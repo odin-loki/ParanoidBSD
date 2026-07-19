@@ -1,0 +1,23 @@
+{
+  "folders": [
+    { "name": "pbsd (new code)",  "path": "./pbsd" },
+    { "name": "docs",                   "path": "./docs" },
+    { "name": "hbsd/src (kernel)",      "path": "./hbsd/src" },
+    { "name": "kde/kwin",               "path": "./kde/kwin" },
+    { "name": "kde/plasma-desktop",     "path": "./kde/plasma-desktop" }
+  ],
+  "settings": {
+    "C_Cpp.default.cppStandard": "c++23",
+    "C_Cpp.default.compilerPath": "/usr/bin/clang++",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json"
+  },
+  "extensions": {
+    "recommendations": [
+      "llvm-vs-code-extensions.vscode-clangd",
+      "ms-vscode.cmake-tools",
+      "eamodio.gitlens",
+      "usernamehw.errorlens",
+      "ms-vscode.cpptools"
+    ]
+  }
+}

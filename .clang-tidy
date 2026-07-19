@@ -1,0 +1,25 @@
+# PBSD clang-tidy configuration
+# Layer 1 of the static analyser — syntactic ownership bans
+Checks: >
+  -*,
+  cppcoreguidelines-no-malloc,
+  cppcoreguidelines-owning-memory,
+  cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  cppcoreguidelines-pro-type-reinterpret-cast,
+  modernize-use-nullptr,
+  modernize-use-override,
+  modernize-use-using,
+  readability-identifier-naming,
+  bugprone-use-after-move,
+  bugprone-dangling-handle,
+  performance-unnecessary-copy-initialization
+
+CheckOptions:
+  - key:   readability-identifier-naming.NamespaceCase
+    value: lower_case
+  - key:   readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key:   readability-identifier-naming.FunctionCase
+    value: lower_case
+
+WarningsAsErrors: '*'

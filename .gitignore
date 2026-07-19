@@ -1,0 +1,37 @@
+# Ports tree is huge and re-clonable; OneDrive also leaves many files offline.
+# Re-fetch with: git clone --depth 1 https://github.com/HardenedBSD/hardenedbsd-ports.git hbsd/ports
+/hbsd/ports/
+
+# Build outputs
+/build/
+**/CMakeFiles/
+**/cmake_install.cmake
+**/CMakeCache.txt
+**/compile_commands.json
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Editor / local
+.vscode/
+.cursor/
+.taskmaster/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Helper scripts (local only)
+_build_check.sh
+_prep_git.sh
+_migrate-to-pbsd.sh
+_rename_docs.py
+_trim_pbsd.sh
+_finish*.sh
+
+# Nested VCS (flattened into this monorepo)
+# (directories removed before commit; ignore if recreated)
+**/.git/

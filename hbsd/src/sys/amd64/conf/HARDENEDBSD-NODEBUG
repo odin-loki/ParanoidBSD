@@ -1,0 +1,10 @@
+#
+# HARDENEDBSD-NODEBUG -- This configuration file removes several
+#   debugging options, including WITNESS and INVARIANTS checking
+
+include HARDENEDBSD
+include "../../conf/std.nodebug"
+
+ident		HARDENEDBSD-NODEBUG
+
+options 	PAX_INSECURE_MODE

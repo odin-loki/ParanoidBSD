@@ -1,0 +1,702 @@
+[20240124] Provide mechanism to disable new USB connections
+__HardenedBSD_version = 1500001
+
+	HBSD: Provide support for prohibiting new USB device connections
+
+	This commit introduces the hardening.pax.prohibit_new_usb sysctl
+	tunable node. This node can be set to one of three values:
+
+	0: Disabled
+	1: Enabled
+	2: Enabled without possibility to disable
+
+	When set to 2, a reboot is required to end the prohibition on new USB
+	connections.
+
+	This is based on a patch by Loic F <loic.f@hardenedbsd.org>.
+
+[20230826] Catch up with FreeBSD version bump to 15
+__HardenedBSD_version = 1500000
+
+	HBSD: Now that __FreeBSD_version is 1500000, let's bump up
+	__HardenedBSD_version to reflect major version bump to 15.
+
+[20230621] Further restrict ptrace access to capsicumized processes
+__HardenedBSD_version = 1400005
+
+	HBSD: Further restrict ptrace access targeting capsicumized processes
+
+	Prevent capsicumized processes from being ptraced. Introduce a new
+	4-state per-jail sysctl node, hardening.prohibit_ptrace_capsicum,
+	defaulted to process opt-out (2). Introduce a new hbsdcontrol knob,
+	prohibit_ptrace_capsicum, to toggle the feature on a per-application
+	basis.
+
+	The intent behind this change is to make post-exploitation tasks more
+	difficult. Abusing ptrace to inject code or to perform process hollowing
+	is commonplace.
+
+[20230528] Introduce shared memory (SHM) hardening
+__HardenedBSD_version = 1400004
+
+	SHM hardening places restrictions on what can be done with the shared
+	memory subsystem (see `shm_open(2)`.) This feature is launching with
+	one technique:
+
+	Use of `shm_open(2)/__sys_shm_open2` system calls is prohibited when:
+
+	1. The `hardening.harden_shm` sysctl tunable is enabled;
+	2. The process has not opted out of the feature;
+	3. The process has entered capability mode (aka, Capsicum mode)
+
+[20220610] Introduce Trusted Path Execution (TPE)
+__HardenedBSD_version = 1400003
+
+	TPE limits the scope of what files can be executed. By default, TPE is
+	left disabled, but can be enabled via the `hardening.pax.tpe.status`
+	sysctl tunable.
+	
+	When enabled, TPE will check the to-be-executed file's parent directory
+	to determine whether the directory is owned by the caller and is
+	writable to users/groups other than the owner.
+	
+	The above logic is only run when:
+	
+	1. The hardening.pax.tpe.all sysctl tunable is non-zero;
+	2. The user's primary group is the group specified in the
+	   hardening.pax.tpe.gid group;
+	3. When the hardening.pax.tpe.negate sysctl tunable is non-zero, the
+	   user's primary group is *NOT* the group specified in the
+	   hardening.pax.tpe.gid group.
+
+[20220406] Introduce insecure kernel module hardening
+__HardenedBSD_version = 1400002
+
+	Provide support for marking certain kernel modules with a
+	notion of insecure or untrustworthy. Introduce a new hardening
+	sysctl tunable: hardening.insecure_kmod (default to 0, meaning
+	loading insecure kernel modules is prohibited by default.)
+
+[20210528] Introduce LTO libs on amd64
+__HardenedBSD_version = 1400001
+
+	As an initial first step towards supporting Cross-DSO CFI,
+	build both static and shared libraries with LTO.
+
+[20200221] Removal of LibreSSL and OpenNTPD
+__HardenedBSD_version = 1300061
+
+	LibreSSL and OpenNTPD were removed from the HardenedBSD base
+	system. Users who set WITH_LIBRESSL or WITH_OPENNTPD will need
+	to rebuild ports.
+
+[20191214] Jail parameter: {no}allow.extattr
+__HardenedBSD_version = 1300060
+
+	Provide a new jail configuration parameter: allow.extattr (and
+	noallow.extattr). Default: allow.
+	Allow setting system-level filesystem extended attributes by
+	default in a jailed environment.
+
+	Change the default system behavior to be more relaxed. Prior
+	to this change, privileged accounts in a jail could not set
+	system-level filesystem extended attributes. This change now
+	enables that ability by default.
+
+	This is in preparation for hbsdcontrol integration with
+	ports/packages.
+
+[20191019] FreeBSD ASR with HardenedBSD ASLR
+__HardenedBSD_version = 1300059
+
+	FreeBSD merged in their incomplete Address Space Randomization
+	(ASR) patch. Undo the reversion of the ASR patch and rely on
+	HardenedBSD's PaX ASLR implementation for the stack and shared
+	page when FreeBSD's ASR is enabled.
+
+	FreeBSD's ASR is disabled by default, but can be enabled at
+	runtime by setting the `kern.elf64.aslr.pie_enable` and
+	`kern.elf64.aslr.enable` sysctl nodes to 1. If HardenedBSD's
+	`hardening.pax.aslr.status' sysctl node is greater than or
+	equal to 2, the PaX ASLR implementation will only be in effect
+	for the stack and the shared page.
+
+
+[20181019] shift to FreeBSD 13-CURRENT 
+__HardenedBSD_version = 1300058
+
+	FreeBSD started 13-CURRENT, do the same here.
+
+
+[20180701] OpenSSL
+__HardenedBSD_version = 1200058
+
+	Switch back to OpenSSL as the default crypto library in base.
+
+
+[20180123] retpoline
+__HardenedBSD_version = 1200057
+
+	Integrated the retpoline patch from llvm. The object
+	tree should be removed fully prior to rebuilding
+	world/kernel.
+
+[20180103] PAX_JAIL_SUPPORT
+__HardenedBSD_version = 1200056
+
+	Added infrastructure to change hardening settings at
+	jail creating time. You can use the same "mibs" as
+	jail params, which exists under the hardening sysctl
+	leaf. See the example jail.conf sniplet:
+
+	  exec.start = "/bin/sh /etc/rc";
+	  exec.stop = "/bin/sh /etc/rc.shutdown";
+	  exec.clean;
+	  mount.devfs;
+	  
+	  path = "/usr/jails/$name";
+	  host.hostname = "$name";
+	  
+	  hbsdnx {
+	          hardening.pax.segvguard.status = 3;
+	          hardening.pax.mprotect.status = 3;
+	          hardening.pax.pageexec.status = 3;
+	          hardening.pax.aslr.status = 3;
+	          persist;
+	  }
+
+	In the current implementation the settings are still
+	modifiable via sysctls inside from the jail, but this
+	will change in the future. The same is true for the
+	nested jails.
+
+
+[20170914] TOCTOU fix, PAX_CONTROL_{ACL,EXTATTR}
+__HardenedBSD_version = 1200055
+
+	hbsdcontrol
+	-----------------------------------------------------------------------
+	The hbsdcontrol subsystem is an extattr(9) based control pane for
+	HardenedBSD's security settings.
+	
+	Currently only the system namespace supported. (The FreeBSD's extattr
+	subsystem has two namespace: system and user. The system namespace is
+	writeable only from non-jail root user, the user namespace is writeable
+	from all users.)
+	This means only the root can assign rules to specific file. The other
+	restriction is similar, only from the host is allowed to set rules to
+	specific file, and prohibited a such operation from jails, for jail's
+	root user too prohibited.
+	
+	To enable the hbsdcontrol subsystem, you should add the
+	
+	options       PAX_CONTROL_EXTATTR
+	
+	kernel knob to your kernel config.
+	
+	The hbsdcontrol subsystem use the following extended attributes:
+	
+	    hbsd.pax.aslr
+	    hbsd.pax.noaslr
+	    hbsd.pax.segvguard
+	    hbsd.pax.nosegvguard
+	    hbsd.pax.pageexec
+	    hbsd.pax.nopageexec
+	    hbsd.pax.mprotect
+	    hbsd.pax.nomprotect
+	    hbsd.pax.shlibrandom
+	    hbsd.pax.noshlibrandom
+	    hbsd.pax.disallow_map32bit
+	    hbsd.pax.nodisallow_map32bit
+	
+	Valid values are only the 0 (= disabled) and 1 (= enabled).
+	Valid settings are the following in system FS-EA namespace (with the ASLR
+	example, the same is true for the other settings):
+	
+	* no hbsd.pax.aslr, nor hbsd.pax.noaslr assigned to the file -> system default
+	* hbsd.pax.aslr = 1 and hbsd.pax.noaslr = 0 -> enabled ASLR
+	* hbsd.pax.aslr = 0 and hbsd.pax.noaslr = 1 -> disabled ASLR
+	* hbsd.pax.aslr = 0 and hbsd.pax.noaslr = 0 -> invalid, warning message + execution error
+	* hbsd.pax.aslr = 1 and hbsd.pax.noaslr = 1 -> invalid, warning message + execution error
+	
+	Attributes in user namespace are ignored.
+
+	TOCTOU fix, PAX_ACL
+	-----------------------------------------------------------------------
+	As preparation to hbsdcontrol, and to clean up the whole control logic
+	there is some new kernel knob:
+
+	* PAX_CONTROL_ACL
+	* PAX_CONTROL_ACL_OVERRIDE_SUPPORT
+	* PAX_CONTROL_EXTATTR
+
+	If you want to use the external secadm utility to manage hardenedbsd's
+	security features, then you should add 
+
+	 options PAX_CONTROL_ACL
+
+	to your kernel config.
+
+	If you want to use the extattr(9) based hbsdcontrol, you should add
+	the
+
+	 options PAX_CONTROL_EXTATTR
+
+	kernel knob.
+
+	If you want to use both hbsdcontrol and secadm, and it's nice to add
+
+	 option PAX_CONTROL_ACL_OVERRIDE_SUPPORT
+
+	too. This is nice in very special case, when you set rules both
+	from hbsdcontrol and from secadm on the _same_ file. By default
+	always the hbsdcontrol wins this situation, and what was set up
+	by hbsdcontrol gets applied as policy. To override this behavior
+	you can add a special flag in you secadm conf to override this
+	behavior. For more details consult with secadm's source code /
+	readme / man page.
+
+
+[20170914] Changed auxvector after e5ea82a50dd64a3e47767b132a16281242ff396d
+__HardenedBSD_version = 1200054
+
+	After the following commit:
+
+	> commit e5ea82a50dd64a3e47767b132a16281242ff396d
+	> Author: jhb <jhb@FreeBSD.org>
+	> Date:   Thu Sep 14 14:26:55 2017 +0000
+
+	>     Add AT_HWCAP and AT_EHDRFLAGS on all platforms.
+	>     
+	>     A new 'u_long *sv_hwcap' field is added to 'struct sysentvec'.  A
+	>     process ABI can set this field to point to a value holding a mask of
+	>     architecture-specific CPU feature flags.  If an ABI does not wish to
+	>     supply AT_HWCAP to processes the field can be left as NULL.
+	>     
+	>     The support code for AT_EHDRFLAGS was already present on all systems,
+	>     just the #define was not present.  This is a step towards unifying the
+	>     AT_* constants across platforms.
+	>     
+	>     Reviewed by:    kib
+	>     MFC after:      1 month
+	>     Differential Revision:  https://reviews.freebsd.org/D12290
+
+	> Notes:
+	>     svn path=/head/; revision=323579
+
+	the AT_PAXFLAGS has been changed from 24 to 26 position in
+	elf auxvector. This may break some functionality, especially
+	the SHLIBRAND feature, when you running on a newer kernel
+	with an older user-space.
+
+
+[20170831] Changed pax_elf API
+__HardenedBSD_version = 1200053
+
+	As preparation to hardenedBSD rationalize
+	the pax_elf(...) functions signature, to
+	follow the codes in kern_exec's style.
+	For the details, see the code.
+
+
+[20170709] Enforced KPI
+__HardenedBSD_version = 1200052
+
+	Enfore the KPI version at compile time. This
+	will implicate the recompilation of external
+	modules even once __HardenedBSD_version or
+	__FreeBSD_version gets bumped.
+
+
+[20170624] Enable OpenNTPd by default
+__HardenedBSD_version = 1200051
+
+       Enable WITH_OPENNTPD by default on HardenedBSD.
+       After this point we deliver OpenNTPd as base
+       ntp provider for HardenedBSD. ISC ntpd is still
+       available, and accessible with WITHOUT_OPENNTPD=
+       knob in src.conf(5).
+
+[20170616] Changed __HardenedBSD_version scheme
+__HardenedBSD_version = 1200050
+
+       The version numbers may differ in different branches (10-STABLE,
+       11-STABLE, 12-CURRENT) and to keep the version number in pair
+       with the features state, there is a need to allow to bump they
+       differently.
+
+
+[20170616] Changed default protection settings for text section
+__HardenedBSD_version = 50 
+
+       Fixes the (theoretically) last outstanding memory
+       protection related weakness in HBSD's user-space detectable
+       with paxtest.
+
+
+[20170302] Enable CFI by default for amd64
+__HardenedBSD_version = 49
+
+	Enable WITH_CFI by default on HardenedBSD/amd64.
+	Control-Flow Integrity (CFI) is an exploit mitigation
+	technique developed in the clang/llvm project. Now that
+	base has clang 4.0.0, which brings a linker that supports
+	Link-Time Optimization (LTO), lld, we can now make use of
+	CFI, which requires LTO.
+
+	This also enables lld by default for amd64 and arm64. Disable
+	CFI by setting WITHOUT_CFI in src.conf(5).
+
+[20170112] Enable SafeStack by default for amd64
+__HardenedBSD_version = 48
+
+	Enable WITH_SAFESTACK by default on HardenedBSD/amd64.
+	SafeStack is an exploit mitigation technique developed in the
+	clang/llvm project, born in the Code-Pointer Integrity
+	(CPI) project. Now that base has clang 3.9.1, which contains
+	a more mature CFI/CPI implementation, SafeStack can be enabled
+	by default for amd64.
+
+	Disable SafeStack for base by setting WITHOUT_SAFESTACK in
+	src.conf(5).
+
+[20160820] Enable LibreSSL by default
+__HardenedBSD_version = 47
+
+	Enable WITH_LIBRESSL by default on HardenedBSD.
+	After this we point we deliver LibreSSL as base
+	SSL engine for HardenedBSD. The OpenSSL is still
+	available, and accessible with WITHOUT_LIBRESSL=
+	knob in src.conf.
+
+
+[20160423] RELRO + BIND_NOW
+__HardenedBSD_version = 46
+
+	Enable RELRO + BIND_NOW for base.
+	Introduce WITHOUT_RELRO and WITHOUT_BIND_NOW.
+	Setting WITHOUT_RELRO also sets WITHOUT_BIND_NOW.
+
+
+[20160408] PIEified base for amd64 and i386
+__HardenedBSD_version = 45
+
+	Remove WANTS_PIE.
+	Default PIE for base for amd64 and i386 only.
+	When PIE is enabled, compile non-static libraries with -fPIC.
+	Default WITH_SHARED_TOOLCHAIN to enabled by default.
+
+	If you encounter build problems during make buildworld,
+	try to clean the object files directory, which is typically
+	/usr/obj: 
+	
+		cd /usr/obj; rm -rf *
+	
+	And retry to build the world. This will require due to not
+	proper cleaning mechanizm of FreeBSD's build framework.
+
+
+[201603XX] noexec and ASLR changes
+__HardenedBSD_version = 44
+
+	Fixed noexec's paxflags parser to get usable system on
+	bronen setups too.
+	Changed ASLR stack randomization settings on 32 machines.
+
+[20160316] ASLR cleanup
+__HardenedBSD_version = 43
+
+	Since the hardening.pax.aslr.*_len variables are no longer
+	available outside of loader.conf(5), remove them from
+	struct hbsd_features, which gets embedded in struct
+	prison. This change makes the hardening.pax.aslr.*_len
+	variables a global setting, rather than a per-jail setting.
+
+
+[20160225] RTLD noexec
+__HardenedBSD_version = 42
+
+	Enforce nonexec thread stacks, driven by the RTLD.
+
+
+[20160213] rewritten internals
+__HardenedBSD_version = 41
+
+	Changed hardenedBSD core structures.
+	Dropped ptrace_hardening.
+	Dropped ASLR bit settings.
+	Fixed hbsd_update_build bug.
+	Added skeleton file.
+	Changed feature strings.
+	Changed noexec implicit rules.
+
+
+[20160123] add pax_get_hardenedbsd_version API
+__HardenedBSD_version = 40
+
+	Add pax_get_hardenedbsd_version() API to query hardening's version
+	from kernel codes.
+
+	Add new types, which represents the PAX_FLAGS.
+
+
+[20151225] redo rework internal structures
+__HardenedBSD_version = 39
+
+	Change pax_get_prison(...) to pax_get_prison_td(...) where possible.
+	Fix one segvguard related issue.
+	Changed pax_elf signature.
+
+	We reverted this code in version 37, because we observed weird
+	issue, but this issues was unrelated to the reworked internals.
+	The true root of the problem was a secadm bug and the issue fixed
+	with version 38.
+
+
+[20151218] reworked MAP_32BIT mmap randomization
+__HardenedBSD_version = 38
+
+	Previously the MAP_32BIT case mmap randomization was an ASR,
+	to fix this and some other issue with the MAP_32BIT related
+	mmap, implement a proper ASLR.
+
+	Upstream fixed stability issues with higher order PID randomization
+
+
+[20151208] revert the reworked internal structures
+__HardenedBSD_version = 37
+
+	revert: Change pax_get_prison(...) to pax_get_prison_td(...) where possible.
+	revert: Changed pax_elf signature.
+
+
+[20151206] rework internal structures
+__HardenedBSD_version = 36
+
+	Change pax_get_prison(...) to pax_get_prison_td(...) where possible.
+	Change noexec's sysctl handlers.
+	Fix one segvguard related issue.
+	Fix randompid related issue.
+	Changed pax_elf signature.
+
+
+[20151123] changed proc structure : added p_timekeep_base
+__HardenedBSD_version = 35
+
+	Follow the recent VDSO changes from kib@.
+	This required to introduce new field to struct proc.
+
+
+[20151018] disabled lib32 build by default
+__HardenedBSD_version = 34
+
+	Do not build lib32 and 32bit related stuffs on 64bit platforms
+	by default.
+
+
+[20150924] changed stack-protector level
+__HardenedBSD_version = 33
+
+	Bump the default build settings from the --stack-protector
+	to --stack-protector-strong.
+
+
+[20150915] ASLR changes
+__HardenedBSD_version = 32
+
+	Changed default VDSO randomization from 20 bits to 28 bits.
+	Fixed div by zero in rare cases in pax_aslr_init_vmspace.
+
+
+[20150907] Reworked DISALLOWMAP32BIT and changes some internal functions
+__HardenedBSD_version = 31
+
+	Rename and correctly paxify the DISALLOWMAP32BIT.
+	Changed pax flags setup.
+
+
+[20150905] Added MAP32_PROTECT
+__HardenedBSD_version = 30
+
+	Added per-process mode to disable MAP_32BIT mode mmap(2).
+
+
+[20150823] Fixed pkg bootstrap
+__HardenedBSD_version = 29
+
+	With FreeBSD commit 671f0b9, use of pubkey signature_type method is explicitly disallowed.
+	This breaks bootstrapping with pubkey signature_type.
+
+
+[20150715] Fixed vdso randomization
+__HardenedBSD_version = 28
+
+	Fixed and simplified vdso and stack mapping.
+
+
+[20150706] Added shared-page (vdso) randomization
+__HardenedBSD_version = 27
+
+	This version brings in true stack randomization.
+	Changed ASLR settings:
+		vdso random : 20 bit
+
+
+[20150701] Rewriten stack randomization, and bumped ASLR settings
+__HardenedBSD_version = 26
+
+	This version brings in true stack randomization.
+	Changed ASLR settings:
+		stack random : 26 -> 42 bit
+		exec random : 21 -> 30 bit
+
+
+[20150605] ASLR "rewrite" and NOEXEC fixes after jhb's vm_mmap.c changes 
+__HardenedBSD_version = 25
+__HardenedBSD_version = 24
+
+	Move the mmap randomization to it's own place and add more state enforcements (KASSERTs).
+	Added locking around pax_aslr_mmap(...).
+	Factore out the MAP_32BIT related code from pax_aslr_mmap(...), and move to pax_aslr_mmap_map_32bit(...)
+
+
+[20150604] fix ASLR - randomize the rtld's shared object too
+__HardenedBSD_version = 23
+
+	Randomize the rtld's address before load them in imgact_elf.c
+
+
+[20150604] added PAX_NOTE_{,NO}SHLIBRANDOM extension
+__HardenedBSD_version = 22
+
+	This feature will fix the issue mentioned on issue #137
+
+
+[20150528] Changed internal structure, removed hardening.pax.segvguard.debug sysctl
+__HardenedBSD_version = 21
+
+	Changed internal structure
+	Removed hardening.pax.segvguard.debug sysctl
+
+
+[20150415] Bumped stack randomization
+__HardenedBSD_version = 20
+
+	Increased stack randomization from 20 bit to 26 bit.
+
+
+[20150415] Fixed stack randomization
+__HardenedBSD_version = 19
+
+
+[20150408] How to get HardenedBSD and HardenedBSD-ports?
+
+	Without git/svnlite:
+
+	    HardenedBSD source:
+
+		# fetch https://github.com/HardenedBSD/hardenedBSD/archive/hardened/current/master.tar.gz -o hardenedbsd-src.tar.gz
+		# tar xf hardenedbsd-src.tar.gz
+		# mv hardenedBSD-hardened-current-master /usr/src
+
+	    HardenedBSD ports:
+
+		# fetch https://github.com/HardenedBSD/freebsd-ports/archive/master.tar.gz -o hardenedbsd-ports.tar.gz
+		# tar xf hardenedbsd-ports.tar.gz
+		# mv freebsd-ports-master /usr/ports
+
+	    Secadm:
+
+		# fetch https://github.com/HardenedBSD/secadm/archive/master.tar.gz -o secadm.tar.gz
+		# tar xf secadm.tar.gz
+
+	With git:
+
+	    HardenedBSD-source:
+
+		# git clone https://github.com/HardenedBSD/hardenedBSD.git /usr/src
+
+	    HardenedBSD ports:
+
+		# git clone https://github.com/HardenedBSD/freebsd-ports.git /usr/ports
+
+	    Secadm:
+
+		# git clone https://github.com/HardenedBSD/secadm.git
+
+	With svnlite (much more slower than git version):
+
+	    HardenedBSD-source:
+
+		# svnlite co https://github.com/HardenedBSD/hardenedBSD.git /usr/src
+
+	    HardenedBSD ports:
+
+		# svnlite co https://github.com/HardenedBSD/freebsd-ports.git /usr/ports
+
+	    Secadm:
+
+		# svnlite co https://github.com/HardenedBSD/secadm.git
+
+
+[20150404] Added secadm hook to rtld
+__HardenedBSD_version = 18
+
+Added integriforce secadm hook to rtld to validate
+shared object before loading them.
+
+
+[20150318] Merged first part of NOEXEC project
+__HardenedBSD_version = 17
+
+This is the first part of PaX's MPROTECT restriction:
+* this merge brings per process level restriction settings
+* eliminated the linux's sound related mmap weakness
+* improved the logging
+...
+
+If you have problem with your application, then install
+secadm:
+
+ * from pkg:
+
+	pkg install secadm
+
+ * or from github:
+
+	# git clone https://github.com/hardenedbsd/secadm
+	# cd secadm
+	# make && make install
+
+
+[201502011] Changed kernel knobs
+
+Added ``options PAX`` to enable the HardenedBSD framework.
+All other PAX_* knob depends on PAX knob.
+
+
+[20150131] Upgrading from systems before "HBSD: Revert the chacha20 import in full."
+
+After the "HBSD: Revert the chacha20 import in full." commit
+we lost the compatibility with the previous version, this
+means ABI break, and the system is unable to properly boot.
+In the background is the removed VM_INHERIT_ZERO flag, which
+was previously used in libc.
+
+The solution is to install the new world, before you booting to the new kernel.
+
+1. make buildworld kernel
+2. IMPORTANT: install world before you reboot
+ 2.1. mergemaster -p && make installworld && mergemaster
+3. reboot
+4. start in single user mode
+5. cd /usr/src
+6. make delete-old delete-old-libs
+7. if you have buildworld or buildkernel error,
+   where the cc aborting and dumping core,
+   then you need to delete the content of /usr/obj directory:
+ 7.1 cd /usr/obj
+ 7.2 rm -rf *
+
+And probably a full ports rebuild required too...
+

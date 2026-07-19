@@ -1,0 +1,3 @@
+add_library(pbsd_handles INTERFACE)
+target_include_directories(pbsd_handles INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_compile_features(pbsd_handles INTERFACE cxx_std_23)

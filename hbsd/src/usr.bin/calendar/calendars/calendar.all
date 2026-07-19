@@ -1,0 +1,12 @@
+/*
+ * International and national calendar files
+ *
+ * $FreeBSD$
+ */
+
+#ifndef _calendar_all_
+#define _calendar_all_
+
+#include <calendar.freebsd>
+
+#endif /* !_calendar_all_ */
