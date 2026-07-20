@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/hpt27xx/hpt27xx_os_bsd.c",
+  "wave": "wave5",
+  "loc_estimate": 315,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/hpt27xx/hpt27xx_os_bsd.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.hpt27xx.hpt27xx_os_bsd",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

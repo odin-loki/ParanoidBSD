@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/expat/lib/xmlrole.c",
+  "wave": "wave9",
+  "loc_estimate": 1255,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/expat/lib/xmlrole.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.expat.lib.xmlrole",
+  "generated": "2026-07-19T09:37:49+00:00"
+}

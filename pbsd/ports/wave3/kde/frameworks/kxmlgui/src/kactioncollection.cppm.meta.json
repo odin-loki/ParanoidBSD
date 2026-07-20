@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kxmlgui/src/kactioncollection.cpp",
+  "wave": "wave3",
+  "loc_estimate": 859,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/src/kactioncollection.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.src.kactioncollection",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

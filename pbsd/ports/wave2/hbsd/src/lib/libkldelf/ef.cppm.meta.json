@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libkldelf/ef.c",
+  "wave": "wave2",
+  "loc_estimate": 652,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libkldelf/ef.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libkldelf.ef",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

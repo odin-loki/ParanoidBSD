@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libthr/thread/thr_sem.c",
+  "wave": "wave2",
+  "loc_estimate": 115,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/thread/thr_sem.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.thread.thr_sem",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

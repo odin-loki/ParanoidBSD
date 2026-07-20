@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/core/filesystemfreespacejob.cpp",
+  "wave": "wave3",
+  "loc_estimate": 91,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/core/filesystemfreespacejob.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.core.filesystemfreespacejob",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

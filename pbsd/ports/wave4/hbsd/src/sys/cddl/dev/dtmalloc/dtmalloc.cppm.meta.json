@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cddl/dev/dtmalloc/dtmalloc.c",
+  "wave": "wave4",
+  "loc_estimate": 216,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/dev/dtmalloc/dtmalloc.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.dev.dtmalloc.dtmalloc",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

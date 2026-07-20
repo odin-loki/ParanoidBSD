@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/pt/pt.c",
+  "wave": "wave7",
+  "loc_estimate": 1003,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/pt/pt.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.pt.pt",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

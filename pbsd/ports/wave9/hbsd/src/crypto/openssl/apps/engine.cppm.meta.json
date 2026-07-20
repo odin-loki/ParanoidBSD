@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/apps/engine.c",
+  "wave": "wave9",
+  "loc_estimate": 507,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/apps/engine.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.apps.engine",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

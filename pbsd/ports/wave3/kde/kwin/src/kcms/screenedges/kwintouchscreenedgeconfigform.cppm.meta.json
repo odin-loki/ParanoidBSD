@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/kcms/screenedges/kwintouchscreenedgeconfigform.cpp",
+  "wave": "wave3",
+  "loc_estimate": 33,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/kcms/screenedges/kwintouchscreenedgeconfigform.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.kcms.screenedges.kwintouchscreenedgeconfigform",
+  "generated": "2026-07-19T08:41:42+00:00"
+}

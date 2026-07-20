@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mthca/mthca_cq.c",
+  "wave": "wave5",
+  "loc_estimate": 981,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mthca/mthca_cq.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mthca.mthca_cq",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

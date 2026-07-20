@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcpdump/print-esp.c",
+  "wave": "wave9",
+  "loc_estimate": 931,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-esp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_esp",
+  "generated": "2026-07-19T09:37:27+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/bootpd/getether.c",
+  "wave": "wave2",
+  "loc_estimate": 385,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/bootpd/getether.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.bootpd.getether",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

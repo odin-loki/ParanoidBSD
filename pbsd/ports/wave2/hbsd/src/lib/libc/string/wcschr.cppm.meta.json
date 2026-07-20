@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/string/wcschr.c",
+  "wave": "wave2",
+  "loc_estimate": 40,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/string/wcschr.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.string.wcschr",
+  "generated": "2026-07-19T08:38:05+00:00"
+}

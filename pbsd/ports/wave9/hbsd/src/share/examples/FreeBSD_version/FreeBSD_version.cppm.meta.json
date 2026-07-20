@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/share/examples/FreeBSD_version/FreeBSD_version.c",
+  "wave": "wave9",
+  "loc_estimate": 20,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/FreeBSD_version/FreeBSD_version.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.share.examples.freebsd_version.freebsd_version",
+  "generated": "2026-07-19T09:37:44+00:00"
+}

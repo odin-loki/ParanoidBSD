@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kxmlgui/tests/kmainwindowtest.cpp",
+  "wave": "wave3",
+  "loc_estimate": 42,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/tests/kmainwindowtest.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.tests.kmainwindowtest",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

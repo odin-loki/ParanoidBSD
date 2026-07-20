@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/utils/filedescriptor.cpp",
+  "wave": "wave3",
+  "loc_estimate": 125,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/utils/filedescriptor.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.utils.filedescriptor",
+  "generated": "2026-07-19T09:19:13+00:00"
+}

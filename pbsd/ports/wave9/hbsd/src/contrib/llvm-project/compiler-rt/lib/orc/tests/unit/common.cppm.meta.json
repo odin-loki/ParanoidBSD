@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/orc/tests/unit/common.cpp",
+  "wave": "wave9",
+  "loc_estimate": 6,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/orc/tests/unit/common.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.orc.tests.unit.common",
+  "generated": "2026-07-19T07:47:46+00:00"
+}

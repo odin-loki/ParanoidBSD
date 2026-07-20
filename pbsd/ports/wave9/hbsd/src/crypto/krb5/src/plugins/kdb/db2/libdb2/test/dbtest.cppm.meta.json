@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/test/dbtest.c",
+  "wave": "wave9",
+  "loc_estimate": 815,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/test/dbtest.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.kdb.db2.libdb2.test.dbtest",
+  "generated": "2026-07-19T09:30:33+00:00"
+}

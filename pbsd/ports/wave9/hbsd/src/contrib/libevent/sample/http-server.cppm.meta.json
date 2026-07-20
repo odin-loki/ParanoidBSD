@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libevent/sample/http-server.c",
+  "wave": "wave9",
+  "loc_estimate": 582,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libevent/sample/http-server.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libevent.sample.http_server",
+  "generated": "2026-07-19T09:37:40+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/API/SBExpressionOptions.cpp",
+  "wave": "wave9",
+  "loc_estimate": 265,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/API/SBExpressionOptions.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.api.sbexpressionoptions",
+  "generated": "2026-07-19T09:31:40+00:00"
+}

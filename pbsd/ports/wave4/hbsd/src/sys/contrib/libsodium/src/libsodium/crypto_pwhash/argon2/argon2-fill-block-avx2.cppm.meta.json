@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-fill-block-avx2.c",
+  "wave": "wave4",
+  "loc_estimate": 239,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-fill-block-avx2.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_pwhash.argon2.argon2_fill_block_avx2",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

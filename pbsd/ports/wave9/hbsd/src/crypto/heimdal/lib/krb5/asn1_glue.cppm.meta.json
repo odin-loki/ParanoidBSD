@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/krb5/asn1_glue.c",
+  "wave": "wave9",
+  "loc_estimate": 72,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/asn1_glue.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.asn1_glue",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

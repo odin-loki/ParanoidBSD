@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/udplite.h",
+  "wave": "wave6",
+  "loc_estimate": 47,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/udplite.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.udplite",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

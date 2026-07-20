@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/base/lib_insch.c",
+  "wave": "wave9",
+  "loc_estimate": 165,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/base/lib_insch.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.base.lib_insch",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

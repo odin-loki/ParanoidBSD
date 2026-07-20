@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/base/lib_initscr.c",
+  "wave": "wave9",
+  "loc_estimate": 112,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/base/lib_initscr.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.base.lib_initscr",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

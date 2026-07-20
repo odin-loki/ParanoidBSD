@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/Utility/RegisterContextPOSIX_s390x.cpp",
+  "wave": "wave9",
+  "loc_estimate": 163,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/Utility/RegisterContextPOSIX_s390x.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.process.utility.registercontextposix_s390x",
+  "generated": "2026-07-19T09:31:38+00:00"
+}

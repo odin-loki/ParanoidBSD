@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/aes/aes_cfb.c",
+  "wave": "wave9",
+  "loc_estimate": 49,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/aes/aes_cfb.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.aes.aes_cfb",
+  "generated": "2026-07-19T09:30:03+00:00"
+}

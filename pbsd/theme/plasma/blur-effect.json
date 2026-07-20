@@ -1,0 +1,32 @@
+{
+  "KPlugin": {
+    "Id": "pbsd_aero_blur",
+    "Name": "PBSD Aero Blur",
+    "Description": "Windows 7 Aero glass blur for Plasma panels and dialogs",
+    "Category": "Appearance",
+    "Authors": [{"Name": "Odin Loch"}],
+    "Version": "0.8.0"
+  },
+  "enabledByDefault": true,
+  "blurRadius": 24,
+  "noiseStrength": 0.04,
+  "glassTint": [0.12, 0.22, 0.40, 0.65],
+  "saturationBoost": 1.15,
+  "contrastBoost": 1.05,
+  "panelOpacity": 0.72,
+  "dialogOpacity": 0.78,
+  "titleBarHeight": 36,
+  "cornerRadius": 8,
+  "decorationPlugin": "pbsd_aero",
+  "decorationBlur": true,
+  "startMenuBlur": true,
+  "startMenuOpacity": 0.78,
+  "panelGlassAsset": "panel/panel-glass.svg",
+  "startMenuFrameAsset": "panel/start-menu-frame.svg",
+  "searchBoxAsset": "panel/search-box.svg",
+  "glowActiveAsset": "decoration/glow-active.svg",
+  "glowInactiveAsset": "decoration/glow-inactive.svg",
+  "glowBlurRadius": 20,
+  "glowSaturation": 1.20,
+  "systemLinkOpacity": 0.68
+}

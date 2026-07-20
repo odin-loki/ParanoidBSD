@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/bhyve/pci_virtio_input.c",
+  "wave": "wave2",
+  "loc_estimate": 774,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/pci_virtio_input.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.pci_virtio_input",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

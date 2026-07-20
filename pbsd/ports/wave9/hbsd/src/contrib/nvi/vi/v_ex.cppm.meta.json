@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/nvi/vi/v_ex.c",
+  "wave": "wave9",
+  "loc_estimate": 646,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/nvi/vi/v_ex.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.nvi.vi.v_ex",
+  "generated": "2026-07-19T09:37:35+00:00"
+}

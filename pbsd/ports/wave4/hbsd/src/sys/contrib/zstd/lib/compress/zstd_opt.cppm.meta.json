@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/zstd/lib/compress/zstd_opt.c",
+  "wave": "wave4",
+  "loc_estimate": 1580,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/lib/compress/zstd_opt.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.lib.compress.zstd_opt",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

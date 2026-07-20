@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/vchiq/interface/vchiq_arm/vchiq_kmod.c",
+  "wave": "wave4",
+  "loc_estimate": 239,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/vchiq/interface/vchiq_arm/vchiq_kmod.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.vchiq.interface.vchiq_arm.vchiq_kmod",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

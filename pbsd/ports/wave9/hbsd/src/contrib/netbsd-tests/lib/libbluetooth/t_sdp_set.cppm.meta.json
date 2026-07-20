@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libbluetooth/t_sdp_set.c",
+  "wave": "wave9",
+  "loc_estimate": 359,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libbluetooth/t_sdp_set.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libbluetooth.t_sdp_set",
+  "generated": "2026-07-19T09:30:59+00:00"
+}

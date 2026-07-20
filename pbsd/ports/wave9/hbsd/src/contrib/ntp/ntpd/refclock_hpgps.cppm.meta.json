@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/ntpd/refclock_hpgps.c",
+  "wave": "wave9",
+  "loc_estimate": 626,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/refclock_hpgps.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.refclock_hpgps",
+  "generated": "2026-07-19T09:31:07+00:00"
+}

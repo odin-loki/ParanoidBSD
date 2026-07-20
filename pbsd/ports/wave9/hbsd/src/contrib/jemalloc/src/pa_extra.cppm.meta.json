@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/jemalloc/src/pa_extra.c",
+  "wave": "wave9",
+  "loc_estimate": 191,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/src/pa_extra.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.src.pa_extra",
+  "generated": "2026-07-19T09:37:43+00:00"
+}

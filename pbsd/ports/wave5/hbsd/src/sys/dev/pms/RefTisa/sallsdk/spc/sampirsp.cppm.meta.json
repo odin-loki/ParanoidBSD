@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/pms/RefTisa/sallsdk/spc/sampirsp.c",
+  "wave": "wave5",
+  "loc_estimate": 7872,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/RefTisa/sallsdk/spc/sampirsp.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.reftisa.sallsdk.spc.sampirsp",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

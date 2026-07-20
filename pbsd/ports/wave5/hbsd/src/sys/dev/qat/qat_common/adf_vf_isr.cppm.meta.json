@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/qat_common/adf_vf_isr.c",
+  "wave": "wave5",
+  "loc_estimate": 403,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_common/adf_vf_isr.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_common.adf_vf_isr",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

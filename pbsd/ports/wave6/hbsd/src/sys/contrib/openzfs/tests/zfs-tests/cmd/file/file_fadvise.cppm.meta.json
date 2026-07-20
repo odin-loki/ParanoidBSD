@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/file/file_fadvise.c",
+  "wave": "wave6",
+  "loc_estimate": 122,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/file/file_fadvise.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.cmd.file.file_fadvise",
+  "generated": "2026-07-19T09:29:19+00:00"
+}

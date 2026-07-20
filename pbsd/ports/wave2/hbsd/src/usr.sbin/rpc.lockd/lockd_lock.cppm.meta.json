@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/rpc.lockd/lockd_lock.c",
+  "wave": "wave2",
+  "loc_estimate": 2278,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/rpc.lockd/lockd_lock.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.rpc_lockd.lockd_lock",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

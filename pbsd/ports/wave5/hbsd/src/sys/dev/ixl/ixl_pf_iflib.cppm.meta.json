@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ixl/ixl_pf_iflib.c",
+  "wave": "wave5",
+  "loc_estimate": 1104,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ixl/ixl_pf_iflib.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ixl.ixl_pf_iflib",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/smbfs/lib/smb/rap.c",
+  "wave": "wave9",
+  "loc_estimate": 404,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/smbfs/lib/smb/rap.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.smbfs.lib.smb.rap",
+  "generated": "2026-07-19T09:37:58+00:00"
+}

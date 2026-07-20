@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/usb/controller/musb_otg.c",
+  "wave": "wave5",
+  "loc_estimate": 4188,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/controller/musb_otg.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.controller.musb_otg",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

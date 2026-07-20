@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ofed/infiniband-diags/src/ibsysstat.c",
+  "wave": "wave9",
+  "loc_estimate": 367,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/infiniband-diags/src/ibsysstat.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.infiniband_diags.src.ibsysstat",
+  "generated": "2026-07-19T09:37:24+00:00"
+}

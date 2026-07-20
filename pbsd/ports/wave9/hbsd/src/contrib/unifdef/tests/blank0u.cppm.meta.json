@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unifdef/tests/blank0u.c",
+  "wave": "wave9",
+  "loc_estimate": 25,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unifdef/tests/blank0u.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unifdef.tests.blank0u",
+  "generated": "2026-07-19T09:37:52+00:00"
+}

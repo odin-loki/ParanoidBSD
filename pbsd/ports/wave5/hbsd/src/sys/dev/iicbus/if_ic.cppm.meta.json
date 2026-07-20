@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/iicbus/if_ic.c",
+  "wave": "wave5",
+  "loc_estimate": 433,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iicbus/if_ic.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iicbus.if_ic",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

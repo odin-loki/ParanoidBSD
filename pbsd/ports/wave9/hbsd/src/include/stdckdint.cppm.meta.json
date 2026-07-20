@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/stdckdint.h",
+  "wave": "wave9",
+  "loc_estimate": 40,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/stdckdint.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.stdckdint",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

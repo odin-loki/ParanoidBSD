@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/mechglue/g_inq_names.c",
+  "wave": "wave9",
+  "loc_estimate": 164,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/mechglue/g_inq_names.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.mechglue.g_inq_names",
+  "generated": "2026-07-19T09:30:29+00:00"
+}

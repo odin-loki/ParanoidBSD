@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ata/chipsets/ata-acard.c",
+  "wave": "wave5",
+  "loc_estimate": 196,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ata/chipsets/ata-acard.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ata.chipsets.ata_acard",
+  "generated": "2026-07-19T09:06:10+00:00"
+}

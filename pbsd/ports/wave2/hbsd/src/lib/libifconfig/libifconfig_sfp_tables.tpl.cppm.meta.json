@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libifconfig/libifconfig_sfp_tables.tpl.c",
+  "wave": "wave2",
+  "loc_estimate": 122,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libifconfig/libifconfig_sfp_tables.tpl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libifconfig.libifconfig_sfp_tables_tpl",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

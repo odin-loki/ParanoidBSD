@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/devctl/devctl.c",
+  "wave": "wave2",
+  "loc_estimate": 457,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/devctl/devctl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.devctl.devctl",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

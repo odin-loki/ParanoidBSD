@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/AST/ExternalASTSource.cpp",
+  "wave": "wave9",
+  "loc_estimate": 136,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/AST/ExternalASTSource.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.ast.externalastsource",
+  "generated": "2026-07-19T09:31:18+00:00"
+}

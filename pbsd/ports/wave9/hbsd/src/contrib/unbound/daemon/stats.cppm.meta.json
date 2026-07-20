@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/daemon/stats.c",
+  "wave": "wave9",
+  "loc_estimate": 613,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/daemon/stats.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.daemon.stats",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

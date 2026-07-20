@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/config/mkoptions.cc",
+  "wave": "wave2",
+  "loc_estimate": 460,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/config/mkoptions.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.config.mkoptions",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

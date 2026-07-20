@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/pf/pf_ioctl.c",
+  "wave": "wave6",
+  "loc_estimate": 7250,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/pf/pf_ioctl.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.pf.pf_ioctl",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

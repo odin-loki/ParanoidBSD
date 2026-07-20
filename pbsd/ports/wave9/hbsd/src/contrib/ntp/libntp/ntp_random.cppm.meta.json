@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/libntp/ntp_random.c",
+  "wave": "wave9",
+  "loc_estimate": 514,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/libntp/ntp_random.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.libntp.ntp_random",
+  "generated": "2026-07-19T09:31:06+00:00"
+}

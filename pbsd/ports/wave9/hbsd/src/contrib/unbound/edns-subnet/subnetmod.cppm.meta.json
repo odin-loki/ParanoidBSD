@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/edns-subnet/subnetmod.c",
+  "wave": "wave9",
+  "loc_estimate": 1263,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/edns-subnet/subnetmod.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.edns_subnet.subnetmod",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

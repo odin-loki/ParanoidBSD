@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/libntp/humandate.c",
+  "wave": "wave9",
+  "loc_estimate": 59,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/libntp/humandate.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.libntp.humandate",
+  "generated": "2026-07-19T09:31:04+00:00"
+}

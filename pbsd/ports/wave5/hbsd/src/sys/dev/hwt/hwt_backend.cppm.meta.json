@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/hwt/hwt_backend.c",
+  "wave": "wave5",
+  "loc_estimate": 289,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/hwt/hwt_backend.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.hwt.hwt_backend",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

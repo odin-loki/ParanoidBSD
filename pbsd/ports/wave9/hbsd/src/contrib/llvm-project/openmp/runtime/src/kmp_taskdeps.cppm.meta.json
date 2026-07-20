@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/openmp/runtime/src/kmp_taskdeps.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1068,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/openmp/runtime/src/kmp_taskdeps.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.openmp.runtime.src.kmp_taskdeps",
+  "generated": "2026-07-19T09:37:17+00:00"
+}

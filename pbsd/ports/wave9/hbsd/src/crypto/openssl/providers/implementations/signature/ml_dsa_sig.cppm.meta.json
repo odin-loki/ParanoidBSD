@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/providers/implementations/signature/ml_dsa_sig.c",
+  "wave": "wave9",
+  "loc_estimate": 368,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/signature/ml_dsa_sig.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.signature.ml_dsa_sig",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/ccapi/common/win/OldCC/ccutil.cxx",
+  "wave": "wave9",
+  "loc_estimate": 187,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/ccapi/common/win/OldCC/ccutil.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.ccapi.common.win.oldcc.ccutil",
+  "generated": "2026-07-19T09:30:29+00:00"
+}

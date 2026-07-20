@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/sysvmsg/msgtest.c",
+  "wave": "wave9",
+  "loc_estimate": 343,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/sysvmsg/msgtest.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.sysvmsg.msgtest",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

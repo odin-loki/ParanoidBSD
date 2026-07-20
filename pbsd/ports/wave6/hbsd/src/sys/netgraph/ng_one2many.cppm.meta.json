@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netgraph/ng_one2many.c",
+  "wave": "wave6",
+  "loc_estimate": 610,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netgraph/ng_one2many.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netgraph.ng_one2many",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

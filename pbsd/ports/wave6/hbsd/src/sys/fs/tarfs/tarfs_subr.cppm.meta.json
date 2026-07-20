@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/tarfs/tarfs_subr.c",
+  "wave": "wave6",
+  "loc_estimate": 537,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/tarfs/tarfs_subr.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.tarfs.tarfs_subr",
+  "generated": "2026-07-19T09:18:58+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/util/timeval_func.c",
+  "wave": "wave9",
+  "loc_estimate": 113,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/util/timeval_func.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.util.timeval_func",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

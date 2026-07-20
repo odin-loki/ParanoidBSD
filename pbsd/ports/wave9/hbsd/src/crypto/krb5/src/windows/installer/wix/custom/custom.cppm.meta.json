@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/windows/installer/wix/custom/custom.cpp",
+  "wave": "wave9",
+  "loc_estimate": 832,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/windows/installer/wix/custom/custom.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.windows.installer.wix.custom.custom",
+  "generated": "2026-07-19T09:30:33+00:00"
+}

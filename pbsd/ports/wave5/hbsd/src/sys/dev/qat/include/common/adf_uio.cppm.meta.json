@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/include/common/adf_uio.h",
+  "wave": "wave5",
+  "loc_estimate": 16,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/include/common/adf_uio.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.include.common.adf_uio",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

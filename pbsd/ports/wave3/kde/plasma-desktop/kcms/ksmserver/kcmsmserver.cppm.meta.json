@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/ksmserver/kcmsmserver.cpp",
+  "wave": "wave3",
+  "loc_estimate": 171,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/ksmserver/kcmsmserver.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.ksmserver.kcmsmserver",
+  "generated": "2026-07-19T09:30:15+00:00"
+}

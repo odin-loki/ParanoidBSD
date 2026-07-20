@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwindowsystem/src/kwindoweffects.cpp",
+  "wave": "wave3",
+  "loc_estimate": 40,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/src/kwindoweffects.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.src.kwindoweffects",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

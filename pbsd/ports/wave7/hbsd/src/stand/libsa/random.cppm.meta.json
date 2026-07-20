@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/libsa/random.c",
+  "wave": "wave7",
+  "loc_estimate": 65,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/libsa/random.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.libsa.random",
+  "generated": "2026-07-19T09:49:37+00:00"
+}

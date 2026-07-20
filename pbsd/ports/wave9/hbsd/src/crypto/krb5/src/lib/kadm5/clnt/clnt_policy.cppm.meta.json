@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/kadm5/clnt/clnt_policy.c",
+  "wave": "wave9",
+  "loc_estimate": 130,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/kadm5/clnt/clnt_policy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.kadm5.clnt.clnt_policy",
+  "generated": "2026-07-19T09:30:28+00:00"
+}

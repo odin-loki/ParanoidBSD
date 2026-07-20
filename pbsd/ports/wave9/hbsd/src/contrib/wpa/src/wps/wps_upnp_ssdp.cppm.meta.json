@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/wps/wps_upnp_ssdp.c",
+  "wave": "wave9",
+  "loc_estimate": 942,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/wps/wps_upnp_ssdp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.wps.wps_upnp_ssdp",
+  "generated": "2026-07-19T09:31:02+00:00"
+}

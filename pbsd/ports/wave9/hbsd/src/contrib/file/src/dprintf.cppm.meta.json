@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/file/src/dprintf.c",
+  "wave": "wave9",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/file/src/dprintf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.file.src.dprintf",
+  "generated": "2026-07-19T09:37:51+00:00"
+}

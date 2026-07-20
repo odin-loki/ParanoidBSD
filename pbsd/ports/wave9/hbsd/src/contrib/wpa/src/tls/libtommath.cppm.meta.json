@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/tls/libtommath.c",
+  "wave": "wave9",
+  "loc_estimate": 3393,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/tls/libtommath.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.tls.libtommath",
+  "generated": "2026-07-19T09:31:02+00:00"
+}

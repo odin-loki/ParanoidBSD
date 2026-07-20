@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/uipc_sockbuf.c",
+  "wave": "wave4",
+  "loc_estimate": 1891,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/uipc_sockbuf.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.uipc_sockbuf",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

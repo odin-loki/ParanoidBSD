@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/test/popss/popss.c",
+  "wave": "wave9",
+  "loc_estimate": 181,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/popss/popss.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.test.popss.popss",
+  "generated": "2026-07-19T09:37:46+00:00"
+}

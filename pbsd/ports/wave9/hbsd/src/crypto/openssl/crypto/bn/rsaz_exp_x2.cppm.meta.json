@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/bn/rsaz_exp_x2.c",
+  "wave": "wave9",
+  "loc_estimate": 708,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/bn/rsaz_exp_x2.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.bn.rsaz_exp_x2",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwindowsystem/src/platforms/wayland/windowshadow.cpp",
+  "wave": "wave3",
+  "loc_estimate": 214,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/src/platforms/wayland/windowshadow.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.src.platforms.wayland.windowshadow",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

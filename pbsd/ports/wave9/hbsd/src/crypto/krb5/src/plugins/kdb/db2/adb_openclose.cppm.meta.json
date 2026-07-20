@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/plugins/kdb/db2/adb_openclose.c",
+  "wave": "wave9",
+  "loc_estimate": 355,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/kdb/db2/adb_openclose.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.kdb.db2.adb_openclose",
+  "generated": "2026-07-19T09:30:31+00:00"
+}

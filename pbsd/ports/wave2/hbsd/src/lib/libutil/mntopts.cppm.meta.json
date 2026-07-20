@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libutil/mntopts.c",
+  "wave": "wave2",
+  "loc_estimate": 322,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libutil/mntopts.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libutil.mntopts",
+  "generated": "2026-07-19T07:48:27+00:00"
+}

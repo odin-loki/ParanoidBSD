@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/xlocale/_inttypes.h",
+  "wave": "wave9",
+  "loc_estimate": 43,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/xlocale/_inttypes.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.xlocale._inttypes",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

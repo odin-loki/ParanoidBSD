@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/compat/fake-rfc2553.c",
+  "wave": "wave9",
+  "loc_estimate": 225,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/compat/fake-rfc2553.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.compat.fake_rfc2553",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/sys_getrandom.c",
+  "wave": "wave4",
+  "loc_estimate": 127,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/sys_getrandom.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.sys_getrandom",
+  "generated": "2026-07-19T08:40:36+00:00"
+}

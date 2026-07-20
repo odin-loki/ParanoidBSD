@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/rockchip/rk_grf.c",
+  "wave": "wave7",
+  "loc_estimate": 82,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/rockchip/rk_grf.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.rockchip.rk_grf",
+  "generated": "2026-07-19T08:30:56+00:00"
+}

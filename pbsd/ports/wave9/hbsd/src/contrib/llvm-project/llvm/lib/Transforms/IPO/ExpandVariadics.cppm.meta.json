@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/IPO/ExpandVariadics.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1022,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/IPO/ExpandVariadics.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.ipo.expandvariadics",
+  "generated": "2026-07-19T09:31:56+00:00"
+}

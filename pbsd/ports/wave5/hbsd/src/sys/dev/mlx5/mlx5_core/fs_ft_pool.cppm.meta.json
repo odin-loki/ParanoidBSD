@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mlx5/mlx5_core/fs_ft_pool.h",
+  "wave": "wave5",
+  "loc_estimate": 23,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx5/mlx5_core/fs_ft_pool.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx5.mlx5_core.fs_ft_pool",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwindowsystem/src/platforms/xcb/kselectionowner.cpp",
+  "wave": "wave3",
+  "loc_estimate": 615,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/src/platforms/xcb/kselectionowner.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.src.platforms.xcb.kselectionowner",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

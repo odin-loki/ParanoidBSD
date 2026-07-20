@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdlib/malloc/free_sized.c",
+  "wave": "wave2",
+  "loc_estimate": 20,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdlib/malloc/free_sized.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdlib.malloc.free_sized",
+  "generated": "2026-07-19T08:29:01+00:00"
+}

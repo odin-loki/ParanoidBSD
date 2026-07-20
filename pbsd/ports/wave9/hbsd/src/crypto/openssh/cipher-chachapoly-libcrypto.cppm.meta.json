@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/cipher-chachapoly-libcrypto.c",
+  "wave": "wave9",
+  "loc_estimate": 165,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/cipher-chachapoly-libcrypto.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.cipher_chachapoly_libcrypto",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

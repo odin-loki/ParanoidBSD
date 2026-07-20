@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/xz-embedded/userspace/xzminidec.c",
+  "wave": "wave4",
+  "loc_estimate": 147,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/xz-embedded/userspace/xzminidec.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.xz_embedded.userspace.xzminidec",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

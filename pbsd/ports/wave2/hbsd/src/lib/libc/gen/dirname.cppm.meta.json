@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/gen/dirname.c",
+  "wave": "wave2",
+  "loc_estimate": 70,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/dirname.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.dirname",
+  "generated": "2026-07-19T08:32:14+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/subr_boot.c",
+  "wave": "wave4",
+  "loc_estimate": 232,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_boot.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_boot",
+  "generated": "2026-07-19T08:37:59+00:00"
+}

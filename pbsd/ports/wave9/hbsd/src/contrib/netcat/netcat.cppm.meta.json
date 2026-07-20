@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netcat/netcat.c",
+  "wave": "wave9",
+  "loc_estimate": 1577,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netcat/netcat.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netcat.netcat",
+  "generated": "2026-07-19T09:38:22+00:00"
+}

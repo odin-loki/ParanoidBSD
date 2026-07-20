@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ath/ath_rate/onoe/onoe.c",
+  "wave": "wave5",
+  "loc_estimate": 448,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_rate/onoe/onoe.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_rate.onoe.onoe",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

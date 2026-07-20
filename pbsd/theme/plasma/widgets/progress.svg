@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="16" viewBox="0 0 200 16" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="prog-fill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#78a8e8"/>
+      <stop offset="0.5" stop-color="#5082c8"/>
+      <stop offset="1" stop-color="#325ca0"/>
+    </linearGradient>
+    <linearGradient id="prog-shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="200" height="16" rx="3" fill="#183060" fill-opacity="0.4" stroke="#5082c8" stroke-width="1" stroke-opacity="0.5"/>
+  <rect x="1" y="1" width="120" height="14" rx="2" fill="url(#prog-fill)"/>
+  <rect x="1" y="1" width="120" height="6" rx="2" fill="url(#prog-shine)"/>
+</svg>

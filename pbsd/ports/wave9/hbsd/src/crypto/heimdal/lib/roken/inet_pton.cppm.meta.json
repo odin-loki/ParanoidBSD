@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/inet_pton.c",
+  "wave": "wave9",
+  "loc_estimate": 116,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/inet_pton.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.inet_pton",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

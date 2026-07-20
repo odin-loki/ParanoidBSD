@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kconfig/src/core/kcoreconfigskeleton.cpp",
+  "wave": "wave3",
+  "loc_estimate": 1683,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kconfig/src/core/kcoreconfigskeleton.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kconfig.src.core.kcoreconfigskeleton",
+  "generated": "2026-07-19T09:30:20+00:00"
+}

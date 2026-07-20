@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/acpica/components/namespace/nsparse.c",
+  "wave": "wave4",
+  "loc_estimate": 439,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/namespace/nsparse.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.namespace.nsparse",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

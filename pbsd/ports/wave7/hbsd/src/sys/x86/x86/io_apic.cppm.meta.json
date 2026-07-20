@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/x86/x86/io_apic.c",
+  "wave": "wave7",
+  "loc_estimate": 1269,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/x86/x86/io_apic.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.x86.x86.io_apic",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

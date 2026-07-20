@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/appl/ftp/ftpd/popen.c",
+  "wave": "wave9",
+  "loc_estimate": 236,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/appl/ftp/ftpd/popen.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.appl.ftp.ftpd.popen",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

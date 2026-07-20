@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/cas/if_cas.c",
+  "wave": "wave5",
+  "loc_estimate": 2907,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/cas/if_cas.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.cas.if_cas",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

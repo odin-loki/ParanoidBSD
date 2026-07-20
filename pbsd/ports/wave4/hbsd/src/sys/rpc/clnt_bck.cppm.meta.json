@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/rpc/clnt_bck.c",
+  "wave": "wave4",
+  "loc_estimate": 615,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/rpc/clnt_bck.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.rpc.clnt_bck",
+  "generated": "2026-07-19T09:31:14+00:00"
+}

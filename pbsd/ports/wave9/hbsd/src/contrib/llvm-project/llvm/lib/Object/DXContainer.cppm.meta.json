@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Object/DXContainer.cpp",
+  "wave": "wave9",
+  "loc_estimate": 517,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Object/DXContainer.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.object.dxcontainer",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/capsicum/openat.cc",
+  "wave": "wave9",
+  "loc_estimate": 366,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/capsicum/openat.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.capsicum.openat",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

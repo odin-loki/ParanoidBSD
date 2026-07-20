@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/isci/scil/scif_sas_remote_device_starting_substates.c",
+  "wave": "wave5",
+  "loc_estimate": 143,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isci/scil/scif_sas_remote_device_starting_substates.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isci.scil.scif_sas_remote_device_starting_substates",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

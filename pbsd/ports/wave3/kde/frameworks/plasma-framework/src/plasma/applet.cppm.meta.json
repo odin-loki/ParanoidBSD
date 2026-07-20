@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/plasma-framework/src/plasma/applet.cpp",
+  "wave": "wave3",
+  "loc_estimate": 964,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasma/applet.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasma.applet",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

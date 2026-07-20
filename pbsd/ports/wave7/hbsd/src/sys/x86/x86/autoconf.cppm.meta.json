@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/x86/x86/autoconf.c",
+  "wave": "wave7",
+  "loc_estimate": 120,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/x86/x86/autoconf.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.x86.x86.autoconf",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

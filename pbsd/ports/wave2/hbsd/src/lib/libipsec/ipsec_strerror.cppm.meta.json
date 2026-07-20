@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libipsec/ipsec_strerror.c",
+  "wave": "wave2",
+  "loc_estimate": 87,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libipsec/ipsec_strerror.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libipsec.ipsec_strerror",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

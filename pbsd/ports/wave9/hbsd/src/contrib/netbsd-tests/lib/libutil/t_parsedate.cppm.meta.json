@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libutil/t_parsedate.c",
+  "wave": "wave9",
+  "loc_estimate": 583,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libutil/t_parsedate.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libutil.t_parsedate",
+  "generated": "2026-07-19T09:30:59+00:00"
+}

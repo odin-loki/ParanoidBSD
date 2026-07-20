@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/rpc/nettype.h",
+  "wave": "wave9",
+  "loc_estimate": 64,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/rpc/nettype.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.rpc.nettype",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

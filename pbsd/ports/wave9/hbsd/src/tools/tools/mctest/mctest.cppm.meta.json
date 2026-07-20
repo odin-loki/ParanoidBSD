@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/mctest/mctest.cc",
+  "wave": "wave9",
+  "loc_estimate": 523,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/mctest/mctest.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.mctest.mctest",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

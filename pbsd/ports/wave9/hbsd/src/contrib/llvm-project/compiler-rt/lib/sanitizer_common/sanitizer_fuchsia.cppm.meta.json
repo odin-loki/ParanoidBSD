@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/sanitizer_common/sanitizer_fuchsia.cpp",
+  "wave": "wave9",
+  "loc_estimate": 569,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/sanitizer_common/sanitizer_fuchsia.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.sanitizer_common.sanitizer_fuchsia",
+  "generated": "2026-07-19T09:37:17+00:00"
+}

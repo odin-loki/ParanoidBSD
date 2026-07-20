@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/zlib/zutil.c",
+  "wave": "wave4",
+  "loc_estimate": 313,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zlib/zutil.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zlib.zutil",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/qat_api/qat_direct/include/adf_kernel_types.h",
+  "wave": "wave5",
+  "loc_estimate": 19,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/qat_direct/include/adf_kernel_types.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.qat_direct.include.adf_kernel_types",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

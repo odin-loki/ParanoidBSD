@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/include/endian.h",
+  "wave": "wave7",
+  "loc_estimate": 36,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/include/endian.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.include.endian",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

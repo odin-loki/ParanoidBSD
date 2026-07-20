@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/security/audit/bsm_token.c",
+  "wave": "wave4",
+  "loc_estimate": 1608,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/audit/bsm_token.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.security.audit.bsm_token",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

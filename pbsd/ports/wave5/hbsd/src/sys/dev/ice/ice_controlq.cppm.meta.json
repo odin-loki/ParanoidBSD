@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ice/ice_controlq.c",
+  "wave": "wave5",
+  "loc_estimate": 1331,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ice/ice_controlq.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ice.ice_controlq",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

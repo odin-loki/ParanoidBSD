@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lld/MachO/SectionPriorities.cpp",
+  "wave": "wave9",
+  "loc_estimate": 444,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lld/MachO/SectionPriorities.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lld.macho.sectionpriorities",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

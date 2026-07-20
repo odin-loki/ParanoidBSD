@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/isa/pnpparse.c",
+  "wave": "wave4",
+  "loc_estimate": 603,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/isa/pnpparse.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.isa.pnpparse",
+  "generated": "2026-07-19T09:31:14+00:00"
+}

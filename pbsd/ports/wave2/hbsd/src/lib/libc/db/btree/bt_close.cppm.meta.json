@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/db/btree/bt_close.c",
+  "wave": "wave2",
+  "loc_estimate": 175,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/db/btree/bt_close.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.db.btree.bt_close",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/usb/controller/ehci_mv.c",
+  "wave": "wave5",
+  "loc_estimate": 384,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/controller/ehci_mv.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.controller.ehci_mv",
+  "generated": "2026-07-19T09:19:37+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_spectral.c",
+  "wave": "wave5",
+  "loc_estimate": 243,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_spectral.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar5416.ar5416_spectral",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/utils/TableGen/LLDBTableGen.cpp",
+  "wave": "wave9",
+  "loc_estimate": 83,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/utils/TableGen/LLDBTableGen.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.utils.tablegen.lldbtablegen",
+  "generated": "2026-07-19T09:31:37+00:00"
+}

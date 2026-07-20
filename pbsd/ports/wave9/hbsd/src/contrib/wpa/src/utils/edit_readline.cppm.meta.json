@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/utils/edit_readline.c",
+  "wave": "wave9",
+  "loc_estimate": 192,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/utils/edit_readline.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.utils.edit_readline",
+  "generated": "2026-07-19T09:31:01+00:00"
+}

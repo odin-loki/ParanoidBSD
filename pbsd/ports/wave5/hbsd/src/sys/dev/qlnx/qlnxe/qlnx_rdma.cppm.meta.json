@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qlnx/qlnxe/qlnx_rdma.c",
+  "wave": "wave5",
+  "loc_estimate": 330,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qlnx/qlnxe/qlnx_rdma.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qlnx.qlnxe.qlnx_rdma",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/liquidio/base/lio_request_manager.c",
+  "wave": "wave5",
+  "loc_estimate": 843,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/liquidio/base/lio_request_manager.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.liquidio.base.lio_request_manager",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

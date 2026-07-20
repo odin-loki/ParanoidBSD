@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/layer-shell-qt/src/qwaylandlayershellintegration.cpp",
+  "wave": "wave3",
+  "loc_estimate": 35,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/layer-shell-qt/src/qwaylandlayershellintegration.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.layer_shell_qt.src.qwaylandlayershellintegration",
+  "generated": "2026-07-19T07:48:20+00:00"
+}

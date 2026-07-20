@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/appl/kf/kf.c",
+  "wave": "wave9",
+  "loc_estimate": 346,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/appl/kf/kf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.appl.kf.kf",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

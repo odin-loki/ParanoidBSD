@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ath/ath_hal/ar5212/ar5212_rfgain.c",
+  "wave": "wave5",
+  "loc_estimate": 333,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar5212/ar5212_rfgain.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar5212.ar5212_rfgain",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

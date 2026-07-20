@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/virtio/p9fs/virtio_p9fs.c",
+  "wave": "wave5",
+  "loc_estimate": 490,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/virtio/p9fs/virtio_p9fs.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.virtio.p9fs.virtio_p9fs",
+  "generated": "2026-07-19T07:49:15+00:00"
+}

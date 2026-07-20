@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/acpica/components/utilities/utdebug.c",
+  "wave": "wave4",
+  "loc_estimate": 842,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/utilities/utdebug.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.utilities.utdebug",
+  "generated": "2026-07-19T09:29:36+00:00"
+}

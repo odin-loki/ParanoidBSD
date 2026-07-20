@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/tar/test/test_option_U_upper.c",
+  "wave": "wave9",
+  "loc_estimate": 140,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/tar/test/test_option_U_upper.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.tar.test.test_option_u_upper",
+  "generated": "2026-07-19T09:30:40+00:00"
+}

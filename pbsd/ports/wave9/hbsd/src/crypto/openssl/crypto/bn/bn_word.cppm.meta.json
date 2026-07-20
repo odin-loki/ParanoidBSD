@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/bn/bn_word.c",
+  "wave": "wave9",
+  "loc_estimate": 200,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/bn/bn_word.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.bn.bn_word",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

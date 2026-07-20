@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/ena-com/ena_com.c",
+  "wave": "wave4",
+  "loc_estimate": 3552,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ena-com/ena_com.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ena_com.ena_com",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

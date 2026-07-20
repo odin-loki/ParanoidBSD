@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/vhba/medium/vhba_medium.c",
+  "wave": "wave9",
+  "loc_estimate": 336,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/vhba/medium/vhba_medium.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.vhba.medium.vhba_medium",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

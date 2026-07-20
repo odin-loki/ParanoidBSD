@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdio/printf-pos.c",
+  "wave": "wave2",
+  "loc_estimate": 758,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdio/printf-pos.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdio.printf_pos",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

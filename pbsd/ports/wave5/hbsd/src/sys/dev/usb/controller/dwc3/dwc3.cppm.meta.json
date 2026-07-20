@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/usb/controller/dwc3/dwc3.c",
+  "wave": "wave5",
+  "loc_estimate": 619,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/controller/dwc3/dwc3.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.controller.dwc3.dwc3",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

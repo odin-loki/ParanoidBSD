@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/ses/nondestructive.c",
+  "wave": "wave9",
+  "loc_estimate": 670,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/ses/nondestructive.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.ses.nondestructive",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

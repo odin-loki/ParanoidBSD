@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/lib/libzfsbootenv/lzbe_util.c",
+  "wave": "wave6",
+  "loc_estimate": 40,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libzfsbootenv/lzbe_util.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libzfsbootenv.lzbe_util",
+  "generated": "2026-07-19T09:29:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/db/recno/recno.h",
+  "wave": "wave2",
+  "loc_estimate": 35,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/db/recno/recno.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.db.recno.recno",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

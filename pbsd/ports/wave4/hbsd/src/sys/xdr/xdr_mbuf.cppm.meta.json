@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/xdr/xdr_mbuf.c",
+  "wave": "wave4",
+  "loc_estimate": 306,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/xdr/xdr_mbuf.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.xdr.xdr_mbuf",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

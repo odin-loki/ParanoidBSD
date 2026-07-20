@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/wayland/keystate.cpp",
+  "wave": "wave3",
+  "loc_estimate": 88,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/wayland/keystate.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.wayland.keystate",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

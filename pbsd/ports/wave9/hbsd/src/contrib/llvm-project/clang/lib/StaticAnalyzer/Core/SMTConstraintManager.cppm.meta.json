@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Core/SMTConstraintManager.cpp",
+  "wave": "wave9",
+  "loc_estimate": 17,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Core/SMTConstraintManager.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.staticanalyzer.core.smtconstraintmanager",
+  "generated": "2026-07-19T09:31:16+00:00"
+}

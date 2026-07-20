@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/rtwn/usb/rtwn_usb_ep.c",
+  "wave": "wave5",
+  "loc_estimate": 268,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/usb/rtwn_usb_ep.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.usb.rtwn_usb_ep",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

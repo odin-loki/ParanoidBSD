@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-cov/SourceCoverageView.cpp",
+  "wave": "wave9",
+  "loc_estimate": 298,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-cov/SourceCoverageView.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_cov.sourcecoverageview",
+  "generated": "2026-07-19T09:31:54+00:00"
+}

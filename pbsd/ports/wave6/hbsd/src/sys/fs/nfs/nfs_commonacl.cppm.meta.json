@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/nfs/nfs_commonacl.c",
+  "wave": "wave6",
+  "loc_estimate": 688,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nfs/nfs_commonacl.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nfs.nfs_commonacl",
+  "generated": "2026-07-19T09:18:58+00:00"
+}

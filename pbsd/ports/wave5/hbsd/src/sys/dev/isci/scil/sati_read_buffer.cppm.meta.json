@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/isci/scil/sati_read_buffer.c",
+  "wave": "wave5",
+  "loc_estimate": 235,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isci/scil/sati_read_buffer.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isci.scil.sati_read_buffer",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

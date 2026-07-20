@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libnv/tests/nv_tests.cc",
+  "wave": "wave2",
+  "loc_estimate": 1275,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libnv/tests/nv_tests.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libnv.tests.nv_tests",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

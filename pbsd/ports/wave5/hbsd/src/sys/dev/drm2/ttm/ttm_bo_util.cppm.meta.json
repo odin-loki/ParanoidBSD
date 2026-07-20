@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/drm2/ttm/ttm_bo_util.c",
+  "wave": "wave5",
+  "loc_estimate": 666,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/drm2/ttm/ttm_bo_util.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.drm2.ttm.ttm_bo_util",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

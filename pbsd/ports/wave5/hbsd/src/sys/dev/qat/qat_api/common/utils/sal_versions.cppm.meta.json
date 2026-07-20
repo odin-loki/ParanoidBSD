@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/qat_api/common/utils/sal_versions.c",
+  "wave": "wave5",
+  "loc_estimate": 176,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/common/utils/sal_versions.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.common.utils.sal_versions",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

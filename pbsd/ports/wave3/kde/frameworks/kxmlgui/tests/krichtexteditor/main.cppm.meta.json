@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kxmlgui/tests/krichtexteditor/main.cpp",
+  "wave": "wave3",
+  "loc_estimate": 18,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/tests/krichtexteditor/main.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.tests.krichtexteditor.main",
+  "generated": "2026-07-19T08:33:26+00:00"
+}

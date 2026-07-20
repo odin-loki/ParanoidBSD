@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/randombytes/sysrandom/randombytes_sysrandom.c",
+  "wave": "wave4",
+  "loc_estimate": 382,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/randombytes/sysrandom/randombytes_sysrandom.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.randombytes.sysrandom.randombytes_sysrandom",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

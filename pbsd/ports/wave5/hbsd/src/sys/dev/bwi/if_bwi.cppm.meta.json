@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/bwi/if_bwi.c",
+  "wave": "wave5",
+  "loc_estimate": 3994,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/bwi/if_bwi.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.bwi.if_bwi",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

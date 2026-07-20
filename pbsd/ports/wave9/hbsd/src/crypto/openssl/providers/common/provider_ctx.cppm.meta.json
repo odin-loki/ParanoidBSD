@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/providers/common/provider_ctx.c",
+  "wave": "wave9",
+  "loc_estimate": 120,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/common/provider_ctx.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.common.provider_ctx",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/libalias/alias_util.c",
+  "wave": "wave6",
+  "loc_estimate": 175,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/libalias/alias_util.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.libalias.alias_util",
+  "generated": "2026-07-19T09:02:52+00:00"
+}

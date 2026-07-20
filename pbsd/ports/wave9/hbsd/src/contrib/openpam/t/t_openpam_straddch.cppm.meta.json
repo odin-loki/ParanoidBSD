@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/openpam/t/t_openpam_straddch.c",
+  "wave": "wave9",
+  "loc_estimate": 183,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openpam/t/t_openpam_straddch.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.openpam.t.t_openpam_straddch",
+  "generated": "2026-07-19T09:37:39+00:00"
+}

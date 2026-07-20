@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libhbsdcontrol/mprotect.c",
+  "wave": "wave2",
+  "loc_estimate": 315,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libhbsdcontrol/mprotect.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libhbsdcontrol.mprotect",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

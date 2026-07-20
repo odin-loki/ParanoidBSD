@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/helpers/wayland_wrapper/kwin_wrapper.cpp",
+  "wave": "wave3",
+  "loc_estimate": 214,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/helpers/wayland_wrapper/kwin_wrapper.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.helpers.wayland_wrapper.kwin_wrapper",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

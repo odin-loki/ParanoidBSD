@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/bhyve/sockstream.c",
+  "wave": "wave2",
+  "loc_estimate": 81,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/sockstream.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.sockstream",
+  "generated": "2026-07-19T08:31:18+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/pem/pem_xaux.c",
+  "wave": "wave9",
+  "loc_estimate": 18,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/pem/pem_xaux.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.pem.pem_xaux",
+  "generated": "2026-07-19T09:30:02+00:00"
+}

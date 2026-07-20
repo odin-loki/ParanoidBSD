@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/opencsd/decoder/source/trc_frame_deformatter.cpp",
+  "wave": "wave9",
+  "loc_estimate": 970,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/trc_frame_deformatter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.trc_frame_deformatter",
+  "generated": "2026-07-19T09:37:48+00:00"
+}

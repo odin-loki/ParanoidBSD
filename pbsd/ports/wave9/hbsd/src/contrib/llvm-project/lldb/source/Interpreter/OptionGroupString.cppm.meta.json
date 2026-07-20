@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Interpreter/OptionGroupString.cpp",
+  "wave": "wave9",
+  "loc_estimate": 45,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Interpreter/OptionGroupString.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.interpreter.optiongroupstring",
+  "generated": "2026-07-19T09:31:35+00:00"
+}

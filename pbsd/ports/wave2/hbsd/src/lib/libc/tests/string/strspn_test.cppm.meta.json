@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/tests/string/strspn_test.c",
+  "wave": "wave2",
+  "loc_estimate": 30,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/tests/string/strspn_test.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.tests.string.strspn_test",
+  "generated": "2026-07-19T08:29:02+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/fs/fusefs/pre-init.cc",
+  "wave": "wave9",
+  "loc_estimate": 232,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/pre-init.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.pre_init",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

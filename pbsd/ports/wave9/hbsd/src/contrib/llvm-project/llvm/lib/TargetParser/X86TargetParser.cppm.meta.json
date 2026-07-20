@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/TargetParser/X86TargetParser.cpp",
+  "wave": "wave9",
+  "loc_estimate": 802,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/TargetParser/X86TargetParser.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.targetparser.x86targetparser",
+  "generated": "2026-07-19T09:31:56+00:00"
+}

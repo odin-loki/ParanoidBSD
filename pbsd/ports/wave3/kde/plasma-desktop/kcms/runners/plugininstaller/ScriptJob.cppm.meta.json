@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/runners/plugininstaller/ScriptJob.cpp",
+  "wave": "wave3",
+  "loc_estimate": 52,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/runners/plugininstaller/ScriptJob.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.runners.plugininstaller.scriptjob",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

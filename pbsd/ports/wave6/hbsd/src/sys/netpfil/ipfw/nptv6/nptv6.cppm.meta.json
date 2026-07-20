@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/ipfw/nptv6/nptv6.c",
+  "wave": "wave6",
+  "loc_estimate": 1040,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/nptv6/nptv6.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.nptv6.nptv6",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

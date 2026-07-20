@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/wayland-client/viewporter.cpp",
+  "wave": "wave3",
+  "loc_estimate": 57,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/wayland-client/viewporter.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.wayland_client.viewporter",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

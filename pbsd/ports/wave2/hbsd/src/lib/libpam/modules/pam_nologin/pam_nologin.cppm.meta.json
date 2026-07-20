@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libpam/modules/pam_nologin/pam_nologin.c",
+  "wave": "wave2",
+  "loc_estimate": 126,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libpam/modules/pam_nologin/pam_nologin.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libpam.modules.pam_nologin.pam_nologin",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

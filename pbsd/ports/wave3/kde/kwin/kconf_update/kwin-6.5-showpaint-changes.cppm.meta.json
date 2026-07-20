@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/kconf_update/kwin-6.5-showpaint-changes.cpp",
+  "wave": "wave3",
+  "loc_estimate": 51,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/kconf_update/kwin-6.5-showpaint-changes.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.kconf_update.kwin_6_5_showpaint_changes",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

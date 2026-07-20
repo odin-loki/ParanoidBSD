@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/isci/isci.c",
+  "wave": "wave5",
+  "loc_estimate": 677,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isci/isci.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isci.isci",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

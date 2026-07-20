@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libiconv_modules/EUC/citrus_euc.c",
+  "wave": "wave2",
+  "loc_estimate": 387,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libiconv_modules/EUC/citrus_euc.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libiconv_modules.euc.citrus_euc",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

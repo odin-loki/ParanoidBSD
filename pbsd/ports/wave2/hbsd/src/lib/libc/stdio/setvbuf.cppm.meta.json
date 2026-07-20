@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdio/setvbuf.c",
+  "wave": "wave2",
+  "loc_estimate": 158,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdio/setvbuf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdio.setvbuf",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

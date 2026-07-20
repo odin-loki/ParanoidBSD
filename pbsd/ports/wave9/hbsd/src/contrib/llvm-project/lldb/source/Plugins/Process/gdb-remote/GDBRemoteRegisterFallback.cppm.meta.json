@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/gdb-remote/GDBRemoteRegisterFallback.cpp",
+  "wave": "wave9",
+  "loc_estimate": 101,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/gdb-remote/GDBRemoteRegisterFallback.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.process.gdb_remote.gdbremoteregisterfallback",
+  "generated": "2026-07-19T09:31:37+00:00"
+}

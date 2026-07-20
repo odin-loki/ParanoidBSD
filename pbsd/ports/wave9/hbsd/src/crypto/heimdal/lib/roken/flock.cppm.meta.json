@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/flock.c",
+  "wave": "wave9",
+  "loc_estimate": 154,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/flock.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.flock",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

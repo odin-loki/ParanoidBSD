@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmsmac/brcms_trace_events.c",
+  "wave": "wave4",
+  "loc_estimate": 23,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmsmac/brcms_trace_events.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.broadcom.brcm80211.brcmsmac.brcms_trace_events",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

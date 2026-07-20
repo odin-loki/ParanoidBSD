@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/x86/iommu/intel_idpgtbl.c",
+  "wave": "wave7",
+  "loc_estimate": 808,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/x86/iommu/intel_idpgtbl.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.x86.iommu.intel_idpgtbl",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

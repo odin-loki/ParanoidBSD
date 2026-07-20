@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ocs_fc/ocs_domain.c",
+  "wave": "wave5",
+  "loc_estimate": 1564,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ocs_fc/ocs_domain.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ocs_fc.ocs_domain",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

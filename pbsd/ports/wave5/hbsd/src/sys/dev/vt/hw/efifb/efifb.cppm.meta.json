@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/vt/hw/efifb/efifb.c",
+  "wave": "wave5",
+  "loc_estimate": 178,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/vt/hw/efifb/efifb.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.vt.hw.efifb.efifb",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

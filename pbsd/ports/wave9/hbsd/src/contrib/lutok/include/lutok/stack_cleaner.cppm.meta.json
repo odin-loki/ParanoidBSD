@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/lutok/include/lutok/stack_cleaner.hpp",
+  "wave": "wave9",
+  "loc_estimate": 1,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/lutok/include/lutok/stack_cleaner.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.lutok.include.lutok.stack_cleaner",
+  "generated": "2026-07-19T10:59:30+00:00"
+}

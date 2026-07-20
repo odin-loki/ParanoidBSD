@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mlx5/mlx5_accel/mlx5_ipsec_rxtx.c",
+  "wave": "wave5",
+  "loc_estimate": 87,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx5/mlx5_accel/mlx5_ipsec_rxtx.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx5.mlx5_accel.mlx5_ipsec_rxtx",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

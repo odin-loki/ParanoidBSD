@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/mandoc/arch.c",
+  "wave": "wave9",
+  "loc_estimate": 54,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/arch.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.arch",
+  "generated": "2026-07-19T09:37:38+00:00"
+}

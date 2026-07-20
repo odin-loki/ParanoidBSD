@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bearssl/src/ec/ecdsa_i31_bits.c",
+  "wave": "wave9",
+  "loc_estimate": 47,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/ec/ecdsa_i31_bits.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.ec.ecdsa_i31_bits",
+  "generated": "2026-07-19T09:37:18+00:00"
+}

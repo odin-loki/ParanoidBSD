@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/krb5/crypto.c",
+  "wave": "wave9",
+  "loc_estimate": 2653,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/crypto.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.crypto",
+  "generated": "2026-07-19T09:30:38+00:00"
+}

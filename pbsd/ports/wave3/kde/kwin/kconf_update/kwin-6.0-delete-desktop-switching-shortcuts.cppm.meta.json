@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/kconf_update/kwin-6.0-delete-desktop-switching-shortcuts.cpp",
+  "wave": "wave3",
+  "loc_estimate": 34,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/kconf_update/kwin-6.0-delete-desktop-switching-shortcuts.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.kconf_update.kwin_6_0_delete_desktop_switching_shortcuts",
+  "generated": "2026-07-19T08:41:43+00:00"
+}

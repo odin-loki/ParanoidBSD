@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/openbsd-compat/bsd-statvfs.c",
+  "wave": "wave9",
+  "loc_estimate": 93,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/openbsd-compat/bsd-statvfs.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.openbsd_compat.bsd_statvfs",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

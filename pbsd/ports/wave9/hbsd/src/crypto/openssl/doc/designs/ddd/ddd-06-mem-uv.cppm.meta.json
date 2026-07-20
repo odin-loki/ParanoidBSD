@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/doc/designs/ddd/ddd-06-mem-uv.c",
+  "wave": "wave9",
+  "loc_estimate": 758,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/doc/designs/ddd/ddd-06-mem-uv.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.doc.designs.ddd.ddd_06_mem_uv",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

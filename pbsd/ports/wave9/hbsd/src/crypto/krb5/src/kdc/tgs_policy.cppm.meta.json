@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/kdc/tgs_policy.c",
+  "wave": "wave9",
+  "loc_estimate": 771,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/kdc/tgs_policy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.kdc.tgs_policy",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

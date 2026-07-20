@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/dmardump/dmardump.c",
+  "wave": "wave9",
+  "loc_estimate": 289,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/dmardump/dmardump.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.dmardump.dmardump",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

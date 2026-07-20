@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lld/Common/ErrorHandler.cpp",
+  "wave": "wave9",
+  "loc_estimate": 358,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lld/Common/ErrorHandler.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lld.common.errorhandler",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

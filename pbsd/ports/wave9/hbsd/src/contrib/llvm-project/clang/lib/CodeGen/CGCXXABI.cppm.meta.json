@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/CodeGen/CGCXXABI.cpp",
+  "wave": "wave9",
+  "loc_estimate": 359,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/CodeGen/CGCXXABI.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.codegen.cgcxxabi",
+  "generated": "2026-07-19T09:31:19+00:00"
+}

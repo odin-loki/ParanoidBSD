@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ntb/ntb_hw/ntb_hw_amd.c",
+  "wave": "wave5",
+  "loc_estimate": 1313,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ntb/ntb_hw/ntb_hw_amd.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ntb.ntb_hw.ntb_hw_amd",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

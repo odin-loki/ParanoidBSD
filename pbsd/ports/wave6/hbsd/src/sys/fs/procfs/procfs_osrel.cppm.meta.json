@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/procfs/procfs_osrel.c",
+  "wave": "wave6",
+  "loc_estimate": 70,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/procfs/procfs_osrel.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.procfs.procfs_osrel",
+  "generated": "2026-07-19T08:30:54+00:00"
+}

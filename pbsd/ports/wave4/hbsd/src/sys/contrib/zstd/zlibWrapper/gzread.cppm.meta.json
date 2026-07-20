@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/zstd/zlibWrapper/gzread.c",
+  "wave": "wave4",
+  "loc_estimate": 637,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/zlibWrapper/gzread.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.zlibwrapper.gzread",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

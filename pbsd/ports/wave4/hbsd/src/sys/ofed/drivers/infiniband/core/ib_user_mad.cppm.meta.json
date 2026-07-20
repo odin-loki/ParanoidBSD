@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/ofed/drivers/infiniband/core/ib_user_mad.c",
+  "wave": "wave4",
+  "loc_estimate": 1407,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/ofed/drivers/infiniband/core/ib_user_mad.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.ofed.drivers.infiniband.core.ib_user_mad",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

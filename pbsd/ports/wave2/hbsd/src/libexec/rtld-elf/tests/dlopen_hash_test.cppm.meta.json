@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/rtld-elf/tests/dlopen_hash_test.c",
+  "wave": "wave2",
+  "loc_estimate": 45,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rtld-elf/tests/dlopen_hash_test.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.rtld_elf.tests.dlopen_hash_test",
+  "generated": "2026-07-19T08:41:19+00:00"
+}

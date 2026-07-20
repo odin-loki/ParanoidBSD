@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/Mips/ABISysV_mips64.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1195,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/Mips/ABISysV_mips64.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.abi.mips.abisysv_mips64",
+  "generated": "2026-07-19T09:31:44+00:00"
+}

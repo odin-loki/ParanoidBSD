@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/axgbe/xgbe-sysctl.c",
+  "wave": "wave5",
+  "loc_estimate": 1720,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/axgbe/xgbe-sysctl.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.axgbe.xgbe_sysctl",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

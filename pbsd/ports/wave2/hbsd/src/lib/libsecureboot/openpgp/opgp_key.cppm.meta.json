@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libsecureboot/openpgp/opgp_key.c",
+  "wave": "wave2",
+  "loc_estimate": 413,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libsecureboot/openpgp/opgp_key.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libsecureboot.openpgp.opgp_key",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

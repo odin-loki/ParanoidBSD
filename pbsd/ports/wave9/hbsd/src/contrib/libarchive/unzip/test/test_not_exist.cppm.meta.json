@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/unzip/test/test_not_exist.c",
+  "wave": "wave9",
+  "loc_estimate": 17,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/unzip/test/test_not_exist.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.unzip.test.test_not_exist",
+  "generated": "2026-07-19T09:30:39+00:00"
+}

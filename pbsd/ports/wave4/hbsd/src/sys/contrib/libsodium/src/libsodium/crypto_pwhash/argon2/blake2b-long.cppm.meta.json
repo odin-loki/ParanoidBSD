@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/blake2b-long.c",
+  "wave": "wave4",
+  "loc_estimate": 79,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/blake2b-long.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_pwhash.argon2.blake2b_long",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/virtio/network/if_vtnet.c",
+  "wave": "wave5",
+  "loc_estimate": 4656,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/virtio/network/if_vtnet.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.virtio.network.if_vtnet",
+  "generated": "2026-07-19T08:30:26+00:00"
+}

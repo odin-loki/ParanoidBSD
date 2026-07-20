@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ObjectFile/Breakpad/BreakpadRecords.cpp",
+  "wave": "wave9",
+  "loc_estimate": 586,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ObjectFile/Breakpad/BreakpadRecords.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.objectfile.breakpad.breakpadrecords",
+  "generated": "2026-07-19T09:31:42+00:00"
+}

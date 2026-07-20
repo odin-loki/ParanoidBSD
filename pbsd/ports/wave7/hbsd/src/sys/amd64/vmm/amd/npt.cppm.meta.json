@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/vmm/amd/npt.c",
+  "wave": "wave7",
+  "loc_estimate": 85,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/vmm/amd/npt.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.vmm.amd.npt",
+  "generated": "2026-07-19T08:30:55+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_verify.c",
+  "wave": "wave9",
+  "loc_estimate": 42,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_verify.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.mech.gss_verify",
+  "generated": "2026-07-19T09:30:34+00:00"
+}

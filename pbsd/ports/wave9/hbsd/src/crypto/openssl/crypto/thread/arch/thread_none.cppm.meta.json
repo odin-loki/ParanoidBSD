@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/thread/arch/thread_none.c",
+  "wave": "wave9",
+  "loc_estimate": 82,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/thread/arch/thread_none.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.thread.arch.thread_none",
+  "generated": "2026-07-19T09:30:03+00:00"
+}

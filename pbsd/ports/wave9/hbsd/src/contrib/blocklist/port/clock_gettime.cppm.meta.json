@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/blocklist/port/clock_gettime.c",
+  "wave": "wave9",
+  "loc_estimate": 17,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/blocklist/port/clock_gettime.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.blocklist.port.clock_gettime",
+  "generated": "2026-07-19T09:37:57+00:00"
+}

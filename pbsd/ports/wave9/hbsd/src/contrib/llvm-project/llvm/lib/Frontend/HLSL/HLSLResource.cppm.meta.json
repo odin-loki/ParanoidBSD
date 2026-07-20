@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Frontend/HLSL/HLSLResource.cpp",
+  "wave": "wave9",
+  "loc_estimate": 19,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Frontend/HLSL/HLSLResource.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.frontend.hlsl.hlslresource",
+  "generated": "2026-07-19T09:31:46+00:00"
+}

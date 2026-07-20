@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/include/pc/display.h",
+  "wave": "wave7",
+  "loc_estimate": 43,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/include/pc/display.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.include.pc.display",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/subr_taskqueue.c",
+  "wave": "wave4",
+  "loc_estimate": 918,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_taskqueue.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_taskqueue",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

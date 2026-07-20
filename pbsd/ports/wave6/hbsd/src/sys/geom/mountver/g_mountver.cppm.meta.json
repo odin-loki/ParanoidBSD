@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/mountver/g_mountver.c",
+  "wave": "wave6",
+  "loc_estimate": 696,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/mountver/g_mountver.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.mountver.g_mountver",
+  "generated": "2026-07-19T09:29:22+00:00"
+}

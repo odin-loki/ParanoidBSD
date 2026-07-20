@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sound/pci/vibes.c",
+  "wave": "wave5",
+  "loc_estimate": 942,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sound/pci/vibes.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sound.pci.vibes",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

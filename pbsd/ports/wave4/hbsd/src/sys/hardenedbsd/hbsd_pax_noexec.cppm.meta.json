@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/hardenedbsd/hbsd_pax_noexec.c",
+  "wave": "wave4",
+  "loc_estimate": 461,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/hardenedbsd/hbsd_pax_noexec.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.hardenedbsd.hbsd_pax_noexec",
+  "generated": "2026-07-19T09:31:13+00:00"
+}

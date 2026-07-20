@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/DataFormatters/FormattersHelpers.cpp",
+  "wave": "wave9",
+  "loc_estimate": 153,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/DataFormatters/FormattersHelpers.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.dataformatters.formattershelpers",
+  "generated": "2026-07-19T09:31:38+00:00"
+}

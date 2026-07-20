@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/bhnd/cores/pcie2/bhnd_pcie2b.c",
+  "wave": "wave5",
+  "loc_estimate": 97,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/bhnd/cores/pcie2/bhnd_pcie2b.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.bhnd.cores.pcie2.bhnd_pcie2b",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

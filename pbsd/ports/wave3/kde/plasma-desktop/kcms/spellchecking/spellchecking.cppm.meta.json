@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/spellchecking/spellchecking.cpp",
+  "wave": "wave3",
+  "loc_estimate": 118,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/spellchecking/spellchecking.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.spellchecking.spellchecking",
+  "generated": "2026-07-19T09:19:13+00:00"
+}

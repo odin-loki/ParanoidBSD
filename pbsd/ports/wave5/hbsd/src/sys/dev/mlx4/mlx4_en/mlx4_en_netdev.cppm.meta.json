@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mlx4/mlx4_en/mlx4_en_netdev.c",
+  "wave": "wave5",
+  "loc_estimate": 2938,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx4/mlx4_en/mlx4_en_netdev.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx4.mlx4_en.mlx4_en_netdev",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

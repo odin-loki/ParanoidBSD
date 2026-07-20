@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lld/COFF/DebugTypes.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1241,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lld/COFF/DebugTypes.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lld.coff.debugtypes",
+  "generated": "2026-07-19T09:37:17+00:00"
+}

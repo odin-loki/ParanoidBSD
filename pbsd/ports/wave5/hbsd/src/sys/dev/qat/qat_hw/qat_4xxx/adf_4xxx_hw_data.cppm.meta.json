@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/qat_hw/qat_4xxx/adf_4xxx_hw_data.c",
+  "wave": "wave5",
+  "loc_estimate": 1072,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_hw/qat_4xxx/adf_4xxx_hw_data.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_hw.qat_4xxx.adf_4xxx_hw_data",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

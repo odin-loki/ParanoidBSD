@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/include/t_netdb.c",
+  "wave": "wave9",
+  "loc_estimate": 244,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/include/t_netdb.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.include.t_netdb",
+  "generated": "2026-07-19T09:30:58+00:00"
+}

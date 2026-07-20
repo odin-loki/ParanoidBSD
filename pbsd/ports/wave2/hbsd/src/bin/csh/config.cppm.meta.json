@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/csh/config.h",
+  "wave": "wave2",
+  "loc_estimate": 276,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/csh/config.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.csh.config",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

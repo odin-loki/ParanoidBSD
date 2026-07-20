@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/cd9660/cd9660_lookup.c",
+  "wave": "wave6",
+  "loc_estimate": 463,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/cd9660/cd9660_lookup.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.cd9660.cd9660_lookup",
+  "generated": "2026-07-19T09:18:58+00:00"
+}

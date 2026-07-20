@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/dwwdt/dwwdt.c",
+  "wave": "wave5",
+  "loc_estimate": 379,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/dwwdt/dwwdt.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.dwwdt.dwwdt",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

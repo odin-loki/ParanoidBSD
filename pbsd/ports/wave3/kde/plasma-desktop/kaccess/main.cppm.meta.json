@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kaccess/main.cpp",
+  "wave": "wave3",
+  "loc_estimate": 77,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kaccess/main.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kaccess.main",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

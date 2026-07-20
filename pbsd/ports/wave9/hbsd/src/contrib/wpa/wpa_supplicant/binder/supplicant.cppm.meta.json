@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/wpa_supplicant/binder/supplicant.cpp",
+  "wave": "wave9",
+  "loc_estimate": 127,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/wpa_supplicant/binder/supplicant.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.wpa_supplicant.binder.supplicant",
+  "generated": "2026-07-19T09:31:01+00:00"
+}

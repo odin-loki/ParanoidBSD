@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ofed/opensm/opensm/osm_ucast_mgr.c",
+  "wave": "wave9",
+  "loc_estimate": 1196,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/opensm/opensm/osm_ucast_mgr.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.opensm.opensm.osm_ucast_mgr",
+  "generated": "2026-07-19T09:37:24+00:00"
+}

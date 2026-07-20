@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/dhclient/tests/fake.c",
+  "wave": "wave2",
+  "loc_estimate": 77,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/dhclient/tests/fake.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.dhclient.tests.fake",
+  "generated": "2026-07-19T09:30:00+00:00"
+}

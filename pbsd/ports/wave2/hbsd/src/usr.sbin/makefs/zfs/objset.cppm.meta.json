@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/makefs/zfs/objset.c",
+  "wave": "wave2",
+  "loc_estimate": 263,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/makefs/zfs/objset.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.makefs.zfs.objset",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

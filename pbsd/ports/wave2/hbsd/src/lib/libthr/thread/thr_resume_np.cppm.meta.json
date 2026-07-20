@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libthr/thread/thr_resume_np.c",
+  "wave": "wave2",
+  "loc_estimate": 97,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/thread/thr_resume_np.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.thread.thr_resume_np",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

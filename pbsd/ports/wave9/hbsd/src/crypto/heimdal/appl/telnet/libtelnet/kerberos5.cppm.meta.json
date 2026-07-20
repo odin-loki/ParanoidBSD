@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/appl/telnet/libtelnet/kerberos5.c",
+  "wave": "wave9",
+  "loc_estimate": 896,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/appl/telnet/libtelnet/kerberos5.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.appl.telnet.libtelnet.kerberos5",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ldns/drill/chasetrace.c",
+  "wave": "wave9",
+  "loc_estimate": 507,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ldns/drill/chasetrace.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ldns.drill.chasetrace",
+  "generated": "2026-07-19T09:37:45+00:00"
+}

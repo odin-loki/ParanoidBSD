@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/crypto/blake2/blake2-sw.c",
+  "wave": "wave4",
+  "loc_estimate": 151,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/blake2/blake2-sw.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.blake2.blake2_sw",
+  "generated": "2026-07-19T09:31:11+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.bin/gzip/unxz.c",
+  "wave": "wave2",
+  "loc_estimate": 474,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/gzip/unxz.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_bin.gzip.unxz",
+  "generated": "2026-07-19T09:30:21+00:00"
+}

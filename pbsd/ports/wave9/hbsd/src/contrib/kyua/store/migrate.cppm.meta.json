@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/kyua/store/migrate.cpp",
+  "wave": "wave9",
+  "loc_estimate": 287,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/kyua/store/migrate.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.kyua.store.migrate",
+  "generated": "2026-07-19T09:37:25+00:00"
+}

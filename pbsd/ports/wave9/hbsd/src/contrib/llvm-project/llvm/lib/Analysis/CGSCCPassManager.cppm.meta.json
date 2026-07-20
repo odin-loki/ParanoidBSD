@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Analysis/CGSCCPassManager.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1195,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Analysis/CGSCCPassManager.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.analysis.cgsccpassmanager",
+  "generated": "2026-07-19T09:31:56+00:00"
+}

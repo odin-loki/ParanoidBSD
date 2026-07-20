@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwindowsystem/src/platforms/xcb/kselectionwatcher.cpp",
+  "wave": "wave3",
+  "loc_estimate": 246,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/src/platforms/xcb/kselectionwatcher.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.src.platforms.xcb.kselectionwatcher",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

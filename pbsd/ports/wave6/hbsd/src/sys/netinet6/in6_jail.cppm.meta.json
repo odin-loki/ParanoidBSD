@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet6/in6_jail.c",
+  "wave": "wave6",
+  "loc_estimate": 325,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet6/in6_jail.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet6.in6_jail",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

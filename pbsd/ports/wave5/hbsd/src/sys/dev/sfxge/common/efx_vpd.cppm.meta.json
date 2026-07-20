@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sfxge/common/efx_vpd.c",
+  "wave": "wave5",
+  "loc_estimate": 1025,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sfxge/common/efx_vpd.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sfxge.common.efx_vpd",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

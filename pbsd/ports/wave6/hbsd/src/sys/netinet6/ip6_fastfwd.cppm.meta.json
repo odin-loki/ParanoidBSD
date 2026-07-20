@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet6/ip6_fastfwd.c",
+  "wave": "wave6",
+  "loc_estimate": 332,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet6/ip6_fastfwd.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet6.ip6_fastfwd",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

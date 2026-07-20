@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libhbsdcontrol/insecure_kmod.c",
+  "wave": "wave2",
+  "loc_estimate": 315,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libhbsdcontrol/insecure_kmod.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libhbsdcontrol.insecure_kmod",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

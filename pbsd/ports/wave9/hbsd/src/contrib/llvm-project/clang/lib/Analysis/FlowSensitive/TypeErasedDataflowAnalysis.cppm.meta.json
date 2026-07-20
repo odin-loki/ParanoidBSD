@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Analysis/FlowSensitive/TypeErasedDataflowAnalysis.cpp",
+  "wave": "wave9",
+  "loc_estimate": 586,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Analysis/FlowSensitive/TypeErasedDataflowAnalysis.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.analysis.flowsensitive.typeeraseddataflowanalysis",
+  "generated": "2026-07-19T09:31:20+00:00"
+}

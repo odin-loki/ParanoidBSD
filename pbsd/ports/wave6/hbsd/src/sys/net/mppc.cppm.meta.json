@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/net/mppc.h",
+  "wave": "wave6",
+  "loc_estimate": 60,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/mppc.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.net.mppc",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

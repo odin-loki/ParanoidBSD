@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/AArch64/AArch64RegisterInfo.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1377,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/AArch64/AArch64RegisterInfo.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.aarch64.aarch64registerinfo",
+  "generated": "2026-07-19T09:31:57+00:00"
+}

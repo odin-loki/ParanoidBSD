@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ldns/duration.c",
+  "wave": "wave9",
+  "loc_estimate": 281,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ldns/duration.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ldns.duration",
+  "generated": "2026-07-19T09:37:45+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libutil/login_times.c",
+  "wave": "wave2",
+  "loc_estimate": 159,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libutil/login_times.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libutil.login_times",
+  "generated": "2026-07-19T07:48:27+00:00"
+}

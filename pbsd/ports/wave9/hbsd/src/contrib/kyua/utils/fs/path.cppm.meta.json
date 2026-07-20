@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/kyua/utils/fs/path.cpp",
+  "wave": "wave9",
+  "loc_estimate": 303,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/kyua/utils/fs/path.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.kyua.utils.fs.path",
+  "generated": "2026-07-19T09:37:25+00:00"
+}

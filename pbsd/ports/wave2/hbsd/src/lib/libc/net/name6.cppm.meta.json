@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/net/name6.c",
+  "wave": "wave2",
+  "loc_estimate": 1130,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/net/name6.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.net.name6",
+  "generated": "2026-07-19T09:05:33+00:00"
+}

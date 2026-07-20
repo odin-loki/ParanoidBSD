@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ice/ice_vf_mbx.c",
+  "wave": "wave5",
+  "loc_estimate": 471,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ice/ice_vf_mbx.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ice.ice_vf_mbx",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

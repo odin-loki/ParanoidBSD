@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libthr/tests/atfork_test.c",
+  "wave": "wave2",
+  "loc_estimate": 280,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/tests/atfork_test.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.tests.atfork_test",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

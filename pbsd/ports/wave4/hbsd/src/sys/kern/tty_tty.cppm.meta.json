@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/tty_tty.c",
+  "wave": "wave4",
+  "loc_estimate": 94,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/tty_tty.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.tty_tty",
+  "generated": "2026-07-19T08:40:35+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/ath/ath_ee_v14_print/ath_ee_v14_print.c",
+  "wave": "wave9",
+  "loc_estimate": 471,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/ath/ath_ee_v14_print/ath_ee_v14_print.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.ath.ath_ee_v14_print.ath_ee_v14_print",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

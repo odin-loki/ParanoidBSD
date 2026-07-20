@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/cpt_err.c",
+  "wave": "wave9",
+  "loc_estimate": 89,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/cpt_err.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.cpt_err",
+  "generated": "2026-07-19T09:30:03+00:00"
+}

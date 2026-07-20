@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/cmd/zdb/zdb_il.c",
+  "wave": "wave6",
+  "loc_estimate": 542,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/cmd/zdb/zdb_il.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.cmd.zdb.zdb_il",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

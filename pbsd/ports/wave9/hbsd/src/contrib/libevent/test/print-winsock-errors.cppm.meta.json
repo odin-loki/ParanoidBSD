@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libevent/test/print-winsock-errors.c",
+  "wave": "wave9",
+  "loc_estimate": 86,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libevent/test/print-winsock-errors.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libevent.test.print_winsock_errors",
+  "generated": "2026-07-19T09:37:40+00:00"
+}

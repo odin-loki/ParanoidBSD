@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/jemalloc/src/arena.c",
+  "wave": "wave9",
+  "loc_estimate": 1891,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/src/arena.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.src.arena",
+  "generated": "2026-07-19T09:37:43+00:00"
+}

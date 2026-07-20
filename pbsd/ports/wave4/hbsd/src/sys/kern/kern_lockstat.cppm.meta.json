@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/kern_lockstat.c",
+  "wave": "wave4",
+  "loc_estimate": 89,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_lockstat.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_lockstat",
+  "generated": "2026-07-19T08:40:35+00:00"
+}

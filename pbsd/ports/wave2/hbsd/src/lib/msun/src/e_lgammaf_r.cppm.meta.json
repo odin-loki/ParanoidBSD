@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/e_lgammaf_r.c",
+  "wave": "wave2",
+  "loc_estimate": 212,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/e_lgammaf_r.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.e_lgammaf_r",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

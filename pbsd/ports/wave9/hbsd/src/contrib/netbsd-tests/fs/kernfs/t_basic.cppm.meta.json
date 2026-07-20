@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/fs/kernfs/t_basic.c",
+  "wave": "wave9",
+  "loc_estimate": 133,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/fs/kernfs/t_basic.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.fs.kernfs.t_basic",
+  "generated": "2026-07-19T09:30:56+00:00"
+}

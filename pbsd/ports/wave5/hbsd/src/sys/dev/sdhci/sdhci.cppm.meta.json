@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sdhci/sdhci.c",
+  "wave": "wave5",
+  "loc_estimate": 2902,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sdhci/sdhci.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sdhci.sdhci",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

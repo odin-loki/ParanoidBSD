@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/subr_dummy_vdso_tc.c",
+  "wave": "wave4",
+  "loc_estimate": 47,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_dummy_vdso_tc.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_dummy_vdso_tc",
+  "generated": "2026-07-19T08:40:35+00:00"
+}

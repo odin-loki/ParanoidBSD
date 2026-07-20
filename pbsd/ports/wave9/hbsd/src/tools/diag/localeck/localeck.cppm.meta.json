@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/diag/localeck/localeck.c",
+  "wave": "wave9",
+  "loc_estimate": 70,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/diag/localeck/localeck.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.diag.localeck.localeck",
+  "generated": "2026-07-19T09:38:20+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/crypto/libsodium/utils.c",
+  "wave": "wave4",
+  "loc_estimate": 41,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/libsodium/utils.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.libsodium.utils",
+  "generated": "2026-07-19T09:31:09+00:00"
+}

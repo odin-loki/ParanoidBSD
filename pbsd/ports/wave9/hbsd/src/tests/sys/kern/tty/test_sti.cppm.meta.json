@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/kern/tty/test_sti.c",
+  "wave": "wave9",
+  "loc_estimate": 343,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/tty/test_sti.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.tty.test_sti",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

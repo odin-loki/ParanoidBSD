@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libsys/auxv.c",
+  "wave": "wave2",
+  "loc_estimate": 416,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libsys/auxv.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libsys.auxv",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

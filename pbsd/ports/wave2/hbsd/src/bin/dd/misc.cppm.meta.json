@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/dd/misc.c",
+  "wave": "wave2",
+  "loc_estimate": 197,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/dd/misc.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.dd.misc",
+  "generated": "2026-07-19T07:28:55+00:00"
+}

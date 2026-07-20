@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/opencrypto/xform_null.c",
+  "wave": "wave4",
+  "loc_estimate": 141,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/opencrypto/xform_null.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.opencrypto.xform_null",
+  "generated": "2026-07-19T09:08:34+00:00"
+}

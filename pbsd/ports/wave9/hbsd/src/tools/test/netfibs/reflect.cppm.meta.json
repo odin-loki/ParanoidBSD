@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/test/netfibs/reflect.c",
+  "wave": "wave9",
+  "loc_estimate": 363,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/netfibs/reflect.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.test.netfibs.reflect",
+  "generated": "2026-07-19T09:37:46+00:00"
+}

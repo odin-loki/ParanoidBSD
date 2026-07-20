@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/sntp/unity/auto/runner_maybe.c",
+  "wave": "wave9",
+  "loc_estimate": 52,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/sntp/unity/auto/runner_maybe.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.sntp.unity.auto.runner_maybe",
+  "generated": "2026-07-19T09:31:04+00:00"
+}

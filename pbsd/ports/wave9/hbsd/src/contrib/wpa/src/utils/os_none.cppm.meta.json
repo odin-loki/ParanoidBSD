@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/utils/os_none.c",
+  "wave": "wave9",
+  "loc_estimate": 248,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/utils/os_none.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.utils.os_none",
+  "generated": "2026-07-19T09:31:01+00:00"
+}

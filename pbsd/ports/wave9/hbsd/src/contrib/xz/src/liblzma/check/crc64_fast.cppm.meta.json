@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/xz/src/liblzma/check/crc64_fast.c",
+  "wave": "wave9",
+  "loc_estimate": 161,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/xz/src/liblzma/check/crc64_fast.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.xz.src.liblzma.check.crc64_fast",
+  "generated": "2026-07-19T09:37:37+00:00"
+}

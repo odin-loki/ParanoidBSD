@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/libsodium/test/default/sodium_utils.c",
+  "wave": "wave4",
+  "loc_estimate": 178,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/test/default/sodium_utils.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.test.default.sodium_utils",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

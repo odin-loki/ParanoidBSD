@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ObjectContainer/Mach-O-Fileset/ObjectContainerMachOFileset.cpp",
+  "wave": "wave9",
+  "loc_estimate": 299,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ObjectContainer/Mach-O-Fileset/ObjectContainerMachOFileset.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.objectcontainer.mach_o_fileset.objectcontainermachofileset",
+  "generated": "2026-07-19T09:31:40+00:00"
+}

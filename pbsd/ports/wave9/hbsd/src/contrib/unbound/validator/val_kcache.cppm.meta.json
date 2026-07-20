@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/validator/val_kcache.c",
+  "wave": "wave9",
+  "loc_estimate": 167,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/validator/val_kcache.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.validator.val_kcache",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

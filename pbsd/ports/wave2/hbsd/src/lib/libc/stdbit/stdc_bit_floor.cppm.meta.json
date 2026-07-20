@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdbit/stdc_bit_floor.c",
+  "wave": "wave2",
+  "loc_estimate": 53,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdbit/stdc_bit_floor.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdbit.stdc_bit_floor",
+  "generated": "2026-07-19T09:05:13+00:00"
+}

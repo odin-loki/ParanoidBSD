@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mlx5/mlx5_lib/mlx5_aso.c",
+  "wave": "wave5",
+  "loc_estimate": 428,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx5/mlx5_lib/mlx5_aso.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx5.mlx5_lib.mlx5_aso",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

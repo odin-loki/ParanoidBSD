@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lld/ELF/EhFrame.cpp",
+  "wave": "wave9",
+  "loc_estimate": 205,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lld/ELF/EhFrame.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lld.elf.ehframe",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

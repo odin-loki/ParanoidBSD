@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/net/bpf/bpf_multi_read.c",
+  "wave": "wave9",
+  "loc_estimate": 76,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/net/bpf/bpf_multi_read.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.net.bpf.bpf_multi_read",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

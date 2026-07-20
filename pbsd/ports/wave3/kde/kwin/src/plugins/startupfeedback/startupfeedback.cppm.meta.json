@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/plugins/startupfeedback/startupfeedback.cpp",
+  "wave": "wave3",
+  "loc_estimate": 482,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/startupfeedback/startupfeedback.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.plugins.startupfeedback.startupfeedback",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

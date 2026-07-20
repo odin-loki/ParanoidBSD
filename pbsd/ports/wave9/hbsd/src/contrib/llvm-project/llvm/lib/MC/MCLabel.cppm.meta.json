@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/MC/MCLabel.cpp",
+  "wave": "wave9",
+  "loc_estimate": 25,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/MC/MCLabel.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.mc.mclabel",
+  "generated": "2026-07-19T09:31:46+00:00"
+}

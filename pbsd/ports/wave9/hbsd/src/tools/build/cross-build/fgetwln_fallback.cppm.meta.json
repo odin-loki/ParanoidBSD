@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/build/cross-build/fgetwln_fallback.c",
+  "wave": "wave9",
+  "loc_estimate": 93,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/build/cross-build/fgetwln_fallback.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.build.cross_build.fgetwln_fallback",
+  "generated": "2026-07-19T09:38:05+00:00"
+}

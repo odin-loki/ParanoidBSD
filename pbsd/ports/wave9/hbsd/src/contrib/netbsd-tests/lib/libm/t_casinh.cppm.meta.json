@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libm/t_casinh.c",
+  "wave": "wave9",
+  "loc_estimate": 81,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libm/t_casinh.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libm.t_casinh",
+  "generated": "2026-07-19T09:30:55+00:00"
+}

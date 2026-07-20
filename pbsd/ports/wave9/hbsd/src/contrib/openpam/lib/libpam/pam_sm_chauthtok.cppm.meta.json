@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/openpam/lib/libpam/pam_sm_chauthtok.c",
+  "wave": "wave9",
+  "loc_estimate": 89,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openpam/lib/libpam/pam_sm_chauthtok.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.openpam.lib.libpam.pam_sm_chauthtok",
+  "generated": "2026-07-19T09:37:39+00:00"
+}

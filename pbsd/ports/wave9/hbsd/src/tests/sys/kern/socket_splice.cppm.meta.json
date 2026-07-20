@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/kern/socket_splice.c",
+  "wave": "wave9",
+  "loc_estimate": 979,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/socket_splice.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.socket_splice",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

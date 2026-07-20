@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_fminimumf.c",
+  "wave": "wave2",
+  "loc_estimate": 61,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_fminimumf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_fminimumf",
+  "generated": "2026-07-19T09:29:45+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/plasma-framework/src/plasmaquick/dialogshadows.cpp",
+  "wave": "wave3",
+  "loc_estimate": 271,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasmaquick/dialogshadows.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasmaquick.dialogshadows",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

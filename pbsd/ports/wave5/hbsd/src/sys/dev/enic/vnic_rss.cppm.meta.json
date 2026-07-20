@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/enic/vnic_rss.h",
+  "wave": "wave5",
+  "loc_estimate": 27,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/enic/vnic_rss.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.enic.vnic_rss",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

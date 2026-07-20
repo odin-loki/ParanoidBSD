@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/qoriq/qoriq_therm.c",
+  "wave": "wave7",
+  "loc_estimate": 517,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/qoriq/qoriq_therm.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.qoriq.qoriq_therm",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

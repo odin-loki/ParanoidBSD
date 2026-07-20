@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/tcp_hostcache.c",
+  "wave": "wave6",
+  "loc_estimate": 845,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/tcp_hostcache.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.tcp_hostcache",
+  "generated": "2026-07-19T09:29:21+00:00"
+}

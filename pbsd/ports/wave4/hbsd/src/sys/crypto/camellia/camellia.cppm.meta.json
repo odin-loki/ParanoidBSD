@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/crypto/camellia/camellia.c",
+  "wave": "wave4",
+  "loc_estimate": 1329,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/camellia/camellia.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.camellia.camellia",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

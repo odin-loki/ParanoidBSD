@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Tooling/Inclusions/HeaderIncludes.cpp",
+  "wave": "wave9",
+  "loc_estimate": 423,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Tooling/Inclusions/HeaderIncludes.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.tooling.inclusions.headerincludes",
+  "generated": "2026-07-19T09:31:19+00:00"
+}

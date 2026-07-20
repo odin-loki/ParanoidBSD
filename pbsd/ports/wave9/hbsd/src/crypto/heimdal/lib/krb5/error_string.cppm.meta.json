@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/krb5/error_string.c",
+  "wave": "wave9",
+  "loc_estimate": 342,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/error_string.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.error_string",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

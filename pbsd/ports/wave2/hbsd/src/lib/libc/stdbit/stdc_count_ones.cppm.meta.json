@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdbit/stdc_count_ones.c",
+  "wave": "wave2",
+  "loc_estimate": 38,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdbit/stdc_count_ones.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdbit.stdc_count_ones",
+  "generated": "2026-07-19T09:05:13+00:00"
+}

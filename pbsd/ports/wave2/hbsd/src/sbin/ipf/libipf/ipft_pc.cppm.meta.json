@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/ipf/libipf/ipft_pc.c",
+  "wave": "wave2",
+  "loc_estimate": 245,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipf/libipf/ipft_pc.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.ipf.libipf.ipft_pc",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

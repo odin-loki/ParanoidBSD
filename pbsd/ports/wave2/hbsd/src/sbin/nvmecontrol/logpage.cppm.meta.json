@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/nvmecontrol/logpage.c",
+  "wave": "wave2",
+  "loc_estimate": 807,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/nvmecontrol/logpage.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.nvmecontrol.logpage",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

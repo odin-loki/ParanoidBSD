@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/sys/csan.h",
+  "wave": "wave4",
+  "loc_estimate": 43,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/sys/csan.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.sys.csan",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

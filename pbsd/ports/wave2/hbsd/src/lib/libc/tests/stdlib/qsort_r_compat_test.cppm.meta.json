@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/tests/stdlib/qsort_r_compat_test.c",
+  "wave": "wave2",
+  "loc_estimate": 89,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/tests/stdlib/qsort_r_compat_test.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.tests.stdlib.qsort_r_compat_test",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

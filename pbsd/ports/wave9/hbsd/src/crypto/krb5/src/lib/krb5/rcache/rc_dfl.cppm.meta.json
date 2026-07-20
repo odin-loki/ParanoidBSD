@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/rcache/rc_dfl.c",
+  "wave": "wave9",
+  "loc_estimate": 164,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/rcache/rc_dfl.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.rcache.rc_dfl",
+  "generated": "2026-07-19T09:30:29+00:00"
+}

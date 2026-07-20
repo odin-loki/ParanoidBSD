@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_cospi.c",
+  "wave": "wave2",
+  "loc_estimate": 145,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_cospi.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_cospi",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

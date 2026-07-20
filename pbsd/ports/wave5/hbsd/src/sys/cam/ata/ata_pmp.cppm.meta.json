@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cam/ata/ata_pmp.c",
+  "wave": "wave5",
+  "loc_estimate": 860,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/cam/ata/ata_pmp.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.cam.ata.ata_pmp",
+  "generated": "2026-07-19T08:31:21+00:00"
+}

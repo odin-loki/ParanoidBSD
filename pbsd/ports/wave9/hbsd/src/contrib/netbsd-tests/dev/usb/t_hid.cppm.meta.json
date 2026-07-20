@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/dev/usb/t_hid.c",
+  "wave": "wave9",
+  "loc_estimate": 267,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/dev/usb/t_hid.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.dev.usb.t_hid",
+  "generated": "2026-07-19T09:30:58+00:00"
+}

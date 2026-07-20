@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/lua/src/lundump.c",
+  "wave": "wave9",
+  "loc_estimate": 335,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/lua/src/lundump.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.lua.src.lundump",
+  "generated": "2026-07-19T09:37:53+00:00"
+}

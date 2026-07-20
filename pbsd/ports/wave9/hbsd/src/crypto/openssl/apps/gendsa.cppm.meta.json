@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/apps/gendsa.c",
+  "wave": "wave9",
+  "loc_estimate": 178,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/apps/gendsa.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.apps.gendsa",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

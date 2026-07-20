@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/net/routing/test_rtsock_l3.c",
+  "wave": "wave9",
+  "loc_estimate": 1443,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/net/routing/test_rtsock_l3.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.net.routing.test_rtsock_l3",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

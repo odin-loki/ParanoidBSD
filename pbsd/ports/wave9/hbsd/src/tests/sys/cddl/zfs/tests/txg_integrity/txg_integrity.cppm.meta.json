@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/cddl/zfs/tests/txg_integrity/txg_integrity.c",
+  "wave": "wave9",
+  "loc_estimate": 608,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/cddl/zfs/tests/txg_integrity/txg_integrity.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.cddl.zfs.tests.txg_integrity.txg_integrity",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/powerd/powerd.c",
+  "wave": "wave2",
+  "loc_estimate": 933,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/powerd/powerd.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.powerd.powerd",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

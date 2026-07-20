@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/zlib/test/infcover.c",
+  "wave": "wave4",
+  "loc_estimate": 672,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zlib/test/infcover.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zlib.test.infcover",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

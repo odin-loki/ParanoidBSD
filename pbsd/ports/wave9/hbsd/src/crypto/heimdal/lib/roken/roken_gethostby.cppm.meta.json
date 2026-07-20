@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/roken_gethostby.c",
+  "wave": "wave9",
+  "loc_estimate": 277,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/roken_gethostby.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.roken_gethostby",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

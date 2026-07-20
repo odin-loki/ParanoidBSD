@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/tests/lockscreenoverlaytest.cpp",
+  "wave": "wave3",
+  "loc_estimate": 90,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/tests/lockscreenoverlaytest.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.tests.lockscreenoverlaytest",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

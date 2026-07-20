@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/acpi/acpidb/acpidb.c",
+  "wave": "wave2",
+  "loc_estimate": 540,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/acpi/acpidb/acpidb.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.acpi.acpidb.acpidb",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

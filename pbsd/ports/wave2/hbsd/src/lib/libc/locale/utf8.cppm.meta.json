@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/locale/utf8.c",
+  "wave": "wave2",
+  "loc_estimate": 424,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/locale/utf8.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.locale.utf8",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

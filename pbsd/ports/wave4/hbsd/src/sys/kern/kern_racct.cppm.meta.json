@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/kern_racct.c",
+  "wave": "wave4",
+  "loc_estimate": 1215,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_racct.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_racct",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

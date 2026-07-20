@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/compat/linux/linux_file.c",
+  "wave": "wave4",
+  "loc_estimate": 2055,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linux/linux_file.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linux.linux_file",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

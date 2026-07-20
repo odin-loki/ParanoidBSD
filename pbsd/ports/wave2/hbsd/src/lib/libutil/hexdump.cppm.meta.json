@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libutil/hexdump.c",
+  "wave": "wave2",
+  "loc_estimate": 93,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libutil/hexdump.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libutil.hexdump",
+  "generated": "2026-07-19T07:48:27+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libder/tests/test_privkey.c",
+  "wave": "wave9",
+  "loc_estimate": 175,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libder/tests/test_privkey.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libder.tests.test_privkey",
+  "generated": "2026-07-19T09:38:03+00:00"
+}

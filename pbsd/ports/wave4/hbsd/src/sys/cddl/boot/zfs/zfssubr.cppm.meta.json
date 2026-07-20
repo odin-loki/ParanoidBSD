@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cddl/boot/zfs/zfssubr.c",
+  "wave": "wave4",
+  "loc_estimate": 1829,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/boot/zfs/zfssubr.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.boot.zfs.zfssubr",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

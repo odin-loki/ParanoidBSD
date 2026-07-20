@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/crypto/opencrypto/h_gcm.c",
+  "wave": "wave9",
+  "loc_estimate": 126,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/crypto/opencrypto/h_gcm.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.crypto.opencrypto.h_gcm",
+  "generated": "2026-07-19T09:30:56+00:00"
+}

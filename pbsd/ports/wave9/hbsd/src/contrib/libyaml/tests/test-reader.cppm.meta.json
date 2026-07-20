@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libyaml/tests/test-reader.c",
+  "wave": "wave9",
+  "loc_estimate": 354,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libyaml/tests/test-reader.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libyaml.tests.test_reader",
+  "generated": "2026-07-19T09:37:59+00:00"
+}

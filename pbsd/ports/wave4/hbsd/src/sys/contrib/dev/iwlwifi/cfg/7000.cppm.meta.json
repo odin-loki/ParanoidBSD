@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/iwlwifi/cfg/7000.c",
+  "wave": "wave4",
+  "loc_estimate": 235,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/cfg/7000.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.cfg._7000",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

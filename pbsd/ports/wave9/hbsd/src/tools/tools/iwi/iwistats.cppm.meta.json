@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/iwi/iwistats.c",
+  "wave": "wave9",
+  "loc_estimate": 125,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/iwi/iwistats.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.iwi.iwistats",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

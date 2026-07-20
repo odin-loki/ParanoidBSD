@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/lib/libzutil/zutil_import.c",
+  "wave": "wave6",
+  "loc_estimate": 2116,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libzutil/zutil_import.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libzutil.zutil_import",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

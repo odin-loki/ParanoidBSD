@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/in_rss.c",
+  "wave": "wave6",
+  "loc_estimate": 389,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/in_rss.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.in_rss",
+  "generated": "2026-07-19T09:02:53+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/krb5/expand_hostname.c",
+  "wave": "wave9",
+  "loc_estimate": 183,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/expand_hostname.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.expand_hostname",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

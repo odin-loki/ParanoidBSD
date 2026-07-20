@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/iicbus/pmic/rockchip/rk817.c",
+  "wave": "wave5",
+  "loc_estimate": 529,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iicbus/pmic/rockchip/rk817.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iicbus.pmic.rockchip.rk817",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

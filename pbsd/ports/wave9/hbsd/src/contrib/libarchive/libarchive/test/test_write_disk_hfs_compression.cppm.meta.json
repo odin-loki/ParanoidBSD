@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_write_disk_hfs_compression.c",
+  "wave": "wave9",
+  "loc_estimate": 277,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_write_disk_hfs_compression.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_write_disk_hfs_compression",
+  "generated": "2026-07-19T09:30:41+00:00"
+}

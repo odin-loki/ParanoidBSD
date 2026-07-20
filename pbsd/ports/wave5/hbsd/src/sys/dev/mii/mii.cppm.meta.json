@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mii/mii.c",
+  "wave": "wave5",
+  "loc_estimate": 670,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mii/mii.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mii.mii",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/plasma-framework/src/plasmaquick/windowresizehandler.cpp",
+  "wave": "wave3",
+  "loc_estimate": 191,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasmaquick/windowresizehandler.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasmaquick.windowresizehandler",
+  "generated": "2026-07-19T09:30:15+00:00"
+}

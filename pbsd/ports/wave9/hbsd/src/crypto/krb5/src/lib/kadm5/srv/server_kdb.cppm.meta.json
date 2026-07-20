@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/kadm5/srv/server_kdb.c",
+  "wave": "wave9",
+  "loc_estimate": 446,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/kadm5/srv/server_kdb.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.kadm5.srv.server_kdb",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

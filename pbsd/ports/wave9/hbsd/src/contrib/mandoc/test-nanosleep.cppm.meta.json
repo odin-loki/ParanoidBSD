@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/mandoc/test-nanosleep.c",
+  "wave": "wave9",
+  "loc_estimate": 17,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/test-nanosleep.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.test_nanosleep",
+  "generated": "2026-07-19T09:37:38+00:00"
+}

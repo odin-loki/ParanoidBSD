@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/bhnd/bhnd.c",
+  "wave": "wave5",
+  "loc_estimate": 1166,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/bhnd/bhnd.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.bhnd.bhnd",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

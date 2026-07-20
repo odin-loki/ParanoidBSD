@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libfetch/common.c",
+  "wave": "wave2",
+  "loc_estimate": 1773,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libfetch/common.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libfetch.common",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

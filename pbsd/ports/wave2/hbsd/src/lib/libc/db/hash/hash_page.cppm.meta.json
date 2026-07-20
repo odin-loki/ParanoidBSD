@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/db/hash/hash_page.c",
+  "wave": "wave2",
+  "loc_estimate": 935,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/db/hash/hash_page.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.db.hash.hash_page",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/include/t_errno.c",
+  "wave": "wave9",
+  "loc_estimate": 765,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/include/t_errno.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.include.t_errno",
+  "generated": "2026-07-19T09:30:59+00:00"
+}

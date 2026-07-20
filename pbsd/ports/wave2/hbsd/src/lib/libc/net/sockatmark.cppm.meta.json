@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/net/sockatmark.c",
+  "wave": "wave2",
+  "loc_estimate": 39,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/net/sockatmark.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.net.sockatmark",
+  "generated": "2026-07-19T09:05:33+00:00"
+}

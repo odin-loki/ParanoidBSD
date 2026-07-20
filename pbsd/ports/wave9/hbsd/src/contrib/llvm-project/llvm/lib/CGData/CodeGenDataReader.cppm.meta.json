@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/CGData/CodeGenDataReader.cpp",
+  "wave": "wave9",
+  "loc_estimate": 208,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/CGData/CodeGenDataReader.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.cgdata.codegendatareader",
+  "generated": "2026-07-19T09:31:53+00:00"
+}

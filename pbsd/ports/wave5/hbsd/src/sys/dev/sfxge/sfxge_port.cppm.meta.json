@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sfxge/sfxge_port.c",
+  "wave": "wave5",
+  "loc_estimate": 1094,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sfxge/sfxge_port.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sfxge.sfxge_port",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

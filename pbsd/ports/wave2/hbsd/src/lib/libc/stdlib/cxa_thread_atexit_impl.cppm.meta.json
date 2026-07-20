@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdlib/cxa_thread_atexit_impl.c",
+  "wave": "wave2",
+  "loc_estimate": 151,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdlib/cxa_thread_atexit_impl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdlib.cxa_thread_atexit_impl",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

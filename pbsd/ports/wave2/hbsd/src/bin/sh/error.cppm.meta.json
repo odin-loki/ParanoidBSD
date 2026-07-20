@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/sh/error.c",
+  "wave": "wave2",
+  "loc_estimate": 194,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/sh/error.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.sh.error",
+  "generated": "2026-07-19T07:28:55+00:00"
+}

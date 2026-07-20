@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Analysis/RegionPrinter.cpp",
+  "wave": "wave9",
+  "loc_estimate": 249,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Analysis/RegionPrinter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.analysis.regionprinter",
+  "generated": "2026-07-19T09:31:53+00:00"
+}

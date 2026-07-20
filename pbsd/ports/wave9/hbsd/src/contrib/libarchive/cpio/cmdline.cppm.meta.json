@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/cpio/cmdline.c",
+  "wave": "wave9",
+  "loc_estimate": 398,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/cpio/cmdline.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.cpio.cmdline",
+  "generated": "2026-07-19T09:30:41+00:00"
+}

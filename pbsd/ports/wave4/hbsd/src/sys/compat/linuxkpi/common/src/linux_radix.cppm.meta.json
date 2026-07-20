@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/compat/linuxkpi/common/src/linux_radix.c",
+  "wave": "wave4",
+  "loc_estimate": 593,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/common/src/linux_radix.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.common.src.linux_radix",
+  "generated": "2026-07-19T09:31:14+00:00"
+}

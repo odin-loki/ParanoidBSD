@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/archive_blake2sp_ref.c",
+  "wave": "wave9",
+  "loc_estimate": 361,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/archive_blake2sp_ref.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.archive_blake2sp_ref",
+  "generated": "2026-07-19T09:30:41+00:00"
+}

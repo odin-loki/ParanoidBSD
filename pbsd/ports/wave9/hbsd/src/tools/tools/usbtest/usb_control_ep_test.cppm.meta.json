@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/usbtest/usb_control_ep_test.c",
+  "wave": "wave9",
+  "loc_estimate": 672,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/usbtest/usb_control_ep_test.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.usbtest.usb_control_ep_test",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

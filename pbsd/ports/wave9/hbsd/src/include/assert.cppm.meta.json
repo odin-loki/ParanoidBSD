@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/assert.h",
+  "wave": "wave9",
+  "loc_estimate": 95,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/assert.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.assert",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

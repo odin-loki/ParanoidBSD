@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/etherswitch/micrel/ksz8995ma.c",
+  "wave": "wave5",
+  "loc_estimate": 941,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/etherswitch/micrel/ksz8995ma.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.etherswitch.micrel.ksz8995ma",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ofw/ofw_bus_subr.c",
+  "wave": "wave5",
+  "loc_estimate": 1140,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ofw/ofw_bus_subr.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ofw.ofw_bus_subr",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

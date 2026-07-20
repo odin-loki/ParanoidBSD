@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/kern/pipe/big_pipe_test.c",
+  "wave": "wave9",
+  "loc_estimate": 86,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/pipe/big_pipe_test.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.pipe.big_pipe_test",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/net80211/wlanwds/wlanwds.c",
+  "wave": "wave9",
+  "loc_estimate": 631,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/net80211/wlanwds/wlanwds.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.net80211.wlanwds.wlanwds",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

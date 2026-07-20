@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/ntlm/ntlm.c",
+  "wave": "wave9",
+  "loc_estimate": 1857,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/ntlm/ntlm.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.ntlm.ntlm",
+  "generated": "2026-07-19T09:30:38+00:00"
+}

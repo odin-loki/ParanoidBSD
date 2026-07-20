@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/bectl/bectl.c",
+  "wave": "wave2",
+  "loc_estimate": 627,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/bectl/bectl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.bectl.bectl",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

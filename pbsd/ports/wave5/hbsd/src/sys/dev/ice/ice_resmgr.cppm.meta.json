@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ice/ice_resmgr.c",
+  "wave": "wave5",
+  "loc_estimate": 227,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ice/ice_resmgr.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ice.ice_resmgr",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

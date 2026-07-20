@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/gnu/gcov/gcov_fs.c",
+  "wave": "wave4",
+  "loc_estimate": 954,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/gnu/gcov/gcov_fs.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.gnu.gcov.gcov_fs",
+  "generated": "2026-07-19T09:31:14+00:00"
+}

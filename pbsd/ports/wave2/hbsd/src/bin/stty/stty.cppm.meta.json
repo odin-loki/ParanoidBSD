@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/stty/stty.c",
+  "wave": "wave2",
+  "loc_estimate": 152,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/stty/stty.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.stty.stty",
+  "generated": "2026-07-19T07:28:55+00:00"
+}

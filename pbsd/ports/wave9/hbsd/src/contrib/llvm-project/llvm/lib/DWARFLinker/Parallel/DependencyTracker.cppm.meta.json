@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/DWARFLinker/Parallel/DependencyTracker.cpp",
+  "wave": "wave9",
+  "loc_estimate": 837,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/DWARFLinker/Parallel/DependencyTracker.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.dwarflinker.parallel.dependencytracker",
+  "generated": "2026-07-19T09:31:56+00:00"
+}

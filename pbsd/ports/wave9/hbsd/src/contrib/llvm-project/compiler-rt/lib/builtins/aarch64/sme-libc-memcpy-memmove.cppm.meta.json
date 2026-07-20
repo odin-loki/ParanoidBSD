@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/aarch64/sme-libc-memcpy-memmove.c",
+  "wave": "wave9",
+  "loc_estimate": 55,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/aarch64/sme-libc-memcpy-memmove.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.builtins.aarch64.sme_libc_memcpy_memmove",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

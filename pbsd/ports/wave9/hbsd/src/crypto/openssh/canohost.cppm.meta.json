@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/canohost.c",
+  "wave": "wave9",
+  "loc_estimate": 209,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/canohost.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.canohost",
+  "generated": "2026-07-19T09:37:20+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libiconv_modules/mapper_serial/citrus_mapper_serial.c",
+  "wave": "wave2",
+  "loc_estimate": 247,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libiconv_modules/mapper_serial/citrus_mapper_serial.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libiconv_modules.mapper_serial.citrus_mapper_serial",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

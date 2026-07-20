@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/lib/libshare/os/linux/smb.c",
+  "wave": "wave6",
+  "loc_estimate": 407,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libshare/os/linux/smb.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libshare.os.linux.smb",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

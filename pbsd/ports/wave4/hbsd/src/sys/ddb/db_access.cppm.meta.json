@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/ddb/db_access.c",
+  "wave": "wave4",
+  "loc_estimate": 103,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/ddb/db_access.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.ddb.db_access",
+  "generated": "2026-07-19T09:31:11+00:00"
+}

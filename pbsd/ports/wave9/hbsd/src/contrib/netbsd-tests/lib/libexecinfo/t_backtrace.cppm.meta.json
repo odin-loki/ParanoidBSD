@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libexecinfo/t_backtrace.c",
+  "wave": "wave9",
+  "loc_estimate": 166,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libexecinfo/t_backtrace.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libexecinfo.t_backtrace",
+  "generated": "2026-07-19T09:30:57+00:00"
+}

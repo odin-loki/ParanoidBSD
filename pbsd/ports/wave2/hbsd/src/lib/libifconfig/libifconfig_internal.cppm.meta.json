@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libifconfig/libifconfig_internal.c",
+  "wave": "wave2",
+  "loc_estimate": 116,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libifconfig/libifconfig_internal.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libifconfig.libifconfig_internal",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

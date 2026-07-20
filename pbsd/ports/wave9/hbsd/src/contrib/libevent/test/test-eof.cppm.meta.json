@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libevent/test/test-eof.c",
+  "wave": "wave9",
+  "loc_estimate": 117,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libevent/test/test-eof.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libevent.test.test_eof",
+  "generated": "2026-07-19T09:37:40+00:00"
+}

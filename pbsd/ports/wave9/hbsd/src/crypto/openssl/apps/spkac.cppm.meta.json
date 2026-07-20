@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/apps/spkac.c",
+  "wave": "wave9",
+  "loc_estimate": 243,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/apps/spkac.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.apps.spkac",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

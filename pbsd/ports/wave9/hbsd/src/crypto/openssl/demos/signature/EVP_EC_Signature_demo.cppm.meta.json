@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/demos/signature/EVP_EC_Signature_demo.c",
+  "wave": "wave9",
+  "loc_estimate": 231,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/demos/signature/EVP_EC_Signature_demo.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.demos.signature.evp_ec_signature_demo",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

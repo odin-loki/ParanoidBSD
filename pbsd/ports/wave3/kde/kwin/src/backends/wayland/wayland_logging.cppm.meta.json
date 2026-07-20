@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/backends/wayland/wayland_logging.cpp",
+  "wave": "wave3",
+  "loc_estimate": 10,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/backends/wayland/wayland_logging.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.backends.wayland.wayland_logging",
+  "generated": "2026-07-19T08:33:26+00:00"
+}

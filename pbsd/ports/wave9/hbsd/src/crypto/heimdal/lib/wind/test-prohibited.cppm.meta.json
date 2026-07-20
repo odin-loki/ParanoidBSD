@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/wind/test-prohibited.c",
+  "wave": "wave9",
+  "loc_estimate": 138,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/wind/test-prohibited.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.wind.test_prohibited",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

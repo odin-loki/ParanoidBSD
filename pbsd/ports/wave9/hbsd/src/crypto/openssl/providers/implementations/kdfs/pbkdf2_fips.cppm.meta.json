@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/providers/implementations/kdfs/pbkdf2_fips.c",
+  "wave": "wave9",
+  "loc_estimate": 20,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/kdfs/pbkdf2_fips.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.kdfs.pbkdf2_fips",
+  "generated": "2026-07-19T09:30:02+00:00"
+}

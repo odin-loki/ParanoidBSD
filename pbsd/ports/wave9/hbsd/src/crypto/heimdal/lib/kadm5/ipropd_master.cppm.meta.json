@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/kadm5/ipropd_master.c",
+  "wave": "wave9",
+  "loc_estimate": 1033,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/kadm5/ipropd_master.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.kadm5.ipropd_master",
+  "generated": "2026-07-19T09:30:38+00:00"
+}

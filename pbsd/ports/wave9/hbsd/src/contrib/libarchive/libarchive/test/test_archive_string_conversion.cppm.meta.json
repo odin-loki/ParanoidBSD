@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_archive_string_conversion.c",
+  "wave": "wave9",
+  "loc_estimate": 1164,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_archive_string_conversion.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_archive_string_conversion",
+  "generated": "2026-07-19T09:30:41+00:00"
+}

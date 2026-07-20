@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcpdump/print-enc.c",
+  "wave": "wave9",
+  "loc_estimate": 156,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-enc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_enc",
+  "generated": "2026-07-19T09:37:26+00:00"
+}

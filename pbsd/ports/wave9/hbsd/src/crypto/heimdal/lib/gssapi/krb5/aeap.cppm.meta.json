@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/gssapi/krb5/aeap.c",
+  "wave": "wave9",
+  "loc_estimate": 102,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/krb5/aeap.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.krb5.aeap",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

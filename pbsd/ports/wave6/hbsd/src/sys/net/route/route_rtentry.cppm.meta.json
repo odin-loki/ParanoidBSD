@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/net/route/route_rtentry.c",
+  "wave": "wave6",
+  "loc_estimate": 331,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/route/route_rtentry.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.net.route.route_rtentry",
+  "generated": "2026-07-19T09:04:06+00:00"
+}

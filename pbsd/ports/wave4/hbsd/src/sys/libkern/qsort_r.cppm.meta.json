@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/libkern/qsort_r.c",
+  "wave": "wave4",
+  "loc_estimate": 6,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/libkern/qsort_r.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.libkern.qsort_r",
+  "generated": "2026-07-19T09:31:09+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/intel/stratix10-soc-fpga-mgr.c",
+  "wave": "wave7",
+  "loc_estimate": 320,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/intel/stratix10-soc-fpga-mgr.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.intel.stratix10_soc_fpga_mgr",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

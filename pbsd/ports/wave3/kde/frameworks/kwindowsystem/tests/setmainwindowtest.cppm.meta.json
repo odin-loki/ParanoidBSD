@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwindowsystem/tests/setmainwindowtest.cpp",
+  "wave": "wave3",
+  "loc_estimate": 76,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/tests/setmainwindowtest.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.tests.setmainwindowtest",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

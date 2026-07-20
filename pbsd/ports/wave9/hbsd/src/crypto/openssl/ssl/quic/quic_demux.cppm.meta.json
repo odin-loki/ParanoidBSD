@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/ssl/quic/quic_demux.c",
+  "wave": "wave9",
+  "loc_estimate": 477,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/ssl/quic/quic_demux.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.ssl.quic.quic_demux",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

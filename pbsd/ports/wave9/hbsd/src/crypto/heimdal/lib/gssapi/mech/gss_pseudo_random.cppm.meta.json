@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_pseudo_random.c",
+  "wave": "wave9",
+  "loc_estimate": 70,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_pseudo_random.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.mech.gss_pseudo_random",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

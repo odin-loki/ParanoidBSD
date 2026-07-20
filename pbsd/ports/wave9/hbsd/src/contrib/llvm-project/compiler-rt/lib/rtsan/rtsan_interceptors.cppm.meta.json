@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/rtsan/rtsan_interceptors.h",
+  "wave": "wave9",
+  "loc_estimate": 15,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/rtsan/rtsan_interceptors.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.rtsan.rtsan_interceptors",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

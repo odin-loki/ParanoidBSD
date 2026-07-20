@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kcoreaddons/src/lib/plugin/kstaticpluginhelpers.cpp",
+  "wave": "wave3",
+  "loc_estimate": 28,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/plugin/kstaticpluginhelpers.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.plugin.kstaticpluginhelpers",
+  "generated": "2026-07-19T07:48:20+00:00"
+}

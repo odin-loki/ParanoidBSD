@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/conf/conf_mall.c",
+  "wave": "wave9",
+  "loc_estimate": 38,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/conf/conf_mall.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.conf.conf_mall",
+  "generated": "2026-07-19T09:30:03+00:00"
+}

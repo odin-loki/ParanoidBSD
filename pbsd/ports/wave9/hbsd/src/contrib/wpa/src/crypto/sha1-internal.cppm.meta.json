@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/crypto/sha1-internal.c",
+  "wave": "wave9",
+  "loc_estimate": 306,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/crypto/sha1-internal.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.crypto.sha1_internal",
+  "generated": "2026-07-19T09:31:01+00:00"
+}

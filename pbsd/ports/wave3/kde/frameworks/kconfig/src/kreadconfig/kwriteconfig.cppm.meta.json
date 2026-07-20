@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kconfig/src/kreadconfig/kwriteconfig.cpp",
+  "wave": "wave3",
+  "loc_estimate": 97,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kconfig/src/kreadconfig/kwriteconfig.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kconfig.src.kreadconfig.kwriteconfig",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

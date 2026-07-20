@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/compat/linux/linux_elf.c",
+  "wave": "wave4",
+  "loc_estimate": 545,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linux/linux_elf.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linux.linux_elf",
+  "generated": "2026-07-19T09:31:13+00:00"
+}

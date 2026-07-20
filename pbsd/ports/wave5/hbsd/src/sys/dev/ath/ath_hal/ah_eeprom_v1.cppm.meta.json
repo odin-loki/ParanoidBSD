@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ath/ath_hal/ah_eeprom_v1.c",
+  "wave": "wave5",
+  "loc_estimate": 253,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ah_eeprom_v1.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ah_eeprom_v1",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

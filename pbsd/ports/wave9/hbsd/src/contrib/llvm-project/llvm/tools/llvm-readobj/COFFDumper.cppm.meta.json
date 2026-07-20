@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-readobj/COFFDumper.cpp",
+  "wave": "wave9",
+  "loc_estimate": 2293,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-readobj/COFFDumper.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_readobj.coffdumper",
+  "generated": "2026-07-19T09:31:57+00:00"
+}

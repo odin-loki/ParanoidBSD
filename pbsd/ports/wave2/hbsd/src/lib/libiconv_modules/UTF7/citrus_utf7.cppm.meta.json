@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libiconv_modules/UTF7/citrus_utf7.c",
+  "wave": "wave2",
+  "loc_estimate": 504,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libiconv_modules/UTF7/citrus_utf7.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libiconv_modules.utf7.citrus_utf7",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

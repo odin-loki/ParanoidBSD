@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/googletest/googletest/src/gtest-assertion-result.cc",
+  "wave": "wave9",
+  "loc_estimate": 77,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/googletest/googletest/src/gtest-assertion-result.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.googletest.googletest.src.gtest_assertion_result",
+  "generated": "2026-07-19T09:37:38+00:00"
+}

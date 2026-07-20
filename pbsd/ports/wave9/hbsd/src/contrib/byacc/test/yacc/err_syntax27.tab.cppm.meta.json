@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/byacc/test/yacc/err_syntax27.tab.c",
+  "wave": "wave9",
+  "loc_estimate": 15,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/byacc/test/yacc/err_syntax27.tab.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.byacc.test.yacc.err_syntax27_tab",
+  "generated": "2026-07-19T09:37:30+00:00"
+}

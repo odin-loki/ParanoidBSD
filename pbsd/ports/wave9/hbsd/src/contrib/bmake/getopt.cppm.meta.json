@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bmake/getopt.c",
+  "wave": "wave9",
+  "loc_estimate": 188,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bmake/getopt.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bmake.getopt",
+  "generated": "2026-07-19T09:37:54+00:00"
+}

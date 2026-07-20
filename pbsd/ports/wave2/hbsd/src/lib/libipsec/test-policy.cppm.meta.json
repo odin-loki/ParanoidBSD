@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libipsec/test-policy.c",
+  "wave": "wave2",
+  "loc_estimate": 332,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libipsec/test-policy.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libipsec.test_policy",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

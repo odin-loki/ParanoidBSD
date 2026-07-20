@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_scalarmult/curve25519/scalarmult_curve25519.c",
+  "wave": "wave4",
+  "loc_estimate": 59,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_scalarmult/curve25519/scalarmult_curve25519.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_scalarmult.curve25519.scalarmult_curve25519",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

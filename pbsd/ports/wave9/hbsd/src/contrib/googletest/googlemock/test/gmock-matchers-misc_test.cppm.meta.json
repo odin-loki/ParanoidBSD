@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/googletest/googlemock/test/gmock-matchers-misc_test.cc",
+  "wave": "wave9",
+  "loc_estimate": 1882,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/googletest/googlemock/test/gmock-matchers-misc_test.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.googletest.googlemock.test.gmock_matchers_misc_test",
+  "generated": "2026-07-19T09:37:38+00:00"
+}

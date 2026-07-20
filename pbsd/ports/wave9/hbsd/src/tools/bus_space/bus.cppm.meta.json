@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/bus_space/bus.c",
+  "wave": "wave9",
+  "loc_estimate": 268,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/bus_space/bus.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.bus_space.bus",
+  "generated": "2026-07-19T09:38:20+00:00"
+}

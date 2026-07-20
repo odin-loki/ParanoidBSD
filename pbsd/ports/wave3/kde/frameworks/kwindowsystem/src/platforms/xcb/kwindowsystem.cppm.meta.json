@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwindowsystem/src/platforms/xcb/kwindowsystem.cpp",
+  "wave": "wave3",
+  "loc_estimate": 27,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/src/platforms/xcb/kwindowsystem.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.src.platforms.xcb.kwindowsystem",
+  "generated": "2026-07-19T07:48:20+00:00"
+}

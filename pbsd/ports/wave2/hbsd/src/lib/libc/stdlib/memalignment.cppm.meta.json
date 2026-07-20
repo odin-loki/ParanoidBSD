@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdlib/memalignment.c",
+  "wave": "wave2",
+  "loc_estimate": 28,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdlib/memalignment.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdlib.memalignment",
+  "generated": "2026-07-19T08:29:02+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/kuser/kdigest.c",
+  "wave": "wave9",
+  "loc_estimate": 572,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/kuser/kdigest.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.kuser.kdigest",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

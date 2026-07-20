@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/wind/map_table.c",
+  "wave": "wave9",
+  "loc_estimate": 2613,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/wind/map_table.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.wind.map_table",
+  "generated": "2026-07-19T09:30:38+00:00"
+}

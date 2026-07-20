@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lld/MachO/Arch/ARM64.cpp",
+  "wave": "wave9",
+  "loc_estimate": 745,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lld/MachO/Arch/ARM64.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lld.macho.arch.arm64",
+  "generated": "2026-07-19T09:37:17+00:00"
+}

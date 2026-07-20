@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/sftp-usergroup.c",
+  "wave": "wave9",
+  "loc_estimate": 239,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/sftp-usergroup.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.sftp_usergroup",
+  "generated": "2026-07-19T09:37:20+00:00"
+}

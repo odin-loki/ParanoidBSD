@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_conjf.c",
+  "wave": "wave2",
+  "loc_estimate": 38,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_conjf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_conjf",
+  "generated": "2026-07-19T08:38:05+00:00"
+}

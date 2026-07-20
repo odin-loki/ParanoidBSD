@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/appl/gss-sample/gss-server.c",
+  "wave": "wave9",
+  "loc_estimate": 911,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/appl/gss-sample/gss-server.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.appl.gss_sample.gss_server",
+  "generated": "2026-07-19T09:30:33+00:00"
+}

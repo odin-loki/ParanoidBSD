@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/mandoc/test-reallocarray.c",
+  "wave": "wave9",
+  "loc_estimate": 7,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/test-reallocarray.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.test_reallocarray",
+  "generated": "2026-07-19T07:47:46+00:00"
+}

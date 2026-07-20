@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/cuse/cuse_defs.h",
+  "wave": "wave6",
+  "loc_estimate": 87,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/cuse/cuse_defs.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.cuse.cuse_defs",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

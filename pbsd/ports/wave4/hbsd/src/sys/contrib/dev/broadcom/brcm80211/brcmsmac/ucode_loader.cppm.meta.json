@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmsmac/ucode_loader.c",
+  "wave": "wave4",
+  "loc_estimate": 109,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmsmac/ucode_loader.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.broadcom.brcm80211.brcmsmac.ucode_loader",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

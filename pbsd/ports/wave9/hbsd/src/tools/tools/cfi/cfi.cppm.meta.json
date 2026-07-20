@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/cfi/cfi.c",
+  "wave": "wave9",
+  "loc_estimate": 155,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/cfi/cfi.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.cfi.cfi",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/hardenedbsd/liblattzfs/src/liblattzfs.c",
+  "wave": "wave9",
+  "loc_estimate": 239,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/hardenedbsd/liblattzfs/src/liblattzfs.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.hardenedbsd.liblattzfs.src.liblattzfs",
+  "generated": "2026-07-19T09:38:25+00:00"
+}

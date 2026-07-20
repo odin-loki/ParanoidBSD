@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/evp/bio_enc.c",
+  "wave": "wave9",
+  "loc_estimate": 451,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/evp/bio_enc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.evp.bio_enc",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

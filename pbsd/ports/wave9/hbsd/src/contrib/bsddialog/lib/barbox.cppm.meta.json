@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bsddialog/lib/barbox.c",
+  "wave": "wave9",
+  "loc_estimate": 716,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bsddialog/lib/barbox.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bsddialog.lib.barbox",
+  "generated": "2026-07-19T09:37:55+00:00"
+}

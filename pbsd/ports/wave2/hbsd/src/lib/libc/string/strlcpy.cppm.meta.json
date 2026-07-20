@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/string/strlcpy.c",
+  "wave": "wave2",
+  "loc_estimate": 52,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/string/strlcpy.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.string.strlcpy",
+  "generated": "2026-07-19T08:32:14+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/PDB/GenericError.cpp",
+  "wave": "wave9",
+  "loc_estimate": 49,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/PDB/GenericError.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.debuginfo.pdb.genericerror",
+  "generated": "2026-07-19T09:31:48+00:00"
+}

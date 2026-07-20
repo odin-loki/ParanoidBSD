@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/plugins/gamecontroller/gamecontrollermanager.cpp",
+  "wave": "wave3",
+  "loc_estimate": 258,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/gamecontroller/gamecontrollermanager.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.plugins.gamecontroller.gamecontrollermanager",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

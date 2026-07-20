@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/form/frm_user.c",
+  "wave": "wave9",
+  "loc_estimate": 73,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/form/frm_user.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.form.frm_user",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

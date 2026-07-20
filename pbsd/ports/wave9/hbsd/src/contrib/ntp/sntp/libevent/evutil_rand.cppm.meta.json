@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/sntp/libevent/evutil_rand.c",
+  "wave": "wave9",
+  "loc_estimate": 204,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/sntp/libevent/evutil_rand.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.sntp.libevent.evutil_rand",
+  "generated": "2026-07-19T09:31:05+00:00"
+}

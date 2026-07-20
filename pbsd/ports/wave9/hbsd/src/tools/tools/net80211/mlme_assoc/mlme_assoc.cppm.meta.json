@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/net80211/mlme_assoc/mlme_assoc.c",
+  "wave": "wave9",
+  "loc_estimate": 200,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/net80211/mlme_assoc/mlme_assoc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.net80211.mlme_assoc.mlme_assoc",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/raid/md_promise.c",
+  "wave": "wave6",
+  "loc_estimate": 2004,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/raid/md_promise.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.raid.md_promise",
+  "generated": "2026-07-19T09:29:22+00:00"
+}

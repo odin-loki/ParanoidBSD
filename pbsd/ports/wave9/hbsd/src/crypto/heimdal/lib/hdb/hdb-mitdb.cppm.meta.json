@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/hdb/hdb-mitdb.c",
+  "wave": "wave9",
+  "loc_estimate": 1202,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/hdb/hdb-mitdb.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.hdb.hdb_mitdb",
+  "generated": "2026-07-19T09:30:38+00:00"
+}

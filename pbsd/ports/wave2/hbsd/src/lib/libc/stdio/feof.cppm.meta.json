@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdio/feof.c",
+  "wave": "wave2",
+  "loc_estimate": 59,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdio/feof.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdio.feof",
+  "generated": "2026-07-19T08:41:19+00:00"
+}

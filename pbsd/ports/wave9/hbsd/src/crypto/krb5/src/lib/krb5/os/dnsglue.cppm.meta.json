@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/os/dnsglue.c",
+  "wave": "wave9",
+  "loc_estimate": 513,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/os/dnsglue.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.os.dnsglue",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

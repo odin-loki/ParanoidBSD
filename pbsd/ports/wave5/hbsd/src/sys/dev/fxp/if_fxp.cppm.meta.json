@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/fxp/if_fxp.c",
+  "wave": "wave5",
+  "loc_estimate": 3243,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/fxp/if_fxp.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.fxp.if_fxp",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

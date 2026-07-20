@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcpdump/print-ahcp.c",
+  "wave": "wave9",
+  "loc_estimate": 382,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-ahcp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_ahcp",
+  "generated": "2026-07-19T09:37:27+00:00"
+}

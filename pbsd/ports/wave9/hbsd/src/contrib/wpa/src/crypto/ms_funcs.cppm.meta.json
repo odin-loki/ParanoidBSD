@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/crypto/ms_funcs.c",
+  "wave": "wave9",
+  "loc_estimate": 531,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/crypto/ms_funcs.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.crypto.ms_funcs",
+  "generated": "2026-07-19T09:31:01+00:00"
+}

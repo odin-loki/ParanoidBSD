@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/bhyvectl/bhyvectl.c",
+  "wave": "wave2",
+  "loc_estimate": 535,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyvectl/bhyvectl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyvectl.bhyvectl",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

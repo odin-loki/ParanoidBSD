@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/linux/linux_vdso_gtod.c",
+  "wave": "wave7",
+  "loc_estimate": 150,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/linux/linux_vdso_gtod.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.linux.linux_vdso_gtod",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

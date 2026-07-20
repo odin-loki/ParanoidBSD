@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/rsa/rsa_depr.c",
+  "wave": "wave9",
+  "loc_estimate": 62,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/rsa/rsa_depr.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.rsa.rsa_depr",
+  "generated": "2026-07-19T09:30:03+00:00"
+}

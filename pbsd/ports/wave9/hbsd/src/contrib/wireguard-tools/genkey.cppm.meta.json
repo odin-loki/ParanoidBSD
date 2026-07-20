@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wireguard-tools/genkey.c",
+  "wave": "wave9",
+  "loc_estimate": 99,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wireguard-tools/genkey.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wireguard_tools.genkey",
+  "generated": "2026-07-19T09:38:04+00:00"
+}

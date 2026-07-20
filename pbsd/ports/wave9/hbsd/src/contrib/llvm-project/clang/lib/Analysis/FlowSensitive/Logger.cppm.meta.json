@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Analysis/FlowSensitive/Logger.cpp",
+  "wave": "wave9",
+  "loc_estimate": 111,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Analysis/FlowSensitive/Logger.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.analysis.flowsensitive.logger",
+  "generated": "2026-07-19T09:31:17+00:00"
+}

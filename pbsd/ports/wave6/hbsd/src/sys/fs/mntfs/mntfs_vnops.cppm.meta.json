@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/mntfs/mntfs_vnops.c",
+  "wave": "wave6",
+  "loc_estimate": 96,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/mntfs/mntfs_vnops.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.mntfs.mntfs_vnops",
+  "generated": "2026-07-19T08:30:54+00:00"
+}

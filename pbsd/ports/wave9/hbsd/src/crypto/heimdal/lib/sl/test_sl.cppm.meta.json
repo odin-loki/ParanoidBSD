@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/sl/test_sl.c",
+  "wave": "wave9",
+  "loc_estimate": 95,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/sl/test_sl.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.sl.test_sl",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

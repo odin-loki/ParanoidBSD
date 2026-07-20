@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mlx5/mlx5_core/fs_tcp.h",
+  "wave": "wave5",
+  "loc_estimate": 41,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx5/mlx5_core/fs_tcp.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx5.mlx5_core.fs_tcp",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

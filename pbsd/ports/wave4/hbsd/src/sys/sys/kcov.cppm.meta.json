@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/sys/kcov.h",
+  "wave": "wave4",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/sys/kcov.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.sys.kcov",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

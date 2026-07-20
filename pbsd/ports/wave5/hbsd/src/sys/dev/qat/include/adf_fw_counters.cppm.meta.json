@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/include/adf_fw_counters.h",
+  "wave": "wave5",
+  "loc_estimate": 39,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/include/adf_fw_counters.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.include.adf_fw_counters",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

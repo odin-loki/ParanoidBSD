@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_acl_platform_posix1e.c",
+  "wave": "wave9",
+  "loc_estimate": 606,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_acl_platform_posix1e.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_acl_platform_posix1e",
+  "generated": "2026-07-19T09:30:41+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/landingpage/splitnode.cpp",
+  "wave": "wave3",
+  "loc_estimate": 291,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/landingpage/splitnode.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.landingpage.splitnode",
+  "generated": "2026-07-19T09:30:17+00:00"
+}

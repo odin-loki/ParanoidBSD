@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libgeom/geom_xml2tree.c",
+  "wave": "wave2",
+  "loc_estimate": 595,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libgeom/geom_xml2tree.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libgeom.geom_xml2tree",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

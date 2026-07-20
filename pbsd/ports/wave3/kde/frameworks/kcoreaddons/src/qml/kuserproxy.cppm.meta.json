@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kcoreaddons/src/qml/kuserproxy.cpp",
+  "wave": "wave3",
+  "loc_estimate": 124,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/qml/kuserproxy.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.qml.kuserproxy",
+  "generated": "2026-07-19T09:19:13+00:00"
+}

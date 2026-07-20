@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/amdsbwd/amdsbwd.c",
+  "wave": "wave5",
+  "loc_estimate": 593,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/amdsbwd/amdsbwd.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.amdsbwd.amdsbwd",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

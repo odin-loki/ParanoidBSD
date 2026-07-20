@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/GISel/X86InstructionSelector.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1957,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/GISel/X86InstructionSelector.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.x86.gisel.x86instructionselector",
+  "generated": "2026-07-19T09:31:57+00:00"
+}

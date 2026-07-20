@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/linux32/linux32_sysvec.c",
+  "wave": "wave7",
+  "loc_estimate": 1068,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/linux32/linux32_sysvec.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.linux32.linux32_sysvec",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

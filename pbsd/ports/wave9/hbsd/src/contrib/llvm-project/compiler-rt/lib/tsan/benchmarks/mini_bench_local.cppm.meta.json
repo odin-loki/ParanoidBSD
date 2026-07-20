@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/benchmarks/mini_bench_local.cpp",
+  "wave": "wave9",
+  "loc_estimate": 49,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/benchmarks/mini_bench_local.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.tsan.benchmarks.mini_bench_local",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

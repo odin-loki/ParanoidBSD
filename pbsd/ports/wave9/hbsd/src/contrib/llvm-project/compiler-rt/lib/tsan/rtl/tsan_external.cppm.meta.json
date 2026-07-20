@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/rtl/tsan_external.cpp",
+  "wave": "wave9",
+  "loc_estimate": 133,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/rtl/tsan_external.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.tsan.rtl.tsan_external",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

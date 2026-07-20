@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/IPO/LowerTypeTests.cpp",
+  "wave": "wave9",
+  "loc_estimate": 2585,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/IPO/LowerTypeTests.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.ipo.lowertypetests",
+  "generated": "2026-07-19T09:31:57+00:00"
+}

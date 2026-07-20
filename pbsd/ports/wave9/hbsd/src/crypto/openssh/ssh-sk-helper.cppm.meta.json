@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/ssh-sk-helper.c",
+  "wave": "wave9",
+  "loc_estimate": 367,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/ssh-sk-helper.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.ssh_sk_helper",
+  "generated": "2026-07-19T09:37:20+00:00"
+}

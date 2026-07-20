@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/widechar/lib_key_name.c",
+  "wave": "wave9",
+  "loc_estimate": 67,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/widechar/lib_key_name.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.widechar.lib_key_name",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

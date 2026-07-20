@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/gen/fpclassify.c",
+  "wave": "wave2",
+  "loc_estimate": 103,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/fpclassify.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.fpclassify",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libc-vis/unvis.c",
+  "wave": "wave9",
+  "loc_estimate": 567,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libc-vis/unvis.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libc_vis.unvis",
+  "generated": "2026-07-19T09:38:26+00:00"
+}

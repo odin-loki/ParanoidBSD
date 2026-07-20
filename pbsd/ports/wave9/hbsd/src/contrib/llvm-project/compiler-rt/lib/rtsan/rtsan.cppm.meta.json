@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/rtsan/rtsan.cpp",
+  "wave": "wave9",
+  "loc_estimate": 154,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/rtsan/rtsan.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.rtsan.rtsan",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

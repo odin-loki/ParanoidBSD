@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/snapinfo/snapinfo.c",
+  "wave": "wave2",
+  "loc_estimate": 181,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/snapinfo/snapinfo.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.snapinfo.snapinfo",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/hastd/proto_tcp.c",
+  "wave": "wave2",
+  "loc_estimate": 636,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/hastd/proto_tcp.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.hastd.proto_tcp",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

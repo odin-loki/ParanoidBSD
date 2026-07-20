@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libiscsiutil/chap.c",
+  "wave": "wave2",
+  "loc_estimate": 419,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libiscsiutil/chap.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libiscsiutil.chap",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

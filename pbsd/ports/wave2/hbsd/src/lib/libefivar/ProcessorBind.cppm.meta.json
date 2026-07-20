@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libefivar/ProcessorBind.h",
+  "wave": "wave2",
+  "loc_estimate": 3,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libefivar/ProcessorBind.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libefivar.processorbind",
+  "generated": "2026-07-19T10:59:30+00:00"
+}

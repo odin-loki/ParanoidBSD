@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/usb/net/ruephy.c",
+  "wave": "wave5",
+  "loc_estimate": 217,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/net/ruephy.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.net.ruephy",
+  "generated": "2026-07-19T09:19:37+00:00"
+}

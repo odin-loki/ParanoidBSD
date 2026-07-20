@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Support/AMDGPUMetadata.cpp",
+  "wave": "wave9",
+  "loc_estimate": 229,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Support/AMDGPUMetadata.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.support.amdgpumetadata",
+  "generated": "2026-07-19T09:31:53+00:00"
+}

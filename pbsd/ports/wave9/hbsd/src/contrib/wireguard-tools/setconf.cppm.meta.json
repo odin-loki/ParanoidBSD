@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wireguard-tools/setconf.c",
+  "wave": "wave9",
+  "loc_estimate": 156,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wireguard-tools/setconf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wireguard_tools.setconf",
+  "generated": "2026-07-19T09:38:04+00:00"
+}

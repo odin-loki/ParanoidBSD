@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/ksplash/kcm.cpp",
+  "wave": "wave3",
+  "loc_estimate": 266,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/ksplash/kcm.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.ksplash.kcm",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

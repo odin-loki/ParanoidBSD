@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libucl/src/ucl_hash.c",
+  "wave": "wave9",
+  "loc_estimate": 629,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libucl/src/ucl_hash.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libucl.src.ucl_hash",
+  "generated": "2026-07-19T09:38:01+00:00"
+}

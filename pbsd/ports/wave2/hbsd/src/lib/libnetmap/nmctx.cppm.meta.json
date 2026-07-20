@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libnetmap/nmctx.c",
+  "wave": "wave2",
+  "loc_estimate": 140,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libnetmap/nmctx.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libnetmap.nmctx",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

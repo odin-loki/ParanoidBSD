@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/efi/loader/arch/arm64/exec.c",
+  "wave": "wave7",
+  "loc_estimate": 105,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/efi/loader/arch/arm64/exec.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.efi.loader.arch.arm64.exec",
+  "generated": "2026-07-19T09:49:38+00:00"
+}

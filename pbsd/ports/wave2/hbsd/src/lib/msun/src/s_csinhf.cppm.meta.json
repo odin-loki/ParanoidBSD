@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_csinhf.c",
+  "wave": "wave2",
+  "loc_estimate": 106,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_csinhf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_csinhf",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

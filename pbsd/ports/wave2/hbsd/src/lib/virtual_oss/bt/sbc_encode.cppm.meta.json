@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/virtual_oss/bt/sbc_encode.c",
+  "wave": "wave2",
+  "loc_estimate": 701,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/virtual_oss/bt/sbc_encode.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.virtual_oss.bt.sbc_encode",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

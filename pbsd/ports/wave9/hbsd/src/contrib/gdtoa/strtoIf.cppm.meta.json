@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/gdtoa/strtoIf.c",
+  "wave": "wave9",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/gdtoa/strtoIf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.gdtoa.strtoif",
+  "generated": "2026-07-19T09:37:48+00:00"
+}

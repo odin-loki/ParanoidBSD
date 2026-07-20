@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cam/scsi/scsi_enc.c",
+  "wave": "wave5",
+  "loc_estimate": 1025,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/cam/scsi/scsi_enc.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.cam.scsi.scsi_enc",
+  "generated": "2026-07-19T08:31:21+00:00"
+}

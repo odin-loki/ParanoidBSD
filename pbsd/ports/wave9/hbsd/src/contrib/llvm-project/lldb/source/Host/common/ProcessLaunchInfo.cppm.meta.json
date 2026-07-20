@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Host/common/ProcessLaunchInfo.cpp",
+  "wave": "wave9",
+  "loc_estimate": 342,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Host/common/ProcessLaunchInfo.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.host.common.processlaunchinfo",
+  "generated": "2026-07-19T09:31:41+00:00"
+}

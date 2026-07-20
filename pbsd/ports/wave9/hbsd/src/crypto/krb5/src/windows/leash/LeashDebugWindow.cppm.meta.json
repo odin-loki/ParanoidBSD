@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/windows/leash/LeashDebugWindow.cpp",
+  "wave": "wave9",
+  "loc_estimate": 187,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/windows/leash/LeashDebugWindow.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.windows.leash.leashdebugwindow",
+  "generated": "2026-07-19T09:30:29+00:00"
+}

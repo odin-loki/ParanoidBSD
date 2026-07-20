@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwayland/src/client/dpms.cpp",
+  "wave": "wave3",
+  "loc_estimate": 266,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/client/dpms.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.client.dpms",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

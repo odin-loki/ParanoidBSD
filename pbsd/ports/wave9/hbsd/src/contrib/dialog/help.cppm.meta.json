@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/dialog/help.c",
+  "wave": "wave9",
+  "loc_estimate": 54,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/dialog/help.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.dialog.help",
+  "generated": "2026-07-19T09:37:51+00:00"
+}

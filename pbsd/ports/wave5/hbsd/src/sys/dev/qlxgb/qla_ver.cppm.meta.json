@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qlxgb/qla_ver.h",
+  "wave": "wave5",
+  "loc_estimate": 41,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qlxgb/qla_ver.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qlxgb.qla_ver",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

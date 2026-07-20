@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/athk/ath10k/pci.c",
+  "wave": "wave4",
+  "loc_estimate": 3966,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/athk/ath10k/pci.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.athk.ath10k.pci",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bmake/buf.c",
+  "wave": "wave9",
+  "loc_estimate": 189,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bmake/buf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bmake.buf",
+  "generated": "2026-07-19T09:37:54+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Scalar/LoopPredication.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1247,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Scalar/LoopPredication.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.scalar.looppredication",
+  "generated": "2026-07-19T09:31:57+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/opengl/glshader.cpp",
+  "wave": "wave3",
+  "loc_estimate": 511,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/opengl/glshader.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.opengl.glshader",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

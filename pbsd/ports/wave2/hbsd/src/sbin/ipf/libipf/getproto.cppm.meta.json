@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/ipf/libipf/getproto.c",
+  "wave": "wave2",
+  "loc_estimate": 34,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipf/libipf/getproto.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.ipf.libipf.getproto",
+  "generated": "2026-07-19T07:46:46+00:00"
+}

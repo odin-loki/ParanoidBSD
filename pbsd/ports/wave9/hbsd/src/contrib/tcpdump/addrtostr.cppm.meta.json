@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcpdump/addrtostr.c",
+  "wave": "wave9",
+  "loc_estimate": 205,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/addrtostr.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.addrtostr",
+  "generated": "2026-07-19T09:37:26+00:00"
+}

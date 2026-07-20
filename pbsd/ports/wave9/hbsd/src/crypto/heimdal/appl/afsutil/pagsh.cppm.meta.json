@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/appl/afsutil/pagsh.c",
+  "wave": "wave9",
+  "loc_estimate": 215,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/appl/afsutil/pagsh.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.appl.afsutil.pagsh",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

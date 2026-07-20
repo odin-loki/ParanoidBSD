@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bearssl/src/codec/enc16le.c",
+  "wave": "wave9",
+  "loc_estimate": 38,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/codec/enc16le.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.codec.enc16le",
+  "generated": "2026-07-19T09:37:18+00:00"
+}

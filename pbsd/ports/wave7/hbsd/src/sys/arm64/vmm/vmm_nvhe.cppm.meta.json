@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/vmm/vmm_nvhe.c",
+  "wave": "wave7",
+  "loc_estimate": 118,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/vmm/vmm_nvhe.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.vmm.vmm_nvhe",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

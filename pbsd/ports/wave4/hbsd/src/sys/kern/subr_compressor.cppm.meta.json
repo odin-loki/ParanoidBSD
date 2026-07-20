@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/subr_compressor.c",
+  "wave": "wave4",
+  "loc_estimate": 575,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_compressor.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_compressor",
+  "generated": "2026-07-19T07:47:45+00:00"
+}

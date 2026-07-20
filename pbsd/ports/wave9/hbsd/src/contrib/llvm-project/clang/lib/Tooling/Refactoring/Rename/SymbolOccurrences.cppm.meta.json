@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Tooling/Refactoring/Rename/SymbolOccurrences.cpp",
+  "wave": "wave9",
+  "loc_estimate": 35,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Tooling/Refactoring/Rename/SymbolOccurrences.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.tooling.refactoring.rename.symboloccurrences",
+  "generated": "2026-07-19T09:31:17+00:00"
+}

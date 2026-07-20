@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ofed/libibverbs/examples/pingpong.c",
+  "wave": "wave9",
+  "loc_estimate": 80,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/libibverbs/examples/pingpong.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.libibverbs.examples.pingpong",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

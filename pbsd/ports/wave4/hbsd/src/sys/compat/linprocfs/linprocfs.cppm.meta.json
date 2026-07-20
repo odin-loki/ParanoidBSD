@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/compat/linprocfs/linprocfs.c",
+  "wave": "wave4",
+  "loc_estimate": 2567,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linprocfs/linprocfs.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linprocfs.linprocfs",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

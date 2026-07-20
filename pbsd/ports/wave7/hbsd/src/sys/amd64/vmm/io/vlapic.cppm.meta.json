@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/vmm/io/vlapic.c",
+  "wave": "wave7",
+  "loc_estimate": 1908,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/vmm/io/vlapic.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.vmm.io.vlapic",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

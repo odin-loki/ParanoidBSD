@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mlx5/mlx5_core/mlx5_eq.c",
+  "wave": "wave5",
+  "loc_estimate": 790,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx5/mlx5_core/mlx5_eq.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx5.mlx5_core.mlx5_eq",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

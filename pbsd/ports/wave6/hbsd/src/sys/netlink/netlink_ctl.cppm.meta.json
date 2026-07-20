@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netlink/netlink_ctl.h",
+  "wave": "wave6",
+  "loc_estimate": 127,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netlink/netlink_ctl.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netlink.netlink_ctl",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

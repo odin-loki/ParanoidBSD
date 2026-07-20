@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/compat/linuxkpi/common/src/linux_lock.c",
+  "wave": "wave4",
+  "loc_estimate": 184,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/common/src/linux_lock.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.common.src.linux_lock",
+  "generated": "2026-07-19T09:31:11+00:00"
+}

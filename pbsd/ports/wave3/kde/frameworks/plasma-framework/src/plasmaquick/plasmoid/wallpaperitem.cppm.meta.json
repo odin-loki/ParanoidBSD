@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/plasma-framework/src/plasmaquick/plasmoid/wallpaperitem.cpp",
+  "wave": "wave3",
+  "loc_estimate": 288,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasmaquick/plasmoid/wallpaperitem.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasmaquick.plasmoid.wallpaperitem",
+  "generated": "2026-07-19T09:30:17+00:00"
+}

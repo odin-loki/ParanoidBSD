@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libpcap/testprogs/versiontest.c",
+  "wave": "wave9",
+  "loc_estimate": 29,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libpcap/testprogs/versiontest.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libpcap.testprogs.versiontest",
+  "generated": "2026-07-19T09:37:41+00:00"
+}

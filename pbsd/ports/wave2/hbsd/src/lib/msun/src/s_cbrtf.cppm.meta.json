@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_cbrtf.c",
+  "wave": "wave2",
+  "loc_estimate": 70,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_cbrtf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_cbrtf",
+  "generated": "2026-07-19T09:29:45+00:00"
+}

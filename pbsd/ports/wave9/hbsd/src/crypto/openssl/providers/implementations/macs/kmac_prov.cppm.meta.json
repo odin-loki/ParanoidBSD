@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/providers/implementations/macs/kmac_prov.c",
+  "wave": "wave9",
+  "loc_estimate": 696,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/macs/kmac_prov.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.macs.kmac_prov",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

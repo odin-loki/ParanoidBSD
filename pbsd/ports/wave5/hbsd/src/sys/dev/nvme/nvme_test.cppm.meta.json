@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/nvme/nvme_test.c",
+  "wave": "wave5",
+  "loc_estimate": 281,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/nvme/nvme_test.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.nvme.nvme_test",
+  "generated": "2026-07-19T08:32:42+00:00"
+}

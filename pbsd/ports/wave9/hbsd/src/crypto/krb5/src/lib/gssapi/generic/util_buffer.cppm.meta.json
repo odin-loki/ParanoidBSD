@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/generic/util_buffer.c",
+  "wave": "wave9",
+  "loc_estimate": 48,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/generic/util_buffer.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.generic.util_buffer",
+  "generated": "2026-07-19T09:30:25+00:00"
+}

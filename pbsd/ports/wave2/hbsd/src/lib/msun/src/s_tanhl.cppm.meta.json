@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_tanhl.c",
+  "wave": "wave2",
+  "loc_estimate": 170,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_tanhl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_tanhl",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

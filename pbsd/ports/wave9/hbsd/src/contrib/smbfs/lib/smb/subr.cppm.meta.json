@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/smbfs/lib/smb/subr.c",
+  "wave": "wave9",
+  "loc_estimate": 380,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/smbfs/lib/smb/subr.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.smbfs.lib.smb.subr",
+  "generated": "2026-07-19T09:37:58+00:00"
+}

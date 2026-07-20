@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ice/ice_common.c",
+  "wave": "wave5",
+  "loc_estimate": 6934,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ice/ice_common.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ice.ice_common",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

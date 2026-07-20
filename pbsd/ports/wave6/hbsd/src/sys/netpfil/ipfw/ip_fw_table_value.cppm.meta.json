@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/ipfw/ip_fw_table_value.c",
+  "wave": "wave6",
+  "loc_estimate": 770,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/ip_fw_table_value.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.ip_fw_table_value",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

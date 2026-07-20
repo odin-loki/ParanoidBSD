@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libcxxrt/libelftc_dem_gnu3.c",
+  "wave": "wave9",
+  "loc_estimate": 4320,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libcxxrt/libelftc_dem_gnu3.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libcxxrt.libelftc_dem_gnu3",
+  "generated": "2026-07-19T09:38:07+00:00"
+}

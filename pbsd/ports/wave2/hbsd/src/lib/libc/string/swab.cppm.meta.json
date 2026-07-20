@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/string/swab.c",
+  "wave": "wave2",
+  "loc_estimate": 32,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/string/swab.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.string.swab",
+  "generated": "2026-07-19T08:38:05+00:00"
+}

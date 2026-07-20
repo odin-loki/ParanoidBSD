@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/JITLink/aarch32.cpp",
+  "wave": "wave9",
+  "loc_estimate": 991,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/JITLink/aarch32.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.executionengine.jitlink.aarch32",
+  "generated": "2026-07-19T09:31:56+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/in_tkt_sky.c",
+  "wave": "wave9",
+  "loc_estimate": 118,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/in_tkt_sky.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.in_tkt_sky",
+  "generated": "2026-07-19T09:30:28+00:00"
+}

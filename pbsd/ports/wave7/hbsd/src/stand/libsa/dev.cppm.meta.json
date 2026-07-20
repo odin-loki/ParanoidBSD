@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/libsa/dev.c",
+  "wave": "wave7",
+  "loc_estimate": 177,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/libsa/dev.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.libsa.dev",
+  "generated": "2026-07-19T09:49:39+00:00"
+}

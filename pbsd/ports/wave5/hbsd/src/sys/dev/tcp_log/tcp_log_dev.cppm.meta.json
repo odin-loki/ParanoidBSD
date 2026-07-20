@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/tcp_log/tcp_log_dev.c",
+  "wave": "wave5",
+  "loc_estimate": 516,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/tcp_log/tcp_log_dev.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.tcp_log.tcp_log_dev",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

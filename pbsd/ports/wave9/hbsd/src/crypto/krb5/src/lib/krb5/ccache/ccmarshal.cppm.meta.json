@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/ccache/ccmarshal.c",
+  "wave": "wave9",
+  "loc_estimate": 570,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/ccache/ccmarshal.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.ccache.ccmarshal",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

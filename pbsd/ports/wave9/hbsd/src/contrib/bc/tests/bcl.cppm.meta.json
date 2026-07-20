@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bc/tests/bcl.c",
+  "wave": "wave9",
+  "loc_estimate": 382,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bc/tests/bcl.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bc.tests.bcl",
+  "generated": "2026-07-19T09:37:57+00:00"
+}

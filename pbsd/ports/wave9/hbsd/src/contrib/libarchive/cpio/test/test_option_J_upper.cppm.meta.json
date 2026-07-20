@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/cpio/test/test_option_J_upper.c",
+  "wave": "wave9",
+  "loc_estimate": 41,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/cpio/test/test_option_J_upper.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.cpio.test.test_option_j_upper",
+  "generated": "2026-07-19T09:30:39+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/ntpd/refclock_ripencc.c",
+  "wave": "wave9",
+  "loc_estimate": 5255,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/refclock_ripencc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.refclock_ripencc",
+  "generated": "2026-07-19T09:31:08+00:00"
+}

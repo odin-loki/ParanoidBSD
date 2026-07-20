@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwayland/src/client/contrast.cpp",
+  "wave": "wave3",
+  "loc_estimate": 190,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/client/contrast.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.client.contrast",
+  "generated": "2026-07-19T09:30:15+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libc/gen/t_pause.c",
+  "wave": "wave9",
+  "loc_estimate": 114,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libc/gen/t_pause.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libc.gen.t_pause",
+  "generated": "2026-07-19T09:30:56+00:00"
+}

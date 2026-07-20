@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/tests/libntp/run-digests.c",
+  "wave": "wave9",
+  "loc_estimate": 86,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/tests/libntp/run-digests.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.tests.libntp.run_digests",
+  "generated": "2026-07-19T09:31:04+00:00"
+}

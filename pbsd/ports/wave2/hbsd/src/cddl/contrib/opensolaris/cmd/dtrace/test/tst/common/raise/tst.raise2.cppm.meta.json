@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/raise/tst.raise2.c",
+  "wave": "wave2",
+  "loc_estimate": 51,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/raise/tst.raise2.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.cddl.contrib.opensolaris.cmd.dtrace.test.tst.common.raise.tst_raise2",
+  "generated": "2026-07-19T09:04:02+00:00"
+}

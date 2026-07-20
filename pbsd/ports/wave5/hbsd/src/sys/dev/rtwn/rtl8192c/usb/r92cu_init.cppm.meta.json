@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/rtwn/rtl8192c/usb/r92cu_init.c",
+  "wave": "wave5",
+  "loc_estimate": 384,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8192c/usb/r92cu_init.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8192c.usb.r92cu_init",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

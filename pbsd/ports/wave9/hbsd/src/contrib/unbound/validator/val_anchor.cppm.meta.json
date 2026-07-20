@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/validator/val_anchor.c",
+  "wave": "wave9",
+  "loc_estimate": 1403,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/validator/val_anchor.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.validator.val_anchor",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

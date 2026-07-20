@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/ipf/libipf/binprint.c",
+  "wave": "wave2",
+  "loc_estimate": 29,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipf/libipf/binprint.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.ipf.libipf.binprint",
+  "generated": "2026-07-19T08:33:26+00:00"
+}

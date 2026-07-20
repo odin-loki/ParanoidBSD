@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ofed/opensm/complib/cl_statustext.c",
+  "wave": "wave9",
+  "loc_estimate": 71,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/opensm/complib/cl_statustext.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.opensm.complib.cl_statustext",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/IR/Core.cpp",
+  "wave": "wave9",
+  "loc_estimate": 4614,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/IR/Core.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.ir.core",
+  "generated": "2026-07-19T09:31:58+00:00"
+}

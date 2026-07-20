@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/regex/regerror.c",
+  "wave": "wave2",
+  "loc_estimate": 168,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/regex/regerror.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.regex.regerror",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

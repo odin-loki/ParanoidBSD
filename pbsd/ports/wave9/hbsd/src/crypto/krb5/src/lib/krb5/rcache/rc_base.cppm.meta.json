@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/rcache/rc_base.c",
+  "wave": "wave9",
+  "loc_estimate": 200,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/rcache/rc_base.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.rcache.rc_base",
+  "generated": "2026-07-19T09:30:29+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/eli/g_eli_privacy.c",
+  "wave": "wave6",
+  "loc_estimate": 359,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/eli/g_eli_privacy.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.eli.g_eli_privacy",
+  "generated": "2026-07-19T08:30:51+00:00"
+}

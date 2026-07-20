@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/runetype.h",
+  "wave": "wave9",
+  "loc_estimate": 103,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/runetype.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.runetype",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

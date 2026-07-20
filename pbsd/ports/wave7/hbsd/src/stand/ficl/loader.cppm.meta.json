@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/ficl/loader.c",
+  "wave": "wave7",
+  "loc_estimate": 883,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/ficl/loader.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.ficl.loader",
+  "generated": "2026-07-19T09:49:43+00:00"
+}

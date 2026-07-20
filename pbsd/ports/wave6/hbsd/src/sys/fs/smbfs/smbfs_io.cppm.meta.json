@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/smbfs/smbfs_io.c",
+  "wave": "wave6",
+  "loc_estimate": 664,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/smbfs/smbfs_io.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.smbfs.smbfs_io",
+  "generated": "2026-07-19T09:18:58+00:00"
+}

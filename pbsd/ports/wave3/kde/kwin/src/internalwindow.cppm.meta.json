@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/internalwindow.cpp",
+  "wave": "wave3",
+  "loc_estimate": 496,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/internalwindow.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.internalwindow",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

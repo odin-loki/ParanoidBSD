@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libevent/event_iocp.c",
+  "wave": "wave9",
+  "loc_estimate": 294,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libevent/event_iocp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libevent.event_iocp",
+  "generated": "2026-07-19T09:37:40+00:00"
+}

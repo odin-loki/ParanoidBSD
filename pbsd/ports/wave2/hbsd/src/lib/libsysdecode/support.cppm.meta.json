@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libsysdecode/support.c",
+  "wave": "wave2",
+  "loc_estimate": 165,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libsysdecode/support.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libsysdecode.support",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

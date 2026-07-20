@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/pax/pat_rep.c",
+  "wave": "wave2",
+  "loc_estimate": 1032,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/pax/pat_rep.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.pax.pat_rep",
+  "generated": "2026-07-19T09:29:51+00:00"
+}

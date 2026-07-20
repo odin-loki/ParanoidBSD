@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/efi/libefi/efinet.c",
+  "wave": "wave7",
+  "loc_estimate": 466,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/efi/libefi/efinet.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.efi.libefi.efinet",
+  "generated": "2026-07-19T09:49:41+00:00"
+}

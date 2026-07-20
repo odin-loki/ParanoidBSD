@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/t_copy_context.c",
+  "wave": "wave9",
+  "loc_estimate": 157,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/t_copy_context.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.t_copy_context",
+  "generated": "2026-07-19T09:30:29+00:00"
+}

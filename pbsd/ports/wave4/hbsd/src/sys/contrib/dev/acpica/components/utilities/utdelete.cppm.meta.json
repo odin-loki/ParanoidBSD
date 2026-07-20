@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/acpica/components/utilities/utdelete.c",
+  "wave": "wave4",
+  "loc_estimate": 934,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/utilities/utdelete.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.utilities.utdelete",
+  "generated": "2026-07-19T09:29:36+00:00"
+}

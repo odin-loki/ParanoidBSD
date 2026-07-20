@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_llrintl.c",
+  "wave": "wave2",
+  "loc_estimate": 6,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_llrintl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_llrintl",
+  "generated": "2026-07-19T07:47:38+00:00"
+}

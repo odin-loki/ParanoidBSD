@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/secure/lib/libpkgecc/pkg_libecc_rand.c",
+  "wave": "wave9",
+  "loc_estimate": 22,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/secure/lib/libpkgecc/pkg_libecc_rand.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.secure.lib.libpkgecc.pkg_libecc_rand",
+  "generated": "2026-07-19T09:38:14+00:00"
+}

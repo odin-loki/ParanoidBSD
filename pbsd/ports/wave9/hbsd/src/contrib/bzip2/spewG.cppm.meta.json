@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bzip2/spewG.c",
+  "wave": "wave9",
+  "loc_estimate": 54,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bzip2/spewG.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bzip2.spewg",
+  "generated": "2026-07-19T09:38:05+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/iicbus/pmic/act8846.c",
+  "wave": "wave5",
+  "loc_estimate": 261,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iicbus/pmic/act8846.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iicbus.pmic.act8846",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

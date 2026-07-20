@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/archive_write_set_format_xar.c",
+  "wave": "wave9",
+  "loc_estimate": 3700,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/archive_write_set_format_xar.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.archive_write_set_format_xar",
+  "generated": "2026-07-19T09:30:41+00:00"
+}

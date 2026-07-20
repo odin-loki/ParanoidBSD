@@ -1,0 +1,19 @@
+export module pbsd.port.wave2.hbsd.src.usr_sbin.pmc.cmd_pmc_summary;
+
+module;
+extern "C" {
+// Legacy TU symbols — hand-port from hbsd/src/usr.sbin/pmc/cmd_pmc_summary.cc
+// void cmd_pmc_summary_init(void);
+}
+
+import pbsd.core;
+
+/// Auto-generated migration stub — status: stubbed
+/// @pbsd-migration-meta source=hbsd/src/usr.sbin/pmc/cmd_pmc_summary.cc wave=wave2 loc=215
+export namespace pbsd::port::wave2::hbsd::src::usr_sbin::pmc::cmd_pmc_summary {
+
+[[nodiscard]] inline Status migration_status() noexcept {
+    return Status::NotImplemented;
+}
+
+} // namespace pbsd::port::wave2::hbsd::src::usr_sbin::pmc::cmd_pmc_summary

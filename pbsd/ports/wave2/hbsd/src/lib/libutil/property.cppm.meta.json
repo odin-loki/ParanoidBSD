@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libutil/property.c",
+  "wave": "wave2",
+  "loc_estimate": 258,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libutil/property.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libutil.property",
+  "generated": "2026-07-19T07:48:27+00:00"
+}

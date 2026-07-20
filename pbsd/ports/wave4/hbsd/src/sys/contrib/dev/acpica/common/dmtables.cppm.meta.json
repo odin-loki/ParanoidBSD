@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/acpica/common/dmtables.c",
+  "wave": "wave4",
+  "loc_estimate": 619,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/common/dmtables.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.common.dmtables",
+  "generated": "2026-07-19T09:29:36+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/capsicum/syscalls/cap_ioctls_limit.c",
+  "wave": "wave9",
+  "loc_estimate": 466,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/capsicum/syscalls/cap_ioctls_limit.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.capsicum.syscalls.cap_ioctls_limit",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

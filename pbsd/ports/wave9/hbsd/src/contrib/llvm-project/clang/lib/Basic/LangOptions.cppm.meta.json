@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Basic/LangOptions.cpp",
+  "wave": "wave9",
+  "loc_estimate": 244,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Basic/LangOptions.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.basic.langoptions",
+  "generated": "2026-07-19T09:31:19+00:00"
+}

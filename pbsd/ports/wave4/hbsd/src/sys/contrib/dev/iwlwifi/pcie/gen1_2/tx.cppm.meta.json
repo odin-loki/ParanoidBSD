@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/iwlwifi/pcie/gen1_2/tx.c",
+  "wave": "wave4",
+  "loc_estimate": 2697,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/pcie/gen1_2/tx.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.pcie.gen1_2.tx",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

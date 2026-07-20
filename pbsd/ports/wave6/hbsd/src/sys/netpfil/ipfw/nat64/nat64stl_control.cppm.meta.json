@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/ipfw/nat64/nat64stl_control.c",
+  "wave": "wave6",
+  "loc_estimate": 556,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/nat64/nat64stl_control.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.nat64.nat64stl_control",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

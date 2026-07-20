@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/ccapi/test/test_cc_initialize.c",
+  "wave": "wave9",
+  "loc_estimate": 15,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/ccapi/test/test_cc_initialize.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.ccapi.test.test_cc_initialize",
+  "generated": "2026-07-19T09:30:25+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/poly1305/poly1305_base2_44.c",
+  "wave": "wave9",
+  "loc_estimate": 166,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/poly1305/poly1305_base2_44.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.poly1305.poly1305_base2_44",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

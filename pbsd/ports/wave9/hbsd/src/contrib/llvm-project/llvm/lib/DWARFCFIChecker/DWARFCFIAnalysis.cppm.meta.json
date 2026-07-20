@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/DWARFCFIChecker/DWARFCFIAnalysis.cpp",
+  "wave": "wave9",
+  "loc_estimate": 332,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/DWARFCFIChecker/DWARFCFIAnalysis.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.dwarfcfichecker.dwarfcfianalysis",
+  "generated": "2026-07-19T09:31:54+00:00"
+}

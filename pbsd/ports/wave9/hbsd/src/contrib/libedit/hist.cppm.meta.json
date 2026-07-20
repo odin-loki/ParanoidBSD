@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libedit/hist.c",
+  "wave": "wave9",
+  "loc_estimate": 252,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libedit/hist.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libedit.hist",
+  "generated": "2026-07-19T09:37:56+00:00"
+}

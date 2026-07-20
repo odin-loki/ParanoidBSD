@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/InstCombine/InstCombineNegator.cpp",
+  "wave": "wave9",
+  "loc_estimate": 587,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/InstCombine/InstCombineNegator.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.instcombine.instcombinenegator",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

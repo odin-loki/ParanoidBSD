@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kcoreaddons/src/lib/util/kruntimeplatform.cpp",
+  "wave": "wave3",
+  "loc_estimate": 10,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/util/kruntimeplatform.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.util.kruntimeplatform",
+  "generated": "2026-07-19T08:33:26+00:00"
+}

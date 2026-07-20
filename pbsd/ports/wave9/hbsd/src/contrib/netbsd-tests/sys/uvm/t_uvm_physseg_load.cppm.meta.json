@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/sys/uvm/t_uvm_physseg_load.c",
+  "wave": "wave9",
+  "loc_estimate": 740,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/sys/uvm/t_uvm_physseg_load.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.sys.uvm.t_uvm_physseg_load",
+  "generated": "2026-07-19T09:30:59+00:00"
+}

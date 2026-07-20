@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/ec/ec_kmeth.c",
+  "wave": "wave9",
+  "loc_estimate": 336,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/ec/ec_kmeth.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.ec.ec_kmeth",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

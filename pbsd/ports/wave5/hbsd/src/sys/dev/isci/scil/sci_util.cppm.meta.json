@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/isci/scil/sci_util.c",
+  "wave": "wave5",
+  "loc_estimate": 72,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isci/scil/sci_util.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isci.scil.sci_util",
+  "generated": "2026-07-19T07:47:45+00:00"
+}

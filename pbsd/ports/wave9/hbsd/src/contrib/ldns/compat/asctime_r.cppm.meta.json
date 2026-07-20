@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ldns/compat/asctime_r.c",
+  "wave": "wave9",
+  "loc_estimate": 16,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ldns/compat/asctime_r.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ldns.compat.asctime_r",
+  "generated": "2026-07-19T09:37:45+00:00"
+}

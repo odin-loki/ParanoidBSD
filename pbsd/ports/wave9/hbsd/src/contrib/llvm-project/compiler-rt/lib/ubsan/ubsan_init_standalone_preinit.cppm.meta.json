@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/ubsan/ubsan_init_standalone_preinit.cpp",
+  "wave": "wave9",
+  "loc_estimate": 35,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/ubsan/ubsan_init_standalone_preinit.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.ubsan.ubsan_init_standalone_preinit",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

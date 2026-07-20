@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/uzip/g_uzip_zlib.c",
+  "wave": "wave6",
+  "loc_estimate": 115,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/uzip/g_uzip_zlib.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.uzip.g_uzip_zlib",
+  "generated": "2026-07-19T08:30:51+00:00"
+}

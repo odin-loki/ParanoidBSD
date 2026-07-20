@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/kern_ctf.c",
+  "wave": "wave4",
+  "loc_estimate": 345,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_ctf.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_ctf",
+  "generated": "2026-07-19T07:47:45+00:00"
+}

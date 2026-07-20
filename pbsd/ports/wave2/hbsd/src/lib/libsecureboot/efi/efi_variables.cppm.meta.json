@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libsecureboot/efi/efi_variables.c",
+  "wave": "wave2",
+  "loc_estimate": 274,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libsecureboot/efi/efi_variables.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libsecureboot.efi.efi_variables",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/netinet/tcpstream/tcpstream.c",
+  "wave": "wave9",
+  "loc_estimate": 231,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/netinet/tcpstream/tcpstream.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.netinet.tcpstream.tcpstream",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

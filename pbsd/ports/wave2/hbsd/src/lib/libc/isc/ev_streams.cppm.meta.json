@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/isc/ev_streams.c",
+  "wave": "wave2",
+  "loc_estimate": 314,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/isc/ev_streams.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.isc.ev_streams",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

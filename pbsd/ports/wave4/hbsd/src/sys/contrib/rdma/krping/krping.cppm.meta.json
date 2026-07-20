@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/rdma/krping/krping.c",
+  "wave": "wave4",
+  "loc_estimate": 2211,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/rdma/krping/krping.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.rdma.krping.krping",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwindowsystem/tests/backgroundcontrasttest.cpp",
+  "wave": "wave3",
+  "loc_estimate": 237,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/tests/backgroundcontrasttest.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.tests.backgroundcontrasttest",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

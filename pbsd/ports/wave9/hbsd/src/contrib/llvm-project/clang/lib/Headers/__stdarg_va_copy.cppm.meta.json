@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Headers/__stdarg_va_copy.h",
+  "wave": "wave9",
+  "loc_estimate": 12,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Headers/__stdarg_va_copy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.headers.__stdarg_va_copy",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

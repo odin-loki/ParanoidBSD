@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcsh/tc.alloc.c",
+  "wave": "wave9",
+  "loc_estimate": 667,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcsh/tc.alloc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcsh.tc_alloc",
+  "generated": "2026-07-19T09:37:47+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/ncsw/Peripherals/FM/SP/fm_sp.c",
+  "wave": "wave4",
+  "loc_estimate": 757,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ncsw/Peripherals/FM/SP/fm_sp.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ncsw.peripherals.fm.sp.fm_sp",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

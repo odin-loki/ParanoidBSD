@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/ath/ath_hal/ar9300/ar9300_stub_funcs.c",
+  "wave": "wave4",
+  "loc_estimate": 1257,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/ath/ath_hal/ar9300/ar9300_stub_funcs.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.ath.ath_hal.ar9300.ar9300_stub_funcs",
+  "generated": "2026-07-19T09:29:36+00:00"
+}

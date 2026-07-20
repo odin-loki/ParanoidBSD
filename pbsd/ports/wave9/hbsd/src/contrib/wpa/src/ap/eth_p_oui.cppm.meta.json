@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/ap/eth_p_oui.c",
+  "wave": "wave9",
+  "loc_estimate": 191,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/ap/eth_p_oui.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.ap.eth_p_oui",
+  "generated": "2026-07-19T09:31:01+00:00"
+}

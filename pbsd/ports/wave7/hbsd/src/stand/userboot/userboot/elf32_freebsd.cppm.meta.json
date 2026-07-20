@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/userboot/userboot/elf32_freebsd.c",
+  "wave": "wave7",
+  "loc_estimate": 111,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/userboot/userboot/elf32_freebsd.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.userboot.userboot.elf32_freebsd",
+  "generated": "2026-07-19T09:49:38+00:00"
+}

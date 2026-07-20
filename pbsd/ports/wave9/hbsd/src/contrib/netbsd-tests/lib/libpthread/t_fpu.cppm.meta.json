@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libpthread/t_fpu.c",
+  "wave": "wave9",
+  "loc_estimate": 152,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libpthread/t_fpu.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libpthread.t_fpu",
+  "generated": "2026-07-19T09:30:57+00:00"
+}

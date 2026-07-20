@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/vm/vm_extern.h",
+  "wave": "wave4",
+  "loc_estimate": 171,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/vm/vm_extern.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.vm.vm_extern",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/netinet/libalias/1_instance.c",
+  "wave": "wave9",
+  "loc_estimate": 119,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/netinet/libalias/1_instance.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.netinet.libalias._1_instance",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

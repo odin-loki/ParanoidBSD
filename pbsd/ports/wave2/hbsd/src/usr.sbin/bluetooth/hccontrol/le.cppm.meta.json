@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/bluetooth/hccontrol/le.c",
+  "wave": "wave2",
+  "loc_estimate": 1370,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bluetooth/hccontrol/le.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bluetooth.hccontrol.le",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

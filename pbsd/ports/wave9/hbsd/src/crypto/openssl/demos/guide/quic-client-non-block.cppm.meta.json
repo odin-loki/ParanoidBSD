@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/demos/guide/quic-client-non-block.c",
+  "wave": "wave9",
+  "loc_estimate": 432,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/demos/guide/quic-client-non-block.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.demos.guide.quic_client_non_block",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

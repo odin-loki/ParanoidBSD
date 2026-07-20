@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_attach.c",
+  "wave": "wave5",
+  "loc_estimate": 1073,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_attach.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar5416.ar5416_attach",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

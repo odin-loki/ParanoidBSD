@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/crypto/chacha20/chacha-sw.c",
+  "wave": "wave4",
+  "loc_estimate": 66,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/chacha20/chacha-sw.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.chacha20.chacha_sw",
+  "generated": "2026-07-19T09:31:10+00:00"
+}

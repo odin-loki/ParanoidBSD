@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/rtld-elf/tests/libval/libval.c",
+  "wave": "wave2",
+  "loc_estimate": 26,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rtld-elf/tests/libval/libval.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.rtld_elf.tests.libval.libval",
+  "generated": "2026-07-19T08:41:19+00:00"
+}

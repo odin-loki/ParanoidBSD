@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/security/mac/mac_audit.c",
+  "wave": "wave4",
+  "loc_estimate": 140,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac/mac_audit.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac.mac_audit",
+  "generated": "2026-07-19T09:04:04+00:00"
+}

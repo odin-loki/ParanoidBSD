@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/aio/aiop/aiop.c",
+  "wave": "wave9",
+  "loc_estimate": 224,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/aio/aiop/aiop.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.aio.aiop.aiop",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

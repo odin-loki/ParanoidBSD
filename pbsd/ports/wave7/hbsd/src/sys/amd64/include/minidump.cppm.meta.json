@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/include/minidump.h",
+  "wave": "wave7",
+  "loc_estimate": 47,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/include/minidump.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.include.minidump",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

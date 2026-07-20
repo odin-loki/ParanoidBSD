@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.bin/posixshmcontrol/posixshmcontrol.c",
+  "wave": "wave2",
+  "loc_estimate": 592,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/posixshmcontrol/posixshmcontrol.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_bin.posixshmcontrol.posixshmcontrol",
+  "generated": "2026-07-19T09:30:22+00:00"
+}

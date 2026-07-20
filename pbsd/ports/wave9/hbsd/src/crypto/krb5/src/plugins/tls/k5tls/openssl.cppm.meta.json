@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/plugins/tls/k5tls/openssl.c",
+  "wave": "wave9",
+  "loc_estimate": 585,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/tls/k5tls/openssl.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.tls.k5tls.openssl",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

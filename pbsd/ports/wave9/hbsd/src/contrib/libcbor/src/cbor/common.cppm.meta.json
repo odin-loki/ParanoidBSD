@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libcbor/src/cbor/common.c",
+  "wave": "wave9",
+  "loc_estimate": 167,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libcbor/src/cbor/common.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libcbor.src.cbor.common",
+  "generated": "2026-07-19T09:37:44+00:00"
+}

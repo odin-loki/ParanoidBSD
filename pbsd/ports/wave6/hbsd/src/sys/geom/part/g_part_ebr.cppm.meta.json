@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/part/g_part_ebr.c",
+  "wave": "wave6",
+  "loc_estimate": 711,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/part/g_part_ebr.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.part.g_part_ebr",
+  "generated": "2026-07-19T09:29:22+00:00"
+}

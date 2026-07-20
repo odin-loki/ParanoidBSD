@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/mfiutil/mfi_show.c",
+  "wave": "wave2",
+  "loc_estimate": 791,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/mfiutil/mfi_show.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.mfiutil.mfi_show",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

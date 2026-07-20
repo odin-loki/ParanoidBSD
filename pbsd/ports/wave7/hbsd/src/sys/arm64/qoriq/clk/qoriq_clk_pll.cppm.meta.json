@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/qoriq/clk/qoriq_clk_pll.c",
+  "wave": "wave7",
+  "loc_estimate": 150,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/qoriq/clk/qoriq_clk_pll.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.qoriq.clk.qoriq_clk_pll",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

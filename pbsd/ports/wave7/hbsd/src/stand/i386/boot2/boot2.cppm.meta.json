@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/i386/boot2/boot2.c",
+  "wave": "wave7",
+  "loc_estimate": 659,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/i386/boot2/boot2.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.i386.boot2.boot2",
+  "generated": "2026-07-19T09:49:42+00:00"
+}

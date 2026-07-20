@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/chio/defs.h",
+  "wave": "wave2",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/chio/defs.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.chio.defs",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

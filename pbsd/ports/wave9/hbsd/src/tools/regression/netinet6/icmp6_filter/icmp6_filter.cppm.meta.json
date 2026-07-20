@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/netinet6/icmp6_filter/icmp6_filter.c",
+  "wave": "wave9",
+  "loc_estimate": 127,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/netinet6/icmp6_filter/icmp6_filter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.netinet6.icmp6_filter.icmp6_filter",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

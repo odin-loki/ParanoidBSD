@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libcbor/src/cbor/bytestrings.c",
+  "wave": "wave9",
+  "loc_estimate": 119,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libcbor/src/cbor/bytestrings.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libcbor.src.cbor.bytestrings",
+  "generated": "2026-07-19T09:37:44+00:00"
+}

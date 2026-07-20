@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/keyboard/types.h",
+  "wave": "wave3",
+  "loc_estimate": 20,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/keyboard/types.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.keyboard.types",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Core/DemangledNameInfo.cpp",
+  "wave": "wave9",
+  "loc_estimate": 230,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Core/DemangledNameInfo.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.core.demanglednameinfo",
+  "generated": "2026-07-19T09:31:40+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libfido2/openbsd-compat/endian_win32.c",
+  "wave": "wave9",
+  "loc_estimate": 52,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libfido2/openbsd-compat/endian_win32.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libfido2.openbsd_compat.endian_win32",
+  "generated": "2026-07-19T09:37:34+00:00"
+}

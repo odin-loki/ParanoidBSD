@@ -1,0 +1,16 @@
+{
+  "KPlugin": {
+    "Category": "Appearance",
+    "Description": "Windows 7 Aero glass blur tuning for KWin — PBSD tint, saturation, and panel opacity",
+    "EnabledByDefault": true,
+    "License": "GPL-2.0-or-later",
+    "Name": "PBSD Aero Blur",
+    "Version": "0.4.0",
+    "Authors": [{"Name": "Odin Loch", "Email": "pbsd@local"}]
+  },
+  "org.kde.kwin.effect": {
+    "enabledByDefaultMethod": true
+  },
+  "X-KDE-Ordering": 20,
+  "X-KDE-ConfigModule": "kwin_pbsd_aero_blur_config"
+}

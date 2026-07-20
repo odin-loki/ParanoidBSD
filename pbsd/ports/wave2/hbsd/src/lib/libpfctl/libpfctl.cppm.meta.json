@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libpfctl/libpfctl.c",
+  "wave": "wave2",
+  "loc_estimate": 3633,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libpfctl/libpfctl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libpfctl.libpfctl",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

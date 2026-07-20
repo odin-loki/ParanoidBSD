@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="200" viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="msg-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5082c8"/>
+      <stop offset="0.5" stop-color="#3a6cb0"/>
+      <stop offset="1" stop-color="#2a5088"/>
+    </linearGradient>
+    <linearGradient id="msg-shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="400" height="200" rx="8" fill="url(#msg-bg)"/>
+  <rect x="1" y="1" width="398" height="60" rx="7" fill="url(#msg-shine)"/>
+  <rect x="0" y="0" width="400" height="1" fill="#b8d8ff" fill-opacity="0.55"/>
+  <rect x="280" y="150" width="100" height="36" rx="4" fill="#78a8e8" stroke="#2a5088"/>
+</svg>

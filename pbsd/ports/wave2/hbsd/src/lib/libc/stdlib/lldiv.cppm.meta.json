@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdlib/lldiv.c",
+  "wave": "wave2",
+  "loc_estimate": 41,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdlib/lldiv.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdlib.lldiv",
+  "generated": "2026-07-19T08:38:06+00:00"
+}

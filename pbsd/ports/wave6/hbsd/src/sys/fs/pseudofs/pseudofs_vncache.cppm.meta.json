@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/pseudofs/pseudofs_vncache.c",
+  "wave": "wave6",
+  "loc_estimate": 362,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/pseudofs/pseudofs_vncache.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.pseudofs.pseudofs_vncache",
+  "generated": "2026-07-19T09:18:58+00:00"
+}

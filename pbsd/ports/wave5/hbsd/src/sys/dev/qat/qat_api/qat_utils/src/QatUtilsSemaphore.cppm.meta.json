@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/qat_api/qat_utils/src/QatUtilsSemaphore.c",
+  "wave": "wave5",
+  "loc_estimate": 168,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/qat_utils/src/QatUtilsSemaphore.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.qat_utils.src.qatutilssemaphore",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

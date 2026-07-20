@@ -1,0 +1,19 @@
+export module pbsd.port.wave2.hbsd.src.usr_bin.whois.whois;
+
+module;
+extern "C" {
+// Legacy TU symbols — hand-port from hbsd/src/usr.bin/whois/whois.c
+// void whois_init(void);
+}
+
+import pbsd.core;
+
+/// Auto-generated migration stub — status: stubbed
+/// @pbsd-migration-meta source=hbsd/src/usr.bin/whois/whois.c wave=wave2 loc=610
+export namespace pbsd::port::wave2::hbsd::src::usr_bin::whois::whois {
+
+[[nodiscard]] inline Status migration_status() noexcept {
+    return Status::NotImplemented;
+}
+
+} // namespace pbsd::port::wave2::hbsd::src::usr_bin::whois::whois

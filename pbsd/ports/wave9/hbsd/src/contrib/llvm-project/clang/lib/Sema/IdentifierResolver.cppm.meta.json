@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Sema/IdentifierResolver.cpp",
+  "wave": "wave9",
+  "loc_estimate": 440,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Sema/IdentifierResolver.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.sema.identifierresolver",
+  "generated": "2026-07-19T09:31:20+00:00"
+}

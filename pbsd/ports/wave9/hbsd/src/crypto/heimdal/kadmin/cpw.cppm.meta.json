@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/kadmin/cpw.c",
+  "wave": "wave9",
+  "loc_estimate": 182,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/kadmin/cpw.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.kadmin.cpw",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/ssl/quic/quic_record_shared.c",
+  "wave": "wave9",
+  "loc_estimate": 510,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/ssl/quic/quic_record_shared.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.ssl.quic.quic_record_shared",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

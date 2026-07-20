@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/netinet/tcp_md5_getsockopt.c",
+  "wave": "wave9",
+  "loc_estimate": 135,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/netinet/tcp_md5_getsockopt.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.netinet.tcp_md5_getsockopt",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

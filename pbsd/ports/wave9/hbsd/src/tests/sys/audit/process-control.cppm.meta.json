@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/audit/process-control.c",
+  "wave": "wave9",
+  "loc_estimate": 1662,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/audit/process-control.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.audit.process_control",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

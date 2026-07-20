@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/kerberos5/lib/libroken/fbsd_ossl_provider_load.c",
+  "wave": "wave9",
+  "loc_estimate": 73,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/kerberos5/lib/libroken/fbsd_ossl_provider_load.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.kerberos5.lib.libroken.fbsd_ossl_provider_load",
+  "generated": "2026-07-19T09:38:11+00:00"
+}

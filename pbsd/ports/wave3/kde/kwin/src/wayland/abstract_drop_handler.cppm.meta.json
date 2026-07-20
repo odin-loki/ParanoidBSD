@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/wayland/abstract_drop_handler.cpp",
+  "wave": "wave3",
+  "loc_estimate": 19,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/wayland/abstract_drop_handler.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.wayland.abstract_drop_handler",
+  "generated": "2026-07-19T08:33:26+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Driver/ToolChains/CommonArgs.cpp",
+  "wave": "wave9",
+  "loc_estimate": 3461,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Driver/ToolChains/CommonArgs.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.driver.toolchains.commonargs",
+  "generated": "2026-07-19T09:31:22+00:00"
+}

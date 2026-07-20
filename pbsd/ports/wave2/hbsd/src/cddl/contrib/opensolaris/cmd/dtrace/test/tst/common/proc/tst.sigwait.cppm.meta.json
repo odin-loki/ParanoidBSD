@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/proc/tst.sigwait.c",
+  "wave": "wave2",
+  "loc_estimate": 76,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/proc/tst.sigwait.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.cddl.contrib.opensolaris.cmd.dtrace.test.tst.common.proc.tst_sigwait",
+  "generated": "2026-07-19T09:04:04+00:00"
+}

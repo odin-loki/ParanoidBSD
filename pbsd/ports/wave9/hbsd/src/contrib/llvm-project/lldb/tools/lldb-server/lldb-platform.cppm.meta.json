@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/tools/lldb-server/lldb-platform.cpp",
+  "wave": "wave9",
+  "loc_estimate": 620,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/tools/lldb-server/lldb-platform.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.tools.lldb_server.lldb_platform",
+  "generated": "2026-07-19T09:31:42+00:00"
+}

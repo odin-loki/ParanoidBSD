@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/openpam/lib/libpam/pam_sm_authenticate_secondary.c",
+  "wave": "wave9",
+  "loc_estimate": 70,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openpam/lib/libpam/pam_sm_authenticate_secondary.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.openpam.lib.libpam.pam_sm_authenticate_secondary",
+  "generated": "2026-07-19T09:37:39+00:00"
+}

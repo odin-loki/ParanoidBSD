@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/iwlwifi/mld/tests/agg.c",
+  "wave": "wave4",
+  "loc_estimate": 663,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/mld/tests/agg.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.mld.tests.agg",
+  "generated": "2026-07-19T09:29:36+00:00"
+}

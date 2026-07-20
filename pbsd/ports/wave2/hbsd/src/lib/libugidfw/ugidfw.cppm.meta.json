@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libugidfw/ugidfw.c",
+  "wave": "wave2",
+  "loc_estimate": 1331,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libugidfw/ugidfw.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libugidfw.ugidfw",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

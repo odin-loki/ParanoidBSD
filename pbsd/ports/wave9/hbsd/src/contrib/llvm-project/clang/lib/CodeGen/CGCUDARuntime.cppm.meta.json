@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/CodeGen/CGCUDARuntime.cpp",
+  "wave": "wave9",
+  "loc_estimate": 45,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/CodeGen/CGCUDARuntime.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.codegen.cgcudaruntime",
+  "generated": "2026-07-19T09:31:17+00:00"
+}

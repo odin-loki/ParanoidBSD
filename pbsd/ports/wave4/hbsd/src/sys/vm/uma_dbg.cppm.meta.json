@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/vm/uma_dbg.c",
+  "wave": "wave4",
+  "loc_estimate": 244,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/vm/uma_dbg.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.vm.uma_dbg",
+  "generated": "2026-07-19T08:30:34+00:00"
+}

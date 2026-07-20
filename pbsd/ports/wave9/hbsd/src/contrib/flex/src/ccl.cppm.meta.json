@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/flex/src/ccl.c",
+  "wave": "wave9",
+  "loc_estimate": 305,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/flex/src/ccl.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.flex.src.ccl",
+  "generated": "2026-07-19T09:38:00+00:00"
+}

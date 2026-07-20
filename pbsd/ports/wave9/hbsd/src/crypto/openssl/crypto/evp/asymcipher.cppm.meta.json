@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/evp/asymcipher.c",
+  "wave": "wave9",
+  "loc_estimate": 595,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/evp/asymcipher.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.evp.asymcipher",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/fuse/fuse_file.c",
+  "wave": "wave6",
+  "loc_estimate": 405,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/fuse/fuse_file.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.fuse.fuse_file",
+  "generated": "2026-07-19T09:18:58+00:00"
+}

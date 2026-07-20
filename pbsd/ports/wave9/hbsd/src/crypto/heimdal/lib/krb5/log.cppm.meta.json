@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/krb5/log.c",
+  "wave": "wave9",
+  "loc_estimate": 516,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/log.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.log",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

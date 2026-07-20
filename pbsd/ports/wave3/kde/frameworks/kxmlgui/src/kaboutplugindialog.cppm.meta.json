@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kxmlgui/src/kaboutplugindialog.cpp",
+  "wave": "wave3",
+  "loc_estimate": 111,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/src/kaboutplugindialog.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.src.kaboutplugindialog",
+  "generated": "2026-07-19T09:19:13+00:00"
+}

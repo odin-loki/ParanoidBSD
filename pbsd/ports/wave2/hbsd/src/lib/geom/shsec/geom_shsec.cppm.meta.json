@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/geom/shsec/geom_shsec.c",
+  "wave": "wave2",
+  "loc_estimate": 259,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/geom/shsec/geom_shsec.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.geom.shsec.geom_shsec",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

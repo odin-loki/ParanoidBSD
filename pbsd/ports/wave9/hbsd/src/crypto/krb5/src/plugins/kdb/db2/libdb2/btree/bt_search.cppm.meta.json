@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/btree/bt_search.c",
+  "wave": "wave9",
+  "loc_estimate": 286,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/btree/bt_search.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.kdb.db2.libdb2.btree.bt_search",
+  "generated": "2026-07-19T09:30:31+00:00"
+}

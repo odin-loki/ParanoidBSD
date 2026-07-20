@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netgraph/bluetooth/l2cap/ng_l2cap_prse.h",
+  "wave": "wave6",
+  "loc_estimate": 87,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netgraph/bluetooth/l2cap/ng_l2cap_prse.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netgraph.bluetooth.l2cap.ng_l2cap_prse",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

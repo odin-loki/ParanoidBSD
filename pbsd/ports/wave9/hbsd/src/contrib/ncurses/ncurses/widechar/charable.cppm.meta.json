@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/widechar/charable.c",
+  "wave": "wave9",
+  "loc_estimate": 84,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/widechar/charable.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.widechar.charable",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

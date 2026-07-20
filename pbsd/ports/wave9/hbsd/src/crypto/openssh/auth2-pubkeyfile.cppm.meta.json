@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/auth2-pubkeyfile.c",
+  "wave": "wave9",
+  "loc_estimate": 500,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/auth2-pubkeyfile.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.auth2_pubkeyfile",
+  "generated": "2026-07-19T09:37:20+00:00"
+}

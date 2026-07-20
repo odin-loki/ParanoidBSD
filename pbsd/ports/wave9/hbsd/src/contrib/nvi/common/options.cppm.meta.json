@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/nvi/common/options.c",
+  "wave": "wave9",
+  "loc_estimate": 1159,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/nvi/common/options.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.nvi.common.options",
+  "generated": "2026-07-19T09:37:35+00:00"
+}

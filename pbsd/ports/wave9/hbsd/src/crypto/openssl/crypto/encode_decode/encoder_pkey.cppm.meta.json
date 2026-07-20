@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/encode_decode/encoder_pkey.c",
+  "wave": "wave9",
+  "loc_estimate": 408,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/encode_decode/encoder_pkey.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.encode_decode.encoder_pkey",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/libunwind/src/Unwind_AIXExtras.cpp",
+  "wave": "wave9",
+  "loc_estimate": 63,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libunwind/src/Unwind_AIXExtras.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libunwind.src.unwind_aixextras",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

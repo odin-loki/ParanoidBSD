@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/gui/kemailclientlauncherjob.cpp",
+  "wave": "wave3",
+  "loc_estimate": 189,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/gui/kemailclientlauncherjob.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.gui.kemailclientlauncherjob",
+  "generated": "2026-07-19T09:30:15+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/krb5/cred_store.c",
+  "wave": "wave9",
+  "loc_estimate": 50,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/krb5/cred_store.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.krb5.cred_store",
+  "generated": "2026-07-19T09:30:25+00:00"
+}

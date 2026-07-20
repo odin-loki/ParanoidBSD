@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/net80211/ieee80211_monitor.c",
+  "wave": "wave6",
+  "loc_estimate": 137,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/net80211/ieee80211_monitor.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.net80211.ieee80211_monitor",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

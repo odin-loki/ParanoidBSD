@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/hx509/ks_keychain.c",
+  "wave": "wave9",
+  "loc_estimate": 604,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/hx509/ks_keychain.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.hx509.ks_keychain",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

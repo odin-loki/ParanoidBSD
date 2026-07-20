@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/e1000/e1000_api.c",
+  "wave": "wave5",
+  "loc_estimate": 1451,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/e1000/e1000_api.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.e1000.e1000_api",
+  "generated": "2026-07-19T08:29:55+00:00"
+}

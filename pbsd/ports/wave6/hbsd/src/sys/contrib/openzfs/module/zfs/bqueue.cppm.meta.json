@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/bqueue.c",
+  "wave": "wave6",
+  "loc_estimate": 176,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/bqueue.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.bqueue",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

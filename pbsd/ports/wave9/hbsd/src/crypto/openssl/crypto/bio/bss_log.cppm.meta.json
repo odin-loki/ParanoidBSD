@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/bio/bss_log.c",
+  "wave": "wave9",
+  "loc_estimate": 377,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/bio/bss_log.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.bio.bss_log",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

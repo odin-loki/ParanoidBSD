@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/vm/uma_align_mask.h",
+  "wave": "wave4",
+  "loc_estimate": 36,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/vm/uma_align_mask.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.vm.uma_align_mask",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

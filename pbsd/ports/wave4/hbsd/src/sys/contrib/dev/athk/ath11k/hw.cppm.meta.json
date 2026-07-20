@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/athk/ath11k/hw.c",
+  "wave": "wave4",
+  "loc_estimate": 2875,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/athk/ath11k/hw.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.athk.ath11k.hw",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

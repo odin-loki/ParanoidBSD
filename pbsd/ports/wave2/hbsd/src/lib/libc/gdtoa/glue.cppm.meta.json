@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/gdtoa/glue.c",
+  "wave": "wave2",
+  "loc_estimate": 11,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gdtoa/glue.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gdtoa.glue",
+  "generated": "2026-07-19T08:29:00+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/cpuset/cpuset.c",
+  "wave": "wave2",
+  "loc_estimate": 326,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/cpuset/cpuset.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.cpuset.cpuset",
+  "generated": "2026-07-19T09:29:51+00:00"
+}

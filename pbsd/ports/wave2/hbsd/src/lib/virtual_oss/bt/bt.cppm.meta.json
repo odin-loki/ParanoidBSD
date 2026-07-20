@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/virtual_oss/bt/bt.c",
+  "wave": "wave2",
+  "loc_estimate": 1061,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/virtual_oss/bt/bt.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.virtual_oss.bt.bt",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

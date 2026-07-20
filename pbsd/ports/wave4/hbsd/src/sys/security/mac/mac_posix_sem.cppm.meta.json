@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/security/mac/mac_posix_sem.c",
+  "wave": "wave4",
+  "loc_estimate": 229,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac/mac_posix_sem.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac.mac_posix_sem",
+  "generated": "2026-07-19T09:04:05+00:00"
+}

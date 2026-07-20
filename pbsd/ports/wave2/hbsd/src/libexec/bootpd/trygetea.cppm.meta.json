@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/bootpd/trygetea.c",
+  "wave": "wave2",
+  "loc_estimate": 53,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/bootpd/trygetea.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.bootpd.trygetea",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

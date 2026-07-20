@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/os/freebsd/spl/spl_kmem.c",
+  "wave": "wave6",
+  "loc_estimate": 342,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/os/freebsd/spl/spl_kmem.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.os.freebsd.spl.spl_kmem",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/rc5/rc5_skey.c",
+  "wave": "wave9",
+  "loc_estimate": 71,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/rc5/rc5_skey.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.rc5.rc5_skey",
+  "generated": "2026-07-19T09:30:03+00:00"
+}

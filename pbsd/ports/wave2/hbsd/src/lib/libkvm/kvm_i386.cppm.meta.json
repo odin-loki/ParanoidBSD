@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libkvm/kvm_i386.c",
+  "wave": "wave2",
+  "loc_estimate": 425,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libkvm/kvm_i386.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libkvm.kvm_i386",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

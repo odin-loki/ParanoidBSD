@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/test/radix/quic_bindings.c",
+  "wave": "wave9",
+  "loc_estimate": 845,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/radix/quic_bindings.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.radix.quic_bindings",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

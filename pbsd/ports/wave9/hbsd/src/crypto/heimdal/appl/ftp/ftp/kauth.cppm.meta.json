@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/appl/ftp/ftp/kauth.c",
+  "wave": "wave9",
+  "loc_estimate": 57,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/appl/ftp/ftp/kauth.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.appl.ftp.ftp.kauth",
+  "generated": "2026-07-19T09:30:34+00:00"
+}

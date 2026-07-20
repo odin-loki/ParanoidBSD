@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/gen/getgrent.c",
+  "wave": "wave2",
+  "loc_estimate": 1575,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/getgrent.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.getgrent",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

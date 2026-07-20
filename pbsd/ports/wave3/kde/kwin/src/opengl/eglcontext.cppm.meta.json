@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/opengl/eglcontext.cpp",
+  "wave": "wave3",
+  "loc_estimate": 682,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/opengl/eglcontext.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.opengl.eglcontext",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/iavf/iavf_vc_iflib.c",
+  "wave": "wave5",
+  "loc_estimate": 177,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iavf/iavf_vc_iflib.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iavf.iavf_vc_iflib",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

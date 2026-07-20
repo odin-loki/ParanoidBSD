@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/mediatek/mt76/mt792x_dma.c",
+  "wave": "wave4",
+  "loc_estimate": 375,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/mediatek/mt76/mt792x_dma.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.mediatek.mt76.mt792x_dma",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

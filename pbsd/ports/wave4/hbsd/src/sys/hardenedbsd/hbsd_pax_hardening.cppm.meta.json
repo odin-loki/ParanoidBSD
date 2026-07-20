@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/hardenedbsd/hbsd_pax_hardening.c",
+  "wave": "wave4",
+  "loc_estimate": 497,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/hardenedbsd/hbsd_pax_hardening.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.hardenedbsd.hbsd_pax_hardening",
+  "generated": "2026-07-19T09:31:13+00:00"
+}

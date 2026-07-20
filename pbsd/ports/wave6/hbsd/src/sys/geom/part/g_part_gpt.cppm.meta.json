@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/part/g_part_gpt.c",
+  "wave": "wave6",
+  "loc_estimate": 1499,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/part/g_part_gpt.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.part.g_part_gpt",
+  "generated": "2026-07-19T09:29:22+00:00"
+}

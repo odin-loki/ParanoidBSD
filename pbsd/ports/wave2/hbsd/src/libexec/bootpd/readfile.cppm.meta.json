@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/bootpd/readfile.c",
+  "wave": "wave2",
+  "loc_estimate": 2035,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/bootpd/readfile.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.bootpd.readfile",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

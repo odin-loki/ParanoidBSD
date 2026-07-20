@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/opencsd/decoder/source/mem_acc/trc_mem_acc_mapper.cpp",
+  "wave": "wave9",
+  "loc_estimate": 307,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/mem_acc/trc_mem_acc_mapper.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.mem_acc.trc_mem_acc_mapper",
+  "generated": "2026-07-19T09:37:48+00:00"
+}

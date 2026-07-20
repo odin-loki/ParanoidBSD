@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/sh/mystring.c",
+  "wave": "wave2",
+  "loc_estimate": 92,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/sh/mystring.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.sh.mystring",
+  "generated": "2026-07-19T08:41:24+00:00"
+}

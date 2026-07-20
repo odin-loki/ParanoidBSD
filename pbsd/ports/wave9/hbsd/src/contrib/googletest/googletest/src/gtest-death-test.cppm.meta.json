@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/googletest/googletest/src/gtest-death-test.cc",
+  "wave": "wave9",
+  "loc_estimate": 1587,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/googletest/googletest/src/gtest-death-test.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.googletest.googletest.src.gtest_death_test",
+  "generated": "2026-07-19T09:37:38+00:00"
+}

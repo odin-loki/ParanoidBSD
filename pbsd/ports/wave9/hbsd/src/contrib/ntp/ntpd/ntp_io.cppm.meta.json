@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/ntpd/ntp_io.c",
+  "wave": "wave9",
+  "loc_estimate": 4944,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/ntp_io.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.ntp_io",
+  "generated": "2026-07-19T09:31:08+00:00"
+}

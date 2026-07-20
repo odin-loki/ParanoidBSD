@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/vm/vm.h",
+  "wave": "wave4",
+  "loc_estimate": 184,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/vm/vm.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.vm.vm",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

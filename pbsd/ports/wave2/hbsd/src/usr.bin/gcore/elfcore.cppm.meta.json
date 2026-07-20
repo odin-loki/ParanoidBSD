@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.bin/gcore/elfcore.c",
+  "wave": "wave2",
+  "loc_estimate": 888,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/gcore/elfcore.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_bin.gcore.elfcore",
+  "generated": "2026-07-19T09:30:22+00:00"
+}

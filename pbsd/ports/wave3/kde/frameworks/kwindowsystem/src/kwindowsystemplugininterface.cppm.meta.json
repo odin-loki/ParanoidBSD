@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwindowsystem/src/kwindowsystemplugininterface.cpp",
+  "wave": "wave3",
+  "loc_estimate": 38,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/src/kwindowsystemplugininterface.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.src.kwindowsystemplugininterface",
+  "generated": "2026-07-19T07:48:20+00:00"
+}

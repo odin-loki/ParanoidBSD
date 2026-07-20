@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/bhnd/nvram/bhnd_nvram_value_fmts.c",
+  "wave": "wave5",
+  "loc_estimate": 1047,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/bhnd/nvram/bhnd_nvram_value_fmts.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.bhnd.nvram.bhnd_nvram_value_fmts",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/igmp.c",
+  "wave": "wave6",
+  "loc_estimate": 3733,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/igmp.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.igmp",
+  "generated": "2026-07-19T09:29:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/hx509/peer.c",
+  "wave": "wave9",
+  "loc_estimate": 237,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/hx509/peer.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.hx509.peer",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/rockchip/rk3399_emmcphy.c",
+  "wave": "wave7",
+  "loc_estimate": 337,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/rockchip/rk3399_emmcphy.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.rockchip.rk3399_emmcphy",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

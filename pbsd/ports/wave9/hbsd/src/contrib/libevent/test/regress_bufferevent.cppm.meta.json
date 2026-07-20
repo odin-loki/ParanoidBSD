@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libevent/test/regress_bufferevent.c",
+  "wave": "wave9",
+  "loc_estimate": 1467,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libevent/test/regress_bufferevent.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libevent.test.regress_bufferevent",
+  "generated": "2026-07-19T09:37:40+00:00"
+}

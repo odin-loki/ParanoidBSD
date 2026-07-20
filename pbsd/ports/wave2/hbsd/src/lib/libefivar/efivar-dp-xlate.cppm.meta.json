@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libefivar/efivar-dp-xlate.c",
+  "wave": "wave2",
+  "loc_estimate": 778,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libefivar/efivar-dp-xlate.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libefivar.efivar_dp_xlate",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

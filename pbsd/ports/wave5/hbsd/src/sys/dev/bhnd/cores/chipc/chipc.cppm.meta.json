@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/bhnd/cores/chipc/chipc.c",
+  "wave": "wave5",
+  "loc_estimate": 1389,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/bhnd/cores/chipc/chipc.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.bhnd.cores.chipc.chipc",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

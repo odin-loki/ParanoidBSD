@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/net80211/w00t/expand/expand.c",
+  "wave": "wave9",
+  "loc_estimate": 466,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/net80211/w00t/expand/expand.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.net80211.w00t.expand.expand",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

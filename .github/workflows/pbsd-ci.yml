@@ -1,0 +1,112 @@
+name: PBSD CI
+
+on:
+  push:
+    paths:
+      - 'pbsd/**'
+      - 'tools/**'
+      - 'docs/migration/**'
+      - 'docs/specs/ANALYSER.md'
+      - '.clang-tidy'
+      - '.github/workflows/pbsd-ci.yml'
+  pull_request:
+    paths:
+      - 'pbsd/**'
+      - 'tools/**'
+      - 'docs/migration/**'
+      - 'docs/specs/ANALYSER.md'
+      - '.clang-tidy'
+      - '.github/workflows/pbsd-ci.yml'
+
+jobs:
+  build-and-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build clang clang-tidy python3
+
+      - name: Module + stub counts
+        run: python3 tools/count_modules.py
+
+      - name: Sync conversion ledgers
+        run: python3 tools/mark_converted.py --sync
+
+      - name: Configure (L3 thread-safety flags via CMake)
+        run: |
+          cmake -S pbsd -B build -G Ninja \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - name: Build modules
+        run: |
+          cmake --build build -j$(nproc)
+          cmake --build build --target pbsd_kernel pbsd_userland pbsd_bifrost pbsd_si_harness
+
+      - name: Test SI harness
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Migration batch progress summary
+        run: |
+          python3 tools/convert_c_batch.py --report
+          python3 - <<'PY'
+import json
+from pathlib import Path
+p = Path("docs/migration/batch_progress.json")
+data = json.loads(p.read_text())
+print("=== batch_progress.json ===")
+for wave, stats in sorted(data.get("waves", {}).items()):
+    print(f"{wave}: converted={stats.get('converted',0)} stubbed={stats.get('stubbed',0)} pending={stats.get('pending',0)} total={stats.get('total',0)}")
+PY
+
+      - name: Inventory summary by wave
+        run: python3 tools/sum_inventory.py
+
+      - name: L1 — clang-tidy (WarningsAsErrors)
+        run: |
+          clang-tidy -p build \
+            pbsd/handles/pbsd.handles.cppm \
+            pbsd/bifrost/pbsd.bifrost.cppm \
+            pbsd/bifrost/pbsd.bifrost.virtio.cppm \
+            pbsd/compositor/pbsd.compositor.cppm \
+            pbsd/pkg/pbsd.pkg.cppm
+
+      - name: L2/L4 — analyser plugin build (when LLVM dev packages present)
+        run: |
+          if [ -f build/analyser/libpbsd_analyser_ownership.so ] || [ -f build/analyser/pbsd_analyser_ownership.so ]; then
+            echo "pbsd_analyser built"
+          else
+            echo "LLVM dev packages absent — L2/L4 plugin skipped (see ANALYSER.md)"
+          fi
+
+      - name: Wave 9 inventory report
+        run: |
+          python3 tools/inventory_c_sources.py
+          python3 tools/wave_purge_c_check.py
+          python3 tools/wave_purge_c_check.py --json > wave9_purge.json
+          cat wave9_purge.json
+
+      - name: Wave 9 purge gate (PBSD 0.1 — fails until owned .c hits zero)
+        run: python3 tools/wave_purge_c_check.py --gate
+        continue-on-error: true
+
+      # Analyser L2/L4 + pkg skeleton: optional until LLVM dev packages installed.
+      # pbsd/pkg (AtomicUpdater) and pbsd/analyser plugins are built when LLVM is present.
+      # L1 clang-tidy above covers nucleus handle/bifrost/compositor/pkg modules.
+
+  wave-build-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build clang python3
+
+      - name: Hosted wave build gate
+        run: bash pbsd/_build_wave.sh

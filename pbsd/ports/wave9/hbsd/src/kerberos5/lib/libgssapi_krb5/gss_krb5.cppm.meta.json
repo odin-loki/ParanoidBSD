@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/kerberos5/lib/libgssapi_krb5/gss_krb5.c",
+  "wave": "wave9",
+  "loc_estimate": 832,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/kerberos5/lib/libgssapi_krb5/gss_krb5.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.kerberos5.lib.libgssapi_krb5.gss_krb5",
+  "generated": "2026-07-19T09:38:12+00:00"
+}

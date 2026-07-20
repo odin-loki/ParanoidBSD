@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Support/ConvertEBCDIC.cpp",
+  "wave": "wave9",
+  "loc_estimate": 123,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Support/ConvertEBCDIC.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.support.convertebcdic",
+  "generated": "2026-07-19T09:31:51+00:00"
+}

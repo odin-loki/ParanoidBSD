@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/i386/libi386/vidconsole.c",
+  "wave": "wave7",
+  "loc_estimate": 1229,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/i386/libi386/vidconsole.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.i386.libi386.vidconsole",
+  "generated": "2026-07-19T09:49:43+00:00"
+}

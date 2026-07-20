@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcpdump/missing/datalinks.c",
+  "wave": "wave9",
+  "loc_estimate": 60,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/missing/datalinks.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.missing.datalinks",
+  "generated": "2026-07-19T09:37:26+00:00"
+}

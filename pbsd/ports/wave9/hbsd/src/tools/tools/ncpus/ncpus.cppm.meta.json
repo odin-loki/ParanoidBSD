@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/ncpus/ncpus.c",
+  "wave": "wave9",
+  "loc_estimate": 15,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/ncpus/ncpus.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.ncpus.ncpus",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

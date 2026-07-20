@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/libcxx/src/shared_mutex.cpp",
+  "wave": "wave9",
+  "loc_estimate": 99,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libcxx/src/shared_mutex.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libcxx.src.shared_mutex",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

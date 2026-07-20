@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/clk/xilinx/zynqmp_clk_gate.c",
+  "wave": "wave5",
+  "loc_estimate": 102,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/clk/xilinx/zynqmp_clk_gate.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.clk.xilinx.zynqmp_clk_gate",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

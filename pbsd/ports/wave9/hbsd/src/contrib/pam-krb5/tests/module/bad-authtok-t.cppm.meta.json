@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/pam-krb5/tests/module/bad-authtok-t.c",
+  "wave": "wave9",
+  "loc_estimate": 53,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pam-krb5/tests/module/bad-authtok-t.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.pam_krb5.tests.module.bad_authtok_t",
+  "generated": "2026-07-19T09:37:42+00:00"
+}

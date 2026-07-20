@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/ap/ndisc_snoop.c",
+  "wave": "wave9",
+  "loc_estimate": 189,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/ap/ndisc_snoop.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.ap.ndisc_snoop",
+  "generated": "2026-07-19T09:31:01+00:00"
+}

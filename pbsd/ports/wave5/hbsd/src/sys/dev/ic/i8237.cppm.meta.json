@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ic/i8237.h",
+  "wave": "wave5",
+  "loc_estimate": 9,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ic/i8237.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ic.i8237",
+  "generated": "2026-07-19T10:59:30+00:00"
+}

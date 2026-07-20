@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/backends/wayland/color_manager.cpp",
+  "wave": "wave3",
+  "loc_estimate": 329,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/backends/wayland/color_manager.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.backends.wayland.color_manager",
+  "generated": "2026-07-19T09:30:17+00:00"
+}

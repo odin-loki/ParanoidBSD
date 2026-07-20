@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/isci/scil/sati_test_unit_ready.c",
+  "wave": "wave5",
+  "loc_estimate": 186,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isci/scil/sati_test_unit_ready.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isci.scil.sati_test_unit_ready",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

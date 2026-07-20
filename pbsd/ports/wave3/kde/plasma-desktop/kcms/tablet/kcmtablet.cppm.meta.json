@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/tablet/kcmtablet.cpp",
+  "wave": "wave3",
+  "loc_estimate": 537,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/tablet/kcmtablet.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.tablet.kcmtablet",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

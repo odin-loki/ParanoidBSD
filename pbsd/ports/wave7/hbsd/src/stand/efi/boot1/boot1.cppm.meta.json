@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/efi/boot1/boot1.c",
+  "wave": "wave7",
+  "loc_estimate": 343,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/efi/boot1/boot1.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.efi.boot1.boot1",
+  "generated": "2026-07-19T09:49:41+00:00"
+}

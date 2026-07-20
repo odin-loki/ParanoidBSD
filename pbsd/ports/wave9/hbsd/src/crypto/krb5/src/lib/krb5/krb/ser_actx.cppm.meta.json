@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/ser_actx.c",
+  "wave": "wave9",
+  "loc_estimate": 397,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/ser_actx.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.ser_actx",
+  "generated": "2026-07-19T09:30:31+00:00"
+}

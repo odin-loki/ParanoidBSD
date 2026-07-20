@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/mk_req_ext.c",
+  "wave": "wave9",
+  "loc_estimate": 405,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/mk_req_ext.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.mk_req_ext",
+  "generated": "2026-07-19T09:30:31+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/ml_dsa/ml_dsa_key.c",
+  "wave": "wave9",
+  "loc_estimate": 553,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/ml_dsa/ml_dsa_key.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.ml_dsa.ml_dsa_key",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

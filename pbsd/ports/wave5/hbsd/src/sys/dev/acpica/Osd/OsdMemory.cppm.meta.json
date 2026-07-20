@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/acpica/Osd/OsdMemory.c",
+  "wave": "wave5",
+  "loc_estimate": 143,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpica/Osd/OsdMemory.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpica.osd.osdmemory",
+  "generated": "2026-07-19T08:30:23+00:00"
+}

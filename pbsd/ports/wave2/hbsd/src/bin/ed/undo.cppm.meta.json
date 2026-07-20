@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/ed/undo.c",
+  "wave": "wave2",
+  "loc_estimate": 148,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/ed/undo.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.ed.undo",
+  "generated": "2026-07-19T07:28:55+00:00"
+}

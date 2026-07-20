@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libfido2/openbsd-compat/explicit_bzero.c",
+  "wave": "wave9",
+  "loc_estimate": 57,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libfido2/openbsd-compat/explicit_bzero.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libfido2.openbsd_compat.explicit_bzero",
+  "generated": "2026-07-19T09:37:34+00:00"
+}

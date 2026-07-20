@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.bin/w/pr_time.c",
+  "wave": "wave2",
+  "loc_estimate": 138,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/w/pr_time.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_bin.w.pr_time",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

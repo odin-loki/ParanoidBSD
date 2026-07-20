@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/rtld-elf/i386/reloc.c",
+  "wave": "wave2",
+  "loc_estimate": 555,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rtld-elf/i386/reloc.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.rtld_elf.i386.reloc",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

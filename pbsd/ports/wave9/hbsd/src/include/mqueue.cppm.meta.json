@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/mqueue.h",
+  "wave": "wave9",
+  "loc_estimate": 57,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/mqueue.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.mqueue",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

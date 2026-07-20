@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ath/ath_hal/ar9002/ar9287.c",
+  "wave": "wave5",
+  "loc_estimate": 400,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar9002/ar9287.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar9002.ar9287",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

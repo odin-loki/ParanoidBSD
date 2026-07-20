@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/rpc.tlsclntd/rpc.tlsclntd.c",
+  "wave": "wave2",
+  "loc_estimate": 673,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/rpc.tlsclntd/rpc.tlsclntd.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.rpc_tlsclntd.rpc_tlsclntd",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

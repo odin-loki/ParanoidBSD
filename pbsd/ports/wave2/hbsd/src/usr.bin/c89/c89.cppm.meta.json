@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.bin/c89/c89.c",
+  "wave": "wave2",
+  "loc_estimate": 111,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/c89/c89.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_bin.c89.c89",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

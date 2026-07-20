@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/fs/fusefs/xattr.cc",
+  "wave": "wave9",
+  "loc_estimate": 1001,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/xattr.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.xattr",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

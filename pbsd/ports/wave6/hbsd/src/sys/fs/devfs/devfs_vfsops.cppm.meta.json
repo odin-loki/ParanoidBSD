@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/devfs/devfs_vfsops.c",
+  "wave": "wave6",
+  "loc_estimate": 244,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/devfs/devfs_vfsops.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.devfs.devfs_vfsops",
+  "generated": "2026-07-19T08:30:54+00:00"
+}

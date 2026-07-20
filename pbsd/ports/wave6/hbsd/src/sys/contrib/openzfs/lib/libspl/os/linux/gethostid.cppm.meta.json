@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/lib/libspl/os/linux/gethostid.c",
+  "wave": "wave6",
+  "loc_estimate": 84,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libspl/os/linux/gethostid.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libspl.os.linux.gethostid",
+  "generated": "2026-07-19T09:29:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/audit/file-attribute-modify.c",
+  "wave": "wave9",
+  "loc_estimate": 1397,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/audit/file-attribute-modify.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.audit.file_attribute_modify",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

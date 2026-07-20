@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/diff/src/sdiff.c",
+  "wave": "wave9",
+  "loc_estimate": 1226,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/diff/src/sdiff.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.diff.src.sdiff",
+  "generated": "2026-07-19T09:37:56+00:00"
+}

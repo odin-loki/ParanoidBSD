@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/placeholderinputeventfilter.cpp",
+  "wave": "wave3",
+  "loc_estimate": 57,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/placeholderinputeventfilter.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.placeholderinputeventfilter",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

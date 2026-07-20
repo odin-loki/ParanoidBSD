@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/x86/iommu/iommu_utils.c",
+  "wave": "wave7",
+  "loc_estimate": 841,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/x86/iommu/iommu_utils.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.x86.iommu.iommu_utils",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

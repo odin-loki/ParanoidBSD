@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libthr/thread/thr_symbols.c",
+  "wave": "wave2",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/thread/thr_symbols.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.thread.thr_symbols",
+  "generated": "2026-07-19T08:41:19+00:00"
+}

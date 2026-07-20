@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netgraph/ng_rfc1490.c",
+  "wave": "wave6",
+  "loc_estimate": 486,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netgraph/ng_rfc1490.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netgraph.ng_rfc1490",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

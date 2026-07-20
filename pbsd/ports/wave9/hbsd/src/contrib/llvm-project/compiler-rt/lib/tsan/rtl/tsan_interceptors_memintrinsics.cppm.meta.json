@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_memintrinsics.cpp",
+  "wave": "wave9",
+  "loc_estimate": 43,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/rtl/tsan_interceptors_memintrinsics.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.tsan.rtl.tsan_interceptors_memintrinsics",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

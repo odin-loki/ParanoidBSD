@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bearssl/src/ec/ec_c25519_m62.c",
+  "wave": "wave9",
+  "loc_estimate": 605,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/ec/ec_c25519_m62.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.ec.ec_c25519_m62",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

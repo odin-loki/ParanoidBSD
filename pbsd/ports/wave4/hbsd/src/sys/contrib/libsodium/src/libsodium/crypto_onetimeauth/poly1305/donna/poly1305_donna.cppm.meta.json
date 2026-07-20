@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_onetimeauth/poly1305/donna/poly1305_donna.c",
+  "wave": "wave4",
+  "loc_estimate": 124,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_onetimeauth/poly1305/donna/poly1305_donna.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_onetimeauth.poly1305.donna.poly1305_donna",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

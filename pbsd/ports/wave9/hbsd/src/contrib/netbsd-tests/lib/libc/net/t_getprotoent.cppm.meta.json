@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libc/net/t_getprotoent.c",
+  "wave": "wave9",
+  "loc_estimate": 233,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libc/net/t_getprotoent.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libc.net.t_getprotoent",
+  "generated": "2026-07-19T09:30:58+00:00"
+}

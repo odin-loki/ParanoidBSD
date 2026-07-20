@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/rockchip/rk3568_pcie.c",
+  "wave": "wave7",
+  "loc_estimate": 422,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/rockchip/rk3568_pcie.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.rockchip.rk3568_pcie",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

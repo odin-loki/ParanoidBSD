@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/geom_int.h",
+  "wave": "wave6",
+  "loc_estimate": 76,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/geom_int.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.geom_int",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

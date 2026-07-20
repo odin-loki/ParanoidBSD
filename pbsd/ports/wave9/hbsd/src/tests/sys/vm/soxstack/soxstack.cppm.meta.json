@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/vm/soxstack/soxstack.c",
+  "wave": "wave9",
+  "loc_estimate": 51,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/vm/soxstack/soxstack.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.vm.soxstack.soxstack",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/ficl/x86/sysdep.c",
+  "wave": "wave7",
+  "loc_estimate": 50,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/ficl/x86/sysdep.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.ficl.x86.sysdep",
+  "generated": "2026-07-19T07:49:21+00:00"
+}

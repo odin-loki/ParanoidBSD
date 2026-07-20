@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/setfacl/remove.c",
+  "wave": "wave2",
+  "loc_estimate": 168,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/setfacl/remove.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.setfacl.remove",
+  "generated": "2026-07-19T07:28:55+00:00"
+}

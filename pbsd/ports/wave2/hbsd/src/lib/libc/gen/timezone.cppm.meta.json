@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/gen/timezone.c",
+  "wave": "wave2",
+  "loc_estimate": 126,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/timezone.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.timezone",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

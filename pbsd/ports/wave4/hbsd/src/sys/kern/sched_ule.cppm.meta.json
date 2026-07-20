@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/sched_ule.c",
+  "wave": "wave4",
+  "loc_estimate": 3512,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/sched_ule.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.sched_ule",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

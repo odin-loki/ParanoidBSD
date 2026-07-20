@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/iicbus/rtc/rtc8583.c",
+  "wave": "wave5",
+  "loc_estimate": 302,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iicbus/rtc/rtc8583.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iicbus.rtc.rtc8583",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

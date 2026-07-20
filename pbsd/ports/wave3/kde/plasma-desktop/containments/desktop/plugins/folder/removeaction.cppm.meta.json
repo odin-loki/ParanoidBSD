@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/containments/desktop/plugins/folder/removeaction.cpp",
+  "wave": "wave3",
+  "loc_estimate": 99,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/containments/desktop/plugins/folder/removeaction.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.containments.desktop.plugins.folder.removeaction",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

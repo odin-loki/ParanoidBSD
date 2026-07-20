@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Support/BuryPointer.cpp",
+  "wave": "wave9",
+  "loc_estimate": 30,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Support/BuryPointer.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.support.burypointer",
+  "generated": "2026-07-19T09:31:47+00:00"
+}

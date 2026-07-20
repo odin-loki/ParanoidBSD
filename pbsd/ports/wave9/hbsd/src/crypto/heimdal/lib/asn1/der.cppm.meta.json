@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/asn1/der.c",
+  "wave": "wave9",
+  "loc_estimate": 142,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/asn1/der.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.asn1.der",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

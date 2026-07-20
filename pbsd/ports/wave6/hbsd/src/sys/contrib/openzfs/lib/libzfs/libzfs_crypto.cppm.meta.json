@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/lib/libzfs/libzfs_crypto.c",
+  "wave": "wave6",
+  "loc_estimate": 1833,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libzfs/libzfs_crypto.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libzfs.libzfs_crypto",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

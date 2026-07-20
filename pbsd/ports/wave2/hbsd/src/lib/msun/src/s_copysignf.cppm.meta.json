@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_copysignf.c",
+  "wave": "wave2",
+  "loc_estimate": 33,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_copysignf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_copysignf",
+  "generated": "2026-07-19T08:38:05+00:00"
+}

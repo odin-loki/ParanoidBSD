@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/tests/subsurfacetest.cpp",
+  "wave": "wave3",
+  "loc_estimate": 184,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/tests/subsurfacetest.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.tests.subsurfacetest",
+  "generated": "2026-07-19T09:30:15+00:00"
+}

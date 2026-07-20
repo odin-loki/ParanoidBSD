@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/bsnmpd/tools/libbsnmptools/bsnmpmap.c",
+  "wave": "wave2",
+  "loc_estimate": 1007,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bsnmpd/tools/libbsnmptools/bsnmpmap.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bsnmpd.tools.libbsnmptools.bsnmpmap",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/kdb/t_sort_key_data.c",
+  "wave": "wave9",
+  "loc_estimate": 96,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/kdb/t_sort_key_data.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.kdb.t_sort_key_data",
+  "generated": "2026-07-19T09:30:27+00:00"
+}

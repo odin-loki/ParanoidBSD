@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/plasma-framework/src/declarativeimports/core/corebindingsplugin.cpp",
+  "wave": "wave3",
+  "loc_estimate": 45,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/declarativeimports/core/corebindingsplugin.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.declarativeimports.core.corebindingsplugin",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

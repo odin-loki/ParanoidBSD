@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/test/stress2/testcases/creat/creat.c",
+  "wave": "wave9",
+  "loc_estimate": 136,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/stress2/testcases/creat/creat.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.test.stress2.testcases.creat.creat",
+  "generated": "2026-07-19T09:37:46+00:00"
+}

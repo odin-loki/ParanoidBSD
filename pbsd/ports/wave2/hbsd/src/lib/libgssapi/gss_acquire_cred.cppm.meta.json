@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libgssapi/gss_acquire_cred.c",
+  "wave": "wave2",
+  "loc_estimate": 172,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libgssapi/gss_acquire_cred.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libgssapi.gss_acquire_cred",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ntb/if_ntb/if_ntb.c",
+  "wave": "wave5",
+  "loc_estimate": 505,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ntb/if_ntb/if_ntb.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ntb.if_ntb.if_ntb",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

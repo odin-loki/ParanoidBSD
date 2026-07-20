@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/asan/asan_globals.cpp",
+  "wave": "wave9",
+  "loc_estimate": 582,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/asan/asan_globals.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.asan.asan_globals",
+  "generated": "2026-07-19T09:37:17+00:00"
+}

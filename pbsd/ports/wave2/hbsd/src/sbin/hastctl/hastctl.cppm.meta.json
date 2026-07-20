@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/hastctl/hastctl.c",
+  "wave": "wave2",
+  "loc_estimate": 582,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/hastctl/hastctl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.hastctl.hastctl",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

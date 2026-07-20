@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcsh/tc.who.c",
+  "wave": "wave9",
+  "loc_estimate": 645,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcsh/tc.who.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcsh.tc_who",
+  "generated": "2026-07-19T09:37:47+00:00"
+}

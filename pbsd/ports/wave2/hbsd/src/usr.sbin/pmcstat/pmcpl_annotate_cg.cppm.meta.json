@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/pmcstat/pmcpl_annotate_cg.c",
+  "wave": "wave2",
+  "loc_estimate": 128,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/pmcstat/pmcpl_annotate_cg.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.pmcstat.pmcpl_annotate_cg",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

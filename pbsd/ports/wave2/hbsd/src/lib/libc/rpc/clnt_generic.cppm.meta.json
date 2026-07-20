@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/rpc/clnt_generic.c",
+  "wave": "wave2",
+  "loc_estimate": 441,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/rpc/clnt_generic.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.rpc.clnt_generic",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/com_err/compile_et.c",
+  "wave": "wave9",
+  "loc_estimate": 242,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/com_err/compile_et.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.com_err.compile_et",
+  "generated": "2026-07-19T09:38:21+00:00"
+}

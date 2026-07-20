@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/mediatek/mt76/mt7615/mcu.c",
+  "wave": "wave4",
+  "loc_estimate": 2570,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/mediatek/mt76/mt7615/mcu.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.mediatek.mt76.mt7615.mcu",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

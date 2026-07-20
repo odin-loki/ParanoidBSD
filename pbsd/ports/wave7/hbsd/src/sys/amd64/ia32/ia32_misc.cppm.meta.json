@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/ia32/ia32_misc.c",
+  "wave": "wave7",
+  "loc_estimate": 68,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/ia32/ia32_misc.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.ia32.ia32_misc",
+  "generated": "2026-07-19T08:30:55+00:00"
+}

@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+"""CLI placeholder for pbsd.pkg atomic updates (Wave 9 scaffold)."""
+from __future__ import annotations
+
+import argparse
+import sys
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="PBSD atomic package updater (scaffold)")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("status", help="Report updater scaffold status")
+    apply_p = sub.add_parser("apply", help="Apply manifest (not yet wired)")
+    apply_p.add_argument("manifest", nargs="?", default="manifest.pbsp")
+    sub.add_parser("rollback", help="Rollback last transaction (not yet wired)")
+    args = parser.parse_args()
+
+    if args.cmd == "status":
+        print("pbsd_pkg: scaffold — build pbsd_pkg module and wire host binary next")
+        return 0
+    print(f"pbsd_pkg {args.cmd}: not implemented (Wave 9 scaffold)", file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

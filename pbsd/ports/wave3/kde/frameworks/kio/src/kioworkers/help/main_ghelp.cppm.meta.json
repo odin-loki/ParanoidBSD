@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/kioworkers/help/main_ghelp.cpp",
+  "wave": "wave3",
+  "loc_estimate": 62,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/kioworkers/help/main_ghelp.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.kioworkers.help.main_ghelp",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

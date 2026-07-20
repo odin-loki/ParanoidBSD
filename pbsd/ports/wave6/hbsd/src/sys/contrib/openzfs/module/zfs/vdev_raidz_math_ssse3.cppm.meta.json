@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/vdev_raidz_math_ssse3.c",
+  "wave": "wave6",
+  "loc_estimate": 2478,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/vdev_raidz_math_ssse3.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.vdev_raidz_math_ssse3",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

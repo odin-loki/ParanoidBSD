@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/alpine-hal/al_hal_udma_config.c",
+  "wave": "wave4",
+  "loc_estimate": 1218,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/alpine-hal/al_hal_udma_config.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.alpine_hal.al_hal_udma_config",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

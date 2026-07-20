@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sram/mmio_sram.c",
+  "wave": "wave5",
+  "loc_estimate": 162,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sram/mmio_sram.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sram.mmio_sram",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

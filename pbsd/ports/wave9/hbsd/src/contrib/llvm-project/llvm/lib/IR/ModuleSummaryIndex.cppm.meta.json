@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/IR/ModuleSummaryIndex.cpp",
+  "wave": "wave9",
+  "loc_estimate": 716,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/IR/ModuleSummaryIndex.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.ir.modulesummaryindex",
+  "generated": "2026-07-19T09:31:56+00:00"
+}

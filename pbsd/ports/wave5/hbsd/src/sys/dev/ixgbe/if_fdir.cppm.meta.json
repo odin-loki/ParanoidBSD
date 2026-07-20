@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ixgbe/if_fdir.c",
+  "wave": "wave5",
+  "loc_estimate": 160,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ixgbe/if_fdir.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ixgbe.if_fdir",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

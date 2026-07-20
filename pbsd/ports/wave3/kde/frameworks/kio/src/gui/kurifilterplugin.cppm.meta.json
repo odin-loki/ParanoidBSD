@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/gui/kurifilterplugin.cpp",
+  "wave": "wave3",
+  "loc_estimate": 75,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/gui/kurifilterplugin.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.gui.kurifilterplugin",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

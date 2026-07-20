@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/crypto/libsodium/randombytes.c",
+  "wave": "wave4",
+  "loc_estimate": 12,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/libsodium/randombytes.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.libsodium.randombytes",
+  "generated": "2026-07-19T09:31:09+00:00"
+}

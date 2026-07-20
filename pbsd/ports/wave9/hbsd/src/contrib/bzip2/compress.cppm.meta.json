@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bzip2/compress.c",
+  "wave": "wave9",
+  "loc_estimate": 672,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bzip2/compress.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bzip2.compress",
+  "generated": "2026-07-19T09:38:05+00:00"
+}

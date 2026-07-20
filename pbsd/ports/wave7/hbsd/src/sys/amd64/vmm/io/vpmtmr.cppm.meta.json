@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/vmm/io/vpmtmr.c",
+  "wave": "wave7",
+  "loc_estimate": 118,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/vmm/io/vpmtmr.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.vmm.io.vpmtmr",
+  "generated": "2026-07-19T08:30:55+00:00"
+}

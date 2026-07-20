@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/krb5/scache.c",
+  "wave": "wave9",
+  "loc_estimate": 1451,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/scache.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.scache",
+  "generated": "2026-07-19T09:30:38+00:00"
+}

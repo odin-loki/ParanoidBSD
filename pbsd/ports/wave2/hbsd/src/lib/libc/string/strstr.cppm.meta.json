@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/string/strstr.c",
+  "wave": "wave2",
+  "loc_estimate": 219,
+  "status": "converted",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/string/strstr.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.string.strstr",
+  "generated": "2026-07-19T10:02:54+00:00"
+}

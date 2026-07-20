@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kgssapi/gss_accept_sec_context.c",
+  "wave": "wave4",
+  "loc_estimate": 287,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kgssapi/gss_accept_sec_context.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kgssapi.gss_accept_sec_context",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

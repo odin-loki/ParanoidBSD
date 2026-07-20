@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/widechar/lib_pecho_wchar.c",
+  "wave": "wave9",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/widechar/lib_pecho_wchar.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.widechar.lib_pecho_wchar",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

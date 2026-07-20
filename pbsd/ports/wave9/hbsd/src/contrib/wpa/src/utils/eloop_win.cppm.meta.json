@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/utils/eloop_win.c",
+  "wave": "wave9",
+  "loc_estimate": 700,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/utils/eloop_win.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.utils.eloop_win",
+  "generated": "2026-07-19T09:31:01+00:00"
+}

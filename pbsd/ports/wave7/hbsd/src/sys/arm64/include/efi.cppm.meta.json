@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/include/efi.h",
+  "wave": "wave7",
+  "loc_estimate": 66,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/include/efi.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.include.efi",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ofed/libmlx4/srq.c",
+  "wave": "wave9",
+  "loc_estimate": 334,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/libmlx4/srq.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.libmlx4.srq",
+  "generated": "2026-07-19T09:37:24+00:00"
+}

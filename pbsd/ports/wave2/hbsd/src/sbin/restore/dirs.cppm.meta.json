@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/restore/dirs.c",
+  "wave": "wave2",
+  "loc_estimate": 812,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/restore/dirs.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.restore.dirs",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

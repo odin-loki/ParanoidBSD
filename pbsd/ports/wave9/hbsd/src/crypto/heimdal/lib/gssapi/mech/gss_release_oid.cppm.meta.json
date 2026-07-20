@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_release_oid.c",
+  "wave": "wave9",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_release_oid.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.mech.gss_release_oid",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

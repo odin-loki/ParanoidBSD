@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libcrypt/crypt-sha256.c",
+  "wave": "wave2",
+  "loc_estimate": 423,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libcrypt/crypt-sha256.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libcrypt.crypt_sha256",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

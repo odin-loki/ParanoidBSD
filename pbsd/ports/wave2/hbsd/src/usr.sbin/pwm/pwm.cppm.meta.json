@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/pwm/pwm.c",
+  "wave": "wave2",
+  "loc_estimate": 215,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/pwm/pwm.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.pwm.pwm",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

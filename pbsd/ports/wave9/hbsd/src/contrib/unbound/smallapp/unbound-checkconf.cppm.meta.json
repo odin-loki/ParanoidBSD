@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/smallapp/unbound-checkconf.c",
+  "wave": "wave9",
+  "loc_estimate": 1150,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/smallapp/unbound-checkconf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.smallapp.unbound_checkconf",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/keyboard_layout.cpp",
+  "wave": "wave3",
+  "loc_estimate": 268,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/keyboard_layout.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.keyboard_layout",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

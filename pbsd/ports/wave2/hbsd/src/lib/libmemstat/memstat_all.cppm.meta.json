@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libmemstat/memstat_all.c",
+  "wave": "wave2",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libmemstat/memstat_all.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libmemstat.memstat_all",
+  "generated": "2026-07-19T09:29:45+00:00"
+}

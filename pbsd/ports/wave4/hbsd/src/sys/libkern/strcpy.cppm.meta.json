@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/libkern/strcpy.c",
+  "wave": "wave4",
+  "loc_estimate": 42,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/libkern/strcpy.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.libkern.strcpy",
+  "generated": "2026-07-19T09:31:09+00:00"
+}

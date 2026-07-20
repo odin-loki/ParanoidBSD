@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/libnv/bsd_nvpair.c",
+  "wave": "wave4",
+  "loc_estimate": 2140,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libnv/bsd_nvpair.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libnv.bsd_nvpair",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

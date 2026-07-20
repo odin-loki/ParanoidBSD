@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/kern/tty/tiocnotty.c",
+  "wave": "wave9",
+  "loc_estimate": 82,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/tty/tiocnotty.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.tty.tiocnotty",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/memprof/memprof_thread.cpp",
+  "wave": "wave9",
+  "loc_estimate": 212,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/memprof/memprof_thread.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.memprof.memprof_thread",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

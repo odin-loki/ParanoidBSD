@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/rpc/rpcdname.c",
+  "wave": "wave2",
+  "loc_estimate": 75,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/rpc/rpcdname.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.rpc.rpcdname",
+  "generated": "2026-07-19T09:29:45+00:00"
+}

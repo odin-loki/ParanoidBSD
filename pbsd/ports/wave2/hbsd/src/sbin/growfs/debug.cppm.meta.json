@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/growfs/debug.c",
+  "wave": "wave2",
+  "loc_estimate": 837,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/growfs/debug.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.growfs.debug",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

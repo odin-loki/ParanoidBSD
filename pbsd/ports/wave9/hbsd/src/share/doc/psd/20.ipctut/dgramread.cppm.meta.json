@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/share/doc/psd/20.ipctut/dgramread.c",
+  "wave": "wave9",
+  "loc_estimate": 77,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/share/doc/psd/20.ipctut/dgramread.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.share.doc.psd._20_ipctut.dgramread",
+  "generated": "2026-07-19T09:38:06+00:00"
+}

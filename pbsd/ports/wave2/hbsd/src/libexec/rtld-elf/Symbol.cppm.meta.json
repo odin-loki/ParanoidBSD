@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/rtld-elf/Symbol.map",
+  "wave": "wave2",
+  "loc_estimate": 0,
+  "status": "converted",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rtld-elf/Symbol.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.rtld_elf.symbol",
+  "generated": "2026-07-19T10:14:43+00:00"
+}

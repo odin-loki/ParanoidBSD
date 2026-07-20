@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/apps/lib/vms_term_sock.c",
+  "wave": "wave9",
+  "loc_estimate": 600,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/apps/lib/vms_term_sock.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.apps.lib.vms_term_sock",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

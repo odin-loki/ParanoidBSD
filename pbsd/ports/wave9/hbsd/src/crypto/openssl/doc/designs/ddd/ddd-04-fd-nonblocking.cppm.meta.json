@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/doc/designs/ddd/ddd-04-fd-nonblocking.c",
+  "wave": "wave9",
+  "loc_estimate": 465,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/doc/designs/ddd/ddd-04-fd-nonblocking.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.doc.designs.ddd.ddd_04_fd_nonblocking",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

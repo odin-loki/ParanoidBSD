@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/ipfw/nat64lsn.c",
+  "wave": "wave2",
+  "loc_estimate": 901,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipfw/nat64lsn.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.ipfw.nat64lsn",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

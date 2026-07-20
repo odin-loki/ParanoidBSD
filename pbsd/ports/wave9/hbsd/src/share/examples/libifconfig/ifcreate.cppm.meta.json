@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/share/examples/libifconfig/ifcreate.c",
+  "wave": "wave9",
+  "loc_estimate": 94,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/libifconfig/ifcreate.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.share.examples.libifconfig.ifcreate",
+  "generated": "2026-07-19T09:37:44+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/security/mac/mac_socket.c",
+  "wave": "wave4",
+  "loc_estimate": 640,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac/mac_socket.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac.mac_socket",
+  "generated": "2026-07-19T09:31:14+00:00"
+}

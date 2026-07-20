@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/libecc/src/wycheproof_tests/libecc_wycheproof.c",
+  "wave": "wave9",
+  "loc_estimate": 838,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/libecc/src/wycheproof_tests/libecc_wycheproof.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.libecc.src.wycheproof_tests.libecc_wycheproof",
+  "generated": "2026-07-19T09:37:36+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Orc/SectCreate.cpp",
+  "wave": "wave9",
+  "loc_estimate": 52,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Orc/SectCreate.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.executionengine.orc.sectcreate",
+  "generated": "2026-07-19T09:31:48+00:00"
+}

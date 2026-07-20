@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Basic/TargetInfo.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1036,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Basic/TargetInfo.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.basic.targetinfo",
+  "generated": "2026-07-19T09:31:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/modules/k_helper3/k_helper3.c",
+  "wave": "wave9",
+  "loc_estimate": 102,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/modules/k_helper3/k_helper3.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.modules.k_helper3.k_helper3",
+  "generated": "2026-07-19T09:30:55+00:00"
+}

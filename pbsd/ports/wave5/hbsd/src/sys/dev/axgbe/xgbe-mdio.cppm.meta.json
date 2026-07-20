@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/axgbe/xgbe-mdio.c",
+  "wave": "wave5",
+  "loc_estimate": 1632,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/axgbe/xgbe-mdio.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.axgbe.xgbe_mdio",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

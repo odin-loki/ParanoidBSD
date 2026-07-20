@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/rpcbind/tests/addrmerge_test.c",
+  "wave": "wave2",
+  "loc_estimate": 902,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/rpcbind/tests/addrmerge_test.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.rpcbind.tests.addrmerge_test",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

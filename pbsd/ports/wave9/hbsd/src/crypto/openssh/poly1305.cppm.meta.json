@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/poly1305.c",
+  "wave": "wave9",
+  "loc_estimate": 159,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/poly1305.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.poly1305",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-cov/CoverageFilters.cpp",
+  "wave": "wave9",
+  "loc_estimate": 86,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-cov/CoverageFilters.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_cov.coveragefilters",
+  "generated": "2026-07-19T09:31:50+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/kadm5/destroy_c.c",
+  "wave": "wave9",
+  "loc_estimate": 55,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/kadm5/destroy_c.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.kadm5.destroy_c",
+  "generated": "2026-07-19T09:30:34+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/opencsd/decoder/source/etmv4/trc_pkt_proc_etmv4i.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1803,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/etmv4/trc_pkt_proc_etmv4i.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.etmv4.trc_pkt_proc_etmv4i",
+  "generated": "2026-07-19T09:37:48+00:00"
+}

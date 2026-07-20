@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/MCTargetDesc/X86IntelInstPrinter.cpp",
+  "wave": "wave9",
+  "loc_estimate": 496,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/MCTargetDesc/X86IntelInstPrinter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.x86.mctargetdesc.x86intelinstprinter",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

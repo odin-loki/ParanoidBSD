@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/ccache/cccopy.c",
+  "wave": "wave9",
+  "loc_estimate": 37,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/ccache/cccopy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.ccache.cccopy",
+  "generated": "2026-07-19T09:30:25+00:00"
+}

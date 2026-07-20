@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/locale/setlocale.c",
+  "wave": "wave2",
+  "loc_estimate": 322,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/locale/setlocale.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.locale.setlocale",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/ip_ecn.c",
+  "wave": "wave6",
+  "loc_estimate": 192,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/ip_ecn.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.ip_ecn",
+  "generated": "2026-07-19T09:02:52+00:00"
+}

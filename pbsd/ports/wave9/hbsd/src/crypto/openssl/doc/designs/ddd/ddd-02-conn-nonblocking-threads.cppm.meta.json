@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/doc/designs/ddd/ddd-02-conn-nonblocking-threads.c",
+  "wave": "wave9",
+  "loc_estimate": 334,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/doc/designs/ddd/ddd-02-conn-nonblocking-threads.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.doc.designs.ddd.ddd_02_conn_nonblocking_threads",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

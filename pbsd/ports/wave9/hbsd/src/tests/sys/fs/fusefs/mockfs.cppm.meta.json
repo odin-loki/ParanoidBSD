@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/fs/fusefs/mockfs.cc",
+  "wave": "wave9",
+  "loc_estimate": 1072,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/mockfs.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.mockfs",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

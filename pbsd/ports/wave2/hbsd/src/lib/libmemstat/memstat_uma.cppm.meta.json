@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libmemstat/memstat_uma.c",
+  "wave": "wave2",
+  "loc_estimate": 490,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libmemstat/memstat_uma.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libmemstat.memstat_uma",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

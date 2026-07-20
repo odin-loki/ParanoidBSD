@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/util/tg.c",
+  "wave": "wave9",
+  "loc_estimate": 653,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/util/tg.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.util.tg",
+  "generated": "2026-07-19T09:31:07+00:00"
+}

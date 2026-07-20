@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_delete_name_attribute.c",
+  "wave": "wave9",
+  "loc_estimate": 65,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_delete_name_attribute.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.mech.gss_delete_name_attribute",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

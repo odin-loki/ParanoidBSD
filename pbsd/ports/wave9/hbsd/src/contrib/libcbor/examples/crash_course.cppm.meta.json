@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libcbor/examples/crash_course.c",
+  "wave": "wave9",
+  "loc_estimate": 183,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libcbor/examples/crash_course.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libcbor.examples.crash_course",
+  "generated": "2026-07-19T09:37:44+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/pem/pvkfmt.c",
+  "wave": "wave9",
+  "loc_estimate": 1152,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/pem/pvkfmt.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.pem.pvkfmt",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

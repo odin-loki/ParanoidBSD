@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/bxe/bxe_elink.c",
+  "wave": "wave5",
+  "loc_estimate": 15118,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/bxe/bxe_elink.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.bxe.bxe_elink",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ow/ow_temp.c",
+  "wave": "wave5",
+  "loc_estimate": 279,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ow/ow_temp.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ow.ow_temp",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

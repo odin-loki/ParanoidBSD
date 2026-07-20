@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netgraph/bluetooth/hci/ng_hci_var.h",
+  "wave": "wave6",
+  "loc_estimate": 220,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netgraph/bluetooth/hci/ng_hci_var.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netgraph.bluetooth.hci.ng_hci_var",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

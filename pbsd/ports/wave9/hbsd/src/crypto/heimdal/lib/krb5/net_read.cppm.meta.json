@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/krb5/net_read.c",
+  "wave": "wave9",
+  "loc_estimate": 44,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/net_read.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.net_read",
+  "generated": "2026-07-19T09:30:34+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/googletest/googletest/test/gtest_test_macro_stack_footprint_test.cc",
+  "wave": "wave9",
+  "loc_estimate": 89,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/googletest/googletest/test/gtest_test_macro_stack_footprint_test.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.googletest.googletest.test.gtest_test_macro_stack_footprint_test",
+  "generated": "2026-07-19T09:37:38+00:00"
+}

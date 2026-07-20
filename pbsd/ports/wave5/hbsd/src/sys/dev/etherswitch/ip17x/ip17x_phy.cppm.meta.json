@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/etherswitch/ip17x/ip17x_phy.c",
+  "wave": "wave5",
+  "loc_estimate": 104,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/etherswitch/ip17x/ip17x_phy.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.etherswitch.ip17x.ip17x_phy",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

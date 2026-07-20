@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/sctp_syscalls.c",
+  "wave": "wave6",
+  "loc_estimate": 577,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/sctp_syscalls.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.sctp_syscalls",
+  "generated": "2026-07-19T09:29:21+00:00"
+}

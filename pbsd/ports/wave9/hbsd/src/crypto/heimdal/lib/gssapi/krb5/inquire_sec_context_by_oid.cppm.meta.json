@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/gssapi/krb5/inquire_sec_context_by_oid.c",
+  "wave": "wave9",
+  "loc_estimate": 605,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/krb5/inquire_sec_context_by_oid.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.krb5.inquire_sec_context_by_oid",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

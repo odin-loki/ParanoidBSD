@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/share/examples/sound/mmap.c",
+  "wave": "wave9",
+  "loc_estimate": 219,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/sound/mmap.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.share.examples.sound.mmap",
+  "generated": "2026-07-19T09:37:45+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/bhyve/usb_emul.c",
+  "wave": "wave2",
+  "loc_estimate": 75,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/usb_emul.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.usb_emul",
+  "generated": "2026-07-19T09:02:52+00:00"
+}

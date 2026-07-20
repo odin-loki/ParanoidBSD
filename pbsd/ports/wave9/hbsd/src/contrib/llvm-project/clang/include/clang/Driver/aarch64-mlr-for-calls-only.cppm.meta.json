@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/include/clang/Driver/aarch64-mlr-for-calls-only.c",
+  "wave": "wave9",
+  "loc_estimate": 3,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/include/clang/Driver/aarch64-mlr-for-calls-only.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.include.clang.driver.aarch64_mlr_for_calls_only",
+  "generated": "2026-07-19T07:47:46+00:00"
+}

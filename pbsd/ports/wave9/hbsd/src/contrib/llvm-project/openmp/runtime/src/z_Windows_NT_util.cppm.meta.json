@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/openmp/runtime/src/z_Windows_NT_util.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1741,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/openmp/runtime/src/z_Windows_NT_util.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.openmp.runtime.src.z_windows_nt_util",
+  "generated": "2026-07-19T09:37:17+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/zfs_quota.c",
+  "wave": "wave6",
+  "loc_estimate": 524,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/zfs_quota.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.zfs_quota",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

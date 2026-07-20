@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/k_rem_pio2.c",
+  "wave": "wave2",
+  "loc_estimate": 439,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/k_rem_pio2.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.k_rem_pio2",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

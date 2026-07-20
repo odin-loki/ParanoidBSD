@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Checkers/ReturnUndefChecker.cpp",
+  "wave": "wave9",
+  "loc_estimate": 120,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Checkers/ReturnUndefChecker.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.staticanalyzer.checkers.returnundefchecker",
+  "generated": "2026-07-19T09:31:18+00:00"
+}

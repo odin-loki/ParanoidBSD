@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/cxgbe/cudbg/cudbg_wtp.c",
+  "wave": "wave5",
+  "loc_estimate": 1307,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/cxgbe/cudbg/cudbg_wtp.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.cxgbe.cudbg.cudbg_wtp",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/ssl/quic/quic_impl.c",
+  "wave": "wave9",
+  "loc_estimate": 5423,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/ssl/quic/quic_impl.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.ssl.quic.quic_impl",
+  "generated": "2026-07-19T09:30:07+00:00"
+}

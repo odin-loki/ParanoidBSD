@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qcom_tlmm/qcom_tlmm_ipq4018.c",
+  "wave": "wave5",
+  "loc_estimate": 396,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qcom_tlmm/qcom_tlmm_ipq4018.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qcom_tlmm.qcom_tlmm_ipq4018",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

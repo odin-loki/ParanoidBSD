@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/progs/tset.c",
+  "wave": "wave9",
+  "loc_estimate": 921,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/progs/tset.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.progs.tset",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

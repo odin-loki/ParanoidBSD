@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/libcxx/src/random_shuffle.cpp",
+  "wave": "wave9",
+  "loc_estimate": 51,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libcxx/src/random_shuffle.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libcxx.src.random_shuffle",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

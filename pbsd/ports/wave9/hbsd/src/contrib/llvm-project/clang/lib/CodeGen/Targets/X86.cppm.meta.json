@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/CodeGen/Targets/X86.cpp",
+  "wave": "wave9",
+  "loc_estimate": 3529,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/CodeGen/Targets/X86.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.codegen.targets.x86",
+  "generated": "2026-07-19T09:31:22+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/nss_tacplus/nss_tacplus.c",
+  "wave": "wave2",
+  "loc_estimate": 316,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/nss_tacplus/nss_tacplus.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.nss_tacplus.nss_tacplus",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

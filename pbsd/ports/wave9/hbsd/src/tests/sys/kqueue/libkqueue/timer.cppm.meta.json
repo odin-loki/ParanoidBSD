@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/kqueue/libkqueue/timer.c",
+  "wave": "wave9",
+  "loc_estimate": 764,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kqueue/libkqueue/timer.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kqueue.libkqueue.timer",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

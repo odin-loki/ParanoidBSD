@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/backends/drm/drm_pipeline_legacy.cpp",
+  "wave": "wave3",
+  "loc_estimate": 250,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/backends/drm/drm_pipeline_legacy.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.backends.drm.drm_pipeline_legacy",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bmake/filemon/filemon_ktrace.c",
+  "wave": "wave9",
+  "loc_estimate": 893,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bmake/filemon/filemon_ktrace.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bmake.filemon.filemon_ktrace",
+  "generated": "2026-07-19T09:37:55+00:00"
+}

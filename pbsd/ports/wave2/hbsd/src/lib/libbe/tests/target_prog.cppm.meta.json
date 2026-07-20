@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libbe/tests/target_prog.c",
+  "wave": "wave2",
+  "loc_estimate": 53,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libbe/tests/target_prog.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libbe.tests.target_prog",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/ec/curve448/eddsa.c",
+  "wave": "wave9",
+  "loc_estimate": 420,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/ec/curve448/eddsa.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.ec.curve448.eddsa",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

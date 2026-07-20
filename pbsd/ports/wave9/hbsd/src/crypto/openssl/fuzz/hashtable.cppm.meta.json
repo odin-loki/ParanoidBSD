@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/fuzz/hashtable.c",
+  "wave": "wave9",
+  "loc_estimate": 393,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/fuzz/hashtable.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.fuzz.hashtable",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

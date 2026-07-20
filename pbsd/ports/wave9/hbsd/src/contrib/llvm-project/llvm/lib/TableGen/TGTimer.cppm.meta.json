@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/TableGen/TGTimer.cpp",
+  "wave": "wave9",
+  "loc_estimate": 54,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/TableGen/TGTimer.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.tablegen.tgtimer",
+  "generated": "2026-07-19T09:31:48+00:00"
+}

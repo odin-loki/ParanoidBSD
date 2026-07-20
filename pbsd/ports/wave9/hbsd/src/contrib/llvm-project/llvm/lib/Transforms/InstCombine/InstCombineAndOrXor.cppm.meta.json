@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/InstCombine/InstCombineAndOrXor.cpp",
+  "wave": "wave9",
+  "loc_estimate": 5234,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/InstCombine/InstCombineAndOrXor.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.instcombine.instcombineandorxor",
+  "generated": "2026-07-19T09:31:58+00:00"
+}

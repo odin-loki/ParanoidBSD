@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/sh/mknodes.c",
+  "wave": "wave2",
+  "loc_estimate": 447,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/sh/mknodes.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.sh.mknodes",
+  "generated": "2026-07-19T09:29:51+00:00"
+}

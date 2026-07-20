@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ofed/opensm/libvendor/osm_vendor_mlx_hca_anafa.c",
+  "wave": "wave9",
+  "loc_estimate": 192,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/opensm/libvendor/osm_vendor_mlx_hca_anafa.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.opensm.libvendor.osm_vendor_mlx_hca_anafa",
+  "generated": "2026-07-19T09:37:24+00:00"
+}

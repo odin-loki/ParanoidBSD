@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/virtual_oss/bt/cosdata-gen/cosdata.c",
+  "wave": "wave2",
+  "loc_estimate": 177,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/virtual_oss/bt/cosdata-gen/cosdata.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.virtual_oss.bt.cosdata_gen.cosdata",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

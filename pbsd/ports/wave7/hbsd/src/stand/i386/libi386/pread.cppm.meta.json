@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/i386/libi386/pread.c",
+  "wave": "wave7",
+  "loc_estimate": 77,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/i386/libi386/pread.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.i386.libi386.pread",
+  "generated": "2026-07-19T09:49:37+00:00"
+}

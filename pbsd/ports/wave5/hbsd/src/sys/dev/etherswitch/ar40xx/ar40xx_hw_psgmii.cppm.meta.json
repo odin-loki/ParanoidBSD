@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/etherswitch/ar40xx/ar40xx_hw_psgmii.c",
+  "wave": "wave5",
+  "loc_estimate": 437,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/etherswitch/ar40xx/ar40xx_hw_psgmii.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.etherswitch.ar40xx.ar40xx_hw_psgmii",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

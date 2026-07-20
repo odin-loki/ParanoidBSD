@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/msk/if_msk.c",
+  "wave": "wave5",
+  "loc_estimate": 4573,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/msk/if_msk.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.msk.if_msk",
+  "generated": "2026-07-19T09:06:11+00:00"
+}

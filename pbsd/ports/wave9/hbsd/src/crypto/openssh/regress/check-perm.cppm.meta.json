@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/regress/check-perm.c",
+  "wave": "wave9",
+  "loc_estimate": 205,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/regress/check-perm.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.regress.check_perm",
+  "generated": "2026-07-19T09:37:20+00:00"
+}

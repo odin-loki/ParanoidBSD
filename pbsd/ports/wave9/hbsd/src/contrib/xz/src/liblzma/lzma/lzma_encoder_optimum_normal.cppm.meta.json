@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/xz/src/liblzma/lzma/lzma_encoder_optimum_normal.c",
+  "wave": "wave9",
+  "loc_estimate": 858,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/xz/src/liblzma/lzma/lzma_encoder_optimum_normal.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.xz.src.liblzma.lzma.lzma_encoder_optimum_normal",
+  "generated": "2026-07-19T09:37:37+00:00"
+}

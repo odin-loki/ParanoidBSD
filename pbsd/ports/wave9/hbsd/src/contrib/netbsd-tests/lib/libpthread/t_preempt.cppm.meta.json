@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libpthread/t_preempt.c",
+  "wave": "wave9",
+  "loc_estimate": 128,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libpthread/t_preempt.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libpthread.t_preempt",
+  "generated": "2026-07-19T09:30:56+00:00"
+}

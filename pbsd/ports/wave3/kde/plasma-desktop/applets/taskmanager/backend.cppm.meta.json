@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/applets/taskmanager/backend.cpp",
+  "wave": "wave3",
+  "loc_estimate": 521,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/applets/taskmanager/backend.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.applets.taskmanager.backend",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

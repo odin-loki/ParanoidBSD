@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/dev/audio/h_pad_musa.c",
+  "wave": "wave9",
+  "loc_estimate": 344,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/dev/audio/h_pad_musa.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.dev.audio.h_pad_musa",
+  "generated": "2026-07-19T09:30:59+00:00"
+}

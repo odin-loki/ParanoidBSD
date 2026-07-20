@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kservice/tests/kservicegroup_dumper.cpp",
+  "wave": "wave3",
+  "loc_estimate": 55,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kservice/tests/kservicegroup_dumper.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kservice.tests.kservicegroup_dumper",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

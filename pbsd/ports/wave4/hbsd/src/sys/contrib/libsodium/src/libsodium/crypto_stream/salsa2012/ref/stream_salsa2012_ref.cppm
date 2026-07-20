@@ -1,0 +1,19 @@
+export module pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_stream.salsa2012.ref.stream_salsa2012_ref;
+
+module;
+extern "C" {
+// Legacy TU symbols — hand-port from hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_stream/salsa2012/ref/stream_salsa2012_ref.c
+// void stream_salsa2012_ref_init(void);
+}
+
+import pbsd.core;
+
+/// Auto-generated migration stub — status: stubbed
+/// @pbsd-migration-meta source=hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_stream/salsa2012/ref/stream_salsa2012_ref.c wave=wave4 loc=106
+export namespace pbsd::port::wave4::hbsd::src::sys::contrib::libsodium::src::libsodium::crypto_stream::salsa2012::ref::stream_salsa2012_ref {
+
+[[nodiscard]] inline Status migration_status() noexcept {
+    return Status::NotImplemented;
+}
+
+} // namespace pbsd::port::wave4::hbsd::src::sys::contrib::libsodium::src::libsodium::crypto_stream::salsa2012::ref::stream_salsa2012_ref

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/ddb/db_ctf.c",
+  "wave": "wave4",
+  "loc_estimate": 326,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/ddb/db_ctf.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.ddb.db_ctf",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

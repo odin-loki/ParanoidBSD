@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/crypto/armv8/armv8_crypto.c",
+  "wave": "wave4",
+  "loc_estimate": 415,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/armv8/armv8_crypto.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.armv8.armv8_crypto",
+  "generated": "2026-07-19T09:31:13+00:00"
+}

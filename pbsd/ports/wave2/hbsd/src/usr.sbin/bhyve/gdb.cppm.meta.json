@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/bhyve/gdb.c",
+  "wave": "wave2",
+  "loc_estimate": 2272,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/gdb.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.gdb",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

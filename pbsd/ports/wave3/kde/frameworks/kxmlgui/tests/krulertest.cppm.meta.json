@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kxmlgui/tests/krulertest.cpp",
+  "wave": "wave3",
+  "loc_estimate": 360,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/tests/krulertest.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.tests.krulertest",
+  "generated": "2026-07-19T09:30:17+00:00"
+}

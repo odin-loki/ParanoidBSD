@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/gnu/dev/bwn/phy_n/if_bwn_radio_2056.c",
+  "wave": "wave4",
+  "loc_estimate": 10373,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/gnu/dev/bwn/phy_n/if_bwn_radio_2056.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.gnu.dev.bwn.phy_n.if_bwn_radio_2056",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

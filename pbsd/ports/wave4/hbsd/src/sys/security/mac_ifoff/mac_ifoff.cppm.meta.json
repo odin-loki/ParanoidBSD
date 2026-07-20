@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/security/mac_ifoff/mac_ifoff.c",
+  "wave": "wave4",
+  "loc_estimate": 169,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac_ifoff/mac_ifoff.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac_ifoff.mac_ifoff",
+  "generated": "2026-07-19T09:04:05+00:00"
+}

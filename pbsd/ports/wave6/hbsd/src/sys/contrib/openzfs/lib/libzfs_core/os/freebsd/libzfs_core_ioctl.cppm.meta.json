@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/lib/libzfs_core/os/freebsd/libzfs_core_ioctl.c",
+  "wave": "wave6",
+  "loc_estimate": 136,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libzfs_core/os/freebsd/libzfs_core_ioctl.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libzfs_core.os.freebsd.libzfs_core_ioctl",
+  "generated": "2026-07-19T09:29:19+00:00"
+}

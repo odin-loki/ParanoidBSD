@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/clk/allwinner/ccu_a31.c",
+  "wave": "wave5",
+  "loc_estimate": 973,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/clk/allwinner/ccu_a31.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.clk.allwinner.ccu_a31",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

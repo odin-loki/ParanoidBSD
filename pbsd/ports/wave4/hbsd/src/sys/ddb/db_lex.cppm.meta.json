@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/ddb/db_lex.c",
+  "wave": "wave4",
+  "loc_estimate": 383,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/ddb/db_lex.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.ddb.db_lex",
+  "generated": "2026-07-19T09:31:13+00:00"
+}

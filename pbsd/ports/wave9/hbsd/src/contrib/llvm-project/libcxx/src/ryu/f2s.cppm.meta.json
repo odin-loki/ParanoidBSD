@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/libcxx/src/ryu/f2s.cpp",
+  "wave": "wave9",
+  "loc_estimate": 718,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libcxx/src/ryu/f2s.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libcxx.src.ryu.f2s",
+  "generated": "2026-07-19T09:37:17+00:00"
+}

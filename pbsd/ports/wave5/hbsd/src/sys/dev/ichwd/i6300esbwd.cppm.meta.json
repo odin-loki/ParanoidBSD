@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ichwd/i6300esbwd.c",
+  "wave": "wave5",
+  "loc_estimate": 245,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ichwd/i6300esbwd.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ichwd.i6300esbwd",
+  "generated": "2026-07-19T08:30:21+00:00"
+}

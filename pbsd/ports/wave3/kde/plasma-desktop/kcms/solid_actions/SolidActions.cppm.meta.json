@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/solid_actions/SolidActions.cpp",
+  "wave": "wave3",
+  "loc_estimate": 216,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/solid_actions/SolidActions.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.solid_actions.solidactions",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

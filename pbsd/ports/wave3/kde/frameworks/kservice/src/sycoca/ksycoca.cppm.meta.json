@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kservice/src/sycoca/ksycoca.cpp",
+  "wave": "wave3",
+  "loc_estimate": 821,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kservice/src/sycoca/ksycoca.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kservice.src.sycoca.ksycoca",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

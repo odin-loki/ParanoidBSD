@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/byacc/test/yacc/code_error.tab.c",
+  "wave": "wave9",
+  "loc_estimate": 44,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/byacc/test/yacc/code_error.tab.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.byacc.test.yacc.code_error_tab",
+  "generated": "2026-07-19T09:37:30+00:00"
+}

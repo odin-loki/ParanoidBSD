@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bsnmp/snmp_mibII/mibII_tcp.c",
+  "wave": "wave9",
+  "loc_estimate": 396,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bsnmp/snmp_mibII/mibII_tcp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bsnmp.snmp_mibii.mibii_tcp",
+  "generated": "2026-07-19T09:37:54+00:00"
+}

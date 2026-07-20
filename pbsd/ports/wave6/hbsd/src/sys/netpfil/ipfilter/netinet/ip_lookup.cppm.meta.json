@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/ipfilter/netinet/ip_lookup.c",
+  "wave": "wave6",
+  "loc_estimate": 933,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfilter/netinet/ip_lookup.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfilter.netinet.ip_lookup",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

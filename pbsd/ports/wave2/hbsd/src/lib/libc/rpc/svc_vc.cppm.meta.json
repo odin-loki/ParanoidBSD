@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/rpc/svc_vc.c",
+  "wave": "wave2",
+  "loc_estimate": 777,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/rpc/svc_vc.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.rpc.svc_vc",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

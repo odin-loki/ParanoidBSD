@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/crypto/krb/encrypt.c",
+  "wave": "wave9",
+  "loc_estimate": 94,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/crypto/krb/encrypt.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.crypto.krb.encrypt",
+  "generated": "2026-07-19T09:30:27+00:00"
+}

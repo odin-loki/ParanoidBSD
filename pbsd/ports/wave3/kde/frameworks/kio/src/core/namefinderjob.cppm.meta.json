@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/core/namefinderjob.cpp",
+  "wave": "wave3",
+  "loc_estimate": 113,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/core/namefinderjob.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.core.namefinderjob",
+  "generated": "2026-07-19T09:19:13+00:00"
+}

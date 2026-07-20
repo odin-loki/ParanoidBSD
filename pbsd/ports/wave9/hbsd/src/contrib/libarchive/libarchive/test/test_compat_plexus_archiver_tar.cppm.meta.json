@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_compat_plexus_archiver_tar.c",
+  "wave": "wave9",
+  "loc_estimate": 68,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_compat_plexus_archiver_tar.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_compat_plexus_archiver_tar",
+  "generated": "2026-07-19T09:30:40+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/nfsclient/nfs_clrpcops.c",
+  "wave": "wave6",
+  "loc_estimate": 9979,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nfsclient/nfs_clrpcops.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nfsclient.nfs_clrpcops",
+  "generated": "2026-07-19T09:29:22+00:00"
+}

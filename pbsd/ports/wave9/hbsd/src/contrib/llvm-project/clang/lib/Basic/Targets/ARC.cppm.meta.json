@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Basic/Targets/ARC.cpp",
+  "wave": "wave9",
+  "loc_estimate": 23,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Basic/Targets/ARC.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.basic.targets.arc",
+  "generated": "2026-07-19T09:31:16+00:00"
+}

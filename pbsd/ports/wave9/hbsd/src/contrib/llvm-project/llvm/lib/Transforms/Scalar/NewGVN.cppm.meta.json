@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Scalar/NewGVN.cpp",
+  "wave": "wave9",
+  "loc_estimate": 4285,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Scalar/NewGVN.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.scalar.newgvn",
+  "generated": "2026-07-19T09:31:58+00:00"
+}

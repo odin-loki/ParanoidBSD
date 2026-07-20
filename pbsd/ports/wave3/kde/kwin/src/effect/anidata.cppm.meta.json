@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/effect/anidata.cpp",
+  "wave": "wave3",
+  "loc_estimate": 110,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/effect/anidata.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.effect.anidata",
+  "generated": "2026-07-19T09:19:13+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/sendmail/libsm/ldap.c",
+  "wave": "wave9",
+  "loc_estimate": 1703,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/sendmail/libsm/ldap.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.sendmail.libsm.ldap",
+  "generated": "2026-07-19T09:37:28+00:00"
+}

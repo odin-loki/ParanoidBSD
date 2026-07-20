@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/pthread/unwind/main_thread_exit.cpp",
+  "wave": "wave9",
+  "loc_estimate": 17,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/pthread/unwind/main_thread_exit.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.pthread.unwind.main_thread_exit",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/kioworkers/file/kauth/filehelper.cpp",
+  "wave": "wave3",
+  "loc_estimate": 277,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/kioworkers/file/kauth/filehelper.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.kioworkers.file.kauth.filehelper",
+  "generated": "2026-07-19T09:30:17+00:00"
+}

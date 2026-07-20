@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_truncf.c",
+  "wave": "wave2",
+  "loc_estimate": 49,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_truncf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_truncf",
+  "generated": "2026-07-19T09:19:10+00:00"
+}

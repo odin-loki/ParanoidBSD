@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/vfs_mountroot.c",
+  "wave": "wave4",
+  "loc_estimate": 1166,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/vfs_mountroot.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.vfs_mountroot",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

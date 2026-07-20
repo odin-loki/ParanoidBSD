@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qlxgb/qla_isr.c",
+  "wave": "wave5",
+  "loc_estimate": 410,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qlxgb/qla_isr.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qlxgb.qla_isr",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

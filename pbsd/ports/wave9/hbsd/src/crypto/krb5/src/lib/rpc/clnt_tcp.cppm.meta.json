@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/rpc/clnt_tcp.c",
+  "wave": "wave9",
+  "loc_estimate": 509,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/rpc/clnt_tcp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.rpc.clnt_tcp",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

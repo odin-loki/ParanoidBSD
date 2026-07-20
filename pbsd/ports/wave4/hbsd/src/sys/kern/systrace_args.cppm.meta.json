@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/systrace_args.c",
+  "wave": "wave4",
+  "loc_estimate": 11523,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/systrace_args.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.systrace_args",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

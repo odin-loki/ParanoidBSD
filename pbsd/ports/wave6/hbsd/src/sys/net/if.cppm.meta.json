@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/net/if.c",
+  "wave": "wave6",
+  "loc_estimate": 5263,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/if.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.net.if",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

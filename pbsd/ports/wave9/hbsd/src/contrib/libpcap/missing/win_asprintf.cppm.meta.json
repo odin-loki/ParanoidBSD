@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libpcap/missing/win_asprintf.c",
+  "wave": "wave9",
+  "loc_estimate": 51,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libpcap/missing/win_asprintf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libpcap.missing.win_asprintf",
+  "generated": "2026-07-19T09:37:41+00:00"
+}

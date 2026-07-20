@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/mandoc/dbm_map.c",
+  "wave": "wave9",
+  "loc_estimate": 194,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/dbm_map.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.dbm_map",
+  "generated": "2026-07-19T09:37:39+00:00"
+}

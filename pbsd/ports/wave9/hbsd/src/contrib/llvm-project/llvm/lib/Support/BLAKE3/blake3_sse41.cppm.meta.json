@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Support/BLAKE3/blake3_sse41.c",
+  "wave": "wave9",
+  "loc_estimate": 560,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Support/BLAKE3/blake3_sse41.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.support.blake3.blake3_sse41",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

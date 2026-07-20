@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/mwl/mwldebug/mwldebug.c",
+  "wave": "wave9",
+  "loc_estimate": 208,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/mwl/mwldebug/mwldebug.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.mwl.mwldebug.mwldebug",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

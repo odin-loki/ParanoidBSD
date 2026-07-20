@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/sys_capability.c",
+  "wave": "wave4",
+  "loc_estimate": 686,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/sys_capability.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.sys_capability",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

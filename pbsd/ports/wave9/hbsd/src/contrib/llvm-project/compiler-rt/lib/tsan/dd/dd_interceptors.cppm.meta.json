@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/dd/dd_interceptors.cpp",
+  "wave": "wave9",
+  "loc_estimate": 330,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/dd/dd_interceptors.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.tsan.dd.dd_interceptors",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

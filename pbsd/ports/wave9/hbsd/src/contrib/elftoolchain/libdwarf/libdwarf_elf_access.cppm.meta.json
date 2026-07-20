@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/elftoolchain/libdwarf/libdwarf_elf_access.c",
+  "wave": "wave9",
+  "loc_estimate": 164,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/elftoolchain/libdwarf/libdwarf_elf_access.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.elftoolchain.libdwarf.libdwarf_elf_access",
+  "generated": "2026-07-19T09:37:29+00:00"
+}

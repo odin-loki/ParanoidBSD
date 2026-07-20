@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/mandoc/dba_write.c",
+  "wave": "wave9",
+  "loc_estimate": 127,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/dba_write.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.dba_write",
+  "generated": "2026-07-19T09:37:39+00:00"
+}

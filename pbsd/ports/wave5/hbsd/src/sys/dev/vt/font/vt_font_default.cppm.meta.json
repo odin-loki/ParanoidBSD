@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/vt/font/vt_font_default.c",
+  "wave": "wave5",
+  "loc_estimate": 3495,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/vt/font/vt_font_default.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.vt.font.vt_font_default",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cam/ctl/ctl_backend_block.c",
+  "wave": "wave5",
+  "loc_estimate": 3326,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/cam/ctl/ctl_backend_block.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.cam.ctl.ctl_backend_block",
+  "generated": "2026-07-19T09:29:22+00:00"
+}

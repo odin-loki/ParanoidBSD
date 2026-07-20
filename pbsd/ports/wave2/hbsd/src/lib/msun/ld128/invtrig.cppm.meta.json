@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/ld128/invtrig.c",
+  "wave": "wave2",
+  "loc_estimate": 99,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/ld128/invtrig.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.ld128.invtrig",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

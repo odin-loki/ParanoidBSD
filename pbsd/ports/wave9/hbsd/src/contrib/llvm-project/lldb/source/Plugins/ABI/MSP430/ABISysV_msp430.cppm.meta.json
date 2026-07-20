@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/MSP430/ABISysV_msp430.cpp",
+  "wave": "wave9",
+  "loc_estimate": 361,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/MSP430/ABISysV_msp430.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.abi.msp430.abisysv_msp430",
+  "generated": "2026-07-19T09:31:41+00:00"
+}

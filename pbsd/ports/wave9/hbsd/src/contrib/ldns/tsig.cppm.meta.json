@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ldns/tsig.c",
+  "wave": "wave9",
+  "loc_estimate": 494,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ldns/tsig.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ldns.tsig",
+  "generated": "2026-07-19T09:37:45+00:00"
+}

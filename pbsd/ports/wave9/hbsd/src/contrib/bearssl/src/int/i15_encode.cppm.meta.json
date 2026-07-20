@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bearssl/src/int/i15_encode.c",
+  "wave": "wave9",
+  "loc_estimate": 56,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/int/i15_encode.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.int.i15_encode",
+  "generated": "2026-07-19T09:37:18+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qlnx/qlnxe/ecore_roce.c",
+  "wave": "wave5",
+  "loc_estimate": 1570,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qlnx/qlnxe/ecore_roce.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qlnx.qlnxe.ecore_roce",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

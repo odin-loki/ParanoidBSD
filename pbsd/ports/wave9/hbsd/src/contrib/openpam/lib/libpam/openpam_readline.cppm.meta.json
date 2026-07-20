@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/openpam/lib/libpam/openpam_readline.c",
+  "wave": "wave9",
+  "loc_estimate": 134,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openpam/lib/libpam/openpam_readline.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.openpam.lib.libpam.openpam_readline",
+  "generated": "2026-07-19T09:37:39+00:00"
+}

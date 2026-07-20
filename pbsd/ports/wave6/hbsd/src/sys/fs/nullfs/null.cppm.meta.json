@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/nullfs/null.h",
+  "wave": "wave6",
+  "loc_estimate": 105,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nullfs/null.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nullfs.null",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

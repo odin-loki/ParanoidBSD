@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/AST/StmtViz.cpp",
+  "wave": "wave9",
+  "loc_estimate": 60,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/AST/StmtViz.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.ast.stmtviz",
+  "generated": "2026-07-19T09:31:17+00:00"
+}

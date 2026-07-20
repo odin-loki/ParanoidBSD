@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kservice/src/services/kmimetypefactory.cpp",
+  "wave": "wave3",
+  "loc_estimate": 168,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kservice/src/services/kmimetypefactory.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kservice.src.services.kmimetypefactory",
+  "generated": "2026-07-19T09:30:15+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/ssl/rio/poll_immediate.c",
+  "wave": "wave9",
+  "loc_estimate": 480,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/ssl/rio/poll_immediate.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.ssl.rio.poll_immediate",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

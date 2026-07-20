@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/hid/hidmap.c",
+  "wave": "wave5",
+  "loc_estimate": 834,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/hid/hidmap.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.hid.hidmap",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

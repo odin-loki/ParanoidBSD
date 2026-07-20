@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mlx5/mlx5_fpga/mlx5fpga_ipsec.c",
+  "wave": "wave5",
+  "loc_estimate": 375,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx5/mlx5_fpga/mlx5fpga_ipsec.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx5.mlx5_fpga.mlx5fpga_ipsec",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

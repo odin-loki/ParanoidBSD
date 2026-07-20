@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/ec/ecp_nistz256_table.c",
+  "wave": "wave9",
+  "loc_estimate": 14923,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/ec/ecp_nistz256_table.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.ec.ecp_nistz256_table",
+  "generated": "2026-07-19T09:30:07+00:00"
+}

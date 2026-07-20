@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/sldns/wire2str.c",
+  "wave": "wave9",
+  "loc_estimate": 2513,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/sldns/wire2str.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.sldns.wire2str",
+  "generated": "2026-07-19T09:37:34+00:00"
+}

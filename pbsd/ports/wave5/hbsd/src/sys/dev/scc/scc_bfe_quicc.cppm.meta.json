@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/scc/scc_bfe_quicc.c",
+  "wave": "wave5",
+  "loc_estimate": 98,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/scc/scc_bfe_quicc.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.scc.scc_bfe_quicc",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

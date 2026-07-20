@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/capsicum/bindat_connectat.c",
+  "wave": "wave9",
+  "loc_estimate": 230,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/capsicum/bindat_connectat.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.capsicum.bindat_connectat",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

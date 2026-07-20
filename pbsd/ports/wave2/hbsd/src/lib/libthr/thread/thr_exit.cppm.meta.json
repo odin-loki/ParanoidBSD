@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libthr/thread/thr_exit.c",
+  "wave": "wave2",
+  "loc_estimate": 327,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/thread/thr_exit.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.thread.thr_exit",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

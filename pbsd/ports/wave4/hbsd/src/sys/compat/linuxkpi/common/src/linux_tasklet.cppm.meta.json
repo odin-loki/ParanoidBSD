@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/compat/linuxkpi/common/src/linux_tasklet.c",
+  "wave": "wave4",
+  "loc_estimate": 277,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/common/src/linux_tasklet.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.common.src.linux_tasklet",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

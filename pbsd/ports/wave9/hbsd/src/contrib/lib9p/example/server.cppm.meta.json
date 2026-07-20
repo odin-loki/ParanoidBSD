@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/lib9p/example/server.c",
+  "wave": "wave9",
+  "loc_estimate": 89,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/lib9p/example/server.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.lib9p.example.server",
+  "generated": "2026-07-19T09:38:03+00:00"
+}

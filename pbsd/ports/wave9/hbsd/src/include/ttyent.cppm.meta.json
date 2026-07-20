@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/ttyent.h",
+  "wave": "wave9",
+  "loc_estimate": 76,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/ttyent.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.ttyent",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

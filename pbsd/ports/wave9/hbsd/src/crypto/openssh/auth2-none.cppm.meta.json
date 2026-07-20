@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/auth2-none.c",
+  "wave": "wave9",
+  "loc_estimate": 76,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/auth2-none.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.auth2_none",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/utils/TableGen/Basic/RuntimeLibcallsEmitter.cpp",
+  "wave": "wave9",
+  "loc_estimate": 586,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/utils/TableGen/Basic/RuntimeLibcallsEmitter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.utils.tablegen.basic.runtimelibcallsemitter",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

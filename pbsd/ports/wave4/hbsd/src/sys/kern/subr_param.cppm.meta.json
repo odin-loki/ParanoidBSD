@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/subr_param.c",
+  "wave": "wave4",
+  "loc_estimate": 378,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_param.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_param",
+  "generated": "2026-07-19T07:47:45+00:00"
+}

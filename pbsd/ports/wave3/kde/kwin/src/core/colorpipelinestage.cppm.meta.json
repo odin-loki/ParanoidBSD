@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/core/colorpipelinestage.cpp",
+  "wave": "wave3",
+  "loc_estimate": 48,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/core/colorpipelinestage.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.core.colorpipelinestage",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

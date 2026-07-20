@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/nscd/log.c",
+  "wave": "wave2",
+  "loc_estimate": 77,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/nscd/log.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.nscd.log",
+  "generated": "2026-07-19T09:02:52+00:00"
+}

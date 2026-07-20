@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_read_format_7zip_malformed.c",
+  "wave": "wave9",
+  "loc_estimate": 83,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_read_format_7zip_malformed.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_read_format_7zip_malformed",
+  "generated": "2026-07-19T09:30:40+00:00"
+}

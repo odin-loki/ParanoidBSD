@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/sys/shm_open.c",
+  "wave": "wave2",
+  "loc_estimate": 73,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/sys/shm_open.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.sys.shm_open",
+  "generated": "2026-07-19T09:29:45+00:00"
+}

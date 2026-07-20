@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/expat/tests/benchmark/benchmark.c",
+  "wave": "wave9",
+  "loc_estimate": 174,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/expat/tests/benchmark/benchmark.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.expat.tests.benchmark.benchmark",
+  "generated": "2026-07-19T09:37:49+00:00"
+}

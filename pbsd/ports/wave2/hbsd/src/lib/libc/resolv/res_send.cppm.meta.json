@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/resolv/res_send.c",
+  "wave": "wave2",
+  "loc_estimate": 1144,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/resolv/res_send.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.resolv.res_send",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

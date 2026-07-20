@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/sys/getdents.c",
+  "wave": "wave2",
+  "loc_estimate": 38,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/sys/getdents.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.sys.getdents",
+  "generated": "2026-07-19T09:19:10+00:00"
+}

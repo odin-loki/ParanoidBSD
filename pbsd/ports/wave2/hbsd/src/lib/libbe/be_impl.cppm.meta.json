@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libbe/be_impl.h",
+  "wave": "wave2",
+  "loc_estimate": 55,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libbe/be_impl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libbe.be_impl",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

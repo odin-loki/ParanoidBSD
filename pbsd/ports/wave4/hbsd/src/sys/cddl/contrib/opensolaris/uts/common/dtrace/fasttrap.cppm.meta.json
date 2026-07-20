@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cddl/contrib/opensolaris/uts/common/dtrace/fasttrap.c",
+  "wave": "wave4",
+  "loc_estimate": 2666,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/contrib/opensolaris/uts/common/dtrace/fasttrap.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.contrib.opensolaris.uts.common.dtrace.fasttrap",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

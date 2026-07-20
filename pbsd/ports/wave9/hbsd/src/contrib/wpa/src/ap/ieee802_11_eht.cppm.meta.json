@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/ap/ieee802_11_eht.c",
+  "wave": "wave9",
+  "loc_estimate": 1405,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/ap/ieee802_11_eht.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.ap.ieee802_11_eht",
+  "generated": "2026-07-19T09:31:02+00:00"
+}

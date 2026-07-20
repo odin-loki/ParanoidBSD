@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/dialog/tailbox.c",
+  "wave": "wave9",
+  "loc_estimate": 433,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/dialog/tailbox.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.dialog.tailbox",
+  "generated": "2026-07-19T09:37:51+00:00"
+}

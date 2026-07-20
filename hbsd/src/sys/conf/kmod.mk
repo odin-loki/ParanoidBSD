@@ -77,7 +77,7 @@ XARGS_J?=	-J
 .include "kmod.opts.mk"
 .include <bsd.sysdir.mk>
 
-.SUFFIXES: .out .o .c .cc .cxx .C .y .l .s .S .m
+.SUFFIXES: .out .o .c .cc .cxx .cpp .C .y .l .s .S .m
 
 # amd64 uses direct linking for kmod, all others use shared binaries
 .if ${MACHINE_CPUARCH} != amd64
@@ -590,3 +590,15 @@ OPENZFS_CFLAGS=     \
 .include <bsd.clang-analyze.mk>
 .include <bsd.obj.mk>
 .include "kern.mk"
+
+#
+# C++23 freestanding module TUs (PBSD dual-link pattern — see KERNEL_CXX_ABI.md).
+#
+.if !empty(SRCS:M*.cpp) || !empty(SRCS:M*.cxx) || !empty(SRCS:M*.cc) || !empty(SRCS:M*.C)
+.if !target(__<bsd.suffixes.mk>__)
+.include <bsd.suffixes.mk>
+.endif
+CXX?=		${CC}
+# Drop C-only -std= from inherited CFLAGS; NORMAL_CXX supplies -std=c++23.
+CXXFLAGS+=	${CFLAGS:N-std=*} ${NORMAL_CXX}
+.endif

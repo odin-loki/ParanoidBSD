@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/regress/misc/fuzz-harness/authkeys_fuzz.cc",
+  "wave": "wave9",
+  "loc_estimate": 81,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/regress/misc/fuzz-harness/authkeys_fuzz.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.regress.misc.fuzz_harness.authkeys_fuzz",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

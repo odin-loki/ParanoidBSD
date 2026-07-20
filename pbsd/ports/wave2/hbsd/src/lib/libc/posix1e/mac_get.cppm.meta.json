@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/posix1e/mac_get.c",
+  "wave": "wave2",
+  "loc_estimate": 86,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/posix1e/mac_get.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.posix1e.mac_get",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/include/stdarg.h",
+  "wave": "wave7",
+  "loc_estimate": 5,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/include/stdarg.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.include.stdarg",
+  "generated": "2026-07-19T10:59:30+00:00"
+}

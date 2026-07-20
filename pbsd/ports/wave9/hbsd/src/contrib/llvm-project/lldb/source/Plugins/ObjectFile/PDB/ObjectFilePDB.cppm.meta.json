@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ObjectFile/PDB/ObjectFilePDB.cpp",
+  "wave": "wave9",
+  "loc_estimate": 195,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ObjectFile/PDB/ObjectFilePDB.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.objectfile.pdb.objectfilepdb",
+  "generated": "2026-07-19T09:31:39+00:00"
+}

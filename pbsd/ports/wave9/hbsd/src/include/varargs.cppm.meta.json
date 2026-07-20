@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/varargs.h",
+  "wave": "wave9",
+  "loc_estimate": 35,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/varargs.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.varargs",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

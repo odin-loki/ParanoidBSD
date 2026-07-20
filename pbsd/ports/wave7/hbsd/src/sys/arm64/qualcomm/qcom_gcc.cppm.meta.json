@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/qualcomm/qcom_gcc.c",
+  "wave": "wave7",
+  "loc_estimate": 143,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/qualcomm/qcom_gcc.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.qualcomm.qcom_gcc",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

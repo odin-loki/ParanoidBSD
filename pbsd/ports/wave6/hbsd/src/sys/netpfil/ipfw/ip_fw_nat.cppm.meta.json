@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/ipfw/ip_fw_nat.c",
+  "wave": "wave6",
+  "loc_estimate": 1248,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/ip_fw_nat.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.ip_fw_nat",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

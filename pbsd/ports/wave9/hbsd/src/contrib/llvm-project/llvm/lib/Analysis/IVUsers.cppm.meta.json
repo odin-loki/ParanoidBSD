@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Analysis/IVUsers.cpp",
+  "wave": "wave9",
+  "loc_estimate": 374,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Analysis/IVUsers.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.analysis.ivusers",
+  "generated": "2026-07-19T09:31:54+00:00"
+}

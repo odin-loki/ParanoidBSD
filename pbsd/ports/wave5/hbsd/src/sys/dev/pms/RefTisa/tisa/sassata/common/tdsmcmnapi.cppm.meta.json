@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/common/tdsmcmnapi.c",
+  "wave": "wave5",
+  "loc_estimate": 1409,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/common/tdsmcmnapi.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.reftisa.tisa.sassata.common.tdsmcmnapi",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

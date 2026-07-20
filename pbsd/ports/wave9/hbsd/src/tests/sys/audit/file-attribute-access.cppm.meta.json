@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/audit/file-attribute-access.c",
+  "wave": "wave9",
+  "loc_estimate": 1254,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/audit/file-attribute-access.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.audit.file_attribute_access",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

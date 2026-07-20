@@ -1,0 +1,19 @@
+export module pbsd.port.wave9.hbsd.src.contrib.libarchive.cpio.test.test_option_d;
+
+module;
+extern "C" {
+// Legacy TU symbols — hand-port from hbsd/src/contrib/libarchive/cpio/test/test_option_d.c
+// void test_option_d_init(void);
+}
+
+import pbsd.core;
+
+/// Auto-generated migration stub — status: stubbed
+/// @pbsd-migration-meta source=hbsd/src/contrib/libarchive/cpio/test/test_option_d.c wave=wave9 loc=44
+export namespace pbsd::port::wave9::hbsd::src::contrib::libarchive::cpio::test::test_option_d {
+
+[[nodiscard]] inline Status migration_status() noexcept {
+    return Status::NotImplemented;
+}
+
+} // namespace pbsd::port::wave9::hbsd::src::contrib::libarchive::cpio::test::test_option_d

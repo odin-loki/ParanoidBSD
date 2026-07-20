@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/imports/activitymanager/switcherbackend.cpp",
+  "wave": "wave3",
+  "loc_estimate": 464,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/imports/activitymanager/switcherbackend.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.imports.activitymanager.switcherbackend",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

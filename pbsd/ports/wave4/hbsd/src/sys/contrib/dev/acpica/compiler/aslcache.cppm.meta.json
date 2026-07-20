@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/acpica/compiler/aslcache.c",
+  "wave": "wave4",
+  "loc_estimate": 484,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/compiler/aslcache.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.compiler.aslcache",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

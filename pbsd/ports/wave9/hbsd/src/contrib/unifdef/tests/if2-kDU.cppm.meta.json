@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unifdef/tests/if2-kDU.c",
+  "wave": "wave9",
+  "loc_estimate": 29,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unifdef/tests/if2-kDU.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unifdef.tests.if2_kdu",
+  "generated": "2026-07-19T09:37:52+00:00"
+}

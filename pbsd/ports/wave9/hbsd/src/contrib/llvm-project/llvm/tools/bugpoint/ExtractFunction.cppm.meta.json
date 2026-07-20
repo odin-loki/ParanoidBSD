@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/tools/bugpoint/ExtractFunction.cpp",
+  "wave": "wave9",
+  "loc_estimate": 419,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/bugpoint/ExtractFunction.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.bugpoint.extractfunction",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

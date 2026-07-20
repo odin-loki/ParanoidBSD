@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1920" height="40" viewBox="0 0 1920 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="aero-taskbar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6ca0e8" stop-opacity="0.94"/>
+      <stop offset="0.5" stop-color="#3c72b8" stop-opacity="0.90"/>
+      <stop offset="1" stop-color="#1a3a72" stop-opacity="0.88"/>
+    </linearGradient>
+    <linearGradient id="aero-taskbar-shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.38"/>
+      <stop offset="0.4" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="40" fill="url(#aero-taskbar)"/>
+  <rect x="0" y="0" width="1920" height="12" fill="url(#aero-taskbar-shine)"/>
+  <rect x="0" y="0" width="1920" height="1" fill="#b8d8ff" fill-opacity="0.65"/>
+  <rect x="0" y="39" width="1920" height="1" fill="#081428" fill-opacity="0.5"/>
+</svg>

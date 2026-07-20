@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/xray/xray_x86_64.cpp",
+  "wave": "wave9",
+  "loc_estimate": 340,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/xray/xray_x86_64.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.xray.xray_x86_64",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

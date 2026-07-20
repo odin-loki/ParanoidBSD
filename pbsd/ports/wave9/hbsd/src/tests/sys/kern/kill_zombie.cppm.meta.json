@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/kern/kill_zombie.c",
+  "wave": "wave9",
+  "loc_estimate": 63,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/kill_zombie.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.kill_zombie",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sume/if_sume.c",
+  "wave": "wave5",
+  "loc_estimate": 1578,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sume/if_sume.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sume.if_sume",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

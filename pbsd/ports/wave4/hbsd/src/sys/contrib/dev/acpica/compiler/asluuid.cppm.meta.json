@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/acpica/compiler/asluuid.c",
+  "wave": "wave4",
+  "loc_estimate": 213,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/compiler/asluuid.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.compiler.asluuid",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

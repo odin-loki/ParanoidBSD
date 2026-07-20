@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/util/ub_event.c",
+  "wave": "wave9",
+  "loc_estimate": 525,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/util/ub_event.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.util.ub_event",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

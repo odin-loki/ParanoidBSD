@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/include/adf_gen2_pfvf.h",
+  "wave": "wave5",
+  "loc_estimate": 26,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/include/adf_gen2_pfvf.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.include.adf_gen2_pfvf",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

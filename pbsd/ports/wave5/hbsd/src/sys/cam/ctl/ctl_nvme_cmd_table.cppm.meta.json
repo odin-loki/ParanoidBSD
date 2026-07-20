@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cam/ctl/ctl_nvme_cmd_table.c",
+  "wave": "wave5",
+  "loc_estimate": 35,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/cam/ctl/ctl_nvme_cmd_table.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.cam.ctl.ctl_nvme_cmd_table",
+  "generated": "2026-07-19T08:40:42+00:00"
+}

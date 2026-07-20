@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/mandoc/compat_stringlist.c",
+  "wave": "wave9",
+  "loc_estimate": 135,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/compat_stringlist.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.compat_stringlist",
+  "generated": "2026-07-19T09:37:39+00:00"
+}

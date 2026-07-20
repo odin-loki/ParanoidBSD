@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/ath/ath_hal/ar9300/ar9300_attach.c",
+  "wave": "wave4",
+  "loc_estimate": 4351,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/ath/ath_hal/ar9300/ar9300_attach.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.ath.ath_hal.ar9300.ar9300_attach",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

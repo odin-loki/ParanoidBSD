@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/jemalloc/src/counter.c",
+  "wave": "wave9",
+  "loc_estimate": 30,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/src/counter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.src.counter",
+  "generated": "2026-07-19T09:37:43+00:00"
+}

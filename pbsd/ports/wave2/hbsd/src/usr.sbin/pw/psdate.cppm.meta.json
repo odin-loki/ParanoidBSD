@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/pw/psdate.c",
+  "wave": "wave2",
+  "loc_estimate": 254,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/pw/psdate.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.pw.psdate",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Format/WhitespaceManager.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1802,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Format/WhitespaceManager.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.format.whitespacemanager",
+  "generated": "2026-07-19T09:31:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/softfloat/letf2.c",
+  "wave": "wave2",
+  "loc_estimate": 23,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/softfloat/letf2.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.softfloat.letf2",
+  "generated": "2026-07-19T08:29:02+00:00"
+}

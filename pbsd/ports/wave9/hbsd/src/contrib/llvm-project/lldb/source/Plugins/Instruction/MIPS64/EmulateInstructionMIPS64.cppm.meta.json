@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Instruction/MIPS64/EmulateInstructionMIPS64.cpp",
+  "wave": "wave9",
+  "loc_estimate": 2367,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Instruction/MIPS64/EmulateInstructionMIPS64.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.instruction.mips64.emulateinstructionmips64",
+  "generated": "2026-07-19T09:31:44+00:00"
+}

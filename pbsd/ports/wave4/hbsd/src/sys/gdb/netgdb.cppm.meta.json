@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/gdb/netgdb.c",
+  "wave": "wave4",
+  "loc_estimate": 390,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/gdb/netgdb.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.gdb.netgdb",
+  "generated": "2026-07-19T09:31:13+00:00"
+}

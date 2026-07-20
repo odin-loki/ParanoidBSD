@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/lyaml/ext/yaml/yaml.c",
+  "wave": "wave9",
+  "loc_estimate": 70,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/lyaml/ext/yaml/yaml.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.lyaml.ext.yaml.yaml",
+  "generated": "2026-07-19T09:38:17+00:00"
+}

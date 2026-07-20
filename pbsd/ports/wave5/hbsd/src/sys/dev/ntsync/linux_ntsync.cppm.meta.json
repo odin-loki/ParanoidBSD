@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ntsync/linux_ntsync.c",
+  "wave": "wave5",
+  "loc_estimate": 338,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ntsync/linux_ntsync.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ntsync.linux_ntsync",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

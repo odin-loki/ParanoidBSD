@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/vers/print_version.c",
+  "wave": "wave9",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/vers/print_version.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.vers.print_version",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

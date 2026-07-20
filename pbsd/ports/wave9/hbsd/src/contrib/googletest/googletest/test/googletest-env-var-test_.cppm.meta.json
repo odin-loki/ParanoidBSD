@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/googletest/googletest/test/googletest-env-var-test_.cc",
+  "wave": "wave9",
+  "loc_estimate": 130,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/googletest/googletest/test/googletest-env-var-test_.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.googletest.googletest.test.googletest_env_var_test_",
+  "generated": "2026-07-19T09:37:38+00:00"
+}

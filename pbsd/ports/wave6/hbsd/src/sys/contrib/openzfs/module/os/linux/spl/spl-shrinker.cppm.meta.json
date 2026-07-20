@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/os/linux/spl/spl-shrinker.c",
+  "wave": "wave6",
+  "loc_estimate": 78,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/os/linux/spl/spl-shrinker.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.os.linux.spl.spl_shrinker",
+  "generated": "2026-07-19T08:30:55+00:00"
+}

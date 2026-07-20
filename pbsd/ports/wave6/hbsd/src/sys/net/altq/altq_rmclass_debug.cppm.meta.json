@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/net/altq/altq_rmclass_debug.h",
+  "wave": "wave6",
+  "loc_estimate": 110,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/altq/altq_rmclass_debug.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.net.altq.altq_rmclass_debug",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

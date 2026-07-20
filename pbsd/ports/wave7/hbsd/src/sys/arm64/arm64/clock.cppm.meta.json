@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/arm64/clock.c",
+  "wave": "wave7",
+  "loc_estimate": 36,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/arm64/clock.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.arm64.clock",
+  "generated": "2026-07-19T08:30:56+00:00"
+}

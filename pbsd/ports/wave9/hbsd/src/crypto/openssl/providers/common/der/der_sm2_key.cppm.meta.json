@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/providers/common/der/der_sm2_key.c",
+  "wave": "wave9",
+  "loc_estimate": 23,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/common/der/der_sm2_key.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.common.der.der_sm2_key",
+  "generated": "2026-07-19T09:30:02+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/kern_jailmeta.c",
+  "wave": "wave4",
+  "loc_estimate": 617,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_jailmeta.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_jailmeta",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

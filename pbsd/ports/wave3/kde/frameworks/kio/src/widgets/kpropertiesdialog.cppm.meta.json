@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/widgets/kpropertiesdialog.cpp",
+  "wave": "wave3",
+  "loc_estimate": 604,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/widgets/kpropertiesdialog.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.widgets.kpropertiesdialog",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

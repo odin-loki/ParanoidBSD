@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/usb/gadget/g_modem.c",
+  "wave": "wave5",
+  "loc_estimate": 537,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/gadget/g_modem.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.gadget.g_modem",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

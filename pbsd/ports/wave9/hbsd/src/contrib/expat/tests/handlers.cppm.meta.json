@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/expat/tests/handlers.c",
+  "wave": "wave9",
+  "loc_estimate": 2043,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/expat/tests/handlers.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.expat.tests.handlers",
+  "generated": "2026-07-19T09:37:49+00:00"
+}

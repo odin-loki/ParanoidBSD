@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mii/dp83867phy.c",
+  "wave": "wave5",
+  "loc_estimate": 291,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mii/dp83867phy.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mii.dp83867phy",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

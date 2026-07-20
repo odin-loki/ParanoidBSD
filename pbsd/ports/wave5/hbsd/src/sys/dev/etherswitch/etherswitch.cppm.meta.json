@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/etherswitch/etherswitch.c",
+  "wave": "wave5",
+  "loc_estimate": 226,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/etherswitch/etherswitch.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.etherswitch.etherswitch",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

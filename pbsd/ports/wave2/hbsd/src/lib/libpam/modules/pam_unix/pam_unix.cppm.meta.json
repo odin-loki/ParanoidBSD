@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libpam/modules/pam_unix/pam_unix.c",
+  "wave": "wave2",
+  "loc_estimate": 492,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libpam/modules/pam_unix/pam_unix.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libpam.modules.pam_unix.pam_unix",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

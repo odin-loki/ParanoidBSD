@@ -1,0 +1,20 @@
+export module pbsd.port.wave2.hbsd.src.sbin.newfs_msdos.newfs_msdos;
+
+module;
+extern "C" {
+// Legacy TU entry — hand-port algorithm from hbsd/src/sbin/newfs_msdos/newfs_msdos.c
+int main(int argc, char* argv[]);
+}
+
+export import pbsd.userland.capsicum.helpers;
+import pbsd.core;
+
+/// Auto-generated migration stub — status: stubbed
+/// @pbsd-migration-meta source=hbsd/src/sbin/newfs_msdos/newfs_msdos.c wave=wave2 loc=276
+export namespace pbsd::port::wave2::hbsd::src::sbin::newfs_msdos::newfs_msdos {
+
+[[nodiscard]] inline Status migration_status() noexcept {
+    return Status::NotImplemented;
+}
+
+} // namespace pbsd::port::wave2::hbsd::src::sbin::newfs_msdos::newfs_msdos

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcpdump/print-isakmp.c",
+  "wave": "wave9",
+  "loc_estimate": 3134,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-isakmp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_isakmp",
+  "generated": "2026-07-19T09:37:27+00:00"
+}

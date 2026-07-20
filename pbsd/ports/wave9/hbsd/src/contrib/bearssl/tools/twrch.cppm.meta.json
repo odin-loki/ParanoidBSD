@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bearssl/tools/twrch.c",
+  "wave": "wave9",
+  "loc_estimate": 1069,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/tools/twrch.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.tools.twrch",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

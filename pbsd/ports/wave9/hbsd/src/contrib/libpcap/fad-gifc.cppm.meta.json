@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libpcap/fad-gifc.c",
+  "wave": "wave9",
+  "loc_estimate": 427,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libpcap/fad-gifc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libpcap.fad_gifc",
+  "generated": "2026-07-19T09:37:41+00:00"
+}

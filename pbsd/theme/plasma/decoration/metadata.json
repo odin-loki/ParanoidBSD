@@ -1,0 +1,17 @@
+{
+  "KPlugin": {
+    "Authors": [{"Name": "Odin Loch", "Email": "pbsd@local"}],
+    "Category": "Windows 7 style",
+    "Description": "PBSD Aero window decoration — blue glass title bar and Win7 chrome",
+    "EnabledByDefault": true,
+    "Id": "pbsd_aero",
+    "License": "Proprietary",
+    "Name": "PBSD Aero",
+    "Version": "0.4.0",
+    "Website": "https://paranoidbsd.local/theme/pbsd-aero"
+  },
+  "org.kde.kdecoration2": {
+    "blur": true,
+    "theme": "PBSDAero"
+  }
+}

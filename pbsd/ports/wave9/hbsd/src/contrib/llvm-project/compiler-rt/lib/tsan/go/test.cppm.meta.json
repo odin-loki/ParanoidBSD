@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/go/test.c",
+  "wave": "wave9",
+  "loc_estimate": 107,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/go/test.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.tsan.go.test",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

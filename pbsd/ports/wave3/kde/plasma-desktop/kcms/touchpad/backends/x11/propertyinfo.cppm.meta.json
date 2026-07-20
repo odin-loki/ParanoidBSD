@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/touchpad/backends/x11/propertyinfo.cpp",
+  "wave": "wave3",
+  "loc_estimate": 85,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/touchpad/backends/x11/propertyinfo.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.touchpad.backends.x11.propertyinfo",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

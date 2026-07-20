@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/wayland/transaction.cpp",
+  "wave": "wave3",
+  "loc_estimate": 289,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/wayland/transaction.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.wayland.transaction",
+  "generated": "2026-07-19T09:30:17+00:00"
+}

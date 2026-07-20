@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/atrun/gloadavg.c",
+  "wave": "wave2",
+  "loc_estimate": 69,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/atrun/gloadavg.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.atrun.gloadavg",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

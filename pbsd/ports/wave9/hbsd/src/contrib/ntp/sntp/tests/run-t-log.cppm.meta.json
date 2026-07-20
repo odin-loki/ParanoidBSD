@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/sntp/tests/run-t-log.c",
+  "wave": "wave9",
+  "loc_estimate": 67,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/sntp/tests/run-t-log.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.sntp.tests.run_t_log",
+  "generated": "2026-07-19T09:31:04+00:00"
+}

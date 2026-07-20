@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kcoreaddons/src/lib/plugin/kpluginmetadata.cpp",
+  "wave": "wave3",
+  "loc_estimate": 559,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/plugin/kpluginmetadata.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.plugin.kpluginmetadata",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

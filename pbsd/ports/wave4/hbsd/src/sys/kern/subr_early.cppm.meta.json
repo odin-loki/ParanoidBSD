@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/subr_early.c",
+  "wave": "wave4",
+  "loc_estimate": 69,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_early.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_early",
+  "generated": "2026-07-19T08:40:35+00:00"
+}

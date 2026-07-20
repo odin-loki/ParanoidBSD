@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/lua/lstate.c",
+  "wave": "wave6",
+  "loc_estimate": 319,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/lua/lstate.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.lua.lstate",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

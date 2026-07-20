@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/openbsd-compat/strlcpy.c",
+  "wave": "wave9",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/openbsd-compat/strlcpy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.openbsd_compat.strlcpy",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

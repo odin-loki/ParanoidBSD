@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/core/colorspace.cpp",
+  "wave": "wave3",
+  "loc_estimate": 953,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/core/colorspace.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.core.colorspace",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

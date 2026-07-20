@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/pf/ftp-proxy/ftp-proxy.c",
+  "wave": "wave9",
+  "loc_estimate": 1139,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pf/ftp-proxy/ftp-proxy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.pf.ftp_proxy.ftp_proxy",
+  "generated": "2026-07-19T09:38:01+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/test/timing_load_creds.c",
+  "wave": "wave9",
+  "loc_estimate": 251,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/timing_load_creds.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.timing_load_creds",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

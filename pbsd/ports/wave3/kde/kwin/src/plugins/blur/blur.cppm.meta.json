@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/plugins/blur/blur.cpp",
+  "wave": "wave3",
+  "loc_estimate": 979,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/blur/blur.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.plugins.blur.blur",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

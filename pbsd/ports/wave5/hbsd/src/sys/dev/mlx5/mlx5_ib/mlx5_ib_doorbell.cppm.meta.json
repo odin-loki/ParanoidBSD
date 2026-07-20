@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mlx5/mlx5_ib/mlx5_ib_doorbell.c",
+  "wave": "wave5",
+  "loc_estimate": 94,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx5/mlx5_ib/mlx5_ib_doorbell.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx5.mlx5_ib.mlx5_ib_doorbell",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

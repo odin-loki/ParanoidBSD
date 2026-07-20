@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/util/rfc_1982.c",
+  "wave": "wave9",
+  "loc_estimate": 75,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/util/rfc_1982.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.util.rfc_1982",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

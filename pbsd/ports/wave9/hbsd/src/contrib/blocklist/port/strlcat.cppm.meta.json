@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/blocklist/port/strlcat.c",
+  "wave": "wave9",
+  "loc_estimate": 99,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/blocklist/port/strlcat.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.blocklist.port.strlcat",
+  "generated": "2026-07-19T09:37:57+00:00"
+}

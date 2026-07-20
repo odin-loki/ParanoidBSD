@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ata/chipsets/ata-marvell.c",
+  "wave": "wave5",
+  "loc_estimate": 181,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ata/chipsets/ata-marvell.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ata.chipsets.ata_marvell",
+  "generated": "2026-07-19T09:06:10+00:00"
+}

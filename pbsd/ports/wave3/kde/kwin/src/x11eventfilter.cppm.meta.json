@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/x11eventfilter.cpp",
+  "wave": "wave3",
+  "loc_estimate": 51,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/x11eventfilter.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.x11eventfilter",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

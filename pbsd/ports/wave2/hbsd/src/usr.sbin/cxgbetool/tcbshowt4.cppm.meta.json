@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/cxgbetool/tcbshowt4.c",
+  "wave": "wave2",
+  "loc_estimate": 414,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/cxgbetool/tcbshowt4.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.cxgbetool.tcbshowt4",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

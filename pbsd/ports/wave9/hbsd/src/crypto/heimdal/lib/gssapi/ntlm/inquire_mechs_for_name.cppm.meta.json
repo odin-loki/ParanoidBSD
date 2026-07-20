@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/gssapi/ntlm/inquire_mechs_for_name.c",
+  "wave": "wave9",
+  "loc_estimate": 48,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/ntlm/inquire_mechs_for_name.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.ntlm.inquire_mechs_for_name",
+  "generated": "2026-07-19T09:30:34+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libpam/libpam/security/pam_mod_misc.h",
+  "wave": "wave4",
+  "loc_estimate": 56,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/lib/libpam/libpam/security/pam_mod_misc.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.lib.libpam.libpam.security.pam_mod_misc",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

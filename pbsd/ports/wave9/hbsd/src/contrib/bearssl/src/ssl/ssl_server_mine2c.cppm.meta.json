@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bearssl/src/ssl/ssl_server_mine2c.c",
+  "wave": "wave9",
+  "loc_estimate": 71,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/ssl/ssl_server_mine2c.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.ssl.ssl_server_mine2c",
+  "generated": "2026-07-19T09:37:18+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/tools/syscalls/examples/cpp/test_syscalls.c",
+  "wave": "wave4",
+  "loc_estimate": 19,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/tools/syscalls/examples/cpp/test_syscalls.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.tools.syscalls.examples.cpp.test_syscalls",
+  "generated": "2026-07-19T09:31:09+00:00"
+}

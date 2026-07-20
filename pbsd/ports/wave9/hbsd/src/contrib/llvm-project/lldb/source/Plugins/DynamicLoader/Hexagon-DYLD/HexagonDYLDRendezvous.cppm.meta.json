@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/DynamicLoader/Hexagon-DYLD/HexagonDYLDRendezvous.cpp",
+  "wave": "wave9",
+  "loc_estimate": 367,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/DynamicLoader/Hexagon-DYLD/HexagonDYLDRendezvous.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.dynamicloader.hexagon_dyld.hexagondyldrendezvous",
+  "generated": "2026-07-19T09:31:41+00:00"
+}

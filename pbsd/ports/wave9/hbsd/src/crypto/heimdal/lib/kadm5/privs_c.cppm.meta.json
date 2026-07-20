@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/kadm5/privs_c.c",
+  "wave": "wave9",
+  "loc_estimate": 82,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/kadm5/privs_c.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.kadm5.privs_c",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

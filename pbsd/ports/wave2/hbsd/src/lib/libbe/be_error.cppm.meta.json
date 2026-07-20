@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libbe/be_error.c",
+  "wave": "wave2",
+  "loc_estimate": 115,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libbe/be_error.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libbe.be_error",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

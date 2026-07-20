@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/kern/tty/readsz.c",
+  "wave": "wave9",
+  "loc_estimate": 130,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/tty/readsz.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.tty.readsz",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

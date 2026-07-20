@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-remarkutil/RemarkConvert.cpp",
+  "wave": "wave9",
+  "loc_estimate": 144,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-remarkutil/RemarkConvert.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_remarkutil.remarkconvert",
+  "generated": "2026-07-19T09:31:52+00:00"
+}

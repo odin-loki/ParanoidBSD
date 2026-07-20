@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/diag/prtblknos/prtblknos.c",
+  "wave": "wave9",
+  "loc_estimate": 302,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/diag/prtblknos/prtblknos.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.diag.prtblknos.prtblknos",
+  "generated": "2026-07-19T09:38:20+00:00"
+}

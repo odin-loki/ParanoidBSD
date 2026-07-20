@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/ofed/drivers/infiniband/core/ib_umem_odp.c",
+  "wave": "wave4",
+  "loc_estimate": 670,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/ofed/drivers/infiniband/core/ib_umem_odp.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.ofed.drivers.infiniband.core.ib_umem_odp",
+  "generated": "2026-07-19T09:31:14+00:00"
+}

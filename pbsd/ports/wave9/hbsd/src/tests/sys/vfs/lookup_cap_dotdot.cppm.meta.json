@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/vfs/lookup_cap_dotdot.c",
+  "wave": "wave9",
+  "loc_estimate": 272,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/vfs/lookup_cap_dotdot.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.vfs.lookup_cap_dotdot",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/mechglue/g_imp_cred.c",
+  "wave": "wave9",
+  "loc_estimate": 177,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/mechglue/g_imp_cred.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.mechglue.g_imp_cred",
+  "generated": "2026-07-19T09:30:29+00:00"
+}

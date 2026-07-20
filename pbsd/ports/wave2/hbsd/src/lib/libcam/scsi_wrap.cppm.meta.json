@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libcam/scsi_wrap.c",
+  "wave": "wave2",
+  "loc_estimate": 178,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libcam/scsi_wrap.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libcam.scsi_wrap",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

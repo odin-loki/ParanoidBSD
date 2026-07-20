@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/openbsm/bin/auditd/auditd.c",
+  "wave": "wave9",
+  "loc_estimate": 899,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openbsm/bin/auditd/auditd.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.openbsm.bin.auditd.auditd",
+  "generated": "2026-07-19T09:37:50+00:00"
+}

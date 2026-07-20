@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/realloc.c",
+  "wave": "wave9",
+  "loc_estimate": 46,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/realloc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.realloc",
+  "generated": "2026-07-19T09:30:34+00:00"
+}

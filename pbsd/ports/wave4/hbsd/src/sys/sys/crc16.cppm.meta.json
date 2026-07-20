@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/sys/crc16.h",
+  "wave": "wave4",
+  "loc_estimate": 46,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/sys/crc16.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.sys.crc16",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

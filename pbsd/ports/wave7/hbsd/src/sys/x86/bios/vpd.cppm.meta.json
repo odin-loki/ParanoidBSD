@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/x86/bios/vpd.c",
+  "wave": "wave7",
+  "loc_estimate": 307,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/x86/bios/vpd.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.x86.bios.vpd",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

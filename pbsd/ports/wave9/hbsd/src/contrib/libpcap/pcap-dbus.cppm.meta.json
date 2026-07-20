@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libpcap/pcap-dbus.c",
+  "wave": "wave9",
+  "loc_estimate": 353,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libpcap/pcap-dbus.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libpcap.pcap_dbus",
+  "generated": "2026-07-19T09:37:41+00:00"
+}

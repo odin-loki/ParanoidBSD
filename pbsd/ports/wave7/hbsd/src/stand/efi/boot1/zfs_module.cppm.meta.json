@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/efi/boot1/zfs_module.c",
+  "wave": "wave7",
+  "loc_estimate": 298,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/efi/boot1/zfs_module.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.efi.boot1.zfs_module",
+  "generated": "2026-07-19T09:49:40+00:00"
+}

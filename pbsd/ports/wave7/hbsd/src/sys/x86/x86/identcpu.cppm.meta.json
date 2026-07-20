@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/x86/x86/identcpu.c",
+  "wave": "wave7",
+  "loc_estimate": 2700,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/x86/x86/identcpu.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.x86.x86.identcpu",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

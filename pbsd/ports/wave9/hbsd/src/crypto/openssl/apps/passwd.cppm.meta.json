@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/apps/passwd.c",
+  "wave": "wave9",
+  "loc_estimate": 852,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/apps/passwd.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.apps.passwd",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

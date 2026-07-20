@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libcompat/4.4/cuserid.c",
+  "wave": "wave2",
+  "loc_estimate": 53,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libcompat/4.4/cuserid.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libcompat._4_4.cuserid",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

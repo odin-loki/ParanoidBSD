@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/librumpclient/h_exec.c",
+  "wave": "wave9",
+  "loc_estimate": 132,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/librumpclient/h_exec.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.librumpclient.h_exec",
+  "generated": "2026-07-19T09:30:56+00:00"
+}

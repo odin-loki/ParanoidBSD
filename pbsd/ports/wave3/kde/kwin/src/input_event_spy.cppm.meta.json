@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/input_event_spy.cpp",
+  "wave": "wave3",
+  "loc_estimate": 133,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/input_event_spy.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.input_event_spy",
+  "generated": "2026-07-19T09:30:14+00:00"
+}

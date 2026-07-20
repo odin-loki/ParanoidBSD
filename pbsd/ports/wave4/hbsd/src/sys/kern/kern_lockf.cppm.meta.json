@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/kern_lockf.c",
+  "wave": "wave4",
+  "loc_estimate": 2667,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_lockf.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_lockf",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

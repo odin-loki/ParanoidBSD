@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/efi/loader/arch/amd64/multiboot2.c",
+  "wave": "wave7",
+  "loc_estimate": 564,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/efi/loader/arch/amd64/multiboot2.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.efi.loader.arch.amd64.multiboot2",
+  "generated": "2026-07-19T09:49:42+00:00"
+}

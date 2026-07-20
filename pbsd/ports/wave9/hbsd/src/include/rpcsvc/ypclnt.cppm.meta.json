@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/rpcsvc/ypclnt.h",
+  "wave": "wave9",
+  "loc_estimate": 93,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/rpcsvc/ypclnt.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.rpcsvc.ypclnt",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

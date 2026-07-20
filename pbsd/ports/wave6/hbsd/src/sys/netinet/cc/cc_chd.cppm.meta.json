@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/cc/cc_chd.c",
+  "wave": "wave6",
+  "loc_estimate": 509,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/cc/cc_chd.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.cc.cc_chd",
+  "generated": "2026-07-19T09:02:53+00:00"
+}

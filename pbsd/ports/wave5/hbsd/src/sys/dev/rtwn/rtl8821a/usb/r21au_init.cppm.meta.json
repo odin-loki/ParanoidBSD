@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/rtwn/rtl8821a/usb/r21au_init.c",
+  "wave": "wave5",
+  "loc_estimate": 68,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8821a/usb/r21au_init.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8821a.usb.r21au_init",
+  "generated": "2026-07-19T07:47:45+00:00"
+}

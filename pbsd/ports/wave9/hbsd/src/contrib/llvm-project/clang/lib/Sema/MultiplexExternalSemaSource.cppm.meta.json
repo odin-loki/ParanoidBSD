@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Sema/MultiplexExternalSemaSource.cpp",
+  "wave": "wave9",
+  "loc_estimate": 376,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Sema/MultiplexExternalSemaSource.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.sema.multiplexexternalsemasource",
+  "generated": "2026-07-19T09:31:19+00:00"
+}

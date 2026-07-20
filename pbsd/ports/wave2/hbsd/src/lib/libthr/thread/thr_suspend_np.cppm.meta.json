@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libthr/thread/thr_suspend_np.c",
+  "wave": "wave2",
+  "loc_estimate": 184,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/thread/thr_suspend_np.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.thread.thr_suspend_np",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

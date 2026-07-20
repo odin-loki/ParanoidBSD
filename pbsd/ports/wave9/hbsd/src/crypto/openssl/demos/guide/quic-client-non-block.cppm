@@ -1,0 +1,19 @@
+export module pbsd.port.wave9.hbsd.src.crypto.openssl.demos.guide.quic_client_non_block;
+
+module;
+extern "C" {
+// Legacy TU symbols — hand-port from hbsd/src/crypto/openssl/demos/guide/quic-client-non-block.c
+// void quic-client-non-block_init(void);
+}
+
+import pbsd.core;
+
+/// Auto-generated migration stub — status: stubbed
+/// @pbsd-migration-meta source=hbsd/src/crypto/openssl/demos/guide/quic-client-non-block.c wave=wave9 loc=432
+export namespace pbsd::port::wave9::hbsd::src::crypto::openssl::demos::guide::quic_client_non_block {
+
+[[nodiscard]] inline Status migration_status() noexcept {
+    return Status::NotImplemented;
+}
+
+} // namespace pbsd::port::wave9::hbsd::src::crypto::openssl::demos::guide::quic_client_non_block

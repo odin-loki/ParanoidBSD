@@ -357,6 +357,22 @@ PHONY_NOTMAIN = afterdepend afterinstall all beforedepend beforeinstall \
 .PHONY: ${PHONY_NOTMAIN}
 .NOTMAIN: ${PHONY_NOTMAIN}
 
+#
+# ParanoidBSD full C++23 port — freestanding kernel / kmod C++ flags (Wave 0).
+# C TUs keep CSTD below; C++ TUs inherit NORMAL_CXX via sys/conf/kmod.mk.
+#
+CXXSTD?=	c++23
+NORMAL_CXX=	-std=${CXXSTD} -fno-exceptions -fno-rtti -ffreestanding \
+		-fno-threadsafe-statics -fno-use-cxa-atexit
+.if ${MACHINE_CPUARCH} == "amd64"
+NORMAL_CXX+=	-mcmodel=kernel -mno-red-zone
+.elif ${MACHINE_CPUARCH} == "aarch64"
+NORMAL_CXX+=	-mgeneral-regs-only
+.endif
+.if ${MK_SSP} == "no"
+NORMAL_CXX+=	-fno-stack-protector
+.endif
+
 CSTD?=		gnu17
 
 # c99/gnu99 is the minimum C standard version supported for kernel build

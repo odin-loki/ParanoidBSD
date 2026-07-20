@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/usb/template/usb_template.c",
+  "wave": "wave5",
+  "loc_estimate": 1473,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/template/usb_template.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.template.usb_template",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

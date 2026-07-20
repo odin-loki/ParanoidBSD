@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/bootparamd/bootparamd/bootparamd.c",
+  "wave": "wave2",
+  "loc_estimate": 352,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bootparamd/bootparamd/bootparamd.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bootparamd.bootparamd.bootparamd",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/qat_api/common/compression/include/dc_error_counter.h",
+  "wave": "wave5",
+  "loc_estimate": 24,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/common/compression/include/dc_error_counter.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.common.compression.include.dc_error_counter",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

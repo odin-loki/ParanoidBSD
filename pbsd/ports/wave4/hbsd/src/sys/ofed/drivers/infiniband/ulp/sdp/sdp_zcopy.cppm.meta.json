@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/ofed/drivers/infiniband/ulp/sdp/sdp_zcopy.c",
+  "wave": "wave4",
+  "loc_estimate": 806,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/ofed/drivers/infiniband/ulp/sdp/sdp_zcopy.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.ofed.drivers.infiniband.ulp.sdp.sdp_zcopy",
+  "generated": "2026-07-19T09:31:14+00:00"
+}

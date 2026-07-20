@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/archive_read_support_filter_program.c",
+  "wave": "wave9",
+  "loc_estimate": 494,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/archive_read_support_filter_program.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.archive_read_support_filter_program",
+  "generated": "2026-07-19T09:30:41+00:00"
+}

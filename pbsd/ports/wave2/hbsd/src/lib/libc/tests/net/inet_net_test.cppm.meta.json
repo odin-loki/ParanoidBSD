@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/tests/net/inet_net_test.cc",
+  "wave": "wave2",
+  "loc_estimate": 333,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/tests/net/inet_net_test.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.tests.net.inet_net_test",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

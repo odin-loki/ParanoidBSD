@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/respip/respip.c",
+  "wave": "wave9",
+  "loc_estimate": 1387,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/respip/respip.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.respip.respip",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

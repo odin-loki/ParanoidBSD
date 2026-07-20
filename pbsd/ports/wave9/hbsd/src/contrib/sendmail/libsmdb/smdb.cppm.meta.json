@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/sendmail/libsmdb/smdb.c",
+  "wave": "wave9",
+  "loc_estimate": 593,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/sendmail/libsmdb/smdb.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.sendmail.libsmdb.smdb",
+  "generated": "2026-07-19T09:37:28+00:00"
+}

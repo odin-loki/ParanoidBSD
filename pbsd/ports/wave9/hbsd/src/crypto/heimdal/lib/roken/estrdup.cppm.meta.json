@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/estrdup.c",
+  "wave": "wave9",
+  "loc_estimate": 53,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/estrdup.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.estrdup",
+  "generated": "2026-07-19T09:30:34+00:00"
+}

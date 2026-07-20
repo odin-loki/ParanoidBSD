@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/appl/test/nt_gss_server.c",
+  "wave": "wave9",
+  "loc_estimate": 244,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/appl/test/nt_gss_server.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.appl.test.nt_gss_server",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/utils/TableGen/X86FoldTablesEmitter.cpp",
+  "wave": "wave9",
+  "loc_estimate": 764,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/utils/TableGen/X86FoldTablesEmitter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.utils.tablegen.x86foldtablesemitter",
+  "generated": "2026-07-19T09:31:56+00:00"
+}

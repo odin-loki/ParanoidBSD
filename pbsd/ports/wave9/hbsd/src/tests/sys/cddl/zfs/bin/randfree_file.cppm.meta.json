@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/cddl/zfs/bin/randfree_file.c",
+  "wave": "wave9",
+  "loc_estimate": 102,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/cddl/zfs/bin/randfree_file.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.cddl.zfs.bin.randfree_file",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

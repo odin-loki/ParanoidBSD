@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/gate/g_gate.c",
+  "wave": "wave6",
+  "loc_estimate": 1011,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/gate/g_gate.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.gate.g_gate",
+  "generated": "2026-07-19T09:29:22+00:00"
+}

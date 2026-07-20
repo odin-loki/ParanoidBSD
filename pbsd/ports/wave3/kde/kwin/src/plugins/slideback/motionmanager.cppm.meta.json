@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/plugins/slideback/motionmanager.cpp",
+  "wave": "wave3",
+  "loc_estimate": 284,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/slideback/motionmanager.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.plugins.slideback.motionmanager",
+  "generated": "2026-07-19T09:30:17+00:00"
+}

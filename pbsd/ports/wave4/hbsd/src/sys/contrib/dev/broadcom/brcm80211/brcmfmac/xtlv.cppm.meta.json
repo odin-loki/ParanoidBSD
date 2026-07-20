@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmfmac/xtlv.c",
+  "wave": "wave4",
+  "loc_estimate": 88,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmfmac/xtlv.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.broadcom.brcm80211.brcmfmac.xtlv",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/virtual_oss/virtual_equalizer/equalizer.c",
+  "wave": "wave2",
+  "loc_estimate": 431,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/virtual_oss/virtual_equalizer/equalizer.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.virtual_oss.virtual_equalizer.equalizer",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

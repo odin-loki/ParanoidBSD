@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/file/src/cdf.c",
+  "wave": "wave9",
+  "loc_estimate": 1676,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/file/src/cdf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.file.src.cdf",
+  "generated": "2026-07-19T09:37:52+00:00"
+}

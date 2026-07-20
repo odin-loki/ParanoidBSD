@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/ficl/unix.c",
+  "wave": "wave7",
+  "loc_estimate": 22,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/ficl/unix.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.ficl.unix",
+  "generated": "2026-07-19T07:49:21+00:00"
+}

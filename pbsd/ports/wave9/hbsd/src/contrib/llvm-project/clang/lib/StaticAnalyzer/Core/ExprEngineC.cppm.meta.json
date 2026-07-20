@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Core/ExprEngineC.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1200,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Core/ExprEngineC.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.staticanalyzer.core.exprenginec",
+  "generated": "2026-07-19T09:31:21+00:00"
+}

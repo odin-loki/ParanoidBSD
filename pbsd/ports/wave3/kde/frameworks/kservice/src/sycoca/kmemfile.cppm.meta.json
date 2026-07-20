@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kservice/src/sycoca/kmemfile.cpp",
+  "wave": "wave3",
+  "loc_estimate": 250,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kservice/src/sycoca/kmemfile.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kservice.src.sycoca.kmemfile",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

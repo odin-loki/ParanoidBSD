@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_read_format_tar_empty_pax.c",
+  "wave": "wave9",
+  "loc_estimate": 57,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_read_format_tar_empty_pax.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_read_format_tar_empty_pax",
+  "generated": "2026-07-19T09:30:39+00:00"
+}

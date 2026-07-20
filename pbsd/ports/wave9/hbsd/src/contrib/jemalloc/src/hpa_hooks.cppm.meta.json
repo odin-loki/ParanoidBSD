@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/jemalloc/src/hpa_hooks.c",
+  "wave": "wave9",
+  "loc_estimate": 63,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/src/hpa_hooks.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.src.hpa_hooks",
+  "generated": "2026-07-19T09:37:43+00:00"
+}

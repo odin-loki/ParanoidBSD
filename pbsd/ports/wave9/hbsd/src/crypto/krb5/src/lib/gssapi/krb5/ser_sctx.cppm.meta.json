@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/krb5/ser_sctx.c",
+  "wave": "wave9",
+  "loc_estimate": 692,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/krb5/ser_sctx.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.krb5.ser_sctx",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

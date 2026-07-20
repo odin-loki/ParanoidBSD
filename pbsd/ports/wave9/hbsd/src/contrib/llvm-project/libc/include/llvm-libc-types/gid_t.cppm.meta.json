@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/libc/include/llvm-libc-types/gid_t.h",
+  "wave": "wave9",
+  "loc_estimate": 14,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libc/include/llvm-libc-types/gid_t.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libc.include.llvm_libc_types.gid_t",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

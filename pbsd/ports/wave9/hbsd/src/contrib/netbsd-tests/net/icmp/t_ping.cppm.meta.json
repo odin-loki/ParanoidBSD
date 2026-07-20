@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/net/icmp/t_ping.c",
+  "wave": "wave9",
+  "loc_estimate": 438,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/net/icmp/t_ping.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.net.icmp.t_ping",
+  "generated": "2026-07-19T09:30:59+00:00"
+}

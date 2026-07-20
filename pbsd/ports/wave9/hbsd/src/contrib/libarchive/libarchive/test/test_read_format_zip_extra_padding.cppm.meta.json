@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_read_format_zip_extra_padding.c",
+  "wave": "wave9",
+  "loc_estimate": 93,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_read_format_zip_extra_padding.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_read_format_zip_extra_padding",
+  "generated": "2026-07-19T09:30:40+00:00"
+}

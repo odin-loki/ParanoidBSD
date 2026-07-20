@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/AArch64/MCTargetDesc/AArch64MachObjectWriter.cpp",
+  "wave": "wave9",
+  "loc_estimate": 436,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/AArch64/MCTargetDesc/AArch64MachObjectWriter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.aarch64.mctargetdesc.aarch64machobjectwriter",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

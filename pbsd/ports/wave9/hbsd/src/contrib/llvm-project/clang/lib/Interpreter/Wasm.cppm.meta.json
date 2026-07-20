@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Interpreter/Wasm.cpp",
+  "wave": "wave9",
+  "loc_estimate": 162,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Interpreter/Wasm.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.interpreter.wasm",
+  "generated": "2026-07-19T09:31:18+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ichsmb/ichsmb_pci.c",
+  "wave": "wave5",
+  "loc_estimate": 337,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ichsmb/ichsmb_pci.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ichsmb.ichsmb_pci",
+  "generated": "2026-07-19T08:30:17+00:00"
+}

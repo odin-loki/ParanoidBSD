@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/stdio/makebuf.c",
+  "wave": "wave2",
+  "loc_estimate": 112,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdio/makebuf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdio.makebuf",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

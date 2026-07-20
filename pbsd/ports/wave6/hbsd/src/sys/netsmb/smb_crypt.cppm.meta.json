@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netsmb/smb_crypt.c",
+  "wave": "wave6",
+  "loc_estimate": 306,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netsmb/smb_crypt.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netsmb.smb_crypt",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/utils/xcbutils.cpp",
+  "wave": "wave3",
+  "loc_estimate": 650,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/utils/xcbutils.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.utils.xcbutils",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/priv/priv_audit_control.c",
+  "wave": "wave9",
+  "loc_estimate": 83,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/priv/priv_audit_control.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.priv.priv_audit_control",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

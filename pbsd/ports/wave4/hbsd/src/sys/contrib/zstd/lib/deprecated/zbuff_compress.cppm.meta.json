@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/zstd/lib/deprecated/zbuff_compress.c",
+  "wave": "wave4",
+  "loc_estimate": 167,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/lib/deprecated/zbuff_compress.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.lib.deprecated.zbuff_compress",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

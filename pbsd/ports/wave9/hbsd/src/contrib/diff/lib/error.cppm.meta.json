@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/diff/lib/error.c",
+  "wave": "wave9",
+  "loc_estimate": 310,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/diff/lib/error.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.diff.lib.error",
+  "generated": "2026-07-19T09:37:56+00:00"
+}

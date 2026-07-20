@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bsddialog/lib/timebox.c",
+  "wave": "wave9",
+  "loc_estimate": 240,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bsddialog/lib/timebox.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bsddialog.lib.timebox",
+  "generated": "2026-07-19T09:37:55+00:00"
+}

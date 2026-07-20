@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/kconf_update/kwin-6.0-reset-active-mouse-screen.cpp",
+  "wave": "wave3",
+  "loc_estimate": 26,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/kconf_update/kwin-6.0-reset-active-mouse-screen.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.kconf_update.kwin_6_0_reset_active_mouse_screen",
+  "generated": "2026-07-19T08:41:42+00:00"
+}

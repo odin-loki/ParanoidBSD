@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcpdump/print-ip6opts.c",
+  "wave": "wave9",
+  "loc_estimate": 234,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-ip6opts.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_ip6opts",
+  "generated": "2026-07-19T09:37:26+00:00"
+}

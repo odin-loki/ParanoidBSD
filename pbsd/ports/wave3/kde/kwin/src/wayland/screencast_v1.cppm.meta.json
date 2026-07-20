@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/wayland/screencast_v1.cpp",
+  "wave": "wave3",
+  "loc_estimate": 162,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/wayland/screencast_v1.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.wayland.screencast_v1",
+  "generated": "2026-07-19T09:30:14+00:00"
+}

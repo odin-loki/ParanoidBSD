@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/hash.c",
+  "wave": "wave9",
+  "loc_estimate": 43,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/hash.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.hash",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

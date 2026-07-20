@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/lib/libnvpair/libnvpair_json.c",
+  "wave": "wave6",
+  "loc_estimate": 404,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libnvpair/libnvpair_json.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libnvpair.libnvpair_json",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

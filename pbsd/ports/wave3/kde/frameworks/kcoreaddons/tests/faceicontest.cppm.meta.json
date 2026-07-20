@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kcoreaddons/tests/faceicontest.cpp",
+  "wave": "wave3",
+  "loc_estimate": 43,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/tests/faceicontest.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.tests.faceicontest",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

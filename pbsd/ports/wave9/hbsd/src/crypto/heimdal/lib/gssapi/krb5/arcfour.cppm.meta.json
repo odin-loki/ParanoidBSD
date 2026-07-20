@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/gssapi/krb5/arcfour.c",
+  "wave": "wave9",
+  "loc_estimate": 791,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/krb5/arcfour.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.krb5.arcfour",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

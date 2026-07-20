@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_frexpf.c",
+  "wave": "wave2",
+  "loc_estimate": 40,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_frexpf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_frexpf",
+  "generated": "2026-07-19T08:38:06+00:00"
+}

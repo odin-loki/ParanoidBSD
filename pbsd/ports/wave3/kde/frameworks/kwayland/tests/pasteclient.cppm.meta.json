@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwayland/tests/pasteclient.cpp",
+  "wave": "wave3",
+  "loc_estimate": 178,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/tests/pasteclient.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwayland.tests.pasteclient",
+  "generated": "2026-07-19T09:30:15+00:00"
+}

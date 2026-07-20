@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/apps/req.c",
+  "wave": "wave9",
+  "loc_estimate": 1681,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/apps/req.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.apps.req",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

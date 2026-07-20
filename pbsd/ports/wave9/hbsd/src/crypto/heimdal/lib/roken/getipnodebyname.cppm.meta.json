@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/getipnodebyname.c",
+  "wave": "wave9",
+  "loc_estimate": 83,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/getipnodebyname.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.getipnodebyname",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

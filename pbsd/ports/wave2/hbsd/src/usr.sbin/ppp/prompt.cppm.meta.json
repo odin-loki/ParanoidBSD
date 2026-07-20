@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/ppp/prompt.c",
+  "wave": "wave2",
+  "loc_estimate": 574,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/ppp/prompt.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.ppp.prompt",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

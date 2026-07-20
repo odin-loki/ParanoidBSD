@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/ipfw/tables.c",
+  "wave": "wave2",
+  "loc_estimate": 2096,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipfw/tables.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.ipfw.tables",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

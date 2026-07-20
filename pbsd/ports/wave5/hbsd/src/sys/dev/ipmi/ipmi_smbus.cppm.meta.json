@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ipmi/ipmi_smbus.c",
+  "wave": "wave5",
+  "loc_estimate": 134,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ipmi/ipmi_smbus.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ipmi.ipmi_smbus",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

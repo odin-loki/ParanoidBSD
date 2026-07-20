@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sbin/pflowctl/pflowctl.c",
+  "wave": "wave2",
+  "loc_estimate": 602,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/sbin/pflowctl/pflowctl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.sbin.pflowctl.pflowctl",
+  "generated": "2026-07-19T09:30:01+00:00"
+}

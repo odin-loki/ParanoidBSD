@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/kern_membarrier.c",
+  "wave": "wave4",
+  "loc_estimate": 254,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_membarrier.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_membarrier",
+  "generated": "2026-07-19T08:37:59+00:00"
+}

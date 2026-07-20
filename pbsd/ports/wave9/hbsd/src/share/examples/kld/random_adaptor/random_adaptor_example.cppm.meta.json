@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/share/examples/kld/random_adaptor/random_adaptor_example.c",
+  "wave": "wave9",
+  "loc_estimate": 124,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/kld/random_adaptor/random_adaptor_example.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.share.examples.kld.random_adaptor.random_adaptor_example",
+  "generated": "2026-07-19T09:37:44+00:00"
+}

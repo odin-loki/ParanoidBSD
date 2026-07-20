@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/telnet/telnet/ring.c",
+  "wave": "wave9",
+  "loc_estimate": 315,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/telnet/telnet/ring.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.telnet.telnet.ring",
+  "generated": "2026-07-19T09:37:58+00:00"
+}

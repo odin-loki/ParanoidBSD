@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/ntpd/refclock_jjy.c",
+  "wave": "wave9",
+  "loc_estimate": 4529,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/refclock_jjy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.refclock_jjy",
+  "generated": "2026-07-19T09:31:08+00:00"
+}

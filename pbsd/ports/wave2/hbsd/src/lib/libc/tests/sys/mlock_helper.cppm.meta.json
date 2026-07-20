@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/tests/sys/mlock_helper.c",
+  "wave": "wave2",
+  "loc_estimate": 111,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/tests/sys/mlock_helper.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.tests.sys.mlock_helper",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/qat_common/adf_dev_err.c",
+  "wave": "wave5",
+  "loc_estimate": 318,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_common/adf_dev_err.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_common.adf_dev_err",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

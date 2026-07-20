@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Basic/Targets/WebAssembly.cpp",
+  "wave": "wave9",
+  "loc_estimate": 398,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Basic/Targets/WebAssembly.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.basic.targets.webassembly",
+  "generated": "2026-07-19T09:31:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/ripemd/rmd_one.c",
+  "wave": "wave9",
+  "loc_estimate": 34,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/ripemd/rmd_one.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.ripemd.rmd_one",
+  "generated": "2026-07-19T09:30:02+00:00"
+}

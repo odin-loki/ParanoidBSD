@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bsnmp/gensnmpdef/gensnmpdef.c",
+  "wave": "wave9",
+  "loc_estimate": 588,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bsnmp/gensnmpdef/gensnmpdef.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bsnmp.gensnmpdef.gensnmpdef",
+  "generated": "2026-07-19T09:37:54+00:00"
+}

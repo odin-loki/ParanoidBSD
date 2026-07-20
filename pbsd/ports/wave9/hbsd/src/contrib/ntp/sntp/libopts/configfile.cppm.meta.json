@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/sntp/libopts/configfile.c",
+  "wave": "wave9",
+  "loc_estimate": 1337,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/sntp/libopts/configfile.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.sntp.libopts.configfile",
+  "generated": "2026-07-19T09:31:07+00:00"
+}

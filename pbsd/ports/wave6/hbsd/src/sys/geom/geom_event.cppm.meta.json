@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/geom_event.c",
+  "wave": "wave6",
+  "loc_estimate": 470,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/geom_event.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.geom_event",
+  "generated": "2026-07-19T08:30:51+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tzcode/localtime.c",
+  "wave": "wave9",
+  "loc_estimate": 3176,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tzcode/localtime.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tzcode.localtime",
+  "generated": "2026-07-19T09:38:10+00:00"
+}

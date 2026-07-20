@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/ext2fs/ext2fs.h",
+  "wave": "wave6",
+  "loc_estimate": 438,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/ext2fs/ext2fs.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.ext2fs.ext2fs",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

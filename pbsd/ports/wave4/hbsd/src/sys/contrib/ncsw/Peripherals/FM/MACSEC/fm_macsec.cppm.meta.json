@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/ncsw/Peripherals/FM/MACSEC/fm_macsec.c",
+  "wave": "wave4",
+  "loc_estimate": 237,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ncsw/Peripherals/FM/MACSEC/fm_macsec.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ncsw.peripherals.fm.macsec.fm_macsec",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

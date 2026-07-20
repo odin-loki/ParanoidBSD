@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/secure/lib/libcrypt/crypt-blowfish.c",
+  "wave": "wave9",
+  "loc_estimate": 322,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/secure/lib/libcrypt/crypt-blowfish.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.secure.lib.libcrypt.crypt_blowfish",
+  "generated": "2026-07-19T09:38:14+00:00"
+}

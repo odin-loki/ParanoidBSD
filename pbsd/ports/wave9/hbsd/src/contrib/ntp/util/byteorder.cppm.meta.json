@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/util/byteorder.c",
+  "wave": "wave9",
+  "loc_estimate": 56,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/util/byteorder.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.util.byteorder",
+  "generated": "2026-07-19T09:31:04+00:00"
+}

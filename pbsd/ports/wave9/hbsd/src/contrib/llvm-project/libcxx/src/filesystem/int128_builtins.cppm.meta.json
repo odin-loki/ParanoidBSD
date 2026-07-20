@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/libcxx/src/filesystem/int128_builtins.cpp",
+  "wave": "wave9",
+  "loc_estimate": 54,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libcxx/src/filesystem/int128_builtins.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libcxx.src.filesystem.int128_builtins",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

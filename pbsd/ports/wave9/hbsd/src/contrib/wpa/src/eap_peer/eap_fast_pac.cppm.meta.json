@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/eap_peer/eap_fast_pac.c",
+  "wave": "wave9",
+  "loc_estimate": 927,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/eap_peer/eap_fast_pac.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.eap_peer.eap_fast_pac",
+  "generated": "2026-07-19T09:31:02+00:00"
+}

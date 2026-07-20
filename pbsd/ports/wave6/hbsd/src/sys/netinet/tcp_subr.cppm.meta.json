@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/tcp_subr.c",
+  "wave": "wave6",
+  "loc_estimate": 5048,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/tcp_subr.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.tcp_subr",
+  "generated": "2026-07-19T09:29:21+00:00"
+}

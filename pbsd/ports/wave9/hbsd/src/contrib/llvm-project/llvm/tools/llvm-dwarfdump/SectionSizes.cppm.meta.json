@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-dwarfdump/SectionSizes.cpp",
+  "wave": "wave9",
+  "loc_estimate": 122,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-dwarfdump/SectionSizes.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_dwarfdump.sectionsizes",
+  "generated": "2026-07-19T09:31:51+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/rpc/clnt_perror.c",
+  "wave": "wave9",
+  "loc_estimate": 349,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/rpc/clnt_perror.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.rpc.clnt_perror",
+  "generated": "2026-07-19T09:30:31+00:00"
+}

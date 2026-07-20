@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/rbootd/conf.c",
+  "wave": "wave2",
+  "loc_estimate": 81,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rbootd/conf.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.rbootd.conf",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

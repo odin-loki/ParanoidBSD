@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/flua/modules/lposix.c",
+  "wave": "wave2",
+  "loc_estimate": 703,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/flua/modules/lposix.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.flua.modules.lposix",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

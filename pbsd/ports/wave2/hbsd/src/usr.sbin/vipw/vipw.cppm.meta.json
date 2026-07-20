@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/vipw/vipw.c",
+  "wave": "wave2",
+  "loc_estimate": 125,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/vipw/vipw.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.vipw.vipw",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libdiff/lib/diff_patience.c",
+  "wave": "wave9",
+  "loc_estimate": 647,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libdiff/lib/diff_patience.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libdiff.lib.diff_patience",
+  "generated": "2026-07-19T09:38:02+00:00"
+}

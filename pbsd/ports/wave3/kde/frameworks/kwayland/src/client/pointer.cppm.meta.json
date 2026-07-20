@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwayland/src/client/pointer.cpp",
+  "wave": "wave3",
+  "loc_estimate": 245,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/client/pointer.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.client.pointer",
+  "generated": "2026-07-19T09:30:16+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/bn/bn_rsa_fips186_4.c",
+  "wave": "wave9",
+  "loc_estimate": 405,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/bn/bn_rsa_fips186_4.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.bn.bn_rsa_fips186_4",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

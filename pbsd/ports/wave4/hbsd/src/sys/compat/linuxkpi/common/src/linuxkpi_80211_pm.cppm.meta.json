@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/compat/linuxkpi/common/src/linuxkpi_80211_pm.c",
+  "wave": "wave4",
+  "loc_estimate": 215,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/common/src/linuxkpi_80211_pm.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.common.src.linuxkpi_80211_pm",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

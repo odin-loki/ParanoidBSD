@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/i386/libi386/comconsole.c",
+  "wave": "wave7",
+  "loc_estimate": 395,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/i386/libi386/comconsole.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.i386.libi386.comconsole",
+  "generated": "2026-07-19T09:49:41+00:00"
+}

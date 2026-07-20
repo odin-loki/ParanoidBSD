@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/base/use_window.c",
+  "wave": "wave9",
+  "loc_estimate": 54,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/base/use_window.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.base.use_window",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

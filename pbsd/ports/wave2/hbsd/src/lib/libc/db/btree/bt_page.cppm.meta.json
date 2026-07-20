@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/db/btree/bt_page.c",
+  "wave": "wave2",
+  "loc_estimate": 90,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/db/btree/bt_page.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.db.btree.bt_page",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

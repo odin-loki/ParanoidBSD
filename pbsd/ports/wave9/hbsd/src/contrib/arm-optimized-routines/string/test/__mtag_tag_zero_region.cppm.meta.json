@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/arm-optimized-routines/string/test/__mtag_tag_zero_region.c",
+  "wave": "wave9",
+  "loc_estimate": 147,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/arm-optimized-routines/string/test/__mtag_tag_zero_region.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.arm_optimized_routines.string.test.__mtag_tag_zero_region",
+  "generated": "2026-07-19T09:31:59+00:00"
+}

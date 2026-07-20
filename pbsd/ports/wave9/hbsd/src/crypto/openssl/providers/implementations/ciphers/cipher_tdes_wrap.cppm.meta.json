@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/providers/implementations/ciphers/cipher_tdes_wrap.c",
+  "wave": "wave9",
+  "loc_estimate": 207,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/ciphers/cipher_tdes_wrap.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.ciphers.cipher_tdes_wrap",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

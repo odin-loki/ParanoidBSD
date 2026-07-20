@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/extendsfdf2.c",
+  "wave": "wave9",
+  "loc_estimate": 21,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/extendsfdf2.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.builtins.extendsfdf2",
+  "generated": "2026-07-19T09:37:14+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/nsan/tests/nsan_unit_test_main.cpp",
+  "wave": "wave9",
+  "loc_estimate": 18,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/nsan/tests/nsan_unit_test_main.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.nsan.tests.nsan_unit_test_main",
+  "generated": "2026-07-19T09:37:14+00:00"
+}

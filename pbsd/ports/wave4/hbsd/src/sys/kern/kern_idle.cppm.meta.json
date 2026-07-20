@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/kern_idle.c",
+  "wave": "wave4",
+  "loc_estimate": 88,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_idle.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_idle",
+  "generated": "2026-07-19T08:40:35+00:00"
+}

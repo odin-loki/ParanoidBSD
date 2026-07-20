@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/nvmf/controller/ctl_frontend_nvmf.c",
+  "wave": "wave5",
+  "loc_estimate": 1237,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/nvmf/controller/ctl_frontend_nvmf.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.nvmf.controller.ctl_frontend_nvmf",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

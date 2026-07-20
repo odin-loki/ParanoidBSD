@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/SymbolFile/NativePDB/PdbSymUid.cpp",
+  "wave": "wave9",
+  "loc_estimate": 160,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/SymbolFile/NativePDB/PdbSymUid.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.symbolfile.nativepdb.pdbsymuid",
+  "generated": "2026-07-19T09:31:38+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/plasma-framework/examples/shell/customcorona.cpp",
+  "wave": "wave3",
+  "loc_estimate": 76,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/examples/shell/customcorona.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.examples.shell.customcorona",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

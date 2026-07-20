@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.bin/patch/util.c",
+  "wave": "wave2",
+  "loc_estimate": 423,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/patch/util.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_bin.patch.util",
+  "generated": "2026-07-19T09:30:21+00:00"
+}

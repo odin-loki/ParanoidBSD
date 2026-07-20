@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Object/MachOUniversalWriter.cpp",
+  "wave": "wave9",
+  "loc_estimate": 372,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Object/MachOUniversalWriter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.object.machouniversalwriter",
+  "generated": "2026-07-19T09:31:54+00:00"
+}

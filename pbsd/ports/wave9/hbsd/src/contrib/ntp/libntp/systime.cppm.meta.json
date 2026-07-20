@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/libntp/systime.c",
+  "wave": "wave9",
+  "loc_estimate": 681,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/libntp/systime.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.libntp.systime",
+  "generated": "2026-07-19T09:31:07+00:00"
+}

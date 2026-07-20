@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/appl/login/login_access.c",
+  "wave": "wave9",
+  "loc_estimate": 277,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/appl/login/login_access.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.appl.login.login_access",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

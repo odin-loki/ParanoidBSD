@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/nvi/ex/ex_quit.c",
+  "wave": "wave9",
+  "loc_estimate": 41,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/nvi/ex/ex_quit.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.nvi.ex.ex_quit",
+  "generated": "2026-07-19T09:37:35+00:00"
+}

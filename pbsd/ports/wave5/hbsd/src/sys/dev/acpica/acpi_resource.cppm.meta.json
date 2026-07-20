@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/acpica/acpi_resource.c",
+  "wave": "wave5",
+  "loc_estimate": 930,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpica/acpi_resource.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpica.acpi_resource",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

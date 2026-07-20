@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/posix1e/acl_to_text_nfs4.c",
+  "wave": "wave2",
+  "loc_estimate": 265,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/posix1e/acl_to_text_nfs4.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.posix1e.acl_to_text_nfs4",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

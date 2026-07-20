@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/rpc/rpcb_prot.c",
+  "wave": "wave4",
+  "loc_estimate": 239,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/rpc/rpcb_prot.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.rpc.rpcb_prot",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

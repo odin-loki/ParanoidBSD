@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/ncsw/Peripherals/FM/MAC/fman_dtsec_mii_acc.c",
+  "wave": "wave4",
+  "loc_estimate": 163,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ncsw/Peripherals/FM/MAC/fman_dtsec_mii_acc.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ncsw.peripherals.fm.mac.fman_dtsec_mii_acc",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

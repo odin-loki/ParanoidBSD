@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/UnwindAssembly/x86/UnwindAssembly-x86.cpp",
+  "wave": "wave9",
+  "loc_estimate": 255,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/UnwindAssembly/x86/UnwindAssembly-x86.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.unwindassembly.x86.unwindassembly_x86",
+  "generated": "2026-07-19T09:31:40+00:00"
+}

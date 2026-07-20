@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_write_format_iso9660_zisofs.c",
+  "wave": "wave9",
+  "loc_estimate": 828,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_write_format_iso9660_zisofs.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_write_format_iso9660_zisofs",
+  "generated": "2026-07-19T09:30:41+00:00"
+}

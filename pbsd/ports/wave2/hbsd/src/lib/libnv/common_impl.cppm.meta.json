@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libnv/common_impl.h",
+  "wave": "wave2",
+  "loc_estimate": 45,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libnv/common_impl.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libnv.common_impl",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

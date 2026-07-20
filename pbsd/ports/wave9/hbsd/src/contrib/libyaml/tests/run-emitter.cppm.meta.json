@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libyaml/tests/run-emitter.c",
+  "wave": "wave9",
+  "loc_estimate": 327,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libyaml/tests/run-emitter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libyaml.tests.run_emitter",
+  "generated": "2026-07-19T09:37:59+00:00"
+}

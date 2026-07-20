@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/clk/xilinx/zynqmp_clk_mux.c",
+  "wave": "wave5",
+  "loc_estimate": 89,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/clk/xilinx/zynqmp_clk_mux.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.clk.xilinx.zynqmp_clk_mux",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

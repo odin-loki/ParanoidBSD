@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Core/Mangled.cpp",
+  "wave": "wave9",
+  "loc_estimate": 560,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Core/Mangled.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.core.mangled",
+  "generated": "2026-07-19T09:31:42+00:00"
+}

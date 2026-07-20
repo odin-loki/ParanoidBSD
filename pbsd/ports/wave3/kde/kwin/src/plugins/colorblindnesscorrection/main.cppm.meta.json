@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/plugins/colorblindnesscorrection/main.cpp",
+  "wave": "wave3",
+  "loc_estimate": 16,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/colorblindnesscorrection/main.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.plugins.colorblindnesscorrection.main",
+  "generated": "2026-07-19T08:33:26+00:00"
+}

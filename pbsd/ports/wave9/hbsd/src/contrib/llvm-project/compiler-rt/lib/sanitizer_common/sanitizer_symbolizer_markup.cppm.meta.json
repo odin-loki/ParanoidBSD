@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/sanitizer_common/sanitizer_symbolizer_markup.cpp",
+  "wave": "wave9",
+  "loc_estimate": 162,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/sanitizer_common/sanitizer_symbolizer_markup.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.sanitizer_common.sanitizer_symbolizer_markup",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

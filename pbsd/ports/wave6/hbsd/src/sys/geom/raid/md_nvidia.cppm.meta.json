@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/raid/md_nvidia.c",
+  "wave": "wave6",
+  "loc_estimate": 1581,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/raid/md_nvidia.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.raid.md_nvidia",
+  "generated": "2026-07-19T09:29:22+00:00"
+}

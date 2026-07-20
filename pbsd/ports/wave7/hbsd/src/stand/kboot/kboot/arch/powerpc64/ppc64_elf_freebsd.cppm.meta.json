@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/kboot/kboot/arch/powerpc64/ppc64_elf_freebsd.c",
+  "wave": "wave7",
+  "loc_estimate": 174,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/kboot/kboot/arch/powerpc64/ppc64_elf_freebsd.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.kboot.kboot.arch.powerpc64.ppc64_elf_freebsd",
+  "generated": "2026-07-19T09:49:39+00:00"
+}

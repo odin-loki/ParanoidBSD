@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/hyperv/utilities/hv_kvp.c",
+  "wave": "wave5",
+  "loc_estimate": 915,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/hyperv/utilities/hv_kvp.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.hyperv.utilities.hv_kvp",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

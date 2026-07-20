@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/XRay/RecordInitializer.cpp",
+  "wave": "wave9",
+  "loc_estimate": 431,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/XRay/RecordInitializer.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.xray.recordinitializer",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

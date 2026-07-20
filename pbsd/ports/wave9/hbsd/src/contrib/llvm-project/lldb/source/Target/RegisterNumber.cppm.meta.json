@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Target/RegisterNumber.cpp",
+  "wave": "wave9",
+  "loc_estimate": 106,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Target/RegisterNumber.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.target.registernumber",
+  "generated": "2026-07-19T09:31:37+00:00"
+}

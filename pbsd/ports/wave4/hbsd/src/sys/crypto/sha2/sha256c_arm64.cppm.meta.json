@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/crypto/sha2/sha256c_arm64.c",
+  "wave": "wave4",
+  "loc_estimate": 94,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/sha2/sha256c_arm64.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.sha2.sha256c_arm64",
+  "generated": "2026-07-19T09:31:10+00:00"
+}

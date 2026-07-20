@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/smbmsg/smbmsg.c",
+  "wave": "wave2",
+  "loc_estimate": 343,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/smbmsg/smbmsg.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.smbmsg.smbmsg",
+  "generated": "2026-07-19T09:29:49+00:00"
+}

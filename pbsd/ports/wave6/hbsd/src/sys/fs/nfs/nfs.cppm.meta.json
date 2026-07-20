@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/nfs/nfs.h",
+  "wave": "wave6",
+  "loc_estimate": 859,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nfs/nfs.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nfs.nfs",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

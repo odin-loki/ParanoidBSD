@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/regress/misc/sk-dummy/sk-dummy.c",
+  "wave": "wave9",
+  "loc_estimate": 543,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/regress/misc/sk-dummy/sk-dummy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.regress.misc.sk_dummy.sk_dummy",
+  "generated": "2026-07-19T09:37:20+00:00"
+}

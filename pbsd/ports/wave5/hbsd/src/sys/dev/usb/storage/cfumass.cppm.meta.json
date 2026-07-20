@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/usb/storage/cfumass.c",
+  "wave": "wave5",
+  "loc_estimate": 992,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/storage/cfumass.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.storage.cfumass",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

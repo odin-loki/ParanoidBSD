@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/ipfilter/netinet/ip_fil_freebsd.c",
+  "wave": "wave6",
+  "loc_estimate": 1444,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfilter/netinet/ip_fil_freebsd.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfilter.netinet.ip_fil_freebsd",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

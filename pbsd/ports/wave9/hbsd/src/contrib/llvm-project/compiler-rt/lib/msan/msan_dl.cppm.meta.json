@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/msan/msan_dl.cpp",
+  "wave": "wave9",
+  "loc_estimate": 65,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/msan/msan_dl.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.msan.msan_dl",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

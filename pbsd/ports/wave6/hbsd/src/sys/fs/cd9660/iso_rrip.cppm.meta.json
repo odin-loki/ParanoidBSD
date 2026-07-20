@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/cd9660/iso_rrip.h",
+  "wave": "wave6",
+  "loc_estimate": 87,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/cd9660/iso_rrip.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.cd9660.iso_rrip",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

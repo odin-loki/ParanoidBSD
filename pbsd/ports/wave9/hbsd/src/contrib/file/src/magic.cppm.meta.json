@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/file/src/magic.c",
+  "wave": "wave9",
+  "loc_estimate": 695,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/file/src/magic.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.file.src.magic",
+  "generated": "2026-07-19T09:37:52+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kgssapi/krb5/krb5_mech.c",
+  "wave": "wave4",
+  "loc_estimate": 2204,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kgssapi/krb5/krb5_mech.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kgssapi.krb5.krb5_mech",
+  "generated": "2026-07-19T09:31:15+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/net/altq/altq.h",
+  "wave": "wave6",
+  "loc_estimate": 104,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/altq/altq.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.net.altq.altq",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

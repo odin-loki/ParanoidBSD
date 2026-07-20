@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/ipfilter/netinet/ip_sync.c",
+  "wave": "wave6",
+  "loc_estimate": 1432,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfilter/netinet/ip_sync.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfilter.netinet.ip_sync",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

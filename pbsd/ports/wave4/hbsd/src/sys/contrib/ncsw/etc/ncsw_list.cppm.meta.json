@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/ncsw/etc/ncsw_list.c",
+  "wave": "wave4",
+  "loc_estimate": 70,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ncsw/etc/ncsw_list.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ncsw.etc.ncsw_list",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

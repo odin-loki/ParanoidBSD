@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/sockets/unix_cmsg/t_cmsgcred.c",
+  "wave": "wave9",
+  "loc_estimate": 136,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/sockets/unix_cmsg/t_cmsgcred.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.sockets.unix_cmsg.t_cmsgcred",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

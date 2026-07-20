@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/security/audit/bsm_errno.c",
+  "wave": "wave4",
+  "loc_estimate": 778,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/audit/bsm_errno.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.security.audit.bsm_errno",
+  "generated": "2026-07-19T09:31:14+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Commands/CommandObjectPlatform.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1842,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Commands/CommandObjectPlatform.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.commands.commandobjectplatform",
+  "generated": "2026-07-19T09:31:44+00:00"
+}

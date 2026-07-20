@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/core/kprotocolmanager.cpp",
+  "wave": "wave3",
+  "loc_estimate": 392,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/core/kprotocolmanager.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.core.kprotocolmanager",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

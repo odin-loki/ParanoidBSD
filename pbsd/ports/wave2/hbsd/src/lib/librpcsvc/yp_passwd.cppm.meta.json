@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/librpcsvc/yp_passwd.c",
+  "wave": "wave2",
+  "loc_estimate": 87,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/librpcsvc/yp_passwd.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.librpcsvc.yp_passwd",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

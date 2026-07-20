@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/librtld_db/rtld_db.c",
+  "wave": "wave2",
+  "loc_estimate": 405,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/librtld_db/rtld_db.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.librtld_db.rtld_db",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

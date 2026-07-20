@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/openbsm/bin/auditdistd/proto_uds.c",
+  "wave": "wave9",
+  "loc_estimate": 360,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openbsm/bin/auditdistd/proto_uds.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.openbsm.bin.auditdistd.proto_uds",
+  "generated": "2026-07-19T09:37:50+00:00"
+}

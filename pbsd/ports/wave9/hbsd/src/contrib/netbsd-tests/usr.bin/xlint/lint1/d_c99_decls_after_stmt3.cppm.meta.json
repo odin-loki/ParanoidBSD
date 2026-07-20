@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/usr.bin/xlint/lint1/d_c99_decls_after_stmt3.c",
+  "wave": "wave9",
+  "loc_estimate": 5,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/usr.bin/xlint/lint1/d_c99_decls_after_stmt3.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.usr_bin.xlint.lint1.d_c99_decls_after_stmt3",
+  "generated": "2026-07-19T07:47:46+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/vm/vm_swapout.c",
+  "wave": "wave4",
+  "loc_estimate": 408,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/vm/vm_swapout.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.vm.vm_swapout",
+  "generated": "2026-07-19T08:30:34+00:00"
+}

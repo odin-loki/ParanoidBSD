@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/pppoed/pppoed.c",
+  "wave": "wave2",
+  "loc_estimate": 692,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/pppoed/pppoed.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.pppoed.pppoed",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

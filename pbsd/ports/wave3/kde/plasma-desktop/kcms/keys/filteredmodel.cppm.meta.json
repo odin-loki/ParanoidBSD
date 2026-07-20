@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/keys/filteredmodel.cpp",
+  "wave": "wave3",
+  "loc_estimate": 92,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/keys/filteredmodel.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.keys.filteredmodel",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

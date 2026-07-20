@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libdiff/compat/recallocarray.c",
+  "wave": "wave9",
+  "loc_estimate": 80,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libdiff/compat/recallocarray.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libdiff.compat.recallocarray",
+  "generated": "2026-07-19T09:38:02+00:00"
+}

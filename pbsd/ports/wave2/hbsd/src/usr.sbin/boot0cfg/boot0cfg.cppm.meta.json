@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/boot0cfg/boot0cfg.c",
+  "wave": "wave2",
+  "loc_estimate": 599,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/boot0cfg/boot0cfg.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.boot0cfg.boot0cfg",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/mmc/host/dwmmc.c",
+  "wave": "wave5",
+  "loc_estimate": 1579,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mmc/host/dwmmc.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mmc.host.dwmmc",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

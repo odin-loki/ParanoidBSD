@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/xmss_hash_address.c",
+  "wave": "wave9",
+  "loc_estimate": 66,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/xmss_hash_address.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.xmss_hash_address",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

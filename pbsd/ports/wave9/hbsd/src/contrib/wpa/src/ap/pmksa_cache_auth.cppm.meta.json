@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/wpa/src/ap/pmksa_cache_auth.c",
+  "wave": "wave9",
+  "loc_estimate": 751,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/ap/pmksa_cache_auth.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.ap.pmksa_cache_auth",
+  "generated": "2026-07-19T09:31:02+00:00"
+}

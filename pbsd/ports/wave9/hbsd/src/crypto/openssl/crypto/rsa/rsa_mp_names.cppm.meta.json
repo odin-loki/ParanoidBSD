@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/rsa/rsa_mp_names.c",
+  "wave": "wave9",
+  "loc_estimate": 76,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/rsa/rsa_mp_names.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.rsa.rsa_mp_names",
+  "generated": "2026-07-19T09:30:03+00:00"
+}

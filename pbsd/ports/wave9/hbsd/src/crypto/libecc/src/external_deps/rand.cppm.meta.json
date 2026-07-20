@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/libecc/src/external_deps/rand.c",
+  "wave": "wave9",
+  "loc_estimate": 121,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/libecc/src/external_deps/rand.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.libecc.src.external_deps.rand",
+  "generated": "2026-07-19T09:37:36+00:00"
+}

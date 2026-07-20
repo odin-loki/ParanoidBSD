@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qat/qat_api/common/compression/dc_buffers.c",
+  "wave": "wave5",
+  "loc_estimate": 189,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/common/compression/dc_buffers.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.common.compression.dc_buffers",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

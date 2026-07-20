@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netipsec/ipsec_input.c",
+  "wave": "wave6",
+  "loc_estimate": 804,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netipsec/ipsec_input.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netipsec.ipsec_input",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

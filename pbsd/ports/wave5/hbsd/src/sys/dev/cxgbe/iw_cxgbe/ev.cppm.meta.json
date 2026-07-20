@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/cxgbe/iw_cxgbe/ev.c",
+  "wave": "wave5",
+  "loc_estimate": 287,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/cxgbe/iw_cxgbe/ev.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.cxgbe.iw_cxgbe.ev",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

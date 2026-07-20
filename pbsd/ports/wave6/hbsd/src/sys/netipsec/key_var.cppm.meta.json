@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netipsec/key_var.h",
+  "wave": "wave6",
+  "loc_estimate": 58,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netipsec/key_var.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netipsec.key_var",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

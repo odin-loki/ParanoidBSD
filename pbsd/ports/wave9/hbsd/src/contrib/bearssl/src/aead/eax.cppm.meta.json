@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bearssl/src/aead/eax.c",
+  "wave": "wave9",
+  "loc_estimate": 525,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/aead/eax.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.aead.eax",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/net80211/ieee80211_crypto.c",
+  "wave": "wave6",
+  "loc_estimate": 1083,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/net80211/ieee80211_crypto.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.net80211.ieee80211_crypto",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

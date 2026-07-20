@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmfmac/p2p.c",
+  "wave": "wave4",
+  "loc_estimate": 2561,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmfmac/p2p.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.broadcom.brcm80211.brcmfmac.p2p",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

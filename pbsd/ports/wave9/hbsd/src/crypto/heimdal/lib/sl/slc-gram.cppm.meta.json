@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/sl/slc-gram.c",
+  "wave": "wave9",
+  "loc_estimate": 2296,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/sl/slc-gram.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.sl.slc_gram",
+  "generated": "2026-07-19T09:30:38+00:00"
+}

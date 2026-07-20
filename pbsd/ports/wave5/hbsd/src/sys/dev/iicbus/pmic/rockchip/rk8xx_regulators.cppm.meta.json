@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/iicbus/pmic/rockchip/rk8xx_regulators.c",
+  "wave": "wave5",
+  "loc_estimate": 367,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iicbus/pmic/rockchip/rk8xx_regulators.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iicbus.pmic.rockchip.rk8xx_regulators",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

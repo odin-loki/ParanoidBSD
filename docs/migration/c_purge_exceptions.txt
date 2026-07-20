@@ -1,0 +1,44 @@
+# Firmware / asm exceptions for the Wave 9 C purge inventory gate.
+# One glob per line; # starts a comment. Matched paths are excluded from owned-C counts.
+#
+# Boot & platform firmware
+hbsd/src/stand/**/boot*.c
+hbsd/src/sys/dev/acpi/**/acpi*.c
+hbsd/src/sys/contrib/dev/acpica/**/*.c
+#
+# Hand-written assembly translation units (listed for traceability; .S not counted)
+hbsd/src/sys/**/locore.c
+hbsd/src/sys/**/mpboot.c
+hbsd/src/sys/**/*.S
+hbsd/src/stand/**/*.S
+#
+# Vendor GPU firmware upload helpers (no C++23 rewrite planned)
+hbsd/src/sys/dev/drm/**/*.c
+#
+# Third-party contrib trees — vendor snapshots, stay in C until Wave 9 hand ports
+hbsd/src/contrib/llvm-project/**/*.c
+hbsd/src/contrib/llvm-project/**/*.cc
+hbsd/src/contrib/llvm-project/**/*.cpp
+hbsd/src/contrib/openssl/**/*.c
+hbsd/src/contrib/arm-optimized-routines/**/*.c
+hbsd/src/contrib/jemalloc/**/*.c
+hbsd/src/contrib/libarchive/**/*.c
+hbsd/src/contrib/libcbor/**/*.c
+hbsd/src/contrib/mandoc/**/*.c
+hbsd/src/contrib/netbsd-tests/**/*.c
+hbsd/src/contrib/unifdef/**/*.c
+hbsd/src/contrib/ntp/**/*.c
+hbsd/src/contrib/gdtoa/**/*.c
+hbsd/src/contrib/libdiff/**/*.c
+#
+# OpenZFS kernel module — Wave 6 batch scope; kernel .c excluded from purge gate
+hbsd/src/sys/contrib/openzfs/module/**/*.c
+hbsd/src/sys/contrib/openzfs/lib/**/*.c
+#
+# Crypto / compiler runtime shipped with base
+hbsd/src/crypto/**/*.c
+hbsd/src/gnu/**/*.c
+#
+# KDE third-party / generated (Wave 3 scope)
+kde/**/thirdparty/**/*.c
+kde/**/3rdparty/**/*.c

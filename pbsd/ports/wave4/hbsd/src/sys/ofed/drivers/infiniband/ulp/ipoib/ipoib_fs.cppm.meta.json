@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/ofed/drivers/infiniband/ulp/ipoib/ipoib_fs.c",
+  "wave": "wave4",
+  "loc_estimate": 301,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/ofed/drivers/infiniband/ulp/ipoib/ipoib_fs.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.ofed.drivers.infiniband.ulp.ipoib.ipoib_fs",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

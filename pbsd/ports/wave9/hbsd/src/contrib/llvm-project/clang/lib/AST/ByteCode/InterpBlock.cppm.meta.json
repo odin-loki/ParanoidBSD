@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/AST/ByteCode/InterpBlock.cpp",
+  "wave": "wave9",
+  "loc_estimate": 139,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/AST/ByteCode/InterpBlock.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.ast.bytecode.interpblock",
+  "generated": "2026-07-19T09:31:18+00:00"
+}

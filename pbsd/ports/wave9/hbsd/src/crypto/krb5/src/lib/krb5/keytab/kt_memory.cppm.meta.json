@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/keytab/kt_memory.c",
+  "wave": "wave9",
+  "loc_estimate": 637,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/keytab/kt_memory.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.keytab.kt_memory",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

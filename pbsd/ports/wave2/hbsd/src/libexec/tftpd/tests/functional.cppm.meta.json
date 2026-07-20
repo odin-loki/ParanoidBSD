@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/tftpd/tests/functional.c",
+  "wave": "wave2",
+  "loc_estimate": 1283,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/tftpd/tests/functional.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.tftpd.tests.functional",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

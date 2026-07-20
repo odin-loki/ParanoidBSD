@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/plugins/kdb/db2/db2_exp.c",
+  "wave": "wave9",
+  "loc_estimate": 235,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/kdb/db2/db2_exp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.kdb.db2.db2_exp",
+  "generated": "2026-07-19T09:30:30+00:00"
+}

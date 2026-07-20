@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ObjectYAML/DWARFYAML.cpp",
+  "wave": "wave9",
+  "loc_estimate": 372,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ObjectYAML/DWARFYAML.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.objectyaml.dwarfyaml",
+  "generated": "2026-07-19T09:31:54+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kgssapi/gss_names.c",
+  "wave": "wave4",
+  "loc_estimate": 173,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kgssapi/gss_names.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kgssapi.gss_names",
+  "generated": "2026-07-19T09:31:11+00:00"
+}

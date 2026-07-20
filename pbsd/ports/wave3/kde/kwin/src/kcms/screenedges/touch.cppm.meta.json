@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/kcms/screenedges/touch.cpp",
+  "wave": "wave3",
+  "loc_estimate": 349,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/kcms/screenedges/touch.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.kcms.screenedges.touch",
+  "generated": "2026-07-19T09:30:17+00:00"
+}

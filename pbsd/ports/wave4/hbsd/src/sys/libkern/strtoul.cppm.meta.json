@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/libkern/strtoul.c",
+  "wave": "wave4",
+  "loc_estimate": 102,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/libkern/strtoul.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.libkern.strtoul",
+  "generated": "2026-07-19T09:31:11+00:00"
+}

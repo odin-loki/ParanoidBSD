@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_gpio.c",
+  "wave": "wave5",
+  "loc_estimate": 278,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_gpio.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar5416.ar5416_gpio",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/expat/xmlwf/win32filemap.c",
+  "wave": "wave9",
+  "loc_estimate": 121,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/expat/xmlwf/win32filemap.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.expat.xmlwf.win32filemap",
+  "generated": "2026-07-19T09:37:49+00:00"
+}

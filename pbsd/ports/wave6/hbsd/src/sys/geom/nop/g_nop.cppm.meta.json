@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/nop/g_nop.c",
+  "wave": "wave6",
+  "loc_estimate": 974,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/nop/g_nop.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.nop.g_nop",
+  "generated": "2026-07-19T09:29:22+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/tests/stdbit/stdc_bit_ceil_test.c",
+  "wave": "wave2",
+  "loc_estimate": 20,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/tests/stdbit/stdc_bit_ceil_test.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.tests.stdbit.stdc_bit_ceil_test",
+  "generated": "2026-07-19T08:29:01+00:00"
+}

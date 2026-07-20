@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/share/examples/scsi_target/scsi_target.c",
+  "wave": "wave9",
+  "loc_estimate": 990,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/scsi_target/scsi_target.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.share.examples.scsi_target.scsi_target",
+  "generated": "2026-07-19T09:37:45+00:00"
+}

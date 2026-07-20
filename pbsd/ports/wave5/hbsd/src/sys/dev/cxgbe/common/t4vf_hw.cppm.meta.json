@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/cxgbe/common/t4vf_hw.c",
+  "wave": "wave5",
+  "loc_estimate": 458,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/cxgbe/common/t4vf_hw.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.cxgbe.common.t4vf_hw",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

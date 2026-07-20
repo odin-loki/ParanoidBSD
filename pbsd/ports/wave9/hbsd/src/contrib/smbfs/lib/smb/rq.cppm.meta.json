@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/smbfs/lib/smb/rq.c",
+  "wave": "wave9",
+  "loc_estimate": 180,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/smbfs/lib/smb/rq.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.smbfs.lib.smb.rq",
+  "generated": "2026-07-19T09:37:58+00:00"
+}

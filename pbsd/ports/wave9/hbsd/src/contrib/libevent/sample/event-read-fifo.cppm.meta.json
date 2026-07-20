@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libevent/sample/event-read-fifo.c",
+  "wave": "wave9",
+  "loc_estimate": 162,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libevent/sample/event-read-fifo.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libevent.sample.event_read_fifo",
+  "generated": "2026-07-19T09:37:40+00:00"
+}

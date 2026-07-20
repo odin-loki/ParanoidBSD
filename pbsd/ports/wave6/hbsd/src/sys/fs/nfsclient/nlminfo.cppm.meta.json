@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/nfsclient/nlminfo.h",
+  "wave": "wave6",
+  "loc_estimate": 41,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nfsclient/nlminfo.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nfsclient.nlminfo",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netgraph/bluetooth/include/ng_ubt.h",
+  "wave": "wave6",
+  "loc_estimate": 91,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netgraph/bluetooth/include/ng_ubt.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netgraph.bluetooth.include.ng_ubt",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

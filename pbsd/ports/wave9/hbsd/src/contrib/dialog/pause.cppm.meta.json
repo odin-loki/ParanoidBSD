@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/dialog/pause.c",
+  "wave": "wave9",
+  "loc_estimate": 259,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/dialog/pause.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.dialog.pause",
+  "generated": "2026-07-19T09:37:51+00:00"
+}

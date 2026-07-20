@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/sctp_asconf.c",
+  "wave": "wave6",
+  "loc_estimate": 3473,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/sctp_asconf.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.sctp_asconf",
+  "generated": "2026-07-19T09:29:21+00:00"
+}

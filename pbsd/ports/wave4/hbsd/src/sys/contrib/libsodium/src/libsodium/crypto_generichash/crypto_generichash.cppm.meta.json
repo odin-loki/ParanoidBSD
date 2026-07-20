@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_generichash/crypto_generichash.c",
+  "wave": "wave4",
+  "loc_estimate": 91,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_generichash/crypto_generichash.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_generichash.crypto_generichash",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

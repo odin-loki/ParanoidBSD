@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/rtw89/sar.c",
+  "wave": "wave4",
+  "loc_estimate": 907,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/rtw89/sar.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.rtw89.sar",
+  "generated": "2026-07-19T09:29:36+00:00"
+}

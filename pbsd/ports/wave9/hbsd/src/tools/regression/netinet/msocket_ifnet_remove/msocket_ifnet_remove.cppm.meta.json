@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/netinet/msocket_ifnet_remove/msocket_ifnet_remove.c",
+  "wave": "wave9",
+  "loc_estimate": 242,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/netinet/msocket_ifnet_remove/msocket_ifnet_remove.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.netinet.msocket_ifnet_remove.msocket_ifnet_remove",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

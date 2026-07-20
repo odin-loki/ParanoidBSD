@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/tests/libntp/run-realpath.c",
+  "wave": "wave9",
+  "loc_estimate": 70,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/tests/libntp/run-realpath.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.tests.libntp.run_realpath",
+  "generated": "2026-07-19T09:31:04+00:00"
+}

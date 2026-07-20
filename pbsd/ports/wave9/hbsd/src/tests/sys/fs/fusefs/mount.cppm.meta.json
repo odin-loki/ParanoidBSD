@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/fs/fusefs/mount.cc",
+  "wave": "wave9",
+  "loc_estimate": 200,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/mount.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.mount",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

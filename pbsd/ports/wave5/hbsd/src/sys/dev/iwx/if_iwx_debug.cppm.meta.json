@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/iwx/if_iwx_debug.c",
+  "wave": "wave5",
+  "loc_estimate": 370,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iwx/if_iwx_debug.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iwx.if_iwx_debug",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

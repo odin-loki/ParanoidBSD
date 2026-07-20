@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcsh/sh.hist.c",
+  "wave": "wave9",
+  "loc_estimate": 1385,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcsh/sh.hist.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcsh.sh_hist",
+  "generated": "2026-07-19T09:37:47+00:00"
+}

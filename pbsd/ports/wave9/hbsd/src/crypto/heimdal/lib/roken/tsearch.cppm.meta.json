@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/tsearch.c",
+  "wave": "wave9",
+  "loc_estimate": 180,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/tsearch.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.tsearch",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

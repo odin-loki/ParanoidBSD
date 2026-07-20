@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kconfig/src/core/kconfigbase.cpp",
+  "wave": "wave3",
+  "loc_estimate": 51,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kconfig/src/core/kconfigbase.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kconfig.src.core.kconfigbase",
+  "generated": "2026-07-19T09:04:20+00:00"
+}

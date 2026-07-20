@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_hash/sha512/cp/hash_sha512_cp.c",
+  "wave": "wave4",
+  "loc_estimate": 282,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_hash/sha512/cp/hash_sha512_cp.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_hash.sha512.cp.hash_sha512_cp",
+  "generated": "2026-07-19T09:29:52+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/share/examples/sunrpc/dir/dir_proc.c",
+  "wave": "wave9",
+  "loc_estimate": 54,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/sunrpc/dir/dir_proc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.share.examples.sunrpc.dir.dir_proc",
+  "generated": "2026-07-19T09:37:44+00:00"
+}

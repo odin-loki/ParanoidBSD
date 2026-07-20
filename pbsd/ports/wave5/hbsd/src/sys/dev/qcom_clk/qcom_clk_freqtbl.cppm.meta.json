@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qcom_clk/qcom_clk_freqtbl.c",
+  "wave": "wave5",
+  "loc_estimate": 53,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qcom_clk/qcom_clk_freqtbl.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qcom_clk.qcom_clk_freqtbl",
+  "generated": "2026-07-19T09:02:54+00:00"
+}

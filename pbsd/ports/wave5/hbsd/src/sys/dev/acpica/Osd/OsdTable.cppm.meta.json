@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/acpica/Osd/OsdTable.c",
+  "wave": "wave5",
+  "loc_estimate": 105,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpica/Osd/OsdTable.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpica.osd.osdtable",
+  "generated": "2026-07-19T08:30:23+00:00"
+}

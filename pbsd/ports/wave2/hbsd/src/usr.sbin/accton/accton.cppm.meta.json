@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/accton/accton.c",
+  "wave": "wave2",
+  "loc_estimate": 75,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/accton/accton.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.accton.accton",
+  "generated": "2026-07-19T09:02:52+00:00"
+}

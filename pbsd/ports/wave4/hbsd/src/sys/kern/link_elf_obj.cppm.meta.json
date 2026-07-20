@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/link_elf_obj.c",
+  "wave": "wave4",
+  "loc_estimate": 2033,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/link_elf_obj.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.link_elf_obj",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

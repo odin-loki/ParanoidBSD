@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/solid_actions/DesktopFileGenerator.cpp",
+  "wave": "wave3",
+  "loc_estimate": 69,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/solid_actions/DesktopFileGenerator.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.solid_actions.desktopfilegenerator",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

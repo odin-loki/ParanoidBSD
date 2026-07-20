@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="panel-glass" cx="50%" cy="0%" r="100%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#5082c8" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#183060" stop-opacity="0.55"/>
+    </radialGradient>
+  </defs>
+  <rect width="40" height="40" fill="url(#panel-glass)"/>
+  <rect y="0" width="40" height="2" fill="#ffffff" fill-opacity="0.4"/>
+</svg>

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/security/proc_to_proc/testuid.c",
+  "wave": "wave4",
+  "loc_estimate": 63,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/tools/regression/security/proc_to_proc/testuid.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.tools.regression.security.proc_to_proc.testuid",
+  "generated": "2026-07-19T09:51:39+00:00"
+}

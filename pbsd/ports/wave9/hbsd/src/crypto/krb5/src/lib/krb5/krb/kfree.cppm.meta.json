@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/kfree.c",
+  "wave": "wave9",
+  "loc_estimate": 916,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/kfree.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.kfree",
+  "generated": "2026-07-19T09:30:33+00:00"
+}

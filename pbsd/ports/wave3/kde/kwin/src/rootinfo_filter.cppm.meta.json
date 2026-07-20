@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/rootinfo_filter.cpp",
+  "wave": "wave3",
+  "loc_estimate": 29,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/rootinfo_filter.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.rootinfo_filter",
+  "generated": "2026-07-19T08:41:42+00:00"
+}

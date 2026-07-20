@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/ipfw/nat64/nat64_translate.c",
+  "wave": "wave6",
+  "loc_estimate": 1721,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/nat64/nat64_translate.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.nat64.nat64_translate",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

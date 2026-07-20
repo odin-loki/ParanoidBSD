@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/sigqueue/sigqtest2/sigqtest2.c",
+  "wave": "wave9",
+  "loc_estimate": 102,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/sigqueue/sigqtest2/sigqtest2.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.sigqueue.sigqtest2.sigqtest2",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/autofs/autofs.c",
+  "wave": "wave6",
+  "loc_estimate": 702,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/autofs/autofs.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.autofs.autofs",
+  "generated": "2026-07-19T09:18:58+00:00"
+}

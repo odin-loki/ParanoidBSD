@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/strnlen.c",
+  "wave": "wave9",
+  "loc_estimate": 46,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/strnlen.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.strnlen",
+  "generated": "2026-07-19T09:30:34+00:00"
+}

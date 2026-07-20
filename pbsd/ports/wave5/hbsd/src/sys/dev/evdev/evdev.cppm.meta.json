@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/evdev/evdev.c",
+  "wave": "wave5",
+  "loc_estimate": 1170,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/evdev/evdev.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.evdev.evdev",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/rc2/rc2_cbc.c",
+  "wave": "wave9",
+  "loc_estimate": 181,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/rc2/rc2_cbc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.rc2.rc2_cbc",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

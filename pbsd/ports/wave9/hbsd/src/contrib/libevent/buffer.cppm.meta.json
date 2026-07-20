@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libevent/buffer.c",
+  "wave": "wave9",
+  "loc_estimate": 3467,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libevent/buffer.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libevent.buffer",
+  "generated": "2026-07-19T09:37:40+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssh/auth-shadow.c",
+  "wave": "wave9",
+  "loc_estimate": 141,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/auth-shadow.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.auth_shadow",
+  "generated": "2026-07-19T09:37:19+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/test/testutil/driver.c",
+  "wave": "wave9",
+  "loc_estimate": 474,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/testutil/driver.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.testutil.driver",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Object/SymbolSize.cpp",
+  "wave": "wave9",
+  "loc_estimate": 128,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Object/SymbolSize.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.object.symbolsize",
+  "generated": "2026-07-19T09:31:51+00:00"
+}

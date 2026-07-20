@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/zstd/lib/compress/zstd_compress.c",
+  "wave": "wave6",
+  "loc_estimate": 4279,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zstd/lib/compress/zstd_compress.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zstd.lib.compress.zstd_compress",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

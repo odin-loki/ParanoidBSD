@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/elf-hints.h",
+  "wave": "wave9",
+  "loc_estimate": 52,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/elf-hints.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.elf_hints",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/athk/ath11k/debugfs.c",
+  "wave": "wave4",
+  "loc_estimate": 1801,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/athk/ath11k/debugfs.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.athk.ath11k.debugfs",
+  "generated": "2026-07-19T09:29:36+00:00"
+}

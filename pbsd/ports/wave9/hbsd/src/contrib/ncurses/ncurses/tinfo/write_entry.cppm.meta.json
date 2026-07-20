@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/tinfo/write_entry.c",
+  "wave": "wave9",
+  "loc_estimate": 981,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/tinfo/write_entry.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.tinfo.write_entry",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

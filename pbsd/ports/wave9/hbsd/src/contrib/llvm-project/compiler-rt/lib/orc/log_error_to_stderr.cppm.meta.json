@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/orc/log_error_to_stderr.cpp",
+  "wave": "wave9",
+  "loc_estimate": 19,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/orc/log_error_to_stderr.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.orc.log_error_to_stderr",
+  "generated": "2026-07-19T09:37:14+00:00"
+}

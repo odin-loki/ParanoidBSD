@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/vmm/vmm_instruction_emul.c",
+  "wave": "wave7",
+  "loc_estimate": 2940,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/vmm/vmm_instruction_emul.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.vmm.vmm_instruction_emul",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

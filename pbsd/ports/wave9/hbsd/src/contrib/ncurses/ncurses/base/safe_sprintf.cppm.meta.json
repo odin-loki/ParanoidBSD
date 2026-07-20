@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/base/safe_sprintf.c",
+  "wave": "wave9",
+  "loc_estimate": 299,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/base/safe_sprintf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.base.safe_sprintf",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/crypto/builtin/aes/aes-gen.c",
+  "wave": "wave9",
+  "loc_estimate": 358,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/crypto/builtin/aes/aes-gen.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.crypto.builtin.aes.aes_gen",
+  "generated": "2026-07-19T09:30:31+00:00"
+}

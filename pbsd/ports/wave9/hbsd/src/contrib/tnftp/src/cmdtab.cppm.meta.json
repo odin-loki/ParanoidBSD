@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tnftp/src/cmdtab.c",
+  "wave": "wave9",
+  "loc_estimate": 314,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tnftp/src/cmdtab.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tnftp.src.cmdtab",
+  "generated": "2026-07-19T09:38:09+00:00"
+}

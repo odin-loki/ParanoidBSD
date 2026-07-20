@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/ctx_profile/tests/CtxInstrProfilingTest.cpp",
+  "wave": "wave9",
+  "loc_estimate": 313,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/ctx_profile/tests/CtxInstrProfilingTest.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.ctx_profile.tests.ctxinstrprofilingtest",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

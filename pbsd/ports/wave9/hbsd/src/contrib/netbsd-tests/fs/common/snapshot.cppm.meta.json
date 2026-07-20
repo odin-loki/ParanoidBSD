@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/fs/common/snapshot.c",
+  "wave": "wave9",
+  "loc_estimate": 228,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/fs/common/snapshot.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.fs.common.snapshot",
+  "generated": "2026-07-19T09:30:58+00:00"
+}

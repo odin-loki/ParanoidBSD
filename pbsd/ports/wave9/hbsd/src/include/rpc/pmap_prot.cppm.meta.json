@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/rpc/pmap_prot.h",
+  "wave": "wave9",
+  "loc_estimate": 104,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/rpc/pmap_prot.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.rpc.pmap_prot",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

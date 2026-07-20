@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/openpam/bin/pamtest/pamtest.c",
+  "wave": "wave9",
+  "loc_estimate": 465,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openpam/bin/pamtest/pamtest.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.openpam.bin.pamtest.pamtest",
+  "generated": "2026-07-19T09:37:40+00:00"
+}

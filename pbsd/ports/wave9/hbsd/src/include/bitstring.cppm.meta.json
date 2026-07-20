@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/bitstring.h",
+  "wave": "wave9",
+  "loc_estimate": 37,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/bitstring.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.bitstring",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

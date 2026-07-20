@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/fstyp/zfs.c",
+  "wave": "wave2",
+  "loc_estimate": 74,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/fstyp/zfs.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.fstyp.zfs",
+  "generated": "2026-07-19T09:02:51+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/kern_rangelock.c",
+  "wave": "wave4",
+  "loc_estimate": 858,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_rangelock.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_rangelock",
+  "generated": "2026-07-19T09:19:11+00:00"
+}

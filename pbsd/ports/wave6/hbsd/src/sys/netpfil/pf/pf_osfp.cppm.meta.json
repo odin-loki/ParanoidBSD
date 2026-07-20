@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/pf/pf_osfp.c",
+  "wave": "wave6",
+  "loc_estimate": 525,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/pf/pf_osfp.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.pf.pf_osfp",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

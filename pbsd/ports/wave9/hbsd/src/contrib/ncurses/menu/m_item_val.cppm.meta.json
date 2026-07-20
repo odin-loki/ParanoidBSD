@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/menu/m_item_val.c",
+  "wave": "wave9",
+  "loc_estimate": 103,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/menu/m_item_val.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.menu.m_item_val",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/libecc/src/hash/bash384.c",
+  "wave": "wave9",
+  "loc_estimate": 114,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/libecc/src/hash/bash384.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.libecc.src.hash.bash384",
+  "generated": "2026-07-19T09:37:36+00:00"
+}

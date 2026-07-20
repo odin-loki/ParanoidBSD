@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libprocstat/smbfs.c",
+  "wave": "wave2",
+  "loc_estimate": 78,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libprocstat/smbfs.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libprocstat.smbfs",
+  "generated": "2026-07-19T09:29:45+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/libkern/arc4random.c",
+  "wave": "wave4",
+  "loc_estimate": 258,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/libkern/arc4random.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.libkern.arc4random",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

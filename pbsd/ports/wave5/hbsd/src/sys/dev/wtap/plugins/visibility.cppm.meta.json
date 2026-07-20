@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/wtap/plugins/visibility.c",
+  "wave": "wave5",
+  "loc_estimate": 199,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/wtap/plugins/visibility.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.wtap.plugins.visibility",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

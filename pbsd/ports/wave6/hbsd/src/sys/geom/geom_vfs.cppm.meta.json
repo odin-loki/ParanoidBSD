@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/geom_vfs.c",
+  "wave": "wave6",
+  "loc_estimate": 340,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/geom_vfs.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.geom_vfs",
+  "generated": "2026-07-19T08:30:51+00:00"
+}

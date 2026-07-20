@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ahci/ahci_pci.c",
+  "wave": "wave5",
+  "loc_estimate": 755,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ahci/ahci_pci.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ahci.ahci_pci",
+  "generated": "2026-07-19T08:32:42+00:00"
+}

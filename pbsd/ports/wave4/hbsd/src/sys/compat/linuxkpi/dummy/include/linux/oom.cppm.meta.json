@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/compat/linuxkpi/dummy/include/linux/oom.h",
+  "wave": "wave4",
+  "loc_estimate": 0,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/dummy/include/linux/oom.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.dummy.include.linux.oom",
+  "generated": "2026-07-19T10:59:35+00:00"
+}

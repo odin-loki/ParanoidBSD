@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/crypto/openssl/arm/ossl_aes_gcm_neon.c",
+  "wave": "wave4",
+  "loc_estimate": 359,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/openssl/arm/ossl_aes_gcm_neon.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.openssl.arm.ossl_aes_gcm_neon",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

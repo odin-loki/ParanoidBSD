@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/test/testutil/fake_random.c",
+  "wave": "wave9",
+  "loc_estimate": 230,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/testutil/fake_random.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.testutil.fake_random",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Frontend/CompilerInstance.cpp",
+  "wave": "wave9",
+  "loc_estimate": 2381,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Frontend/CompilerInstance.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.frontend.compilerinstance",
+  "generated": "2026-07-19T09:31:21+00:00"
+}

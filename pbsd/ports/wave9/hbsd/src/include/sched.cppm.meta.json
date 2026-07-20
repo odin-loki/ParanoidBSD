@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/include/sched.h",
+  "wave": "wave9",
+  "loc_estimate": 48,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/include/sched.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.include.sched",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

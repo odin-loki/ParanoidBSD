@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwayland/src/client/relativepointer.cpp",
+  "wave": "wave3",
+  "loc_estimate": 191,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/client/relativepointer.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.client.relativepointer",
+  "generated": "2026-07-19T09:30:15+00:00"
+}

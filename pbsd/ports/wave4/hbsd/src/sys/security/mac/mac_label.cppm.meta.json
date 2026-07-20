@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/security/mac/mac_label.c",
+  "wave": "wave4",
+  "loc_estimate": 148,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac/mac_label.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac.mac_label",
+  "generated": "2026-07-19T09:04:04+00:00"
+}

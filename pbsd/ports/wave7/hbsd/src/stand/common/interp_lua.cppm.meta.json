@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/common/interp_lua.c",
+  "wave": "wave7",
+  "loc_estimate": 228,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/common/interp_lua.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.common.interp_lua",
+  "generated": "2026-07-19T08:30:57+00:00"
+}

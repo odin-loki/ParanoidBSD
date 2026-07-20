@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/kern/sysctl_kern_proc.c",
+  "wave": "wave9",
+  "loc_estimate": 199,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/sysctl_kern_proc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.sysctl_kern_proc",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

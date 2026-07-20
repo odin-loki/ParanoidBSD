@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/dpaa2/memac_mdio_common.c",
+  "wave": "wave5",
+  "loc_estimate": 303,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/dpaa2/memac_mdio_common.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.dpaa2.memac_mdio_common",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

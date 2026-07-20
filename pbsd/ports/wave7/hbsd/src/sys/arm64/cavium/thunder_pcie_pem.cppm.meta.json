@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/cavium/thunder_pcie_pem.c",
+  "wave": "wave7",
+  "loc_estimate": 939,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/cavium/thunder_pcie_pem.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.cavium.thunder_pcie_pem",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

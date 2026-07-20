@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/demos/pkey/EVP_PKEY_EC_keygen.c",
+  "wave": "wave9",
+  "loc_estimate": 155,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/demos/pkey/EVP_PKEY_EC_keygen.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.demos.pkey.evp_pkey_ec_keygen",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

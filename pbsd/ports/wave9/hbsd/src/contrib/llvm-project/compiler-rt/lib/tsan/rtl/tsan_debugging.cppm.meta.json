@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/rtl/tsan_debugging.cpp",
+  "wave": "wave9",
+  "loc_estimate": 264,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/rtl/tsan_debugging.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.tsan.rtl.tsan_debugging",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/libecc/src/sig/ecsdsa_common.c",
+  "wave": "wave9",
+  "loc_estimate": 632,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/libecc/src/sig/ecsdsa_common.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.libecc.src.sig.ecsdsa_common",
+  "generated": "2026-07-19T09:37:36+00:00"
+}

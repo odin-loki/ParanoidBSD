@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/compat-43/sethostid.c",
+  "wave": "wave2",
+  "loc_estimate": 45,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/compat-43/sethostid.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.compat_43.sethostid",
+  "generated": "2026-07-19T09:19:10+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tnftp/src/progressbar.c",
+  "wave": "wave9",
+  "loc_estimate": 493,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tnftp/src/progressbar.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tnftp.src.progressbar",
+  "generated": "2026-07-19T09:38:09+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/rtwn/rtl8188e/r88e_rom.c",
+  "wave": "wave5",
+  "loc_estimate": 83,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8188e/r88e_rom.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8188e.r88e_rom",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/libkern/strcasestr.c",
+  "wave": "wave4",
+  "loc_estimate": 65,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/libkern/strcasestr.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.libkern.strcasestr",
+  "generated": "2026-07-19T09:31:10+00:00"
+}

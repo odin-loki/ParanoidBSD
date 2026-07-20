@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/kadmin/server/ovsec_kadmd.c",
+  "wave": "wave9",
+  "loc_estimate": 558,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/kadmin/server/ovsec_kadmd.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.kadmin.server.ovsec_kadmd",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/w_cabs.c",
+  "wave": "wave2",
+  "loc_estimate": 20,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/w_cabs.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.w_cabs",
+  "generated": "2026-07-19T07:47:38+00:00"
+}

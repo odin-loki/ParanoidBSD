@@ -1,0 +1,19 @@
+export module pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.test.default.misuse;
+
+module;
+extern "C" {
+// Legacy TU symbols — hand-port from hbsd/src/sys/contrib/libsodium/test/default/misuse.c
+// void misuse_init(void);
+}
+
+import pbsd.core;
+
+/// Auto-generated migration stub — status: stubbed
+/// @pbsd-migration-meta source=hbsd/src/sys/contrib/libsodium/test/default/misuse.c wave=wave4 loc=173
+export namespace pbsd::port::wave4::hbsd::src::sys::contrib::libsodium::test::default::misuse {
+
+[[nodiscard]] inline Status migration_status() noexcept {
+    return Status::NotImplemented;
+}
+
+} // namespace pbsd::port::wave4::hbsd::src::sys::contrib::libsodium::test::default::misuse

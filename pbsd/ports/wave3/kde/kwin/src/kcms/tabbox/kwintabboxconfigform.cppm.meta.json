@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/kcms/tabbox/kwintabboxconfigform.cpp",
+  "wave": "wave3",
+  "loc_estimate": 394,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/kcms/tabbox/kwintabboxconfigform.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.kcms.tabbox.kwintabboxconfigform",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

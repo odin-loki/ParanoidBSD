@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kservice/src/sycoca/kbuildservicegroupfactory.cpp",
+  "wave": "wave3",
+  "loc_estimate": 155,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kservice/src/sycoca/kbuildservicegroupfactory.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kservice.src.sycoca.kbuildservicegroupfactory",
+  "generated": "2026-07-19T09:30:14+00:00"
+}

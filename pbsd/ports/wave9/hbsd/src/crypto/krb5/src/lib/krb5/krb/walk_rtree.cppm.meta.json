@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/walk_rtree.c",
+  "wave": "wave9",
+  "loc_estimate": 626,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/walk_rtree.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.walk_rtree",
+  "generated": "2026-07-19T09:30:32+00:00"
+}

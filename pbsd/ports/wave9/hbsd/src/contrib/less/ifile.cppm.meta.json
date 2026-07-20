@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/less/ifile.c",
+  "wave": "wave9",
+  "loc_estimate": 362,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/less/ifile.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.less.ifile",
+  "generated": "2026-07-19T09:37:50+00:00"
+}

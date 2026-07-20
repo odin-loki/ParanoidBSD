@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/krb5/init_creds.c",
+  "wave": "wave9",
+  "loc_estimate": 434,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/init_creds.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.init_creds",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

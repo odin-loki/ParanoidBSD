@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/jls/jls.c",
+  "wave": "wave2",
+  "loc_estimate": 659,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/jls/jls.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.jls.jls",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

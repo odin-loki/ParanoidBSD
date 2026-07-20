@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sfxge/common/efx_crc32.c",
+  "wave": "wave5",
+  "loc_estimate": 123,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sfxge/common/efx_crc32.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sfxge.common.efx_crc32",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

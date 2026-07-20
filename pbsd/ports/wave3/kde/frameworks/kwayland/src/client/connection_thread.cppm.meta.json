@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kwayland/src/client/connection_thread.cpp",
+  "wave": "wave3",
+  "loc_estimate": 328,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/client/connection_thread.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.client.connection_thread",
+  "generated": "2026-07-19T09:30:17+00:00"
+}

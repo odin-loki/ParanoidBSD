@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/test/stress2/tools/flip.c",
+  "wave": "wave9",
+  "loc_estimate": 146,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/stress2/tools/flip.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.test.stress2.tools.flip",
+  "generated": "2026-07-19T09:37:46+00:00"
+}

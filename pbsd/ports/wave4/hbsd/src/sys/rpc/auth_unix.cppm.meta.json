@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/rpc/auth_unix.c",
+  "wave": "wave4",
+  "loc_estimate": 372,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/rpc/auth_unix.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.rpc.auth_unix",
+  "generated": "2026-07-19T09:31:13+00:00"
+}

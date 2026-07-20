@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/pam-krb5/tests/tap/kerberos.c",
+  "wave": "wave9",
+  "loc_estimate": 544,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pam-krb5/tests/tap/kerberos.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.pam_krb5.tests.tap.kerberos",
+  "generated": "2026-07-19T09:37:42+00:00"
+}

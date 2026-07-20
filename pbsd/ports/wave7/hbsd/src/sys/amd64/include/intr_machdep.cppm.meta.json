@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/include/intr_machdep.h",
+  "wave": "wave7",
+  "loc_estimate": 47,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/include/intr_machdep.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.include.intr_machdep",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

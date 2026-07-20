@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/random/random_infra.c",
+  "wave": "wave5",
+  "loc_estimate": 102,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/random/random_infra.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.random.random_infra",
+  "generated": "2026-07-19T09:19:12+00:00"
+}

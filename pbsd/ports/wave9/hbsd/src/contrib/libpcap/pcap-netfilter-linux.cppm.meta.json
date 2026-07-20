@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libpcap/pcap-netfilter-linux.c",
+  "wave": "wave9",
+  "loc_estimate": 794,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libpcap/pcap-netfilter-linux.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libpcap.pcap_netfilter_linux",
+  "generated": "2026-07-19T09:37:41+00:00"
+}

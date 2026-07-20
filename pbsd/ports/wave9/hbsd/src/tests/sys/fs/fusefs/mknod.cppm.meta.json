@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tests/sys/fs/fusefs/mknod.cc",
+  "wave": "wave9",
+  "loc_estimate": 318,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/mknod.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.mknod",
+  "generated": "2026-07-19T09:37:21+00:00"
+}

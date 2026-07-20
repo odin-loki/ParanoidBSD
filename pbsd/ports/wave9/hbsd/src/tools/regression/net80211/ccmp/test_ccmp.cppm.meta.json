@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/net80211/ccmp/test_ccmp.c",
+  "wave": "wave9",
+  "loc_estimate": 761,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/net80211/ccmp/test_ccmp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.net80211.ccmp.test_ccmp",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/crypto/hifnstats.c",
+  "wave": "wave9",
+  "loc_estimate": 63,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/crypto/hifnstats.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.crypto.hifnstats",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

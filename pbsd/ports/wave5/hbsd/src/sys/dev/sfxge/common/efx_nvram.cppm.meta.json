@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sfxge/common/efx_nvram.c",
+  "wave": "wave5",
+  "loc_estimate": 1078,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sfxge/common/efx_nvram.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sfxge.common.efx_nvram",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

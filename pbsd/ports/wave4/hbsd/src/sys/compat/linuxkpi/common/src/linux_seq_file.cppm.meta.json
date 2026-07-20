@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/compat/linuxkpi/common/src/linux_seq_file.c",
+  "wave": "wave4",
+  "loc_estimate": 292,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/common/src/linux_seq_file.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.common.src.linux_seq_file",
+  "generated": "2026-07-19T09:31:12+00:00"
+}

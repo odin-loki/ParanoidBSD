@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/security/cap_test/cap_test_sysctl.c",
+  "wave": "wave4",
+  "loc_estimate": 62,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/tools/regression/security/cap_test/cap_test_sysctl.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.tools.regression.security.cap_test.cap_test_sysctl",
+  "generated": "2026-07-19T09:51:39+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/whrlpool/wp_block.c",
+  "wave": "wave9",
+  "loc_estimate": 780,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/whrlpool/wp_block.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.whrlpool.wp_block",
+  "generated": "2026-07-19T09:30:06+00:00"
+}

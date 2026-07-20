@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/elftoolchain/libelf/elf_phnum.c",
+  "wave": "wave9",
+  "loc_estimate": 65,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/elftoolchain/libelf/elf_phnum.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.elftoolchain.libelf.elf_phnum",
+  "generated": "2026-07-19T09:37:29+00:00"
+}

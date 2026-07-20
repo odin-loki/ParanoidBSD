@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/rpc.rstatd/rstat_proc.c",
+  "wave": "wave2",
+  "loc_estimate": 469,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rpc.rstatd/rstat_proc.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.rpc_rstatd.rstat_proc",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

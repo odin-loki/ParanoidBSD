@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/xdgshellwindow.cpp",
+  "wave": "wave3",
+  "loc_estimate": 2081,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/xdgshellwindow.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.xdgshellwindow",
+  "generated": "2026-07-19T09:30:20+00:00"
+}

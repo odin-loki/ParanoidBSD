@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/kernel/kqueue/t_vnode.c",
+  "wave": "wave9",
+  "loc_estimate": 533,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/kernel/kqueue/t_vnode.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.kernel.kqueue.t_vnode",
+  "generated": "2026-07-19T09:30:59+00:00"
+}

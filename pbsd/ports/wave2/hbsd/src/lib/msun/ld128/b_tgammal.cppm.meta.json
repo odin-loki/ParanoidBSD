@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/ld128/b_tgammal.c",
+  "wave": "wave2",
+  "loc_estimate": 12,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/ld128/b_tgammal.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.ld128.b_tgammal",
+  "generated": "2026-07-19T07:47:38+00:00"
+}

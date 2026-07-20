@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.bin/kyua/config.h",
+  "wave": "wave2",
+  "loc_estimate": 122,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/kyua/config.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_bin.kyua.config",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/demos/smime/smsign.c",
+  "wave": "wave9",
+  "loc_estimate": 91,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/demos/smime/smsign.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.demos.smime.smsign",
+  "generated": "2026-07-19T09:30:03+00:00"
+}

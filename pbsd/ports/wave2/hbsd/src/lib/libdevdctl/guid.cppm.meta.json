@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libdevdctl/guid.cc",
+  "wave": "wave2",
+  "loc_estimate": 78,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libdevdctl/guid.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libdevdctl.guid",
+  "generated": "2026-07-19T09:29:45+00:00"
+}

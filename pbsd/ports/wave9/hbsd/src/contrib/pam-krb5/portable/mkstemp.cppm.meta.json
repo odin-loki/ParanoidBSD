@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/pam-krb5/portable/mkstemp.c",
+  "wave": "wave9",
+  "loc_estimate": 101,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pam-krb5/portable/mkstemp.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.pam_krb5.portable.mkstemp",
+  "generated": "2026-07-19T09:37:42+00:00"
+}

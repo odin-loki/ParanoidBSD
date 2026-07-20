@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/msdosfs/msdosfs_fat.c",
+  "wave": "wave6",
+  "loc_estimate": 1215,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/msdosfs/msdosfs_fat.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.msdosfs.msdosfs_fat",
+  "generated": "2026-07-19T09:19:13+00:00"
+}

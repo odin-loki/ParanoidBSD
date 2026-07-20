@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Format/UsingDeclarationsSorter.cpp",
+  "wave": "wave9",
+  "loc_estimate": 246,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Format/UsingDeclarationsSorter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.format.usingdeclarationssorter",
+  "generated": "2026-07-19T09:31:19+00:00"
+}

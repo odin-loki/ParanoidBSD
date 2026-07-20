@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netgraph/ng_source.c",
+  "wave": "wave6",
+  "loc_estimate": 931,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netgraph/ng_source.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netgraph.ng_source",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

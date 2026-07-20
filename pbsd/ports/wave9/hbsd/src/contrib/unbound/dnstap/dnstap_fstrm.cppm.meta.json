@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/dnstap/dnstap_fstrm.c",
+  "wave": "wave9",
+  "loc_estimate": 236,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/dnstap/dnstap_fstrm.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.dnstap.dnstap_fstrm",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

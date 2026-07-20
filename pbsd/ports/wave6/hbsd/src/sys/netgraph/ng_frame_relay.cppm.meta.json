@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netgraph/ng_frame_relay.c",
+  "wave": "wave6",
+  "loc_estimate": 501,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netgraph/ng_frame_relay.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netgraph.ng_frame_relay",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Analysis/DemandedBits.cpp",
+  "wave": "wave9",
+  "loc_estimate": 583,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Analysis/DemandedBits.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.analysis.demandedbits",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/ssl/priority_queue.c",
+  "wave": "wave9",
+  "loc_estimate": 373,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/ssl/priority_queue.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.ssl.priority_queue",
+  "generated": "2026-07-19T09:30:05+00:00"
+}

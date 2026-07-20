@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/pthread/unwind/sem_wait_cancel.cpp",
+  "wave": "wave9",
+  "loc_estimate": 34,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/pthread/unwind/sem_wait_cancel.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.pthread.unwind.sem_wait_cancel",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

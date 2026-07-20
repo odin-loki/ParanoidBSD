@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/X86InsertWait.cpp",
+  "wave": "wave9",
+  "loc_estimate": 130,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/X86InsertWait.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.x86.x86insertwait",
+  "generated": "2026-07-19T09:31:52+00:00"
+}

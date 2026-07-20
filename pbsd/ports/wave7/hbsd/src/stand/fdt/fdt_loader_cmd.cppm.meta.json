@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/fdt/fdt_loader_cmd.c",
+  "wave": "wave7",
+  "loc_estimate": 1946,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/fdt/fdt_loader_cmd.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.fdt.fdt_loader_cmd",
+  "generated": "2026-07-19T09:49:44+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/rtwn/rtl8812a/r12a_rx.c",
+  "wave": "wave5",
+  "loc_estimate": 330,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8812a/r12a_rx.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8812a.r12a_rx",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

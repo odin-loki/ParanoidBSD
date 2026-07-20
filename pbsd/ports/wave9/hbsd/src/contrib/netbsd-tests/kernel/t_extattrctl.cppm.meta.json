@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/kernel/t_extattrctl.c",
+  "wave": "wave9",
+  "loc_estimate": 28,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/kernel/t_extattrctl.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.kernel.t_extattrctl",
+  "generated": "2026-07-19T09:30:53+00:00"
+}

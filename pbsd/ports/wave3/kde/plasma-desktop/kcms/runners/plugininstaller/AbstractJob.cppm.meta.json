@@ -1,0 +1,9 @@
+{
+  "source": "kde/plasma-desktop/kcms/runners/plugininstaller/AbstractJob.cpp",
+  "wave": "wave3",
+  "loc_estimate": 35,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/runners/plugininstaller/AbstractJob.cppm",
+  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.runners.plugininstaller.abstractjob",
+  "generated": "2026-07-19T08:41:43+00:00"
+}

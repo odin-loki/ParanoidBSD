@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/hx509/softp11.c",
+  "wave": "wave9",
+  "loc_estimate": 1784,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/hx509/softp11.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.hx509.softp11",
+  "generated": "2026-07-19T09:30:38+00:00"
+}

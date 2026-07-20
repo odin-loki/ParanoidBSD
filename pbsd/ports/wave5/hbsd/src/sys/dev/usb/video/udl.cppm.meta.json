@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/usb/video/udl.c",
+  "wave": "wave5",
+  "loc_estimate": 1153,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/video/udl.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.video.udl",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

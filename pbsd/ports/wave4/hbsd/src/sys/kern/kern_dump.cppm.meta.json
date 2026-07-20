@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/kern/kern_dump.c",
+  "wave": "wave4",
+  "loc_estimate": 533,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_dump.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_dump",
+  "generated": "2026-07-19T07:47:45+00:00"
+}

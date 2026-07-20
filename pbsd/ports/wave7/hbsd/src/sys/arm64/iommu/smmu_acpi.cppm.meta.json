@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/arm64/iommu/smmu_acpi.c",
+  "wave": "wave7",
+  "loc_estimate": 291,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/iommu/smmu_acpi.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.iommu.smmu_acpi",
+  "generated": "2026-07-19T09:29:37+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/iwlwifi/mld/coex.c",
+  "wave": "wave4",
+  "loc_estimate": 40,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/mld/coex.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.mld.coex",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

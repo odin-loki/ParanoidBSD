@@ -1,0 +1,19 @@
+export module pbsd.port.wave4.hbsd.src.sys.hardenedbsd.hbsd_control_acl;
+
+module;
+extern "C" {
+// Legacy TU symbols — hand-port from hbsd/src/sys/hardenedbsd/hbsd_control_acl.c
+// void hbsd_control_acl_init(void);
+}
+
+import pbsd.core;
+
+/// Auto-generated migration stub — status: stubbed
+/// @pbsd-migration-meta source=hbsd/src/sys/hardenedbsd/hbsd_control_acl.c wave=wave4 loc=112
+export namespace pbsd::port::wave4::hbsd::src::sys::hardenedbsd::hbsd_control_acl {
+
+[[nodiscard]] inline Status migration_status() noexcept {
+    return Status::NotImplemented;
+}
+
+} // namespace pbsd::port::wave4::hbsd::src::sys::hardenedbsd::hbsd_control_acl

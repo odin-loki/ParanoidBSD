@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/libc/src/__support/OSUtil/linux/vdso.cpp",
+  "wave": "wave9",
+  "loc_estimate": 239,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libc/src/__support/OSUtil/linux/vdso.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libc.src.__support.osutil.linux.vdso",
+  "generated": "2026-07-19T09:37:16+00:00"
+}

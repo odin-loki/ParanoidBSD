@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/ntpd/refclock_jupiter.c",
+  "wave": "wave9",
+  "loc_estimate": 1032,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/refclock_jupiter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.refclock_jupiter",
+  "generated": "2026-07-19T09:31:07+00:00"
+}

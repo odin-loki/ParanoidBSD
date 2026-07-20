@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/openpam/lib/libpam/openpam_strlcpy.c",
+  "wave": "wave9",
+  "loc_estimate": 54,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openpam/lib/libpam/openpam_strlcpy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.openpam.lib.libpam.openpam_strlcpy",
+  "generated": "2026-07-19T09:37:39+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-ar/llvm-ar.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1540,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-ar/llvm-ar.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_ar.llvm_ar",
+  "generated": "2026-07-19T09:31:57+00:00"
+}

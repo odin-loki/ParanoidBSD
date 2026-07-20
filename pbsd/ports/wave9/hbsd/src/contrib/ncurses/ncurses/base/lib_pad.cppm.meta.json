@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/base/lib_pad.c",
+  "wave": "wave9",
+  "loc_estimate": 349,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/base/lib_pad.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.base.lib_pad",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

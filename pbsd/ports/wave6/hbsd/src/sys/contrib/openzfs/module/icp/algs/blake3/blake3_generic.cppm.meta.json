@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/icp/algs/blake3/blake3_generic.c",
+  "wave": "wave6",
+  "loc_estimate": 205,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/icp/algs/blake3/blake3_generic.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.icp.algs.blake3.blake3_generic",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

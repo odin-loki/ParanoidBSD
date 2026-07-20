@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/unbound/services/cache/infra.c",
+  "wave": "wave9",
+  "loc_estimate": 1342,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/services/cache/infra.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.services.cache.infra",
+  "generated": "2026-07-19T09:37:33+00:00"
+}

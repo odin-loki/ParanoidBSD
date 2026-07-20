@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libgssapi/gss_display_status.c",
+  "wave": "wave2",
+  "loc_estimate": 339,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libgssapi/gss_display_status.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libgssapi.gss_display_status",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libsamplerate/src_sinc.c",
+  "wave": "wave9",
+  "loc_estimate": 1254,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libsamplerate/src_sinc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libsamplerate.src_sinc",
+  "generated": "2026-07-19T09:38:16+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/rtld-elf/rtld-libc/rtld_libc.c",
+  "wave": "wave2",
+  "loc_estimate": 120,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rtld-elf/rtld-libc/rtld_libc.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.rtld_elf.rtld_libc.rtld_libc",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/crypto/krb/enctype_util.c",
+  "wave": "wave9",
+  "loc_estimate": 176,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/crypto/krb/enctype_util.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.crypto.krb.enctype_util",
+  "generated": "2026-07-19T09:30:29+00:00"
+}

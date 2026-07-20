@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libpcap/rpcapd/rpcapd.c",
+  "wave": "wave9",
+  "loc_estimate": 1435,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libpcap/rpcapd/rpcapd.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libpcap.rpcapd.rpcapd",
+  "generated": "2026-07-19T09:37:41+00:00"
+}

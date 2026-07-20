@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/usb/controller/generic_ohci.c",
+  "wave": "wave5",
+  "loc_estimate": 330,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/controller/generic_ohci.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.controller.generic_ohci",
+  "generated": "2026-07-19T09:19:37+00:00"
+}

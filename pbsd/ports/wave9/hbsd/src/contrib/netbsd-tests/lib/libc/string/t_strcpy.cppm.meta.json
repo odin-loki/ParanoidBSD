@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libc/string/t_strcpy.c",
+  "wave": "wave9",
+  "loc_estimate": 124,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libc/string/t_strcpy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libc.string.t_strcpy",
+  "generated": "2026-07-19T09:30:56+00:00"
+}

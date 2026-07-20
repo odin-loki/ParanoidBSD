@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/filewidgets/kurlnavigatorbutton.cpp",
+  "wave": "wave3",
+  "loc_estimate": 709,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/filewidgets/kurlnavigatorbutton.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.filewidgets.kurlnavigatorbutton",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

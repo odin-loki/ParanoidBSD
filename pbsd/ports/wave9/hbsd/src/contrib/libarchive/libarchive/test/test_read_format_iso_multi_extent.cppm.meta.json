@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_read_format_iso_multi_extent.c",
+  "wave": "wave9",
+  "loc_estimate": 95,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_read_format_iso_multi_extent.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_read_format_iso_multi_extent",
+  "generated": "2026-07-19T09:30:40+00:00"
+}

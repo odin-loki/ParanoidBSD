@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/openbsm/tools/audump.c",
+  "wave": "wave9",
+  "loc_estimate": 282,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openbsm/tools/audump.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.openbsm.tools.audump",
+  "generated": "2026-07-19T09:37:50+00:00"
+}

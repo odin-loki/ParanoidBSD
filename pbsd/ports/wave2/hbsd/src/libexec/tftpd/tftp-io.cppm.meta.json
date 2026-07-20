@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/tftpd/tftp-io.c",
+  "wave": "wave2",
+  "loc_estimate": 447,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/tftpd/tftp-io.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.tftpd.tftp_io",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

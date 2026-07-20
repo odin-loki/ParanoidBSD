@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ioat/ioat_test.c",
+  "wave": "wave5",
+  "loc_estimate": 606,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ioat/ioat_test.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ioat.ioat_test",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

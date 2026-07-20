@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/pwm/pwmbus.c",
+  "wave": "wave5",
+  "loc_estimate": 271,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pwm/pwmbus.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pwm.pwmbus",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

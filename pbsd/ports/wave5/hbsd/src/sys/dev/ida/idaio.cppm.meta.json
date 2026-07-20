@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ida/idaio.h",
+  "wave": "wave5",
+  "loc_estimate": 22,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ida/idaio.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ida.idaio",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

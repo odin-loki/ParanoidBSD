@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/apps/lib/vms_decc_argv.c",
+  "wave": "wave9",
+  "loc_estimate": 72,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/apps/lib/vms_decc_argv.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.apps.lib.vms_decc_argv",
+  "generated": "2026-07-19T09:30:03+00:00"
+}

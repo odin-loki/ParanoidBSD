@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/os/linux/zfs/zpl_xattr.c",
+  "wave": "wave6",
+  "loc_estimate": 1557,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/os/linux/zfs/zpl_xattr.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.os.linux.zfs.zpl_xattr",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

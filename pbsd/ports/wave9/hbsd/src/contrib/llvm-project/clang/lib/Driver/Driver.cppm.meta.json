@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Driver/Driver.cpp",
+  "wave": "wave9",
+  "loc_estimate": 7350,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Driver/Driver.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.driver.driver",
+  "generated": "2026-07-19T09:31:22+00:00"
+}

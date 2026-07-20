@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/qcom_tcsr/qcom_tcsr_reg.h",
+  "wave": "wave5",
+  "loc_estimate": 42,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qcom_tcsr/qcom_tcsr_reg.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qcom_tcsr.qcom_tcsr_reg",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

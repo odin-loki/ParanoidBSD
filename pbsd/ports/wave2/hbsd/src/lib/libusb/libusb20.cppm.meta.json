@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libusb/libusb20.c",
+  "wave": "wave2",
+  "loc_estimate": 1416,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libusb/libusb20.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libusb.libusb20",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

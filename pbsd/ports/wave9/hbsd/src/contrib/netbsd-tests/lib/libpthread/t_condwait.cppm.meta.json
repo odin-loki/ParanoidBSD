@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/lib/libpthread/t_condwait.c",
+  "wave": "wave9",
+  "loc_estimate": 154,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libpthread/t_condwait.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libpthread.t_condwait",
+  "generated": "2026-07-19T09:30:57+00:00"
+}

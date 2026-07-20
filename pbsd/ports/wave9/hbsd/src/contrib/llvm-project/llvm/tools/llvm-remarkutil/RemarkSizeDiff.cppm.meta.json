@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-remarkutil/RemarkSizeDiff.cpp",
+  "wave": "wave9",
+  "loc_estimate": 501,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-remarkutil/RemarkSizeDiff.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_remarkutil.remarksizediff",
+  "generated": "2026-07-19T09:31:55+00:00"
+}

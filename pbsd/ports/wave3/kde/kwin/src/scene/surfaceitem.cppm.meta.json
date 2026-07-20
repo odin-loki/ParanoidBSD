@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/scene/surfaceitem.cpp",
+  "wave": "wave3",
+  "loc_estimate": 582,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/scene/surfaceitem.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.scene.surfaceitem",
+  "generated": "2026-07-19T09:30:19+00:00"
+}

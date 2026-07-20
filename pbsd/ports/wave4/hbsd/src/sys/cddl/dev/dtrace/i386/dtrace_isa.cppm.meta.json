@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cddl/dev/dtrace/i386/dtrace_isa.c",
+  "wave": "wave4",
+  "loc_estimate": 674,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/dev/dtrace/i386/dtrace_isa.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.dev.dtrace.i386.dtrace_isa",
+  "generated": "2026-07-19T09:31:14+00:00"
+}

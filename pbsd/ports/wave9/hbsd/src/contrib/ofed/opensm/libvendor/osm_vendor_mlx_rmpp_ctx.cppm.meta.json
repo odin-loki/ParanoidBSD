@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ofed/opensm/libvendor/osm_vendor_mlx_rmpp_ctx.c",
+  "wave": "wave9",
+  "loc_estimate": 361,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/opensm/libvendor/osm_vendor_mlx_rmpp_ctx.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.opensm.libvendor.osm_vendor_mlx_rmpp_ctx",
+  "generated": "2026-07-19T09:37:24+00:00"
+}

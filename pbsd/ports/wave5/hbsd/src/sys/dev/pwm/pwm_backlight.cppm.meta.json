@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/pwm/pwm_backlight.c",
+  "wave": "wave5",
+  "loc_estimate": 304,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pwm/pwm_backlight.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pwm.pwm_backlight",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

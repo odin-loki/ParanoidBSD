@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ofed/opensm/libvendor/osm_vendor_mlx_sar.c",
+  "wave": "wave9",
+  "loc_estimate": 154,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/opensm/libvendor/osm_vendor_mlx_sar.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.opensm.libvendor.osm_vendor_mlx_sar",
+  "generated": "2026-07-19T09:37:24+00:00"
+}

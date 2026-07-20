@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/lib9p/sbuf/sbuf.c",
+  "wave": "wave9",
+  "loc_estimate": 127,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/lib9p/sbuf/sbuf.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.lib9p.sbuf.sbuf",
+  "generated": "2026-07-19T09:38:03+00:00"
+}

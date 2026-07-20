@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/neta/if_mvneta.c",
+  "wave": "wave5",
+  "loc_estimate": 3613,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/neta/if_mvneta.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.neta.if_mvneta",
+  "generated": "2026-07-19T09:29:10+00:00"
+}

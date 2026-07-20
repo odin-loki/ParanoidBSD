@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libxo/libxo/xo_syslog.c",
+  "wave": "wave9",
+  "loc_estimate": 711,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libxo/libxo/xo_syslog.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libxo.libxo.xo_syslog",
+  "generated": "2026-07-19T09:37:59+00:00"
+}

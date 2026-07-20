@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/opencsd/decoder/source/ocsd_lib_dcd_register.cpp",
+  "wave": "wave9",
+  "loc_estimate": 216,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/ocsd_lib_dcd_register.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.ocsd_lib_dcd_register",
+  "generated": "2026-07-19T09:37:48+00:00"
+}

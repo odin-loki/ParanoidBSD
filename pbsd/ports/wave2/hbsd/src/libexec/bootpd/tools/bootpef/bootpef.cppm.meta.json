@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/libexec/bootpd/tools/bootpef/bootpef.c",
+  "wave": "wave2",
+  "loc_estimate": 318,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/libexec/bootpd/tools/bootpef/bootpef.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.libexec.bootpd.tools.bootpef.bootpef",
+  "generated": "2026-07-19T09:30:23+00:00"
+}

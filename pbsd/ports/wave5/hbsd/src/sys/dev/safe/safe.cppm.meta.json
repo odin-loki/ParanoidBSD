@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/safe/safe.c",
+  "wave": "wave5",
+  "loc_estimate": 1978,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/safe/safe.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.safe.safe",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/libc/src/__support/File/file.cpp",
+  "wave": "wave9",
+  "loc_estimate": 477,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libc/src/__support/File/file.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libc.src.__support.file.file",
+  "generated": "2026-07-19T09:37:17+00:00"
+}

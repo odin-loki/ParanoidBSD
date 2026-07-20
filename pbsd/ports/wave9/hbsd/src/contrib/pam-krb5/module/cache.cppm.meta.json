@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/pam-krb5/module/cache.c",
+  "wave": "wave9",
+  "loc_estimate": 185,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pam-krb5/module/cache.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.pam_krb5.module.cache",
+  "generated": "2026-07-19T09:37:42+00:00"
+}

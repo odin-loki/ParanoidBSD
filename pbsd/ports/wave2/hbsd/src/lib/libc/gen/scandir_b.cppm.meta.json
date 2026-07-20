@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/gen/scandir_b.c",
+  "wave": "wave2",
+  "loc_estimate": 27,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/scandir_b.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.scandir_b",
+  "generated": "2026-07-19T08:29:02+00:00"
+}

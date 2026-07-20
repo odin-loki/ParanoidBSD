@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/providers/implementations/digests/md5_prov.c",
+  "wave": "wave9",
+  "loc_estimate": 24,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/digests/md5_prov.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.digests.md5_prov",
+  "generated": "2026-07-19T09:30:02+00:00"
+}

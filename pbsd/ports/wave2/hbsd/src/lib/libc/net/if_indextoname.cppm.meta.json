@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/net/if_indextoname.c",
+  "wave": "wave2",
+  "loc_estimate": 92,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/net/if_indextoname.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.net.if_indextoname",
+  "generated": "2026-07-19T09:05:33+00:00"
+}

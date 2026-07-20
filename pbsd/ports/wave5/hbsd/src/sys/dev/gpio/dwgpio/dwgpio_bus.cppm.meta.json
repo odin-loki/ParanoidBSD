@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/gpio/dwgpio/dwgpio_bus.c",
+  "wave": "wave5",
+  "loc_estimate": 162,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/gpio/dwgpio/dwgpio_bus.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.gpio.dwgpio.dwgpio_bus",
+  "generated": "2026-07-19T09:29:05+00:00"
+}

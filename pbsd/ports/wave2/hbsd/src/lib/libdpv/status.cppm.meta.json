@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libdpv/status.c",
+  "wave": "wave2",
+  "loc_estimate": 109,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libdpv/status.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libdpv.status",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/vmm/io/ppt.c",
+  "wave": "wave7",
+  "loc_estimate": 857,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/vmm/io/ppt.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.vmm.io.ppt",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

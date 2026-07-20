@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libcasper/services/cap_grp/cap_grp.c",
+  "wave": "wave2",
+  "loc_estimate": 788,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libcasper/services/cap_grp/cap_grp.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libcasper.services.cap_grp.cap_grp",
+  "generated": "2026-07-19T09:29:48+00:00"
+}

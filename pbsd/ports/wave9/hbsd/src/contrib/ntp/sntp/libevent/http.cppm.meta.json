@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/sntp/libevent/http.c",
+  "wave": "wave9",
+  "loc_estimate": 5128,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/sntp/libevent/http.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.sntp.libevent.http",
+  "generated": "2026-07-19T09:31:08+00:00"
+}

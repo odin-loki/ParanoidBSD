@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/rm_lnkcnt_zero_file.c",
+  "wave": "wave6",
+  "loc_estimate": 159,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/rm_lnkcnt_zero_file.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.cmd.rm_lnkcnt_zero_file",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

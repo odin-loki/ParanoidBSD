@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/gdtoa/strtoIdd.c",
+  "wave": "wave9",
+  "loc_estimate": 66,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/gdtoa/strtoIdd.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.gdtoa.strtoidd",
+  "generated": "2026-07-19T09:37:48+00:00"
+}

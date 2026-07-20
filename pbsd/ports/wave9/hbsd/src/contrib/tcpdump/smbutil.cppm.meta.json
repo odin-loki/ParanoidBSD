@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcpdump/smbutil.c",
+  "wave": "wave9",
+  "loc_estimate": 1967,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/smbutil.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.smbutil",
+  "generated": "2026-07-19T09:37:27+00:00"
+}

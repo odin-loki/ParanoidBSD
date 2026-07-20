@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/fuzz/quic-rcidm.c",
+  "wave": "wave9",
+  "loc_estimate": 198,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/fuzz/quic-rcidm.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.fuzz.quic_rcidm",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

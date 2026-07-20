@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/scene/outlinedborderitem.cpp",
+  "wave": "wave3",
+  "loc_estimate": 102,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/scene/outlinedborderitem.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.scene.outlinedborderitem",
+  "generated": "2026-07-19T09:04:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/geom/cache/geom_cache.c",
+  "wave": "wave2",
+  "loc_estimate": 240,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/geom/cache/geom_cache.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.geom.cache.geom_cache",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

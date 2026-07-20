@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/xz/src/liblzma/common/easy_encoder_memusage.c",
+  "wave": "wave9",
+  "loc_estimate": 23,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/xz/src/liblzma/common/easy_encoder_memusage.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.xz.src.liblzma.common.easy_encoder_memusage",
+  "generated": "2026-07-19T09:37:37+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/libecc/src/nn/nn_modinv.c",
+  "wave": "wave9",
+  "loc_estimate": 587,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/libecc/src/nn/nn_modinv.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.libecc.src.nn.nn_modinv",
+  "generated": "2026-07-19T09:37:36+00:00"
+}

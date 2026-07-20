@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/dcons/dcons_os.c",
+  "wave": "wave5",
+  "loc_estimate": 513,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/dcons/dcons_os.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.dcons.dcons_os",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

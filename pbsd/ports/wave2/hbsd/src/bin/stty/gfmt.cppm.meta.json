@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/stty/gfmt.c",
+  "wave": "wave2",
+  "loc_estimate": 120,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/stty/gfmt.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.stty.gfmt",
+  "generated": "2026-07-19T07:28:54+00:00"
+}

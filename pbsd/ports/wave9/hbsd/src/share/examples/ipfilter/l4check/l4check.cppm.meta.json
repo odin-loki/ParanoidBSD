@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/share/examples/ipfilter/l4check/l4check.c",
+  "wave": "wave9",
+  "loc_estimate": 800,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/ipfilter/l4check/l4check.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.share.examples.ipfilter.l4check.l4check",
+  "generated": "2026-07-19T09:37:45+00:00"
+}

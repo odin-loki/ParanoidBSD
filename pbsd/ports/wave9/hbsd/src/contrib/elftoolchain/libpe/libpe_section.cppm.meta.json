@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/elftoolchain/libpe/libpe_section.c",
+  "wave": "wave9",
+  "loc_estimate": 518,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/elftoolchain/libpe/libpe_section.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.elftoolchain.libpe.libpe_section",
+  "generated": "2026-07-19T09:37:29+00:00"
+}

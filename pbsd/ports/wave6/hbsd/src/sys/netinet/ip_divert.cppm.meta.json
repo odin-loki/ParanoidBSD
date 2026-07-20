@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/ip_divert.c",
+  "wave": "wave6",
+  "loc_estimate": 913,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/ip_divert.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.ip_divert",
+  "generated": "2026-07-19T09:29:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/utils/TableGen/Common/GlobalISel/GlobalISelMatchTable.cpp",
+  "wave": "wave9",
+  "loc_estimate": 2425,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/utils/TableGen/Common/GlobalISel/GlobalISelMatchTable.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.utils.tablegen.common.globalisel.globaliselmatchtable",
+  "generated": "2026-07-19T09:31:57+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/amd64/vmm/io/vrtc.c",
+  "wave": "wave7",
+  "loc_estimate": 1064,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/vmm/io/vrtc.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.vmm.io.vrtc",
+  "generated": "2026-07-19T09:29:38+00:00"
+}

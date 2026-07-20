@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libyaml/tests/example-reformatter-alt.c",
+  "wave": "wave9",
+  "loc_estimate": 217,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libyaml/tests/example-reformatter-alt.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libyaml.tests.example_reformatter_alt",
+  "generated": "2026-07-19T09:37:59+00:00"
+}

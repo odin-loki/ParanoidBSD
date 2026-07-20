@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/crypto/blake2/blake2s-xop.c",
+  "wave": "wave4",
+  "loc_estimate": 2,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/blake2/blake2s-xop.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.blake2.blake2s_xop",
+  "generated": "2026-07-19T09:31:09+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.bin/mkimg/qcow.c",
+  "wave": "wave2",
+  "loc_estimate": 367,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/mkimg/qcow.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_bin.mkimg.qcow",
+  "generated": "2026-07-19T09:30:21+00:00"
+}

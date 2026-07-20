@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/agp/agp_intel.c",
+  "wave": "wave5",
+  "loc_estimate": 433,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/agp/agp_intel.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.agp.agp_intel",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

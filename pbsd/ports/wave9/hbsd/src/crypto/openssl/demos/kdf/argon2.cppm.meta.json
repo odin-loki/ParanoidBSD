@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/demos/kdf/argon2.c",
+  "wave": "wave9",
+  "loc_estimate": 156,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/demos/kdf/argon2.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.demos.kdf.argon2",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/uart/uart_tty.c",
+  "wave": "wave5",
+  "loc_estimate": 466,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/uart/uart_tty.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.uart.uart_tty",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

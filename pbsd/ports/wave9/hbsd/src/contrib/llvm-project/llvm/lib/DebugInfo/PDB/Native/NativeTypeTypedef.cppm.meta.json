@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/PDB/Native/NativeTypeTypedef.cpp",
+  "wave": "wave9",
+  "loc_estimate": 31,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/PDB/Native/NativeTypeTypedef.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.debuginfo.pdb.native.nativetypetypedef",
+  "generated": "2026-07-19T09:31:47+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/softfloat/gesf2.c",
+  "wave": "wave2",
+  "loc_estimate": 19,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/softfloat/gesf2.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.softfloat.gesf2",
+  "generated": "2026-07-19T08:29:01+00:00"
+}

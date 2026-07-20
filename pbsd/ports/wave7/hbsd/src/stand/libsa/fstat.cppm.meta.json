@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/stand/libsa/fstat.c",
+  "wave": "wave7",
+  "loc_estimate": 55,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave7/hbsd/src/stand/libsa/fstat.cppm",
+  "module": "pbsd.port.wave7.hbsd.src.stand.libsa.fstat",
+  "generated": "2026-07-19T07:49:21+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/cpu_model/aarch64.c",
+  "wave": "wave9",
+  "loc_estimate": 91,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/cpu_model/aarch64.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.builtins.cpu_model.aarch64",
+  "generated": "2026-07-19T09:37:15+00:00"
+}

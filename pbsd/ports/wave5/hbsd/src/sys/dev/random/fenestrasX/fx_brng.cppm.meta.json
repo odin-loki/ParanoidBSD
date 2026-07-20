@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/random/fenestrasX/fx_brng.c",
+  "wave": "wave5",
+  "loc_estimate": 313,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/random/fenestrasX/fx_brng.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.random.fenestrasx.fx_brng",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

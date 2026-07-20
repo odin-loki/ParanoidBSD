@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netipsec/ah.h",
+  "wave": "wave6",
+  "loc_estimate": 57,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netipsec/ah.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netipsec.ah",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

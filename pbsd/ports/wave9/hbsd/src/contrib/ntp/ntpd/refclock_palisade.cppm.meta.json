@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ntp/ntpd/refclock_palisade.c",
+  "wave": "wave9",
+  "loc_estimate": 1571,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/refclock_palisade.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.refclock_palisade",
+  "generated": "2026-07-19T09:31:07+00:00"
+}

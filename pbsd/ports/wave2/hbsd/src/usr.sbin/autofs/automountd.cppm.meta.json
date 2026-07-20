@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/autofs/automountd.c",
+  "wave": "wave2",
+  "loc_estimate": 566,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/autofs/automountd.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.autofs.automountd",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ExpressionParser/Clang/ClangFunctionCaller.cpp",
+  "wave": "wave9",
+  "loc_estimate": 219,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ExpressionParser/Clang/ClangFunctionCaller.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.expressionparser.clang.clangfunctioncaller",
+  "generated": "2026-07-19T09:31:40+00:00"
+}

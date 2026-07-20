@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/libpcap/testprogs/threadsignaltest.c",
+  "wave": "wave9",
+  "loc_estimate": 409,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libpcap/testprogs/threadsignaltest.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.libpcap.testprogs.threadsignaltest",
+  "generated": "2026-07-19T09:37:41+00:00"
+}

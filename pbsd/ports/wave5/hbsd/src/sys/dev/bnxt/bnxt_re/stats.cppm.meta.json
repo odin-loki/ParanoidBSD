@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/bnxt/bnxt_re/stats.c",
+  "wave": "wave5",
+  "loc_estimate": 773,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/bnxt/bnxt_re/stats.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.bnxt.bnxt_re.stats",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

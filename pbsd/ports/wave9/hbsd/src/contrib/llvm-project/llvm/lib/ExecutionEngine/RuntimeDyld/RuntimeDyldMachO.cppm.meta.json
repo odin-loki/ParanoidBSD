@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldMachO.cpp",
+  "wave": "wave9",
+  "loc_estimate": 381,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldMachO.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.executionengine.runtimedyld.runtimedyldmacho",
+  "generated": "2026-07-19T09:31:54+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/acpica/components/parser/psopcode.c",
+  "wave": "wave4",
+  "loc_estimate": 452,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/parser/psopcode.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.parser.psopcode",
+  "generated": "2026-07-19T09:29:35+00:00"
+}

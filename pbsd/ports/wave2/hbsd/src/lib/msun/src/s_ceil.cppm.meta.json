@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/msun/src/s_ceil.c",
+  "wave": "wave2",
+  "loc_estimate": 73,
+  "status": "converted",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_ceil.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_ceil",
+  "generated": "2026-07-19T10:02:54+00:00"
+}

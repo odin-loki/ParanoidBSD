@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libjail/jail_getid.c",
+  "wave": "wave2",
+  "loc_estimate": 121,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libjail/jail_getid.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libjail.jail_getid",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

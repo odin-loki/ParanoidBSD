@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/rtwn/pci/rtwn_pci_attach.c",
+  "wave": "wave5",
+  "loc_estimate": 789,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/pci/rtwn_pci_attach.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.pci.rtwn_pci_attach",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

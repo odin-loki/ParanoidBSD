@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/progs/transform.c",
+  "wave": "wave9",
+  "loc_estimate": 80,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/progs/transform.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.progs.transform",
+  "generated": "2026-07-19T09:37:22+00:00"
+}

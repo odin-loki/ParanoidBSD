@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/utils/TableGen/llvm-min-tblgen.cpp",
+  "wave": "wave9",
+  "loc_estimate": 18,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/utils/TableGen/llvm-min-tblgen.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.utils.tablegen.llvm_min_tblgen",
+  "generated": "2026-07-19T09:31:46+00:00"
+}

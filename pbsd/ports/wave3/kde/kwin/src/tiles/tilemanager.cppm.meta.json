@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/tiles/tilemanager.cpp",
+  "wave": "wave3",
+  "loc_estimate": 406,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/tiles/tilemanager.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.tiles.tilemanager",
+  "generated": "2026-07-19T09:30:18+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/socket.c",
+  "wave": "wave9",
+  "loc_estimate": 336,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/socket.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.socket",
+  "generated": "2026-07-19T09:30:37+00:00"
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tray-bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5088c8" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#284878" stop-opacity="0.75"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="2" width="22" height="20" rx="3" fill="url(#tray-bg)" stroke="#183060" stroke-width="0.5"/>
+  <circle cx="8" cy="12" r="2" fill="#ffffff" fill-opacity="0.85"/>
+  <rect x="13" y="10" width="6" height="4" rx="1" fill="#ffffff" fill-opacity="0.75"/>
+</svg>

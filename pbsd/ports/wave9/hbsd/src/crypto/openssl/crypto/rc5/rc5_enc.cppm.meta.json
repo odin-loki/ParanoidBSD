@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/openssl/crypto/rc5/rc5_enc.c",
+  "wave": "wave9",
+  "loc_estimate": 166,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/rc5/rc5_enc.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.rc5.rc5_enc",
+  "generated": "2026-07-19T09:30:04+00:00"
+}

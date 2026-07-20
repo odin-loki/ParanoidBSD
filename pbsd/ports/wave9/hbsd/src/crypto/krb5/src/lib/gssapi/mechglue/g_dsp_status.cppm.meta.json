@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/mechglue/g_dsp_status.c",
+  "wave": "wave9",
+  "loc_estimate": 349,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/mechglue/g_dsp_status.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.mechglue.g_dsp_status",
+  "generated": "2026-07-19T09:30:31+00:00"
+}

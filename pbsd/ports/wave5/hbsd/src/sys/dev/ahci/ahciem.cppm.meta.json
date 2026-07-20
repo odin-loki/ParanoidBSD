@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ahci/ahciem.c",
+  "wave": "wave5",
+  "loc_estimate": 667,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ahci/ahciem.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ahci.ahciem",
+  "generated": "2026-07-19T08:32:42+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libpmc/pmu-events/pmu-events.h",
+  "wave": "wave2",
+  "loc_estimate": 61,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libpmc/pmu-events/pmu-events.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libpmc.pmu_events.pmu_events",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

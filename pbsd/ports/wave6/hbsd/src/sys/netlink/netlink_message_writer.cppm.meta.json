@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netlink/netlink_message_writer.c",
+  "wave": "wave6",
+  "loc_estimate": 401,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netlink/netlink_message_writer.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netlink.netlink_message_writer",
+  "generated": "2026-07-19T09:29:34+00:00"
+}

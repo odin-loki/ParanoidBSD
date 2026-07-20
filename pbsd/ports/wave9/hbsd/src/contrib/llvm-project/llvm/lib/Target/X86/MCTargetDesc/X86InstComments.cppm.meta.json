@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/MCTargetDesc/X86InstComments.cpp",
+  "wave": "wave9",
+  "loc_estimate": 1864,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/MCTargetDesc/X86InstComments.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.x86.mctargetdesc.x86instcomments",
+  "generated": "2026-07-19T09:31:57+00:00"
+}

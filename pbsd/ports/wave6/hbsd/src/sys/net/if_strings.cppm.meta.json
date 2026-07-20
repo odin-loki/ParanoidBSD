@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/net/if_strings.h",
+  "wave": "wave6",
+  "loc_estimate": 114,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/if_strings.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.net.if_strings",
+  "generated": "2026-07-19T10:59:34+00:00"
+}

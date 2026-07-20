@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/security/open_to_operation/open_to_operation.c",
+  "wave": "wave4",
+  "loc_estimate": 1250,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/tools/regression/security/open_to_operation/open_to_operation.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.tools.regression.security.open_to_operation.open_to_operation",
+  "generated": "2026-07-19T09:51:40+00:00"
+}

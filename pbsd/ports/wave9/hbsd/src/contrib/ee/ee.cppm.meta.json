@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ee/ee.c",
+  "wave": "wave9",
+  "loc_estimate": 5338,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ee/ee.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ee.ee",
+  "generated": "2026-07-19T09:38:23+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/workspace.cpp",
+  "wave": "wave3",
+  "loc_estimate": 3156,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/workspace.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.workspace",
+  "generated": "2026-07-19T09:30:20+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/gen/setproctitle.c",
+  "wave": "wave2",
+  "loc_estimate": 218,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/setproctitle.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.setproctitle",
+  "generated": "2026-07-19T09:29:47+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/acpica/Osd/OsdInterrupt.c",
+  "wave": "wave5",
+  "loc_estimate": 217,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpica/Osd/OsdInterrupt.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpica.osd.osdinterrupt",
+  "generated": "2026-07-19T09:29:06+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/SymbolFile/DWARF/DWARFContext.cpp",
+  "wave": "wave9",
+  "loc_estimate": 152,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/SymbolFile/DWARF/DWARFContext.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.symbolfile.dwarf.dwarfcontext",
+  "generated": "2026-07-19T09:31:38+00:00"
+}

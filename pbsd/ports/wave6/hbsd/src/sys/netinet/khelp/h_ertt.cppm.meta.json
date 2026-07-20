@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/khelp/h_ertt.c",
+  "wave": "wave6",
+  "loc_estimate": 547,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/khelp/h_ertt.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.khelp.h_ertt",
+  "generated": "2026-07-19T09:02:53+00:00"
+}

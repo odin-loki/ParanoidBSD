@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/clang/lib/Sema/SemaSYCL.cpp",
+  "wave": "wave9",
+  "loc_estimate": 457,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Sema/SemaSYCL.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.sema.semasycl",
+  "generated": "2026-07-19T09:31:20+00:00"
+}

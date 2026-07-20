@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/netbsd-tests/net/in_cksum/assym.h",
+  "wave": "wave9",
+  "loc_estimate": 10,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/net/in_cksum/assym.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.net.in_cksum.assym",
+  "generated": "2026-07-19T10:59:30+00:00"
+}

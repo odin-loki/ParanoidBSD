@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netinet/tcp_accounting.h",
+  "wave": "wave6",
+  "loc_estimate": 31,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/tcp_accounting.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.tcp_accounting",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

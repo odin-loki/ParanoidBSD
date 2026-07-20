@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/geom/eli/g_eli_integrity.c",
+  "wave": "wave6",
+  "loc_estimate": 587,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/eli/g_eli_integrity.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.geom.eli.g_eli_integrity",
+  "generated": "2026-07-19T09:29:21+00:00"
+}

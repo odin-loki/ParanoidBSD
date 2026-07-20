@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cam/cam_periph.c",
+  "wave": "wave5",
+  "loc_estimate": 2232,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/cam/cam_periph.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.cam.cam_periph",
+  "generated": "2026-07-19T08:31:22+00:00"
+}

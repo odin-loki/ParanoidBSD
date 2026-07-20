@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/bin/ps/nlist.c",
+  "wave": "wave2",
+  "loc_estimate": 60,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/bin/ps/nlist.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.bin.ps.nlist",
+  "generated": "2026-07-19T08:41:24+00:00"
+}

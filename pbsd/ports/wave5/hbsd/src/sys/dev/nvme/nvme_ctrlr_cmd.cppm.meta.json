@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/nvme/nvme_ctrlr_cmd.c",
+  "wave": "wave5",
+  "loc_estimate": 335,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/nvme/nvme_ctrlr_cmd.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.nvme.nvme_ctrlr_cmd",
+  "generated": "2026-07-19T08:32:42+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/bearssl/src/rsa/rsa_i62_pkcs1_vrfy.c",
+  "wave": "wave9",
+  "loc_estimate": 63,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/rsa/rsa_i62_pkcs1_vrfy.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.rsa.rsa_i62_pkcs1_vrfy",
+  "generated": "2026-07-19T09:37:18+00:00"
+}

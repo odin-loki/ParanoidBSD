@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/fs/tarfs/tarfs_dbg.h",
+  "wave": "wave6",
+  "loc_estimate": 66,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/tarfs/tarfs_dbg.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.fs.tarfs.tarfs_dbg",
+  "generated": "2026-07-19T10:59:33+00:00"
+}

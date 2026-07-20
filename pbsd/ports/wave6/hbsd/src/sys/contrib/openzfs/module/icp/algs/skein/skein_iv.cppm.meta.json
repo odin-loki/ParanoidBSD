@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/icp/algs/skein/skein_iv.c",
+  "wave": "wave6",
+  "loc_estimate": 162,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/icp/algs/skein/skein_iv.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.icp.algs.skein.skein_iv",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

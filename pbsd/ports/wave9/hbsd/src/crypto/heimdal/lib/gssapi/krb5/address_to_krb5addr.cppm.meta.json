@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/gssapi/krb5/address_to_krb5addr.c",
+  "wave": "wave9",
+  "loc_estimate": 77,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/krb5/address_to_krb5addr.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.krb5.address_to_krb5addr",
+  "generated": "2026-07-19T09:30:35+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/tools/vhba/faulty/vhba_faulty.c",
+  "wave": "wave9",
+  "loc_estimate": 348,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/vhba/faulty/vhba_faulty.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.tools.vhba.faulty.vhba_faulty",
+  "generated": "2026-07-19T09:37:32+00:00"
+}

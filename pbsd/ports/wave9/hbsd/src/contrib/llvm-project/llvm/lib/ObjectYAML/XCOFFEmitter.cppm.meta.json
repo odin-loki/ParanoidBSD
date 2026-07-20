@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ObjectYAML/XCOFFEmitter.cpp",
+  "wave": "wave9",
+  "loc_estimate": 900,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ObjectYAML/XCOFFEmitter.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.objectyaml.xcoffemitter",
+  "generated": "2026-07-19T09:31:56+00:00"
+}

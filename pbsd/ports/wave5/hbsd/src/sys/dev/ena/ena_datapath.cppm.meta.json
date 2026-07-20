@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/ena/ena_datapath.c",
+  "wave": "wave5",
+  "loc_estimate": 1162,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ena/ena_datapath.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ena.ena_datapath",
+  "generated": "2026-07-19T09:29:09+00:00"
+}

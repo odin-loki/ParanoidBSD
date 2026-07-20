@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/rtwn/rtl8192c/usb/r92cu_tx_desc.h",
+  "wave": "wave5",
+  "loc_estimate": 44,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8192c/usb/r92cu_tx_desc.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8192c.usb.r92cu_tx_desc",
+  "generated": "2026-07-19T10:59:32+00:00"
+}

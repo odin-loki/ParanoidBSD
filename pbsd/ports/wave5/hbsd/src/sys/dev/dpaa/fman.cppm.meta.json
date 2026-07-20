@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/dpaa/fman.c",
+  "wave": "wave5",
+  "loc_estimate": 555,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/dpaa/fman.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.dpaa.fman",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

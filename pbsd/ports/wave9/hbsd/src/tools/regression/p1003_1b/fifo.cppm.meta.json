@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/tools/regression/p1003_1b/fifo.c",
+  "wave": "wave9",
+  "loc_estimate": 227,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/p1003_1b/fifo.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.tools.regression.p1003_1b.fifo",
+  "generated": "2026-07-19T09:37:31+00:00"
+}

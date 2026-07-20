@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/lib/rpc/get_myaddress.c",
+  "wave": "wave9",
+  "loc_estimate": 120,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/rpc/get_myaddress.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.rpc.get_myaddress",
+  "generated": "2026-07-19T09:30:28+00:00"
+}

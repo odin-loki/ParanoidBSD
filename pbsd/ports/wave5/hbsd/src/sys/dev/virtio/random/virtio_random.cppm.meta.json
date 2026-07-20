@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/virtio/random/virtio_random.c",
+  "wave": "wave5",
+  "loc_estimate": 329,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/virtio/random/virtio_random.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.virtio.random.virtio_random",
+  "generated": "2026-07-19T07:49:15+00:00"
+}

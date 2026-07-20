@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/XRayInstrumentation.cpp",
+  "wave": "wave9",
+  "loc_estimate": 335,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/XRayInstrumentation.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.codegen.xrayinstrumentation",
+  "generated": "2026-07-19T09:31:54+00:00"
+}

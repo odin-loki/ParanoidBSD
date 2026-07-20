@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/hyperv/vmbus/hyperv_mmu.c",
+  "wave": "wave5",
+  "loc_estimate": 308,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/hyperv/vmbus/hyperv_mmu.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.hyperv.vmbus.hyperv_mmu",
+  "generated": "2026-07-19T09:29:07+00:00"
+}

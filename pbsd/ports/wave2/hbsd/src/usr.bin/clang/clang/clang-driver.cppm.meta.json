@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.bin/clang/clang/clang-driver.cpp",
+  "wave": "wave2",
+  "loc_estimate": 18,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/clang/clang/clang-driver.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_bin.clang.clang.clang_driver",
+  "generated": "2026-07-19T08:41:23+00:00"
+}

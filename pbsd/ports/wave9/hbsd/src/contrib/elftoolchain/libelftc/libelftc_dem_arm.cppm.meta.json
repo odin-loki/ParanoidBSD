@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/elftoolchain/libelftc/libelftc_dem_arm.c",
+  "wave": "wave9",
+  "loc_estimate": 1217,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/elftoolchain/libelftc/libelftc_dem_arm.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.elftoolchain.libelftc.libelftc_dem_arm",
+  "generated": "2026-07-19T09:37:29+00:00"
+}

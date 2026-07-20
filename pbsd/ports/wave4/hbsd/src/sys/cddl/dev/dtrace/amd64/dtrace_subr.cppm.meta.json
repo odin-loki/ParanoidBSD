@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cddl/dev/dtrace/amd64/dtrace_subr.c",
+  "wave": "wave4",
+  "loc_estimate": 422,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/dev/dtrace/amd64/dtrace_subr.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.dev.dtrace.amd64.dtrace_subr",
+  "generated": "2026-07-19T09:31:13+00:00"
+}

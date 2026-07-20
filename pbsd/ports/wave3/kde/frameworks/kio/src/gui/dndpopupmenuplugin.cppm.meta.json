@@ -1,0 +1,9 @@
+{
+  "source": "kde/frameworks/kio/src/gui/dndpopupmenuplugin.cpp",
+  "wave": "wave3",
+  "loc_estimate": 21,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/gui/dndpopupmenuplugin.cppm",
+  "module": "pbsd.port.wave3.kde.frameworks.kio.src.gui.dndpopupmenuplugin",
+  "generated": "2026-07-19T08:28:06+00:00"
+}

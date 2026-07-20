@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/usr.sbin/rpc.yppasswdd/yppasswdd_server.c",
+  "wave": "wave2",
+  "loc_estimate": 944,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/rpc.yppasswdd/yppasswdd_server.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.rpc_yppasswdd.yppasswdd_server",
+  "generated": "2026-07-19T09:29:50+00:00"
+}

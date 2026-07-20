@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/tcpdump/print-ipoib.c",
+  "wave": "wave9",
+  "loc_estimate": 123,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-ipoib.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_ipoib",
+  "generated": "2026-07-19T09:37:26+00:00"
+}

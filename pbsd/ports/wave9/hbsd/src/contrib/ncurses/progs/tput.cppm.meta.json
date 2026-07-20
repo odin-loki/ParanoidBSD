@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/progs/tput.c",
+  "wave": "wave9",
+  "loc_estimate": 520,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/progs/tput.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.progs.tput",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/suid_write_to_file.c",
+  "wave": "wave6",
+  "loc_estimate": 134,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/suid_write_to_file.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.cmd.suid_write_to_file",
+  "generated": "2026-07-19T09:29:19+00:00"
+}

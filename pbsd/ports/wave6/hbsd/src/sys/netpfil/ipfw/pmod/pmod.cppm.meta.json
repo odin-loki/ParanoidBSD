@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/netpfil/ipfw/pmod/pmod.h",
+  "wave": "wave6",
+  "loc_estimate": 33,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/pmod/pmod.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.pmod.pmod",
+  "generated": "2026-07-19T10:59:31+00:00"
+}

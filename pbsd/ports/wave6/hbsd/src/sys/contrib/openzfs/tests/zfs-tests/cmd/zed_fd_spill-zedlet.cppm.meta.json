@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/zed_fd_spill-zedlet.c",
+  "wave": "wave6",
+  "loc_estimate": 49,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/zed_fd_spill-zedlet.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.cmd.zed_fd_spill_zedlet",
+  "generated": "2026-07-19T09:29:19+00:00"
+}

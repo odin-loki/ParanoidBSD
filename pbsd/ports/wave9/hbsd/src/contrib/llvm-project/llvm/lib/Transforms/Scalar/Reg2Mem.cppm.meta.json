@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Scalar/Reg2Mem.cpp",
+  "wave": "wave9",
+  "loc_estimate": 150,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Scalar/Reg2Mem.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.scalar.reg2mem",
+  "generated": "2026-07-19T09:31:52+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/kadm5/chpass_c.c",
+  "wave": "wave9",
+  "loc_estimate": 128,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/kadm5/chpass_c.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.kadm5.chpass_c",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

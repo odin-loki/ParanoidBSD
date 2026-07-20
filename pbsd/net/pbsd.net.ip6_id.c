@@ -1,0 +1,3 @@
+/* Reference logic from hbsd/src/sys/netinet6/ip6_id.c (dual-world). */
+
+/* stub */

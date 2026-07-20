@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/heimdal/lib/roken/getnameinfo.c",
+  "wave": "wave9",
+  "loc_estimate": 124,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/getnameinfo.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.getnameinfo",
+  "generated": "2026-07-19T09:30:36+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cpp",
+  "wave": "wave9",
+  "loc_estimate": 3200,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/SelectionDAG/ScheduleDAGRRList.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.codegen.selectiondag.scheduledagrrlist",
+  "generated": "2026-07-19T09:31:57+00:00"
+}

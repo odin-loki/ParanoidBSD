@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/uctf/tst.printtype.c",
+  "wave": "wave2",
+  "loc_estimate": 72,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/uctf/tst.printtype.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.cddl.contrib.opensolaris.cmd.dtrace.test.tst.common.uctf.tst_printtype",
+  "generated": "2026-07-19T09:04:04+00:00"
+}

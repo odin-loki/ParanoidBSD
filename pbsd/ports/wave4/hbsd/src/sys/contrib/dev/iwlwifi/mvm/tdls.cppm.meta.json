@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/dev/iwlwifi/mvm/tdls.c",
+  "wave": "wave4",
+  "loc_estimate": 671,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/mvm/tdls.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.mvm.tdls",
+  "generated": "2026-07-19T09:29:36+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/jemalloc/src/prof_log.c",
+  "wave": "wave9",
+  "loc_estimate": 717,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/src/prof_log.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.src.prof_log",
+  "generated": "2026-07-19T09:37:43+00:00"
+}

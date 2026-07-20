@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/ncurses/ncurses/base/lib_set_term.c",
+  "wave": "wave9",
+  "loc_estimate": 874,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/base/lib_set_term.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.base.lib_set_term",
+  "generated": "2026-07-19T09:37:23+00:00"
+}

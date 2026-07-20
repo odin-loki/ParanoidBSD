@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/lib/libc/rpc/mt_misc.c",
+  "wave": "wave2",
+  "loc_estimate": 112,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/rpc/mt_misc.cppm",
+  "module": "pbsd.port.wave2.hbsd.src.lib.libc.rpc.mt_misc",
+  "generated": "2026-07-19T09:29:46+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/contrib/sqlite3/tea/generic/tclsqlite3.c",
+  "wave": "wave9",
+  "loc_estimate": 4165,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/contrib/sqlite3/tea/generic/tclsqlite3.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.contrib.sqlite3.tea.generic.tclsqlite3",
+  "generated": "2026-07-19T09:38:19+00:00"
+}

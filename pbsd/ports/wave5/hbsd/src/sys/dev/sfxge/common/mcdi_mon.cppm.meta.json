@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sfxge/common/mcdi_mon.c",
+  "wave": "wave5",
+  "loc_estimate": 657,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sfxge/common/mcdi_mon.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sfxge.common.mcdi_mon",
+  "generated": "2026-07-19T09:29:08+00:00"
+}

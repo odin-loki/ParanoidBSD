@@ -1,0 +1,9 @@
+{
+  "source": "kde/kwin/src/screenedge.cpp",
+  "wave": "wave3",
+  "loc_estimate": 1467,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave3/kde/kwin/src/screenedge.cppm",
+  "module": "pbsd.port.wave3.kde.kwin.src.screenedge",
+  "generated": "2026-07-19T09:30:20+00:00"
+}

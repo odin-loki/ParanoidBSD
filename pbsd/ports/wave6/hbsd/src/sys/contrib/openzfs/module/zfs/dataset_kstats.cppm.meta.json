@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/dataset_kstats.c",
+  "wave": "wave6",
+  "loc_estimate": 261,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/dataset_kstats.cppm",
+  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.dataset_kstats",
+  "generated": "2026-07-19T09:29:20+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/crypto/krb5/src/ccapi/lib/ccapi_ccache_iterator.c",
+  "wave": "wave9",
+  "loc_estimate": 291,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/ccapi/lib/ccapi_ccache_iterator.cppm",
+  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.ccapi.lib.ccapi_ccache_iterator",
+  "generated": "2026-07-19T09:30:31+00:00"
+}

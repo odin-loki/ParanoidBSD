@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/cddl/dev/prototype.c",
+  "wave": "wave4",
+  "loc_estimate": 144,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/dev/prototype.cppm",
+  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.dev.prototype",
+  "generated": "2026-07-19T09:31:11+00:00"
+}

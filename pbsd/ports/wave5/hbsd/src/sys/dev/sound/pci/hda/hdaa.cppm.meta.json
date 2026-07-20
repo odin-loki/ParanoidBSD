@@ -1,0 +1,9 @@
+{
+  "source": "hbsd/src/sys/dev/sound/pci/hda/hdaa.c",
+  "wave": "wave5",
+  "loc_estimate": 7215,
+  "status": "stubbed",
+  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sound/pci/hda/hdaa.cppm",
+  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sound.pci.hda.hdaa",
+  "generated": "2026-07-19T08:30:14+00:00"
+}
