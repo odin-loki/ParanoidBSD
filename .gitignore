@@ -1,21 +1,87 @@
-# Ports tree is huge and re-clonable; OneDrive also leaves many files offline.
-# Re-fetch with: git clone --depth 1 https://github.com/HardenedBSD/hardenedbsd-ports.git hbsd/ports
+# =============================================================================
+# Source-only tree — build artifacts and local scratch stay out of git.
+# =============================================================================
+
+# HardenedBSD ports tree (huge / re-clonable)
+# Re-fetch: git clone --depth 1 https://github.com/HardenedBSD/hardenedbsd-ports.git hbsd/ports
 /hbsd/ports/
 
-# Build outputs
+# ---- Build / CMake / Ninja outputs (repo root + pbsd) ----------------------
 /build/
+/build-*/
+pbsd/build/
+pbsd/build-*/
+pbsd/build_*/
+pbsd/_build/
+pbsd/_build-*/
+pbsd/_build_*/
+
 **/CMakeFiles/
-**/cmake_install.cmake
 **/CMakeCache.txt
+**/cmake_install.cmake
+**/CTestTestfile.cmake
+**/DartConfiguration.tcl
 **/compile_commands.json
+**/.ninja_deps
+**/.ninja_log
+**/build.ninja
+**/rules.ninja
+**/install_manifest.txt
+**/Testing/
+
+# Compiled objects / libs / modules
 *.o
+*.obj
 *.a
+*.lib
 *.so
+*.so.*
 *.dylib
 *.dll
 *.exe
+*.pcm
+*.gcm
+*.ifc
+*.pch
+*.modmap
+*.d
 
-# Editor / local
+# WSL /tmp gate leftovers accidentally synced under the tree
+**/pbsd-b*-src/
+**/pbsd-b*/
+
+# ---- Local helper / one-off scripts (not product source) -------------------
+.git-commit-msg.txt
+_build_check.sh
+_prep_git.sh
+_migrate-to-pbsd.sh
+_rename_docs.py
+_trim_pbsd.sh
+_finish*.sh
+pbsd/_build_*.sh
+pbsd/_burst10_*.sh
+pbsd/_burst11_*.sh
+pbsd/_cont_*.sh
+pbsd/_check_sync.sh
+pbsd/_count_mods.sh
+pbsd/_integration_*.sh
+pbsd/_patch_*.sh
+pbsd/_retest_*.sh
+pbsd/_run_*.sh
+pbsd/_sync_*.sh
+pbsd/_tmp_*.sh
+
+# Keep curated gate scripts tracked (negations after broader ignores)
+!pbsd/_build_wave.sh
+!pbsd/_burst13_*.sh
+!pbsd/_burst14_*.sh
+!pbsd/_burst15_*.sh
+!pbsd/_burst16_*.sh
+!pbsd/_b16_*.sh
+!pbsd/_b16_*.py
+!pbsd/_fix_*.py
+
+# ---- Editor / OS / local tooling -------------------------------------------
 .vscode/
 .cursor/
 .taskmaster/
@@ -24,14 +90,5 @@
 .DS_Store
 Thumbs.db
 
-# Helper scripts (local only)
-_build_check.sh
-_prep_git.sh
-_migrate-to-pbsd.sh
-_rename_docs.py
-_trim_pbsd.sh
-_finish*.sh
-
-# Nested VCS (flattened into this monorepo)
-# (directories removed before commit; ignore if recreated)
+# Nested VCS
 **/.git/
