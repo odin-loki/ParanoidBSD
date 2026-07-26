@@ -92,3 +92,13 @@ Thumbs.db
 
 # Nested VCS
 **/.git/
+
+# Python
+**/__pycache__/
+*.py[cod]
+
+# PBSD C→C++23 port generated bulk (re-run tools/run_todo_passes.py)
+docs/migration/clang_port/staged/
+docs/migration/clang_port/pass_report.json
+docs/migration/clang_port/compile_commands.json
+docs/migration/clang_port/tidy_staged.json

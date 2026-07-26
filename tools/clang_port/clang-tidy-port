@@ -1,0 +1,3 @@
+---
+Checks: 'modernize-use-nullptr,modernize-use-override,modernize-use-using,cppcoreguidelines-no-malloc,bugprone-use-after-move'
+WarningsAsErrors: ''
