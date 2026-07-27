@@ -1,14 +1,14 @@
 # PBSD todo.md Pass Report
 
-Generated: `2026-07-27T11:07:44+00:00`
+Generated: `2026-07-27T11:40:16+00:00`
 
-- Files processed: **300**
-- Edits applied: **13718**
+- Files processed: **30**
+- Edits applied: **533**
 - Refusals (model queue only): **0**
 - compile_commands coverage: **100.0%**
 - Corpus OK: **True**
-- IR equal: **0** / ran **0**
-- Diff equal: **0**
+- IR equal: **0** / ran **2**
+- Diff equal: **1**
 
 ## Reason histogram (true refusals — not successful edits)
 
@@ -19,36 +19,36 @@ Generated: `2026-07-27T11:07:44+00:00`
 
 | Edits | Refusals | File |
 |---:|---:|---|
-| 777 | 0 | `hbsd/src/sys/cam/ctl/ctl.c` |
-| 515 | 0 | `hbsd/src/sys/cam/scsi/scsi_all.c` |
-| 466 | 0 | `hbsd/src/sys/cam/cam_xpt.c` |
-| 437 | 0 | `hbsd/src/sys/amd64/amd64/pmap.c` |
-| 437 | 0 | `hbsd/src/sys/arm64/arm64/pmap.c` |
-| 355 | 0 | `hbsd/src/sys/cam/ctl/ctl_cmd_table.c` |
-| 291 | 0 | `hbsd/src/sys/cam/scsi/scsi_enc_ses.c` |
-| 264 | 0 | `hbsd/src/sys/cam/scsi/scsi_sa.c` |
-| 226 | 0 | `hbsd/src/sys/arm64/vmm/io/vgic_v3.c` |
-| 218 | 0 | `hbsd/src/sys/cam/ctl/ctl_backend_block.c` |
-| 196 | 0 | `hbsd/src/sys/cam/scsi/scsi_da.c` |
-| 176 | 0 | `hbsd/src/sys/cam/ctl/ctl_frontend_iscsi.c` |
-| 160 | 0 | `hbsd/src/sys/cam/scsi/scsi_xpt.c` |
-| 158 | 0 | `hbsd/src/sys/amd64/vmm/intel/vmx.c` |
-| 153 | 0 | `hbsd/src/sys/cam/ctl/ctl_tpc.c` |
-| 151 | 0 | `hbsd/src/sys/cam/mmc/mmc_da.c` |
-| 147 | 0 | `hbsd/src/sys/cam/cam_iosched.c` |
-| 143 | 0 | `hbsd/src/sys/amd64/vmm/vmm.c` |
-| 137 | 0 | `hbsd/src/sys/arm64/nvidia/tegra210/tegra210_clk_per.c` |
-| 136 | 0 | `hbsd/src/sys/amd64/vmm/amd/svm.c` |
-| 133 | 0 | `hbsd/src/sys/arm64/nvidia/tegra210/tegra210_xusbpadctl.c` |
-| 132 | 0 | `hbsd/src/sys/amd64/vmm/vmm_instruction_emul.c` |
-| 132 | 0 | `hbsd/src/sys/cam/scsi/scsi_cd.c` |
-| 127 | 0 | `hbsd/src/sys/cam/ata/ata_da.c` |
-| 125 | 0 | `hbsd/src/sys/arm64/arm64/gicv3_its.c` |
-| 125 | 0 | `hbsd/src/sys/cam/cam_periph.c` |
-| 123 | 0 | `hbsd/src/sys/cam/ata/ata_xpt.c` |
-| 119 | 0 | `hbsd/src/sys/cam/scsi/scsi_pass.c` |
-| 117 | 0 | `hbsd/src/sys/arm64/iommu/smmu.c` |
-| 108 | 0 | `hbsd/src/sys/arm64/broadcom/genet/if_genet.c` |
+| 66 | 0 | `hbsd/src/bin/ed/main.c` |
+| 55 | 0 | `hbsd/src/bin/df/df.c` |
+| 50 | 0 | `hbsd/src/bin/chio/chio.c` |
+| 47 | 0 | `hbsd/src/bin/dd/args.c` |
+| 33 | 0 | `hbsd/src/bin/cat/cat.c` |
+| 30 | 0 | `hbsd/src/bin/cp/cp.c` |
+| 27 | 0 | `hbsd/src/bin/date/date.c` |
+| 22 | 0 | `hbsd/src/bin/ed/glbl.c` |
+| 22 | 0 | `hbsd/src/bin/ed/io.c` |
+| 19 | 0 | `hbsd/src/bin/ed/buf.c` |
+| 17 | 0 | `hbsd/src/bin/date/vary.c` |
+| 17 | 0 | `hbsd/src/bin/ed/re.c` |
+| 17 | 0 | `hbsd/src/bin/ed/sub.c` |
+| 16 | 0 | `hbsd/src/bin/kenv/kenv.c` |
+| 15 | 0 | `hbsd/src/bin/getfacl/getfacl.c` |
+| 14 | 0 | `hbsd/src/bin/cp/utils.c` |
+| 14 | 0 | `hbsd/src/bin/dd/dd.c` |
+| 10 | 0 | `hbsd/src/bin/csh/iconv_stub.c` |
+| 8 | 0 | `hbsd/src/bin/ed/undo.c` |
+| 6 | 0 | `hbsd/src/bin/chmod/chmod.c` |
+| 5 | 0 | `hbsd/src/bin/cpuset/cpuset.c` |
+| 4 | 0 | `hbsd/src/bin/chflags/chflags.c` |
+| 3 | 0 | `hbsd/src/bin/dd/conv.c` |
+| 3 | 0 | `hbsd/src/bin/dd/misc.c` |
+| 3 | 0 | `hbsd/src/bin/dd/position.c` |
+| 3 | 0 | `hbsd/src/bin/echo/echo.c` |
+| 3 | 0 | `hbsd/src/bin/hostname/hostname.c` |
+| 2 | 0 | `hbsd/src/bin/domainname/domainname.c` |
+| 1 | 0 | `hbsd/src/bin/dd/conv_tab.c` |
+| 1 | 0 | `hbsd/src/bin/dd/gen.c` |
 
 ## Outputs
 
@@ -56,38 +56,38 @@ Generated: `2026-07-27T11:07:44+00:00`
 - Refusals: `/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/docs/migration/clang_port/refusals.jsonl`
 - Full JSON: `docs/migration/clang_port/pass_report.json`
 
-## Proposal histogram (`proposals.jsonl`, 37527)
+## Proposal histogram (`proposals.jsonl`, 37597)
 
 | Kind | Count |
 |---|---:|
-| `MACRO_OBJECT` | 9990 |
-| `STR_FORMAT_CANDIDATE` | 3915 |
-| `MALLOC_ESCAPE` | 3080 |
-| `SPAN_CANDIDATE` | 2825 |
-| `NULLABILITY` | 2583 |
-| `LIFETIME_OWN` | 1802 |
-| `LIFETIME_FAIL` | 1780 |
-| `ANDERSEN_OWNED` | 1769 |
-| `MACRO_CONSTEXPR` | 1691 |
-| `GLOBAL_CLUSTER` | 1518 |
-| `POINTER_KIND` | 1271 |
-| `ANDERSEN_ESCAPE` | 1121 |
-| `MACRO_DIVERGENT` | 924 |
-| `DEAD_STORE` | 747 |
-| `SYSCALL_TRACE` | 657 |
-| `PURITY` | 505 |
-| `GOTO_CLEANUP_CANDIDATE` | 257 |
-| `VLA` | 247 |
+| `MACRO_OBJECT` | 10030 |
+| `STR_FORMAT_CANDIDATE` | 3798 |
+| `MALLOC_ESCAPE` | 3058 |
+| `SPAN_CANDIDATE` | 2840 |
+| `NULLABILITY` | 2601 |
+| `LIFETIME_OWN` | 1732 |
+| `MACRO_CONSTEXPR` | 1730 |
+| `LIFETIME_FAIL` | 1727 |
+| `ANDERSEN_OWNED` | 1695 |
+| `GLOBAL_CLUSTER` | 1444 |
+| `POINTER_KIND` | 1401 |
+| `ANDERSEN_ESCAPE` | 1055 |
+| `MACRO_DIVERGENT` | 977 |
+| `DEAD_STORE` | 711 |
+| `SYSCALL_TRACE` | 616 |
+| `PURITY` | 537 |
+| `GOTO_CLEANUP_CANDIDATE` | 266 |
+| `KR_DEFINITION` | 250 |
+| `VLA` | 246 |
+| `LOCK_DISCIPLINE` | 186 |
 | `QUEUE_H_SITE` | 178 |
-| `TYPEDEF_COMPLEX` | 162 |
-| `LOCK_DISCIPLINE` | 149 |
-| `CALL_SITE_SPAN` | 97 |
-| `RANGE_FOR_CANDIDATE` | 96 |
-| `CALLBACK_CTX` | 58 |
-| `GOTO_CROSS_INIT` | 30 |
-| `FLEXIBLE_ARRAY` | 23 |
+| `TYPEDEF_COMPLEX` | 176 |
+| `CALL_SITE_SPAN` | 103 |
+| `RANGE_FOR_CANDIDATE` | 90 |
+| `CALLBACK_CTX` | 57 |
+| `GOTO_CROSS_INIT` | 29 |
+| `FLEXIBLE_ARRAY` | 24 |
 | `BIT_CAST_CANDIDATE` | 16 |
-| `KR_DEFINITION` | 12 |
 | `FN_PTR_STRUCT` | 11 |
 | `ENUM_ARITHMETIC` | 7 |
 | `NESTED_STRUCT_TAG` | 5 |

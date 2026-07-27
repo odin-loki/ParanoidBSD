@@ -554,6 +554,146 @@ class MacroAntiUnificationPass(Pass):
         return PassResult.unchanged(unit.text)
 
 
+class MacroFunctionConstexprPass(Pass):
+    """Rewrite simple function-like macros to constexpr templates.
+
+    Example: `#define ADD(a, b) ((a)+(b))` →
+      `template<class T0, class T1> constexpr auto ADD(T0 a, T1 b) { return ((a)+(b)); }`
+    """
+
+    name = "macro_function_constexpr"
+    tier = 1
+
+    _SAFE_BODY = re.compile(
+        r"^[\w\s\(\)\+\-\*/%<>=!&|?:.,\[\]]{1,120}$"
+    )
+
+    def apply(self, unit: TranslationUnit) -> PassResult:
+        text = unit.text
+        edits: list[Edit] = []
+        ops: list[tuple[int, int, str, str]] = []
+
+        for m in re.finditer(
+            r"(?m)^#\s*define\s+([A-Za-z_]\w*)\(([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*){0,3})\)\s+(\S.*)$",
+            text,
+        ):
+            name, params_s, body = m.group(1), m.group(2), m.group(3).strip()
+            if body.endswith("\\"):
+                continue
+            body_code = re.split(r"/\*|//", body, maxsplit=1)[0].strip()
+            if not body_code or not self._SAFE_BODY.match(body_code):
+                continue
+            # Reject statement-like / control flow
+            if re.search(r"\b(do|while|for|if|switch|return|goto)\b", body_code):
+                continue
+            params = [p.strip() for p in params_s.split(",")]
+            if not params or any(not p.isidentifier() for p in params):
+                continue
+            # Body must reference only identifiers that are params or literals-ish
+            ids = set(re.findall(r"\b([A-Za-z_]\w*)\b", body_code))
+            allowed = set(params) | {
+                "sizeof",
+                "NULL",
+                "true",
+                "false",
+                "uint8_t",
+                "uint16_t",
+                "uint32_t",
+                "uint64_t",
+                "int8_t",
+                "int16_t",
+                "int32_t",
+                "int64_t",
+                "size_t",
+                "ssize_t",
+            }
+            if ids - allowed:
+                continue
+            tparams = ", ".join(f"class T{i}" for i in range(len(params)))
+            fparams = ", ".join(f"T{i} {p}" for i, p in enumerate(params))
+            new = (
+                f"template<{tparams}>\n"
+                f"constexpr auto {name}({fparams}) {{\n"
+                f"  return {body_code};\n"
+                f"}}"
+            )
+            ops.append((m.start(), m.end(), new, m.group(0)))
+
+        for start, end, new, old in sorted(ops, key=lambda x: x[0], reverse=True):
+            text = text[:start] + new + text[end:]
+            edits.append(
+                Edit(
+                    self.name,
+                    "macro→constexpr fn",
+                    unit.line_col(start)[0],
+                    old[:80],
+                    new[:80],
+                )
+            )
+        if not edits:
+            return PassResult.unchanged(unit.text)
+        return PassResult(text=text, refusals=[], edits=edits)
+
+
+class StrcpyLiteralPass(Pass):
+    """strcpy(dst, \"lit\") / strncpy(dst, \"lit\", n) → bounded copy helpers."""
+
+    name = "strcpy_literal"
+    tier = 2
+
+    def apply(self, unit: TranslationUnit) -> PassResult:
+        text = unit.text
+        masked = unit.mask_strings_comments()
+        edits: list[Edit] = []
+        ops: list[tuple[int, int, str, str]] = []
+
+        for m in re.finditer(
+            r"\bstrcpy\s*\(\s*([A-Za-z_]\w*)\s*,\s*(\"([^\"\\]|\\.)*\")\s*\)",
+            text,
+        ):
+            # Only if match region isn't all spaces in mask (i.e. not inside comment) —
+            # approximate: require masked has strcpy at same index
+            if masked[m.start() : m.start() + 6] != "strcpy":
+                continue
+            dst, lit = m.group(1), m.group(2)
+            new = (
+                f"{{ constexpr auto _pbsd_lit = {lit}; "
+                f"std::strncpy({dst}, _pbsd_lit, sizeof({dst}) - 1); "
+                f"{dst}[sizeof({dst}) - 1] = '\\0'; }}"
+            )
+            # sizeof(dst) wrong if dst is char* — only when dst looks like array use:
+            # require sizeof pattern elsewhere or skip pointers: heuristic — name is buf/path/tmp
+            if not re.search(r"(buf|path|tmp|name|str|line|file|dir|cmd)", dst, re.I):
+                _propose(
+                    unit,
+                    "STR_FORMAT_CANDIDATE",
+                    {
+                        "line": unit.line_col(m.start())[0],
+                        "snippet": "strcpy-lit",
+                        "hint": "string_view assign if destination is array",
+                    },
+                )
+                continue
+            ops.append((m.start(), m.end(), new, m.group(0)))
+
+        for start, end, new, old in sorted(ops, key=lambda x: x[0], reverse=True):
+            text = text[:start] + new + text[end:]
+            edits.append(
+                Edit(self.name, "strcpy→strncpy", unit.line_col(start)[0], old[:80], new[:80])
+            )
+        if edits and "#include <cstring>" not in text:
+            incs = list(re.finditer(r"(?m)^#include\b.*$", text))
+            hdr = "#include <cstring>\n"
+            if incs:
+                pos = incs[-1].end()
+                text = text[:pos] + "\n" + hdr + text[pos:]
+            else:
+                text = hdr + text
+        if not edits:
+            return PassResult(text=unit.text, refusals=[], edits=[])
+        return PassResult(text=text, refusals=[], edits=edits)
+
+
 # ---------------------------------------------------------------------------
 # Tier 3 — fn-ptr struct → virtuals; callback + void* ctx
 # ---------------------------------------------------------------------------

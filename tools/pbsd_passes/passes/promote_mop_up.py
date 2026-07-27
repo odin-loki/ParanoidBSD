@@ -210,6 +210,7 @@ class KrDefinitionFixPass(Pass):
     def apply(self, unit: TranslationUnit) -> PassResult:
         text = unit.text
         edits: list[Edit] = []
+        refusals: list[Refusal] = []
         # Line-oriented K&R match — avoid nested [\w\s*]+ catastrophic regex
         rx = re.compile(
             r"(?m)^([\w\s\*]{1,80}?)\b([A-Za-z_]\w*)\s*\("
@@ -242,17 +243,7 @@ class KrDefinitionFixPass(Pass):
             if j >= len(lines) or not re.match(r"^[ \t]*\{", lines[j]):
                 continue
             if not all(p in dtype for p in pnames):
-                from ..proposals import propose
-
-                propose(
-                    unit.path,
-                    "KR_DEFINITION",
-                    {
-                        "line": unit.line_col(offs[i])[0],
-                        "snippet": name,
-                        "hint": "incomplete K&R decl types",
-                    },
-                )
+                refusals.append(_ref(unit, self.name, "KR_DEFINITION", offs[i], name))
                 continue
             new_params = ", ".join(f"{dtype[p]} {p}" for p in pnames)
             new = f"{ret}{name}({new_params})\n{{"
@@ -263,7 +254,7 @@ class KrDefinitionFixPass(Pass):
         for start, end, new, old in sorted(ops, key=lambda x: x[0], reverse=True):
             text = text[:start] + new + text[end:]
             edits.append(Edit(self.name, "K&R→ANSI", unit.line_col(start)[0], old, new[:60]))
-        return PassResult(text=text, refusals=[], edits=edits)
+        return PassResult(text=text, refusals=refusals, edits=edits)
 
 
 class CloseFdGuardPass(Pass):

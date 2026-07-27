@@ -49,6 +49,7 @@ Mechanical. Auto-fixable at very high rates. Do these first; they gate everythin
 - [x] Nested struct tags → hoist (C puts inner tags at file scope, C++ scopes them). *(refuse `NESTED_STRUCT_TAG`)*
 - [x] Tentative definitions at file scope → single definition + `extern` declarations. *(pass `tentative_definition`)*
 - [x] Simple object-like `#define N lit` → `inline constexpr auto N = lit;` when unused in `#if`. *(pass `macro_object_constexpr`)*
+- [x] Simple function-like `#define F(a,b) ((a)+(b))` → `template` constexpr function. *(pass `macro_function_constexpr`)*
 - [x] `typedef struct foo foo;` → drop redundant typedef, fix all uses. *(simple `typedef` → `using`; complex refused)*
 - [x] `restrict` → `__restrict`.
 - [x] `_Bool` → `bool`, `_Atomic` → `std::atomic`, `_Static_assert` → `static_assert`.

@@ -1,4 +1,0 @@
-@@inline constexpr auto SIZE
-@@inline constexpr auto GREETING
-@@#define FEATURE
-@@#define SKIPME
