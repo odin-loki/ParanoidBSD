@@ -48,6 +48,7 @@ Mechanical. Auto-fixable at very high rates. Do these first; they gate everythin
 - [x] Flexible array members → refuse and log (no clean C++ equivalent; needs a decision).
 - [x] Nested struct tags → hoist (C puts inner tags at file scope, C++ scopes them). *(refuse `NESTED_STRUCT_TAG`)*
 - [x] Tentative definitions at file scope → single definition + `extern` declarations. *(pass `tentative_definition`)*
+- [x] Simple object-like `#define N lit` → `inline constexpr auto N = lit;` when unused in `#if`. *(pass `macro_object_constexpr`)*
 - [x] `typedef struct foo foo;` → drop redundant typedef, fix all uses. *(simple `typedef` → `using`; complex refused)*
 - [x] `restrict` → `__restrict`.
 - [x] `_Bool` → `bool`, `_Atomic` → `std::atomic`, `_Static_assert` → `static_assert`.
@@ -66,7 +67,7 @@ Analysis confined to one function. Tractable, no whole-program cost.
 - [x] **Local `malloc`/`free` → RAII.** Precondition: allocation and free in the same function, pointer never stored to a field/global, never passed to a function that could retain it. Local escape analysis over the CFG.
 - [x] **`goto out:` cleanup chains → scope guards.** Build the CFG, find the postdominator set of the cleanup label, verify each `goto` target releases a superset of what's live. FreeBSD is internally consistent enough that ~5 shapes cover most sites. *(log `GOTO_CLEANUP_CANDIDATE`; rewrite TBD)*
 - [x] **Non-escaping `char buf[N]` → `std::array`.** Same escape precondition as above.
-- [x] `str*`/`snprintf` families → `std::format` / `std::string_view`, where arguments are provably not aliased with the destination. *(safe `strlen==0` → `string_view`; `STR_FORMAT_CANDIDATE` proposals for snprintf/strcpy)*
+- [x] `str*`/`snprintf` families → `std::format` / `std::string_view`, where arguments are provably not aliased with the destination. *(safe `strlen==0` → `string_view`; `snprintf(buf,sizeof(buf),"%s",…)` → format+strncpy; other `STR_FORMAT_CANDIDATE` proposals)*
 - [x] **Const-correctness inference.** A parameter never written through, and never passed to a non-const position, becomes `const`. Monotone fixpoint over the call graph — converges, no heuristics. *(log `CONST_CANDIDATE`)*
 - [x] Dead store and unused parameter detection → log, don't rewrite (may be ABI-relevant).
 - [x] Manual loop idioms over C arrays with known extent → range-`for`. *(log `RANGE_FOR_CANDIDATE`)*

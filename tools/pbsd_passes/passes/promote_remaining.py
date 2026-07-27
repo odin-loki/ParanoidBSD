@@ -339,6 +339,143 @@ class RegionLifetimePass(Pass):
 # ---------------------------------------------------------------------------
 
 
+class MacroObjectConstexprPass(Pass):
+    """Rewrite simple object-like macros: `#define N 1` → `inline constexpr auto N = 1;`.
+
+    Skips names used in `#if`/`#ifdef` in the same TU, and non-literal bodies.
+    """
+
+    name = "macro_object_constexpr"
+    tier = 1
+
+    _LIT = re.compile(
+        r"^(?:"
+        r"0[xX][0-9A-Fa-f]+[uUlL]*|"
+        r"0[bB][01]+[uUlL]*|"
+        r"[0-9]+(?:\.[0-9]*)?(?:[eE][+-]?[0-9]+)?[fFlLuU]*|"
+        r"'(?:\\.|[^\\'])'|"
+        r'"(?:\\.|[^\\"])*"'
+        r")$"
+    )
+
+    def apply(self, unit: TranslationUnit) -> PassResult:
+        text = unit.text
+        # Names appearing in preprocessor conditions must stay macros
+        pp_names: set[str] = set()
+        for m in re.finditer(
+            r"(?m)^#\s*if(?:n?def)?\s+([A-Za-z_]\w*)|"
+            r"^#\s*if\b([^\n]*)|"
+            r"^#\s*elif\b([^\n]*)",
+            text,
+        ):
+            if m.group(1):
+                pp_names.add(m.group(1))
+            for g in m.groups()[1:]:
+                if g:
+                    pp_names.update(re.findall(r"\b([A-Za-z_]\w*)\b", g))
+
+        edits: list[Edit] = []
+        ops: list[tuple[int, int, str, str]] = []
+        for m in re.finditer(
+            r"(?m)^(#\s*define\s+)([A-Za-z_]\w*)(\s+)(\S.*)$",
+            text,
+        ):
+            name = m.group(2)
+            if "(" in name:
+                continue
+            # Skip function-like: `#define FOO(` 
+            after_name = text[m.start(2) + len(name) : m.start(2) + len(name) + 1]
+            # Check original define line for (
+            line = m.group(0)
+            if re.search(rf"#\s*define\s+{re.escape(name)}\s*\(", line):
+                continue
+            body = m.group(4).strip()
+            # Strip trailing backslash continuations — refuse multi-line
+            if body.endswith("\\") or "\\" in m.group(0).split(name, 1)[-1][:3]:
+                continue
+            # Drop C comments at end of define
+            body_code = re.split(r"/\*|//", body, maxsplit=1)[0].strip()
+            if not body_code or not self._LIT.match(body_code):
+                continue
+            if name in pp_names:
+                continue
+            # Avoid colliding with common feature-test / include guards
+            if name.endswith("_H") or name.endswith("_H_") or name.startswith("HAVE_"):
+                continue
+            new = f"inline constexpr auto {name} = {body_code};"
+            ops.append((m.start(), m.end(), new, m.group(0)))
+
+        for start, end, new, old in sorted(ops, key=lambda x: x[0], reverse=True):
+            text = text[:start] + new + text[end:]
+            edits.append(
+                Edit(self.name, "define→constexpr", unit.line_col(start)[0], old[:80], new[:80])
+            )
+        if not edits:
+            return PassResult.unchanged(unit.text)
+        return PassResult(text=text, refusals=[], edits=edits)
+
+
+class SnprintfLiteralPass(Pass):
+    """Safe snprintf patterns → std::format into a fixed buffer via string.
+
+    Only: snprintf(buf, sizeof(buf), "%s", expr) when buf is an array name.
+    """
+
+    name = "snprintf_literal"
+    tier = 2
+
+    def apply(self, unit: TranslationUnit) -> PassResult:
+        text = unit.text
+        masked = unit.mask_strings_comments()
+        edits: list[Edit] = []
+        ops: list[tuple[int, int, str, str]] = []
+        for m in re.finditer(
+            r"\bsnprintf\s*\(\s*([A-Za-z_]\w*)\s*,\s*sizeof\s*\(\s*\1\s*\)\s*,\s*"
+            r'"%s"\s*,\s*([^)]+)\)',
+            masked,
+        ):
+            buf = m.group(1)
+            # Recover expr from original text (same span)
+            orig = text[m.start() : m.end()]
+            em = re.search(
+                r"\bsnprintf\s*\(\s*"
+                + re.escape(buf)
+                + r"\s*,\s*sizeof\s*\(\s*"
+                + re.escape(buf)
+                + r"\s*\)\s*,\s*\"%s\"\s*,\s*([^)]+)\)",
+                orig,
+            )
+            if not em:
+                continue
+            expr = em.group(1).strip()
+            new = (
+                f"{{ auto _pbsd_s = std::format(\"{{}}\", {expr}); "
+                f"std::strncpy({buf}, _pbsd_s.c_str(), sizeof({buf}) - 1); "
+                f"{buf}[sizeof({buf}) - 1] = '\\0'; }}"
+            )
+            ops.append((m.start(), m.end(), new, orig))
+
+        for start, end, new, old in sorted(ops, key=lambda x: x[0], reverse=True):
+            text = text[:start] + new + text[end:]
+            edits.append(
+                Edit(self.name, "snprintf→format", unit.line_col(start)[0], old[:80], new[:80])
+            )
+
+        if edits:
+            if "#include <format>" not in text:
+                incs = list(re.finditer(r"(?m)^#include\b.*$", text))
+                hdr = "#include <format>\n#include <cstring>\n"
+                if incs:
+                    pos = incs[-1].end()
+                    text = text[:pos] + "\n" + hdr + text[pos:]
+                else:
+                    text = hdr + text
+
+        if not edits:
+            return PassResult.unchanged(unit.text)
+        return PassResult(text=text, refusals=[], edits=edits)
+
+
 class MacroAntiUnificationPass(Pass):
     """Identical-modulo-args macros → constexpr/inline; else divergent proposal."""
 
