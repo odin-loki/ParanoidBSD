@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import tempfile
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -140,18 +141,20 @@ def process_file(
         "diff_eligible": False,
     }
 
-    # For IR/diff, prefer freestanding-ish files without heavy BSD headers
+    # For IR/diff, prefer freestanding-ish files without heavy BSD headers.
+    # <err.h> is ubiquitous in userland and available on many hosts — do not
+    # treat it as heavy. Skip kernel/capsicum-heavy TUs.
     heavy = any(
         x in text
         for x in (
             "capsicum",
-            "sys/",
+            "#include <sys/",
+            '#include "sys/',
             "libcasper",
-            "<err.h>",
             "caph_",
         )
     )
-    record["ir_eligible"] = bool(do_ir and not heavy and src.stat().st_size < 8000)
+    record["ir_eligible"] = bool(do_ir and not heavy and src.stat().st_size < 12_000)
     record["diff_eligible"] = bool(
         do_diff and not heavy and "main" in text and src.stat().st_size < 4000
     )
@@ -215,8 +218,9 @@ def process_file_timed(
 
 
 def run_corpus_tests() -> dict:
-    """Golden-file smoke tests for Tier 1 transforms."""
+    """Golden-file smoke tests for Tier 1 transforms + optional IR oracle."""
     results = []
+    ir_results = []
     corpus_dir = CORPUS
     if not corpus_dir.exists():
         return {"ok": False, "error": "corpus missing", "cases": []}
@@ -251,11 +255,41 @@ def run_corpus_tests() -> dict:
             # Write expected draft for first run
             expected.write_text(got, encoding="utf-8")
             results.append({"case": inp.name, "ok": True, "drafted_expected": True})
+
+        # IR oracle on self-contained corpus mains (no system includes)
+        if (
+            "int main" in text
+            and "#include" not in text
+            and "fprintf" not in text
+        ):
+            with tempfile.TemporaryDirectory(prefix="pbsd_corpus_ir_") as td:
+                td_path = Path(td)
+                c_src = td_path / "orig.c"
+                cxx_src = td_path / "port.cpp"
+                c_src.write_text(text, encoding="utf-8")
+                cxx_src.write_text(got, encoding="utf-8")
+                ir = compare_ir(c_src, cxx_src, include_flags=["-Wno-everything"])
+                ir_results.append(
+                    {
+                        "case": inp.name,
+                        "status": ir.get("status"),
+                        "equal": bool(ir.get("equal")),
+                    }
+                )
+
     ok = all(r.get("ok") for r in results) if results else False
     from .proposals import flush as flush_proposals
 
     flush_proposals()
-    return {"ok": ok, "cases": results}
+    ir_ran = len(ir_results)
+    ir_equal = sum(1 for r in ir_results if r.get("equal"))
+    return {
+        "ok": ok,
+        "cases": results,
+        "ir_ran": ir_ran,
+        "ir_equal": ir_equal,
+        "ir_cases": ir_results,
+    }
 
 
 def run_clang_tidy_on_staged(limit: int | None = 80, fix: bool = True) -> dict:
@@ -453,6 +487,7 @@ def run_pipeline(
         f"- Refusals (model queue only): **{report['refusals_total']}**",
         f"- compile_commands coverage: **{cov['coverage_pct']}%**",
         f"- Corpus OK: **{corpus.get('ok')}**",
+        f"- Corpus IR equal: **{corpus.get('ir_equal', 0)}** / ran **{corpus.get('ir_ran', 0)}**",
         f"- IR equal: **{report['ir_equal']}** / ran **{report['ir_ran']}**",
         f"- Diff equal: **{report['diff_equal']}**",
     ]

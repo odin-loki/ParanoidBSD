@@ -176,12 +176,25 @@ class StrToStringViewPass(Pass):
             r"\b(snprintf|sprintf|strcpy|strncpy|strcat|strncat|strlcpy|strlcat)\s*\(",
             unit.mask_strings_comments(),
         ):
+            # Skip shapes rewritten by snprintf_literal / strcpy_literal
+            window = unit.text[m.start() : m.start() + 160]
+            fn = m.group(1)
+            if fn in ("strlcpy", "strlcat") and re.search(
+                r"sizeof\s*\(\s*[A-Za-z_]\w*\s*\)", window
+            ):
+                continue
+            if fn == "snprintf" and '"%s"' in window and "sizeof" in window:
+                continue
+            if fn == "sprintf" and '"%s"' in window:
+                continue
+            if fn == "strcpy" and re.search(r'strcpy\s*\(\s*\w+\s*,\s*"', window):
+                continue
             _propose(
                 unit,
                 "STR_FORMAT_CANDIDATE",
                 {
                     "line": unit.line_col(m.start())[0],
-                    "snippet": m.group(1),
+                    "snippet": fn,
                     "hint": "std::format / string_view when dest not aliased",
                 },
             )
@@ -342,7 +355,8 @@ class RegionLifetimePass(Pass):
 class MacroObjectConstexprPass(Pass):
     """Rewrite simple object-like macros: `#define N 1` → `inline constexpr auto N = 1;`.
 
-    Skips names used in `#if`/`#ifdef` in the same TU, and non-literal bodies.
+    Skips names used in `#if`/`#ifdef` in the same TU, non-literal bodies, and
+    string macros used in adjacent string-literal concatenation.
     """
 
     name = "macro_object_constexpr"
@@ -354,13 +368,25 @@ class MacroObjectConstexprPass(Pass):
         r"0[bB][01]+[uUlL]*|"
         r"[0-9]+(?:\.[0-9]*)?(?:[eE][+-]?[0-9]+)?[fFlLuU]*|"
         r"'(?:\\.|[^\\'])'|"
-        r'"(?:\\.|[^\\"])*"'
+        r'"(?:\\.|[^\\"])*"|'
+        r"nullptr|NULL|true|false"
         r")$"
+    )
+    # Integer/float arithmetic of literals only — e.g. (32 * 1024), (1+2)
+    _SAFE_ARITH = re.compile(
+        r"^(?:"
+        r"\s*(?:"
+        r"0[xX][0-9A-Fa-f]+[uUlL]*|"
+        r"0[bB][01]+[uUlL]*|"
+        r"[0-9]+(?:\.[0-9]*)?(?:[eE][+-]?[0-9]+)?[fFlLuU]*|"
+        r"[+\-*/%()]"
+        r")\s*"
+        r")+$"
     )
 
     @classmethod
     def _literal_expr(cls, body: str) -> str | None:
-        """Accept lit, (lit), ((lit)), or (type)lit / ((type)lit)."""
+        """Accept lit, (lit), ((lit)), (type)lit, or literal-only arithmetic."""
         s = body.strip()
         cast_re = re.compile(
             r"^\(\s*((?:unsigned\s+|signed\s+|long\s+|short\s+|const\s+)*"
@@ -374,12 +400,32 @@ class MacroObjectConstexprPass(Pass):
                 inner = s[1:-1].strip()
                 if cls._LIT.match(inner):
                     return inner
+                if cls._SAFE_ARITH.fullmatch(inner) and re.search(r"\d", inner):
+                    return s  # keep outer parens
                 s = inner
                 continue
             break
         if cls._LIT.match(s):
+            return "nullptr" if s == "NULL" else s
+        if cls._SAFE_ARITH.fullmatch(s) and re.search(r"\d", s):
             return s
         return None
+
+    @staticmethod
+    def _used_in_string_concat(text: str, name: str) -> bool:
+        """C adjacent string concat: \"x\" NAME or NAME \"x\" — constexpr breaks this."""
+        # Ignore the #define line for this name (body is often a string literal).
+        cleaned = re.sub(
+            rf"(?m)^#\s*define\s+{re.escape(name)}\b.*$",
+            "",
+            text,
+        )
+        return bool(
+            re.search(
+                rf'(?<!\\)"\s*{re.escape(name)}\b|\b{re.escape(name)}\s*"',
+                cleaned,
+            )
+        )
 
     def apply(self, unit: TranslationUnit) -> PassResult:
         text = unit.text
@@ -418,6 +464,8 @@ class MacroObjectConstexprPass(Pass):
             if name in pp_names:
                 continue
             if name.endswith("_H") or name.endswith("_H_") or name.startswith("HAVE_"):
+                continue
+            if lit.startswith('"') and self._used_in_string_concat(text, name):
                 continue
             new = f"inline constexpr auto {name} = {lit};"
             ops.append((m.start(), m.end(), new, m.group(0)))
@@ -495,6 +543,48 @@ class SnprintfLiteralPass(Pass):
             )
             ops.append((m.start(), m.end(), new, orig))
 
+        # strlcpy(buf, expr, sizeof(buf)) / strlcat(buf, expr, sizeof(buf))
+        for fn in ("strlcpy", "strlcat"):
+            for m in re.finditer(
+                rf"\b{fn}\s*\(\s*([A-Za-z_]\w*)\s*,\s*([^,]+)\s*,\s*sizeof\s*\(\s*\1\s*\)\s*\)",
+                masked,
+            ):
+                buf = m.group(1)
+                if not re.search(r"(buf|path|tmp|name|str|line|file|dir|cmd|dst|dest)", buf, re.I):
+                    continue
+                orig = text[m.start() : m.end()]
+                em = re.search(
+                    rf"\b{fn}\s*\(\s*"
+                    + re.escape(buf)
+                    + r"\s*,\s*([^,]+)\s*,\s*sizeof\s*\(\s*"
+                    + re.escape(buf)
+                    + r"\s*\)\s*\)",
+                    orig,
+                )
+                if not em:
+                    continue
+                expr = em.group(1).strip()
+                if fn == "strlcpy":
+                    new = (
+                        f"{{ auto _pbsd_s = std::string_view({expr}); "
+                        f"auto _pbsd_n = _pbsd_s.size() < sizeof({buf}) - 1 "
+                        f"? _pbsd_s.size() : sizeof({buf}) - 1; "
+                        f"std::memcpy({buf}, _pbsd_s.data(), _pbsd_n); "
+                        f"{buf}[_pbsd_n] = '\\0'; }}"
+                    )
+                else:
+                    new = (
+                        f"{{ auto _pbsd_s = std::string_view({expr}); "
+                        f"auto _pbsd_len = std::string_view({buf}).size(); "
+                        f"auto _pbsd_room = sizeof({buf}) > _pbsd_len + 1 "
+                        f"? sizeof({buf}) - _pbsd_len - 1 : 0; "
+                        f"auto _pbsd_n = _pbsd_s.size() < _pbsd_room "
+                        f"? _pbsd_s.size() : _pbsd_room; "
+                        f"std::memcpy({buf} + _pbsd_len, _pbsd_s.data(), _pbsd_n); "
+                        f"{buf}[_pbsd_len + _pbsd_n] = '\\0'; }}"
+                    )
+                ops.append((m.start(), m.end(), new, orig))
+
         for start, end, new, old in sorted(ops, key=lambda x: x[0], reverse=True):
             text = text[:start] + new + text[end:]
             edits.append(
@@ -503,9 +593,11 @@ class SnprintfLiteralPass(Pass):
 
         if edits:
             need = []
-            if "#include <format>" not in text:
+            if "std::format" in text and "#include <format>" not in text:
                 need.append("#include <format>\n")
-            if "#include <cstring>" not in text:
+            if "std::string_view" in text and "#include <string_view>" not in text:
+                need.append("#include <string_view>\n")
+            if ("std::strncpy" in text or "std::memcpy" in text) and "#include <cstring>" not in text:
                 need.append("#include <cstring>\n")
             if need:
                 incs = list(re.finditer(r"(?m)^#include\b.*$", text))
@@ -522,38 +614,49 @@ class SnprintfLiteralPass(Pass):
 
 
 class MacroAntiUnificationPass(Pass):
-    """Identical-modulo-args macros → constexpr/inline; else divergent proposal."""
+    """Identical-modulo-args macros → constexpr/inline; else divergent proposal.
+
+    Scans *remaining* `#define`s after earlier rewrite passes (not stale meta),
+    so successful object-like constexpr promotions are not re-proposed.
+    """
 
     name = "macro_anti_unification"
     tier = 3
 
     def apply(self, unit: TranslationUnit) -> PassResult:
-        macros = unit.meta.get("macros") or []
-        if not macros:
-            for m in re.finditer(
-                r"(?m)^#\s*define\s+([A-Za-z_]\w*)(\([^\)]*\))?\s+(.*)$",
-                unit.text,
-            ):
-                macros.append(
-                    {
-                        "name": m.group(1),
-                        "function_like": bool(m.group(2)),
-                        "params": m.group(2) or "",
-                        "body": m.group(3).strip()[:200],
-                        "line": unit.line_col(m.start())[0],
-                    }
-                )
+        # Always re-scan current text — MacroObjectConstexpr may have rewritten
+        # many object-like macros already.
+        macros: list[dict] = []
+        for m in re.finditer(
+            r"(?m)^#\s*define\s+([A-Za-z_]\w*)(\([^\)]*\))?\s+(.*)$",
+            unit.text,
+        ):
+            macros.append(
+                {
+                    "name": m.group(1),
+                    "function_like": bool(m.group(2)),
+                    "params": m.group(2) or "",
+                    "body": m.group(3).strip()[:200],
+                    "line": unit.line_col(m.start())[0],
+                }
+            )
 
         # Normalize body: replace param tokens with $0,$1,...
         templates: dict[str, list[dict]] = defaultdict(list)
         for mac in macros:
             if not mac.get("function_like"):
+                body = mac.get("body", "")
+                # Skip header guards / feature tests — not constexpr material
+                name = mac["name"]
+                if name.endswith("_H") or name.endswith("_H_") or name.startswith("HAVE_"):
+                    continue
                 _propose(
                     unit,
                     "MACRO_OBJECT",
                     {
-                        "name": mac["name"],
+                        "name": name,
                         "line": mac.get("line", 0),
+                        "body": body[:80],
                         "hint": "constexpr / inline constexpr variable",
                     },
                 )
