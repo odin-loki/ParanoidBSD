@@ -31287,3 +31287,37 @@
 {"file": "hbsd/src/libexec/ypxfr/ypxfr_misc.c", "kind": "STR_FORMAT_CANDIDATE", "line": 191, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/libexec/ypxfr/ypxfrd_getmap.c", "kind": "GLOBAL_CLUSTER", "globals": ["fp"], "count": 1}
 {"file": "hbsd/src/libexec/ypxfr/ypxfrd_getmap.c", "kind": "MACRO_OBJECT", "name": "PERM_SECURE", "line": 100, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "SIZE", "line": 1, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "WRAPPED", "line": 2, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "CASTED", "line": 3, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "GREETING", "line": 4, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "FEATURE", "line": 5, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "SKIPME", "line": 9, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_fn.c", "kind": "MACRO_CONSTEXPR", "names": ["ADD"], "template": "(($0) + ($1))", "hint": "inline constexpr / template function"}
+{"file": "t1_macro_fn.c", "kind": "MACRO_CONSTEXPR", "names": ["SQR"], "template": "(($0) * ($0))", "hint": "inline constexpr / template function"}
+{"file": "t1_macro_fn.c", "kind": "MACRO_DIVERGENT", "names": ["BAD"], "template": "do { foo($0); } while (0)", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
+{"file": "t1_tentative.c", "kind": "GLOBAL_CLUSTER", "globals": ["flag", "counter"], "count": 2}
+{"file": "t2_malloc_err.c", "kind": "ANDERSEN_OWNED", "var": "buf", "locs": ["heap:buf@112"], "hint": "unique_ptr candidate"}
+{"file": "t2_malloc_err.c", "kind": "LIFETIME_OWN", "var": "buf", "region": "heap_buf", "hint": "owning region \u2192 unique_ptr"}
+{"file": "t2_span_hint.c", "kind": "CALL_SITE_SPAN", "line": 1, "snippet": "sum"}
+{"file": "t3_macro_au.c", "kind": "MACRO_CONSTEXPR", "names": ["ADD", "SUM"], "template": "(($0) + ($1))", "hint": "inline constexpr / template function"}
+{"file": "t3_macro_au.c", "kind": "MACRO_DIVERGENT", "names": ["WEIRD"], "template": "do { if ($0) foo(); else bar(); } while (0)", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
+{"file": "t3_queue.c", "kind": "MACRO_OBJECT", "name": "PBSD_INTRUSIVE_FOREACH_HELPERS", "line": 3, "hint": "constexpr / inline constexpr variable"}
+{"file": "t3_queue.c", "kind": "MACRO_CONSTEXPR", "names": ["pbsd_intrusive_next"], "template": "(($0)->$1.next)", "hint": "inline constexpr / template function"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "SIZE", "line": 1, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "WRAPPED", "line": 2, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "CASTED", "line": 3, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "GREETING", "line": 4, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "FEATURE", "line": 5, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "SKIPME", "line": 9, "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_fn.c", "kind": "MACRO_CONSTEXPR", "names": ["ADD"], "template": "(($0) + ($1))", "hint": "inline constexpr / template function"}
+{"file": "t1_macro_fn.c", "kind": "MACRO_CONSTEXPR", "names": ["SQR"], "template": "(($0) * ($0))", "hint": "inline constexpr / template function"}
+{"file": "t1_macro_fn.c", "kind": "MACRO_DIVERGENT", "names": ["BAD"], "template": "do { foo($0); } while (0)", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
+{"file": "t1_tentative.c", "kind": "GLOBAL_CLUSTER", "globals": ["flag", "counter"], "count": 2}
+{"file": "t2_malloc_err.c", "kind": "ANDERSEN_OWNED", "var": "buf", "locs": ["heap:buf@112"], "hint": "unique_ptr candidate"}
+{"file": "t2_malloc_err.c", "kind": "LIFETIME_OWN", "var": "buf", "region": "heap_buf", "hint": "owning region \u2192 unique_ptr"}
+{"file": "t2_span_hint.c", "kind": "CALL_SITE_SPAN", "line": 1, "snippet": "sum"}
+{"file": "t3_macro_au.c", "kind": "MACRO_CONSTEXPR", "names": ["ADD", "SUM"], "template": "(($0) + ($1))", "hint": "inline constexpr / template function"}
+{"file": "t3_macro_au.c", "kind": "MACRO_DIVERGENT", "names": ["WEIRD"], "template": "do { if ($0) foo(); else bar(); } while (0)", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
+{"file": "t3_queue.c", "kind": "MACRO_OBJECT", "name": "PBSD_INTRUSIVE_FOREACH_HELPERS", "line": 3, "hint": "constexpr / inline constexpr variable"}
+{"file": "t3_queue.c", "kind": "MACRO_CONSTEXPR", "names": ["pbsd_intrusive_next"], "template": "(($0)->$1.next)", "hint": "inline constexpr / template function"}
