@@ -1,14 +1,14 @@
 # PBSD todo.md Pass Report
 
-Generated: `2026-07-27T11:40:16+00:00`
+Generated: `2026-07-27T11:56:23+00:00`
 
-- Files processed: **30**
-- Edits applied: **533**
+- Files processed: **4028**
+- Edits applied: **99852**
 - Refusals (model queue only): **0**
 - compile_commands coverage: **100.0%**
 - Corpus OK: **True**
-- IR equal: **0** / ran **2**
-- Diff equal: **1**
+- IR equal: **0** / ran **0**
+- Diff equal: **0**
 
 ## Reason histogram (true refusals — not successful edits)
 
@@ -19,36 +19,36 @@ Generated: `2026-07-27T11:40:16+00:00`
 
 | Edits | Refusals | File |
 |---:|---:|---|
-| 66 | 0 | `hbsd/src/bin/ed/main.c` |
-| 55 | 0 | `hbsd/src/bin/df/df.c` |
-| 50 | 0 | `hbsd/src/bin/chio/chio.c` |
-| 47 | 0 | `hbsd/src/bin/dd/args.c` |
-| 33 | 0 | `hbsd/src/bin/cat/cat.c` |
-| 30 | 0 | `hbsd/src/bin/cp/cp.c` |
-| 27 | 0 | `hbsd/src/bin/date/date.c` |
-| 22 | 0 | `hbsd/src/bin/ed/glbl.c` |
-| 22 | 0 | `hbsd/src/bin/ed/io.c` |
-| 19 | 0 | `hbsd/src/bin/ed/buf.c` |
-| 17 | 0 | `hbsd/src/bin/date/vary.c` |
-| 17 | 0 | `hbsd/src/bin/ed/re.c` |
-| 17 | 0 | `hbsd/src/bin/ed/sub.c` |
-| 16 | 0 | `hbsd/src/bin/kenv/kenv.c` |
-| 15 | 0 | `hbsd/src/bin/getfacl/getfacl.c` |
-| 14 | 0 | `hbsd/src/bin/cp/utils.c` |
-| 14 | 0 | `hbsd/src/bin/dd/dd.c` |
-| 10 | 0 | `hbsd/src/bin/csh/iconv_stub.c` |
-| 8 | 0 | `hbsd/src/bin/ed/undo.c` |
-| 6 | 0 | `hbsd/src/bin/chmod/chmod.c` |
-| 5 | 0 | `hbsd/src/bin/cpuset/cpuset.c` |
-| 4 | 0 | `hbsd/src/bin/chflags/chflags.c` |
-| 3 | 0 | `hbsd/src/bin/dd/conv.c` |
-| 3 | 0 | `hbsd/src/bin/dd/misc.c` |
-| 3 | 0 | `hbsd/src/bin/dd/position.c` |
-| 3 | 0 | `hbsd/src/bin/echo/echo.c` |
-| 3 | 0 | `hbsd/src/bin/hostname/hostname.c` |
-| 2 | 0 | `hbsd/src/bin/domainname/domainname.c` |
-| 1 | 0 | `hbsd/src/bin/dd/conv_tab.c` |
-| 1 | 0 | `hbsd/src/bin/dd/gen.c` |
+| 748 | 0 | `hbsd/src/libexec/rtld-elf/rtld.c` |
+| 597 | 0 | `hbsd/src/sbin/camcontrol/camcontrol.c` |
+| 508 | 0 | `hbsd/src/lib/libprocstat/libprocstat.c` |
+| 481 | 0 | `hbsd/src/usr.sbin/cxgbetool/tcbinfot6.c` |
+| 464 | 0 | `hbsd/src/usr.sbin/bsnmpd/modules/snmp_wlan/wlan_snmp.c` |
+| 460 | 0 | `hbsd/src/sbin/ifconfig/ifieee80211.c` |
+| 459 | 0 | `hbsd/src/usr.sbin/cxgbetool/tcbinfot5.c` |
+| 457 | 0 | `hbsd/src/usr.sbin/ppp/command.c` |
+| 442 | 0 | `hbsd/src/usr.sbin/cxgbetool/tcbinfot4.c` |
+| 437 | 0 | `hbsd/src/sbin/ipfw/ipfw2.c` |
+| 424 | 0 | `hbsd/src/usr.sbin/mountd/mountd.c` |
+| 392 | 0 | `hbsd/src/usr.sbin/ctladm/ctladm.c` |
+| 376 | 0 | `hbsd/src/usr.bin/find/function.c` |
+| 344 | 0 | `hbsd/src/sbin/pfctl/pfctl.c` |
+| 328 | 0 | `hbsd/src/lib/libpfctl/libpfctl.c` |
+| 319 | 0 | `hbsd/src/lib/libc/gen/getpwent.c` |
+| 287 | 0 | `hbsd/src/usr.sbin/syslogd/syslogd.c` |
+| 275 | 0 | `hbsd/src/lib/libcasper/services/cap_net/tests/net_test.c` |
+| 274 | 0 | `hbsd/src/usr.sbin/route6d/route6d.c` |
+| 267 | 0 | `hbsd/src/usr.sbin/bsnmpd/tools/libbsnmptools/bsnmptools.c` |
+| 258 | 0 | `hbsd/src/lib/libc/net/getaddrinfo.c` |
+| 240 | 0 | `hbsd/src/lib/libc/gen/getgrent.c` |
+| 237 | 0 | `hbsd/src/bin/ps/keyword.c` |
+| 236 | 0 | `hbsd/src/usr.sbin/bhyve/pci_nvme.c` |
+| 236 | 0 | `hbsd/src/usr.sbin/camdd/camdd.c` |
+| 232 | 0 | `hbsd/src/sbin/dhclient/dhclient.c` |
+| 229 | 0 | `hbsd/src/usr.sbin/pw/pw_user.c` |
+| 227 | 0 | `hbsd/src/lib/libefivar/efivar-dp-parse.c` |
+| 223 | 0 | `hbsd/src/lib/libcasper/services/cap_net/cap_net.c` |
+| 215 | 0 | `hbsd/src/usr.sbin/bhyve/pci_emul.c` |
 
 ## Outputs
 
@@ -56,39 +56,39 @@ Generated: `2026-07-27T11:40:16+00:00`
 - Refusals: `/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/docs/migration/clang_port/refusals.jsonl`
 - Full JSON: `docs/migration/clang_port/pass_report.json`
 
-## Proposal histogram (`proposals.jsonl`, 37597)
+## Proposal histogram (`proposals.jsonl`, 31289)
 
 | Kind | Count |
 |---|---:|
-| `MACRO_OBJECT` | 10030 |
-| `STR_FORMAT_CANDIDATE` | 3798 |
-| `MALLOC_ESCAPE` | 3058 |
-| `SPAN_CANDIDATE` | 2840 |
-| `NULLABILITY` | 2601 |
-| `LIFETIME_OWN` | 1732 |
-| `MACRO_CONSTEXPR` | 1730 |
-| `LIFETIME_FAIL` | 1727 |
-| `ANDERSEN_OWNED` | 1695 |
-| `GLOBAL_CLUSTER` | 1444 |
-| `POINTER_KIND` | 1401 |
-| `ANDERSEN_ESCAPE` | 1055 |
-| `MACRO_DIVERGENT` | 977 |
-| `DEAD_STORE` | 711 |
-| `SYSCALL_TRACE` | 616 |
-| `PURITY` | 537 |
-| `GOTO_CLEANUP_CANDIDATE` | 266 |
-| `KR_DEFINITION` | 250 |
-| `VLA` | 246 |
-| `LOCK_DISCIPLINE` | 186 |
-| `QUEUE_H_SITE` | 178 |
-| `TYPEDEF_COMPLEX` | 176 |
-| `CALL_SITE_SPAN` | 103 |
-| `RANGE_FOR_CANDIDATE` | 90 |
-| `CALLBACK_CTX` | 57 |
+| `MACRO_OBJECT` | 7673 |
+| `STR_FORMAT_CANDIDATE` | 3631 |
+| `MALLOC_ESCAPE` | 2579 |
+| `SPAN_CANDIDATE` | 2334 |
+| `NULLABILITY` | 2124 |
+| `LIFETIME_OWN` | 1605 |
+| `ANDERSEN_OWNED` | 1598 |
+| `LIFETIME_FAIL` | 1435 |
+| `GLOBAL_CLUSTER` | 1226 |
+| `MACRO_CONSTEXPR` | 1188 |
+| `POINTER_KIND` | 1156 |
+| `ANDERSEN_ESCAPE` | 962 |
+| `MACRO_DIVERGENT` | 774 |
+| `DEAD_STORE` | 632 |
+| `SYSCALL_TRACE` | 609 |
+| `PURITY` | 454 |
+| `KR_DEFINITION` | 247 |
+| `VLA` | 234 |
+| `GOTO_CLEANUP_CANDIDATE` | 233 |
+| `QUEUE_H_SITE` | 163 |
+| `TYPEDEF_COMPLEX` | 128 |
+| `RANGE_FOR_CANDIDATE` | 82 |
+| `CALL_SITE_SPAN` | 82 |
+| `CALLBACK_CTX` | 47 |
 | `GOTO_CROSS_INIT` | 29 |
-| `FLEXIBLE_ARRAY` | 24 |
+| `LOCK_DISCIPLINE` | 18 |
 | `BIT_CAST_CANDIDATE` | 16 |
-| `FN_PTR_STRUCT` | 11 |
+| `FN_PTR_STRUCT` | 9 |
+| `FLEXIBLE_ARRAY` | 8 |
 | `ENUM_ARITHMETIC` | 7 |
 | `NESTED_STRUCT_TAG` | 5 |
 | `GENERIC` | 1 |

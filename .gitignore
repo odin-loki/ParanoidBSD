@@ -107,3 +107,5 @@ docs/migration/clang_port/stubs/fuzz/
 docs/migration/clang_port/ast_census.json
 docs/migration/clang_port/ast_census_slim.json
 docs/migration/clang_port/*.c.orig
+# Regenerable; large — prefer local commit of tooling without this if OneDrive stalls git
+# docs/migration/clang_port/proposals.jsonl

@@ -358,6 +358,29 @@ class MacroObjectConstexprPass(Pass):
         r")$"
     )
 
+    @classmethod
+    def _literal_expr(cls, body: str) -> str | None:
+        """Accept lit, (lit), ((lit)), or (type)lit / ((type)lit)."""
+        s = body.strip()
+        cast_re = re.compile(
+            r"^\(\s*((?:unsigned\s+|signed\s+|long\s+|short\s+|const\s+)*"
+            r"(?:int|char|long|short|size_t|ssize_t|u_int|uint\d+_t|int\d+_t))\s*\)\s*(.+)$"
+        )
+        for _ in range(4):
+            cm = cast_re.match(s)
+            if cm and cls._LIT.match(cm.group(2).strip()):
+                return s
+            if len(s) >= 2 and s[0] == "(" and s[-1] == ")":
+                inner = s[1:-1].strip()
+                if cls._LIT.match(inner):
+                    return inner
+                s = inner
+                continue
+            break
+        if cls._LIT.match(s):
+            return s
+        return None
+
     def apply(self, unit: TranslationUnit) -> PassResult:
         text = unit.text
         # Names appearing in preprocessor conditions must stay macros
@@ -381,28 +404,22 @@ class MacroObjectConstexprPass(Pass):
             text,
         ):
             name = m.group(2)
-            if "(" in name:
-                continue
-            # Skip function-like: `#define FOO(` 
-            after_name = text[m.start(2) + len(name) : m.start(2) + len(name) + 1]
-            # Check original define line for (
             line = m.group(0)
-            if re.search(rf"#\s*define\s+{re.escape(name)}\s*\(", line):
+            # Function-like macros have '(' immediately after the name (no space).
+            if re.search(rf"#\s*define\s+{re.escape(name)}\(", line):
                 continue
             body = m.group(4).strip()
-            # Strip trailing backslash continuations — refuse multi-line
-            if body.endswith("\\") or "\\" in m.group(0).split(name, 1)[-1][:3]:
+            if body.endswith("\\"):
                 continue
-            # Drop C comments at end of define
             body_code = re.split(r"/\*|//", body, maxsplit=1)[0].strip()
-            if not body_code or not self._LIT.match(body_code):
+            lit = self._literal_expr(body_code)
+            if not lit:
                 continue
             if name in pp_names:
                 continue
-            # Avoid colliding with common feature-test / include guards
             if name.endswith("_H") or name.endswith("_H_") or name.startswith("HAVE_"):
                 continue
-            new = f"inline constexpr auto {name} = {body_code};"
+            new = f"inline constexpr auto {name} = {lit};"
             ops.append((m.start(), m.end(), new, m.group(0)))
 
         for start, end, new, old in sorted(ops, key=lambda x: x[0], reverse=True):
@@ -416,10 +433,7 @@ class MacroObjectConstexprPass(Pass):
 
 
 class SnprintfLiteralPass(Pass):
-    """Safe snprintf patterns → std::format into a fixed buffer via string.
-
-    Only: snprintf(buf, sizeof(buf), "%s", expr) when buf is an array name.
-    """
+    """Safe snprintf patterns → format/strncpy for simple formats."""
 
     name = "snprintf_literal"
     tier = 2
@@ -429,13 +443,14 @@ class SnprintfLiteralPass(Pass):
         masked = unit.mask_strings_comments()
         edits: list[Edit] = []
         ops: list[tuple[int, int, str, str]] = []
+
+        # snprintf(buf, sizeof(buf), "%s", expr)
         for m in re.finditer(
             r"\bsnprintf\s*\(\s*([A-Za-z_]\w*)\s*,\s*sizeof\s*\(\s*\1\s*\)\s*,\s*"
             r'"%s"\s*,\s*([^)]+)\)',
             masked,
         ):
             buf = m.group(1)
-            # Recover expr from original text (same span)
             orig = text[m.start() : m.end()]
             em = re.search(
                 r"\bsnprintf\s*\(\s*"
@@ -455,16 +470,46 @@ class SnprintfLiteralPass(Pass):
             )
             ops.append((m.start(), m.end(), new, orig))
 
+        # sprintf(buf, "%s", expr) — same shape, assume buf is array
+        for m in re.finditer(
+            r"\bsprintf\s*\(\s*([A-Za-z_]\w*)\s*,\s*\"%s\"\s*,\s*([^)]+)\)",
+            masked,
+        ):
+            buf = m.group(1)
+            if not re.search(r"(buf|path|tmp|name|str|line|file|dir|cmd)", buf, re.I):
+                continue
+            orig = text[m.start() : m.end()]
+            em = re.search(
+                r"\bsprintf\s*\(\s*"
+                + re.escape(buf)
+                + r"\s*,\s*\"%s\"\s*,\s*([^)]+)\)",
+                orig,
+            )
+            if not em:
+                continue
+            expr = em.group(1).strip()
+            new = (
+                f"{{ auto _pbsd_s = std::format(\"{{}}\", {expr}); "
+                f"std::strncpy({buf}, _pbsd_s.c_str(), sizeof({buf}) - 1); "
+                f"{buf}[sizeof({buf}) - 1] = '\\0'; }}"
+            )
+            ops.append((m.start(), m.end(), new, orig))
+
         for start, end, new, old in sorted(ops, key=lambda x: x[0], reverse=True):
             text = text[:start] + new + text[end:]
             edits.append(
-                Edit(self.name, "snprintf→format", unit.line_col(start)[0], old[:80], new[:80])
+                Edit(self.name, "sprintf→format", unit.line_col(start)[0], old[:80], new[:80])
             )
 
         if edits:
+            need = []
             if "#include <format>" not in text:
+                need.append("#include <format>\n")
+            if "#include <cstring>" not in text:
+                need.append("#include <cstring>\n")
+            if need:
                 incs = list(re.finditer(r"(?m)^#include\b.*$", text))
-                hdr = "#include <format>\n#include <cstring>\n"
+                hdr = "".join(need)
                 if incs:
                     pos = incs[-1].end()
                     text = text[:pos] + "\n" + hdr + text[pos:]
