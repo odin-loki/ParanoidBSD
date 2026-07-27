@@ -71,9 +71,9 @@ def _ref(unit: TranslationUnit, pass_name: str, reason: str, idx: int, snippet: 
 
 
 def _propose(unit: TranslationUnit, kind: str, payload: dict) -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
-    with (OUT / "proposals.jsonl").open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"file": unit.path, "kind": kind, **payload}) + "\n")
+    from ..proposals import propose
+
+    propose(unit.path, kind, payload)
 
 
 class PurityProposeOnlyPass(Pass):

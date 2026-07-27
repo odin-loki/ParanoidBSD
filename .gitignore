@@ -102,3 +102,8 @@ docs/migration/clang_port/staged/
 docs/migration/clang_port/pass_report.json
 docs/migration/clang_port/compile_commands.json
 docs/migration/clang_port/tidy_staged.json
+docs/migration/clang_port/stubs/alive2/
+docs/migration/clang_port/stubs/fuzz/
+docs/migration/clang_port/ast_census.json
+docs/migration/clang_port/ast_census_slim.json
+docs/migration/clang_port/*.c.orig

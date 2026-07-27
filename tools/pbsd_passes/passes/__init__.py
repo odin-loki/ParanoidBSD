@@ -8,6 +8,19 @@ from .promote_null_bitcast_goto import NULL_BITCAST_GOTO_PASSES
 from .promote_proposals import PROPOSAL_PASSES
 from .promote_queue_ops import PROMOTE_QUEUE_OPS_PASSES
 from .promote_refusals import REFUSAL_PROMOTE_PASSES
+from .promote_remaining import (
+    Alive2OracleStubPass,
+    AndersenEscapePass,
+    CallbackCtxPass,
+    FnPtrStructPass,
+    FuzzOracleStubPass,
+    MacroAntiUnificationPass,
+    MacroRangeMaskPass,
+    RegionLifetimePass,
+    StrToStringViewPass,
+    SyscallTraceStubPass,
+    TentativeDefinitionPass,
+)
 from .tier0 import TIER0_PASSES
 from .tier1 import TIER1_PASSES
 from .tier2 import TIER2_PASSES
@@ -19,7 +32,9 @@ from .tier4 import TIER4_PASSES
 def register_all_passes() -> list[Pass]:
     return [
         *TIER0_PASSES,
+        MacroRangeMaskPass(),
         *TIER1_PASSES,
+        TentativeDefinitionPass(),
         *REFUSAL_PROMOTE_PASSES,
         *PROMOTE_MALLOC_SPAN_PASSES,
         *NULL_BITCAST_GOTO_PASSES,
@@ -28,8 +43,17 @@ def register_all_passes() -> list[Pass]:
         *MOP_UP_PASSES,
         *PROPOSAL_PASSES,
         *TIER2_PASSES,
+        StrToStringViewPass(),
         *TIER3_PASSES,
+        AndersenEscapePass(),
+        RegionLifetimePass(),
+        MacroAntiUnificationPass(),
+        FnPtrStructPass(),
+        CallbackCtxPass(),
         *TIER4_PASSES,
+        Alive2OracleStubPass(),
+        FuzzOracleStubPass(),
+        SyscallTraceStubPass(),
     ]
 
 

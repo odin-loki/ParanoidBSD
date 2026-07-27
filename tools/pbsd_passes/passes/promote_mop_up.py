@@ -211,24 +211,46 @@ class KrDefinitionFixPass(Pass):
         text = unit.text
         edits: list[Edit] = []
         refusals: list[Refusal] = []
-        # Very simplified: int foo(a, b)\nint a;\nchar *b;\n{
+        # Line-oriented K&R match — avoid nested [\w\s*]+ catastrophic regex
         rx = re.compile(
-            r"\b([\w\s\*]+?)\b([A-Za-z_]\w*)\s*\(([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\)\s*\n"
-            r"((?:\s*[\w\s\*]+\s+[A-Za-z_]\w*\s*;\s*\n)+)\s*\{"
+            r"(?m)^([\w\s\*]{1,80}?)\b([A-Za-z_]\w*)\s*\("
+            r"([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*){0,8})\)\s*$"
+        )
+        lines = text.splitlines(keepends=True)
+        offs: list[int] = []
+        pos = 0
+        for ln in lines:
+            offs.append(pos)
+            pos += len(ln)
+        decl_re = re.compile(
+            r"^[ \t]*([\w\s\*]{1,60}?)\s+([A-Za-z_]\w*)\s*;[ \t]*$"
         )
         ops = []
-        for m in rx.finditer(text):
-            ret, name, params, decls = m.group(1), m.group(2), m.group(3), m.group(4)
+        for i, ln in enumerate(lines):
+            m = rx.match(ln.rstrip("\n"))
+            if not m:
+                continue
+            ret, name, params = m.group(1), m.group(2), m.group(3)
             pnames = [p.strip() for p in params.split(",")]
-            dtype = {}
-            for dm in re.finditer(r"([\w\s\*]+?)\s+([A-Za-z_]\w*)\s*;", decls):
+            dtype: dict[str, str] = {}
+            j = i + 1
+            while j < len(lines) and len(dtype) < 16:
+                dm = decl_re.match(lines[j].rstrip("\n"))
+                if not dm:
+                    break
                 dtype[dm.group(2)] = dm.group(1).strip()
+                j += 1
+            if j >= len(lines) or not re.match(r"^[ \t]*\{", lines[j]):
+                continue
             if not all(p in dtype for p in pnames):
-                refusals.append(_ref(unit, self.name, "KR_DEFINITION", m.start(), name))
+                refusals.append(_ref(unit, self.name, "KR_DEFINITION", offs[i], name))
                 continue
             new_params = ", ".join(f"{dtype[p]} {p}" for p in pnames)
             new = f"{ret}{name}({new_params})\n{{"
-            ops.append((m.start(), m.end(), new, m.group(0)[:60]))
+            end = offs[j] + len(lines[j])
+            # Consume through opening brace line
+            brace_end = offs[j] + lines[j].find("{") + 1
+            ops.append((offs[i], brace_end, new, text[offs[i] : brace_end][:60]))
         for start, end, new, old in sorted(ops, key=lambda x: x[0], reverse=True):
             text = text[:start] + new + text[end:]
             edits.append(Edit(self.name, "K&R→ANSI", unit.line_col(start)[0], old, new[:60]))

@@ -1,0 +1,2 @@
+@@extern int flag;
+@@extern int counter;

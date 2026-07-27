@@ -11,6 +11,8 @@ from .compile_db import coverage_report, default_flags, generate_compile_command
 from .differential import differential
 from .ir_oracle import compare_ir
 from .passes import passes_for_tiers
+from .proposals import flush as flush_proposals
+from .proposals import reset as clear_proposal_buffer
 from .schema import PassResult, Refusal
 from .unit import TranslationUnit
 
@@ -24,7 +26,11 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
-def discover_sources(scopes: list[str], limit: int | None = None) -> list[Path]:
+def discover_sources(
+    scopes: list[str],
+    limit: int | None = None,
+    skip: int = 0,
+) -> list[Path]:
     files: list[Path] = []
     for scope in scopes:
         base = ROOT / "hbsd" / "src" / scope
@@ -34,6 +40,8 @@ def discover_sources(scopes: list[str], limit: int | None = None) -> list[Path]:
             if ".git" in p.parts:
                 continue
             files.append(p)
+    if skip:
+        files = files[skip:]
     if limit is not None:
         files = files[:limit]
     return files
@@ -87,7 +95,24 @@ def process_file(
     tiers: set[int] | None = None,
     do_ir: bool = False,
     do_diff: bool = False,
+    max_bytes: int = 2_000_000,
 ) -> dict:
+    size = src.stat().st_size
+    if size > max_bytes:
+        flush_proposals()
+        return {
+            "source": src.relative_to(ROOT).as_posix(),
+            "staged": "",
+            "edits": 0,
+            "refusals": 0,
+            "edit_list": [],
+            "refusal_list": [],
+            "ir": {"status": "skipped_huge", "equal": False},
+            "diff": {"status": "skipped_huge", "equal": False},
+            "ir_eligible": False,
+            "diff_eligible": False,
+            "skipped_huge": True,
+        }
     text = src.read_text(encoding="utf-8", errors="replace")
     rel = src.relative_to(ROOT).as_posix()
     unit = TranslationUnit(path=rel, text=text)
@@ -111,9 +136,10 @@ def process_file(
         "refusal_list": [r.to_dict() for r in refusals],
         "ir": None,
         "diff": None,
+        "ir_eligible": False,
+        "diff_eligible": False,
     }
 
-    includes = default_flags(ROOT)
     # For IR/diff, prefer freestanding-ish files without heavy BSD headers
     heavy = any(
         x in text
@@ -125,12 +151,17 @@ def process_file(
             "caph_",
         )
     )
-    if do_ir and not heavy and src.stat().st_size < 8000:
+    record["ir_eligible"] = bool(do_ir and not heavy and src.stat().st_size < 8000)
+    record["diff_eligible"] = bool(
+        do_diff and not heavy and "main" in text and src.stat().st_size < 4000
+    )
+
+    if record["ir_eligible"]:
         record["ir"] = compare_ir(src, dest, include_flags=["-Wno-everything"])
     elif do_ir:
         record["ir"] = {"status": "skipped_heavy", "equal": False}
 
-    if do_diff and not heavy and "main" in text and src.stat().st_size < 4000:
+    if record["diff_eligible"]:
         # Only argv-only utilities; avoid programs that read stdin forever.
         record["diff"] = differential(
             src,
@@ -141,7 +172,46 @@ def process_file(
     elif do_diff:
         record["diff"] = {"status": "skipped_heavy", "equal": False}
 
+    flush_proposals()
     return record
+
+
+def process_file_timed(
+    src: Path,
+    tiers: set[int] | None = None,
+    do_ir: bool = False,
+    do_diff: bool = False,
+    timeout_s: float = 90.0,
+) -> dict:
+    """Run process_file with SIGALRM wall-clock timeout (WSL/Linux)."""
+    import signal
+
+    def _alarm(_signum, _frame):
+        raise TimeoutError(f"process_file timeout {timeout_s}s on {src.name}")
+
+    old = signal.signal(signal.SIGALRM, _alarm)
+    signal.setitimer(signal.ITIMER_REAL, timeout_s)
+    try:
+        return process_file(src, tiers=tiers, do_ir=do_ir, do_diff=do_diff)
+    except TimeoutError:
+        flush_proposals()
+        print(f"  TIMEOUT {src.name} after {timeout_s}s — skipped", flush=True)
+        return {
+            "source": src.relative_to(ROOT).as_posix(),
+            "staged": "",
+            "edits": 0,
+            "refusals": 0,
+            "edit_list": [],
+            "refusal_list": [],
+            "ir": {"status": "timeout", "equal": False},
+            "diff": {"status": "timeout", "equal": False},
+            "ir_eligible": False,
+            "diff_eligible": False,
+            "timeout": True,
+        }
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old)
 
 
 def run_corpus_tests() -> dict:
@@ -154,7 +224,7 @@ def run_corpus_tests() -> dict:
         expected = inp.with_suffix(".expected")
         text = inp.read_text(encoding="utf-8")
         unit = TranslationUnit(path=inp.name, text=text)
-        unit, refusals, edits = run_passes_on_unit(unit, tiers={1, 2, 3})
+        unit, refusals, edits = run_passes_on_unit(unit, tiers={0, 1, 2, 3})
         got = unit.text
         if expected.exists():
             exp = expected.read_text(encoding="utf-8")
@@ -182,6 +252,9 @@ def run_corpus_tests() -> dict:
             expected.write_text(got, encoding="utf-8")
             results.append({"case": inp.name, "ok": True, "drafted_expected": True})
     ok = all(r.get("ok") for r in results) if results else False
+    from .proposals import flush as flush_proposals
+
+    flush_proposals()
     return {"ok": ok, "cases": results}
 
 
@@ -254,26 +327,73 @@ def run_pipeline(
     files: list[Path] | None = None,
     do_tidy: bool = False,
     tidy_limit: int | None = 100,
+    ir_limit: int | None = 25,
+    diff_limit: int | None = 10,
+    skip: int = 0,
+    append_proposals: bool = False,
+    skip_corpus: bool = False,
+    reset_proposals: bool = True,
+    file_timeout: float = 90.0,
 ) -> dict:
     OUT.mkdir(parents=True, exist_ok=True)
-    # Reset side-channel jsonl for this run
-    for side in ("pointer_kinds.jsonl", "global_clusters.jsonl", "proposals.jsonl"):
+    clear_proposal_buffer()
+    for side in ("pointer_kinds.jsonl", "global_clusters.jsonl"):
         p = OUT / side
         if p.exists():
             p.unlink()
+    prop = OUT / "proposals.jsonl"
+    if prop.exists() and reset_proposals and not append_proposals:
+        prop.unlink()
 
-    corpus = run_corpus_tests()
-    sources = files if files is not None else discover_sources(scopes, limit)
+    if skip_corpus:
+        corpus = {"ok": True, "skipped": True, "cases": []}
+    else:
+        corpus = run_corpus_tests()
+    sources = (
+        files
+        if files is not None
+        else discover_sources(scopes, limit=limit, skip=skip)
+    )
     compile_commands = OUT / "compile_commands.json"
     generate_compile_commands(sources, compile_commands, ROOT)
     cov = coverage_report(sources, compile_commands)
 
     records = []
     all_refusals: list[dict] = []
-    for src in sources:
-        rec = process_file(src, tiers=tiers, do_ir=do_ir, do_diff=do_diff)
+    ir_budget = ir_limit if do_ir else 0
+    diff_budget = diff_limit if do_diff else 0
+    total = len(sources)
+    for i, src in enumerate(sources, 1):
+        # Probe eligibility without Clang first: size/heavy heuristics in process_file
+        # Cap expensive oracles via remaining budget.
+        want_ir = do_ir and (ir_budget is None or ir_budget > 0)
+        want_diff = do_diff and (diff_budget is None or diff_budget > 0)
+        rec = process_file_timed(
+            src,
+            tiers=tiers,
+            do_ir=want_ir,
+            do_diff=want_diff,
+            timeout_s=file_timeout,
+        )
+        if want_ir and rec.get("ir_eligible") and ir_budget is not None:
+            ir_budget -= 1
+        if want_diff and rec.get("diff_eligible") and diff_budget is not None:
+            diff_budget -= 1
+        # If we asked for IR but were over budget path: skipped via want_ir=False
+        if do_ir and not want_ir:
+            rec["ir"] = {"status": "skipped_budget", "equal": False}
+        if do_diff and not want_diff:
+            rec["diff"] = {"status": "skipped_budget", "equal": False}
         records.append(rec)
         all_refusals.extend(rec["refusal_list"])
+        if i % 10 == 0 or i == total:
+            print(
+                f"  progress {i}/{total} edits={sum(r['edits'] for r in records)} "
+                f"refusals={len(all_refusals)} last={src.name}",
+                flush=True,
+            )
+
+    flush_proposals()
 
     # Dedupe refusals: same file/line/reason from stacked passes
     deduped: list[dict] = []
@@ -372,6 +492,33 @@ def run_pipeline(
         f"- Full JSON: `docs/migration/clang_port/pass_report.json`",
         "",
     ]
+    # Proposal histogram
+    prop_path = OUT / "proposals.jsonl"
+    if prop_path.exists():
+        ph: dict[str, int] = {}
+        nprop = 0
+        with prop_path.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    kind = json.loads(line).get("kind", "?")
+                except json.JSONDecodeError:
+                    continue
+                ph[kind] = ph.get(kind, 0) + 1
+                nprop += 1
+        report["proposals_total"] = nprop
+        report["proposal_histogram"] = dict(sorted(ph.items(), key=lambda x: -x[1]))
+        lines += [
+            f"## Proposal histogram (`proposals.jsonl`, {nprop})",
+            "",
+            "| Kind | Count |",
+            "|---|---:|",
+        ]
+        for k, v in list(report["proposal_histogram"].items())[:40]:
+            lines.append(f"| `{k}` | {v} |")
+        lines.append("")
     md = "\n".join(lines) + "\n"
     (OUT / "todo_pass_report.md").write_text(md, encoding="utf-8")
     return report

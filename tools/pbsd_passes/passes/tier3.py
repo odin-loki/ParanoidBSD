@@ -11,9 +11,9 @@ from ..unit import TranslationUnit
 from .base import Pass
 
 def _propose_lock(unit, kind: str, payload: dict) -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
-    with (OUT / "proposals.jsonl").open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"file": unit.path, "kind": kind, **payload}) + "\n")
+    from ..proposals import propose
+
+    propose(unit.path, kind, payload)
 
 
 ROOT = Path(__file__).resolve().parents[3]

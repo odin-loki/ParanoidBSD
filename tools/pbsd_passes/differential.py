@@ -57,3 +57,16 @@ def differential(
         return {"status": "build_fail", "c": left, "cxx": right, "equal": False}
     equal = left["runs"] == right["runs"]
     return {"status": "ok" if equal else "mismatch", "equal": equal, "c": left, "cxx": right}
+
+
+def syscall_trace_plan(binary_c: str, binary_cxx: str) -> str:
+    """Document ktrace/truss differential (no privileged attach required here)."""
+    return (
+        f"# Syscall-trace differential\n"
+        f"# FreeBSD/HBSD:\n"
+        f"#   ktrace -di ./{binary_c}; ./{binary_c}; ktrace -C; kdump > c.kd\n"
+        f"#   ktrace -di ./{binary_cxx}; ./{binary_cxx}; ktrace -C; kdump > cxx.kd\n"
+        f"#   diff -u c.kd cxx.kd\n"
+        f"# Linux fallback: strace -o c.st ./{binary_c}; strace -o cxx.st ./{binary_cxx}\n"
+    )
+

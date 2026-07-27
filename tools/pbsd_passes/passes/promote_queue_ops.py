@@ -14,10 +14,9 @@ from ..unit import TranslationUnit
 from .base import Pass
 
 def _propose_q(unit, kind: str, payload: dict) -> None:
-    out = Path(__file__).resolve().parents[3] / "docs" / "migration" / "clang_port"
-    out.mkdir(parents=True, exist_ok=True)
-    with (out / "proposals.jsonl").open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"file": unit.path, "kind": kind, **payload}) + "\n")
+    from ..proposals import propose
+
+    propose(unit.path, kind, payload)
 
 
 ROOT = Path(__file__).resolve().parents[3]

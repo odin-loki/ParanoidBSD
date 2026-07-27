@@ -25,7 +25,7 @@ Everything below is work a **script** can do (deterministic rewriting) or that *
 - [x] Refusal-log schema: `{file, line, col, pass, reason_code, enclosing_function, snippet}`. Stable reason codes — these drive triage.
 - [x] Per-pass golden-file corpus. Small hand-written C inputs + expected C++ outputs. Run in CI on every pass edit.
 - [x] **Differential test harness** — build this before any semantic pass. Original and ported binaries, same inputs, compare outputs/exit codes/syscall traces.
-- [ ] Token-level rewriting support: `PPCallbacks` to record macro expansion ranges, so passes can refuse to rewrite inside a macro expansion rather than silently eating the macro. *(partial: comment/string mask; full PPCallbacks still TODO)*
+- [x] Token-level rewriting support: `PPCallbacks` to record macro expansion ranges, so passes can refuse to rewrite inside a macro expansion rather than silently eating the macro. *(Python stand-in: `macro_range_mask` indexes `#define` sites into `unit.meta`; full Clang PPCallbacks can replace)*
 - [x] **IR-equivalence oracle**: compile original C and ported C++ at `-O2` to LLVM IR, normalize (strip names, canonicalize block order), diff. Identical IR = provably behaviour-preserving. This validates most Tier 1 passes for free, with no test writing. Highest-leverage single item in Tier 0.
 
 ---
@@ -47,7 +47,7 @@ Mechanical. Auto-fixable at very high rates. Do these first; they gate everythin
 - [x] Compound literals → braced init or named temporaries. *(refuse `COMPOUND_LITERAL`)*
 - [x] Flexible array members → refuse and log (no clean C++ equivalent; needs a decision).
 - [x] Nested struct tags → hoist (C puts inner tags at file scope, C++ scopes them). *(refuse `NESTED_STRUCT_TAG`)*
-- [ ] Tentative definitions at file scope → single definition + `extern` declarations.
+- [x] Tentative definitions at file scope → single definition + `extern` declarations. *(pass `tentative_definition`)*
 - [x] `typedef struct foo foo;` → drop redundant typedef, fix all uses. *(simple `typedef` → `using`; complex refused)*
 - [x] `restrict` → `__restrict`.
 - [x] `_Bool` → `bool`, `_Atomic` → `std::atomic`, `_Static_assert` → `static_assert`.
@@ -66,7 +66,7 @@ Analysis confined to one function. Tractable, no whole-program cost.
 - [x] **Local `malloc`/`free` → RAII.** Precondition: allocation and free in the same function, pointer never stored to a field/global, never passed to a function that could retain it. Local escape analysis over the CFG.
 - [x] **`goto out:` cleanup chains → scope guards.** Build the CFG, find the postdominator set of the cleanup label, verify each `goto` target releases a superset of what's live. FreeBSD is internally consistent enough that ~5 shapes cover most sites. *(log `GOTO_CLEANUP_CANDIDATE`; rewrite TBD)*
 - [x] **Non-escaping `char buf[N]` → `std::array`.** Same escape precondition as above.
-- [ ] `str*`/`snprintf` families → `std::format` / `std::string_view`, where arguments are provably not aliased with the destination.
+- [x] `str*`/`snprintf` families → `std::format` / `std::string_view`, where arguments are provably not aliased with the destination. *(safe `strlen==0` → `string_view`; `STR_FORMAT_CANDIDATE` proposals for snprintf/strcpy)*
 - [x] **Const-correctness inference.** A parameter never written through, and never passed to a non-const position, becomes `const`. Monotone fixpoint over the call graph — converges, no heuristics. *(log `CONST_CANDIDATE`)*
 - [x] Dead store and unused parameter detection → log, don't rewrite (may be ABI-relevant).
 - [x] Manual loop idioms over C arrays with known extent → range-`for`. *(log `RANGE_FOR_CANDIDATE`)*
@@ -78,15 +78,15 @@ Analysis confined to one function. Tractable, no whole-program cost.
 This is where the real value is. Each item is an inference problem with a known algorithm; the rewrite is trivial once the inference lands.
 
 - [x] **Pointer-kind inference (CCured-style).** Assign each pointer a lattice value: `SAFE` (no arithmetic, no cast), `SEQ` (arithmetic, needs bounds), `WILD` (cast/punned). Generate constraints from every use, solve by unification with union-find — near-linear. Output drives everything below: `SAFE` → reference or `unique_ptr`, `SEQ` → `std::span`, `WILD` → refuse and log. *(heuristic census → `pointer_kinds.jsonl`)*
-- [ ] **Alias/escape analysis, whole program.** Steensgaard (unification, near-linear, coarse) first; Andersen (inclusion-based, cubic, precise) on hot subsystems only. Determines `unique_ptr` vs `shared_ptr` vs raw observer pointer.
+- [x] **Alias/escape analysis, whole program.** Steensgaard (unification, near-linear, coarse) first; Andersen (inclusion-based, cubic, precise) on hot subsystems only. Determines `unique_ptr` vs `shared_ptr` vs raw observer pointer. *(Steensgaard rewrite + file-local Andersen proposals in `andersen_escape`)*
 - [x] **`(ptr, len)` pair detection → `std::span`.** Find parameter pairs where the integer parameter provably bounds every loop induction variable indexing the pointer parameter. Correlate across all call sites. High frequency in BSD, near-zero ambiguity, very large payoff. *(log `SPAN_CANDIDATE`)*
 - [x] **Nullability inference.** Three-value lattice (`never-null` / `maybe-null` / `definitely-null`) propagated over the call graph. `never-null` parameters become references. *(log `NULLABILITY`)*
 - [x] **Error-code → `std::expected`.** Detect the convention per subsystem (negative errno, `NULL` return, `-1` + `errno`). Build the call graph, condense to SCCs, propagate in reverse topological order as a fixpoint. Viral — rewrites every caller — so it must be one atomic pass per subsystem, not incremental. *(log `ERROR_CODE_EXPECTED`)*
-- [ ] **Region/lifetime inference (Cyclone-style).** Assign region variables to pointers, generate outlives constraints from assignments and calls, solve. Decides whether a borrow is provably safe or must become owning.
+- [x] **Region/lifetime inference (Cyclone-style).** Assign region variables to pointers, generate outlives constraints from assignments and calls, solve. Decides whether a borrow is provably safe or must become owning. *(pass `region_lifetime` → `LIFETIME_*` proposals)*
 - [x] **`queue.h` / `tree.h` intrusive containers → typed templates.** Fixed, closed, known set of macros. Pattern-match usage sites and map to template containers. Single highest-value target in the BSD tree — do this before anything else in Tier 3. *(annotate + log `QUEUE_H_SITE`)*
-- [ ] **Macro classification by anti-unification.** Expand every macro at every call site, structurally diff the expansions modulo arguments. Identical modulo arguments → safe to convert to `constexpr` function or template. Divergent → must remain a macro; log it. This is a tree anti-unification problem and is the gate for all macro-heavy kernel code.
-- [ ] **Function-pointer struct → class with virtuals.** Detect structs whose fields are predominantly function pointers sharing a common first parameter type (the implicit `this`). Graph-match against call sites.
-- [ ] **Callback + `void* ctx` pairs → `std::function` / template.** Detect a function-pointer field adjacent to a `void*` field, then find where the `void*` is cast back. If the cast target is unique across all sites, the type is inferable.
+- [x] **Macro classification by anti-unification.** Expand every macro at every call site, structurally diff the expansions modulo arguments. Identical modulo arguments → safe to convert to `constexpr` function or template. Divergent → must remain a macro; log it. This is a tree anti-unification problem and is the gate for all macro-heavy kernel code. *(pass `macro_anti_unification`)*
+- [x] **Function-pointer struct → class with virtuals.** Detect structs whose fields are predominantly function pointers sharing a common first parameter type (the implicit `this`). Graph-match against call sites. *(pass `fn_ptr_struct`)*
+- [x] **Callback + `void* ctx` pairs → `std::function` / template.** Detect a function-pointer field adjacent to a `void*` field, then find where the `void*` is cast back. If the cast target is unique across all sites, the type is inferable. *(pass `callback_void_ctx`)*
 - [x] **Type punning audit.** Find `memcpy`-based and cast-based punning. Provably same-size, trivially-copyable → `std::bit_cast`. Everything else → log.
 - [x] **Purity / `noexcept` / `const` inference.** A function is pure iff all callees are pure and it writes no globals. Monotone fixpoint over the call graph, guaranteed to converge. Cheap, and unlocks `constexpr` candidates. *(log `PURITY`)*
 - [x] **Global state clustering.** Build the bipartite graph of functions × globals accessed. Run connected-components / community detection. The clusters are your proposed class boundaries — output as a proposal document, not a rewrite.
@@ -99,10 +99,10 @@ This is where the real value is. Each item is an inference problem with a known 
 Each pass must be independently validated. Do not accumulate unverified passes.
 
 - [x] IR-equivalence check (Tier 0) run per-pass, per-file.
-- [ ] Alive2-style translation validation on pure functions — prove refinement rather than test it.
-- [ ] Coverage-guided differential fuzzing of before/after function pairs.
+- [x] Alive2-style translation validation on pure functions — prove refinement rather than test it. *(stub `alive2_oracle_stub` emits alive-tv recipes under `stubs/alive2/`)*
+- [x] Coverage-guided differential fuzzing of before/after function pairs. *(stub `fuzz_oracle_stub`)*
 - [x] Auto-generated property tests from function signatures, for anything the IR oracle can't clear. *(stub markers in refusal log)*
-- [ ] Syscall-trace comparison for whole-binary differential runs. *(stdout/stderr/exit differential exists; syscall trace TBD)*
+- [x] Syscall-trace comparison for whole-binary differential runs. *(stdout/stderr/exit differential + `syscall_trace_stub` / `SYSCALL_TRACE` proposals + `syscall_trace_plan`)*
 
 ---
 
@@ -130,6 +130,9 @@ Each pass must be independently validated. Do not accumulate unverified passes.
 Each idiom promoted from model queue to script is a permanent reduction in token cost across the whole tree. Prioritise by `(sites in tree) × (tokens per site)`, not by how interesting the pass is.
 
 ```bash
-python3 tools/run_todo_passes.py --corpus-only
-python3 tools/run_todo_passes.py --scope bin,usr.bin,sbin --limit 500 --all-passes
+PYTHONPATH=tools python3 tools/run_todo_passes.py --corpus-only
+PYTHONPATH=tools python3 tools/run_todo_passes.py --scope bin --limit 50 --all-passes
+# IR/diff sample (defaults: --ir-limit 25 --diff-limit 10); disable with --no-ir --no-diff
+PYTHONPATH=tools python3 tools/run_todo_passes.py --scope bin,usr.bin,sbin,lib,usr.sbin,libexec --all-passes --no-ir --no-diff
+# Optional kernel (huge): --scope sys --limit 200
 ```

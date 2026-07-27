@@ -21,14 +21,44 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--scope",
         default="bin,usr.bin,sbin,lib,usr.sbin,libexec",
-        help="Comma-separated under hbsd/src",
+        help="Comma-separated under hbsd/src (add sys for kernel; huge)",
     )
     ap.add_argument("--limit", type=int, default=None)
+    ap.add_argument("--skip", type=int, default=0, help="Skip first N discovered sources (resume)")
+    ap.add_argument(
+        "--append-proposals",
+        action="store_true",
+        help="Do not truncate proposals.jsonl (resume runs)",
+    )
+    ap.add_argument(
+        "--keep-proposals",
+        action="store_true",
+        help="Alias: keep existing proposals.jsonl across this run",
+    )
     ap.add_argument("--file", action="append", default=[], help="Specific file(s) relative to repo root")
     ap.add_argument("--tiers", default="0,1,2,3,4", help="Comma-separated tier numbers")
     ap.add_argument("--corpus-only", action="store_true")
-    ap.add_argument("--no-ir", action="store_true")
-    ap.add_argument("--no-diff", action="store_true")
+    ap.add_argument("--skip-corpus", action="store_true", help="Skip golden corpus at pipeline start")
+    ap.add_argument("--no-ir", action="store_true", help="Disable IR-equivalence oracle")
+    ap.add_argument("--no-diff", action="store_true", help="Disable stdout/exit differential")
+    ap.add_argument(
+        "--ir-limit",
+        type=int,
+        default=25,
+        help="Max eligible files for IR oracle (default 25; 0=off; -1=unlimited)",
+    )
+    ap.add_argument(
+        "--diff-limit",
+        type=int,
+        default=10,
+        help="Max eligible files for differential (default 10; 0=off; -1=unlimited)",
+    )
+    ap.add_argument(
+        "--file-timeout",
+        type=float,
+        default=90.0,
+        help="Per-file wall-clock timeout seconds (default 90)",
+    )
     ap.add_argument("--all-passes", action="store_true", help="Alias: all tiers")
     ap.add_argument("--tidy", action="store_true", help="Run clang-tidy -fix on staged outputs")
     ap.add_argument("--tidy-limit", type=int, default=120)
@@ -48,27 +78,49 @@ def main(argv: list[str] | None = None) -> int:
         files = [(ROOT / f).resolve() for f in args.file]
 
     scopes = [s.strip() for s in args.scope.split(",") if s.strip()]
+
+    def _lim(n: int) -> int | None:
+        if n < 0:
+            return None  # unlimited
+        return n
+
+    ir_limit = _lim(args.ir_limit)
+    diff_limit = _lim(args.diff_limit)
+    do_ir = not args.no_ir and (ir_limit is None or ir_limit > 0)
+    do_diff = not args.no_diff and (diff_limit is None or diff_limit > 0)
+
     report = run_pipeline(
         scopes=scopes,
         limit=args.limit,
         tiers=tiers,
-        do_ir=not args.no_ir,
-        do_diff=not args.no_diff,
+        do_ir=do_ir,
+        do_diff=do_diff,
         files=files,
         do_tidy=args.tidy,
         tidy_limit=args.tidy_limit,
+        ir_limit=ir_limit if do_ir else 0,
+        diff_limit=diff_limit if do_diff else 0,
+        skip=args.skip,
+        append_proposals=args.append_proposals or args.keep_proposals,
+        skip_corpus=args.skip_corpus,
+        reset_proposals=not (args.append_proposals or args.keep_proposals),
+        file_timeout=args.file_timeout,
     )
     print(
         f"OK files={report['files']} edits={report['edits_total']} "
         f"refusals={report['refusals_total']} "
+        f"ir={report['ir_equal']}/{report['ir_ran']} "
+        f"diff={report['diff_equal']} "
         f"report=docs/migration/clang_port/todo_pass_report.md"
     )
-    # Print top reasons
     for reason, count in list(report["reason_histogram"].items())[:12]:
         print(f"  {reason}: {count}")
     if report.get("clang_tidy"):
         ct = report["clang_tidy"]
-        print(f"  clang-tidy: targets={ct.get('targets')} warnings={ct.get('warning_sum')} fix={ct.get('fix')}")
+        print(
+            f"  clang-tidy: targets={ct.get('targets')} "
+            f"warnings={ct.get('warning_sum')} fix={ct.get('fix')}"
+        )
     return 0
 
 

@@ -13,9 +13,9 @@ _propose_pol_OUT = Path(__file__).resolve().parents[3] / "docs" / "migration" / 
 
 
 def _propose_pol(unit, kind: str, payload: dict) -> None:
-    _propose_pol_OUT.mkdir(parents=True, exist_ok=True)
-    with (_propose_pol_OUT / "proposals.jsonl").open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"file": unit.path, "kind": kind, **payload}) + "\n")
+    from ..proposals import propose
+
+    propose(unit.path, kind, payload)
 
 
 CPP_KEYWORDS = [
@@ -391,6 +391,53 @@ class VoidPtrCastPass(Pass):
         return PassResult(text="".join(pieces), refusals=[], edits=edits)
 
 
+class KnrRejectPass(Pass):
+    """Detect K&R definitions without catastrophic regex backtracking."""
+
+    name = "knr_reject"
+    tier = 1
+
+    def apply(self, unit: TranslationUnit) -> PassResult:
+        text = unit.text
+        lines = text.splitlines(keepends=True)
+        # Map line start offsets
+        offs: list[int] = []
+        pos = 0
+        for ln in lines:
+            offs.append(pos)
+            pos += len(ln)
+
+        decl_line = re.compile(
+            r"^[ \t]*(?:(?:unsigned|signed|const|volatile|static|register)\s+)*"
+            r"(?:struct\s+\w+|union\s+\w+|enum\s+\w+|[\w\*]+)(?:\s+[\w\*]+)*\s*;[ \t]*$"
+        )
+        for i, ln in enumerate(lines):
+            if not ln.rstrip().endswith(")"):
+                continue
+            # Collect following decl lines then '{'
+            j = i + 1
+            decl_count = 0
+            while j < len(lines) and decl_count < 16:
+                s = lines[j].rstrip("\n")
+                if decl_line.match(s):
+                    decl_count += 1
+                    j += 1
+                    continue
+                break
+            if decl_count == 0 or j >= len(lines):
+                continue
+            if not re.match(r"^[ \t]*\{", lines[j]):
+                continue
+            idx = offs[i]
+            snip = text[idx : idx + 80]
+            _propose_pol(
+                unit,
+                "KR_DEFINITION",
+                {"line": i + 1, "snippet": snip},
+            )
+        return PassResult.unchanged(text)
+
+
 class RefusePatternPass(Pass):
     """Generic refuse-and-log pass (some codes demoted to proposals)."""
 
@@ -411,6 +458,7 @@ class RefusePatternPass(Pass):
     def apply(self, unit: TranslationUnit) -> PassResult:
         masked = unit.mask_strings_comments()
         refusals: list[Refusal] = []
+        # Bound work: skip pathological finds on huge masked buffers for nested patterns
         for m in self.rx.finditer(masked):
             snip = unit.text[m.start() : m.start() + 80]
             if self.reason in self.PROPOSAL_CODES:
@@ -438,7 +486,7 @@ TIER1_PASSES: list[Pass] = [
     RegisterRemovePass(),
     RestrictPass(),
     C11ToCxxPass(),
-    RefusePatternPass("knr_reject", "KR_DEFINITION", r"\)\s*\n(?:\s*[\w\s\*]+\s+[A-Za-z_]\w*\s*;\s*\n)+\s*\{"),
+    KnrRejectPass(),
     RefusePatternPass("generic_refuse", "GENERIC", r"\b_Generic\b"),
     # compound / designated / VLA / goto handled by promote_refusals.py
     RefusePatternPass(
@@ -449,7 +497,7 @@ TIER1_PASSES: list[Pass] = [
     RefusePatternPass(
         "nested_struct_tag_refuse",
         "NESTED_STRUCT_TAG",
-        r"struct\s+\w+\s*\{[^}]*struct\s+\w+\s*\{",
+        r"struct\s+\w+\s*\{[^}]{0,2000}struct\s+\w+\s*\{",
     ),
     StringLiteralConstPass(),
     VoidPtrCastPass(),

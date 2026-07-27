@@ -17,9 +17,9 @@ _OUT = Path(__file__).resolve().parents[3] / "docs" / "migration" / "clang_port"
 
 
 def _propose_null(unit, kind: str, payload: dict) -> None:
-    _OUT.mkdir(parents=True, exist_ok=True)
-    with (_OUT / "proposals.jsonl").open("a", encoding="utf-8") as f:
-        f.write(json.dumps({"file": unit.path, "kind": kind, **payload}) + "\n")
+    from ..proposals import propose
+
+    propose(unit.path, kind, payload)
 
 
 
