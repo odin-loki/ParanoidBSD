@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bsdinstall/partedit/diskmenu.c",
-  "wave": "wave2",
-  "loc_estimate": 90,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bsdinstall/partedit/diskmenu.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bsdinstall.partedit.diskmenu",
-  "generated": "2026-07-19T08:31:19+00:00"
-}

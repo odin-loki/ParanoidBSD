@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/test/iconv/const-gnuism.c",
-  "wave": "wave9",
-  "loc_estimate": 67,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/iconv/const-gnuism.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.test.iconv.const_gnuism",
-  "generated": "2026-07-19T09:37:46+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/linux/linux_stats.c",
-  "wave": "wave4",
-  "loc_estimate": 768,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linux/linux_stats.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linux.linux_stats",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

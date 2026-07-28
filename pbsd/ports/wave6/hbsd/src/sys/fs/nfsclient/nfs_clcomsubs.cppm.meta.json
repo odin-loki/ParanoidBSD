@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/nfsclient/nfs_clcomsubs.c",
-  "wave": "wave6",
-  "loc_estimate": 447,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nfsclient/nfs_clcomsubs.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nfsclient.nfs_clcomsubs",
-  "generated": "2026-07-19T09:18:58+00:00"
-}

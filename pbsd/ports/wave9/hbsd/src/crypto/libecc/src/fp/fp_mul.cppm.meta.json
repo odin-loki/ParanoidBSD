@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/libecc/src/fp/fp_mul.c",
-  "wave": "wave9",
-  "loc_estimate": 138,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/libecc/src/fp/fp_mul.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.libecc.src.fp.fp_mul",
-  "generated": "2026-07-19T09:37:36+00:00"
-}

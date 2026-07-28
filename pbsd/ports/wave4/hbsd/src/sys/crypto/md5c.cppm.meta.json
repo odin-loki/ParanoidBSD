@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/crypto/md5c.c",
-  "wave": "wave4",
-  "loc_estimate": 317,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/md5c.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.md5c",
-  "generated": "2026-07-19T09:31:12+00:00"
-}

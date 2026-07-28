@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/apmd/apmd.c",
-  "wave": "wave2",
-  "loc_estimate": 702,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/apmd/apmd.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.apmd.apmd",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

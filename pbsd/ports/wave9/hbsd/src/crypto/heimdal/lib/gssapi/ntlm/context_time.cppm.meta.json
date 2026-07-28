@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/gssapi/ntlm/context_time.c",
-  "wave": "wave9",
-  "loc_estimate": 45,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/ntlm/context_time.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.ntlm.context_time",
-  "generated": "2026-07-19T09:30:34+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kgssapi/gss_release_oid_set.c",
-  "wave": "wave4",
-  "loc_estimate": 51,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kgssapi/gss_release_oid_set.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kgssapi.gss_release_oid_set",
-  "generated": "2026-07-19T09:31:10+00:00"
-}

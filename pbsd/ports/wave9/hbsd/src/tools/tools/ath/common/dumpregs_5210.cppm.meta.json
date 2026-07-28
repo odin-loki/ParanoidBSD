@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/ath/common/dumpregs_5210.c",
-  "wave": "wave9",
-  "loc_estimate": 124,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/ath/common/dumpregs_5210.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.ath.common.dumpregs_5210",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

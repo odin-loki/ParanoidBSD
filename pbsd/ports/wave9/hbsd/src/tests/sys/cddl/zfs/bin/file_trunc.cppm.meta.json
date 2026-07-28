@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/cddl/zfs/bin/file_trunc.c",
-  "wave": "wave9",
-  "loc_estimate": 238,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/cddl/zfs/bin/file_trunc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.cddl.zfs.bin.file_trunc",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

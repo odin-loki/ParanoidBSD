@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/lib9p/log.c",
-  "wave": "wave9",
-  "loc_estimate": 67,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/lib9p/log.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.lib9p.log",
-  "generated": "2026-07-19T09:38:03+00:00"
-}

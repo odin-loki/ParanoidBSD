@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/ck/src/ck_hp.c",
-  "wave": "wave4",
-  "loc_estimate": 323,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ck/src/ck_hp.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ck.src.ck_hp",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

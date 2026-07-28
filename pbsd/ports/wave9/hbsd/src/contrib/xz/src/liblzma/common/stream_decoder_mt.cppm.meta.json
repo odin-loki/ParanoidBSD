@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/xz/src/liblzma/common/stream_decoder_mt.c",
-  "wave": "wave9",
-  "loc_estimate": 2004,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/xz/src/liblzma/common/stream_decoder_mt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.xz.src.liblzma.common.stream_decoder_mt",
-  "generated": "2026-07-19T09:37:37+00:00"
-}

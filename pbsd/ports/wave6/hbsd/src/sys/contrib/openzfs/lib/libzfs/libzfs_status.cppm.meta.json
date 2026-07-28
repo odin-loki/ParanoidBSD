@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/lib/libzfs/libzfs_status.c",
-  "wave": "wave6",
-  "loc_estimate": 545,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libzfs/libzfs_status.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libzfs.libzfs_status",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

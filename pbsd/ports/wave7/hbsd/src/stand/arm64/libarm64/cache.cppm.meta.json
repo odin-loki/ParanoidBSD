@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/arm64/libarm64/cache.c",
-  "wave": "wave7",
-  "loc_estimate": 147,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/arm64/libarm64/cache.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.arm64.libarm64.cache",
-  "generated": "2026-07-19T09:49:39+00:00"
-}

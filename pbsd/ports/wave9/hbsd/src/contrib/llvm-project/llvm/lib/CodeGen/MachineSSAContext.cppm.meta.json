@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/MachineSSAContext.cpp",
-  "wave": "wave9",
-  "loc_estimate": 123,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/MachineSSAContext.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.codegen.machinessacontext",
-  "generated": "2026-07-19T09:31:51+00:00"
-}

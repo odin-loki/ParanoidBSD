@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp",
-  "wave": "wave9",
-  "loc_estimate": 533,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.executionengine.interpreter.externalfunctions",
-  "generated": "2026-07-19T09:31:55+00:00"
-}

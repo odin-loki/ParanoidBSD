@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/lpr/lptest/lptest.c",
-  "wave": "wave2",
-  "loc_estimate": 73,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/lpr/lptest/lptest.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.lpr.lptest.lptest",
-  "generated": "2026-07-19T09:02:51+00:00"
-}

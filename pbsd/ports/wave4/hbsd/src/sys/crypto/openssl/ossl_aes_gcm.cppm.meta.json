@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/crypto/openssl/ossl_aes_gcm.c",
-  "wave": "wave4",
-  "loc_estimate": 615,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/openssl/ossl_aes_gcm.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.openssl.ossl_aes_gcm",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

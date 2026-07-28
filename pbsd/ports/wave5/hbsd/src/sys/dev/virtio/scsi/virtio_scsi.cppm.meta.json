@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/virtio/scsi/virtio_scsi.c",
-  "wave": "wave5",
-  "loc_estimate": 2365,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/virtio/scsi/virtio_scsi.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.virtio.scsi.virtio_scsi",
-  "generated": "2026-07-19T08:40:45+00:00"
-}

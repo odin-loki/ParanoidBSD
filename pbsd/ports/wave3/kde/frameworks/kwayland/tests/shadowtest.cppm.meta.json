@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwayland/tests/shadowtest.cpp",
-  "wave": "wave3",
-  "loc_estimate": 161,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/tests/shadowtest.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwayland.tests.shadowtest",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/hardware/hwacpi.c",
-  "wave": "wave4",
-  "loc_estimate": 329,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/hardware/hwacpi.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.hardware.hwacpi",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

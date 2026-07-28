@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/ubsan/ubsan_diag_standalone.cpp",
-  "wave": "wave9",
-  "loc_estimate": 38,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/ubsan/ubsan_diag_standalone.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.ubsan.ubsan_diag_standalone",
-  "generated": "2026-07-19T09:37:15+00:00"
-}

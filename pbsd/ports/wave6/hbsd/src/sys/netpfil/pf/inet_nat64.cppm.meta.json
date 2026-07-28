@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netpfil/pf/inet_nat64.c",
-  "wave": "wave6",
-  "loc_estimate": 204,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/pf/inet_nat64.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.pf.inet_nat64",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/src/declarativeimports/plasmaextracomponents/qmenuitem.cpp",
-  "wave": "wave3",
-  "loc_estimate": 159,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/declarativeimports/plasmaextracomponents/qmenuitem.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.declarativeimports.plasmaextracomponents.qmenuitem",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

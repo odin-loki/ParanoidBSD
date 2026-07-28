@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cddl/dev/sdt/sdt.c",
-  "wave": "wave4",
-  "loc_estimate": 659,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/dev/sdt/sdt.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.dev.sdt.sdt",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ofed/librdmacm/examples/rcopy.c",
-  "wave": "wave9",
-  "loc_estimate": 628,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/librdmacm/examples/rcopy.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.librdmacm.examples.rcopy",
-  "generated": "2026-07-19T09:37:24+00:00"
-}

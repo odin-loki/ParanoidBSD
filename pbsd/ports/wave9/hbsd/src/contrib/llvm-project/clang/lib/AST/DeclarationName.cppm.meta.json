@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/AST/DeclarationName.cpp",
-  "wave": "wave9",
-  "loc_estimate": 524,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/AST/DeclarationName.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.ast.declarationname",
-  "generated": "2026-07-19T09:31:20+00:00"
-}

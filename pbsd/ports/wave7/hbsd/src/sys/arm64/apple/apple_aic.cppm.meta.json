@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/apple/apple_aic.c",
-  "wave": "wave7",
-  "loc_estimate": 780,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/apple/apple_aic.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.apple.apple_aic",
-  "generated": "2026-07-19T09:29:38+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/scripting/desktopbackgrounditem.cpp",
-  "wave": "wave3",
-  "loc_estimate": 126,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/scripting/desktopbackgrounditem.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.scripting.desktopbackgrounditem",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

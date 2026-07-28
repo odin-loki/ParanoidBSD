@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/etc/systemd/system-generators/zfs-mount-generator.c",
-  "wave": "wave6",
-  "loc_estimate": 1006,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/etc/systemd/system-generators/zfs-mount-generator.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.etc.systemd.system_generators.zfs_mount_generator",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

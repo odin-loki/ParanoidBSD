@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/princ_comp.c",
-  "wave": "wave9",
-  "loc_estimate": 167,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/princ_comp.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.princ_comp",
-  "generated": "2026-07-19T09:30:29+00:00"
-}

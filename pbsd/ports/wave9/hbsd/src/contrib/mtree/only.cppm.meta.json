@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/mtree/only.c",
-  "wave": "wave9",
-  "loc_estimate": 153,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mtree/only.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.mtree.only",
-  "generated": "2026-07-19T09:38:06+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/cddl/contrib/opensolaris/tools/ctf/common/symbol.c",
-  "wave": "wave2",
-  "loc_estimate": 62,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/cddl/contrib/opensolaris/tools/ctf/common/symbol.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.cddl.contrib.opensolaris.tools.ctf.common.symbol",
-  "generated": "2026-07-19T09:04:03+00:00"
-}

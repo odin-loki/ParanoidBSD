@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ncurses/ncurses/tty/tty_update.c",
-  "wave": "wave9",
-  "loc_estimate": 2300,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/tty/tty_update.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.tty.tty_update",
-  "generated": "2026-07-19T09:37:23+00:00"
-}

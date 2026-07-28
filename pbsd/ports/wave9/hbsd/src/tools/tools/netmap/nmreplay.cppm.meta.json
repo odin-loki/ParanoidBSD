@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/netmap/nmreplay.c",
-  "wave": "wave9",
-  "loc_estimate": 1814,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/netmap/nmreplay.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.netmap.nmreplay",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

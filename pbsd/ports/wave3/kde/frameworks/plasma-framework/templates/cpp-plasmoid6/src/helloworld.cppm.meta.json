@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/templates/cpp-plasmoid6/src/helloworld.cpp",
-  "wave": "wave3",
-  "loc_estimate": 22,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/templates/cpp-plasmoid6/src/helloworld.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.templates.cpp_plasmoid6.src.helloworld",
-  "generated": "2026-07-19T07:48:20+00:00"
-}

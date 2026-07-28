@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/uzip/g_uzip_cloop.h",
-  "wave": "wave6",
-  "loc_estimate": 59,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/uzip/g_uzip_cloop.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.uzip.g_uzip_cloop",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/MachineBasicBlock.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1810,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/MachineBasicBlock.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.codegen.machinebasicblock",
-  "generated": "2026-07-19T09:31:57+00:00"
-}

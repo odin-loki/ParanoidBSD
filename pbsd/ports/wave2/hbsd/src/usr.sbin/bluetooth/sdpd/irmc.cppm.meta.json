@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bluetooth/sdpd/irmc.c",
-  "wave": "wave2",
-  "loc_estimate": 135,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bluetooth/sdpd/irmc.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bluetooth.sdpd.irmc",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/core/chmodjob.cpp",
-  "wave": "wave3",
-  "loc_estimate": 295,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/core/chmodjob.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.core.chmodjob",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

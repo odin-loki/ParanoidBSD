@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libcbor/test/cpp_linkage_test.cpp",
-  "wave": "wave9",
-  "loc_estimate": 11,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libcbor/test/cpp_linkage_test.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libcbor.test.cpp_linkage_test",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

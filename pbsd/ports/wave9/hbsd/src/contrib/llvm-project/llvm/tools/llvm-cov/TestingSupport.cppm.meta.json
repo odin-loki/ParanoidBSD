@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-cov/TestingSupport.cpp",
-  "wave": "wave9",
-  "loc_estimate": 142,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-cov/TestingSupport.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_cov.testingsupport",
-  "generated": "2026-07-19T09:31:52+00:00"
-}

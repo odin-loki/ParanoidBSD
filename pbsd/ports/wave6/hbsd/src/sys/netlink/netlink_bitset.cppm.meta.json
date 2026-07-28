@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netlink/netlink_bitset.h",
-  "wave": "wave6",
-  "loc_estimate": 57,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netlink/netlink_bitset.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netlink.netlink_bitset",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdio/getc.c",
-  "wave": "wave2",
-  "loc_estimate": 61,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdio/getc.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdio.getc",
-  "generated": "2026-07-19T08:41:20+00:00"
-}

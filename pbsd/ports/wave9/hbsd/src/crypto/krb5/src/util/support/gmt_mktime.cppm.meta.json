@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/util/support/gmt_mktime.c",
-  "wave": "wave9",
-  "loc_estimate": 163,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/util/support/gmt_mktime.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.util.support.gmt_mktime",
-  "generated": "2026-07-19T09:30:29+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/msun/ld80/k_cospil.h",
-  "wave": "wave2",
-  "loc_estimate": 42,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/ld80/k_cospil.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.msun.ld80.k_cospil",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

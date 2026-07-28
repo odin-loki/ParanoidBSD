@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/netmap/pkt-gen.c",
-  "wave": "wave9",
-  "loc_estimate": 3395,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/netmap/pkt-gen.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.netmap.pkt_gen",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

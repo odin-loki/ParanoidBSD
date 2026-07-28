@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/opencsd/decoder/source/mem_acc/trc_mem_acc_cache.cpp",
-  "wave": "wave9",
-  "loc_estimate": 176,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/mem_acc/trc_mem_acc_cache.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.mem_acc.trc_mem_acc_cache",
-  "generated": "2026-07-19T09:37:48+00:00"
-}

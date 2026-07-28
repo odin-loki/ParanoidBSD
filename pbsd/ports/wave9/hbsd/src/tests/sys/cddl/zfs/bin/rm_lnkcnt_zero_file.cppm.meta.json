@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/cddl/zfs/bin/rm_lnkcnt_zero_file.c",
-  "wave": "wave9",
-  "loc_estimate": 146,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/cddl/zfs/bin/rm_lnkcnt_zero_file.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.cddl.zfs.bin.rm_lnkcnt_zero_file",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

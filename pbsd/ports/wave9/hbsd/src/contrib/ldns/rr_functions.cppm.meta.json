@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ldns/rr_functions.c",
-  "wave": "wave9",
-  "loc_estimate": 431,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ldns/rr_functions.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ldns.rr_functions",
-  "generated": "2026-07-19T09:37:45+00:00"
-}

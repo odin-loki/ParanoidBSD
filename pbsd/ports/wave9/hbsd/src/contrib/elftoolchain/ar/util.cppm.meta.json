@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/elftoolchain/ar/util.c",
-  "wave": "wave9",
-  "loc_estimate": 184,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/elftoolchain/ar/util.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.elftoolchain.ar.util",
-  "generated": "2026-07-19T09:37:29+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/rpc/unit-test/rpc_test_clnt.c",
-  "wave": "wave9",
-  "loc_estimate": 20,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/rpc/unit-test/rpc_test_clnt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.rpc.unit_test.rpc_test_clnt",
-  "generated": "2026-07-19T09:30:25+00:00"
-}

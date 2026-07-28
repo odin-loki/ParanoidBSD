@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/jemalloc/src/ctl.c",
-  "wave": "wave9",
-  "loc_estimate": 4414,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/src/ctl.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.src.ctl",
-  "generated": "2026-07-19T09:37:43+00:00"
-}

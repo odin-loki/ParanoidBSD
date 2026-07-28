@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/plugins/slide/springmotion.cpp",
-  "wave": "wave3",
-  "loc_estimate": 164,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/slide/springmotion.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.plugins.slide.springmotion",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

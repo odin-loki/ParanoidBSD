@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/gve/gve_sysctl.c",
-  "wave": "wave5",
-  "loc_estimate": 505,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/gve/gve_sysctl.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.gve.gve_sysctl",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

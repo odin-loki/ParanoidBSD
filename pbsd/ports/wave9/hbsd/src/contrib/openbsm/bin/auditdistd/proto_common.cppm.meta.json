@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/openbsm/bin/auditdistd/proto_common.c",
-  "wave": "wave9",
-  "loc_estimate": 231,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openbsm/bin/auditdistd/proto_common.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.openbsm.bin.auditdistd.proto_common",
-  "generated": "2026-07-19T09:37:50+00:00"
-}

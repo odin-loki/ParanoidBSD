@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/util/support/k5buf.c",
-  "wave": "wave9",
-  "loc_estimate": 275,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/util/support/k5buf.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.util.support.k5buf",
-  "generated": "2026-07-19T09:30:30+00:00"
-}

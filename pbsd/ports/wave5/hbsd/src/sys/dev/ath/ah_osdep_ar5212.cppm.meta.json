@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ath/ah_osdep_ar5212.c",
-  "wave": "wave5",
-  "loc_estimate": 91,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ah_osdep_ar5212.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ah_osdep_ar5212",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

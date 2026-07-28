@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1650,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.expressionparser.clang.clangexpressionparser",
-  "generated": "2026-07-19T09:31:44+00:00"
-}

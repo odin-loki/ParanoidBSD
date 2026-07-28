@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/pppctl/pppctl.c",
-  "wave": "wave2",
-  "loc_estimate": 681,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/pppctl/pppctl.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.pppctl.pppctl",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

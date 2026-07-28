@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/roken/memmove.c",
-  "wave": "wave9",
-  "loc_estimate": 62,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/memmove.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.memmove",
-  "generated": "2026-07-19T09:30:35+00:00"
-}

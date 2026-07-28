@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cddl/dev/dtrace/dtrace_hacks.c",
-  "wave": "wave4",
-  "loc_estimate": 9,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/dev/dtrace/dtrace_hacks.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.dev.dtrace.dtrace_hacks",
-  "generated": "2026-07-19T09:31:09+00:00"
-}

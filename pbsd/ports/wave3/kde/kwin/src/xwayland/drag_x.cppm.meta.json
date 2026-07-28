@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/xwayland/drag_x.cpp",
-  "wave": "wave3",
-  "loc_estimate": 409,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/xwayland/drag_x.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.xwayland.drag_x",
-  "generated": "2026-07-19T09:30:18+00:00"
-}

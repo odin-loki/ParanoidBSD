@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/icp/algs/sha2/sha512_impl.c",
-  "wave": "wave6",
-  "loc_estimate": 286,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/icp/algs/sha2/sha512_impl.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.icp.algs.sha2.sha512_impl",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

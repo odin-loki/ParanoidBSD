@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/net80211/w00t/assoc/assoc.c",
-  "wave": "wave9",
-  "loc_estimate": 936,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/net80211/w00t/assoc/assoc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.net80211.w00t.assoc.assoc",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

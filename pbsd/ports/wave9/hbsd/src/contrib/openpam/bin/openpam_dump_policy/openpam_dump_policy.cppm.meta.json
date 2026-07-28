@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/openpam/bin/openpam_dump_policy/openpam_dump_policy.c",
-  "wave": "wave9",
-  "loc_estimate": 200,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openpam/bin/openpam_dump_policy/openpam_dump_policy.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.openpam.bin.openpam_dump_policy.openpam_dump_policy",
-  "generated": "2026-07-19T09:37:39+00:00"
-}

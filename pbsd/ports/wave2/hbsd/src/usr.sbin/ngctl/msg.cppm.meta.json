@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/ngctl/msg.c",
-  "wave": "wave2",
-  "loc_estimate": 156,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/ngctl/msg.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.ngctl.msg",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

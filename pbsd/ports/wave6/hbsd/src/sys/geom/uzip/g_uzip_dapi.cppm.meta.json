@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/uzip/g_uzip_dapi.h",
-  "wave": "wave6",
-  "loc_estimate": 40,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/uzip/g_uzip_dapi.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.uzip.g_uzip_dapi",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCClassDescriptorV2.cpp",
-  "wave": "wave9",
-  "loc_estimate": 746,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCClassDescriptorV2.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.languageruntime.objc.appleobjcruntime.appleobjcclassdescriptorv2",
-  "generated": "2026-07-19T09:31:43+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krb5/ccache/ccselect_hostname.c",
-  "wave": "wave9",
-  "loc_estimate": 146,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/ccache/ccselect_hostname.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.ccache.ccselect_hostname",
-  "generated": "2026-07-19T09:30:29+00:00"
-}

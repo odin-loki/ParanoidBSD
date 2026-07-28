@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/p9fs/p9_transport.c",
-  "wave": "wave6",
-  "loc_estimate": 69,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/p9fs/p9_transport.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.p9fs.p9_transport",
-  "generated": "2026-07-19T08:30:54+00:00"
-}

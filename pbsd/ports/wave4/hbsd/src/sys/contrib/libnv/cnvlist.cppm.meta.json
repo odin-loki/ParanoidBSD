@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libnv/cnvlist.c",
-  "wave": "wave4",
-  "loc_estimate": 218,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libnv/cnvlist.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libnv.cnvlist",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

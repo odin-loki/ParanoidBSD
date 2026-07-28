@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bluetooth/sdpd/audio_sink.c",
-  "wave": "wave2",
-  "loc_estimate": 186,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bluetooth/sdpd/audio_sink.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bluetooth.sdpd.audio_sink",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

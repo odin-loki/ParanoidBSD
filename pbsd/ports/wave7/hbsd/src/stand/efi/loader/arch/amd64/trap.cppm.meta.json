@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/efi/loader/arch/amd64/trap.c",
-  "wave": "wave7",
-  "loc_estimate": 441,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/efi/loader/arch/amd64/trap.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.efi.loader.arch.amd64.trap",
-  "generated": "2026-07-19T09:49:41+00:00"
-}

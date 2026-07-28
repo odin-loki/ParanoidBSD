@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/asn1/gen_encode.c",
-  "wave": "wave9",
-  "loc_estimate": 552,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/asn1/gen_encode.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.asn1.gen_encode",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

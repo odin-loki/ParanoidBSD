@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/archive_read_add_passphrase.c",
-  "wave": "wave9",
-  "loc_estimate": 189,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/archive_read_add_passphrase.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.archive_read_add_passphrase",
-  "generated": "2026-07-19T09:30:40+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/openbsd-compat/bsd-timegm.c",
-  "wave": "wave9",
-  "loc_estimate": 82,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/openbsd-compat/bsd-timegm.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.openbsd_compat.bsd_timegm",
-  "generated": "2026-07-19T09:37:19+00:00"
-}

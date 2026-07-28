@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/krb5/set_ccache.c",
-  "wave": "wave9",
-  "loc_estimate": 87,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/krb5/set_ccache.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.krb5.set_ccache",
-  "generated": "2026-07-19T09:30:27+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/security/mac/mac_sysv_sem.c",
-  "wave": "wave4",
-  "loc_estimate": 160,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac/mac_sysv_sem.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac.mac_sysv_sem",
-  "generated": "2026-07-19T09:04:04+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/expat/lib/random_getrandom.c",
-  "wave": "wave9",
-  "loc_estimate": 95,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/expat/lib/random_getrandom.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.expat.lib.random_getrandom",
-  "generated": "2026-07-19T09:37:49+00:00"
-}

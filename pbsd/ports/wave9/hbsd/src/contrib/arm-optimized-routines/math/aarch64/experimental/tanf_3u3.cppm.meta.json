@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/arm-optimized-routines/math/aarch64/experimental/tanf_3u3.c",
-  "wave": "wave9",
-  "loc_estimate": 185,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/arm-optimized-routines/math/aarch64/experimental/tanf_3u3.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.arm_optimized_routines.math.aarch64.experimental.tanf_3u3",
-  "generated": "2026-07-19T09:31:59+00:00"
-}

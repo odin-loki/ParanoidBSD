@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/procfs/procfs_regs.c",
-  "wave": "wave6",
-  "loc_estimate": 137,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/procfs/procfs_regs.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.procfs.procfs_regs",
-  "generated": "2026-07-19T08:30:54+00:00"
-}

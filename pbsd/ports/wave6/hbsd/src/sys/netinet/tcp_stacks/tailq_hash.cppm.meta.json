@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/tcp_stacks/tailq_hash.c",
-  "wave": "wave6",
-  "loc_estimate": 360,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/tcp_stacks/tailq_hash.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.tcp_stacks.tailq_hash",
-  "generated": "2026-07-19T09:02:53+00:00"
-}

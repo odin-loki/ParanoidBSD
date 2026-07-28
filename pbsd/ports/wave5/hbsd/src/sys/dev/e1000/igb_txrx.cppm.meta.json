@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/e1000/igb_txrx.c",
-  "wave": "wave5",
-  "loc_estimate": 580,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/e1000/igb_txrx.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.e1000.igb_txrx",
-  "generated": "2026-07-19T08:29:54+00:00"
-}

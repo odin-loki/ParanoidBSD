@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/ipf/libipf/printhash_live.c",
-  "wave": "wave2",
-  "loc_estimate": 72,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipf/libipf/printhash_live.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.ipf.libipf.printhash_live",
-  "generated": "2026-07-19T09:30:00+00:00"
-}

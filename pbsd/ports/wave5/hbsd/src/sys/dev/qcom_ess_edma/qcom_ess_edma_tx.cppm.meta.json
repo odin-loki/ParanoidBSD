@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qcom_ess_edma/qcom_ess_edma_tx.c",
-  "wave": "wave5",
-  "loc_estimate": 454,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qcom_ess_edma/qcom_ess_edma_tx.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qcom_ess_edma.qcom_ess_edma_tx",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

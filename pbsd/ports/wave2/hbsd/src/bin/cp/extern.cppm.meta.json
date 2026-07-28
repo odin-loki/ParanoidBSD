@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/cp/extern.h",
-  "wave": "wave2",
-  "loc_estimate": 64,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/cp/extern.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.cp.extern",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

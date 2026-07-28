@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/gdtoa/qnan.c",
-  "wave": "wave9",
-  "loc_estimate": 110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/gdtoa/qnan.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.gdtoa.qnan",
-  "generated": "2026-07-19T09:37:48+00:00"
-}

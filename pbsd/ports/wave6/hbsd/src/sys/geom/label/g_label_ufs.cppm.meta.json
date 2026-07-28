@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/label/g_label_ufs.c",
-  "wave": "wave6",
-  "loc_estimate": 206,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/label/g_label_ufs.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.label.g_label_ufs",
-  "generated": "2026-07-19T08:30:51+00:00"
-}

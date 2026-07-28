@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/dump/unctime.c",
-  "wave": "wave2",
-  "loc_estimate": 50,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/dump/unctime.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.dump.unctime",
-  "generated": "2026-07-19T09:30:00+00:00"
-}

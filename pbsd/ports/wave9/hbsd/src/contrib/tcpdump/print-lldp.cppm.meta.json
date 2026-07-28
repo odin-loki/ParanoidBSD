@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/print-lldp.c",
-  "wave": "wave9",
-  "loc_estimate": 1680,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-lldp.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_lldp",
-  "generated": "2026-07-19T09:37:27+00:00"
-}

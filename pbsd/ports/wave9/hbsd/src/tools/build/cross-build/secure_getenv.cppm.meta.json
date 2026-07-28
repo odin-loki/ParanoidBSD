@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/build/cross-build/secure_getenv.c",
-  "wave": "wave9",
-  "loc_estimate": 16,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/build/cross-build/secure_getenv.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.build.cross_build.secure_getenv",
-  "generated": "2026-07-19T09:38:05+00:00"
-}

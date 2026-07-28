@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/kern/libkern_crc32.c",
-  "wave": "wave9",
-  "loc_estimate": 155,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/libkern_crc32.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.libkern_crc32",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/if_dl.h",
-  "wave": "wave6",
-  "loc_estimate": 93,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/if_dl.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.if_dl",
-  "generated": "2026-07-19T10:59:34+00:00"
-}

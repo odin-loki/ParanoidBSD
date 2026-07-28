@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/libsa/geli/geliboot.c",
-  "wave": "wave7",
-  "loc_estimate": 398,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/libsa/geli/geliboot.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.libsa.geli.geliboot",
-  "generated": "2026-07-19T09:49:41+00:00"
-}

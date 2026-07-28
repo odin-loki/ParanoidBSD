@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/netinet/libalias/3_natin.c",
-  "wave": "wave9",
-  "loc_estimate": 381,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/netinet/libalias/3_natin.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.netinet.libalias._3_natin",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

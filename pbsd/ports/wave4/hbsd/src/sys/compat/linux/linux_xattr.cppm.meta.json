@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/linux/linux_xattr.c",
-  "wave": "wave4",
-  "loc_estimate": 460,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linux/linux_xattr.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linux.linux_xattr",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

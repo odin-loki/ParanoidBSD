@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/linuxkpi/dummy/include/linux/rtnetlink.h",
-  "wave": "wave4",
-  "loc_estimate": 0,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/dummy/include/linux/rtnetlink.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.dummy.include.linux.rtnetlink",
-  "generated": "2026-07-19T10:59:35+00:00"
-}

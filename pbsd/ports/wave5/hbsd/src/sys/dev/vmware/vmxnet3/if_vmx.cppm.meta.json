@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/vmware/vmxnet3/if_vmx.c",
-  "wave": "wave5",
-  "loc_estimate": 2545,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/vmware/vmxnet3/if_vmx.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.vmware.vmxnet3.if_vmx",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/sound/pcm/feeder_chain.c",
-  "wave": "wave5",
-  "loc_estimate": 845,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sound/pcm/feeder_chain.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sound.pcm.feeder_chain",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

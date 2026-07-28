@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libiconv_modules/MSKanji/citrus_mskanji.c",
-  "wave": "wave2",
-  "loc_estimate": 474,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libiconv_modules/MSKanji/citrus_mskanji.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libiconv_modules.mskanji.citrus_mskanji",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

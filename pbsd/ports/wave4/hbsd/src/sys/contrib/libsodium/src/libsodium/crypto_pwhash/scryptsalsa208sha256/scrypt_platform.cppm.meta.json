@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/scrypt_platform.c",
-  "wave": "wave4",
-  "loc_estimate": 108,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/scrypt_platform.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_pwhash.scryptsalsa208sha256.scrypt_platform",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

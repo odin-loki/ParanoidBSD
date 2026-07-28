@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/sound/pci/cs4281.c",
-  "wave": "wave5",
-  "loc_estimate": 968,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sound/pci/cs4281.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sound.pci.cs4281",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

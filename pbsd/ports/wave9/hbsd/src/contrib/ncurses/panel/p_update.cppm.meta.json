@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ncurses/panel/p_update.c",
-  "wave": "wave9",
-  "loc_estimate": 79,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/panel/p_update.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.panel.p_update",
-  "generated": "2026-07-19T09:37:22+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/build/cross-build/progname.c",
-  "wave": "wave9",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/build/cross-build/progname.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.build.cross_build.progname",
-  "generated": "2026-07-19T09:38:05+00:00"
-}

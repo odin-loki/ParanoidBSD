@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/ap/iapp.c",
-  "wave": "wave9",
-  "loc_estimate": 542,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/ap/iapp.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.ap.iapp",
-  "generated": "2026-07-19T09:31:01+00:00"
-}

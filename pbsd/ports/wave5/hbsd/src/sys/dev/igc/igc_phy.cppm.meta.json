@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/igc/igc_phy.c",
-  "wave": "wave5",
-  "loc_estimate": 1072,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/igc/igc_phy.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.igc.igc_phy",
-  "generated": "2026-07-19T08:30:11+00:00"
-}

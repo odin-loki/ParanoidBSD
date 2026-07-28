@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/net/getnetbynis.c",
-  "wave": "wave2",
-  "loc_estimate": 259,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/net/getnetbynis.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.net.getnetbynis",
-  "generated": "2026-07-19T09:05:33+00:00"
-}

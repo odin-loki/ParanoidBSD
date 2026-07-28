@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/sunrpc/msg/msg_proc.c",
-  "wave": "wave9",
-  "loc_estimate": 28,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/sunrpc/msg/msg_proc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.sunrpc.msg.msg_proc",
-  "generated": "2026-07-19T09:37:44+00:00"
-}

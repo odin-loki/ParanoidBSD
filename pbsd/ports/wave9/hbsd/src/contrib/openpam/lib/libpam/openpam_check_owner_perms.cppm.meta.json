@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/openpam/lib/libpam/openpam_check_owner_perms.c",
-  "wave": "wave9",
-  "loc_estimate": 143,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openpam/lib/libpam/openpam_check_owner_perms.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.openpam.lib.libpam.openpam_check_owner_perms",
-  "generated": "2026-07-19T09:37:39+00:00"
-}

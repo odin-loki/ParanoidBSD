@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mlx5/mlx5_core/mlx5_eswitch.c",
-  "wave": "wave5",
-  "loc_estimate": 1276,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx5/mlx5_core/mlx5_eswitch.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx5.mlx5_core.mlx5_eswitch",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

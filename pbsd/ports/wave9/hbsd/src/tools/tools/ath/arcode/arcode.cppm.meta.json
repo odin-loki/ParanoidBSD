@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/ath/arcode/arcode.c",
-  "wave": "wave9",
-  "loc_estimate": 112,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/ath/arcode/arcode.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.ath.arcode.arcode",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

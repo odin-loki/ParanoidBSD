@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/libc/src/__support/wchar/mbrtowc.cpp",
-  "wave": "wave9",
-  "loc_estimate": 52,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libc/src/__support/wchar/mbrtowc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libc.src.__support.wchar.mbrtowc",
-  "generated": "2026-07-19T09:37:15+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/InlineSpiller.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1743,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/InlineSpiller.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.codegen.inlinespiller",
-  "generated": "2026-07-19T09:31:57+00:00"
-}

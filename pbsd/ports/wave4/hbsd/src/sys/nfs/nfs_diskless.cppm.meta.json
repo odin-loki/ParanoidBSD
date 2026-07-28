@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/nfs/nfs_diskless.c",
-  "wave": "wave4",
-  "loc_estimate": 497,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/nfs/nfs_diskless.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.nfs.nfs_diskless",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

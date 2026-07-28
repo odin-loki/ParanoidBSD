@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/tar/test/test_copy.c",
-  "wave": "wave9",
-  "loc_estimate": 364,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/tar/test/test_copy.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.tar.test.test_copy",
-  "generated": "2026-07-19T09:30:41+00:00"
-}

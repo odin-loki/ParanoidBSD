@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libexecinfo/unwind.c",
-  "wave": "wave9",
-  "loc_estimate": 76,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libexecinfo/unwind.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libexecinfo.unwind",
-  "generated": "2026-07-19T09:38:22+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/SymbolFile/NativePDB/CodeViewRegisterMapping.cpp",
-  "wave": "wave9",
-  "loc_estimate": 748,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/SymbolFile/NativePDB/CodeViewRegisterMapping.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.symbolfile.nativepdb.codeviewregistermapping",
-  "generated": "2026-07-19T09:31:43+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/kernel/kqueue/write/t_ttypty.c",
-  "wave": "wave9",
-  "loc_estimate": 130,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/kernel/kqueue/write/t_ttypty.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.kernel.kqueue.write.t_ttypty",
-  "generated": "2026-07-19T09:30:56+00:00"
-}

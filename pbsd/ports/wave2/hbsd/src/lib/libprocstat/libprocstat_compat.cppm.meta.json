@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libprocstat/libprocstat_compat.c",
-  "wave": "wave2",
-  "loc_estimate": 259,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libprocstat/libprocstat_compat.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libprocstat.libprocstat_compat",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

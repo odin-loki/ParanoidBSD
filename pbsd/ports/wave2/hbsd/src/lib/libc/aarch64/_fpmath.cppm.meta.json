@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/aarch64/_fpmath.h",
-  "wave": "wave2",
-  "loc_estimate": 56,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/aarch64/_fpmath.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.aarch64._fpmath",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

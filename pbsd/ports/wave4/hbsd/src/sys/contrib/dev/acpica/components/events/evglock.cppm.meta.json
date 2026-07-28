@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/events/evglock.c",
-  "wave": "wave4",
-  "loc_estimate": 492,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/events/evglock.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.events.evglock",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

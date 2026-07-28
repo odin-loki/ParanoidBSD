@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/smult_curve25519_ref.c",
-  "wave": "wave9",
-  "loc_estimate": 265,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/smult_curve25519_ref.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.smult_curve25519_ref",
-  "generated": "2026-07-19T09:37:20+00:00"
-}

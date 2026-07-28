@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/SymbolFile/DWARF/DWARFBaseDIE.cpp",
-  "wave": "wave9",
-  "loc_estimate": 132,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/SymbolFile/DWARF/DWARFBaseDIE.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.symbolfile.dwarf.dwarfbasedie",
-  "generated": "2026-07-19T09:31:38+00:00"
-}

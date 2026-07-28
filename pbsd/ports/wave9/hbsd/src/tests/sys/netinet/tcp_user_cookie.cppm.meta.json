@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/netinet/tcp_user_cookie.c",
-  "wave": "wave9",
-  "loc_estimate": 110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/netinet/tcp_user_cookie.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.netinet.tcp_user_cookie",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

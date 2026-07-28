@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libdiff/compat/include/sys/types.h",
-  "wave": "wave9",
-  "loc_estimate": 15,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libdiff/compat/include/sys/types.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libdiff.compat.include.sys.types",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

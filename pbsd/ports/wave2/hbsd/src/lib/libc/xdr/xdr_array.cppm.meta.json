@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/xdr/xdr_array.c",
-  "wave": "wave2",
-  "loc_estimate": 155,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/xdr/xdr_array.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.xdr.xdr_array",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

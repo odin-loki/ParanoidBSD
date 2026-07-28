@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libufs/inode.c",
-  "wave": "wave2",
-  "loc_estimate": 123,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libufs/inode.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libufs.inode",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/rpc/xdr_stdio.c",
-  "wave": "wave9",
-  "loc_estimate": 172,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/rpc/xdr_stdio.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.rpc.xdr_stdio",
-  "generated": "2026-07-19T09:30:29+00:00"
-}

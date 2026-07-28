@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/pwd/pwd.c",
-  "wave": "wave2",
-  "loc_estimate": 118,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/pwd/pwd.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.pwd.pwd",
-  "generated": "2026-07-19T07:28:54+00:00"
-}

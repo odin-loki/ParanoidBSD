@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/unbound/sldns/sbuffer.c",
-  "wave": "wave9",
-  "loc_estimate": 160,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/sldns/sbuffer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.sldns.sbuffer",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

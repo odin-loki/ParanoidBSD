@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/cmd/zstream/zstream_recompress.c",
-  "wave": "wave6",
-  "loc_estimate": 382,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/cmd/zstream/zstream_recompress.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.cmd.zstream.zstream_recompress",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

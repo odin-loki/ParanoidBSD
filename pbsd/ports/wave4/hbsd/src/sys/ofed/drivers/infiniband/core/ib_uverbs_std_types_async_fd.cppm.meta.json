@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/ofed/drivers/infiniband/core/ib_uverbs_std_types_async_fd.c",
-  "wave": "wave4",
-  "loc_estimate": 54,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/ofed/drivers/infiniband/core/ib_uverbs_std_types_async_fd.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.ofed.drivers.infiniband.core.ib_uverbs_std_types_async_fd",
-  "generated": "2026-07-19T09:31:10+00:00"
-}

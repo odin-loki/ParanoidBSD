@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwayland/src/client/shell.cpp",
-  "wave": "wave3",
-  "loc_estimate": 377,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/client/shell.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.client.shell",
-  "generated": "2026-07-19T09:30:18+00:00"
-}

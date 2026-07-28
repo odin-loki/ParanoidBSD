@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/athk/ath12k/debugfs_htt_stats.c",
-  "wave": "wave4",
-  "loc_estimate": 6369,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/athk/ath12k/debugfs_htt_stats.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.athk.ath12k.debugfs_htt_stats",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

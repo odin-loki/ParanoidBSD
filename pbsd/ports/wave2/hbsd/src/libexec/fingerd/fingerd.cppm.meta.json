@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/fingerd/fingerd.c",
-  "wave": "wave2",
-  "loc_estimate": 231,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/fingerd/fingerd.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.fingerd.fingerd",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

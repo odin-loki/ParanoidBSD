@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/usb/input/uhid_snes.c",
-  "wave": "wave5",
-  "loc_estimate": 643,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/input/uhid_snes.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.input.uhid_snes",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

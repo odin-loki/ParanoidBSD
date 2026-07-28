@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/rtwn/rtl8821a/r21a_fw.c",
-  "wave": "wave5",
-  "loc_estimate": 75,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8821a/r21a_fw.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8821a.r21a_fw",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

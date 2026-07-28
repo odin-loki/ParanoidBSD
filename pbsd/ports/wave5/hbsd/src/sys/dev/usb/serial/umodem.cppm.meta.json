@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/usb/serial/umodem.c",
-  "wave": "wave5",
-  "loc_estimate": 1042,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/serial/umodem.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.serial.umodem",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

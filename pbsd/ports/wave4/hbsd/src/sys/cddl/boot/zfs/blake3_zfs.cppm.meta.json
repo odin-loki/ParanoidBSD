@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cddl/boot/zfs/blake3_zfs.c",
-  "wave": "wave4",
-  "loc_estimate": 97,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/boot/zfs/blake3_zfs.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.boot.zfs.blake3_zfs",
-  "generated": "2026-07-19T09:31:10+00:00"
-}

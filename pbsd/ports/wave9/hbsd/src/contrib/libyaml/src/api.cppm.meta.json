@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libyaml/src/api.c",
-  "wave": "wave9",
-  "loc_estimate": 1393,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libyaml/src/api.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libyaml.src.api",
-  "generated": "2026-07-19T09:37:59+00:00"
-}

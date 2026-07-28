@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/sockets/udp_pingpong/udp_pingpong.c",
-  "wave": "wave9",
-  "loc_estimate": 621,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/sockets/udp_pingpong/udp_pingpong.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.sockets.udp_pingpong.udp_pingpong",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

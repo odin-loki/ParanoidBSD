@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/opencsd/decoder/source/ete/trc_cmp_cfg_ete.cpp",
-  "wave": "wave9",
-  "loc_estimate": 98,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/ete/trc_cmp_cfg_ete.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.ete.trc_cmp_cfg_ete",
-  "generated": "2026-07-19T09:37:48+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Headers/cuda_wrappers/bits/basic_string.h",
-  "wave": "wave9",
-  "loc_estimate": 9,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Headers/cuda_wrappers/bits/basic_string.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.headers.cuda_wrappers.bits.basic_string",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

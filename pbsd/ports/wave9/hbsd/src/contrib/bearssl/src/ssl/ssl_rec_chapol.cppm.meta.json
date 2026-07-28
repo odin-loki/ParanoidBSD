@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bearssl/src/ssl/ssl_rec_chapol.c",
-  "wave": "wave9",
-  "loc_estimate": 177,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/ssl/ssl_rec_chapol.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.ssl.ssl_rec_chapol",
-  "generated": "2026-07-19T09:37:18+00:00"
-}

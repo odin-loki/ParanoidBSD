@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kgssapi/gss_acquire_cred.c",
-  "wave": "wave4",
-  "loc_estimate": 109,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kgssapi/gss_acquire_cred.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kgssapi.gss_acquire_cred",
-  "generated": "2026-07-19T09:31:11+00:00"
-}

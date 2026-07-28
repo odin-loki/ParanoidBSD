@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/hpke/hpke_util.c",
-  "wave": "wave9",
-  "loc_estimate": 530,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/hpke/hpke_util.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.hpke.hpke_util",
-  "generated": "2026-07-19T09:30:06+00:00"
-}

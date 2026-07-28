@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/iwi/if_iwi_ioctl.h",
-  "wave": "wave5",
-  "loc_estimate": 23,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iwi/if_iwi_ioctl.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iwi.if_iwi_ioctl",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

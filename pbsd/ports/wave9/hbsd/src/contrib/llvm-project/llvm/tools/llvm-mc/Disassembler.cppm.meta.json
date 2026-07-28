@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-mc/Disassembler.cpp",
-  "wave": "wave9",
-  "loc_estimate": 221,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-mc/Disassembler.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_mc.disassembler",
-  "generated": "2026-07-19T09:31:53+00:00"
-}

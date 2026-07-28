@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_write_filter_xz.c",
-  "wave": "wave9",
-  "loc_estimate": 264,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_write_filter_xz.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_write_filter_xz",
-  "generated": "2026-07-19T09:30:40+00:00"
-}

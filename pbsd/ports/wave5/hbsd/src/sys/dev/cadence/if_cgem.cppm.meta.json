@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/cadence/if_cgem.c",
-  "wave": "wave5",
-  "loc_estimate": 2006,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/cadence/if_cgem.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.cadence.if_cgem",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

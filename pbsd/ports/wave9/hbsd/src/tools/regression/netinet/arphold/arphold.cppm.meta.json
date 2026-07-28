@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/netinet/arphold/arphold.c",
-  "wave": "wave9",
-  "loc_estimate": 161,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/netinet/arphold/arphold.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.netinet.arphold.arphold",
-  "generated": "2026-07-19T09:37:31+00:00"
-}

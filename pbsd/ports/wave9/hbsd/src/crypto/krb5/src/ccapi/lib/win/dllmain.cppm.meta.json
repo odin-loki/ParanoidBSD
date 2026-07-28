@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/ccapi/lib/win/dllmain.cxx",
-  "wave": "wave9",
-  "loc_estimate": 212,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/ccapi/lib/win/dllmain.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.ccapi.lib.win.dllmain",
-  "generated": "2026-07-19T09:30:30+00:00"
-}

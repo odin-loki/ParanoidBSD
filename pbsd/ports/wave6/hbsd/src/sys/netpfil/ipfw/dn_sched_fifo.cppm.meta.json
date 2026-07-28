@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netpfil/ipfw/dn_sched_fifo.c",
-  "wave": "wave6",
-  "loc_estimate": 131,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/dn_sched_fifo.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.dn_sched_fifo",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

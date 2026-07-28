@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/kadm5/set_keys.c",
-  "wave": "wave9",
-  "loc_estimate": 273,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/kadm5/set_keys.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.kadm5.set_keys",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

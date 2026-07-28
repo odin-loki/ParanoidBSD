@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/cmd/zstream/zstream_token.c",
-  "wave": "wave6",
-  "loc_estimate": 83,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/cmd/zstream/zstream_token.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.cmd.zstream.zstream_token",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

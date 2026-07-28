@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/plugins/glide/glide.cpp",
-  "wave": "wave3",
-  "loc_estimate": 308,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/glide/glide.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.plugins.glide.glide",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

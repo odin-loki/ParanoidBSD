@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/mediatek/mt76/mt7925/usb.c",
-  "wave": "wave4",
-  "loc_estimate": 353,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/mediatek/mt76/mt7925/usb.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.mediatek.mt76.mt7925.usb",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

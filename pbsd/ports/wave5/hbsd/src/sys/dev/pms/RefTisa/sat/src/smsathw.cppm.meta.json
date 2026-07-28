@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pms/RefTisa/sat/src/smsathw.c",
-  "wave": "wave5",
-  "loc_estimate": 529,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/RefTisa/sat/src/smsathw.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.reftisa.sat.src.smsathw",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

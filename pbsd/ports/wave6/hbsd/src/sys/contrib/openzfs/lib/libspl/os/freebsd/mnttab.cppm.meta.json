@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/lib/libspl/os/freebsd/mnttab.c",
-  "wave": "wave6",
-  "loc_estimate": 235,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libspl/os/freebsd/mnttab.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libspl.os.freebsd.mnttab",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

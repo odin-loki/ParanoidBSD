@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Language/ObjC/NSString.cpp",
-  "wave": "wave9",
-  "loc_estimate": 409,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Language/ObjC/NSString.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.language.objc.nsstring",
-  "generated": "2026-07-19T09:31:41+00:00"
-}

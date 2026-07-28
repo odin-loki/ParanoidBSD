@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/jedec_dimm/jedec_dimm.c",
-  "wave": "wave5",
-  "loc_estimate": 1192,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/jedec_dimm/jedec_dimm.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.jedec_dimm.jedec_dimm",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

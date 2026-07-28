@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/CodeView/DebugSymbolRVASubsection.cpp",
-  "wave": "wave9",
-  "loc_estimate": 35,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/CodeView/DebugSymbolRVASubsection.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.debuginfo.codeview.debugsymbolrvasubsection",
-  "generated": "2026-07-19T09:31:47+00:00"
-}

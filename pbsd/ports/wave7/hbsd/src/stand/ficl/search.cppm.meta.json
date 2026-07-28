@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/ficl/search.c",
-  "wave": "wave7",
-  "loc_estimate": 392,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/ficl/search.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.ficl.search",
-  "generated": "2026-07-19T09:49:41+00:00"
-}

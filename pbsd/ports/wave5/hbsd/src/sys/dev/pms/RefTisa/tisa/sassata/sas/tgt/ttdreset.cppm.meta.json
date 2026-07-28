@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/sas/tgt/ttdreset.c",
-  "wave": "wave5",
-  "loc_estimate": 52,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/sas/tgt/ttdreset.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.reftisa.tisa.sassata.sas.tgt.ttdreset",
-  "generated": "2026-07-19T09:02:54+00:00"
-}

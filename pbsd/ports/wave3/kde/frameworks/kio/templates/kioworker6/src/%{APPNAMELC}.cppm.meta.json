@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/templates/kioworker6/src/%{APPNAMELC}.cpp",
-  "wave": "wave3",
-  "loc_estimate": 174,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/templates/kioworker6/src/%{APPNAMELC}.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.templates.kioworker6.src.__appnamelc_",
-  "generated": "2026-07-19T09:30:15+00:00"
-}

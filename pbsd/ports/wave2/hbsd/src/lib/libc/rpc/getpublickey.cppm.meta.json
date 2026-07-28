@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/rpc/getpublickey.c",
-  "wave": "wave2",
-  "loc_estimate": 167,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/rpc/getpublickey.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.rpc.getpublickey",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

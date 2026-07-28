@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/fixunstfsi.c",
-  "wave": "wave9",
-  "loc_estimate": 17,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/fixunstfsi.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.builtins.fixunstfsi",
-  "generated": "2026-07-19T09:37:14+00:00"
-}

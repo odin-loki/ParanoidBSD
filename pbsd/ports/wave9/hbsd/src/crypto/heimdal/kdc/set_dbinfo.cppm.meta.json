@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/kdc/set_dbinfo.c",
-  "wave": "wave9",
-  "loc_estimate": 113,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/kdc/set_dbinfo.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.kdc.set_dbinfo",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

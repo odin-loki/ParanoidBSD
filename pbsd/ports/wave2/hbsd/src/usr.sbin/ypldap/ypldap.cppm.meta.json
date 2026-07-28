@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/ypldap/ypldap.c",
-  "wave": "wave2",
-  "loc_estimate": 651,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/ypldap/ypldap.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.ypldap.ypldap",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

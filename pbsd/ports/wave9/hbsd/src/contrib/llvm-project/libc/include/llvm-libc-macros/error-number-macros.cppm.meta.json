@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/libc/include/llvm-libc-macros/error-number-macros.h",
-  "wave": "wave9",
-  "loc_estimate": 8,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libc/include/llvm-libc-macros/error-number-macros.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libc.include.llvm_libc_macros.error_number_macros",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

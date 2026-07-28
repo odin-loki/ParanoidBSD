@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/fs/ffs/t_quota2_1.c",
-  "wave": "wave9",
-  "loc_estimate": 114,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/fs/ffs/t_quota2_1.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.fs.ffs.t_quota2_1",
-  "generated": "2026-07-19T09:30:56+00:00"
-}

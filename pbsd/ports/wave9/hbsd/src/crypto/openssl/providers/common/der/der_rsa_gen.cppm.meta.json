@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/providers/common/der/der_rsa_gen.c",
-  "wave": "wave9",
-  "loc_estimate": 176,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/common/der/der_rsa_gen.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.common.der.der_rsa_gen",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

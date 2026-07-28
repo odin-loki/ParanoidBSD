@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/threads_lib.c",
-  "wave": "wave9",
-  "loc_estimate": 27,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/threads_lib.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.threads_lib",
-  "generated": "2026-07-19T09:30:02+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libutil/expand_number.c",
-  "wave": "wave2",
-  "loc_estimate": 187,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libutil/expand_number.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libutil.expand_number",
-  "generated": "2026-07-19T07:48:27+00:00"
-}

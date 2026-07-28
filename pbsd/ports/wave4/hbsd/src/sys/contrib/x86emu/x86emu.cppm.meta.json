@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/x86emu/x86emu.c",
-  "wave": "wave4",
-  "loc_estimate": 8401,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/x86emu/x86emu.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.x86emu.x86emu",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

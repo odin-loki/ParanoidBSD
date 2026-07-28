@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ObjectYAML/MinidumpYAML.cpp",
-  "wave": "wave9",
-  "loc_estimate": 608,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ObjectYAML/MinidumpYAML.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.objectyaml.minidumpyaml",
-  "generated": "2026-07-19T09:31:55+00:00"
-}

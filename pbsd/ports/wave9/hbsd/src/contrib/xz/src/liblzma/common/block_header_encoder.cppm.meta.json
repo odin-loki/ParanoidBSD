@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/xz/src/liblzma/common/block_header_encoder.c",
-  "wave": "wave9",
-  "loc_estimate": 131,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/xz/src/liblzma/common/block_header_encoder.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.xz.src.liblzma.common.block_header_encoder",
-  "generated": "2026-07-19T09:37:37+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/kconf_update/kwin-6.0-remove-breeze-tabbox-default.cpp",
-  "wave": "wave3",
-  "loc_estimate": 40,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/kconf_update/kwin-6.0-remove-breeze-tabbox-default.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.kconf_update.kwin_6_0_remove_breeze_tabbox_default",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

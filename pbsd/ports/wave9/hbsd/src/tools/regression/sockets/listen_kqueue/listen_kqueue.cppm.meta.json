@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/sockets/listen_kqueue/listen_kqueue.c",
-  "wave": "wave9",
-  "loc_estimate": 112,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/sockets/listen_kqueue/listen_kqueue.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.sockets.listen_kqueue.listen_kqueue",
-  "generated": "2026-07-19T09:37:31+00:00"
-}

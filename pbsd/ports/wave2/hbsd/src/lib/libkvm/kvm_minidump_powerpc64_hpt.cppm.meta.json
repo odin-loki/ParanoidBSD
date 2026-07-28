@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libkvm/kvm_minidump_powerpc64_hpt.c",
-  "wave": "wave2",
-  "loc_estimate": 660,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libkvm/kvm_minidump_powerpc64_hpt.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libkvm.kvm_minidump_powerpc64_hpt",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

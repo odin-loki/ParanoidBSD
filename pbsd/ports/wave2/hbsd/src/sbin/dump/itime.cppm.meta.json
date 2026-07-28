@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/dump/itime.c",
-  "wave": "wave2",
-  "loc_estimate": 260,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/dump/itime.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.dump.itime",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

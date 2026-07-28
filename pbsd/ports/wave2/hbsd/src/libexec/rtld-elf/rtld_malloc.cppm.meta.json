@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/rtld-elf/rtld_malloc.c",
-  "wave": "wave2",
-  "loc_estimate": 322,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rtld-elf/rtld_malloc.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.rtld_elf.rtld_malloc",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

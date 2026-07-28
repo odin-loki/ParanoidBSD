@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/rpc/rpcsec_tls/rpctls_impl.c",
-  "wave": "wave4",
-  "loc_estimate": 561,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/rpc/rpcsec_tls/rpctls_impl.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.rpc.rpcsec_tls.rpctls_impl",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

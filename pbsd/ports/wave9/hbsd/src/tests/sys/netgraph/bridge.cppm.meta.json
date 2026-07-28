@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/netgraph/bridge.c",
-  "wave": "wave9",
-  "loc_estimate": 632,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/netgraph/bridge.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.netgraph.bridge",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/truncate_test.c",
-  "wave": "wave6",
-  "loc_estimate": 104,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/truncate_test.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.cmd.truncate_test",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

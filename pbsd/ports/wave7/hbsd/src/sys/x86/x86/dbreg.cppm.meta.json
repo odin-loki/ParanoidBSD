@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/x86/x86/dbreg.c",
-  "wave": "wave7",
-  "loc_estimate": 303,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/x86/x86/dbreg.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.x86.x86.dbreg",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

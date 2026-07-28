@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/mandoc/test-fts.c",
-  "wave": "wave9",
-  "loc_estimate": 59,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/test-fts.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.test_fts",
-  "generated": "2026-07-19T09:37:38+00:00"
-}

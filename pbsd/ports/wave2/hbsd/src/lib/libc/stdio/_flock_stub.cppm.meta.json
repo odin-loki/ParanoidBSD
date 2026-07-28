@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdio/_flock_stub.c",
-  "wave": "wave2",
-  "loc_estimate": 138,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdio/_flock_stub.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdio._flock_stub",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

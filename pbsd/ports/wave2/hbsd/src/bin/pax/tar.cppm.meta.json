@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/pax/tar.c",
-  "wave": "wave2",
-  "loc_estimate": 1075,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/pax/tar.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.pax.tar",
-  "generated": "2026-07-19T09:29:51+00:00"
-}

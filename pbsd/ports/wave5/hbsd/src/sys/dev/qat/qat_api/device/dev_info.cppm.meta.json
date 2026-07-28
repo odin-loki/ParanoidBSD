@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_api/device/dev_info.c",
-  "wave": "wave5",
-  "loc_estimate": 134,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/device/dev_info.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.device.dev_info",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

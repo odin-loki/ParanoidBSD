@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/arm64/gicv3_its.c",
-  "wave": "wave7",
-  "loc_estimate": 2335,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/arm64/gicv3_its.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.arm64.gicv3_its",
-  "generated": "2026-07-19T09:29:38+00:00"
-}

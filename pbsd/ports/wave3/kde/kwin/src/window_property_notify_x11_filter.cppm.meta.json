@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/window_property_notify_x11_filter.cpp",
-  "wave": "wave3",
-  "loc_estimate": 39,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/window_property_notify_x11_filter.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.window_property_notify_x11_filter",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

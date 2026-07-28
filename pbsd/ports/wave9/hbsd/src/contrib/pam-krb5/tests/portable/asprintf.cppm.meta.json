@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/pam-krb5/tests/portable/asprintf.c",
-  "wave": "wave9",
-  "loc_estimate": 2,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pam-krb5/tests/portable/asprintf.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.pam_krb5.tests.portable.asprintf",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

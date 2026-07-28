@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/ssh-keysign.c",
-  "wave": "wave9",
-  "loc_estimate": 311,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/ssh-keysign.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.ssh_keysign",
-  "generated": "2026-07-19T09:37:20+00:00"
-}

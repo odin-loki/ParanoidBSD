@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace_xoroshiro128_plus.c",
-  "wave": "wave4",
-  "loc_estimate": 89,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace_xoroshiro128_plus.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.contrib.opensolaris.uts.common.dtrace.dtrace_xoroshiro128_plus",
-  "generated": "2026-07-19T09:31:10+00:00"
-}

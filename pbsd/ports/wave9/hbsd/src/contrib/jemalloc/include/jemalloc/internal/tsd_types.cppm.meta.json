@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/jemalloc/include/jemalloc/internal/tsd_types.h",
-  "wave": "wave9",
-  "loc_estimate": 10,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/include/jemalloc/internal/tsd_types.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.include.jemalloc.internal.tsd_types",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

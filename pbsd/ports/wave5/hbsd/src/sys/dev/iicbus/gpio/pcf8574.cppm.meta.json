@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/iicbus/gpio/pcf8574.c",
-  "wave": "wave5",
-  "loc_estimate": 420,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iicbus/gpio/pcf8574.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iicbus.gpio.pcf8574",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

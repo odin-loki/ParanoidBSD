@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/libecc/src/nn/nn_logical.c",
-  "wave": "wave9",
-  "loc_estimate": 577,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/libecc/src/nn/nn_logical.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.libecc.src.nn.nn_logical",
-  "generated": "2026-07-19T09:37:36+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/pwhash_argon2id.c",
-  "wave": "wave4",
-  "loc_estimate": 234,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/pwhash_argon2id.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_pwhash.argon2.pwhash_argon2id",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

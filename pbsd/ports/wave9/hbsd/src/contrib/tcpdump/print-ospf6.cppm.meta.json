@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/print-ospf6.c",
-  "wave": "wave9",
-  "loc_estimate": 1009,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-ospf6.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_ospf6",
-  "generated": "2026-07-19T09:37:27+00:00"
-}

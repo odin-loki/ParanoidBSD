@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdio/remove.c",
-  "wave": "wave2",
-  "loc_estimate": 50,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdio/remove.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdio.remove",
-  "generated": "2026-07-19T08:41:19+00:00"
-}

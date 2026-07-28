@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_read_set_format.c",
-  "wave": "wave9",
-  "loc_estimate": 283,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_read_set_format.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_read_set_format",
-  "generated": "2026-07-19T09:30:41+00:00"
-}

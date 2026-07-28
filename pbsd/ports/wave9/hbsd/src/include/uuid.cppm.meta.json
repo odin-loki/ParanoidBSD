@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/uuid.h",
-  "wave": "wave9",
-  "loc_estimate": 63,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/uuid.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.uuid",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

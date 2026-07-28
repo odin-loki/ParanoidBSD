@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Breakpoint/BreakpointIDList.cpp",
-  "wave": "wave9",
-  "loc_estimate": 294,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Breakpoint/BreakpointIDList.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.breakpoint.breakpointidlist",
-  "generated": "2026-07-19T09:31:40+00:00"
-}

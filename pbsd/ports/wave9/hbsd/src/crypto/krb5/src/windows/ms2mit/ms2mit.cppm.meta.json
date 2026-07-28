@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/windows/ms2mit/ms2mit.c",
-  "wave": "wave9",
-  "loc_estimate": 201,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/windows/ms2mit/ms2mit.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.windows.ms2mit.ms2mit",
-  "generated": "2026-07-19T09:30:29+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/fs/fusefs/default_permissions_privileged.cc",
-  "wave": "wave9",
-  "loc_estimate": 124,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/default_permissions_privileged.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.default_permissions_privileged",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/filemon/filemon.c",
-  "wave": "wave5",
-  "loc_estimate": 519,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/filemon/filemon.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.filemon.filemon",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

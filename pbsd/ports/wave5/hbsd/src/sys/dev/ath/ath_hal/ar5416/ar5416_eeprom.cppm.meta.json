@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_eeprom.c",
-  "wave": "wave5",
-  "loc_estimate": 44,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_eeprom.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar5416.ar5416_eeprom",
-  "generated": "2026-07-19T09:02:54+00:00"
-}

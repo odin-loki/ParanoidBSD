@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lld/ELF/Arch/AVR.cpp",
-  "wave": "wave9",
-  "loc_estimate": 294,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lld/ELF/Arch/AVR.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lld.elf.arch.avr",
-  "generated": "2026-07-19T09:37:16+00:00"
-}

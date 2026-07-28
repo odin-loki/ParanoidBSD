@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lld/Common/Reproduce.cpp",
-  "wave": "wave9",
-  "loc_estimate": 66,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lld/Common/Reproduce.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lld.common.reproduce",
-  "generated": "2026-07-19T09:37:15+00:00"
-}

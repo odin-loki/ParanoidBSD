@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/TableGen/Parser.cpp",
-  "wave": "wave9",
-  "loc_estimate": 41,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/TableGen/Parser.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.tablegen.parser",
-  "generated": "2026-07-19T09:31:47+00:00"
-}

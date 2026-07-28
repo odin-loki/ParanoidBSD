@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/cpu_model/x86.c",
-  "wave": "wave9",
-  "loc_estimate": 1204,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/cpu_model/x86.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.builtins.cpu_model.x86",
-  "generated": "2026-07-19T09:37:17+00:00"
-}

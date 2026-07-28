@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/ath/ath_prom_read/ath_prom_read.c",
-  "wave": "wave9",
-  "loc_estimate": 132,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/ath/ath_prom_read/ath_prom_read.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.ath.ath_prom_read.ath_prom_read",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

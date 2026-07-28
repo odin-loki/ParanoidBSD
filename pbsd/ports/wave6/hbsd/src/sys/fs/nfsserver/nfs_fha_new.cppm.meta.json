@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/nfsserver/nfs_fha_new.c",
-  "wave": "wave6",
-  "loc_estimate": 703,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nfsserver/nfs_fha_new.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nfsserver.nfs_fha_new",
-  "generated": "2026-07-19T09:18:58+00:00"
-}

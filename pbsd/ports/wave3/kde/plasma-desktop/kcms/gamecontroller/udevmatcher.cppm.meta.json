@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/kcms/gamecontroller/udevmatcher.cpp",
-  "wave": "wave3",
-  "loc_estimate": 69,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/gamecontroller/udevmatcher.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.gamecontroller.udevmatcher",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

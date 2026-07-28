@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/rpc.ypupdated/yp_dbdelete.c",
-  "wave": "wave2",
-  "loc_estimate": 68,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/rpc.ypupdated/yp_dbdelete.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.rpc_ypupdated.yp_dbdelete",
-  "generated": "2026-07-19T09:02:51+00:00"
-}

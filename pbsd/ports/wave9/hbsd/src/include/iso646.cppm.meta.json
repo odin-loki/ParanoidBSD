@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/iso646.h",
-  "wave": "wave9",
-  "loc_estimate": 48,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/iso646.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.iso646",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

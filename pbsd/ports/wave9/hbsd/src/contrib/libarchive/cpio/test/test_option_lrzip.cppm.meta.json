@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/cpio/test/test_option_lrzip.c",
-  "wave": "wave9",
-  "loc_estimate": 34,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/cpio/test/test_option_lrzip.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.cpio.test.test_option_lrzip",
-  "generated": "2026-07-19T09:30:39+00:00"
-}

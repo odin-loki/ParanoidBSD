@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/msun/src/s_cprojf.c",
-  "wave": "wave2",
-  "loc_estimate": 42,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_cprojf.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_cprojf",
-  "generated": "2026-07-19T08:38:06+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/linux/linux_futex.c",
-  "wave": "wave4",
-  "loc_estimate": 1069,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linux/linux_futex.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linux.linux_futex",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qlnx/qlnxr/qlnxr_cm.c",
-  "wave": "wave5",
-  "loc_estimate": 857,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qlnx/qlnxr/qlnxr_cm.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qlnx.qlnxr.qlnxr_cm",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

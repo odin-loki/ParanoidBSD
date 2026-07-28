@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/amd64/include/bus_dma.h",
-  "wave": "wave7",
-  "loc_estimate": 34,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/include/bus_dma.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.include.bus_dma",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

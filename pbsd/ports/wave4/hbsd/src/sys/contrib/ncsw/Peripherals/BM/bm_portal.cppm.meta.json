@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/ncsw/Peripherals/BM/bm_portal.c",
-  "wave": "wave4",
-  "loc_estimate": 561,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ncsw/Peripherals/BM/bm_portal.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ncsw.peripherals.bm.bm_portal",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

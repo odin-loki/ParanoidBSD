@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/os/linux/spl/spl-math-compat.c",
-  "wave": "wave6",
-  "loc_estimate": 275,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/os/linux/spl/spl-math-compat.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.os.linux.spl.spl_math_compat",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

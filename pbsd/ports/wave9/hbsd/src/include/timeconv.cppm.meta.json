@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/timeconv.h",
-  "wave": "wave9",
-  "loc_estimate": 60,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/timeconv.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.timeconv",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/cms/cms_env.c",
-  "wave": "wave9",
-  "loc_estimate": 1376,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/cms/cms_env.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.cms.cms_env",
-  "generated": "2026-07-19T09:30:06+00:00"
-}

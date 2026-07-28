@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ldns/keys.c",
-  "wave": "wave9",
-  "loc_estimate": 2211,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ldns/keys.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ldns.keys",
-  "generated": "2026-07-19T09:37:45+00:00"
-}

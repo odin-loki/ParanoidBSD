@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/krb5/fcache.c",
-  "wave": "wave9",
-  "loc_estimate": 1124,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/fcache.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.fcache",
-  "generated": "2026-07-19T09:30:38+00:00"
-}

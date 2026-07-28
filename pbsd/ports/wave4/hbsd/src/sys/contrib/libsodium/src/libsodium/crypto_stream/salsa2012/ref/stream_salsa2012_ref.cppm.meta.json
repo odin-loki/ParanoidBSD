@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_stream/salsa2012/ref/stream_salsa2012_ref.c",
-  "wave": "wave4",
-  "loc_estimate": 106,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_stream/salsa2012/ref/stream_salsa2012_ref.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_stream.salsa2012.ref.stream_salsa2012_ref",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

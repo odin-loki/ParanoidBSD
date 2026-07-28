@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/geom_flashmap.c",
-  "wave": "wave6",
-  "loc_estimate": 225,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/geom_flashmap.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.geom_flashmap",
-  "generated": "2026-07-19T08:30:51+00:00"
-}

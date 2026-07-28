@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/file/src/file.c",
-  "wave": "wave9",
-  "loc_estimate": 857,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/file/src/file.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.file.src.file",
-  "generated": "2026-07-19T09:37:52+00:00"
-}

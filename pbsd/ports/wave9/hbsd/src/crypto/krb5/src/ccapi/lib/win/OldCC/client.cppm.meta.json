@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/ccapi/lib/win/OldCC/client.cxx",
-  "wave": "wave9",
-  "loc_estimate": 388,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/ccapi/lib/win/OldCC/client.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.ccapi.lib.win.oldcc.client",
-  "generated": "2026-07-19T09:30:31+00:00"
-}

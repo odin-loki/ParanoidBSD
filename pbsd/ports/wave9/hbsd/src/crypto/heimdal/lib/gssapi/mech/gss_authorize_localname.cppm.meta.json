@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_authorize_localname.c",
-  "wave": "wave9",
-  "loc_estimate": 187,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/mech/gss_authorize_localname.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.mech.gss_authorize_localname",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

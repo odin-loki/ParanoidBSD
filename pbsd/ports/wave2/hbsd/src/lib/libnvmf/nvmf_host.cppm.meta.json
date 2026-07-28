@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libnvmf/nvmf_host.c",
-  "wave": "wave2",
-  "loc_estimate": 1021,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libnvmf/nvmf_host.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libnvmf.nvmf_host",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qlnx/qlnxe/ecore_init_ops.c",
-  "wave": "wave5",
-  "loc_estimate": 669,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qlnx/qlnxe/ecore_init_ops.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qlnx.qlnxe.ecore_init_ops",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

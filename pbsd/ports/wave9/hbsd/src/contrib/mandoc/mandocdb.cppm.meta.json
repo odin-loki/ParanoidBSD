@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/mandoc/mandocdb.c",
-  "wave": "wave9",
-  "loc_estimate": 2468,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/mandocdb.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.mandocdb",
-  "generated": "2026-07-19T09:37:39+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/mediatek/mt76/mt7996/mac.c",
-  "wave": "wave4",
-  "loc_estimate": 3342,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/mediatek/mt76/mt7996/mac.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.mediatek.mt76.mt7996.mac",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

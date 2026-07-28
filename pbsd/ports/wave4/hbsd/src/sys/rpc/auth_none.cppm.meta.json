@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/rpc/auth_none.c",
-  "wave": "wave4",
-  "loc_estimate": 149,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/rpc/auth_none.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.rpc.auth_none",
-  "generated": "2026-07-19T09:31:11+00:00"
-}

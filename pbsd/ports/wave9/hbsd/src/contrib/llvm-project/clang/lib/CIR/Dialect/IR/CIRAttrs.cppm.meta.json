@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/CIR/Dialect/IR/CIRAttrs.cpp",
-  "wave": "wave9",
-  "loc_estimate": 373,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/CIR/Dialect/IR/CIRAttrs.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.cir.dialect.ir.cirattrs",
-  "generated": "2026-07-19T09:31:19+00:00"
-}

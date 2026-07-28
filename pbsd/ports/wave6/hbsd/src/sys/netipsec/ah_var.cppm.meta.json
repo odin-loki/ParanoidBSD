@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netipsec/ah_var.h",
-  "wave": "wave6",
-  "loc_estimate": 94,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netipsec/ah_var.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netipsec.ah_var",
-  "generated": "2026-07-19T10:59:34+00:00"
-}

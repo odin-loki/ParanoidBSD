@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zstd/programs/fileio_asyncio.c",
-  "wave": "wave4",
-  "loc_estimate": 663,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/programs/fileio_asyncio.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.programs.fileio_asyncio",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

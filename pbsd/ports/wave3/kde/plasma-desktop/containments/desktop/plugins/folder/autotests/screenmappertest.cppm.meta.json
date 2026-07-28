@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/containments/desktop/plugins/folder/autotests/screenmappertest.cpp",
-  "wave": "wave3",
-  "loc_estimate": 293,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/containments/desktop/plugins/folder/autotests/screenmappertest.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.containments.desktop.plugins.folder.autotests.screenmappertest",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ocs_fc/ocs_scsi.c",
-  "wave": "wave5",
-  "loc_estimate": 2951,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ocs_fc/ocs_scsi.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ocs_fc.ocs_scsi",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

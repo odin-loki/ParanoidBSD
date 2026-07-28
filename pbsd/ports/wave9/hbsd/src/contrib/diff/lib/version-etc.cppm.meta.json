@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/diff/lib/version-etc.c",
-  "wave": "wave9",
-  "loc_estimate": 176,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/diff/lib/version-etc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.diff.lib.version_etc",
-  "generated": "2026-07-19T09:37:56+00:00"
-}

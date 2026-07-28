@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/sfxge/sfxge_dma.c",
-  "wave": "wave5",
-  "loc_estimate": 217,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sfxge/sfxge_dma.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sfxge.sfxge_dma",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

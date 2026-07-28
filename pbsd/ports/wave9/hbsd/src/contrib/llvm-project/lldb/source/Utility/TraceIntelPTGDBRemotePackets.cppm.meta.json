@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Utility/TraceIntelPTGDBRemotePackets.cpp",
-  "wave": "wave9",
-  "loc_estimate": 125,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Utility/TraceIntelPTGDBRemotePackets.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.utility.traceintelptgdbremotepackets",
-  "generated": "2026-07-19T09:31:38+00:00"
-}

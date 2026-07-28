@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/archive_read_support_filter_lzop.c",
-  "wave": "wave9",
-  "loc_estimate": 498,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/archive_read_support_filter_lzop.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.archive_read_support_filter_lzop",
-  "generated": "2026-07-19T09:30:41+00:00"
-}

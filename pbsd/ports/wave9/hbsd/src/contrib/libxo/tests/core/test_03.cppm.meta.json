@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libxo/tests/core/test_03.c",
-  "wave": "wave9",
-  "loc_estimate": 109,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libxo/tests/core/test_03.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libxo.tests.core.test_03",
-  "generated": "2026-07-19T09:37:59+00:00"
-}

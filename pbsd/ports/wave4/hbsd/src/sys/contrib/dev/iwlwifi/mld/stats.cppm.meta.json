@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/iwlwifi/mld/stats.c",
-  "wave": "wave4",
-  "loc_estimate": 521,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/mld/stats.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.mld.stats",
-  "generated": "2026-07-19T09:29:36+00:00"
-}

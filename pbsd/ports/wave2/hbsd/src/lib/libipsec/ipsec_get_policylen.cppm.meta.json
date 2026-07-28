@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libipsec/ipsec_get_policylen.c",
-  "wave": "wave2",
-  "loc_estimate": 47,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libipsec/ipsec_get_policylen.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libipsec.ipsec_get_policylen",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

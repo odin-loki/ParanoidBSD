@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/net/getnetbydns.c",
-  "wave": "wave2",
-  "loc_estimate": 464,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/net/getnetbydns.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.net.getnetbydns",
-  "generated": "2026-07-19T09:05:33+00:00"
-}

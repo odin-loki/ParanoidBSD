@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/usr.bin/xlint/lint1/d_type_conv3.c",
-  "wave": "wave9",
-  "loc_estimate": 10,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/usr.bin/xlint/lint1/d_type_conv3.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.usr_bin.xlint.lint1.d_type_conv3",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

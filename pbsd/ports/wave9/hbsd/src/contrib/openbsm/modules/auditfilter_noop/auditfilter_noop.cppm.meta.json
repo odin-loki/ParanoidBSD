@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/openbsm/modules/auditfilter_noop/auditfilter_noop.c",
-  "wave": "wave9",
-  "loc_estimate": 77,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openbsm/modules/auditfilter_noop/auditfilter_noop.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.openbsm.modules.auditfilter_noop.auditfilter_noop",
-  "generated": "2026-07-19T09:37:50+00:00"
-}

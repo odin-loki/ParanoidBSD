@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/vm/sg_pager.c",
-  "wave": "wave4",
-  "loc_estimate": 229,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/vm/sg_pager.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.vm.sg_pager",
-  "generated": "2026-07-19T08:30:34+00:00"
-}

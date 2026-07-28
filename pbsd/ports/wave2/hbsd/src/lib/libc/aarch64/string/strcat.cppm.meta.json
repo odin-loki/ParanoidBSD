@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/aarch64/string/strcat.c",
-  "wave": "wave2",
-  "loc_estimate": 20,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/aarch64/string/strcat.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.aarch64.string.strcat",
-  "generated": "2026-07-19T08:29:01+00:00"
-}

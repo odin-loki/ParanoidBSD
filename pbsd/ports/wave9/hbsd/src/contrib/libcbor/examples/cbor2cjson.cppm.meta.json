@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libcbor/examples/cbor2cjson.c",
-  "wave": "wave9",
-  "loc_estimate": 124,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libcbor/examples/cbor2cjson.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libcbor.examples.cbor2cjson",
-  "generated": "2026-07-19T09:37:44+00:00"
-}

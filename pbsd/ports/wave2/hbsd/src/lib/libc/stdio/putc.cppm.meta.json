@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdio/putc.c",
-  "wave": "wave2",
-  "loc_estimate": 61,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdio/putc.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdio.putc",
-  "generated": "2026-07-19T08:41:20+00:00"
-}

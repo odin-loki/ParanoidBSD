@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/cxgbe/crypto/t4_keyctx.c",
-  "wave": "wave5",
-  "loc_estimate": 702,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/cxgbe/crypto/t4_keyctx.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.cxgbe.crypto.t4_keyctx",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

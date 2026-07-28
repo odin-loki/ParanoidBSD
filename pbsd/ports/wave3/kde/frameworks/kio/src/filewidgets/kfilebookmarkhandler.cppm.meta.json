@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/filewidgets/kfilebookmarkhandler.cpp",
-  "wave": "wave3",
-  "loc_estimate": 64,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/filewidgets/kfilebookmarkhandler.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.filewidgets.kfilebookmarkhandler",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

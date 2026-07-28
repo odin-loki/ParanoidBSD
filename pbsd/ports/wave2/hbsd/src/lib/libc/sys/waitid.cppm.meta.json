@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/sys/waitid.c",
-  "wave": "wave2",
-  "loc_estimate": 67,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/sys/waitid.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.sys.waitid",
-  "generated": "2026-07-19T09:29:45+00:00"
-}

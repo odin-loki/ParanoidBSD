@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libfido2/src/winhello.c",
-  "wave": "wave9",
-  "loc_estimate": 1035,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libfido2/src/winhello.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libfido2.src.winhello",
-  "generated": "2026-07-19T09:37:34+00:00"
-}

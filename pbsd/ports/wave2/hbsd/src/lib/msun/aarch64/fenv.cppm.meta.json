@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/msun/aarch64/fenv.c",
-  "wave": "wave2",
-  "loc_estimate": 118,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/aarch64/fenv.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.msun.aarch64.fenv",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

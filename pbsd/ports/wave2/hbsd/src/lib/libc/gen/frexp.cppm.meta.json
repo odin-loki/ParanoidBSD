@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/gen/frexp.c",
-  "wave": "wave2",
-  "loc_estimate": 57,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/frexp.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.frexp",
-  "generated": "2026-07-19T09:29:45+00:00"
-}

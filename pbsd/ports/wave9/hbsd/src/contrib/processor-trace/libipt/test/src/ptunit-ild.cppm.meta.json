@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/processor-trace/libipt/test/src/ptunit-ild.c",
-  "wave": "wave9",
-  "loc_estimate": 757,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/processor-trace/libipt/test/src/ptunit-ild.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.processor_trace.libipt.test.src.ptunit_ild",
-  "generated": "2026-07-19T09:37:47+00:00"
-}

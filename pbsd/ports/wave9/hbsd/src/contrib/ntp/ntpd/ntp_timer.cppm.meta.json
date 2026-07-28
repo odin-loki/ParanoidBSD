@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/ntpd/ntp_timer.c",
-  "wave": "wave9",
-  "loc_estimate": 732,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/ntp_timer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.ntp_timer",
-  "generated": "2026-07-19T09:31:07+00:00"
-}

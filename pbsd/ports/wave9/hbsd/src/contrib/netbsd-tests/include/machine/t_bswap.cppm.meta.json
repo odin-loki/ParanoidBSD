@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/include/machine/t_bswap.c",
-  "wave": "wave9",
-  "loc_estimate": 178,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/include/machine/t_bswap.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.include.machine.t_bswap",
-  "generated": "2026-07-19T09:30:57+00:00"
-}

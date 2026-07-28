@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/fs/fusefs/notify.cc",
-  "wave": "wave9",
-  "loc_estimate": 616,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/notify.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.notify",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

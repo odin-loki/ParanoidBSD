@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Interpreter/OptionValueFormatEntity.cpp",
-  "wave": "wave9",
-  "loc_estimate": 122,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Interpreter/OptionValueFormatEntity.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.interpreter.optionvalueformatentity",
-  "generated": "2026-07-19T09:31:38+00:00"
-}

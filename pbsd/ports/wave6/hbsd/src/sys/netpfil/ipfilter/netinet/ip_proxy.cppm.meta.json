@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netpfil/ipfilter/netinet/ip_proxy.c",
-  "wave": "wave6",
-  "loc_estimate": 1417,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfilter/netinet/ip_proxy.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfilter.netinet.ip_proxy",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

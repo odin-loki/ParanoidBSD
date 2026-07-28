@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/linuxkpi/common/src/linux_80211_macops.c",
-  "wave": "wave4",
-  "loc_estimate": 1029,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/common/src/linux_80211_macops.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.common.src.linux_80211_macops",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

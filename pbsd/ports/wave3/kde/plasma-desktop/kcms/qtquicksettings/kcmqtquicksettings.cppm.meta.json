@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/kcms/qtquicksettings/kcmqtquicksettings.cpp",
-  "wave": "wave3",
-  "loc_estimate": 33,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/qtquicksettings/kcmqtquicksettings.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.qtquicksettings.kcmqtquicksettings",
-  "generated": "2026-07-19T08:41:43+00:00"
-}

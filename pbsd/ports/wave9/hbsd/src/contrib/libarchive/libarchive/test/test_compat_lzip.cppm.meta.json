@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_compat_lzip.c",
-  "wave": "wave9",
-  "loc_estimate": 223,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_compat_lzip.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_compat_lzip",
-  "generated": "2026-07-19T09:30:40+00:00"
-}

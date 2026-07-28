@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/CIR/CodeGen/CIRGenStmt.cpp",
-  "wave": "wave9",
-  "loc_estimate": 919,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/CIR/CodeGen/CIRGenStmt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.cir.codegen.cirgenstmt",
-  "generated": "2026-07-19T09:31:21+00:00"
-}

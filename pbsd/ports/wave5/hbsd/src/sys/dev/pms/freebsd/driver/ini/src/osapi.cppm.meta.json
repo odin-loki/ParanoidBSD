@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pms/freebsd/driver/ini/src/osapi.c",
-  "wave": "wave5",
-  "loc_estimate": 833,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/freebsd/driver/ini/src/osapi.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.freebsd.driver.ini.src.osapi",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

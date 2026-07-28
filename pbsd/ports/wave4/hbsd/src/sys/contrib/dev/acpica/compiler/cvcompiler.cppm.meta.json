@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/compiler/cvcompiler.c",
-  "wave": "wave4",
-  "loc_estimate": 1029,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/compiler/cvcompiler.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.compiler.cvcompiler",
-  "generated": "2026-07-19T09:29:36+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/lpr/pac/pac.c",
-  "wave": "wave2",
-  "loc_estimate": 435,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/lpr/pac/pac.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.lpr.pac.pac",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

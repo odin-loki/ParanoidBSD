@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/unbound/compat/malloc.c",
-  "wave": "wave9",
-  "loc_estimate": 20,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/compat/malloc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.compat.malloc",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

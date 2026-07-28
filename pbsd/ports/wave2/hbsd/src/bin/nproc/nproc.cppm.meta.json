@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/nproc/nproc.c",
-  "wave": "wave2",
-  "loc_estimate": 132,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/nproc/nproc.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.nproc.nproc",
-  "generated": "2026-07-19T07:28:54+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Coroutines/CoroCleanup.cpp",
-  "wave": "wave9",
-  "loc_estimate": 143,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Coroutines/CoroCleanup.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.coroutines.corocleanup",
-  "generated": "2026-07-19T09:31:52+00:00"
-}

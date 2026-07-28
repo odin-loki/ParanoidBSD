@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/netrate/tcpp/tcpp_util.c",
-  "wave": "wave9",
-  "loc_estimate": 46,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/netrate/tcpp/tcpp_util.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.netrate.tcpp.tcpp_util",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

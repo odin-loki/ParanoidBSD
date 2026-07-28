@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/amd64/vmm/amd/svm_genassym.c",
-  "wave": "wave7",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/vmm/amd/svm_genassym.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.vmm.amd.svm_genassym",
-  "generated": "2026-07-19T08:30:55+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/rpcbind/rpcb_svc.c",
-  "wave": "wave2",
-  "loc_estimate": 233,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/rpcbind/rpcb_svc.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.rpcbind.rpcb_svc",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

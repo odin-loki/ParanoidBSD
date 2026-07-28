@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kxmlgui/src/kactionconflictdetector.cpp",
-  "wave": "wave3",
-  "loc_estimate": 59,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/src/kactionconflictdetector.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.src.kactionconflictdetector",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

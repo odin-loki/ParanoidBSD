@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/coresight/coresight_tmc_acpi.c",
-  "wave": "wave7",
-  "loc_estimate": 87,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/coresight/coresight_tmc_acpi.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.coresight.coresight_tmc_acpi",
-  "generated": "2026-07-19T08:30:56+00:00"
-}

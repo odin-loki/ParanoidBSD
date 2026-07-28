@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/unbound/libunbound/context.c",
-  "wave": "wave9",
-  "loc_estimate": 436,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/libunbound/context.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.libunbound.context",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

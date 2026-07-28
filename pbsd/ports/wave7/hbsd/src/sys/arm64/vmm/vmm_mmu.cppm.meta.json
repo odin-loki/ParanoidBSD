@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/vmm/vmm_mmu.c",
-  "wave": "wave7",
-  "loc_estimate": 415,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/vmm/vmm_mmu.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.vmm.vmm_mmu",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

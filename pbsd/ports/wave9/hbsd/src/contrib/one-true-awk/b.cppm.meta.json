@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/one-true-awk/b.c",
-  "wave": "wave9",
-  "loc_estimate": 1581,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/one-true-awk/b.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.one_true_awk.b",
-  "generated": "2026-07-19T09:38:08+00:00"
-}

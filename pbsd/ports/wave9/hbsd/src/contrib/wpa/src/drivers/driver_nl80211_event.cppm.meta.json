@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/drivers/driver_nl80211_event.c",
-  "wave": "wave9",
-  "loc_estimate": 4272,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/drivers/driver_nl80211_event.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.drivers.driver_nl80211_event",
-  "generated": "2026-07-19T09:31:02+00:00"
-}

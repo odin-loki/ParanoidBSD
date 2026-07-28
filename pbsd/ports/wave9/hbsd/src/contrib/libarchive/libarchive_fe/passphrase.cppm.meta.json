@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive_fe/passphrase.c",
-  "wave": "wave9",
-  "loc_estimate": 343,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive_fe/passphrase.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive_fe.passphrase",
-  "generated": "2026-07-19T09:30:41+00:00"
-}

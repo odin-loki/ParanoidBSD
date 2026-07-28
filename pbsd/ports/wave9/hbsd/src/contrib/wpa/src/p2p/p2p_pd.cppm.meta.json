@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/p2p/p2p_pd.c",
-  "wave": "wave9",
-  "loc_estimate": 1782,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/p2p/p2p_pd.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.p2p.p2p_pd",
-  "generated": "2026-07-19T09:31:02+00:00"
-}

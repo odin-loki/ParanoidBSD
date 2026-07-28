@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/crypto/aes-gcm.c",
-  "wave": "wave9",
-  "loc_estimate": 327,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/crypto/aes-gcm.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.crypto.aes_gcm",
-  "generated": "2026-07-19T09:31:01+00:00"
-}

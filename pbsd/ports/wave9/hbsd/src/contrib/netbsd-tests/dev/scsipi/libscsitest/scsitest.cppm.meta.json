@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/dev/scsipi/libscsitest/scsitest.c",
-  "wave": "wave9",
-  "loc_estimate": 259,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/dev/scsipi/libscsitest/scsitest.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.dev.scsipi.libscsitest.scsitest",
-  "generated": "2026-07-19T09:30:58+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kxmlgui/src/kaboutapplicationpersonmodel_p.cpp",
-  "wave": "wave3",
-  "loc_estimate": 140,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/src/kaboutapplicationpersonmodel_p.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.src.kaboutapplicationpersonmodel_p",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

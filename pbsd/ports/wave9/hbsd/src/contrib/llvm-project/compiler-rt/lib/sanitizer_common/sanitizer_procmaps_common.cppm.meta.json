@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/sanitizer_common/sanitizer_procmaps_common.cpp",
-  "wave": "wave9",
-  "loc_estimate": 192,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/sanitizer_common/sanitizer_procmaps_common.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.sanitizer_common.sanitizer_procmaps_common",
-  "generated": "2026-07-19T09:37:16+00:00"
-}

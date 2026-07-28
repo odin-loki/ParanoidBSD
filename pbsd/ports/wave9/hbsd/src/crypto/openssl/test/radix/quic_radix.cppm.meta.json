@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/test/radix/quic_radix.c",
-  "wave": "wave9",
-  "loc_estimate": 15,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/radix/quic_radix.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.radix.quic_radix",
-  "generated": "2026-07-19T09:30:02+00:00"
-}

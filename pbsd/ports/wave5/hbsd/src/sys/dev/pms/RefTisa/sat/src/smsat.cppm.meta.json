@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pms/RefTisa/sat/src/smsat.c",
-  "wave": "wave5",
-  "loc_estimate": 20819,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/RefTisa/sat/src/smsat.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.reftisa.sat.src.smsat",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

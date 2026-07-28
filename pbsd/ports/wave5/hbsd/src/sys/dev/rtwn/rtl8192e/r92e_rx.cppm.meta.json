@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/rtwn/rtl8192e/r92e_rx.c",
-  "wave": "wave5",
-  "loc_estimate": 95,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8192e/r92e_rx.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8192e.r92e_rx",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

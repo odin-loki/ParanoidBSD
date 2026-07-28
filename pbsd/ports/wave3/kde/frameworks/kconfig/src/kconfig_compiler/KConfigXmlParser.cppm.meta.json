@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kconfig/src/kconfig_compiler/KConfigXmlParser.cpp",
-  "wave": "wave3",
-  "loc_estimate": 564,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kconfig/src/kconfig_compiler/KConfigXmlParser.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kconfig.src.kconfig_compiler.kconfigxmlparser",
-  "generated": "2026-07-19T09:30:19+00:00"
-}

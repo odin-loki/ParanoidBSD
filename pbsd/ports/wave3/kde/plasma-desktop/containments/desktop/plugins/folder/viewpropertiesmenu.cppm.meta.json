@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/containments/desktop/plugins/folder/viewpropertiesmenu.cpp",
-  "wave": "wave3",
-  "loc_estimate": 286,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/containments/desktop/plugins/folder/viewpropertiesmenu.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.containments.desktop.plugins.folder.viewpropertiesmenu",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/smartpqi/smartpqi_response.c",
-  "wave": "wave5",
-  "loc_estimate": 522,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/smartpqi/smartpqi_response.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.smartpqi.smartpqi_response",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

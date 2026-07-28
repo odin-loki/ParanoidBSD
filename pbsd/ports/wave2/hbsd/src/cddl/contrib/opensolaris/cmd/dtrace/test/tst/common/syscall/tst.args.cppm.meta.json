@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/syscall/tst.args.c",
-  "wave": "wave2",
-  "loc_estimate": 41,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/syscall/tst.args.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.cddl.contrib.opensolaris.cmd.dtrace.test.tst.common.syscall.tst_args",
-  "generated": "2026-07-19T09:04:01+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/dma/local.c",
-  "wave": "wave9",
-  "loc_estimate": 256,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/dma/local.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.dma.local",
-  "generated": "2026-07-19T09:38:04+00:00"
-}

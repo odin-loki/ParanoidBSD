@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/x86_64/floatdisf.c",
-  "wave": "wave9",
-  "loc_estimate": 11,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/x86_64/floatdisf.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.builtins.x86_64.floatdisf",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/filewidgets/kencodingfiledialog.cpp",
-  "wave": "wave3",
-  "loc_estimate": 242,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/filewidgets/kencodingfiledialog.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.filewidgets.kencodingfiledialog",
-  "generated": "2026-07-19T09:30:16+00:00"
-}

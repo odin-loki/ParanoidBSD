@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/tablet_input.cpp",
-  "wave": "wave3",
-  "loc_estimate": 531,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/tablet_input.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.tablet_input",
-  "generated": "2026-07-19T09:30:18+00:00"
-}

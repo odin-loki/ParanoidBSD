@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/semaphore.h",
-  "wave": "wave9",
-  "loc_estimate": 71,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/semaphore.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.semaphore",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

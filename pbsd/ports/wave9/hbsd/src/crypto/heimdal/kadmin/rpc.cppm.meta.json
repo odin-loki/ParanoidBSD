@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/kadmin/rpc.c",
-  "wave": "wave9",
-  "loc_estimate": 1110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/kadmin/rpc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.kadmin.rpc",
-  "generated": "2026-07-19T09:30:38+00:00"
-}

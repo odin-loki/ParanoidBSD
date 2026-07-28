@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/pr_to_salt.c",
-  "wave": "wave9",
-  "loc_estimate": 82,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/pr_to_salt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.pr_to_salt",
-  "generated": "2026-07-19T09:30:27+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/audit/inter-process.c",
-  "wave": "wave9",
-  "loc_estimate": 1658,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/audit/inter-process.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.audit.inter_process",
-  "generated": "2026-07-19T09:37:22+00:00"
-}

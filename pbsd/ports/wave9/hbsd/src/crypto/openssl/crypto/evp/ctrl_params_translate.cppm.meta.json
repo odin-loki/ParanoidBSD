@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/evp/ctrl_params_translate.c",
-  "wave": "wave9",
-  "loc_estimate": 2958,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/evp/ctrl_params_translate.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.evp.ctrl_params_translate",
-  "generated": "2026-07-19T09:30:06+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libder/libder/libder_obj.c",
-  "wave": "wave9",
-  "loc_estimate": 1192,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libder/libder/libder_obj.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libder.libder.libder_obj",
-  "generated": "2026-07-19T09:38:03+00:00"
-}

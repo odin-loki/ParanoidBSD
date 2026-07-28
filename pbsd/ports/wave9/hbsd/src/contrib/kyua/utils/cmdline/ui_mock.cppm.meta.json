@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/kyua/utils/cmdline/ui_mock.cpp",
-  "wave": "wave9",
-  "loc_estimate": 114,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/kyua/utils/cmdline/ui_mock.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.kyua.utils.cmdline.ui_mock",
-  "generated": "2026-07-19T09:37:25+00:00"
-}

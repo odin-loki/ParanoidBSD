@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/security/mac_do/mac_do.c",
-  "wave": "wave4",
-  "loc_estimate": 2671,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac_do/mac_do.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac_do.mac_do",
-  "generated": "2026-07-19T09:31:15+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/in_rmx.c",
-  "wave": "wave6",
-  "loc_estimate": 182,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/in_rmx.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.in_rmx",
-  "generated": "2026-07-19T09:02:52+00:00"
-}

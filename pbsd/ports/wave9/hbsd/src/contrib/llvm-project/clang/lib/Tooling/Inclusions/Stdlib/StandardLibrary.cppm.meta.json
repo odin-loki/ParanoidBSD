@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Tooling/Inclusions/Stdlib/StandardLibrary.cpp",
-  "wave": "wave9",
-  "loc_estimate": 325,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Tooling/Inclusions/Stdlib/StandardLibrary.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.tooling.inclusions.stdlib.standardlibrary",
-  "generated": "2026-07-19T09:31:19+00:00"
-}

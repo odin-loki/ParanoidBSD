@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/libsa/nfs.c",
-  "wave": "wave7",
-  "loc_estimate": 850,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/libsa/nfs.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.libsa.nfs",
-  "generated": "2026-07-19T09:49:43+00:00"
-}

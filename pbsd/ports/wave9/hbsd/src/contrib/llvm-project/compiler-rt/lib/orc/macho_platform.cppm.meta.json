@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/orc/macho_platform.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1564,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/orc/macho_platform.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.orc.macho_platform",
-  "generated": "2026-07-19T09:37:17+00:00"
-}

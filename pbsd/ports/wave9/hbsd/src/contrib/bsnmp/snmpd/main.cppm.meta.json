@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bsnmp/snmpd/main.c",
-  "wave": "wave9",
-  "loc_estimate": 3139,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bsnmp/snmpd/main.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bsnmp.snmpd.main",
-  "generated": "2026-07-19T09:37:54+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Expression/DWARFExpression.cpp",
-  "wave": "wave9",
-  "loc_estimate": 2416,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Expression/DWARFExpression.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.expression.dwarfexpression",
-  "generated": "2026-07-19T09:31:44+00:00"
-}

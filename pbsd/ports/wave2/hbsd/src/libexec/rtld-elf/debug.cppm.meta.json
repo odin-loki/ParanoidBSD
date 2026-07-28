@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/rtld-elf/debug.c",
-  "wave": "wave2",
-  "loc_estimate": 144,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rtld-elf/debug.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.rtld_elf.debug",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

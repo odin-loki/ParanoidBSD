@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/amd64/gen/infinity.c",
-  "wave": "wave2",
-  "loc_estimate": 11,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/amd64/gen/infinity.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.amd64.gen.infinity",
-  "generated": "2026-07-19T08:29:00+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/crypto/md4-internal.c",
-  "wave": "wave9",
-  "loc_estimate": 275,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/crypto/md4-internal.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.crypto.md4_internal",
-  "generated": "2026-07-19T09:31:01+00:00"
-}

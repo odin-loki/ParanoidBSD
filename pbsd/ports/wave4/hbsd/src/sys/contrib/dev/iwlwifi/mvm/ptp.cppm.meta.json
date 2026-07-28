@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/iwlwifi/mvm/ptp.c",
-  "wave": "wave4",
-  "loc_estimate": 333,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/mvm/ptp.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.mvm.ptp",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

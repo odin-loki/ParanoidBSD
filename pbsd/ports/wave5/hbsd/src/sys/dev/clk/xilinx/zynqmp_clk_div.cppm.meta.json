@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/clk/xilinx/zynqmp_clk_div.c",
-  "wave": "wave5",
-  "loc_estimate": 140,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/clk/xilinx/zynqmp_clk_div.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.clk.xilinx.zynqmp_clk_div",
-  "generated": "2026-07-19T09:29:05+00:00"
-}

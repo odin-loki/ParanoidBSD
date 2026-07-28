@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/tools/compact-unwind/compact-unwind-dumper.c",
-  "wave": "wave9",
-  "loc_estimate": 1472,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/tools/compact-unwind/compact-unwind-dumper.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.tools.compact_unwind.compact_unwind_dumper",
-  "generated": "2026-07-19T09:31:44+00:00"
-}

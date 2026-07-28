@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/mount_cd9660/mount_cd9660.c",
-  "wave": "wave2",
-  "loc_estimate": 328,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/mount_cd9660/mount_cd9660.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.mount_cd9660.mount_cd9660",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_api/qat_kernel/src/lac_adf_interface_freebsd.c",
-  "wave": "wave5",
-  "loc_estimate": 425,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/qat_kernel/src/lac_adf_interface_freebsd.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.qat_kernel.src.lac_adf_interface_freebsd",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

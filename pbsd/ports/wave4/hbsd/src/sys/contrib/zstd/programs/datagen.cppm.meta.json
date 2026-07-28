@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zstd/programs/datagen.c",
-  "wave": "wave4",
-  "loc_estimate": 186,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/programs/datagen.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.programs.datagen",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

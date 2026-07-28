@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/speaker/speaker.h",
-  "wave": "wave5",
-  "loc_estimate": 27,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/speaker/speaker.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.speaker.speaker",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

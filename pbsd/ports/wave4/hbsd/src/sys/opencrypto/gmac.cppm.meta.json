@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/opencrypto/gmac.c",
-  "wave": "wave4",
-  "loc_estimate": 130,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/opencrypto/gmac.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.opencrypto.gmac",
-  "generated": "2026-07-19T09:08:34+00:00"
-}

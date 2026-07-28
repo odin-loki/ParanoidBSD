@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libutil++/tests/stringf_test.cc",
-  "wave": "wave2",
-  "loc_estimate": 52,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libutil++/tests/stringf_test.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libutil__.tests.stringf_test",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

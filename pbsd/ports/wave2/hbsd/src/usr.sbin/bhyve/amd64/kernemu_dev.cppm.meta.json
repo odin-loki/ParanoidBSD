@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bhyve/amd64/kernemu_dev.c",
-  "wave": "wave2",
-  "loc_estimate": 96,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/amd64/kernemu_dev.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.amd64.kernemu_dev",
-  "generated": "2026-07-19T08:31:19+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/linux/linux_socket.c",
-  "wave": "wave4",
-  "loc_estimate": 2815,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linux/linux_socket.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linux.linux_socket",
-  "generated": "2026-07-19T09:31:15+00:00"
-}

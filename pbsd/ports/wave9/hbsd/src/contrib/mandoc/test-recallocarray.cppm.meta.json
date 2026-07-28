@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/mandoc/test-recallocarray.c",
-  "wave": "wave9",
-  "loc_estimate": 11,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/test-recallocarray.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.test_recallocarray",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

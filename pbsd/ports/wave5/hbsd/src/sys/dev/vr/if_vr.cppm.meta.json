@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/vr/if_vr.c",
-  "wave": "wave5",
-  "loc_estimate": 2651,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/vr/if_vr.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.vr.if_vr",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

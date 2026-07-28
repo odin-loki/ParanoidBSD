@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/kcm/connect.c",
-  "wave": "wave9",
-  "loc_estimate": 84,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/kcm/connect.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.kcm.connect",
-  "generated": "2026-07-19T09:30:35+00:00"
-}

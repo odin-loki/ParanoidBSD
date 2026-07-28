@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/x509/v3_ncons.c",
-  "wave": "wave9",
-  "loc_estimate": 855,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/x509/v3_ncons.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.x509.v3_ncons",
-  "generated": "2026-07-19T09:30:06+00:00"
-}

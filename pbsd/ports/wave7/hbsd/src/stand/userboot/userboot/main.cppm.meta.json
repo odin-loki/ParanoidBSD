@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/userboot/userboot/main.c",
-  "wave": "wave7",
-  "loc_estimate": 328,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/userboot/userboot/main.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.userboot.userboot.main",
-  "generated": "2026-07-19T09:49:41+00:00"
-}

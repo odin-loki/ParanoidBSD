@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/elftoolchain/libelf/elf_cntl.c",
-  "wave": "wave9",
-  "loc_estimate": 58,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/elftoolchain/libelf/elf_cntl.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.elftoolchain.libelf.elf_cntl",
-  "generated": "2026-07-19T09:37:29+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/csu/tests/cxx_constructors.cc",
-  "wave": "wave2",
-  "loc_estimate": 102,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/csu/tests/cxx_constructors.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.csu.tests.cxx_constructors",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

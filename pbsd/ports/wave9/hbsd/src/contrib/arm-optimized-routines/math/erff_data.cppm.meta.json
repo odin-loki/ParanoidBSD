@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/arm-optimized-routines/math/erff_data.c",
-  "wave": "wave9",
-  "loc_estimate": 22,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/arm-optimized-routines/math/erff_data.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.arm_optimized_routines.math.erff_data",
-  "generated": "2026-07-19T09:31:58+00:00"
-}

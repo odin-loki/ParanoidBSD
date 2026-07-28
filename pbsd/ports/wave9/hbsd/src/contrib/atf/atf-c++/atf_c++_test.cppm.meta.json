@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/atf/atf-c++/atf_c++_test.cpp",
-  "wave": "wave9",
-  "loc_estimate": 44,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/atf/atf-c++/atf_c++_test.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.atf.atf_c__.atf_c___test",
-  "generated": "2026-07-19T09:37:41+00:00"
-}

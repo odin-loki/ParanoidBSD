@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Expression/FunctionCaller.cpp",
-  "wave": "wave9",
-  "loc_estimate": 419,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Expression/FunctionCaller.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.expression.functioncaller",
-  "generated": "2026-07-19T09:31:41+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/ntpd/ntp_restrict.c",
-  "wave": "wave9",
-  "loc_estimate": 950,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/ntp_restrict.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.ntp_restrict",
-  "generated": "2026-07-19T09:31:07+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/ctld/kernel.cc",
-  "wave": "wave2",
-  "loc_estimate": 1137,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/ctld/kernel.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.ctld.kernel",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

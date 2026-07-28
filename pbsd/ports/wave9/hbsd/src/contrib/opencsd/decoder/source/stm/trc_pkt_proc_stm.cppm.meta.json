@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/opencsd/decoder/source/stm/trc_pkt_proc_stm.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1043,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/stm/trc_pkt_proc_stm.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.stm.trc_pkt_proc_stm",
-  "generated": "2026-07-19T09:37:48+00:00"
-}

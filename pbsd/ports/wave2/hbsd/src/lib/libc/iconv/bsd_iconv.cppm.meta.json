@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/iconv/bsd_iconv.c",
-  "wave": "wave2",
-  "loc_estimate": 309,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/iconv/bsd_iconv.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.iconv.bsd_iconv",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

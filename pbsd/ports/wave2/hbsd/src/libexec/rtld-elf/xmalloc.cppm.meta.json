@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/rtld-elf/xmalloc.c",
-  "wave": "wave2",
-  "loc_estimate": 162,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/rtld-elf/xmalloc.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.rtld_elf.xmalloc",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

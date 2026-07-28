@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/kdb/kdb_log.c",
-  "wave": "wave9",
-  "loc_estimate": 720,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/kdb/kdb_log.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.kdb.kdb_log",
-  "generated": "2026-07-19T09:30:32+00:00"
-}

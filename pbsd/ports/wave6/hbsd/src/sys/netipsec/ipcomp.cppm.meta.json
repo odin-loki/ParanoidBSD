@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netipsec/ipcomp.h",
-  "wave": "wave6",
-  "loc_estimate": 56,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netipsec/ipcomp.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netipsec.ipcomp",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

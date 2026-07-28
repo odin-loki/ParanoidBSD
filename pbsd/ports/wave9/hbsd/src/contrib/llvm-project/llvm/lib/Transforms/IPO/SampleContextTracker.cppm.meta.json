@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/IPO/SampleContextTracker.cpp",
-  "wave": "wave9",
-  "loc_estimate": 631,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/IPO/SampleContextTracker.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.ipo.samplecontexttracker",
-  "generated": "2026-07-19T09:31:55+00:00"
-}

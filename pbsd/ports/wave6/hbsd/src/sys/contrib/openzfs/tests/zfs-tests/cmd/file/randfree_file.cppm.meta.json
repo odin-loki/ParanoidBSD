@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/file/randfree_file.c",
-  "wave": "wave6",
-  "loc_estimate": 126,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/file/randfree_file.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.cmd.file.randfree_file",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

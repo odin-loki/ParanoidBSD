@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/atf/atf-pytest-wrapper/atf_pytest_wrapper.cpp",
-  "wave": "wave2",
-  "loc_estimate": 229,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/atf/atf-pytest-wrapper/atf_pytest_wrapper.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.atf.atf_pytest_wrapper.atf_pytest_wrapper",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

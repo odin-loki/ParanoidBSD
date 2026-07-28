@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/tar/test/test_format_newc.c",
-  "wave": "wave9",
-  "loc_estimate": 45,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/tar/test/test_format_newc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.tar.test.test_format_newc",
-  "generated": "2026-07-19T09:30:39+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/revnetgroup/hash.c",
-  "wave": "wave2",
-  "loc_estimate": 205,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/revnetgroup/hash.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.revnetgroup.hash",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

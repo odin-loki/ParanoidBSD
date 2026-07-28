@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/providers/implementations/encode_decode/encode_key2ms.c",
-  "wave": "wave9",
-  "loc_estimate": 233,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/encode_decode/encode_key2ms.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.encode_decode.encode_key2ms",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

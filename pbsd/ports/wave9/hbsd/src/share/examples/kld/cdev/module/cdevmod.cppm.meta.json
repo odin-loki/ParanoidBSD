@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/kld/cdev/module/cdevmod.c",
-  "wave": "wave9",
-  "loc_estimate": 146,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/kld/cdev/module/cdevmod.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.kld.cdev.module.cdevmod",
-  "generated": "2026-07-19T09:37:44+00:00"
-}

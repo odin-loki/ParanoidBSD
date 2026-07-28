@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/vnic/thunder_bgx_fdt.c",
-  "wave": "wave5",
-  "loc_estimate": 456,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/vnic/thunder_bgx_fdt.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.vnic.thunder_bgx_fdt",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

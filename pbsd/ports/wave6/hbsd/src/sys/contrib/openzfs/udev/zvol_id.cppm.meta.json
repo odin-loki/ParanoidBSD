@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/udev/zvol_id.c",
-  "wave": "wave6",
-  "loc_estimate": 91,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/udev/zvol_id.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.udev.zvol_id",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

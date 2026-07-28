@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/blocklist/port/strlcpy.c",
-  "wave": "wave9",
-  "loc_estimate": 81,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/blocklist/port/strlcpy.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.blocklist.port.strlcpy",
-  "generated": "2026-07-19T09:37:57+00:00"
-}

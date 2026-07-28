@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/doc/psd/20.ipctut/udgramsend.c",
-  "wave": "wave9",
-  "loc_estimate": 62,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/doc/psd/20.ipctut/udgramsend.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.doc.psd._20_ipctut.udgramsend",
-  "generated": "2026-07-19T09:38:06+00:00"
-}

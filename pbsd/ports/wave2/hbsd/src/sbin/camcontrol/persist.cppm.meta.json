@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/camcontrol/persist.c",
-  "wave": "wave2",
-  "loc_estimate": 956,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/camcontrol/persist.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.camcontrol.persist",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

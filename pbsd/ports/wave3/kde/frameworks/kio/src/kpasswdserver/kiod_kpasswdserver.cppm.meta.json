@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/kpasswdserver/kiod_kpasswdserver.cpp",
-  "wave": "wave3",
-  "loc_estimate": 14,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/kpasswdserver/kiod_kpasswdserver.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.kpasswdserver.kiod_kpasswdserver",
-  "generated": "2026-07-19T08:33:26+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/admin/change.c",
-  "wave": "wave9",
-  "loc_estimate": 251,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/admin/change.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.admin.change",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

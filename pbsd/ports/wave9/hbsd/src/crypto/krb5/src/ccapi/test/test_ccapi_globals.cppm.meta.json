@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/ccapi/test/test_ccapi_globals.c",
-  "wave": "wave9",
-  "loc_estimate": 87,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/ccapi/test/test_ccapi_globals.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.ccapi.test.test_ccapi_globals",
-  "generated": "2026-07-19T09:30:27+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-mca/Views/ResourcePressureView.cpp",
-  "wave": "wave9",
-  "loc_estimate": 237,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-mca/Views/ResourcePressureView.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_mca.views.resourcepressureview",
-  "generated": "2026-07-19T09:31:53+00:00"
-}

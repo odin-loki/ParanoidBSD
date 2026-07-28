@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ofed/librdmacm/config.h",
-  "wave": "wave9",
-  "loc_estimate": 9,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/librdmacm/config.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.librdmacm.config",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/isci/scil/scif_sas_remote_device_states.c",
-  "wave": "wave5",
-  "loc_estimate": 549,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isci/scil/scif_sas_remote_device_states.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isci.scil.scif_sas_remote_device_states",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

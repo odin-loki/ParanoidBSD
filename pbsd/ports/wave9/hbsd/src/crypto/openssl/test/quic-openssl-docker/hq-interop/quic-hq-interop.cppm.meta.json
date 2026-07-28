@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/test/quic-openssl-docker/hq-interop/quic-hq-interop.c",
-  "wave": "wave9",
-  "loc_estimate": 1047,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/quic-openssl-docker/hq-interop/quic-hq-interop.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.quic_openssl_docker.hq_interop.quic_hq_interop",
-  "generated": "2026-07-19T09:30:06+00:00"
-}

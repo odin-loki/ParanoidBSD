@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Analysis/EphemeralValuesCache.cpp",
-  "wave": "wave9",
-  "loc_estimate": 28,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Analysis/EphemeralValuesCache.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.analysis.ephemeralvaluescache",
-  "generated": "2026-07-19T09:31:47+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/backends/wayland/wayland_layer.cpp",
-  "wave": "wave3",
-  "loc_estimate": 128,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/backends/wayland/wayland_layer.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.backends.wayland.wayland_layer",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

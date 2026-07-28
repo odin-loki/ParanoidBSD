@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/kcms/touchpad/backends/x11/c_ptr.h",
-  "wave": "wave3",
-  "loc_estimate": 16,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/touchpad/backends/x11/c_ptr.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.touchpad.backends.x11.c_ptr",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

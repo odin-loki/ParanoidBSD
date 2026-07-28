@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_write_format_zip_entry_size_unset.c",
-  "wave": "wave9",
-  "loc_estimate": 284,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_write_format_zip_entry_size_unset.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_write_format_zip_entry_size_unset",
-  "generated": "2026-07-19T09:30:41+00:00"
-}

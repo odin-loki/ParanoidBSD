@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/security/proc_to_proc/scenario.c",
-  "wave": "wave4",
-  "loc_estimate": 431,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/tools/regression/security/proc_to_proc/scenario.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.tools.regression.security.proc_to_proc.scenario",
-  "generated": "2026-07-19T09:51:40+00:00"
-}

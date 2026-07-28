@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/build/cross-build/fake_sysctl.c",
-  "wave": "wave9",
-  "loc_estimate": 59,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/build/cross-build/fake_sysctl.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.build.cross_build.fake_sysctl",
-  "generated": "2026-07-19T09:38:05+00:00"
-}

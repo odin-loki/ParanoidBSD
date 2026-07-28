@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/vchiq/interface/vchiq_arm/vchiq_version.c",
-  "wave": "wave4",
-  "loc_estimate": 59,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/vchiq/interface/vchiq_arm/vchiq_version.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.vchiq.interface.vchiq_arm.vchiq_version",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

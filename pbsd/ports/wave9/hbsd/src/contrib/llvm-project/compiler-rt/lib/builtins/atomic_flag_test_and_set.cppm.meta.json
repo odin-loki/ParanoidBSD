@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/atomic_flag_test_and_set.c",
-  "wave": "wave9",
-  "loc_estimate": 25,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/atomic_flag_test_and_set.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.builtins.atomic_flag_test_and_set",
-  "generated": "2026-07-19T09:37:14+00:00"
-}

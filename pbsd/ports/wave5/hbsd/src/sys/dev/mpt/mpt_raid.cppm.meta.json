@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mpt/mpt_raid.c",
-  "wave": "wave5",
-  "loc_estimate": 1832,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mpt/mpt_raid.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mpt.mpt_raid",
-  "generated": "2026-07-19T09:06:09+00:00"
-}

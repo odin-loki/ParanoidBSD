@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/softfloat/bits32/softfloat.c",
-  "wave": "wave2",
-  "loc_estimate": 2344,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/softfloat/bits32/softfloat.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.softfloat.bits32.softfloat",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

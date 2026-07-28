@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/applets/trash/dirmodel.cpp",
-  "wave": "wave3",
-  "loc_estimate": 192,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/applets/trash/dirmodel.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.applets.trash.dirmodel",
-  "generated": "2026-07-19T09:30:15+00:00"
-}

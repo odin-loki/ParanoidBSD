@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libpam/modules/pam_rootok/pam_rootok.c",
-  "wave": "wave2",
-  "loc_estimate": 73,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libpam/modules/pam_rootok/pam_rootok.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libpam.modules.pam_rootok.pam_rootok",
-  "generated": "2026-07-19T09:29:45+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/vm/vm_fault.c",
-  "wave": "wave4",
-  "loc_estimate": 2512,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/vm/vm_fault.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.vm.vm_fault",
-  "generated": "2026-07-19T08:30:34+00:00"
-}

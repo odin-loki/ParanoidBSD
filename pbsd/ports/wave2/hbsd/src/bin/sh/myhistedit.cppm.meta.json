@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/sh/myhistedit.h",
-  "wave": "wave2",
-  "loc_estimate": 44,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/sh/myhistedit.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.sh.myhistedit",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kxmlgui/src/kedittoolbar.cpp",
-  "wave": "wave3",
-  "loc_estimate": 1737,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/src/kedittoolbar.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.src.kedittoolbar",
-  "generated": "2026-07-19T09:30:20+00:00"
-}

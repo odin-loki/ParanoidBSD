@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdlib/strtoull.c",
-  "wave": "wave2",
-  "loc_estimate": 134,
-  "status": "converted",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdlib/strtoull.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdlib.strtoull",
-  "generated": "2026-07-19T10:02:54+00:00"
-}

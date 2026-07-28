@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/iwlwifi/mld/session-protect.c",
-  "wave": "wave4",
-  "loc_estimate": 222,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/mld/session-protect.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.mld.session_protect",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

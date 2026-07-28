@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/krb5/expand_path.c",
-  "wave": "wave9",
-  "loc_estimate": 500,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/expand_path.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.expand_path",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

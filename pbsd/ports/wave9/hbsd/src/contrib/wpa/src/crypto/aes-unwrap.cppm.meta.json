@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/crypto/aes-unwrap.c",
-  "wave": "wave9",
-  "loc_estimate": 80,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/crypto/aes-unwrap.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.crypto.aes_unwrap",
-  "generated": "2026-07-19T09:31:00+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/msun/ld80/s_nanl.c",
-  "wave": "wave2",
-  "loc_estimate": 46,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/ld80/s_nanl.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.msun.ld80.s_nanl",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

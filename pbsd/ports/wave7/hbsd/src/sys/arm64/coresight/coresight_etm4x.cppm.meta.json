@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/coresight/coresight_etm4x.c",
-  "wave": "wave7",
-  "loc_estimate": 263,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/coresight/coresight_etm4x.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.coresight.coresight_etm4x",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

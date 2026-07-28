@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/brand.c",
-  "wave": "wave9",
-  "loc_estimate": 72,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/brand.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.brand",
-  "generated": "2026-07-19T09:30:26+00:00"
-}

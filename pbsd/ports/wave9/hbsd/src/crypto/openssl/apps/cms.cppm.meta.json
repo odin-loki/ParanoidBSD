@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/apps/cms.c",
-  "wave": "wave9",
-  "loc_estimate": 1573,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/apps/cms.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.apps.cms",
-  "generated": "2026-07-19T09:30:06+00:00"
-}

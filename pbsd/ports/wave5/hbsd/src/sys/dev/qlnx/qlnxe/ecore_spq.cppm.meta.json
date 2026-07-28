@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qlnx/qlnxe/ecore_spq.c",
-  "wave": "wave5",
-  "loc_estimate": 1156,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qlnx/qlnxe/ecore_spq.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qlnx.qlnxe.ecore_spq",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

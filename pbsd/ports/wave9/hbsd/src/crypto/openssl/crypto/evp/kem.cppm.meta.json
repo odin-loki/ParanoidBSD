@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/evp/kem.c",
-  "wave": "wave9",
-  "loc_estimate": 540,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/evp/kem.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.evp.kem",
-  "generated": "2026-07-19T09:30:06+00:00"
-}

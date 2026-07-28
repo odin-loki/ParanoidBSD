@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/providers/implementations/encode_decode/decode_epki2pki.c",
-  "wave": "wave9",
-  "loc_estimate": 202,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/encode_decode/decode_epki2pki.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.encode_decode.decode_epki2pki",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

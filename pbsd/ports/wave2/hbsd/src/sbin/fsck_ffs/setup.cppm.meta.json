@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/fsck_ffs/setup.c",
-  "wave": "wave2",
-  "loc_estimate": 576,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/fsck_ffs/setup.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.fsck_ffs.setup",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

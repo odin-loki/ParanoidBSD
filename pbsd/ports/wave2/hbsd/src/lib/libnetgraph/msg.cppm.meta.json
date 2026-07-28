@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libnetgraph/msg.c",
-  "wave": "wave2",
-  "loc_estimate": 374,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libnetgraph/msg.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libnetgraph.msg",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/plugins/kpackage/windowswitcher/windowswitcher.cpp",
-  "wave": "wave3",
-  "loc_estimate": 34,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/kpackage/windowswitcher/windowswitcher.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.plugins.kpackage.windowswitcher.windowswitcher",
-  "generated": "2026-07-19T08:41:43+00:00"
-}

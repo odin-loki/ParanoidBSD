@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/common/zfs_cmd.c",
-  "wave": "wave7",
-  "loc_estimate": 101,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/common/zfs_cmd.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.common.zfs_cmd",
-  "generated": "2026-07-19T08:30:57+00:00"
-}

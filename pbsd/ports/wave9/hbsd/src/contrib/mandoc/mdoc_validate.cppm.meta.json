@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/mandoc/mdoc_validate.c",
-  "wave": "wave9",
-  "loc_estimate": 3125,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/mdoc_validate.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.mdoc_validate",
-  "generated": "2026-07-19T09:37:39+00:00"
-}

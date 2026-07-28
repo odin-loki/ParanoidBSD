@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/kld/khelp/h_example.c",
-  "wave": "wave9",
-  "loc_estimate": 154,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/kld/khelp/h_example.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.kld.khelp.h_example",
-  "generated": "2026-07-19T09:37:44+00:00"
-}

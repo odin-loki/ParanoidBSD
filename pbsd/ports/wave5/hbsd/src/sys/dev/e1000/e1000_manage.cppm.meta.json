@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/e1000/e1000_manage.c",
-  "wave": "wave5",
-  "loc_estimate": 577,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/e1000/e1000_manage.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.e1000.e1000_manage",
-  "generated": "2026-07-19T08:29:54+00:00"
-}

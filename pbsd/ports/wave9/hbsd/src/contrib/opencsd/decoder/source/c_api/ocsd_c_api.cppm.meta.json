@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/opencsd/decoder/source/c_api/ocsd_c_api.cpp",
-  "wave": "wave9",
-  "loc_estimate": 632,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/c_api/ocsd_c_api.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.c_api.ocsd_c_api",
-  "generated": "2026-07-19T09:37:48+00:00"
-}

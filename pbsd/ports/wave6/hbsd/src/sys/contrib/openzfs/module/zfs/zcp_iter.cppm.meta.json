@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/zcp_iter.c",
-  "wave": "wave6",
-  "loc_estimate": 759,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/zcp_iter.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.zcp_iter",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

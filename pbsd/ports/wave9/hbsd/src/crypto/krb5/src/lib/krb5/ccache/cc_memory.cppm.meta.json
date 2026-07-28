@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krb5/ccache/cc_memory.c",
-  "wave": "wave9",
-  "loc_estimate": 830,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/ccache/cc_memory.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.ccache.cc_memory",
-  "generated": "2026-07-19T09:30:33+00:00"
-}

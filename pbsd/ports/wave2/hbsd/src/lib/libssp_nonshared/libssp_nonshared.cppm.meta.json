@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libssp_nonshared/libssp_nonshared.c",
-  "wave": "wave2",
-  "loc_estimate": 15,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libssp_nonshared/libssp_nonshared.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libssp_nonshared.libssp_nonshared",
-  "generated": "2026-07-19T07:47:38+00:00"
-}

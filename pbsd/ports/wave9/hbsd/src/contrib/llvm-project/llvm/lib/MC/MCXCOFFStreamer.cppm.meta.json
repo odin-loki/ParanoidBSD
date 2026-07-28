@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/MC/MCXCOFFStreamer.cpp",
-  "wave": "wave9",
-  "loc_estimate": 146,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/MC/MCXCOFFStreamer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.mc.mcxcoffstreamer",
-  "generated": "2026-07-19T09:31:52+00:00"
-}

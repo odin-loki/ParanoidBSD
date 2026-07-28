@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net80211/ieee80211_xauth.c",
-  "wave": "wave6",
-  "loc_estimate": 77,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net80211/ieee80211_xauth.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net80211.ieee80211_xauth",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

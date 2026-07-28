@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/applets/kimpanel/screen.cpp",
-  "wave": "wave3",
-  "loc_estimate": 82,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/applets/kimpanel/screen.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.applets.kimpanel.screen",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

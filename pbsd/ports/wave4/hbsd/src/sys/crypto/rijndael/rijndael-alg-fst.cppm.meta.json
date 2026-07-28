@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/crypto/rijndael/rijndael-alg-fst.c",
-  "wave": "wave4",
-  "loc_estimate": 1221,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/rijndael/rijndael-alg-fst.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.rijndael.rijndael_alg_fst",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/byacc/test/btyacc/quote_calc-s.tab.c",
-  "wave": "wave9",
-  "loc_estimate": 1507,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/byacc/test/btyacc/quote_calc-s.tab.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.byacc.test.btyacc.quote_calc_s_tab",
-  "generated": "2026-07-19T09:37:30+00:00"
-}

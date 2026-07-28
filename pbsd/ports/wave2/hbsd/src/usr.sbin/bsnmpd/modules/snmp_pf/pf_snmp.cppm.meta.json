@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_pf/pf_snmp.c",
-  "wave": "wave2",
-  "loc_estimate": 1785,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bsnmpd/modules/snmp_pf/pf_snmp.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bsnmpd.modules.snmp_pf.pf_snmp",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

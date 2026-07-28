@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/kyua/integration/helpers/simple_all_pass.cpp",
-  "wave": "wave9",
-  "loc_estimate": 55,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/kyua/integration/helpers/simple_all_pass.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.kyua.integration.helpers.simple_all_pass",
-  "generated": "2026-07-19T09:37:25+00:00"
-}

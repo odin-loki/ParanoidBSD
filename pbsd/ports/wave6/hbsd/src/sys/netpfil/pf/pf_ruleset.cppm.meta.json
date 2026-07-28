@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netpfil/pf/pf_ruleset.c",
-  "wave": "wave6",
-  "loc_estimate": 768,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/pf/pf_ruleset.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.pf.pf_ruleset",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

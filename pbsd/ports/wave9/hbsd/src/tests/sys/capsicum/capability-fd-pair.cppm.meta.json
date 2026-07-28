@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/capsicum/capability-fd-pair.cc",
-  "wave": "wave9",
-  "loc_estimate": 188,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/capsicum/capability-fd-pair.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.capsicum.capability_fd_pair",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

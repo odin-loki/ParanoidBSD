@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/journal/g_journal.c",
-  "wave": "wave6",
-  "loc_estimate": 3024,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/journal/g_journal.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.journal.g_journal",
-  "generated": "2026-07-19T09:29:22+00:00"
-}

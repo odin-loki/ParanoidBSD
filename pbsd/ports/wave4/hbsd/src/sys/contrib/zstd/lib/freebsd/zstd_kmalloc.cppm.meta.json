@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zstd/lib/freebsd/zstd_kmalloc.c",
-  "wave": "wave4",
-  "loc_estimate": 39,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/lib/freebsd/zstd_kmalloc.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.lib.freebsd.zstd_kmalloc",
-  "generated": "2026-07-19T09:29:51+00:00"
-}

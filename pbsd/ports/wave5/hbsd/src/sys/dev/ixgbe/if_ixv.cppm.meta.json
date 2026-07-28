@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ixgbe/if_ixv.c",
-  "wave": "wave5",
-  "loc_estimate": 1985,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ixgbe/if_ixv.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ixgbe.if_ixv",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

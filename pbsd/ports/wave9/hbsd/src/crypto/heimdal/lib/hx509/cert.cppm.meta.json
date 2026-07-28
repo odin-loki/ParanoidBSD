@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/hx509/cert.c",
-  "wave": "wave9",
-  "loc_estimate": 3612,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/hx509/cert.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.hx509.cert",
-  "generated": "2026-07-19T09:30:38+00:00"
-}

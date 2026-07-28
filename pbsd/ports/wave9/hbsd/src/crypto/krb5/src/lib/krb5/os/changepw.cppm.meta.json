@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krb5/os/changepw.c",
-  "wave": "wave9",
-  "loc_estimate": 377,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/os/changepw.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.os.changepw",
-  "generated": "2026-07-19T09:30:31+00:00"
-}

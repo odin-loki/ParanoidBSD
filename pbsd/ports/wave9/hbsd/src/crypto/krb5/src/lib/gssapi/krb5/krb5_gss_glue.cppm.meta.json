@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/krb5/krb5_gss_glue.c",
-  "wave": "wave9",
-  "loc_estimate": 445,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/krb5/krb5_gss_glue.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.krb5.krb5_gss_glue",
-  "generated": "2026-07-19T09:30:32+00:00"
-}

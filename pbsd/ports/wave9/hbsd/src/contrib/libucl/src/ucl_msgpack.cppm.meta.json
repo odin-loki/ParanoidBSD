@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libucl/src/ucl_msgpack.c",
-  "wave": "wave9",
-  "loc_estimate": 1638,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libucl/src/ucl_msgpack.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libucl.src.ucl_msgpack",
-  "generated": "2026-07-19T09:38:01+00:00"
-}

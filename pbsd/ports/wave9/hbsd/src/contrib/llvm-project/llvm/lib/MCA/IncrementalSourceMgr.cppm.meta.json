@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/MCA/IncrementalSourceMgr.cpp",
-  "wave": "wave9",
-  "loc_estimate": 51,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/MCA/IncrementalSourceMgr.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.mca.incrementalsourcemgr",
-  "generated": "2026-07-19T09:31:48+00:00"
-}

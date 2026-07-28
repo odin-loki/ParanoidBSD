@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/arm-optimized-routines/math/aarch64/sve/acosf.c",
-  "wave": "wave9",
-  "loc_estimate": 86,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/arm-optimized-routines/math/aarch64/sve/acosf.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.arm_optimized_routines.math.aarch64.sve.acosf",
-  "generated": "2026-07-19T09:31:59+00:00"
-}

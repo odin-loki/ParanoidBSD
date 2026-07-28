@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Language/CPlusPlus/LibCxxUnorderedMap.cpp",
-  "wave": "wave9",
-  "loc_estimate": 417,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Language/CPlusPlus/LibCxxUnorderedMap.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.language.cplusplus.libcxxunorderedmap",
-  "generated": "2026-07-19T09:31:41+00:00"
-}

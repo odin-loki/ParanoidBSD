@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libgeom/geom_getxml.c",
-  "wave": "wave2",
-  "loc_estimate": 128,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libgeom/geom_getxml.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libgeom.geom_getxml",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

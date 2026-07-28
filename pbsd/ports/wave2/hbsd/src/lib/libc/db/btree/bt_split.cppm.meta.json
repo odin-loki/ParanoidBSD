@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/db/btree/bt_split.c",
-  "wave": "wave2",
-  "loc_estimate": 798,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/db/btree/bt_split.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.db.btree.bt_split",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

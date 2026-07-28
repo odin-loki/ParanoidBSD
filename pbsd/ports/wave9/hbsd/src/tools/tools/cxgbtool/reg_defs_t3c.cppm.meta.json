@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/cxgbtool/reg_defs_t3c.c",
-  "wave": "wave9",
-  "loc_estimate": 3118,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/cxgbtool/reg_defs_t3c.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.cxgbtool.reg_defs_t3c",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

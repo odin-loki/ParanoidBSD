@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libpam/modules/pam_ksu/pam_ksu.c",
-  "wave": "wave2",
-  "loc_estimate": 307,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libpam/modules/pam_ksu/pam_ksu.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libpam.modules.pam_ksu.pam_ksu",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

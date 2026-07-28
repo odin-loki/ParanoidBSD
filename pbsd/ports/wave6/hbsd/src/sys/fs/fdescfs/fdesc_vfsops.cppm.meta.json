@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/fdescfs/fdesc_vfsops.c",
-  "wave": "wave6",
-  "loc_estimate": 241,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/fdescfs/fdesc_vfsops.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.fdescfs.fdesc_vfsops",
-  "generated": "2026-07-19T08:30:54+00:00"
-}

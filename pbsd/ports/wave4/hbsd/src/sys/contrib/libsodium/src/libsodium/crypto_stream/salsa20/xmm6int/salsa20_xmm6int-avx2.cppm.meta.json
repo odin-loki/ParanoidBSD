@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_stream/salsa20/xmm6int/salsa20_xmm6int-avx2.c",
-  "wave": "wave4",
-  "loc_estimate": 131,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_stream/salsa20/xmm6int/salsa20_xmm6int-avx2.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_stream.salsa20.xmm6int.salsa20_xmm6int_avx2",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

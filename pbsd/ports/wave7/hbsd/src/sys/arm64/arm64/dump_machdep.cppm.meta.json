@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/arm64/dump_machdep.c",
-  "wave": "wave7",
-  "loc_estimate": 69,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/arm64/dump_machdep.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.arm64.dump_machdep",
-  "generated": "2026-07-19T08:30:56+00:00"
-}

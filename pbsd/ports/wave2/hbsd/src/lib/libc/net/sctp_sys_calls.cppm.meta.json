@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/net/sctp_sys_calls.c",
-  "wave": "wave2",
-  "loc_estimate": 1195,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/net/sctp_sys_calls.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.net.sctp_sys_calls",
-  "generated": "2026-07-19T09:05:33+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/rockchip/rk3568_combphy.c",
-  "wave": "wave7",
-  "loc_estimate": 469,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/rockchip/rk3568_combphy.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.rockchip.rk3568_combphy",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ofed/libibumad/umad.c",
-  "wave": "wave9",
-  "loc_estimate": 1117,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/libibumad/umad.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.libibumad.umad",
-  "generated": "2026-07-19T09:37:24+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Sema/SemaTemplateInstantiate.cpp",
-  "wave": "wave9",
-  "loc_estimate": 4739,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Sema/SemaTemplateInstantiate.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.sema.sematemplateinstantiate",
-  "generated": "2026-07-19T09:31:22+00:00"
-}

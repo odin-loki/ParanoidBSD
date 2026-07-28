@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/plugins/windowsystem/windowsystem.cpp",
-  "wave": "wave3",
-  "loc_estimate": 91,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/windowsystem/windowsystem.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.plugins.windowsystem.windowsystem",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

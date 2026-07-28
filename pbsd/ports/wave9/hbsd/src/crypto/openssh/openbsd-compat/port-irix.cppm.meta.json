@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/openbsd-compat/port-irix.c",
-  "wave": "wave9",
-  "loc_estimate": 92,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/openbsd-compat/port-irix.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.openbsd_compat.port_irix",
-  "generated": "2026-07-19T09:37:19+00:00"
-}

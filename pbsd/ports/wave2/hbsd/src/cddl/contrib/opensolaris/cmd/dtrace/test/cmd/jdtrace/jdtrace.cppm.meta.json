@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/cmd/jdtrace/jdtrace.c",
-  "wave": "wave2",
-  "loc_estimate": 60,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/cmd/jdtrace/jdtrace.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.cddl.contrib.opensolaris.cmd.dtrace.test.cmd.jdtrace.jdtrace",
-  "generated": "2026-07-19T09:04:02+00:00"
-}

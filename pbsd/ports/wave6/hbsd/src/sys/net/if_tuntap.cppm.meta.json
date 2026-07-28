@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/if_tuntap.c",
-  "wave": "wave6",
-  "loc_estimate": 2192,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/if_tuntap.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.if_tuntap",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

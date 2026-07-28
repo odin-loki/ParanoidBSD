@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-objcopy/ObjcopyOptions.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1662,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-objcopy/ObjcopyOptions.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_objcopy.objcopyoptions",
-  "generated": "2026-07-19T09:31:57+00:00"
-}

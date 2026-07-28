@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/roken/getifaddrs.c",
-  "wave": "wave9",
-  "loc_estimate": 1309,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/getifaddrs.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.getifaddrs",
-  "generated": "2026-07-19T09:30:38+00:00"
-}

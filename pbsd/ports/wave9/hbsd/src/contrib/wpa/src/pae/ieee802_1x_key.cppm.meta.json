@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/pae/ieee802_1x_key.c",
-  "wave": "wave9",
-  "loc_estimate": 210,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/pae/ieee802_1x_key.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.pae.ieee802_1x_key",
-  "generated": "2026-07-19T09:31:01+00:00"
-}

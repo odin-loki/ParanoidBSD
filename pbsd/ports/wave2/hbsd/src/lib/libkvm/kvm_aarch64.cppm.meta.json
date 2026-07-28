@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libkvm/kvm_aarch64.h",
-  "wave": "wave2",
-  "loc_estimate": 63,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libkvm/kvm_aarch64.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libkvm.kvm_aarch64",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

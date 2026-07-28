@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/tools/clang-scan-deps/ClangScanDeps.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1175,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/tools/clang-scan-deps/ClangScanDeps.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.tools.clang_scan_deps.clangscandeps",
-  "generated": "2026-07-19T09:31:21+00:00"
-}

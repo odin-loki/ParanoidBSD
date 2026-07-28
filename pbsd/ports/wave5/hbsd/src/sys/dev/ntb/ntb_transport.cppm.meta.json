@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ntb/ntb_transport.c",
-  "wave": "wave5",
-  "loc_estimate": 1693,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ntb/ntb_transport.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ntb.ntb_transport",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dpdk_rte_lpm/dpdk_lpm.c",
-  "wave": "wave4",
-  "loc_estimate": 427,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dpdk_rte_lpm/dpdk_lpm.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dpdk_rte_lpm.dpdk_lpm",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

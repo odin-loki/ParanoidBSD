@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/tests/runtest/runtest.c",
-  "wave": "wave4",
-  "loc_estimate": 92,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/tests/runtest/runtest.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.tests.runtest.runtest",
-  "generated": "2026-07-19T09:31:10+00:00"
-}

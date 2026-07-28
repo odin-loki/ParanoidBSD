@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/priv/main.c",
-  "wave": "wave9",
-  "loc_estimate": 555,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/priv/main.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.priv.main",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

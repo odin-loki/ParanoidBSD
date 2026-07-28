@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/rpc/getnetconfig.c",
-  "wave": "wave2",
-  "loc_estimate": 728,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/rpc/getnetconfig.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.rpc.getnetconfig",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tzcode/strftime.c",
-  "wave": "wave9",
-  "loc_estimate": 712,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tzcode/strftime.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tzcode.strftime",
-  "generated": "2026-07-19T09:38:10+00:00"
-}

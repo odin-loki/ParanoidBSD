@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Driver/ToolChains/Darwin.cpp",
-  "wave": "wave9",
-  "loc_estimate": 3787,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Driver/ToolChains/Darwin.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.driver.toolchains.darwin",
-  "generated": "2026-07-19T09:31:22+00:00"
-}

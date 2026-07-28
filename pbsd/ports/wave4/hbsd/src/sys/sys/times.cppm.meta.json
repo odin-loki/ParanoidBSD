@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/sys/times.h",
-  "wave": "wave4",
-  "loc_estimate": 61,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/sys/times.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.sys.times",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/label/g_label_iso9660.c",
-  "wave": "wave6",
-  "loc_estimate": 78,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/label/g_label_iso9660.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.label.g_label_iso9660",
-  "generated": "2026-07-19T08:30:51+00:00"
-}

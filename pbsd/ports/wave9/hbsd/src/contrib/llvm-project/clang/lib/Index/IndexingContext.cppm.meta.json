@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Index/IndexingContext.cpp",
-  "wave": "wave9",
-  "loc_estimate": 518,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Index/IndexingContext.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.index.indexingcontext",
-  "generated": "2026-07-19T09:31:20+00:00"
-}

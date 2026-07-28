@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/ipf/libipf/ipf_dotuning.c",
-  "wave": "wave2",
-  "loc_estimate": 70,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipf/libipf/ipf_dotuning.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.ipf.libipf.ipf_dotuning",
-  "generated": "2026-07-19T09:30:00+00:00"
-}

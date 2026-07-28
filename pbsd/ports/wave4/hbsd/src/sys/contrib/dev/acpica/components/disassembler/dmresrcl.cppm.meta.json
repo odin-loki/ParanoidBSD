@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/disassembler/dmresrcl.c",
-  "wave": "wave4",
-  "loc_estimate": 1194,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/disassembler/dmresrcl.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.disassembler.dmresrcl",
-  "generated": "2026-07-19T09:29:36+00:00"
-}

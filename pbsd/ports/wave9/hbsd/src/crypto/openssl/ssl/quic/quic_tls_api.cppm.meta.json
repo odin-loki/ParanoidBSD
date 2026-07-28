@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/ssl/quic/quic_tls_api.c",
-  "wave": "wave9",
-  "loc_estimate": 203,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/ssl/quic/quic_tls_api.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.ssl.quic.quic_tls_api",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

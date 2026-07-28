@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/kerberos5/lib/libgssapi_krb5/prefix.c",
-  "wave": "wave9",
-  "loc_estimate": 33,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/kerberos5/lib/libgssapi_krb5/prefix.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.kerberos5.lib.libgssapi_krb5.prefix",
-  "generated": "2026-07-19T09:38:11+00:00"
-}

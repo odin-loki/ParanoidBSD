@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/doc/psd/20.ipctut/ustreamread.c",
-  "wave": "wave9",
-  "loc_estimate": 90,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/doc/psd/20.ipctut/ustreamread.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.doc.psd._20_ipctut.ustreamread",
-  "generated": "2026-07-19T09:38:06+00:00"
-}

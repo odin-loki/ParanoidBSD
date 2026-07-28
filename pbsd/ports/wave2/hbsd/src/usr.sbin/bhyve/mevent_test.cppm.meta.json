@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bhyve/mevent_test.c",
-  "wave": "wave2",
-  "loc_estimate": 254,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/mevent_test.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.mevent_test",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

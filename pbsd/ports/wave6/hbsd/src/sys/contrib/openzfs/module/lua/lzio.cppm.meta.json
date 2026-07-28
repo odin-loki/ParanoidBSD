@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/lua/lzio.c",
-  "wave": "wave6",
-  "loc_estimate": 73,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/lua/lzio.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.lua.lzio",
-  "generated": "2026-07-19T08:30:55+00:00"
-}

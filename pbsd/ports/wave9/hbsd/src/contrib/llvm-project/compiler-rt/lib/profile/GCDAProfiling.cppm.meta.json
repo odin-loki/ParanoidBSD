@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/profile/GCDAProfiling.c",
-  "wave": "wave9",
-  "loc_estimate": 656,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/profile/GCDAProfiling.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.profile.gcdaprofiling",
-  "generated": "2026-07-19T09:37:17+00:00"
-}

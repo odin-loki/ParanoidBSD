@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/os/freebsd/spl/spl_atomic.c",
-  "wave": "wave6",
-  "loc_estimate": 121,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/os/freebsd/spl/spl_atomic.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.os.freebsd.spl.spl_atomic",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

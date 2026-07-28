@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/krb5/test_pkinit_dh2key.c",
-  "wave": "wave9",
-  "loc_estimate": 216,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/test_pkinit_dh2key.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.test_pkinit_dh2key",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

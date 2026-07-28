@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/file/flock_helper.c",
-  "wave": "wave9",
-  "loc_estimate": 1596,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/file/flock_helper.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.file.flock_helper",
-  "generated": "2026-07-19T09:37:22+00:00"
-}

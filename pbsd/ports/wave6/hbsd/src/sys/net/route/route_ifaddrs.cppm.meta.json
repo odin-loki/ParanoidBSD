@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/route/route_ifaddrs.c",
-  "wave": "wave6",
-  "loc_estimate": 241,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/route/route_ifaddrs.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.route.route_ifaddrs",
-  "generated": "2026-07-19T09:04:06+00:00"
-}

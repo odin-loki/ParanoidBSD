@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/kadmin/dbutil/tabdump.c",
-  "wave": "wave9",
-  "loc_estimate": 696,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/kadmin/dbutil/tabdump.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.kadmin.dbutil.tabdump",
-  "generated": "2026-07-19T09:30:32+00:00"
-}

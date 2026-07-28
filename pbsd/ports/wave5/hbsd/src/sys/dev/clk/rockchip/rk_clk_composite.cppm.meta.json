@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/clk/rockchip/rk_clk_composite.c",
-  "wave": "wave5",
-  "loc_estimate": 334,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/clk/rockchip/rk_clk_composite.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.clk.rockchip.rk_clk_composite",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

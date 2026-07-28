@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/xz-embedded/linux/lib/xz/xz_dec_lzma2.c",
-  "wave": "wave4",
-  "loc_estimate": 1344,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/xz-embedded/linux/lib/xz/xz_dec_lzma2.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.xz_embedded.linux.lib.xz.xz_dec_lzma2",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

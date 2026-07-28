@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/utils/radiotap.c",
-  "wave": "wave9",
-  "loc_estimate": 396,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/utils/radiotap.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.utils.radiotap",
-  "generated": "2026-07-19T09:31:01+00:00"
-}

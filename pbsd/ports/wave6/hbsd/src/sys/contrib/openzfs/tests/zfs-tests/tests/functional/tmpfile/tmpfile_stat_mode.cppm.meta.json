@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/tests/functional/tmpfile/tmpfile_stat_mode.c",
-  "wave": "wave6",
-  "loc_estimate": 110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/tests/functional/tmpfile/tmpfile_stat_mode.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.tests.functional.tmpfile.tmpfile_stat_mode",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

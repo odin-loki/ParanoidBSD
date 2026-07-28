@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmsmac/phy/phy_cmn.c",
-  "wave": "wave4",
-  "loc_estimate": 2497,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmsmac/phy/phy_cmn.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.broadcom.brcm80211.brcmsmac.phy.phy_cmn",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

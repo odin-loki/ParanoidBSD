@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/fdc/fdc_isa.c",
-  "wave": "wave5",
-  "loc_estimate": 223,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/fdc/fdc_isa.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.fdc.fdc_isa",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

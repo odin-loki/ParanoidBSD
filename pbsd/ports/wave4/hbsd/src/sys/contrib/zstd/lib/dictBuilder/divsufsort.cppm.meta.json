@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zstd/lib/dictBuilder/divsufsort.c",
-  "wave": "wave4",
-  "loc_estimate": 1913,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/lib/dictBuilder/divsufsort.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.lib.dictbuilder.divsufsort",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

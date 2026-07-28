@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/filewidgets/kdiroperatordetailview.cpp",
-  "wave": "wave3",
-  "loc_estimate": 134,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/filewidgets/kdiroperatordetailview.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.filewidgets.kdiroperatordetailview",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/executer/exfield.c",
-  "wave": "wave4",
-  "loc_estimate": 561,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/executer/exfield.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.executer.exfield",
-  "generated": "2026-07-19T09:29:36+00:00"
-}

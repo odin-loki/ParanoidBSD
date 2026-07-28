@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_keycache.c",
-  "wave": "wave5",
-  "loc_estimate": 66,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar5416/ar5416_keycache.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar5416.ar5416_keycache",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

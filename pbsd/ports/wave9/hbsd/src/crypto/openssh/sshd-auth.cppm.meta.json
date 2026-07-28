@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/sshd-auth.c",
-  "wave": "wave9",
-  "loc_estimate": 888,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/sshd-auth.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.sshd_auth",
-  "generated": "2026-07-19T09:37:20+00:00"
-}

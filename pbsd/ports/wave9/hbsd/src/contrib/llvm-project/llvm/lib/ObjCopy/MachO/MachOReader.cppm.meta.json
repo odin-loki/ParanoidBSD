@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ObjCopy/MachO/MachOReader.cpp",
-  "wave": "wave9",
-  "loc_estimate": 387,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ObjCopy/MachO/MachOReader.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.objcopy.macho.machoreader",
-  "generated": "2026-07-19T09:31:54+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/ofed/drivers/infiniband/ulp/sdp/sdp_proc.c",
-  "wave": "wave4",
-  "loc_estimate": 534,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/ofed/drivers/infiniband/ulp/sdp/sdp_proc.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.ofed.drivers.infiniband.ulp.sdp.sdp_proc",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

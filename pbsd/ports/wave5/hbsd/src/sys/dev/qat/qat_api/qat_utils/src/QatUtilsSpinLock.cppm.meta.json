@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_api/qat_utils/src/QatUtilsSpinLock.c",
-  "wave": "wave5",
-  "loc_estimate": 44,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/qat_utils/src/QatUtilsSpinLock.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.qat_utils.src.qatutilsspinlock",
-  "generated": "2026-07-19T09:02:54+00:00"
-}

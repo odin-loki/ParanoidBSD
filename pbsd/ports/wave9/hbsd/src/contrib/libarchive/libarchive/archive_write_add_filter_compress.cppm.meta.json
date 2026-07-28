@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/archive_write_add_filter_compress.c",
-  "wave": "wave9",
-  "loc_estimate": 445,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/archive_write_add_filter_compress.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.archive_write_add_filter_compress",
-  "generated": "2026-07-19T09:30:41+00:00"
-}

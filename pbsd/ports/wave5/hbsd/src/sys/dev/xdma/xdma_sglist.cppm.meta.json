@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/xdma/xdma_sglist.c",
-  "wave": "wave5",
-  "loc_estimate": 99,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/xdma/xdma_sglist.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.xdma.xdma_sglist",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

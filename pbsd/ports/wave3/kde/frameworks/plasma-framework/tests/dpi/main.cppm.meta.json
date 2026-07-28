@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/tests/dpi/main.cpp",
-  "wave": "wave3",
-  "loc_estimate": 34,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/tests/dpi/main.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.tests.dpi.main",
-  "generated": "2026-07-19T07:48:20+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Checkers/MallocChecker.cpp",
-  "wave": "wave9",
-  "loc_estimate": 3915,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Checkers/MallocChecker.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.staticanalyzer.checkers.mallocchecker",
-  "generated": "2026-07-19T09:31:22+00:00"
-}

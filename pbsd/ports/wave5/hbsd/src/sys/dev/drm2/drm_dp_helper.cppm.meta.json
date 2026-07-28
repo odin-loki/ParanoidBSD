@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/drm2/drm_dp_helper.c",
-  "wave": "wave5",
-  "loc_estimate": 154,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/drm2/drm_dp_helper.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.drm2.drm_dp_helper",
-  "generated": "2026-07-19T09:29:05+00:00"
-}

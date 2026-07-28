@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/lpr/common_source/ctlinfo.c",
-  "wave": "wave2",
-  "loc_estimate": 916,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/lpr/common_source/ctlinfo.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.lpr.common_source.ctlinfo",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

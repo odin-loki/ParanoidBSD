@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libcasper/services/cap_sysctl/cap_sysctl.c",
-  "wave": "wave2",
-  "loc_estimate": 531,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libcasper/services/cap_sysctl/cap_sysctl.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libcasper.services.cap_sysctl.cap_sysctl",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

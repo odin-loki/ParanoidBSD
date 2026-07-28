@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/vm/_vm_radix.h",
-  "wave": "wave4",
-  "loc_estimate": 43,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/vm/_vm_radix.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.vm._vm_radix",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

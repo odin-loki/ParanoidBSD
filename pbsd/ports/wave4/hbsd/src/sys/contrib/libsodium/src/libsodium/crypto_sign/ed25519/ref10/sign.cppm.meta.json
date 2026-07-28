@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_sign/ed25519/ref10/sign.c",
-  "wave": "wave4",
-  "loc_estimate": 144,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_sign/ed25519/ref10/sign.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_sign.ed25519.ref10.sign",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

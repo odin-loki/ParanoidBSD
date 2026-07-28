@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/compat-43/killpg.c",
-  "wave": "wave2",
-  "loc_estimate": 47,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/compat-43/killpg.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.compat_43.killpg",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

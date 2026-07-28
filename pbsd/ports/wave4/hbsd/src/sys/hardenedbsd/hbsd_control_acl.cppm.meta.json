@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/hardenedbsd/hbsd_control_acl.c",
-  "wave": "wave4",
-  "loc_estimate": 112,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/hardenedbsd/hbsd_control_acl.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.hardenedbsd.hbsd_control_acl",
-  "generated": "2026-07-19T09:31:11+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libdiff/compat/merge.c",
-  "wave": "wave9",
-  "loc_estimate": 338,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libdiff/compat/merge.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libdiff.compat.merge",
-  "generated": "2026-07-19T09:38:02+00:00"
-}

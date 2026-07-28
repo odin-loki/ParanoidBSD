@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/unbound/compat/inet_ntop.c",
-  "wave": "wave9",
-  "loc_estimate": 218,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/compat/inet_ntop.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.compat.inet_ntop",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

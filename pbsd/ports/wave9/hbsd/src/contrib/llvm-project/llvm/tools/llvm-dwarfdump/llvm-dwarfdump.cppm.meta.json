@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-dwarfdump/llvm-dwarfdump.cpp",
-  "wave": "wave9",
-  "loc_estimate": 942,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-dwarfdump/llvm-dwarfdump.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_dwarfdump.llvm_dwarfdump",
-  "generated": "2026-07-19T09:31:56+00:00"
-}

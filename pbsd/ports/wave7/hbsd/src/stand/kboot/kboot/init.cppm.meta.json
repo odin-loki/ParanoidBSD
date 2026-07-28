@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/kboot/kboot/init.c",
-  "wave": "wave7",
-  "loc_estimate": 129,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/kboot/kboot/init.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.kboot.kboot.init",
-  "generated": "2026-07-19T09:49:38+00:00"
-}

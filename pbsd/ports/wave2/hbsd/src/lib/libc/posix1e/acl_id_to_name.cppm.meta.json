@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/posix1e/acl_id_to_name.c",
-  "wave": "wave2",
-  "loc_estimate": 99,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/posix1e/acl_id_to_name.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.posix1e.acl_id_to_name",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

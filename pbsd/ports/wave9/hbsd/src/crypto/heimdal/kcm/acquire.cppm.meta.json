@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/kcm/acquire.c",
-  "wave": "wave9",
-  "loc_estimate": 145,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/kcm/acquire.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.kcm.acquire",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

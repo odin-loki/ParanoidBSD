@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/test/afalgtest.c",
-  "wave": "wave9",
-  "loc_estimate": 154,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/afalgtest.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.afalgtest",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

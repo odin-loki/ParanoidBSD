@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/SandboxIR/Constant.cpp",
-  "wave": "wave9",
-  "loc_estimate": 484,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/SandboxIR/Constant.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.sandboxir.constant",
-  "generated": "2026-07-19T09:31:55+00:00"
-}

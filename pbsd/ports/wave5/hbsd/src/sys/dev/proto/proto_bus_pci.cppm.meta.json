@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/proto/proto_bus_pci.c",
-  "wave": "wave5",
-  "loc_estimate": 109,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/proto/proto_bus_pci.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.proto.proto_bus_pci",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

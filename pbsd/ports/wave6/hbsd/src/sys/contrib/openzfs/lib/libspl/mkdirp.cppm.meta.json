@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/lib/libspl/mkdirp.c",
-  "wave": "wave6",
-  "loc_estimate": 213,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libspl/mkdirp.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libspl.mkdirp",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/exca/exca.c",
-  "wave": "wave5",
-  "loc_estimate": 933,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/exca/exca.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.exca.exca",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

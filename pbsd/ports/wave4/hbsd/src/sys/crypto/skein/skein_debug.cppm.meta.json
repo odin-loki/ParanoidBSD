@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/crypto/skein/skein_debug.c",
-  "wave": "wave4",
-  "loc_estimate": 247,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/skein/skein_debug.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.skein.skein_debug",
-  "generated": "2026-07-19T09:31:12+00:00"
-}

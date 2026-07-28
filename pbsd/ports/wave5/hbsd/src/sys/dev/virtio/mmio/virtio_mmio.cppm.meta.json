@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/virtio/mmio/virtio_mmio.c",
-  "wave": "wave5",
-  "loc_estimate": 980,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/virtio/mmio/virtio_mmio.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.virtio.mmio.virtio_mmio",
-  "generated": "2026-07-19T07:49:15+00:00"
-}

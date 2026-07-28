@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/cmd/zed/zed_conf.c",
-  "wave": "wave6",
-  "loc_estimate": 721,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/cmd/zed/zed_conf.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.cmd.zed.zed_conf",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

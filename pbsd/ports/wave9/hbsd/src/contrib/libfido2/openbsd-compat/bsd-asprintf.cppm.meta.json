@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libfido2/openbsd-compat/bsd-asprintf.c",
-  "wave": "wave9",
-  "loc_estimate": 88,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libfido2/openbsd-compat/bsd-asprintf.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libfido2.openbsd_compat.bsd_asprintf",
-  "generated": "2026-07-19T09:37:34+00:00"
-}

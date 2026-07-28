@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/net/gethostbyht.c",
-  "wave": "wave2",
-  "loc_estimate": 335,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/net/gethostbyht.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.net.gethostbyht",
-  "generated": "2026-07-19T09:05:33+00:00"
-}

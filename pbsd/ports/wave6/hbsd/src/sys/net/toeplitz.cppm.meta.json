@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/toeplitz.c",
-  "wave": "wave6",
-  "loc_estimate": 55,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/toeplitz.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.toeplitz",
-  "generated": "2026-07-19T09:04:05+00:00"
-}

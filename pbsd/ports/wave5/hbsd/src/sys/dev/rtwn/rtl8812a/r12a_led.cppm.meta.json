@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/rtwn/rtl8812a/r12a_led.c",
-  "wave": "wave5",
-  "loc_estimate": 69,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8812a/r12a_led.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8812a.r12a_led",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

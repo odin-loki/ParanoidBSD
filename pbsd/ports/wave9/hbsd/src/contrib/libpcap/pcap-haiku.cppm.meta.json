@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libpcap/pcap-haiku.c",
-  "wave": "wave9",
-  "loc_estimate": 506,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libpcap/pcap-haiku.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libpcap.pcap_haiku",
-  "generated": "2026-07-19T09:37:41+00:00"
-}

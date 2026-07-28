@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kxmlgui/src/kshortcutseditoritem.cpp",
-  "wave": "wave3",
-  "loc_estimate": 312,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/src/kshortcutseditoritem.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.src.kshortcutseditoritem",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

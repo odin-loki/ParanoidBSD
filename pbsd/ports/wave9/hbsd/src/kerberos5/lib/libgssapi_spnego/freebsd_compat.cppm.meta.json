@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/kerberos5/lib/libgssapi_spnego/freebsd_compat.c",
-  "wave": "wave9",
-  "loc_estimate": 84,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/kerberos5/lib/libgssapi_spnego/freebsd_compat.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.kerberos5.lib.libgssapi_spnego.freebsd_compat",
-  "generated": "2026-07-19T09:38:12+00:00"
-}

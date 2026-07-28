@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/iwlwifi/mld/ftm-initiator.c",
-  "wave": "wave4",
-  "loc_estimate": 451,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/mld/ftm-initiator.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.mld.ftm_initiator",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/crypto/builtin/des/f_aead.c",
-  "wave": "wave9",
-  "loc_estimate": 177,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/crypto/builtin/des/f_aead.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.crypto.builtin.des.f_aead",
-  "generated": "2026-07-19T09:30:29+00:00"
-}

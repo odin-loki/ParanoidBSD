@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/if_tun.h",
-  "wave": "wave6",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/if_tun.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.if_tun",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

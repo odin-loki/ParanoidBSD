@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/e1000/em_txrx.c",
-  "wave": "wave5",
-  "loc_estimate": 843,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/e1000/em_txrx.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.e1000.em_txrx",
-  "generated": "2026-07-19T08:29:55+00:00"
-}

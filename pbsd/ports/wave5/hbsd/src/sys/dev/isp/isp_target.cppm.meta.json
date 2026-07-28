@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/isp/isp_target.c",
-  "wave": "wave5",
-  "loc_estimate": 871,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isp/isp_target.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isp.isp_target",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

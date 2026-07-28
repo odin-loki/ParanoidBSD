@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libucl/tests/fuzzers/ucl_msgpack_fuzzer.c",
-  "wave": "wave9",
-  "loc_estimate": 29,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libucl/tests/fuzzers/ucl_msgpack_fuzzer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libucl.tests.fuzzers.ucl_msgpack_fuzzer",
-  "generated": "2026-07-19T09:38:00+00:00"
-}

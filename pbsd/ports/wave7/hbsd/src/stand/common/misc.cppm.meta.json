@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/common/misc.c",
-  "wave": "wave7",
-  "loc_estimate": 235,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/common/misc.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.common.misc",
-  "generated": "2026-07-19T08:30:57+00:00"
-}

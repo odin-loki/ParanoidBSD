@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/hwasan/hwasan_globals.cpp",
-  "wave": "wave9",
-  "loc_estimate": 98,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/hwasan/hwasan_globals.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.hwasan.hwasan_globals",
-  "generated": "2026-07-19T09:37:15+00:00"
-}

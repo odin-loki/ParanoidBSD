@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/outline.cpp",
-  "wave": "wave3",
-  "loc_estimate": 180,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/outline.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.outline",
-  "generated": "2026-07-19T09:30:15+00:00"
-}

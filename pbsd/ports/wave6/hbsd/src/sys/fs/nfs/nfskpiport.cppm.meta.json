@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/nfs/nfskpiport.h",
-  "wave": "wave6",
-  "loc_estimate": 40,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nfs/nfskpiport.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nfs.nfskpiport",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

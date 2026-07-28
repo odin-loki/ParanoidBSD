@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/posix1e/acl_calc_mask.c",
-  "wave": "wave2",
-  "loc_estimate": 128,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/posix1e/acl_calc_mask.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.posix1e.acl_calc_mask",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

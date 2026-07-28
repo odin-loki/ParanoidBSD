@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/src/plasmaquick/transientplacementhint.cpp",
-  "wave": "wave3",
-  "loc_estimate": 306,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasmaquick/transientplacementhint.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasmaquick.transientplacementhint",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

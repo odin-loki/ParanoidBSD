@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/isa/isa_common.c",
-  "wave": "wave4",
-  "loc_estimate": 1142,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/isa/isa_common.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.isa.isa_common",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

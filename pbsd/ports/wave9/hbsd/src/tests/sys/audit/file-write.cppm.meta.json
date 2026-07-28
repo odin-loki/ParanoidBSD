@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/audit/file-write.c",
-  "wave": "wave9",
-  "loc_estimate": 139,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/audit/file-write.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.audit.file_write",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

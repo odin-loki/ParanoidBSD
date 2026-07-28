@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/fb/splash.c",
-  "wave": "wave5",
-  "loc_estimate": 215,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/fb/splash.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.fb.splash",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

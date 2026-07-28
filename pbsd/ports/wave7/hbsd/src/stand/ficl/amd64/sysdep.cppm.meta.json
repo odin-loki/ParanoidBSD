@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/ficl/amd64/sysdep.c",
-  "wave": "wave7",
-  "loc_estimate": 100,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/ficl/amd64/sysdep.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.ficl.amd64.sysdep",
-  "generated": "2026-07-19T09:49:38+00:00"
-}

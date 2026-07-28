@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/chg_usr_exec.c",
-  "wave": "wave6",
-  "loc_estimate": 78,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/chg_usr_exec.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.cmd.chg_usr_exec",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

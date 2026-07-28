@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/sys_eventfd.c",
-  "wave": "wave4",
-  "loc_estimate": 391,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/sys_eventfd.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.sys_eventfd",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

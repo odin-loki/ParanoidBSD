@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/openbsd-compat/base64.c",
-  "wave": "wave9",
-  "loc_estimate": 314,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/openbsd-compat/base64.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.openbsd_compat.base64",
-  "generated": "2026-07-19T09:37:20+00:00"
-}

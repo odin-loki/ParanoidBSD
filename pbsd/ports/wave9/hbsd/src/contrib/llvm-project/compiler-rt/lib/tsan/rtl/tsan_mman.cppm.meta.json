@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/rtl/tsan_mman.cpp",
-  "wave": "wave9",
-  "loc_estimate": 496,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/tsan/rtl/tsan_mman.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.tsan.rtl.tsan_mman",
-  "generated": "2026-07-19T09:37:17+00:00"
-}

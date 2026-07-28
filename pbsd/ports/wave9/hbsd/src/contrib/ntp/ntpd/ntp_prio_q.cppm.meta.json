@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/ntpd/ntp_prio_q.c",
-  "wave": "wave9",
-  "loc_estimate": 238,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/ntp_prio_q.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.ntp_prio_q",
-  "generated": "2026-07-19T09:31:05+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zstd/programs/dibio.c",
-  "wave": "wave4",
-  "loc_estimate": 440,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/programs/dibio.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.programs.dibio",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

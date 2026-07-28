@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libucl/tests/test_generate.c",
-  "wave": "wave9",
-  "loc_estimate": 317,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libucl/tests/test_generate.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libucl.tests.test_generate",
-  "generated": "2026-07-19T09:38:00+00:00"
-}

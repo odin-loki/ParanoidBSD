@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libsecureboot/vets.c",
-  "wave": "wave2",
-  "loc_estimate": 1156,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libsecureboot/vets.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libsecureboot.vets",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

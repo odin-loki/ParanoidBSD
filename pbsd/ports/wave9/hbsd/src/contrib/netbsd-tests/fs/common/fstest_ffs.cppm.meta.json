@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/fs/common/fstest_ffs.c",
-  "wave": "wave9",
-  "loc_estimate": 156,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/fs/common/fstest_ffs.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.fs.common.fstest_ffs",
-  "generated": "2026-07-19T09:30:57+00:00"
-}

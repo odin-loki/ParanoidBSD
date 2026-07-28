@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ath/if_ath_tdma.c",
-  "wave": "wave5",
-  "loc_estimate": 688,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/if_ath_tdma.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.if_ath_tdma",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

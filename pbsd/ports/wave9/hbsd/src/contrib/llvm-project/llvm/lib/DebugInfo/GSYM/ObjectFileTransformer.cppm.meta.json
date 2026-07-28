@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/GSYM/ObjectFileTransformer.cpp",
-  "wave": "wave9",
-  "loc_estimate": 120,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/GSYM/ObjectFileTransformer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.debuginfo.gsym.objectfiletransformer",
-  "generated": "2026-07-19T09:31:51+00:00"
-}

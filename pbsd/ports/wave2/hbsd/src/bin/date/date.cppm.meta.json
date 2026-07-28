@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/date/date.c",
-  "wave": "wave2",
-  "loc_estimate": 522,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/date/date.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.date.date",
-  "generated": "2026-07-19T07:48:49+00:00"
-}

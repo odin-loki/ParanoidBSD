@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Lex/HeaderSearch.cpp",
-  "wave": "wave9",
-  "loc_estimate": 2185,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Lex/HeaderSearch.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.lex.headersearch",
-  "generated": "2026-07-19T09:31:21+00:00"
-}

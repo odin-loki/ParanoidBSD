@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/makefs/walk.c",
-  "wave": "wave2",
-  "loc_estimate": 699,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/makefs/walk.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.makefs.walk",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

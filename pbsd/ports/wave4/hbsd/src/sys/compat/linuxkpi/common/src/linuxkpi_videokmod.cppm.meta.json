@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/linuxkpi/common/src/linuxkpi_videokmod.c",
-  "wave": "wave4",
-  "loc_estimate": 7,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/common/src/linuxkpi_videokmod.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.common.src.linuxkpi_videokmod",
-  "generated": "2026-07-19T09:31:09+00:00"
-}

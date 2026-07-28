@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/accf_dns.c",
-  "wave": "wave6",
-  "loc_estimate": 121,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/accf_dns.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.accf_dns",
-  "generated": "2026-07-19T09:02:52+00:00"
-}

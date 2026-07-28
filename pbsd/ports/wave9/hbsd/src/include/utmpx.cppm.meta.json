@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/utmpx.h",
-  "wave": "wave9",
-  "loc_estimate": 88,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/utmpx.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.utmpx",
-  "generated": "2026-07-19T10:59:34+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qcom_clk/qcom_clk_fdiv.c",
-  "wave": "wave5",
-  "loc_estimate": 112,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qcom_clk/qcom_clk_fdiv.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qcom_clk.qcom_clk_fdiv",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/elftoolchain/libelf/elf_end.c",
-  "wave": "wave9",
-  "loc_estimate": 94,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/elftoolchain/libelf/elf_end.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.elftoolchain.libelf.elf_end",
-  "generated": "2026-07-19T09:37:29+00:00"
-}

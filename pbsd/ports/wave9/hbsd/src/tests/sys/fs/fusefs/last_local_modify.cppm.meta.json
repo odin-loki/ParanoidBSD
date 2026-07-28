@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/fs/fusefs/last_local_modify.cc",
-  "wave": "wave9",
-  "loc_estimate": 521,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/last_local_modify.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.last_local_modify",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

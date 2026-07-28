@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/athk/ath10k/wmi-tlv.c",
-  "wave": "wave4",
-  "loc_estimate": 5088,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/athk/ath10k/wmi-tlv.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.athk.ath10k.wmi_tlv",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/utils/ramfile.cpp",
-  "wave": "wave3",
-  "loc_estimate": 164,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/utils/ramfile.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.utils.ramfile",
-  "generated": "2026-07-19T09:30:15+00:00"
-}

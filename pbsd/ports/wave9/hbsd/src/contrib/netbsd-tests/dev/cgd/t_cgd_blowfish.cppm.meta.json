@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/dev/cgd/t_cgd_blowfish.c",
-  "wave": "wave9",
-  "loc_estimate": 2341,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/dev/cgd/t_cgd_blowfish.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.dev.cgd.t_cgd_blowfish",
-  "generated": "2026-07-19T09:30:59+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/kboot/kboot/hostcons.c",
-  "wave": "wave7",
-  "loc_estimate": 98,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/kboot/kboot/hostcons.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.kboot.kboot.hostcons",
-  "generated": "2026-07-19T09:49:38+00:00"
-}

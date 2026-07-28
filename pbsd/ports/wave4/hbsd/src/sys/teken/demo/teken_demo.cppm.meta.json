@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/teken/demo/teken_demo.c",
-  "wave": "wave4",
-  "loc_estimate": 355,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/teken/demo/teken_demo.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.teken.demo.teken_demo",
-  "generated": "2026-07-19T09:31:12+00:00"
-}

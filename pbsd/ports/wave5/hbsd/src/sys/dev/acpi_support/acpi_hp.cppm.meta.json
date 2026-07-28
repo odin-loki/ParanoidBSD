@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/acpi_support/acpi_hp.c",
-  "wave": "wave5",
-  "loc_estimate": 1287,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpi_support/acpi_hp.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpi_support.acpi_hp",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

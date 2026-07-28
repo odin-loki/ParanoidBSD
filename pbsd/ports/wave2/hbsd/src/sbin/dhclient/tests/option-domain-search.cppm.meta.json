@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/dhclient/tests/option-domain-search.c",
-  "wave": "wave2",
-  "loc_estimate": 374,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/dhclient/tests/option-domain-search.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.dhclient.tests.option_domain_search",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

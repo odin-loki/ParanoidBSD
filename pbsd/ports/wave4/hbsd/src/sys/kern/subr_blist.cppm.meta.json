@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/subr_blist.c",
-  "wave": "wave4",
-  "loc_estimate": 1177,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_blist.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_blist",
-  "generated": "2026-07-19T09:19:11+00:00"
-}

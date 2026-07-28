@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwindowsystem/src/platforms/wayland/shm.cpp",
-  "wave": "wave3",
-  "loc_estimate": 137,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/src/platforms/wayland/shm.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.src.platforms.wayland.shm",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

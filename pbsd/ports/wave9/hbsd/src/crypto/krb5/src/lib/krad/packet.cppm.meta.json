@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krad/packet.c",
-  "wave": "wave9",
-  "loc_estimate": 645,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krad/packet.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krad.packet",
-  "generated": "2026-07-19T09:30:32+00:00"
-}

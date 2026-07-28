@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/os/freebsd/spl/spl_string.c",
-  "wave": "wave6",
-  "loc_estimate": 138,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/os/freebsd/spl/spl_string.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.os.freebsd.spl.spl_string",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

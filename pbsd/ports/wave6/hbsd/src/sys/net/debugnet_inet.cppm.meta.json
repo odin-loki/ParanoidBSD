@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/debugnet_inet.c",
-  "wave": "wave6",
-  "loc_estimate": 501,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/debugnet_inet.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.debugnet_inet",
-  "generated": "2026-07-19T09:04:06+00:00"
-}

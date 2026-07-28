@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mlx4/mlx4_ib/mlx4_ib_alias_GUID.c",
-  "wave": "wave5",
-  "loc_estimate": 909,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx4/mlx4_ib/mlx4_ib_alias_GUID.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx4.mlx4_ib.mlx4_ib_alias_guid",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

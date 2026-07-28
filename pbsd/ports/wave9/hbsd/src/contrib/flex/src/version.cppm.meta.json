@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/flex/src/version.h",
-  "wave": "wave9",
-  "loc_estimate": 1,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/flex/src/version.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.flex.src.version",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

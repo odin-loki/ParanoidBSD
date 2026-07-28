@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/opencrypto/xform_aes_xts.c",
-  "wave": "wave4",
-  "loc_estimate": 181,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/opencrypto/xform_aes_xts.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.opencrypto.xform_aes_xts",
-  "generated": "2026-07-19T09:08:34+00:00"
-}

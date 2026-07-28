@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/moused/msconvd/msconvd.c",
-  "wave": "wave2",
-  "loc_estimate": 2603,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/moused/msconvd/msconvd.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.moused.msconvd.msconvd",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/usb/storage/umass_loader.c",
-  "wave": "wave7",
-  "loc_estimate": 240,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/usb/storage/umass_loader.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.usb.storage.umass_loader",
-  "generated": "2026-07-19T09:49:40+00:00"
-}

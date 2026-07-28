@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/util/et/error_message.c",
-  "wave": "wave9",
-  "loc_estimate": 309,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/util/et/error_message.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.util.et.error_message",
-  "generated": "2026-07-19T09:30:31+00:00"
-}

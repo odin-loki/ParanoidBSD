@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/setfib/setfib.c",
-  "wave": "wave2",
-  "loc_estimate": 105,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/setfib/setfib.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.setfib.setfib",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/atf/atf-c++/macros_test.cpp",
-  "wave": "wave9",
-  "loc_estimate": 811,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/atf/atf-c++/macros_test.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.atf.atf_c__.macros_test",
-  "generated": "2026-07-19T09:37:42+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/arm-optimized-routines/string/arm/strcpy.c",
-  "wave": "wave9",
-  "loc_estimate": 133,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/arm-optimized-routines/string/arm/strcpy.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.arm_optimized_routines.string.arm.strcpy",
-  "generated": "2026-07-19T09:31:59+00:00"
-}

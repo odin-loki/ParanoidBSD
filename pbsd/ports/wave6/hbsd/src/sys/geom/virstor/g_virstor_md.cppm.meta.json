@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/virstor/g_virstor_md.c",
-  "wave": "wave6",
-  "loc_estimate": 89,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/virstor/g_virstor_md.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.virstor.g_virstor_md",
-  "generated": "2026-07-19T08:30:51+00:00"
-}

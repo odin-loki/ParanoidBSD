@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bearssl/tools/chain.c",
-  "wave": "wave9",
-  "loc_estimate": 154,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/tools/chain.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.tools.chain",
-  "generated": "2026-07-19T09:37:18+00:00"
-}

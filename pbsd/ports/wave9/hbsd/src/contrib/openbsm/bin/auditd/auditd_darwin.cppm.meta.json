@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/openbsm/bin/auditd/auditd_darwin.c",
-  "wave": "wave9",
-  "loc_estimate": 482,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openbsm/bin/auditd/auditd_darwin.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.openbsm.bin.auditd.auditd_darwin",
-  "generated": "2026-07-19T09:37:50+00:00"
-}

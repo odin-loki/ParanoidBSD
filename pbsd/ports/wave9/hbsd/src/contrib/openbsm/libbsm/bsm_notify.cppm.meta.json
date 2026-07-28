@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/openbsm/libbsm/bsm_notify.c",
-  "wave": "wave9",
-  "loc_estimate": 179,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openbsm/libbsm/bsm_notify.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.openbsm.libbsm.bsm_notify",
-  "generated": "2026-07-19T09:37:50+00:00"
-}

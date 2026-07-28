@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/libsa/pkgfs.c",
-  "wave": "wave7",
-  "loc_estimate": 842,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/libsa/pkgfs.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.libsa.pkgfs",
-  "generated": "2026-07-19T09:49:43+00:00"
-}

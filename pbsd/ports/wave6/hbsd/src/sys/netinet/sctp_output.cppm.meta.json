@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/sctp_output.c",
-  "wave": "wave6",
-  "loc_estimate": 13928,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/sctp_output.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.sctp_output",
-  "generated": "2026-07-19T09:29:21+00:00"
-}

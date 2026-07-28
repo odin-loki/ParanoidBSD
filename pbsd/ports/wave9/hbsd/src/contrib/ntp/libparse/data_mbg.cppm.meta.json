@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/libparse/data_mbg.c",
-  "wave": "wave9",
-  "loc_estimate": 542,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/libparse/data_mbg.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.libparse.data_mbg",
-  "generated": "2026-07-19T09:31:06+00:00"
-}

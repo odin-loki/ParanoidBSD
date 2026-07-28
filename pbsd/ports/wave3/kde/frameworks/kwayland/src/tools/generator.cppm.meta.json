@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwayland/src/tools/generator.cpp",
-  "wave": "wave3",
-  "loc_estimate": 1585,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/tools/generator.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.tools.generator",
-  "generated": "2026-07-19T09:30:20+00:00"
-}

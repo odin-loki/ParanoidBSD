@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/raid/g_raid.c",
-  "wave": "wave6",
-  "loc_estimate": 2575,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/raid/g_raid.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.raid.g_raid",
-  "generated": "2026-07-19T09:29:22+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/comcontrol/comcontrol.c",
-  "wave": "wave2",
-  "loc_estimate": 106,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/comcontrol/comcontrol.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.comcontrol.comcontrol",
-  "generated": "2026-07-19T09:30:00+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmfmac/sdio.c",
-  "wave": "wave4",
-  "loc_estimate": 4651,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/broadcom/brcm80211/brcmfmac/sdio.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.broadcom.brcm80211.brcmfmac.sdio",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

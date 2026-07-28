@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Frontend/InterfaceStubFunctionsConsumer.cpp",
-  "wave": "wave9",
-  "loc_estimate": 341,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Frontend/InterfaceStubFunctionsConsumer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.frontend.interfacestubfunctionsconsumer",
-  "generated": "2026-07-19T09:31:19+00:00"
-}

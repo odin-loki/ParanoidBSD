@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tnftp/src/domacro.c",
-  "wave": "wave9",
-  "loc_estimate": 152,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tnftp/src/domacro.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tnftp.src.domacro",
-  "generated": "2026-07-19T09:38:09+00:00"
-}

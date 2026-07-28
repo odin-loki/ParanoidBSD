@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/isci/scil/sati_request_sense.c",
-  "wave": "wave5",
-  "loc_estimate": 353,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isci/scil/sati_request_sense.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isci.scil.sati_request_sense",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

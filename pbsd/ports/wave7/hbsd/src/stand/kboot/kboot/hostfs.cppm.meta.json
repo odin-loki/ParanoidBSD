@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/kboot/kboot/hostfs.c",
-  "wave": "wave7",
-  "loc_estimate": 287,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/kboot/kboot/hostfs.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.kboot.kboot.hostfs",
-  "generated": "2026-07-19T09:49:40+00:00"
-}

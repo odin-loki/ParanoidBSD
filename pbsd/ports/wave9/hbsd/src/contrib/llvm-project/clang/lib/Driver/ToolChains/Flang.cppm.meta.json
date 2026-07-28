@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Driver/ToolChains/Flang.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1068,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Driver/ToolChains/Flang.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.driver.toolchains.flang",
-  "generated": "2026-07-19T09:31:21+00:00"
-}

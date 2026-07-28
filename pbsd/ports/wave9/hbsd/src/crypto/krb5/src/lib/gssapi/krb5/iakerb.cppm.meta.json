@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/krb5/iakerb.c",
-  "wave": "wave9",
-  "loc_estimate": 1398,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/krb5/iakerb.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.krb5.iakerb",
-  "generated": "2026-07-19T09:30:33+00:00"
-}

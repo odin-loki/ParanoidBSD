@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/pkill/tests/spin_helper.c",
-  "wave": "wave2",
-  "loc_estimate": 123,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/pkill/tests/spin_helper.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.pkill.tests.spin_helper",
-  "generated": "2026-07-19T07:28:54+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/ec/ecp_sm2p256_table.c",
-  "wave": "wave9",
-  "loc_estimate": 16387,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/ec/ecp_sm2p256_table.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.ec.ecp_sm2p256_table",
-  "generated": "2026-07-19T09:30:07+00:00"
-}

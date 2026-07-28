@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/kqueue/libkqueue/signal.c",
-  "wave": "wave9",
-  "loc_estimate": 196,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kqueue/libkqueue/signal.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kqueue.libkqueue.signal",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

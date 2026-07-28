@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/Utility/RegisterContextDarwin_riscv32.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1313,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/Utility/RegisterContextDarwin_riscv32.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.process.utility.registercontextdarwin_riscv32",
-  "generated": "2026-07-19T09:31:44+00:00"
-}

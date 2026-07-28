@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ofed/libirdma/irdma_umain.c",
-  "wave": "wave9",
-  "loc_estimate": 288,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/libirdma/irdma_umain.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.libirdma.irdma_umain",
-  "generated": "2026-07-19T09:37:24+00:00"
-}

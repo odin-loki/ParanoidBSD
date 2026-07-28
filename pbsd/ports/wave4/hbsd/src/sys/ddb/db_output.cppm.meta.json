@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/ddb/db_output.c",
-  "wave": "wave4",
-  "loc_estimate": 391,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/ddb/db_output.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.ddb.db_output",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/ia32/ia32_genassym.c",
-  "wave": "wave4",
-  "loc_estimate": 39,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/ia32/ia32_genassym.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.ia32.ia32_genassym",
-  "generated": "2026-07-19T09:31:09+00:00"
-}

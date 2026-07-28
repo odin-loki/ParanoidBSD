@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/acpica/acpi_powerres.c",
-  "wave": "wave5",
-  "loc_estimate": 764,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpica/acpi_powerres.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpica.acpi_powerres",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

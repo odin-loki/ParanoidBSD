@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/raid/md_ddf.c",
-  "wave": "wave6",
-  "loc_estimate": 3087,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/raid/md_ddf.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.raid.md_ddf",
-  "generated": "2026-07-19T09:29:22+00:00"
-}

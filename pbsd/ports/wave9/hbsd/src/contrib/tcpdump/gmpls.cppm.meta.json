@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/gmpls.c",
-  "wave": "wave9",
-  "loc_estimate": 190,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/gmpls.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.gmpls",
-  "generated": "2026-07-19T09:37:26+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/archive_entry_strmode.c",
-  "wave": "wave9",
-  "loc_estimate": 86,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/archive_entry_strmode.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.archive_entry_strmode",
-  "generated": "2026-07-19T09:30:40+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libcasper/services/cap_pwd/cap_pwd.c",
-  "wave": "wave2",
-  "loc_estimate": 781,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libcasper/services/cap_pwd/cap_pwd.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libcasper.services.cap_pwd.cap_pwd",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

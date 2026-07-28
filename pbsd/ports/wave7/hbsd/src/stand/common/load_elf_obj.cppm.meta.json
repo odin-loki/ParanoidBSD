@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/common/load_elf_obj.c",
-  "wave": "wave7",
-  "loc_estimate": 572,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/common/load_elf_obj.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.common.load_elf_obj",
-  "generated": "2026-07-19T09:49:42+00:00"
-}

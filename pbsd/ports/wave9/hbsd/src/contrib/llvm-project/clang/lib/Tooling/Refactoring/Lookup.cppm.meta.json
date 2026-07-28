@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Tooling/Refactoring/Lookup.cpp",
-  "wave": "wave9",
-  "loc_estimate": 224,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Tooling/Refactoring/Lookup.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.tooling.refactoring.lookup",
-  "generated": "2026-07-19T09:31:18+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libhbsdcontrol/disallow_map32bit.c",
-  "wave": "wave2",
-  "loc_estimate": 315,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libhbsdcontrol/disallow_map32bit.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libhbsdcontrol.disallow_map32bit",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

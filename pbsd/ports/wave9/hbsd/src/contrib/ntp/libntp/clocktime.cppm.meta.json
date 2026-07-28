@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/libntp/clocktime.c",
-  "wave": "wave9",
-  "loc_estimate": 149,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/libntp/clocktime.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.libntp.clocktime",
-  "generated": "2026-07-19T09:31:05+00:00"
-}

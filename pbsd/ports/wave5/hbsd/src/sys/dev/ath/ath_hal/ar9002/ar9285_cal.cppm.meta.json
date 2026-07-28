@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ath/ath_hal/ar9002/ar9285_cal.c",
-  "wave": "wave5",
-  "loc_estimate": 269,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar9002/ar9285_cal.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar9002.ar9285_cal",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

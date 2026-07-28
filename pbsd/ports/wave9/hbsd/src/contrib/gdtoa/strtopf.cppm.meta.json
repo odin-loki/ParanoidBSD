@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/gdtoa/strtopf.c",
-  "wave": "wave9",
-  "loc_estimate": 78,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/gdtoa/strtopf.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.gdtoa.strtopf",
-  "generated": "2026-07-19T09:37:48+00:00"
-}

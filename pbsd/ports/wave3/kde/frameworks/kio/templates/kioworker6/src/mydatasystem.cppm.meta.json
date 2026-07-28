@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/templates/kioworker6/src/mydatasystem.cpp",
-  "wave": "wave3",
-  "loc_estimate": 79,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/templates/kioworker6/src/mydatasystem.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.templates.kioworker6.src.mydatasystem",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

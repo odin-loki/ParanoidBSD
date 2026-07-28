@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/cddl/zfs/bin/mktree.c",
-  "wave": "wave9",
-  "loc_estimate": 194,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/cddl/zfs/bin/mktree.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.cddl.zfs.bin.mktree",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_kdf/crypto_kdf.c",
-  "wave": "wave4",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_kdf/crypto_kdf.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_kdf.crypto_kdf",
-  "generated": "2026-07-19T09:29:51+00:00"
-}

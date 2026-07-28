@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/opencrypto/xform_aes_cbc.c",
-  "wave": "wave4",
-  "loc_estimate": 167,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/opencrypto/xform_aes_cbc.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.opencrypto.xform_aes_cbc",
-  "generated": "2026-07-19T09:08:34+00:00"
-}

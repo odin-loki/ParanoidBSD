@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/signature.c",
-  "wave": "wave9",
-  "loc_estimate": 206,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/signature.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.signature",
-  "generated": "2026-07-19T09:37:26+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/util/support/regex.cpp",
-  "wave": "wave9",
-  "loc_estimate": 153,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/util/support/regex.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.util.support.regex",
-  "generated": "2026-07-19T09:30:29+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ida/ida_pci.c",
-  "wave": "wave5",
-  "loc_estimate": 307,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ida/ida_pci.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ida.ida_pci",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

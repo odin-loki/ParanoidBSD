@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/net80211/wesside/wesside/wesside.c",
-  "wave": "wave9",
-  "loc_estimate": 2814,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/net80211/wesside/wesside/wesside.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.net80211.wesside.wesside.wesside",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

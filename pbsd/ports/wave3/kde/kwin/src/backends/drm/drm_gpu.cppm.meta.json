@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/backends/drm/drm_gpu.cpp",
-  "wave": "wave3",
-  "loc_estimate": 1116,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/backends/drm/drm_gpu.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.backends.drm.drm_gpu",
-  "generated": "2026-07-19T09:30:19+00:00"
-}

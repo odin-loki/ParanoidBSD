@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/zlib/zcalloc.c",
-  "wave": "wave5",
-  "loc_estimate": 38,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/zlib/zcalloc.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.zlib.zcalloc",
-  "generated": "2026-07-19T09:02:54+00:00"
-}

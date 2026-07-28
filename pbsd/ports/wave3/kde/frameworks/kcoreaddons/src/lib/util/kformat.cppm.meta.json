@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kcoreaddons/src/lib/util/kformat.cpp",
-  "wave": "wave3",
-  "loc_estimate": 80,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/util/kformat.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.util.kformat",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

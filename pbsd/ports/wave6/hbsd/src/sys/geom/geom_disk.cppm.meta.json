@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/geom_disk.c",
-  "wave": "wave6",
-  "loc_estimate": 1120,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/geom_disk.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.geom_disk",
-  "generated": "2026-07-19T09:29:22+00:00"
-}

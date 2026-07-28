@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/sockets/unix_cmsg/uc_common.c",
-  "wave": "wave9",
-  "loc_estimate": 742,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/sockets/unix_cmsg/uc_common.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.sockets.unix_cmsg.uc_common",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

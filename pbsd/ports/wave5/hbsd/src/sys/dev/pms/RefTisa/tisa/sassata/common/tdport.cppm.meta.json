@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/common/tdport.c",
-  "wave": "wave5",
-  "loc_estimate": 8043,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/common/tdport.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.reftisa.tisa.sassata.common.tdport",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

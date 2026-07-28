@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/json/tst.usdt.c",
-  "wave": "wave2",
-  "loc_estimate": 66,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/json/tst.usdt.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.cddl.contrib.opensolaris.cmd.dtrace.test.tst.common.json.tst_usdt",
-  "generated": "2026-07-19T09:04:03+00:00"
-}

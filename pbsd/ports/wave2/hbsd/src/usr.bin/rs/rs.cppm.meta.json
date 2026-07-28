@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.bin/rs/rs.cc",
-  "wave": "wave2",
-  "loc_estimate": 462,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/rs/rs.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_bin.rs.rs",
-  "generated": "2026-07-19T09:30:21+00:00"
-}

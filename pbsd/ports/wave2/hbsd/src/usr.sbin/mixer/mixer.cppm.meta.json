@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/mixer/mixer.c",
-  "wave": "wave2",
-  "loc_estimate": 523,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/mixer/mixer.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.mixer.mixer",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

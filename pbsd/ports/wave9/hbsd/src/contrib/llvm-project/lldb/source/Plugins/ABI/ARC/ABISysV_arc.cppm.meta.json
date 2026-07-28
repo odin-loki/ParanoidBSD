@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/ARC/ABISysV_arc.cpp",
-  "wave": "wave9",
-  "loc_estimate": 600,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/ARC/ABISysV_arc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.abi.arc.abisysv_arc",
-  "generated": "2026-07-19T09:31:42+00:00"
-}

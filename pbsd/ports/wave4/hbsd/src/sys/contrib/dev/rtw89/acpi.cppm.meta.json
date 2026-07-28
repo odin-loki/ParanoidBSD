@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/rtw89/acpi.c",
-  "wave": "wave4",
-  "loc_estimate": 1289,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/rtw89/acpi.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.rtw89.acpi",
-  "generated": "2026-07-19T09:29:36+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mlx5/mlx5_fpga_tools/mlx5fpga_tools_main.c",
-  "wave": "wave5",
-  "loc_estimate": 139,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx5/mlx5_fpga_tools/mlx5fpga_tools_main.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx5.mlx5_fpga_tools.mlx5fpga_tools_main",
-  "generated": "2026-07-19T09:29:05+00:00"
-}

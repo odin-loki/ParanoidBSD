@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/net/ip6opt.c",
-  "wave": "wave2",
-  "loc_estimate": 598,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/net/ip6opt.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.net.ip6opt",
-  "generated": "2026-07-19T09:05:33+00:00"
-}

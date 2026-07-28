@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/orc/coff_platform.per_jd.cpp",
-  "wave": "wave9",
-  "loc_estimate": 31,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/orc/coff_platform.per_jd.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.orc.coff_platform_per_jd",
-  "generated": "2026-07-19T09:37:15+00:00"
-}

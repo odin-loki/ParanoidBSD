@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kcoreaddons/src/lib/io/kautosavefile.cpp",
-  "wave": "wave3",
-  "loc_estimate": 232,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/io/kautosavefile.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.io.kautosavefile",
-  "generated": "2026-07-19T09:30:16+00:00"
-}

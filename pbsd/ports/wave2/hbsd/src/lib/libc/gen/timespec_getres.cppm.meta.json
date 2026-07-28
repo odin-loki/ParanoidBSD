@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/gen/timespec_getres.c",
-  "wave": "wave2",
-  "loc_estimate": 24,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/timespec_getres.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.timespec_getres",
-  "generated": "2026-07-19T08:29:02+00:00"
-}

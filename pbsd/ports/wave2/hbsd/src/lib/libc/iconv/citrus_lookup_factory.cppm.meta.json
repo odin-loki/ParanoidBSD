@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/iconv/citrus_lookup_factory.c",
-  "wave": "wave2",
-  "loc_estimate": 121,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/iconv/citrus_lookup_factory.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.iconv.citrus_lookup_factory",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

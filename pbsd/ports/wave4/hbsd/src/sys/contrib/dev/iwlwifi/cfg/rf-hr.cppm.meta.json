@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/iwlwifi/cfg/rf-hr.c",
-  "wave": "wave4",
-  "loc_estimate": 89,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/cfg/rf-hr.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.cfg.rf_hr",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

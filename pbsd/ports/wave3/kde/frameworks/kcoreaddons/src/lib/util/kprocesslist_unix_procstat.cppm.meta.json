@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kcoreaddons/src/lib/util/kprocesslist_unix_procstat.cpp",
-  "wave": "wave3",
-  "loc_estimate": 43,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/util/kprocesslist_unix_procstat.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.util.kprocesslist_unix_procstat",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

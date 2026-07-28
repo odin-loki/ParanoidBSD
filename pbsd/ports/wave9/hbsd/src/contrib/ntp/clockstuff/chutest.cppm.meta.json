@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/clockstuff/chutest.c",
-  "wave": "wave9",
-  "loc_estimate": 821,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/clockstuff/chutest.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.clockstuff.chutest",
-  "generated": "2026-07-19T09:31:07+00:00"
-}

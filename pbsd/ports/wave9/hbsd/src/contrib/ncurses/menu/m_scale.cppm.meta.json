@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ncurses/menu/m_scale.c",
-  "wave": "wave9",
-  "loc_estimate": 77,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/menu/m_scale.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.menu.m_scale",
-  "generated": "2026-07-19T09:37:22+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ldns/host2wire.c",
-  "wave": "wave9",
-  "loc_estimate": 527,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ldns/host2wire.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ldns.host2wire",
-  "generated": "2026-07-19T09:37:45+00:00"
-}

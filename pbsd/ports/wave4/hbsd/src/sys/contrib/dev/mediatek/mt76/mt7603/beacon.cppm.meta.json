@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/mediatek/mt76/mt7603/beacon.c",
-  "wave": "wave4",
-  "loc_estimate": 225,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/mediatek/mt76/mt7603/beacon.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.mediatek.mt76.mt7603.beacon",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

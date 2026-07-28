@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/sntp/libevent/test/regress_rpc.c",
-  "wave": "wave9",
-  "loc_estimate": 952,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/sntp/libevent/test/regress_rpc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.sntp.libevent.test.regress_rpc",
-  "generated": "2026-07-19T09:31:07+00:00"
-}

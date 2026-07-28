@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwayland/src/compat/wayland-xdg-shell-v5-protocol.c",
-  "wave": "wave3",
-  "loc_estimate": 119,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/compat/wayland-xdg-shell-v5-protocol.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.compat.wayland_xdg_shell_v5_protocol",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

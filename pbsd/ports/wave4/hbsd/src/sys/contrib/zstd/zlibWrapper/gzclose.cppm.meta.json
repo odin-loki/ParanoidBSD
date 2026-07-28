@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zstd/zlibWrapper/gzclose.c",
-  "wave": "wave4",
-  "loc_estimate": 26,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/zlibWrapper/gzclose.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.zlibwrapper.gzclose",
-  "generated": "2026-07-19T09:29:51+00:00"
-}

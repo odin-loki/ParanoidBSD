@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/dpaa2/dpaa2_ni.c",
-  "wave": "wave5",
-  "loc_estimate": 3837,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/dpaa2/dpaa2_ni.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.dpaa2.dpaa2_ni",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

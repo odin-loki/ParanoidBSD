@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ath/if_ath_btcoex.c",
-  "wave": "wave5",
-  "loc_estimate": 479,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/if_ath_btcoex.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.if_ath_btcoex",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

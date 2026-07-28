@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/dir_rd_update.c",
-  "wave": "wave6",
-  "loc_estimate": 136,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/dir_rd_update.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.cmd.dir_rd_update",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

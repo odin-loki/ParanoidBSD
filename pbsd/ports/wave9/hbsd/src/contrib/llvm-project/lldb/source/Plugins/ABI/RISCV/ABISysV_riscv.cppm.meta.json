@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/RISCV/ABISysV_riscv.cpp",
-  "wave": "wave9",
-  "loc_estimate": 908,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/RISCV/ABISysV_riscv.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.abi.riscv.abisysv_riscv",
-  "generated": "2026-07-19T09:31:43+00:00"
-}

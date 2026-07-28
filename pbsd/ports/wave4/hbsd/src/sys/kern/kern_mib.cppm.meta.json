@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/kern_mib.c",
-  "wave": "wave4",
-  "loc_estimate": 787,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_mib.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_mib",
-  "generated": "2026-07-19T09:19:11+00:00"
-}

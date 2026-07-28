@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netipsec/xform_ah.c",
-  "wave": "wave6",
-  "loc_estimate": 1192,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netipsec/xform_ah.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netipsec.xform_ah",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

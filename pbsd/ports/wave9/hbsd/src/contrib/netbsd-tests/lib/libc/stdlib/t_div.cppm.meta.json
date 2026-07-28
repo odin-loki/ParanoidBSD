@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/lib/libc/stdlib/t_div.c",
-  "wave": "wave9",
-  "loc_estimate": 98,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libc/stdlib/t_div.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libc.stdlib.t_div",
-  "generated": "2026-07-19T09:30:55+00:00"
-}

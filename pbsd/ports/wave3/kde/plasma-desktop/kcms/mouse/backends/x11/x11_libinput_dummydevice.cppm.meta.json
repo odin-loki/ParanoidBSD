@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/kcms/mouse/backends/x11/x11_libinput_dummydevice.cpp",
-  "wave": "wave3",
-  "loc_estimate": 277,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/mouse/backends/x11/x11_libinput_dummydevice.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.mouse.backends.x11.x11_libinput_dummydevice",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

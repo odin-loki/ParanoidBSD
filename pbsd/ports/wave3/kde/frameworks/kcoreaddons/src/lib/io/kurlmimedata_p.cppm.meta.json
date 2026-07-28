@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kcoreaddons/src/lib/io/kurlmimedata_p.h",
-  "wave": "wave3",
-  "loc_estimate": 19,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/io/kurlmimedata_p.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.io.kurlmimedata_p",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

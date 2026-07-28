@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/tests/framework/kern_testfrwk.c",
-  "wave": "wave4",
-  "loc_estimate": 333,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/tests/framework/kern_testfrwk.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.tests.framework.kern_testfrwk",
-  "generated": "2026-07-19T09:31:12+00:00"
-}

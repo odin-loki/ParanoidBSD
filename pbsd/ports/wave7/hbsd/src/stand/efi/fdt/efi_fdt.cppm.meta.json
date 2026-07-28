@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/efi/fdt/efi_fdt.c",
-  "wave": "wave7",
-  "loc_estimate": 66,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/efi/fdt/efi_fdt.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.efi.fdt.efi_fdt",
-  "generated": "2026-07-19T09:49:37+00:00"
-}

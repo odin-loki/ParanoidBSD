@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/ip_gre.c",
-  "wave": "wave6",
-  "loc_estimate": 582,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/ip_gre.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.ip_gre",
-  "generated": "2026-07-19T09:29:21+00:00"
-}

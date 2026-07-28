@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/os/linux/zfs/zfs_sysfs.c",
-  "wave": "wave6",
-  "loc_estimate": 702,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/os/linux/zfs/zfs_sysfs.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.os.linux.zfs.zfs_sysfs",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

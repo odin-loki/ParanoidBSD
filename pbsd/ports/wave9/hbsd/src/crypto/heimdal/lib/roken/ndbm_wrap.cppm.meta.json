@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/roken/ndbm_wrap.c",
-  "wave": "wave9",
-  "loc_estimate": 225,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/ndbm_wrap.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.ndbm_wrap",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

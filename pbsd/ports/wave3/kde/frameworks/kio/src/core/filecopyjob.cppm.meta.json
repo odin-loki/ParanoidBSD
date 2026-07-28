@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/core/filecopyjob.cpp",
-  "wave": "wave3",
-  "loc_estimate": 649,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/core/filecopyjob.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.core.filecopyjob",
-  "generated": "2026-07-19T09:30:19+00:00"
-}

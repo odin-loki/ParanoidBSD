@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Analysis/HashRecognize.cpp",
-  "wave": "wave9",
-  "loc_estimate": 720,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Analysis/HashRecognize.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.analysis.hashrecognize",
-  "generated": "2026-07-19T09:31:56+00:00"
-}

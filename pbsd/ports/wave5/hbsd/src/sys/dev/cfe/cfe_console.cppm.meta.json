@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/cfe/cfe_console.c",
-  "wave": "wave5",
-  "loc_estimate": 225,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/cfe/cfe_console.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.cfe.cfe_console",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

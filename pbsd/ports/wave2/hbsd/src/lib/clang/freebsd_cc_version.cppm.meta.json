@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/clang/freebsd_cc_version.h",
-  "wave": "wave2",
-  "loc_estimate": 1,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/clang/freebsd_cc_version.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.clang.freebsd_cc_version",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

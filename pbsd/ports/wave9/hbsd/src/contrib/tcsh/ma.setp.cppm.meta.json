@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcsh/ma.setp.c",
-  "wave": "wave9",
-  "loc_estimate": 593,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcsh/ma.setp.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcsh.ma_setp",
-  "generated": "2026-07-19T09:37:47+00:00"
-}

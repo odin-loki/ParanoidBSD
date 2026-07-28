@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libevent/WIN32-Code/getopt.c",
-  "wave": "wave9",
-  "loc_estimate": 149,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libevent/WIN32-Code/getopt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libevent.win32_code.getopt",
-  "generated": "2026-07-19T09:37:40+00:00"
-}

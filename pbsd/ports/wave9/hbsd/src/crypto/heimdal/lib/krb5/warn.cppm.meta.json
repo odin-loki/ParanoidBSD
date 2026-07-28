@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/krb5/warn.c",
-  "wave": "wave9",
-  "loc_estimate": 347,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/warn.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.warn",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

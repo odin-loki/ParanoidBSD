@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/smbfs/smbfs_smb.c",
-  "wave": "wave6",
-  "loc_estimate": 1469,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/smbfs/smbfs_smb.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.smbfs.smbfs_smb",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

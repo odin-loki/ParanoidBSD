@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/FreeBSD/NativeRegisterContextFreeBSD_arm64.cpp",
-  "wave": "wave9",
-  "loc_estimate": 302,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/FreeBSD/NativeRegisterContextFreeBSD_arm64.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.process.freebsd.nativeregistercontextfreebsd_arm64",
-  "generated": "2026-07-19T09:31:41+00:00"
-}

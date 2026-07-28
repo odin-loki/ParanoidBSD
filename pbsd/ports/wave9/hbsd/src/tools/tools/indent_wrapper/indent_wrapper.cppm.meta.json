@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/indent_wrapper/indent_wrapper.c",
-  "wave": "wave9",
-  "loc_estimate": 744,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/indent_wrapper/indent_wrapper.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.indent_wrapper.indent_wrapper",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

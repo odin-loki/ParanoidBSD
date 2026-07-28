@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Serialization/TemplateArgumentHasher.cpp",
-  "wave": "wave9",
-  "loc_estimate": 415,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Serialization/TemplateArgumentHasher.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.serialization.templateargumenthasher",
-  "generated": "2026-07-19T09:31:19+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/msun/src/k_sincos.h",
-  "wave": "wave2",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/k_sincos.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.k_sincos",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

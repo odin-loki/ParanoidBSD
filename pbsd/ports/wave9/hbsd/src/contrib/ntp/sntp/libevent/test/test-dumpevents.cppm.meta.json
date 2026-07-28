@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/sntp/libevent/test/test-dumpevents.c",
-  "wave": "wave9",
-  "loc_estimate": 179,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/sntp/libevent/test/test-dumpevents.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.sntp.libevent.test.test_dumpevents",
-  "generated": "2026-07-19T09:31:05+00:00"
-}

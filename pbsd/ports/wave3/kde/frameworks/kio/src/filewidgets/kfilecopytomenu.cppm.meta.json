@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/filewidgets/kfilecopytomenu.cpp",
-  "wave": "wave3",
-  "loc_estimate": 260,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/filewidgets/kfilecopytomenu.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.filewidgets.kfilecopytomenu",
-  "generated": "2026-07-19T09:30:16+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_common/adf_cfg_sysctl.c",
-  "wave": "wave5",
-  "loc_estimate": 355,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_common/adf_cfg_sysctl.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_common.adf_cfg_sysctl",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

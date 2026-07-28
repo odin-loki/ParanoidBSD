@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/security/mac_veriexec_parser/mac_veriexec_parser.c",
-  "wave": "wave4",
-  "loc_estimate": 471,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac_veriexec_parser/mac_veriexec_parser.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac_veriexec_parser.mac_veriexec_parser",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/mandoc/test-noop.c",
-  "wave": "wave9",
-  "loc_estimate": 5,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/test-noop.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.test_noop",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

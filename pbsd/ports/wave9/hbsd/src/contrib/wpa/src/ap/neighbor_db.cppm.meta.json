@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/ap/neighbor_db.c",
-  "wave": "wave9",
-  "loc_estimate": 366,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/ap/neighbor_db.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.ap.neighbor_db",
-  "generated": "2026-07-19T09:31:01+00:00"
-}

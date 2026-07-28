@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/libifconfig/ifchangevlan.c",
-  "wave": "wave9",
-  "loc_estimate": 107,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/libifconfig/ifchangevlan.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.libifconfig.ifchangevlan",
-  "generated": "2026-07-19T09:37:44+00:00"
-}

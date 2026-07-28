@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/tar/write.c",
-  "wave": "wave9",
-  "loc_estimate": 1071,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/tar/write.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.tar.write",
-  "generated": "2026-07-19T09:30:41+00:00"
-}

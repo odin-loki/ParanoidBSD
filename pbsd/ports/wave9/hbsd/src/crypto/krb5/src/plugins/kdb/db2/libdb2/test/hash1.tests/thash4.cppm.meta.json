@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/test/hash1.tests/thash4.c",
-  "wave": "wave9",
-  "loc_estimate": 131,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/test/hash1.tests/thash4.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.kdb.db2.libdb2.test.hash1_tests.thash4",
-  "generated": "2026-07-19T09:30:28+00:00"
-}

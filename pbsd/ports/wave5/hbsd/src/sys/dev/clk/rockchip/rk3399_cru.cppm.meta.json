@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/clk/rockchip/rk3399_cru.c",
-  "wave": "wave5",
-  "loc_estimate": 1270,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/clk/rockchip/rk3399_cru.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.clk.rockchip.rk3399_cru",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

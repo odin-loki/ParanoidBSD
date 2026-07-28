@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_write_open_memory.c",
-  "wave": "wave9",
-  "loc_estimate": 83,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_write_open_memory.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_write_open_memory",
-  "generated": "2026-07-19T09:30:40+00:00"
-}

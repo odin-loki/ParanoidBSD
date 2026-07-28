@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/kadmin/dbutil/kdb5_stash.c",
-  "wave": "wave9",
-  "loc_estimate": 137,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/kadmin/dbutil/kdb5_stash.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.kadmin.dbutil.kdb5_stash",
-  "generated": "2026-07-19T09:30:28+00:00"
-}

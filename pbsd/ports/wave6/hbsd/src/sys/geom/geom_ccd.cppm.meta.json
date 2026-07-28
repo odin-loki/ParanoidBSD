@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/geom_ccd.c",
-  "wave": "wave6",
-  "loc_estimate": 930,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/geom_ccd.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.geom_ccd",
-  "generated": "2026-07-19T09:29:22+00:00"
-}

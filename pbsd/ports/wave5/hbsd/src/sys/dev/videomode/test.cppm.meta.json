@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/videomode/test.c",
-  "wave": "wave5",
-  "loc_estimate": 25,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/videomode/test.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.videomode.test",
-  "generated": "2026-07-19T09:02:53+00:00"
-}

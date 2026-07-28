@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/gen/mrand48.c",
-  "wave": "wave2",
-  "loc_estimate": 23,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/mrand48.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.mrand48",
-  "generated": "2026-07-19T08:29:01+00:00"
-}

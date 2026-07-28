@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/crypto/des/des_enc.c",
-  "wave": "wave4",
-  "loc_estimate": 294,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/des/des_enc.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.des.des_enc",
-  "generated": "2026-07-19T09:31:12+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/tests/net/test-eui64.h",
-  "wave": "wave2",
-  "loc_estimate": 53,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/tests/net/test-eui64.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.tests.net.test_eui64",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/t_get_etype_info.c",
-  "wave": "wave9",
-  "loc_estimate": 110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/t_get_etype_info.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.t_get_etype_info",
-  "generated": "2026-07-19T09:30:27+00:00"
-}

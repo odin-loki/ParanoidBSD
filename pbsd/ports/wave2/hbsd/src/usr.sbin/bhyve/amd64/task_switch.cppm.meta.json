@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bhyve/amd64/task_switch.c",
-  "wave": "wave2",
-  "loc_estimate": 941,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/amd64/task_switch.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.amd64.task_switch",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

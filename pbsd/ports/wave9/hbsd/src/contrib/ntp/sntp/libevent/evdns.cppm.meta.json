@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/sntp/libevent/evdns.c",
-  "wave": "wave9",
-  "loc_estimate": 4847,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/sntp/libevent/evdns.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.sntp.libevent.evdns",
-  "generated": "2026-07-19T09:31:08+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Core/ThreadedCommunication.cpp",
-  "wave": "wave9",
-  "loc_estimate": 376,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Core/ThreadedCommunication.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.core.threadedcommunication",
-  "generated": "2026-07-19T09:31:41+00:00"
-}

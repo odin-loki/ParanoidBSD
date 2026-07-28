@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/gssapi/krb5/external.c",
-  "wave": "wave9",
-  "loc_estimate": 355,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/krb5/external.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.krb5.external",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

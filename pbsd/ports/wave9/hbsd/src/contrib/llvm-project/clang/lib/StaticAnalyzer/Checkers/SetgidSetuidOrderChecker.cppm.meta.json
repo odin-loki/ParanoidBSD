@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Checkers/SetgidSetuidOrderChecker.cpp",
-  "wave": "wave9",
-  "loc_estimate": 196,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Checkers/SetgidSetuidOrderChecker.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.staticanalyzer.checkers.setgidsetuidorderchecker",
-  "generated": "2026-07-19T09:31:18+00:00"
-}

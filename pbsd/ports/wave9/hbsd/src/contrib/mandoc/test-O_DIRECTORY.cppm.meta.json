@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/mandoc/test-O_DIRECTORY.c",
-  "wave": "wave9",
-  "loc_estimate": 7,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mandoc/test-O_DIRECTORY.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.mandoc.test_o_directory",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

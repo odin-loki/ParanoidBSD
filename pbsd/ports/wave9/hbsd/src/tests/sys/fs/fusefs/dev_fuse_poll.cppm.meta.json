@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/fs/fusefs/dev_fuse_poll.cc",
-  "wave": "wave9",
-  "loc_estimate": 229,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/dev_fuse_poll.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.dev_fuse_poll",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

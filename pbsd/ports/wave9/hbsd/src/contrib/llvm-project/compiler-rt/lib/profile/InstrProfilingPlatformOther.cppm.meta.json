@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/profile/InstrProfilingPlatformOther.c",
-  "wave": "wave9",
-  "loc_estimate": 125,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/profile/InstrProfilingPlatformOther.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.profile.instrprofilingplatformother",
-  "generated": "2026-07-19T09:37:16+00:00"
-}

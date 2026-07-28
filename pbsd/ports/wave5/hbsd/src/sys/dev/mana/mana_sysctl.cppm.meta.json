@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mana/mana_sysctl.c",
-  "wave": "wave5",
-  "loc_estimate": 381,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mana/mana_sysctl.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mana.mana_sysctl",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

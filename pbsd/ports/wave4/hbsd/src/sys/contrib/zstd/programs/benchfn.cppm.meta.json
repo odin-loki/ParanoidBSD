@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zstd/programs/benchfn.c",
-  "wave": "wave4",
-  "loc_estimate": 256,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/programs/benchfn.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.programs.benchfn",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

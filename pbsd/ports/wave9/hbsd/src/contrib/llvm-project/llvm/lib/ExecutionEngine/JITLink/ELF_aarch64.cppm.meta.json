@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/JITLink/ELF_aarch64.cpp",
-  "wave": "wave9",
-  "loc_estimate": 734,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/JITLink/ELF_aarch64.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.executionengine.jitlink.elf_aarch64",
-  "generated": "2026-07-19T09:31:56+00:00"
-}

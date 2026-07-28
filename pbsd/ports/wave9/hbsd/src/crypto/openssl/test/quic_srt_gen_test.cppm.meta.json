@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/test/quic_srt_gen_test.c",
-  "wave": "wave9",
-  "loc_estimate": 77,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/quic_srt_gen_test.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.quic_srt_gen_test",
-  "generated": "2026-07-19T09:30:03+00:00"
-}

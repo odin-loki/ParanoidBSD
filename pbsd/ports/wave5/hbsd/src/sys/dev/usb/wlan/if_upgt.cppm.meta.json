@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/usb/wlan/if_upgt.c",
-  "wave": "wave5",
-  "loc_estimate": 2343,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/wlan/if_upgt.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.wlan.if_upgt",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

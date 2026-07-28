@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/ec/curve448/curve448_tables.c",
-  "wave": "wave9",
-  "loc_estimate": 1591,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/ec/curve448/curve448_tables.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.ec.curve448.curve448_tables",
-  "generated": "2026-07-19T09:30:06+00:00"
-}

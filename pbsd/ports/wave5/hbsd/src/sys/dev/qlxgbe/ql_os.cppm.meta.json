@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qlxgbe/ql_os.c",
-  "wave": "wave5",
-  "loc_estimate": 2250,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qlxgbe/ql_os.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qlxgbe.ql_os",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

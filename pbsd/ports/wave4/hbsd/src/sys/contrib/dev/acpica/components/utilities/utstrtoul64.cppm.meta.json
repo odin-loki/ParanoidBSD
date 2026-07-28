@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/utilities/utstrtoul64.c",
-  "wave": "wave4",
-  "loc_estimate": 502,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/utilities/utstrtoul64.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.utilities.utstrtoul64",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

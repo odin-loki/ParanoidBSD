@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/p1003_1b/p26.c",
-  "wave": "wave9",
-  "loc_estimate": 65,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/p1003_1b/p26.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.p1003_1b.p26",
-  "generated": "2026-07-19T09:37:31+00:00"
-}

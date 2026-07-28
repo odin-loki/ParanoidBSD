@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/fs/fusefs/read.cc",
-  "wave": "wave9",
-  "loc_estimate": 1689,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/fs/fusefs/read.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.fs.fusefs.read",
-  "generated": "2026-07-19T09:37:22+00:00"
-}

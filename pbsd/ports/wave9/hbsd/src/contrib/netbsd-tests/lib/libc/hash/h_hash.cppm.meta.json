@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/lib/libc/hash/h_hash.c",
-  "wave": "wave9",
-  "loc_estimate": 167,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libc/hash/h_hash.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libc.hash.h_hash",
-  "generated": "2026-07-19T09:30:57+00:00"
-}

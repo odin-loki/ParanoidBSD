@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/regress/setuid-allowed.c",
-  "wave": "wave9",
-  "loc_estimate": 58,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/regress/setuid-allowed.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.regress.setuid_allowed",
-  "generated": "2026-07-19T09:37:19+00:00"
-}

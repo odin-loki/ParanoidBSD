@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ObjectContainer/BSD-Archive/ObjectContainerBSDArchive.cpp",
-  "wave": "wave9",
-  "loc_estimate": 522,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ObjectContainer/BSD-Archive/ObjectContainerBSDArchive.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.objectcontainer.bsd_archive.objectcontainerbsdarchive",
-  "generated": "2026-07-19T09:31:42+00:00"
-}

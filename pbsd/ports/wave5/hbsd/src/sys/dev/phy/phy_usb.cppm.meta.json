@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/phy/phy_usb.c",
-  "wave": "wave5",
-  "loc_estimate": 145,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/phy/phy_usb.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.phy.phy_usb",
-  "generated": "2026-07-19T09:29:05+00:00"
-}

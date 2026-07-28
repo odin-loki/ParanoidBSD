@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/geom/mirror/geom_mirror.c",
-  "wave": "wave2",
-  "loc_estimate": 495,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/geom/mirror/geom_mirror.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.geom.mirror.geom_mirror",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

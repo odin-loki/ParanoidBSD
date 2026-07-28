@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libthr/thread/thr_switch_np.c",
-  "wave": "wave2",
-  "loc_estimate": 60,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/thread/thr_switch_np.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.thread.thr_switch_np",
-  "generated": "2026-07-19T08:41:20+00:00"
-}

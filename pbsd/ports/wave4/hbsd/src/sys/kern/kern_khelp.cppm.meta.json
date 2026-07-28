@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/kern_khelp.c",
-  "wave": "wave4",
-  "loc_estimate": 367,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_khelp.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_khelp",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

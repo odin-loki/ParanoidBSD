@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/if_dead.c",
-  "wave": "wave6",
-  "loc_estimate": 141,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/if_dead.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.if_dead",
-  "generated": "2026-07-19T09:04:05+00:00"
-}

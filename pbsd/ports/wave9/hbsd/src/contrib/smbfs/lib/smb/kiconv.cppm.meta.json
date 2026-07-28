@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/smbfs/lib/smb/kiconv.c",
-  "wave": "wave9",
-  "loc_estimate": 77,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/smbfs/lib/smb/kiconv.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.smbfs.lib.smb.kiconv",
-  "generated": "2026-07-19T09:37:58+00:00"
-}

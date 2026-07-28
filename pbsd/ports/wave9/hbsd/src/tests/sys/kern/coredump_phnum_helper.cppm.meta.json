@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/kern/coredump_phnum_helper.c",
-  "wave": "wave9",
-  "loc_estimate": 64,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/coredump_phnum_helper.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.coredump_phnum_helper",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

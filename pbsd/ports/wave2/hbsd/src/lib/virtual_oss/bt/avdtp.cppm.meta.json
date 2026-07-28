@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/virtual_oss/bt/avdtp.c",
-  "wave": "wave2",
-  "loc_estimate": 720,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/virtual_oss/bt/avdtp.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.virtual_oss.bt.avdtp",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

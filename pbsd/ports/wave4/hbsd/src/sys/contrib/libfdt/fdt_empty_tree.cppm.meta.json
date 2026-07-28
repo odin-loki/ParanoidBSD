@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libfdt/fdt_empty_tree.c",
-  "wave": "wave4",
-  "loc_estimate": 83,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libfdt/fdt_empty_tree.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libfdt.fdt_empty_tree",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

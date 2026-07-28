@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/demos/smime/smver.c",
-  "wave": "wave9",
-  "loc_estimate": 85,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/demos/smime/smver.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.demos.smime.smver",
-  "generated": "2026-07-19T09:30:03+00:00"
-}

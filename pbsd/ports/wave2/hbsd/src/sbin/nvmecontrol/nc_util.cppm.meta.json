@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/nvmecontrol/nc_util.c",
-  "wave": "wave2",
-  "loc_estimate": 58,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/nvmecontrol/nc_util.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.nvmecontrol.nc_util",
-  "generated": "2026-07-19T09:30:00+00:00"
-}

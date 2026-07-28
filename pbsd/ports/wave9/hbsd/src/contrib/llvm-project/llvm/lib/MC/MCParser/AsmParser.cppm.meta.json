@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/MC/MCParser/AsmParser.cpp",
-  "wave": "wave9",
-  "loc_estimate": 6361,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/MC/MCParser/AsmParser.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.mc.mcparser.asmparser",
-  "generated": "2026-07-19T09:31:58+00:00"
-}

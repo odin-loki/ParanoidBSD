@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bmake/cond.c",
-  "wave": "wave9",
-  "loc_estimate": 1236,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bmake/cond.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bmake.cond",
-  "generated": "2026-07-19T09:37:55+00:00"
-}

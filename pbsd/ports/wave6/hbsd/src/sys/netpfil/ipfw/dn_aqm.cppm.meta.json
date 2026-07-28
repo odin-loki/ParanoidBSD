@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netpfil/ipfw/dn_aqm.h",
-  "wave": "wave6",
-  "loc_estimate": 162,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/dn_aqm.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.dn_aqm",
-  "generated": "2026-07-19T10:59:34+00:00"
-}

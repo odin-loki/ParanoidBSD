@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libkiconv/xlat16_sysctl.c",
-  "wave": "wave2",
-  "loc_estimate": 85,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libkiconv/xlat16_sysctl.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libkiconv.xlat16_sysctl",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

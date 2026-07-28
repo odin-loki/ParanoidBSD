@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/i386/libi386/multiboot.c",
-  "wave": "wave7",
-  "loc_estimate": 387,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/i386/libi386/multiboot.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.i386.libi386.multiboot",
-  "generated": "2026-07-19T09:49:41+00:00"
-}

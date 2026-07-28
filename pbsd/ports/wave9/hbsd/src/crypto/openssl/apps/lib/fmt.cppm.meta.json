@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/apps/lib/fmt.c",
-  "wave": "wave9",
-  "loc_estimate": 15,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/apps/lib/fmt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.apps.lib.fmt",
-  "generated": "2026-07-19T09:30:02+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/jemalloc/include/msvc_compat/windows_extra.h",
-  "wave": "wave9",
-  "loc_estimate": 6,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/include/msvc_compat/windows_extra.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.include.msvc_compat.windows_extra",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/pf/pflogd/privsep_fdpass.c",
-  "wave": "wave9",
-  "loc_estimate": 130,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pf/pflogd/privsep_fdpass.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.pf.pflogd.privsep_fdpass",
-  "generated": "2026-07-19T09:38:01+00:00"
-}

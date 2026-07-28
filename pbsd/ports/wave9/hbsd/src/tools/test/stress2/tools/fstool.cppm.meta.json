@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/test/stress2/tools/fstool.c",
-  "wave": "wave9",
-  "loc_estimate": 236,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/stress2/tools/fstool.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.test.stress2.tools.fstool",
-  "generated": "2026-07-19T09:37:46+00:00"
-}

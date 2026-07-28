@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/jemalloc/src/ehooks.c",
-  "wave": "wave9",
-  "loc_estimate": 275,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/src/ehooks.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.src.ehooks",
-  "generated": "2026-07-19T09:37:43+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_read_format_cpio_bin_gz.c",
-  "wave": "wave9",
-  "loc_estimate": 62,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_read_format_cpio_bin_gz.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_read_format_cpio_bin_gz",
-  "generated": "2026-07-19T09:30:39+00:00"
-}

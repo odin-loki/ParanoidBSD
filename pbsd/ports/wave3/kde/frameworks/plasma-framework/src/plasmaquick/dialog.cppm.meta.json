@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/src/plasmaquick/dialog.cpp",
-  "wave": "wave3",
-  "loc_estimate": 1664,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasmaquick/dialog.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasmaquick.dialog",
-  "generated": "2026-07-19T09:30:20+00:00"
-}

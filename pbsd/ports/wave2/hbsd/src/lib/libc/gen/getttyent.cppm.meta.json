@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/gen/getttyent.c",
-  "wave": "wave2",
-  "loc_estimate": 312,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/getttyent.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.getttyent",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

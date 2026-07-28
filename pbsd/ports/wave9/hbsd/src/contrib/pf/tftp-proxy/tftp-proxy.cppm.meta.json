@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/pf/tftp-proxy/tftp-proxy.c",
-  "wave": "wave9",
-  "loc_estimate": 393,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pf/tftp-proxy/tftp-proxy.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.pf.tftp_proxy.tftp_proxy",
-  "generated": "2026-07-19T09:38:01+00:00"
-}

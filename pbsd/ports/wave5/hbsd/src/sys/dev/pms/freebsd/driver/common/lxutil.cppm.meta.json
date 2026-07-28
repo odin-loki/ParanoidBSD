@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pms/freebsd/driver/common/lxutil.c",
-  "wave": "wave5",
-  "loc_estimate": 785,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/freebsd/driver/common/lxutil.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.freebsd.driver.common.lxutil",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

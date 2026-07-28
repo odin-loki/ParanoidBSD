@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pccbb/pccbb.c",
-  "wave": "wave5",
-  "loc_estimate": 1544,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pccbb/pccbb.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pccbb.pccbb",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/libalias/alias_mod.c",
-  "wave": "wave6",
-  "loc_estimate": 170,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/libalias/alias_mod.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.libalias.alias_mod",
-  "generated": "2026-07-19T09:02:52+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-readobj/MachODumper.cpp",
-  "wave": "wave9",
-  "loc_estimate": 979,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-readobj/MachODumper.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_readobj.machodumper",
-  "generated": "2026-07-19T09:31:56+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-pdbutil/PrettyTypedefDumper.cpp",
-  "wave": "wave9",
-  "loc_estimate": 84,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-pdbutil/PrettyTypedefDumper.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_pdbutil.prettytypedefdumper",
-  "generated": "2026-07-19T09:31:50+00:00"
-}

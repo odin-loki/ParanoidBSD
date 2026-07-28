@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/amd64/vmm/amd/svm.c",
-  "wave": "wave7",
-  "loc_estimate": 2854,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/vmm/amd/svm.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.vmm.amd.svm",
-  "generated": "2026-07-19T09:29:38+00:00"
-}

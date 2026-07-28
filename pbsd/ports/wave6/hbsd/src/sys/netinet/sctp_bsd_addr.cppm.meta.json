@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/sctp_bsd_addr.c",
-  "wave": "wave6",
-  "loc_estimate": 527,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/sctp_bsd_addr.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.sctp_bsd_addr",
-  "generated": "2026-07-19T09:02:53+00:00"
-}

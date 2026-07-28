@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/expat/tests/chardata.c",
-  "wave": "wave9",
-  "loc_estimate": 98,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/expat/tests/chardata.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.expat.tests.chardata",
-  "generated": "2026-07-19T09:37:49+00:00"
-}

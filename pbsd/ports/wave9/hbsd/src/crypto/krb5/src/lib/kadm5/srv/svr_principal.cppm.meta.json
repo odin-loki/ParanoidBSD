@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/kadm5/srv/svr_principal.c",
-  "wave": "wave9",
-  "loc_estimate": 2087,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/kadm5/srv/svr_principal.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.kadm5.srv.svr_principal",
-  "generated": "2026-07-19T09:30:33+00:00"
-}

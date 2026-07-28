@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/subr_witness.c",
-  "wave": "wave4",
-  "loc_estimate": 3168,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_witness.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_witness",
-  "generated": "2026-07-19T09:31:15+00:00"
-}

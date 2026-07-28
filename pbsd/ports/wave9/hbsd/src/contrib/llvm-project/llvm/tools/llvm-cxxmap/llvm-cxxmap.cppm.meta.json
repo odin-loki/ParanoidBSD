@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-cxxmap/llvm-cxxmap.cpp",
-  "wave": "wave9",
-  "loc_estimate": 170,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-cxxmap/llvm-cxxmap.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_cxxmap.llvm_cxxmap",
-  "generated": "2026-07-19T09:31:52+00:00"
-}

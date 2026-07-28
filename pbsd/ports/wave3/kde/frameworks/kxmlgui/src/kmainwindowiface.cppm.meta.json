@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kxmlgui/src/kmainwindowiface.cpp",
-  "wave": "wave3",
-  "loc_estimate": 110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/src/kmainwindowiface.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.src.kmainwindowiface",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

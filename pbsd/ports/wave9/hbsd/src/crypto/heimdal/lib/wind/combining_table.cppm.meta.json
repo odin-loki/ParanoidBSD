@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/wind/combining_table.c",
-  "wave": "wave9",
-  "loc_estimate": 363,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/wind/combining_table.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.wind.combining_table",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/subr_coverage.c",
-  "wave": "wave4",
-  "loc_estimate": 236,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_coverage.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_coverage",
-  "generated": "2026-07-19T08:37:59+00:00"
-}

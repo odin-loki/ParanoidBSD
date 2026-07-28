@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/cxgbe/tom/t4_ddp.c",
-  "wave": "wave5",
-  "loc_estimate": 3031,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/cxgbe/tom/t4_ddp.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.cxgbe.tom.t4_ddp",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

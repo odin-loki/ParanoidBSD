@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/iwm/if_iwm_phy_ctxt.c",
-  "wave": "wave5",
-  "loc_estimate": 318,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iwm/if_iwm_phy_ctxt.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iwm.if_iwm_phy_ctxt",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

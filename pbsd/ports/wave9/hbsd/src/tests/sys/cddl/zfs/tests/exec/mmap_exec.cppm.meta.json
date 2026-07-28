@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/cddl/zfs/tests/exec/mmap_exec.c",
-  "wave": "wave9",
-  "loc_estimate": 68,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/cddl/zfs/tests/exec/mmap_exec.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.cddl.zfs.tests.exec.mmap_exec",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

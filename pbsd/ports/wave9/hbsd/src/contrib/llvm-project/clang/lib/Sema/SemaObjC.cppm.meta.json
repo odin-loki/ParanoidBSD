@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Sema/SemaObjC.cpp",
-  "wave": "wave9",
-  "loc_estimate": 2407,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Sema/SemaObjC.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.sema.semaobjc",
-  "generated": "2026-07-19T09:31:21+00:00"
-}

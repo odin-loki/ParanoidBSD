@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/tests/gen/arc4random_test.c",
-  "wave": "wave2",
-  "loc_estimate": 112,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/tests/gen/arc4random_test.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.tests.gen.arc4random_test",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

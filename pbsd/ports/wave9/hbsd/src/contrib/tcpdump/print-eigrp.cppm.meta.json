@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/print-eigrp.c",
-  "wave": "wave9",
-  "loc_estimate": 530,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-eigrp.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_eigrp",
-  "generated": "2026-07-19T09:37:27+00:00"
-}

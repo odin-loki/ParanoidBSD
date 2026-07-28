@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/openpam/modules/pam_return/pam_return.c",
-  "wave": "wave9",
-  "loc_estimate": 125,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openpam/modules/pam_return/pam_return.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.openpam.modules.pam_return.pam_return",
-  "generated": "2026-07-19T09:37:39+00:00"
-}

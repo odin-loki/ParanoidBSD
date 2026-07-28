@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/libcxx/src/memory.cpp",
-  "wave": "wave9",
-  "loc_estimate": 150,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libcxx/src/memory.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libcxx.src.memory",
-  "generated": "2026-07-19T09:37:16+00:00"
-}

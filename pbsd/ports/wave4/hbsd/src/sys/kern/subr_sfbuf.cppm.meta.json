@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/subr_sfbuf.c",
-  "wave": "wave4",
-  "loc_estimate": 230,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_sfbuf.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_sfbuf",
-  "generated": "2026-07-19T08:40:36+00:00"
-}

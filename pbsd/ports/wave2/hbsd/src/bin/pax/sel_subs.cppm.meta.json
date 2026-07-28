@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/pax/sel_subs.c",
-  "wave": "wave2",
-  "loc_estimate": 602,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/pax/sel_subs.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.pax.sel_subs",
-  "generated": "2026-07-19T09:29:51+00:00"
-}

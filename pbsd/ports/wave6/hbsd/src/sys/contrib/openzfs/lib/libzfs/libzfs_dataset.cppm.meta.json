@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/lib/libzfs/libzfs_dataset.c",
-  "wave": "wave6",
-  "loc_estimate": 5658,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libzfs/libzfs_dataset.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libzfs.libzfs_dataset",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

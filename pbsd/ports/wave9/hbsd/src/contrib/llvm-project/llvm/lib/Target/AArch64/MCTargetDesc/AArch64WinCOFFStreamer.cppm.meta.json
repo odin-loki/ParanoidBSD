@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/AArch64/MCTargetDesc/AArch64WinCOFFStreamer.cpp",
-  "wave": "wave9",
-  "loc_estimate": 308,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/AArch64/MCTargetDesc/AArch64WinCOFFStreamer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.aarch64.mctargetdesc.aarch64wincoffstreamer",
-  "generated": "2026-07-19T09:31:54+00:00"
-}

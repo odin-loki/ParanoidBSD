@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/test/default/auth3.c",
-  "wave": "wave4",
-  "loc_estimate": 31,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/test/default/auth3.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.test.default.auth3",
-  "generated": "2026-07-19T09:29:51+00:00"
-}

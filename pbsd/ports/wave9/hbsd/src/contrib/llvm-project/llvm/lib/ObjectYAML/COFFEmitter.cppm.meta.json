@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ObjectYAML/COFFEmitter.cpp",
-  "wave": "wave9",
-  "loc_estimate": 643,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ObjectYAML/COFFEmitter.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.objectyaml.coffemitter",
-  "generated": "2026-07-19T09:31:55+00:00"
-}

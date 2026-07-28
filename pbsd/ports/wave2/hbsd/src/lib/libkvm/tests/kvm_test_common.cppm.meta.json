@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libkvm/tests/kvm_test_common.c",
-  "wave": "wave2",
-  "loc_estimate": 45,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libkvm/tests/kvm_test_common.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libkvm.tests.kvm_test_common",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

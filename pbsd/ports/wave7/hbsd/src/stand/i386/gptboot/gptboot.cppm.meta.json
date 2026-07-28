@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/i386/gptboot/gptboot.c",
-  "wave": "wave7",
-  "loc_estimate": 655,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/i386/gptboot/gptboot.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.i386.gptboot.gptboot",
-  "generated": "2026-07-19T09:49:42+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qlxgb/qla_dbg.c",
-  "wave": "wave5",
-  "loc_estimate": 262,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qlxgb/qla_dbg.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qlxgb.qla_dbg",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

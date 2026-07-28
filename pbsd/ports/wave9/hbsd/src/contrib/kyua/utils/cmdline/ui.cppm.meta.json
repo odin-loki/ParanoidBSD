@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/kyua/utils/cmdline/ui.cpp",
-  "wave": "wave9",
-  "loc_estimate": 276,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/kyua/utils/cmdline/ui.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.kyua.utils.cmdline.ui",
-  "generated": "2026-07-19T09:37:25+00:00"
-}

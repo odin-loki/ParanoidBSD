@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/sys/splash.h",
-  "wave": "wave4",
-  "loc_estimate": 19,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/sys/splash.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.sys.splash",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

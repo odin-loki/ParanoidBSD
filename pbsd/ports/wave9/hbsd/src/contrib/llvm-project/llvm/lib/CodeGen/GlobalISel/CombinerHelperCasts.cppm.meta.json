@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/GlobalISel/CombinerHelperCasts.cpp",
-  "wave": "wave9",
-  "loc_estimate": 415,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/GlobalISel/CombinerHelperCasts.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.codegen.globalisel.combinerhelpercasts",
-  "generated": "2026-07-19T09:31:55+00:00"
-}

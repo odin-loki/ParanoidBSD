@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/AArch64/Disassembler/AArch64Disassembler.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1856,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/AArch64/Disassembler/AArch64Disassembler.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.aarch64.disassembler.aarch64disassembler",
-  "generated": "2026-07-19T09:31:57+00:00"
-}

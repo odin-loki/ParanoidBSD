@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bsnmp/snmpd/trans_inet.c",
-  "wave": "wave9",
-  "loc_estimate": 1342,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bsnmp/snmpd/trans_inet.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bsnmp.snmpd.trans_inet",
-  "generated": "2026-07-19T09:37:54+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/checksum/sha2_test.c",
-  "wave": "wave6",
-  "loc_estimate": 215,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/cmd/checksum/sha2_test.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.cmd.checksum.sha2_test",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

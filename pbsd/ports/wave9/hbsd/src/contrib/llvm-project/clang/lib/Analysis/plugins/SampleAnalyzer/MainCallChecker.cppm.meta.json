@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Analysis/plugins/SampleAnalyzer/MainCallChecker.cpp",
-  "wave": "wave9",
-  "loc_estimate": 54,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Analysis/plugins/SampleAnalyzer/MainCallChecker.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.analysis.plugins.sampleanalyzer.maincallchecker",
-  "generated": "2026-07-19T09:31:17+00:00"
-}

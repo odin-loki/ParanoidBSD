@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/kern_poll.c",
-  "wave": "wave4",
-  "loc_estimate": 582,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_poll.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_poll",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

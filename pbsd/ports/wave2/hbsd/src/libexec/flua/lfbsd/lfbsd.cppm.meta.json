@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/flua/lfbsd/lfbsd.c",
-  "wave": "wave2",
-  "loc_estimate": 289,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/flua/lfbsd/lfbsd.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.flua.lfbsd.lfbsd",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

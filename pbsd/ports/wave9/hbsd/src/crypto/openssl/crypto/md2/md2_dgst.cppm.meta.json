@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/md2/md2_dgst.c",
-  "wave": "wave9",
-  "loc_estimate": 173,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/md2/md2_dgst.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.md2.md2_dgst",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

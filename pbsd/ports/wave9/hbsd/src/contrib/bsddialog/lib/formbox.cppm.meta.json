@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bsddialog/lib/formbox.c",
-  "wave": "wave9",
-  "loc_estimate": 944,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bsddialog/lib/formbox.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bsddialog.lib.formbox",
-  "generated": "2026-07-19T09:37:55+00:00"
-}

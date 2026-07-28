@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/MLRegAllocPriorityAdvisor.cpp",
-  "wave": "wave9",
-  "loc_estimate": 401,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/CodeGen/MLRegAllocPriorityAdvisor.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.codegen.mlregallocpriorityadvisor",
-  "generated": "2026-07-19T09:31:54+00:00"
-}

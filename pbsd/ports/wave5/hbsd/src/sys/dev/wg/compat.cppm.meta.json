@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/wg/compat.h",
-  "wave": "wave5",
-  "loc_estimate": 10,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/wg/compat.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.wg.compat",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

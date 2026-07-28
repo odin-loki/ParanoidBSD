@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/amd64/vmm/intel/vmx.c",
-  "wave": "wave7",
-  "loc_estimate": 4307,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/vmm/intel/vmx.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.vmm.intel.vmx",
-  "generated": "2026-07-19T09:29:38+00:00"
-}

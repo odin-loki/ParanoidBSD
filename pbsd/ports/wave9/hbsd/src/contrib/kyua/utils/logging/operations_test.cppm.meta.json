@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/kyua/utils/logging/operations_test.cpp",
-  "wave": "wave9",
-  "loc_estimate": 354,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/kyua/utils/logging/operations_test.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.kyua.utils.logging.operations_test",
-  "generated": "2026-07-19T09:37:25+00:00"
-}

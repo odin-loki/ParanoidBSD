@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/hyperv/utilities/vmbus_shutdown.c",
-  "wave": "wave5",
-  "loc_estimate": 161,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/hyperv/utilities/vmbus_shutdown.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.hyperv.utilities.vmbus_shutdown",
-  "generated": "2026-07-19T09:29:05+00:00"
-}

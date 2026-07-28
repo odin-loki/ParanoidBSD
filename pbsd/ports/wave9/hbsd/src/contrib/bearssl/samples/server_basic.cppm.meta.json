@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bearssl/samples/server_basic.c",
-  "wave": "wave9",
-  "loc_estimate": 436,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/samples/server_basic.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.samples.server_basic",
-  "generated": "2026-07-19T09:37:18+00:00"
-}

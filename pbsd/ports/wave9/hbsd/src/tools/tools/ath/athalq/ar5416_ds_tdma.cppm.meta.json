@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/ath/athalq/ar5416_ds_tdma.c",
-  "wave": "wave9",
-  "loc_estimate": 468,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/ath/athalq/ar5416_ds_tdma.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.ath.athalq.ar5416_ds_tdma",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

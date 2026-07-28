@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/tcp_syncache.c",
-  "wave": "wave6",
-  "loc_estimate": 2587,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/tcp_syncache.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.tcp_syncache",
-  "generated": "2026-07-19T09:29:21+00:00"
-}

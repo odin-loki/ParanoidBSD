@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/lib/libc/db/h_db.c",
-  "wave": "wave9",
-  "loc_estimate": 794,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libc/db/h_db.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libc.db.h_db",
-  "generated": "2026-07-19T09:30:59+00:00"
-}

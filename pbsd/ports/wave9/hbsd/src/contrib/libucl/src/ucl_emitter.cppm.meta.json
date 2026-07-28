@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libucl/src/ucl_emitter.c",
-  "wave": "wave9",
-  "loc_estimate": 714,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libucl/src/ucl_emitter.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libucl.src.ucl_emitter",
-  "generated": "2026-07-19T09:38:01+00:00"
-}

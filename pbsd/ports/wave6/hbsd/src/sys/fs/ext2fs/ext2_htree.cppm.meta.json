@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/ext2fs/ext2_htree.c",
-  "wave": "wave6",
-  "loc_estimate": 960,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/ext2fs/ext2_htree.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.ext2fs.ext2_htree",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

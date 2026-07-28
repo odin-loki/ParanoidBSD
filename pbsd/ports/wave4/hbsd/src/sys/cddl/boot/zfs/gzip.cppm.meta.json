@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cddl/boot/zfs/gzip.c",
-  "wave": "wave4",
-  "loc_estimate": 96,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/boot/zfs/gzip.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.boot.zfs.gzip",
-  "generated": "2026-07-19T09:31:10+00:00"
-}

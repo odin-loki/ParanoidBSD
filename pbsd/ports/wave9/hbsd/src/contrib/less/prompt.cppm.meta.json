@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/less/prompt.c",
-  "wave": "wave9",
-  "loc_estimate": 607,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/less/prompt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.less.prompt",
-  "generated": "2026-07-19T09:37:50+00:00"
-}

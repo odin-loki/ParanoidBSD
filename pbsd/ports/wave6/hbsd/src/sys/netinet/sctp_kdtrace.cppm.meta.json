@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/sctp_kdtrace.c",
-  "wave": "wave6",
-  "loc_estimate": 196,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/sctp_kdtrace.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.sctp_kdtrace",
-  "generated": "2026-07-19T09:02:53+00:00"
-}

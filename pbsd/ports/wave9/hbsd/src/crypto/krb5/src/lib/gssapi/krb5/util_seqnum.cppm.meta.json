@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/krb5/util_seqnum.c",
-  "wave": "wave9",
-  "loc_estimate": 93,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/krb5/util_seqnum.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.krb5.util_seqnum",
-  "generated": "2026-07-19T09:30:27+00:00"
-}

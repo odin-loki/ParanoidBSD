@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libvmmapi/ppt.c",
-  "wave": "wave2",
-  "loc_estimate": 144,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libvmmapi/ppt.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libvmmapi.ppt",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

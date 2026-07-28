@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/cavium/thunder_pcie_fdt.c",
-  "wave": "wave7",
-  "loc_estimate": 301,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/cavium/thunder_pcie_fdt.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.cavium.thunder_pcie_fdt",
-  "generated": "2026-07-19T09:29:37+00:00"
-}

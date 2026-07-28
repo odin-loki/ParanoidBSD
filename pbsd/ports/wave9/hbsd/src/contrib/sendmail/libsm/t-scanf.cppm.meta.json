@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/sendmail/libsm/t-scanf.c",
-  "wave": "wave9",
-  "loc_estimate": 59,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/sendmail/libsm/t-scanf.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.sendmail.libsm.t_scanf",
-  "generated": "2026-07-19T09:37:27+00:00"
-}

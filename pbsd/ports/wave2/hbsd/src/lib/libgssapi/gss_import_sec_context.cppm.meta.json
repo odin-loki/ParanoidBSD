@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libgssapi/gss_import_sec_context.c",
-  "wave": "wave2",
-  "loc_estimate": 87,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libgssapi/gss_import_sec_context.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libgssapi.gss_import_sec_context",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

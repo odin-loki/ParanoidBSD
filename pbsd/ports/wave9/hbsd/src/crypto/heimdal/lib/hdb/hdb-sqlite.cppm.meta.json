@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/hdb/hdb-sqlite.c",
-  "wave": "wave9",
-  "loc_estimate": 879,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/hdb/hdb-sqlite.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.hdb.hdb_sqlite",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/firewire/if_fwe.c",
-  "wave": "wave5",
-  "loc_estimate": 628,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/firewire/if_fwe.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.firewire.if_fwe",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

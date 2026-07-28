@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/dialog/argv.c",
-  "wave": "wave9",
-  "loc_estimate": 168,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/dialog/argv.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.dialog.argv",
-  "generated": "2026-07-19T09:37:51+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/lyaml/ext/yaml/scanner.c",
-  "wave": "wave9",
-  "loc_estimate": 340,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/lyaml/ext/yaml/scanner.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.lyaml.ext.yaml.scanner",
-  "generated": "2026-07-19T09:38:17+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netpfil/ipfw/ip_dn_io.c",
-  "wave": "wave6",
-  "loc_estimate": 1009,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/ip_dn_io.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.ip_dn_io",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

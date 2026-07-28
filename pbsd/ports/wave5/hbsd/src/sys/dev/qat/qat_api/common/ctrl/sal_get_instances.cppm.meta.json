@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_api/common/ctrl/sal_get_instances.c",
-  "wave": "wave5",
-  "loc_estimate": 402,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/common/ctrl/sal_get_instances.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.common.ctrl.sal_get_instances",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

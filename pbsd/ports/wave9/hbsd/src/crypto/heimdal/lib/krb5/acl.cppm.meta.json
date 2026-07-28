@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/krb5/acl.c",
-  "wave": "wave9",
-  "loc_estimate": 295,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/acl.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.acl",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

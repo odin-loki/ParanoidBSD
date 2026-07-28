@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/core/connection.cpp",
-  "wave": "wave3",
-  "loc_estimate": 249,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/core/connection.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.core.connection",
-  "generated": "2026-07-19T09:30:16+00:00"
-}

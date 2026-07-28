@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/providers/implementations/rands/seeding/rand_vxworks.c",
-  "wave": "wave9",
-  "loc_estimate": 146,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/rands/seeding/rand_vxworks.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.rands.seeding.rand_vxworks",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

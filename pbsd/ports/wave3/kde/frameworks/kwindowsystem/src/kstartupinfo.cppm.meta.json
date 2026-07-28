@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwindowsystem/src/kstartupinfo.cpp",
-  "wave": "wave3",
-  "loc_estimate": 1344,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/src/kstartupinfo.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.src.kstartupinfo",
-  "generated": "2026-07-19T09:30:20+00:00"
-}

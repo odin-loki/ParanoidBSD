@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/security/audit/audit_bsm_db.c",
-  "wave": "wave4",
-  "loc_estimate": 402,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/audit/audit_bsm_db.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.security.audit.audit_bsm_db",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

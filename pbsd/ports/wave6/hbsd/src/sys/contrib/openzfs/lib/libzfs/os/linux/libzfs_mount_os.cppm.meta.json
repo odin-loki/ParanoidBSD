@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/lib/libzfs/os/linux/libzfs_mount_os.c",
-  "wave": "wave6",
-  "loc_estimate": 574,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libzfs/os/linux/libzfs_mount_os.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libzfs.os.linux.libzfs_mount_os",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

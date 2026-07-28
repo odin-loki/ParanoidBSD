@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/widgets/pastejob.cpp",
-  "wave": "wave3",
-  "loc_estimate": 108,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/widgets/pastejob.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.widgets.pastejob",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

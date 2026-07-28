@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/providers/implementations/ciphers/cipher_tdes_default.c",
-  "wave": "wave9",
-  "loc_estimate": 35,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/ciphers/cipher_tdes_default.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.ciphers.cipher_tdes_default",
-  "generated": "2026-07-19T09:30:03+00:00"
-}

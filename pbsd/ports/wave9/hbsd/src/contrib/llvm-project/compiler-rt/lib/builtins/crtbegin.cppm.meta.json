@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/crtbegin.c",
-  "wave": "wave9",
-  "loc_estimate": 193,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/builtins/crtbegin.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.builtins.crtbegin",
-  "generated": "2026-07-19T09:37:16+00:00"
-}

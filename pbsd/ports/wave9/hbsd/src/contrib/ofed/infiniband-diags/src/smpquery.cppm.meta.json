@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ofed/infiniband-diags/src/smpquery.c",
-  "wave": "wave9",
-  "loc_estimate": 509,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/infiniband-diags/src/smpquery.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.infiniband_diags.src.smpquery",
-  "generated": "2026-07-19T09:37:24+00:00"
-}

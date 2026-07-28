@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/API/SBReproducer.cpp",
-  "wave": "wave9",
-  "loc_estimate": 97,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/API/SBReproducer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.api.sbreproducer",
-  "generated": "2026-07-19T09:31:37+00:00"
-}

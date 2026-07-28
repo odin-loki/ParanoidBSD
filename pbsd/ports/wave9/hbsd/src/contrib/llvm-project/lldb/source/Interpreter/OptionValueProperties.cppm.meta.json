@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Interpreter/OptionValueProperties.cpp",
-  "wave": "wave9",
-  "loc_estimate": 491,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Interpreter/OptionValueProperties.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.interpreter.optionvalueproperties",
-  "generated": "2026-07-19T09:31:42+00:00"
-}

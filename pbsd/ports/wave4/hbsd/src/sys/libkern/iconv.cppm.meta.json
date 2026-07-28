@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/libkern/iconv.c",
-  "wave": "wave4",
-  "loc_estimate": 582,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/libkern/iconv.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.libkern.iconv",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

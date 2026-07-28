@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/gen/fts-compat11.c",
-  "wave": "wave2",
-  "loc_estimate": 1215,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/fts-compat11.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.fts_compat11",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

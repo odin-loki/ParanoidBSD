@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/csu/aarch64/reloc.c",
-  "wave": "wave2",
-  "loc_estimate": 75,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/csu/aarch64/reloc.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.csu.aarch64.reloc",
-  "generated": "2026-07-19T09:29:45+00:00"
-}

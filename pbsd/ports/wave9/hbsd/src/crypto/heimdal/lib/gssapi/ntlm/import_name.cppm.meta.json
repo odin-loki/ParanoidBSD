@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/gssapi/ntlm/import_name.c",
-  "wave": "wave9",
-  "loc_estimate": 112,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/ntlm/import_name.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.ntlm.import_name",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

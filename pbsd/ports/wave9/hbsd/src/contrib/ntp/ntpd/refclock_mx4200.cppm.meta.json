@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/ntpd/refclock_mx4200.c",
-  "wave": "wave9",
-  "loc_estimate": 1639,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/ntpd/refclock_mx4200.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.ntpd.refclock_mx4200",
-  "generated": "2026-07-19T09:31:07+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/sshbuf-getput-basic.c",
-  "wave": "wave9",
-  "loc_estimate": 633,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/sshbuf-getput-basic.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.sshbuf_getput_basic",
-  "generated": "2026-07-19T09:37:20+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/tools/llvm-readobj/llvm-readobj.cpp",
-  "wave": "wave9",
-  "loc_estimate": 734,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/tools/llvm-readobj/llvm-readobj.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.tools.llvm_readobj.llvm_readobj",
-  "generated": "2026-07-19T09:31:56+00:00"
-}

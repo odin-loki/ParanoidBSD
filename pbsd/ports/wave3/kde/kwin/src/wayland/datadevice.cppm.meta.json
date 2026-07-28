@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/wayland/datadevice.cpp",
-  "wave": "wave3",
-  "loc_estimate": 335,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/wayland/datadevice.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.wayland.datadevice",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

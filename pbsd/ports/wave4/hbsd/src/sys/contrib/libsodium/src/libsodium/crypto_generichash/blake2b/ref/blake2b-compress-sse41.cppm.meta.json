@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_generichash/blake2b/ref/blake2b-compress-sse41.c",
-  "wave": "wave4",
-  "loc_estimate": 87,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_generichash/blake2b/ref/blake2b-compress-sse41.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_generichash.blake2b.ref.blake2b_compress_sse41",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/src/plasmaquick/plasmoid/containmentitem.cpp",
-  "wave": "wave3",
-  "loc_estimate": 1094,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasmaquick/plasmoid/containmentitem.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasmaquick.plasmoid.containmentitem",
-  "generated": "2026-07-19T09:30:19+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/ddb/db_break.c",
-  "wave": "wave4",
-  "loc_estimate": 405,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/ddb/db_break.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.ddb.db_break",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

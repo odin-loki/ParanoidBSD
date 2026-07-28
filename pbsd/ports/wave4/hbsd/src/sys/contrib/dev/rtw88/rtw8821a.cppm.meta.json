@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/rtw88/rtw8821a.c",
-  "wave": "wave4",
-  "loc_estimate": 1226,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/rtw88/rtw8821a.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.rtw88.rtw8821a",
-  "generated": "2026-07-19T09:29:36+00:00"
-}

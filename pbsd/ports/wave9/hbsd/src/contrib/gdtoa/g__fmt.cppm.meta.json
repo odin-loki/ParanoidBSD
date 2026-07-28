@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/gdtoa/g__fmt.c",
-  "wave": "wave9",
-  "loc_estimate": 147,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/gdtoa/g__fmt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.gdtoa.g__fmt",
-  "generated": "2026-07-19T09:37:49+00:00"
-}

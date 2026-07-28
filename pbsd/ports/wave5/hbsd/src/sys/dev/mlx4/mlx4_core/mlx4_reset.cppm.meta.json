@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mlx4/mlx4_core/mlx4_reset.c",
-  "wave": "wave5",
-  "loc_estimate": 184,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx4/mlx4_core/mlx4_reset.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx4.mlx4_core.mlx4_reset",
-  "generated": "2026-07-19T09:29:05+00:00"
-}

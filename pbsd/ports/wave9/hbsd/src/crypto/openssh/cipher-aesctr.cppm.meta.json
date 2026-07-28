@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/cipher-aesctr.c",
-  "wave": "wave9",
-  "loc_estimate": 83,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/cipher-aesctr.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.cipher_aesctr",
-  "generated": "2026-07-19T09:37:19+00:00"
-}

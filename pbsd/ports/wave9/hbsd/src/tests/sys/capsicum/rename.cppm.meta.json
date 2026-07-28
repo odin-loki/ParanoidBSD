@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/capsicum/rename.cc",
-  "wave": "wave9",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/capsicum/rename.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.capsicum.rename",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

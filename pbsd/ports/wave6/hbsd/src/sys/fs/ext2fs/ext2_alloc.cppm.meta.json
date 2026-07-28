@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/ext2fs/ext2_alloc.c",
-  "wave": "wave6",
-  "loc_estimate": 1575,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/ext2fs/ext2_alloc.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.ext2fs.ext2_alloc",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

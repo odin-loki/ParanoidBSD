@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/core/kprotocolinfofactory.cpp",
-  "wave": "wave3",
-  "loc_estimate": 118,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/core/kprotocolinfofactory.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.core.kprotocolinfofactory",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

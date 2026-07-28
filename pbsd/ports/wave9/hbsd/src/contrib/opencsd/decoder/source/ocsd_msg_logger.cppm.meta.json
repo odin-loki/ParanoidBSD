@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/opencsd/decoder/source/ocsd_msg_logger.cpp",
-  "wave": "wave9",
-  "loc_estimate": 120,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/ocsd_msg_logger.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.ocsd_msg_logger",
-  "generated": "2026-07-19T09:37:48+00:00"
-}

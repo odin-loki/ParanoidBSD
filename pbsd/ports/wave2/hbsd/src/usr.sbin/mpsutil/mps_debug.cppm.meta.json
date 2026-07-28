@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/mpsutil/mps_debug.c",
-  "wave": "wave2",
-  "loc_estimate": 183,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/mpsutil/mps_debug.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.mpsutil.mps_debug",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

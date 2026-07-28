@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/test/gpioevents/gpioevents.c",
-  "wave": "wave9",
-  "loc_estimate": 675,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/gpioevents/gpioevents.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.test.gpioevents.gpioevents",
-  "generated": "2026-07-19T09:37:46+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/iwlwifi/iwl-nvm-utils.c",
-  "wave": "wave4",
-  "loc_estimate": 119,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/iwl-nvm-utils.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.iwl_nvm_utils",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

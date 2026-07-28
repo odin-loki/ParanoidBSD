@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libfido2/examples/reset.c",
-  "wave": "wave9",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libfido2/examples/reset.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libfido2.examples.reset",
-  "generated": "2026-07-19T09:37:34+00:00"
-}

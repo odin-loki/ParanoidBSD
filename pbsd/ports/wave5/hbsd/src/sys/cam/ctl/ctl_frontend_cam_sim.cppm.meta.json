@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cam/ctl/ctl_frontend_cam_sim.c",
-  "wave": "wave5",
-  "loc_estimate": 788,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/cam/ctl/ctl_frontend_cam_sim.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.cam.ctl.ctl_frontend_cam_sim",
-  "generated": "2026-07-19T08:31:21+00:00"
-}

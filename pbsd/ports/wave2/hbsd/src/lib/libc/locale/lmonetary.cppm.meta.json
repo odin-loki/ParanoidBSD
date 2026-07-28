@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/locale/lmonetary.c",
-  "wave": "wave2",
-  "loc_estimate": 228,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/locale/lmonetary.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.locale.lmonetary",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

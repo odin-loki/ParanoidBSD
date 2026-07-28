@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/kdc/log.c",
-  "wave": "wave9",
-  "loc_estimate": 97,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/kdc/log.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.kdc.log",
-  "generated": "2026-07-19T09:30:35+00:00"
-}

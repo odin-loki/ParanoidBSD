@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/string/memchr.c",
-  "wave": "wave2",
-  "loc_estimate": 56,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/string/memchr.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.string.memchr",
-  "generated": "2026-07-19T08:32:14+00:00"
-}

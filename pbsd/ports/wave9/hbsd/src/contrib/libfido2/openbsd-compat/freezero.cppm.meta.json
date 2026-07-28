@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libfido2/openbsd-compat/freezero.c",
-  "wave": "wave9",
-  "loc_estimate": 30,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libfido2/openbsd-compat/freezero.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libfido2.openbsd_compat.freezero",
-  "generated": "2026-07-19T09:37:34+00:00"
-}

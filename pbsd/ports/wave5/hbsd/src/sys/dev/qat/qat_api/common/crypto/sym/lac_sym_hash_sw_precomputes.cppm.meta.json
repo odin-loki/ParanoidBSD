@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_api/common/crypto/sym/lac_sym_hash_sw_precomputes.c",
-  "wave": "wave5",
-  "loc_estimate": 352,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/common/crypto/sym/lac_sym_hash_sw_precomputes.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.common.crypto.sym.lac_sym_hash_sw_precomputes",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

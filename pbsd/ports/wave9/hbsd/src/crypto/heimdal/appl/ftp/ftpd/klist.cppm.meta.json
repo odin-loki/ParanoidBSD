@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/appl/ftp/ftpd/klist.c",
-  "wave": "wave9",
-  "loc_estimate": 178,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/appl/ftp/ftpd/klist.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.appl.ftp.ftpd.klist",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

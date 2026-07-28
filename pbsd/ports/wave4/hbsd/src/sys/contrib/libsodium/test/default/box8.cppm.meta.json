@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/test/default/box8.c",
-  "wave": "wave4",
-  "loc_estimate": 58,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/test/default/box8.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.test.default.box8",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

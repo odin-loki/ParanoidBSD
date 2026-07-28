@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_common/qat_common_module.c",
-  "wave": "wave5",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_common/qat_common_module.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_common.qat_common_module",
-  "generated": "2026-07-19T09:02:54+00:00"
-}

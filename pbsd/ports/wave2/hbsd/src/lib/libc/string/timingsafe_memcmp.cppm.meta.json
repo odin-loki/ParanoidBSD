@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/string/timingsafe_memcmp.c",
-  "wave": "wave2",
-  "loc_estimate": 50,
-  "status": "converted",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/string/timingsafe_memcmp.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.string.timingsafe_memcmp",
-  "generated": "2026-07-19T10:02:54+00:00"
-}

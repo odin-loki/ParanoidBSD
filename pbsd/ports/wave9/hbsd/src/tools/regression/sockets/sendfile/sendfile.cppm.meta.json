@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/sockets/sendfile/sendfile.c",
-  "wave": "wave9",
-  "loc_estimate": 481,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/sockets/sendfile/sendfile.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.sockets.sendfile.sendfile",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

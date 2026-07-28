@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_write_format_shar_empty.c",
-  "wave": "wave9",
-  "loc_estimate": 53,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_write_format_shar_empty.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_write_format_shar_empty",
-  "generated": "2026-07-19T09:30:39+00:00"
-}

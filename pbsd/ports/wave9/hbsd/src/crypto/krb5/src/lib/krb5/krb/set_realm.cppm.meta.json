@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/set_realm.c",
-  "wave": "wave9",
-  "loc_estimate": 48,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/set_realm.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.set_realm",
-  "generated": "2026-07-19T09:30:25+00:00"
-}

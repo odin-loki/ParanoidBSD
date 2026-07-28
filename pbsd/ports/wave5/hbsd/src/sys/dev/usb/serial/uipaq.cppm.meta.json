@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/usb/serial/uipaq.c",
-  "wave": "wave5",
-  "loc_estimate": 1371,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/serial/uipaq.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.serial.uipaq",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

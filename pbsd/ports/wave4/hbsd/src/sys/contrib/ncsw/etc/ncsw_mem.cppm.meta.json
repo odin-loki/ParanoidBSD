@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/ncsw/etc/ncsw_mem.c",
-  "wave": "wave4",
-  "loc_estimate": 765,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ncsw/etc/ncsw_mem.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ncsw.etc.ncsw_mem",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

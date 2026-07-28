@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/lib/libbpfjit/t_bpfjit.c",
-  "wave": "wave9",
-  "loc_estimate": 4753,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libbpfjit/t_bpfjit.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libbpfjit.t_bpfjit",
-  "generated": "2026-07-19T09:30:59+00:00"
-}

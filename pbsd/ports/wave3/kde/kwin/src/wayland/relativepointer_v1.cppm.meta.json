@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/wayland/relativepointer_v1.cpp",
-  "wave": "wave3",
-  "loc_estimate": 98,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/wayland/relativepointer_v1.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.wayland.relativepointer_v1",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

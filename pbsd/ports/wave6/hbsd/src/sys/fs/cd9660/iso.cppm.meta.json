@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/cd9660/iso.h",
-  "wave": "wave6",
-  "loc_estimate": 369,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/cd9660/iso.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.cd9660.iso",
-  "generated": "2026-07-19T10:59:34+00:00"
-}

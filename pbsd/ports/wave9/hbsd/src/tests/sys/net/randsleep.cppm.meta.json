@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/net/randsleep.c",
-  "wave": "wave9",
-  "loc_estimate": 61,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/net/randsleep.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.net.randsleep",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/pax/tty_subs.c",
-  "wave": "wave2",
-  "loc_estimate": 184,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/pax/tty_subs.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.pax.tty_subs",
-  "generated": "2026-07-19T07:28:55+00:00"
-}

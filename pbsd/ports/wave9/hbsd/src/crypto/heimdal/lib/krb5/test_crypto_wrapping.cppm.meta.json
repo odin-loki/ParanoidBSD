@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/krb5/test_crypto_wrapping.c",
-  "wave": "wave9",
-  "loc_estimate": 166,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/test_crypto_wrapping.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.test_crypto_wrapping",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

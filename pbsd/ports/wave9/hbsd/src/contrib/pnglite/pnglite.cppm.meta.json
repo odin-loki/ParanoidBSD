@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/pnglite/pnglite.c",
-  "wave": "wave9",
-  "loc_estimate": 621,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pnglite/pnglite.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.pnglite.pnglite",
-  "generated": "2026-07-19T09:38:34+00:00"
-}

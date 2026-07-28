@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/axgbe/xgbe_osdep.c",
-  "wave": "wave5",
-  "loc_estimate": 45,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/axgbe/xgbe_osdep.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.axgbe.xgbe_osdep",
-  "generated": "2026-07-19T09:02:54+00:00"
-}

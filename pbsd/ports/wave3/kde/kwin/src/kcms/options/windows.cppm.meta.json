@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/kcms/options/windows.cpp",
-  "wave": "wave3",
-  "loc_estimate": 297,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/kcms/options/windows.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.kcms.options.windows",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

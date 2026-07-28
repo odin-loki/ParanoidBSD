@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/subr_pcpu.c",
-  "wave": "wave4",
-  "loc_estimate": 425,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_pcpu.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_pcpu",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

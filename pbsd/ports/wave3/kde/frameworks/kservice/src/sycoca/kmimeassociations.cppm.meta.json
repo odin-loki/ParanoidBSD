@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kservice/src/sycoca/kmimeassociations.cpp",
-  "wave": "wave3",
-  "loc_estimate": 196,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kservice/src/sycoca/kmimeassociations.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kservice.src.sycoca.kmimeassociations",
-  "generated": "2026-07-19T09:30:15+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/acpica/Osd/OsdHardware.c",
-  "wave": "wave5",
-  "loc_estimate": 140,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpica/Osd/OsdHardware.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpica.osd.osdhardware",
-  "generated": "2026-07-19T08:30:23+00:00"
-}

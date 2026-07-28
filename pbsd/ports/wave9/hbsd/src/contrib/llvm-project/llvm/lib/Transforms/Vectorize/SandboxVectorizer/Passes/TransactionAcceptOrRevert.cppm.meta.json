@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Vectorize/SandboxVectorizer/Passes/TransactionAcceptOrRevert.cpp",
-  "wave": "wave9",
-  "loc_estimate": 45,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Vectorize/SandboxVectorizer/Passes/TransactionAcceptOrRevert.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.vectorize.sandboxvectorizer.passes.transactionacceptorrevert",
-  "generated": "2026-07-19T09:31:48+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/libcxx/src/thread.cpp",
-  "wave": "wave9",
-  "loc_estimate": 175,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libcxx/src/thread.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libcxx.src.thread",
-  "generated": "2026-07-19T09:37:16+00:00"
-}

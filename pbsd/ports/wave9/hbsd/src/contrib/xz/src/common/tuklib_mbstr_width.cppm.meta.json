@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/xz/src/common/tuklib_mbstr_width.c",
-  "wave": "wave9",
-  "loc_estimate": 86,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/xz/src/common/tuklib_mbstr_width.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.xz.src.common.tuklib_mbstr_width",
-  "generated": "2026-07-19T09:37:37+00:00"
-}

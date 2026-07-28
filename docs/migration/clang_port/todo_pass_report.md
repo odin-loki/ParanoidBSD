@@ -1,9 +1,9 @@
 # PBSD todo.md Pass Report
 
-Generated: `2026-07-27T12:26:27+00:00`
+Generated: `2026-07-28T07:35:07+00:00`
 
-- Files processed: **4028**
-- Edits applied: **100176**
+- Files processed: **4027**
+- Edits applied: **100172**
 - Refusals (model queue only): **0**
 - compile_commands coverage: **100.0%**
 - Corpus OK: **True**
@@ -33,12 +33,12 @@ Generated: `2026-07-27T12:26:27+00:00`
 | 424 | 0 | `hbsd/src/usr.sbin/mountd/mountd.c` |
 | 392 | 0 | `hbsd/src/usr.sbin/ctladm/ctladm.c` |
 | 376 | 0 | `hbsd/src/usr.bin/find/function.c` |
-| 345 | 0 | `hbsd/src/sbin/pfctl/pfctl.c` |
+| 353 | 0 | `hbsd/src/sbin/pfctl/pfctl.c` |
 | 328 | 0 | `hbsd/src/lib/libpfctl/libpfctl.c` |
-| 316 | 0 | `hbsd/src/lib/libc/gen/getpwent.c` |
+| 318 | 0 | `hbsd/src/lib/libc/gen/getpwent.c` |
 | 288 | 0 | `hbsd/src/usr.sbin/syslogd/syslogd.c` |
+| 275 | 0 | `hbsd/src/lib/libcasper/services/cap_net/tests/net_test.c` |
 | 274 | 0 | `hbsd/src/usr.sbin/route6d/route6d.c` |
-| 273 | 0 | `hbsd/src/lib/libcasper/services/cap_net/tests/net_test.c` |
 | 267 | 0 | `hbsd/src/usr.sbin/bsnmpd/tools/libbsnmptools/bsnmptools.c` |
 | 259 | 0 | `hbsd/src/lib/libc/net/getaddrinfo.c` |
 | 239 | 0 | `hbsd/src/lib/libc/gen/getgrent.c` |
@@ -53,28 +53,28 @@ Generated: `2026-07-27T12:26:27+00:00`
 
 ## Outputs
 
-- Staged C++: `/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/docs/migration/clang_port/staged`
-- Refusals: `/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/docs/migration/clang_port/refusals.jsonl`
+- Staged C++: `/home/odin/pbsd/docs/migration/clang_port/staged`
+- Refusals: `/home/odin/pbsd/docs/migration/clang_port/refusals.jsonl`
 - Full JSON: `docs/migration/clang_port/pass_report.json`
 
-## Proposal histogram (`proposals.jsonl`, 25987)
+## Proposal histogram (`proposals.jsonl`, 25954)
 
 | Kind | Count |
 |---|---:|
 | `MACRO_OBJECT` | 3221 |
-| `STR_FORMAT_CANDIDATE` | 3090 |
-| `MALLOC_ESCAPE` | 2579 |
+| `STR_FORMAT_CANDIDATE` | 3066 |
+| `MALLOC_ESCAPE` | 2577 |
 | `SPAN_CANDIDATE` | 2334 |
 | `NULLABILITY` | 2124 |
-| `LIFETIME_OWN` | 1610 |
-| `ANDERSEN_OWNED` | 1603 |
+| `LIFETIME_OWN` | 1608 |
+| `ANDERSEN_OWNED` | 1600 |
 | `LIFETIME_FAIL` | 1435 |
 | `GLOBAL_CLUSTER` | 1227 |
-| `POINTER_KIND` | 1166 |
+| `POINTER_KIND` | 1160 |
 | `MACRO_CONSTEXPR` | 999 |
 | `ANDERSEN_ESCAPE` | 964 |
+| `DEAD_STORE` | 634 |
 | `MACRO_DIVERGENT` | 631 |
-| `DEAD_STORE` | 630 |
 | `SYSCALL_TRACE` | 610 |
 | `PURITY` | 454 |
 | `KR_DEFINITION` | 247 |

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kxmlgui/src/ktoolbarhelper.cpp",
-  "wave": "wave3",
-  "loc_estimate": 52,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/src/ktoolbarhelper.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.src.ktoolbarhelper",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

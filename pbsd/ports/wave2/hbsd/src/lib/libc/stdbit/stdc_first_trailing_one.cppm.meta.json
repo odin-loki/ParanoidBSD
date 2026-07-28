@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdbit/stdc_first_trailing_one.c",
-  "wave": "wave2",
-  "loc_estimate": 52,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdbit/stdc_first_trailing_one.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdbit.stdc_first_trailing_one",
-  "generated": "2026-07-19T09:05:13+00:00"
-}

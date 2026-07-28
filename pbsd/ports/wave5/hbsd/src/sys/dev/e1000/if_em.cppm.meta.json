@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/e1000/if_em.c",
-  "wave": "wave5",
-  "loc_estimate": 5775,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/e1000/if_em.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.e1000.if_em",
-  "generated": "2026-07-19T08:29:55+00:00"
-}

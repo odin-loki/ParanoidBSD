@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/iwlwifi/fw/notif-wait.c",
-  "wave": "wave4",
-  "loc_estimate": 135,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/fw/notif-wait.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.fw.notif_wait",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

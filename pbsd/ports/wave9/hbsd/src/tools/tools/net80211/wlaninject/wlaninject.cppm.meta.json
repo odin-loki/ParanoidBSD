@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/net80211/wlaninject/wlaninject.c",
-  "wave": "wave9",
-  "loc_estimate": 804,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/net80211/wlaninject/wlaninject.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.net80211.wlaninject.wlaninject",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

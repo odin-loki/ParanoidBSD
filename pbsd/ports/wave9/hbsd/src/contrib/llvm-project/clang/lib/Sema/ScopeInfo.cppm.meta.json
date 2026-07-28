@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Sema/ScopeInfo.cpp",
-  "wave": "wave9",
-  "loc_estimate": 261,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Sema/ScopeInfo.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.sema.scopeinfo",
-  "generated": "2026-07-19T09:31:19+00:00"
-}

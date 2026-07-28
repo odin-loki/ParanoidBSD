@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/security/mac/mac_framework.c",
-  "wave": "wave4",
-  "loc_estimate": 744,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac/mac_framework.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac.mac_framework",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

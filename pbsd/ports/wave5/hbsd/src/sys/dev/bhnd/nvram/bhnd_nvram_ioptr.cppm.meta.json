@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/bhnd/nvram/bhnd_nvram_ioptr.c",
-  "wave": "wave5",
-  "loc_estimate": 226,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/bhnd/nvram/bhnd_nvram_ioptr.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.bhnd.nvram.bhnd_nvram_ioptr",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

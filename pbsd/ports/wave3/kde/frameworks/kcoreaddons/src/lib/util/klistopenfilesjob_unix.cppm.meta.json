@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kcoreaddons/src/lib/util/klistopenfilesjob_unix.cpp",
-  "wave": "wave3",
-  "loc_estimate": 134,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/util/klistopenfilesjob_unix.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.util.klistopenfilesjob_unix",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

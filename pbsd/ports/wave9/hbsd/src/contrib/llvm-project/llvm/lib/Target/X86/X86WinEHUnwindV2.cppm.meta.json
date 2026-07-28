@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/X86WinEHUnwindV2.cpp",
-  "wave": "wave9",
-  "loc_estimate": 325,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/X86WinEHUnwindV2.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.x86.x86winehunwindv2",
-  "generated": "2026-07-19T09:31:54+00:00"
-}

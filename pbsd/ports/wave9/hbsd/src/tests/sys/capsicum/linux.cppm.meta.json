@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/capsicum/linux.cc",
-  "wave": "wave9",
-  "loc_estimate": 1500,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/capsicum/linux.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.capsicum.linux",
-  "generated": "2026-07-19T09:37:22+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ProfileData/MemProfRadixTree.cpp",
-  "wave": "wave9",
-  "loc_estimate": 253,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ProfileData/MemProfRadixTree.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.profiledata.memprofradixtree",
-  "generated": "2026-07-19T09:31:53+00:00"
-}

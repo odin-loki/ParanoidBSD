@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/redzone9/redzone.c",
-  "wave": "wave9",
-  "loc_estimate": 138,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/redzone9/redzone.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.redzone9.redzone",
-  "generated": "2026-07-19T09:37:31+00:00"
-}

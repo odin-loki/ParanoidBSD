@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libsysdecode/utrace.c",
-  "wave": "wave2",
-  "loc_estimate": 212,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libsysdecode/utrace.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libsysdecode.utrace",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

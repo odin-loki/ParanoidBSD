@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/ncsw/Peripherals/BM/bman_low.c",
-  "wave": "wave4",
-  "loc_estimate": 498,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ncsw/Peripherals/BM/bman_low.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ncsw.peripherals.bm.bman_low",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

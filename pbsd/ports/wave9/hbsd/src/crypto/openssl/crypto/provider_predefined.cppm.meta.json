@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/provider_predefined.c",
-  "wave": "wave9",
-  "loc_estimate": 32,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/provider_predefined.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.provider_predefined",
-  "generated": "2026-07-19T09:30:02+00:00"
-}

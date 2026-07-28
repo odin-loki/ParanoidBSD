@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/sysevent/tst.post_chan.c",
-  "wave": "wave2",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/common/sysevent/tst.post_chan.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.cddl.contrib.opensolaris.cmd.dtrace.test.tst.common.sysevent.tst_post_chan",
-  "generated": "2026-07-19T09:04:01+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Frontend/FrontendOptions.cpp",
-  "wave": "wave9",
-  "loc_estimate": 39,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Frontend/FrontendOptions.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.frontend.frontendoptions",
-  "generated": "2026-07-19T09:31:17+00:00"
-}

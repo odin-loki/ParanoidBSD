@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/bootpd/trygetif.c",
-  "wave": "wave2",
-  "loc_estimate": 72,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/bootpd/trygetif.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.bootpd.trygetif",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

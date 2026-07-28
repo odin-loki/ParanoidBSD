@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/test/time_offset_test.c",
-  "wave": "wave9",
-  "loc_estimate": 112,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/time_offset_test.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.time_offset_test",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

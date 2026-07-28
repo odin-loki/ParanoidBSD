@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/tests/zfs-tests/tests/functional/cp_files/seekflood.c",
-  "wave": "wave6",
-  "loc_estimate": 187,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/tests/zfs-tests/tests/functional/cp_files/seekflood.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.tests.zfs_tests.tests.functional.cp_files.seekflood",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

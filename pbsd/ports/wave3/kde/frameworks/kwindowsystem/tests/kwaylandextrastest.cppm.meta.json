@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwindowsystem/tests/kwaylandextrastest.cpp",
-  "wave": "wave3",
-  "loc_estimate": 125,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwindowsystem/tests/kwaylandextrastest.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwindowsystem.tests.kwaylandextrastest",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

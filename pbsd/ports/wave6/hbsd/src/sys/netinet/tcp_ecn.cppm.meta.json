@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/tcp_ecn.c",
-  "wave": "wave6",
-  "loc_estimate": 612,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/tcp_ecn.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.tcp_ecn",
-  "generated": "2026-07-19T09:29:21+00:00"
-}

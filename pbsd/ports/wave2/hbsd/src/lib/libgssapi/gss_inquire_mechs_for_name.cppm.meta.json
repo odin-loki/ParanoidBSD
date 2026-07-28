@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libgssapi/gss_inquire_mechs_for_name.c",
-  "wave": "wave2",
-  "loc_estimate": 79,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libgssapi/gss_inquire_mechs_for_name.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libgssapi.gss_inquire_mechs_for_name",
-  "generated": "2026-07-19T09:29:45+00:00"
-}

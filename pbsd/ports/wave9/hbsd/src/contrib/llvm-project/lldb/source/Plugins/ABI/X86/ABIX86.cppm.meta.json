@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/X86/ABIX86.cpp",
-  "wave": "wave9",
-  "loc_estimate": 272,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ABI/X86/ABIX86.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.abi.x86.abix86",
-  "generated": "2026-07-19T09:31:40+00:00"
-}

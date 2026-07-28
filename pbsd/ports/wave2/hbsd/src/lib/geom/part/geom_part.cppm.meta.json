@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/geom/part/geom_part.c",
-  "wave": "wave2",
-  "loc_estimate": 1327,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/geom/part/geom_part.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.geom.part.geom_part",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

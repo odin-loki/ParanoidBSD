@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/crypto/ccp/ccp.c",
-  "wave": "wave4",
-  "loc_estimate": 789,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/ccp/ccp.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.ccp.ccp",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

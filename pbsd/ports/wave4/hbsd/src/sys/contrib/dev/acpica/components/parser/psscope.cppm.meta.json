@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/parser/psscope.c",
-  "wave": "wave4",
-  "loc_estimate": 408,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/parser/psscope.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.parser.psscope",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

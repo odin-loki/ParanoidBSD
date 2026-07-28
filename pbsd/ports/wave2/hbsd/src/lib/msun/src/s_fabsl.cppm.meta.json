@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/msun/src/s_fabsl.c",
-  "wave": "wave2",
-  "loc_estimate": 43,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_fabsl.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_fabsl",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

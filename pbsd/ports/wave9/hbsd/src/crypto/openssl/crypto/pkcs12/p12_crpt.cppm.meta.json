@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/pkcs12/p12_crpt.c",
-  "wave": "wave9",
-  "loc_estimate": 84,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/pkcs12/p12_crpt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.pkcs12.p12_crpt",
-  "generated": "2026-07-19T09:30:03+00:00"
-}

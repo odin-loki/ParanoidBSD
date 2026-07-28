@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/security/cap_test/cap_test_capabilities.c",
-  "wave": "wave4",
-  "loc_estimate": 558,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/tools/regression/security/cap_test/cap_test_capabilities.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.tools.regression.security.cap_test.cap_test_capabilities",
-  "generated": "2026-07-19T09:51:40+00:00"
-}

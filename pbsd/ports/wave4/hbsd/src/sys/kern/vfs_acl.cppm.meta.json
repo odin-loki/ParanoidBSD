@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/vfs_acl.c",
-  "wave": "wave4",
-  "loc_estimate": 599,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/vfs_acl.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.vfs_acl",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

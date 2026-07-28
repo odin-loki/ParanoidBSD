@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/acpi_support/acpi_asus.c",
-  "wave": "wave5",
-  "loc_estimate": 1264,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpi_support/acpi_asus.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpi_support.acpi_asus",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

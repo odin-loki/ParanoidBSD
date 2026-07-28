@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libthr/tests/pthread_tryjoin_test.c",
-  "wave": "wave2",
-  "loc_estimate": 62,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/tests/pthread_tryjoin_test.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.tests.pthread_tryjoin_test",
-  "generated": "2026-07-19T08:41:20+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/arc.c",
-  "wave": "wave6",
-  "loc_estimate": 11313,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/arc.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.arc",
-  "generated": "2026-07-19T09:29:21+00:00"
-}

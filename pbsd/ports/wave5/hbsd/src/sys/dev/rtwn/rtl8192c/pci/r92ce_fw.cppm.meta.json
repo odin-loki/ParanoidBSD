@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/rtwn/rtl8192c/pci/r92ce_fw.c",
-  "wave": "wave5",
-  "loc_estimate": 72,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8192c/pci/r92ce_fw.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8192c.pci.r92ce_fw",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

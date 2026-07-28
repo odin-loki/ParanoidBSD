@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/kcms/rules/ruleitem.cpp",
-  "wave": "wave3",
-  "loc_estimate": 213,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/kcms/rules/ruleitem.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.kcms.rules.ruleitem",
-  "generated": "2026-07-19T09:30:16+00:00"
-}

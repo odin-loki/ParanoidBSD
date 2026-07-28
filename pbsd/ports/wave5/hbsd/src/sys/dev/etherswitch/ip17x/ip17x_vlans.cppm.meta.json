@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/etherswitch/ip17x/ip17x_vlans.c",
-  "wave": "wave5",
-  "loc_estimate": 187,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/etherswitch/ip17x/ip17x_vlans.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.etherswitch.ip17x.ip17x_vlans",
-  "generated": "2026-07-19T09:29:05+00:00"
-}

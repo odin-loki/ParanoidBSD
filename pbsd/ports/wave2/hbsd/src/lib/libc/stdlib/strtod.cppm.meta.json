@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdlib/strtod.c",
-  "wave": "wave2",
-  "loc_estimate": 0,
-  "status": "converted",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdlib/strtod.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdlib.strtod",
-  "generated": "2026-07-19T10:14:43+00:00"
-}

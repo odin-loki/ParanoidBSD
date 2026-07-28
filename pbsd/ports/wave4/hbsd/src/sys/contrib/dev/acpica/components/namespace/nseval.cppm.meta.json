@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/namespace/nseval.c",
-  "wave": "wave4",
-  "loc_estimate": 460,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/namespace/nseval.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.namespace.nseval",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

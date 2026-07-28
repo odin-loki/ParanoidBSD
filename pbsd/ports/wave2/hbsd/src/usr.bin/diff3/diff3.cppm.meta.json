@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.bin/diff3/diff3.c",
-  "wave": "wave2",
-  "loc_estimate": 1113,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/diff3/diff3.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_bin.diff3.diff3",
-  "generated": "2026-07-19T09:30:22+00:00"
-}

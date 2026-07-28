@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/pf/pflogd/pflogd.c",
-  "wave": "wave9",
-  "loc_estimate": 824,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pf/pflogd/pflogd.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.pf.pflogd.pflogd",
-  "generated": "2026-07-19T09:38:01+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/TextAPI/TextStubV5.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1083,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/TextAPI/TextStubV5.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.textapi.textstubv5",
-  "generated": "2026-07-19T09:31:56+00:00"
-}

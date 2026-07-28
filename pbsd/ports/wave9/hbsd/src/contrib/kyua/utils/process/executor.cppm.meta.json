@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/kyua/utils/process/executor.cpp",
-  "wave": "wave9",
-  "loc_estimate": 937,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/kyua/utils/process/executor.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.kyua.utils.process.executor",
-  "generated": "2026-07-19T09:37:26+00:00"
-}

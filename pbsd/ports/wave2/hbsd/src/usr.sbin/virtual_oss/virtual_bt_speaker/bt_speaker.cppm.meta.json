@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/virtual_oss/virtual_bt_speaker/bt_speaker.c",
-  "wave": "wave2",
-  "loc_estimate": 541,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/virtual_oss/virtual_bt_speaker/bt_speaker.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.virtual_oss.virtual_bt_speaker.bt_speaker",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

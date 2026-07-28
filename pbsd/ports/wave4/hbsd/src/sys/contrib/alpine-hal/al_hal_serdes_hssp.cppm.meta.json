@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/alpine-hal/al_hal_serdes_hssp.c",
-  "wave": "wave4",
-  "loc_estimate": 3164,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/alpine-hal/al_hal_serdes_hssp.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.alpine_hal.al_hal_serdes_hssp",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

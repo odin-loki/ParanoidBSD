@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/plugins/hidecursor/hidecursor.cpp",
-  "wave": "wave3",
-  "loc_estimate": 121,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/hidecursor/hidecursor.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.plugins.hidecursor.hidecursor",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

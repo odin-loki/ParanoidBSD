@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/plugins/kdb/ldap/libkdb_ldap/ldap_handle.c",
-  "wave": "wave9",
-  "loc_estimate": 175,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/kdb/ldap/libkdb_ldap/ldap_handle.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.kdb.ldap.libkdb_ldap.ldap_handle",
-  "generated": "2026-07-19T09:30:29+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/vdev_raidz_math_powerpc_altivec.c",
-  "wave": "wave6",
-  "loc_estimate": 4338,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/vdev_raidz_math_powerpc_altivec.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.vdev_raidz_math_powerpc_altivec",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

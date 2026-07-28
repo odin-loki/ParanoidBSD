@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/gui/faviconrequestjob.cpp",
-  "wave": "wave3",
-  "loc_estimate": 200,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/gui/faviconrequestjob.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.gui.faviconrequestjob",
-  "generated": "2026-07-19T09:30:15+00:00"
-}

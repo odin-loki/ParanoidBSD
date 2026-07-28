@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/flex/src/nfa.c",
-  "wave": "wave9",
-  "loc_estimate": 704,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/flex/src/nfa.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.flex.src.nfa",
-  "generated": "2026-07-19T09:38:00+00:00"
-}

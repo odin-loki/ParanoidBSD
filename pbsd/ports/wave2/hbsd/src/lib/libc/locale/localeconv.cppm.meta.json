@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/locale/localeconv.c",
-  "wave": "wave2",
-  "loc_estimate": 113,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/locale/localeconv.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.locale.localeconv",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Lex/DependencyDirectivesScanner.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1072,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Lex/DependencyDirectivesScanner.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.lex.dependencydirectivesscanner",
-  "generated": "2026-07-19T09:31:21+00:00"
-}

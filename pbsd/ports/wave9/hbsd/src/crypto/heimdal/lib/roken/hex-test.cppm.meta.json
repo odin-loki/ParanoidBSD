@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/roken/hex-test.c",
-  "wave": "wave9",
-  "loc_estimate": 106,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/hex-test.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.hex_test",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

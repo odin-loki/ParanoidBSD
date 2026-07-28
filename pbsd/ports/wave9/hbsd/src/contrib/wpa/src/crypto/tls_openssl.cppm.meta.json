@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/crypto/tls_openssl.c",
-  "wave": "wave9",
-  "loc_estimate": 6029,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/crypto/tls_openssl.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.crypto.tls_openssl",
-  "generated": "2026-07-19T09:31:03+00:00"
-}

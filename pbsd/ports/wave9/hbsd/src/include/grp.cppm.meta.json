@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/grp.h",
-  "wave": "wave9",
-  "loc_estimate": 91,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/grp.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.grp",
-  "generated": "2026-07-19T10:59:34+00:00"
-}

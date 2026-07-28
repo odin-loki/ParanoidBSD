@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Sema/SemaX86.cpp",
-  "wave": "wave9",
-  "loc_estimate": 1059,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Sema/SemaX86.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.sema.semax86",
-  "generated": "2026-07-19T09:31:21+00:00"
-}

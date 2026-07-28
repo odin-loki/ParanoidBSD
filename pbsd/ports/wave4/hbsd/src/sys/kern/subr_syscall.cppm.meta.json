@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/subr_syscall.c",
-  "wave": "wave4",
-  "loc_estimate": 304,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_syscall.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_syscall",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

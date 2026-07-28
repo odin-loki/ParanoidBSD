@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/nvi/common/log.c",
-  "wave": "wave9",
-  "loc_estimate": 723,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/nvi/common/log.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.nvi.common.log",
-  "generated": "2026-07-19T09:37:35+00:00"
-}

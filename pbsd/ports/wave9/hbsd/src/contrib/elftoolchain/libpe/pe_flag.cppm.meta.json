@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/elftoolchain/libpe/pe_flag.c",
-  "wave": "wave9",
-  "loc_estimate": 187,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/elftoolchain/libpe/pe_flag.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.elftoolchain.libpe.pe_flag",
-  "generated": "2026-07-19T09:37:29+00:00"
-}

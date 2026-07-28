@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libsecureboot/openpgp/opgp_sig.c",
-  "wave": "wave2",
-  "loc_estimate": 492,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libsecureboot/openpgp/opgp_sig.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libsecureboot.openpgp.opgp_sig",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

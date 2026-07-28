@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/contrib/gnome-ssh-askpass1.c",
-  "wave": "wave9",
-  "loc_estimate": 172,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/contrib/gnome-ssh-askpass1.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.contrib.gnome_ssh_askpass1",
-  "generated": "2026-07-19T09:37:20+00:00"
-}

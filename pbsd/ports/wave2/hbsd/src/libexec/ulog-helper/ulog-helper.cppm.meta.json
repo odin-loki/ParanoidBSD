@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/ulog-helper/ulog-helper.c",
-  "wave": "wave2",
-  "loc_estimate": 97,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/ulog-helper/ulog-helper.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.ulog_helper.ulog_helper",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

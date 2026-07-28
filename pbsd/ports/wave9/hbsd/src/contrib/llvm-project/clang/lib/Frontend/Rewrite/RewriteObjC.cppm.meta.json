@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Frontend/Rewrite/RewriteObjC.cpp",
-  "wave": "wave9",
-  "loc_estimate": 5866,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Frontend/Rewrite/RewriteObjC.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.frontend.rewrite.rewriteobjc",
-  "generated": "2026-07-19T09:31:22+00:00"
-}

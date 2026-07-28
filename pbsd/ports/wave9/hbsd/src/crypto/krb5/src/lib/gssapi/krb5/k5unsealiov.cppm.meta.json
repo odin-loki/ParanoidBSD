@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/gssapi/krb5/k5unsealiov.c",
-  "wave": "wave9",
-  "loc_estimate": 632,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/gssapi/krb5/k5unsealiov.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.gssapi.krb5.k5unsealiov",
-  "generated": "2026-07-19T09:30:32+00:00"
-}

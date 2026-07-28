@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/openmp/runtime/src/kmp_debug.cpp",
-  "wave": "wave9",
-  "loc_estimate": 131,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/openmp/runtime/src/kmp_debug.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.openmp.runtime.src.kmp_debug",
-  "generated": "2026-07-19T09:37:16+00:00"
-}

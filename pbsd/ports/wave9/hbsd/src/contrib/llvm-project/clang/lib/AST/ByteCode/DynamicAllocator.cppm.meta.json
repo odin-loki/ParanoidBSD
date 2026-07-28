@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/AST/ByteCode/DynamicAllocator.cpp",
-  "wave": "wave9",
-  "loc_estimate": 132,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/AST/ByteCode/DynamicAllocator.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.ast.bytecode.dynamicallocator",
-  "generated": "2026-07-19T09:31:18+00:00"
-}

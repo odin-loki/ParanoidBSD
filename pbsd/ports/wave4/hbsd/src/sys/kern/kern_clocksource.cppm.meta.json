@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/kern_clocksource.c",
-  "wave": "wave4",
-  "loc_estimate": 985,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_clocksource.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_clocksource",
-  "generated": "2026-07-19T09:19:11+00:00"
-}

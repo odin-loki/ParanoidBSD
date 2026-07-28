@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libutil/stub.c",
-  "wave": "wave2",
-  "loc_estimate": 46,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libutil/stub.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libutil.stub",
-  "generated": "2026-07-19T07:48:27+00:00"
-}

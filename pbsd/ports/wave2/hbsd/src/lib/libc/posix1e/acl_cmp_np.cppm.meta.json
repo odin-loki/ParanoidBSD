@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/posix1e/acl_cmp_np.c",
-  "wave": "wave2",
-  "loc_estimate": 52,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/posix1e/acl_cmp_np.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.posix1e.acl_cmp_np",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

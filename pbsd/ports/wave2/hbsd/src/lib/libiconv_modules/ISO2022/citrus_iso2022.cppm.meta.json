@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libiconv_modules/ISO2022/citrus_iso2022.c",
-  "wave": "wave2",
-  "loc_estimate": 1292,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libiconv_modules/ISO2022/citrus_iso2022.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libiconv_modules.iso2022.citrus_iso2022",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

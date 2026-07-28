@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/libalias/alias_skinny.c",
-  "wave": "wave6",
-  "loc_estimate": 442,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/libalias/alias_skinny.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.libalias.alias_skinny",
-  "generated": "2026-07-19T09:02:53+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/X86MachineFunctionInfo.cpp",
-  "wave": "wave9",
-  "loc_estimate": 50,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Target/X86/X86MachineFunctionInfo.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.target.x86.x86machinefunctioninfo",
-  "generated": "2026-07-19T09:31:48+00:00"
-}

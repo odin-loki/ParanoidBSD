@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/test/iconv/tablegen/tablegen.c",
-  "wave": "wave9",
-  "loc_estimate": 317,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/iconv/tablegen/tablegen.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.test.iconv.tablegen.tablegen",
-  "generated": "2026-07-19T09:37:46+00:00"
-}

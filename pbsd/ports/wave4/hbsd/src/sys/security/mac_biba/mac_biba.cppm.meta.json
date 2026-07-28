@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/security/mac_biba/mac_biba.c",
-  "wave": "wave4",
-  "loc_estimate": 3797,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac_biba/mac_biba.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac_biba.mac_biba",
-  "generated": "2026-07-19T09:31:15+00:00"
-}

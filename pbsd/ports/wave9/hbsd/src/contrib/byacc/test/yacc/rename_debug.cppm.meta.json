@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/byacc/test/yacc/rename_debug.c",
-  "wave": "wave9",
-  "loc_estimate": 385,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/byacc/test/yacc/rename_debug.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.byacc.test.yacc.rename_debug",
-  "generated": "2026-07-19T09:37:30+00:00"
-}

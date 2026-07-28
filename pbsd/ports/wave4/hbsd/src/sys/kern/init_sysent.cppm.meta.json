@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/init_sysent.c",
-  "wave": "wave4",
-  "loc_estimate": 672,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/init_sysent.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.init_sysent",
-  "generated": "2026-07-19T09:19:11+00:00"
-}

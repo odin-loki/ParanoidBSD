@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ofed/libibcm/config.h",
-  "wave": "wave9",
-  "loc_estimate": 5,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/libibcm/config.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.libibcm.config",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

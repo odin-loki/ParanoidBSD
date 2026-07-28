@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/mtree/getid.c",
-  "wave": "wave9",
-  "loc_estimate": 446,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/mtree/getid.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.mtree.getid",
-  "generated": "2026-07-19T09:38:06+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/test/auxinfo/auxinfo.c",
-  "wave": "wave9",
-  "loc_estimate": 64,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/auxinfo/auxinfo.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.test.auxinfo.auxinfo",
-  "generated": "2026-07-19T09:37:46+00:00"
-}

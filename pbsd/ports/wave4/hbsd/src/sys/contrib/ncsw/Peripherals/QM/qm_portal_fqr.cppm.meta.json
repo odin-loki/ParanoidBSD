@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/ncsw/Peripherals/QM/qm_portal_fqr.c",
-  "wave": "wave4",
-  "loc_estimate": 2732,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/ncsw/Peripherals/QM/qm_portal_fqr.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.ncsw.peripherals.qm.qm_portal_fqr",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

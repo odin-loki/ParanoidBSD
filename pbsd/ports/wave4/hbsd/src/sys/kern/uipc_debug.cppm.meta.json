@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/uipc_debug.c",
-  "wave": "wave4",
-  "loc_estimate": 496,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/uipc_debug.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.uipc_debug",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

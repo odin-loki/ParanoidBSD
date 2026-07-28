@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/telnet/libtelnet/encrypt.c",
-  "wave": "wave9",
-  "loc_estimate": 948,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/telnet/libtelnet/encrypt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.telnet.libtelnet.encrypt",
-  "generated": "2026-07-19T09:37:58+00:00"
-}

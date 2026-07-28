@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/msun/ld80/s_erfl.c",
-  "wave": "wave2",
-  "loc_estimate": 333,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/ld80/s_erfl.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.msun.ld80.s_erfl",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

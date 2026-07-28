@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libthr/thread/thr_getcpuclockid.c",
-  "wave": "wave2",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/thread/thr_getcpuclockid.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.thread.thr_getcpuclockid",
-  "generated": "2026-07-19T08:41:19+00:00"
-}

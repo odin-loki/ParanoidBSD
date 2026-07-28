@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/asn1/der_length.c",
-  "wave": "wave9",
-  "loc_estimate": 305,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/asn1/der_length.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.asn1.der_length",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

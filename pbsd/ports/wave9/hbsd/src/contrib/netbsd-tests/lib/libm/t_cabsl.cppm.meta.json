@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/lib/libm/t_cabsl.cxx",
-  "wave": "wave9",
-  "loc_estimate": 66,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/libm/t_cabsl.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.libm.t_cabsl",
-  "generated": "2026-07-19T09:30:54+00:00"
-}

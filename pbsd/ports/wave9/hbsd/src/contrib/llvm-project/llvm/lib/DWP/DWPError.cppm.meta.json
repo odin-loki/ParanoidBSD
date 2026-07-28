@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/DWP/DWPError.cpp",
-  "wave": "wave9",
-  "loc_estimate": 3,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/DWP/DWPError.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.dwp.dwperror",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

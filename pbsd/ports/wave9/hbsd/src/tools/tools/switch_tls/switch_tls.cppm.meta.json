@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/switch_tls/switch_tls.c",
-  "wave": "wave9",
-  "loc_estimate": 378,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/switch_tls/switch_tls.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.switch_tls.switch_tls",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

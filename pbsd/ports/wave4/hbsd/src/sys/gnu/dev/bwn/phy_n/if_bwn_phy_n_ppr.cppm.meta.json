@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/gnu/dev/bwn/phy_n/if_bwn_phy_n_ppr.c",
-  "wave": "wave4",
-  "loc_estimate": 332,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/gnu/dev/bwn/phy_n/if_bwn_phy_n_ppr.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.gnu.dev.bwn.phy_n.if_bwn_phy_n_ppr",
-  "generated": "2026-07-19T09:31:12+00:00"
-}

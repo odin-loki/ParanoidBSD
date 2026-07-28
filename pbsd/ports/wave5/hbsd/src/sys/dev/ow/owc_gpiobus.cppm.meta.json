@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ow/owc_gpiobus.c",
-  "wave": "wave5",
-  "loc_estimate": 399,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ow/owc_gpiobus.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ow.owc_gpiobus",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

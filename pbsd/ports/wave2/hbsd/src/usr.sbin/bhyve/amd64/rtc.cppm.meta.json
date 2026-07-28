@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bhyve/amd64/rtc.c",
-  "wave": "wave2",
-  "loc_estimate": 127,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/amd64/rtc.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.amd64.rtc",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

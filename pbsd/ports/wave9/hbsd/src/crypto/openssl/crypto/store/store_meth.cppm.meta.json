@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/store/store_meth.c",
-  "wave": "wave9",
-  "loc_estimate": 503,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/store/store_meth.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.store.store_meth",
-  "generated": "2026-07-19T09:30:05+00:00"
-}

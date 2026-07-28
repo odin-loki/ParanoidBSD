@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libthr/thread/thr_barrier.c",
-  "wave": "wave2",
-  "loc_estimate": 171,
-  "status": "converted",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/thread/thr_barrier.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.thread.thr_barrier",
-  "generated": "2026-07-19T10:02:54+00:00"
-}

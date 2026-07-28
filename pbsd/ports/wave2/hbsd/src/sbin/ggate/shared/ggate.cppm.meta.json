@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/ggate/shared/ggate.c",
-  "wave": "wave2",
-  "loc_estimate": 409,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ggate/shared/ggate.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.ggate.shared.ggate",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

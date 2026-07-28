@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/malo/if_malohal.c",
-  "wave": "wave5",
-  "loc_estimate": 903,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/malo/if_malohal.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.malo.if_malohal",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

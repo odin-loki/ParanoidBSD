@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Scalar/BDCE.cpp",
-  "wave": "wave9",
-  "loc_estimate": 210,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Scalar/BDCE.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.scalar.bdce",
-  "generated": "2026-07-19T09:31:53+00:00"
-}

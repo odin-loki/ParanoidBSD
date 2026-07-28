@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ffec/if_ffec.c",
-  "wave": "wave5",
-  "loc_estimate": 1837,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ffec/if_ffec.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ffec.if_ffec",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

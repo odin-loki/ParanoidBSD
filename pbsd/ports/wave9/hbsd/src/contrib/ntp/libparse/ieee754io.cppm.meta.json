@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/libparse/ieee754io.c",
-  "wave": "wave9",
-  "loc_estimate": 631,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/libparse/ieee754io.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.libparse.ieee754io",
-  "generated": "2026-07-19T09:31:07+00:00"
-}

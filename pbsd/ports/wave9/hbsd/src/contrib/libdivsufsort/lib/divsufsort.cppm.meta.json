@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libdivsufsort/lib/divsufsort.c",
-  "wave": "wave9",
-  "loc_estimate": 398,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libdivsufsort/lib/divsufsort.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libdivsufsort.lib.divsufsort",
-  "generated": "2026-07-19T09:38:15+00:00"
-}

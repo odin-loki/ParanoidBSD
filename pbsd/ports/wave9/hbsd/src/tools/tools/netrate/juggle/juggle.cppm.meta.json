@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/netrate/juggle/juggle.c",
-  "wave": "wave9",
-  "loc_estimate": 577,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/netrate/juggle/juggle.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.netrate.juggle.juggle",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

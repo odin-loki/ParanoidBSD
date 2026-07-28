@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/makefs/zfs.c",
-  "wave": "wave2",
-  "loc_estimate": 808,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/makefs/zfs.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.makefs.zfs",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

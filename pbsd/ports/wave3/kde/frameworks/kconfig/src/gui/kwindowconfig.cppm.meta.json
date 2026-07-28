@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kconfig/src/gui/kwindowconfig.cpp",
-  "wave": "wave3",
-  "loc_estimate": 237,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kconfig/src/gui/kwindowconfig.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kconfig.src.gui.kwindowconfig",
-  "generated": "2026-07-19T09:30:16+00:00"
-}

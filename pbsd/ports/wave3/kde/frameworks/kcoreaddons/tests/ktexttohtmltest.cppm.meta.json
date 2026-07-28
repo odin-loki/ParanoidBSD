@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kcoreaddons/tests/ktexttohtmltest.cpp",
-  "wave": "wave3",
-  "loc_estimate": 47,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/tests/ktexttohtmltest.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.tests.ktexttohtmltest",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/archive_write_add_filter.c",
-  "wave": "wave9",
-  "loc_estimate": 71,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/archive_write_add_filter.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.archive_write_add_filter",
-  "generated": "2026-07-19T09:30:40+00:00"
-}

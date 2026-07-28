@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/core/kfileitemlistproperties.cpp",
-  "wave": "wave3",
-  "loc_estimate": 208,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/core/kfileitemlistproperties.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.core.kfileitemlistproperties",
-  "generated": "2026-07-19T09:30:15+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/audit/utils.c",
-  "wave": "wave9",
-  "loc_estimate": 329,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/audit/utils.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.audit.utils",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

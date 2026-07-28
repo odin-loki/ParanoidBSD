@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/openbsd-compat/setenv.c",
-  "wave": "wave9",
-  "loc_estimate": 228,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/openbsd-compat/setenv.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.openbsd_compat.setenv",
-  "generated": "2026-07-19T09:37:20+00:00"
-}

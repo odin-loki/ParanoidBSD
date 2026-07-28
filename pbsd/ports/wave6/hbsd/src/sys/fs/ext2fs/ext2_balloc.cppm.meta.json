@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/ext2fs/ext2_balloc.c",
-  "wave": "wave6",
-  "loc_estimate": 320,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/ext2fs/ext2_balloc.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.ext2fs.ext2_balloc",
-  "generated": "2026-07-19T08:30:54+00:00"
-}

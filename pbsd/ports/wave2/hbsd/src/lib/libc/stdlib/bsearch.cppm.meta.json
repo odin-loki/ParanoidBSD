@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdlib/bsearch.c",
-  "wave": "wave2",
-  "loc_estimate": 85,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdlib/bsearch.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdlib.bsearch",
-  "generated": "2026-07-19T08:32:14+00:00"
-}

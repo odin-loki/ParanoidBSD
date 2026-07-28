@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/kernel/t_lockf.c",
-  "wave": "wave9",
-  "loc_estimate": 265,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/kernel/t_lockf.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.kernel.t_lockf",
-  "generated": "2026-07-19T09:30:58+00:00"
-}

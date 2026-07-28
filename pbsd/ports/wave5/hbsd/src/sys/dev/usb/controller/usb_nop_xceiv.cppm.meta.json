@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/usb/controller/usb_nop_xceiv.c",
-  "wave": "wave5",
-  "loc_estimate": 206,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/controller/usb_nop_xceiv.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.controller.usb_nop_xceiv",
-  "generated": "2026-07-19T09:19:37+00:00"
-}

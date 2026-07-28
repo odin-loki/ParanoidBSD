@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/utilities/utids.c",
-  "wave": "wave4",
-  "loc_estimate": 586,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/utilities/utids.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.utilities.utids",
-  "generated": "2026-07-19T09:29:36+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/file/src/apprentice.c",
-  "wave": "wave9",
-  "loc_estimate": 3788,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/file/src/apprentice.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.file.src.apprentice",
-  "generated": "2026-07-19T09:37:52+00:00"
-}

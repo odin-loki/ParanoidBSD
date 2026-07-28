@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/rpc/des_crypt.c",
-  "wave": "wave2",
-  "loc_estimate": 136,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/rpc/des_crypt.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.rpc.des_crypt",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

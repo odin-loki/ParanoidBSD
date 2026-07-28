@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/opencsd/decoder/source/pkt_printers/trc_print_fact.cpp",
-  "wave": "wave9",
-  "loc_estimate": 124,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/opencsd/decoder/source/pkt_printers/trc_print_fact.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.opencsd.decoder.source.pkt_printers.trc_print_fact",
-  "generated": "2026-07-19T09:37:48+00:00"
-}

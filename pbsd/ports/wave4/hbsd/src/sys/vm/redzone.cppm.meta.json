@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/vm/redzone.c",
-  "wave": "wave4",
-  "loc_estimate": 185,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/vm/redzone.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.vm.redzone",
-  "generated": "2026-07-19T08:30:34+00:00"
-}

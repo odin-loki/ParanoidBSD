@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/res_update.h",
-  "wave": "wave9",
-  "loc_estimate": 76,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/res_update.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.res_update",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

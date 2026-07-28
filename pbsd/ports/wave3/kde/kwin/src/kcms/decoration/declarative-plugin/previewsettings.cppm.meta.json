@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/kcms/decoration/declarative-plugin/previewsettings.cpp",
-  "wave": "wave3",
-  "loc_estimate": 275,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/kcms/decoration/declarative-plugin/previewsettings.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.kcms.decoration.declarative_plugin.previewsettings",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

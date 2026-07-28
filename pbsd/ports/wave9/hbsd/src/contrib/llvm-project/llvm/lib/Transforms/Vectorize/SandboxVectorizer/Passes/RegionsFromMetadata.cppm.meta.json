@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Vectorize/SandboxVectorizer/Passes/RegionsFromMetadata.cpp",
-  "wave": "wave9",
-  "loc_estimate": 30,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Vectorize/SandboxVectorizer/Passes/RegionsFromMetadata.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.vectorize.sandboxvectorizer.passes.regionsfrommetadata",
-  "generated": "2026-07-19T09:31:47+00:00"
-}

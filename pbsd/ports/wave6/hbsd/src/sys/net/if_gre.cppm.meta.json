@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/if_gre.c",
-  "wave": "wave6",
-  "loc_estimate": 832,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/if_gre.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.if_gre",
-  "generated": "2026-07-19T09:18:58+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/tls/tlsv1_server_write.c",
-  "wave": "wave9",
-  "loc_estimate": 1093,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/tls/tlsv1_server_write.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.tls.tlsv1_server_write",
-  "generated": "2026-07-19T09:31:02+00:00"
-}

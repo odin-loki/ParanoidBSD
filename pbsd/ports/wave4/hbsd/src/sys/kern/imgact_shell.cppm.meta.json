@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/imgact_shell.c",
-  "wave": "wave4",
-  "loc_estimate": 252,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/imgact_shell.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.imgact_shell",
-  "generated": "2026-07-19T08:37:59+00:00"
-}

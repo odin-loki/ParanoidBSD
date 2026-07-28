@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/crypto/krb/valid_cksumtype.c",
-  "wave": "wave9",
-  "loc_estimate": 39,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/crypto/krb/valid_cksumtype.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.crypto.krb.valid_cksumtype",
-  "generated": "2026-07-19T09:30:25+00:00"
-}

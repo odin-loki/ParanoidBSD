@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/PDB/PDBInterfaceAnchors.cpp",
-  "wave": "wave9",
-  "loc_estimate": 39,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/DebugInfo/PDB/PDBInterfaceAnchors.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.debuginfo.pdb.pdbinterfaceanchors",
-  "generated": "2026-07-19T09:31:47+00:00"
-}

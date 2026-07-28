@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/tests/gen/test-fnmatch.c",
-  "wave": "wave2",
-  "loc_estimate": 99,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/tests/gen/test-fnmatch.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.tests.gen.test_fnmatch",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

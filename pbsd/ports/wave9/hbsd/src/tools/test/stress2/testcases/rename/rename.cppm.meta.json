@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/test/stress2/testcases/rename/rename.c",
-  "wave": "wave9",
-  "loc_estimate": 134,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/stress2/testcases/rename/rename.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.test.stress2.testcases.rename.rename",
-  "generated": "2026-07-19T09:37:46+00:00"
-}

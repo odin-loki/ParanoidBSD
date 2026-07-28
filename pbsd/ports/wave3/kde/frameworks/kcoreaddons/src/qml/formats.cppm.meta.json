@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kcoreaddons/src/qml/formats.cpp",
-  "wave": "wave3",
-  "loc_estimate": 39,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/qml/formats.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.qml.formats",
-  "generated": "2026-07-19T07:48:20+00:00"
-}

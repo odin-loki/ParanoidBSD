@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/jemalloc/include/jemalloc/internal/slab_data.h",
-  "wave": "wave9",
-  "loc_estimate": 12,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/jemalloc/include/jemalloc/internal/slab_data.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.jemalloc.include.jemalloc.internal.slab_data",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

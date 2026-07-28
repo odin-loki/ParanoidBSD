@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/zfs_rlock.c",
-  "wave": "wave6",
-  "loc_estimate": 692,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/zfs_rlock.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.zfs_rlock",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

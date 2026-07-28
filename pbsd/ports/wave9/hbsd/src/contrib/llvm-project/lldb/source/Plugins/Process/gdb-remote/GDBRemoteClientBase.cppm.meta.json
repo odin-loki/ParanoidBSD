@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/gdb-remote/GDBRemoteClientBase.cpp",
-  "wave": "wave9",
-  "loc_estimate": 405,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/gdb-remote/GDBRemoteClientBase.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.process.gdb_remote.gdbremoteclientbase",
-  "generated": "2026-07-19T09:31:41+00:00"
-}

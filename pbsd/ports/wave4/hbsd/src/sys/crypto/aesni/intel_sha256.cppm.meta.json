@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/crypto/aesni/intel_sha256.c",
-  "wave": "wave4",
-  "loc_estimate": 276,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/aesni/intel_sha256.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.aesni.intel_sha256",
-  "generated": "2026-07-19T09:31:12+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/openbsm/bin/auditreduce/auditreduce.c",
-  "wave": "wave9",
-  "loc_estimate": 879,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/openbsm/bin/auditreduce/auditreduce.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.openbsm.bin.auditreduce.auditreduce",
-  "generated": "2026-07-19T09:37:50+00:00"
-}

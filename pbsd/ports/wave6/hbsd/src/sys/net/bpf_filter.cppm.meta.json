@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/bpf_filter.c",
-  "wave": "wave6",
-  "loc_estimate": 601,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/bpf_filter.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.bpf_filter",
-  "generated": "2026-07-19T09:04:07+00:00"
-}

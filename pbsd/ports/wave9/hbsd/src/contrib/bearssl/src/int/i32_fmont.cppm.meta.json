@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bearssl/src/int/i32_fmont.c",
-  "wave": "wave9",
-  "loc_estimate": 60,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/int/i32_fmont.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.int.i32_fmont",
-  "generated": "2026-07-19T09:37:18+00:00"
-}

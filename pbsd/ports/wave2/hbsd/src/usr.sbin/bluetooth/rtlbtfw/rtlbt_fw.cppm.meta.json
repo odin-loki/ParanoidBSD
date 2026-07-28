@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bluetooth/rtlbtfw/rtlbt_fw.c",
-  "wave": "wave2",
-  "loc_estimate": 582,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bluetooth/rtlbtfw/rtlbt_fw.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bluetooth.rtlbtfw.rtlbt_fw",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

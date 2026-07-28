@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/udf/udf_vfsops.c",
-  "wave": "wave6",
-  "loc_estimate": 837,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/udf/udf_vfsops.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.udf.udf_vfsops",
-  "generated": "2026-07-19T09:18:58+00:00"
-}

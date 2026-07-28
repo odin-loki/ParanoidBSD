@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libpmc/pmclog.c",
-  "wave": "wave2",
-  "loc_estimate": 608,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libpmc/pmclog.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libpmc.pmclog",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

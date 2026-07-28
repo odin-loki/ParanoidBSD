@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/cpio/test/test_owner_parse.c",
-  "wave": "wave9",
-  "loc_estimate": 130,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/cpio/test/test_owner_parse.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.cpio.test.test_owner_parse",
-  "generated": "2026-07-19T09:30:40+00:00"
-}

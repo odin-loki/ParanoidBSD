@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.bin/touch/touch.c",
-  "wave": "wave2",
-  "loc_estimate": 402,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/touch/touch.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_bin.touch.touch",
-  "generated": "2026-07-19T09:30:21+00:00"
-}

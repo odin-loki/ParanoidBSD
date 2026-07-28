@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libvgl/bitmap.c",
-  "wave": "wave2",
-  "loc_estimate": 314,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libvgl/bitmap.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libvgl.bitmap",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

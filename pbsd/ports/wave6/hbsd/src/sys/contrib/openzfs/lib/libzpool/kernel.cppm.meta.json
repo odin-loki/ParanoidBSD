@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/lib/libzpool/kernel.c",
-  "wave": "wave6",
-  "loc_estimate": 1581,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libzpool/kernel.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libzpool.kernel",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/tables/tbfind.c",
-  "wave": "wave4",
-  "loc_estimate": 268,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/tables/tbfind.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.tables.tbfind",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

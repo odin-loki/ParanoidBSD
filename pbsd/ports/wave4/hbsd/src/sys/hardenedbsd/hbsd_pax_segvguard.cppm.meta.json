@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/hardenedbsd/hbsd_pax_segvguard.c",
-  "wave": "wave4",
-  "loc_estimate": 584,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/hardenedbsd/hbsd_pax_segvguard.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.hardenedbsd.hbsd_pax_segvguard",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

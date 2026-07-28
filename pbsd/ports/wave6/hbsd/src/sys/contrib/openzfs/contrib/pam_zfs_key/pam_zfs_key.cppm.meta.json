@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/contrib/pam_zfs_key/pam_zfs_key.c",
-  "wave": "wave6",
-  "loc_estimate": 1105,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/contrib/pam_zfs_key/pam_zfs_key.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.contrib.pam_zfs_key.pam_zfs_key",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

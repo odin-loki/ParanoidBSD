@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_compat_gtar_large.c",
-  "wave": "wave9",
-  "loc_estimate": 224,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_compat_gtar_large.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_compat_gtar_large",
-  "generated": "2026-07-19T09:30:40+00:00"
-}

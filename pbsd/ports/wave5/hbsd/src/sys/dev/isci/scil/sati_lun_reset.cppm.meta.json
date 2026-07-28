@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/isci/scil/sati_lun_reset.c",
-  "wave": "wave5",
-  "loc_estimate": 122,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isci/scil/sati_lun_reset.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isci.scil.sati_lun_reset",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

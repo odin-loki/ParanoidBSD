@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/skein_zfs.c",
-  "wave": "wave6",
-  "loc_estimate": 101,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/skein_zfs.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.skein_zfs",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

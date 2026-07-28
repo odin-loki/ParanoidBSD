@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/modules/skel.c",
-  "wave": "wave9",
-  "loc_estimate": 86,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/modules/skel.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.modules.skel",
-  "generated": "2026-07-19T09:37:44+00:00"
-}

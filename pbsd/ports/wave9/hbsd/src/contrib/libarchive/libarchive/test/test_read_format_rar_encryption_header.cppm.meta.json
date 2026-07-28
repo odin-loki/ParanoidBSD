@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/libarchive/test/test_read_format_rar_encryption_header.c",
-  "wave": "wave9",
-  "loc_estimate": 70,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/libarchive/test/test_read_format_rar_encryption_header.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.libarchive.test.test_read_format_rar_encryption_header",
-  "generated": "2026-07-19T09:30:40+00:00"
-}

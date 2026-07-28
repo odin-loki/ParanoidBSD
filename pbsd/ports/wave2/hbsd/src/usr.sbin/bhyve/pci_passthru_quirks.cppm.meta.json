@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bhyve/pci_passthru_quirks.c",
-  "wave": "wave2",
-  "loc_estimate": 48,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/pci_passthru_quirks.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.pci_passthru_quirks",
-  "generated": "2026-07-19T09:02:50+00:00"
-}

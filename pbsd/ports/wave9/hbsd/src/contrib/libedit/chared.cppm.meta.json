@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libedit/chared.c",
-  "wave": "wave9",
-  "loc_estimate": 815,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libedit/chared.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libedit.chared",
-  "generated": "2026-07-19T09:37:56+00:00"
-}

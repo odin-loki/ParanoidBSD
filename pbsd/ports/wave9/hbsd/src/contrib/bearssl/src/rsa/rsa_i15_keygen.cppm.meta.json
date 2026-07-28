@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bearssl/src/rsa/rsa_i15_keygen.c",
-  "wave": "wave9",
-  "loc_estimate": 583,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/rsa/rsa_i15_keygen.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.rsa.rsa_i15_keygen",
-  "generated": "2026-07-19T09:37:19+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/krb5/test_princ.c",
-  "wave": "wave9",
-  "loc_estimate": 365,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/test_princ.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.test_princ",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

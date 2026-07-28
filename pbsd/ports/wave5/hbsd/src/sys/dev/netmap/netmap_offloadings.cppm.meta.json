@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/netmap/netmap_offloadings.c",
-  "wave": "wave5",
-  "loc_estimate": 491,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/netmap/netmap_offloadings.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.netmap.netmap_offloadings",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

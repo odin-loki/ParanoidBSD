@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/krb5/addr_families.c",
-  "wave": "wave9",
-  "loc_estimate": 1559,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/addr_families.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.addr_families",
-  "generated": "2026-07-19T09:30:38+00:00"
-}

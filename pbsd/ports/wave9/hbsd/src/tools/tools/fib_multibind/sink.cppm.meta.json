@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/fib_multibind/sink.c",
-  "wave": "wave9",
-  "loc_estimate": 237,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/fib_multibind/sink.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.fib_multibind.sink",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet6/in6_cksum.c",
-  "wave": "wave6",
-  "loc_estimate": 343,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet6/in6_cksum.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet6.in6_cksum",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

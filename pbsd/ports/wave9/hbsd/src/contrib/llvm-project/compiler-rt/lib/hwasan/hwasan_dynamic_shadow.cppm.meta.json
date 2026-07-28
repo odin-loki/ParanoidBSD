@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/compiler-rt/lib/hwasan/hwasan_dynamic_shadow.cpp",
-  "wave": "wave9",
-  "loc_estimate": 148,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/compiler-rt/lib/hwasan/hwasan_dynamic_shadow.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.compiler_rt.lib.hwasan.hwasan_dynamic_shadow",
-  "generated": "2026-07-19T09:37:16+00:00"
-}

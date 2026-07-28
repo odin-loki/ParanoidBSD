@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/iwlwifi/iwl-phy-db.c",
-  "wave": "wave4",
-  "loc_estimate": 437,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/iwlwifi/iwl-phy-db.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.iwlwifi.iwl_phy_db",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

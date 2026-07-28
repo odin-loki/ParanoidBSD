@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Vectorize/VPlanSLP.cpp",
-  "wave": "wave9",
-  "loc_estimate": 525,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Vectorize/VPlanSLP.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.vectorize.vplanslp",
-  "generated": "2026-07-19T09:31:55+00:00"
-}

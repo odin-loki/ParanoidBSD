@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bearssl/src/ec/ec_p256_m64.c",
-  "wave": "wave9",
-  "loc_estimate": 1781,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bearssl/src/ec/ec_p256_m64.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bearssl.src.ec.ec_p256_m64",
-  "generated": "2026-07-19T09:37:19+00:00"
-}

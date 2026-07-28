@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/audit-bsm.c",
-  "wave": "wave9",
-  "loc_estimate": 455,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/audit-bsm.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.audit_bsm",
-  "generated": "2026-07-19T09:37:20+00:00"
-}

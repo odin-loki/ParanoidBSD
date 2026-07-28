@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/solid-device-automounter/lib/AutomounterSettings.cpp",
-  "wave": "wave3",
-  "loc_estimate": 112,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/solid-device-automounter/lib/AutomounterSettings.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.solid_device_automounter.lib.automountersettings",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

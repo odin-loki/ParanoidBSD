@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/kern/ktls_test.c",
-  "wave": "wave9",
-  "loc_estimate": 3047,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/ktls_test.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.ktls_test",
-  "generated": "2026-07-19T09:37:22+00:00"
-}

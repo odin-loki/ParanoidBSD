@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/filewidgets/kfilewidgetdocktitlebar_p.h",
-  "wave": "wave3",
-  "loc_estimate": 31,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/filewidgets/kfilewidgetdocktitlebar_p.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.filewidgets.kfilewidgetdocktitlebar_p",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

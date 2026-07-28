@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/opencrypto/rmd160.c",
-  "wave": "wave4",
-  "loc_estimate": 364,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/opencrypto/rmd160.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.opencrypto.rmd160",
-  "generated": "2026-07-19T09:08:34+00:00"
-}

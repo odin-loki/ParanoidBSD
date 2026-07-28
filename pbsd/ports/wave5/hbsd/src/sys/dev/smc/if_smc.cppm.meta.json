@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/smc/if_smc.c",
-  "wave": "wave5",
-  "loc_estimate": 1340,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/smc/if_smc.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.smc.if_smc",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

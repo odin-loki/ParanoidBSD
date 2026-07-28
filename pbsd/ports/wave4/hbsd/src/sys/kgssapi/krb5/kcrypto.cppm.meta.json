@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kgssapi/krb5/kcrypto.c",
-  "wave": "wave4",
-  "loc_estimate": 261,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kgssapi/krb5/kcrypto.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kgssapi.krb5.kcrypto",
-  "generated": "2026-07-19T09:31:12+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Orc/GetDylibInterface.cpp",
-  "wave": "wave9",
-  "loc_estimate": 128,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Orc/GetDylibInterface.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.executionengine.orc.getdylibinterface",
-  "generated": "2026-07-19T09:31:51+00:00"
-}

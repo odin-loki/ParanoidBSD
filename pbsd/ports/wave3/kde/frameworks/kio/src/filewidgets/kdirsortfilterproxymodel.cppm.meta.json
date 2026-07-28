@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/filewidgets/kdirsortfilterproxymodel.cpp",
-  "wave": "wave3",
-  "loc_estimate": 298,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/filewidgets/kdirsortfilterproxymodel.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.filewidgets.kdirsortfilterproxymodel",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

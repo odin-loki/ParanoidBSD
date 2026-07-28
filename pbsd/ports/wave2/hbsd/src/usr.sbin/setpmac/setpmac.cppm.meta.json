@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/setpmac/setpmac.c",
-  "wave": "wave2",
-  "loc_estimate": 92,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/setpmac/setpmac.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.setpmac.setpmac",
-  "generated": "2026-07-19T08:31:19+00:00"
-}

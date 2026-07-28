@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/security/access/testaccess.c",
-  "wave": "wave4",
-  "loc_estimate": 358,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/tools/regression/security/access/testaccess.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.tools.regression.security.access.testaccess",
-  "generated": "2026-07-19T09:51:40+00:00"
-}

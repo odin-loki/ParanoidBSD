@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/usr.bin/xlint/lint1/d_alignof.c",
-  "wave": "wave9",
-  "loc_estimate": 6,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/usr.bin/xlint/lint1/d_alignof.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.usr_bin.xlint.lint1.d_alignof",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

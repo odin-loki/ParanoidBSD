@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_api/common/crypto/sym/key/lac_sym_key.c",
-  "wave": "wave5",
-  "loc_estimate": 3014,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/common/crypto/sym/key/lac_sym_key.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.common.crypto.sym.key.lac_sym_key",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

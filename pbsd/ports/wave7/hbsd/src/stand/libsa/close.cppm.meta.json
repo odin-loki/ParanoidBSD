@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/libsa/close.c",
-  "wave": "wave7",
-  "loc_estimate": 107,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/libsa/close.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.libsa.close",
-  "generated": "2026-07-19T09:49:38+00:00"
-}

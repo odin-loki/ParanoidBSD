@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/rtwn/rtl8812a/usb/r12au_init.c",
-  "wave": "wave5",
-  "loc_estimate": 207,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/rtwn/rtl8812a/usb/r12au_init.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.rtwn.rtl8812a.usb.r12au_init",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

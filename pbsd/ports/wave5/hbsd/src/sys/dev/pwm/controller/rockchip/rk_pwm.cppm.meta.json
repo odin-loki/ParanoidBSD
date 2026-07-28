@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pwm/controller/rockchip/rk_pwm.c",
-  "wave": "wave5",
-  "loc_estimate": 398,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pwm/controller/rockchip/rk_pwm.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pwm.controller.rockchip.rk_pwm",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

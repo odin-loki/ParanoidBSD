@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zstd/programs/zstdcli_trace.c",
-  "wave": "wave4",
-  "loc_estimate": 172,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zstd/programs/zstdcli_trace.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zstd.programs.zstdcli_trace",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

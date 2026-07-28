@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/appl/telnet/telnet/ring.c",
-  "wave": "wave9",
-  "loc_estimate": 321,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/appl/telnet/telnet/ring.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.appl.telnet.telnet.ring",
-  "generated": "2026-07-19T09:30:37+00:00"
-}

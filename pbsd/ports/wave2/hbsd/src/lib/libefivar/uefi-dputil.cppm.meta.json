@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libefivar/uefi-dputil.c",
-  "wave": "wave2",
-  "loc_estimate": 632,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libefivar/uefi-dputil.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libefivar.uefi_dputil",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/sys/regression.h",
-  "wave": "wave4",
-  "loc_estimate": 38,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/sys/regression.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.sys.regression",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/spibus/controller/rockchip/rk_spi.c",
-  "wave": "wave5",
-  "loc_estimate": 475,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/spibus/controller/rockchip/rk_spi.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.spibus.controller.rockchip.rk_spi",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

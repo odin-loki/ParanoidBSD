@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/security/mac_pimd/mac_pimd.c",
-  "wave": "wave4",
-  "loc_estimate": 71,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/security/mac_pimd/mac_pimd.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.security.mac_pimd.mac_pimd",
-  "generated": "2026-07-19T09:04:04+00:00"
-}

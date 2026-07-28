@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/kern_boottrace.c",
-  "wave": "wave4",
-  "loc_estimate": 612,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_boottrace.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_boottrace",
-  "generated": "2026-07-19T09:19:11+00:00"
-}

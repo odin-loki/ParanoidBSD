@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mana/gdma_util.c",
-  "wave": "wave5",
-  "loc_estimate": 94,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mana/gdma_util.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mana.gdma_util",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

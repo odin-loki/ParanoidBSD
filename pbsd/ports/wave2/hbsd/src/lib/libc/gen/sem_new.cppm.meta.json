@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/gen/sem_new.c",
-  "wave": "wave2",
-  "loc_estimate": 470,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/sem_new.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.sem_new",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

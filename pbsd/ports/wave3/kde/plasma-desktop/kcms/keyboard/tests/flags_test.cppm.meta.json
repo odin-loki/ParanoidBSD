@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/kcms/keyboard/tests/flags_test.cpp",
-  "wave": "wave3",
-  "loc_estimate": 68,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/keyboard/tests/flags_test.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.keyboard.tests.flags_test",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

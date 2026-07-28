@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/mknetid/mknetid.c",
-  "wave": "wave2",
-  "loc_estimate": 303,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/mknetid/mknetid.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.mknetid.mknetid",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

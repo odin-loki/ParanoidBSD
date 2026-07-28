@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/kern/socket_accept.c",
-  "wave": "wave9",
-  "loc_estimate": 127,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/kern/socket_accept.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.kern.socket_accept",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

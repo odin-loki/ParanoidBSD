@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/usr.bin/nbperf/hash_driver.c",
-  "wave": "wave9",
-  "loc_estimate": 53,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/usr.bin/nbperf/hash_driver.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.usr_bin.nbperf.hash_driver",
-  "generated": "2026-07-19T09:30:54+00:00"
-}

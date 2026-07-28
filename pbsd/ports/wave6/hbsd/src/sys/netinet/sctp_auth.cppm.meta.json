@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/sctp_auth.c",
-  "wave": "wave6",
-  "loc_estimate": 1986,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/sctp_auth.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.sctp_auth",
-  "generated": "2026-07-19T09:29:21+00:00"
-}

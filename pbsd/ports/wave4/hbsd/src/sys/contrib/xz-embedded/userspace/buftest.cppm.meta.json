@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/xz-embedded/userspace/buftest.c",
-  "wave": "wave4",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/xz-embedded/userspace/buftest.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.xz_embedded.userspace.buftest",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

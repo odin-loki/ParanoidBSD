@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/sound/pci/emu10kx.c",
-  "wave": "wave5",
-  "loc_estimate": 3434,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sound/pci/emu10kx.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sound.pci.emu10kx",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

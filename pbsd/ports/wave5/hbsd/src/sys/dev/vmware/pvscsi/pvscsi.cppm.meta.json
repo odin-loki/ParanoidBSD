@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/vmware/pvscsi/pvscsi.c",
-  "wave": "wave5",
-  "loc_estimate": 1802,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/vmware/pvscsi/pvscsi.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.vmware.pvscsi.pvscsi",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

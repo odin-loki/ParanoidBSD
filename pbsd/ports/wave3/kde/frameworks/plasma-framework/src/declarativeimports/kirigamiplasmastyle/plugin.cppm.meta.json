@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/src/declarativeimports/kirigamiplasmastyle/plugin.cpp",
-  "wave": "wave3",
-  "loc_estimate": 33,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/declarativeimports/kirigamiplasmastyle/plugin.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.declarativeimports.kirigamiplasmastyle.plugin",
-  "generated": "2026-07-19T07:48:20+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/locale/wcstombs.c",
-  "wave": "wave2",
-  "loc_estimate": 57,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/locale/wcstombs.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.locale.wcstombs",
-  "generated": "2026-07-19T08:41:19+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/usb/wlan/if_zyd.c",
-  "wave": "wave5",
-  "loc_estimate": 2911,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/wlan/if_zyd.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.wlan.if_zyd",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

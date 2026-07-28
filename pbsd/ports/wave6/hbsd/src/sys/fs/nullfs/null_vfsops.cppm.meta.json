@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/nullfs/null_vfsops.c",
-  "wave": "wave6",
-  "loc_estimate": 508,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nullfs/null_vfsops.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nullfs.null_vfsops",
-  "generated": "2026-07-19T09:18:58+00:00"
-}

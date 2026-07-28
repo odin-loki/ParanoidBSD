@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/print-nsh.c",
-  "wave": "wave9",
-  "loc_estimate": 261,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-nsh.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_nsh",
-  "generated": "2026-07-19T09:37:27+00:00"
-}

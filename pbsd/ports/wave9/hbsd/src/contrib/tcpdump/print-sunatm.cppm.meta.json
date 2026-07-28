@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/print-sunatm.c",
-  "wave": "wave9",
-  "loc_estimate": 100,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-sunatm.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_sunatm",
-  "generated": "2026-07-19T09:37:26+00:00"
-}

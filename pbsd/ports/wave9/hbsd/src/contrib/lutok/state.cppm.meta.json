@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/lutok/state.cpp",
-  "wave": "wave9",
-  "loc_estimate": 904,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/lutok/state.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.lutok.state",
-  "generated": "2026-07-19T09:38:02+00:00"
-}

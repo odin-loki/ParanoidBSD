@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/TableGen/TableGenBackend.cpp",
-  "wave": "wave9",
-  "loc_estimate": 110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/TableGen/TableGenBackend.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.tablegen.tablegenbackend",
-  "generated": "2026-07-19T09:31:51+00:00"
-}

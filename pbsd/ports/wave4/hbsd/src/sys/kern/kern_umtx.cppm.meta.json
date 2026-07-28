@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/kern_umtx.c",
-  "wave": "wave4",
-  "loc_estimate": 5254,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_umtx.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_umtx",
-  "generated": "2026-07-19T09:31:15+00:00"
-}

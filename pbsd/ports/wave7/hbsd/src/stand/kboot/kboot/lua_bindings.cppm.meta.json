@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/kboot/kboot/lua_bindings.c",
-  "wave": "wave7",
-  "loc_estimate": 19,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/kboot/kboot/lua_bindings.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.kboot.kboot.lua_bindings",
-  "generated": "2026-07-19T07:49:21+00:00"
-}

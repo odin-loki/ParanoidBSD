@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/MC/MCValue.cpp",
-  "wave": "wave9",
-  "loc_estimate": 44,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/MC/MCValue.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.mc.mcvalue",
-  "generated": "2026-07-19T09:31:48+00:00"
-}

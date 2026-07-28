@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/src/plasmaquick/plasmoid/dropmenu.cpp",
-  "wave": "wave3",
-  "loc_estimate": 110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasmaquick/plasmoid/dropmenu.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasmaquick.plasmoid.dropmenu",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

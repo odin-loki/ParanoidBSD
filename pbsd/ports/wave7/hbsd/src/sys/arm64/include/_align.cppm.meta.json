@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/include/_align.h",
-  "wave": "wave7",
-  "loc_estimate": 47,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/include/_align.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.include._align",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

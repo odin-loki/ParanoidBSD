@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/sfxge/common/efx_filter.c",
-  "wave": "wave5",
-  "loc_estimate": 1642,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/sfxge/common/efx_filter.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.sfxge.common.efx_filter",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

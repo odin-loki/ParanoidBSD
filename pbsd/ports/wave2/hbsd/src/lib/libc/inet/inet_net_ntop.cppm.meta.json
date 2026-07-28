@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/inet/inet_net_ntop.c",
-  "wave": "wave2",
-  "loc_estimate": 173,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/inet/inet_net_ntop.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.inet.inet_net_ntop",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

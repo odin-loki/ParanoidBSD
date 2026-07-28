@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/revnetgroup/parse_netgroup.c",
-  "wave": "wave2",
-  "loc_estimate": 357,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/revnetgroup/parse_netgroup.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.revnetgroup.parse_netgroup",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

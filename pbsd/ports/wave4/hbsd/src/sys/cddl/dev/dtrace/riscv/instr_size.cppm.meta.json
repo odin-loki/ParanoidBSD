@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cddl/dev/dtrace/riscv/instr_size.c",
-  "wave": "wave4",
-  "loc_estimate": 22,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/dev/dtrace/riscv/instr_size.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.dev.dtrace.riscv.instr_size",
-  "generated": "2026-07-19T09:31:09+00:00"
-}

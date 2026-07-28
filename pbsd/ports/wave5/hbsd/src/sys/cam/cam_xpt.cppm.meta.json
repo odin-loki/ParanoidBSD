@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cam/cam_xpt.c",
-  "wave": "wave5",
-  "loc_estimate": 5600,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/cam/cam_xpt.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.cam.cam_xpt",
-  "generated": "2026-07-19T09:29:22+00:00"
-}

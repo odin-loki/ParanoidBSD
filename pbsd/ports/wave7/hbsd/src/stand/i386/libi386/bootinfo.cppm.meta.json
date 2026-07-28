@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/i386/libi386/bootinfo.c",
-  "wave": "wave7",
-  "loc_estimate": 83,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/i386/libi386/bootinfo.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.i386.libi386.bootinfo",
-  "generated": "2026-07-19T09:49:37+00:00"
-}

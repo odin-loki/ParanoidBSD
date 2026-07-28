@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/i386/libi386/time.c",
-  "wave": "wave7",
-  "loc_estimate": 115,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/i386/libi386/time.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.i386.libi386.time",
-  "generated": "2026-07-19T09:49:38+00:00"
-}

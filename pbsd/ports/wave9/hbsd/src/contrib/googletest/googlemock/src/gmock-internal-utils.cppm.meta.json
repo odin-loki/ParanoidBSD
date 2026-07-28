@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/googletest/googlemock/src/gmock-internal-utils.cc",
-  "wave": "wave9",
-  "loc_estimate": 258,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/googletest/googlemock/src/gmock-internal-utils.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.googletest.googlemock.src.gmock_internal_utils",
-  "generated": "2026-07-19T09:37:38+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/adb/adb_kbd.c",
-  "wave": "wave5",
-  "loc_estimate": 881,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/adb/adb_kbd.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.adb.adb_kbd",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

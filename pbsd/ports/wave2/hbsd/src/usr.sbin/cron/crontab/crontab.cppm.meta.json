@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/cron/crontab/crontab.c",
-  "wave": "wave2",
-  "loc_estimate": 632,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/cron/crontab/crontab.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.cron.crontab.crontab",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/kyua/integration/helpers/bogus_test_cases.cpp",
-  "wave": "wave9",
-  "loc_estimate": 64,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/kyua/integration/helpers/bogus_test_cases.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.kyua.integration.helpers.bogus_test_cases",
-  "generated": "2026-07-19T09:37:25+00:00"
-}

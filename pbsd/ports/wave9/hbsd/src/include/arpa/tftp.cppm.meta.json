@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/arpa/tftp.h",
-  "wave": "wave9",
-  "loc_estimate": 80,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/arpa/tftp.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.arpa.tftp",
-  "generated": "2026-07-19T10:59:34+00:00"
-}

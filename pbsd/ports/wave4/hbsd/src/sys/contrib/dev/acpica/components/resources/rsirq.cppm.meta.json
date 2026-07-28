@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/resources/rsirq.c",
-  "wave": "wave4",
-  "loc_estimate": 426,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/resources/rsirq.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.resources.rsirq",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

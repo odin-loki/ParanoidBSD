@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/route/route_temporal.c",
-  "wave": "wave6",
-  "loc_estimate": 160,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/route/route_temporal.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.route.route_temporal",
-  "generated": "2026-07-19T09:04:05+00:00"
-}

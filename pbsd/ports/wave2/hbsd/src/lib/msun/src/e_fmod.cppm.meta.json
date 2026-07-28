@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/msun/src/e_fmod.c",
-  "wave": "wave2",
-  "loc_estimate": 128,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/e_fmod.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.e_fmod",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

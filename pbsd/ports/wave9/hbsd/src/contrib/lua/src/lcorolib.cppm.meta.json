@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/lua/src/lcorolib.c",
-  "wave": "wave9",
-  "loc_estimate": 210,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/lua/src/lcorolib.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.lua.src.lcorolib",
-  "generated": "2026-07-19T09:37:53+00:00"
-}

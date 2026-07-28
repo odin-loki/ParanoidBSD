@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/kioworkers/remote/kdedmodule/remotedirnotifymodule.cpp",
-  "wave": "wave3",
-  "loc_estimate": 20,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/kioworkers/remote/kdedmodule/remotedirnotifymodule.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.kioworkers.remote.kdedmodule.remotedirnotifymodule",
-  "generated": "2026-07-19T08:33:26+00:00"
-}

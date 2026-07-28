@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cddl/dev/profile/profile.c",
-  "wave": "wave4",
-  "loc_estimate": 667,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/dev/profile/profile.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.dev.profile.profile",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

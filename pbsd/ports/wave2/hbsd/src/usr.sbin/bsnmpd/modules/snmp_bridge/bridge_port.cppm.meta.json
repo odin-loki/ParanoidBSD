@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_bridge/bridge_port.c",
-  "wave": "wave2",
-  "loc_estimate": 1514,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bsnmpd/modules/snmp_bridge/bridge_port.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bsnmpd.modules.snmp_bridge.bridge_port",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Target/ThreadPlanShouldStopHere.cpp",
-  "wave": "wave9",
-  "loc_estimate": 201,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Target/ThreadPlanShouldStopHere.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.target.threadplanshouldstophere",
-  "generated": "2026-07-19T09:31:39+00:00"
-}

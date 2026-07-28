@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/src/plasma/packagestructure/plasma_generic_packagestructure.cpp",
-  "wave": "wave3",
-  "loc_estimate": 11,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasma/packagestructure/plasma_generic_packagestructure.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasma.packagestructure.plasma_generic_packagestructure",
-  "generated": "2026-07-19T08:33:26+00:00"
-}

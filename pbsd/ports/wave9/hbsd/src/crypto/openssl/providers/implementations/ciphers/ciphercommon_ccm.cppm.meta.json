@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/providers/implementations/ciphers/ciphercommon_ccm.c",
-  "wave": "wave9",
-  "loc_estimate": 456,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/providers/implementations/ciphers/ciphercommon_ccm.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.providers.implementations.ciphers.ciphercommon_ccm",
-  "generated": "2026-07-19T09:30:05+00:00"
-}

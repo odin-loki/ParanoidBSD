@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/ath/ath_hal/ar9300/ar9300_radar.c",
-  "wave": "wave4",
-  "loc_estimate": 626,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/ath/ath_hal/ar9300/ar9300_radar.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.ath.ath_hal.ar9300.ar9300_radar",
-  "generated": "2026-07-19T09:29:36+00:00"
-}

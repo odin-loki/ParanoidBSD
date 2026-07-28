@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/route/nhop.c",
-  "wave": "wave6",
-  "loc_estimate": 393,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/route/nhop.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.route.nhop",
-  "generated": "2026-07-19T09:04:06+00:00"
-}

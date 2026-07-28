@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/ctladm/ctladm.c",
-  "wave": "wave2",
-  "loc_estimate": 4621,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/ctladm/ctladm.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.ctladm.ctladm",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

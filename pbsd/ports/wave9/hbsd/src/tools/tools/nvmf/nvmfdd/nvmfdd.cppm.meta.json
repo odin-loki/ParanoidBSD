@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/nvmf/nvmfdd/nvmfdd.c",
-  "wave": "wave9",
-  "loc_estimate": 494,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/nvmf/nvmfdd/nvmfdd.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.nvmf.nvmfdd.nvmfdd",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/tests/kopenwithtest.cpp",
-  "wave": "wave3",
-  "loc_estimate": 52,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/tests/kopenwithtest.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.tests.kopenwithtest",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

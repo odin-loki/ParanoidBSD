@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/clang/liblldb/LLDBWrapLua.cpp",
-  "wave": "wave2",
-  "loc_estimate": 84957,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/clang/liblldb/LLDBWrapLua.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.clang.liblldb.lldbwraplua",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

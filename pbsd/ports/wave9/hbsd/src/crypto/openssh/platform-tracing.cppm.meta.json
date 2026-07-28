@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/platform-tracing.c",
-  "wave": "wave9",
-  "loc_estimate": 76,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/platform-tracing.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.platform_tracing",
-  "generated": "2026-07-19T09:37:19+00:00"
-}

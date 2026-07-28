@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/kadm5/get_princs_c.c",
-  "wave": "wave9",
-  "loc_estimate": 92,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/kadm5/get_princs_c.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.kadm5.get_princs_c",
-  "generated": "2026-07-19T09:30:35+00:00"
-}

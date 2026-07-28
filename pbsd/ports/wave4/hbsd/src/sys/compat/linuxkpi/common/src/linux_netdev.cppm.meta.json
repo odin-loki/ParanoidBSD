@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/linuxkpi/common/src/linux_netdev.c",
-  "wave": "wave4",
-  "loc_estimate": 436,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/common/src/linux_netdev.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.common.src.linux_netdev",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

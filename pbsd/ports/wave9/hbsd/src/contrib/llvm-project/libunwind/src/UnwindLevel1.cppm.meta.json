@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/libunwind/src/UnwindLevel1.c",
-  "wave": "wave9",
-  "loc_estimate": 616,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/libunwind/src/UnwindLevel1.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.libunwind.src.unwindlevel1",
-  "generated": "2026-07-19T09:37:17+00:00"
-}

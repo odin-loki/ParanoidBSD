@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libefivar/uefi-guid.c",
-  "wave": "wave2",
-  "loc_estimate": 35,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libefivar/uefi-guid.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libefivar.uefi_guid",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

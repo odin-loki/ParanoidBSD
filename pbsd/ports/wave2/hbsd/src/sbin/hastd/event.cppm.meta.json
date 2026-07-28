@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/hastd/event.c",
-  "wave": "wave2",
-  "loc_estimate": 161,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/hastd/event.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.hastd.event",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

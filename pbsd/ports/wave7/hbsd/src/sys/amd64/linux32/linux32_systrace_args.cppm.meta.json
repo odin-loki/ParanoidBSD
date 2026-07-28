@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/amd64/linux32/linux32_systrace_args.c",
-  "wave": "wave7",
-  "loc_estimate": 10501,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/linux32/linux32_systrace_args.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.linux32.linux32_systrace_args",
-  "generated": "2026-07-19T09:29:38+00:00"
-}

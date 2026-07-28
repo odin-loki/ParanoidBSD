@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/ppp/tcp.c",
-  "wave": "wave2",
-  "loc_estimate": 212,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/ppp/tcp.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.ppp.tcp",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

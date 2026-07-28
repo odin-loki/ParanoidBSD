@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zlib/inflate.c",
-  "wave": "wave4",
-  "loc_estimate": 1413,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zlib/inflate.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zlib.inflate",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

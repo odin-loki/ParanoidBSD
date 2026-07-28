@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kdecoration/src/decorationbutton.cpp",
-  "wave": "wave3",
-  "loc_estimate": 628,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kdecoration/src/decorationbutton.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kdecoration.src.decorationbutton",
-  "generated": "2026-07-19T09:30:19+00:00"
-}

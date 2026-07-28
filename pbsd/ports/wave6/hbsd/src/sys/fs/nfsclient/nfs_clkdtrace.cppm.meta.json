@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/nfsclient/nfs_clkdtrace.c",
-  "wave": "wave6",
-  "loc_estimate": 583,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nfsclient/nfs_clkdtrace.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nfsclient.nfs_clkdtrace",
-  "generated": "2026-07-19T09:18:58+00:00"
-}

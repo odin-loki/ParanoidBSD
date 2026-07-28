@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netgraph/bluetooth/socket/ng_btsocket_l2cap_raw.c",
-  "wave": "wave6",
-  "loc_estimate": 1354,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netgraph/bluetooth/socket/ng_btsocket_l2cap_raw.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netgraph.bluetooth.socket.ng_btsocket_l2cap_raw",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

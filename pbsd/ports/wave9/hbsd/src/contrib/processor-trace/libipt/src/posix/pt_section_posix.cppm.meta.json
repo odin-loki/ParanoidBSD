@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/processor-trace/libipt/src/posix/pt_section_posix.c",
-  "wave": "wave9",
-  "loc_estimate": 333,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/processor-trace/libipt/src/posix/pt_section_posix.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.processor_trace.libipt.src.posix.pt_section_posix",
-  "generated": "2026-07-19T09:37:47+00:00"
-}

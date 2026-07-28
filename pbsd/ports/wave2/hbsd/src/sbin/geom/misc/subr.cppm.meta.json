@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/geom/misc/subr.c",
-  "wave": "wave2",
-  "loc_estimate": 545,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/geom/misc/subr.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.geom.misc.subr",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

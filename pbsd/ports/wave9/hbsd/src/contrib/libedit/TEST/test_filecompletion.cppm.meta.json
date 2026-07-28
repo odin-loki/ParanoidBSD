@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libedit/TEST/test_filecompletion.c",
-  "wave": "wave9",
-  "loc_estimate": 553,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libedit/TEST/test_filecompletion.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libedit.test.test_filecompletion",
-  "generated": "2026-07-19T09:37:56+00:00"
-}

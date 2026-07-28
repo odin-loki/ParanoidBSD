@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netsmb/smb_usr.c",
-  "wave": "wave6",
-  "loc_estimate": 362,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netsmb/smb_usr.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netsmb.smb_usr",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

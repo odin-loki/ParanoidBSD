@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.bin/mkuzip/mkuz_time.c",
-  "wave": "wave2",
-  "loc_estimate": 43,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/mkuzip/mkuz_time.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_bin.mkuzip.mkuz_time",
-  "generated": "2026-07-19T08:41:23+00:00"
-}

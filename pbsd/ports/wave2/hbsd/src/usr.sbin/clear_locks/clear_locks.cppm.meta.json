@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/clear_locks/clear_locks.c",
-  "wave": "wave2",
-  "loc_estimate": 70,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/clear_locks/clear_locks.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.clear_locks.clear_locks",
-  "generated": "2026-07-19T09:02:51+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bhyve/net_backend_netgraph.c",
-  "wave": "wave2",
-  "loc_estimate": 191,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bhyve/net_backend_netgraph.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bhyve.net_backend_netgraph",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

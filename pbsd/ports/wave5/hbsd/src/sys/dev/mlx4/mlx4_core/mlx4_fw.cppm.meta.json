@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mlx4/mlx4_core/mlx4_fw.c",
-  "wave": "wave5",
-  "loc_estimate": 3060,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mlx4/mlx4_core/mlx4_fw.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mlx4.mlx4_core.mlx4_fw",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

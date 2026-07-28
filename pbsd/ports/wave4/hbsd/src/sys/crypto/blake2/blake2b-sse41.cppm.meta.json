@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/crypto/blake2/blake2b-sse41.c",
-  "wave": "wave4",
-  "loc_estimate": 2,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/blake2/blake2b-sse41.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.blake2.blake2b_sse41",
-  "generated": "2026-07-19T09:31:09+00:00"
-}

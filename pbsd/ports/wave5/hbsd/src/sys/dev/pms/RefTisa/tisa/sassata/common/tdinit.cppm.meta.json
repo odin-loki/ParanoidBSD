@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/common/tdinit.c",
-  "wave": "wave5",
-  "loc_estimate": 3495,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/RefTisa/tisa/sassata/common/tdinit.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.reftisa.tisa.sassata.common.tdinit",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

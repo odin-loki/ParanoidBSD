@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/usb/usb_busdma_loader.c",
-  "wave": "wave7",
-  "loc_estimate": 618,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/usb/usb_busdma_loader.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.usb.usb_busdma_loader",
-  "generated": "2026-07-19T09:49:42+00:00"
-}

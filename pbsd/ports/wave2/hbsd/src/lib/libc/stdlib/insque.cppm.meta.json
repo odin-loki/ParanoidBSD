@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdlib/insque.c",
-  "wave": "wave2",
-  "loc_estimate": 44,
-  "status": "converted",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdlib/insque.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdlib.insque",
-  "generated": "2026-07-19T10:02:54+00:00"
-}

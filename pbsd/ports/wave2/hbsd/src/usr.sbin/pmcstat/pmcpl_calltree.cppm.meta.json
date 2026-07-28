@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/pmcstat/pmcpl_calltree.c",
-  "wave": "wave2",
-  "loc_estimate": 1202,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/pmcstat/pmcpl_calltree.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.pmcstat.pmcpl_calltree",
-  "generated": "2026-07-19T09:29:50+00:00"
-}

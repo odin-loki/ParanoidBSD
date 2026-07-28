@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/rpc/pmap_prot.c",
-  "wave": "wave2",
-  "loc_estimate": 61,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/rpc/pmap_prot.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.rpc.pmap_prot",
-  "generated": "2026-07-19T09:29:45+00:00"
-}

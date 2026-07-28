@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/nlist.h",
-  "wave": "wave9",
-  "loc_estimate": 47,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/nlist.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.nlist",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

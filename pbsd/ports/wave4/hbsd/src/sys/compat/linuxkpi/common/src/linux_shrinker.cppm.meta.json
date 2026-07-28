@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/compat/linuxkpi/common/src/linux_shrinker.c",
-  "wave": "wave4",
-  "loc_estimate": 156,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/compat/linuxkpi/common/src/linux_shrinker.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.compat.linuxkpi.common.src.linux_shrinker",
-  "generated": "2026-07-19T09:31:11+00:00"
-}

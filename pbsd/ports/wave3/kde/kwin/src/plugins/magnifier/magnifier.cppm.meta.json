@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/plugins/magnifier/magnifier.cpp",
-  "wave": "wave3",
-  "loc_estimate": 353,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/magnifier/magnifier.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.plugins.magnifier.magnifier",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

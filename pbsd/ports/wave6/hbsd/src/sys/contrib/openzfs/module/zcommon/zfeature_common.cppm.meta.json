@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/zcommon/zfeature_common.c",
-  "wave": "wave6",
-  "loc_estimate": 824,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zcommon/zfeature_common.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zcommon.zfeature_common",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

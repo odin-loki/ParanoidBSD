@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/objects/o_names.c",
-  "wave": "wave9",
-  "loc_estimate": 390,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/objects/o_names.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.objects.o_names",
-  "generated": "2026-07-19T09:30:05+00:00"
-}

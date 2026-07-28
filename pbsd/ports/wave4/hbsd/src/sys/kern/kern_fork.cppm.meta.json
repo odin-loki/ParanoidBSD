@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/kern_fork.c",
-  "wave": "wave4",
-  "loc_estimate": 1296,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_fork.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_fork",
-  "generated": "2026-07-19T09:19:11+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ata/ata-pci.c",
-  "wave": "wave5",
-  "loc_estimate": 924,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ata/ata-pci.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ata.ata_pci",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

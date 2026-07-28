@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/cxgbe/cudbg/fastlz.c",
-  "wave": "wave5",
-  "loc_estimate": 553,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/cxgbe/cudbg/fastlz.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.cxgbe.cudbg.fastlz",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

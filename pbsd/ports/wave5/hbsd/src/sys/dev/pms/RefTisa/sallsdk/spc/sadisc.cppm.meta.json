@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pms/RefTisa/sallsdk/spc/sadisc.c",
-  "wave": "wave5",
-  "loc_estimate": 863,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/RefTisa/sallsdk/spc/sadisc.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.reftisa.sallsdk.spc.sadisc",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

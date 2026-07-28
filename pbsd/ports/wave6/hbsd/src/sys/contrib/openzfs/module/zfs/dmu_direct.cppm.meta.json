@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/zfs/dmu_direct.c",
-  "wave": "wave6",
-  "loc_estimate": 405,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/zfs/dmu_direct.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.zfs.dmu_direct",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

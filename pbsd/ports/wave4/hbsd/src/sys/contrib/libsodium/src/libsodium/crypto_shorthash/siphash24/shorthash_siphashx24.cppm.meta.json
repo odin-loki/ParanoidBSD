@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_shorthash/siphash24/shorthash_siphashx24.c",
-  "wave": "wave4",
-  "loc_estimate": 11,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/src/libsodium/crypto_shorthash/siphash24/shorthash_siphashx24.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.src.libsodium.crypto_shorthash.siphash24.shorthash_siphashx24",
-  "generated": "2026-07-19T09:29:51+00:00"
-}

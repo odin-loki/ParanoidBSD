@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Host/common/HostNativeThreadBase.cpp",
-  "wave": "wave9",
-  "loc_estimate": 63,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Host/common/HostNativeThreadBase.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.host.common.hostnativethreadbase",
-  "generated": "2026-07-19T09:31:36+00:00"
-}

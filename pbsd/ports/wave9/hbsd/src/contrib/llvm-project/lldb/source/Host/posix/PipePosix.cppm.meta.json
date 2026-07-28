@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Host/posix/PipePosix.cpp",
-  "wave": "wave9",
-  "loc_estimate": 345,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Host/posix/PipePosix.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.host.posix.pipeposix",
-  "generated": "2026-07-19T09:31:41+00:00"
-}

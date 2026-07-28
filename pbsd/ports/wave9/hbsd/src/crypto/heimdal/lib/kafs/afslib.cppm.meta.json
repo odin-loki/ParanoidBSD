@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/kafs/afslib.c",
-  "wave": "wave9",
-  "loc_estimate": 53,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/kafs/afslib.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.kafs.afslib",
-  "generated": "2026-07-19T09:30:34+00:00"
-}

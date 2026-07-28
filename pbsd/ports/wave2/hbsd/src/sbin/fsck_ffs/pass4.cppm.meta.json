@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/fsck_ffs/pass4.c",
-  "wave": "wave2",
-  "loc_estimate": 121,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/fsck_ffs/pass4.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.fsck_ffs.pass4",
-  "generated": "2026-07-19T09:30:00+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libedit/readline/history.h",
-  "wave": "wave2",
-  "loc_estimate": 30,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libedit/readline/history.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libedit.readline.history",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

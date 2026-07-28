@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/etherswitch/rtl8366/rtl8366rb.c",
-  "wave": "wave5",
-  "loc_estimate": 959,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/etherswitch/rtl8366/rtl8366rb.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.etherswitch.rtl8366.rtl8366rb",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

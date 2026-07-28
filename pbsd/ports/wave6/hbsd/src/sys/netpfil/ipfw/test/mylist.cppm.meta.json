@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netpfil/ipfw/test/mylist.h",
-  "wave": "wave6",
-  "loc_estimate": 49,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netpfil/ipfw/test/mylist.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netpfil.ipfw.test.mylist",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

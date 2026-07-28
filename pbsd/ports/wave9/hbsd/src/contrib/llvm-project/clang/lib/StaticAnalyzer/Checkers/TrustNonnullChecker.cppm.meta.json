@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Checkers/TrustNonnullChecker.cpp",
-  "wave": "wave9",
-  "loc_estimate": 256,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/StaticAnalyzer/Checkers/TrustNonnullChecker.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.staticanalyzer.checkers.trustnonnullchecker",
-  "generated": "2026-07-19T09:31:19+00:00"
-}

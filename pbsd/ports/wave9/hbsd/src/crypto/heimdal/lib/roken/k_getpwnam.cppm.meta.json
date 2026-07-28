@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/roken/k_getpwnam.c",
-  "wave": "wave9",
-  "loc_estimate": 61,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/roken/k_getpwnam.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.roken.k_getpwnam",
-  "generated": "2026-07-19T09:30:35+00:00"
-}

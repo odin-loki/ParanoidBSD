@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/utils/realtime.cpp",
-  "wave": "wave3",
-  "loc_estimate": 29,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/utils/realtime.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.utils.realtime",
-  "generated": "2026-07-19T08:41:42+00:00"
-}

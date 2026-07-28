@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/plugins/preauth/spake/spake_kdc.c",
-  "wave": "wave9",
-  "loc_estimate": 562,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/preauth/spake/spake_kdc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.preauth.spake.spake_kdc",
-  "generated": "2026-07-19T09:30:32+00:00"
-}

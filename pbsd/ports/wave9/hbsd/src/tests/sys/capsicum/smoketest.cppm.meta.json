@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/capsicum/smoketest.c",
-  "wave": "wave9",
-  "loc_estimate": 135,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/capsicum/smoketest.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.capsicum.smoketest",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

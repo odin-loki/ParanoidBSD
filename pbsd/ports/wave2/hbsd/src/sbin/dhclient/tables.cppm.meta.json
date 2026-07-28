@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/dhclient/tables.c",
-  "wave": "wave2",
-  "loc_estimate": 449,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/dhclient/tables.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.dhclient.tables",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/src/plasmaquick/appletcontext_p.h",
-  "wave": "wave3",
-  "loc_estimate": 38,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasmaquick/appletcontext_p.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasmaquick.appletcontext_p",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

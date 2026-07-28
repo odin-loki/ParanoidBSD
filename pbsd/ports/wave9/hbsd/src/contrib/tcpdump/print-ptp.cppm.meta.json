@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/print-ptp.c",
-  "wave": "wave9",
-  "loc_estimate": 649,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-ptp.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_ptp",
-  "generated": "2026-07-19T09:37:27+00:00"
-}

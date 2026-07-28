@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/virtio/pci/virtio_pci.c",
-  "wave": "wave5",
-  "loc_estimate": 999,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/virtio/pci/virtio_pci.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.virtio.pci.virtio_pci",
-  "generated": "2026-07-19T07:49:15+00:00"
-}

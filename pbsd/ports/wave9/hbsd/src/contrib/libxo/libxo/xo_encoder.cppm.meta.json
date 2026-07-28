@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libxo/libxo/xo_encoder.c",
-  "wave": "wave9",
-  "loc_estimate": 444,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libxo/libxo/xo_encoder.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libxo.libxo.xo_encoder",
-  "generated": "2026-07-19T09:37:59+00:00"
-}

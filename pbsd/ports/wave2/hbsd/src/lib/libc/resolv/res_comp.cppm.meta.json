@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/resolv/res_comp.c",
-  "wave": "wave2",
-  "loc_estimate": 271,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/resolv/res_comp.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.resolv.res_comp",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/net/sys/t_rfc6056.c",
-  "wave": "wave9",
-  "loc_estimate": 152,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/net/sys/t_rfc6056.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.net.sys.t_rfc6056",
-  "generated": "2026-07-19T09:30:57+00:00"
-}

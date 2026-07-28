@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/sntp/libevent/test/regress.c",
-  "wave": "wave9",
-  "loc_estimate": 3615,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/sntp/libevent/test/regress.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.sntp.libevent.test.regress",
-  "generated": "2026-07-19T09:31:08+00:00"
-}

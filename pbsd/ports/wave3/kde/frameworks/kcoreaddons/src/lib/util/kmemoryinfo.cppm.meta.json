@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kcoreaddons/src/lib/util/kmemoryinfo.cpp",
-  "wave": "wave3",
-  "loc_estimate": 516,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/util/kmemoryinfo.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.util.kmemoryinfo",
-  "generated": "2026-07-19T09:30:18+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/nvmf/host/nvmf_ns.c",
-  "wave": "wave5",
-  "loc_estimate": 528,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/nvmf/host/nvmf_ns.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.nvmf.host.nvmf_ns",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

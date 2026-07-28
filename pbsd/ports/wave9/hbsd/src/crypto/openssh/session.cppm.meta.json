@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/session.c",
-  "wave": "wave9",
-  "loc_estimate": 2731,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/session.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.session",
-  "generated": "2026-07-19T09:37:20+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/containments/desktop/plugins/folder/eventgenerator.cpp",
-  "wave": "wave3",
-  "loc_estimate": 54,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/containments/desktop/plugins/folder/eventgenerator.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.containments.desktop.plugins.folder.eventgenerator",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

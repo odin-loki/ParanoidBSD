@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/ipf/libipf/optvalue.c",
-  "wave": "wave2",
-  "loc_estimate": 33,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipf/libipf/optvalue.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.ipf.libipf.optvalue",
-  "generated": "2026-07-19T07:46:46+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/ipfilter/samples/relay.c",
-  "wave": "wave9",
-  "loc_estimate": 195,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/ipfilter/samples/relay.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.ipfilter.samples.relay",
-  "generated": "2026-07-19T09:37:45+00:00"
-}

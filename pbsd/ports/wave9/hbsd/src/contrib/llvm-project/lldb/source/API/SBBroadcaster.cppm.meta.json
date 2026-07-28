@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/API/SBBroadcaster.cpp",
-  "wave": "wave9",
-  "loc_estimate": 159,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/API/SBBroadcaster.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.api.sbbroadcaster",
-  "generated": "2026-07-19T09:31:38+00:00"
-}

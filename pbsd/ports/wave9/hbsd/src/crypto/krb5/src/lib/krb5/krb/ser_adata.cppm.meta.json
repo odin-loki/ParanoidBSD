@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/krb5/krb/ser_adata.c",
-  "wave": "wave9",
-  "loc_estimate": 153,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/krb5/krb/ser_adata.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.krb5.krb.ser_adata",
-  "generated": "2026-07-19T09:30:29+00:00"
-}

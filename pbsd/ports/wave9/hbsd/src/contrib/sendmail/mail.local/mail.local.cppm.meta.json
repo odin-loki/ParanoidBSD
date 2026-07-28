@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/sendmail/mail.local/mail.local.c",
-  "wave": "wave9",
-  "loc_estimate": 1995,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/sendmail/mail.local/mail.local.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.sendmail.mail_local.mail_local",
-  "generated": "2026-07-19T09:37:28+00:00"
-}

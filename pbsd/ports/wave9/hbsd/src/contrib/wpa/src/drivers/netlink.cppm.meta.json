@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/drivers/netlink.c",
-  "wave": "wave9",
-  "loc_estimate": 228,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/drivers/netlink.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.drivers.netlink",
-  "generated": "2026-07-19T09:31:01+00:00"
-}

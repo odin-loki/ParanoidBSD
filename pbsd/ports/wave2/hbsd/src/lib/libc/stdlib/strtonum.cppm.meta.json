@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdlib/strtonum.c",
-  "wave": "wave2",
-  "loc_estimate": 65,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdlib/strtonum.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdlib.strtonum",
-  "generated": "2026-07-19T09:29:45+00:00"
-}

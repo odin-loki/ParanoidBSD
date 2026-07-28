@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/isci/scil/sati_write.c",
-  "wave": "wave5",
-  "loc_estimate": 321,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/isci/scil/sati_write.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.isci.scil.sati_write",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

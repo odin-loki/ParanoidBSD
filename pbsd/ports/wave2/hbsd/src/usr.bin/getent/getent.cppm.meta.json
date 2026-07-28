@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.bin/getent/getent.c",
-  "wave": "wave2",
-  "loc_estimate": 715,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/getent/getent.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_bin.getent.getent",
-  "generated": "2026-07-19T09:30:22+00:00"
-}

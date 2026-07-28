@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/tftpd/tftp-options.c",
-  "wave": "wave2",
-  "loc_estimate": 477,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/tftpd/tftp-options.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.tftpd.tftp_options",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/acpica/acpi_hpet.c",
-  "wave": "wave5",
-  "loc_estimate": 1010,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpica/acpi_hpet.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpica.acpi_hpet",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

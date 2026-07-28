@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/libusb20/util.c",
-  "wave": "wave9",
-  "loc_estimate": 48,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/libusb20/util.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.libusb20.util",
-  "generated": "2026-07-19T09:37:44+00:00"
-}

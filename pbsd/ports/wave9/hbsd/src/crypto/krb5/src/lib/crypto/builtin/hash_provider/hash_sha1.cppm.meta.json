@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/crypto/builtin/hash_provider/hash_sha1.c",
-  "wave": "wave9",
-  "loc_estimate": 66,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/crypto/builtin/hash_provider/hash_sha1.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.crypto.builtin.hash_provider.hash_sha1",
-  "generated": "2026-07-19T09:30:26+00:00"
-}

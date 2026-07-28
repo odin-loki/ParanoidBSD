@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/crypto/asn1/a_sign.c",
-  "wave": "wave9",
-  "loc_estimate": 288,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/crypto/asn1/a_sign.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.crypto.asn1.a_sign",
-  "generated": "2026-07-19T09:30:05+00:00"
-}

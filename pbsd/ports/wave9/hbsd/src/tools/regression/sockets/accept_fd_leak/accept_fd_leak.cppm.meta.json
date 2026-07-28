@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/sockets/accept_fd_leak/accept_fd_leak.c",
-  "wave": "wave9",
-  "loc_estimate": 213,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/sockets/accept_fd_leak/accept_fd_leak.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.sockets.accept_fd_leak.accept_fd_leak",
-  "generated": "2026-07-19T09:37:31+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/unbound/validator/validator.c",
-  "wave": "wave9",
-  "loc_estimate": 3629,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unbound/validator/validator.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.unbound.validator.validator",
-  "generated": "2026-07-19T09:37:34+00:00"
-}

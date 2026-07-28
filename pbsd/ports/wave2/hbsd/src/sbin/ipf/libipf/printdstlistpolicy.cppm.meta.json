@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/ipf/libipf/printdstlistpolicy.c",
-  "wave": "wave2",
-  "loc_estimate": 30,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipf/libipf/printdstlistpolicy.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.ipf.libipf.printdstlistpolicy",
-  "generated": "2026-07-19T08:33:26+00:00"
-}

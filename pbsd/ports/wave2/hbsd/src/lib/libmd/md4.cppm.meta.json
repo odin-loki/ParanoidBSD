@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libmd/md4.h",
-  "wave": "wave2",
-  "loc_estimate": 33,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libmd/md4.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libmd.md4",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

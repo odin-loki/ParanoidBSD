@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/wpa_supplicant/dbus/dbus_dict_helpers.c",
-  "wave": "wave9",
-  "loc_estimate": 1161,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/wpa_supplicant/dbus/dbus_dict_helpers.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.wpa_supplicant.dbus.dbus_dict_helpers",
-  "generated": "2026-07-19T09:31:02+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/gen/setprogname.c",
-  "wave": "wave2",
-  "loc_estimate": 16,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/gen/setprogname.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.gen.setprogname",
-  "generated": "2026-07-19T08:29:00+00:00"
-}

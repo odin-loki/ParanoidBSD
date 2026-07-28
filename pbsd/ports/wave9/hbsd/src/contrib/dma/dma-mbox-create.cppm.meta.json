@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/dma/dma-mbox-create.c",
-  "wave": "wave9",
-  "loc_estimate": 192,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/dma/dma-mbox-create.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.dma.dma_mbox_create",
-  "generated": "2026-07-19T09:38:04+00:00"
-}

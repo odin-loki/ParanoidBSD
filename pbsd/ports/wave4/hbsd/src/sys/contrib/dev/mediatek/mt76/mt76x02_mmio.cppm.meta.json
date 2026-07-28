@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/mediatek/mt76/mt76x02_mmio.c",
-  "wave": "wave4",
-  "loc_estimate": 565,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/mediatek/mt76/mt76x02_mmio.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.mediatek.mt76.mt76x02_mmio",
-  "generated": "2026-07-19T09:29:36+00:00"
-}

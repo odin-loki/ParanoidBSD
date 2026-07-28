@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/valectl/valectl.c",
-  "wave": "wave2",
-  "loc_estimate": 444,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/valectl/valectl.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.valectl.valectl",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

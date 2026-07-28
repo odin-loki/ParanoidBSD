@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/mediatek/mt76/mt7615/testmode.c",
-  "wave": "wave4",
-  "loc_estimate": 376,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/mediatek/mt76/mt7615/testmode.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.mediatek.mt76.mt7615.testmode",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

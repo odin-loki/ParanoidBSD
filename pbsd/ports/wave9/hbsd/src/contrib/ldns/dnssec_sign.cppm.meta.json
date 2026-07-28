@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ldns/dnssec_sign.c",
-  "wave": "wave9",
-  "loc_estimate": 1690,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ldns/dnssec_sign.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ldns.dnssec_sign",
-  "generated": "2026-07-19T09:37:45+00:00"
-}

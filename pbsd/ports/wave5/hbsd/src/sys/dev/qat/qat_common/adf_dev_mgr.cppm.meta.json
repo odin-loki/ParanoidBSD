@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_common/adf_dev_mgr.c",
-  "wave": "wave5",
-  "loc_estimate": 405,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_common/adf_dev_mgr.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_common.adf_dev_mgr",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

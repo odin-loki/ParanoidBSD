@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/hdb/hdb-keytab.c",
-  "wave": "wave9",
-  "loc_estimate": 231,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/hdb/hdb-keytab.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.hdb.hdb_keytab",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

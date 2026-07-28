@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libfigpar/figpar.c",
-  "wave": "wave2",
-  "loc_estimate": 464,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libfigpar/figpar.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libfigpar.figpar",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

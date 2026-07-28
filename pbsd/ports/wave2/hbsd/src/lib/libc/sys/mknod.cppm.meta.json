@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/sys/mknod.c",
-  "wave": "wave2",
-  "loc_estimate": 42,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/sys/mknod.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.sys.mknod",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/layers.cpp",
-  "wave": "wave3",
-  "loc_estimate": 724,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/layers.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.layers",
-  "generated": "2026-07-19T09:30:19+00:00"
-}

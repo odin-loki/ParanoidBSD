@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/libecc/src/curves/ec_shortw.c",
-  "wave": "wave9",
-  "loc_estimate": 107,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/libecc/src/curves/ec_shortw.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.libecc.src.curves.ec_shortw",
-  "generated": "2026-07-19T09:37:36+00:00"
-}

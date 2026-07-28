@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netinet/pim_var.h",
-  "wave": "wave6",
-  "loc_estimate": 77,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netinet/pim_var.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netinet.pim_var",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

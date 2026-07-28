@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/diff/src/io.c",
-  "wave": "wave9",
-  "loc_estimate": 859,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/diff/src/io.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.diff.src.io",
-  "generated": "2026-07-19T09:37:56+00:00"
-}

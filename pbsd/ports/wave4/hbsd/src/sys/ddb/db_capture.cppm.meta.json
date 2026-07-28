@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/ddb/db_capture.c",
-  "wave": "wave4",
-  "loc_estimate": 364,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/ddb/db_capture.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.ddb.db_capture",
-  "generated": "2026-07-19T09:31:12+00:00"
-}

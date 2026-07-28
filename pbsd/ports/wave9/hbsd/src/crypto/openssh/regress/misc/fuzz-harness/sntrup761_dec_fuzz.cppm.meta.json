@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/regress/misc/fuzz-harness/sntrup761_dec_fuzz.cc",
-  "wave": "wave9",
-  "loc_estimate": 74,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/regress/misc/fuzz-harness/sntrup761_dec_fuzz.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.regress.misc.fuzz_harness.sntrup761_dec_fuzz",
-  "generated": "2026-07-19T09:37:19+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/tests/pip/window.cpp",
-  "wave": "wave3",
-  "loc_estimate": 19,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/tests/pip/window.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.tests.pip.window",
-  "generated": "2026-07-19T08:33:26+00:00"
-}

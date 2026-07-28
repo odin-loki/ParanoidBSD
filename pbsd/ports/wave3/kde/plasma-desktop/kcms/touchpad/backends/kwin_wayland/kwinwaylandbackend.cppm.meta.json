@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/kcms/touchpad/backends/kwin_wayland/kwinwaylandbackend.cpp",
-  "wave": "wave3",
-  "loc_estimate": 159,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/touchpad/backends/kwin_wayland/kwinwaylandbackend.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.touchpad.backends.kwin_wayland.kwinwaylandbackend",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

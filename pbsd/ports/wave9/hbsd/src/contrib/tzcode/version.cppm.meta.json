@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tzcode/version.h",
-  "wave": "wave9",
-  "loc_estimate": 3,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tzcode/version.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tzcode.version",
-  "generated": "2026-07-19T10:59:30+00:00"
-}

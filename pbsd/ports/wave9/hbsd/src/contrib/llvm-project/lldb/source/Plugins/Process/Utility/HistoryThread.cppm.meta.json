@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/Utility/HistoryThread.cpp",
-  "wave": "wave9",
-  "loc_estimate": 85,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/Utility/HistoryThread.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.process.utility.historythread",
-  "generated": "2026-07-19T09:31:37+00:00"
-}

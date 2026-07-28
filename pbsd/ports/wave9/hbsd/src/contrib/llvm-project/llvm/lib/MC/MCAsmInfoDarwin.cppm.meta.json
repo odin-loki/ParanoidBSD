@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/MC/MCAsmInfoDarwin.cpp",
-  "wave": "wave9",
-  "loc_estimate": 87,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/MC/MCAsmInfoDarwin.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.mc.mcasminfodarwin",
-  "generated": "2026-07-19T09:31:50+00:00"
-}

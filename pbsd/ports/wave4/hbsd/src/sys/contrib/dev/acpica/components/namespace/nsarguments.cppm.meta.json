@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/dev/acpica/components/namespace/nsarguments.c",
-  "wave": "wave4",
-  "loc_estimate": 429,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/dev/acpica/components/namespace/nsarguments.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.dev.acpica.components.namespace.nsarguments",
-  "generated": "2026-07-19T09:29:35+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libprocstat/msdosfs.c",
-  "wave": "wave2",
-  "loc_estimate": 147,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libprocstat/msdosfs.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libprocstat.msdosfs",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

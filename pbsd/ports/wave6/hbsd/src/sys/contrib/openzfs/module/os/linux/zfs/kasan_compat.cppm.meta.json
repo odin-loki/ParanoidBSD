@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/os/linux/zfs/kasan_compat.c",
-  "wave": "wave6",
-  "loc_estimate": 48,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/os/linux/zfs/kasan_compat.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.os.linux.zfs.kasan_compat",
-  "generated": "2026-07-19T08:30:54+00:00"
-}

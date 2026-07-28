@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/kld/syscall/module/syscall.c",
-  "wave": "wave9",
-  "loc_estimate": 83,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/kld/syscall/module/syscall.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.kld.syscall.module.syscall",
-  "generated": "2026-07-19T09:37:44+00:00"
-}

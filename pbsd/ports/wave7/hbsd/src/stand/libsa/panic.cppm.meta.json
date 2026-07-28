@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/libsa/panic.c",
-  "wave": "wave7",
-  "loc_estimate": 63,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/libsa/panic.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.libsa.panic",
-  "generated": "2026-07-19T07:49:21+00:00"
-}

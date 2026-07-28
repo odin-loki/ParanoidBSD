@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/drm2/drm_scatter.c",
-  "wave": "wave5",
-  "loc_estimate": 134,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/drm2/drm_scatter.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.drm2.drm_scatter",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/gssapi/krb5/test_cfx.c",
-  "wave": "wave9",
-  "loc_estimate": 173,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/gssapi/krb5/test_cfx.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.gssapi.krb5.test_cfx",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.bin/talk/get_addrs.c",
-  "wave": "wave2",
-  "loc_estimate": 61,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.bin/talk/get_addrs.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_bin.talk.get_addrs",
-  "generated": "2026-07-19T08:37:36+00:00"
-}

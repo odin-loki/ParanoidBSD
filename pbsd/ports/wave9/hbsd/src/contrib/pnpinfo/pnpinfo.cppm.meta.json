@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/pnpinfo/pnpinfo.c",
-  "wave": "wave9",
-  "loc_estimate": 607,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pnpinfo/pnpinfo.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.pnpinfo.pnpinfo",
-  "generated": "2026-07-19T09:38:35+00:00"
-}

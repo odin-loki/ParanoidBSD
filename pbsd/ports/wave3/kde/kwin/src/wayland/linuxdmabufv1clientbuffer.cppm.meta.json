@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/wayland/linuxdmabufv1clientbuffer.cpp",
-  "wave": "wave3",
-  "loc_estimate": 525,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/wayland/linuxdmabufv1clientbuffer.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.wayland.linuxdmabufv1clientbuffer",
-  "generated": "2026-07-19T09:30:18+00:00"
-}

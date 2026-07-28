@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/net/getnameinfo.c",
-  "wave": "wave2",
-  "loc_estimate": 554,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/net/getnameinfo.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.net.getnameinfo",
-  "generated": "2026-07-19T09:05:33+00:00"
-}

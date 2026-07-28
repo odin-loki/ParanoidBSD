@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/vt/vt_sysmouse.c",
-  "wave": "wave5",
-  "loc_estimate": 500,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/vt/vt_sysmouse.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.vt.vt_sysmouse",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

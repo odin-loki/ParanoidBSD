@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/dwc/dwc1000_dma.c",
-  "wave": "wave5",
-  "loc_estimate": 882,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/dwc/dwc1000_dma.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.dwc.dwc1000_dma",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

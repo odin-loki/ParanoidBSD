@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/wayland/textinput.cpp",
-  "wave": "wave3",
-  "loc_estimate": 9,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/wayland/textinput.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.wayland.textinput",
-  "generated": "2026-07-19T08:33:26+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/tcpdrop/tcpdrop.c",
-  "wave": "wave2",
-  "loc_estimate": 398,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/tcpdrop/tcpdrop.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.tcpdrop.tcpdrop",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

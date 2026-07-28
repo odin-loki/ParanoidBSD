@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bsdinstall/partedit/part_wizard.c",
-  "wave": "wave2",
-  "loc_estimate": 428,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bsdinstall/partedit/part_wizard.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bsdinstall.partedit.part_wizard",
-  "generated": "2026-07-19T09:29:49+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/lib/csu/h_initfini1.cxx",
-  "wave": "wave9",
-  "loc_estimate": 9,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/lib/csu/h_initfini1.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.lib.csu.h_initfini1",
-  "generated": "2026-07-19T07:47:46+00:00"
-}

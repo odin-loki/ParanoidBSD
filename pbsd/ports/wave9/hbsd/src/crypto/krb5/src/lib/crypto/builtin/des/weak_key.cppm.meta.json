@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/crypto/builtin/des/weak_key.c",
-  "wave": "wave9",
-  "loc_estimate": 90,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/crypto/builtin/des/weak_key.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.crypto.builtin.des.weak_key",
-  "generated": "2026-07-19T09:30:27+00:00"
-}

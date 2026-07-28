@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/sys/_umtx.h",
-  "wave": "wave4",
-  "loc_estimate": 83,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/sys/_umtx.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.sys._umtx",
-  "generated": "2026-07-19T10:59:34+00:00"
-}

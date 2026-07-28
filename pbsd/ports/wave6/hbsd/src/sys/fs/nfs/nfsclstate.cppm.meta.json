@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/nfs/nfsclstate.h",
-  "wave": "wave6",
-  "loc_estimate": 462,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/nfs/nfsclstate.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.nfs.nfsclstate",
-  "generated": "2026-07-19T10:59:34+00:00"
-}

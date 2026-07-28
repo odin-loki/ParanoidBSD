@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/x86/gen/getcontextx.c",
-  "wave": "wave2",
-  "loc_estimate": 137,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/x86/gen/getcontextx.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.x86.gen.getcontextx",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/icp/core/kcf_prov_tabs.c",
-  "wave": "wave6",
-  "loc_estimate": 306,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/icp/core/kcf_prov_tabs.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.icp.core.kcf_prov_tabs",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

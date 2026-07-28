@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/module/os/freebsd/zfs/vdev_geom.c",
-  "wave": "wave6",
-  "loc_estimate": 1307,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/module/os/freebsd/zfs/vdev_geom.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.module.os.freebsd.zfs.vdev_geom",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

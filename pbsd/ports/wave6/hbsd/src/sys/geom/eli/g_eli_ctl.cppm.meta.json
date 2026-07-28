@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/geom/eli/g_eli_ctl.c",
-  "wave": "wave6",
-  "loc_estimate": 1208,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/geom/eli/g_eli_ctl.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.geom.eli.g_eli_ctl",
-  "generated": "2026-07-19T09:29:22+00:00"
-}

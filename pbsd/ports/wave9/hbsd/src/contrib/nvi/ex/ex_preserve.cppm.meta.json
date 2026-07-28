@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/nvi/ex/ex_preserve.c",
-  "wave": "wave9",
-  "loc_estimate": 100,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/nvi/ex/ex_preserve.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.nvi.ex.ex_preserve",
-  "generated": "2026-07-19T09:37:35+00:00"
-}

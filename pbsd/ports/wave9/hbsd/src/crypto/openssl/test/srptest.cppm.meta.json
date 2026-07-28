@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/test/srptest.c",
-  "wave": "wave9",
-  "loc_estimate": 282,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/test/srptest.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.test.srptest",
-  "generated": "2026-07-19T09:30:05+00:00"
-}

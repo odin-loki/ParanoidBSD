@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/unifdef/FreeBSD/err.c",
-  "wave": "wave9",
-  "loc_estimate": 138,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unifdef/FreeBSD/err.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.unifdef.freebsd.err",
-  "generated": "2026-07-19T09:37:52+00:00"
-}

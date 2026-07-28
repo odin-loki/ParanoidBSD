@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/print-carp.c",
-  "wave": "wave9",
-  "loc_estimate": 77,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-carp.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_carp",
-  "generated": "2026-07-19T09:37:26+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ncurses/ncurses/tinfo/lib_termcap.c",
-  "wave": "wave9",
-  "loc_estimate": 447,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/ncurses/tinfo/lib_termcap.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.ncurses.tinfo.lib_termcap",
-  "generated": "2026-07-19T09:37:23+00:00"
-}

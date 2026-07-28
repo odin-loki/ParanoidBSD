@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/netinet/udp_dontroute.c",
-  "wave": "wave9",
-  "loc_estimate": 136,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/netinet/udp_dontroute.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.netinet.udp_dontroute",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

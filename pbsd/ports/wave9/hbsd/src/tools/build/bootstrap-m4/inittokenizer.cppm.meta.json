@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/build/bootstrap-m4/inittokenizer.c",
-  "wave": "wave9",
-  "loc_estimate": 1872,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/build/bootstrap-m4/inittokenizer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.build.bootstrap_m4.inittokenizer",
-  "generated": "2026-07-19T09:38:05+00:00"
-}

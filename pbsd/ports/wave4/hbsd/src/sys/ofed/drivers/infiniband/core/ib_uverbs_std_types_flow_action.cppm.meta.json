@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/ofed/drivers/infiniband/core/ib_uverbs_std_types_flow_action.c",
-  "wave": "wave4",
-  "loc_estimate": 449,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/ofed/drivers/infiniband/core/ib_uverbs_std_types_flow_action.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.ofed.drivers.infiniband.core.ib_uverbs_std_types_flow_action",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/subr_memdesc.c",
-  "wave": "wave4",
-  "loc_estimate": 799,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/subr_memdesc.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.subr_memdesc",
-  "generated": "2026-07-19T09:19:11+00:00"
-}

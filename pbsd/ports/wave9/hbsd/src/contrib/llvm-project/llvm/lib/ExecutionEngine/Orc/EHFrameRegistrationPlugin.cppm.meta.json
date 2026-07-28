@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Orc/EHFrameRegistrationPlugin.cpp",
-  "wave": "wave9",
-  "loc_estimate": 65,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Orc/EHFrameRegistrationPlugin.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.executionengine.orc.ehframeregistrationplugin",
-  "generated": "2026-07-19T09:31:49+00:00"
-}

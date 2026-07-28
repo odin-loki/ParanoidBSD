@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ath/ath_hal/ar9002/ar9285_reset.c",
-  "wave": "wave5",
-  "loc_estimate": 801,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar9002/ar9285_reset.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar9002.ar9285_reset",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

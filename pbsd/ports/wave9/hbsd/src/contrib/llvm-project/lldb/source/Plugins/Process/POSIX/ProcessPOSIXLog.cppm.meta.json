@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/POSIX/ProcessPOSIXLog.cpp",
-  "wave": "wave9",
-  "loc_estimate": 34,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/POSIX/ProcessPOSIXLog.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.process.posix.processposixlog",
-  "generated": "2026-07-19T09:31:35+00:00"
-}

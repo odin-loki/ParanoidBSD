@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netlink/route/iface_drivers.c",
-  "wave": "wave6",
-  "loc_estimate": 183,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netlink/route/iface_drivers.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netlink.route.iface_drivers",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

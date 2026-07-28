@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/usb/net/if_ipheth.c",
-  "wave": "wave5",
-  "loc_estimate": 663,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/net/if_ipheth.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.net.if_ipheth",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

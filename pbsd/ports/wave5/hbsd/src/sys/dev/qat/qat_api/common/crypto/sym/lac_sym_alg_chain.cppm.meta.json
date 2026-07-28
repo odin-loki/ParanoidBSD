@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/qat/qat_api/common/crypto/sym/lac_sym_alg_chain.c",
-  "wave": "wave5",
-  "loc_estimate": 2391,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/qat/qat_api/common/crypto/sym/lac_sym_alg_chain.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.qat.qat_api.common.crypto.sym.lac_sym_alg_chain",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/IR/GVMaterializer.cpp",
-  "wave": "wave9",
-  "loc_estimate": 17,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/IR/GVMaterializer.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.ir.gvmaterializer",
-  "generated": "2026-07-19T09:31:46+00:00"
-}

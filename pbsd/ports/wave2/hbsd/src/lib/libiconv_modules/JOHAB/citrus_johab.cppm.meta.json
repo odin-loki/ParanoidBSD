@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libiconv_modules/JOHAB/citrus_johab.c",
-  "wave": "wave2",
-  "loc_estimate": 336,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libiconv_modules/JOHAB/citrus_johab.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libiconv_modules.johab.citrus_johab",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

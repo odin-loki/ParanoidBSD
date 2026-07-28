@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/heimdal/lib/krb5/string-to-key-test.c",
-  "wave": "wave9",
-  "loc_estimate": 140,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/heimdal/lib/krb5/string-to-key-test.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.heimdal.lib.krb5.string_to_key_test",
-  "generated": "2026-07-19T09:30:36+00:00"
-}

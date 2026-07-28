@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ExpressionParser/Clang/IRDynamicChecks.cpp",
-  "wave": "wave9",
-  "loc_estimate": 474,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ExpressionParser/Clang/IRDynamicChecks.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.expressionparser.clang.irdynamicchecks",
-  "generated": "2026-07-19T09:31:42+00:00"
-}

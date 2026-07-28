@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/crypto/openssl/ossl.c",
-  "wave": "wave4",
-  "loc_estimate": 484,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/crypto/openssl/ossl.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.crypto.openssl.ossl",
-  "generated": "2026-07-19T09:31:13+00:00"
-}

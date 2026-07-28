@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/ipf/ipsend/sbpf.c",
-  "wave": "wave2",
-  "loc_estimate": 143,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipf/ipsend/sbpf.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.ipf.ipsend.sbpf",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

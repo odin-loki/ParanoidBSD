@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/opengl/gllut3D.cpp",
-  "wave": "wave3",
-  "loc_estimate": 94,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/opengl/gllut3D.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.opengl.gllut3d",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

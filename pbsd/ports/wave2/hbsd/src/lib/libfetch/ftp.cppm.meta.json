@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libfetch/ftp.c",
-  "wave": "wave2",
-  "loc_estimate": 1211,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libfetch/ftp.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libfetch.ftp",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netlink/route/neigh.c",
-  "wave": "wave6",
-  "loc_estimate": 601,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netlink/route/neigh.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netlink.route.neigh",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

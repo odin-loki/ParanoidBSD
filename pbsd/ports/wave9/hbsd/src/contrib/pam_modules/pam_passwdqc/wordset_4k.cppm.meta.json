@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/pam_modules/pam_passwdqc/wordset_4k.c",
-  "wave": "wave9",
-  "loc_estimate": 4108,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/pam_modules/pam_passwdqc/wordset_4k.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.pam_modules.pam_passwdqc.wordset_4k",
-  "generated": "2026-07-19T09:38:18+00:00"
-}

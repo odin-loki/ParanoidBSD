@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ProfileData/SampleProfWriter.cpp",
-  "wave": "wave9",
-  "loc_estimate": 921,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ProfileData/SampleProfWriter.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.profiledata.sampleprofwriter",
-  "generated": "2026-07-19T09:31:56+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/atkbdc/psm.c",
-  "wave": "wave5",
-  "loc_estimate": 7701,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/atkbdc/psm.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.atkbdc.psm",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

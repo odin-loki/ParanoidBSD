@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libgssapi/gss_mech_switch.c",
-  "wave": "wave2",
-  "loc_estimate": 311,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libgssapi/gss_mech_switch.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libgssapi.gss_mech_switch",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

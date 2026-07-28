@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/doc/designs/ddd/ddd-03-fd-blocking.c",
-  "wave": "wave9",
-  "loc_estimate": 217,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/doc/designs/ddd/ddd-03-fd-blocking.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.doc.designs.ddd.ddd_03_fd_blocking",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/clang/lib/Analysis/MacroExpansionContext.cpp",
-  "wave": "wave9",
-  "loc_estimate": 232,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/clang/lib/Analysis/MacroExpansionContext.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.clang.lib.analysis.macroexpansioncontext",
-  "generated": "2026-07-19T09:31:18+00:00"
-}

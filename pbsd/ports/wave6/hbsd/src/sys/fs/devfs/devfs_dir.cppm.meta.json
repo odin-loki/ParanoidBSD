@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/fs/devfs/devfs_dir.c",
-  "wave": "wave6",
-  "loc_estimate": 175,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/fs/devfs/devfs_dir.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.fs.devfs.devfs_dir",
-  "generated": "2026-07-19T08:30:54+00:00"
-}

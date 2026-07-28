@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Core/AddressResolver.cpp",
-  "wave": "wave9",
-  "loc_estimate": 43,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Core/AddressResolver.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.core.addressresolver",
-  "generated": "2026-07-19T09:31:35+00:00"
-}

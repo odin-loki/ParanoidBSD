@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/regex/utils.h",
-  "wave": "wave2",
-  "loc_estimate": 55,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/regex/utils.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.regex.utils",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

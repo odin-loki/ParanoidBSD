@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/windows/leashdll/lshfunc.c",
-  "wave": "wave9",
-  "loc_estimate": 2684,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/windows/leashdll/lshfunc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.windows.leashdll.lshfunc",
-  "generated": "2026-07-19T09:30:33+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/axgbe/xgbe-i2c.c",
-  "wave": "wave5",
-  "loc_estimate": 527,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/axgbe/xgbe-i2c.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.axgbe.xgbe_i2c",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

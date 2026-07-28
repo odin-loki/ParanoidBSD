@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/ccapi/test/test_cc_seq_fetch_NCs_begin.c",
-  "wave": "wave9",
-  "loc_estimate": 14,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/ccapi/test/test_cc_seq_fetch_NCs_begin.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.ccapi.test.test_cc_seq_fetch_ncs_begin",
-  "generated": "2026-07-19T09:30:25+00:00"
-}

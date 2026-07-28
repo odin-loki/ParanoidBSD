@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/btree/bt_overflow.c",
-  "wave": "wave9",
-  "loc_estimate": 218,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/btree/bt_overflow.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.kdb.db2.libdb2.btree.bt_overflow",
-  "generated": "2026-07-19T09:30:30+00:00"
-}

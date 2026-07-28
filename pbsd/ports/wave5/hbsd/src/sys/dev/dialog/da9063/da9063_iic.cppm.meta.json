@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/dialog/da9063/da9063_iic.c",
-  "wave": "wave5",
-  "loc_estimate": 261,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/dialog/da9063/da9063_iic.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.dialog.da9063.da9063_iic",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

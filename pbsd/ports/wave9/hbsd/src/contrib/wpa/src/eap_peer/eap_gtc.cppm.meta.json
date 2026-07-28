@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/wpa/src/eap_peer/eap_gtc.c",
-  "wave": "wave9",
-  "loc_estimate": 141,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/wpa/src/eap_peer/eap_gtc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.wpa.src.eap_peer.eap_gtc",
-  "generated": "2026-07-19T09:31:01+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/plugins/krunner-integration/main.cpp",
-  "wave": "wave3",
-  "loc_estimate": 30,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/krunner-integration/main.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.plugins.krunner_integration.main",
-  "generated": "2026-07-19T08:41:42+00:00"
-}

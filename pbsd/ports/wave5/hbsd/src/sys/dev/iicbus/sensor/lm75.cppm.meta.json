@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/iicbus/sensor/lm75.c",
-  "wave": "wave5",
-  "loc_estimate": 630,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/iicbus/sensor/lm75.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.iicbus.sensor.lm75",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

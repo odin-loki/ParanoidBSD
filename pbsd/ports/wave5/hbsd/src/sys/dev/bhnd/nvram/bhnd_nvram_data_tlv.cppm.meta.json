@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/bhnd/nvram/bhnd_nvram_data_tlv.c",
-  "wave": "wave5",
-  "loc_estimate": 882,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/bhnd/nvram/bhnd_nvram_data_tlv.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.bhnd.nvram.bhnd_nvram_data_tlv",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

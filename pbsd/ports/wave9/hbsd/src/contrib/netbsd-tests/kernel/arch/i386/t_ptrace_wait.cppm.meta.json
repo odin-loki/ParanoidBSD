@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/kernel/arch/i386/t_ptrace_wait.c",
-  "wave": "wave9",
-  "loc_estimate": 141,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/kernel/arch/i386/t_ptrace_wait.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.kernel.arch.i386.t_ptrace_wait",
-  "generated": "2026-07-19T09:30:56+00:00"
-}

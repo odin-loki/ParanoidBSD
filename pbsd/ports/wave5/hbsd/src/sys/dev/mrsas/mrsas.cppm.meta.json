@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mrsas/mrsas.c",
-  "wave": "wave5",
-  "loc_estimate": 5072,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mrsas/mrsas.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mrsas.mrsas",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

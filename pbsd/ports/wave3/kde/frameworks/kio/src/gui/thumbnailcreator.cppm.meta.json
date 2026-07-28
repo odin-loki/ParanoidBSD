@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/gui/thumbnailcreator.cpp",
-  "wave": "wave3",
-  "loc_estimate": 144,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/gui/thumbnailcreator.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.gui.thumbnailcreator",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

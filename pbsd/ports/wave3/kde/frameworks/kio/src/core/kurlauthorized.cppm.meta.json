@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/core/kurlauthorized.cpp",
-  "wave": "wave3",
-  "loc_estimate": 40,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/core/kurlauthorized.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.core.kurlauthorized",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

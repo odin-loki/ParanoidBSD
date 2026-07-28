@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/xlocale/_string.h",
-  "wave": "wave9",
-  "loc_estimate": 59,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/xlocale/_string.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.xlocale._string",
-  "generated": "2026-07-19T10:59:33+00:00"
-}

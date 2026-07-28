@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libsodium/test/default/xchacha20.c",
-  "wave": "wave4",
-  "loc_estimate": 428,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libsodium/test/default/xchacha20.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libsodium.test.default.xchacha20",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

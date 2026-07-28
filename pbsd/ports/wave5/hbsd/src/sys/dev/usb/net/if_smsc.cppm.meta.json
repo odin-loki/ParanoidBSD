@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/usb/net/if_smsc.c",
-  "wave": "wave5",
-  "loc_estimate": 1855,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/net/if_smsc.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.net.if_smsc",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

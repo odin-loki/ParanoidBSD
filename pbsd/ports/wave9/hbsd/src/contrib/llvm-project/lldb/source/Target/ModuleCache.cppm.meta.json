@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Target/ModuleCache.cpp",
-  "wave": "wave9",
-  "loc_estimate": 341,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Target/ModuleCache.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.target.modulecache",
-  "generated": "2026-07-19T09:31:41+00:00"
-}

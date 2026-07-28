@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Utils/BypassSlowDivision.cpp",
-  "wave": "wave9",
-  "loc_estimate": 479,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/Transforms/Utils/BypassSlowDivision.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.transforms.utils.bypassslowdivision",
-  "generated": "2026-07-19T09:31:55+00:00"
-}

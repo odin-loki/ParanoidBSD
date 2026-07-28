@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netbsd-tests/include/t_bitstring.c",
-  "wave": "wave9",
-  "loc_estimate": 298,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netbsd-tests/include/t_bitstring.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netbsd_tests.include.t_bitstring",
-  "generated": "2026-07-19T09:30:58+00:00"
-}

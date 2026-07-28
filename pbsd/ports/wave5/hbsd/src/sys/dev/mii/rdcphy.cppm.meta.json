@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mii/rdcphy.c",
-  "wave": "wave5",
-  "loc_estimate": 231,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mii/rdcphy.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mii.rdcphy",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

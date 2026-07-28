@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libkvm/kvm_minidump_riscv.c",
-  "wave": "wave2",
-  "loc_estimate": 293,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libkvm/kvm_minidump_riscv.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libkvm.kvm_minidump_riscv",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

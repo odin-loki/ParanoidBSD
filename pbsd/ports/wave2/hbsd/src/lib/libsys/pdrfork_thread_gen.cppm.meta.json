@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libsys/pdrfork_thread_gen.c",
-  "wave": "wave2",
-  "loc_estimate": 34,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libsys/pdrfork_thread_gen.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libsys.pdrfork_thread_gen",
-  "generated": "2026-07-19T09:19:10+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kio/src/gui/dbusactivationrunner.cpp",
-  "wave": "wave3",
-  "loc_estimate": 117,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kio/src/gui/dbusactivationrunner.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kio.src.gui.dbusactivationrunner",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

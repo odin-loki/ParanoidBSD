@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssl/demos/bio/client-arg.c",
-  "wave": "wave9",
-  "loc_estimate": 110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssl/demos/bio/client-arg.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssl.demos.bio.client_arg",
-  "generated": "2026-07-19T09:30:04+00:00"
-}

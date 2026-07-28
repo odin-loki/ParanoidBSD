@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwayland/src/client/xdgshell_stable.cpp",
-  "wave": "wave3",
-  "loc_estimate": 610,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/client/xdgshell_stable.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.client.xdgshell_stable",
-  "generated": "2026-07-19T09:30:19+00:00"
-}

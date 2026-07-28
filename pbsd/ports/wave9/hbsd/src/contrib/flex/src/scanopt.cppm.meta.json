@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/flex/src/scanopt.c",
-  "wave": "wave9",
-  "loc_estimate": 814,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/flex/src/scanopt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.flex.src.scanopt",
-  "generated": "2026-07-19T09:38:00+00:00"
-}

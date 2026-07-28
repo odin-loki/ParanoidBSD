@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/usr.sbin/bsdinstall/runconsoles/common.c",
-  "wave": "wave2",
-  "loc_estimate": 56,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/usr.sbin/bsdinstall/runconsoles/common.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.usr_sbin.bsdinstall.runconsoles.common",
-  "generated": "2026-07-19T09:02:50+00:00"
-}

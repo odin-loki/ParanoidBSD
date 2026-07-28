@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/lib/kadm5/srv/pwqual.c",
-  "wave": "wave9",
-  "loc_estimate": 127,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/lib/kadm5/srv/pwqual.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.lib.kadm5.srv.pwqual",
-  "generated": "2026-07-19T09:30:28+00:00"
-}

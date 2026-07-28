@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/usb/controller/dwc_otg_fdt.c",
-  "wave": "wave5",
-  "loc_estimate": 214,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/usb/controller/dwc_otg_fdt.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.usb.controller.dwc_otg_fdt",
-  "generated": "2026-07-19T09:19:37+00:00"
-}

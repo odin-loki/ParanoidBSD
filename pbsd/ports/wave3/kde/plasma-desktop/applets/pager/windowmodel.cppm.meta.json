@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/applets/pager/windowmodel.cpp",
-  "wave": "wave3",
-  "loc_estimate": 120,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/applets/pager/windowmodel.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.applets.pager.windowmodel",
-  "generated": "2026-07-19T09:19:13+00:00"
-}

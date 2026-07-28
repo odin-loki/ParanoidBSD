@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libarchive/cpio/cpio.c",
-  "wave": "wave9",
-  "loc_estimate": 1523,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libarchive/cpio/cpio.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libarchive.cpio.cpio",
-  "generated": "2026-07-19T09:30:41+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwayland/src/client/surface_p.cpp",
-  "wave": "wave3",
-  "loc_estimate": 65,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/client/surface_p.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.client.surface_p",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

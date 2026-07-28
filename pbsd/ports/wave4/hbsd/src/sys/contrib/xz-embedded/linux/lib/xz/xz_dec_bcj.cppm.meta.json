@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/xz-embedded/linux/lib/xz/xz_dec_bcj.c",
-  "wave": "wave4",
-  "loc_estimate": 574,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/xz-embedded/linux/lib/xz/xz_dec_bcj.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.xz_embedded.linux.lib.xz.xz_dec_bcj",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

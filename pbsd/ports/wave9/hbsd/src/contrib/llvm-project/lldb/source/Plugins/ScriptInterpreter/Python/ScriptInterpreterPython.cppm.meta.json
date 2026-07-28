@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/ScriptInterpreter/Python/ScriptInterpreterPython.cpp",
-  "wave": "wave9",
-  "loc_estimate": 3192,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/ScriptInterpreter/Python/ScriptInterpreterPython.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.scriptinterpreter.python.scriptinterpreterpython",
-  "generated": "2026-07-19T09:31:44+00:00"
-}

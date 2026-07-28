@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/ufs/ufs/ufs_bmap.c",
-  "wave": "wave4",
-  "loc_estimate": 651,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/ufs/ufs/ufs_bmap.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.ufs.ufs.ufs_bmap",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

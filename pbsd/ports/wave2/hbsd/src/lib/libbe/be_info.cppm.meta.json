@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libbe/be_info.c",
-  "wave": "wave2",
-  "loc_estimate": 292,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libbe/be_info.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libbe.be_info",
-  "generated": "2026-07-19T09:29:47+00:00"
-}

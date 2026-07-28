@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcpdump/print-sunrpc.c",
-  "wave": "wave9",
-  "loc_estimate": 239,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcpdump/print-sunrpc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcpdump.print_sunrpc",
-  "generated": "2026-07-19T09:37:26+00:00"
-}

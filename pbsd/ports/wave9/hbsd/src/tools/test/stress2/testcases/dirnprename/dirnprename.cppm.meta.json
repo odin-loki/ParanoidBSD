@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/test/stress2/testcases/dirnprename/dirnprename.c",
-  "wave": "wave9",
-  "loc_estimate": 172,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/test/stress2/testcases/dirnprename/dirnprename.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.test.stress2.testcases.dirnprename.dirnprename",
-  "generated": "2026-07-19T09:37:46+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/virtio/virtqueue.c",
-  "wave": "wave5",
-  "loc_estimate": 879,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/virtio/virtqueue.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.virtio.virtqueue",
-  "generated": "2026-07-19T07:49:15+00:00"
-}

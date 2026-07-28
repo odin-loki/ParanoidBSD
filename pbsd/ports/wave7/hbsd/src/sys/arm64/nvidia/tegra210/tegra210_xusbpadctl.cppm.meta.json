@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/arm64/nvidia/tegra210/tegra210_xusbpadctl.c",
-  "wave": "wave7",
-  "loc_estimate": 1957,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/arm64/nvidia/tegra210/tegra210_xusbpadctl.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.arm64.nvidia.tegra210.tegra210_xusbpadctl",
-  "generated": "2026-07-19T09:29:38+00:00"
-}

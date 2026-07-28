@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tests/sys/sound/pcm_read_write.c",
-  "wave": "wave9",
-  "loc_estimate": 262,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tests/sys/sound/pcm_read_write.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tests.sys.sound.pcm_read_write",
-  "generated": "2026-07-19T09:37:21+00:00"
-}

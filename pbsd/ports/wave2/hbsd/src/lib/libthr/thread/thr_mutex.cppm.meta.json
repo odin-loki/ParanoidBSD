@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libthr/thread/thr_mutex.c",
-  "wave": "wave2",
-  "loc_estimate": 1198,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libthr/thread/thr_mutex.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libthr.thread.thr_mutex",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

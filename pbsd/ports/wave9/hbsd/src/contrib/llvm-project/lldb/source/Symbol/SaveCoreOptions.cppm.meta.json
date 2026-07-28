@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Symbol/SaveCoreOptions.cpp",
-  "wave": "wave9",
-  "loc_estimate": 192,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Symbol/SaveCoreOptions.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.symbol.savecoreoptions",
-  "generated": "2026-07-19T09:31:39+00:00"
-}

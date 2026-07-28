@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/include/ssp/random.h",
-  "wave": "wave9",
-  "loc_estimate": 42,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/include/ssp/random.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.include.ssp.random",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

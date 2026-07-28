@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Architecture/AArch64/ArchitectureAArch64.cpp",
-  "wave": "wave9",
-  "loc_estimate": 143,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Architecture/AArch64/ArchitectureAArch64.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.architecture.aarch64.architectureaarch64",
-  "generated": "2026-07-19T09:31:38+00:00"
-}

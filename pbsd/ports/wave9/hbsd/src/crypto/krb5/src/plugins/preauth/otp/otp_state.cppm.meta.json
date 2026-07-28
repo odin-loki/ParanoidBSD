@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/plugins/preauth/otp/otp_state.c",
-  "wave": "wave9",
-  "loc_estimate": 735,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/preauth/otp/otp_state.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.preauth.otp.otp_state",
-  "generated": "2026-07-19T09:30:32+00:00"
-}

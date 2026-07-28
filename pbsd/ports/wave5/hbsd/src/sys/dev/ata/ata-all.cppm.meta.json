@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ata/ata-all.c",
-  "wave": "wave5",
-  "loc_estimate": 1226,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ata/ata-all.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ata.ata_all",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

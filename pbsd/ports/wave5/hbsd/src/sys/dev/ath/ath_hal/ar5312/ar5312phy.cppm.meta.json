@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ath/ath_hal/ar5312/ar5312phy.h",
-  "wave": "wave5",
-  "loc_estimate": 31,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar5312/ar5312phy.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar5312.ar5312phy",
-  "generated": "2026-07-19T10:59:31+00:00"
-}

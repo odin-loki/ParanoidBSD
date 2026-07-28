@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/acpica/Osd/OsdDebug.c",
-  "wave": "wave5",
-  "loc_estimate": 111,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/acpica/Osd/OsdDebug.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.acpica.osd.osddebug",
-  "generated": "2026-07-19T08:30:23+00:00"
-}

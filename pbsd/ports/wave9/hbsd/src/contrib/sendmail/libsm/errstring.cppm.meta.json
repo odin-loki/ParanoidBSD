@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/sendmail/libsm/errstring.c",
-  "wave": "wave9",
-  "loc_estimate": 285,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/sendmail/libsm/errstring.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.sendmail.libsm.errstring",
-  "generated": "2026-07-19T09:37:28+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/cmd/zstream/zstream_dump.c",
-  "wave": "wave6",
-  "loc_estimate": 813,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/cmd/zstream/zstream_dump.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.cmd.zstream.zstream_dump",
-  "generated": "2026-07-19T09:29:20+00:00"
-}

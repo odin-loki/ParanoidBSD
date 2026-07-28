@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/bin/cat/cat.c",
-  "wave": "wave2",
-  "loc_estimate": 525,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/bin/cat/cat.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.bin.cat.cat",
-  "generated": "2026-07-19T07:48:49+00:00"
-}

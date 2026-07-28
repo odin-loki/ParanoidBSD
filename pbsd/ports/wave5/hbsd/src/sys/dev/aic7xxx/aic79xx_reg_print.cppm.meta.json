@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/aic7xxx/aic79xx_reg_print.c",
-  "wave": "wave5",
-  "loc_estimate": 3671,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/aic7xxx/aic79xx_reg_print.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.aic7xxx.aic79xx_reg_print",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

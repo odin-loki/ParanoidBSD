@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ntp/libntp/strl_obsd.c",
-  "wave": "wave9",
-  "loc_estimate": 123,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ntp/libntp/strl_obsd.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ntp.libntp.strl_obsd",
-  "generated": "2026-07-19T09:31:05+00:00"
-}

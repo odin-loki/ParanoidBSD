@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/sound/sndstat_nv.c",
-  "wave": "wave9",
-  "loc_estimate": 206,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/sound/sndstat_nv.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.sound.sndstat_nv",
-  "generated": "2026-07-19T09:37:45+00:00"
-}

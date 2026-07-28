@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/netmap/netmap_kloop.c",
-  "wave": "wave5",
-  "loc_estimate": 1189,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/netmap/netmap_kloop.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.netmap.netmap_kloop",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

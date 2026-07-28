@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/kcms/gamecontroller/axesproxymodel.cpp",
-  "wave": "wave3",
-  "loc_estimate": 43,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/gamecontroller/axesproxymodel.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.gamecontroller.axesproxymodel",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

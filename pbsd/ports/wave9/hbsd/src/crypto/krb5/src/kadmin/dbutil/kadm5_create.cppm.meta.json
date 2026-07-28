@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/kadmin/dbutil/kadm5_create.c",
-  "wave": "wave9",
-  "loc_estimate": 225,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/kadmin/dbutil/kadm5_create.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.kadmin.dbutil.kadm5_create",
-  "generated": "2026-07-19T09:30:30+00:00"
-}

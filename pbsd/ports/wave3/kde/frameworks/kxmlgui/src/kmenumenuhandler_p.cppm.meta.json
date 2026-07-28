@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kxmlgui/src/kmenumenuhandler_p.cpp",
-  "wave": "wave3",
-  "loc_estimate": 242,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kxmlgui/src/kmenumenuhandler_p.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kxmlgui.src.kmenumenuhandler_p",
-  "generated": "2026-07-19T09:30:16+00:00"
-}

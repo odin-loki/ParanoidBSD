@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/rss_config.c",
-  "wave": "wave6",
-  "loc_estimate": 546,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/rss_config.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.rss_config",
-  "generated": "2026-07-19T09:04:07+00:00"
-}

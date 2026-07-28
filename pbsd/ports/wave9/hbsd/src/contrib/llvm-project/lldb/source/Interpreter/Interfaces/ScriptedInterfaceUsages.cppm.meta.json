@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Interpreter/Interfaces/ScriptedInterfaceUsages.cpp",
-  "wave": "wave9",
-  "loc_estimate": 37,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Interpreter/Interfaces/ScriptedInterfaceUsages.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.interpreter.interfaces.scriptedinterfaceusages",
-  "generated": "2026-07-19T09:31:35+00:00"
-}

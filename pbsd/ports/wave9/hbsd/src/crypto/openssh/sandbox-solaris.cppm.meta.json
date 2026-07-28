@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/openssh/sandbox-solaris.c",
-  "wave": "wave9",
-  "loc_estimate": 100,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/openssh/sandbox-solaris.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.openssh.sandbox_solaris",
-  "generated": "2026-07-19T09:37:19+00:00"
-}

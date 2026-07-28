@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/kern_sharedpage.c",
-  "wave": "wave4",
-  "loc_estimate": 409,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_sharedpage.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_sharedpage",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

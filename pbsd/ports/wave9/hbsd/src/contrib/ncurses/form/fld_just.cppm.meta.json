@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ncurses/form/fld_just.c",
-  "wave": "wave9",
-  "loc_estimate": 87,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ncurses/form/fld_just.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ncurses.form.fld_just",
-  "generated": "2026-07-19T09:37:22+00:00"
-}

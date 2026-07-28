@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/libevent/evthread_pthread.c",
-  "wave": "wave9",
-  "loc_estimate": 191,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/libevent/evthread_pthread.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.libevent.evthread_pthread",
-  "generated": "2026-07-19T09:37:40+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/altq/altq_priq.c",
-  "wave": "wave6",
-  "loc_estimate": 642,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/altq/altq_priq.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.altq.altq_priq",
-  "generated": "2026-07-19T09:04:07+00:00"
-}

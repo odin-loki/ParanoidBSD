@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/xen/xenbus/xenbusb.c",
-  "wave": "wave4",
-  "loc_estimate": 1004,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/xen/xenbus/xenbusb.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.xen.xenbus.xenbusb",
-  "generated": "2026-07-19T09:31:14+00:00"
-}

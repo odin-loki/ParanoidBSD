@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/regression/netinet/ipsockopt/ipsockopt.c",
-  "wave": "wave9",
-  "loc_estimate": 941,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/regression/netinet/ipsockopt/ipsockopt.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.regression.netinet.ipsockopt.ipsockopt",
-  "generated": "2026-07-19T09:37:32+00:00"
-}

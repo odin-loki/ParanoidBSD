@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/fdt/simple_mfd.c",
-  "wave": "wave5",
-  "loc_estimate": 320,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/fdt/simple_mfd.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.fdt.simple_mfd",
-  "generated": "2026-07-19T09:29:07+00:00"
-}

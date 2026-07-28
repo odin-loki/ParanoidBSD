@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/if_vxlan.c",
-  "wave": "wave6",
-  "loc_estimate": 3696,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/if_vxlan.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.if_vxlan",
-  "generated": "2026-07-19T09:19:12+00:00"
-}

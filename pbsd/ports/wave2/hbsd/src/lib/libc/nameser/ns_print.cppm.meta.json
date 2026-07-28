@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/nameser/ns_print.c",
-  "wave": "wave2",
-  "loc_estimate": 1250,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/nameser/ns_print.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.nameser.ns_print",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

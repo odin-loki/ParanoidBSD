@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/kldload/kldload.c",
-  "wave": "wave2",
-  "loc_estimate": 202,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/kldload/kldload.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.kldload.kldload",
-  "generated": "2026-07-19T09:30:01+00:00"
-}

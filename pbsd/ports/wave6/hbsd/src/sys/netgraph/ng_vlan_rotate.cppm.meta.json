@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/netgraph/ng_vlan_rotate.c",
-  "wave": "wave6",
-  "loc_estimate": 508,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/netgraph/ng_vlan_rotate.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.netgraph.ng_vlan_rotate",
-  "generated": "2026-07-19T09:29:34+00:00"
-}

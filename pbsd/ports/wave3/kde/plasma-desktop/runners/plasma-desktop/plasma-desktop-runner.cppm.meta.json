@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/runners/plasma-desktop/plasma-desktop-runner.cpp",
-  "wave": "wave3",
-  "loc_estimate": 67,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/runners/plasma-desktop/plasma-desktop-runner.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.runners.plasma_desktop.plasma_desktop_runner",
-  "generated": "2026-07-19T09:04:21+00:00"
-}

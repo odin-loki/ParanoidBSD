@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/tcsh/sh.proc.c",
-  "wave": "wave9",
-  "loc_estimate": 2057,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/tcsh/sh.proc.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.tcsh.sh_proc",
-  "generated": "2026-07-19T09:37:47+00:00"
-}

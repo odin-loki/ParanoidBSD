@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/blocklist/bin/conf.c",
-  "wave": "wave9",
-  "loc_estimate": 1360,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/blocklist/bin/conf.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.blocklist.bin.conf",
-  "generated": "2026-07-19T09:37:57+00:00"
-}

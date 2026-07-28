@@ -1,9 +1,0 @@
-{
-  "source": "kde/kwin/src/plugins/colorpicker/colorpickerlayer.cpp",
-  "wave": "wave3",
-  "loc_estimate": 43,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/kwin/src/plugins/colorpicker/colorpickerlayer.cppm",
-  "module": "pbsd.port.wave3.kde.kwin.src.plugins.colorpicker.colorpickerlayer",
-  "generated": "2026-07-19T09:04:20+00:00"
-}

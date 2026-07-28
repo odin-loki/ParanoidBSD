@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/zlib/infback.c",
-  "wave": "wave4",
-  "loc_estimate": 581,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/zlib/infback.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.zlib.infback",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

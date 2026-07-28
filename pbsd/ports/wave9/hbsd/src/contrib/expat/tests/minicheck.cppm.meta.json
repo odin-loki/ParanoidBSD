@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/expat/tests/minicheck.c",
-  "wave": "wave9",
-  "loc_estimate": 275,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/expat/tests/minicheck.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.expat.tests.minicheck",
-  "generated": "2026-07-19T09:37:49+00:00"
-}

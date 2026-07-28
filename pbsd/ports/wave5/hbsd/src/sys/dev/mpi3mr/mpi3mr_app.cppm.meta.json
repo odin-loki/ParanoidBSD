@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/mpi3mr/mpi3mr_app.c",
-  "wave": "wave5",
-  "loc_estimate": 2243,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/mpi3mr/mpi3mr_app.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.mpi3mr.mpi3mr_app",
-  "generated": "2026-07-19T09:29:10+00:00"
-}

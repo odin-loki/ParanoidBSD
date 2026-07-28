@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/kern/kern_ucoredump.c",
-  "wave": "wave4",
-  "loc_estimate": 308,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/kern/kern_ucoredump.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.kern.kern_ucoredump",
-  "generated": "2026-07-19T07:47:45+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/amd64/amd64/mp_machdep.c",
-  "wave": "wave7",
-  "loc_estimate": 1110,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/sys/amd64/amd64/mp_machdep.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.sys.amd64.amd64.mp_machdep",
-  "generated": "2026-07-19T09:29:38+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/stand/efi/loader/main.c",
-  "wave": "wave7",
-  "loc_estimate": 2025,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave7/hbsd/src/stand/efi/loader/main.cppm",
-  "module": "pbsd.port.wave7.hbsd.src.stand.efi.loader.main",
-  "generated": "2026-07-19T09:49:44+00:00"
-}

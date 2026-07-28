@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sbin/ipf/libipf/printpacket6.c",
-  "wave": "wave2",
-  "loc_estimate": 57,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/sbin/ipf/libipf/printpacket6.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.sbin.ipf.libipf.printpacket6",
-  "generated": "2026-07-19T09:30:00+00:00"
-}

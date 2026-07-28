@@ -1,0 +1,943 @@
+{"path": "hbsd/src/lib/libc/aarch64/gen/flt_rounds.c", "batch": "b0022", "reasons": ["INLINE_ASM"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/kern/subr_hash.c", "batch": "b0146", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/bin/pwait/pwait.c", "batch": "b0181", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/bin/setfacl/setfacl.c", "batch": "b0199", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/bin/pkill/pkill.c", "batch": "b0210", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/kern/vfs_hash.c", "batch": "b0217", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/kern/kern_tslog.c", "batch": "b0217", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/db/mpool/mpool.c", "batch": "b0226", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/iconv/citrus_db_factory.c", "batch": "b0229", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl_backend.c", "batch": "b0273", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/bin/ps/keyword.c", "batch": "b0291", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/bin/ps/print.c", "batch": "b0291", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/bin/sh/exec.c", "batch": "b0293", "reasons": ["FLEX_ARRAY"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/iconv/citrus_pivot_factory.c", "batch": "b0329", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/bin/ps/ps.c", "batch": "b0334", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/softfloat/timesoftfloat.c", "batch": "b0339", "reasons": ["HEAVY_CPP(53)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linuxkpi_hdmikmod.c", "batch": "b0356", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linuxkpi_videokmod.c", "batch": "b0356", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_kmod.c", "batch": "b0356", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/nls/msgcat.c", "batch": "b0377", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/stdlib/cxa_thread_atexit_impl.c", "batch": "b0380", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/gen/opendir2.c", "batch": "b0388", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/iconv/citrus_iconv.c", "batch": "b0389", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sbin/hastctl/hastctl.c", "batch": "b0420", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sbin/hastd/rangelock.c", "batch": "b0424", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/gen/telldir.c", "batch": "b0427", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/netinet/libalias/alias_dummy.c", "batch": "b0428", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/netinet/libalias/alias_mod.c", "batch": "b0428", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/sys/netinet/libalias/alias_skinny.c", "batch": "b0428", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/gen/sem_new.c", "batch": "b0432", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/gen/sem.c", "batch": "b0432", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/lib/libc/gen/posix_spawn.c", "batch": "b0435", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/usr.bin/procstat/procstat_pwdx.c", "batch": "b0466", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:08Z"}
+{"path": "hbsd/src/usr.bin/procstat/procstat_advlock.c", "batch": "b0472", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/kldconfig/kldconfig.c", "batch": "b0474", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_resume_np.c", "batch": "b0478", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/compat/linux/linux_common.c", "batch": "b0480", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/mdconfig/mdconfig.c", "batch": "b0488", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/amd64/linux/linux_vdso_gtod.c", "batch": "b0489", "reasons": ["INLINE_ASM"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libcuse/cuse_lib.c", "batch": "b0494", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libcasper/libcasper/libcasper_service.c", "batch": "b0496", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libc/gen/popen.c", "batch": "b0497", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/recoverdisk/recoverdisk.c", "batch": "b0498", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/subr_sfbuf.c", "batch": "b0499", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/compat/linsysfs/linsysfs_net.c", "batch": "b0500", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/compat/linsysfs/linsysfs.c", "batch": "b0500", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/geom/core/geom.c", "batch": "b0504", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_rcu.c", "batch": "b0507", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_netdev.c", "batch": "b0507", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_aperture.c", "batch": "b0507", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthread_db/thread_db.c", "batch": "b0509", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthread_db/libthr_db.c", "batch": "b0509", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthread_db/libpthread_db.c", "batch": "b0509", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_sleepq.c", "batch": "b0524", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_pshared.c", "batch": "b0529", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/camcontrol/timestamp.c", "batch": "b0530", "reasons": ["VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_suspend_np.c", "batch": "b0546", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/fsck/preen.c", "batch": "b0550", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/fsck/fsck.c", "batch": "b0550", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/bsdlabel/bsdlabel.c", "batch": "b0552", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/camcontrol/attrib.c", "batch": "b0555", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/camcontrol/persist.c", "batch": "b0555", "reasons": ["QUEUE_MACRO", "VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libc/gen/fts.c", "batch": "b0556", "reasons": ["GENERIC"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libc/gen/getpwent.c", "batch": "b0556", "reasons": ["HEAVY_CPP(41)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/stack_protector.c", "batch": "b0559", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/tty_tty.c", "batch": "b0573", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/kern_idle.c", "batch": "b0573", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/devfs/devfs.c", "batch": "b0582", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/fs/fdescfs/fdesc_vnops.c", "batch": "b0586", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/kern_et.c", "batch": "b0589", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/subr_kobj.c", "batch": "b0589", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/subr_log.c", "batch": "b0589", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_create.c", "batch": "b0591", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_fork.c", "batch": "b0591", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/hastd/hooks.c", "batch": "b0592", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/fdisk/fdisk.c", "batch": "b0593", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/fs/nullfs/null_subr.c", "batch": "b0595", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/amd64/amd64/elf_machdep.c", "batch": "b0596", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/camcontrol/modeedit.c", "batch": "b0599", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/camcontrol/camcontrol.c", "batch": "b0599", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_list.c", "batch": "b0615", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_stack.c", "batch": "b0615", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/ggate/ggated/ggated.c", "batch": "b0619", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libc/posix1e/mac.c", "batch": "b0620", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_mutex.c", "batch": "b0621", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/geom/geom_dump.c", "batch": "b0623", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/geom/geom_event.c", "batch": "b0623", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/geom/geom_ctl.c", "batch": "b0623", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/geom/geom_slice.c", "batch": "b0623", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/lib/libthr/thread/thr_init.c", "batch": "b0624", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/hastd/proto.c", "batch": "b0629", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/hastd/lzf.c", "batch": "b0629", "reasons": ["INLINE_ASM"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/hastd/control.c", "batch": "b0629", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/ipf/ipftest/ip_fil.c", "batch": "b0635", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/geom/geom_flashmap.c", "batch": "b0643", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/uipc_domain.c", "batch": "b0645", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/ipf/ipfstat/ipfstat.c", "batch": "b0646", "reasons": ["HEAVY_CPP(40)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/fsck_ffs/fsutil.c", "batch": "b0648", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/fsck_ffs/inode.c", "batch": "b0648", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/fsck_ffs/suj.c", "batch": "b0648", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/netinet/khelp/h_ertt.c", "batch": "b0650", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/uipc_accf.c", "batch": "b0653", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/subr_rangeset.c", "batch": "b0653", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/subr_disk.c", "batch": "b0653", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/fsck_msdosfs/fat.c", "batch": "b0660", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/compat/linprocfs/linprocfs.c", "batch": "b0662", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/kern_cons.c", "batch": "b0666", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/vfs_init.c", "batch": "b0666", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/kern/subr_devstat.c", "batch": "b0666", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/ggate/shared/ggate.c", "batch": "b0671", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sbin/ipfw/altq.c", "batch": "b0678", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:09Z"}
+{"path": "hbsd/src/sys/amd64/amd64/sys_machdep.c", "batch": "b0679", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/amd64/amd64/mp_machdep.c", "batch": "b0679", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/lib/libc/net/name6.c", "batch": "b0680", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/lib/libc/net/getaddrinfo.c", "batch": "b0680", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(52)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/dump/itime.c", "batch": "b0693", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/amd64/linux32/linux32_vdso_gtod.c", "batch": "b0694", "reasons": ["INLINE_ASM"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/ifconfig/ifclone.c", "batch": "b0695", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/hastd/activemap.c", "batch": "b0699", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/hastd/secondary.c", "batch": "b0699", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/amd64/amd64/fpu.c", "batch": "b0702", "reasons": ["LINKER_SET", "FLEX_ARRAY"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/amd64/amd64/machdep.c", "batch": "b0702", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/amd64/amd64/pmap.c", "batch": "b0702", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(63)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/subr_prng.c", "batch": "b0721", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/subr_atomic64.c", "batch": "b0721", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/x86bios/x86bios.c", "batch": "b0727", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linuxkpi_80211_pm.c", "batch": "b0729", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/amd64/pt/pt.c", "batch": "b0732", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linux/linux_vdso.c", "batch": "b0733", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/kern_loginclass.c", "batch": "b0734", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/kern_ucoredump.c", "batch": "b0737", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/kern_khelp.c", "batch": "b0737", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/subr_eventhandler.c", "batch": "b0737", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/subr_pcpu.c", "batch": "b0741", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl_tpc_local.c", "batch": "b0742", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl_frontend.c", "batch": "b0742", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl_frontend_ioctl.c", "batch": "b0742", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/autofs/autofs_vfsops.c", "batch": "b0744", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/autofs/autofs_vnops.c", "batch": "b0744", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/autofs/autofs.c", "batch": "b0744", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/amd64/ia32/ia32_syscall.c", "batch": "b0745", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/smbfs/smbfs_vfsops.c", "batch": "b0746", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/p9fs/p9_transport.c", "batch": "b0747", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/p9fs/p9fs_subr.c", "batch": "b0747", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/p9fs/p9fs_vfsops.c", "batch": "b0747", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/kern_ktr.c", "batch": "b0750", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/kern_osd.c", "batch": "b0750", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/devfs/devfs_dir.c", "batch": "b0751", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/devfs/devfs_devs.c", "batch": "b0751", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/devfs/devfs_rule.c", "batch": "b0751", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/cuse/cuse.c", "batch": "b0752", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/pseudofs/pseudofs_vncache.c", "batch": "b0754", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/pseudofs/pseudofs.c", "batch": "b0754", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/pseudofs/pseudofs_vnops.c", "batch": "b0754", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/dump/optr.c", "batch": "b0760", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/hastd/hastd.c", "batch": "b0761", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/hastd/primary.c", "batch": "b0761", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/geom/geom_dev.c", "batch": "b0762", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/geom/geom_ccd.c", "batch": "b0762", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/geom/geom_disk.c", "batch": "b0762", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/geom/geom_io.c", "batch": "b0762", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/ping/ping6.c", "batch": "b0763", "reasons": ["HEAVY_CPP(41)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/amd64/linux/linux_sysvec.c", "batch": "b0764", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/usr.sbin/hbsdcontrol/hbsdcontrol.c", "batch": "b0772", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/geom/label/g_label_ufs.c", "batch": "b0775", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_shrinker.c", "batch": "b0776", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_lock.c", "batch": "b0776", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_dmi.c", "batch": "b0776", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/posix4_mib.c", "batch": "b0777", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/kern_mtxpool.c", "batch": "b0777", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/lindebugfs/lindebugfs.c", "batch": "b0778", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/usr.sbin/rtadvctl/rtadvctl.c", "batch": "b0779", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/quotacheck/preen.c", "batch": "b0780", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_tasklet.c", "batch": "b0782", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/geom/raid/g_raid_ctl.c", "batch": "b0784", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_current.c", "batch": "b0786", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_i2cbb.c", "batch": "b0786", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_i2c.c", "batch": "b0786", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_acpi.c", "batch": "b0788", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_skbuff.c", "batch": "b0788", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/geom/geom_subr.c", "batch": "b0789", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/kern_sharedpage.c", "batch": "b0790", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/kern/subr_rtc.c", "batch": "b0790", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linux/linux_util.c", "batch": "b0791", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/pfctl/pf_ruleset.c", "batch": "b0792", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/devfs/devfs_vnops.c", "batch": "b0794", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sbin/route/route.c", "batch": "b0797", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(52)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_idr.c", "batch": "b0798", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_page.c", "batch": "b0798", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_work.c", "batch": "b0798", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:10Z"}
+{"path": "hbsd/src/sys/fs/p9fs/p9fs_vnops.c", "batch": "b0799", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/routed/main.c", "batch": "b0800", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/routed/trace.c", "batch": "b0800", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/routed/output.c", "batch": "b0800", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/ifconfig/ifconfig.c", "batch": "b0802", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/ifconfig/ifieee80211.c", "batch": "b0802", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/amd64/linux32/linux32_sysvec.c", "batch": "b0804", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/compat/freebsd32/freebsd32_misc.c", "batch": "b0805", "reasons": ["LINKER_SET", "HEAVY_CPP(49)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/mountver/g_mountver.c", "batch": "b0809", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/label/g_label.c", "batch": "b0810", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/nop/g_nop.c", "batch": "b0811", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/uzip/g_uzip.c", "batch": "b0812", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/gate/g_gate.c", "batch": "b0813", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/cache/g_cache.c", "batch": "b0814", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/linux_lvm/g_linux_lvm.c", "batch": "b0815", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/nvmecontrol/comnd.c", "batch": "b0816", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/concat/g_concat.c", "batch": "b0817", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/union/g_union.c", "batch": "b0818", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/tty_outq.c", "batch": "b0819", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/subr_autoconf.c", "batch": "b0819", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/p1003_1b.c", "batch": "b0819", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/kern_pmc.c", "batch": "b0819", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/sched_shim.c", "batch": "b0821", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/kern_jaildesc.c", "batch": "b0821", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/tty_info.c", "batch": "b0821", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/multipath/g_multipath.c", "batch": "b0822", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/fs/fuse/fuse_main.c", "batch": "b0823", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/fs/fuse/fuse_file.c", "batch": "b0823", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/fs/fuse/fuse_node.c", "batch": "b0823", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/fs/fuse/fuse_device.c", "batch": "b0823", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/compat/linux/linux_mib.c", "batch": "b0826", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/tty_inq.c", "batch": "b0827", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/kern_kcov.c", "batch": "b0828", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/sys_timerfd.c", "batch": "b0828", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/kern_devctl.c", "batch": "b0828", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/kern_poll.c", "batch": "b0828", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/part/g_part_bsd.c", "batch": "b0829", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/part/g_part_mbr.c", "batch": "b0829", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/part/g_part_ebr.c", "batch": "b0829", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/eli/g_eli_privacy.c", "batch": "b0830", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/eli/g_eli_key_cache.c", "batch": "b0830", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/eli/g_eli_integrity.c", "batch": "b0830", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/eli/g_eli_ctl.c", "batch": "b0830", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/amd64/vmm/amd/amdviiommu.c", "batch": "b0831", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/amd64/vmm/amd/ivrs_drv.c", "batch": "b0831", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/amd64/vmm/amd/amdvi_hw.c", "batch": "b0831", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/journal/g_journal_ufs.c", "batch": "b0833", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/journal/g_journal.c", "batch": "b0833", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/subr_lock.c", "batch": "b0835", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/imgact_binmisc.c", "batch": "b0835", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/kern/tty_pts.c", "batch": "b0835", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/raid3/g_raid3_ctl.c", "batch": "b0837", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/raid3/g_raid3.c", "batch": "b0837", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/routed/rdisc.c", "batch": "b0839", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/routed/parms.c", "batch": "b0839", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/routed/input.c", "batch": "b0839", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/routed/if.c", "batch": "b0839", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/mirror/g_mirror_ctl.c", "batch": "b0840", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/mirror/g_mirror.c", "batch": "b0840", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "batch": "b0841", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/pfctl/pfctl_altq.c", "batch": "b0841", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sbin/pfctl/pfctl_optimize.c", "batch": "b0841", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/raid/md_jmicron.c", "batch": "b0843", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/raid/md_nvidia.c", "batch": "b0843", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/part/g_part_bsd64.c", "batch": "b0844", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/part/g_part_ldm.c", "batch": "b0844", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/part/g_part_gpt.c", "batch": "b0844", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/part/g_part.c", "batch": "b0844", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_usb.c", "batch": "b0845", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_pci.c", "batch": "b0845", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/raid/md_sii.c", "batch": "b0846", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/raid/md_promise.c", "batch": "b0846", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/raid/g_raid.c", "batch": "b0846", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/raid/md_intel.c", "batch": "b0846", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/cam/cam_periph.c", "batch": "b0847", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/cam/cam_iosched.c", "batch": "b0847", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/cam/cam_xpt.c", "batch": "b0847", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/shsec/g_shsec.c", "batch": "b0853", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/stripe/g_stripe.c", "batch": "b0855", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:11Z"}
+{"path": "hbsd/src/sys/geom/eli/g_eli.c", "batch": "b0858", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/kern/uipc_mbuf2.c", "batch": "b0859", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/kern/subr_hints.c", "batch": "b0859", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/geom/virstor/g_virstor.c", "batch": "b0862", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sbin/routed/table.c", "batch": "b0863", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/kern/kern_module.c", "batch": "b0864", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/kern/kern_jailmeta.c", "batch": "b0864", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/kern/subr_compressor.c", "batch": "b0864", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/kern/kern_hhook.c", "batch": "b0864", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/nvme/nvme_xpt.c", "batch": "b0865", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/nvme/nvme_da.c", "batch": "b0865", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_pt.c", "batch": "b0869", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_targ_bh.c", "batch": "b0869", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_sg.c", "batch": "b0869", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/geom/raid/md_ddf.c", "batch": "b0870", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/mmc/mmc_xpt.c", "batch": "b0871", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/mmc/mmc_da.c", "batch": "b0871", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/amd64/vmm/io/ppt.c", "batch": "b0872", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl_ha.c", "batch": "b0873", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/fs/fuse/fuse_ipc.c", "batch": "b0874", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/fs/fuse/fuse_internal.c", "batch": "b0874", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/compat/linux/linux_ipc.c", "batch": "b0875", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/compat/linux/linux_file.c", "batch": "b0875", "reasons": ["HEAVY_CPP(43)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sbin/pfctl/pfctl_parser.c", "batch": "b0877", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sbin/pfctl/pfctl.c", "batch": "b0877", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ata/ata_pmp.c", "batch": "b0878", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ata/ata_xpt.c", "batch": "b0878", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ata/ata_da.c", "batch": "b0878", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_compat.c", "batch": "b0879", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/compat/linuxkpi/common/src/linux_80211.c", "batch": "b0879", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(149)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/kern/subr_busdma_bounce.c", "batch": "b0887", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/kern/coredump_vnode.c", "batch": "b0887", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/kern/kern_boottrace.c", "batch": "b0887", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sbin/nvmecontrol/logpage.c", "batch": "b0888", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/lib/libc/rpc/clnt_bcast.c", "batch": "b0889", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/fs/fuse/fuse_vnops.c", "batch": "b0890", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/amd64/vmm/intel/vtd.c", "batch": "b0891", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_enc.c", "batch": "b0892", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_enc_safte.c", "batch": "b0892", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_target.c", "batch": "b0892", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_ch.c", "batch": "b0892", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl_backend_ramdisk.c", "batch": "b0893", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ctl/scsi_ctl.c", "batch": "b0893", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl_tpc.c", "batch": "b0893", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/compat/linux/linux_misc.c", "batch": "b0894", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/compat/linux/linux_ioctl.c", "batch": "b0894", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_sa.c", "batch": "b0895", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_da.c", "batch": "b0895", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_all.c", "batch": "b0895", "reasons": ["LINKER_SET", "HEAVY_CPP(45)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/lib/libc/rpc/clnt_vc.c", "batch": "b0900", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/lib/libc/rpc/clnt_dg.c", "batch": "b0900", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/fs/nfs/nfs_commonport.c", "batch": "b0901", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/fs/nfs/nfs_commonkrpc.c", "batch": "b0901", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/fs/nfs/nfs_commonsubs.c", "batch": "b0901", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_pass.c", "batch": "b0902", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_enc_ses.c", "batch": "b0902", "reasons": ["QUEUE_MACRO", "VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_xpt.c", "batch": "b0902", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/scsi/scsi_cd.c", "batch": "b0902", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl_frontend_iscsi.c", "batch": "b0903", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(41)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl_backend_block.c", "batch": "b0903", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:12Z"}
+{"path": "hbsd/src/sys/cam/ctl/ctl.c", "batch": "b0903", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(40)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsclient/nfs_clnfsiod.c", "batch": "b0906", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsclient/nfs_clsubs.c", "batch": "b0906", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/kern_switch.c", "batch": "b0907", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/subr_kdb.c", "batch": "b0907", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/subr_acl_posix1e.c", "batch": "b0907", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/tarfs/tarfs_subr.c", "batch": "b0908", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/tarfs/tarfs_vfsops.c", "batch": "b0908", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsserver/nfs_fha_new.c", "batch": "b0909", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsserver/nfs_nfsdcache.c", "batch": "b0909", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsserver/nfs_nfsdsubs.c", "batch": "b0909", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/unionfs/union_subr.c", "batch": "b0910", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/tmpfs/tmpfs_vfsops.c", "batch": "b0911", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/tmpfs/tmpfs_vnops.c", "batch": "b0911", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/tmpfs/tmpfs_subr.c", "batch": "b0911", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/security/mac_ddb/mac_ddb.c", "batch": "b0912", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/kern_synch.c", "batch": "b0914", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/subr_firmware.c", "batch": "b0914", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/vfs_export.c", "batch": "b0914", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsclient/nfs_clkdtrace.c", "batch": "b0916", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsclient/nfs_clport.c", "batch": "b0916", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsclient/nfs_clbio.c", "batch": "b0916", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsserver/nfs_nfsdsocket.c", "batch": "b0917", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsserver/nfs_nfsdport.c", "batch": "b0917", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsserver/nfs_nfsdstate.c", "batch": "b0917", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/subr_gtaskqueue.c", "batch": "b0918", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/kern_rangelock.c", "batch": "b0918", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/sys_socket.c", "batch": "b0918", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/kern_clock.c", "batch": "b0919", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/subr_taskqueue.c", "batch": "b0919", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/subr_unit.c", "batch": "b0920", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/kern_racct.c", "batch": "b0920", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/kern_rmlock.c", "batch": "b0920", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/vfs_cluster.c", "batch": "b0920", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsclient/nfs_clvfsops.c", "batch": "b0921", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsclient/nfs_clvnops.c", "batch": "b0921", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsclient/nfs_clstate.c", "batch": "b0921", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/fs/nfsclient/nfs_clrpcops.c", "batch": "b0921", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:13Z"}
+{"path": "hbsd/src/sys/kern/kern_alq.c", "batch": "b0925", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/uipc_sem.c", "batch": "b0926", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/subr_csan.c", "batch": "b0926", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/subr_epoch.c", "batch": "b0926", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/init_main.c", "batch": "b0926", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_environment.c", "batch": "b0927", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/vfs_inotify.c", "batch": "b0927", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/vfs_mountroot.c", "batch": "b0927", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/subr_rman.c", "batch": "b0927", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_fail.c", "batch": "b0928", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_cpu.c", "batch": "b0928", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_ntptime.c", "batch": "b0929", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/subr_smp.c", "batch": "b0929", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_fork.c", "batch": "b0930", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_procctl.c", "batch": "b0930", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_mutex.c", "batch": "b0930", "reasons": ["HEAVY_CPP(64)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/vm/sg_pager.c", "batch": "b0931", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/subr_turnstile.c", "batch": "b0932", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_conf.c", "batch": "b0932", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/subr_acl_nfs4.c", "batch": "b0932", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/subr_sleepqueue.c", "batch": "b0932", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_ktrace.c", "batch": "b0933", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_sendfile.c", "batch": "b0933", "reasons": ["LINKER_SET", "FLEX_ARRAY"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/uipc_syscalls.c", "batch": "b0933", "reasons": ["HEAVY_CPP(49)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_sx.c", "batch": "b0934", "reasons": ["HEAVY_CPP(64)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_exit.c", "batch": "b0934", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_rwlock.c", "batch": "b0934", "reasons": ["HEAVY_CPP(58)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_intr.c", "batch": "b0934", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_malloc.c", "batch": "b0935", "reasons": ["LINKER_SET", "HEAVY_CPP(71)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_resource.c", "batch": "b0935", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/mkimg/ebr.c", "batch": "b0958", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_lm75/snmp_lm75.c", "batch": "b0964", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/pmccontrol/pmccontrol.c", "batch": "b0974", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/ac/ac.c", "batch": "b0977", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hast/hast_snmp.c", "batch": "b0980", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/du/du.c", "batch": "b0982", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/mkimg/mbr.c", "batch": "b0983", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/mkimg/apm.c", "batch": "b0983", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/mkimg/bsd.c", "batch": "b0983", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bluetooth/sdpd/provider.c", "batch": "b0984", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/cpucontrol/cpucontrol.c", "batch": "b0985", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/netlink/netlink_route.c", "batch": "b0990", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/netlink/netlink_sysevent.c", "batch": "b0990", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/netlink/netlink_module.c", "batch": "b0990", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/virtual_oss/virtual_oss/mul.c", "batch": "b0996", "reasons": ["VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_swrun_tbl.c", "batch": "b1001", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/pmcannotate/pmcannotate.c", "batch": "b1005", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/rtadvd/timer.c", "batch": "b1006", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/net/if_disc.c", "batch": "b1009", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bhyveload/bhyveload.c", "batch": "b1012", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/diff/diffdir.c", "batch": "b1013", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/tzsetup/tzsetup.c", "batch": "b1014", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/ypserv/yp_dnslookup.c", "batch": "b1017", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/fstat/fuser.c", "batch": "b1018", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/fstat/fstat.c", "batch": "b1018", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_network_tbl.c", "batch": "b1019", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_printer_tbl.c", "batch": "b1019", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/vtfontcvt/vtfontcvt.c", "batch": "b1020", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/sesutil/sesutil.c", "batch": "b1023", "reasons": ["VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/iscsictl/iscsictl.c", "batch": "b1025", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/ar/write.c", "batch": "b1031", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/gssd/gssd.c", "batch": "b1033", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_pf/pf_snmp.c", "batch": "b1034", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/sockstat/main.c", "batch": "b1037", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/netinet/libalias/alias_pptp.c", "batch": "b1040", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/netinet/libalias/alias_smedia.c", "batch": "b1040", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/netinet/libalias/alias_ftp.c", "batch": "b1040", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_timeout.c", "batch": "b1043", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_time.c", "batch": "b1043", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_thread.c", "batch": "b1043", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/vfs_lookup.c", "batch": "b1043", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_mbuf.c", "batch": "b1044", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/subr_intr.c", "batch": "b1044", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/sched_4bsd.c", "batch": "b1044", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/link_elf_obj.c", "batch": "b1045", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/sys_generic.c", "batch": "b1045", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/link_elf.c", "batch": "b1045", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(46)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_rctl.c", "batch": "b1045", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/setfmac/setfmac.c", "batch": "b1060", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/last/last.c", "batch": "b1061", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/gencat/gencat.c", "batch": "b1065", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/security/audit/audit_trigger.c", "batch": "b1070", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/security/audit/bsm_fcntl.c", "batch": "b1070", "reasons": ["HEAVY_CPP(54)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/security/audit/bsm_domain.c", "batch": "b1070", "reasons": ["HEAVY_CPP(55)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/mkimg/gpt.c", "batch": "b1077", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsdinstall/partedit/scripted.c", "batch": "b1078", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsdinstall/partedit/part_wizard.c", "batch": "b1078", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsdinstall/partedit/partedit.c", "batch": "b1078", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/procstat/procstat_kqueue.c", "batch": "b1081", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/procstat/procstat_files.c", "batch": "b1081", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_processor_tbl.c", "batch": "b1082", "reasons": ["QUEUE_MACRO", "VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_fs_tbl.c", "batch": "b1082", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_swinstalled_tbl.c", "batch": "b1082", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/indent/indent.c", "batch": "b1083", "reasons": ["VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/sysv_shm.c", "batch": "b1086", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(48)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/subr_vmem.c", "batch": "b1086", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/sys/kern/kern_shutdown.c", "batch": "b1086", "reasons": ["LINKER_SET", "QUEUE_MACRO", "FLEX_ARRAY", "HEAVY_CPP(41)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:14Z"}
+{"path": "hbsd/src/usr.bin/lex/initskel.c", "batch": "b1087", "reasons": ["HEAVY_CPP(162)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/lex/initscan.c", "batch": "b1087", "reasons": ["HEAVY_CPP(50)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/pmcstat/pmcpl_gprof.c", "batch": "b1096", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/pmcstat/pmcpl_callgraph.c", "batch": "b1096", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/localedef/charmap.c", "batch": "b1097", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/localedef/ctype.c", "batch": "b1097", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_partition_tbl.c", "batch": "b1100", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_diskstorage_tbl.c", "batch": "b1100", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_storage_tbl.c", "batch": "b1100", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_device_tbl.c", "batch": "b1100", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/gzip/gzip.c", "batch": "b1102", "reasons": ["HEAVY_CPP(50)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/sys_pipe.c", "batch": "b1103", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/sysv_msg.c", "batch": "b1103", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(44)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/sysv_sem.c", "batch": "b1103", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/kern_exec.c", "batch": "b1104", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(45)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/kern_tc.c", "batch": "b1104", "reasons": ["LINKER_SET", "GENERIC"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/uipc_shm.c", "batch": "b1104", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/tty.c", "batch": "b1104", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/localedef/collate.c", "batch": "b1109", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/acpi/acpidump/acpi_user.c", "batch": "b1110", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/uipc_mbuf.c", "batch": "b1111", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/kern_linker.c", "batch": "b1111", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/kern_cpuset.c", "batch": "b1111", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/uipc_mqueue.c", "batch": "b1111", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/kern_lockf.c", "batch": "b1112", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/kern_sysctl.c", "batch": "b1112", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/imgact_elf.c", "batch": "b1112", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/kern_prot.c", "batch": "b1112", "reasons": ["HEAVY_CPP(94)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/tee/tee.c", "batch": "b1122", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/common/ng_bluetooth.c", "batch": "b1131", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/ip6addrctl/ip6addrctl.c", "batch": "b1151", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netinet/sctp_module.c", "batch": "b1153", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/mixer/mixer.c", "batch": "b1154", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/acpi/acpidb/acpidb.c", "batch": "b1156", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/boot0cfg/boot0cfg.c", "batch": "b1160", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netgraph/ng_hub.c", "batch": "b1161", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/rpc.tlsclntd/rpc.tlsclntd.c", "batch": "b1165", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/acpi_device.c", "batch": "b1171", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/net_backend_netgraph.c", "batch": "b1171", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/lpr/common_source/request.c", "batch": "b1174", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/usbdump/usbdump.c", "batch": "b1185", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/gcore/elfcore.c", "batch": "b1188", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/kbdcontrol/kbdcontrol.c", "batch": "b1194", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/sdiff/sdiff.c", "batch": "b1195", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/mt/mt.c", "batch": "b1199", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netlink/netlink_io.c", "batch": "b1200", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netlink/netlink_generic.c", "batch": "b1200", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/net/if_edsc.c", "batch": "b1201", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/net/if_loop.c", "batch": "b1201", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/net/dummymbuf.c", "batch": "b1201", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netgraph/ng_etf.c", "batch": "b1204", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/mkimg/image.c", "batch": "b1205", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/mkimg/mkimg.c", "batch": "b1205", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/net/if_enc.c", "batch": "b1207", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/vm/memguard.c", "batch": "b1208", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/vm/device_pager.c", "batch": "b1208", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/vm/vm_pager.c", "batch": "b1208", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/net/if_media.c", "batch": "b1209", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/net/rss_config.c", "batch": "b1209", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/makefs/zfs.c", "batch": "b1210", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netinet/libalias/alias_sctp.c", "batch": "b1213", "reasons": ["QUEUE_MACRO", "VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/pciconf/pciconf.c", "batch": "b1214", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/camdd/camdd.c", "batch": "b1215", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netgraph/ng_nat.c", "batch": "b1216", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netgraph/ng_pipe.c", "batch": "b1216", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.bin/sort/file.c", "batch": "b1217", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netinet/libalias/alias_nbt.c", "batch": "b1218", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netinet/libalias/alias_db.c", "batch": "b1218", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(48)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netgraph/ng_l2tp.c", "batch": "b1219", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netgraph/ng_pppoe.c", "batch": "b1219", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/netgraph/ng_ppp.c", "batch": "b1219", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/vfs_aio.c", "batch": "b1220", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/kern_event.c", "batch": "b1220", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/vfs_mount.c", "batch": "b1220", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/sys/kern/subr_witness.c", "batch": "b1220", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/pmc/pmc.c", "batch": "b1228", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/pmc/pmc_util.c", "batch": "b1228", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/pmc/cmd_pmc_stat.c", "batch": "b1228", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/bluetooth/bthidd/session.c", "batch": "b1231", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/bluetooth/bthidd/server.c", "batch": "b1231", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/rpc.tlsservd/rpc.tlscommon.c", "batch": "b1232", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/rpc.tlsservd/rpc.tlsservd.c", "batch": "b1232", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:15Z"}
+{"path": "hbsd/src/usr.sbin/bluetooth/rtlbtfw/rtlbt_fw.c", "batch": "b1238", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/net_backend_netmap.c", "batch": "b1239", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/mem.c", "batch": "b1239", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_netgraph/snmp_netgraph.c", "batch": "b1240", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/makefs/zfs/objset.c", "batch": "b1242", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/makefs/zfs/zap.c", "batch": "b1242", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/makefs/zfs/dsl.c", "batch": "b1242", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/netgraph/ng_base.c", "batch": "b1246", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/kern/kern_proc.c", "batch": "b1247", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/kern/uipc_ktls.c", "batch": "b1247", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/kern/sched_ule.c", "batch": "b1247", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(40)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/kern/kern_sig.c", "batch": "b1247", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(44)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/makefs/zfs/fs.c", "batch": "b1252", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/netgraph/ng_tcpmss.c", "batch": "b1253", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/mevent.c", "batch": "b1255", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/qemu_fwcfg.c", "batch": "b1255", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/l2cap/ng_l2cap_cmds.c", "batch": "b1256", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/l2cap/ng_l2cap_misc.c", "batch": "b1256", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/l2cap/ng_l2cap_main.c", "batch": "b1256", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/l2cap/ng_l2cap_llpi.c", "batch": "b1256", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/hci/ng_hci_misc.c", "batch": "b1259", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/hci/ng_hci_main.c", "batch": "b1259", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/hci/ng_hci_evnt.c", "batch": "b1259", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/makefs/mtree.c", "batch": "b1260", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/makefs/cd9660.c", "batch": "b1260", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/kern/subr_stats.c", "batch": "b1261", "reasons": ["LINKER_SET", "QUEUE_MACRO", "FLEX_ARRAY", "VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/kern/vfs_vnops.c", "batch": "b1261", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/sys/kern/vfs_syscalls.c", "batch": "b1261", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(139)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:16Z"}
+{"path": "hbsd/src/usr.sbin/config/mkheaders.c", "batch": "b1263", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/security/mac_grantbylabel/mac_grantbylabel.c", "batch": "b1264", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/sndctl/sndctl.c", "batch": "b1265", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_debug.c", "batch": "b1266", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_write.c", "batch": "b1266", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/hci/ng_hci_ulpi.c", "batch": "b1267", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/bsdinstall/partedit/gpart_ops.c", "batch": "b1268", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/security/mac_veriexec/veriexec_fingerprint.c", "batch": "b1270", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/security/mac_veriexec/veriexec_metadata.c", "batch": "b1270", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/kern/uipc_usrreq.c", "batch": "b1273", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/kern/kern_umtx.c", "batch": "b1273", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/kern/kern_descrip.c", "batch": "b1273", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(59)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/kern/uipc_socket.c", "batch": "b1273", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(59)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/autofs/popen.c", "batch": "b1276", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/autofs/defined.c", "batch": "b1276", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/autofs/autounmountd.c", "batch": "b1276", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netsmb/smb_dev.c", "batch": "b1279", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_eltorito.c", "batch": "b1280", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/makefs/cd9660/iso9660_rrip.c", "batch": "b1280", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/net/pfil.c", "batch": "b1282", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/net/if_gre.c", "batch": "b1282", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/net/if_fwsubr.c", "batch": "b1282", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/net/if_clone.c", "batch": "b1282", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/socket/ng_btsocket.c", "batch": "b1283", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/socket/ng_btsocket_l2cap_raw.c", "batch": "b1283", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/socket/ng_btsocket_hci_raw.c", "batch": "b1283", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/socket/ng_btsocket_sco.c", "batch": "b1283", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/socket/ng_btsocket_l2cap.c", "batch": "b1284", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/socket/ng_btsocket_rfcomm.c", "batch": "b1284", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/kern/kern_jail.c", "batch": "b1285", "reasons": ["QUEUE_MACRO", "FLEX_ARRAY", "HEAVY_CPP(137)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/kern/vfs_bio.c", "batch": "b1285", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/kern/subr_bus.c", "batch": "b1285", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/kern/vfs_cache.c", "batch": "b1285", "reasons": ["LINKER_SET", "QUEUE_MACRO", "FLEX_ARRAY", "VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/drivers/ubtbcmfw/ubtbcmfw.c", "batch": "b1290", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/kldxref/kldxref.c", "batch": "b1293", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.bin/tail/reverse.c", "batch": "b1295", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/vm/vm_init.c", "batch": "b1297", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/vm/phys_pager.c", "batch": "b1297", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/vm/vm_swapout.c", "batch": "b1297", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/x86/acpica/srat.c", "batch": "b1298", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/x86/acpica/acpi_apm.c", "batch": "b1298", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/x86/acpica/madt.c", "batch": "b1298", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/autofs/automount.c", "batch": "b1301", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/autofs/automountd.c", "batch": "b1301", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/usr.sbin/autofs/common.c", "batch": "b1301", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/drivers/ubt/ng_ubt_rtl.c", "batch": "b1302", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/drivers/ubt/ng_ubt_intel.c", "batch": "b1302", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netgraph/bluetooth/drivers/ubt/ng_ubt.c", "batch": "b1302", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/netpfil/ipfilter/netinet/mlfk_ipl.c", "batch": "b1303", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/net/if_gif.c", "batch": "b1304", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/net/if_me.c", "batch": "b1304", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/net/if_infiniband.c", "batch": "b1304", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/net/route.c", "batch": "b1304", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:17Z"}
+{"path": "hbsd/src/sys/x86/cpufreq/est.c", "batch": "b1305", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netsmb/smb_iod.c", "batch": "b1306", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netsmb/smb_rq.c", "batch": "b1306", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netsmb/smb_conn.c", "batch": "b1306", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_epair.c", "batch": "b1307", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/vnet.c", "batch": "b1307", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_ipsec.c", "batch": "b1307", "reasons": ["HEAVY_CPP(44)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_llatbl.c", "batch": "b1307", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/kern/vfs_subr.c", "batch": "b1308", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/lpr/chkprintcap/chkprintcap.c", "batch": "b1312", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/bsdinstall/runconsoles/runconsoles.c", "batch": "b1317", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/netstat/unix.c", "batch": "b1323", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/systat/main.c", "batch": "b1324", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/ufs/ffs/ffs_rawread.c", "batch": "b1326", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/systat/iolat.c", "batch": "b1327", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/systat/ifstat.c", "batch": "b1327", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/lpr/common_source/matchjobs.c", "batch": "b1328", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/x86/isa/atpic.c", "batch": "b1329", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/vm/vm_meter.c", "batch": "b1330", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/vm/vm_glue.c", "batch": "b1330", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/vm/vm_mmap.c", "batch": "b1330", "reasons": ["HEAVY_CPP(43)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/ctladm/ctladm.c", "batch": "b1332", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/debugnet.c", "batch": "b1333", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_stf.c", "batch": "b1333", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_ethersubr.c", "batch": "b1333", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/pstat/pstat.c", "batch": "b1334", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/posixmqcontrol/posixmqcontrol.c", "batch": "b1337", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/netstat/mroute.c", "batch": "b1340", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/x86/x86/ucode.c", "batch": "b1342", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/x86/x86/x86_mem.c", "batch": "b1342", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/lpr/lpc/movejobs.c", "batch": "b1344", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/kdump/kdump.c", "batch": "b1346", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/netisr.c", "batch": "b1347", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_tuntap.c", "batch": "b1347", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/ieee8023ad_lacp.c", "batch": "b1347", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/bridgestp.c", "batch": "b1347", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/devctl/devctl.c", "batch": "b1351", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netgraph/ng_ipfw.c", "batch": "b1355", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/certctl/certctl.c", "batch": "b1356", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/qemu_loader.c", "batch": "b1357", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/net_backend_slirp.c", "batch": "b1357", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/moused/moused/moused.c", "batch": "b1360", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/truss/main.c", "batch": "b1361", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/truss/setup.c", "batch": "b1361", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.bin/truss/syscalls.c", "batch": "b1361", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_vlan.c", "batch": "b1362", "reasons": ["LINKER_SET", "HEAVY_CPP(40)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_lagg.c", "batch": "b1362", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_ovpn.c", "batch": "b1362", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/rtsock.c", "batch": "b1362", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(48)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/jail/state.c", "batch": "b1368", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/jail/config.c", "batch": "b1368", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/jail/jail.c", "batch": "b1368", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/jail/command.c", "batch": "b1368", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/bpf.c", "batch": "b1371", "reasons": ["LINKER_SET", "HEAVY_CPP(48)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_vxlan.c", "batch": "b1371", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if_bridge.c", "batch": "b1371", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net/if.c", "batch": "b1371", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(61)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netinet/netdump/netdump_client.c", "batch": "b1379", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/ifmcstat/ifmcstat.c", "batch": "b1383", "reasons": ["HEAVY_CPP(40)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_acl.c", "batch": "b1385", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_radiotap.c", "batch": "b1385", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/uhsoctl/uhsoctl.c", "batch": "b1386", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netlink/netlink_domain.c", "batch": "b1389", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_bridge/bridge_addrs.c", "batch": "b1393", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netgraph/ng_gif.c", "batch": "b1394", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netgraph/ng_deflate.c", "batch": "b1394", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netgraph/ng_tag.c", "batch": "b1395", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/pmcstat/pmcstat_log.c", "batch": "b1397", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/pmcstat/pmcpl_calltree.c", "batch": "b1397", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/usr.sbin/pmcstat/pmcstat.c", "batch": "b1397", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netgraph/ng_mppc.c", "batch": "b1398", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:18Z"}
+{"path": "hbsd/src/sys/netgraph/ng_socket.c", "batch": "b1400", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netgraph/ng_bridge.c", "batch": "b1400", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netgraph/ng_pptpgre.c", "batch": "b1400", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netgraph/ng_ksocket.c", "batch": "b1400", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net/iflib.c", "batch": "b1401", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(80)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/ip_fw_iface.c", "batch": "b1404", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/usr.sbin/pkg/config.c", "batch": "b1406", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/usr.sbin/pkg/pkg.c", "batch": "b1406", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_regdomain.c", "batch": "b1407", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/security/mac/mac_syscalls.c", "batch": "b1408", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/security/mac/mac_framework.c", "batch": "b1408", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/security/mac_do/mac_do.c", "batch": "b1409", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_bridge/bridge_if.c", "batch": "b1411", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_bridge/bridge_port.c", "batch": "b1411", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net/route/route_tables.c", "batch": "b1413", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net/altq/altq_hfsc.c", "batch": "b1414", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net/altq/altq_subr.c", "batch": "b1414", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(73)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/pmod/ip_fw_pmod.c", "batch": "b1415", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net/altq/altq_rmclass.c", "batch": "b1420", "reasons": ["HEAVY_CPP(50)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/usr.sbin/nscd/cacheplcs.c", "batch": "b1421", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/usr.sbin/nscd/nscd.c", "batch": "b1421", "reasons": ["VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netgraph/netflow/netflow.c", "batch": "b1422", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_wds.c", "batch": "b1423", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_phy.c", "batch": "b1423", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net/route/fib_algo.c", "batch": "b1424", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet6/in6_fib_algo.c", "batch": "b1425", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/toecore.c", "batch": "b1426", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/usr.sbin/nscd/cachelib.c", "batch": "b1427", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/tcp_lro_hpts.c", "batch": "b1428", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/in_fib_algo.c", "batch": "b1428", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_input.c", "batch": "b1429", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/tcp_reass.c", "batch": "b1430", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(46)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/sctp_ss_functions.c", "batch": "b1430", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet6/send.c", "batch": "b1431", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/sctp_syscalls.c", "batch": "b1432", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/sctp_bsd_addr.c", "batch": "b1432", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/ip_divert.c", "batch": "b1433", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/ip_reass.c", "batch": "b1433", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_crypto.c", "batch": "b1434", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_vht.c", "batch": "b1434", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_ddb.c", "batch": "b1434", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_freebsd.c", "batch": "b1434", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/siftr.c", "batch": "b1435", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/tcp_fastopen.c", "batch": "b1435", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/sctp_sysctl.c", "batch": "b1435", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/in_fib_dxr.c", "batch": "b1436", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/tcp_sack.c", "batch": "b1436", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/ip_input.c", "batch": "b1436", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/modules/snmp_wlan/wlan_snmp.c", "batch": "b1437", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_scan_sta.c", "batch": "b1438", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_hwmp.c", "batch": "b1438", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/tcp_lro.c", "batch": "b1439", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/udp_usrreq.c", "batch": "b1439", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/sctp_timer.c", "batch": "b1439", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211.c", "batch": "b1440", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_proto.c", "batch": "b1440", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_node.c", "batch": "b1440", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_mesh.c", "batch": "b1440", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/in.c", "batch": "b1442", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/sctp_auth.c", "batch": "b1442", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/tcp_ratelimit.c", "batch": "b1442", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_ht.c", "batch": "b1443", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/net80211/ieee80211_output.c", "batch": "b1443", "reasons": ["HEAVY_CPP(50)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/security/mac_ipacl/mac_ipacl.c", "batch": "b1444", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netpfil/pf/if_pflog.c", "batch": "b1445", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/tcp_hpts.c", "batch": "b1447", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/sctp_cc_functions.c", "batch": "b1447", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/tcp_usrreq.c", "batch": "b1447", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(66)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/ip_carp.c", "batch": "b1447", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(60)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:19Z"}
+{"path": "hbsd/src/sys/netinet/ip_mroute.c", "batch": "b1448", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/tcp_syncache.c", "batch": "b1448", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(59)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/in_mcast.c", "batch": "b1448", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/in_pcb.c", "batch": "b1448", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(74)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/security/mac_portacl/mac_portacl.c", "batch": "b1449", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/tcp_log_buf.c", "batch": "b1450", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/igmp.c", "batch": "b1450", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/sctp_asconf.c", "batch": "b1450", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(72)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/tcp_input.c", "batch": "b1450", "reasons": ["HEAVY_CPP(65)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/tcp_subr.c", "batch": "b1451", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(130)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/sctp_indata.c", "batch": "b1451", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(43)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/sctp_input.c", "batch": "b1451", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/sctp_pcb.c", "batch": "b1451", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(158)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/cc/cc_hd.c", "batch": "b1452", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/cc/cc_vegas.c", "batch": "b1452", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/cc/cc_chd.c", "batch": "b1452", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/tcp_stacks/tailq_hash.c", "batch": "b1453", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/tcp_stacks/rack_bbr_common.c", "batch": "b1453", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/cc/cc.c", "batch": "b1454", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/sctputil.c", "batch": "b1455", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(162)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/sctp_usrreq.c", "batch": "b1455", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(121)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/sctp_output.c", "batch": "b1455", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(160)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/cc/cc_cdg.c", "batch": "b1456", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.bin/netstat/sctp.c", "batch": "b1457", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/in6_ifattach.c", "batch": "b1458", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/sctp6_usrreq.c", "batch": "b1458", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/frag6.c", "batch": "b1458", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/tcp_stacks/bbr.c", "batch": "b1459", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(87)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet/tcp_stacks/rack.c", "batch": "b1459", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(241)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.bin/systat/netstat.c", "batch": "b1460", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/in6_src.c", "batch": "b1461", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/udp6_usrreq.c", "batch": "b1461", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/nd6_nbr.c", "batch": "b1461", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/inetd/inetd.c", "batch": "b1463", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(71)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/ip6_input.c", "batch": "b1464", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/ip6_mroute.c", "batch": "b1464", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/nd6_rtr.c", "batch": "b1464", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/nd6.c", "batch": "b1464", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/virtual_oss/virtual_oss/format.c", "batch": "b1475", "reasons": ["VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/virtual_oss/virtual_oss/ctl.c", "batch": "b1475", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/virtual_oss/virtual_oss/httpd.c", "batch": "b1475", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/rtadvd/rrenum.c", "batch": "b1476", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/rtadvd/control_server.c", "batch": "b1476", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/rtadvd/if.c", "batch": "b1476", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/mountd/mountd.c", "batch": "b1479", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/syslogd/syslogd_cap_log.c", "batch": "b1480", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/syslogd/syslogd_cap_config.c", "batch": "b1480", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/usr.sbin/syslogd/syslogd.c", "batch": "b1480", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:20Z"}
+{"path": "hbsd/src/sys/netinet6/in6.c", "batch": "b1482", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netinet6/icmp6.c", "batch": "b1482", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netinet6/in6_mcast.c", "batch": "b1482", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netipsec/ipsec_mod.c", "batch": "b1484", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netipsec/keysock.c", "batch": "b1484", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netlink/route/iface.c", "batch": "b1486", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/dn_sched_fq_codel.c", "batch": "b1489", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/ip_fw_compat.c", "batch": "b1489", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pf_osfp.c", "batch": "b1490", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pf_ruleset.c", "batch": "b1490", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pf_if.c", "batch": "b1490", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netinet6/mld6.c", "batch": "b1493", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/usr.sbin/rtadvd/config.c", "batch": "b1494", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/usr.sbin/rtadvd/rtadvd.c", "batch": "b1494", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/usr.sbin/virtual_oss/virtual_oss/virtual_oss.c", "batch": "b1495", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/usr.sbin/virtual_oss/virtual_oss/main.c", "batch": "b1495", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/usr.sbin/pmcstudy/pmcstudy.c", "batch": "b1496", "reasons": ["INLINE_ASM"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfilter/netinet/ip_fil_freebsd.c", "batch": "b1497", "reasons": ["HEAVY_CPP(40)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/usr.sbin/rtsold/dump.c", "batch": "b1500", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netipsec/subr_ipsec.c", "batch": "b1502", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netipsec/xform_tcp.c", "batch": "b1502", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/usr.sbin/rpc.lockd/lockd_lock.c", "batch": "b1503", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/ip_fw_nat.c", "batch": "b1505", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/dn_sched_fq_pie.c", "batch": "b1505", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/ip_dummynet.c", "batch": "b1505", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pf_lb.c", "batch": "b1506", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pflow.c", "batch": "b1506", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pf_table.c", "batch": "b1506", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfilter/netinet/ip_nat.c", "batch": "b1507", "reasons": ["HEAVY_CPP(63)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfilter/netinet/fil.c", "batch": "b1507", "reasons": ["HEAVY_CPP(114)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/security/audit/audit_bsm_db.c", "batch": "b1509", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/security/audit/audit_worker.c", "batch": "b1509", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/security/audit/audit_dtrace.c", "batch": "b1509", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netipsec/xform_ipcomp.c", "batch": "b1510", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netipsec/xform_esp.c", "batch": "b1510", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netipsec/xform_ah.c", "batch": "b1510", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/ufs/ffs/ffs_vnops.c", "batch": "b1511", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/ufs/ffs/ffs_vfsops.c", "batch": "b1511", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/vm/vm_reserv.c", "batch": "b1512", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/vm/vnode_pager.c", "batch": "b1512", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/vm/vm_phys.c", "batch": "b1512", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/vm/vm_pageout.c", "batch": "b1512", "reasons": ["LINKER_SET", "QUEUE_MACRO", "VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/ip_fw_table.c", "batch": "b1513", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/ip_fw_sockopt.c", "batch": "b1513", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/ip_fw_dynamic.c", "batch": "b1513", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(54)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/ip_fw2.c", "batch": "b1513", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(54)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pf_norm.c", "batch": "b1514", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pf_nl.c", "batch": "b1514", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/if_pfsync.c", "batch": "b1514", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pf_ioctl.c", "batch": "b1514", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(53)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/x86/x86/autoconf.c", "batch": "b1519", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/nat64/ip_fw_nat64.c", "batch": "b1524", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/usr.sbin/usbconfig/dump.c", "batch": "b1526", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/net_backends.c", "batch": "b1527", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/security/audit/bsm_errno.c", "batch": "b1528", "reasons": ["HEAVY_CPP(79)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/security/audit/audit.c", "batch": "b1528", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/ip_fw_table_algo.c", "batch": "b1529", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(41)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netpfil/pf/pf.c", "batch": "b1530", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(135)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netipsec/ipsec_offload.c", "batch": "b1531", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/netipsec/key.c", "batch": "b1531", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(56)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:21Z"}
+{"path": "hbsd/src/sys/vm/vm_object.c", "batch": "b1532", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/vm/swap_pager.c", "batch": "b1532", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/vm/uma_core.c", "batch": "b1532", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(76)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/ufs/ffs/ffs_snapshot.c", "batch": "b1533", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/ufs/ffs/ffs_alloc.c", "batch": "b1533", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(49)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/ufs/ffs/ffs_softdep.c", "batch": "b1533", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bluetooth/btpand/packet.c", "batch": "b1537", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/nptv6/ip_fw_nptv6.c", "batch": "b1540", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/basl.c", "batch": "b1542", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/pci_virtio_scsi.c", "batch": "b1543", "reasons": ["QUEUE_MACRO", "FLEX_ARRAY"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/security/audit/audit_pipe.c", "batch": "b1545", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/security/audit/audit_bsm.c", "batch": "b1545", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/ufs/ufs/ufs_extattr.c", "batch": "b1546", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/ufs/ufs/ufs_dirhash.c", "batch": "b1546", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/netpfil/ipfw/nat64/nat64lsn.c", "batch": "b1547", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/vm/vm_page.c", "batch": "b1548", "reasons": ["LINKER_SET", "QUEUE_MACRO", "HEAVY_CPP(61)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/makefs/ffs/buf.c", "batch": "b1549", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bluetooth/btpand/event.c", "batch": "b1551", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bluetooth/btpand/channel.c", "batch": "b1551", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/route6d/route6d.c", "batch": "b1556", "reasons": ["QUEUE_MACRO", "HEAVY_CPP(48)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/block_if.c", "batch": "b1557", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/acpi.c", "batch": "b1557", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/ufs/ufs/ufs_quota.c", "batch": "b1558", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/ufs/ufs/ufs_vnops.c", "batch": "b1558", "reasons": ["HEAVY_CPP(42)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/tools/libbsnmptools/bsnmpimport.c", "batch": "b1559", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/tools/libbsnmptools/bsnmpmap.c", "batch": "b1559", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bsnmpd/tools/libbsnmptools/bsnmptools.c", "batch": "b1559", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.bin/script/script.c", "batch": "b1566", "reasons": ["QUEUE_MACRO", "FLEX_ARRAY"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bluetooth/btpand/bnep.c", "batch": "b1567", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/ypldap/entries.c", "batch": "b1570", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/ypldap/ypldap_dns.c", "batch": "b1570", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/ypldap/ypldap.c", "batch": "b1570", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/rtsold/rtsold.c", "batch": "b1574", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/rtsold/rtsol.c", "batch": "b1574", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/iommu/amd_ctx.c", "batch": "b1576", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/iommu/iommu_utils.c", "batch": "b1576", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/iommu/intel_idpgtbl.c", "batch": "b1576", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/rfb.c", "batch": "b1578", "reasons": ["INLINE_ASM"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/pci_passthru.c", "batch": "b1579", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/gdb.c", "batch": "b1579", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/pci_ahci.c", "batch": "b1579", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/pci_emul.c", "batch": "b1580", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/pci_nvme.c", "batch": "b1580", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/kbdmap/kbdmap.c", "batch": "b1585", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/efibootmgr/efibootmgr.c", "batch": "b1587", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/intr_machdep.c", "batch": "b1590", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/msi.c", "batch": "b1590", "reasons": ["VLA"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/tsc.c", "batch": "b1590", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/iommu/intel_ctx.c", "batch": "b1591", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/iommu/amd_drv.c", "batch": "b1591", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/iommu/intel_drv.c", "batch": "b1591", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/newsyslog/newsyslog.c", "batch": "b1592", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/ypldap/yp.c", "batch": "b1593", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/ypldap/ldapclient.c", "batch": "b1593", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/ypserv/yp_main.c", "batch": "b1596", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/ypserv/yp_dblookup.c", "batch": "b1596", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/busdma_bounce.c", "batch": "b1597", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/mptable.c", "batch": "b1597", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/io_apic.c", "batch": "b1597", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/mca.c", "batch": "b1597", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/usr.sbin/bhyve/amd64/e820.c", "batch": "b1599", "reasons": ["QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/mp_x86.c", "batch": "b1600", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/cpu_machdep.c", "batch": "b1600", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/local_apic.c", "batch": "b1600", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/x86/identcpu.c", "batch": "b1600", "reasons": ["LINKER_SET", "HEAVY_CPP(42)"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/xen/xen_apic.c", "batch": "b1601", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/xen/xen_arch_intr.c", "batch": "b1601", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}
+{"path": "hbsd/src/sys/x86/xen/hvm.c", "batch": "b1601", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:28:22Z"}

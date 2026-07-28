@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/kprop/kprop_util.c",
-  "wave": "wave9",
-  "loc_estimate": 99,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/kprop/kprop_util.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.kprop.kprop_util",
-  "generated": "2026-07-19T09:30:27+00:00"
-}

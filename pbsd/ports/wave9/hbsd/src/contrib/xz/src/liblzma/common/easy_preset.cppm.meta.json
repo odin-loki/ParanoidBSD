@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/xz/src/liblzma/common/easy_preset.c",
-  "wave": "wave9",
-  "loc_estimate": 26,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/xz/src/liblzma/common/easy_preset.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.xz.src.liblzma.common.easy_preset",
-  "generated": "2026-07-19T09:37:37+00:00"
-}

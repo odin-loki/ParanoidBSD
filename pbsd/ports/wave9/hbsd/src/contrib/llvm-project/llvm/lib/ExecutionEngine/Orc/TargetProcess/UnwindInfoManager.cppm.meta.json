@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Orc/TargetProcess/UnwindInfoManager.cpp",
-  "wave": "wave9",
-  "loc_estimate": 170,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/llvm/lib/ExecutionEngine/Orc/TargetProcess/UnwindInfoManager.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.llvm.lib.executionengine.orc.targetprocess.unwindinfomanager",
-  "generated": "2026-07-19T09:31:52+00:00"
-}

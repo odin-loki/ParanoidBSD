@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/vmware/vmci/vmci_utils.h",
-  "wave": "wave5",
-  "loc_estimate": 41,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/vmware/vmci/vmci_utils.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.vmware.vmci.vmci_utils",
-  "generated": "2026-07-19T10:59:32+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/windows/leash/LeashMessageBox.cpp",
-  "wave": "wave9",
-  "loc_estimate": 83,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/windows/leash/LeashMessageBox.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.windows.leash.leashmessagebox",
-  "generated": "2026-07-19T09:30:27+00:00"
-}

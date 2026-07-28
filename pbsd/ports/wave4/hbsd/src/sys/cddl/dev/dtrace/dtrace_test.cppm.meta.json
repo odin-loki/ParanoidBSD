@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/cddl/dev/dtrace/dtrace_test.c",
-  "wave": "wave4",
-  "loc_estimate": 130,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/cddl/dev/dtrace/dtrace_test.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.cddl.dev.dtrace.dtrace_test",
-  "generated": "2026-07-19T09:31:11+00:00"
-}

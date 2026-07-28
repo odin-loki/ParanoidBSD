@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/net/bpf_jitter.c",
-  "wave": "wave6",
-  "loc_estimate": 120,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/net/bpf_jitter.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.net.bpf_jitter",
-  "generated": "2026-07-19T09:04:05+00:00"
-}

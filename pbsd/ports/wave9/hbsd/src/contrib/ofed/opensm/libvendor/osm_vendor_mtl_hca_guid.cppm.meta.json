@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/ofed/opensm/libvendor/osm_vendor_mtl_hca_guid.c",
-  "wave": "wave9",
-  "loc_estimate": 631,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/ofed/opensm/libvendor/osm_vendor_mtl_hca_guid.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.ofed.opensm.libvendor.osm_vendor_mtl_hca_guid",
-  "generated": "2026-07-19T09:37:24+00:00"
-}

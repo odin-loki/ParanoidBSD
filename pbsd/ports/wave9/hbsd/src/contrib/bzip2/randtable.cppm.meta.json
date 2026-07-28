@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bzip2/randtable.c",
-  "wave": "wave9",
-  "loc_estimate": 84,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bzip2/randtable.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bzip2.randtable",
-  "generated": "2026-07-19T09:38:05+00:00"
-}

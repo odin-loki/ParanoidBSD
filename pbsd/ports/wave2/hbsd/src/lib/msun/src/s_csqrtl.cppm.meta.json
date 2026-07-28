@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/msun/src/s_csqrtl.c",
-  "wave": "wave2",
-  "loc_estimate": 123,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/msun/src/s_csqrtl.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.msun.src.s_csqrtl",
-  "generated": "2026-07-19T09:29:46+00:00"
-}

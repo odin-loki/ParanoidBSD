@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lld/COFF/MarkLive.cpp",
-  "wave": "wave9",
-  "loc_estimate": 85,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lld/COFF/MarkLive.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lld.coff.marklive",
-  "generated": "2026-07-19T09:37:15+00:00"
-}

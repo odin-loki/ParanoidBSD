@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/tools/tools/ath/athrd/athrd.c",
-  "wave": "wave9",
-  "loc_estimate": 1659,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/tools/tools/ath/athrd/athrd.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.tools.tools.ath.athrd.athrd",
-  "generated": "2026-07-19T09:37:33+00:00"
-}

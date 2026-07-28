@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/etherswitch/infineon/adm6996fc.c",
-  "wave": "wave5",
-  "loc_estimate": 839,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/etherswitch/infineon/adm6996fc.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.etherswitch.infineon.adm6996fc",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

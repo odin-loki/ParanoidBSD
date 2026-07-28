@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kcoreaddons/src/lib/kcoreaddons.cpp",
-  "wave": "wave3",
-  "loc_estimate": 21,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kcoreaddons/src/lib/kcoreaddons.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kcoreaddons.src.lib.kcoreaddons",
-  "generated": "2026-07-19T08:28:06+00:00"
-}

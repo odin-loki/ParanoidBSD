@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/sendmail/libsm/strdup.c",
-  "wave": "wave9",
-  "loc_estimate": 166,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/sendmail/libsm/strdup.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.sendmail.libsm.strdup",
-  "generated": "2026-07-19T09:37:28+00:00"
-}

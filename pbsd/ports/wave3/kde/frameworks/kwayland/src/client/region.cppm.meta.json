@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/kwayland/src/client/region.cpp",
-  "wave": "wave3",
-  "loc_estimate": 141,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/kwayland/src/client/region.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.kwayland.src.client.region",
-  "generated": "2026-07-19T09:30:14+00:00"
-}

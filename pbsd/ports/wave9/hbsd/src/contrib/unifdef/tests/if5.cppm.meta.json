@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/unifdef/tests/if5.c",
-  "wave": "wave9",
-  "loc_estimate": 80,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/unifdef/tests/if5.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.unifdef.tests.if5",
-  "generated": "2026-07-19T09:37:52+00:00"
-}

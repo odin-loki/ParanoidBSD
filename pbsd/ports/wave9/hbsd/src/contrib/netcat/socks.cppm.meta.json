@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/netcat/socks.c",
-  "wave": "wave9",
-  "loc_estimate": 340,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/netcat/socks.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.netcat.socks",
-  "generated": "2026-07-19T09:38:22+00:00"
-}

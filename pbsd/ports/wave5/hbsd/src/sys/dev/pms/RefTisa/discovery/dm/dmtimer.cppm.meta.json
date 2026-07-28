@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/pms/RefTisa/discovery/dm/dmtimer.c",
-  "wave": "wave5",
-  "loc_estimate": 162,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/pms/RefTisa/discovery/dm/dmtimer.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.pms.reftisa.discovery.dm.dmtimer",
-  "generated": "2026-07-19T09:29:05+00:00"
-}

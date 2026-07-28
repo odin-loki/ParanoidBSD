@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/alpine-hal/eth/al_hal_eth_main.c",
-  "wave": "wave4",
-  "loc_estimate": 5668,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/alpine-hal/eth/al_hal_eth_main.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.alpine_hal.eth.al_hal_eth_main",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

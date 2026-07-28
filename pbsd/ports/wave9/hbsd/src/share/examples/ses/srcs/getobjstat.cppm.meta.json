@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/share/examples/ses/srcs/getobjstat.c",
-  "wave": "wave9",
-  "loc_estimate": 76,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/share/examples/ses/srcs/getobjstat.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.share.examples.ses.srcs.getobjstat",
-  "generated": "2026-07-19T09:37:44+00:00"
-}

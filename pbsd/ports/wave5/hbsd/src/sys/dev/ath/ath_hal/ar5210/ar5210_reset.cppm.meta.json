@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/ath/ath_hal/ar5210/ar5210_reset.c",
-  "wave": "wave5",
-  "loc_estimate": 1005,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/ath/ath_hal/ar5210/ar5210_reset.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.ath.ath_hal.ar5210.ar5210_reset",
-  "generated": "2026-07-19T09:29:09+00:00"
-}

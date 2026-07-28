@@ -1,9 +1,0 @@
-{
-  "source": "kde/plasma-desktop/kcms/keyboard/keyboard_daemon.cpp",
-  "wave": "wave3",
-  "loc_estimate": 309,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/plasma-desktop/kcms/keyboard/keyboard_daemon.cppm",
-  "module": "pbsd.port.wave3.kde.plasma_desktop.kcms.keyboard.keyboard_daemon",
-  "generated": "2026-07-19T09:30:17+00:00"
-}

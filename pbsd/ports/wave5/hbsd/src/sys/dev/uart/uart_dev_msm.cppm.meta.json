@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/uart/uart_dev_msm.c",
-  "wave": "wave5",
-  "loc_estimate": 577,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/uart/uart_dev_msm.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.uart.uart_dev_msm",
-  "generated": "2026-07-19T09:29:08+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "kde/frameworks/plasma-framework/src/plasmaquick/plasmashellwaylandintegration.cpp",
-  "wave": "wave3",
-  "loc_estimate": 214,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave3/kde/frameworks/plasma-framework/src/plasmaquick/plasmashellwaylandintegration.cppm",
-  "module": "pbsd.port.wave3.kde.frameworks.plasma_framework.src.plasmaquick.plasmashellwaylandintegration",
-  "generated": "2026-07-19T09:30:16+00:00"
-}

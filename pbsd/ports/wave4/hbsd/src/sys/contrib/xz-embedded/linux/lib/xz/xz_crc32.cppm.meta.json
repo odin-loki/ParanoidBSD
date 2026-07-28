@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/xz-embedded/linux/lib/xz/xz_crc32.c",
-  "wave": "wave4",
-  "loc_estimate": 59,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/xz-embedded/linux/lib/xz/xz_crc32.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.xz_embedded.linux.lib.xz.xz_crc32",
-  "generated": "2026-07-19T09:29:52+00:00"
-}

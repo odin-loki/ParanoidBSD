@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/Utility/RegisterInfoPOSIX_riscv64.cpp",
-  "wave": "wave9",
-  "loc_estimate": 149,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/llvm-project/lldb/source/Plugins/Process/Utility/RegisterInfoPOSIX_riscv64.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.llvm_project.lldb.source.plugins.process.utility.registerinfoposix_riscv64",
-  "generated": "2026-07-19T09:31:38+00:00"
-}

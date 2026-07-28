@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/openzfs/lib/libuutil/uu_ident.c",
-  "wave": "wave6",
-  "loc_estimate": 123,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave6/hbsd/src/sys/contrib/openzfs/lib/libuutil/uu_ident.cppm",
-  "module": "pbsd.port.wave6.hbsd.src.sys.contrib.openzfs.lib.libuutil.uu_ident",
-  "generated": "2026-07-19T09:29:19+00:00"
-}

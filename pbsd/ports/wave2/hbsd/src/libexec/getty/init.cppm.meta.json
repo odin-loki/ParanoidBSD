@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/libexec/getty/init.c",
-  "wave": "wave2",
-  "loc_estimate": 148,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/libexec/getty/init.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.libexec.getty.init",
-  "generated": "2026-07-19T09:30:23+00:00"
-}

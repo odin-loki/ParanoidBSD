@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/lib/libc/stdtime/strptime.c",
-  "wave": "wave2",
-  "loc_estimate": 710,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave2/hbsd/src/lib/libc/stdtime/strptime.cppm",
-  "module": "pbsd.port.wave2.hbsd.src.lib.libc.stdtime.strptime",
-  "generated": "2026-07-19T09:29:48+00:00"
-}

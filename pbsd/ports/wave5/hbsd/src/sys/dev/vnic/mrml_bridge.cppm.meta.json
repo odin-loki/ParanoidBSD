@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/dev/vnic/mrml_bridge.c",
-  "wave": "wave5",
-  "loc_estimate": 277,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave5/hbsd/src/sys/dev/vnic/mrml_bridge.cppm",
-  "module": "pbsd.port.wave5.hbsd.src.sys.dev.vnic.mrml_bridge",
-  "generated": "2026-07-19T09:29:06+00:00"
-}

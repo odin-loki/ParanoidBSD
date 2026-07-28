@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/hash/hash_bigkey.c",
-  "wave": "wave9",
-  "loc_estimate": 460,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/crypto/krb5/src/plugins/kdb/db2/libdb2/hash/hash_bigkey.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.crypto.krb5.src.plugins.kdb.db2.libdb2.hash.hash_bigkey",
-  "generated": "2026-07-19T09:30:32+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/contrib/bmake/arch.c",
-  "wave": "wave9",
-  "loc_estimate": 1025,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave9/hbsd/src/contrib/bmake/arch.cppm",
-  "module": "pbsd.port.wave9.hbsd.src.contrib.bmake.arch",
-  "generated": "2026-07-19T09:37:55+00:00"
-}

@@ -1,9 +1,0 @@
-{
-  "source": "hbsd/src/sys/contrib/libfdt/fdt_addresses.c",
-  "wave": "wave4",
-  "loc_estimate": 96,
-  "status": "stubbed",
-  "stub": "pbsd/ports/wave4/hbsd/src/sys/contrib/libfdt/fdt_addresses.cppm",
-  "module": "pbsd.port.wave4.hbsd.src.sys.contrib.libfdt.fdt_addresses",
-  "generated": "2026-07-19T09:29:52+00:00"
-}
