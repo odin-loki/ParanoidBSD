@@ -1,0 +1,4 @@
+set bind-root false
+match callExpr(callee(functionDecl(hasName("malloc"))))
+match gotoStmt()
+match varDecl(hasType(pointerType(pointee(voidType()))))
