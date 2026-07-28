@@ -344,6 +344,7 @@ HARD_MARKERS = [
     ("GENERIC",       re.compile(r"\b_Generic\b")),
 ]
 HEAVY_CPP_THRESHOLD = 40      # #if density above which a file is macro-shaped
+_INCLUDE_C = re.compile(r'^\s*#\s*include\s+"[^"]*\.c"', re.M)
 
 
 def classify_difficulty(path: Path) -> list[str]:
@@ -362,6 +363,15 @@ def classify_difficulty(path: Path) -> list[str]:
                 codes.append(f"{code}({hits})")
         elif hits:
             codes.append(code)
+
+    # A file with no function definitions has nothing to put in port.cppm, so
+    # the normal batch prompt cannot succeed on it -- the gate demands a
+    # port.cppm and the agent has no functions to write. These are data-only
+    # translation units and preprocessor instantiation shims. Route them
+    # straight to the deferred queue instead of paying a batch call to fail.
+    if not [n for n in _DEFN.findall(txt)
+            if n not in _KEYWORDS and not n.isupper()]:
+        codes.append("INCLUDE_SHIM" if _INCLUDE_C.search(txt) else "NO_FUNCTIONS")
     return codes
 
 
@@ -423,6 +433,15 @@ Guidance for the specific difficulties flagged:
   and breaks ABI.
 - GENERIC: expand _Generic into an overload set only where the branches are
   genuinely type-dispatchable; otherwise skip.
+- INCLUDE_SHIM: this file defines a few macros and #includes another .c file to
+  instantiate it at a concrete type. Port the EXPANSION: read the included file,
+  substitute the macros this file sets, and emit the resulting concrete
+  function. Do not #include a .c file from the module.
+- NO_FUNCTIONS: this translation unit defines data, not functions. Port the
+  object definitions with their exact types, linkage and initialisers. The
+  harness cannot call anything, so instead assert on each object's initial
+  value, sizeof and alignof against the same object in the oracle, and say in
+  the table that the comparison is a data comparison.
 
 ABSOLUTE, unchanged: never emit a stub, NotImplemented, migration_status(), or
 a TODO placeholder. Never edit the oracle or weaken the harness to pass. If this
