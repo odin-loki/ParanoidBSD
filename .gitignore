@@ -111,3 +111,5 @@ docs/migration/clang_port/*.c.orig
 # docs/migration/clang_port/proposals.jsonl
 # pbsd.py state — never clean these
 !docs/migration/
+# pbsd.py state — never clean these
+!docs/migration/

@@ -1,9 +1,9 @@
 # PBSD todo.md Pass Report
 
-Generated: `2026-07-28T07:35:07+00:00`
+Generated: `2026-07-28T08:04:43+00:00`
 
 - Files processed: **4027**
-- Edits applied: **100172**
+- Edits applied: **100176**
 - Refusals (model queue only): **0**
 - compile_commands coverage: **100.0%**
 - Corpus OK: **True**
@@ -33,15 +33,15 @@ Generated: `2026-07-28T07:35:07+00:00`
 | 424 | 0 | `hbsd/src/usr.sbin/mountd/mountd.c` |
 | 392 | 0 | `hbsd/src/usr.sbin/ctladm/ctladm.c` |
 | 376 | 0 | `hbsd/src/usr.bin/find/function.c` |
-| 353 | 0 | `hbsd/src/sbin/pfctl/pfctl.c` |
+| 352 | 0 | `hbsd/src/sbin/pfctl/pfctl.c` |
 | 328 | 0 | `hbsd/src/lib/libpfctl/libpfctl.c` |
-| 318 | 0 | `hbsd/src/lib/libc/gen/getpwent.c` |
+| 321 | 0 | `hbsd/src/lib/libc/gen/getpwent.c` |
 | 288 | 0 | `hbsd/src/usr.sbin/syslogd/syslogd.c` |
 | 275 | 0 | `hbsd/src/lib/libcasper/services/cap_net/tests/net_test.c` |
 | 274 | 0 | `hbsd/src/usr.sbin/route6d/route6d.c` |
 | 267 | 0 | `hbsd/src/usr.sbin/bsnmpd/tools/libbsnmptools/bsnmptools.c` |
 | 259 | 0 | `hbsd/src/lib/libc/net/getaddrinfo.c` |
-| 239 | 0 | `hbsd/src/lib/libc/gen/getgrent.c` |
+| 238 | 0 | `hbsd/src/lib/libc/gen/getgrent.c` |
 | 237 | 0 | `hbsd/src/bin/ps/keyword.c` |
 | 237 | 0 | `hbsd/src/usr.sbin/camdd/camdd.c` |
 | 236 | 0 | `hbsd/src/usr.sbin/bhyve/pci_nvme.c` |
@@ -57,12 +57,12 @@ Generated: `2026-07-28T07:35:07+00:00`
 - Refusals: `/home/odin/pbsd/docs/migration/clang_port/refusals.jsonl`
 - Full JSON: `docs/migration/clang_port/pass_report.json`
 
-## Proposal histogram (`proposals.jsonl`, 25954)
+## Proposal histogram (`proposals.jsonl`, 25959)
 
 | Kind | Count |
 |---|---:|
 | `MACRO_OBJECT` | 3221 |
-| `STR_FORMAT_CANDIDATE` | 3066 |
+| `STR_FORMAT_CANDIDATE` | 3073 |
 | `MALLOC_ESCAPE` | 2577 |
 | `SPAN_CANDIDATE` | 2334 |
 | `NULLABILITY` | 2124 |
@@ -73,7 +73,7 @@ Generated: `2026-07-28T07:35:07+00:00`
 | `POINTER_KIND` | 1160 |
 | `MACRO_CONSTEXPR` | 999 |
 | `ANDERSEN_ESCAPE` | 964 |
-| `DEAD_STORE` | 634 |
+| `DEAD_STORE` | 632 |
 | `MACRO_DIVERGENT` | 631 |
 | `SYSCALL_TRACE` | 610 |
 | `PURITY` | 454 |

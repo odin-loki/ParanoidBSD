@@ -460,6 +460,7 @@
 {"file": "hbsd/src/bin/sh/arith_yacc.c", "kind": "SPAN_CANDIDATE", "line": 164, "snippet": "val,op:iv-fail"}
 {"file": "hbsd/src/bin/sh/arith_yacc.c", "kind": "PURITY", "function": "arith_prec", "line": 112}
 {"file": "hbsd/src/bin/sh/arith_yacc.c", "kind": "GLOBAL_CLUSTER", "globals": ["last_token", "prec"], "count": 2}
+{"file": "hbsd/src/bin/sh/arith_yacc.c", "kind": "STR_FORMAT_CANDIDATE", "line": 329, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/bin/sh/arith_yacc.c", "kind": "MACRO_CONSTEXPR", "names": ["ARITH_PRECEDENCE"], "template": "[$0 - ARITH_BINOP_MIN] = $1", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/bin/sh/bltin/echo.c", "kind": "MACRO_OBJECT", "name": "main", "line": 40, "body": "echocmd", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/bin/sh/error.c", "kind": "GLOBAL_CLUSTER", "globals": ["handler"], "count": 1}
@@ -635,7 +636,7 @@
 {"file": "hbsd/src/bin/sh/var.c", "kind": "SPAN_CANDIDATE", "line": 402, "snippet": "list,flags:iv-fail"}
 {"file": "hbsd/src/bin/sh/var.c", "kind": "GLOBAL_CLUSTER", "globals": ["vhistsize", "vterm", "vifs", "vmail", "vmpath", "vpath", "vps1", "vps2", "vps4", "voptind", "vdisvfork", "localvars", "forcelocal", "varinit", "vartab", "locale_categories"], "count": 16}
 {"file": "hbsd/src/bin/sh/var.c", "kind": "LIFETIME_FAIL", "outlives": "stack_vps1 \u2ab0 R_vpp", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
-{"file": "hbsd/src/bin/sh/var.c", "kind": "LIFETIME_FAIL", "outlives": "stack_jmploc \u2ab0 R_handler", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
+{"file": "hbsd/src/bin/sh/var.c", "kind": "LIFETIME_FAIL", "outlives": "stack_jsetvar \u2ab0 R_handler", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/bin/sh/var.c", "kind": "LIFETIME_FAIL", "outlives": "stack_vartab \u2ab0 R_vpp", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/bin/sh/var.c", "kind": "LIFETIME_FAIL", "outlives": "stack_vp \u2ab0 R_vpp", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/bin/sh/var.c", "kind": "LIFETIME_FAIL", "outlives": "stack_vp \u2ab0 R_vpp", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
@@ -1132,13 +1133,13 @@
 {"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "SPAN_CANDIDATE", "line": 709, "snippet": "c,k:iv-fail"}
 {"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "SPAN_CANDIDATE", "line": 1273, "snippet": "f,a:iv-fail"}
 {"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "GLOBAL_CLUSTER", "globals": ["clen", "inifdef", "anychange", "edoffset", "clist", "clistlen", "sfile", "context_vec_start", "context_vec_end", "context_vec_ptr", "lastline", "lastmatchline"], "count": 12}
-{"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "DEAD_STORE", "line": 1145, "snippet": "anychange == 0) {\n\t\t\t/*\n\t\t\t * Print the context/unidiff header first time throug"}
-{"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "DEAD_STORE", "line": 1489, "snippet": "nc = sizeof(buf) - 1;\n\t\tnc ="}
+{"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "DEAD_STORE", "line": 1122, "snippet": "anychange == 0) {\n\t\t\t/*\n\t\t\t * Print the context/unidiff header first time throug"}
+{"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "DEAD_STORE", "line": 1469, "snippet": "nc = sizeof(buf) - 1;\n\t\tnc ="}
 {"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "ANDERSEN_ESCAPE", "var": "ai", "locs": ["stack:a"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "ANDERSEN_ESCAPE", "var": "aim", "locs": ["stack:ai"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "LIFETIME_FAIL", "outlives": "stack_a \u2ab0 R_ai", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "LIFETIME_FAIL", "outlives": "stack_ai \u2ab0 R_aim", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
-{"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "MACRO_OBJECT", "name": "c", "line": 1009, "body": "i0", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "MACRO_OBJECT", "name": "c", "line": 990, "body": "i0", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "MACRO_CONSTEXPR", "names": ["begins_with"], "template": "(strncmp($0, $1, sizeof($1) - 1) == 0)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/usr.bin/diff/diffreg.c", "kind": "SYSCALL_TRACE", "io_calls": 9, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/usr.bin/diff/diffreg_new.c", "kind": "MALLOC_ESCAPE", "line": 141, "snippet": "newlabel = calloc(newlabellen, sizeof(char))"}
@@ -1204,14 +1205,14 @@
 {"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "GOTO_CLEANUP_CANDIDATE", "line": 152, "snippet": "complex-cleanup:fail"}
 {"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "PURITY", "function": "release", "line": 9}
 {"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "GLOBAL_CLUSTER", "globals": ["featurelist", "long_opts", "iflag"], "count": 3}
-{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "ANDERSEN_OWNED", "var": "name", "locs": ["heap:name@10739"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "ANDERSEN_OWNED", "var": "name", "locs": ["heap:name@10726"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "LIFETIME_OWN", "var": "name", "region": "heap_name", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "PBSD_FD_GUARD", "line": 3, "body": "struct pbsd_fd_guard {", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "HOST_ENDIAN", "line": 99, "body": "ELFDATA2LSB", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "SWAP_ENDIAN", "line": 100, "body": "ELFDATA2MSB", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "HOST_ENDIAN", "line": 102, "body": "ELFDATA2MSB", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "SWAP_ENDIAN", "line": 103, "body": "ELFDATA2LSB", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "USAGE_MESSAGE", "line": 221, "body": "\\", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "HOST_ENDIAN", "line": 98, "body": "ELFDATA2LSB", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "SWAP_ENDIAN", "line": 99, "body": "ELFDATA2MSB", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "HOST_ENDIAN", "line": 101, "body": "ELFDATA2MSB", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "SWAP_ENDIAN", "line": 102, "body": "ELFDATA2LSB", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "MACRO_OBJECT", "name": "USAGE_MESSAGE", "line": 218, "body": "\\", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/elfctl/elfctl.c", "kind": "SYSCALL_TRACE", "io_calls": 7, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/usr.bin/elfdump/elfdump.c", "kind": "PURITY", "function": "elf_print_hash", "line": 1062}
 {"file": "hbsd/src/usr.bin/elfdump/elfdump.c", "kind": "GLOBAL_CLUSTER", "globals": ["elf32_offsets", "elf64_offsets"], "count": 2}
@@ -1917,18 +1918,18 @@
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "NULLABILITY", "line": 676, "snippet": "maybe-null:newss"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "NULLABILITY", "line": 677, "snippet": "maybe-null:newvs"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "KR_DEFINITION", "line": 533, "snippet": "build_eof_action", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "PURITY", "function": "yyerror", "line": 656}
+{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "PURITY", "function": "yyerror", "line": 657}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "GLOBAL_CLUSTER", "globals": ["scon_stk_ptr", "madeany", "previous_continued_action", "yydebug", "yyerrflag", "yychar", "yynerrs"], "count": 7}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "STR_FORMAT_CANDIDATE", "line": 67, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "STR_FORMAT_CANDIDATE", "line": 552, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "STR_FORMAT_CANDIDATE", "line": 577, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "STR_FORMAT_CANDIDATE", "line": 597, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "STR_FORMAT_CANDIDATE", "line": 617, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "STR_FORMAT_CANDIDATE", "line": 638, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "ANDERSEN_ESCAPE", "var": "newss", "locs": ["heap:newss@24499"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "ANDERSEN_ESCAPE", "var": "newvs", "locs": ["heap:newvs@24675"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "ANDERSEN_ESCAPE", "var": "s_base", "locs": ["heap:newss@24499"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "ANDERSEN_ESCAPE", "var": "l_base", "locs": ["heap:newvs@24675"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "STR_FORMAT_CANDIDATE", "line": 640, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "ANDERSEN_ESCAPE", "var": "newss", "locs": ["heap:newss@24498"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "ANDERSEN_ESCAPE", "var": "newvs", "locs": ["heap:newvs@24674"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "ANDERSEN_ESCAPE", "var": "s_base", "locs": ["heap:newss@24498"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "ANDERSEN_ESCAPE", "var": "l_base", "locs": ["heap:newvs@24674"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "MACRO_OBJECT", "name": "yyclearin", "line": 10, "body": "(yychar = YYEMPTY)", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "MACRO_OBJECT", "name": "yyerrok", "line": 11, "body": "(yyerrflag = 0)", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "MACRO_OBJECT", "name": "YYPURE", "line": 17, "body": "0", "hint": "constexpr / inline constexpr variable"}
@@ -1953,46 +1954,46 @@
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "MACRO_CONSTEXPR", "names": ["YYERROR_CALL"], "template": "yyerror($0)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/usr.bin/lex/initparse.c", "kind": "MACRO_CONSTEXPR", "names": ["YYTRANSLATE"], "template": "(($0) > YYMAXTOKEN ? YYUNDFTOKEN : ($0))", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "CALL_SITE_SPAN", "line": 4926, "snippet": "yy_scan_bytes"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4293, "snippet": "yy_get_next_buffer", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4431, "snippet": "yy_get_previous_state", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4660, "snippet": "yy_load_buffer_state", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4810, "snippet": "yypop_buffer_state", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4829, "snippet": "yyensure_buffer_stack", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4984, "snippet": "yy_pop_state", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5024, "snippet": "yyget_lineno", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5033, "snippet": "yyget_in", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5041, "snippet": "yyget_out", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5049, "snippet": "yyget_leng", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5058, "snippet": "yyget_text", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5089, "snippet": "yyget_debug", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5099, "snippet": "yy_init_globals", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5132, "snippet": "yylex_destroy", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5209, "snippet": "yywrap", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yy_load_buffer_state", "line": 4658}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_lineno", "line": 5023}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_in", "line": 5032}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_out", "line": 5040}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_leng", "line": 5048}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_text", "line": 5056}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyset_lineno", "line": 5066}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyset_in", "line": 5078}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyset_out", "line": 5082}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_debug", "line": 5087}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyset_debug", "line": 5092}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4294, "snippet": "yy_get_next_buffer", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4432, "snippet": "yy_get_previous_state", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4661, "snippet": "yy_load_buffer_state", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4811, "snippet": "yypop_buffer_state", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4830, "snippet": "yyensure_buffer_stack", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 4986, "snippet": "yy_pop_state", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5026, "snippet": "yyget_lineno", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5035, "snippet": "yyget_in", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5043, "snippet": "yyget_out", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5051, "snippet": "yyget_leng", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5060, "snippet": "yyget_text", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5091, "snippet": "yyget_debug", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5101, "snippet": "yy_init_globals", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5134, "snippet": "yylex_destroy", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "KR_DEFINITION", "line": 5215, "snippet": "yywrap", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yy_load_buffer_state", "line": 4659}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_lineno", "line": 5025}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_in", "line": 5034}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_out", "line": 5042}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_leng", "line": 5050}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_text", "line": 5058}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyset_lineno", "line": 5068}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyset_in", "line": 5080}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyset_out", "line": 5084}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyget_debug", "line": 5089}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "PURITY", "function": "yyset_debug", "line": 5094}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "GLOBAL_CLUSTER", "globals": ["yy_buffer_stack_top", "yy_buffer_stack_max", "yy_hold_char", "yy_n_chars", "yyleng", "yy_init", "yy_start", "yy_did_buffer_switch_on_eof", "yylineno", "yy_flex_debug"], "count": 10}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "DEAD_STORE", "line": 2291, "snippet": "yy_cp = (yy_hold_char);\n\t\t\tyy_cp ="}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "DEAD_STORE", "line": 2292, "snippet": "yy_cp = (yy_hold_char);\n\t\t\tyy_cp ="}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 303, "snippet": "void*:WILD"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4362, "snippet": "void*:WILD"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4413, "snippet": "void*:WILD"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4714, "snippet": "void*:WILD"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4716, "snippet": "void*:WILD"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4973, "snippet": "void*:WILD"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4363, "snippet": "void*:WILD"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4414, "snippet": "void*:WILD"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4715, "snippet": "void*:WILD"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4717, "snippet": "void*:WILD"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "POINTER_KIND", "line": 4975, "snippet": "void*:WILD"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1923, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2403, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2641, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 3083, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 3354, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 3423, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2404, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2642, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 3084, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 3355, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "STR_FORMAT_CANDIDATE", "line": 3424, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "LIFETIME_FAIL", "outlives": "stack_YY_CURRENT_BUFFER_LVALUE \u2ab0 R_dest", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "LIFETIME_FAIL", "outlives": "stack_YY_CURRENT_BUFFER_LVALUE \u2ab0 R_source", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "LIFETIME_FAIL", "outlives": "stack_b \u2ab0 R_yy_buf_pos", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
@@ -2047,15 +2048,15 @@
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_USER_INIT", "line": 1946, "body": "\\", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "END_CODEBLOCK", "line": 1961, "body": "do { \\", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_EXTRA_TYPE", "line": 2013, "body": "void *", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_READ_BUF_SIZE", "line": 2093, "body": "16384", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_READ_BUF_SIZE", "line": 2095, "body": "8192", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "ECHO", "line": 2104, "body": "do { if (fwrite( yytext, (size_t) yyleng, 1, yyout )) {} } while (0)", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_START_STACK_INCR", "line": 2153, "body": "25", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_DECL", "line": 2171, "body": "int yylex (void)", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_USER_ACTION", "line": 2178, "body": "#endif", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_BREAK", "line": 2183, "body": "/*LINTED*/break;", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_RULE_SETUP", "line": 2186, "body": "\\", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_EXIT_FAILURE", "line": 4993, "body": "2", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_READ_BUF_SIZE", "line": 2094, "body": "16384", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_READ_BUF_SIZE", "line": 2096, "body": "8192", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "ECHO", "line": 2105, "body": "do { if (fwrite( yytext, (size_t) yyleng, 1, yyout )) {} } while (0)", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_START_STACK_INCR", "line": 2154, "body": "25", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_DECL", "line": 2172, "body": "int yylex (void)", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_USER_ACTION", "line": 2179, "body": "#endif", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_BREAK", "line": 2184, "body": "/*LINTED*/break;", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_RULE_SETUP", "line": 2187, "body": "\\", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_OBJECT", "name": "YY_EXIT_FAILURE", "line": 4995, "body": "2", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_CONSTEXPR", "names": ["YY_SC_TO_UI"], "template": "((YY_CHAR) ($0))", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_CONSTEXPR", "names": ["YY_STATE_EOF"], "template": "(YY_END_OF_BUFFER + $0 + 1)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/usr.bin/lex/initscan.c", "kind": "MACRO_CONSTEXPR", "names": ["yyless", "yy_set_interactive", "yy_set_bol", "ACTION_IFDEF", "ACTION_M4_IFDEF", "PUT_BACK_STRING", "CHECK_REJECT", "CHECK_YYMORE", "YY_INPUT", "yyless"], "template": "\\", "hint": "inline constexpr / template function"}
@@ -2254,9 +2255,9 @@
 {"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "SPAN_CANDIDATE", "line": 487, "snippet": "mb,n:iv-fail"}
 {"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "GLOBAL_CLUSTER", "globals": ["_encoding_buffer", "_nbits"], "count": 2}
 {"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "STR_FORMAT_CANDIDATE", "line": 159, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "STR_FORMAT_CANDIDATE", "line": 653, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "ANDERSEN_OWNED", "var": "mbs", "locs": ["heap:mbs@16107"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "ANDERSEN_OWNED", "var": "ptr", "locs": ["heap:mbs@16107"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "STR_FORMAT_CANDIDATE", "line": 661, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "ANDERSEN_OWNED", "var": "mbs", "locs": ["heap:mbs@16066"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "ANDERSEN_OWNED", "var": "ptr", "locs": ["heap:mbs@16066"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.bin/localedef/wide.c", "kind": "LIFETIME_OWN", "var": "mbs", "region": "heap_mbs", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/usr.bin/locate/code/locate.code.c", "kind": "GLOBAL_CLUSTER", "globals": ["big"], "count": 1}
 {"file": "hbsd/src/usr.bin/locate/code/locate.code.c", "kind": "MACRO_OBJECT", "name": "BGBUFSIZE", "line": 91, "body": "(NBG * 2)\t/* size of bigram buffer */", "hint": "constexpr / inline constexpr variable"}
@@ -2874,7 +2875,7 @@
 {"file": "hbsd/src/usr.bin/netstat/main.c", "kind": "MALLOC_ESCAPE", "line": 840, "snippet": "multi-free"}
 {"file": "hbsd/src/usr.bin/netstat/main.c", "kind": "NULLABILITY", "line": 673, "snippet": "maybe-null:pr"}
 {"file": "hbsd/src/usr.bin/netstat/main.c", "kind": "GLOBAL_CLUSTER", "globals": ["ip6protox", "pfkeyprotox", "netgraphprotox", "protoprotox", "Aflag", "aflag", "Bflag", "bflag", "cflag", "Cflag", "dflag", "gflag", "hflag", "iflag", "Lflag", "mflag", "noutputs", "numeric_port", "Oflag", "oflag", "Pflag", "pflag", "Qflag", "rflag", "Rflag", "sflag", "Wflag", "Tflag", "xflag", "zflag", "interval", "unit", "af", "live"], "count": 34}
-{"file": "hbsd/src/usr.bin/netstat/main.c", "kind": "ANDERSEN_OWNED", "var": "counters", "locs": ["heap:counters@20076"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/netstat/main.c", "kind": "ANDERSEN_OWNED", "var": "counters", "locs": ["heap:counters@20078"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.bin/netstat/main.c", "kind": "LIFETIME_OWN", "var": "counters", "region": "heap_counters", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/usr.bin/netstat/main.c", "kind": "MACRO_OBJECT", "name": "BACKWARD_COMPATIBILITY", "line": 437, "body": "#ifdef\tBACKWARD_COMPATIBILITY", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/netstat/main.c", "kind": "FN_PTR_STRUCT", "struct": "protox", "methods": ["pr_cblocks", "pr_stats", "pr_istats"], "line": 74, "hint": "abstract class with virtual methods"}
@@ -2915,11 +2916,11 @@
 {"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "MALLOC_ESCAPE", "line": 310, "snippet": "work_array = calloc(numthreads * proto_array_len, sizeof(*work_array))"}
 {"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "GLOBAL_CLUSTER", "globals": ["proto_array", "workstream_array", "work_array"], "count": 3}
 {"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "STR_FORMAT_CANDIDATE", "line": 110, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "np_array", "locs": ["heap:np_array@5929"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "proto_array", "locs": ["heap:proto_array@6333", "heap:proto_array@7457"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "nws_array", "locs": ["heap:nws_array@8359"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "workstream_array", "locs": ["heap:workstream_array@10307", "heap:workstream_array@8556"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "work_array", "locs": ["heap:work_array@11286", "heap:work_array@8723"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "np_array", "locs": ["heap:np_array@5940"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "proto_array", "locs": ["heap:proto_array@6344", "heap:proto_array@7468"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "nws_array", "locs": ["heap:nws_array@8370"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "workstream_array", "locs": ["heap:workstream_array@10318", "heap:workstream_array@8567"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_OWNED", "var": "work_array", "locs": ["heap:work_array@11297", "heap:work_array@8734"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_ESCAPE", "var": "npp", "locs": ["stack:np_array"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "ANDERSEN_ESCAPE", "var": "nwp", "locs": ["stack:nws"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.bin/netstat/netisr.c", "kind": "LIFETIME_FAIL", "outlives": "stack_np_array \u2ab0 R_npp", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
@@ -3304,12 +3305,10 @@
 {"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "VLA", "line": 1087, "snippet": "char flag[(1 << 8 * sizeof (char))];"}
 {"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "MALLOC_ESCAPE", "line": 280, "snippet": "copied-out"}
 {"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "GLOBAL_CLUSTER", "globals": ["CPPFLAGS", "allc", "allnc", "argcount", "argmax", "nonfatalerrors", "inetdflag", "pmflag", "tirpc_socket", "logflag", "tblflag", "mtflag", "inline_size", "indefinitewait", "exitnow", "timerflag", "newstyle", "CCflag", "allfiles", "tirpcflag", "rpcgen_table_dcl"], "count": 21}
-{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "DEAD_STORE", "line": 522, "snippet": "filename = strrchr(pathname, '/');  /* find last component */\n\tfilename ="}
-{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "STR_FORMAT_CANDIDATE", "line": 219, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "STR_FORMAT_CANDIDATE", "line": 220, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "STR_FORMAT_CANDIDATE", "line": 554, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "STR_FORMAT_CANDIDATE", "line": 904, "snippet": "strncat", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "STR_FORMAT_CANDIDATE", "line": 903, "snippet": "strcpy-lit", "hint": "string_view assign if destination is array"}
+{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "DEAD_STORE", "line": 521, "snippet": "filename = strrchr(pathname, '/');  /* find last component */\n\tfilename ="}
+{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "STR_FORMAT_CANDIDATE", "line": 553, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "STR_FORMAT_CANDIDATE", "line": 903, "snippet": "strncat", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "STR_FORMAT_CANDIDATE", "line": 902, "snippet": "strcpy-lit", "hint": "string_view assign if destination is array"}
 {"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "ANDERSEN_OWNED", "var": "dupvar", "locs": ["heap:dupvar@8207"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "ANDERSEN_OWNED", "var": "word", "locs": ["heap:dupvar@8207"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.bin/rpcgen/rpc_main.c", "kind": "ANDERSEN_OWNED", "var": "t", "locs": ["heap:dupvar@8207"], "hint": "unique_ptr candidate"}
@@ -3421,7 +3420,7 @@
 {"file": "hbsd/src/usr.bin/script/script.c", "kind": "MALLOC_ESCAPE", "line": 345, "snippet": "passed-to-TAILQ_INSERT_TAIL"}
 {"file": "hbsd/src/usr.bin/script/script.c", "kind": "MALLOC_ESCAPE", "line": 345, "snippet": "be = malloc(sizeof(*be) + cc)"}
 {"file": "hbsd/src/usr.bin/script/script.c", "kind": "MALLOC_ESCAPE", "line": 345, "snippet": "be = malloc(sizeof(*be) + cc)"}
-{"file": "hbsd/src/usr.bin/script/script.c", "kind": "PURITY", "function": "resizeit", "line": 653}
+{"file": "hbsd/src/usr.bin/script/script.c", "kind": "PURITY", "function": "resizeit", "line": 652}
 {"file": "hbsd/src/usr.bin/script/script.c", "kind": "GLOBAL_CLUSTER", "globals": ["child", "tt", "tflg"], "count": 3}
 {"file": "hbsd/src/usr.bin/script/script.c", "kind": "DEAD_STORE", "line": 136, "snippet": "pselmask == NULL so that pselect(2)\n\t * leaves the signal mask alone.  If -w is "}
 {"file": "hbsd/src/usr.bin/script/script.c", "kind": "ANDERSEN_OWNED", "var": "be", "locs": ["heap:be@8886"], "hint": "unique_ptr candidate"}
@@ -3432,7 +3431,7 @@
 {"file": "hbsd/src/usr.bin/script/script.c", "kind": "LIFETIME_OWN", "var": "be", "region": "heap_be", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/usr.bin/script/script.c", "kind": "MACRO_OBJECT", "name": "TSTAMP_FMT", "line": 96, "body": "\"%n@ %s [%Y-%m-%d %T]%n\"", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/script/script.c", "kind": "MACRO_DIVERGENT", "names": ["swapstamp"], "template": "do { \\", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
-{"file": "hbsd/src/usr.bin/script/script.c", "kind": "SYSCALL_TRACE", "io_calls": 19, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
+{"file": "hbsd/src/usr.bin/script/script.c", "kind": "SYSCALL_TRACE", "io_calls": 18, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/usr.bin/sdiff/edit.c", "kind": "DEAD_STORE", "line": 174, "snippet": "nread = sizeof(buf); nread ="}
 {"file": "hbsd/src/usr.bin/sdiff/edit.c", "kind": "SYSCALL_TRACE", "io_calls": 2, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/usr.bin/sdiff/sdiff.c", "kind": "MALLOC_ESCAPE", "line": 233, "snippet": "passed-to-execvp"}
@@ -3838,12 +3837,12 @@
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "NULLABILITY", "line": 217, "snippet": "maybe-null:iosp"}
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "GLOBAL_CLUSTER", "globals": ["docolor", "ndevs"], "count": 2}
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 221, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 442, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 461, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 463, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 465, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 467, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 469, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 445, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 464, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 466, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 468, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 470, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 472, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "ANDERSEN_OWNED", "var": "isp", "locs": ["heap:isp@4901"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "ANDERSEN_ESCAPE", "var": "iosp", "locs": ["stack:isp"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "LIFETIME_FAIL", "outlives": "stack_isp \u2ab0 R_iosp", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
@@ -3854,8 +3853,8 @@
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "MACRO_OBJECT", "name": "OP_READ_MASK", "line": 66, "body": "(1 << OP_READ)", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "MACRO_OBJECT", "name": "OP_WRITE_MASK", "line": 67, "body": "(1 << OP_WRITE)", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "MACRO_OBJECT", "name": "OP_TRIM_MASK", "line": 68, "body": "(1 << OP_TRIM)", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "MACRO_OBJECT", "name": "DRIVESPERLINE", "line": 411, "body": "((getmaxx(wnd) - 1 - INSET) / COLWIDTH)", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "MACRO_OBJECT", "name": "DRIVESPERLINE", "line": 502, "body": "((getmaxx(wnd) - 1 - INSET) / COLWIDTH)", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "MACRO_OBJECT", "name": "DRIVESPERLINE", "line": 414, "body": "((getmaxx(wnd) - 1 - INSET) / COLWIDTH)", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "MACRO_OBJECT", "name": "DRIVESPERLINE", "line": 504, "body": "((getmaxx(wnd) - 1 - INSET) / COLWIDTH)", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/systat/iolat.c", "kind": "MACRO_CONSTEXPR", "names": ["pbsd_intrusive_next"], "template": "(($0)->$1.next)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/usr.bin/systat/iostat.c", "kind": "GLOBAL_CLUSTER", "globals": ["linesperregion", "numbers", "kbpt"], "count": 3}
 {"file": "hbsd/src/usr.bin/systat/iostat.c", "kind": "STR_FORMAT_CANDIDATE", "line": 211, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
@@ -4632,7 +4631,7 @@
 {"file": "hbsd/src/usr.bin/who/who.c", "kind": "STR_FORMAT_CANDIDATE", "line": 179, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.bin/whois/whois.c", "kind": "MALLOC_ESCAPE", "line": 315, "snippet": "copied-out"}
 {"file": "hbsd/src/usr.bin/whois/whois.c", "kind": "GOTO_CLEANUP_CANDIDATE", "line": 355, "snippet": "complex-cleanup:done"}
-{"file": "hbsd/src/usr.bin/whois/whois.c", "kind": "ANDERSEN_OWNED", "var": "fds", "locs": ["heap:fds@8471"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.bin/whois/whois.c", "kind": "ANDERSEN_OWNED", "var": "fds", "locs": ["heap:fds@8482"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.bin/whois/whois.c", "kind": "LIFETIME_OWN", "var": "fds", "region": "heap_fds", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/usr.bin/whois/whois.c", "kind": "MACRO_OBJECT", "name": "QNICHOST_TAIL", "line": 68, "body": "\".whois-servers.net\"", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/whois/whois.c", "kind": "MACRO_DIVERGENT", "names": ["ishost"], "template": "(isalnum((unsigned char)$0) || $0 == '.' || $0 == '-')", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
@@ -4684,8 +4683,8 @@
 {"file": "hbsd/src/usr.bin/xinstall/xinstall.c", "kind": "MACRO_OBJECT", "name": "NOCHANGEBITS", "line": 109, "body": "(UF_IMMUTABLE | UF_APPEND | SF_IMMUTABLE | SF_APPEND)", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.bin/xstr/xstr.c", "kind": "MALLOC_ESCAPE", "line": 344, "snippet": "hp = (struct hash *) calloc(1, sizeof (*hp))"}
 {"file": "hbsd/src/usr.bin/xstr/xstr.c", "kind": "GLOBAL_CLUSTER", "globals": ["cstrings", "cflg", "vflg", "readstd"], "count": 4}
-{"file": "hbsd/src/usr.bin/xstr/xstr.c", "kind": "ANDERSEN_ESCAPE", "var": "hp", "locs": ["heap:hp@6902"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/usr.bin/xstr/xstr.c", "kind": "ANDERSEN_ESCAPE", "var": "hnext", "locs": ["heap:hp@6902"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.bin/xstr/xstr.c", "kind": "ANDERSEN_ESCAPE", "var": "hp", "locs": ["heap:hp@6914"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.bin/xstr/xstr.c", "kind": "ANDERSEN_ESCAPE", "var": "hnext", "locs": ["heap:hp@6914"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.bin/xstr/xstr.c", "kind": "ANDERSEN_ESCAPE", "var": "hp0", "locs": ["stack:bucket"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.bin/xstr/xstr.c", "kind": "LIFETIME_FAIL", "outlives": "stack_bucket \u2ab0 R_hp0", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/usr.bin/xstr/xstr.c", "kind": "LIFETIME_OWN", "var": "hp", "region": "heap_hp", "hint": "owning region \u2192 unique_ptr"}
@@ -5003,7 +5002,7 @@
 {"file": "hbsd/src/sbin/conscontrol/conscontrol.c", "kind": "SYSCALL_TRACE", "io_calls": 3, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/sbin/ddb/ddb_capture.c", "kind": "MALLOC_ESCAPE", "line": 109, "snippet": "passed-to-kread"}
 {"file": "hbsd/src/sbin/ddb/ddb_capture.c", "kind": "GLOBAL_CLUSTER", "globals": ["namelist"], "count": 1}
-{"file": "hbsd/src/sbin/ddb/ddb_capture.c", "kind": "ANDERSEN_OWNED", "var": "buffer", "locs": ["heap:buffer@3949", "heap:buffer@4549"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/ddb/ddb_capture.c", "kind": "ANDERSEN_OWNED", "var": "buffer", "locs": ["heap:buffer@3949", "heap:buffer@4550"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/sbin/ddb/ddb_capture.c", "kind": "LIFETIME_OWN", "var": "buffer", "region": "heap_buffer", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/sbin/ddb/ddb_script.c", "kind": "MALLOC_ESCAPE", "line": 69, "snippet": "multi-free"}
 {"file": "hbsd/src/sbin/ddb/ddb_script.c", "kind": "ANDERSEN_OWNED", "var": "buffer", "locs": ["heap:buffer@2537"], "hint": "unique_ptr candidate"}
@@ -5262,9 +5261,9 @@
 {"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "MALLOC_ESCAPE", "line": 314, "snippet": "re-alloc"}
 {"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "MALLOC_ESCAPE", "line": 257, "snippet": "bufp = malloc(*max * size / 8)"}
 {"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "MALLOC_ESCAPE", "line": 314, "snippet": "bufp = malloc(count * size / 8)"}
-{"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "ANDERSEN_OWNED", "var": "s", "locs": ["heap:bufp@7085", "heap:bufp@8374", "heap:s@3998"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "ANDERSEN_OWNED", "var": "bufp", "locs": ["heap:bufp@7085", "heap:bufp@8374"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "ANDERSEN_OWNED", "var": "t", "locs": ["heap:t@8138"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "ANDERSEN_OWNED", "var": "s", "locs": ["heap:bufp@7096", "heap:bufp@8382", "heap:s@3998"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "ANDERSEN_OWNED", "var": "bufp", "locs": ["heap:bufp@7096", "heap:bufp@8382"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "ANDERSEN_OWNED", "var": "t", "locs": ["heap:t@8146"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "LIFETIME_OWN", "var": "s", "region": "heap_s", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "LIFETIME_OWN", "var": "bufp", "region": "heap_bufp", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/sbin/dhclient/parse.c", "kind": "LIFETIME_OWN", "var": "t", "region": "heap_t", "hint": "owning region \u2192 unique_ptr"}
@@ -7452,12 +7451,12 @@
 {"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "SPAN_CANDIDATE", "line": 1792, "snippet": "oh,need_header:iv-fail"}
 {"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "SPAN_CANDIDATE", "line": 1812, "snippet": "buf,bufsize:iv-fail"}
 {"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "GLOBAL_CLUSTER", "globals": ["tabletypes", "tablealgos", "tablevaltypes", "tablecmds", "tablenewcmds", "flowtypecmds", "tablealgoclass"], "count": 7}
-{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "POINTER_KIND", "line": 291, "snippet": "void*:WILD"}
-{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "POINTER_KIND", "line": 303, "snippet": "void*:WILD"}
-{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "STR_FORMAT_CANDIDATE", "line": 330, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "STR_FORMAT_CANDIDATE", "line": 392, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "STR_FORMAT_CANDIDATE", "line": 475, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "STR_FORMAT_CANDIDATE", "line": 498, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "POINTER_KIND", "line": 289, "snippet": "void*:WILD"}
+{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "POINTER_KIND", "line": 301, "snippet": "void*:WILD"}
+{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "STR_FORMAT_CANDIDATE", "line": 328, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "STR_FORMAT_CANDIDATE", "line": 390, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "STR_FORMAT_CANDIDATE", "line": 473, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "STR_FORMAT_CANDIDATE", "line": 496, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/sbin/ipfw/tables.c", "kind": "MACRO_OBJECT", "name": "s6_addr32", "line": 85, "body": "__u6_addr.__u6_addr32", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/sbin/kldconfig/kldconfig.c", "kind": "MALLOC_ESCAPE", "line": 111, "snippet": "path = malloc(sz + 1)"}
 {"file": "hbsd/src/sbin/kldconfig/kldconfig.c", "kind": "MALLOC_ESCAPE", "line": 174, "snippet": "pe = malloc(sizeof(*pe))"}
@@ -7761,7 +7760,7 @@
 {"file": "hbsd/src/sbin/nvmecontrol/modules/wdc/wdc.c", "kind": "SPAN_CANDIDATE", "line": 766, "snippet": "sp,nsp:iv-fail"}
 {"file": "hbsd/src/sbin/nvmecontrol/modules/wdc/wdc.c", "kind": "GLOBAL_CLUSTER", "globals": ["wdc_cmd", "opts", "args", "cap_diag_cmd", "hgst_subpage"], "count": 5}
 {"file": "hbsd/src/sbin/nvmecontrol/modules/wdc/wdc.c", "kind": "STR_FORMAT_CANDIDATE", "line": 139, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/nvmecontrol/modules/wdc/wdc.c", "kind": "ANDERSEN_OWNED", "var": "hdr", "locs": ["heap:hdr@5581", "heap:hdr@8252"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/nvmecontrol/modules/wdc/wdc.c", "kind": "ANDERSEN_OWNED", "var": "hdr", "locs": ["heap:hdr@5581", "heap:hdr@8262"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/sbin/nvmecontrol/modules/wdc/wdc.c", "kind": "LIFETIME_OWN", "var": "hdr", "region": "heap_hdr", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/sbin/nvmecontrol/modules/wdc/wdc.c", "kind": "MACRO_OBJECT", "name": "OPT_END", "line": 61, "body": "{ nullptr, 0, arg_none, nullptr, nullptr }", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/sbin/nvmecontrol/modules/wdc/wdc.c", "kind": "MACRO_DIVERGENT", "names": ["OPT"], "template": "{ $0, $1, $2, &$3.$4, $5 }", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
@@ -7889,35 +7888,48 @@
 {"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "QUEUE_H_SITE", "line": 3127, "snippet": "SLIST_REMOVE(anchors, pfra, pfr_anchoritem, pfra_sle)"}
 {"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "QUEUE_H_SITE", "line": 3198, "snippet": "SLIST_REMOVE"}
 {"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "QUEUE_H_SITE", "line": 2332, "snippet": "RB_INIT"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "PURITY", "function": "pfctl_init_options", "line": 2439}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "PURITY", "function": "pfctl_init_options", "line": 2429}
 {"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "GLOBAL_CLUSTER", "globals": ["pf_anchors", "pf_main_anchor", "pf_eth_main_anchor", "skip_b", "src_node_killers", "state_killers", "loadopt", "altqsupport", "dev", "pfh", "first_title", "labels", "exit_val", "pf_hint_normal", "pf_hint_satellite", "pf_hint_conservative", "pf_hint_aggressive"], "count": 17}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 896, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 903, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1136, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1195, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1238, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1241, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1243, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1356, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1359, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1361, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1567, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1569, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1571, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1573, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2294, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2309, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2312, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2330, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2333, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2876, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 3040, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_ESCAPE", "var": "pa", "locs": ["heap:pa@29011"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "npath", "locs": ["heap:npath@33623", "heap:npath@36945", "heap:npath@42934", "heap:path@62401", "heap:path@90452"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "rule", "locs": ["heap:rule@50836", "heap:rule@52569"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "path", "locs": ["heap:path@62401", "heap:path@90452"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "eanchor", "locs": ["heap:eanchor@63394"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "pfra", "locs": ["heap:pfra@78886"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 887, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 894, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1123, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1182, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1225, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1228, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1230, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1343, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1346, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1348, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1554, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1556, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1558, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1560, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1694, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1859, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1868, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1907, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1916, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1990, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1992, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2052, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2055, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2090, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2092, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2165, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2168, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2284, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2299, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2302, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2320, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2323, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2864, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 3028, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_ESCAPE", "var": "pa", "locs": ["heap:pa@29030"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "npath", "locs": ["heap:npath@33642", "heap:npath@36964", "heap:npath@42947", "heap:path@62411", "heap:path@90466"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "rule", "locs": ["heap:rule@50850", "heap:rule@52583"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "path", "locs": ["heap:path@62411", "heap:path@90466"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "eanchor", "locs": ["heap:eanchor@63404"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_OWNED", "var": "pfra", "locs": ["heap:pfra@78901"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_ESCAPE", "var": "t", "locs": ["stack:buf"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_ESCAPE", "var": "trans", "locs": ["stack:buf"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/sbin/pfctl/pfctl.c", "kind": "ANDERSEN_ESCAPE", "var": "p", "locs": ["stack:anchor_call"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
@@ -8032,30 +8044,30 @@
 {"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "MALLOC_ESCAPE", "line": 711, "snippet": "nm_entry = calloc(1, sizeof(*nm_entry))"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "MALLOC_ESCAPE", "line": 711, "snippet": "nm_entry = calloc(1, sizeof(*nm_entry))"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "GLOBAL_CLUSTER", "globals": ["classes", "class_count", "fingerprint_count"], "count": 3}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 254, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 257, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 259, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 261, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 515, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 519, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 524, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 528, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 530, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 255, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 258, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 260, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 262, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 516, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 520, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 525, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 529, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 531, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 534, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 537, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 539, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 532, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 535, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 538, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 540, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 602, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 605, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 728, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 742, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1044, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1049, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1064, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1093, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1104, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1122, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 541, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 603, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 606, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 729, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 743, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1045, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1050, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1065, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1094, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1105, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1123, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "ANDERSEN_OWNED", "var": "nm_entry", "locs": ["heap:nm_entry@20052"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "ANDERSEN_OWNED", "var": "v", "locs": ["heap:v@25336"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_osfp.c", "kind": "LIFETIME_FAIL", "outlives": "stack_nm \u2ab0 R_list", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
@@ -8116,7 +8128,9 @@
 {"file": "hbsd/src/sbin/pfctl/pfctl_table.c", "kind": "POINTER_KIND", "line": 180, "snippet": "void*:WILD"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_table.c", "kind": "STR_FORMAT_CANDIDATE", "line": 155, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_table.c", "kind": "STR_FORMAT_CANDIDATE", "line": 159, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/pfctl/pfctl_table.c", "kind": "MACRO_OBJECT", "name": "CREATE_TABLE", "line": 92, "body": "do {\t\t\t\t\t\t\\", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_table.c", "kind": "STR_FORMAT_CANDIDATE", "line": 576, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_table.c", "kind": "STR_FORMAT_CANDIDATE", "line": 577, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/pfctl/pfctl_table.c", "kind": "MACRO_OBJECT", "name": "CREATE_TABLE", "line": 95, "body": "do {\t\t\t\t\t\t\\", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/sbin/pfctl/pfctl_table.c", "kind": "MACRO_DIVERGENT", "names": ["RVTEST"], "template": "do {\t\t\t\t\t\t\\", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
 {"file": "hbsd/src/sbin/pfctl/tests/pfctl_test.c", "kind": "STR_FORMAT_CANDIDATE", "line": 171, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/sbin/pfctl/tests/pfctl_test.c", "kind": "STR_FORMAT_CANDIDATE", "line": 202, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
@@ -8708,22 +8722,19 @@
 {"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "PURITY", "function": "release", "line": 9}
 {"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "DEAD_STORE", "line": 112, "snippet": "which_prog == SWAPCTL) {\n\t\t\t\tdoall = 1;\n\t\t\t\twhich_prog ="}
 {"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "DEAD_STORE", "line": 168, "snippet": "which_prog == SWAPCTL) {\n\t\t\t\tdoall = 1;\n\t\t\t\twhich_prog ="}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "DEAD_STORE", "line": 478, "snippet": "p = strstr(mntops, \"file=\")) != nullptr) {\n\t\tvnodefile = strdup(p + sizeof(\"file"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 377, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 379, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 523, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 584, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 618, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 622, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 824, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 826, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 866, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "ANDERSEN_OWNED", "var": "argv", "locs": ["heap:argv@16551"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "ANDERSEN_OWNED", "var": "argvp", "locs": ["heap:argv@16551"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "DEAD_STORE", "line": 476, "snippet": "p = strstr(mntops, \"file=\")) != nullptr) {\n\t\tvnodefile = strdup(p + sizeof(\"file"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 376, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 378, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 521, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 582, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 616, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "STR_FORMAT_CANDIDATE", "line": 620, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "ANDERSEN_OWNED", "var": "argv", "locs": ["heap:argv@16509"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "ANDERSEN_OWNED", "var": "argvp", "locs": ["heap:argv@16509"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "LIFETIME_FAIL", "outlives": "stack_name \u2ab0 R_suffix", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "LIFETIME_OWN", "var": "argv", "region": "heap_argv", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "MACRO_OBJECT", "name": "PBSD_FD_GUARD", "line": 3, "body": "struct pbsd_fd_guard {", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "MACRO_OBJECT", "name": "DOT_ELI", "line": 77, "body": "\".eli\"", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "MACRO_OBJECT", "name": "DOT_ELI", "line": 74, "body": "\".eli\"", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/sbin/swapon/swapon.c", "kind": "SYSCALL_TRACE", "io_calls": 13, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "MALLOC_ESCAPE", "line": 1182, "snippet": "multi-free"}
 {"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "NULLABILITY", "line": 1069, "snippet": "maybe-null:val"}
@@ -8733,7 +8744,7 @@
 {"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 782, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1005, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "ANDERSEN_OWNED", "var": "newbuf", "locs": ["heap:newbuf@9027"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "ANDERSEN_OWNED", "var": "oval", "locs": ["heap:oval@27990"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "ANDERSEN_OWNED", "var": "oval", "locs": ["heap:oval@27977"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "ANDERSEN_OWNED", "var": "newbufp", "locs": ["heap:newbuf@9027"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "LIFETIME_FAIL", "outlives": "stack_intval \u2ab0 R_newval", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/sbin/sysctl/sysctl.c", "kind": "LIFETIME_FAIL", "outlives": "stack_uintval \u2ab0 R_newval", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
@@ -8973,13 +8984,13 @@
 {"file": "hbsd/src/lib/libbluetooth/dev.c", "kind": "STR_FORMAT_CANDIDATE", "line": 94, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libbluetooth/dev.c", "kind": "MACRO_OBJECT", "name": "L2CAP_SOCKET_CHECKED", "line": 33, "body": "#include <bluetooth.h>", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "NULLABILITY", "line": 426, "snippet": "maybe-null:i"}
-{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "DEAD_STORE", "line": 443, "snippet": "devname == nullptr) {\n\t\tstd::memset(_devname, 0, sizeof(_devname));\n\t\tdevname ="}
-{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "DEAD_STORE", "line": 577, "snippet": "devname == nullptr) {\n\t\tstd::memset(_devname, 0, sizeof(_devname));\n\t\tdevname ="}
-{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "STR_FORMAT_CANDIDATE", "line": 643, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "STR_FORMAT_CANDIDATE", "line": 743, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "STR_FORMAT_CANDIDATE", "line": 770, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "DEAD_STORE", "line": 441, "snippet": "devname == nullptr) {\n\t\tstd::memset(_devname, 0, sizeof(_devname));\n\t\tdevname ="}
+{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "DEAD_STORE", "line": 574, "snippet": "devname == nullptr) {\n\t\tstd::memset(_devname, 0, sizeof(_devname));\n\t\tdevname ="}
+{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "STR_FORMAT_CANDIDATE", "line": 640, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "STR_FORMAT_CANDIDATE", "line": 740, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "STR_FORMAT_CANDIDATE", "line": 767, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "ANDERSEN_OWNED", "var": "ii", "locs": ["heap:ii@10586"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "ANDERSEN_OWNED", "var": "names", "locs": ["heap:names@15907"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "ANDERSEN_OWNED", "var": "names", "locs": ["heap:names@15908"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "LIFETIME_FAIL", "outlives": "stack_h \u2ab0 R_iov_base", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "LIFETIME_FAIL", "outlives": "stack_cp \u2ab0 R_cparam", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/lib/libbluetooth/hci.c", "kind": "LIFETIME_FAIL", "outlives": "stack_ep \u2ab0 R_rparam", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
@@ -9435,7 +9446,7 @@
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "KR_DEFINITION", "line": 688, "snippet": "NS_FALLBACK_CB", "hint": "incomplete K&R decl types"}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "PURITY", "function": "NS_FALLBACK_CB", "line": 687}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "GLOBAL_CLUSTER", "globals": ["grp", "grp_storage_size"], "count": 2}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "DEAD_STORE", "line": 1189, "snippet": "rv == YPERR_NOMORE) {\n\t\t\t\t\tst->done = 1;\n\t\t\t\t\trv ="}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "DEAD_STORE", "line": 1187, "snippet": "rv == YPERR_NOMORE) {\n\t\t\t\t\tst->done = 1;\n\t\t\t\t\trv ="}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "POINTER_KIND", "line": 112, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "POINTER_KIND", "line": 122, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "POINTER_KIND", "line": 136, "snippet": "void*:WILD"}
@@ -9465,15 +9476,15 @@
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "POINTER_KIND", "line": 657, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "POINTER_KIND", "line": 660, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "POINTER_KIND", "line": 662, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1023, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1031, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1057, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1158, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1162, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "ANDERSEN_OWNED", "var": "buf", "locs": ["heap:buf@12735", "heap:buf@13342"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "ANDERSEN_OWNED", "var": "grp_storage", "locs": ["heap:grp_storage@17504", "heap:grp_storage@18033"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "name", "locs": ["heap:name@33518"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "label", "locs": ["heap:buf@12735", "heap:buf@13342", "heap:name@33518"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1021, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1029, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1055, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1156, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1160, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "ANDERSEN_OWNED", "var": "buf", "locs": ["heap:buf@12724", "heap:buf@13331"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "ANDERSEN_OWNED", "var": "grp_storage", "locs": ["heap:grp_storage@17493", "heap:grp_storage@18022"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "name", "locs": ["heap:name@33500"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "label", "locs": ["heap:buf@12724", "heap:buf@13331", "heap:name@33500"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "LIFETIME_FAIL", "outlives": "stack_s \u2ab0 R_eom", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "LIFETIME_FAIL", "outlives": "stack_line \u2ab0 R_eol", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/lib/libc/gen/getgrent.c", "kind": "LIFETIME_OWN", "var": "buf", "region": "heap_buf", "hint": "owning region \u2192 unique_ptr"}
@@ -9513,32 +9524,32 @@
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "KR_DEFINITION", "line": 181, "snippet": "NS_COMPAT_CB", "hint": "incomplete K&R decl types"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "KR_DEFINITION", "line": 187, "snippet": "NS_COMPAT_CB", "hint": "incomplete K&R decl types"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "KR_DEFINITION", "line": 193, "snippet": "NS_COMPAT_CB", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "KR_DEFINITION", "line": 1020, "snippet": "NS_FALLBACK_CB", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "KR_DEFINITION", "line": 1017, "snippet": "NS_FALLBACK_CB", "hint": "incomplete K&R decl types"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "PURITY", "function": "NS_COMPAT_CB", "line": 180}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "PURITY", "function": "NS_COMPAT_CB", "line": 186}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "PURITY", "function": "NS_COMPAT_CB", "line": 192}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "PURITY", "function": "NS_FALLBACK_CB", "line": 1019}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "PURITY", "function": "NS_FALLBACK_CB", "line": 1016}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "GLOBAL_CLUSTER", "globals": ["_use_only_yp", "_netgr_yp_enabled", "_yp_innetgr", "compat_state"], "count": 4}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "DEAD_STORE", "line": 962, "snippet": "ngrp_storage == nullptr) {\n\t\tngrp_storage_size = NGRP_STORAGE_INITIAL;\n\t\tngrp_st"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "DEAD_STORE", "line": 959, "snippet": "ngrp_storage == nullptr) {\n\t\tngrp_storage_size = NGRP_STORAGE_INITIAL;\n\t\tngrp_st"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "POINTER_KIND", "line": 156, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 432, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 497, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 501, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 504, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 508, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 833, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_OWNED", "var": "buf", "locs": ["heap:buf@16661"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "grp", "locs": ["heap:grp@19199"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "lp", "locs": ["heap:lp@22588"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_OWNED", "var": "l_groupname", "locs": ["heap:l_groupname@22687"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "linep", "locs": ["heap:linep@23415"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_OWNED", "var": "ngrp_storage", "locs": ["heap:ngrp_storage@25118"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "olp", "locs": ["heap:lp@22588"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "st_linehead", "locs": ["heap:lp@22588"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "st_gr", "locs": ["heap:grp@19199"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_OWNED", "var": "p", "locs": ["heap:buf@16661"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "olinep", "locs": ["heap:linep@23415"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "l_line", "locs": ["heap:linep@23415"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 834, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_OWNED", "var": "buf", "locs": ["heap:buf@16667"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "grp", "locs": ["heap:grp@19205"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "lp", "locs": ["heap:lp@22594"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_OWNED", "var": "l_groupname", "locs": ["heap:l_groupname@22693"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "linep", "locs": ["heap:linep@23421"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_OWNED", "var": "ngrp_storage", "locs": ["heap:ngrp_storage@25134"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "olp", "locs": ["heap:lp@22594"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "st_linehead", "locs": ["heap:lp@22594"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "st_gr", "locs": ["heap:grp@19205"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_OWNED", "var": "p", "locs": ["heap:buf@16667"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "olinep", "locs": ["heap:linep@23421"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "ANDERSEN_ESCAPE", "var": "l_line", "locs": ["heap:linep@23421"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "LIFETIME_OWN", "var": "buf", "region": "heap_buf", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "LIFETIME_OWN", "var": "grp", "region": "heap_grp", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/lib/libc/gen/getnetgrent.c", "kind": "LIFETIME_OWN", "var": "lp", "region": "heap_lp", "hint": "owning region \u2192 unique_ptr"}
@@ -9560,9 +9571,9 @@
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "SPAN_CANDIDATE", "line": 1972, "snippet": "entry,entrysize:iv-fail"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "SPAN_CANDIDATE", "line": 2010, "snippet": "buffer,bufsize:iv-fail"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "GLOBAL_CLUSTER", "globals": ["pwd", "pwd_storage_size"], "count": 2}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "DEAD_STORE", "line": 906, "snippet": "rv == 1) {\n\t\t\tif (how == nss_lt_all)\n\t\t\t\tst->keynum = -1;\n\t\t\trv ="}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "DEAD_STORE", "line": 1860, "snippet": "rv == 1) {\n\t\t\tkeynum = -1;\n\t\t\trv ="}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 1622, "snippet": "mdata:WILD"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "DEAD_STORE", "line": 905, "snippet": "rv == 1) {\n\t\t\tif (how == nss_lt_all)\n\t\t\t\tst->keynum = -1;\n\t\t\trv ="}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "DEAD_STORE", "line": 1863, "snippet": "rv == 1) {\n\t\t\tkeynum = -1;\n\t\t\trv ="}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 1620, "snippet": "mdata:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 1713, "snippet": "mdata:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 143, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 146, "snippet": "void*:WILD"}
@@ -9589,37 +9600,37 @@
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 527, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 530, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 532, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 561, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 559, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 564, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 566, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 568, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 569, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 571, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 573, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 602, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 607, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 599, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 604, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 606, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 609, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 612, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 614, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 1622, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 611, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 1620, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "POINTER_KIND", "line": 1713, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1159, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1167, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1188, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1242, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1252, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1354, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1358, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1518, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1536, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_OWNED", "var": "pwd_storage", "locs": ["heap:pwd_storage@16947", "heap:pwd_storage@17476"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "copy", "locs": ["heap:copy@36448"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_name", "locs": ["heap:copy@36448"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "p", "locs": ["heap:copy@36448"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_passwd", "locs": ["heap:copy@36448", "stack:buffer"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_class", "locs": ["heap:copy@36448"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_gecos", "locs": ["heap:copy@36448"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_dir", "locs": ["heap:copy@36448"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_shell", "locs": ["heap:copy@36448"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "field", "locs": ["heap:copy@36448"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1155, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1163, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1184, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1238, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1248, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1350, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1354, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1514, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1532, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_OWNED", "var": "pwd_storage", "locs": ["heap:pwd_storage@16979", "heap:pwd_storage@17508"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "copy", "locs": ["heap:copy@36476"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_name", "locs": ["heap:copy@36476"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "p", "locs": ["heap:copy@36476"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_passwd", "locs": ["heap:copy@36476", "stack:buffer"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_class", "locs": ["heap:copy@36476"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_gecos", "locs": ["heap:copy@36476"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_dir", "locs": ["heap:copy@36476"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "pw_shell", "locs": ["heap:copy@36476"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "ANDERSEN_ESCAPE", "var": "field", "locs": ["heap:copy@36476"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "LIFETIME_FAIL", "outlives": "stack_entry \u2ab0 R_eom", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "LIFETIME_FAIL", "outlives": "stack_buffer \u2ab0 R_eom", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/lib/libc/gen/getpwent.c", "kind": "LIFETIME_FAIL", "outlives": "stack_entry \u2ab0 R_eom", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
@@ -10052,7 +10063,7 @@
 {"file": "hbsd/src/lib/libc/iconv/citrus_db_factory.c", "kind": "ANDERSEN_ESCAPE", "var": "df", "locs": ["heap:df@2875"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/lib/libc/iconv/citrus_db_factory.c", "kind": "ANDERSEN_ESCAPE", "var": "de", "locs": ["heap:de@4009"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/lib/libc/iconv/citrus_db_factory.c", "kind": "ANDERSEN_OWNED", "var": "p", "locs": ["heap:p@5058", "heap:p@5376", "heap:p@5701"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libc/iconv/citrus_db_factory.c", "kind": "ANDERSEN_OWNED", "var": "depp", "locs": ["heap:depp@7632"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libc/iconv/citrus_db_factory.c", "kind": "ANDERSEN_OWNED", "var": "depp", "locs": ["heap:depp@7633"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/lib/libc/iconv/citrus_db_factory.c", "kind": "ANDERSEN_ESCAPE", "var": "rdf", "locs": ["heap:df@2875"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/lib/libc/iconv/citrus_db_factory.c", "kind": "ANDERSEN_ESCAPE", "var": "de_next", "locs": ["heap:de@4009"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/lib/libc/iconv/citrus_db_factory.c", "kind": "LIFETIME_OWN", "var": "df", "region": "heap_df", "hint": "owning region \u2192 unique_ptr"}
@@ -10341,7 +10352,7 @@
 {"file": "hbsd/src/lib/libc/nameser/ns_name.c", "kind": "SPAN_CANDIDATE", "line": 351, "snippet": "dst,dstsiz:iv-fail"}
 {"file": "hbsd/src/lib/libc/nameser/ns_name.c", "kind": "SPAN_CANDIDATE", "line": 1024, "snippet": "end,char:iv-fail"}
 {"file": "hbsd/src/lib/libc/nameser/ns_name.c", "kind": "GLOBAL_CLUSTER", "globals": ["digits", "digitvalue"], "count": 2}
-{"file": "hbsd/src/lib/libc/nameser/ns_name.c", "kind": "DEAD_STORE", "line": 1102, "snippet": "count == 8) {\n\t\t\t\t\t*tp++ = value;\n\t\t\t\t\tcount ="}
+{"file": "hbsd/src/lib/libc/nameser/ns_name.c", "kind": "DEAD_STORE", "line": 1103, "snippet": "count == 8) {\n\t\t\t\t\t*tp++ = value;\n\t\t\t\t\tcount ="}
 {"file": "hbsd/src/lib/libc/nameser/ns_name.c", "kind": "MACRO_CONSTEXPR", "names": ["SPRINTF"], "template": "strlen(sprintf/**/$0)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/lib/libc/nameser/ns_name.c", "kind": "MACRO_CONSTEXPR", "names": ["SPRINTF"], "template": "((size_t)sprintf $0)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/lib/libc/nameser/ns_parse.c", "kind": "SPAN_CANDIDATE", "line": 99, "snippet": "msg,msglen"}
@@ -10352,10 +10363,7 @@
 {"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "SPAN_CANDIDATE", "line": 1167, "snippet": "msg,msglen"}
 {"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "SPAN_CANDIDATE", "line": 1167, "snippet": "msg,msglen:iv-fail"}
 {"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "GLOBAL_CLUSTER", "globals": ["base32hex"], "count": 1}
-{"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "DEAD_STORE", "line": 452, "snippet": "len = SPRINTF((tmp, \"0x%04x %u %u\",\n\t\t\t       keyflags, protocol, algoaddstr(std"}
-{"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "STR_FORMAT_CANDIDATE", "line": 622, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "STR_FORMAT_CANDIDATE", "line": 951, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "STR_FORMAT_CANDIDATE", "line": 955, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "DEAD_STORE", "line": 459, "snippet": "len = SPRINTF((tmp, \"0x%04x %u %u\",\n\t\t\t       keyflags, protocol, algoaddstr(std"}
 {"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "MACRO_CONSTEXPR", "names": ["INSIST"], "template": "assert($0)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "MACRO_CONSTEXPR", "names": ["SPRINTF"], "template": "strlen(sprintf/**/$0)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/lib/libc/nameser/ns_print.c", "kind": "MACRO_CONSTEXPR", "names": ["SPRINTF"], "template": "((size_t)sprintf $0)", "hint": "inline constexpr / template function"}
@@ -10387,8 +10395,8 @@
 {"file": "hbsd/src/lib/libc/net/eui64.c", "kind": "STR_FORMAT_CANDIDATE", "line": 124, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/net/eui64.c", "kind": "STR_FORMAT_CANDIDATE", "line": 213, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/net/eui64.c", "kind": "STR_FORMAT_CANDIDATE", "line": 252, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/net/eui64.c", "kind": "STR_FORMAT_CANDIDATE", "line": 261, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/net/eui64.c", "kind": "STR_FORMAT_CANDIDATE", "line": 300, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/net/eui64.c", "kind": "STR_FORMAT_CANDIDATE", "line": 262, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/net/eui64.c", "kind": "STR_FORMAT_CANDIDATE", "line": 301, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/net/eui64.c", "kind": "MACRO_OBJECT", "name": "_PATH_EUI64", "line": 89, "body": "\"/etc/eui64\"", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/lib/libc/net/gai_strerror.c", "kind": "MALLOC_ESCAPE", "line": 97, "snippet": "passed-to-thr_setspecific"}
 {"file": "hbsd/src/lib/libc/net/gai_strerror.c", "kind": "MALLOC_ESCAPE", "line": 97, "snippet": "passed-to-thr_setspecific"}
@@ -10455,15 +10463,15 @@
 {"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "SPAN_CANDIDATE", "line": 360, "snippet": "buffer,buffer_size"}
 {"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "NULLABILITY", "line": 80, "snippet": "maybe-null:hed"}
 {"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "SPAN_CANDIDATE", "line": 360, "snippet": "buffer,buffer_size:iv-fail"}
-{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "KR_DEFINITION", "line": 545, "snippet": "NS_FILES_CB", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "KR_DEFINITION", "line": 607, "snippet": "NS_FILES_CB", "hint": "incomplete K&R decl types"}
-{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "PURITY", "function": "NS_FILES_CB", "line": 544}
-{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "PURITY", "function": "NS_FILES_CB", "line": 606}
+{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "KR_DEFINITION", "line": 544, "snippet": "NS_FILES_CB", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "KR_DEFINITION", "line": 605, "snippet": "NS_FILES_CB", "hint": "incomplete K&R decl types"}
+{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "PURITY", "function": "NS_FILES_CB", "line": 543}
+{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "PURITY", "function": "NS_FILES_CB", "line": 604}
 {"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "DEAD_STORE", "line": 461, "snippet": "af == AF_INET && (statp->options & RES_USE_INET6) != 0U) {\n\t\t_map_v4v6_address(("}
-{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "POINTER_KIND", "line": 541, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "POINTER_KIND", "line": 577, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "POINTER_KIND", "line": 603, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "POINTER_KIND", "line": 658, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "POINTER_KIND", "line": 540, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "POINTER_KIND", "line": 575, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "POINTER_KIND", "line": 601, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "POINTER_KIND", "line": 656, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "STR_FORMAT_CANDIDATE", "line": 146, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "STR_FORMAT_CANDIDATE", "line": 154, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/net/gethostnamadr.c", "kind": "STR_FORMAT_CANDIDATE", "line": 459, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
@@ -10700,7 +10708,7 @@
 {"file": "hbsd/src/lib/libc/net/rcmd.c", "kind": "DEAD_STORE", "line": 145, "snippet": "ai = ai->ai_next)\n\t\tnres++;\n\tai ="}
 {"file": "hbsd/src/lib/libc/net/rcmd.c", "kind": "STR_FORMAT_CANDIDATE", "line": 128, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/net/rcmd.c", "kind": "STR_FORMAT_CANDIDATE", "line": 141, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libc/net/rcmd.c", "kind": "STR_FORMAT_CANDIDATE", "line": 224, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libc/net/rcmd.c", "kind": "STR_FORMAT_CANDIDATE", "line": 225, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/net/rcmdsh.c", "kind": "STR_FORMAT_CANDIDATE", "line": 89, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/net/rcmdsh.c", "kind": "STR_FORMAT_CANDIDATE", "line": 98, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/net/rthdr.c", "kind": "POINTER_KIND", "line": 372, "snippet": "void*:WILD"}
@@ -12492,14 +12500,14 @@
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "MALLOC_ESCAPE", "line": 329, "snippet": "ai_next = calloc(1, sizeof(struct addrinfo))"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "SPAN_CANDIDATE", "line": 161, "snippet": "buffer,buflen:iv-fail"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "GLOBAL_CLUSTER", "globals": ["hints"], "count": 1}
-{"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "DEAD_STORE", "line": 397, "snippet": "rv == 0) {\n\t\tprintf(\"found\\n\");\n\n\t\trv ="}
+{"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "DEAD_STORE", "line": 396, "snippet": "rv == 0) {\n\t\tprintf(\"found\\n\");\n\n\t\trv ="}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "STR_FORMAT_CANDIDATE", "line": 172, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "STR_FORMAT_CANDIDATE", "line": 180, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "STR_FORMAT_CANDIDATE", "line": 188, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "STR_FORMAT_CANDIDATE", "line": 195, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "STR_FORMAT_CANDIDATE", "line": 209, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "ANDERSEN_OWNED", "var": "ai_addr", "locs": ["heap:ai_addr@2758", "heap:ai_addr@7253"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "ANDERSEN_OWNED", "var": "ai_next", "locs": ["heap:ai_next@3111", "heap:ai_next@8092"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "ANDERSEN_OWNED", "var": "ai_next", "locs": ["heap:ai_next@3111", "heap:ai_next@8093"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "LIFETIME_FAIL", "outlives": "stack_ai \u2ab0 R_pi", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "LIFETIME_OWN", "var": "ai_addr", "region": "heap_ai_addr", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/lib/libc/tests/nss/getaddrinfo_test.c", "kind": "LIFETIME_OWN", "var": "ai_next", "region": "heap_ai_next", "hint": "owning region \u2192 unique_ptr"}
@@ -13360,30 +13368,30 @@
 {"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 370, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 378, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 398, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 404, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 449, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 459, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 477, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 482, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 500, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 506, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 530, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 545, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 555, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 562, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 590, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 603, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 609, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 617, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 622, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 632, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 656, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 715, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 719, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 740, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 748, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 766, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 772, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 403, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 450, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 460, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 478, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 483, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 501, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 507, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 533, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 548, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 558, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 565, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 593, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 606, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 612, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 620, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 625, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 635, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 659, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 718, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 722, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 743, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 751, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 769, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libcam/camlib.c", "kind": "STR_FORMAT_CANDIDATE", "line": 775, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libcam/camlib.c", "kind": "ANDERSEN_ESCAPE", "var": "ccb", "locs": ["heap:ccb@2617"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/lib/libcam/camlib.c", "kind": "ANDERSEN_OWNED", "var": "matches", "locs": ["heap:matches@8573"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/lib/libcam/camlib.c", "kind": "ANDERSEN_OWNED", "var": "patterns", "locs": ["heap:patterns@9035"], "hint": "unique_ptr candidate"}
@@ -13901,7 +13909,7 @@
 {"file": "hbsd/src/lib/libgeom/geom_stats.c", "kind": "LIFETIME_OWN", "var": "ptr", "region": "heap_ptr", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/lib/libgeom/geom_stats.c", "kind": "SYSCALL_TRACE", "io_calls": 3, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/lib/libgeom/geom_util.c", "kind": "STR_FORMAT_CANDIDATE", "line": 204, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libgeom/geom_util.c", "kind": "STR_FORMAT_CANDIDATE", "line": 264, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libgeom/geom_util.c", "kind": "STR_FORMAT_CANDIDATE", "line": 267, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libgeom/geom_util.c", "kind": "MACRO_OBJECT", "name": "PBSD_INTRUSIVE_FOREACH_HELPERS", "line": 3, "body": "#define pbsd_intrusive_first(h) ((h)->first)", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/lib/libgeom/geom_util.c", "kind": "MACRO_CONSTEXPR", "names": ["pbsd_intrusive_next"], "template": "(($0)->$1.next)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/lib/libgeom/geom_util.c", "kind": "SYSCALL_TRACE", "io_calls": 8, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
@@ -15063,11 +15071,11 @@
 {"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "NULLABILITY", "line": 487, "snippet": "maybe-null:kmemzones"}
 {"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "GLOBAL_CLUSTER", "globals": ["memstat_malloc_zone_count", "namelist"], "count": 2}
 {"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "POINTER_KIND", "line": 376, "snippet": "void*:WILD"}
-{"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "POINTER_KIND", "line": 500, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "POINTER_KIND", "line": 503, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "ANDERSEN_OWNED", "var": "buffer", "locs": ["heap:buffer@4668"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "ANDERSEN_OWNED", "var": "kmemzones", "locs": ["heap:kmemzones@13584"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "ANDERSEN_OWNED", "var": "kmemzones", "locs": ["heap:kmemzones@13592"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "ANDERSEN_OWNED", "var": "p", "locs": ["heap:buffer@4668"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "ANDERSEN_OWNED", "var": "kz", "locs": ["heap:kmemzones@13584"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "ANDERSEN_OWNED", "var": "kz", "locs": ["heap:kmemzones@13592"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "LIFETIME_FAIL", "outlives": "stack_type \u2ab0 R_mtip", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "LIFETIME_OWN", "var": "buffer", "region": "heap_buffer", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/lib/libmemstat/memstat_malloc.c", "kind": "LIFETIME_OWN", "var": "kmemzones", "region": "heap_kmemzones", "hint": "owning region \u2192 unique_ptr"}
@@ -15187,15 +15195,15 @@
 {"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "STR_FORMAT_CANDIDATE", "line": 89, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "STR_FORMAT_CANDIDATE", "line": 135, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "STR_FORMAT_CANDIDATE", "line": 137, "snippet": "strcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "STR_FORMAT_CANDIDATE", "line": 226, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "STR_FORMAT_CANDIDATE", "line": 294, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "STR_FORMAT_CANDIDATE", "line": 368, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "STR_FORMAT_CANDIDATE", "line": 220, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "STR_FORMAT_CANDIDATE", "line": 288, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "STR_FORMAT_CANDIDATE", "line": 363, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_OWNED", "var": "ascii", "locs": ["heap:ascii@4195"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_ESCAPE", "var": "buf", "locs": ["heap:buf@6308", "heap:buf@9342"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_OWNED", "var": "rep", "locs": ["heap:rep@8918"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_OWNED", "var": "reply", "locs": ["heap:reply@10537"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_ESCAPE", "var": "cmd", "locs": ["heap:buf@6308", "heap:buf@9342"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_ESCAPE", "var": "args", "locs": ["heap:buf@6308", "heap:buf@9342"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_ESCAPE", "var": "buf", "locs": ["heap:buf@6314", "heap:buf@9348"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_OWNED", "var": "rep", "locs": ["heap:rep@8924"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_OWNED", "var": "reply", "locs": ["heap:reply@10544"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_ESCAPE", "var": "cmd", "locs": ["heap:buf@6314", "heap:buf@9348"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "ANDERSEN_ESCAPE", "var": "args", "locs": ["heap:buf@6314", "heap:buf@9348"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "LIFETIME_OWN", "var": "ascii", "region": "heap_ascii", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "LIFETIME_OWN", "var": "buf", "region": "heap_buf", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/lib/libnetgraph/msg.c", "kind": "LIFETIME_OWN", "var": "rep", "region": "heap_rep", "hint": "owning region \u2192 unique_ptr"}
@@ -16334,8 +16342,8 @@
 {"file": "hbsd/src/lib/libsys/x86/pkru.c", "kind": "MACRO_OBJECT", "name": "X86_CLEAR_PKRU", "line": 40, "body": "I386_CLEAR_PKRU", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/lib/libsys/x86/pkru.c", "kind": "MACRO_OBJECT", "name": "X86_SET_PKRU", "line": 42, "body": "AMD64_SET_PKRU", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/lib/libsys/x86/pkru.c", "kind": "MACRO_OBJECT", "name": "X86_CLEAR_PKRU", "line": 43, "body": "AMD64_CLEAR_PKRU", "hint": "constexpr / inline constexpr variable"}
-{"file": "hbsd/src/lib/libsysdecode/flags.c", "kind": "GLOBAL_CLUSTER", "globals": ["semctlops", "shmctlops", "semgetflags", "idtypes", "sockflags", "getfsstatmode", "kevent_user_ffctrl", "kevent_rdwr_fflags", "kevent_vnode_fflags", "kevent_proc_fflags", "kevent_timer_fflags", "pipe2flags", "quotatypes", "fcntl_fd_arg", "cmsgtypeip", "cmsgtypeipv6", "cmsgtypesctp", "sctpsndflags", "sctprcvflags", "sctpnxtflags", "sctpsinfoflags"], "count": 21}
-{"file": "hbsd/src/lib/libsysdecode/flags.c", "kind": "POINTER_KIND", "line": 971, "snippet": "void*:WILD"}
+{"file": "hbsd/src/lib/libsysdecode/flags.c", "kind": "GLOBAL_CLUSTER", "globals": ["semctlops", "shmctlops", "semgetflags", "idtypes", "sockflags", "getfsstatmode", "kevent_user_ffctrl", "kevent_rdwr_fflags", "kevent_vnode_fflags", "kevent_proc_fflags", "kevent_timer_fflags", "pipe2flags", "quotatypes", "fcntl_fd_arg", "cmsgtypeip", "cmsgtypeipv6", "cmsgtypesctp", "sctpsndflags", "sctpnxtflags", "sctpsinfoflags"], "count": 20}
+{"file": "hbsd/src/lib/libsysdecode/flags.c", "kind": "POINTER_KIND", "line": 972, "snippet": "void*:WILD"}
 {"file": "hbsd/src/lib/libsysdecode/flags.c", "kind": "MACRO_OBJECT", "name": "L2CAP_SOCKET_CHECKED", "line": 26, "body": "#include <sys/types.h>", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/lib/libsysdecode/flags.c", "kind": "MACRO_OBJECT", "name": "XEND", "line": 76, "body": "{ 0, nullptr }", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/lib/libsysdecode/flags.c", "kind": "MACRO_OBJECT", "name": "TABLE_ENTRY", "line": 79, "body": "X", "hint": "constexpr / inline constexpr variable"}
@@ -18993,16 +19001,15 @@
 {"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "PURITY", "function": "release", "line": 9}
 {"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "GLOBAL_CLUSTER", "globals": ["rtc_nvram_offset", "get_gpa_pmap", "get_intinfo", "get_vmcs_entry_interruption_info", "get_vmcs_interruptibility", "get_exception_bitmap", "get_cr3_targets", "get_vpid_asid", "get_vmcs_exit_inst_length"], "count": 9}
 {"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 911, "snippet": "error == 0) {\n\t\t\tprintf(\"entry_interruption_info[%d]\\t0x%016vm_get_vmcs_field(st"}
-{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1027, "snippet": "error == 0)\n\t\t\tprintf(\"))r_intercept[%d]\\t0x%08x\\n\", vcpuid, (int)ctl);\n\n\t\terror"}
-{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1031, "snippet": "error == 0)\n\t\t\tprintf))\"dr_intercept[%d]\\t0x%08x\\n\", vcpuid, (int)ctl);\n\n\t\terror"}
-{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1035, "snippet": "error == 0)\n\t\t\tprint))(\"exc_intercept[%d]\\t0x%08x\\n\", vcpuid, (int)ctl);\n\n\t\terro"}
-{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1056, "snippet": "error == 0)\n\t\t\tprintf(\"exitinfo1[%d]\\t0x%016lx\\n\", vcpuid, ctl);\n\t\terror ="}
-{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1059, "snippet": "error == 0)\n\t\t\tprintf(\"exitinfo2[%d]\\t0x%016lx\\n\", vcpuid, ctl);\n\t\terror ="}
-{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1086, "snippet": "error == 0)\n\t\t\tprintf(\"AVIC logical table[%d]\\t0x%016lx\\n\",\n\t\t\t\tvcpuid, addr);\n\t"}
-{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1726, "snippet": "error == 0)\n\t\t\t\tprintf(\"io_bitmap_avm_get_vmcb_field(std::span(uid,, m);\n\t\t\terro"}
+{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1027, "snippet": "error == 0)))\tprintf(\"cr_intercept[%d]\\t0x%08x\\n\", vcpuid, (int)ctl);\n\n\t\terror ="}
+{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1031, "snippet": "error ==))0)\n\t\t\tprintf(\"dr_intercept[%d]\\t0x%08x\\n\", vcpuid, (int)ctl);\n\n\t\terror"}
+{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1039, "snippet": "error = vm_get_vmcb_field(vcpu, VMCB_OFF_INST1_INTERCEPT,\n\t\t  vm_get_vmcb_field("}
+{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1061, "snippet": "error == 0)\n\t\t\tprintf(\"exitinfo2[%d]\\t0x%016lx\\n\", vcpuid, ctl);\n\t\terror ="}
+{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1088, "snippet": "error == 0)\n\t\t\tprintf(\"AVIC logical table[%d]\\t0x%016lx\\n\",\n\t\t\t\tvcpuid, addr);\n\t"}
+{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "DEAD_STORE", "line": 1728, "snippet": "error == 0)\n\t\t\t\tprintf(\"io_bitmapvm_get_vmcb_field(std::span(cpui, bm);\n\t\t\terror"}
 {"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "POINTER_KIND", "line": 454, "snippet": "void*:WILD"}
 {"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "STR_FORMAT_CANDIDATE", "line": 343, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "ANDERSEN_OWNED", "var": "all_opts", "locs": ["heap:all_opts@39021"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "ANDERSEN_OWNED", "var": "all_opts", "locs": ["heap:all_opts@39044"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "LIFETIME_FAIL", "outlives": "stack_pteval \u2ab0 R_pte", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "LIFETIME_OWN", "var": "all_opts", "region": "heap_all_opts", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/usr.sbin/bhyvectl/amd64/bhyvectl_machdep.c", "kind": "MACRO_OBJECT", "name": "PBSD_FD_GUARD", "line": 3, "body": "struct pbsd_fd_guard {", "hint": "constexpr / inline constexpr variable"}
@@ -19159,7 +19166,7 @@
 {"file": "hbsd/src/usr.sbin/bluetooth/hccontrol/adv_data.c", "kind": "STR_FORMAT_CANDIDATE", "line": 176, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.sbin/bluetooth/hccontrol/adv_data.c", "kind": "STR_FORMAT_CANDIDATE", "line": 178, "snippet": "strlcat", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.sbin/bluetooth/hccontrol/adv_data.c", "kind": "STR_FORMAT_CANDIDATE", "line": 194, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/bluetooth/hccontrol/adv_data.c", "kind": "STR_FORMAT_CANDIDATE", "line": 223, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/bluetooth/hccontrol/adv_data.c", "kind": "STR_FORMAT_CANDIDATE", "line": 221, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.sbin/bluetooth/hccontrol/adv_data.c", "kind": "MACRO_OBJECT", "name": "L2CAP_SOCKET_CHECKED", "line": 37, "body": "#include <bluetooth.h>", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.sbin/bluetooth/hccontrol/hccontrol.c", "kind": "NULLABILITY", "line": 178, "snippet": "maybe-null:c"}
 {"file": "hbsd/src/usr.sbin/bluetooth/hccontrol/hccontrol.c", "kind": "GLOBAL_CLUSTER", "globals": ["verbose", "timeout", "numeric_bdaddr"], "count": 3}
@@ -20049,7 +20056,7 @@
 {"file": "hbsd/src/usr.sbin/camdd/camdd.c", "kind": "DEAD_STORE", "line": 3382, "snippet": "error == -1)\n\t\t\t\t\twarn(\"%s: unable to wake up thread\",\n\t\t\t\t\t    __func__);\n\t\t\t\te"}
 {"file": "hbsd/src/usr.sbin/camdd/camdd.c", "kind": "DEAD_STORE", "line": 3499, "snippet": "retval == -1) {\n\t\t\t\twarn(\"expand_number(3) failed on %s=%s\", name,\n\t\t\t\t    value"}
 {"file": "hbsd/src/usr.sbin/camdd/camdd.c", "kind": "DEAD_STORE", "line": 3527, "snippet": "retval == -1) {\n\t\t\t\twarn(\"expand_number(3) failed on %s=%s\", name,\n\t\t\t\t    value"}
-{"file": "hbsd/src/usr.sbin/camdd/camdd.c", "kind": "DEAD_STORE", "line": 3599, "snippet": "error == -1) {\n\t\t\t\twarn(\"invalid maximum I/O amount %s\", optarg);\n\t\t\t\terror ="}
+{"file": "hbsd/src/usr.sbin/camdd/camdd.c", "kind": "DEAD_STORE", "line": 3601, "snippet": "error == -1) {\n\t\t\t\twarn(\"invalid maximum I/O amount %s\", optarg);\n\t\t\t\terror ="}
 {"file": "hbsd/src/usr.sbin/camdd/camdd.c", "kind": "POINTER_KIND", "line": 3362, "snippet": "void*:WILD"}
 {"file": "hbsd/src/usr.sbin/camdd/camdd.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1058, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.sbin/camdd/camdd.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1060, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
@@ -20234,11 +20241,11 @@
 {"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "MALLOC_ESCAPE", "line": 132, "snippet": "e = (entry *) calloc(sizeof(entry), sizeof(char))"}
 {"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "NULLABILITY", "line": 112, "snippet": "maybe-null:e"}
 {"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "GLOBAL_CLUSTER", "globals": ["rcsid"], "count": 1}
-{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "DEAD_STORE", "line": 281, "snippet": "ch == '*')\n\t\t\te->flags |= DOW_S))AR;\n\t\tch ="}
-{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "STR_FORMAT_CANDIDATE", "line": 399, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "STR_FORMAT_CANDIDATE", "line": 411, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "STR_FORMAT_CANDIDATE", "line": 422, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "ANDERSEN_ESCAPE", "var": "e", "locs": ["heap:e@3401"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "DEAD_STORE", "line": 261, "snippet": "ch ==, ')\n\t\t\te->flags |= DOM_STAR;\n\t\tch ="}
+{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "STR_FORMAT_CANDIDATE", "line": 398, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "STR_FORMAT_CANDIDATE", "line": 410, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "STR_FORMAT_CANDIDATE", "line": 421, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "ANDERSEN_ESCAPE", "var": "e", "locs": ["heap:e@3390"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.sbin/cron/lib/entry.c", "kind": "LIFETIME_OWN", "var": "e", "region": "heap_e", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/usr.sbin/cron/lib/env.c", "kind": "NULLABILITY", "line": 58, "snippet": "maybe-null:p"}
 {"file": "hbsd/src/usr.sbin/cron/lib/env.c", "kind": "NULLABILITY", "line": 84, "snippet": "maybe-null:p"}
@@ -20524,18 +20531,18 @@
 {"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "NULLABILITY", "line": 112, "snippet": "maybe-null:curprivs"}
 {"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "GLOBAL_CLUSTER", "globals": ["tmpfil", "hflag"], "count": 2}
 {"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 184, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 396, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 517, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 531, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 795, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 799, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 803, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 806, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "qup", "locs": ["heap:qup@10166", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "curprivs", "locs": ["heap:qup@10166", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "next", "locs": ["heap:qup@10166", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "quptail", "locs": ["heap:qup@10166", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "quphead", "locs": ["heap:qup@10166", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 395, "snippet": "strlcpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 516, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 530, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 793, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 797, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 801, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "STR_FORMAT_CANDIDATE", "line": 804, "snippet": "sprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "qup", "locs": ["heap:qup@10162", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "curprivs", "locs": ["heap:qup@10162", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "next", "locs": ["heap:qup@10162", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "quptail", "locs": ["heap:qup@10162", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
+{"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "ANDERSEN_ESCAPE", "var": "quphead", "locs": ["heap:qup@10162", "heap:qup@4542"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "LIFETIME_OWN", "var": "qup", "region": "heap_qup", "hint": "owning region \u2192 unique_ptr"}
 {"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "MACRO_CONSTEXPR", "names": ["dbtokb", "dbtokb"], "template": "\\", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/usr.sbin/edquota/edquota.c", "kind": "SYSCALL_TRACE", "io_calls": 2, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
@@ -21368,7 +21375,7 @@
 {"file": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_debug.c", "kind": "SPAN_CANDIDATE", "line": 87, "snippet": "node,level:iv-fail"}
 {"file": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_debug.c", "kind": "SPAN_CANDIDATE", "line": 181, "snippet": "pttemp,num:iv-fail"}
 {"file": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_debug.c", "kind": "SPAN_CANDIDATE", "line": 332, "snippet": "element,char:iv-fail"}
-{"file": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_debug.c", "kind": "PURITY", "function": "debug_dump_string", "line": 343}
+{"file": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_debug.c", "kind": "PURITY", "function": "debug_dump_string", "line": 337}
 {"file": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_debug.c", "kind": "MACRO_OBJECT", "name": "PBSD_INTRUSIVE_FOREACH_HELPERS", "line": 3, "body": "#define pbsd_intrusive_first(h) ((h)->first)", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_debug.c", "kind": "MACRO_CONSTEXPR", "names": ["pbsd_intrusive_next"], "template": "(($0)->$1.next)", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/usr.sbin/makefs/cd9660/cd9660_eltorito.c", "kind": "NULLABILITY", "line": 284, "snippet": "maybe-null:default_entry"}
@@ -22340,7 +22347,6 @@
 {"file": "hbsd/src/usr.sbin/pkg/ecc.c", "kind": "NULLABILITY", "line": 405, "snippet": "maybe-null:params"}
 {"file": "hbsd/src/usr.sbin/pkg/ecc.c", "kind": "SPAN_CANDIDATE", "line": 272, "snippet": "data,datalen:iv-fail"}
 {"file": "hbsd/src/usr.sbin/pkg/ecc.c", "kind": "GLOBAL_CLUSTER", "globals": ["pkgkey_app", "pkgkey_signer"], "count": 2}
-{"file": "hbsd/src/usr.sbin/pkg/ecc.c", "kind": "DEAD_STORE", "line": 466, "snippet": "keysz = MIN(sizeof(keybuf), cb, ta.keylen / 2);\n\n\tkeysz ="}
 {"file": "hbsd/src/usr.sbin/pkg/ecc.c", "kind": "LIFETIME_FAIL", "outlives": "stack_pkgkey_map \u2ab0 R_entry", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/usr.sbin/pkg/ecc.c", "kind": "MACRO_OBJECT", "name": "WITH_STDLIB", "line": 44, "body": "#include <libecc/libsig.h>", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.sbin/pkg/ecc.c", "kind": "MACRO_CONSTEXPR", "names": ["STREQ"], "template": "(strcmp($0, $1) == 0)", "hint": "inline constexpr / template function"}
@@ -22695,20 +22701,20 @@
 {"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1227, "snippet": "strcat", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1239, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1241, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1527, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1541, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1721, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1734, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1786, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1791, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2049, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2055, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2065, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2199, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2219, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2261, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2755, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
-{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2763, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1528, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1542, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1722, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1735, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1787, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 1792, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2050, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2056, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2066, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2196, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2216, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2258, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2751, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "STR_FORMAT_CANDIDATE", "line": 2759, "snippet": "strncpy", "hint": "std::format / string_view when dest not aliased"}
 {"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "ANDERSEN_ESCAPE", "var": "ntgt", "locs": ["heap:ntgt@13296"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "ANDERSEN_ESCAPE", "var": "tgt", "locs": ["heap:ntgt@13296"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.sbin/ppp/command.c", "kind": "ANDERSEN_ESCAPE", "var": "timeout", "locs": ["stack:arg"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
@@ -23227,8 +23233,7 @@
 {"file": "hbsd/src/usr.sbin/pw/pw.c", "kind": "LIFETIME_FAIL", "outlives": "stack_argv \u2ab0 R_optarg", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/usr.sbin/pw/pw.c", "kind": "SYSCALL_TRACE", "io_calls": 2, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/usr.sbin/pw/pw_conf.c", "kind": "GLOBAL_CLUSTER", "globals": ["bourne_shell", "config"], "count": 2}
-{"file": "hbsd/src/usr.sbin/pw/pw_conf.c", "kind": "DEAD_STORE", "line": 422, "snippet": "file == nullptr) {\n\t\tsnprintf(cfgfile, sizeof(cfgfile), \"%s/\" _PW_CONF,\n\t\t    co"}
-{"file": "hbsd/src/usr.sbin/pw/pw_conf.c", "kind": "STR_FORMAT_CANDIDATE", "line": 423, "snippet": "snprintf", "hint": "std::format / string_view when dest not aliased"}
+{"file": "hbsd/src/usr.sbin/pw/pw_conf.c", "kind": "DEAD_STORE", "line": 421, "snippet": "file == nullptr) {\n\t\tsnprintf(cfgfile, sizeof(cfgfile), \"%s/\" _PW_CONF,\n\t\t    co"}
 {"file": "hbsd/src/usr.sbin/pw/pw_conf.c", "kind": "MACRO_OBJECT", "name": "debugging", "line": 41, "body": "0", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.sbin/pw/pw_conf.c", "kind": "SYSCALL_TRACE", "io_calls": 2, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/usr.sbin/pw/pw_group.c", "kind": "NULLABILITY", "line": 117, "snippet": "maybe-null:grp"}
@@ -24414,10 +24419,10 @@
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "MALLOC_ESCAPE", "line": 1970, "snippet": "re-alloc"}
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "SPAN_CANDIDATE", "line": 1359, "snippet": "buf,cc:iv-fail"}
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "GLOBAL_CLUSTER", "globals": ["outip", "hip", "hiplen", "s", "sndsock", "whereto", "wherefrom", "packlen", "protlen", "minpacket", "maxpacket", "pmtu", "devnull", "nprobes", "max_ttl", "first_ttl", "options", "verbose", "waittime", "nflag", "as_path", "doipcksum", "doipcksum", "optlen", "fixedPort", "printdiff", "ecnflag", "protos", "proto"], "count": 29}
-{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "ANDERSEN_OWNED", "var": "outip", "locs": ["heap:outip@22086"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "ANDERSEN_OWNED", "var": "fdsp", "locs": ["heap:fdsp@32760"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "ANDERSEN_OWNED", "var": "hi", "locs": ["heap:hi@51308"], "hint": "unique_ptr candidate"}
-{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "ANDERSEN_OWNED", "var": "addrs", "locs": ["heap:addrs@51541", "heap:addrs@52373"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "ANDERSEN_OWNED", "var": "outip", "locs": ["heap:outip@22081"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "ANDERSEN_OWNED", "var": "fdsp", "locs": ["heap:fdsp@32758"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "ANDERSEN_OWNED", "var": "hi", "locs": ["heap:hi@51297"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "ANDERSEN_OWNED", "var": "addrs", "locs": ["heap:addrs@51530", "heap:addrs@52362"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "ANDERSEN_ESCAPE", "var": "proto", "locs": ["stack:protos"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "LIFETIME_FAIL", "outlives": "stack_protos \u2ab0 R_proto", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "LIFETIME_FAIL", "outlives": "stack_icp \u2ab0 R_hip", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
@@ -24435,7 +24440,7 @@
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "MACRO_OBJECT", "name": "Printf", "line": 273, "body": "(void)printf", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "MACRO_OBJECT", "name": "IPPROTO_GRE", "line": 283, "body": "47", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "MACRO_DIVERGENT", "names": ["CRC32C"], "template": "($0 = ($0 >> 8) ^ crc_c[($0 ^ ($1)) & 0xFF])", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
-{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "FN_PTR_STRUCT", "struct": "outproto", "methods": ["prepare", "check"], "line": 401, "hint": "abstract class with virtual methods"}
+{"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "FN_PTR_STRUCT", "struct": "outproto", "methods": ["prepare", "check"], "line": 400, "hint": "abstract class with virtual methods"}
 {"file": "hbsd/src/usr.sbin/traceroute/traceroute.c", "kind": "SYSCALL_TRACE", "io_calls": 9, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/usr.sbin/traceroute6/traceroute6.c", "kind": "RANGE_FOR_CANDIDATE", "line": 960, "snippet": "for (probe = 0; probe < nprobes; ++probe) {"}
 {"file": "hbsd/src/usr.sbin/traceroute6/traceroute6.c", "kind": "MALLOC_ESCAPE", "line": 1076, "snippet": "passed-to-FD_SET"}
@@ -25006,7 +25011,7 @@
 {"file": "hbsd/src/usr.sbin/ypldap/ber.c", "kind": "ANDERSEN_ESCAPE", "var": "string", "locs": ["heap:string@6835"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.sbin/ypldap/ber.c", "kind": "ANDERSEN_ESCAPE", "var": "v", "locs": ["heap:v@7779"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.sbin/ypldap/ber.c", "kind": "ANDERSEN_ESCAPE", "var": "buf", "locs": ["heap:buf@10591"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
-{"file": "hbsd/src/usr.sbin/ypldap/ber.c", "kind": "ANDERSEN_OWNED", "var": "br_wbuf", "locs": ["heap:br_wbuf@17009"], "hint": "unique_ptr candidate"}
+{"file": "hbsd/src/usr.sbin/ypldap/ber.c", "kind": "ANDERSEN_OWNED", "var": "br_wbuf", "locs": ["heap:br_wbuf@17008"], "hint": "unique_ptr candidate"}
 {"file": "hbsd/src/usr.sbin/ypldap/ber.c", "kind": "ANDERSEN_ESCAPE", "var": "be_sub", "locs": ["heap:elm@2601"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.sbin/ypldap/ber.c", "kind": "ANDERSEN_ESCAPE", "var": "be_next", "locs": ["heap:elm@2601"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
 {"file": "hbsd/src/usr.sbin/ypldap/ber.c", "kind": "ANDERSEN_ESCAPE", "var": "be_val", "locs": ["heap:buf@10591", "heap:string@6835", "heap:v@7779"], "hint": "shared_ptr or raw observer \u2014 ownership crosses"}
@@ -25904,12 +25909,12 @@
 {"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "SPAN_CANDIDATE", "line": 435, "snippet": "buf,nbytes:iv-fail"}
 {"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "PURITY", "function": "sigalrm", "line": 264}
 {"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "GLOBAL_CLUSTER", "globals": ["pidfile", "protocol", "s", "addr", "s_flag", "w_flag"], "count": 6}
-{"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "MACRO_OBJECT", "name": "AReallyBigFileName", "line": 708, "body": "\\", "hint": "constexpr / inline constexpr variable"}
+{"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "MACRO_OBJECT", "name": "AReallyBigFileName", "line": 711, "body": "\\", "hint": "constexpr / inline constexpr variable"}
 {"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "MACRO_DIVERGENT", "names": ["RECV"], "template": "do {\t\t\t\t\\", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
 {"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "MACRO_CONSTEXPR", "names": ["RECV_ERROR", "TFTPD_TC_ADD"], "template": "do {\t\t\t\t\t\\", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "MACRO_CONSTEXPR", "names": ["SEND_STR", "SEND_RRQ", "SEND_RRQ_OPT", "SEND_WRQ", "SEND_WRQ_OPT", "TFTPD_TC_DEFINE"], "template": "\\", "hint": "inline constexpr / template function"}
 {"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "MACRO_DIVERGENT", "names": ["OPTION_STR"], "template": "$0 \"\\000\" $1 \"\\000\"", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
-{"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "SYSCALL_TRACE", "io_calls": 78, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
+{"file": "hbsd/src/libexec/tftpd/tests/functional.c", "kind": "SYSCALL_TRACE", "io_calls": 79, "hint": "ktrace/truss both binaries; diff syscall seq + errno"}
 {"file": "hbsd/src/libexec/tftpd/tftp-file.c", "kind": "GLOBAL_CLUSTER", "globals": ["convert", "gotcr"], "count": 2}
 {"file": "hbsd/src/libexec/tftpd/tftp-file.c", "kind": "DEAD_STORE", "line": 73, "snippet": "gotcr == 0) {\n\t\t\tconvbuffer[n++] = buffer[i];\n\t\t\tgotcr ="}
 {"file": "hbsd/src/libexec/tftpd/tftp-io.c", "kind": "GLOBAL_CLUSTER", "globals": ["peer_sock", "me_sock"], "count": 2}
