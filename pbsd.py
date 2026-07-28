@@ -134,14 +134,32 @@ Finish by running `sh build.sh` and reporting the table.
 # ───────────────────────────── mutations ─────────────────────────────────────
 # Planted bugs. If the harness cannot detect these, it proves nothing and the
 # batch is rejected regardless of whether it passed.
+#
+# These are the standard mutation-testing operators rather than string-function
+# specific ones. The original five only matched `!= 0)`, `*p = '\0';` and
+# `return a - b;`, which is the shape of libc string code and almost nothing
+# else, so every batch outside lib/libc/string failed the gate for having too
+# few applicable mutations rather than for being wrong. Ordered most to least
+# generally applicable; the scan stops once MUTANT_CAP have been run.
 
 MUTATIONS = [
-    ("off_by_one",     r"(\w+)\s*!=\s*0\s*\)",            r"\1 > 1)"),
-    ("inverted_cmp",   r"(?<![<>!=])<(?![<=])",            ">="),
-    ("dropped_nul",    r"\*\s*(\w+)\s*=\s*'\\0'\s*;",     r"/*mut*/;"),
-    ("off_by_one_inc", r"\+\+\s*(\w+)\s*;",                r"\1 += 2;"),
-    ("zero_return",    r"return\s+(\w+)\s*-\s*(\w+)\s*;",  r"return 0;"),
+    ("relational_lt",  r"(?<![<>!=+\-*/%&|^])<(?![<=])",        ">="),
+    ("relational_gt",  r"(?<![<>!=+\-*/%&|^])>(?![>=])",        "<="),
+    ("equality",       r"==",                                   "!="),
+    ("inequality",     r"!=",                                   "=="),
+    ("arith_plus",     r"(?<![+\-=<>!*/%&|^])\+(?![+=])",       "-"),
+    ("arith_minus",    r"(?<![+\-=<>!*/%&|^])-(?![-=>])",       "+"),
+    ("increment",      r"\+\+",                                 "--"),
+    ("logical_and",    r"&&",                                   "||"),
+    ("logical_or",     r"\|\|",                                 "&&"),
+    ("shift_left",     r"<<(?!=)",                              ">>"),
+    ("shift_right",    r"(?<!-)>>(?!=)",                        "<<"),
+    ("const_zero",     r"\b0\b",                                "1"),
+    ("const_one",      r"\b1\b",                                "0"),
+    ("zero_return",    r"return\s+(\w+)\s*-\s*(\w+)\s*;",       "return 0;"),
+    ("dropped_nul",    r"\*\s*(\w+)\s*=\s*'\\0'\s*;",           "/*mut*/;"),
 ]
+MUTANT_CAP = 6          # stop after this many compilable mutants; bounds runtime
 
 # ─────────────────────────────── helpers ─────────────────────────────────────
 
@@ -860,26 +878,90 @@ def run_build(d: Path, timeout: int = GATE_TIMEOUT) -> tuple[bool, str]:
         return False, "timed out"
 
 
+def code_mask(src: str) -> str:
+    """Blank comments, string/char literals and preprocessor lines to spaces.
+
+    Length and line structure are preserved, so an offset into the mask is the
+    same offset in the original. Mutation sites are located in the mask and
+    applied to the original, which stops a planted `-` -> `+` from landing in a
+    copyright header or an #include guard, where it would survive every harness
+    and fail the batch for no reason.
+    """
+    out, in_block = [], False
+    for line in src.split("\n"):
+        if in_block:
+            end = line.find("*/")
+            if end < 0:
+                out.append(" " * len(line))
+                continue
+            line = " " * (end + 2) + line[end + 2:]
+            in_block = False
+        if line.lstrip().startswith("#"):
+            out.append(" " * len(line))
+            continue
+        buf, i, n = [], 0, len(line)
+        while i < n:
+            two = line[i:i + 2]
+            if two == "/*":
+                end = line.find("*/", i + 2)
+                if end < 0:
+                    buf.append(" " * (n - i))
+                    i, in_block = n, True
+                else:
+                    buf.append(" " * (end + 2 - i))
+                    i = end + 2
+            elif two == "//":
+                buf.append(" " * (n - i))
+                i = n
+            elif line[i] in "\"'":
+                q, j = line[i], i + 1
+                while j < n and line[j] != q:
+                    j += 2 if line[j] == "\\" else 1
+                j = min(j + 1, n)
+                buf.append(" " * (j - i))
+                i = j
+            else:
+                buf.append(line[i])
+                i += 1
+        out.append("".join(buf))
+    return "\n".join(out)
+
+
 def mutation_check(d: Path) -> tuple[bool, str]:
-    """Plant bugs in the port. The harness must reject every one."""
+    """Plant bugs in the port. The harness must reject every one.
+
+    A mutant that does not compile proves nothing about the harness -- the
+    compiler caught it, not the test -- so it is not counted either way. Only
+    mutants that build are evidence, and every one of those must be killed.
+    """
     port = d / "port.cppm"
     original = port.read_text(encoding="utf-8")
-    applied, survived = 0, []
+    mask = code_mask(original)
+    applied, survived, uncompilable = 0, [], 0
     try:
         for name, pat, rep in MUTATIONS:
-            mutated, n = re.subn(pat, rep, original, count=1)
-            if n == 0 or mutated == original:
+            if applied >= MUTANT_CAP:
+                break
+            m = re.search(pat, mask)
+            if m is None:
+                continue
+            mutated = original[:m.start()] + m.expand(rep) + original[m.end():]
+            if mutated == original:
+                continue
+            port.write_text(mutated, encoding="utf-8")
+            ok, out = run_build(d, timeout=MUTANT_TIMEOUT)
+            if not ok and re.search(r"\berror:", out):
+                uncompilable += 1
                 continue
             applied += 1
-            port.write_text(mutated, encoding="utf-8")
-            ok, _ = run_build(d, timeout=MUTANT_TIMEOUT)
             if ok:                      # harness passed a broken port
                 survived.append(name)
     finally:
         port.write_text(original, encoding="utf-8")
 
     if applied < MIN_MUTATIONS:
-        return False, f"only {applied} mutations applicable (need {MIN_MUTATIONS})"
+        return False, (f"only {applied} compilable mutations, need "
+                       f"{MIN_MUTATIONS} ({uncompilable} would not build)")
     if survived:
         return False, f"harness failed to detect: {', '.join(survived)}"
     return True, f"{applied}/{applied} mutations killed"
