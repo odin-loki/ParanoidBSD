@@ -1110,3 +1110,6 @@
 {"path": "hbsd/src/sys/x86/xen/xen_apic.c", "batch": "b1601", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:58:02Z"}
 {"path": "hbsd/src/sys/x86/xen/xen_arch_intr.c", "batch": "b1601", "reasons": ["LINKER_SET", "QUEUE_MACRO"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:58:02Z"}
 {"path": "hbsd/src/sys/x86/xen/hvm.c", "batch": "b1601", "reasons": ["LINKER_SET"], "detail": "pre-triage: statically hard", "attempts": 0, "queued": "2026-07-28T07:58:02Z"}
+{"path": "hbsd/src/sys/security/mac_pimd/mac_pimd.c", "batch": "b0006", "reasons": ["AUTO_FAILED"], "detail": "mutation check: only 1 mutations applicable (need 3)", "attempts": 0, "queued": "2026-07-28T08:08:29Z"}
+{"path": "hbsd/src/sys/security/mac_ntpd/mac_ntpd.c", "batch": "b0007", "reasons": ["AUTO_FAILED"], "detail": "mutation check: only 1 mutations applicable (need 3)", "attempts": 0, "queued": "2026-07-28T08:12:52Z"}
+{"path": "hbsd/src/lib/libc/csu/aarch64/reloc.c", "batch": "b0008", "reasons": ["AUTO_FAILED"], "detail": "mutation check: only 1 mutations applicable (need 3)", "attempts": 0, "queued": "2026-07-28T08:22:26Z"}

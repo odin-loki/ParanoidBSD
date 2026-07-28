@@ -1,1 +1,5 @@
 {"batch": "b0001", "status": "REJECTED", "detail": "missing port.cppm", "ts": "2026-07-28T07:45:12Z"}
+{"batch": "b0006", "status": "REJECTED", "detail": "mutation check: only 1 mutations applicable (need 3)", "ts": "2026-07-28T08:08:29Z"}
+{"batch": "b0007", "status": "REJECTED", "detail": "mutation check: only 1 mutations applicable (need 3)", "ts": "2026-07-28T08:12:52Z"}
+{"batch": "b0008", "status": "REJECTED", "detail": "mutation check: only 1 mutations applicable (need 3)", "ts": "2026-07-28T08:22:26Z"}
+{"batch": "b0009", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 4/4: negsf2, gtsf2, gtdf2, nesf2)", "ts": "2026-07-28T08:33:43Z"}
