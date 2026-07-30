@@ -28,6 +28,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <signal.h>
+#include <unistd.h>
 
 #include <cerrno>
 #include <climits>
@@ -295,16 +296,48 @@ Tally t_rand = { "sigwait/random", 0, 0 };
 
 int g_printed;
 
+/*
+ * A bug in the port can leave a live sigwait() waiting for a signal that will
+ * never arrive.  The watchdog turns that into a failure instead of a hang.
+ * SIGALRM stays unblocked and is never a member of any wait set used here, so
+ * it is delivered to this handler rather than dequeued by sigwait().
+ */
 void
-sigblock_setup(void)
+watchdog_expired(int)
 {
-	sigset_t all;
+	static const char msg[] = "\nFAIL: watchdog expired -- a call never "
+	    "returned\nRESULT: FAIL\n";
 
-	sigemptyset(&all);
-	sigaddset(&all, SIGUSR1);
-	sigaddset(&all, SIGUSR2);
-	sigaddset(&all, SIGALRM);
-	sigprocmask(SIG_BLOCK, &all, nullptr);
+	ssize_t n = write(STDERR_FILENO, msg, sizeof(msg) - 1);
+
+	(void)n;
+	_exit(1);
+}
+
+void
+signal_setup(void)
+{
+	struct sigaction sa;
+	sigset_t s;
+
+	sigemptyset(&s);
+	sigaddset(&s, SIGUSR1);
+	sigaddset(&s, SIGUSR2);
+	sigaddset(&s, SIGWINCH);
+	sigprocmask(SIG_BLOCK, &s, nullptr);
+
+	std::memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = watchdog_expired;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sigaction(SIGALRM, &sa, nullptr);
+
+	sigemptyset(&s);
+	sigaddset(&s, SIGALRM);
+	sigprocmask(SIG_UNBLOCK, &s, nullptr);
+
+	/* Generous: the whole run is well under a second of CPU. */
+	alarm(60);
 }
 
 void
@@ -680,11 +713,11 @@ live_cases(void)
 
 		a.set_off = 0;
 		a.sig_off = BUFSZ - sizeof(int);
-		a.live_raise = SIGALRM;
+		a.live_raise = SIGWINCH;
 		sigemptyset(&want);
 		sigaddset(&want, SIGUSR1);
 		sigaddset(&want, SIGUSR2);
-		sigaddset(&want, SIGALRM);
+		sigaddset(&want, SIGWINCH);
 		std::memcpy(a.set_fill, &want, SS);
 		run_case(t_live, a);
 	}
@@ -850,7 +883,7 @@ trap_target(const sigset_t *set, int *sig)
 int
 main(void)
 {
-	sigblock_setup();
+	signal_setup();
 
 	std::printf("=== PBSD b0020s3 differential test ===\n");
 	std::printf("sigset_t=%zu bytes, guarded buffer=%zu bytes, "
