@@ -2381,7 +2381,7 @@ b0804,hbsd/src/sys/amd64/linux32/linux32_sysent.c,sys/amd64/linux32,471,DEFERRED
 b0804,hbsd/src/sys/amd64/linux32/linux32_systrace_args.c,sys/amd64/linux32,10501,DEFERRED,
 b0805,hbsd/src/sys/compat/freebsd32/freebsd32_misc.c,sys/compat/freebsd32,4236,DEFERRED,
 b0805,hbsd/src/sys/compat/freebsd32/freebsd32_sysent.c,sys/compat/freebsd32,673,DEFERRED,
-b0805,hbsd/src/sys/compat/freebsd32/freebsd32_systrace_args.c,sys/compat/freebsd32,11288,PENDING,
+b0805,hbsd/src/sys/compat/freebsd32/freebsd32_systrace_args.c,sys/compat/freebsd32,11288,DEFERRED,
 b0806,hbsd/src/sys/geom/zero/g_zero.c,sys/geom/zero,188,DEFERRED,
 b0807,hbsd/src/sys/fs/procfs/procfs_status.c,sys/fs/procfs,189,DEFERRED,
 b0807,hbsd/src/sys/fs/procfs/procfs.c,sys/fs/procfs,209,DEFERRED,
