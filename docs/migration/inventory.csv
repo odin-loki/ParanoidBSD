@@ -1418,7 +1418,7 @@ b0454,hbsd/src/usr.sbin/fifolog/fifolog_reader/fifolog_reader.c,usr.sbin/fifolog
 b0455,hbsd/src/usr.bin/leave/leave.c,usr.bin/leave,187,DEFERRED,
 b0456,hbsd/src/usr.sbin/chkgrp/chkgrp.c,usr.sbin/chkgrp,193,DEFERRED,
 b0457,hbsd/src/sbin/conscontrol/conscontrol.c,sbin/conscontrol,195,DEFERRED,
-b0458,hbsd/src/sbin/kldload/kldload.c,sbin/kldload,202,PENDING,
+b0458,hbsd/src/sbin/kldload/kldload.c,sbin/kldload,202,DEFERRED,
 b0459,hbsd/src/sbin/kldstat/kldstat.c,sbin/kldstat,208,DEFERRED,
 b0460,hbsd/src/usr.bin/backlight/backlight.c,usr.bin/backlight,224,PENDING,
 b0461,hbsd/src/sbin/pfilctl/pfilctl.c,sbin/pfilctl,226,PENDING,
