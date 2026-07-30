@@ -263,3 +263,4 @@
 {"batch": "b0020s2", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-07-30T09:49:48Z"}
 {"batch": "b0020s4", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-07-30T09:50:48Z"}
 {"batch": "b0021", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/4: remque)", "how": "agent", "ts": "2026-07-30T09:50:57Z"}
+{"batch": "b0016s3", "status": "REJECTED", "detail": "mutation check: only 0 compilable mutations, need 3 (0 would not build)\n(mechanical path first said: not attempted (mechanical phase runs separately))", "how": "agent", "ts": "2026-07-30T09:55:05Z"}
