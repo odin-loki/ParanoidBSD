@@ -1,0 +1,10 @@
+{
+  "batch": "b0012s1",
+  "verified": "2026-07-30T07:52:43Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: __gedf2)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\ngedf2 (__gedf2)            564735            0\nfloat64_le                 564735            0\n\nPASS: 0 failure(s)\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/gedf2.c": "9d4552f0ddf03850"
+  }
+}

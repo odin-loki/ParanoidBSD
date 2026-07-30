@@ -3,3 +3,16 @@
 {"batch": "b0007", "status": "REJECTED", "detail": "mutation check: only 1 mutations applicable (need 3)", "ts": "2026-07-28T08:12:52Z"}
 {"batch": "b0008", "status": "REJECTED", "detail": "mutation check: only 1 mutations applicable (need 3)", "ts": "2026-07-28T08:22:26Z"}
 {"batch": "b0009", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 4/4: negsf2, gtsf2, gtdf2, nesf2)", "ts": "2026-07-28T08:33:43Z"}
+{"batch": "b0010", "status": "REJECTED", "detail": "mutation check: harness failed to detect: equality, logical_and, logical_or", "ts": "2026-07-28T08:39:25Z"}
+{"batch": "b0010s1", "status": "AGENT_FAILED", "detail": "", "ts": "2026-07-28T08:42:34Z"}
+{"batch": "b0010s1", "status": "REJECTED", "detail": "agent failed", "ts": "2026-07-28T08:42:34Z"}
+{"batch": "b0010s2", "status": "AGENT_FAILED", "detail": "", "ts": "2026-07-28T08:42:42Z"}
+{"batch": "b0010s2", "status": "REJECTED", "detail": "agent failed", "ts": "2026-07-28T08:42:42Z"}
+{"batch": "b0010s3", "status": "AGENT_FAILED", "detail": "", "ts": "2026-07-28T08:42:49Z"}
+{"batch": "b0010s3", "status": "REJECTED", "detail": "agent failed", "ts": "2026-07-28T08:42:49Z"}
+{"batch": "b0010s4", "status": "AGENT_FAILED", "detail": "", "ts": "2026-07-28T08:42:58Z"}
+{"batch": "b0010s4", "status": "REJECTED", "detail": "agent failed", "ts": "2026-07-28T08:42:58Z"}
+{"batch": "b0011", "status": "AGENT_FAILED", "detail": "", "ts": "2026-07-28T08:43:05Z"}
+{"batch": "b0011", "status": "REJECTED", "detail": "agent failed", "ts": "2026-07-28T08:43:05Z"}
+{"batch": "b0012", "status": "REJECTED", "detail": "mutation check: only 2 compilable mutations, need 3 (0 would not build)", "ts": "2026-07-30T07:40:57Z"}
+{"batch": "b0012s1", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: __gedf2)", "ts": "2026-07-30T07:52:43Z"}

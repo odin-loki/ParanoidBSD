@@ -1113,3 +1113,11 @@
 {"path": "hbsd/src/sys/security/mac_pimd/mac_pimd.c", "batch": "b0006", "reasons": ["AUTO_FAILED"], "detail": "mutation check: only 1 mutations applicable (need 3)", "attempts": 0, "queued": "2026-07-28T08:08:29Z"}
 {"path": "hbsd/src/sys/security/mac_ntpd/mac_ntpd.c", "batch": "b0007", "reasons": ["AUTO_FAILED"], "detail": "mutation check: only 1 mutations applicable (need 3)", "attempts": 0, "queued": "2026-07-28T08:12:52Z"}
 {"path": "hbsd/src/lib/libc/csu/aarch64/reloc.c", "batch": "b0008", "reasons": ["AUTO_FAILED"], "detail": "mutation check: only 1 mutations applicable (need 3)", "attempts": 0, "queued": "2026-07-28T08:22:26Z"}
+{"path": "hbsd/src/lib/libc/softfloat/nedf2.c", "batch": "b0010s1", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:42:34Z"}
+{"path": "hbsd/src/lib/libc/softfloat/ltsf2.c", "batch": "b0010s2", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:42:42Z"}
+{"path": "hbsd/src/lib/libc/softfloat/ltdf2.c", "batch": "b0010s3", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:42:49Z"}
+{"path": "hbsd/src/lib/libc/softfloat/eqsf2.c", "batch": "b0010s4", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:42:58Z"}
+{"path": "hbsd/src/lib/libc/softfloat/eqdf2.c", "batch": "b0011", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:43:06Z"}
+{"path": "hbsd/src/lib/libc/softfloat/negdf2.c", "batch": "b0011", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:43:06Z"}
+{"path": "hbsd/src/lib/libc/softfloat/gesf2.c", "batch": "b0011", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:43:06Z"}
+{"path": "hbsd/src/lib/libc/softfloat/lesf2.c", "batch": "b0011", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:43:06Z"}

@@ -6,4 +6,5 @@ set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 add_library(pbsd STATIC)
 target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0009/port.cppm
+  lib/libc/softfloat/b0012s1/port.cppm
 )
