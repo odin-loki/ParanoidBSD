@@ -8,4 +8,5 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0009/port.cppm
   lib/libc/softfloat/b0012s1/port.cppm
   lib/libc/softfloat/b0012s2/port.cppm
+  lib/libc/softfloat/b0012s4/port.cppm
 )

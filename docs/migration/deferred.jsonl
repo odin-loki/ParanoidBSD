@@ -1121,3 +1121,4 @@
 {"path": "hbsd/src/lib/libc/softfloat/negdf2.c", "batch": "b0011", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:43:06Z"}
 {"path": "hbsd/src/lib/libc/softfloat/gesf2.c", "batch": "b0011", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:43:06Z"}
 {"path": "hbsd/src/lib/libc/softfloat/lesf2.c", "batch": "b0011", "reasons": ["AUTO_FAILED"], "detail": "agent failed", "attempts": 0, "queued": "2026-07-28T08:43:06Z"}
+{"path": "hbsd/src/lib/libc/softfloat/negxf2.c", "batch": "b0012s3", "reasons": ["AUTO_FAILED"], "detail": "mutation check: only 2 compilable mutations, need 3 (3 would not build)", "attempts": 0, "queued": "2026-07-30T08:12:16Z"}
