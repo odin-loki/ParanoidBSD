@@ -97,6 +97,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0012s2/port.cppm
   lib/libc/softfloat/b0012s4/port.cppm
   lib/libc/softfloat/b0014/port.cppm
+  lib/libc/softfloat/b0016/port.cppm
   lib/libc/stdbit/stdc_bit_floor_m/port.cppm
   lib/libc/stdbit/stdc_bit_width_m/port.cppm
   lib/libc/stdbit/stdc_first_leading_one_m/port.cppm
@@ -114,6 +115,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdio/wbuf_m/port.cppm
   lib/libc/stdio/wsetup_m/port.cppm
   lib/libc/stdlib/a64l_m/port.cppm
+  lib/libc/stdlib/b0021/port.cppm
   lib/libc/stdlib/getsubopt_m/port.cppm
   lib/libc/stdlib/hcreate_m/port.cppm
   lib/libc/stdlib/reallocarray_m/port.cppm
@@ -149,6 +151,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/wcsstr_m/port.cppm
   lib/libc/string/wmemchr_m/port.cppm
   lib/libc/string/wmemcmp_m/port.cppm
+  lib/libc/sys/b0020/port.cppm
   lib/libc/uuid/b0019/port.cppm
   lib/libc/uuid/uuid_compare_m/port.cppm
   lib/libc/uuid/uuid_equal_m/port.cppm
