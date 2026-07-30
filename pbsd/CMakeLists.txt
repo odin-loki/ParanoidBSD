@@ -98,6 +98,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0012s4/port.cppm
   lib/libc/softfloat/b0014/port.cppm
   lib/libc/softfloat/b0016/port.cppm
+  lib/libc/softfloat/b0016s2/port.cppm
   lib/libc/stdbit/stdc_bit_floor_m/port.cppm
   lib/libc/stdbit/stdc_bit_width_m/port.cppm
   lib/libc/stdbit/stdc_first_leading_one_m/port.cppm

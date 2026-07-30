@@ -1,0 +1,10 @@
+{
+  "batch": "b0016s2",
+  "verified": "2026-07-30T10:07:07Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nedge pairs: 2304   random pairs: 500000   total pairs: 502304\nfunction                cases     failures\n---------------- ------------ ------------\nfloatx80_le            502304            0\n__gexf2                502304            0\nTOTAL                                    0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/gexf2.c": "ddec90ed08ccd24e"
+  }
+}
