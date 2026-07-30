@@ -1305,7 +1305,7 @@ b0409,hbsd/src/usr.sbin/nfsdumpstate/nfsdumpstate.c,usr.sbin/nfsdumpstate,315,DE
 b0410,hbsd/src/usr.bin/cksum/sum1.c,usr.bin/cksum,65,VERIFIED,
 b0410,hbsd/src/usr.bin/cksum/sum2.c,usr.bin/cksum,68,VERIFIED,
 b0410,hbsd/src/usr.bin/cksum/print.c,usr.bin/cksum,64,VERIFIED,
-b0410,hbsd/src/usr.bin/cksum/cksum.c,usr.bin/cksum,123,PENDING,
+b0410,hbsd/src/usr.bin/cksum/cksum.c,usr.bin/cksum,123,DEFERRED,
 b0411,hbsd/src/lib/msun/src/s_fminimum_mag_numf.c,lib/msun/src,85,DEFERRED,
 b0411,hbsd/src/lib/msun/src/s_asinhl.c,lib/msun/src,87,DEFERRED,
 b0411,hbsd/src/lib/msun/src/s_atanf.c,lib/msun/src,89,DEFERRED,
