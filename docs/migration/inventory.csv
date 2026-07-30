@@ -1158,7 +1158,7 @@ b0356,hbsd/src/sys/compat/linuxkpi/common/src/linuxkpi_hdmikmod.c,sys/compat/lin
 b0356,hbsd/src/sys/compat/linuxkpi/common/src/linuxkpi_videokmod.c,sys/compat/linuxkpi/common/src,7,DEFERRED,
 b0356,hbsd/src/sys/compat/linuxkpi/common/src/linux_seq_buf.c,sys/compat/linuxkpi/common/src,64,PENDING,
 b0356,hbsd/src/sys/compat/linuxkpi/common/src/linux_kmod.c,sys/compat/linuxkpi/common/src,33,DEFERRED,
-b0357,hbsd/src/usr.bin/c89/c89.c,usr.bin/c89,111,PENDING,
+b0357,hbsd/src/usr.bin/c89/c89.c,usr.bin/c89,111,DEFERRED,
 b0358,hbsd/src/usr.sbin/fifolog/fifolog_writer/fifolog_writer.c,usr.sbin/fifolog/fifolog_writer,115,PENDING,
 b0359,hbsd/src/usr.bin/bluetooth/bthost/bthost.c,usr.bin/bluetooth/bthost,144,PENDING,
 b0360,hbsd/src/lib/libc/string/strncmp.c,lib/libc/string,48,VERIFIED,
