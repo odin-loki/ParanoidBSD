@@ -1688,7 +1688,7 @@ b0564,hbsd/src/sbin/mount_unionfs/mount_unionfs.c,sbin/mount_unionfs,181,DEFERRE
 b0565,hbsd/src/usr.bin/expand/expand.c,usr.bin/expand,184,DEFERRED,
 b0566,hbsd/src/sbin/mksnap_ffs/mksnap_ffs.c,sbin/mksnap_ffs,189,DEFERRED,
 b0567,hbsd/src/usr.sbin/lpr/filters/lpf.c,usr.sbin/lpr/filters,206,DEFERRED,
-b0568,hbsd/src/usr.sbin/chroot/chroot.c,usr.sbin/chroot,207,PENDING,
+b0568,hbsd/src/usr.sbin/chroot/chroot.c,usr.sbin/chroot,207,DEFERRED,
 b0569,hbsd/src/usr.bin/mail/version.c,usr.bin/mail,36,DEFERRED,
 b0569,hbsd/src/usr.bin/mail/getname.c,usr.bin/mail,63,VERIFIED,
 b0569,hbsd/src/usr.bin/mail/v7.local.c,usr.bin/mail,90,DEFERRED,
