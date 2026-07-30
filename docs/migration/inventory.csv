@@ -615,7 +615,7 @@ b0185,hbsd/src/lib/libc/db/test/hash.tests/tseq.c,lib/libc/db/test/hash.tests,76
 b0185,hbsd/src/lib/libc/db/test/hash.tests/tcreat3.c,lib/libc/db/test/hash.tests,93,PENDING,
 b0185,hbsd/src/lib/libc/db/test/hash.tests/tread2.c,lib/libc/db/test/hash.tests,93,PENDING,
 b0185,hbsd/src/lib/libc/db/test/hash.tests/tverify.c,lib/libc/db/test/hash.tests,95,PENDING,
-b0186,hbsd/src/bin/ln/ln.c,bin/ln,378,PENDING,
+b0186,hbsd/src/bin/ln/ln.c,bin/ln,378,DEFERRED,
 b0187,hbsd/src/bin/stty/util.c,bin/stty,54,PENDING,
 b0187,hbsd/src/bin/stty/gfmt.c,bin/stty,120,VERIFIED,
 b0187,hbsd/src/bin/stty/stty.c,bin/stty,152,PENDING,
