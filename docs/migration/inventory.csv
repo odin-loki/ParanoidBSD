@@ -4400,7 +4400,7 @@ b1568,hbsd/src/usr.sbin/bhyve/amd64/kernemu_dev.c,usr.sbin/bhyve/amd64,96,DEFERR
 b1568,hbsd/src/usr.sbin/bhyve/amd64/rtc.c,usr.sbin/bhyve/amd64,127,DEFERRED,
 b1568,hbsd/src/usr.sbin/bhyve/amd64/xmsr.c,usr.sbin/bhyve/amd64,260,DEFERRED,
 b1568,hbsd/src/usr.sbin/bhyve/amd64/inout.c,usr.sbin/bhyve/amd64,295,DEFERRED,
-b1569,hbsd/src/usr.bin/stat/stat.c,usr.bin/stat,1193,PENDING,
+b1569,hbsd/src/usr.bin/stat/stat.c,usr.bin/stat,1193,DEFERRED,
 b1570,hbsd/src/usr.sbin/ypldap/log.c,usr.sbin/ypldap,161,VERIFIED,
 b1570,hbsd/src/usr.sbin/ypldap/entries.c,usr.sbin/ypldap,145,DEFERRED,
 b1570,hbsd/src/usr.sbin/ypldap/ypldap_dns.c,usr.sbin/ypldap,250,DEFERRED,
