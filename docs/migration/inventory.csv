@@ -4143,7 +4143,7 @@ b1475,hbsd/src/usr.sbin/virtual_oss/virtual_oss/eq.c,usr.sbin/virtual_oss/virtua
 b1475,hbsd/src/usr.sbin/virtual_oss/virtual_oss/format.c,usr.sbin/virtual_oss/virtual_oss,429,DEFERRED,
 b1475,hbsd/src/usr.sbin/virtual_oss/virtual_oss/ctl.c,usr.sbin/virtual_oss/virtual_oss,615,DEFERRED,
 b1475,hbsd/src/usr.sbin/virtual_oss/virtual_oss/httpd.c,usr.sbin/virtual_oss/virtual_oss,846,DEFERRED,
-b1476,hbsd/src/usr.sbin/rtadvd/control.c,usr.sbin/rtadvd,492,PENDING,
+b1476,hbsd/src/usr.sbin/rtadvd/control.c,usr.sbin/rtadvd,492,DEFERRED,
 b1476,hbsd/src/usr.sbin/rtadvd/rrenum.c,usr.sbin/rtadvd,501,DEFERRED,
 b1476,hbsd/src/usr.sbin/rtadvd/control_server.c,usr.sbin/rtadvd,752,DEFERRED,
 b1476,hbsd/src/usr.sbin/rtadvd/if.c,usr.sbin/rtadvd,769,DEFERRED,
