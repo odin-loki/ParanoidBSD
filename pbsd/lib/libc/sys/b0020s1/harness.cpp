@@ -41,8 +41,8 @@ int ref_pdwait(int fd, int *status, int options, __wrusage *ru,
 
 #define	PBSD_INTERPOS_SLOTS	16
 
-typedef int (*pdwait_impl_t)(int, int *, int, struct __wrusage *,
-    struct __siginfo *);
+typedef int (*pdwait_impl_t)(int, int *, int, __wrusage *,
+    __siginfo *);
 
 /* Number of bytes the recording callee scribbles through ru / infop. */
 static const int RU_WRITE = 24;
@@ -80,8 +80,8 @@ rec_reset(void)
  * that transposing two arguments or dropping one is always observable.
  */
 static int
-mock_body(int slot, int fd, int *status, int options, struct __wrusage *ru,
-    struct __siginfo *infop)
+mock_body(int slot, int fd, int *status, int options, __wrusage *ru,
+    __siginfo *infop)
 {
 	g_rec.calls++;
 	g_rec.slot = slot;
@@ -126,8 +126,8 @@ mock_body(int slot, int fd, int *status, int options, struct __wrusage *ru,
 
 template <int Slot>
 static int
-mock_slot(int fd, int *status, int options, struct __wrusage *ru,
-    struct __siginfo *infop)
+mock_slot(int fd, int *status, int options, __wrusage *ru,
+    __siginfo *infop)
 {
 	return mock_body(Slot, fd, status, options, ru, infop);
 }
@@ -268,14 +268,14 @@ run_case(int fd, int options, bool use_status, bool use_ru, bool use_infop,
 	    reinterpret_cast<int *>(a.sbuf + soff) : nullptr;
 	int *b_status = use_status ?
 	    reinterpret_cast<int *>(b.sbuf + soff) : nullptr;
-	struct __wrusage *a_ru = use_ru ?
-	    reinterpret_cast<struct __wrusage *>(a.rbuf + roff) : nullptr;
-	struct __wrusage *b_ru = use_ru ?
-	    reinterpret_cast<struct __wrusage *>(b.rbuf + roff) : nullptr;
-	struct __siginfo *a_info = use_infop ?
-	    reinterpret_cast<struct __siginfo *>(a.ibuf + ioff) : nullptr;
-	struct __siginfo *b_info = use_infop ?
-	    reinterpret_cast<struct __siginfo *>(b.ibuf + ioff) : nullptr;
+	__wrusage *a_ru = use_ru ?
+	    reinterpret_cast<__wrusage *>(a.rbuf + roff) : nullptr;
+	__wrusage *b_ru = use_ru ?
+	    reinterpret_cast<__wrusage *>(b.rbuf + roff) : nullptr;
+	__siginfo *a_info = use_infop ?
+	    reinterpret_cast<__siginfo *>(a.ibuf + ioff) : nullptr;
+	__siginfo *b_info = use_infop ?
+	    reinterpret_cast<__siginfo *>(b.ibuf + ioff) : nullptr;
 
 	rec_reset();
 	ret_port = pbsd::lib_libc_sys::b0020s1::pdwait(fd, a_status, options,

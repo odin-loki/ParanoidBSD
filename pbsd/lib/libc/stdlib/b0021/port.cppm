@@ -97,7 +97,7 @@ l64a_r(long value, char *buffer, int buflen)
 	uint32_t v;
 
 	v = value;
-	while (buflen-- > 1) {
+	while (buflen-- > 0) {
 		if (v == 0) {
 			*buffer = '\0';
 			return (0);
