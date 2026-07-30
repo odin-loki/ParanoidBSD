@@ -820,7 +820,7 @@ b0254,hbsd/src/lib/libthr/thread/thr_getthreadid_np.c,lib/libthr/thread,49,DEFER
 b0254,hbsd/src/lib/libthr/thread/thr_ctrdtr.c,lib/libthr/thread,53,DEFERRED,
 b0255,hbsd/src/lib/libc/gen/frexp.c,lib/libc/gen,57,VERIFIED,
 b0255,hbsd/src/lib/libc/gen/sethostname.c,lib/libc/gen,47,VERIFIED,
-b0255,hbsd/src/lib/libc/gen/raise.c,lib/libc/gen,49,PENDING,
+b0255,hbsd/src/lib/libc/gen/raise.c,lib/libc/gen,49,DEFERRED,
 b0255,hbsd/src/lib/libc/gen/basename.c,lib/libc/gen,51,DEFERRED,
 b0256,hbsd/src/lib/libc/gen/setdomainname.c,lib/libc/gen,47,VERIFIED,
 b0256,hbsd/src/lib/libc/gen/unvis-compat.c,lib/libc/gen,48,DEFERRED,
