@@ -1875,7 +1875,7 @@ b0634,hbsd/src/sys/netpfil/ipfilter/netinet/ip_rules.c,sys/netpfil/ipfilter/neti
 b0634,hbsd/src/sys/netpfil/ipfilter/netinet/ip_rcmd_pxy.c,sys/netpfil/ipfilter/netinet,326,DEFERRED,
 b0634,hbsd/src/sys/netpfil/ipfilter/netinet/ip_raudio_pxy.c,sys/netpfil/ipfilter/netinet,328,DEFERRED,
 b0635,hbsd/src/sbin/ipf/ipftest/md5.c,sbin/ipf/ipftest,301,DEFERRED,
-b0635,hbsd/src/sbin/ipf/ipftest/ipftest.c,sbin/ipf/ipftest,710,PENDING,
+b0635,hbsd/src/sbin/ipf/ipftest/ipftest.c,sbin/ipf/ipftest,710,DEFERRED,
 b0635,hbsd/src/sbin/ipf/ipftest/ip_fil.c,sbin/ipf/ipftest,807,DEFERRED,
 b0636,hbsd/src/sbin/ipf/ipf/ipf.c,sbin/ipf/ipf,573,PENDING,
 b0636,hbsd/src/sbin/ipf/ipf/bpf_filter.c,sbin/ipf/ipf,577,PENDING,
