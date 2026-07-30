@@ -2843,7 +2843,7 @@ b0985,hbsd/src/usr.sbin/cpucontrol/cpucontrol.c,usr.sbin/cpucontrol,591,DEFERRED
 b0986,hbsd/src/usr.bin/col/col.c,usr.bin/col,592,DEFERRED,
 b0987,hbsd/src/usr.bin/whois/whois.c,usr.bin/whois,610,DEFERRED,
 b0988,hbsd/src/usr.sbin/yppush/yppush_main.c,usr.sbin/yppush,633,PENDING,
-b0989,hbsd/src/usr.bin/join/join.c,usr.bin/join,661,PENDING,
+b0989,hbsd/src/usr.bin/join/join.c,usr.bin/join,661,DEFERRED,
 b0990,hbsd/src/sys/netlink/ktest_netlink_message_writer.c,sys/netlink,108,PENDING,
 b0990,hbsd/src/sys/netlink/netlink_route.c,sys/netlink,143,DEFERRED,
 b0990,hbsd/src/sys/netlink/netlink_sysevent.c,sys/netlink,205,DEFERRED,
