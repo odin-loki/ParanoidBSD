@@ -2859,7 +2859,7 @@ b0996,hbsd/src/usr.sbin/virtual_oss/virtual_oss/compressor.c,usr.sbin/virtual_os
 b0996,hbsd/src/usr.sbin/virtual_oss/virtual_oss/ring.c,usr.sbin/virtual_oss/virtual_oss,213,DEFERRED,
 b0996,hbsd/src/usr.sbin/virtual_oss/virtual_oss/mul.c,usr.sbin/virtual_oss/virtual_oss,175,DEFERRED,
 b0996,hbsd/src/usr.sbin/virtual_oss/virtual_oss/audio_delay.c,usr.sbin/virtual_oss/virtual_oss,238,DEFERRED,
-b0997,hbsd/src/usr.sbin/prometheus_sysctl_exporter/prometheus_sysctl_exporter.c,usr.sbin/prometheus_sysctl_exporter,706,PENDING,
+b0997,hbsd/src/usr.sbin/prometheus_sysctl_exporter/prometheus_sysctl_exporter.c,usr.sbin/prometheus_sysctl_exporter,706,DEFERRED,
 b0998,hbsd/src/usr.bin/localedef/numeric.c,usr.bin/localedef,117,PENDING,
 b0998,hbsd/src/usr.bin/localedef/messages.c,usr.bin/localedef,119,PENDING,
 b0998,hbsd/src/usr.bin/localedef/monetary.c,usr.bin/localedef,209,PENDING,
