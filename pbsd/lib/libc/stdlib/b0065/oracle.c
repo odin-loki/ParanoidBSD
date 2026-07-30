@@ -11,6 +11,14 @@
  *	lib/libc/stdlib/ldiv.c
  */
 
+/*
+ * Strict -std=c11 hides the BSD quad_t/u_quad_t typedefs behind __USE_MISC,
+ * so ask for them explicitly.  No function body is affected.
+ */
+#ifndef _DEFAULT_SOURCE
+#define	_DEFAULT_SOURCE
+#endif
+
 /* ---------------------------------------------------------------- strtoq.c */
 /*-
  * SPDX-License-Identifier: BSD-3-Clause

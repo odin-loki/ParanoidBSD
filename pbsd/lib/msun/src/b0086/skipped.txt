@@ -1,0 +1,1 @@
+e_gamma.c - wraps gamma_r(3), a BSD-only symbol absent from this host's libm (glibc), so neither the port nor the oracle can link or be differentially tested.

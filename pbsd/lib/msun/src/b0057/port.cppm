@@ -80,18 +80,8 @@ conj(double _Complex z)
 
 	double _Complex r;
 	__real__ r = creal(z);
-	__imag__ r = -cimag_(z);
+	__imag__ r = -(__imag__ z);
 	return r;
-}
-
-}
-
-namespace pbsd::lib_msun_src::b0057 {
-
-double
-cimag_(double _Complex z)
-{
-	return __imag__ z;
 }
 
 }

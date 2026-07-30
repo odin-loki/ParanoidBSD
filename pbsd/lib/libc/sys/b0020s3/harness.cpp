@@ -1,914 +1,495 @@
-/*
- * harness.cpp -- differential test for PBSD batch b0020s3.
- *
- * Compares pbsd::lib_libc_sys::b0020s3::sigwait() against the unmodified
- * reference ref_sigwait() from oracle.c.
- *
- * The only observable behaviour of sigwait.c is the indirect dispatch through
- * libc's interposing table: the table slot that is selected, the arguments
- * that reach it unchanged, the value that comes back, and the absence of any
- * other memory effect.  So the harness owns the table (as libc does, in
- * interposing_table.c), fills EVERY slot with a distinct recording target and
- * checks, for both implementations:
- *
- *   - the returned int;
- *   - errno afterwards;
- *   - how many times a slot was entered;
- *   - which slot was entered;
- *   - the classification/offset of both pointer arguments as they arrived;
- *   - the ENTIRE guard-filled buffer holding the sigset_t and the int, past
- *     the nominal write window, byte for byte.
- *
- * Two separate buffers are used, one per implementation, so pointers are only
- * ever compared as offsets from their own base -- never as raw addresses.
- * The table is also driven with the host's real sigwait() so the live success
- * path and the live EFAULT error path are exercised end to end.
- */
-
-#define _POSIX_C_SOURCE 200809L
-
-#include <signal.h>
-#include <unistd.h>
+// b0020s3 differential test: port vs. ref_ oracle.
+//
+// sigwait() is libc's interposable syscall stub: it forwards both arguments
+// through an interposing-table slot and returns whatever the slot's callee
+// returned.  The test installs the same instrumented callee in the port's slot
+// and in the oracle's slot, then compares, for every case:
+//
+//   - the return value;
+//   - errno afterwards;
+//   - that the slot was entered exactly as many times on each side;
+//   - the OFFSETS (never raw addresses) of both forwarded pointers, relative
+//     to each side's own buffer base, including the null/non-null distinction;
+//   - the sigset_t bytes the callee actually observed through `set';
+//   - the ENTIRE buffer of each side, guard bytes included, so a write that
+//     lands outside the nominal `sig' window is caught.
 
 #include <cerrno>
 #include <climits>
+#include <csignal>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <utility>
+#include <initializer_list>
 
 import pbsd.lib.libc.sys.b0020s3;
 
-/* ------------------------------------------------------------------ */
-/* the interposing table (lib/libc/gen/interposing_table.c)            */
-/* ------------------------------------------------------------------ */
-
-/*
- * Deliberately an independent copy of the enum: if a planted bug perturbs the
- * port's own copy, the harness still knows which slot the real sigwait.c must
- * reach.
- */
-enum {
-	H_INTERPOS_accept,
-	H_INTERPOS_accept4,
-	H_INTERPOS_aio_suspend,
-	H_INTERPOS_close,
-	H_INTERPOS_connect,
-	H_INTERPOS_fcntl,
-	H_INTERPOS_fsync,
-	H_INTERPOS_fork,
-	H_INTERPOS_msync,
-	H_INTERPOS_nanosleep,
-	H_INTERPOS_openat,
-	H_INTERPOS_poll,
-	H_INTERPOS_pselect,
-	H_INTERPOS_recvfrom,
-	H_INTERPOS_recvmsg,
-	H_INTERPOS_select,
-	H_INTERPOS_sendmsg,
-	H_INTERPOS_sendto,
-	H_INTERPOS_setcontext,
-	H_INTERPOS_sigaction,
-	H_INTERPOS_sigprocmask,
-	H_INTERPOS_sigsuspend,
-	H_INTERPOS_sigwait,
-	H_INTERPOS_sigtimedwait,
-	H_INTERPOS_sigwaitinfo,
-	H_INTERPOS_swapcontext,
-	H_INTERPOS_system,
-	H_INTERPOS_tcdrain,
-	H_INTERPOS_read,
-	H_INTERPOS_readv,
-	H_INTERPOS_wait4,
-	H_INTERPOS_write,
-	H_INTERPOS_writev,
-	H_INTERPOS__pthread_mutex_init_calloc_cb,
-	H_INTERPOS_spinlock,
-	H_INTERPOS_wait6,
-	H_INTERPOS_kevent,
-	H_INTERPOS_wait,
-	H_INTERPOS_pdfork,
-	H_INTERPOS_MAX
-};
-
-/* Slack past the last real slot, so that a bug which indexes off the end of
- * the table lands on a recognisable trap instead of on whatever the linker
- * happened to place next to it. */
-#define	H_INTERPOS_SLACK	64
-
 extern "C" {
-typedef int (*interpos_func_t)(void);
-
-int trap_target(const sigset_t *set, int *sig);
-interpos_func_t __libc_interposing[H_INTERPOS_MAX + H_INTERPOS_SLACK];
+extern int (*ref_interpos_sigwait_slot)(const sigset_t *, int *);
 int ref_sigwait(const sigset_t *set, int *sig);
 }
 
-using sigwait_func_t = int (*)(const sigset_t *, int *);
-
-/* ------------------------------------------------------------------ */
-/* recording targets                                                   */
-/* ------------------------------------------------------------------ */
+namespace port = pbsd::lib_libc_sys::b0020s3;
 
 namespace {
 
-const sigset_t *const SET_UNSET = reinterpret_cast<const sigset_t *>(-1);
-int *const SIG_UNSET = reinterpret_cast<int *>(-1);
+constexpr std::size_t SETSZ = sizeof(sigset_t);
+constexpr std::size_t TAIL = 64;
+constexpr std::size_t BUFSZ = SETSZ + TAIL;
+constexpr unsigned char GUARD = 0x7f;
+constexpr int ERRNO_SENTINEL = 0x5eed;
+
+struct alignas(64) Buf {
+	unsigned char b[BUFSZ];
+};
 
 struct Record {
-	int calls;
-	int slot;
-	const sigset_t *set;
-	int *sig;
+	long calls;
+	long set_off; // -1 when the pointer was null
+	long sig_off; // -1 when the pointer was null
+	bool set_seen_valid;
+	unsigned char set_seen[SETSZ];
 };
 
 Record g_rec;
-int g_ret_base;
+const unsigned char *g_base;
+int g_ret;
 int g_write_val;
 bool g_do_write;
+int g_errno_val;
 
-void
-reset_record(void)
+long off_of(const void *p, const unsigned char *base)
 {
-	g_rec.calls = 0;
-	g_rec.slot = -1;
-	g_rec.set = SET_UNSET;
-	g_rec.sig = SIG_UNSET;
+	if (p == nullptr)
+		return -1;
+	return static_cast<long>(static_cast<const unsigned char *>(p) - base);
 }
 
-void
-record(int slot, const sigset_t *set, int *sig)
+// The interposed callee, shared by both sides so that any difference in
+// observed behaviour is attributable to the caller under test.
+int shim(const sigset_t *set, int *sig)
 {
 	g_rec.calls++;
-	g_rec.slot = slot;
-	g_rec.set = set;
-	g_rec.sig = sig;
+	g_rec.set_off = off_of(set, g_base);
+	g_rec.sig_off = off_of(sig, g_base);
+	g_rec.set_seen_valid = false;
+	if (set != nullptr) {
+		std::memcpy(g_rec.set_seen, set, SETSZ);
+		g_rec.set_seen_valid = true;
+	}
+	if (sig != nullptr && g_do_write)
+		*sig = g_write_val;
+	errno = g_errno_val;
+	return g_ret;
 }
 
-/*
- * Slot N's answer -- and the value it stores through sig -- both depend on N,
- * so dispatching to the wrong slot shows up in the return value AND in the
- * buffer, not just in g_rec.slot.
- */
-template <int N>
-int
-slot_target(const sigset_t *set, int *sig)
-{
-	record(N, set, sig);
-	if (g_do_write && sig != nullptr)
-		*sig = static_cast<int>(static_cast<unsigned>(g_write_val) +
-		    static_cast<unsigned>(N) * 7u + 1u);
-	return static_cast<int>(static_cast<unsigned>(g_ret_base) +
-	    static_cast<unsigned>(N) * 131u + 1u);
-}
-
-template <std::size_t... Is>
-void
-install_all(std::index_sequence<Is...>)
-{
-	((__libc_interposing[Is] = reinterpret_cast<interpos_func_t>(
-	    &slot_target<static_cast<int>(Is)>)), ...);
-}
-
-void
-install_recorders(void)
-{
-	std::size_t i;
-
-	for (i = H_INTERPOS_MAX; i < H_INTERPOS_MAX + H_INTERPOS_SLACK; i++)
-		__libc_interposing[i] =
-		    reinterpret_cast<interpos_func_t>(&trap_target);
-	install_all(std::make_index_sequence<H_INTERPOS_MAX>{});
-}
-
-/* ------------------------------------------------------------------ */
-/* guarded buffers                                                     */
-/* ------------------------------------------------------------------ */
-
-constexpr unsigned char GUARD = 0x7f;
-constexpr std::size_t SS = sizeof(sigset_t);
-constexpr std::size_t BUFSZ = SS * 2 + 64;
-
-alignas(16) unsigned char g_bufA[BUFSZ];
-alignas(16) unsigned char g_bufB[BUFSZ];
-
-struct Args {
-	bool have_set;
-	bool have_sig;
+struct Case {
+	unsigned char fill[SETSZ];
 	std::size_t set_off;
 	std::size_t sig_off;
-	unsigned char set_fill[SS];
-	int sig_init;
-	int ret_base;
+	bool set_null;
+	bool sig_null;
 	bool do_write;
+	int ret;
 	int write_val;
-	/*
-	 * When set, the pointer handed over is this raw value instead of a
-	 * pointer into the buffer.  Never dereferenced by the recorders.
-	 */
-	const void *odd_set;
-	const void *odd_sig;
-	/* When set, the real sigwait() occupies the sigwait slot. */
-	bool live;
-	int live_raise;
+	int err;
 };
 
-Args
-default_args(void)
+unsigned long g_cases;
+unsigned long g_fails;
+unsigned long g_reported;
+
+void fail(const Case &c, const char *what, long a, long b)
 {
-	Args a;
-	a.have_set = true;
-	a.have_sig = true;
-	a.set_off = 0;
-	a.sig_off = SS;
-	std::memset(a.set_fill, 0, sizeof(a.set_fill));
-	a.sig_init = 0;
-	a.ret_base = 0;
-	a.do_write = true;
-	a.write_val = 0;
-	a.odd_set = nullptr;
-	a.odd_sig = nullptr;
-	a.live = false;
-	a.live_raise = 0;
-	return a;
-}
-
-void
-lay_out(unsigned char *buf, const Args &a)
-{
-	std::memset(buf, GUARD, BUFSZ);
-	if (a.have_set)
-		std::memcpy(buf + a.set_off, a.set_fill, SS);
-	if (a.have_sig)
-		std::memcpy(buf + a.sig_off, &a.sig_init, sizeof(int));
-}
-
-/*
- * A pointer is compared as (class, value): NULL, an offset inside its own
- * buffer, or -- only for the deliberately bogus pointers -- the raw value.
- */
-struct PtrId {
-	int cls; /* 0 = null, 1 = inside buffer, 2 = outside */
-	std::intptr_t val;
-};
-
-PtrId
-identify(const void *p, const unsigned char *base)
-{
-	PtrId id;
-
-	if (p == nullptr) {
-		id.cls = 0;
-		id.val = 0;
-		return id;
-	}
-	const unsigned char *q = static_cast<const unsigned char *>(p);
-	if (q >= base && q < base + BUFSZ) {
-		id.cls = 1;
-		id.val = q - base;
-		return id;
-	}
-	id.cls = 2;
-	id.val = reinterpret_cast<std::intptr_t>(p);
-	return id;
-}
-
-bool
-same(const PtrId &x, const PtrId &y)
-{
-	return (x.cls == y.cls && x.val == y.val);
-}
-
-/* ------------------------------------------------------------------ */
-/* the comparison                                                      */
-/* ------------------------------------------------------------------ */
-
-struct Tally {
-	const char *name;
-	long cases;
-	long failures;
-};
-
-Tally t_edge = { "sigwait/edge", 0, 0 };
-Tally t_live = { "sigwait/live", 0, 0 };
-Tally t_rand = { "sigwait/random", 0, 0 };
-
-int g_printed;
-
-/*
- * A bug in the port can leave a live sigwait() waiting for a signal that will
- * never arrive.  The watchdog turns that into a failure instead of a hang.
- * SIGALRM stays unblocked and is never a member of any wait set used here, so
- * it is delivered to this handler rather than dequeued by sigwait().
- */
-void
-watchdog_expired(int)
-{
-	static const char msg[] = "\nFAIL: watchdog expired -- a call never "
-	    "returned\nRESULT: FAIL\n";
-
-	ssize_t n = write(STDERR_FILENO, msg, sizeof(msg) - 1);
-
-	(void)n;
-	_exit(1);
-}
-
-void
-signal_setup(void)
-{
-	struct sigaction sa;
-	sigset_t s;
-
-	sigemptyset(&s);
-	sigaddset(&s, SIGUSR1);
-	sigaddset(&s, SIGUSR2);
-	sigaddset(&s, SIGWINCH);
-	sigprocmask(SIG_BLOCK, &s, nullptr);
-
-	std::memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = watchdog_expired;
-	sigemptyset(&sa.sa_mask);
-	sa.sa_flags = 0;
-	sigaction(SIGALRM, &sa, nullptr);
-
-	sigemptyset(&s);
-	sigaddset(&s, SIGALRM);
-	sigprocmask(SIG_UNBLOCK, &s, nullptr);
-
-	/* Generous: the whole run is well under a second of CPU. */
-	alarm(60);
-}
-
-void
-fail(Tally &t, const char *what, const char *detail)
-{
-	t.failures++;
-	if (g_printed < 20) {
-		g_printed++;
-		std::printf("FAIL [%s] case %ld: %s%s%s\n", t.name, t.cases,
-		    what, detail != nullptr ? " -- " : "",
-		    detail != nullptr ? detail : "");
+	g_fails++;
+	if (g_reported++ < 20u) {
+		std::printf("  FAIL sigwait: %s port=%ld ref=%ld"
+		    " (set_off=%zu sig_off=%zu set_null=%d sig_null=%d"
+		    " do_write=%d ret=%d write=%d err=%d fill[0]=0x%02x)\n",
+		    what, a, b, c.set_off, c.sig_off,
+		    static_cast<int>(c.set_null), static_cast<int>(c.sig_null),
+		    static_cast<int>(c.do_write), c.ret, c.write_val, c.err,
+		    static_cast<unsigned>(c.fill[0]));
 	}
 }
 
-void
-run_case(Tally &t, const Args &a)
+void run(const Case &c)
 {
-	char buf[256];
+	g_cases++;
 
-	t.cases++;
+	Buf A, B;
+	std::memset(A.b, GUARD, BUFSZ);
+	std::memset(B.b, GUARD, BUFSZ);
+	std::memcpy(A.b + c.set_off, c.fill, SETSZ);
+	std::memcpy(B.b + c.set_off, c.fill, SETSZ);
 
-	lay_out(g_bufA, a);
-	lay_out(g_bufB, a);
+	g_ret = c.ret;
+	g_write_val = c.write_val;
+	g_do_write = c.do_write;
+	g_errno_val = c.err;
 
-	const sigset_t *setA = nullptr;
-	const sigset_t *setB = nullptr;
-	if (a.odd_set != nullptr) {
-		setA = static_cast<const sigset_t *>(a.odd_set);
-		setB = setA;
-	} else if (a.have_set) {
-		setA = reinterpret_cast<const sigset_t *>(g_bufA + a.set_off);
-		setB = reinterpret_cast<const sigset_t *>(g_bufB + a.set_off);
-	}
+	port::interpos_sigwait_slot = &shim;
+	ref_interpos_sigwait_slot = &shim;
 
-	int *sigA = nullptr;
-	int *sigB = nullptr;
-	if (a.odd_sig != nullptr) {
-		sigA = const_cast<int *>(static_cast<const int *>(a.odd_sig));
-		sigB = sigA;
-	} else if (a.have_sig) {
-		sigA = reinterpret_cast<int *>(g_bufA + a.sig_off);
-		sigB = reinterpret_cast<int *>(g_bufB + a.sig_off);
-	}
+	std::memset(&g_rec, 0, sizeof g_rec);
+	g_base = A.b;
+	errno = ERRNO_SENTINEL;
+	const int prv = port::sigwait(
+	    c.set_null ? nullptr
+	               : reinterpret_cast<const sigset_t *>(A.b + c.set_off),
+	    c.sig_null ? nullptr : reinterpret_cast<int *>(A.b + c.sig_off));
+	const int perrno = errno;
+	const Record prec = g_rec;
 
-	g_ret_base = a.ret_base;
-	g_write_val = a.write_val;
-	g_do_write = a.do_write;
+	std::memset(&g_rec, 0, sizeof g_rec);
+	g_base = B.b;
+	errno = ERRNO_SENTINEL;
+	const int orv = ref_sigwait(
+	    c.set_null ? nullptr
+	               : reinterpret_cast<const sigset_t *>(B.b + c.set_off),
+	    c.sig_null ? nullptr : reinterpret_cast<int *>(B.b + c.sig_off));
+	const int oerrno = errno;
+	const Record orec = g_rec;
 
-	install_recorders();
-	if (a.live)
-		__libc_interposing[H_INTERPOS_sigwait] =
-		    reinterpret_cast<interpos_func_t>(
-		    static_cast<sigwait_func_t>(&::sigwait));
-
-	reset_record();
-	if (a.live && a.live_raise != 0)
-		raise(a.live_raise);
-	errno = 0;
-	int rp = pbsd::lib_libc_sys::b0020s3::sigwait(setA, sigA);
-	int ep = errno;
-	Record recP = g_rec;
-
-	reset_record();
-	if (a.live && a.live_raise != 0)
-		raise(a.live_raise);
-	errno = 0;
-	int rr = ref_sigwait(setB, sigB);
-	int er = errno;
-	Record recR = g_rec;
-
-	if (rp != rr) {
-		std::snprintf(buf, sizeof(buf), "port=%d ref=%d", rp, rr);
-		fail(t, "return value differs", buf);
-	}
-	if (ep != er) {
-		std::snprintf(buf, sizeof(buf), "port=%d ref=%d", ep, er);
-		fail(t, "errno differs", buf);
-	}
-
-	if (a.live) {
-		/*
-		 * The real sigwait() does not record, so a mutant that skips
-		 * the sigwait slot lands on a recorder or on trap_target and
-		 * is caught here as well as by the return value.
-		 */
-		if (recP.calls != recR.calls) {
-			std::snprintf(buf, sizeof(buf), "port=%d ref=%d",
-			    recP.calls, recR.calls);
-			fail(t, "live dispatch count differs", buf);
-		}
-		if (recP.calls != 0) {
-			std::snprintf(buf, sizeof(buf), "slot=%d", recP.slot);
-			fail(t, "port bypassed the real sigwait", buf);
-		}
-	} else {
-		if (recP.calls != recR.calls) {
-			std::snprintf(buf, sizeof(buf), "port=%d ref=%d",
-			    recP.calls, recR.calls);
-			fail(t, "dispatch count differs", buf);
-		}
-		if (recP.slot != recR.slot) {
-			std::snprintf(buf, sizeof(buf), "port=%d ref=%d",
-			    recP.slot, recR.slot);
-			fail(t, "dispatched slot differs", buf);
-		}
-		if (recP.calls != 1 || recP.slot != H_INTERPOS_sigwait) {
-			std::snprintf(buf, sizeof(buf), "calls=%d slot=%d",
-			    recP.calls, recP.slot);
-			fail(t, "port did not dispatch via INTERPOS_sigwait",
-			    buf);
-		}
-		if (recR.calls != 1 || recR.slot != H_INTERPOS_sigwait) {
-			std::snprintf(buf, sizeof(buf), "calls=%d slot=%d",
-			    recR.calls, recR.slot);
-			fail(t, "ref did not dispatch via INTERPOS_sigwait",
-			    buf);
-		}
-		PtrId sP = identify(recP.set, g_bufA);
-		PtrId sR = identify(recR.set, g_bufB);
-		if (!same(sP, sR)) {
-			std::snprintf(buf, sizeof(buf),
-			    "port=(%d,%ld) ref=(%d,%ld)", sP.cls,
-			    static_cast<long>(sP.val), sR.cls,
-			    static_cast<long>(sR.val));
-			fail(t, "set argument differs", buf);
-		}
-		PtrId gP = identify(recP.sig, g_bufA);
-		PtrId gR = identify(recR.sig, g_bufB);
-		if (!same(gP, gR)) {
-			std::snprintf(buf, sizeof(buf),
-			    "port=(%d,%ld) ref=(%d,%ld)", gP.cls,
-			    static_cast<long>(gP.val), gR.cls,
-			    static_cast<long>(gR.val));
-			fail(t, "sig argument differs", buf);
-		}
-		/*
-		 * The arguments must arrive exactly where they were sent,
-		 * measured against each implementation's own buffer.
-		 */
-		if (!same(sP, identify(setA, g_bufA)))
-			fail(t, "port perturbed the set argument", nullptr);
-		if (!same(gP, identify(sigA, g_bufA)))
-			fail(t, "port perturbed the sig argument", nullptr);
-		if (!same(sR, identify(setB, g_bufB)))
-			fail(t, "ref perturbed the set argument", nullptr);
-		if (!same(gR, identify(sigB, g_bufB)))
-			fail(t, "ref perturbed the sig argument", nullptr);
-	}
-
-	if (std::memcmp(g_bufA, g_bufB, BUFSZ) != 0) {
+	if (prv != orv)
+		fail(c, "return", prv, orv);
+	if (perrno != oerrno)
+		fail(c, "errno", perrno, oerrno);
+	if (prec.calls != orec.calls)
+		fail(c, "slot calls", prec.calls, orec.calls);
+	if (prec.set_off != orec.set_off)
+		fail(c, "set offset", prec.set_off, orec.set_off);
+	if (prec.sig_off != orec.sig_off)
+		fail(c, "sig offset", prec.sig_off, orec.sig_off);
+	if (prec.set_seen_valid != orec.set_seen_valid)
+		fail(c, "set null-ness", prec.set_seen_valid,
+		    orec.set_seen_valid);
+	if (prec.set_seen_valid && orec.set_seen_valid &&
+	    std::memcmp(prec.set_seen, orec.set_seen, SETSZ) != 0)
+		fail(c, "sigset contents", 1, 0);
+	if (std::memcmp(A.b, B.b, BUFSZ) != 0) {
 		std::size_t i = 0;
-		while (i < BUFSZ && g_bufA[i] == g_bufB[i])
+		while (i < BUFSZ && A.b[i] == B.b[i])
 			i++;
-		std::snprintf(buf, sizeof(buf),
-		    "first difference at byte %zu: port=0x%02x ref=0x%02x", i,
-		    g_bufA[i], g_bufB[i]);
-		fail(t, "buffer differs", buf);
+		fail(c, "buffer bytes", static_cast<long>(A.b[i]),
+		    static_cast<long>(B.b[i]));
 	}
 }
 
-/* ------------------------------------------------------------------ */
-/* edge cases                                                          */
-/* ------------------------------------------------------------------ */
+// ---------------------------------------------------------------- fill modes
 
-struct Layout {
-	bool have_set;
-	bool have_sig;
-	std::size_t set_off;
-	std::size_t sig_off;
-};
-
-const Layout LAYOUTS[] = {
-	{ true, true, 0, SS },			/* set at buffer start */
-	{ true, true, BUFSZ - SS, 0 },		/* set at end, sig at start */
-	{ true, true, 8, 0 },			/* sig at start, set adjacent */
-	{ true, true, 0, BUFSZ - sizeof(int) },	/* sig at the very end */
-	{ true, true, SS, SS * 2 },		/* both in the middle */
-	{ false, true, 0, 0 },			/* no set, sig at start */
-	{ false, true, 0, BUFSZ - sizeof(int) },/* no set, sig at end */
-	{ true, false, 0, 0 },			/* no sig, set at start */
-	{ true, false, BUFSZ - SS, 0 },		/* no sig, set at end */
-	{ false, false, 0, 0 },			/* both null */
-};
-constexpr std::size_t NLAYOUT = sizeof(LAYOUTS) / sizeof(LAYOUTS[0]);
-
-const int RETS[] = { 0, 1, -1, 2, EINVAL, EFAULT, EINTR, INT_MAX, INT_MIN,
-	0x7f7f7f7f, static_cast<int>(0x80000001u), 255, 256 };
-constexpr std::size_t NRET = sizeof(RETS) / sizeof(RETS[0]);
-
-const int SIGINITS[] = { 0, 1, -1, 31, 32, 63, 64, 65, SIGUSR1, INT_MAX,
-	INT_MIN, 0x7f7f7f7f, static_cast<int>(0x80808080u),
-	static_cast<int>(0xffffffffu) };
-constexpr std::size_t NSIGINIT = sizeof(SIGINITS) / sizeof(SIGINITS[0]);
-
-const int WRITES[] = { 0, 1, -1, SIGUSR1, SIGUSR2, 64, INT_MAX, INT_MIN,
-	0x7f7f7f7f, static_cast<int>(0x80000000u) };
-constexpr std::size_t NWRITE = sizeof(WRITES) / sizeof(WRITES[0]);
-
-constexpr int NPATTERN = 12;
-
-void
-apply_pattern(unsigned char *p, std::size_t n, int which)
+void fill_const(unsigned char *p, unsigned char v)
 {
-	std::size_t i;
-
-	switch (which) {
-	case 0:
-		std::memset(p, 0x00, n);
-		break;
-	case 1:
-		std::memset(p, 0xff, n);
-		break;
-	case 2:
-		std::memset(p, 0x80, n);
-		break;
-	case 3:
-		std::memset(p, GUARD, n);
-		break;
-	case 4:
-		std::memset(p, 0x01, n);
-		break;
-	case 5:
-		for (i = 0; i < n; i++)
-			p[i] = (i % 2 == 0) ? 0x80 : 0x00;
-		break;
-	case 6:
-		for (i = 0; i < n; i++)
-			p[i] = (i % 2 == 0) ? 0xff : GUARD;
-		break;
-	case 7:
-		for (i = 0; i < n; i++)
-			p[i] = static_cast<unsigned char>(i & 0xff);
-		break;
-	case 8:
-		std::memset(p, 0x00, n);
-		p[0] = 0x80;
-		break;
-	case 9:
-		std::memset(p, 0x00, n);
-		p[n - 1] = 0x80;
-		break;
-	case 10:
-		for (i = 0; i < n; i++)
-			p[i] = static_cast<unsigned char>(0x80 + (i & 0x7f));
-		break;
-	default:
-		std::memset(p, 0x5a, n);
-		break;
-	}
+	std::memset(p, v, SETSZ);
 }
 
-void
-edge_cases(void)
+void fill_from_sigset(unsigned char *p, const sigset_t &s)
 {
-	std::size_t li;
-	std::size_t ri;
-	std::size_t si;
-	int w;
-	int pi;
-	int k;
+	std::memcpy(p, &s, SETSZ);
+}
 
-	/* layouts x return values x write/no-write */
-	for (li = 0; li < NLAYOUT; li++) {
-		for (ri = 0; ri < NRET; ri++) {
-			for (w = 0; w < 2; w++) {
-				Args a = default_args();
-				a.have_set = LAYOUTS[li].have_set;
-				a.have_sig = LAYOUTS[li].have_sig;
-				a.set_off = LAYOUTS[li].set_off;
-				a.sig_off = LAYOUTS[li].sig_off;
-				apply_pattern(a.set_fill, SS,
-				    static_cast<int>((li + ri) % NPATTERN));
-				a.sig_init = SIGINITS[(li + ri) % NSIGINIT];
-				a.ret_base = RETS[ri];
-				a.do_write = (w != 0);
-				a.write_val = WRITES[(ri + li) % NWRITE];
-				run_case(t_edge, a);
+void fill_empty(unsigned char *p)
+{
+	sigset_t s;
+	sigemptyset(&s);
+	fill_from_sigset(p, s);
+}
+
+void fill_full(unsigned char *p)
+{
+	sigset_t s;
+	sigfillset(&s);
+	fill_from_sigset(p, s);
+}
+
+void fill_one(unsigned char *p, int signo)
+{
+	sigset_t s;
+	sigemptyset(&s);
+	sigaddset(&s, signo);
+	fill_from_sigset(p, s);
+}
+
+// ------------------------------------------------------------------ hand set
+
+Case base_case()
+{
+	Case c{};
+	fill_const(c.fill, 0x00);
+	c.set_off = 0;
+	c.sig_off = SETSZ; // first slot past the sigset image
+	c.set_null = false;
+	c.sig_null = false;
+	c.do_write = true;
+	c.ret = 0;
+	c.write_val = 0;
+	c.err = 0;
+	return c;
+}
+
+constexpr std::size_t LAST_SIG_OFF =
+    ((BUFSZ - sizeof(int)) / alignof(int)) * alignof(int);
+
+void edge_cases()
+{
+	// Empty / all-zero sigset, no write, both boundaries of ret.
+	for (int r : {0, 1, -1, INT_MIN, INT_MAX}) {
+		Case c = base_case();
+		c.ret = r;
+		c.do_write = false;
+		run(c);
+		c.do_write = true;
+		run(c);
+	}
+
+	// Every byte pattern that matters for the sigset image, including the
+	// guard byte itself (so a copy that overruns cannot hide) and the
+	// high-bit range 0x80..0xff.
+	for (unsigned v = 0; v <= 0xffu; v++) {
+		Case c = base_case();
+		fill_const(c.fill, static_cast<unsigned char>(v));
+		c.write_val = static_cast<int>(v);
+		c.ret = (v & 1u) ? -1 : 1;
+		run(c);
+	}
+	for (unsigned v = 0x80u; v <= 0xffu; v++) {
+		Case c = base_case();
+		fill_const(c.fill, static_cast<unsigned char>(v));
+		c.set_off = 16;
+		c.sig_off = 0;
+		c.ret = static_cast<int>(v) - 0x100;
+		c.write_val = static_cast<int>(v) - 0x100;
+		run(c);
+	}
+
+	// NUL-heavy: zeros with a single high-bit byte walked across the image.
+	for (std::size_t i = 0; i < SETSZ; i++) {
+		Case c = base_case();
+		fill_const(c.fill, 0x00);
+		c.fill[i] = 0xff;
+		c.write_val = static_cast<int>(i) - 1;
+		run(c);
+		c.fill[i] = 0x80;
+		c.do_write = false;
+		run(c);
+	}
+
+	// Real sigsets.
+	{
+		Case c = base_case();
+		fill_empty(c.fill);
+		run(c);
+		fill_full(c.fill);
+		c.ret = -1;
+		c.err = EINTR;
+		run(c);
+	}
+	for (int signo : {SIGHUP, SIGINT, SIGQUIT, SIGKILL, SIGUSR1, SIGUSR2,
+	         SIGTERM, SIGCHLD, SIGSTOP, SIGCONT}) {
+		Case c = base_case();
+		fill_one(c.fill, signo);
+		c.write_val = signo;
+		c.ret = 0;
+		run(c);
+		c.ret = -1;
+		c.err = EAGAIN;
+		c.do_write = false;
+		run(c);
+	}
+
+	// Null-pointer combinations, both arguments independently.
+	for (int sn = 0; sn < 2; sn++) {
+		for (int gn = 0; gn < 2; gn++) {
+			for (int r : {0, -1}) {
+				Case c = base_case();
+				c.set_null = (sn != 0);
+				c.sig_null = (gn != 0);
+				c.ret = r;
+				c.err = (r == 0) ? 0 : EINVAL;
+				c.write_val = 0x7f7f7f7f;
+				run(c);
 			}
 		}
 	}
 
-	/* every sigset_t pattern x every initial *sig value */
-	for (pi = 0; pi < NPATTERN; pi++) {
-		for (si = 0; si < NSIGINIT; si++) {
-			Args a = default_args();
-			apply_pattern(a.set_fill, SS, pi);
-			a.sig_init = SIGINITS[si];
-			a.ret_base = RETS[(static_cast<std::size_t>(pi) + si) %
-			    NRET];
-			a.do_write = ((static_cast<std::size_t>(pi) + si) %
-			    2) == 0;
-			a.write_val = WRITES[si % NWRITE];
-			run_case(t_edge, a);
+	// Boundary write positions: the very first slot, the slot immediately
+	// before and after the sigset image, and the last slot that still fits
+	// inside the buffer.
+	for (std::size_t off : {std::size_t{0}, alignof(int),
+	         SETSZ - sizeof(int), SETSZ, SETSZ + alignof(int),
+	         LAST_SIG_OFF - alignof(int), LAST_SIG_OFF}) {
+		for (int wv : {0, 1, -1, INT_MIN, INT_MAX, 0x7f7f7f7f,
+		         static_cast<int>(0x80808080u)}) {
+			Case c = base_case();
+			c.sig_off = off;
+			c.write_val = wv;
+			run(c);
+			c.do_write = false;
+			run(c);
 		}
 	}
 
-	/* every write value, at the two extreme sig offsets */
-	for (w = 0; w < static_cast<int>(NWRITE); w++) {
-		Args a = default_args();
-		a.set_off = SS;
-		a.sig_off = 0;
-		apply_pattern(a.set_fill, SS, w % NPATTERN);
-		a.sig_init = 0x7f7f7f7f;
-		a.ret_base = RETS[static_cast<std::size_t>(w) % NRET];
-		a.write_val = WRITES[w];
-		run_case(t_edge, a);
-		a.set_off = 0;
-		a.sig_off = BUFSZ - sizeof(int);
-		run_case(t_edge, a);
+	// Boundary `set' positions, including the one where the image ends
+	// exactly at the end of the buffer.
+	for (std::size_t so = 0; so + SETSZ <= BUFSZ; so += alignof(sigset_t)) {
+		Case c = base_case();
+		fill_const(c.fill, 0xa5);
+		c.set_off = so;
+		c.sig_off = 0;
+		c.ret = static_cast<int>(so);
+		c.write_val = static_cast<int>(so) - 1;
+		run(c);
 	}
 
-	/* pointers that are not buffer pointers, passed straight through */
-	{
-		Args a = default_args();
-		a.do_write = false;
-		a.odd_set = reinterpret_cast<const void *>(
-		    static_cast<std::uintptr_t>(0x1));
-		run_case(t_edge, a);
-		a.odd_set = reinterpret_cast<const void *>(UINTPTR_MAX - 7);
-		run_case(t_edge, a);
-		a.odd_set = nullptr;
-		a.have_set = false;
-		a.odd_sig = reinterpret_cast<const void *>(
-		    static_cast<std::uintptr_t>(0xdeadbee0u));
-		run_case(t_edge, a);
-		a.have_set = true;
-		run_case(t_edge, a);
-		a.odd_set = reinterpret_cast<const void *>(
-		    static_cast<std::uintptr_t>(0x1234));
-		run_case(t_edge, a);
-	}
-
-	/* repeated dispatch must stay stateless */
-	for (k = 0; k < 8; k++) {
-		Args a = default_args();
-		a.ret_base = RETS[static_cast<std::size_t>(k) % NRET];
-		a.write_val = WRITES[static_cast<std::size_t>(k) % NWRITE];
-		a.sig_init = SIGINITS[static_cast<std::size_t>(k) % NSIGINIT];
-		apply_pattern(a.set_fill, SS, k % NPATTERN);
-		run_case(t_edge, a);
+	// errno values, including 0 and the sentinel itself.
+	for (int e : {0, 1, EINTR, EINVAL, EAGAIN, EFAULT, ERRNO_SENTINEL,
+	         INT_MAX}) {
+		Case c = base_case();
+		c.err = e;
+		c.ret = (e == 0) ? 0 : -1;
+		run(c);
 	}
 }
 
-/* ------------------------------------------------------------------ */
-/* live cases: the host's real sigwait() in the slot                   */
-/* ------------------------------------------------------------------ */
+// ------------------------------------------------------------------- sweep
 
-void
-live_cases(void)
+std::uint64_t g_state = 0x243f6a8885a308d3ULL;
+
+std::uint64_t next_u64()
 {
-	sigset_t want;
-
-	/* success: a blocked signal is already pending */
-	{
-		Args a = default_args();
-		a.live = true;
-		a.live_raise = SIGUSR1;
-		a.set_off = 0;
-		a.sig_off = SS;
-		sigemptyset(&want);
-		sigaddset(&want, SIGUSR1);
-		std::memcpy(a.set_fill, &want, SS);
-		a.sig_init = 0x7f7f7f7f;
-		run_case(t_live, a);
-
-		a.set_off = BUFSZ - SS;
-		a.sig_off = 0;
-		a.live_raise = SIGUSR2;
-		sigemptyset(&want);
-		sigaddset(&want, SIGUSR2);
-		std::memcpy(a.set_fill, &want, SS);
-		run_case(t_live, a);
-
-		a.set_off = 0;
-		a.sig_off = BUFSZ - sizeof(int);
-		a.live_raise = SIGWINCH;
-		sigemptyset(&want);
-		sigaddset(&want, SIGUSR1);
-		sigaddset(&want, SIGUSR2);
-		sigaddset(&want, SIGWINCH);
-		std::memcpy(a.set_fill, &want, SS);
-		run_case(t_live, a);
-	}
-
-	/* error: the kernel rejects an unreadable set, *sig stays untouched */
-	{
-		Args a = default_args();
-		a.live = true;
-		a.live_raise = 0;
-		a.have_set = false;
-		a.odd_set = reinterpret_cast<const void *>(
-		    static_cast<std::uintptr_t>(0x8));
-		a.sig_off = SS;
-		a.sig_init = 0x7f7f7f7f;
-		run_case(t_live, a);
-	}
-}
-
-/* ------------------------------------------------------------------ */
-/* randomised sweep                                                    */
-/* ------------------------------------------------------------------ */
-
-std::uint64_t g_state;
-
-std::uint64_t
-next64(void)
-{
-	g_state += 0x9e3779b97f4a7c15ull;
+	g_state += 0x9e3779b97f4a7c15ULL;
 	std::uint64_t z = g_state;
-	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
-	z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
-	return (z ^ (z >> 31));
+	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+	z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+	return z ^ (z >> 31);
 }
 
-std::uint32_t
-below(std::uint64_t n)
+unsigned next_u32()
 {
-	return static_cast<std::uint32_t>(next64() % n);
+	return static_cast<unsigned>(next_u64() >> 32);
 }
 
-void
-random_cases(long iters)
+std::size_t next_below(std::size_t n)
 {
-	long i;
+	return static_cast<std::size_t>(next_u64() % n);
+}
 
-	g_state = 0x0020530000b0020ull;
+int pick_int()
+{
+	switch (next_below(8)) {
+	case 0:
+		return 0;
+	case 1:
+		return 1;
+	case 2:
+		return -1;
+	case 3:
+		return INT_MIN;
+	case 4:
+		return INT_MAX;
+	case 5:
+		return 0x7f7f7f7f;
+	case 6:
+		return static_cast<int>(0x80808080u);
+	default:
+		return static_cast<int>(next_u32());
+	}
+}
 
-	for (i = 0; i < iters; i++) {
-		Args a = default_args();
+void sweep(unsigned long iters)
+{
+	const std::size_t set_slots = (BUFSZ - SETSZ) / alignof(sigset_t) + 1;
+	const std::size_t sig_slots = LAST_SIG_OFF / alignof(int) + 1;
+	const int signos[] = {SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGABRT, SIGFPE,
+	    SIGKILL, SIGSEGV, SIGPIPE, SIGALRM, SIGTERM, SIGUSR1, SIGUSR2,
+	    SIGCHLD, SIGCONT, SIGSTOP};
 
-		a.have_set = below(8) != 0;
-		a.have_sig = below(8) != 0;
-		a.do_write = below(3) != 0;
+	for (unsigned long i = 0; i < iters; i++) {
+		Case c{};
 
-		/* place the objects, keeping them disjoint */
-		bool sig_first = below(2) != 0;
-		if (a.have_set) {
-			if (a.have_sig && sig_first) {
-				a.set_off = 8 + 8 * below((BUFSZ - SS) / 8);
-				a.sig_off = 4 * below(a.set_off / 4);
-			} else if (a.have_sig) {
-				a.set_off = 8 * below((BUFSZ - SS -
-				    sizeof(int)) / 8 + 1);
-				std::size_t lo = a.set_off + SS;
-				a.sig_off = lo + 4 * below((BUFSZ -
-				    sizeof(int) - lo) / 4 + 1);
-			} else {
-				a.set_off = 8 * below((BUFSZ - SS) / 8 + 1);
-			}
-		} else if (a.have_sig) {
-			a.sig_off = 4 * below((BUFSZ - sizeof(int)) / 4 + 1);
-		}
-
-		/* contents: mostly structured patterns, sometimes pure noise */
-		if (below(4) != 0) {
-			apply_pattern(a.set_fill, SS,
-			    static_cast<int>(below(NPATTERN)));
-		} else {
-			std::size_t k;
-			for (k = 0; k < SS; k++)
-				a.set_fill[k] = static_cast<unsigned char>(
-				    next64() & 0xff);
-		}
-
-		switch (below(4)) {
+		switch (next_below(9)) {
 		case 0:
-			a.sig_init = SIGINITS[below(NSIGINIT)];
+			fill_const(c.fill, 0x00);
 			break;
 		case 1:
-			a.sig_init = static_cast<int>(
-			    static_cast<std::uint32_t>(next64()));
+			fill_const(c.fill, 0xff);
 			break;
 		case 2:
-			a.sig_init = static_cast<int>(below(70)) - 4;
+			fill_const(c.fill, 0x80);
+			break;
+		case 3:
+			fill_const(c.fill, GUARD);
+			break;
+		case 4:
+			fill_const(c.fill, 0x00);
+			c.fill[next_below(SETSZ)] =
+			    static_cast<unsigned char>(0x80u | next_below(0x80));
+			break;
+		case 5:
+			fill_empty(c.fill);
+			break;
+		case 6:
+			fill_full(c.fill);
+			break;
+		case 7:
+			fill_one(c.fill,
+			    signos[next_below(sizeof signos / sizeof signos[0])]);
 			break;
 		default:
-			a.sig_init = 0x7f7f7f7f;
+			for (std::size_t k = 0; k < SETSZ; k++)
+				c.fill[k] = static_cast<unsigned char>(
+				    next_u32() & 0xffu);
 			break;
 		}
 
-		switch (below(3)) {
+		c.set_off = next_below(set_slots) * alignof(sigset_t);
+		c.sig_off = next_below(sig_slots) * alignof(int);
+		c.set_null = (next_below(17) == 0);
+		c.sig_null = (next_below(19) == 0);
+		c.do_write = (next_below(3) != 0);
+		c.ret = pick_int();
+		c.write_val = pick_int();
+
+		switch (next_below(6)) {
 		case 0:
-			a.ret_base = RETS[below(NRET)];
+			c.err = 0;
 			break;
 		case 1:
-			a.ret_base = static_cast<int>(
-			    static_cast<std::uint32_t>(next64()));
+			c.err = EINTR;
+			break;
+		case 2:
+			c.err = EINVAL;
+			break;
+		case 3:
+			c.err = EAGAIN;
+			break;
+		case 4:
+			c.err = ERRNO_SENTINEL;
 			break;
 		default:
-			a.ret_base = static_cast<int>(below(300)) - 150;
+			c.err = static_cast<int>(next_below(4096));
 			break;
 		}
 
-		switch (below(3)) {
-		case 0:
-			a.write_val = WRITES[below(NWRITE)];
-			break;
-		case 1:
-			a.write_val = static_cast<int>(
-			    static_cast<std::uint32_t>(next64()));
-			break;
-		default:
-			a.write_val = static_cast<int>(below(70)) - 4;
-			break;
-		}
-
-		/* occasionally hand over pointers that are not ours */
-		if (below(64) == 0) {
-			a.have_set = false;
-			a.odd_set = reinterpret_cast<const void *>(
-			    static_cast<std::uintptr_t>(next64() | 1u));
-		}
-		if (!a.do_write && below(64) == 0) {
-			a.have_sig = false;
-			a.odd_sig = reinterpret_cast<const void *>(
-			    static_cast<std::uintptr_t>(next64() | 1u));
-		}
-
-		run_case(t_rand, a);
+		run(c);
 	}
-}
-
-void
-print_row(const char *label, long cases, long failures)
-{
-	std::printf("  %-24s %10ld %10ld\n", label, cases, failures);
 }
 
 } // namespace
 
-/*
- * Reached only by a bug that indexes past the end of the interposing table.
- * It never touches sig, so both the recorded slot and the untouched guard
- * bytes give it away.
- */
-extern "C" int
-trap_target(const sigset_t *set, int *sig)
-{
-	record(-2, set, sig);
-	return (0x5eadbeef);
-}
-
 int
-main(void)
+main()
 {
-	signal_setup();
-
-	std::printf("=== PBSD b0020s3 differential test ===\n");
-	std::printf("sigset_t=%zu bytes, guarded buffer=%zu bytes, "
-	    "interposing slots=%d\n\n",
-	    SS, BUFSZ, static_cast<int>(H_INTERPOS_MAX));
-
 	edge_cases();
-	live_cases();
-	random_cases(250000);
+	sweep(250000ul);
 
-	long cases = t_edge.cases + t_live.cases + t_rand.cases;
-	long failures = t_edge.failures + t_live.failures + t_rand.failures;
+	std::printf("%-12s %12s %12s\n", "function", "cases", "failures");
+	std::printf("%-12s %12s %12s\n", "------------", "------------",
+	    "------------");
+	std::printf("%-12s %12lu %12lu\n", "sigwait", g_cases, g_fails);
+	std::printf("%-12s %12lu %12lu\n", "TOTAL", g_cases, g_fails);
+	std::printf("%s\n", g_fails == 0 ? "PASS" : "FAIL");
 
-	std::printf("\n  %-24s %10s %10s\n", "section", "cases", "failures");
-	std::printf("  ------------------------------------------------\n");
-	print_row(t_edge.name, t_edge.cases, t_edge.failures);
-	print_row(t_live.name, t_live.cases, t_live.failures);
-	print_row(t_rand.name, t_rand.cases, t_rand.failures);
-
-	std::printf("\n  %-24s %10s %10s\n", "function", "cases", "failures");
-	std::printf("  ------------------------------------------------\n");
-	print_row("sigwait", cases, failures);
-	std::printf("  ------------------------------------------------\n");
-	print_row("TOTAL", cases, failures);
-
-	std::printf("\nRESULT: %s\n", failures == 0 ? "PASS" : "FAIL");
-	return failures == 0 ? 0 : 1;
+	return g_fails == 0 ? 0 : 1;
 }

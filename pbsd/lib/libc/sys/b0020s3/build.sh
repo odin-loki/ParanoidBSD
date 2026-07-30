@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 CC=${CC:-cc}
 CXX=${CXX:-c++}
 
-# GCC wants -fmodules-ts for C++20 modules and does not recognise the .cppm
+# GCC wants -fmodules-ts for C++ modules and does not recognise the .cppm
 # suffix, hence -x c++.  Clang wants -fmodules and the interface unit
 # precompiled to a .pcm first.  Probe for whichever this toolchain accepts.
 if $CXX -std=c++23 -fmodules-ts -E -x c++ /dev/null >/dev/null 2>&1; then

@@ -1,0 +1,2 @@
+hbsd/src/lib/libc/gdtoa/machdep_ldisQ.c: body calls strtorQ_l(), a gdtoa-internal symbol with no public declaration (needs the unavailable gdtoaimp.h) and no definition in this toolchain's libc, so neither port nor oracle can link.
+hbsd/src/lib/libc/gdtoa/machdep_ldisx.c: body calls strtorx_l() and the FIX_LOCALE() macro, both private to gdtoa/gdtoaimp.h, which is absent here; the symbol is undefined at link time so it cannot be built or differentially tested.

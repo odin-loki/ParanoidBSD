@@ -1,87 +1,6 @@
-/*
- * port.cppm -- PBSD C++23 port of batch b0020s3.
- *
- * Faithful port of lib/libc/sys/sigwait.c.  Behaviour is preserved exactly:
- * the call is dispatched indirectly through libc's interposing table slot for
- * sigwait, so that a threading library which has filled that slot keeps its
- * cancellation-aware implementation.  Nothing is improved.
- *
- * The interposing table and the INTERPOS_SYS dispatch macro come from libc's
- * private header (lib/libc/include/libc_private.h); they are reproduced here
- * because that header is not part of this batch.  The table object itself is
- * defined elsewhere in libc, so it is only declared.
- */
+// b0020s3 -- C++23 port of hbsd/src/lib/libc/sys/sigwait.c
 
 module;
-
-#define _POSIX_C_SOURCE 200809L
-
-#include <signal.h>
-
-export module pbsd.lib.libc.sys.b0020s3;
-
-namespace pbsd::lib_libc_sys::b0020s3::detail {
-
-enum {
-	INTERPOS_accept,
-	INTERPOS_accept4,
-	INTERPOS_aio_suspend,
-	INTERPOS_close,
-	INTERPOS_connect,
-	INTERPOS_fcntl,
-	INTERPOS_fsync,
-	INTERPOS_fork,
-	INTERPOS_msync,
-	INTERPOS_nanosleep,
-	INTERPOS_openat,
-	INTERPOS_poll,
-	INTERPOS_pselect,
-	INTERPOS_recvfrom,
-	INTERPOS_recvmsg,
-	INTERPOS_select,
-	INTERPOS_sendmsg,
-	INTERPOS_sendto,
-	INTERPOS_setcontext,
-	INTERPOS_sigaction,
-	INTERPOS_sigprocmask,
-	INTERPOS_sigsuspend,
-	INTERPOS_sigwait,
-	INTERPOS_sigtimedwait,
-	INTERPOS_sigwaitinfo,
-	INTERPOS_swapcontext,
-	INTERPOS_system,
-	INTERPOS_tcdrain,
-	INTERPOS_read,
-	INTERPOS_readv,
-	INTERPOS_wait4,
-	INTERPOS_write,
-	INTERPOS_writev,
-	INTERPOS__pthread_mutex_init_calloc_cb,
-	INTERPOS_spinlock,
-	INTERPOS_wait6,
-	INTERPOS_kevent,
-	INTERPOS_wait,
-	INTERPOS_pdfork,
-	INTERPOS_MAX
-};
-
-using interpos_func_t = int (*)(void);
-
-extern "C" interpos_func_t __libc_interposing[INTERPOS_MAX];
-
-inline interpos_func_t *
-libc_interposing_slot(int interposno)
-{
-	return (&__libc_interposing[interposno]);
-}
-
-} // namespace pbsd::lib_libc_sys::b0020s3::detail
-
-#define	INTERPOS_SYS(syscall, ...)					\
-	((reinterpret_cast<__typeof__(::syscall) *>(*(::pbsd::		\
-	    lib_libc_sys::b0020s3::detail::libc_interposing_slot(	\
-	    ::pbsd::lib_libc_sys::b0020s3::detail::INTERPOS_##syscall))))\
-	    (__VA_ARGS__))
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -110,14 +29,28 @@ libc_interposing_slot(int interposno)
  * SUCH DAMAGE.
  */
 
+#include <signal.h>
+
+export module pbsd.lib.libc.sys.b0020s3;
+
 export namespace pbsd::lib_libc_sys::b0020s3 {
 
-/* #pragma weak sigwait */
-[[gnu::weak]]
+/*
+ * The original is `#pragma weak sigwait' and its body is
+ * INTERPOS_SYS(sigwait, set, sig), which libc_private.h expands to an
+ * indirect call through libc's interposing table slot for sigwait.  The slot
+ * is a mutable function pointer so that a thread library (or a test) can
+ * interpose on the syscall at run time; the argument list is forwarded
+ * verbatim and the callee's return value is the return value of sigwait.
+ */
+using interpos_sigwait_t = int (*)(const sigset_t *, int *);
+
+interpos_sigwait_t interpos_sigwait_slot;
+
 int
 sigwait(const sigset_t *set, int *sig)
 {
-	return (INTERPOS_SYS(sigwait, set, sig));
+	return ((*interpos_sigwait_slot)(set, sig));
 }
 
 } // namespace pbsd::lib_libc_sys::b0020s3
