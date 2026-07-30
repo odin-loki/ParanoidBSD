@@ -756,3 +756,4 @@
 {"batch": "b0548", "status": "REJECTED", "detail": "agent failed: exit 1 after 8s: ActionRequiredError: Rate limit exceeded. You've reached the rate limit. Please wait a bit before trying again.", "how": "agent", "ts": "2026-07-30T10:43:49Z"}
 {"batch": "b0546", "status": "REJECTED", "detail": "agent failed: exit 1 after 8s: ActionRequiredError: Rate limit exceeded. You've reached the rate limit. Please wait a bit before trying again.", "how": "agent", "ts": "2026-07-30T10:43:50Z"}
 {"batch": "b0547", "status": "REJECTED", "detail": "agent failed: exit 1 after 7s: ActionRequiredError: Rate limit exceeded. You've reached the rate limit. Please wait a bit before trying again.", "how": "agent", "ts": "2026-07-30T10:43:51Z"}
+{"batch": "b0544", "status": "REJECTED", "detail": "agent failed: exit 1 after 12s: ActionRequiredError: Rate limit exceeded. You've reached the rate limit. Please wait a bit before trying again.", "how": "agent", "ts": "2026-07-30T10:43:51Z"}
