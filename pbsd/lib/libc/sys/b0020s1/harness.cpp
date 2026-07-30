@@ -20,17 +20,18 @@
 #include <cstring>
 #include <utility>
 
+/*
+ * The opaque kernel structures __wrusage / __siginfo come from the module, so
+ * that the harness names exactly the entities in the port's signature.
+ */
 import pbsd.lib.libc.sys.b0020s1;
-
-struct __wrusage;
-struct __siginfo;
 
 extern "C" {
 
 typedef int (*interpos_func_t)(void);
 
-int ref_pdwait(int fd, int *status, int options, struct __wrusage *ru,
-    struct __siginfo *infop);
+int ref_pdwait(int fd, int *status, int options, __wrusage *ru,
+    __siginfo *infop);
 
 }
 

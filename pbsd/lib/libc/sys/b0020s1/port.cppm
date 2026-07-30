@@ -7,18 +7,17 @@
  * under sponsorship from the FreeBSD Foundation.
  */
 
-module;
+export module pbsd.lib.libc.sys.b0020s1;
 
 /*
- * Declarations that the original translation unit obtained from
- * <sys/types.h>, <sys/procdesc.h> and "libc_private.h".  They live in the
- * global module fragment so that the types keep global module attachment and
- * remain the same entities as the ones named by the C oracle and by any
- * importer.
+ * Declarations the original translation unit obtained from <sys/types.h>,
+ * <sys/procdesc.h> and the private header "libc_private.h".  The two opaque
+ * kernel structures are exported so that importers name the same entities
+ * that appear in pdwait()'s signature.
  */
 
-struct __wrusage;
-struct __siginfo;
+export struct __wrusage;
+export struct __siginfo;
 
 extern "C" {
 
@@ -31,15 +30,13 @@ int __sys_pdwait(int fd, int *status, int options, struct __wrusage *ru,
 
 }
 
-#define INTERPOS_pdwait		11
+#define	INTERPOS_pdwait		11
 
-#define __libc_interposing_slot(i)	(&__libc_interposing[i])
+#define	__libc_interposing_slot(i)	(&__libc_interposing[i])
 
 #define	INTERPOS_SYS(syscall, ...)					\
 	((reinterpret_cast<decltype(&::__sys_ ## syscall)>(*		\
 	    (__libc_interposing_slot(INTERPOS_ ## syscall))))(__VA_ARGS__))
-
-export module pbsd.lib.libc.sys.b0020s1;
 
 export namespace pbsd::lib_libc_sys::b0020s1 {
 
