@@ -3059,7 +3059,7 @@ b1078,hbsd/src/usr.sbin/bsdinstall/partedit/partedit_powerpc.c,usr.sbin/bsdinsta
 b1078,hbsd/src/usr.sbin/bsdinstall/partedit/scripted.c,usr.sbin/bsdinstall/partedit,233,DEFERRED,
 b1078,hbsd/src/usr.sbin/bsdinstall/partedit/part_wizard.c,usr.sbin/bsdinstall/partedit,428,DEFERRED,
 b1078,hbsd/src/usr.sbin/bsdinstall/partedit/partedit.c,usr.sbin/bsdinstall/partedit,628,DEFERRED,
-b1079,hbsd/src/usr.bin/chat/chat.c,usr.bin/chat,1526,PENDING,
+b1079,hbsd/src/usr.bin/chat/chat.c,usr.bin/chat,1526,DEFERRED,
 b1080,hbsd/src/usr.bin/gprof/elf.c,usr.bin/gprof,140,PENDING,
 b1080,hbsd/src/usr.bin/gprof/dfn.c,usr.bin/gprof,315,PENDING,
 b1080,hbsd/src/usr.bin/gprof/gprof.c,usr.bin/gprof,580,PENDING,
