@@ -1408,7 +1408,7 @@ b0444,hbsd/src/usr.sbin/lpr/filters.ru/koi2alt/koi2alt.c,usr.sbin/lpr/filters.ru
 b0445,hbsd/src/sbin/clri/clri.c,sbin/clri,107,DEFERRED,
 b0446,hbsd/src/usr.sbin/utx/utx.c,usr.sbin/utx,110,DEFERRED,
 b0447,hbsd/src/usr.sbin/nfsrevoke/nfsrevoke.c,usr.sbin/nfsrevoke,120,PENDING,
-b0448,hbsd/src/usr.sbin/vipw/vipw.c,usr.sbin/vipw,125,PENDING,
+b0448,hbsd/src/usr.sbin/vipw/vipw.c,usr.sbin/vipw,125,DEFERRED,
 b0449,hbsd/src/usr.bin/basename/basename.c,usr.bin/basename,134,DEFERRED,
 b0450,hbsd/src/usr.sbin/efiwake/efiwake.c,usr.sbin/efiwake,140,PENDING,
 b0451,hbsd/src/usr.bin/asa/asa.c,usr.bin/asa,142,PENDING,
