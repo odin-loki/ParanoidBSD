@@ -7,7 +7,9 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-MODNAME=pbsd.lib.libc.compat.43.b0067
+# NB: "43" is not a legal module-name component (see port.cppm); the module is
+# named pbsd.lib.libc.compat_43.b0067.
+MODNAME=pbsd.lib.libc.compat_43.b0067
 
 rm -rf gcm.cache port.pcm oracle.o port.o harness.o harness
 

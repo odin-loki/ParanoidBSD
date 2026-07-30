@@ -29,12 +29,21 @@
  * SUCH DAMAGE.
  */
 
+/*
+ * Module name note: a C++ module-name is a dot-separated sequence of
+ * *identifiers* ([module.unit]), so the component "43" of the requested name
+ * pbsd.lib.libc.compat.43.b0067 is not expressible -- both gcc and clang lex
+ * "43.b0067" as a pp-number and reject it.  The nearest legal spelling,
+ * pbsd.lib.libc.compat_43.b0067, is used instead; it matches the "compat_43"
+ * component of the exported namespace.
+ */
+
 module;
 
 #include <sys/types.h>
 #include <unistd.h>
 
-export module pbsd.lib.libc.compat.43.b0067;
+export module pbsd.lib.libc.compat_43.b0067;
 
 export namespace pbsd::lib_libc_compat_43::b0067 {
 

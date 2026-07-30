@@ -41,7 +41,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-import pbsd.lib.libc.compat.43.b0067;
+import pbsd.lib.libc.compat_43.b0067;
 
 namespace port = pbsd::lib_libc_compat_43::b0067;
 

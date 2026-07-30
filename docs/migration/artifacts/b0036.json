@@ -1,0 +1,12 @@
+{
+  "batch": "b0036",
+  "verified": "2026-07-30T10:29:33Z",
+  "evidence": "harness green + IR-identical for all 15 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                            cases     failures\n---------------------------------------------------------\nstdc_trailing_ones_uc              250360            0\nstdc_trailing_ones_us              315728            0\nstdc_trailing_ones_ui              250368            0\nstdc_trailing_ones_ul              250720            0\nstdc_trailing_ones_ull             250720            0\nstdc_trailing_zeros_uc             250360            0\nstdc_trailing_zeros_us             315728            0\nstdc_trailing_zeros_ui             250368            0\nstdc_trailing_zeros_ul             250720            0\nstdc_trailing_zeros_ull            250720            0\nstdc_leading_ones_uc               250360            0\nstdc_leading_ones_us               315728            0\nstdc_leading_ones_ui               250368            0\nstdc_leading_ones_ul               250720            0\nstdc_leading_ones_ull              250720            0\n---------------------------------------------------------\nTOTAL                             3953688            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdbit/stdc_trailing_ones.c": "96c890424c5be290",
+    "hbsd/src/lib/libc/stdbit/stdc_trailing_zeros.c": "c35570b4a396108d",
+    "hbsd/src/lib/libc/stdbit/stdc_leading_ones.c": "68584e030aa4c771"
+  }
+}

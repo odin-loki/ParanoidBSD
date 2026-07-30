@@ -74,6 +74,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/valloc_m/port.cppm
   lib/libc/iconv/b0062/port.cppm
   lib/libc/iconv/b0063/port.cppm
+  lib/libc/locale/b0045/port.cppm
   lib/libc/locale/b0075/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm
@@ -90,6 +91,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/posix1e/acl_from_mode_np_m/port.cppm
   lib/libc/posix1e/acl_id_to_name_m/port.cppm
   lib/libc/posix1e/acl_perm_m/port.cppm
+  lib/libc/posix1e/b0110/port.cppm
   lib/libc/quad/b0033/port.cppm
   lib/libc/quad/b0040/port.cppm
   lib/libc/quad/divdi3_m/port.cppm

@@ -52,10 +52,10 @@ static unsigned long long n_fails[F_COUNT];
  * and the whole buffer -- lead guard, string, NUL, and every byte past the
  * nominal window -- is compared afterwards.
  */
-#define MAX_INPUT	512u
+#define B0069_MAX_INPUT	512u
 #define LEAD_GUARD	16u
 #define TRAIL_GUARD	16u
-#define BUF_SIZE	(LEAD_GUARD + MAX_INPUT + 1u + TRAIL_GUARD)
+#define BUF_SIZE	(LEAD_GUARD + B0069_MAX_INPUT + 1u + TRAIL_GUARD)
 #define GUARD_BYTE	0x7f
 
 struct Ret {
@@ -196,7 +196,7 @@ check_one(int fn, const char *in, size_t len, locale_t loc, const char *lname)
 	Ret rp, rr;
 	bool ok = true;
 
-	if (len > MAX_INPUT) {
+	if (len > B0069_MAX_INPUT) {
 		std::printf("  internal: input too long (%zu)\n", len);
 		std::exit(2);
 	}
@@ -378,7 +378,7 @@ run_edge_cases(void)
 {
 	size_t i;
 	unsigned v;
-	char buf[MAX_INPUT + 1];
+	char buf[B0069_MAX_INPUT + 1];
 
 	for (i = 0; i < sizeof(edge_lits) / sizeof(edge_lits[0]); i++)
 		check_all(edge_lits[i].d, edge_lits[i].n);
@@ -456,17 +456,17 @@ run_edge_cases(void)
 	{
 		size_t k;
 
-		for (k = 0; k < MAX_INPUT; k++)
+		for (k = 0; k < B0069_MAX_INPUT; k++)
 			buf[k] = (char)('0' + (int)(k % 10u));
-		check_all(buf, MAX_INPUT);
+		check_all(buf, B0069_MAX_INPUT);
 
 		buf[0] = '-';
-		check_all(buf, MAX_INPUT);
+		check_all(buf, B0069_MAX_INPUT);
 
-		for (k = 0; k < MAX_INPUT; k++)
+		for (k = 0; k < B0069_MAX_INPUT; k++)
 			buf[k] = '0';
-		buf[MAX_INPUT - 1] = '5';
-		check_all(buf, MAX_INPUT);
+		buf[B0069_MAX_INPUT - 1] = '5';
+		check_all(buf, B0069_MAX_INPUT);
 	}
 }
 
@@ -754,7 +754,7 @@ gen_nul_mix(char *buf)
 static void
 run_random_sweep(void)
 {
-	char buf[MAX_INPUT + 1];
+	char buf[B0069_MAX_INPUT + 1];
 	unsigned i;
 
 	for (i = 0; i < SWEEP_ITERS; i++) {
