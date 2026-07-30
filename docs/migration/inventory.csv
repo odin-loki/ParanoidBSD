@@ -4244,7 +4244,7 @@ b1509,hbsd/src/sys/security/audit/audit_bsm_klib.c,sys/security/audit,528,DEFERR
 b1509,hbsd/src/sys/security/audit/audit_worker.c,sys/security/audit,542,DEFERRED,
 b1509,hbsd/src/sys/security/audit/audit_dtrace.c,sys/security/audit,533,DEFERRED,
 b1510,hbsd/src/sys/netipsec/xform_ipcomp.c,sys/netipsec,793,DEFERRED,
-b1510,hbsd/src/sys/netipsec/key_debug.c,sys/netipsec,1056,PENDING,
+b1510,hbsd/src/sys/netipsec/key_debug.c,sys/netipsec,1056,DEFERRED,
 b1510,hbsd/src/sys/netipsec/xform_esp.c,sys/netipsec,1093,DEFERRED,
 b1510,hbsd/src/sys/netipsec/xform_ah.c,sys/netipsec,1192,DEFERRED,
 b1511,hbsd/src/sys/ufs/ffs/ffs_balloc.c,sys/ufs/ffs,1212,PENDING,
