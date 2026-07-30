@@ -68,6 +68,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/iswctype_m/port.cppm
   lib/libc/locale/rpmatch_m/port.cppm
   lib/libc/locale/wctype_m/port.cppm
+  lib/libc/net/b0076/port.cppm
   lib/libc/net/if_indextoname_m/port.cppm
   lib/libc/net/if_nametoindex_m/port.cppm
   lib/libc/net/ip6opt_m/port.cppm
@@ -99,6 +100,9 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0014/port.cppm
   lib/libc/softfloat/b0016/port.cppm
   lib/libc/softfloat/b0016s2/port.cppm
+  lib/libc/stdbit/b0026/port.cppm
+  lib/libc/stdbit/b0036/port.cppm
+  lib/libc/stdbit/b0050/port.cppm
   lib/libc/stdbit/stdc_bit_floor_m/port.cppm
   lib/libc/stdbit/stdc_bit_width_m/port.cppm
   lib/libc/stdbit/stdc_first_leading_one_m/port.cppm
@@ -117,11 +121,15 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdio/wsetup_m/port.cppm
   lib/libc/stdlib/a64l_m/port.cppm
   lib/libc/stdlib/b0021/port.cppm
+  lib/libc/stdlib/b0065/port.cppm
+  lib/libc/stdlib/b0069/port.cppm
   lib/libc/stdlib/getsubopt_m/port.cppm
   lib/libc/stdlib/hcreate_m/port.cppm
   lib/libc/stdlib/reallocarray_m/port.cppm
   lib/libc/stdlib/reallocf_m/port.cppm
   lib/libc/stdlib/recallocarray_m/port.cppm
+  lib/libc/string/b0032/port.cppm
+  lib/libc/string/b0099/port.cppm
   lib/libc/string/bcmp_m/port.cppm
   lib/libc/string/ffs_m/port.cppm
   lib/libc/string/ffsl_m/port.cppm
@@ -167,6 +175,9 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libcrypt/misc_m/port.cppm
   lib/msun/ld128/k_cosl_m/port.cppm
   lib/msun/ld128/k_tanl_m/port.cppm
+  lib/msun/src/b0057/port.cppm
+  lib/msun/src/b0079/port.cppm
+  lib/msun/src/b0080/port.cppm
   lib/msun/src/e_acosh_m/port.cppm
   lib/msun/src/e_acoshf_m/port.cppm
   lib/msun/src/e_atanh_m/port.cppm
