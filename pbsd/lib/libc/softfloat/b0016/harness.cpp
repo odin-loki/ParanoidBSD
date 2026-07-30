@@ -302,9 +302,9 @@ case128(int fn, const V128 &a, const V128 &b, unsigned char pad)
 		ok = false;
 	if (gotflags != wantflags)
 		ok = false;
-	if (std::memcmp(pbuf, ebuf, BUFSZ) != 0)
+	if (std::memcmp(pbuf, pexp, BUFSZ) != 0)
 		ok = false;
-	if (std::memcmp(rbuf, ebuf, BUFSZ) != 0)
+	if (std::memcmp(rbuf, rexpbuf, BUFSZ) != 0)
 		ok = false;
 	if (std::memcmp(pbuf, rbuf, BUFSZ) != 0)
 		ok = false;
@@ -322,12 +322,13 @@ case128(int fn, const V128 &a, const V128 &b, unsigned char pad)
 			    (unsigned long long)b.high,
 			    (unsigned long long)b.low,
 			    pad, got, gotflags, want, wantflags);
-			if (std::memcmp(pbuf, ebuf, BUFSZ) != 0)
-				dumpdiff("port buffer clobbered", pbuf, ebuf);
-			if (std::memcmp(rbuf, ebuf, BUFSZ) != 0)
-				dumpdiff("oracle buffer clobbered", rbuf, ebuf);
+			if (std::memcmp(pbuf, pexp, BUFSZ) != 0)
+				dumpdiff("port buffer clobbered", pbuf, pexp);
+			if (std::memcmp(rbuf, rexpbuf, BUFSZ) != 0)
+				dumpdiff("oracle buffer clobbered", rbuf,
+				    rexpbuf);
 			if (std::memcmp(pbuf, rbuf, BUFSZ) != 0)
-				dumpdiff("buffers differ", pbuf, rbuf);
+				dumpdiff("operand images differ", pbuf, rbuf);
 		}
 	}
 }
@@ -345,16 +346,18 @@ static void
 casex80(const VX80 &a, const VX80 &b, unsigned char pad)
 {
 	FnStat &st = stats[FN_GEXF2];
-	unsigned char pbuf[BUFSZ], rbuf[BUFSZ], ebuf[BUFSZ];
-	floatx80 pa, pbv, ra, rb;
+	unsigned char pbuf[BUFSZ], rbuf[BUFSZ], pexp[BUFSZ], rexpbuf[BUFSZ];
+	floatx80 pa, pbv;
+	h_floatx80 ra, rb;
 	int got, gotflags, want, wantflags;
 	bool ok;
 
 	st.cases++;
 
-	fillx80(pbuf, pad, a, b);
-	fillx80(rbuf, pad, a, b);
-	fillx80(ebuf, pad, a, b);
+	fillx80<floatx80>(pbuf, pad, a, b);
+	fillx80<floatx80>(pexp, pad, a, b);
+	fillx80<h_floatx80>(rbuf, pad, a, b);
+	fillx80<h_floatx80>(rexpbuf, pad, a, b);
 
 	std::memcpy(&pa, pbuf + OFF_A, sizeof pa);
 	std::memcpy(&pbv, pbuf + OFF_B, sizeof pbv);
@@ -376,9 +379,9 @@ casex80(const VX80 &a, const VX80 &b, unsigned char pad)
 		ok = false;
 	if (gotflags != wantflags)
 		ok = false;
-	if (std::memcmp(pbuf, ebuf, BUFSZ) != 0)
+	if (std::memcmp(pbuf, pexp, BUFSZ) != 0)
 		ok = false;
-	if (std::memcmp(rbuf, ebuf, BUFSZ) != 0)
+	if (std::memcmp(rbuf, rexpbuf, BUFSZ) != 0)
 		ok = false;
 	if (std::memcmp(pbuf, rbuf, BUFSZ) != 0)
 		ok = false;
@@ -394,12 +397,13 @@ casex80(const VX80 &a, const VX80 &b, unsigned char pad)
 			    (unsigned long long)a.low, (unsigned)b.high,
 			    (unsigned long long)b.low,
 			    pad, got, gotflags, want, wantflags);
-			if (std::memcmp(pbuf, ebuf, BUFSZ) != 0)
-				dumpdiff("port buffer clobbered", pbuf, ebuf);
-			if (std::memcmp(rbuf, ebuf, BUFSZ) != 0)
-				dumpdiff("oracle buffer clobbered", rbuf, ebuf);
+			if (std::memcmp(pbuf, pexp, BUFSZ) != 0)
+				dumpdiff("port buffer clobbered", pbuf, pexp);
+			if (std::memcmp(rbuf, rexpbuf, BUFSZ) != 0)
+				dumpdiff("oracle buffer clobbered", rbuf,
+				    rexpbuf);
 			if (std::memcmp(pbuf, rbuf, BUFSZ) != 0)
-				dumpdiff("buffers differ", pbuf, rbuf);
+				dumpdiff("operand images differ", pbuf, rbuf);
 		}
 	}
 }

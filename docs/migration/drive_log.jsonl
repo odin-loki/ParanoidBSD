@@ -257,3 +257,4 @@
 {"batch": "m_hbsd_src_usr_sbin_ypldap_log", "status": "VERIFIED", "detail": "mechanical port of log.c, IR-identical for all 9 functions, 12 planted bugs all rejected", "how": "mechanical", "ts": "2026-07-30T09:30:03Z"}
 {"batch": "b0019", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 4/4: uuid_enc_le, uuid_dec_le, uuid_enc_be, uuid_dec_be)", "how": "agent", "ts": "2026-07-30T09:36:51Z"}
 {"batch": "b0017", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-07-30T09:42:27Z"}
+{"batch": "b0014", "status": "VERIFIED", "detail": "harness green + IR-identical for all 18 functions", "how": "agent", "ts": "2026-07-30T09:44:19Z"}
