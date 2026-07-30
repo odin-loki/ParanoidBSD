@@ -1,0 +1,13 @@
+{
+  "batch": "b0013",
+  "verified": "2026-07-30T09:57:40Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                  cases     failures\n--------------------------------------------\n_rand48 globals               3            0\nnrand48                  507292            0\nerand48                  507292            0\njrand48                  507292            0\n--------------------------------------------\nTOTAL                   1521879            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/_rand48.c": "421361ecce91bdd4",
+    "hbsd/src/lib/libc/gen/nrand48.c": "28a2570e8d390b10",
+    "hbsd/src/lib/libc/gen/erand48.c": "69c90903fe168978",
+    "hbsd/src/lib/libc/gen/jrand48.c": "1b870225175e506f"
+  }
+}

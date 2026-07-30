@@ -25,6 +25,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <climits>
+#include <csignal>
+#include <unistd.h>
 
 import pbsd.lib.libc.gen.b0013;
 
@@ -485,11 +487,30 @@ report(void)
 
 /* ------------------------------------------------------------------ */
 
+/*
+ * ERAND48_END's normalisation loop only terminates because of the values the
+ * two statements above it produce, so a bug in either of them can turn it into
+ * an endless loop.  A correct run takes well under a second; treat spinning
+ * for a minute as the failure it is instead of hanging.
+ */
+extern "C" void
+watchdog(int)
+{
+	static const char msg[] = "\n  FAIL watchdog: no progress for 60s "
+	    "(non-terminating loop in the port)\n\nFAIL\n";
+
+	(void)!write(2, msg, sizeof msg - 1);
+	_exit(1);
+}
+
 int
 main(void)
 {
 	unsigned short in[3];
 	char label[64];
+
+	std::signal(SIGALRM, watchdog);
+	alarm(60);
 
 	g_inv = mult_inv48();
 	if (((g_inv * (ref__rand48_mult & MASK48)) & MASK48) != 1) {
