@@ -1646,7 +1646,8 @@ def apply_result(batch_id: str, rows: list[dict], ok: bool, detail: str,
     compute verdicts, the parent is the only thing that writes shared state.
     Returns any follow-up batch ids that should be queued (the per-file split).
     """
-    mine = [r for r in rows if r["batch_id"] == batch_id]
+    mine = [r for r in rows if r["batch_id"] == batch_id
+            and r["status"] != "VERIFIED"]
     if not mine:
         return []
     outdir = WORK / mine[0]["dir"] / batch_id
@@ -1696,7 +1697,10 @@ def apply_result(batch_id: str, rows: list[dict], ok: bool, detail: str,
 
 
 def do_batch(batch_id: str, rows: list[dict], model: str, split_ok: bool = True) -> bool:
-    mine = [r for r in rows if r["batch_id"] == batch_id]
+    mine = [r for r in rows if r["batch_id"] == batch_id
+            and r["status"] != "VERIFIED"]
+    if not mine:
+        return True
     say(f"{batch_id}: {len(mine)} files, {sum(int(r['lines']) for r in mine)} lines "
         f"[{mine[0]['dir']}]")
     ok, detail, how = attempt_batch(batch_id, mine, model)
@@ -1814,7 +1818,11 @@ def run_parallel(queue: list[str], rows: list[dict], model: str,
             while pending or live:
                 while pending and len(live) < jobs:
                     b = pending.pop(0)
-                    mine = [r for r in rows if r["batch_id"] == b]
+                    # Skip anything the mechanical phase already proved, or the
+                    # agent would redo proven work and its verdict would
+                    # overwrite a verdict that is already backed by evidence.
+                    mine = [r for r in rows if r["batch_id"] == b
+                            and r["status"] != "VERIFIED"]
                     if not mine:
                         continue
                     live[ex.submit(_worker, (b, mine, model))] = b
@@ -1922,6 +1930,8 @@ def main() -> int:
                     help="batches in flight; 0 = auto from cpu_count()")
     ap.add_argument("--no-mechanical", action="store_true",
                     help="always use the agent, skip the free deterministic port")
+    ap.add_argument("--mechanical-only", action="store_true",
+                    help="run only the free deterministic port, then stop")
     ap.add_argument("--status", action="store_true")
     ap.add_argument("--reset-setup", action="store_true")
     ap.add_argument("--deferred", action="store_true",
@@ -1955,6 +1965,9 @@ def main() -> int:
 
     jobs_mech = a.jobs or (os.cpu_count() or 8)
     run_mechanical_phase(rows, jobs_mech)
+    if a.mechanical_only:
+        status()
+        return 0
 
     queue = []
     for r in rows:
