@@ -2361,7 +2361,7 @@ b0798,hbsd/src/sys/compat/linuxkpi/common/src/linux_radix.c,sys/compat/linuxkpi/
 b0798,hbsd/src/sys/compat/linuxkpi/common/src/linux_idr.c,sys/compat/linuxkpi/common/src,820,DEFERRED,
 b0798,hbsd/src/sys/compat/linuxkpi/common/src/linux_page.c,sys/compat/linuxkpi/common/src,797,DEFERRED,
 b0798,hbsd/src/sys/compat/linuxkpi/common/src/linux_work.c,sys/compat/linuxkpi/common/src,789,DEFERRED,
-b0799,hbsd/src/sys/fs/p9fs/p9_client.c,sys/fs/p9fs,1332,PENDING,
+b0799,hbsd/src/sys/fs/p9fs/p9_client.c,sys/fs/p9fs,1332,DEFERRED,
 b0799,hbsd/src/sys/fs/p9fs/p9fs_vnops.c,sys/fs/p9fs,2277,DEFERRED,
 b0800,hbsd/src/sbin/routed/main.c,sbin/routed,940,DEFERRED,
 b0800,hbsd/src/sbin/routed/trace.c,sbin/routed,1009,DEFERRED,
