@@ -128,8 +128,12 @@ check_strtoq(const std::string &in, int base, bool use_endptr)
 	a[n] = '\0';
 	b[n] = '\0';
 
-	char *ea = (char *)(uintptr_t)0xdeadbeef;
-	char *eb = (char *)(uintptr_t)0xdeadbeef;
+	/*
+	 * Seed endptr with an offset no legitimate write can produce, so an
+	 * implementation that leaves it alone is still compared like for like.
+	 */
+	char *ea = (char *)((uintptr_t)a + BUFSZ + 13);
+	char *eb = (char *)((uintptr_t)b + BUFSZ + 13);
 
 	errno = 0;
 	quad_t ra = P::strtoq(a, use_endptr ? &ea : (char **)0, base);
