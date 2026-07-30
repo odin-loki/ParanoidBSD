@@ -60,16 +60,44 @@ MECHANICAL = True             # try a free deterministic port before paying an a
 # Longest matching directory prefix wins. These are best-effort: a batch that
 # will not compile under them simply escalates to the agent, which is the point.
 MECH_FLAGS: list[tuple[str, list[str]]] = [
-    ("lib/msun",   ["-I", "hbsd/src/lib/msun/src", "-I", "hbsd/src/lib/msun/amd64",
-                    "-I", "hbsd/src/include"]),
-    ("lib/libthr", ["-I", "hbsd/src/lib/libthr/thread", "-I", "hbsd/src/lib/libc/include",
-                    "-I", "hbsd/src/include"]),
-    ("lib/libc",   ["-I", "hbsd/src/lib/libc/include", "-I", "hbsd/src/include",
-                    "-I", "hbsd/src/sys"]),
-    ("sys",        ["-I", "hbsd/src/sys", "-I", "hbsd/src/sys/amd64/include",
-                    "-D_KERNEL", "-ffreestanding"]),
-    ("",           ["-I", "hbsd/src/include", "-I", "hbsd/src/sys"]),
+    ("lib/msun",   ["hbsd/src/lib/msun/src", "hbsd/src/lib/msun/amd64",
+                    "hbsd/src/lib/msun/x86"]),
+    ("lib/libthr", ["hbsd/src/lib/libthr/thread"]),
+    ("sys",        ["hbsd/src/sys", "hbsd/src/sys/amd64/include"]),
 ]
+# Added to every scope. The softfloat templates, libsys and gdtoa directories
+# are here because FreeBSD sources include milieu.h, libsys.h and gdtoaimp.h by
+# bare name from directories that are not their own.
+MECH_COMMON = [
+    "hbsd/src/lib/libc/include", "hbsd/src/lib/libc/amd64",
+    "hbsd/src/lib/libc/locale", "hbsd/src/lib/libsys",
+    "hbsd/src/contrib/gdtoa", "hbsd/src/include", "hbsd/src/sys", "hbsd/src",
+]
+# Headers the FreeBSD build generates or installs from elsewhere in the tree, so
+# a plain source checkout has no <errno.h> or <math.h> at all. Symlinked into a
+# scratch directory, which is what `make includes` effectively does.
+MECH_GENERATED = {
+    "errno.h": "sys/sys/errno.h",
+    "math.h": "lib/msun/src/math.h",
+    "fenv.h": "lib/msun/amd64/fenv.h",
+    "complex.h": "lib/msun/src/complex.h",
+    "xlocale.h": "include/xlocale.h",
+}
+# `-w` because only codegen matters here, never warnings, and modern clang makes
+# several perfectly ordinary old-C constructs hard errors by default.
+MECH_QUIET = ["-w", "-Wno-error=implicit-function-declaration",
+              "-Wno-error=int-conversion", "-Wno-error=incompatible-pointer-types",
+              "-Wno-error=implicit-int"]
+# C spellings with no C++ equivalent. On the command line rather than in the
+# generated source so they also cover the FreeBSD headers, which use both.
+CXX_ONLY = ["-D_Bool=bool", "-Drestrict=__restrict"]
+
+
+def sanitise_component(s: str) -> str:
+    """A C++ identifier component. FreeBSD has sources like `64bit.c`, and a
+    module or namespace name may not start with a digit."""
+    s = re.sub(r"[^A-Za-z0-9]+", "_", s.lower()).strip("_") or "x"
+    return s if not s[0].isdigit() else "n" + s
 
 # Frozen scope. Everything else in hbsd/ is third-party, driver, or deferred.
 IN_SCOPE = [
@@ -658,11 +686,10 @@ def check_drift(rows: list[dict]) -> int:
 def emit_build_wiring(rows: list[dict]) -> None:
     """Generate a CMakeLists listing every VERIFIED module, so the port is
     actually buildable as a unit rather than a pile of loose files."""
-    mods = sorted({
-        str((WORK / r["dir"] / r["batch_id"] / "port.cppm"))
-        for r in rows if r["status"] == "VERIFIED"
-        if (WORK / r["dir"] / r["batch_id"] / "port.cppm").is_file()
-    })
+    # Mechanical ports live in <dir>/<stem>_m/ and agent batches in
+    # <dir>/<batch_id>/, so take whatever port.cppm actually exists rather than
+    # reconstructing the path from the inventory.
+    mods = sorted(str(p) for p in WORK.rglob("port.cppm"))
     if not mods:
         return
     rel = [os.path.relpath(m, WORK) for m in mods]
@@ -788,8 +815,32 @@ def propagate_clones(rows: list[dict], verified_paths: set[str]) -> int:
 _IR_NOISE = re.compile(
     r"(^\s*;.*$)|(^\s*(source_filename|target|!|attributes|declare|@__).*$)",
     re.M)
-_IR_NAMES = re.compile(r"[%@][\w.$-]+")
+# Skips the canonical block labels this module writes, which must survive the
+# generic name squashing so control flow is still compared.
+_IR_NAMES = re.compile(r"[%@](?!Lbb)[\w.$-]+")
 _IR_DEFINE = re.compile(r"^define[^{]*@([\w.$]+)\([^)]*\)[^{]*\{(.*?)^\}", re.M | re.S)
+
+# Codegen noise that differs between the C and C++ front ends for identical
+# source: attribute group references (#0), inferred parameter/return attributes,
+# and the `; preds = ...` comment on every basic block.
+_IR_ATTRGRP = re.compile(r"\s#\d+\b")
+_IR_PREDS = re.compile(r"[ \t]*;[ \t]*preds[ \t]*=.*$", re.M)
+_IR_ATTRS = re.compile(
+    r"\b(?:noundef|nonnull|signext|zeroext|inreg|returned|nocapture|noalias|"
+    r"nofree|readonly|writeonly|writable|immarg|"
+    r"dereferenceable(?:_or_null)?\(\d+\)|captures\([^)]*\)|align \d+)\b[ \t]*")
+_IR_LABELDEF = re.compile(r"^([\w.$-]+):", re.M)
+_IR_LABELREF = re.compile(r"label %([\w.$-]+)")
+_IR_META = re.compile(r"![0-9]+")
+
+
+def _bb_name(k: int) -> str:
+    """Digit-free canonical block name, so integer squashing cannot merge two."""
+    s, k = "", k + 1
+    while k:
+        k, r = divmod(k - 1, 26)
+        s = chr(97 + r) + s
+    return "Lbb" + s
 
 
 def _llvm() -> tuple[str, str] | None:
@@ -825,13 +876,44 @@ def emit_ir(src: Path, lang: str, extra: list[str], workdir: Path) -> str | None
 
 
 def ir_bodies(ir: str) -> dict[str, str]:
-    """Extract per-function normalised opcode sequences from IR text."""
+    """Extract per-function normalised opcode sequences from IR text.
+
+    Basic-block labels are renamed by order of first appearance rather than
+    compared literally: for identical source the C and C++ front ends emit the
+    same control flow but number the blocks differently (`if.end5` against
+    `if.end6`), which used to be reported as a behavioural difference. Attribute
+    groups and inferred parameter attributes are dropped for the same reason.
+    """
     bodies: dict[str, str] = {}
     for name, body in _IR_DEFINE.findall(_IR_NOISE.sub("", ir)):
+        if name.startswith(("_ZGI", "ZGI")):     # module initialiser, not code
+            continue
+        body = _IR_PREDS.sub("", body)
+        body = _IR_ATTRGRP.sub("", body)
+        body = _IR_ATTRS.sub("", body)
+
+        order: dict[str, str] = {}
+
+        def canon(label: str) -> str:
+            if label not in order:
+                order[label] = _bb_name(len(order))
+            return order[label]
+
+        for m in _IR_LABELDEF.finditer(body):
+            canon(m.group(1))
+        for m in _IR_LABELREF.finditer(body):
+            canon(m.group(1))
+        body = _IR_LABELREF.sub(lambda m: f"label %{canon(m.group(1))}", body)
+        body = _IR_LABELDEF.sub(lambda m: f"{canon(m.group(1))}:", body)
+
         ops = []
         for line in body.splitlines():
             line = _IR_NAMES.sub("%v", line.strip())
-            line = re.sub(r"\b\d+\b", "N", line)
+            # Only metadata ids are squashed. This used to blank every integer,
+            # which silently made the whole comparison worthless: a port with `1`
+            # where the C had `0` normalised to the same text and was accepted.
+            # Literal constants are exactly what has to be compared.
+            line = _IR_META.sub("!N", line)
             if line and not line.startswith(("#", ";")):
                 ops.append(line)
         bodies[name] = "\n".join(ops)
@@ -839,9 +921,67 @@ def ir_bodies(ir: str) -> dict[str, str]:
 
 
 def demangle_key(sym: str) -> str:
-    """Reduce a mangled C++ symbol to a comparable bare function name."""
-    m = re.findall(r"\d+([A-Za-z_]\w*)", sym)
-    return (m[-1] if m else sym).lstrip("_")
+    """Bare function name from a possibly module-mangled Itanium symbol.
+
+    Clang mangles module-attached entities with extra `W<module>` components, so
+    the old `\\d+(\\w+)` regex matched once and returned the entire tail --
+    nothing ever matched by name and every mechanical port looked like it
+    differed. Walk the <length><name> sequence properly instead.
+    """
+    if not sym.startswith("_Z"):
+        return sym.lstrip("_")
+    s = sym[2:]
+    if s[:1] == "N":
+        s = s[1:]
+    parts, i = [], 0
+    while i < len(s):
+        if s[i] == "W":                 # module component, not part of the name
+            i += 1
+            continue
+        if not s[i].isdigit():
+            break
+        j = i
+        while j < len(s) and s[j].isdigit():
+            j += 1
+        n = int(s[i:j])
+        parts.append(s[j:j + n])
+        i = j + n
+    return parts[-1] if parts else sym.lstrip("_")
+
+
+def degenerate(body: str) -> bool:
+    """True if this body contains no actual computation, so proves nothing.
+
+    Some sources compile to a single `unreachable`: the compiler found undefined
+    behaviour and threw the body away. Two such bodies always compare equal, so
+    treating that as proof let *any* port through -- every file in lib/libc/quad
+    was being certified against an empty oracle. Those must go to the agent.
+    """
+    ops = [l for l in body.splitlines() if l and not l.endswith(":")]
+    return not ops or all(o == "unreachable" for o in ops)
+
+
+def match_ir(ref: dict[str, str], port: dict[str, str]) -> tuple[list[str], list[str]]:
+    """Pair every oracle function with a port function of identical IR.
+
+    Name matching is tried first; anything left over is matched on body content,
+    because C++ symbol mangling is a moving target and an unmatched name would
+    otherwise be reported as a behavioural difference it is not. Each port
+    function can only be consumed once, so this stays a real bijection.
+    """
+    matched, differing, pool = [], [], dict(port)
+    for fn, body in ref.items():
+        if pool.get(fn) == body:
+            matched.append(fn)
+            pool.pop(fn)
+            continue
+        hit = next((k for k, v in pool.items() if v == body), None)
+        if hit is None:
+            differing.append(fn)
+        else:
+            matched.append(fn)
+            pool.pop(hit)
+    return matched, differing
 
 
 def ir_equivalence(d: Path, flags: list[str] | None = None) -> tuple[bool, str]:
@@ -859,12 +999,12 @@ def ir_equivalence(d: Path, flags: list[str] | None = None) -> tuple[bool, str]:
         return False, "no clang toolchain — IR check skipped"
     extra = list(flags or [])
     work = d / ".ir"
-    work.mkdir(exist_ok=True)
+    work.mkdir(parents=True, exist_ok=True)
     try:
         c_ir = emit_ir(d / "oracle.c", "c", extra, work)
         if c_ir is None:
             return False, "oracle would not compile to IR"
-        cpp_ir = emit_ir(d / "port.cppm", "cpp", ["-x", "c++", *extra], work)
+        cpp_ir = emit_ir(d / "port.cppm", "cpp", ["-x", "c++", *CXX_ONLY, *extra], work)
         if cpp_ir is None:
             return False, "port would not compile to IR standalone"
 
@@ -872,13 +1012,12 @@ def ir_equivalence(d: Path, flags: list[str] | None = None) -> tuple[bool, str]:
         port = {demangle_key(k): v for k, v in ir_bodies(cpp_ir).items()}
         if not ref:
             return False, "no ref_ functions in oracle IR"
+        hollow = [k for k, v in ref.items() if degenerate(v)]
+        if hollow:
+            return False, ("oracle IR has no computation for "
+                           f"{hollow[0]} — nothing to compare against")
 
-        matched, differing = [], []
-        for fn, body in ref.items():
-            if fn in port and port[fn] == body:
-                matched.append(fn)
-            else:
-                differing.append(fn)
+        matched, differing = match_ir(ref, port)
         if differing:
             return False, f"IR differs for {len(differing)}/{len(ref)}: " \
                           f"{', '.join(differing[:4])}"
@@ -900,56 +1039,140 @@ def ir_equivalence(d: Path, flags: list[str] | None = None) -> tuple[bool, str]:
 # needed.
 
 _INCLUDE_LINE = re.compile(r"^[ \t]*#[ \t]*include[ \t]+[<\"][^>\"]+[>\"].*$", re.M)
+_MEMBER_ACCESS = re.compile(r"(?:->|\.)\s*$")
+
+# Words that are ordinary identifiers in C but keywords in C++. FreeBSD uses
+# `new` as a parameter name in a couple of dozen files. Renaming them is
+# behaviour-neutral -- and if it ever were not, the IR comparison would catch it
+# and the file would go to the agent instead.
+CXX_KEYWORDS = frozenset("""
+new delete class template this operator private public protected namespace
+using export friend virtual typename explicit mutable typeid concept requires
+try catch throw
+""".split())
 
 
-def batch_functions(paths: list[Path]) -> set[str]:
-    """Function names defined by this batch, per FreeBSD KNF column-0 naming."""
-    names: set[str] = set()
-    for p in paths:
-        for n in _DEFN.findall(norm_lines(p)):
-            if n not in _KEYWORDS and not n.isupper():
-                names.add(n)
-    return names
+# KNF puts the return type on its own line, so the function name starts at
+# column 0 and _DEFN finds it. Plenty of the tree does not follow KNF, and
+# `static void foo(int a)\n{` was being read as a file with no functions at all.
+_DEFN_INLINE = re.compile(
+    r"^[A-Za-z_][\w \t*]*?\b([A-Za-z_]\w*)[ \t]*\([^();{}]*\)[ \t\r\n]*\{", re.M)
 
 
-def write_oracle(paths: list[Path], names: set[str], out: Path) -> None:
-    """The original C, every batch-defined function renamed with a ref_ prefix.
+def file_functions(path: Path) -> set[str]:
+    """Function names this file defines, in either KNF or one-line style."""
+    txt = norm_lines(path)
+    found = set(_DEFN.findall(txt)) | set(_DEFN_INLINE.findall(txt))
+    return {n for n in found if n not in _KEYWORDS and not n.isupper()}
 
-    Only names this batch defines are renamed, so calls out to libc still bind
-    to libc. Bodies are otherwise untouched -- this file is the specification.
+
+def rename_in_code(txt: str, names: set[str]) -> str:
+    """Prefix `ref_` onto each given name, but only where it is real code.
+
+    Renaming over the raw text rewrote `#include <sys/stat.h>` into
+    `sys/ref_stat.h` whenever the file defined a function called `stat`, so the
+    oracle stopped compiling. The mask keeps includes, comments and string
+    literals out of it.
     """
-    chunks = []
-    for p in paths:
-        txt = p.read_text(errors="ignore")
-        for n in sorted(names, key=len, reverse=True):
-            txt = re.sub(rf"\b{re.escape(n)}\b", f"ref_{n}", txt)
-        chunks.append(f"/* ---- {p.name} ---- */\n{txt}")
-    out.write_text("\n".join(chunks) + "\n", encoding="utf-8")
+    mask = code_mask(txt)
+    edits: list[tuple[int, int, str]] = []
+    for n in names:
+        for m in re.finditer(rf"\b{re.escape(n)}\b", mask):
+            # A struct field can share a function's name -- libc does this all
+            # over the locale code (`l->wcsrtombs`). Renaming the field access
+            # invented a member that does not exist and broke the oracle.
+            if _MEMBER_ACCESS.search(mask[max(0, m.start() - 24):m.start()]):
+                continue
+            edits.append((m.start(), m.end(), f"ref_{n}"))
+    out = []
+    last = 0
+    for start, end, rep in sorted(edits):
+        if start < last:                      # overlapping name, keep the first
+            continue
+        out.append(txt[last:start])
+        out.append(rep)
+        last = end
+    out.append(txt[last:])
+    return "".join(out)
 
 
-def write_port(paths: list[Path], module: str, ns: str, out: Path) -> None:
+def write_oracle(path: Path, names: set[str], out: Path) -> None:
+    """The original C, with this file's own functions renamed `ref_*`.
+
+    Only names this file defines are renamed, so calls out to libc still bind to
+    libc. Bodies are otherwise untouched -- this file is the specification.
+    """
+    out.write_text(rename_in_code(path.read_text(errors="ignore"), names),
+                   encoding="utf-8")
+
+
+def dodge_cxx_keywords(txt: str) -> str:
+    """Suffix an underscore onto identifiers that C++ reserves.
+
+    Only in code regions, and only in the port -- the oracle stays byte-faithful
+    C. These are almost always parameter names, which do not survive into
+    optimised IR at all, so the comparison is unaffected.
+    """
+    mask = code_mask(txt)
+    edits = []
+    for kw in CXX_KEYWORDS:
+        for m in re.finditer(rf"\b{kw}\b", mask):
+            edits.append((m.start(), m.end(), kw + "_"))
+    if not edits:
+        return txt
+    out, last = [], 0
+    for start, end, rep in sorted(edits):
+        if start < last:
+            continue
+        out.append(txt[last:start])
+        out.append(rep)
+        last = end
+    out.append(txt[last:])
+    return "".join(out)
+
+
+def write_port(path: Path, module: str, ns: str, out: Path,
+               exported: bool = True) -> None:
     """The same C, wrapped as a C++23 module.
 
     Includes are hoisted into the global module fragment because a module
     interface unit may not #include after `export module`. Nothing else is
-    rewritten: if the body needs changing to be valid C++, this batch is not
+    rewritten: if the body needs real changes to be valid C++, this file is not
     mechanical and belongs to the agent.
+
+    `exported` is retried as False for files that define `static` helpers, since
+    C++ refuses to export an internal-linkage name. A file-local helper should
+    not be part of the module interface anyway, so the unexported form is the
+    more faithful rendering of what the C meant.
     """
-    incs, bodies, seen = [], [], set()
-    for p in paths:
-        txt = p.read_text(errors="ignore")
-        for m in _INCLUDE_LINE.finditer(txt):
-            line = m.group(0).strip()
-            if line not in seen:
-                seen.add(line)
-                incs.append(line)
-        bodies.append(f"/* ---- {p.name} ---- */\n" + _INCLUDE_LINE.sub("", txt))
+    txt = path.read_text(errors="ignore")
+    incs, seen = [], set()
+    for m in _INCLUDE_LINE.finditer(code_mask_keep_includes(txt)):
+        line = m.group(0).strip()
+        if line not in seen:
+            seen.add(line)
+            incs.append(line)
+    body = dodge_cxx_keywords(_INCLUDE_LINE.sub("", txt))
     out.write_text(
-        "// PBSD -- mechanical C++23 port, verified by LLVM IR equivalence\n"
-        "// against the original C. Generated by pbsd.py; no model involved.\n"
-        "module;\n" + "\n".join(incs) + f"\n\nexport module {module};\n\n"
-        f"export namespace {ns} {{\n\n" + "\n".join(bodies) + f"\n}}  // {ns}\n",
+        f"// PBSD -- mechanical C++23 port of {path.name}, proven equivalent to\n"
+        "// the original C by LLVM IR comparison. Generated by pbsd.py.\n"
+        "module;\n" + "\n".join(incs) +
+        f"\n\nexport module {module};\n\n"
+        + ("export " if exported else "") + f"namespace {ns} {{\n\n"
+        + body + f"\n}}  // namespace {ns}\n",
         encoding="utf-8")
+
+
+def code_mask_keep_includes(txt: str) -> str:
+    """Like code_mask but leaves #include lines visible, so they can be hoisted."""
+    out = []
+    for line in txt.split("\n"):
+        s = line.lstrip()
+        if s.startswith("#") and not re.match(r"#\s*include\b", s):
+            out.append(" " * len(line))
+        else:
+            out.append(line)
+    return "\n".join(out)
 
 
 def include_root() -> Path:
@@ -962,61 +1185,163 @@ def include_root() -> Path:
     """
     inc = Path(tempfile.gettempdir()) / "pbsd_include"
     inc.mkdir(parents=True, exist_ok=True)
+    src = ROOT / "hbsd" / "src"
     for name, target in (("machine", "sys/amd64/include"),
                          ("x86", "sys/x86/include")):
-        link, dest = inc / name, ROOT / "hbsd" / "src" / target
+        link, dest = inc / name, src / target
         if not link.exists() and dest.is_dir():
             try:
                 link.symlink_to(dest, target_is_directory=True)
             except OSError:
                 pass
+    for name, target in MECH_GENERATED.items():
+        link, dest = inc / name, src / target
+        if not link.exists() and dest.is_file():
+            try:
+                link.symlink_to(dest)
+            except OSError:
+                pass
     return inc
 
 
-def mech_flags(d: str, paths: list[Path]) -> list[str]:
-    """Include flags for compiling this batch standalone.
+def _resource_include() -> str:
+    """clang's own builtin header directory, needed alongside -nostdinc."""
+    try:
+        r = subprocess.run(["clang", "-print-resource-dir"],
+                           capture_output=True, text=True, timeout=30)
+        if r.returncode == 0 and r.stdout.strip():
+            return str(Path(r.stdout.strip()) / "include")
+    except Exception:
+        pass
+    return ""
 
-    The source's own directory matters most: FreeBSD uses quoted includes for
-    private headers that sit next to the .c file (rand48.h, softfloat-for-gcc.h),
-    and nothing else on the search path will find them.
+
+def mech_flag_variants(d: str, path: Path) -> list[list[str]]:
+    """Flag sets to try, in order, when compiling one source file standalone.
+
+    The file's own directory matters most: FreeBSD uses quoted includes for
+    private headers sitting next to the .c file (rand48.h, softfloat-for-gcc.h).
+
+    The second variant adds -nostdinc. Many files fail the first way with
+    `typedef redefinition with different types` because the FreeBSD headers on
+    the include path and the host glibc headers both get pulled in and disagree
+    about types like __int32_t. Cutting the host headers out entirely is what a
+    real cross build does.
     """
-    flags: list[str] = []
+    dirs: list[str] = [str(path.parent)]
     for prefix, fl in MECH_FLAGS:
         if d.startswith(prefix):
-            flags = [f if f == "-I" or not f.startswith(("hbsd", "-"))
-                     else (str(ROOT / f) if f.startswith("hbsd") else f)
-                     for f in fl]
+            dirs += [f for f in fl if not f.startswith("-")]
             break
-    for own in dict.fromkeys(str(p.parent) for p in paths):
-        flags += ["-I", own]
-    flags += ["-I", str(include_root())]
-    return flags
+    dirs += MECH_COMMON
+
+    inc: list[str] = []
+    for x in dict.fromkeys(dirs):
+        inc += ["-I", x if x.startswith("/") else str(ROOT / x)]
+    inc += ["-I", str(include_root())]
+
+    base = list(MECH_QUIET) + inc
+    variants = [base]
+    res = _resource_include()
+    if res:
+        variants.append(list(MECH_QUIET) + ["-nostdinc", "-isystem", res] + inc)
+    return variants
 
 
-def mechanical_port(batch_id: str, mine: list[dict], outdir: Path,
-                    module: str, ns: str) -> tuple[bool, str]:
-    """Try to port a batch with no agent call. True only if IR proves it."""
+# Every mutation site in a port gets probed before it is certified. A cap would
+# leave exactly the blind spot this is meant to close -- the one leak that
+# survived a 30-probe cap was at site 34 of a file with 34 of them.
+MECH_SITE_LIMIT = 400   # refuse rather than validate partially
+MECH_MIN_CAUGHT = 2     # positive evidence required before certifying
+
+
+def proof_is_sensitive(outdir: Path, flags: list[str]) -> tuple[bool, str]:
+    """Check that this file's IR comparison can actually detect a wrong port.
+
+    An IR match only means something if a *mismatch* were possible. Some files
+    compile to IR that swallows the difference: everything in lib/libc/quad
+    passed with planted bugs still in it, because those files pun `union uu` --
+    legal C, undefined in C++ -- and the port's IR stopped tracking the source.
+    Rather than trust that the normalisation is safe everywhere, plant bugs in
+    this specific port and require this specific comparison to reject them.
+
+    Every mutation site is probed, not just the first per operator, because the
+    leaks were at second and third sites. Returns False if any planted bug that
+    still compiles is accepted, and also if too few could be tested, since then
+    there is no evidence either way.
+    """
+    port = outdir / "port.cppm"
+    good = port.read_text(encoding="utf-8", errors="ignore")
+    mask = code_mask(good)
+    sites = [(m.start(), m.end(), rep)
+             for _, pat, rep in MUTATIONS for m in re.finditer(pat, mask)]
+    if len(sites) > MECH_SITE_LIMIT:
+        return False, (f"proof unvalidated: {len(sites)} mutation sites is too "
+                       "many to probe exhaustively; partial checking is no proof")
+    caught = 0
+    try:
+        for start, end, rep in sites:
+            port.write_text(good[:start] + rep + good[end:], encoding="utf-8")
+            accepted, why = ir_equivalence(outdir, flags)
+            if accepted:
+                return False, ("proof rejected: a planted bug was accepted, so "
+                               "the IR comparison is blind for this file")
+            if why.startswith("IR differs"):
+                caught += 1
+    finally:
+        port.write_text(good, encoding="utf-8")
+    if caught < MECH_MIN_CAUGHT:
+        return False, (f"proof unvalidated: only {caught} planted bugs could be "
+                       "compiled and caught, too few to trust the comparison")
+    return True, f"{caught} planted bugs all rejected"
+
+
+def mechanical_port(row: dict, outdir: Path) -> tuple[bool, str]:
+    """Try to port ONE source file with no agent call. True only if IR proves it.
+
+    Per file rather than per batch: concatenating a batch's sources into a single
+    translation unit produced duplicate typedefs and duplicate statics, which
+    failed the compile for reasons that had nothing to do with the port.
+    """
     if not MECHANICAL:
         return False, "mechanical path disabled"
-    paths = [ROOT / r["path"] for r in mine]
-    if not all(p.is_file() for p in paths):
+    path = ROOT / row["path"]
+    if not path.is_file():
         return False, "source missing"
-    names = batch_functions(paths)
+    names = file_functions(path)
     if not names:
         return False, "no function definitions"
+
+    stem = sanitise_component(Path(row["path"]).stem)
+    parts = [sanitise_component(x) for x in row["dir"].split("/") if x]
+    module = ".".join(["pbsd", *parts, stem])
+    ns = "::".join(["pbsd", *parts, stem])
+    outdir.mkdir(parents=True, exist_ok=True)
     try:
-        write_oracle(paths, names, outdir / "oracle.c")
-        write_port(paths, module, ns, outdir / "port.cppm")
+        write_oracle(path, names, outdir / "oracle.c")
     except Exception as e:                       # unreadable source, odd encoding
         return False, f"could not generate: {e}"
 
-    ok, detail = ir_equivalence(outdir, mech_flags(mine[0]["dir"], paths))
-    if not ok:
-        # Leave nothing behind for the agent to be confused by.
-        for f in ("oracle.c", "port.cppm"):
-            (outdir / f).unlink(missing_ok=True)
-        return False, detail
-    return True, f"mechanical port, {detail}"
+    last = "not attempted"
+    for flags in mech_flag_variants(row["dir"], path):
+        for exported in (True, False):
+            try:
+                write_port(path, module, ns, outdir / "port.cppm", exported)
+            except Exception as e:
+                return False, f"could not generate: {e}"
+            ok, last = ir_equivalence(outdir, flags)
+            if ok:
+                sound, why = proof_is_sensitive(outdir, flags)
+                if not sound:
+                    last = why
+                    break        # the proof is worthless here; let the agent do it
+                note = "" if exported else " (helpers kept module-local)"
+                return True, (f"mechanical port of {path.name}, {last}, "
+                              f"{why}{note}")
+            if last.startswith("oracle"):
+                break            # the C side failed; the C++ form is irrelevant
+    shutil.rmtree(outdir, ignore_errors=True)
+    return False, last
 
 
 def record_artifact(batch_id: str, detail: str, ir_ok: bool,
@@ -1216,12 +1541,7 @@ def attempt_batch(batch_id: str, mine: list[dict], model: str) -> tuple[bool, st
     ns = re.sub(r"[^a-z0-9]+", "_", mine[0]["dir"].lower()).strip("_")
     module = f"{ns}.{batch_id}".replace("_", ".")
     namespace = f"{ns}::{batch_id}"
-
-    ok, detail = mechanical_port(batch_id, mine, outdir, module, namespace)
-    if ok:
-        record_artifact(batch_id, detail, True, "", mine)
-        return True, detail, "mechanical"
-    mech_detail = detail
+    mech_detail = "not attempted (mechanical phase runs separately)"
 
     prompt = PROMPT.format(
         batch_id=batch_id,
@@ -1395,6 +1715,83 @@ def _worker(payload):
     return batch_id, ok, detail, how
 
 
+def mech_id(path: str) -> str:
+    """Evidence id for a mechanically ported file.
+
+    Derived from the whole path, not the stem: the tree has several files called
+    strsep.c and they would overwrite each other's evidence.
+    """
+    return "m_" + re.sub(r"[^A-Za-z0-9]+", "_", path.rsplit(".", 1)[0]).strip("_")
+
+
+def _mech_worker(row):
+    """Child-process entry point for one mechanical file attempt."""
+    outdir = WORK / row["dir"] / (Path(row["path"]).stem + "_m")
+    try:
+        ok, detail = mechanical_port(row, outdir)
+    except Exception as e:
+        ok, detail = False, f"crashed: {e!r}"
+    return row["path"], ok, detail
+
+
+def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
+    """Prove as much of the tree as possible with no model calls at all.
+
+    This is pure CPU -- two compiler invocations and an IR comparison per file --
+    so it saturates every core and costs nothing but electricity. Whatever it
+    proves never reaches the agent, which is the only way the whole tree finishes
+    in hours instead of weeks.
+    """
+    if not MECHANICAL:
+        return 0
+    todo = [r for r in rows if r["status"] in ("PENDING", "DEFERRED")]
+    if not todo:
+        return 0
+    banner(f"Mechanical phase — {len(todo)} files, {jobs} parallel, no agent")
+
+    proven = 0
+    done = 0
+    reasons: dict[str, int] = {}
+    t0 = time.monotonic()
+    by_path = {r["path"]: r for r in rows}
+
+    with cf.ProcessPoolExecutor(max_workers=jobs) as ex:
+        for path, ok, detail in ex.map(_mech_worker, todo, chunksize=4):
+            done += 1
+            if ok:
+                proven += 1
+                row = by_path[path]
+                row["status"] = "VERIFIED"
+                bid = mech_id(path)
+                record_artifact(bid, detail, True, "", [row])
+                log(batch=bid, status="VERIFIED", detail=detail, how="mechanical")
+            else:
+                key = detail.split(":")[0][:60]
+                reasons[key] = reasons.get(key, 0) + 1
+            if done % 250 == 0 or done == len(todo):
+                el = time.monotonic() - t0
+                print(f"  [{done}/{len(todo)}] {proven} proven free "
+                      f"({100*proven/done:.0f}%), {done/max(el,1):.0f} files/s",
+                      flush=True)
+
+    say(f"mechanical phase proved {proven}/{len(todo)} files with no agent call")
+    if reasons:
+        say("what still needs the agent:")
+        for k, v in sorted(reasons.items(), key=lambda kv: -kv[1])[:10]:
+            say(f"    {v:>5}  {k}")
+    if proven:
+        n = propagate_clones(rows, {r["path"] for r in rows
+                                    if r["status"] == "VERIFIED"})
+        if n:
+            say(f"+ {n} clone files inherit a mechanical verdict")
+        save_rows(rows)
+        emit_build_wiring(rows)
+        git("add", "-A")
+        git("commit", "-q", "-m",
+            f"pbsd: {proven} files ported mechanically, proven by IR equivalence")
+    return proven
+
+
 def run_parallel(queue: list[str], rows: list[dict], model: str,
                  jobs: int) -> tuple[int, int]:
     """Work the batch queue with `jobs` batches in flight.
@@ -1555,6 +1952,10 @@ def main() -> int:
     if n_drift:
         say(f"upstream drift: reopened {n_drift} batches")
         save_rows(rows)
+
+    jobs_mech = a.jobs or (os.cpu_count() or 8)
+    run_mechanical_phase(rows, jobs_mech)
+
     queue = []
     for r in rows:
         if r["status"] == "PENDING" and r["batch_id"] not in queue:
