@@ -3072,7 +3072,7 @@ b1082,hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_scalars.c,usr.sbin/b
 b1082,hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_processor_tbl.c,usr.sbin/bsnmpd/modules/snmp_hostres,429,DEFERRED,
 b1082,hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_fs_tbl.c,usr.sbin/bsnmpd/modules/snmp_hostres,471,DEFERRED,
 b1082,hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_swinstalled_tbl.c,usr.sbin/bsnmpd/modules/snmp_hostres,553,DEFERRED,
-b1083,hbsd/src/usr.bin/indent/lexi.c,usr.bin/indent,647,PENDING,
+b1083,hbsd/src/usr.bin/indent/lexi.c,usr.bin/indent,647,DEFERRED,
 b1083,hbsd/src/usr.bin/indent/indent.c,usr.bin/indent,1303,DEFERRED,
 b1084,hbsd/src/usr.bin/diff/diff.c,usr.bin/diff,698,PENDING,
 b1084,hbsd/src/usr.bin/diff/diffreg.c,usr.bin/diff,1758,PENDING,
