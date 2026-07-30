@@ -152,6 +152,10 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/wmemchr_m/port.cppm
   lib/libc/string/wmemcmp_m/port.cppm
   lib/libc/sys/b0020/port.cppm
+  lib/libc/sys/b0020s1/port.cppm
+  lib/libc/sys/b0020s2/port.cppm
+  lib/libc/sys/b0020s3/port.cppm
+  lib/libc/sys/b0020s4/port.cppm
   lib/libc/uuid/b0019/port.cppm
   lib/libc/uuid/uuid_compare_m/port.cppm
   lib/libc/uuid/uuid_equal_m/port.cppm

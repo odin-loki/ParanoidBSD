@@ -16,8 +16,9 @@
  *	remque	the whole element region after the call: every next/prev field
  *		encoded as a byte offset from that region's base (never a raw
  *		address) plus the raw guard padding on both sides.
- *	_Exit	the wait(2) status of a forked child, plus a shared-memory flag
- *		that detects the call returning instead of terminating.
+ *	_Exit	the wait(2) status of a forked child, plus shared-memory flags
+ *		that detect the call returning instead of terminating and
+ *		detect exit-time handlers running (which _exit() must not do).
  */
 #include <climits>
 #include <cstdarg>
@@ -514,21 +515,34 @@ const long EXIT_RANDOM_ITERS = 25000;
 
 unsigned char *shared_flag = nullptr;
 
+/*
+ * Inherited by every child; _exit(2) must not run it, so it distinguishes
+ * termination that skips exit-time processing from termination that does not.
+ */
+void
+atexit_marker(void)
+{
+	if (shared_flag != nullptr)
+		shared_flag[1] = 0x5a;
+}
+
 struct ExitObs {
 	int exited;
 	int code;
 	int signaled;
 	int sig;
 	int returned;
+	int atexit_ran;
 };
 
 ExitObs
 run_exit(int which, int code)
 {
-	ExitObs o = { -1, -1, -1, -1, -1 };
+	ExitObs o = { -1, -1, -1, -1, -1, -1 };
 	pid_t p;
 
 	shared_flag[0] = 0;
+	shared_flag[1] = 0;
 	fflush(nullptr);
 	while ((p = fork()) < 0)
 		;
@@ -550,6 +564,7 @@ run_exit(int which, int code)
 	o.signaled = WIFSIGNALED(st) ? 1 : 0;
 	o.sig = o.signaled ? WTERMSIG(st) : -1;
 	o.returned = (shared_flag[0] == 2) ? 1 : 0;
+	o.atexit_ran = (shared_flag[1] == 0x5a) ? 1 : 0;
 	return o;
 }
 
@@ -561,13 +576,13 @@ case_exit(int code)
 
 	bool okay = a.exited == b.exited && a.code == b.code &&
 	    a.signaled == b.signaled && a.sig == b.sig &&
-	    a.returned == b.returned;
+	    a.returned == b.returned && a.atexit_ran == b.atexit_ran;
 
 	chk(c_exit, okay,
-	    "code=%d: port{exited=%d,status=%d,sig=%d,returned=%d} "
-	    "ref{exited=%d,status=%d,sig=%d,returned=%d}",
-	    code, a.exited, a.code, a.sig, a.returned,
-	    b.exited, b.code, b.sig, b.returned);
+	    "code=%d: port{exited=%d,status=%d,sig=%d,returned=%d,atexit=%d} "
+	    "ref{exited=%d,status=%d,sig=%d,returned=%d,atexit=%d}",
+	    code, a.exited, a.code, a.sig, a.returned, a.atexit_ran,
+	    b.exited, b.code, b.sig, b.returned, b.atexit_ran);
 }
 
 void
@@ -626,6 +641,10 @@ main(void)
 	    PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0));
 	if (shared_flag == MAP_FAILED) {
 		perror("mmap");
+		return 1;
+	}
+	if (atexit(atexit_marker) != 0) {
+		perror("atexit");
 		return 1;
 	}
 
