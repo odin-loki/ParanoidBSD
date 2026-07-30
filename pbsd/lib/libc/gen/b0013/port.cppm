@@ -11,36 +11,19 @@
  * to anyone/anything when using this software.
  */
 
-/*-
- * The IEEEd2bits definition below is taken verbatim from
- * lib/libc/include/fpmath.h, which rand48.h includes:
+/*
+ * C++23 module port of HardenedBSD
+ *	lib/libc/gen/_rand48.c
+ *	lib/libc/gen/nrand48.c
+ *	lib/libc/gen/erand48.c
+ *	lib/libc/gen/jrand48.c
  *
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2003 Mike Barcroft <mike@FreeBSD.org>
- * Copyright (c) 2002 David Schultz <das@FreeBSD.ORG>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * The private header lib/libc/gen/rand48.h and the union IEEEd2bits layout
+ * from lib/libc/include/fpmath.h are reproduced here so that the function
+ * bodies stay byte-for-byte what they were.  The 64-bit wrap-around of
+ * _DORAND48, the truncation to 48 bits in STORERAND48, the ERAND48_END bit
+ * fiddling and jrand48's (int) cast (which sign-extends into the returned
+ * long) are all preserved exactly.
  */
 
 module;
@@ -49,7 +32,6 @@ module;
 
 export module pbsd.lib.libc.gen.b0013;
 
-/* lib/libc/gen/rand48.h */
 #define	RAND48_SEED_0	(0x330e)
 #define	RAND48_SEED_1	(0xabcd)
 #define	RAND48_SEED_2	(0x1234)
@@ -87,7 +69,7 @@ export module pbsd.lib.libc.gen.b0013;
 #define	ERAND48_BEGIN							\
 	union {								\
 		union IEEEd2bits ieee;					\
-		uint64_t u64;						\
+		std::uint64_t u64;					\
 	} u;								\
 	int s
 
@@ -112,39 +94,38 @@ export module pbsd.lib.libc.gen.b0013;
 
 export namespace pbsd::lib_libc_gen::b0013 {
 
-using std::uint64_t;
+using uint48 = std::uint64_t;
 
-/* lib/libc/include/fpmath.h, with lib/libc/{amd64,aarch64}/_fpmath.h's
- * _IEEE_WORD_ORDER == _BYTE_ORDER. */
-#define	DBL_MANH_SIZE	20
-#define	DBL_MANL_SIZE	32
-
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 union IEEEd2bits {
 	double	d;
 	struct {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-		unsigned int	manl	:32;
-		unsigned int	manh	:20;
-		unsigned int	exp	:11;
-		unsigned int	sign	:1;
-#else /* _BIG_ENDIAN */
 		unsigned int	sign	:1;
 		unsigned int	exp	:11;
 		unsigned int	manh	:20;
 		unsigned int	manl	:32;
-#endif
 	} bits;
 };
-
-/* lib/libc/gen/rand48.h */
-typedef uint64_t uint48;
+#else /* _LITTLE_ENDIAN */
+union IEEEd2bits {
+	double	d;
+	struct {
+		unsigned int	manl	:32;
+		unsigned int	manh	:20;
+		unsigned int	exp	:11;
+		unsigned int	sign	:1;
+	} bits;
+};
+#endif
 
 /* lib/libc/gen/_rand48.c */
+
 uint48 _rand48_seed = RAND48_SEED;
 uint48 _rand48_mult = RAND48_MULT;
 uint48 _rand48_add = RAND48_ADD;
 
 /* lib/libc/gen/nrand48.c */
+
 long
 nrand48(unsigned short xseed[3])
 {
@@ -155,6 +136,7 @@ nrand48(unsigned short xseed[3])
 }
 
 /* lib/libc/gen/erand48.c */
+
 double
 erand48(unsigned short xseed[3])
 {
@@ -166,6 +148,7 @@ erand48(unsigned short xseed[3])
 }
 
 /* lib/libc/gen/jrand48.c */
+
 long
 jrand48(unsigned short xseed[3])
 {

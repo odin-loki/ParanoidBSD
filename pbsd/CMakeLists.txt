@@ -26,6 +26,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/alarm_m/port.cppm
   lib/libc/gen/arc4random_uniform_m/port.cppm
   lib/libc/gen/b0013/port.cppm
+  lib/libc/gen/b0015/port.cppm
+  lib/libc/gen/b0017/port.cppm
   lib/libc/gen/check_utility_compat_m/port.cppm
   lib/libc/gen/clock_m/port.cppm
   lib/libc/gen/devname_m/port.cppm
@@ -94,6 +96,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0012s1/port.cppm
   lib/libc/softfloat/b0012s2/port.cppm
   lib/libc/softfloat/b0012s4/port.cppm
+  lib/libc/softfloat/b0014/port.cppm
   lib/libc/stdbit/stdc_bit_floor_m/port.cppm
   lib/libc/stdbit/stdc_bit_width_m/port.cppm
   lib/libc/stdbit/stdc_first_leading_one_m/port.cppm
@@ -146,6 +149,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/wcsstr_m/port.cppm
   lib/libc/string/wmemchr_m/port.cppm
   lib/libc/string/wmemcmp_m/port.cppm
+  lib/libc/uuid/b0019/port.cppm
   lib/libc/uuid/uuid_compare_m/port.cppm
   lib/libc/uuid/uuid_equal_m/port.cppm
   lib/libc/uuid/uuid_from_string_m/port.cppm
