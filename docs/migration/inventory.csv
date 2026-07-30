@@ -3298,7 +3298,7 @@ b1187,hbsd/src/usr.bin/sdiotool/linux_sdio_compat.c,usr.bin/sdiotool,100,DEFERRE
 b1187,hbsd/src/usr.bin/sdiotool/cam_sdio.c,usr.bin/sdiotool,436,DEFERRED,
 b1187,hbsd/src/usr.bin/sdiotool/sdiotool.c,usr.bin/sdiotool,552,DEFERRED,
 b1188,hbsd/src/usr.bin/gcore/elf32core.c,usr.bin/gcore,10,DEFERRED,
-b1188,hbsd/src/usr.bin/gcore/gcore.c,usr.bin/gcore,216,PENDING,
+b1188,hbsd/src/usr.bin/gcore/gcore.c,usr.bin/gcore,216,DEFERRED,
 b1188,hbsd/src/usr.bin/gcore/elfcore.c,usr.bin/gcore,888,DEFERRED,
 b1189,hbsd/src/usr.sbin/dconschat/dconschat.c,usr.sbin/dconschat,1150,PENDING,
 b1190,hbsd/src/usr.bin/patch/mkpath.c,usr.bin/patch,79,VERIFIED,
