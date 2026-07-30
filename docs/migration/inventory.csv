@@ -765,7 +765,7 @@ b0240,hbsd/src/lib/libc/secure/stack_protector_compat.c,lib/libc/secure,18,DEFER
 b0240,hbsd/src/lib/libc/secure/strlcpy_chk.c,lib/libc/secure,43,DEFERRED,
 b0240,hbsd/src/lib/libc/secure/mempcpy_chk.c,lib/libc/secure,49,DEFERRED,
 b0240,hbsd/src/lib/libc/secure/memset_chk.c,lib/libc/secure,46,DEFERRED,
-b0241,hbsd/src/lib/libc/string/strchr.c,lib/libc/string,36,PENDING,
+b0241,hbsd/src/lib/libc/string/strchr.c,lib/libc/string,36,DEFERRED,
 b0241,hbsd/src/lib/libc/string/wcschr.c,lib/libc/string,40,VERIFIED,
 b0241,hbsd/src/lib/libc/string/strnlen.c,lib/libc/string,41,VERIFIED,
 b0241,hbsd/src/lib/libc/string/wcsnlen.c,lib/libc/string,41,VERIFIED,
