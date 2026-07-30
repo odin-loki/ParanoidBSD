@@ -3080,7 +3080,7 @@ b1085,hbsd/src/sys/netpfil/ipfilter/netinet/ip_htable.c,sys/netpfil/ipfilter/net
 b1085,hbsd/src/sys/netpfil/ipfilter/netinet/ip_proxy.c,sys/netpfil/ipfilter/netinet,1417,DEFERRED,
 b1085,hbsd/src/sys/netpfil/ipfilter/netinet/ip_pool.c,sys/netpfil/ipfilter/netinet,1399,DEFERRED,
 b1085,hbsd/src/sys/netpfil/ipfilter/netinet/ip_ftp_pxy.c,sys/netpfil/ipfilter/netinet,2049,DEFERRED,
-b1086,hbsd/src/sys/kern/uipc_sockbuf.c,sys/kern,1891,PENDING,
+b1086,hbsd/src/sys/kern/uipc_sockbuf.c,sys/kern,1891,DEFERRED,
 b1086,hbsd/src/sys/kern/sysv_shm.c,sys/kern,1763,DEFERRED,
 b1086,hbsd/src/sys/kern/subr_vmem.c,sys/kern,1947,DEFERRED,
 b1086,hbsd/src/sys/kern/kern_shutdown.c,sys/kern,1842,DEFERRED,
