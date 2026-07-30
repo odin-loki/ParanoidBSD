@@ -38,6 +38,8 @@ from pathlib import Path
 MODEL = "claude-opus-5-thinking-high"   # Opus 5 1M Thinking
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
 AGENT_TIMEOUT = 1800          # cursor-agent -p can hang; always bound it
+AGENT_RETRIES = 3             # transient API failures must not defer a file
+AGENT_BACKOFF = 30            # seconds before the first retry, doubled after
 GATE_TIMEOUT = 1200
 MUTANT_TIMEOUT = 120          # a planted bug can loop forever; bound it hard
 MIN_MUTATIONS = 3             # harness must kill at least this many planted bugs
@@ -111,6 +113,15 @@ Produce EXACTLY these four files in {outdir}/ and nothing else:
      offset, the output state pointer, and the buffer after EVERY iteration.
    Print a per-function table of cases/failures. Return 0 only if every single
    case matched; return 1 otherwise.
+
+   Your harness will then be MUTATION TESTED: bugs are planted in your port
+   (comparisons flipped, `+` swapped for `-`, `&&` for `||`, `0` for `1`,
+   `++` for `--`) and the harness must fail for every one that compiles. A
+   harness that passes a planted bug is rejected even if your port is perfect.
+   So make sure the inputs you generate actually drive every branch, every
+   comparison and every arithmetic expression in the port to a value where a
+   flip would change the observable result. Test both sides of each boundary,
+   not just the happy path.
 
 4. build.sh — POSIX sh. Compiles oracle.c with `cc -std=c11 -O2`, port.cppm and
    harness.cpp with `c++ -std=c++23` plus whatever module flags this toolchain
@@ -967,6 +978,39 @@ def mutation_check(d: Path) -> tuple[bool, str]:
     return True, f"{applied}/{applied} mutations killed"
 
 
+def call_agent(prompt: str, model: str) -> tuple[bool, str]:
+    """One agent call, retrying transient failures with backoff.
+
+    Firing several calls back to back gets the API to rate-limit us, and the
+    resulting fast non-zero exit used to defer the file permanently. Retry
+    those. A timeout is not transient, so it is not retried -- three more
+    half-hour waits would buy nothing. stderr is kept because the CLI reports
+    its actual reason there and the log used to record only an empty stdout.
+    """
+    last = ""
+    for attempt in range(1, AGENT_RETRIES + 1):
+        t0 = time.monotonic()
+        try:
+            r = subprocess.run(
+                ["cursor-agent", "-p", prompt, "--workspace", str(ROOT),
+                 "--model", model, "--output-format", "text",
+                 "--force", "--trust"],
+                timeout=AGENT_TIMEOUT, text=True, capture_output=True,
+                stdin=subprocess.DEVNULL,
+            )
+            if r.returncode == 0:
+                return True, (r.stdout or "")[-2000:]
+            detail = (r.stderr or r.stdout or "").strip() or "(no output)"
+            last = f"exit {r.returncode} after {time.monotonic() - t0:.0f}s: {detail[-800:]}"
+        except subprocess.TimeoutExpired:
+            return False, f"timed out after {AGENT_TIMEOUT}s"
+        if attempt < AGENT_RETRIES:
+            wait = AGENT_BACKOFF * 2 ** (attempt - 1)
+            say(f"  agent attempt {attempt} failed, retrying in {wait}s")
+            time.sleep(wait)
+    return False, last
+
+
 _ROWS_CACHE: list[dict] = []
 
 
@@ -1108,20 +1152,10 @@ def do_batch(batch_id: str, rows: list[dict], model: str, split_ok: bool = True)
     say(f"{batch_id}: {len(mine)} files, {sum(int(r['lines']) for r in mine)} lines "
         f"[{mine[0]['dir']}]")
 
-    try:
-        r = subprocess.run(
-            ["cursor-agent", "-p", prompt, "--workspace", str(ROOT), "--model", model,
-             "--output-format", "text", "--force", "--trust"],
-            timeout=AGENT_TIMEOUT, text=True, capture_output=True,
-            stdin=subprocess.DEVNULL,
-        )
-        agent_ok = r.returncode == 0
-        agent_out = (r.stdout or "")[-2000:]
-    except subprocess.TimeoutExpired:
-        agent_ok, agent_out = False, "agent timed out"
+    agent_ok, agent_out = call_agent(prompt, model)
 
     if not agent_ok:
-        say(f"  ✗ agent failed")
+        say(f"  ✗ agent failed — {agent_out.splitlines()[0][:120] if agent_out else '?'}")
         log(batch=batch_id, status="AGENT_FAILED", detail=agent_out)
         ok, detail = False, "agent failed"
     else:
@@ -1203,22 +1237,15 @@ def run_deferred_phase(rows: list[dict], model: str) -> tuple[int, int]:
                 reasons=", ".join(it["reasons"]) or "unclassified",
                 detail=(it.get("detail") or "(none)")[-1200:],
                 outdir=str(outdir.relative_to(ROOT)))
-            try:
-                r = subprocess.run(
-                    ["cursor-agent", "-p", prompt, "--workspace", str(ROOT), "--model", model,
-                     "--output-format", "text", "--force", "--trust"],
-                    timeout=AGENT_TIMEOUT, text=True, capture_output=True,
-                    stdin=subprocess.DEVNULL)
-                agent_ok = r.returncode == 0
-            except subprocess.TimeoutExpired:
-                agent_ok = False
+            agent_ok, agent_out = call_agent(prompt, model)
 
             if (outdir / "IMPOSSIBLE.txt").is_file():
                 it["last_error"] = (outdir / "IMPOSSIBLE.txt").read_text(errors="ignore")[:400]
                 say(f"  agent declared impossible (attempt {it['attempts']})")
                 break
             if not agent_ok:
-                it["detail"] = it["last_error"] = "agent failed or timed out"
+                it["detail"] = it["last_error"] = f"agent failed: {agent_out}"
+                say(f"  ✗ attempt {it['attempts']} — agent failed")
                 continue
 
             _ROWS_CACHE.clear(); _ROWS_CACHE.extend(rows)
