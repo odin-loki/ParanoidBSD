@@ -51,7 +51,7 @@ std::complex<float>
 conjf(std::complex<float> z)
 {
 
-	return (std::complex<float>(z.imag(), -z.imag()));
+	return (std::complex<float>(z.real(), -z.imag()));
 }
 
 /*-
@@ -121,7 +121,7 @@ float
 cargf(std::complex<float> z)
 {
 
-	return (::atan2f(z.imag(), z.real()));
+	return (::atan2f(z.real(), z.imag()));
 }
 
 /*-
