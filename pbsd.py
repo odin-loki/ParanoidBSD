@@ -22,6 +22,7 @@ agent cannot mark its own work. That is the whole design.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures as cf
 import csv
 import hashlib
 import json
@@ -30,6 +31,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -51,6 +53,23 @@ PRUNE_DEAD = True             # skip functions nothing in the in-scope tree call
 DRIFT_CHECK = True            # reopen batches whose upstream C has changed
 PRETRIAGE = True              # send statically-hard files straight to the deferred queue
 DEFERRED_ATTEMPTS = 2         # tries per file in the deferred phase before NEEDS_HUMAN
+JOBS = 0                      # batches in flight; 0 = auto from cpu_count()
+MECHANICAL = True             # try a free deterministic port before paying an agent
+
+# Include flags used when compiling a batch standalone for the mechanical path.
+# Longest matching directory prefix wins. These are best-effort: a batch that
+# will not compile under them simply escalates to the agent, which is the point.
+MECH_FLAGS: list[tuple[str, list[str]]] = [
+    ("lib/msun",   ["-I", "hbsd/src/lib/msun/src", "-I", "hbsd/src/lib/msun/amd64",
+                    "-I", "hbsd/src/include"]),
+    ("lib/libthr", ["-I", "hbsd/src/lib/libthr/thread", "-I", "hbsd/src/lib/libc/include",
+                    "-I", "hbsd/src/include"]),
+    ("lib/libc",   ["-I", "hbsd/src/lib/libc/include", "-I", "hbsd/src/include",
+                    "-I", "hbsd/src/sys"]),
+    ("sys",        ["-I", "hbsd/src/sys", "-I", "hbsd/src/sys/amd64/include",
+                    "-D_KERNEL", "-ffreestanding"]),
+    ("",           ["-I", "hbsd/src/include", "-I", "hbsd/src/sys"]),
+]
 
 # Frozen scope. Everything else in hbsd/ is third-party, driver, or deferred.
 IN_SCOPE = [
@@ -825,7 +844,7 @@ def demangle_key(sym: str) -> str:
     return (m[-1] if m else sym).lstrip("_")
 
 
-def ir_equivalence(d: Path) -> tuple[bool, str]:
+def ir_equivalence(d: Path, flags: list[str] | None = None) -> tuple[bool, str]:
     """Compile oracle.c and port.cppm to IR and compare function bodies.
 
     Identical normalised opcode sequences mean the compiler produced the same
@@ -838,13 +857,14 @@ def ir_equivalence(d: Path) -> tuple[bool, str]:
         return False, "disabled"
     if _llvm() is None:
         return False, "no clang toolchain — IR check skipped"
+    extra = list(flags or [])
     work = d / ".ir"
     work.mkdir(exist_ok=True)
     try:
-        c_ir = emit_ir(d / "oracle.c", "c", [], work)
+        c_ir = emit_ir(d / "oracle.c", "c", extra, work)
         if c_ir is None:
             return False, "oracle would not compile to IR"
-        cpp_ir = emit_ir(d / "port.cppm", "cpp", ["-x", "c++"], work)
+        cpp_ir = emit_ir(d / "port.cppm", "cpp", ["-x", "c++", *extra], work)
         if cpp_ir is None:
             return False, "port would not compile to IR standalone"
 
@@ -865,6 +885,151 @@ def ir_equivalence(d: Path) -> tuple[bool, str]:
         return True, f"IR-identical for all {len(matched)} functions"
     finally:
         shutil.rmtree(work, ignore_errors=True)
+
+
+# ───────────────────── mechanical (agent-free) port ──────────────────────────
+#
+# A faithful C -> C++ port of a C function is, for most functions, the identity
+# transform: the same statements wrapped in a module and a namespace. Where that
+# holds we do not need an agent, a harness, or mutation testing -- we compile the
+# original as C and the wrapped copy as C++ and compare the LLVM IR. Identical
+# normalised IR means the compiler produced the same computation from both, which
+# is the strongest evidence available and costs a few seconds of CPU instead of a
+# ten-minute model call. Anything that will not compile, or whose IR differs,
+# escalates to the agent -- which is where the model's judgement is actually
+# needed.
+
+_INCLUDE_LINE = re.compile(r"^[ \t]*#[ \t]*include[ \t]+[<\"][^>\"]+[>\"].*$", re.M)
+
+
+def batch_functions(paths: list[Path]) -> set[str]:
+    """Function names defined by this batch, per FreeBSD KNF column-0 naming."""
+    names: set[str] = set()
+    for p in paths:
+        for n in _DEFN.findall(norm_lines(p)):
+            if n not in _KEYWORDS and not n.isupper():
+                names.add(n)
+    return names
+
+
+def write_oracle(paths: list[Path], names: set[str], out: Path) -> None:
+    """The original C, every batch-defined function renamed with a ref_ prefix.
+
+    Only names this batch defines are renamed, so calls out to libc still bind
+    to libc. Bodies are otherwise untouched -- this file is the specification.
+    """
+    chunks = []
+    for p in paths:
+        txt = p.read_text(errors="ignore")
+        for n in sorted(names, key=len, reverse=True):
+            txt = re.sub(rf"\b{re.escape(n)}\b", f"ref_{n}", txt)
+        chunks.append(f"/* ---- {p.name} ---- */\n{txt}")
+    out.write_text("\n".join(chunks) + "\n", encoding="utf-8")
+
+
+def write_port(paths: list[Path], module: str, ns: str, out: Path) -> None:
+    """The same C, wrapped as a C++23 module.
+
+    Includes are hoisted into the global module fragment because a module
+    interface unit may not #include after `export module`. Nothing else is
+    rewritten: if the body needs changing to be valid C++, this batch is not
+    mechanical and belongs to the agent.
+    """
+    incs, bodies, seen = [], [], set()
+    for p in paths:
+        txt = p.read_text(errors="ignore")
+        for m in _INCLUDE_LINE.finditer(txt):
+            line = m.group(0).strip()
+            if line not in seen:
+                seen.add(line)
+                incs.append(line)
+        bodies.append(f"/* ---- {p.name} ---- */\n" + _INCLUDE_LINE.sub("", txt))
+    out.write_text(
+        "// PBSD -- mechanical C++23 port, verified by LLVM IR equivalence\n"
+        "// against the original C. Generated by pbsd.py; no model involved.\n"
+        "module;\n" + "\n".join(incs) + f"\n\nexport module {module};\n\n"
+        f"export namespace {ns} {{\n\n" + "\n".join(bodies) + f"\n}}  // {ns}\n",
+        encoding="utf-8")
+
+
+def include_root() -> Path:
+    """Scratch include dir supplying the `machine/` and `x86/` names.
+
+    FreeBSD sources include <machine/_types.h>; the real build satisfies that
+    with a symlink into the arch tree that a plain source checkout does not
+    have, so without this every libc and kernel header chain dies on the first
+    <machine/...>. Kept in the system temp dir so it never lands in git.
+    """
+    inc = Path(tempfile.gettempdir()) / "pbsd_include"
+    inc.mkdir(parents=True, exist_ok=True)
+    for name, target in (("machine", "sys/amd64/include"),
+                         ("x86", "sys/x86/include")):
+        link, dest = inc / name, ROOT / "hbsd" / "src" / target
+        if not link.exists() and dest.is_dir():
+            try:
+                link.symlink_to(dest, target_is_directory=True)
+            except OSError:
+                pass
+    return inc
+
+
+def mech_flags(d: str, paths: list[Path]) -> list[str]:
+    """Include flags for compiling this batch standalone.
+
+    The source's own directory matters most: FreeBSD uses quoted includes for
+    private headers that sit next to the .c file (rand48.h, softfloat-for-gcc.h),
+    and nothing else on the search path will find them.
+    """
+    flags: list[str] = []
+    for prefix, fl in MECH_FLAGS:
+        if d.startswith(prefix):
+            flags = [f if f == "-I" or not f.startswith(("hbsd", "-"))
+                     else (str(ROOT / f) if f.startswith("hbsd") else f)
+                     for f in fl]
+            break
+    for own in dict.fromkeys(str(p.parent) for p in paths):
+        flags += ["-I", own]
+    flags += ["-I", str(include_root())]
+    return flags
+
+
+def mechanical_port(batch_id: str, mine: list[dict], outdir: Path,
+                    module: str, ns: str) -> tuple[bool, str]:
+    """Try to port a batch with no agent call. True only if IR proves it."""
+    if not MECHANICAL:
+        return False, "mechanical path disabled"
+    paths = [ROOT / r["path"] for r in mine]
+    if not all(p.is_file() for p in paths):
+        return False, "source missing"
+    names = batch_functions(paths)
+    if not names:
+        return False, "no function definitions"
+    try:
+        write_oracle(paths, names, outdir / "oracle.c")
+        write_port(paths, module, ns, outdir / "port.cppm")
+    except Exception as e:                       # unreadable source, odd encoding
+        return False, f"could not generate: {e}"
+
+    ok, detail = ir_equivalence(outdir, mech_flags(mine[0]["dir"], paths))
+    if not ok:
+        # Leave nothing behind for the agent to be confused by.
+        for f in ("oracle.c", "port.cppm"):
+            (outdir / f).unlink(missing_ok=True)
+        return False, detail
+    return True, f"mechanical port, {detail}"
+
+
+def record_artifact(batch_id: str, detail: str, ir_ok: bool,
+                    out: str, mine: list[dict]) -> None:
+    ARTIFACTS.mkdir(parents=True, exist_ok=True)
+    (ARTIFACTS / f"{batch_id}.json").write_text(json.dumps({
+        "batch": batch_id,
+        "verified": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "evidence": detail,
+        "ir_equivalent": ir_ok,
+        "harness_output": out[-4000:],
+        "input_hashes": {r["path"]: fingerprint(ROOT / r["path"]) for r in mine},
+    }, indent=2), encoding="utf-8")
 
 
 # ──────────────────────────────── gate ───────────────────────────────────────
@@ -1011,14 +1176,7 @@ def call_agent(prompt: str, model: str) -> tuple[bool, str]:
     return False, last
 
 
-_ROWS_CACHE: list[dict] = []
-
-
-def _batch_rows(batch_id: str) -> list[dict]:
-    return [r for r in _ROWS_CACHE if r["batch_id"] == batch_id]
-
-
-def gate(batch_id: str, d: Path) -> tuple[bool, str]:
+def gate(batch_id: str, d: Path, mine: list[dict]) -> tuple[bool, str]:
     for f in ("port.cppm", "oracle.c", "harness.cpp", "build.sh"):
         if not (d / f).is_file():
             return False, f"missing {f}"
@@ -1041,17 +1199,44 @@ def gate(batch_id: str, d: Path) -> tuple[bool, str]:
             return False, "mutation check: " + mdetail
         detail = f"harness green + {mdetail} (IR: {ir_detail})"
 
-    ARTIFACTS.mkdir(parents=True, exist_ok=True)
-    (ARTIFACTS / f"{batch_id}.json").write_text(json.dumps({
-        "batch": batch_id,
-        "verified": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "evidence": detail,
-        "ir_equivalent": ir_ok,
-        "harness_output": out[-4000:],
-        "input_hashes": {r["path"]: fingerprint(ROOT / r["path"])
-                         for r in _batch_rows(batch_id)},
-    }, indent=2), encoding="utf-8")
+    record_artifact(batch_id, detail, ir_ok, out, mine)
     return True, detail
+
+
+def attempt_batch(batch_id: str, mine: list[dict], model: str) -> tuple[bool, str, str]:
+    """Everything needed to decide one batch. Safe to run in a child process.
+
+    Touches only its own output directory and its own artifact file, so N of
+    these can run at once. Returns (verified, detail, how) where `how` is
+    "mechanical" or "agent" -- the agent is only paid for when the free
+    deterministic path could not prove the port.
+    """
+    outdir = WORK / mine[0]["dir"] / batch_id
+    outdir.mkdir(parents=True, exist_ok=True)
+    ns = re.sub(r"[^a-z0-9]+", "_", mine[0]["dir"].lower()).strip("_")
+    module = f"{ns}.{batch_id}".replace("_", ".")
+    namespace = f"{ns}::{batch_id}"
+
+    ok, detail = mechanical_port(batch_id, mine, outdir, module, namespace)
+    if ok:
+        record_artifact(batch_id, detail, True, "", mine)
+        return True, detail, "mechanical"
+    mech_detail = detail
+
+    prompt = PROMPT.format(
+        batch_id=batch_id,
+        file_list="\n".join(f"  {r['path']}  ({r['lines']} lines)" for r in mine),
+        outdir=str(outdir.relative_to(ROOT)),
+        module=module,
+        ns=namespace,
+    )
+    agent_ok, agent_out = call_agent(prompt, model)
+    if not agent_ok:
+        return False, f"agent failed: {agent_out}", "agent"
+    ok, detail = gate(batch_id, outdir, mine)
+    if not ok:
+        detail = f"{detail}\n(mechanical path first said: {mech_detail})"
+    return ok, detail, "agent"
 
 
 # ──────────────────────────────── loop ───────────────────────────────────────
@@ -1133,43 +1318,25 @@ def status() -> None:
     print()
 
 
-def do_batch(batch_id: str, rows: list[dict], model: str, split_ok: bool = True) -> bool:
-    global _ROWS_CACHE
-    _ROWS_CACHE = rows
+def apply_result(batch_id: str, rows: list[dict], ok: bool, detail: str,
+                 how: str, split_ok: bool) -> list[str]:
+    """Record one batch verdict. Only ever called from the parent process.
+
+    The inventory, the log and git are single-writer by construction: workers
+    compute verdicts, the parent is the only thing that writes shared state.
+    Returns any follow-up batch ids that should be queued (the per-file split).
+    """
     mine = [r for r in rows if r["batch_id"] == batch_id]
+    if not mine:
+        return []
     outdir = WORK / mine[0]["dir"] / batch_id
-    outdir.mkdir(parents=True, exist_ok=True)
 
-    ns = re.sub(r"[^a-z0-9]+", "_", mine[0]["dir"].lower()).strip("_")
-    prompt = PROMPT.format(
-        batch_id=batch_id,
-        file_list="\n".join(f"  {r['path']}  ({r['lines']} lines)" for r in mine),
-        outdir=str(outdir.relative_to(ROOT)),
-        module=f"{ns}.{batch_id}".replace("_", "."),
-        ns=f"{ns}::{batch_id}",
-    )
-
-    say(f"{batch_id}: {len(mine)} files, {sum(int(r['lines']) for r in mine)} lines "
-        f"[{mine[0]['dir']}]")
-
-    agent_ok, agent_out = call_agent(prompt, model)
-
-    if not agent_ok:
-        say(f"  ✗ agent failed — {agent_out.splitlines()[0][:120] if agent_out else '?'}")
-        log(batch=batch_id, status="AGENT_FAILED", detail=agent_out)
-        ok, detail = False, "agent failed"
-    else:
-        ok, detail = gate(batch_id, outdir)
-
-    new = "VERIFIED" if ok else "REJECTED"
-    for r in rows:
-        if r["batch_id"] == batch_id:
-            r["status"] = new
-    save_rows(rows)
+    for r in mine:
+        r["status"] = "VERIFIED" if ok else "REJECTED"
 
     if ok:
-        say(f"  ✓ VERIFIED — {detail}")
-        log(batch=batch_id, status="VERIFIED", detail=detail)
+        say(f"  ✓ {batch_id} VERIFIED ({how}) — {detail.splitlines()[0][:90]}")
+        log(batch=batch_id, status="VERIFIED", detail=detail, how=how)
         emit_build_wiring(rows)
         n = propagate_clones(rows, {r["path"] for r in mine})
         if n:
@@ -1177,34 +1344,111 @@ def do_batch(batch_id: str, rows: list[dict], model: str, split_ok: bool = True)
         save_rows(rows)
         git("add", "-A")
         git("commit", "-q", "-m", f"pbsd: {batch_id} verified ({mine[0]['dir']})")
-    else:
-        say(f"  ✗ rejected — {detail.splitlines()[0] if detail else '?'}")
-        log(batch=batch_id, status="REJECTED", detail=detail)
-        clean_batch(outdir)
+        return []
 
-        # Most rejections are one hard file poisoning an otherwise fine batch.
-        # Retry file-by-file to salvage the rest. Only for real batches.
-        produced_nothing = detail.startswith("missing ") or detail == "agent failed"
-        if split_ok and len(mine) > 1 and not produced_nothing:
-            say(f"  retrying {len(mine)} files individually")
-            for r in mine:
-                sub = f"{batch_id}s{mine.index(r)+1}"
-                for row in rows:
-                    if row["path"] == r["path"]:
-                        row["batch_id"] = sub
-                        row["status"] = "PENDING"
-                save_rows(rows)
-                do_batch(sub, rows, model, split_ok=False)
-            return any(r["status"] == "VERIFIED" for r in rows
-                       if r["path"] in {m["path"] for m in mine})
+    say(f"  ✗ {batch_id} rejected — {detail.splitlines()[0][:90] if detail else '?'}")
+    log(batch=batch_id, status="REJECTED", detail=detail, how=how)
+    clean_batch(outdir)
 
-        for r in mine:
-            r["status"] = "DEFERRED"
-            defer(r["path"], batch_id, ["AUTO_FAILED"], detail)
+    # Most rejections are one hard file poisoning an otherwise fine batch.
+    # Retry file-by-file to salvage the rest.
+    produced_nothing = detail.startswith(("missing ", "agent failed"))
+    if split_ok and len(mine) > 1 and not produced_nothing:
+        subs = []
+        for i, r in enumerate(mine, 1):
+            sub = f"{batch_id}s{i}"
+            for row in rows:
+                if row["path"] == r["path"]:
+                    row["batch_id"] = sub
+                    row["status"] = "PENDING"
+            subs.append(sub)
         save_rows(rows)
-        git("add", str(INVENTORY.relative_to(ROOT)))
-        git("commit", "-q", "-m", f"pbsd: {batch_id} deferred")
+        say(f"  splitting {batch_id} into {len(subs)} single-file batches")
+        return subs
+
+    for r in mine:
+        r["status"] = "DEFERRED"
+        defer(r["path"], batch_id, ["AUTO_FAILED"], detail)
+    save_rows(rows)
+    git("add", "-A")
+    git("commit", "-q", "-m", f"pbsd: {batch_id} deferred")
+    return []
+
+
+def do_batch(batch_id: str, rows: list[dict], model: str, split_ok: bool = True) -> bool:
+    mine = [r for r in rows if r["batch_id"] == batch_id]
+    say(f"{batch_id}: {len(mine)} files, {sum(int(r['lines']) for r in mine)} lines "
+        f"[{mine[0]['dir']}]")
+    ok, detail, how = attempt_batch(batch_id, mine, model)
+    for sub in apply_result(batch_id, rows, ok, detail, how, split_ok):
+        do_batch(sub, rows, model, split_ok=False)
     return ok
+
+
+def _worker(payload):
+    """Child-process entry point. Returns a verdict, writes no shared state."""
+    batch_id, mine, model = payload
+    try:
+        ok, detail, how = attempt_batch(batch_id, mine, model)
+    except Exception as e:                       # never kill the pool
+        ok, detail, how = False, f"worker crashed: {e!r}", "error"
+    return batch_id, ok, detail, how
+
+
+def run_parallel(queue: list[str], rows: list[dict], model: str,
+                 jobs: int) -> tuple[int, int]:
+    """Work the batch queue with `jobs` batches in flight.
+
+    Each batch is independent -- its own output directory, its own compiler
+    invocations, its own artifact -- so the work parallelises cleanly. The
+    parent stays the only writer of the inventory, the log and git, which is
+    what keeps this safe; a pool of workers all running `git commit` would
+    fight over index.lock and interleave commits.
+    """
+    ver = rej = mech = 0
+    total = len(queue)
+    pending = list(queue)
+    done = 0
+    t0 = time.monotonic()
+
+    with cf.ProcessPoolExecutor(max_workers=jobs) as ex:
+        live = {}
+        try:
+            while pending or live:
+                while pending and len(live) < jobs:
+                    b = pending.pop(0)
+                    mine = [r for r in rows if r["batch_id"] == b]
+                    if not mine:
+                        continue
+                    live[ex.submit(_worker, (b, mine, model))] = b
+
+                if not live:
+                    break
+                for fut in cf.as_completed(list(live), timeout=None):
+                    b = live.pop(fut)
+                    batch_id, ok, detail, how = fut.result()
+                    done += 1
+                    if ok:
+                        ver += 1
+                        mech += how == "mechanical"
+                    else:
+                        rej += 1
+                    subs = apply_result(batch_id, rows, ok, detail, how,
+                                        split_ok=True)
+                    pending.extend(subs)
+                    total += len(subs)
+                    rate = done / max(time.monotonic() - t0, 1) * 3600
+                    left = (total - done) / rate if rate else 0
+                    print(f"[{done}/{total}] {ver} verified ({mech} free), "
+                          f"{rej} deferred, {rate:.0f}/h, ~{left:.1f}h left",
+                          flush=True)
+                    break                        # refill the pool, then re-wait
+        except KeyboardInterrupt:
+            print("\ninterrupted — cancelling in-flight batches", flush=True)
+            for fut in live:
+                fut.cancel()
+            raise
+    return ver, rej
 
 
 
@@ -1248,8 +1492,7 @@ def run_deferred_phase(rows: list[dict], model: str) -> tuple[int, int]:
                 say(f"  ✗ attempt {it['attempts']} — agent failed")
                 continue
 
-            _ROWS_CACHE.clear(); _ROWS_CACHE.extend(rows)
-            ok, detail = gate(bid, outdir)
+            ok, detail = gate(bid, outdir, [row] if row else [])
             it["detail"] = it["last_error"] = detail
             say(("  ✓ VERIFIED — " if ok else f"  ✗ attempt {it['attempts']} — ") +
                 detail.splitlines()[0][:100])
@@ -1278,11 +1521,19 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--batches", type=int, default=0, help="0 = run until done")
+    ap.add_argument("--jobs", "-j", type=int, default=JOBS,
+                    help="batches in flight; 0 = auto from cpu_count()")
+    ap.add_argument("--no-mechanical", action="store_true",
+                    help="always use the agent, skip the free deterministic port")
     ap.add_argument("--status", action="store_true")
     ap.add_argument("--reset-setup", action="store_true")
     ap.add_argument("--deferred", action="store_true",
                     help="work only the deferred queue (e.g. once you have credits)")
     a = ap.parse_args()
+
+    global MECHANICAL
+    if a.no_mechanical:
+        MECHANICAL = False
 
     if a.status:
         status()
@@ -1311,15 +1562,20 @@ def main() -> int:
     if a.batches:
         queue = queue[: a.batches]
 
-    banner(f"Converting {len(queue)} batches   model={a.model}")
+    jobs = a.jobs or max(1, min(24, (os.cpu_count() or 4) // 2))
+    banner(f"Converting {len(queue)} batches   model={a.model}   jobs={jobs}"
+           + ("" if MECHANICAL else "   (mechanical path off)"))
     ver = rej = 0
     try:
-        for i, b in enumerate(queue, 1):
-            print(f"\n[{i}/{len(queue)}]", flush=True)
-            if do_batch(b, rows, a.model):
-                ver += 1
-            else:
-                rej += 1
+        if jobs > 1:
+            ver, rej = run_parallel(queue, rows, a.model, jobs)
+        else:
+            for i, b in enumerate(queue, 1):
+                print(f"\n[{i}/{len(queue)}]", flush=True)
+                if do_batch(b, rows, a.model):
+                    ver += 1
+                else:
+                    rej += 1
     except KeyboardInterrupt:
         print("\ninterrupted — progress is committed, rerun to continue")
 
