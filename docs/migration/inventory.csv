@@ -4240,7 +4240,7 @@ b1508,hbsd/src/sys/netpfil/ipfw/test/test_dn_sched.c,sys/netpfil/ipfw/test,95,DE
 b1508,hbsd/src/sys/netpfil/ipfw/test/test_dn_heap.c,sys/netpfil/ipfw/test,161,DEFERRED,
 b1508,hbsd/src/sys/netpfil/ipfw/test/main.c,sys/netpfil/ipfw/test,736,DEFERRED,
 b1509,hbsd/src/sys/security/audit/audit_bsm_db.c,sys/security/audit,402,DEFERRED,
-b1509,hbsd/src/sys/security/audit/audit_bsm_klib.c,sys/security/audit,528,PENDING,
+b1509,hbsd/src/sys/security/audit/audit_bsm_klib.c,sys/security/audit,528,DEFERRED,
 b1509,hbsd/src/sys/security/audit/audit_worker.c,sys/security/audit,542,DEFERRED,
 b1509,hbsd/src/sys/security/audit/audit_dtrace.c,sys/security/audit,533,DEFERRED,
 b1510,hbsd/src/sys/netipsec/xform_ipcomp.c,sys/netipsec,793,DEFERRED,
