@@ -16,3 +16,4 @@
 {"batch": "b0011", "status": "REJECTED", "detail": "agent failed", "ts": "2026-07-28T08:43:05Z"}
 {"batch": "b0012", "status": "REJECTED", "detail": "mutation check: only 2 compilable mutations, need 3 (0 would not build)", "ts": "2026-07-30T07:40:57Z"}
 {"batch": "b0012s1", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: __gedf2)", "ts": "2026-07-30T07:52:43Z"}
+{"batch": "b0012s2", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: __ledf2)", "ts": "2026-07-30T07:59:43Z"}
