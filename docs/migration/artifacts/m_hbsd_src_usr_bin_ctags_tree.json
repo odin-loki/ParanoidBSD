@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_ctags_tree",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of tree.c, IR-identical for all 2 functions, 9 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/ctags/tree.c": "4aa1ed76b43dec5b"
+  }
+}

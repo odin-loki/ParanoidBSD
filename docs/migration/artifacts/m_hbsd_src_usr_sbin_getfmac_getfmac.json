@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_getfmac_getfmac",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of getfmac.c, IR-identical for all 1 functions, 17 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/getfmac/getfmac.c": "4bbf7566f1bfb46c"
+  }
+}

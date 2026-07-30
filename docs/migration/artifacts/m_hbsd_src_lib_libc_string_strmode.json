@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_string_strmode",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of strmode.c, IR-identical for all 1 functions, 36 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/strmode.c": "2998dea3559778f6"
+  }
+}

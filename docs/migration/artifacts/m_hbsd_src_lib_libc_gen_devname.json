@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_devname",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of devname.c, IR-identical for all 2 functions, 7 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/devname.c": "7378fb776fff4ed5"
+  }
+}

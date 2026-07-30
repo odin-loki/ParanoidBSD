@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_stdlib_a64l",
+  "verified": "2026-07-30T09:25:00Z",
+  "evidence": "mechanical port of a64l.c, IR-identical for all 1 functions, 20 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/a64l.c": "2c9eebf4fda94c9f"
+  }
+}

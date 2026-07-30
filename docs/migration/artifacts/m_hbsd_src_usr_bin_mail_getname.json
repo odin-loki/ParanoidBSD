@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_mail_getname",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of getname.c, IR-identical for all 2 functions, 4 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/mail/getname.c": "65f29c9920b393dc"
+  }
+}

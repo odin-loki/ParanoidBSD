@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_feature_present",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of feature_present.c, IR-identical for all 1 functions, 11 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/feature_present.c": "9e0188d8cbb6d022"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_sigsetops",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of sigsetops.c, IR-identical for all 8 functions, 43 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/sigsetops.c": "144c5f1bb69784ec"
+  }
+}

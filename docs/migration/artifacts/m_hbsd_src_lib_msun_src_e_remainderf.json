@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_e_remainderf",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of e_remainderf.c, IR-identical for all 1 functions, 20 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/e_remainderf.c": "04821b0d88a4ca36"
+  }
+}

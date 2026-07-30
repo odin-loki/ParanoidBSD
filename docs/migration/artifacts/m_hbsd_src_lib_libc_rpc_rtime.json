@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_rpc_rtime",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of rtime.c, IR-identical for all 1 functions, 43 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/rpc/rtime.c": "68ddbb9db1f7e0bd"
+  }
+}

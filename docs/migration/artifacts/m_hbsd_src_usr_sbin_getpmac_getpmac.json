@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_getpmac_getpmac",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of getpmac.c, IR-identical for all 1 functions, 24 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/getpmac/getpmac.c": "44075e2abd74d9f5"
+  }
+}

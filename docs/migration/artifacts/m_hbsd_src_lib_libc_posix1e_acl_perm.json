@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_posix1e_acl_perm",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of acl_perm.c, IR-identical for all 4 functions, 29 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/posix1e/acl_perm.c": "409cd4bd858c051d"
+  }
+}

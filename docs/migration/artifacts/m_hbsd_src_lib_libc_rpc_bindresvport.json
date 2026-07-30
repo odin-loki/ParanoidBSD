@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_rpc_bindresvport",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of bindresvport.c, IR-identical for all 2 functions, 24 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/rpc/bindresvport.c": "1367de1d056feafd"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_quad_fixdfdi",
+  "verified": "2026-07-30T09:25:28Z",
+  "evidence": "mechanical port of fixdfdi.c, IR-identical for all 1 functions, 4 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/quad/fixdfdi.c": "f8f8371dcf00eee8"
+  }
+}

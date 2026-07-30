@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_posix1e_acl_cmp_np",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of acl_cmp_np.c, IR-identical for all 1 functions, 7 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/posix1e/acl_cmp_np.c": "a6ebaa9228d6a688"
+  }
+}

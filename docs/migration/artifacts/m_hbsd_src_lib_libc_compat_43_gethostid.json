@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_compat_43_gethostid",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of gethostid.c, IR-identical for all 1 functions, 8 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/compat-43/gethostid.c": "84e485e6b85d576c"
+  }
+}

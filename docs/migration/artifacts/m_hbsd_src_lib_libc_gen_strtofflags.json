@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_strtofflags",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of strtofflags.c, IR-identical for all 2 functions, 61 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/strtofflags.c": "17753e23551e4799"
+  }
+}

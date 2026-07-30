@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_sbin_nvmecontrol_nc_util",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of nc_util.c, IR-identical for all 2 functions, 12 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/sbin/nvmecontrol/nc_util.c": "db6597bb2b215b2d"
+  }
+}

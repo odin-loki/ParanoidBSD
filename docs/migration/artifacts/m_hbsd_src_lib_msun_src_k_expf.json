@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_k_expf",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of k_expf.c, IR-identical for all 2 functions, 14 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/k_expf.c": "3b66f8cd377b4230"
+  }
+}

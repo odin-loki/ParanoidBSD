@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_bin_dd_position",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of position.c, IR-identical for all 2 functions, 71 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/bin/dd/position.c": "e55ff08a4485a4d6"
+  }
+}

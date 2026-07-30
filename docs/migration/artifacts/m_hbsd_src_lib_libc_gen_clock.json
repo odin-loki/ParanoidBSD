@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_clock",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of clock.c, IR-identical for all 1 functions, 4 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/clock.c": "4dc582b1c21c940b"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_sys_net_toeplitz",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of toeplitz.c, IR-identical for all 1 functions, 27 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/sys/net/toeplitz.c": "7f32fd35936fcf89"
+  }
+}
