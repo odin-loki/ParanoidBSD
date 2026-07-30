@@ -3388,7 +3388,7 @@ b1218,hbsd/src/sys/netinet/libalias/alias_proxy.c,sys/netinet/libalias,860,DEFER
 b1218,hbsd/src/sys/netinet/libalias/alias.c,sys/netinet/libalias,1830,DEFERRED,
 b1218,hbsd/src/sys/netinet/libalias/alias_db.c,sys/netinet/libalias,2600,DEFERRED,
 b1219,hbsd/src/sys/netgraph/ng_l2tp.c,sys/netgraph,1604,DEFERRED,
-b1219,hbsd/src/sys/netgraph/ng_parse.c,sys/netgraph,1902,PENDING,
+b1219,hbsd/src/sys/netgraph/ng_parse.c,sys/netgraph,1902,DEFERRED,
 b1219,hbsd/src/sys/netgraph/ng_pppoe.c,sys/netgraph,2229,DEFERRED,
 b1219,hbsd/src/sys/netgraph/ng_ppp.c,sys/netgraph,2642,DEFERRED,
 b1220,hbsd/src/sys/kern/vfs_aio.c,sys/kern,3174,DEFERRED,
