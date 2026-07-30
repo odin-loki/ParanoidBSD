@@ -4455,7 +4455,7 @@ b1588,hbsd/src/usr.sbin/makefs/msdos/msdosfs_fat.c,usr.sbin/makefs/msdos,1053,DE
 b1589,hbsd/src/usr.sbin/bhyve/amd64/task_switch.c,usr.sbin/bhyve/amd64,941,DEFERRED,
 b1589,hbsd/src/usr.sbin/bhyve/amd64/vga.c,usr.sbin/bhyve/amd64,1330,DEFERRED,
 b1590,hbsd/src/sys/x86/x86/intr_machdep.c,sys/x86/x86,780,DEFERRED,
-b1590,hbsd/src/sys/x86/x86/nexus.c,sys/x86/x86,770,PENDING,
+b1590,hbsd/src/sys/x86/x86/nexus.c,sys/x86/x86,770,DEFERRED,
 b1590,hbsd/src/sys/x86/x86/msi.c,sys/x86/x86,795,DEFERRED,
 b1590,hbsd/src/sys/x86/x86/tsc.c,sys/x86/x86,1000,DEFERRED,
 b1591,hbsd/src/sys/x86/iommu/intel_ctx.c,sys/x86/iommu,932,DEFERRED,
