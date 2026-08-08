@@ -64,16 +64,10 @@ using port_locale_t = port_xlocale *;
 port_xlocale_ctype	port_global_ctype;
 port_xlocale		port_global_locale;
 
-static std::size_t	port_mbrtowc(wchar_t * __restrict,
+std::size_t	port_mbrtowc(wchar_t * __restrict,
 		    const char * __restrict, std::size_t, mbstate_t * __restrict);
-static std::size_t	port_wcrtomb(char * __restrict, wchar_t,
+std::size_t	port_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
-
-static std::size_t (*port_mbrtowc_ptr)(wchar_t * __restrict,
-		    const char * __restrict, std::size_t, mbstate_t * __restrict) =
-    port_mbrtowc;
-static std::size_t (*port_wcrtomb_ptr)(char * __restrict, wchar_t,
-		    mbstate_t * __restrict) = port_wcrtomb;
 
 port_locale_t
 port_get_locale()
@@ -100,7 +94,7 @@ XLOCALE_CTYPE(port_locale_t l)
 	return (static_cast<port_xlocale_ctype *>(l->components[PORT_XLC_CTYPE]));
 }
 
-static std::size_t
+std::size_t
 port_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n,
     mbstate_t * __restrict ps)
 {
@@ -185,7 +179,7 @@ port_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n,
 	return (wch == L'\0' ? 0 : want);
 }
 
-static std::size_t
+std::size_t
 port_wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 {
 	_UTF8State *us;

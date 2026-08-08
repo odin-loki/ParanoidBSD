@@ -15,9 +15,12 @@
 
 module;
 
+#include <cstddef>
 #include <cstdint>
 
-namespace {
+export module pbsd.lib.libc.locale.b0064;
+
+export namespace pbsd::lib_libc_locale::b0064 {
 
 typedef union {
 	char		__mbstate8[128];
@@ -38,15 +41,15 @@ enum {
 	XLC_CTYPE = 1,
 };
 
-#define XLOCALE_CTYPE(x)	((struct pbsd_xlocale_ctype *)(x)->components[XLC_CTYPE])
+#define XLOCALE_CTYPE(x)	((pbsd_xlocale_ctype *)(x)->components[XLC_CTYPE])
 
-pbsd_xlocale_ctype	port_c_ctype;
-pbsd_locale		port_c_locale;
-pbsd_xlocale_ctype	port_global_ctype;
-pbsd_locale		port_global_locale;
+static pbsd_xlocale_ctype	port_c_ctype;
+static pbsd_locale		port_c_locale;
+static pbsd_xlocale_ctype	port_global_ctype;
+static pbsd_locale		port_global_locale;
 
-int			port_has_thread_locale;
-pbsd_locale_t		port_thread_locale;
+static int			port_has_thread_locale;
+static pbsd_locale_t		port_thread_locale;
 
 static inline pbsd_locale_t
 get_real_locale(pbsd_locale_t locale)
@@ -72,18 +75,6 @@ __get_locale(void)
 		return (&port_global_locale);
 	return (port_thread_locale);
 }
-
-} // namespace
-
-export module pbsd.lib.libc.locale.b0064;
-
-export namespace pbsd::lib_libc_locale::b0064 {
-
-using pbsd_mbstate_t = ::pbsd_mbstate_t;
-using pbsd_locale = ::pbsd_locale;
-using pbsd_locale_t = ::pbsd_locale_t;
-
-extern "C" {
 
 void
 pbsd_set_thread_locale(int on, pbsd_locale_t loc)
@@ -114,8 +105,6 @@ pbsd_global_locale(void)
 
 	return (&port_global_locale);
 }
-
-} // extern "C"
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -161,10 +150,5 @@ mbsinit(const pbsd_mbstate_t *ps)
 {
 	return mbsinit_l(ps, __get_locale());
 }
-
-using ::pbsd_set_thread_locale;
-using ::pbsd_locale_init;
-using ::pbsd_c_locale;
-using ::pbsd_global_locale;
 
 } // export namespace pbsd::lib_libc_locale::b0064

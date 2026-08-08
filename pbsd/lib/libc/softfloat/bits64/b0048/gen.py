@@ -351,6 +351,9 @@ def make_rename_macros(names: list[str]) -> str:
     lines.append('int8 floatx80_rounding_precision = 80;')
     lines.append('int8 float_detect_tininess = float_tininess_after_rounding;')
     lines.append('int float_exception_mask = 0;')
+    lines.append('')
+    lines.append('/* Expose file-scope static helpers to the harness linker. */')
+    lines.append('#define static')
     return '\n'.join(lines) + '\n\n'
 
 
