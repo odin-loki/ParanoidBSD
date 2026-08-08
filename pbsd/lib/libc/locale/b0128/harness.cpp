@@ -10,7 +10,6 @@ import pbsd.lib.libc.locale.b0128;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cwchar>
 
 namespace port = pbsd::lib_libc_locale::b0128;
 
@@ -134,6 +133,16 @@ ld_bits_eq(long double a, long double b)
 	return (memcmp(ba, bb, sizeof(ba)) == 0);
 }
 
+static size_t
+wcsnlen_local(const wchar_t *s, size_t maxlen)
+{
+	size_t n = 0;
+
+	while (n < maxlen && s[n] != L'\0')
+		n++;
+	return (n);
+}
+
 static bool
 state_eq(const port::mbstate_t &a, const ref_mbstate_t &b)
 {
@@ -188,7 +197,7 @@ compare_wcstof_l(Stats &st, const wchar_t *in, bool use_l, bool null_end,
 	}
 	fill_guard(pwbuf, sizeof(pwbuf));
 	fill_guard(rwbuf, sizeof(rwbuf));
-	plen = wcsnlen(in, (sizeof(pwbuf) / sizeof(wchar_t)) - 9);
+	plen = wcsnlen_local(in, (sizeof(pwbuf) / sizeof(wchar_t)) - 9);
 	rlen = plen;
 	memcpy(pwbuf + 8, in, (plen + 1) * sizeof(wchar_t));
 	memcpy(rwbuf + 8, in, (rlen + 1) * sizeof(wchar_t));
@@ -244,7 +253,7 @@ compare_wcstold_l(Stats &st, const wchar_t *in, bool use_l, bool null_end,
 	}
 	fill_guard(pwbuf, sizeof(pwbuf));
 	fill_guard(rwbuf, sizeof(rwbuf));
-	plen = wcsnlen(in, (sizeof(pwbuf) / sizeof(wchar_t)) - 9);
+	plen = wcsnlen_local(in, (sizeof(pwbuf) / sizeof(wchar_t)) - 9);
 	memcpy(pwbuf + 8, in, (plen + 1) * sizeof(wchar_t));
 	memcpy(rwbuf + 8, in, (plen + 1) * sizeof(wchar_t));
 

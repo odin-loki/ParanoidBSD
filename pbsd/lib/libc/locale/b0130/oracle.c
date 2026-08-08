@@ -37,6 +37,7 @@ typedef __mbstate_t mbstate_t;
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <wctype.h>
 
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX	4
@@ -86,20 +87,20 @@ struct xlocale_ctype {
 	mbstate_t	wcsnrtombs;
 };
 
-struct xlocale_struct {
+struct xlocale {
 	int		using_messages_locale;
 	void		*components[8];
 };
 
-typedef struct xlocale_struct xlocale;
+typedef struct xlocale *locale_t;
 
 #define FIX_LOCALE(loc)		if ((loc) == NULL) (loc) = __get_locale()
 #define XLOCALE_CTYPE(l)	((struct xlocale_ctype *)(l)->components[XLC_CTYPE])
 #define __get_locale()		ref___get_locale()
 
 struct xlocale_ctype	ref_global_ctype;
+struct xlocale		__xlocale_global_locale;
 struct xlocale_messages	__xlocale_global_messages;
-xlocale			__xlocale_global_locale;
 
 #define LCMESSAGES_SIZE_FULL (sizeof(struct lc_messages_T) / sizeof(char *))
 #define LCMESSAGES_SIZE_MIN \
@@ -301,6 +302,11 @@ __part_load_locale(const char *name, int *using_locale, char **buffer,
 		*buffer = NULL;
 	return (_LDP_LOADED);
 }
+
+static size_t
+ref___wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
+    size_t nwc, size_t len, mbstate_t * __restrict ps,
+    wcrtomb_pfn_t pwcrtomb);
 
 static size_t
 ref_dispatch_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,

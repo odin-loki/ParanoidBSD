@@ -15,8 +15,10 @@ import pbsd.lib.libc.gen.b0132;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <initializer_list>
 
 #include <sys/time.h>
+#include <sys/types.h>
 
 namespace port = pbsd::lib_libc_gen::b0132;
 
@@ -35,22 +37,21 @@ namespace port = pbsd::lib_libc_gen::b0132;
 #define	DEAD_PROCESS	7
 #define	SHUTDOWN_TIME	8
 
-using utmpx = port::utmpx;
-using futx = port::futx;
-
 struct guarded_futx {
 	unsigned char	pre[PAD];
-	struct futx	fu;
+	port::futx	fu;
 	unsigned char	post[PAD];
 };
 
 struct guarded_utmpx {
 	unsigned char	pre[PAD];
-	struct utmpx	ut;
+	port::utmpx	ut;
 	unsigned char	post[PAD];
 };
 
 extern "C" {
+struct utmpx;
+struct futx;
 void ref_utx_to_futx(const struct utmpx *, struct futx *);
 struct utmpx *ref_futx_to_utx(const struct futx *);
 void *__real_calloc(size_t, size_t);
@@ -175,13 +176,13 @@ guards_intact(const unsigned char *pre, const unsigned char *post)
 }
 
 static void
-utmpx_zero(struct utmpx *ut)
+utmpx_zero(port::utmpx *ut)
 {
 	std::memset(ut, 0, sizeof(*ut));
 }
 
 static void
-futx_zero(struct futx *fu)
+futx_zero(port::futx *fu)
 {
 	std::memset(fu, 0, sizeof(*fu));
 }
@@ -208,7 +209,7 @@ fill_bytes_nulheavy(char *dst, size_t len, uint32_t seed)
 }
 
 static void
-utmpx_fill(struct utmpx *ut, short type, uint32_t seed)
+utmpx_fill(port::utmpx *ut, short type, uint32_t seed)
 {
 	utmpx_zero(ut);
 	ut->ut_type = type;
@@ -222,7 +223,7 @@ utmpx_fill(struct utmpx *ut, short type, uint32_t seed)
 }
 
 static void
-futx_fill(struct futx *fu, uint8_t type, uint32_t seed)
+futx_fill(port::futx *fu, uint8_t type, uint32_t seed)
 {
 	futx_zero(fu);
 	fu->fu_type = type;
@@ -241,7 +242,7 @@ futx_bufs_match(const guarded_futx &a, const guarded_futx &b)
 }
 
 static bool
-utmpx_bufs_match(const struct utmpx *a, const struct utmpx *b)
+utmpx_bufs_match(const port::utmpx *a, const port::utmpx *b)
 {
 	return (std::memcmp(a, b, sizeof(*a)) == 0);
 }
@@ -249,7 +250,7 @@ utmpx_bufs_match(const struct utmpx *a, const struct utmpx *b)
 /* ----------------------------------------------------------- utx_to_futx */
 
 static void
-test_utx_to_futx_one(int row, const char *label, const struct utmpx *ut,
+test_utx_to_futx_one(int row, const char *label, const port::utmpx *ut,
     time_t tv_sec, suseconds_t tv_usec)
 {
 	guarded_utmpx gua, gub;
@@ -268,7 +269,9 @@ test_utx_to_futx_one(int row, const char *label, const struct utmpx *ut,
 	port::utx_to_futx(&gua.ut, &ga.fu);
 	tv_mock_reset();
 	tv_mock_set(tv_sec, tv_usec);
-	ref_utx_to_futx(&gub.ut, &gb.fu);
+	ref_utx_to_futx(reinterpret_cast<const struct utmpx *>(
+	    static_cast<const void *>(&gub.ut)),
+	    reinterpret_cast<struct futx *>(static_cast<void *>(&gb.fu)));
 
 	if (!guards_intact(gua.pre, gua.post))
 		fail_row(row, label, "port ut guard clobbered");
@@ -288,7 +291,7 @@ static void
 test_utx_to_futx_edges(void)
 {
 	const int row = R_UTX2FUTX;
-	struct utmpx ut;
+	port::utmpx ut;
 	const short primitive_types[] = {
 		BOOT_TIME, OLD_TIME, NEW_TIME, SHUTDOWN_TIME
 	};
@@ -344,7 +347,7 @@ test_utx_to_futx_sweep(void)
 	};
 
 	for (long i = 0; i < SWEEP_ITERS; i++) {
-		struct utmpx ut;
+		port::utmpx ut;
 		uint32_t seed = rnd32();
 		short type = types[rnd32() % (sizeof(types) / sizeof(types[0]))];
 
@@ -372,11 +375,11 @@ test_utx_to_futx_sweep(void)
 /* ----------------------------------------------------------- futx_to_utx */
 
 static void
-test_futx_to_utx_one(int row, const char *label, const struct futx *fu)
+test_futx_to_utx_one(int row, const char *label, const port::futx *fu)
 {
 	guarded_futx ga, gb;
-	const struct utmpx *pa;
-	const struct utmpx *pb;
+	const port::utmpx *pa;
+	const port::utmpx *pb;
 
 	rows[row].cases++;
 	guard_init(&ga, sizeof(ga));
@@ -385,7 +388,9 @@ test_futx_to_utx_one(int row, const char *label, const struct futx *fu)
 	std::memcpy(&gb.fu, fu, sizeof(*fu));
 
 	pa = port::futx_to_utx(&ga.fu);
-	pb = ref_futx_to_utx(&gb.fu);
+	pb = reinterpret_cast<const port::utmpx *>(static_cast<const void *>(
+	    ref_futx_to_utx(reinterpret_cast<const struct futx *>(
+	    static_cast<const void *>(&gb.fu)))));
 
 	if ((pa == NULL) != (pb == NULL)) {
 		fail_row(row, label, "NULL mismatch");
@@ -406,9 +411,9 @@ static void
 test_futx_to_utx_calloc_fail(void)
 {
 	const int row = R_FUTX2UTX;
-	struct futx fu;
-	const struct utmpx *pa;
-	const struct utmpx *pb;
+	port::futx fu;
+	const port::utmpx *pa;
+	const port::utmpx *pb;
 
 	rows[row].cases++;
 	futx_fill(&fu, USER_PROCESS, 0xc0ffee);
@@ -416,7 +421,9 @@ test_futx_to_utx_calloc_fail(void)
 	g_calloc_fail = 1;
 
 	pa = port::futx_to_utx(&fu);
-	pb = ref_futx_to_utx(&fu);
+	pb = reinterpret_cast<const port::utmpx *>(static_cast<const void *>(
+	    ref_futx_to_utx(reinterpret_cast<const struct futx *>(
+	    static_cast<const void *>(&fu)))));
 
 	if ((pa == NULL) != (pb == NULL))
 		fail_row(row, "calloc-fail", "NULL mismatch");
@@ -430,7 +437,7 @@ static void
 test_futx_to_utx_edges(void)
 {
 	const int row = R_FUTX2UTX;
-	struct futx fu;
+	port::futx fu;
 	const uint8_t primitive_types[] = {
 		BOOT_TIME, OLD_TIME, NEW_TIME, SHUTDOWN_TIME
 	};
@@ -461,7 +468,7 @@ test_futx_to_utx_edges(void)
 	futx_fill(&fu, DEAD_PROCESS, 3);
 	test_futx_to_utx_one(row, "dead", &fu);
 
-	for (uint8_t bad : { (uint8_t)9, (uint8_t)127, (uint8_t)255 }) {
+	for (uint8_t bad : std::initializer_list<uint8_t>{ 9, 127, 255 }) {
 		futx_fill(&fu, bad, bad);
 		test_futx_to_utx_one(row, "default-type", &fu);
 	}
@@ -493,7 +500,7 @@ test_futx_to_utx_sweep(void)
 	};
 
 	for (long i = 0; i < SWEEP_ITERS; i++) {
-		struct futx fu;
+		port::futx fu;
 		uint32_t seed = rnd32();
 		uint8_t type = types[rnd32() % (sizeof(types) / sizeof(types[0]))];
 

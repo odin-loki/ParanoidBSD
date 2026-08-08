@@ -125,9 +125,6 @@
 
 module;
 
-#define _POSIX_C_SOURCE 200809L
-#define __SSP_FORTIFY_LEVEL 0
-
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/socket.h>

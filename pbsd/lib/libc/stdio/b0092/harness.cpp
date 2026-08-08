@@ -26,6 +26,8 @@ int ref_wscanf(const wchar_t *__restrict, ...);
 int ref_wscanf_l(locale_t, const wchar_t *__restrict, ...);
 wint_t ref_getwc(FILE *);
 wint_t ref_getwc_l(FILE *, locale_t);
+int wscanf(const wchar_t *__restrict, ...);
+int wscanf_l(locale_t, const wchar_t *__restrict, ...);
 }
 
 namespace {
@@ -468,10 +470,10 @@ test_wscanf_int(StatId which, const char *label, const wchar_t *input,
 	}
 	if (push_stdin_wide(input, n)) {
 		if (which == S_WSCANF)
-			rp = port::wscanf(fmt, &gi_p.val);
+			rp = (wscanf)(fmt, &gi_p.val);
 		else {
 			locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
-			rp = port::wscanf_l(loc, fmt, &gi_p.val);
+			rp = (wscanf_l)(loc, fmt, &gi_p.val);
 			freelocale(loc);
 		}
 		pop_stdin();
@@ -512,10 +514,10 @@ test_wscanf_wchar(StatId which, const char *label, const wchar_t *input,
 	}
 	if (push_stdin_wide(input, n)) {
 		if (which == S_WSCANF)
-			rp = port::wscanf(fmt, gw_p.user());
+			rp = (wscanf)(fmt, gw_p.user());
 		else {
 			locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
-			rp = port::wscanf_l(loc, fmt, gw_p.user());
+			rp = (wscanf_l)(loc, fmt, gw_p.user());
 			freelocale(loc);
 		}
 		pop_stdin();
@@ -558,10 +560,10 @@ test_wscanf_two_int(StatId which, const char *label, const wchar_t *input,
 	}
 	if (push_stdin_wide(input, n)) {
 		if (which == S_WSCANF)
-			rp = port::wscanf(fmt, &gi_p1.val, &gi_p2.val);
+			rp = (wscanf)(fmt, &gi_p1.val, &gi_p2.val);
 		else {
 			locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
-			rp = port::wscanf_l(loc, fmt, &gi_p1.val, &gi_p2.val);
+			rp = (wscanf_l)(loc, fmt, &gi_p1.val, &gi_p2.val);
 			freelocale(loc);
 		}
 		pop_stdin();

@@ -34,6 +34,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/compat-43/setrgid_m/port.cppm
   lib/libc/compat-43/setruid_m/port.cppm
   lib/libc/csu/aarch64/b0008/port.cppm
+  lib/libc/csu/amd64/b0134/port.cppm
   lib/libc/db/btree/b0131/port.cppm
   lib/libc/db/hash/b0133/port.cppm
   lib/libc/db/hash/hash_log2_m/port.cppm
@@ -107,6 +108,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/rpmatch_m/port.cppm
   lib/libc/locale/wctype_m/port.cppm
   lib/libc/net/b0076/port.cppm
+  lib/libc/net/b0129/port.cppm
   lib/libc/net/if_indextoname_m/port.cppm
   lib/libc/net/if_nametoindex_m/port.cppm
   lib/libc/net/ip6opt_m/port.cppm

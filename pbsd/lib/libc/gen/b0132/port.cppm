@@ -55,7 +55,7 @@ export module pbsd.lib.libc.gen.b0132;
 
 export namespace pbsd::lib_libc_gen::b0132 {
 
-export struct utmpx {
+struct utmpx {
 	short		ut_type;
 	struct timeval	ut_tv;
 	char		ut_id[8];
@@ -66,7 +66,7 @@ export struct utmpx {
 	char		__ut_spare[64];
 };
 
-export struct futx {
+struct futx {
 	uint8_t		fu_type;
 	uint64_t	fu_tv;
 	char		fu_id[8];
@@ -165,10 +165,10 @@ utx_to_futx(const struct utmpx *ut, struct futx *fu)
 struct utmpx *
 futx_to_utx(const struct futx *fu)
 {
-	static _Thread_local struct utmpx *ut;
+	static thread_local struct utmpx *ut;
 
 	if (ut == NULL) {
-		ut = calloc(1, sizeof *ut);
+		ut = (struct utmpx *)calloc(1, sizeof *ut);
 		if (ut == NULL)
 			return (NULL);
 	} else

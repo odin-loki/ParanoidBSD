@@ -1,5 +1,7 @@
 module;
 
+#include <sys/types.h>
+
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
@@ -7,6 +9,8 @@ module;
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
+
+export module pbsd.lib.libc.db.btree.b0131;
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)
@@ -19,11 +23,6 @@ module;
 typedef uint32_t	pgno_t;
 typedef uint16_t	indx_t;
 typedef uint32_t	recno_t;
-typedef unsigned int	u_int;
-typedef unsigned char	u_char;
-typedef uint32_t	u_int32_t;
-typedef uint8_t		u_int8_t;
-typedef char		* caddr_t;
 
 typedef struct {
 	void	*data;
@@ -217,8 +216,6 @@ int __bt_ret(BTREE *, EPG *, DBT *, DBT *, DBT *, DBT *, int);
 int _close(int);
 }
 
-export module pbsd.lib.libc.db.btree.b0131;
-
 export namespace pbsd::lib_libc_db_btree::b0131 {
 
 /*-
@@ -269,13 +266,13 @@ __bt_new(BTREE *t, pgno_t *npg)
 	PAGE *h;
 
 	if (t->bt_free != P_INVALID &&
-	    (h = mpool_get(t->bt_mp, t->bt_free, 0)) != NULL) {
+	    (h = (PAGE *)mpool_get(t->bt_mp, t->bt_free, 0)) != NULL) {
 		*npg = t->bt_free;
 		t->bt_free = h->nextpg;
 		F_SET(t, B_METADIRTY);
 		return (h);
 	}
-	return (mpool_new(t->bt_mp, npg, MPOOL_PAGE_NEXT));
+	return ((PAGE *)mpool_new(t->bt_mp, npg, MPOOL_PAGE_NEXT));
 }
 
 /*-
@@ -382,6 +379,8 @@ __bt_get(const DB *dbp, const DBT *key, DBT *data, u_int flags)
  */
 
 static int bt_meta(BTREE *);
+
+int __bt_sync(const DB *dbp, u_int flags);
 
 int
 __bt_close(DB *dbp)

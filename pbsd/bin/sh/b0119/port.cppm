@@ -34,19 +34,25 @@
 
 module;
 
-#include <cctype>
-#include <cerrno>
-#include <climits>
-#include <cinttypes>
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+
 #include <cstddef>
-#include <cstdlib>
 #include <cstring>
 
 export module pbsd.bin.sh.b0119;
 
 export namespace pbsd::bin_sh::b0119 {
 
-typedef std::intmax_t arith_t;
+extern "C" uintmax_t strtoumax(const char *nptr, char **endptr, int base);
+extern "C" intmax_t strtoimax(const char *nptr, char **endptr, int base);
+
+typedef intmax_t arith_t;
 
 #define ARITH_MIN INTMAX_MIN
 #define ARITH_MAX INTMAX_MAX
