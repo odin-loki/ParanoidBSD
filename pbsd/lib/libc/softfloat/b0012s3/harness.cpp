@@ -173,8 +173,8 @@ check_mul(const char *phase, Val a, Val b)
 	P::floatx80 pr = P::mulxf3(pa, pb);
 	int pfl = P::float_exception_flags;
 
-	std::memcpy(bufRef + OFF_OUT, &rr, sizeof rr);
-	std::memcpy(bufPort + OFF_OUT, &pr, sizeof pr);
+	std::memcpy(bufRef + OFF_B + 16, &rr, sizeof rr);
+	std::memcpy(bufPort + OFF_B + 16, &pr, sizeof pr);
 
 	++st_mul.cases;
 	Val rv{ rr.high, rr.low };

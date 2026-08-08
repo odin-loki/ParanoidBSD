@@ -552,8 +552,11 @@ test_read(void)
 
 	for (size_t f = 0; f < sizeof(fds) / sizeof(fds[0]); f++)
 		for (size_t n = 0; n < sizeof(nbs) / sizeof(nbs[0]); n++)
-			for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++)
+			for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++) {
+				fprintf(stderr, "case_read fd=%d nb=%zu ret=%lld\n",
+				    fds[f], nbs[n], rets[r]);
 				case_read(fds[f], nbs[n], rets[r]);
+			}
 
 	rng_seed(0x72'65'61'64ULL);
 	for (int i = 0; i < 200000; i++) {
@@ -664,9 +667,13 @@ main(void)
 {
 	unsigned long long total_cases = 0, total_fails = 0;
 
+	fprintf(stderr, "test_read\n");
 	test_read();
+	fprintf(stderr, "test_write\n");
 	test_write();
+	fprintf(stderr, "test_msync\n");
 	test_msync();
+	fprintf(stderr, "test_wait4\n");
 	test_wait4();
 
 	printf("\n%-12s %12s %12s\n", "function", "cases", "failures");

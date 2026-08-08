@@ -1,10 +1,3 @@
-// Batch b0037 -- C++23 port of:
-//   sys/x86/linux/linux_vdso_selector_x86.c
-//   sys/x86/linux/linux_x86.c
-//
-// -----------------------------------------------------------------------------
-// From sys/x86/linux/linux_vdso_selector_x86.c:
-//
 /*-
  * Copyright (c) 2012 Konstantin Belousov <kib@FreeBSD.org>
  * Copyright (c) 2016, 2017, 2019, 2021 The FreeBSD Foundation
@@ -33,12 +26,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- */
-//
-// -----------------------------------------------------------------------------
-// From sys/x86/linux/linux_x86.c:
-//
-/*-
+ *
+ *-
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 1994-1996 Søren Schmidt
@@ -66,38 +55,83 @@
  * SUCH DAMAGE.
  */
 
+module;
+
+#include <cstddef>
+#include <cstdint>
+
 export module pbsd.sys.x86.linux.b0037;
 
-namespace pbsd::sys_x86_linux::b0037 {
+export namespace pbsd::sys_x86_linux::b0037 {
 
-/* x86/cputypes.h */
-inline constexpr unsigned int CPU_VENDOR_AMD = 0x1022;
-inline constexpr unsigned int CPU_VENDOR_HYGON = 0x1d94;
+using u_int = unsigned int;
 
-/* x86/specialreg.h */
-inline constexpr unsigned int CPUID_SSE2 = 0x04000000;
-inline constexpr unsigned int AMDID_RDTSCP = 0x08000000;
-inline constexpr unsigned int CPUID_STDEXT_FSGSBASE = 0x00000001;
-inline constexpr unsigned int CPUID_STDEXT2_RDPID = 0x00400000;
+inline constexpr u_int CPU_VENDOR_AMD = 0x1022;
+inline constexpr u_int CPU_VENDOR_HYGON = 0x1d94;
 
-/* x86/linux/linux_x86.h */
+inline constexpr u_int CPUID_SSE2 = 0x04000000;
+inline constexpr u_int AMDID_RDTSCP = 0x08000000;
+inline constexpr u_int CPUID_STDEXT_FSGSBASE = 0x00000001;
+inline constexpr u_int CPUID_STDEXT2_RDPID = 0x00400000;
+
 inline constexpr int LINUX_VDSO_CPU_DEFAULT = 0;
-inline constexpr int LINUX_VDSO_CPU_RDTSCP = 1;
-inline constexpr int LINUX_VDSO_CPU_RDPID = 2;
-inline constexpr unsigned int LINUX_HWCAP2_FSGSBASE = 0x2;
+inline constexpr int LINUX_VDSO_CPU_RDPID = 1;
+inline constexpr int LINUX_VDSO_CPU_RDTSCP = 2;
+inline constexpr u_int LINUX_HWCAP2_FSGSBASE = 0x00000002;
 
-/* x86/trap.h */
 inline constexpr int T_PROTFLT = 9;
 inline constexpr int T_PAGEFLT = 12;
 inline constexpr int T_DOUBLEFLT = 23;
 inline constexpr int T_TSSFLT = 25;
 
-/* sys/signal.h */
 inline constexpr int SIGBUS = 10;
 inline constexpr int SIGSEGV = 11;
 
-#define LINUX_T_UNKNOWN  255
-int _bsd_to_linux_trapcode[] = {
+inline constexpr int LINUX_T_UNKNOWN = 255;
+
+inline u_int cpu_feature = 0;
+inline u_int cpu_vendor_id = 0;
+inline u_int amd_feature = 0;
+inline u_int cpu_stdext_feature = 0;
+inline u_int cpu_stdext_feature2 = 0;
+
+template <typename T, std::size_t N>
+constexpr std::size_t
+nitems(const T (&)[N])
+{
+	return (N);
+}
+
+int
+linux_vdso_tsc_selector_idx(void)
+{
+	bool amd_cpu;
+
+	if (cpu_feature == 0)
+		return (2);	/* should not happen due to RDTSC */
+
+	amd_cpu = (cpu_vendor_id == CPU_VENDOR_AMD ||
+	    cpu_vendor_id == CPU_VENDOR_HYGON);
+
+	if ((amd_feature & AMDID_RDTSCP) != 0)
+		return (3);
+	if ((cpu_feature & CPUID_SSE2) == 0)
+		return (2);
+	return (amd_cpu ? 1 : 0);
+}
+
+int
+linux_vdso_cpu_selector_idx(void)
+{
+
+	if ((cpu_stdext_feature2 & CPUID_STDEXT2_RDPID) != 0)
+		return (LINUX_VDSO_CPU_RDPID);
+
+	return ((amd_feature & AMDID_RDTSCP) == 0 ?
+	    LINUX_VDSO_CPU_DEFAULT : LINUX_VDSO_CPU_RDTSCP);
+}
+
+static int _bsd_to_linux_trapcode[] = {
 	LINUX_T_UNKNOWN,	/* 0 */
 	6,			/* 1  T_PRIVINFLT */
 	LINUX_T_UNKNOWN,	/* 2 */
@@ -131,53 +165,6 @@ int _bsd_to_linux_trapcode[] = {
 	15			/* 30 T_RESERVED */
 };
 
-} /* namespace pbsd::sys_x86_linux::b0037 */
-
-export namespace pbsd::sys_x86_linux::b0037 {
-
-/*
- * CPU identification words the kernel publishes via <x86/x86_var.h>.  The
- * ported routines read them exactly as the originals do.
- */
-unsigned int cpu_feature = 0;
-unsigned int cpu_vendor_id = 0;
-unsigned int amd_feature = 0;
-unsigned int cpu_stdext_feature = 0;
-unsigned int cpu_stdext_feature2 = 0;
-
-int
-linux_vdso_tsc_selector_idx(void)
-{
-	bool amd_cpu;
-
-	if (cpu_feature == 0)
-		return (2);	/* should not happen due to RDTSC */
-
-	amd_cpu = (cpu_vendor_id == CPU_VENDOR_AMD ||
-	    cpu_vendor_id == CPU_VENDOR_HYGON);
-
-	if ((amd_feature & AMDID_RDTSCP) != 0)
-		return (3);
-	if ((cpu_feature & CPUID_SSE2) == 0)
-		return (2);
-	return (amd_cpu ? 1 : 0);
-}
-
-int
-linux_vdso_cpu_selector_idx(void)
-{
-
-	if ((cpu_stdext_feature2 & CPUID_STDEXT2_RDPID) != 0)
-		return (LINUX_VDSO_CPU_RDPID);
-
-	return ((amd_feature & AMDID_RDTSCP) == 0 ?
-	    LINUX_VDSO_CPU_DEFAULT : LINUX_VDSO_CPU_RDTSCP);
-}
-
-/*
- * If FreeBSD & Linux have a difference of opinion about what a trap
- * means, deal with it here.
- */
 int
 linux_translate_traps(int signal, int trap_code)
 {
@@ -198,15 +185,14 @@ int
 bsd_to_linux_trapcode(int code)
 {
 
-	return (code < sizeof(_bsd_to_linux_trapcode) /
-	    sizeof(_bsd_to_linux_trapcode[0]) ?
+	return (code < nitems(_bsd_to_linux_trapcode) ?
 	    _bsd_to_linux_trapcode[code] : LINUX_T_UNKNOWN);
 }
 
-unsigned int
+u_int
 linux_x86_elf_hwcap2(void)
 {
-	static unsigned int elf_hwcap2 = 0;
+	static u_int elf_hwcap2 = 0;
 	static bool elf_hwcap2_valid = false;
 
 	if (!elf_hwcap2_valid) {

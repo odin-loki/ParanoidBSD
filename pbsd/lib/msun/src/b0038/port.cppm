@@ -64,7 +64,8 @@ union IEEEl2bits {
 	} xbits;
 };
 
-inline constexpr unsigned int LDBL_NBIT = 0x80000000;
+#define	LDBL_NBIT	0x80000000
+#define	mask_nbit_l(u)	((u).bits.manh &= ~LDBL_NBIT)
 
 union IEEEf2bits {
 	float	f;
@@ -85,12 +86,12 @@ fminimuml(long double x, long double y)
 	detail::IEEEl2bits u[2];
 
 	u[0].e = x;
-	u[0].bits.manh &= ~detail::LDBL_NBIT;
+	mask_nbit_l(u[0]);
 	u[1].e = y;
-	u[1].bits.manh &= ~detail::LDBL_NBIT;
+	mask_nbit_l(u[1]);
 
 	/* Handle NaN according to ISO/IEC 60559. NaN argument -> NaN return */
-	if (u[0].bits.exp == 32767 && (u[0].bits.manh | u[0].bits.manl) != 0 ||
+	if (u[0].bits.exp == 32767 && (u[0].bits.manh | u[0].bits.manl) != 0 || 
 	    u[1].bits.exp == 32767 && (u[1].bits.manh | u[1].bits.manl) != 0)
 		return (NAN);
 
@@ -107,9 +108,9 @@ fmaximuml(long double x, long double y)
 	detail::IEEEl2bits u[2];
 
 	u[0].e = x;
-	u[0].bits.manh &= ~detail::LDBL_NBIT;
+	mask_nbit_l(u[0]);
 	u[1].e = y;
-	u[1].bits.manh &= ~detail::LDBL_NBIT;
+	mask_nbit_l(u[1]);
 
 	/* Handle NaN according to ISO/IEC 60559. NaN argument -> NaN return */
 	if ((u[0].bits.exp == 32767 && (u[0].bits.manh | u[0].bits.manl) != 0) ||

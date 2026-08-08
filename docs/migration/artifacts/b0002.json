@@ -1,0 +1,13 @@
+{
+  "batch": "b0002",
+  "verified": "2026-08-08T09:23:55Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 4/10: c16rtomb_l, c32rtomb_l, mbrtoc16_l, mbrtoc32_l)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                cases     failures\n--------                -----     --------\nc16rtomb_l             200208            0\nc16rtomb               200216            0\nc32rtomb_l             200204            0\nc32rtomb               200204            0\nmbrtoc16_l             200217            0\nmbrtoc16               200193            0\nmbrtoc32_l             200186            0\nmbrtoc32               200205            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/c16rtomb_iconv.c": "4d6d45e2b92385fa",
+    "hbsd/src/lib/libc/locale/c32rtomb_iconv.c": "c24add7bb3562ae1",
+    "hbsd/src/lib/libc/locale/mbrtoc16_iconv.c": "25e73b2aa41b8c37",
+    "hbsd/src/lib/libc/locale/mbrtoc32_iconv.c": "a531067e6f79c88a"
+  }
+}

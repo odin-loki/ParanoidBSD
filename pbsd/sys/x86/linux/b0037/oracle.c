@@ -1,18 +1,27 @@
 /*
- * Batch b0037 oracle: the original HardenedBSD C sources, concatenated, with
- * every function renamed with a ref_ prefix.  Function bodies are UNMODIFIED.
- * Only the kernel-header-supplied defines/declarations the bodies rely on have
- * been added, so that the file builds standalone with cc -std=c11.
+ * oracle.c -- reference implementation for PBSD batch b0037.
  *
  * Sources:
- *   sys/x86/linux/linux_vdso_selector_x86.c
- *   sys/x86/linux/linux_x86.c
+ *   hbsd/src/sys/x86/linux/linux_vdso_selector_x86.c
+ *   hbsd/src/sys/x86/linux/linux_x86.c
+ *
+ * Function bodies are reproduced verbatim with only a ref_ prefix added.
+ * Kernel headers are replaced by the shim definitions the bodies need.
  */
 
+#include <limits.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-/* sys/param.h */
+#ifndef LONG_BIT
+#define	LONG_BIT	(sizeof(long) * 8)
+#endif
+
+#ifndef nitems
 #define	nitems(x)	(sizeof((x)) / sizeof((x)[0]))
+#endif
+
+typedef unsigned int u_int;
 
 /* x86/cputypes.h */
 #define	CPU_VENDOR_AMD		0x1022
@@ -26,33 +35,27 @@
 
 /* x86/linux/linux_x86.h */
 #define	LINUX_VDSO_CPU_DEFAULT	0
-#define	LINUX_VDSO_CPU_RDTSCP	1
-#define	LINUX_VDSO_CPU_RDPID	2
-#define	LINUX_HWCAP2_FSGSBASE	0x2
+#define	LINUX_VDSO_CPU_RDPID	1
+#define	LINUX_VDSO_CPU_RDTSCP	2
+#define	LINUX_HWCAP2_FSGSBASE	0x00000002
 
 /* x86/trap.h */
-#define	T_PROTFLT		9
-#define	T_PAGEFLT		12
-#define	T_DOUBLEFLT		23
-#define	T_TSSFLT		25
+#define	T_PROTFLT	9
+#define	T_PAGEFLT	12
+#define	T_DOUBLEFLT	23
+#define	T_TSSFLT	25
 
 /* sys/signal.h */
-#define	SIGBUS			10
-#define	SIGSEGV			11
+#define	SIGBUS		10
+#define	SIGSEGV		11
 
-/* sys/types.h */
-typedef unsigned int u_int;
+u_int	cpu_feature;
+u_int	cpu_vendor_id;
+u_int	amd_feature;
+u_int	cpu_stdext_feature;
+u_int	cpu_stdext_feature2;
 
-/* x86/x86_var.h */
-u_int cpu_feature = 0;
-u_int cpu_vendor_id = 0;
-u_int amd_feature = 0;
-u_int cpu_stdext_feature = 0;
-u_int cpu_stdext_feature2 = 0;
-
-/* ------------------------------------------------------------------------- */
-/* sys/x86/linux/linux_vdso_selector_x86.c                                   */
-/* ------------------------------------------------------------------------- */
+/* --- linux_vdso_selector_x86.c ---------------------------------------- */
 
 /*-
  * Copyright (c) 2012 Konstantin Belousov <kib@FreeBSD.org>
@@ -113,9 +116,7 @@ ref_linux_vdso_cpu_selector_idx(void)
 	    LINUX_VDSO_CPU_DEFAULT : LINUX_VDSO_CPU_RDTSCP);
 }
 
-/* ------------------------------------------------------------------------- */
-/* sys/x86/linux/linux_x86.c                                                 */
-/* ------------------------------------------------------------------------- */
+/* --- linux_x86.c -------------------------------------------------------- */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -180,10 +181,6 @@ static int _bsd_to_linux_trapcode[] = {
 	15			/* 30 T_RESERVED */
 };
 
-/*
- * If FreeBSD & Linux have a difference of opinion about what a trap
- * means, deal with it here.
- */
 int
 ref_linux_translate_traps(int signal, int trap_code)
 {
