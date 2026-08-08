@@ -1722,3 +1722,4 @@
 {"batch": "b0051", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 2/5: __udivdi3, __umoddi3)", "how": "agent", "ts": "2026-08-08T11:18:36Z"}
 {"batch": "b0049", "status": "VERIFIED", "detail": "harness green + 2/2 mutations killed (IR: IR differs for 2/3: __unorddf2, __unordsf2)", "how": "agent", "ts": "2026-08-08T11:18:39Z"}
 {"batch": "b0060", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T11:18:57Z"}
+{"batch": "b0053", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/3: __qdivrem)", "how": "agent", "ts": "2026-08-08T11:18:58Z"}
