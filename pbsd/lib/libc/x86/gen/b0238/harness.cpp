@@ -236,18 +236,34 @@ normalize_ctxbuf(CtxBuf &buf)
 }
 
 static bool
+xfpu_path_active(unsigned int features, int sysarch_fail)
+{
+
+	return ((features & CPUID2_OSXSAVE) != 0 && sysarch_fail == 0);
+}
+
+static bool
 mcontext_fields_match(const P::mcontext_t &a, const P::mcontext_t &b,
-    const char *port_ctx, const char *ref_ctx, const char *ctx, int func)
+    const char *port_ctx, const char *ref_ctx, const char *ctx, int func,
+    bool use_xfpu_offsets)
 {
 	char msg[256];
 	intptr_t aoff, boff;
 
-	aoff = xfpustate_offset(a.mc_xfpustate, port_ctx);
-	boff = xfpustate_offset(b.mc_xfpustate, ref_ctx);
-	if (aoff != boff) {
+	if (use_xfpu_offsets) {
+		aoff = xfpustate_offset(a.mc_xfpustate, port_ctx);
+		boff = xfpustate_offset(b.mc_xfpustate, ref_ctx);
+		if (aoff != boff) {
+			std::snprintf(msg, sizeof msg,
+			    "mc_xfpustate off port=%td ref=%td",
+			    (ptrdiff_t)aoff, (ptrdiff_t)boff);
+			report(func, ctx, msg);
+			return (false);
+		}
+	} else if (a.mc_xfpustate != b.mc_xfpustate) {
 		std::snprintf(msg, sizeof msg,
-		    "mc_xfpustate off port=%td ref=%td",
-		    (ptrdiff_t)aoff, (ptrdiff_t)boff);
+		    "mc_xfpustate port=%lld ref=%lld",
+		    (long long)a.mc_xfpustate, (long long)b.mc_xfpustate);
 		report(func, ctx, msg);
 		return (false);
 	}
@@ -378,12 +394,6 @@ fill2_ok(unsigned int features, unsigned int cpuid_sz, int sysarch_fail,
 	a = P::__fillcontextx2(pb.ctx());
 	b = ref___fillcontextx2(rb.ctx());
 
-	if (a == 0 && (cpu_feature2 & CPUID2_OSXSAVE) != 0 && sysarch_fail == 0 &&
-	    pb.ucp()->uc_mcontext.mc_xfpustate == 0) {
-		std::fprintf(stderr, "DEBUG: mc_xfpustate unset feat=0x%x cpuid=%u\n",
-		    cpu_feature2, cpuid_sz);
-	}
-
 	if (a != b) {
 		char msg[160];
 
@@ -393,8 +403,11 @@ fill2_ok(unsigned int features, unsigned int cpuid_sz, int sysarch_fail,
 		report(F_FILL2, ctx, msg);
 		return (false);
 	}
+	if (a != 0)
+		return (true);
 	if (!mcontext_fields_match(pb.ucp()->uc_mcontext,
-	    rb.ucp()->uc_mcontext, pb.ctx(), rb.ctx(), ctx, F_FILL2))
+	    rb.ucp()->uc_mcontext, pb.ctx(), rb.ctx(), ctx, F_FILL2,
+	    xfpu_path_active(features, sysarch_fail)))
 		return (false);
 	{
 		CtxBuf pc = pb, rc = rb;
@@ -459,7 +472,7 @@ test_fill2_edges(void)
 			report(F_FILL2, "flags-or", "preset mc_flags case");
 		else if (!mcontext_fields_match(pb.ucp()->uc_mcontext,
 		    rb.ucp()->uc_mcontext, pb.ctx(), rb.ctx(),
-		    "flags-or", F_FILL2)) {
+		    "flags-or", F_FILL2, true)) {
 			report(F_FILL2, "flags-or", "preset mc_flags case");
 		} else {
 			CtxBuf pc = pb, rc = rb;
@@ -729,13 +742,6 @@ test_get_random(void)
 int
 main(void)
 {
-	std::printf("sizeof ucontext=%zu xoff=%zu\n", sizeof(P::ucontext_t),
-	    offsetof(P::mcontext_t, mc_xfpustate));
-	test_fill2_edges();
-	if (nfails[F_FILL2] == 0)
-		std::printf("fill2 edges only: PASS\n");
-	return nfails[F_FILL2] == 0 ? 0 : 1;
-#if 0
 	test_size_edges();
 	test_size_random();
 	test_fill2_edges();
@@ -744,7 +750,6 @@ main(void)
 	test_fill_random();
 	test_get_edges();
 	test_get_random();
-#endif
 
 	std::printf("\n%-22s %12s %12s\n", "function", "cases", "failures");
 	for (int i = 0; i < NFUNC; i++)
