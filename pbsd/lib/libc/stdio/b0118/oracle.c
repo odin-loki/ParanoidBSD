@@ -1,419 +1,567 @@
 /*
- * Reference oracle for batch b0118.
+ * oracle.c -- reference implementations for batch b0118.
  *
- * hbsd/src/lib/libc/stdio/fgets.c, fwrite.c, fgetws.c, and fdopen.c
- * concatenated with every function renamed with a ref_ prefix.  Function
- * bodies are UNMODIFIED.  Declarations from unavailable FreeBSD/HardenedBSD
- * private headers are supplied below.
+ * The four source files of this batch are concatenated below with every
+ * function renamed with a "ref_" prefix.  The function bodies are otherwise
+ * unmodified.
+ *
+ * The batch operates on the private FreeBSD stdio FILE internals (_p, _r,
+ * _flags, __srefill(), __sfvwrite(), __sflags(), __sfp(), the xlocale ctype
+ * conversion vector, ...) which do not exist on this host.  A self contained
+ * mock of exactly those internals is provided first; it is compiled into this
+ * translation unit and shared verbatim by the C++ port, so that the reference
+ * and the port execute against bit-identical infrastructure and any observed
+ * difference is a difference between the two function bodies.
  */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <uchar.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <limits.h>
 
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * CHAR_BIT)
-#endif
+/* ------------------------------------------------------------------ */
+/* Mock of <stdio.h> private flags (FreeBSD sys/_stdio.h values).      */
+/* ------------------------------------------------------------------ */
 
-#ifndef O_VERIFY
-#define O_VERIFY 0
-#endif
+#define	__SRD	0x0004		/* OK to read */
+#define	__SWR	0x0008		/* OK to write */
+#define	__SRW	0x0010		/* open for reading & writing */
+#define	__SEOF	0x0020		/* found EOF */
+#define	__SERR	0x0040		/* found error */
+#define	__SAPP	0x0100		/* fdopen()ed in append mode */
 
-#ifndef O_EXEC
-#define O_EXEC 0
-#endif
+#define	__S2OAP	0x00000001	/* O_APPEND mode is set */
 
-#define EOF (-1)
-typedef long fpos_t;
+/* Mock of <fcntl.h> (FreeBSD values). */
+#define	O_RDONLY	0x0000
+#define	O_WRONLY	0x0001
+#define	O_RDWR		0x0002
+#define	O_ACCMODE	0x0003
+#define	O_APPEND	0x0008
+#define	O_CREAT		0x0200
+#define	O_TRUNC		0x0400
+#define	O_EXCL		0x0800
+#define	O_EXEC		0x00040000
+#define	O_CLOEXEC	0x00100000
 
-extern void *memcpy(void *, const void *, size_t);
-extern void *memchr(const void *, int, size_t);
-extern void *memset(void *, int, size_t);
-extern size_t mbsnrtowcs(wchar_t * __restrict, const char ** __restrict, size_t,
-    size_t, mbstate_t * __restrict);
-extern int mbsinit(const mbstate_t *);
+#define	FD_CLOEXEC	1
+#define	F_GETFD		1
+#define	F_SETFD		2
+#define	F_GETFL		3
 
-struct __sbuf {
-	unsigned char *_base;
-	int _size;
-};
+#define	PB_BUFSZ	256
+#define	PB_FCNTL_LOG	8
 
-struct __sFILE {
-	unsigned char *_p;
-	int _r;
-	int _w;
-	short _flags;
-	short _file;
-	struct __sbuf _bf;
-	int _lbfsize;
-	void *_cookie;
-	int (*_close)(void *);
-	int (*_read)(void *, char *, int);
-	fpos_t (*_seek)(void *, fpos_t, int);
-	int (*_write)(void *, const char *, int);
-	struct __sbuf _ub;
-	unsigned char *_up;
-	int _ur;
-	unsigned char _ubuf[3];
-	unsigned char _nbuf[1];
-	struct __sbuf _lb;
-	int _blksize;
-	fpos_t _offset;
-	void *_fl_mutex;
-	void *_fl_owner;
-	int _fl_count;
-	int _orientation;
-	mbstate_t _mbstate;
-	int _flags2;
-};
-typedef struct __sFILE FILE;
-typedef void *locale_t;
+typedef struct pb_mbstate {
+	int		__want;
+	unsigned int	__ch;
+	unsigned int	__lbound;
+} pb_mbstate_t;
 
-#define	__SLBF	0x0001
-#define	__SNBF	0x0002
-#define	__SRD	0x0004
-#define	__SWR	0x0008
-#define	__SRW	0x0010
-#define	__SEOF	0x0020
-#define	__SERR	0x0040
-#define	__SMBF	0x0080
-#define	__SAPP	0x0100
-#define	__SSTR	0x0200
-#define	__SOPT	0x0400
-#define	__SNPT	0x0800
-#define	__SOFF	0x1000
-#define	__SMOD	0x2000
-#define	__SALC	0x4000
-#define	__SIGN	0x8000
-#define	__S2OAP	0x0001
+typedef int (*pb_readfn)(void *, char *, int);
+typedef int (*pb_writefn)(void *, const char *, int);
+typedef long (*pb_seekfn)(void *, long, int);
+typedef int (*pb_closefn)(void *);
 
-#define	__sfeof(p)	(((p)->_flags & __SEOF) != 0)
-#define	ORIENT(fp, o)	do {					\
-	if ((fp)->_orientation == 0)				\
-		(fp)->_orientation = (o);			\
-} while (0)
-
-#define	FLOCKFILE_CANCELSAFE(fp)	do { (void)(fp); } while (0)
-#define	FUNLOCKFILE_CANCELSAFE()	do { } while (0)
+typedef struct pb_file {
+	unsigned char	*_p;		/* current position in (some) buffer */
+	int		 _r;		/* read space left for getc() */
+	int		 _w;		/* write space left for putc() */
+	short		 _flags;	/* flags, below */
+	short		 _file;		/* fileno, if Unix descriptor */
+	short		 _orientation;	/* orientation for fwide() */
+	int		 _flags2;
+	pb_mbstate_t	 _mbstate;	/* multibyte conversion state */
+	pb_readfn	 _read;
+	pb_writefn	 _write;
+	pb_seekfn	 _seek;
+	pb_closefn	 _close;
+	void		*_cookie;
+	/* mock plumbing */
+	unsigned char	 _buf[PB_BUFSZ];
+	const unsigned char *in_data;
+	size_t		 in_len;
+	size_t		 in_pos;
+	size_t		 chunk;
+	int		 fail_refill_at;
+	int		 refill_calls;
+	unsigned char	*sink;
+	size_t		 sink_size;
+	size_t		 sink_cap;
+	size_t		 sink_len;
+	int		 sfvwrite_calls;
+} pb_file_t;
 
 struct __siov {
-	void *iov_base;
-	size_t iov_len;
+	void	*iov_base;
+	size_t	 iov_len;
 };
 
 struct __suio {
-	struct __siov *uio_iov;
-	int uio_iovcnt;
-	int uio_resid;
+	struct __siov	*uio_iov;
+	int		 uio_iovcnt;
+	int		 uio_resid;
 };
 
 struct xlocale_ctype {
-	size_t (*__mbsnrtowcs)(wchar_t * __restrict, const char ** __restrict,
-	    size_t, size_t, mbstate_t * __restrict);
-	int (*__mbsinit)(const mbstate_t *);
+	size_t	(*__mbsnrtowcs)(wchar_t * __restrict, const char ** __restrict,
+		    size_t, size_t, pb_mbstate_t * __restrict);
+	int	(*__mbsinit)(const pb_mbstate_t *);
 };
 
-#define FIX_LOCALE(l)	((void)(l))
-#define XLOCALE_CTYPE(x) (&b0118_ctype)
+typedef struct xlocale_ctype *pb_locale_t;
 
-typedef struct b0118_stream {
-	const unsigned char *data;
-	size_t len;
-	size_t pos;
-	int err_on_refill;
-	unsigned char *buf;
-	size_t buf_cap;
-} b0118_stream;
-
-typedef struct b0118_write_ctx {
-	unsigned char *out;
-	size_t out_cap;
-	size_t out_len;
-	size_t max_write;
-	int fail;
-} b0118_write_ctx;
-
-static FILE *b0118_sfp_target;
-static struct xlocale_ctype b0118_ctype;
+/* ------------------------------------------------------------------ */
+/* Mock character conversion (a UTF-8 locale and a single byte locale).*/
+/* ------------------------------------------------------------------ */
 
 static size_t
-b0118_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
-    size_t nmc, size_t len, mbstate_t * __restrict ps)
+pb_utf8_mbrtowc(wchar_t *pwc, const char *s, size_t n, pb_mbstate_t *ps)
 {
-	return (mbsnrtowcs(dst, src, nmc, len, ps));
+	const unsigned char *us;
+	unsigned int ch, wch, lbound;
+	int want, i, mask;
+
+	if (n == 0)
+		return ((size_t)-2);
+	us = (const unsigned char *)s;
+	if (ps->__want == 0) {
+		ch = us[0];
+		if ((ch & 0x80) == 0) {
+			mask = 0x7f;
+			want = 1;
+			lbound = 0;
+		} else if ((ch & 0xe0) == 0xc0) {
+			mask = 0x1f;
+			want = 2;
+			lbound = 0x80;
+		} else if ((ch & 0xf0) == 0xe0) {
+			mask = 0x0f;
+			want = 3;
+			lbound = 0x800;
+		} else if ((ch & 0xf8) == 0xf0) {
+			mask = 0x07;
+			want = 4;
+			lbound = 0x10000;
+		} else {
+			errno = EILSEQ;
+			return ((size_t)-1);
+		}
+		wch = ch & (unsigned int)mask;
+		us++;
+		i = 1;
+	} else {
+		want = ps->__want;
+		lbound = ps->__lbound;
+		wch = ps->__ch;
+		i = 0;
+	}
+	for (; i < want && (size_t)i < n; i++) {
+		if ((us[0] & 0xc0) != 0x80) {
+			errno = EILSEQ;
+			return ((size_t)-1);
+		}
+		wch = (wch << 6) | (unsigned int)(us[0] & 0x3f);
+		us++;
+	}
+	if (i < want) {
+		ps->__want = want - i;
+		ps->__lbound = lbound;
+		ps->__ch = wch;
+		return ((size_t)-2);
+	}
+	if (wch < lbound) {
+		errno = EILSEQ;
+		return ((size_t)-1);
+	}
+	ps->__want = 0;
+	ps->__ch = 0;
+	ps->__lbound = 0;
+	if (pwc != NULL)
+		*pwc = (wchar_t)wch;
+	return (wch == 0 ? 0 : (size_t)want);
+}
+
+static size_t
+pb_sb_mbrtowc(wchar_t *pwc, const char *s, size_t n, pb_mbstate_t *ps)
+{
+	unsigned int ch;
+
+	(void)ps;
+	if (n == 0)
+		return ((size_t)-2);
+	ch = (unsigned char)s[0];
+	if (pwc != NULL)
+		*pwc = (wchar_t)ch;
+	return (ch == 0 ? 0 : 1);
+}
+
+static size_t
+pb_mbsnrtowcs_std(wchar_t * __restrict dst, const char ** __restrict src,
+    size_t nms, size_t len, pb_mbstate_t * __restrict ps,
+    size_t (*pmbrtowc)(wchar_t *, const char *, size_t, pb_mbstate_t *))
+{
+	const char *s;
+	size_t nchr;
+	wchar_t wc;
+	size_t nb;
+
+	s = *src;
+	nchr = 0;
+
+	if (dst == NULL) {
+		for (;;) {
+			if ((nb = pmbrtowc(&wc, s, nms, ps)) == (size_t)-1)
+				return ((size_t)-1);
+			else if (nb == 0 || nb == (size_t)-2)
+				return (nchr);
+			s += nb;
+			nms -= nb;
+			nchr++;
+		}
+	}
+
+	while (len-- > 0) {
+		if ((nb = pmbrtowc(dst, s, nms, ps)) == (size_t)-1) {
+			*src = s;
+			return ((size_t)-1);
+		} else if (nb == (size_t)-2) {
+			*src = s + nms;
+			return (nchr);
+		} else if (nb == 0) {
+			*src = NULL;
+			return (nchr);
+		}
+		s += nb;
+		nms -= nb;
+		nchr++;
+		dst++;
+	}
+	*src = s;
+	return (nchr);
+}
+
+static size_t
+pb_utf8_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
+    size_t nms, size_t len, pb_mbstate_t * __restrict ps)
+{
+	return (pb_mbsnrtowcs_std(dst, src, nms, len, ps, pb_utf8_mbrtowc));
+}
+
+static size_t
+pb_sb_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
+    size_t nms, size_t len, pb_mbstate_t * __restrict ps)
+{
+	return (pb_mbsnrtowcs_std(dst, src, nms, len, ps, pb_sb_mbrtowc));
 }
 
 static int
-b0118_mbsinit(const mbstate_t *ps)
+pb_utf8_mbsinit(const pb_mbstate_t *ps)
 {
-	return (mbsinit(ps));
+	return (ps->__want == 0);
 }
 
-static void
-b0118_locale_setup(void)
+static int
+pb_sb_mbsinit(const pb_mbstate_t *ps)
 {
-	b0118_ctype.__mbsnrtowcs = b0118_mbsnrtowcs;
-	b0118_ctype.__mbsinit = b0118_mbsinit;
+	(void)ps;
+	return (1);
 }
 
-void *
-__get_locale(void)
+struct xlocale_ctype pb_utf8_locale = { pb_utf8_mbsnrtowcs, pb_utf8_mbsinit };
+struct xlocale_ctype pb_sb_locale = { pb_sb_mbsnrtowcs, pb_sb_mbsinit };
+pb_locale_t pb_global_locale = &pb_utf8_locale;
+
+pb_locale_t
+pb_get_locale(void)
 {
-	return ((void *)0);
+	return (pb_global_locale);
+}
+
+/* ------------------------------------------------------------------ */
+/* Mock FILE plumbing.                                                 */
+/* ------------------------------------------------------------------ */
+
+void
+pb_file_init(pb_file_t *fp, unsigned char *sink, size_t sink_size,
+    size_t sink_cap)
+{
+	memset(fp, 0, sizeof(*fp));
+	memset(fp->_buf, 0xaa, sizeof(fp->_buf));
+	fp->_file = -1;
+	fp->sink = sink;
+	fp->sink_size = sink_size;
+	fp->sink_cap = sink_cap;
+	if (sink != NULL)
+		memset(sink, 0x7f, sink_size);
+}
+
+int
+pb_srefill(pb_file_t *fp)
+{
+	size_t n;
+
+	fp->refill_calls++;
+	if (fp->fail_refill_at != 0 && fp->refill_calls == fp->fail_refill_at) {
+		fp->_flags |= __SERR;
+		fp->_p = fp->_buf;
+		fp->_r = 0;
+		return (-1);
+	}
+	if (fp->in_pos >= fp->in_len) {
+		fp->_flags |= __SEOF;
+		fp->_p = fp->_buf;
+		fp->_r = 0;
+		return (-1);
+	}
+	n = fp->in_len - fp->in_pos;
+	if (fp->chunk != 0 && n > fp->chunk)
+		n = fp->chunk;
+	if (n > PB_BUFSZ)
+		n = PB_BUFSZ;
+	memcpy(fp->_buf, fp->in_data + fp->in_pos, n);
+	fp->in_pos += n;
+	fp->_p = fp->_buf;
+	fp->_r = (int)n;
+	return (0);
 }
 
 void
-b0118_set_sfp_target(FILE *fp)
+pb_file_input(pb_file_t *fp, const unsigned char *data, size_t len,
+    size_t chunk, int fail_at, int prefill)
 {
-	b0118_sfp_target = fp;
-}
-
-int
-__srefill(FILE *fp)
-{
-	b0118_stream *st;
-
-	fp->_r = 0;
-
-	if (fp->_flags & __SEOF)
-		return (EOF);
-
-	st = (b0118_stream *)fp->_cookie;
-	if (st == NULL) {
-		fp->_flags |= __SEOF;
-		return (EOF);
-	}
-
-	if (st->err_on_refill) {
-		fp->_flags |= __SERR;
-		errno = EIO;
-		return (EOF);
-	}
-
-	if (st->pos >= st->len) {
-		fp->_flags |= __SEOF;
-		return (EOF);
-	}
-
-	{
-		size_t avail = st->len - st->pos;
-		unsigned char *dbuf = st->buf != NULL ? st->buf : fp->_nbuf;
-		size_t dcap = st->buf != NULL ? st->buf_cap : 1;
-		size_t chunk = avail > dcap ? dcap : avail;
-		if (chunk > 128)
-			chunk = 128;
-		if (chunk > dcap)
-			chunk = dcap;
-
-		memcpy(dbuf, st->data + st->pos, chunk);
-		st->pos += chunk;
-		fp->_bf._base = dbuf;
-		fp->_bf._size = (int)dcap;
-		fp->_p = dbuf;
-		fp->_r = (int)chunk;
-		fp->_flags |= __SRD;
-	}
-
-	return (0);
-}
-
-int
-__sfvwrite(FILE *fp, struct __suio *uio)
-{
-	b0118_write_ctx *ctx;
-	struct __siov *iov;
-	size_t n, written;
-	unsigned char *dst;
-
-	if (uio->uio_iovcnt != 1)
-		return (EOF);
-
-	ctx = (b0118_write_ctx *)fp->_cookie;
-	if (ctx == NULL)
-		return (EOF);
-
-	if (ctx->fail) {
-		fp->_flags |= __SERR;
-		return (EOF);
-	}
-
-	iov = uio->uio_iov;
-	n = iov->iov_len;
-	if (n != (size_t)uio->uio_resid)
-		return (EOF);
-
-	if (ctx->max_write < n)
-		n = ctx->max_write;
-
-	written = 0;
-	dst = (unsigned char *)iov->iov_base;
-	while (written < n) {
-		if (ctx->out_len >= ctx->out_cap)
-			break;
-		ctx->out[ctx->out_len++] = dst[written];
-		written++;
-	}
-
-	uio->uio_resid -= (int)written;
-	if (written != iov->iov_len)
-		return (EOF);
-
-	return (0);
-}
-
-FILE *
-__sfp(void)
-{
-	FILE *fp;
-
-	if (b0118_sfp_target == NULL)
-		return (NULL);
-
-	fp = b0118_sfp_target;
-	if (fp->_flags != 0)
-		return (NULL);
-
-	fp->_flags = 1;
+	fp->in_data = data;
+	fp->in_len = len;
+	fp->in_pos = 0;
+	fp->chunk = chunk;
+	fp->fail_refill_at = fail_at;
+	fp->refill_calls = 0;
 	fp->_p = NULL;
-	fp->_w = 0;
 	fp->_r = 0;
-	fp->_bf._base = NULL;
-	fp->_bf._size = 0;
-	fp->_lbfsize = 0;
-	fp->_file = -1;
-	fp->_ub._base = NULL;
-	fp->_ub._size = 0;
-	fp->_lb._base = NULL;
-	fp->_lb._size = 0;
-	fp->_orientation = 0;
-	memset(&fp->_mbstate, 0, sizeof(mbstate_t));
-	fp->_flags2 = 0;
-	return (fp);
+	if (prefill) {
+		(void)pb_srefill(fp);
+		fp->refill_calls = 0;
+		fp->_flags = (short)(fp->_flags & ~(__SEOF | __SERR));
+	}
 }
 
 int
-__sflags(const char *mode, int *optr)
+pb_sfvwrite(pb_file_t *fp, struct __suio *uio)
 {
-	int ret, m, o, known;
+	struct __siov *iov;
+	size_t want, avail, put;
+	int i, err;
+
+	fp->sfvwrite_calls++;
+	if (uio->uio_resid == 0)
+		return (0);
+	err = 0;
+	iov = uio->uio_iov;
+	for (i = 0; i < uio->uio_iovcnt; i++) {
+		want = iov[i].iov_len;
+		avail = fp->sink_cap - fp->sink_len;
+		put = want < avail ? want : avail;
+		if (put != 0)
+			memcpy(fp->sink + fp->sink_len, iov[i].iov_base, put);
+		fp->sink_len += put;
+		uio->uio_resid -= (int)put;
+		if (put < want) {
+			err = 1;
+			break;
+		}
+	}
+	if (err) {
+		fp->_flags |= __SERR;
+		return (-1);
+	}
+	return (0);
+}
+
+int
+pb_sflags(const char *mode, int *optr)
+{
+	int ret, m, o;
 
 	switch (*mode++) {
-
-	case 'r':
+	case 'r':	/* open for reading */
 		ret = __SRD;
 		m = O_RDONLY;
 		o = 0;
 		break;
-
-	case 'w':
+	case 'w':	/* open for writing */
 		ret = __SWR;
 		m = O_WRONLY;
 		o = O_CREAT | O_TRUNC;
 		break;
-
-	case 'a':
+	case 'a':	/* open for appending */
 		ret = __SWR;
 		m = O_WRONLY;
 		o = O_CREAT | O_APPEND;
 		break;
-
-	default:
+	default:	/* illegal mode */
 		errno = EINVAL;
 		return (0);
 	}
 
-	do {
-		known = 1;
+	for (;;) {
 		switch (*mode++) {
-		case 'b':
+		case '\0':
 			break;
 		case '+':
 			ret = __SRW;
 			m = O_RDWR;
-			break;
+			continue;
+		case 'b':
+			continue;
 		case 'x':
 			o |= O_EXCL;
-			break;
+			continue;
 		case 'e':
 			o |= O_CLOEXEC;
-			break;
-		case 'v':
-			o |= O_VERIFY;
-			break;
+			continue;
 		default:
-			known = 0;
-			break;
+			continue;
 		}
-	} while (known);
-
-	if ((o & O_EXCL) != 0 && m == O_RDONLY) {
-		errno = EINVAL;
-		return (0);
+		break;
 	}
 
 	*optr = m | o;
 	return (ret);
 }
 
-int
-_fcntl(int fd, int cmd, ...)
+int pb_fcntl_getfl_ret = 0;
+int pb_fcntl_getfd_ret = 0;
+int pb_fcntl_setfd_ret = 0;
+int pb_fcntl_errno = EBADF;
+int pb_fcntl_log_n = 0;
+int pb_fcntl_log_fd[PB_FCNTL_LOG];
+int pb_fcntl_log_cmd[PB_FCNTL_LOG];
+int pb_fcntl_log_arg[PB_FCNTL_LOG];
+
+void
+pb_fcntl_reset(void)
 {
-	va_list ap;
-	int arg, ret;
+	int i;
 
-	va_start(ap, cmd);
-	arg = va_arg(ap, int);
-	va_end(ap);
-
-	if (cmd == F_SETFD || cmd == F_SETFL)
-		ret = fcntl(fd, cmd, arg);
-	else
-		ret = fcntl(fd, cmd);
-	return (ret);
+	pb_fcntl_log_n = 0;
+	for (i = 0; i < PB_FCNTL_LOG; i++) {
+		pb_fcntl_log_fd[i] = 0;
+		pb_fcntl_log_cmd[i] = 0;
+		pb_fcntl_log_arg[i] = 0;
+	}
 }
 
 int
-__sread(void *cookie, char *buf, int n)
+pb_fcntl(int fd, int cmd, int arg)
 {
-	FILE *fp = (FILE *)cookie;
+	int r;
 
-	return ((int)read(fp->_file, buf, (size_t)n));
+	if (pb_fcntl_log_n < PB_FCNTL_LOG) {
+		pb_fcntl_log_fd[pb_fcntl_log_n] = fd;
+		pb_fcntl_log_cmd[pb_fcntl_log_n] = cmd;
+		pb_fcntl_log_arg[pb_fcntl_log_n] = arg;
+	}
+	pb_fcntl_log_n++;
+	switch (cmd) {
+	case F_GETFL:
+		r = pb_fcntl_getfl_ret;
+		break;
+	case F_GETFD:
+		r = pb_fcntl_getfd_ret;
+		break;
+	case F_SETFD:
+		r = pb_fcntl_setfd_ret;
+		break;
+	default:
+		r = -1;
+		break;
+	}
+	if (r < 0)
+		errno = pb_fcntl_errno;
+	return (r);
+}
+
+int pb_sfp_fail = 0;
+pb_file_t *pb_sfp_last = NULL;
+
+pb_file_t *
+pb_sfp(void)
+{
+	pb_file_t *fp;
+
+	pb_sfp_last = NULL;
+	if (pb_sfp_fail) {
+		errno = EMFILE;
+		return (NULL);
+	}
+	fp = (pb_file_t *)calloc(1, sizeof(*fp));
+	if (fp == NULL)
+		return (NULL);
+	memset(fp->_buf, 0xaa, sizeof(fp->_buf));
+	fp->_flags = 1;		/* reserve this file */
+	fp->_file = -1;
+	pb_sfp_last = fp;
+	return (fp);
 }
 
 int
-__swrite(void *cookie, const char *buf, int n)
+pb_sread(void *cookie, char *buf, int n)
 {
-	FILE *fp = (FILE *)cookie;
-
-	return ((int)write(fp->_file, buf, (size_t)n));
-}
-
-fpos_t
-__sseek(void *cookie, fpos_t pos, int whence)
-{
-	FILE *fp = (FILE *)cookie;
-
-	return ((fpos_t)lseek(fp->_file, (off_t)pos, whence));
+	(void)cookie; (void)buf; (void)n;
+	return (0);
 }
 
 int
-__sclose(void *cookie)
+pb_swrite(void *cookie, const char *buf, int n)
 {
-	FILE *fp = (FILE *)cookie;
-
-	return (close(fp->_file));
+	(void)cookie; (void)buf;
+	return (n);
 }
 
-/* ======================= fgets.c ======================= */
+long
+pb_sseek(void *cookie, long off, int whence)
+{
+	(void)cookie; (void)whence;
+	return (off);
+}
+
+int
+pb_sclose(void *cookie)
+{
+	(void)cookie;
+	return (0);
+}
+
+/* ------------------------------------------------------------------ */
+/* Glue so that the function bodies below can stay verbatim.           */
+/* ------------------------------------------------------------------ */
+
+#define	FILE			pb_file_t
+#define	locale_t		pb_locale_t
+#define	FLOCKFILE_CANCELSAFE(fp)	{ {
+#define	FUNLOCKFILE_CANCELSAFE()	} }
+#define	ORIENT(fp, o)		do {					\
+					if ((fp)->_orientation == 0)	\
+						(fp)->_orientation = (o); \
+				} while (0)
+#define	__sfeof(fp)		(((fp)->_flags & __SEOF) != 0)
+#define	__srefill		pb_srefill
+#define	__sfvwrite		pb_sfvwrite
+#define	__sflags		pb_sflags
+#define	__sfp			pb_sfp
+#define	_fcntl			pb_fcntl
+#define	__sread			pb_sread
+#define	__swrite		pb_swrite
+#define	__sseek			pb_sseek
+#define	__sclose		pb_sclose
+#define	__get_locale()		pb_get_locale()
+#define	FIX_LOCALE(l)		do {					\
+					if ((l) == NULL)		\
+						(l) = __get_locale();	\
+				} while (0)
+#define	XLOCALE_CTYPE(l)	(l)
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -449,6 +597,13 @@ __sclose(void *cookie)
  * SUCH DAMAGE.
  */
 
+/* lib/libc/stdio/fgets.c */
+
+/*
+ * Read at most n-1 characters from the given file.
+ * Stop when a newline has been read, or the count runs out.
+ * Return first argument, or NULL if no characters were read.
+ */
 char *
 ref_fgets(char * __restrict buf, int n, FILE * __restrict fp)
 {
@@ -516,8 +671,6 @@ end:
 	return (ret);
 }
 
-/* ======================= fwrite.c ======================= */
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -527,31 +680,15 @@ end:
  * This code is derived from software contributed to Berkeley by
  * Chris Torek.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * [BSD-3-Clause licence text as above]
  */
 
+/* lib/libc/stdio/fwrite.c */
+
+/*
+ * Write `count' objects (each size `size') from memory to the given file.
+ * Return the number of whole objects written.
+ */
 size_t
 ref_fwrite_unlocked(const void * __restrict buf, size_t size, size_t count,
     FILE * __restrict fp)
@@ -609,8 +746,6 @@ ref_fwrite(const void * __restrict buf, size_t size, size_t count,
 	return (n);
 }
 
-/* ======================= fgetws.c ======================= */
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -643,6 +778,8 @@ ref_fwrite(const void * __restrict buf, size_t size, size_t count,
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+/* lib/libc/stdio/fgetws.c */
 
 wchar_t *
 ref_fgetws_l(wchar_t * __restrict ws, int n, FILE * __restrict fp, locale_t locale)
@@ -731,8 +868,6 @@ ref_fgetws(wchar_t * __restrict ws, int n, FILE * __restrict fp)
 	return ref_fgetws_l(ws, n, fp, __get_locale());
 }
 
-/* ======================= fdopen.c ======================= */
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -742,30 +877,10 @@ ref_fgetws(wchar_t * __restrict ws, int n, FILE * __restrict fp)
  * This code is derived from software contributed to Berkeley by
  * Chris Torek.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * [BSD-3-Clause licence text as above]
  */
+
+/* lib/libc/stdio/fdopen.c */
 
 FILE *
 ref_fdopen(int fd, const char *mode)
@@ -833,16 +948,4 @@ ref_fdopen(int fd, const char *mode)
 	fp->_seek = __sseek;
 	fp->_close = __sclose;
 	return (fp);
-}
-
-void
-b0118_oracle_init(void)
-{
-	b0118_locale_setup();
-}
-
-struct xlocale_ctype *
-b0118_get_ctype(void)
-{
-	return (&b0118_ctype);
 }

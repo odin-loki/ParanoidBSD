@@ -6,7 +6,7 @@
  * destination buffer (guard byte 0x7f past the nominal write window
  * included), pointer results are compared as offsets from the buffer base,
  * and the kernel-service side effects (malloc size/flags/type, free, printf
- * text, kdb_backtrace count, probe function arguments) are compared too.
+ * text, kdb_backtrace count and ordering, probe arguments) are compared too.
  */
 
 #include <cstdarg>
@@ -92,11 +92,13 @@ struct kenv_state {
 
 static kenv_state g_env;
 
+static void kenv_log(const char *fmt, ...);
+
 /*
- * The port declares these hooks with its own (module-attached) malloc_type,
+ * The port declares these hooks with its own (module-attached) malloc_type
  * and clang makes that declaration visible to importers, so the definitions
- * here must use the same type.  Both are opaque; only the pointer value is
- * ever inspected.
+ * here must use the same type.  It is opaque either way; only the pointer
+ * value is ever inspected.
  */
 extern "C" void *
 pbsd_kern_malloc(std::size_t size, k::malloc_type *type, int flags)
@@ -118,7 +120,7 @@ pbsd_kern_malloc(std::size_t size, k::malloc_type *type, int flags)
 }
 
 extern "C" void
-pbsd_kern_free(void *addr, struct malloc_type *type)
+pbsd_kern_free(void *addr, k::malloc_type *type)
 {
 
 	g_env.free_calls++;
@@ -145,11 +147,33 @@ pbsd_kern_printf(const char *fmt, ...)
 	return (n);
 }
 
+/*
+ * Logged into the same text buffer as printf, so that the ORDER of the two
+ * side effects is compared and not merely their counts.
+ */
 extern "C" void
 kdb_backtrace(void)
 {
 
 	g_env.backtrace_calls++;
+	kenv_log("<kdb_backtrace>\n");
+}
+
+static void
+kenv_log(const char *fmt, ...)
+{
+	std::va_list ap;
+	int n;
+
+	va_start(ap, fmt);
+	n = std::vsnprintf(g_env.text + g_env.text_len,
+	    sizeof(g_env.text) - g_env.text_len, fmt, ap);
+	va_end(ap);
+	if (n > 0) {
+		g_env.text_len += static_cast<std::size_t>(n);
+		if (g_env.text_len >= sizeof(g_env.text))
+			g_env.text_len = sizeof(g_env.text) - 1;
+	}
 }
 
 /*
@@ -184,7 +208,7 @@ kenv_equal(const kenv_state &a, const kenv_state &b)
 }
 
 /* ------------------------------------------------------------------ */
-/* Probe recorder (installed into both sdt_probe_func variables)       */
+/* Probe recorder (installed into both sdt_probe_func variables)      */
 /* ------------------------------------------------------------------ */
 
 struct probe_rec {
@@ -420,8 +444,8 @@ case_memcpy(std::size_t doff, std::size_t soff, std::size_t len)
 	    std::memcmp(psrc, rsrc, BUFSZ) == 0, "ret+buffer", buf);
 }
 
-/* memmove_early, source and destination in the same buffer so that overlap
- * in either direction is exercised. */
+/* memmove_early with source and destination in the same buffer, so that
+ * overlap in either direction is exercised. */
 static void
 case_memmove(std::size_t doff, std::size_t soff, std::size_t len)
 {
@@ -762,7 +786,7 @@ test_sdt(void)
 	record(F_STUB, k::sdt_probes_enabled == sdt_probes_enabled &&
 	    !k::sdt_probes_enabled, "probes_enabled initial", buf);
 
-	/* Distinct value in every slot: any swap or substitution shows up. */
+	/* A distinct value in every slot: any swap or substitution shows. */
 	for (std::size_t i = 0; i < 6; i++)
 		a[i] = static_cast<std::uintptr_t>(0x1111111111111111ULL *
 		    (i + 1));

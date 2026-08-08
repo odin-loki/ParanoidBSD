@@ -1,160 +1,39 @@
 /*
- * Batch b0154 oracle: original HardenedBSD nameser C sources, concatenated.
+ * b0154 oracle: the original HardenedBSD C sources for
  *
- * The only mechanical change is that each function gained a "ref_" prefix.
- * No function body is altered.
+ *	lib/libc/nameser/ns_netint.c
+ *	lib/libc/nameser/ns_ttl.c
+ *	lib/libc/nameser/ns_samedomain.c
+ *	lib/libc/nameser/ns_parse.c
  *
- * Added support: HardenedBSD <arpa/nameser.h> (via -I), labellen and
- * ns_name_unpack2 for ref_ns_parserr2, and internal-call macros.
+ * concatenated, with every function (and the one file-scope table) renamed
+ * with a "ref_" prefix so that it can be linked next to the host libc and
+ * next to the C++23 port.  Function bodies are UNMODIFIED except for the
+ * mechanical renaming of calls to other ref_ functions in this file.
+ *
+ * ns_parserr2() is absent on purpose; see skipped.txt.
  */
 
 #ifndef _DEFAULT_SOURCE
-#define _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE 1
 #endif
 
 #include <sys/types.h>
+
 #include <netinet/in.h>
 #include <arpa/nameser.h>
-#undef _ns_flagdata
+
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <resolv.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
 
-typedef unsigned char u_char;
-typedef unsigned int u_int;
-typedef unsigned long u_long;
-
-#ifndef NS_MAXNNAME
-#define NS_MAXNNAME	256
-typedef u_char ns_nname[NS_MAXNNAME];
-typedef struct __ns_rr2 {
-	ns_nname	nname;
-	size_t		nnamel;
-	int		type;
-	int		rr_class;
-	u_int		ttl;
-	int		rdlength;
-	const u_char *	rdata;
-} ns_rr2;
-#endif
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
-
-#ifndef SPRINTF_CHAR
-# define SPRINTF(x) ((size_t)sprintf x)
-#endif
-
-#define NS_TYPE_ELT			0x40
-#define DNS_LABELTYPE_BITSTRING		0x41
-
-#define fmt1			ref_fmt1
-#define setsection		ref_setsection
-#define ns_skiprr		ref_ns_skiprr
-#define ns_initparse		ref_ns_initparse
-#define ns_parserr		ref_ns_parserr
-#define ns_parserr2		ref_ns_parserr2
-#define ns_makecanon		ref_ns_makecanon
-#define ns_samename		ref_ns_samename
-#define ns_samedomain		ref_ns_samedomain
-
-int	ref_ns_samename(const char *, const char *);
-
-static int
-labellen(const u_char *lp)
-{
-	int bitlen;
-	u_char l = *lp;
-
-	if ((l & NS_CMPRSFLGS) == NS_CMPRSFLGS) {
-		return (-1);
-	}
-
-	if ((l & NS_CMPRSFLGS) == NS_TYPE_ELT) {
-		if (l == DNS_LABELTYPE_BITSTRING) {
-			if ((bitlen = *(lp + 1)) == 0)
-				bitlen = 256;
-			return ((bitlen + 7 ) / 8 + 1);
-		}
-		return (-1);
-	}
-	return (l);
-}
-
-int
-ns_name_unpack2(const u_char *msg, const u_char *eom, const u_char *src,
-		u_char *dst, size_t dstsiz, size_t *dstlen)
-{
-	const u_char *srcp, *dstlim;
-	u_char *dstp;
-	int n, len, checked, l;
-
-	len = -1;
-	checked = 0;
-	dstp = dst;
-	srcp = src;
-	dstlim = dst + dstsiz;
-	if (srcp < msg || srcp >= eom) {
-		errno = EMSGSIZE;
-		return (-1);
-	}
-	while ((n = *srcp++) != 0) {
-		switch (n & NS_CMPRSFLGS) {
-		case 0:
-		case NS_TYPE_ELT:
-			if ((l = labellen(srcp - 1)) < 0) {
-				errno = EMSGSIZE;
-				return (-1);
-			}
-			if (dstp + l + 1 >= dstlim || srcp + l >= eom) {
-				errno = EMSGSIZE;
-				return (-1);
-			}
-			checked += l + 1;
-			*dstp++ = n;
-			memcpy(dstp, srcp, l);
-			dstp += l;
-			srcp += l;
-			break;
-
-		case NS_CMPRSFLGS:
-			if (srcp >= eom) {
-				errno = EMSGSIZE;
-				return (-1);
-			}
-			if (len < 0)
-				len = srcp - src + 1;
-			l = ((n & 0x3f) << 8) | (*srcp & 0xff);
-			if (l >= eom - msg) {
-				errno = EMSGSIZE;
-				return (-1);
-			}
-			srcp = msg + l;
-			checked += 2;
-			if (checked >= eom - msg) {
-				errno = EMSGSIZE;
-				return (-1);
-			}
-			break;
-
-		default:
-			errno = EMSGSIZE;
-			return (-1);
-		}
-	}
-	*dstp++ = 0;
-	if (dstlen != NULL)
-		*dstlen = dstp - dst;
-	if (len < 0)
-		len = srcp - src;
-	return (len);
-}
-
-/* ===== ns_netint.c ===== */
+/* ------------------------------------------------------------------------ */
+/* lib/libc/nameser/ns_netint.c						    */
+/* ------------------------------------------------------------------------ */
 
 /*-
  * SPDX-License-Identifier: ISC
@@ -174,6 +53,8 @@ ns_name_unpack2(const u_char *msg, const u_char *eom, const u_char *src,
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+
+/* Public. */
 
 u_int
 ref_ns_get16(const u_char *src) {
@@ -201,7 +82,11 @@ ref_ns_put32(u_long src, u_char *dst) {
 	NS_PUT32(src, dst);
 }
 
-/* ===== ns_ttl.c ===== */
+/*! \file */
+
+/* ------------------------------------------------------------------------ */
+/* lib/libc/nameser/ns_ttl.c						    */
+/* ------------------------------------------------------------------------ */
 
 /*-
  * SPDX-License-Identifier: ISC
@@ -222,9 +107,21 @@ ref_ns_put32(u_long src, u_char *dst) {
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-static int	ref_fmt1(int t, char s, char **buf, size_t *buflen);
+#ifdef SPRINTF_CHAR
+# define SPRINTF(x) strlen(sprintf/**/x)
+#else
+# define SPRINTF(x) ((size_t)sprintf x)
+#endif
+
+/* Forward. */
+
+int	ref_fmt1(int t, char s, char **buf, size_t *buflen);
+
+/* Macros. */
 
 #define T(x) if ((x) < 0) return (-1); else (void)NULL
+
+/* Public. */
 
 int
 ref_ns_format_ttl(u_long src, char *dst, size_t dstlen) {
@@ -240,23 +137,23 @@ ref_ns_format_ttl(u_long src, char *dst, size_t dstlen) {
 
 	x = 0;
 	if (weeks) {
-		T(fmt1(weeks, 'W', &dst, &dstlen));
+		T(ref_fmt1(weeks, 'W', &dst, &dstlen));
 		x++;
 	}
 	if (days) {
-		T(fmt1(days, 'D', &dst, &dstlen));
+		T(ref_fmt1(days, 'D', &dst, &dstlen));
 		x++;
 	}
 	if (hours) {
-		T(fmt1(hours, 'H', &dst, &dstlen));
+		T(ref_fmt1(hours, 'H', &dst, &dstlen));
 		x++;
 	}
 	if (mins) {
-		T(fmt1(mins, 'M', &dst, &dstlen));
+		T(ref_fmt1(mins, 'M', &dst, &dstlen));
 		x++;
 	}
 	if (secs || !(weeks || days || hours || mins)) {
-		T(fmt1(secs, 'S', &dst, &dstlen));
+		T(ref_fmt1(secs, 'S', &dst, &dstlen));
 		x++;
 	}
 
@@ -321,7 +218,9 @@ ref_ns_parse_ttl(const char *src, u_long *dst) {
 	return (-1);
 }
 
-static int
+/* Private. */
+
+int
 ref_fmt1(int t, char s, char **buf, size_t *buflen) {
 	char tmp[50];
 	size_t len;
@@ -335,7 +234,13 @@ ref_fmt1(int t, char s, char **buf, size_t *buflen) {
 	return (0);
 }
 
-/* ===== ns_samedomain.c ===== */
+/*! \file */
+
+#undef T
+
+/* ------------------------------------------------------------------------ */
+/* lib/libc/nameser/ns_samedomain.c					    */
+/* ------------------------------------------------------------------------ */
 
 /*-
  * SPDX-License-Identifier: ISC
@@ -356,6 +261,27 @@ ref_fmt1(int t, char s, char **buf, size_t *buflen) {
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+int	ref_ns_samename(const char *a, const char *b);
+
+/*%
+ *	Check whether a name belongs to a domain.
+ *
+ * Inputs:
+ *\li	a - the domain whose ancestry is being verified
+ *\li	b - the potential ancestor we're checking against
+ *
+ * Return:
+ *\li	boolean - is a at or below b?
+ *
+ * Notes:
+ *\li	Trailing dots are first removed from name and domain.
+ *	Always compare complete subdomains, not only whether the
+ *	domain name is the trailing string of the given name.
+ *
+ *\li	"host.foobar.top" lies in "foobar.top" and in "top" and in ""
+ *	but NOT in "bar.top"
+ */
+
 int
 ref_ns_samedomain(const char *a, const char *b) {
 	size_t la, lb;
@@ -365,8 +291,10 @@ ref_ns_samedomain(const char *a, const char *b) {
 	la = strlen(a);
 	lb = strlen(b);
 
+	/* Ignore a trailing label separator (i.e. an unescaped dot) in 'a'. */
 	if (la != 0U && a[la - 1] == '.') {
 		escaped = 0;
+		/* Note this loop doesn't get executed if la==1. */
 		for (i = la - 2; i >= 0; i--)
 			if (a[i] == '\\') {
 				if (escaped)
@@ -379,8 +307,10 @@ ref_ns_samedomain(const char *a, const char *b) {
 			la--;
 	}
 
+	/* Ignore a trailing label separator (i.e. an unescaped dot) in 'b'. */
 	if (lb != 0U && b[lb - 1] == '.') {
 		escaped = 0;
+		/* note this loop doesn't get executed if lb==1 */
 		for (i = lb - 2; i >= 0; i--)
 			if (b[i] == '\\') {
 				if (escaped)
@@ -393,23 +323,42 @@ ref_ns_samedomain(const char *a, const char *b) {
 			lb--;
 	}
 
+	/* lb == 0 means 'b' is the root domain, so 'a' must be in 'b'. */
 	if (lb == 0U)
 		return (1);
 
+	/* 'b' longer than 'a' means 'a' can't be in 'b'. */
 	if (lb > la)
 		return (0);
 
+	/* 'a' and 'b' being equal at this point indicates sameness. */
 	if (lb == la)
 		return (strncasecmp(a, b, lb) == 0);
 
+	/* Ok, we know la > lb. */
+
 	diff = la - lb;
 
+	/*
+	 * If 'a' is only 1 character longer than 'b', then it can't be
+	 * a subdomain of 'b' (because of the need for the '.' label
+	 * separator).
+	 */
 	if (diff < 2)
 		return (0);
 
+	/*
+	 * If the character before the last 'lb' characters of 'b'
+	 * isn't '.', then it can't be a match (this lets us avoid
+	 * having "foobar.com" match "bar.com").
+	 */
 	if (a[diff - 1] != '.')
 		return (0);
 
+	/*
+	 * We're not sure about that '.', however.  It could be escaped
+         * and thus not a really a label separator.
+	 */
 	escaped = 0;
 	for (i = diff - 2; i >= 0; i--)
 		if (a[i] == '\\') {
@@ -422,27 +371,44 @@ ref_ns_samedomain(const char *a, const char *b) {
 	if (escaped)
 		return (0);
 	  
+	/* Now compare aligned trailing substring. */
 	cp = a + diff;
 	return (strncasecmp(cp, b, lb) == 0);
 }
 
+/*%
+ *	is "a" a subdomain of "b"?
+ */
 int
 ref_ns_subdomain(const char *a, const char *b) {
-	return (ns_samename(a, b) != 1 && ns_samedomain(a, b));
+	return (ref_ns_samename(a, b) != 1 && ref_ns_samedomain(a, b));
 }
+
+/*%
+ *	make a canonical copy of domain name "src"
+ *
+ * notes:
+ * \code
+ *	foo -> foo.
+ *	foo. -> foo.
+ *	foo.. -> foo.
+ *	foo\. -> foo\..
+ *	foo\\. -> foo\\.
+ * \endcode
+ */
 
 int
 ref_ns_makecanon(const char *src, char *dst, size_t dstsize) {
 	size_t n = strlen(src);
 
-	if (n + sizeof "." > dstsize) {
+	if (n + sizeof "." > dstsize) {			/*%< Note: sizeof == 2 */
 		errno = EMSGSIZE;
 		return (-1);
 	}
 	strcpy(dst, src);
-	while (n >= 1U && dst[n - 1] == '.')
-		if (n >= 2U && dst[n - 2] == '\\' &&
-		    (n < 3U || dst[n - 3] != '\\'))
+	while (n >= 1U && dst[n - 1] == '.')		/*%< Ends in "." */
+		if (n >= 2U && dst[n - 2] == '\\' &&	/*%< Ends in "\." */
+		    (n < 3U || dst[n - 3] != '\\'))	/*%< But not "\\." */
 			break;
 		else
 			dst[--n] = '\0';
@@ -451,12 +417,21 @@ ref_ns_makecanon(const char *src, char *dst, size_t dstsize) {
 	return (0);
 }
 
+/*%
+ *	determine whether domain name "a" is the same as domain name "b"
+ *
+ * return:
+ *\li	-1 on error
+ *\li	0 if names differ
+ *\li	1 if names are the same
+ */
+
 int
 ref_ns_samename(const char *a, const char *b) {
 	char ta[NS_MAXDNAME], tb[NS_MAXDNAME];
 
-	if (ns_makecanon(a, ta, sizeof ta) < 0 ||
-	    ns_makecanon(b, tb, sizeof tb) < 0)
+	if (ref_ns_makecanon(a, ta, sizeof ta) < 0 ||
+	    ref_ns_makecanon(b, tb, sizeof tb) < 0)
 		return (-1);
 	if (strcasecmp(ta, tb) == 0)
 		return (1);
@@ -464,7 +439,11 @@ ref_ns_samename(const char *a, const char *b) {
 		return (0);
 }
 
-/* ===== ns_parse.c ===== */
+/*! \file */
+
+/* ------------------------------------------------------------------------ */
+/* lib/libc/nameser/ns_parse.c						    */
+/* ------------------------------------------------------------------------ */
 
 /*-
  * SPDX-License-Identifier: ISC
@@ -485,33 +464,46 @@ ref_ns_samename(const char *a, const char *b) {
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-static void	ref_setsection(ns_msg *msg, ns_sect sect);
+/* Forward. */
 
+void	ref_setsection(ns_msg *msg, ns_sect sect);
+
+/* Macros. */
+
+#if !defined(SOLARIS2) || defined(__COVERITY__)
 #define RETERR(err) do { errno = (err); return (-1); } while (0)
+#else
+#define RETERR(err) \
+	do { errno = (err); if (errno == errno) return (-1); } while (0)
+#endif
 
-struct _ns_flagdata oracle_ns_flagdata[16] = {
-	{ 0x8000, 15 },
-	{ 0x7800, 11 },
-	{ 0x0400, 10 },
-	{ 0x0200, 9 },
-	{ 0x0100, 8 },
-	{ 0x0080, 7 },
-	{ 0x0040, 6 },
-	{ 0x0020, 5 },
-	{ 0x0010, 4 },
-	{ 0x000f, 0 },
-	{ 0x0000, 0 },
-	{ 0x0000, 0 },
-	{ 0x0000, 0 },
-	{ 0x0000, 0 },
-	{ 0x0000, 0 },
-	{ 0x0000, 0 },
+#define PARSE_FMT_PRESO 0	/* Parse using presentation-format names */
+#define PARSE_FMT_WIRE 1	/* Parse using network-format names */
+
+/* Public. */
+
+/* These need to be in the same order as the nres.h:ns_flag enum. */
+struct _ns_flagdata ref__ns_flagdata[16] = {
+	{ 0x8000, 15 },		/*%< qr. */
+	{ 0x7800, 11 },		/*%< opcode. */
+	{ 0x0400, 10 },		/*%< aa. */
+	{ 0x0200, 9 },		/*%< tc. */
+	{ 0x0100, 8 },		/*%< rd. */
+	{ 0x0080, 7 },		/*%< ra. */
+	{ 0x0040, 6 },		/*%< z. */
+	{ 0x0020, 5 },		/*%< ad. */
+	{ 0x0010, 4 },		/*%< cd. */
+	{ 0x000f, 0 },		/*%< rcode. */
+	{ 0x0000, 0 },		/*%< expansion (1/6). */
+	{ 0x0000, 0 },		/*%< expansion (2/6). */
+	{ 0x0000, 0 },		/*%< expansion (3/6). */
+	{ 0x0000, 0 },		/*%< expansion (4/6). */
+	{ 0x0000, 0 },		/*%< expansion (5/6). */
+	{ 0x0000, 0 },		/*%< expansion (6/6). */
 };
 
-#define _ns_flagdata	oracle_ns_flagdata
-
 int ref_ns_msg_getflag(ns_msg handle, int flag) {
-	return(((handle)._flags & _ns_flagdata[flag].mask) >> _ns_flagdata[flag].shift);
+	return(((handle)._flags & ref__ns_flagdata[flag].mask) >> ref__ns_flagdata[flag].shift);
 }
 
 int
@@ -560,7 +552,7 @@ ref_ns_initparse(const u_char *msg, int msglen, ns_msg *handle) {
 		if (handle->_counts[i] == 0)
 			handle->_sections[i] = NULL;
 		else {
-			int b = ns_skiprr(msg, eom, (ns_sect)i,
+			int b = ref_ns_skiprr(msg, eom, (ns_sect)i,
 					  handle->_counts[i]);
 
 			if (b < 0)
@@ -570,7 +562,7 @@ ref_ns_initparse(const u_char *msg, int msglen, ns_msg *handle) {
 		}
 	if (msg != eom)
 		RETERR(EMSGSIZE);
-	setsection(handle, ns_s_max);
+	ref_setsection(handle, ns_s_max);
 	return (0);
 }
 
@@ -579,20 +571,22 @@ ref_ns_parserr(ns_msg *handle, ns_sect section, int rrnum, ns_rr *rr) {
 	int b;
 	int tmp;
 
+	/* Make section right. */
 	tmp = section;
 	if (tmp < 0 || section >= ns_s_max)
 		RETERR(ENODEV);
 	if (section != handle->_sect)
-		setsection(handle, section);
+		ref_setsection(handle, section);
 
+	/* Make rrnum right. */
 	if (rrnum == -1)
 		rrnum = handle->_rrnum;
 	if (rrnum < 0 || rrnum >= handle->_counts[(int)section])
 		RETERR(ENODEV);
 	if (rrnum < handle->_rrnum)
-		setsection(handle, section);
+		ref_setsection(handle, section);
 	if (rrnum > handle->_rrnum) {
-		b = ns_skiprr(handle->_msg_ptr, handle->_eom, section,
+		b = ref_ns_skiprr(handle->_msg_ptr, handle->_eom, section,
 			      rrnum - handle->_rrnum);
 
 		if (b < 0)
@@ -601,6 +595,7 @@ ref_ns_parserr(ns_msg *handle, ns_sect section, int rrnum, ns_rr *rr) {
 		handle->_rrnum = rrnum;
 	}
 
+	/* Do the parse. */
 	b = dn_expand(handle->_msg, handle->_eom,
 		      handle->_msg_ptr, rr->name, NS_MAXDNAME);
 	if (b < 0)
@@ -625,67 +620,15 @@ ref_ns_parserr(ns_msg *handle, ns_sect section, int rrnum, ns_rr *rr) {
 		handle->_msg_ptr += rr->rdlength;
 	}
 	if (++handle->_rrnum > handle->_counts[(int)section])
-		setsection(handle, (ns_sect)((int)section + 1));
+		ref_setsection(handle, (ns_sect)((int)section + 1));
 
+	/* All done. */
 	return (0);
 }
 
-int
-ref_ns_parserr2(ns_msg *handle, ns_sect section, int rrnum, ns_rr2 *rr) {
-	int b;
-	int tmp;
+/* Private. */
 
-	if ((tmp = section) < 0 || section >= ns_s_max)
-		RETERR(ENODEV);
-	if (section != handle->_sect)
-		setsection(handle, section);
-
-	if (rrnum == -1)
-		rrnum = handle->_rrnum;
-	if (rrnum < 0 || rrnum >= handle->_counts[(int)section])
-		RETERR(ENODEV);
-	if (rrnum < handle->_rrnum)
-		setsection(handle, section);
-	if (rrnum > handle->_rrnum) {
-		b = ns_skiprr(handle->_msg_ptr, handle->_eom, section,
-			      rrnum - handle->_rrnum);
-
-		if (b < 0)
-			return (-1);
-		handle->_msg_ptr += b;
-		handle->_rrnum = rrnum;
-	}
-
-	b = ns_name_unpack2(handle->_msg, handle->_eom, handle->_msg_ptr,
-			    rr->nname, NS_MAXNNAME, &rr->nnamel);
-	if (b < 0)
-		return (-1);
-	handle->_msg_ptr += b;
-	if (handle->_msg_ptr + NS_INT16SZ + NS_INT16SZ > handle->_eom)
-		RETERR(EMSGSIZE);
-	NS_GET16(rr->type, handle->_msg_ptr);
-	NS_GET16(rr->rr_class, handle->_msg_ptr);
-	if (section == ns_s_qd) {
-		rr->ttl = 0;
-		rr->rdlength = 0;
-		rr->rdata = NULL;
-	} else {
-		if (handle->_msg_ptr + NS_INT32SZ + NS_INT16SZ > handle->_eom)
-			RETERR(EMSGSIZE);
-		NS_GET32(rr->ttl, handle->_msg_ptr);
-		NS_GET16(rr->rdlength, handle->_msg_ptr);
-		if (handle->_msg_ptr + rr->rdlength > handle->_eom)
-			RETERR(EMSGSIZE);
-		rr->rdata = handle->_msg_ptr;
-		handle->_msg_ptr += rr->rdlength;
-	}
-	if (++handle->_rrnum > handle->_counts[(int)section])
-		setsection(handle, (ns_sect)((int)section + 1));
-
-	return (0);
-}
-
-static void
+void
 ref_setsection(ns_msg *msg, ns_sect sect) {
 	msg->_sect = sect;
 	if (sect == ns_s_max) {
@@ -696,3 +639,5 @@ ref_setsection(ns_msg *msg, ns_sect sect) {
 		msg->_msg_ptr = msg->_sections[(int)sect];
 	}
 }
+
+/*! \file */

@@ -27,6 +27,7 @@
 
 #include <sys/types.h>
 
+#include <csignal>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -90,6 +91,25 @@ int badfd = -1;
 {
 	std::fprintf(stderr, "harness: %s: %s\n", what, std::strerror(errno));
 	std::exit(2);
+}
+
+/*
+ * A wedged implementation (e.g. a read loop whose exit condition can never be
+ * met) must be reported as a failure rather than hanging the test run.  The
+ * whole sweep takes a handful of seconds, so this budget is enormous.
+ */
+extern "C" void on_timeout(int)
+{
+	static const char msg[] = "\nharness: TIMEOUT -- implementation did not terminate\n";
+	ssize_t ignored = write(STDERR_FILENO, msg, sizeof msg - 1);
+	(void)ignored;
+	_exit(1);
+}
+
+void setup_timeout()
+{
+	std::signal(SIGALRM, on_timeout);
+	alarm(600);
 }
 
 void setup_fds()
@@ -447,6 +467,7 @@ void random_cases()
 
 int main()
 {
+	setup_timeout();
 	setup_fds();
 
 	hand_cases();

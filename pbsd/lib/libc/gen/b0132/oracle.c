@@ -10,6 +10,9 @@
  *   hbsd/src/lib/libc/gen/disklabel.c   (gettype() only; see skipped.txt)
  */
 
+/* -std=c11 hides the BSD/GNU extras; htobe32() and friends live behind this. */
+#define _DEFAULT_SOURCE 1
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>

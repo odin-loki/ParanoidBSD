@@ -24,6 +24,7 @@ namespace P = pbsd::bin_sync::b0166;
 
 extern "C" int ref_main(int argc, char *argv[]);
 extern "C" int __real_sync(void);
+extern "C" void __real_exit(int status);
 
 #define SWEEP 200000L
 #define MAX_SHOW 8
@@ -31,6 +32,16 @@ extern "C" int __real_sync(void);
 namespace {
 
 int g_sync_pipe = -1;
+bool g_test_child = false;
+
+extern "C" void
+__wrap_exit(int status)
+{
+	if (g_test_child) {
+		::_exit(status);
+	}
+	__real_exit(status);
+}
 
 extern "C" int
 __wrap_sync(void)
@@ -102,8 +113,9 @@ run_ref(int argc, char **argv)
 	if (pid == 0) {
 		close(pipefd[0]);
 		g_sync_pipe = pipefd[1];
+		g_test_child = true;
 		ref_main(argc, argv);
-		_exit(99);
+		::_exit(99);
 	}
 
 	close(pipefd[1]);
@@ -147,8 +159,9 @@ run_port(int argc, char **argv)
 	if (pid == 0) {
 		close(pipefd[0]);
 		g_sync_pipe = pipefd[1];
+		g_test_child = true;
 		P::main(argc, argv);
-		_exit(99);
+		::_exit(99);
 	}
 
 	close(pipefd[1]);

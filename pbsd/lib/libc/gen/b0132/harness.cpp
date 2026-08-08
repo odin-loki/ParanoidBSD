@@ -144,7 +144,9 @@ static GdScript g_script;
 static int g_gd_idx;
 static long long g_gd_total;
 
-extern "C" int __isthreaded = 0;
+extern "C" {
+int __isthreaded = 0;
+}
 
 extern "C" ssize_t
 _getdirentries(int fd, char *buf, size_t nbytes, off_t *basep)
@@ -1153,6 +1155,14 @@ check_dir_iterate(int which, const DirCase &c0, int maxsteps)
 		    : (long long)((char *)dpa - (char *)dbufA);
 		long long ob = dpb == NULL ? -1
 		    : (long long)((char *)dpb - (char *)dbufB);
+		/*
+		 * __readdir_r()'s errno early-return leaves *result alone, so
+		 * normalise instead of subtracting from two different bases.
+		 */
+		long long ra = resa == NULL ? -1
+		    : (resa == (struct dirent *)(ebufA + ENTOFF) ? 0 : -2);
+		long long rb = resb == NULL ? -1
+		    : (resb == (struct dirent *)(ebufB + ENTOFF) ? 0 : -2);
 
 		char msg[256];
 		bool bad = false;
@@ -1171,13 +1181,9 @@ check_dir_iterate(int which, const DirCase &c0, int maxsteps)
 			    step, erra, errb);
 			note(idx, msg);
 			bad = true;
-		} else if (which == 2 &&
-		    ((resa == NULL) != (resb == NULL) ||
-		     (resa != NULL &&
-		      ((char *)resa - (char *)ebufA) !=
-		      ((char *)resb - (char *)ebufB)))) {
-			snprintf(msg, sizeof msg, "step %d: *result differs",
-			    step);
+		} else if (which == 2 && ra != rb) {
+			snprintf(msg, sizeof msg,
+			    "step %d: *result %lld vs %lld", step, ra, rb);
 			note(idx, msg);
 			bad = true;
 		} else if (da.dd_loc != db.dd_loc || da.dd_size != db.dd_size ||
@@ -1215,7 +1221,7 @@ check_dir_iterate(int which, const DirCase &c0, int maxsteps)
 		}
 		if (bad)
 			break;
-		if (dpa == NULL && !(which == 2 && resa != NULL))
+		if (dpa == NULL && !(which == 2 && ra == 0))
 			break;	/* exhausted */
 	}
 	pthread_mutex_destroy(&da.dd_lock);
@@ -1440,6 +1446,9 @@ hand_dir(void)
 			check_dir(0, c);
 			c.dd_flags = 0;
 			check_dir(2, c);
+			c.dd_flags = H_DTF_SKIPREAD;
+			check_dir(2, c);
+			check_dir(1, c);
 		}
 	}
 
@@ -1520,11 +1529,13 @@ hand_dir(void)
 						check_dir(0, c);
 					}
 				}
-				c.dd_flags = 0;
+				c.dd_flags = H_DTF_SKIPREAD;
 				c.flags = 0;
 				check_dir(2, c);
-				c.dd_flags = H_DTF_HIDEW;
+				check_dir(1, c);
+				c.dd_flags = H_DTF_SKIPREAD | H_DTF_HIDEW;
 				check_dir(2, c);
+				check_dir(1, c);
 			}
 		}
 	}
@@ -1562,7 +1573,7 @@ hand_dir(void)
 			int len = 64 + (int)rng.below(900);
 			Chain ch;
 			build_chain(g_tmpl, 8, len, rng, trial % 3, &ch);
-			gen_script(len, rng, trial % 3);
+			gen_script(len, rng, trial % 3, 1);
 			c.bufoff = 8;
 			c.dd_len = len;
 			c.dd_loc = 0;
@@ -1581,7 +1592,7 @@ hand_dir(void)
 			int len = 64 + (int)rng.below(900);
 			Chain ch;
 			build_chain(g_tmpl, 8, len, rng, 0, &ch);
-			gen_script(len, rng, 0);
+			gen_script(len, rng, 0, 0);
 			c.bufoff = 8;
 			c.dd_len = len;
 			c.dd_loc = 0;
@@ -1610,21 +1621,35 @@ gen_dir_case(Rng &rng, DirCase &c, int which)
 		c.bufoff = any_offs[rng.below(11)];
 
 	Chain ch;
+	ch.npos = 0;
 	if (which != 2 && rng.below(4) == 0)
-		build_random(g_tmpl, c.bufoff, c.dd_len, rng), ch.npos = 0;
+		build_random(g_tmpl, c.bufoff, c.dd_len, rng);
 	else
 		build_chain(g_tmpl, c.bufoff, c.dd_len, rng, perturb, &ch);
 
-	switch (rng.below(7)) {
-	case 0: c.dd_loc = 0; break;
-	case 1: c.dd_loc = ch.npos ? ch.pos[rng.below((uint32_t)ch.npos)] : 0;
-		break;
-	case 2: c.dd_loc = rng.below((uint32_t)c.dd_len + 1); break;
-	case 3: c.dd_loc = (size_t)c.dd_len; break;
-	case 4: c.dd_loc = (ch.npos ? ch.pos[rng.below((uint32_t)ch.npos)] : 0)
-	    + 1; break;
-	case 5: c.dd_loc = rng.below((uint32_t)c.dd_len + 8); break;
-	default: c.dd_loc = ch.npos ? ch.pos[ch.npos - 1] : 0; break;
+	/*
+	 * __readdir_r() memcpy()s _GENERIC_DIRSIZ(dp) bytes out of the
+	 * buffer, so its cases stay on well-formed record boundaries where
+	 * d_namlen is bounded; every other landing site is still covered by
+	 * the _readdir_unlocked() sweep, which does not copy anything.
+	 */
+	if (which == 2) {
+		if (ch.npos == 0 || rng.below(4) == 0)
+			c.dd_loc = 0;
+		else
+			c.dd_loc = ch.pos[rng.below((uint32_t)ch.npos)];
+	} else {
+		switch (rng.below(7)) {
+		case 0: c.dd_loc = 0; break;
+		case 1: c.dd_loc = ch.npos
+		    ? ch.pos[rng.below((uint32_t)ch.npos)] : 0; break;
+		case 2: c.dd_loc = rng.below((uint32_t)c.dd_len + 1); break;
+		case 3: c.dd_loc = (size_t)c.dd_len; break;
+		case 4: c.dd_loc = (ch.npos
+		    ? ch.pos[rng.below((uint32_t)ch.npos)] : 0) + 1; break;
+		case 5: c.dd_loc = rng.below((uint32_t)c.dd_len + 8); break;
+		default: c.dd_loc = ch.npos ? ch.pos[ch.npos - 1] : 0; break;
+		}
 	}
 
 	switch (rng.below(8)) {
@@ -1654,7 +1679,7 @@ gen_dir_case(Rng &rng, DirCase &c, int which)
 	c.isthreaded = (int)rng.below(2);
 	c.errno_in = rng.below(4) == 0 ? 0 : (int)(1 + rng.below(60));
 
-	gen_script(c.dd_len, rng, perturb);
+	gen_script(c.dd_len, rng, perturb, which != 2);
 }
 
 static void

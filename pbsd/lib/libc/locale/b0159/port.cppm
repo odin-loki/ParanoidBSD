@@ -296,6 +296,8 @@ extern _RuneLocale const	*_CurrentRuneLocale;
 extern const char		*_PathLocale;
 extern int			__mb_cur_max;
 extern int			__mb_sb_limit;
+extern struct xlocale		__xlocale_global_locale;
+extern struct xlocale_ctype	__xlocale_global_ctype;
 
 void		*calloc(size_t, size_t);
 void		free(void *);

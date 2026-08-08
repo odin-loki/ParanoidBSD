@@ -551,6 +551,8 @@ int mkostemp(char *template, int flags)
 {
 	(void)template; (void)flags;
 	test_mock.mkostemp_calls++;
+	if (test_mock.mkostemp_ret < 0)
+		errno = ENOENT;
 	return test_mock.mkostemp_ret;
 }
 

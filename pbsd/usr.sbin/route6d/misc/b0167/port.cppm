@@ -1,6 +1,8 @@
-export module pbsd.usr.sbin.route6d.misc.b0167;
+module;
 
-#include <cstdio>
+#include <stdio.h>
+
+export module pbsd.usr.sbin.route6d.misc.b0167;
 
 export namespace pbsd::usr_sbin_route6d_misc::b0167 {
 

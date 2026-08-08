@@ -1,0 +1,13 @@
+{
+  "batch": "b0138",
+  "verified": "2026-08-08T12:13:46Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/10: buf_ring_alloc)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                            cases   failures   result\n---------------------------- ------------ ---------- --------\ncpu_fill_vdso_timehands            200016          0     PASS\ncpu_fill_vdso_timehands32          200016          0     PASS\nmemset_early                       205760          0     PASS\nmemcpy_early                       200864          0     PASS\nmemmove_early                      200202          0     PASS\nbuf_ring_alloc                     200688          0     PASS\nbuf_ring_free                      200688          0     PASS\nsdt_probe_stub                     200091          0     PASS\nsdt_probe                          200089          0     PASS\nsdt_probe6                         200089          0     PASS\n---------------------------- ------------ ---------- --------\nTOTAL                             2008503          0     PASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/kern/subr_dummy_vdso_tc.c": "c9da3a329f51cbb4",
+    "hbsd/src/sys/kern/subr_early.c": "b5140f3c0b072c46",
+    "hbsd/src/sys/kern/subr_bufring.c": "ee3c6cca1027c21b",
+    "hbsd/src/sys/kern/kern_sdt.c": "254521a5307a9e15"
+  }
+}

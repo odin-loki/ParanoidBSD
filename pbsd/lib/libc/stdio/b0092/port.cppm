@@ -1,43 +1,26 @@
-module;
+/*
+ * PBSD batch b0092: C++23 module port of
+ *
+ *	lib/libc/stdio/setbuffer.c
+ *	lib/libc/stdio/wscanf.c
+ *	lib/libc/stdio/getwc.c
+ *
+ * The ports below are byte-for-byte behavioural equivalents of the C
+ * originals; argument types, casts, the conditional operator selecting the
+ * buffering mode and the parenthesised returns are all preserved as written.
+ *
+ * wscanf_l() and getwc_l() are not ported; see skipped.txt.
+ */
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
+module;
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <wchar.h>
-#include <locale.h>
 
-#if defined(__has_include)
-#if __has_include(<xlocale.h>)
-#include <xlocale.h>
-#endif
-#else
-#ifdef __FreeBSD__
-#include <xlocale.h>
-#endif
-#endif
+#undef getwc
 
 export module pbsd.lib.libc.stdio.b0092;
-
-#ifndef fgetwc_l
-static inline wint_t
-fgetwc_l(FILE *stream, locale_t locale)
-{
-	(void)locale;
-	return (fgetwc(stream));
-}
-#endif
-
-#ifndef vfwscanf_l
-static inline int
-vfwscanf_l(FILE *stream, locale_t locale, const wchar_t *format, va_list arg)
-{
-	(void)locale;
-	return (vfwscanf(stream, format, arg));
-}
-#endif
 
 export namespace pbsd::lib_libc_stdio::b0092 {
 
@@ -125,7 +108,7 @@ setlinebuf(FILE *fp)
  * SUCH DAMAGE.
  */
 
-extern "C" int
+int
 wscanf(const wchar_t * __restrict fmt, ...)
 {
 	va_list ap;
@@ -133,18 +116,6 @@ wscanf(const wchar_t * __restrict fmt, ...)
 
 	va_start(ap, fmt);
 	r = vfwscanf(stdin, fmt, ap);
-	va_end(ap);
-
-	return (r);
-}
-extern "C" int
-wscanf_l(locale_t locale, const wchar_t * __restrict fmt, ...)
-{
-	va_list ap;
-	int r;
-
-	va_start(ap, fmt);
-	r = vfwscanf_l(stdin, locale, fmt, ap);
 	va_end(ap);
 
 	return (r);
@@ -192,12 +163,6 @@ getwc(FILE *fp)
 {
 
 	return (fgetwc(fp));
-}
-wint_t
-getwc_l(FILE *fp, locale_t locale)
-{
-
-	return (fgetwc_l(fp, locale));
 }
 
 } /* namespace pbsd::lib_libc_stdio::b0092 */

@@ -410,6 +410,7 @@ void init_tree_ref(BTREE &t, MPOOL &mp, DB &db, u_int32_t flags)
 struct MockDelta {
 	unsigned get, put, new_c, search, split, ovfl_put, ovfl_del, free_c, cmp;
 	unsigned ret, delete_c, open_fd, fstat, read, close, mkostemp, calloc;
+	unsigned getenv, sigmask;
 };
 
 MockDelta mock_delta(const test_mock_state &before, const test_mock_state &after)
@@ -432,6 +433,8 @@ MockDelta mock_delta(const test_mock_state &before, const test_mock_state &after
 	d.close = after.close_calls - before.close_calls;
 	d.mkostemp = after.mkostemp_calls - before.mkostemp_calls;
 	d.calloc = after.calloc_calls - before.calloc_calls;
+	d.getenv = after.getenv_calls - before.getenv_calls;
+	d.sigmask = after.sigmask_calls - before.sigmask_calls;
 	return d;
 }
 
@@ -443,7 +446,16 @@ bool mock_delta_eq(const MockDelta &a, const MockDelta &b)
 	    a.free_c == b.free_c && a.cmp == b.cmp && a.ret == b.ret &&
 	    a.delete_c == b.delete_c && a.open_fd == b.open_fd &&
 	    a.fstat == b.fstat && a.read == b.read && a.close == b.close &&
-	    a.mkostemp == b.mkostemp && a.calloc == b.calloc;
+	    a.mkostemp == b.mkostemp && a.calloc == b.calloc &&
+	    a.getenv == b.getenv && a.sigmask == b.sigmask;
+}
+
+bool open_mock_delta_eq(const MockDelta &a, const MockDelta &b)
+{
+	MockDelta ap = a;
+	MockDelta bp = b;
+	ap.calloc = bp.calloc = 0;
+	return mock_delta_eq(ap, bp);
 }
 
 bool harness_cmp_btree(const P::BTREE &tp, const BTREE &tr)
@@ -463,7 +475,20 @@ void build_bleaf_page(PAGE *pg, size_t psize, int nents,
     const u_int32_t *ksizes, const u_int32_t *dsizes, const u_char *eflags)
 {
 	size_t off = psize;
+	std::memset(pg, 0, psize);
 	pg->flags = P_BLEAF;
+	while (nents > 0) {
+		size_t trial = psize;
+		for (int i = nents - 1; i >= 0; i--) {
+			trial -= NBLEAFDBT(ksizes[i], dsizes[i]);
+			if (trial < BTDATAOFF + (size_t)nents * sizeof(indx_t))
+				goto shrink;
+		}
+		break;
+shrink:
+		nents--;
+	}
+	off = psize;
 	for (int i = nents - 1; i >= 0; i--) {
 		size_t ksz = ksizes[i];
 		size_t dsz = dsizes[i];
@@ -621,18 +646,26 @@ void check_nroot(int existing_valid, int existing_invalid, int get_null,
 		((PAGE *)root_r)->lower = ((PAGE *)root_p)->lower;
 		if (existing_invalid)
 			((PAGE *)root_p)->linp[0] = 0;
+		std::memcpy(root_r, root_p, PAGE_SZ);
 		test_mock_register(P_ROOT, root_p);
-		test_mock_register(P_ROOT, root_r);
 	}
 	if (new_root_null)
 		test_mock.new_fail_after = 1;
+
+	unsigned char init_root[PAGE_SZ];
+	if (existing_valid || existing_invalid)
+		std::memcpy(init_root, root_p, PAGE_SZ);
 
 	MockSnap before = snap_mock();
 	int rp = P::nroot(&tp);
 	int ep = errno;
 	MockDelta dp = mock_delta(before.mock, test_mock);
 	u_int32_t flags_p = tp.flags;
+	if (existing_valid || existing_invalid)
+		std::memcpy(root_p, init_root, PAGE_SZ);
 	restore_mock(before);
+	if (new_root_null)
+		test_mock.new_fail_after = 1;
 	int rr = ref_nroot(&tr);
 	int er = errno;
 	MockDelta dr = mock_delta(before.mock, test_mock);
@@ -836,8 +869,9 @@ void check_bt_fast(int order, int nents, indx_t last_idx, pgno_t last_pg,
 	((PAGE *)leaf_r)->prevpg = ((PAGE *)leaf_p)->prevpg;
 	((PAGE *)leaf_p)->nextpg = order == FORWARD ? P_INVALID : 6;
 	((PAGE *)leaf_r)->nextpg = ((PAGE *)leaf_p)->nextpg;
+	unsigned char init_leaf[PAGE_SZ];
+	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock_register(last_pg, leaf_p);
-	test_mock_register(last_pg, leaf_r);
 	keybuf[0] = 0x90;
 	key.data = keybuf;
 	key.size = ksz ? ksz : 4;
@@ -849,7 +883,10 @@ void check_bt_fast(int order, int nents, indx_t last_idx, pgno_t last_pg,
 	P::EPG *ep_p = P::bt_fast(&tp, (P::DBT *)&key, (P::DBT *)&data, &exact_p);
 	u_int32_t order_p = tp.bt_order;
 	MockDelta dp = mock_delta(snap.mock, test_mock);
+	std::memcpy(leaf_p, init_leaf, PAGE_SZ);
 	restore_mock(snap);
+	test_mock.cmp_ret = cmp_ret;
+	test_mock.get_force_null = get_null;
 	EPG *ep_r = ref_bt_fast(&tr, &key, &data, &exact_r);
 	MockDelta dr = mock_delta(snap.mock, test_mock);
 	char msg[160];
@@ -1226,18 +1263,24 @@ void check_bt_delete(u_int flags, u_int32_t tflags, int curs_init, int curs_acqu
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
 	((PAGE *)leaf_p)->pgno = 8;
 	((PAGE *)leaf_r)->pgno = 8;
-	test_mock_register(8, leaf_p);
-	test_mock_register(8, leaf_r);
+	unsigned char init_leaf[PAGE_SZ];
+	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock.search_epg.page = (PAGE *)leaf_p;
 	test_mock.search_epg.index = 0;
+	test_mock_register(8, leaf_p);
 	if (curs_init) {
+		unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
 		tp.bt_cursor.flags = CURS_INIT |
 		    (curs_acquire ? CURS_ACQUIRE : 0);
 		tp.bt_cursor.pg.pgno = 8;
 		tp.bt_cursor.pg.index = 0;
+		tp.bt_cursor.key.data = ckey;
+		tp.bt_cursor.key.size = 4;
 		tr.bt_cursor.flags = tp.bt_cursor.flags;
 		tr.bt_cursor.pg.pgno = 8;
 		tr.bt_cursor.pg.index = 0;
+		tr.bt_cursor.key.data = ckey;
+		tr.bt_cursor.key.size = 4;
 	}
 	key.data = (void *)"k";
 	key.size = 1;
@@ -1248,6 +1291,13 @@ void check_bt_delete(u_int flags, u_int32_t tflags, int curs_init, int curs_acqu
 	int ep = errno;
 	u_int32_t flags_p = tp.flags;
 	MockDelta dp = mock_delta(snap.mock, test_mock);
+	std::memcpy(leaf_p, init_leaf, PAGE_SZ);
+	if (curs_init) {
+		tp.bt_cursor.flags = CURS_INIT |
+		    (curs_acquire ? CURS_ACQUIRE : 0);
+		tp.bt_cursor.pg.pgno = 8;
+		tp.bt_cursor.pg.index = 0;
+	}
 	restore_mock(snap);
 	errno = 0;
 	int rr = ref___bt_delete(&db_r, &key, flags);
@@ -1390,12 +1440,16 @@ void check_bt_seqset(int flags, int empty, int internal, int get_null,
 	setup_tree_for_seq(root_p, leaf_p, empty, internal);
 	std::memcpy(root_r, root_p, PAGE_SZ);
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
+	unsigned char init_root[PAGE_SZ];
+	unsigned char init_leaf[PAGE_SZ];
+	std::memcpy(init_root, root_p, PAGE_SZ);
+	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock_register(P_ROOT, root_p);
-	test_mock_register(P_ROOT, root_r);
-	if (internal) {
+	if (internal)
 		test_mock_register(10, leaf_p);
-		test_mock_register(10, leaf_r);
-	}
+	test_mock.search_epg.page = internal ? (PAGE *)leaf_p : (PAGE *)root_p;
+	test_mock.search_epg.index = 0;
+	test_mock.search_exact = 0;
 	key.data = first_null_key ? nullptr : keybuf;
 	key.size = first_null_key ? 0 : 4;
 	keybuf[0] = 0x80;
@@ -1405,7 +1459,12 @@ void check_bt_seqset(int flags, int empty, int internal, int get_null,
 	int rp = P::__bt_seqset(&tp, &ep_p, (P::DBT *)&key, flags);
 	int ep = errno;
 	MockDelta dp = mock_delta(snap.mock, test_mock);
+	std::memcpy(root_p, init_root, PAGE_SZ);
+	if (internal)
+		std::memcpy(leaf_p, init_leaf, PAGE_SZ);
 	restore_mock(snap);
+	test_mock.search_epg.page = internal ? (PAGE *)leaf_p : (PAGE *)root_p;
+	test_mock.search_epg.index = 0;
 	errno = 0;
 	int rr = ref___bt_seqset(&tr, &ep_r, &key, flags);
 	int er = errno;
@@ -1452,8 +1511,10 @@ void check_bt_seqadv(int advflags, int curs_acquire, int curs_after,
 	((PAGE *)leaf_r)->pgno = cpg;
 	((PAGE *)leaf_p)->nextpg = nextpg;
 	((PAGE *)leaf_r)->nextpg = nextpg;
+	unsigned char init_leaf[PAGE_SZ];
+	unsigned char init_next[PAGE_SZ];
+	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock_register(cpg, leaf_p);
-	test_mock_register(cpg, leaf_r);
 	if (nextpg != P_INVALID) {
 		guard_fill(next_p, PAGE_SZ);
 		guard_fill(next_r, PAGE_SZ);
@@ -1461,20 +1522,36 @@ void check_bt_seqadv(int advflags, int curs_acquire, int curs_after,
 		std::memcpy(next_r, next_p, PAGE_SZ);
 		((PAGE *)next_p)->pgno = nextpg;
 		((PAGE *)next_r)->pgno = nextpg;
+		std::memcpy(init_next, next_p, PAGE_SZ);
 		test_mock_register(nextpg, next_p);
-		test_mock_register(nextpg, next_r);
 	}
+	test_mock.search_epg.page = (PAGE *)leaf_p;
+	test_mock.search_epg.index = 0;
+	unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
 	tp.bt_cursor.flags = CURS_INIT | (curs_acquire ? CURS_ACQUIRE : 0) |
 	    (curs_after ? CURS_AFTER : 0) | (curs_before ? CURS_BEFORE : 0);
 	tp.bt_cursor.pg.pgno = cpg;
 	tp.bt_cursor.pg.index = cidx;
+	if (curs_acquire) {
+		tp.bt_cursor.key.data = ckey;
+		tp.bt_cursor.key.size = 4;
+	}
 	copy_cursor_ref(tr, tp);
 
 	MockSnap snap = snap_mock();
 	int rp = P::__bt_seqadv(&tp, &ep_p, advflags);
 	MockDelta dp = mock_delta(snap.mock, test_mock);
+	std::memcpy(leaf_p, init_leaf, PAGE_SZ);
+	if (nextpg != P_INVALID)
+		std::memcpy(next_p, init_next, PAGE_SZ);
 	restore_mock(snap);
 	copy_cursor_ref(tr, tp);
+	if (curs_acquire) {
+		tr.bt_cursor.key.data = ckey;
+		tr.bt_cursor.key.size = 4;
+	}
+	test_mock.search_epg.page = (PAGE *)leaf_p;
+	test_mock.search_epg.index = 0;
 	int rr = ref___bt_seqadv(&tr, &ep_r, advflags);
 	MockDelta dr = mock_delta(snap.mock, test_mock);
 	char msg[160];
@@ -1606,7 +1683,8 @@ void check_bt_seq(u_int flags, int empty, int curs_init, int get_null,
 void check_bt_open(int inmem, int invalid_psize, int existing_meta,
     int open_fail, int calloc_fail, int mpool_null)
 {
-	BTREEINFO info{};
+	P::BTREEINFO pinfo{};
+	BTREEINFO rinfo{};
 	test_mock_reset();
 	test_mock.open_ret = open_fail ? -1 : 3;
 	test_mock.mkostemp_ret = open_fail ? -1 : 4;
@@ -1616,8 +1694,14 @@ void check_bt_open(int inmem, int invalid_psize, int existing_meta,
 	if (existing_meta)
 		setup_open_mocks_meta(B_NODUPS);
 	if (invalid_psize) {
-		info.psize = 511;
-		info.lorder = LITTLE_ENDIAN;
+		pinfo.psize = 511;
+		pinfo.lorder = LITTLE_ENDIAN;
+		rinfo.psize = 511;
+		rinfo.lorder = LITTLE_ENDIAN;
+	}
+	if (existing_meta) {
+		pinfo.lorder = LITTLE_ENDIAN;
+		rinfo.lorder = LITTLE_ENDIAN;
 	}
 	if (!inmem && !invalid_psize && !existing_meta)
 		test_mock.fstat_sb.st_size = 0;
@@ -1625,7 +1709,8 @@ void check_bt_open(int inmem, int invalid_psize, int existing_meta,
 	MockSnap snap = snap_mock();
 	errno = 0;
 	P::DB *dp_p = P::__bt_open(inmem ? nullptr : "/tmp/x.db",
-	    O_RDWR, 0644, invalid_psize || existing_meta ? &info : nullptr,
+	    O_RDWR, 0644,
+	    invalid_psize || existing_meta ? &pinfo : nullptr,
 	    inmem ? 0 : DB_LOCK);
 	int ep = errno;
 	MockDelta dport = mock_delta(snap.mock, test_mock);
@@ -1635,7 +1720,6 @@ void check_bt_open(int inmem, int invalid_psize, int existing_meta,
 	int fd_p = tp ? tp->bt_fd : -99;
 	restore_mock(snap);
 
-	test_mock_reset();
 	test_mock.open_ret = open_fail ? -1 : 3;
 	test_mock.mkostemp_ret = open_fail ? -1 : 4;
 	test_mock.calloc_fail_after = calloc_fail;
@@ -1648,7 +1732,7 @@ void check_bt_open(int inmem, int invalid_psize, int existing_meta,
 
 	errno = 0;
 	DB *dp_r = ref___bt_open(inmem ? nullptr : "/tmp/x.db", O_RDWR, 0644,
-	    invalid_psize || existing_meta ? &info : nullptr,
+	    invalid_psize || existing_meta ? &rinfo : nullptr,
 	    inmem ? 0 : DB_LOCK);
 	int er = errno;
 	MockDelta dref = mock_delta(snap.mock, test_mock);
@@ -1662,7 +1746,7 @@ void check_bt_open(int inmem, int invalid_psize, int existing_meta,
 	check_eq(F_BT_OPEN, (dp_p == nullptr) == (dp_r == nullptr) && ep == er, msg);
 	check_eq(F_BT_OPEN, mock_delta_eq(dport, dref), "mock delta");
 	if (dp_p && dp_r) {
-		check_eq(F_BT_OPEN, dp_p->type == dp_r->type, "type");
+		check_eq(F_BT_OPEN, (int)dp_p->type == (int)dp_r->type, "type");
 		check_eq(F_BT_OPEN, flags_p == tr->flags, "flags");
 		check_eq(F_BT_OPEN, psize_p == tr->bt_psize, "psize");
 		check_eq(F_BT_OPEN, (fd_p < 0) == (tr->bt_fd < 0), "fd sign");
@@ -1671,4 +1755,386 @@ void check_bt_open(int inmem, int invalid_psize, int existing_meta,
 	free_open_db_ref(dp_r);
 }
 
+void test_byteorder_edges(void) { check_byteorder(); }
 
+void test_tmp_edges(void)
+{
+	check_tmp(4, nullptr);
+	check_tmp(4, "/tmp");
+	check_tmp(-1, "/tmp");
+}
+
+void test_nroot_edges(void)
+{
+	check_nroot(1, 0, 0, 0, 0, P_ROOT);
+	check_nroot(0, 1, 0, 0, 0, P_ROOT);
+	check_nroot(0, 0, 1, 0, 0, P_ROOT);
+	check_nroot(0, 0, 0, 1, 0, P_ROOT);
+	check_nroot(0, 0, 0, 0, 1, 99);
+}
+
+void test_bt_fd_edges(void)
+{
+	check_bt_fd(0, 0);
+	check_bt_fd(1, 0);
+	check_bt_fd(0, 1);
+}
+
+void test_bt_setcur_edges(void)
+{
+	check_bt_setcur(0, 5, 0);
+	check_bt_setcur(1, 7, 2);
+	check_bt_setcur(0, P_ROOT, 1);
+}
+
+void test_bt_relink_edges(void)
+{
+	check_bt_relink(20, 19, 21, 0);
+	check_bt_relink(20, P_INVALID, 21, 0);
+	check_bt_relink(20, 19, P_INVALID, 0);
+	check_bt_relink(20, 19, 21, 1);
+}
+
+void test_bt_fast_edges(void)
+{
+	check_bt_fast(FORWARD, 4, 3, 8, 0, 0, 4, 4);
+	check_bt_fast(FORWARD, 4, 3, 8, 1, 0, 4, 4);
+	check_bt_fast(BACK, 4, 0, 8, 0, 0, 4, 4);
+	check_bt_fast(BACK, 4, 0, 8, -1, 0, 4, 4);
+	check_bt_fast(FORWARD, 4, 3, 8, 0, 1, 4, 4);
+	check_bt_fast(FORWARD, 2, 1, 8, 0, 0, 200, 4);
+}
+
+void test_bt_dleaf_edges(void)
+{
+	check_bt_dleaf(4, 1, 0, 0, 0, 0);
+	check_bt_dleaf(4, 1, 1, 0, 0, 0);
+	check_bt_dleaf(3, 0, 0, 1, 0, 0);
+	check_bt_dleaf(3, 2, 0, 0, 1, 0);
+}
+
+void test_bt_curdel_edges(void)
+{
+	check_bt_curdel(3, 1, 0, 0, 0, 0);
+	check_bt_curdel(3, 1, B_NODUPS, 0, 0, 0);
+	check_bt_curdel(3, 0, 0, 1, 0, 0);
+	check_bt_curdel(1, 0, 0, 0, 1, 0);
+	check_bt_curdel(2, 1, 0, 0, 0, 1);
+}
+
+void test_bt_pdelete_edges(void)
+{
+	check_bt_pdelete(3, 1, 0, 0);
+	check_bt_pdelete(1, 1, 1, 0);
+	check_bt_pdelete(2, 0, 0, 0);
+	check_bt_pdelete(2, 1, 0, 1);
+}
+
+void test_bt_bdelete_edges(void)
+{
+	check_bt_bdelete(1, B_NODUPS, 0, 0);
+	check_bt_bdelete(0, 0, 0, 0);
+	check_bt_bdelete(1, 0, 1, 0);
+	check_bt_bdelete(1, 0, 0, 1);
+}
+
+void test_bt_stkacq_edges(void)
+{
+	check_bt_stkacq(8, 0);
+	check_bt_stkacq(50, 0);
+	check_bt_stkacq(8, 1);
+}
+
+void test_bt_delete_edges(void)
+{
+	check_bt_delete(0, 0, 0, 0, 0, 0);
+	check_bt_delete(0, B_RDONLY, 0, 0, 0, 0);
+	check_bt_delete(R_CURSOR, 0, 1, 0, 0, 0);
+	check_bt_delete(R_CURSOR, 0, 1, 1, 0, 0);
+	check_bt_delete(99, 0, 0, 0, 0, 0);
+	check_bt_delete(R_CURSOR, 0, 1, 0, 0, 1);
+}
+
+void test_bt_put_edges(void)
+{
+	check_bt_put(0, 0, 0, 0, 0, 0, 1);
+	check_bt_put(R_NOOVERWRITE, 0, 0, 1, 0, 0, 1);
+	check_bt_put(0, B_RDONLY, 0, 0, 0, 0, 1);
+	check_bt_put(99, 0, 0, 0, 0, 0, 1);
+	check_bt_put(0, 0, 0, 0, 1, 0, 0);
+	check_bt_put(0, 0, 0, 0, 0, 1, 1);
+	check_bt_put(R_SETCURSOR, 0, 0, 0, 0, 0, 1);
+}
+
+void test_bt_seqset_edges(void)
+{
+	check_bt_seqset(R_FIRST, 0, 0, 0, 0);
+	check_bt_seqset(R_LAST, 0, 0, 0, 0);
+	check_bt_seqset(R_FIRST, 1, 0, 0, 0);
+	check_bt_seqset(R_CURSOR, 0, 0, 0, 0);
+	check_bt_seqset(R_CURSOR, 0, 0, 0, 1);
+	check_bt_seqset(R_FIRST, 0, 1, 0, 0);
+	check_bt_seqset(R_FIRST, 0, 0, 1, 0);
+}
+
+void test_bt_seqadv_edges(void)
+{
+	check_bt_seqadv(R_NEXT, 0, 0, 0, 0, 8, 9);
+	check_bt_seqadv(R_NEXT, 0, 0, 0, 2, 8, P_INVALID);
+	check_bt_seqadv(R_PREV, 0, 0, 0, 0, 8, P_INVALID);
+	check_bt_seqadv(R_PREV, 0, 0, 1, 0, 8, P_INVALID);
+	check_bt_seqadv(R_NEXT, 1, 0, 0, 0, 8, 9);
+}
+
+void test_bt_first_edges(void)
+{
+	check_bt_first(1, 0, 0, 1);
+	check_bt_first(0, 0, 0, 0);
+	check_bt_first(1, 0, 1, 0);
+	check_bt_first(1, 0, 0, 0);
+}
+
+void test_bt_seq_edges(void)
+{
+	check_bt_seq(R_FIRST, 0, 0, 0, 0);
+	check_bt_seq(R_NEXT, 0, 1, 0, 0);
+	check_bt_seq(R_LAST, 0, 0, 0, 0);
+	check_bt_seq(R_PREV, 0, 1, 0, 0);
+	check_bt_seq(R_FIRST, 1, 0, 0, 0);
+	check_bt_seq(99, 0, 0, 0, 0);
+	check_bt_seq(R_FIRST, 0, 0, 0, 1);
+}
+
+void test_bt_open_edges(void)
+{
+	check_bt_open(1, 0, 0, 0, 0, 0);
+	check_bt_open(0, 0, 0, 0, 0, 0);
+	check_bt_open(0, 0, 1, 0, 0, 0);
+	check_bt_open(0, 1, 0, 0, 0, 0);
+	check_bt_open(1, 0, 0, 1, 0, 0);
+	check_bt_open(1, 0, 0, 0, 1, 0);
+	check_bt_open(1, 0, 0, 0, 0, 1);
+}
+
+void sweep_byteorder(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_byteorder();
+}
+
+void sweep_tmp(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_tmp((int)(nextr() & 1u) ? 4 : -1,
+		    (int)(nextr() & 3u) == 0 ? "/tmp" : nullptr);
+}
+
+void sweep_nroot(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_nroot((int)(nextr() & 1u), (int)(nextr() & 3u) == 0,
+		    (int)(nextr() % 17u == 0), (int)(nextr() % 23u == 0),
+		    (int)(nextr() % 29u == 0), (pgno_t)(100 + (nextr() % 50u)));
+}
+
+void sweep_bt_fd(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_bt_fd((int)(nextr() & 1u), (int)(nextr() & 3u) == 0);
+}
+
+void sweep_bt_setcur(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_bt_setcur((int)(nextr() & 1u),
+		    (pgno_t)(2 + (nextr() % 20u)), (u_int)(nextr() % 4u));
+}
+
+void sweep_bt_relink(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_bt_relink((pgno_t)(10 + (nextr() % 30u)),
+		    (nextr() & 1u) ? (pgno_t)(5 + (nextr() % 5u)) : P_INVALID,
+		    (nextr() & 2u) ? (pgno_t)(20 + (nextr() % 5u)) : P_INVALID,
+		    (int)(nextr() % 31u == 0));
+}
+
+void sweep_bt_fast(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
+		int order = (int)((nextr() % 3u) ? FORWARD : BACK);
+		int nents = (int)(nextr() % 6u) + 2;
+		check_bt_fast(order, nents, (indx_t)(nents - 1), 8,
+		    (int)(nextr() % 3u) - 1, (int)(nextr() % 37u == 0),
+		    (size_t)(nextr() % 16u) + 1, (size_t)(nextr() % 16u) + 1);
+	}
+}
+
+void sweep_bt_dleaf(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
+		int nents = (int)(nextr() % 4u) + 2;
+		u_int idx = (u_int)(nextr() % (unsigned)nents);
+		check_bt_dleaf(nents, idx, (int)(nextr() & 1u),
+		    (int)(nextr() % 11u == 0), (int)(nextr() % 13u == 0),
+		    (nextr() & 1u) ? B_NODUPS : 0);
+	}
+}
+
+void sweep_bt_curdel(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
+		int nents = (int)(nextr() % 3u) + 2;
+		check_bt_curdel(nents, (u_int)(nextr() % (unsigned)nents),
+		    (nextr() & 1u) ? B_NODUPS : 0, (int)(nextr() % 7u == 0),
+		    (int)(nextr() % 9u == 0), (int)(nextr() % 41u == 0));
+	}
+}
+
+void sweep_bt_pdelete(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_bt_pdelete((int)(nextr() % 4u) + 1, (int)(nextr() & 1u),
+		    (int)(nextr() % 5u == 0), (int)(nextr() % 17u == 0));
+}
+
+void sweep_bt_bdelete(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_bt_bdelete((int)(nextr() & 1u),
+		    (nextr() & 1u) ? B_NODUPS : 0, (int)(nextr() % 29u == 0),
+		    (int)(nextr() % 43u == 0));
+}
+
+void sweep_bt_stkacq(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_bt_stkacq((int)(8 + (nextr() % 40u)),
+		    (int)(nextr() % 37u == 0));
+}
+
+void sweep_bt_delete(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
+		u_int fl = (nextr() % 5u == 0) ? R_CURSOR :
+		    (nextr() % 7u == 0) ? 99u : 0u;
+		check_bt_delete(fl, (nextr() & 8u) ? B_RDONLY : 0,
+		    fl == R_CURSOR, (int)(nextr() % 3u == 0),
+		    (int)(nextr() % 31u == 0), (int)(nextr() & 1u));
+	}
+}
+
+void sweep_bt_put(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
+		u_int fl = (nextr() % 6u == 0) ? R_NOOVERWRITE :
+		    (nextr() % 7u == 0) ? R_SETCURSOR :
+		    (nextr() % 8u == 0) ? 99u : 0u;
+		check_bt_put(fl, (nextr() & 16u) ? B_RDONLY : 0,
+		    (int)(nextr() % 37u == 0), (int)(nextr() & 1u),
+		    (int)(nextr() % 5u == 0), (int)(nextr() % 11u == 0),
+		    (int)(nextr() & 1u));
+	}
+}
+
+void sweep_bt_seqset(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
+		int fl = (int)((nextr() % 4u) == 0 ? R_LAST :
+		    (nextr() % 4u) == 1 ? R_CURSOR : R_FIRST);
+		check_bt_seqset(fl, (int)(nextr() % 5u == 0),
+		    (int)(nextr() % 3u == 0), (int)(nextr() % 29u == 0),
+		    (int)(nextr() % 13u == 0));
+	}
+}
+
+void sweep_bt_seqadv(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_bt_seqadv((int)(nextr() & 1u) ? R_NEXT : R_PREV,
+		    (int)(nextr() % 17u == 0), (int)(nextr() % 19u == 0),
+		    (int)(nextr() % 23u == 0), (indx_t)(nextr() % 3u),
+		    8, (nextr() & 2u) ? (pgno_t)9 : P_INVALID);
+}
+
+void sweep_bt_first(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++)
+		check_bt_first((int)(nextr() & 1u), 0, (int)(nextr() % 31u == 0),
+		    (int)(nextr() & 1u));
+}
+
+void sweep_bt_seq(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
+		u_int fl = (nextr() % 4u == 0) ? R_LAST :
+		    (nextr() % 4u == 1) ? R_PREV :
+		    (nextr() % 4u == 2) ? R_NEXT : R_FIRST;
+		check_bt_seq(fl, (int)(nextr() % 6u == 0), (int)(nextr() & 1u),
+		    (int)(nextr() % 29u == 0), (int)(nextr() % 47u == 0));
+	}
+}
+
+void sweep_bt_open(void)
+{
+	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
+		int mode = (int)(nextr() % 7u);
+		check_bt_open(mode == 0 || mode == 1, mode == 2, mode == 3,
+		    mode == 4, mode == 5, mode == 6);
+	}
+}
+
+} // namespace
+
+int main(void)
+{
+	test_byteorder_edges();
+	test_tmp_edges();
+	test_nroot_edges();
+	test_bt_fd_edges();
+	test_bt_setcur_edges();
+	test_bt_relink_edges();
+	test_bt_fast_edges();
+	test_bt_dleaf_edges();
+	test_bt_curdel_edges();
+	test_bt_pdelete_edges();
+	test_bt_bdelete_edges();
+	test_bt_stkacq_edges();
+	test_bt_delete_edges();
+	test_bt_put_edges();
+	test_bt_seqset_edges();
+	test_bt_seqadv_edges();
+	test_bt_first_edges();
+	test_bt_seq_edges();
+	test_bt_open_edges();
+
+	sweep_byteorder();
+	sweep_tmp();
+	sweep_nroot();
+	sweep_bt_fd();
+	sweep_bt_setcur();
+	sweep_bt_relink();
+	sweep_bt_fast();
+	sweep_bt_dleaf();
+	sweep_bt_curdel();
+	sweep_bt_pdelete();
+	sweep_bt_bdelete();
+	sweep_bt_stkacq();
+	sweep_bt_delete();
+	sweep_bt_put();
+	sweep_bt_seqset();
+	sweep_bt_seqadv();
+	sweep_bt_first();
+	sweep_bt_seq();
+	sweep_bt_open();
+
+	std::printf("\n%-14s %12s %12s\n", "function", "cases", "failures");
+	for (int i = 0; i < F_COUNT; i++)
+		std::printf("%-14s %12lu %12lu\n", fn_name[i], n_cases[i],
+		    n_fails[i]);
+
+	unsigned long total_fails = 0;
+	for (int i = 0; i < F_COUNT; i++)
+		total_fails += n_fails[i];
+	return total_fails == 0 ? 0 : 1;
+}

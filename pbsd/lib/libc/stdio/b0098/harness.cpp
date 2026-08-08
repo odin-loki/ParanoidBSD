@@ -595,11 +595,13 @@ static void sweep_scanf(long iters)
 
 enum PKind {
 	P_NONE, P_INT, P_INT2, P_UINT, P_UINT3, P_WSTR, P_WSTR2, P_STR,
-	P_WC, P_DBL, P_DBL3, P_ID, P_PTR, P_N, P_LL, P_LONG, P_SIZE, P_IWD
+	P_WC, P_DBL, P_DBL3, P_PTR, P_N, P_LL, P_LONG, P_SIZE, P_IWD,
+	P_WID_I, P_PREC_D, P_WID_PREC_D
 };
 
 struct PArgs {
 	int i1, i2;
+	int wid, prec; /* kept small: they feed '*' width/precision */
 	unsigned u1, u2, u3;
 	long l1;
 	long long ll;
@@ -634,7 +636,9 @@ static int dispatch_printf(bool port, const wchar_t *fmt, int k, PArgs &a,
 	case P_WC:	return cp(port, fmt, (wint_t)a.u1);
 	case P_DBL:	return cp(port, fmt, a.d1);
 	case P_DBL3:	return cp(port, fmt, a.d1, a.d2, a.d3);
-	case P_ID:	return cp(port, fmt, a.i1, a.d1);
+	case P_WID_I:	return cp(port, fmt, a.wid, a.i1);
+	case P_PREC_D:	return cp(port, fmt, a.prec, a.d1);
+	case P_WID_PREC_D: return cp(port, fmt, a.wid, a.prec, a.d1);
 	case P_PTR:	return cp(port, fmt, a.p);
 	case P_N:	return cp(port, fmt, s_i3(s));
 	case P_LL:	return cp(port, fmt, a.ll);
@@ -645,7 +649,7 @@ static int dispatch_printf(bool port, const wchar_t *fmt, int k, PArgs &a,
 	abort();
 }
 
-static const size_t OUTMAX = 1 << 16;
+static const size_t OUTMAX = 8192;
 
 struct PCap {
 	int rv;
@@ -678,6 +682,10 @@ static void run_printf(bool port, const wchar_t *fmt, int kind, PArgs &args,
 	ssize_t g = pread(g_out_rfd, c.out, OUTMAX, 0);
 	if (g < 0)
 		die("pread stdout");
+	if ((size_t)g == OUTMAX) {
+		errno = 0;
+		die("stdout capture overflow: widen OUTMAX");
+	}
 	c.n = (size_t)g;
 }
 
@@ -723,7 +731,7 @@ static const PFmt p_fmts[] = {
 	{ L"%5d|%-5d", P_INT2 },
 	{ L"%+05d", P_INT },
 	{ L"% d", P_INT },
-	{ L"%*d", P_INT2 },
+	{ L"%*d", P_WID_I },
 	{ L"%.0d", P_INT },
 	{ L"%c", P_INT },
 	{ L"%u", P_UINT },
@@ -739,7 +747,8 @@ static const PFmt p_fmts[] = {
 	{ L"%f %e %g", P_DBL3 },
 	{ L"%.0f", P_DBL },
 	{ L"%a", P_DBL },
-	{ L"%.*f", P_ID },
+	{ L"%.*f", P_PREC_D },
+	{ L"%*.*f", P_WID_PREC_D },
 	{ L"%20.10e", P_DBL },
 	{ L"%G", P_DBL },
 	{ L"%p", P_PTR },
@@ -792,6 +801,8 @@ static void hand_printf()
 		memset(&a, 0, sizeof a);
 		a.i1 = ints[b % NI];
 		a.i2 = ints[(b + 3) % NI];
+		a.wid = (int)(b % 9) - 4;
+		a.prec = (int)(b % 7) - 1;
 		a.u1 = (unsigned)ints[b % NI];
 		a.u2 = (unsigned)ints[(b + 1) % NI];
 		a.u3 = (unsigned)ints[(b + 2) % NI];
@@ -806,23 +817,26 @@ static void hand_printf()
 		set_ws(a.ws2, 24, wstrs[(b + 1) % NW]);
 		strncpy(a.cs1, cstrs[b % NC], sizeof a.cs1 - 1);
 		a.cs1[sizeof a.cs1 - 1] = '\0';
-		/* %*d width: exercise negative, zero and positive widths. */
 		for (size_t f = 0; f < P_NFMT; f++)
 			check_printf(p_fmts[f].fmt, p_fmts[f].kind, a, true,
 			    "hand");
 	}
-	/* %*d and %.*f with boundary width/precision values. */
-	static const int widths[] = { -30, -1, 0, 1, 2, 30, 40 };
-	for (size_t w = 0; w < sizeof(widths) / sizeof(widths[0]); w++) {
-		memset(&a, 0, sizeof a);
-		a.i1 = widths[w];
-		a.i2 = -12345;
-		a.d1 = -1.0 / 3.0;
-		set_ws(a.ws1, 24, L"wz");
-		check_printf(L"%*d", P_INT2, a, true, "hand");
-		check_printf(L"%.*f", P_ID, a, true, "hand");
-		check_printf(L"%*.*f", P_ID, a, true, "hand");
-	}
+	/* '*' width/precision: both sides of every interesting boundary. */
+	static const int widths[] = { -40, -2, -1, 0, 1, 2, 39, 40 };
+	static const int precs[] = { -1, 0, 1, 2, 17, 25 };
+	for (size_t w = 0; w < sizeof(widths) / sizeof(widths[0]); w++)
+		for (size_t p = 0; p < sizeof(precs) / sizeof(precs[0]); p++) {
+			memset(&a, 0, sizeof a);
+			a.wid = widths[w];
+			a.prec = precs[p];
+			a.i1 = -12345;
+			a.d1 = -1.0 / 3.0;
+			set_ws(a.ws1, 24, L"wz");
+			check_printf(L"%*d", P_WID_I, a, true, "hand");
+			check_printf(L"%.*f", P_PREC_D, a, true, "hand");
+			check_printf(L"%*.*f", P_WID_PREC_D, a, true, "hand");
+			check_printf(L"%-*.*e", P_WID_PREC_D, a, true, "hand");
+		}
 }
 
 static double pick_double(Rng &r)
@@ -955,6 +969,8 @@ static void sweep_printf(long iters)
 		if (r.chance(30))
 			a.i1 = (int)(r.below(80)) - 40;
 		a.i2 = (int)(r.below(80)) - 40;
+		a.wid = (int)(r.below(84)) - 42;
+		a.prec = (int)(r.below(28)) - 2;
 		a.u1 = r.u32();
 		if (r.chance(35))
 			a.u1 = r.below(0x120);
@@ -1299,8 +1315,6 @@ static void warmup()
 	const unsigned char in[] = "12 34 ab 5.5 x";
 	for (int pass = 0; pass < 2; pass++) {
 		bool port = pass != 0;
-		run_scanf(port, L"%d %d %31ls %lf", S_NONE, in, sizeof in - 1,
-		    true, sc);
 		run_scanf(port, L"%d", S_INT, in, sizeof in - 1, true, sc);
 		run_scanf(port, L"%31ls", S_WS, in, sizeof in - 1, true, sc);
 		run_scanf(port, L"%lf", S_DBL, in, sizeof in - 1, true, sc);

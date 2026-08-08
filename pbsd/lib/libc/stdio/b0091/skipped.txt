@@ -1,1 +1,0 @@
-fsetpos.c: host fpos_t is not scalar; the original (off_t)*pos cast does not compile here

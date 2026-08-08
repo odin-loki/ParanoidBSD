@@ -1,37 +1,71 @@
+/*
+ * PBSD batch b0109 -- C++23 port of:
+ *	lib/libc/stdio/fgetc.c
+ *	lib/libc/stdio/putwc.c
+ *	lib/libc/stdio/swprintf.c
+ *	lib/libc/stdio/rewind.c
+ *
+ * The original copyright notices are reproduced verbatim above each ported
+ * translation unit.  The bodies are transcribed unchanged; the FreeBSD libc
+ * internals they rely on (FLOCKFILE_CANCELSAFE, __sgetc, _fseeko,
+ * __sdidinit/__sinit, FIX_LOCALE/__get_locale, fputwc_l, vswprintf_l) are
+ * supplied below as the same-named macros/helpers over the host libc.
+ */
 module;
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#define _GNU_SOURCE 1
 #endif
 
 #include <errno.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <wchar.h>
 #include <locale.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <wchar.h>
 
 export module pbsd.lib.libc.stdio.b0109;
 
+/*
+ * libc-internal plumbing: the local.h / xlocale_private.h equivalents.
+ */
+#define	FLOCKFILE_CANCELSAFE(fp)	flockfile(fp)
+#define	FUNLOCKFILE_CANCELSAFE()	funlockfile(fp)
+#define	FLOCKFILE(fp)			flockfile(fp)
+#define	FUNLOCKFILE(fp)			funlockfile(fp)
+#define	__sgetc(fp)			getc_unlocked(fp)
+#define	_fseeko(fp, off, whence, ltest)	fseeko((fp), (off), (whence))
+#define	__get_locale()			uselocale((locale_t)0)
+#define	FIX_LOCALE(loc)							\
+	do {								\
+		if ((loc) == NULL)					\
+			(loc) = __get_locale();				\
+	} while (0)
+
 namespace {
 
-#ifndef fputwc_l
-static inline wint_t
-b0109_fputwc_l(wchar_t wc, FILE *fp, locale_t loc)
+int __sdidinit = 0;
+
+void
+__sinit(void)
+{
+	__sdidinit = 1;
+}
+
+wint_t
+fputwc_l(wchar_t wc, FILE *fp, locale_t loc)
 {
 	locale_t old = uselocale(loc);
-	wint_t w = fputwc(wc, fp);
+	wint_t wi = fputwc(wc, fp);
 
 	uselocale(old);
-	return (w);
+	return (wi);
 }
-#define fputwc_l b0109_fputwc_l
-#endif
 
-#ifndef vswprintf_l
-static inline int
-b0109_vswprintf_l(wchar_t *s, size_t n, locale_t loc, const wchar_t *fmt,
-    va_list ap)
+int
+vswprintf_l(wchar_t * __restrict s, size_t n, locale_t loc,
+    const wchar_t * __restrict fmt, va_list ap)
 {
 	locale_t old = uselocale(loc);
 	int r = vswprintf(s, n, fmt, ap);
@@ -39,76 +73,12 @@ b0109_vswprintf_l(wchar_t *s, size_t n, locale_t loc, const wchar_t *fmt,
 	uselocale(old);
 	return (r);
 }
-#define vswprintf_l b0109_vswprintf_l
-#endif
-
-#define	FLOCKFILE_CANCELSAFE(fp)	do { (void)(fp); } while (0)
-#define	FUNLOCKFILE_CANCELSAFE()	do { } while (0)
-#define	FLOCKFILE(fp)			do { (void)(fp); } while (0)
-#define	FUNLOCKFILE(fp)			do { (void)(fp); } while (0)
-
-static int __sdidinit = 1;
-
-static void
-__sinit(void)
-{
-}
-
-static inline int
-__sgetc(FILE *fp)
-{
-
-	return (fgetc(fp));
-}
-
-static inline int
-_fseeko(FILE *fp, off_t off, int whence, int ign)
-{
-	(void)ign;
-
-	return (fseeko(fp, off, whence));
-}
-
-locale_t
-b0109_get_C_locale(void)
-{
-	static locale_t c_locale = nullptr;
-	static int inited = 0;
-
-	if (!inited) {
-		c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)1);
-		inited = 1;
-	}
-	return (c_locale);
-}
-
-static inline locale_t
-get_real_locale(locale_t locale)
-{
-	switch ((intptr_t)locale) {
-	case 0:
-		return (b0109_get_C_locale());
-	case -1:
-		return (LC_GLOBAL_LOCALE);
-	default:
-		return (locale);
-	}
-}
-
-#define FIX_LOCALE(l) (l = get_real_locale(l))
-
-static inline locale_t
-__get_locale(void)
-{
-	locale_t loc;
-
-	loc = uselocale((locale_t)0);
-	if (loc == (locale_t)0)
-		return (LC_GLOBAL_LOCALE);
-	return (loc);
-}
 
 } /* namespace */
+
+#undef fgetc
+#undef putwc
+#undef rewind
 
 export namespace pbsd::lib_libc_stdio::b0109 {
 
@@ -210,7 +180,7 @@ putwc(wchar_t wc, FILE *fp)
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2002 Tim J. Robbins.
+ * Copyright (c) 2002 Tim J. Robbins
  * All rights reserved.
  *
  * Copyright (c) 2011 The FreeBSD Foundation
@@ -314,6 +284,16 @@ rewind(FILE *fp)
 		errno = serrno;
 	clearerr_unlocked(fp);	/* POSIX: clear stdio error regardless */
 	FUNLOCKFILE(fp);
+}
+
+/*
+ * Reader for the private `stdio is initialised' flag that rewind() tests
+ * above; the differential test needs to observe that branch.
+ */
+int
+sdidinit_state(void)
+{
+	return (__sdidinit);
 }
 
 } /* namespace pbsd::lib_libc_stdio::b0109 */

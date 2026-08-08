@@ -1456,3 +1456,31 @@ pbsd_oracle_init(void)
 	__xlocale_global_locale.conv = pbsd_nl_hook.conv;
 }
 
+void *
+pbsd_harness_global_locale(void)
+{
+
+	return (&__xlocale_global_locale);
+}
+
+pbsd_nl_hook_t *
+pbsd_harness_nl_hook(void)
+{
+
+	return (&pbsd_nl_hook);
+}
+
+pbsd_rune_hook_t *
+pbsd_harness_rune_hook(void)
+{
+
+	return (&pbsd_rune_hook);
+}
+
+_RuneLocale *
+pbsd_harness_default_rune(void)
+{
+
+	return (&_DefaultRuneLocale);
+}
+

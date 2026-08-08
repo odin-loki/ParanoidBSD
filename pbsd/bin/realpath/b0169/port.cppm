@@ -31,9 +31,14 @@
 
 module;
 
+#ifndef __dead2
+#define __dead2 __attribute__((__noreturn__))
+#endif
+
 #include <sys/param.h>
 
 #include <err.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

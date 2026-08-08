@@ -32,6 +32,6 @@ else
 fi
 
 $CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o \
-    -Wl,--wrap=calloc -Wl,--wrap=free
+    -Wl,--wrap=calloc -lpthread
 
 exec ./harness

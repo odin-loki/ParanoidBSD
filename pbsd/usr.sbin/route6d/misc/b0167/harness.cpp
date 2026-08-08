@@ -2,16 +2,21 @@
  * harness.cpp -- differential test for PBSD batch b0167 (cksum.c).
  *
  * cksum.c defines only main(), which reads hex values from stdin, stores them
- * in buf, and prints checksums.  Each case redirects stdin, captures stdout,
- * and compares ref_main against port::main.  At least four inputs are required
- * per case because fewer values leave q != p forever in the original.
+ * in buf, and prints checksums.  Each case forks a child to redirect stdin,
+ * capture stdout, and compare ref_main against port::main.  At least four
+ * inputs are required per case because fewer values leave q != p forever in
+ * the original.
  */
+
+#define _GNU_SOURCE
 
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <string>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
 
@@ -85,118 +90,106 @@ poison_buf(unsigned short *b, std::size_t nshorts)
 	std::memset(b, 0x7f, nshorts * sizeof(unsigned short));
 }
 
+static bool
+push_stdin(const char *input, std::size_t inlen)
+{
+	int pfd[2];
+
+	if (pipe(pfd) != 0)
+		return false;
+	if (inlen > 0) {
+		std::size_t off = 0;
+		while (off < inlen) {
+			ssize_t w = write(pfd[1], input + off, inlen - off);
+			if (w <= 0) {
+				close(pfd[0]);
+				close(pfd[1]);
+				return false;
+			}
+			off += static_cast<std::size_t>(w);
+		}
+	}
+	close(pfd[1]);
+	if (dup2(pfd[0], STDIN_FILENO) < 0) {
+		close(pfd[0]);
+		return false;
+	}
+	close(pfd[0]);
+	clearerr(stdin);
+	setvbuf(stdin, nullptr, _IONBF, 0);
+	return true;
+}
+
+static std::string
+read_pipe_all(int fd)
+{
+	std::string out;
+	char chunk[4096];
+	ssize_t nread;
+
+	while ((nread = read(fd, chunk, sizeof(chunk))) > 0)
+		out.append(chunk, static_cast<std::size_t>(nread));
+	return out;
+}
+
 static IoResult
-run_ref(const char *input)
+run_child(bool use_port, const char *input)
 {
 	IoResult r;
 	int outpipe[2];
-	int oldin, oldout;
-	FILE *inmem;
-	std::size_t inlen;
-	char bufout[65536];
-	ssize_t nread;
-
-	poison_buf(buf, BUFSIZ);
-
-	inlen = std::strlen(input);
-	inmem = fmemopen(const_cast<char *>(input), inlen, "r");
-	if (inmem == nullptr)
-		std::abort();
+	pid_t pid;
+	int status = 0;
+	std::size_t inlen = std::strlen(input);
 
 	if (pipe(outpipe) != 0)
 		std::abort();
 
-	oldin = dup(STDIN_FILENO);
-	oldout = dup(STDOUT_FILENO);
-	if (oldin < 0 || oldout < 0)
+	pid = fork();
+	if (pid < 0)
 		std::abort();
 
-	dup2(fileno(inmem), STDIN_FILENO);
-	dup2(outpipe[1], STDOUT_FILENO);
-	std::fflush(stdout);
+	if (pid == 0) {
+		close(outpipe[0]);
+		if (!push_stdin(input, inlen))
+			_exit(126);
+		if (dup2(outpipe[1], STDOUT_FILENO) < 0)
+			_exit(127);
+		close(outpipe[1]);
 
-	r.ret = ref_main();
-
-	std::fflush(stdout);
-	dup2(oldin, STDIN_FILENO);
-	dup2(oldout, STDOUT_FILENO);
-	close(oldin);
-	close(oldout);
-	close(outpipe[1]);
-	fclose(inmem);
-
-	nread = 0;
-	while (true) {
-		ssize_t chunk = read(outpipe[0], bufout + nread,
-		    sizeof(bufout) - 1 - static_cast<std::size_t>(nread));
-		if (chunk <= 0)
-			break;
-		nread += chunk;
-		if (static_cast<std::size_t>(nread) >= sizeof(bufout) - 1)
-			break;
+		if (use_port) {
+			poison_buf(P::buf, BUFSIZ);
+			_exit(P::main());
+		}
+		poison_buf(buf, BUFSIZ);
+		_exit(ref_main());
 	}
+
+	close(outpipe[1]);
+	r.out = read_pipe_all(outpipe[0]);
 	close(outpipe[0]);
 
-	bufout[nread] = '\0';
-	r.out.assign(bufout, static_cast<std::size_t>(nread));
+	if (waitpid(pid, &status, 0) < 0)
+		std::abort();
+	if (WIFEXITED(status))
+		r.ret = WEXITSTATUS(status);
+	else if (WIFSIGNALED(status))
+		r.ret = 128 + WTERMSIG(status);
+	else
+		r.ret = -1;
+
 	return r;
+}
+
+static IoResult
+run_ref(const char *input)
+{
+	return run_child(false, input);
 }
 
 static IoResult
 run_port(const char *input)
 {
-	IoResult r;
-	int outpipe[2];
-	int oldin, oldout;
-	FILE *inmem;
-	std::size_t inlen;
-	char bufout[65536];
-	ssize_t nread;
-
-	poison_buf(P::buf, BUFSIZ);
-
-	inlen = std::strlen(input);
-	inmem = fmemopen(const_cast<char *>(input), inlen, "r");
-	if (inmem == nullptr)
-		std::abort();
-
-	if (pipe(outpipe) != 0)
-		std::abort();
-
-	oldin = dup(STDIN_FILENO);
-	oldout = dup(STDOUT_FILENO);
-	if (oldin < 0 || oldout < 0)
-		std::abort();
-
-	dup2(fileno(inmem), STDIN_FILENO);
-	dup2(outpipe[1], STDOUT_FILENO);
-	std::fflush(stdout);
-
-	r.ret = P::main();
-
-	std::fflush(stdout);
-	dup2(oldin, STDIN_FILENO);
-	dup2(oldout, STDOUT_FILENO);
-	close(oldin);
-	close(oldout);
-	close(outpipe[1]);
-	fclose(inmem);
-
-	nread = 0;
-	while (true) {
-		ssize_t chunk = read(outpipe[0], bufout + nread,
-		    sizeof(bufout) - 1 - static_cast<std::size_t>(nread));
-		if (chunk <= 0)
-			break;
-		nread += chunk;
-		if (static_cast<std::size_t>(nread) >= sizeof(bufout) - 1)
-			break;
-	}
-	close(outpipe[0]);
-
-	bufout[nread] = '\0';
-	r.out.assign(bufout, static_cast<std::size_t>(nread));
-	return r;
+	return run_child(true, input);
 }
 
 static std::string

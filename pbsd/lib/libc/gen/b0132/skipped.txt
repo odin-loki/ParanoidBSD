@@ -1,2 +1,1 @@
-readdir.c — depends on DIR internals, _getdirentries, _fixtelldir, pthread locking, and telldir state not available in this batch harness.
-disklabel.c — depends on cgetent/cgetcap disktab parsing and full sys/disklabel.h layout not available in this batch harness.
+disklabel.c: getdiskbyname() needs the BSD capability database (cgetent/cgetcap/cgetstr/cgetnum), _PATH_DISKTAB and struct disklabel/MAXPARTITIONS/NDDATA, none of which exist here; only the file's static gettype() helper is ported.

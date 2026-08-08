@@ -10,6 +10,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/dd/conv_m/port.cppm
   bin/dd/position_m/port.cppm
   bin/domainname/domainname_m/port.cppm
+  bin/echo/b0171/port.cppm
   bin/ed/b0148/port.cppm
   bin/hostname/hostname_m/port.cppm
   bin/pax/b0108/port.cppm
@@ -17,6 +18,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/ps/nlist_m/port.cppm
   bin/pwd/pwd_m/port.cppm
   bin/realpath/b0169/port.cppm
+  bin/rmdir/b0172/port.cppm
   bin/setfacl/b0162/port.cppm
   bin/setfacl/mask_m/port.cppm
   bin/setfacl/util_m/port.cppm
@@ -136,6 +138,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/posix1e/acl_id_to_name_m/port.cppm
   lib/libc/posix1e/acl_perm_m/port.cppm
   lib/libc/posix1e/b0110/port.cppm
+  lib/libc/quad/TESTS/b0174/port.cppm
   lib/libc/quad/b0033/port.cppm
   lib/libc/quad/b0034/port.cppm
   lib/libc/quad/b0040/port.cppm

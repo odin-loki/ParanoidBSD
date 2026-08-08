@@ -1,21 +1,15 @@
-// PBSD port of HardenedBSD lib/libc/gdtoa, batch b0066.
+// PBSD b0066 -- C++23 port of
+//	lib/libc/gdtoa/_ldtoa.c
+//	lib/libc/gdtoa/_hldtoa.c
+//	lib/libc/gdtoa/_hdtoa.c
 //
-// Sources ported here:
-//   hbsd/src/lib/libc/gdtoa/_ldtoa.c
-//   hbsd/src/lib/libc/gdtoa/_hldtoa.c
-//   hbsd/src/lib/libc/gdtoa/_hdtoa.c
+// The bodies below are the HardenedBSD originals, transliterated to C++ with
+// no changes to behaviour: same signedness, same evaluation order, same
+// pointer arithmetic, same truncation in the digit loops.  rv_alloc(),
+// nrv_alloc() and gdtoa() live in contrib/gdtoa, outside this batch, and are
+// resolved at link time exactly as they are for the C implementation.
 
 module;
-
-#include <endian.h>
-#ifndef _BYTE_ORDER
-#define _LITTLE_ENDIAN 1234
-#define _BIG_ENDIAN 4321
-#define _BYTE_ORDER __BYTE_ORDER
-#endif
-#ifndef _IEEE_WORD_ORDER
-#define _IEEE_WORD_ORDER _BYTE_ORDER
-#endif
 
 #include <float.h>
 #include <inttypes.h>
@@ -24,60 +18,65 @@ module;
 #include <stdint.h>
 #include <stdlib.h>
 
-export module pbsd.lib.libc.gdtoa.b0066;
+#ifdef __i386__
+#include <ieeefp.h>
+#endif
 
+// HardenedBSD's <float.h> defines FLT_ROUNDS as __flt_rounds(), which tracks
+// fesetround(3).  GCC's <float.h> hardcodes it to 1.  Restore the target
+// definition so that __ldtoa() sees the rounding mode the program is running
+// under, as it does on HardenedBSD.
+extern "C" int __flt_rounds(void);
+#undef FLT_ROUNDS
+#define	FLT_ROUNDS	__flt_rounds()
+
+// Declarations that the batch sources obtain from contrib/gdtoa's "gdtoa.h"
+// and "gdtoaimp.h".
 extern "C" {
-enum {
-	STRTOG_Zero = 0,
-	STRTOG_Normal = 1,
-	STRTOG_Denormal = 2,
-	STRTOG_Infinite = 3,
-	STRTOG_NaN = 4,
-};
-typedef struct {
+
+typedef unsigned int ULong;
+
+typedef struct
+FPI {
 	int nbits;
 	int emin;
 	int emax;
 	int rounding;
 	int sudden_underflow;
-} FPI;
-char *__gdtoa(FPI *fpi, int be, unsigned int *bits, int *kindp, int mode,
-    int ndigits, int *decpt, char **rve);
-char *__rv_alloc_D2A(int i);
-char *__nrv_alloc_D2A(char *s, char **rve, int n);
-void __freedtoa(char *s);
+	} FPI;
+
+char *rv_alloc(int);
+char *nrv_alloc(const char *, char **, int);
+char *gdtoa(FPI *fpi, int be, ULong *bits, int *kindp, int mode, int ndigits,
+    int *decpt, char **rve);
+
 }
 
-#define gdtoa __gdtoa
-#define rv_alloc __rv_alloc_D2A
-#define nrv_alloc __nrv_alloc_D2A
+export module pbsd.lib.libc.gdtoa.b0066;
 
-export namespace pbsd::lib_libc_gdtoa::b0066 {
+namespace pbsd::lib_libc_gdtoa::b0066 {
 
-#define DBL_MANH_SIZE 20
-#define DBL_MANL_SIZE 32
+// ------------------------------------------------------------------
+// From lib/libc/include/fpmath.h (_BYTE_ORDER == _LITTLE_ENDIAN and
+// _IEEE_WORD_ORDER == _LITTLE_ENDIAN, i.e. the amd64 branch).
+// ------------------------------------------------------------------
+
+#define	DBL_MANH_SIZE	20
+#define	DBL_MANL_SIZE	32
 
 union IEEEd2bits {
 	double	d;
 	struct {
-#if _BYTE_ORDER == _LITTLE_ENDIAN
-#if _IEEE_WORD_ORDER == _LITTLE_ENDIAN
 		unsigned int	manl	:32;
-#endif
 		unsigned int	manh	:20;
 		unsigned int	exp	:11;
 		unsigned int	sign	:1;
-#if _IEEE_WORD_ORDER == _BIG_ENDIAN
-		unsigned int	manl	:32;
-#endif
-#else
-		unsigned int	sign	:1;
-		unsigned int	exp	:11;
-		unsigned int	manh	:20;
-		unsigned int	manl	:32;
-#endif
 	} bits;
 };
+
+// ------------------------------------------------------------------
+// From lib/libc/amd64/_fpmath.h.
+// ------------------------------------------------------------------
 
 union IEEEl2bits {
 	long double	e;
@@ -96,14 +95,42 @@ union IEEEl2bits {
 	} xbits;
 };
 
-#define LDBL_NBIT	0x80000000
-#define mask_nbit_l(u)	((u).bits.manh &= ~LDBL_NBIT)
-#define LDBL_MANH_SIZE	32
-#define LDBL_MANL_SIZE	32
-#define LDBL_TO_ARRAY32(u, a) do {			\
+#define	LDBL_NBIT	0x80000000
+#define	mask_nbit_l(u)	((u).bits.manh &= ~LDBL_NBIT)
+
+#define	LDBL_MANH_SIZE	32
+#define	LDBL_MANL_SIZE	32
+
+#define	LDBL_TO_ARRAY32(u, a) do {			\
 	(a)[0] = (uint32_t)(u).bits.manl;		\
 	(a)[1] = (uint32_t)(u).bits.manh;		\
 } while (0)
+
+// ------------------------------------------------------------------
+// From contrib/gdtoa/gdtoa.h.
+// ------------------------------------------------------------------
+
+enum {	/* return values from strtodg */
+	STRTOG_Zero	= 0,
+	STRTOG_Normal	= 1,
+	STRTOG_Denormal	= 2,
+	STRTOG_Infinite	= 3,
+	STRTOG_NaN	= 4,
+	STRTOG_NaNbits	= 5,
+	STRTOG_NoNumber	= 6,
+	STRTOG_Retmask	= 7,
+
+	STRTOG_Neg	= 0x08,
+	STRTOG_Inexlo	= 0x10,
+	STRTOG_Inexhi	= 0x20,
+	STRTOG_Inexact	= 0x30,
+	STRTOG_Underflow= 0x40,
+	STRTOG_Overflow	= 0x80
+};
+
+/* ================================================================== */
+/* lib/libc/gdtoa/_ldtoa.c						*/
+/* ================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -140,7 +167,7 @@ union IEEEl2bits {
  * However, a long double could have a valid exponent of 9999, so we
  * use INT_MAX in ldtoa() instead.
  */
-char *
+export char *
 __ldtoa(long double *ld, int mode, int ndigits, int *decpt, int *sign,
     char **rve)
 {
@@ -198,11 +225,15 @@ __ldtoa(long double *ld, int mode, int ndigits, int *decpt, int *sign,
 		abort();
 	}
 
-	ret = gdtoa(&fpi, be, (unsigned int *)vbits, &kind, mode, ndigits, decpt, rve);
+	ret = gdtoa(&fpi, be, (ULong *)vbits, &kind, mode, ndigits, decpt, rve);
 	if (*decpt == -32768)
 		*decpt = INT_MAX;
 	return ret;
 }
+
+/* ================================================================== */
+/* lib/libc/gdtoa/_hldtoa.c						*/
+/* ================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -232,10 +263,12 @@ __ldtoa(long double *ld, int mode, int ndigits, int *decpt, int *sign,
  * SUCH DAMAGE.
  */
 
-#if (LDBL_MANT_DIG > DBL_MANT_DIG)
+// The file-scope `one' of each source file is given a distinct spelling so
+// that the three files can share a translation unit.  The bodies below are
+// unchanged; the macro does the renaming.
+#define	one	one_hldtoa
 
-#define SIGFIGS LDBL_SIGFIGS_VAL
-#define one hldtoa_one
+#if (LDBL_MANT_DIG > DBL_MANT_DIG)
 
 /* Strings values used by dtoa() */
 #define	INFSTR	"Infinity"
@@ -260,14 +293,14 @@ typedef uint32_t manl_t;
 #endif
 
 #define	LDBL_ADJ	(LDBL_MAX_EXP - 2)
-#define	LDBL_SIGFIGS_VAL	((LDBL_MANT_DIG + 3) / 4 + 1)
+#define	SIGFIGS		((LDBL_MANT_DIG + 3) / 4 + 1)
 
-static const float hldtoa_one[] = { 1.0f, -1.0f };
+static const float one[] = { 1.0f, -1.0f };
 
 /*
  * This is the long double version of __hdtoa().
  */
-char *
+export char *
 __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
     char **rve)
 {
@@ -276,6 +309,9 @@ __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
 	manh_t manh;
 	manl_t manl;
 	int bufsize;
+#ifdef __i386__
+	fp_prec_t oldprec;
+#endif
 
 	u.e = e;
 	*sign = u.bits.sign;
@@ -288,8 +324,14 @@ __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
 		*decpt = 1;
 		return (nrv_alloc("0", rve, 1));
 	case FP_SUBNORMAL:
+#ifdef __i386__
+		oldprec = fpsetprec(FP_PE);
+#endif
 		u.e *= 0x1p514L;
 		*decpt = u.bits.exp - (514 + LDBL_ADJ);
+#ifdef __i386__
+		fpsetprec(oldprec);
+#endif
 		break;
 	case FP_INFINITE:
 		*decpt = INT_MAX;
@@ -315,10 +357,16 @@ __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
 	if (SIGFIGS > ndigits && ndigits > 0) {
 		float redux = one[u.bits.sign];
 		int offset = 4 * ndigits + LDBL_MAX_EXP - 4 - LDBL_MANT_DIG;
+#ifdef __i386__
+		oldprec = fpsetprec(FP_PE);
+#endif
 		u.bits.exp = offset;
 		u.e += redux;
 		u.e -= redux;
 		*decpt += u.bits.exp - offset;
+#ifdef __i386__
+		fpsetprec(oldprec);
+#endif
 	}
 
 	mask_nbit_l(u);
@@ -346,7 +394,9 @@ __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
 
 #else	/* (LDBL_MANT_DIG == DBL_MANT_DIG) */
 
-char *
+export char *__hdtoa(double, const char *, int, int *, int *, char **);
+
+export char *
 __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
     char **rve)
 {
@@ -355,6 +405,15 @@ __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
 }
 
 #endif	/* (LDBL_MANT_DIG == DBL_MANT_DIG) */
+
+#undef one
+#undef INFSTR
+#undef NANSTR
+#undef SIGFIGS
+
+/* ================================================================== */
+/* lib/libc/gdtoa/_hdtoa.c						*/
+/* ================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -384,20 +443,16 @@ __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
  * SUCH DAMAGE.
  */
 
-#undef SIGFIGS
-#undef one
-
-#define SIGFIGS DBL_SIGFIGS_VAL
-#define one hdtoa_one
+#define	one	one_hdtoa
 
 /* Strings values used by dtoa() */
 #define	INFSTR	"Infinity"
 #define	NANSTR	"NaN"
 
 #define	DBL_ADJ	(DBL_MAX_EXP - 2)
-#define	DBL_SIGFIGS_VAL	((DBL_MANT_DIG + 3) / 4 + 1)
+#define	SIGFIGS	((DBL_MANT_DIG + 3) / 4 + 1)
 
-static const float hdtoa_one[] = { 1.0f, -1.0f };
+static const float one[] = { 1.0f, -1.0f };
 
 /*
  * This procedure converts a double-precision number in IEEE format
@@ -423,7 +478,7 @@ static const float hdtoa_one[] = { 1.0f, -1.0f };
  * Inputs:	d, xdigs, ndigits
  * Outputs:	decpt, sign, rve
  */
-char *
+export char *
 __hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign,
     char **rve)
 {

@@ -3,7 +3,6 @@
  */
 
 #include <cstddef>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -69,6 +68,16 @@ typedef struct _bleaf {
 	u_char flags;
 	char bytes[1];
 } BLEAF;
+
+#define GETBLEAF(pg, indx) ((BLEAF *)((char *)(pg) + (pg)->linp[indx]))
+
+typedef struct _rleaf {
+	u_int32_t dsize;
+	u_char flags;
+	char bytes[1];
+} RLEAF;
+
+#define GETRLEAF(pg, indx) ((RLEAF *)((char *)(pg) + (pg)->linp[indx]))
 
 typedef struct _btree {
 	MPOOL *bt_mp;
@@ -1102,8 +1111,8 @@ void check_bt_search_sprev(int match_prev)
 	P::DBT k;
 	int exact_p = 0;
 	int exact_r = 0;
-	u_char key0[4] = { 0xa0, 0xa1, 0xa2, 0xa3 };
-	u_char key1[4] = { 0xb0, 0xb1, 0xb2, 0xb3 };
+	u_char key0[4] = { 0xb0, 0xb1, 0xb2, 0xb3 };
+	u_char key1[4] = { 0xa0, 0xa1, 0xa2, 0xa3 };
 	u_int32_t ksizes[1] = { 4 };
 	u_int32_t dsizes[1] = { 2 };
 	u_char eflags[1] = { 0 };
@@ -1173,6 +1182,30 @@ void check_dpage(u_int32_t ptype, int nents)
 		build_bleaf_page((PAGE *)pgbuf_p, PAGE_SZ, nents, ks, ds, ef,
 		    nullptr, nullptr);
 		std::memcpy(pgbuf_r, pgbuf_p, PAGE_SZ);
+		for (int i = 0; i < nents; i++) {
+			PAGE *pg_p = (PAGE *)pgbuf_p;
+			PAGE *pg_r = (PAGE *)pgbuf_r;
+			BLEAF *bl = (BLEAF *)((char *)pg_p + pg_p->linp[i]);
+			if (bl->flags & P_BIGKEY) {
+				*(pgno_t *)bl->bytes = (pgno_t)(50 + i);
+				*(u_int32_t *)(bl->bytes + sizeof(pgno_t)) = 8;
+			}
+			if (bl->flags & P_BIGDATA) {
+				char *bd = bl->bytes + bl->ksize;
+				*(pgno_t *)bd = (pgno_t)(60 + i);
+				*(u_int32_t *)(bd + sizeof(pgno_t)) = 8;
+			}
+			bl = (BLEAF *)((char *)pg_r + pg_r->linp[i]);
+			if (bl->flags & P_BIGKEY) {
+				*(pgno_t *)bl->bytes = (pgno_t)(50 + i);
+				*(u_int32_t *)(bl->bytes + sizeof(pgno_t)) = 8;
+			}
+			if (bl->flags & P_BIGDATA) {
+				char *bd = bl->bytes + bl->ksize;
+				*(pgno_t *)bd = (pgno_t)(60 + i);
+				*(u_int32_t *)(bd + sizeof(pgno_t)) = 8;
+			}
+		}
 	} else if (ptype == P_BINTERNAL) {
 		u_int32_t ks[4] = { 4, 5, 6, 7 };
 		u_char ef[4] = { 0, P_BIGKEY, 0, 0 };
@@ -1190,6 +1223,20 @@ void check_dpage(u_int32_t ptype, int nents)
 		u_char ef[4] = { 0, P_BIGDATA, 0, 0 };
 		build_rleaf_page((PAGE *)pgbuf_p, PAGE_SZ, nents, ds, ef);
 		std::memcpy(pgbuf_r, pgbuf_p, PAGE_SZ);
+		for (int i = 0; i < nents; i++) {
+			PAGE *pg_p = (PAGE *)pgbuf_p;
+			PAGE *pg_r = (PAGE *)pgbuf_r;
+			RLEAF *rl = (RLEAF *)((char *)pg_p + pg_p->linp[i]);
+			if (rl->flags & P_BIGDATA) {
+				*(pgno_t *)rl->bytes = (pgno_t)(70 + i);
+				*(u_int32_t *)(rl->bytes + sizeof(pgno_t)) = 8;
+			}
+			rl = (RLEAF *)((char *)pg_r + pg_r->linp[i]);
+			if (rl->flags & P_BIGDATA) {
+				*(pgno_t *)rl->bytes = (pgno_t)(70 + i);
+				*(u_int32_t *)(rl->bytes + sizeof(pgno_t)) = 8;
+			}
+		}
 	} else if (ptype == P_OVERFLOW) {
 		((PAGE *)pgbuf_p)->flags = P_OVERFLOW;
 		((PAGE *)pgbuf_r)->flags = P_OVERFLOW;
@@ -1201,6 +1248,10 @@ void check_dpage(u_int32_t ptype, int nents)
 	cr.start();
 	ref___bt_dpage((PAGE *)pgbuf_r);
 	cr.stop();
+	if (std::strcmp(cp.buf, cr.buf) != 0) {
+		std::fprintf(stderr, "DPAGE DIFF ptype=0x%x nents=%d\nPORT(%zu):\n%s\nREF(%zu):\n%s\n",
+		    ptype, nents, cp.len, cp.buf, cr.len, cr.buf);
+	}
 	check_eq(F_BT_DPAGE, std::strcmp(cp.buf, cr.buf) == 0, "stderr output");
 }
 
@@ -1305,22 +1356,13 @@ void check_dump_stat(u_int32_t tflags)
 	StderrCap csr;
 
 	test_mock_reset();
-	test_mock_seq_begin(P_ROOT);
 	init_tree(tp, mp_p, db_p, tflags | B_INMEM, PAGE_SZ);
-	init_tree_ref(tr, mp_r, db_r, tflags | B_INMEM, PAGE_SZ);
 	tp.bt_nrecs = 42;
-	tr.bt_nrecs = 42;
 	guard_fill(leaf_p, PAGE_SZ);
-	guard_fill(leaf_r, PAGE_SZ);
 	guard_fill(root_p, PAGE_SZ);
-	guard_fill(root_r, PAGE_SZ);
 	setup_stat_tree(leaf_p, root_p, 4);
-	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
-	std::memcpy(root_r, root_p, PAGE_SZ);
 	test_mock_register(P_ROOT, root_p);
-	test_mock_register(P_ROOT, root_r);
 	test_mock_register(2, leaf_p);
-	test_mock_register(2, leaf_r);
 
 	bt_cache_hit = 11;
 	bt_cache_miss = 22;
@@ -1332,15 +1374,37 @@ void check_dump_stat(u_int32_t tflags)
 	cp.start();
 	P::__bt_dump(&db_p);
 	cp.stop();
+
+	test_mock_reset();
+	init_tree_ref(tr, mp_r, db_r, tflags | B_INMEM, PAGE_SZ);
+	tr.bt_nrecs = 42;
+	guard_fill(leaf_r, PAGE_SZ);
+	guard_fill(root_r, PAGE_SZ);
+	setup_stat_tree(leaf_r, root_r, 4);
+	test_mock_register(P_ROOT, root_r);
+	test_mock_register(2, leaf_r);
+
 	cr.start();
 	ref___bt_dump(&db_r);
 	cr.stop();
 	check_eq(F_BT_DUMP, std::strcmp(cp.buf, cr.buf) == 0, "dump stderr");
 
-	test_mock_seq_begin(P_ROOT);
+	test_mock_reset();
+	init_tree(tp, mp_p, db_p, tflags | B_INMEM, PAGE_SZ);
+	tp.bt_nrecs = 42;
+	setup_stat_tree(leaf_p, root_p, 4);
+	test_mock_register(P_ROOT, root_p);
+	test_mock_register(2, leaf_p);
 	csp.start();
 	P::__bt_stat(&db_p);
 	csp.stop();
+
+	test_mock_reset();
+	init_tree_ref(tr, mp_r, db_r, tflags | B_INMEM, PAGE_SZ);
+	tr.bt_nrecs = 42;
+	setup_stat_tree(leaf_r, root_r, 4);
+	test_mock_register(P_ROOT, root_r);
+	test_mock_register(2, leaf_r);
 	csr.start();
 	ref___bt_stat(&db_r);
 	csr.stop();
