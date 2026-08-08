@@ -14,3 +14,4 @@
 {"path": "hbsd/src/usr.sbin/route6d/misc/cksum.c", "batch": "b0167", "reasons": ["AUTO_FAILED"], "detail": "differential run failed:\ntimed out\n(mechanical path first said: not attempted (mechanical phase runs separately))", "attempts": 0, "queued": "2026-08-08T13:28:31Z"}
 {"path": "hbsd/src/bin/kenv/kenv.c", "batch": "b0180", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T13:29:24Z"}
 {"path": "hbsd/src/bin/kill/kill.c", "batch": "b0177", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T13:29:31Z"}
+{"path": "hbsd/src/bin/getfacl/getfacl.c", "batch": "b0182", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T13:32:09Z"}
