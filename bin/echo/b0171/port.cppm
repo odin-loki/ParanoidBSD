@@ -54,14 +54,6 @@ module;
 #define	IOV_MAX	1024
 #endif
 
-extern "C" {
-int pbsd_shim_caph_limit_stdio(void);
-int pbsd_shim_caph_enter(void);
-void *pbsd_shim_malloc(std::size_t);
-ssize_t pbsd_shim_writev(int, const struct iovec *, int);
-[[noreturn]] void pbsd_shim_err(int, const char *);
-}
-
 #undef caph_limit_stdio
 #undef caph_enter
 #define	caph_limit_stdio()	pbsd_shim_caph_limit_stdio()
@@ -77,6 +69,19 @@ ssize_t pbsd_shim_writev(int, const struct iovec *, int);
 #define	err(...)		pbsd_shim_err(__VA_ARGS__)
 
 export module pbsd.bin.echo.b0171;
+
+/*
+ * The observable shim, shared with the oracle.  Declared here rather than in
+ * the global module fragment because a GMF may only contain preprocessor
+ * inclusions; extern "C" declarations attach to the global module regardless.
+ */
+extern "C" {
+int pbsd_shim_caph_limit_stdio(void);
+int pbsd_shim_caph_enter(void);
+void *pbsd_shim_malloc(std::size_t);
+ssize_t pbsd_shim_writev(int, const struct iovec *, int);
+[[noreturn]] void pbsd_shim_err(int, const char *);
+}
 
 export namespace pbsd::bin_echo::b0171 {
 

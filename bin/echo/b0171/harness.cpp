@@ -107,7 +107,7 @@ static long g_mcalls = 0;
 
 static std::vector<Blk> g_blocks;
 
-static jmp_buf g_jb;
+static std::jmp_buf g_jb;
 
 /* -------------------------------------------------------------- the shims */
 
@@ -225,7 +225,8 @@ pbsd_shim_writev(int fd, const struct iovec *iov, int cnt)
 	return total;
 }
 
-extern "C" [[noreturn]] void
+extern "C" {
+[[noreturn]] void
 pbsd_shim_err(int code, const char *fmt)
 {
 	t_str("err ");
@@ -234,6 +235,7 @@ pbsd_shim_err(int code, const char *fmt)
 	t_str(fmt);
 	t_str("\"\n");
 	std::longjmp(g_jb, 1);
+}
 }
 
 /* ---------------------------------------------------------------- harness */
