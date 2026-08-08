@@ -205,12 +205,6 @@ ref_imax(int a, int b)
 	return (a > b ? a : b);
 }
 
-static const struct option long_options[] =
-{
-	{ "si", no_argument, NULL, 'H' },
-	{ NULL, no_argument, NULL, 0 },
-};
-
 int
 ref_main(int argc, char *argv[])
 {

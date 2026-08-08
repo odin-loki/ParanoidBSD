@@ -619,18 +619,38 @@ test_vary_apply()
 	const char *e9[] = { "+" };
 	const char *e10[] = { "+1x" };
 	const char *e11[] = { "+1d", "bad" };
-	run(e1, 1, base);
-	run(e2, 1, base);
-	run(e3, 1, base);
-	run(e4, 1, base);
-	run(e5, 3, base);
-	run(e6, 1, base);
-	run(e7, 1, base);
-	run(e8, 1, base);
-	run(e9, 1, base);
-	run(e10, 1, base);
-	run(e11, 2, base);
-	run(nullptr, 0, base);
+	auto run_named = [&](const char *name, const char *const *args, int n, struct tm seed) {
+		struct vary *rv = nullptr;
+		P::vary *pv = nullptr;
+		for (int i = 0; i < n; i++) {
+			rv = ref_vary_append(rv, (char *)args[i]);
+			pv = P::vary_append(pv, (char *)args[i]);
+		}
+		struct tm rt = seed, pt = seed;
+		st.cases++;
+		const struct vary *rbad = ref_vary_apply(rv, &rt);
+		const P::vary *pbad = P::vary_apply(pv, &pt);
+		long roff = rbad ? (long)(rbad - rv) : -1;
+		long poff = pbad ? (long)(pbad - pv) : -1;
+		if (roff != poff || !tm_equal(&rt, &pt)) {
+			std::printf("  FAIL %s: roff=%ld poff=%ld\n", name, roff, poff);
+			fail(st, "mismatch");
+		}
+		ref_vary_destroy(rv);
+		P::vary_destroy(pv);
+	};
+	run_named("e1", e1, 1, base);
+	run_named("e2", e2, 1, base);
+	run_named("e3", e3, 1, base);
+	run_named("e4", e4, 1, base);
+	run_named("e5", e5, 3, base);
+	run_named("e6", e6, 1, base);
+	run_named("e7", e7, 1, base);
+	run_named("e8", e8, 1, base);
+	run_named("e9", e9, 1, base);
+	run_named("e10", e10, 1, base);
+	run_named("e11", e11, 2, base);
+	run_named("null", nullptr, 0, base);
 
 #if 0
 	char bufs[6][32];

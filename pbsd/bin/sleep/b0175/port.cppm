@@ -12,6 +12,8 @@ module;
 #define SIGINFO SIGUSR1
 #endif
 
+#define _POSIX_C_SOURCE 200809L
+
 #include <csignal>
 #include <csetjmp>
 #include <cstdarg>

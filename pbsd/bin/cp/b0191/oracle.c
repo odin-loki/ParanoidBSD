@@ -20,6 +20,9 @@
 #include <getopt.h>
 #include <limits.h>
 #include <signal.h>
+#ifdef siginfo
+#undef siginfo
+#endif
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,0 +1,13 @@
+{
+  "batch": "b0140",
+  "verified": "2026-08-08T12:42:34Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/5: __printf_arginfo_errno)",
+  "ir_equivalent": false,
+  "harness_output": "b0140 differential test (port vs. ref_ oracle)\n  function                      cases   failures\n  putchar                      200297          0  ok\n  putchar_unlocked             200297          0  ok\n  __printf_arginfo_errno       200034          0  ok\n  __printf_render_errno        200672          0  ok\n  printf                       203120          0  ok\n  TOTAL                       1004420          0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/putchar.c": "422530bbe838919b",
+    "hbsd/src/lib/libc/stdio/vdprintf.c": "b14dcc20ff0ac0e8",
+    "hbsd/src/lib/libc/stdio/xprintf_errno.c": "1c14e50097519571",
+    "hbsd/src/lib/libc/stdio/printf.c": "88a5d24d65cd0e2e"
+  }
+}

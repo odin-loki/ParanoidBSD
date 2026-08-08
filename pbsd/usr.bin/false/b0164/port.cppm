@@ -1,7 +1,3 @@
-export module pbsd.usr.bin.FALSE_MODSEG.b0164;
-
-export namespace pbsd::usr_bin_false::b0164 {
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -32,6 +28,18 @@ export namespace pbsd::usr_bin_false::b0164 {
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+/*
+ * usr.bin/false/false.c
+ *
+ * The module-name segment `false' is spelled here in plain ASCII.  It is a
+ * C++ keyword and therefore not a legal module-name token, so build.sh
+ * rewrites that one segment in a throwaway build copy of this file; see the
+ * comment at the top of build.sh.
+ */
+export module pbsd.usr.bin.false.b0164;
+
+export namespace pbsd::usr_bin_false::b0164 {
 
 int
 main(void)

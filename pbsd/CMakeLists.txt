@@ -170,6 +170,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/quad/fixdfdi_m/port.cppm
   lib/libc/quad/fixsfdi_m/port.cppm
   lib/libc/regex/regfree_m/port.cppm
+  lib/libc/rpc/b0196/port.cppm
   lib/libc/rpc/bindresvport_m/port.cppm
   lib/libc/rpc/des_soft_m/port.cppm
   lib/libc/rpc/rtime_m/port.cppm

@@ -16,7 +16,9 @@
 #include <cstring>
 #include <fcntl.h>
 #include <fts.h>
+#include <getopt.h>
 #include <limits.h>
+#include <sysexits.h>
 #include <map>
 #include <memory>
 #include <signal.h>
@@ -66,6 +68,14 @@ int ref_copy(char *argv[], enum ref_op type, int fts_options,
 int ref_main(int argc, char *argv[]);
 
 void __real_exit(int status);
+long __real_sysconf(int name);
+void *__real_malloc(size_t size);
+int fchflags(int, unsigned long);
+int chflagsat(int, const char *, unsigned long, int);
+acl_t acl_get_fd_np(int, acl_type_t);
+int acl_is_trivial_np(acl_t, int *);
+int acl_set_fd_np(int, acl_t, acl_type_t);
+int acl_free(acl_t);
 }
 
 #define SWEEP 200000L
@@ -213,11 +223,11 @@ struct MockCtrl {
 MockCtrl g_mock;
 
 struct FtsNode {
-	FTSENT ent {};
+	std::vector<char> blob;
+	FTSENT *ent = nullptr;
 	struct stat statbuf {};
 	std::string accpath;
 	std::string path;
-	std::vector<char> namebuf;
 };
 
 struct FtsState {
@@ -271,7 +281,7 @@ reset_globals()
 
 	optind = 1;
 	opterr = 0;
-#ifdef __GLIBC__
+#if defined(__GLIBC__) && defined(optreset)
 	optreset = 1;
 #endif
 }
@@ -376,14 +386,12 @@ __wrap_sysconf(int name)
 		}
 		return g_mock.sysconf_pages;
 	}
-	extern long __real_sysconf(int);
 	return __real_sysconf(name);
 }
 
 extern "C" void *
 __wrap_malloc(size_t size)
 {
-	extern void *__real_malloc(size_t);
 	return __real_malloc(size);
 }
 
@@ -1056,18 +1064,20 @@ make_fts_node(int info, int level, int fts_errno, const std::string &accpath,
 	auto node = std::make_unique<FtsNode>();
 	node->accpath = accpath;
 	node->path = tpath;
-	node->namebuf.assign(name, name + std::strlen(name) + 1);
-	std::memset(&node->ent, 0, sizeof(node->ent));
-	node->ent.fts_info = (unsigned short)info;
-	node->ent.fts_level = (short)level;
-	node->ent.fts_errno = fts_errno;
-	node->ent.fts_accpath = const_cast<char *>(node->accpath.c_str());
-	node->ent.fts_path = const_cast<char *>(node->path.c_str());
-	node->ent.fts_namelen = (unsigned short)std::strlen(name);
+	size_t nlen = std::strlen(name) + 1;
+	node->blob.resize(sizeof(FTSENT) + nlen);
+	node->ent = reinterpret_cast<FTSENT *>(node->blob.data());
+	std::memset(node->ent, 0, sizeof(FTSENT));
+	node->ent->fts_info = (unsigned short)info;
+	node->ent->fts_level = (short)level;
+	node->ent->fts_errno = fts_errno;
+	node->ent->fts_accpath = const_cast<char *>(node->accpath.c_str());
+	node->ent->fts_path = const_cast<char *>(node->path.c_str());
+	node->ent->fts_namelen = (unsigned short)std::strlen(name);
 	if (st != nullptr)
 		node->statbuf = *st;
-	node->ent.fts_statp = &node->statbuf;
-	node->ent.fts_name = node->namebuf.data();
+	node->ent->fts_statp = &node->statbuf;
+	std::memcpy(node->ent->fts_name, name, nlen);
 	return node.release();
 }
 
@@ -1078,8 +1088,11 @@ __wrap_fts_open(char *const *argv, int options,
 	(void)argv;
 	(void)options;
 	(void)compar;
-	if (!g_test_active)
-		return fts_open(argv, options, compar);
+	if (!g_test_active) {
+		auto cmp = reinterpret_cast<int (*)(const FTSENT **,
+		    const FTSENT **)>(compar);
+		return fts_open(argv, options, cmp);
+	}
 	if (g_fts_script == nullptr)
 		return nullptr;
 	return (FTS *)g_fts_script.get();
@@ -1095,12 +1108,12 @@ __wrap_fts_read(FTS *ftsp)
 	while (st->idx < st->nodes.size()) {
 		FtsNode *node = st->nodes[st->idx].get();
 		if (st->skip_pending) {
-			if (node->ent.fts_level > st->skip_level) {
+			if (node->ent->fts_level > st->skip_level) {
 				st->idx++;
 				continue;
 			}
-			if (node->ent.fts_info == FTS_DP &&
-			    node->ent.fts_level == st->skip_level) {
+			if (node->ent->fts_info == FTS_DP &&
+			    node->ent->fts_level == st->skip_level) {
 				st->skip_pending = false;
 			} else {
 				st->idx++;
@@ -1108,7 +1121,7 @@ __wrap_fts_read(FTS *ftsp)
 			}
 		}
 		st->idx++;
-		return &node->ent;
+		return node->ent;
 	}
 	return nullptr;
 }
@@ -1275,8 +1288,8 @@ run_copy_file_case(const char *label, bool dne, bool beneath)
 	FtsNode *node = make_ent_node("srcfile", src, S_IFREG | 0644, 3);
 
 	int saved = silence_stderr();
-	int rr = ref_copy_file(&node->ent, dne, beneath);
-	int rp = P::copy_file(&node->ent, dne, beneath);
+	int rr = ref_copy_file(node->ent, dne, beneath);
+	int rp = P::copy_file(node->ent, dne, beneath);
 	restore_stderr(saved);
 
 	delete node;
@@ -1320,8 +1333,8 @@ run_copy_link_case(const char *label, bool dne, bool beneath)
 	    "linksrc", &path_mock(src).st);
 
 	int saved = silence_stderr();
-	int rr = ref_copy_link(&node->ent, dne, beneath);
-	int rp = P::copy_link(&node->ent, dne, beneath);
+	int rr = ref_copy_link(node->ent, dne, beneath);
+	int rp = P::copy_link(node->ent, dne, beneath);
 	restore_stderr(saved);
 
 	delete node;
@@ -1647,8 +1660,8 @@ run_ftscmp_case(const char *label, const char *a, const char *b)
 	st_ftscmp.cases++;
 	FtsNode *na = make_name_node(a);
 	FtsNode *nb = make_name_node(b);
-	const FTSENT *pa = &na->ent;
-	const FTSENT *pb = &nb->ent;
+	const FTSENT *pa = na->ent;
+	const FTSENT *pb = nb->ent;
 	int rr = ref_ftscmp(&pa, &pb);
 	int rp = P::ftscmp(&pa, &pb);
 	delete na;
@@ -1783,7 +1796,7 @@ run_main_child(bool use_port, int argc, char **argv)
 		g_test_child = true;
 		g_test_active = false;
 		optind = 1;
-#ifdef __GLIBC__
+#if defined(__GLIBC__) && defined(optreset)
 		optreset = 1;
 #endif
 		int ret = use_port ? P::main(argc, argv) : ref_main(argc, argv);

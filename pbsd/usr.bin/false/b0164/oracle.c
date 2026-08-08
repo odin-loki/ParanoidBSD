@@ -1,3 +1,13 @@
+/*
+ * oracle.c -- reference implementation for batch b0164.
+ *
+ * The original C sources of the batch, concatenated, with every function
+ * renamed with a `ref_' prefix.  Function bodies are unmodified.
+ *
+ * Sources:
+ *	hbsd/src/usr.bin/false/false.c
+ */
+
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -28,6 +38,8 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+int ref_main(void);
 
 int
 ref_main(void)

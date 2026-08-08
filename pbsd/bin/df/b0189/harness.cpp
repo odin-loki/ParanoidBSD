@@ -3,8 +3,6 @@
  */
 
 #define _DEFAULT_SOURCE
-#define _GNU_SOURCE
-
 #include <climits>
 #include <cerrno>
 #include <cinttypes>
@@ -44,34 +42,11 @@ namespace P = pbsd::bin_df::b0189;
 #define VFCF_NETWORK 0x00000010
 #endif
 
-struct statfs {
-	uint64_t f_flags;
-	int64_t f_bsize;
-	int64_t f_blocks;
-	int64_t f_bfree;
-	int64_t f_bavail;
-	int64_t f_files;
-	int64_t f_ffree;
-	char f_fstypename[MFSNAMELEN];
-	char f_mntonname[MNAMELEN];
-	char f_mntfromname[MNAMELEN];
-};
-
 struct xvfsconf {
 	uint32_t vfc_version;
 	char vfc_name[MFSNAMELEN];
 	int vfc_refcount;
 	int vfc_flags;
-};
-
-struct maxwidths {
-	int mntfrom;
-	int fstype;
-	int total;
-	int used;
-	int avail;
-	int iused;
-	int ifree;
 };
 
 extern "C" {
@@ -107,7 +82,7 @@ namespace {
 
 bool g_test_child = false;
 std::vector<std::string> g_xo_log;
-std::vector<statfs> g_mnt_table;
+std::vector<P::statfs> g_mnt_table;
 std::vector<xvfsconf> g_vfs_conf;
 int g_malloc_fail = 0;
 int g_strdup_fail = 0;
@@ -186,7 +161,7 @@ extern "C" char *__wrap_strdup(const char *s) {
 }
 extern "C" int __wrap_getmntinfo(struct statfs **mntbufp, int mode) {
 	(void)mode;
-	static std::vector<statfs> storage;
+	static std::vector<P::statfs> storage;
 	storage = g_mnt_table;
 	if (mntbufp) *mntbufp = storage.empty()?nullptr:storage.data();
 	return (int)storage.size();
@@ -247,13 +222,13 @@ extern "C" void __real_exit(int);
 extern "C" void __wrap_exit(int status) { if (g_test_child) ::_exit(status); __real_exit(status); }
 
 bool logs_equal(const std::vector<std::string> &a, const std::vector<std::string> &b) { return a==b; }
-bool statfs_equal(const statfs &a, const statfs &b) { return std::memcmp(&a,&b,sizeof(statfs))==0; }
-bool maxwidths_equal(const maxwidths &a, const maxwidths &b) { return std::memcmp(&a,&b,sizeof(maxwidths))==0; }
+bool statfs_equal(const P::statfs &a, const P::statfs &b) { return std::memcmp(&a,&b,sizeof(P::statfs))==0; }
+bool maxwidths_equal(const P::maxwidths &a, const maxwidths &b) { return std::memcmp(&a,&b,sizeof(P::maxwidths))==0; }
 
-statfs make_statfs(const char *from, const char *on, const char *type,
+P::statfs make_statfs(const char *from, const char *on, const char *type,
     int64_t bsize, int64_t blocks, int64_t bfree, int64_t bavail,
     int64_t files, int64_t ffree, uint64_t flags=0) {
-	statfs s{}; s.f_flags=flags; s.f_bsize=bsize; s.f_blocks=blocks;
+	P::statfs s{}; s.f_flags=flags; s.f_bsize=bsize; s.f_blocks=blocks;
 	s.f_bfree=bfree; s.f_bavail=bavail; s.f_files=files; s.f_ffree=ffree;
 	std::strncpy(s.f_fstypename,type,MFSNAMELEN-1);
 	std::strncpy(s.f_mntonname,on,MNAMELEN-1);
@@ -301,17 +276,17 @@ bool test_makevfslist_case(const char *input, bool mfail) {
 	return true;
 }
 
-bool test_addstat_case(const statfs &add,int64_t tbs) {
+bool test_addstat_case(const P::statfs &add,int64_t tbs) {
 	st_addstat.cases++;
-	statfs tr{}, tp{}, ar=add, ap=add;
+	P::statfs tr{}, tp{}, ar=add, ap=add;
 	tr.f_bsize=tp.f_bsize=tbs;
 	ref_addstat(&tr,&ar); P::addstat(&tp,&ap);
 	if (!statfs_equal(tr,tp)||!statfs_equal(ar,ap)) return fail(st_addstat,"statfs");
 	return true;
 }
-bool test_update_maxwidths_case(const statfs &s) {
+bool test_update_maxwidths_case(const P::statfs &s) {
 	st_update_maxwidths.cases++;
-	maxwidths mr{}, mp{};
+	P::maxwidths mr{}, mp{};
 	ref_update_maxwidths(&mr,&s); P::update_maxwidths(&mp,&s);
 	if (!maxwidths_equal(mr,mp)) return fail(st_update_maxwidths,"mwp");
 	return true;
@@ -323,9 +298,9 @@ bool test_getmntpt_case(const char *n) {
 	if (!ok) return fail(st_getmntpt,"ptr");
 	return true;
 }
-bool test_regetmntinfo_case(std::vector<statfs> t,long ms,bool lists) {
+bool test_regetmntinfo_case(std::vector<P::statfs> t,long ms,bool lists) {
 	st_regetmntinfo.cases++;
-	std::vector<statfs> br=t,bp=t; struct statfs *rp=br.data(), *pp=bp.data();
+	std::vector<P::statfs> br=t,bp=t; P::statfs *rp=br.data(), *pp=bp.data();
 	if (lists) {
 		static char tl[]="ufs,zfs", ll[]="nfs";
 		ref_vfslist_t=ref_makevfslist(tl,&ref_skipvfs_t);
@@ -352,7 +327,7 @@ bool test_prthumanvalinode_case(const char *fmt,int64_t b) {
 	if (!logs_equal(lr,g_xo_log)) return fail(st_prthumanvalinode,"xo");
 	return true;
 }
-bool test_prthuman_case(const statfs &s,int64_t u,int hf) {
+bool test_prthuman_case(const P::statfs &s,int64_t u,int hf) {
 	st_prthuman.cases++; ref_hflag=hf; P::hflag=hf;
 	g_xo_log.clear(); ref_prthuman(&s,u); auto lr=g_xo_log;
 	g_xo_log.clear(); P::prthuman(&s,u);
@@ -361,7 +336,7 @@ bool test_prthuman_case(const statfs &s,int64_t u,int hf) {
 }
 bool test_prtstat_case(statfs s,int hf,int inf,int tf,int th) {
 	st_prtstat.cases++;
-	maxwidths mr{}, mp{}; statfs sr=s, sp=s;
+	P::maxwidths mr{}, mp{}; P::statfs sr=s, sp=s;
 	ref_hflag=hf; ref_iflag=inf; ref_Tflag=tf; ref_thousands=th;
 	g_xo_log.clear(); ref_prtstat(&sr,&mr); auto lr=g_xo_log;
 	reset_port_globals(); P::hflag=hf; P::iflag=inf; P::Tflag=tf; P::thousands=th;
@@ -431,9 +406,9 @@ void hand_tests() {
 	mock_reset(); test_makevfslist_case("",false); test_makevfslist_case("ufs",false);
 	test_makevfslist_case("ufs,zfs",false); test_makevfslist_case("nousfs,zfs",false);
 	test_makevfslist_case("x",true);
-	statfs add=make_statfs("x","/x","ufs",4096,100,20,70,1000,800);
+	P::statfs add=make_statfs("x","/x","ufs",4096,100,20,70,1000,800);
 	test_addstat_case(add,512); test_addstat_case(add,4096);
-	statfs s=make_statfs("dev","/mnt","ufs",4096,10000,2000,7000,50000,40000);
+	P::statfs s=make_statfs("dev","/mnt","ufs",4096,10000,2000,7000,50000,40000);
 	test_update_maxwidths_case(s);
 	mock_reset(); setup_mounts(); test_getmntpt_case("dev/sda1"); test_getmntpt_case("missing");
 	mock_reset(); setup_mounts(); test_regetmntinfo_case(g_mnt_table,(long)g_mnt_table.size(),false);
@@ -442,9 +417,9 @@ void hand_tests() {
 	test_prthumanval_case("{:%s}",0,0); test_prthumanval_case("{:%s}",1024,1);
 	test_prthumanval_case("{:%s}",-512,2); test_prthumanvalinode_case("{:%s}",0);
 	test_prthumanvalinode_case("{:%s}",999999);
-	statfs hs=make_statfs("d","/m","ufs",512,100,10,80,0,0);
+	P::statfs hs=make_statfs("d","/m","ufs",512,100,10,80,0,0);
 	test_prthuman_case(hs,90,1); test_prthuman_case(hs,90,2);
-	statfs ps=make_statfs("dev/da0","/mnt","ufs",512,1000,100,800,10000,9000);
+	P::statfs ps=make_statfs("dev/da0","/mnt","ufs",512,1000,100,800,10000,9000);
 	test_prtstat_case(ps,0,0,0,0); test_prtstat_case(ps,1,1,1,1);
 	test_prtstat_case(make_statfs("total","/mnt","ufs",0,0,0,0,0,0),2,0,0,0);
 	test_prtstat_case(make_statfs("x","/zero","ufs",0,10,1,8,0,0),0,1,0,1);
@@ -452,7 +427,7 @@ void hand_tests() {
 	g_vfs_conf.clear(); test_makenetvfslist_case();
 	g_sysctl_fail=1; test_makenetvfslist_case();
 	test_usage_case();
-	static char prog[]="df", a[]="-a", k[]="-k", t[]="-t", type[]="ufs";
+	static char prog[]="df", a[]="-a", k[]="-k", tflag[]="-t", type[]="ufs";
 	static char path[]="/mnt/a", bad[]="/nope", comma[]="-,", i[]="-i";
 	static char c[]="-c", H[]="-H", h[]="-h", T[]="-T", n[]="-n";
 	static char Pflag[]="-P", b[]="-b", g[]="-g", m[]="-m", l[]="-l";
@@ -460,9 +435,9 @@ void hand_tests() {
 	mock_reset(); setup_mounts();
 	char *ava[]={prog,a,nullptr}; test_main_case(2,ava);
 	char *avk[]={prog,k,nullptr}; test_main_case(2,avk);
-	char *avp[]={prog,path,nullptr}; g_stat_map[path]=stat{}; test_main_case(2,avp);
+	char *avp[]={prog,path,nullptr}; g_stat_map[path]=struct stat{}; test_main_case(2,avp);
 	char *avb[]={prog,bad,nullptr}; test_main_case(2,avb);
-	char *avt[]={prog,t,type,nullptr}; test_main_case(3,avt);
+	char *avt[]={prog,tflag,type,nullptr}; test_main_case(3,avt);
 	char *avc[]={prog,comma,i,c,H,T,path,nullptr}; test_main_case(7,avc);
 	char *avh[]={prog,h,n,nullptr}; test_main_case(3,avh);
 	char *avpb[]={prog,Pflag,b,k,nullptr}; test_main_case(4,avpb);
@@ -499,13 +474,13 @@ void sweeps() {
 		test_makevfslist_case(s.c_str(),rng.bits(0,50)==0);
 	}
 	for (long i=0;i<SWEEP;++i) {
-		statfs add=make_statfs("d","/m","ufs",(int64_t)(rng.next()%8192+512),
+		P::statfs add=make_statfs("d","/m","ufs",(int64_t)(rng.next()%8192+512),
 			(int64_t)rng.bits(0,100000),(int64_t)rng.bits(0,50000),(int64_t)rng.bits(0,50000),
 			(int64_t)rng.bits(0,1000000),(int64_t)rng.bits(0,1000000));
 		test_addstat_case(add,(int64_t)(rng.next()%4096+512));
 	}
 	for (long i=0;i<SWEEP;++i) {
-		statfs s=make_statfs("d","/m","ufs",(int64_t)(rng.next()%8192+1),
+		P::statfs s=make_statfs("d","/m","ufs",(int64_t)(rng.next()%8192+1),
 			(int64_t)rng.bits(0,1000000),(int64_t)rng.bits(0,500000),(int64_t)rng.bits(0,500000),
 			(int64_t)rng.bits(0,10000000),(int64_t)rng.bits(0,10000000));
 		test_update_maxwidths_case(s);
@@ -520,10 +495,10 @@ void sweeps() {
 	}
 	for (long i=0;i<SWEEP/2;++i) test_prthumanval_case("{:%s}",rng.i64(),rng.bits(0,2));
 	for (long i=0;i<SWEEP/2;++i) test_prthumanvalinode_case("{:%s}",rng.i64());
-	statfs hs=make_statfs("d","/m","ufs",512,100,10,80,0,0);
+	P::statfs hs=make_statfs("d","/m","ufs",512,100,10,80,0,0);
 	for (long i=0;i<SWEEP/4;++i) test_prthuman_case(hs,rng.i64(),rng.bits(1,2));
 	for (long i=0;i<SWEEP/20;++i) {
-		statfs s=make_statfs("d","/m","ufs",(int64_t)(rng.next()%8192+1),
+		P::statfs s=make_statfs("d","/m","ufs",(int64_t)(rng.next()%8192+1),
 			(int64_t)rng.bits(1,100000),(int64_t)rng.bits(0,50000),(int64_t)rng.bits(0,50000),
 			(int64_t)rng.bits(0,1000000),(int64_t)rng.bits(0,1000000));
 		test_prtstat_case(s,rng.bits(0,2),rng.coin(),rng.coin(),rng.coin());

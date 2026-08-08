@@ -11,6 +11,9 @@
  * from printf.c.
  */
 
+/* flockfile(), funlockfile(), putc_unlocked(), POSIX strerror_r(). */
+#define _POSIX_C_SOURCE 200809L
+
 #include <assert.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -66,9 +69,9 @@ extern void __printf_flush(struct __printf_io *);
 extern const int __hidden_sys_nerr;
 
 /*
- * FreeBSD's strerror_r() is the POSIX one: it always writes the message
- * into the caller's buffer.  Name the host's XSI implementation directly so
- * that the GNU char *-returning strerror_r() cannot be selected here.
+ * FreeBSD's strerror_r() is the POSIX one: it always writes the message into
+ * the caller's buffer.  Name the host's XSI implementation directly so that
+ * the GNU char *-returning strerror_r() cannot be selected here.
  */
 extern int __xpg_strerror_r(int, char *, size_t);
 #define strerror_r __xpg_strerror_r
@@ -76,8 +79,8 @@ extern int __xpg_strerror_r(int, char *, size_t);
 /*
  * From lib/libc/stdio/local.h and lib/libc/include/libc_private.h.
  * __sputc() is FreeBSD's inline unlocked putc(); FLOCKFILE_CANCELSAFE()
- * locks the stream (and pushes a cancellation cleanup, which has no effect
- * without a pending cancel).
+ * locks the stream (and pushes a cancellation cleanup, which does nothing
+ * absent a pending cancel).
  */
 #define __sputc(c, fp)		putc_unlocked((c), (fp))
 #define FLOCKFILE_CANCELSAFE(fp)					\

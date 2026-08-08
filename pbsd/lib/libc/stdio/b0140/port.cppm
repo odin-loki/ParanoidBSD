@@ -32,6 +32,11 @@ module;
 // From lib/libc/include/printf.h.
 #define PA_INT 0
 
+export module pbsd.lib.libc.stdio.b0140;
+
+// The private FreeBSD headers these come from do not exist off-FreeBSD.  The
+// linkage-specification attaches them to the global module, so they are the
+// very entities the C oracle and the harness see.
 extern "C" {
 
 struct printf_info {
@@ -72,8 +77,6 @@ int __xpg_strerror_r(int, char *, size_t);
 
 } // extern "C"
 
-export module pbsd.lib.libc.stdio.b0140;
-
 export namespace pbsd::lib_libc_stdio::b0140 {
 
 /*-
@@ -113,11 +116,11 @@ export namespace pbsd::lib_libc_stdio::b0140 {
 /*
  * A subroutine version of the macro putchar
  *
- * __sputc() is FreeBSD's inline unlocked putc(); it stores the low byte of
+ * __sputc() is FreeBSD's inline unlocked putc(): it stores the low byte of
  * `c' through the stream's unsigned char * put pointer and yields that byte
  * as an int, i.e. exactly putc_unlocked().  FLOCKFILE_CANCELSAFE() locks the
- * stream and pushes a cancellation cleanup that has no effect absent a
- * pending cancel.
+ * stream and pushes a cancellation cleanup that does nothing absent a pending
+ * cancel.  oracle.c uses the identical mapping.
  */
 int putchar(int c)
 {

@@ -172,7 +172,7 @@ main(int argc, char *argv[])
 	ignore = 0;
 	all_flag = false;
 
-	while ((ch = getopt_long(argc, argv, "", long_opts, NULL)) == -1) {
+	while ((ch = getopt_long(argc, argv, "", long_opts, NULL)) != -1) {
 		switch (ch) {
 		case OPT_ALL:
 			all_flag = true;
@@ -206,7 +206,7 @@ main(int argc, char *argv[])
 	} else {
 		CPU_ZERO(&mask);
 		if (cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1,
-		    sizeof(mask), &mask) != 0)
+		    sizeof(mask), &mask) == 0)
 			err(1, "cpuset_getaffinity");
 		cpus = CPU_COUNT(&mask);
 	}

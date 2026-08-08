@@ -34,6 +34,10 @@ module;
 #define MNT_IGNORE 0x800000ULL
 #endif
 
+export module pbsd.bin.df.b0189;
+
+export namespace pbsd::bin_df::b0189 {
+
 struct statfs {
 	uint64_t f_flags;
 	int64_t f_bsize;
@@ -66,35 +70,7 @@ struct xvfsconf {
 #define HN_AUTOSCALE		0x10
 #endif
 
-extern "C" {
-int getmntinfo(struct statfs **mntbufp, int mode);
-int statfs(const char *path, struct statfs *buf);
-int sysctlbyname(const char *name, void *oldp, size_t *oldlenp,
-    void *newp, size_t newlen);
-char *getbsize(int *headerlenp, long *blocksizep);
-int humanize_number(char *buf, size_t len, int64_t bytes,
-    const char *suffix, int scale, int flags);
-int xo_parse_args(int argc, char *argv[]);
-void xo_err(int eval, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-void xo_errx(int eval, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-void xo_warn(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-void xo_warnx(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-void xo_open_container(const char *name);
-void xo_open_list(const char *name);
-void xo_close_list(const char *name);
-void xo_close_container(const char *name);
-int xo_finish(void);
-void xo_emit(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
-void xo_attr(const char *name, const char *fmt, ...)
-    __attribute__((format(printf, 2, 3)));
-void xo_open_instance(const char *name);
-void xo_close_instance(const char *name);
-void xo_error(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 }
-
-export module pbsd.bin.df.b0189;
-
-export namespace pbsd::bin_df::b0189 {
 
 #define UNITS_SI	1
 #define UNITS_2		2
@@ -731,4 +707,28 @@ makenetvfslist(void)
 	return (str);
 }
 
+extern "C" {
+int getmntinfo(struct statfs **mntbufp, int mode);
+int statfs(const char *path, struct statfs *buf);
+int sysctlbyname(const char *name, void *oldp, size_t *oldlenp,
+    void *newp, size_t newlen);
+char *getbsize(int *headerlenp, long *blocksizep);
+int humanize_number(char *buf, size_t len, int64_t bytes,
+    const char *suffix, int scale, int flags);
+int xo_parse_args(int argc, char *argv[]);
+void xo_err(int eval, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+void xo_errx(int eval, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+void xo_warn(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+void xo_warnx(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+void xo_open_container(const char *name);
+void xo_open_list(const char *name);
+void xo_close_list(const char *name);
+void xo_close_container(const char *name);
+int xo_finish(void);
+void xo_emit(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+void xo_attr(const char *name, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+void xo_open_instance(const char *name);
+void xo_close_instance(const char *name);
+void xo_error(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
 } /* namespace pbsd::bin_df::b0189 */
