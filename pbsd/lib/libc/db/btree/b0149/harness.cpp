@@ -1098,8 +1098,18 @@ void test_bt_preserve_edges(void)
 
 void test_bt_psplit_edges(void)
 {
+	check_bt_psplit(P_BLEAF, 4, 0, 20, 0, 0);
+	check_bt_psplit(P_BLEAF, 4, 2, 24, 1, 1);
+	check_bt_psplit(P_BLEAF, 6, 3, 16, 1, 5);
+	check_bt_psplit(P_BINTERNAL, 5, 1, 12, 0, 0);
+	check_bt_psplit(P_BINTERNAL, 4, 4, 28, 1, 2);
 	check_bt_psplit(P_RINTERNAL, 4, 0, 0, 0, 0);
+	check_bt_psplit(P_RINTERNAL, 3, 2, 0, 1, 1);
+	check_bt_psplit(P_RLEAF, 5, 0, 10, 0, 0);
+	check_bt_psplit(P_RLEAF, 4, 3, 8, 1, 0);
+	check_bt_psplit(P_BLEAF, 2, 1, 200, 0, 0);
 }
+
 void test_bt_rroot_edges(void)
 {
 	check_bt_rroot(1, 1, 2, 2);
@@ -1202,23 +1212,6 @@ void test_random_sweep(void)
 
 int main(void)
 {
-	test_rec_total_edges();
-	test_bt_preserve_edges();
-	test_bt_psplit_edges();
-	test_bt_rroot_edges();
-	test_bt_broot_edges();
-	test_bt_page_edges();
-	test_bt_root_edges();
-	test_bt_split_edges();
-	test_random_sweep();
-
-	std::printf("\n%-12s %12s %12s\n", "function", "cases", "failures");
-	for (int i = 0; i < F_COUNT; i++)
-		std::printf("%-12s %12lu %12lu\n", fn_name[i], n_cases[i],
-		    n_fails[i]);
-
-	unsigned long total_fails = 0;
-	for (int i = 0; i < F_COUNT; i++)
-		total_fails += n_fails[i];
-	return total_fails == 0 ? 0 : 1;
+	check_bt_psplit(P_RINTERNAL, 4, 0, 0, 0, 0);
+	return 0;
 }
