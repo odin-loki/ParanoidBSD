@@ -136,11 +136,11 @@ export module pbsd.lib.libc.gen.b0102;
 #define	AIO_OP2_VECTORED	0x0002
 #define	GETENTROPY_MAX		256
 
-struct aiocb {
+export struct aiocb {
 	int	aio_lio_opcode;
 };
 
-struct DIR {
+export struct DIR {
 	pthread_mutex_t	dd_lock;
 };
 
@@ -153,7 +153,6 @@ void _pthread_mutex_unlock(pthread_mutex_t *);
 extern int __isthreaded;
 int __libc_sigaction(int, const struct sigaction *, struct sigaction *);
 ssize_t getrandom(void *, size_t, unsigned int);
-int raise(int);
 }
 
 export namespace pbsd::lib_libc_gen::b0102 {

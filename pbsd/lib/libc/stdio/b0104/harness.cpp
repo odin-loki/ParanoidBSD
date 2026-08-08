@@ -125,76 +125,31 @@ read_out(FILE *fp, unsigned char *out, std::size_t outsz,
 	(void)fread(tail, 1, tailsz, fp);
 }
 
-template<typename Fn>
-static FprintObs
-run_fprint(FILE *fp, Fn fn, const char *fmt, ...)
-{
-	FprintObs obs{};
-	std::va_list ap;
-
-	std::va_start(ap, fmt);
-	obs.ret = fn(fp, fmt, ap);
-	std::va_end(ap);
-	std::fflush(fp);
-	read_out(fp, obs.out, sizeof(obs.out), obs.tail, sizeof(obs.tail));
-	return obs;
-}
-
-static int
-port_fprintf_v(FILE *fp, const char *fmt, std::va_list ap)
-{
-	return P::fprintf(fp, fmt, ap);
-}
-
-static int
-ref_fprintf_v(FILE *fp, const char *fmt, std::va_list ap)
-{
-	return ref_fprintf(fp, fmt, ap);
-}
-
-static int
-port_fprintf_l_v(FILE *fp, locale_t loc, const char *fmt, std::va_list ap)
-{
-	return P::fprintf_l(fp, loc, fmt, ap);
-}
-
-static int
-ref_fprintf_l_v(FILE *fp, locale_t loc, const char *fmt, std::va_list ap)
-{
-	return ref_fprintf_l(fp, loc, fmt, ap);
-}
-
+template<typename... Args>
 static void
-fprint_case(Stat *st, locale_t loc, int use_l, const char *fmt, ...)
+fprint_case(Stat *st, locale_t loc, int use_l, const char *fmt, Args... args)
 {
 	FILE *pa = make_out_file();
 	FILE *pb = make_out_file();
 	FprintObs a, b;
 	int bad;
-	std::va_list ap;
 
 	if (pa == nullptr || pb == nullptr) {
 		std::fprintf(stderr, "harness bug: temp file for fprintf\n");
 		std::exit(2);
 	}
 
-	std::va_start(ap, fmt);
-	if (use_l) {
-		a.ret = P::fprintf_l(pa, loc, fmt, ap);
-	} else {
-		a.ret = P::fprintf(pa, fmt, ap);
-	}
-	std::va_end(ap);
+	if (use_l)
+		a.ret = P::fprintf_l(pa, loc, fmt, args...);
+	else
+		a.ret = P::fprintf(pa, fmt, args...);
 	std::fflush(pa);
 	read_out(pa, a.out, sizeof(a.out), a.tail, sizeof(a.tail));
 
-	std::va_start(ap, fmt);
-	if (use_l) {
-		b.ret = ref_fprintf_l(pb, loc, fmt, ap);
-	} else {
-		b.ret = ref_fprintf(pb, fmt, ap);
-	}
-	std::va_end(ap);
+	if (use_l)
+		b.ret = ref_fprintf_l(pb, loc, fmt, args...);
+	else
+		b.ret = ref_fprintf(pb, fmt, args...);
 	std::fflush(pb);
 	read_out(pb, b.out, sizeof(b.out), b.tail, sizeof(b.tail));
 

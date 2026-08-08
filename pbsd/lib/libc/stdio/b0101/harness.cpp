@@ -454,54 +454,57 @@ vprintf_case_va(StatId id, locale_t loc, int use_l, const char *fmt,
 	vprintf_compare(id, a, b, tag, detail);
 }
 
-#define VPRINTF_CASE(id, loc, use_l, tag, fmt, ...)                          \
-	do {                                                                   \
-		va_list ap;                                                    \
-		char detail[128];                                              \
-		va_start(ap, fmt);                                             \
-		std::snprintf(detail, sizeof(detail), tag);                    \
-		vprintf_case_va(id, loc, use_l, fmt, ap, tag, detail);        \
-		va_end(ap);                                                    \
-	} while (0)
+static void
+vprintf_case(StatId id, locale_t loc, int use_l, const char *tag,
+    const char *fmt, ...)
+{
+	va_list ap;
+	char detail[128];
+
+	va_start(ap, fmt);
+	std::snprintf(detail, sizeof(detail), "%s", tag);
+	vprintf_case_va(id, loc, use_l, fmt, ap, tag, detail);
+	va_end(ap);
+}
 
 static void
 vprintf_edges(locale_t loc)
 {
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "empty", "");
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "pct", "%%");
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "d0", "%d", 0);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "d1", "%d", 1);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "d-1", "%d", -1);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "dmax", "%d", INT_MAX);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "dmin", "%d", INT_MIN);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "u", "%u", 0xffffffffu);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "x", "%x", 0xdeadbeefu);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "c0", "%c", 0);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "c7f", "%c", 0x7f);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "c80", "%c", 0x80);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "cff", "%c", 0xff);
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "s-empty", "%s", "");
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "s-a", "%s", "a");
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "s-hi", "%s", "\x80\xff");
-	VPRINTF_CASE(S_VPRINTF, loc, 0, "mix", "%d %u %x %c", 42, 7u, 0xab, 'Q');
+	vprintf_case(S_VPRINTF, loc, 0, "empty", "");
+	vprintf_case(S_VPRINTF, loc, 0, "pct", "%%");
+	vprintf_case(S_VPRINTF, loc, 0, "d0", "%d", 0);
+	vprintf_case(S_VPRINTF, loc, 0, "d1", "%d", 1);
+	vprintf_case(S_VPRINTF, loc, 0, "d-1", "%d", -1);
+	vprintf_case(S_VPRINTF, loc, 0, "dmax", "%d", INT_MAX);
+	vprintf_case(S_VPRINTF, loc, 0, "dmin", "%d", INT_MIN);
+	vprintf_case(S_VPRINTF, loc, 0, "u", "%u", 0xffffffffu);
+	vprintf_case(S_VPRINTF, loc, 0, "x", "%x", 0xdeadbeefu);
+	vprintf_case(S_VPRINTF, loc, 0, "c0", "%c", 0);
+	vprintf_case(S_VPRINTF, loc, 0, "c7f", "%c", 0x7f);
+	vprintf_case(S_VPRINTF, loc, 0, "c80", "%c", 0x80);
+	vprintf_case(S_VPRINTF, loc, 0, "cff", "%c", 0xff);
+	vprintf_case(S_VPRINTF, loc, 0, "s-empty", "%s", "");
+	vprintf_case(S_VPRINTF, loc, 0, "s-a", "%s", "a");
+	vprintf_case(S_VPRINTF, loc, 0, "s-hi", "%s", "\x80\xff");
+	vprintf_case(S_VPRINTF, loc, 0, "mix", "%d %u %x %c", 42, 7u, 0xab, 'Q');
 
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "empty", "");
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "pct", "%%");
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "d0", "%d", 0);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "d1", "%d", 1);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "d-1", "%d", -1);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "dmax", "%d", INT_MAX);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "dmin", "%d", INT_MIN);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "u", "%u", 0xffffffffu);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "x", "%x", 0xdeadbeefu);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "c0", "%c", 0);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "c7f", "%c", 0x7f);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "c80", "%c", 0x80);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "cff", "%c", 0xff);
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "s-empty", "%s", "");
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "s-a", "%s", "a");
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "s-hi", "%s", "\x80\xff");
-	VPRINTF_CASE(S_VPRINTF_L, loc, 1, "mix", "%d %u %x %c", 42, 7u, 0xab, 'Q');
+	vprintf_case(S_VPRINTF_L, loc, 1, "empty", "");
+	vprintf_case(S_VPRINTF_L, loc, 1, "pct", "%%");
+	vprintf_case(S_VPRINTF_L, loc, 1, "d0", "%d", 0);
+	vprintf_case(S_VPRINTF_L, loc, 1, "d1", "%d", 1);
+	vprintf_case(S_VPRINTF_L, loc, 1, "d-1", "%d", -1);
+	vprintf_case(S_VPRINTF_L, loc, 1, "dmax", "%d", INT_MAX);
+	vprintf_case(S_VPRINTF_L, loc, 1, "dmin", "%d", INT_MIN);
+	vprintf_case(S_VPRINTF_L, loc, 1, "u", "%u", 0xffffffffu);
+	vprintf_case(S_VPRINTF_L, loc, 1, "x", "%x", 0xdeadbeefu);
+	vprintf_case(S_VPRINTF_L, loc, 1, "c0", "%c", 0);
+	vprintf_case(S_VPRINTF_L, loc, 1, "c7f", "%c", 0x7f);
+	vprintf_case(S_VPRINTF_L, loc, 1, "c80", "%c", 0x80);
+	vprintf_case(S_VPRINTF_L, loc, 1, "cff", "%c", 0xff);
+	vprintf_case(S_VPRINTF_L, loc, 1, "s-empty", "%s", "");
+	vprintf_case(S_VPRINTF_L, loc, 1, "s-a", "%s", "a");
+	vprintf_case(S_VPRINTF_L, loc, 1, "s-hi", "%s", "\x80\xff");
+	vprintf_case(S_VPRINTF_L, loc, 1, "mix", "%d %u %x %c", 42, 7u, 0xab, 'Q');
 }
 
 static void
@@ -514,33 +517,33 @@ vprintf_random(locale_t loc, long n)
 
 		switch (pick) {
 		case 0:
-			VPRINTF_CASE(S_VPRINTF, loc, 0, "random", "");
-			VPRINTF_CASE(S_VPRINTF_L, loc, 1, "random", "");
+			vprintf_case(S_VPRINTF, loc, 0, "random", "");
+			vprintf_case(S_VPRINTF_L, loc, 1, "random", "");
 			break;
 		case 1:
-			VPRINTF_CASE(S_VPRINTF, loc, 0, "random", "%d",
+			vprintf_case(S_VPRINTF, loc, 0, "random", "%d",
 			    (int)((int)rnd_u32() ^ (int)(rnd_u32() & 1 ? 0 :
 			    INT_MIN)));
-			VPRINTF_CASE(S_VPRINTF_L, loc, 1, "random", "%d",
+			vprintf_case(S_VPRINTF_L, loc, 1, "random", "%d",
 			    (int)((int)rnd_u32() ^ (int)(rnd_u32() & 1 ? 0 :
 			    INT_MIN)));
 			break;
 		case 2:
-			VPRINTF_CASE(S_VPRINTF, loc, 0, "random", "%u",
+			vprintf_case(S_VPRINTF, loc, 0, "random", "%u",
 			    rnd_u32());
-			VPRINTF_CASE(S_VPRINTF_L, loc, 1, "random", "%u",
+			vprintf_case(S_VPRINTF_L, loc, 1, "random", "%u",
 			    rnd_u32());
 			break;
 		case 3:
-			VPRINTF_CASE(S_VPRINTF, loc, 0, "random", "%x",
+			vprintf_case(S_VPRINTF, loc, 0, "random", "%x",
 			    rnd_u32());
-			VPRINTF_CASE(S_VPRINTF_L, loc, 1, "random", "%x",
+			vprintf_case(S_VPRINTF_L, loc, 1, "random", "%x",
 			    rnd_u32());
 			break;
 		case 4:
-			VPRINTF_CASE(S_VPRINTF, loc, 0, "random", "%c",
+			vprintf_case(S_VPRINTF, loc, 0, "random", "%c",
 			    (int)(rnd_u32() & 0xff));
-			VPRINTF_CASE(S_VPRINTF_L, loc, 1, "random", "%c",
+			vprintf_case(S_VPRINTF_L, loc, 1, "random", "%c",
 			    (int)(rnd_u32() & 0xff));
 			break;
 		case 5: {
@@ -548,15 +551,15 @@ vprintf_random(locale_t loc, long n)
 			for (std::size_t i = 0; i < slen; i++)
 				str[i] = (char)(unsigned char)(rnd_u32() & 0xff);
 			str[slen] = '\0';
-			VPRINTF_CASE(S_VPRINTF, loc, 0, "random", "%s", str);
-			VPRINTF_CASE(S_VPRINTF_L, loc, 1, "random", "%s", str);
+			vprintf_case(S_VPRINTF, loc, 0, "random", "%s", str);
+			vprintf_case(S_VPRINTF_L, loc, 1, "random", "%s", str);
 			break;
 		}
 		default:
-			VPRINTF_CASE(S_VPRINTF, loc, 0, "random", "%d %u %c",
+			vprintf_case(S_VPRINTF, loc, 0, "random", "%d %u %c",
 			    (int)rnd_u32(), rnd_u32(),
 			    (int)(rnd_u32() & 0xff));
-			VPRINTF_CASE(S_VPRINTF_L, loc, 1, "random",
+			vprintf_case(S_VPRINTF_L, loc, 1, "random",
 			    "%d %u %c", (int)rnd_u32(), rnd_u32(),
 			    (int)(rnd_u32() & 0xff));
 			break;

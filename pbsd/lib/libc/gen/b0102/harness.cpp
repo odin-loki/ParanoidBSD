@@ -10,6 +10,7 @@
 import pbsd.lib.libc.gen.b0102;
 
 #include <csetjmp>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -37,17 +38,17 @@ namespace port = pbsd::lib_libc_gen::b0102;
 #define	MAX_PRINT	12
 #define	ENT_RAISED	(-1000)
 
-struct aiocb {
+struct ora_aiocb {
 	int	aio_lio_opcode;
 };
 
-struct DIR {
+struct ora_dir {
 	pthread_mutex_t	dd_lock;
 };
 
 extern "C" {
-int ref_aio_write2(struct aiocb *, int);
-void ref_seekdir(struct DIR *, long);
+int ref_aio_write2(ora_aiocb *, int);
+void ref_seekdir(ora_dir *, long);
 sig_t ref_signal(int, sig_t);
 int ref_getentropy(void *, size_t);
 extern sigset_t _sigintr;
@@ -146,7 +147,7 @@ aio_mock_reset(int script)
 }
 
 extern "C" int
-lio_listio(int mode, struct aiocb *const list[], int nent, void *sig)
+lio_listio(int mode, aiocb *const list[], int nent, void *sig)
 {
 	(void)sig;
 
@@ -176,7 +177,7 @@ lio_listio(int mode, struct aiocb *const list[], int nent, void *sig)
 }
 
 extern "C" int
-aio_error(const struct aiocb *iocb)
+aio_error(const aiocb *iocb)
 {
 	(void)iocb;
 
@@ -197,7 +198,7 @@ aio_error(const struct aiocb *iocb)
 
 struct guarded_aiocb {
 	unsigned char	pre[32];
-	struct aiocb	cb;
+	aiocb		cb;
 	unsigned char	post[32];
 };
 
@@ -270,7 +271,7 @@ do_aio_write2(int flags, int script, int seed_opcode, const char *label)
 
 	aio_mock_reset(script);
 	errno = 0;
-	rvb = ref_aio_write2(&gb.cb, flags);
+	rvb = ref_aio_write2(reinterpret_cast<ora_aiocb *>(&gb.cb), flags);
 	cb = snap_aio(rvb, gb);
 
 	if (!aio_cap_eq(ca, cb))
@@ -281,7 +282,7 @@ do_aio_write2(int flags, int script, int seed_opcode, const char *label)
 
 struct test_dir {
 	unsigned char	pre[32];
-	struct DIR	dir;
+	DIR		dir;
 	long		recorded_loc;
 	unsigned char	post[32];
 };
@@ -316,7 +317,7 @@ _pthread_mutex_unlock(pthread_mutex_t *m)
 }
 
 extern "C" void
-_seekdir(struct DIR *dirp, long loc)
+_seekdir(DIR *dirp, long loc)
 {
 	test_dir *td;
 
@@ -389,7 +390,7 @@ do_seekdir(long loc, int threaded, const char *label)
 	ca = snap_seek(da);
 
 	seek_mock_reset();
-	ref_seekdir(&db.dir, loc);
+	ref_seekdir(reinterpret_cast<ora_dir *>(&db.dir), loc);
 	cb = snap_seek(db);
 
 	if (!seek_cap_eq(ca, cb))

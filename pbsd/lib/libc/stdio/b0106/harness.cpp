@@ -258,7 +258,7 @@ run_fputs_edges(StatId which)
 	static const char empty[] = "";
 	static const char one[] = "a";
 	static const char hi[] = "\x80\xff\x7f\xfe";
-	static const char mix[] = "abc\x00def";
+	static const char mix[] = "abc\000def";
 	char longbuf[300];
 
 	std::memset(longbuf, 'Z', sizeof(longbuf) - 1);
@@ -340,54 +340,58 @@ pop_stdin(void)
 	clearerr(stdin);
 }
 
+template<typename... Args>
 int
 call_ref_scanf(const unsigned char *input, std::size_t n, const char *fmt,
-    int *out)
+    Args... args)
 {
 	int r = -9999;
 
 	if (!push_stdin_bytes(input, n))
 		return -9999;
-	r = ref_scanf(fmt, out);
+	r = ref_scanf(fmt, args...);
 	pop_stdin();
 	return r;
 }
 
+template<typename... Args>
 int
 call_port_scanf(const unsigned char *input, std::size_t n, const char *fmt,
-    int *out)
+    Args... args)
 {
 	int r = -9999;
 
 	if (!push_stdin_bytes(input, n))
 		return -9999;
-	r = port::scanf(fmt, out);
+	r = port::scanf(fmt, args...);
 	pop_stdin();
 	return r;
 }
 
+template<typename... Args>
 int
 call_ref_scanf_l(locale_t loc, const unsigned char *input, std::size_t n,
-    const char *fmt, int *out)
+    const char *fmt, Args... args)
 {
 	int r = -9999;
 
 	if (!push_stdin_bytes(input, n))
 		return -9999;
-	r = ref_scanf_l(loc, fmt, out);
+	r = ref_scanf_l(loc, fmt, args...);
 	pop_stdin();
 	return r;
 }
 
+template<typename... Args>
 int
 call_port_scanf_l(locale_t loc, const unsigned char *input, std::size_t n,
-    const char *fmt, int *out)
+    const char *fmt, Args... args)
 {
 	int r = -9999;
 
 	if (!push_stdin_bytes(input, n))
 		return -9999;
-	r = port::scanf_l(loc, fmt, out);
+	r = port::scanf_l(loc, fmt, args...);
 	pop_stdin();
 	return r;
 }

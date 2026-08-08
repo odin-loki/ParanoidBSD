@@ -8,6 +8,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
+#include <locale.h>
+#include <stdarg.h>
 #include <unistd.h>
 
 import pbsd.lib.libc.stdio.b0100;
@@ -22,12 +24,6 @@ typedef struct {
 	short		_flags;
 	short		_file;
 } ref_FILE;
-
-typedef void *locale_t;
-#define LC_ALL_MASK	0
-#define LC_GLOBAL_LOCALE ((locale_t)0)
-locale_t newlocale(int, const char *, locale_t);
-void freelocale(locale_t);
 
 int		ref_wprintf(const wchar_t * __restrict, ...);
 int		ref_wprintf_l(locale_t, const wchar_t * __restrict, ...);

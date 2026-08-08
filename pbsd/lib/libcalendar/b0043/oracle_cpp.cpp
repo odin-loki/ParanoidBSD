@@ -1,8 +1,10 @@
+#include <cstddef>
+extern "C" {
 /*
  * Reference oracle for batch b0043 (lib/libcalendar).
  *
  * Original HardenedBSD sources concatenated, every function renamed with a
- * cpp_ prefix.  Function bodies are UNMODIFIED.
+ * ref_ prefix.  Function bodies are UNMODIFIED.
  *
  * Sources:
  *   hbsd/src/lib/libcalendar/calendar.c
@@ -10,6 +12,7 @@
  */
 
 #ifndef NULL
+#define NULL 0
 #endif
 
 struct date {
@@ -18,6 +21,21 @@ struct date {
 	int d;	/* day */
 };
 
+#define date2idt		cpp_date2idt
+#define idt2date		cpp_idt2date
+#define ndaysji			cpp_ndaysji
+#define ndaysgi			cpp_ndaysgi
+#define firstweek		cpp_firstweek
+#define gdate			cpp_gdate
+#define jdate			cpp_jdate
+#define ndaysj			cpp_ndaysj
+#define ndaysg			cpp_ndaysg
+#define weekday			cpp_weekday
+#define week			cpp_week
+#define easterodn		cpp_easterodn
+#define easterg			cpp_easterg
+#define easterog		cpp_easterog
+#define easteroj		cpp_easteroj
 
 int cpp_weekday(int nd);
 
@@ -448,4 +466,6 @@ cpp_easterodn(int y)
 	/* Return the next sunday after the easter limit */
 	dn = ndaysj(&dt);
 	return (dn + ns[weekday(dn)]);
+}
+
 }

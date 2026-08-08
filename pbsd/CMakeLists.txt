@@ -20,6 +20,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/aarch64/gen/b0022/port.cppm
   lib/libc/aarch64/string/b0018/port.cppm
   lib/libc/aarch64/string/b0071/port.cppm
+  lib/libc/aarch64/string/b0112/port.cppm
   lib/libc/aarch64/string/strsep_m/port.cppm
   lib/libc/amd64/gen/b0055/port.cppm
   lib/libc/amd64/gen/b0056/port.cppm
@@ -191,6 +192,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/b0032/port.cppm
   lib/libc/string/b0099/port.cppm
   lib/libc/string/b0105/port.cppm
+  lib/libc/string/b0113/port.cppm
   lib/libc/string/bcmp_m/port.cppm
   lib/libc/string/ffs_m/port.cppm
   lib/libc/string/ffsl_m/port.cppm

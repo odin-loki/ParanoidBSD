@@ -58,6 +58,23 @@ import pbsd.lib.libc.sys.b0097;
 
 namespace port = pbsd::lib_libc_sys::b0097;
 
+using port_wait6_fn = pid_t (*)(idtype_t, id_t, int *, int,
+    struct __wrusage *, siginfo_t *);
+
+static port_wait6_fn
+port_wait6_ptr(void)
+{
+	return (reinterpret_cast<port_wait6_fn>(
+	    reinterpret_cast<void *>(port::wait6)));
+}
+
+static pid_t
+call_port_wait6(idtype_t idtype, id_t id, int *status, int options,
+    struct __wrusage *ru, siginfo_t *infop)
+{
+	return (port_wait6_ptr()(idtype, id, status, options, ru, infop));
+}
+
 #define	GUARD			0x7f
 #define	MSG_CAP			64
 #define	MSG_GUARD_PAD		16
@@ -426,8 +443,7 @@ case_wait6(idtype_t idtype, id_t id, int *status, int options,
 	unsigned char info_a[sizeof(siginfo_t) + 2 * INFO_GUARD_PAD];
 	unsigned char info_b[sizeof(siginfo_t) + 2 * INFO_GUARD_PAD];
 	int *psa, *psb;
-	struct __wrusage *rua;
-	port::__wrusage *rub_p;
+	struct __wrusage *rua, *rub;
 	siginfo_t *ia, *ib;
 	Snap snap_a, snap_b;
 	pid_t ra, rb;
@@ -448,8 +464,8 @@ case_wait6(idtype_t idtype, id_t id, int *status, int options,
 	    (int *)(status_b + STATUS_GUARD_PAD) : nullptr;
 	rua = ru != nullptr ?
 	    (struct __wrusage *)(ru_a + RU_GUARD_PAD) : nullptr;
-	rub_p = ru != nullptr ?
-	    (port::__wrusage *)(ru_b + RU_GUARD_PAD) : nullptr;
+	rub = ru != nullptr ?
+	    (struct __wrusage *)(ru_b + RU_GUARD_PAD) : nullptr;
 	ia = infop != nullptr ?
 	    (siginfo_t *)(info_a + INFO_GUARD_PAD) : nullptr;
 	ib = infop != nullptr ?
@@ -462,7 +478,7 @@ case_wait6(idtype_t idtype, id_t id, int *status, int options,
 
 	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
-	rb = port::wait6(idtype, id, psb, options, rub_p, ib);
+	rb = call_port_wait6(idtype, id, psb, options, rub, ib);
 	snap_b = take_snap();
 
 	snprintf(ctx, sizeof(ctx),

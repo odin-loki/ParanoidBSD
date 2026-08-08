@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 import pbsd.lib.libc.amd64.gen.b0055;
 
@@ -49,23 +50,6 @@ fp_except_t ref_fpgetsticky(void);
 #define	FP_STKY_OFF	0
 #define	SSE_STKY_FLD	0x3f
 
-struct alignas(16) FpEnv28 {
-	unsigned	fcw;
-	unsigned	fsw;
-	unsigned	ftw;
-	unsigned	fpu_op;
-	unsigned	fpu_sel;
-	unsigned	fpu_ip;
-	unsigned	fpu_dp;
-};
-
-struct SavedFp {
-	FpEnv28		x87;
-	unsigned	mxcsr;
-};
-
-alignas(16) static FpEnv28 g_fp_env;
-
 struct FnStats {
 	const char	*name;
 	unsigned long	cases;
@@ -76,6 +60,14 @@ static FnStats stats_fpgetprec = { "fpgetprec", 0, 0 };
 static FnStats stats_fpgetround = { "fpgetround", 0, 0 };
 static FnStats stats_fpgetmask = { "fpgetmask", 0, 0 };
 static FnStats stats_fpgetsticky = { "fpgetsticky", 0, 0 };
+
+alignas(64) static unsigned char g_fxsave[512];
+alignas(64) static unsigned char g_fxwork[512];
+
+struct SavedFp {
+	unsigned char	fx[512];
+	unsigned	mxcsr;
+};
 
 static unsigned
 xorshift32(unsigned *state)
@@ -90,15 +82,15 @@ xorshift32(unsigned *state)
 }
 
 static void
-fnstenv(FpEnv28 *env)
+fxsave_buf(unsigned char *buf)
 {
-	__asm__ __volatile__("fnstenv %0" : "=m"(*env));
+	__asm__ __volatile__("fxsave %0" : "=m"(*buf));
 }
 
 static void
-fldenv(const FpEnv28 *env)
+fxrstor_buf(const unsigned char *buf)
 {
-	__asm__ __volatile__("fldenv %0" : : "m"(*env));
+	__asm__ __volatile__("fxrstor %0" : : "m"(*buf));
 }
 
 static void
@@ -113,19 +105,49 @@ ldmxcsr(unsigned mxcsr)
 	__asm__ __volatile__("ldmxcsr %0" : : "m"(mxcsr));
 }
 
+static unsigned short
+fx_cw(const unsigned char *buf)
+{
+	unsigned short cw;
+
+	std::memcpy(&cw, buf, sizeof(cw));
+	return (cw);
+}
+
+static unsigned short
+fx_sw(const unsigned char *buf)
+{
+	unsigned short sw;
+
+	std::memcpy(&sw, buf + 2, sizeof(sw));
+	return (sw);
+}
+
+static void
+fx_set_cw(unsigned char *buf, unsigned short cw)
+{
+	std::memcpy(buf, &cw, sizeof(cw));
+}
+
+static void
+fx_set_sw(unsigned char *buf, unsigned short sw)
+{
+	std::memcpy(buf + 2, &sw, sizeof(sw));
+}
+
 static void
 save_fp(SavedFp *s)
 {
-	fnstenv(&g_fp_env);
-	s->x87 = g_fp_env;
+	fxsave_buf(g_fxsave);
+	std::memcpy(s->fx, g_fxsave, sizeof(s->fx));
 	stmxcsr(&s->mxcsr);
 }
 
 static void
 restore_fp(const SavedFp *s)
 {
-	g_fp_env = s->x87;
-	fldenv(&g_fp_env);
+	std::memcpy(g_fxsave, s->fx, sizeof(g_fxsave));
+	fxrstor_buf(g_fxsave);
 	ldmxcsr(s->mxcsr);
 }
 
@@ -152,11 +174,14 @@ static void
 apply_fp_state(const SavedFp *base, unsigned short cw, unsigned short sw,
     unsigned mxcsr)
 {
-	g_fp_env = base->x87;
-	g_fp_env.fcw = (g_fp_env.fcw & ~0xffffu) | (cw & 0xffffu);
-	g_fp_env.fsw = (g_fp_env.fsw & ~0xffffu) |
-	    ((g_fp_env.fsw & ~FP_STKY_FLD) | (sw & FP_STKY_FLD)) & 0xffffu;
-	fldenv(&g_fp_env);
+	unsigned short merged_sw;
+
+	std::memcpy(g_fxwork, base->fx, sizeof(g_fxwork));
+	merged_sw = (fx_sw(g_fxwork) & (unsigned short)~FP_STKY_FLD) |
+	    (sw & FP_STKY_FLD);
+	fx_set_cw(g_fxwork, cw);
+	fx_set_sw(g_fxwork, merged_sw);
+	fxrstor_buf(g_fxwork);
 	ldmxcsr(mxcsr);
 }
 

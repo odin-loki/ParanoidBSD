@@ -4,19 +4,6 @@ module;
 #include <cwchar>
 #include <stdarg.h>
 
-extern "C" {
-struct _IO_FILE;
-extern struct _IO_FILE *stdout;
-int vfwprintf(struct _IO_FILE * __restrict, const wchar_t * __restrict,
-    va_list);
-typedef void *locale_t;
-int vfwprintf_l(struct _IO_FILE * __restrict, locale_t,
-    const wchar_t * __restrict, va_list);
-extern int __isthreaded;
-void _flockfile(void *);
-void _funlockfile(void *);
-}
-
 export module pbsd.lib.libc.stdio.b0100;
 
 export namespace pbsd::lib_libc_stdio::b0100 {
@@ -36,6 +23,20 @@ struct FILE {
 
 #define	FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
 #define	FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
+
+extern "C" {
+struct _IO_FILE;
+extern struct _IO_FILE *stdout;
+int vfwprintf(struct _IO_FILE * __restrict, const wchar_t * __restrict,
+    va_list);
+int vfwprintf_l(struct _IO_FILE * __restrict, void *locale,
+    const wchar_t * __restrict, va_list);
+extern int __isthreaded;
+void _flockfile(void *);
+void _funlockfile(void *);
+}
+
+typedef void *locale_t;
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause

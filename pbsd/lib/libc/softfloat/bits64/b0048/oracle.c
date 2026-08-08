@@ -287,6 +287,7 @@ int float_exception_mask = 0;
 
 /* Expose file-scope static helpers to the harness linker. */
 #define static
+#define INLINE
 
 /* $NetBSD: softfloat-macros,v 1.2 2009/02/16 10:23:35 tron Exp $ */
 

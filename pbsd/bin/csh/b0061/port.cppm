@@ -69,7 +69,7 @@ iconv_t
 dl_iconv_open(const char *tocode, const char *fromcode)
 {
 	if (initialized) {
-		if (iconvlib == NULL)
+		if (iconvlib != NULL)
 			return (iconv_t)-1;
 	} else {
 		initialized = 1;
