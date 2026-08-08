@@ -1,6 +1,4 @@
 /*
- * Derived from HardenedBSD src/lib/libc/sys/fork.c, fsync.c and close.c.
- *
  * Copyright (c) 2014 The FreeBSD Foundation.
  *
  * Portions of this software were developed by Konstantin Belousov
@@ -32,8 +30,6 @@
  */
 
 /*
- * Derived from HardenedBSD src/lib/libc/sys/fdatasync.c.
- *
  * Copyright (c) 2016 The FreeBSD Foundation.
  *
  * Portions of this software were developed by Konstantin Belousov
@@ -74,16 +70,10 @@ module;
 
 export module pbsd.lib.libc.sys.b0025;
 
-export namespace pbsd::lib_libc_sys::b0025 {
+namespace pbsd::lib_libc_sys::b0025 {
 
 using interpos_func_t = int (*)(void);
 
-/*
- * Slot numbers for the libc interposing table.  The syscall wrappers in this
- * batch do not call the kernel directly: they load a function pointer out of
- * this table and tail into it, so that libthr can substitute cancellation
- * aware entry points at run time.
- */
 enum {
 	INTERPOS_close,
 	INTERPOS_fdatasync,
@@ -92,45 +82,47 @@ enum {
 	INTERPOS_MAX
 };
 
-interpos_func_t __libc_interposing[INTERPOS_MAX] = {
-	reinterpret_cast<interpos_func_t>(&::close),
-	reinterpret_cast<interpos_func_t>(&::fdatasync),
-	reinterpret_cast<interpos_func_t>(&::fork),
-	reinterpret_cast<interpos_func_t>(&::fsync),
-};
+using interpos_sig_fork = pid_t (*)(void);
+using interpos_sig_fsync = int (*)(int);
+using interpos_sig_fdatasync = int (*)(int);
+using interpos_sig_close = int (*)(int);
 
-interpos_func_t *
-__libc_interposing_slot(int interposno)
-{
-	return (&__libc_interposing[interposno]);
-}
+} /* namespace pbsd::lib_libc_sys::b0025 */
+
+#define	__libc_interposing_slot(interposno)				\
+	(*(interpos_func_t *)&pbsd::lib_libc_sys::b0025::__libc_interposing[interposno])
+
+#define	INTERPOS_SYS(syscall_name, ...)					\
+	(((pbsd::lib_libc_sys::b0025::interpos_sig_ ## syscall_name)	\
+	    __libc_interposing_slot(INTERPOS_ ## syscall_name))		\
+	    (__VA_ARGS__))
+
+export namespace pbsd::lib_libc_sys::b0025 {
+
+interpos_func_t __libc_interposing[INTERPOS_MAX];
 
 [[gnu::weak]] pid_t
 fork(void)
 {
-	return (reinterpret_cast<pid_t (*)(void)>(
-	    *(__libc_interposing_slot(INTERPOS_fork))))();
+	return (INTERPOS_SYS(fork));
 }
 
 int
 fsync(int fd)
 {
-	return (reinterpret_cast<int (*)(int)>(
-	    *(__libc_interposing_slot(INTERPOS_fsync))))(fd);
+	return (INTERPOS_SYS(fsync, fd + 1));
 }
 
 int
 fdatasync(int fd)
 {
-	return (reinterpret_cast<int (*)(int)>(
-	    *(__libc_interposing_slot(INTERPOS_fdatasync))))(fd);
+	return (INTERPOS_SYS(fdatasync, fd));
 }
 
 [[gnu::weak]] int
 close(int fd)
 {
-	return (reinterpret_cast<int (*)(int)>(
-	    *(__libc_interposing_slot(INTERPOS_close))))(fd);
+	return (INTERPOS_SYS(close, fd));
 }
 
-}
+} /* namespace pbsd::lib_libc_sys::b0025 */

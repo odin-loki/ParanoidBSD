@@ -1,249 +1,322 @@
 /*
  * harness.cpp -- differential test for PBSD batch b0006.
  *
- * Drives pimd_priv_grant against the ref_ oracle with hand-written edge
- * cases and a fixed-seed randomised sweep.  Each ucred operand is staged
- * in two guard buffers pre-filled with 0x7f so any stray write is caught.
+ * Drives the C++23 port in port.cppm and the C reference in oracle.c with
+ * identical inputs and compares every observable: the return value, the
+ * bytes of the credential structure the callee was handed, and the guard
+ * bytes surrounding it.
+ *
+ * mac_pimd.c contains exactly one function, pimd_priv_grant().  It writes to
+ * no buffer, returns no pointer and holds no iterator state, so the buffer /
+ * offset / iterator protocols degenerate to: place the struct ucred inside a
+ * 0x7f-filled arena and require the whole arena to be byte-identical
+ * afterwards.  The function's real inputs are four values -- the two
+ * sysctl-backed globals pimd_enabled and pimd_uid, the credential's cr_uid,
+ * and priv -- and all four are swept.
  */
 
 #include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <vector>
+#include <new>
+#include <random>
 
 import pbsd.sys.security.mac.pimd.b0006;
 
 namespace port = pbsd::sys_security_mac_pimd::b0006;
 
+/* Layout-identical mirror of the struct ucred defined in oracle.c. */
+struct ucred {
+	unsigned int	cr_ref;
+	std::uint32_t	cr_uid;
+	std::uint32_t	cr_ruid;
+	std::uint32_t	cr_svuid;
+	std::uint32_t	cr_rgid;
+	std::uint32_t	cr_svgid;
+};
+
 extern "C" {
-extern int ref_pimd_enabled;
-extern int ref_pimd_uid;
-int ref_pimd_priv_grant_export(port::ucred *cred, int priv);
+extern int pimd_enabled;
+extern int pimd_uid;
+int ref_pimd_priv_grant(struct ucred *cred, int priv);
 }
+
+static_assert(sizeof(struct ucred) == sizeof(port::ucred),
+    "oracle and port credential layouts must match");
 
 namespace {
 
-constexpr int MAX_REPORT = 10;
-constexpr long RANDOM_ITERATIONS = 250000;
-constexpr int PRIV_NETINET_MROUTE = 496;
-constexpr int EPERM = 1;
+constexpr std::size_t ARENA = 64;
+constexpr std::size_t OFFSET = 8;
+constexpr unsigned char GUARD = 0x7f;
 
-constexpr std::size_t GUARD_SIZE = 64;
-constexpr std::size_t GUARD_OFF = 16;
-
-struct Stat {
-	const char *name;
-	long cases;
-	long fails;
-	int reported;
+struct Stats {
+	const char	*name;
+	unsigned long	 cases;
+	unsigned long	 failures;
+	unsigned long	 granted;	/* observed return 0 */
+	unsigned long	 denied;	/* observed return EPERM */
 };
 
-Stat st_pimd_priv_grant{"pimd_priv_grant", 0, 0, 0};
+Stats g_pg = { "pimd_priv_grant", 0, 0, 0, 0 };
 
-struct GuardCred {
-	unsigned char b[GUARD_SIZE];
+unsigned long g_reported = 0;
 
-	void fill()
-	{
-		std::memset(b, 0x7f, GUARD_SIZE);
-	}
-
-	port::ucred *cred()
-	{
-		return reinterpret_cast<port::ucred *>(b + GUARD_OFF);
-	}
-
-	const port::ucred *cred() const
-	{
-		return reinterpret_cast<const port::ucred *>(b + GUARD_OFF);
-	}
-
-	void set_uid(std::uint32_t uid)
-	{
-		cred()->cr_uid = uid;
-	}
-
-};
-
-std::uint64_t prng_state;
-
-void prng_seed(std::uint64_t seed)
+/*
+ * Fill an arena with the guard byte, materialise a credential at OFFSET whose
+ * cr_uid is the requested value and whose other members carry fixed sentinel
+ * values, and return a pointer to it.
+ */
+template <typename Cred>
+Cred *
+place(unsigned char *arena, std::uint32_t cr_uid, std::uint32_t tag)
 {
-	prng_state = seed;
+	std::memset(arena, GUARD, ARENA);
+	Cred *c = new (arena + OFFSET) Cred{};
+	c->cr_ref = 0xa5a5a5a5u;
+	c->cr_uid = cr_uid;
+	c->cr_ruid = tag;
+	c->cr_svuid = ~tag;
+	c->cr_rgid = tag ^ 0x5a5a5a5au;
+	c->cr_svgid = 0xdeadbeefu;
+	return c;
 }
 
-std::uint64_t prng_next()
+void
+report(const char *phase, int enabled, int uidvar, std::uint32_t cr_uid,
+    int priv, int got, int want, const char *what)
 {
-	std::uint64_t z = (prng_state += 0x9E3779B97F4A7C15ULL);
-	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
-	z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
-	return z ^ (z >> 31);
-}
-
-std::uint32_t rand_u32()
-{
-	return static_cast<std::uint32_t>(prng_next());
-}
-
-int rand_int()
-{
-	return static_cast<int>(prng_next());
-}
-
-void report_fail(Stat &st, const char *detail)
-{
-	if (st.reported < MAX_REPORT)
-		std::fprintf(stderr, "  FAIL %s: %s\n", st.name, detail);
-	++st.reported;
-}
-
-void check_case(Stat &st, int enabled, int uid, std::uint32_t cr_uid, int priv)
-{
-	++st.cases;
-
-	port::pimd_enabled = enabled;
-	port::pimd_uid = uid;
-	ref_pimd_enabled = enabled;
-	ref_pimd_uid = uid;
-
-	GuardCred g_port;
-	GuardCred g_ref;
-	g_port.fill();
-	g_ref.fill();
-	g_port.set_uid(cr_uid);
-	g_ref.set_uid(cr_uid);
-
-	const int got_port =
-	    port::pimd_priv_grant_export(g_port.cred(), priv);
-	const int got_ref =
-	    ref_pimd_priv_grant_export(g_ref.cred(), priv);
-
-	if (got_port != got_ref) {
-		++st.fails;
-		char buf[256];
-		std::snprintf(buf, sizeof(buf),
-		    "enabled=%d uid=%d cr_uid=%u priv=%d -> port=%d ref=%d",
-		    enabled, uid, cr_uid, priv, got_port, got_ref);
-		report_fail(st, buf);
+	if (g_reported >= 20) {
+		if (g_reported == 20)
+			std::printf("  ... further failures suppressed\n");
+		g_reported++;
 		return;
 	}
+	g_reported++;
+	std::printf("  FAIL [%s] %s: pimd_enabled=%d pimd_uid=%d "
+	    "cr_uid=0x%08lx priv=%d  port=%d oracle=%d\n",
+	    phase, what, enabled, uidvar,
+	    static_cast<unsigned long>(cr_uid), priv, got, want);
+}
 
-	if (std::memcmp(g_port.b, g_ref.b, GUARD_SIZE) != 0) {
-		++st.fails;
-		report_fail(st, "guard buffer mismatch");
+/*
+ * Run one differential case.  set_globals selects whether the two sysctl
+ * variables are written before the call; the pristine phase leaves them at
+ * their static initialisers so that a mutated initialiser is observable.
+ */
+void
+run_case(const char *phase, bool set_enabled, int enabled, bool set_uidvar,
+    int uidvar, std::uint32_t cr_uid, int priv, std::uint32_t tag)
+{
+	alignas(16) unsigned char parena[ARENA];
+	alignas(16) unsigned char oarena[ARENA];
+
+	if (set_enabled) {
+		port::pimd_enabled = enabled;
+		pimd_enabled = enabled;
+	}
+	if (set_uidvar) {
+		port::pimd_uid = uidvar;
+		pimd_uid = uidvar;
+	}
+
+	port::ucred *pc = place<port::ucred>(parena, cr_uid, tag);
+	struct ucred *oc = place<struct ucred>(oarena, cr_uid, tag);
+
+	int pr = port::pimd_priv_grant(pc, priv);
+	int orr = ref_pimd_priv_grant(oc, priv);
+
+	g_pg.cases++;
+	bool bad = false;
+
+	if (pr != orr) {
+		bad = true;
+		report(phase, port::pimd_enabled, port::pimd_uid, cr_uid, priv,
+		    pr, orr, "return value");
+	}
+	if (std::memcmp(parena, oarena, ARENA) != 0) {
+		bad = true;
+		report(phase, port::pimd_enabled, port::pimd_uid, cr_uid, priv,
+		    pr, orr, "arena bytes");
+	}
+	/* The globals must not have been disturbed by either callee. */
+	if (port::pimd_enabled != pimd_enabled ||
+	    port::pimd_uid != pimd_uid) {
+		bad = true;
+		report(phase, port::pimd_enabled, port::pimd_uid, cr_uid, priv,
+		    pr, orr, "global state");
+	}
+
+	if (bad)
+		g_pg.failures++;
+
+	if (orr == 0)
+		g_pg.granted++;
+	else
+		g_pg.denied++;
+}
+
+const int ENABLED_POOL[] = {
+	0, 1, -1, 2, 0x10000, INT_MIN, INT_MAX
+};
+
+const int UIDVAR_POOL[] = {
+	0, 1, -1, -2, 2, 1000, INT_MIN, INT_MAX
+};
+
+const std::uint32_t CRUID_POOL[] = {
+	0u, 1u, 2u, 1000u, 65534u,
+	0x7fffffffu, 0x80000000u, 0xfffffffeu, 0xffffffffu
+};
+
+const int PRIV_POOL[] = {
+	0, 1, -1, 490, 491, 494, 495, 496, 497, 498, 502,
+	INT_MIN, INT_MAX
+};
+
+std::uint32_t
+pick_cruid(std::mt19937_64 &rng)
+{
+	std::uint64_t r = rng();
+	switch (r % 8u) {
+	case 0: return 0u;
+	case 1: return 1u;
+	case 2: return 0xffffffffu;
+	case 3: return 0x7fffffffu;
+	case 4: return 0x80000000u;
+	case 5: return static_cast<std::uint32_t>((r >> 8) % 8u);
+	case 6: return 0xfffffff8u + static_cast<std::uint32_t>((r >> 8) % 8u);
+	default: return static_cast<std::uint32_t>(r >> 16);
 	}
 }
 
-void run_edge_cases(Stat &st)
+int
+pick_priv(std::mt19937_64 &rng)
 {
-	struct Case {
-		int enabled;
-		int uid;
-		std::uint32_t cr_uid;
-		int priv;
-	};
-
-	static const Case cases[] = {
-		/* disabled: short-circuit pimd_enabled */
-		{0, 0, 0, PRIV_NETINET_MROUTE},
-		{0, 0, 0, 0},
-		{0, 0, 0, -1},
-		{0, 1, 1, PRIV_NETINET_MROUTE},
-		{0, -1, UINT32_MAX, PRIV_NETINET_MROUTE},
-
-		/* enabled but uid mismatch */
-		{1, 0, 1, PRIV_NETINET_MROUTE},
-		{1, 1, 0, PRIV_NETINET_MROUTE},
-		{1, 100, 99, PRIV_NETINET_MROUTE},
-		{1, -1, 0, PRIV_NETINET_MROUTE},
-		{1, 0, UINT32_MAX, PRIV_NETINET_MROUTE},
-		{1, INT_MAX, static_cast<std::uint32_t>(INT_MAX) + 1U,
-		    PRIV_NETINET_MROUTE},
-
-		/* enabled, uid match, priv boundary around MROUTE */
-		{1, 0, 0, PRIV_NETINET_MROUTE},
-		{1, 0, 0, PRIV_NETINET_MROUTE - 1},
-		{1, 0, 0, PRIV_NETINET_MROUTE + 1},
-		{1, 0, 0, 0},
-		{1, 0, 0, -1},
-		{1, 0, 0, INT_MAX},
-		{1, 0, 0, INT_MIN},
-
-		/* signed pimd_uid vs unsigned cr_uid conversion */
-		{1, -1, UINT32_MAX, PRIV_NETINET_MROUTE},
-		{1, -1, UINT32_MAX, 0},
-		{1, -1, UINT32_MAX - 1, PRIV_NETINET_MROUTE},
-		{1, INT_MIN, static_cast<std::uint32_t>(INT_MIN),
-		    PRIV_NETINET_MROUTE},
-
-		/* truthy enabled values beyond 1 */
-		{2, 5, 5, PRIV_NETINET_MROUTE},
-		{-1, 3, 3, PRIV_NETINET_MROUTE},
-		{INT_MAX, 7, 7, PRIV_NETINET_MROUTE},
-
-		/* high-bit cr_uid bytes */
-		{1, 0x80, 0x80, PRIV_NETINET_MROUTE},
-		{1, 0xFF, 0xFF, PRIV_NETINET_MROUTE},
-		{1, static_cast<int>(0x80000000U), 0x80000000U, PRIV_NETINET_MROUTE},
-		{1, static_cast<int>(UINT32_MAX), UINT32_MAX, PRIV_NETINET_MROUTE},
-		{1, static_cast<int>(UINT32_MAX), UINT32_MAX, PRIV_NETINET_MROUTE - 1},
-
-		/* NUL-heavy is N/A for integers; boundary priv sweep */
-		{1, 42, 42, 495},
-		{1, 42, 42, 496},
-		{1, 42, 42, 497},
-	};
-
-	for (const Case &c : cases)
-		check_case(st, c.enabled, c.uid, c.cr_uid, c.priv);
+	std::uint64_t r = rng();
+	switch (r % 8u) {
+	case 0: return 496;
+	case 1: return 495;
+	case 2: return 497;
+	case 3: return 0;
+	case 4: return -1;
+	case 5: return 490 + static_cast<int>((r >> 8) % 13u);
+	case 6: return ((r >> 8) & 1u) ? INT_MIN : INT_MAX;
+	default: return static_cast<int>(static_cast<std::uint32_t>(r >> 16));
+	}
 }
 
-void run_random_sweep(Stat &st)
+int
+pick_enabled(std::mt19937_64 &rng)
 {
-	for (long i = 0; i < RANDOM_ITERATIONS; ++i) {
-		const int enabled = rand_int();
-		const int uid = rand_int();
-		const std::uint32_t cr_uid = rand_u32();
-		int priv = rand_int();
+	std::uint64_t r = rng();
+	switch (r % 8u) {
+	case 0: case 1: case 2: return 0;
+	case 3: case 4: case 5: return 1;
+	case 6: return -1;
+	default: return static_cast<int>(static_cast<std::uint32_t>(r >> 16));
+	}
+}
 
-		/* bias toward the switch boundary */
-		switch (prng_next() & 7) {
-		case 0:
-			priv = PRIV_NETINET_MROUTE;
-			break;
-		case 1:
-			priv = PRIV_NETINET_MROUTE - 1;
-			break;
-		case 2:
-			priv = PRIV_NETINET_MROUTE + 1;
-			break;
-		default:
-			break;
+int
+pick_uidvar(std::mt19937_64 &rng, std::uint32_t cr_uid)
+{
+	std::uint64_t r = rng();
+	switch (r % 8u) {
+	/* Bias hard towards the value that makes the comparison true. */
+	case 0: case 1: case 2:
+		return static_cast<int>(cr_uid);
+	case 3: return 0;
+	case 4: return 1;
+	case 5: return -1;
+	case 6: return static_cast<int>(cr_uid) + 1;
+	default: return static_cast<int>(static_cast<std::uint32_t>(r >> 16));
+	}
+}
+
+} /* anonymous namespace */
+
+int
+main(void)
+{
+	std::uint32_t tag = 0x11223344u;
+
+	/*
+	 * Phase 1 -- pristine.  Neither global is written, so both sides run
+	 * against their static initialisers.  With pimd_enabled == 0 every
+	 * call must be denied; a port whose initialiser was perturbed grants.
+	 */
+	for (std::uint32_t cr_uid : CRUID_POOL)
+		for (int priv : PRIV_POOL)
+			run_case("pristine", false, 0, false, 0, cr_uid, priv,
+			    tag++);
+
+	/*
+	 * Phase 2 -- enable only.  pimd_uid keeps its initialiser, so cr_uid
+	 * of 0 must match it and grant PRIV_NETINET_MROUTE.
+	 */
+	for (int enabled : ENABLED_POOL)
+		for (std::uint32_t cr_uid : CRUID_POOL)
+			for (int priv : PRIV_POOL)
+				run_case("enable-only", true, enabled, false, 0,
+				    cr_uid, priv, tag++);
+
+	/*
+	 * Phase 3 -- exhaustive cross product of the hand-written pools.
+	 * Covers both sides of every boundary: pimd_enabled zero/non-zero,
+	 * cr_uid equal/adjacent to pimd_uid (including the unsigned wrap that
+	 * makes pimd_uid == -1 match cr_uid == 0xffffffff), and priv on, one
+	 * below and one above PRIV_NETINET_MROUTE.
+	 */
+	for (int enabled : ENABLED_POOL)
+		for (int uidvar : UIDVAR_POOL)
+			for (std::uint32_t cr_uid : CRUID_POOL)
+				for (int priv : PRIV_POOL)
+					run_case("cross", true, enabled, true,
+					    uidvar, cr_uid, priv, tag++);
+
+	/*
+	 * Phase 4 -- targeted signedness cases: pimd_uid negative against the
+	 * cr_uid that it converts to, and the neighbours on either side.
+	 */
+	for (int k = 1; k <= 64; k++) {
+		std::uint32_t match = static_cast<std::uint32_t>(-k);
+		for (int priv : PRIV_POOL) {
+			run_case("signedness", true, 1, true, -k, match, priv,
+			    tag++);
+			run_case("signedness", true, 1, true, -k, match - 1u,
+			    priv, tag++);
+			run_case("signedness", true, 1, true, -k, match + 1u,
+			    priv, tag++);
 		}
-
-		check_case(st, enabled, uid, cr_uid, priv);
 	}
-}
 
-void print_stat(const Stat &st)
-{
-	std::printf("%-20s %8ld %8ld\n", st.name, st.cases, st.fails);
-}
+	/* Phase 5 -- fixed-seed randomised sweep. */
+	std::mt19937_64 rng(0x50425344'62303036ull);
+	for (long i = 0; i < 200000; i++) {
+		int enabled = pick_enabled(rng);
+		std::uint32_t cr_uid = pick_cruid(rng);
+		int uidvar = pick_uidvar(rng, cr_uid);
+		int priv = pick_priv(rng);
+		run_case("random", true, enabled, true, uidvar, cr_uid, priv,
+		    tag++);
+	}
 
-} // namespace
+	std::printf("\n%-24s %12s %12s %12s %12s\n", "function", "cases",
+	    "failures", "granted", "denied");
+	std::printf("%-24s %12lu %12lu %12lu %12lu\n", g_pg.name, g_pg.cases,
+	    g_pg.failures, g_pg.granted, g_pg.denied);
 
-int main()
-{
-	prng_seed(0xB0006FACEB00CULL);
-
-	run_edge_cases(st_pimd_priv_grant);
-	run_random_sweep(st_pimd_priv_grant);
-
-	std::printf("\n%-20s %8s %8s\n", "function", "cases", "failures");
-	print_stat(st_pimd_priv_grant);
-
-	const long total_fails = st_pimd_priv_grant.fails;
-
-	return total_fails == 0 ? 0 : 1;
+	/*
+	 * Both outcomes must actually have been produced, otherwise the sweep
+	 * never reached the grant path and the comparison proves nothing.
+	 */
+	int rc = (g_pg.failures == 0) ? 0 : 1;
+	if (g_pg.granted == 0 || g_pg.denied == 0) {
+		std::printf("\nERROR: sweep failed to exercise both outcomes\n");
+		rc = 1;
+	}
+	std::printf("\n%s\n", rc == 0 ? "PASS" : "FAIL");
+	return rc;
 }

@@ -23,9 +23,17 @@ union __nan_un {
 };
 
 /* bytes for +Infinity on aarch64 */
-const union __infinity_un __infinity = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f } };
+extern const union __infinity_un __infinity;
 
 /* bytes for NaN */
-const union __nan_un __nan = { { 0, 0, 0xc0, 0xff } };
+extern const union __nan_un __nan;
+
+} // namespace pbsd::lib_libc_aarch64_gen::b0022
+
+namespace pbsd::lib_libc_aarch64_gen::b0022 {
+
+extern const union __infinity_un __infinity = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f } };
+
+extern const union __nan_un __nan = { { 0, 0, 0xc0, 0xff } };
 
 } // namespace pbsd::lib_libc_aarch64_gen::b0022

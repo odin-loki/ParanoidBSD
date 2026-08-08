@@ -108,6 +108,8 @@ module;
 #include <fcntl.h>
 #include <unistd.h>
 
+export module pbsd.lib.libc.sys.b0024;
+
 /*
  * The raw system call entry points.  In libc these prototypes come from
  * "libc_private.h" (and, for __sys_mknodat, from a local declaration in
@@ -117,8 +119,6 @@ module;
 extern "C" int __sys_fstatat(int, const char *, struct stat *, int);
 extern "C" int __sys_mknodat(int, const char *, mode_t, dev_t);
 extern "C" pid_t __sys_fork(void);
-
-export module pbsd.lib.libc.sys.b0024;
 
 export namespace pbsd::lib_libc_sys::b0024 {
 

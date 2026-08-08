@@ -15,6 +15,7 @@ typedef __mbstate_t mbstate_t;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <langinfo.h>
 #include <uchar.h>
 
 export module pbsd.lib.libc.locale.b0002;
@@ -38,8 +39,6 @@ int _citrus_iconv_convert(struct _citrus_iconv * __restrict,
     char * __restrict * __restrict, std::size_t * __restrict,
     char * __restrict * __restrict, std::size_t * __restrict, std::uint32_t,
     std::size_t * __restrict);
-
-extern int port_iconv_open_fail;
 
 enum {
 	XLC_CTYPE = 1,
@@ -83,7 +82,7 @@ char *
 port_nl_langinfo_l(int item, locale_t locale)
 {
 	(void)locale;
-	if (item == 0x0000E) /* CODESET */
+	if (item == CODESET)
 		return ("UTF-8");
 	return ("");
 }
@@ -166,7 +165,7 @@ c16rtomb_l(char * __restrict s, char16_t c, mbstate_t * __restrict ps,
 	/* Reinitialize mbstate_t. */
 	if (s == nullptr || !cs->initialized) {
 		if (_citrus_iconv_open(&handle, "UTF-16-INTERNAL",
-		    port_nl_langinfo_l(0x0000E, locale)) != 0) {
+		    port_nl_langinfo_l(CODESET, locale)) != 0) {
 			cs->initialized = false;
 			errno = EINVAL;
 			return ((std::size_t)-1);
@@ -198,7 +197,7 @@ c16rtomb_l(char * __restrict s, char16_t c, mbstate_t * __restrict ps,
 		errno = EILSEQ;
 		return ((std::size_t)-1);
 	}
-	return ((std::size_t)(dst - s));
+	return (dst - s);
 }
 
 std::size_t
@@ -267,7 +266,7 @@ c32rtomb_l(char * __restrict s, char32_t c, mbstate_t * __restrict ps,
 	/* Reinitialize mbstate_t. */
 	if (s == nullptr || !cs->initialized) {
 		if (_citrus_iconv_open(&handle, "UTF-32-INTERNAL",
-		    port_nl_langinfo_l(0x0000E, locale)) != 0) {
+		    port_nl_langinfo_l(CODESET, locale)) != 0) {
 			cs->initialized = false;
 			errno = EINVAL;
 			return ((std::size_t)-1);
@@ -299,7 +298,7 @@ c32rtomb_l(char * __restrict s, char32_t c, mbstate_t * __restrict ps,
 		errno = EILSEQ;
 		return ((std::size_t)-1);
 	}
-	return ((std::size_t)(dst - s));
+	return (dst - s);
 }
 
 std::size_t
@@ -369,7 +368,7 @@ mbrtoc16_l(char16_t * __restrict pc, const char * __restrict s, std::size_t n,
 	/* Reinitialize mbstate_t. */
 	if (s == nullptr || !cs->initialized) {
 		if (_citrus_iconv_open(&handle,
-		    port_nl_langinfo_l(0x0000E, locale), "UTF-16-INTERNAL") != 0) {
+		    port_nl_langinfo_l(CODESET, locale), "UTF-16-INTERNAL") != 0) {
 			cs->initialized = false;
 			errno = EINVAL;
 			return ((std::size_t)-1);
@@ -405,12 +404,12 @@ mbrtoc16_l(char16_t * __restrict pc, const char * __restrict s, std::size_t n,
 		    dstleft <= sizeof(cs->dstbuf.bytes));
 		err = _citrus_iconv_convert(handle, &src, &srcleft,
 		    &dst, &dstleft, _CITRUS_ICONV_F_HIDE_INVALID, &invlen);
-		cs->dstbuf_len = (std::size_t)(dst - cs->dstbuf.bytes) / sizeof(char16_t);
+		cs->dstbuf_len = (dst - cs->dstbuf.bytes) / sizeof(char16_t);
 
 		/* Got new character(s). Return the first. */
 		if (cs->dstbuf_len > 0) {
-			assert(src - cs->srcbuf > (std::ptrdiff_t)cs->srcbuf_len);
-			retval = (std::size_t)(src - cs->srcbuf - cs->srcbuf_len);
+			assert(src - cs->srcbuf > cs->srcbuf_len);
+			retval = src - cs->srcbuf - cs->srcbuf_len;
 			cs->srcbuf_len = 0;
 			goto return_char;
 		}
@@ -511,7 +510,7 @@ mbrtoc32_l(char32_t * __restrict pc, const char * __restrict s, std::size_t n,
 	/* Reinitialize mbstate_t. */
 	if (s == nullptr || !cs->initialized) {
 		if (_citrus_iconv_open(&handle,
-		    port_nl_langinfo_l(0x0000E, locale), "UTF-32-INTERNAL") != 0) {
+		    port_nl_langinfo_l(CODESET, locale), "UTF-32-INTERNAL") != 0) {
 			cs->initialized = false;
 			errno = EINVAL;
 			return ((std::size_t)-1);
@@ -547,12 +546,12 @@ mbrtoc32_l(char32_t * __restrict pc, const char * __restrict s, std::size_t n,
 		    dstleft <= sizeof(cs->dstbuf.bytes));
 		err = _citrus_iconv_convert(handle, &src, &srcleft,
 		    &dst, &dstleft, _CITRUS_ICONV_F_HIDE_INVALID, &invlen);
-		cs->dstbuf_len = (std::size_t)(dst - cs->dstbuf.bytes) / sizeof(char32_t);
+		cs->dstbuf_len = (dst - cs->dstbuf.bytes) / sizeof(char32_t);
 
 		/* Got new character(s). Return the first. */
 		if (cs->dstbuf_len > 0) {
-			assert(src - cs->srcbuf > (std::ptrdiff_t)cs->srcbuf_len);
-			retval = (std::size_t)(src - cs->srcbuf - cs->srcbuf_len);
+			assert(src - cs->srcbuf > cs->srcbuf_len);
+			retval = src - cs->srcbuf - cs->srcbuf_len;
 			cs->srcbuf_len = 0;
 			goto return_char;
 		}
