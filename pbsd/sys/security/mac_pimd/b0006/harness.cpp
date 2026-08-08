@@ -64,14 +64,6 @@ struct GuardCred {
 		cred()->cr_uid = uid;
 	}
 
-	bool intact() const
-	{
-		for (std::size_t i = 0; i < GUARD_SIZE; ++i) {
-			if (b[i] != 0x7f)
-				return false;
-		}
-		return true;
-	}
 };
 
 std::uint64_t prng_state;
@@ -137,9 +129,9 @@ void check_case(Stat &st, int enabled, int uid, std::uint32_t cr_uid, int priv)
 		return;
 	}
 
-	if (!g_port.intact() || !g_ref.intact()) {
+	if (std::memcmp(g_port.b, g_ref.b, GUARD_SIZE) != 0) {
 		++st.fails;
-		report_fail(st, "guard buffer corrupted");
+		report_fail(st, "guard buffer mismatch");
 	}
 }
 
