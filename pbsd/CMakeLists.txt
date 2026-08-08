@@ -6,6 +6,7 @@ set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 add_library(pbsd STATIC)
 target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/cat/b0163/port.cppm
+  bin/chflags/b0179/port.cppm
   bin/csh/b0061/port.cppm
   bin/dd/conv_m/port.cppm
   bin/dd/position_m/port.cppm

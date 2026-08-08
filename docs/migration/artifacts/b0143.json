@@ -1,0 +1,12 @@
+{
+  "batch": "b0143",
+  "verified": "2026-08-08T12:28:29Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 5/6: vswscanf_l, vswscanf, fopen, vswprintf_l)",
+  "ir_equivalent": false,
+  "harness_output": "function            cases   failures\n-------------- ---------- ----------\nvswscanf_l         200675          0\nvswscanf           200227          0\nfopen              201532          0\nvswprintf_l        208840          0\nvswprintf          208840          0\n-------------- ---------- ----------\nTOTAL             1020114          0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/vswscanf.c": "312433d634fed525",
+    "hbsd/src/lib/libc/stdio/fopen.c": "1e6df965230f3abe",
+    "hbsd/src/lib/libc/stdio/vswprintf.c": "7794b306e30510e3"
+  }
+}
