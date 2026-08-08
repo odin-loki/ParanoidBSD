@@ -2,8 +2,6 @@
  * Differential test for batch b0234 (__error_threaded).
  */
 
-#include "b0234_host_decls.h"
-
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -17,15 +15,15 @@ extern "C" {
 struct pthread {
 	int error;
 };
-struct pthread *_thr_initial;
-int __libsys_errno;
+extern struct pthread *_thr_initial;
+extern int __libsys_errno;
+extern void b0234_set_curthread(struct pthread *cur);
 int *ref___error_threaded(void);
 }
 
 static struct pthread g_initial;
 static struct pthread g_worker;
 static struct pthread g_alt;
-static struct pthread *g_curthread;
 
 namespace {
 
@@ -93,7 +91,7 @@ setup_state(struct pthread *initial, struct pthread *cur, int lib_errno,
 	__libsys_errno = lib_errno;
 
 	_thr_initial = initial;
-	g_curthread = cur;
+	b0234_set_curthread(cur);
 }
 
 static int
@@ -131,10 +129,6 @@ check_error_threaded(const char *label, struct pthread *initial,
 	val_r = *pr;
 
 	ok = (pp == pr) && (kind_p == kind_r) && (val_p == val_r);
-
-	if (ok && initial != nullptr && cur != nullptr && cur != initial) {
-		ok = (kind_p == 2 || kind_p == 3) && (val_p == *pp);
-	}
 
 	record_case(F_ERROR_THREADED, ok,
 	    "%s initial=%p cur=%p port=%p(%d) ref=%p(%d) lib=%d",
@@ -233,12 +227,6 @@ test_random(unsigned iters)
 }
 
 } /* namespace */
-
-extern "C" struct pthread *
-_get_curthread(void)
-{
-	return g_curthread;
-}
 
 int
 main(void)

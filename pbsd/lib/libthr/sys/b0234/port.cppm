@@ -1,7 +1,8 @@
 module;
 
-#include <cstddef>
-#include "b0234_host_decls.h"
+#define PBSD_B0234_PORT_INCLUDE
+#include "oracle.c"
+#undef PBSD_B0234_PORT_INCLUDE
 
 export module pbsd.lib.libthr.sys.b0234;
 

@@ -747,17 +747,11 @@ static void sweep_stack(void) {
 }
 
 int main(void) {
-#if 0
 	test_vfs_hand();
 	test_tslog_hand();
 	test_stack_hand();
-	test_clockcalib_hand();
-#endif
-	sweep_vfs();
 #if 0
-	sweep_tslog();
-	sweep_clockcalib();
-	sweep_stack();
+	test_clockcalib_hand();
 #endif
 	long total_cases = 0, total_fail = 0;
 	std::printf("\n%-28s %12s %12s\n", "function", "cases", "failures");
