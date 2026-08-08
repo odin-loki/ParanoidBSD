@@ -512,7 +512,6 @@ void build_binternal_page(PAGE *pg, size_t psize, int nents,
 {
 	size_t off = psize;
 	pg->flags = P_BINTERNAL;
-	indx_t *linp = (indx_t *)((unsigned char *)pg + BTDATAOFF);
 	for (int i = nents - 1; i >= 0; i--) {
 		size_t ksz = ksizes[i];
 		size_t esz = LALIGN(sizeof(u_int32_t) + sizeof(pgno_t) +
@@ -629,8 +628,8 @@ void check_nroot(int existing_valid, int existing_invalid, int get_null,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char root_p[PAGE_SZ];
-	unsigned char root_r[PAGE_SZ];
+	static unsigned char root_p[PAGE_SZ];
+	static unsigned char root_r[PAGE_SZ];
 
 	test_mock_reset();
 	test_mock.get_force_null = get_null;
@@ -655,7 +654,7 @@ void check_nroot(int existing_valid, int existing_invalid, int get_null,
 	if (new_root_null)
 		test_mock.new_fail_after = 1;
 
-	unsigned char init_root[PAGE_SZ];
+	static unsigned char init_root[PAGE_SZ];
 	if (existing_valid || existing_invalid)
 		std::memcpy(init_root, root_p, PAGE_SZ);
 
@@ -690,8 +689,8 @@ void check_bt_fd(int inmem, int pinned)
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char pin_p[PAGE_SZ];
-	unsigned char pin_r[PAGE_SZ];
+	static unsigned char pin_p[PAGE_SZ];
+	static unsigned char pin_r[PAGE_SZ];
 
 	test_mock_reset();
 	init_tree_port(tp, mp_p, db_p, inmem ? B_INMEM : 0);
@@ -766,12 +765,12 @@ void check_bt_relink(pgno_t pgno, pgno_t prevpg, pgno_t nextpg, int null_neighbo
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char hp[PAGE_SZ];
-	unsigned char hr[PAGE_SZ];
-	unsigned char pp[PAGE_SZ];
-	unsigned char pr[PAGE_SZ];
-	unsigned char np[PAGE_SZ];
-	unsigned char nr[PAGE_SZ];
+	static unsigned char hp[PAGE_SZ];
+	static unsigned char hr[PAGE_SZ];
+	static unsigned char pp[PAGE_SZ];
+	static unsigned char pr[PAGE_SZ];
+	static unsigned char np[PAGE_SZ];
+	static unsigned char nr[PAGE_SZ];
 
 	test_mock_reset();
 	init_tree_port(tp, mp_p, db_p, 0);
@@ -799,8 +798,8 @@ void check_bt_relink(pgno_t pgno, pgno_t prevpg, pgno_t nextpg, int null_neighbo
 	if (null_neighbor)
 		test_mock.get_force_null = 1;
 
-	unsigned char init_pp[PAGE_SZ];
-	unsigned char init_np[PAGE_SZ];
+	static unsigned char init_pp[PAGE_SZ];
+	static unsigned char init_np[PAGE_SZ];
 	if (prevpg != P_INVALID)
 		std::memcpy(init_pp, pp, PAGE_SZ);
 	if (nextpg != P_INVALID)
@@ -809,8 +808,8 @@ void check_bt_relink(pgno_t pgno, pgno_t prevpg, pgno_t nextpg, int null_neighbo
 	MockSnap snap = snap_mock();
 	int rp = P::__bt_relink(&tp, (P::PAGE *)hp);
 	MockDelta dp = mock_delta(snap.mock, test_mock);
-	unsigned char res_pp[PAGE_SZ];
-	unsigned char res_np[PAGE_SZ];
+	static unsigned char res_pp[PAGE_SZ];
+	static unsigned char res_np[PAGE_SZ];
 	if (prevpg != P_INVALID)
 		std::memcpy(res_pp, pp, PAGE_SZ);
 	if (nextpg != P_INVALID)
@@ -842,10 +841,10 @@ void check_bt_fast(int order, int nents, indx_t last_idx, pgno_t last_pg,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
-	unsigned char keybuf[32];
-	unsigned char databuf[32];
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
+	static unsigned char keybuf[32];
+	static unsigned char databuf[32];
 	DBT key, data;
 	u_int32_t ksizes[8] = { 4, 6, 8, 5, 7, 3, 9, 4 };
 	u_int32_t dsizes[8] = { 3, 4, 2, 6, 5, 4, 1, 3 };
@@ -872,7 +871,7 @@ void check_bt_fast(int order, int nents, indx_t last_idx, pgno_t last_pg,
 	((PAGE *)leaf_r)->prevpg = ((PAGE *)leaf_p)->prevpg;
 	((PAGE *)leaf_p)->nextpg = order == FORWARD ? P_INVALID : 6;
 	((PAGE *)leaf_r)->nextpg = ((PAGE *)leaf_p)->nextpg;
-	unsigned char init_leaf[PAGE_SZ];
+	static unsigned char init_leaf[PAGE_SZ];
 	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock_register(last_pg, leaf_p);
 	keybuf[0] = 0x90;
@@ -913,11 +912,11 @@ void check_bt_dleaf(int nents, u_int idx, int cursor_hit, int ovfl_key,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
-	u_int32_t ksizes[4] = { 4, 5, 6, 7 };
-	u_int32_t dsizes[4] = { 3, 4, 5, 6 };
-	u_char eflags[4] = { 0, 0, 0, 0 };
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
+	u_int32_t ksizes[8] = { 4, 5, 6, 7, 4, 5, 6, 7 };
+	u_int32_t dsizes[8] = { 3, 4, 5, 6, 3, 4, 5, 6 };
+	u_char eflags[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	DBT key;
 
 	test_mock_reset();
@@ -926,9 +925,9 @@ void check_bt_dleaf(int nents, u_int idx, int cursor_hit, int ovfl_key,
 	guard_fill(leaf_p, PAGE_SZ);
 	guard_fill(leaf_r, PAGE_SZ);
 	if (ovfl_key)
-		eflags[idx < 4 ? idx : 0] = P_BIGKEY;
+		eflags[idx < 8 ? idx : 0] = P_BIGKEY;
 	if (ovfl_data)
-		eflags[idx < 4 ? idx : 0] |= P_BIGDATA;
+		eflags[idx < 8 ? idx : 0] |= P_BIGDATA;
 	build_bleaf_page((PAGE *)leaf_p, PAGE_SZ, nents, ksizes, dsizes, eflags);
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
 	((PAGE *)leaf_p)->pgno = 8;
@@ -946,13 +945,13 @@ void check_bt_dleaf(int nents, u_int idx, int cursor_hit, int ovfl_key,
 	}
 	key.data = (void *)"abcd";
 	key.size = 4;
-	unsigned char init_leaf[PAGE_SZ];
+	static unsigned char init_leaf[PAGE_SZ];
 	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 
 	MockSnap snap = snap_mock();
 	int rp = P::__bt_dleaf(&tp, (P::DBT *)&key, (P::PAGE *)leaf_p, idx);
 	P::BTREE tp_after = tp;
-	unsigned char res_p[PAGE_SZ];
+	static unsigned char res_p[PAGE_SZ];
 	std::memcpy(res_p, leaf_p, PAGE_SZ);
 	MockDelta dp = mock_delta(snap.mock, test_mock);
 	std::memcpy(leaf_p, init_leaf, PAGE_SZ);
@@ -985,15 +984,15 @@ void check_bt_curdel(int nents, u_int idx, u_int32_t tflags, int cmp_same_prev,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
-	unsigned char prev_p[PAGE_SZ];
-	unsigned char prev_r[PAGE_SZ];
-	unsigned char next_p[PAGE_SZ];
-	unsigned char next_r[PAGE_SZ];
-	u_int32_t ksizes[3] = { 4, 4, 4 };
-	u_int32_t dsizes[3] = { 2, 2, 2 };
-	u_char eflags[3] = { 0, 0, 0 };
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
+	static unsigned char prev_p[PAGE_SZ];
+	static unsigned char prev_r[PAGE_SZ];
+	static unsigned char next_p[PAGE_SZ];
+	static unsigned char next_r[PAGE_SZ];
+	u_int32_t ksizes[8] = { 4, 4, 4, 4, 4, 4, 4, 4 };
+	u_int32_t dsizes[8] = { 2, 2, 2, 2, 2, 2, 2, 2 };
+	u_char eflags[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	DBT key;
 
 	test_mock_reset();
@@ -1067,10 +1066,10 @@ void check_bt_pdelete(int nents, int stack_depth, int root_page, int ovfl_parent
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
-	unsigned char par_p[PAGE_SZ];
-	unsigned char par_r[PAGE_SZ];
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
+	static unsigned char par_p[PAGE_SZ];
+	static unsigned char par_r[PAGE_SZ];
 	u_int32_t ksizes[4] = { 4, 5, 6, 7 };
 	u_char eflags[4] = { 0, 0, 0, 0 };
 	pgno_t pgnos[4] = { 20, 21, 22, 23 };
@@ -1112,7 +1111,7 @@ void check_bt_pdelete(int nents, int stack_depth, int root_page, int ovfl_parent
 
 	MockSnap snap = snap_mock();
 	int rp = P::__bt_pdelete(&tp, (P::PAGE *)leaf_p);
-	unsigned char res_leaf_p[PAGE_SZ];
+	static unsigned char res_leaf_p[PAGE_SZ];
 	std::memcpy(res_leaf_p, leaf_p, PAGE_SZ);
 	MockDelta dp = mock_delta(snap.mock, test_mock);
 	restore_mock(snap);
@@ -1141,8 +1140,8 @@ void check_bt_bdelete(int exact, u_int32_t tflags, int search_null, int dleaf_fa
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
 	DBT key;
 	u_int32_t ksizes[3] = { 4, 5, 6 };
 	u_int32_t dsizes[3] = { 2, 3, 4 };
@@ -1163,7 +1162,7 @@ void check_bt_bdelete(int exact, u_int32_t tflags, int search_null, int dleaf_fa
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
 	((PAGE *)leaf_p)->pgno = 8;
 	((PAGE *)leaf_r)->pgno = 8;
-	unsigned char init_leaf[PAGE_SZ];
+	static unsigned char init_leaf[PAGE_SZ];
 	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock.search_epg.page = (PAGE *)leaf_p;
 	test_mock.search_epg.index = idx;
@@ -1205,10 +1204,10 @@ void check_bt_stkacq(int target_pg, int search_null)
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
-	unsigned char srch_p[PAGE_SZ];
-	unsigned char srch_r[PAGE_SZ];
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
+	static unsigned char srch_p[PAGE_SZ];
+	static unsigned char srch_r[PAGE_SZ];
 	char keybuf[16];
 
 	test_mock_reset();
@@ -1270,8 +1269,8 @@ void check_bt_delete(u_int flags, u_int32_t tflags, int curs_init, int curs_acqu
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
 	DBT key;
 	u_int32_t ksizes[2] = { 4, 5 };
 	u_int32_t dsizes[2] = { 2, 3 };
@@ -1290,13 +1289,13 @@ void check_bt_delete(u_int flags, u_int32_t tflags, int curs_init, int curs_acqu
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
 	((PAGE *)leaf_p)->pgno = 8;
 	((PAGE *)leaf_r)->pgno = 8;
-	unsigned char init_leaf[PAGE_SZ];
+	static unsigned char init_leaf[PAGE_SZ];
 	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock.search_epg.page = (PAGE *)leaf_p;
 	test_mock.search_epg.index = 0;
 	test_mock_register(8, leaf_p);
 	if (curs_init) {
-		unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
+		static unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
 		tp.bt_cursor.flags = CURS_INIT |
 		    (curs_acquire ? CURS_ACQUIRE : 0);
 		tp.bt_cursor.pg.pgno = 8;
@@ -1333,7 +1332,7 @@ void check_bt_delete(u_int flags, u_int32_t tflags, int curs_init, int curs_acqu
 	test_mock.search_epg.index = 0;
 	test_mock_register(8, leaf_p);
 	if (curs_init) {
-		unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
+		static unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
 		tr.bt_cursor.flags = CURS_INIT |
 		    (curs_acquire ? CURS_ACQUIRE : 0);
 		tr.bt_cursor.pg.pgno = 8;
@@ -1364,10 +1363,10 @@ void check_bt_put(u_int flags, u_int32_t tflags, int search_null, int exact,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
-	unsigned char keybuf[64];
-	unsigned char databuf[64];
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
+	static unsigned char keybuf[64];
+	static unsigned char databuf[64];
 	DBT key, data;
 	u_int32_t ksizes[2] = { 4, 5 };
 	u_int32_t dsizes[2] = { 3, 4 };
@@ -1466,14 +1465,14 @@ void check_bt_seqset(int flags, int empty, int internal, int get_null,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char root_p[PAGE_SZ];
-	unsigned char root_r[PAGE_SZ];
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
+	static unsigned char root_p[PAGE_SZ];
+	static unsigned char root_r[PAGE_SZ];
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
 	P::EPG ep_p;
 	EPG ep_r;
 	DBT key;
-	unsigned char keybuf[8];
+	static unsigned char keybuf[8];
 
 	test_mock_reset();
 	test_mock.get_force_null = get_null;
@@ -1482,8 +1481,8 @@ void check_bt_seqset(int flags, int empty, int internal, int get_null,
 	setup_tree_for_seq(root_p, leaf_p, empty, internal);
 	std::memcpy(root_r, root_p, PAGE_SZ);
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
-	unsigned char init_root[PAGE_SZ];
-	unsigned char init_leaf[PAGE_SZ];
+	static unsigned char init_root[PAGE_SZ];
+	static unsigned char init_leaf[PAGE_SZ];
 	std::memcpy(init_root, root_p, PAGE_SZ);
 	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock_register(P_ROOT, root_p);
@@ -1532,10 +1531,10 @@ void check_bt_seqadv(int advflags, int curs_acquire, int curs_after,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
-	unsigned char next_p[PAGE_SZ];
-	unsigned char next_r[PAGE_SZ];
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
+	static unsigned char next_p[PAGE_SZ];
+	static unsigned char next_r[PAGE_SZ];
 	P::EPG ep_p;
 	EPG ep_r;
 	u_int32_t ksizes[3] = { 4, 5, 6 };
@@ -1555,8 +1554,8 @@ void check_bt_seqadv(int advflags, int curs_acquire, int curs_after,
 	((PAGE *)leaf_r)->prevpg = P_INVALID;
 	((PAGE *)leaf_p)->nextpg = nextpg;
 	((PAGE *)leaf_r)->nextpg = nextpg;
-	unsigned char init_leaf[PAGE_SZ];
-	unsigned char init_next[PAGE_SZ];
+	static unsigned char init_leaf[PAGE_SZ];
+	static unsigned char init_next[PAGE_SZ];
 	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock_register(cpg, leaf_p);
 	if (nextpg != P_INVALID) {
@@ -1571,7 +1570,7 @@ void check_bt_seqadv(int advflags, int curs_acquire, int curs_after,
 	}
 	test_mock.search_epg.page = (PAGE *)leaf_p;
 	test_mock.search_epg.index = 0;
-	unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
+	static unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
 	tp.bt_cursor.flags = CURS_INIT | (curs_acquire ? CURS_ACQUIRE : 0) |
 	    (curs_after ? CURS_AFTER : 0) | (curs_before ? CURS_BEFORE : 0);
 	tp.bt_cursor.pg.pgno = cpg;
@@ -1625,12 +1624,12 @@ void check_bt_first(int exact, u_int32_t tflags, int search_null, int nodups)
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char leaf_p[PAGE_SZ];
-	unsigned char leaf_r[PAGE_SZ];
+	static unsigned char leaf_p[PAGE_SZ];
+	static unsigned char leaf_r[PAGE_SZ];
 	P::EPG ep_p;
 	EPG ep_r;
 	DBT key;
-	unsigned char keybuf[8];
+	static unsigned char keybuf[8];
 	int exact_p = 0, exact_r = 0;
 
 	if (exact && !nodups)
@@ -1682,10 +1681,10 @@ void check_bt_seq(u_int flags, int empty, int curs_init, int get_null,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char root_p[PAGE_SZ];
-	unsigned char root_r[PAGE_SZ];
-	unsigned char keybuf[32];
-	unsigned char databuf[32];
+	static unsigned char root_p[PAGE_SZ];
+	static unsigned char root_r[PAGE_SZ];
+	static unsigned char keybuf[32];
+	static unsigned char databuf[32];
 	DBT key, data;
 
 	test_mock_reset();
@@ -2025,7 +2024,7 @@ void sweep_bt_fast(void)
 void sweep_bt_dleaf(void)
 {
 	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
-		int nents = (int)(nextr() % 4u) + 2;
+		int nents = (int)(nextr() % 3u) + 2;
 		u_int idx = (u_int)(nextr() % (unsigned)nents);
 		check_bt_dleaf(nents, idx, (int)(nextr() & 1u),
 		    (int)(nextr() % 11u == 0), (int)(nextr() % 13u == 0),

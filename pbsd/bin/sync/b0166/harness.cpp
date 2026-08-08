@@ -50,7 +50,10 @@ __wrap_sync(void)
 		unsigned char b = 1;
 		(void)write(g_sync_pipe, &b, 1);
 	}
-	return __real_sync();
+	if (!g_test_child) {
+		return __real_sync();
+	}
+	return 0;
 }
 
 struct Stat {

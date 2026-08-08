@@ -2,13 +2,12 @@
  * harness.cpp -- differential test for PBSD batch b0172 (rmdir.c).
  */
 
-#define _GNU_SOURCE
-
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <dirent.h>
 #include <fcntl.h>
 #include <string>
 #include <sys/stat.h>
@@ -80,6 +79,10 @@ Stat st_rm_path = { "rm_path", 0, 0, 0 };
 Stat st_usage = { "usage", 0, 0, 0 };
 Stat st_main = { "main", 0, 0, 0 };
 
+char g_base[256];
+bool g_base_ok;
+long g_case_seq;
+
 bool
 fail(Stat &st, const char *what)
 {
@@ -89,6 +92,51 @@ fail(Stat &st, const char *what)
 		std::printf("  FAIL %s: %s\n", st.name, what);
 	}
 	return false;
+}
+
+bool
+init_base()
+{
+	if (g_base_ok)
+		return true;
+	std::snprintf(g_base, sizeof(g_base), "/tmp/pbsd-rmdir-XXXXXX");
+	g_base_ok = mkdtemp(g_base) != nullptr;
+	return g_base_ok;
+}
+
+bool
+rmtree(const char *path)
+{
+	DIR *d = opendir(path);
+
+	if (d == nullptr)
+		return rmdir(path) == 0 || errno == ENOENT;
+	struct dirent *de;
+	while ((de = readdir(d)) != nullptr) {
+		if (de->d_name[0] == '.' &&
+		    (de->d_name[1] == '\0' ||
+		    (de->d_name[1] == '.' && de->d_name[2] == '\0')))
+			continue;
+		char child[1024];
+		std::snprintf(child, sizeof(child), "%s/%s", path, de->d_name);
+		if (!rmtree(child)) {
+			closedir(d);
+			return false;
+		}
+	}
+	closedir(d);
+	return rmdir(path) == 0 || errno == ENOENT;
+}
+
+bool
+make_case_root(char *out, std::size_t outsz)
+{
+	if (!init_base())
+		return false;
+	std::snprintf(out, outsz, "%s/c%ld", g_base, g_case_seq++);
+	if (mkdir(out, 0755) != 0 && errno != EEXIST)
+		return false;
+	return true;
 }
 
 struct GuardBuf {
@@ -106,13 +154,13 @@ struct GuardBuf {
 	}
 
 	char *
-data()
+	data()
 	{
 		return ptr;
 	}
 
 	const unsigned char *
-whole() const
+	whole() const
 	{
 		return raw.data();
 	}
@@ -164,26 +212,6 @@ struct IoCapture {
 		dup2(saved, fd);
 		close(saved);
 		return bytes;
-	}
-};
-
-struct TempRoot {
-	char path[256];
-	bool ok;
-
-	TempRoot()
-	{
-		std::snprintf(path, sizeof(path), "/tmp/pbsd-rmdir-XXXXXX");
-		ok = mkdtemp(path) != nullptr;
-	}
-
-	~TempRoot()
-	{
-		if (!ok)
-			return;
-		char cmd[512];
-		std::snprintf(cmd, sizeof(cmd), "rm -rf '%s'", path);
-		(void)std::system(cmd);
 	}
 };
 
@@ -240,11 +268,9 @@ create_tree(const char *root, const char *relpath)
 }
 
 bool
-path_exists(const char *path)
+needs_tree(const char *path)
 {
-	struct stat sb;
-
-	return stat(path, &sb) == 0;
+	return std::strchr(path, '/') != nullptr;
 }
 
 bool
@@ -266,18 +292,16 @@ remove_leaf(const char *root, const char *relpath)
 	return rmdir(full) == 0 || errno == ENOENT;
 }
 
-std::string
-abs_path(const char *root, const char *relpath)
+void
+add_file_block_rmdir(const char *root, const char *relpath)
 {
-	std::string s = root;
-	const char *p = relpath;
-	while (*p == '/')
-		p++;
-	if (*p != '\0') {
-		s += '/';
-		s += p;
-	}
-	return s;
+	char full[1024];
+	std::snprintf(full, sizeof(full), "%s/%s", root, relpath);
+	(void)mkdir_p(full);
+	std::strcat(full, "/blocker");
+	int fd = open(full, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+	if (fd >= 0)
+		close(fd);
 }
 
 struct RmPathResult {
@@ -292,22 +316,16 @@ run_ref_rm_path(const char *path, int vflag, bool remove_leaf_first,
     const char *tree_root, const char *relpath)
 {
 	RmPathResult res{};
-	TempRoot tr;
-
-	if (tree_root != nullptr) {
-		if (!create_tree(tree_root, relpath))
-			return res;
-		if (remove_leaf_first)
-			(void)remove_leaf(tree_root, relpath);
-	} else if (tr.ok) {
-		if (!create_tree(tr.path, path))
-			return res;
-		if (remove_leaf_first)
-			(void)remove_leaf(tr.path, path);
-	}
 
 	ref_pflag = 0;
 	ref_vflag = vflag;
+	if (tree_root != nullptr && needs_tree(relpath ? relpath : path)) {
+		if (!create_tree(tree_root, relpath ? relpath : path))
+			return res;
+		if (remove_leaf_first)
+			(void)remove_leaf(tree_root, relpath ? relpath : path);
+	}
+
 	GuardBuf gb(path);
 	IoCapture out;
 	IoCapture err;
@@ -326,22 +344,16 @@ run_port_rm_path(const char *path, int vflag, bool remove_leaf_first,
     const char *tree_root, const char *relpath)
 {
 	RmPathResult res{};
-	TempRoot tr;
-
-	if (tree_root != nullptr) {
-		if (!create_tree(tree_root, relpath))
-			return res;
-		if (remove_leaf_first)
-			(void)remove_leaf(tree_root, relpath);
-	} else if (tr.ok) {
-		if (!create_tree(tr.path, path))
-			return res;
-		if (remove_leaf_first)
-			(void)remove_leaf(tr.path, path);
-	}
 
 	P::pflag = 0;
 	P::vflag = vflag;
+	if (tree_root != nullptr && needs_tree(relpath ? relpath : path)) {
+		if (!create_tree(tree_root, relpath ? relpath : path))
+			return res;
+		if (remove_leaf_first)
+			(void)remove_leaf(tree_root, relpath ? relpath : path);
+	}
+
 	GuardBuf gb(path);
 	IoCapture out;
 	IoCapture err;
@@ -366,15 +378,17 @@ check_rm_path(const char *label, const char *path, int vflag,
     bool remove_leaf_first, const char *relpath_for_tree = nullptr)
 {
 	st_rm_path.cases++;
-	TempRoot tr1;
-	TempRoot tr2;
+	char tr1[512];
+	char tr2[512];
+
+	if (!make_case_root(tr1, sizeof(tr1)) || !make_case_root(tr2, sizeof(tr2)))
+		return fail(st_rm_path, "case root");
+
 	const char *rel = relpath_for_tree ? relpath_for_tree : path;
-
-	if (!tr1.ok || !tr2.ok)
-		return fail(st_rm_path, "mkdtemp");
-
-	RmPathResult r = run_ref_rm_path(path, vflag, remove_leaf_first, tr1.path, rel);
-	RmPathResult p = run_port_rm_path(path, vflag, remove_leaf_first, tr2.path, rel);
+	RmPathResult r = run_ref_rm_path(path, vflag, remove_leaf_first, tr1, rel);
+	RmPathResult p = run_port_rm_path(path, vflag, remove_leaf_first, tr2, rel);
+	(void)rmtree(tr1);
+	(void)rmtree(tr2);
 
 	if (r.ret != p.ret) {
 		std::printf("  [%s] ret ref=%d port=%d path=%s\n", label, r.ret, p.ret, path);
@@ -393,18 +407,6 @@ check_rm_path(const char *label, const char *path, int vflag,
 		return fail(st_rm_path, label);
 	}
 	return true;
-}
-
-void
-add_file_block_rmdir(const char *root, const char *relpath)
-{
-	char full[1024];
-	std::snprintf(full, sizeof(full), "%s/%s", root, relpath);
-	(void)mkdir_p(full);
-	std::strcat(full, "/blocker");
-	int fd = open(full, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-	if (fd >= 0)
-		close(fd);
 }
 
 struct ExitRun {
@@ -492,7 +494,6 @@ run_port_usage()
 bool
 check_usage(const char *label)
 {
-	st_usage.cases++;
 	ExitRun r = run_ref_usage();
 	ExitRun p = run_port_usage();
 	if (r.status != p.status) {
@@ -506,15 +507,29 @@ check_usage(const char *label)
 	return true;
 }
 
+std::string
+abs_path(const char *root, const char *relpath)
+{
+	std::string s = root;
+	const char *p = relpath;
+	while (*p == '/')
+		p++;
+	if (*p != '\0') {
+		s += '/';
+		s += p;
+	}
+	return s;
+}
+
 ExitRun
 run_ref_main(int argc, char **argv, const char *tree_root,
-    const std::vector<std::string> &rel_dirs)
+    const std::vector<std::string> &create_rels)
 {
 	ExitRun res{};
 	int pipe_out[2];
 	int pipe_err[2];
 
-	for (const auto &rel : rel_dirs) {
+	for (const auto &rel : create_rels) {
 		if (!create_tree(tree_root, rel.c_str()))
 			return res;
 	}
@@ -554,13 +569,13 @@ run_ref_main(int argc, char **argv, const char *tree_root,
 
 ExitRun
 run_port_main(int argc, char **argv, const char *tree_root,
-    const std::vector<std::string> &rel_dirs)
+    const std::vector<std::string> &create_rels)
 {
 	ExitRun res{};
 	int pipe_out[2];
 	int pipe_err[2];
 
-	for (const auto &rel : rel_dirs) {
+	for (const auto &rel : create_rels) {
 		if (!create_tree(tree_root, rel.c_str()))
 			return res;
 	}
@@ -599,17 +614,43 @@ run_port_main(int argc, char **argv, const char *tree_root,
 }
 
 bool
-check_main(const char *label, int argc, char **argv,
-    const std::vector<std::string> &rel_dirs)
+run_main_case(const char *label, const std::vector<const char *> &flags,
+    const std::vector<std::string> &arg_rels,
+    const std::vector<std::string> &create_rels)
 {
 	st_main.cases++;
-	TempRoot tr1;
-	TempRoot tr2;
-	if (!tr1.ok || !tr2.ok)
-		return fail(st_main, "mkdtemp");
+	char tr1[512];
+	char tr2[512];
+	if (!make_case_root(tr1, sizeof(tr1)) || !make_case_root(tr2, sizeof(tr2)))
+		return fail(st_main, "case root");
 
-	ExitRun r = run_ref_main(argc, argv, tr1.path, rel_dirs);
-	ExitRun p = run_port_main(argc, argv, tr2.path, rel_dirs);
+	std::vector<std::string> abs1;
+	std::vector<std::string> abs2;
+	for (const auto &rel : arg_rels) {
+		abs1.push_back(abs_path(tr1, rel.c_str()));
+		abs2.push_back(abs_path(tr2, rel.c_str()));
+	}
+
+	std::vector<char *> argv1;
+	std::vector<char *> argv2;
+	argv1.push_back(const_cast<char *>("rmdir"));
+	argv2.push_back(const_cast<char *>("rmdir"));
+	for (const char *f : flags) {
+		argv1.push_back(const_cast<char *>(f));
+		argv2.push_back(const_cast<char *>(f));
+	}
+	for (auto &s : abs1)
+		argv1.push_back(const_cast<char *>(s.c_str()));
+	for (auto &s : abs2)
+		argv2.push_back(const_cast<char *>(s.c_str()));
+	argv1.push_back(nullptr);
+	argv2.push_back(nullptr);
+
+	ExitRun r = run_ref_main((int)argv1.size() - 1, argv1.data(), tr1, create_rels);
+	ExitRun p = run_port_main((int)argv2.size() - 1, argv2.data(), tr2, create_rels);
+	(void)rmtree(tr1);
+	(void)rmtree(tr2);
+
 	if (r.status != p.status) {
 		std::printf("  [%s] status ref=%d port=%d\n", label, r.status, p.status);
 		return fail(st_main, label);
@@ -632,7 +673,7 @@ rand_component(Rng &r, int maxlen)
 	for (int i = 0; i < len; i++) {
 		unsigned char c = r.byte();
 		if (c == '/' || c == '\0')
-			c = 'a' + (r.bits(0, 25));
+			c = (unsigned char)('a' + r.bits(0, 25));
 		s.push_back((char)c);
 	}
 	return s;
@@ -675,37 +716,36 @@ test_rm_path_edge()
 	(void)check_rm_path("highbit", "a/\x80/b", 0, true);
 	(void)check_rm_path("highbit_v", "\xff/\xfe/", 1, true);
 
-	TempRoot tr;
-	if (tr.ok) {
-		add_file_block_rmdir(tr.path, "p/q");
-		(void)remove_leaf(tr.path, "p/q/r");
-		st_rm_path.cases++;
-		TempRoot tr2;
-		if (tr2.ok) {
-			add_file_block_rmdir(tr.path, "p/q");
-			(void)remove_leaf(tr.path, "p/q/r");
-			create_tree(tr2.path, "p/q");
-			(void)remove_leaf(tr2.path, "p/q/r");
-			add_file_block_rmdir(tr2.path, "p/q");
-			GuardBuf gb("p/q/r");
-			GuardBuf gb2("p/q/r");
-			ref_vflag = 0;
-			P::vflag = 0;
-			IoCapture o1, e1, o2, e2;
-			(void)o1.begin(STDOUT_FILENO);
-			(void)e1.begin(STDERR_FILENO);
-			int rr = ref_rm_path(gb.data());
-			auto ro = o1.end(STDOUT_FILENO);
-			auto re = e1.end(STDERR_FILENO);
-			(void)o2.begin(STDOUT_FILENO);
-			(void)e2.begin(STDERR_FILENO);
-			int pr = P::rm_path(gb2.data());
-			auto po = o2.end(STDOUT_FILENO);
-			auto pe = e2.end(STDERR_FILENO);
-			if (rr != pr || gb.raw != gb2.raw || ro != po || re != pe)
-				(void)fail(st_rm_path, "rmdir_fail");
-		}
+	st_rm_path.cases++;
+	char tr1[512];
+	char tr2[512];
+	if (make_case_root(tr1, sizeof(tr1)) && make_case_root(tr2, sizeof(tr2))) {
+		add_file_block_rmdir(tr1, "p/q");
+		(void)remove_leaf(tr1, "p/q/r");
+		add_file_block_rmdir(tr2, "p/q");
+		(void)remove_leaf(tr2, "p/q/r");
+		create_tree(tr2, "p/q");
+		add_file_block_rmdir(tr2, "p/q");
+		GuardBuf gb("p/q/r");
+		GuardBuf gb2("p/q/r");
+		ref_vflag = 0;
+		P::vflag = 0;
+		IoCapture o1, e1, o2, e2;
+		(void)o1.begin(STDOUT_FILENO);
+		(void)e1.begin(STDERR_FILENO);
+		int rr = ref_rm_path(gb.data());
+		auto ro = o1.end(STDOUT_FILENO);
+		auto re = e1.end(STDERR_FILENO);
+		(void)o2.begin(STDOUT_FILENO);
+		(void)e2.begin(STDERR_FILENO);
+		int pr = P::rm_path(gb2.data());
+		auto po = o2.end(STDOUT_FILENO);
+		auto pe = e2.end(STDERR_FILENO);
+		if (rr != pr || gb.raw != gb2.raw || ro != po || re != pe)
+			(void)fail(st_rm_path, "rmdir_fail");
 	}
+	(void)rmtree(tr1);
+	(void)rmtree(tr2);
 }
 
 void
@@ -724,99 +764,53 @@ test_rm_path_random()
 void
 test_usage_edge()
 {
+	st_usage.cases++;
 	(void)check_usage("usage");
 }
 
 void
 test_usage_random()
 {
-	for (long i = 0; i < SWEEP; i++)
+	for (long i = 0; i < SWEEP; i++) {
+		st_usage.cases++;
 		(void)check_usage("usage_rand");
-}
-
-bool
-run_main_case(const char *label, const std::vector<const char *> &flags,
-    const std::vector<std::string> &rel_dirs, bool create_dirs)
-{
-	st_main.cases++;
-	TempRoot tr1;
-	TempRoot tr2;
-	if (!tr1.ok || !tr2.ok)
-		return fail(st_main, "mkdtemp");
-
-	std::vector<std::string> abs1;
-	std::vector<std::string> abs2;
-	for (const auto &rel : rel_dirs) {
-		abs1.push_back(abs_path(tr1.path, rel.c_str()));
-		abs2.push_back(abs_path(tr2.path, rel.c_str()));
 	}
-
-	std::vector<char *> argv1;
-	std::vector<char *> argv2;
-	argv1.push_back(const_cast<char *>("rmdir"));
-	argv2.push_back(const_cast<char *>("rmdir"));
-	for (const char *f : flags) {
-		argv1.push_back(const_cast<char *>(f));
-		argv2.push_back(const_cast<char *>(f));
-	}
-	for (auto &s : abs1)
-		argv1.push_back(const_cast<char *>(s.c_str()));
-	for (auto &s : abs2)
-		argv2.push_back(const_cast<char *>(s.c_str()));
-	argv1.push_back(nullptr);
-	argv2.push_back(nullptr);
-
-	std::vector<std::string> rels;
-	if (create_dirs)
-		rels = rel_dirs;
-
-	ExitRun r = run_ref_main((int)argv1.size() - 1, argv1.data(), tr1.path, rels);
-	std::vector<std::string> rels2;
-	if (create_dirs)
-		rels2 = rel_dirs;
-	ExitRun p = run_port_main((int)argv2.size() - 1, argv2.data(), tr2.path, rels2);
-
-	if (r.status != p.status) {
-		std::printf("  [%s] status ref=%d port=%d\n", label, r.status, p.status);
-		return fail(st_main, label);
-	}
-	if (!same_bytes(r.stdout_bytes, p.stdout_bytes))
-		return fail(st_main, label);
-	if (!same_bytes(r.stderr_bytes, p.stderr_bytes))
-		return fail(st_main, label);
-	return true;
 }
 
 void
 test_main_edge()
 {
-	{
+	char tr1[512];
+	char tr2[512];
+	if (make_case_root(tr1, sizeof(tr1)) && make_case_root(tr2, sizeof(tr2))) {
 		char *argv[] = { (char *)"rmdir", nullptr };
 		st_main.cases++;
-		TempRoot t1, t2;
-		ExitRun r = run_ref_main(1, argv, t1.path, {});
-		ExitRun p = run_port_main(1, argv, t2.path, {});
+		ExitRun r = run_ref_main(1, argv, tr1, {});
+		ExitRun p = run_port_main(1, argv, tr2, {});
 		if (r.status != p.status || r.stdout_bytes != p.stdout_bytes ||
 		    r.stderr_bytes != p.stderr_bytes)
 			(void)fail(st_main, "no_args");
+		(void)rmtree(tr1);
+		(void)rmtree(tr2);
 	}
-	{
+	if (make_case_root(tr1, sizeof(tr1)) && make_case_root(tr2, sizeof(tr2))) {
 		char *argv[] = { (char *)"rmdir", (char *)"-z", nullptr };
 		st_main.cases++;
-		TempRoot t1, t2;
-		ExitRun r = run_ref_main(2, argv, t1.path, {});
-		ExitRun p = run_port_main(2, argv, t2.path, {});
+		ExitRun r = run_ref_main(2, argv, tr1, {});
+		ExitRun p = run_port_main(2, argv, tr2, {});
 		if (r.status != p.status || r.stdout_bytes != p.stdout_bytes ||
 		    r.stderr_bytes != p.stderr_bytes)
 			(void)fail(st_main, "bad_opt");
+		(void)rmtree(tr1);
+		(void)rmtree(tr2);
 	}
-	(void)run_main_case("single_ok", {}, { "d" }, true);
-	(void)run_main_case("single_ok_v", { "-v" }, { "d" }, true);
-	(void)run_main_case("single_ok_p", { "-p" }, { "a/b" }, true);
-	(void)run_main_case("single_ok_pv", { "-p", "-v" }, { "a/b/c" }, true);
-	(void)run_main_case("missing", {}, { "nope" }, false);
-	(void)run_main_case("two_ok", {}, { "x", "y" }, true);
-	(void)run_main_case("mix", { "-v" }, { "good", "bad" }, true);
+	(void)run_main_case("single_ok", {}, { "d" }, { "d" });
+	(void)run_main_case("single_ok_v", { "-v" }, { "d" }, { "d" });
+	(void)run_main_case("single_ok_p", { "-p" }, { "a/b" }, { "a/b" });
+	(void)run_main_case("single_ok_pv", { "-p", "-v" }, { "a/b/c" }, { "a/b/c" });
+	(void)run_main_case("missing", {}, { "nope" }, {});
+	(void)run_main_case("two_ok", {}, { "x", "y" }, { "x", "y" });
+	(void)run_main_case("mix", { "-v" }, { "good", "bad" }, { "good" });
 }
 
 void
@@ -830,9 +824,13 @@ test_main_random()
 			flags.push_back("-v");
 		int nd = rng.bits(1, 3);
 		std::vector<std::string> rels;
-		for (int j = 0; j < nd; j++)
-			rels.push_back(rand_relpath(rng, 4, 8));
-		bool create = rng.coin();
+		std::vector<std::string> create;
+		for (int j = 0; j < nd; j++) {
+			std::string rel = rand_relpath(rng, 4, 8);
+			rels.push_back(rel);
+			if (rng.coin())
+				create.push_back(rel);
+		}
 		char label[64];
 		std::snprintf(label, sizeof(label), "main%ld", i);
 		(void)run_main_case(label, flags, rels, create);
@@ -844,12 +842,19 @@ test_main_random()
 int
 main()
 {
+	if (!init_base()) {
+		std::fprintf(stderr, "mkdtemp failed\n");
+		return 2;
+	}
+
 	test_rm_path_edge();
 	test_usage_edge();
 	test_main_edge();
 	test_rm_path_random();
 	test_usage_random();
 	test_main_random();
+
+	(void)rmtree(g_base);
 
 	Stat *all[] = { &st_rm_path, &st_usage, &st_main };
 	long total_cases = 0;

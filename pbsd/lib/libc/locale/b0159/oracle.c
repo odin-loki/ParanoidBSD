@@ -48,6 +48,8 @@ typedef struct xlocale *locale_t;
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#undef MB_CUR_MAX
+#define MB_CUR_MAX	4
 
 typedef int nl_item;
 

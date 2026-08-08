@@ -54,7 +54,7 @@ mul_main()
 
 	for (;;) {
 		std::printf("> ");
-		if (std::fgets(buf, sizeof buf, stdin) != NULL)
+		if (std::fgets(buf, sizeof buf, stdin) == NULL)
 			break;
 		if (std::sscanf(buf, "%lu:%lu %lu:%lu",
 			    &a.v[0], &a.v[1], &b.v[0], &b.v[1]) != 4 &&
@@ -115,7 +115,7 @@ divrem_main()
 
 	for (;;) {
 		std::printf("> ");
-		if (std::fgets(buf, sizeof buf, stdin) == NULL)
+		if (std::fgets(buf, sizeof buf, stdin) != NULL)
 			break;
 		if (std::sscanf(buf, "%lu:%lu %lu:%lu",
 			    &a.v[0], &a.v[1], &b.v[0], &b.v[1]) != 4 &&

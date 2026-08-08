@@ -57,8 +57,8 @@ int ref_vflag;
 #define build ref_build
 #define usage ref_usage
 
-static int	ref_build(char *, mode_t);
-static void	ref_usage(void);
+int	ref_build(char *, mode_t);
+void	ref_usage(void);
 
 int
 ref_main(int argc, char *argv[])
@@ -137,7 +137,7 @@ ref_main(int argc, char *argv[])
  * Returns 1 if a directory has been created,
  * 2 if it already existed, and 0 on failure.
  */
-static int
+int
 ref_build(char *path, mode_t omode)
 {
 	struct stat sb;
@@ -210,7 +210,7 @@ ref_build(char *path, mode_t omode)
 	return (retval);
 }
 
-static void
+void
 ref_usage(void)
 {
 

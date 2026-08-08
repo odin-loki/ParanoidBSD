@@ -33,6 +33,8 @@ typedef pbsd_mbstate_t mbstate_t;
 #define _BITS_TYPES_LOCALE_T_H	1
 #include <string.h>
 #include <wchar.h>
+#undef MB_CUR_MAX
+#define MB_CUR_MAX	4
 #undef locale_t
 
 #ifndef MB_LEN_MAX
