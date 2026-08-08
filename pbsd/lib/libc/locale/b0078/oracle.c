@@ -256,7 +256,7 @@ int ref____mb_cur_max(void)
 {
 	return XLOCALE_CTYPE(__get_locale())->__mb_cur_max;
 }
-int ref____mb_cur_max_l(locale_t locale)
+int ref____mb_cur_max_l(ref_locale_t locale)
 {
 	FIX_LOCALE(locale);
 	return XLOCALE_CTYPE(locale)->__mb_cur_max;
