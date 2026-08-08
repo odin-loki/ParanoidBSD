@@ -110,6 +110,10 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/secure/strncat_chk_m/port.cppm
   lib/libc/secure/vsprintf_chk_m/port.cppm
   lib/libc/softfloat/b0009/port.cppm
+  lib/libc/softfloat/b0010s1/port.cppm
+  lib/libc/softfloat/b0010s2/port.cppm
+  lib/libc/softfloat/b0010s3/port.cppm
+  lib/libc/softfloat/b0010s4/port.cppm
   lib/libc/softfloat/b0012s1/port.cppm
   lib/libc/softfloat/b0012s2/port.cppm
   lib/libc/softfloat/b0012s4/port.cppm
@@ -192,6 +196,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/uuid/uuid_from_string_m/port.cppm
   lib/libc/uuid/uuid_is_nil_m/port.cppm
   lib/libc/uuid/uuid_to_string_m/port.cppm
+  lib/libc_nonshared/b0004/port.cppm
   lib/libcalendar/b0043/port.cppm
   lib/libcompat/4.3/re_comp_m/port.cppm
   lib/libcrypt/misc_m/port.cppm
@@ -199,6 +204,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/ld128/k_cosl_m/port.cppm
   lib/msun/ld128/k_tanl_m/port.cppm
   lib/msun/ld80/b0082/port.cppm
+  lib/msun/src/b0001/port.cppm
   lib/msun/src/b0030/port.cppm
   lib/msun/src/b0038/port.cppm
   lib/msun/src/b0057/port.cppm
@@ -259,6 +265,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/rcorder/ealloc_m/port.cppm
   sys/fs/procfs/procfs_type_m/port.cppm
   sys/net/toeplitz_m/port.cppm
+  sys/security/mac_pimd/b0006/port.cppm
   sys/x86/linux/b0037/port.cppm
   usr.bin/ar/util_m/port.cppm
   usr.bin/calendar/ostern_m/port.cppm
