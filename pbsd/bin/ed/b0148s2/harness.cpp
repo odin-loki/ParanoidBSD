@@ -190,12 +190,59 @@ void test_push_undo_stack()
 	run(0, 0, 5, 0);
 	run(1, 2, 4, 1);
 
+	auto run_pair = [&](int type, long from, long to) {
+		reset_both();
+		if (!scratch_both())
+			return;
+		add_lines_ref(5);
+		add_lines_port(5);
+		enable_undo_ref(3, 5);
+		enable_undo_port(3, 5);
+		ref_push_undo_stack(type, from, to);
+		port::push_undo_stack(type, from, to);
+		ref_push_undo_stack(type, from, to);
+		port::push_undo_stack(type, from, to);
+		int rp = ref_pop_undo_stack();
+		int pp = port::pop_undo_stack();
+		st.cases++;
+		if (rp != pp || !state_match())
+			st.fails++;
+		ref_close_sbuf();
+		port::close_sbuf();
+	};
+
+	run_pair(2, 1, 3);
+	run_pair(3, 2, 4);
+
 	for (long i = 0; i < RANDOM_ITERS / 3; i++) {
 		int type = (int)(rnd() % 5);
 		long from = rndl() % 6;
 		long to = rndl() % 6;
 		int mfail = (rnd() % 50 == 0) ? 1 : 0;
-		run(type, from, to, mfail);
+		if (type == 2 || type == 3) {
+			reset_both();
+			oracle_malloc_fail_at = mfail;
+			port::malloc_fail_at = mfail;
+			if (!scratch_both())
+				continue;
+			add_lines_ref(5);
+			add_lines_port(5);
+			enable_undo_ref(3, 5);
+			enable_undo_port(3, 5);
+			ref_push_undo_stack(type, from, to);
+			port::push_undo_stack(type, from, to);
+			ref_push_undo_stack(type, from, to);
+			port::push_undo_stack(type, from, to);
+			int rp = ref_pop_undo_stack();
+			int pp = port::pop_undo_stack();
+			st.cases++;
+			if (rp != pp || !state_match())
+				st.fails++;
+			ref_close_sbuf();
+			port::close_sbuf();
+		} else {
+			run(type, from, to, mfail);
+		}
 	}
 
 	for (long i = 0; i < 150; i++) {
@@ -296,6 +343,10 @@ void test_pop_undo_stack()
 			long t = rndl() % (n + 1);
 			ref_push_undo_stack(ty, f, t);
 			port::push_undo_stack(ty, f, t);
+			if (ty == 2 || ty == 3) {
+				ref_push_undo_stack(ty, f, t);
+				port::push_undo_stack(ty, f, t);
+			}
 		}
 		int rp = ref_pop_undo_stack();
 		int pp = port::pop_undo_stack();

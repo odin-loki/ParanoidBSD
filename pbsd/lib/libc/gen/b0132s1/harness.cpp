@@ -380,6 +380,10 @@ check_readdir(int row, const char *label, dir_fixture *pa, dir_fixture *pb,
 	long off_p;
 	long off_r;
 	int prev_threaded;
+	int locks_p;
+	int locks_r;
+	int unlocks_p;
+	int unlocks_r;
 
 	prev_threaded = __isthreaded;
 	__isthreaded = threaded;
@@ -387,7 +391,12 @@ check_readdir(int row, const char *label, dir_fixture *pa, dir_fixture *pb,
 	fix_mock_reset();
 
 	dp_p = port::readdir(&pa->dir);
+	locks_p = g_mutex_lock_calls;
+	unlocks_p = g_mutex_unlock_calls;
+
 	dp_r = ref_readdir(&pb->dir);
+	locks_r = g_mutex_lock_calls - locks_p;
+	unlocks_r = g_mutex_unlock_calls - unlocks_p;
 
 	__isthreaded = prev_threaded;
 
@@ -404,9 +413,12 @@ check_readdir(int row, const char *label, dir_fixture *pa, dir_fixture *pb,
 		fail_row(row, label, "DIR/buffer state mismatch");
 		return (false);
 	}
-	if (g_mutex_lock_calls != expect_locks ||
-	    g_mutex_unlock_calls != expect_locks) {
+	if (locks_p != locks_r || unlocks_p != unlocks_r) {
 		fail_row(row, label, "mutex traffic mismatch");
+		return (false);
+	}
+	if (locks_p != expect_locks || unlocks_p != expect_locks) {
+		fail_row(row, label, "mutex count mismatch");
 		return (false);
 	}
 	return (true);
