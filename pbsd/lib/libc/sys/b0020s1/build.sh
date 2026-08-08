@@ -1,6 +1,12 @@
 #!/bin/sh
-# Build and run the b0020s1 differential test.
-# Usage:  sh build.sh   (from pbsd/lib/libc/sys/b0020s1/)
+#
+# Build and run the PBSD b0020s1 differential test.
+#
+#   sh build.sh
+#
+# Compiles the C oracle, the C++23 module port and the harness, links them
+# together and execs the harness so its exit status is this script's exit
+# status.
 
 set -e
 
@@ -8,46 +14,27 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS="-std=c11 -O2"
-CXXFLAGS="-std=c++23 -O2"
+CFLAGS="-std=c11 -O2 -Wall"
+CXXFLAGS="-std=c++23 -O2 -Wall"
 
-OUT=./b0020s1_harness
+MODNAME=pbsd.lib.libc.sys.b0020s1
 
-# Work out which module flags this toolchain wants.
-MODFLAGS=""
-if $CXX -std=c++23 -fmodules-ts -E -x c++ /dev/null >/dev/null 2>&1; then
-	MODFLAGS="-fmodules-ts"
-elif $CXX -std=c++23 -fmodules -E -x c++ /dev/null >/dev/null 2>&1; then
-	MODFLAGS="-fmodules"
-fi
-
-rm -rf gcm.cache pcm.cache
-mkdir -p pcm.cache
+rm -rf gcm.cache oracle.o port.o harness.o port.pcm harness
 
 $CC $CFLAGS -c oracle.c -o oracle.o
 
-case "$MODFLAGS" in
--fmodules-ts)
-	# GCC: compiling the interface unit also emits its CMI into gcm.cache.
-	$CXX $CXXFLAGS $MODFLAGS -x c++ -c port.cppm -o port.o
-	$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o harness.o
-	;;
--fmodules)
-	# Clang: precompile the interface, then feed the BMI to the consumer.
-	$CXX $CXXFLAGS $MODFLAGS --precompile -x c++-module port.cppm \
-	    -o pcm.cache/pbsd.lib.libc.sys.b0020s1.pcm
-	$CXX $CXXFLAGS $MODFLAGS -c \
-	    pcm.cache/pbsd.lib.libc.sys.b0020s1.pcm -o port.o
-	$CXX $CXXFLAGS $MODFLAGS \
-	    -fmodule-file=pbsd.lib.libc.sys.b0020s1=pcm.cache/pbsd.lib.libc.sys.b0020s1.pcm \
-	    -c harness.cpp -o harness.o
-	;;
-*)
-	echo "build.sh: no C++20 module support found in $CXX" >&2
-	exit 2
-	;;
-esac
+if $CXX --version 2>&1 | grep -qi clang; then
+	# clang: precompile the module interface, then compile the BMI.
+	$CXX $CXXFLAGS -x c++-module port.cppm --precompile -o port.pcm
+	$CXX $CXXFLAGS -c port.pcm -o port.o
+	$CXX $CXXFLAGS -fmodule-file="$MODNAME=port.pcm" -c harness.cpp \
+		-o harness.o
+	$CXX $CXXFLAGS -o harness harness.o port.o oracle.o
+else
+	# GCC: -fmodules-ts, the CMI goes through gcm.cache.
+	$CXX $CXXFLAGS -fmodules-ts -x c++ -c port.cppm -o port.o
+	$CXX $CXXFLAGS -fmodules-ts -c harness.cpp -o harness.o
+	$CXX $CXXFLAGS -fmodules-ts -o harness harness.o port.o oracle.o
+fi
 
-$CXX $CXXFLAGS -o "$OUT" harness.o port.o oracle.o
-
-exec "$OUT"
+exec ./harness
