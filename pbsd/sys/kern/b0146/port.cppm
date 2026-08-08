@@ -919,22 +919,22 @@ _sema_trywait(sema *sema, const char *file, int line)
 {
 	int ret;
 
-mtx_lock(&sema->sema_mtx);
+	detail::mtx_lock(&sema->sema_mtx);
 
 	if (sema->sema_value > 0) {
 		sema->sema_value--;
 		ret = 1;
 
 		CTR6(KTR_LOCK, "%s(%p) \"%s\" v = %d at %s:%d", __func__, sema,
-cv_wmesg(&sema->sema_cv), sema->sema_value, file, line);
+		    detail::cv_wmesg(&sema->sema_cv), sema->sema_value, file, line);
 	} else {
 		ret = 0;
 
 		CTR5(KTR_LOCK, "%s(%p) \"%s\" fail at %s:%d", __func__, sema,
-cv_wmesg(&sema->sema_cv), file, line);
+		    detail::cv_wmesg(&sema->sema_cv), file, line);
 	}
 
-mtx_unlock(&sema->sema_mtx);
+	detail::mtx_unlock(&sema->sema_mtx);
 	return (ret);
 }
 
@@ -943,9 +943,9 @@ sema_value(sema *sema)
 {
 	int ret;
 
-mtx_lock(&sema->sema_mtx);
+	detail::mtx_lock(&sema->sema_mtx);
 	ret = sema->sema_value;
-mtx_unlock(&sema->sema_mtx);
+	detail::mtx_unlock(&sema->sema_mtx);
 	return (ret);
 }
 

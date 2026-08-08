@@ -229,21 +229,10 @@ bool bufs_eq(const unsigned char *a, const unsigned char *b, size_t n)
 	return std::memcmp(a, b, n) == 0;
 }
 
-size_t test_pfx_half(const DBT *a, const DBT *b)
+size_t harness_pfx(const DBT *a, const DBT *b)
 {
 	size_t m = a->size < b->size ? a->size : b->size;
 	return m > 1 ? m / 2 : m;
-}
-
-size_t ref_pfx_half(const DBT *a, const DBT *b)
-{
-	size_t m = a->size < b->size ? a->size : b->size;
-	return m > 1 ? m / 2 : m;
-}
-
-extern "C" size_t harness_pfx(const DBT *a, const DBT *b)
-{
-	return test_pfx_half(a, b);
 }
 
 void init_tree(P::BTREE &tp, P::MPOOL &mp, P::DB &db, u_int32_t flags,

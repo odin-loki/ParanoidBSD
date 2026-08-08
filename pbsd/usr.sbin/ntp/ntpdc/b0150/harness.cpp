@@ -2,6 +2,7 @@
  * Differential harness for batch b0150 (ntpdc nl.c layout printer).
  */
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -189,7 +190,6 @@ main(void)
 	run_hand_cases();
 	run_sweep();
 
-	std::printf("\n%-24s %8lld %8lld\n", row.name, row.cases, row.failures);
 	std::printf("%-24s %8s %8s\n", "function", "cases", "failures");
 	std::printf("%-24s %8lld %8lld\n", row.name, row.cases, row.failures);
 

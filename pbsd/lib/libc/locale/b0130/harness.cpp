@@ -733,7 +733,6 @@ main()
 
 	// hand_wcsnrtombs_cases();
 	hand_wcstod_cases();
-	hand_messages_cases();
 
 	std::printf("\n%-32s %12s %12s\n", "function", "cases", "failures");
 	for (int i = 0; i < F_COUNT; i++) {

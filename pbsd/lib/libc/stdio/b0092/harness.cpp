@@ -399,11 +399,11 @@ run_setlinebuf_random(void)
 }
 
 int saved_stdin = -1;
-char stdin_tmp_path[] = "/tmp/pbsd_b0092_stdin_XXXXXX";
 
 bool
 push_stdin_wide(const wchar_t *ws, std::size_t n)
 {
+	char stdin_tmp_path[] = "/tmp/pbsd_b0092_stdin_XXXXXX";
 	int fd = mkstemp(stdin_tmp_path);
 	if (fd < 0)
 		return false;
