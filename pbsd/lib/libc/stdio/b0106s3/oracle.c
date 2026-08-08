@@ -229,3 +229,19 @@ vsprintf(char * __restrict str, const char * __restrict fmt, __va_list ap)
 {
 	return vsprintf_l(str, __get_locale(), fmt, ap);
 }
+
+#undef __vfprintf
+#undef __get_locale
+
+int
+__vfprintf(struct pbsd_shim_file *fp, locale_t locale, int serrno,
+    const char *fmt, va_list ap)
+{
+	return (pbsd_shim_vfprintf(fp, locale, serrno, fmt, ap));
+}
+
+locale_t
+__get_locale(void)
+{
+	return (pbsd_shim_get_locale());
+}
