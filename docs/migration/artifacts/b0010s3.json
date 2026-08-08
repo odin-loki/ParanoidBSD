@@ -1,0 +1,10 @@
+{
+  "batch": "b0010s3",
+  "verified": "2026-08-08T09:15:38Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "building batch b0010s3 with cc / c++ (gcc modules)\nPBSD batch b0010s3 differential test\n(oracle.c is the specification; guard byte 0x7f)\n\n\nfunction                cases     failures     result\n---------------- ------------ ------------ ----------\n__ltdf2                277566            0       PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/ltdf2.c": "d331e1af3a5e8aec"
+  }
+}
