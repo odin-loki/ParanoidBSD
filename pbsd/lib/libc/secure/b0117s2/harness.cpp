@@ -39,7 +39,7 @@ static long long ncase[F_COUNT];
 static long long nfail[F_COUNT];
 static int reported[F_COUNT];
 
-static std::uint64_t rng = 0xb0117s2ULL;
+static std::uint64_t rng = 0xb011702ULL;
 
 static std::uint64_t
 rnd(void)

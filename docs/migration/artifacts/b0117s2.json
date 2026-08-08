@@ -1,0 +1,10 @@
+{
+  "batch": "b0117s2",
+  "verified": "2026-08-08T22:10:28Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                  cases   failures\n__strcpy_chk             250087          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/secure/strcpy_chk.c": "78c36f5c2aa3b743"
+  }
+}

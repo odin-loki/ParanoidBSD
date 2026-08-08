@@ -568,7 +568,7 @@ log1pl(long double x)
 	int16_t ax, hx;
 
 	EXTRACT_LDBL80_WORDS(hx, lx, x);
-	if (hx < 0x3fff) {		/* x < 1, or x neg NaN */
+	if (hx >= 0x3fff) {		/* x < 1, or x neg NaN */
 		ax = hx & 0x7fff;
 		if (ax >= 0x3fff) {	/* x <= -1, or x neg NaN */
 			if (ax == 0x3fff && lx == 0x8000000000000000ULL)
