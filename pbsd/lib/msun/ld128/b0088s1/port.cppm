@@ -2,6 +2,7 @@ module;
 
 #include <cmath>
 #include <cstdint>
+#include <math.h>
 
 export module pbsd.lib.msun.ld128.b0088s1;
 

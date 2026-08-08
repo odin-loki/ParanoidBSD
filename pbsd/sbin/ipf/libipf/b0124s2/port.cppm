@@ -1,5 +1,7 @@
 module;
 
+#include <cstddef>
+
 export module pbsd.sbin.ipf.libipf.b0124s2;
 
 export namespace pbsd::sbin_ipf_libipf::b0124s2 {

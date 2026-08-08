@@ -34,7 +34,7 @@ struct Stat {
 
 static Stat st_resetlexer = { "resetlexer", 0, 0, 0 };
 
-static std::uint64_t rng_state = 0xb0124s2feedfaceULL;
+static std::uint64_t rng_state = 0xb0124002feedfaceULL;
 
 static inline std::uint64_t
 rnd(void)
