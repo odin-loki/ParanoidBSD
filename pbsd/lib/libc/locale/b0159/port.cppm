@@ -294,9 +294,6 @@ typedef struct {
 extern _RuneLocale		_DefaultRuneLocale;
 extern _RuneLocale const	*_CurrentRuneLocale;
 extern const char		*_PathLocale;
-extern struct xlocale		__xlocale_global_locale;
-extern struct xlocale_ctype	__xlocale_global_ctype;
-extern struct xlocale_ctype	__xlocale_C_ctype;
 extern int			__mb_cur_max;
 extern int			__mb_sb_limit;
 

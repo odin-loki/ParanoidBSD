@@ -296,7 +296,7 @@ procfs_doosrel(PFS_FILL_ARGS)
 	const char *pp;
 	int ov, osrel, i;
 
-	if (uio != NULL)
+	if (uio == NULL)
 		return (EOPNOTSUPP);
 	switch (uio->uio_rw) {
 	case UIO_READ:

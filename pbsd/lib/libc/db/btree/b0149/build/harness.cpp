@@ -507,6 +507,7 @@ void check_bt_psplit(u_int32_t ptype, int nents, indx_t skip, size_t ilen,
 
 	unsigned char init_src[PAGE_SZ];
 	std::memcpy(init_src, c.src_p, PAGE_SZ);
+	std::fprintf(stderr, "before port\n"); std::fflush(stderr);
 	MockSnap snap = snap_mock();
 	P::PAGE *ret_p = P::bt_psplit(&c.tp, (P::PAGE *)sp, (P::PAGE *)lp_p,
 	    (P::PAGE *)rp_p, &skip_p, ilen);
@@ -534,6 +535,7 @@ void check_bt_psplit(u_int32_t ptype, int nents, indx_t skip, size_t ilen,
 	}
 	skip_r = skip;
 	restore_mock(snap);
+	std::fprintf(stderr, "before ref\n"); std::fflush(stderr);
 
 	PAGE *ret_r = ref_bt_psplit(&c.tr, sr, lp_r, rp_r, &skip_r, ilen);
 
@@ -564,6 +566,7 @@ void check_bt_psplit(u_int32_t ptype, int nents, indx_t skip, size_t ilen,
 	check_eq(F_BT_PSPLIT, c.tp.bt_cursor.pg.index == c.tr.bt_cursor.pg.index,
 	    "cursor index");
 	check_eq(F_BT_PSPLIT, bufs_eq(c.lp_p, c.lp_r, PAGE_SZ), "left page");
+	std::fprintf(stderr, "after ref\n"); std::fflush(stderr);
 	check_eq(F_BT_PSPLIT, bufs_eq(c.rp_p, c.rp_r, PAGE_SZ), "right page");
 }
 
