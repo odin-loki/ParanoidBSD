@@ -136,9 +136,12 @@ struct _bkt {
 };
 using BKT = struct _bkt;
 
+TAILQ_HEAD(_lqh, _bkt);
+TAILQ_HEAD(_hqh, _bkt);
+
 struct MPOOL {
-	TAILQ_HEAD(_lqh, _bkt) lqh;
-	TAILQ_HEAD(_hqh, _bkt) hqh[HASHSIZE];
+	struct _lqh lqh;
+	struct _hqh hqh[HASHSIZE];
 	pgno_t	curcache;
 	pgno_t	maxcache;
 	pgno_t	npages;
@@ -407,7 +410,7 @@ mpool_bkt(MPOOL *mp)
 
 	/* If under the max cached, always create a new page. */
 	if (mp->curcache < mp->maxcache)
-		goto new;
+		goto new_bkt;
 
 	/*
 	 * If the cache is max'd out, walk the lru list for a buffer we
@@ -439,7 +442,7 @@ mpool_bkt(MPOOL *mp)
 			return (bp);
 		}
 
-new:	if ((bp = (BKT *)calloc(1, sizeof(BKT) + mp->pagesize)) == NULL)
+new_bkt:	if ((bp = (BKT *)calloc(1, sizeof(BKT) + mp->pagesize)) == NULL)
 		return (NULL);
 #ifdef STATISTICS
 	++mp->pagealloc;

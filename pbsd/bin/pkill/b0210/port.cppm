@@ -34,6 +34,8 @@
 
 module;
 
+#define _DEFAULT_SOURCE
+
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/queue.h>
@@ -51,10 +53,18 @@ module;
 #include <signal.h>
 #include <ctype.h>
 #include <fcntl.h>
+#include <sys/file.h>
 #include <err.h>
 #include <pwd.h>
 #include <grp.h>
 #include <errno.h>
+
+#ifndef SLIST_FOREACH_SAFE
+#define	SLIST_FOREACH_SAFE(var, head, field, tvar)			\
+	for ((var) = SLIST_FIRST((head));				\
+	    (var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
+	    (var) = (tvar))
+#endif
 
 #ifndef LONG_BIT
 #define	LONG_BIT	(sizeof(long) * CHAR_BIT)
@@ -488,14 +498,14 @@ list_name(struct listhead *head, int idx)
 	return (NULL);
 }
 
-export struct listhead *ppidlist(void) { return (&ppidlist); }
-export struct listhead *ruidlist(void) { return (&ruidlist); }
-export struct listhead *rgidlist(void) { return (&rgidlist); }
-export struct listhead *pgrplist(void) { return (&pgrplist); }
-export struct listhead *tdevlist(void) { return (&tdevlist); }
-export struct listhead *sidlist(void) { return (&sidlist); }
-export struct listhead *jidlist(void) { return (&jidlist); }
-export struct listhead *classlist(void) { return (&classlist); }
-export struct listhead *euidlist(void) { return (&euidlist); }
+export struct listhead *get_ppidlist(void) { return (&ppidlist); }
+export struct listhead *get_ruidlist(void) { return (&ruidlist); }
+export struct listhead *get_rgidlist(void) { return (&rgidlist); }
+export struct listhead *get_pgrplist(void) { return (&pgrplist); }
+export struct listhead *get_tdevlist(void) { return (&tdevlist); }
+export struct listhead *get_sidlist(void) { return (&sidlist); }
+export struct listhead *get_jidlist(void) { return (&jidlist); }
+export struct listhead *get_classlist(void) { return (&classlist); }
+export struct listhead *get_euidlist(void) { return (&euidlist); }
 
 } /* namespace */

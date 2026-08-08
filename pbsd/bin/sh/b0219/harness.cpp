@@ -224,6 +224,126 @@ fail_stat(Stat *st, const char *tag, const char *detail)
 	return 1;
 }
 
+#define ALIASINUSE 1
+
+static void test_alias_set(const char *name, const char *val);
+static void test_outqstr(const char *tag, const char *s);
+
+static void
+test_alias_inuse(void)
+{
+	Stat *st = get_stat("unalias/rmaliases/lookupalias");
+	int bad = 0;
+
+	reset_oracle();
+	reset_port();
+	test_alias_set("inuse", "v1");
+	struct oracle_alias *oa =
+	    (struct oracle_alias *)ref_lookupalias("inuse", 0);
+	port::alias *pb = const_cast<port::alias *>(
+	    port::lookupalias("inuse", 0));
+	if (oa == nullptr || pb == nullptr)
+		bad = 1;
+	else {
+		oa->flag |= ALIASINUSE;
+		pb->flag |= ALIASINUSE;
+		if (ref_lookupalias("inuse", 1) != nullptr)
+			bad |= 2;
+		if (port::lookupalias("inuse", 1) != nullptr)
+			bad |= 4;
+		char *ua[] = {(char *)"inuse", nullptr};
+		oracle_argptr = ua;
+		oracle_nextopt_optptr = nullptr;
+		int ra = ref_unaliascmd(0, nullptr);
+		port::port_argptr = ua;
+		port::port_nextopt_optptr = nullptr;
+		int rp = port::unaliascmd(0, nullptr);
+		if (ra != rp)
+			bad |= 8;
+		if (oa->name[0] != '\0' || pb->name[0] != '\0')
+			bad |= 16;
+	}
+	st->cases++;
+	if (bad)
+		fail_stat(st, "edge", "alias inuse");
+}
+
+static void
+test_stack_grow(void)
+{
+	Stat *st = get_stat("growstackstr/makestrspace/stputbin/stputs");
+	char *pa, *pb;
+	int bad = 0;
+
+	reset_oracle();
+	reset_port();
+	struct oracle_stackmark ma;
+	port::stackmark mb;
+	ref_setstackmark(&ma);
+	port::setstackmark(&mb);
+	pa = ref_growstackstr();
+	pb = port::growstackstr();
+	if (pa == nullptr || pb == nullptr)
+		bad = 1;
+	for (int i = 0; i < 32; i++) {
+		pa = ref_makestrspace(1, pa);
+		pb = port::makestrspace(1, pb);
+		*pa++ = (char)(0x80 + (i & 0x7f));
+		*pb++ = (char)(0x80 + (i & 0x7f));
+	}
+	ref_popstackmark(&ma);
+	port::popstackmark(&mb);
+	st->cases++;
+	if (bad)
+		fail_stat(st, "edge", "stack grow");
+}
+
+static void
+test_memout_grow(void)
+{
+	Stat *st = get_stat("outbin/emptyoutbuf");
+	struct oracle_output oa;
+	port::output ob;
+	unsigned char data[256];
+	int bad = 0;
+
+	for (int i = 0; i < 256; i++)
+		data[i] = (unsigned char)(0x80 + i);
+	reset_oracle();
+	reset_port();
+	init_memout_oracle(&oa);
+	init_memout_port(&ob);
+	ref_outbin(data, 200, &oa);
+	port::outbin(data, 200, &ob);
+	std::size_t la = memout_len_oracle(&oa);
+	std::size_t lb = memout_len_port(&ob);
+	if (la != lb || la != 200)
+		bad = 1;
+	if (la > 0 && std::memcmp(oa.buf, ob.buf, la) != 0)
+		bad |= 2;
+	st->cases++;
+	if (bad)
+		fail_stat(st, "edge", "memout grow");
+	if (oa.buf)
+		std::free(oa.buf);
+	if (ob.buf)
+		std::free(ob.buf);
+}
+
+static void
+test_outqstr_exhaustive(void)
+{
+	const char *more[] = {
+		" \t", "foo\nbar", "foo\rbar", "foo\tbar", "noquote",
+		"needs'quote", "needs$dollar", "semi;", "amp&", "lt<",
+		"gt>", "paren()", "back`tick", "star*", "q?mark",
+		"tilde~", "hash#", "weird\x01\x02", "utf8\xc2\xa9",
+		"onlyhigh\xff\xfe", "mix a|b", "ends=", "begins#hash"
+	};
+	for (std::size_t i = 0; i < sizeof(more) / sizeof(more[0]); i++)
+		test_outqstr("edge2", more[i]);
+}
+
 static void
 test_ckmalloc_ckfree(void)
 {
@@ -554,19 +674,46 @@ test_alias_lookup(const char *tag, const char *name, int check)
 }
 
 static void
+alias_arg_sanitize(char *name)
+{
+	if (name[0] == '\0' || name[0] == '-')
+		name[0] = 'a' + (unsigned char)name[1] % 26;
+	if (name[0] == '=')
+		name[0] = 'z';
+}
+
+static void
 test_alias_set(const char *name, const char *val)
 {
 	char obuf[128], pbuf[128];
-	std::snprintf(obuf, sizeof(obuf), "%s=%s", name, val);
-	std::snprintf(pbuf, sizeof(pbuf), "%s=%s", name, val);
+	char oname[64], pname[64];
+	char oval[64], pval[64];
+
+	std::strncpy(oname, name, sizeof(oname) - 1);
+	oname[sizeof(oname) - 1] = '\0';
+	std::strncpy(pname, name, sizeof(pname) - 1);
+	pname[sizeof(pname) - 1] = '\0';
+	std::strncpy(oval, val, sizeof(oval) - 1);
+	oval[sizeof(oval) - 1] = '\0';
+	std::strncpy(pval, val, sizeof(pval) - 1);
+	pval[sizeof(pval) - 1] = '\0';
+	alias_arg_sanitize(oname);
+	alias_arg_sanitize(pname);
+
+	std::snprintf(obuf, sizeof(obuf), "%s=%s", oname, oval);
+	std::snprintf(pbuf, sizeof(pbuf), "%s=%s", pname, pval);
 	char *oav[] = {obuf, nullptr};
 	char *pav[] = {pbuf, nullptr};
+	oracle_set_out1_memout();
+	port::port_set_out1_memout();
 	oracle_argptr = oav;
 	oracle_nextopt_optptr = nullptr;
 	ref_aliascmd(0, nullptr);
 	port::port_argptr = pav;
 	port::port_nextopt_optptr = nullptr;
 	port::aliascmd(0, nullptr);
+	oracle_restore_out1();
+	port::port_restore_out1();
 }
 
 static void
@@ -674,6 +821,10 @@ rand_string(char *buf, std::size_t cap, std::size_t len)
 			buf[i] = (char)(rnd_mod(256));
 	}
 	buf[len] = '\0';
+	if (buf[0] == '\0' || buf[0] == '-')
+		buf[0] = 'a' + (unsigned char)buf[1] % 26;
+	if (buf[0] == '=')
+		buf[0] = 'z';
 }
 
 static void
@@ -750,7 +901,11 @@ main(void)
 	test_xwrite();
 	test_out_flags();
 	test_alias_edge();
+	test_alias_inuse();
 	test_aliascmd();
+	test_stack_grow();
+	test_memout_grow();
+	test_outqstr_exhaustive();
 	random_sweep();
 
 	long total_fails = 0;

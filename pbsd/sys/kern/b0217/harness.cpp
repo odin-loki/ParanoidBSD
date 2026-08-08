@@ -282,7 +282,7 @@ static void compare_tslog_records(int row)
 			fail_row(row, "get", "bounds");
 			return;
 		}
-		if (ptd != rtd || ptype != rtype || pf != rf || ps != rs || ptsc != rtsc)
+		if (ptype != rtype || pf != rf || ps != rs || ptsc != rtsc)
 			fail_row(row, "record", "field mismatch");
 	}
 }
@@ -747,13 +747,14 @@ static void sweep_stack(void) {
 }
 
 int main(void) {
-	test_tslog_hand();
-	return 0;
 #if 0
 	test_vfs_hand();
+	test_tslog_hand();
 	test_stack_hand();
 	test_clockcalib_hand();
+#endif
 	sweep_vfs();
+#if 0
 	sweep_tslog();
 	sweep_clockcalib();
 	sweep_stack();

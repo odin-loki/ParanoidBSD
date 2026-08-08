@@ -1,102 +1,3 @@
-module;
-
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <sys/types.h>
-
-export module pbsd.sys.kern.b0146s1;
-
-export namespace pbsd::sys_kern::b0146s1 {
-
-#define CTASSERT(x) typedef char __ctassert[(x) ? 1 : -1] __attribute__((__unused__))
-
-#define GRND_NONBLOCK 0x0001
-#define GRND_RANDOM   0x0002
-#define GRND_INSECURE 0x0004
-#define GRND_VALIDFLAGS (GRND_NONBLOCK | GRND_RANDOM | GRND_INSECURE)
-
-#define IOSIZE_MAX INT_MAX
-
-#define UIO_USERSPACE 1
-#define UIO_READ      1
-
-#define EINVAL 22
-#define EWOULDBLOCK 35
-#define EAGAIN 35
-
-struct thread {
-	long td_retval[2];
-};
-
-struct getrandom_args {
-	void *buf;
-	std::size_t buflen;
-	unsigned int flags;
-};
-
-namespace detail {
-
-struct iovec {
-	void *iov_base;
-	std::size_t iov_len;
-};
-
-struct uio {
-	iovec *uio_iov;
-	int uio_iovcnt;
-	long long uio_offset;
-	long uio_resid;
-	int uio_segflg;
-	int uio_rw;
-	thread *uio_td;
-};
-
-inline int g_read_random_error;
-inline int g_read_random_block;
-inline long g_read_random_transfer = -1;
-
-inline void read_random_reset() noexcept
-{
-	g_read_random_error = 0;
-	g_read_random_block = 0;
-	g_read_random_transfer = -1;
-}
-
-inline void read_random_configure(int error, int block, ssize_t transfer) noexcept
-{
-	g_read_random_error = error;
-	g_read_random_block = block;
-	g_read_random_transfer = transfer;
-}
-
-inline int
-read_random_uio(uio *auio, int nonblock)
-{
-	unsigned char *bp;
-	unsigned long n, i;
-
-	if (g_read_random_error != 0)
-		return (g_read_random_error);
-	if (nonblock != 0 && g_read_random_block != 0)
-		return (EWOULDBLOCK);
-	if (auio->uio_resid <= 0)
-		return (0);
-	n = (unsigned long)auio->uio_resid;
-	if (g_read_random_transfer >= 0 &&
-	    n > (unsigned long)g_read_random_transfer)
-		n = (unsigned long)g_read_random_transfer;
-	if (n > (unsigned long)auio->uio_iov[0].iov_len)
-		n = (unsigned long)auio->uio_iov[0].iov_len;
-	bp = static_cast<unsigned char *>(auio->uio_iov[0].iov_base);
-	for (i = 0; i < n; i++)
-		bp[i] = static_cast<unsigned char>(0xa5 ^ (i & 0xff));
-	auio->uio_resid -= (long)n;
-	return (0);
-}
-
-} // namespace detail
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -125,16 +26,88 @@ read_random_uio(uio *auio, int nonblock)
  * SUCH DAMAGE.
  */
 
-#define GRND_VALIDFLAGS	(GRND_NONBLOCK | GRND_RANDOM | GRND_INSECURE)
+/*
+ * PBSD batch b0146s1: C++23 port of sys/kern/sys_getrandom.c.
+ */
 
-CTASSERT(EWOULDBLOCK == EAGAIN);
+module;
 
-static int
-kern_getrandom(thread *td, void *user_buf, std::size_t buflen,
+#include <cerrno>
+#include <climits>
+#include <cstddef>
+#include <sys/types.h>
+
+export module pbsd.sys.kern.b0146s1;
+
+export namespace pbsd::sys_kern::b0146s1 {
+
+/* <sys/random.h> */
+constexpr int GRND_NONBLOCK = 0x0001;
+constexpr int GRND_RANDOM = 0x0002;
+constexpr int GRND_INSECURE = 0x0004;
+
+/* <sys/limits.h> */
+constexpr int IOSIZE_MAX = INT_MAX;
+
+/* <sys/_iovec.h>, <sys/uio.h> */
+enum uio_rw { UIO_READ, UIO_WRITE };
+enum uio_seg { UIO_USERSPACE, UIO_SYSSPACE, UIO_NOCOPY };
+
+using register_t = long;
+
+struct iovec {
+	void		*iov_base;
+	std::size_t	 iov_len;
+};
+
+/* <sys/proc.h> */
+struct thread {
+	register_t	td_retval[2];
+};
+
+struct uio {
+	struct iovec	*uio_iov;
+	int		 uio_iovcnt;
+	::off_t		 uio_offset;
+	::ssize_t	 uio_resid;
+	enum uio_seg	 uio_segflg;
+	enum uio_rw	 uio_rw;
+	struct thread	*uio_td;
+};
+
+constexpr int GRND_VALIDFLAGS = (GRND_NONBLOCK | GRND_RANDOM | GRND_INSECURE);
+
+/*
+ * read_random_uio(9) returns EWOULDBLOCK if a nonblocking request would block,
+ * but the Linux API name is EAGAIN.  On FreeBSD, they have the same numeric
+ * value for now.
+ */
+static_assert(EWOULDBLOCK == EAGAIN);
+
+int kern_getrandom(struct thread *td, void *user_buf, std::size_t buflen,
+    unsigned int flags);
+
+struct getrandom_args {
+	void		*buf;
+	std::size_t	 buflen;
+	unsigned int	 flags;
+};
+
+int sys_getrandom(struct thread *td, struct getrandom_args *uap);
+
+} /* namespace pbsd::sys_kern::b0146s1 */
+
+/* Supplied by the kernel entropy device; see random_harvestq.c. */
+extern "C" int read_random_uio(pbsd::sys_kern::b0146s1::uio *uio, bool nonblock);
+
+namespace pbsd::sys_kern::b0146s1 {
+
+int
+kern_getrandom(struct thread *td, void *user_buf, std::size_t buflen,
     unsigned int flags)
 {
-	detail::uio auio;
-	detail::iovec aiov;
+	struct uio auio;
+	struct iovec aiov;
 	int error;
 
 	if ((flags & ~GRND_VALIDFLAGS) != 0)
@@ -142,6 +115,37 @@ kern_getrandom(thread *td, void *user_buf, std::size_t buflen,
 	if (buflen > IOSIZE_MAX)
 		return (EINVAL);
 
+	/*
+	 * Linux compatibility: We have two choices for handling Linux's
+	 * GRND_INSECURE.
+	 *
+	 * 1. We could ignore it completely (like GRND_RANDOM).  However, this
+	 * might produce the surprising result of GRND_INSECURE requests
+	 * blocking, when the Linux API does not block.
+	 *
+	 * 2. Alternatively, we could treat GRND_INSECURE requests as requests
+	 * for GRND_NONBLOCK.  Here, the surprising result for Linux programs
+	 * is that invocations with unseeded random(4) will produce EAGAIN,
+	 * rather than garbage.
+	 *
+	 * Honoring the flag in the way Linux does seems fraught.  If we
+	 * actually use the output of a random(4) implementation prior to
+	 * seeding, we leak some entropy about the initial seed to attackers.
+	 * This seems unacceptable -- it defeats the purpose of blocking on
+	 * initial seeding.
+	 *
+	 * Secondary to that concern, before seeding we may have arbitrarily
+	 * little entropy collected; producing output from zero or a handful of
+	 * entropy bits does not seem particularly useful to userspace.
+	 *
+	 * If userspace can accept garbage, insecure non-random bytes, they can
+	 * create their own insecure garbage with srandom(time(NULL)) or
+	 * similar.  Asking the kernel to produce it from the secure
+	 * getrandom(2) API seems inane.
+	 *
+	 * We elect to emulate GRND_INSECURE as an alternative spelling of
+	 * GRND_NONBLOCK (2).
+	 */
 	if ((flags & GRND_INSECURE) != 0)
 		flags |= GRND_NONBLOCK;
 
@@ -160,26 +164,16 @@ kern_getrandom(thread *td, void *user_buf, std::size_t buflen,
 	auio.uio_rw = UIO_READ;
 	auio.uio_td = td;
 
-	error = detail::read_random_uio(&auio, (flags & GRND_NONBLOCK) != 0);
+	error = read_random_uio(&auio, (flags & GRND_NONBLOCK) != 0);
 	if (error == 0)
 		td->td_retval[0] = buflen - auio.uio_resid;
 	return (error);
 }
 
 int
-sys_getrandom(thread *td, getrandom_args *uap)
+sys_getrandom(struct thread *td, struct getrandom_args *uap)
 {
 	return (kern_getrandom(td, uap->buf, uap->buflen, uap->flags));
 }
 
-inline void read_random_reset() noexcept
-{
-	detail::read_random_reset();
-}
-
-inline void read_random_configure(int error, int block, ssize_t transfer) noexcept
-{
-	detail::read_random_configure(error, block, transfer);
-}
-
-} // namespace pbsd::sys_kern::b0146s1
+} /* namespace pbsd::sys_kern::b0146s1 */

@@ -1,44 +1,44 @@
 #!/bin/sh
-# Build and run the b0196s1 differential test.
+# PBSD batch b0196s1 -- build and run the differential harness.
+#
 # Usage: sh build.sh   (from pbsd/lib/libc/rpc/b0196s1/)
+
 set -e
 
+cd "$(dirname "$0")"
+
 CC=${CC:-cc}
-if command -v clang++ >/dev/null 2>&1; then
-	CXX=${CXX:-clang++}
-else
-	CXX=${CXX:-c++}
-fi
-CFLAGS="-std=c11 -O2 -D_GNU_SOURCE"
-CXXFLAGS="-std=c++23 -O2"
+CXX=${CXX:-c++}
 MODULE=pbsd.lib.libc.rpc.b0196s1
-OBJDIR=./.b0196s1-obj
 
-if $CXX --version 2>&1 | grep -qi clang; then
-	MODFLAGS="-fmodules"
-	PRECOMPILE=clang
-else
-	MODFLAGS="-fmodules-ts"
-	PRECOMPILE=gcc
+# The C++ driver needs a compiler with usable C++23 module support.  Prefer
+# whatever "c++" is if it is clang, otherwise fall back to a clang++ on PATH,
+# otherwise use GCC's -fmodules-ts.
+if ! "$CXX" --version 2>/dev/null | grep -qi clang; then
+	if command -v clang++ >/dev/null 2>&1; then
+		CXX=clang++
+	fi
 fi
 
-rm -rf "$OBJDIR" gcm.cache
-mkdir -p "$OBJDIR"
+CFLAGS="-std=c11 -O2 -Wall"
+CXXFLAGS="-std=c++23 -O2 -Wall"
+LDLIBS="-lpthread"
 
-$CC $CFLAGS -Wl,--wrap=malloc -c oracle.c -o "$OBJDIR/oracle.o"
+rm -f oracle.o port.o harness.o port.pcm harness
+rm -rf gcm.cache
 
-if [ "$PRECOMPILE" = clang ]; then
-	$CXX $CXXFLAGS $MODFLAGS --precompile -x c++-module port.cppm \
-	    -o "$OBJDIR/port.pcm"
-	$CXX $CXXFLAGS $MODFLAGS -c "$OBJDIR/port.pcm" -o "$OBJDIR/port.o"
-	$CXX $CXXFLAGS $MODFLAGS -fmodule-file="$MODULE=$OBJDIR/port.pcm" \
-	    -c harness.cpp -o "$OBJDIR/harness.o"
+"$CC" $CFLAGS -c oracle.c -o oracle.o
+
+if "$CXX" --version 2>/dev/null | grep -qi clang; then
+	"$CXX" $CXXFLAGS -x c++-module --precompile port.cppm -o port.pcm
+	"$CXX" $CXXFLAGS -c port.pcm -o port.o
+	"$CXX" $CXXFLAGS -fmodule-file="$MODULE"=port.pcm \
+	    -c harness.cpp -o harness.o
 else
-	$CXX $CXXFLAGS $MODFLAGS -c -x c++ port.cppm -o "$OBJDIR/port.o"
-	$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o "$OBJDIR/harness.o"
+	"$CXX" $CXXFLAGS -fmodules-ts -c -x c++ port.cppm -o port.o
+	"$CXX" $CXXFLAGS -fmodules-ts -c harness.cpp -o harness.o
 fi
 
-$CXX $CXXFLAGS $MODFLAGS "$OBJDIR/harness.o" "$OBJDIR/port.o" \
-    "$OBJDIR/oracle.o" -Wl,--wrap=malloc -lpthread -o "$OBJDIR/b0196s1_test"
+"$CXX" $CXXFLAGS -o harness harness.o port.o oracle.o $LDLIBS
 
-exec "$OBJDIR/b0196s1_test"
+exec ./harness

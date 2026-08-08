@@ -1,0 +1,13 @@
+{
+  "batch": "b0207",
+  "verified": "2026-08-08T22:48:57Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/8: opt_next, opt_add)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                        cases     failures result\n------------------------ ------------ ------------ ------\nno_op                          200002            0 ok\nst_hash                        207632            0 ok\nstr_offt                       201159            0 ok\nopt_add/opt_next               200818            0 ok\nTOTAL                                            0 ok\noracle.c:9: warning: \"_DEFAULT_SOURCE\" redefined\n    9 | #define _DEFAULT_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\nport.cppm:14: warning: \"_DEFAULT_SOURCE\" redefined\n   14 | #define _DEFAULT_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\nharness.cpp:12: warning: \"_DEFAULT_SOURCE\" redefined\n   12 | #define _DEFAULT_SOURCE\n      | \n<command-line>: note: this is the location of the previous definition\n",
+  "input_hashes": {
+    "hbsd/src/bin/pax/ar_subs.c": "6d68168becb00788",
+    "hbsd/src/bin/pax/ar_io.c": "54dff10f13591e6d",
+    "hbsd/src/bin/pax/options.c": "0c0b13b4d450e4f4",
+    "hbsd/src/bin/pax/tables.c": "8dddbfbd81fdc7e0"
+  }
+}

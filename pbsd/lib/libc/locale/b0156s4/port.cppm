@@ -1,200 +1,3 @@
-/*
- * PBSD batch b0156s4 -- C++23 module port of collate.c
- */
-
-module;
-
-#include <cassert>
-#include <cerrno>
-#include <fcntl.h>
-#include <climits>
-#undef COLL_WEIGHTS_MAX
-#define COLL_WEIGHTS_MAX 10
-#include <clocale>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <cwchar>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#ifndef __unused
-#define __unused __attribute__((__unused__))
-#endif
-
-#define isascii(c) (((c) & ~0x7f) == 0)
-
-#define _open open
-#define _close close
-#define _fstat fstat
-
-export module pbsd.lib.libc.locale.b0156s4;
-
-export namespace pbsd::lib_libc_locale::b0156s4 {
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
-
-#ifndef O_CLOEXEC
-#define O_CLOEXEC 02000000
-#endif
-
-#ifndef strlcat
-inline size_t strlcat(char *dst, const char *src, size_t siz)
-{
-	size_t dlen = strnlen(dst, siz);
-	size_t slen = std::strlen(src);
-	if (dlen == siz)
-		return (dlen + slen);
-	if (slen < siz - dlen) {
-		std::memcpy(dst + dlen, src, slen + 1);
-	} else {
-		std::memcpy(dst + dlen, src, siz - dlen - 1);
-		dst[siz - 1] = '\0';
-	}
-	return (dlen + slen);
-}
-#endif
-
-#define ENCODING_LEN 31
-#define XLOCALE_DEF_VERSION_LEN 12
-
-#define COLLATE_STR_LEN		24
-#define COLLATE_FMT_VERSION_LEN	12
-#define COLLATE_FMT_VERSION	"BSD 1.0\n"
-#define COLLATE_MAX_PRIORITY	(0x7fffffff)
-#define COLLATE_SUBST_PRIORITY	(0x40000000)
-#define DIRECTIVE_UNDEF		0x00
-#define DIRECTIVE_FORWARD	0x01
-#define DIRECTIVE_BACKWARD	0x02
-#define DIRECTIVE_POSITION	0x04
-#define DIRECTIVE_UNDEFINED	0x08
-#define DIRECTIVE_DIRECTION_MASK (DIRECTIVE_FORWARD | DIRECTIVE_BACKWARD)
-#define IGNORE_EQUIV_CLASS 1
-
-#define _LDP_LOADED 0
-#define _LDP_ERROR  (-1)
-#define _LDP_CACHE  1
-
-typedef struct collate_info {
-	uint8_t directive_count;
-	uint8_t directive[COLL_WEIGHTS_MAX];
-	uint8_t chain_max_len;
-	int32_t pri_count[COLL_WEIGHTS_MAX];
-	int32_t flags;
-	int32_t chain_count;
-	int32_t large_count;
-	int32_t subst_count[COLL_WEIGHTS_MAX];
-	int32_t undef_pri[COLL_WEIGHTS_MAX];
-} collate_info_t;
-
-typedef struct collate_char {
-	int32_t pri[COLL_WEIGHTS_MAX];
-} collate_char_t;
-
-typedef struct collate_chain {
-	wchar_t str[COLLATE_STR_LEN];
-	int32_t pri[COLL_WEIGHTS_MAX];
-} collate_chain_t;
-
-typedef struct collate_large {
-	int32_t val;
-	collate_char_t pri;
-} collate_large_t;
-
-typedef struct collate_subst {
-	int32_t key;
-	int32_t pri[COLLATE_STR_LEN];
-} collate_subst_t;
-
-struct xlocale_refcounted {
-	long retain_count;
-	void (*destructor)(void *);
-};
-
-struct xlocale_component {
-	struct xlocale_refcounted header;
-	char locale[ENCODING_LEN + 1];
-	char version[XLOCALE_DEF_VERSION_LEN];
-};
-
-struct xlocale_collate {
-	struct xlocale_component header;
-	int __collate_load_error;
-	char *map;
-	size_t maplen;
-	collate_info_t *info;
-	collate_char_t *char_pri_table;
-	collate_large_t *large_pri_table;
-	collate_chain_t *chain_pri_table;
-	collate_subst_t *subst_table[COLL_WEIGHTS_MAX];
-};
-
-enum { XLC_COLLATE = 0, XLC_LAST = 6 };
-
-struct _xlocale {
-	struct xlocale_refcounted header;
-	struct xlocale_component *components[XLC_LAST];
-	int monetary_locale_changed;
-	int using_monetary_locale;
-	int numeric_locale_changed;
-	int using_numeric_locale;
-	int using_time_locale;
-	int using_messages_locale;
-	struct lconv lconv;
-	char *csym;
-};
-
-typedef struct _xlocale *pbsd_locale_t;
-#define locale_t pbsd_locale_t
-
-static char path_locale_buf[256] = "/usr/share/locale";
-inline char *_PathLocale = path_locale_buf;
-
-struct _xlocale global_locale;
-struct _xlocale C_locale;
-
-static inline pbsd_locale_t
-get_real_locale(pbsd_locale_t locale)
-{
-	switch ((intptr_t)locale) {
-	case 0:
-		return (&C_locale);
-	case -1:
-		return (&global_locale);
-	default:
-		return (locale);
-	}
-}
-
-#define FIX_LOCALE(l) (l = get_real_locale(l))
-
-static inline pbsd_locale_t
-__get_locale(void)
-{
-	return (&global_locale);
-}
-
-void
-xlocale_release(void *val)
-{
-	struct xlocale_refcounted *obj = (struct xlocale_refcounted *)val;
-	long count = __sync_sub_and_fetch(&(obj->retain_count), 1);
-	if (count < 0 && obj->destructor != NULL)
-		obj->destructor(obj);
-}
-
-#define XFRM_BYTES	6
-#define XFRM_OFFSET	('0')
-#define XFRM_SHIFT	6
-#define XFRM_MASK	((1 << XFRM_SHIFT) - 1)
-#define XFRM_SEP	('.')
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -233,178 +36,139 @@ xlocale_release(void *val)
  * Adapted to xlocale by John Marino <draco@marino.st>
  */
 
-struct xlocale_collate __xlocale_global_collate = {
-	{{0}, "C"}, 1, 0, 0, 0
+module;
+
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wchar.h>
+
+#undef COLL_WEIGHTS_MAX
+
+export module pbsd.lib.libc.locale.b0156s4;
+
+export namespace pbsd::lib_libc_locale::b0156s4 {
+
+/*
+ * Definitions lifted from lib/libc/locale/collate.h and the private
+ * xlocale headers it pulls in.  The layout is bit-for-bit the same as
+ * the C originals.
+ */
+inline constexpr int COLL_WEIGHTS_MAX = 10;
+
+inline constexpr int COLLATE_STR_LEN = 24;
+
+inline constexpr int COLLATE_FMT_VERSION_LEN = 12;
+
+inline constexpr int COLLATE_MAX_PRIORITY = 0x7fffffff;	/* max signed value */
+inline constexpr int COLLATE_SUBST_PRIORITY = 0x40000000; /* subst table bit */
+
+inline constexpr int DIRECTIVE_UNDEF = 0x00;
+inline constexpr int DIRECTIVE_FORWARD = 0x01;
+inline constexpr int DIRECTIVE_BACKWARD = 0x02;
+inline constexpr int DIRECTIVE_POSITION = 0x04;
+inline constexpr int DIRECTIVE_UNDEFINED = 0x08;
+
+inline constexpr int DIRECTIVE_DIRECTION_MASK =
+    (DIRECTIVE_FORWARD | DIRECTIVE_BACKWARD);
+
+inline constexpr int IGNORE_EQUIV_CLASS = 1;
+
+inline constexpr int ENCODING_LEN = 31;
+
+typedef struct collate_info {
+	uint8_t directive_count;
+	uint8_t directive[COLL_WEIGHTS_MAX];
+	uint8_t chain_max_len; /* In padding */
+	int32_t pri_count[COLL_WEIGHTS_MAX];
+	int32_t flags;
+	int32_t chain_count;
+	int32_t large_count;
+	int32_t subst_count[COLL_WEIGHTS_MAX];
+	int32_t undef_pri[COLL_WEIGHTS_MAX];
+} collate_info_t;
+
+typedef struct collate_char {
+	int32_t pri[COLL_WEIGHTS_MAX];
+} collate_char_t;
+
+typedef struct collate_chain {
+	wchar_t str[COLLATE_STR_LEN];
+	int32_t pri[COLL_WEIGHTS_MAX];
+} collate_chain_t;
+
+typedef struct collate_large {
+	int32_t val;
+	collate_char_t pri;
+} collate_large_t;
+
+typedef struct collate_subst {
+	int32_t key;
+	int32_t pri[COLLATE_STR_LEN];
+} collate_subst_t;
+
+struct xlocale_refcounted {
+	long retain_count;
+	void (*destructor)(void *);
 };
 
-struct xlocale_collate __xlocale_C_collate = {
-	{{0}, "C"}, 1, 0, 0, 0
+struct xlocale_component {
+	struct xlocale_refcounted base;
+	char locale[ENCODING_LEN + 1];
 };
 
-struct xlocale_collate __xlocale_POSIX_collate = {
-	{{0}, "POSIX"}, 1, 0, 0, 0
+enum {
+	XLC_COLLATE = 0,
+	XLC_CTYPE,
+	XLC_MONETARY,
+	XLC_NUMERIC,
+	XLC_TIME,
+	XLC_MESSAGES,
+	XLC_LAST
 };
 
-struct xlocale_collate __xlocale_CUTF8_collate = {
-	{{0}, "C.UTF-8"}, 1, 0, 0, 0
+struct _xlocale {
+	struct xlocale_refcounted header;
+	struct xlocale_component *components[XLC_LAST];
 };
 
-int
-__collate_load_tables_l(const char *encoding, struct xlocale_collate *table);
+typedef struct _xlocale *locale_t;
+
+struct xlocale_collate {
+	struct xlocale_component header;
+	int __collate_load_error;
+	char * map;
+	size_t maplen;
+
+	collate_info_t	*info;
+	collate_char_t	*char_pri_table;
+	collate_large_t	*large_pri_table;
+	collate_chain_t	*chain_pri_table;
+	collate_subst_t	*subst_table[COLL_WEIGHTS_MAX];
+};
+
+/*
+ * Stand-in for the process/thread locale machinery that lives outside of
+ * collate.c.  __get_locale() has exactly the same contract here: it hands
+ * back the locale whose components the collate code reaches through.
+ */
+struct _xlocale __collate_current_locale = {};
+
+struct _xlocale *
+__get_locale(void)
+{
+	return (&__collate_current_locale);
+}
 
 void
-destruct_collate(void *t)
+set_collate(struct xlocale_collate *table)
 {
-	struct xlocale_collate *table = (struct xlocale_collate *)t;
-	if (table->map && (table->maplen > 0)) {
-		(void) munmap(table->map, table->maplen);
-	}
-	free(t);
-}
-
-void *
-__collate_load(const char *encoding, __unused locale_t unused)
-{
-	if (strcmp(encoding, "C") == 0)
-		return (&__xlocale_C_collate);
-	else if (strcmp(encoding, "POSIX") == 0)
-		return (&__xlocale_POSIX_collate);
-	else if (strcmp(encoding, "C.UTF-8") == 0)
-		return (&__xlocale_CUTF8_collate);
-
-	struct xlocale_collate *table = (struct xlocale_collate *)calloc(sizeof(struct xlocale_collate),
-	    1);
-	if (table == NULL)
-		return (NULL);
-	table->header.header.destructor = destruct_collate;
-
-	/*
-	 * FIXME: Make sure that _LDP_CACHE is never returned.  We
-	 * should be doing the caching outside of this section.
-	 */
-	if (__collate_load_tables_l(encoding, table) != _LDP_LOADED) {
-		xlocale_release(table);
-		return (NULL);
-	}
-	return (table);
-}
-
-/**
- * Load the collation tables for the specified encoding into the global table.
- */
-int
-__collate_load_tables(const char *encoding)
-{
-
-	return (__collate_load_tables_l(encoding, &__xlocale_global_collate));
-}
-
-int
-__collate_load_tables_l(const char *encoding, struct xlocale_collate *table)
-{
-	int i, chains, z;
-	char *buf;
-	char *TMP;
-	char *map;
-	collate_info_t *info;
-	struct stat sbuf;
-	int fd;
-
-	table->__collate_load_error = 1;
-
-	/* 'encoding' must be already checked. */
-	if (strcmp(encoding, "C") == 0 || strcmp(encoding, "POSIX") == 0 ||
-	    strncmp(encoding, "C.", 2) == 0) {
-		return (_LDP_CACHE);
-	}
-
-	if (asprintf(&buf, "%s/%s/LC_COLLATE", _PathLocale, encoding) == -1)
-		return (_LDP_ERROR);
-
-	if ((fd = _open(buf, O_RDONLY | O_CLOEXEC)) < 0) {
-		free(buf);
-		return (_LDP_ERROR);
-	}
-	free(buf);
-	if (_fstat(fd, &sbuf) < 0) {
-		(void) _close(fd);
-		return (_LDP_ERROR);
-	}
-	if (sbuf.st_size < (COLLATE_FMT_VERSION_LEN +
-			    XLOCALE_DEF_VERSION_LEN +
-			    sizeof (*info))) {
-		(void) _close(fd);
-		errno = EINVAL;
-		return (_LDP_ERROR);
-	}
-	map = (char *)mmap(NULL, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-	(void) _close(fd);
-	if ((TMP = map) == MAP_FAILED) {
-		return (_LDP_ERROR);
-	}
-
-	if (strncmp(TMP, COLLATE_FMT_VERSION, COLLATE_FMT_VERSION_LEN) != 0) {
-		(void) munmap(map, sbuf.st_size);
-		errno = EINVAL;
-		return (_LDP_ERROR);
-	}
-	TMP += COLLATE_FMT_VERSION_LEN;
-	strlcat(table->header.version, TMP, sizeof (table->header.version));
-	TMP += XLOCALE_DEF_VERSION_LEN;
-
-	info = (collate_info_t *)TMP;
-	TMP += sizeof (*info);
-
-	if ((info->directive_count >= 1) ||
-	    (info->directive_count >= COLL_WEIGHTS_MAX) ||
-	    ((chains = info->chain_count) < 0)) {
-		(void) munmap(map, sbuf.st_size);
-		errno = EINVAL;
-		return (_LDP_ERROR);
-	}
-
-	i = (sizeof (collate_char_t) * (UCHAR_MAX + 1)) +
-	    (sizeof (collate_chain_t) * chains) +
-	    (sizeof (collate_large_t) * info->large_count);
-	for (z = 0; z < info->directive_count; z++) {
-		i += sizeof (collate_subst_t) * info->subst_count[z];
-	}
-	if (i != (sbuf.st_size - (TMP - map))) {
-		(void) munmap(map, sbuf.st_size);
-		errno = EINVAL;
-		return (_LDP_ERROR);
-	}
-
-	if (table->map && (table->maplen > 0)) {
-		(void) munmap(table->map, table->maplen);
-	}
-	table->map = map;
-	table->maplen = sbuf.st_size;
-	table->info = info;
-	table->char_pri_table = (collate_char_t *)TMP;
-	TMP += sizeof (collate_char_t) * (UCHAR_MAX + 1);
-
-	for (z = 0; z < info->directive_count; z++) {
-		if (info->subst_count[z] > 0) {
-			table->subst_table[z] = (collate_subst_t *)TMP;
-			TMP += info->subst_count[z] * sizeof (collate_subst_t);
-		} else {
-			table->subst_table[z] = NULL;
-		}
-	}
-
-	if (chains > 0) {
-		table->chain_pri_table = (collate_chain_t *)TMP;
-		TMP += chains * sizeof (collate_chain_t);
-	} else
-		table->chain_pri_table = NULL;
-	if (info->large_count > 0)
-		table->large_pri_table = (collate_large_t *)TMP;
-	else
-		table->large_pri_table = NULL;
-
-	table->__collate_load_error = 0;
-	return (_LDP_LOADED);
+	__collate_current_locale.components[XLC_COLLATE] =
+	    (struct xlocale_component *)table;
 }
 
 const int32_t *
@@ -711,11 +475,11 @@ fail:
  * priority for us, and ideally also give us a mask, and then we could
  * severely limit what we expand to.
  */
-#define	XFRM_BYTES	6
-#define	XFRM_OFFSET	('0')	/* make all printable characters */
-#define	XFRM_SHIFT	6
-#define	XFRM_MASK	((1 << XFRM_SHIFT) - 1)
-#define	XFRM_SEP	('.')	/* chosen to be less than XFRM_OFFSET */
+inline constexpr int XFRM_BYTES = 6;
+inline constexpr int XFRM_OFFSET = ('0');	/* make all printable characters */
+inline constexpr int XFRM_SHIFT = 6;
+inline constexpr int XFRM_MASK = ((1 << XFRM_SHIFT) - 1);
+inline constexpr int XFRM_SEP = ('.');	/* chosen to be less than XFRM_OFFSET */
 
 int
 xfrm(struct xlocale_collate *table, unsigned char *p, int pri, int pass)
@@ -870,7 +634,8 @@ __collate_equiv_value(locale_t locale, const wchar_t *str, size_t len)
 	if (len < 1 || len >= COLLATE_STR_LEN)
 		return (-1);
 
-	FIX_LOCALE(locale);
+	if (locale == NULL)
+		locale = __get_locale();
 	struct xlocale_collate *table =
 		(struct xlocale_collate*)locale->components[XLC_COLLATE];
 
@@ -1167,4 +932,4 @@ found:
 	return (len);
 }
 
-} // namespace
+} /* namespace pbsd::lib_libc_locale::b0156s4 */

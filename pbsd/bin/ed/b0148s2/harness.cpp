@@ -373,6 +373,8 @@ void push_both(int ty, long f, long t)
 	}
 }
 
+constexpr int UDEL_T = 1;
+
 /* Types that leave every line node owned by the buffer, so that an
  * internal clear_undo_stack cannot free a node still on the list. */
 int safe_type(std::uint64_t r)
@@ -413,13 +415,21 @@ void run_push(Stat &st, const PushCase &c)
 		port::realloc_fail_at = port::realloc_calls + c.rfail;
 	}
 
-	void *ru = ref_push_undo_stack(c.type, c.from, c.to);
-	void *pu = port::push_undo_stack(c.type, c.from, c.to);
+	/*
+	 * The out-of-memory tail calls clear_undo_stack, which frees the
+	 * nodes of every UDEL entry.  Our UDEL entries name nodes that are
+	 * still on the buffer list, so keep them off the stack whenever a
+	 * failure can be injected.
+	 */
+	int type = (c.rfail && c.type == UDEL_T) ? 0 : c.type;
+
+	void *ru = ref_push_undo_stack(type, c.from, c.to);
+	void *pu = port::push_undo_stack(type, c.from, c.to);
 	check(st, ru, pu);
 
 	/* a second push observes usize/u_p growth and the post-OOM state */
-	ru = ref_push_undo_stack(c.type, c.to, c.from);
-	pu = port::push_undo_stack(c.type, c.to, c.from);
+	ru = ref_push_undo_stack(type, c.to, c.from);
+	pu = port::push_undo_stack(type, c.to, c.from);
 	check(st, ru, pu);
 
 	oracle_realloc_fail_at = 0;
@@ -484,8 +494,9 @@ void test_push_undo_stack()
 			port::realloc_fail_at = port::realloc_calls + rf;
 		}
 		for (int i = 0; i < 6; i++) {
-			void *ru = ref_push_undo_stack(i % 5, 1, 5);
-			void *pu = port::push_undo_stack(i % 5, 1, 5);
+			int ty = rf ? safe_type(i) : i % 5;
+			void *ru = ref_push_undo_stack(ty, 1, 5);
+			void *pu = port::push_undo_stack(ty, 1, 5);
 			check(st, ru, pu);
 		}
 		oracle_realloc_fail_at = 0;
@@ -636,9 +647,16 @@ void run_clear(Stat &st, const ClearCase &c)
 	if (!prep(c.nlines, c.ig, c.sf))
 		return;
 	set_undo(c.nlines / 2, c.nlines);
-	for (int i = 0; i < c.pushes; i++)
-		push_both(safe_type(rnd()), (long)(rnd() % (c.nlines + 1)),
+	for (int i = 0; i < c.pushes; i++) {
+		/*
+		 * pop_undo_stack turns UADD into UDEL, which would make the
+		 * following clear free nodes that are still on the list, so
+		 * skip UADD when this case pops first.
+		 */
+		int ty = c.popfirst ? 2 + (int)(rnd() % 3) : safe_type(rnd());
+		push_both(ty, (long)(rnd() % (c.nlines + 1)),
 		    (long)(rnd() % (c.nlines + 1)));
+	}
 	for (int i = 0; i < c.orphans && addr_last > 1; i++) {
 		long a = 1 + (long)(rnd() % addr_last);
 		oracle_inject_orphan_udel(a);

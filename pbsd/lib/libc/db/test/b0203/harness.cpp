@@ -20,14 +20,16 @@ import pbsd.lib.libc.db.test.b0203;
 
 namespace P = pbsd::lib_libc_db_test::b0203;
 
+typedef P::DBT DBT;
+typedef P::DB DB;
+typedef P::DBTYPE DBTYPE;
 typedef unsigned char u_char;
 typedef unsigned int u_int;
 typedef unsigned long u_long;
 
-typedef struct {
-	void *data;
-	size_t size;
-} DBT;
+using P::DB_BTREE;
+using P::DB_HASH;
+using P::DB_RECNO;
 
 #define	R_CURSOR	1
 #define	R_FIRST		3
@@ -38,20 +40,6 @@ typedef struct {
 #define	R_NOOVERWRITE	8
 #define	R_PREV		9
 #define	R_SETCURSOR	10
-
-typedef enum { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
-
-typedef struct __db {
-	DBTYPE type;
-	int (*close)(struct __db *);
-	int (*del)(const struct __db *, const DBT *, unsigned int);
-	int (*get)(const struct __db *, const DBT *, DBT *, unsigned int);
-	int (*put)(struct __db *, DBT *, const DBT *, unsigned int);
-	int (*seq)(struct __db *, DBT *, DBT *, unsigned int);
-	int (*sync)(struct __db *, unsigned int);
-	void *internal;
-	int (*fd)(const struct __db *);
-} DB;
 
 typedef struct {
 	unsigned long flags;
@@ -330,8 +318,9 @@ mock_seq_push(int ret, const void *data, size_t sz)
 	}
 }
 
+template <typename Fn>
 static std::string
-capture_stdout_ref(void (*fn)(void))
+capture_stdout_ref(Fn fn)
 {
 	fflush(stdout);
 	int pfd[2];
@@ -348,8 +337,9 @@ capture_stdout_ref(void (*fn)(void))
 	return s;
 }
 
+template <typename Fn>
 static std::string
-capture_stdout_port(void (*fn)(void))
+capture_stdout_port(Fn fn)
 {
 	fflush(stdout);
 	int pfd[2];
@@ -366,8 +356,9 @@ capture_stdout_port(void (*fn)(void))
 	return s;
 }
 
+template <typename Fn>
 static std::string
-capture_ofd_ref(int outfd, void (*fn)(void))
+capture_ofd_ref(int outfd, Fn fn)
 {
 	int rd = pipe_read_end(outfd);
 	fn();
@@ -377,8 +368,9 @@ capture_ofd_ref(int outfd, void (*fn)(void))
 	return s;
 }
 
+template <typename Fn>
 static std::string
-capture_ofd_port(int outfd, void (*fn)(void))
+capture_ofd_port(int outfd, Fn fn)
 {
 	int rd = pipe_read_end(outfd);
 	fn();

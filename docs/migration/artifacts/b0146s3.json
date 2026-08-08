@@ -1,0 +1,10 @@
+{
+  "batch": "b0146s3",
+  "verified": "2026-08-08T22:51:55Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/6: hashdestroy)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                  cases     failures\n------------------ ------------ ------------\nhash_mflags              200388            0\nhashinit_flags           207452            0\nhashinit                 200276            0\nhashdestroy              203100            0\nphashinit_flags          207452            0\nphashinit                200276            0\n------------------ ------------ ------------\nTOTAL                   1218944            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/kern/subr_hash.c": "7ad7108eb950442a"
+  }
+}

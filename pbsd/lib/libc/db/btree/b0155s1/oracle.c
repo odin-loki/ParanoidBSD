@@ -11,6 +11,11 @@
  * both this oracle and the C++23 port run against.
  */
 
+/* -std=c11 hides the BSD spellings (u_int, u_char, caddr_t) behind __USE_MISC */
+#ifndef _DEFAULT_SOURCE
+#define	_DEFAULT_SOURCE	1
+#endif
+
 #include <sys/types.h>
 
 #include <errno.h>

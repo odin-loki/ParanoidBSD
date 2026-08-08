@@ -1,108 +1,3 @@
-/*
- * PBSD batch b0146s1 -- reference oracle.
- *
- * Source: hbsd/src/sys/kern/sys_getrandom.c
- *
- * Every function is renamed with a "ref_" prefix.  Function bodies are
- * otherwise UNMODIFIED.  The kernel environment (types, constants, and
- * read_random_uio(9)) is modelled below and shared identically with the
- * C++23 port under test.
- */
-
-#include <errno.h>
-#include <limits.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-#include <sys/types.h>
-
-#ifndef LONG_BIT
-#define	LONG_BIT	(sizeof(long) * CHAR_BIT)
-#endif
-
-#define	__unused		__attribute__((__unused__))
-#define	CTASSERT(x)		_Static_assert((x), "compile-time assertion failed")
-
-typedef long		register_t;
-
-enum uio_rw { UIO_READ, UIO_WRITE };
-enum uio_seg { UIO_USERSPACE, UIO_SYSSPACE, UIO_NOCOPY };
-
-struct iovec {
-	void	*iov_base;
-	size_t	 iov_len;
-};
-
-struct thread {
-	register_t	td_retval[2];
-};
-
-struct uio {
-	struct iovec	*uio_iov;
-	int		 uio_iovcnt;
-	long long	 uio_offset;
-	long		 uio_resid;
-	enum uio_seg	 uio_segflg;
-	enum uio_rw	 uio_rw;
-	struct thread	*uio_td;
-};
-
-#define	IOSIZE_MAX	INT_MAX
-
-#define	GRND_NONBLOCK	0x0001
-#define	GRND_RANDOM	0x0002
-#define	GRND_INSECURE	0x0004
-
-/* Harness-controlled read_random_uio(9) behaviour. */
-int	oracle_random_error;
-int	oracle_random_nb_fail;
-unsigned long	oracle_random_cap = ULONG_MAX;
-
-void
-oracle_read_random_reset(void)
-{
-
-	oracle_random_error = 0;
-	oracle_random_nb_fail = 0;
-	oracle_random_cap = ULONG_MAX;
-}
-
-void
-oracle_read_random_configure(int error, int block, ssize_t transfer)
-{
-
-	oracle_random_error = error;
-	oracle_random_nb_fail = block;
-	if (transfer < 0)
-		oracle_random_cap = ULONG_MAX;
-	else
-		oracle_random_cap = (unsigned long)transfer;
-}
-
-static int
-read_random_uio(struct uio *auio, int nonblock)
-{
-	unsigned char *bp;
-	unsigned long n, i;
-
-	if (oracle_random_error != 0)
-		return (oracle_random_error);
-	if (nonblock != 0 && oracle_random_nb_fail != 0)
-		return (EWOULDBLOCK);
-	if (auio->uio_resid <= 0)
-		return (0);
-	n = (unsigned long)auio->uio_resid;
-	if (n > oracle_random_cap)
-		n = oracle_random_cap;
-	if (n > (unsigned long)auio->uio_iov[0].iov_len)
-		n = (unsigned long)auio->uio_iov[0].iov_len;
-	bp = (unsigned char *)auio->uio_iov[0].iov_base;
-	for (i = 0; i < n; i++)
-		bp[i] = (unsigned char)(0xa5 ^ (i & 0xff));
-	auio->uio_resid -= (long)n;
-	return (0);
-}
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -130,6 +25,140 @@ read_random_uio(struct uio *auio, int nonblock)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+/*
+ * PBSD batch b0146s1 oracle -- sys/kern/sys_getrandom.c.
+ *
+ * Every function of the original translation unit appears below with a ref_
+ * prefix; the function bodies are verbatim.  `kern_getrandom' loses its
+ * `static' storage class so the differential harness can reach it (a
+ * declaration change only; the body is untouched).
+ *
+ * The kernel environment that the original obtains from <sys/param.h>,
+ * <sys/errno.h>, <sys/limits.h>, <sys/proc.h>, <sys/random.h>,
+ * <sys/sysproto.h>, <sys/systm.h> and <sys/uio.h> is reproduced here so the
+ * code compiles and runs in userspace.  read_random_uio(9) is a deterministic
+ * stand-in driven by the rr_* globals; the port links against this very same
+ * function, so it is a shared part of the environment rather than part of
+ * either implementation.
+ */
+
+#include <errno.h>
+#include <limits.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/types.h>
+
+/* <sys/systm.h> */
+#define	CTASSERT(x)	_Static_assert(x, #x)
+
+/* <sys/errno.h>: EWOULDBLOCK is a synonym of EAGAIN on FreeBSD too. */
+#ifndef EWOULDBLOCK
+#define	EWOULDBLOCK	EAGAIN
+#endif
+
+/* <sys/limits.h> */
+#define	IOSIZE_MAX	INT_MAX
+
+/* <sys/random.h> */
+#define	GRND_NONBLOCK	0x0001
+#define	GRND_RANDOM	0x0002
+#define	GRND_INSECURE	0x0004
+
+/* <sys/_iovec.h>, <sys/uio.h> */
+enum uio_rw { UIO_READ, UIO_WRITE };
+enum uio_seg { UIO_USERSPACE, UIO_SYSSPACE, UIO_NOCOPY };
+
+typedef long register_t;
+
+struct iovec {
+	void	*iov_base;
+	size_t	 iov_len;
+};
+
+/* <sys/proc.h> */
+struct thread {
+	register_t	td_retval[2];
+};
+
+struct uio {
+	struct iovec	*uio_iov;
+	int		 uio_iovcnt;
+	off_t		 uio_offset;
+	ssize_t		 uio_resid;
+	enum uio_seg	 uio_segflg;
+	enum uio_rw	 uio_rw;
+	struct thread	*uio_td;
+};
+
+/*
+ * Deterministic stand-in for read_random_uio(9) plus the observation record
+ * the harness uses to check *how* it was called.  Shared by oracle and port.
+ */
+struct rr_observation {
+	int		 calls;
+	int		 nonblock;
+	const void	*iov_base;
+	size_t		 iov_len;
+	int		 iovcnt;
+	long long	 offset;
+	long long	 resid_in;
+	long long	 resid_out;
+	int		 segflg;
+	int		 rw;
+	const void	*td;
+};
+
+int rr_error;
+size_t rr_consume;
+int rr_block;
+struct rr_observation rr_obs;
+
+int
+read_random_uio(struct uio *uio, bool nonblock)
+{
+	unsigned char *p;
+	size_t avail, n, i;
+	unsigned int mix;
+
+	rr_obs.calls++;
+	rr_obs.nonblock = nonblock ? 1 : 0;
+	rr_obs.iov_base = uio->uio_iov[0].iov_base;
+	rr_obs.iov_len = uio->uio_iov[0].iov_len;
+	rr_obs.iovcnt = uio->uio_iovcnt;
+	rr_obs.offset = (long long)uio->uio_offset;
+	rr_obs.resid_in = (long long)uio->uio_resid;
+	rr_obs.segflg = (int)uio->uio_segflg;
+	rr_obs.rw = (int)uio->uio_rw;
+	rr_obs.td = uio->uio_td;
+
+	/* A nonblocking request refuses to wait for initial seeding. */
+	if (rr_block && nonblock) {
+		rr_obs.resid_out = (long long)uio->uio_resid;
+		return (EWOULDBLOCK);
+	}
+
+	avail = (uio->uio_resid > 0) ? (size_t)uio->uio_resid : 0;
+	n = (rr_consume < avail) ? rr_consume : avail;
+	mix = (unsigned int)(nonblock ? 0x5bu : 0x11u) +
+	    (unsigned int)uio->uio_iovcnt * 9u +
+	    (unsigned int)uio->uio_offset * 13u +
+	    (unsigned int)uio->uio_iov[0].iov_len * 17u +
+	    (unsigned int)uio->uio_segflg * 3u +
+	    (unsigned int)uio->uio_rw * 5u;
+	p = (unsigned char *)uio->uio_iov[0].iov_base;
+	if (p != NULL) {
+		for (i = 0; i < n; i++)
+			p[i] = (unsigned char)(mix + (unsigned int)i * 7u);
+	}
+	uio->uio_resid -= (ssize_t)n;
+	rr_obs.resid_out = (long long)uio->uio_resid;
+	return (rr_error);
+}
+
+/* ---- original translation unit below, bodies verbatim ---------------- */
 
 #define GRND_VALIDFLAGS	(GRND_NONBLOCK | GRND_RANDOM | GRND_INSECURE)
 

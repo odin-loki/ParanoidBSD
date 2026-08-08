@@ -1,7 +1,6 @@
 #!/bin/sh
-#
-# build.sh -- build and run the PBSD batch b0193s2 differential test.
-# Run as: sh build.sh
+# Build and run the b0193s2 differential test.
+# Usage: sh build.sh   (from pbsd/bin/ed/b0193s2/)
 
 set -e
 
@@ -9,27 +8,31 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS=${CFLAGS:--O2}
-CXXFLAGS=${CXXFLAGS:--O2}
-
+CFLAGS="-std=c11 -O2"
+CXXFLAGS="-std=c++23 -O2"
 MODNAME=pbsd.bin.ed.b0193s2
+OBJDIR=.build
 
-rm -rf gcm.cache
-rm -f oracle.o port.o harness.o port.pcm harness
+rm -rf "$OBJDIR"
+mkdir -p "$OBJDIR"
 
-$CC -std=c11 $CFLAGS -c oracle.c -o oracle.o
+$CC $CFLAGS -c oracle.c -o "$OBJDIR/oracle.o"
 
 if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX -std=c++23 $CXXFLAGS -x c++-module port.cppm --precompile \
-	    -o port.pcm
-	$CXX -std=c++23 $CXXFLAGS -c port.pcm -o port.o
-	$CXX -std=c++23 $CXXFLAGS -fmodule-file=$MODNAME=port.pcm \
-	    -c harness.cpp -o harness.o
+	# clang: explicit BMI (.pcm) produced by --precompile
+	$CXX $CXXFLAGS -x c++-module --precompile port.cppm \
+	    -o "$OBJDIR/$MODNAME.pcm"
+	$CXX $CXXFLAGS -c "$OBJDIR/$MODNAME.pcm" -o "$OBJDIR/port.o"
+	$CXX $CXXFLAGS -fmodule-file="$MODNAME=$OBJDIR/$MODNAME.pcm" \
+	    -c harness.cpp -o "$OBJDIR/harness.o"
 else
-	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c -x c++ port.cppm -o port.o
-	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c harness.cpp -o harness.o
+	# gcc: -fmodules-ts, BMIs land in ./gcm.cache, so compile from OBJDIR
+	( cd "$OBJDIR" && \
+	  $CXX $CXXFLAGS -fmodules-ts -x c++ -c ../port.cppm -o port.o && \
+	  $CXX $CXXFLAGS -fmodules-ts -c ../harness.cpp -o harness.o )
 fi
 
-$CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o
+$CXX $CXXFLAGS -o "$OBJDIR/harness" \
+    "$OBJDIR/harness.o" "$OBJDIR/port.o" "$OBJDIR/oracle.o"
 
-exec ./harness
+exec "$OBJDIR/harness"

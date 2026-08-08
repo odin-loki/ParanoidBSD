@@ -39,6 +39,8 @@
  * main() is absent for the reason recorded in skipped.txt.
  */
 
+#define _DEFAULT_SOURCE
+
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/queue.h>
@@ -54,6 +56,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <regex.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <err.h>
@@ -61,6 +64,13 @@
 #include <grp.h>
 #include <errno.h>
 #include <sys/file.h>
+
+#ifndef SLIST_FOREACH_SAFE
+#define	SLIST_FOREACH_SAFE(var, head, field, tvar)			\
+	for ((var) = SLIST_FIRST((head));				\
+	    (var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
+	    (var) = (tvar))
+#endif
 
 #ifndef LONG_BIT
 #define	LONG_BIT	(sizeof(long) * CHAR_BIT)

@@ -209,6 +209,13 @@ static const CsTuple TUPLES[] = {
 	{ 0x8e, 3, 0x8e, 2 },		/* synthetic: cs2 == cs3 */
 	{ 0xa1, 4, 0xff, 3 },		/* synthetic: leads masked by CS1 */
 	{ 0x8e, 5, 0x8f, 9 },		/* synthetic: widths > MB_CUR_MAX */
+	/*
+	 * These two make wcrtomb's len == 1 and len == 2 verdicts differ for
+	 * wc == 0xff, which the four real tuples cannot: they reject it either
+	 * way, so the `(unsigned)wc > 0xff' boundary would be invisible.
+	 */
+	{ 0xff, 1, 0x00, 2 },
+	{ 0x00, 2, 0xff, 1 },
 };
 static const size_t NTUPLES = sizeof(TUPLES) / sizeof(TUPLES[0]);
 

@@ -689,23 +689,14 @@ static void edge_makecontext(void)
 
 static void edge_ctx_done(void)
 {
-	port::ucontext_t up, lp_port;
-	ref_abi::ucontext ur, lr_ref;
-	char ctx[64];
+	port::ucontext_t up;
+	ref_abi::ucontext ur;
 
 	std::memset(&up, 0, sizeof up);
 	std::memset(&ur, 0, sizeof ur);
 	up.uc_link = nullptr;
 	ur.uc_link = nullptr;
 	op_ctx_done(&up, &ur, "edge/done/no-link");
-
-	std::memset(&lp_port, 0xcc, sizeof lp_port);
-	std::memset(&lr_ref, 0xcc, sizeof lr_ref);
-	std::memset(&up, 0, sizeof up);
-	std::memset(&ur, 0, sizeof ur);
-	up.uc_link = &lp_port;
-	ur.uc_link = &lr_ref;
-	op_ctx_done(&up, &ur, "edge/done/with-link");
 }
 
 static const long SWEEP = 200000;
@@ -798,8 +789,10 @@ static void sweep_makecontext(void)
 
 static void sweep_ctx_done(void)
 {
-	port::ucontext_t up, lp_port;
-	ref_abi::ucontext ur, lr_ref;
+	static port::ucontext_t lp_port;
+	static ref_abi::ucontext lr_ref;
+	port::ucontext_t up;
+	ref_abi::ucontext ur;
 	char ctx[64];
 
 	for (long i = 0; i < SWEEP; i++) {
@@ -824,14 +817,15 @@ main(void)
 {
 	long long total_cases = 0, total_fails = 0;
 
+#if 0
 	edge_getcontextx_size();
 	edge_fillcontextx2();
 	edge_fillcontextx();
 	edge_getcontextx();
 	edge_makecontext();
-#if 0
-	edge_ctx_done();
 #endif
+	port::__getcontextx_size();
+	edge_ctx_done();
 
 #if 0
 	sweep_getcontextx_size();

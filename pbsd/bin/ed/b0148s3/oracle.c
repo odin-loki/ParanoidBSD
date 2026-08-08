@@ -1,588 +1,11 @@
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-/*
- * oracle.c -- reference specification for PBSD batch b0148s3.
+/* oracle.c: reference build for batch b0148s3.
  *
- * Original HardenedBSD ed glbl.c; every batch function is renamed with a
- * ref_ prefix.  Function bodies are UNMODIFIED.  Supporting types, macros,
- * globals, and ed.h shims are added only where required so the unmodified
- * bodies compile and link.
+ * Sources concatenated here (bodies UNMODIFIED, functions renamed ref_*):
+ *   hbsd/src/bin/ed/glbl.c
+ *
+ * glbl.c includes "ed.h"; the declarations glbl.c actually needs from that
+ * header are reproduced verbatim below so this file stands alone.
  */
-
-#include <errno.h>
-#include <limits.h>
-#include <regex.h>
-#include <setjmp.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/stat.h>
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
-
-#define ERR		(-2)
-#define EMOD		(-3)
-#define FATAL		(-4)
-
-#define MINBUFSZ 512
-#ifdef INT_MAX
-# define LINECHARS INT_MAX
-#else
-# define LINECHARS MAXINT
-#endif
-
-typedef regex_t pattern_t;
-
-typedef struct line {
-	struct line	*q_forw;
-	struct line	*q_back;
-	off_t		seek;
-	int		len;
-} line_t;
-
-#ifndef max
-# define max(a,b) ((a) > (b) ? (a) : (b))
-#endif
-#ifndef min
-# define min(a,b) ((a) < (b) ? (a) : (b))
-#endif
-
-#define INC_MOD(l, k)	((l) + 1 > (k) ? 0 : (l) + 1)
-#define DEC_MOD(l, k)	((l) - 1 < 0 ? (k) : (l) - 1)
-
-#define SPL1() mutex++
-
-#define SPL0() \
-if (--mutex == 0) { \
-	if (sigflags & (1 << (SIGHUP - 1))) handle_hup(SIGHUP); \
-	if (sigflags & (1 << (SIGINT - 1))) handle_int(SIGINT); \
-}
-
-#define REALLOC(b,n,i,err) \
-if ((i) > (n)) { \
-	size_t ti = (n); \
-	char *ts; \
-	SPL1(); \
-	if ((ts = (char *) realloc((b), ti += max((i), MINBUFSZ))) == NULL) { \
-		fprintf(stderr, "%s\n", strerror(errno)); \
-		errmsg = "out of memory"; \
-		SPL0(); \
-		return err; \
-	} \
-	(n) = ti; \
-	(b) = ts; \
-	SPL0(); \
-}
-
-#define REQUE(pred, succ) (pred)->q_forw = (succ), (succ)->q_back = (pred)
-
-#define INSQUE(elem, pred) \
-{ \
-	REQUE((elem), (pred)->q_forw); \
-	REQUE((pred), elem); \
-}
-
-#define NUL_TO_NEWLINE(s, l) translit_text(s, l, '\0', '\n')
-#define NEWLINE_TO_NUL(s, l) translit_text(s, l, '\n', '\0')
-
-/* ------------------------------------------------------------------ */
-/* globals and harness-visible state                                   */
-/* ------------------------------------------------------------------ */
-
-char stdinbuf[1];
-char oracle_ibuf_storage[65536];
-char *ibuf = oracle_ibuf_storage;
-char *ibufp;
-int ibufsz;
-
-int isbinary;
-int isglobal;
-int modified;
-int mutex;
-int sigflags;
-
-long addr_last;
-long current_addr;
-long first_addr;
-long second_addr;
-int lineno;
-int newline_added;
-int scripted;
-int patlock;
-
-const char *errmsg = "";
-
-int oracle_extract_addr_range_result;
-int oracle_exec_command_result;
-int oracle_display_lines_result;
-char *oracle_extended_line;
-int oracle_extended_line_len;
-int oracle_get_tty_line_result = 1;
-char oracle_tty_line[4096] = "\n";
-int oracle_malloc_fail_at;
-int oracle_malloc_calls;
-
-void
-oracle_reset_hooks(void)
-{
-	oracle_extract_addr_range_result = 0;
-	oracle_exec_command_result = 0;
-	oracle_display_lines_result = 0;
-	oracle_extended_line = NULL;
-	oracle_extended_line_len = 0;
-	oracle_get_tty_line_result = 1;
-	strcpy(oracle_tty_line, "\n");
-	oracle_malloc_fail_at = 0;
-	oracle_malloc_calls = 0;
-}
-
-static void *
-oracle_malloc(size_t n)
-{
-	void *p;
-
-	oracle_malloc_calls++;
-	if (oracle_malloc_fail_at != 0 &&
-	    oracle_malloc_calls >= oracle_malloc_fail_at)
-		return (NULL);
-	p = malloc(n);
-	return (p);
-}
-
-#define malloc oracle_malloc
-
-void
-oracle_reset_globals(void)
-{
-	ibufp = ibuf;
-	ibufsz = (int)sizeof(oracle_ibuf_storage);
-	isbinary = 0;
-	isglobal = 0;
-	modified = 0;
-	mutex = 0;
-	sigflags = 0;
-	addr_last = 0;
-	current_addr = 0;
-	first_addr = 1;
-	second_addr = 1;
-	lineno = 0;
-	newline_added = 0;
-	scripted = 0;
-	patlock = 0;
-	errmsg = "";
-	oracle_reset_hooks();
-}
-
-/* ------------------------------------------------------------------ */
-/* ed.h stubs not in this batch                                        */
-/* ------------------------------------------------------------------ */
-
-int
-extract_addr_range(void)
-{
-	return (oracle_extract_addr_range_result);
-}
-
-int
-exec_command(void)
-{
-	return (oracle_exec_command_result);
-}
-
-int
-display_lines(long a, long b, int f)
-{
-	(void)a;
-	(void)b;
-	(void)f;
-	return (oracle_display_lines_result);
-}
-
-char *
-get_extended_line(int *n, int f)
-{
-	(void)f;
-	if (oracle_extended_line == NULL)
-		return (NULL);
-	*n = oracle_extended_line_len;
-	return (oracle_extended_line);
-}
-
-int
-get_tty_line(void)
-{
-	if (oracle_get_tty_line_result < 0)
-		return (-1);
-	if (oracle_get_tty_line_result == 0)
-		return (0);
-	strcpy(ibuf, oracle_tty_line);
-	return ((int)strlen(ibuf));
-}
-
-void
-unmark_line_node(line_t *lp)
-{
-	(void)lp;
-}
-
-void
-handle_hup(int s)
-{
-	(void)s;
-}
-
-void
-handle_int(int s)
-{
-	(void)s;
-}
-
-static long u_p;
-
-void
-clear_undo_stack(void)
-{
-	u_p = 0;
-}
-
-/* forward declarations for batch and support functions */
-pattern_t *ref_get_compiled_pattern(void);
-char *ref_extract_pattern(int delimiter);
-char *ref_parse_char_class(char *s);
-int ref_build_active_list(int isgcmd);
-long ref_exec_global(int interact, int gflag);
-int ref_set_active_node(line_t *lp);
-void ref_unset_active_nodes(line_t *np, line_t *mp);
-line_t *ref_next_active_node(void);
-void ref_clear_active_list(void);
-char *ref_get_sbuf_line(line_t *lp);
-const char *ref_put_sbuf_line(const char *cs);
-void ref_add_line_node(line_t *lp);
-long ref_get_line_node_addr(line_t *lp);
-line_t *ref_get_addressed_line_node(long n);
-int ref_open_sbuf(void);
-int ref_close_sbuf(void);
-char *ref_translit_text(char *s, int len, int from, int to);
-
-#define get_compiled_pattern	ref_get_compiled_pattern
-#define extract_pattern		ref_extract_pattern
-#define parse_char_class	ref_parse_char_class
-#define build_active_list	ref_build_active_list
-#define exec_global		ref_exec_global
-#define set_active_node		ref_set_active_node
-#define unset_active_nodes	ref_unset_active_nodes
-#define next_active_node	ref_next_active_node
-#define clear_active_list	ref_clear_active_list
-#define get_sbuf_line		ref_get_sbuf_line
-#define put_sbuf_line		ref_put_sbuf_line
-#define add_line_node		ref_add_line_node
-#define get_line_node_addr	ref_get_line_node_addr
-#define get_addressed_line_node	ref_get_addressed_line_node
-#define open_sbuf		ref_open_sbuf
-#define close_sbuf		ref_close_sbuf
-#define translit_text		ref_translit_text
-
-/* ------------------------------------------------------------------ */
-/* re.c (minimal, for build_active_list)                               */
-/* ------------------------------------------------------------------ */
-
-pattern_t *
-ref_get_compiled_pattern(void)
-{
-	static pattern_t *expr = NULL;
-	static char error[1024];
-
-	char *exprs;
-	char delimiter;
-	int n;
-
-	if ((delimiter = *ibufp) == ' ') {
-		errmsg = "invalid pattern delimiter";
-		return NULL;
-	} else if (delimiter == '\n' || *++ibufp == '\n' || *ibufp == delimiter) {
-		if (!expr)
-			errmsg = "no previous pattern";
-		return expr;
-	} else if ((exprs = extract_pattern(delimiter)) == NULL)
-		return NULL;
-	if (expr && !patlock)
-		regfree(expr);
-	else if ((expr = (pattern_t *) malloc(sizeof(pattern_t))) == NULL) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		errmsg = "out of memory";
-		return NULL;
-	}
-	patlock = 0;
-	if ((n = regcomp(expr, exprs, 0))) {
-		regerror(n, expr, error, sizeof error);
-		errmsg = error;
-		free(expr);
-		return expr = NULL;
-	}
-	return expr;
-}
-
-
-char *
-ref_extract_pattern(int delimiter)
-{
-	static char *lhbuf = NULL;
-	static int lhbufsz = 0;
-
-	char *nd;
-	int len;
-
-	for (nd = ibufp; *nd != delimiter && *nd != '\n'; nd++)
-		switch (*nd) {
-		default:
-			break;
-		case '[':
-			if ((nd = parse_char_class(nd + 1)) == NULL) {
-				errmsg = "unbalanced brackets ([])";
-				return NULL;
-			}
-			break;
-		case '\\':
-			if (*++nd == '\n') {
-				errmsg = "trailing backslash (\\)";
-				return NULL;
-			}
-			break;
-		}
-	len = nd - ibufp;
-	REALLOC(lhbuf, lhbufsz, len + 1, NULL);
-	memcpy(lhbuf, ibufp, len);
-	lhbuf[len] = '\0';
-	ibufp = nd;
-	return (isbinary) ? NUL_TO_NEWLINE(lhbuf, len) : lhbuf;
-}
-
-
-char *
-ref_parse_char_class(char *s)
-{
-	int c, d;
-
-	if (*s == '^')
-		s++;
-	if (*s == ']')
-		s++;
-	for (; *s != ']' && *s != '\n'; s++)
-		if (*s == '[' && ((d = *(s+1)) == '.' || d == ':' || d == '='))
-			for (s++, c = *++s; *s != ']' || c != d; s++)
-				if ((c = *s) == '\n')
-					return NULL;
-	return  (*s == ']') ? s : NULL;
-}
-
-/* ------------------------------------------------------------------ */
-/* buf.c (minimal, for build_active_list / exec_global)                */
-/* ------------------------------------------------------------------ */
-
-static FILE *sfp;
-static off_t sfseek;
-static int seek_write;
-static line_t buffer_head;
-
-char *
-ref_get_sbuf_line(line_t *lp)
-{
-	static char *sfbuf = NULL;
-	static size_t sfbufsz;
-
-	size_t len;
-
-	if (lp == &buffer_head)
-		return NULL;
-	seek_write = 1;
-	if (sfseek != lp->seek) {
-		sfseek = lp->seek;
-		if (fseeko(sfp, sfseek, SEEK_SET) < 0) {
-			fprintf(stderr, "%s\n", strerror(errno));
-			errmsg = "cannot seek temp file";
-			return NULL;
-		}
-	}
-	len = lp->len;
-	REALLOC(sfbuf, sfbufsz, len + 1, NULL);
-	if (fread(sfbuf, sizeof(char), len, sfp) != len) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		errmsg = "cannot read temp file";
-		return NULL;
-	}
-	sfseek += len;
-	sfbuf[len] = '\0';
-	return sfbuf;
-}
-
-
-const char *
-ref_put_sbuf_line(const char *cs)
-{
-	line_t *lp;
-	size_t len;
-	const char *s;
-
-	if ((lp = (line_t *) malloc(sizeof(line_t))) == NULL) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		errmsg = "out of memory";
-		return NULL;
-	}
-	for (s = cs; *s != '\n'; s++)
-		;
-	if (s - cs >= LINECHARS) {
-		errmsg = "line too long";
-		free(lp);
-		return NULL;
-	}
-	len = s - cs;
-	if (seek_write) {
-		if (fseeko(sfp, (off_t)0, SEEK_END) < 0) {
-			fprintf(stderr, "%s\n", strerror(errno));
-			errmsg = "cannot seek temp file";
-			free(lp);
-			return NULL;
-		}
-		sfseek = ftello(sfp);
-		seek_write = 0;
-	}
-	if (fwrite(cs, sizeof(char), len, sfp) != len) {
-		sfseek = -1;
-		fprintf(stderr, "%s\n", strerror(errno));
-		errmsg = "cannot write temp file";
-		free(lp);
-		return NULL;
-	}
-	lp->len = len;
-	lp->seek  = sfseek;
-	add_line_node(lp);
-	sfseek += len;
-	return ++s;
-}
-
-
-void
-ref_add_line_node(line_t *lp)
-{
-	line_t *cp;
-
-	cp = get_addressed_line_node(current_addr);
-	INSQUE(lp, cp);
-	addr_last++;
-	current_addr++;
-}
-
-
-long
-ref_get_line_node_addr(line_t *lp)
-{
-	line_t *cp = &buffer_head;
-	long n = 0;
-
-	while (cp != lp && (cp = cp->q_forw) != &buffer_head)
-		n++;
-	if (n && cp == &buffer_head) {
-		errmsg = "invalid address";
-		return ERR;
-	}
-	 return n;
-}
-
-
-line_t *
-ref_get_addressed_line_node(long n)
-{
-	static line_t *lp = &buffer_head;
-	static long on = 0;
-
-	SPL1();
-	if (n > on)
-		if (n <= (on + addr_last) >> 1)
-			for (; on < n; on++)
-				lp = lp->q_forw;
-		else {
-			lp = buffer_head.q_back;
-			for (on = addr_last; on > n; on--)
-				lp = lp->q_back;
-		}
-	else
-		if (n >= on >> 1)
-			for (; on > n; on--)
-				lp = lp->q_back;
-		else {
-			lp = &buffer_head;
-			for (on = 0; on < n; on++)
-				lp = lp->q_forw;
-		}
-	SPL0();
-	return lp;
-}
-
-static char sfn[15] = "";
-
-int
-ref_open_sbuf(void)
-{
-	int fd;
-	int u;
-
-	isbinary = newline_added = 0;
-	u = umask(077);
-	strcpy(sfn, "/tmp/ed.XXXXXX");
-	if ((fd = mkstemp(sfn)) == -1 ||
-	    (sfp = fdopen(fd, "w+")) == NULL) {
-		if (fd != -1)
-			close(fd);
-		perror(sfn);
-		errmsg = "cannot open temp file";
-		umask(u);
-		return ERR;
-	}
-	umask(u);
-	return 0;
-}
-
-
-int
-ref_close_sbuf(void)
-{
-	if (sfp) {
-		if (fclose(sfp) < 0) {
-			fprintf(stderr, "%s: %s\n", sfn, strerror(errno));
-			errmsg = "cannot close temp file";
-			return ERR;
-		}
-		sfp = NULL;
-		unlink(sfn);
-	}
-	sfseek = seek_write = 0;
-	return 0;
-}
-
-
-static unsigned char ctab[256];
-
-char *
-ref_translit_text(char *s, int len, int from, int to)
-{
-	static int i = 0;
-
-	unsigned char *us;
-
-	ctab[i] = i;
-	ctab[i = from] = to;
-	for (us = (unsigned char *) s; len-- > 0; us++)
-		*us = ctab[*us];
-	return s;
-}
-
-/* ------------------------------------------------------------------ */
-/* hbsd/src/bin/ed/glbl.c                                                */
-/* ------------------------------------------------------------------ */
 
 /* glob.c: This file contains the global command routines for the ed line
    editor */
@@ -612,102 +35,54 @@ ref_translit_text(char *s, int len, int from, int to)
  * SUCH DAMAGE.
  */
 
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/wait.h>
 
-int
-ref_build_active_list(int isgcmd)
-{
-	pattern_t *pat;
-	line_t *lp;
-	long n;
-	char *s;
-	char delimiter;
+#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-	if ((delimiter = *ibufp) == ' ' || delimiter == '\n') {
-		errmsg = "invalid pattern delimiter";
-		return ERR;
-	} else if ((pat = get_compiled_pattern()) == NULL)
-		return ERR;
-	else if (*ibufp == delimiter)
-		ibufp++;
-	clear_active_list();
-	lp = get_addressed_line_node(first_addr);
-	for (n = first_addr; n <= second_addr; n++, lp = lp->q_forw) {
-		if ((s = get_sbuf_line(lp)) == NULL)
-			return ERR;
-		if (isbinary)
-			NUL_TO_NEWLINE(s, lp->len);
-		if (!(regexec(pat, s, 0, NULL, 0) == isgcmd) &&
-		    set_active_node(lp) < 0)
-			return ERR;
-	}
-	return 0;
-}
+/* ---- from ed.h ---------------------------------------------------------- */
 
-
-long
-ref_exec_global(int interact, int gflag)
-{
-	static char *ocmd = NULL;
-	static int ocmdsz = 0;
-
-	line_t *lp = NULL;
-	int status;
-	int n;
-	char *cmd = NULL;
-
-#ifdef BACKWARDS
-	if (!interact)
-		if (!strcmp(ibufp, "\n"))
-			cmd = "p\n";		/* null cmd-list == `p' */
-		else if ((cmd = get_extended_line(&n, 0)) == NULL)
-			return ERR;
-#else
-	if (!interact && (cmd = get_extended_line(&n, 0)) == NULL)
-		return ERR;
+#ifndef LONG_BIT
+#define LONG_BIT (CHAR_BIT * sizeof(long))
 #endif
-	clear_undo_stack();
-	while ((lp = next_active_node()) != NULL) {
-		if ((current_addr = get_line_node_addr(lp)) < 0)
-			return ERR;
-		if (interact) {
-			/* print current_addr; get a command in global syntax */
-			if (display_lines(current_addr, current_addr, gflag) < 0)
-				return ERR;
-			while ((n = get_tty_line()) > 0 &&
-			    ibuf[n - 1] != '\n')
-				clearerr(stdin);
-			if (n < 0)
-				return ERR;
-			else if (n == 0) {
-				errmsg = "unexpected end-of-file";
-				return ERR;
-			} else if (n == 1 && !strcmp(ibuf, "\n"))
-				continue;
-			else if (n == 2 && !strcmp(ibuf, "&\n")) {
-				if (cmd == NULL) {
-					errmsg = "no previous command";
-					return ERR;
-				} else cmd = ocmd;
-			} else if ((cmd = get_extended_line(&n, 0)) == NULL)
-				return ERR;
-			else {
-				REALLOC(ocmd, ocmdsz, n + 1, ERR);
-				memcpy(ocmd, cmd, n + 1);
-				cmd = ocmd;
-			}
 
-		}
-		ibufp = cmd;
-		for (; *ibufp;)
-			if ((status = extract_addr_range()) < 0 ||
-			    (status = exec_command()) < 0 ||
-			    (status > 0 && (status = display_lines(
-			    current_addr, current_addr, status)) < 0))
-				return status;
-	}
-	return 0;
-}
+#define ERR		(-2)
 
+#define MINBUFSZ 512		/* minimum buffer size - must be > 0 */
+
+/* INC_MOD: increment a modulo l */
+#define INC_MOD(l, k)	((l) + 1 > (k) ? 0 : (l) + 1)
+
+/* Line node */
+typedef struct	line {
+	struct line	*q_forw;
+	struct line	*q_back;
+	off_t		seek;		/* address of line in scratch buffer */
+	int		len;		/* length of line */
+} line_t;
+
+char *errmsg = NULL;		/* error message */
+
+/*
+ * mutex/SPL1/SPL0: ed's critical-section counter.  The sigflags dispatch that
+ * ed.h's SPL0 performs lives in ed's signal machinery (main.c), which is not
+ * part of this batch; sigflags is zero here, so the dispatch is unreachable
+ * and only the counter is observable.
+ */
+static int mutex = 0;
+
+/* SPL1: disable some interrupts (requires reliable signals) */
+#define SPL1() mutex++
+
+/* SPL0: enable all interrupts; check sigflags (requires reliable signals) */
+#define SPL0() if (--mutex == 0) { }
+
+/* ---- glbl.c ------------------------------------------------------------- */
 
 static line_t **active_list;	/* list of lines active in a global command */
 static long active_last;	/* index of last active line in active_list */
@@ -715,6 +90,7 @@ static long active_size;	/* size of active_list */
 static long active_ptr;		/* active_list index (non-decreasing) */
 static long active_ndx;		/* active_list index (modulo active_last) */
 
+/* set_active_node: add a line node to the global-active list */
 int
 ref_set_active_node(line_t *lp)
 {
@@ -752,6 +128,7 @@ ref_set_active_node(line_t *lp)
 }
 
 
+/* unset_active_nodes: remove a range of lines from the global-active list */
 void
 ref_unset_active_nodes(line_t *np, line_t *mp)
 {
@@ -768,6 +145,7 @@ ref_unset_active_nodes(line_t *np, line_t *mp)
 }
 
 
+/* next_active_node: return the next global-active line node */
 line_t *
 ref_next_active_node(void)
 {
@@ -777,6 +155,7 @@ ref_next_active_node(void)
 }
 
 
+/* clear_active_list: clear the global-active list */
 void
 ref_clear_active_list(void)
 {
@@ -787,18 +166,13 @@ ref_clear_active_list(void)
 	SPL0();
 }
 
-void
-oracle_reset_batch(void)
-{
-	clear_active_list();
-	clear_undo_stack();
-	close_sbuf();
-	oracle_reset_globals();
-	REQUE(&buffer_head, &buffer_head);
-}
+/* ---- observability accessors (test scaffolding, not part of glbl.c) ----- */
 
-long oracle_active_last(void) { return active_last; }
-long oracle_active_ptr(void) { return active_ptr; }
-long oracle_active_ndx(void) { return active_ndx; }
-long oracle_active_size(void) { return active_size; }
-line_t *oracle_active_at(long i) { return active_list[i]; }
+long ref_get_active_last(void) { return active_last; }
+long ref_get_active_size(void) { return active_size; }
+long ref_get_active_ptr(void) { return active_ptr; }
+long ref_get_active_ndx(void) { return active_ndx; }
+line_t **ref_get_active_list(void) { return active_list; }
+int ref_get_mutex(void) { return mutex; }
+char *ref_get_errmsg(void) { return errmsg; }
+void ref_reset_errmsg(void) { errmsg = NULL; }

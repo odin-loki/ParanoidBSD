@@ -5,12 +5,15 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <paths.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pwd.h>
+#include <grp.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -318,7 +321,7 @@ static void test_usage(void)
 	unsigned long i;
 	check_usage(0, "pkill");
 	check_usage(1, "pgrep");
-	rng_seed(0xb0210usageULL);
+	rng_seed(0xb02100001ULL);
 	for (i = 0; i < 20000; i++)
 		check_usage((int)(rng_u32() & 1), (rng_u32() & 1) ? "pgrep" : "pkill");
 }
@@ -405,7 +408,7 @@ static void test_show_process(void)
 	check_show(1, 1, 0, 0, 1, "q", 0);
 	check_show(0, 0, 0, 1, 100, "foo", 1);
 	check_show(1, 0, 0, 0, 200, "\x80\xff", 0);
-	rng_seed(0xb0210showULL);
+	rng_seed(0xb02100002ULL);
 	for (i = 0; i < 40000; i++) {
 		char comm[20];
 		size_t j, len = (rng_u32() % 18) + 1;
@@ -464,7 +467,7 @@ static void test_killact(void)
 	check_kill(1, "n\n", 0, 0, 128);
 	check_kill(1, "N\n", 0, 0, 129);
 	check_kill(1, "", 0, 0, 130);
-	rng_seed(0xb0210killULL);
+	rng_seed(0xb02100003ULL);
 	for (i = 0; i < 40000; i++) {
 		static const char *ans[] = { "y\n", "Y\n", "n\n", "N\n", "x\n", "" };
 		int intr = (int)(rng_u32() & 1);
@@ -522,7 +525,7 @@ static void test_grepact(void)
 	check_grep(1, 0, "|", 12, "c", 2);
 	check_grep(1, 1, "\n", 13, "d", 2);
 	check_grep(1, 0, "", 14, "e", 2);
-	rng_seed(0xb0210grepULL);
+	rng_seed(0xb02100004ULL);
 	for (i = 0; i < 40000; i++) {
 		char comm[12], dl[3];
 		comm[rng_u32() % 10] = (char)(rng_u32() & 0xff);
@@ -565,8 +568,8 @@ static void check_makelist_die(enum listtype ty, const char *src)
 	strncpy(buf, src, sizeof(buf) - 1);
 	p1 = fork();
 	if (p1 == 0) {
-		P::list_clear(P::ppidlist());
-		P::makelist(P::ppidlist(), (P::listtype)ty, buf);
+		P::list_clear(P::get_ppidlist());
+		P::makelist(P::get_ppidlist(), (P::listtype)ty, buf);
 		_exit(0);
 	}
 	waitpid(p1, &s1, 0);
@@ -587,50 +590,50 @@ static void test_makelist(void)
 	char path[128];
 
 	mock_reset();
-	check_makelist_ok(LT_GENERIC, "1,2,3", P::ppidlist, ref_ppidlist);
-	check_makelist_ok(LT_GENERIC, "0x10,020", P::ppidlist, ref_ppidlist);
-	check_makelist_ok(LT_PGRP, "0", P::pgrplist, ref_pgrplist);
-	check_makelist_ok(LT_SID, "0", P::sidlist, ref_sidlist);
+	check_makelist_ok(LT_GENERIC, "1,2,3", P::get_ppidlist, ref_ppidlist);
+	check_makelist_ok(LT_GENERIC, "0x10,020", P::get_ppidlist, ref_ppidlist);
+	check_makelist_ok(LT_PGRP, "0", P::get_pgrplist, ref_pgrplist);
+	check_makelist_ok(LT_SID, "0", P::get_sidlist, ref_sidlist);
 	mock_pw_valid = 1; strcpy(mock_pw_name, "testu"); mock_pw.pw_uid = 1234;
-	check_makelist_ok(LT_USER, "testu", P::ruidlist, ref_ruidlist);
+	check_makelist_ok(LT_USER, "testu", P::get_ruidlist, ref_ruidlist);
 	mock_gr_valid = 1; strcpy(mock_gr_name, "testg"); mock_gr.gr_gid = 5678;
-	check_makelist_ok(LT_GROUP, "testg", P::rgidlist, ref_rgidlist);
-	check_makelist_ok(LT_JAIL, "none", P::jidlist, ref_jidlist);
-	check_makelist_ok(LT_JAIL, "any", P::jidlist, ref_jidlist);
+	check_makelist_ok(LT_GROUP, "testg", P::get_rgidlist, ref_rgidlist);
+	check_makelist_ok(LT_JAIL, "none", P::get_jidlist, ref_jidlist);
+	check_makelist_ok(LT_JAIL, "any", P::get_jidlist, ref_jidlist);
 	mock_jail_id = 42; strcpy(mock_jail_name, "myjail");
-	check_makelist_ok(LT_JAIL, "myjail", P::jidlist, ref_jidlist);
-	check_makelist_ok(LT_JAIL, "7", P::jidlist, ref_jidlist);
-	check_makelist_ok(LT_CLASS, "daemon,staff", P::classlist, ref_classlist);
+	check_makelist_ok(LT_JAIL, "myjail", P::get_jidlist, ref_jidlist);
+	check_makelist_ok(LT_JAIL, "7", P::get_jidlist, ref_jidlist);
+	check_makelist_ok(LT_CLASS, "daemon,staff", P::get_classlist, ref_classlist);
 	snprintf(path, sizeof(path), "%sconsole", _PATH_DEV);
 	mock_stat_set(path, S_IFCHR, 0x0500);
-	check_makelist_ok(LT_TTY, "co", P::tdevlist, ref_tdevlist);
-	check_makelist_ok(LT_TTY, "-", P::tdevlist, ref_tdevlist);
+	check_makelist_ok(LT_TTY, "co", P::get_tdevlist, ref_tdevlist);
+	check_makelist_ok(LT_TTY, "-", P::get_tdevlist, ref_tdevlist);
 	check_makelist_die(LT_GENERIC, "1,,2");
 	check_makelist_die(LT_USER, "nosuchuser_x");
 	check_makelist_die(LT_JAIL, "-5");
-	rng_seed(0xb0210makeULL);
+	rng_seed(0xb02100005ULL);
 	for (i = 0; i < 40000; i++) {
 		char src[64];
 		switch (rng_u32() % 5) {
 		case 0:
 			snprintf(src, sizeof(src), "%ld", (long)(rng_u32() % 10000));
-			check_makelist_ok(LT_GENERIC, src, P::ppidlist, ref_ppidlist);
+			check_makelist_ok(LT_GENERIC, src, P::get_ppidlist, ref_ppidlist);
 			break;
 		case 1:
 			check_makelist_ok(LT_JAIL, (rng_u32() & 1) ? "none" : "any",
-			    P::jidlist, ref_jidlist);
+			    P::get_jidlist, ref_jidlist);
 			break;
 		case 2:
-			check_makelist_ok(LT_CLASS, "c", P::classlist, ref_classlist);
+			check_makelist_ok(LT_CLASS, "c", P::get_classlist, ref_classlist);
 			break;
 		case 3:
 			mock_pw_valid = 1;
 			snprintf(mock_pw_name, sizeof(mock_pw_name), "u%lu", i & 0xff);
 			mock_pw.pw_uid = (uid_t)(rng_u32() % 60000);
-			check_makelist_ok(LT_USER, mock_pw_name, P::ruidlist, ref_ruidlist);
+			check_makelist_ok(LT_USER, mock_pw_name, P::get_ruidlist, ref_ruidlist);
 			break;
 		default:
-			check_makelist_ok(LT_TTY, "-", P::tdevlist, ref_tdevlist);
+			check_makelist_ok(LT_TTY, "-", P::get_tdevlist, ref_tdevlist);
 			break;
 		}
 	}
@@ -692,7 +695,7 @@ static void test_takepid(void)
 	check_takepid_die("100000\n");
 	check_takepid_die("abc\n");
 	check_takepid_die("");
-	rng_seed(0xb0210takeULL);
+	rng_seed(0xb02100006ULL);
 	for (i = 0; i < 40000; i++) {
 		long v = (long)(rng_u32() % 200000);
 		int k = (int)(rng_u32() % 4);

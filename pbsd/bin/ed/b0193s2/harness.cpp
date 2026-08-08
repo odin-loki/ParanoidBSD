@@ -278,7 +278,8 @@ static void sbuf_cmp(Checker &c, long written)
 	if (!*pb || !*rb)
 		return;
 	size_t n = (size_t)(*pn < *rn ? *pn : *rn);
-	if (*pn != sb_old_p || *rn != sb_old_r) {
+	bool grew = (*pn != sb_old_p || *rn != sb_old_r);
+	if (grew) {
 		/* the buffer just grew: the tail past the old (guard-filled)
 		 * region is fresh malloc garbage, so limit the window to the
 		 * old region plus whatever this call wrote. */
@@ -289,6 +290,15 @@ static void sbuf_cmp(Checker &c, long written)
 			n = lim;
 	}
 	c.eqmem("sbuf", *pb, *rb, n);
+	if (grew) {
+		/* re-establish the guard over the fresh tail (dead space, no
+		 * live line data lives there) so the next call can again be
+		 * compared over the whole buffer. */
+		if ((size_t)*pn > n)
+			memset(*pb + n, 0x7f, (size_t)*pn - n);
+		if ((size_t)*rn > n)
+			memset(*rb + n, 0x7f, (size_t)*rn - n);
+	}
 }
 
 static int ib_old_p, ib_old_r;
@@ -306,7 +316,8 @@ static void ibuf_cmp(Checker &c, long written)
 	if (!P::ibuf || !ibuf)
 		return;
 	size_t n = (size_t)(P::ibufsz < ibufsz ? P::ibufsz : ibufsz);
-	if (P::ibufsz != ib_old_p || ibufsz != ib_old_r) {
+	bool grew = (P::ibufsz != ib_old_p || ibufsz != ib_old_r);
+	if (grew) {
 		size_t old = (size_t)(ib_old_p < ib_old_r ? ib_old_p : ib_old_r);
 		size_t w = (size_t)(written < 0 ? 0 : written + 3);
 		size_t lim = old > w ? old : w;
@@ -314,6 +325,14 @@ static void ibuf_cmp(Checker &c, long written)
 			n = lim;
 	}
 	c.eqmem("ibuf", P::ibuf, ibuf, n);
+	if (grew) {
+		if ((size_t)P::ibufsz > n)
+			memset(P::ibuf + n, 0x7f, (size_t)P::ibufsz - n);
+		if ((size_t)ibufsz > n)
+			memset(ibuf + n, 0x7f, (size_t)ibufsz - n);
+		ib_old_p = P::ibufsz;
+		ib_old_r = ibufsz;
+	}
 }
 
 static void cmp_globals(Checker &c)
@@ -407,29 +426,6 @@ static void test_get_stream_line(void)
 			for (int nl = 0; nl < 2; nl++)
 				run_gsl(fixed[i].d, fixed[i].n, b, nl, 6, "fixed");
 
-	/* buffer-growth cases: force REALLOC to fire and the buffer to move. */
-	{
-		static char big[4096];
-		for (size_t i = 0; i < sizeof big; i++)
-			big[i] = (char)(i % 251);
-		big[600] = '\n';
-		big[1200] = '\n';
-		run_gsl(big, 2500, 0, 0, 5, "grow");
-		run_gsl(big, 2500, 1, 1, 5, "grow");
-		/* exact boundary: line length such that i + 2 == sbufsz */
-		int sz = *ref_sbufsz_addr();
-		for (int d = -2; d <= 2; d++) {
-			int n = sz - 2 + d;
-			if (n < 1 || n >= (int)sizeof big)
-				continue;
-			static char edge[8192];
-			memset(edge, 'q', (size_t)n);
-			edge[n] = '\n';
-			run_gsl(edge, (size_t)n + 1, 0, 0, 3, "edge");
-			run_gsl(edge, (size_t)n, 0, 0, 3, "edge");
-		}
-	}
-
 	static char buf[64];
 	for (long it = 0; it < 200000; it++) {
 		size_t len = rndn(41);
@@ -443,6 +439,33 @@ static void test_get_stream_line(void)
 		if (iters > 16)
 			iters = 16;
 		run_gsl(buf, len, (int)(rnd() & 1), (int)(rnd() & 1), iters, "rand");
+	}
+
+	/* Buffer-growth cases last: they enlarge sbuf permanently.  Force
+	 * REALLOC to fire, the buffer to move, and then straddle the exact
+	 * "i + 2 == sbufsz" boundary in both directions. */
+	{
+		static char big[4096];
+		static char edge[8192];
+
+		for (size_t i = 0; i < sizeof big; i++)
+			big[i] = (char)(i % 251);
+		big[600] = '\n';
+		big[1200] = '\n';
+		run_gsl(big, 2500, 0, 0, 5, "grow");
+		run_gsl(big, 2500, 1, 1, 5, "grow");
+
+		int sz = *ref_sbufsz_addr();
+		for (int d = -2; d <= 2; d++) {
+			int n = sz - 2 + d;
+			if (n < 1 || n + 1 >= (int)sizeof edge)
+				continue;
+			memset(edge, 'q', (size_t)n);
+			edge[n] = '\n';
+			run_gsl(edge, (size_t)n + 1, 0, 0, 3, "edge");
+			run_gsl(edge, (size_t)n, 0, 0, 3, "edge");
+			sz = *ref_sbufsz_addr();
+		}
 	}
 }
 
@@ -618,25 +641,6 @@ static void test_get_tty_line(void)
 		for (int b = 0; b < 2; b++)
 			run_gtl(fixed[i].d, fixed[i].n, b, 8, "fixed");
 
-	/* ibuf growth */
-	{
-		static char big[4096];
-		for (size_t i = 0; i < sizeof big; i++)
-			big[i] = (char)('A' + (i % 26));
-		big[1500] = '\n';
-		run_gtl(big, 2000, 0, 4, "grow");
-		int sz = ibufsz;
-		for (int d = -3; d <= 3; d++) {
-			int n = sz - 2 + d;
-			if (n < 1 || n + 1 >= (int)sizeof big)
-				continue;
-			static char edge[8192];
-			memset(edge, 'z', (size_t)n);
-			edge[n] = '\n';
-			run_gtl(edge, (size_t)n + 1, 0, 3, "edge");
-		}
-	}
-
 	static char buf[64];
 	for (long it = 0; it < 200000; it++) {
 		size_t len = rndn(41);
@@ -651,6 +655,29 @@ static void test_get_tty_line(void)
 			iters = 16;
 		run_gtl(buf, len, (int)(rnd() & 1), iters, "rand");
 	}
+
+	/* ibuf growth last: straddle the "i + 2 == ibufsz" boundary. */
+	{
+		static char big[4096];
+		static char edge[8192];
+
+		for (size_t i = 0; i < sizeof big; i++)
+			big[i] = (char)('A' + (i % 26));
+		big[1500] = '\n';
+		run_gtl(big, 2000, 0, 4, "grow");
+
+		int sz = ibufsz;
+		for (int d = -3; d <= 3; d++) {
+			int n = sz - 2 + d;
+			if (n < 1 || n + 1 >= (int)sizeof edge)
+				continue;
+			memset(edge, 'z', (size_t)n);
+			edge[n] = '\n';
+			run_gtl(edge, (size_t)n + 1, 0, 3, "edge");
+			run_gtl(edge, (size_t)n, 0, 3, "edge");
+			sz = ibufsz;
+		}
+	}
 }
 
 /* ------------------------------------------------------------------ */
@@ -659,6 +686,8 @@ static void test_get_tty_line(void)
 
 static Stat *st_gel;
 static long cv_written;			/* bytes of cvbuf known to be equal */
+static int gel_last_size;		/* *sizep from the last completed call */
+static int gel_last_cls;		/* 0 = NULL, 1 = ibuf, 2 = cvbuf */
 
 static void run_gel(const char *data, size_t len, int nonl, const char *tag)
 {
@@ -715,17 +744,24 @@ static void run_gel(const char *data, size_t len, int nonl, const char *tag)
 	int clsr = retr == NULL ? 0 :
 	    (retr >= ibuf && retr < ibuf + ibufsz ? 1 : 2);
 
+	gel_last_cls = clsr;
+	gel_last_size = szr;
+
 	c.eqi("ret_class", clsp, clsr);
 	c.eqi("sizep", szp, szr);
 	if (clsp == 1 && clsr == 1)
 		c.eqi("ret_off", retp - P::ibuf, retr - ibuf);
 	if (clsp == 2 && clsr == 2 && szp == szr && szp >= 0) {
 		size_t n = (size_t)szp + 1;
-		size_t wide = n + 64;
-		if (cv_written > 0 && wide > (size_t)cv_written)
-			wide = (size_t)cv_written;
-		if (wide > n)
-			n = wide;
+		if (cv_written > 0) {
+			/* cvbuf has been primed with a known pattern, so we can
+			 * look well past this call's own write window. */
+			size_t wide = n + 64;
+			if (wide > (size_t)cv_written)
+				wide = (size_t)cv_written;
+			if (wide > n)
+				n = wide;
+		}
 		c.eqmem("cvbuf", retp, retr, n);
 	}
 	cmp_globals(c);
@@ -750,8 +786,15 @@ static void test_get_extended_line(void)
 			prime[k++] = (line == 4) ? 'Z' : '\\';
 			prime[k++] = '\n';
 		}
+		gel_last_cls = 0;
+		gel_last_size = -1;
 		run_gel(prime, k, 0, "prime");
-		cv_written = 497;
+		if (gel_last_cls != 2 || gel_last_size < 64) {
+			fprintf(g_out, "  priming of cvbuf failed (cls=%d size=%d)\n",
+			    gel_last_cls, gel_last_size);
+			st_gel->fails++;
+		} else
+			cv_written = gel_last_size + 1;
 	}
 
 	static const struct { const char *d; size_t n; } fixed[] = {
@@ -913,8 +956,8 @@ static void test_put_tty_line(void)
 		int l = (rnd() & 7) == 0 ? (int)rndn((uint32_t)len + 1) : len;
 		long n = ns[rndn(6)];
 		int gflag = (int)rndn(32);
-		int colsv = colsvs[rndn(sizeof colsvs / sizeof colsvs[0])];
-		int rowsv = rowsvs[rndn(sizeof rowsvs / sizeof rowsvs[0])];
+		int colsv = colsvs[rndn((uint32_t)(sizeof colsvs / sizeof colsvs[0]))];
+		int rowsv = rowsvs[rndn((uint32_t)(sizeof rowsvs / sizeof rowsvs[0]))];
 		int sc = (int)(rnd() & 1);
 		int ig = (int)(rnd() & 1);
 		size_t sinlen = 8 + rndn(200);
@@ -963,11 +1006,13 @@ int main(void)
 
 	seed(0x0123456789abcdefULL);
 
+	/* get_tty_line last: its growth cases permanently enlarge ibuf, which
+	 * only makes the other sweeps slower. */
 	test_get_stream_line();
 	test_put_stream_line();
-	test_get_tty_line();
 	test_get_extended_line();
 	test_put_tty_line();
+	test_get_tty_line();
 
 	long totc = 0, totf = 0;
 	fprintf(g_out, "\n%-20s %12s %12s  %s\n", "function", "cases", "failures",

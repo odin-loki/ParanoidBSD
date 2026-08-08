@@ -1,0 +1,364 @@
+oracle.c: In function ‘ref_compare’:
+oracle.c:140:59: warning: format ‘%d’ expects argument of type ‘int’, but argument 2 has type ‘long int’ [-Wformat=]
+  140 |                         printf("compare failed at offset %d\n",
+      |                                                          ~^
+      |                                                           |
+      |                                                           int
+      |                                                          %ld
+  141 |                             p1 - (u_char *)db1->data);
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~       
+      |                                |
+      |                                long int
+oracle.c: In function ‘ref_get’:
+oracle.c:167:49: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘u_long’ {aka ‘long unsigned int’} [-Wformat=]
+  167 |                         (void)fprintf(stderr, "%d: %.*s: %s",
+      |                                                ~^
+      |                                                 |
+      |                                                 int
+      |                                                %ld
+  168 |                             lineno, MIN(kp->size, 20), kp->data, NOSUCHKEY);
+      |                             ~~~~~~               
+      |                             |
+      |                             u_long {aka long unsigned int}
+oracle.c:167:54: warning: field precision specifier ‘.*’ expects argument of type ‘int’, but argument 4 has type ‘size_t’ {aka ‘long unsigned int’} [-Wformat=]
+  167 |                         (void)fprintf(stderr, "%d: %.*s: %s",
+      |                                                    ~~^~
+      |                                                      |
+      |                                                      int
+oracle.c:167:55: warning: format ‘%s’ expects argument of type ‘char *’, but argument 5 has type ‘void *’ [-Wformat=]
+  167 |                         (void)fprintf(stderr, "%d: %.*s: %s",
+      |                                                    ~~~^
+      |                                                       |
+      |                                                       char *
+      |                                                    %.*p
+  168 |                             lineno, MIN(kp->size, 20), kp->data, NOSUCHKEY);
+      |                                                        ~~~~~~~~
+      |                                                          |
+      |                                                          void *
+oracle.c: In function ‘ref_rem’:
+oracle.c:224:49: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘u_long’ {aka ‘long unsigned int’} [-Wformat=]
+  224 |                         (void)fprintf(stderr, "%d: %.*s: %s",
+      |                                                ~^
+      |                                                 |
+      |                                                 int
+      |                                                %ld
+  225 |                             lineno, MIN(kp->size, 20), kp->data, NOSUCHKEY);
+      |                             ~~~~~~               
+      |                             |
+      |                             u_long {aka long unsigned int}
+oracle.c:224:54: warning: field precision specifier ‘.*’ expects argument of type ‘int’, but argument 4 has type ‘size_t’ {aka ‘long unsigned int’} [-Wformat=]
+  224 |                         (void)fprintf(stderr, "%d: %.*s: %s",
+      |                                                    ~~^~
+      |                                                      |
+      |                                                      int
+oracle.c:224:55: warning: format ‘%s’ expects argument of type ‘char *’, but argument 5 has type ‘void *’ [-Wformat=]
+  224 |                         (void)fprintf(stderr, "%d: %.*s: %s",
+      |                                                    ~~~^
+      |                                                       |
+      |                                                       char *
+      |                                                    %.*p
+  225 |                             lineno, MIN(kp->size, 20), kp->data, NOSUCHKEY);
+      |                                                        ~~~~~~~~
+      |                                                          |
+      |                                                          void *
+oracle.c:228:31: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘u_long’ {aka ‘long unsigned int’} [-Wformat=]
+  228 |                             "%d: rem of cursor failed\n", lineno);
+      |                              ~^                           ~~~~~~
+      |                               |                           |
+      |                               int                         u_long {aka long unsigned int}
+      |                              %ld
+oracle.c: In function ‘ref_seq’:
+oracle.c:268:49: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘u_long’ {aka ‘long unsigned int’} [-Wformat=]
+  268 |                         (void)fprintf(stderr, "%d: %.*s: %s",
+      |                                                ~^
+      |                                                 |
+      |                                                 int
+      |                                                %ld
+  269 |                             lineno, MIN(kp->size, 20), kp->data, NOSUCHKEY);
+      |                             ~~~~~~               
+      |                             |
+      |                             u_long {aka long unsigned int}
+oracle.c:268:54: warning: field precision specifier ‘.*’ expects argument of type ‘int’, but argument 4 has type ‘size_t’ {aka ‘long unsigned int’} [-Wformat=]
+  268 |                         (void)fprintf(stderr, "%d: %.*s: %s",
+      |                                                    ~~^~
+      |                                                      |
+      |                                                      int
+oracle.c:268:55: warning: format ‘%s’ expects argument of type ‘char *’, but argument 5 has type ‘void *’ [-Wformat=]
+  268 |                         (void)fprintf(stderr, "%d: %.*s: %s",
+      |                                                    ~~~^
+      |                                                       |
+      |                                                       char *
+      |                                                    %.*p
+  269 |                             lineno, MIN(kp->size, 20), kp->data, NOSUCHKEY);
+      |                                                        ~~~~~~~~
+      |                                                          |
+      |                                                          void *
+oracle.c:272:31: warning: format ‘%d’ expects argument of type ‘int’, but argument 3 has type ‘u_long’ {aka ‘long unsigned int’} [-Wformat=]
+  272 |                             "%d: seq (%s) failed\n", lineno, ref_sflags(flags));
+      |                              ~^                      ~~~~~~
+      |                               |                      |
+      |                               int                    u_long {aka long unsigned int}
+      |                              %ld
+oracle.c: In function ‘ref_get’:
+oracle.c:155:23: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  155 |                 (void)write(ofd, data.data, data.size);
+      |                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+oracle.c:157:31: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  157 |                         (void)write(ofd, "\n", 1);
+      |                               ^~~~~~~~~~~~~~~~~~~
+oracle.c:165:31: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  165 |                         (void)write(ofd, NOSUCHKEY, sizeof(NOSUCHKEY) - 1);
+      |                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+oracle.c: In function ‘ref_put’:
+oracle.c:203:23: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  203 |                 (void)write(ofd, NOOVERWRITE, sizeof(NOOVERWRITE) - 1);
+      |                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+oracle.c: In function ‘ref_rem’:
+oracle.c:222:31: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  222 |                         (void)write(ofd, NOSUCHKEY, sizeof(NOSUCHKEY) - 1);
+      |                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+oracle.c: In function ‘ref_seq’:
+oracle.c:256:23: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  256 |                 (void)write(ofd, data.data, data.size);
+      |                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+oracle.c:258:31: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  258 |                         (void)write(ofd, "\n", 1);
+      |                               ^~~~~~~~~~~~~~~~~~~
+oracle.c:266:31: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  266 |                         (void)write(ofd, NOSUCHKEY, sizeof(NOSUCHKEY) - 1);
+      |                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+oracle.c: In function ‘ref_dump’:
+oracle.c:296:31: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  296 |                         (void)write(ofd, data.data, data.size);
+      |                               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+oracle.c:298:39: warning: ignoring return value of ‘write’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  298 |                                 (void)write(ofd, "\n", 1);
+      |                                       ^~~~~~~~~~~~~~~~~~~
+oracle.c: In function ‘ref_rfile’:
+oracle.c:486:15: warning: ignoring return value of ‘read’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  486 |         (void)read(fd, p, (int)sb.st_size);
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm: In function ‘char* pbsd::lib_libc_db_test::b0203::sflags(int)’:
+port.cppm:318:41: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  318 |         case R_CURSOR:          return ("R_CURSOR");
+      |                                        ~^~~~~~~~~~~
+port.cppm:319:41: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  319 |         case R_FIRST:           return ("R_FIRST");
+      |                                        ~^~~~~~~~~~
+port.cppm:320:41: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  320 |         case R_IAFTER:          return ("R_IAFTER");
+      |                                        ~^~~~~~~~~~~
+port.cppm:321:41: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  321 |         case R_IBEFORE:         return ("R_IBEFORE");
+      |                                        ~^~~~~~~~~~~~
+port.cppm:322:41: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  322 |         case R_LAST:            return ("R_LAST");
+      |                                        ~^~~~~~~~~
+port.cppm:323:41: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  323 |         case R_NEXT:            return ("R_NEXT");
+      |                                        ~^~~~~~~~~
+port.cppm:324:41: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  324 |         case R_NOOVERWRITE:     return ("R_NOOVERWRITE");
+      |                                        ~^~~~~~~~~~~~~~~~
+port.cppm:325:41: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  325 |         case R_PREV:            return ("R_PREV");
+      |                                        ~^~~~~~~~~
+port.cppm:326:41: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  326 |         case R_SETCURSOR:       return ("R_SETCURSOR");
+      |                                        ~^~~~~~~~~~~~~~
+port.cppm:329:17: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  329 |         return ("UNKNOWN!");
+      |                ~^~~~~~~~~~~
+port.cppm: In function ‘void pbsd::lib_libc_db_test::b0203::get(DB*, DBT*)’:
+port.cppm:160:28: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  160 |                 (void)write(ofd, data.data, data.size);
+      |                       ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm:162:36: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  162 |                         (void)write(ofd, "\n", 1);
+      |                               ~~~~~^~~~~~~~~~~~~~
+port.cppm:169:36: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  169 |                         (void)write(ofd, NOSUCHKEY, sizeof(NOSUCHKEY) - 1);
+      |                               ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm: In function ‘void pbsd::lib_libc_db_test::b0203::put(DB*, DBT*, DBT*)’:
+port.cppm:199:28: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  199 |                 (void)write(ofd, NOOVERWRITE, sizeof(NOOVERWRITE) - 1);
+      |                       ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm: In function ‘void pbsd::lib_libc_db_test::b0203::rem(DB*, DBT*)’:
+port.cppm:214:36: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  214 |                         (void)write(ofd, NOSUCHKEY, sizeof(NOSUCHKEY) - 1);
+      |                               ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm: In function ‘void pbsd::lib_libc_db_test::b0203::seq(DB*, DBT*)’:
+port.cppm:243:28: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  243 |                 (void)write(ofd, data.data, data.size);
+      |                       ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm:245:36: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  245 |                         (void)write(ofd, "\n", 1);
+      |                               ~~~~~^~~~~~~~~~~~~~
+port.cppm:252:36: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  252 |                         (void)write(ofd, NOSUCHKEY, sizeof(NOSUCHKEY) - 1);
+      |                               ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm: In function ‘void pbsd::lib_libc_db_test::b0203::dump(DB*, int)’:
+port.cppm:280:36: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  280 |                         (void)write(ofd, data.data, data.size);
+      |                               ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm:282:44: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  282 |                                 (void)write(ofd, "\n", 1);
+      |                                       ~~~~~^~~~~~~~~~~~~~
+port.cppm: In function ‘unsigned int pbsd::lib_libc_db_test::b0203::setflags(char*)’:
+port.cppm:312:12: warning: control reaches end of non-void function [-Wreturn-type]
+  312 |         err("line %lu: %s: unknown flag", lineno, s);
+      |         ~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm: In function ‘pbsd::lib_libc_db_test::b0203::DBTYPE pbsd::lib_libc_db_test::b0203::dbtype(char*)’:
+port.cppm:340:12: warning: control reaches end of non-void function [-Wreturn-type]
+  340 |         err("%s: unknown type (use btree, hash or recno)", s);
+      |         ~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm: In function ‘void* pbsd::lib_libc_db_test::b0203::setinfo(DBTYPE, char*)’:
+port.cppm:432:12: warning: control reaches end of non-void function [-Wreturn-type]
+  432 |         err("%s: unknown structure value", s);
+      |         ~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+port.cppm: In function ‘void* pbsd::lib_libc_db_test::b0203::rfile(char*, size_t*)’:
+port.cppm:450:19: warning: ignoring return value of ‘ssize_t read(int, void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  450 |         (void)read(fd, p, (int)sb.st_size);
+      |               ~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+harness.cpp: In function ‘std::string capture_stdout_ref(Fn) [with Fn = test_compare_buf(const u_char*, size_t, const u_char*, size_t)::<lambda()>]’:
+harness.cpp:327:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  327 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘std::string capture_stdout_port(Fn) [with Fn = test_compare_buf(const u_char*, size_t, const u_char*, size_t)::<lambda()>]’:
+harness.cpp:346:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  346 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_dbtype_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         pipe(ep);
+      |         ~~~~^~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_dbtype_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_dbtype_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_dbtype_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setflags_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setflags_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setflags_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setflags_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setinfo_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setinfo_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setinfo_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setinfo_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setinfo_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_setinfo_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_rfile_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_rfile_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘std::string make_temp_file(const void*, size_t)’:
+harness.cpp:742:28: warning: ignoring return value of ‘ssize_t write(int, const void*, size_t)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  742 |                 (void)write(fd, data, n);
+      |                       ~~~~~^~~~~~~~~~~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_get_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         pipe(ep);
+      |         ~~~~^~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_get_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘std::string capture_stdout_ref(Fn) [with Fn = run_get_case(int, int, u_long, const char*, size_t)::<lambda()>]’:
+harness.cpp:327:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  327 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘std::string capture_stdout_port(Fn) [with Fn = run_get_case(int, int, u_long, const char*, size_t)::<lambda()>]’:
+harness.cpp:346:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  346 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_getdata_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         pipe(ep);
+      |         ~~~~^~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_getdata_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_put_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_put_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_rem_tests()::<lambda(int, u_int, int, u_long)>::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_rem_tests()::<lambda(int, u_int, int, u_long)>::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_rem_tests()::<lambda(int, u_int, int, u_long)>::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_rem_tests()::<lambda(int, u_int, int, u_long)>::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_synk_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_synk_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_synk_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_synk_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_seq_tests()::<lambda(int, u_int, int, u_long, const char*, size_t)>::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_seq_tests()::<lambda(int, u_int, int, u_long, const char*, size_t)>::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘std::string capture_stdout_ref(Fn) [with Fn = run_seq_tests()::<lambda(int, u_int, int, u_long, const char*, size_t)>::<lambda()>]’:
+harness.cpp:327:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  327 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘std::string capture_stdout_port(Fn) [with Fn = run_seq_tests()::<lambda(int, u_int, int, u_long, const char*, size_t)>::<lambda()>]’:
+harness.cpp:346:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  346 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_seq_tests()::<lambda(int, u_int, int, u_long, const char*, size_t)>::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         pipe(ep);
+      |         ~~~~^~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_seq_tests()::<lambda(int, u_int, int, u_long, const char*, size_t)>::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘std::string capture_stdout_ref(Fn) [with Fn = run_dump_tests()::<lambda(int, int)>::<lambda()>]’:
+harness.cpp:327:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  327 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘std::string capture_stdout_port(Fn) [with Fn = run_dump_tests()::<lambda(int, int)>::<lambda()>]’:
+harness.cpp:346:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  346 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘std::string capture_stdout_ref(Fn) [with Fn = run_dump_tests()::<lambda()>]’:
+harness.cpp:327:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  327 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘std::string capture_stdout_port(Fn) [with Fn = run_dump_tests()::<lambda()>]’:
+harness.cpp:346:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  346 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘std::string capture_stdout_ref(Fn) [with Fn = run_dump_tests()::<lambda()>]’:
+harness.cpp:327:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  327 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘std::string capture_stdout_port(Fn) [with Fn = run_dump_tests()::<lambda()>]’:
+harness.cpp:346:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  346 |         pipe(pfd);
+      |         ~~~~^~~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_err_usage_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         pipe(ep);
+      |         ~~~~^~~~
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_err_usage_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_err_usage_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_err_usage_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_err_usage_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+harness.cpp: In function ‘ExitObs run_child(Fn) [with Fn = run_err_usage_tests()::<lambda()>]’:
+harness.cpp:188:13: warning: ignoring return value of ‘int pipe(int*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]

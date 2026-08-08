@@ -1,8 +1,6 @@
 #!/bin/sh
-#
-# Build and run the b0190s2 differential test.  Run as `sh build.sh' from
-# pbsd/bin/date/b0190s2/.  The harness's exit status is this script's exit
-# status.
+# Build and run the b0190s2 differential test.
+# Usage: sh build.sh   (from pbsd/bin/date/b0190s2/)
 
 set -e
 
@@ -10,29 +8,30 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS=${CFLAGS:--O2}
-CXXFLAGS=${CXXFLAGS:--O2}
+CFLAGS="-std=c11 -O2"
+CXXFLAGS="-std=c++23 -O2"
 
-MODNAME=pbsd.bin.date.b0190s2
-
-WRAP_FLAGS="-Wl,--wrap=exit -Wl,--wrap=clock_settime -Wl,--wrap=pututxline -Wl,--wrap=gettimeofday -Wl,--wrap=getlogin -Wl,--wrap=syslog"
-
+rm -f port.o harness.o oracle.o port.pcm harness
 rm -rf gcm.cache
-rm -f oracle.o port.o harness.o port.pcm harness
 
-$CC -std=c11 $CFLAGS -c oracle.c -o oracle.o
-
-if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX -std=c++23 $CXXFLAGS -x c++-module port.cppm --precompile \
-	    -o port.pcm
-	$CXX -std=c++23 $CXXFLAGS -c port.pcm -o port.o
-	$CXX -std=c++23 $CXXFLAGS -fmodule-file=$MODNAME=port.pcm \
+if $CXX --version 2>&1 | grep -i -q clang; then
+	# Clang: precompile the interface unit, then feed the BMI to the
+	# importer and also turn it into an object file.
+	$CXX $CXXFLAGS --precompile -x c++-module port.cppm -o port.pcm
+	$CXX $CXXFLAGS -c port.pcm -o port.o
+	$CXX $CXXFLAGS -fmodule-file=pbsd.bin.date.b0190s2=port.pcm \
 	    -c harness.cpp -o harness.o
+	MODFLAGS=""
 else
-	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c -x c++ port.cppm -o port.o
-	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c harness.cpp -o harness.o
+	# GCC: -fmodules-ts, BMI goes into ./gcm.cache and is found from
+	# there by the importer.
+	MODFLAGS="-fmodules-ts"
+	$CXX $CXXFLAGS $MODFLAGS -c -x c++ port.cppm -o port.o
+	$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o harness.o
 fi
 
-$CXX -std=c++23 $CXXFLAGS $WRAP_FLAGS -o harness harness.o port.o oracle.o
+$CC $CFLAGS -c oracle.c -o oracle.o
+
+$CXX $CXXFLAGS $MODFLAGS port.o harness.o oracle.o -o harness
 
 exec ./harness

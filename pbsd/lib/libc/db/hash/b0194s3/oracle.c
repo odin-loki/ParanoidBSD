@@ -170,9 +170,60 @@ typedef struct {
 	char page_data[HASH_MAX_BUFS][MAX_BSIZE];
 	u_int32_t reg_addr[HASH_MAX_BUFS];
 	BUFHEAD *reg_bp[HASH_MAX_BUFS];
+	HTAB *reg_htab[HASH_MAX_BUFS];
 } hash_mock_state;
 hash_mock_state hash_mock;
-void hash_mock_reset(void) { memset(&hash_mock, 0, sizeof(hash_mock)); hash_mock.next_ovfl = 100; }
+void hash_mock_reset(void)
+{
+	int i, nreg, preserve_reg;
+	BUFHEAD *reg_bp[HASH_MAX_BUFS];
+	u_int32_t reg_addr[HASH_MAX_BUFS];
+	int get_fail_cnt, find_bigpair_ret, big_return_fail, big_keydata_fail;
+	int split_page_fail, ibitmap_fail, addel_fail, delpair_fail;
+	int buf_free_fail, put_page_fail;
+	u_int16_t find_last_page_ret;
+
+	nreg = hash_mock.nreg;
+	preserve_reg = nreg > 0 && nreg < 2;
+	get_fail_cnt = hash_mock.get_fail_cnt;
+	find_bigpair_ret = hash_mock.find_bigpair_ret;
+	find_last_page_ret = hash_mock.find_last_page_ret;
+	big_return_fail = hash_mock.big_return_fail;
+	big_keydata_fail = hash_mock.big_keydata_fail;
+	split_page_fail = hash_mock.split_page_fail;
+	ibitmap_fail = hash_mock.ibitmap_fail;
+	addel_fail = hash_mock.addel_fail;
+	delpair_fail = hash_mock.delpair_fail;
+	buf_free_fail = hash_mock.buf_free_fail;
+	put_page_fail = hash_mock.put_page_fail;
+	if (preserve_reg) {
+		for (i = 0; i < nreg; i++) {
+			reg_bp[i] = hash_mock.reg_bp[i];
+			reg_addr[i] = hash_mock.reg_addr[i];
+		}
+	}
+	memset(&hash_mock, 0, sizeof(hash_mock));
+	hash_mock.next_ovfl = 100;
+	hash_mock.get_fail_cnt = get_fail_cnt;
+	hash_mock.find_bigpair_ret = find_bigpair_ret;
+	hash_mock.find_last_page_ret = find_last_page_ret;
+	hash_mock.big_return_fail = big_return_fail;
+	hash_mock.big_keydata_fail = big_keydata_fail;
+	hash_mock.split_page_fail = split_page_fail;
+	hash_mock.ibitmap_fail = ibitmap_fail;
+	hash_mock.addel_fail = addel_fail;
+	hash_mock.delpair_fail = delpair_fail;
+	hash_mock.buf_free_fail = buf_free_fail;
+	hash_mock.put_page_fail = put_page_fail;
+	if (preserve_reg) {
+		hash_mock.nreg = nreg;
+		for (i = 0; i < nreg; i++) {
+			hash_mock.reg_bp[i] = reg_bp[i];
+			hash_mock.reg_addr[i] = reg_addr[i];
+			hash_mock.reg_htab[i] = NULL;
+		}
+	}
+}
 int hash_mock_nbufs(void) { return hash_mock.nbufs; }
 void hash_mock_snapshot_page(int idx, char *dst, int sz) { if (idx >= 0 && idx < hash_mock.nbufs) memcpy(dst, hash_mock.page_data[idx], (size_t)sz); }
 void hash_mock_set_get_fail_cnt(int v) { hash_mock.get_fail_cnt = v; }
@@ -187,21 +238,57 @@ void hash_mock_set_put_page_fail(int v) { hash_mock.put_page_fail = v; }
 void hash_mock_set_big_return_fail(int v) { hash_mock.big_return_fail = v; }
 void hash_mock_set_big_keydata_fail(int v) { hash_mock.big_keydata_fail = v; }
 void hash_mock_register(BUFHEAD *bp) {
-	int i; if (hash_mock.nreg >= HASH_MAX_BUFS) return;
-	for (i = 0; i < hash_mock.nreg; i++) if (hash_mock.reg_bp[i] == bp) return;
-	hash_mock.reg_addr[hash_mock.nreg] = bp->addr; hash_mock.reg_bp[hash_mock.nreg] = bp; hash_mock.nreg++;
+	int i;
+
+	if (hash_mock.nreg >= HASH_MAX_BUFS)
+		return;
+	for (i = 0; i < hash_mock.nreg; i++)
+		if (hash_mock.reg_bp[i] == bp)
+			return;
+	hash_mock.reg_addr[hash_mock.nreg] = bp->addr;
+	hash_mock.reg_bp[hash_mock.nreg] = bp;
+	hash_mock.reg_htab[hash_mock.nreg] = NULL;
+	hash_mock.nreg++;
 }
-static BUFHEAD *hash_mock_lookup(u_int32_t addr) {
-	int i; for (i = 0; i < hash_mock.nreg; i++) if (hash_mock.reg_addr[i] == addr) return hash_mock.reg_bp[i]; return NULL;
+static BUFHEAD *hash_mock_lookup(HTAB *hashp, u_int32_t addr)
+{
+	int i;
+
+	for (i = 0; i < hash_mock.nreg; i++)
+		if (hash_mock.reg_htab[i] == hashp &&
+		    hash_mock.reg_addr[i] == addr)
+			return (hash_mock.reg_bp[i]);
+	for (i = 0; i < hash_mock.nreg; i++) {
+		if (hash_mock.reg_htab[i] == NULL &&
+		    hash_mock.reg_addr[i] == addr) {
+			hash_mock.reg_htab[i] = hashp;
+			return (hash_mock.reg_bp[i]);
+		}
+	}
+	return (NULL);
 }
 static BUFHEAD *hash_mock_new_buf(HTAB *hashp, u_int32_t addr) {
-	BUFHEAD *bp; int i; if (hash_mock.nbufs >= HASH_MAX_BUFS) return NULL;
-	i = hash_mock.nbufs++; bp = &hash_mock.bufs[i]; memset(bp, 0, sizeof(*bp));
-	bp->page = hash_mock.page_data[i]; bp->addr = addr;
+	BUFHEAD *bp;
+	int i;
+
+	if (hash_mock.nbufs >= HASH_MAX_BUFS)
+		return (NULL);
+	i = hash_mock.nbufs++;
+	bp = &hash_mock.bufs[i];
+	memset(bp, 0, sizeof(*bp));
+	bp->page = hash_mock.page_data[i];
+	bp->addr = addr;
 	((u_int16_t *)bp->page)[0] = 0;
 	((u_int16_t *)bp->page)[1] = (u_int16_t)(hashp->BSIZE - 3 * sizeof(u_int16_t));
 	((u_int16_t *)bp->page)[2] = (u_int16_t)hashp->BSIZE;
-	hash_mock_register(bp); return bp;
+	hash_mock_register(bp);
+	for (i = 0; i < hash_mock.nreg; i++) {
+		if (hash_mock.reg_bp[i] == bp) {
+			hash_mock.reg_htab[i] = hashp;
+			break;
+		}
+	}
+	return (bp);
 }
 static u_int32_t mock_hash4(const void *key, size_t len) {
 	u_int32_t h, loop; const u_int8_t *k; h = 0; k = (const u_int8_t *)key;
@@ -257,19 +344,29 @@ int __ibitmap(HTAB *hashp, int p, int n, int ndx) { (void)p;(void)n; if (hash_mo
 	if (!hashp->mapp[ndx]) { hashp->mapp[ndx] = calloc(1, sizeof(u_int32_t)); if (!hashp->mapp[ndx]) return -1; } return 0; }
 int __put_page(HTAB *h, char *p, u_int32_t b, int i, int j) { (void)h;(void)p;(void)b;(void)i;(void)j; return hash_mock.put_page_fail ? -1 : 0; }
 BUFHEAD *__get_buf(HTAB *hashp, u_int32_t addr, BUFHEAD *prev_bp, int newpage) {
-	BUFHEAD *bp; (void)hashp;
-	if (hash_mock.get_fail_cnt > 0) { hash_mock.get_fail_cnt--; return NULL; }
+	BUFHEAD *bp;
+
+	if (hash_mock.get_fail_cnt > 0)
+		return (NULL);
 	if (prev_bp) {
 		bp = prev_bp->ovfl;
 		if (!bp || bp->addr != addr) {
-			if (newpage) { bp = hash_mock_new_buf(hashp, addr); if (!bp) return NULL; prev_bp->ovfl = bp; bp->flags |= BUF_MOD; return bp; }
-			return NULL;
+			if (newpage) {
+				bp = hash_mock_new_buf(hashp, addr);
+				if (!bp)
+					return (NULL);
+				prev_bp->ovfl = bp;
+				bp->flags |= BUF_MOD;
+				return (bp);
+			}
+			return (NULL);
 		}
-		return bp;
+		return (bp);
 	}
-	bp = hash_mock_lookup(addr);
-	if (!bp && newpage) bp = hash_mock_new_buf(hashp, addr);
-	return bp;
+	bp = hash_mock_lookup(hashp, addr);
+	if (!bp && newpage)
+		bp = hash_mock_new_buf(hashp, addr);
+	return (bp);
 }
 #define alloc_segs ref_alloc_segs
 #define flush_meta ref_flush_meta

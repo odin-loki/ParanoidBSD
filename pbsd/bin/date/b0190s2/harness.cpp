@@ -1,501 +1,446 @@
 /*
- * harness.cpp -- differential test for PBSD batch b0190s2 (date.c).
+ * Differential test harness for PBSD batch b0190s2 (bin/date/date.c).
+ *
+ * Every ported function is exercised against the unmodified reference
+ * implementation in oracle.c.  For each case both the return value and the
+ * complete output buffer (including the guard bytes past the nominal write
+ * window) are compared.
+ *
+ * Batch contents:
+ *   strftime_ns()  -- buffer writer, compared byte for byte.
+ * There are no pointer-returning or stateful-iterator functions in this batch,
+ * so those comparison modes do not apply here.
  */
-#include <sys/time.h>
+
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
+#include <climits>
 #include <clocale>
-#include <csetjmp>
-#include <fcntl.h>
-#include <unistd.h>
+#include <ctime>
 
 import pbsd.bin.date.b0190s2;
-namespace P = pbsd::bin_date::b0190s2;
 
-extern "C" {
-struct iso8601_fmt { const char *refname; const char *format_string; };
-void oracle_err_arm(void);
-void oracle_err_disarm(void);
-extern jmp_buf oracle_err_jmp;
-extern int oracle_err_status;
-void ref_test_set_iso8601_selected(const struct iso8601_fmt *);
-const struct iso8601_fmt *ref_test_iso8601_fmts(void);
-int ref_test_iso8601_fmts_count(void);
-void ref_printdate(const char *);
-void ref_printisodate(struct tm *, long, long);
-void ref_setthetime(const char *, const char *, int, struct timespec *);
-size_t ref_strftime_ns(char *, size_t, const char *, const struct tm *, long, long);
-void ref_badformat(void);
-void ref_iso8601_usage(const char *);
-void ref_multipleformats(void);
-void ref_usage(void);
-}
+extern "C" size_t ref_strftime_ns(char * __restrict s, size_t maxsize,
+    const char * __restrict format, const struct tm * __restrict t,
+    long nsec, long res);
 
-static jmp_buf g_exit_jmp;
-static volatile int g_exit_armed;
-static volatile int g_exit_status;
-static int cap_out_fd = -1, cap_err_fd = -1, saved_out = -1, saved_err = -1;
+namespace port = pbsd::bin_date::b0190s2;
 
-static void cap_restore_force()
+/* ------------------------------------------------------------------ */
+
+static const size_t BUFCAP = 4096;
+static const unsigned char GUARD = 0x7f;
+
+static long long g_cases = 0;
+static long long g_fails = 0;
+static int g_reported = 0;
+
+static void
+dump(const char *tag, const char *p, size_t n)
 {
-	fflush(nullptr);
-	if (saved_out >= 0) {
-		dup2(saved_out, 1);
-		close(saved_out);
-		saved_out = -1;
+	fprintf(stderr, "    %s [%zu] \"", tag, n);
+	for (size_t i = 0; i < n; i++) {
+		unsigned char c = (unsigned char)p[i];
+		if (c >= 0x20 && c < 0x7f && c != '"' && c != '\\')
+			fputc(c, stderr);
+		else
+			fprintf(stderr, "\\x%02x", c);
 	}
-	if (saved_err >= 0) {
-		dup2(saved_err, 2);
-		close(saved_err);
-		saved_err = -1;
-	}
-	if (cap_out_fd >= 0) {
-		close(cap_out_fd);
-		cap_out_fd = -1;
-	}
-	if (cap_err_fd >= 0) {
-		close(cap_err_fd);
-		cap_err_fd = -1;
-	}
+	fprintf(stderr, "\"\n");
 }
 
-extern "C" void __wrap_exit(int status)
+/*
+ * Run one strftime_ns() case through both implementations.
+ *
+ * Two independent buffers are pre-filled with the guard byte; after the call
+ * the whole of both buffers is compared, not just the first `maxsize` bytes
+ * and not just the return value.
+ */
+static void
+check(const char *what, size_t maxsize, const char *format,
+    const struct tm *t, long nsec, long res)
 {
-	if (g_exit_armed) {
-		g_exit_status = status;
-		g_exit_armed = 0;
-		cap_restore_force();
-		longjmp(g_exit_jmp, 1);
+	static char abuf[BUFCAP];
+	static char bbuf[BUFCAP];
+	struct tm ta, tb;
+
+	if (maxsize > BUFCAP)
+		maxsize = BUFCAP;
+
+	memset(abuf, GUARD, BUFCAP);
+	memset(bbuf, GUARD, BUFCAP);
+	memcpy(&ta, t, sizeof(ta));
+	memcpy(&tb, t, sizeof(tb));
+
+	size_t ra = port::strftime_ns(abuf, maxsize, format, &ta, nsec, res);
+	size_t rb = ref_strftime_ns(bbuf, maxsize, format, &tb, nsec, res);
+
+	g_cases++;
+
+	bool ok = true;
+	if (ra != rb)
+		ok = false;
+	if (memcmp(abuf, bbuf, BUFCAP) != 0)
+		ok = false;
+	if (memcmp(&ta, &tb, sizeof(ta)) != 0)
+		ok = false;
+
+	if (ok)
+		return;
+
+	g_fails++;
+	if (g_reported++ < 25) {
+		fprintf(stderr,
+		    "FAIL strftime_ns [%s] maxsize=%zu nsec=%ld res=%ld\n",
+		    what, maxsize, nsec, res);
+		dump("format", format, strlen(format));
+		fprintf(stderr, "    ret port=%zu ref=%zu\n", ra, rb);
+		size_t first = BUFCAP;
+		for (size_t i = 0; i < BUFCAP; i++)
+			if (abuf[i] != bbuf[i]) { first = i; break; }
+		if (first != BUFCAP) {
+			size_t n = BUFCAP - first;
+			if (n > 48)
+				n = 48;
+			fprintf(stderr, "    first buffer diff at %zu\n", first);
+			dump("port  ", abuf + first, n);
+			dump("ref   ", bbuf + first, n);
+		}
 	}
-	fflush(nullptr);
-	_exit(status);
 }
 
-extern "C" int __wrap_clock_settime(clockid_t, const struct timespec *) { return 0; }
-extern "C" struct utmpx *__wrap_pututxline(struct utmpx *u) { return u; }
-extern "C" int __wrap_gettimeofday(struct timeval *tv, void *) {
-	if (tv) { tv->tv_sec = 1700000000; tv->tv_usec = 0; }
-	return 0;
+/* ------------------------------------------------------------------ */
+
+static struct tm g_tms[6];
+static int g_ntms;
+
+static void
+init_tms(void)
+{
+	static const time_t seeds[] = {
+		0,			/* epoch */
+		1,
+		951827696,		/* 2000-02-29 */
+		1234567890,
+		2147483647,		/* 32-bit time_t boundary */
+		-1,
+	};
+	g_ntms = 0;
+	for (size_t i = 0; i < sizeof(seeds) / sizeof(seeds[0]); i++) {
+		time_t tv = seeds[i];
+		struct tm tmp;
+		if (gmtime_r(&tv, &tmp) != NULL)
+			g_tms[g_ntms++] = tmp;
+	}
+	if (g_ntms == 0) {
+		memset(&g_tms[0], 0, sizeof(g_tms[0]));
+		g_tms[0].tm_mday = 1;
+		g_tms[0].tm_year = 70;
+		g_ntms = 1;
+	}
 }
-extern "C" char *__wrap_getlogin(void) { return const_cast<char*>("harness"); }
-extern "C" void __wrap_syslog(int, const char *, ...) {}
 
-constexpr long SWEEP = 200000L;
-constexpr int MAX_SHOW = 8;
-constexpr unsigned char GUARD = 0x7f;
-constexpr int BUF_SZ = 256;
+/* ------------------------------------------------------------------ */
 
-struct Stat { const char *name; long cases, fails; int shown; };
-Stat stats[16];
-int nstats = 0;
+static uint64_t g_rs = 0x9e3779b97f4a7c15ULL;	/* fixed seed */
 
-struct Rng {
-	std::uint64_t s;
-	explicit Rng(std::uint64_t seed) : s(seed) {}
-	std::uint64_t next() {
-		s += 0x9E3779B97F4A7C15ull;
-		std::uint64_t z = s;
-		z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
-		z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
-		return z ^ (z >> 31);
+static inline uint32_t
+rnd(void)
+{
+	g_rs ^= g_rs >> 12;
+	g_rs ^= g_rs << 25;
+	g_rs ^= g_rs >> 27;
+	return (uint32_t)((g_rs * 0x2545f4914f6cdd1dULL) >> 32);
+}
+
+static long
+rnd_nsec(void)
+{
+	switch (rnd() % 10) {
+	case 0: return 0;
+	case 1: return (long)(rnd() % 10);
+	case 2: return (long)(rnd() % 100);
+	case 3: return 999999999L;
+	case 4: return 1000000000L;
+	case 5: return -(long)(rnd() % 1000000000u);
+	case 6: return LONG_MAX;
+	case 7: return LONG_MIN;
+	case 8: return 123456789L;
+	default: return (long)(rnd() % 1000000000u);
 	}
-	int bits(int lo, int hi) {
-		if (hi <= lo) return lo;
-		return lo + (int)(next() % (std::uint64_t)(hi - lo + 1));
+}
+
+static long
+rnd_res(void)
+{
+	switch (rnd() % 10) {
+	case 0: return 0;
+	case 1: return 1;
+	case 2: {
+		unsigned e = rnd() % 13;
+		long r = 1;
+		for (unsigned i = 0; i < e; i++)
+			r *= 10;
+		return r;
 	}
-	unsigned char byte() { return (unsigned char)(next() & 0xffu); }
-	bool coin() { return (next() & 1u) != 0; }
+	case 3: return -(long)(rnd() % 1000u) - 1;
+	case 4: return LONG_MAX;
+	case 5: return LONG_MIN;
+	case 6: return 999999999L;
+	case 7: return (long)(rnd() % 1000000000u);
+	case 8: return 2;
+	default: return 1000L;
+	}
+}
+
+static size_t
+rnd_maxsize(void)
+{
+	switch (rnd() % 8) {
+	case 0: return 0;
+	case 1: return 1;
+	case 2: return rnd() % 24;
+	case 3: return rnd() % 80;
+	case 4: return BUFCAP;
+	case 5: return 1 + rnd() % 12;
+	default: return 128 + rnd() % (BUFCAP - 128);
+	}
+}
+
+/*
+ * Build a random format string.  Runs of digits are capped at three so that
+ * the `width = width * 10 + *tok - '0'` accumulator in the function under test
+ * can never signed-overflow (which would be undefined behaviour and would make
+ * the differential comparison meaningless), while still reaching widths well
+ * above the nine-digit clamp.
+ */
+static void
+rnd_format(char *out, size_t cap)
+{
+	static const char alpha[] = {
+		'%', '%', '%', '%',
+		'N', 'N', 'N',
+		'-', '-',
+		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+		'a', 'X', ' ', '.', ':', 'Y', 'm', 'd', 'q', 'n',
+		(char)0x01, (char)0x7f, (char)0x80, (char)0xa5, (char)0xff,
+	};
+	size_t n = rnd() % (cap - 1);
+	size_t digits = 0;
+	size_t i;
+
+	for (i = 0; i < n; i++) {
+		char c = alpha[rnd() % (sizeof(alpha) / sizeof(alpha[0]))];
+		if (c >= '0' && c <= '9') {
+			if (digits >= 3)
+				c = 'a';
+			else
+				digits++;
+		} else {
+			digits = 0;
+		}
+		out[i] = c;
+	}
+	out[i] = '\0';
+}
+
+/* ------------------------------------------------------------------ */
+
+static const char *const g_formats[] = {
+	/* degenerate */
+	"", "%", "%%", "%%%", "%%%%",
+	"N", "NN", "n", "-", "0", "9",
+	/* the plain conversion */
+	"%N", "%%N", "%%%N", "%%%%N", "%N%N", "%N%NN", "%NN",
+	"a%N", "ab%Nc", "%Na%Nb", "%N%%N", "%%N%N", "abc%", "abc%N",
+	"%N%N%N%N",
+	/* dash flag */
+	"%-N", "%--N", "%---N", "%-%N", "%-N%-N", "%-NX%-N",
+	"-N", "%x-N", "%--%N",
+	/* explicit widths, both sides of every clamp */
+	"%0N", "%1N", "%2N", "%3N", "%4N", "%5N", "%6N", "%7N", "%8N",
+	"%9N", "%10N", "%11N", "%12N", "%18N", "%19N", "%20N", "%99N",
+	"%100N", "%999N",
+	"%00N", "%01N", "%09N", "%000N", "%010N", "%090N",
+	/* dash and width in both orders (only one order is a conversion) */
+	"%-0N", "%-1N", "%-5N", "%-9N", "%-10N", "%-99N",
+	"%0-N", "%1-N", "%5-N", "%9-N", "%12-N", "%5-5N",
+	"%--5N", "%5--N", "%55-N",
+	/* a percent that gets cancelled before the N */
+	"%xN", "%qN", "%YN", "% N", "%\tN", "%.N", "%aN", "%zN",
+	"%N ", "% %N",
+	/* high-bit and control bytes around the conversion */
+	"\x80%N", "\xff\xfe%N\x81", "%\x80N", "%N\x80", "\x01%N\x7f",
+	"\xc3\xa9%-N\xc3\xa9", "%\xffN", "\x80\x81\x82\x83",
+	/* realistic date(1) formats */
+	"%+", "%Y-%m-%d", "%Y-%m-%dT%H:%M:%S,%N", "T%H:%M:%S,%-N",
+	"%a, %d %b %Y %T %z", ",%N", ":%S", "%Y-%m-%dT%H:%M:%S,%9N%z",
+	/* long literal, exercises prefixlen arithmetic */
+	"0123456789012345678901234567890123456789%N",
+	"0123456789012345678901234567890123456789%-N",
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa%12Nbbbbbbbbbb%3N",
 };
+static const size_t g_nformats = sizeof(g_formats) / sizeof(g_formats[0]);
 
-Rng rng(0xB01902A0ull);
+static const long g_nsecs[] = {
+	0L, 1L, 9L, 10L, 99L, 100L, 987L, 123456789L, 999999999L,
+	1000000000L, -1L, -123456789L, LONG_MAX, LONG_MIN,
+};
+static const size_t g_nnsecs = sizeof(g_nsecs) / sizeof(g_nsecs[0]);
 
-Stat &reg(const char *name) {
-	stats[nstats++] = Stat{name, 0, 0, 0};
-	return stats[nstats - 1];
-}
+static const long g_ress[] = {
+	0L, 1L, 2L, 9L, 10L, 11L, 100L, 1000L, 100000L, 1000000L,
+	10000000L, 100000000L, 999999999L, 1000000000L, 10000000000L,
+	-1L, LONG_MAX, LONG_MIN,
+};
+static const size_t g_nress = sizeof(g_ress) / sizeof(g_ress[0]);
 
-void fail(Stat &st, const char *what) {
-	st.fails++;
-	if (st.shown < MAX_SHOW) {
-		st.shown++;
-		std::fprintf(stderr, "  FAIL %s: %s\n", st.name, what);
-	}
-}
+/* ------------------------------------------------------------------ */
 
-void fill_tm(struct tm *t, int sec, int min, int hour, int mday, int mon,
-    int year, int wday, int isdst) {
-	std::memset(t, 0, sizeof(*t));
-	t->tm_sec = sec; t->tm_min = min; t->tm_hour = hour;
-	t->tm_mday = mday; t->tm_mon = mon; t->tm_year = year;
-	t->tm_wday = wday; t->tm_isdst = isdst;
-}
-
-static void cap_begin(char *ob, size_t osz, char *eb, size_t esz) {
-	int pout[2], perr[2];
-	pipe(pout); pipe(perr);
-	saved_out = dup(1); saved_err = dup(2);
-	dup2(pout[1], 1); dup2(perr[1], 2);
-	close(pout[1]); close(perr[1]);
-	cap_out_fd = pout[0]; cap_err_fd = perr[0];
-	if (osz) ob[0] = '\0';
-	if (esz) eb[0] = '\0';
-}
-
-static void cap_end(char *ob, size_t osz, char *eb, size_t esz) {
-	fflush(nullptr);
-	if (saved_out >= 0) { dup2(saved_out, 1); close(saved_out); saved_out = -1; }
-	if (saved_err >= 0) { dup2(saved_err, 2); close(saved_err); saved_err = -1; }
-	if (cap_out_fd >= 0) {
-		ssize_t n = read(cap_out_fd, ob, osz - 1);
-		if (n < 0) n = 0; ob[n] = '\0'; close(cap_out_fd); cap_out_fd = -1;
-	}
-	if (cap_err_fd >= 0) {
-		ssize_t n = read(cap_err_fd, eb, esz - 1);
-		if (n < 0) n = 0; eb[n] = '\0'; close(cap_err_fd); cap_err_fd = -1;
-	}
-}
-
-static void iso8601_select(int idx) {
-	const struct iso8601_fmt *fmts = ref_test_iso8601_fmts();
-	int n = ref_test_iso8601_fmts_count();
-	if (idx < 0) idx = 0;
-	if (idx >= n) idx = n - 1;
-	ref_test_set_iso8601_selected(&fmts[idx]);
-	P::test_set_iso8601_selected(&P::test_iso8601_fmts()[idx]);
-}
-
-void
-test_strftime_ns()
+static void
+phase_curated(void)
 {
-	Stat &st = reg("strftime_ns");
+	const struct tm *t = &g_tms[0];
 
-	struct tm lt;
-	fill_tm(&lt, 30, 15, 12, 15, 5, 120, 3, -1);
-	mktime(&lt);
+	for (size_t f = 0; f < g_nformats; f++)
+		for (size_t n = 0; n < g_nnsecs; n++)
+			for (size_t r = 0; r < g_nress; r++)
+				check("curated", BUFCAP, g_formats[f], t,
+				    g_nsecs[n], g_ress[r]);
+}
 
-	auto run = [&](const char *fmt, long nsec, long res, size_t maxsize) {
-		unsigned char rbuf[BUF_SZ + 32], pbuf[BUF_SZ + 32];
-		std::memset(rbuf, GUARD, sizeof(rbuf));
-		std::memset(pbuf, GUARD, sizeof(pbuf));
-		st.cases++;
-		size_t rr = ref_strftime_ns((char *)(rbuf + 16), maxsize, fmt, &lt,
-		    nsec, res);
-		size_t pr = P::strftime_ns((char *)(pbuf + 16), maxsize, fmt, &lt,
-		    nsec, res);
-		if (rr != pr)
-			fail(st, "return");
-		else if (std::memcmp(rbuf, pbuf, sizeof(rbuf)) != 0)
-			fail(st, "buffer");
-	};
+/*
+ * Sweep every possible byte value through the three positions where the
+ * scanner's state machine can be steered: right after the '%', right after a
+ * width/dash flag, and immediately before the '%'.
+ */
+static void
+phase_bytes(void)
+{
+	const struct tm *t = &g_tms[1];
+	char buf[8];
 
-	run("", 0, 1, 64);
-	run("%Y-%m-%d", 0, 1, 64);
-	run("%N", 123456789L, 1, 64);
-	run("%%N", 123456789L, 1, 64);
-	run("%-N", 123456789L, 1000000L, 64);
-	run("%-N", 123456789L, 1L, 64);
-	run("%5N", 123456789L, 1, 64);
-	run("%09N", 123456789L, 1, 64);
-	run("%12N", 123456789L, 1, 64);
-	run("%Y-%m-%d %N", 999999999L, 1, 128);
-	run("%3N", 123456789L, 1, 64);
-	run("%1N", 987654321L, 1, 64);
-	run("prefix%Nsuffix", 42L, 1, 128);
-	run("%-5N", 100L, 1000L, 64);
-	run("%-10N", 555555555L, 1000000000L, 64);
-	run("%z %N", 0L, 1, 64);
-	run("%", 0L, 1, 64);
-	run("%%", 0L, 1, 64);
-	run("%0N", 0L, 1, 64);
-	run("%99N", 1L, 1, 256);
-
-	for (long i = 0; i < SWEEP; i++) {
-		char fmt[64];
-		int flen = rng.bits(0, 40);
-		int fp = 0;
-		for (int j = 0; j < flen; j++) {
-			unsigned char c = rng.byte();
-			if (c == '\0')
-				c = 'x';
-			fmt[fp++] = (char)c;
-			if (c == '%' && fp < 60 && rng.coin()) {
-				static const char *spec = "NY%-0123456789";
-				fmt[fp++] = spec[rng.bits(0, 13)];
+	for (int b = 1; b < 256; b++) {
+		for (int shape = 0; shape < 6; shape++) {
+			switch (shape) {
+			case 0:
+				buf[0] = '%'; buf[1] = (char)b; buf[2] = 'N';
+				buf[3] = '\0';
+				break;
+			case 1:
+				buf[0] = (char)b; buf[1] = '%'; buf[2] = 'N';
+				buf[3] = '\0';
+				break;
+			case 2:
+				buf[0] = '%'; buf[1] = 'N'; buf[2] = (char)b;
+				buf[3] = '\0';
+				break;
+			case 3:
+				buf[0] = '%'; buf[1] = '-'; buf[2] = (char)b;
+				buf[3] = 'N'; buf[4] = '\0';
+				break;
+			case 4:
+				buf[0] = '%'; buf[1] = '1'; buf[2] = (char)b;
+				buf[3] = 'N'; buf[4] = '\0';
+				break;
+			default:
+				buf[0] = '%'; buf[1] = (char)b; buf[2] = '%';
+				buf[3] = 'N'; buf[4] = '\0';
+				break;
 			}
+			check("bytes", BUFCAP, buf, t, 123456789L, 1L);
+			check("bytes", BUFCAP, buf, t, 999999999L, 1000000L);
+			check("bytes", BUFCAP, buf, t, 0L, 0L);
+			check("bytes", BUFCAP, buf, t, -7L, LONG_MAX);
 		}
-		fmt[fp] = '\0';
-		long nsec = (long)(rng.next() % 1000000000ull);
-		long res = (long)rng.bits(1, 9) * 100000000L;
-		if (res <= 0)
-			res = 1;
-		size_t ms = (size_t)rng.bits(0, BUF_SZ);
-		run(fmt, nsec, res, ms);
 	}
 }
 
+/* Boundary lengths: every small maxsize around the length of the output. */
+static void
+phase_lengths(void)
+{
+	static const char *const fmts[] = {
+		"", "%N", "%%N", "%-N", "%1N", "%5N", "%9N", "%12N",
+		"ab%Ncd", "%N%N", "%-N%3N", "%Y-%m-%dT%H:%M:%S,%N",
+		"%20N", "\x80%N",
+	};
+	const size_t nf = sizeof(fmts) / sizeof(fmts[0]);
 
-void test_setthetime() {
-	Stat &st = reg("setthetime");
-	auto run_ok = [&](const char *fmt, const char *p, int jflag, time_t base) {
-		struct timespec rts = {base, 123}, pts = {base, 123};
-		int re = 0, pe = 0, oe = 0;
-		st.cases++;
-		oracle_err_arm();
-		if (setjmp(oracle_err_jmp) == 0) {
-			if (setjmp(g_exit_jmp) == 0) {
-				g_exit_armed = 1;
-				ref_setthetime(fmt, p, jflag, &rts);
-				g_exit_armed = 0;
-			} else {
-				oe = 1;
-			}
-		} else {
-			re = 1;
+	for (size_t f = 0; f < nf; f++)
+		for (size_t m = 0; m <= 48; m++) {
+			check("len", m, fmts[f], &g_tms[2], 123456789L, 1L);
+			check("len", m, fmts[f], &g_tms[3], 999999999L,
+			    1000000000L);
+			check("len", m, fmts[f], &g_tms[0], -1L, 0L);
 		}
-		oracle_err_disarm();
-		P::port_err_arm();
-		if (setjmp(P::port_err_jmp) == 0) {
-			if (setjmp(g_exit_jmp) == 0) {
-				g_exit_armed = 1;
-				P::setthetime(fmt, p, jflag, &pts);
-				g_exit_armed = 0;
-			} else {
-				oe = 1;
-			}
-		} else {
-			pe = 1;
-		}
-		P::port_err_disarm();
-		if (oe)
-			fail(st, "unexpected exit");
-		else if (re != pe)
-			fail(st, "errx mismatch");
-		else if (!re && (rts.tv_sec != pts.tv_sec || rts.tv_nsec != pts.tv_nsec))
-			fail(st, "timespec");
+	for (size_t f = 0; f < nf; f++)
+		for (size_t m = 60; m <= 130; m += 7)
+			check("len", m, fmts[f], &g_tms[4], 500000000L, 100L);
+}
+
+/* All tm values against the interesting formats. */
+static void
+phase_tms(void)
+{
+	static const char *const fmts[] = {
+		"%N", "%-N", "%5N", "%Y-%m-%dT%H:%M:%S,%N",
+		"%a, %d %b %Y %T %z", "%c", "%+", "%Z%N",
 	};
-	auto run_err = [&](const char *fmt, const char *p, int jflag, time_t base) {
-		struct timespec rts = {base, 0}, pts = {base, 0};
-		int re = 0, pe = 0, rs = 0, ps = 0;
-		st.cases++;
-		oracle_err_arm();
-		if (setjmp(oracle_err_jmp) == 0) {
-			if (setjmp(g_exit_jmp) == 0) {
-				g_exit_armed = 1;
-				ref_setthetime(fmt, p, jflag, &rts);
-				g_exit_armed = 0;
-			} else { re = 1; rs = g_exit_status; }
-		} else { re = 2; rs = oracle_err_status; }
-		oracle_err_disarm();
-		P::port_err_arm();
-		if (setjmp(P::port_err_jmp) == 0) {
-			if (setjmp(g_exit_jmp) == 0) {
-				g_exit_armed = 1;
-				P::setthetime(fmt, p, jflag, &pts);
-				g_exit_armed = 0;
-			} else { pe = 1; ps = g_exit_status; }
-		} else { pe = 2; ps = P::port_err_status; }
-		P::port_err_disarm();
-		if (re != pe || rs != ps) fail(st, "error");
-	};
-	time_t base = 1704067200;
-	run_ok(nullptr, "2312151530", 1, base);
-	run_ok(nullptr, "2312151530.30", 1, base);
-	run_ok(nullptr, "042312151530", 1, base);
-	run_ok(nullptr, "240412121530", 1, base);
-	run_ok(nullptr, "202404121530", 1, base);
-	run_ok("%Y%m%d%H%M.%S", "202404121530.30", 1, base);
-	run_ok(nullptr, "2312151530", 0, base);
-	run_err(nullptr, "bad", 1, base);
-	run_err(nullptr, "9913010000", 1, base);
-	run_err(nullptr, "9912312460", 1, base);
-	for (long i = 0; i < SWEEP / 100; i++) {
-		char d[24];
-		std::snprintf(d, sizeof(d), "%04d%02d%02d%02d%02d",
-		    2000 + (int)(i % 24), 1 + (int)(i % 12), 1 + (int)(i % 28),
-		    (int)(i % 24), (int)(i % 60));
-		run_ok(nullptr, d, 1, (time_t)(1700000000 + i));
+	const size_t nf = sizeof(fmts) / sizeof(fmts[0]);
+
+	for (int i = 0; i < g_ntms; i++)
+		for (size_t f = 0; f < nf; f++)
+			for (size_t n = 0; n < g_nnsecs; n++)
+				for (size_t r = 0; r < g_nress; r++)
+					check("tm", BUFCAP, fmts[f], &g_tms[i],
+					    g_nsecs[n], g_ress[r]);
+}
+
+static void
+phase_random(long long iters)
+{
+	char fmt[24];
+
+	for (long long i = 0; i < iters; i++) {
+		rnd_format(fmt, sizeof(fmt));
+		long nsec = rnd_nsec();
+		long res = rnd_res();
+		size_t maxsize = rnd_maxsize();
+		const struct tm *t = &g_tms[rnd() % (unsigned)g_ntms];
+		check("random", maxsize, fmt, t, nsec, res);
 	}
 }
 
-void test_printdate() {
-	Stat &st = reg("printdate");
-	auto run = [&](const char *buf) {
-		char rout[256], pout[256], rerr[256], perr[256];
-		int re = 0, pe = 0, rs = 0, ps = 0;
-		st.cases++;
-		cap_begin(rout, sizeof(rout), rerr, sizeof(rerr));
-		if (setjmp(g_exit_jmp) == 0) { g_exit_armed = 1; ref_printdate(buf); }
-		else { re = 1; rs = g_exit_status; }
-		g_exit_armed = 0;
-		cap_end(rout, sizeof(rout), rerr, sizeof(rerr));
-		cap_begin(pout, sizeof(pout), perr, sizeof(perr));
-		if (setjmp(g_exit_jmp) == 0) { g_exit_armed = 1; P::printdate(buf); }
-		else { pe = 1; ps = g_exit_status; }
-		g_exit_armed = 0;
-		cap_end(pout, sizeof(pout), perr, sizeof(perr));
-		if (re != pe || rs != ps) fail(st, "exit");
-		else if (std::strcmp(rout, pout) != 0) fail(st, "stdout");
-	};
-	run(""); run("hello");
-	for (long i = 0; i < SWEEP / 20; i++) {
-		char b[128]; int n = rng.bits(0, 120);
-		for (int j = 0; j < n; j++) b[j] = (char)(rng.byte() == 0 ? 'a' : rng.byte());
-		b[n] = '\0'; run(b);
-	}
-}
+/* ------------------------------------------------------------------ */
 
-void test_printisodate() {
-	Stat &st = reg("printisodate");
-	struct tm lt; fill_tm(&lt, 30, 15, 12, 15, 3, 124, 1, 0); mktime(&lt);
-	auto run = [&](int sel, long nsec, long res) {
-		char rout[512], pout[512], rerr[512], perr[512];
-		int re = 0, pe = 0, rs = 0, ps = 0;
-		st.cases++;
-		iso8601_select(sel);
-		cap_begin(rout, sizeof(rout), rerr, sizeof(rerr));
-		if (setjmp(g_exit_jmp) == 0) { g_exit_armed = 1; ref_printisodate(&lt, nsec, res); }
-		else { re = 1; rs = g_exit_status; }
-		g_exit_armed = 0;
-		cap_end(rout, sizeof(rout), rerr, sizeof(rerr));
-		iso8601_select(sel);
-		cap_begin(pout, sizeof(pout), perr, sizeof(perr));
-		if (setjmp(g_exit_jmp) == 0) { g_exit_armed = 1; P::printisodate(&lt, nsec, res); }
-		else { pe = 1; ps = g_exit_status; }
-		g_exit_armed = 0;
-		cap_end(pout, sizeof(pout), perr, sizeof(perr));
-		if (re != pe || rs != ps) fail(st, "exit");
-		else if (std::strcmp(rout, pout) != 0) fail(st, "stdout");
-	};
-	for (int i = 0; i < ref_test_iso8601_fmts_count(); i++) run(i, 0L, 1L);
-	for (long i = 0; i < SWEEP / 10; i++)
-		run(rng.bits(0, ref_test_iso8601_fmts_count() - 1),
-		    (long)(rng.next() % 1000000000ull), (long)rng.bits(1, 9) * 100000000L);
-}
-
-void test_badformat() {
-	Stat &st = reg("badformat");
-	auto run = [&]() {
-		char rerr[1024], perr[1024], rout[64], pout[64];
-		int re = 0, pe = 0, rs = 0, ps = 0;
-		st.cases++;
-		cap_begin(rout, sizeof(rout), rerr, sizeof(rerr));
-		if (setjmp(g_exit_jmp) == 0) { g_exit_armed = 1; ref_badformat(); }
-		else { re = 1; rs = g_exit_status; }
-		g_exit_armed = 0;
-		cap_end(rout, sizeof(rout), rerr, sizeof(rerr));
-		cap_begin(pout, sizeof(pout), perr, sizeof(perr));
-		if (setjmp(g_exit_jmp) == 0) { g_exit_armed = 1; P::badformat(); }
-		else { pe = 1; ps = g_exit_status; }
-		g_exit_armed = 0;
-		cap_end(pout, sizeof(pout), perr, sizeof(perr));
-		if (re != pe || rs != ps) fail(st, "exit");
-		else if (std::strcmp(rerr, perr) != 0) fail(st, "stderr");
-	};
-	for (long i = 0; i < SWEEP / 40; i++) run();
-}
-
-void test_iso8601_usage() {
-	Stat &st = reg("iso8601_usage");
-	auto run = [&](const char *arg) {
-		char rerr[256], perr[256];
-		int re = 0, pe = 0, rs = 0, ps = 0;
-		st.cases++;
-		cap_begin(rerr, sizeof(rerr), perr, sizeof(perr));
-		oracle_err_arm();
-		if (setjmp(oracle_err_jmp) == 0) ref_iso8601_usage(arg);
-		else { re = 1; rs = oracle_err_status; }
-		oracle_err_disarm();
-		cap_end(rerr, sizeof(rerr), perr, sizeof(perr));
-		char perr2[256], rerr2[256];
-		cap_begin(perr2, sizeof(perr2), rerr2, sizeof(rerr2));
-		P::port_err_arm();
-		if (setjmp(P::port_err_jmp) == 0) P::iso8601_usage(arg);
-		else { pe = 1; ps = P::port_err_status; }
-		P::port_err_disarm();
-		cap_end(perr2, sizeof(perr2), rerr2, sizeof(rerr2));
-		if (re != pe || rs != ps) fail(st, "errx");
-		else if (std::strcmp(rerr, perr2) != 0) fail(st, "stderr");
-	};
-	run("bogus");
-	for (long i = 0; i < SWEEP / 40; i++) {
-		char a[32]; int n = rng.bits(0, 20);
-		for (int j = 0; j < n; j++) a[j] = (char)rng.byte();
-		a[n] = '\0'; run(a);
-	}
-}
-
-void test_multipleformats() {
-	Stat &st = reg("multipleformats");
-	auto run = [&]() {
-		char rerr[256], perr[256];
-		int re = 0, pe = 0, rs = 0, ps = 0;
-		st.cases++;
-		cap_begin(rerr, sizeof(rerr), perr, sizeof(perr));
-		oracle_err_arm();
-		if (setjmp(oracle_err_jmp) == 0) ref_multipleformats();
-		else { re = 1; rs = oracle_err_status; }
-		oracle_err_disarm();
-		cap_end(rerr, sizeof(rerr), perr, sizeof(perr));
-		char perr2[256], rerr2[256];
-		cap_begin(perr2, sizeof(perr2), rerr2, sizeof(rerr2));
-		P::port_err_arm();
-		if (setjmp(P::port_err_jmp) == 0) P::multipleformats();
-		else { pe = 1; ps = P::port_err_status; }
-		P::port_err_disarm();
-		cap_end(perr2, sizeof(perr2), rerr2, sizeof(rerr2));
-		if (re != pe || rs != ps) fail(st, "errx");
-	};
-	for (long i = 0; i < SWEEP / 40; i++) run();
-}
-
-void test_usage() {
-	Stat &st = reg("usage");
-	auto run = [&]() {
-		char rerr[1024], perr[1024], rout[64], pout[64];
-		int re = 0, pe = 0, rs = 0, ps = 0;
-		st.cases++;
-		cap_begin(rout, sizeof(rout), rerr, sizeof(rerr));
-		if (setjmp(g_exit_jmp) == 0) { g_exit_armed = 1; ref_usage(); }
-		else { re = 1; rs = g_exit_status; }
-		g_exit_armed = 0;
-		cap_end(rout, sizeof(rout), rerr, sizeof(rerr));
-		cap_begin(pout, sizeof(pout), perr, sizeof(perr));
-		if (setjmp(g_exit_jmp) == 0) { g_exit_armed = 1; P::usage(); }
-		else { pe = 1; ps = g_exit_status; }
-		g_exit_armed = 0;
-		cap_end(pout, sizeof(pout), perr, sizeof(perr));
-		if (re != pe || rs != ps) fail(st, "exit");
-		else if (std::strcmp(rerr, perr) != 0) fail(st, "stderr");
-	};
-	for (long i = 0; i < SWEEP / 40; i++) run();
-}
-
-
-
-int main() {
+int
+main(void)
+{
 	setenv("TZ", "UTC0", 1);
 	tzset();
-	(void)setlocale(LC_TIME, "C");
-	cap_restore_force();
-	iso8601_select(0);
-	test_strftime_ns();
-	test_setthetime();
-	test_printdate();
-	test_printisodate();
-	test_badformat();
-	test_iso8601_usage();
-	test_multipleformats();
-	test_usage();
-	long tc = 0, tf = 0;
-	std::printf("\n%-16s %10s %10s\n", "function", "cases", "failures");
-	std::printf("%-16s %10s %10s\n", "--------", "-----", "--------");
-	for (int i = 0; i < nstats; i++) {
-		std::printf("%-16s %10ld %10ld\n", stats[i].name, stats[i].cases, stats[i].fails);
-		tc += stats[i].cases; tf += stats[i].fails;
-	}
-	std::printf("%-16s %10ld %10ld\n", "TOTAL", tc, tf);
-	return tf == 0 ? 0 : 1;
+	setlocale(LC_ALL, "C");
+
+	init_tms();
+
+	phase_curated();
+	phase_bytes();
+	phase_lengths();
+	phase_tms();
+	phase_random(250000);
+
+	printf("\n");
+	printf("%-24s %12s %12s\n", "function", "cases", "failures");
+	printf("%-24s %12s %12s\n", "------------------------",
+	    "------------", "------------");
+	printf("%-24s %12lld %12lld\n", "strftime_ns", g_cases, g_fails);
+	printf("%-24s %12s %12s\n", "------------------------",
+	    "------------", "------------");
+	printf("%-24s %12lld %12lld\n", "TOTAL", g_cases, g_fails);
+	printf("\n%s\n", g_fails == 0 ? "PASS" : "FAIL");
+
+	return g_fails == 0 ? 0 : 1;
 }

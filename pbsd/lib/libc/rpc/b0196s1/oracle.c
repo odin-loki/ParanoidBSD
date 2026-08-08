@@ -1,125 +1,128 @@
+/*	$NetBSD: mt_misc.c,v 1.1 2000/06/02 23:11:11 fvdl Exp $	*/
+
 /*
- * Batch b0196s1 oracle: original HardenedBSD C sources concatenated.
- * Each function renamed with ref_ prefix; bodies otherwise unmodified.
- * Infrastructure (types, mocks, wrappers) added for standalone compilation.
+ * PBSD batch b0196s1 oracle.
+ *
+ * Source: hbsd/src/lib/libc/rpc/mt_misc.c
+ *
+ * The function bodies below are the originals, unmodified.  Only the
+ * externally visible function names carry a ref_ prefix (applied through a
+ * #define for the static helper so that no body text changes), and the
+ * declarations that libc's private "namespace.h" / "reentrant.h" /
+ * "mt_misc.h" and <rpc/rpc.h> would have supplied are spelled out here so the
+ * translation unit is self contained.
  */
 
-#include <pthread.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
+#define _GNU_SOURCE
+
+/* #include "namespace.h"	-- libc internal, not available here */
+/* #include "reentrant.h"	-- substituted below */
+/* #include <rpc/rpc.h>		-- substituted below */
+#include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
+/* #include "un-namespace.h"	-- libc internal, not available here */
+/* #include "mt_misc.h"		-- declarations only */
 
-enum clnt_stat { RPC_SUCCESS = 0 };
-struct rpc_err { int re_status; };
+#include <pthread.h>
+#include <stdint.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+
+/* ---- from <rpc/clnt_stat.h> ------------------------------------------- */
+enum clnt_stat {
+	RPC_SUCCESS = 0,
+	RPC_CANTENCODEARGS = 1,
+	RPC_CANTDECODERES = 2,
+	RPC_CANTSEND = 3,
+	RPC_CANTRECV = 4,
+	RPC_TIMEDOUT = 5,
+	RPC_INTR = 18,
+	RPC_UDERROR = 23,
+	RPC_VERSMISMATCH = 6,
+	RPC_AUTHERROR = 7,
+	RPC_PROGUNAVAIL = 8,
+	RPC_PROGVERSMISMATCH = 9,
+	RPC_PROCUNAVAIL = 10,
+	RPC_CANTDECODEARGS = 11,
+	RPC_SYSTEMERROR = 12,
+	RPC_UNKNOWNHOST = 13,
+	RPC_UNKNOWNPROTO = 17,
+	RPC_UNKNOWNADDR = 19,
+	RPC_NOBROADCAST = 21,
+	RPC_RPCBFAILURE = 14,
+	RPC_PROGNOTREGISTERED = 15,
+	RPC_N2AXLATEFAILURE = 22,
+	RPC_TLIERROR = 20,
+	RPC_FAILED = 16,
+	RPC_INPROGRESS = 24,
+	RPC_STALERACHANDLE = 25,
+	RPC_CANTCONNECT = 26,
+	RPC_XPRTFAILED = 27,
+	RPC_CANTCREATESTREAM = 28
+};
+
+/* ---- from <rpc/auth.h> ------------------------------------------------ */
+enum auth_stat {
+	AUTH_OK = 0,
+	AUTH_BADCRED = 1,
+	AUTH_REJECTEDCRED = 2,
+	AUTH_BADVERF = 3,
+	AUTH_REJECTEDVERF = 4,
+	AUTH_TOOWEAK = 5,
+	AUTH_INVALIDRESP = 6,
+	AUTH_FAILED = 7,
+	AUTH_KERB_GENERIC = 8,
+	AUTH_TIMEEXPIRE = 9,
+	AUTH_TKT_FILE = 10,
+	AUTH_DECODE = 11,
+	AUTH_NET_ADDR = 12,
+	RPCSEC_GSS_CREDPROBLEM = 13,
+	RPCSEC_GSS_CTXPROBLEM = 14,
+	RPCSEC_GSS_NODISPATCH = 15
+};
+
+/* ---- from <rpc/clnt.h> ------------------------------------------------ */
+typedef uint32_t rpcvers_t;
+
+struct rpc_err {
+	enum clnt_stat re_status;
+	union {
+		int RE_errno;
+		enum auth_stat RE_why;
+		struct {
+			rpcvers_t low;
+			rpcvers_t high;
+		} RE_vers;
+		struct {
+			int32_t s1;
+			int32_t s2;
+		} RE_lb;
+	} ru;
+};
 
 struct rpc_createerr {
 	enum clnt_stat cf_stat;
 	struct rpc_err cf_error;
 };
 
-typedef pthread_key_t thread_key_t;
-typedef pthread_once_t once_t;
-#ifndef PTHREAD_ONCE_INITIALIZER
-#define PTHREAD_ONCE_INITIALIZER PTHREAD_ONCE_INIT
-#endif
-#define ONCE_INITIALIZER PTHREAD_ONCE_INITIALIZER
+/* ---- from "reentrant.h" ----------------------------------------------- */
+typedef pthread_key_t	thread_key_t;
+typedef pthread_once_t	once_t;
 
-/* ---- mock control (harness-visible) ---- */
+#define	ONCE_INITIALIZER		PTHREAD_ONCE_INIT
+#define	thr_keycreate(k, d)		pthread_key_create(k, d)
+#define	thr_getspecific(k)		pthread_getspecific(k)
+#define	thr_setspecific(k, p)		pthread_setspecific(k, p)
+#define	thr_once(o, f)			pthread_once(o, f)
+#define	thr_main()			(syscall(SYS_gettid) == (long)getpid())
 
-int mock_thr_main_result = 0;
-int mock_thr_once_result = 0;
-int mock_thr_keycreate_result = 0;
-int mock_thr_setspecific_result = 0;
-void *mock_thr_getspecific_result = NULL;
-int mock_thr_getspecific_null = 0;
-int mock_thr_once_invoked = 0;
-int mock_malloc_fail = 0;
-int mock_thr_setspecific_fail_on = 0;
+/* ---- ref_ renaming of the static helper (leaves body text intact) ----- */
+#define	rce_key_init			ref_rce_key_init
 
-void
-mock_reset_b0196s1(void)
-{
-	mock_thr_main_result = 0;
-	mock_thr_once_result = 0;
-	mock_thr_keycreate_result = 0;
-	mock_thr_setspecific_result = 0;
-	mock_thr_getspecific_result = NULL;
-	mock_thr_getspecific_null = 0;
-	mock_thr_once_invoked = 0;
-	mock_malloc_fail = 0;
-	mock_thr_setspecific_fail_on = 0;
-}
+/* ======================================================================= */
 
-int
-thr_main(void)
-{
-	return mock_thr_main_result;
-}
-
-int
-thr_once(once_t *o, void (*init)(void))
-{
-	(void)o;
-	if (mock_thr_once_result != 0)
-		return mock_thr_once_result;
-	if (!mock_thr_once_invoked) {
-		mock_thr_once_invoked = 1;
-		if (init != NULL)
-			init();
-	}
-	return 0;
-}
-
-int
-thr_keycreate(thread_key_t *k, void (*d)(void *))
-{
-	(void)d;
-	if (mock_thr_keycreate_result != 0)
-		return mock_thr_keycreate_result;
-	*k = (thread_key_t)1;
-	return 0;
-}
-
-int
-thr_setspecific(thread_key_t k, void *p)
-{
-	(void)k;
-	if (p == NULL)
-		return -1;
-	if (mock_thr_setspecific_fail_on)
-		return -1;
-	if (mock_thr_setspecific_result != 0)
-		return mock_thr_setspecific_result;
-	mock_thr_getspecific_result = p;
-	mock_thr_getspecific_null = 0;
-	return 0;
-}
-
-void *
-thr_getspecific(thread_key_t k)
-{
-	(void)k;
-	if (mock_thr_getspecific_null)
-		return NULL;
-	return mock_thr_getspecific_result;
-}
-
-extern void *__real_malloc(size_t);
-
-void *
-__wrap_malloc(size_t n)
-{
-	if (mock_malloc_fail)
-		return NULL;
-	return __real_malloc(n);
-}
-
-/* ===== mt_misc.c ===== */
-
-/*	$NetBSD: mt_misc.c,v 1.1 2000/06/02 23:11:11 fvdl Exp $	*/
-
+/* Take these objects out of the application namespace. */
 #define	svc_lock		__svc_lock
 #define	svc_fd_lock		__svc_fd_lock
 #define	rpcbaddr_cache_lock	__rpcbaddr_cache_lock
@@ -186,13 +189,13 @@ pthread_mutex_t	xprtlist_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #undef	rpc_createerr
 
-struct rpc_createerr ref_rpc_createerr;
+struct rpc_createerr rpc_createerr;
 static thread_key_t rce_key;
 static once_t rce_once = ONCE_INITIALIZER;
 static int rce_key_error;
 
 static void
-ref_rce_key_init(void)
+rce_key_init(void)
 {
 
 	rce_key_error = thr_keycreate(&rce_key, free);
@@ -204,16 +207,16 @@ ref___rpc_createerr(void)
 	struct rpc_createerr *rce_addr = NULL;
 
 	if (thr_main())
-		return (&ref_rpc_createerr);
-	if (thr_once(&rce_once, ref_rce_key_init) != 0 || rce_key_error != 0)
-		return (&ref_rpc_createerr);
+		return (&rpc_createerr);
+	if (thr_once(&rce_once, rce_key_init) != 0 || rce_key_error != 0)
+		return (&rpc_createerr);
 	rce_addr = (struct rpc_createerr *)thr_getspecific(rce_key);
 	if (!rce_addr) {
 		rce_addr = (struct rpc_createerr *)
 			malloc(sizeof (struct rpc_createerr));
 		if (thr_setspecific(rce_key, (void *) rce_addr) != 0) {
 			free(rce_addr);
-			return (&ref_rpc_createerr);
+			return (&rpc_createerr);
 		}
 		memset(rce_addr, 0, sizeof (struct rpc_createerr));
 		return (rce_addr);
