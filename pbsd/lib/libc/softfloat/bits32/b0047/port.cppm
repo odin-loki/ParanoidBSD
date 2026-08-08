@@ -1,61 +1,149 @@
 /* $NetBSD: softfloat.c,v 1.1 2002/05/21 23:51:07 bjh21 Exp $ */
+
+/*
+ * This version hacked for use with gcc -msoft-float by bjh21.
+ * (Mostly a case of #ifdefing out things GCC doesn't need or provides
+ *  itself).
+ */
+
+/*
+ * Things you may want to define:
+ *
+ * SOFTFLOAT_FOR_GCC - build only those functions necessary for GCC (with
+ *   -msoft-float) to work.  Include "softfloat-for-gcc.h" to get them
+ *   properly renamed.
+ */
+
+/*
+ * This differs from the standard bits32/softfloat.c in that float64
+ * is defined to be a 64-bit integer rather than a structure.  The
+ * structure is float64s, with translation between the two going via
+ * float64u.
+ */
+
+/*
+===============================================================================
+
+This C source file is part of the SoftFloat IEC/IEEE Floating-Point
+Arithmetic Package, Release 2a.
+
+Written by John R. Hauser.  This work was made possible in part by the
+International Computer Science Institute, located at Suite 600, 1947 Center
+Street, Berkeley, California 94704.  Funding was partially provided by the
+National Science Foundation under grant MIP-9311980.  The original version
+of this code was written as part of a project to build a fixed-point vector
+processor in collaboration with the University of California at Berkeley,
+overseen by Profs. Nelson Morgan and John Wawrzynek.  More information
+is available through the Web page `http://HTTP.CS.Berkeley.EDU/~jhauser/
+arithmetic/SoftFloat.html'.
+
+THIS SOFTWARE IS DISTRIBUTED AS IS, FOR FREE.  Although reasonable effort
+has been made to avoid it, THIS SOFTWARE MAY CONTAIN FAULTS THAT WILL AT
+TIMES RESULT IN INCORRECT BEHAVIOR.  USE OF THIS SOFTWARE IS RESTRICTED TO
+PERSONS AND ORGANIZATIONS WHO CAN AND WILL TAKE FULL RESPONSIBILITY FOR ANY
+AND ALL LOSSES, COSTS, OR OTHER PROBLEMS ARISING FROM ITS USE.
+
+Derivative works are acceptable, even for commercial purposes, so long as
+(1) they include prominent notice that the work is derivative, and (2) they
+include prominent notice akin to these four paragraphs for those parts of
+this code that are retained.
+
+===============================================================================
+*/
+
+/*
+ * PBSD batch b0047: C++23 module port of lib/libc/softfloat/bits32/softfloat.c
+ * together with the bits32 "softfloat-macros" and "softfloat-specialize"
+ * fragments that it #includes, in include order.
+ *
+ * The port is behaviour-faithful: signedness, evaluation order, truncating
+ * assignments, shift counts, `goto' flow and the shifted-significand
+ * conventions are all preserved exactly, bugs included.  The only deviations
+ * are the ones C++ forces:
+ *
+ *   - the file-static / INLINE helpers become ordinary namespace-scope
+ *     functions so that they can be exported (linkage only, no behaviour);
+ *   - float64_rem passes `&sigMean0' (an sbits32*) to add64, which expects a
+ *     bits32*; C++ requires the cast to be spelt out, so a reinterpret_cast
+ *     to the corresponding unsigned type is used.  Access through the
+ *     corresponding unsigned type is permitted and the emitted stores are
+ *     identical.
+ *
+ * The concrete "milieu.h" / "!!!processor.h" / bits32 "softfloat.h" headers
+ * are generated per target and are not part of this batch, so their integer
+ * typedefs, LIT64, and enumerations are supplied here using the SoftFloat 2a
+ * `processors' conventions.
+ *
+ * float64_round_to_int is absent: see skipped.txt.
+ */
+
 module;
 
-#include <csignal>
-#include <cstring>
+#include <signal.h>
+#include <string.h>
 #include <unistd.h>
+#include <limits.h>
+
+#ifndef LONG_BIT
+#define LONG_BIT	(CHAR_BIT * (int)sizeof(long))
+#endif
 
 export module pbsd.lib.libc.softfloat.bits32.b0047;
 
 export namespace pbsd::lib_libc_softfloat_bits32::b0047 {
 
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
+/*
+-------------------------------------------------------------------------------
+Supplied in place of "milieu.h" / "!!!processor.h".
+-------------------------------------------------------------------------------
+*/
+typedef char flag;
+typedef unsigned char uint8;
+typedef signed char int8;
+typedef int uint16;
+typedef int int16;
+typedef unsigned int uint32;
+typedef signed int int32;
+typedef unsigned long long int uint64;
+typedef signed long long int int64;
 
-using flag = int;
-using uint8 = int;
-using int8 = int;
-using uint16 = int;
-using int16 = int;
-using uint32 = unsigned int;
-using int32 = signed int;
-using uint64 = unsigned long long int;
-using int64 = signed long long int;
-using bits8 = unsigned char;
-using sbits8 = signed char;
-using bits16 = unsigned short int;
-using sbits16 = signed short int;
-using bits32 = unsigned int;
-using sbits32 = signed int;
-using bits64 = unsigned long long int;
-using sbits64 = signed long long int;
+typedef unsigned char bits8;
+typedef signed char sbits8;
+typedef unsigned short int bits16;
+typedef signed short int sbits16;
+typedef unsigned int bits32;
+typedef signed int sbits32;
+typedef unsigned long long int bits64;
+typedef signed long long int sbits64;
 
-#define LIT64(a) a##ULL
-#define INLINE static inline
+#define LIT64( a ) a##LL
 
-enum { FALSE = 0, TRUE = 1 };
+enum {
+    FALSE = 0,
+    TRUE  = 1
+};
 
-using float32 = bits32;
-using float64 = bits64;
-
-#ifndef FLOAT64_DEMANGLE
-#define FLOAT64_DEMANGLE(a) (a)
-#endif
-#ifndef FLOAT64_MANGLE
-#define FLOAT64_MANGLE(a) (a)
-#endif
+/*
+-------------------------------------------------------------------------------
+Supplied in place of the bits32 "softfloat.h".  float64 is a 64-bit integer
+rather than a structure, as the file banner above describes.
+-------------------------------------------------------------------------------
+*/
+typedef bits32 float32;
+typedef bits64 float64;
 
 enum {
     float_tininess_after_rounding  = 0,
     float_tininess_before_rounding = 1
 };
+
 enum {
     float_round_nearest_even = 0,
     float_round_to_zero      = 1,
     float_round_down         = 2,
     float_round_up           = 3
 };
+
 enum {
     float_flag_inexact   =  1,
     float_flag_underflow =  2,
@@ -64,19 +152,35 @@ enum {
     float_flag_invalid   = 16
 };
 
-#define float32_default_nan 0xFFFFFFFFu
-#define float64_default_nan LIT64(0xFFFFFFFFFFFFFFFF)
+void float_raise( int );
 
-int __port_float_rounding_mode = float_round_nearest_even;
-int __port_float_exception_flags = 0;
-int8 __port_float_detect_tininess = float_tininess_after_rounding;
-int __port_float_exception_mask = 0;
+/*
+ * Conversions between floats as stored in memory and floats as
+ * SoftFloat uses them
+ */
+#ifndef FLOAT64_DEMANGLE
+#define FLOAT64_DEMANGLE(a)	(a)
+#endif
+#ifndef FLOAT64_MANGLE
+#define FLOAT64_MANGLE(a)	(a)
+#endif
 
-#define float_rounding_mode __port_float_rounding_mode
-#define float_exception_flags __port_float_exception_flags
-#define float_detect_tininess __port_float_detect_tininess
-#define float_exception_mask __port_float_exception_mask
+/*
+-------------------------------------------------------------------------------
+Floating-point rounding mode and exception flags.
+-------------------------------------------------------------------------------
+*/
+int float_rounding_mode = float_round_nearest_even;
+int float_exception_flags = 0;
 
+/*
+-------------------------------------------------------------------------------
+Primitive arithmetic functions, including multi-word arithmetic, and
+division and square root approximations.  (Can be specialized to target if
+desired.)
+-------------------------------------------------------------------------------
+*/
+/* #include "softfloat-macros" */
 
 /*
 ===============================================================================
@@ -118,7 +222,7 @@ result will be either 0 or 1, depending on whether `a' is zero or nonzero.
 The result is stored in the location pointed to by `zPtr'.
 -------------------------------------------------------------------------------
 */
-INLINE void shift32RightJamming( bits32 a, int16 count, bits32 *zPtr )
+void shift32RightJamming( bits32 a, int16 count, bits32 *zPtr )
 {
     bits32 z;
 
@@ -144,7 +248,7 @@ than 64, the result will be 0.  The result is broken into two 32-bit pieces
 which are stored at the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  shift64Right(
      bits32 a0, bits32 a1, int16 count, bits32 *z0Ptr, bits32 *z1Ptr )
 {
@@ -180,7 +284,7 @@ nonzero.  The result is broken into two 32-bit pieces which are stored at
 the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  shift64RightJamming(
      bits32 a0, bits32 a1, int16 count, bits32 *z0Ptr, bits32 *z1Ptr )
 {
@@ -232,7 +336,7 @@ corrupted as described above, and is returned at the location pointed to by
 `z2Ptr'.)
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  shift64ExtraRightJamming(
      bits32 a0,
      bits32 a1,
@@ -291,7 +395,7 @@ of `count' must be less than 32.  The result is broken into two 32-bit
 pieces which are stored at the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  shortShift64Left(
      bits32 a0, bits32 a1, int16 count, bits32 *z0Ptr, bits32 *z1Ptr )
 {
@@ -311,7 +415,7 @@ The value of `count' must be less than 32.  The result is broken into three
 `z1Ptr', and `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  shortShift96Left(
      bits32 a0,
      bits32 a1,
@@ -347,7 +451,7 @@ any carry out is lost.  The result is broken into two 32-bit pieces which
 are stored at the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  add64(
      bits32 a0, bits32 a1, bits32 b0, bits32 b1, bits32 *z0Ptr, bits32 *z1Ptr )
 {
@@ -368,7 +472,7 @@ modulo 2^96, so any carry out is lost.  The result is broken into three
 `z1Ptr', and `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  add96(
      bits32 a0,
      bits32 a1,
@@ -407,7 +511,7 @@ Subtracts the 64-bit value formed by concatenating `b0' and `b1' from the
 `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  sub64(
      bits32 a0, bits32 a1, bits32 b0, bits32 b1, bits32 *z0Ptr, bits32 *z1Ptr )
 {
@@ -426,7 +530,7 @@ into three 32-bit pieces which are stored at the locations pointed to by
 `z0Ptr', `z1Ptr', and `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  sub96(
      bits32 a0,
      bits32 a1,
@@ -463,7 +567,7 @@ into two 32-bit pieces which are stored at the locations pointed to by
 `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void mul32To64( bits32 a, bits32 b, bits32 *z0Ptr, bits32 *z1Ptr )
+void mul32To64( bits32 a, bits32 b, bits32 *z0Ptr, bits32 *z1Ptr )
 {
     bits16 aHigh, aLow, bHigh, bLow;
     bits32 z0, zMiddleA, zMiddleB, z1;
@@ -494,7 +598,7 @@ which are stored at the locations pointed to by `z0Ptr', `z1Ptr', and
 `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  mul64By32To96(
      bits32 a0,
      bits32 a1,
@@ -523,7 +627,7 @@ product.  The product is broken into four 32-bit pieces which are stored at
 the locations pointed to by `z0Ptr', `z1Ptr', `z2Ptr', and `z3Ptr'.
 -------------------------------------------------------------------------------
 */
-INLINE void
+void
  mul64To128(
      bits32 a0,
      bits32 a1,
@@ -563,7 +667,7 @@ If the exact quotient q is larger than 32 bits, the maximum positive 32-bit
 unsigned integer is returned.
 -------------------------------------------------------------------------------
 */
-static bits32 estimateDiv64To32( bits32 a0, bits32 a1, bits32 b )
+bits32 estimateDiv64To32( bits32 a0, bits32 a1, bits32 b )
 {
     bits32 b0, b1;
     bits32 rem0, rem1, term0, term1;
@@ -597,7 +701,7 @@ case, the approximation returned lies strictly within +/-2 of the exact
 value.
 -------------------------------------------------------------------------------
 */
-static bits32 estimateSqrt32( int16 aExp, bits32 a )
+bits32 estimateSqrt32( int16 aExp, bits32 a )
 {
     static const bits16 sqrtOddAdjustments[] = {
         0x0004, 0x0022, 0x005D, 0x00B1, 0x011D, 0x019F, 0x0236, 0x02E0,
@@ -633,7 +737,7 @@ Returns the number of leading 0 bits before the most-significant 1 bit of
 `a'.  If `a' is zero, 32 is returned.
 -------------------------------------------------------------------------------
 */
-static int8 countLeadingZeros32( bits32 a )
+int8 countLeadingZeros32( bits32 a )
 {
     static const int8 countLeadingZerosHigh[] = {
         8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -676,7 +780,7 @@ equal to the 64-bit value formed by concatenating `b0' and `b1'.  Otherwise,
 returns 0.
 -------------------------------------------------------------------------------
 */
-INLINE flag eq64( bits32 a0, bits32 a1, bits32 b0, bits32 b1 )
+flag eq64( bits32 a0, bits32 a1, bits32 b0, bits32 b1 )
 {
 
     return ( a0 == b0 ) && ( a1 == b1 );
@@ -690,7 +794,7 @@ than or equal to the 64-bit value formed by concatenating `b0' and `b1'.
 Otherwise, returns 0.
 -------------------------------------------------------------------------------
 */
-INLINE flag le64( bits32 a0, bits32 a1, bits32 b0, bits32 b1 )
+flag le64( bits32 a0, bits32 a1, bits32 b0, bits32 b1 )
 {
 
     return ( a0 < b0 ) || ( ( a0 == b0 ) && ( a1 <= b1 ) );
@@ -704,7 +808,7 @@ than the 64-bit value formed by concatenating `b0' and `b1'.  Otherwise,
 returns 0.
 -------------------------------------------------------------------------------
 */
-INLINE flag lt64( bits32 a0, bits32 a1, bits32 b0, bits32 b1 )
+flag lt64( bits32 a0, bits32 a1, bits32 b0, bits32 b1 )
 {
 
     return ( a0 < b0 ) || ( ( a0 == b0 ) && ( a1 < b1 ) );
@@ -718,13 +822,70 @@ equal to the 64-bit value formed by concatenating `b0' and `b1'.  Otherwise,
 returns 0.
 -------------------------------------------------------------------------------
 */
-INLINE flag ne64( bits32 a0, bits32 a1, bits32 b0, bits32 b1 )
+flag ne64( bits32 a0, bits32 a1, bits32 b0, bits32 b1 )
 {
 
     return ( a0 != b0 ) || ( a1 != b1 );
 
 }
 
+/*
+-------------------------------------------------------------------------------
+Functions and definitions to determine:  (1) whether tininess for underflow
+is detected before or after rounding by default, (2) what (if anything)
+happens when exceptions are raised, (3) how signaling NaNs are distinguished
+from quiet NaNs, (4) the default generated quiet NaNs, and (4) how NaNs
+are propagated from function inputs to output.  These details are target-
+specific.
+-------------------------------------------------------------------------------
+*/
+/* #include "softfloat-specialize" */
+
+/*	$NetBSD: softfloat-specialize,v 1.6 2011/03/06 10:27:37 martin Exp $	*/
+
+/* This is a derivative work. */
+
+/*
+===============================================================================
+
+This C source fragment is part of the SoftFloat IEC/IEEE Floating-point
+Arithmetic Package, Release 2a.
+
+Written by John R. Hauser.  This work was made possible in part by the
+International Computer Science Institute, located at Suite 600, 1947 Center
+Street, Berkeley, California 94704.  Funding was partially provided by the
+National Science Foundation under grant MIP-9311980.  The original version
+of this code was written as part of a project to build a fixed-point vector
+processor in collaboration with the University of California at Berkeley,
+overseen by Profs. Nelson Morgan and John Wawrzynek.  More information
+is available through the Web page `http://HTTP.CS.Berkeley.EDU/~jhauser/
+arithmetic/SoftFloat.html'.
+
+THIS SOFTWARE IS DISTRIBUTED AS IS, FOR FREE.  Although reasonable effort
+has been made to avoid it, THIS SOFTWARE MAY CONTAIN FAULTS THAT WILL AT
+TIMES RESULT IN INCORRECT BEHAVIOR.  USE OF THIS SOFTWARE IS RESTRICTED TO
+PERSONS AND ORGANIZATIONS WHO CAN AND WILL TAKE FULL RESPONSIBILITY FOR ANY
+AND ALL LOSSES, COSTS, OR OTHER PROBLEMS ARISING FROM ITS USE.
+
+Derivative works are acceptable, even for commercial purposes, so long as
+(1) they include prominent notice that the work is derivative, and (2) they
+include prominent notice akin to these four paragraphs for those parts of
+this code that are retained.
+
+===============================================================================
+*/
+
+/*
+-------------------------------------------------------------------------------
+Underflow tininess-detection mode, statically initialized to default value.
+(The declaration in `softfloat.h' must match the `int8' type here.)
+-------------------------------------------------------------------------------
+*/
+#ifdef __sparc64__
+int8 float_detect_tininess = float_tininess_before_rounding;
+#else
+int8 float_detect_tininess = float_tininess_after_rounding;
+#endif
 
 /*
 -------------------------------------------------------------------------------
@@ -734,33 +895,14 @@ substitute a result value.  If traps are not implemented, this routine
 should be simply `float_exception_flags |= flags;'.
 -------------------------------------------------------------------------------
 */
-
+int float_exception_mask = 0;
 void float_raise( int flags )
 {
 
     float_exception_flags |= flags;
 
     if ( flags & float_exception_mask ) {
-#if 0
-	siginfo_t info;
-	memset(&info, 0, sizeof info);
-	info.si_signo = SIGFPE;
-	info.si_pid = getpid();
-	info.si_uid = geteuid();
-	if (flags & float_flag_underflow)
-	    info.si_code = FPE_FLTUND;
-	else if (flags & float_flag_overflow)
-	    info.si_code = FPE_FLTOVF;
-	else if (flags & float_flag_divbyzero)
-	    info.si_code = FPE_FLTDIV;
-	else if (flags & float_flag_invalid)
-	    info.si_code = FPE_FLTINV;
-	else if (flags & float_flag_inexact)
-	    info.si_code = FPE_FLTRES;
-	sigqueueinfo(getpid(), &info);
-#else
-	raise( SIGFPE );
-#endif
+	::raise( SIGFPE );
     }
 }
 
@@ -779,7 +921,7 @@ typedef struct {
 The pattern for a default generated single-precision NaN.
 -------------------------------------------------------------------------------
 */
-
+#define float32_default_nan 0xFFFFFFFF
 
 /*
 -------------------------------------------------------------------------------
@@ -800,10 +942,6 @@ Returns 1 if the single-precision floating-point value `a' is a signaling
 NaN; otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-#if defined(SOFTFLOAT_FOR_GCC) && !defined(SOFTFLOATSPARC64_FOR_GCC) && \
-    !defined(SOFTFLOAT_M68K_FOR_GCC)
-static
-#endif
 flag float32_is_signaling_nan( float32 a )
 {
 
@@ -818,7 +956,7 @@ Returns the result of converting the single-precision floating-point NaN
 exception is raised.
 -------------------------------------------------------------------------------
 */
-static commonNaNT float32ToCommonNaN( float32 a )
+commonNaNT float32ToCommonNaN( float32 a )
 {
     commonNaNT z;
 
@@ -836,7 +974,7 @@ Returns the result of converting the canonical NaN `a' to the single-
 precision floating-point format.
 -------------------------------------------------------------------------------
 */
-static float32 commonNaNToFloat32( commonNaNT a )
+float32 commonNaNToFloat32( commonNaNT a )
 {
 
     return ( ( (bits32) a.sign )<<31 ) | 0x7FC00000 | ( a.high>>41 );
@@ -850,7 +988,7 @@ is a NaN, and returns the appropriate NaN result.  If either `a' or `b' is a
 signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-static float32 propagateFloat32NaN( float32 a, float32 b )
+float32 propagateFloat32NaN( float32 a, float32 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -875,7 +1013,7 @@ static float32 propagateFloat32NaN( float32 a, float32 b )
 The pattern for a default generated double-precision NaN.
 -------------------------------------------------------------------------------
 */
-
+#define float64_default_nan LIT64( 0xFFFFFFFFFFFFFFFF )
 
 /*
 -------------------------------------------------------------------------------
@@ -897,10 +1035,6 @@ Returns 1 if the double-precision floating-point value `a' is a signaling
 NaN; otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-#if defined(SOFTFLOAT_FOR_GCC) && !defined(SOFTFLOATSPARC64_FOR_GCC) && \
-    !defined(SOFTFLOATM68K_FOR_GCC)
-static
-#endif
 flag float64_is_signaling_nan( float64 a )
 {
 
@@ -917,7 +1051,7 @@ Returns the result of converting the double-precision floating-point NaN
 exception is raised.
 -------------------------------------------------------------------------------
 */
-static commonNaNT float64ToCommonNaN( float64 a )
+commonNaNT float64ToCommonNaN( float64 a )
 {
     commonNaNT z;
 
@@ -935,7 +1069,7 @@ Returns the result of converting the canonical NaN `a' to the double-
 precision floating-point format.
 -------------------------------------------------------------------------------
 */
-static float64 commonNaNToFloat64( commonNaNT a )
+float64 commonNaNToFloat64( commonNaNT a )
 {
 
     return FLOAT64_MANGLE(
@@ -952,7 +1086,7 @@ is a NaN, and returns the appropriate NaN result.  If either `a' or `b' is a
 signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-static float64 propagateFloat64NaN( float64 a, float64 b )
+float64 propagateFloat64NaN( float64 a, float64 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -972,32 +1106,12 @@ static float64 propagateFloat64NaN( float64 a, float64 b )
 
 }
 
-
-/*
--------------------------------------------------------------------------------
-Primitive arithmetic functions, including multi-word arithmetic, and
-division and square root approximations.  (Can be specialized to target if
-desired.)
--------------------------------------------------------------------------------
-*/
-
-/*
--------------------------------------------------------------------------------
-Functions and definitions to determine:  (1) whether tininess for underflow
-is detected before or after rounding by default, (2) what (if anything)
-happens when exceptions are raised, (3) how signaling NaNs are distinguished
-from quiet NaNs, (4) the default generated quiet NaNs, and (4) how NaNs
-are propagated from function inputs to output.  These details are target-
-specific.
--------------------------------------------------------------------------------
-*/
-
 /*
 -------------------------------------------------------------------------------
 Returns the fraction bits of the single-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-INLINE bits32 extractFloat32Frac( float32 a )
+bits32 extractFloat32Frac( float32 a )
 {
 
     return a & 0x007FFFFF;
@@ -1009,7 +1123,7 @@ INLINE bits32 extractFloat32Frac( float32 a )
 Returns the exponent bits of the single-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-INLINE int16 extractFloat32Exp( float32 a )
+int16 extractFloat32Exp( float32 a )
 {
 
     return ( a>>23 ) & 0xFF;
@@ -1021,7 +1135,7 @@ INLINE int16 extractFloat32Exp( float32 a )
 Returns the sign bit of the single-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-INLINE flag extractFloat32Sign( float32 a )
+flag extractFloat32Sign( float32 a )
 {
 
     return a>>31;
@@ -1036,7 +1150,7 @@ significand are stored at the locations pointed to by `zExpPtr' and
 `zSigPtr', respectively.
 -------------------------------------------------------------------------------
 */
-static void
+void
  normalizeFloat32Subnormal( bits32 aSig, int16 *zExpPtr, bits32 *zSigPtr )
 {
     int8 shiftCount;
@@ -1059,7 +1173,7 @@ than the desired result exponent whenever `zSig' is a complete, normalized
 significand.
 -------------------------------------------------------------------------------
 */
-INLINE float32 packFloat32( flag zSign, int16 zExp, bits32 zSig )
+float32 packFloat32( flag zSign, int16 zExp, bits32 zSig )
 {
 
     return ( ( (bits32) zSign )<<31 ) + ( ( (bits32) zExp )<<23 ) + zSig;
@@ -1089,7 +1203,7 @@ The handling of underflow and overflow follows the IEC/IEEE Standard for
 Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float32 roundAndPackFloat32( flag zSign, int16 zExp, bits32 zSig )
+float32 roundAndPackFloat32( flag zSign, int16 zExp, bits32 zSig )
 {
     int8 roundingMode;
     flag roundNearestEven;
@@ -1151,7 +1265,7 @@ Bit 31 of `zSig' must be zero, and `zExp' must be 1 less than the ``true''
 floating-point exponent.
 -------------------------------------------------------------------------------
 */
-static float32
+float32
  normalizeRoundAndPackFloat32( flag zSign, int16 zExp, bits32 zSig )
 {
     int8 shiftCount;
@@ -1167,7 +1281,7 @@ Returns the least-significant 32 fraction bits of the double-precision
 floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-INLINE bits32 extractFloat64Frac1( float64 a )
+bits32 extractFloat64Frac1( float64 a )
 {
 
     return FLOAT64_DEMANGLE(a) & LIT64( 0x00000000FFFFFFFF );
@@ -1180,7 +1294,7 @@ Returns the most-significant 20 fraction bits of the double-precision
 floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-INLINE bits32 extractFloat64Frac0( float64 a )
+bits32 extractFloat64Frac0( float64 a )
 {
 
     return ( FLOAT64_DEMANGLE(a)>>32 ) & 0x000FFFFF;
@@ -1192,7 +1306,7 @@ INLINE bits32 extractFloat64Frac0( float64 a )
 Returns the exponent bits of the double-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-INLINE int16 extractFloat64Exp( float64 a )
+int16 extractFloat64Exp( float64 a )
 {
 
     return ( FLOAT64_DEMANGLE(a)>>52 ) & 0x7FF;
@@ -1204,7 +1318,7 @@ INLINE int16 extractFloat64Exp( float64 a )
 Returns the sign bit of the double-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-INLINE flag extractFloat64Sign( float64 a )
+flag extractFloat64Sign( float64 a )
 {
 
     return FLOAT64_DEMANGLE(a)>>63;
@@ -1222,7 +1336,7 @@ stored at the location pointed to by `zSig0Ptr', and the least significant
 by `zSig1Ptr'.
 -------------------------------------------------------------------------------
 */
-static void
+void
  normalizeFloat64Subnormal(
      bits32 aSig0,
      bits32 aSig1,
@@ -1266,7 +1380,7 @@ the `zExp' input should be 1 less than the desired result exponent whenever
 `zSig0' and `zSig1' concatenated form a complete, normalized significand.
 -------------------------------------------------------------------------------
 */
-INLINE float64
+float64
  packFloat64( flag zSign, int16 zExp, bits32 zSig0, bits32 zSig1 )
 {
 
@@ -1299,7 +1413,7 @@ than the ``true'' floating-point exponent.  The handling of underflow and
 overflow follows the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float64
+float64
  roundAndPackFloat64(
      flag zSign, int16 zExp, bits32 zSig0, bits32 zSig1, bits32 zSig2 )
 {
@@ -1384,7 +1498,7 @@ normalized.  In all cases, `zExp' must be 1 less than the ``true'' floating-
 point exponent.
 -------------------------------------------------------------------------------
 */
-static float64
+float64
  normalizeRoundAndPackFloat64(
      flag zSign, int16 zExp, bits32 zSig0, bits32 zSig1 )
 {
@@ -1457,6 +1571,7 @@ float64 int32_to_float64( int32 a )
 
 }
 
+#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Returns the result of converting the single-precision floating-point value
@@ -1526,6 +1641,7 @@ int32 float32_to_int32( float32 a )
     return z;
 
 }
+#endif
 
 /*
 -------------------------------------------------------------------------------
@@ -1601,6 +1717,7 @@ float64 float32_to_float64( float32 a )
 
 }
 
+#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Rounds the single-precision floating-point value `a' to an integer,
@@ -1662,6 +1779,7 @@ float32 float32_round_to_int( float32 a )
     return z;
 
 }
+#endif
 
 /*
 -------------------------------------------------------------------------------
@@ -1672,7 +1790,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float32 addFloat32Sigs( float32 a, float32 b, flag zSign )
+float32 addFloat32Sigs( float32 a, float32 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits32 aSig, bSig, zSig;
@@ -1744,7 +1862,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float32 subFloat32Sigs( float32 a, float32 b, flag zSign )
+float32 subFloat32Sigs( float32 a, float32 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits32 aSig, bSig, zSig;
@@ -1983,6 +2101,7 @@ float32 float32_div( float32 a, float32 b )
 
 }
 
+#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Returns the remainder of the single-precision floating-point value `a'
@@ -2067,7 +2186,9 @@ float32 float32_rem( float32 a, float32 b )
     return normalizeRoundAndPackFloat32( aSign ^ zSign, bExp, aSig );
 
 }
+#endif
 
+#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Returns the square root of the single-precision floating-point value `a'.
@@ -2125,6 +2246,7 @@ float32 float32_sqrt( float32 a )
     return roundAndPackFloat32( 0, zExp, zSig );
 
 }
+#endif
 
 /*
 -------------------------------------------------------------------------------
@@ -2436,15 +2558,6 @@ float32 float64_to_float32( float64 a )
 
 /*
 -------------------------------------------------------------------------------
-Rounds the double-precision floating-point value `a' to an integer,
-and returns the result as a double-precision floating-point value.  The
-operation is performed according to the IEC/IEEE Standard for Binary
-Floating-Point Arithmetic.
--------------------------------------------------------------------------------
-*/
-
-/*
--------------------------------------------------------------------------------
 Returns the result of adding the absolute values of the double-precision
 floating-point values `a' and `b'.  If `zSign' is 1, the sum is negated
 before being returned.  `zSign' is ignored if the result is a NaN.
@@ -2452,7 +2565,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float64 addFloat64Sigs( float64 a, float64 b, flag zSign )
+float64 addFloat64Sigs( float64 a, float64 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits32 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1, zSig2;
@@ -2530,7 +2643,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float64 subFloat64Sigs( float64 a, float64 b, flag zSign )
+float64 subFloat64Sigs( float64 a, float64 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits32 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1;
@@ -2789,6 +2902,7 @@ float64 float64_div( float64 a, float64 b )
 
 }
 
+#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Returns the remainder of the double-precision floating-point value `a'
@@ -2879,7 +2993,8 @@ float64 float64_rem( float64 a, float64 b )
         sub64( aSig0, aSig1, bSig0, bSig1, &aSig0, &aSig1 );
     } while ( 0 <= (sbits32) aSig0 );
     add64(
-        aSig0, aSig1, alternateASig0, alternateASig1, (bits32 *)&sigMean0, &sigMean1 );
+        aSig0, aSig1, alternateASig0, alternateASig1,
+        reinterpret_cast<bits32 *>( &sigMean0 ), &sigMean1 );
     if (    ( sigMean0 < 0 )
          || ( ( ( sigMean0 | sigMean1 ) == 0 ) && ( q & 1 ) ) ) {
         aSig0 = alternateASig0;
@@ -2891,7 +3006,9 @@ float64 float64_rem( float64 a, float64 b )
         normalizeRoundAndPackFloat64( aSign ^ zSign, bExp - 4, aSig0, aSig1 );
 
 }
+#endif
 
+#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Returns the square root of the double-precision floating-point value `a'.
@@ -2960,6 +3077,7 @@ float64 float64_sqrt( float64 a )
     return roundAndPackFloat64( 0, zExp, zSig0, zSig1, zSig2 );
 
 }
+#endif
 
 /*
 -------------------------------------------------------------------------------
@@ -3046,6 +3164,7 @@ flag float64_lt( float64 a, float64 b )
 
 }
 
+#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Returns 1 if the double-precision floating-point value `a' is equal to
@@ -3126,4 +3245,7 @@ flag float64_lt_quiet( float64 a, float64 b )
     return ( a != b ) && ( aSign ^ ( a < b ) );
 
 }
-} // namespace
+
+#endif
+
+} /* namespace pbsd::lib_libc_softfloat_bits32::b0047 */

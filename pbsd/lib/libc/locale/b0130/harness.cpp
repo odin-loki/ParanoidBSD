@@ -472,8 +472,8 @@ compare_msg_load(const char *name, int expect_null, int hook_ret)
 static bool
 compare_get_msg_locale(int using_custom)
 {
-	ref_xlocale loc = __xlocale_global_locale;
-	P::lc_messages_T *pm;
+	ref_xlocale loc = ref_test_locale;
+	const void *pm;
 	ref_lc_messages_T *rm;
 	int f = F_GET_MSG_LOCALE;
 
@@ -483,17 +483,17 @@ compare_get_msg_locale(int using_custom)
 		loc.using_messages_locale = 1;
 		loc.components[5] = blob;
 		std::memset(blob, 0, sizeof(blob));
-		auto *slot = reinterpret_cast<P::xlocale_messages *>(blob);
-		slot->locale.yesexpr = "Y";
-		slot->locale.noexpr = "N";
-		slot->locale.yesstr = "aye";
-		slot->locale.nostr = "nay";
+		auto *slot = reinterpret_cast<ref_lc_messages_T *>(blob);
+		slot->yesexpr = "Y";
+		slot->noexpr = "N";
+		slot->yesstr = "aye";
+		slot->nostr = "nay";
 	} else {
 		loc.using_messages_locale = 0;
 	}
 	pm = P::__get_current_messages_locale(reinterpret_cast<P::locale_t>(&loc));
 	rm = ref___get_current_messages_locale(&loc);
-	if (!msgs_eq(pm, rm)) {
+	if (!msgs_eq_ptr(pm, rm)) {
 		report(f, "fields");
 		return (false);
 	}

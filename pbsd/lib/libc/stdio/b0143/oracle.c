@@ -28,7 +28,7 @@
 #define EOF (-1)
 #endif
 
-typedef long fpos_t;
+#undef FILE
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
@@ -81,7 +81,7 @@ struct __sFILE {
 	mbstate_t _mbstate;
 	int _flags2;
 };
-#undef FILE
+typedef long fpos_t;
 typedef struct __sFILE FILE;
 
 #define	__SLBF	0x0001
