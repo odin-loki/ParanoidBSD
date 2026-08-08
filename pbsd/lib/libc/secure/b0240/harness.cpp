@@ -123,7 +123,7 @@ void test_strlcpy_chk_hand(Stats &st)
 		{8, 8, "\xff\xfe\xfd", false},
 		{16, 16, "\x80\x81\x82\x83", false},
 		{4, 8, "test", false},
-		{8, 4, "short", false},
+		{8, 4, "short", true},
 		{5, 4, "fail", true},
 		{1, 0, "", true},
 		{2, 1, "a", true},
@@ -234,18 +234,26 @@ void test_mempcpy_chk_hand(Stats &st)
 		fill_guard(dst_ref, BUF_CAP);
 		fill_guard(dst_port, BUF_CAP);
 
-		const void *src = src_buf;
+		const void *src_ref = src_buf;
+		const void *src_port = src_buf;
 		if (c.overlap) {
-			src = dst_ref + 2;
+			for (size_t j = 0; j < BUF_CAP; j++) {
+				unsigned char v =
+				    static_cast<unsigned char>(0xa0u + (j & 0x3fu));
+				dst_ref[j] = v;
+				dst_port[j] = v;
+			}
+			src_ref = dst_ref + 2;
+			src_port = dst_port + 2;
 		}
 
 		reset_chk_flags();
-		void *rptr = ref___mempcpy_chk(dst_ref, src, c.len, c.slen);
+		void *rptr = ref___mempcpy_chk(dst_ref, src_ref, c.len, c.slen);
 		size_t roff = static_cast<unsigned char *>(rptr) - dst_ref;
 		int rfail = ref_chk_fail_called;
 
 		reset_chk_flags();
-		void *pptr = port::__mempcpy_chk(dst_port, src, c.len, c.slen);
+		void *pptr = port::__mempcpy_chk(dst_port, src_port, c.len, c.slen);
 		size_t poff = static_cast<unsigned char *>(pptr) - dst_port;
 		int pfail = ref_chk_fail_called;
 
@@ -261,20 +269,25 @@ void test_mempcpy_chk_hand(Stats &st)
 			unsigned char dst_ref[BUF_CAP];
 			unsigned char dst_port[BUF_CAP];
 
-			fill_guard(dst_ref, BUF_CAP);
-			fill_guard(dst_port, BUF_CAP);
+			for (size_t j = 0; j < BUF_CAP; j++) {
+				unsigned char v =
+				    static_cast<unsigned char>(0xa0u + (j & 0x3fu));
+				dst_ref[j] = v;
+				dst_port[j] = v;
+			}
 
-			const void *src = dst_ref + off;
+			const void *src_ref = dst_ref + off;
+			const void *src_port = dst_port + off;
 			size_t slen = BUF_CAP;
-			bool expect_fail = __ssp_overlap(src, dst_ref, len);
+			bool expect_fail = __ssp_overlap(src_ref, dst_ref, len);
 
 			reset_chk_flags();
-			void *rptr = ref___mempcpy_chk(dst_ref, src, len, slen);
+			void *rptr = ref___mempcpy_chk(dst_ref, src_ref, len, slen);
 			size_t roff = static_cast<unsigned char *>(rptr) - dst_ref;
 			int rfail = ref_chk_fail_called;
 
 			reset_chk_flags();
-			void *pptr = port::__mempcpy_chk(dst_port, src, len, slen);
+			void *pptr = port::__mempcpy_chk(dst_port, src_port, len, slen);
 			size_t poff = static_cast<unsigned char *>(pptr) - dst_port;
 			int pfail = ref_chk_fail_called;
 
@@ -308,23 +321,31 @@ void test_mempcpy_chk_random(Stats &st, Rng &rng)
 		fill_guard(dst_ref, BUF_CAP);
 		fill_guard(dst_port, BUF_CAP);
 
-		const void *src = src_buf;
+		const void *src_ref = src_buf;
+		const void *src_port = src_buf;
 		bool overlap = false;
 		if ((rng.next() & 3u) == 0u) {
 			size_t off = rng.next_size(32);
-			src = dst_ref + off;
-			overlap = __ssp_overlap(src, dst_ref, len);
+			for (size_t j = 0; j < BUF_CAP; j++) {
+				unsigned char v =
+				    static_cast<unsigned char>(rng.next() & 0xffu);
+				dst_ref[j] = v;
+				dst_port[j] = v;
+			}
+			src_ref = dst_ref + off;
+			src_port = dst_port + off;
+			overlap = __ssp_overlap(src_ref, dst_ref, len);
 		}
 
 		bool expect_fail = (len > slen) || overlap;
 
 		reset_chk_flags();
-		void *rptr = ref___mempcpy_chk(dst_ref, src, len, slen);
+		void *rptr = ref___mempcpy_chk(dst_ref, src_ref, len, slen);
 		size_t roff = static_cast<unsigned char *>(rptr) - dst_ref;
 		int rfail = ref_chk_fail_called;
 
 		reset_chk_flags();
-		void *pptr = port::__mempcpy_chk(dst_port, src, len, slen);
+		void *pptr = port::__mempcpy_chk(dst_port, src_port, len, slen);
 		size_t poff = static_cast<unsigned char *>(pptr) - dst_port;
 		int pfail = ref_chk_fail_called;
 

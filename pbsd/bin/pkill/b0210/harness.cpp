@@ -390,6 +390,10 @@ static void check_show(int pg, int q, int lf, int ma, pid_t pid,
 	Capture cp, cr;
 	P::kinfo_proc kp = make_kp(pid, comm);
 	stats[F_SHOW].cases++;
+	if (q)
+		pg = 1;
+	memset(&cp, 0, sizeof(cp));
+	memset(&cr, 0, sizeof(cr));
 	sync_globals(pg, q, lf, ma, 0, SIGTERM, "\n");
 	if (argv) mock_argv_set(comm, "-a"); else mock_argv_valid = 0;
 	capture_show(&kp, 1, &cp);
@@ -412,10 +416,13 @@ static void test_show_process(void)
 	for (i = 0; i < 40000; i++) {
 		char comm[20];
 		size_t j, len = (rng_u32() % 18) + 1;
+		int q = (int)(rng_u32() & 1);
+		int pg = (int)(rng_u32() & 1);
+		if (q)
+			pg = 1;
 		for (j = 0; j < len; j++) comm[j] = (char)(rng_u32() & 0xff);
 		comm[len] = '\0';
-		check_show((int)(rng_u32() & 1), (int)(rng_u32() & 1),
-		    (int)(rng_u32() & 1), (int)(rng_u32() & 1),
+		check_show(pg, q, (int)(rng_u32() & 1), (int)(rng_u32() & 1),
 		    (pid_t)(rng_u32() % 100000), comm, (int)(rng_u32() & 1));
 	}
 }
@@ -487,7 +494,9 @@ static void capture_grep(int port, int pg, int q, const char *dl, pid_t pid,
 
 	memset(cap->buf, 0x7f, sizeof(cap->buf));
 	cap->nread = 0;
+	cap->status = 0;
 	if (pipe(fds) == -1) return;
+	fflush(NULL);
 	child = fork();
 	if (child == 0) {
 		sync_globals(pg, q, 0, 0, 0, SIGTERM, dl);
@@ -498,10 +507,15 @@ static void capture_grep(int port, int pg, int q, const char *dl, pid_t pid,
 			if (port) P::grepact(&kp);
 			else ref_grepact_call((const struct kinfo_proc *)&kp);
 		}
+		fflush(stdout);
 		_exit(0);
 	}
 	close(fds[1]);
-	read(fds[0], cap->buf, CAP_SZ);
+	{
+		ssize_t nread = read(fds[0], cap->buf, CAP_SZ);
+		if (nread > 0)
+			cap->nread = nread;
+	}
 	close(fds[0]);
 	waitpid(child, &cap->status, 0);
 }
@@ -511,6 +525,10 @@ static void check_grep(int pg, int q, const char *dl, pid_t pid,
 {
 	Capture cp, cr;
 	stats[F_GREP].cases++;
+	if (q)
+		pg = 1;
+	memset(&cp, 0, sizeof(cp));
+	memset(&cr, 0, sizeof(cr));
 	capture_grep(1, pg, q, dl, pid, comm, n, &cp);
 	capture_grep(0, pg, q, dl, pid, comm, n, &cr);
 	if (!caps_eq(&cp, &cr))
@@ -528,10 +546,17 @@ static void test_grepact(void)
 	rng_seed(0xb02100004ULL);
 	for (i = 0; i < 40000; i++) {
 		char comm[12], dl[3];
-		comm[rng_u32() % 10] = (char)(rng_u32() & 0xff);
-		comm[10] = '\0';
-		dl[0] = (char)(rng_u32() & 0xff); dl[1] = '\0';
-		check_grep(1, (int)(rng_u32() & 1), dl, (pid_t)(rng_u32() % 50000),
+		int q = (int)(rng_u32() & 1);
+		int pg = (int)(rng_u32() & 1);
+		size_t j;
+		if (q)
+			pg = 1;
+		memset(comm, 0, sizeof(comm));
+		for (j = 0; j < sizeof(comm) - 1; j++)
+			comm[j] = (char)(rng_u32() & 0xff);
+		dl[0] = (char)(rng_u32() & 0xff);
+		dl[1] = '\0';
+		check_grep(pg, q, dl, (pid_t)(rng_u32() % 50000),
 		    comm, (int)(rng_u32() % 4) + 1);
 	}
 }

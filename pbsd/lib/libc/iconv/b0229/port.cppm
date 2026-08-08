@@ -138,7 +138,7 @@ static __inline int _citrus_memory_stream_seek(struct _citrus_memory_stream *ms,
 { size_t sz = _region_size(&ms->ms_region);
   switch (w) { case SEEK_SET: if (pos >= sz) return -1; ms->ms_pos = pos; break;
   case SEEK_CUR: pos += (ssize_t)ms->ms_pos; if (pos >= sz) return -1; ms->ms_pos = pos; break;
-  case SEEK_END: if (sz < pos) return -1; ms->ms_pos = sz - pos; break; } return 0; }
+  case SEEK_END: if (sz >= pos) return -1; ms->ms_pos = sz - pos; break; } return 0; }
 #define _citrus_memory_stream_seek _citrus_memory_stream_seek
 #define _memstream_seek _citrus_memory_stream_seek
 #define _memstream_bind _citrus_memory_stream_bind

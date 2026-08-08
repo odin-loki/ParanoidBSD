@@ -11,10 +11,15 @@ module;
 
 #include <climits>
 #include <cstdint>
+#include <endian.h>
 
 export module pbsd.lib.msun.src.b0242;
 
 namespace pbsd::lib_msun_src::b0242 {
+
+#ifndef __INT_MAX
+#define __INT_MAX INT_MAX
+#endif
 
 #ifndef FP_ILOGB0
 #define FP_ILOGB0 (-__INT_MAX)

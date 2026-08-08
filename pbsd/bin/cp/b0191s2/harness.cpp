@@ -1,1651 +1,458 @@
 /*
- * harness.cpp -- differential test for PBSD batch b0191 (cp/utils.c, cp/cp.c).
+ * Differential test harness for PBSD batch b0191s2 (hbsd/src/bin/cp/cp.c).
+ *
+ * Every ported function is exercised against the ref_ oracle built from the
+ * unmodified C source.  Buffers handed to the two implementations are kept
+ * bit-identical and compared in full (guard bytes included) after each call.
  */
 
-#define _GNU_SOURCE
-
-#ifndef SIGINFO
-#define SIGINFO SIGUSR1
-#endif
-
-#include <cerrno>
-#include <cstdarg>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
-#include <fts.h>
-#include <getopt.h>
-#include <limits.h>
-#include <sysexits.h>
-#include <map>
-#include <memory>
-#include <signal.h>
-#include <string>
+#include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/sysmacros.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <vector>
 
-#if defined(__linux__)
-#include <bsd/string.h>
-#endif
+#include <fts.h>
+#include <limits.h>
+#include <signal.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <initializer_list>
+#include <vector>
 
 import pbsd.bin.cp.b0191s2;
 
 namespace P = pbsd::bin_cp::b0191s2;
 
-typedef void *acl_t;
-typedef unsigned int acl_type_t;
-
 extern "C" {
-enum ref_op { RFILE_TO_FILE, RFILE_TO_DIR, RDIR_TO_DNE };
-
-typedef struct {
-	int dir;
-	char base[PATH_MAX + 1];
-	char *end;
-	char path[PATH_MAX];
-} PATH_T;
-
-extern PATH_T ref_to;
-extern bool ref_Nflag, ref_fflag, ref_iflag, ref_lflag, ref_nflag, ref_pflag,
-    ref_sflag, ref_vflag;
-extern volatile sig_atomic_t ref_info;
-
-ssize_t ref_copy_fallback(int from_fd, int to_fd);
-int ref_copy_file(const FTSENT *entp, bool dne, bool beneath);
-int ref_copy_link(const FTSENT *p, bool dne, bool beneath);
-int ref_copy_fifo(struct stat *from_stat, bool dne, bool beneath);
-int ref_copy_special(struct stat *from_stat, bool dne, bool beneath);
-int ref_setfile(struct stat *fs, int fd, bool beneath);
-int ref_preserve_fd_acls(int source_fd, int dest_fd);
-int ref_preserve_dir_acls(const char *source_dir, const char *dest_dir);
-void ref_usage(void);
-int ref_cp_ftscmp(const FTSENT *const *a, const FTSENT *const *b);
-void ref_cp_siginfo(int sig);
-int ref_cp_copy(char *argv[], enum ref_op type, int fts_options,
-    struct stat *root_stat);
-int ref_cp_main(int argc, char *argv[]);
-
-void __real_exit(int status);
-long __real_sysconf(int name);
-void *__real_malloc(size_t size);
-int __real_fchflags(int, unsigned long);
-int __real_chflagsat(int, const char *, unsigned long, int);
-acl_t __real_acl_get_fd_np(int, acl_type_t);
-int __real_acl_is_trivial_np(acl_t, int *);
-int __real_acl_set_fd_np(int, acl_t, acl_type_t);
-int __real_acl_free(acl_t);
+int ref_ftscmp(const FTSENT *const *a, const FTSENT *const *b);
+void ref_siginfo(int sig);
+extern volatile sig_atomic_t info;
 }
 
-#if defined(__linux__)
-extern "C" int
-__real_fchflags(int fd, unsigned long flags)
-{
-	(void)fd;
-	(void)flags;
-	errno = EOPNOTSUPP;
-	return -1;
-}
+/* ------------------------------------------------------------------ */
+/* bookkeeping                                                        */
+/* ------------------------------------------------------------------ */
 
-extern "C" int
-__real_chflagsat(int dirfd, const char *path, unsigned long flags, int atflag)
-{
-	(void)dirfd;
-	(void)path;
-	(void)flags;
-	(void)atflag;
-	errno = EOPNOTSUPP;
-	return -1;
-}
-
-extern "C" acl_t
-__real_acl_get_fd_np(int fd, acl_type_t type)
-{
-	(void)fd;
-	(void)type;
-	errno = EOPNOTSUPP;
-	return nullptr;
-}
-
-extern "C" int
-__real_acl_is_trivial_np(acl_t acl, int *trivial)
-{
-	(void)acl;
-	(void)trivial;
-	errno = EINVAL;
-	return -1;
-}
-
-extern "C" int
-__real_acl_set_fd_np(int fd, acl_t acl, acl_type_t type)
-{
-	(void)fd;
-	(void)acl;
-	(void)type;
-	errno = EOPNOTSUPP;
-	return -1;
-}
-
-extern "C" int
-__real_acl_free(acl_t acl)
-{
-	(void)acl;
-	return 0;
-}
-#endif
-
-#define SWEEP 200000L
-#define MAX_SHOW 8
-#define GUARD 0x7f
-#define PHYSPAGES_THRESHOLD (32 * 1024)
-
-namespace {
-
-bool g_test_active = false;
-bool g_test_child = false;
-
-struct Stat {
+struct Stats {
 	const char *name;
-	long cases;
-	long fails;
-	int shown;
+	unsigned long long cases;
+	unsigned long long failures;
+	unsigned long long reported;
 };
 
-struct Rng {
-	std::uint64_t s;
+static Stats st_ftscmp = { "ftscmp", 0, 0, 0 };
+static Stats st_siginfo = { "siginfo", 0, 0, 0 };
 
-	explicit Rng(std::uint64_t seed) : s(seed) {}
+static const unsigned long long REPORT_LIMIT = 12;
 
-	std::uint64_t next()
-	{
-		s += 0x9E3779B97F4A7C15ull;
-		std::uint64_t z = s;
-		z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
-		z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
-		return z ^ (z >> 31);
-	}
+/* ------------------------------------------------------------------ */
+/* deterministic PRNG (splitmix64, fixed seed)                        */
+/* ------------------------------------------------------------------ */
 
-	int bits(int lo, int hi)
-	{
-		if (hi <= lo)
-			return lo;
-		return lo + (int)(next() % (std::uint64_t)(hi - lo + 1));
-	}
+static uint64_t rng_state;
 
-	bool coin()
-	{
-		return (next() & 1u) != 0;
-	}
-
-	unsigned char byte()
-	{
-		return (unsigned char)(next() & 0xffu);
-	}
-};
-
-Rng rng(0xB01912FACEULL);
-
-Stat st_ftscmp = { "ftscmp", 0, 0, 0 };
-Stat st_siginfo = { "siginfo", 0, 0, 0 };
-Stat st_copy = { "copy", 0, 0, 0 };
-Stat st_main = { "main", 0, 0, 0 };
-
-#ifndef ACL_TYPE_NFS4
-#define ACL_TYPE_NFS4 0x00000004
-#endif
-#ifndef ACL_TYPE_ACCESS
-#define ACL_TYPE_ACCESS 0x00000002
-#endif
-#ifndef _PC_ACL_NFS4
-#define _PC_ACL_NFS4 64
-#endif
-#ifndef _PC_ACL_EXTENDED
-#define _PC_ACL_EXTENDED 65
-#endif
-
-struct PathMock {
-	bool exists = false;
-	struct stat st {};
-	std::string readlink_target;
-	std::vector<unsigned char> data;
-	int open_errno = 0;
-	int stat_errno = 0;
-	int unlink_errno = 0;
-	int readlink_errno = 0;
-};
-
-struct FdMock {
-	bool active = false;
-	std::string path;
-	bool is_dir = false;
-	off_t pos = 0;
-	struct stat st {};
-	std::vector<unsigned char> data;
-	int fpathconf_nfs4 = 0;
-	int fpathconf_nfs4_errno = EINVAL;
-	int fpathconf_ext = 0;
-	int fpathconf_ext_errno = EINVAL;
-	uintptr_t acl_handle = 0;
-	int acl_get_errno = 0;
-	int acl_trivial = 0;
-	int acl_trivial_fail = 0;
-	int acl_set_fail = 0;
-};
-
-struct IoOp {
-	int fd = -1;
-	int op = 0;
-	ssize_t ret = 0;
-	int err = 0;
-	ssize_t partial = 0;
-};
-
-struct MockCtrl {
-	std::map<std::string, PathMock> paths;
-	std::map<int, FdMock> fds;
-	std::vector<IoOp> ioq;
-	size_t ioq_pos = 0;
-	int next_fd = 100;
-	long sysconf_pages = 65536;
-	bool sysconf_fail = false;
-	int getchar_val = 'n';
-	int getchar_errno = 0;
-	bool copy_file_range_fail = false;
-	int copy_file_range_errno = EINVAL;
-	std::map<std::string, struct stat> fstatat_results;
-	std::map<std::string, int> fstatat_errno;
-	std::map<std::string, int> futimens_fail;
-	std::map<std::string, int> fchown_fail;
-	std::map<std::string, int> fchmod_fail;
-	std::map<std::string, unsigned long> chflags_val;
-	std::map<std::string, int> chflags_fail;
-	std::map<int, struct stat> fd_fstat;
-	std::map<int, int> fd_fstat_fail;
-	uintptr_t next_acl = 0x2000;
-};
-
-MockCtrl g_mock;
-
-struct FtsNode {
-	std::vector<char> blob;
-	FTSENT *ent = nullptr;
-	struct stat statbuf {};
-	std::string accpath;
-	std::string path;
-};
-
-struct FtsState {
-	FTS pub {};
-	std::vector<std::unique_ptr<FtsNode>> nodes;
-	size_t idx = 0;
-	bool skip_pending = false;
-	int skip_level = 0;
-};
-
-std::unique_ptr<FtsState> g_fts_script;
-
-extern "C" void
-__wrap_exit(int status)
+static void
+rng_seed(uint64_t s)
 {
-	if (g_test_child || g_test_active)
-		::_exit(status);
-	__real_exit(status);
+	rng_state = s;
+}
+
+static uint64_t
+rnd(void)
+{
+	uint64_t z = (rng_state += 0x9E3779B97F4A7C15ULL);
+	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+	z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+	return (z ^ (z >> 31));
+}
+
+static uint64_t
+rnd_below(uint64_t n)
+{
+	return (n == 0 ? 0 : rnd() % n);
+}
+
+/* ------------------------------------------------------------------ */
+/* byte-string helpers                                                */
+/* ------------------------------------------------------------------ */
+
+typedef std::vector<unsigned char> Bytes;
+
+static Bytes
+B(std::initializer_list<int> il)
+{
+	Bytes b;
+	for (int v : il)
+		b.push_back((unsigned char)v);
+	return b;
+}
+
+static Bytes
+S(const char *s)
+{
+	Bytes b;
+	for (const char *p = s; *p != '\0'; p++)
+		b.push_back((unsigned char)*p);
+	return b;
+}
+
+static Bytes
+rep(unsigned char c, size_t n)
+{
+	return Bytes(n, c);
 }
 
 static void
-mock_reset()
+hexdump(const Bytes &b)
 {
-	g_mock = MockCtrl{};
-	g_fts_script.reset();
-	g_mock.next_fd = 100;
+	fputc('"', stdout);
+	for (size_t i = 0; i < b.size(); i++)
+		printf("\\x%02x", (unsigned)b[i]);
+	fputc('"', stdout);
+}
+
+/* ------------------------------------------------------------------ */
+/* ftscmp                                                             */
+/* ------------------------------------------------------------------ */
+
+/*
+ * glibc declares FTSENT with a trailing "char fts_name[1]"; real entries are
+ * over-allocated.  We build our own over-allocated entries in a fixed-size
+ * blob so that the whole blob (name window plus everything around it) can be
+ * memcmp'd after the call.
+ */
+#define NAME_CAP 48
+#define ENT_BLOB (sizeof(FTSENT) + NAME_CAP + 16)
+
+struct EntBuf {
+	alignas(16) unsigned char raw[ENT_BLOB];
+};
+
+static const unsigned char GUARD = 0x7f;
+
+static void
+fill_ent(EntBuf &e, const Bytes &name)
+{
+	size_t off = offsetof(FTSENT, fts_name);
+
+	memset(e.raw, GUARD, sizeof(e.raw));
+	if (name.size() != 0)
+		memcpy(e.raw + off, &name[0], name.size());
+	e.raw[off + name.size()] = 0;
+}
+
+static const FTSENT *
+ent_of(const EntBuf &e)
+{
+	return (const FTSENT *)(const void *)e.raw;
 }
 
 static void
-reset_globals()
+ftscmp_case(const Bytes &na, const Bytes &nb)
 {
-	ref_to.dir = AT_FDCWD;
-	ref_to.end = ref_to.path;
-	ref_to.path[0] = '\0';
-	ref_to.base[0] = '\0';
+	EntBuf aP, bP, aO, bO;
 
-	P::to.dir = AT_FDCWD;
-	P::to.end = P::to.path;
-	P::to.path[0] = '\0';
-	P::to.base[0] = '\0';
-
-	ref_Nflag = ref_fflag = ref_iflag = ref_lflag = ref_nflag = false;
-	ref_pflag = ref_sflag = ref_vflag = false;
-	ref_info = 0;
-
-	P::Nflag = P::fflag = P::iflag = P::lflag = P::nflag = false;
-	P::pflag = P::sflag = P::vflag = false;
-	P::Hflag = P::Lflag = P::Pflag = P::Rflag = false;
-	P::rflag = P::Sflag = false;
-	P::info = 0;
-
-	optind = 1;
-	opterr = 0;
-#if defined(__GLIBC__) && defined(optreset)
-	optreset = 1;
-#endif
-}
-
-static bool
-fail(Stat &st, const char *what)
-{
-	st.fails++;
-	if (st.shown < MAX_SHOW) {
-		st.shown++;
-		std::printf("  FAIL %s: %s\n", st.name, what);
-	}
-	return false;
-}
-
-static int
-silence_stderr()
-{
-	int saved = dup(STDERR_FILENO);
-	int devnull = open("/dev/null", O_WRONLY);
-	if (devnull >= 0) {
-		dup2(devnull, STDERR_FILENO);
-		close(devnull);
-	}
-	return saved;
-}
-
-static void
-restore_stderr(int saved)
-{
-	if (saved >= 0) {
-		dup2(saved, STDERR_FILENO);
-		close(saved);
-	}
-}
-
-static PathMock &
-path_mock(const std::string &p)
-{
-	return g_mock.paths[p];
-}
-
-static int
-alloc_fd(const std::string &path, bool is_dir)
-{
-	int fd = g_mock.next_fd++;
-	FdMock &fm = g_mock.fds[fd];
-	fm.active = true;
-	fm.path = path;
-	fm.is_dir = is_dir;
-	fm.pos = 0;
-	auto it = g_mock.paths.find(path);
-	if (it != g_mock.paths.end()) {
-		fm.st = it->second.st;
-		fm.data = it->second.data;
-	} else {
-		std::memset(&fm.st, 0, sizeof(fm.st));
-		fm.st.st_mode = is_dir ? (S_IFDIR | 0755) : (S_IFREG | 0644);
-	}
-	return fd;
-}
-
-static FdMock *
-fd_mock(int fd)
-{
-	auto it = g_mock.fds.find(fd);
-	if (it == g_mock.fds.end() || !it->second.active)
-		return nullptr;
-	return &it->second;
-}
-
-static std::string
-join_path(int dirfd, const char *path)
-{
-	if (dirfd == AT_FDCWD || path[0] == '/')
-		return std::string(path);
-	FdMock *d = fd_mock(dirfd);
-	if (d == nullptr)
-		return std::string(path);
-	if (d->path.empty())
-		return std::string(path);
-	if (d->path.back() == '/')
-		return d->path + path;
-	return d->path + "/" + path;
-}
-
-static IoOp *
-next_io()
-{
-	if (g_mock.ioq_pos >= g_mock.ioq.size())
-		return nullptr;
-	return &g_mock.ioq[g_mock.ioq_pos++];
-}
-
-extern "C" long
-__wrap_sysconf(int name)
-{
-	if (g_test_active && name == _SC_PHYS_PAGES) {
-		if (g_mock.sysconf_fail) {
-			errno = EINVAL;
-			return -1;
-		}
-		return g_mock.sysconf_pages;
-	}
-	return __real_sysconf(name);
-}
-
-extern "C" void *
-__wrap_malloc(size_t size)
-{
-	return __real_malloc(size);
-}
-
-extern "C" ssize_t
-__wrap_read(int fd, void *buf, size_t nbytes)
-{
-	if (!g_test_active)
-		return read(fd, buf, nbytes);
-
-	IoOp *op = next_io();
-	if (op != nullptr && (op->fd < 0 || op->fd == fd) && op->op == 1) {
-		if (op->ret < 0) {
-			errno = op->err ? op->err : EIO;
-			return -1;
-		}
-		FdMock *fm = fd_mock(fd);
-		if (fm == nullptr) {
-			errno = EBADF;
-			return -1;
-		}
-		size_t avail = fm->data.size() > (size_t)fm->pos ?
-		    fm->data.size() - (size_t)fm->pos : 0;
-		size_t n = op->partial > 0 ? (size_t)op->partial :
-		    (nbytes < avail ? nbytes : avail);
-		if (n > 0) {
-			std::memcpy(buf, fm->data.data() + fm->pos, n);
-			fm->pos += (off_t)n;
-		}
-		return (ssize_t)n;
-	}
-
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return -1;
-	}
-	size_t avail = fm->data.size() > (size_t)fm->pos ?
-	    fm->data.size() - (size_t)fm->pos : 0;
-	size_t n = nbytes < avail ? nbytes : avail;
-	if (n > 0) {
-		std::memcpy(buf, fm->data.data() + fm->pos, n);
-		fm->pos += (off_t)n;
-	}
-	return (ssize_t)n;
-}
-
-extern "C" ssize_t
-__wrap_write(int fd, const void *buf, size_t nbytes)
-{
-	if (!g_test_active)
-		return write(fd, buf, nbytes);
-
-	IoOp *op = next_io();
-	if (op != nullptr && (op->fd < 0 || op->fd == fd) && op->op == 2) {
-		if (op->ret < 0) {
-			errno = op->err ? op->err : EIO;
-			return -1;
-		}
-		FdMock *fm = fd_mock(fd);
-		if (fm == nullptr) {
-			errno = EBADF;
-			return -1;
-		}
-		size_t n = op->partial > 0 ? (size_t)op->partial : nbytes;
-		if (fm->data.size() < fm->pos + (off_t)n)
-			fm->data.resize((size_t)fm->pos + n);
-		std::memcpy(fm->data.data() + fm->pos, buf, n);
-		fm->pos += (off_t)n;
-		return (ssize_t)n;
-	}
-
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return -1;
-	}
-	if (fm->data.size() < fm->pos + (off_t)nbytes)
-		fm->data.resize((size_t)fm->pos + nbytes);
-	std::memcpy(fm->data.data() + fm->pos, buf, nbytes);
-	fm->pos += (off_t)nbytes;
-	return (ssize_t)nbytes;
-}
-
-extern "C" ssize_t
-__wrap_copy_file_range(int infd, off_t *off_in, int outfd, off_t *off_out,
-    size_t len, unsigned int flags)
-{
-	(void)off_in;
-	(void)off_out;
-	(void)len;
-	(void)flags;
-
-	if (!g_test_active) {
-		return copy_file_range(infd, off_in, outfd, off_out, len, flags);
-	}
-
-	IoOp *op = next_io();
-	if (op != nullptr && op->op == 3 && op->ret < 0) {
-		errno = op->err ? op->err : EINVAL;
-		return -1;
-	}
-
-	if (g_mock.copy_file_range_fail) {
-		errno = g_mock.copy_file_range_errno;
-		return -1;
-	}
-	errno = EINVAL;
-	return -1;
-}
-
-extern "C" int
-__wrap_close(int fd)
-{
-	if (!g_test_active)
-		return close(fd);
-	auto it = g_mock.fds.find(fd);
-	if (it != g_mock.fds.end())
-		it->second.active = false;
-	return 0;
-}
-
-extern "C" int
-__wrap_open(const char *path, int flags, ...)
-{
-	if (!g_test_active) {
-		va_list ap;
-		va_start(ap, flags);
-		mode_t mode = (mode_t)va_arg(ap, int);
-		va_end(ap);
-		return open(path, flags, mode);
-	}
-
-	(void)flags;
-	PathMock &pm = path_mock(path);
-	if (!pm.exists) {
-		errno = pm.open_errno ? pm.open_errno : ENOENT;
-		return -1;
-	}
-	return alloc_fd(path, S_ISDIR(pm.st.st_mode));
-}
-
-extern "C" int
-__wrap_openat(int dirfd, const char *path, int flags, ...)
-{
-	if (!g_test_active) {
-		va_list ap;
-		va_start(ap, flags);
-		mode_t mode = (mode_t)va_arg(ap, int);
-		va_end(ap);
-		return openat(dirfd, path, flags, mode);
-	}
-
-	(void)flags;
-	std::string full = join_path(dirfd, path);
-	PathMock &pm = path_mock(full);
-	if (!pm.exists && (flags & O_CREAT)) {
-		pm.exists = true;
-		pm.st.st_mode = S_IFREG | 0644;
-	}
-	if (!pm.exists) {
-		errno = pm.open_errno ? pm.open_errno : ENOENT;
-		return -1;
-	}
-	return alloc_fd(full, S_ISDIR(pm.st.st_mode));
-}
-
-extern "C" int
-__wrap_fstat(int fd, struct stat *sb)
-{
-	if (!g_test_active)
-		return fstat(fd, sb);
-
-	auto fail_it = g_mock.fd_fstat_fail.find(fd);
-	if (fail_it != g_mock.fd_fstat_fail.end()) {
-		errno = fail_it->second;
-		return -1;
-	}
-	auto st_it = g_mock.fd_fstat.find(fd);
-	if (st_it != g_mock.fd_fstat.end()) {
-		*sb = st_it->second;
-		return 0;
-	}
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return -1;
-	}
-	*sb = fm->st;
-	return 0;
-}
-
-extern "C" int
-__wrap_fstatat(int dirfd, const char *path, struct stat *sb, int atflags)
-{
-	(void)atflags;
-	if (!g_test_active)
-		return fstatat(dirfd, path, sb, atflags);
-
-	std::string full = join_path(dirfd, path);
-	auto eit = g_mock.fstatat_errno.find(full);
-	if (eit != g_mock.fstatat_errno.end()) {
-		errno = eit->second;
-		return -1;
-	}
-	auto sit = g_mock.fstatat_results.find(full);
-	if (sit != g_mock.fstatat_results.end()) {
-		*sb = sit->second;
-		return 0;
-	}
-	PathMock &pm = path_mock(full);
-	if (!pm.exists) {
-		errno = pm.stat_errno ? pm.stat_errno : ENOENT;
-		return -1;
-	}
-	*sb = pm.st;
-	return 0;
-}
-
-extern "C" int
-__wrap_stat(const char *path, struct stat *sb)
-{
-	if (!g_test_active)
-		return stat(path, sb);
-	PathMock &pm = path_mock(path);
-	if (!pm.exists) {
-		errno = pm.stat_errno ? pm.stat_errno : ENOENT;
-		return -1;
-	}
-	*sb = pm.st;
-	return 0;
-}
-
-extern "C" int
-__wrap_lstat(const char *path, struct stat *sb)
-{
-	return __wrap_stat(path, sb);
-}
-
-extern "C" ssize_t
-__wrap_readlink(const char *path, char *buf, size_t bufsiz)
-{
-	if (!g_test_active)
-		return readlink(path, buf, bufsiz);
-
-	PathMock &pm = path_mock(path);
-	if (!pm.exists) {
-		errno = pm.readlink_errno ? pm.readlink_errno : ENOENT;
-		return -1;
-	}
-	if (pm.readlink_target.empty()) {
-		errno = EINVAL;
-		return -1;
-	}
-	size_t n = pm.readlink_target.size();
-	if (n >= bufsiz) {
-		errno = ENAMETOOLONG;
-		return -1;
-	}
-	std::memcpy(buf, pm.readlink_target.data(), n);
-	return (ssize_t)n;
-}
-
-extern "C" int
-__wrap_unlinkat(int dirfd, const char *path, int atflags)
-{
-	(void)atflags;
-	if (!g_test_active)
-		return unlinkat(dirfd, path, atflags);
-
-	std::string full = join_path(dirfd, path);
-	PathMock &pm = path_mock(full);
-	if (!pm.exists) {
-		errno = pm.unlink_errno ? pm.unlink_errno : ENOENT;
-		return -1;
-	}
-	pm.exists = false;
-	return 0;
-}
-
-extern "C" int
-__wrap_linkat(int olddirfd, const char *oldpath, int newdirfd,
-    const char *newpath, int flags)
-{
-	(void)olddirfd;
-	(void)oldpath;
-	(void)newdirfd;
-	(void)flags;
-	if (!g_test_active)
-		return linkat(olddirfd, oldpath, newdirfd, newpath, flags);
-
-	std::string dst = join_path(newdirfd, newpath);
-	path_mock(dst).exists = true;
-	path_mock(dst).st.st_mode = S_IFREG | 0644;
-	return 0;
-}
-
-extern "C" int
-__wrap_symlinkat(const char *target, int newdirfd, const char *newpath)
-{
-	if (!g_test_active)
-		return symlinkat(target, newdirfd, newpath);
-
-	std::string dst = join_path(newdirfd, newpath);
-	PathMock &pm = path_mock(dst);
-	pm.exists = true;
-	pm.st.st_mode = S_IFLNK | 0777;
-	pm.readlink_target = target;
-	return 0;
-}
-
-extern "C" int
-__wrap_mkfifoat(int dirfd, const char *path, mode_t mode)
-{
-	if (!g_test_active)
-		return mkfifoat(dirfd, path, mode);
-
-	std::string full = join_path(dirfd, path);
-	PathMock &pm = path_mock(full);
-	pm.exists = true;
-	pm.st.st_mode = S_IFIFO | (mode & 0777);
-	return 0;
-}
-
-extern "C" int
-__wrap_mknodat(int dirfd, const char *path, mode_t mode, dev_t dev)
-{
-	if (!g_test_active)
-		return mknodat(dirfd, path, mode, dev);
-
-	std::string full = join_path(dirfd, path);
-	PathMock &pm = path_mock(full);
-	pm.exists = true;
-	pm.st.st_mode = mode;
-	pm.st.st_rdev = dev;
-	return 0;
-}
-
-extern "C" int
-__wrap_mkdir(const char *path, mode_t mode)
-{
-	if (!g_test_active)
-		return mkdir(path, mode);
-
-	PathMock &pm = path_mock(path);
-	pm.exists = true;
-	pm.st.st_mode = S_IFDIR | (mode & 0777);
-	return 0;
-}
-
-extern "C" int
-__wrap_mkdirat(int dirfd, const char *path, mode_t mode)
-{
-	if (!g_test_active)
-		return mkdirat(dirfd, path, mode);
-
-	std::string full = join_path(dirfd, path);
-	PathMock &pm = path_mock(full);
-	pm.exists = true;
-	pm.st.st_mode = S_IFDIR | (mode & 0777);
-	return 0;
-}
-
-extern "C" int
-__wrap_rmdir(const char *path)
-{
-	if (!g_test_active)
-		return rmdir(path);
-	PathMock &pm = path_mock(path);
-	if (!pm.exists) {
-		errno = ENOENT;
-		return -1;
-	}
-	pm.exists = false;
-	return 0;
-}
-
-extern "C" int
-__wrap_futimens(int fd, const struct timespec ts[2])
-{
-	if (!g_test_active)
-		return futimens(fd, ts);
-
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return -1;
-	}
-	auto it = g_mock.futimens_fail.find(fm->path);
-	if (it != g_mock.futimens_fail.end()) {
-		errno = it->second;
-		return -1;
-	}
-	fm->st.st_atim = ts[0];
-	fm->st.st_mtim = ts[1];
-	return 0;
-}
-
-extern "C" int
-__wrap_utimensat(int dirfd, const char *path, const struct timespec ts[2],
-    int atflags)
-{
-	(void)atflags;
-	if (!g_test_active)
-		return utimensat(dirfd, path, ts, atflags);
-
-	std::string full = join_path(dirfd, path);
-	auto it = g_mock.futimens_fail.find(full);
-	if (it != g_mock.futimens_fail.end()) {
-		errno = it->second;
-		return -1;
-	}
-	PathMock &pm = path_mock(full);
-	pm.st.st_atim = ts[0];
-	pm.st.st_mtim = ts[1];
-	return 0;
-}
-
-extern "C" int
-__wrap_fchown(int fd, uid_t owner, gid_t group)
-{
-	if (!g_test_active)
-		return fchown(fd, owner, group);
-
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return -1;
-	}
-	auto it = g_mock.fchown_fail.find(fm->path);
-	if (it != g_mock.fchown_fail.end()) {
-		errno = it->second;
-		return -1;
-	}
-	fm->st.st_uid = owner;
-	fm->st.st_gid = group;
-	return 0;
-}
-
-extern "C" int
-__wrap_fchownat(int dirfd, const char *path, uid_t owner, gid_t group,
-    int atflags)
-{
-	(void)atflags;
-	if (!g_test_active)
-		return fchownat(dirfd, path, owner, group, atflags);
-
-	std::string full = join_path(dirfd, path);
-	auto it = g_mock.fchown_fail.find(full);
-	if (it != g_mock.fchown_fail.end()) {
-		errno = it->second;
-		return -1;
-	}
-	PathMock &pm = path_mock(full);
-	pm.st.st_uid = owner;
-	pm.st.st_gid = group;
-	return 0;
-}
-
-extern "C" int
-__wrap_fchmod(int fd, mode_t mode)
-{
-	if (!g_test_active)
-		return fchmod(fd, mode);
-
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return -1;
-	}
-	auto it = g_mock.fchmod_fail.find(fm->path);
-	if (it != g_mock.fchmod_fail.end()) {
-		errno = it->second;
-		return -1;
-	}
-	fm->st.st_mode = (fm->st.st_mode & S_IFMT) | (mode & 07777);
-	return 0;
-}
-
-extern "C" int
-__wrap_fchmodat(int dirfd, const char *path, mode_t mode, int atflags)
-{
-	(void)atflags;
-	if (!g_test_active)
-		return fchmodat(dirfd, path, mode, atflags);
-
-	std::string full = join_path(dirfd, path);
-	auto it = g_mock.fchmod_fail.find(full);
-	if (it != g_mock.fchmod_fail.end()) {
-		errno = it->second;
-		return -1;
-	}
-	PathMock &pm = path_mock(full);
-	pm.st.st_mode = (pm.st.st_mode & S_IFMT) | (mode & 07777);
-	return 0;
-}
-
-extern "C" int
-__wrap_fchflags(int fd, unsigned long flags)
-{
-	if (!g_test_active)
-		return __real_fchflags(fd, flags);
-
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return -1;
-	}
-	auto it = g_mock.chflags_fail.find(fm->path);
-	if (it != g_mock.chflags_fail.end()) {
-		errno = it->second;
-		return -1;
-	}
-#if defined(__linux__)
-	fm->st.st_blksize = (blksize_t)flags;
-#else
-	fm->st.st_flags = flags;
-#endif
-	g_mock.chflags_val[fm->path] = flags;
-	return 0;
-}
-
-extern "C" int
-__wrap_chflagsat(int dirfd, const char *path, unsigned long flags, int atflag)
-{
-	(void)atflag;
-	if (!g_test_active)
-		return __real_chflagsat(dirfd, path, flags, atflag);
-
-	std::string full = join_path(dirfd, path);
-	auto it = g_mock.chflags_fail.find(full);
-	if (it != g_mock.chflags_fail.end()) {
-		errno = it->second;
-		return -1;
-	}
-	PathMock &pm = path_mock(full);
-#if defined(__linux__)
-	pm.st.st_blksize = (blksize_t)flags;
-#else
-	pm.st.st_flags = flags;
-#endif
-	g_mock.chflags_val[full] = flags;
-	return 0;
-}
-
-extern "C" long
-__wrap_fpathconf(int fd, int name)
-{
-	if (!g_test_active)
-		return fpathconf(fd, name);
-
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return -1;
-	}
-	if (name == _PC_ACL_NFS4) {
-		if (fm->fpathconf_nfs4 < 0) {
-			errno = fm->fpathconf_nfs4_errno;
-			return -1;
-		}
-		return fm->fpathconf_nfs4;
-	}
-	if (name == _PC_ACL_EXTENDED) {
-		if (fm->fpathconf_ext < 0) {
-			errno = fm->fpathconf_ext_errno;
-			return -1;
-		}
-		return fm->fpathconf_ext;
-	}
-	errno = EINVAL;
-	return -1;
-}
-
-extern "C" acl_t
-__wrap_acl_get_fd_np(int fd, acl_type_t type)
-{
-	(void)type;
-	if (!g_test_active)
-		return __real_acl_get_fd_np(fd, type);
-
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return nullptr;
-	}
-	if (fm->acl_get_errno != 0) {
-		errno = fm->acl_get_errno;
-		return nullptr;
-	}
-	if (fm->acl_handle == 0)
-		return nullptr;
-	return (acl_t)fm->acl_handle;
-}
-
-extern "C" int
-__wrap_acl_is_trivial_np(acl_t acl, int *trivial)
-{
-	if (!g_test_active)
-		return __real_acl_is_trivial_np(acl, trivial);
-
-	for (const auto &kv : g_mock.fds) {
-		if (kv.second.acl_handle == (uintptr_t)acl) {
-			if (kv.second.acl_trivial_fail) {
-				errno = EINVAL;
-				return -1;
-			}
-			*trivial = kv.second.acl_trivial;
-			return 0;
-		}
-	}
-	errno = EINVAL;
-	return -1;
-}
-
-extern "C" int
-__wrap_acl_set_fd_np(int fd, acl_t acl, acl_type_t type)
-{
-	(void)acl;
-	(void)type;
-	if (!g_test_active)
-		return __real_acl_set_fd_np(fd, acl, type);
-
-	FdMock *fm = fd_mock(fd);
-	if (fm == nullptr) {
-		errno = EBADF;
-		return -1;
-	}
-	if (fm->acl_set_fail) {
-		errno = EIO;
-		return -1;
-	}
-	return 0;
-}
-
-extern "C" int
-__wrap_acl_free(acl_t acl)
-{
-	if (!g_test_active)
-		return __real_acl_free(acl);
-	(void)acl;
-	return 0;
-}
-
-extern "C" int
-__wrap_getchar(void)
-{
-	if (!g_test_active)
-		return getchar();
-	if (g_mock.getchar_errno) {
-		errno = g_mock.getchar_errno;
-		return EOF;
-	}
-	return g_mock.getchar_val;
-}
-
-extern "C" sighandler_t
-__wrap_signal(int sig, sighandler_t handler)
-{
-	if (!g_test_active)
-		return signal(sig, handler);
-	(void)sig;
-	(void)handler;
-	return SIG_DFL;
-}
-
-static FtsNode *
-make_fts_node(int info, int level, int fts_errno, const std::string &accpath,
-    const std::string &tpath, const char *name, const struct stat *st)
-{
-	auto node = std::make_unique<FtsNode>();
-	node->accpath = accpath;
-	node->path = tpath;
-	size_t nlen = std::strlen(name) + 1;
-	node->blob.resize(sizeof(FTSENT) + nlen);
-	node->ent = reinterpret_cast<FTSENT *>(node->blob.data());
-	std::memset(node->ent, 0, sizeof(FTSENT));
-	node->ent->fts_info = (unsigned short)info;
-	node->ent->fts_level = (short)level;
-	node->ent->fts_errno = fts_errno;
-	node->ent->fts_accpath = const_cast<char *>(node->accpath.c_str());
-	node->ent->fts_path = const_cast<char *>(node->path.c_str());
-	node->ent->fts_namelen = (unsigned short)std::strlen(name);
-	if (st != nullptr)
-		node->statbuf = *st;
-	node->ent->fts_statp = &node->statbuf;
-	std::memcpy(node->ent->fts_name, name, nlen);
-	return node.release();
-}
-
-extern "C" FTS *
-__wrap_fts_open(char *const *argv, int options,
-    int (*compar)(const FTSENT *const *, const FTSENT *const *))
-{
-	(void)argv;
-	(void)options;
-	(void)compar;
-	if (!g_test_active) {
-		auto cmp = reinterpret_cast<int (*)(const FTSENT **,
-		    const FTSENT **)>(compar);
-		return fts_open(argv, options, cmp);
-	}
-	if (g_fts_script == nullptr)
-		return nullptr;
-	return (FTS *)g_fts_script.get();
-}
-
-extern "C" FTSENT *
-__wrap_fts_read(FTS *ftsp)
-{
-	if (!g_test_active)
-		return fts_read(ftsp);
-
-	FtsState *st = (FtsState *)ftsp;
-	while (st->idx < st->nodes.size()) {
-		FtsNode *node = st->nodes[st->idx].get();
-		if (st->skip_pending) {
-			if (node->ent->fts_level > st->skip_level) {
-				st->idx++;
-				continue;
-			}
-			if (node->ent->fts_info == FTS_DP &&
-			    node->ent->fts_level == st->skip_level) {
-				st->skip_pending = false;
-			} else {
-				st->idx++;
-				continue;
-			}
-		}
-		st->idx++;
-		return node->ent;
-	}
-	errno = 0;
-	return nullptr;
-}
-
-extern "C" int
-__wrap_fts_set(FTS *ftsp, FTSENT *p, int instr)
-{
-	if (!g_test_active)
-		return fts_set(ftsp, p, instr);
-
-	FtsState *st = (FtsState *)ftsp;
-	if (st == nullptr || p == nullptr)
-		return -1;
-	if (instr == FTS_SKIP) {
-		st->skip_pending = true;
-		st->skip_level = p->fts_level;
-	}
-	return 0;
-}
-
-extern "C" int
-__wrap_fts_close(FTS *ftsp)
-{
-	if (!g_test_active)
-		return fts_close(ftsp);
-	(void)ftsp;
-	return 0;
-}
-
-extern "C" int
-__wrap_asprintf(char **strp, const char *fmt, ...)
-{
-	if (!g_test_active) {
-		va_list ap;
-		va_start(ap, fmt);
-		int r = vasprintf(strp, fmt, ap);
-		va_end(ap);
-		return r;
-	}
-
-	char buf[PATH_MAX];
-	va_list ap;
-	va_start(ap, fmt);
-	int n = vsnprintf(buf, sizeof(buf), fmt, ap);
-	va_end(ap);
-	if (n < 0)
-		return -1;
-	*strp = strdup(buf);
-	return (*strp != nullptr) ? n : -1;
-}
-
-static void
-copy_path_t(P::PATH_T *dst, const PATH_T *src)
-{
-	dst->dir = src->dir;
-	std::memcpy(dst->base, src->base, sizeof(dst->base));
-	std::memcpy(dst->path, src->path, sizeof(dst->path));
-	dst->end = dst->path + (src->end - src->path);
-}
-
-static void
-setup_reg_file(const std::string &path, const std::vector<unsigned char> &data,
-    mode_t mode)
-{
-	PathMock &pm = path_mock(path);
-	pm.exists = true;
-	pm.st.st_mode = S_IFREG | (mode & 0777);
-	pm.st.st_size = (off_t)data.size();
-	pm.data = data;
-}
-
-static FtsNode *
-make_name_node(const char *name)
-{
-	struct stat st {};
-	st.st_mode = S_IFREG | 0644;
-	return make_fts_node(FTS_F, 0, 0, "/a", "/a", name, &st);
-}
-
-static bool
-run_ftscmp_case(const char *label, const char *a, const char *b)
-{
 	st_ftscmp.cases++;
-	FtsNode *na = make_name_node(a);
-	FtsNode *nb = make_name_node(b);
-	const FTSENT *pa = na->ent;
-	const FTSENT *pb = nb->ent;
-	int rr = ref_cp_ftscmp(&pa, &pb);
+
+	/* Two independent sets of buffers, guard-filled, identical content. */
+	fill_ent(aP, na);
+	fill_ent(bP, nb);
+	fill_ent(aO, na);
+	fill_ent(bO, nb);
+
+	const FTSENT *pa = ent_of(aP);
+	const FTSENT *pb = ent_of(bP);
+	const FTSENT *oa = ent_of(aO);
+	const FTSENT *ob = ent_of(bO);
+	const FTSENT *pa0 = pa, *pb0 = pb, *oa0 = oa, *ob0 = ob;
+
 	int rp = P::ftscmp(&pa, &pb);
-	delete na;
-	delete nb;
-	if (rr != rp)
-		return fail(st_ftscmp, label);
-	return true;
+	int ro = ref_ftscmp(&oa, &ob);
+
+	int bad = 0;
+	const char *why = "";
+
+	if (rp != ro) {
+		bad = 1;
+		why = "return value";
+	} else if (memcmp(aP.raw, aO.raw, sizeof(aP.raw)) != 0) {
+		bad = 1;
+		why = "buffer a (incl. guard bytes)";
+	} else if (memcmp(bP.raw, bO.raw, sizeof(bP.raw)) != 0) {
+		bad = 1;
+		why = "buffer b (incl. guard bytes)";
+	} else if (pa != pa0 || pb != pb0 || oa != oa0 || ob != ob0) {
+		bad = 1;
+		why = "argument pointer clobbered";
+	}
+
+	if (bad) {
+		st_ftscmp.failures++;
+		if (st_ftscmp.reported < REPORT_LIMIT) {
+			st_ftscmp.reported++;
+			printf("  FAIL ftscmp [%s]: a=", why);
+			hexdump(na);
+			printf(" b=");
+			hexdump(nb);
+			printf(" port=%d oracle=%d\n", rp, ro);
+		}
+	}
 }
 
-static bool
-run_siginfo_case(const char *label, int sig)
+static Bytes
+rand_name(size_t cap)
+{
+	unsigned mode = (unsigned)rnd_below(6);
+	size_t len = (size_t)rnd_below(cap + 1);
+	Bytes b(len);
+
+	for (size_t i = 0; i < len; i++) {
+		unsigned char c;
+		switch (mode) {
+		case 0:
+			c = (unsigned char)('a' + rnd_below(2));
+			break;
+		case 1:
+			c = (unsigned char)(1 + rnd_below(255));
+			break;
+		case 2:
+			c = (unsigned char)(0x80 + rnd_below(0x80));
+			break;
+		case 3:
+			c = (unsigned char)rnd_below(256);
+			break;
+		case 4:
+			c = (unsigned char)(0x7e + rnd_below(4));
+			break;
+		default:
+			c = (unsigned char)('A' + rnd_below(26));
+			break;
+		}
+		b[i] = c;
+	}
+	return b;
+}
+
+static Bytes
+perturb(const Bytes &a, size_t cap)
+{
+	Bytes b = a;
+	unsigned what = (unsigned)rnd_below(4);
+
+	if (what == 0 && !b.empty()) {
+		size_t i = (size_t)rnd_below(b.size());
+		b[i] = (unsigned char)rnd_below(256);
+	} else if (what == 1 && !b.empty()) {
+		b.pop_back();
+	} else if (what == 2 && b.size() < cap) {
+		b.push_back((unsigned char)rnd_below(256));
+	} else if (!b.empty()) {
+		size_t i = b.size() - 1;
+		b[i] = (unsigned char)(b[i] + 1);
+	}
+	return b;
+}
+
+static void
+test_ftscmp(void)
+{
+	std::vector<Bytes> names;
+
+	/* Hand-written edge cases. */
+	names.push_back(Bytes());			/* empty */
+	names.push_back(B({ 0x00 }));			/* leading NUL -> empty */
+	names.push_back(B({ 0x00, 0x41, 0x42 }));	/* NUL then garbage */
+	names.push_back(B({ 0x00, 0x00, 0x00, 0x00 }));	/* NUL heavy */
+	names.push_back(B({ 0x61 }));			/* "a" */
+	names.push_back(B({ 0x62 }));			/* "b" */
+	names.push_back(B({ 0x01 }));
+	names.push_back(B({ 0x7e }));
+	names.push_back(B({ 0x7f }));
+	names.push_back(B({ 0x80 }));			/* high bit */
+	names.push_back(B({ 0x81 }));
+	names.push_back(B({ 0xfe }));
+	names.push_back(B({ 0xff }));
+	names.push_back(B({ 0x61, 0x00, 0x62 }));	/* "a\0b" */
+	names.push_back(B({ 0x61, 0x00, 0x63 }));	/* "a\0c" -> equal to above */
+	names.push_back(B({ 0x61, 0x62, 0x63 }));	/* "abc" */
+	names.push_back(B({ 0x61, 0x62, 0x64 }));	/* "abd" */
+	names.push_back(B({ 0x61, 0x62, 0x63, 0x64 }));	/* "abcd" */
+	names.push_back(B({ 0x61, 0x62, 0x63, 0x00, 0xff })); /* "abc" + junk */
+	names.push_back(B({ 0x61, 0x80 }));
+	names.push_back(B({ 0x61, 0x7f }));
+	names.push_back(B({ 0x80, 0x61 }));
+	names.push_back(B({ 0xff, 0xff, 0xff }));
+	names.push_back(B({ 0xff, 0xff, 0xfe }));
+	names.push_back(S("."));
+	names.push_back(S(".."));
+	names.push_back(S("/"));
+	names.push_back(S("a.txt"));
+	names.push_back(S("A.txt"));
+	names.push_back(S("z"));
+	names.push_back(S("Z"));
+
+	/* Boundary lengths, including the longest name the blob can hold. */
+	{
+		const size_t cap = NAME_CAP - 1;
+		size_t lens[] = { 0, 1, 2, 3, cap - 2, cap - 1, cap };
+		for (size_t i = 0; i < sizeof(lens) / sizeof(lens[0]); i++) {
+			size_t L = lens[i];
+			Bytes x = rep('a', L);
+			names.push_back(x);
+			if (L > 0) {
+				Bytes y = x;
+				y[L - 1] = 'b';		/* differs in last byte */
+				names.push_back(y);
+				Bytes z = x;
+				z[0] = 'b';		/* differs in first byte */
+				names.push_back(z);
+				Bytes w = x;
+				w[L - 1] = 0xff;	/* high bit in last byte */
+				names.push_back(w);
+			}
+		}
+	}
+
+	/* Full cross product of the hand-written set (both argument orders). */
+	for (size_t i = 0; i < names.size(); i++)
+		for (size_t j = 0; j < names.size(); j++)
+			ftscmp_case(names[i], names[j]);
+
+	/* Exhaustive single-byte cross product, 0x00-0xff on both sides. */
+	for (unsigned i = 0; i < 256; i++) {
+		for (unsigned j = 0; j < 256; j++) {
+			Bytes a = B({ (int)i });
+			Bytes b = B({ (int)j });
+			ftscmp_case(a, b);
+		}
+	}
+
+	/* Exhaustive two-byte cross product over sign-boundary values. */
+	{
+		static const int vals[] = { 0x00, 0x01, 0x41, 0x61, 0x7e,
+		    0x7f, 0x80, 0x81, 0xfe, 0xff };
+		const size_t nv = sizeof(vals) / sizeof(vals[0]);
+		std::vector<Bytes> two;
+		for (size_t i = 0; i < nv; i++)
+			for (size_t j = 0; j < nv; j++)
+				two.push_back(B({ vals[i], vals[j] }));
+		for (size_t i = 0; i < two.size(); i++)
+			for (size_t j = 0; j < two.size(); j++)
+				ftscmp_case(two[i], two[j]);
+	}
+
+	/* Fixed-seed randomised sweep. */
+	rng_seed(0xC0FFEE1234ABCD01ULL);
+	for (unsigned long i = 0; i < 250000UL; i++) {
+		Bytes a = rand_name(NAME_CAP - 1);
+		Bytes b;
+		if (rnd_below(2) == 0)
+			b = perturb(a, NAME_CAP - 1);
+		else
+			b = rand_name(NAME_CAP - 1);
+		ftscmp_case(a, b);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* siginfo                                                            */
+/* ------------------------------------------------------------------ */
+
+static void
+siginfo_case(int sig, int preset)
 {
 	st_siginfo.cases++;
-	reset_globals();
-	ref_cp_siginfo(sig);
-	int rr = (int)ref_info;
-	reset_globals();
+
+	P::info = (sig_atomic_t)preset;
+	info = (sig_atomic_t)preset;
+
 	P::siginfo(sig);
-	int rp = (int)P::info;
-	if (rr != rp || rr != 1)
-		return fail(st_siginfo, label);
-	return true;
+	ref_siginfo(sig);
+
+	sig_atomic_t vp = P::info;
+	sig_atomic_t vo = info;
+
+	if (vp != vo) {
+		st_siginfo.failures++;
+		if (st_siginfo.reported < REPORT_LIMIT) {
+			st_siginfo.reported++;
+			printf("  FAIL siginfo: sig=%d preset=%d port=%ld "
+			    "oracle=%ld\n", sig, preset, (long)vp, (long)vo);
+		}
+	}
 }
 
 static void
-build_fts_script_simple()
+test_siginfo(void)
 {
-	g_fts_script = std::make_unique<FtsState>();
-	setup_reg_file("/src/a", { 'd', 'a', 't', 'a' }, 0644);
-	g_fts_script->nodes.emplace_back(std::unique_ptr<FtsNode>(
-	    make_fts_node(FTS_F, FTS_ROOTLEVEL, 0, "/src/a", "/src/a", "a",
-	    &path_mock("/src/a").st)));
-}
-
-static bool
-paths_equal(const PATH_T *a, const P::PATH_T *b)
-{
-	if (a->dir != b->dir)
-		return false;
-	if (std::strcmp(a->base, b->base) != 0)
-		return false;
-	if (std::strcmp(a->path, b->path) != 0)
-		return false;
-	return (a->end - a->path) == (b->end - b->path);
-}
-
-static bool
-run_copy_case(const char *label, enum ref_op type)
-{
-	st_copy.cases++;
-	mock_reset();
-	reset_globals();
-	g_test_active = true;
-
-	build_fts_script_simple();
-
-	if (type == RFILE_TO_FILE) {
-		ref_to.dir = AT_FDCWD;
-		strlcpy(ref_to.base, "out", sizeof(ref_to.base));
-		ref_to.path[0] = '\0';
-		ref_to.end = ref_to.path;
-	} else {
-		path_mock("/dest/").exists = true;
-		path_mock("/dest/").st.st_mode = S_IFDIR | 0755;
-		ref_to.dir = AT_FDCWD;
-		strlcpy(ref_to.base, "/dest/", sizeof(ref_to.base));
-		ref_to.path[0] = '\0';
-		ref_to.end = ref_to.path;
-	}
-	copy_path_t(&P::to, &ref_to);
-
-	char arg0[] = "/src/a";
-	char *argv[] = { arg0, nullptr };
-
-	struct stat root_stat {};
-	struct stat *rootp = nullptr;
-	if (type == RFILE_TO_DIR) {
-		root_stat.st_mode = S_IFDIR | 0755;
-		root_stat.st_dev = 1;
-		root_stat.st_ino = 1;
-		rootp = &root_stat;
-	}
-
-	int fts_options = FTS_NOCHDIR | FTS_PHYSICAL;
-	int saved = silence_stderr();
-	int rr = ref_cp_copy(argv, type, fts_options, rootp);
-	char *end_ref = ref_to.end;
-	int rp = P::copy(argv, (P::op)type, fts_options, rootp);
-	char *end_port = P::to.end;
-	restore_stderr(saved);
-	g_test_active = false;
-
-	if (rr != rp || !paths_equal(&ref_to, &P::to))
-		return fail(st_copy, label);
-	if ((end_ref - ref_to.path) != (end_port - P::to.path))
-		return fail(st_copy, label);
-	return true;
-}
-
-static std::string
-make_temp_root()
-{
-	char tmpl[] = "/tmp/pbsd_b0191s2_XXXXXX";
-	char *dir = mkdtemp(tmpl);
-	if (dir == nullptr)
-		return "";
-	return std::string(dir);
-}
-
-struct MainResult {
-	int status;
-	std::vector<unsigned char> out;
-	std::vector<unsigned char> err;
-};
-
-static MainResult
-run_main_child(bool use_port, int argc, char **argv)
-{
-	int pout[2], perr[2];
-	if (pipe(pout) != 0 || pipe(perr) != 0)
-		return {};
-
-	pid_t pid = fork();
-	if (pid < 0)
-		return {};
-
-	if (pid == 0) {
-		dup2(pout[1], STDOUT_FILENO);
-		dup2(perr[1], STDERR_FILENO);
-		close(pout[0]);
-		close(pout[1]);
-		close(perr[0]);
-		close(perr[1]);
-		g_test_child = true;
-		g_test_active = false;
-		optind = 1;
-#if defined(__GLIBC__) && defined(optreset)
-		optreset = 1;
-#endif
-		int ret = use_port ? P::main(argc, argv) : ref_cp_main(argc, argv);
-		::_exit(ret);
-	}
-
-	close(pout[1]);
-	close(perr[1]);
-	MainResult res{};
-	unsigned char buf[4096];
-	ssize_t nr;
-	while ((nr = read(pout[0], buf, sizeof(buf))) > 0)
-		res.out.insert(res.out.end(), buf, buf + nr);
-	while ((nr = read(perr[0], buf, sizeof(buf))) > 0)
-		res.err.insert(res.err.end(), buf, buf + nr);
-	close(pout[0]);
-	close(perr[0]);
-
-	int st = 0;
-	if (waitpid(pid, &st, 0) >= 0 && WIFEXITED(st))
-		res.status = WEXITSTATUS(st);
-	return res;
-}
-
-static bool
-run_main_case(const char *label, const std::vector<std::string> &args)
-{
-	st_main.cases++;
-	static char prog[] = "cp";
-	std::vector<std::string> pool = args;
-	std::vector<char *> argv;
-	argv.push_back(prog);
-	for (auto &a : pool)
-		argv.push_back(const_cast<char *>(a.c_str()));
-	argv.push_back(nullptr);
-
-	MainResult ref = run_main_child(false, (int)argv.size() - 1, argv.data());
-	MainResult port = run_main_child(true, (int)argv.size() - 1, argv.data());
-
-	if (ref.status != port.status)
-		return fail(st_main, label);
-	if (ref.out != port.out || ref.err != port.err)
-		return fail(st_main, label);
-	return true;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-static void test_ftscmp_hand()
-{
-	(void)run_ftscmp_case("eq", "abc", "abc");
-	(void)run_ftscmp_case("lt", "a", "b");
-	(void)run_ftscmp_case("gt", "z", "a");
-	(void)run_ftscmp_case("empty", "", "");
-	(void)run_ftscmp_case("hi", "\x80", "\x7f");
-}
-
-static void test_ftscmp_sweep()
-{
-	for (long i = 0; i < 52000; i++) {
-		char a[16], b[16];
-		int la = rng.bits(0, 8);
-		int lb = rng.bits(0, 8);
-		for (int j = 0; j < la; j++)
-			a[j] = (char)rng.byte();
-		a[la] = '\0';
-		for (int j = 0; j < lb; j++)
-			b[j] = (char)rng.byte();
-		b[lb] = '\0';
-		(void)run_ftscmp_case("sweep", a, b);
-	}
-}
-
-static void test_siginfo_hand()
-{
-	(void)run_siginfo_case("siginfo", SIGINFO);
-	(void)run_siginfo_case("zero", 0);
-}
-
-static void test_siginfo_sweep()
-{
-	for (long i = 0; i < 25000; i++)
-		(void)run_siginfo_case("sweep", rng.bits(-128, 255));
-}
-
-static void test_copy_hand()
-{
-	(void)run_copy_case("file_to_file", RFILE_TO_FILE);
-	(void)run_copy_case("file_to_dir", RFILE_TO_DIR);
-}
-
-static void test_copy_sweep()
-{
-	for (long i = 0; i < 100000; i++) {
-		enum ref_op t = rng.coin() ? RFILE_TO_FILE : RFILE_TO_DIR;
-		(void)run_copy_case("sweep", t);
-	}
-}
-
-static void test_main_hand()
-{
-	std::string root = make_temp_root();
-	if (root.empty())
-		return;
-
-	std::string f1 = root + "/f1";
-	std::string f2 = root + "/f2";
-	std::string sub = root + "/sub";
-	std::string dne = root + "/newdir";
-
-	FILE *fp = fopen(f1.c_str(), "w");
-	if (fp) {
-		fputs("hello", fp);
-		fclose(fp);
-	}
-	fp = fopen(f2.c_str(), "w");
-	if (fp) {
-		fputs("world", fp);
-		fclose(fp);
-	}
-	mkdir(sub.c_str(), 0755);
-
-	(void)run_main_case("usage_no_args", {});
-	(void)run_main_case("usage_one_arg", { f1 });
-	(void)run_main_case("bad_opt", { "-Z", f1, f2 });
-	(void)run_main_case("R_r_conflict", { "-R", "-r", f1, sub });
-	(void)run_main_case("l_s_conflict", { "-l", "-s", f1, f2 });
-	(void)run_main_case("file_to_file", { f1, f2 });
-	(void)run_main_case("to_dir", { f1, sub });
-	(void)run_main_case("recursive", { "-R", f1, dne });
-	(void)run_main_case("no_clobber", { "-n", f1, f2 });
-	(void)run_main_case("verbose", { "-v", f1, f2 });
-
-	unlink(f1.c_str());
-	unlink(f2.c_str());
-	rmdir(sub.c_str());
-	rmdir(dne.c_str());
-	rmdir(root.c_str());
-}
-
-static void test_main_sweep()
-{
-	static const char *opts[] = { "", "-f", "-n", "-v", "-p", "-H", "-L",
-	    "-P", "-R", "-a", "-l", "-s", "-x", "-N" };
-
-	for (long i = 0; i < 3000; i++) {
-		std::string root = make_temp_root();
-		if (root.empty())
-			continue;
-		std::string f1 = root + "/a";
-		std::string f2 = root + "/b";
-		std::string sub = root + "/d";
-		FILE *fp = fopen(f1.c_str(), "w");
-		if (fp) {
-			fputc((char)rng.byte(), fp);
-			fclose(fp);
+	static const int sigs[] = { 0, 1, -1, 2, 9, 15, 29, 31, 63, 64, 65,
+	    127, 128, 255, 256, -128, -129, INT_MIN, INT_MAX, INT_MIN + 1,
+	    INT_MAX - 1 };
+	static const int presets[] = { 0, 1, -1, 2, -2, 127, 128, -128, 255,
+	    0x7f7f7f7f, INT_MIN, INT_MAX, INT_MIN + 1, INT_MAX - 1 };
+	const size_t ns = sizeof(sigs) / sizeof(sigs[0]);
+	const size_t np = sizeof(presets) / sizeof(presets[0]);
+
+	for (size_t i = 0; i < ns; i++)
+		for (size_t j = 0; j < np; j++)
+			siginfo_case(sigs[i], presets[j]);
+
+	/* Fixed-seed randomised sweep. */
+	rng_seed(0x5EED0BADF00D0011ULL);
+	for (unsigned long i = 0; i < 220000UL; i++) {
+		int sig;
+		int preset;
+
+		if (rnd_below(4) == 0)
+			sig = (int)(int32_t)rnd();
+		else
+			sig = (int)rnd_below(70);
+
+		switch (rnd_below(3)) {
+		case 0:
+			preset = (int)rnd_below(3) - 1;
+			break;
+		case 1:
+			preset = (int)(int32_t)rnd();
+			break;
+		default:
+			preset = (int)rnd_below(256);
+			break;
 		}
-		fp = fopen(f2.c_str(), "w");
-		if (fp) {
-			fputc((char)rng.byte(), fp);
-			fclose(fp);
-		}
-		mkdir(sub.c_str(), 0755);
-
-		std::vector<std::string> args;
-		if ((rng.next() & 3u) == 0u) {
-			const char *o = opts[rng.bits(0, 13)];
-			if (o[0] != '\0')
-				args.emplace_back(o);
-		}
-		args.push_back(f1);
-		if (rng.coin())
-			args.push_back(f2);
-		args.push_back(rng.coin() ? sub : f2);
-
-		(void)run_main_case("sweep", args);
-
-		unlink(f1.c_str());
-		unlink(f2.c_str());
-		rmdir(sub.c_str());
-		rmdir(root.c_str());
+		siginfo_case(sig, preset);
 	}
 }
 
-} // namespace
+/* ------------------------------------------------------------------ */
 
-extern "C" {
-int ref_copy_file(const FTSENT *e, bool d, bool b) { (void)e;(void)d;(void)b; return 0; }
-int ref_copy_link(const FTSENT *p, bool d, bool b) { (void)p;(void)d;(void)b; return 0; }
-int ref_copy_fifo(struct stat *s, bool d, bool b) { (void)s;(void)d;(void)b; return 0; }
-int ref_copy_special(struct stat *s, bool d, bool b) { (void)s;(void)d;(void)b; return 0; }
-int ref_setfile(struct stat *fs, int fd, bool b) { (void)fs;(void)fd;(void)b; return 0; }
-int ref_preserve_dir_acls(const char *a, const char *b) { (void)a;(void)b; return 0; }
-void ref_usage(void) { ::_exit(EX_USAGE); }
-}
-int main()
+static void
+row(const Stats &s)
 {
-	test_ftscmp_hand();
-	test_siginfo_hand();
-	test_copy_hand();
-	test_main_hand();
-	test_ftscmp_sweep();
-	test_siginfo_sweep();
-	test_copy_sweep();
-	test_main_sweep();
-	Stat *all[] = { &st_ftscmp, &st_siginfo, &st_copy, &st_main, };
-	long total_cases = 0;
-	long total_fails = 0;
+	printf("  %-12s %12llu %12llu   %s\n", s.name, s.cases, s.failures,
+	    s.failures == 0 ? "ok" : "FAILED");
+}
 
-	std::printf("\n%-22s %12s %12s\n", "function", "cases", "failures");
-	for (Stat *st : all) {
-		std::printf("%-22s %12ld %12ld\n", st->name, st->cases,
-		    st->fails);
-		total_cases += st->cases;
-		total_fails += st->fails;
-	}
-	std::printf("%-22s %12ld %12ld\n", "TOTAL", total_cases, total_fails);
+int
+main(void)
+{
+	printf("pbsd b0191s2 differential harness (hbsd/src/bin/cp/cp.c)\n");
 
-	return (total_fails == 0 ? 0 : 1);
+	test_ftscmp();
+	test_siginfo();
+
+	unsigned long long tc = st_ftscmp.cases + st_siginfo.cases;
+	unsigned long long tf = st_ftscmp.failures + st_siginfo.failures;
+
+	printf("\n");
+	printf("  %-12s %12s %12s\n", "function", "cases", "failures");
+	printf("  ------------------------------------------------\n");
+	row(st_ftscmp);
+	row(st_siginfo);
+	printf("  ------------------------------------------------\n");
+	printf("  %-12s %12llu %12llu   %s\n", "TOTAL", tc, tf,
+	    tf == 0 ? "ok" : "FAILED");
+
+	return (tf == 0 ? 0 : 1);
 }

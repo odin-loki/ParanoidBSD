@@ -1002,3 +1002,8 @@ letcmd(int argc, char **argv)
 }
 
 } // namespace
+
+extern "C" int port_letcmd(int argc, char **argv)
+{
+	return pbsd::bin_sh::b0228::letcmd(argc, argv);
+}

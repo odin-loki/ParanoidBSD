@@ -176,24 +176,35 @@ struct Fixture {
 
 static std::vector<std::unique_ptr<Fixture>> fixtures;
 
+/*
+ * A priority that reaches substsearch() and has COLLATE_SUBST_PRIORITY set
+ * is used verbatim as an index into subst_table[w], so for a weight that
+ * owns a substitution table only genuine keys may carry that bit -- which
+ * also rules out the ordinary negative encodings, whose bit 30 is set.
+ * COLLATE_MAX_PRIORITY has bit 30 set too.
+ */
 static int32_t
 genpri(Rng &r, Fixture &f, int w)
 {
+	bool subst = !f.subst[w].empty();
+
 	switch (r.below(20)) {
 	case 0:
 	case 1:
 		return (0);
 	case 2:
-		return (-r.range(1, 60));
+		/* negative either way; 0x80000000|k keeps bit 30 clear */
+		return (subst ? (int32_t)(0x80000000u + r.below(60)) :
+		    -r.range(1, 60));
 	case 3:
 	case 4:
 	case 5:
-		if (!f.subst[w].empty())
+		if (subst)
 			return (P::COLLATE_SUBST_PRIORITY |
 			    (int32_t)r.below((uint32_t)f.subst[w].size()));
 		return (r.range(1, 4000));
 	case 6:
-		return (P::COLLATE_MAX_PRIORITY);
+		return (subst ? 0x3fffffff : P::COLLATE_MAX_PRIORITY);
 	case 7:
 		return (1);
 	default:

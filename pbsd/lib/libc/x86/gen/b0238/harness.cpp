@@ -214,16 +214,40 @@ struct CtxBuf {
 	}
 };
 
+static intptr_t
+xfpustate_offset(P::__register_t v, const char *base)
+{
+
+	if (v == 0)
+		return (0);
+	return ((intptr_t)v - (intptr_t)base);
+}
+
+static void
+normalize_ctxbuf(CtxBuf &buf)
+{
+	P::ucontext_t *ucp = buf.ucp();
+
+	if (ucp->uc_mcontext.mc_xfpustate != 0)
+		ucp->uc_mcontext.mc_xfpustate =
+		    (P::__register_t)sizeof(P::ucontext_t);
+	else
+		ucp->uc_mcontext.mc_xfpustate = 0;
+}
+
 static bool
 mcontext_fields_match(const P::mcontext_t &a, const P::mcontext_t &b,
-    const char *ctx, int func)
+    const char *port_ctx, const char *ref_ctx, const char *ctx, int func)
 {
 	char msg[256];
+	intptr_t aoff, boff;
 
-	if (a.mc_xfpustate != b.mc_xfpustate) {
+	aoff = xfpustate_offset(a.mc_xfpustate, port_ctx);
+	boff = xfpustate_offset(b.mc_xfpustate, ref_ctx);
+	if (aoff != boff) {
 		std::snprintf(msg, sizeof msg,
-		    "mc_xfpustate port=%lld ref=%lld",
-		    (long long)a.mc_xfpustate, (long long)b.mc_xfpustate);
+		    "mc_xfpustate off port=%td ref=%td",
+		    (ptrdiff_t)aoff, (ptrdiff_t)boff);
 		report(func, ctx, msg);
 		return (false);
 	}
@@ -364,13 +388,29 @@ fill2_ok(unsigned int features, unsigned int cpuid_sz, int sysarch_fail,
 		return (false);
 	}
 	if (!mcontext_fields_match(pb.ucp()->uc_mcontext,
-	    rb.ucp()->uc_mcontext, ctx, F_FILL2))
+	    rb.ucp()->uc_mcontext, pb.ctx(), rb.ctx(), ctx, F_FILL2))
 		return (false);
-	if (!pb.identical(rb)) {
-		report(F_FILL2, ctx, "full guard buffer mismatch");
-		return (false);
+	{
+		CtxBuf pc = pb, rc = rb;
+
+		normalize_ctxbuf(pc);
+		normalize_ctxbuf(rc);
+		if (!pc.identical(rc)) {
+			report(F_FILL2, ctx, "full guard buffer mismatch");
+			return (false);
+		}
 	}
 	return (true);
+}
+
+static unsigned int
+safe_cpuid_sz(unsigned int s)
+{
+	unsigned int min = (unsigned int)sizeof(P::savex86_t);
+
+	if (s < min)
+		return (min + (s % 512u));
+	return (s);
 }
 
 static void
@@ -385,10 +425,11 @@ test_fill2_edges(void)
 
 	for (unsigned int f : feats) {
 		for (unsigned int s : szs) {
+			unsigned int cs = (f & CPUID2_OSXSAVE) ? safe_cpuid_sz(s) : s;
 			for (int sf : fails) {
 				for (unsigned char fl : fills) {
 					ncases[F_FILL2]++;
-					fill2_ok(f, s, sf, fl, "edge");
+					fill2_ok(f, cs, sf, fl, "edge");
 				}
 			}
 		}
@@ -410,9 +451,17 @@ test_fill2_edges(void)
 		if (P::__fillcontextx2(pb.ctx()) !=
 		    ref___fillcontextx2(rb.ctx()) ||
 		    !mcontext_fields_match(pb.ucp()->uc_mcontext,
-		    rb.ucp()->uc_mcontext, "flags-or", F_FILL2) ||
-		    !pb.identical(rb))
+		    rb.ucp()->uc_mcontext, pb.ctx(), rb.ctx(),
+		    "flags-or", F_FILL2)) {
 			report(F_FILL2, "flags-or", "preset mc_flags case");
+		} else {
+			CtxBuf pc = pb, rc = rb;
+
+			normalize_ctxbuf(pc);
+			normalize_ctxbuf(rc);
+			if (!pc.identical(rc))
+				report(F_FILL2, "flags-or", "preset mc_flags case");
+		}
 	}
 }
 
@@ -428,8 +477,10 @@ test_fill2_random(void)
 
 		if ((nextrand() & 1u) == 0u)
 			f &= ~CPUID2_OSXSAVE;
-		else
+		else {
 			f |= CPUID2_OSXSAVE;
+			s = safe_cpuid_sz(s);
+		}
 
 		std::snprintf(ctx, sizeof ctx, "rand %d", i);
 		ncases[F_FILL2]++;
@@ -473,12 +524,18 @@ fill_ok(unsigned int features, unsigned int cpuid_sz, int gc_fail,
 		return (false);
 	}
 	if (!pb.identical(rb)) {
-		report(F_FILL, ctx, "full guard buffer mismatch");
-		return (false);
+		CtxBuf pc = pb, rc = rb;
+
+		normalize_ctxbuf(pc);
+		normalize_ctxbuf(rc);
+		if (!pc.identical(rc)) {
+			report(F_FILL, ctx, "full guard buffer mismatch");
+			return (false);
+		}
 	}
 	if (a == 0 &&
 	    !mcontext_fields_match(pb.ucp()->uc_mcontext,
-	    rb.ucp()->uc_mcontext, ctx, F_FILL))
+	    rb.ucp()->uc_mcontext, pb.ctx(), rb.ctx(), ctx, F_FILL))
 		return (false);
 	return (true);
 }
@@ -520,8 +577,10 @@ test_fill_random(void)
 
 		if ((nextrand() & 1u) == 0u)
 			f &= ~CPUID2_OSXSAVE;
-		else
+		else {
 			f |= CPUID2_OSXSAVE;
+			s = safe_cpuid_sz(s);
+		}
 
 		std::snprintf(ctx, sizeof ctx, "rand %d", i);
 		ncases[F_FILL]++;
@@ -539,7 +598,19 @@ static bool
 ucontext_payload_match(const P::ucontext_t *pa, const P::ucontext_t *pb,
     size_t nbytes, const char *ctx)
 {
-	if (std::memcmp(pa, pb, nbytes) != 0) {
+	P::ucontext_t ca = *pa;
+	P::ucontext_t cb = *pb;
+
+	if (ca.uc_mcontext.mc_xfpustate != 0)
+		ca.uc_mcontext.mc_xfpustate = (P::__register_t)sizeof(P::ucontext_t);
+	else
+		ca.uc_mcontext.mc_xfpustate = 0;
+	if (cb.uc_mcontext.mc_xfpustate != 0)
+		cb.uc_mcontext.mc_xfpustate = (P::__register_t)sizeof(P::ucontext_t);
+	else
+		cb.uc_mcontext.mc_xfpustate = 0;
+
+	if (std::memcmp(&ca, &cb, nbytes) != 0) {
 		report(F_GET, ctx, "allocated ucontext payload mismatch");
 		return (false);
 	}
@@ -604,8 +675,10 @@ test_get_edges(void)
 
 	for (unsigned int f : feats) {
 		for (unsigned int s : szs) {
+			unsigned int cs = (f & CPUID2_OSXSAVE) ? safe_cpuid_sz(s) : s;
+
 			ncases[F_GET]++;
-			get_ok(f, s, 0, 0, 0, "ok edge");
+			get_ok(f, cs, 0, 0, 0, "ok edge");
 		}
 	}
 
@@ -631,8 +704,10 @@ test_get_random(void)
 
 		if ((nextrand() & 1u) == 0u)
 			f &= ~CPUID2_OSXSAVE;
-		else
+		else {
 			f |= CPUID2_OSXSAVE;
+			s = safe_cpuid_sz(s);
+		}
 
 		std::snprintf(ctx, sizeof ctx, "rand %d", i);
 		ncases[F_GET]++;

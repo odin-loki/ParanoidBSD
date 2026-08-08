@@ -39,6 +39,7 @@ P::arith_t ref_do_binop(int op, P::arith_t a, P::arith_t b);
 P::arith_t ref_arith_lookupvarint(char *varname);
 P::arith_t ref_arith(const char *s);
 int ref_letcmd(int argc, char **argv);
+extern "C" int port_letcmd(int argc, char **argv);
 }
 
 struct Stat {
@@ -731,8 +732,8 @@ test_letcmd()
 
 	oracle_reset_state();
 	P::port_reset_state();
+	int p1 = port_letcmd(1, av1);
 	int r1 = ref_letcmd(1, av1);
-	int p1 = P::letcmd(1, av1);
 	if (r1 != p1)
 		fail(st, "argc1");
 	else
@@ -740,8 +741,8 @@ test_letcmd()
 
 	oracle_reset_state();
 	P::port_reset_state();
+	int p2 = port_letcmd(2, av2);
 	int r2 = ref_letcmd(2, av2);
-	int p2 = P::letcmd(2, av2);
 	if (r2 != p2)
 		fail(st, "zero");
 	else
@@ -749,8 +750,8 @@ test_letcmd()
 
 	oracle_reset_state();
 	P::port_reset_state();
+	int p3 = port_letcmd(2, av3);
 	int r3 = ref_letcmd(2, av3);
-	int p3 = P::letcmd(2, av3);
 	if (r3 != p3)
 		fail(st, "expr");
 	else
@@ -758,8 +759,8 @@ test_letcmd()
 
 	oracle_reset_state();
 	P::port_reset_state();
+	int p4 = port_letcmd(3, av4);
 	int r4 = ref_letcmd(3, av4);
-	int p4 = P::letcmd(3, av4);
 	if (r4 != p4)
 		fail(st, "concat");
 	else
@@ -773,8 +774,8 @@ test_letcmd()
 		char *av[] = { let, e1, e2, nullptr };
 		oracle_reset_state();
 		P::port_reset_state();
+		int pr = port_letcmd(3, av);
 		int rr = ref_letcmd(3, av);
-		int pr = P::letcmd(3, av);
 		if (rr != pr)
 			fail(st, "sweep");
 		else
@@ -798,7 +799,7 @@ main()
 	test_arith_lookupvarint();
 	test_arith_hand();
 	test_letcmd();
-	/* test_arith_sweep(); */
+	test_arith_sweep();
 
 	unsigned long long total = 0, fails = 0;
 	std::printf("\n%-22s %12s %12s\n", "function", "cases", "failures");

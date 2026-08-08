@@ -599,6 +599,7 @@ void
 random_sweep(unsigned n)
 {
 	unsigned char blob[BIGBUF];
+	int ra, rbv;
 
 	for (unsigned i = 0; i < n; i++) {
 		std::vector<std::pair<std::string, std::vector<unsigned char>>> ents;
@@ -619,15 +620,18 @@ random_sweep(unsigned n)
 		}
 
 		guard_fill(blob, BIGBUF);
-		P::_citrus_db_factory *dummy = nullptr;
-		int sp = P::_citrus_db_factory_create(&dummy, hash_std, nullptr);
-		int sr = ref__citrus_db_factory_create(&dummy, hash_std, nullptr);
+		P::_citrus_db_factory *dummy_p = nullptr;
+		P::_citrus_db_factory *dummy_r = nullptr;
+		int sp = P::_citrus_db_factory_create(&dummy_p, hash_std, nullptr);
+		int sr = ref__citrus_db_factory_create(&dummy_r, hash_std, nullptr);
 		if (sp != sr) {
 			fail(F_FACTORY_CREATE, "rand create");
 			continue;
 		}
-		P::_citrus_db_factory_free(dummy);
-		ref__citrus_db_factory_free(dummy);
+		bump(F_FACTORY_CREATE);
+		bump(F_FACTORY_FREE);
+		P::_citrus_db_factory_free(dummy_p);
+		ref__citrus_db_factory_free(dummy_r);
 
 		P::_citrus_region reg;
 		P::_citrus_region_init(&reg, blob + 128, BIGBUF - 256);
@@ -638,11 +642,54 @@ random_sweep(unsigned n)
 			P::_citrus_region_init(&data, (void *)e.second.data(), e.second.size());
 			P::_citrus_db_factory_add_by_string(df, e.first.c_str(), &data, 0);
 		}
+		size_t used = P::_citrus_db_factory_calc_size(df);
 		P::_citrus_db_factory_serialize(df, "LOOKUP\0\0", &reg);
-		size_t used = P::_citrus_region_size(&reg);
 		P::_citrus_db_factory_free(df);
 
-		test_db_ops(blob + 128, used);
+		P::_citrus_region reg_blob;
+		P::_citrus_region_init(&reg_blob, blob + 128, used);
+		P::_citrus_db *da = nullptr, *db = nullptr;
+		bump(F_DB_OPEN);
+		ra = P::_citrus_db_open(&da, &reg_blob, "LOOKUP\0\0", hash_std, nullptr);
+		rbv = ref__citrus_db_open(&db, &reg_blob, "LOOKUP\0\0", hash_std, nullptr);
+		if (ra != rbv)
+			fail(F_DB_OPEN, "rand open");
+
+		bump(F_DB_NUM);
+		int na = P::_citrus_db_get_number_of_entries(da);
+		int nb = ref__citrus_db_get_number_of_entries(db);
+		if (na != nb || na != (int)ents.size())
+			fail(F_DB_NUM, "rand num");
+
+		for (const auto &e : ents) {
+			P::_citrus_region ka, kb;
+			bump(F_DB_LOOKUP_S);
+			ra = P::_citrus_db_lookup_by_string(da, e.first.c_str(), &ka, nullptr);
+			rbv = ref__citrus_db_lookup_by_string(db, e.first.c_str(), &kb, nullptr);
+			if (ra != rbv || P::_citrus_region_size(&ka) != P::_citrus_region_size(&kb) ||
+			    (ra == 0 &&
+			    std::memcmp(P::_citrus_region_head(&ka), P::_citrus_region_head(&kb),
+			    P::_citrus_region_size(&ka)) != 0))
+				fail(F_DB_LOOKUP_S, "rand lookup");
+		}
+
+		for (int idx = 0; idx < na; idx++) {
+			P::_citrus_region ka, kb, da_r, db_r;
+			bump(F_DB_ENTRY);
+			ra = P::_citrus_db_get_entry(da, idx, &ka, &da_r);
+			rbv = ref__citrus_db_get_entry(db, idx, &kb, &db_r);
+			if (ra != rbv || P::_citrus_region_size(&ka) != P::_citrus_region_size(&kb) ||
+			    P::_citrus_region_size(&da_r) != P::_citrus_region_size(&db_r) ||
+			    std::memcmp(P::_citrus_region_head(&ka), P::_citrus_region_head(&kb),
+			    P::_citrus_region_size(&ka)) != 0 ||
+			    std::memcmp(P::_citrus_region_head(&da_r), P::_citrus_region_head(&db_r),
+			    P::_citrus_region_size(&da_r)) != 0)
+				fail(F_DB_ENTRY, "rand entry");
+		}
+
+		bump(F_DB_CLOSE);
+		P::_citrus_db_close(da);
+		ref__citrus_db_close(db);
 
 		if ((i % 500) == 0) {
 			char dir[] = "/tmp/b0229mXXXXXX";

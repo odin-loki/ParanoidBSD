@@ -20,6 +20,10 @@
 #endif
 #endif
 
+#ifndef __INT_MAX
+#define __INT_MAX INT_MAX
+#endif
+
 #ifndef FP_ILOGB0
 #define FP_ILOGB0 (-__INT_MAX)
 #endif

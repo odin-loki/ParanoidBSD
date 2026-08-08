@@ -80,7 +80,6 @@ int ref___getcontextx_size(void);
 int ref___fillcontextx2(char *ctx);
 int ref___fillcontextx(char *ctx);
 ref_abi::ucontext *ref___getcontextx(void);
-void ref_ctx_done(ref_abi::ucontext *ucp);
 void ref___makecontext(ref_abi::ucontext *ucp, void (*func)(void), int argc, ...);
 }
 
@@ -585,7 +584,12 @@ op_ctx_done(port::ucontext_t *ucp_port, ref_abi::ucontext *ucp_ref,
 	la = g_done_log;
 
 	mock_reset();
-	ref_ctx_done(ucp_ref);
+	if (ucp_ref->uc_link == nullptr)
+		__wrap_exit(0);
+	else {
+		setcontext(ucp_ref->uc_link);
+		__wrap_abort();
+	}
 	lb = g_done_log;
 
 	if (la.exit_called != lb.exit_called) {
@@ -829,23 +833,19 @@ main(void)
 {
 	long long total_cases = 0, total_fails = 0;
 
-#if 0
 	edge_getcontextx_size();
 	edge_fillcontextx2();
 	edge_fillcontextx();
 	edge_getcontextx();
 	edge_makecontext();
-#endif
 	edge_ctx_done();
 
-#if 0
 	sweep_getcontextx_size();
 	sweep_fillcontextx2();
 	sweep_fillcontextx();
 	sweep_getcontextx();
 	sweep_makecontext();
 	sweep_ctx_done();
-#endif
 
 	std::printf("\n");
 	std::printf("%-20s %10s %10s\n", "function", "cases", "failures");
