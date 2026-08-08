@@ -9,17 +9,16 @@ module;
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
-#include <cstdlib>
 
-extern "C" {
-#include <errno.h>
+export module pbsd.lib.libc.aarch64.gen.b0222;
 
-typedef int64_t __register_t;
-typedef uint64_t __uint64_t;
-typedef uint32_t __uint32_t;
-typedef size_t __size_t;
+export namespace pbsd::lib_libc_aarch64_gen::b0222 {
 
-typedef struct __sigset {
+using __register_t = std::int64_t;
+using __uint64_t = std::uint64_t;
+using __uint32_t = std::uint32_t;
+
+typedef struct {
 	__uint32_t __bits[4];
 } __sigset_t;
 
@@ -52,7 +51,7 @@ typedef struct __mcontext mcontext_t;
 
 struct __stack_t {
 	void		*ss_sp;
-	size_t		ss_size;
+	std::size_t	ss_size;
 	int		ss_flags;
 };
 
@@ -73,18 +72,18 @@ struct arm64_reg_context {
 #define	ARM64_CTX_END		0xa5a5a5a5
 
 #define	STACKALIGNBYTES	(16 - 1)
-#define	STACKALIGN(p)	((uint64_t)(p) & ~STACKALIGNBYTES)
+#define	STACKALIGN(p)	((std::uint64_t)(p) & ~STACKALIGNBYTES)
 
+extern "C" {
+extern int errno;
 int getcontext(ucontext_t *);
 void exit(int);
 int setcontext(const ucontext_t *);
 void abort(void);
 void _ctx_start(void);
+void *malloc(std::size_t);
+void free(void *);
 }
-
-export module pbsd.lib.libc.aarch64.gen.b0222;
-
-export namespace pbsd::lib_libc_aarch64_gen::b0222 {
 
 /*
  * Copyright (c) 2011 Konstantin Belousov <kib@FreeBSD.org>
@@ -115,12 +114,12 @@ export namespace pbsd::lib_libc_aarch64_gen::b0222 {
 int
 __getcontextx_size(void)
 {
-	size_t size;
+	std::size_t size;
 
 	size = sizeof(ucontext_t);
 	size += sizeof(struct arm64_reg_context); /* Space for ARM64_CTX_END */
 
-	return (size);
+	return ((int)size);
 }
 
 int
@@ -130,7 +129,7 @@ __fillcontextx2(char *ctx)
 	ucontext_t *ucp;
 
 	ucp = (ucontext_t *)ctx;
-	ucp->uc_mcontext.mc_ptr = (uint64_t)(ucp + 1);
+	ucp->uc_mcontext.mc_ptr = (std::uint64_t)(ucp + 1);
 
 	reg_ctx = (struct arm64_reg_context *)ucp->uc_mcontext.mc_ptr;
 	reg_ctx->ctx_id = ARM64_CTX_END;
@@ -228,7 +227,7 @@ __makecontext(ucontext_t *ucp, void (*func)(void), int argc, ...)
 	va_start(ap, argc);
 	/* Pass up to eight arguments in x0-7. */
 	for (i = 0; i < argc && i < 8; i++)
-		gp->gp_x[i] = va_arg(ap, uint64_t);
+		gp->gp_x[i] = va_arg(ap, std::uint64_t);
 	va_end(ap);
 
 	/* Set the stack */

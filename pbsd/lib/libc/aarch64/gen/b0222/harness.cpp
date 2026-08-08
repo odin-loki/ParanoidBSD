@@ -19,15 +19,15 @@ import pbsd.lib.libc.aarch64.gen.b0222;
 
 namespace port = pbsd::lib_libc_aarch64_gen::b0222;
 
-extern "C" {
-typedef int64_t __register_t;
-typedef uint64_t __uint64_t;
-typedef uint32_t __uint32_t;
-typedef size_t __size_t;
+namespace ref_abi {
 
-typedef struct __sigset {
+using __register_t = std::int64_t;
+using __uint64_t = std::uint64_t;
+using __uint32_t = std::uint32_t;
+
+typedef struct {
 	__uint32_t __bits[4];
-} __sigset_t;
+} ref_sigset_t;
 
 struct gpregs {
 	__register_t	gp_x[30];
@@ -45,7 +45,7 @@ struct fpregs {
 	int		fp_pad;
 };
 
-struct __mcontext {
+struct mcontext {
 	struct gpregs	mc_gpregs;
 	struct fpregs	mc_fpregs;
 	int		mc_flags;
@@ -54,34 +54,32 @@ struct __mcontext {
 	__uint64_t	mc_spare[7];
 };
 
-typedef struct __mcontext mcontext_t;
-
-struct __stack_t {
+struct stack_t {
 	void		*ss_sp;
-	__size_t	ss_size;
+	std::size_t	ss_size;
 	int		ss_flags;
 };
 
-typedef struct __ucontext {
-	__sigset_t		uc_sigmask;
-	mcontext_t		uc_mcontext;
-	struct __ucontext	*uc_link;
-	struct __stack_t	uc_stack;
-	int			uc_flags;
-	int			__spare__[4];
-} ucontext_t;
-
-struct arm64_reg_context {
-	__uint32_t	ctx_id;
-	__uint32_t	ctx_size;
+struct ucontext {
+	ref_sigset_t	uc_sigmask;
+	struct mcontext	uc_mcontext;
+	struct ucontext	*uc_link;
+	struct stack_t	uc_stack;
+	int		uc_flags;
+	int		__spare__[4];
 };
 
+} /* namespace ref_abi */
+
+static_assert(sizeof(ref_abi::ucontext) == sizeof(port::ucontext_t));
+
+extern "C" {
 int ref___getcontextx_size(void);
 int ref___fillcontextx2(char *ctx);
 int ref___fillcontextx(char *ctx);
-ucontext_t *ref___getcontextx(void);
-void ref_ctx_done(ucontext_t *ucp);
-void ref___makecontext(ucontext_t *ucp, void (*func)(void), int argc, ...);
+ref_abi::ucontext *ref___getcontextx(void);
+void ref_ctx_done(ref_abi::ucontext *ucp);
+void ref___makecontext(ref_abi::ucontext *ucp, void (*func)(void), int argc, ...);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -133,10 +131,10 @@ static unsigned g_getcontext_seq;
 static int g_malloc_fail;
 
 struct DoneLog {
-	int		exit_called;
-	int		exit_status;
-	ucontext_t	*setcontext_arg;
-	int		abort_called;
+	int			exit_called;
+	int			exit_status;
+	ref_abi::ucontext	*setcontext_arg;
+	int			abort_called;
 };
 
 static DoneLog g_done_log;

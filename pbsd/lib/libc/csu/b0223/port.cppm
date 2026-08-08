@@ -90,22 +90,21 @@ namespace {
 
 #if defined(CRT_IRELOC_RELA)
 #define __rela_iplt_end \
-	((const Elf_Rela (*)[1])(__rela_iplt_start + mock_iplt_n))
+	((const Elf_Rela *)(__rela_iplt_start + mock_iplt_n))
 #elif defined(CRT_IRELOC_REL)
 #define __rel_iplt_end \
-	((const Elf_Rel (*)[1])(__rel_iplt_start + mock_rel_iplt_n))
+	((const Elf_Rel *)(__rel_iplt_start + mock_rel_iplt_n))
 #endif
 
 #define __preinit_array_end \
-	((void (*(*)[1])(int, char **, char **))(__preinit_array_start + \
+	((void (**)(int, char **, char **))(__preinit_array_start + \
 	    mock_preinit_n))
 
 #define __init_array_end \
-	((void (*(*)[1])(int, char **, char **))(__init_array_start + \
-	    mock_init_n))
+	((void (**)(int, char **, char **))(__init_array_start + mock_init_n))
 
 #define __fini_array_end \
-	((void (*(*)[1])(void))(__fini_array_start + mock_fini_n))
+	((void (**)(void))(__fini_array_start + mock_fini_n))
 
 #if defined(CRT_IRELOC_RELA)
 

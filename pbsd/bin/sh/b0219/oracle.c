@@ -112,7 +112,7 @@ struct stackmark {
 #define is_int_on() oracle_suppressint
 #define int_pending() oracle_intpending
 
-static volatile sig_atomic_t oracle_suppressint = 0;
+static volatile sig_atomic_t oracle_suppressint = 1;
 static volatile sig_atomic_t oracle_intpending = 0;
 
 static void oracle_onint(void) {}
@@ -210,7 +210,7 @@ void ref_doformat(struct output *dest, const char *f, va_list ap);
 
 void oracle_reset_state(void)
 {
-	oracle_suppressint = 0;
+	oracle_suppressint = 1;
 	oracle_intpending = 0;
 	oracle_error_flag = 0;
 	oracle_argptr = NULL;

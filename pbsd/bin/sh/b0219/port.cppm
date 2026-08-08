@@ -82,7 +82,7 @@ struct stackmark {
 
 #define CHECKSTRSPACE(n, p) 	{ if ((size_t)(sstrend - p) < (size_t)(n)) p = makestrspace((n), (p)); }
 
-static volatile sig_atomic_t port_suppressint = 0;
+static volatile sig_atomic_t port_suppressint = 1;
 static volatile sig_atomic_t port_intpending = 0;
 
 static void port_onint(void) {}
@@ -213,7 +213,7 @@ port_fwopen(void *cookie, int (*writefn)(void *, const char *, int))
 
 void port_reset_state(void)
 {
-	port_suppressint = 0;
+	port_suppressint = 1;
 	port_intpending = 0;
 	port_error_flag = 0;
 	port_argptr = NULL;

@@ -16,7 +16,6 @@
 typedef int64_t __register_t;
 typedef uint64_t __uint64_t;
 typedef uint32_t __uint32_t;
-typedef size_t __size_t;
 
 typedef struct __sigset {
 	__uint32_t __bits[4];
@@ -77,6 +76,11 @@ struct arm64_reg_context {
 #define	__weak_reference(sym, alias)
 
 void _ctx_start(void);
+
+int getcontext(ucontext_t *);
+void exit(int);
+int setcontext(const ucontext_t *);
+void abort(void);
 
 #define	__getcontextx_size	ref___getcontextx_size
 #define	__fillcontextx2		ref___fillcontextx2

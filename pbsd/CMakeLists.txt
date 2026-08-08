@@ -79,6 +79,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/db/db/b0157/port.cppm
   lib/libc/db/hash/b0133/port.cppm
   lib/libc/db/hash/hash_log2_m/port.cppm
+  lib/libc/db/mpool/b0226/port.cppm
   lib/libc/db/recno/rec_utils_m/port.cppm
   lib/libc/db/test/hash.tests/b0184/port.cppm
   lib/libc/db/test/hash.tests/b0185/port.cppm
@@ -414,6 +415,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/compat/freebsd32/b0206/port.cppm
   sys/compat/linuxkpi/common/src/b0209/port.cppm
   sys/fs/deadfs/b0213/port.cppm
+  sys/fs/fifofs/b0205/port.cppm
   sys/fs/mntfs/b0211/port.cppm
   sys/fs/procfs/b0161/port.cppm
   sys/fs/procfs/procfs_type_m/port.cppm

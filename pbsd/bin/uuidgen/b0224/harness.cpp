@@ -15,9 +15,20 @@ namespace P = pbsd::bin_uuidgen::b0224;
 static const unsigned char GUARD = 0x7f;
 static const long SWEEP = 200000L;
 
+struct OracleUuid {
+	std::uint32_t	time_low;
+	std::uint16_t	time_mid;
+	std::uint16_t	time_hi_and_version;
+	std::uint8_t	clock_seq_hi_and_reserved;
+	std::uint8_t	clock_seq_low;
+	std::uint8_t	node[6];
+};
+
+static_assert(sizeof(OracleUuid) == sizeof(P::uuid));
+
 extern "C" {
-void ref_uuid_to_compact_string(const ::uuid_t *u, char **s, std::uint32_t *status);
-int ref_uuidgen_v4(::uuid *store, int count);
+void ref_uuid_to_compact_string(const OracleUuid *u, char **s, std::uint32_t *status);
+int ref_uuidgen_v4(OracleUuid *store, int count);
 void b0224_arc4random_reset(std::uint64_t seed);
 }
 
@@ -128,23 +139,24 @@ cmp_compact_one(const OracleUuid *u, char **s_r, char **s_p, StatusWrap *sw_r,
 	    status_p);
 
 	if (sw_r != nullptr && !status_guards_ok(*sw_r)) {
-		fail(st, std::string(tag + ": ref status guard").c_str());
+		fail(st, "ref status guard");
 	} else if (sw_p != nullptr && !status_guards_ok(*sw_p)) {
-		fail(st, std::string(tag + ": port status guard").c_str());
+		fail(st, "port status guard");
 	} else if (status_r != nullptr && status_p != nullptr &&
 	    *status_r != *status_p) {
-		fail(st, std::string(tag + ": status mismatch").c_str());
+		fail(st, "status mismatch");
 	} else if ((s_r == nullptr) != (s_p == nullptr)) {
-		fail(st, std::string(tag + ": s null mismatch").c_str());
+		fail(st, "s null mismatch");
 	} else if (s_r != nullptr) {
 		if (*s_r == nullptr && *s_p == nullptr) {
 			/* match */
 		} else if (*s_r == nullptr || *s_p == nullptr) {
-			fail(st, std::string(tag + ": *s null mismatch").c_str());
+			fail(st, "*s null mismatch");
 		} else if (std::strcmp(*s_r, *s_p) != 0) {
-			fail(st, std::string(tag + ": string mismatch").c_str());
+			fail(st, "string mismatch");
 		}
 	}
+	(void)tag;
 	ok(st);
 }
 
@@ -239,7 +251,7 @@ test_uuid_to_compact_string_sweep(void)
 		char *sr = nullptr;
 		char *sp = nullptr;
 		StatusWrap wr, wp;
-		const ::uuid *up = nullptr;
+		const OracleUuid *up = nullptr;
 		bool hi = (rng.u32() & 1u) != 0u;
 		bool null_u = (rng.u32() & 3u) == 0u;
 		bool null_s = (rng.u32() & 7u) == 0u;
@@ -257,8 +269,9 @@ test_uuid_to_compact_string_sweep(void)
 
 		ref_uuid_to_compact_string(up, null_s ? nullptr : &sr,
 		    null_st ? nullptr : &wr.st);
-		P::uuid_to_compact_string(up, null_s ? nullptr : &sp,
-		    null_st ? nullptr : &wp.st);
+		P::uuid_to_compact_string(
+		    reinterpret_cast<const P::uuid *>(up),
+		    null_s ? nullptr : &sp, null_st ? nullptr : &wp.st);
 
 		bool bad = false;
 		if (!null_st) {
@@ -270,13 +283,9 @@ test_uuid_to_compact_string_sweep(void)
 		if (!null_s) {
 			if ((sr == nullptr) != (sp == nullptr))
 				bad = true;
-			else if (sr != nullptr && sp != nullptr) {
-				if ((*sr == nullptr) != (*sp == nullptr))
-					bad = true;
-				else if (*sr != nullptr && *sp != nullptr &&
-				    std::strcmp(sr, sp) != 0)
-					bad = true;
-			}
+			else if (sr != nullptr && sp != nullptr &&
+			    std::strcmp(sr, sp) != 0)
+				bad = true;
 		}
 		if (bad)
 			fail(st, "sweep");
@@ -289,7 +298,7 @@ test_uuid_to_compact_string_sweep(void)
 static unsigned char *
 alloc_uuid_store(size_t count, size_t &total)
 {
-	const size_t body = count * sizeof(::uuid);
+	const size_t body = count * sizeof(OracleUuid);
 	total = body + 2;
 	unsigned char *raw = (unsigned char *)std::malloc(total);
 	if (raw == nullptr) {
@@ -307,16 +316,16 @@ cmp_uuidgen_one(int count, std::uint64_t seed, const char *tag)
 	size_t total_r = 0, total_p = 0;
 	unsigned char *raw_r = nullptr;
 	unsigned char *raw_p = nullptr;
-	::uuid *store_r = nullptr;
-	::uuid *store_p = nullptr;
+	OracleUuid *store_r = nullptr;
+	P::uuid *store_p = nullptr;
 	int ret_r, ret_p;
 	int errno_r, errno_p;
 
 	if (count >= 1) {
 		raw_r = alloc_uuid_store((size_t)count, total_r);
 		raw_p = alloc_uuid_store((size_t)count, total_p);
-		store_r = (::uuid *)(raw_r + 1);
-		store_p = (::uuid *)(raw_p + 1);
+		store_r = reinterpret_cast<OracleUuid *>(raw_r + 1);
+		store_p = reinterpret_cast<P::uuid *>(raw_p + 1);
 	}
 
 	errno = 0;
@@ -330,13 +339,14 @@ cmp_uuidgen_one(int count, std::uint64_t seed, const char *tag)
 	errno_p = errno;
 
 	if (ret_r != ret_p)
-		fail(st, std::string(tag + ": return").c_str());
+		fail(st, "return mismatch");
 	else if (ret_r < 0 && (errno_r != errno_p || errno_r != EINVAL))
-		fail(st, std::string(tag + ": errno").c_str());
+		fail(st, "errno mismatch");
 	else if (ret_r == 0) {
 		if (std::memcmp(raw_r, raw_p, total_r) != 0)
-			fail(st, std::string(tag + ": buffer").c_str());
+			fail(st, "buffer mismatch");
 	}
+	(void)tag;
 	ok(st);
 
 	std::free(raw_r);
@@ -375,16 +385,16 @@ test_uuidgen_v4_sweep(void)
 		size_t total_r = 0, total_p = 0;
 		unsigned char *raw_r = nullptr;
 		unsigned char *raw_p = nullptr;
-		::uuid *store_r = nullptr;
-		::uuid *store_p = nullptr;
+		OracleUuid *store_r = nullptr;
+		P::uuid *store_p = nullptr;
 		int ret_r, ret_p;
 		int errno_r, errno_p;
 
 		if (count >= 1) {
 			raw_r = alloc_uuid_store((size_t)count, total_r);
 			raw_p = alloc_uuid_store((size_t)count, total_p);
-			store_r = (::uuid *)(raw_r + 1);
-			store_p = (::uuid *)(raw_p + 1);
+			store_r = reinterpret_cast<OracleUuid *>(raw_r + 1);
+			store_p = reinterpret_cast<P::uuid *>(raw_p + 1);
 		}
 
 		errno = 0;

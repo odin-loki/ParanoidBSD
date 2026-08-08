@@ -29,7 +29,6 @@
 module;
 
 #define _GNU_SOURCE
-
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -40,8 +39,9 @@ module;
 #define LONG_BIT (sizeof(long) * 8)
 #endif
 
-extern "C" void arc4random_buf(void *buf, size_t len);
-extern "C" void uuid_create_nil(uuid_t *u, std::uint32_t *status);
+export module pbsd.bin.uuidgen.b0224;
+
+export namespace pbsd::bin_uuidgen::b0224 {
 
 struct uuid {
 	std::uint32_t	time_low;
@@ -54,15 +54,20 @@ struct uuid {
 
 typedef struct uuid uuid_t;
 
-export module pbsd.bin.uuidgen.b0224;
-
-export namespace pbsd::bin_uuidgen::b0224 {
-
-using ::uuid;
-using ::uuid_t;
-
 constexpr std::uint32_t uuid_s_ok = 0;
 constexpr std::uint32_t uuid_s_no_memory = 3;
+
+extern "C" void arc4random_buf(void *buf, size_t len);
+
+static void
+uuid_create_nil(uuid_t *u, std::uint32_t *status)
+{
+
+	if (status)
+		*status = uuid_s_ok;
+
+	std::memset(u, 0, sizeof(*u));
+}
 
 void
 uuid_to_compact_string(const uuid_t *u, char **s, std::uint32_t *status)

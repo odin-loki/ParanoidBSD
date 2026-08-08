@@ -12,6 +12,7 @@
  * depends on so that the bodies compile verbatim.
  */
 
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -65,29 +66,28 @@ const char *__progname;
 int mock_iplt_n;
 Elf_Rela __rela_iplt_start[64];
 #define __rela_iplt_end \
-	((const Elf_Rela (*)[1])(__rela_iplt_start + mock_iplt_n))
+	((const Elf_Rela *)(__rela_iplt_start + mock_iplt_n))
 
 int mock_rel_iplt_n;
 Elf_Rel __rel_iplt_start[64];
 #define __rel_iplt_end \
-	((const Elf_Rel (*)[1])(__rel_iplt_start + mock_rel_iplt_n))
+	((const Elf_Rel *)(__rel_iplt_start + mock_rel_iplt_n))
 
 int mock_preinit_n;
 void (*__preinit_array_start[64])(int, char **, char **);
 #define __preinit_array_end \
-	((void (*(*)[1])(int, char **, char **))(__preinit_array_start + \
+	((void (**)(int, char **, char **))(__preinit_array_start + \
 	    mock_preinit_n))
 
 int mock_init_n;
 void (*__init_array_start[64])(int, char **, char **);
 #define __init_array_end \
-	((void (*(*)[1])(int, char **, char **))(__init_array_start + \
-	    mock_init_n))
+	((void (**)(int, char **, char **))(__init_array_start + mock_init_n))
 
 int mock_fini_n;
 void (*__fini_array_start[64])(void);
 #define __fini_array_end \
-	((void (*(*)[1])(void))(__fini_array_start + mock_fini_n))
+	((void (**)(void))(__fini_array_start + mock_fini_n))
 
 __attribute__((weak)) int _DYNAMIC;
 
@@ -119,11 +119,11 @@ int mock_preinit_calls;
 int mock_init_array_calls;
 int mock_fini_array_calls;
 int mock_preinit_argc[64];
-void **mock_preinit_argv[64];
-char ***mock_preinit_env[64];
+char **mock_preinit_argv[64];
+char **mock_preinit_env[64];
 int mock_init_array_argc[64];
-void **mock_init_array_argv[64];
-char ***mock_init_array_env[64];
+char **mock_init_array_argv[64];
+char **mock_init_array_env[64];
 
 void
 ref_reset_mocks(void)
