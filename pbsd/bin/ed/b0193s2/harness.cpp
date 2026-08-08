@@ -200,6 +200,17 @@ static uint32_t rnd(void)
 }
 static uint32_t rndn(uint32_t n) { return n ? rnd() % n : 0; }
 
+/* odometer over a small alphabet, for exhaustive short-input sweeps */
+static bool next_word(int *idx, int len, int na)
+{
+	for (int i = len - 1; i >= 0; i--) {
+		if (++idx[i] < na)
+			return true;
+		idx[i] = 0;
+	}
+	return false;
+}
+
 static unsigned char rbyte(void)
 {
 	uint32_t r = rnd();
@@ -435,6 +446,24 @@ static void test_get_stream_line(void)
 			for (int nl = 0; nl < 2; nl++)
 				run_gsl(fixed[i].d, fixed[i].n, b, nl, 6, "fixed");
 
+	/* exhaustive over {'a', NUL, '\n', 0xff} for every length 1..7 */
+	{
+		static const char alpha[4] = { 'a', '\0', '\n', (char)0xff };
+		char w[8];
+		int idx[8];
+		for (int len = 1; len <= 7; len++) {
+			memset(idx, 0, sizeof idx);
+			do {
+				for (int i = 0; i < len; i++)
+					w[i] = alpha[idx[i]];
+				for (int b = 0; b < 2; b++)
+					for (int nl = 0; nl < 2; nl++)
+						run_gsl(w, (size_t)len, b, nl,
+						    len + 1, "exh");
+			} while (next_word(idx, len, 4));
+		}
+	}
+
 	static char buf[64];
 	for (long it = 0; it < 200000; it++) {
 		size_t len = rndn(41);
@@ -651,6 +680,22 @@ static void test_get_tty_line(void)
 		for (int b = 0; b < 2; b++)
 			run_gtl(fixed[i].d, fixed[i].n, b, 8, "fixed");
 
+	/* exhaustive over {'a', NUL, '\n', 0xff} for every length 1..7 */
+	{
+		static const char alpha[4] = { 'a', '\0', '\n', (char)0xff };
+		char w[8];
+		int idx[8];
+		for (int len = 1; len <= 7; len++) {
+			memset(idx, 0, sizeof idx);
+			do {
+				for (int i = 0; i < len; i++)
+					w[i] = alpha[idx[i]];
+				for (int b = 0; b < 2; b++)
+					run_gtl(w, (size_t)len, b, len + 2, "exh");
+			} while (next_word(idx, len, 4));
+		}
+	}
+
 	static char buf[64];
 	for (long it = 0; it < 200000; it++) {
 		size_t len = rndn(41);
@@ -834,6 +879,24 @@ static void test_get_extended_line(void)
 	for (unsigned i = 0; i < sizeof fixed / sizeof fixed[0]; i++)
 		for (int nonl = 0; nonl < 2; nonl++)
 			run_gel(fixed[i].d, fixed[i].n, nonl, "fixed");
+
+	/* Exhaustive over {'a', '\\', '\n'} for every length 1..10.  This
+	 * enumerates every reachable combination of escape parity, line
+	 * length and continuation count that fits in ten bytes. */
+	{
+		static const char alpha[3] = { 'a', '\\', '\n' };
+		char w[12];
+		int idx[12];
+		for (int len = 1; len <= 10; len++) {
+			memset(idx, 0, sizeof idx);
+			do {
+				for (int i = 0; i < len; i++)
+					w[i] = alpha[idx[i]];
+				for (int nonl = 0; nonl < 2; nonl++)
+					run_gel(w, (size_t)len, nonl, "exh");
+			} while (next_word(idx, len, 3));
+		}
+	}
 
 	static char buf[300];
 	for (long it = 0; it < 200000; it++) {

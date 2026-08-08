@@ -1,6 +1,7 @@
 #!/bin/sh
-# Build and run batch b0155s4 differential test.
-# Usage: sh build.sh   (from pbsd/lib/libc/db/btree/b0155s4/)
+# Build and run the b0155s4 differential test.
+#   sh build.sh
+# Exit status is the harness exit status.
 
 set -e
 
@@ -8,26 +9,23 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS="-std=c11 -O2"
-CXXFLAGS="-std=c++23 -O2"
+MODULE=pbsd.lib.libc.db.btree.b0155s4
 
-OUT=./build
-rm -rf "$OUT"
-mkdir -p "$OUT" "$OUT/gcm.cache"
+rm -rf gcm.cache port.pcm port.o harness.o oracle.o harness
 
-MODFLAGS=""
-if $CXX -std=c++23 -fmodules-ts -E -x c++ /dev/null >/dev/null 2>&1; then
-	MODFLAGS="-fmodules-ts"
-elif $CXX -std=c++23 -fmodules -E -x c++ /dev/null >/dev/null 2>&1; then
-	MODFLAGS="-fmodules"
+"$CC" -std=c11 -O2 -c oracle.c -o oracle.o
+
+if "$CXX" --version 2>&1 | grep -qi clang; then
+	"$CXX" -std=c++23 -x c++-module port.cppm --precompile -o port.pcm
+	"$CXX" -std=c++23 -c port.pcm -o port.o
+	"$CXX" -std=c++23 -fmodule-file="$MODULE=port.pcm" \
+	    -c harness.cpp -o harness.o
+else
+	# GCC: -fmodules-ts, interface unit first (populates gcm.cache).
+	"$CXX" -std=c++23 -fmodules-ts -x c++ -c port.cppm -o port.o
+	"$CXX" -std=c++23 -fmodules-ts -c harness.cpp -o harness.o
 fi
 
-$CC $CFLAGS -c oracle.c -o "$OUT/oracle.o"
+"$CXX" -std=c++23 port.o harness.o oracle.o -o harness
 
-$CXX $CXXFLAGS $MODFLAGS -c -x c++ port.cppm -o "$OUT/port.o"
-$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o "$OUT/harness.o"
-
-$CXX $CXXFLAGS $MODFLAGS "$OUT/port.o" "$OUT/harness.o" "$OUT/oracle.o" \
-    -o "$OUT/harness"
-
-exec "$OUT/harness"
+exec ./harness

@@ -636,7 +636,7 @@ phaseXfrm(unsigned long iters)
 				oneXfrm(f, pris[i], pass);
 	}
 
-	Rng r(0x7F2Mull & 0xffffffffu);
+	Rng r(0x7F2A5ull);
 	for (unsigned long it = 0; it < iters; it++) {
 		Fixture &f = pickFixture(r, true);
 		int pass = r.range(0, NWEIGHT - 1);

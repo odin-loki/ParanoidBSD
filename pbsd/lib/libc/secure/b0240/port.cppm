@@ -3,6 +3,8 @@ module;
 #include <cstddef>
 #include <cstring>
 
+export module pbsd.lib.libc.secure.b0240;
+
 extern "C" {
 void __chk_fail(void);
 size_t strlcpy(char *dst, const char *src, size_t dsize);
@@ -11,8 +13,6 @@ void *memset(void *dst, int val, size_t len);
 int __ssp_overlap(const void *s1, const void *s2, size_t n);
 void __stack_chk_fail(void);
 }
-
-export module pbsd.lib.libc.secure.b0240;
 
 export namespace pbsd::lib_libc_secure::b0240 {
 

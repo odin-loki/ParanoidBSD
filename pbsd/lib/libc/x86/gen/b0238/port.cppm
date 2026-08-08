@@ -149,33 +149,6 @@ __getcontextx_size_xfpu(void)
 	return (sizeof(ucontext_t) + xstate_sz);
 }
 
-static int (*__getcontextx_size_resolver(void))(void);
-
-static int
-__getcontextx_size_dispatch(void)
-{
-	u_int p[4];
-
-	if ((cpu_feature2 & CPUID2_OSXSAVE) != 0) {
-		cpuid_count(0xd, 0x0, p);
-		xstate_sz = p[1] - sizeof(savex86_t);
-	}
-	return (__getcontextx_size_resolver());
-}
-
-static int
-__getcontextx_size_xfpu_impl(void)
-{
-
-	return (__getcontextx_size_xfpu());
-}
-
-static int (*__getcontextx_size_resolver(void))(void)
-{
-
-	return (__getcontextx_size_xfpu_impl);
-}
-
 /*
  * Copyright (c) 2011 Konstantin Belousov <kib@FreeBSD.org>
  * All rights reserved.
@@ -205,8 +178,13 @@ static int (*__getcontextx_size_resolver(void))(void)
 int
 __getcontextx_size(void)
 {
+	u_int p[4];
 
-	return (__getcontextx_size_dispatch());
+	if ((cpu_feature2 & CPUID2_OSXSAVE) != 0) {
+		cpuid_count(0xd, 0x0, p);
+		xstate_sz = p[1] - sizeof(savex86_t);
+	}
+	return (__getcontextx_size_xfpu());
 }
 
 static int
@@ -237,27 +215,12 @@ __fillcontextx2_noxfpu(char *ctx)
 	return (0);
 }
 
-static int (*__fillcontextx2_resolver(void))(char *);
-
-static int
-__fillcontextx2_dispatch(char *ctx)
-{
-
-	return ((*__fillcontextx2_resolver())(ctx));
-}
-
-static int (*__fillcontextx2_resolver(void))(char *)
-{
-
-	return ((cpu_feature2 & CPUID2_OSXSAVE) != 0 ? __fillcontextx2_xfpu :
-	    __fillcontextx2_noxfpu);
-}
-
 int
 __fillcontextx2(char *ctx)
 {
 
-	return (__fillcontextx2_dispatch(ctx));
+	return ((cpu_feature2 & CPUID2_OSXSAVE) != 0 ? __fillcontextx2_xfpu :
+	    __fillcontextx2_noxfpu)(ctx);
 }
 
 int

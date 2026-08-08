@@ -1,0 +1,2 @@
+hbsd/src/bin/cp/cp.c:main - depends on extern.h (PATH_T, usage) which is not in this batch; drives getopt_long, signal(SIGINFO), stat/lstat and exit(), so it has no differentially testable pure behaviour.
+hbsd/src/bin/cp/cp.c:copy - depends on extern.h (PATH_T "to", copy_file, copy_link, copy_special, copy_fifo, setfile, preserve_dir_acls) which is not in this batch; performs an fts(3) traversal with mkdir/open/umask/chmod side effects, so it cannot be ported faithfully or compared against the oracle without mutating the filesystem.

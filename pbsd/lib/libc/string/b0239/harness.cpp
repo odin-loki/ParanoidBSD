@@ -6,6 +6,8 @@
 // implementations and the WHOLE arena is compared afterwards.  Pointer results
 // from malloc are compared by nullness and full string content.
 
+#define _DEFAULT_SOURCE 1
+
 #include <climits>
 #include <cstddef>
 #include <cstdint>
@@ -239,7 +241,7 @@ check_strndup(const char *str, size_t maxlen)
 	}
 
 	if (!bad && pa != nullptr) {
-		size_t expect = std::strnlen(str, maxlen);
+		size_t expect = strnlen(str, maxlen);
 		if (std::memcmp(pa, pb, expect + 1) != 0) {
 			bad = true;
 			if (begin_fail(st_strndup, "content mismatch")) {

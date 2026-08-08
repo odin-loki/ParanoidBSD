@@ -6,13 +6,13 @@
 
 import pbsd.lib.libc.secure.b0240;
 
+namespace port = pbsd::lib_libc_secure::b0240;
+
 namespace {
 
 constexpr unsigned char GUARD = 0x7f;
 constexpr size_t BUF_CAP = 256;
 constexpr unsigned RANDOM_ITERS = 200000;
-
-using namespace pbsd::lib_libc_secure::b0240;
 
 extern "C" {
 extern volatile int ref_chk_fail_called;
@@ -23,6 +23,7 @@ size_t ref___strlcpy_chk(char *dst, const char *src, size_t dsize,
 void *ref___mempcpy_chk(void *dst, const void *src, size_t len, size_t slen);
 void *ref___memset_chk(void *dst, int val, size_t len, size_t slen);
 void ref___stack_chk_fail_local_hidden(void);
+int __ssp_overlap(const void *s1, const void *s2, size_t n);
 }
 
 struct Stats {
@@ -145,7 +146,7 @@ void test_strlcpy_chk_hand(Stats &st)
 		int rfail = ref_chk_fail_called;
 
 		reset_chk_flags();
-		size_t pret = __strlcpy_chk(reinterpret_cast<char *>(dst_port),
+		size_t pret = port::__strlcpy_chk(reinterpret_cast<char *>(dst_port),
 		    src_buf, c.dsize, c.dbufsize);
 		int pfail = ref_chk_fail_called;
 
@@ -187,7 +188,7 @@ void test_strlcpy_chk_random(Stats &st, Rng &rng)
 		int rfail = ref_chk_fail_called;
 
 		reset_chk_flags();
-		size_t pret = __strlcpy_chk(reinterpret_cast<char *>(dst_port),
+		size_t pret = port::__strlcpy_chk(reinterpret_cast<char *>(dst_port),
 		    src_buf, dsize, dbufsize);
 		int pfail = ref_chk_fail_called;
 
@@ -244,7 +245,7 @@ void test_mempcpy_chk_hand(Stats &st)
 		int rfail = ref_chk_fail_called;
 
 		reset_chk_flags();
-		void *pptr = __mempcpy_chk(dst_port, src, c.len, c.slen);
+		void *pptr = port::__mempcpy_chk(dst_port, src, c.len, c.slen);
 		size_t poff = static_cast<unsigned char *>(pptr) - dst_port;
 		int pfail = ref_chk_fail_called;
 
@@ -273,7 +274,7 @@ void test_mempcpy_chk_hand(Stats &st)
 			int rfail = ref_chk_fail_called;
 
 			reset_chk_flags();
-			void *pptr = __mempcpy_chk(dst_port, src, len, slen);
+			void *pptr = port::__mempcpy_chk(dst_port, src, len, slen);
 			size_t poff = static_cast<unsigned char *>(pptr) - dst_port;
 			int pfail = ref_chk_fail_called;
 
@@ -284,8 +285,6 @@ void test_mempcpy_chk_hand(Stats &st)
 		}
 	}
 }
-
-extern "C" int __ssp_overlap(const void *s1, const void *s2, size_t n);
 
 void test_mempcpy_chk_random(Stats &st, Rng &rng)
 {
@@ -325,7 +324,7 @@ void test_mempcpy_chk_random(Stats &st, Rng &rng)
 		int rfail = ref_chk_fail_called;
 
 		reset_chk_flags();
-		void *pptr = __mempcpy_chk(dst_port, src, len, slen);
+		void *pptr = port::__mempcpy_chk(dst_port, src, len, slen);
 		size_t poff = static_cast<unsigned char *>(pptr) - dst_port;
 		int pfail = ref_chk_fail_called;
 
@@ -373,7 +372,7 @@ void test_memset_chk_hand(Stats &st)
 		int rfail = ref_chk_fail_called;
 
 		reset_chk_flags();
-		void *pptr = __memset_chk(dst_port, c.val, c.len, c.slen);
+		void *pptr = port::__memset_chk(dst_port, c.val, c.len, c.slen);
 		size_t poff = static_cast<unsigned char *>(pptr) - dst_port;
 		int pfail = ref_chk_fail_called;
 
@@ -412,7 +411,7 @@ void test_memset_chk_random(Stats &st, Rng &rng)
 		int rfail = ref_chk_fail_called;
 
 		reset_chk_flags();
-		void *pptr = __memset_chk(dst_port, val, len, slen);
+		void *pptr = port::__memset_chk(dst_port, val, len, slen);
 		size_t poff = static_cast<unsigned char *>(pptr) - dst_port;
 		int pfail = ref_chk_fail_called;
 
@@ -431,7 +430,7 @@ void test_stack_chk_fail_local_hidden(Stats &st)
 		int rfail = ref_stack_chk_fail_called;
 
 		reset_chk_flags();
-		__stack_chk_fail_local_hidden();
+		port::__stack_chk_fail_local_hidden();
 		int pfail = ref_stack_chk_fail_called;
 
 		st.cases++;

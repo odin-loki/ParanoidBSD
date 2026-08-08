@@ -7,11 +7,21 @@
 
 module;
 
+#define _DEFAULT_SOURCE 1
+
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <sys/endian.h>
 #include <unistd.h>
+#if defined(__linux__)
+#include <byteswap.h>
+#ifndef bswap16
+#define bswap16(x) bswap_16(x)
+#endif
+#else
+#include <sys/endian.h>
+#endif
 
 export module pbsd.lib.libc.string.b0239;
 
@@ -25,8 +35,8 @@ export namespace pbsd::lib_libc_string::b0239 {
 void
 swab(const void * __restrict from, void * __restrict to, ssize_t len)
 {
-	const char *f = from;
-	char *t = to;
+	const char *f = (const char *)from;
+	char *t = (char *)to;
 	uint16_t tmp;
 
 	/*
@@ -71,7 +81,7 @@ strndup(const char *str, size_t maxlen)
 	size_t len;
 
 	len = strnlen(str, maxlen);
-	copy = malloc(len + 1);
+	copy = (char *)malloc(len + 1);
 	if (copy != NULL) {
 		(void)memcpy(copy, str, len);
 		copy[len] = '\0';
@@ -100,7 +110,8 @@ strndup(const char *str, size_t maxlen)
 int
 __timingsafe_bcmp(const void *b1, const void *b2, size_t n)
 {
-	const unsigned char *p1 = b1, *p2 = b2;
+	const unsigned char *p1 = (const unsigned char *)b1,
+	    *p2 = (const unsigned char *)b2;
 	int ret = 0;
 
 	for (; n > 0; n--)

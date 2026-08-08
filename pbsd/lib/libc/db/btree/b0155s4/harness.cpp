@@ -1,1402 +1,1284 @@
 /*
- * Differential harness for batch b0155s4: btree delete routines.
+ * Differential harness for PBSD batch b0155s4 (bt_delete.c).
+ *
+ * Every function of the batch is exercised against the ref_ oracle in
+ * oracle.c.  Both sides run against the *same* mocked btree environment
+ * (mpool, __bt_search, __bt_cmp, __bt_ret, __ovfl_delete, __bt_free), each
+ * on its own private page buffer.  Both buffers are pre-filled with the
+ * guard byte 0x7f and the entire buffer -- including the bytes beyond the
+ * last page -- is compared afterwards, together with the BTREE state, the
+ * cursor, the parent stack, errno, the mpool pin counts and a hash of the
+ * full environment call trace.  Comparing only return values would let a
+ * broken port through.
  */
 
-#include <cerrno>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
-#include <signal.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 import pbsd.lib.libc.db.btree.b0155s4;
 
 namespace P = pbsd::lib_libc_db_btree::b0155s4;
 
+typedef P::PAGE PAGE;
+typedef P::BTREE BTREE;
+typedef P::CURSOR CURSOR;
+typedef P::EPG EPG;
+typedef P::EPGNO EPGNO;
+typedef P::DBT DBT;
+typedef P::DB DB;
+
+enum {
+	RET_ERROR = -1,
+	RET_SUCCESS = 0,
+	RET_SPECIAL = 1
+};
+
+enum {
+	CURS_ACQUIRE = 0x01,
+	CURS_AFTER = 0x02,
+	CURS_BEFORE = 0x04,
+	CURS_INIT = 0x08
+};
+
+enum {
+	B_MODIFIED = 0x00004,
+	B_RDONLY = 0x00010,
+	B_NODUPS = 0x00020
+};
+
+enum { P_BIGDATA = 0x01, P_BIGKEY = 0x02 };
+
+/* ------------------------------------------------------------------ */
+/* Geometry of the mocked page pool.                                   */
+/* ------------------------------------------------------------------ */
+
+enum {
+	NPAGE = 6,		/* pages 1..5 usable, page 0 is P_META    */
+	PGSZ = 256,
+	MEMSZ = NPAGE * PGSZ,
+	/*
+	 * A generous tail so that a linp[] slot picked up from outside the
+	 * live index range (which __bt_stkacq can do) still dereferences
+	 * inside the allocation.  Nothing ever writes there; if a mutated
+	 * port does, the buffers diverge and the case fails.
+	 */
+	GUARD = 40960,
+	BUFSZ = MEMSZ + GUARD,
+	CMPZONE = MEMSZ + 64,	/* bytes compared byte-for-byte per case  */
+	NSLOT = 10,		/* linp[] slots materialised on every page */
+	NIDXMAX = 8,		/* largest NEXTINDEX() a page may carry    */
+	STKMAX = 6,
+	NSCRIPT = 4,
+	BTDATAOFF = 20
+};
+
+enum {
+	FN_DELETE = 0,
+	FN_STKACQ,
+	FN_BDELETE,
+	FN_PDELETE,
+	FN_DLEAF,
+	FN_CURDEL,
+	FN_RELINK,
+	NFN
+};
+
+static const char *const FNNAME[NFN] = {
+	"__bt_delete", "__bt_stkacq", "__bt_bdelete", "__bt_pdelete",
+	"__bt_dleaf", "__bt_curdel", "__bt_relink"
+};
+
+/* Pages 1 and 2 hold BLEAF records, pages 0/3/4/5 hold BINTERNAL ones. */
+static const int LEAFPG[2] = { 1, 2 };
+static const int POOL_ALL[4] = { 0, 3, 4, 5 };
+static const int POOL_A[2] = { 0, 3 };
+static const int POOL_B[2] = { 4, 5 };
+/* Values a BINTERNAL's pgno field may take (6 makes mpool_get fail). */
+static const uint32_t OKPG[5] = { 0, 3, 4, 5, 6 };
+
+/* ------------------------------------------------------------------ */
+/* The oracle.                                                         */
+/* ------------------------------------------------------------------ */
+
 extern "C" {
-typedef uint32_t pgno_t;
-typedef uint16_t indx_t;
-typedef uint32_t recno_t;
-typedef unsigned int u_int;
-typedef unsigned char u_char;
-typedef uint32_t u_int32_t;
-typedef char *caddr_t;
-
-typedef enum { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
-
-typedef struct {
-	void *data;
-	size_t size;
-} DBT;
-
-typedef struct __db {
-	DBTYPE type;
-	int (*close)(struct __db *);
-	int (*del)(const struct __db *, const DBT *, unsigned int);
-	int (*get)(const struct __db *, const DBT *, DBT *, unsigned int);
-	int (*put)(const struct __db *, DBT *, const DBT *, unsigned int);
-	int (*seq)(const struct __db *, DBT *, DBT *, unsigned int);
-	int (*sync)(const struct __db *, unsigned int);
-	void *internal;
-	int (*fd)(const struct __db *);
-} DB;
-
-typedef struct MPOOL {
-	char dummy;
-} MPOOL;
-
-typedef struct _page {
-	pgno_t pgno;
-	pgno_t prevpg;
-	pgno_t nextpg;
-	u_int32_t flags;
-	indx_t lower;
-	indx_t upper;
-	indx_t linp[1];
-} PAGE;
-
-typedef struct _epgno {
-	pgno_t pgno;
-	indx_t index;
-} EPGNO;
-
-typedef struct _epg {
-	PAGE *page;
-	indx_t index;
-} EPG;
-
-typedef struct _cursor {
-	EPGNO pg;
-	DBT key;
-	recno_t rcursor;
-	u_int8_t flags;
-} CURSOR;
-
-typedef struct {
-	unsigned long flags;
-	unsigned int cachesize;
-	int maxkeypage;
-	int minkeypage;
-	unsigned int psize;
-	int (*compare)(const DBT *, const DBT *);
-	size_t (*prefix)(const DBT *, const DBT *);
-	int lorder;
-} BTREEINFO;
-
-typedef struct _btmeta {
-	u_int32_t magic;
-	u_int32_t version;
-	u_int32_t psize;
-	u_int32_t free;
-	u_int32_t nrecs;
-	u_int32_t flags;
-} BTMETA;
-
-typedef struct _btree {
-	MPOOL *bt_mp;
-	DB *bt_dbp;
-	EPG bt_cur;
-	PAGE *bt_pinned;
-	CURSOR bt_cursor;
-	EPGNO bt_stack[50];
-	EPGNO *bt_sp;
-	DBT bt_rkey;
-	DBT bt_rdata;
-	int bt_fd;
-	pgno_t bt_free;
-	u_int32_t bt_psize;
-	indx_t bt_ovflsize;
-	int bt_lorder;
-	int bt_order;
-	EPGNO bt_last;
-	int (*bt_cmp)(const DBT *, const DBT *);
-	size_t (*bt_pfx)(const DBT *, const DBT *);
-	int (*bt_irec)(struct _btree *, recno_t);
-	FILE *bt_rfp;
-	int bt_rfd;
-	caddr_t bt_cmap;
-	caddr_t bt_smap;
-	caddr_t bt_emap;
-	size_t bt_msize;
-	recno_t bt_nrecs;
-	size_t bt_reclen;
-	u_char bt_bval;
-	u_int32_t flags;
-} BTREE;
-
-typedef struct {
-	unsigned get_calls, put_calls, new_calls, delete_calls;
-	unsigned open_calls, filter_calls;
-	unsigned search_calls, split_calls, ovfl_put_calls, ovfl_del_calls;
-	unsigned ret_calls, free_calls, cmp_calls;
-	unsigned open_fd_calls, fstat_calls, read_calls, close_calls;
-	unsigned mkostemp_calls, getenv_calls, sigmask_calls, unlink_calls;
-	unsigned calloc_calls;
-	int get_force_null, new_force_null, search_force_null;
-	int split_ret, ovfl_put_ret, ovfl_del_ret, ret_status, free_ret;
-	int open_ret, fstat_ret, read_ret, close_ret, mkostemp_ret;
-	int calloc_fail_after;
-	int search_exact, cmp_ret;
-	int split_force_error;
-	pgno_t get_last_pgno, new_pgno_seq;
-	unsigned get_last_flags, last_put_flags;
-	void *last_put_page;
-	int nreg;
-	pgno_t reg_pgno[64];
-	void *reg_page[64];
-	EPG search_epg;
-	pgno_t ovfl_pgno;
-	int new_fail_after;
-	int delete_ret;
-	char *getenv_val;
-	struct stat fstat_sb;
-	unsigned char read_buf[512];
-	ssize_t read_ret_val;
-	int read_errno_val;
-	MPOOL *mpool_open_ret;
-} test_mock_state;
-
-extern test_mock_state test_mock;
-
-void test_mock_reset(void);
-void test_mock_register(pgno_t pgno, void *page);
-
-int ref___bt_relink(BTREE *, PAGE *);
-int ref___bt_dleaf(BTREE *, const DBT *, PAGE *, u_int);
-int ref___bt_curdel(BTREE *, const DBT *, PAGE *, u_int);
-int ref___bt_pdelete(BTREE *, PAGE *);
-int ref___bt_bdelete(BTREE *, const DBT *);
+int ref___bt_delete(const DB *, const DBT *, unsigned int);
 int ref___bt_stkacq(BTREE *, PAGE **, CURSOR *);
-int ref___bt_delete(const DB *, const DBT *, u_int);
+int ref___bt_bdelete(BTREE *, const DBT *);
+int ref___bt_pdelete(BTREE *, PAGE *);
+int ref___bt_dleaf(BTREE *, const DBT *, PAGE *, unsigned int);
+int ref___bt_curdel(BTREE *, const DBT *, PAGE *, unsigned int);
+int ref___bt_relink(BTREE *, PAGE *);
+}
 
-int harness_cmp(const DBT *a, const DBT *b)
+/* ------------------------------------------------------------------ */
+/* Case description.                                                   */
+/* ------------------------------------------------------------------ */
+
+struct PageCfg {
+	uint32_t pgno, prevpg, nextpg, pflags;
+	uint16_t nent;
+	uint16_t upper;
+	uint16_t linp[NSLOT];
+	uint32_t f0[NSLOT];		/* ksize                          */
+	uint32_t f4[NSLOT];		/* dsize (leaf) / pgno (internal) */
+	uint8_t f8[NSLOT];		/* record flags                   */
+};
+
+struct Script {
+	int fail;
+	uint32_t pgno;
+	uint16_t index;
+	int exact;
+	int stackn;
+	uint32_t stkpg[STKMAX];
+	uint16_t stkidx[STKMAX];
+};
+
+struct Env {
+	PageCfg pg[NPAGE];
+	uint32_t getfail;		/* bitmask: mpool_get returns NULL */
+	uint32_t tflags;
+	uint32_t psize;
+	uint8_t cflags;
+	uint32_t cpgno;
+	uint16_t cindex;
+	uint32_t ckeysize;
+	int pinned;
+	int stackn;
+	uint32_t stkpg[STKMAX];
+	uint16_t stkidx[STKMAX];
+	Script sc[NSCRIPT];
+	signed char cmp[NPAGE][NSLOT + 2];
+	int ret_status, ovfl_status, free_status, fuel;
+	uint32_t dbflags;
+	uint32_t apgno, aidx;
+	int key_null;
+	uint32_t keysize;
+};
+
+/* ------------------------------------------------------------------ */
+/* Mock environment state.                                             */
+/* ------------------------------------------------------------------ */
+
+alignas(16) static unsigned char g_bufA[BUFSZ];
+alignas(16) static unsigned char g_bufB[BUFSZ];
+static unsigned char *g_mem;
+static const Env *g_env;
+static int g_fuel;
+static int g_searchcalls;
+static uint64_t g_loghash;
+static int g_logn;
+static int g_pin[NPAGE];
+static EPG g_epg;
+static char g_retbuf[64];
+static char g_keybuf[64];
+static long g_mpool_cookie;
+
+static inline void
+lc(unsigned char c)
 {
-	size_t min = a->size < b->size ? a->size : b->size;
-	if (min > 0) {
-		int c = std::memcmp(a->data, b->data, min);
-		if (c != 0)
-			return c;
+	g_loghash = (g_loghash ^ c) * 1099511628211ULL;
+	++g_logn;
+}
+
+static inline void
+ls(const char *s)
+{
+	while (*s)
+		lc((unsigned char)*s++);
+}
+
+static void
+lu(unsigned long long v)
+{
+	char b[24];
+	int n = 0;
+
+	if (v == 0)
+		b[n++] = '0';
+	while (v) {
+		b[n++] = (char)('0' + (int)(v % 10));
+		v /= 10;
 	}
-	if (a->size < b->size)
-		return -1;
-	if (a->size > b->size)
-		return 1;
+	while (n)
+		lc((unsigned char)b[--n]);
+}
+
+static void
+li(long long v)
+{
+	if (v < 0) {
+		lc('-');
+		lu((unsigned long long)(-(v + 1)) + 1ULL);
+	} else
+		lu((unsigned long long)v);
+}
+
+static inline int
+fuel(void)
+{
+	if (g_fuel <= 0) {
+		lc('!');
+		return 0;
+	}
+	--g_fuel;
+	return 1;
+}
+
+static inline long
+memoff(const void *p)
+{
+	return (long)((const unsigned char *)p - g_mem);
+}
+
+static inline unsigned
+pidx(const void *p)
+{
+	long d = memoff(p);
+
+	if (d < 0 || d >= MEMSZ)
+		return 0xffffu;
+	return (unsigned)(d / PGSZ);
+}
+
+extern "C" void *
+mpool_get(P::MPOOL *, uint32_t pgno, unsigned int flags)
+{
+	ls("g");
+	lu(pgno);
+	lc(',');
+	lu(flags);
+	if (!fuel()) {
+		ls("=X");
+		return nullptr;
+	}
+	if (pgno >= (uint32_t)NPAGE || ((g_env->getfail >> pgno) & 1u)) {
+		ls("=X");
+		return nullptr;
+	}
+	++g_pin[pgno];
+	ls("=ok");
+	return g_mem + (size_t)pgno * PGSZ;
+}
+
+extern "C" int
+mpool_put(P::MPOOL *, void *p, unsigned int flags)
+{
+	long d = memoff(p);
+
+	ls("p");
+	li(d);
+	lc(',');
+	lu(flags);
+	if (d >= 0 && d < MEMSZ)
+		--g_pin[(unsigned)(d / PGSZ)];
 	return 0;
 }
 
-struct MockSnap {
-	test_mock_state mock;
-};
-
-MockSnap snap_mock(void)
-{
-	MockSnap s;
-	s.mock = test_mock;
-	return s;
-}
-
-void restore_mock(const MockSnap &s)
-{
-	test_mock = s.mock;
-}
-
-
-#define MAX_POOL 64
-#define RET_ERROR -1
-#define RET_SUCCESS 0
-#define RET_SPECIAL 1
-
-test_mock_state test_mock;
-
-void test_mock_reset(void)
-{
-	memset(&test_mock, 0, sizeof(test_mock));
-	test_mock.split_ret = RET_SUCCESS;
-	test_mock.ovfl_put_ret = RET_SUCCESS;
-	test_mock.ovfl_del_ret = RET_SUCCESS;
-	test_mock.ret_status = RET_SUCCESS;
-	test_mock.free_ret = RET_SUCCESS;
-	test_mock.open_ret = 3;
-	test_mock.fstat_ret = 0;
-	test_mock.read_ret = 0;
-	test_mock.close_ret = 0;
-	test_mock.mkostemp_ret = 4;
-	test_mock.delete_ret = RET_SUCCESS;
-	test_mock.new_pgno_seq = 100;
-	test_mock.fstat_sb.st_blksize = 4096;
-	test_mock.mpool_open_ret = (MPOOL *)0x1;
-}
-
-void test_mock_register(pgno_t pgno, void *page)
-{
-	if (test_mock.nreg < MAX_POOL) {
-		test_mock.reg_pgno[test_mock.nreg] = pgno;
-		test_mock.reg_page[test_mock.nreg] = page;
-		test_mock.nreg++;
-	}
-}
-
-void *mpool_get(MPOOL *mp, pgno_t pgno, unsigned int flags)
+extern "C" EPG *
+__bt_search(BTREE *t, const DBT *key, int *exactp)
 {
 	int i;
-	(void)mp;
-	test_mock.get_calls++;
-	test_mock.get_last_pgno = pgno;
-	test_mock.get_last_flags = flags;
-	if (test_mock.get_force_null)
-		return NULL;
-	for (i = 0; i < test_mock.nreg; i++)
-		if (test_mock.reg_pgno[i] == pgno)
-			return test_mock.reg_page[i];
-	return NULL;
-}
 
-int mpool_put(MPOOL *mp, void *page, unsigned int flags)
-{
-	(void)mp;
-	test_mock.put_calls++;
-	test_mock.last_put_page = page;
-	test_mock.last_put_flags = flags;
-	return RET_SUCCESS;
-}
-
-void *mpool_new(MPOOL *mp, pgno_t *npg, unsigned int flags)
-{
-	(void)mp;
-	(void)flags;
-	test_mock.new_calls++;
-	if (test_mock.new_force_null)
-		return NULL;
-	if (test_mock.new_fail_after > 0) {
-		test_mock.new_fail_after--;
-		return NULL;
+	i = g_searchcalls < NSCRIPT ? g_searchcalls : NSCRIPT - 1;
+	++g_searchcalls;
+	ls("S");
+	lu((unsigned)i);
+	lc(',');
+	lu((unsigned long long)(key != nullptr ? key->size : (size_t)999));
+	if (!fuel()) {
+		ls("=X");
+		return nullptr;
 	}
-	if (npg)
-		*npg = test_mock.new_pgno_seq++;
-	return calloc(1, 512);
+	const Script &s = g_env->sc[i];
+	if (s.fail) {
+		ls("=X");
+		return nullptr;
+	}
+	t->bt_sp = t->bt_stack;
+	for (int k = 0; k < s.stackn; ++k) {
+		t->bt_sp->pgno = s.stkpg[k];
+		t->bt_sp->index = s.stkidx[k];
+		++t->bt_sp;
+	}
+	g_epg.page = (PAGE *)(g_mem + (size_t)s.pgno * PGSZ);
+	g_epg.index = s.index;
+	++g_pin[s.pgno];
+	*exactp = s.exact;
+	ls("=");
+	lu(s.pgno);
+	lc(',');
+	lu(s.index);
+	lc(',');
+	li(s.exact);
+	return &g_epg;
 }
 
-int mpool_delete(MPOOL *mp, void *page)
+extern "C" int
+__bt_cmp(BTREE *, const DBT *key, EPG *e)
 {
-	(void)mp;
-	(void)page;
-	test_mock.delete_calls++;
-	return test_mock.delete_ret;
+	unsigned p = pidx(e->page);
+	int r;
+
+	ls("c");
+	lu(p);
+	lc(',');
+	lu(e->index);
+	lc(',');
+	lu((unsigned long long)(key != nullptr ? key->size : (size_t)999));
+	if (!fuel()) {
+		ls("=1");
+		return 1;
+	}
+	if (p < (unsigned)NPAGE && e->index < (unsigned)(NSLOT + 2))
+		r = g_env->cmp[p][e->index];
+	else
+		r = 1;
+	ls("=");
+	li(r);
+	return r;
 }
 
-MPOOL *mpool_open(void *a, int fd, u_int32_t psize, pgno_t ncache)
+extern "C" int
+__bt_ret(BTREE *, EPG *e, DBT *key, DBT *data, DBT *rkey, DBT *rdata, int copy)
 {
-	(void)a; (void)fd; (void)psize; (void)ncache;
-	test_mock.open_calls++;
-	return test_mock.mpool_open_ret;
-}
+	int st;
 
-void mpool_filter(MPOOL *mp, void *a, void *b, void *c)
-{
-	(void)mp; (void)a; (void)b; (void)c;
-	test_mock.filter_calls++;
-}
-
-EPG * __bt_search(BTREE *t, const DBT *key, int *exact)
-{
-	(void)t; (void)key;
-	test_mock.search_calls++;
-	if (test_mock.search_force_null)
-		return NULL;
-	*exact = test_mock.search_exact;
-	return &test_mock.search_epg;
-}
-
-int __bt_cmp(BTREE *t, const DBT *key, EPG *ep)
-{
-	(void)t; (void)key; (void)ep;
-	test_mock.cmp_calls++;
-	return test_mock.cmp_ret;
-}
-
-int __bt_split(BTREE *t, PAGE *h, const DBT *key, const DBT *data,
-    int dflags, u_int32_t nbytes, indx_t idx)
-{
-	(void)t; (void)h; (void)key; (void)data; (void)dflags; (void)nbytes; (void)idx;
-	test_mock.split_calls++;
-	if (test_mock.split_force_error)
+	ls("r");
+	lu(pidx(e->page));
+	lc(',');
+	lu(e->index);
+	lc(',');
+	lu((unsigned)(key != nullptr));
+	lu((unsigned)(data != nullptr));
+	lu((unsigned)(rkey != nullptr));
+	lu((unsigned)(rdata != nullptr));
+	lc(',');
+	li(copy);
+	if (!fuel()) {
+		ls("=X");
 		return RET_ERROR;
-	return test_mock.split_ret;
+	}
+	st = g_env->ret_status;
+	if (st == RET_SUCCESS) {
+		if (key != nullptr) {
+			key->data = g_retbuf;
+			key->size = (size_t)(1 + (e->index & 7));
+		}
+		if (data != nullptr) {
+			data->data = g_retbuf;
+			data->size = (size_t)(2 + (e->index & 7));
+		}
+	}
+	ls("=");
+	li(st);
+	return st;
 }
 
-int __ovfl_put(BTREE *t, const DBT *dbt, pgno_t *pg)
+extern "C" int
+__ovfl_delete(BTREE *, void *p)
 {
-	(void)t; (void)dbt;
-	test_mock.ovfl_put_calls++;
-	if (test_mock.ovfl_put_ret == RET_ERROR)
+	ls("o");
+	li(memoff(p));
+	if (!fuel()) {
+		ls("=X");
 		return RET_ERROR;
-	*pg = test_mock.ovfl_pgno++;
-	return RET_SUCCESS;
-}
-
-int __ovfl_delete(BTREE *t, void *p)
-{
-	(void)t; (void)p;
-	test_mock.ovfl_del_calls++;
-	return test_mock.ovfl_del_ret;
-}
-
-int __bt_ret(BTREE *t, EPG *e, DBT *key, DBT *rkey, DBT *data, DBT *rdata, int copy)
-{
-	(void)t; (void)e; (void)key; (void)rkey; (void)rdata; (void)copy;
-	test_mock.ret_calls++;
-	if (data != NULL) {
-		static char dbuf[256];
-		data->data = dbuf;
-		data->size = 4;
 	}
-	if (rkey != NULL && rkey->data == NULL) {
-		rkey->data = malloc(64);
-		rkey->size = 0;
+	ls("=");
+	li(g_env->ovfl_status);
+	return g_env->ovfl_status;
+}
+
+extern "C" int
+__bt_free(BTREE *, PAGE *h)
+{
+	ls("f");
+	lu(pidx(h));
+	if (!fuel()) {
+		ls("=X");
+		return RET_ERROR;
 	}
-	return test_mock.ret_status;
+	ls("=");
+	li(g_env->free_status);
+	return g_env->free_status;
 }
 
-}
+/* ------------------------------------------------------------------ */
+/* Random generator (fixed seed, splitmix64).                          */
+/* ------------------------------------------------------------------ */
 
-namespace {
+struct Rng {
+	uint64_t s;
 
-constexpr unsigned char GUARD = 0x7f;
-constexpr size_t PAGE_SZ = 512;
-constexpr unsigned SWEEP_ITERS = 0;
+	explicit Rng(uint64_t seed) : s(seed) {}
 
-enum { NOT = 0, BACK = 1, FORWARD = 2 };
+	uint64_t next(void)
+	{
+		uint64_t z = (s += 0x9E3779B97F4A7C15ULL);
+		z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+		z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+		return z ^ (z >> 31);
+	}
 
-#define P_INVALID 0
-#define P_ROOT 1
-#define P_BINTERNAL 0x01
-#define P_BLEAF 0x02
-#define P_OVERFLOW 0x04
-#define P_RINTERNAL 0x08
-#define P_RLEAF 0x10
-#define P_BIGKEY 0x02
-#define P_BIGDATA 0x01
-#define B_INMEM 0x00001
-#define B_METADIRTY 0x00002
-#define B_MODIFIED 0x00004
-#define B_NEEDSWAP 0x00008
-#define B_RDONLY 0x00010
-#define B_NODUPS 0x00020
-#define R_RECNO 0x00080
-#define B_DB_LOCK 0x04000
-#define CURS_ACQUIRE 0x01
-#define CURS_AFTER 0x02
-#define CURS_BEFORE 0x04
-#define CURS_INIT 0x08
-#define R_CURSOR 1
-#define R_FIRST 3
-#define R_LAST 6
-#define R_NEXT 7
-#define R_NOOVERWRITE 8
-#define R_PREV 9
-#define R_SETCURSOR 10
-#define R_DUP 0x01
-#define RET_ERROR -1
-#define RET_SUCCESS 0
-#define RET_SPECIAL 1
-#define MPOOL_DIRTY 0x01
-#define MPOOL_PAGE_NEXT 0x02
-#define BTREEMAGIC 0x053162
-#define BTREEVERSION 3
-#define BIG_ENDIAN 4321
-#define LITTLE_ENDIAN 1234
-#define DB_LOCK 0x20000000
-
-#define BTDATAOFF \
-	(sizeof(pgno_t) + sizeof(pgno_t) + sizeof(pgno_t) + \
-	    sizeof(u_int32_t) + sizeof(indx_t) + sizeof(indx_t))
-#define NEXTINDEX(p) (((p)->lower - BTDATAOFF) / sizeof(indx_t))
-#define LALIGN(n) (((n) + sizeof(pgno_t) - 1) & ~(sizeof(pgno_t) - 1))
-#define NBLEAFDBT(ksize, dsize) \
-	LALIGN(sizeof(u_int32_t) + sizeof(u_int32_t) + sizeof(u_char) + \
-	    (ksize) + (dsize))
-
-enum Fn {
-	F_BT_RELINK,
-	F_BT_DLEAF,
-	F_BT_CURDEL,
-	F_BT_PDELETE,
-	F_BT_BDELETE,
-	F_BT_STKACQ,
-	F_BT_DELETE,
-	F_COUNT
+	uint32_t n(uint32_t m) { return m ? (uint32_t)(next() % m) : 0u; }
 };
 
-const char *fn_name[F_COUNT] = {
-	"__bt_relink",
-	"__bt_dleaf",
-	"__bt_curdel",
-	"__bt_pdelete",
-	"__bt_bdelete",
-	"__bt_stkacq",
-	"__bt_delete",
+/* ------------------------------------------------------------------ */
+/* Page materialisation.                                               */
+/* ------------------------------------------------------------------ */
+
+static inline uint32_t
+lalign(uint32_t v)
+{
+	return (v + 3u) & ~3u;
+}
+
+static void
+layout(PageCfg &c, int isleaf, Rng &r)
+{
+	uint32_t nb[NSLOT];
+	int perm[NSLOT];
+
+	for (int s = 0; s < NSLOT; ++s) {
+		uint32_t ks = r.n(12);
+		if (isleaf) {
+			uint32_t ds = r.n(12 - ks);
+			c.f0[s] = ks;
+			c.f4[s] = ds;
+			nb[s] = lalign(9 + ks + ds);
+		} else {
+			c.f0[s] = ks;
+			c.f4[s] = OKPG[r.n(5)];
+			nb[s] = lalign(9 + ks);
+		}
+		c.f8[s] = (uint8_t)r.n(4);
+		perm[s] = s;
+	}
+	for (int s = NSLOT - 1; s > 0; --s) {
+		int j = (int)r.n((uint32_t)s + 1);
+		int t = perm[s];
+		perm[s] = perm[j];
+		perm[j] = t;
+	}
+
+	uint32_t off = PGSZ;
+	for (int k = 0; k < NSLOT; ++k) {
+		int s = perm[k];
+		off -= nb[s];
+		c.linp[s] = (uint16_t)off;
+	}
+	/*
+	 * upper is the lowest live record; everything live therefore sits
+	 * at or above it and the records are packed, which is the invariant
+	 * __bt_dleaf()/__bt_pdelete() rely on when they slide the page.
+	 */
+	uint32_t up = PGSZ;
+	for (int s = 0; s < c.nent; ++s)
+		if (c.linp[s] < up)
+			up = c.linp[s];
+	if (c.nent == 0)
+		up = off;
+	c.upper = (uint16_t)up;
+}
+
+static inline void
+wr16(unsigned char *p, uint16_t v)
+{
+	memcpy(p, &v, 2);
+}
+
+static inline void
+wr32(unsigned char *p, uint32_t v)
+{
+	memcpy(p, &v, 4);
+}
+
+static BTREE g_tree;
+static DB g_db;
+
+static void
+build(const Env &E, unsigned char *buf)
+{
+	memset(buf, 0x7f, MEMSZ);
+	for (int p = 0; p < NPAGE; ++p) {
+		unsigned char *b = buf + (size_t)p * PGSZ;
+		const PageCfg &c = E.pg[p];
+
+		wr32(b + 0, c.pgno);
+		wr32(b + 4, c.prevpg);
+		wr32(b + 8, c.nextpg);
+		wr32(b + 12, c.pflags);
+		wr16(b + 16, (uint16_t)(BTDATAOFF + 2 * c.nent));
+		wr16(b + 18, c.upper);
+		for (int s = 0; s < NSLOT; ++s)
+			wr16(b + 20 + 2 * s, c.linp[s]);
+		for (int s = 0; s < NSLOT; ++s) {
+			unsigned char *rec = b + c.linp[s];
+			wr32(rec + 0, c.f0[s]);
+			wr32(rec + 4, c.f4[s]);
+			rec[8] = c.f8[s];
+		}
+	}
+
+	memset(&g_tree, 0, sizeof g_tree);
+	memset(&g_db, 0, sizeof g_db);
+	g_tree.bt_mp = (P::MPOOL *)&g_mpool_cookie;
+	g_tree.bt_dbp = &g_db;
+	g_tree.bt_pinned = E.pinned < 0 ? nullptr
+	    : (PAGE *)(buf + (size_t)E.pinned * PGSZ);
+	g_tree.bt_cursor.pg.pgno = E.cpgno;
+	g_tree.bt_cursor.pg.index = E.cindex;
+	g_tree.bt_cursor.key.data = E.ckeysize ? g_keybuf : nullptr;
+	g_tree.bt_cursor.key.size = E.ckeysize;
+	g_tree.bt_cursor.flags = E.cflags;
+	g_tree.bt_sp = g_tree.bt_stack;
+	for (int k = 0; k < E.stackn; ++k) {
+		g_tree.bt_sp->pgno = E.stkpg[k];
+		g_tree.bt_sp->index = E.stkidx[k];
+		++g_tree.bt_sp;
+	}
+	g_tree.bt_psize = E.psize;
+	g_tree.flags = E.tflags;
+	g_db.internal = &g_tree;
+}
+
+/* ------------------------------------------------------------------ */
+/* Observable state after a call.                                      */
+/* ------------------------------------------------------------------ */
+
+struct Snap {
+	int rc;
+	int err;
+	unsigned pinned;
+	unsigned spdepth;
+	unsigned hpout;
+	uint32_t stkpg[50];
+	uint16_t stkidx[50];
+	uint32_t cpgno;
+	uint16_t cindex;
+	uint8_t cflags;
+	uint32_t ckeysize;
+	int ckeycode;
+	uint32_t tflags;
+	uint32_t psize;
+	uint64_t loghash;
+	int logn;
+	int pin[NPAGE];
+	unsigned char mem[CMPZONE];
 };
-unsigned long n_cases[F_COUNT];
-unsigned long n_fails[F_COUNT];
-unsigned reported[F_COUNT];
 
-uint64_t rng = 0xb0155s4deadbeefULL;
+static Snap g_sa, g_sb;
 
-uint64_t nextr(void)
+static void
+snapshot(Snap &S, int rc, unsigned hpout, const unsigned char *buf)
 {
-	rng ^= rng << 13;
-	rng ^= rng >> 7;
-	rng ^= rng << 17;
-	return rng;
+	memset(&S, 0, sizeof S);
+	S.rc = rc;
+	S.err = errno;
+	S.pinned = g_tree.bt_pinned == nullptr ? 0xffffu
+	    : (unsigned)(((const unsigned char *)g_tree.bt_pinned - buf));
+	S.spdepth = (unsigned)(g_tree.bt_sp - g_tree.bt_stack);
+	S.hpout = hpout;
+	for (int i = 0; i < 50; ++i) {
+		S.stkpg[i] = g_tree.bt_stack[i].pgno;
+		S.stkidx[i] = g_tree.bt_stack[i].index;
+	}
+	S.cpgno = g_tree.bt_cursor.pg.pgno;
+	S.cindex = g_tree.bt_cursor.pg.index;
+	S.cflags = g_tree.bt_cursor.flags;
+	S.ckeysize = (uint32_t)g_tree.bt_cursor.key.size;
+	S.ckeycode = g_tree.bt_cursor.key.data == nullptr ? 0
+	    : (g_tree.bt_cursor.key.data == g_keybuf ? 1
+	    : (g_tree.bt_cursor.key.data == g_retbuf ? 2 : 3));
+	S.tflags = g_tree.flags;
+	S.psize = g_tree.bt_psize;
+	S.loghash = g_loghash;
+	S.logn = g_logn;
+	for (int i = 0; i < NPAGE; ++i)
+		S.pin[i] = g_pin[i];
+	memcpy(S.mem, buf, CMPZONE);
 }
 
-u_char rnd_byte(void)
+static void
+run(const Env &E, int fn, unsigned char *buf, Snap &S, int useport)
 {
-	return (u_char)(nextr() & 0xffu);
+	int rc = 0;
+	unsigned hpout = 0xffffu;
+
+	g_mem = buf;
+	g_env = &E;
+	g_fuel = E.fuel;
+	g_searchcalls = 0;
+	g_loghash = 1469598103934665603ULL;
+	g_logn = 0;
+	memset(g_pin, 0, sizeof g_pin);
+	memset(g_retbuf, 0x5a, sizeof g_retbuf);
+	memset(g_keybuf, 0x33, sizeof g_keybuf);
+	build(E, buf);
+
+	PAGE *h = (PAGE *)(buf + (size_t)(E.apgno % NPAGE) * PGSZ);
+	DBT key;
+	key.data = g_keybuf;
+	key.size = E.keysize;
+	const DBT *kp = E.key_null ? nullptr : &key;
+
+	errno = 0;
+	switch (fn) {
+	case FN_DELETE:
+		rc = useport ? P::__bt_delete(&g_db, &key, E.dbflags)
+		    : ref___bt_delete(&g_db, &key, E.dbflags);
+		break;
+	case FN_STKACQ: {
+		PAGE *hp = h;
+		++g_pin[E.apgno % NPAGE];	/* the caller's pin */
+		rc = useport ? P::__bt_stkacq(&g_tree, &hp, &g_tree.bt_cursor)
+		    : ref___bt_stkacq(&g_tree, &hp, &g_tree.bt_cursor);
+		hpout = hp == nullptr ? 0xfffeu : pidx(hp);
+		break;
+	}
+	case FN_BDELETE:
+		rc = useport ? P::__bt_bdelete(&g_tree, &key)
+		    : ref___bt_bdelete(&g_tree, &key);
+		break;
+	case FN_PDELETE:
+		rc = useport ? P::__bt_pdelete(&g_tree, h)
+		    : ref___bt_pdelete(&g_tree, h);
+		break;
+	case FN_DLEAF:
+		rc = useport ? P::__bt_dleaf(&g_tree, kp, h, E.aidx)
+		    : ref___bt_dleaf(&g_tree, kp, h, E.aidx);
+		break;
+	case FN_CURDEL:
+		rc = useport ? P::__bt_curdel(&g_tree, kp, h, E.aidx)
+		    : ref___bt_curdel(&g_tree, kp, h, E.aidx);
+		break;
+	case FN_RELINK:
+		rc = useport ? P::__bt_relink(&g_tree, h)
+		    : ref___bt_relink(&g_tree, h);
+		break;
+	}
+	snapshot(S, rc, hpout, buf);
 }
 
-void fail(int fn, const char *msg)
+static int
+runcase(const Env &E, int fn)
 {
-	n_fails[fn]++;
-	if (reported[fn] < 10) {
-		reported[fn]++;
-		std::fprintf(stderr, "FAIL %s: %s\n", fn_name[fn], msg);
+	run(E, fn, g_bufA, g_sa, 1);
+	run(E, fn, g_bufB, g_sb, 0);
+	return memcmp(&g_sa, &g_sb, sizeof(Snap)) == 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Safety fixups: keep every generated case inside the well-formedness */
+/* envelope the original code assumes, without weakening any check.    */
+/* ------------------------------------------------------------------ */
+
+static void
+fixStack(Env &E, int n, uint32_t *pg, uint16_t *idx, const int *pool, int npool)
+{
+	for (int k = 0; k < n; ++k) {
+		pg[k] = (uint32_t)pool[pg[k] % (uint32_t)npool];
+		uint16_t ne = E.pg[pg[k]].nent;
+		idx[k] = (uint16_t)(idx[k] % ne);	/* ne >= 1 always */
 	}
 }
 
-void check_eq(int fn, bool ok, const char *msg)
+static void
+fixupSafety(Env &E, int fn)
 {
-	n_cases[fn]++;
-	if (!ok)
-		fail(fn, msg);
-}
+	int i, k;
 
-void guard_fill(void *p, size_t n)
-{
-	std::memset(p, GUARD, n);
-}
+	for (k = 0; k < 4; ++k) {
+		int p = POOL_ALL[k];
+		for (int s = 0; s < NSLOT; ++s)
+			E.pg[p].f4[s] = OKPG[E.pg[p].f4[s] % 5];
+	}
 
-bool bufs_eq(const unsigned char *a, const unsigned char *b, size_t n)
-{
-	return std::memcmp(a, b, n) == 0;
-}
+	E.apgno %= NPAGE;
+	E.cpgno %= NPAGE;
+	if (E.pinned >= NPAGE)
+		E.pinned = NPAGE - 1;
+	if (E.fuel < 4)
+		E.fuel = 4;
 
-static int port_cmp(const P::DBT *a, const P::DBT *b)
-{
-	return harness_cmp((const DBT *)a, (const DBT *)b);
-}
+	const int *pool0 = POOL_ALL, *pool1 = POOL_ALL;
+	int np0 = 4, np1 = 4;
+	if (fn == FN_DELETE || fn == FN_BDELETE) {
+		/*
+		 * __bt_bdelete() can run two search passes and therefore two
+		 * __bt_pdelete() calls; give each pass its own parent pages
+		 * so a page reset to an empty root by pass one is never
+		 * re-parsed by pass two.
+		 */
+		pool0 = POOL_A;
+		np0 = 2;
+		pool1 = POOL_B;
+		np1 = 2;
+	}
+	fixStack(E, E.stackn, E.stkpg, E.stkidx, POOL_ALL, 4);
+	fixStack(E, E.sc[0].stackn, E.sc[0].stkpg, E.sc[0].stkidx, pool0, np0);
+	for (i = 1; i < NSCRIPT; ++i)
+		fixStack(E, E.sc[i].stackn, E.sc[i].stkpg, E.sc[i].stkidx,
+		    pool1, np1);
 
-indx_t calc_ovflsize(u_int32_t psize, int minkeypage)
-{
-	indx_t ov = (indx_t)((psize - BTDATAOFF) / (unsigned)minkeypage -
-	    (sizeof(indx_t) + NBLEAFDBT(0, 0)));
-	if (ov < (indx_t)(NBLEAFDBT(8, 8) + sizeof(indx_t)))
-		ov = (indx_t)(NBLEAFDBT(8, 8) + sizeof(indx_t));
-	return ov;
-}
+	for (i = 0; i < NSCRIPT; ++i)
+		E.sc[i].pgno = (uint32_t)LEAFPG[E.sc[i].pgno % 2];
 
-void init_tree_port(P::BTREE &t, P::MPOOL &mp, P::DB &db, u_int32_t flags)
-{
-	std::memset(&t, 0, sizeof(t));
-	t.bt_mp = &mp;
-	t.bt_dbp = &db;
-	t.bt_psize = (u_int32_t)PAGE_SZ;
-	t.bt_ovflsize = calc_ovflsize((u_int32_t)PAGE_SZ, 2);
-	t.bt_sp = t.bt_stack;
-	t.bt_order = NOT;
-	t.bt_fd = -1;
-	t.bt_cmp = port_cmp;
-	t.flags = flags;
-	db.internal = &t;
-}
-
-void init_tree_ref(BTREE &t, MPOOL &mp, DB &db, u_int32_t flags)
-{
-	std::memset(&t, 0, sizeof(t));
-	t.bt_mp = &mp;
-	t.bt_dbp = &db;
-	t.bt_psize = (u_int32_t)PAGE_SZ;
-	t.bt_ovflsize = calc_ovflsize((u_int32_t)PAGE_SZ, 2);
-	t.bt_sp = t.bt_stack;
-	t.bt_order = NOT;
-	t.bt_fd = -1;
-	t.bt_cmp = harness_cmp;
-	t.flags = flags;
-	db.internal = &t;
-}
-
-struct MockDelta {
-	unsigned get, put, new_c, search, split, ovfl_put, ovfl_del, free_c, cmp;
-	unsigned ret, delete_c, open_fd, fstat, read, close, mkostemp, calloc;
-	unsigned getenv, sigmask;
-};
-
-MockDelta mock_delta(const test_mock_state &before, const test_mock_state &after)
-{
-	MockDelta d{};
-	d.get = after.get_calls - before.get_calls;
-	d.put = after.put_calls - before.put_calls;
-	d.new_c = after.new_calls - before.new_calls;
-	d.search = after.search_calls - before.search_calls;
-	d.split = after.split_calls - before.split_calls;
-	d.ovfl_put = after.ovfl_put_calls - before.ovfl_put_calls;
-	d.ovfl_del = after.ovfl_del_calls - before.ovfl_del_calls;
-	d.free_c = after.free_calls - before.free_calls;
-	d.cmp = after.cmp_calls - before.cmp_calls;
-	d.ret = after.ret_calls - before.ret_calls;
-	d.delete_c = after.delete_calls - before.delete_calls;
-	d.open_fd = after.open_fd_calls - before.open_fd_calls;
-	d.fstat = after.fstat_calls - before.fstat_calls;
-	d.read = after.read_calls - before.read_calls;
-	d.close = after.close_calls - before.close_calls;
-	d.mkostemp = after.mkostemp_calls - before.mkostemp_calls;
-	d.calloc = after.calloc_calls - before.calloc_calls;
-	d.getenv = after.getenv_calls - before.getenv_calls;
-	d.sigmask = after.sigmask_calls - before.sigmask_calls;
-	return d;
-}
-
-bool mock_delta_eq(const MockDelta &a, const MockDelta &b)
-{
-	return a.get == b.get && a.put == b.put && a.new_c == b.new_c &&
-	    a.search == b.search && a.split == b.split &&
-	    a.ovfl_put == b.ovfl_put && a.ovfl_del == b.ovfl_del &&
-	    a.free_c == b.free_c && a.cmp == b.cmp && a.ret == b.ret &&
-	    a.delete_c == b.delete_c && a.open_fd == b.open_fd &&
-	    a.fstat == b.fstat && a.read == b.read && a.close == b.close &&
-	    a.mkostemp == b.mkostemp && a.calloc == b.calloc &&
-	    a.getenv == b.getenv && a.sigmask == b.sigmask;
-}
-
-
-
-bool harness_cmp_btree(const P::BTREE &tp, const BTREE &tr)
-{
-	return tp.flags == tr.flags && tp.bt_order == tr.bt_order &&
-	    tp.bt_free == tr.bt_free && tp.bt_last.pgno == tr.bt_last.pgno &&
-	    tp.bt_last.index == tr.bt_last.index &&
-	    tp.bt_cursor.pg.pgno == tr.bt_cursor.pg.pgno &&
-	    tp.bt_cursor.pg.index == tr.bt_cursor.pg.index &&
-	    tp.bt_cursor.flags == tr.bt_cursor.flags &&
-	    (tp.bt_pinned == nullptr) == (tr.bt_pinned == nullptr) &&
-	    (tp.bt_cursor.key.data == nullptr) ==
-		(tr.bt_cursor.key.data == nullptr);
-}
-
-void build_bleaf_page(PAGE *pg, size_t psize, int nents,
-    const u_int32_t *ksizes, const u_int32_t *dsizes, const u_char *eflags)
-{
-	size_t off = psize;
-	std::memset(pg, 0, psize);
-	pg->flags = P_BLEAF;
-	while (nents > 0) {
-		size_t trial = psize;
-		for (int i = nents - 1; i >= 0; i--) {
-			trial -= NBLEAFDBT(ksizes[i], dsizes[i]);
-			if (trial < BTDATAOFF + (size_t)nents * sizeof(indx_t))
-				goto shrink;
+	switch (fn) {
+	case FN_DELETE:
+	case FN_BDELETE:
+		E.sc[1].pgno = E.sc[0].pgno == 1u ? 2u : 1u;
+		E.sc[2].exact = 0;
+		E.sc[3].exact = 0;
+		for (i = 0; i < 2; ++i) {
+			uint16_t ne = E.pg[E.sc[i].pgno].nent;
+			if (ne == 0)
+				E.sc[i].exact = 0;
+			else
+				E.sc[i].index = (uint16_t)(E.sc[i].index % ne);
+		}
+		if (fn == FN_DELETE) {
+			E.cpgno = (uint32_t)LEAFPG[E.cpgno % 2];
+			E.cindex = (uint16_t)(E.cindex %
+			    E.pg[E.cpgno].nent);
+			/*
+			 * When the R_CURSOR path has to acquire a stack we
+			 * make __bt_stkacq() either fail outright or find
+			 * the cursor page in one shot; the walking form
+			 * would leave a stack __bt_pdelete() cannot parse.
+			 */
+			if (!E.sc[0].fail)
+				E.pg[E.sc[0].pgno].pgno = E.cpgno;
 		}
 		break;
-shrink:
-		nents--;
-	}
-	off = psize;
-	for (int i = nents - 1; i >= 0; i--) {
-		size_t ksz = ksizes[i];
-		size_t dsz = dsizes[i];
-		size_t esz = NBLEAFDBT(ksz, dsz);
-		off -= esz;
-		unsigned char *e = (unsigned char *)pg + off;
-		*(u_int32_t *)e = (u_int32_t)ksz;
-		*(u_int32_t *)(e + 4) = (u_int32_t)dsz;
-		e[8] = eflags[i];
-		for (size_t k = 0; k < ksz + dsz; k++)
-			e[9 + k] = (u_char)(0x80 + k + (unsigned)i);
-		*(indx_t *)((unsigned char *)pg + BTDATAOFF +
-		    (size_t)i * sizeof(indx_t)) = (indx_t)off;
-	}
-	pg->lower = (indx_t)(BTDATAOFF + nents * sizeof(indx_t));
-	pg->upper = (indx_t)off;
-}
-
-void build_binternal_page(PAGE *pg, size_t psize, int nents,
-    const u_int32_t *ksizes, const u_char *eflags, const pgno_t *pgnos)
-{
-	size_t off = psize;
-	pg->flags = P_BINTERNAL;
-	for (int i = nents - 1; i >= 0; i--) {
-		size_t ksz = ksizes[i];
-		size_t esz = LALIGN(sizeof(u_int32_t) + sizeof(pgno_t) +
-		    sizeof(u_char) + ksz);
-		off -= esz;
-		unsigned char *e = (unsigned char *)pg + off;
-		*(u_int32_t *)e = (u_int32_t)ksz;
-		*(pgno_t *)(e + 4) = pgnos[i];
-		e[8] = eflags[i];
-		for (size_t k = 0; k < ksz; k++)
-			e[9 + k] = (u_char)(0xa0 + k + (unsigned)i);
-		*(indx_t *)((unsigned char *)pg + BTDATAOFF +
-		    (size_t)i * sizeof(indx_t)) = (indx_t)off;
-	}
-	pg->lower = (indx_t)(BTDATAOFF + nents * sizeof(indx_t));
-	pg->upper = (indx_t)off;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void check_bt_relink(pgno_t pgno, pgno_t prevpg, pgno_t nextpg, int null_neighbor)
-{
-	P::BTREE tp;
-	P::MPOOL mp_p;
-	P::DB db_p;
-	BTREE tr;
-	MPOOL mp_r;
-	DB db_r;
-	static unsigned char hp[PAGE_SZ];
-	static unsigned char hr[PAGE_SZ];
-	static unsigned char pp[PAGE_SZ];
-	static unsigned char pr[PAGE_SZ];
-	static unsigned char np[PAGE_SZ];
-	static unsigned char nr[PAGE_SZ];
-
-	test_mock_reset();
-	init_tree_port(tp, mp_p, db_p, 0);
-	init_tree_ref(tr, mp_r, db_r, 0);
-	guard_fill(hp, PAGE_SZ);
-	guard_fill(hr, PAGE_SZ);
-	guard_fill(pp, PAGE_SZ);
-	guard_fill(pr, PAGE_SZ);
-	guard_fill(np, PAGE_SZ);
-	guard_fill(nr, PAGE_SZ);
-	((PAGE *)hp)->pgno = pgno;
-	((PAGE *)hr)->pgno = pgno;
-	((PAGE *)hp)->prevpg = prevpg;
-	((PAGE *)hr)->prevpg = prevpg;
-	((PAGE *)hp)->nextpg = nextpg;
-	((PAGE *)hr)->nextpg = nextpg;
-	if (prevpg != P_INVALID) {
-		((PAGE *)pp)->pgno = prevpg;
-		test_mock_register(prevpg, pp);
-	}
-	if (nextpg != P_INVALID) {
-		((PAGE *)np)->pgno = nextpg;
-		test_mock_register(nextpg, np);
-	}
-	if (null_neighbor)
-		test_mock.get_force_null = 1;
-
-	static unsigned char init_pp[PAGE_SZ];
-	static unsigned char init_np[PAGE_SZ];
-	if (prevpg != P_INVALID)
-		std::memcpy(init_pp, pp, PAGE_SZ);
-	if (nextpg != P_INVALID)
-		std::memcpy(init_np, np, PAGE_SZ);
-
-	MockSnap snap = snap_mock();
-	int rp = P::__bt_relink(&tp, (P::PAGE *)hp);
-	MockDelta dp = mock_delta(snap.mock, test_mock);
-	static unsigned char res_pp[PAGE_SZ];
-	static unsigned char res_np[PAGE_SZ];
-	if (prevpg != P_INVALID)
-		std::memcpy(res_pp, pp, PAGE_SZ);
-	if (nextpg != P_INVALID)
-		std::memcpy(res_np, np, PAGE_SZ);
-	if (prevpg != P_INVALID)
-		std::memcpy(pp, init_pp, PAGE_SZ);
-	if (nextpg != P_INVALID)
-		std::memcpy(np, init_np, PAGE_SZ);
-	restore_mock(snap);
-	int rr = ref___bt_relink(&tr, (PAGE *)hr);
-	MockDelta dr = mock_delta(snap.mock, test_mock);
-	char msg[128];
-	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d pg=%u", rp, rr,
-	    (unsigned)pgno);
-	check_eq(F_BT_RELINK, rp == rr, msg);
-	check_eq(F_BT_RELINK, mock_delta_eq(dp, dr), "mock delta");
-	if (rp == rr && rp == RET_SUCCESS && prevpg != P_INVALID && !null_neighbor)
-		check_eq(F_BT_RELINK, bufs_eq(res_pp, pp, PAGE_SZ), "prev page");
-	if (rp == rr && rp == RET_SUCCESS && nextpg != P_INVALID && !null_neighbor)
-		check_eq(F_BT_RELINK, bufs_eq(res_np, np, PAGE_SZ), "next page");
-}
-
-
-
-void check_bt_dleaf(int nents, u_int idx, int cursor_hit, int ovfl_key,
-    int ovfl_data, u_int32_t tflags)
-{
-	P::BTREE tp;
-	P::MPOOL mp_p;
-	P::DB db_p;
-	BTREE tr;
-	MPOOL mp_r;
-	DB db_r;
-	static unsigned char leaf_p[PAGE_SZ];
-	static unsigned char leaf_r[PAGE_SZ];
-	u_int32_t ksizes[8] = { 4, 5, 6, 7, 4, 5, 6, 7 };
-	u_int32_t dsizes[8] = { 3, 4, 5, 6, 3, 4, 5, 6 };
-	u_char eflags[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	DBT key;
-
-	test_mock_reset();
-	init_tree_port(tp, mp_p, db_p, tflags);
-	init_tree_ref(tr, mp_r, db_r, tflags);
-	guard_fill(leaf_p, PAGE_SZ);
-	guard_fill(leaf_r, PAGE_SZ);
-	if (ovfl_key)
-		eflags[idx < 8 ? idx : 0] = P_BIGKEY;
-	if (ovfl_data)
-		eflags[idx < 8 ? idx : 0] |= P_BIGDATA;
-	build_bleaf_page((PAGE *)leaf_p, PAGE_SZ, nents, ksizes, dsizes, eflags);
-	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
-	((PAGE *)leaf_p)->pgno = 8;
-	((PAGE *)leaf_r)->pgno = 8;
-	int actual_nents = NEXTINDEX((PAGE *)leaf_p);
-	if (idx >= (u_int)actual_nents)
-		idx = actual_nents > 0 ? (u_int)(actual_nents - 1) : 0;
-	if (cursor_hit) {
-		tp.bt_cursor.flags = CURS_INIT;
-		tp.bt_cursor.pg.pgno = 8;
-		tp.bt_cursor.pg.index = idx;
-		tr.bt_cursor.flags = CURS_INIT;
-		tr.bt_cursor.pg.pgno = 8;
-		tr.bt_cursor.pg.index = idx;
-	}
-	key.data = (void *)"abcd";
-	key.size = 4;
-	static unsigned char init_leaf[PAGE_SZ];
-	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
-
-	MockSnap snap = snap_mock();
-	int rp = P::__bt_dleaf(&tp, (P::DBT *)&key, (P::PAGE *)leaf_p, idx);
-	P::BTREE tp_after = tp;
-	static unsigned char res_p[PAGE_SZ];
-	std::memcpy(res_p, leaf_p, PAGE_SZ);
-	MockDelta dp = mock_delta(snap.mock, test_mock);
-	std::memcpy(leaf_p, init_leaf, PAGE_SZ);
-	restore_mock(snap);
-	if (cursor_hit) {
-		tp.bt_cursor.flags = CURS_INIT;
-		tp.bt_cursor.pg.pgno = 8;
-		tp.bt_cursor.pg.index = idx;
-		tr.bt_cursor.flags = CURS_INIT;
-		tr.bt_cursor.pg.pgno = 8;
-		tr.bt_cursor.pg.index = idx;
-	}
-	int rr = ref___bt_dleaf(&tr, &key, (PAGE *)leaf_r, idx);
-	MockDelta dr = mock_delta(snap.mock, test_mock);
-	char msg[160];
-	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d idx=%u nents=%d ovfl=%d/%d",
-	    rp, rr, idx, nents, ovfl_key, ovfl_data);
-	check_eq(F_BT_DLEAF, rp == rr, msg);
-	check_eq(F_BT_DLEAF, mock_delta_eq(dp, dr), "mock delta");
-	check_eq(F_BT_DLEAF, bufs_eq(res_p, leaf_r, PAGE_SZ), "pagebuf");
-	check_eq(F_BT_DLEAF, harness_cmp_btree(tp_after, tr), "btree");
-}
-
-void check_bt_curdel(int nents, u_int idx, u_int32_t tflags, int cmp_same_prev,
-    int cmp_same_next, int ret_fail)
-{
-	P::BTREE tp;
-	P::MPOOL mp_p;
-	P::DB db_p;
-	BTREE tr;
-	MPOOL mp_r;
-	DB db_r;
-	static unsigned char leaf_p[PAGE_SZ];
-	static unsigned char leaf_r[PAGE_SZ];
-	static unsigned char prev_p[PAGE_SZ];
-	static unsigned char prev_r[PAGE_SZ];
-	static unsigned char next_p[PAGE_SZ];
-	static unsigned char next_r[PAGE_SZ];
-	u_int32_t ksizes[8] = { 4, 4, 4, 4, 4, 4, 4, 4 };
-	u_int32_t dsizes[8] = { 2, 2, 2, 2, 2, 2, 2, 2 };
-	u_char eflags[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
-	DBT key;
-
-	test_mock_reset();
-	test_mock.ret_status = ret_fail ? RET_ERROR : RET_SUCCESS;
-	init_tree_port(tp, mp_p, db_p, tflags);
-	init_tree_ref(tr, mp_r, db_r, tflags);
-	guard_fill(leaf_p, PAGE_SZ);
-	guard_fill(leaf_r, PAGE_SZ);
-	build_bleaf_page((PAGE *)leaf_p, PAGE_SZ, nents, ksizes, dsizes, eflags);
-	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
-	((PAGE *)leaf_p)->pgno = 12;
-	((PAGE *)leaf_r)->pgno = 12;
-	if (idx == 0 || idx == (u_int)(nents - 1)) {
-		guard_fill(prev_p, PAGE_SZ);
-		guard_fill(prev_r, PAGE_SZ);
-		guard_fill(next_p, PAGE_SZ);
-		guard_fill(next_r, PAGE_SZ);
-		build_bleaf_page((PAGE *)prev_p, PAGE_SZ, 1, ksizes, dsizes, eflags);
-		std::memcpy(prev_r, prev_p, PAGE_SZ);
-		build_bleaf_page((PAGE *)next_p, PAGE_SZ, 1, ksizes, dsizes, eflags);
-		std::memcpy(next_r, next_p, PAGE_SZ);
-		((PAGE *)prev_p)->pgno = 11;
-		((PAGE *)prev_r)->pgno = 11;
-		((PAGE *)next_p)->pgno = 13;
-		((PAGE *)next_r)->pgno = 13;
-		((PAGE *)leaf_p)->prevpg = 11;
-		((PAGE *)leaf_r)->prevpg = 11;
-		((PAGE *)leaf_p)->nextpg = 13;
-		((PAGE *)leaf_r)->nextpg = 13;
-		test_mock_register(11, prev_p);
-		test_mock_register(11, prev_r);
-		test_mock_register(13, next_p);
-		test_mock_register(13, next_r);
-	}
-	if (cmp_same_prev)
-		test_mock.cmp_ret = 0;
-	else if (cmp_same_next)
-		test_mock.cmp_ret = 0;
-	else
-		test_mock.cmp_ret = 1;
-	key.data = nullptr;
-	key.size = 0;
-
-	MockSnap snap = snap_mock();
-	int rp = P::__bt_curdel(&tp, nullptr, (P::PAGE *)leaf_p, idx);
-	P::BTREE tp_after = tp;
-	MockDelta dp = mock_delta(snap.mock, test_mock);
-	restore_mock(snap);
-	if (cmp_same_prev)
-		test_mock.cmp_ret = 0;
-	else if (cmp_same_next)
-		test_mock.cmp_ret = 0;
-	else
-		test_mock.cmp_ret = 1;
-	test_mock.ret_status = ret_fail ? RET_ERROR : RET_SUCCESS;
-	int rr = ref___bt_curdel(&tr, nullptr, (PAGE *)leaf_r, idx);
-	MockDelta dr = mock_delta(snap.mock, test_mock);
-	char msg[160];
-	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d idx=%u nodups=%d fail=%d",
-	    rp, rr, idx, (tflags & B_NODUPS) != 0, ret_fail);
-	check_eq(F_BT_CURDEL, rp == rr, msg);
-	check_eq(F_BT_CURDEL, mock_delta_eq(dp, dr), "mock delta");
-	check_eq(F_BT_CURDEL, harness_cmp_btree(tp_after, tr), "btree");
-}
-
-void check_bt_pdelete(int nents, int stack_depth, int root_page, int ovfl_parent)
-{
-	P::BTREE tp;
-	P::MPOOL mp_p;
-	P::DB db_p;
-	BTREE tr;
-	MPOOL mp_r;
-	DB db_r;
-	static unsigned char leaf_p[PAGE_SZ];
-	static unsigned char leaf_r[PAGE_SZ];
-	static unsigned char par_p[PAGE_SZ];
-	static unsigned char par_r[PAGE_SZ];
-	u_int32_t ksizes[4] = { 4, 5, 6, 7 };
-	u_char eflags[4] = { 0, 0, 0, 0 };
-	pgno_t pgnos[4] = { 20, 21, 22, 23 };
-
-	test_mock_reset();
-	init_tree_port(tp, mp_p, db_p, 0);
-	init_tree_ref(tr, mp_r, db_r, 0);
-	tp.bt_sp = tp.bt_stack;
-	tr.bt_sp = tr.bt_stack;
-	guard_fill(leaf_p, PAGE_SZ);
-	guard_fill(leaf_r, PAGE_SZ);
-	guard_fill(par_p, PAGE_SZ);
-	guard_fill(par_r, PAGE_SZ);
-	if (root_page) {
-		build_bleaf_page((PAGE *)leaf_p, PAGE_SZ, 1, ksizes, ksizes, eflags);
-		((PAGE *)leaf_p)->pgno = P_ROOT;
-	} else {
-		build_bleaf_page((PAGE *)leaf_p, PAGE_SZ, nents, ksizes, ksizes, eflags);
-		((PAGE *)leaf_p)->pgno = 30;
-	}
-	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
-	if (stack_depth > 0) {
-		if (ovfl_parent)
-			eflags[0] = P_BIGKEY;
-		build_binternal_page((PAGE *)par_p, PAGE_SZ, stack_depth > 1 ? 2 : 1,
-		    ksizes, eflags, pgnos);
-		std::memcpy(par_r, par_p, PAGE_SZ);
-		((PAGE *)par_p)->pgno = 3;
-		((PAGE *)par_r)->pgno = 3;
-		test_mock_register(3, par_p);
-		test_mock_register(3, par_r);
-		tp.bt_sp->pgno = 3;
-		tp.bt_sp->index = 0;
-		++tp.bt_sp;
-		tr.bt_sp->pgno = 3;
-		tr.bt_sp->index = 0;
-		++tr.bt_sp;
-	}
-
-	MockSnap snap = snap_mock();
-	int rp = P::__bt_pdelete(&tp, (P::PAGE *)leaf_p);
-	static unsigned char res_leaf_p[PAGE_SZ];
-	std::memcpy(res_leaf_p, leaf_p, PAGE_SZ);
-	MockDelta dp = mock_delta(snap.mock, test_mock);
-	restore_mock(snap);
-	tr.bt_sp = tr.bt_stack;
-	if (stack_depth > 0) {
-		tr.bt_sp->pgno = 3;
-		tr.bt_sp->index = 0;
-		++tr.bt_sp;
-	}
-	int rr = ref___bt_pdelete(&tr, (PAGE *)leaf_r);
-	MockDelta dr = mock_delta(snap.mock, test_mock);
-	char msg[128];
-	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d root=%d depth=%d",
-	    rp, rr, root_page, stack_depth);
-	check_eq(F_BT_PDELETE, rp == rr, msg);
-	check_eq(F_BT_PDELETE, mock_delta_eq(dp, dr), "mock delta");
-	if (root_page && rp == rr && rp == RET_SUCCESS)
-		check_eq(F_BT_PDELETE, bufs_eq(res_leaf_p, leaf_r, PAGE_SZ), "root leaf");
-}
-
-void check_bt_bdelete(int exact, u_int32_t tflags, int search_null, int dleaf_fail)
-{
-	P::BTREE tp;
-	P::MPOOL mp_p;
-	P::DB db_p;
-	BTREE tr;
-	MPOOL mp_r;
-	DB db_r;
-	static unsigned char leaf_p[PAGE_SZ];
-	static unsigned char leaf_r[PAGE_SZ];
-	DBT key;
-	u_int32_t ksizes[3] = { 4, 5, 6 };
-	u_int32_t dsizes[3] = { 2, 3, 4 };
-	u_char eflags[3] = { 0, 0, 0 };
-	u_int idx = 1;
-
-	test_mock_reset();
-	test_mock.search_force_null = search_null;
-	test_mock.search_exact = exact;
-	test_mock.cmp_ret = 1;
-	if (dleaf_fail)
-		eflags[idx] = P_BIGKEY;
-	init_tree_port(tp, mp_p, db_p, tflags | B_NODUPS);
-	init_tree_ref(tr, mp_r, db_r, tflags | B_NODUPS);
-	guard_fill(leaf_p, PAGE_SZ);
-	guard_fill(leaf_r, PAGE_SZ);
-	build_bleaf_page((PAGE *)leaf_p, PAGE_SZ, 3, ksizes, dsizes, eflags);
-	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
-	((PAGE *)leaf_p)->pgno = 8;
-	((PAGE *)leaf_r)->pgno = 8;
-	static unsigned char init_leaf[PAGE_SZ];
-	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
-	test_mock.search_epg.page = (PAGE *)leaf_p;
-	test_mock.search_epg.index = idx;
-	key.data = (void *)"key";
-	key.size = 3;
-	if (dleaf_fail)
-		test_mock.ovfl_del_ret = RET_ERROR;
-
-	MockSnap snap = snap_mock();
-	int rp = P::__bt_bdelete(&tp, (P::DBT *)&key);
-	u_int32_t flags_p = tp.flags;
-	MockDelta dp = mock_delta(snap.mock, test_mock);
-	std::memcpy(leaf_p, init_leaf, PAGE_SZ);
-	restore_mock(snap);
-	test_mock.search_force_null = search_null;
-	test_mock.search_exact = exact;
-	test_mock.cmp_ret = 1;
-	test_mock.search_epg.page = (PAGE *)leaf_p;
-	test_mock.search_epg.index = idx;
-	if (dleaf_fail)
-		test_mock.ovfl_del_ret = RET_ERROR;
-	int rr = ref___bt_bdelete(&tr, &key);
-	MockDelta dr = mock_delta(snap.mock, test_mock);
-	char msg[160];
-	std::snprintf(msg, sizeof(msg),
-	    "ret port=%d ref=%d exact=%d null=%d nodups=%d fail=%d",
-	    rp, rr, exact, search_null, 1, dleaf_fail);
-	check_eq(F_BT_BDELETE, rp == rr, msg);
-	check_eq(F_BT_BDELETE, mock_delta_eq(dp, dr), "mock delta");
-	if (rp == rr && rp == RET_SUCCESS)
-		check_eq(F_BT_BDELETE, flags_p == tr.flags, "flags");
-}
-
-void check_bt_stkacq(int target_pg, int search_null)
-{
-	P::BTREE tp;
-	P::MPOOL mp_p;
-	P::DB db_p;
-	BTREE tr;
-	MPOOL mp_r;
-	DB db_r;
-	static unsigned char leaf_p[PAGE_SZ];
-	static unsigned char leaf_r[PAGE_SZ];
-	static unsigned char srch_p[PAGE_SZ];
-	static unsigned char srch_r[PAGE_SZ];
-	char keybuf[16];
-
-	test_mock_reset();
-	test_mock.search_force_null = search_null;
-	test_mock.search_exact = 1;
-	init_tree_port(tp, mp_p, db_p, 0);
-	init_tree_ref(tr, mp_r, db_r, 0);
-	guard_fill(leaf_p, PAGE_SZ);
-	guard_fill(leaf_r, PAGE_SZ);
-	guard_fill(srch_p, PAGE_SZ);
-	guard_fill(srch_r, PAGE_SZ);
-	u_int32_t ks[1] = { 4 };
-	u_int32_t ds[1] = { 2 };
-	u_char ef[1] = { 0 };
-	build_bleaf_page((PAGE *)leaf_p, PAGE_SZ, 1, ks, ds, ef);
-	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
-	build_bleaf_page((PAGE *)srch_p, PAGE_SZ, 1, ks, ds, ef);
-	std::memcpy(srch_r, srch_p, PAGE_SZ);
-	((PAGE *)leaf_p)->pgno = (pgno_t)target_pg;
-	((PAGE *)leaf_r)->pgno = (pgno_t)target_pg;
-	((PAGE *)srch_p)->pgno = (pgno_t)target_pg;
-	((PAGE *)srch_r)->pgno = (pgno_t)target_pg;
-	test_mock.search_epg.page = (PAGE *)srch_p;
-	test_mock.search_epg.index = 0;
-	test_mock_register((pgno_t)target_pg, leaf_p);
-	tp.bt_cursor.flags = CURS_INIT;
-	tp.bt_cursor.pg.pgno = (pgno_t)target_pg;
-	tp.bt_cursor.pg.index = 0;
-	tp.bt_cursor.key.data = keybuf;
-	tp.bt_cursor.key.size = 4;
-	tr.bt_cursor.flags = CURS_INIT;
-	tr.bt_cursor.pg.pgno = (pgno_t)target_pg;
-	tr.bt_cursor.pg.index = 0;
-	tr.bt_cursor.key.data = keybuf;
-	tr.bt_cursor.key.size = 4;
-
-	P::PAGE *hp_p = (P::PAGE *)leaf_p;
-	PAGE *hp_r = (PAGE *)leaf_r;
-	MockSnap snap = snap_mock();
-	int rp = P::__bt_stkacq(&tp, &hp_p, &tp.bt_cursor);
-	MockDelta dp = mock_delta(snap.mock, test_mock);
-	restore_mock(snap);
-	hp_r = (PAGE *)leaf_r;
-	int rr = ref___bt_stkacq(&tr, &hp_r, &tr.bt_cursor);
-	MockDelta dr = mock_delta(snap.mock, test_mock);
-	char msg[128];
-	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d pg=%d null=%d",
-	    rp, rr, target_pg, search_null);
-	check_eq(F_BT_STKACQ, rp == rr, msg);
-	check_eq(F_BT_STKACQ, mock_delta_eq(dp, dr), "mock delta");
-}
-
-void check_bt_delete(u_int flags, u_int32_t tflags, int curs_init, int curs_acquire,
-    int search_null, int one_entry)
-{
-	P::BTREE tp;
-	P::MPOOL mp_p;
-	P::DB db_p;
-	BTREE tr;
-	MPOOL mp_r;
-	DB db_r;
-	static unsigned char leaf_p[PAGE_SZ];
-	static unsigned char leaf_r[PAGE_SZ];
-	DBT key;
-	u_int32_t ksizes[2] = { 4, 5 };
-	u_int32_t dsizes[2] = { 2, 3 };
-	u_char eflags[2] = { 0, 0 };
-
-	test_mock_reset();
-	test_mock.search_force_null = search_null;
-	test_mock.search_exact = 1;
-	test_mock.cmp_ret = 1;
-	init_tree_port(tp, mp_p, db_p, tflags);
-	init_tree_ref(tr, mp_r, db_r, tflags);
-	guard_fill(leaf_p, PAGE_SZ);
-	guard_fill(leaf_r, PAGE_SZ);
-	build_bleaf_page((PAGE *)leaf_p, PAGE_SZ, one_entry ? 1 : 2, ksizes, dsizes,
-	    eflags);
-	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
-	((PAGE *)leaf_p)->pgno = 8;
-	((PAGE *)leaf_r)->pgno = 8;
-	static unsigned char init_leaf[PAGE_SZ];
-	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
-	test_mock.search_epg.page = (PAGE *)leaf_p;
-	test_mock.search_epg.index = 0;
-	test_mock_register(8, leaf_p);
-	if (curs_init) {
-		static unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
-		tp.bt_cursor.flags = CURS_INIT |
-		    (curs_acquire ? CURS_ACQUIRE : 0);
-		tp.bt_cursor.pg.pgno = 8;
-		tp.bt_cursor.pg.index = 0;
-		tp.bt_cursor.key.data = ckey;
-		tp.bt_cursor.key.size = 4;
-		tr.bt_cursor.flags = tp.bt_cursor.flags;
-		tr.bt_cursor.pg.pgno = 8;
-		tr.bt_cursor.pg.index = 0;
-		tr.bt_cursor.key.data = ckey;
-		tr.bt_cursor.key.size = 4;
-	}
-	key.data = (void *)"k";
-	key.size = 1;
-
-	MockSnap snap = snap_mock();
-	errno = 0;
-	int rp = P::__bt_delete(&db_p, (P::DBT *)&key, flags);
-	int ep = errno;
-	u_int32_t flags_p = tp.flags;
-	MockDelta dp = mock_delta(snap.mock, test_mock);
-	std::memcpy(leaf_p, init_leaf, PAGE_SZ);
-	if (curs_init) {
-		tp.bt_cursor.flags = CURS_INIT |
-		    (curs_acquire ? CURS_ACQUIRE : 0);
-		tp.bt_cursor.pg.pgno = 8;
-		tp.bt_cursor.pg.index = 0;
-	}
-	restore_mock(snap);
-	test_mock.search_force_null = search_null;
-	test_mock.search_exact = 1;
-	test_mock.cmp_ret = 1;
-	test_mock.search_epg.page = (PAGE *)leaf_p;
-	test_mock.search_epg.index = 0;
-	test_mock_register(8, leaf_p);
-	if (curs_init) {
-		static unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
-		tr.bt_cursor.flags = CURS_INIT |
-		    (curs_acquire ? CURS_ACQUIRE : 0);
-		tr.bt_cursor.pg.pgno = 8;
-		tr.bt_cursor.pg.index = 0;
-		tr.bt_cursor.key.data = ckey;
-		tr.bt_cursor.key.size = 4;
-	}
-	errno = 0;
-	int rr = ref___bt_delete(&db_r, &key, flags);
-	int er = errno;
-	MockDelta dr = mock_delta(snap.mock, test_mock);
-	char msg[160];
-	std::snprintf(msg, sizeof(msg),
-	    "ret port=%d ref=%d fl=%u rdonly=%d curs=%d errno_p=%d errno_r=%d",
-	    rp, rr, flags, (tflags & B_RDONLY) != 0, curs_init, ep, er);
-	check_eq(F_BT_DELETE, rp == rr && ep == er, msg);
-	check_eq(F_BT_DELETE, mock_delta_eq(dp, dr), "mock delta");
-	if (rp == rr && rp == RET_SUCCESS)
-		check_eq(F_BT_DELETE, flags_p == tr.flags, "B_MODIFIED");
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void test_bt_relink_edges(void)
-{
-	check_bt_relink(20, 19, 21, 0);
-	check_bt_relink(20, P_INVALID, 21, 0);
-	check_bt_relink(20, 19, P_INVALID, 0);
-	check_bt_relink(20, 19, 21, 1);
-}
-
-
-
-void test_bt_dleaf_edges(void)
-{
-	check_bt_dleaf(4, 1, 0, 0, 0, 0);
-	check_bt_dleaf(4, 1, 1, 0, 0, 0);
-	check_bt_dleaf(3, 0, 0, 1, 0, 0);
-	check_bt_dleaf(3, 2, 0, 0, 1, 0);
-}
-
-void test_bt_curdel_edges(void)
-{
-	check_bt_curdel(3, 1, 0, 0, 0, 0);
-	check_bt_curdel(3, 1, B_NODUPS, 0, 0, 0);
-	check_bt_curdel(3, 0, 0, 1, 0, 0);
-	check_bt_curdel(1, 0, 0, 0, 1, 0);
-	check_bt_curdel(2, 1, 0, 0, 0, 1);
-}
-
-void test_bt_pdelete_edges(void)
-{
-	check_bt_pdelete(3, 1, 0, 0);
-	check_bt_pdelete(1, 1, 1, 0);
-	check_bt_pdelete(2, 0, 0, 0);
-	check_bt_pdelete(2, 1, 0, 1);
-}
-
-void test_bt_bdelete_edges(void)
-{
-	check_bt_bdelete(1, B_NODUPS, 0, 0);
-	check_bt_bdelete(0, 0, 0, 0);
-	check_bt_bdelete(1, 0, 1, 0);
-	check_bt_bdelete(1, 0, 0, 1);
-}
-
-void test_bt_stkacq_edges(void)
-{
-	check_bt_stkacq(8, 0);
-	check_bt_stkacq(50, 0);
-	check_bt_stkacq(8, 1);
-}
-
-void test_bt_delete_edges(void)
-{
-	check_bt_delete(0, 0, 0, 0, 0, 0);
-	check_bt_delete(0, B_RDONLY, 0, 0, 0, 0);
-	check_bt_delete(R_CURSOR, 0, 1, 0, 0, 0);
-	check_bt_delete(R_CURSOR, 0, 1, 1, 0, 0);
-	check_bt_delete(99, 0, 0, 0, 0, 0);
-	check_bt_delete(R_CURSOR, 0, 1, 0, 0, 1);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void sweep_bt_relink(void)
-{
-	for (unsigned i = 0; i < SWEEP_ITERS; i++)
-		check_bt_relink((pgno_t)(10 + (nextr() % 30u)),
-		    (nextr() & 1u) ? (pgno_t)(5 + (nextr() % 5u)) : P_INVALID,
-		    (nextr() & 2u) ? (pgno_t)(20 + (nextr() % 5u)) : P_INVALID,
-		    (int)(nextr() % 31u == 0));
-}
-
-
-
-void sweep_bt_dleaf(void)
-{
-	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
-		int nents = (int)(nextr() % 3u) + 2;
-		u_int idx = (u_int)(nextr() % (unsigned)nents);
-		check_bt_dleaf(nents, idx, (int)(nextr() & 1u),
-		    (int)(nextr() % 11u == 0), (int)(nextr() % 13u == 0),
-		    (nextr() & 1u) ? B_NODUPS : 0);
+	case FN_STKACQ:
+		/*
+		 * Guarantee a parent that satisfies the "move to the next
+		 * index" test, otherwise __bt_stkacq() reads its
+		 * uninitialised idx and the two runs would differ for
+		 * reasons that have nothing to do with the port.
+		 */
+		for (i = 0; i < NSCRIPT; ++i) {
+			if (E.sc[i].stackn <= 0)
+				continue;
+			E.sc[i].stkpg[0] = 3;
+			E.sc[i].stkidx[0] = (uint16_t)(1 +
+			    (E.sc[i].stkidx[0] % (uint16_t)(E.pg[3].nent - 2)));
+		}
+		/*
+		 * ... and keep the sibling walk to a single stack dance per
+		 * direction so a replaced bottom-of-stack entry can never be
+		 * consulted a second time.
+		 */
+		if (E.sc[0].stackn > 0 || E.sc[1].stackn > 0 ||
+		    E.sc[2].stackn > 0 || E.sc[3].stackn > 0) {
+			E.pg[1].nextpg = (E.pg[1].nextpg & 1u) ? 2u : 0u;
+			E.pg[1].prevpg = (E.pg[1].prevpg & 1u) ? 2u : 0u;
+			E.pg[2].nextpg = 0;
+			E.pg[2].prevpg = 0;
+		}
+		break;
+	case FN_DLEAF:
+		E.apgno = (uint32_t)LEAFPG[E.apgno % 2];
+		E.aidx %= E.pg[E.apgno].nent;
+		break;
+	case FN_CURDEL:
+		E.apgno = (uint32_t)LEAFPG[E.apgno % 2];
+		E.aidx %= (uint32_t)(NIDXMAX + 2);
+		break;
+	default:
+		break;
 	}
 }
 
-void sweep_bt_curdel(void)
+static void
+genEnv(Env &E, Rng &r, int fn, const int *nreq)
 {
-	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
-		int nents = (int)(nextr() % 3u) + 2;
-		check_bt_curdel(nents, (u_int)(nextr() % (unsigned)nents),
-		    (nextr() & 1u) ? B_NODUPS : 0, (int)(nextr() % 7u == 0),
-		    (int)(nextr() % 9u == 0), (int)(nextr() % 41u == 0));
+	memset(&E, 0, sizeof E);
+
+	for (int p = 0; p < NPAGE; ++p) {
+		int isleaf = (p == 1 || p == 2);
+		int n;
+
+		if (nreq != nullptr && nreq[p] >= 0)
+			n = nreq[p];
+		else
+			n = (int)r.n(NIDXMAX + 1);
+		if (!isleaf && n < 1)
+			n = 1;
+		if (isleaf && n < 1 &&
+		    (fn == FN_DELETE || fn == FN_BDELETE || fn == FN_DLEAF))
+			n = 1;
+		if (fn == FN_STKACQ && p == 3 && n < 3)
+			n = 3;
+		if (n > NIDXMAX)
+			n = NIDXMAX;
+		E.pg[p].nent = (uint16_t)n;
+		layout(E.pg[p], isleaf, r);
+
+		E.pg[p].pgno = r.n(3) == 0 ? 1u : r.n(NPAGE);
+		E.pg[p].prevpg = r.n(NPAGE + 1);
+		E.pg[p].nextpg = r.n(NPAGE + 1);
+		E.pg[p].pflags = r.n(2) ? 0x02u : 0x01u;
+	}
+
+	E.getfail = r.n(4) == 0 ? r.n(64) : 0u;
+	E.tflags = (r.n(2) ? B_NODUPS : 0u) | (r.n(6) == 0 ? B_RDONLY : 0u);
+	static const uint32_t PSZ[4] = { 256, 512, 65536 + 256, 40 };
+	E.psize = PSZ[r.n(4)];
+	E.cflags = (uint8_t)(r.n(2) ? (CURS_INIT | r.n(8)) : r.n(16));
+	E.cpgno = r.n(NPAGE);
+	E.cindex = (uint16_t)r.n(NIDXMAX + 2);
+	E.ckeysize = r.n(8);
+	E.pinned = (int)r.n(NPAGE + 1) - 1;
+	E.stackn = (int)r.n(STKMAX + 1);
+	for (int k = 0; k < STKMAX; ++k) {
+		E.stkpg[k] = r.n(4);
+		E.stkidx[k] = (uint16_t)r.n(NIDXMAX);
+	}
+	for (int i = 0; i < NSCRIPT; ++i) {
+		E.sc[i].fail = r.n(6) == 0;
+		E.sc[i].pgno = r.n(2);
+		E.sc[i].index = (uint16_t)r.n(NIDXMAX);
+		E.sc[i].exact = r.n(3) != 0;
+		E.sc[i].stackn = (int)r.n(STKMAX + 1);
+		for (int k = 0; k < STKMAX; ++k) {
+			E.sc[i].stkpg[k] = r.n(4);
+			E.sc[i].stkidx[k] = (uint16_t)r.n(NIDXMAX);
+		}
+	}
+	for (int p = 0; p < NPAGE; ++p)
+		for (int s = 0; s < NSLOT + 2; ++s)
+			E.cmp[p][s] = (signed char)(r.n(3) == 0 ? 0
+			    : (r.n(2) ? 1 : -1));
+	static const int ST[3] = { RET_SUCCESS, RET_ERROR, RET_SPECIAL };
+	E.ret_status = r.n(3) == 0 ? ST[r.n(3)] : RET_SUCCESS;
+	E.ovfl_status = r.n(3) == 0 ? RET_ERROR : RET_SUCCESS;
+	E.free_status = r.n(4) == 0 ? RET_ERROR : RET_SUCCESS;
+	E.fuel = 12 + (int)r.n(50);
+	static const uint32_t DF[6] = { 0, 1, 0, 1, 2, 7 };
+	E.dbflags = DF[r.n(6)];
+	E.apgno = r.n(NPAGE);
+	E.aidx = r.n(NIDXMAX + 2);
+	E.key_null = (int)r.n(2);
+	E.keysize = r.n(8);
+
+	fixupSafety(E, fn);
+
+	/* Bias the cursor onto the page under test so the cursor-delete
+	 * arms of __bt_dleaf()/__bt_curdel() are actually reached. */
+	if (fn == FN_DLEAF || fn == FN_CURDEL) {
+		if (r.n(2)) {
+			E.cpgno = E.pg[E.apgno].pgno;
+			E.cindex = (uint16_t)(E.aidx + r.n(3) - 1);
+		}
 	}
 }
 
-void sweep_bt_pdelete(void)
-{
-	for (unsigned i = 0; i < SWEEP_ITERS; i++)
-		check_bt_pdelete((int)(nextr() % 4u) + 1, (int)(nextr() & 1u),
-		    (int)(nextr() % 5u == 0), (int)(nextr() % 17u == 0));
-}
+/* ------------------------------------------------------------------ */
+/* Result accounting.                                                  */
+/* ------------------------------------------------------------------ */
 
-void sweep_bt_bdelete(void)
-{
-	for (unsigned i = 0; i < SWEEP_ITERS; i++)
-		check_bt_bdelete((int)(nextr() & 1u), B_NODUPS, (int)(nextr() % 29u == 0),
-		    (int)(nextr() % 43u == 0));
-}
+static long g_cases[NFN];
+static long g_fails[NFN];
+static int g_shown;
 
-void sweep_bt_stkacq(void)
+static void
+check(const Env &E, int fn, const char *what, long which)
 {
-	for (unsigned i = 0; i < SWEEP_ITERS; i++)
-		check_bt_stkacq((int)(8 + (nextr() % 40u)),
-		    (int)(nextr() % 37u == 0));
-}
-
-void sweep_bt_delete(void)
-{
-	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
-		u_int fl = (nextr() % 5u == 0) ? R_CURSOR :
-		    (nextr() % 7u == 0) ? 99u : 0u;
-		check_bt_delete(fl, (nextr() & 8u) ? B_RDONLY : 0,
-		    fl == R_CURSOR, (int)(nextr() % 3u == 0),
-		    (int)(nextr() % 31u == 0), (int)(nextr() & 1u));
+	++g_cases[fn];
+	if (runcase(E, fn))
+		return;
+	++g_fails[fn];
+	if (g_shown < 12) {
+		++g_shown;
+		printf("  MISMATCH %-12s %s #%ld: rc %d/%d errno %d/%d "
+		    "log %016llx/%016llx (%d/%d) mem %s\n",
+		    FNNAME[fn], what, which, g_sa.rc, g_sb.rc,
+		    g_sa.err, g_sb.err,
+		    (unsigned long long)g_sa.loghash,
+		    (unsigned long long)g_sb.loghash,
+		    g_sa.logn, g_sb.logn,
+		    memcmp(g_sa.mem, g_sb.mem, CMPZONE) ? "differs" : "same");
 	}
 }
 
+/* ------------------------------------------------------------------ */
+/* Hand-written edge suites.                                           */
+/* ------------------------------------------------------------------ */
 
-
-
-
-
-
-
-
-
-
-
-
-} // namespace
-
-int main(void)
+static void
+edge_relink(void)
 {
-	test_bt_relink_edges();
-	test_bt_dleaf_edges();
-	test_bt_curdel_edges();
-	test_bt_pdelete_edges();
-	test_bt_bdelete_edges();
-	test_bt_stkacq_edges();
-	test_bt_delete_edges();
-	sweep_bt_relink();
-	sweep_bt_dleaf();
-	sweep_bt_curdel();
-	sweep_bt_pdelete();
-	sweep_bt_bdelete();
-	sweep_bt_stkacq();
-	sweep_bt_delete();
-	std::printf("\n%-14s %12s %12s\n", "function", "cases", "failures");
-	for (int i = 0; i < F_COUNT; i++)
-		std::printf("%-14s %12lu %12lu\n", fn_name[i], n_cases[i], n_fails[i]);
-	unsigned long total_fails = 0;
-	for (int i = 0; i < F_COUNT; i++) total_fails += n_fails[i];
-	return total_fails == 0 ? 0 : 1;
+	Env E;
+	long c = 0;
+
+	for (int ap = 0; ap < NPAGE; ++ap)
+	for (int nx = 0; nx <= NPAGE; ++nx)
+	for (int pv = 0; pv <= NPAGE; ++pv)
+	for (int gf = 0; gf < 4; ++gf) {
+		Rng r(0x1000 + c);
+		genEnv(E, r, FN_RELINK, nullptr);
+		E.apgno = (uint32_t)ap;
+		E.pg[ap].nextpg = (uint32_t)nx;
+		E.pg[ap].prevpg = (uint32_t)pv;
+		E.getfail = gf == 0 ? 0u
+		    : gf == 1 ? (nx < NPAGE ? (1u << nx) : 0u)
+		    : gf == 2 ? (pv < NPAGE ? (1u << pv) : 0u)
+		    : 0x3fu;
+		E.fuel = 64;
+		fixupSafety(E, FN_RELINK);
+		check(E, FN_RELINK, "edge", c++);
+	}
+}
+
+static void
+edge_dleaf(void)
+{
+	Env E;
+	long c = 0;
+	static const int CF[5] = { 0, CURS_INIT, CURS_INIT | CURS_ACQUIRE,
+	    CURS_INIT | CURS_AFTER, CURS_ACQUIRE };
+
+	for (int ne = 1; ne <= NIDXMAX; ++ne)
+	for (int iw = 0; iw < 3; ++iw)
+	for (int cf = 0; cf < 5; ++cf)
+	for (int cd = 0; cd < 3; ++cd)
+	for (int cm = 0; cm < 2; ++cm)
+	for (int rf = 0; rf < 4; ++rf)
+	for (int ov = 0; ov < 2; ++ov)
+	for (int nd = 0; nd < 2; ++nd) {
+		int nreq[NPAGE];
+		for (int p = 0; p < NPAGE; ++p)
+			nreq[p] = -1;
+		nreq[1] = ne;
+		nreq[2] = ne;
+
+		Rng r(0x20000 + c);
+		genEnv(E, r, FN_DLEAF, nreq);
+		int idx = iw == 0 ? 0 : (iw == 1 ? ne / 2 : ne - 1);
+		E.aidx = (uint32_t)idx;
+		E.cflags = (uint8_t)CF[cf];
+		E.cindex = (uint16_t)(idx + cd - 1);
+		E.cpgno = cm ? E.pg[E.apgno % NPAGE].pgno
+		    : E.pg[E.apgno % NPAGE].pgno + 1u;
+		E.pg[E.apgno % NPAGE].f8[idx] = (uint8_t)rf;
+		E.ovfl_status = ov ? RET_ERROR : RET_SUCCESS;
+		E.tflags = nd ? B_NODUPS : 0u;
+		E.ret_status = RET_SUCCESS;
+		E.fuel = 64;
+		fixupSafety(E, FN_DLEAF);
+		E.pg[E.apgno].f8[E.aidx] = (uint8_t)rf;
+		check(E, FN_DLEAF, "edge", c++);
+	}
+}
+
+static void
+edge_curdel(void)
+{
+	Env E;
+	long c = 0;
+	static const int NE[5] = { 0, 1, 2, 3, NIDXMAX };
+	static const int RS[3] = { RET_SUCCESS, RET_ERROR, RET_SPECIAL };
+
+	for (int nei = 0; nei < 5; ++nei)
+	for (int iw = 0; iw < 3; ++iw)
+	for (int kn = 0; kn < 2; ++kn)
+	for (int nd = 0; nd < 2; ++nd)
+	for (int rs = 0; rs < 3; ++rs)
+	for (int cmask = 0; cmask < 16; ++cmask)
+	for (int pv = 0; pv < 2; ++pv)
+	for (int nx = 0; nx < 2; ++nx) {
+		int ne = NE[nei];
+		int nreq[NPAGE];
+		for (int p = 0; p < NPAGE; ++p)
+			nreq[p] = -1;
+		nreq[1] = ne;
+		nreq[2] = ne;
+
+		Rng r(0x40000 + c);
+		genEnv(E, r, FN_CURDEL, nreq);
+		int idx = iw == 0 ? 0 : (iw == 1 ? 1 : (ne ? ne - 1 : 0));
+		E.aidx = (uint32_t)idx;
+		E.key_null = kn;
+		E.tflags = nd ? B_NODUPS : 0u;
+		E.ret_status = RS[rs];
+		E.pg[E.apgno].prevpg = pv ? 3u : 0u;
+		E.pg[E.apgno].nextpg = nx ? 4u : 0u;
+		E.getfail = 0;
+		E.fuel = 64;
+		fixupSafety(E, FN_CURDEL);
+		int a = E.apgno;
+		if (idx > 0)
+			E.cmp[a][idx - 1] = (signed char)((cmask & 1) ? 0 : 1);
+		if (idx + 1 < NSLOT + 2)
+			E.cmp[a][idx + 1] = (signed char)((cmask & 2) ? 0 : 1);
+		if (E.pg[a].prevpg < NPAGE) {
+			int q = E.pg[a].prevpg;
+			int j = E.pg[q].nent ? E.pg[q].nent - 1 : 0;
+			E.cmp[q][j] = (signed char)((cmask & 4) ? 0 : 1);
+		}
+		if (E.pg[a].nextpg < NPAGE)
+			E.cmp[E.pg[a].nextpg][0] =
+			    (signed char)((cmask & 8) ? 0 : 1);
+		check(E, FN_CURDEL, "edge", c++);
+	}
+}
+
+static void
+edge_pdelete(void)
+{
+	Env E;
+	long c = 0;
+
+	for (int sn = 0; sn < 3; ++sn)
+	for (int sp = 0; sp < 2; ++sp)
+	for (int ne = 1; ne <= 3; ++ne)
+	for (int iw = 0; iw < 2; ++iw)
+	for (int rt = 0; rt < 2; ++rt)
+	for (int rf = 0; rf < 2; ++rf)
+	for (int ov = 0; ov < 2; ++ov)
+	for (int fr = 0; fr < 2; ++fr)
+	for (int hr = 0; hr < 2; ++hr)
+	for (int hn = 0; hn < 2; ++hn)
+	for (int gf = 0; gf < 2; ++gf) {
+		int page = POOL_ALL[sp];
+		int nreq[NPAGE];
+		for (int p = 0; p < NPAGE; ++p)
+			nreq[p] = -1;
+		nreq[page] = ne;
+
+		Rng r(0x80000 + c);
+		genEnv(E, r, FN_PDELETE, nreq);
+		E.stackn = sn;
+		for (int k = 0; k < sn; ++k) {
+			E.stkpg[k] = (uint32_t)page;
+			E.stkidx[k] = (uint16_t)(iw ? ne - 1 : 0);
+		}
+		E.pg[page].pgno = rt ? 1u : 2u;
+		E.pg[page].f8[iw ? ne - 1 : 0] = (uint8_t)(rf ? P_BIGKEY : 0);
+		E.ovfl_status = ov ? RET_ERROR : RET_SUCCESS;
+		E.free_status = fr ? RET_ERROR : RET_SUCCESS;
+		E.apgno = 2;
+		E.pg[2].pgno = hr ? 1u : 5u;
+		E.pg[2].nextpg = hn ? 4u : 0u;
+		E.pg[2].prevpg = hn ? 0u : 3u;
+		E.getfail = gf ? (1u << page) : 0u;
+		E.psize = 256;
+		E.fuel = 64;
+		fixupSafety(E, FN_PDELETE);
+		E.pg[page].f8[E.stackn ? E.stkidx[0] : 0] =
+		    (uint8_t)(rf ? P_BIGKEY : 0);
+		check(E, FN_PDELETE, "edge", c++);
+	}
+}
+
+static void
+edge_stkacq(void)
+{
+	Env E;
+	long c = 0;
+
+	for (int cp = 0; cp < NPAGE; ++cp)
+	for (int s0 = 0; s0 < 2; ++s0)
+	for (int f0 = 0; f0 < 2; ++f0)
+	for (int f1 = 0; f1 < 2; ++f1)
+	for (int sn = 0; sn < 4; ++sn)
+	for (int p1n = 0; p1n < 3; ++p1n)
+	for (int p1p = 0; p1p < 3; ++p1p)
+	for (int hit = 0; hit < 3; ++hit)
+	for (int gf = 0; gf < 2; ++gf) {
+		Rng r(0x100000 + c);
+		genEnv(E, r, FN_STKACQ, nullptr);
+		E.cpgno = (uint32_t)cp;
+		E.sc[0].pgno = (uint32_t)LEAFPG[s0];
+		E.sc[1].pgno = (uint32_t)LEAFPG[s0];
+		E.sc[0].fail = f0;
+		E.sc[1].fail = f1;
+		E.sc[0].stackn = sn;
+		E.sc[1].stackn = sn;
+		for (int k = 0; k < sn; ++k) {
+			E.sc[0].stkpg[k] = (uint32_t)POOL_ALL[k % 4];
+			E.sc[0].stkidx[k] = (uint16_t)k;
+			E.sc[1].stkpg[k] = (uint32_t)POOL_ALL[k % 4];
+			E.sc[1].stkidx[k] = (uint16_t)k;
+		}
+		E.pg[1].nextpg = (uint32_t)(p1n == 0 ? 0 : (p1n == 1 ? 2 : 6));
+		E.pg[1].prevpg = (uint32_t)(p1p == 0 ? 0 : (p1p == 1 ? 2 : 6));
+		E.pg[2].nextpg = 0;
+		E.pg[2].prevpg = 0;
+		/* hit: page content number vs the cursor's page number */
+		E.pg[1].pgno = (uint32_t)(hit == 0 ? cp : (cp + 1) % NPAGE);
+		E.pg[2].pgno = (uint32_t)(hit == 1 ? cp : (cp + 2) % NPAGE);
+		E.apgno = (uint32_t)(hit == 2 ? 1 : 2);
+		E.getfail = gf ? (1u << ((cp + 1) % NPAGE)) : 0u;
+		E.fuel = 64;
+		fixupSafety(E, FN_STKACQ);
+		check(E, FN_STKACQ, "edge", c++);
+	}
+}
+
+static void
+edge_bdelete(void)
+{
+	Env E;
+	long c = 0;
+
+	for (int ne = 1; ne <= 4; ++ne)
+	for (int iw = 0; iw < 3; ++iw)
+	for (int e0 = 0; e0 < 2; ++e0)
+	for (int f0 = 0; f0 < 2; ++f0)
+	for (int e1 = 0; e1 < 2; ++e1)
+	for (int nd = 0; nd < 2; ++nd)
+	for (int cmode = 0; cmode < 4; ++cmode)
+	for (int sn = 0; sn < 3; ++sn)
+	for (int ov = 0; ov < 2; ++ov)
+	for (int fu = 0; fu < 2; ++fu) {
+		int nreq[NPAGE];
+		for (int p = 0; p < NPAGE; ++p)
+			nreq[p] = -1;
+		nreq[1] = ne;
+		nreq[2] = ne;
+
+		Rng r(0x200000 + c);
+		genEnv(E, r, FN_BDELETE, nreq);
+		E.sc[0].pgno = 1;
+		E.sc[0].exact = e0;
+		E.sc[0].fail = f0;
+		E.sc[0].index = (uint16_t)(iw == 0 ? 0
+		    : (iw == 1 ? ne / 2 : ne - 1));
+		E.sc[0].stackn = sn;
+		E.sc[1].exact = e1;
+		E.sc[1].fail = 0;
+		E.sc[1].index = 0;
+		E.sc[1].stackn = sn;
+		E.sc[2].fail = 0;
+		E.sc[3].fail = 0;
+		E.tflags = nd ? B_NODUPS : 0u;
+		E.ovfl_status = ov ? RET_ERROR : RET_SUCCESS;
+		E.cflags = 0;
+		E.getfail = 0;
+		E.fuel = fu ? 64 : 14;
+		E.psize = 256;
+		fixupSafety(E, FN_BDELETE);
+		for (int p = 0; p < NPAGE; ++p)
+			for (int s = 0; s < NSLOT + 2; ++s)
+				E.cmp[p][s] = (signed char)(cmode == 0 ? 0
+				    : cmode == 1 ? 1
+				    : ((s & 1) ? 0 : 1));
+		if (cmode == 3)
+			for (int s = 0; s < NSLOT + 2; ++s)
+				E.cmp[1][s] = (signed char)(s < ne / 2 ? 1 : 0);
+		check(E, FN_BDELETE, "edge", c++);
+	}
+}
+
+static void
+edge_delete(void)
+{
+	Env E;
+	long c = 0;
+	static const uint32_t DF[5] = { 0, 1, 2, 3, 0xffffffffu };
+	static const int CF[6] = { 0, CURS_INIT, CURS_INIT | CURS_ACQUIRE,
+	    CURS_INIT | CURS_AFTER, CURS_INIT | CURS_BEFORE,
+	    CURS_ACQUIRE | CURS_AFTER };
+
+	for (int df = 0; df < 5; ++df)
+	for (int ro = 0; ro < 2; ++ro)
+	for (int pn = -1; pn < 2; ++pn)
+	for (int cf = 0; cf < 6; ++cf)
+	for (int ne = 1; ne <= 3; ++ne)
+	for (int iw = 0; iw < 2; ++iw)
+	for (int f0 = 0; f0 < 2; ++f0)
+	for (int e0 = 0; e0 < 2; ++e0)
+	for (int nd = 0; nd < 2; ++nd)
+	for (int sn = 0; sn < 3; ++sn)
+	for (int gf = 0; gf < 2; ++gf) {
+		int nreq[NPAGE];
+		for (int p = 0; p < NPAGE; ++p)
+			nreq[p] = -1;
+		nreq[1] = ne;
+		nreq[2] = ne;
+
+		Rng r(0x400000 + c);
+		genEnv(E, r, FN_DELETE, nreq);
+		E.dbflags = DF[df];
+		E.tflags = (ro ? B_RDONLY : 0u) | (nd ? B_NODUPS : 0u);
+		E.pinned = pn < 0 ? -1 : (pn == 0 ? 0 : 3);
+		E.cflags = (uint8_t)CF[cf];
+		E.cpgno = 1;
+		E.cindex = (uint16_t)(iw ? ne - 1 : 0);
+		E.sc[0].fail = f0;
+		E.sc[0].exact = e0;
+		E.sc[0].pgno = 1;
+		E.sc[0].index = 0;
+		E.sc[0].stackn = sn;
+		E.sc[1].stackn = sn;
+		E.getfail = gf ? (1u << 1) : 0u;
+		E.psize = 256;
+		E.fuel = 64;
+		fixupSafety(E, FN_DELETE);
+		check(E, FN_DELETE, "edge", c++);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+
+int
+main(void)
+{
+	long sweep = 200000;
+	int i;
+
+	memset(g_bufA, 0x7f, sizeof g_bufA);
+	memset(g_bufB, 0x7f, sizeof g_bufB);
+
+	edge_delete();
+	edge_stkacq();
+	edge_bdelete();
+	edge_pdelete();
+	edge_dleaf();
+	edge_curdel();
+	edge_relink();
+
+	long edgecases[NFN];
+	for (i = 0; i < NFN; ++i)
+		edgecases[i] = g_cases[i];
+
+	Env E;
+	for (int fn = 0; fn < NFN; ++fn) {
+		Rng r(0xC0FFEE0000ULL + (uint64_t)fn * 0x9E3779B97F4A7C15ULL);
+		for (long k = 0; k < sweep; ++k) {
+			genEnv(E, r, fn, nullptr);
+			check(E, fn, "rand", k);
+		}
+	}
+
+	/* The far guard must be pristine in both buffers. */
+	long guardbad = 0;
+	for (long o = CMPZONE; o < BUFSZ; ++o)
+		if (g_bufA[o] != 0x7f || g_bufB[o] != 0x7f)
+			++guardbad;
+
+	long tc = 0, tf = 0;
+	printf("\n");
+	printf("%-14s %10s %10s %10s %10s\n",
+	    "function", "edge", "random", "cases", "failures");
+	printf("-------------------------------------------------------------"
+	    "-\n");
+	for (i = 0; i < NFN; ++i) {
+		printf("%-14s %10ld %10ld %10ld %10ld\n", FNNAME[i],
+		    edgecases[i], g_cases[i] - edgecases[i], g_cases[i],
+		    g_fails[i]);
+		tc += g_cases[i];
+		tf += g_fails[i];
+	}
+	printf("-------------------------------------------------------------"
+	    "-\n");
+	printf("%-14s %10s %10s %10ld %10ld\n", "TOTAL", "", "", tc, tf);
+	printf("guard bytes clobbered: %ld\n", guardbad);
+	printf("\n%s\n", (tf == 0 && guardbad == 0) ? "PASS" : "FAIL");
+	return (tf == 0 && guardbad == 0) ? 0 : 1;
 }

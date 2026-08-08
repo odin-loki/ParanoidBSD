@@ -544,17 +544,17 @@ static void test_stack_prints(void) {
 }
 
 static void test_stack_sbuf(void) {
-	unsigned char blob[PAD + sizeof(port::sbuf) + PAD];
+	unsigned char blob[PAD + sizeof(port::sbuf) + 512 + PAD];
 	std::memset(blob, GUARD, sizeof(blob));
 	port::sbuf *sb = (port::sbuf *)(blob + PAD);
-	sb->s_buf = (char *)(blob + PAD + 64);
+	sb->s_buf = (char *)(blob + PAD + sizeof(port::sbuf));
 	sb->s_size = 256; sb->s_len = 0; sb->s_error = 0;
 	std::memset(sb->s_buf, GUARD, sb->s_size);
 	port::stack st{}; st.depth = 2; st.pcs[0] = 0x5000; st.pcs[1] = 0x5100;
-	unsigned char rblob[PAD + sizeof(struct sbuf) + PAD];
+	unsigned char rblob[PAD + sizeof(struct sbuf) + 512 + PAD];
 	std::memset(rblob, GUARD, sizeof(rblob));
 	struct sbuf *rsb = (struct sbuf *)(rblob + PAD);
-	rsb->s_buf = (char *)(rblob + PAD + 64);
+	rsb->s_buf = (char *)(rblob + PAD + sizeof(struct sbuf));
 	rsb->s_size = 256; rsb->s_len = 0; rsb->s_error = 0;
 	std::memset(rsb->s_buf, GUARD, rsb->s_size);
 	struct stack rst{}; std::memcpy(&rst, &st, sizeof(rst));
@@ -564,6 +564,11 @@ static void test_stack_sbuf(void) {
 	reset_ref();
 	int re = ref_stack_sbuf_print_flags(rsb, &rst, 2, 1);
 	if (pe != re) fail_row(R_STACK_SBUF_PRINT_FLAGS, "ret", "mismatch");
+	if (sb->s_len != rsb->s_len ||
+	    std::memcmp(sb->s_buf, rsb->s_buf, sb->s_size) != 0)
+		fail_row(R_STACK_SBUF_PRINT_FLAGS, "sbuf", "mismatch");
+	if (!buf_ok(blob, PAD) || !buf_ok(blob + PAD + sizeof(port::sbuf) + sb->s_size, PAD))
+		fail_row(R_STACK_SBUF_PRINT_FLAGS, "guard", "port");
 	case_row(R_STACK_SBUF_PRINT);
 	reset_port();
 	port::stack_sbuf_print(sb, &st);
@@ -672,11 +677,11 @@ static void test_stack_hand(void) {
 	g_linker_block = 0;
 	test_stack_lifecycle();
 	test_stack_prints();
-#if 0
 	test_stack_sbuf();
 	test_stack_ktr();
 	test_stack_symbol(0xdead, 64, 2);
-	test_stack_symbol(0xbeef, 4, 2);
+	test_stack_symbol(0xbeef, 9, 2);
+	test_stack_symbol(0xcafe, 3, 2);
 	g_linker_fail = 1;
 	test_stack_symbol(0x1000, 64, 2);
 	g_linker_fail = 0;
@@ -684,7 +689,6 @@ static void test_stack_hand(void) {
 	test_stack_symbol(0x2000, 64, 1);
 	g_linker_block = 0;
 	test_stack_symbol_ddb(0x3000);
-#endif
 }
 
 static void test_clockcalib_hand(void) {
@@ -752,9 +756,11 @@ int main(void) {
 	test_vfs_hand();
 	test_tslog_hand();
 	test_stack_hand();
-#if 0
 	test_clockcalib_hand();
-#endif
+	sweep_vfs();
+	sweep_tslog();
+	sweep_clockcalib();
+	sweep_stack();
 	long total_cases = 0, total_fail = 0;
 	std::printf("\n%-28s %12s %12s\n", "function", "cases", "failures");
 	for (const auto &r : rows) {

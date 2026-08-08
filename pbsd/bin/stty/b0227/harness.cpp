@@ -10,16 +10,12 @@ import pbsd.bin.stty.b0227;
 #include <cstring>
 
 #include <fcntl.h>
+#include <setjmp.h>
 #include <unistd.h>
 
 namespace P = pbsd::bin_stty::b0227;
 
-static const unsigned char GUARD = 0x7f;
 static const long SWEEP = 200000L;
-
-#define TIOCEXT_VAL	0x54410096
-#define TIOCSETD_VAL	0x54270027
-#define TTYDISC_VAL	0
 
 struct CInfo {
 	int fd;
@@ -38,12 +34,6 @@ static CInfo *
 as_cinfo(P::info *ip)
 {
 	return reinterpret_cast<CInfo *>(ip);
-}
-
-static const CInfo *
-as_cinfo(const P::info *ip)
-{
-	return reinterpret_cast<const CInfo *>(ip);
 }
 
 struct OTermios {
@@ -125,12 +115,12 @@ S(const char *n)
 }
 
 static int g_test_active = 0;
+static jmp_buf g_usage_jmp;
 static int g_usage_count = 0;
 static int g_warnx_count = 0;
 static int g_err_count = 0;
 static int g_err_eval = 0;
 static int g_ioctl_ret = 0;
-static unsigned long g_last_ioctl_req = 0;
 static int g_ioctl_arg = 0;
 static int g_ioctl_count = 0;
 
@@ -187,7 +177,6 @@ __wrap_ioctl(int fd, unsigned long req, ...)
 
 	if (g_test_active) {
 		g_ioctl_count++;
-		g_last_ioctl_req = req;
 		if (arg != nullptr)
 			g_ioctl_arg = *(int *)arg;
 		return g_ioctl_ret;
@@ -223,7 +212,6 @@ reset_hooks()
 	g_err_count = 0;
 	g_err_eval = 0;
 	g_ioctl_ret = 0;
-	g_last_ioctl_req = 0;
 	g_ioctl_arg = 0;
 	g_ioctl_count = 0;
 }
@@ -412,8 +400,7 @@ run_msearch_one(const char *name)
 	char **argv_p = av_p;
 	P::info ip_r{};
 	P::info ip_p{};
-	fill_info(ip_r, rng, false);
-	fill_info(ip_p, rng, false);
+	dup_info(ip_r, ip_p, rng, false);
 	ip_r.set = 0;
 	ip_p.set = 0;
 	g_test_active = 1;
@@ -439,8 +426,19 @@ static const int NKEYS =
 
 static char argbuf[8][32];
 
+static bool
+key_needs_arg(const char *key)
+{
+	const char *n = key;
+	if (*n == '-')
+		n++;
+	return std::strcmp(n, "cols") == 0 || std::strcmp(n, "columns") == 0 ||
+	    std::strcmp(n, "rows") == 0 || std::strcmp(n, "ispeed") == 0 ||
+	    std::strcmp(n, "ospeed") == 0;
+}
+
 static void
-run_ksearch_one(const char *key, const char *arg, bool need_arg_path)
+run_ksearch_one(const char *key, const char *arg)
 {
 	Stat &st = S("ksearch");
 	char k_r[64];
@@ -466,8 +464,7 @@ run_ksearch_one(const char *key, const char *arg, bool need_arg_path)
 	char **argv_p = av_p;
 	P::info ip_r{};
 	P::info ip_p{};
-	fill_info(ip_r, rng, true);
-	fill_info(ip_p, rng, true);
+	dup_info(ip_r, ip_p, rng, true);
 	ip_r.off = 0;
 	ip_p.off = 0;
 	ip_r.set = 0;
@@ -481,24 +478,37 @@ run_ksearch_one(const char *key, const char *arg, bool need_arg_path)
 	g_test_active = 1;
 	reset_hooks();
 	g_ioctl_ret = 0;
-	int ret_r = ref_ksearch(&argv_r, as_cinfo(&ip_r));
+	int ret_r = 0;
+	int usage_r = 0;
+	if (setjmp(g_usage_jmp) == 0)
+		ret_r = ref_ksearch(&argv_r, as_cinfo(&ip_r));
+	else
+		usage_r = 1;
 	int u_r = g_usage_count;
 	int w_r = g_warnx_count;
-	int ret_p = P::ksearch(&argv_p, &ip_p);
+	reset_hooks();
+	g_ioctl_ret = 0;
+	int ret_p = 0;
+	int usage_p = 0;
+	if (setjmp(g_usage_jmp) == 0)
+		ret_p = P::ksearch(&argv_p, &ip_p);
+	else
+		usage_p = 1;
 	int u_p = g_usage_count;
 	int w_p = g_warnx_count;
 	g_test_active = 0;
-	if (ret_r != ret_p)
-		fail(st, "return mismatch");
+	if (usage_r != usage_p)
+		fail(st, "usage path mismatch");
 	else if (u_r != u_p)
 		fail(st, "usage count mismatch");
 	else if (w_r != w_p)
 		fail(st, "warnx count mismatch");
-	else if (ret_r == 1 && !same_info(ip_r, ip_p))
+	else if (!usage_r && ret_r != ret_p)
+		fail(st, "return mismatch");
+	else if (!usage_r && ret_r == 1 && !same_info(ip_r, ip_p))
 		fail(st, "info mismatch");
-	else if (ret_r == 0 && !same_info(ip_r, ip_p))
+	else if (!usage_r && ret_r == 0 && !same_info(ip_r, ip_p))
 		fail(st, "info mismatch on miss");
-	(void)need_arg_path;
 	ok(st);
 }
 
@@ -509,8 +519,7 @@ cmp_f_void(const char *name, void (*ref_fn)(CInfo *), void (*port_fn)(P::info *)
 	Stat &st = S(name);
 	P::info ip_r{};
 	P::info ip_p{};
-	fill_info(ip_r, rng, hi);
-	fill_info(ip_p, rng, hi);
+	dup_info(ip_r, ip_p, rng, hi);
 	ip_r.off = off;
 	ip_p.off = off;
 	ip_r.set = 0;
@@ -570,8 +579,7 @@ cmp_f_stdout(const char *stat_name, void (*ref_fn)(CInfo *),
 	Stat &st = S(stat_name);
 	P::info ip_r{};
 	P::info ip_p{};
-	fill_info(ip_r, rng, false);
-	fill_info(ip_p, rng, false);
+	dup_info(ip_r, ip_p, rng, false);
 	char out_r[65536];
 	char out_p[65536];
 	f_stdout_ctx cr{ true, &ip_r, ref_fn, port_fn };
@@ -593,8 +601,7 @@ run_f_columns(const char *arg)
 	std::snprintf(ab_p, sizeof(ab_p), "%s", arg);
 	P::info ip_r{};
 	P::info ip_p{};
-	fill_info(ip_r, rng, false);
-	fill_info(ip_p, rng, false);
+	dup_info(ip_r, ip_p, rng, false);
 	ip_r.arg = ab_r;
 	ip_p.arg = ab_p;
 	ip_r.wset = 0;
@@ -616,8 +623,7 @@ run_f_rows(const char *arg)
 	std::snprintf(ab_p, sizeof(ab_p), "%s", arg);
 	P::info ip_r{};
 	P::info ip_p{};
-	fill_info(ip_r, rng, false);
-	fill_info(ip_p, rng, false);
+	dup_info(ip_r, ip_p, rng, false);
 	ip_r.arg = ab_r;
 	ip_p.arg = ab_p;
 	ip_r.wset = 0;
@@ -731,7 +737,7 @@ main()
 		else if (std::strcmp(key_names[i], "ispeed") == 0 ||
 		    std::strcmp(key_names[i], "ospeed") == 0)
 			arg = "9600";
-		run_ksearch_one(key_names[i], arg, false);
+		run_ksearch_one(key_names[i], arg);
 	}
 	for (long i = 0; i < SWEEP; i++) {
 		int ki = (int)(rng.u32() % (unsigned)NKEYS);
@@ -740,7 +746,7 @@ main()
 			std::snprintf(argbuf[2], sizeof(argbuf[2]), "%d", rng.i32());
 			arg = argbuf[2];
 		}
-		run_ksearch_one(key_names[ki], arg, false);
+		run_ksearch_one(key_names[ki], arg);
 	}
 
 	for (int off = 0; off < 2; off++)

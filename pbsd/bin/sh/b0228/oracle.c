@@ -88,12 +88,17 @@ static char oracle_varbuf[256];
 static char oracle_outbuf[512];
 static int oracle_outlen;
 
+struct stackmark { char dummy; };
+static char oracle_stack[65536];
+static size_t oracle_stack_off;
+
 void oracle_reset_state(void)
 {
 	oracle_uflag = 0;
 	oracle_varbuf[0] = '\0';
 	oracle_outlen = 0;
 	oracle_outbuf[0] = '\0';
+	oracle_stack_off = 0;
 	b0228_err_exit = 0;
 }
 
@@ -139,10 +144,6 @@ void out1fmt(const char *fmt, ...)
 	    (int)sizeof(oracle_outbuf) - oracle_outlen, fmt, ap);
 	va_end(ap);
 }
-
-struct stackmark { char dummy; };
-static char oracle_stack[65536];
-static size_t oracle_stack_off;
 
 void setstackmark(struct stackmark *mark) { (void)mark; oracle_stack_off = 0; }
 void popstackmark(struct stackmark *mark) { (void)mark; }

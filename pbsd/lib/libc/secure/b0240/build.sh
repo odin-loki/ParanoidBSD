@@ -1,26 +1,44 @@
 #!/bin/sh
+#
+# build.sh -- build and run the PBSD b0240 differential test.
+#
+# Usage: sh build.sh            (from pbsd/lib/libc/secure/b0240/)
+#
+# Compiles the C oracle, the C++23 module port and the harness, links them
+# together and execs the resulting binary so that its exit status becomes the
+# exit status of this script.
+
 set -e
+
 cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
+CFLAGS=${CFLAGS:-"-std=c11 -O2 -DPIC"}
+CXXFLAGS=${CXXFLAGS:-"-std=c++23 -O2 -DPIC"}
 
-rm -f oracle.o port.o harness.o harness \
-	pbsd.lib.libc.secure.b0240.o \
-	pbsd.lib.libc.secure.b0240.gcm
+BUILD=build
+MODNAME=pbsd.lib.libc.secure.b0240
 
-"$CC" -std=c11 -O2 -DPIC -c oracle.c -o oracle.o
+rm -rf "$BUILD" gcm.cache
+mkdir -p "$BUILD"
 
-if "$CXX" --version 2>/dev/null | grep -qi clang; then
-	MODFLAGS="-std=c++23 -fprebuilt-module-path=."
-	"$CXX" $MODFLAGS -DPIC -x c++-module -c port.cppm -o pbsd.lib.libc.secure.b0240.o
-	"$CXX" $MODFLAGS -DPIC -c harness.cpp -o harness.o
-	"$CXX" $MODFLAGS harness.o port.o oracle.o -o harness
+$CC $CFLAGS -c oracle.c -o "$BUILD/oracle.o"
+
+MODFLAGS=""
+if $CXX --version 2>&1 | grep -qi 'clang'; then
+	$CXX $CXXFLAGS --precompile -x c++-module port.cppm \
+	    -o "$BUILD/port.pcm"
+	$CXX $CXXFLAGS -c "$BUILD/port.pcm" -o "$BUILD/port.o"
+	$CXX $CXXFLAGS -fmodule-file="$MODNAME=$BUILD/port.pcm" \
+	    -c harness.cpp -o "$BUILD/harness.o"
 else
-	MODFLAGS="-std=c++23 -fmodules-ts"
-	"$CXX" $MODFLAGS -DPIC -c port.cppm -o port.o
-	"$CXX" $MODFLAGS -DPIC -c harness.cpp -o harness.o
-	"$CXX" $MODFLAGS harness.o port.o oracle.o -o harness
+	MODFLAGS="-fmodules-ts"
+	$CXX $CXXFLAGS $MODFLAGS -x c++ -c port.cppm -o "$BUILD/port.o"
+	$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o "$BUILD/harness.o"
 fi
 
-exec ./harness
+$CXX $CXXFLAGS $MODFLAGS "$BUILD/port.o" "$BUILD/harness.o" \
+    "$BUILD/oracle.o" -o "$BUILD/b0240_test"
+
+exec "$BUILD/b0240_test"

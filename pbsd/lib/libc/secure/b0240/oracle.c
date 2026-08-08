@@ -8,6 +8,10 @@
 #include <string.h>
 #include <limits.h>
 
+#ifndef __RCSID
+#define __RCSID(s)
+#endif
+
 #define PIC 1
 
 volatile int ref_chk_fail_called = 0;

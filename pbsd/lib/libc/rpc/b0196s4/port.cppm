@@ -35,53 +35,89 @@
 module;
 
 #include <cstddef>
-#include <cstdint>
 
-typedef unsigned char u_char;
+export module pbsd.lib.libc.rpc.b0196s4;
+
+/*
+ * Generic DES driver interface, mirrored from <rpc/des.h>.  Exported with C
+ * language linkage so that the driver entry point _des_crypt_call() keeps
+ * the ABI it has in the original library.  u_char is spelled unsigned char
+ * so the layout is reproducible without <sys/types.h>.
+ */
+export extern "C" {
+
+#define DES_MAXLEN 	65536	/* maximum # of bytes to encrypt  */
+#define DES_QUICKLEN	16	/* maximum # of bytes to encrypt quickly */
 
 enum desdir { ENCRYPT, DECRYPT };
 enum desmode { CBC, ECB };
 
+/*
+ * parameters to ioctl call
+ */
 struct desparams {
-	u_char des_key[8];
-	enum desdir des_dir;
-	enum desmode des_mode;
-	u_char des_ivec[8];
-	unsigned des_len;
+	unsigned char des_key[8];	/* key (with low bit parity) */
+	enum desdir des_dir;	/* direction */
+	enum desmode des_mode;	/* mode */
+	unsigned char des_ivec[8];	/* input vector */
+	unsigned des_len;	/* number of bytes to crypt */
 	union {
-		u_char UDES_data[16];
-		u_char *UDES_buf;
+		unsigned char UDES_data[DES_QUICKLEN];
+		unsigned char *UDES_buf;
 	} UDES;
 };
 
-extern "C" {
-extern int (*__des_crypt_LOCAL)(char *, unsigned, struct desparams *);
-extern int _des_crypt_call(char *, int, struct desparams *);
+int _des_crypt_call(char *, int, struct desparams *);
+
 }
 
-export module pbsd.lib.libc.rpc.b0196s4;
+/*
+ * Mirrored from <rpc/des_crypt.h>.
+ */
+#define DES_MAXDATA 8192	/* max bytes encrypted in one call */
+#define DES_DIRMASK (1 << 0)
+#define DES_ENCRYPT (0*DES_DIRMASK)	/* Encrypt */
+#define DES_DECRYPT (1*DES_DIRMASK)	/* Decrypt */
+
+
+#define DES_DEVMASK (1 << 1)
+#define	DES_HW (0*DES_DEVMASK)	/* Use hardware device */ 
+#define DES_SW (1*DES_DEVMASK)	/* Use software device */
+
+
+#define DESERR_NONE 0	/* succeeded */
+#define DESERR_NOHWDEVICE 1	/* succeeded, but hw device not available */
+#define DESERR_HWERROR 2	/* failed, hardware/driver error */
+#define DESERR_BADPARAM 3	/* failed, bad parameter to call */
 
 namespace pbsd::lib_libc_rpc::b0196s4 {
 
-inline constexpr unsigned DES_MAXDATA = 8192;
-inline constexpr unsigned DES_DIRMASK = (1 << 0);
-inline constexpr unsigned DES_ENCRYPT = (0 * DES_DIRMASK);
-inline constexpr unsigned DES_DECRYPT = (1 * DES_DIRMASK);
-inline constexpr unsigned DES_DEVMASK = (1 << 1);
-inline constexpr unsigned DES_HW = (0 * DES_DEVMASK);
-inline constexpr unsigned DES_SW = (1 * DES_DEVMASK);
-inline constexpr int DESERR_NONE = 0;
-inline constexpr int DESERR_NOHWDEVICE = 1;
-inline constexpr int DESERR_HWERROR = 2;
-inline constexpr int DESERR_BADPARAM = 3;
+static int common_crypt( char *, char *, unsigned, unsigned, struct desparams * );
 
+}
+
+export namespace pbsd::lib_libc_rpc::b0196s4 {
+
+int (*__des_crypt_LOCAL)(char *, unsigned, struct desparams *) = 0;
+
+int cbc_crypt(char *key, char *buf, unsigned len, unsigned mode, char *ivec);
+int ecb_crypt(char *key, char *buf, unsigned len, unsigned mode);
+
+}
+
+/*
+ * Copy 8 bytes
+ */
 #define COPY8(src, dst) { \
 	char *a = (char *) dst; \
 	char *b = (char *) src; \
 	*a++ = *b++; *a++ = *b++; *a++ = *b++; *a++ = *b++; \
 	*a++ = *b++; *a++ = *b++; *a++ = *b++; *a++ = *b++; \
 }
-
+ 
+/*
+ * Copy multiple of 8 bytes
+ */
 #define DESCOPY(src, dst, len) { \
 	char *a = (char *) dst; \
 	char *b = (char *) src; \
@@ -92,6 +128,52 @@ inline constexpr int DESERR_BADPARAM = 3;
 	} \
 }
 
+namespace pbsd::lib_libc_rpc::b0196s4 {
+
+/*
+ * CBC mode encryption
+ */
+int
+cbc_crypt(char *key, char *buf, unsigned len, unsigned mode, char *ivec)
+{
+	int err;
+	struct desparams dp;
+
+#ifdef BROKEN_DES
+	dp.UDES.UDES_buf = buf;
+	dp.des_mode = ECB;
+#else
+	dp.des_mode = CBC;
+#endif
+	COPY8(ivec, dp.des_ivec);
+	err = common_crypt(key, buf, len, mode, &dp);
+	COPY8(dp.des_ivec, ivec);
+	return(err);
+}
+
+
+/*
+ * ECB mode encryption
+ */
+int
+ecb_crypt(char *key, char *buf, unsigned len, unsigned mode)
+{
+	struct desparams dp;
+
+#ifdef BROKEN_DES
+	dp.UDES.UDES_buf = buf;
+	dp.des_mode = CBC;
+#else
+	dp.des_mode = ECB;
+#endif
+	return(common_crypt(key, buf, len, mode, &dp));
+}
+
+
+
+/*
+ * Common code to cbc_crypt() & ecb_crypt()
+ */
 static int
 common_crypt(char *key, char *buf, unsigned len, unsigned mode,
     struct desparams *desp)
@@ -102,7 +184,7 @@ common_crypt(char *key, char *buf, unsigned len, unsigned mode,
 		return(DESERR_BADPARAM);
 	}
 	desp->des_dir =
-		((mode & DES_DIRMASK) == DES_ENCRYPT) ? ::ENCRYPT : ::DECRYPT;
+		((mode & DES_DIRMASK) == DES_ENCRYPT) ? ENCRYPT : DECRYPT;
 
 	desdev = mode & DES_DEVMASK;
 	COPY8(key, desp->des_key);
@@ -121,36 +203,4 @@ common_crypt(char *key, char *buf, unsigned len, unsigned mode,
 	return(desdev == DES_SW ? DESERR_NONE : DESERR_NOHWDEVICE);
 }
 
-export int
-cbc_crypt(char *key, char *buf, unsigned len, unsigned mode, char *ivec)
-{
-	int err;
-	struct desparams dp;
-
-#ifdef BROKEN_DES
-	dp.UDES.UDES_buf = buf;
-	dp.des_mode = ::ECB;
-#else
-	dp.des_mode = ::CBC;
-#endif
-	COPY8(ivec, dp.des_ivec);
-	err = common_crypt(key, buf, len, mode, &dp);
-	COPY8(dp.des_ivec, ivec);
-	return(err);
 }
-
-export int
-ecb_crypt(char *key, char *buf, unsigned len, unsigned mode)
-{
-	struct desparams dp;
-
-#ifdef BROKEN_DES
-	dp.UDES.UDES_buf = buf;
-	dp.des_mode = ::CBC;
-#else
-	dp.des_mode = ::ECB;
-#endif
-	return(common_crypt(key, buf, len, mode, &dp));
-}
-
-} /* namespace pbsd::lib_libc_rpc::b0196s4 */

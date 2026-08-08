@@ -10,15 +10,29 @@
  *   hbsd/src/lib/libc/string/timingsafe_bcmp.c
  */
 
+#define _DEFAULT_SOURCE 1
+
 #include <limits.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/endian.h>
 #include <unistd.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
+#endif
+
+#if defined(__linux__)
+#include <byteswap.h>
+#include <stdint.h>
+#ifndef bswap16
+#define bswap16(x) bswap_16(x)
+#endif
+#define PBSD_B0239_ENDIAN_SHIM
+#endif
+
+#ifndef PBSD_B0239_ENDIAN_SHIM
+#include <sys/endian.h>
 #endif
 
 /* ------------------------------------------------------------------------- */

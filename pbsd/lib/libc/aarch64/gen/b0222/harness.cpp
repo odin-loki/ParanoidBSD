@@ -583,8 +583,44 @@ op_ctx_done(port::ucontext_t *ucp_port, ref_abi::ucontext *ucp_ref,
 	mock_reset();
 	port::ctx_done(ucp_port);
 	la = g_done_log;
-	lb = la;
-	return;
+
+	mock_reset();
+	ref_ctx_done(ucp_ref);
+	lb = g_done_log;
+
+	if (la.exit_called != lb.exit_called) {
+		std::snprintf(msg, sizeof msg, "exit_called port=%d ref=%d",
+		    la.exit_called, lb.exit_called);
+		report(F_CTX_DONE, ctx, msg);
+		return;
+	}
+	if (la.exit_status != lb.exit_status) {
+		std::snprintf(msg, sizeof msg, "exit_status port=%d ref=%d",
+		    la.exit_status, lb.exit_status);
+		report(F_CTX_DONE, ctx, msg);
+		return;
+	}
+	if (la.abort_called != lb.abort_called) {
+		std::snprintf(msg, sizeof msg, "abort_called port=%d ref=%d",
+		    la.abort_called, lb.abort_called);
+		report(F_CTX_DONE, ctx, msg);
+		return;
+	}
+	if ((la.setcontext_arg == nullptr) != (lb.setcontext_arg == nullptr)) {
+		report(F_CTX_DONE, ctx, "setcontext null mismatch");
+		return;
+	}
+	if (la.setcontext_arg != nullptr &&
+	    (void *)la.setcontext_arg != (void *)ucp_port->uc_link) {
+		report(F_CTX_DONE, ctx, "port setcontext arg mismatch");
+		return;
+	}
+	if (lb.setcontext_arg != nullptr &&
+	    lb.setcontext_arg != ucp_ref->uc_link) {
+		report(F_CTX_DONE, ctx, "ref setcontext arg mismatch");
+		return;
+	}
+}
 
 static void edge_getcontextx_size(void) { op_getcontextx_size("edge/size"); }
 
