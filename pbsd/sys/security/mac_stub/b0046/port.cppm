@@ -1661,7 +1661,7 @@ stub_vnode_create_extattr(struct ucred *cred, struct mount *mp,
 }
 
 export void
-stub_vnode_execve_transition(struct ucred *old, struct ucred *new,
+stub_vnode_execve_transition(struct ucred *old, struct ucred * /*new*/,
     struct vnode *vp, struct label *vplabel, struct label *interpvplabel,
     struct image_params *imgp, struct label *execlabel)
 {

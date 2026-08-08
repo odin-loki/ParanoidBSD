@@ -182,11 +182,12 @@ bump_fail(int fn)
 static void
 check_easter(int fn, int y, const char *tag)
 {
-	DateFrame pf, rf;
+	PortDateFrame pf;
+	RefDateFrame rf;
 
 	n_cases[fn]++;
-	date_frame_init(pf, 0x11111111, 0x22222222, 0x33333333);
-	date_frame_init(rf, 0x11111111, 0x22222222, 0x33333333);
+	port_date_frame_init(pf, 0x11111111, 0x22222222, 0x33333333);
+	ref_date_frame_init(rf, 0x11111111, 0x22222222, 0x33333333);
 
 	P::date *pgot;
 	struct date *rgot;
@@ -195,22 +196,23 @@ check_easter(int fn, int y, const char *tag)
 	switch (fn) {
 	case F_EASTERG:
 		pgot = P::easterg(y, &pf.dt);
-		rgot = ref_easterg(y, &rf.dt);
+		rgot = ref_easterg(y, reinterpret_cast<struct date *>(&rf.dt));
 		break;
 	case F_EASTEROG:
 		pgot = P::easterog(y, &pf.dt);
-		rgot = ref_easterog(y, &rf.dt);
+		rgot = ref_easterog(y, reinterpret_cast<struct date *>(&rf.dt));
 		break;
 	default:
 		pgot = P::easteroj(y, &pf.dt);
-		rgot = ref_easteroj(y, &rf.dt);
+		rgot = ref_easteroj(y, reinterpret_cast<struct date *>(&rf.dt));
 		break;
 	}
 
 	poff = pgot == nullptr ? -1 : (long long)(pgot - &pf.dt);
-	roff = rgot == nullptr ? -1 : (long long)(rgot - &rf.dt);
+	roff = rgot == nullptr ? -1 :
+	    (long long)(rgot - reinterpret_cast<struct date *>(&rf.dt));
 
-	if (poff != roff || !frames_eq(pf, rf)) {
+	if (poff != roff || !date_frames_match(pf, rf)) {
 		bump_fail(fn);
 		if (poff != roff)
 			report(fn, tag, poff, roff);
@@ -227,11 +229,12 @@ check_easter(int fn, int y, const char *tag)
 static void
 check_date_conv(int fn, int ndays, const char *tag)
 {
-	DateFrame pf, rf;
+	PortDateFrame pf;
+	RefDateFrame rf;
 
 	n_cases[fn]++;
-	date_frame_init(pf, 0x44444444, 0x55555555, 0x66666666);
-	date_frame_init(rf, 0x44444444, 0x55555555, 0x66666666);
+	port_date_frame_init(pf, 0x44444444, 0x55555555, 0x66666666);
+	ref_date_frame_init(rf, 0x44444444, 0x55555555, 0x66666666);
 
 	P::date *pgot;
 	struct date *rgot;
@@ -239,16 +242,17 @@ check_date_conv(int fn, int ndays, const char *tag)
 
 	if (fn == F_GDATE) {
 		pgot = P::gdate(ndays, &pf.dt);
-		rgot = ref_gdate(ndays, &rf.dt);
+		rgot = ref_gdate(ndays, reinterpret_cast<struct date *>(&rf.dt));
 	} else {
 		pgot = P::jdate(ndays, &pf.dt);
-		rgot = ref_jdate(ndays, &rf.dt);
+		rgot = ref_jdate(ndays, reinterpret_cast<struct date *>(&rf.dt));
 	}
 
 	poff = pgot == nullptr ? -1 : (long long)(pgot - &pf.dt);
-	roff = rgot == nullptr ? -1 : (long long)(rgot - &rf.dt);
+	roff = rgot == nullptr ? -1 :
+	    (long long)(rgot - reinterpret_cast<struct date *>(&rf.dt));
 
-	if (poff != roff || !frames_eq(pf, rf)) {
+	if (poff != roff || !date_frames_match(pf, rf)) {
 		bump_fail(fn);
 		if (poff != roff)
 			report(fn, tag, poff, roff);
@@ -265,22 +269,23 @@ check_date_conv(int fn, int ndays, const char *tag)
 static void
 check_ndays(int fn, int y, int m, int d, const char *tag)
 {
-	DateFrame pf, rf;
+	PortDateFrame pf;
+	RefDateFrame rf;
 	int pgot, rgot;
 
 	n_cases[fn]++;
-	date_frame_init(pf, y, m, d);
-	date_frame_init(rf, y, m, d);
+	port_date_frame_init(pf, y, m, d);
+	ref_date_frame_init(rf, y, m, d);
 
 	if (fn == F_NDAYSG) {
 		pgot = P::ndaysg(&pf.dt);
-		rgot = ref_ndaysg(&rf.dt);
+		rgot = ref_ndaysg(reinterpret_cast<struct date *>(&rf.dt));
 	} else {
 		pgot = P::ndaysj(&pf.dt);
-		rgot = ref_ndaysj(&rf.dt);
+		rgot = ref_ndaysj(reinterpret_cast<struct date *>(&rf.dt));
 	}
 
-	if (pgot != rgot || !frames_eq(pf, rf)) {
+	if (pgot != rgot || !date_frames_match(pf, rf)) {
 		bump_fail(fn);
 		report(fn, tag, pgot, rgot);
 	}

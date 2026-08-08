@@ -174,7 +174,7 @@ static void
 check_conjl(long double re, long double im, const char *tag)
 {
 	ldrep gp[2], go[2];
-	port::long_double_complex_t pz;
+	long double _Complex pz;
 	long double _Complex oz;
 
 	st_conjl.cases++;
@@ -215,7 +215,7 @@ static void
 check_cimagf(std::uint32_t re, std::uint32_t im, const char *tag)
 {
 	std::uint32_t p, o;
-	port::float_complex_t z;
+	float _Complex z;
 
 	st_cimagf.cases++;
 
@@ -240,7 +240,7 @@ static void
 check_cimag(std::uint64_t re, std::uint64_t im, const char *tag)
 {
 	std::uint64_t p, o;
-	port::double_complex_t z;
+	double _Complex z;
 
 	st_cimag.cases++;
 

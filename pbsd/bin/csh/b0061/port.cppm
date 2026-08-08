@@ -29,15 +29,17 @@ module;
 #include <dlfcn.h>
 #include <stddef.h>
 
+export module pbsd.bin.csh.b0061;
+
 #ifndef dlfunc
-static void *
+namespace {
+void *
 dlfunc(void *handle, const char *symbol)
 {
 	return (dlsym(handle, symbol));
 }
+} // namespace
 #endif
-
-export module pbsd.bin.csh.b0061;
 
 export namespace pbsd::bin_csh::b0061 {
 
