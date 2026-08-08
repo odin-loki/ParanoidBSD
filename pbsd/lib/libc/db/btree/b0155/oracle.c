@@ -128,6 +128,8 @@ typedef struct {
 
 typedef struct MPOOL MPOOL;
 
+enum { NOT, BACK, FORWARD };
+
 typedef struct _page {
 	pgno_t	pgno;
 	pgno_t	prevpg;

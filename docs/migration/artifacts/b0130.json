@@ -1,0 +1,12 @@
+{
+  "batch": "b0130",
+  "verified": "2026-08-08T12:07:47Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                                cases     failures\nwcsnrtombs_l                           203696            0\nwcsnrtombs                             200924            0\n__wcsnrtombs_std                       201853            0\nwcstod_l                               200036            0\nwcstod                                 200012            0\n__messages_load_locale                 200005            0\n__messages_load                        100032            0\n__get_current_messages_locale          200002            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/wcsnrtombs.c": "ae2b0dcdea3fab37",
+    "hbsd/src/lib/libc/locale/wcstod.c": "f881e8c5cbf778a4",
+    "hbsd/src/lib/libc/locale/lmessages.c": "7c814d8952064049"
+  }
+}

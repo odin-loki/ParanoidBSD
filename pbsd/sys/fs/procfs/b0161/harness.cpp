@@ -466,7 +466,7 @@ test_osrel_hand()
 	run_osrel_write("empty", "", 0, 0);
 	run_osrel_write("max_ok", "2147483647", 0, 2147483647);
 	run_osrel_write("overflow", "2147483648", EINVAL, 99);
-	run_osrel_write("wrap_pos", "9999999999", 0, 1410065398);
+	run_osrel_write("wrap_pos", "9999999999", 0, 1410065407);
 	run_osrel_write("alpha", "abc", EINVAL, 99);
 	run_osrel_write("mid_alpha", "12a34", EINVAL, 99);
 	run_osrel_write("sign", "-1", EINVAL, 99);
@@ -475,47 +475,77 @@ test_osrel_hand()
 	run_osrel_write("ff", "\xff", EINVAL, 99);
 }
 
+static bool
+run_osrel_write_diff(const char *label, const char *text)
+{
+	st_osrel.cases++;
+
+	unsigned char arena_r[ARENA_SZ];
+	unsigned char arena_p[ARENA_SZ];
+	size_t tlen = std::strlen(text);
+
+	fill_arena(arena_r, text, tlen);
+	fill_arena(arena_p, text, tlen);
+
+	struct thread td_r{};
+	struct pfs_node pn_r{};
+	struct proc pr_r{};
+	struct sbuf sb_r{};
+	P::thread td_p2{};
+	P::pfs_node pn_p2{};
+	P::proc pr_p2{};
+	P::sbuf sb_p2{};
+	struct uio uio_r{};
+	P::uio uio_p2{};
+
+	init_proc(&pr_r, 99);
+	init_proc_t(&pr_p2, 99);
+	init_sbuf_data(&sb_r, (char *)(arena_r + PAD), DATA_CAP, text);
+	init_sbuf_data_t(&sb_p2, (char *)(arena_p + PAD), DATA_CAP, text);
+	uio_r.uio_rw = UIO_WRITE;
+	uio_p2.uio_rw = P::UIO_WRITE;
+
+	int ret_r = ref_procfs_doosrel(&td_r, &pr_r, &pn_r, &sb_r, &uio_r);
+	int ret_p = P::procfs_doosrel(&td_p2, &pr_p2, &pn_p2, &sb_p2, &uio_p2);
+
+	if (ret_r != ret_p) {
+		std::printf("    write %s ret %d/%d\n", label, ret_r, ret_p);
+		fail(st_osrel, label);
+		return false;
+	}
+	if (pr_r.p_osrel != pr_p2.p_osrel) {
+		std::printf("    write %s osrel %d/%d\n", label,
+		    pr_r.p_osrel, pr_p2.p_osrel);
+		fail(st_osrel, label);
+		return false;
+	}
+	if (!cmp_arenas(st_osrel, arena_r, arena_p))
+		return false;
+	if (!cmp_sbuf_meta(st_osrel, &sb_r, &sb_p2))
+		return false;
+	return true;
+}
+
 static void
 test_osrel_sweep()
 {
 	for (long i = 0; i < SWEEP; i++) {
-		st_osrel.cases++;
-		int osrel = (int)(rng.next() & 0x7fffffffu);
-		if (rng.coin())
-			run_osrel_read(osrel);
-		else {
+		if (rng.coin()) {
+			run_osrel_read((int)(rng.next() & 0x7fffffffu));
+		} else {
 			char buf[32];
 			unsigned n = rng.below(11);
-			if (n == 0) {
-				run_osrel_write("sweep_empty", "", 0, 0);
-				continue;
-			}
 			size_t pos = 0;
 			for (unsigned j = 0; j < n && pos + 1 < sizeof(buf); j++) {
 				if (rng.coin() && j > 0)
 					buf[pos++] = (char)(' ' + rng.below(5));
+				else if (rng.coin())
+					buf[pos++] = (char)(0x80 + rng.below(0x40));
 				else
 					buf[pos++] = (char)('0' + rng.below(10));
 			}
 			buf[pos] = '\0';
-			int expect = 0;
-			int parsed = 0;
-			const char *p = buf;
-			while (*p == ' ' || *p == '\t' || *p == '\n')
-				p++;
-			while (*p >= '0' && *p <= '9') {
-				int ov = parsed * 10 + (*p - '0');
-				if (ov < parsed) {
-					expect = EINVAL;
-					break;
-				}
-				parsed = ov;
-				p++;
-			}
-			if (expect == 0 && *p != '\0')
-				expect = EINVAL;
-			int expect_osrel = (expect == 0) ? parsed : 99;
-			run_osrel_write("sweep", buf, expect, expect_osrel);
+			run_osrel_write_diff("sweep", buf);
 		}
 	}
 }

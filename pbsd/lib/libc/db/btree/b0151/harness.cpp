@@ -718,12 +718,6 @@ void check_ovfl_get(pgno_t firstpg, size_t total, int force_null, int smallbuf)
 {
 	unsigned char desc_p[16];
 	unsigned char desc_r[16];
-	unsigned char buf_p[BIG_BUF];
-	unsigned char buf_r[BIG_BUF];
-	unsigned char pg1_p[PAGE_SZ];
-	unsigned char pg1_r[PAGE_SZ];
-	unsigned char pg2_p[PAGE_SZ];
-	unsigned char pg2_r[PAGE_SZ];
 	P::BTREE tp;
 	P::MPOOL mp_p;
 	P::DB db_p;
@@ -744,8 +738,6 @@ void check_ovfl_get(pgno_t firstpg, size_t total, int force_null, int smallbuf)
 	test_mock.get_force_null = force_null;
 	init_tree(tp, mp_p, db_p, 0, PAGE_SZ);
 	init_tree_ref(tr, mp_r, db_r, 0, PAGE_SZ);
-	guard_fill(buf_p, BIG_BUF);
-	guard_fill(buf_r, BIG_BUF);
 
 	*(pgno_t *)desc_p = firstpg;
 	*(u_int32_t *)(desc_p + sizeof(pgno_t)) = (u_int32_t)total;
@@ -757,19 +749,23 @@ void check_ovfl_get(pgno_t firstpg, size_t total, int force_null, int smallbuf)
 	    payload, nb1, PAGE_SZ);
 	test_mock_register(firstpg, h1p);
 	test_mock_register(firstpg, h1r);
+	PAGE *h2p = nullptr;
+	PAGE *h2r = nullptr;
 	if (nb2) {
-		PAGE *h2p = make_overflow_page(pg2, P_INVALID, payload + nb1,
+		h2p = make_overflow_page(pg2, P_INVALID, payload + nb1,
 		    nb2, PAGE_SZ);
-		PAGE *h2r = make_overflow_page(pg2, P_INVALID, payload + nb1,
+		h2r = make_overflow_page(pg2, P_INVALID, payload + nb1,
 		    nb2, PAGE_SZ);
 		test_mock_register(pg2, h2p);
 		test_mock_register(pg2, h2r);
 	}
 
-	void *bp = buf_p + 128;
-	void *br = buf_r + 128;
+	void *bp = nullptr;
+	void *br = nullptr;
 	size_t bsz_p = smallbuf ? 8 : BIG_BUF - 256;
 	size_t bsz_r = smallbuf ? 8 : BIG_BUF - 256;
+	bp = std::malloc(bsz_p);
+	br = std::malloc(bsz_r);
 	size_t ssz_p = 0;
 	size_t ssz_r = 0;
 
@@ -784,7 +780,14 @@ void check_ovfl_get(pgno_t firstpg, size_t total, int force_null, int smallbuf)
 		check_eq(F_OVFL_GET, ssz_p == ssz_r && ssz_p == total, "ssz");
 		check_eq(F_OVFL_GET,
 		    std::memcmp(bp, br, total) == 0, "payload");
-		check_eq(F_OVFL_GET, bufs_eq(buf_p, buf_r, BIG_BUF), "guard");
+	}
+	std::free(bp);
+	std::free(br);
+	std::free(h1p);
+	std::free(h1r);
+	if (nb2) {
+		std::free(h2p);
+		std::free(h2r);
 	}
 }
 

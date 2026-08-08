@@ -775,7 +775,12 @@ main()
 	pbsd_reset_hooks();
 	init_locales();
 
+	hand_wcsnrtombs_cases();
 	sweep_wcsnrtombs();
+	hand_wcstod_cases();
+	sweep_wcstod();
+	hand_messages_cases();
+	sweep_messages();
 
 	std::printf("\n%-32s %12s %12s\n", "function", "cases", "failures");
 	for (int i = 0; i < F_COUNT; i++) {

@@ -872,9 +872,8 @@ static P::xlocale_collate *make_port_collate()
 	info->pri_count[0] = 0x40;
 	info->chain_max_len = 2;
 
-	chars['a'].pri[0] = 10;
 	chars['b'].pri[0] = 20;
-	chars['a'].pri[0] |= 0x80000000;
+	chars['a'].pri[0] = 0x80000000;
 	subst->key = chars['a'].pri[0];
 	subst->pri[0] = 99;
 	subst->pri[1] = 0;
@@ -911,9 +910,8 @@ static ref_xlocale_collate *make_ref_collate()
 	info->pri_count[0] = 0x40;
 	info->chain_max_len = 2;
 
-	chars['a'].pri[0] = 10;
 	chars['b'].pri[0] = 20;
-	chars['a'].pri[0] |= 0x80000000;
+	chars['a'].pri[0] = 0x80000000;
 	subst->key = chars['a'].pri[0];
 	subst->pri[0] = 99;
 	subst->pri[1] = 0;
@@ -1031,8 +1029,8 @@ static void test_collate_search(int fsub, int fch, int flg, P::xlocale_collate *
     ref_xlocale_collate *rt)
 {
 	int pl{}, rl{};
-	const int32_t *ps = P::collate_substsearch(pt, pt->char_pri_table['a'].pri[0], 0);
-	const int32_t *rs = ref_substsearch(rt, rt->char_pri_table['a'].pri[0], 0);
+	const int32_t *ps = P::collate_substsearch(pt, 0x80000000, 0);
+	const int32_t *rs = ref_substsearch(rt, 0x80000000, 0);
 	ncase[fsub]++;
 	if ((ps == nullptr) != (rs == nullptr) || (ps && rs && *ps != *rs))
 		report(fsub, "substsearch");
@@ -1163,6 +1161,8 @@ int main()
 
 	test_collate_lookup(F_COLLATE_LOOKUP, pc, rc);
 	test_collate_xfrm(F_COLLATE_WXFRM, F_COLLATE_SXFRM, pc, rc);
+	P::port___xlocale_global_locale.components[0] = P::collate_c_table();
+	ref___xlocale_global_locale.components[0] = &ref___xlocale_C_collate;
 	test_collate_equiv_value(F_COLLATE_EQUIV_VALUE);
 	test_collate_collating_symbol(F_COLLATE_COLLATING_SYMBOL);
 	test_collate_equiv_class(F_COLLATE_EQUIV_CLASS);

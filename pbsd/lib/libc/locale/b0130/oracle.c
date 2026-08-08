@@ -201,16 +201,16 @@ pbsd_wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 	size_t nb;
 
 	(void)ps;
+	memset(buf, 0, sizeof(buf));
 	pbsd_wcrtomb_hook.call_count++;
 	if (pbsd_wcrtomb_hook.fail_at != 0 &&
 	    pbsd_wcrtomb_hook.call_count == pbsd_wcrtomb_hook.fail_at)
 		return ((size_t)-1);
-	if (pbsd_wcrtomb_hook.forced_wc == wc && pbsd_wcrtomb_hook.forced_nb != 0)
-		nb = pbsd_wcrtomb_hook.forced_nb;
-	else
-		nb = pbsd_utf8_encode(wc, buf, sizeof(buf));
+	nb = pbsd_utf8_encode(wc, buf, sizeof(buf));
 	if (nb == (size_t)-1)
 		return ((size_t)-1);
+	if (pbsd_wcrtomb_hook.forced_wc == wc && pbsd_wcrtomb_hook.forced_nb != 0)
+		nb = pbsd_wcrtomb_hook.forced_nb;
 	if (pbsd_wcrtomb_hook.touch_state != 0 && ps != NULL)
 		ps->__mbstate8[0] = (char)0x80;
 	if (s == NULL)

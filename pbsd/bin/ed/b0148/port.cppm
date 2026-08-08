@@ -592,7 +592,7 @@ build_active_list(int isgcmd)
 		if (isbinary)
 			NUL_TO_NEWLINE(s, lp->len);
 		if (!(regexec(pat, s, 0, NULL, 0) == isgcmd) &&
-		    set_active_node(lp) < 0)
+		    set_active_node(lp) >= 0)
 			return ERR;
 	}
 	return 0;

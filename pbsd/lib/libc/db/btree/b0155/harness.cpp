@@ -163,7 +163,6 @@ extern test_mock_state test_mock;
 
 void test_mock_reset(void);
 void test_mock_register(pgno_t pgno, void *page);
-int __bt_defcmp(const DBT *, const DBT *);
 
 int ref_byteorder(void);
 int ref_tmp(void);
@@ -187,7 +186,17 @@ DB *ref___bt_open(const char *, int, int, const BTREEINFO *, int);
 
 int harness_cmp(const DBT *a, const DBT *b)
 {
-	return __bt_defcmp(a, b);
+	size_t min = a->size < b->size ? a->size : b->size;
+	if (min > 0) {
+		int c = std::memcmp(a->data, b->data, min);
+		if (c != 0)
+			return c;
+	}
+	if (a->size < b->size)
+		return -1;
+	if (a->size > b->size)
+		return 1;
+	return 0;
 }
 
 struct MockSnap {
@@ -494,6 +503,16 @@ void build_binternal_page(PAGE *pg, size_t psize, int nents,
 	pg->upper = (indx_t)off;
 }
 
+void copy_cursor_ref(BTREE &tr, const P::BTREE &tp)
+{
+	tr.bt_cursor.pg.pgno = tp.bt_cursor.pg.pgno;
+	tr.bt_cursor.pg.index = tp.bt_cursor.pg.index;
+	tr.bt_cursor.flags = tp.bt_cursor.flags;
+	tr.bt_cursor.rcursor = tp.bt_cursor.rcursor;
+	tr.bt_cursor.key.data = tp.bt_cursor.key.data;
+	tr.bt_cursor.key.size = tp.bt_cursor.key.size;
+}
+
 void setup_open_mocks_empty(int open_ret, int mkostemp_ret)
 {
 	test_mock_reset();
@@ -560,15 +579,17 @@ void check_tmp(int mkostemp_ret, const char *tmpdir)
 	MockSnap snap = snap_mock();
 	int rp = P::tmp();
 	int re_p = errno;
+	MockDelta dp = mock_delta(snap.mock, test_mock);
 	restore_mock(snap);
 	int rr = ref_tmp();
 	int re_r = errno;
+	MockDelta dr = mock_delta(snap.mock, test_mock);
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d mk=%d env=%s errno_p=%d errno_r=%d",
 	    rp, rr, mkostemp_ret, tmpdir ? tmpdir : "null", re_p, re_r);
 	check_eq(F_TMP, rp == rr && re_p == re_r, msg);
-	check_eq(F_TMP, test_mock.mkostemp_calls == 2, "mkostemp calls");
-	check_eq(F_TMP, test_mock.getenv_calls == 2, "getenv calls");
+	check_eq(F_TMP, dp.mkostemp == dr.mkostemp, "mkostemp delta");
+	check_eq(F_TMP, dp.getenv == dr.getenv, "getenv delta");
 }
 
 void check_nroot(int existing_valid, int existing_invalid, int get_null,
@@ -877,7 +898,7 @@ void check_bt_dleaf(int nents, u_int idx, int cursor_hit, int ovfl_key,
 	key.size = 4;
 
 	MockSnap snap = snap_mock();
-	int rp = P::__bt_dleaf(&tp, &key, (P::PAGE *)leaf_p, idx);
+	int rp = P::__bt_dleaf(&tp, (P::DBT *)&key, (P::PAGE *)leaf_p, idx);
 	P::BTREE tp_after = tp;
 	unsigned char res_p[PAGE_SZ];
 	std::memcpy(res_p, leaf_p, PAGE_SZ);
