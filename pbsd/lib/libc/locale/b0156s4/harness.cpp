@@ -270,62 +270,50 @@ static void init_loaded(Fixture &fx, unsigned variant)
 	ri.undef_pri[2] = 77;
 
 	for (int i = 0; i < 256; i++) {
-		for (int p = 0; p < COLL_WEIGHTS_MAX; p++) {
+		for (int p = 0; p < PBSD_COLL_WEIGHTS_MAX; p++) {
 			int v = (i * 3 + p * 7 + (int)variant + 1) & 0x3fff;
 			if (i == 5 && p == 1)
 				v = -1;
 			if (i == 7 && p == 0)
 				v = 0;
-			fx.back.chars[i].pri[p] = v;
-			fx.rback.chars[i].pri[p] = v;
+			fx.pback.chars[i].pri[p] = v;
 		}
 	}
-	fx.back.chars['a'].pri[0] = (50 | COLLATE_SUBST_PRIORITY);
-	fx.rback.chars['a'].pri[0] = fx.back.chars['a'].pri[0];
-	fx.back.subst0[0].key = fx.back.chars['a'].pri[0];
-	fx.rback.subst0[0].key = fx.back.subst0[0].key;
-	fx.back.subst0[0].pri[0] = 10;
-	fx.back.subst0[0].pri[1] = 20;
-	fx.back.subst0[0].pri[2] = 0;
-	fx.rback.subst0[0].pri[0] = 10;
-	fx.rback.subst0[0].pri[1] = 20;
-	fx.rback.subst0[0].pri[2] = 0;
+	fx.pback.chars['a'].pri[0] = (50 | COLLATE_SUBST_PRIORITY);
+	fx.pback.subst0[0].key = fx.pback.chars['a'].pri[0];
+	fx.pback.subst0[0].pri[0] = 10;
+	fx.pback.subst0[0].pri[1] = 20;
+	fx.pback.subst0[0].pri[2] = 0;
 
-	wset(fx.back.chains[0].str, L"ab");
-	wset(fx.back.chains[1].str, L"cd");
-	wset(fx.back.chains[2].str, L"xy");
-	wset(fx.rback.chains[0].str, L"ab");
-	wset(fx.rback.chains[1].str, L"cd");
-	wset(fx.rback.chains[2].str, L"xy");
+	wset(fx.pback.chains[0].str, L"ab");
+	wset(fx.pback.chains[1].str, L"cd");
+	wset(fx.pback.chains[2].str, L"xy");
 	for (int c = 0; c < 3; c++) {
-		for (int p = 0; p < COLL_WEIGHTS_MAX; p++) {
+		for (int p = 0; p < PBSD_COLL_WEIGHTS_MAX; p++) {
 			int v = 100 + c * 10 + p;
-			fx.back.chains[c].pri[p] = v;
-			fx.rback.chains[c].pri[p] = v;
+			fx.pback.chains[c].pri[p] = v;
 		}
 	}
-	fx.back.chains[1].pri[0] = -5;
-	fx.rback.chains[1].pri[0] = -5;
+	fx.pback.chains[1].pri[0] = -5;
 
-	fx.back.larges[0].val = 300;
-	fx.back.larges[1].val = 500;
-	fx.rback.larges[0].val = 300;
-	fx.rback.larges[1].val = 500;
-	for (int p = 0; p < COLL_WEIGHTS_MAX; p++) {
-		fx.back.larges[0].pri.pri[p] = 400 + p;
-		fx.back.larges[1].pri.pri[p] = 600 + p;
-		fx.rback.larges[0].pri.pri[p] = 400 + p;
-		fx.rback.larges[1].pri.pri[p] = 600 + p;
+	fx.pback.larges[0].val = 300;
+	fx.pback.larges[1].val = 500;
+	for (int p = 0; p < PBSD_COLL_WEIGHTS_MAX; p++) {
+		fx.pback.larges[0].pri.pri[p] = 400 + p;
+		fx.pback.larges[1].pri.pri[p] = 600 + p;
 	}
 
-	fx.back.subst1[0].key = (60 | COLLATE_SUBST_PRIORITY);
-	fx.rback.subst1[0].key = fx.back.subst1[0].key;
-	fx.back.chars['b'].pri[1] = fx.back.subst1[0].key;
-	fx.rback.chars['b'].pri[1] = fx.back.subst1[0].key;
-	fx.back.subst1[0].pri[0] = 30;
-	fx.back.subst1[0].pri[1] = 0;
-	fx.rback.subst1[0].pri[0] = 30;
-	fx.rback.subst1[0].pri[1] = 0;
+	fx.pback.subst1[0].key = (60 | COLLATE_SUBST_PRIORITY);
+	fx.pback.chars['b'].pri[1] = fx.pback.subst1[0].key;
+	fx.pback.subst1[0].pri[0] = 30;
+	fx.pback.subst1[0].pri[1] = 0;
+
+	std::memcpy(&fx.rback.info, &fx.pback.info, sizeof(fx.rback.info));
+	std::memcpy(fx.rback.chars, fx.pback.chars, sizeof(fx.rback.chars));
+	std::memcpy(fx.rback.chains, fx.pback.chains, sizeof(fx.rback.chains));
+	std::memcpy(fx.rback.larges, fx.pback.larges, sizeof(fx.rback.larges));
+	std::memcpy(fx.rback.subst0, fx.pback.subst0, sizeof(fx.rback.subst0));
+	std::memcpy(fx.rback.subst1, fx.pback.subst1, sizeof(fx.rback.subst1));
 }
 
 static void bind_locales(Fixture &fx)
@@ -346,7 +334,7 @@ static void bind_posix()
 	    (xlocale_component *)&ref___xlocale_global_collate;
 }
 
-static bool write_collate_file(const char *locname, const CollateBacking &b)
+static bool write_collate_file(const char *locname, const RefBacking &b)
 {
 	char path[512];
 	std::snprintf(path, sizeof(path), "%s/%s", tmp_root, locname);
@@ -421,7 +409,7 @@ static void test_load_hand()
 			continue;
 		}
 	}
-	CollateBacking b{};
+	RefBacking b{};
 	b.info.directive_count = 1;
 	b.info.directive[0] = DIRECTIVE_FORWARD;
 	b.info.pri_count[0] = 8;
@@ -462,7 +450,7 @@ static void test_load_tables_hand()
 		if (pv != rv)
 			report(F_LOAD_TABLES, "cache enc");
 	}
-	CollateBacking b{};
+	RefBacking b{};
 	b.info.directive_count = 1;
 	b.info.directive[0] = DIRECTIVE_FORWARD;
 	b.info.pri_count[0] = 8;
@@ -483,22 +471,22 @@ static void test_load_tables_hand()
 
 static void test_lookup_one(Fixture &fx, const wchar_t *ws, int which, int f)
 {
-	const int **pst = nullptr;
-	const int **rst = nullptr;
+	const int *pstate = nullptr;
+	const int *rstate = nullptr;
 	int plen = -1, rlen = -1, ppri = -1, rpri = -1;
 	const wchar_t *pt = ws;
 	const wchar_t *rt = ws;
-	for (int step = 0; step < 32 && (pt[0] || pst); step++) {
+	for (int step = 0; step < 32 && (pt[0] || pstate); step++) {
 		plen = rlen = -1;
 		ppri = rpri = -1;
-		P::_collate_lookup(&fx.ptab, pt, &plen, &ppri, which, &pst);
-		ref__collate_lookup(&fx.rtab, rt, &rlen, &rpri, which, &rst);
+		P::_collate_lookup(&fx.ptab, pt, &plen, &ppri, which, &pstate);
+		ref__collate_lookup(&fx.rtab, rt, &rlen, &rpri, which, &rstate);
 		bump(f);
 		if (plen != rlen || ppri != rpri)
 			report(f, "lookup out");
 		pt += plen > 0 ? plen : 0;
 		rt += rlen > 0 ? rlen : 0;
-		if (pst == nullptr && rst == nullptr && !pt[0])
+		if (pstate == nullptr && rstate == nullptr && !pt[0])
 			break;
 	}
 }
@@ -539,7 +527,7 @@ static void test_wxfrm_hand()
 	init_loaded(fx, 1);
 	const wchar_t *ss[] = {L"", L"a", L"ab", L"bac", L"\xff", L"a\xbcd"};
 	for (auto ws : ss) {
-		for (size_t room : {size_t(0), size_t(1), size_t(8), size_t(256)}) {
+	for (auto room : {size_t(0), size_t(1), size_t(8), size_t(256)}) {
 			wchar_t pbuf[512], rbuf[512];
 			for (size_t i = 0; i < 512; i++) {
 				pbuf[i] = WGUARD;
@@ -564,7 +552,7 @@ static void test_sxfrm_hand()
 	init_loaded(fx, 2);
 	const wchar_t *ss[] = {L"", L"z", L"cd", L"bac", L"\x300"};
 	for (auto ws : ss) {
-		for (size_t room : {size_t(0), size_t(2), size_t(16), size_t(512)}) {
+	for (auto room : {size_t(0), size_t(2), size_t(16), size_t(512)}) {
 			unsigned char pbuf[1024], rbuf[1024];
 			std::memset(pbuf, GUARD, sizeof(pbuf));
 			std::memset(rbuf, GUARD, sizeof(rbuf));

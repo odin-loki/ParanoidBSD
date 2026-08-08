@@ -168,7 +168,7 @@ constexpr unsigned SWEEP_ITERS = 200000;
 
 enum { NOT = 0, BACK = 1, FORWARD = 2 };
 
-#define P_INVALID 0
+#define P_INVALID 0xffffffffu
 #define P_ROOT 1
 #define P_BLEAF 0x02
 #define P_BIGKEY 0x02

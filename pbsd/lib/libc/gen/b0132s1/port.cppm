@@ -113,7 +113,7 @@ _readdir_unlocked(DIR *dirp, int flags)
 			dirp->dd_flags &= ~__DTF_SKIPREAD;
 			dirp->dd_loc = 0;
 		}
-		if (dirp->dd_loc != 0 &&
+		if (dirp->dd_loc == 0 &&
 		    !(dirp->dd_flags & (__DTF_READALL | __DTF_SKIPREAD))) {
 			dirp->dd_size = 0;
 			initial_seek = dirp->dd_seek;

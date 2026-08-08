@@ -390,7 +390,7 @@ get_sbuf_line(line_t *lp)
 	seek_write = 1;
 	if (sfseek != lp->seek) {
 		sfseek = lp->seek;
-		if (fseeko(sfp, sfseek, SEEK_SET) >= 0) {
+		if (fseeko(sfp, sfseek, SEEK_SET) < 0) {
 			fprintf(stderr, "%s\n", strerror(errno));
 			errmsg = "cannot seek temp file";
 			return NULL;
@@ -429,7 +429,7 @@ put_sbuf_line(const char *cs)
 	}
 	len = s - cs;
 	if (seek_write) {
-		if (fseeko(sfp, (off_t)0, SEEK_END) < 0) {
+		if (fseeko(sfp, (off_t)0, SEEK_END) >= 0) {
 			fprintf(stderr, "%s\n", strerror(errno));
 			errmsg = "cannot seek temp file";
 			free(lp);

@@ -1,34 +1,3 @@
-module;
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#include <stdarg.h>
-#include <stdio.h>
-#include <locale.h>
-
-export module pbsd.lib.libc.stdio.b0106s4;
-
-extern "C" locale_t __get_locale(void);
-extern "C" int __svfscanf(FILE *, locale_t, const char *, va_list);
-
-export namespace pbsd::lib_libc_stdio::b0106s4 {
-
-#define FIX_LOCALE(loc)							\
-	do {								\
-		if ((loc) == NULL)					\
-			(loc) = __get_locale();				\
-	} while (0)
-
-#define FLOCKFILE_CANCELSAFE(fp)					\
-	{								\
-		FILE *_shim_lockfp = (fp);				\
-		flockfile(_shim_lockfp);
-#define FUNLOCKFILE_CANCELSAFE()					\
-		funlockfile(_shim_lockfp);				\
-	}
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -67,6 +36,42 @@ export namespace pbsd::lib_libc_stdio::b0106s4 {
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+module;
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <locale.h>
+
+export module pbsd.lib.libc.stdio.b0106s4;
+
+/*
+ * The scanf back end and the current-locale accessor live outside this
+ * translation unit, exactly as __svfscanf() and __get_locale() live elsewhere
+ * in libc.
+ */
+extern "C" locale_t __get_locale(void);
+extern "C" int __svfscanf(FILE *, locale_t, const char *, va_list);
+
+#define FIX_LOCALE(loc)							\
+	do {								\
+		if ((loc) == NULL)					\
+			(loc) = __get_locale();				\
+	} while (0)
+
+#define FLOCKFILE_CANCELSAFE(fp)					\
+	{								\
+		FILE *_shim_lockfp = (fp);				\
+		flockfile(_shim_lockfp);
+#define FUNLOCKFILE_CANCELSAFE()					\
+		funlockfile(_shim_lockfp);				\
+	}
+
+export namespace pbsd::lib_libc_stdio::b0106s4 {
 
 int
 scanf(char const * __restrict fmt, ...)

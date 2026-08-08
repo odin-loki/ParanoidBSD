@@ -10,6 +10,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/chio/b0192/port.cppm
   bin/chmod/b0195/port.cppm
   bin/cp/b0191/port.cppm
+  bin/cp/b0191s1/port.cppm
   bin/cpuset/b0183/port.cppm
   bin/csh/b0061/port.cppm
   bin/date/b0190/port.cppm

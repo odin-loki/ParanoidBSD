@@ -142,7 +142,7 @@ typedef struct _page {
 	indx_t	linp[1];
 } PAGE;
 
-#define	P_INVALID	 0
+#define	P_INVALID	 0xffffffff
 #define	P_META		 0
 #define	P_ROOT		 1
 

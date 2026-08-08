@@ -1,0 +1,1 @@
+main — requires vary.h (vary_append/vary_apply/vary_destroy) not in batch source list; CLI integration not testable without vary

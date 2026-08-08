@@ -28,7 +28,9 @@
 
 #define	KTR_LOCK		0x00000004
 
+#ifndef EWOULDBLOCK
 #define	EWOULDBLOCK		35
+#endif
 
 struct mtx {
 	unsigned long long	mtx_name_hash;

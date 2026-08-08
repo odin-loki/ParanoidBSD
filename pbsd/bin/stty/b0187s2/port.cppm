@@ -46,18 +46,6 @@ enum FMT { NOTSET, GFLAG, BSD, POSIX };
 } // namespace pbsd::bin_stty::b0187s2
 
 extern "C" {
-struct pbsd_stty_hooks {
-	unsigned print_calls;
-	unsigned gprint_calls;
-	unsigned gread_calls;
-	unsigned checkredirect_calls;
-	unsigned ksearch_hits;
-	unsigned csearch_hits;
-	unsigned msearch_hits;
-	int last_print_fmt;
-};
-extern struct pbsd_stty_hooks pbsd_stty_hooks;
-
 void checkredirect(void);
 int ksearch(char ***, pbsd::bin_stty::b0187s2::info *);
 int csearch(char ***, pbsd::bin_stty::b0187s2::info *);
@@ -98,6 +86,8 @@ export namespace pbsd::bin_stty::b0187s2 {
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+void usage(void) __dead2;
 
 int
 main(int argc, char *argv[])

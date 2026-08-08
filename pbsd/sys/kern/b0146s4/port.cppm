@@ -13,10 +13,6 @@ namespace pbsd::sys_kern::b0146s4::detail {
 #define KASSERT(cond, msg) ((void)0)
 
 #define KTR_LOCK 0
-#define CTR3(...) ((void)0)
-#define CTR4(...) ((void)0)
-#define CTR5(...) ((void)0)
-#define CTR6(...) ((void)0)
 
 constexpr int MTX_DEF = 0;
 constexpr int MTX_NOWITNESS = 0;
@@ -201,6 +197,10 @@ using detail::sema;
 
 #define KASSERT(cond, msg) ((void)0)
 #define KTR_LOCK 0
+#define CTR3(...) ((void)0)
+#define CTR4(...) ((void)0)
+#define CTR5(...) ((void)0)
+#define CTR6(...) ((void)0)
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -239,7 +239,7 @@ using detail::sema;
  * upon in combination with semaphores.
  */
 
-export void
+void
 sema_init(sema *sema, int value, const char *description)
 {
 
@@ -254,7 +254,7 @@ KASSERT((value >= 0), ("%s(): negative value\n", __func__));
 	CTR4(KTR_LOCK, "%s(%p, %d, \"%s\")", __func__, sema, value, description);
 }
 
-export void
+void
 sema_destroy(sema *sema)
 {
 
@@ -267,7 +267,7 @@ KASSERT((sema->sema_waiters == 0), ("%s(): waiters\n", __func__));
 	detail::cv_destroy(&sema->sema_cv);
 }
 
-export void
+void
 _sema_post(sema *sema, const char *file, int line)
 {
 
@@ -282,7 +282,7 @@ _sema_post(sema *sema, const char *file, int line)
 	detail::mtx_unlock(&sema->sema_mtx);
 }
 
-export void
+void
 _sema_wait(sema *sema, const char *file, int line)
 {
 
@@ -300,7 +300,7 @@ _sema_wait(sema *sema, const char *file, int line)
 	detail::mtx_unlock(&sema->sema_mtx);
 }
 
-export int
+int
 _sema_timedwait(sema *sema, int timo, const char *file, int line)
 {
 	int error;
@@ -334,7 +334,7 @@ _sema_timedwait(sema *sema, int timo, const char *file, int line)
 	return (error);
 }
 
-export int
+int
 _sema_trywait(sema *sema, const char *file, int line)
 {
 	int ret;
@@ -359,7 +359,7 @@ _sema_trywait(sema *sema, const char *file, int line)
 	return (ret);
 }
 
-export int
+int
 sema_value(sema *sema)
 {
 	int ret;

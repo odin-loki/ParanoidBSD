@@ -14,6 +14,7 @@ import pbsd.bin.stty.b0187s2;
 #include <sys/wait.h>
 #include <termios.h>
 #include <unistd.h>
+#include <string>
 #include <vector>
 
 namespace P = pbsd::bin_stty::b0187s2;
@@ -297,7 +298,7 @@ run_main_edge_cases()
 	char okfile[] = "/dev/null";
 	char k[] = "__ksearch__";
 	char c[] = "__csearch__";
-	char m[] = "__msearch__";
+	char msearch_tok[] = "__msearch__";
 	char sp9600[] = "9600";
 	char sp0[] = "0";
 	char spbad[] = "999999999999999999999";
@@ -318,7 +319,7 @@ run_main_edge_cases()
 	char *av_f_ok[] = { prog, fopt, okfile, nullptr };
 	char *av_k[] = { prog, k, nullptr };
 	char *av_c[] = { prog, c, nullptr };
-	char *av_m[] = { prog, m, nullptr };
+	char *av_m[] = { prog, msearch_tok, nullptr };
 	char *av_sp[] = { prog, sp9600, nullptr };
 	char *av_sp0[] = { prog, sp0, nullptr };
 	char *av_spbad[] = { prog, spbad, nullptr };
@@ -354,34 +355,34 @@ run_main_edge_cases()
 	cmp_main_run(ok_mock(), 3, av_g_k);
 	cmp_main_run(ok_mock(), 3, av_e_arg);
 
-	MockState m = ok_mock();
-	m.open_ret = -1;
-	cmp_main_run(m, 3, av_f_bad);
+	MockState mockst = ok_mock();
+	mockst.open_ret = -1;
+	cmp_main_run(mockst, 3, av_f_bad);
 
-	m = ok_mock();
-	m.tcgetattr_ret = -1;
-	cmp_main_run(m, 1, av_empty);
+	mockst = ok_mock();
+	mockst.tcgetattr_ret = -1;
+	cmp_main_run(mockst, 1, av_empty);
 
-	m = ok_mock();
-	m.ioctl_getd_ret = -1;
-	cmp_main_run(m, 1, av_empty);
+	mockst = ok_mock();
+	mockst.ioctl_getd_ret = -1;
+	cmp_main_run(mockst, 1, av_empty);
 
-	m = ok_mock();
-	m.ioctl_winsz_ret = -1;
-	cmp_main_run(m, 1, av_empty);
+	mockst = ok_mock();
+	mockst.ioctl_winsz_ret = -1;
+	cmp_main_run(mockst, 1, av_empty);
 
-	m = ok_mock();
-	m.tcsetattr_ret = -1;
-	cmp_main_run(m, 2, av_sp);
+	mockst = ok_mock();
+	mockst.tcsetattr_ret = -1;
+	cmp_main_run(mockst, 2, av_sp);
 
-	m = ok_mock();
-	m.ioctl_setwinsz_ret = -1;
-	cmp_main_run(m, 2, av_m);
+	mockst = ok_mock();
+	mockst.ioctl_setwinsz_ret = -1;
+	cmp_main_run(mockst, 2, av_m);
 
-	m = ok_mock();
-	m.isatty_ret = 1;
-	m.same_rdev = 0;
-	cmp_main_run(m, 1, av_empty);
+	mockst = ok_mock();
+	mockst.isatty_ret = 1;
+	mockst.same_rdev = 0;
+	cmp_main_run(mockst, 1, av_empty);
 
 	cmp_main_run(ok_mock(), 2, av_spbad);
 	cmp_main_run(ok_mock(), 2, av_ill);

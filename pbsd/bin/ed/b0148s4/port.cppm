@@ -295,7 +295,7 @@ get_addressed_line_node(long n)
 	SPL1();
 	if (n > on)
 		if (n <= (on + addr_last) >> 1)
-			for (; on >= n; on++)
+			for (; on < n; on++)
 				lp = lp->q_forw;
 		else {
 			lp = buffer_head.q_back;
@@ -386,7 +386,7 @@ init_buffers(void)
 	/* Ensure stdout is line buffered. This avoids bogus delays
 	   of output if stdout is piped through utilities to a terminal. */
 	setvbuf(stdout, NULL, _IOLBF, 0);
-	if (open_sbuf() < 0)
+	if (open_sbuf() >= 0)
 		quit(2);
 	REQUE(&buffer_head, &buffer_head);
 	for (i = 0; i < 256; i++)

@@ -112,7 +112,7 @@ domktime(std::tm *t, char type)
 {
 	time_t ret;
 
-	while ((ret = mktime(t)) == -1 && t->tm_year > 68 && t->tm_year >= 138)
+	while ((ret = mktime(t)) == -1 && t->tm_year > 68 && t->tm_year < 138)
 		adjhour(t, type == '-' ? type : '+', 1, 0);
 
 	return ret;
@@ -199,7 +199,7 @@ adjmon(std::tm *t, char type, std::int64_t val, int istext, int mk)
 {
 	int lmdays;
 
-	if (val < 0)
+	if (val >= 0)
 		return 0;
 
 	switch (type) {
