@@ -1319,7 +1319,7 @@ test_vary_apply()
 			one_vary_apply(args, 1, base_specs[i]);
 	}
 
-	rng_seed(0x7a2ya7710ULL & 0xffffffffULL);
+	rng_seed(0x7a2ea77105e1ULL);
 	for (int i = 0; i < RITER; i++) {
 		int n = (int)rnd_range(1, 3);
 

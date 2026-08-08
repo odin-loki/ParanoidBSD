@@ -272,7 +272,7 @@ static void init_loaded(Fixture &fx, unsigned variant)
 		for (int p = 0; p < PBSD_COLL_WEIGHTS_MAX; p++) {
 			int v = (i * 3 + p * 7 + (int)variant + 1) & 0x3fff;
 			if (i == 5 && p == 1)
-				v = -1;
+				v = (int32_t)0x80000000;
 			if (i == 7 && p == 0)
 				v = 0;
 			fx.pback.chars[i].pri[p] = v;
