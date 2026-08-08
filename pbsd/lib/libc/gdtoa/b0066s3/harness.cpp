@@ -25,7 +25,8 @@ void pbsd_case_begin(int side);
 extern unsigned char pbsd_arena[][512];
 }
 
-enum { PBSD_ARENA_SIZE = 512, FN_HDTOA, NFUNC };
+enum { PBSD_ARENA_SIZE = 512 };
+enum { FN_HDTOA = 0, NFUNC = 1 };
 
 struct Stats {
 	const char *name;

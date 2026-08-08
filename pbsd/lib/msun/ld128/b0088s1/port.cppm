@@ -8,18 +8,16 @@ export module pbsd.lib.msun.ld128.b0088s1;
 
 export namespace pbsd::lib_msun_ld128::b0088s1 {
 
-/* ld128 IEEEl2bits (binary128) */
+/* x87 80-bit IEEEl2bits (matches oracle host adaptation) */
 union IEEEl2bits {
 	long double e;
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
+		unsigned long long man :64;
 		unsigned int exp :15;
 		unsigned int sign :1;
 	} bits;
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
+		unsigned long long man :64;
 		unsigned int expsign :16;
 	} xbits;
 };
@@ -37,13 +35,9 @@ union IEEEl2bits {
 	int e;						\
 	u.e = (x);					\
 	e = u.bits.exp - 16383;				\
-	if (e < 48) {					\
-		m = ((1llu << 49) - 1) >> (e + 1);	\
-		u.bits.manh &= ~m;			\
-		u.bits.manl = 0;			\
-	} else {					\
-		m = (uint64_t)-1 >> (e - 48);		\
-		u.bits.manl &= ~m;			\
+	if (e < 63) {					\
+		m = (uint64_t)-1 >> (e + 1);		\
+		u.bits.man &= ~m;			\
 	}						\
 	(ai) = u.e;					\
 	(ar) = (x) - (ai);				\

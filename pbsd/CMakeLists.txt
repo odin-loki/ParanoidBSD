@@ -93,6 +93,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gdtoa/b0023/port.cppm
   lib/libc/gdtoa/b0066/port.cppm
   lib/libc/gdtoa/b0066s1/port.cppm
+  lib/libc/gdtoa/b0066s2/port.cppm
   lib/libc/gdtoa/b0066s3/port.cppm
   lib/libc/gen/alarm_m/port.cppm
   lib/libc/gen/arc4random_uniform_m/port.cppm
@@ -261,6 +262,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdio/b0118s1/port.cppm
   lib/libc/stdio/b0118s2/port.cppm
   lib/libc/stdio/b0118s3/port.cppm
+  lib/libc/stdio/b0118s4/port.cppm
   lib/libc/stdio/b0127/port.cppm
   lib/libc/stdio/b0139/port.cppm
   lib/libc/stdio/b0140/port.cppm
@@ -475,6 +477,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/geom/uzip/b0144/port.cppm
   sys/kern/b0138/port.cppm
   sys/kern/b0146/port.cppm
+  sys/kern/b0146s1/port.cppm
   sys/kern/b0217/port.cppm
   sys/net/toeplitz_m/port.cppm
   sys/security/mac_none/b0005/port.cppm
