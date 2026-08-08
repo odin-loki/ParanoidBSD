@@ -18,6 +18,21 @@ struct reg_info {
 	std::uint32_t len;
 };
 
+extern const reg_info t4vf_sge_regs[];
+extern const reg_info t5vf_sge_regs[];
+extern const reg_info t4vf_mps_regs[];
+extern const reg_info t4vf_pl_regs[];
+extern const reg_info t5vf_pl_regs[];
+extern const reg_info t6vf_pl_regs[];
+extern const reg_info t4vf_cim_regs[];
+extern const reg_info t4vf_mbdata_regs[];
+
+} // namespace pbsd::usr_sbin_cxgbetool::b0085
+
+module :private;
+
+namespace pbsd::usr_sbin_cxgbetool::b0085 {
+
 const reg_info t4vf_sge_regs[] = {
 	{ "SGE_KDOORBELL",			0x000, 0 },
 		{ "QID", 15, 17 },

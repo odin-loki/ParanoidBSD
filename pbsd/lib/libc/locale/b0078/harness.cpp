@@ -777,8 +777,12 @@ sweep_mbs_std(void)
 		fill_guard(in_r, sizeof(in_r));
 		rand_bytes(in_p + 4, blen);
 		std::memcpy(in_r + 4, in_p + 4, blen + 1);
-		if (u32(5) == 0)
-			in_p[4 + u32((uint32_t)blen + 1)] = '\0';
+		if (u32(5) == 0) {
+			size_t pos = 4 + u32((uint32_t)blen + 1);
+
+			in_p[pos] = '\0';
+			in_r[pos] = '\0';
+		}
 		nms = u32((uint32_t)blen + 4);
 		len = u32(12);
 		dst_null = (u32(4) == 0);

@@ -158,8 +158,10 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdbit/stdc_first_trailing_one_m/port.cppm
   lib/libc/stdbit/stdc_first_trailing_zero_m/port.cppm
   lib/libc/stdbit/stdc_has_single_bit_m/port.cppm
+  lib/libc/stdio/b0091/port.cppm
   lib/libc/stdio/b0092/port.cppm
   lib/libc/stdio/b0098/port.cppm
+  lib/libc/stdio/b0100/port.cppm
   lib/libc/stdio/fgetpos_m/port.cppm
   lib/libc/stdio/flags_m/port.cppm
   lib/libc/stdio/funopen_m/port.cppm
@@ -234,6 +236,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libcrypt/misc_m/port.cppm
   lib/msun/ld128/b0073/port.cppm
   lib/msun/ld128/b0084/port.cppm
+  lib/msun/ld128/b0088/port.cppm
   lib/msun/ld128/b0089/port.cppm
   lib/msun/ld128/k_cosl_m/port.cppm
   lib/msun/ld128/k_tanl_m/port.cppm

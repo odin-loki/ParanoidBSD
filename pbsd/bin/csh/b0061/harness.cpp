@@ -209,6 +209,13 @@ check(MockKind kind, const char *tocode, const char *fromcode, int ncalls,
 	if (run_isolated(kind, tocode, fromcode, ncalls))
 		return;
 
+	if (nprinted[F_DL_ICONV_OPEN] < 2) {
+		char ldpath[512];
+		set_mock_path(kind, ldpath, sizeof(ldpath));
+		std::fprintf(stderr, "debug: isolated failed kind=%d ld=%s\n",
+		    (int)kind, ldpath);
+	}
+
 	std::snprintf(why, sizeof(why), "%s kind=%d ncalls=%d to=%s from=%s",
 	    tag, (int)kind, ncalls,
 	    tocode ? tocode : "(null)",

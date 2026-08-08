@@ -7,10 +7,10 @@ ROOT = Path("/home/odin/pbsd/hbsd/src/lib/msun")
 OUT = Path("/home/odin/pbsd/pbsd/lib/msun/ld80/b0093")
 
 SECTIONS = [
-    ("s_cexpl.c", "cexpl", "ref_cexpl", None),
-    ("s_cospil.c", "cospil", "ref_cospil", "cospil"),
-    ("s_sinpil.c", "sinpil", "ref_sinpil", "sinpil"),
-    ("s_tanpil.c", "tanpil", "ref_tanpil", "tanpil"),
+    ("s_cexpl.c", "cexpl", "ref_cexpl", None, False),
+    ("s_cospil.c", "cospil", "ref_cospil", "cospil", True),
+    ("s_sinpil.c", "sinpil", "ref_sinpil", "sinpil", False),
+    ("s_tanpil.c", "tanpil", "ref_tanpil", "tanpil", True),
 ]
 
 HEADER_INLINE = {
@@ -206,12 +206,12 @@ def section_epilogue(section: str | None) -> str:
 
 def build_oracle() -> None:
     parts = [SUPPORT_C, "/* === kernel support === */\n", KERNEL_COS, KERNEL_SIN, KERNEL_TAN]
-    for fname, _, ref, section in SECTIONS:
+    for fname, _, ref, section, rename_pi in SECTIONS:
         src = (ROOT / "ld80" / fname).read_text()
         parts.append(f"\n/* ================================================================== */\n")
         parts.append(f"/* lib/msun/ld80/{fname} */\n")
         parts.append(f"/* ================================================================== */\n\n")
-        parts.append(section_preamble(section))
+        parts.append(section_preamble(section, rename_pi))
         parts.append(transform_source(src, ref, section))
         parts.append(section_epilogue(section))
     (OUT / "oracle.c").write_text("".join(parts))
@@ -238,21 +238,12 @@ module;
 
 export module pbsd.lib.msun.ld80.b0093;
 
-namespace pbsd::lib_msun_ld80::b0093 {
+export namespace pbsd::lib_msun_ld80::b0093 {
 
 '''
 
 PORT_SUFFIX = r'''
-} /* namespace pbsd::lib_msun_ld80::b0093 */
-
-export namespace pbsd::lib_msun_ld80::b0093 {
-
-long double complex cexpl(long double complex z);
-long double cospil(long double x);
-long double sinpil(long double x);
-long double tanpil(long double x);
-
-} /* export namespace */
+} /* export namespace pbsd::lib_msun_ld80::b0093 */
 '''
 
 

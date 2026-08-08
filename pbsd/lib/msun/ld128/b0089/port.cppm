@@ -5,6 +5,10 @@ module;
 #include <cfloat>
 #include <sys/types.h>
 
+export module pbsd.lib.msun.ld128.b0089;
+
+export namespace pbsd::lib_msun_ld128::b0089 {
+
 #ifndef __always_inline
 #define __always_inline inline
 #endif
@@ -111,10 +115,6 @@ typedef union {
 
 #define NO_UTAB
 #define NO_UTABL
-
-export module pbsd.lib.msun.ld128.b0089;
-
-export namespace pbsd::lib_msun_ld128::b0089 {
 
 /* e_powl.c */
 #undef G

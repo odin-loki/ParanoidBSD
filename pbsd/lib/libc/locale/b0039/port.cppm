@@ -1,4 +1,4 @@
-/*
+/*-
  * PBSD batch b0039 -- C++23 module port of
  *
  *	lib/libc/locale/mbsrtowcs.c
@@ -14,6 +14,7 @@
 module;
 
 #include <cerrno>
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -29,56 +30,54 @@ module;
 
 export module pbsd.lib.libc.locale.b0039;
 
-struct pbsd_mbstate {
-	unsigned int	want;
-	unsigned int	have;
-	unsigned int	wch;
-	unsigned int	lbound;
-};
-using pbsd_mbstate_t = pbsd_mbstate;
+export namespace pbsd::lib_libc_locale::b0039 {
 
-struct pbsd_xlocale_ctype {
-	size_t	(*__mbsnrtowcs)(wchar_t *, const char **, size_t, size_t,
-		    pbsd_mbstate_t *);
-	size_t	(*__wcsnrtombs)(char *, const wchar_t **, size_t, size_t,
-		    pbsd_mbstate_t *);
-	size_t	(*__mbrtowc)(wchar_t *, const char *, size_t,
-		    pbsd_mbstate_t *);
-	pbsd_mbstate_t	mbsrtowcs;
-	pbsd_mbstate_t	wcsrtombs;
-	pbsd_mbstate_t	mbtowc;
-	int		wcwidth_mode;
+struct mbstate_t {
+	char		__mbstate8[128];
+	long long	_mbstateL;
 };
 
-struct pbsd_locale {
-	pbsd_xlocale_ctype ctype;
+enum {
+	XLC_CTYPE = 1,
 };
 
-using pbsd_locale_t = pbsd_locale *;
+struct xlocale_ctype {
+	mbstate_t	mbsrtowcs;
+	mbstate_t	wcsrtombs;
+	mbstate_t	mbtowc;
+	std::size_t	(*__mbsnrtowcs)(wchar_t * __restrict, const char ** __restrict,
+		    std::size_t, std::size_t, mbstate_t * __restrict);
+	std::size_t	(*__wcsnrtombs)(char * __restrict, const wchar_t ** __restrict,
+		    std::size_t, std::size_t, mbstate_t * __restrict);
+	std::size_t	(*__mbrtowc)(wchar_t * __restrict, const char * __restrict,
+		    std::size_t, mbstate_t * __restrict);
+};
 
-pbsd_locale		pbsd_global_locale;
-pbsd_locale		pbsd_alt_locale;
-pbsd_locale		*pbsd_active_locale = &pbsd_global_locale;
+struct xlocale {
+	void		*components[6];
+};
 
-static int	utf8_decode(const unsigned char *, size_t, wchar_t *,
-		    size_t *);
-static int	utf8_encode(wchar_t, unsigned char *, size_t, size_t *);
+using locale_t = xlocale *;
 
-static size_t
-pbsd_mbsnrtowcs_impl(wchar_t * __restrict dst, const char ** __restrict src,
-    size_t nms, size_t len, pbsd_mbstate_t * __restrict ps)
+static int	utf8_decode(const unsigned char *, std::size_t, wchar_t *,
+		    std::size_t *);
+static int	utf8_encode(wchar_t, unsigned char *, std::size_t, std::size_t *);
+
+static std::size_t
+mock_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
+    std::size_t nms, std::size_t len, mbstate_t * __restrict ps)
 {
 	const unsigned char *s;
-	size_t nconv, nwritten, consumed;
+	std::size_t nconv, nwritten, consumed;
 	wchar_t wc;
 	int err;
 
 	(void)ps;
 	if (src == NULL)
-		return ((size_t)-1);
+		return ((std::size_t)-1);
 	s = (const unsigned char *)*src;
 	if (s == NULL)
-		return ((size_t)-1);
+		return ((std::size_t)-1);
 	nconv = 0;
 	nwritten = 0;
 	while (nms > 0) {
@@ -93,7 +92,7 @@ pbsd_mbsnrtowcs_impl(wchar_t * __restrict dst, const char ** __restrict src,
 		}
 		err = utf8_decode(s, nms, &wc, &consumed);
 		if (err == -1)
-			return ((size_t)-1);
+			return ((std::size_t)-1);
 		if (err == -2)
 			break;
 		if (dst != NULL) {
@@ -109,21 +108,21 @@ pbsd_mbsnrtowcs_impl(wchar_t * __restrict dst, const char ** __restrict src,
 	return (nconv);
 }
 
-static size_t
-pbsd_wcsnrtombs_impl(char * __restrict dst, const wchar_t ** __restrict src,
-    size_t nwcs, size_t len, pbsd_mbstate_t * __restrict ps)
+static std::size_t
+mock_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
+    std::size_t nwcs, std::size_t len, mbstate_t * __restrict ps)
 {
 	const wchar_t *s;
-	size_t nconv, nwritten, produced;
+	std::size_t nconv, nwritten, produced;
 	unsigned char buf[MB_LEN_MAX];
 	int err;
 
 	(void)ps;
 	if (src == NULL)
-		return ((size_t)-1);
+		return ((std::size_t)-1);
 	s = *src;
 	if (s == NULL)
-		return ((size_t)-1);
+		return ((std::size_t)-1);
 	nconv = 0;
 	nwritten = 0;
 	while (nwcs > 0) {
@@ -138,7 +137,7 @@ pbsd_wcsnrtombs_impl(char * __restrict dst, const wchar_t ** __restrict src,
 		}
 		err = utf8_encode(*s, buf, sizeof(buf), &produced);
 		if (err != 0)
-			return ((size_t)-1);
+			return ((std::size_t)-1);
 		if (dst != NULL) {
 			if (nwritten + produced > len)
 				break;
@@ -153,22 +152,22 @@ pbsd_wcsnrtombs_impl(char * __restrict dst, const wchar_t ** __restrict src,
 	return (nconv);
 }
 
-static size_t
-pbsd_mbrtowc_impl(wchar_t * __restrict pwc, const char * __restrict s, size_t n,
-    pbsd_mbstate_t * __restrict ps)
+static std::size_t
+mock_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n,
+    mbstate_t * __restrict ps)
 {
 	wchar_t wc;
-	size_t consumed;
+	std::size_t consumed;
 	int err;
 
 	(void)ps;
 	if (n == 0)
-		return ((size_t)-2);
+		return ((std::size_t)-2);
 	err = utf8_decode((const unsigned char *)s, n, &wc, &consumed);
 	if (err == -1)
-		return ((size_t)-1);
+		return ((std::size_t)-1);
 	if (err == -2)
-		return ((size_t)-2);
+		return ((std::size_t)-2);
 	if (pwc != NULL)
 		*pwc = wc;
 	if (wc == L'\0')
@@ -177,7 +176,7 @@ pbsd_mbrtowc_impl(wchar_t * __restrict pwc, const char * __restrict s, size_t n,
 }
 
 static int
-pbsd_wcwidth_impl(wchar_t wc)
+mock_wcwidth(wchar_t wc)
 {
 
 	if (wc == 0)
@@ -194,9 +193,9 @@ pbsd_wcwidth_impl(wchar_t wc)
 }
 
 static int
-utf8_decode(const unsigned char *p, size_t n, wchar_t *wc, size_t *consumed)
+utf8_decode(const unsigned char *p, std::size_t n, wchar_t *wc, std::size_t *consumed)
 {
-	uint32_t c;
+	std::uint32_t c;
 
 	if (n == 0)
 		return (-2);
@@ -247,12 +246,12 @@ utf8_decode(const unsigned char *p, size_t n, wchar_t *wc, size_t *consumed)
 }
 
 static int
-utf8_encode(wchar_t wc, unsigned char *dst, size_t dstl, size_t *produced)
+utf8_encode(wchar_t wc, unsigned char *dst, std::size_t dstl, std::size_t *produced)
 {
-	uint32_t cp;
+	std::uint32_t cp;
 
 	*produced = 0;
-	cp = (uint32_t)wc;
+	cp = (std::uint32_t)wc;
 	if (cp < 0x80) {
 		if (dstl < 1)
 			return (EINVAL);
@@ -290,30 +289,78 @@ utf8_encode(wchar_t wc, unsigned char *dst, size_t dstl, size_t *produced)
 	return (EINVAL);
 }
 
-static void
-pbsd_locale_init_impl(pbsd_locale_t loc, int mode)
-{
+xlocale		global_locale;
+xlocale		alt_locale;
+xlocale_ctype	global_ctype;
+xlocale_ctype	alt_ctype;
+locale_t	active_locale = &global_locale;
 
-	memset(loc, 0, sizeof(*loc));
-	loc->ctype.__mbsnrtowcs = pbsd_mbsnrtowcs_impl;
-	loc->ctype.__wcsnrtombs = pbsd_wcsnrtombs_impl;
-	loc->ctype.__mbrtowc = pbsd_mbrtowc_impl;
-	loc->ctype.wcwidth_mode = mode;
+static xlocale_ctype *
+XLOCALE_CTYPE(locale_t l)
+{
+	return (static_cast<xlocale_ctype *>(l->components[XLC_CTYPE]));
 }
 
-extern "C" {
-
-size_t
-pbsd_mbrtowc(wchar_t *pwc, const char *s, size_t n, pbsd_mbstate_t *ps)
+static inline locale_t
+fix_locale(locale_t l)
 {
-	return (pbsd_mbrtowc_impl(pwc, s, n, ps));
+
+	if (l == NULL)
+		return (active_locale);
+	return (l);
 }
 
-size_t
-pbsd_wcrtomb(char *s, wchar_t wc, pbsd_mbstate_t *ps)
+#define FIX_LOCALE(l)	((l) = fix_locale(l))
+
+locale_t
+__get_locale()
+{
+	return (active_locale);
+}
+
+int
+__wcwidth(wchar_t wc)
+{
+	return (mock_wcwidth(wc));
+}
+
+int
+__wcwidth_l(wchar_t wc, locale_t locale)
+{
+
+	(void)locale;
+	return (mock_wcwidth(wc));
+}
+
+void
+pbsd_locale_init(xlocale *loc, xlocale_ctype *ctype)
+{
+
+	std::memset(loc, 0, sizeof(*loc));
+	std::memset(ctype, 0, sizeof(*ctype));
+	loc->components[XLC_CTYPE] = ctype;
+	ctype->__mbsnrtowcs = mock_mbsnrtowcs;
+	ctype->__wcsnrtombs = mock_wcsnrtombs;
+	ctype->__mbrtowc = mock_mbrtowc;
+}
+
+void
+pbsd_set_active_locale(locale_t loc)
+{
+	active_locale = loc;
+}
+
+locale_t
+pbsd_get_active_locale()
+{
+	return (active_locale);
+}
+
+std::size_t
+pbsd_wcrtomb(char *s, wchar_t wc, mbstate_t *ps)
 {
 	unsigned char buf[MB_LEN_MAX];
-	size_t produced;
+	std::size_t produced;
 	int err;
 
 	(void)ps;
@@ -321,84 +368,9 @@ pbsd_wcrtomb(char *s, wchar_t wc, pbsd_mbstate_t *ps)
 		return (1);
 	err = utf8_encode(wc, buf, sizeof(buf), &produced);
 	if (err != 0)
-		return ((size_t)-1);
+		return ((std::size_t)-1);
 	memcpy(s, buf, produced);
 	return (produced);
-}
-
-size_t
-pbsd_mbsnrtowcs(wchar_t *dst, const char **src, size_t nms, size_t len,
-    pbsd_mbstate_t *ps)
-{
-	return (pbsd_mbsnrtowcs_impl(dst, src, nms, len, ps));
-}
-
-size_t
-pbsd_wcsnrtombs(char *dst, const wchar_t **src, size_t nwcs, size_t len,
-    pbsd_mbstate_t *ps)
-{
-	return (pbsd_wcsnrtombs_impl(dst, src, nwcs, len, ps));
-}
-
-int
-pbsd_wcwidth(wchar_t wc)
-{
-	return (pbsd_wcwidth_impl(wc));
-}
-
-int
-pbsd_wcwidth_l(wchar_t wc, pbsd_locale_t locale)
-{
-
-	(void)locale;
-	return (pbsd_wcwidth_impl(wc));
-}
-
-pbsd_locale_t
-pbsd_get_active_locale()
-{
-	return (pbsd_active_locale);
-}
-
-void
-pbsd_set_active_locale(pbsd_locale_t loc)
-{
-	pbsd_active_locale = loc;
-}
-
-void
-pbsd_locale_init(pbsd_locale_t loc, int mode)
-{
-	pbsd_locale_init_impl(loc, mode);
-}
-
-} /* extern "C" */
-
-#define	XLOCALE_CTYPE(l)	(&((l)->ctype))
-#define	FIX_LOCALE(l)		((l) = ((l) == NULL ? pbsd_get_active_locale() : (l)))
-
-export namespace pbsd::lib_libc_locale::b0039 {
-
-using pbsd_mbstate_t = ::pbsd_mbstate_t;
-using pbsd_locale = ::pbsd_locale;
-using pbsd_locale_t = ::pbsd_locale_t;
-
-inline pbsd_locale_t
-__get_locale()
-{
-	return (pbsd_get_active_locale());
-}
-
-inline int
-__wcwidth(wchar_t wc)
-{
-	return (pbsd_wcwidth(wc));
-}
-
-inline int
-__wcwidth_l(wchar_t wc, pbsd_locale_t locale)
-{
-	return (pbsd_wcwidth_l(wc, locale));
 }
 
 /*-
@@ -436,18 +408,18 @@ __wcwidth_l(wchar_t wc, pbsd_locale_t locale)
 
 /* lib/libc/locale/mbsrtowcs.c */
 
-size_t
-mbsrtowcs_l(wchar_t * __restrict dst, const char ** __restrict src, size_t len,
-    pbsd_mbstate_t * __restrict ps, pbsd_locale_t locale)
+std::size_t
+mbsrtowcs_l(wchar_t * __restrict dst, const char ** __restrict src, std::size_t len,
+    mbstate_t * __restrict ps, locale_t locale)
 {
 	FIX_LOCALE(locale);
 	if (ps == NULL)
 		ps = &(XLOCALE_CTYPE(locale)->mbsrtowcs);
 	return (XLOCALE_CTYPE(locale)->__mbsnrtowcs(dst, src, SIZE_T_MAX, len, ps));
 }
-size_t
-mbsrtowcs(wchar_t * __restrict dst, const char ** __restrict src, size_t len,
-    pbsd_mbstate_t * __restrict ps)
+std::size_t
+mbsrtowcs(wchar_t * __restrict dst, const char ** __restrict src, std::size_t len,
+    mbstate_t * __restrict ps)
 {
 	return mbsrtowcs_l(dst, src, len, ps, __get_locale());
 }
@@ -487,9 +459,9 @@ mbsrtowcs(wchar_t * __restrict dst, const char ** __restrict src, size_t len,
 
 /* lib/libc/locale/wcsrtombs.c */
 
-size_t
-wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src, size_t len,
-    pbsd_mbstate_t * __restrict ps, pbsd_locale_t locale)
+std::size_t
+wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src, std::size_t len,
+    mbstate_t * __restrict ps, locale_t locale)
 {
 	FIX_LOCALE(locale);
 	if (ps == NULL)
@@ -497,9 +469,9 @@ wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src, size_t len,
 	return (XLOCALE_CTYPE(locale)->__wcsnrtombs(dst, src, SIZE_T_MAX, len, ps));
 }
 
-size_t
-wcsrtombs(char * __restrict dst, const wchar_t ** __restrict src, size_t len,
-    pbsd_mbstate_t * __restrict ps)
+std::size_t
+wcsrtombs(char * __restrict dst, const wchar_t ** __restrict src, std::size_t len,
+    mbstate_t * __restrict ps)
 {
 	return wcsrtombs_l(dst, src, len, ps, __get_locale());
 }
@@ -540,10 +512,10 @@ wcsrtombs(char * __restrict dst, const wchar_t ** __restrict src, size_t len,
 /* lib/libc/locale/mbtowc.c */
 
 int
-mbtowc_l(wchar_t * __restrict pwc, const char * __restrict s, size_t n, pbsd_locale_t locale)
+mbtowc_l(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n, locale_t locale)
 {
-	static const pbsd_mbstate_t initial{};
-	size_t rval;
+	static const mbstate_t initial{};
+	std::size_t rval;
 	FIX_LOCALE(locale);
 
 	if (s == NULL) {
@@ -554,17 +526,17 @@ mbtowc_l(wchar_t * __restrict pwc, const char * __restrict s, size_t n, pbsd_loc
 	rval = XLOCALE_CTYPE(locale)->__mbrtowc(pwc, s, n,
 	    &(XLOCALE_CTYPE(locale)->mbtowc));
 	switch (rval) {
-	case (size_t)-2:
+	case (std::size_t)-2:
 		errno = EILSEQ;
 		/* FALLTHROUGH */
-	case (size_t)-1:
+	case (std::size_t)-1:
 		return (-1);
 	default:
 		return ((int)rval);
 	}
 }
 int
-mbtowc(wchar_t * __restrict pwc, const char * __restrict s, size_t n)
+mbtowc(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n)
 {
 	return mbtowc_l(pwc, s, n, __get_locale());
 }
@@ -621,14 +593,9 @@ wcwidth(wchar_t wc)
 	return (__wcwidth(wc));
 }
 int
-wcwidth_l(wchar_t wc, pbsd_locale_t locale)
+wcwidth_l(wchar_t wc, locale_t locale)
 {
 	return (__wcwidth_l(wc, locale));
 }
-
-using ::pbsd_locale_init;
-using ::pbsd_set_active_locale;
-using ::pbsd_get_active_locale;
-using ::pbsd_wcrtomb;
 
 } /* namespace pbsd::lib_libc_locale::b0039 */

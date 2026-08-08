@@ -37,7 +37,6 @@ module;
 #include <cstdarg>
 #include <cstdio>
 #include <cwchar>
-#include <xlocale.h>
 
 export module pbsd.lib.libc.stdio.b0092;
 
@@ -105,18 +104,6 @@ wscanf(const wchar_t * __restrict fmt, ...)
 
 	return (r);
 }
-int
-wscanf_l(locale_t locale, const wchar_t * __restrict fmt, ...)
-{
-	std::va_list ap;
-	int r;
-
-	std::va_start(ap, fmt);
-	r = vfwscanf_l(stdin, locale, fmt, ap);
-	std::va_end(ap);
-
-	return (r);
-}
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -160,12 +147,6 @@ getwc(FILE *fp)
 {
 
 	return (fgetwc(fp));
-}
-wint_t
-getwc_l(FILE *fp, locale_t locale)
-{
-
-	return (fgetwc_l(fp, locale));
 }
 
 } /* namespace pbsd::lib_libc_stdio::b0092 */

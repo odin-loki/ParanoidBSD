@@ -77,7 +77,7 @@ flag ref_float128_lt(float128 a, float128 b);
 flag ref_float128_lt_quiet(float128 a, float128 b);
 float128 ref_float128_mul(float128 a, float128 b);
 float128 ref_float128_rem(float128 a, float128 b);
-int64_t ref_float128_round_to_int(float128 a);
+float128 ref_float128_round_to_int(float128 a);
 float128 ref_float128_sqrt(float128 a);
 float128 ref_float128_sub(float128 a, float128 b);
 float32 ref_float128_to_float32(float128 a);
@@ -100,7 +100,7 @@ flag ref_float32_lt(float32 a, float32 b);
 flag ref_float32_lt_quiet(float32 a, float32 b);
 float32 ref_float32_mul(float32 a, float32 b);
 float32 ref_float32_rem(float32 a, float32 b);
-int64_t ref_float32_round_to_int(float32 a);
+float32 ref_float32_round_to_int(float32 a);
 float32 ref_float32_sqrt(float32 a);
 float32 ref_float32_sub(float32 a, float32 b);
 float128 ref_float32_to_float128(float32 a);
@@ -123,7 +123,7 @@ flag ref_float64_lt(float64 a, float64 b);
 flag ref_float64_lt_quiet(float64 a, float64 b);
 float64 ref_float64_mul(float64 a, float64 b);
 float64 ref_float64_rem(float64 a, float64 b);
-int64_t ref_float64_round_to_int(float64 a);
+float64 ref_float64_round_to_int(float64 a);
 float64 ref_float64_sqrt(float64 a);
 float64 ref_float64_sub(float64 a, float64 b);
 float128 ref_float64_to_float128(float64 a);
@@ -147,7 +147,7 @@ flag ref_floatx80_lt(floatx80 a, floatx80 b);
 flag ref_floatx80_lt_quiet(floatx80 a, floatx80 b);
 floatx80 ref_floatx80_mul(floatx80 a, floatx80 b);
 floatx80 ref_floatx80_rem(floatx80 a, floatx80 b);
-int64_t ref_floatx80_round_to_int(floatx80 a);
+floatx80 ref_floatx80_round_to_int(floatx80 a);
 floatx80 ref_floatx80_sqrt(floatx80 a);
 floatx80 ref_floatx80_sub(floatx80 a, floatx80 b);
 float128 ref_floatx80_to_float128(floatx80 a);
@@ -859,7 +859,7 @@ static void test_float128_add()
     float128 rp0 = port::float128_add(z, z);
     float128 rr0 = ref_float128_add(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -884,7 +884,7 @@ static void test_float128_div()
     float128 rp0 = port::float128_div(z, z);
     float128 rr0 = ref_float128_div(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -894,34 +894,6 @@ static void test_float128_eq()
     const char *name = "float128_eq";
     reset_globals();
 
-    static const float128 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(float128) == 8) {
-        static const float128 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float128 a : edges64) for (float128 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float128_eq(a, b);
-            flag rr = ref_float128_eq(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float128 a : edges) for (float128 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float128_eq(a, b);
-            flag rr = ref_float128_eq(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         float128 b = f128_rand();
@@ -941,34 +913,6 @@ static void test_float128_eq_signaling()
     const char *name = "float128_eq_signaling";
     reset_globals();
 
-    static const float128 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(float128) == 8) {
-        static const float128 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float128 a : edges64) for (float128 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float128_eq_signaling(a, b);
-            flag rr = ref_float128_eq_signaling(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float128 a : edges) for (float128 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float128_eq_signaling(a, b);
-            flag rr = ref_float128_eq_signaling(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         float128 b = f128_rand();
@@ -1024,34 +968,6 @@ static void test_float128_le()
     const char *name = "float128_le";
     reset_globals();
 
-    static const float128 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(float128) == 8) {
-        static const float128 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float128 a : edges64) for (float128 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float128_le(a, b);
-            flag rr = ref_float128_le(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float128 a : edges) for (float128 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float128_le(a, b);
-            flag rr = ref_float128_le(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         float128 b = f128_rand();
@@ -1071,34 +987,6 @@ static void test_float128_le_quiet()
     const char *name = "float128_le_quiet";
     reset_globals();
 
-    static const float128 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(float128) == 8) {
-        static const float128 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float128 a : edges64) for (float128 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float128_le_quiet(a, b);
-            flag rr = ref_float128_le_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float128 a : edges) for (float128 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float128_le_quiet(a, b);
-            flag rr = ref_float128_le_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         float128 b = f128_rand();
@@ -1118,34 +1006,6 @@ static void test_float128_lt()
     const char *name = "float128_lt";
     reset_globals();
 
-    static const float128 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(float128) == 8) {
-        static const float128 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float128 a : edges64) for (float128 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float128_lt(a, b);
-            flag rr = ref_float128_lt(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float128 a : edges) for (float128 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float128_lt(a, b);
-            flag rr = ref_float128_lt(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         float128 b = f128_rand();
@@ -1165,34 +1025,6 @@ static void test_float128_lt_quiet()
     const char *name = "float128_lt_quiet";
     reset_globals();
 
-    static const float128 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(float128) == 8) {
-        static const float128 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float128 a : edges64) for (float128 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float128_lt_quiet(a, b);
-            flag rr = ref_float128_lt_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float128 a : edges) for (float128 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float128_lt_quiet(a, b);
-            flag rr = ref_float128_lt_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         float128 b = f128_rand();
@@ -1227,7 +1059,7 @@ static void test_float128_mul()
     float128 rp0 = port::float128_mul(z, z);
     float128 rr0 = ref_float128_mul(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -1252,7 +1084,7 @@ static void test_float128_rem()
     float128 rp0 = port::float128_rem(z, z);
     float128 rr0 = ref_float128_rem(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -1265,10 +1097,10 @@ static void test_float128_round_to_int()
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         sync_globals_from_port();
-        int64_t rp = port::float128_round_to_int(a);
-        int64_t rr = ref_float128_round_to_int(a);
+        float128 rp = port::float128_round_to_int(a);
+        float128 rr = ref_float128_round_to_int(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -1313,7 +1145,7 @@ static void test_float128_sub()
     float128 rp0 = port::float128_sub(z, z);
     float128 rr0 = ref_float128_sub(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -1326,10 +1158,10 @@ static void test_float128_to_float32()
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         sync_globals_from_port();
-        auto rp = port::float128_to_float32(a);
-        auto rr = ref_float128_to_float32(a);
+        float32 rp = port::float128_to_float32(a);
+        float32 rr = ref_float128_to_float32(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -1344,10 +1176,10 @@ static void test_float128_to_float64()
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         sync_globals_from_port();
-        auto rp = port::float128_to_float64(a);
-        auto rr = ref_float128_to_float64(a);
+        float64 rp = port::float128_to_float64(a);
+        float64 rr = ref_float128_to_float64(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -1362,10 +1194,10 @@ static void test_float128_to_floatx80()
     for (unsigned i = 0; i < 200000u; ++i) {
         float128 a = f128_rand();
         sync_globals_from_port();
-        auto rp = port::float128_to_floatx80(a);
-        auto rr = ref_float128_to_floatx80(a);
+        floatx80 rp = port::float128_to_floatx80(a);
+        floatx80 rr = ref_float128_to_floatx80(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -1482,7 +1314,7 @@ static void test_float32_add()
     float32 rp0 = port::float32_add(z, z);
     float32 rr0 = ref_float32_add(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -1507,7 +1339,7 @@ static void test_float32_div()
     float32 rp0 = port::float32_div(z, z);
     float32 rr0 = ref_float32_div(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -1519,31 +1351,15 @@ static void test_float32_eq()
 
     static const float32 edges[] = {
         0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0x7F7FFFFF, 0x00800000u, 0x00000001u, 0xFFFFFFFFu
     };
-    if (sizeof(float32) == 8) {
-        static const float32 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float32 a : edges64) for (float32 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float32_eq(a, b);
-            flag rr = ref_float32_eq(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float32 a : edges) for (float32 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float32_eq(a, b);
-            flag rr = ref_float32_eq(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float32 a : edges) for (float32 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float32_eq(a, b);
+        flag rr = ref_float32_eq(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
@@ -1566,31 +1382,15 @@ static void test_float32_eq_signaling()
 
     static const float32 edges[] = {
         0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0x7F7FFFFF, 0x00800000u, 0x00000001u, 0xFFFFFFFFu
     };
-    if (sizeof(float32) == 8) {
-        static const float32 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float32 a : edges64) for (float32 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float32_eq_signaling(a, b);
-            flag rr = ref_float32_eq_signaling(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float32 a : edges) for (float32 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float32_eq_signaling(a, b);
-            flag rr = ref_float32_eq_signaling(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float32 a : edges) for (float32 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float32_eq_signaling(a, b);
+        flag rr = ref_float32_eq_signaling(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
@@ -1649,31 +1449,15 @@ static void test_float32_le()
 
     static const float32 edges[] = {
         0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0x7F7FFFFF, 0x00800000u, 0x00000001u, 0xFFFFFFFFu
     };
-    if (sizeof(float32) == 8) {
-        static const float32 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float32 a : edges64) for (float32 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float32_le(a, b);
-            flag rr = ref_float32_le(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float32 a : edges) for (float32 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float32_le(a, b);
-            flag rr = ref_float32_le(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float32 a : edges) for (float32 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float32_le(a, b);
+        flag rr = ref_float32_le(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
@@ -1696,31 +1480,15 @@ static void test_float32_le_quiet()
 
     static const float32 edges[] = {
         0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0x7F7FFFFF, 0x00800000u, 0x00000001u, 0xFFFFFFFFu
     };
-    if (sizeof(float32) == 8) {
-        static const float32 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float32 a : edges64) for (float32 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float32_le_quiet(a, b);
-            flag rr = ref_float32_le_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float32 a : edges) for (float32 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float32_le_quiet(a, b);
-            flag rr = ref_float32_le_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float32 a : edges) for (float32 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float32_le_quiet(a, b);
+        flag rr = ref_float32_le_quiet(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
@@ -1743,31 +1511,15 @@ static void test_float32_lt()
 
     static const float32 edges[] = {
         0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0x7F7FFFFF, 0x00800000u, 0x00000001u, 0xFFFFFFFFu
     };
-    if (sizeof(float32) == 8) {
-        static const float32 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float32 a : edges64) for (float32 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float32_lt(a, b);
-            flag rr = ref_float32_lt(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float32 a : edges) for (float32 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float32_lt(a, b);
-            flag rr = ref_float32_lt(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float32 a : edges) for (float32 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float32_lt(a, b);
+        flag rr = ref_float32_lt(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
@@ -1790,31 +1542,15 @@ static void test_float32_lt_quiet()
 
     static const float32 edges[] = {
         0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0x7F7FFFFF, 0x00800000u, 0x00000001u, 0xFFFFFFFFu
     };
-    if (sizeof(float32) == 8) {
-        static const float32 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float32 a : edges64) for (float32 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float32_lt_quiet(a, b);
-            flag rr = ref_float32_lt_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float32 a : edges) for (float32 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float32_lt_quiet(a, b);
-            flag rr = ref_float32_lt_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float32 a : edges) for (float32 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float32_lt_quiet(a, b);
+        flag rr = ref_float32_lt_quiet(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
@@ -1850,7 +1586,7 @@ static void test_float32_mul()
     float32 rp0 = port::float32_mul(z, z);
     float32 rr0 = ref_float32_mul(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -1875,7 +1611,7 @@ static void test_float32_rem()
     float32 rp0 = port::float32_rem(z, z);
     float32 rr0 = ref_float32_rem(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -1888,10 +1624,10 @@ static void test_float32_round_to_int()
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
         sync_globals_from_port();
-        int64_t rp = port::float32_round_to_int(a);
-        int64_t rr = ref_float32_round_to_int(a);
+        float32 rp = port::float32_round_to_int(a);
+        float32 rr = ref_float32_round_to_int(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -1936,7 +1672,7 @@ static void test_float32_sub()
     float32 rp0 = port::float32_sub(z, z);
     float32 rr0 = ref_float32_sub(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -1949,10 +1685,10 @@ static void test_float32_to_float128()
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
         sync_globals_from_port();
-        auto rp = port::float32_to_float128(a);
-        auto rr = ref_float32_to_float128(a);
+        float128 rp = port::float32_to_float128(a);
+        float128 rr = ref_float32_to_float128(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -1967,10 +1703,10 @@ static void test_float32_to_float64()
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
         sync_globals_from_port();
-        auto rp = port::float32_to_float64(a);
-        auto rr = ref_float32_to_float64(a);
+        float64 rp = port::float32_to_float64(a);
+        float64 rr = ref_float32_to_float64(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -1985,10 +1721,10 @@ static void test_float32_to_floatx80()
     for (unsigned i = 0; i < 200000u; ++i) {
         float32 a = f32_rand();
         sync_globals_from_port();
-        auto rp = port::float32_to_floatx80(a);
-        auto rr = ref_float32_to_floatx80(a);
+        floatx80 rp = port::float32_to_floatx80(a);
+        floatx80 rr = ref_float32_to_floatx80(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -2105,7 +1841,7 @@ static void test_float64_add()
     float64 rp0 = port::float64_add(z, z);
     float64 rr0 = ref_float64_add(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -2130,7 +1866,7 @@ static void test_float64_div()
     float64 rp0 = port::float64_div(z, z);
     float64 rr0 = ref_float64_div(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -2141,32 +1877,17 @@ static void test_float64_eq()
     reset_globals();
 
     static const float64 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0ULL, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
+        0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
+        0x000FFFFFFFFFFFFFULL, 0x0010000000000000ULL, 1ULL, 0xFFFFFFFFFFFFFFFFULL
     };
-    if (sizeof(float64) == 8) {
-        static const float64 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float64 a : edges64) for (float64 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float64_eq(a, b);
-            flag rr = ref_float64_eq(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float64 a : edges) for (float64 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float64_eq(a, b);
-            flag rr = ref_float64_eq(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float64 a : edges) for (float64 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float64_eq(a, b);
+        flag rr = ref_float64_eq(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
@@ -2188,32 +1909,17 @@ static void test_float64_eq_signaling()
     reset_globals();
 
     static const float64 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0ULL, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
+        0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
+        0x000FFFFFFFFFFFFFULL, 0x0010000000000000ULL, 1ULL, 0xFFFFFFFFFFFFFFFFULL
     };
-    if (sizeof(float64) == 8) {
-        static const float64 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float64 a : edges64) for (float64 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float64_eq_signaling(a, b);
-            flag rr = ref_float64_eq_signaling(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float64 a : edges) for (float64 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float64_eq_signaling(a, b);
-            flag rr = ref_float64_eq_signaling(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float64 a : edges) for (float64 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float64_eq_signaling(a, b);
+        flag rr = ref_float64_eq_signaling(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
@@ -2271,32 +1977,17 @@ static void test_float64_le()
     reset_globals();
 
     static const float64 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0ULL, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
+        0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
+        0x000FFFFFFFFFFFFFULL, 0x0010000000000000ULL, 1ULL, 0xFFFFFFFFFFFFFFFFULL
     };
-    if (sizeof(float64) == 8) {
-        static const float64 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float64 a : edges64) for (float64 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float64_le(a, b);
-            flag rr = ref_float64_le(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float64 a : edges) for (float64 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float64_le(a, b);
-            flag rr = ref_float64_le(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float64 a : edges) for (float64 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float64_le(a, b);
+        flag rr = ref_float64_le(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
@@ -2318,32 +2009,17 @@ static void test_float64_le_quiet()
     reset_globals();
 
     static const float64 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0ULL, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
+        0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
+        0x000FFFFFFFFFFFFFULL, 0x0010000000000000ULL, 1ULL, 0xFFFFFFFFFFFFFFFFULL
     };
-    if (sizeof(float64) == 8) {
-        static const float64 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float64 a : edges64) for (float64 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float64_le_quiet(a, b);
-            flag rr = ref_float64_le_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float64 a : edges) for (float64 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float64_le_quiet(a, b);
-            flag rr = ref_float64_le_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float64 a : edges) for (float64 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float64_le_quiet(a, b);
+        flag rr = ref_float64_le_quiet(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
@@ -2365,32 +2041,17 @@ static void test_float64_lt()
     reset_globals();
 
     static const float64 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0ULL, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
+        0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
+        0x000FFFFFFFFFFFFFULL, 0x0010000000000000ULL, 1ULL, 0xFFFFFFFFFFFFFFFFULL
     };
-    if (sizeof(float64) == 8) {
-        static const float64 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float64 a : edges64) for (float64 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float64_lt(a, b);
-            flag rr = ref_float64_lt(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float64 a : edges) for (float64 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float64_lt(a, b);
-            flag rr = ref_float64_lt(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float64 a : edges) for (float64 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float64_lt(a, b);
+        flag rr = ref_float64_lt(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
@@ -2412,32 +2073,17 @@ static void test_float64_lt_quiet()
     reset_globals();
 
     static const float64 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0ULL, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
+        0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
+        0x000FFFFFFFFFFFFFULL, 0x0010000000000000ULL, 1ULL, 0xFFFFFFFFFFFFFFFFULL
     };
-    if (sizeof(float64) == 8) {
-        static const float64 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (float64 a : edges64) for (float64 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::float64_lt_quiet(a, b);
-            flag rr = ref_float64_lt_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (float64 a : edges) for (float64 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::float64_lt_quiet(a, b);
-            flag rr = ref_float64_lt_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
+    for (float64 a : edges) for (float64 b : edges) {
+        sync_globals_from_port();
+        flag rp = port::float64_lt_quiet(a, b);
+        flag rr = ref_float64_lt_quiet(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
@@ -2473,7 +2119,7 @@ static void test_float64_mul()
     float64 rp0 = port::float64_mul(z, z);
     float64 rr0 = ref_float64_mul(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -2498,7 +2144,7 @@ static void test_float64_rem()
     float64 rp0 = port::float64_rem(z, z);
     float64 rr0 = ref_float64_rem(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -2511,10 +2157,10 @@ static void test_float64_round_to_int()
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
         sync_globals_from_port();
-        int64_t rp = port::float64_round_to_int(a);
-        int64_t rr = ref_float64_round_to_int(a);
+        float64 rp = port::float64_round_to_int(a);
+        float64 rr = ref_float64_round_to_int(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -2559,7 +2205,7 @@ static void test_float64_sub()
     float64 rp0 = port::float64_sub(z, z);
     float64 rr0 = ref_float64_sub(z, z);
     cases++;
-    if ((rp != rr)) failures++;
+    if ((rp0 != rr0)) failures++;
     record(name, cases, failures);
 }
 
@@ -2572,10 +2218,10 @@ static void test_float64_to_float128()
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
         sync_globals_from_port();
-        auto rp = port::float64_to_float128(a);
-        auto rr = ref_float64_to_float128(a);
+        float128 rp = port::float64_to_float128(a);
+        float128 rr = ref_float64_to_float128(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -2590,10 +2236,10 @@ static void test_float64_to_float32()
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
         sync_globals_from_port();
-        auto rp = port::float64_to_float32(a);
-        auto rr = ref_float64_to_float32(a);
+        float32 rp = port::float64_to_float32(a);
+        float32 rr = ref_float64_to_float32(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -2608,10 +2254,10 @@ static void test_float64_to_floatx80()
     for (unsigned i = 0; i < 200000u; ++i) {
         float64 a = f64_rand();
         sync_globals_from_port();
-        auto rp = port::float64_to_floatx80(a);
-        auto rr = ref_float64_to_floatx80(a);
+        floatx80 rp = port::float64_to_floatx80(a);
+        floatx80 rr = ref_float64_to_floatx80(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -2746,7 +2392,7 @@ static void test_floatx80_add()
     floatx80 rp0 = port::floatx80_add(z, z);
     floatx80 rr0 = ref_floatx80_add(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -2771,7 +2417,7 @@ static void test_floatx80_div()
     floatx80 rp0 = port::floatx80_div(z, z);
     floatx80 rr0 = ref_floatx80_div(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -2781,34 +2427,6 @@ static void test_floatx80_eq()
     const char *name = "floatx80_eq";
     reset_globals();
 
-    static const floatx80 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(floatx80) == 8) {
-        static const floatx80 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (floatx80 a : edges64) for (floatx80 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_eq(a, b);
-            flag rr = ref_floatx80_eq(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (floatx80 a : edges) for (floatx80 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_eq(a, b);
-            flag rr = ref_floatx80_eq(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         floatx80 b = fx80_rand();
@@ -2828,34 +2446,6 @@ static void test_floatx80_eq_signaling()
     const char *name = "floatx80_eq_signaling";
     reset_globals();
 
-    static const floatx80 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(floatx80) == 8) {
-        static const floatx80 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (floatx80 a : edges64) for (floatx80 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_eq_signaling(a, b);
-            flag rr = ref_floatx80_eq_signaling(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (floatx80 a : edges) for (floatx80 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_eq_signaling(a, b);
-            flag rr = ref_floatx80_eq_signaling(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         floatx80 b = fx80_rand();
@@ -2911,34 +2501,6 @@ static void test_floatx80_le()
     const char *name = "floatx80_le";
     reset_globals();
 
-    static const floatx80 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(floatx80) == 8) {
-        static const floatx80 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (floatx80 a : edges64) for (floatx80 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_le(a, b);
-            flag rr = ref_floatx80_le(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (floatx80 a : edges) for (floatx80 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_le(a, b);
-            flag rr = ref_floatx80_le(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         floatx80 b = fx80_rand();
@@ -2958,34 +2520,6 @@ static void test_floatx80_le_quiet()
     const char *name = "floatx80_le_quiet";
     reset_globals();
 
-    static const floatx80 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(floatx80) == 8) {
-        static const floatx80 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (floatx80 a : edges64) for (floatx80 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_le_quiet(a, b);
-            flag rr = ref_floatx80_le_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (floatx80 a : edges) for (floatx80 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_le_quiet(a, b);
-            flag rr = ref_floatx80_le_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         floatx80 b = fx80_rand();
@@ -3005,34 +2539,6 @@ static void test_floatx80_lt()
     const char *name = "floatx80_lt";
     reset_globals();
 
-    static const floatx80 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(floatx80) == 8) {
-        static const floatx80 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (floatx80 a : edges64) for (floatx80 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_lt(a, b);
-            flag rr = ref_floatx80_lt(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (floatx80 a : edges) for (floatx80 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_lt(a, b);
-            flag rr = ref_floatx80_lt(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         floatx80 b = fx80_rand();
@@ -3052,34 +2558,6 @@ static void test_floatx80_lt_quiet()
     const char *name = "floatx80_lt_quiet";
     reset_globals();
 
-    static const floatx80 edges[] = {
-        0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
-    };
-    if (sizeof(floatx80) == 8) {
-        static const floatx80 edges64[] = {
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        };
-        for (floatx80 a : edges64) for (floatx80 b : edges64) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_lt_quiet(a, b);
-            flag rr = ref_floatx80_lt_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    } else {
-        for (floatx80 a : edges) for (floatx80 b : edges) {
-            sync_globals_from_port();
-            flag rp = port::floatx80_lt_quiet(a, b);
-            flag rr = ref_floatx80_lt_quiet(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }
-    }
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         floatx80 b = fx80_rand();
@@ -3114,7 +2592,7 @@ static void test_floatx80_mul()
     floatx80 rp0 = port::floatx80_mul(z, z);
     floatx80 rr0 = ref_floatx80_mul(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -3139,7 +2617,7 @@ static void test_floatx80_rem()
     floatx80 rp0 = port::floatx80_rem(z, z);
     floatx80 rr0 = ref_floatx80_rem(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -3152,10 +2630,10 @@ static void test_floatx80_round_to_int()
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         sync_globals_from_port();
-        int64_t rp = port::floatx80_round_to_int(a);
-        int64_t rr = ref_floatx80_round_to_int(a);
+        floatx80 rp = port::floatx80_round_to_int(a);
+        floatx80 rr = ref_floatx80_round_to_int(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -3200,7 +2678,7 @@ static void test_floatx80_sub()
     floatx80 rp0 = port::floatx80_sub(z, z);
     floatx80 rr0 = ref_floatx80_sub(z, z);
     cases++;
-    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
+    if ((rp0.high != rr0.high || rp0.low != rr0.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -3213,10 +2691,10 @@ static void test_floatx80_to_float128()
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         sync_globals_from_port();
-        auto rp = port::floatx80_to_float128(a);
-        auto rr = ref_floatx80_to_float128(a);
+        float128 rp = port::floatx80_to_float128(a);
+        float128 rr = ref_floatx80_to_float128(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -3231,10 +2709,10 @@ static void test_floatx80_to_float32()
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         sync_globals_from_port();
-        auto rp = port::floatx80_to_float32(a);
-        auto rr = ref_floatx80_to_float32(a);
+        float32 rp = port::floatx80_to_float32(a);
+        float32 rr = ref_floatx80_to_float32(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -3249,10 +2727,10 @@ static void test_floatx80_to_float64()
     for (unsigned i = 0; i < 200000u; ++i) {
         floatx80 a = fx80_rand();
         sync_globals_from_port();
-        auto rp = port::floatx80_to_float64(a);
-        auto rr = ref_floatx80_to_float64(a);
+        float64 rp = port::floatx80_to_float64(a);
+        float64 rr = ref_floatx80_to_float64(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);

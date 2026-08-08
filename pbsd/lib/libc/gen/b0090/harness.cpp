@@ -501,9 +501,8 @@ do_bootfile(bool fail)
 
 	r.cases++;
 
-	g.force_fail = fail ? 1 : 0;
-
 	mock_reset();
+	g.force_fail = fail ? 1 : 0;
 	const char *rva = port::getbootfile();
 	boot_capture ca = snap_boot(rva);
 
@@ -526,7 +525,7 @@ do_bootfile(bool fail)
 }
 
 static void
-do_domainname(int namelen, bool use_null)
+do_domainname(int namelen, bool use_null, bool fail)
 {
 	stat_row &r = rows[R_DOMAINNAME];
 
@@ -536,11 +535,13 @@ do_domainname(int namelen, bool use_null)
 	memset(bufb, GUARD, BUFSZ);
 
 	mock_reset();
+	g.force_fail = fail ? 1 : 0;
 	int rva = use_null ? port::getdomainname(nullptr, namelen) :
 	    port::getdomainname((char *)bufa, namelen);
 	dom_capture ca = snap_dom(rva);
 
 	mock_reset();
+	g.force_fail = fail ? 1 : 0;
 	int rvb = use_null ? ref_getdomainname(nullptr, namelen) :
 	    ref_getdomainname((char *)bufb, namelen);
 	dom_capture cb = snap_dom(rvb);
@@ -660,20 +661,20 @@ edge_domainname(void)
 
 	mock_set_domain("");
 	for (unsigned i = 0; i < sizeof(lens) / sizeof(lens[0]); i++)
-		do_domainname(lens[i], false);
+		do_domainname(lens[i], false, false);
 
 	mock_set_domain("a");
-	do_domainname(1, false);
-	do_domainname(2, false);
+	do_domainname(1, false, false);
+	do_domainname(2, false, false);
 
 	mock_set_domain("example.com");
 	for (unsigned i = 0; i < sizeof(lens) / sizeof(lens[0]); i++)
-		do_domainname(lens[i], false);
+		do_domainname(lens[i], false, false);
 
 	mock_set_domain("long.domain.name.test");
-	do_domainname(64, false);
-	do_domainname(256, false);
-	do_domainname(1024, false);
+	do_domainname(64, false, false);
+	do_domainname(256, false, false);
+	do_domainname(1024, false, false);
 
 	{
 		char dom[300];
@@ -681,16 +682,16 @@ edge_domainname(void)
 			dom[i] = (char)(0x80 + (i % 0x80u));
 		dom[sizeof(dom) - 1u] = '\0';
 		mock_set_domain(dom);
-		do_domainname(128, false);
-		do_domainname(512, false);
+		do_domainname(128, false, false);
+		do_domainname(512, false, false);
 	}
 
 	g.force_fail = 1;
 	for (unsigned i = 0; i < sizeof(lens) / sizeof(lens[0]); i++)
-		do_domainname(lens[i], false);
+		do_domainname(lens[i], false, true);
 	g.force_fail = 0;
 
-	do_domainname(64, true);
+	do_domainname(64, true, false);
 }
 
 /* ------------------------------------------------------------------- random */
@@ -763,7 +764,8 @@ sweep(void)
 		dom[dlen] = '\0';
 		mock_set_domain(dom);
 		g.force_fail = (rnd32() & 7u) == 0u ? 1 : 0;
-		do_domainname((int)rnd32(), (rnd32() % 128u) == 0u);
+		do_domainname((int)rnd32(), (rnd32() % 128u) == 0u,
+		    g.force_fail != 0);
 		g.force_fail = 0;
 	}
 }

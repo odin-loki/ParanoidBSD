@@ -1,7 +1,7 @@
 #!/bin/sh
-# Build and run the PBSD batch b0073 differential test.
+# Build and run the PBSD batch b0089 differential test.
 #
-# Usage: sh build.sh   (from pbsd/lib/msun/ld128/b0073/)
+# Usage: sh build.sh   (from pbsd/lib/msun/ld128/b0089/)
 
 set -e
 
@@ -10,8 +10,13 @@ cd "$(dirname "$0")"
 CC=${CC:-cc}
 CXX=${CXX:-c++}
 
-CFLAGS="-std=c11 -O2"
-CXXFLAGS="-std=c++23 -O2"
+LD128FLAG=""
+if $CC -mlong-double-128 -x c -c /dev/null -o /dev/null 2>/dev/null; then
+	LD128FLAG=-mlong-double-128
+fi
+
+CFLAGS="-std=c11 -O2 $LD128FLAG"
+CXXFLAGS="-std=c++23 -O2 $LD128FLAG"
 
 MODFLAG=""
 for f in -fmodules-ts -fmodules ""; do
@@ -28,10 +33,10 @@ $CC $CFLAGS -c oracle.c -o oracle.o
 
 if $CXX --version 2>&1 | grep -qi clang; then
 	$CXX $CXXFLAGS -x c++-module --precompile port.cppm \
-	    -o pcm.cache/pbsd.lib.msun.ld128.b0073.pcm
-	$CXX $CXXFLAGS -c pcm.cache/pbsd.lib.msun.ld128.b0073.pcm -o port.o
+	    -o pcm.cache/pbsd.lib.msun.ld128.b0089.pcm
+	$CXX $CXXFLAGS -c pcm.cache/pbsd.lib.msun.ld128.b0089.pcm -o port.o
 	$CXX $CXXFLAGS \
-	    -fmodule-file=pbsd.lib.msun.ld128.b0073=pcm.cache/pbsd.lib.msun.ld128.b0073.pcm \
+	    -fmodule-file=pbsd.lib.msun.ld128.b0089=pcm.cache/pbsd.lib.msun.ld128.b0089.pcm \
 	    -c harness.cpp -o harness.o
 else
 	$CXX $CXXFLAGS $MODFLAG -x c++ -c port.cppm -o port.o

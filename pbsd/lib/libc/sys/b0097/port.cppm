@@ -211,27 +211,11 @@ clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *rqtp,
 }
 
 [[gnu::weak]] int __weak_symbol
-__ssp_real(ppoll)(struct pollfd pfd[], nfds_t nfds,
+ppoll(struct pollfd pfd[], nfds_t nfds,
     const struct timespec *__restrict timeout,
     const sigset_t *__restrict newsigmask)
 {
 	return (INTERPOS_SYS(ppoll, pfd, nfds, timeout, newsigmask));
-}
-
-/*
- * Test-only access to this module's interposing table.  Not part of any
- * ported function; libc fills the real table from _libc_init().
- */
-void
-set_interpos(int slot, interpos_func_t func)
-{
-	__libc_interposing[slot] = func;
-}
-
-interpos_func_t
-get_interpos(int slot)
-{
-	return (__libc_interposing[slot]);
 }
 
 } /* namespace pbsd::lib_libc_sys::b0097 */

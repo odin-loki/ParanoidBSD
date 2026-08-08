@@ -403,7 +403,7 @@ def classify_functions(funcs: set[str]) -> dict[str, str]:
             classes[f] = 'is_sig_nan'
         elif f.startswith('int32_to_') or f.startswith('int64_to_') or f.startswith('uint32_to_'):
             classes[f] = 'int_to_float'
-        elif '_to_int' in f:
+        elif '_to_int' in f and not f.endswith('_round_to_int'):
             classes[f] = 'float_to_int'
         elif '_to_float' in f:
             classes[f] = 'float_convert'
@@ -544,12 +544,12 @@ def sig_float_type(f: str) -> str:
     return 'float64'
 
 
-def cmp_expr(ty: str, a: str, b: str) -> str:
+def cmp_expr(ty: str, a: str = 'rp', b: str = 'rr') -> str:
     if ty == 'float128':
-        return f'(rp.high != rr.high || rp.low != rr.low)'
+        return f'({a}.high != {b}.high || {a}.low != {b}.low)'
     if ty == 'floatx80':
-        return f'(rp.high != rr.high || rp.low != rr.low)'
-    return f'(rp != rr)'
+        return f'({a}.high != {b}.high || {a}.low != {b}.low)'
+    return f'({a} != {b})'
 
 
 def proto_extract_pack(f: str) -> str:
@@ -854,35 +854,58 @@ def gen_test_functions(funcs: set[str], classes: dict[str, str]) -> str:
 
 
 def edge_and_rand_fcmp(f, ty, rand_fn):
-    return f'''
-    static const {ty} edges[] = {{
+    if ty == 'float32':
+        return f'''
+    static const float32 edges[] = {{
         0u, 0x80000000u, 0x7F800000u, 0xFF800000u, 0x7FC00000u,
-        0x7F7FFFFF, 0x00800000, 0x00000001, 0xFFFFFFFFu
+        0x7F7FFFFF, 0x00800000u, 0x00000001u, 0xFFFFFFFFu
     }};
-    if (sizeof({ty}) == 8) {{
-        static const {ty} edges64[] = {{
-            0, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
-            0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
-            0x000FFFFFFFFFFFFF, 0x0010000000000000ULL, 1, 0xFFFFFFFFFFFFFFFFULL
-        }};
-        for ({ty} a : edges64) for ({ty} b : edges64) {{
-            sync_globals_from_port();
-            flag rp = port::{f}(a, b);
-            flag rr = ref_{f}(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }}
-    }} else {{
-        for ({ty} a : edges) for ({ty} b : edges) {{
-            sync_globals_from_port();
-            flag rp = port::{f}(a, b);
-            flag rr = ref_{f}(a, b);
-            cases++;
-            if (rp != rr) failures++;
-            sync_globals_to_port();
-        }}
+    for (float32 a : edges) for (float32 b : edges) {{
+        sync_globals_from_port();
+        flag rp = port::{f}(a, b);
+        flag rr = ref_{f}(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
     }}
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        float32 a = f32_rand();
+        float32 b = f32_rand();
+        sync_globals_from_port();
+        flag rp = port::{f}(a, b);
+        flag rr = ref_{f}(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }}
+'''
+    if ty == 'float64':
+        return f'''
+    static const float64 edges[] = {{
+        0ULL, 0x8000000000000000ULL, 0x7FF0000000000000ULL,
+        0xFFF0000000000000ULL, 0x7FF8000000000000ULL,
+        0x000FFFFFFFFFFFFFULL, 0x0010000000000000ULL, 1ULL, 0xFFFFFFFFFFFFFFFFULL
+    }};
+    for (float64 a : edges) for (float64 b : edges) {{
+        sync_globals_from_port();
+        flag rp = port::{f}(a, b);
+        flag rr = ref_{f}(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }}
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        float64 a = f64_rand();
+        float64 b = f64_rand();
+        sync_globals_from_port();
+        flag rp = port::{f}(a, b);
+        flag rr = ref_{f}(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }}
+'''
+    return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         {ty} a = {rand_fn}();
         {ty} b = {rand_fn}();
@@ -951,7 +974,7 @@ def gen_int_to_float_test(f):
     else:
         ity = 'uint32_t'
         rand_loop = 'urand32()'
-    cmp = cmp_expr(rt, 'rp', 'rr')
+    cmp = cmp_expr(rt)
     return f'''
     static const {ity} vals[] = {{0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu}};
     for ({ity} v : vals) {{
@@ -1001,21 +1024,22 @@ def gen_float_to_int_test(f):
 
 
 def gen_float_convert_test(f):
-    # parse from name like float32_to_float64
     parts = f.split('_to_')
     src = parts[0]
     dst = parts[1]
     sm = {'float32': ('float32', 'f32_rand'), 'float64': ('float64', 'f64_rand'),
           'floatx80': ('floatx80', 'fx80_rand'), 'float128': ('float128', 'f128_rand')}
     st, sr = sm[src]
+    dt = sm[dst][0]
+    cmp = cmp_expr(dt, 'rp', 'rr')
     return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         {st} a = {sr}();
         sync_globals_from_port();
-        auto rp = port::{f}(a);
-        auto rr = ref_{f}(a);
+        {dt} rp = port::{f}(a);
+        {dt} rr = ref_{f}(a);
         cases++;
-        if (rp != rr) failures++;
+        if ({cmp}) failures++;
         sync_globals_to_port();
     }}
 '''

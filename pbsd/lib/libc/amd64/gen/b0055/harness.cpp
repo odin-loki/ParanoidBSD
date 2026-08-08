@@ -179,8 +179,11 @@ test_fpgetprec(const SavedFp *base, unsigned rnd, unsigned prc,
 	unsigned short cw;
 	int refv, portv;
 
+	std::fprintf(stderr, "test_fpgetprec rnd=%u prc=%u mask=%u\n", rnd, prc,
+	    mask_en);
 	cw = build_cw(rnd, prc, mask_en);
 	apply_fp_state(base, cw, 0, base->mxcsr);
+	std::fprintf(stderr, "test_fpgetprec applied\n");
 	refv = ref_fpgetprec();
 	portv = port::fpgetprec();
 	compare_int("fpgetprec", refv, portv, &stats_fpgetprec);
@@ -232,9 +235,11 @@ run_hand_cases(const SavedFp *base)
 	unsigned rnd, prc, mask, bit;
 	unsigned mxcsr_base;
 
+	std::fprintf(stderr, "hand: start\n");
 	mxcsr_base = base->mxcsr & ~SSE_STKY_FLD;
 
 	/* default / live state */
+	std::fprintf(stderr, "hand: default\n");
 	test_fpgetprec(base, ref_fpgetround(), ref_fpgetprec(),
 	    ref_fpgetmask());
 	test_fpgetround(base, ref_fpgetround(), ref_fpgetprec(),

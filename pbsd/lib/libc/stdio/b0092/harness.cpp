@@ -8,8 +8,18 @@
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
+#include <locale.h>
 #include <unistd.h>
+
+#if defined(__has_include)
+#if __has_include(<xlocale.h>)
 #include <xlocale.h>
+#endif
+#else
+#ifdef __FreeBSD__
+#include <xlocale.h>
+#endif
+#endif
 
 import pbsd.lib.libc.stdio.b0092;
 

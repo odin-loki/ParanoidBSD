@@ -87,7 +87,6 @@ ref_setlinebuf(FILE *fp)
 #include <stdarg.h>
 #include <stdio.h>
 #include <wchar.h>
-#include <xlocale.h>
 
 int
 ref_wscanf(const wchar_t * __restrict fmt, ...)
@@ -97,18 +96,6 @@ ref_wscanf(const wchar_t * __restrict fmt, ...)
 
 	va_start(ap, fmt);
 	r = vfwscanf(stdin, fmt, ap);
-	va_end(ap);
-
-	return (r);
-}
-int
-ref_wscanf_l(locale_t locale, const wchar_t * __restrict fmt, ...)
-{
-	va_list ap;
-	int r;
-
-	va_start(ap, fmt);
-	r = vfwscanf_l(stdin, locale, fmt, ap);
 	va_end(ap);
 
 	return (r);
@@ -149,7 +136,6 @@ ref_wscanf_l(locale_t locale, const wchar_t * __restrict fmt, ...)
 
 #include <stdio.h>
 #include <wchar.h>
-#include <xlocale.h>
 
 /*
  * Synonym for fgetwc(). The only difference is that getwc(), if it is a
@@ -160,10 +146,4 @@ ref_getwc(FILE *fp)
 {
 
 	return (fgetwc(fp));
-}
-wint_t
-ref_getwc_l(FILE *fp, locale_t locale)
-{
-
-	return (fgetwc_l(fp, locale));
 }
