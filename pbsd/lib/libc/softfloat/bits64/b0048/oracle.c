@@ -1068,8 +1068,6 @@ Underflow tininess-detection mode, statically initialized to default value.
 (The declaration in `softfloat.h' must match the `int8' type here.)
 -------------------------------------------------------------------------------
 */
-int8 float_detect_tininess = float_tininess_after_rounding;
-
 /*
 -------------------------------------------------------------------------------
 Raises the exceptions specified by `flags'.  Floating-point traps can be

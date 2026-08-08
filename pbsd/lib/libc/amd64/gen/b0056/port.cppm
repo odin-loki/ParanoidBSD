@@ -64,7 +64,7 @@ fpsetmask(fp_except_t m)
 	return (__fpsetmask(m));
 }
 
-extern const union __infinity_un __infinity = { { 0, 0, 0, 1, 0, 0, 0xf0, 0x7f } };
+extern const union __infinity_un __infinity = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f } };
 
 extern const union __nan_un __nan = { { 0, 0, 0xc0, 0xff } };
 
