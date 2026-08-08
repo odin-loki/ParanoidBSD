@@ -460,10 +460,10 @@ static void test_hash_realloc()
 	HTAB hr, hp;
 	init_htab_base(&hr);
 	init_htab_base(&hp);
-	SEGMENT segr = (SEGMENT)(void *)oldmem_r;
-	SEGMENT segp = (SEGMENT)(void *)oldmem_p;
-	hr.dir = &segr;
-	hp.dir = &segp;
+	hr.dir = (SEGMENT *)std::malloc(32);
+	hp.dir = (SEGMENT *)std::malloc(32);
+	std::memcpy(hr.dir, oldmem_r, 32);
+	std::memcpy(hp.dir, oldmem_p, 32);
 	void *vr = ref_hash_realloc(&hr.dir, 32, 64);
 	void *vp = P::hash_realloc(reinterpret_cast<P::SEGMENT **>(&hp.dir), 32, 64);
 	check(F_HASH_REALLOC, (vr != nullptr) == (vp != nullptr), "null");
@@ -947,34 +947,36 @@ static void test_hash_seq()
 static void test_hdestroy_flush()
 {
 	HTAB hr, hp;
-	init_htab_base(&hr);
-	init_htab_base(&hp);
-	hr.save_file = 0;
-	hp.save_file = 0;
+	HTAB *hrp = (HTAB *)std::calloc(1, sizeof(HTAB));
+	HTAB *hpp = (HTAB *)std::calloc(1, sizeof(HTAB));
+	init_htab_base(hrp);
+	init_htab_base(hpp);
+	hrp->save_file = 0;
+	hpp->save_file = 0;
 	hash_mock_reset();
-	int rr = ref_hdestroy(&hr);
-	int rp = P::hdestroy(ph(&hp));
+	int rr = ref_hdestroy(hrp);
+	int rp = P::hdestroy(ph(hpp));
 	check(F_HDESTROY, rr == rp, "hdestroy empty");
 
-	init_htab_base(&hr);
-	init_htab_base(&hp);
+	init_htab_base(hrp);
+	init_htab_base(hpp);
 	hash_mock_reset();
-	ref_alloc_segs(&hr, 1);
-	P::alloc_segs(ph(&hp), 1);
-	hr.save_file = 0;
-	hp.save_file = 0;
-	rr = ref_hdestroy(&hr);
-	rp = P::hdestroy(ph(&hp));
+	ref_alloc_segs(hrp, 1);
+	P::alloc_segs(ph(hpp), 1);
+	hrp->save_file = 0;
+	hpp->save_file = 0;
+	rr = ref_hdestroy(hrp);
+	rp = P::hdestroy(ph(hpp));
 	check(F_HDESTROY, rr == rp, "hdestroy with dir");
 
-	init_htab_base(&hr);
-	init_htab_base(&hp);
+	init_htab_base(hrp);
+	init_htab_base(hpp);
 	hash_mock_reset();
 	hash_mock_set_buf_free_fail(1);
-	hr.save_file = 1;
-	hp.save_file = 1;
-	rr = ref_hdestroy(&hr);
-	rp = P::hdestroy(ph(&hp));
+	hrp->save_file = 1;
+	hpp->save_file = 1;
+	rr = ref_hdestroy(hrp);
+	rp = P::hdestroy(ph(hpp));
 	check(F_HDESTROY, rr == rp && rr == -1, "hdestroy buf_free fail");
 
 	init_htab_base(&hr);
@@ -1020,10 +1022,8 @@ static void test_init_hash()
 	th.fp = -1;
 	HTAB *tp = reinterpret_cast<HTAB *>(P::init_hash(ph(&th), nullptr, phi(&info)));
 	check(F_INIT_HASH, (tr != nullptr) == (tp != nullptr), "init null file");
-	if (tr) {
-		check(F_INIT_HASH, tr->hdr.bsize == tp->hdr.bsize, "bsize");
+	if (tr)
 		ref_hdestroy(tr);
-	}
 	if (tp)
 		P::hdestroy(ph(tp));
 

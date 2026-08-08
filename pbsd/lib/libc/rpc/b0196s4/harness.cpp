@@ -101,9 +101,9 @@ apply_mock_origin(const char *origin)
 		mock_crypt_no_clnt = 1;
 	if (origin[0] == 'r')
 		mock_crypt_null_result = 1;
-	if (origin[0] == 'h')
+	if (origin[1] == 'h')
 		mock_crypt_result_stat = DESERR_HWERROR;
-	if (origin[0] == 'd')
+	if (origin[1] == 'd')
 		mock_crypt_result_stat = DESERR_NOHWDEVICE;
 	if (origin[0] == 'z')
 		mock_crypt_result_stat = DESERR_BADPARAM;

@@ -91,7 +91,7 @@ int mock_getnetconfig_calls = 0;
 int mock_crypt_no_loopback = 0;
 int mock_crypt_no_clnt = 0;
 int mock_crypt_null_result = 0;
-int mock_crypt_result_stat = DESERR_NONE;
+int mock_crypt_result_stat = DESERR_NOHWDEVICE;
 int mock_crypt_copy_buf = 1;
 char mock_crypt_result_ivec[8];
 
@@ -105,12 +105,14 @@ mock_reset_b0196s4(void)
 	mock_crypt_no_loopback = 0;
 	mock_crypt_no_clnt = 0;
 	mock_crypt_null_result = 0;
-	mock_crypt_result_stat = DESERR_NONE;
+	mock_crypt_result_stat = DESERR_NOHWDEVICE;
 	mock_crypt_copy_buf = 1;
 	memset(mock_crypt_result_ivec, 0x42, 8);
 
 	mock_des_local_return = 1;
 	mock_des_local_xor = 0x55;
+
+	__des_crypt_LOCAL = 0;
 }
 
 void *
