@@ -1,5 +1,10 @@
 module;
 
+#ifndef __BEGIN_DECLS
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+
 #define __IEEEFP_NOINLINES__ 1
 #include <ieeefp.h>
 
@@ -59,7 +64,7 @@ fpsetmask(fp_except_t m)
 	return (__fpsetmask(m));
 }
 
-extern const union __infinity_un __infinity = { { 0, 0, 0, 0, 0, 0, 0xf0, 0x7f } };
+extern const union __infinity_un __infinity = { { 0, 0, 0, 1, 0, 0, 0xf0, 0x7f } };
 
 extern const union __nan_un __nan = { { 0, 0, 0xc0, 0xff } };
 

@@ -8,6 +8,11 @@
  * section.  <ieeefp.h> is supplied via -I on the compiler command line.
  */
 
+#ifndef __BEGIN_DECLS
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+
 /* --- fpsetround.c --- */
 #define __IEEEFP_NOINLINES__ 1
 #include <ieeefp.h>

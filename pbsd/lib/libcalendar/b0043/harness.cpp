@@ -207,7 +207,7 @@ check_easter(int fn, int y, const char *tag)
 
 	poff = pgot == nullptr ? -1 : (long long)(pgot - &pf.dt);
 	roff = rgot == nullptr ? -1 :
-	    (long long)(rgot - reinterpret_cast<struct date *>(&rf.dt));
+	    (long long)(reinterpret_cast<c_date *>(rgot) - &rf.dt);
 
 	if (poff != roff || !date_frames_match(pf, rf)) {
 		bump_fail(fn);
@@ -247,7 +247,7 @@ check_date_conv(int fn, int ndays, const char *tag)
 
 	poff = pgot == nullptr ? -1 : (long long)(pgot - &pf.dt);
 	roff = rgot == nullptr ? -1 :
-	    (long long)(rgot - reinterpret_cast<struct date *>(&rf.dt));
+	    (long long)(reinterpret_cast<c_date *>(rgot) - &rf.dt);
 
 	if (poff != roff || !date_frames_match(pf, rf)) {
 		bump_fail(fn);

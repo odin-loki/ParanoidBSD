@@ -344,7 +344,28 @@ def make_rename_macros(names: list[str]) -> str:
     lines = ['/* ref_ renaming via preprocessor */']
     for n in sorted(names):
         lines.append(f'#define {n} ref_{n}')
+    lines.append('')
+    lines.append('/* Globals must precede any function that touches them. */')
+    lines.append('int float_rounding_mode = float_round_nearest_even;')
+    lines.append('int float_exception_flags = 0;')
+    lines.append('int8 floatx80_rounding_precision = 80;')
+    lines.append('int8 float_detect_tininess = float_tininess_after_rounding;')
+    lines.append('int float_exception_mask = 0;')
     return '\n'.join(lines) + '\n\n'
+
+
+def strip_duplicate_globals(text: str) -> str:
+    patterns = [
+        r'^int float_rounding_mode = float_round_nearest_even;\s*\n',
+        r'^int float_exception_flags = 0;\s*\n',
+        r'^int8 floatx80_rounding_precision = 80;\s*\n',
+        r'^int8 float_detect_tininess = float_tininess_after_rounding;\s*\n',
+        r'^int8 float_detect_tininess = float_tininess_before_rounding;\s*\n',
+        r'^int float_exception_mask = 0;\s*\n',
+    ]
+    for pat in patterns:
+        text = re.sub(pat, '', text, flags=re.MULTILINE)
+    return text
 
 
 def port_body_from_source(body: str) -> str:
@@ -1119,7 +1140,9 @@ def main():
     sf_pp = preprocess(read(BITS64 / 'softfloat.c'))
 
   # Remove duplicate commonNaNT typedef from specialize if present in body
-    body = macros_pp + '\n' + spec_pp + '\n' + sf_pp
+    body = strip_duplicate_globals(
+        macros_pp + '\n' + spec_pp + '\n' + sf_pp
+    )
     funcs = find_funcs(body)
     for g in GLOBALS:
         pass
@@ -1129,7 +1152,14 @@ def main():
     oracle = ORACLE_PROLOGUE + make_rename_macros(rename_names) + body
     (OUT / 'oracle.c').write_text(oracle)
 
-    port = PORT_HEADER + port_body_from_source(body) + PORT_FOOTER
+    port_globals = (
+        'int float_rounding_mode = float_round_nearest_even;\n'
+        'int float_exception_flags = 0;\n'
+        'int8 floatx80_rounding_precision = 80;\n'
+        'int8 float_detect_tininess = float_tininess_after_rounding;\n'
+        'int float_exception_mask = 0;\n\n'
+    )
+    port = PORT_HEADER + port_globals + port_body_from_source(body) + PORT_FOOTER
     (OUT / 'port.cppm').write_text(port)
 
     harness = gen_harness(funcs, classes)

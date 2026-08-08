@@ -108,8 +108,8 @@ snap_ref(Obs *o, iconv_t ret)
 {
 
 	o->ret = ptr_u(ret);
-	o->iconv_fn = ptr_u(dl_iconv);
-	o->close_fn = ptr_u(dl_iconv_close);
+	o->iconv_fn = fp_u(dl_iconv);
+	o->close_fn = fp_u(dl_iconv_close);
 }
 
 static void
@@ -117,8 +117,8 @@ snap_port(Obs *o, iconv_t ret)
 {
 
 	o->ret = ptr_u(ret);
-	o->iconv_fn = ptr_u(P::dl_iconv);
-	o->close_fn = ptr_u(P::dl_iconv_close);
+	o->iconv_fn = fp_u(P::dl_iconv);
+	o->close_fn = fp_u(P::dl_iconv_close);
 }
 
 static bool

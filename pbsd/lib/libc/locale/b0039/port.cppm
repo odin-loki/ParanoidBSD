@@ -17,6 +17,7 @@ module;
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <cwchar>
 
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX	SIZE_MAX
@@ -26,10 +27,7 @@ module;
 #define MB_LEN_MAX	4
 #endif
 
-#define	XLOCALE_CTYPE(l)	(&((l)->ctype))
-#define	FIX_LOCALE(l)		((l) = ((l) == NULL ? pbsd_get_active_locale() : (l)))
-
-namespace {
+export module pbsd.lib.libc.locale.b0039;
 
 struct pbsd_mbstate {
 	unsigned int	want;
@@ -303,8 +301,6 @@ pbsd_locale_init_impl(pbsd_locale_t loc, int mode)
 	loc->ctype.wcwidth_mode = mode;
 }
 
-} /* anonymous namespace */
-
 extern "C" {
 
 size_t
@@ -378,7 +374,8 @@ pbsd_locale_init(pbsd_locale_t loc, int mode)
 
 } /* extern "C" */
 
-export module pbsd.lib.libc.locale.b0039;
+#define	XLOCALE_CTYPE(l)	(&((l)->ctype))
+#define	FIX_LOCALE(l)		((l) = ((l) == NULL ? pbsd_get_active_locale() : (l)))
 
 export namespace pbsd::lib_libc_locale::b0039 {
 

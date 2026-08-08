@@ -15,42 +15,41 @@
 
 module;
 
-#define __mbstate_t_defined 1
+#include <cstdint>
+
+namespace {
+
 typedef union {
 	char		__mbstate8[128];
 	long long	_mbstateL;
-} __mbstate_t;
-typedef __mbstate_t mbstate_t;
+} pbsd_mbstate_t;
 
-#include <cstdint>
-#include <cwchar>
+struct pbsd_xlocale_ctype {
+	int		(*__mbsinit)(const pbsd_mbstate_t *);
+};
 
-typedef struct xlocale *locale_t;
+struct pbsd_locale {
+	void		*components[6];
+};
+
+using pbsd_locale_t = pbsd_locale *;
 
 enum {
 	XLC_CTYPE = 1,
 };
 
-struct xlocale_ctype {
-	int		(*__mbsinit)(const mbstate_t *);
-};
+#define XLOCALE_CTYPE(x)	((struct pbsd_xlocale_ctype *)(x)->components[XLC_CTYPE])
 
-struct xlocale {
-	void		*components[6];
-};
+pbsd_xlocale_ctype	port_c_ctype;
+pbsd_locale		port_c_locale;
+pbsd_xlocale_ctype	port_global_ctype;
+pbsd_locale		port_global_locale;
 
-#define XLOCALE_CTYPE(x)	((struct xlocale_ctype *)(x)->components[XLC_CTYPE])
+int			port_has_thread_locale;
+pbsd_locale_t		port_thread_locale;
 
-struct xlocale_ctype	port_c_ctype;
-struct xlocale		port_c_locale;
-struct xlocale_ctype	port_global_ctype;
-struct xlocale		port_global_locale;
-
-static int		port_has_thread_locale;
-static locale_t		port_thread_locale;
-
-static inline locale_t
-get_real_locale(locale_t locale)
+static inline pbsd_locale_t
+get_real_locale(pbsd_locale_t locale)
 {
 
 	switch ((intptr_t)locale) {
@@ -65,7 +64,7 @@ get_real_locale(locale_t locale)
 
 #define FIX_LOCALE(l)	(l = get_real_locale(l))
 
-static inline locale_t
+static inline pbsd_locale_t
 __get_locale(void)
 {
 
@@ -74,26 +73,20 @@ __get_locale(void)
 	return (port_thread_locale);
 }
 
+} // namespace
+
 export module pbsd.lib.libc.locale.b0064;
 
 export namespace pbsd::lib_libc_locale::b0064 {
 
-using pbsd_mbstate_t = mbstate_t;
-
-struct pbsd_locale_ctype {
-	int		(*__mbsinit)(const mbstate_t *);
-};
-
-struct pbsd_locale {
-	void		*components[6];
-};
-
-} // namespace pbsd::lib_libc_locale::b0064
+using pbsd_mbstate_t = ::pbsd_mbstate_t;
+using pbsd_locale = ::pbsd_locale;
+using pbsd_locale_t = ::pbsd_locale_t;
 
 extern "C" {
 
 void
-pbsd_set_thread_locale(int on, locale_t loc)
+pbsd_set_thread_locale(int on, pbsd_locale_t loc)
 {
 
 	port_has_thread_locale = on;
@@ -108,14 +101,14 @@ pbsd_locale_init(void)
 	port_global_locale.components[XLC_CTYPE] = &port_global_ctype;
 }
 
-locale_t
+pbsd_locale_t
 pbsd_c_locale(void)
 {
 
 	return (&port_c_locale);
 }
 
-locale_t
+pbsd_locale_t
 pbsd_global_locale(void)
 {
 
@@ -123,8 +116,6 @@ pbsd_global_locale(void)
 }
 
 } // extern "C"
-
-export namespace pbsd::lib_libc_locale::b0064 {
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -160,13 +151,13 @@ export namespace pbsd::lib_libc_locale::b0064 {
  */
 
 int
-mbsinit_l(const mbstate_t *ps, locale_t locale)
+mbsinit_l(const pbsd_mbstate_t *ps, pbsd_locale_t locale)
 {
 	FIX_LOCALE(locale);
 	return (XLOCALE_CTYPE(locale)->__mbsinit(ps));
 }
 int
-mbsinit(const mbstate_t *ps)
+mbsinit(const pbsd_mbstate_t *ps)
 {
 	return mbsinit_l(ps, __get_locale());
 }

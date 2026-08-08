@@ -22,7 +22,8 @@ ln -sf "$hbsd_sys/x86/include/x86_ieeefp.h" "$builddir/x86_inc/x86/x86_ieeefp.h"
 cd "$builddir"
 
 CFLAGS="-std=c11 -O2 -I$hbsd_sys/amd64/include -I$builddir/x86_inc"
-CXXFLAGS="-std=c++23 -O2 -I$hbsd_sys/amd64/include -I$builddir/x86_inc"
+PORT_CXXFLAGS="-std=c++23 -O2 -I$hbsd_sys/amd64/include -I$builddir/x86_inc"
+HARNESS_CXXFLAGS="-std=c++23 -O2"
 
 modname=pbsd.lib.libc.amd64.gen.b0056
 
@@ -37,17 +38,17 @@ echo "building batch b0056 with $CC / $CXX ($compiler modules)"
 $CC $CFLAGS -c "$srcdir/oracle.c" -o oracle.o
 
 if [ "$compiler" = clang ]; then
-	$CXX $CXXFLAGS -x c++-module --precompile "$srcdir/port.cppm" \
+	$CXX $PORT_CXXFLAGS -x c++-module --precompile "$srcdir/port.cppm" \
 	    -o port.pcm
-	$CXX $CXXFLAGS -c port.pcm -o port.o
-	$CXX $CXXFLAGS -fmodule-file="$modname=port.pcm" \
+	$CXX $PORT_CXXFLAGS -c port.pcm -o port.o
+	$CXX $HARNESS_CXXFLAGS -fmodule-file="$modname=port.pcm" \
 	    -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS -o harness harness.o port.o oracle.o
+	$CXX $HARNESS_CXXFLAGS -o harness harness.o port.o oracle.o
 else
 	rm -rf gcm.cache
-	$CXX $CXXFLAGS -fmodules-ts -x c++ -c "$srcdir/port.cppm" -o port.o
-	$CXX $CXXFLAGS -fmodules-ts -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS -fmodules-ts -o harness harness.o port.o oracle.o
+	$CXX $PORT_CXXFLAGS -fmodules-ts -x c++ -c "$srcdir/port.cppm" -o port.o
+	$CXX $HARNESS_CXXFLAGS -fmodules-ts -c "$srcdir/harness.cpp" -o harness.o
+	$CXX $HARNESS_CXXFLAGS -fmodules-ts -o harness harness.o port.o oracle.o
 fi
 
 exec ./harness

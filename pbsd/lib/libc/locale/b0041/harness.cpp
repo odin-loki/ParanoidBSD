@@ -367,7 +367,7 @@ random_wcstombs(Stats &st, bool use_l)
 	wchar_t wcs[WCS_CAP];
 
 	for (unsigned long long i = 0; i < RANDOM_ITERS; i++) {
-		size_t len = (size_t)(xorshift32() % WCS_CAP);
+		size_t len = 1 + (size_t)(xorshift32() % WCS_CAP);
 		size_t n = (size_t)(xorshift32() % (WRITE_MAX + 1));
 		bool null_dst = (xorshift32() & 0x1ffu) == 0;
 

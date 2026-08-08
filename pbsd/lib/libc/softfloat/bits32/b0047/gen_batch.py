@@ -1,19 +1,100 @@
 #!/usr/bin/env python3
-"""Generate oracle.c, port.cppm, harness.cpp for b0047."""
+"""Generate oracle.c and port.cppm for b0047."""
 
 import re
 from pathlib import Path
 
 ROOT = Path("/home/odin/pbsd/hbsd/src/lib/libc/softfloat")
 OUT = Path("/home/odin/pbsd/pbsd/lib/libc/softfloat/bits32/b0047")
-SKIP = {"float64_round_to_int": "uses .high/.low members on bits64 float64; source does not compile"}
 
-# Functions the harness calls (non-static, not skipped).
-PUBLIC_FUNCS = [
+SKIP_FUNCS = {"float64_round_to_int"}
+
+COPYRIGHT = read_src = lambda p: (ROOT / p).read_text()
+
+def read(p):
+    return (ROOT / p).read_text()
+
+def remove_ifdef_blocks(text, macro):
+    out, i, lines = [], 0, text.splitlines()
+    while i < len(lines):
+        line = lines[i]
+        if re.match(rf'^\s*#ifdef\s+{re.escape(macro)}\s*$', line):
+            depth, i = 1, i + 1
+            while i < len(lines) and depth:
+                if re.match(r'^\s*#ifdef\b', lines[i]):
+                    depth += 1
+                elif re.match(r'^\s*#endif\b', lines[i]):
+                    depth -= 1
+                i += 1
+            continue
+        out.append(line)
+        i += 1
+    return "\n".join(out)
+
+def remove_skipped_functions(text):
+    lines = text.splitlines()
+    out, i = [], 0
+    while i < len(lines):
+        m = re.match(r'^[\w\s\*]+\s+(\w+)\s*\(', lines[i])
+        if m and m.group(1) in SKIP_FUNCS:
+            depth = 0
+            while i < len(lines):
+                depth += lines[i].count('{') - lines[i].count('}')
+                i += 1
+                if depth <= 0 and '{' in ''.join(out[-5:] + lines[i-3:i]):
+                    break
+            continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
+def strip_softfloat_c(text):
+    text = remove_ifdef_blocks(text, "SOFTFLOAT_FOR_GCC")
+    text = remove_skipped_functions(text)
+    # drop includes and #include lines
+    lines = [ln for ln in text.splitlines()
+             if not re.match(r'^\s*#include\s', ln)]
+    text = "\n".join(lines)
+    # drop preamble through globals and macro/specialize includes
+    marker = '#include "softfloat-specialize"'
+    idx = text.find(marker)
+    if idx != -1:
+        text = text[idx + len(marker):]
+    return text.lstrip("\n")
+
+def strip_specialize(text):
+    text = remove_ifdef_blocks(text, "SOFTFLOAT_FOR_GCC")
+    text = remove_ifdef_blocks(text, "FLOATX80")
+    text = remove_ifdef_blocks(text, "FLOAT128")
+    # float_detect_tininess / float_exception_mask are defined in our globals block.
+    text = re.sub(
+        r'/\*[\s\S]*?Underflow tininess[\s\S]*?\*/\s*'
+        r'(?:#ifdef __sparc64__[\s\S]*?#endif\s*)?',
+        '', text, count=1)
+    text = re.sub(r'^\s*int\s+float_exception_mask\s*=\s*0\s*;\s*$', '', text, flags=re.M)
+    text = re.sub(r'^\s*#undef float_exception_mask\s*$', '', text, flags=re.M)
+    text = re.sub(r'^\s*#define float32_default_nan\b.*$', '', text, flags=re.M)
+    text = re.sub(r'^\s*#define float64_default_nan\b.*$', '', text, flags=re.M)
+    return text
+
+FUNC_RENAMES = [
+    "normalizeFloat32Subnormal", "roundAndPackFloat32", "normalizeRoundAndPackFloat32",
+    "extractFloat32Frac", "extractFloat32Exp", "extractFloat32Sign", "packFloat32",
+    "normalizeFloat64Subnormal", "roundAndPackFloat64", "normalizeRoundAndPackFloat64",
+    "extractFloat64Frac1", "extractFloat64Frac0", "extractFloat64Exp", "extractFloat64Sign",
+    "packFloat64",
+    "shift32RightJamming", "shift64Right", "shift64RightJamming", "shift64ExtraRightJamming",
+    "shortShift64Left", "shortShift96Left", "add64", "add96", "sub64", "sub96",
+    "mul32To64", "mul64By32To96", "mul64To128", "estimateDiv64To32", "estimateSqrt32",
+    "countLeadingZeros32", "eq64", "le64", "lt64", "ne64",
+    "float_raise", "float32_is_nan", "float32_is_signaling_nan", "float32ToCommonNaN",
+    "commonNaNToFloat32", "propagateFloat32NaN",
+    "float64_is_nan", "float64_is_signaling_nan", "float64ToCommonNaN",
+    "commonNaNToFloat64", "propagateFloat64NaN",
+    "addFloat32Sigs", "subFloat32Sigs", "addFloat64Sigs", "subFloat64Sigs",
     "int32_to_float32", "int32_to_float64",
     "float32_to_int32", "float32_to_int32_round_to_zero", "float32_to_float64",
-    "float32_round_to_int",
-    "float32_add", "float32_sub", "float32_mul", "float32_div",
+    "float32_round_to_int", "float32_add", "float32_sub", "float32_mul", "float32_div",
     "float32_rem", "float32_sqrt",
     "float32_eq", "float32_le", "float32_lt",
     "float32_eq_signaling", "float32_le_quiet", "float32_lt_quiet",
@@ -24,106 +105,10 @@ PUBLIC_FUNCS = [
     "float64_eq_signaling", "float64_le_quiet", "float64_lt_quiet",
 ]
 
-STATIC_FUNCS = [
-    "normalizeFloat32Subnormal", "roundAndPackFloat32", "normalizeRoundAndPackFloat32",
-    "normalizeFloat64Subnormal", "roundAndPackFloat64", "normalizeRoundAndPackFloat64",
-    "addFloat32Sigs", "subFloat32Sigs", "addFloat64Sigs", "subFloat64Sigs",
-    "shift32RightJamming", "shift64Right", "shift64RightJamming", "shift64ExtraRightJamming",
-    "shortShift64Left", "shortShift96Left", "add64", "add96", "sub64", "sub96",
-    "mul32To64", "mul64By32To96", "mul64To128", "estimateDiv64To32", "estimateSqrt32",
-    "countLeadingZeros32", "eq64", "le64", "lt64", "ne64",
-    "extractFloat32Frac", "extractFloat32Exp", "extractFloat32Sign", "packFloat32",
-    "extractFloat64Frac1", "extractFloat64Frac0", "extractFloat64Exp", "extractFloat64Sign",
-    "packFloat64",
-    "float_raise", "float32_is_nan", "float32_is_signaling_nan", "float32ToCommonNaN",
-    "commonNaNToFloat32", "propagateFloat32NaN",
-    "float64_is_nan", "float64_is_signaling_nan", "float64ToCommonNaN",
-    "commonNaNToFloat64", "propagateFloat64NaN",
-]
+def func_rename_block():
+    return "\n".join(f"#define {n} ref_{n}" for n in FUNC_RENAMES)
 
-RENAME_GLOBALS = {
-    "float_rounding_mode": "__oracle_float_rounding_mode",
-    "float_exception_flags": "__oracle_float_exception_flags",
-    "float_detect_tininess": "__oracle_float_detect_tininess",
-    "float_exception_mask": "__oracle_float_exception_mask",
-}
-
-RENAME_FUNCS = {f: f"ref_{f}" for f in PUBLIC_FUNCS + STATIC_FUNCS}
-RENAME_FUNCS.update({k: f"ref_{v}" for k, v in [
-    ("float_raise", "float_raise"),
-]})
-
-def read_src(name):
-    return (ROOT / name).read_text()
-
-def strip_includes(text):
-    lines = []
-    for line in text.splitlines():
-        if re.match(r'^\s*#include\s', line):
-            continue
-        if re.match(r'^\s*#ifdef SOFTFLOAT_FOR_GCC', line):
-            continue
-        if line.strip() == '#endif' and 'SOFTFLOAT_FOR_GCC' in text[:text.find(line)]:
-            pass
-        lines.append(line)
-    return "\n".join(lines)
-
-def preprocess_softfloat_c(text):
-    """Remove includes and SOFTFLOAT_FOR_GCC blocks; drop skipped functions."""
-    out = []
-    skip_depth = 0
-    skip_func = False
-    func_depth = 0
-    i = 0
-    lines = text.splitlines()
-    while i < len(lines):
-        line = lines[i]
-        if re.match(r'^\s*#include\s', line):
-            i += 1
-            continue
-        if '#ifdef SOFTFLOAT_FOR_GCC' in line:
-            skip_depth += 1
-            i += 1
-            continue
-        if skip_depth > 0 and line.strip() == '#endif':
-            skip_depth -= 1
-            i += 1
-            continue
-        if skip_depth > 0:
-            i += 1
-            continue
-        m = re.match(r'^(\w[\w\s\*]*?)\s+(float64_round_to_int)\s*\(', line)
-        if m and m.group(2) in SKIP:
-            skip_func = True
-            func_depth = 0
-            i += 1
-            continue
-        if skip_func:
-            func_depth += line.count('{') - line.count('}')
-            if func_depth <= 0 and '{' in ''.join(lines[max(0,i-20):i+1]):
-                if line.strip() == '}' or (func_depth == 0 and '}' in line):
-                    skip_func = False
-            i += 1
-            continue
-        out.append(line)
-        i += 1
-    return "\n".join(out)
-
-def apply_renames(text, funcs, globals_):
-    for old, new in sorted(globals_.items(), key=lambda x: -len(x[0])):
-        text = re.sub(r'\b' + re.escape(old) + r'\b', new, text)
-    for old, new in sorted(funcs.items(), key=lambda x: -len(x[0])):
-        text = re.sub(r'\b' + re.escape(old) + r'\b', new, text)
-    return text
-
-ORACLE_HEADER = r'''/*
- * oracle.c -- reference specification for PBSD batch b0047.
- *
- * hbsd/src/lib/libc/softfloat/bits32/softfloat.c
- * plus softfloat-macros and softfloat-specialize fragments it includes.
- * Every function is renamed via the preprocessor; bodies are unmodified.
- */
-
+TYPES = r'''
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
@@ -169,14 +154,12 @@ enum {
     float_tininess_after_rounding  = 0,
     float_tininess_before_rounding = 1
 };
-
 enum {
     float_round_nearest_even = 0,
     float_round_to_zero      = 1,
     float_round_down         = 2,
     float_round_up           = 3
 };
-
 enum {
     float_flag_inexact   =  1,
     float_flag_underflow =  2,
@@ -185,33 +168,42 @@ enum {
     float_flag_invalid   = 16
 };
 
-#define float32_default_nan 0xFFFFFFFF
+#define float32_default_nan 0xFFFFFFFFu
 #define float64_default_nan LIT64(0xFFFFFFFFFFFFFFFF)
 
 '''
 
-def build_rename_block():
-    lines = ["/* symbol renaming */"]
-    for k, v in RENAME_GLOBALS.items():
-        lines.append(f"#define {k} {v}")
-    for k, v in sorted(RENAME_FUNCS.items()):
-        lines.append(f"#define {k} {v}")
-    return "\n".join(lines) + "\n"
-
 def gen_oracle():
-    macros = read_src("bits32/softfloat-macros")
-    specialize = read_src("softfloat-specialize")
-    # trim specialize at FLOATX80
-    specialize = specialize.split("#ifdef FLOATX80")[0]
-    softfloat = read_src("bits32/softfloat.c")
-    softfloat = preprocess_softfloat_c(softfloat)
-    body = macros + "\n" + specialize + "\n" + softfloat
-    body = apply_renames(body, RENAME_FUNCS, RENAME_GLOBALS)
-    # globals at end of specialize need initial values
-    oracle = ORACLE_HEADER + build_rename_block() + body
+    macros = read("bits32/softfloat-macros")
+    specialize = strip_specialize(read("softfloat-specialize"))
+    body = strip_softfloat_c(read("bits32/softfloat.c"))
+
+    globals_ = r'''
+int __oracle_float_rounding_mode = float_round_nearest_even;
+int __oracle_float_exception_flags = 0;
+int8 __oracle_float_detect_tininess = float_tininess_after_rounding;
+int __oracle_float_exception_mask = 0;
+
+#define float_rounding_mode __oracle_float_rounding_mode
+#define float_exception_flags __oracle_float_exception_flags
+#define float_detect_tininess __oracle_float_detect_tininess
+#define float_exception_mask __oracle_float_exception_mask
+
+'''
+
+    oracle = (
+        "/* oracle.c -- PBSD batch b0047 reference specification. */\n"
+        + TYPES + globals_ + func_rename_block() + "\n\n"
+        + macros + "\n" + specialize + "\n" + body
+    )
     (OUT / "oracle.c").write_text(oracle)
 
-PORT_HEADER = r'''/* $NetBSD: softfloat.c,v 1.1 2002/05/21 23:51:07 bjh21 Exp $ */
+def gen_port():
+    macros = read("bits32/softfloat-macros")
+    specialize = strip_specialize(read("softfloat-specialize"))
+    body = strip_softfloat_c(read("bits32/softfloat.c"))
+
+    header = '''/* $NetBSD: softfloat.c,v 1.1 2002/05/21 23:51:07 bjh21 Exp $ */
 export module pbsd.lib.libc.softfloat.bits32.b0047;
 
 export namespace pbsd::lib_libc_softfloat_bits32::b0047 {
@@ -262,14 +254,12 @@ enum {
     float_tininess_after_rounding  = 0,
     float_tininess_before_rounding = 1
 };
-
 enum {
     float_round_nearest_even = 0,
     float_round_to_zero      = 1,
     float_round_down         = 2,
     float_round_up           = 3
 };
-
 enum {
     float_flag_inexact   =  1,
     float_flag_underflow =  2,
@@ -278,108 +268,31 @@ enum {
     float_flag_invalid   = 16
 };
 
-#define float32_default_nan 0xFFFFFFFF
+#define float32_default_nan 0xFFFFFFFFu
 #define float64_default_nan LIT64(0xFFFFFFFFFFFFFFFF)
+
+int __port_float_rounding_mode = float_round_nearest_even;
+int __port_float_exception_flags = 0;
+int8 __port_float_detect_tininess = float_tininess_after_rounding;
+int __port_float_exception_mask = 0;
+
+#define float_rounding_mode __port_float_rounding_mode
+#define float_exception_flags __port_float_exception_flags
+#define float_detect_tininess __port_float_detect_tininess
+#define float_exception_mask __port_float_exception_mask
 
 '''
 
-PORT_FOOTER = "\n} // namespace\n"
-
-def gen_port():
-    macros = read_src("bits32/softfloat-macros")
-    specialize = read_src("softfloat-specialize").split("#ifdef FLOATX80")[0]
-    softfloat = preprocess_softfloat_c(read_src("bits32/softfloat.c"))
-    body = macros + "\n" + specialize + "\n" + softfloat
-    # rename globals for port isolation
-    body = body.replace("float_rounding_mode", "__port_float_rounding_mode")
-    body = body.replace("float_exception_flags", "__port_float_exception_flags")
-    body = body.replace("float_detect_tininess", "__port_float_detect_tininess")
-    body = body.replace("float_exception_mask", "__port_float_exception_mask")
-    port = PORT_HEADER + body + PORT_FOOTER
+    port = header + macros + "\n" + specialize + "\n" + body + "\n} // namespace\n"
     (OUT / "port.cppm").write_text(port)
 
 def gen_skipped():
-    lines = [f"{k}: {v}" for k, v in SKIP.items()]
-    (OUT / "skipped.txt").write_text("\n".join(lines) + "\n")
-
-def gen_harness():
-    funcs = [f for f in PUBLIC_FUNCS if f not in SKIP]
-    h = r'''/*
- * harness.cpp -- differential test for PBSD batch b0047 (bits32 softfloat).
- */
-
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <vector>
-
-import pbsd.lib.libc.softfloat.bits32.b0047;
-
-namespace port = pbsd::lib_libc_softfloat_bits32::b0047;
-
-using u32 = std::uint32_t;
-using u64 = std::uint64_t;
-using i32 = std::int32_t;
-
-extern "C" {
-'''
-    for f in funcs:
-        if f.startswith("float32") or f.startswith("int32_to_float"):
-            h += f"u32 ref_{f}(u32 a);\n" if "to_float32" in f or (f.startswith("float32") and "_to_" not in f and f not in ("float32_eq","float32_le","float32_lt","float32_eq_signaling","float32_le_quiet","float32_lt_quiet")) else ""
-    # simpler: declare all
-    for f in funcs:
-        if f in ("int32_to_float32", "int32_to_float64"):
-            h += f"u32 ref_{f}(i32 a);\n" if f.endswith("float32") else f"u64 ref_{f}(i32 a);\n"
-        elif f == "int32_to_float64":
-            pass
-        elif f.startswith("float32_to_int"):
-            h += f"i32 ref_{f}(u32 a);\n"
-        elif f == "float32_to_float64":
-            h += f"u64 ref_{f}(u32 a);\n"
-        elif f.startswith("float32_"):
-            if f in ("float32_eq","float32_le","float32_lt","float32_eq_signaling","float32_le_quiet","float32_lt_quiet"):
-                h += f"int ref_{f}(u32 a, u32 b);\n"
-            else:
-                h += f"u32 ref_{f}(u32 a, u32 b);\n" if "add" in f or "sub" in f or "mul" in f or "div" in f or "rem" in f else f"u32 ref_{f}(u32 a);\n"
-        elif f.startswith("float64_to_int"):
-            h += f"i32 ref_{f}(u64 a);\n"
-        elif f == "float64_to_float32":
-            h += f"u32 ref_{f}(u64 a);\n"
-        elif f.startswith("float64_"):
-            if f in ("float64_eq","float64_le","float64_lt","float64_eq_signaling","float64_le_quiet","float64_lt_quiet"):
-                h += f"int ref_{f}(u64 a, u64 b);\n"
-            else:
-                h += f"u64 ref_{f}(u64 a, u64 b);\n" if any(x in f for x in ("add","sub","mul","div","rem")) else f"u64 ref_{f}(u64 a);\n"
-
-    h += r'''
-extern int __oracle_float_rounding_mode;
-extern int __oracle_float_exception_flags;
-extern int __port_float_rounding_mode;
-extern int __port_float_exception_flags;
-}
-
-struct Stat { const char *name; unsigned long long cases, failures; };
-
-static Stat stats[] = {
-'''
-    for i, f in enumerate(funcs):
-        h += f'\t{{ "{f}", 0, 0 }},\n'
-    h += r'''};
-
-static int reported;
-static unsigned long fail_total;
-
-static void save_oracle() {
-	/* touch globals */
-}
-'''
-
-    (OUT / "harness.cpp").write_text(h)
-    print("harness stub written - needs completion")
+    (OUT / "skipped.txt").write_text(
+        "float64_round_to_int: uses .high/.low members on bits64 float64; source does not compile\n"
+    )
 
 if __name__ == "__main__":
     gen_oracle()
     gen_port()
     gen_skipped()
-    print("oracle, port, skipped generated")
+    print("done")

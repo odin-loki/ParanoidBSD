@@ -1,0 +1,13 @@
+{
+  "batch": "b0071",
+  "verified": "2026-08-08T11:20:02Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "building batch b0071 with cc / c++ (gcc modules)\n\nfunction            cases     failures   result\n------------ ------------ ------------   ------\nstrlcat            203613            0   PASS\nstrpbrk            207739            0   PASS\n------------ ------------ ------------   ------\nTOTAL              411352            0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/aarch64/string/strlcat.c": "422604ce520ddfac",
+    "hbsd/src/lib/libc/aarch64/string/strpbrk.c": "59d537bc7d834a5c",
+    "hbsd/src/lib/libc/aarch64/string/memcpy_resolver.c": "4eaa1cf1a9eea786",
+    "hbsd/src/lib/libc/aarch64/string/memmove_resolver.c": "b03b7e0cf11b954b"
+  }
+}

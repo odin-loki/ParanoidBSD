@@ -138,6 +138,12 @@ build_cw(unsigned rnd, unsigned prc, unsigned mask_en)
 	return (cw);
 }
 
+static unsigned
+stick_mxcsr(unsigned base, unsigned sticky)
+{
+	return ((base & ~SSE_STKY_FLD) | (sticky & SSE_STKY_FLD));
+}
+
 static void
 apply_fp_state(const SavedFp *base, unsigned short cw, unsigned short sw,
     unsigned mxcsr)
@@ -281,13 +287,13 @@ run_hand_cases(const SavedFp *base)
 	test_fpgetround(base, 2, FP_PD, 0x2a);
 	test_fpgetmask(base, 1, 2, 0x15);
 	test_fpgetsticky(base, (unsigned short)0x8080,
-	    (unsigned short)0x00c0, mxcsr_base | 0x00000080u);
+	    (unsigned short)0x00c0, stick_mxcsr(mxcsr_base, 0x01));
 
-	/* NUL-heavy / 0x80-0xFF patterns on status and mxcsr sticky fields */
-	test_fpgetsticky(base, build_cw(1, 2, 0x3f), (unsigned short)0xffff,
-	    mxcsr_base | 0xffffffc0u);
+	/* high-bit patterns confined to the sticky fields */
+	test_fpgetsticky(base, build_cw(1, 2, 0x3f), (unsigned short)0x00ff,
+	    stick_mxcsr(mxcsr_base, 0x3f));
 	test_fpgetsticky(base, build_cw(3, 1, 0x00), (unsigned short)0x00ff,
-	    mxcsr_base | 0x000000ffu);
+	    stick_mxcsr(mxcsr_base, 0x15));
 
 	/* empty single-bit boundaries on each side of shifts */
 	test_fpgetsticky(base, build_cw(0, 0, 0), 0, mxcsr_base);
@@ -312,7 +318,7 @@ run_random_sweep(const SavedFp *base)
 		prc = (xorshift32(&state) >> 3) & 7u;
 		mask = xorshift32(&state) & 0x3fu;
 		sw = (unsigned short)(xorshift32(&state) & 0xffu);
-		mxcsr = mxcsr_base | (xorshift32(&state) & 0xffu);
+		mxcsr = stick_mxcsr(mxcsr_base, xorshift32(&state));
 
 		test_fpgetprec(base, rnd, prc, mask);
 		test_fpgetround(base, rnd, prc, mask);

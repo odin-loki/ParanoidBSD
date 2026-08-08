@@ -69,6 +69,12 @@ static std::size_t	port_mbrtowc(wchar_t * __restrict,
 static std::size_t	port_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
 
+static std::size_t (*port_mbrtowc_ptr)(wchar_t * __restrict,
+		    const char * __restrict, std::size_t, mbstate_t * __restrict) =
+    port_mbrtowc;
+static std::size_t (*port_wcrtomb_ptr)(char * __restrict, wchar_t,
+		    mbstate_t * __restrict) = port_wcrtomb;
+
 port_locale_t
 port_get_locale()
 {

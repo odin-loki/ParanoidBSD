@@ -278,6 +278,13 @@ enum {
 #define uint32_to_float64 ref_uint32_to_float64
 #define uint32_to_floatx80 ref_uint32_to_floatx80
 
+/* Globals must precede any function that touches them. */
+int float_rounding_mode = float_round_nearest_even;
+int float_exception_flags = 0;
+int8 floatx80_rounding_precision = 80;
+int8 float_detect_tininess = float_tininess_after_rounding;
+int float_exception_mask = 0;
+
 /* $NetBSD: softfloat-macros,v 1.2 2009/02/16 10:23:35 tron Exp $ */
 
 /*
@@ -1071,7 +1078,6 @@ substitute a result value.  If traps are not implemented, this routine
 should be simply `float_exception_flags |= flags;'.
 -------------------------------------------------------------------------------
 */
-int float_exception_mask = 0;
 void float_raise( int flags )
 {
 
@@ -1550,10 +1556,6 @@ Floating-point rounding mode, extended double-precision rounding precision,
 and exception flags.
 -------------------------------------------------------------------------------
 */
-int float_rounding_mode = float_round_nearest_even;
-int float_exception_flags = 0;
-int8 floatx80_rounding_precision = 80;
-
 /*
 -------------------------------------------------------------------------------
 Primitive arithmetic functions, including multi-word arithmetic, and
