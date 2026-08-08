@@ -41,6 +41,11 @@ _pbsd_bin = str(Path.home() / ".local" / "bin")
 if _pbsd_bin not in os.environ.get("PATH", ""):
     os.environ["PATH"] = _pbsd_bin + os.pathsep + os.environ.get("PATH", "")
 
+# A stale CURSOR_API_KEY in the shell overrides `cursor-agent login` and every
+# worker call fails instantly. Prefer the login session unless explicitly set
+# later via a dedicated flag.
+os.environ.pop("CURSOR_API_KEY", None)
+
 # ─────────────────────────────── config ──────────────────────────────────────
 
 MODEL = "composer-2.5"                    # cheap bulk model; escalate on gate failure
@@ -1969,12 +1974,8 @@ def run_parallel(queue: list[str], rows: list[dict], model: str,
                             current_jobs = new_jobs
                             rate_streak = 0
                     elif how == "auth_failed" or is_auth_failure(detail):
-                        say("API key invalid — stopping parallel pass")
-                        for fut in list(live):
-                            fut.cancel()
-                        pending.clear()
-                        live.clear()
-                        break
+                        say(f"auth issue on {batch_id} — re-queueing (use cursor-agent login)")
+                        pending.extend(subs)
                     else:
                         rate_streak = 0
                         done += 1
