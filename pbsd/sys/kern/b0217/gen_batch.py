@@ -918,7 +918,7 @@ inline u_long desiredvnodes = 64;
 inline int bootverbose = 0;
 inline thread thread0{};
 inline thread *curthread = &thread0;
-inline timecounter *timecounter = nullptr;
+inline timecounter *g_timecounter = nullptr;
 
 #ifndef TSLOGSIZE
 #define TSLOGSIZE 4096
@@ -1108,7 +1108,7 @@ for key in ["vfs_hash", "kern_tslog", "subr_clockcalib", "subr_stack"]:
 port_sources = port_sources.replace(
     "vfs_hash_tbl = hashinit(", "vfs_hash_tbl = (vfs_hash_head *)hashinit(")
 port_sources = port_sources.replace(
-    "vfs_hash_newtbl = hashinit(", "vfs_hash_newtbl = (vfs_hash_head *)hashinit(")
+    "atomic_load_ptr(&timecounter)", "atomic_load_ptr(&g_timecounter)")
 
 port_sources = port_sources.replace(
     "const struct sysinit_tslog *x = data;",

@@ -781,7 +781,7 @@ void run_libc_start1_gcrt_tests()
 	test_libc_start1_gcrt_case(st_libc_start1_gcrt, 1, argv, env, 1, 1, 99,
 	    0x1000, 0x2000);
 
-	prng_seed(0xGCRT01);
+	prng_seed(0x6C127701ULL);
 	for (long i = 0; i < RANDOM_ITERATIONS; i++) {
 		int pre = dynamic_linked() ? 0 :
 		    static_cast<int>(prng_u32() % 3);
