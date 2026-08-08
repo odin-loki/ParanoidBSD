@@ -896,7 +896,15 @@ def edge_and_rand_fcmp(f, ty, rand_fn):
 '''
 
 
+def zero_val(ty: str) -> str:
+    if ty in ('float128', 'floatx80'):
+        return '{{0, 0}}'
+    return '0'
+
+
 def edge_and_rand_float_binary(f, ty, rand_fn):
+    cmp = cmp_expr(ty, 'rp', 'rr')
+    z = zero_val(ty)
     return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         {ty} a = {rand_fn}();
@@ -905,19 +913,20 @@ def edge_and_rand_float_binary(f, ty, rand_fn):
         {ty} rp = port::{f}(a, b);
         {ty} rr = ref_{f}(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ({cmp}) failures++;
         sync_globals_to_port();
     }}
-    static const {ty} z = 0;
+    static const {ty} z = {z};
     sync_globals_from_port();
     {ty} rp0 = port::{f}(z, z);
     {ty} rr0 = ref_{f}(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ({cmp_expr(ty, 'rp0', 'rr0')}) failures++;
 '''
 
 
 def edge_and_rand_float_unary(f, ty, rand_fn):
+    cmp = cmp_expr(ty, 'rp', 'rr')
     return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         {ty} a = {rand_fn}();
@@ -925,7 +934,7 @@ def edge_and_rand_float_unary(f, ty, rand_fn):
         {ty} rp = port::{f}(a);
         {ty} rr = ref_{f}(a);
         cases++;
-        if (rp != rr) failures++;
+        if ({cmp}) failures++;
         sync_globals_to_port();
     }}
 '''

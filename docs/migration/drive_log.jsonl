@@ -1752,3 +1752,4 @@
 {"batch": "b0046", "status": "VERIFIED", "detail": "harness green + IR-identical for all 201 functions", "how": "agent", "ts": "2026-08-08T11:24:35Z"}
 {"batch": "b0079s2", "status": "REJECTED", "detail": "mutation check: only 2 of 4 candidate mutations compiled, need 3 (2 would not build)\n(mechanical path first said: not attempted (mechanical phase runs separately))", "how": "agent+escalate", "ts": "2026-08-08T11:25:11Z"}
 {"batch": "b0029s3", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)", "how": "agent", "ts": "2026-08-08T11:26:19Z"}
+{"batch": "b0029s1", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)", "how": "agent", "ts": "2026-08-08T11:26:22Z"}

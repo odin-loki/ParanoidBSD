@@ -698,16 +698,11 @@ run_mbs_wrap_case(int f, bool use_l, const MbsCase &tc)
 		return;
 	}
 	if (tc.ps_null) {
-		ref_mbstate_t ref_st;
-		P::mbstate_t port_st;
+		ref_mbstate_t ref_view;
 
-		std::memcpy(&ref_st, &genv.ref_ctype.mbsnrtowcs, sizeof(ref_st));
-		port_st = genv.port_ctype.mbsnrtowcs;
-		mb_copy(port_st, ref_st);
-		if (std::memcmp(&genv.port_ctype.mbsnrtowcs, &port_st,
-		    sizeof(port_st)) != 0 ||
-		    std::memcmp(&genv.ref_ctype.mbsnrtowcs, &ref_st,
-		    sizeof(ref_st)) != 0)
+		mb_copy(genv.port_ctype.mbsnrtowcs, ref_view);
+		if (std::memcmp(&genv.ref_ctype.mbsnrtowcs, &ref_view,
+		    sizeof(ref_view)) != 0)
 			report(f, "locale mbstate mismatch");
 	} else if (std::memcmp(&ps_p, &ps_ref_p, sizeof(ps_p)) != 0) {
 		report(f, "ps mismatch");
