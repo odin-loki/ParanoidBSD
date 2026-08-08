@@ -23,8 +23,11 @@ using iconv_t = void *;
 
 extern "C" {
 iconv_t ref_dl_iconv_open(const char *, const char *);
-extern P::dl_iconv_t *dl_iconv;
-extern P::dl_iconv_close_t *dl_iconv_close;
+typedef size_t oracle_dl_iconv_t(iconv_t, char **, size_t *, char **,
+    size_t *);
+typedef int oracle_dl_iconv_close_t(iconv_t);
+extern oracle_dl_iconv_t *dl_iconv;
+extern oracle_dl_iconv_close_t *dl_iconv_close;
 }
 
 enum {
@@ -79,6 +82,17 @@ ptr_u(const void *p)
 {
 
 	return (reinterpret_cast<uintptr_t>(p));
+}
+
+template<typename T>
+static uintptr_t
+fp_u(T fn)
+{
+	uintptr_t u;
+
+	static_assert(sizeof(T) == sizeof(u));
+	std::memcpy(&u, &fn, sizeof(u));
+	return (u);
 }
 
 static bool

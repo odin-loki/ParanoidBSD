@@ -1,0 +1,13 @@
+{
+  "batch": "b0070",
+  "verified": "2026-08-08T11:19:43Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd batch b0070 differential test\nLDBL_MANT_DIG=64, comparing 10 significant bytes of long double\n\n\n  function              cases   failures   result\n  ----------------------------------------------------\n  conjl                252020          0   PASS\n  cimagf               251944          0   PASS\n  cimag                251857          0   PASS\n  cargl                252344          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_conjl.c": "3e14ebbae22654fe",
+    "hbsd/src/lib/msun/src/s_cimagf.c": "a6bbfa3e5a398dc2",
+    "hbsd/src/lib/msun/src/s_cimag.c": "6b0872c7cb9465e1",
+    "hbsd/src/lib/msun/src/s_cargl.c": "eb3bcf4cc1bdff7e"
+  }
+}

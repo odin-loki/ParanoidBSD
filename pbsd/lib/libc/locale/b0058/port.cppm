@@ -1,12 +1,5 @@
 module;
 
-#define __mbstate_t_defined 1
-typedef union {
-	char		__mbstate8[128];
-	long long	_mbstateL;
-} __mbstate_t;
-typedef __mbstate_t mbstate_t;
-
 #include <cerrno>
 #include <climits>
 #include <cstddef>
@@ -14,12 +7,22 @@ typedef __mbstate_t mbstate_t;
 #include <cstdlib>
 #include <cstring>
 
-#include <uchar.h>
-#include <wchar.h>
-
 export module pbsd.lib.libc.locale.b0058;
 
 extern "C" {
+#define __mbstate_t_defined 1
+typedef union {
+	char		__mbstate8[128];
+	long long	_mbstateL;
+} __mbstate_t;
+typedef __mbstate_t mbstate_t;
+
+#include <uchar.h>
+#include <wchar.h>
+
+#ifndef EOF
+#define EOF	(-1)
+#endif
 
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX	4

@@ -134,11 +134,8 @@ date_frames_match(const PortDateFrame &pf, const RefDateFrame &rf)
 	return true;
 }
 
-static bool
-frames_eq(const PortDateFrame &a, const PortDateFrame &b)
-{
-	return std::memcmp(&a, &b, sizeof a) == 0;
-}
+static_assert(sizeof(P::date) == sizeof(c_date));
+static_assert(alignof(P::date) == alignof(c_date));
 
 static void
 int_frame_init(IntFrame &f, int v)
@@ -397,25 +394,26 @@ run_edge_cases(void)
 
 	/* Round-trip: ndaysg(gdate(nd)) and ndaysj(jdate(nd)) for sample nd */
 	for (int nd = -5000; nd <= 5000; nd += 17) {
-		DateFrame pf, rf;
+		PortDateFrame pf;
+		RefDateFrame rf;
 		int ng, nj;
 
-		date_frame_init(pf, 0, 0, 0);
-		date_frame_init(rf, 0, 0, 0);
+		port_date_frame_init(pf, 0, 0, 0);
+		ref_date_frame_init(rf, 0, 0, 0);
 		(void)P::gdate(nd, &pf.dt);
-		(void)ref_gdate(nd, &rf.dt);
+		(void)ref_gdate(nd, reinterpret_cast<struct date *>(&rf.dt));
 		ng = P::ndaysg(&pf.dt);
-		nj = ref_ndaysg(&rf.dt);
+		nj = ref_ndaysg(reinterpret_cast<struct date *>(&rf.dt));
 		std::snprintf(tag, sizeof tag, "rt-g-%d", nd);
 		if (ng != nj)
 			check_ndays(F_NDAYSG, pf.dt.y, pf.dt.m, pf.dt.d, tag);
 
-		date_frame_init(pf, 0, 0, 0);
-		date_frame_init(rf, 0, 0, 0);
+		port_date_frame_init(pf, 0, 0, 0);
+		ref_date_frame_init(rf, 0, 0, 0);
 		(void)P::jdate(nd, &pf.dt);
-		(void)ref_jdate(nd, &rf.dt);
+		(void)ref_jdate(nd, reinterpret_cast<struct date *>(&rf.dt));
 		ng = P::ndaysj(&pf.dt);
-		nj = ref_ndaysj(&rf.dt);
+		nj = ref_ndaysj(reinterpret_cast<struct date *>(&rf.dt));
 		std::snprintf(tag, sizeof tag, "rt-j-%d", nd);
 		if (ng != nj)
 			check_ndays(F_NDAYSJ, pf.dt.y, pf.dt.m, pf.dt.d, tag);

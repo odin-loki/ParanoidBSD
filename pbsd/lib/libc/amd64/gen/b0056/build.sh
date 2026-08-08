@@ -19,8 +19,6 @@ hbsd_sys=$(CDPATH= cd -- "$srcdir/../../../../../../hbsd/src/sys" && pwd)
 builddir="$srcdir/.build"
 mkdir -p "$builddir/x86_inc/x86"
 ln -sf "$hbsd_sys/x86/include/x86_ieeefp.h" "$builddir/x86_inc/x86/x86_ieeefp.h"
-
-mkdir -p "$builddir"
 cd "$builddir"
 
 CFLAGS="-std=c11 -O2 -I$hbsd_sys/amd64/include -I$builddir/x86_inc"
