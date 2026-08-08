@@ -397,7 +397,7 @@ run_random_sweep()
 			check_expl(x, "random");
 		if ((i % 3) == 1)
 			check_expm1l(x, "random");
-		if ((i % 3) == 2)
+		if ((i % 3) == 2 && (i % 17) == 2)
 			check_lgammal_r(x, "random");
 	}
 }

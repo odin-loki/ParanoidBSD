@@ -43,6 +43,9 @@ static stat st_sinpil = { "sinpil", 0, 0, 0 };
 static stat st_tanpil = { "tanpil", 0, 0, 0 };
 static stat st_cexpl = { "cexpl", 0, 0, 0 };
 
+#define creall __real__
+#define cimagl __imag__
+
 static bool
 ld_equal(long double a, long double b)
 {
@@ -167,9 +170,6 @@ mkld(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl)
 	std::memcpy(&x, b, sizeof(x));
 	return x;
 }
-
-#define creall __real__
-#define cimagl __imag__
 
 static long double _Complex
 mkcx(long double re, long double im)

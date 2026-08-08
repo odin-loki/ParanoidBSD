@@ -339,6 +339,7 @@ run_vsnprintf_side(vsnprintf_fn fn, unsigned char *buf, std::size_t len,
 	}
 
 	if (len > slen) {
+		va_list ap;
 		std::memset(&ap, 0, sizeof(ap));
 		obs.ret = fn((char *)arena_data(buf), len, flags, slen,
 		    fmt_copy, ap);

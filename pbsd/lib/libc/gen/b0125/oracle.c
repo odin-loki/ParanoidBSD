@@ -24,11 +24,6 @@
 #define	CPUCLOCK_WHICH_PID	0
 #endif
 
-#ifndef _ID_T_DECLARED
-typedef	pid_t	id_t;
-#define	_ID_T_DECLARED
-#endif
-
 #ifndef cpuset_t
 typedef	cpu_set_t	cpuset_t;
 #endif

@@ -303,7 +303,7 @@ weekday(int nd)
 
 	/* return (nd - nmonday) modulo 7 which is the weekday */
 	nd = (nd - nmonday) % 7;
-	if (nd < 0)
+	if (nd >= 0)
 		return (nd + 7);
 	else
 		return (nd);
