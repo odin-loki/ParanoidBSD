@@ -24,13 +24,10 @@ typedef __mbstate_t mbstate_t;
 
 #include <wchar.h>
 
-#ifndef MB_LEN_MAX
+#undef MB_LEN_MAX
+#undef MB_CUR_MAX
 #define MB_LEN_MAX	4
-#endif
-
-#ifndef MB_CUR_MAX
 #define MB_CUR_MAX	4
-#endif
 
 typedef size_t (*wcrtomb_pfn_t)(char * __restrict, wchar_t, mbstate_t * __restrict);
 

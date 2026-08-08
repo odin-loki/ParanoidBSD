@@ -236,15 +236,15 @@ port_get_locale()
 	return (&port_test_locale);
 }
 
-struct lc_monetary_T *
-__get_current_monetary_locale(port_locale_t loc)
+static struct lc_monetary_T *
+port_get_current_monetary_locale(port_locale_t loc)
 {
 	(void)loc;
 	return ((struct lc_monetary_T *)&pbsd_localeconv_hook.data.monetary);
 }
 
-struct lc_numeric_T *
-__get_current_numeric_locale(port_locale_t loc)
+static struct lc_numeric_T *
+port_get_current_numeric_locale(port_locale_t loc)
 {
 	(void)loc;
 	return ((struct lc_numeric_T *)&pbsd_localeconv_hook.data.numeric);
@@ -333,8 +333,8 @@ mock_wcs_to_mbs(char *dst, const wchar_t *ws, size_t cap)
 	return (i);
 }
 
-size_t
-wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src,
+static size_t
+port_wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src,
     size_t len, mbstate_t * __restrict ps, port_locale_t locale)
 {
 	const wchar_t *s;
@@ -361,9 +361,9 @@ wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src,
 	return (n);
 }
 
-size_t
-pbsd_strftime_l(char * __restrict s, size_t max, const char * __restrict fmt,
-    const struct tm * __restrict tm, port_locale_t locale)
+static size_t
+port_pbsd_strftime_l(char * __restrict s, size_t max, const char * __restrict fmt,
+    const void * __restrict tm, port_locale_t locale)
 {
 	size_t n;
 
@@ -384,8 +384,8 @@ pbsd_strftime_l(char * __restrict s, size_t max, const char * __restrict fmt,
 	return (n);
 }
 
-size_t
-mbsrtowcs_l(wchar_t * __restrict dst, const char ** __restrict src,
+static size_t
+port_mbsrtowcs_l(wchar_t * __restrict dst, const char ** __restrict src,
     size_t len, mbstate_t * __restrict ps, port_locale_t locale)
 {
 	const char *s;
@@ -423,6 +423,31 @@ export namespace pbsd::lib_libc_locale::b0153 {
 
 using mbstate_t = ::mbstate_t;
 using locale_t = ::port_locale_t;
+
+inline locale_t
+test_locale()
+{
+	return (&::port_test_locale);
+}
+
+inline void
+set_localeconv_flags(int mon, int num)
+{
+	::port_test_locale.monetary_locale_changed = mon;
+	::port_test_locale.numeric_locale_changed = num;
+}
+
+struct tm {
+	int	tm_sec;
+	int	tm_min;
+	int	tm_hour;
+	int	tm_mday;
+	int	tm_mon;
+	int	tm_year;
+	int	tm_wday;
+	int	tm_yday;
+	int	tm_isdst;
+};
 
 struct lc_monetary_T {
 	const char	*int_curr_symbol;
@@ -610,7 +635,7 @@ localeconv_l(locale_t loc)
 #define M_ASSIGN_STR(NAME) (ret->NAME = (char*)mptr->NAME)
 #define M_ASSIGN_CHAR(NAME) (ret->NAME = mptr->NAME[0])
 
-		mptr = __get_current_monetary_locale(loc);
+		mptr = port_get_current_monetary_locale(loc);
 		M_ASSIGN_STR(int_curr_symbol);
 		M_ASSIGN_STR(currency_symbol);
 		M_ASSIGN_STR(mon_decimal_point);
@@ -640,7 +665,7 @@ localeconv_l(locale_t loc)
 
 #define N_ASSIGN_STR(NAME) (ret->NAME = (char*)nptr->NAME)
 
-		nptr = __get_current_numeric_locale(loc);
+		nptr = port_get_current_numeric_locale(loc);
 		N_ASSIGN_STR(decimal_point);
 		N_ASSIGN_STR(thousands_sep);
 		N_ASSIGN_STR(grouping);
@@ -658,7 +683,7 @@ localeconv()
 
 std::size_t
 wcsftime_l(wchar_t * __restrict wcs, std::size_t maxsize,
-	const wchar_t * __restrict format, const struct tm * __restrict timeptr,
+	const wchar_t * __restrict format, const tm * __restrict timeptr,
 	locale_t locale)
 {
 	static const mbstate_t initial{};
@@ -674,25 +699,25 @@ wcsftime_l(wchar_t * __restrict wcs, std::size_t maxsize,
 
 	mbs = initial;
 	formatp = format;
-	sflen = wcsrtombs_l(NULL, &formatp, 0, &mbs, locale);
+	sflen = port_wcsrtombs_l(NULL, &formatp, 0, &mbs, locale);
 	if (sflen == (std::size_t)-1)
 		goto error;
-	if ((sformat = (char *)std::malloc(sflen + 1)) == NULL)
+	if ((sformat = (char *)malloc(sflen + 1)) == NULL)
 		goto error;
 	mbs = initial;
-	wcsrtombs_l(sformat, &formatp, sflen + 1, &mbs, locale);
+	port_wcsrtombs_l(sformat, &formatp, sflen + 1, &mbs, locale);
 
 	if (SIZE_MAX / MB_CUR_MAX <= maxsize) {
 		errno = EINVAL;
 		goto error;
 	}
-	if ((dst = (char *)std::malloc(maxsize * MB_CUR_MAX)) == NULL)
+	if ((dst = (char *)malloc(maxsize * MB_CUR_MAX)) == NULL)
 		goto error;
-	if (pbsd_strftime_l(dst, maxsize, sformat, timeptr, locale) == 0)
+	if (port_pbsd_strftime_l(dst, maxsize, sformat, timeptr, locale) == 0)
 		goto error;
 	dstp = dst;
 	mbs = initial;
-	n = mbsrtowcs_l(wcs, &dstp, maxsize, &mbs, locale);
+	n = port_mbsrtowcs_l(wcs, &dstp, maxsize, &mbs, locale);
 	if (n == (std::size_t)-2 || n == (std::size_t)-1 || dstp != NULL)
 		goto error;
 
@@ -702,15 +727,15 @@ wcsftime_l(wchar_t * __restrict wcs, std::size_t maxsize,
 
 error:
 	sverrno = errno;
-	std::free(sformat);
-	std::free(dst);
+	free(sformat);
+	free(dst);
 	errno = sverrno;
 	return (0);
 }
 
 std::size_t
 wcsftime(wchar_t * __restrict wcs, std::size_t maxsize,
-	const wchar_t * __restrict format, const struct tm * __restrict timeptr)
+	const wchar_t * __restrict format, const tm * __restrict timeptr)
 {
 	return (wcsftime_l(wcs, maxsize, format, timeptr, __get_locale()));
 }
@@ -760,7 +785,7 @@ __part_load_locale(const char *name,
 		goto bad_locale;
 	}
 	bufsize = namesize + st.st_size;
-	if ((lbuf = (char *)std::malloc(bufsize)) == NULL) {
+	if ((lbuf = (char *)malloc(bufsize)) == NULL) {
 		errno = ENOMEM;
 		goto bad_locale;
 	}
@@ -784,7 +809,7 @@ __part_load_locale(const char *name,
 	}
 	(void)port_close(fd);
 	if (*locale_buf != NULL)
-		std::free(*locale_buf);
+		free(*locale_buf);
 	*locale_buf = lbuf;
 	for (p = *locale_buf, i = 0; i < num_lines; i++)
 		dst_localebuf[i] = (p += std::strlen(p) + 1);
@@ -796,7 +821,7 @@ __part_load_locale(const char *name,
 
 bad_lbuf:
 	saverr = errno;
-	std::free(lbuf);
+	free(lbuf);
 	errno = saverr;
 bad_locale:
 	saverr = errno;
@@ -998,9 +1023,4 @@ GB2312_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 	return (_GB2312_wcsnrtombs(dst, src, nwc, len, ps));
 }
 
-}
-
-extern "C" {
-struct port_xlocale	port_test_locale;
-char			*_PathLocale;
 }

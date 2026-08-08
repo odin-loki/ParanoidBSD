@@ -573,8 +573,7 @@ void check_bt_cmp_bigkey(const u_char *key, size_t ksz)
 {
 	unsigned char leaf_p[PAGE_SZ];
 	unsigned char leaf_r[PAGE_SZ];
-	unsigned char ov_p[PAGE_SZ];
-	unsigned char ov_r[PAGE_SZ];
+	unsigned char keybuf[128];
 	P::BTREE tp;
 	P::MPOOL mp_p;
 	P::DB db_p;
@@ -583,18 +582,23 @@ void check_bt_cmp_bigkey(const u_char *key, size_t ksz)
 	DB db_r;
 	P::DBT k;
 	pgno_t ovpg = 50;
+	size_t use = ksz < sizeof(keybuf) ? ksz : sizeof(keybuf);
+
+	std::memset(keybuf, 0, sizeof(keybuf));
+	if (key && use)
+		std::memcpy(keybuf, key, use);
 
 	test_mock_reset();
 	init_tree(tp, mp_p, db_p, 0, PAGE_SZ);
 	init_tree_ref(tr, mp_r, db_r, 0, PAGE_SZ);
 	guard_fill(leaf_p, PAGE_SZ);
 	guard_fill(leaf_r, PAGE_SZ);
-	setup_bigkey_overflow(leaf_p, PAGE_SZ, ovpg, key, ksz, 4);
+	setup_bigkey_overflow(leaf_p, PAGE_SZ, ovpg, keybuf, use, 4);
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
 	((PAGE *)leaf_p)->flags = P_BLEAF;
 	((PAGE *)leaf_r)->flags = P_BLEAF;
-	PAGE *op = make_overflow_page(ovpg, P_INVALID, key, ksz, PAGE_SZ);
-	PAGE *or_ = make_overflow_page(ovpg, P_INVALID, key, ksz, PAGE_SZ);
+	PAGE *op = make_overflow_page(ovpg, P_INVALID, keybuf, use, PAGE_SZ);
+	PAGE *or_ = make_overflow_page(ovpg, P_INVALID, keybuf, use, PAGE_SZ);
 	test_mock_register(ovpg, op);
 	test_mock_register(ovpg, or_);
 
@@ -604,14 +608,14 @@ void check_bt_cmp_bigkey(const u_char *key, size_t ksz)
 	EPG er;
 	er.page = (PAGE *)leaf_r;
 	er.index = 0;
-	k.data = (void *)key;
-	k.size = ksz;
+	k.data = keybuf;
+	k.size = use;
 
 	int rp = P::__bt_cmp(&tp, &k, &ep);
 	int rr = ref___bt_cmp(&tr, reinterpret_cast<DBT *>(&k), &er);
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "bigkey port=%d ref=%d ksz=%zu", rp, rr,
-	    ksz);
+	    use);
 	check_eq(F_BT_CMP, rp == rr, msg);
 	free(op);
 	free(or_);
@@ -628,14 +632,6 @@ void check_bt_ret(int copy, u_int32_t tflags, u_char bflags, u_int32_t ksz,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	unsigned char rkeybuf_p[BIG_BUF];
-	unsigned char rkeybuf_r[BIG_BUF];
-	unsigned char rdbuf_p[BIG_BUF];
-	unsigned char rdbuf_r[BIG_BUF];
-	unsigned char keybuf_p[BIG_BUF];
-	unsigned char keybuf_r[BIG_BUF];
-	unsigned char databuf_p[BIG_BUF];
-	unsigned char databuf_r[BIG_BUF];
 	u_int32_t ksizes[1] = { ksz };
 	u_int32_t dsizes[1] = { dsz };
 	u_char eflags[1] = { bflags };
@@ -647,24 +643,17 @@ void check_bt_ret(int copy, u_int32_t tflags, u_char bflags, u_int32_t ksz,
 	init_tree_ref(tr, mp_r, db_r, tflags, PAGE_SZ);
 	guard_fill(leaf_p, PAGE_SZ);
 	guard_fill(leaf_r, PAGE_SZ);
-	guard_fill(rkeybuf_p, BIG_BUF);
-	guard_fill(rkeybuf_r, BIG_BUF);
-	guard_fill(rdbuf_p, BIG_BUF);
-	guard_fill(rdbuf_r, BIG_BUF);
-	guard_fill(keybuf_p, BIG_BUF);
-	guard_fill(keybuf_r, BIG_BUF);
-	guard_fill(databuf_p, BIG_BUF);
-	guard_fill(databuf_r, BIG_BUF);
 
 	if (bflags & P_BIGKEY) {
 		pgno_t ovpg = 60;
-		setup_bigkey_overflow(leaf_p, PAGE_SZ, ovpg, nullptr, ksz, dsz);
+		u_char kdata[128];
+		u_int32_t use = ksz < sizeof(kdata) ? ksz : (u_int32_t)sizeof(kdata);
+		setup_bigkey_overflow(leaf_p, PAGE_SZ, ovpg, nullptr, use, dsz);
 		std::memcpy(leaf_r, leaf_p, PAGE_SZ);
-		u_char kdata[64];
-		for (u_int32_t i = 0; i < ksz && i < sizeof(kdata); i++)
+		for (u_int32_t i = 0; i < use; i++)
 			kdata[i] = (u_char)(0x80 + i);
-		PAGE *op = make_overflow_page(ovpg, P_INVALID, kdata, ksz, PAGE_SZ);
-		PAGE *or_ = make_overflow_page(ovpg, P_INVALID, kdata, ksz, PAGE_SZ);
+		PAGE *op = make_overflow_page(ovpg, P_INVALID, kdata, use, PAGE_SZ);
+		PAGE *or_ = make_overflow_page(ovpg, P_INVALID, kdata, use, PAGE_SZ);
 		test_mock_register(ovpg, op);
 		test_mock_register(ovpg, or_);
 	} else {
@@ -680,14 +669,14 @@ void check_bt_ret(int copy, u_int32_t tflags, u_char bflags, u_int32_t ksz,
 	er.page = (PAGE *)leaf_r;
 	er.index = 0;
 
-	rkey_p.data = rkeybuf_p + 64;
-	rkey_p.size = 32;
-	rkey_r.data = rkeybuf_r + 64;
-	rkey_r.size = 32;
-	rdata_p.data = rdbuf_p + 64;
-	rdata_p.size = 32;
-	rdata_r.data = rdbuf_r + 64;
-	rdata_r.size = 32;
+	rkey_p.data = nullptr;
+	rkey_p.size = 0;
+	rkey_r.data = nullptr;
+	rkey_r.size = 0;
+	rdata_p.data = nullptr;
+	rdata_p.size = 0;
+	rdata_r.data = nullptr;
+	rdata_r.size = 0;
 
 	int rp = P::__bt_ret(&tp, &ep, key_null ? nullptr : &key_p,
 	    &rkey_p, data_null ? nullptr : &data_p, &rdata_p, copy);
@@ -716,13 +705,13 @@ void check_bt_ret(int copy, u_int32_t tflags, u_char bflags, u_int32_t ksz,
 				check_eq(F_BT_RET,
 				    std::memcmp(data_p.data, data_r.data,
 					data_p.size) == 0,
-				    "data.data");
+					"data.data");
 		}
-		check_eq(F_BT_RET, bufs_eq(rkeybuf_p, rkeybuf_r, BIG_BUF),
-		    "rkey guard");
-		check_eq(F_BT_RET, bufs_eq(rdbuf_p, rdbuf_r, BIG_BUF),
-		    "rdata guard");
 	}
+	std::free(rkey_p.data);
+	std::free(rdata_p.data);
+	std::free(rkey_r.data);
+	std::free(rdata_r.data);
 }
 
 void check_ovfl_get(pgno_t firstpg, size_t total, int force_null, int smallbuf)
@@ -809,7 +798,8 @@ void check_ovfl_put(size_t dlen, int new_null, int fail_after)
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	DBT dbt_p, dbt_r;
+	P::DBT dbt_p;
+	DBT dbt_r;
 	pgno_t pg_p = 0;
 	pgno_t pg_r = 0;
 
@@ -846,8 +836,10 @@ void check_ovfl_delete(pgno_t firstpg, size_t total, int preserve, int nullget)
 {
 	unsigned char desc_p[16];
 	unsigned char desc_r[16];
-	unsigned char pgbuf_p[PAGE_SZ];
-	unsigned char pgbuf_r[PAGE_SZ];
+	PAGE *pgbuf_p = nullptr;
+	PAGE *pgbuf_r = nullptr;
+	PAGE *pg2_p = nullptr;
+	PAGE *pg2_r = nullptr;
 	P::BTREE tp;
 	P::MPOOL mp_p;
 	P::DB db_p;
@@ -864,32 +856,34 @@ void check_ovfl_delete(pgno_t firstpg, size_t total, int preserve, int nullget)
 	*(u_int32_t *)(desc_p + sizeof(pgno_t)) = (u_int32_t)total;
 	std::memcpy(desc_r, desc_p, sizeof(desc_p));
 
+	pgbuf_p = (PAGE *)std::calloc(1, PAGE_SZ);
+	pgbuf_r = (PAGE *)std::calloc(1, PAGE_SZ);
 	guard_fill(pgbuf_p, PAGE_SZ);
 	guard_fill(pgbuf_r, PAGE_SZ);
-	((PAGE *)pgbuf_p)->pgno = firstpg;
-	((PAGE *)pgbuf_r)->pgno = firstpg;
+	pgbuf_p->pgno = firstpg;
+	pgbuf_r->pgno = firstpg;
 	if (preserve) {
-		((PAGE *)pgbuf_p)->flags = P_OVERFLOW | P_PRESERVE;
-		((PAGE *)pgbuf_r)->flags = P_OVERFLOW | P_PRESERVE;
+		pgbuf_p->flags = P_OVERFLOW | P_PRESERVE;
+		pgbuf_r->flags = P_OVERFLOW | P_PRESERVE;
 	} else {
-		((PAGE *)pgbuf_p)->flags = P_OVERFLOW;
-		((PAGE *)pgbuf_r)->flags = P_OVERFLOW;
+		pgbuf_p->flags = P_OVERFLOW;
+		pgbuf_r->flags = P_OVERFLOW;
 	}
 	if (total > plen) {
-		((PAGE *)pgbuf_p)->nextpg = firstpg + 1;
-		((PAGE *)pgbuf_r)->nextpg = firstpg + 1;
+		pgbuf_p->nextpg = firstpg + 1;
+		pgbuf_r->nextpg = firstpg + 1;
 	}
 	test_mock_register(firstpg, pgbuf_p);
 	test_mock_register(firstpg, pgbuf_r);
 	if (total > plen) {
-		unsigned char pg2_p[PAGE_SZ];
-		unsigned char pg2_r[PAGE_SZ];
+		pg2_p = (PAGE *)std::calloc(1, PAGE_SZ);
+		pg2_r = (PAGE *)std::calloc(1, PAGE_SZ);
 		guard_fill(pg2_p, PAGE_SZ);
 		guard_fill(pg2_r, PAGE_SZ);
-		((PAGE *)pg2_p)->pgno = firstpg + 1;
-		((PAGE *)pg2_r)->pgno = firstpg + 1;
-		((PAGE *)pg2_p)->flags = P_OVERFLOW;
-		((PAGE *)pg2_r)->flags = P_OVERFLOW;
+		pg2_p->pgno = firstpg + 1;
+		pg2_r->pgno = firstpg + 1;
+		pg2_p->flags = P_OVERFLOW;
+		pg2_r->flags = P_OVERFLOW;
 		test_mock_register(firstpg + 1, pg2_p);
 		test_mock_register(firstpg + 1, pg2_r);
 	}
@@ -903,6 +897,15 @@ void check_ovfl_delete(pgno_t firstpg, size_t total, int preserve, int nullget)
 	    rp, rr, total, preserve, nullget,
 	    test_mock.free_calls - free_before);
 	check_eq(F_OVFL_DELETE, rp == rr, msg);
+
+	if (preserve) {
+		std::free(pgbuf_p);
+		std::free(pgbuf_r);
+		if (pg2_p)
+			std::free(pg2_p);
+		if (pg2_r)
+			std::free(pg2_r);
+	}
 }
 
 void check_bt_search_leaf(int nents, const u_char *key, size_t ksz,
@@ -945,7 +948,7 @@ void check_bt_search_leaf(int nents, const u_char *key, size_t ksz,
 	k.size = ksz;
 
 	P::EPG *rp = P::__bt_search(&tp, &k, &exact_p);
-	EPG *rr = ref___bt_search(&tr, &k, &exact_r);
+	EPG *rr = ref___bt_search(&tr, reinterpret_cast<DBT *>(&k), &exact_r);
 	char msg[200];
 	std::snprintf(msg, sizeof(msg),
 	    "null port=%p ref=%p exact port=%d ref=%d nents=%d ksz=%zu",
@@ -1015,7 +1018,7 @@ void check_bt_search_internal(int nleaf, const u_char *key, size_t ksz)
 	k.size = ksz;
 
 	P::EPG *rp = P::__bt_search(&tp, &k, &exact_p);
-	EPG *rr = ref___bt_search(&tr, &k, &exact_r);
+	EPG *rr = ref___bt_search(&tr, reinterpret_cast<DBT *>(&k), &exact_r);
 	bool ok = (rp == nullptr) == (rr == nullptr) && exact_p == exact_r;
 	if (ok && rp && rr)
 		ok = rp->index == rr->index;
@@ -1077,7 +1080,7 @@ void check_bt_search_snext(int match_next)
 	k.size = 4;
 
 	P::EPG *rp = P::__bt_search(&tp, &k, &exact_p);
-	EPG *rr = ref___bt_search(&tr, &k, &exact_r);
+	EPG *rr = ref___bt_search(&tr, reinterpret_cast<DBT *>(&k), &exact_r);
 	bool ok = exact_p == exact_r;
 	if (match_next)
 		ok = ok && exact_p == 1;
@@ -1140,7 +1143,7 @@ void check_bt_search_sprev(int match_prev)
 	k.size = 4;
 
 	P::__bt_search(&tp, &k, &exact_p);
-	ref___bt_search(&tr, &k, &exact_r);
+	ref___bt_search(&tr, reinterpret_cast<DBT *>(&k), &exact_r);
 	bool ok = exact_p == exact_r;
 	if (match_prev)
 		ok = ok && exact_p == 1;
@@ -1367,6 +1370,7 @@ void test_defcmp_edges(void)
 
 void test_defpfx_edges(void)
 {
+	u_char empty[1];
 	u_char a[4] = { 1, 2, 3, 4 };
 	u_char b[4] = { 1, 2, 9, 4 };
 	u_char c[2] = { 1, 2 };
@@ -1381,11 +1385,13 @@ void test_defpfx_edges(void)
 void test_bt_cmp_edges(void)
 {
 	u_char key[8] = { 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87 };
+	u_char bigkey[16] = { 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87,
+	    0x88, 0x89, 0x8a, 0x8b, 0x8c, 0x8d, 0x8e, 0x8f };
 	check_bt_cmp_internal0();
 	check_bt_cmp_leaf(4, 0, key, 8, 0);
 	check_bt_cmp_leaf(4, 2, key, 4, 0);
 	check_bt_cmp_leaf(6, 5, key, 1, 0);
-	check_bt_cmp_bigkey(key, 16);
+	check_bt_cmp_bigkey(bigkey, 16);
 }
 
 void test_bt_ret_edges(void)

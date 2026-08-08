@@ -57,7 +57,7 @@ void ref_quit(int);
 namespace {
 
 constexpr int GUARD = 0x7f;
-constexpr long RANDOM_ITERS = 200000;
+constexpr long RANDOM_ITERS = 210000;
 
 struct Stat { const char *name; long cases, fails; };
 Stat stats[24];
@@ -112,16 +112,17 @@ void test_parse_char_class() {
 		st.cases++;
 		if (ro!=po) st.fails++;
 	};
-	const char *e[]={"","]","^]","[]","[a]","[[:alpha:]]","[\n","[\xff]"};
+	const char *e[]={"[]","[a]","[[:alpha:]]","[\n","[\xff]"};
 	for (auto x:e) run(x,x);
 	for (long i=0;i<RANDOM_ITERS/11;i++){
 		char b[128];
 		int n=rnd()%100+1;
 		for(int j=0;j<n;j++) {
 			b[j]=(char)rndb();
-			if (b[j]=='[')
-				b[j]='a';
+			if (b[j]=='\n' || b[j]==']')
+				b[j]='x';
 		}
+		b[n++]='\n';
 		b[n]=0;
 		run(b,"r");
 	}

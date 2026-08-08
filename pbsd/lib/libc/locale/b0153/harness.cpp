@@ -102,11 +102,24 @@ struct harness_tm {
 	int	tm_isdst;
 };
 
+struct tm {
+	int	tm_sec;
+	int	tm_min;
+	int	tm_hour;
+	int	tm_mday;
+	int	tm_mon;
+	int	tm_year;
+	int	tm_wday;
+	int	tm_yday;
+	int	tm_isdst;
+};
+
 void	pbsd_reset_hooks(void);
 pbsd_ldpart_hook_t	*pbsd_get_ldpart_hook(void);
 pbsd_wcsftime_hook_t	*pbsd_get_wcsftime_hook(void);
 void	ref_set_localeconv_flags(int mon, int num);
 struct ref_xlocale	*ref_get_test_locale(void);
+int	ref_lconv_equal(const struct lconv *, const struct lconv *);
 
 struct lconv	*ref_localeconv_l(struct ref_xlocale *);
 struct lconv	*ref_localeconv(void);
@@ -263,27 +276,7 @@ set_gb_state(ref_mbstate_t &s, int count, unsigned char b0 = 0, unsigned char b1
 static bool
 lconv_eq(const struct lconv *a, const struct lconv *b)
 {
-#define CMPF(F) (a->F == b->F || (a->F != nullptr && b->F != nullptr && \
-    std::strcmp(a->F, b->F) == 0))
-	return (CMPF(decimal_point) && CMPF(thousands_sep) && CMPF(grouping) &&
-	    CMPF(int_curr_symbol) && CMPF(currency_symbol) &&
-	    CMPF(mon_decimal_point) && CMPF(mon_thousands_sep) &&
-	    CMPF(mon_grouping) && CMPF(positive_sign) && CMPF(negative_sign) &&
-	    a->int_frac_digits == b->int_frac_digits &&
-	    a->frac_digits == b->frac_digits &&
-	    a->p_cs_precedes == b->p_cs_precedes &&
-	    a->p_sep_by_space == b->p_sep_by_space &&
-	    a->n_cs_precedes == b->n_cs_precedes &&
-	    a->n_sep_by_space == b->n_sep_by_space &&
-	    a->p_sign_posn == b->p_sign_posn &&
-	    a->n_sign_posn == b->n_sign_posn &&
-	    a->int_p_cs_precedes == b->int_p_cs_precedes &&
-	    a->int_n_cs_precedes == b->int_n_cs_precedes &&
-	    a->int_p_sep_by_space == b->int_p_sep_by_space &&
-	    a->int_n_sep_by_space == b->int_n_sep_by_space &&
-	    a->int_p_sign_posn == b->int_p_sign_posn &&
-	    a->int_n_sign_posn == b->int_n_sign_posn);
-#undef CMPF
+	return (ref_lconv_equal(a, b) != 0);
 }
 
 static void
@@ -300,10 +293,11 @@ run_localeconv(int f, bool use_l)
 
 	ncase[f]++;
 	if (use_l) {
-		pr = P::localeconv_l(P::test_locale());
+		pr = reinterpret_cast<struct lconv *>(
+		    P::localeconv_l(P::test_locale()));
 		rr = ref_localeconv_l(ref_get_test_locale());
 	} else {
-		pr = P::localeconv();
+		pr = reinterpret_cast<struct lconv *>(P::localeconv());
 		rr = ref_localeconv();
 	}
 	if (pr == nullptr || rr == nullptr) {
@@ -341,29 +335,32 @@ sweep_localeconv(int f, bool use_l)
 
 static bool
 run_wcsftime(int f, bool use_l, const wchar_t *fmt, size_t maxsize,
-    const harness_tm *htm, bool null_wcs)
+    const P::tm *tm, bool null_wcs)
 {
 	wchar_t pw[64], rw[64];
 	size_t pr, rr;
 	int pe, re;
-	const struct tm *tm = reinterpret_cast<const struct tm *>(htm);
+	const struct tm *rtm = reinterpret_cast<const struct tm *>(tm);
 
 	fill_wguard(pw, sizeof(pw) / sizeof(pw[0]));
 	fill_wguard(rw, sizeof(rw) / sizeof(rw[0]));
 	errno = 0;
+	wchook().malloc_calls = 0;
 	if (use_l) {
 		pr = P::wcsftime_l(null_wcs ? nullptr : pw, maxsize, fmt, tm,
 		    P::test_locale());
 		pe = errno;
 		errno = 0;
-		rr = ref_wcsftime_l(null_wcs ? nullptr : rw, maxsize, fmt, tm,
+		wchook().malloc_calls = 0;
+		rr = ref_wcsftime_l(null_wcs ? nullptr : rw, maxsize, fmt, rtm,
 		    ref_get_test_locale());
 		re = errno;
 	} else {
 		pr = P::wcsftime(null_wcs ? nullptr : pw, maxsize, fmt, tm);
 		pe = errno;
 		errno = 0;
-		rr = ref_wcsftime(null_wcs ? nullptr : rw, maxsize, fmt, tm);
+		wchook().malloc_calls = 0;
+		rr = ref_wcsftime(null_wcs ? nullptr : rw, maxsize, fmt, rtm);
 		re = errno;
 	}
 	if (!chk_ret(f, pr, rr, pe, re))
@@ -379,7 +376,7 @@ run_wcsftime(int f, bool use_l, const wchar_t *fmt, size_t maxsize,
 static void
 edge_wcsftime(int f, bool use_l)
 {
-	harness_tm tm{};
+	P::tm tm{};
 
 	tm.tm_year = 100;
 	tm.tm_mon = 0;
@@ -424,7 +421,7 @@ edge_wcsftime(int f, bool use_l)
 static void
 sweep_wcsftime(int f, bool use_l)
 {
-	harness_tm tm{};
+	P::tm tm{};
 	wchar_t fmt[16];
 
 	for (long long i = 0; i < SWEEP; i++) {
@@ -555,13 +552,18 @@ sweep_part_load()
 		ldhook().fstat_fail = (u32(25) == 0);
 		ldhook().malloc_fail = (u32(30) == 0);
 		ldhook().read_fail = (u32(35) == 0);
+		const char *name = names[u32(6)];
 		int expect = -1;
 		if (!ldhook().open_fail && !ldhook().fstat_fail &&
 		    !ldhook().malloc_fail && !ldhook().read_fail) {
-			const char *name = names[u32(6)];
-			expect = (name[0] == 'C') ? 1 : 0;
+			if (std::strcmp(name, "C") == 0 ||
+			    std::strcmp(name, "POSIX") == 0 ||
+			    std::strncmp(name, "C.", 2) == 0)
+				expect = 1;
+			else
+				expect = 0;
 		}
-		run_part_load(names[u32(6)], 3, 2, expect);
+		run_part_load(name, 3, 2, expect);
 	}
 }
 

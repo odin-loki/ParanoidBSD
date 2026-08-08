@@ -800,15 +800,15 @@ __runes_for_locale(locale_t locale, int *mb_sb_limit)
 
 extern int __mb_sb_limit;
 
-static size_t	_UTF8_mbrtowc(wchar_t * __restrict, const char * __restrict,
+size_t	_UTF8_mbrtowc(wchar_t * __restrict, const char * __restrict,
 		    size_t, mbstate_t * __restrict);
-static int	_UTF8_mbsinit(const mbstate_t *);
-static size_t	_UTF8_mbsnrtowcs(wchar_t * __restrict,
+int	_UTF8_mbsinit(const mbstate_t *);
+size_t	_UTF8_mbsnrtowcs(wchar_t * __restrict,
 		    const char ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
-static size_t	_UTF8_wcrtomb(char * __restrict, wchar_t,
+size_t	_UTF8_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
-static size_t	_UTF8_wcsnrtombs(char * __restrict, const wchar_t ** __restrict,
+size_t	_UTF8_wcsnrtombs(char * __restrict, const wchar_t ** __restrict,
 		    size_t, size_t, mbstate_t * __restrict);
 
 typedef struct {
@@ -838,14 +838,14 @@ _UTF8_init(struct xlocale_ctype *l, _RuneLocale *rl)
 	return (0);
 }
 
-static int
+int
 _UTF8_mbsinit(const mbstate_t *ps)
 {
 
 	return (ps == NULL || ((const _UTF8State *)ps)->want == 0);
 }
 
-static size_t
+size_t
 _UTF8_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s, size_t n,
     mbstate_t * __restrict ps)
 {
@@ -962,7 +962,7 @@ _UTF8_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s, size_t n,
 	return (wch == L'\0' ? 0 : want);
 }
 
-static size_t
+size_t
 _UTF8_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
     size_t nms, size_t len, mbstate_t * __restrict ps)
 {
@@ -1044,7 +1044,7 @@ _UTF8_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
 	return (nchr);
 }
 
-static size_t
+size_t
 _UTF8_wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 {
 	_UTF8State *us;
@@ -1105,7 +1105,7 @@ _UTF8_wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 	return (len);
 }
 
-static size_t
+size_t
 _UTF8_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
     size_t nwc, size_t len, mbstate_t * __restrict ps)
 {
@@ -1226,56 +1226,56 @@ _UTF8_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 
 extern int __mb_sb_limit;
 
-static size_t	_EUC_mbrtowc_impl(wchar_t * __restrict, const char * __restrict,
+size_t	_EUC_mbrtowc_impl(wchar_t * __restrict, const char * __restrict,
     size_t, mbstate_t * __restrict, uint8_t, uint8_t, uint8_t, uint8_t);
-static size_t	_EUC_wcrtomb_impl(char * __restrict, wchar_t,
+size_t	_EUC_wcrtomb_impl(char * __restrict, wchar_t,
     mbstate_t * __restrict, uint8_t, uint8_t, uint8_t, uint8_t);
 
-static size_t	_EUC_CN_mbrtowc(wchar_t * __restrict, const char * __restrict,
+size_t	_EUC_CN_mbrtowc(wchar_t * __restrict, const char * __restrict,
 		    size_t, mbstate_t * __restrict);
-static size_t	_EUC_JP_mbrtowc(wchar_t * __restrict, const char * __restrict,
+size_t	_EUC_JP_mbrtowc(wchar_t * __restrict, const char * __restrict,
 		    size_t, mbstate_t * __restrict);
-static size_t	_EUC_KR_mbrtowc(wchar_t * __restrict, const char * __restrict,
+size_t	_EUC_KR_mbrtowc(wchar_t * __restrict, const char * __restrict,
 		    size_t, mbstate_t * __restrict);
-static size_t	_EUC_TW_mbrtowc(wchar_t * __restrict, const char * __restrict,
+size_t	_EUC_TW_mbrtowc(wchar_t * __restrict, const char * __restrict,
 		    size_t, mbstate_t * __restrict);
 
-static size_t	_EUC_CN_wcrtomb(char * __restrict, wchar_t,
+size_t	_EUC_CN_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
-static size_t	_EUC_JP_wcrtomb(char * __restrict, wchar_t,
+size_t	_EUC_JP_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
-static size_t	_EUC_KR_wcrtomb(char * __restrict, wchar_t,
+size_t	_EUC_KR_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
-static size_t	_EUC_TW_wcrtomb(char * __restrict, wchar_t,
-		    mbstate_t * __restrict);
-
-static size_t	_EUC_CN_mbsnrtowcs(wchar_t * __restrict,
-		    const char ** __restrict, size_t, size_t,
-		    mbstate_t * __restrict);
-static size_t	_EUC_JP_mbsnrtowcs(wchar_t * __restrict,
-		    const char ** __restrict, size_t, size_t,
-		    mbstate_t * __restrict);
-static size_t	_EUC_KR_mbsnrtowcs(wchar_t * __restrict,
-		    const char ** __restrict, size_t, size_t,
-		    mbstate_t * __restrict);
-static size_t	_EUC_TW_mbsnrtowcs(wchar_t * __restrict,
-		    const char ** __restrict, size_t, size_t,
+size_t	_EUC_TW_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
 
-static size_t	_EUC_CN_wcsnrtombs(char * __restrict,
+size_t	_EUC_CN_mbsnrtowcs(wchar_t * __restrict,
+		    const char ** __restrict, size_t, size_t,
+		    mbstate_t * __restrict);
+size_t	_EUC_JP_mbsnrtowcs(wchar_t * __restrict,
+		    const char ** __restrict, size_t, size_t,
+		    mbstate_t * __restrict);
+size_t	_EUC_KR_mbsnrtowcs(wchar_t * __restrict,
+		    const char ** __restrict, size_t, size_t,
+		    mbstate_t * __restrict);
+size_t	_EUC_TW_mbsnrtowcs(wchar_t * __restrict,
+		    const char ** __restrict, size_t, size_t,
+		    mbstate_t * __restrict);
+
+size_t	_EUC_CN_wcsnrtombs(char * __restrict,
 		    const wchar_t ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
-static size_t	_EUC_JP_wcsnrtombs(char * __restrict,
+size_t	_EUC_JP_wcsnrtombs(char * __restrict,
 		    const wchar_t ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
-static size_t	_EUC_KR_wcsnrtombs(char * __restrict,
+size_t	_EUC_KR_wcsnrtombs(char * __restrict,
 		    const wchar_t ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
-static size_t	_EUC_TW_wcsnrtombs(char * __restrict,
+size_t	_EUC_TW_wcsnrtombs(char * __restrict,
 		    const wchar_t ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
 
-static int	_EUC_mbsinit(const mbstate_t *);
+int	_EUC_mbsinit(const mbstate_t *);
 
 typedef struct {
 	wchar_t	ch;
@@ -1283,7 +1283,7 @@ typedef struct {
 	int	want;
 } _EucState;
 
-static int
+int
 _EUC_mbsinit(const mbstate_t *ps)
 {
 
@@ -1308,14 +1308,14 @@ _EUC_CN_init(struct xlocale_ctype *l, _RuneLocale *rl)
 	return (0);
 }
 
-static size_t
+size_t
 _EUC_CN_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
     size_t n, mbstate_t * __restrict ps)
 {
 	return (_EUC_mbrtowc_impl(pwc, s, n, ps, SS2, 4, 0, 0));
 }
 
-static size_t
+size_t
 _EUC_CN_mbsnrtowcs(wchar_t * __restrict dst,
     const char ** __restrict src,
     size_t nms, size_t len, mbstate_t * __restrict ps)
@@ -1323,14 +1323,14 @@ _EUC_CN_mbsnrtowcs(wchar_t * __restrict dst,
 	return (__mbsnrtowcs_std(dst, src, nms, len, ps, _EUC_CN_mbrtowc));
 }
 
-static size_t
+size_t
 _EUC_CN_wcrtomb(char * __restrict s, wchar_t wc,
     mbstate_t * __restrict ps)
 {
 	return (_EUC_wcrtomb_impl(s, wc, ps, SS2, 4, 0, 0));
 }
 
-static size_t
+size_t
 _EUC_CN_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 	size_t nwc, size_t len, mbstate_t * __restrict ps)
 {
@@ -1355,14 +1355,14 @@ _EUC_KR_init(struct xlocale_ctype *l, _RuneLocale *rl)
 	return (0);
 }
 
-static size_t
+size_t
 _EUC_KR_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
     size_t n, mbstate_t * __restrict ps)
 {
 	return (_EUC_mbrtowc_impl(pwc, s, n, ps, 0, 0, 0, 0));
 }
 
-static size_t
+size_t
 _EUC_KR_mbsnrtowcs(wchar_t * __restrict dst,
     const char ** __restrict src,
     size_t nms, size_t len, mbstate_t * __restrict ps)
@@ -1370,14 +1370,14 @@ _EUC_KR_mbsnrtowcs(wchar_t * __restrict dst,
 	return (__mbsnrtowcs_std(dst, src, nms, len, ps, _EUC_KR_mbrtowc));
 }
 
-static size_t
+size_t
 _EUC_KR_wcrtomb(char * __restrict s, wchar_t wc,
 	mbstate_t * __restrict ps)
 {
 	return (_EUC_wcrtomb_impl(s, wc, ps, 0, 0, 0, 0));
 }
 
-static size_t
+size_t
 _EUC_KR_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 	size_t nwc, size_t len, mbstate_t * __restrict ps)
 {
@@ -1402,14 +1402,14 @@ _EUC_JP_init(struct xlocale_ctype *l, _RuneLocale *rl)
 	return (0);
 }
 
-static size_t
+size_t
 _EUC_JP_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
     size_t n, mbstate_t * __restrict ps)
 {
 	return (_EUC_mbrtowc_impl(pwc, s, n, ps, SS2, 2, SS3, 3));
 }
 
-static size_t
+size_t
 _EUC_JP_mbsnrtowcs(wchar_t * __restrict dst,
     const char ** __restrict src,
     size_t nms, size_t len, mbstate_t * __restrict ps)
@@ -1417,14 +1417,14 @@ _EUC_JP_mbsnrtowcs(wchar_t * __restrict dst,
 	return (__mbsnrtowcs_std(dst, src, nms, len, ps, _EUC_JP_mbrtowc));
 }
 
-static size_t
+size_t
 _EUC_JP_wcrtomb(char * __restrict s, wchar_t wc,
     mbstate_t * __restrict ps)
 {
 	return (_EUC_wcrtomb_impl(s, wc, ps, SS2, 2, SS3, 3));
 }
 
-static size_t
+size_t
 _EUC_JP_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 	size_t nwc, size_t len, mbstate_t * __restrict ps)
 {
@@ -1449,14 +1449,14 @@ _EUC_TW_init(struct xlocale_ctype *l, _RuneLocale *rl)
 	return (0);
 }
 
-static size_t
+size_t
 _EUC_TW_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 	size_t n, mbstate_t * __restrict ps)
 {
 	return (_EUC_mbrtowc_impl(pwc, s, n, ps, SS2, 4, 0, 0));
 }
 
-static size_t
+size_t
 _EUC_TW_mbsnrtowcs(wchar_t * __restrict dst,
 	const char ** __restrict src,
 	size_t nms, size_t len, mbstate_t * __restrict ps)
@@ -1464,14 +1464,14 @@ _EUC_TW_mbsnrtowcs(wchar_t * __restrict dst,
 	return (__mbsnrtowcs_std(dst, src, nms, len, ps, _EUC_TW_mbrtowc));
 }
 
-static size_t
+size_t
 _EUC_TW_wcrtomb(char * __restrict s, wchar_t wc,
 	mbstate_t * __restrict ps)
 {
 	return (_EUC_wcrtomb_impl(s, wc, ps, SS2, 4, 0, 0));
 }
 
-static size_t
+size_t
 _EUC_TW_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 	size_t nwc, size_t len, mbstate_t * __restrict ps)
 {
@@ -1482,7 +1482,7 @@ _EUC_TW_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
  * Common EUC code.
  */
 
-static size_t
+size_t
 _EUC_mbrtowc_impl(wchar_t * __restrict pwc, const char * __restrict s,
 	size_t n, mbstate_t * __restrict ps,
 	uint8_t cs2, uint8_t cs2width, uint8_t cs3, uint8_t cs3width)
@@ -1556,7 +1556,7 @@ _EUC_mbrtowc_impl(wchar_t * __restrict pwc, const char * __restrict s,
 	return (wc == L'\0' ? 0 : want);
 }
 
-static size_t
+size_t
 _EUC_wcrtomb_impl(char * __restrict s, wchar_t wc,
     mbstate_t * __restrict ps,
     uint8_t cs2, uint8_t cs2width, uint8_t cs3, uint8_t cs3width)
@@ -1844,7 +1844,7 @@ __collate_load_tables_l(const char *encoding, struct xlocale_collate *table)
 	return (_LDP_LOADED);
 }
 
-static const int32_t *
+int32_t *
 substsearch(struct xlocale_collate *table, const wchar_t key, int pass)
 {
 	const collate_subst_t *p;
@@ -1865,7 +1865,7 @@ substsearch(struct xlocale_collate *table, const wchar_t key, int pass)
 	return (p->pri);
 }
 
-static collate_chain_t *
+collate_chain_t *
 chainsearch(struct xlocale_collate *table, const wchar_t *key, int *len)
 {
 	int low = 0;
@@ -1897,7 +1897,7 @@ chainsearch(struct xlocale_collate *table, const wchar_t *key, int *len)
 	return (NULL);
 }
 
-static collate_large_t *
+collate_large_t *
 largesearch(struct xlocale_collate *table, const wchar_t key)
 {
 	int low = 0;

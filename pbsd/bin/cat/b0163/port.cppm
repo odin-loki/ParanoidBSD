@@ -35,6 +35,7 @@
 module;
 
 #include <cerrno>
+#include <climits>
 #include <csetjmp>
 #include <cstdarg>
 #include <cstdio>

@@ -16,6 +16,9 @@
  * This file is the specification.  Do not "fix" anything in it.
  */
 
+/* -std=c11 hides the BSD type names; crc() needs u_char. */
+#define _DEFAULT_SOURCE 1
+
 #include <sys/types.h>
 
 #include <stdio.h>

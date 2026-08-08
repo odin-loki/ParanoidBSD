@@ -293,6 +293,31 @@ pbsd_reset_hooks(void)
 	memset(&port_test_locale, 0, sizeof(port_test_locale));
 }
 
+pbsd_ldpart_hook_t *
+pbsd_get_ldpart_hook(void)
+{
+	return (&pbsd_ldpart_hook);
+}
+
+pbsd_wcsftime_hook_t *
+pbsd_get_wcsftime_hook(void)
+{
+	return (&pbsd_wcsftime_hook);
+}
+
+void
+ref_set_localeconv_flags(int mon, int num)
+{
+	ref_test_locale.monetary_locale_changed = mon;
+	ref_test_locale.numeric_locale_changed = num;
+}
+
+struct _xlocale *
+ref_get_test_locale(void)
+{
+	return (&ref_test_locale);
+}
+
 static void __attribute__((constructor))
 ref_oracle_init(void)
 {
@@ -606,7 +631,7 @@ __wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
 }
 
 /* localeconv.c */
-static int
+int
 ref_lconv_equal(const struct lconv *a, const struct lconv *b)
 {
 #define CMPF(F) (a->F == b->F || (a->F != NULL && b->F != NULL && \

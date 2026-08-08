@@ -3,10 +3,10 @@
  *
  * Every ported function is driven with hand-written edge cases and with a
  * fixed-seed randomised sweep.  Buffer writers are checked over their WHOLE
- * destination buffer (guard byte 0x7f past the nominal write window included),
- * pointer results are compared as offsets from the buffer base, and the
- * kernel-service side effects (malloc size/flags/type, free, printf text,
- * kdb_backtrace count, probe function arguments) are compared as well.
+ * destination buffer (guard byte 0x7f past the nominal write window
+ * included), pointer results are compared as offsets from the buffer base,
+ * and the kernel-service side effects (malloc size/flags/type, free, printf
+ * text, kdb_backtrace count, probe function arguments) are compared too.
  */
 
 #include <cstdarg>
@@ -63,13 +63,13 @@ extern volatile bool sdt_probes_enabled;	/* oracle global */
 } /* extern "C" */
 
 /* ------------------------------------------------------------------ */
-/* Kernel services (shared environment for both sides)                */
+/* Kernel services (one shared environment, used by both sides)       */
 /* ------------------------------------------------------------------ */
 
 enum : int { M_NOWAIT = 0x0001, M_WAITOK = 0x0002, M_ZERO = 0x0100 };
 
-/* Simulated kernel heap.  A single arena so that both sides get the same
- * base address; requests larger than the arena fail like M_NOWAIT would. */
+/* Simulated kernel heap: a single arena, so both sides are handed the same
+ * base address; requests larger than the arena fail the way M_NOWAIT would. */
 enum : std::size_t { ARENA_CAP = 8192 };
 alignas(64) static unsigned char g_arena[ARENA_CAP];
 
@@ -92,8 +92,14 @@ struct kenv_state {
 
 static kenv_state g_env;
 
+/*
+ * The port declares these hooks with its own (module-attached) malloc_type,
+ * and clang makes that declaration visible to importers, so the definitions
+ * here must use the same type.  Both are opaque; only the pointer value is
+ * ever inspected.
+ */
 extern "C" void *
-pbsd_kern_malloc(std::size_t size, struct malloc_type *type, int flags)
+pbsd_kern_malloc(std::size_t size, k::malloc_type *type, int flags)
 {
 
 	g_env.alloc_calls++;
@@ -148,8 +154,9 @@ kdb_backtrace(void)
 
 /*
  * Only the recorded side effects need clearing: pbsd_kern_malloc() repaints
- * the whole arena with the guard byte on every call, failed calls included,
- * so the arena state after an allocation attempt is fully determined.
+ * the entire arena with the guard byte on every call, failed calls included,
+ * so the arena state after an allocation attempt is fully determined by that
+ * call.
  */
 static void
 kenv_reset(void)
@@ -177,7 +184,7 @@ kenv_equal(const kenv_state &a, const kenv_state &b)
 }
 
 /* ------------------------------------------------------------------ */
-/* Probe recorder (installed into both sdt_probe_func variables)      */
+/* Probe recorder (installed into both sdt_probe_func variables)       */
 /* ------------------------------------------------------------------ */
 
 struct probe_rec {
@@ -326,7 +333,8 @@ test_vdso(void)
 			    static_cast<struct timecounter *>(ptrs[j]));
 			std::snprintf(buf, sizeof(buf),
 			    "i=%d j=%d port=%u ref=%u", i, j, p32, r32);
-			record(F_VDSO32, p32 == r32 && p32 == 0, "return", buf);
+			record(F_VDSO32, p32 == r32 && p32 == 0, "return",
+			    buf);
 		}
 	}
 
@@ -366,8 +374,8 @@ static unsigned char rbuf[BUFSZ];
 static unsigned char srcpat[BUFSZ];
 
 /*
- * One memset_early case: write at pbuf/rbuf + off, len bytes, guard 0x7f
- * everywhere else, compare the ENTIRE buffer plus the returned offset.
+ * One memset_early case: write at pbuf/rbuf + off for len bytes, guard byte
+ * 0x7f everywhere else, compare the ENTIRE buffer plus the returned offset.
  */
 static void
 case_memset(std::size_t off, std::size_t len, int c)
@@ -412,7 +420,8 @@ case_memcpy(std::size_t doff, std::size_t soff, std::size_t len)
 	    std::memcmp(psrc, rsrc, BUFSZ) == 0, "ret+buffer", buf);
 }
 
-/* memmove_early, including src/dst overlap in both directions. */
+/* memmove_early, source and destination in the same buffer so that overlap
+ * in either direction is exercised. */
 static void
 case_memmove(std::size_t doff, std::size_t soff, std::size_t len)
 {
@@ -469,20 +478,24 @@ test_early(void)
 		}
 	}
 
-	/* memmove: exact overlap, forward overlap, backward overlap, and
-	 * disjoint, on both sides of the "src < dst" boundary. */
+	/* memmove: identical, one-byte overlap either way, adjacent, half
+	 * overlapping and fully disjoint -- both sides of "src < dst". */
 	for (std::size_t l = 0; l < nl; l++) {
 		std::size_t len = lens[l];
 
-		if (len > BUFSZ - 256)
+		if (len <= BUFSZ - 256) {
+			case_memmove(0, 256, len);
+			case_memmove(256, 0, len);
+		}
+		if (len > 200)
 			continue;
-		case_memmove(64, 64, len);		/* same */
-		case_memmove(64, 65, len);		/* dst < src by 1 */
-		case_memmove(65, 64, len);		/* dst > src by 1 */
-		case_memmove(64, 64 + len, len);	/* adjacent */
-		case_memmove(64 + len, 64, len);	/* adjacent */
-		case_memmove(0, 256, len);		/* disjoint */
-		case_memmove(256, 0, len);		/* disjoint */
+		case_memmove(64, 64, len);
+		case_memmove(64, 65, len);
+		case_memmove(65, 64, len);
+		case_memmove(64, 64 + len, len);
+		case_memmove(64 + len, 64, len);
+		case_memmove(64, 64 + len / 2, len);
+		case_memmove(64 + len / 2, 64, len);
 	}
 
 	for (long it = 0; it < 200000; it++) {
@@ -525,7 +538,7 @@ static void
 case_buf_ring(int count, int flags, unsigned typesel, unsigned locksel,
     int forcefail)
 {
-	char buf[224];
+	char buf[240];
 	static unsigned char snapshot[ARENA_CAP];
 	kenv_state penv, renv;
 	void *pbr, *rbr;
@@ -554,11 +567,11 @@ case_buf_ring(int count, int flags, unsigned typesel, unsigned locksel,
 	    static_cast<long>(static_cast<unsigned char *>(pbr) - g_arena);
 
 	kenv_reset();
-	rbr = ref_buf_ring_alloc(count, rtype, flags, rlock);
+	rbr = static_cast<void *>(ref_buf_ring_alloc(count, rtype, flags,
+	    rlock));
 	renv = g_env;
 	rofs = rbr == nullptr ? -1 :
-	    static_cast<long>(static_cast<unsigned char *>(
-	    static_cast<void *>(rbr)) - g_arena);
+	    static_cast<long>(static_cast<unsigned char *>(rbr) - g_arena);
 
 	ok = pofs == rofs && kenv_equal(penv, renv) &&
 	    std::memcmp(snapshot, g_arena, ARENA_CAP) == 0;
@@ -581,7 +594,8 @@ case_buf_ring(int count, int flags, unsigned typesel, unsigned locksel,
 	std::snprintf(buf, sizeof(buf),
 	    "count=%d type=%p pcalls=%d rcalls=%d pptr=%p rptr=%p",
 	    count, static_cast<void *>(ptype), penv.free_calls,
-	    renv.free_calls, penv.free_ptr, renv.free_ptr);
+	    renv.free_calls, const_cast<void *>(penv.free_ptr),
+	    const_cast<void *>(renv.free_ptr));
 	record(F_BR_FREE, kenv_equal(penv, renv), "free side effects", buf);
 
 	g_force_alloc_fail = 0;
@@ -616,13 +630,13 @@ test_bufring(void)
 
 		switch (rnd_below(6)) {
 		case 0:
-			count = 1 << rnd_below(20);	/* powers of 2 */
+			count = 1 << rnd_below(20);		/* 2^n */
 			break;
 		case 1:
-			count = (1 << rnd_below(20)) - 1;
+			count = (1 << rnd_below(20)) - 1;	/* 2^n - 1 */
 			break;
 		case 2:
-			count = (1 << rnd_below(20)) + 1;
+			count = (1 << rnd_below(20)) + 1;	/* 2^n + 1 */
 			break;
 		case 3:
 			count = static_cast<int>(rnd_below(1024));
@@ -647,7 +661,7 @@ test_bufring(void)
 static void
 case_probe(std::uint32_t id, const std::uintptr_t *a, bool with_recorder)
 {
-	char buf[224];
+	char buf[240];
 	kenv_state penv, renv;
 	probe_rec prec, rrec;
 	bool ok;
@@ -713,8 +727,8 @@ case_probe(std::uint32_t id, const std::uintptr_t *a, bool with_recorder)
 	ref_sdt_probe_stub(id, a[0], a[1], a[2], a[3], a[4], a[5]);
 	renv = g_env;
 	std::snprintf(buf, sizeof(buf),
-	    "id=%u pprintf=%d rprintf=%d pbt=%d rbt=%d ptext=\"%s\" "
-	    "rtext=\"%s\"", id, penv.printf_calls, renv.printf_calls,
+	    "id=%u pprintf=%d rprintf=%d pbt=%d rbt=%d ptext=\"%.60s\" "
+	    "rtext=\"%.60s\"", id, penv.printf_calls, renv.printf_calls,
 	    penv.backtrace_calls, renv.backtrace_calls, penv.text, renv.text);
 	record(F_STUB, kenv_equal(penv, renv) && penv.printf_calls == 1 &&
 	    penv.backtrace_calls == 1, "stub side effects", buf);
@@ -731,7 +745,7 @@ test_sdt(void)
 	};
 	std::size_t ni = sizeof(interesting) / sizeof(interesting[0]);
 	std::uintptr_t a[6];
-	char buf[128];
+	char buf[160];
 
 	/* The default hook must be the stub, and probes must start off. */
 	std::snprintf(buf, sizeof(buf), "port=%p ref=%p",
@@ -748,21 +762,22 @@ test_sdt(void)
 	record(F_STUB, k::sdt_probes_enabled == sdt_probes_enabled &&
 	    !k::sdt_probes_enabled, "probes_enabled initial", buf);
 
-	/* Distinct arguments in every slot: any swap or replacement shows. */
+	/* Distinct value in every slot: any swap or substitution shows up. */
 	for (std::size_t i = 0; i < 6; i++)
 		a[i] = static_cast<std::uintptr_t>(0x1111111111111111ULL *
 		    (i + 1));
 	case_probe(0xdeadbeefu, a, true);
 	case_probe(0xdeadbeefu, a, false);
 
-	/* All-zero arguments: distinguishes arg5=0 from arg5=1 mutations
-	 * only via the other direction, so also try all-ones. */
 	for (std::size_t i = 0; i < 6; i++)
 		a[i] = 0;
 	case_probe(0, a, true);
 	for (std::size_t i = 0; i < 6; i++)
 		a[i] = static_cast<std::uintptr_t>(-1);
 	case_probe(0xffffffffu, a, true);
+	for (std::size_t i = 0; i < 6; i++)
+		a[i] = 1;
+	case_probe(1, a, true);
 
 	/* One interesting value at a time in each slot. */
 	for (std::size_t slot = 0; slot < 6; slot++) {

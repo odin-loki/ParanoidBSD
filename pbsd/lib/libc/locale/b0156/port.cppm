@@ -64,6 +64,7 @@ size_t strlcat(char *, const char *, size_t);
 wchar_t *wcsdup(const wchar_t *);
 }
 
+extern "C" {
 typedef struct {
 	int		open_ret;
 	int		fstat_ret;
@@ -77,6 +78,7 @@ extern pbsd_collate_file_hook_t pbsd_collate_file_hook;
 extern const char *pbsd_PathLocale;
 
 void pbsd_reset_collate_hooks(void);
+}
 
 export namespace pbsd::lib_libc_locale::b0156 {
 

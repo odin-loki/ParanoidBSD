@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
+#include <setjmp.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>

@@ -12,6 +12,11 @@
 #include <limits.h>
 #include <unistd.h>
 
+#if defined(__cplusplus) && defined(__GLIBC__)
+#undef O_CLOEXEC
+#undef O_NOFOLLOW
+#endif
+
 #ifndef O_NOFOLLOW
 #define O_NOFOLLOW 0
 #endif
@@ -35,6 +40,10 @@ namespace P = pbsd::lib_libc_db_db::b0157;
 typedef P::DBT DBT;
 typedef P::DBTYPE DBTYPE;
 typedef P::DB DB;
+
+using P::DB_BTREE;
+using P::DB_HASH;
+using P::DB_RECNO;
 
 #if UINT_MAX > 65535
 #define	DB_LOCK		0x20000000
@@ -620,14 +629,20 @@ t_dbget(DB *ref_db, DB *port_db, const DBT *key, DBT *ref_data, DBT *port_data,
 	int ref_errno = errno;
 	MethodLog ref_log = g_ref_h.get_m;
 	unsigned char ref_arena[ARENA];
-	std::memcpy(ref_arena, (unsigned char *)ref_data->data - SIDE, ARENA);
+	unsigned char got_arena[ARENA];
+	if (ref_data != nullptr && ref_data->data != nullptr)
+		std::memcpy(ref_arena, (unsigned char *)ref_data->data - SIDE, ARENA);
+	else
+		std::memset(ref_arena, GUARD, ARENA);
 
 	errno = 0;
 	int got = P::cfi_libc_db_dbget(port_db, key, port_data, flags);
 	int got_errno = errno;
 	MethodLog got_log = g_port_h.get_m;
-	unsigned char got_arena[ARENA];
-	std::memcpy(got_arena, (unsigned char *)port_data->data - SIDE, ARENA);
+	if (port_data != nullptr && port_data->data != nullptr)
+		std::memcpy(got_arena, (unsigned char *)port_data->data - SIDE, ARENA);
+	else
+		std::memset(got_arena, GUARD, ARENA);
 
 	if (ref != got) {
 		char msg[160];
@@ -704,14 +719,20 @@ t_dbseq(DB *ref_db, DB *port_db, DBT *ref_key, DBT *port_key,
 	int ref_errno = errno;
 	MethodLog ref_log = g_ref_h.seq_m;
 	unsigned char ref_arena[ARENA];
-	std::memcpy(ref_arena, (unsigned char *)ref_data->data - SIDE, ARENA);
+	unsigned char got_arena[ARENA];
+	if (ref_data != nullptr && ref_data->data != nullptr)
+		std::memcpy(ref_arena, (unsigned char *)ref_data->data - SIDE, ARENA);
+	else
+		std::memset(ref_arena, GUARD, ARENA);
 
 	errno = 0;
 	int got = P::cfi_libc_db_dbseq(port_db, port_key, port_data, flags);
 	int got_errno = errno;
 	MethodLog got_log = g_port_h.seq_m;
-	unsigned char got_arena[ARENA];
-	std::memcpy(got_arena, (unsigned char *)port_data->data - SIDE, ARENA);
+	if (port_data != nullptr && port_data->data != nullptr)
+		std::memcpy(got_arena, (unsigned char *)port_data->data - SIDE, ARENA);
+	else
+		std::memset(got_arena, GUARD, ARENA);
 
 	if (ref != got) {
 		char msg[160];

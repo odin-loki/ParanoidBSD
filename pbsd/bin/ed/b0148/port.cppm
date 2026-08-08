@@ -64,8 +64,8 @@ struct undo_t {
 #define INC_MOD(l, k)	((l) + 1 > (k) ? 0 : (l) + 1)
 #define DEC_MOD(l, k)	((l) - 1 < 0 ? (k) : (l) - 1)
 
-inline int &mutex_ref();
-inline int &sigflags_ref();
+int &mutex_ref();
+int &sigflags_ref();
 
 #define SPL1() mutex_ref()++
 
@@ -104,47 +104,47 @@ if ((i) > (n)) { \
 #define NUL_TO_NEWLINE(s, l) translit_text(s, l, '\0', '\n')
 #define NEWLINE_TO_NUL(s, l) translit_text(s, l, '\n', '\0')
 
-inline char stdinbuf_arr[1];
-inline char ibuf_storage[65536];
-inline char *ibuf = ibuf_storage;
-inline char *ibufp;
-inline int ibufsz;
+char stdinbuf_arr[1];
+char ibuf_storage[65536];
+char *ibuf = ibuf_storage;
+char *ibufp;
+int ibufsz;
 
-inline int isbinary;
-inline int isglobal;
-inline int modified;
-inline int mutex;
-inline int sigflags;
+int isbinary;
+int isglobal;
+int modified;
+int mutex;
+int sigflags;
 
-inline long addr_last;
-inline long current_addr;
-inline long first_addr;
-inline long second_addr;
-inline int lineno;
-inline int newline_added;
-inline int scripted;
-inline int patlock;
+long addr_last;
+long current_addr;
+long first_addr;
+long second_addr;
+int lineno;
+int newline_added;
+int scripted;
+int patlock;
 
-inline const char *errmsg = "";
+const char *errmsg = "";
 
-inline int &mutex_ref() { return mutex; }
-inline int &sigflags_ref() { return sigflags; }
+int &mutex_ref() { return mutex; }
+int &sigflags_ref() { return sigflags; }
 
-inline int extract_addr_range_result;
-inline int exec_command_result;
-inline int display_lines_result;
-inline char *extended_line;
-inline int extended_line_len;
-inline int get_tty_line_result = 1;
-inline char tty_line[4096] = "\n";
-inline int malloc_fail_at;
-inline int malloc_calls;
-inline int quit_status;
-inline int quit_called;
+int extract_addr_range_result;
+int exec_command_result;
+int display_lines_result;
+char *extended_line;
+int extended_line_len;
+int get_tty_line_result = 1;
+char tty_line[4096] = "\n";
+int malloc_fail_at;
+int malloc_calls;
+int quit_status;
+int quit_called;
 
-inline jmp_buf quit_jmp;
+jmp_buf quit_jmp;
 
-inline void reset_hooks()
+void reset_hooks()
 {
 	extract_addr_range_result = 0;
 	exec_command_result = 0;
@@ -159,7 +159,7 @@ inline void reset_hooks()
 	quit_called = 0;
 }
 
-inline void *port_malloc(std::size_t n)
+void *port_malloc(std::size_t n)
 {
 	void *p;
 
@@ -170,7 +170,7 @@ inline void *port_malloc(std::size_t n)
 	return (p);
 }
 
-inline void reset_globals()
+void reset_globals()
 {
 	ibufp = ibuf;
 	ibufsz = (int)sizeof(ibuf_storage);
@@ -191,17 +191,17 @@ inline void reset_globals()
 	reset_hooks();
 }
 
-inline int extract_addr_range(void)
+int extract_addr_range(void)
 {
 	return (extract_addr_range_result);
 }
 
-inline int exec_command(void)
+int exec_command(void)
 {
 	return (exec_command_result);
 }
 
-inline int display_lines(long a, long b, int f)
+int display_lines(long a, long b, int f)
 {
 	(void)a;
 	(void)b;
@@ -209,7 +209,7 @@ inline int display_lines(long a, long b, int f)
 	return (display_lines_result);
 }
 
-inline char *get_extended_line(int *n, int f)
+char *get_extended_line(int *n, int f)
 {
 	(void)f;
 	if (extended_line == nullptr)
@@ -218,7 +218,7 @@ inline char *get_extended_line(int *n, int f)
 	return (extended_line);
 }
 
-inline int get_tty_line(void)
+int get_tty_line(void)
 {
 	if (get_tty_line_result < 0)
 		return (-1);
@@ -228,17 +228,17 @@ inline int get_tty_line(void)
 	return ((int)std::strlen(ibuf));
 }
 
-inline void unmark_line_node(line_t *lp)
+void unmark_line_node(line_t *lp)
 {
 	(void)lp;
 }
 
-inline void handle_hup(int s)
+void handle_hup(int s)
 {
 	(void)s;
 }
 
-inline void handle_int(int s)
+void handle_int(int s)
 {
 	(void)s;
 }
@@ -426,9 +426,9 @@ parse_char_class(char *s)
 
 
 #define USIZE 100				/* undo stack size */
-inline undo_t *ustack = NULL;			/* undo stack */
-inline long usize = 0;				/* stack size variable */
-inline long u_p = 0;				/* undo stack pointer */
+undo_t *ustack = NULL;			/* undo stack */
+long usize = 0;				/* stack size variable */
+long u_p = 0;				/* undo stack pointer */
 
 undo_t *
 push_undo_stack(int type, long from, long to)
@@ -469,8 +469,8 @@ push_undo_stack(int type, long from, long to)
 }
 
 
-inline long u_current_addr = -1;	/* if >= 0, undo enabled */
-inline long u_addr_last = -1;		/* if >= 0, undo enabled */
+long u_current_addr = -1;	/* if >= 0, undo enabled */
+long u_addr_last = -1;		/* if >= 0, undo enabled */
 
 int
 pop_undo_stack(void)
@@ -664,11 +664,11 @@ exec_global(int interact, int gflag)
 }
 
 
-inline line_t **active_list;	/* list of lines active in a global command */
-inline long active_last;	/* index of last active line in active_list */
-inline long active_size;	/* size of active_list */
-inline long active_ptr;		/* active_list index (non-decreasing) */
-inline long active_ndx;		/* active_list index (modulo active_last) */
+line_t **active_list;	/* list of lines active in a global command */
+long active_last;	/* index of last active line in active_list */
+long active_size;	/* size of active_list */
+long active_ptr;		/* active_list index (non-decreasing) */
+long active_ndx;		/* active_list index (modulo active_last) */
 
 int
 set_active_node(line_t *lp)
@@ -771,10 +771,10 @@ clear_active_list(void)
  */
 
 
-inline FILE *sfp;			/* scratch file pointer */
-inline off_t sfseek;			/* scratch file position */
-inline int seek_write;			/* seek before writing */
-inline line_t buffer_head;		/* incore buffer */
+FILE *sfp;			/* scratch file pointer */
+off_t sfseek;			/* scratch file position */
+int seek_write;			/* seek before writing */
+line_t buffer_head;		/* incore buffer */
 
 char *
 get_sbuf_line(line_t *lp)
@@ -914,7 +914,7 @@ get_addressed_line_node(long n)
 	return lp;
 }
 
-inline char sfn[15] = "";			/* scratch file name */
+char sfn[15] = "";			/* scratch file name */
 
 int
 open_sbuf(void)
@@ -967,7 +967,7 @@ quit(int n)
 }
 
 
-inline unsigned char ctab[256];		/* character translation table */
+unsigned char ctab[256];		/* character translation table */
 
 void
 init_buffers(void)
@@ -1007,7 +1007,7 @@ translit_text(char *s, int len, int from, int to)
 	return s;
 }
 
-inline void reset_batch(void)
+void reset_batch(void)
 {
 	clear_active_list();
 	clear_undo_stack();

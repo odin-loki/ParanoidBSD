@@ -8,11 +8,20 @@
  * Every comparison below is therefore made on the raw 32-bit encoding, so a
  * port that returns -0.0 where the oracle returns +0.0, or that returns a
  * different NaN encoding, is reported as a failure.
+ *
+ * The floating point exception flags raised by the call are compared too.
+ * tanhf(+-Inf) is +-1 whether it is reached through the Inf/NaN arm or through
+ * the |x| >= 9 arm, so on the return value alone those two arms are
+ * indistinguishable; they differ only in that the second evaluates one - tiny
+ * and so raises FE_INEXACT.  The original raises that flag deliberately (the
+ * comment on the line says so), which makes it part of the behaviour being
+ * preserved.
  */
 
 #include <cstdio>
 #include <cstdint>
 #include <cstring>
+#include <cfenv>
 
 import pbsd.lib.msun.src.b0152;
 
@@ -41,25 +50,38 @@ struct Stat {
 
 static Stat st_tanhf = { "tanhf", 0, 0, 0 };
 
-/* Exact bit-for-bit comparison of the two results for one input encoding. */
+static const int kExcepts = FE_DIVBYZERO | FE_INEXACT | FE_INVALID |
+			    FE_OVERFLOW | FE_UNDERFLOW;
+
+/*
+ * Exact bit-for-bit comparison of the two results for one input encoding,
+ * together with the exception flags each call raised.
+ */
 static void check_tanhf(uint32_t xb)
 {
 	const float x = from_bits(xb);
 
+	std::feclearexcept(kExcepts);
 	const float got = pbsd::lib_msun_src::b0152::tanhf(x);
+	const int gex = std::fetestexcept(kExcepts);
+
+	std::feclearexcept(kExcepts);
 	const float want = ref_tanhf(x);
+	const int wex = std::fetestexcept(kExcepts);
 
 	const uint32_t gb = to_bits(got);
 	const uint32_t wb = to_bits(want);
 
 	st_tanhf.cases++;
-	if (gb != wb) {
+	if (gb != wb || gex != wex) {
 		st_tanhf.failures++;
 		if (st_tanhf.reported < 20) {
 			st_tanhf.reported++;
-			std::printf("  FAIL tanhf: x=0x%08x (%.9g)  port=0x%08x (%.9g)"
-				    "  oracle=0x%08x (%.9g)\n",
-				    xb, (double)x, gb, (double)got, wb, (double)want);
+			std::printf("  FAIL tanhf: x=0x%08x (%.9g)  port=0x%08x"
+				    " (%.9g) exc=0x%x  oracle=0x%08x (%.9g)"
+				    " exc=0x%x\n",
+				    xb, (double)x, gb, (double)got, gex,
+				    wb, (double)want, wex);
 		}
 	}
 }
@@ -99,7 +121,7 @@ static uint32_t rand_in(uint32_t lo, uint32_t hi)
 }
 
 /*
- * The four thresholds the port branches on, as float encodings:
+ * The thresholds the port branches on, as float encodings:
  *   0x39800000  2**-12   (below it: return x directly)
  *   0x3f800000  1.0      (at or above: the expm1f(+2|x|) arm)
  *   0x41100000  9.0      (at or above: the constant +-(1 - tiny) arm)
@@ -117,8 +139,8 @@ static const uint32_t boundaries[] = {
 
 static void hand_written_cases(void)
 {
-	/* Zeroes, subnormals, and the exact threshold encodings with their
-	   immediate neighbours on both sides. */
+	/* Zeroes, subnormals, infinities, NaNs of both signs, and the exact
+	   threshold encodings with their immediate neighbours on both sides. */
 	static const uint32_t explicit_bits[] = {
 		0x00000000u,		/* +0 */
 		0x00000001u,		/* smallest subnormal */
@@ -160,7 +182,7 @@ static void hand_written_cases(void)
 		0x7f7ffffeu,
 		0x7f7fffffu,		/* FLT_MAX */
 		0x7f800000u,		/* +Inf */
-		0x7f800001u,		/* smallest signalling-encoding NaN */
+		0x7f800001u,		/* smallest NaN encoding */
 		0x7fbfffffu,
 		0x7fc00000u,		/* default quiet NaN */
 		0x7fc00001u,
@@ -171,10 +193,10 @@ static void hand_written_cases(void)
 		check_both_signs(explicit_bits[i]);
 
 	/* Dense neighbourhoods: every encoding within 512 ulps of each
-	   threshold, both signs.  A comparison that is flipped from < to <=
-	   (or the reverse) only changes behaviour for the single encoding
-	   sitting exactly on the threshold, so the threshold itself and both
-	   of its neighbours must be exercised. */
+	   threshold, both signs.  A comparison flipped from < to <= (or the
+	   reverse) changes behaviour only for the single encoding sitting
+	   exactly on the threshold, so the threshold itself and both of its
+	   neighbours have to be exercised, not just the happy path. */
 	for (unsigned b = 0; b < sizeof boundaries / sizeof boundaries[0]; b++) {
 		const uint32_t base = boundaries[b];
 		for (int32_t d = -512; d <= 512; d++) {
@@ -185,8 +207,8 @@ static void hand_written_cases(void)
 		}
 	}
 
-	/* A walk through every binade: one encoding per exponent, plus a few
-	   mantissa positions, so no exponent range goes untested. */
+	/* A walk through every binade: several mantissa positions for each of
+	   the 256 exponents, so no exponent range goes untested. */
 	for (uint32_t e = 0; e < 256; e++) {
 		static const uint32_t mant[] = {
 			0x000000u, 0x000001u, 0x155555u,

@@ -9,6 +9,13 @@ module;
 #include <cstdint>
 #include <cstdio>
 
+#include <fcntl.h>
+
+#if defined(__cplusplus) && defined(__GLIBC__)
+#undef O_CLOEXEC
+#undef O_NOFOLLOW
+#endif
+
 #ifndef O_NOFOLLOW
 #define O_NOFOLLOW 0
 #endif

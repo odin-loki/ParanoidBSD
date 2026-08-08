@@ -15,22 +15,9 @@ module;
 
 export module pbsd.sys.fs.procfs.b0161;
 
-namespace pbsd::sys_fs_procfs::b0161::detail {
+export namespace pbsd::sys_fs_procfs::b0161 {
 
-#define EINVAL		22
-#define EOPNOTSUPP	45
-
-#define PRVM_BLOCK_EXEC		0x00000001
-#define PRVM_CHECK_DEBUG	0x00000004
-
-#define SBUF_FINISHED	0x00020000
-#define SBUF_INCLUDENUL	0x00000002
-
-#define SBUF_ISFINISHED(s)	((s)->s_flags & SBUF_FINISHED)
-#define SBUF_NULINCLUDED(s)	((s)->s_flags & SBUF_INCLUDENUL)
-#define SBUF_SETFLAG(s, f)	((s)->s_flags |= (f))
-
-enum uio_rw {
+enum uio_rw_enum {
 	UIO_READ,
 	UIO_WRITE
 };
@@ -62,8 +49,26 @@ struct sbuf {
 
 struct uio {
 	ssize_t		uio_resid;
-	uio_rw		uio_rw;
+	uio_rw_enum	uio_rw;
 };
+
+constexpr int EINVAL = 22;
+constexpr int EOPNOTSUPP = 45;
+constexpr int PRVM_BLOCK_EXEC = 0x00000001;
+constexpr int PRVM_CHECK_DEBUG = 0x00000004;
+
+} // namespace pbsd::sys_fs_procfs::b0161
+
+namespace pbsd::sys_fs_procfs::b0161::detail {
+
+using namespace pbsd::sys_fs_procfs::b0161;
+
+#define SBUF_FINISHED	0x00020000
+#define SBUF_INCLUDENUL	0x00000002
+
+#define SBUF_ISFINISHED(s)	((s)->s_flags & SBUF_FINISHED)
+#define SBUF_NULINCLUDED(s)	((s)->s_flags & SBUF_INCLUDENUL)
+#define SBUF_SETFLAG(s, f)	((s)->s_flags |= (f))
 
 #define PFS_FILL_ARGS \
 	thread *td, proc *p, pfs_node *pn, sbuf *sb, uio *uio
@@ -131,7 +136,7 @@ sbuf_finish(sbuf *s)
 }
 
 inline int
-sbuf_vprintf(sbuf *s, const char *fmt, std::va_list ap)
+sbuf_vprintf(sbuf *s, const char *fmt, va_list ap)
 {
 	int n;
 
@@ -152,12 +157,12 @@ sbuf_vprintf(sbuf *s, const char *fmt, std::va_list ap)
 inline int
 sbuf_printf(sbuf *s, const char *fmt, ...)
 {
-	std::va_list ap;
+	va_list ap;
 	int n;
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	n = sbuf_vprintf(s, fmt, ap);
-	std::va_end(ap);
+	va_end(ap);
 	return (n);
 }
 
@@ -183,26 +188,11 @@ sbuf_len(sbuf *s)
 
 export namespace pbsd::sys_fs_procfs::b0161 {
 
-using detail::mtx;
-using detail::pfs_node;
-using detail::proc;
-using detail::sbuf;
-using detail::thread;
-using detail::uio;
-using detail::UIO_READ;
-using detail::UIO_WRITE;
-
 #define PFS_FILL_ARGS \
-	detail::thread *td, detail::proc *p, detail::pfs_node *pn, \
-	detail::sbuf *sb, detail::uio *uio
+	thread *td, proc *p, pfs_node *pn, sbuf *sb, uio *uio
 
 #define PROC_LOCK(p)	pthread_mutex_lock(&(p)->p_mtx.lock)
 #define PROC_UNLOCK(p)	pthread_mutex_unlock(&(p)->p_mtx.lock)
-
-#define EINVAL		detail::EINVAL
-#define EOPNOTSUPP	detail::EOPNOTSUPP
-#define PRVM_BLOCK_EXEC	detail::PRVM_BLOCK_EXEC
-#define PRVM_CHECK_DEBUG	detail::PRVM_CHECK_DEBUG
 
 inline void stub_reset() noexcept
 {

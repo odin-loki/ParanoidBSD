@@ -1,55 +1,20 @@
 /*
- * Reference oracle for batch b0098.
+ * oracle.c -- batch b0098 reference implementation.
  *
- * The original HardenedBSD sources are concatenated below with every function
- * renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.
+ * The original HardenedBSD sources concatenated, with every function renamed
+ * with a "ref_" prefix.  Function bodies are UNMODIFIED.
+ *
+ * Sources, in order:
+ *   lib/libc/stdio/vwscanf.c
+ *   lib/libc/stdio/vwprintf.c
+ *   lib/libc/stdio/setbuf.c
+ *
+ * Deviations, limited to non-body text:
+ *   - <xlocale.h> is not included and the vwscanf_l()/vwprintf_l() functions
+ *     are absent: this platform's libc has no locale_t-parameterised
+ *     vfwscanf_l()/vfwprintf_l().  See skipped.txt.
+ *   - setbuf.c's #include "local.h" is dropped; nothing in the body needs it.
  */
-
-#define _GNU_SOURCE
-
-#include <limits.h>
-#include <locale.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <wchar.h>
-
-#if defined(__has_include)
-#if __has_include(<xlocale.h>)
-#include <xlocale.h>
-#endif
-#elif defined(__FreeBSD__) || defined(__APPLE__)
-#include <xlocale.h>
-#endif
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * CHAR_BIT)
-#endif
-
-#ifndef _XLOCALE_H_
-#ifndef vfwscanf_l
-int
-vfwscanf_l(FILE *stream, locale_t loc, const wchar_t *fmt, va_list ap)
-{
-	locale_t old = uselocale(loc);
-	int r = vfwscanf(stream, fmt, ap);
-
-	uselocale(old);
-	return r;
-}
-#endif
-
-#ifndef vfwprintf_l
-int
-vfwprintf_l(FILE *stream, locale_t loc, const wchar_t *fmt, va_list ap)
-{
-	locale_t old = uselocale(loc);
-	int r = vfwprintf(stream, fmt, ap);
-
-	uselocale(old);
-	return r;
-}
-#endif
-#endif
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -84,15 +49,14 @@ vfwprintf_l(FILE *stream, locale_t loc, const wchar_t *fmt, va_list ap)
  * SUCH DAMAGE.
  */
 
+#include <stdarg.h>
+#include <stdio.h>
+#include <wchar.h>
+
 int
 ref_vwscanf(const wchar_t * __restrict fmt, va_list ap)
 {
 	return (vfwscanf(stdin, fmt, ap));
-}
-int
-ref_vwscanf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
-{
-	return (vfwscanf_l(stdin, locale, fmt, ap));
 }
 
 /*-
@@ -132,11 +96,6 @@ int
 ref_vwprintf(const wchar_t * __restrict fmt, va_list ap)
 {
 	return (vfwprintf(stdout, fmt, ap));
-}
-int
-ref_vwprintf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
-{
-	return (vfwprintf_l(stdout, locale, fmt, ap));
 }
 
 /*-

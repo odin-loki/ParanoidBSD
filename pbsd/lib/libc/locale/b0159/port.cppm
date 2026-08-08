@@ -10,16 +10,16 @@
 module;
 
 #include <climits>
-#include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
 
 export module pbsd.lib.libc.locale.b0159;
 
 extern "C" {
+struct xlocale;
+typedef struct xlocale *locale_t;
+
 #define __mbstate_t_defined 1
 typedef union {
 	char		__mbstate8[128];
@@ -27,9 +27,19 @@ typedef union {
 } pbsd_mbstate_t;
 typedef pbsd_mbstate_t mbstate_t;
 
-#include <cwchar>
+#include <cstdarg>
+#include <errno.h>
+#define _BITS_TYPES_LOCALE_T_H	1
+#include <string.h>
+#include <wchar.h>
+
+#ifndef __unused
+#define __unused	__attribute__((__unused__))
+#endif
 
 typedef int nl_item;
+
+
 
 #ifndef CODESET
 #define CODESET		0
@@ -104,8 +114,12 @@ typedef int nl_item;
 #define D_MD_ORDER	69
 #endif
 
-#ifndef MIN
-#define MIN(a, b)	((a) < (b) ? (a) : (b))
+#ifndef __unused
+#define __unused	__attribute__((__unused__))
+#endif
+
+#ifndef u_char
+typedef unsigned char u_char;
 #endif
 
 #ifndef MB_LEN_MAX
@@ -114,6 +128,10 @@ typedef int nl_item;
 
 #ifndef MB_CUR_MAX
 #define MB_CUR_MAX	4
+#endif
+
+#ifndef MIN
+#define MIN(a, b)	((a) < (b) ? (a) : (b))
 #endif
 
 #ifndef EFTYPE
@@ -147,11 +165,11 @@ typedef struct {
 	_RuneEntry	*__ranges;
 } _RuneRange;
 
-struct _RuneLocale {
+typedef struct {
 	char		__magic[8];
 	char		__encoding[32];
-	__rune_t	(*__sgetrune)(const char *, std::size_t, char const **);
-	int		(*__sputrune)(__rune_t, char *, std::size_t, char **);
+	__rune_t	(*__sgetrune)(const char *, size_t, char const **);
+	int		(*__sputrune)(__rune_t, char *, size_t, char **);
 	__rune_t	__invalid_rune;
 	unsigned long	__runetype[256];
 	__rune_t	__maplower[256];
@@ -161,11 +179,11 @@ struct _RuneLocale {
 	_RuneRange	__mapupper_ext;
 	void		*__variable;
 	int		__variable_len;
-};
+} _RuneLocale;
 
-typedef std::size_t (*mbrtowc_pfn_t)(wchar_t * __restrict, const char * __restrict,
-    std::size_t, mbstate_t * __restrict);
-typedef std::size_t (*wcrtomb_pfn_t)(char * __restrict, wchar_t,
+typedef size_t (*mbrtowc_pfn_t)(wchar_t * __restrict, const char * __restrict,
+    size_t, mbstate_t * __restrict);
+typedef size_t (*wcrtomb_pfn_t)(char * __restrict, wchar_t,
     mbstate_t * __restrict);
 
 struct xlocale_component_header {
@@ -174,18 +192,18 @@ struct xlocale_component_header {
 
 struct xlocale_ctype {
 	struct {
-		xlocale_component_header header;
+		struct xlocale_component_header header;
 		char		locale_name[32];
 	} header;
 	_RuneLocale	*runes;
-	std::size_t	(*__mbrtowc)(wchar_t * __restrict, const char * __restrict,
-		    std::size_t, mbstate_t * __restrict);
+	size_t		(*__mbrtowc)(wchar_t * __restrict, const char * __restrict,
+		    size_t, mbstate_t * __restrict);
 	int		(*__mbsinit)(const mbstate_t *);
-	std::size_t	(*__mbsnrtowcs)(wchar_t * __restrict, const char ** __restrict,
-		    std::size_t, std::size_t, mbstate_t * __restrict);
-	std::size_t	(*__wcrtomb)(char * __restrict, wchar_t, mbstate_t * __restrict);
-	std::size_t	(*__wcsnrtombs)(char * __restrict, const wchar_t ** __restrict,
-		    std::size_t, std::size_t, mbstate_t * __restrict);
+	size_t		(*__mbsnrtowcs)(wchar_t * __restrict, const char ** __restrict,
+		    size_t, size_t, mbstate_t * __restrict);
+	size_t		(*__wcrtomb)(char * __restrict, wchar_t, mbstate_t * __restrict);
+	size_t		(*__wcsnrtombs)(char * __restrict, const wchar_t ** __restrict,
+		    size_t, size_t, mbstate_t * __restrict);
 	int		__mb_cur_max;
 	int		__mb_sb_limit;
 	mbstate_t	c16rtomb;
@@ -206,6 +224,10 @@ struct xlocale_ctype {
 
 enum {
 	XLC_CTYPE = 1,
+	XLC_NUMERIC = 2,
+	XLC_MONETARY = 3,
+	XLC_MESSAGES = 5,
+	XLC_TIME = 6,
 };
 
 struct lc_time_T {
@@ -248,10 +270,8 @@ struct pbsd_lconv {
 struct xlocale {
 	void		*components[8];
 	char		*csym;
-	pbsd_lconv	conv;
+	struct pbsd_lconv conv;
 };
-
-typedef struct xlocale *locale_t;
 
 typedef struct {
 	const char	*encoding;
@@ -271,26 +291,27 @@ typedef struct {
 #define FIX_LOCALE(loc)	if ((loc) == NULL) (loc) = __get_locale()
 #define XLOCALE_CTYPE(l)	((struct xlocale_ctype *)(l)->components[XLC_CTYPE])
 
-extern pbsd_rune_hook_t	pbsd_rune_hook;
-extern pbsd_nl_hook_t	pbsd_nl_hook;
-extern _RuneLocale	_DefaultRuneLocale;
+extern _RuneLocale		_DefaultRuneLocale;
 extern _RuneLocale const	*_CurrentRuneLocale;
-extern const char	*_PathLocale;
-extern struct xlocale	__xlocale_global_locale;
+extern const char		*_PathLocale;
+extern struct xlocale		__xlocale_global_locale;
 extern struct xlocale_ctype	__xlocale_global_ctype;
 extern struct xlocale_ctype	__xlocale_C_ctype;
-extern int		__mb_cur_max;
-extern int		__mb_sb_limit;
+extern int			__mb_cur_max;
+extern int			__mb_sb_limit;
 
-typedef struct {
+void		*calloc(size_t, size_t);
+void		free(void *);
+void		*reallocf(void *, size_t);
+int		asprintf(char **, const char *, ...);
+
+locale_t	__get_locale(void);
 struct lc_time_T *__get_current_time_locale(locale_t);
 struct lc_numeric_T *__get_current_numeric_locale(locale_t);
 struct lc_messages_T *__get_current_messages_locale(locale_t);
 struct lc_monetary_T *__get_current_monetary_locale(locale_t);
 struct pbsd_lconv *localeconv_l(locale_t);
-_RuneLocale *_Read_RuneMagi(const char *);
-void pbsd_reset_hooks(void);
-void pbsd_oracle_init(void);
+_RuneLocale	*_Read_RuneMagi(const char *);
 
 int	_ascii_init(struct xlocale_ctype *, _RuneLocale *);
 int	_UTF8_init(struct xlocale_ctype *, _RuneLocale *);
@@ -302,7 +323,8 @@ int	_GB2312_init(struct xlocale_ctype *, _RuneLocale *);
 int	_GBK_init(struct xlocale_ctype *, _RuneLocale *);
 int	_BIG5_init(struct xlocale_ctype *, _RuneLocale *);
 int	_MSKanji_init(struct xlocale_ctype *, _RuneLocale *);
-}
+
+} // extern "C"
 
 export namespace pbsd::lib_libc_locale::b0159 {
 
@@ -310,28 +332,26 @@ using mbstate_t = ::mbstate_t;
 using locale_t = ::locale_t;
 using nl_item = ::nl_item;
 using _RuneLocale = ::_RuneLocale;
-using xlocale_ctype = ::xlocale_ctype;
 
 
-
-std::size_t
+size_t
 __mbsnrtowcs_std(wchar_t * __restrict dst, const char ** __restrict src,
-    std::size_t nms, std::size_t len, mbstate_t * __restrict ps,
+    size_t nms, size_t len, mbstate_t * __restrict ps,
     mbrtowc_pfn_t pmbrtowc)
 {
 	const char *s;
-	std::size_t nchr;
+	size_t nchr;
 	wchar_t wc;
-	std::size_t nb;
+	size_t nb;
 
 	s = *src;
 	nchr = 0;
 
-	if (dst == nullptr) {
+	if (dst == NULL) {
 		for (;;) {
-			if ((nb = pmbrtowc(&wc, s, nms, ps)) == (std::size_t)-1)
-				return ((std::size_t)-1);
-			else if (nb == 0 || nb == (std::size_t)-2)
+			if ((nb = pmbrtowc(&wc, s, nms, ps)) == (size_t)-1)
+				return ((size_t)-1);
+			else if (nb == 0 || nb == (size_t)-2)
 				return (nchr);
 			s += nb;
 			nms -= nb;
@@ -340,14 +360,14 @@ __mbsnrtowcs_std(wchar_t * __restrict dst, const char ** __restrict src,
 	}
 
 	while (len-- > 0) {
-		if ((nb = pmbrtowc(dst, s, nms, ps)) == (std::size_t)-1) {
+		if ((nb = pmbrtowc(dst, s, nms, ps)) == (size_t)-1) {
 			*src = s;
-			return ((std::size_t)-1);
-		} else if (nb == (std::size_t)-2) {
+			return ((size_t)-1);
+		} else if (nb == (size_t)-2) {
 			*src = s + nms;
 			return (nchr);
 		} else if (nb == 0) {
-			*src = nullptr;
+			*src = NULL;
 			return (nchr);
 		}
 		s += nb;
@@ -359,24 +379,24 @@ __mbsnrtowcs_std(wchar_t * __restrict dst, const char ** __restrict src,
 	return (nchr);
 }
 
-std::size_t
+size_t
 __wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
-    std::size_t nwc, std::size_t len, mbstate_t * __restrict ps,
+    size_t nwc, size_t len, mbstate_t * __restrict ps,
     wcrtomb_pfn_t pwcrtomb)
 {
 	mbstate_t mbsbak;
 	char buf[MB_LEN_MAX];
 	const wchar_t *s;
-	std::size_t nbytes;
-	std::size_t nb;
+	size_t nbytes;
+	size_t nb;
 
 	s = *src;
 	nbytes = 0;
 
-	if (dst == nullptr) {
+	if (dst == NULL) {
 		while (nwc-- > 0) {
-			if ((nb = pwcrtomb(buf, *s, ps)) == (std::size_t)-1)
-				return ((std::size_t)-1);
+			if ((nb = pwcrtomb(buf, *s, ps)) == (size_t)-1)
+				return ((size_t)-1);
 			else if (*s == L'\0')
 				return (nbytes + nb - 1);
 			s++;
@@ -386,25 +406,25 @@ __wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
 	}
 
 	while (len > 0 && nwc-- > 0) {
-		if (len > (std::size_t)MB_CUR_MAX) {
-			if ((nb = pwcrtomb(dst, *s, ps)) == (std::size_t)-1) {
+		if (len > (size_t)MB_CUR_MAX) {
+			if ((nb = pwcrtomb(dst, *s, ps)) == (size_t)-1) {
 				*src = s;
-				return ((std::size_t)-1);
+				return ((size_t)-1);
 			}
 		} else {
 			mbsbak = *ps;
-			if ((nb = pwcrtomb(buf, *s, ps)) == (std::size_t)-1) {
+			if ((nb = pwcrtomb(buf, *s, ps)) == (size_t)-1) {
 				*src = s;
-				return ((std::size_t)-1);
+				return ((size_t)-1);
 			}
 			if (nb > len) {
 				*ps = mbsbak;
 				break;
 			}
-			std::memcpy(dst, buf, nb);
+			memcpy(dst, buf, nb);
 		}
 		if (*s == L'\0') {
-			*src = nullptr;
+			*src = NULL;
 			return (nbytes + nb - 1);
 		}
 		s++;
@@ -474,8 +494,6 @@ size_t	_none_wcsnrtombs(char * __restrict, const wchar_t ** __restrict,
 
 /* setup defaults */
 
-int __mb_cur_max = 1;
-int __mb_sb_limit = 256; /* Expected to be <= _CACHED_RUNES */
 
 int
 _none_init(struct xlocale_ctype *l, _RuneLocale *rl)
@@ -513,7 +531,7 @@ _none_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s, size_t n,
 		return (0);
 	if (n == 0)
 		/* Incomplete multibyte sequence */
-		return ((std::size_t)-2);
+		return ((size_t)-2);
 	if (pwc != nullptr)
 		*pwc = (unsigned char)*s;
 	return (*s == '\0' ? 0 : 1);
@@ -529,7 +547,7 @@ _none_wcrtomb(char * __restrict s, wchar_t wc,
 		return (1);
 	if (wc < 0 || wc > UCHAR_MAX) {
 		errno = EILSEQ;
-		return ((std::size_t)-1);
+		return ((size_t)-1);
 	}
 	*s = (unsigned char)wc;
 	return (1);
@@ -543,7 +561,7 @@ _none_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
 	size_t nchr;
 
 	if (dst == nullptr) {
-		s = memchr(*src, '\0', nms);
+		s = (const char *)memchr(*src, '\0', nms);
 		return (s != nullptr ? s - *src : nms);
 	}
 
@@ -571,7 +589,7 @@ _none_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 		for (s = *src; nwc > 0 && *s != L'\0'; s++, nwc--) {
 			if (*s < 0 || *s > UCHAR_MAX) {
 				errno = EILSEQ;
-				return ((std::size_t)-1);
+				return ((size_t)-1);
 			}
 		}
 		return (s - *src);
@@ -583,7 +601,7 @@ _none_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 		if (*s < 0 || *s > UCHAR_MAX) {
 			*src = s;
 			errno = EILSEQ;
-			return ((std::size_t)-1);
+			return ((size_t)-1);
 		}
 		if ((*dst++ = *s++) == '\0') {
 			*src = nullptr;
@@ -793,7 +811,7 @@ nl_langinfo_l(nl_item item, locale_t loc)
 				if (psn != '\0') {
 					int clen = strlen(cs);
 
-					if ((loc->csym = reallocf(loc->csym, clen + 2)) != nullptr) {
+					if ((loc->csym = (char *)reallocf(loc->csym, clen + 2)) != nullptr) {
 						*loc->csym = psn;
 						strcpy(loc->csym + 1, cs);
 						ret = loc->csym;
@@ -873,6 +891,8 @@ size_t	_GB18030_wcsnrtombs(char * __restrict,
 		    mbstate_t * __restrict);
 
 
+typedef unsigned char u_char;
+
 typedef struct {
 	int	count;
 	u_char	bytes[4];
@@ -914,7 +934,7 @@ _GB18030_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 
 	if (gs->count < 0 || gs->count > sizeof(gs->bytes)) {
 		errno = EINVAL;
-		return ((std::size_t)-1);
+		return ((size_t)-1);
 	}
 
 	if (s == nullptr) {
@@ -932,7 +952,7 @@ _GB18030_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 
 	if (n == 0)
 		/* Incomplete multibyte sequence */
-		return ((std::size_t)-2);
+		return ((size_t)-2);
 
 	/*
 	 * Single byte:		[00-7f]
@@ -946,7 +966,7 @@ _GB18030_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 	} else if (ch >= 0x81 && ch <= 0xfe) {
 		wch = ch;
 		if (n < 2)
-			return ((std::size_t)-2);
+			return ((size_t)-2);
 		ch = (unsigned char)*s++;
 		if ((ch >= 0x40 && ch <= 0x7e) || (ch >= 0x80 && ch <= 0xfe)) {
 			wch = (wch << 8) | ch;
@@ -959,13 +979,13 @@ _GB18030_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 			 */
 			wch = ((wch & 0x7f) << 8) | ch;
 			if (n < 3)
-				return ((std::size_t)-2);
+				return ((size_t)-2);
 			ch = (unsigned char)*s++;
 			if (ch < 0x81 || ch > 0xfe)
 				goto ilseq;
 			wch = (wch << 8) | ch;
 			if (n < 4)
-				return ((std::size_t)-2);
+				return ((size_t)-2);
 			ch = (unsigned char)*s++;
 			if (ch < 0x30 || ch > 0x39)
 				goto ilseq;
@@ -982,7 +1002,7 @@ _GB18030_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 	return (wch == L'\0' ? 0 : len - ocount);
 ilseq:
 	errno = EILSEQ;
-	return ((std::size_t)-1);
+	return ((size_t)-1);
 }
 
 size_t
@@ -996,7 +1016,7 @@ _GB18030_wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 
 	if (gs->count != 0) {
 		errno = EINVAL;
-		return ((std::size_t)-1);
+		return ((size_t)-1);
 	}
 
 	if (s == nullptr)
@@ -1045,7 +1065,7 @@ _GB18030_wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 	return (len);
 ilseq:
 	errno = EILSEQ;
-	return ((std::size_t)-1);
+	return ((size_t)-1);
 }
 
 size_t
@@ -1111,7 +1131,7 @@ extern _RuneLocale const *_CurrentRuneLocale;
 /*
  * A cached version of the runes for this thread.  Used by ctype.h
  */
-_Thread_local const _RuneLocale *_ThreadRuneLocale;
+thread_local const _RuneLocale *_ThreadRuneLocale;
 
 extern int __mb_sb_limit;
 
@@ -1122,7 +1142,7 @@ int		__setrunelocale(struct xlocale_ctype *l, const char *);
 void
 destruct_ctype(void *v)
 {
-	struct xlocale_ctype *l = v;
+	struct xlocale_ctype *l = (struct xlocale_ctype *)v;
 
 	if (&_DefaultRuneLocale != l->runes)
 		free(l->runes);
@@ -1265,7 +1285,7 @@ __set_thread_rune_locale(locale_t loc)
 void *
 __ctype_load(const char *locale, locale_t unused __unused)
 {
-	struct xlocale_ctype *l = calloc(sizeof(struct xlocale_ctype), 1);
+	struct xlocale_ctype *l = (struct xlocale_ctype *)calloc(sizeof(struct xlocale_ctype), 1);
 	if (l == nullptr)
 		return (nullptr);
 

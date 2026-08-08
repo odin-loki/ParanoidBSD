@@ -35,6 +35,9 @@ typedef union {
 } pbsd_mbstate_t;
 typedef pbsd_mbstate_t mbstate_t;
 
+struct xlocale;
+typedef struct xlocale *locale_t;
+
 #include <errno.h>
 #include <limits.h>
 #include <stddef.h>
@@ -275,8 +278,6 @@ struct xlocale {
 	char		*csym;
 	struct pbsd_lconv conv;
 };
-
-typedef struct xlocale *locale_t;
 
 #define FIX_LOCALE(loc)	if ((loc) == NULL) (loc) = __get_locale()
 #define XLOCALE_CTYPE(l)	((struct xlocale_ctype *)(l)->components[XLC_CTYPE])
@@ -1433,6 +1434,8 @@ ref___ctype_load(const char *locale, locale_t unused __unused)
 	return (l);
 }
 
+
+const size_t pbsd_xlocale_ctype_sz = sizeof(struct xlocale_ctype);
 
 void
 pbsd_oracle_init(void)
