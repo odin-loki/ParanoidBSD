@@ -98,6 +98,10 @@ const char *errmsg = "";
 
 int malloc_fail_at;
 int malloc_calls;
+int realloc_fail_at;
+int realloc_calls;
+int hup_calls;
+int int_calls;
 
 int &mutex_ref() { return mutex; }
 int &sigflags_ref() { return sigflags; }

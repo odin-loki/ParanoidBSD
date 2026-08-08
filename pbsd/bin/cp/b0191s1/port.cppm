@@ -41,6 +41,18 @@ module;
 
 export module pbsd.bin.cp.b0191s1;
 
+typedef void *acl_t;
+typedef unsigned int acl_type_t;
+
+extern "C" {
+acl_t acl_get_fd_np(int, acl_type_t);
+int acl_is_trivial_np(acl_t, int *);
+int acl_set_fd_np(int, acl_t, acl_type_t);
+int acl_free(acl_t);
+int fchflags(int, unsigned long);
+int chflagsat(int, const char *, unsigned long, int);
+}
+
 export namespace pbsd::bin_cp::b0191s1 {
 
 #ifndef MAXPHYS
@@ -71,6 +83,10 @@ typedef unsigned int acl_type_t;
 #ifndef _PC_ACL_EXTENDED
 #define _PC_ACL_EXTENDED 65
 #endif
+
+int setfile(struct stat *, int, bool);
+int preserve_fd_acls(int, int);
+int preserve_dir_acls(const char *, const char *);
 
 acl_t acl_get_fd_np(int, acl_type_t);
 int acl_is_trivial_np(acl_t, int *);

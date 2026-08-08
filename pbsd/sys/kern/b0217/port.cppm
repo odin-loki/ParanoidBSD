@@ -1271,4 +1271,31 @@ inline const char *out_text() { return detail::model_out; }
 inline std::size_t out_length() { return detail::model_out_n; }
 inline long tslog_record_count() { return nrecs; }
 
+inline bool tslog_get_record(long i, void **td, int *type, const char **f,
+    const char **s, std::uint64_t *tsc)
+{
+	if (i < 0 || i >= (long)nitems(timestamps))
+		return false;
+	*td = timestamps[i].td;
+	*type = timestamps[i].type;
+	*f = timestamps[i].f;
+	*s = timestamps[i].s;
+	*tsc = timestamps[i].tsc;
+	return true;
+}
+
+inline bool tslog_user_get_record(pid_t pid, pid_t *ppid, std::uint64_t *tf,
+    std::uint64_t *te, const char **ex, const char **nm, int *reused)
+{
+	if (pid < 0 || pid > PID_MAX)
+		return false;
+	*ppid = procs[pid].ppid;
+	*tf = procs[pid].tsc_forked;
+	*te = procs[pid].tsc_exited;
+	*ex = procs[pid].execname;
+	*nm = procs[pid].namei;
+	*reused = procs[pid].reused;
+	return true;
+}
+
 } // namespace

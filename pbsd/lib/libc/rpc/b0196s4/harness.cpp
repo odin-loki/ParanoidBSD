@@ -155,20 +155,23 @@ check_crypt(const char *which, unsigned len, unsigned mode, const char *origin,
 		got = port::cbc_crypt(reinterpret_cast<char *>(portkey.data()),
 		    reinterpret_cast<char *>(portbuf.data()), len, mode,
 		    reinterpret_cast<char *>(portivec.data()));
+		apply_mock_origin(origin);
 		want = ref_cbc_crypt(reinterpret_cast<char *>(refkey.data()),
 		    reinterpret_cast<char *>(refbuf.data()), len, mode,
 		    reinterpret_cast<char *>(refivec.data()));
 	} else {
 		got = port::ecb_crypt(reinterpret_cast<char *>(portkey.data()),
 		    reinterpret_cast<char *>(portbuf.data()), len, mode);
+		apply_mock_origin(origin);
 		want = ref_ecb_crypt(reinterpret_cast<char *>(refkey.data()),
 		    reinterpret_cast<char *>(refbuf.data()), len, mode);
 	}
 
 	bool ok = got == want &&
 	    bufs_equal(portkey.data(), refkey.data(), 16) &&
-	    bufs_equal(portbuf.data(), refbuf.data(), cap) &&
-	    bufs_equal(portivec.data(), refivec.data(), 16);
+	    bufs_equal(portbuf.data(), refbuf.data(), cap);
+	if (which[0] == 'c')
+		ok = ok && bufs_equal(portivec.data(), refivec.data(), 16);
 
 	if (!ok) {
 		st.failures++;

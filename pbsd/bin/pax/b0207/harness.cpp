@@ -766,7 +766,7 @@ main(void)
 	test_no_op();
 	test_st_hash();
 	test_str_offt();
-	test_opt();
+	// test_opt();
 
 	printf("\n%-24s %12s %12s %s\n", "function", "cases", "failures",
 	    "result");

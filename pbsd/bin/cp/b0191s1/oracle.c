@@ -116,6 +116,10 @@ PATH_T ref_to = { .dir = -1, .end = ref_to.path };
 bool ref_Nflag, ref_fflag, ref_iflag, ref_lflag, ref_nflag, ref_pflag, ref_sflag, ref_vflag;
 volatile sig_atomic_t ref_info;
 
+int ref_setfile(struct stat *, int, bool);
+int ref_preserve_fd_acls(int, int);
+int ref_preserve_dir_acls(const char *, const char *);
+
 #define to ref_to
 #define Nflag ref_Nflag
 #define fflag ref_fflag
