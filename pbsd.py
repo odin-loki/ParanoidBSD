@@ -35,6 +35,12 @@ import tempfile
 import time
 from pathlib import Path
 
+# cursor-agent is installed to ~/.local/bin by default; worker processes need this
+# on PATH even when the parent shell did not export it.
+_pbsd_bin = str(Path.home() / ".local" / "bin")
+if _pbsd_bin not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = _pbsd_bin + os.pathsep + os.environ.get("PATH", "")
+
 # ─────────────────────────────── config ──────────────────────────────────────
 
 MODEL = "composer-2.5"                    # cheap bulk model; escalate on gate failure
@@ -1495,6 +1501,12 @@ def is_rate_limited(detail: str) -> bool:
     ) or "rate limit exceeded" in d
 
 
+def is_auth_failure(detail: str) -> bool:
+    """True when the API key or login is wrong — retrying will never help."""
+    d = detail.lower()
+    return "api key is invalid" in d or "authentication" in d and "fail" in d
+
+
 def call_agent(prompt: str, model: str) -> tuple[bool, str]:
     """One agent call, retrying transient failures with backoff.
 
@@ -1503,6 +1515,10 @@ def call_agent(prompt: str, model: str) -> tuple[bool, str]:
     reports its actual reason there and the log used to record only an empty stdout.
     """
     last = ""
+    env = os.environ.copy()
+    home_bin = str(Path.home() / ".local" / "bin")
+    if home_bin not in env.get("PATH", ""):
+        env["PATH"] = home_bin + ":" + env.get("PATH", "")
     for attempt in range(1, AGENT_RETRIES + 1):
         t0 = time.monotonic()
         try:
@@ -1511,13 +1527,15 @@ def call_agent(prompt: str, model: str) -> tuple[bool, str]:
                  "--model", model, "--output-format", "text",
                  "--force", "--trust"],
                 timeout=AGENT_TIMEOUT, text=True, capture_output=True,
-                stdin=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL, env=env,
             )
             if r.returncode == 0:
                 return True, (r.stdout or "")[-2000:]
             detail = (r.stderr or r.stdout or "").strip() or "(no output)"
             last = f"exit {r.returncode} after {time.monotonic() - t0:.0f}s: {detail[-800:]}"
             if is_rate_limited(last):
+                return False, last
+            if is_auth_failure(last):
                 return False, last
         except subprocess.TimeoutExpired:
             return False, f"timed out after {AGENT_TIMEOUT}s"
@@ -1584,6 +1602,8 @@ def attempt_batch(batch_id: str, mine: list[dict], model: str,
         if not agent_ok:
             if is_rate_limited(agent_out):
                 return False, f"agent rate limited: {agent_out}", "rate_limit"
+            if is_auth_failure(agent_out):
+                return False, f"agent auth failed: {agent_out}", "auth_failed"
             return False, f"agent failed: {agent_out}", "agent"
         ok, detail = gate(batch_id, outdir, mine)
         if not ok:
@@ -1697,6 +1717,11 @@ def apply_result(batch_id: str, rows: list[dict], ok: bool, detail: str,
     if how == "rate_limit" or is_rate_limited(detail):
         say(f"  ~ {batch_id} rate limited — leaving PENDING for retry")
         log(batch=batch_id, status="RATE_LIMITED", detail=detail, how=how)
+        return [batch_id]
+
+    if how == "auth_failed" or is_auth_failure(detail):
+        say(f"  ! {batch_id} auth failure — leaving PENDING (fix API key)")
+        log(batch=batch_id, status="AUTH_FAILED", detail=detail, how=how)
         return [batch_id]
 
     for r in mine:
@@ -1913,6 +1938,13 @@ def run_parallel(queue: list[str], rows: list[dict], model: str,
                             time.sleep(pause)
                             current_jobs = new_jobs
                             rate_streak = 0
+                    elif how == "auth_failed" or is_auth_failure(detail):
+                        say("API key invalid — stopping parallel pass")
+                        for fut in list(live):
+                            fut.cancel()
+                        pending.clear()
+                        live.clear()
+                        break
                     else:
                         rate_streak = 0
                         done += 1
