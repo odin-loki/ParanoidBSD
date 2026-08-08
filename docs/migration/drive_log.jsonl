@@ -1694,3 +1694,4 @@
 {"batch": "b0037", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T09:25:37Z"}
 {"batch": "b0006", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: pimd_priv_grant)", "how": "agent+escalate", "ts": "2026-08-08T09:26:10Z"}
 {"batch": "b0042", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:26:41Z"}
+{"batch": "b0045", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 4/8: wcstol_l, wcstoull_l, wcstoimax_l, wcstoll_l)", "how": "agent", "ts": "2026-08-08T09:27:06Z"}

@@ -184,7 +184,8 @@ noconv:
 long
 wcstol(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr, int base)
 {
-	return wcstol_l(nptr, endptr, base, __get_locale());
+	return pbsd::lib_libc_locale::b0045::wcstol_l(nptr, endptr, base,
+	    __get_locale());
 }
 
 /*-
@@ -316,7 +317,8 @@ unsigned long long
 wcstoull(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
     int base)
 {
-	return wcstoull_l(nptr, endptr, base, __get_locale());
+	return pbsd::lib_libc_locale::b0045::wcstoull_l(nptr, endptr, base,
+	    __get_locale());
 }
 
 /*-
@@ -450,7 +452,8 @@ intmax_t
 wcstoimax(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
     int base)
 {
-	return wcstoimax_l(nptr, endptr, base, __get_locale());
+	return pbsd::lib_libc_locale::b0045::wcstoimax_l(nptr, endptr, base,
+	    __get_locale());
 }
 
 /*-
@@ -583,7 +586,8 @@ noconv:
 long long
 wcstoll(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr, int base)
 {
-	return wcstoll_l(nptr, endptr, base, __get_locale());
+	return pbsd::lib_libc_locale::b0045::wcstoll_l(nptr, endptr, base,
+	    __get_locale());
 }
 
 } // export namespace pbsd::lib_libc_locale::b0045

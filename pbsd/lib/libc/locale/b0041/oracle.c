@@ -38,7 +38,12 @@ typedef __mbstate_t mbstate_t;
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wchar.h>
+
+typedef unsigned int wint_t;
+
+#ifndef WEOF
+#define WEOF	((wint_t)-1)
+#endif
 
 #ifndef EOF
 #define EOF	(-1)
@@ -206,7 +211,7 @@ mock_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s, size_t n,
 	if (pwc != NULL)
 		*pwc = wch;
 	us->want = 0;
-	return (wch == L'\0' ? 0 : want);
+	return (wch == 0 ? 0 : want);
 }
 
 static size_t
@@ -283,7 +288,7 @@ mock_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 			else if ((nb = mock_wcrtomb(buf, *s, ps)) ==
 			    (size_t)-1)
 				return ((size_t)-1);
-			if (*s == L'\0')
+			if (*s == 0)
 				return (nbytes + nb - 1);
 			s++;
 			nbytes += nb;
@@ -309,7 +314,7 @@ mock_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 				break;
 			memcpy(dst, buf, nb);
 		}
-		if (*s == L'\0') {
+		if (*s == 0) {
 			*src = NULL;
 			return (nbytes + nb - 1);
 		}
