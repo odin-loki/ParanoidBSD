@@ -16,6 +16,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/pwd/pwd_m/port.cppm
   bin/setfacl/mask_m/port.cppm
   bin/setfacl/util_m/port.cppm
+  bin/sh/b0119/port.cppm
   bin/stty/gfmt_m/port.cppm
   lib/libc/aarch64/gen/b0022/port.cppm
   lib/libc/aarch64/string/b0018/port.cppm

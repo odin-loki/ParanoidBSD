@@ -6,11 +6,7 @@ module;
 #include <cstdio>
 #include <cstring>
 
-export module pbsd.lib.libc.secure.b0117;
-
 extern "C" void __chk_fail(void);
-
-namespace pbsd::lib_libc_secure::b0117 {
 
 static inline int
 __ssp_overlap(const void *leftp, const void *rightp, std::size_t sz)
@@ -23,6 +19,10 @@ __ssp_overlap(const void *leftp, const void *rightp, std::size_t sz)
 
 	return (SIZE_MAX - sz < right || left < right + sz);
 }
+
+export module pbsd.lib.libc.secure.b0117;
+
+export namespace pbsd::lib_libc_secure::b0117 {
 
 /*-
  *
@@ -171,9 +171,3 @@ __snprintf_chk(char * __restrict buf, std::size_t len, int flags, std::size_t sl
 }
 
 } // namespace pbsd::lib_libc_secure::b0117
-
-export namespace pbsd::lib_libc_secure::b0117 {
-using pbsd::lib_libc_secure::b0117::__stpncpy_chk;
-using pbsd::lib_libc_secure::b0117::__strcpy_chk;
-using pbsd::lib_libc_secure::b0117::__snprintf_chk;
-}

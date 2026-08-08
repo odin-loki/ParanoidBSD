@@ -989,9 +989,6 @@ exp_ovfl = 1.13565234062941439494919310779707649e+04L;
 extern "C" long double _Complex
 pbsd_b0088_cexpl(long double _Complex z)
 {
-	return cexpl(z);
-}
-{
 	long double c, exp_x, s, x, y;
 
 	x = creall(z);
@@ -1040,4 +1037,13 @@ pbsd_b0088_cexpl(long double _Complex z)
 }
 
 
+} // export namespace
+
+export namespace pbsd::lib_msun_ld128::b0088 {
+using ::pbsd::lib_msun_ld128::b0088::cospil;
+using ::pbsd::lib_msun_ld128::b0088::sinpil;
+using ::pbsd::lib_msun_ld128::b0088::tanpil;
+inline long double _Complex cexpl(long double _Complex z) {
+	return pbsd_b0088_cexpl(z);
+}
 } // export namespace

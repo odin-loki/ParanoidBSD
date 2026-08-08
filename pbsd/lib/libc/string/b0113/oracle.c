@@ -1,17 +1,29 @@
 /*
- * oracle.c -- reference implementations for batch b0113.
+ * Reference oracle for PBSD batch b0113.
  *
- * The original HardenedBSD/FreeBSD sources, concatenated verbatim.  Every
- * function has been renamed with a "ref_" prefix; the bodies are unmodified.
- * Only includes / feature-test macros / missing defines were adjusted so the
- * code builds with `cc -std=c11 -O2` on a hosted glibc toolchain.
+ * The original HardenedBSD C sources concatenated verbatim; every function has
+ * been renamed with a `ref_` prefix and nothing else has been touched.  The
+ * FreeBSD-internal <ssp/ssp.h> include is not available off-FreeBSD, so the
+ * __ssp_real() name-mangling wrapper is replaced by the plain renamed symbol.
+ *
+ * Sources:
+ *   hbsd/src/lib/libc/string/mempcpy.c
+ *   hbsd/src/lib/libc/string/wcpncpy.c
+ *   hbsd/src/lib/libc/string/wmempcpy.c
  */
 
-#define _DEFAULT_SOURCE 1
-
 #include <stddef.h>
+#include <limits.h>
 #include <string.h>
 #include <wchar.h>
+
+#ifndef LONG_BIT
+#define LONG_BIT (sizeof(long) * CHAR_BIT)
+#endif
+
+/* ------------------------------------------------------------------------- */
+/* hbsd/src/lib/libc/string/mempcpy.c                                        */
+/* ------------------------------------------------------------------------- */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -44,11 +56,15 @@
  */
 
 void *
-ref_mempcpy(void *__restrict dst, const void *__restrict src,
+(ref_mempcpy)(void *__restrict dst, const void *__restrict src,
     size_t len)
 {
 	return ((char *)memcpy(dst, src, len) + len);
 }
+
+/* ------------------------------------------------------------------------- */
+/* hbsd/src/lib/libc/string/wcpncpy.c                                        */
+/* ------------------------------------------------------------------------- */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -93,6 +109,10 @@ ref_wcpncpy(wchar_t * __restrict dst, const wchar_t * __restrict src,
 	}
 	return (dst);
 }
+
+/* ------------------------------------------------------------------------- */
+/* hbsd/src/lib/libc/string/wmempcpy.c                                       */
+/* ------------------------------------------------------------------------- */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause

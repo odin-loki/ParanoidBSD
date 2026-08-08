@@ -141,7 +141,7 @@ check_table(stat &s, const char *name, const long double *ptbl,
 }
 
 static long double
-mkld128(std::uint64_t manl, std::uint64_t manh, std::uint16_t expsign)
+mkld128(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl)
 {
 	union {
 		long double e;
@@ -156,6 +156,15 @@ mkld128(std::uint64_t manl, std::uint64_t manh, std::uint16_t expsign)
 	u.x.manh = manh;
 	u.x.expsign = expsign;
 	return u.e;
+}
+
+static long double
+ld128_from_bytes(const unsigned char (&b)[16])
+{
+	long double x;
+
+	std::memcpy(&x, b, sizeof(x));
+	return x;
 }
 
 static void

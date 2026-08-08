@@ -581,7 +581,9 @@ print_table(void)
 int
 main(void)
 {
+	std::fprintf(stderr, "start\n");
 	memmove_edges();
+	std::fprintf(stderr, "memmove_edges\n");
 	memcpy_edges();
 	strncpy_edges();
 	vsnprintf_edges();

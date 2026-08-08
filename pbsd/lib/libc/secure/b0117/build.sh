@@ -13,7 +13,7 @@ set -e
 cd "$(dirname "$0")"
 
 CC=${CC:-cc}
-CXX=${CXX:-c++}
+CXX=${CXX:-clang++}
 CFLAGS=${CFLAGS:-"-std=c11 -O2"}
 CXXFLAGS=${CXXFLAGS:-"-std=c++23 -O2 -D_GNU_SOURCE"}
 

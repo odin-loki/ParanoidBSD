@@ -45,7 +45,7 @@ struct acl_t_struct {
 		unsigned int		acl_maxcnt;
 		unsigned int		acl_cnt;
 		int			acl_spare[4];
-		acl_entry		acl_entry[ACL_MAX_ENTRIES];
+		acl_entry		entries[ACL_MAX_ENTRIES];
 	}			ats_acl;
 	int			ats_cur_entry;
 	int			ats_brand;
@@ -721,9 +721,9 @@ ace_run_pair(int dest_idx, int src_idx, const acl_t_full dest_tpl,
 	acl_clone(sa, src_tpl);
 	acl_clone(sb, src_tpl);
 
-	ok = ace_run_ptrs(&da->ats_acl.acl_entry[dest_idx],
-	    &sa->ats_acl.acl_entry[src_idx], &db->ats_acl.acl_entry[dest_idx],
-	    &sb->ats_acl.acl_entry[src_idx], tag);
+	ok = ace_run_ptrs(&da->ats_acl.entries[dest_idx],
+	    &sa->ats_acl.entries[src_idx], &db->ats_acl.entries[dest_idx],
+	    &sb->ats_acl.entries[src_idx], tag);
 
 	free_acl(da);
 	free_acl(db);
@@ -738,44 +738,44 @@ test_acl_copy_entry_edge(void)
 	acl_t_full dest = alloc_acl();
 	acl_t_full src = alloc_acl();
 
-	ace_run_ptrs(nullptr, &src->ats_acl.acl_entry[0], nullptr,
-	    &src->ats_acl.acl_entry[0], "null-dest");
-	ace_run_ptrs(&dest->ats_acl.acl_entry[0], nullptr,
-	    &dest->ats_acl.acl_entry[0], nullptr, "null-src");
+	ace_run_ptrs(nullptr, &src->ats_acl.entries[0], nullptr,
+	    &src->ats_acl.entries[0], "null-dest");
+	ace_run_ptrs(&dest->ats_acl.entries[0], nullptr,
+	    &dest->ats_acl.entries[0], nullptr, "null-src");
 	{
 		acl_t_full same_a = alloc_acl();
 		acl_t_full same_b = alloc_acl();
 
 		acl_clone(same_b, same_a);
-		ace_run_ptrs(&same_a->ats_acl.acl_entry[0],
-		    &same_a->ats_acl.acl_entry[0],
-		    &same_b->ats_acl.acl_entry[0],
-		    &same_b->ats_acl.acl_entry[0], "same");
+		ace_run_ptrs(&same_a->ats_acl.entries[0],
+		    &same_a->ats_acl.entries[0],
+		    &same_b->ats_acl.entries[0],
+		    &same_b->ats_acl.entries[0], "same");
 		free_acl(same_a);
 		free_acl(same_b);
 	}
 
 	dest->ats_brand = ACL_BRAND_POSIX;
 	src->ats_brand = ACL_BRAND_NFS4;
-	src->ats_acl.acl_entry[0].ae_tag = 1;
+	src->ats_acl.entries[0].ae_tag = 1;
 	ace_run_pair(0, 0, dest, src, "brand-mismatch");
 
 	dest->ats_brand = ACL_BRAND_UNKNOWN;
 	src->ats_brand = ACL_BRAND_POSIX;
-	src->ats_acl.acl_entry[1].ae_tag = 10;
-	src->ats_acl.acl_entry[1].ae_id = 20;
-	src->ats_acl.acl_entry[1].ae_perm = 0x80ff;
-	src->ats_acl.acl_entry[1].ae_entry_type = 0xff;
-	src->ats_acl.acl_entry[1].ae_flags = 0x7f00;
+	src->ats_acl.entries[1].ae_tag = 10;
+	src->ats_acl.entries[1].ae_id = 20;
+	src->ats_acl.entries[1].ae_perm = 0x80ff;
+	src->ats_acl.entries[1].ae_entry_type = 0xff;
+	src->ats_acl.entries[1].ae_flags = 0x7f00;
 	ace_run_pair(0, 1, dest, src, "ok-unknown-dest");
 
 	dest->ats_brand = ACL_BRAND_POSIX;
 	src->ats_brand = ACL_BRAND_POSIX;
-	src->ats_acl.acl_entry[2].ae_tag = 0xffffffff;
-	src->ats_acl.acl_entry[2].ae_id = 0;
-	src->ats_acl.acl_entry[2].ae_perm = 0;
-	src->ats_acl.acl_entry[2].ae_entry_type = 0;
-	src->ats_acl.acl_entry[2].ae_flags = 0;
+	src->ats_acl.entries[2].ae_tag = 0xffffffff;
+	src->ats_acl.entries[2].ae_id = 0;
+	src->ats_acl.entries[2].ae_perm = 0;
+	src->ats_acl.entries[2].ae_entry_type = 0;
+	src->ats_acl.entries[2].ae_flags = 0;
 	ace_run_pair(1, 2, dest, src, "ok-posix");
 
 	dest->ats_brand = ACL_BRAND_NFS4;
@@ -798,12 +798,12 @@ test_acl_copy_entry_random(void)
 
 		dest->ats_brand = (int)(rnd32() % 3);
 		src->ats_brand = (int)(rnd32() % 3);
-		src->ats_acl.acl_entry[si].ae_tag = rnd32();
-		src->ats_acl.acl_entry[si].ae_id = rnd32();
-		src->ats_acl.acl_entry[si].ae_perm = rnd32();
-		src->ats_acl.acl_entry[si].ae_entry_type =
+		src->ats_acl.entries[si].ae_tag = rnd32();
+		src->ats_acl.entries[si].ae_id = rnd32();
+		src->ats_acl.entries[si].ae_perm = rnd32();
+		src->ats_acl.entries[si].ae_entry_type =
 		    (acl_entry_type_t)(rnd32() & 0xffff);
-		src->ats_acl.acl_entry[si].ae_flags =
+		src->ats_acl.entries[si].ae_flags =
 		    (acl_flag_t)(rnd32() & 0xffff);
 		ace_run_pair(di, si, dest, src, "rand");
 		free_acl(dest);
