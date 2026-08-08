@@ -849,7 +849,17 @@ def gen_test_functions(funcs: set[str], classes: dict[str, str]) -> str:
             code += gen_float_raise_test(f)
         elif cls == 'round_pack_int':
             code += gen_round_pack_int_test(f)
-        elif cls in ('round_pack_float', 'nan_internal', 'sig_arith', 'internal_bits', 'misc'):
+        elif cls == 'round_pack_float':
+            code += gen_round_pack_float_test(f)
+        elif cls == 'sig_arith':
+            code += gen_sig_arith_test(f)
+        elif cls == 'nan_internal':
+            code += gen_nan_internal_test(f)
+        elif cls == 'internal_bits':
+            code += gen_internal_bits_test(f)
+        elif cls.startswith('propagate'):
+            code += gen_propagate_test(f)
+        elif cls in ('misc'):
             code += gen_generic_test(f, cls)
         else:
             code += gen_generic_test(f, cls)

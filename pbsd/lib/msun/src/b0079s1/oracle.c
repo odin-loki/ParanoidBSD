@@ -6,7 +6,6 @@
  * otherwise unmodified.
  */
 
-#define _GNU_SOURCE
 #include <math.h>
 
 /* e_lgammaf.c -- float version of e_lgamma.c.

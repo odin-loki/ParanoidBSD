@@ -38,12 +38,7 @@ module;
 
 #include <sys/types.h>
 
-#include <cstdint>
-#include <cstring>
-
-#ifndef __DECONST
-#define	__DECONST(type, var)	((type)(uintptr_t)(const void *)(var))
-#endif
+export module pbsd.lib.libc.iconv.b0072;
 
 extern "C" {
 size_t	__bsd_iconv(void *, char **, size_t *, char **, size_t *);
@@ -52,7 +47,12 @@ size_t	__bsd___iconv(void *, char **, size_t *, char **, size_t *,
 int	__bsd_iconv_open_into(const char *, const char *, void *);
 }
 
-export module pbsd.lib.libc.iconv.b0072;
+#include <stdint.h>
+#include <string.h>
+
+#ifndef __DECONST
+#define	__DECONST(type, var)	((type)(uintptr_t)(const void *)(var))
+#endif
 
 export namespace pbsd::lib_libc_iconv::b0072 {
 
@@ -75,12 +75,12 @@ struct _citrus_region {
 #define	_db_hash_std		_citrus_db_hash_std
 
 #define _CITRUS_BCS_PRED(_name_, _cond_) \
-static inline int _citrus_bcs_##_name_(std::uint8_t c) { return (_cond_); }
+static inline int _citrus_bcs_##_name_(uint8_t c) { return (_cond_); }
 
 _CITRUS_BCS_PRED(isupper, c >= 'A' && c <= 'Z')
 
-static inline std::uint8_t
-_citrus_bcs_tolower(std::uint8_t c)
+static inline uint8_t
+_citrus_bcs_tolower(uint8_t c)
 {
 
 	return (_citrus_bcs_isupper(c) ? (c - 'A' + 'a') : c);
@@ -108,15 +108,15 @@ _citrus_region_size(const struct _citrus_region *r)
 	return (r->r_size);
 }
 
-static std::uint32_t
+static uint32_t
 _citrus_db_hash_std(struct _region *r)
 {
-	const std::uint8_t *p;
-	std::uint32_t hash, tmp;
+	const uint8_t *p;
+	uint32_t hash, tmp;
 	size_t i;
 
 	hash = 0;
-	p = (const std::uint8_t *)_region_head(r);
+	p = (const uint8_t *)_region_head(r);
 
 	for (i = _region_size(r); i > 0; i--) {
 		hash <<= 4;
@@ -159,7 +159,7 @@ _citrus_string_hash_func(const char *key, int hashsize)
 
 	_region_init(&r, __DECONST(void *, key), strlen(key));
 
-	return ((int)(_db_hash_std(&r) % (std::uint32_t)hashsize));
+	return ((int)(_db_hash_std(&r) % (uint32_t)hashsize));
 }
 
 } // namespace pbsd::lib_libc_iconv::b0072

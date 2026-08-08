@@ -48,8 +48,55 @@ void sha1_loop(struct sha1_ctxt *, const std::uint8_t *, std::size_t);
 void ref_SHA1_Final(unsigned char *buf, void *ctx);
 }
 
-static_assert(sizeof(SHA1_CTX) == sizeof(port::SHA1_CTX),
-    "oracle and port SHA1_CTX layouts must match");
+/*
+ * SHA1_Final casts its void* ctx to SHA1_CTX and hands it to sha1_result,
+ * so the port's struct must be ABI-identical to the oracle's.  The port
+ * never reads the fields itself, which means a wrong array bound is
+ * invisible at runtime (padding hides most size changes).  Assert the
+ * layout member by member instead, so any divergence is rejected here.
+ */
+namespace layout {
+
+using P = port::SHA1_CTX;
+using O = SHA1_CTX;
+
+static_assert(sizeof(P) == sizeof(O), "SHA1_CTX size");
+static_assert(alignof(P) == alignof(O), "SHA1_CTX alignment");
+
+static_assert(offsetof(P, h) == offsetof(O, h), "SHA1_CTX::h offset");
+static_assert(offsetof(P, c) == offsetof(O, c), "SHA1_CTX::c offset");
+static_assert(offsetof(P, m) == offsetof(O, m), "SHA1_CTX::m offset");
+static_assert(offsetof(P, count) == offsetof(O, count),
+    "SHA1_CTX::count offset");
+
+static_assert(sizeof(P::h) == sizeof(O::h), "SHA1_CTX::h size");
+static_assert(sizeof(P::c) == sizeof(O::c), "SHA1_CTX::c size");
+static_assert(sizeof(P::m) == sizeof(O::m), "SHA1_CTX::m size");
+static_assert(sizeof(P::count) == sizeof(O::count), "SHA1_CTX::count size");
+
+static_assert(sizeof(decltype(P::h)::b8) == sizeof(decltype(O::h)::b8),
+    "SHA1_CTX::h.b8 bound");
+static_assert(sizeof(decltype(P::h)::b32) == sizeof(decltype(O::h)::b32),
+    "SHA1_CTX::h.b32 bound");
+static_assert(sizeof(decltype(P::c)::b8) == sizeof(decltype(O::c)::b8),
+    "SHA1_CTX::c.b8 bound");
+static_assert(sizeof(decltype(P::c)::b64) == sizeof(decltype(O::c)::b64),
+    "SHA1_CTX::c.b64 bound");
+static_assert(sizeof(decltype(P::m)::b8) == sizeof(decltype(O::m)::b8),
+    "SHA1_CTX::m.b8 bound");
+static_assert(sizeof(decltype(P::m)::b32) == sizeof(decltype(O::m)::b32),
+    "SHA1_CTX::m.b32 bound");
+
+static_assert(sizeof(decltype(P::h)::b8[0]) == sizeof(decltype(O::h)::b8[0]),
+    "SHA1_CTX::h.b8 element width");
+static_assert(sizeof(decltype(P::h)::b32[0]) == sizeof(decltype(O::h)::b32[0]),
+    "SHA1_CTX::h.b32 element width");
+static_assert(sizeof(decltype(P::c)::b64[0]) == sizeof(decltype(O::c)::b64[0]),
+    "SHA1_CTX::c.b64 element width");
+static_assert(sizeof(decltype(P::m)::b32[0]) == sizeof(decltype(O::m)::b32[0]),
+    "SHA1_CTX::m.b32 element width");
+
+} /* namespace layout */
 
 namespace {
 

@@ -33,6 +33,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/db/hash/hash_log2_m/port.cppm
   lib/libc/db/recno/rec_utils_m/port.cppm
   lib/libc/gdtoa/b0023/port.cppm
+  lib/libc/gdtoa/b0066/port.cppm
   lib/libc/gen/alarm_m/port.cppm
   lib/libc/gen/arc4random_uniform_m/port.cppm
   lib/libc/gen/b0013/port.cppm
@@ -245,6 +246,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0079s4/port.cppm
   lib/msun/src/b0080/port.cppm
   lib/msun/src/b0080s1/port.cppm
+  lib/msun/src/b0080s2/port.cppm
   lib/msun/src/b0086/port.cppm
   lib/msun/src/e_acosh_m/port.cppm
   lib/msun/src/e_acoshf_m/port.cppm

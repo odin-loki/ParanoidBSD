@@ -4,11 +4,13 @@
 
 import pbsd.lib.libc.locale.b0058;
 
+#include <cerrno>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cwchar>
 
 namespace port = pbsd::lib_libc_locale::b0058;
 
@@ -112,24 +114,17 @@ state_eq(const port::mbstate_t &a, const ref_mbstate_t &b)
 static bool
 locale_ctype_eq()
 {
-	const auto &pc = port::global_locale()->components[1];
-	const auto &rc = ref_global_locale.components[1];
-	const port::mbstate_t *pm;
-	const ref_mbstate_t *rm;
+	port::mbstate_t pmbrtoc32, pmbrlen, pwcrtomb, pmbrtowc;
+	const xlocale_ctype *rc;
 
-	if (pc == nullptr || rc == nullptr)
-		return (pc == rc);
-	pm = &reinterpret_cast<const struct {
-		port::mbstate_t mbrtoc32;
-		port::mbstate_t mbrlen;
-		port::mbstate_t wcrtomb;
-		port::mbstate_t mbrtowc;
-	} *>(pc)->mbrtoc32;
-	rm = &reinterpret_cast<const struct xlocale_ctype *>(rc)->mbrtoc32;
-	if (!state_eq(pm[0], rm[0]) || !state_eq(pm[1], rm[1]) ||
-	    !state_eq(pm[2], rm[2]) || !state_eq(pm[3], rm[3]))
+	port::snapshot_locale_states(&pmbrtoc32, &pmbrlen, &pwcrtomb, &pmbrtowc);
+	rc = reinterpret_cast<const xlocale_ctype *>(ref_global_locale.components[1]);
+	if (rc == nullptr)
 		return (false);
-	return (true);
+	return (state_eq(pmbrtoc32, rc->mbrtoc32) &&
+	    state_eq(pmbrlen, rc->mbrlen) &&
+	    state_eq(pwcrtomb, rc->wcrtomb) &&
+	    state_eq(pmbrtowc, rc->mbrtowc));
 }
 
 static void

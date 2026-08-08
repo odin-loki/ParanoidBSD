@@ -419,7 +419,11 @@ run_edge_cases(void)
 
 		check_iconvlist(&bucket);
 	}
-	check_iconvlist((void *)0xdeadbeefUL);
+	{
+		unsigned long opaque = 0xdeadbeefUL;
+
+		check_iconvlist(&opaque);
+	}
 
 	fill_pool(pool, sizeof(pool), 8, 'p', '/');
 	check_reloc(nullptr, nullptr);
@@ -468,9 +472,15 @@ run_random_sweep(unsigned long iterations)
 			    (rng_next() & 1u) ? &b_seed : nullptr);
 			break;
 		}
-		case 2:
-			check_iconvlist((void *)(uintptr_t)(rng_next()));
+		case 2: {
+			unsigned long rnd_hits = 1;
+
+			if (rng_next() & 1u)
+				check_iconvlist(nullptr);
+			else
+				check_iconvlist(&rnd_hits);
 			break;
+		}
 		default:
 			if ((rng_next() & 3u) == 0u)
 				check_reloc(nullptr, nullptr);
