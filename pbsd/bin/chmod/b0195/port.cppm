@@ -53,7 +53,7 @@ usage(void)
 {
 	(void)fprintf(stderr,
 	    "usage: chmod [-fhv] [-R [-H | -L | -P]] mode file ...\n");
-	exit(0);
+	exit(1);
 }
 
 /*
