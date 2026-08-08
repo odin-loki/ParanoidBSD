@@ -4,6 +4,7 @@
 
 import pbsd.lib.libc.locale.b0075;
 
+#include <cerrno>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -447,7 +448,7 @@ hand_mbrtowc(Stats &st, bool use_l)
 	compare_mbrtowc_l(st, seq, 1, use_l, true, false, false, false);
 	compare_mbrtowc_l(st, seq, 1, use_l, false, false, true, false);
 	compare_mbrtowc_l(st, nullptr, 0, use_l, false, false, false, true);
-	compare_mbrtowc_l(st, seq, 2, use_l, true, true, true);
+	compare_mbrtowc_l(st, seq, 2, use_l, true, true, true, false);
 }
 
 static void
@@ -468,7 +469,7 @@ hand_c32rtomb(Stats &st, bool use_l)
 	compare_c32rtomb_l(st, (char32_t)0xdfff, use_l, false, false, false);
 	compare_c32rtomb_l(st, (char32_t)0x110000, use_l, false, false, false);
 	compare_c32rtomb_l(st, (char32_t)0xFFFFFFFFu, use_l, false, false, false);
-	compare_c32rtomb_l(st, 'x', use_l, false, true, false, false);
+	compare_c32rtomb_l(st, 'x', use_l, false, true, false);
 	compare_c32rtomb_l(st, 'q', use_l, true, false, false);
 	compare_c32rtomb_l(st, 'z', use_l, false, false, true);
 	compare_c32rtomb_l(st, 'w', use_l, true, true, true);

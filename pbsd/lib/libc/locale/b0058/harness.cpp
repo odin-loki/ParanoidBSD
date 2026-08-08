@@ -114,8 +114,14 @@ state_eq(const port::mbstate_t &a, const ref_mbstate_t &b)
 	return (memcmp(&a, &b, sizeof(a)) == 0);
 }
 
+enum class LocField {
+	MBROTOC32,
+	MBRLEN,
+	WCRTOMB,
+};
+
 static bool
-locale_ctype_eq()
+locale_field_eq(LocField which)
 {
 	port::mbstate_t pmbrtoc32, pmbrlen, pwcrtomb, pmbrtowc;
 	const xlocale_ctype *rc;
@@ -124,10 +130,15 @@ locale_ctype_eq()
 	rc = reinterpret_cast<const xlocale_ctype *>(ref_global_locale.components[1]);
 	if (rc == nullptr)
 		return (false);
-	return (state_eq(pmbrtoc32, rc->mbrtoc32) &&
-	    state_eq(pmbrlen, rc->mbrlen) &&
-	    state_eq(pwcrtomb, rc->wcrtomb) &&
-	    state_eq(pmbrtowc, rc->mbrtowc));
+	switch (which) {
+	case LocField::MBROTOC32:
+		return (state_eq(pmbrtoc32, rc->mbrtoc32));
+	case LocField::MBRLEN:
+		return (state_eq(pmbrlen, rc->mbrlen));
+	case LocField::WCRTOMB:
+		return (state_eq(pwcrtomb, rc->wcrtomb));
+	}
+	return (false);
 }
 
 static void
@@ -238,7 +249,7 @@ compare_mbrtoc32_l(Stats &st, const unsigned char *in, size_t n, bool use_l,
 		report_fail(st, "state");
 		return (false);
 	}
-	if (null_ps && !locale_ctype_eq()) {
+	if (null_ps && !locale_field_eq(LocField::MBROTOC32)) {
 		report_fail(st, "locstate");
 		return (false);
 	}
@@ -298,7 +309,7 @@ compare_wcrtomb_l(Stats &st, wchar_t wc, bool use_l, bool null_ps,
 		report_fail(st, "state");
 		return (false);
 	}
-	if (null_ps && !locale_ctype_eq()) {
+	if (null_ps && !locale_field_eq(LocField::WCRTOMB)) {
 		report_fail(st, "locstate");
 		return (false);
 	}
@@ -380,7 +391,7 @@ compare_mbrlen_l(Stats &st, const unsigned char *in, size_t n, bool use_l,
 		report_fail(st, "state");
 		return (false);
 	}
-	if (null_ps && !locale_ctype_eq()) {
+	if (null_ps && !locale_field_eq(LocField::MBRLEN)) {
 		report_fail(st, "locstate");
 		return (false);
 	}

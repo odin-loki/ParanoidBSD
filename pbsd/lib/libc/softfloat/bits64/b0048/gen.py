@@ -520,7 +520,7 @@ def gen_extern_decls(funcs: set[str], classes: dict[str, str]) -> str:
                     'bits64 *z0Ptr, bits64 *z1Ptr);')
             else:
                 lines.append(f'void ref_{f}(bits64 a, int16 count, bits64 *zPtr);')
-        elif cls == 'wide_arith':
+        elif cls == 'wide_arith_ptr':
             lines.append(proto_wide_arith(f))
         elif cls == 'cmp128':
             lines.append(
@@ -547,14 +547,12 @@ def gen_extern_decls(funcs: set[str], classes: dict[str, str]) -> str:
                 lines.append(f'{sig_float_type(f)} ref_{f}(commonNaNT a);')
         elif cls == 'internal_bits':
             lines.append(proto_internal_bits(f))
-        elif f == 'propagateFloat32NaN':
-            lines.append('float32 ref_propagateFloat32NaN(float32 a, float32 b);')
-        elif f == 'propagateFloat64NaN':
-            lines.append('float64 ref_propagateFloat64NaN(float64 a, float64 b);')
-        elif f == 'propagateFloatx80NaN':
-            lines.append('floatx80 ref_propagateFloatx80NaN(floatx80 a, floatx80 b);')
-        elif f == 'propagateFloat128NaN':
-            lines.append('float128 ref_propagateFloat128NaN(float128 a, float128 b);')
+        elif cls == 'propagate':
+            ty = sig_float_type(f)
+            lines.append(f'{ty} ref_{f}({ty} a, {ty} b);')
+        elif f.startswith('propagate'):
+            ty = sig_float_type(f)
+            lines.append(f'{ty} ref_{f}({ty} a, {ty} b);')
         else:
             lines.append(f'int ref_{f}(); /* misc */')
     return '\n'.join(lines)

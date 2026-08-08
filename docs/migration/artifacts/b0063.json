@@ -1,0 +1,13 @@
+{
+  "batch": "b0063",
+  "verified": "2026-08-08T11:22:39Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: IR differs for 4/4: iconv_canonicalize, __iconv_get_list, iconvlist, iconv_set_relocation_prefix)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                              cases   failures\niconv_canonicalize                    50537          0\n__iconv_get_list                      49877          0\niconvlist                             49945          0\niconv_set_relocation_prefix           49983          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/iconv/iconv_canonicalize.c": "76fa5cd3c3778482",
+    "hbsd/src/lib/libc/iconv/__iconv_get_list.c": "b289d8bc74443fe8",
+    "hbsd/src/lib/libc/iconv/iconvlist.c": "419a70000d94e965",
+    "hbsd/src/lib/libc/iconv/iconv_set_relocation_prefix.c": "8105a0b65438ddab"
+  }
+}
