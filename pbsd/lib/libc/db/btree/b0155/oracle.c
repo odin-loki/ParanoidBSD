@@ -358,7 +358,7 @@ typedef struct _btree {
 	u_int32_t bt_psize;
 	indx_t	  bt_ovflsize;
 	int	  bt_lorder;
-	enum { NOT, BACK, FORWARD } bt_order;
+	enum _bt_order bt_order;
 	EPGNO	  bt_last;
 
 	int	(*bt_cmp)(const DBT *, const DBT *);

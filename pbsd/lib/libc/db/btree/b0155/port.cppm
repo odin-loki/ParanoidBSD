@@ -196,6 +196,13 @@ typedef struct _bleaf {
 	memmove(p, data->data, data->size);				\
 }
 
+/*
+ * btree.h spells this as an unnamed enum inside struct _btree; hoisted here
+ * so that NOT/BACK/FORWARD name the same things in C and in C++, where an
+ * enum nested in a class would scope its enumerators to that class.
+ */
+enum _bt_order { NOT, BACK, FORWARD };
+
 typedef struct _epgno {
 	pgno_t	pgno;
 	indx_t	index;

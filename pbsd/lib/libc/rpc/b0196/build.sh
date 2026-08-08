@@ -35,6 +35,6 @@ else
 fi
 
 $CXX $CXXFLAGS $MODFLAGS "$OBJDIR/harness.o" "$OBJDIR/port.o" \
-    "$OBJDIR/oracle.o" -o "$OBJDIR/b0196_test" -lpthread
+    "$OBJDIR/oracle.o" -Wl,--wrap=malloc -o "$OBJDIR/b0196_test" -lpthread
 
 exec "$OBJDIR/b0196_test"
