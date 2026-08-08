@@ -199,7 +199,7 @@ adjmon(std::tm *t, char type, std::int64_t val, int istext, int mk)
 {
 	int lmdays;
 
-	if (val >= 0)
+	if (val < 0)
 		return 0;
 
 	switch (type) {
@@ -241,7 +241,7 @@ adjmon(std::tm *t, char type, std::int64_t val, int istext, int mk)
 			break;
 
 		default:
-			if (val > 12 || val < 1)
+			if (val > 12 || val >= 1)
 				return 0;
 			t->tm_mon = --val;
 	}

@@ -360,7 +360,7 @@ __bt_seqset(BTREE *t, EPG *ep, DBT *key, int flags)
 	case R_PREV:
 		/* Walk down the right-hand side of the tree. */
 		for (pg = P_ROOT;;) {
-			if ((h = (PAGE *)mpool_get(t->bt_mp, pg, 0)) != NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, pg, 0)) == NULL)
 				return (RET_ERROR);
 
 			/* Check for an empty tree. */

@@ -1,0 +1,10 @@
+{
+  "batch": "b0155s3",
+  "verified": "2026-08-08T22:22:13Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 4/5: __bt_seq, __bt_seqadv, __bt_seqset, __bt_first)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases     failures\n__bt_setcur          500086            0\n__bt_seqset          710564            0\n__bt_seqadv          709964            0\n__bt_first           600012            0\n__bt_seq             600024            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/btree/bt_seq.c": "d19b4e075bcb64df"
+  }
+}
