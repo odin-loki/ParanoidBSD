@@ -54,7 +54,7 @@ struct sha1_ctxt {
 };
 typedef struct sha1_ctxt SHA1_CTX;
 
-extern "C" void sha1_result(struct sha1_ctxt *, char *);
+extern "C" void sha1_result(SHA1_CTX *, char *);
 
 void
 SHA1_Final(unsigned char *buf, void *ctx)
