@@ -187,7 +187,7 @@ error_case(long idx)
 /* ------------------------------------------------------------------ */
 /* deterministic PRNG (xorshift64*, fixed seed)                        */
 
-static uint64_t rng_state = 0xb0054s1ULL; /* replaced below */
+static uint64_t rng_state = 0x00b0054100000001ULL;
 
 static uint32_t
 rnd(void)

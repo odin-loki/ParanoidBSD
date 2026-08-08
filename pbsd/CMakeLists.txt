@@ -87,6 +87,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/db/btree/b0149/port.cppm
   lib/libc/db/btree/b0151/port.cppm
   lib/libc/db/btree/b0155/port.cppm
+  lib/libc/db/btree/b0155s1/port.cppm
   lib/libc/db/db/b0157/port.cppm
   lib/libc/db/hash/b0133/port.cppm
   lib/libc/db/hash/hash_log2_m/port.cppm

@@ -349,7 +349,7 @@ t_ns_parse_ttl(void)
 int
 main(void)
 {
-	rng_seed(0x015402C0FFEE123456ULL);
+	rng_seed(0x015402C0FFEE1234ULL);
 
 	printf("=== b0154s2 nameser differential test ===\n");
 

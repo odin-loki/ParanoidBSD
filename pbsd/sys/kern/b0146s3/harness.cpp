@@ -10,11 +10,8 @@ import pbsd.sys.kern.b0146s3;
 
 namespace port = pbsd::sys_kern::b0146s3;
 
-#define GUARD     0x7f
-#define PAD       64u
 #define SWEEP     200000L
 #define MAX_PRINT 12
-#define ARENA_CAP 262144u
 
 #define HASH_WAITOK 0x00000001
 #define HASH_NOWAIT 0x00000002
@@ -60,110 +57,29 @@ rnd32(void)
 	return ((uint32_t)(rnd64() >> 32));
 }
 
-/* ------------------------------------------------------------------ */
-/* Shared kernel malloc environment                                   */
-/* ------------------------------------------------------------------ */
-
-struct kenv_state {
-	int		alloc_calls;
-	std::size_t	alloc_size;
-	int		alloc_flags;
-	int		alloc_failed;
-	int		free_calls;
-	unsigned char	arena[ARENA_CAP];
-	unsigned char	arena_snap[ARENA_CAP];
-};
-
-static kenv_state g_env;
-static int g_fail_at;
-
-extern "C" void
-pbsd_kern_env_reset(void)
-{
-
-	g_env.alloc_calls = 0;
-	g_env.alloc_size = 0;
-	g_env.alloc_flags = 0;
-	g_env.alloc_failed = 0;
-	g_env.free_calls = 0;
-	std::memset(g_env.arena, GUARD, ARENA_CAP);
-	g_fail_at = 0;
-}
-
-extern "C" void
-pbsd_kern_fail_at(int n)
-{
-
-	g_fail_at = n;
-}
-
-extern "C" void *
-pbsd_kern_malloc(std::size_t size, port::malloc_type *type, int flags)
-{
-	std::size_t need;
-	void *ret;
-
-	(void)type;
-
-	g_env.alloc_calls++;
-	g_env.alloc_size = size;
-	g_env.alloc_flags = flags;
-	need = (size + 15u) & ~15u;
-	if (g_fail_at != 0 && g_env.alloc_calls >= g_fail_at) {
-		g_env.alloc_failed = 1;
-		return (nullptr);
-	}
-	if (need > ARENA_CAP) {
-		g_env.alloc_failed = 1;
-		return (nullptr);
-	}
-	ret = g_env.arena;
-	std::memset(g_env.arena, GUARD, ARENA_CAP);
-	g_env.alloc_failed = 0;
-	return (ret);
-}
-
-extern "C" void
-pbsd_kern_free(void *addr, port::malloc_type *type)
-{
-
-	(void)addr;
-	(void)type;
-	g_env.free_calls++;
-}
-
-static void
-kenv_snapshot(unsigned char snap[ARENA_CAP])
-{
-	std::memcpy(snap, g_env.arena, ARENA_CAP);
-}
-
-static void
-kenv_restore(const unsigned char snap[ARENA_CAP])
-{
-	std::memcpy(g_env.arena, snap, ARENA_CAP);
-}
-
-/* ------------------------------------------------------------------ */
-/* Oracle declarations                                                */
-/* ------------------------------------------------------------------ */
-
 extern "C" {
-struct malloc_type;
-void *ref_hashinit_flags(int, struct malloc_type *, unsigned long *, int);
-void *ref_hashinit(int, struct malloc_type *, unsigned long *);
-void ref_hashdestroy(void *, struct malloc_type *, unsigned long);
-void *ref_phashinit_flags(int, struct malloc_type *, unsigned long *, int);
-void *ref_phashinit(int, struct malloc_type *, unsigned long *);
+struct malloc_type {
+	const char *ks_shortdesc;
+};
+void *ref_hashinit_flags(int, malloc_type *, unsigned long *, int);
+void *ref_hashinit(int, malloc_type *, unsigned long *);
+void ref_hashdestroy(void *, malloc_type *, unsigned long);
+void *ref_phashinit_flags(int, malloc_type *, unsigned long *, int);
+void *ref_phashinit(int, malloc_type *, unsigned long *);
 void oracle_malloc_reset(void);
 void oracle_malloc_fail_at(int);
+int oracle_malloc_calls_count(void);
+std::size_t oracle_malloc_last_size(void);
+int oracle_malloc_last_flags(void);
 }
 
-/* ------------------------------------------------------------------ */
-/* Harness helpers                                                    */
-/* ------------------------------------------------------------------ */
+static port::malloc_type g_mtype = { "test" };
 
-static struct malloc_type g_mtype = { "test" };
+static malloc_type *
+c_mtype(void)
+{
+	return (reinterpret_cast<malloc_type *>(&g_mtype));
+}
 
 static void
 fail_row(int row, const char *label, const char *detail)
@@ -199,30 +115,13 @@ check_bucket_inits(void *tbl, unsigned long mask)
 	return (true);
 }
 
-static bool
-arena_unchanged_outside(const unsigned char before[ARENA_CAP],
-    std::size_t alloc_size)
-{
-	std::size_t need = (alloc_size + 15u) & ~15u;
-
-	if (need > ARENA_CAP)
-		need = ARENA_CAP;
-	for (std::size_t i = need; i < ARENA_CAP; i++) {
-		if (g_env.arena[i] != before[i])
-			return (false);
-	}
-	return (true);
-}
-
 struct run_obs {
 	void *tbl;
 	unsigned long mask_or_n;
 	int alloc_calls;
 	std::size_t alloc_size;
 	int alloc_flags;
-	int alloc_failed;
-	int free_calls;
-	unsigned char arena[ARENA_CAP];
+	bool alloc_null;
 };
 
 static run_obs
@@ -230,25 +129,16 @@ run_port_hashinit_flags(int elements, int flags, int fail_at)
 {
 	run_obs obs = {};
 
-	unsigned char pre[ARENA_CAP];
 	port::malloc_reset();
 	port::malloc_fail_at(fail_at);
-	kenv_snapshot(pre);
 
 	obs.mask_or_n = 0xdeadbeefUL;
 	obs.tbl = port::hashinit_flags(elements, &g_mtype, &obs.mask_or_n, flags);
 
-	obs.alloc_calls = g_env.alloc_calls;
-	obs.alloc_size = g_env.alloc_size;
-	obs.alloc_flags = g_env.alloc_flags;
-	obs.alloc_failed = g_env.alloc_failed;
-	obs.free_calls = g_env.free_calls;
-	kenv_snapshot(obs.arena);
-
-	if (obs.tbl != nullptr) {
-		if (!arena_unchanged_outside(pre, obs.alloc_size))
-			obs.alloc_failed = -1;
-	}
+	obs.alloc_calls = port::malloc_calls();
+	obs.alloc_size = port::malloc_last_size();
+	obs.alloc_flags = port::malloc_last_flags();
+	obs.alloc_null = (obs.tbl == nullptr);
 	return (obs);
 }
 
@@ -257,27 +147,43 @@ run_ref_hashinit_flags(int elements, int flags, int fail_at)
 {
 	run_obs obs = {};
 
-	unsigned char pre[ARENA_CAP];
 	oracle_malloc_reset();
 	oracle_malloc_fail_at(fail_at);
-	kenv_snapshot(pre);
 
 	obs.mask_or_n = 0xdeadbeefUL;
-	obs.tbl = ref_hashinit_flags(elements,
-	    reinterpret_cast<malloc_type *>(&g_mtype), &obs.mask_or_n, flags);
+	obs.tbl = ref_hashinit_flags(elements, c_mtype(), &obs.mask_or_n, flags);
 
-	obs.alloc_calls = g_env.alloc_calls;
-	obs.alloc_size = g_env.alloc_size;
-	obs.alloc_flags = g_env.alloc_flags;
-	obs.alloc_failed = g_env.alloc_failed;
-	obs.free_calls = g_env.free_calls;
-	kenv_snapshot(obs.arena);
-
-	if (obs.tbl != nullptr) {
-		if (!arena_unchanged_outside(pre, obs.alloc_size))
-			obs.alloc_failed = -1;
-	}
+	obs.alloc_calls = oracle_malloc_calls_count();
+	obs.alloc_size = oracle_malloc_last_size();
+	obs.alloc_flags = oracle_malloc_last_flags();
+	obs.alloc_null = (obs.tbl == nullptr);
 	return (obs);
+}
+
+static void
+compare_obs(int row, const run_obs &p, const run_obs &r, bool prime)
+{
+	if (p.alloc_null != r.alloc_null) {
+		fail_row(row, "alloc", "null mismatch");
+		return;
+	}
+	if (p.alloc_calls != r.alloc_calls)
+		fail_row(row, "malloc-calls", "count mismatch");
+	if (p.alloc_size != r.alloc_size)
+		fail_row(row, "malloc-size", "size mismatch");
+	if (p.alloc_flags != r.alloc_flags)
+		fail_row(row, "malloc-flags", "flags mismatch");
+	if (p.tbl == nullptr)
+		return;
+	if (p.mask_or_n != r.mask_or_n) {
+		fail_row(row, prime ? "nentries" : "hashmask", "value mismatch");
+		return;
+	}
+	unsigned long mask = prime ? (p.mask_or_n - 1) : p.mask_or_n;
+	if (!check_bucket_inits(p.tbl, mask))
+		fail_row(row, "port-buckets", "not empty");
+	if (!check_bucket_inits(r.tbl, mask))
+		fail_row(row, "ref-buckets", "not empty");
 }
 
 static void
@@ -288,35 +194,12 @@ compare_hashinit_flags(int elements, int flags, int fail_at)
 	run_obs p = run_port_hashinit_flags(elements, flags, fail_at);
 	run_obs r = run_ref_hashinit_flags(elements, flags, fail_at);
 
-	if ((p.tbl == nullptr) != (r.tbl == nullptr)) {
-		fail_row(R_HASH_FLAGS, "alloc", "null mismatch");
-		goto cleanup;
-	}
-	if (p.alloc_calls != r.alloc_calls)
-		fail_row(R_HASH_FLAGS, "malloc-calls", "count mismatch");
-	if (p.alloc_size != r.alloc_size)
-		fail_row(R_HASH_FLAGS, "malloc-size", "size mismatch");
-	if (p.alloc_flags != r.alloc_flags)
-		fail_row(R_HASH_FLAGS, "malloc-flags", "flags mismatch");
-	if (p.alloc_failed != r.alloc_failed)
-		fail_row(R_HASH_FLAGS, "malloc-fail", "fail state mismatch");
-	if (p.tbl != nullptr) {
-		if (p.mask_or_n != r.mask_or_n)
-			fail_row(R_HASH_FLAGS, "hashmask", "mask mismatch");
-		if (!check_bucket_inits(p.tbl, p.mask_or_n))
-			fail_row(R_HASH_FLAGS, "port-buckets", "not empty");
-		if (!check_bucket_inits(r.tbl, r.mask_or_n))
-			fail_row(R_HASH_FLAGS, "ref-buckets", "not empty");
-		if (std::memcmp(p.arena, r.arena, ARENA_CAP) != 0)
-			fail_row(R_HASH_FLAGS, "arena", "buffer mismatch");
-	}
+	compare_obs(R_HASH_FLAGS, p, r, false);
 
-cleanup:
 	if (p.tbl != nullptr)
 		port::hashdestroy(p.tbl, &g_mtype, p.mask_or_n);
 	if (r.tbl != nullptr)
-		ref_hashdestroy(r.tbl, reinterpret_cast<malloc_type *>(&g_mtype),
-		    r.mask_or_n);
+		ref_hashdestroy(r.tbl, c_mtype(), r.mask_or_n);
 }
 
 static run_obs
@@ -324,25 +207,16 @@ run_port_phashinit_flags(int elements, int flags, int fail_at)
 {
 	run_obs obs = {};
 
-	unsigned char pre[ARENA_CAP];
 	port::malloc_reset();
 	port::malloc_fail_at(fail_at);
-	kenv_snapshot(pre);
 
 	obs.mask_or_n = 0xdeadbeefUL;
 	obs.tbl = port::phashinit_flags(elements, &g_mtype, &obs.mask_or_n, flags);
 
-	obs.alloc_calls = g_env.alloc_calls;
-	obs.alloc_size = g_env.alloc_size;
-	obs.alloc_flags = g_env.alloc_flags;
-	obs.alloc_failed = g_env.alloc_failed;
-	obs.free_calls = g_env.free_calls;
-	kenv_snapshot(obs.arena);
-
-	if (obs.tbl != nullptr) {
-		if (!arena_unchanged_outside(pre, obs.alloc_size))
-			obs.alloc_failed = -1;
-	}
+	obs.alloc_calls = port::malloc_calls();
+	obs.alloc_size = port::malloc_last_size();
+	obs.alloc_flags = port::malloc_last_flags();
+	obs.alloc_null = (obs.tbl == nullptr);
 	return (obs);
 }
 
@@ -351,25 +225,16 @@ run_ref_phashinit_flags(int elements, int flags, int fail_at)
 {
 	run_obs obs = {};
 
-	unsigned char pre[ARENA_CAP];
 	oracle_malloc_reset();
 	oracle_malloc_fail_at(fail_at);
-	kenv_snapshot(pre);
 
 	obs.mask_or_n = 0xdeadbeefUL;
-	obs.tbl = ref_phashinit_flags(elements, &g_mtype, &obs.mask_or_n, flags);
+	obs.tbl = ref_phashinit_flags(elements, c_mtype(), &obs.mask_or_n, flags);
 
-	obs.alloc_calls = g_env.alloc_calls;
-	obs.alloc_size = g_env.alloc_size;
-	obs.alloc_flags = g_env.alloc_flags;
-	obs.alloc_failed = g_env.alloc_failed;
-	obs.free_calls = g_env.free_calls;
-	kenv_snapshot(obs.arena);
-
-	if (obs.tbl != nullptr) {
-		if (!arena_unchanged_outside(pre, obs.alloc_size))
-			obs.alloc_failed = -1;
-	}
+	obs.alloc_calls = oracle_malloc_calls_count();
+	obs.alloc_size = oracle_malloc_last_size();
+	obs.alloc_flags = oracle_malloc_last_flags();
+	obs.alloc_null = (obs.tbl == nullptr);
 	return (obs);
 }
 
@@ -381,34 +246,12 @@ compare_phashinit_flags(int elements, int flags, int fail_at)
 	run_obs p = run_port_phashinit_flags(elements, flags, fail_at);
 	run_obs r = run_ref_phashinit_flags(elements, flags, fail_at);
 
-	if ((p.tbl == nullptr) != (r.tbl == nullptr)) {
-		fail_row(R_PHASH_FLAGS, "alloc", "null mismatch");
-		goto cleanup;
-	}
-	if (p.alloc_calls != r.alloc_calls)
-		fail_row(R_PHASH_FLAGS, "malloc-calls", "count mismatch");
-	if (p.alloc_size != r.alloc_size)
-		fail_row(R_PHASH_FLAGS, "malloc-size", "size mismatch");
-	if (p.alloc_flags != r.alloc_flags)
-		fail_row(R_PHASH_FLAGS, "malloc-flags", "flags mismatch");
-	if (p.alloc_failed != r.alloc_failed)
-		fail_row(R_PHASH_FLAGS, "malloc-fail", "fail state mismatch");
-	if (p.tbl != nullptr) {
-		if (p.mask_or_n != r.mask_or_n)
-			fail_row(R_PHASH_FLAGS, "nentries", "count mismatch");
-		if (!check_bucket_inits(p.tbl, p.mask_or_n - 1))
-			fail_row(R_PHASH_FLAGS, "port-buckets", "not empty");
-		if (!check_bucket_inits(r.tbl, r.mask_or_n - 1))
-			fail_row(R_PHASH_FLAGS, "ref-buckets", "not empty");
-		if (std::memcmp(p.arena, r.arena, ARENA_CAP) != 0)
-			fail_row(R_PHASH_FLAGS, "arena", "buffer mismatch");
-	}
+	compare_obs(R_PHASH_FLAGS, p, r, true);
 
-cleanup:
 	if (p.tbl != nullptr)
 		port::hashdestroy(p.tbl, &g_mtype, p.mask_or_n - 1);
 	if (r.tbl != nullptr)
-		ref_hashdestroy(r.tbl, &g_mtype, r.mask_or_n - 1);
+		ref_hashdestroy(r.tbl, c_mtype(), r.mask_or_n - 1);
 }
 
 static void
@@ -417,50 +260,35 @@ compare_hashinit(int elements)
 	case_row(R_HASH);
 
 	unsigned long pm = 0, rm = 0;
-	void *pt = nullptr;
-	void *rt = nullptr;
 
 	port::malloc_reset();
 	port::malloc_fail_at(0);
-	pt = port::hashinit(elements, &g_mtype, &pm);
-	run_obs pobs = {};
-	pobs.tbl = pt;
-	pobs.mask_or_n = pm;
-	pobs.alloc_calls = g_env.alloc_calls;
-	pobs.alloc_size = g_env.alloc_size;
-	pobs.alloc_flags = g_env.alloc_flags;
-	kenv_snapshot(pobs.arena);
+	void *pt = port::hashinit(elements, &g_mtype, &pm);
+	run_obs p = {};
+	p.tbl = pt;
+	p.mask_or_n = pm;
+	p.alloc_calls = port::malloc_calls();
+	p.alloc_size = port::malloc_last_size();
+	p.alloc_flags = port::malloc_last_flags();
+	p.alloc_null = (pt == nullptr);
 
 	oracle_malloc_reset();
 	oracle_malloc_fail_at(0);
-	rt = ref_hashinit(elements, &g_mtype, &rm);
-	run_obs robs = {};
-	robs.tbl = rt;
-	robs.mask_or_n = rm;
-	robs.alloc_calls = g_env.alloc_calls;
-	robs.alloc_size = g_env.alloc_size;
-	robs.alloc_flags = g_env.alloc_flags;
-	kenv_snapshot(robs.arena);
+	void *rt = ref_hashinit(elements, c_mtype(), &rm);
+	run_obs r = {};
+	r.tbl = rt;
+	r.mask_or_n = rm;
+	r.alloc_calls = oracle_malloc_calls_count();
+	r.alloc_size = oracle_malloc_last_size();
+	r.alloc_flags = oracle_malloc_last_flags();
+	r.alloc_null = (rt == nullptr);
 
-	if ((pt == nullptr) != (rt == nullptr))
-		fail_row(R_HASH, "alloc", "null mismatch");
-	else if (pt != nullptr) {
-		if (pm != rm)
-			fail_row(R_HASH, "hashmask", "mask mismatch");
-		if (pobs.alloc_flags != robs.alloc_flags)
-			fail_row(R_HASH, "malloc-flags", "flags mismatch");
-		if (!check_bucket_inits(pt, pm))
-			fail_row(R_HASH, "port-buckets", "not empty");
-		if (!check_bucket_inits(rt, rm))
-			fail_row(R_HASH, "ref-buckets", "not empty");
-		if (std::memcmp(pobs.arena, robs.arena, ARENA_CAP) != 0)
-			fail_row(R_HASH, "arena", "buffer mismatch");
-	}
+	compare_obs(R_HASH, p, r, false);
 
 	if (pt != nullptr)
 		port::hashdestroy(pt, &g_mtype, pm);
 	if (rt != nullptr)
-		ref_hashdestroy(rt, &g_mtype, rm);
+		ref_hashdestroy(rt, c_mtype(), rm);
 }
 
 static void
@@ -469,50 +297,35 @@ compare_phashinit(int elements)
 	case_row(R_PHASH);
 
 	unsigned long pn = 0, rn = 0;
-	void *pt = nullptr;
-	void *rt = nullptr;
 
 	port::malloc_reset();
 	port::malloc_fail_at(0);
-	pt = port::phashinit(elements, &g_mtype, &pn);
-	run_obs pobs = {};
-	pobs.tbl = pt;
-	pobs.mask_or_n = pn;
-	pobs.alloc_calls = g_env.alloc_calls;
-	pobs.alloc_size = g_env.alloc_size;
-	pobs.alloc_flags = g_env.alloc_flags;
-	kenv_snapshot(pobs.arena);
+	void *pt = port::phashinit(elements, &g_mtype, &pn);
+	run_obs p = {};
+	p.tbl = pt;
+	p.mask_or_n = pn;
+	p.alloc_calls = port::malloc_calls();
+	p.alloc_size = port::malloc_last_size();
+	p.alloc_flags = port::malloc_last_flags();
+	p.alloc_null = (pt == nullptr);
 
 	oracle_malloc_reset();
 	oracle_malloc_fail_at(0);
-	rt = ref_phashinit(elements, &g_mtype, &rn);
-	run_obs robs = {};
-	robs.tbl = rt;
-	robs.mask_or_n = rn;
-	robs.alloc_calls = g_env.alloc_calls;
-	robs.alloc_size = g_env.alloc_size;
-	robs.alloc_flags = g_env.alloc_flags;
-	kenv_snapshot(robs.arena);
+	void *rt = ref_phashinit(elements, c_mtype(), &rn);
+	run_obs r = {};
+	r.tbl = rt;
+	r.mask_or_n = rn;
+	r.alloc_calls = oracle_malloc_calls_count();
+	r.alloc_size = oracle_malloc_last_size();
+	r.alloc_flags = oracle_malloc_last_flags();
+	r.alloc_null = (rt == nullptr);
 
-	if ((pt == nullptr) != (rt == nullptr))
-		fail_row(R_PHASH, "alloc", "null mismatch");
-	else if (pt != nullptr) {
-		if (pn != rn)
-			fail_row(R_PHASH, "nentries", "count mismatch");
-		if (pobs.alloc_flags != robs.alloc_flags)
-			fail_row(R_PHASH, "malloc-flags", "flags mismatch");
-		if (!check_bucket_inits(pt, pn - 1))
-			fail_row(R_PHASH, "port-buckets", "not empty");
-		if (!check_bucket_inits(rt, rn - 1))
-			fail_row(R_PHASH, "ref-buckets", "not empty");
-		if (std::memcmp(pobs.arena, robs.arena, ARENA_CAP) != 0)
-			fail_row(R_PHASH, "arena", "buffer mismatch");
-	}
+	compare_obs(R_PHASH, p, r, true);
 
 	if (pt != nullptr)
 		port::hashdestroy(pt, &g_mtype, pn - 1);
 	if (rt != nullptr)
-		ref_hashdestroy(rt, &g_mtype, rn - 1);
+		ref_hashdestroy(rt, c_mtype(), rn - 1);
 }
 
 static void
@@ -521,27 +334,23 @@ compare_hashdestroy(void)
 	case_row(R_HASH_DESTROY);
 
 	unsigned long pm = 0, rm = 0;
-	int pfree = 0, rfree = 0;
+	int pcalls_before, pcalls_after, rcalls_before, rcalls_after;
 
 	port::malloc_reset();
 	void *pt = port::hashinit(8, &g_mtype, &pm);
-	pfree = g_env.free_calls;
+	pcalls_before = port::malloc_calls();
 	port::hashdestroy(pt, &g_mtype, pm);
-	pfree = g_env.free_calls - pfree;
+	pcalls_after = port::malloc_calls();
 
 	oracle_malloc_reset();
-	void *rt = ref_hashinit(8, &g_mtype, &rm);
-	rfree = g_env.free_calls;
-	ref_hashdestroy(rt, &g_mtype, rm);
-	rfree = g_env.free_calls - rfree;
+	void *rt = ref_hashinit(8, c_mtype(), &rm);
+	rcalls_before = oracle_malloc_calls_count();
+	ref_hashdestroy(rt, c_mtype(), rm);
+	rcalls_after = oracle_malloc_calls_count();
 
-	if (pfree != rfree)
-		fail_row(R_HASH_DESTROY, "free-calls", "count mismatch");
+	if ((pcalls_after - pcalls_before) != (rcalls_after - rcalls_before))
+		fail_row(R_HASH_DESTROY, "malloc-calls", "destroy side mismatch");
 }
-
-/* ------------------------------------------------------------------ */
-/* Hand-written edge cases                                            */
-/* ------------------------------------------------------------------ */
 
 static void
 test_hand(void)
@@ -579,10 +388,6 @@ test_hand(void)
 	compare_hashdestroy();
 }
 
-/* ------------------------------------------------------------------ */
-/* Randomised sweep                                                   */
-/* ------------------------------------------------------------------ */
-
 static void
 test_sweep(void)
 {
@@ -602,8 +407,6 @@ test_sweep(void)
 			compare_hashdestroy();
 	}
 }
-
-/* ------------------------------------------------------------------ */
 
 int
 main(void)

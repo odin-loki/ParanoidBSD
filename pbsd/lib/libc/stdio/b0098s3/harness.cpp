@@ -103,13 +103,6 @@ static size_t rng_below(size_t n)
 	return (size_t)(rng_next() % (uint64_t)n);
 }
 
-static void build_pools(void)
-{
-	rng_seed(0x5eed0098s3ULL & 0);	/* placeholder, replaced below */
-}
-
-/* ------------------------------------------------------------------ */
-
 static void make_temp(char *dst, size_t dstsz, const char *tag)
 {
 	static const char *dirs[] = { "/dev/shm", "/tmp", "." };

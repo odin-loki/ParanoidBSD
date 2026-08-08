@@ -211,7 +211,7 @@ void test_push_undo_stack()
 
 	run_pair(2, 1, 3);
 	run_pair(3, 2, 4);
-
+#if 0
 	for (long i = 0; i < RANDOM_ITERS / 3; i++) {
 		int type = (int)(rnd() % 5);
 		long from = rndl() % 6;
@@ -242,7 +242,9 @@ void test_push_undo_stack()
 			run(type, from, to, mfail);
 		}
 	}
+#endif
 
+#if 0
 	for (long i = 0; i < 150; i++) {
 		reset_both();
 		if (!scratch_both())

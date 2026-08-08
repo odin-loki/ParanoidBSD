@@ -143,7 +143,7 @@ _close(int fd)
 /* hbsd/src/lib/libc/locale/ldpart.c					*/
 /* ------------------------------------------------------------------ */
 
-static int ref_split_lines(char *, const char *);
+int ref_split_lines(char *, const char *);
 
 int
 ref___part_load_locale(const char *name,

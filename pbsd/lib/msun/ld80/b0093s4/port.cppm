@@ -1,99 +1,3 @@
-/*
- * PBSD batch b0093s4 -- C++23 port of
- *
- *	lib/msun/ld80/s_tanpil.c
- *
- * The body is transcribed unchanged, down to the evaluation order, the
- * mixed double/long double arithmetic and the integer types and signedness.
- */
-
-module;
-
-#include <cstdint>
-
-export module pbsd.lib.msun.ld80.b0093s4;
-
-namespace pbsd::lib_msun_ld80::b0093s4 {
-
-using std::uint16_t;
-using std::uint32_t;
-using std::uint64_t;
-
-extern "C" {
-long double copysignl(long double, long double);
-long double __kernel_tanl(long double, long double, int);
-}
-
-/* ------------------------------------------------------------------ */
-/* from lib/libc/amd64/_fpmath.h					    */
-/* ------------------------------------------------------------------ */
-
-union IEEEl2bits {
-	long double	e;
-	struct {
-		unsigned int	manl	:32;
-		unsigned int	manh	:32;
-		unsigned int	exp	:15;
-		unsigned int	sign	:1;
-		unsigned int	junkl	:16;
-		unsigned int	junkh	:32;
-	} bits;
-	struct {
-		unsigned long	man	:64;
-		unsigned int	expsign	:16;
-		unsigned long	junk	:48;
-	} xbits;
-};
-
-/* ------------------------------------------------------------------ */
-/* from lib/msun/src/math_private.h				    */
-/* ------------------------------------------------------------------ */
-
-#define	EXTRACT_LDBL80_WORDS(ix0,ix1,d)				\
-do {								\
-  union IEEEl2bits ew_u;					\
-  ew_u.e = (d);							\
-  (ix0) = ew_u.xbits.expsign;					\
-  (ix1) = ew_u.xbits.man;					\
-} while (0)
-
-#define	INSERT_LDBL80_WORDS(d,ix0,ix1)				\
-do {								\
-  union IEEEl2bits iw_u;					\
-  iw_u.xbits.expsign = (ix0);					\
-  iw_u.xbits.man = (ix1);					\
-  (d) = iw_u.e;							\
-} while (0)
-
-#define	ENTERI()
-#define	RETURNI(x)	RETURNF(x)
-#define	RETURNF(v)	return (v)
-
-#define	_2sumF(a, b) do {	\
-	__typeof(a) __w;	\
-				\
-	__w = (a) + (b);	\
-	(b) = ((a) - __w) + (b); \
-	(a) = __w;		\
-} while (0)
-
-#define	FFLOORL80(x, j0, ix, lx) do {			\
-	j0 = ix - 0x3fff + 1;				\
-	if ((j0) < 32) {				\
-		(lx) = ((lx) >> 32) << 32;		\
-		(lx) &= ~((((lx) << 32)-1) >> (j0));	\
-	} else {					\
-		uint64_t _m;				\
-		_m = (uint64_t)-1 >> (j0);		\
-		if ((lx) & _m) (lx) &= ~_m;		\
-	}						\
-	INSERT_LDBL80_WORDS((x), (ix), (lx));		\
-} while (0)
-
-/* ================================================================== */
-/* lib/msun/ld80/s_tanpil.c					      */
-/* ================================================================== */
-
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -121,14 +25,104 @@ do {								\
  */
 
 /*
+ * PBSD port of lib/msun/ld80/s_tanpil.c to C++23.
+ *
  * See ../src/s_tanpi.c for implementation details.
+ *
+ * __kernel_tanl (lib/msun/ld80/k_tanl.c) is not part of this batch; it is
+ * resolved at link time exactly as it is in libm.
  */
+
+module;
+
+#include <cstdint>
+#include <cmath>
+
+export module pbsd.lib.msun.ld80.b0093s4;
+
+extern "C" long double __kernel_tanl(long double x, long double y, int iy);
+
+export namespace pbsd::lib_msun_ld80::b0093s4 {
+
+long double __kernel_tanpil(long double x);
+long double tanpil(long double x);
+
+} /* export namespace pbsd::lib_msun_ld80::b0093s4 */
+
+namespace pbsd::lib_msun_ld80::b0093s4 {
+
+/* lib/libc/amd64/_fpmath.h */
+union IEEEl2bits {
+	long double	e;
+	struct {
+		unsigned int	manl	:32;
+		unsigned int	manh	:32;
+		unsigned int	exp	:15;
+		unsigned int	sign	:1;
+		unsigned int	junkl	:16;
+		unsigned int	junkh	:32;
+	} bits;
+	struct {
+		unsigned long	man	:64;
+		unsigned int	expsign	:16;
+		unsigned long	junk	:48;
+	} xbits;
+};
+
+/* lib/msun/src/math_private.h (the !__i386__ variants) */
+
+#define	EXTRACT_LDBL80_WORDS(ix0,ix1,d)				\
+do {								\
+  IEEEl2bits ew_u;						\
+  ew_u.e = (d);							\
+  (ix0) = ew_u.xbits.expsign;					\
+  (ix1) = ew_u.xbits.man;					\
+} while (0)
+
+#define	INSERT_LDBL80_WORDS(d,ix0,ix1)				\
+do {								\
+  IEEEl2bits iw_u;						\
+  iw_u.xbits.expsign = (ix0);					\
+  iw_u.xbits.man = (ix1);					\
+  (d) = iw_u.e;							\
+} while (0)
+
+#define	ENTERI()
+#define	RETURNI(x)	RETURNF(x)
+
+/* Default return statement if hack*_t() is not used. */
+#define      RETURNF(v)      return (v)
+
+#define	_2sumF(a, b) do {	\
+	decltype(a) __w;	\
+				\
+	__w = (a) + (b);	\
+	(b) = ((a) - __w) + (b); \
+	(a) = __w;		\
+} while (0)
+
+#define	FFLOORL80(x, j0, ix, lx) do {			\
+	j0 = ix - 0x3fff + 1;				\
+	if ((j0) < 32) {				\
+		(lx) = ((lx) >> 32) << 32;		\
+		(lx) &= ~((((lx) << 32)-1) >> (j0));	\
+	} else {					\
+		std::uint64_t _m;			\
+		_m = (std::uint64_t)-1 >> (j0);		\
+		if ((lx) & _m) (lx) &= ~_m;		\
+	}						\
+	INSERT_LDBL80_WORDS((x), (ix), (lx));		\
+} while (0)
 
 static const double
 pi_hi =  3.1415926814079285e+00,	/* 0x400921fb 0x58000000 */
 pi_lo = -2.7818135228334233e-08;	/* 0xbe5dde97 0x3dcb3b3a */
 
-static inline long double
+/*
+ * "static inline" in the original.  Given module linkage here so that the
+ * differential harness can exercise it directly; the body is unchanged.
+ */
+long double
 __kernel_tanpil(long double x)
 {
 	long double hi, lo, t;
@@ -156,13 +150,13 @@ __kernel_tanpil(long double x)
 
 volatile static const double vzero = 0;
 
-export long double
+long double
 tanpil(long double x)
 {
 	long double ax, hi, lo, odd, t;
-	uint64_t lx, m;
-	uint32_t j0;
-	uint16_t hx, ix;
+	std::uint64_t lx, m;
+	std::uint32_t j0;
+	std::uint16_t hx, ix;
 
 	EXTRACT_LDBL80_WORDS(hx, lx, x);
 	ix = hx & 0x7fff;
@@ -193,12 +187,12 @@ tanpil(long double x)
 
 	if (ix < 0x403e) {			/* 1 <= |x| < 0x1p63 */
 		FFLOORL80(x, j0, ix, lx);	/* Integer part of ax. */
-		odd = (uint64_t)x & 1 ? -1 : 1;
+		odd = (std::uint64_t)x & 1 ? -1 : 1;
 		ax -= x;
 		EXTRACT_LDBL80_WORDS(ix, lx, ax);
 
 		if (ix < 0x3ffe)		/* |x| < 0.5 */
-			t = ix == 0 ? copysignl(0, odd) : __kernel_tanpil(ax);
+			t = ix == 0 ? std::copysignl(0, odd) : __kernel_tanpil(ax);
 		else if (ax == 0.5L)
 			t = odd / vzero;
 		else
@@ -215,7 +209,7 @@ tanpil(long double x)
 	 * or odd integer to set t = +0 or -0.
 	 * For |x| >= 0x1p64, it is always an even integer, so t = 0.
 	 */
-	t = ix >= 0x403f ? 0 : (copysignl(0, (lx & 1) ? -1 : 1));
+	t = ix >= 0x403f ? 0 : (std::copysignl(0, (lx & 1) ? -1 : 1));
 	RETURNI((hx & 0x8000) ? -t : t);
 }
 
