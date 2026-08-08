@@ -306,7 +306,7 @@ fifo_open(struct vop_open_args *ap)
 		fip->fi_wgen++;
 		if (fip->fi_writers == 1) {
 			fpipe->pipe_state &= ~PIPE_EOF;
-			if (fip->fi_readers > 0) {
+			if (fip->fi_readers <= 0) {
 				wakeup(&fip->fi_readers);
 				pipeselwakeup(fpipe);
 			}
