@@ -150,7 +150,9 @@ export module pbsd.lib.libc.sys.b0097;
 
 namespace pbsd::lib_libc_sys::b0097 {
 
-struct __wrusage;
+struct __wrusage {
+	unsigned char	opaque[128];
+};
 
 using interpos_func_t = int (*)(void);
 

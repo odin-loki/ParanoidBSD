@@ -1,30 +1,35 @@
+/*
+ * PBSD port of HardenedBSD lib/msun/ld128 batch b0089.
+ *
+ * Original HardenedBSD lib/msun/ld128 sources concatenated; every external
+ * function renamed with a ref_ prefix.  Bodies are otherwise unmodified.
+ * Per-section macros rename file-local statics so the concatenated unit links.
+ */
+
 module;
 
 #include <cmath>
 #include <cstdint>
 #include <cfloat>
+
 #include <sys/types.h>
 
-export module pbsd.lib.msun.ld128.b0089;
-
-export namespace pbsd::lib_msun_ld128::b0089 {
-
 #ifndef __always_inline
-#define __always_inline inline
+#define __always_inline __inline__
 #endif
 
 union IEEEl2bits {
 	long double e;
 	struct {
-		unsigned long manl;
-		unsigned long manh;
-		unsigned int exp;
-		unsigned int sign;
+		unsigned long manl : 64;
+		unsigned long manh : 48;
+		unsigned int exp : 15;
+		unsigned int sign : 1;
 	} bits;
 	struct {
-		unsigned long manl;
-		unsigned long manh;
-		unsigned int expsign;
+		unsigned long manl : 64;
+		unsigned long manh : 48;
+		unsigned int expsign : 16;
 	} xbits;
 };
 
@@ -116,7 +121,12 @@ typedef union {
 #define NO_UTAB
 #define NO_UTABL
 
-/* e_powl.c */
+
+export module pbsd.lib.msun.ld128.b0089;
+
+export namespace pbsd::lib_msun_ld128::b0089 {
+
+/* ===== e_powl.c ===== */
 #undef G
 #undef F_hi
 #undef F_lo
@@ -283,7 +293,7 @@ static const long double
   cp_l = 5.0577616648125906047157785230014751039424E-17L;
 
 long double
-powl(long double x, long double y)
+ref_powl(long double x, long double y)
 {
   long double z, ax, z_h, z_l, p_h, p_l;
   long double yy1, t1, t2, r, s, t, u, v, w;
@@ -601,7 +611,7 @@ powl(long double x, long double y)
 #undef cp_h
 #undef cp_l
 
-/* s_exp2l.c */
+/* ===== s_exp2l.c ===== */
 #undef G
 #undef F_hi
 #undef F_lo
@@ -970,7 +980,7 @@ static const float eps[TBLSIZE] = {
  *	for the IEEE Floating Point Standard.  TOMS 17(1), 26-46 (1991).
  */
 long double
-exp2l(long double x)
+ref_exp2l(long double x)
 {
 	union IEEEl2bits u, v;
 	long double r, t, twopk, twopkp10000, z;
@@ -1061,7 +1071,7 @@ exp2l(long double x)
 #undef tbl
 #undef eps
 
-/* s_erfl.c */
+/* ===== s_erfl.c ===== */
 #undef G
 #undef F_hi
 #undef F_lo
@@ -1383,7 +1393,7 @@ sc8  =  2.59909544563616121735963429710382149e6L,  /* 0x40143d45, 0xbb90a9b1, 0x
 sc9  =  2.80930665169282501639651995082335693e5L;  /* 0x40111258, 0xaa92222e, 0xa97e3216, 0xa237fa6c */
 
 long double
-erfl(long double x)
+ref_erfl(long double x)
 {
 	long double ax,R,S,P,Q,s,y,z,r;
 	uint64_t lx, llx;
@@ -1445,7 +1455,7 @@ erfl(long double x)
 }
 
 long double
-erfcl(long double x)
+ref_erfcl(long double x)
 {
 	long double ax,R,S,P,Q,s,y,z,r;
 	uint64_t lx, llx;
@@ -1652,7 +1662,7 @@ erfcl(long double x)
 #undef sc8
 #undef sc9
 
-/* s_logl.c */
+/* ===== s_logl.c ===== */
 #undef G
 #undef F_hi
 #undef F_lo
@@ -2123,7 +2133,7 @@ static __always_inline void
 k_logl(long double x, struct ld *rp)
 #else
 long double
-logl(long double x)
+ref_logl(long double x)
 #endif
 {
 	long double d, val_hi, val_lo;
@@ -2231,7 +2241,7 @@ logl(long double x)
 }
 
 long double
-log1pl(long double x)
+ref_log1pl(long double x)
 {
 	long double d, d_hi, f_lo, val_hi, val_lo;
 	long double f_hi, twopminusk;
@@ -2336,7 +2346,7 @@ log1pl(long double x)
 #ifdef STRUCT_RETURN
 
 long double
-logl(long double x)
+ref_logl(long double x)
 {
 	struct ld r;
 
@@ -2362,7 +2372,7 @@ invln10_lo_plus_hi = invln10_lo + invln10_hi,
 invln2_lo_plus_hi = invln2_lo + invln2_hi;
 
 long double
-log10l(long double x)
+ref_log10l(long double x)
 {
 	struct ld r;
 	long double hi, lo;
@@ -2378,7 +2388,7 @@ log10l(long double x)
 }
 
 long double
-log2l(long double x)
+ref_log2l(long double x)
 {
 	struct ld r;
 	long double hi, lo;

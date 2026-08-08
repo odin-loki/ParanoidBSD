@@ -2,6 +2,10 @@
  * harness.cpp -- differential test for PBSD batch b0106.
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -9,7 +13,11 @@
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
-#include <xlocale.h>
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <locale.h>
 
 import pbsd.lib.libc.stdio.b0106;
 

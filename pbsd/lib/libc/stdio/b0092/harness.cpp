@@ -2,12 +2,17 @@
  * b0092 differential test: pbsd::lib_libc_stdio::b0092 vs. the ref_ oracle.
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
+#include <locale.h>
 #include <unistd.h>
 
 import pbsd.lib.libc.stdio.b0092;
@@ -18,7 +23,9 @@ extern "C" {
 void ref_setbuffer(FILE *, char *, int);
 int ref_setlinebuf(FILE *);
 int ref_wscanf(const wchar_t *__restrict, ...);
+int ref_wscanf_l(locale_t, const wchar_t *__restrict, ...);
 wint_t ref_getwc(FILE *);
+wint_t ref_getwc_l(FILE *, locale_t);
 }
 
 namespace {
@@ -36,7 +43,9 @@ enum StatId {
 	S_SETBUFFER,
 	S_SETLINEBUF,
 	S_WSCANF,
+	S_WSCANF_L,
 	S_GETWC,
+	S_GETWC_L,
 	NSTAT
 };
 
@@ -51,7 +60,9 @@ Stats g_stat[NSTAT] = {
 	{ "setbuffer",  0, 0, 0 },
 	{ "setlinebuf", 0, 0, 0 },
 	{ "wscanf",     0, 0, 0 },
+	{ "wscanf_l",   0, 0, 0 },
 	{ "getwc",      0, 0, 0 },
+	{ "getwc_l",    0, 0, 0 },
 };
 
 std::uint64_t rng_state = 0xc0ffee0092ULL;
@@ -168,10 +179,15 @@ bool
 probe_write_read(FILE *rf, FILE *pf, StatId which, const char *label)
 {
 	bool ok = true;
-	const char probe[] =
-	    "abcdefghij\x00\x7f\x80\xffABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	static const char probe[] = {
+		'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+		(char)0x00, (char)0x7f, (char)0x80, (char)0xff,
+		'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+		'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
+		'U', 'V', 'W', 'X', 'Y', 'Z'
+	};
 
-	for (std::size_t i = 0; i < sizeof(probe) - 1; i++) {
+	for (std::size_t i = 0; i < sizeof(probe); i++) {
 		int cr = std::fputc(probe[i], rf);
 		int cp = std::fputc(probe[i], pf);
 		if (cr != cp) {
@@ -186,7 +202,7 @@ probe_write_read(FILE *rf, FILE *pf, StatId which, const char *label)
 	}
 	std::rewind(rf);
 	std::rewind(pf);
-	for (std::size_t i = 0; i < sizeof(probe) - 1; i++) {
+	for (std::size_t i = 0; i < sizeof(probe); i++) {
 		int cr = std::fgetc(rf);
 		int cp = std::fgetc(pf);
 		if (cr != cp) {
@@ -244,7 +260,8 @@ run_setbuffer_edges(void)
 		0, 1, 2, 63, 64, 127, 128, 255, 256, -1, INT_MIN, INT_MAX
 	};
 
-	for (bool use_buf : { false, true }) {
+	for (int buf_mode = 0; buf_mode < 2; buf_mode++) {
+		bool use_buf = buf_mode != 0;
 		for (int sz : sizes) {
 			char label[64];
 			std::snprintf(label, sizeof(label), "edge buf=%d sz=%d",
@@ -426,81 +443,97 @@ pop_stdin(void)
 	fwide(stdin, 1);
 }
 
-int
-call_ref_wscanf(const wchar_t *input, std::size_t n, const wchar_t *fmt,
-    int *out)
-{
-	int r = -9999;
-	if (!push_stdin_wide(input, n))
-		return -9999;
-	r = ref_wscanf(fmt, out);
-	pop_stdin();
-	return r;
-}
-
-int
-call_port_wscanf(const wchar_t *input, std::size_t n, const wchar_t *fmt,
-    int *out)
-{
-	int r = -9999;
-	if (!push_stdin_wide(input, n))
-		return -9999;
-	r = port::wscanf(fmt, out);
-	pop_stdin();
-	return r;
-}
-
 bool
-test_wscanf_int(const char *label, const wchar_t *input, std::size_t n,
-    const wchar_t *fmt)
+test_wscanf_int(StatId which, const char *label, const wchar_t *input,
+    std::size_t n, const wchar_t *fmt)
 {
 	GuardedInt gi_r, gi_p;
 	gi_r.fill_guard();
 	gi_p.fill_guard();
 
-	int rr = call_ref_wscanf(input, n, fmt, &gi_r.val);
-	int rp = call_port_wscanf(input, n, fmt, &gi_p.val);
+	int rr = -9999;
+	int rp = -9999;
+	if (push_stdin_wide(input, n)) {
+		if (which == S_WSCANF)
+			rr = ref_wscanf(fmt, &gi_r.val);
+		else {
+			locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
+			rr = ref_wscanf_l(loc, fmt, &gi_r.val);
+			freelocale(loc);
+		}
+		pop_stdin();
+	}
+	if (push_stdin_wide(input, n)) {
+		if (which == S_WSCANF)
+			rp = port::wscanf(fmt, &gi_p.val);
+		else {
+			locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
+			rp = port::wscanf_l(loc, fmt, &gi_p.val);
+			freelocale(loc);
+		}
+		pop_stdin();
+	}
 
 	bool ok = true;
 	if (rr != rp) {
-		fail_msg(S_WSCANF, label, "return mismatch");
+		fail_msg(which, label, "return mismatch");
 		ok = false;
 	}
 	if (!gi_r.eq(gi_p)) {
-		fail_msg(S_WSCANF, label, "int/guard mismatch");
+		fail_msg(which, label, "int/guard mismatch");
 		ok = false;
 	}
-	case_inc(S_WSCANF);
+	case_inc(which);
 	return ok;
 }
 
 bool
-test_wscanf_wchar(const char *label, const wchar_t *input, std::size_t n,
-    const wchar_t *fmt)
+test_wscanf_wchar(StatId which, const char *label, const wchar_t *input,
+    std::size_t n, const wchar_t *fmt)
 {
 	GuardedWBuf gw_r, gw_p;
 	gw_r.fill_guard();
 	gw_p.fill_guard();
 
-	int rr = call_ref_wscanf(input, n, fmt, gw_r.user());
-	int rp = call_port_wscanf(input, n, fmt, gw_p.user());
+	int rr = -9999;
+	int rp = -9999;
+	if (push_stdin_wide(input, n)) {
+		if (which == S_WSCANF)
+			rr = ref_wscanf(fmt, gw_r.user());
+		else {
+			locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
+			rr = ref_wscanf_l(loc, fmt, gw_r.user());
+			freelocale(loc);
+		}
+		pop_stdin();
+	}
+	if (push_stdin_wide(input, n)) {
+		if (which == S_WSCANF)
+			rp = port::wscanf(fmt, gw_p.user());
+		else {
+			locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
+			rp = port::wscanf_l(loc, fmt, gw_p.user());
+			freelocale(loc);
+		}
+		pop_stdin();
+	}
 
 	bool ok = true;
 	if (rr != rp) {
-		fail_msg(S_WSCANF, label, "return mismatch");
+		fail_msg(which, label, "return mismatch");
 		ok = false;
 	}
 	if (!gw_r.eq_bytes(gw_p)) {
-		fail_msg(S_WSCANF, label, "wchar buffer mismatch");
+		fail_msg(which, label, "wchar buffer mismatch");
 		ok = false;
 	}
-	case_inc(S_WSCANF);
+	case_inc(which);
 	return ok;
 }
 
 bool
-test_wscanf_two_int(const char *label, const wchar_t *input, std::size_t n,
-    const wchar_t *fmt)
+test_wscanf_two_int(StatId which, const char *label, const wchar_t *input,
+    std::size_t n, const wchar_t *fmt)
 {
 	GuardedInt gi_r1, gi_p1, gi_r2, gi_p2;
 	gi_r1.fill_guard();
@@ -508,24 +541,44 @@ test_wscanf_two_int(const char *label, const wchar_t *input, std::size_t n,
 	gi_r2.fill_guard();
 	gi_p2.fill_guard();
 
-	int rr = call_ref_wscanf(input, n, fmt, &gi_r1.val, &gi_r2.val);
-	int rp = call_port_wscanf(input, n, fmt, &gi_p1.val, &gi_p2.val);
+	int rr = -9999;
+	int rp = -9999;
+	if (push_stdin_wide(input, n)) {
+		if (which == S_WSCANF)
+			rr = ref_wscanf(fmt, &gi_r1.val, &gi_r2.val);
+		else {
+			locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
+			rr = ref_wscanf_l(loc, fmt, &gi_r1.val, &gi_r2.val);
+			freelocale(loc);
+		}
+		pop_stdin();
+	}
+	if (push_stdin_wide(input, n)) {
+		if (which == S_WSCANF)
+			rp = port::wscanf(fmt, &gi_p1.val, &gi_p2.val);
+		else {
+			locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
+			rp = port::wscanf_l(loc, fmt, &gi_p1.val, &gi_p2.val);
+			freelocale(loc);
+		}
+		pop_stdin();
+	}
 
 	bool ok = true;
 	if (rr != rp) {
-		fail_msg(S_WSCANF, label, "return mismatch");
+		fail_msg(which, label, "return mismatch");
 		ok = false;
 	}
 	if (!gi_r1.eq(gi_p1) || !gi_r2.eq(gi_p2)) {
-		fail_msg(S_WSCANF, label, "int pair mismatch");
+		fail_msg(which, label, "int pair mismatch");
 		ok = false;
 	}
-	case_inc(S_WSCANF);
+	case_inc(which);
 	return ok;
 }
 
 void
-run_wscanf_edges(void)
+run_wscanf_edges(StatId which)
 {
 	static const wchar_t w42[] = { '4', '2', '\n' };
 	static const wchar_t w12[] = { '1', ' ', '2', '\n' };
@@ -535,18 +588,18 @@ run_wscanf_edges(void)
 	static const wchar_t wnone[] = { 'z', '\n' };
 	static const wchar_t w0[] = { '0', '\n' };
 
-	test_wscanf_int("d 42", w42, 3, L"%d");
-	test_wscanf_two_int("d d 1 2", w12, 4, L"%d %d");
-	test_wscanf_int("d empty", wempty, 1, L"%d");
-	test_wscanf_wchar("lc x", wx, 2, L"%lc");
-	test_wscanf_wchar("lc hi", whi, 3, L"%lc");
-	test_wscanf_int("d nomatch", wnone, 2, L"%d");
-	test_wscanf_int("d zero", w0, 2, L"%d");
-	test_wscanf_int("d eof", w42, 0, L"%d");
+	test_wscanf_int(which, "d 42", w42, 3, L"%d");
+	test_wscanf_two_int(which, "d d 1 2", w12, 4, L"%d %d");
+	test_wscanf_int(which, "d empty", wempty, 1, L"%d");
+	test_wscanf_wchar(which, "lc x", wx, 2, L"%lc");
+	test_wscanf_wchar(which, "lc hi", whi, 3, L"%lc");
+	test_wscanf_int(which, "d nomatch", wnone, 2, L"%d");
+	test_wscanf_int(which, "d zero", w0, 2, L"%d");
+	test_wscanf_int(which, "d eof", w42, 0, L"%d");
 }
 
 void
-run_wscanf_random(void)
+run_wscanf_random(StatId which)
 {
 	wchar_t input[32];
 	wchar_t fmt[8];
@@ -570,25 +623,26 @@ run_wscanf_random(void)
 
 		if (kind == 0) {
 			std::wcscpy(fmt, L"%d");
-			test_wscanf_int(label, input, n, fmt);
+			test_wscanf_int(which, label, input, n, fmt);
 		} else if (kind == 1) {
 			std::wcscpy(fmt, L"%lc");
-			test_wscanf_wchar(label, input, n, fmt);
+			test_wscanf_wchar(which, label, input, n, fmt);
 		} else if (kind == 2) {
 			std::wcscpy(fmt, L"%d %d");
-			test_wscanf_two_int(label, input, n, fmt);
+			test_wscanf_two_int(which, label, input, n, fmt);
 		} else if (kind == 3) {
 			std::wcscpy(fmt, L"%1d");
-			test_wscanf_int(label, input, n, fmt);
+			test_wscanf_int(which, label, input, n, fmt);
 		} else {
 			std::wcscpy(fmt, L"%2d");
-			test_wscanf_int(label, input, n, fmt);
+			test_wscanf_int(which, label, input, n, fmt);
 		}
 	}
 }
 
 bool
-test_getwc_stream(const wchar_t *ws, std::size_t n, const char *label)
+test_getwc_stream(StatId which, const wchar_t *ws, std::size_t n,
+    const char *label)
 {
 	FILE *rf = mk_wchar_file(ws, n);
 	FILE *pf = mk_wchar_file(ws, n);
@@ -597,18 +651,21 @@ test_getwc_stream(const wchar_t *ws, std::size_t n, const char *label)
 			std::fclose(rf);
 		if (pf)
 			std::fclose(pf);
-		fail_msg(S_GETWC, label, "tmpfile failed");
-		case_inc(S_GETWC);
+		fail_msg(which, label, "tmpfile failed");
+		case_inc(which);
 		return false;
 	}
 
+	locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
 	bool ok = true;
 	for (;;) {
-		wint_t wr = ref_getwc(rf);
-		wint_t wp = port::getwc(pf);
-		case_inc(S_GETWC);
+		wint_t wr = (which == S_GETWC) ? ref_getwc(rf) :
+		    ref_getwc_l(rf, loc);
+		wint_t wp = (which == S_GETWC) ? port::getwc(pf) :
+		    port::getwc_l(pf, loc);
+		case_inc(which);
 		if (wr != wp) {
-			fail_msg(S_GETWC, label, "wint mismatch");
+			fail_msg(which, label, "wint mismatch");
 			ok = false;
 			break;
 		}
@@ -618,11 +675,12 @@ test_getwc_stream(const wchar_t *ws, std::size_t n, const char *label)
 
 	std::fclose(rf);
 	std::fclose(pf);
+	freelocale(loc);
 	return ok;
 }
 
 void
-run_getwc_edges(void)
+run_getwc_edges(StatId which)
 {
 	static const wchar_t wempty[] = {};
 	static const wchar_t wone[] = { 'A' };
@@ -631,14 +689,14 @@ run_getwc_edges(void)
 		(wchar_t)0x80, (wchar_t)0xff, (wchar_t)0xffff
 	};
 
-	test_getwc_stream(wempty, 0, "empty");
-	test_getwc_stream(wone, 1, "one");
-	test_getwc_stream(wnul, 2, "nul heavy");
-	test_getwc_stream(whi, 3, "highbit");
+	test_getwc_stream(which, wempty, 0, "empty");
+	test_getwc_stream(which, wone, 1, "one");
+	test_getwc_stream(which, wnul, 2, "nul heavy");
+	test_getwc_stream(which, whi, 3, "highbit");
 }
 
 void
-run_getwc_random(void)
+run_getwc_random(StatId which)
 {
 	wchar_t buf[64];
 
@@ -655,7 +713,7 @@ run_getwc_random(void)
 		}
 		char label[48];
 		std::snprintf(label, sizeof(label), "rnd%u", i);
-		test_getwc_stream(buf, n, label);
+		test_getwc_stream(which, buf, n, label);
 	}
 }
 
@@ -687,10 +745,14 @@ main(void)
 	run_setbuffer_random();
 	run_setlinebuf_edges();
 	run_setlinebuf_random();
-	run_wscanf_edges();
-	run_wscanf_random();
-	run_getwc_edges();
-	run_getwc_random();
+	run_wscanf_edges(S_WSCANF);
+	run_wscanf_random(S_WSCANF);
+	run_wscanf_edges(S_WSCANF_L);
+	run_wscanf_random(S_WSCANF_L);
+	run_getwc_edges(S_GETWC);
+	run_getwc_random(S_GETWC);
+	run_getwc_edges(S_GETWC_L);
+	run_getwc_random(S_GETWC_L);
 
 	report();
 	long long fails = 0;

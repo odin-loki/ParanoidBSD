@@ -171,14 +171,14 @@ void ref_mul128By64To192(bits64 a0, bits64 a1, bits64 b, bits64 *z0Ptr, bits64 *
 void ref_mul128To256(bits64 a0, bits64 a1, bits64 b0, bits64 b1, bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr, bits64 *z3Ptr);
 void ref_mul64To128(bits64 a, bits64 b, bits64 *z0Ptr, bits64 *z1Ptr);
 flag ref_ne128(bits64 a0, bits64 a1, bits64 b0, bits64 b1);
-void ref_normalizeFloat128Subnormal(bits64 aSig0, bits64 aSig1, int16 *zExpPtr, bits64 *zSig0Ptr, bits64 *zSig1Ptr);
+void ref_normalizeFloat128Subnormal(bits64 aSig0, bits64 aSig1, int32 *zExpPtr, bits64 *zSig0Ptr, bits64 *zSig1Ptr);
 void ref_normalizeFloat32Subnormal(bits32 aSig, int16 *zExpPtr, bits32 *zSigPtr);
 void ref_normalizeFloat64Subnormal(bits64 aSig, int16 *zExpPtr, bits64 *zSigPtr);
 void ref_normalizeFloatx80Subnormal(bits64 aSig, int32 *zExpPtr, bits64 *zSigPtr);
 float128 ref_normalizeRoundAndPackFloat128(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
 float32 ref_normalizeRoundAndPackFloat32(flag zSign, int16 zExp, bits32 zSig);
 float64 ref_normalizeRoundAndPackFloat64(flag zSign, int16 zExp, bits64 zSig);
-floatx80 ref_normalizeRoundAndPackFloatx80(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
+floatx80 ref_normalizeRoundAndPackFloatx80(int8 roundingPrecision, flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
 float128 ref_packFloat128(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
 float32 ref_packFloat32(flag zSign, int16 zExp, bits32 zSig);
 float64 ref_packFloat64(flag zSign, int16 zExp, bits64 zSig);
@@ -187,17 +187,17 @@ float128 ref_propagateFloat128NaN(float128 a, float128 b);
 float32 ref_propagateFloat32NaN(float32 a, float32 b);
 float64 ref_propagateFloat64NaN(float64 a, float64 b);
 floatx80 ref_propagateFloatx80NaN(floatx80 a, floatx80 b);
-float128 ref_roundAndPackFloat128(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
+float128 ref_roundAndPackFloat128(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1, bits64 zSig2);
 float32 ref_roundAndPackFloat32(flag zSign, int16 zExp, bits32 zSig);
 float64 ref_roundAndPackFloat64(flag zSign, int16 zExp, bits64 zSig);
-floatx80 ref_roundAndPackFloatx80(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
+floatx80 ref_roundAndPackFloatx80(int8 roundingPrecision, flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
 int32_t ref_roundAndPackInt32(flag zSign, bits64 absZ);
 int64_t ref_roundAndPackInt64(flag zSign, bits64 absZ0, bits64 absZ1);
 void ref_shift128ExtraRightJamming(bits64 a0, bits64 a1, bits64 a2, int16 count, bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);
 void ref_shift128Right(bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr);
 void ref_shift128RightJamming(bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr);
 void ref_shift32RightJamming(bits32 a, int16 count, bits32 *zPtr);
-void ref_shift64ExtraRightJamming(bits64 a, int16 count, bits64 *zPtr);
+void ref_shift64ExtraRightJamming(bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr);
 void ref_shift64RightJamming(bits64 a, int16 count, bits64 *zPtr);
 void ref_shortShift128Left(bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr);
 void ref_shortShift192Left(bits64 a0, bits64 a1, bits64 a2, int16 count, bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);
@@ -3150,23 +3150,14 @@ static void test_normalizeFloat128Subnormal()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
-        bits64 sig = static_cast<bits64>(urand64());
+        bits64 sig0 = urand64(), sig1 = urand64();
         int16 exp_p = 0x7F7F, exp_r = 0x7F7F;
-        bits64 sig_p = sig, sig_r = sig;
+        bits64 z0p = sig0, z1p = sig1, z0r = sig0, z1r = sig1;
         sync_globals_from_port();
-        if (strcmp(name, "normalizeFloat128Subnormal") == 0) {
-            bits64 sig0 = urand64(), sig1 = urand64();
-            bits64 z0p = sig0, z1p = sig1, z0r = sig0, z1r = sig1;
-            port::normalizeFloat128Subnormal(sig0, sig1, &exp_p, &z0p, &z1p);
-            ref_normalizeFloat128Subnormal(sig0, sig1, &exp_r, &z0r, &z1r);
-            cases++;
-            if (exp_p != exp_r || z0p != z0r || z1p != z1r) failures++;
-        } else {
-            port::normalizeFloat128Subnormal(sig, &exp_p, &sig_p);
-            ref_normalizeFloat128Subnormal(sig, &exp_r, &sig_r);
-            cases++;
-            if (exp_p != exp_r || sig_p != sig_r) failures++;
-        }
+        port::normalizeFloat128Subnormal(sig0, sig1, &exp_p, &z0p, &z1p);
+        ref_normalizeFloat128Subnormal(sig0, sig1, &exp_r, &z0r, &z1r);
+        cases++;
+        if (exp_p != exp_r || z0p != z0r || z1p != z1r) failures++;
     }
     record(name, cases, failures);
 }
@@ -3178,23 +3169,14 @@ static void test_normalizeFloat32Subnormal()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
-        bits32 sig = static_cast<bits32>(urand64());
+        bits32 sig = urand32();
         int16 exp_p = 0x7F7F, exp_r = 0x7F7F;
         bits32 sig_p = sig, sig_r = sig;
         sync_globals_from_port();
-        if (strcmp(name, "normalizeFloat128Subnormal") == 0) {
-            bits64 sig0 = urand64(), sig1 = urand64();
-            bits64 z0p = sig0, z1p = sig1, z0r = sig0, z1r = sig1;
-            port::normalizeFloat32Subnormal(sig0, sig1, &exp_p, &z0p, &z1p);
-            ref_normalizeFloat32Subnormal(sig0, sig1, &exp_r, &z0r, &z1r);
-            cases++;
-            if (exp_p != exp_r || z0p != z0r || z1p != z1r) failures++;
-        } else {
-            port::normalizeFloat32Subnormal(sig, &exp_p, &sig_p);
-            ref_normalizeFloat32Subnormal(sig, &exp_r, &sig_r);
-            cases++;
-            if (exp_p != exp_r || sig_p != sig_r) failures++;
-        }
+        port::normalizeFloat32Subnormal(sig, &exp_p, &sig_p);
+        ref_normalizeFloat32Subnormal(sig, &exp_r, &sig_r);
+        cases++;
+        if (exp_p != exp_r || sig_p != sig_r) failures++;
     }
     record(name, cases, failures);
 }
@@ -3206,23 +3188,14 @@ static void test_normalizeFloat64Subnormal()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
-        bits64 sig = static_cast<bits64>(urand64());
+        bits64 sig = urand64();
         int16 exp_p = 0x7F7F, exp_r = 0x7F7F;
         bits64 sig_p = sig, sig_r = sig;
         sync_globals_from_port();
-        if (strcmp(name, "normalizeFloat128Subnormal") == 0) {
-            bits64 sig0 = urand64(), sig1 = urand64();
-            bits64 z0p = sig0, z1p = sig1, z0r = sig0, z1r = sig1;
-            port::normalizeFloat64Subnormal(sig0, sig1, &exp_p, &z0p, &z1p);
-            ref_normalizeFloat64Subnormal(sig0, sig1, &exp_r, &z0r, &z1r);
-            cases++;
-            if (exp_p != exp_r || z0p != z0r || z1p != z1r) failures++;
-        } else {
-            port::normalizeFloat64Subnormal(sig, &exp_p, &sig_p);
-            ref_normalizeFloat64Subnormal(sig, &exp_r, &sig_r);
-            cases++;
-            if (exp_p != exp_r || sig_p != sig_r) failures++;
-        }
+        port::normalizeFloat64Subnormal(sig, &exp_p, &sig_p);
+        ref_normalizeFloat64Subnormal(sig, &exp_r, &sig_r);
+        cases++;
+        if (exp_p != exp_r || sig_p != sig_r) failures++;
     }
     record(name, cases, failures);
 }
@@ -3234,23 +3207,14 @@ static void test_normalizeFloatx80Subnormal()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
-        bits64 sig = static_cast<bits64>(urand64());
+        bits64 sig = urand64();
         int16 exp_p = 0x7F7F, exp_r = 0x7F7F;
         bits64 sig_p = sig, sig_r = sig;
         sync_globals_from_port();
-        if (strcmp(name, "normalizeFloat128Subnormal") == 0) {
-            bits64 sig0 = urand64(), sig1 = urand64();
-            bits64 z0p = sig0, z1p = sig1, z0r = sig0, z1r = sig1;
-            port::normalizeFloatx80Subnormal(sig0, sig1, &exp_p, &z0p, &z1p);
-            ref_normalizeFloatx80Subnormal(sig0, sig1, &exp_r, &z0r, &z1r);
-            cases++;
-            if (exp_p != exp_r || z0p != z0r || z1p != z1r) failures++;
-        } else {
-            port::normalizeFloatx80Subnormal(sig, &exp_p, &sig_p);
-            ref_normalizeFloatx80Subnormal(sig, &exp_r, &sig_r);
-            cases++;
-            if (exp_p != exp_r || sig_p != sig_r) failures++;
-        }
+        port::normalizeFloatx80Subnormal(sig, &exp_p, &sig_p);
+        ref_normalizeFloatx80Subnormal(sig, &exp_r, &sig_r);
+        cases++;
+        if (exp_p != exp_r || sig_p != sig_r) failures++;
     }
     record(name, cases, failures);
 }
@@ -3263,13 +3227,13 @@ static void test_normalizeRoundAndPackFloat128()
 
     for (unsigned i = 0; i < 200000u; ++i) {
         flag zs = urand32() & 1;
-        int32 ze = static_cast<int32>(urand32() & 0x7FF);
-        bits64 zsig = static_cast<bits64>(urand64());
+        int32 ze = static_cast<int32>(urand32() & 0x7FFF);
+        bits64 z0 = urand64(), z1 = urand64();
         sync_globals_from_port();
-        float128 rp = port::normalizeRoundAndPackFloat128(zs, ze, zsig);
-        float128 rr = ref_normalizeRoundAndPackFloat128(zs, ze, zsig);
+        float128 rp = port::normalizeRoundAndPackFloat128(zs, ze, z0, z1);
+        float128 rr = ref_normalizeRoundAndPackFloat128(zs, ze, z0, z1);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -3284,7 +3248,7 @@ static void test_normalizeRoundAndPackFloat32()
     for (unsigned i = 0; i < 200000u; ++i) {
         flag zs = urand32() & 1;
         int16 ze = static_cast<int16>(urand32() & 0x7FF);
-        bits32 zsig = static_cast<bits32>(urand64());
+        bits32 zsig = urand32();
         sync_globals_from_port();
         float32 rp = port::normalizeRoundAndPackFloat32(zs, ze, zsig);
         float32 rr = ref_normalizeRoundAndPackFloat32(zs, ze, zsig);
@@ -3304,7 +3268,7 @@ static void test_normalizeRoundAndPackFloat64()
     for (unsigned i = 0; i < 200000u; ++i) {
         flag zs = urand32() & 1;
         int16 ze = static_cast<int16>(urand32() & 0x7FF);
-        bits64 zsig = static_cast<bits64>(urand64());
+        bits64 zsig = urand64();
         sync_globals_from_port();
         float64 rp = port::normalizeRoundAndPackFloat64(zs, ze, zsig);
         float64 rr = ref_normalizeRoundAndPackFloat64(zs, ze, zsig);
@@ -3322,14 +3286,15 @@ static void test_normalizeRoundAndPackFloatx80()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
+        int8 rprec = static_cast<int8>((urand32() % 3) * 32 + 32);
         flag zs = urand32() & 1;
-        int32 ze = static_cast<int32>(urand32() & 0x7FF);
-        bits64 zsig = static_cast<bits64>(urand64());
+        int32 ze = static_cast<int32>(urand32() & 0x7FFF);
+        bits64 z0 = urand64(), z1 = urand64();
         sync_globals_from_port();
-        floatx80 rp = port::normalizeRoundAndPackFloatx80(zs, ze, zsig);
-        floatx80 rr = ref_normalizeRoundAndPackFloatx80(zs, ze, zsig);
+        floatx80 rpv = port::normalizeRoundAndPackFloatx80(rprec, zs, ze, z0, z1);
+        floatx80 rrv = ref_normalizeRoundAndPackFloatx80(rprec, zs, ze, z0, z1);
         cases++;
-        if (rp != rr) failures++;
+        if ((rpv.high != rrv.high || rpv.low != rrv.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -3464,12 +3429,12 @@ static void test_roundAndPackFloat128()
     for (unsigned i = 0; i < 200000u; ++i) {
         flag zs = urand32() & 1;
         int32 ze = static_cast<int32>(urand32() & 0x7FFF);
-        bits64 z0 = urand64(), z1 = urand64();
+        bits64 z0 = urand64(), z1 = urand64(), z2 = urand64();
         sync_globals_from_port();
-        float128 rp = port::roundAndPackFloat128(zs, ze, z0, z1);
-        float128 rr = ref_roundAndPackFloat128(zs, ze, z0, z1);
+        float128 rp = port::roundAndPackFloat128(zs, ze, z0, z1, z2);
+        float128 rr = ref_roundAndPackFloat128(zs, ze, z0, z1, z2);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -3484,7 +3449,7 @@ static void test_roundAndPackFloat32()
     for (unsigned i = 0; i < 200000u; ++i) {
         flag zs = urand32() & 1;
         int16 ze = static_cast<int16>(urand32() & 0x7FF);
-        bits32 zsig = static_cast<bits32>(urand64());
+        bits32 zsig = urand32();
         sync_globals_from_port();
         float32 rp = port::roundAndPackFloat32(zs, ze, zsig);
         float32 rr = ref_roundAndPackFloat32(zs, ze, zsig);
@@ -3504,7 +3469,7 @@ static void test_roundAndPackFloat64()
     for (unsigned i = 0; i < 200000u; ++i) {
         flag zs = urand32() & 1;
         int16 ze = static_cast<int16>(urand32() & 0x7FF);
-        bits64 zsig = static_cast<bits64>(urand64());
+        bits64 zsig = urand64();
         sync_globals_from_port();
         float64 rp = port::roundAndPackFloat64(zs, ze, zsig);
         float64 rr = ref_roundAndPackFloat64(zs, ze, zsig);
@@ -3522,14 +3487,15 @@ static void test_roundAndPackFloatx80()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
+        int8 rprec = static_cast<int8>((urand32() % 3) * 32 + 32);
         flag zs = urand32() & 1;
         int32 ze = static_cast<int32>(urand32() & 0x7FFF);
         bits64 z0 = urand64(), z1 = urand64();
         sync_globals_from_port();
-        floatx80 rp = port::roundAndPackFloatx80(zs, ze, z0, z1);
-        floatx80 rr = ref_roundAndPackFloatx80(zs, ze, z0, z1);
+        floatx80 rpv = port::roundAndPackFloatx80(rprec, zs, ze, z0, z1);
+        floatx80 rrv = ref_roundAndPackFloatx80(rprec, zs, ze, z0, z1);
         cases++;
-        if (rp != rr) failures++;
+        if ((rpv.high != rrv.high || rpv.low != rrv.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);

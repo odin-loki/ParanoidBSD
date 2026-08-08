@@ -183,6 +183,10 @@ const reg_info t4vf_mbdata_regs[] = {
 
 } // namespace pbsd::usr_sbin_cxgbetool::b0085
 
+export namespace pbsd::usr_sbin_cxgbetool::b0085 {
+using reg_info = ::pbsd::usr_sbin_cxgbetool::b0085::reg_info;
+}
+
 export using pbsd::usr_sbin_cxgbetool::b0085::reg_info;
 export using pbsd::usr_sbin_cxgbetool::b0085::t4vf_sge_regs;
 export using pbsd::usr_sbin_cxgbetool::b0085::t5vf_sge_regs;

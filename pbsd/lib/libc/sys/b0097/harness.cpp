@@ -426,8 +426,7 @@ case_wait6(idtype_t idtype, id_t id, int *status, int options,
 	unsigned char info_a[sizeof(siginfo_t) + 2 * INFO_GUARD_PAD];
 	unsigned char info_b[sizeof(siginfo_t) + 2 * INFO_GUARD_PAD];
 	int *psa, *psb;
-	struct __wrusage *rua;
-	port::__wrusage *rub;
+	struct __wrusage *rua, *rub;
 	siginfo_t *ia, *ib;
 	Snap snap_a, snap_b;
 	pid_t ra, rb;

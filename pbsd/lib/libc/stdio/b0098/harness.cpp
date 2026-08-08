@@ -2,6 +2,9 @@
  * harness.cpp -- differential test for PBSD batch b0098.
  */
 
+#define _GNU_SOURCE
+
+#include <clocale>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -9,8 +12,7 @@
 #include <cstdarg>
 #include <unistd.h>
 #include <fcntl.h>
-#include <wchar.h>
-#include <xlocale.h>
+#include <cwchar>
 
 import pbsd.lib.libc.stdio.b0098;
 
@@ -297,12 +299,12 @@ scan_case_ll(Stat *st, locale_t loc, const unsigned char *data, std::size_t len,
 	if (std::freopen(path, "r", stdin) == nullptr)
 		std::exit(2);
 	clearerr(stdin);
-	a.ret = port_vwscanf_l(loc, L"%lld", &a.ll1);
+	a.ret = do_port_scan(loc, L"%lld", &a.ll1);
 
 	if (std::freopen(path, "r", stdin) == nullptr)
 		std::exit(2);
 	clearerr(stdin);
-	b.ret = ref_vwscanf_l(loc, L"%lld", &b.ll1);
+	b.ret = do_ref_scan(loc, L"%lld", &b.ll1);
 
 	st->cases++;
 	bad = (a.ret != b.ret || a.ll1 != b.ll1);
@@ -325,12 +327,12 @@ scan_case_c(Stat *st, locale_t loc, const unsigned char *data, std::size_t len,
 	if (std::freopen(path, "r", stdin) == nullptr)
 		std::exit(2);
 	clearerr(stdin);
-	a.ret = port_vwscanf_l(loc, L"%c", &a.w1);
+	a.ret = do_port_scan(loc, L"%c", &a.w1);
 
 	if (std::freopen(path, "r", stdin) == nullptr)
 		std::exit(2);
 	clearerr(stdin);
-	b.ret = ref_vwscanf_l(loc, L"%c", &b.w1);
+	b.ret = do_ref_scan(loc, L"%c", &b.w1);
 
 	st->cases++;
 	bad = (a.ret != b.ret || a.w1 != b.w1);
@@ -446,7 +448,21 @@ struct PrintObs {
 };
 
 static int
-port_vwprintf_l(locale_t loc, const wchar_t *fmt, ...)
+read_output_file(const char *path, unsigned char *out, std::size_t cap,
+    std::size_t *len)
+{
+	FILE *fp = std::fopen(path, "rb");
+	std::size_t n;
+
+	if (fp == nullptr)
+		return -1;
+	n = std::fread(out, 1, cap, fp);
+	*len = n;
+	return std::fclose(fp);
+}
+
+static int
+do_port_print(locale_t loc, const wchar_t *fmt, ...)
 {
 	va_list ap;
 	int r;
@@ -461,7 +477,7 @@ port_vwprintf_l(locale_t loc, const wchar_t *fmt, ...)
 }
 
 static int
-ref_vwprintf_l(locale_t loc, const wchar_t *fmt, ...)
+do_ref_print(locale_t loc, const wchar_t *fmt, ...)
 {
 	va_list ap;
 	int r;
@@ -473,67 +489,6 @@ ref_vwprintf_l(locale_t loc, const wchar_t *fmt, ...)
 		r = ref_vwprintf_l(loc, fmt, ap);
 	va_end(ap);
 	return r;
-}
-
-static void
-print_run(locale_t loc, const char *path, const wchar_t *fmt, PrintObs *obs, ...)
-{
-	va_list ap;
-
-	fill_guard(obs->out, sizeof(obs->out));
-	obs->out_len = 0;
-
-	if (freopen(path, "w", stdout) == nullptr) {
-		obs->ret = -9999;
-		return;
-	}
-	va_start(ap, obs);
-	if (loc == nullptr)
-		obs->ret = port::vwprintf(fmt, ap);
-	else
-		obs->ret = port::vwprintf_l(loc, fmt, ap);
-	va_end(ap);
-	std::fflush(stdout);
-	if (read_output_file(path, obs->out, sizeof(obs->out), &obs->out_len) != 0)
-		obs->ret = -9998;
-}
-
-static void
-print_run_ref(locale_t loc, const char *path, const wchar_t *fmt, PrintObs *obs,
-    ...)
-{
-	va_list ap;
-
-	fill_guard(obs->out, sizeof(obs->out));
-	obs->out_len = 0;
-
-	if (freopen(path, "w", stdout) == nullptr) {
-		obs->ret = -9999;
-		return;
-	}
-	va_start(ap, obs);
-	if (loc == nullptr)
-		obs->ret = ref_vwprintf(fmt, ap);
-	else
-		obs->ret = ref_vwprintf_l(loc, fmt, ap);
-	va_end(ap);
-	std::fflush(stdout);
-	if (read_output_file(path, obs->out, sizeof(obs->out), &obs->out_len) != 0)
-		obs->ret = -9998;
-}
-
-static int
-read_output_file(const char *path, unsigned char *out, std::size_t cap,
-    std::size_t *len)
-{
-	FILE *fp = std::fopen(path, "rb");
-	std::size_t n;
-
-	if (fp == nullptr)
-		return -1;
-	n = std::fread(out, 1, cap, fp);
-	*len = n;
-	return std::fclose(fp);
 }
 
 static void

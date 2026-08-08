@@ -9,30 +9,30 @@ module;
 extern "C" {
 int vfwprintf_l(FILE * __restrict, locale_t, const wchar_t * __restrict,
     std::va_list);
-}
-
-#ifndef __LIBC_ISTHREADED_DECLARED
-#define __LIBC_ISTHREADED_DECLARED
-#endif
-
-extern "C" {
 extern int __isthreaded;
-void _flockfile(FILE *);
-void _funlockfile(FILE *);
+void _flockfile(void *);
+void _funlockfile(void *);
 }
-
-#define FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
-#define FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
-
-#define __sclearerr(p)	((void)(clearerr_unlocked(p)))
-#define __sfeof(p)	(feof_unlocked(p))
-
-#undef clearerr_unlocked
-#undef feof_unlocked
 
 export module pbsd.lib.libc.stdio.b0100;
 
 export namespace pbsd::lib_libc_stdio::b0100 {
+
+struct FILE {
+	unsigned char	*_p;
+	int		_r;
+	int		_w;
+	short		_flags;
+	short		_file;
+};
+
+#define	__SEOF	0x0020
+#define	__SERR	0x0040
+#define	__sfeof(p)	(((p)->_flags & __SEOF) != 0)
+#define	__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
+
+#define	FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
+#define	FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -74,7 +74,7 @@ wprintf(const wchar_t * __restrict fmt, ...)
 	std::va_list ap;
 
 	std::va_start(ap, fmt);
-	ret = vfwprintf(stdout, fmt, ap);
+	ret = ::vfwprintf(::stdout, fmt, ap);
 	std::va_end(ap);
 
 	return (ret);
@@ -86,7 +86,7 @@ wprintf_l(locale_t locale, const wchar_t * __restrict fmt, ...)
 	std::va_list ap;
 
 	std::va_start(ap, fmt);
-	ret = vfwprintf_l(stdout, locale, fmt, ap);
+	ret = vfwprintf_l(::stdout, locale, fmt, ap);
 	std::va_end(ap);
 
 	return (ret);

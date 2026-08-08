@@ -1,0 +1,288 @@
+module;
+
+#include <cerrno>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdio>
+#include <cwchar>
+#include <xlocale.h>
+
+namespace {
+
+#define	FLOCKFILE_CANCELSAFE(fp)	do { (void)(fp); } while (0)
+#define	FUNLOCKFILE_CANCELSAFE()	do { } while (0)
+#define	FLOCKFILE(fp)			do { (void)(fp); } while (0)
+#define	FUNLOCKFILE(fp)			do { (void)(fp); } while (0)
+
+static int __sdidinit = 1;
+
+static void
+__sinit(void)
+{
+}
+
+static inline int
+__sgetc(std::FILE *fp)
+{
+
+	return (::fgetc(fp));
+}
+
+static inline int
+_fseeko(std::FILE *fp, ::off_t off, int whence, int ign)
+{
+	(void)ign;
+
+	return (::fseeko(fp, off, whence));
+}
+
+::locale_t
+b0109_get_C_locale(void)
+{
+	static ::locale_t c_locale = nullptr;
+	static int inited = 0;
+
+	if (!inited) {
+		c_locale = ::newlocale(LC_ALL_MASK, "C", (::locale_t)0);
+		inited = 1;
+	}
+	return (c_locale);
+}
+
+static inline ::locale_t
+get_real_locale(::locale_t locale)
+{
+	switch ((intptr_t)locale) {
+	case 0:
+		return (b0109_get_C_locale());
+	case -1:
+		return (LC_GLOBAL_LOCALE);
+	default:
+		return (locale);
+	}
+}
+
+#define FIX_LOCALE(l) (l = get_real_locale(l))
+
+static inline ::locale_t
+__get_locale(void)
+{
+	::locale_t loc;
+
+	loc = ::uselocale((::locale_t)0);
+	if (loc == (::locale_t)0)
+		return (LC_GLOBAL_LOCALE);
+	return (loc);
+}
+
+} /* namespace */
+
+export module pbsd.lib.libc.stdio.b0109;
+
+export namespace pbsd::lib_libc_stdio::b0109 {
+
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1990, 1993
+ *	The Regents of the University of California.  All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Chris Torek.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+int
+fgetc(std::FILE *fp)
+{
+	int retval;
+	FLOCKFILE_CANCELSAFE(fp);
+	/* Orientation set by __sgetc() when buffer is empty. */
+	/* ORIENT(fp, -1); */
+	retval = __sgetc(fp);
+	FUNLOCKFILE_CANCELSAFE();
+	return (retval);
+}
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2002 Tim J. Robbins.
+ * All rights reserved.
+ *
+ * Copyright (c) 2011 The FreeBSD Foundation
+ *
+ * Portions of this software were developed by David Chisnall
+ * under sponsorship from the FreeBSD Foundation.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Synonym for fputwc(). The only difference is that putwc(), if it is a
+ * macro, may evaluate `fp' more than once.
+ */
+::wint_t
+putwc_l(wchar_t wc, std::FILE *fp, ::locale_t locale)
+{
+	FIX_LOCALE(locale);
+	return (::fputwc_l(wc, fp, locale));
+}
+::wint_t
+putwc(wchar_t wc, std::FILE *fp)
+{
+	return putwc_l(wc, fp, __get_locale());
+}
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2002 Tim J. Robbins.
+ * All rights reserved.
+ *
+ * Copyright (c) 2011 The FreeBSD Foundation
+ *
+ * Portions of this software were developed by David Chisnall
+ * under sponsorship from the FreeBSD Foundation.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+int
+swprintf(wchar_t * __restrict s, std::size_t n, const wchar_t * __restrict fmt, ...)
+{
+	int ret;
+	std::va_list ap;
+
+	std::va_start(ap, fmt);
+	ret = ::vswprintf(s, n, fmt, ap);
+	std::va_end(ap);
+
+	return (ret);
+}
+int
+swprintf_l(wchar_t * __restrict s, std::size_t n, ::locale_t locale,
+		const wchar_t * __restrict fmt, ...)
+{
+	int ret;
+	std::va_list ap;
+
+	std::va_start(ap, fmt);
+	ret = ::vswprintf_l(s, n, locale, fmt, ap);
+	std::va_end(ap);
+
+	return (ret);
+}
+
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1990, 1993
+ *	The Regents of the University of California.  All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Chris Torek.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+void
+rewind(std::FILE *fp)
+{
+	int serrno = errno;
+
+	/* make sure stdio is set up */
+	if (!__sdidinit)
+		__sinit();
+
+	FLOCKFILE(fp);
+	if (_fseeko(fp, (::off_t)0, SEEK_SET, 1) == 0)
+		errno = serrno;
+	::clearerr_unlocked(fp);	/* POSIX: clear stdio error regardless */
+	FUNLOCKFILE(fp);
+}
+
+} /* namespace pbsd::lib_libc_stdio::b0109 */

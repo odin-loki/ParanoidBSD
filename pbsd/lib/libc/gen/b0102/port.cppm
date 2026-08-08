@@ -123,6 +123,8 @@ module;
 #include <stddef.h>
 #include <sys/types.h>
 
+export module pbsd.lib.libc.gen.b0102;
+
 #define	LIO_READ		1
 #define	LIO_WRITE		2
 #define	LIO_NOP			4
@@ -153,8 +155,6 @@ int __libc_sigaction(int, const struct sigaction *, struct sigaction *);
 ssize_t getrandom(void *, size_t, unsigned int);
 int raise(int);
 }
-
-export module pbsd.lib.libc.gen.b0102;
 
 export namespace pbsd::lib_libc_gen::b0102 {
 

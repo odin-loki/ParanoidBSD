@@ -18,15 +18,15 @@
 union IEEEl2bits {
 	long double e;
 	struct {
-		unsigned long manl;
-		unsigned long manh;
-		unsigned int exp;
-		unsigned int sign;
+		unsigned long manl : 64;
+		unsigned long manh : 48;
+		unsigned int exp : 15;
+		unsigned int sign : 1;
 	} bits;
 	struct {
-		unsigned long manl;
-		unsigned long manh;
-		unsigned int expsign;
+		unsigned long manl : 64;
+		unsigned long manh : 48;
+		unsigned int expsign : 16;
 	} xbits;
 };
 
