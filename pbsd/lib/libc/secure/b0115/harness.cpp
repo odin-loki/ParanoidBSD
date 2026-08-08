@@ -407,16 +407,27 @@ memcpy_edges(void)
 	static const unsigned char pat3[] = { 'a', 'b', 'c', 'd' };
 	static const unsigned char pat4[] = { 0x00, 0x80, 0xff, 0x00 };
 
+	std::fprintf(stderr, "memcpy_edges:empty\n");
 	memcpy_case(&st_memcpy, "empty", pat0, 0, 0, false);
+	std::fprintf(stderr, "memcpy_edges:empty_slen1\n");
 	memcpy_case(&st_memcpy, "empty_slen1", pat0, 0, 1, false);
+	std::fprintf(stderr, "memcpy_edges:one\n");
 	memcpy_case(&st_memcpy, "one", pat1, 1, 1, false);
+	std::fprintf(stderr, "memcpy_edges:one_fail\n");
 	memcpy_case(&st_memcpy, "one_fail", pat1, 1, 0, false);
+	std::fprintf(stderr, "memcpy_edges:two_hibyte\n");
 	memcpy_case(&st_memcpy, "two_hibyte", pat2, 2, 2, false);
+	std::fprintf(stderr, "memcpy_edges:four\n");
 	memcpy_case(&st_memcpy, "four", pat3, 4, 4, false);
+	std::fprintf(stderr, "memcpy_edges:four_slen3\n");
 	memcpy_case(&st_memcpy, "four_slen3", pat3, 4, 3, false);
+	std::fprintf(stderr, "memcpy_edges:four_slen5\n");
 	memcpy_case(&st_memcpy, "four_slen5", pat3, 4, 5, false);
+	std::fprintf(stderr, "memcpy_edges:nul_mix\n");
 	memcpy_case(&st_memcpy, "nul_mix", pat4, 4, 4, false);
+	std::fprintf(stderr, "memcpy_edges:overlap\n");
 	memcpy_case(&st_memcpy, "overlap", pat3, 4, 8, true);
+	std::fprintf(stderr, "memcpy_edges:overlap_fail_len\n");
 	memcpy_case(&st_memcpy, "overlap_fail_len", pat3, 4, 3, true);
 }
 
@@ -585,8 +596,11 @@ main(void)
 	memmove_edges();
 	std::fprintf(stderr, "memmove_edges\n");
 	memcpy_edges();
+	std::fprintf(stderr, "memcpy_edges\n");
 	strncpy_edges();
+	std::fprintf(stderr, "strncpy_edges\n");
 	vsnprintf_edges();
+	std::fprintf(stderr, "vsnprintf_edges\n");
 
 	memmove_random(SWEEP);
 	memcpy_random(SWEEP);

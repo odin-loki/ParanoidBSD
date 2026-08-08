@@ -432,10 +432,10 @@ b0120,hbsd/src/lib/libc/amd64/string/bzero.c,lib/libc/amd64/string,14,VERIFIED,h
 b0120,hbsd/src/lib/libc/amd64/string/bcopy.c,lib/libc/amd64/string,14,VERIFIED,hbsd/src/lib/libc/aarch64/string/bcopy.c
 b0120,hbsd/src/lib/libc/amd64/string/strncat.c,lib/libc/amd64/string,31,VERIFIED,hbsd/src/lib/libc/aarch64/string/strncat.c
 b0120,hbsd/src/lib/libc/amd64/string/strlcat.c,lib/libc/amd64/string,27,VERIFIED,
-b0121,hbsd/src/lib/libc/string/wmemmove.c,lib/libc/string,45,PENDING,
+b0121,hbsd/src/lib/libc/string/wmemmove.c,lib/libc/string,45,VERIFIED,
 b0121,hbsd/src/lib/libc/string/strcat.c,lib/libc/string,44,VERIFIED,
-b0121,hbsd/src/lib/libc/string/wcscpy.c,lib/libc/string,50,PENDING,
-b0121,hbsd/src/lib/libc/string/wmemset.c,lib/libc/string,52,PENDING,
+b0121,hbsd/src/lib/libc/string/wcscpy.c,lib/libc/string,50,VERIFIED,
+b0121,hbsd/src/lib/libc/string/wmemset.c,lib/libc/string,52,VERIFIED,
 b0122,hbsd/src/lib/libc/uuid/uuid_create.c,lib/libc/uuid,45,PENDING,
 b0122,hbsd/src/lib/libc/uuid/uuid_create_nil.c,lib/libc/uuid,46,PENDING,
 b0122,hbsd/src/lib/libc/uuid/uuid_hash.c,lib/libc/uuid,49,PENDING,

@@ -386,8 +386,12 @@ run_random_sweep()
 		z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
 		z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
 		z = z ^ (z >> 31);
-		long double x = mkld128(z, z ^ 0xdeadbeefcafebabeULL,
-		    (std::uint16_t)(z & 0xffffu));
+		unsigned char b[16];
+		std::size_t j;
+
+		for (j = 0; j < 16; ++j)
+			b[j] = (unsigned char)((z >> ((j % 8) * 8)) & 0xffu);
+		long double x = ld128_from_bytes(b);
 
 		if ((i % 3) == 0)
 			check_expl(x, "random");

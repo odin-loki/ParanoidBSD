@@ -488,7 +488,9 @@ int main()
 		ldhex(p);
 		std::printf(" r=");
 		ldhex(r);
-		std::printf(" eq=%d\n\n", guarded_equal(p.b, r.b, sizeof(p.b)));
+		std::printf(" eq=%d\n", guarded_equal(p.b, r.b, sizeof(p.b)));
+		check_erfl(x, "selftest-call");
+		std::printf("after check_erfl selftest-call\n\n");
 	}
 
 	edge_cases();

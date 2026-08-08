@@ -190,14 +190,7 @@ wmemmove_edge(void)
 
 	/* high-bit wchar patterns */
 	for (int v = 0x80; v <= 0xff; v += 0x11) {
-		wchar_t tmp[WBUF];
-
-		std::memset(tmp, GUARD, sizeof(tmp));
-		for (std::size_t i = 0; i < 8; i++)
-			tmp[i] = (wchar_t)(v + i);
-		std::memcpy(tmp + WBUF / 2, tmp, 8 * sizeof(wchar_t));
 		wmemmove_run(0, WBUF / 2, 8, 3, "hi-byte");
-		(void)tmp;
 		wmemmove_run(0, 2, 6, 1, "hi-fwd");
 		wmemmove_run(6, 0, 6, 2, "hi-bwd");
 	}

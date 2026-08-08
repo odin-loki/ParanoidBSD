@@ -17,6 +17,8 @@
 
 import pbsd.lib.msun.ld128.b0088;
 
+namespace port = pbsd::lib_msun_ld128::b0088;
+
 extern "C" {
 long double _Complex pbsd_b0088_cexpl(long double _Complex);
 }
