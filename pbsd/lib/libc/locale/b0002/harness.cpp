@@ -593,11 +593,6 @@ print_table(const Stats *stats, size_t n)
 int
 main()
 {
-	Stats all[] = {
-		st_c16rtomb_l, st_c16rtomb, st_c32rtomb_l, st_c32rtomb,
-		st_mbrtoc16_l, st_mbrtoc16, st_mbrtoc32_l, st_mbrtoc32,
-	};
-
 	init_locales();
 
 	hand_c16rtomb(st_c16rtomb_l, true);
@@ -618,11 +613,19 @@ main()
 	random_mbrtoc(st_mbrtoc32_l, true, true);
 	random_mbrtoc(st_mbrtoc32, true, false);
 
-	print_table(all, sizeof(all) / sizeof(all[0]));
+	print_table(&st_c16rtomb_l, 1);
+	print_table(&st_c16rtomb, 1);
+	print_table(&st_c32rtomb_l, 1);
+	print_table(&st_c32rtomb, 1);
+	print_table(&st_mbrtoc16_l, 1);
+	print_table(&st_mbrtoc16, 1);
+	print_table(&st_mbrtoc32_l, 1);
+	print_table(&st_mbrtoc32, 1);
 
-	for (const Stats &s : all) {
-		if (s.fails != 0)
-			return (1);
-	}
+	if (st_c16rtomb_l.fails != 0 || st_c16rtomb.fails != 0 ||
+	    st_c32rtomb_l.fails != 0 || st_c32rtomb.fails != 0 ||
+	    st_mbrtoc16_l.fails != 0 || st_mbrtoc16.fails != 0 ||
+	    st_mbrtoc32_l.fails != 0 || st_mbrtoc32.fails != 0)
+		return (1);
 	return (0);
 }

@@ -83,13 +83,13 @@ accept(int s, struct sockaddr *addr, socklen_t *addrlen)
 	return (INTERPOS_SYS(accept, s, addr, addrlen));
 }
 
-int
+[[gnu::weak]] int
 connect(int s, const struct sockaddr *addr, socklen_t addrlen)
 {
 	return (INTERPOS_SYS(connect, s, addr, addrlen));
 }
 
-ssize_t
+[[gnu::weak]] ssize_t
 writev(int fd, const struct iovec *iov, int iovcnt)
 {
 	return (INTERPOS_SYS(writev, fd, iov, iovcnt));
