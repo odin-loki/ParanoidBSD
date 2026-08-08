@@ -1159,38 +1159,64 @@ def gen_shift_ptr_test(f):
 
 
 def gen_wide_arith_test(f):
-    return f'''
-    for (unsigned i = 0; i < 200000u; ++i) {{
+    if f == 'mul64To128':
+        loop = '''
+        bits64 a = urand64(), b = urand64();
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
+        port::mul64To128(a, b, &z0p, &z1p);
+        ref_mul64To128(a, b, &z0r, &z1r);
+        cases++;
+        if (z0p != z0r || z1p != z1r) failures++;
+'''
+    elif f in ('add128', 'sub128'):
+        loop = f'''
         bits64 a0 = urand64(), a1 = urand64(), b0 = urand64(), b1 = urand64();
         bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
         bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
-        sync_globals_from_port();
-        if (strcmp(name, "mul64To128") == 0) {{
-            port::{f}(a0, a1, &z0p, &z1p);
-            ref_{f}(a0, a1, &z0r, &z1r);
-        }} else if (strcmp(name, "add128") == 0 || strcmp(name, "sub128") == 0) {{
-            port::{f}(a0, a1, b0, b1, &z0p, &z1p);
-            ref_{f}(a0, a1, b0, b1, &z0r, &z1r);
-        }} else if (strcmp(name, "add192") == 0 || strcmp(name, "sub192") == 0) {{
-            bits64 a2 = urand64(), b2 = urand64();
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::{f}(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
-            ref_{f}(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        }} else if (strcmp(name, "mul128By64To192") == 0) {{
-            bits64 b = urand64(), z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::{f}(a0, a1, b, &z0p, &z1p, &z2p);
-            ref_{f}(a0, a1, b, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        }} else if (strcmp(name, "mul128To256") == 0) {{
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            bits64 z3p = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
-            port::{f}(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
-            ref_{f}(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
-            if (z2p != z2r || z3p != z3r) failures++;
-        }}
+        port::{f}(a0, a1, b0, b1, &z0p, &z1p);
+        ref_{f}(a0, a1, b0, b1, &z0r, &z1r);
         cases++;
         if (z0p != z0r || z1p != z1r) failures++;
+'''
+    elif f in ('add192', 'sub192'):
+        loop = f'''
+        bits64 a0 = urand64(), a1 = urand64(), a2 = urand64();
+        bits64 b0 = urand64(), b1 = urand64(), b2 = urand64();
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL, z2p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
+        port::{f}(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
+        ref_{f}(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
+        cases++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r) failures++;
+'''
+    elif f == 'mul128By64To192':
+        loop = f'''
+        bits64 a0 = urand64(), a1 = urand64(), b = urand64();
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL, z2p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
+        port::{f}(a0, a1, b, &z0p, &z1p, &z2p);
+        ref_{f}(a0, a1, b, &z0r, &z1r, &z2r);
+        cases++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r) failures++;
+'''
+    else:
+        loop = f'''
+        bits64 a0 = urand64(), a1 = urand64(), b0 = urand64(), b1 = urand64();
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z3p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z2r = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
+        port::{f}(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
+        ref_{f}(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
+        cases++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r || z3p != z3r) failures++;
+'''
+    return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        sync_globals_from_port();
+        {loop}
+        sync_globals_to_port();
     }}
 '''
 

@@ -25,6 +25,7 @@ typedef port::float32 float32;
 typedef port::float64 float64;
 typedef port::floatx80 floatx80;
 typedef port::float128 float128;
+typedef port::commonNaNT commonNaNT;
 
 extern "C" {
 extern int ref_float_rounding_mode;
@@ -32,6 +33,181 @@ extern int ref_float_exception_flags;
 extern int ref_floatx80_rounding_precision;
 extern int ref_float_detect_tininess;
 extern int ref_float_exception_mask;
+void ref_add128(bits64 a0, bits64 a1, bits64 b0, bits64 b1, bits64 *z0Ptr, bits64 *z1Ptr);
+void ref_add192(bits64 a0, bits64 a1, bits64 a2, bits64 b0, bits64 b1, bits64 b2, bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);
+float64 ref_addFloat128Sigs(float64 a, float64 b, flag zSign);
+float64 ref_addFloat32Sigs(float64 a, float64 b, flag zSign);
+float64 ref_addFloat64Sigs(float64 a, float64 b, flag zSign);
+float64 ref_addFloatx80Sigs(float64 a, float64 b, flag zSign);
+float64 ref_commonNaNToFloat128(commonNaNT a);
+float64 ref_commonNaNToFloat32(commonNaNT a);
+float64 ref_commonNaNToFloat64(commonNaNT a);
+float64 ref_commonNaNToFloatx80(commonNaNT a);
+int8 ref_countLeadingZeros32(bits32 a);
+int8 ref_countLeadingZeros64(bits64 a);
+flag ref_eq128(bits64 a0, bits64 a1, bits64 b0, bits64 b1);
+bits64 ref_estimateDiv128To64(bits64 a0, bits64 a1, bits64 b);
+bits32 ref_estimateSqrt32(int16 aExp, bits32 a);
+int32 ref_extractFloat128Exp(float128 a);
+bits64 ref_extractFloat128Frac0(float128 a);
+bits64 ref_extractFloat128Frac1(float128 a);
+bits64 ref_extractFloat128Sign(float128 a);
+bits32 ref_extractFloat32Exp(float32 a);
+bits32 ref_extractFloat32Frac(float32 a);
+bits32 ref_extractFloat32Sign(float32 a);
+bits64 ref_extractFloat64Exp(float64 a);
+bits64 ref_extractFloat64Frac(float64 a);
+bits64 ref_extractFloat64Sign(float64 a);
+int32 ref_extractFloatx80Exp(floatx80 a);
+bits64 ref_extractFloatx80Frac(floatx80 a);
+bits64 ref_extractFloatx80Sign(floatx80 a);
+commonNaNT ref_float128ToCommonNaN(float128 a);
+float128 ref_float128_add(float128 a, float128 b);
+float128 ref_float128_div(float128 a, float128 b);
+flag ref_float128_eq(float128 a, float128 b);
+flag ref_float128_eq_signaling(float128 a, float128 b);
+flag ref_float128_is_nan(float128 a);
+flag ref_float128_is_signaling_nan(float128 a);
+flag ref_float128_le(float128 a, float128 b);
+flag ref_float128_le_quiet(float128 a, float128 b);
+flag ref_float128_lt(float128 a, float128 b);
+flag ref_float128_lt_quiet(float128 a, float128 b);
+float128 ref_float128_mul(float128 a, float128 b);
+float128 ref_float128_rem(float128 a, float128 b);
+int64_t ref_float128_round_to_int(float128 a);
+float128 ref_float128_sqrt(float128 a);
+float128 ref_float128_sub(float128 a, float128 b);
+float32 ref_float128_to_float32(float128 a);
+float64 ref_float128_to_float64(float128 a);
+floatx80 ref_float128_to_floatx80(float128 a);
+int32_t ref_float128_to_int32(float128 a);
+int32_t ref_float128_to_int32_round_to_zero(float128 a);
+int64_t ref_float128_to_int64(float128 a);
+int64_t ref_float128_to_int64_round_to_zero(float128 a);
+commonNaNT ref_float32ToCommonNaN(float32 a);
+float32 ref_float32_add(float32 a, float32 b);
+float32 ref_float32_div(float32 a, float32 b);
+flag ref_float32_eq(float32 a, float32 b);
+flag ref_float32_eq_signaling(float32 a, float32 b);
+flag ref_float32_is_nan(float32 a);
+flag ref_float32_is_signaling_nan(float32 a);
+flag ref_float32_le(float32 a, float32 b);
+flag ref_float32_le_quiet(float32 a, float32 b);
+flag ref_float32_lt(float32 a, float32 b);
+flag ref_float32_lt_quiet(float32 a, float32 b);
+float32 ref_float32_mul(float32 a, float32 b);
+float32 ref_float32_rem(float32 a, float32 b);
+int64_t ref_float32_round_to_int(float32 a);
+float32 ref_float32_sqrt(float32 a);
+float32 ref_float32_sub(float32 a, float32 b);
+float128 ref_float32_to_float128(float32 a);
+float64 ref_float32_to_float64(float32 a);
+floatx80 ref_float32_to_floatx80(float32 a);
+int32_t ref_float32_to_int32(float32 a);
+int32_t ref_float32_to_int32_round_to_zero(float32 a);
+int64_t ref_float32_to_int64(float32 a);
+int64_t ref_float32_to_int64_round_to_zero(float32 a);
+commonNaNT ref_float64ToCommonNaN(float64 a);
+float64 ref_float64_add(float64 a, float64 b);
+float64 ref_float64_div(float64 a, float64 b);
+flag ref_float64_eq(float64 a, float64 b);
+flag ref_float64_eq_signaling(float64 a, float64 b);
+flag ref_float64_is_nan(float64 a);
+flag ref_float64_is_signaling_nan(float64 a);
+flag ref_float64_le(float64 a, float64 b);
+flag ref_float64_le_quiet(float64 a, float64 b);
+flag ref_float64_lt(float64 a, float64 b);
+flag ref_float64_lt_quiet(float64 a, float64 b);
+float64 ref_float64_mul(float64 a, float64 b);
+float64 ref_float64_rem(float64 a, float64 b);
+int64_t ref_float64_round_to_int(float64 a);
+float64 ref_float64_sqrt(float64 a);
+float64 ref_float64_sub(float64 a, float64 b);
+float128 ref_float64_to_float128(float64 a);
+float32 ref_float64_to_float32(float64 a);
+floatx80 ref_float64_to_floatx80(float64 a);
+int32_t ref_float64_to_int32(float64 a);
+int32_t ref_float64_to_int32_round_to_zero(float64 a);
+int64_t ref_float64_to_int64(float64 a);
+int64_t ref_float64_to_int64_round_to_zero(float64 a);
+void ref_float_raise(int flags);
+commonNaNT ref_floatx80ToCommonNaN(floatx80 a);
+floatx80 ref_floatx80_add(floatx80 a, floatx80 b);
+floatx80 ref_floatx80_div(floatx80 a, floatx80 b);
+flag ref_floatx80_eq(floatx80 a, floatx80 b);
+flag ref_floatx80_eq_signaling(floatx80 a, floatx80 b);
+flag ref_floatx80_is_nan(floatx80 a);
+flag ref_floatx80_is_signaling_nan(floatx80 a);
+flag ref_floatx80_le(floatx80 a, floatx80 b);
+flag ref_floatx80_le_quiet(floatx80 a, floatx80 b);
+flag ref_floatx80_lt(floatx80 a, floatx80 b);
+flag ref_floatx80_lt_quiet(floatx80 a, floatx80 b);
+floatx80 ref_floatx80_mul(floatx80 a, floatx80 b);
+floatx80 ref_floatx80_rem(floatx80 a, floatx80 b);
+int64_t ref_floatx80_round_to_int(floatx80 a);
+floatx80 ref_floatx80_sqrt(floatx80 a);
+floatx80 ref_floatx80_sub(floatx80 a, floatx80 b);
+float128 ref_floatx80_to_float128(floatx80 a);
+float32 ref_floatx80_to_float32(floatx80 a);
+float64 ref_floatx80_to_float64(floatx80 a);
+int32_t ref_floatx80_to_int32(floatx80 a);
+int32_t ref_floatx80_to_int32_round_to_zero(floatx80 a);
+int64_t ref_floatx80_to_int64(floatx80 a);
+int64_t ref_floatx80_to_int64_round_to_zero(floatx80 a);
+float128 ref_int32_to_float128(int32_t a);
+float32 ref_int32_to_float32(int32_t a);
+float64 ref_int32_to_float64(int32_t a);
+floatx80 ref_int32_to_floatx80(int32_t a);
+float128 ref_int64_to_float128(int64_t a);
+float32 ref_int64_to_float32(int64_t a);
+float64 ref_int64_to_float64(int64_t a);
+floatx80 ref_int64_to_floatx80(int64_t a);
+flag ref_le128(bits64 a0, bits64 a1, bits64 b0, bits64 b1);
+flag ref_lt128(bits64 a0, bits64 a1, bits64 b0, bits64 b1);
+void ref_mul128By64To192(bits64 a0, bits64 a1, bits64 b, bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);
+void ref_mul128To256(bits64 a0, bits64 a1, bits64 b0, bits64 b1, bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr, bits64 *z3Ptr);
+void ref_mul64To128(bits64 a, bits64 b, bits64 *z0Ptr, bits64 *z1Ptr);
+flag ref_ne128(bits64 a0, bits64 a1, bits64 b0, bits64 b1);
+void ref_normalizeFloat128Subnormal(bits64 aSig0, bits64 aSig1, int16 *zExpPtr, bits64 *zSig0Ptr, bits64 *zSig1Ptr);
+void ref_normalizeFloat32Subnormal(bits32 aSig, int16 *zExpPtr, bits32 *zSigPtr);
+void ref_normalizeFloat64Subnormal(bits64 aSig, int16 *zExpPtr, bits64 *zSigPtr);
+void ref_normalizeFloatx80Subnormal(bits64 aSig, int32 *zExpPtr, bits64 *zSigPtr);
+float128 ref_normalizeRoundAndPackFloat128(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
+float32 ref_normalizeRoundAndPackFloat32(flag zSign, int16 zExp, bits32 zSig);
+float64 ref_normalizeRoundAndPackFloat64(flag zSign, int16 zExp, bits64 zSig);
+floatx80 ref_normalizeRoundAndPackFloatx80(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
+float128 ref_packFloat128(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
+float32 ref_packFloat32(flag zSign, int16 zExp, bits32 zSig);
+float64 ref_packFloat64(flag zSign, int16 zExp, bits64 zSig);
+floatx80 ref_packFloatx80(flag zSign, int32 zExp, bits64 zSig);
+float64 ref_propagateFloat128NaN(float64 a, float64 b);
+float64 ref_propagateFloat32NaN(float64 a, float64 b);
+float64 ref_propagateFloat64NaN(float64 a, float64 b);
+float64 ref_propagateFloatx80NaN(float64 a, float64 b);
+float128 ref_roundAndPackFloat128(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
+float32 ref_roundAndPackFloat32(flag zSign, int16 zExp, bits32 zSig);
+float64 ref_roundAndPackFloat64(flag zSign, int16 zExp, bits64 zSig);
+floatx80 ref_roundAndPackFloatx80(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);
+int32_t ref_roundAndPackInt32(flag zSign, bits64 absZ);
+int64_t ref_roundAndPackInt64(flag zSign, bits64 absZ0, bits64 absZ1);
+void ref_shift128ExtraRightJamming(bits64 a0, bits64 a1, bits64 a2, int16 count, bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);
+void ref_shift128Right(bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr);
+void ref_shift128RightJamming(bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr);
+void ref_shift32RightJamming(bits32 a, int16 count, bits32 *zPtr);
+void ref_shift64ExtraRightJamming(bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr);
+void ref_shift64RightJamming(bits64 a, int16 count, bits64 *zPtr);
+void ref_shortShift128Left(bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr);
+void ref_shortShift192Left(bits64 a, int16 count, bits64 *zPtr);
+void ref_sub128(bits64 a0, bits64 a1, bits64 b0, bits64 b1, bits64 *z0Ptr, bits64 *z1Ptr);
+void ref_sub192(bits64 a0, bits64 a1, bits64 a2, bits64 b0, bits64 b1, bits64 b2, bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);
+float64 ref_subFloat128Sigs(float64 a, float64 b, flag zSign);
+float64 ref_subFloat32Sigs(float64 a, float64 b, flag zSign);
+float64 ref_subFloat64Sigs(float64 a, float64 b, flag zSign);
+float64 ref_subFloatx80Sigs(float64 a, float64 b, flag zSign);
+float128 ref_uint32_to_float128(uint32_t a);
+float32 ref_uint32_to_float32(uint32_t a);
+float64 ref_uint32_to_float64(uint32_t a);
+floatx80 ref_uint32_to_floatx80(uint32_t a);
 }
 
 
@@ -135,36 +311,17 @@ static void test_add128()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
+        sync_globals_from_port();
+        
         bits64 a0 = urand64(), a1 = urand64(), b0 = urand64(), b1 = urand64();
         bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
         bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
-        sync_globals_from_port();
-        if (strcmp(name, "mul64To128") == 0) {
-            port::add128(a0, a1, &z0p, &z1p);
-            ref_add128(a0, a1, &z0r, &z1r);
-        } else if (strcmp(name, "add128") == 0 || strcmp(name, "sub128") == 0) {
-            port::add128(a0, a1, b0, b1, &z0p, &z1p);
-            ref_add128(a0, a1, b0, b1, &z0r, &z1r);
-        } else if (strcmp(name, "add192") == 0 || strcmp(name, "sub192") == 0) {
-            bits64 a2 = urand64(), b2 = urand64();
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::add128(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
-            ref_add128(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128By64To192") == 0) {
-            bits64 b = urand64(), z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::add128(a0, a1, b, &z0p, &z1p, &z2p);
-            ref_add128(a0, a1, b, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128To256") == 0) {
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            bits64 z3p = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
-            port::add128(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
-            ref_add128(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
-            if (z2p != z2r || z3p != z3r) failures++;
-        }
+        port::add128(a0, a1, b0, b1, &z0p, &z1p);
+        ref_add128(a0, a1, b0, b1, &z0r, &z1r);
         cases++;
         if (z0p != z0r || z1p != z1r) failures++;
+
+        sync_globals_to_port();
     }
     record(name, cases, failures);
 }
@@ -176,36 +333,18 @@ static void test_add192()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
-        bits64 a0 = urand64(), a1 = urand64(), b0 = urand64(), b1 = urand64();
-        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
-        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
         sync_globals_from_port();
-        if (strcmp(name, "mul64To128") == 0) {
-            port::add192(a0, a1, &z0p, &z1p);
-            ref_add192(a0, a1, &z0r, &z1r);
-        } else if (strcmp(name, "add128") == 0 || strcmp(name, "sub128") == 0) {
-            port::add192(a0, a1, b0, b1, &z0p, &z1p);
-            ref_add192(a0, a1, b0, b1, &z0r, &z1r);
-        } else if (strcmp(name, "add192") == 0 || strcmp(name, "sub192") == 0) {
-            bits64 a2 = urand64(), b2 = urand64();
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::add192(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
-            ref_add192(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128By64To192") == 0) {
-            bits64 b = urand64(), z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::add192(a0, a1, b, &z0p, &z1p, &z2p);
-            ref_add192(a0, a1, b, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128To256") == 0) {
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            bits64 z3p = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
-            port::add192(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
-            ref_add192(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
-            if (z2p != z2r || z3p != z3r) failures++;
-        }
+        
+        bits64 a0 = urand64(), a1 = urand64(), a2 = urand64();
+        bits64 b0 = urand64(), b1 = urand64(), b2 = urand64();
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL, z2p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
+        port::add192(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
+        ref_add192(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
         cases++;
-        if (z0p != z0r || z1p != z1r) failures++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r) failures++;
+
+        sync_globals_to_port();
     }
     record(name, cases, failures);
 }
@@ -216,8 +355,16 @@ static void test_addFloat128Sigs()
     const char *name = "addFloat128Sigs";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for sig_arith */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float64 a = f64_rand(), b = f64_rand();
+        flag zs = urand32() & 1;
+        sync_globals_from_port();
+        float64 rp = port::addFloat128Sigs(a, b, zs);
+        float64 rr = ref_addFloat128Sigs(a, b, zs);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -227,8 +374,16 @@ static void test_addFloat32Sigs()
     const char *name = "addFloat32Sigs";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for sig_arith */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float64 a = f64_rand(), b = f64_rand();
+        flag zs = urand32() & 1;
+        sync_globals_from_port();
+        float64 rp = port::addFloat32Sigs(a, b, zs);
+        float64 rr = ref_addFloat32Sigs(a, b, zs);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -238,8 +393,16 @@ static void test_addFloat64Sigs()
     const char *name = "addFloat64Sigs";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for sig_arith */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float64 a = f64_rand(), b = f64_rand();
+        flag zs = urand32() & 1;
+        sync_globals_from_port();
+        float64 rp = port::addFloat64Sigs(a, b, zs);
+        float64 rr = ref_addFloat64Sigs(a, b, zs);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -249,8 +412,16 @@ static void test_addFloatx80Sigs()
     const char *name = "addFloatx80Sigs";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for sig_arith */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float64 a = f64_rand(), b = f64_rand();
+        flag zs = urand32() & 1;
+        sync_globals_from_port();
+        float64 rp = port::addFloatx80Sigs(a, b, zs);
+        float64 rr = ref_addFloatx80Sigs(a, b, zs);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -260,8 +431,18 @@ static void test_commonNaNToFloat128()
     const char *name = "commonNaNToFloat128";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for nan_internal */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        commonNaNT a;
+        a.sign = urand32() & 1;
+        a.high = urand64();
+        a.low = urand64();
+        sync_globals_from_port();
+        float64 rp = port::commonNaNToFloat128(a);
+        float64 rr = ref_commonNaNToFloat128(a);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -271,8 +452,18 @@ static void test_commonNaNToFloat32()
     const char *name = "commonNaNToFloat32";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for nan_internal */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        commonNaNT a;
+        a.sign = urand32() & 1;
+        a.high = urand64();
+        a.low = urand64();
+        sync_globals_from_port();
+        float64 rp = port::commonNaNToFloat32(a);
+        float64 rr = ref_commonNaNToFloat32(a);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -282,8 +473,18 @@ static void test_commonNaNToFloat64()
     const char *name = "commonNaNToFloat64";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for nan_internal */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        commonNaNT a;
+        a.sign = urand32() & 1;
+        a.high = urand64();
+        a.low = urand64();
+        sync_globals_from_port();
+        float64 rp = port::commonNaNToFloat64(a);
+        float64 rr = ref_commonNaNToFloat64(a);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -293,8 +494,18 @@ static void test_commonNaNToFloatx80()
     const char *name = "commonNaNToFloatx80";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for nan_internal */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        commonNaNT a;
+        a.sign = urand32() & 1;
+        a.high = urand64();
+        a.low = urand64();
+        sync_globals_from_port();
+        float64 rp = port::commonNaNToFloatx80(a);
+        float64 rr = ref_commonNaNToFloatx80(a);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -304,8 +515,14 @@ static void test_countLeadingZeros32()
     const char *name = "countLeadingZeros32";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for internal_bits */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        bits32 a = urand32();
+        sync_globals_from_port();
+        int8_t rp = port::countLeadingZeros32(a);
+        int8_t rr = ref_countLeadingZeros32(a);
+        cases++;
+        if (rp != rr) failures++;
+    }
     record(name, cases, failures);
 }
 
@@ -315,8 +532,14 @@ static void test_countLeadingZeros64()
     const char *name = "countLeadingZeros64";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for internal_bits */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        bits64 a = urand64();
+        sync_globals_from_port();
+        int8_t rp = port::countLeadingZeros64(a);
+        int8_t rr = ref_countLeadingZeros64(a);
+        cases++;
+        if (rp != rr) failures++;
+    }
     record(name, cases, failures);
 }
 
@@ -343,8 +566,15 @@ static void test_estimateDiv128To64()
     const char *name = "estimateDiv128To64";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for internal_bits */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        bits64 a0 = urand64(), a1 = urand64();
+        bits64 b = urand64() | (1ULL << 63);
+        sync_globals_from_port();
+        bits64 rp = port::estimateDiv128To64(a0, a1, b);
+        bits64 rr = ref_estimateDiv128To64(a0, a1, b);
+        cases++;
+        if (rp != rr) failures++;
+    }
     record(name, cases, failures);
 }
 
@@ -354,8 +584,15 @@ static void test_estimateSqrt32()
     const char *name = "estimateSqrt32";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for internal_bits */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        int16 aexp = static_cast<int16>(urand32() & 0xFF);
+        bits32 a = urand32() | (1u << 31);
+        sync_globals_from_port();
+        bits32 rp = port::estimateSqrt32(aexp, a);
+        bits32 rr = ref_estimateSqrt32(aexp, a);
+        cases++;
+        if (rp != rr) failures++;
+    }
     record(name, cases, failures);
 }
 
@@ -586,8 +823,15 @@ static void test_float128ToCommonNaN()
     const char *name = "float128ToCommonNaN";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for nan_internal */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float128 a = f128_rand();
+        sync_globals_from_port();
+        commonNaNT rp = port::float128ToCommonNaN(a);
+        commonNaNT rr = ref_float128ToCommonNaN(a);
+        cases++;
+        if (rp.sign != rr.sign || rp.high != rr.high || rp.low != rr.low) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -1202,8 +1446,15 @@ static void test_float32ToCommonNaN()
     const char *name = "float32ToCommonNaN";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for nan_internal */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float32 a = f32_rand();
+        sync_globals_from_port();
+        commonNaNT rp = port::float32ToCommonNaN(a);
+        commonNaNT rr = ref_float32ToCommonNaN(a);
+        cases++;
+        if (rp.sign != rr.sign || rp.high != rr.high || rp.low != rr.low) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -1818,8 +2069,15 @@ static void test_float64ToCommonNaN()
     const char *name = "float64ToCommonNaN";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for nan_internal */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float64 a = f64_rand();
+        sync_globals_from_port();
+        commonNaNT rp = port::float64ToCommonNaN(a);
+        commonNaNT rr = ref_float64ToCommonNaN(a);
+        cases++;
+        if (rp.sign != rr.sign || rp.high != rr.high || rp.low != rr.low) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -2452,8 +2710,15 @@ static void test_floatx80ToCommonNaN()
     const char *name = "floatx80ToCommonNaN";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for nan_internal */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        floatx80 a = fx80_rand();
+        sync_globals_from_port();
+        commonNaNT rp = port::floatx80ToCommonNaN(a);
+        commonNaNT rr = ref_floatx80ToCommonNaN(a);
+        cases++;
+        if (rp.sign != rr.sign || rp.high != rr.high || rp.low != rr.low) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -3327,36 +3592,17 @@ static void test_mul128By64To192()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
-        bits64 a0 = urand64(), a1 = urand64(), b0 = urand64(), b1 = urand64();
-        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
-        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
         sync_globals_from_port();
-        if (strcmp(name, "mul64To128") == 0) {
-            port::mul128By64To192(a0, a1, &z0p, &z1p);
-            ref_mul128By64To192(a0, a1, &z0r, &z1r);
-        } else if (strcmp(name, "add128") == 0 || strcmp(name, "sub128") == 0) {
-            port::mul128By64To192(a0, a1, b0, b1, &z0p, &z1p);
-            ref_mul128By64To192(a0, a1, b0, b1, &z0r, &z1r);
-        } else if (strcmp(name, "add192") == 0 || strcmp(name, "sub192") == 0) {
-            bits64 a2 = urand64(), b2 = urand64();
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::mul128By64To192(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
-            ref_mul128By64To192(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128By64To192") == 0) {
-            bits64 b = urand64(), z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::mul128By64To192(a0, a1, b, &z0p, &z1p, &z2p);
-            ref_mul128By64To192(a0, a1, b, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128To256") == 0) {
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            bits64 z3p = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
-            port::mul128By64To192(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
-            ref_mul128By64To192(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
-            if (z2p != z2r || z3p != z3r) failures++;
-        }
+        
+        bits64 a0 = urand64(), a1 = urand64(), b = urand64();
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL, z2p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
+        port::mul128By64To192(a0, a1, b, &z0p, &z1p, &z2p);
+        ref_mul128By64To192(a0, a1, b, &z0r, &z1r, &z2r);
         cases++;
-        if (z0p != z0r || z1p != z1r) failures++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r) failures++;
+
+        sync_globals_to_port();
     }
     record(name, cases, failures);
 }
@@ -3368,36 +3614,19 @@ static void test_mul128To256()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
+        sync_globals_from_port();
+        
         bits64 a0 = urand64(), a1 = urand64(), b0 = urand64(), b1 = urand64();
         bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z3p = 0x7F7F7F7F7F7F7F7FULL;
         bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
-        sync_globals_from_port();
-        if (strcmp(name, "mul64To128") == 0) {
-            port::mul128To256(a0, a1, &z0p, &z1p);
-            ref_mul128To256(a0, a1, &z0r, &z1r);
-        } else if (strcmp(name, "add128") == 0 || strcmp(name, "sub128") == 0) {
-            port::mul128To256(a0, a1, b0, b1, &z0p, &z1p);
-            ref_mul128To256(a0, a1, b0, b1, &z0r, &z1r);
-        } else if (strcmp(name, "add192") == 0 || strcmp(name, "sub192") == 0) {
-            bits64 a2 = urand64(), b2 = urand64();
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::mul128To256(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
-            ref_mul128To256(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128By64To192") == 0) {
-            bits64 b = urand64(), z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::mul128To256(a0, a1, b, &z0p, &z1p, &z2p);
-            ref_mul128To256(a0, a1, b, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128To256") == 0) {
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            bits64 z3p = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
-            port::mul128To256(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
-            ref_mul128To256(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
-            if (z2p != z2r || z3p != z3r) failures++;
-        }
+        bits64 z2r = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
+        port::mul128To256(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
+        ref_mul128To256(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
         cases++;
-        if (z0p != z0r || z1p != z1r) failures++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r || z3p != z3r) failures++;
+
+        sync_globals_to_port();
     }
     record(name, cases, failures);
 }
@@ -3409,36 +3638,17 @@ static void test_mul64To128()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
-        bits64 a0 = urand64(), a1 = urand64(), b0 = urand64(), b1 = urand64();
+        sync_globals_from_port();
+        
+        bits64 a = urand64(), b = urand64();
         bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
         bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
-        sync_globals_from_port();
-        if (strcmp(name, "mul64To128") == 0) {
-            port::mul64To128(a0, a1, &z0p, &z1p);
-            ref_mul64To128(a0, a1, &z0r, &z1r);
-        } else if (strcmp(name, "add128") == 0 || strcmp(name, "sub128") == 0) {
-            port::mul64To128(a0, a1, b0, b1, &z0p, &z1p);
-            ref_mul64To128(a0, a1, b0, b1, &z0r, &z1r);
-        } else if (strcmp(name, "add192") == 0 || strcmp(name, "sub192") == 0) {
-            bits64 a2 = urand64(), b2 = urand64();
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::mul64To128(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
-            ref_mul64To128(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128By64To192") == 0) {
-            bits64 b = urand64(), z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::mul64To128(a0, a1, b, &z0p, &z1p, &z2p);
-            ref_mul64To128(a0, a1, b, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128To256") == 0) {
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            bits64 z3p = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
-            port::mul64To128(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
-            ref_mul64To128(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
-            if (z2p != z2r || z3p != z3r) failures++;
-        }
+        port::mul64To128(a, b, &z0p, &z1p);
+        ref_mul64To128(a, b, &z0r, &z1r);
         cases++;
         if (z0p != z0r || z1p != z1r) failures++;
+
+        sync_globals_to_port();
     }
     record(name, cases, failures);
 }
@@ -3578,8 +3788,17 @@ static void test_normalizeRoundAndPackFloat128()
     const char *name = "normalizeRoundAndPackFloat128";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for round_pack_float */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        flag zs = urand32() & 1;
+        int32 ze = static_cast<int32>(urand32() & 0x7FF);
+        bits64 zsig = static_cast<bits64>(urand64());
+        sync_globals_from_port();
+        float128 rp = port::normalizeRoundAndPackFloat128(zs, ze, zsig);
+        float128 rr = ref_normalizeRoundAndPackFloat128(zs, ze, zsig);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -3589,8 +3808,17 @@ static void test_normalizeRoundAndPackFloat32()
     const char *name = "normalizeRoundAndPackFloat32";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for round_pack_float */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        flag zs = urand32() & 1;
+        int16 ze = static_cast<int16>(urand32() & 0x7FF);
+        bits32 zsig = static_cast<bits32>(urand64());
+        sync_globals_from_port();
+        float32 rp = port::normalizeRoundAndPackFloat32(zs, ze, zsig);
+        float32 rr = ref_normalizeRoundAndPackFloat32(zs, ze, zsig);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -3600,8 +3828,17 @@ static void test_normalizeRoundAndPackFloat64()
     const char *name = "normalizeRoundAndPackFloat64";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for round_pack_float */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        flag zs = urand32() & 1;
+        int16 ze = static_cast<int16>(urand32() & 0x7FF);
+        bits64 zsig = static_cast<bits64>(urand64());
+        sync_globals_from_port();
+        float64 rp = port::normalizeRoundAndPackFloat64(zs, ze, zsig);
+        float64 rr = ref_normalizeRoundAndPackFloat64(zs, ze, zsig);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -3611,8 +3848,17 @@ static void test_normalizeRoundAndPackFloatx80()
     const char *name = "normalizeRoundAndPackFloatx80";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for round_pack_float */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        flag zs = urand32() & 1;
+        int32 ze = static_cast<int32>(urand32() & 0x7FF);
+        bits64 zsig = static_cast<bits64>(urand64());
+        sync_globals_from_port();
+        floatx80 rp = port::normalizeRoundAndPackFloatx80(zs, ze, zsig);
+        floatx80 rr = ref_normalizeRoundAndPackFloatx80(zs, ze, zsig);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -3742,8 +3988,17 @@ static void test_roundAndPackFloat128()
     const char *name = "roundAndPackFloat128";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for round_pack_float */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        flag zs = urand32() & 1;
+        int32 ze = static_cast<int32>(urand32() & 0x7FFF);
+        bits64 z0 = urand64(), z1 = urand64();
+        sync_globals_from_port();
+        float128 rp = port::roundAndPackFloat128(zs, ze, z0, z1);
+        float128 rr = ref_roundAndPackFloat128(zs, ze, z0, z1);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -3753,8 +4008,17 @@ static void test_roundAndPackFloat32()
     const char *name = "roundAndPackFloat32";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for round_pack_float */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        flag zs = urand32() & 1;
+        int16 ze = static_cast<int16>(urand32() & 0x7FF);
+        bits32 zsig = static_cast<bits32>(urand64());
+        sync_globals_from_port();
+        float32 rp = port::roundAndPackFloat32(zs, ze, zsig);
+        float32 rr = ref_roundAndPackFloat32(zs, ze, zsig);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -3764,8 +4028,17 @@ static void test_roundAndPackFloat64()
     const char *name = "roundAndPackFloat64";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for round_pack_float */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        flag zs = urand32() & 1;
+        int16 ze = static_cast<int16>(urand32() & 0x7FF);
+        bits64 zsig = static_cast<bits64>(urand64());
+        sync_globals_from_port();
+        float64 rp = port::roundAndPackFloat64(zs, ze, zsig);
+        float64 rr = ref_roundAndPackFloat64(zs, ze, zsig);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -3775,8 +4048,17 @@ static void test_roundAndPackFloatx80()
     const char *name = "roundAndPackFloatx80";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for round_pack_float */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        flag zs = urand32() & 1;
+        int32 ze = static_cast<int32>(urand32() & 0x7FFF);
+        bits64 z0 = urand64(), z1 = urand64();
+        sync_globals_from_port();
+        floatx80 rp = port::roundAndPackFloatx80(zs, ze, z0, z1);
+        floatx80 rr = ref_roundAndPackFloatx80(zs, ze, z0, z1);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -3977,36 +4259,17 @@ static void test_sub128()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
+        sync_globals_from_port();
+        
         bits64 a0 = urand64(), a1 = urand64(), b0 = urand64(), b1 = urand64();
         bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
         bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
-        sync_globals_from_port();
-        if (strcmp(name, "mul64To128") == 0) {
-            port::sub128(a0, a1, &z0p, &z1p);
-            ref_sub128(a0, a1, &z0r, &z1r);
-        } else if (strcmp(name, "add128") == 0 || strcmp(name, "sub128") == 0) {
-            port::sub128(a0, a1, b0, b1, &z0p, &z1p);
-            ref_sub128(a0, a1, b0, b1, &z0r, &z1r);
-        } else if (strcmp(name, "add192") == 0 || strcmp(name, "sub192") == 0) {
-            bits64 a2 = urand64(), b2 = urand64();
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::sub128(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
-            ref_sub128(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128By64To192") == 0) {
-            bits64 b = urand64(), z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::sub128(a0, a1, b, &z0p, &z1p, &z2p);
-            ref_sub128(a0, a1, b, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128To256") == 0) {
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            bits64 z3p = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
-            port::sub128(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
-            ref_sub128(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
-            if (z2p != z2r || z3p != z3r) failures++;
-        }
+        port::sub128(a0, a1, b0, b1, &z0p, &z1p);
+        ref_sub128(a0, a1, b0, b1, &z0r, &z1r);
         cases++;
         if (z0p != z0r || z1p != z1r) failures++;
+
+        sync_globals_to_port();
     }
     record(name, cases, failures);
 }
@@ -4018,36 +4281,18 @@ static void test_sub192()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
-        bits64 a0 = urand64(), a1 = urand64(), b0 = urand64(), b1 = urand64();
-        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
-        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
         sync_globals_from_port();
-        if (strcmp(name, "mul64To128") == 0) {
-            port::sub192(a0, a1, &z0p, &z1p);
-            ref_sub192(a0, a1, &z0r, &z1r);
-        } else if (strcmp(name, "add128") == 0 || strcmp(name, "sub128") == 0) {
-            port::sub192(a0, a1, b0, b1, &z0p, &z1p);
-            ref_sub192(a0, a1, b0, b1, &z0r, &z1r);
-        } else if (strcmp(name, "add192") == 0 || strcmp(name, "sub192") == 0) {
-            bits64 a2 = urand64(), b2 = urand64();
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::sub192(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
-            ref_sub192(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128By64To192") == 0) {
-            bits64 b = urand64(), z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            port::sub192(a0, a1, b, &z0p, &z1p, &z2p);
-            ref_sub192(a0, a1, b, &z0r, &z1r, &z2r);
-            if (z2p != z2r) failures++;
-        } else if (strcmp(name, "mul128To256") == 0) {
-            bits64 z2p = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
-            bits64 z3p = 0x7F7F7F7F7F7F7F7FULL, z3r = 0x7F7F7F7F7F7F7F7FULL;
-            port::sub192(a0, a1, b0, b1, &z0p, &z1p, &z2p, &z3p);
-            ref_sub192(a0, a1, b0, b1, &z0r, &z1r, &z2r, &z3r);
-            if (z2p != z2r || z3p != z3r) failures++;
-        }
+        
+        bits64 a0 = urand64(), a1 = urand64(), a2 = urand64();
+        bits64 b0 = urand64(), b1 = urand64(), b2 = urand64();
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL, z2p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
+        port::sub192(a0, a1, a2, b0, b1, b2, &z0p, &z1p, &z2p);
+        ref_sub192(a0, a1, a2, b0, b1, b2, &z0r, &z1r, &z2r);
         cases++;
-        if (z0p != z0r || z1p != z1r) failures++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r) failures++;
+
+        sync_globals_to_port();
     }
     record(name, cases, failures);
 }
@@ -4058,8 +4303,16 @@ static void test_subFloat128Sigs()
     const char *name = "subFloat128Sigs";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for sig_arith */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float64 a = f64_rand(), b = f64_rand();
+        flag zs = urand32() & 1;
+        sync_globals_from_port();
+        float64 rp = port::subFloat128Sigs(a, b, zs);
+        float64 rr = ref_subFloat128Sigs(a, b, zs);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -4069,8 +4322,16 @@ static void test_subFloat32Sigs()
     const char *name = "subFloat32Sigs";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for sig_arith */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float64 a = f64_rand(), b = f64_rand();
+        flag zs = urand32() & 1;
+        sync_globals_from_port();
+        float64 rp = port::subFloat32Sigs(a, b, zs);
+        float64 rr = ref_subFloat32Sigs(a, b, zs);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -4080,8 +4341,16 @@ static void test_subFloat64Sigs()
     const char *name = "subFloat64Sigs";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for sig_arith */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float64 a = f64_rand(), b = f64_rand();
+        flag zs = urand32() & 1;
+        sync_globals_from_port();
+        float64 rp = port::subFloat64Sigs(a, b, zs);
+        float64 rr = ref_subFloat64Sigs(a, b, zs);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 
@@ -4091,8 +4360,16 @@ static void test_subFloatx80Sigs()
     const char *name = "subFloatx80Sigs";
     reset_globals();
 
-    /* generic smoke: skipped detailed typing for sig_arith */
-    cases++;
+    for (unsigned i = 0; i < 200000u; ++i) {
+        float64 a = f64_rand(), b = f64_rand();
+        flag zs = urand32() & 1;
+        sync_globals_from_port();
+        float64 rp = port::subFloatx80Sigs(a, b, zs);
+        float64 rr = ref_subFloatx80Sigs(a, b, zs);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }
     record(name, cases, failures);
 }
 

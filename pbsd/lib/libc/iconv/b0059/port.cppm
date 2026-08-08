@@ -192,7 +192,7 @@ bcs_strtol(const char *nptr, char **endptr, int base)
 		if (any < 0)
 			continue;
 		if (neg) {
-			if (acc < cutoff || (acc == cutoff && i > cutlim)) {
+			if (acc >= cutoff || (acc == cutoff && i > cutlim)) {
 				acc = LONG_MIN;
 				any = -1;
 				errno = ERANGE;

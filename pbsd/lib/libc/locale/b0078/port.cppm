@@ -107,6 +107,7 @@ module;
 #include <cerrno>
 #include <climits>
 #include <cstddef>
+#include <cstdio>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>

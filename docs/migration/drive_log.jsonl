@@ -1738,3 +1738,5 @@
 {"batch": "b0080s2", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-08-08T11:22:29Z"}
 {"batch": "b0063", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: IR differs for 4/4: iconv_canonicalize, __iconv_get_list, iconvlist, iconv_set_relocation_prefix)", "how": "agent", "ts": "2026-08-08T11:22:39Z"}
 {"batch": "b0072", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:22:48Z"}
+{"batch": "b0080s3", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-08-08T11:22:49Z"}
+{"batch": "b0080s4", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-08-08T11:23:14Z"}

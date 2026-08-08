@@ -205,7 +205,7 @@ extern int ref_stub_vnode_check_stat(struct ucred *active_cred, struct ucred *fi
 extern int ref_stub_vnode_check_unlink(struct ucred *cred, struct vnode *dvp,     struct label *dvplabel, struct vnode *vp, struct label *vplabel,     struct componentname *cnp);
 extern int ref_stub_vnode_check_write(struct ucred *active_cred, struct ucred *file_cred,     struct vnode *vp, struct label *vplabel);
 extern int ref_stub_vnode_create_extattr(struct ucred *cred, struct mount *mp,     struct label *mntlabel, struct vnode *dvp, struct label *dvplabel,     struct vnode *vp, struct label *vplabel, struct componentname *cnp);
-extern void ref_stub_vnode_execve_transition(struct ucred *old, struct ucred *new,     struct vnode *vp, struct label *vplabel, struct label *interpvplabel,     struct image_params *imgp, struct label *execlabel);
+extern void ref_stub_vnode_execve_transition(struct ucred *old, struct ucred * /*new*/,     struct vnode *vp, struct label *vplabel, struct label *interpvplabel,     struct image_params *imgp, struct label *execlabel);
 extern int ref_stub_vnode_execve_will_transition(struct ucred *old, struct vnode *vp,     struct label *vplabel, struct label *interpvplabel,     struct image_params *imgp, struct label *execlabel);
 extern void ref_stub_vnode_relabel(struct ucred *cred, struct vnode *vp,     struct label *vplabel, struct label *label);
 extern int ref_stub_vnode_setlabel_extattr(struct ucred *cred, struct vnode *vp,     struct label *vplabel, struct label *intlabel);

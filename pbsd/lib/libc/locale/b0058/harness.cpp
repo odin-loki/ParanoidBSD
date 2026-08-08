@@ -84,10 +84,17 @@ xorshift32()
 }
 
 static void
-init_locales()
+reset_both_locales()
 {
 	port::init_locale();
+	memset(&ref_global_ctype, 0, sizeof(ref_global_ctype));
 	ref_global_locale.components[1] = &ref_global_ctype;
+}
+
+static void
+init_locales()
+{
+	reset_both_locales();
 }
 
 static void
