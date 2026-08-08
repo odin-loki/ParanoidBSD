@@ -244,15 +244,13 @@ init_locales()
 	std::memset(&ref_test_locale, 0, sizeof(ref_test_locale));
 	ref_test_locale.components[1] = &ref_global_ctype;
 	std::memset(&ref_global_ctype.wcsnrtombs, 0, sizeof(ref_global_ctype.wcsnrtombs));
-	std::memset(&::port_global_ctype.wcsnrtombs, 0, sizeof(::port_global_ctype.wcsnrtombs));
 }
 
 static void
 reset_shared_ps()
 {
 	std::memset(&ref_global_ctype.wcsnrtombs, 0, sizeof(ref_global_ctype.wcsnrtombs));
-	std::memset(&::port_global_ctype.wcsnrtombs, 0,
-	    sizeof(::port_global_ctype.wcsnrtombs));
+	P::reset_wcsnrtombs_ps();
 }
 
 static P::mbstate_t

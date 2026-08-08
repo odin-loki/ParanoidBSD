@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 add_library(pbsd STATIC)
 target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
+  bin/cat/b0163/port.cppm
   bin/csh/b0061/port.cppm
   bin/dd/conv_m/port.cppm
   bin/dd/position_m/port.cppm
@@ -391,6 +392,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   usr.bin/cksum/sum2_m/port.cppm
   usr.bin/ctags/tree_m/port.cppm
   usr.bin/diff/xmalloc_m/port.cppm
+  usr.bin/false/b0164/port.cppm
   usr.bin/find/find_m/port.cppm
   usr.bin/fstat/main_m/port.cppm
   usr.bin/gprof/hertz_m/port.cppm

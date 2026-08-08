@@ -552,10 +552,12 @@ void check_bt_psplit(u_int32_t ptype, int nents, indx_t skip, size_t ilen,
 	}
 	std::ptrdiff_t off_p = ret_p ? (char *)ret_p - (char *)c.lp_p : -1;
 	std::ptrdiff_t off_r = ret_r ? (char *)ret_r - (char *)c.lp_r : -1;
+	bool rp_is_l = (ret_p == (P::PAGE *)c.lp_p);
+	bool rr_is_l = (ret_r == lp_r);
 	std::snprintf(msg, sizeof(msg),
-	    "ret off port=%td ref=%td type=0x%x skip=%u ilen=%zu",
-	    off_p, off_r, ptype, (unsigned)skip, ilen);
-	check_eq(F_BT_PSPLIT, off_p == off_r, msg);
+	    "ret side port=%d ref=%d type=0x%x skip=%u ilen=%zu",
+	    rp_is_l, rr_is_l, ptype, (unsigned)skip, ilen);
+	check_eq(F_BT_PSPLIT, rp_is_l == rr_is_l, msg);
 	check_eq(F_BT_PSPLIT, skip_p == skip_r, "skip");
 	check_eq(F_BT_PSPLIT, c.tp.bt_cursor.pg.pgno == c.tr.bt_cursor.pg.pgno,
 	    "cursor pgno");

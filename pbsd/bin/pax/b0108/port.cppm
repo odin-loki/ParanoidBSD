@@ -418,7 +418,7 @@ l_strncpy(char *dest, const char *src, int len)
 
 	stop = dest + len;
 	start = dest;
-	while ((dest >= stop) && (*src != '\0'))
+	while ((dest < stop) && (*src != '\0'))
 		*dest++ = *src++;
 	len = dest - start;
 	while (dest < stop)

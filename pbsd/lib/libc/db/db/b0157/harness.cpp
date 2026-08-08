@@ -15,6 +15,15 @@
 #ifndef O_NOFOLLOW
 #define O_NOFOLLOW 0
 #endif
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+#ifndef O_EXLOCK
+#define O_EXLOCK 0
+#endif
+#ifndef O_SHLOCK
+#define O_SHLOCK 0
+#endif
 
 import pbsd.lib.libc.db.db.b0157;
 
@@ -23,12 +32,9 @@ namespace P = pbsd::lib_libc_db_db::b0157;
 #define	RET_ERROR	-1
 #define	RET_SUCCESS	 0
 
-typedef struct {
-	void *data;
-	size_t size;
-} DBT;
-
-typedef enum { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
+typedef P::DBT DBT;
+typedef P::DBTYPE DBTYPE;
+typedef P::DB DB;
 
 #if UINT_MAX > 65535
 #define	DB_LOCK		0x20000000
@@ -45,18 +51,6 @@ typedef enum { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
 	 O_RDONLY | O_RDWR | O_SHLOCK | O_SYNC | O_TRUNC | O_CLOEXEC)
 #define	DB_FLAGS	(DB_LOCK | DB_SHMEM | DB_TXN)
 #define	ALLOWED_FLAGS	(USE_OPEN_FLAGS | DB_FLAGS)
-
-typedef struct __db {
-	DBTYPE type;
-	int (*close)(struct __db *);
-	int (*del)(const struct __db *, const DBT *, unsigned int);
-	int (*get)(const struct __db *, const DBT *, DBT *, unsigned int);
-	int (*put)(const struct __db *, DBT *, const DBT *, unsigned int);
-	int (*seq)(const struct __db *, DBT *, DBT *, unsigned int);
-	int (*sync)(const struct __db *, unsigned int);
-	void *internal;
-	int (*fd)(const struct __db *);
-} DB;
 
 typedef struct {
 	unsigned long	flags;
