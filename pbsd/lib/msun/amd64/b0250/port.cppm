@@ -73,11 +73,11 @@ struct fenv_t {
 	std::uint32_t __mxcsr;
 };
 
-static std::uint32_t sim_x87_control;
-static std::uint32_t sim_x87_status;
-static std::uint32_t sim_x87_tag;
-static char sim_x87_other[16];
-static std::uint32_t sim_mxcsr;
+std::uint32_t sim_x87_control;
+std::uint32_t sim_x87_status;
+std::uint32_t sim_x87_tag;
+char sim_x87_other[16];
+std::uint32_t sim_mxcsr;
 
 inline void
 fnstenv(fenv_x87 *addr)
@@ -99,9 +99,12 @@ fldenv(const fenv_x87 *addr)
 }
 
 inline void
-fldenvx(const fenv_x87 *addr)
+fldenvx(const fenv_x87 &env)
 {
-	fldenv(addr);
+	sim_x87_control = env.__control;
+	sim_x87_status = env.__status;
+	sim_x87_tag = env.__tag;
+	std::memcpy(sim_x87_other, env.__other, 16);
 }
 
 inline void
@@ -136,6 +139,12 @@ stmxcsr(std::uint32_t *addr)
 
 inline void
 ldmxcsr(std::uint32_t *addr)
+{
+	sim_mxcsr = *addr;
+}
+
+inline void
+ldmxcsr(const std::uint32_t *addr)
 {
 	sim_mxcsr = *addr;
 }
@@ -227,7 +236,7 @@ inline int
 fesetenv_int(const fenv_t *__envp)
 {
 
-	fldenvx(&__envp->__x87);
+	fldenvx(__envp->__x87);
 	ldmxcsr(&__envp->__mxcsr);
 	return (0);
 }
@@ -237,18 +246,8 @@ fesetenv_int(const fenv_t *__envp)
 export namespace pbsd::lib_msun_amd64::b0250 {
 
 using fexcept_t = detail::fexcept_t;
-
-struct fenv_x87 {
-	std::uint32_t __control;
-	std::uint32_t __status;
-	std::uint32_t __tag;
-	char __other[16];
-};
-
-struct fenv_t {
-	fenv_x87 __x87;
-	std::uint32_t __mxcsr;
-};
+using fenv_x87 = detail::fenv_x87;
+using fenv_t = detail::fenv_t;
 
 constexpr int FE_INVALID = detail::FE_INVALID;
 constexpr int FE_DENORMAL = detail::FE_DENORMAL;

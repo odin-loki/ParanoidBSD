@@ -1,262 +1,3 @@
-/*
- * PBSD batch b0146s4 -- reference oracle.
- *
- * Source: hbsd/src/sys/kern/kern_sema.c
- *
- * Every function is renamed with a "ref_" prefix.  Function bodies are
- * otherwise UNMODIFIED.  The kernel environment (types, constants, and the
- * mutex(9), condvar(9), KASSERT(9), and CTR* routines) is modelled below and
- * shared identically with the C++23 port under test.
- */
-
-#include <errno.h>
-#include <limits.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-
-#ifndef LONG_BIT
-#define	LONG_BIT	(sizeof(long) * CHAR_BIT)
-#endif
-
-#define	__unused		__attribute__((__unused__))
-
-#define	MTX_DEF			0x00000000
-#define	MTX_SPIN		0x00000001
-#define	MTX_NOWITNESS		0x00000008
-#define	MTX_QUIET		0x00040000
-
-#define	KTR_LOCK		0x00000004
-
-#ifndef EWOULDBLOCK
-#define	EWOULDBLOCK		35
-#endif
-
-struct mtx {
-	unsigned long long	mtx_name_hash;
-	unsigned long long	mtx_type_hash;
-	int			mtx_flags;
-	int			mtx_locked;
-};
-
-struct cv {
-	unsigned long long	cv_desc_hash;
-	int			cv_waits;
-	int			cv_signals;
-};
-
-struct sema {
-	struct mtx	sema_mtx;
-	struct cv	sema_cv;
-	int		sema_value;
-	int		sema_waiters;
-};
-
-#define	MODEL_WAIT_RUNAWAY	256
-
-int		oracle_cv_release_after = 1;
-int		oracle_cv_post_amount = 1;
-int		oracle_timedwait_post_after;
-int		oracle_timedwait_fail_after = 1;
-struct sema	*oracle_sema_target;
-
-static int	oracle_total_waits;
-static int	oracle_runaway;
-
-static unsigned long long
-oracle_strhash(const char *s)
-{
-	unsigned long long h = 1469598103934665603ULL;
-
-	if (s == NULL)
-		return (0);
-	while (*s != '\0') {
-		h ^= (unsigned long long)(unsigned char)*s++;
-		h *= 1099511628211ULL;
-	}
-	return (h);
-}
-
-void
-oracle_reset(void)
-{
-
-	oracle_total_waits = 0;
-	oracle_runaway = 0;
-}
-
-void
-oracle_set_sema_target(void *p)
-{
-
-	oracle_sema_target = (struct sema *)p;
-}
-
-void
-oracle_configure_cv(int release_after, int post_amount,
-    int timedwait_post_after, int timedwait_fail_after)
-{
-
-	oracle_cv_release_after = release_after;
-	oracle_cv_post_amount = post_amount;
-	oracle_timedwait_post_after = timedwait_post_after;
-	oracle_timedwait_fail_after = timedwait_fail_after;
-}
-
-static void
-oracle_assert(int cond)
-{
-
-	(void)cond;
-}
-
-static void
-oracle_ctr(int arity, long long v1, long long v2, const char *s)
-{
-
-	(void)arity;
-	(void)v1;
-	(void)v2;
-	(void)s;
-}
-
-static void
-oracle_bzero(void *p, unsigned long len)
-{
-
-	memset(p, 0, (size_t)len);
-}
-
-static void
-oracle_mtx_init(struct mtx *m, const char *name, const char *type, int opts)
-{
-
-	m->mtx_name_hash = oracle_strhash(name);
-	m->mtx_type_hash = oracle_strhash(type);
-	m->mtx_flags = opts;
-	m->mtx_locked = 0;
-}
-
-static void
-oracle_mtx_destroy(struct mtx *m)
-{
-
-	m->mtx_name_hash = 0;
-	m->mtx_type_hash = 0;
-	m->mtx_flags = 0;
-}
-
-static void
-oracle_mtx_lock(struct mtx *m)
-{
-
-	m->mtx_locked++;
-}
-
-static void
-oracle_mtx_unlock(struct mtx *m)
-{
-
-	m->mtx_locked--;
-}
-
-static void
-oracle_cv_init(struct cv *cv, const char *desc)
-{
-
-	cv->cv_desc_hash = oracle_strhash(desc);
-	cv->cv_waits = 0;
-	cv->cv_signals = 0;
-}
-
-static void
-oracle_cv_destroy(struct cv *cv)
-{
-
-	cv->cv_desc_hash = 0;
-}
-
-static const char *
-oracle_cv_wmesg(struct cv *cv)
-{
-
-	static char buf[1];
-
-	(void)cv;
-	return (buf);
-}
-
-static void
-oracle_cv_signal(struct cv *cv)
-{
-
-	cv->cv_signals++;
-}
-
-static void
-oracle_cv_wait(struct cv *cv, struct mtx *m)
-{
-
-	cv->cv_waits++;
-	oracle_total_waits++;
-	m->mtx_locked--;
-	if (oracle_total_waits > MODEL_WAIT_RUNAWAY) {
-		oracle_runaway = 1;
-		if (oracle_sema_target != NULL)
-			oracle_sema_target->sema_value = oracle_total_waits & 1;
-	} else if (cv->cv_waits >= oracle_cv_release_after &&
-	    oracle_sema_target != NULL)
-		oracle_sema_target->sema_value += oracle_cv_post_amount;
-	m->mtx_locked++;
-}
-
-static int
-oracle_cv_timedwait(struct cv *cv, struct mtx *m, int timo)
-{
-
-	cv->cv_waits++;
-	oracle_total_waits++;
-	m->mtx_locked--;
-	m->mtx_locked++;
-	if (oracle_total_waits > MODEL_WAIT_RUNAWAY) {
-		oracle_runaway = 1;
-		if (oracle_sema_target != NULL)
-			oracle_sema_target->sema_value = oracle_total_waits & 1;
-		return (EWOULDBLOCK);
-	}
-	if (oracle_timedwait_post_after > 0 &&
-	    cv->cv_waits >= oracle_timedwait_post_after &&
-	    oracle_sema_target != NULL)
-		oracle_sema_target->sema_value += 1;
-	if (oracle_timedwait_fail_after > 0 &&
-	    cv->cv_waits >= oracle_timedwait_fail_after)
-		return (EWOULDBLOCK);
-	(void)timo;
-	return (0);
-}
-
-#define	KASSERT(exp, msg)		oracle_assert((exp) ? 1 : 0)
-#define	CTR3(m, f, a1, a2, a3)		oracle_ctr(3, 0, 0, (const char *)(a3))
-#define	CTR4(m, f, a1, a2, a3, a4)	oracle_ctr(4, (long long)(a3), 0,	\
-					    (const char *)(a4))
-#define	CTR5(m, f, a1, a2, a3, a4, a5)	oracle_ctr(5, (long long)(a5), 0,	\
-					    (const char *)(a3))
-#define	CTR6(m, f, a1, a2, a3, a4, a5, a6)					\
-					oracle_ctr(6, (long long)(a4),		\
-					    (long long)(a6), (const char *)(a3))
-
-#define	bzero(p, n)			oracle_bzero((p), (unsigned long)(n))
-#define	mtx_init(m, n, t, o)		oracle_mtx_init((m), (n), (t), (o))
-#define	mtx_destroy(m)			oracle_mtx_destroy(m)
-#define	mtx_lock(m)			oracle_mtx_lock(m)
-#define	mtx_unlock(m)			oracle_mtx_unlock(m)
-#define	cv_init(c, d)			oracle_cv_init((c), (d))
-#define	cv_destroy(c)			oracle_cv_destroy(c)
-#define	cv_wmesg(c)			oracle_cv_wmesg(c)
-#define	cv_signal(c)			oracle_cv_signal(c)
-#define	cv_wait(c, m)			oracle_cv_wait((c), (m))
-#define	cv_timedwait(c, m, t)		oracle_cv_timedwait((c), (m), (t))
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -293,6 +34,407 @@ oracle_cv_timedwait(struct cv *cv, struct mtx *m, int timo)
  * "owners" (a misnomer in the context of semaphores), so should not be relied
  * upon in combination with semaphores.
  */
+
+/*
+ * PBSD batch b0146s4 oracle.
+ *
+ * Source: hbsd/src/sys/kern/kern_sema.c
+ *
+ * Every function of the original file appears below with a ref_ prefix and an
+ * otherwise unmodified body.  The kernel services the file is written against
+ * (mutexes, condition variables, KTR tracing, KASSERT and bzero) are not
+ * available in userland, so a deterministic model of them is supplied here.
+ * The model records every call it receives into an event trace and lets the
+ * caller script the outcome of the blocking condition variable waits, which is
+ * what makes the six functions observable.  The identical model is
+ * reimplemented by the port; the harness compares the two traces.
+ */
+
+#include <stddef.h>
+#include <string.h>
+#include <setjmp.h>
+
+/* sys/mutex.h */
+#define	MTX_DEF		0x00000000
+#define	MTX_NOWITNESS	0x00000008
+#define	MTX_QUIET	0x00040000
+
+/* sys/ktr.h */
+#define	KTR_LOCK	0x00000004
+
+/* Event opcodes; shared verbatim with the port and the harness. */
+#define	EV_KASSERT	1
+#define	EV_BZERO	2
+#define	EV_MTX_INIT	3
+#define	EV_CV_INIT	4
+#define	EV_MTX_LOCK	5
+#define	EV_MTX_UNLOCK	6
+#define	EV_MTX_DESTROY	7
+#define	EV_CV_DESTROY	8
+#define	EV_CV_SIGNAL	9
+#define	EV_CV_WMESG	10
+#define	EV_CV_WAIT	11
+#define	EV_CV_TIMEDWAIT	12
+#define	EV_CTR3		13
+#define	EV_CTR4		14
+#define	EV_CTR5		15
+#define	EV_CTR6		16
+
+#define	PBSD_MAXEV	4096
+#define	PBSD_NREG	8
+#define	PBSD_EVARGS	8
+#define	PBSD_WAITLIMIT	256
+
+struct mtx {
+	const char	*mtx_name;
+	const char	*mtx_type;
+	int		 mtx_opts;
+	int		 mtx_inited;
+	int		 mtx_locked;
+	int		 mtx_lockcnt;
+	int		 mtx_unlockcnt;
+	int		 mtx_destroyed;
+};
+
+struct cv {
+	const char	*cv_description;
+	int		 cv_inited;
+	int		 cv_signals;
+	int		 cv_waits;
+	int		 cv_destroyed;
+};
+
+struct sema {
+	struct mtx	sema_mtx;
+	struct cv	sema_cv;
+	int		sema_value;
+	int		sema_waiters;
+};
+
+struct ref_event {
+	int	op;
+	long	a[PBSD_EVARGS];
+};
+
+static struct ref_event	 ref_evbuf[PBSD_MAXEV];
+static long		 ref_nev;
+static long		 ref_evtotal;
+static const void	*ref_reg[PBSD_NREG];
+static int		 ref_nreg;
+static const int	*ref_scr_delta;
+static const int	*ref_scr_err;
+static int		 ref_scr_n;
+static int		 ref_scr_idx;
+static int		 ref_scr_over;
+static int		 ref_waitcalls;
+static int		 ref_runaway;
+static jmp_buf		 ref_jb;
+
+static long
+ref_ptr_id(const void *p)
+{
+	int i;
+
+	if (p == NULL)
+		return (0);
+	for (i = 0; i < ref_nreg; i++) {
+		if (ref_reg[i] == p)
+			return (i + 1);
+	}
+	return (-1);
+}
+
+static long
+ref_str_hash(const char *s)
+{
+	unsigned long h = 14695981039346656037UL;
+
+	if (s == NULL)
+		return (0);
+	while (*s != '\0') {
+		h ^= (unsigned long)(unsigned char)*s++;
+		h *= 1099511628211UL;
+	}
+	return ((long)(h & 0x7fffffffUL));
+}
+
+static struct ref_event *
+ref_rec(int op)
+{
+	static struct ref_event sink;
+	struct ref_event *e;
+
+	ref_evtotal++;
+	if (ref_nev < PBSD_MAXEV)
+		e = &ref_evbuf[ref_nev++];
+	else
+		e = &sink;
+	memset(e, 0, sizeof(*e));
+	e->op = op;
+	return (e);
+}
+
+static void
+ref_bzero(void *dst, size_t len)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_BZERO);
+	e->a[0] = ref_ptr_id(dst);
+	e->a[1] = (long)len;
+	memset(dst, 0, len);
+}
+
+static void
+ref_assert(int cond)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_KASSERT);
+	e->a[0] = cond ? 1 : 0;
+}
+
+static void
+mtx_init(struct mtx *m, const char *name, const char *type, int opts)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_MTX_INIT);
+	e->a[0] = ref_ptr_id(m);
+	e->a[1] = ref_ptr_id(name);
+	e->a[2] = ref_str_hash(type);
+	e->a[3] = opts;
+	m->mtx_name = name;
+	m->mtx_type = type;
+	m->mtx_opts = opts;
+	m->mtx_inited = 1;
+}
+
+static void
+mtx_destroy(struct mtx *m)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_MTX_DESTROY);
+	e->a[0] = ref_ptr_id(m);
+	e->a[1] = m->mtx_locked;
+	m->mtx_destroyed++;
+	m->mtx_inited = 0;
+}
+
+static void
+mtx_lock(struct mtx *m)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_MTX_LOCK);
+	e->a[0] = ref_ptr_id(m);
+	e->a[1] = m->mtx_locked;
+	m->mtx_locked = 1;
+	m->mtx_lockcnt++;
+	e->a[2] = m->mtx_lockcnt;
+}
+
+static void
+mtx_unlock(struct mtx *m)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_MTX_UNLOCK);
+	e->a[0] = ref_ptr_id(m);
+	e->a[1] = m->mtx_locked;
+	m->mtx_locked = 0;
+	m->mtx_unlockcnt++;
+	e->a[2] = m->mtx_unlockcnt;
+}
+
+static void
+cv_init(struct cv *cvp, const char *desc)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_CV_INIT);
+	e->a[0] = ref_ptr_id(cvp);
+	e->a[1] = ref_ptr_id(desc);
+	cvp->cv_description = desc;
+	cvp->cv_inited = 1;
+}
+
+static void
+cv_destroy(struct cv *cvp)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_CV_DESTROY);
+	e->a[0] = ref_ptr_id(cvp);
+	cvp->cv_destroyed++;
+	cvp->cv_inited = 0;
+}
+
+static void
+cv_signal(struct cv *cvp)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_CV_SIGNAL);
+	e->a[0] = ref_ptr_id(cvp);
+	cvp->cv_signals++;
+	e->a[1] = cvp->cv_signals;
+}
+
+static const char *
+cv_wmesg(struct cv *cvp)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_CV_WMESG);
+	e->a[0] = ref_ptr_id(cvp);
+	e->a[1] = ref_ptr_id(cvp->cv_description);
+	return (cvp->cv_description);
+}
+
+/*
+ * The scripted wakeup.  Each wait consumes one entry of the script; the entry
+ * says how much a notional producer changed sema_value by while the waiter was
+ * asleep and, for the timed variant, what cv_timedwait() returns.  When the
+ * script is exhausted the model forces progress so that a correct port always
+ * terminates: an untimed wait observes a value bump of one, a timed wait fails.
+ * A port whose loop condition has been broken can still spin, so the number of
+ * waits per operation is capped, and the cap escapes through longjmp() rather
+ * than hanging the harness.
+ */
+static int
+ref_wait_common(struct ref_event *e, struct cv *cvp, struct mtx *m, int *errp)
+{
+	struct sema *s;
+	int delta, err;
+
+	s = (struct sema *)(void *)((char *)cvp -
+	    offsetof(struct sema, sema_cv));
+	if (++ref_waitcalls > PBSD_WAITLIMIT) {
+		ref_runaway = 1;
+		longjmp(ref_jb, 1);
+	}
+	e->a[0] = ref_ptr_id(cvp);
+	e->a[1] = ref_ptr_id(m);
+	e->a[2] = s->sema_value;
+	e->a[3] = s->sema_waiters;
+	if (ref_scr_idx < ref_scr_n) {
+		delta = ref_scr_delta[ref_scr_idx];
+		err = ref_scr_err[ref_scr_idx];
+	} else {
+		delta = (errp == NULL) ? 1 : 0;
+		err = 35;			/* EWOULDBLOCK */
+		ref_scr_over++;
+	}
+	ref_scr_idx++;
+	e->a[4] = delta;
+	e->a[5] = ref_scr_idx;
+	e->a[6] = ref_scr_over;
+	e->a[7] = m->mtx_locked;
+	cvp->cv_waits++;
+	m->mtx_locked = 0;
+	s->sema_value += delta;
+	m->mtx_locked = 1;
+	if (errp != NULL)
+		*errp = err;
+	return (delta);
+}
+
+static void
+cv_wait(struct cv *cvp, struct mtx *m)
+{
+
+	(void)ref_wait_common(ref_rec(EV_CV_WAIT), cvp, m, NULL);
+}
+
+static int
+cv_timedwait(struct cv *cvp, struct mtx *m, int timo)
+{
+	struct ref_event *e;
+	int err = 0;
+
+	e = ref_rec(EV_CV_TIMEDWAIT);
+	(void)ref_wait_common(e, cvp, m, &err);
+	e->a[6] = timo;
+	e->a[7] = err;
+	return (err);
+}
+
+static void
+ref_ctr3(int mask, const char *fmt, const void *p1, const void *p2)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_CTR3);
+	e->a[0] = mask;
+	e->a[1] = ref_str_hash(fmt);
+	e->a[2] = ref_ptr_id(p1);
+	e->a[3] = ref_ptr_id(p2);
+}
+
+static void
+ref_ctr4(int mask, const char *fmt, const void *p1, int i2, const void *p3)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_CTR4);
+	e->a[0] = mask;
+	e->a[1] = ref_str_hash(fmt);
+	e->a[2] = ref_ptr_id(p1);
+	e->a[3] = i2;
+	e->a[4] = ref_ptr_id(p3);
+}
+
+static void
+ref_ctr5(int mask, const char *fmt, const void *p1, const void *p2,
+    const void *p3, int i4)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_CTR5);
+	e->a[0] = mask;
+	e->a[1] = ref_str_hash(fmt);
+	e->a[2] = ref_ptr_id(p1);
+	e->a[3] = ref_ptr_id(p2);
+	e->a[4] = ref_ptr_id(p3);
+	e->a[5] = i4;
+}
+
+static void
+ref_ctr6(int mask, const char *fmt, const void *p1, const void *p2, int i3,
+    const void *p4, int i5)
+{
+	struct ref_event *e;
+
+	e = ref_rec(EV_CTR6);
+	e->a[0] = mask;
+	e->a[1] = ref_str_hash(fmt);
+	e->a[2] = ref_ptr_id(p1);
+	e->a[3] = ref_ptr_id(p2);
+	e->a[4] = i3;
+	e->a[5] = ref_ptr_id(p4);
+	e->a[6] = i5;
+}
+
+/*
+ * KASSERT() is modelled after an INVARIANTS kernel except that a failed
+ * assertion is recorded instead of panicking, so that both sides can be run to
+ * completion and compared.  The message argument is not evaluated, exactly as
+ * in a kernel where the assertion holds.
+ */
+#define	KASSERT(exp, msg)	ref_assert((exp) ? 1 : 0)
+#define	bzero(dst, len)		ref_bzero((dst), (len))
+#define	CTR3(mask, fmt, f, p1, p2)					\
+	ref_ctr3((mask), (fmt), (p1), (p2))
+#define	CTR4(mask, fmt, f, p1, i2, p3)					\
+	ref_ctr4((mask), (fmt), (p1), (i2), (p3))
+#define	CTR5(mask, fmt, f, p1, p2, p3, i4)				\
+	ref_ctr5((mask), (fmt), (p1), (p2), (p3), (i4))
+#define	CTR6(mask, fmt, f, p1, p2, i3, p4, i5)				\
+	ref_ctr6((mask), (fmt), (p1), (p2), (i3), (p4), (i5))
+
+/* ---------- original kern_sema.c bodies, unmodified ---------- */
 
 void
 ref_sema_init(struct sema *sema, int value, const char *description)
@@ -423,4 +565,108 @@ ref_sema_value(struct sema *sema)
 	ret = sema->sema_value;
 	mtx_unlock(&sema->sema_mtx);
 	return (ret);
+}
+
+/* ---------- observation interface used by the harness ---------- */
+
+size_t
+ref_obj_size(void)
+{
+
+	return (sizeof(struct sema));
+}
+
+size_t
+ref_obj_align(void)
+{
+
+	return (_Alignof(struct sema));
+}
+
+void
+ref_env_reset(void *obj, const void *desc, const void *file, const int *deltas,
+    const int *errs, int nacts)
+{
+	struct sema *s = (struct sema *)obj;
+
+	ref_reg[0] = obj;
+	ref_reg[1] = desc;
+	ref_reg[2] = file;
+	ref_reg[3] = (const void *)&s->sema_mtx;
+	ref_reg[4] = (const void *)&s->sema_cv;
+	ref_nreg = 5;
+	ref_nev = 0;
+	ref_evtotal = 0;
+	ref_scr_delta = deltas;
+	ref_scr_err = errs;
+	ref_scr_n = nacts;
+	ref_scr_idx = 0;
+	ref_scr_over = 0;
+	ref_waitcalls = 0;
+	ref_runaway = 0;
+}
+
+void *
+ref_jmpbuf(void)
+{
+
+	return ((void *)&ref_jb);
+}
+
+int
+ref_runaway_flag(void)
+{
+
+	return (ref_runaway);
+}
+
+void
+ref_set_state(void *obj, int value, int waiters)
+{
+	struct sema *s = (struct sema *)obj;
+
+	s->sema_value = value;
+	s->sema_waiters = waiters;
+}
+
+long
+ref_trace_count(void)
+{
+
+	return (ref_nev);
+}
+
+void
+ref_trace_get(long i, int *op, long *a)
+{
+	int k;
+
+	*op = ref_evbuf[i].op;
+	for (k = 0; k < PBSD_EVARGS; k++)
+		a[k] = ref_evbuf[i].a[k];
+}
+
+void
+ref_snapshot(const void *obj, long *out)
+{
+	const struct sema *s = (const struct sema *)obj;
+
+	out[0] = ref_ptr_id(s->sema_mtx.mtx_name);
+	out[1] = ref_ptr_id(s->sema_mtx.mtx_type);
+	out[2] = s->sema_mtx.mtx_opts;
+	out[3] = s->sema_mtx.mtx_inited;
+	out[4] = s->sema_mtx.mtx_locked;
+	out[5] = s->sema_mtx.mtx_lockcnt;
+	out[6] = s->sema_mtx.mtx_unlockcnt;
+	out[7] = s->sema_mtx.mtx_destroyed;
+	out[8] = ref_ptr_id(s->sema_cv.cv_description);
+	out[9] = s->sema_cv.cv_inited;
+	out[10] = s->sema_cv.cv_signals;
+	out[11] = s->sema_cv.cv_waits;
+	out[12] = s->sema_cv.cv_destroyed;
+	out[13] = s->sema_value;
+	out[14] = s->sema_waiters;
+	out[15] = ref_scr_idx;
+	out[16] = ref_scr_over;
+	out[17] = ref_evtotal;
 }

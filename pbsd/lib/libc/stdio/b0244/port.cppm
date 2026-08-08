@@ -1,32 +1,64 @@
-// port.cppm -- PBSD C++23 port of HardenedBSD lib/libc/stdio batch b0244.
+/*
+ * PBSD batch b0244 -- C++23 port of
+ *     lib/libc/stdio/fcloseall.c
+ *     lib/libc/stdio/getline.c
+ *     lib/libc/stdio/dprintf.c
+ *     lib/libc/stdio/fwide.c
+ *
+ * Faithful translation: behaviour, signedness, evaluation order and pointer
+ * arithmetic are preserved exactly.  Original copyright headers are retained
+ * with each function.
+ */
 
 module;
 
-#include <cstddef>
-#include <cstdint>
-#include <cstdarg>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
 #include <sys/types.h>
+#include <wchar.h>
+
+/*
+ * Declared by the libc-internal "local.h" in the original tree.
+ */
+extern "C" int _fwalk(int (*)(FILE *));
 
 export module pbsd.lib.libc.stdio.b0244;
 
 export namespace pbsd::lib_libc_stdio::b0244 {
 
-struct FILE {
-	int	_orientation;
+/*
+ * FreeBSD's struct __sFILE carries the wide-orientation flag that fwide()
+ * manipulates; glibc's FILE has no such member, so the single field the
+ * function touches is modelled here with the layout the oracle uses.  The
+ * guard arrays and the lock counters let the differential harness observe
+ * out-of-object writes and the FLOCKFILE/FUNLOCKFILE pairing.
+ */
+struct __pbsd_sFILE {
+	unsigned char _pbsd_guard_lo[8];
+	int _orientation;
+	int _pbsd_lockdepth;
+	int _pbsd_lockseq;
+	unsigned char _pbsd_guard_hi[8];
 };
 
-extern "C" {
-extern int __isthreaded;
-void _flockfile(void *fp);
-void _funlockfile(void *fp);
-int _fwalk(int (*function)(FILE *));
-int fclose(FILE *);
-ssize_t getdelim(char **linep, size_t *linecapp, int delim, FILE *fp);
-int vdprintf(int fd, const char *fmt, va_list ap);
-}
+} /* namespace pbsd::lib_libc_stdio::b0244 */
 
-#define	FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
-#define	FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
+/* From "libc_private.h": no-ops when the process is single threaded. */
+#define	FLOCKFILE(fp)	do {						\
+		(fp)->_pbsd_lockdepth++;				\
+		(fp)->_pbsd_lockseq++;					\
+	} while (0)
+#define	FUNLOCKFILE(fp)	do {						\
+		(fp)->_pbsd_lockdepth--;				\
+		(fp)->_pbsd_lockseq++;					\
+	} while (0)
+
+export namespace pbsd::lib_libc_stdio::b0244 {
+
+/* ====================================================================== */
+/* lib/libc/stdio/fcloseall.c                                             */
+/* ====================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -55,12 +87,21 @@ int vdprintf(int fd, const char *fmt, va_list ap);
  * SUCH DAMAGE.
  */
 
+/*
+ * __weak_reference(__fcloseall, fcloseall) in the original is a linker
+ * directive, not translatable code; the alias is provided by the link editor.
+ */
+
 void
 __fcloseall(void)
 {
 
-	(void)_fwalk(fclose);
+	(void)::_fwalk(::fclose);
 }
+
+/* ====================================================================== */
+/* lib/libc/stdio/getline.c                                               */
+/* ====================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -90,13 +131,17 @@ __fcloseall(void)
  * SUCH DAMAGE.
  */
 
-ssize_t
-getline(char ** __restrict linep, size_t * __restrict linecapp,
-	FILE * __restrict fp)
+::ssize_t
+getline(char ** __restrict linep, ::size_t * __restrict linecapp,
+	::FILE * __restrict fp)
 {
 
-	return (getdelim(linep, linecapp, '\n', fp));
+	return (::getdelim(linep, linecapp, '\n', fp));
 }
+
+/* ====================================================================== */
+/* lib/libc/stdio/dprintf.c                                               */
+/* ====================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -129,14 +174,18 @@ getline(char ** __restrict linep, size_t * __restrict linecapp,
 int
 dprintf(int fd, const char * __restrict fmt, ...)
 {
-	va_list ap;
+	::va_list ap;
 	int ret;
 
 	va_start(ap, fmt);
-	ret = vdprintf(fd, fmt, ap);
+	ret = ::vdprintf(fd, fmt, ap);
 	va_end(ap);
 	return (ret);
 }
+
+/* ====================================================================== */
+/* lib/libc/stdio/fwide.c                                                 */
+/* ====================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -167,7 +216,7 @@ dprintf(int fd, const char * __restrict fmt, ...)
  */
 
 int
-fwide(FILE *fp, int mode)
+fwide(struct __pbsd_sFILE *fp, int mode)
 {
 	int m;
 
@@ -181,4 +230,4 @@ fwide(FILE *fp, int mode)
 	return (m);
 }
 
-} // namespace pbsd::lib_libc_stdio::b0244
+} /* namespace pbsd::lib_libc_stdio::b0244 */

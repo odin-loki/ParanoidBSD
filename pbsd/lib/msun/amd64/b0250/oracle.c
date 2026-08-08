@@ -161,7 +161,13 @@ do {									\
 	memcpy(sim_x87_other, (addr)->__other, 16);			\
 } while (0)
 
-#define	__fldenvx(addr)	__fldenv(addr)
+#define	__fldenvx(env)							\
+do {									\
+	sim_x87_control = (env).__control;				\
+	sim_x87_status = (env).__status;				\
+	sim_x87_tag = (env).__tag;					\
+	memcpy(sim_x87_other, (env).__other, 16);			\
+} while (0)
 
 #define	__fnstcw(addr)	((*(addr)) = (uint16_t)sim_x87_control)
 

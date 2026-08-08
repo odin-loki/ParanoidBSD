@@ -3,19 +3,19 @@
  *
  * Drives the C++23 port in pbsd::sys_kern::b0146s4 and the ref_ oracle built
  * from hbsd/src/sys/kern/kern_sema.c side by side over the same semaphore
- * states and the same scripted condition-variable wakeups, and compares:
+ * states and the same scripted condition variable wakeups, and compares:
  *
  *   - the return value of every call;
  *   - the whole modelled environment afterwards (mutex and condvar state,
- *     sema_value, sema_waiters, script position, event count);
- *   - the complete event trace, entry by entry, so that the order and the
- *     arguments of every mtx/cv/KTR/KASSERT/bzero operation are checked;
- *   - guard bytes on both sides of each semaphore object, so that a write
- *     past the object is caught even when it does not change the result.
+ *     sema_value, sema_waiters, script position, total event count);
+ *   - the complete event trace, entry by entry, so the order and the arguments
+ *     of every mtx/cv/KTR/KASSERT/bzero operation are checked;
+ *   - guard bytes on both sides of each semaphore object, so a write past the
+ *     object is caught even when it does not change the result.
  *
- * Every semaphore object lives in a buffer pre-filled with the guard byte
- * 0x7f, so the bzero() in sema_init() and anything that writes outside the
- * object are both observable.
+ * Each semaphore object lives at a fixed offset inside a buffer pre-filled
+ * with the guard byte 0x7f, which makes the bzero() in sema_init() and any
+ * write outside the object observable.
  */
 
 #include <cstddef>
@@ -56,6 +56,7 @@ void		 ref_snapshot(const void *, long *);
 #define	SCRMAX		8
 #define	GUARD		32
 #define	BUFSZ		512
+#define	MAXREPORT	25
 
 enum {
 	OP_INIT = 0,
@@ -74,7 +75,7 @@ static const char *const opnames[OP_N] = {
 	"_sema_wait",
 	"_sema_timedwait",
 	"_sema_trywait",
-	"sema_value"	,
+	"sema_value",
 	"sema_destroy"
 };
 
@@ -246,10 +247,11 @@ run_port(const Case &c, Result &r)
 static void
 describe(const Case &c)
 {
+
 	std::printf("    case: op=%s initval=%d poke=%d value=%d waiters=%d "
-	    "timo=%d line=%d desc=%d file=%d nacts=%d",
-	    opnames[c.op], c.initval, c.poke, c.value, c.waiters, c.timo,
-	    c.line, c.di, c.fi, c.nacts);
+	    "timo=%d line=%d desc=%d file=%d nacts=%d", opnames[c.op],
+	    c.initval, c.poke, c.value, c.waiters, c.timo, c.line, c.di, c.fi,
+	    c.nacts);
 	for (int i = 0; i < c.nacts; i++)
 		std::printf(" [%d:d=%d,e=%d]", i, c.deltas[i], c.errs[i]);
 	std::printf("\n");
@@ -259,11 +261,11 @@ static int
 guards_ok(const unsigned char *buf)
 {
 
-	for (std::size_t i = 0; i < GUARD; i++) {
+	for (std::size_t i = 0; i < (std::size_t)GUARD; i++) {
 		if (buf[i] != 0x7f)
 			return (0);
 	}
-	for (std::size_t i = GUARD + objsz; i < BUFSZ; i++) {
+	for (std::size_t i = GUARD + objsz; i < (std::size_t)BUFSZ; i++) {
 		if (buf[i] != 0x7f)
 			return (0);
 	}
@@ -276,7 +278,7 @@ compare(const Case &c)
 	int bad = 0;
 
 	if (resA.ret != resB.ret) {
-		if (reported < 25) {
+		if (reported < MAXREPORT) {
 			std::printf("MISMATCH return: oracle=%ld port=%ld\n",
 			    resA.ret, resB.ret);
 			describe(c);
@@ -284,7 +286,7 @@ compare(const Case &c)
 		bad = 1;
 	}
 	if (resA.runaway != resB.runaway) {
-		if (reported < 25) {
+		if (reported < MAXREPORT) {
 			std::printf("MISMATCH runaway: oracle=%d port=%d\n",
 			    resA.runaway, resB.runaway);
 			describe(c);
@@ -292,18 +294,17 @@ compare(const Case &c)
 		bad = 1;
 	}
 	for (int i = 0; i < SNAP_N; i++) {
-		if (resA.snap[i] != resB.snap[i]) {
-			if (reported < 25) {
-				std::printf("MISMATCH state[%d]: oracle=%ld "
-				    "port=%ld\n", i, resA.snap[i],
-				    resB.snap[i]);
-				describe(c);
-			}
-			bad = 1;
+		if (resA.snap[i] == resB.snap[i])
+			continue;
+		if (reported < MAXREPORT) {
+			std::printf("MISMATCH state[%d]: oracle=%ld "
+			    "port=%ld\n", i, resA.snap[i], resB.snap[i]);
+			describe(c);
 		}
+		bad = 1;
 	}
 	if (resA.nev != resB.nev) {
-		if (reported < 25) {
+		if (reported < MAXREPORT) {
 			std::printf("MISMATCH trace length: oracle=%ld "
 			    "port=%ld\n", resA.nev, resB.nev);
 			describe(c);
@@ -319,7 +320,7 @@ compare(const Case &c)
 			diff = (resA.args[i][k] != resB.args[i][k]);
 		if (!diff)
 			continue;
-		if (reported < 25) {
+		if (reported < MAXREPORT) {
 			std::printf("MISMATCH trace[%ld]: oracle=%s(", i,
 			    (resA.ops[i] >= 0 && resA.ops[i] <= 16) ?
 			    evnames[resA.ops[i]] : "?");
@@ -342,7 +343,7 @@ compare(const Case &c)
 	    std::memcmp(bufA, bufB, GUARD) != 0 ||
 	    std::memcmp(bufA + GUARD + objsz, bufB + GUARD + objsz,
 	    BUFSZ - GUARD - objsz) != 0) {
-		if (reported < 25) {
+		if (reported < MAXREPORT) {
 			std::printf("MISMATCH guard bytes clobbered\n");
 			describe(c);
 		}
@@ -372,6 +373,12 @@ struct Script {
 	int	e[SCRMAX];
 };
 
+/*
+ * Wakeup scripts.  Between them these drive every exit from both wait loops:
+ * the value becoming non-zero (positive and negative), the timed wait failing
+ * with the value still zero, the timed wait failing after the value has
+ * already moved, and running the script off its end.
+ */
 static const Script scripts[] = {
 	{ 0, { 0 }, { 0 } },
 	{ 1, { 0 }, { 0 } },
@@ -411,12 +418,14 @@ edge_cases(void)
 	static const int waiterss[] = { -2, -1, 0, 1, 2 };
 	static const int timos[] = { -1, 0, 1, 1000 };
 	static const int initsub[] = { -1, 0, 5 };
+	static const int plainops[] = { OP_POST, OP_TRYWAIT, OP_VALUE,
+	    OP_DESTROY };
 	Case c;
 
 	std::memset(&c, 0, sizeof(c));
 	c.line = 123;
 
-	/* sema_init on its own, with and without a forced state after it. */
+	/* sema_init alone, over every description and file string. */
 	for (int iv = 0; iv < 7; iv++) {
 		for (int d = 0; d < ndescs; d++) {
 			for (int f = 0; f < nfiles; f++) {
@@ -438,9 +447,7 @@ edge_cases(void)
 		}
 	}
 
-	/* Operations that do not block: every state combination. */
-	static const int plainops[] = { OP_POST, OP_TRYWAIT, OP_VALUE,
-	    OP_DESTROY };
+	/* The operations that never block, over every state combination. */
 	for (int o = 0; o < 4; o++) {
 		for (int iv = 0; iv < 7; iv++) {
 			for (int v = 0; v < 7; v++) {
@@ -482,7 +489,7 @@ edge_cases(void)
 		}
 	}
 
-	/* _sema_timedwait: same, across timeouts. */
+	/* _sema_timedwait: the same, across timeouts. */
 	for (int iv = 0; iv < 3; iv++) {
 		for (int v = 0; v < 7; v++) {
 			for (int w = 0; w < 5; w++) {
@@ -506,9 +513,9 @@ edge_cases(void)
 	}
 
 	/*
-	 * Boundaries that decide a branch, spelled out on both sides:
-	 * sema_value just above, at and just below every comparison in the
-	 * batch, with sema_waiters both zero and non-zero.
+	 * Every comparison in the batch tests sema_value or sema_waiters
+	 * against zero, so walk both of them across zero for every operation
+	 * and every script: each boundary is exercised from both sides.
 	 */
 	for (int v = -2; v <= 2; v++) {
 		for (int w = -1; w <= 1; w++) {
@@ -516,7 +523,7 @@ edge_cases(void)
 				for (int s = 0; s < nscripts; s++) {
 					setscript(c, scripts[s]);
 					c.op = o;
-					c.initval = 0;
+					c.initval = v;
 					c.poke = 1;
 					c.value = v;
 					c.waiters = w;

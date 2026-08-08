@@ -350,7 +350,7 @@ cmp_snap(int fn, const Snap &a, const Snap &b, const char *ctx)
 	if (same)
 		return;
 
-	char sa[512], sb[512], msg[1200];
+	char sa[1024], sb[1024], msg[4096];
 
 	snap_str(sa, sizeof(sa), a);
 	snap_str(sb, sizeof(sb), b);
@@ -615,16 +615,16 @@ case_kevent(int kq, const struct kevent *ch, int nchanges,
 	memset(tsa, GUARD, sizeof(tsa));
 	memset(tsb, GUARD, sizeof(tsb));
 
-	if (ch != nullptr) {
-		size_t n = (size_t)(nchanges < KEV_MAX ? nchanges : KEV_MAX) *
-		    sizeof(struct kevent);
+	if (ch != nullptr && nchanges > 0) {
+		int nc = nchanges < KEV_MAX ? nchanges : KEV_MAX;
+		size_t n = (size_t)nc * sizeof(struct kevent);
 
 		memcpy(cha + KEV_OFF, ch, n);
 		memcpy(chb + KEV_OFF, ch, n);
 	}
-	if (ev != nullptr) {
-		size_t n = (size_t)(nevents < KEV_MAX ? nevents : KEV_MAX) *
-		    sizeof(struct kevent);
+	if (ev != nullptr && nevents > 0) {
+		int ne = nevents < KEV_MAX ? nevents : KEV_MAX;
+		size_t n = (size_t)ne * sizeof(struct kevent);
 
 		memcpy(eva + KEV_OFF, ev, n);
 		memcpy(evb + KEV_OFF, ev, n);

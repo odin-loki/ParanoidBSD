@@ -116,7 +116,7 @@ check2(char **argv)
 		first = ch = getchar();
 		while (ch != '\n' && ch != EOF)
 			ch = getchar();
-		if (ch == EOF)
+		if (ch != EOF)
 			break;
 	}
 	return (first == 'y' || first == 'Y');

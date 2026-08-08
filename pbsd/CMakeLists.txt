@@ -133,6 +133,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/b0233/port.cppm
   lib/libc/gen/b0247/port.cppm
   lib/libc/gen/b0248/port.cppm
+  lib/libc/gen/b0256/port.cppm
+  lib/libc/gen/b0258/port.cppm
   lib/libc/gen/check_utility_compat_m/port.cppm
   lib/libc/gen/clock_m/port.cppm
   lib/libc/gen/devname_m/port.cppm
@@ -220,6 +222,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/posix1e/acl_id_to_name_m/port.cppm
   lib/libc/posix1e/acl_perm_m/port.cppm
   lib/libc/posix1e/b0110/port.cppm
+  lib/libc/posix1e/b0259/port.cppm
   lib/libc/quad/TESTS/b0174/port.cppm
   lib/libc/quad/b0033/port.cppm
   lib/libc/quad/b0034/port.cppm
@@ -351,6 +354,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/b0158/port.cppm
   lib/libc/string/b0239/port.cppm
   lib/libc/string/b0241/port.cppm
+  lib/libc/string/b0257/port.cppm
   lib/libc/string/bcmp_m/port.cppm
   lib/libc/string/ffs_m/port.cppm
   lib/libc/string/ffsl_m/port.cppm
@@ -412,6 +416,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libthr/arch/amd64/amd64/b0111/port.cppm
   lib/libthr/sys/b0234/port.cppm
   lib/libthr/thread/b0252/port.cppm
+  lib/libthr/thread/b0254/port.cppm
   lib/msun/aarch64/b0201/port.cppm
   lib/msun/amd64/b0250/port.cppm
   lib/msun/ld128/b0073/port.cppm

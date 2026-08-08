@@ -1,116 +1,64 @@
 /*
- * b0244 oracle -- the specification.
+ * PBSD batch b0244 -- reference oracle.
  *
- * hbsd/src/lib/libc/stdio/fcloseall.c, getline.c, dprintf.c, and fwide.c
- * concatenated, with every function renamed with a `ref_' prefix.  Function
- * bodies are UNMODIFIED.  Only defines/declarations that the unavailable
- * FreeBSD/HardenedBSD headers used to supply have been added.
+ * The original HardenedBSD sources for
+ *     lib/libc/stdio/fcloseall.c
+ *     lib/libc/stdio/getline.c
+ *     lib/libc/stdio/dprintf.c
+ *     lib/libc/stdio/fwide.c
+ * concatenated, with every function renamed with a "ref_" prefix.  Function
+ * bodies are byte-for-byte unmodified.  Only the declarations/defines that the
+ * original private libc headers ("local.h", "namespace.h", "libc_private.h")
+ * would have supplied are added below, because those headers are not part of
+ * this batch.
  */
 
-#include <stddef.h>
-#include <stdint.h>
+#define _POSIX_C_SOURCE 200809L
+
+#include <errno.h>
 #include <limits.h>
 #include <stdarg.h>
-#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
+#include <wchar.h>
 
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * CHAR_BIT)
-#endif
+/*
+ * Missing defines / declarations that the private libc headers provide.
+ */
 
-#ifndef _STDFILE_DECLARED
-#define _STDFILE_DECLARED
-struct __sFILE {
-	int	_orientation;
+/* From <stdio.h>'s private companion "local.h" (libc internal). */
+extern int _fwalk(int (*)(FILE *));
+
+/*
+ * FreeBSD's struct __sFILE carries the wide-orientation flag that fwide()
+ * manipulates; glibc's FILE has no such member, so the single field the
+ * function touches is modelled here.  The guard arrays and the lock counters
+ * exist purely so that the differential harness can observe out-of-object
+ * writes and the FLOCKFILE/FUNLOCKFILE pairing.  The identical declaration is
+ * used by the port.
+ */
+struct __pbsd_sFILE {
+	unsigned char _pbsd_guard_lo[8];
+	int _orientation;
+	int _pbsd_lockdepth;
+	int _pbsd_lockseq;
+	unsigned char _pbsd_guard_hi[8];
 };
-typedef struct __sFILE FILE;
-#endif
 
-int	__isthreaded;
+/* From "libc_private.h": no-ops when the process is single threaded. */
+#define	FLOCKFILE(fp)	do {						\
+		(fp)->_pbsd_lockdepth++;				\
+		(fp)->_pbsd_lockseq++;					\
+	} while (0)
+#define	FUNLOCKFILE(fp)	do {						\
+		(fp)->_pbsd_lockdepth--;				\
+		(fp)->_pbsd_lockseq++;					\
+	} while (0)
 
-/* Harness-visible mock state */
-int	mock_fwalk_calls;
-void	*mock_fwalk_fn;
-int	mock_fclose_calls;
-
-ssize_t	mock_getdelim_ret;
-int	mock_getdelim_last_delim;
-char	**mock_getdelim_last_linep;
-size_t	*mock_getdelim_last_linecapp;
-FILE	*mock_getdelim_last_fp;
-size_t	mock_getdelim_set_cap;
-size_t	mock_getdelim_write_len;
-unsigned char mock_getdelim_write_buf[256];
-
-int	mock_vdprintf_ret;
-int	mock_vdprintf_last_fd;
-const char *mock_vdprintf_last_fmt;
-int	mock_vdprintf_last_arg;
-
-int	mock_flock_calls;
-int	mock_funlock_calls;
-
-void
-_flockfile(void *fp)
-{
-	(void)fp;
-	mock_flock_calls++;
-}
-
-void
-_funlockfile(void *fp)
-{
-	(void)fp;
-	mock_funlock_calls++;
-}
-
-#define	FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
-#define	FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
-
-int
-_fwalk(int (*function)(FILE *))
-{
-	mock_fwalk_calls++;
-	mock_fwalk_fn = (void *)function;
-	return (0);
-}
-
-int
-fclose(FILE *fp)
-{
-	(void)fp;
-	mock_fclose_calls++;
-	return (0);
-}
-
-ssize_t
-getdelim(char **linep, size_t *linecapp, int delim, FILE *fp)
-{
-	mock_getdelim_last_delim = delim;
-	mock_getdelim_last_linep = linep;
-	mock_getdelim_last_linecapp = linecapp;
-	mock_getdelim_last_fp = fp;
-	if (linecapp != NULL && mock_getdelim_set_cap != 0)
-		*linecapp = mock_getdelim_set_cap;
-	if (linep != NULL && *linep != NULL && mock_getdelim_write_len != 0) {
-		size_t n = mock_getdelim_write_len;
-		if (n > sizeof(mock_getdelim_write_buf))
-			n = sizeof(mock_getdelim_write_buf);
-		memcpy(*linep, mock_getdelim_write_buf, n);
-	}
-	return (mock_getdelim_ret);
-}
-
-int
-vdprintf(int fd, const char *fmt, va_list ap)
-{
-	mock_vdprintf_last_fd = fd;
-	mock_vdprintf_last_fmt = fmt;
-	mock_vdprintf_last_arg = va_arg(ap, int);
-	return (mock_vdprintf_ret);
-}
-
-/* ======================= fcloseall.c ======================= */
+/* ====================================================================== */
+/* lib/libc/stdio/fcloseall.c                                             */
+/* ====================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -139,10 +87,7 @@ vdprintf(int fd, const char *fmt, va_list ap)
  * SUCH DAMAGE.
  */
 
-/* #include <stdio.h>			-- unavailable, substituted above */
-/* #include "local.h"			-- unavailable, substituted above */
-
-#define __weak_reference(sym, alias)
+/* __weak_reference(__fcloseall, fcloseall); -- linker directive, not code. */
 
 void
 ref___fcloseall(void)
@@ -151,7 +96,9 @@ ref___fcloseall(void)
 	(void)_fwalk(fclose);
 }
 
-/* ======================= getline.c ======================= */
+/* ====================================================================== */
+/* lib/libc/stdio/getline.c                                               */
+/* ====================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -180,8 +127,6 @@ ref___fcloseall(void)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-/* #include <stdio.h>			-- unavailable, substituted above */
 
 ssize_t
 ref_getline(char ** __restrict linep, size_t * __restrict linecapp,
@@ -191,7 +136,9 @@ ref_getline(char ** __restrict linep, size_t * __restrict linecapp,
 	return (getdelim(linep, linecapp, '\n', fp));
 }
 
-/* ======================= dprintf.c ======================= */
+/* ====================================================================== */
+/* lib/libc/stdio/dprintf.c                                               */
+/* ====================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -220,11 +167,6 @@ ref_getline(char ** __restrict linep, size_t * __restrict linecapp,
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-/* #include "namespace.h"		-- unavailable, substituted above */
-/* #include <stdarg.h>			-- unavailable, substituted above */
-/* #include <stdio.h>			-- unavailable, substituted above */
-/* #include "un-namespace.h"		-- unavailable, substituted above */
 
 int
 ref_dprintf(int fd, const char * __restrict fmt, ...)
@@ -238,7 +180,9 @@ ref_dprintf(int fd, const char * __restrict fmt, ...)
 	return (ret);
 }
 
-/* ======================= fwide.c ======================= */
+/* ====================================================================== */
+/* lib/libc/stdio/fwide.c                                                 */
+/* ====================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -268,16 +212,8 @@ ref_dprintf(int fd, const char * __restrict fmt, ...)
  * SUCH DAMAGE.
  */
 
-/* #include "namespace.h"		-- unavailable, substituted above */
-/* #include <errno.h>			-- unavailable, substituted above */
-/* #include <stdio.h>			-- unavailable, substituted above */
-/* #include <wchar.h>			-- unavailable, substituted above */
-/* #include "un-namespace.h"		-- unavailable, substituted above */
-/* #include "libc_private.h"		-- unavailable, substituted above */
-/* #include "local.h"			-- unavailable, substituted above */
-
 int
-ref_fwide(FILE *fp, int mode)
+ref_fwide(struct __pbsd_sFILE *fp, int mode)
 {
 	int m;
 
