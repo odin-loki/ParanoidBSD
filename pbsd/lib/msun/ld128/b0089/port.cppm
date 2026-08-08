@@ -369,7 +369,7 @@ powl(long double x, long double y)
 	}
       if (iy == 0x3fff0000)
 	{			/* y is  +-1 */
-	  if (hy >= 0)
+	  if (hy < 0)
 	    return one / x;
 	  else
 	    return x;

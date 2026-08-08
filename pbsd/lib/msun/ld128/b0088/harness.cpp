@@ -52,10 +52,40 @@ ld_equal(long double a, long double b)
 	return std::memcmp(&a, &b, LD_BYTES) == 0;
 }
 
-static bool
-cx_equal(long double _Complex a, long double _Complex b)
+static long double
+port_cexpl_re(long double _Complex z) __attribute__((noinline));
+
+static long double
+port_cexpl_im(long double _Complex z) __attribute__((noinline));
+
+static long double
+ref_cexpl_re(long double _Complex z) __attribute__((noinline));
+
+static long double
+ref_cexpl_im(long double _Complex z) __attribute__((noinline));
+
+static long double
+port_cexpl_re(long double _Complex z)
 {
-	return std::memcmp(&a, &b, CX_BYTES) == 0;
+	return creall(port::cexpl(z));
+}
+
+static long double
+port_cexpl_im(long double _Complex z)
+{
+	return cimagl(port::cexpl(z));
+}
+
+static long double
+ref_cexpl_re(long double _Complex z)
+{
+	return creall(ref_cexpl(z));
+}
+
+static long double
+ref_cexpl_im(long double _Complex z)
+{
+	return cimagl(ref_cexpl(z));
 }
 
 static void

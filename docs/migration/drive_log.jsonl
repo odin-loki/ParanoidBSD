@@ -1775,3 +1775,4 @@
 {"batch": "b0029s4", "status": "REJECTED", "detail": "mutation check: harness failed to detect: const_one\n(mechanical path first said: not attempted (mechanical phase runs separately))", "how": "agent+escalate", "ts": "2026-08-08T11:35:40Z"}
 {"batch": "b0126", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T11:37:53Z"}
 {"batch": "b0123", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T11:38:00Z"}
+{"batch": "b0089", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:38:17Z"}

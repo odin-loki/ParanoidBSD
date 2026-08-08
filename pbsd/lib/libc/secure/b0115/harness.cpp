@@ -617,7 +617,7 @@ main(void)
 	// memmove_random(SWEEP);
 	// memcpy_random(SWEEP);
 	// strncpy_random(SWEEP);
-	vsnprintf_random(1000);
+	vsnprintf_random(200000);
 
 	print_table();
 

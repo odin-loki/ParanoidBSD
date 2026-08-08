@@ -1,0 +1,13 @@
+{
+  "batch": "b0089",
+  "verified": "2026-08-08T11:38:17Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD batch b0089 differential harness\nLDBL_MANT_DIG=113, comparing 16 bytes of long double\n\nfunction        cases     failures\npowl           251525            0\nexp2l          250079            0\nerfl           250079            0\nerfcl          250079            0\nlogl           250079            0\nlog1pl         250093            0\nlog10l         250079            0\nlog2l          250079            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld128/e_powl.c": "5c9c46a8dbbcab41",
+    "hbsd/src/lib/msun/ld128/s_exp2l.c": "14d805b809cedb62",
+    "hbsd/src/lib/msun/ld128/s_erfl.c": "998c3ba68ceb0708",
+    "hbsd/src/lib/msun/ld128/s_logl.c": "42c87963a6f71845"
+  }
+}

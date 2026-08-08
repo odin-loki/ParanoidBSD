@@ -52,8 +52,6 @@
 
 module;
 
-#define _GNU_SOURCE
-
 #include <cstdlib>
 #include <errno.h>
 #include <sched.h>
@@ -64,15 +62,15 @@ module;
 #define	CPUCLOCK_WHICH_PID	0
 #endif
 
-#ifndef cpuset_t
-typedef	cpu_set_t	cpuset_t;
-#endif
+export module pbsd.lib.libc.gen.b0125;
 
 extern "C" int clock_getcpuclockid2(id_t, int, clockid_t *);
 
-export module pbsd.lib.libc.gen.b0125;
-
 export namespace pbsd::lib_libc_gen::b0125 {
+
+#if defined(__linux__)
+using cpuset_t = cpu_set_t;
+#endif
 
 void
 __cpuset_free(cpuset_t *ptr)
