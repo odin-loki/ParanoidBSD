@@ -606,6 +606,33 @@ __wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
 }
 
 /* localeconv.c */
+static int
+ref_lconv_equal(const struct lconv *a, const struct lconv *b)
+{
+#define CMPF(F) (a->F == b->F || (a->F != NULL && b->F != NULL && \
+    strcmp(a->F, b->F) == 0))
+	if (!CMPF(decimal_point) || !CMPF(thousands_sep) || !CMPF(grouping) ||
+	    !CMPF(int_curr_symbol) || !CMPF(currency_symbol) ||
+	    !CMPF(mon_decimal_point) || !CMPF(mon_thousands_sep) ||
+	    !CMPF(mon_grouping) || !CMPF(positive_sign) || !CMPF(negative_sign))
+		return (0);
+#undef CMPF
+	return (a->int_frac_digits == b->int_frac_digits &&
+	    a->frac_digits == b->frac_digits &&
+	    a->p_cs_precedes == b->p_cs_precedes &&
+	    a->p_sep_by_space == b->p_sep_by_space &&
+	    a->n_cs_precedes == b->n_cs_precedes &&
+	    a->n_sep_by_space == b->n_sep_by_space &&
+	    a->p_sign_posn == b->p_sign_posn &&
+	    a->n_sign_posn == b->n_sign_posn &&
+	    a->int_p_cs_precedes == b->int_p_cs_precedes &&
+	    a->int_n_cs_precedes == b->int_n_cs_precedes &&
+	    a->int_p_sep_by_space == b->int_p_sep_by_space &&
+	    a->int_n_sep_by_space == b->int_n_sep_by_space &&
+	    a->int_p_sign_posn == b->int_p_sign_posn &&
+	    a->int_n_sign_posn == b->int_n_sign_posn);
+}
+
 struct lconv *
 ref_localeconv_l(locale_t loc)
 {

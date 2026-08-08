@@ -1,51 +1,65 @@
 /*
- * Reference oracle for batch b0109.
+ * PBSD batch b0109 reference oracle.
  *
- * The original HardenedBSD sources are concatenated below with every function
- * renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.
+ * The original HardenedBSD/FreeBSD sources for
+ *	lib/libc/stdio/fgetc.c
+ *	lib/libc/stdio/putwc.c
+ *	lib/libc/stdio/swprintf.c
+ *	lib/libc/stdio/rewind.c
+ * concatenated, with every function renamed with a `ref_' prefix.  Function
+ * bodies are byte-for-byte unmodified; the libc-internal macros and helpers
+ * the bodies reference (FLOCKFILE_CANCELSAFE, __sgetc, _fseeko, __sdidinit,
+ * __sinit, FIX_LOCALE, __get_locale, fputwc_l, vswprintf_l) are defined here
+ * in terms of the host libc.  This file is the specification.
  */
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#define _GNU_SOURCE 1
 #endif
 
-#include <stddef.h>
-#include <stdint.h>
-#include <limits.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <wchar.h>
 #include <locale.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <wchar.h>
 
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * CHAR_BIT)
-#endif
+#define	FLOCKFILE_CANCELSAFE(fp)	flockfile(fp)
+#define	FUNLOCKFILE_CANCELSAFE()	funlockfile(fp)
+#define	FLOCKFILE(fp)			flockfile(fp)
+#define	FUNLOCKFILE(fp)			funlockfile(fp)
+#define	__sgetc(fp)			getc_unlocked(fp)
+#define	_fseeko(fp, off, whence, ltest)	fseeko((fp), (off), (whence))
+#define	__get_locale()			uselocale((locale_t)0)
+#define	FIX_LOCALE(loc)							\
+	do {								\
+		if ((loc) == NULL)					\
+			(loc) = __get_locale();				\
+	} while (0)
 
-static wint_t
-oracle_fputwc_l(wchar_t wc, FILE *fp, locale_t loc)
+static int __sdidinit = 0;
+
+static void
+__sinit(void)
 {
-	locale_t old = uselocale(loc);
-	wint_t w = fputwc(wc, fp);
-
-	uselocale(old);
-	return (w);
+	__sdidinit = 1;
 }
 
 static wint_t
-oracle_putwc_l(wchar_t wc, FILE *fp, locale_t loc)
+ref_fputwc_l(wchar_t wc, FILE *fp, locale_t loc)
 {
 	locale_t old = uselocale(loc);
-	wint_t w = fputwc(wc, fp);
+	wint_t wi = fputwc(wc, fp);
 
 	uselocale(old);
-	return (w);
+	return (wi);
 }
+#define	fputwc_l	ref_fputwc_l
 
 static int
-oracle_vswprintf_l(wchar_t *s, size_t n, locale_t loc, const wchar_t *fmt,
-    va_list ap)
+ref_vswprintf_l(wchar_t * __restrict s, size_t n, locale_t loc,
+    const wchar_t * __restrict fmt, va_list ap)
 {
 	locale_t old = uselocale(loc);
 	int r = vswprintf(s, n, fmt, ap);
@@ -53,76 +67,7 @@ oracle_vswprintf_l(wchar_t *s, size_t n, locale_t loc, const wchar_t *fmt,
 	uselocale(old);
 	return (r);
 }
-
-#define fputwc_l oracle_fputwc_l
-#define putwc_l oracle_putwc_l
-#define vswprintf_l oracle_vswprintf_l
-
-#define	FLOCKFILE_CANCELSAFE(fp)	do { (void)(fp); } while (0)
-#define	FUNLOCKFILE_CANCELSAFE()	do { } while (0)
-#define	FLOCKFILE(fp)			do { (void)(fp); } while (0)
-#define	FUNLOCKFILE(fp)			do { (void)(fp); } while (0)
-
-static int __sdidinit = 1;
-
-static void
-__sinit(void)
-{
-}
-
-int
-__sgetc(FILE *fp)
-{
-
-	return (fgetc(fp));
-}
-
-int
-_fseeko(FILE *fp, off_t off, int whence, int ign)
-{
-	(void)ign;
-
-	return (fseeko(fp, off, whence));
-}
-
-static locale_t
-oracle_get_C_locale(void)
-{
-	static locale_t c_locale = NULL;
-	static int inited = 0;
-
-	if (!inited) {
-		c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
-		inited = 1;
-	}
-	return (c_locale);
-}
-
-static inline locale_t
-get_real_locale(locale_t locale)
-{
-	switch ((intptr_t)locale) {
-	case 0:
-		return (oracle_get_C_locale());
-	case -1:
-		return (LC_GLOBAL_LOCALE);
-	default:
-		return (locale);
-	}
-}
-
-#define FIX_LOCALE(l) (l = get_real_locale(l))
-
-static inline locale_t
-__get_locale(void)
-{
-	locale_t loc;
-
-	loc = uselocale((locale_t)0);
-	if (loc == (locale_t)0)
-		return (LC_GLOBAL_LOCALE);
-	return (loc);
-}
+#define	vswprintf_l	ref_vswprintf_l
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -215,6 +160,7 @@ ref_putwc_l(wchar_t wc, FILE *fp, locale_t locale)
 	FIX_LOCALE(locale);
 	return (fputwc_l(wc, fp, locale));
 }
+#define	putwc_l	ref_putwc_l
 wint_t
 ref_putwc(wchar_t wc, FILE *fp)
 {
@@ -224,7 +170,7 @@ ref_putwc(wchar_t wc, FILE *fp)
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2002 Tim J. Robbins.
+ * Copyright (c) 2002 Tim J. Robbins
  * All rights reserved.
  *
  * Copyright (c) 2011 The FreeBSD Foundation
@@ -328,4 +274,13 @@ ref_rewind(FILE *fp)
 		errno = serrno;
 	clearerr_unlocked(fp);	/* POSIX: clear stdio error regardless */
 	FUNLOCKFILE(fp);
+}
+
+/*
+ * Reader for the private `stdio is initialised' flag tested by ref_rewind().
+ */
+int
+ref_sdidinit_state(void)
+{
+	return (__sdidinit);
 }

@@ -2543,4 +2543,78 @@ found:
 	return (len);
 }
 
+int UTF8_mbsinit(const mbstate_t *ps) { return _UTF8_mbsinit(ps); }
+std::size_t UTF8_mbrtowc(wchar_t *pwc, const char *s, std::size_t n, mbstate_t *ps)
+    { return _UTF8_mbrtowc(pwc, s, n, ps); }
+std::size_t UTF8_mbsnrtowcs(wchar_t *dst, const char **src, std::size_t nms,
+    std::size_t len, mbstate_t *ps)
+    { return _UTF8_mbsnrtowcs(dst, src, nms, len, ps); }
+std::size_t UTF8_wcrtomb(char *s, wchar_t wc, mbstate_t *ps)
+    { return _UTF8_wcrtomb(s, wc, ps); }
+std::size_t UTF8_wcsnrtombs(char *dst, const wchar_t **src, std::size_t nwc,
+    std::size_t len, mbstate_t *ps)
+    { return _UTF8_wcsnrtombs(dst, src, nwc, len, ps); }
+
+int EUC_mbsinit(const mbstate_t *ps) { return _EUC_mbsinit(ps); }
+std::size_t EUC_mbrtowc_impl(wchar_t *pwc, const char *s, std::size_t n,
+    mbstate_t *ps, uint8_t cs2, uint8_t cs2w, uint8_t cs3, uint8_t cs3w)
+    { return _EUC_mbrtowc_impl(pwc, s, n, ps, cs2, cs2w, cs3, cs3w); }
+std::size_t EUC_wcrtomb_impl(char *s, wchar_t wc, mbstate_t *ps,
+    uint8_t cs2, uint8_t cs2w, uint8_t cs3, uint8_t cs3w)
+    { return _EUC_wcrtomb_impl(s, wc, ps, cs2, cs2w, cs3, cs3w); }
+
+std::size_t EUC_CN_mbrtowc(wchar_t *pwc, const char *s, std::size_t n, mbstate_t *ps)
+    { return _EUC_CN_mbrtowc(pwc, s, n, ps); }
+std::size_t EUC_CN_wcrtomb(char *s, wchar_t wc, mbstate_t *ps)
+    { return _EUC_CN_wcrtomb(s, wc, ps); }
+std::size_t EUC_CN_mbsnrtowcs(wchar_t *dst, const char **src, std::size_t nms,
+    std::size_t len, mbstate_t *ps)
+    { return _EUC_CN_mbsnrtowcs(dst, src, nms, len, ps); }
+std::size_t EUC_CN_wcsnrtombs(char *dst, const wchar_t **src, std::size_t nwc,
+    std::size_t len, mbstate_t *ps)
+    { return _EUC_CN_wcsnrtombs(dst, src, nwc, len, ps); }
+
+std::size_t EUC_KR_mbrtowc(wchar_t *pwc, const char *s, std::size_t n, mbstate_t *ps)
+    { return _EUC_KR_mbrtowc(pwc, s, n, ps); }
+std::size_t EUC_KR_wcrtomb(char *s, wchar_t wc, mbstate_t *ps)
+    { return _EUC_KR_wcrtomb(s, wc, ps); }
+std::size_t EUC_KR_mbsnrtowcs(wchar_t *dst, const char **src, std::size_t nms,
+    std::size_t len, mbstate_t *ps)
+    { return _EUC_KR_mbsnrtowcs(dst, src, nms, len, ps); }
+std::size_t EUC_KR_wcsnrtombs(char *dst, const wchar_t **src, std::size_t nwc,
+    std::size_t len, mbstate_t *ps)
+    { return _EUC_KR_wcsnrtombs(dst, src, nwc, len, ps); }
+
+std::size_t EUC_JP_mbrtowc(wchar_t *pwc, const char *s, std::size_t n, mbstate_t *ps)
+    { return _EUC_JP_mbrtowc(pwc, s, n, ps); }
+std::size_t EUC_JP_wcrtomb(char *s, wchar_t wc, mbstate_t *ps)
+    { return _EUC_JP_wcrtomb(s, wc, ps); }
+std::size_t EUC_JP_mbsnrtowcs(wchar_t *dst, const char **src, std::size_t nms,
+    std::size_t len, mbstate_t *ps)
+    { return _EUC_JP_mbsnrtowcs(dst, src, nms, len, ps); }
+std::size_t EUC_JP_wcsnrtombs(char *dst, const wchar_t **src, std::size_t nwc,
+    std::size_t len, mbstate_t *ps)
+    { return _EUC_JP_wcsnrtombs(dst, src, nwc, len, ps); }
+
+std::size_t EUC_TW_mbrtowc(wchar_t *pwc, const char *s, std::size_t n, mbstate_t *ps)
+    { return _EUC_TW_mbrtowc(pwc, s, n, ps); }
+std::size_t EUC_TW_wcrtomb(char *s, wchar_t wc, mbstate_t *ps)
+    { return _EUC_TW_wcrtomb(s, wc, ps); }
+std::size_t EUC_TW_mbsnrtowcs(wchar_t *dst, const char **src, std::size_t nms,
+    std::size_t len, mbstate_t *ps)
+    { return _EUC_TW_mbsnrtowcs(dst, src, nms, len, ps); }
+std::size_t EUC_TW_wcsnrtombs(char *dst, const wchar_t **src, std::size_t nwc,
+    std::size_t len, mbstate_t *ps)
+    { return _EUC_TW_wcsnrtombs(dst, src, nwc, len, ps); }
+
+const int32_t *collate_substsearch(xlocale_collate *t, const wchar_t key, int pass)
+    { return substsearch(t, key, pass); }
+collate_chain_t *collate_chainsearch(xlocale_collate *t, const wchar_t *key, int *len)
+    { return chainsearch(t, key, len); }
+collate_large_t *collate_largesearch(xlocale_collate *t, const wchar_t key)
+    { return largesearch(t, key); }
+
+const _RuneLocale *default_rune_locale() { return (&_DefaultRuneLocale); }
+xlocale_collate *collate_c_table() { return (&__xlocale_C_collate); }
+
 } // namespace pbsd::lib_libc_locale::b0156

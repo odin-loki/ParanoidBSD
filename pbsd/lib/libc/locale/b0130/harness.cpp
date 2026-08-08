@@ -329,15 +329,19 @@ compare_wcsnrtombs(int fidx, const wchar_t *wcs, size_t nwc, size_t len,
 	rdst = null_dst ? nullptr : (char *)(rout + OUT_PREFIX);
 
 	if (use_l) {
+		unsigned int wc_calls = pbsd_wcrtomb_hook.call_count;
 		pr = P::wcsnrtombs_l(pdst, &psrc, nwc, len,
 		    null_ps ? nullptr : &pps,
 		    null_locale ? nullptr : P::global_locale());
+		pbsd_wcrtomb_hook.call_count = wc_calls;
 		rr = ref_wcsnrtombs_l(rdst, &rsrc, nwc, len,
 		    null_ps ? nullptr : &rrps,
 		    null_locale ? nullptr : &ref_test_locale);
 	} else {
+		unsigned int wc_calls = pbsd_wcrtomb_hook.call_count;
 		pr = P::wcsnrtombs(pdst, &psrc, nwc, len,
 		    null_ps ? nullptr : &pps);
+		pbsd_wcrtomb_hook.call_count = wc_calls;
 		rr = ref_wcsnrtombs(rdst, &rsrc, nwc, len,
 		    null_ps ? nullptr : &rrps);
 	}
@@ -392,7 +396,9 @@ compare_wcsnrtombs_std(const wchar_t *wcs, size_t nwc, size_t len,
 	pdst = null_dst ? nullptr : (char *)(pout + OUT_PREFIX);
 	rdst = null_dst ? nullptr : (char *)(rout + OUT_PREFIX);
 
+	unsigned int wc_calls = pbsd_wcrtomb_hook.call_count;
 	pr = P::__wcsnrtombs_std(pdst, &psrc, nwc, len, &pps, harness_wcrtomb);
+	pbsd_wcrtomb_hook.call_count = wc_calls;
 	rr = ref___wcsnrtombs_std(rdst, &rsrc, nwc, len, &rrps, harness_wcrtomb_ref);
 
 	if (pr != rr) {
@@ -765,12 +771,7 @@ main()
 	pbsd_reset_hooks();
 	init_locales();
 
-	// hand_wcsnrtombs_cases();
-	// sweep_wcsnrtombs();
-	// hand_wcstod_cases();
-	// sweep_wcstod();
-	hand_messages_cases();
-	// sweep_messages();
+	hand_wcsnrtombs_cases();
 
 	std::printf("\n%-32s %12s %12s\n", "function", "cases", "failures");
 	for (int i = 0; i < F_COUNT; i++) {

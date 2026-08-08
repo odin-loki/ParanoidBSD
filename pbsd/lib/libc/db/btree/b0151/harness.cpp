@@ -2,6 +2,7 @@
  * Differential harness for batch b0151: btree search/overflow/utils/debug.
  */
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -45,31 +46,61 @@ typedef struct _page {
 	indx_t linp[1];
 } PAGE;
 
+typedef struct _epgno {
+	pgno_t pgno;
+	indx_t index;
+} EPGNO;
+
 typedef struct _epg {
 	PAGE *page;
 	indx_t index;
 } EPG;
+
+typedef struct _cursor {
+	EPGNO pg;
+	DBT key;
+	recno_t rcursor;
+	uint8_t flags;
+} CURSOR;
+
+typedef struct _bleaf {
+	u_int32_t ksize;
+	u_int32_t dsize;
+	u_char flags;
+	char bytes[1];
+} BLEAF;
 
 typedef struct _btree {
 	MPOOL *bt_mp;
 	DB *bt_dbp;
 	EPG bt_cur;
 	PAGE *bt_pinned;
-	char bt_cursor[64];
+	CURSOR bt_cursor;
 	EPGNO bt_stack[50];
 	EPGNO *bt_sp;
 	DBT bt_rkey;
 	DBT bt_rdata;
-	char bt_pad[256];
+	int bt_fd;
+	pgno_t bt_free;
 	u_int32_t bt_psize;
-	u_int32_t flags;
+	indx_t bt_ovflsize;
+	int bt_lorder;
+	int bt_order;
+	EPGNO bt_last;
 	int (*bt_cmp)(const DBT *, const DBT *);
+	size_t (*bt_pfx)(const DBT *, const DBT *);
+	int (*bt_irec)(struct _btree *, recno_t);
+	void *bt_rfp;
+	int bt_rfd;
+	char *bt_cmap;
+	char *bt_smap;
+	char *bt_emap;
+	size_t bt_msize;
+	recno_t bt_nrecs;
+	size_t bt_reclen;
+	uint8_t bt_bval;
+	u_int32_t flags;
 } BTREE;
-
-typedef struct _epgno {
-	pgno_t pgno;
-	indx_t index;
-} EPGNO;
 
 typedef struct {
 	unsigned get_calls;
@@ -123,6 +154,12 @@ int harness_cmp(const DBT *a, const DBT *b)
 }
 
 namespace {
+
+int port_cmp_shim(const P::DBT *a, const P::DBT *b)
+{
+	return ::harness_cmp(reinterpret_cast<const DBT *>(a),
+	    reinterpret_cast<const DBT *>(b));
+}
 
 constexpr unsigned char GUARD = 0x7f;
 constexpr size_t PAGE_SZ = 512;
@@ -276,7 +313,7 @@ void init_tree(P::BTREE &tp, P::MPOOL &mp, P::DB &db, u_int32_t flags,
 	tp.bt_psize = psize;
 	tp.bt_sp = tp.bt_stack;
 	tp.flags = flags;
-	tp.bt_cmp = harness_cmp;
+	tp.bt_cmp = port_cmp_shim;
 	db.internal = &tp;
 }
 
@@ -398,13 +435,14 @@ PAGE *make_overflow_page(pgno_t pgno, pgno_t nextpg, const void *data,
 
 void check_defcmp(const u_char *a, size_t asz, const u_char *b, size_t bsz)
 {
-	DBT da, db;
+	P::DBT da, db;
 	da.data = (void *)a;
 	da.size = asz;
 	db.data = (void *)b;
 	db.size = bsz;
 	int rp = P::__bt_defcmp(&da, &db);
-	int rr = ref___bt_defcmp(&da, &db);
+	int rr = ref___bt_defcmp(reinterpret_cast<DBT *>(&da),
+	    reinterpret_cast<DBT *>(&db));
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d asz=%zu bsz=%zu",
 	    rp, rr, asz, bsz);
@@ -413,13 +451,14 @@ void check_defcmp(const u_char *a, size_t asz, const u_char *b, size_t bsz)
 
 void check_defpfx(const u_char *a, size_t asz, const u_char *b, size_t bsz)
 {
-	DBT da, db;
+	P::DBT da, db;
 	da.data = (void *)a;
 	da.size = asz;
 	db.data = (void *)b;
 	db.size = bsz;
 	size_t rp = P::__bt_defpfx(&da, &db);
-	size_t rr = ref___bt_defpfx(&da, &db);
+	size_t rr = ref___bt_defpfx(reinterpret_cast<DBT *>(&da),
+	    reinterpret_cast<DBT *>(&db));
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "ret port=%zu ref=%zu asz=%zu bsz=%zu",
 	    rp, rr, asz, bsz);
@@ -440,7 +479,7 @@ void check_bt_cmp_leaf(int nents, indx_t idx, const u_char *key, size_t ksz,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	DBT k;
+	P::DBT k;
 
 	test_mock_reset();
 	init_tree(tp, mp_p, db_p, tflags, PAGE_SZ);
@@ -463,7 +502,7 @@ void check_bt_cmp_leaf(int nents, indx_t idx, const u_char *key, size_t ksz,
 	k.size = ksz;
 
 	int rp = P::__bt_cmp(&tp, &k, &ep);
-	int rr = ref___bt_cmp(&tr, &k, &er);
+	int rr = ref___bt_cmp(&tr, reinterpret_cast<DBT *>(&k), &er);
 	char msg[160];
 	std::snprintf(msg, sizeof(msg),
 	    "ret port=%d ref=%d idx=%u nents=%d ksz=%zu", rp, rr,
@@ -484,7 +523,7 @@ void check_bt_cmp_internal0(void)
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	DBT k;
+	P::DBT k;
 	u_char key[4] = { 1, 2, 3, 4 };
 
 	test_mock_reset();
@@ -510,7 +549,7 @@ void check_bt_cmp_internal0(void)
 	k.size = 4;
 
 	int rp = P::__bt_cmp(&tp, &k, &ep);
-	int rr = ref___bt_cmp(&tr, &k, &er);
+	int rr = ref___bt_cmp(&tr, reinterpret_cast<DBT *>(&k), &er);
 	check_eq(F_BT_CMP, rp == rr && rp == 1, "internal index 0 sentinel");
 }
 
@@ -542,7 +581,7 @@ void check_bt_cmp_bigkey(const u_char *key, size_t ksz)
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	DBT k;
+	P::DBT k;
 	pgno_t ovpg = 50;
 
 	test_mock_reset();
@@ -569,7 +608,7 @@ void check_bt_cmp_bigkey(const u_char *key, size_t ksz)
 	k.size = ksz;
 
 	int rp = P::__bt_cmp(&tp, &k, &ep);
-	int rr = ref___bt_cmp(&tr, &k, &er);
+	int rr = ref___bt_cmp(&tr, reinterpret_cast<DBT *>(&k), &er);
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "bigkey port=%d ref=%d ksz=%zu", rp, rr,
 	    ksz);
@@ -600,7 +639,8 @@ void check_bt_ret(int copy, u_int32_t tflags, u_char bflags, u_int32_t ksz,
 	u_int32_t ksizes[1] = { ksz };
 	u_int32_t dsizes[1] = { dsz };
 	u_char eflags[1] = { bflags };
-	DBT key_p, key_r, data_p, data_r, rkey_p, rkey_r, rdata_p, rdata_r;
+	P::DBT key_p, data_p, rkey_p, rdata_p;
+	DBT key_r, data_r, rkey_r, rdata_r;
 
 	test_mock_reset();
 	init_tree(tp, mp_p, db_p, tflags, PAGE_SZ);
@@ -876,7 +916,7 @@ void check_bt_search_leaf(int nents, const u_char *key, size_t ksz,
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	DBT k;
+	P::DBT k;
 	int exact_p = -1;
 	int exact_r = -1;
 	u_int32_t ksizes[8] = { 2, 4, 6, 8, 10, 12, 14, 16 };
@@ -933,7 +973,7 @@ void check_bt_search_internal(int nleaf, const u_char *key, size_t ksz)
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	DBT k;
+	P::DBT k;
 	int exact_p = -1;
 	int exact_r = -1;
 	u_int32_t iksizes[3] = { 2, 8, 16 };
@@ -998,7 +1038,7 @@ void check_bt_search_snext(int match_next)
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	DBT k;
+	P::DBT k;
 	int exact_p = 0;
 	int exact_r = 0;
 	u_char key0[4] = { 0xa0, 0xa1, 0xa2, 0xa3 };
@@ -1061,7 +1101,7 @@ void check_bt_search_sprev(int match_prev)
 	BTREE tr;
 	MPOOL mp_r;
 	DB db_r;
-	DBT k;
+	P::DBT k;
 	int exact_p = 0;
 	int exact_r = 0;
 	u_char key0[4] = { 0xa0, 0xa1, 0xa2, 0xa3 };

@@ -128,7 +128,7 @@ tmpnam(char *s)
 	if (s == NULL)
 		s = buf;
 	(void)snprintf(s, L_tmpnam, "%stmp.%lu.XXXXXX", P_tmpdir, tmpcount);
-	--tmpcount;
+	++tmpcount;
 	return (_mktemp(s));
 }
 

@@ -283,6 +283,13 @@ dispatch_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 }
 
 inline void
+reset_wcsnrtombs_ps()
+{
+	std::memset(&::port_global_ctype.wcsnrtombs, 0,
+	    sizeof(::port_global_ctype.wcsnrtombs));
+}
+
+inline void
 init_locale()
 {
 	std::memset(&::port_global_ctype, 0, sizeof(::port_global_ctype));

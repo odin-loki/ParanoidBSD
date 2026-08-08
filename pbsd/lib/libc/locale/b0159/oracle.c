@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 /*
  * PBSD batch b0159 -- reference oracle.
  *
@@ -34,19 +35,15 @@ typedef union {
 } pbsd_mbstate_t;
 typedef pbsd_mbstate_t mbstate_t;
 
-#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdarg.h>
+#define _BITS_TYPES_LOCALE_T_H	1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
 #include <wchar.h>
 
 typedef int nl_item;

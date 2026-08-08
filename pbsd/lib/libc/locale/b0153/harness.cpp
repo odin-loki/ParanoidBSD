@@ -2,15 +2,13 @@
  * Differential harness for batch b0153.
  */
 
+import pbsd.lib.libc.locale.b0153;
+
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
-#include <cwchar>
-
-import pbsd.lib.libc.locale.b0153;
 
 namespace P = pbsd::lib_libc_locale::b0153;
 
@@ -50,40 +48,8 @@ typedef struct {
 	int		__variable_len;
 } ref_rune_locale;
 
-struct ref_xlocale_component {
-	long		retain_count;
-	void		(*destructor)(void *);
-	char		locale[32];
-	char		version[12];
-};
-
-struct ref_xlocale {
-	long		retain_count;
-	void		(*destructor)(void *);
-	struct ref_xlocale_component *components[6];
-	int		monetary_locale_changed;
-	int		using_monetary_locale;
-	int		numeric_locale_changed;
-	int		using_numeric_locale;
-	int		using_time_locale;
-	int		using_messages_locale;
-	struct lconv	lconv;
-	char		*csym;
-};
-
-struct port_xlocale {
-	long		retain_count;
-	void		(*destructor)(void *);
-	struct ref_xlocale_component *components[6];
-	int		monetary_locale_changed;
-	int		using_monetary_locale;
-	int		numeric_locale_changed;
-	int		using_numeric_locale;
-	int		using_time_locale;
-	int		using_messages_locale;
-	struct lconv	lconv;
-	char		*csym;
-};
+struct ref_xlocale;
+struct lconv;
 
 struct ref_xlocale_ctype {
 	size_t		(*__mbrtowc)(wchar_t *, const char *, size_t,
@@ -98,11 +64,6 @@ struct ref_xlocale_ctype {
 	int		__mb_cur_max;
 	int		__mb_sb_limit;
 };
-
-typedef struct {
-	int			monetary_changed;
-	int			numeric_changed;
-} pbsd_localeconv_hook_flags_t;
 
 typedef struct {
 	int			open_fail;
@@ -129,17 +90,28 @@ typedef struct {
 	size_t			mbsrtowcs_count;
 } pbsd_wcsftime_hook_t;
 
-extern struct ref_xlocale	ref_test_locale;
-extern struct port_xlocale	port_test_locale;
-extern pbsd_ldpart_hook_t	pbsd_ldpart_hook;
-extern pbsd_wcsftime_hook_t	pbsd_wcsftime_hook;
+struct harness_tm {
+	int	tm_sec;
+	int	tm_min;
+	int	tm_hour;
+	int	tm_mday;
+	int	tm_mon;
+	int	tm_year;
+	int	tm_wday;
+	int	tm_yday;
+	int	tm_isdst;
+};
 
 void	pbsd_reset_hooks(void);
+pbsd_ldpart_hook_t	*pbsd_get_ldpart_hook(void);
+pbsd_wcsftime_hook_t	*pbsd_get_wcsftime_hook(void);
+void	ref_set_localeconv_flags(int mon, int num);
+struct ref_xlocale	*ref_get_test_locale(void);
 
-struct lconv	*ref_localeconv_l(ref_xlocale *);
+struct lconv	*ref_localeconv_l(struct ref_xlocale *);
 struct lconv	*ref_localeconv(void);
 size_t	ref_wcsftime_l(wchar_t *, size_t, const wchar_t *, const struct tm *,
-	    ref_xlocale *);
+	    struct ref_xlocale *);
 size_t	ref_wcsftime(wchar_t *, size_t, const wchar_t *, const struct tm *);
 int	ref___part_load_locale(const char *, int *, char **, const char *,
 	    int, int, const char **);
@@ -175,6 +147,18 @@ static int nprinted[F_COUNT];
 static constexpr unsigned char GUARD = 0x7f;
 static constexpr wchar_t WGUARD = (wchar_t)0x7f7f;
 static constexpr long long SWEEP = 200000;
+
+static pbsd_ldpart_hook_t &
+ldhook()
+{
+	return (*pbsd_get_ldpart_hook());
+}
+
+static pbsd_wcsftime_hook_t &
+wchook()
+{
+	return (*pbsd_get_wcsftime_hook());
+}
 
 static uint64_t rng = 0xB0153001ULL;
 
@@ -259,10 +243,12 @@ fill_wguard(wchar_t *b, size_t n)
 static void
 set_gb_state(P::mbstate_t &s, int count, unsigned char b0 = 0, unsigned char b1 = 0)
 {
-	std::memset(&s, 0, sizeof(s));
-	s.__mbstate8[0] = (char)count;
-	s.__mbstate8[1] = (char)b0;
-	s.__mbstate8[2] = (char)b1;
+	unsigned char buf[128]{};
+
+	buf[0] = (unsigned char)count;
+	buf[1] = b0;
+	buf[2] = b1;
+	std::memcpy(&s, buf, sizeof(s));
 }
 
 static void
@@ -301,25 +287,21 @@ lconv_eq(const struct lconv *a, const struct lconv *b)
 }
 
 static void
-prep_localeconv(ref_xlocale &rl, P::xlocale &pl, int mon, int num)
+prep_localeconv(int mon, int num)
 {
-	std::memset(&rl, 0, sizeof(rl));
-	std::memset(&pl, 0, sizeof(pl));
-	rl.monetary_locale_changed = mon;
-	rl.numeric_locale_changed = num;
-	pl.monetary_locale_changed = mon;
-	pl.numeric_locale_changed = num;
+	ref_set_localeconv_flags(mon, num);
+	P::set_localeconv_flags(mon, num);
 }
 
 static bool
-run_localeconv(int f, bool use_l, ref_xlocale &rl, P::xlocale &pl)
+run_localeconv(int f, bool use_l)
 {
 	struct lconv *pr, *rr;
 
 	ncase[f]++;
 	if (use_l) {
-		pr = P::localeconv_l(reinterpret_cast<P::locale_t>(&pl));
-		rr = ref_localeconv_l(&rl);
+		pr = P::localeconv_l(P::test_locale());
+		rr = ref_localeconv_l(ref_get_test_locale());
 	} else {
 		pr = P::localeconv();
 		rr = ref_localeconv();
@@ -332,84 +314,50 @@ run_localeconv(int f, bool use_l, ref_xlocale &rl, P::xlocale &pl)
 		report(f, "fields");
 		return (false);
 	}
-	if (rl.monetary_locale_changed != pl.monetary_locale_changed ||
-	    rl.numeric_locale_changed != pl.numeric_locale_changed) {
-		report(f, "flags");
-		return (false);
-	}
-	if (!use_l) {
-		if (ref_test_locale.monetary_locale_changed !=
-		    port_test_locale.monetary_locale_changed ||
-		    ref_test_locale.numeric_locale_changed !=
-		    port_test_locale.numeric_locale_changed) {
-			report(f, "gflags");
-			return (false);
-		}
-	}
 	return (true);
 }
 
 static void
 edge_localeconv(int f, bool use_l)
 {
-	ref_xlocale rl{};
-	P::xlocale pl{};
-
-	prep_localeconv(rl, pl, 1, 1);
-	run_localeconv(f, use_l, rl, pl);
-	prep_localeconv(rl, pl, 1, 0);
-	run_localeconv(f, use_l, rl, pl);
-	prep_localeconv(rl, pl, 0, 1);
-	run_localeconv(f, use_l, rl, pl);
-	prep_localeconv(rl, pl, 0, 0);
-	run_localeconv(f, use_l, rl, pl);
-	if (!use_l) {
-		ref_test_locale.monetary_locale_changed = 1;
-		ref_test_locale.numeric_locale_changed = 1;
-		port_test_locale.monetary_locale_changed = 1;
-		port_test_locale.numeric_locale_changed = 1;
-		run_localeconv(f, false, rl, pl);
-	}
+	prep_localeconv(1, 1);
+	run_localeconv(f, use_l);
+	prep_localeconv(1, 0);
+	run_localeconv(f, use_l);
+	prep_localeconv(0, 1);
+	run_localeconv(f, use_l);
+	prep_localeconv(0, 0);
+	run_localeconv(f, use_l);
 }
 
 static void
 sweep_localeconv(int f, bool use_l)
 {
-	ref_xlocale rl{};
-	P::xlocale pl{};
-
 	for (long long i = 0; i < SWEEP; i++) {
-		int mon = (int)(u32(2));
-		int num = (int)(u32(2));
-		prep_localeconv(rl, pl, mon, num);
-		if (!use_l) {
-		ref_test_locale.monetary_locale_changed = mon;
-		ref_test_locale.numeric_locale_changed = num;
-		port_test_locale.monetary_locale_changed = mon;
-		port_test_locale.numeric_locale_changed = num;
-		}
-		run_localeconv(f, use_l, rl, pl);
+		prep_localeconv((int)u32(2), (int)u32(2));
+		run_localeconv(f, use_l);
 	}
 }
 
 static bool
 run_wcsftime(int f, bool use_l, const wchar_t *fmt, size_t maxsize,
-    const struct tm *tm, bool null_wcs)
+    const harness_tm *htm, bool null_wcs)
 {
 	wchar_t pw[64], rw[64];
 	size_t pr, rr;
 	int pe, re;
+	const struct tm *tm = reinterpret_cast<const struct tm *>(htm);
 
 	fill_wguard(pw, sizeof(pw) / sizeof(pw[0]));
 	fill_wguard(rw, sizeof(rw) / sizeof(rw[0]));
 	errno = 0;
 	if (use_l) {
 		pr = P::wcsftime_l(null_wcs ? nullptr : pw, maxsize, fmt, tm,
-		    reinterpret_cast<P::locale_t>(&ref_test_locale));
+		    P::test_locale());
 		pe = errno;
 		errno = 0;
 		rr = ref_wcsftime_l(null_wcs ? nullptr : rw, maxsize, fmt, tm,
-		    &ref_test_locale);
+		    ref_get_test_locale());
 		re = errno;
 	} else {
 		pr = P::wcsftime(null_wcs ? nullptr : pw, maxsize, fmt, tm);
@@ -420,7 +368,8 @@ run_wcsftime(int f, bool use_l, const wchar_t *fmt, size_t maxsize,
 	}
 	if (!chk_ret(f, pr, rr, pe, re))
 		return (false);
-	if (!null_wcs && pr > 0 && std::memcmp(pw, rw, (pr + 1) * sizeof(wchar_t)) != 0) {
+	if (!null_wcs && pr > 0 &&
+	    std::memcmp(pw, rw, (pr + 1) * sizeof(wchar_t)) != 0) {
 		report(f, "wbuf");
 		return (false);
 	}
@@ -430,7 +379,7 @@ run_wcsftime(int f, bool use_l, const wchar_t *fmt, size_t maxsize,
 static void
 edge_wcsftime(int f, bool use_l)
 {
-	struct tm tm{};
+	harness_tm tm{};
 
 	tm.tm_year = 100;
 	tm.tm_mon = 0;
@@ -439,43 +388,43 @@ edge_wcsftime(int f, bool use_l)
 	run_wcsftime(f, use_l, L"ab", 16, &tm, false);
 	run_wcsftime(f, use_l, L"", 8, &tm, false);
 
-	pbsd_wcsftime_hook.wcsrtombs_fail = 1;
+	wchook().wcsrtombs_fail = 1;
 	run_wcsftime(f, use_l, L"x", 8, &tm, false);
-	pbsd_wcsftime_hook.wcsrtombs_fail = 0;
+	wchook().wcsrtombs_fail = 0;
 
-	pbsd_wcsftime_hook.fail_malloc_at = 1;
-	pbsd_wcsftime_hook.malloc_calls = 0;
+	wchook().fail_malloc_at = 1;
+	wchook().malloc_calls = 0;
 	run_wcsftime(f, use_l, L"x", 8, &tm, false);
-	pbsd_wcsftime_hook.fail_malloc_at = 0;
+	wchook().fail_malloc_at = 0;
 
-	pbsd_wcsftime_hook.fail_malloc_at = 2;
-	pbsd_wcsftime_hook.malloc_calls = 0;
+	wchook().fail_malloc_at = 2;
+	wchook().malloc_calls = 0;
 	run_wcsftime(f, use_l, L"x", 8, &tm, false);
-	pbsd_wcsftime_hook.fail_malloc_at = 0;
+	wchook().fail_malloc_at = 0;
 
-	pbsd_wcsftime_hook.strftime_zero = 1;
+	wchook().strftime_zero = 1;
 	run_wcsftime(f, use_l, L"x", 8, &tm, false);
-	pbsd_wcsftime_hook.strftime_zero = 0;
+	wchook().strftime_zero = 0;
 
 	run_wcsftime(f, use_l, L"x", SIZE_MAX / MB_CUR_MAX, &tm, false);
 
-	pbsd_wcsftime_hook.mbsrtowcs_fail = 1;
+	wchook().mbsrtowcs_fail = 1;
 	run_wcsftime(f, use_l, L"x", 16, &tm, false);
-	pbsd_wcsftime_hook.mbsrtowcs_fail = 0;
+	wchook().mbsrtowcs_fail = 0;
 
-	pbsd_wcsftime_hook.mbsrtowcs_incomplete = 1;
+	wchook().mbsrtowcs_incomplete = 1;
 	run_wcsftime(f, use_l, L"x", 16, &tm, false);
-	pbsd_wcsftime_hook.mbsrtowcs_incomplete = 0;
+	wchook().mbsrtowcs_incomplete = 0;
 
-	pbsd_wcsftime_hook.mbsrtowcs_dstp_left = 1;
+	wchook().mbsrtowcs_dstp_left = 1;
 	run_wcsftime(f, use_l, L"x", 16, &tm, false);
-	pbsd_wcsftime_hook.mbsrtowcs_dstp_left = 0;
+	wchook().mbsrtowcs_dstp_left = 0;
 }
 
 static void
 sweep_wcsftime(int f, bool use_l)
 {
-	struct tm tm{};
+	harness_tm tm{};
 	wchar_t fmt[16];
 
 	for (long long i = 0; i < SWEEP; i++) {
@@ -486,25 +435,19 @@ sweep_wcsftime(int f, bool use_l)
 		tm.tm_sec = (int)u32(60);
 		tm.tm_min = (int)u32(60);
 		tm.tm_hour = (int)u32(24);
-		if (u32(8) == 0)
-			pbsd_wcsftime_hook.wcsrtombs_fail = 1;
-		else
-			pbsd_wcsftime_hook.wcsrtombs_fail = 0;
+		wchook().wcsrtombs_fail = (u32(8) == 0);
 		if (u32(16) == 0) {
-			pbsd_wcsftime_hook.fail_malloc_at = 1 + (int)u32(3);
-			pbsd_wcsftime_hook.malloc_calls = 0;
+			wchook().fail_malloc_at = 1 + (int)u32(3);
+			wchook().malloc_calls = 0;
 		} else
-			pbsd_wcsftime_hook.fail_malloc_at = 0;
-		if (u32(32) == 0)
-			pbsd_wcsftime_hook.strftime_zero = 1;
-		else
-			pbsd_wcsftime_hook.strftime_zero = 0;
+			wchook().fail_malloc_at = 0;
+		wchook().strftime_zero = (u32(32) == 0);
 		run_wcsftime(f, use_l, fmt, u32(32) + 1, &tm, u32(4) == 0);
 	}
 }
 
 static bool
-run_part_load(const char *name, int maxl, int minl, int expect, int *using_out)
+run_part_load(const char *name, int maxl, int minl, int expect)
 {
 	const char *dst_p[8]{};
 	const char *dst_r[8]{};
@@ -527,8 +470,6 @@ run_part_load(const char *name, int maxl, int minl, int expect, int *using_out)
 		report(f, "using");
 		return (false);
 	}
-	if (using_out != nullptr)
-		*using_out = up;
 	if (pr == 0) {
 		for (int i = 0; i < maxl; i++) {
 			if ((dst_p[i] == nullptr) != (dst_r[i] == nullptr) ||
@@ -549,49 +490,48 @@ edge_part_load()
 {
 	static const char good[] = "line1\nline2\nline3\n";
 
-	pbsd_ldpart_hook.file_content = good;
-	pbsd_ldpart_hook.file_size = (off_t)(sizeof(good) - 1);
-	run_part_load("C", 3, 2, 1, nullptr);
-	run_part_load("POSIX", 3, 2, 1, nullptr);
-	run_part_load("C.UTF-8", 3, 2, 1, nullptr);
+	ldhook().file_content = good;
+	ldhook().file_size = (off_t)(sizeof(good) - 1);
+	run_part_load("C", 3, 2, 1);
+	run_part_load("POSIX", 3, 2, 1);
+	run_part_load("C.UTF-8", 3, 2, 1);
+	run_part_load("en_US", 3, 2, 0);
 
-	run_part_load("en_US", 3, 2, 0, nullptr);
+	ldhook().open_fail = 1;
+	ldhook().open_errno = ENOENT;
+	run_part_load("xx", 3, 2, -1);
+	ldhook().open_fail = 0;
 
-	pbsd_ldpart_hook.open_fail = 1;
-	pbsd_ldpart_hook.open_errno = ENOENT;
-	run_part_load("xx", 3, 2, -1, nullptr);
-	pbsd_ldpart_hook.open_fail = 0;
+	ldhook().fstat_fail = 1;
+	ldhook().fstat_errno = EIO;
+	run_part_load("xx", 3, 2, -1);
+	ldhook().fstat_fail = 0;
 
-	pbsd_ldpart_hook.fstat_fail = 1;
-	pbsd_ldpart_hook.fstat_errno = EIO;
-	run_part_load("xx", 3, 2, -1, nullptr);
-	pbsd_ldpart_hook.fstat_fail = 0;
+	ldhook().file_size = 0;
+	run_part_load("xx", 3, 2, -1);
+	ldhook().file_size = (off_t)(sizeof(good) - 1);
 
-	pbsd_ldpart_hook.file_size = 0;
-	run_part_load("xx", 3, 2, -1, nullptr);
-	pbsd_ldpart_hook.file_size = (off_t)(sizeof(good) - 1);
-
-	pbsd_ldpart_hook.malloc_fail = 1;
-	run_part_load("xx", 3, 2, -1, nullptr);
-	pbsd_ldpart_hook.malloc_fail = 0;
+	ldhook().malloc_fail = 1;
+	run_part_load("xx", 3, 2, -1);
+	ldhook().malloc_fail = 0;
 
 	static const char bad_nl[] = "noeol";
-	pbsd_ldpart_hook.file_content = bad_nl;
-	pbsd_ldpart_hook.file_size = (off_t)(sizeof(bad_nl) - 1);
-	run_part_load("xx", 3, 2, -1, nullptr);
+	ldhook().file_content = bad_nl;
+	ldhook().file_size = (off_t)(sizeof(bad_nl) - 1);
+	run_part_load("xx", 3, 2, -1);
 
 	static const char one_line[] = "only\n";
-	pbsd_ldpart_hook.file_content = one_line;
-	pbsd_ldpart_hook.file_size = (off_t)(sizeof(one_line) - 1);
-	run_part_load("xx", 3, 3, -1, nullptr);
+	ldhook().file_content = one_line;
+	ldhook().file_size = (off_t)(sizeof(one_line) - 1);
+	run_part_load("xx", 3, 3, -1);
 
-	pbsd_ldpart_hook.file_content = good;
-	pbsd_ldpart_hook.file_size = (off_t)(sizeof(good) - 1);
+	ldhook().file_content = good;
+	ldhook().file_size = (off_t)(sizeof(good) - 1);
 
-	pbsd_ldpart_hook.read_fail = 1;
-	pbsd_ldpart_hook.read_errno = EIO;
-	run_part_load("xx", 3, 2, -1, nullptr);
-	pbsd_ldpart_hook.read_fail = 0;
+	ldhook().read_fail = 1;
+	ldhook().read_errno = EIO;
+	run_part_load("xx", 3, 2, -1);
+	ldhook().read_fail = 0;
 }
 
 static void
@@ -608,17 +548,20 @@ sweep_part_load()
 			content[pos++] = '\n';
 		}
 		content[pos] = '\0';
-		pbsd_ldpart_hook.file_content = content;
-		pbsd_ldpart_hook.file_size = (off_t)pos;
-		pbsd_ldpart_hook.open_fail = (u32(20) == 0);
-		pbsd_ldpart_hook.open_errno = ENOENT;
-		pbsd_ldpart_hook.fstat_fail = (u32(25) == 0);
-		pbsd_ldpart_hook.malloc_fail = (u32(30) == 0);
-		pbsd_ldpart_hook.read_fail = (u32(35) == 0);
-		run_part_load(names[u32(6)], 3, 2,
-		    pbsd_ldpart_hook.open_fail || pbsd_ldpart_hook.fstat_fail ||
-		    pbsd_ldpart_hook.malloc_fail || pbsd_ldpart_hook.read_fail ?
-		    -1 : (names[u32(6)][0] == 'C' ? 1 : 0), nullptr);
+		ldhook().file_content = content;
+		ldhook().file_size = (off_t)pos;
+		ldhook().open_fail = (u32(20) == 0);
+		ldhook().open_errno = ENOENT;
+		ldhook().fstat_fail = (u32(25) == 0);
+		ldhook().malloc_fail = (u32(30) == 0);
+		ldhook().read_fail = (u32(35) == 0);
+		int expect = -1;
+		if (!ldhook().open_fail && !ldhook().fstat_fail &&
+		    !ldhook().malloc_fail && !ldhook().read_fail) {
+			const char *name = names[u32(6)];
+			expect = (name[0] == 'C') ? 1 : 0;
+		}
+		run_part_load(names[u32(6)], 3, 2, expect);
 	}
 }
 
@@ -658,9 +601,7 @@ test_gb2312_mbsinit(int f)
 static bool
 run_gb_check(int f, const char *s, size_t n)
 {
-	int pr = P::GB2312_check(s, n);
-	int rr = ref__GB2312_check(s, n);
-	return (chk_int(f, pr, rr));
+	return (chk_int(f, P::GB2312_check(s, n), ref__GB2312_check(s, n)));
 }
 
 static void

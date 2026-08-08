@@ -15,6 +15,14 @@ module;
 
 export module pbsd.lib.libc.db.db.b0157;
 
+extern "C" {
+void *__bt_open(const char *, int, int, const void *, int);
+void *__hash_open(const char *, int, int, const void *, int);
+void *__rec_open(const char *, int, int, const void *, int);
+}
+
+export namespace pbsd::lib_libc_db_db::b0157 {
+
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)
 #endif
@@ -52,43 +60,7 @@ typedef struct __db {
 	int (*fd)(const struct __db *);
 } DB;
 
-typedef struct {
-	unsigned long	flags;
-	unsigned int	cachesize;
-	int		maxkeypage;
-	int		minkeypage;
-	unsigned int	psize;
-	int		(*compare)(const DBT *, const DBT *);
-	size_t		(*prefix)(const DBT *, const DBT *);
-	int		lorder;
-} BTREEINFO;
-
-typedef struct {
-	unsigned int	bsize;
-	unsigned int	ffactor;
-	unsigned int	nelem;
-	unsigned int	cachesize;
-	uint32_t	(*hash)(const void *, size_t);
-	int	lorder;
-} HASHINFO;
-
-typedef struct {
-	unsigned long	flags;
-	unsigned int	cachesize;
-	unsigned int	psize;
-	int		lorder;
-	size_t		reclen;
-	unsigned char	bval;
-	char	*bfname;
-} RECNOINFO;
-
-extern "C" {
-DB *__bt_open(const char *, int, int, const BTREEINFO *, int);
-DB *__hash_open(const char *, int, int, const HASHINFO *, int);
-DB *__rec_open(const char *, int, int, const RECNOINFO *, int);
-}
-
-export namespace pbsd::lib_libc_db_db::b0157 {
+typedef unsigned int u_int;
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -145,13 +117,13 @@ dbopen(const char *fname, int flags, int mode, DBTYPE type, const void *openinfo
 	if ((flags & ~(USE_OPEN_FLAGS | DB_FLAGS)) == 0)
 		switch (type) {
 		case DB_BTREE:
-			return (__bt_open(fname, flags & USE_OPEN_FLAGS,
+			return ((DB *)__bt_open(fname, flags & USE_OPEN_FLAGS,
 			    mode, openinfo, flags & DB_FLAGS));
 		case DB_HASH:
-			return (__hash_open(fname, flags & USE_OPEN_FLAGS,
+			return ((DB *)__hash_open(fname, flags & USE_OPEN_FLAGS,
 			    mode, openinfo, flags & DB_FLAGS));
 		case DB_RECNO:
-			return (__rec_open(fname, flags & USE_OPEN_FLAGS,
+			return ((DB *)__rec_open(fname, flags & USE_OPEN_FLAGS,
 			    mode, openinfo, flags & DB_FLAGS));
 		}
 	errno = EINVAL;

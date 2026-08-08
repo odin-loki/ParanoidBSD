@@ -893,9 +893,9 @@ void check_bt_split_leaf_root(int nents, u_int32_t argskip, int use_recno,
 	unsigned char databuf[16];
 	P::DBT key_p, data_p;
 	DBT key_r, data_r;
-	u_int32_t ks[] = { 4, 6, 5 };
-	u_int32_t ds[] = { 3, 4, 2 };
-	u_char ef[] = { 0, 0, 0 };
+	u_int32_t ks[] = { 4, 6, 5, 7, 8, 3, 9, 2 };
+	u_int32_t ds[] = { 3, 4, 2, 5, 6, 1, 7, 3 };
+	u_char ef[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 	test_mock_reset();
 	init_tree(tp, mp_p, db_p, use_recno ? R_RECNO : 0, PAGE_SZ);

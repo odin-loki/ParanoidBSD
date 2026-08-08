@@ -368,6 +368,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/nvmecontrol/nc_util_m/port.cppm
   sbin/ping/utils_m/port.cppm
   sbin/rcorder/ealloc_m/port.cppm
+  sys/fs/procfs/b0161/port.cppm
   sys/fs/procfs/procfs_type_m/port.cppm
   sys/geom/uzip/b0144/port.cppm
   sys/kern/b0138/port.cppm
@@ -407,6 +408,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   usr.bin/rpcgen/rpc_tblout_m/port.cppm
   usr.bin/sort/mem_m/port.cppm
   usr.bin/stdbuf/stdbuf_m/port.cppm
+  usr.bin/true/b0165/port.cppm
   usr.bin/tty/tty_m/port.cppm
   usr.bin/w/proc_compare_m/port.cppm
   usr.sbin/accton/accton_m/port.cppm

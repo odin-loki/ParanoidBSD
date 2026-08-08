@@ -179,8 +179,8 @@ open_mock_reset()
 	g_open.rec_db.type = DB_RECNO;
 }
 
-extern "C" DB *
-__bt_open(const char *fname, int flags, int mode, const BTREEINFO *openinfo, int dflags)
+extern "C" void *
+__bt_open(const char *fname, int flags, int mode, const void *openinfo, int dflags)
 {
 	g_open.bt_calls++;
 	g_open.last_bt.which = 0;
@@ -192,8 +192,8 @@ __bt_open(const char *fname, int flags, int mode, const BTREEINFO *openinfo, int
 	return (&g_open.bt_db);
 }
 
-extern "C" DB *
-__hash_open(const char *fname, int flags, int mode, const HASHINFO *openinfo, int dflags)
+extern "C" void *
+__hash_open(const char *fname, int flags, int mode, const void *openinfo, int dflags)
 {
 	g_open.hash_calls++;
 	g_open.last_hash.which = 1;
@@ -205,8 +205,8 @@ __hash_open(const char *fname, int flags, int mode, const HASHINFO *openinfo, in
 	return (&g_open.hash_db);
 }
 
-extern "C" DB *
-__rec_open(const char *fname, int flags, int mode, const RECNOINFO *openinfo, int dflags)
+extern "C" void *
+__rec_open(const char *fname, int flags, int mode, const void *openinfo, int dflags)
 {
 	g_open.rec_calls++;
 	g_open.last_rec.which = 2;
@@ -985,8 +985,8 @@ edge_wrappers()
 	    RET_SUCCESS, RET_SUCCESS, 3, sizeof data_body, data_body);
 
 	t_dbclose(nullptr, nullptr, "null_close");
-	t_dbdel(nullptr, nullptr, 0, "null_del");
-	t_dbget(nullptr, nullptr, nullptr, nullptr, 0, "null_get");
+	t_dbdel(nullptr, nullptr, nullptr, 0, "null_del");
+	t_dbget(nullptr, nullptr, nullptr, nullptr, nullptr, 0, "null_get");
 	t_dbput(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, "null_put");
 	t_dbseq(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, 0, "null_seq");
 	t_dbsync(nullptr, nullptr, 0, "null_sync");
@@ -1121,7 +1121,7 @@ random_wrappers(Rng &rng, unsigned long long n)
 			t_dbclose(&g_ref_h.db, &g_port_h.db, "rand_close");
 
 		if (rng.coin())
-			t_dbdel(nullptr, nullptr, flags, "rand_null_del");
+			t_dbdel(nullptr, nullptr, nullptr, flags, "rand_null_del");
 		else
 			t_dbdel(&g_ref_h.db, &g_port_h.db, &rk, flags, "rand_del");
 

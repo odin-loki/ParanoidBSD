@@ -4,6 +4,7 @@
 
 #include <climits>
 #include <cerrno>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -231,30 +232,14 @@ ref_ctype(void)
 	return ((ref_xlocale_ctype *)__xlocale_global_locale.components[1]);
 }
 
-static void *
-port_ctype_slot(void)
-{
-	return (__xlocale_global_locale.components[1]);
-}
-
 static void
 sync_encoding(const char *enc)
 {
 	std::strncpy(pbsd_nl_hook.encoding, enc, sizeof(pbsd_nl_hook.encoding) - 1);
 	std::strncpy(_DefaultRuneLocale.__encoding, enc,
 	    sizeof(_DefaultRuneLocale.__encoding) - 1);
-	if (port_ctype_slot() != nullptr) {
-		auto *ct = (P::_RuneLocale *)((char *)port_ctype_slot() +
-		    offsetof(ref_xlocale_ctype, runes));
-		(void)ct;
-	}
 	if (ref_ctype() != nullptr && ref_ctype()->runes != nullptr)
 		std::strncpy(ref_ctype()->runes->__encoding, enc, 31);
-	if (port_ctype_slot() != nullptr) {
-		ref_xlocale_ctype *pct = (ref_xlocale_ctype *)port_ctype_slot();
-		if (pct->runes != nullptr)
-			std::strncpy(pct->runes->__encoding, enc, 31);
-	}
 }
 
 static void
@@ -507,6 +492,11 @@ test_nl_langinfo(void)
 	test_nl_one(F_NL_LANGINFO_L, 68, "UTF-8");
 
 	test_nl_one(F_NL_LANGINFO, 0, "EUC-KR");
+	char *pp = P::nl_langinfo(0);
+	char *rp = ref_nl_langinfo(0);
+	ncase[F_NL_LANGINFO]++;
+	if (pp == nullptr || rp == nullptr || std::strcmp(pp, rp) != 0)
+		report(F_NL_LANGINFO, "nl_langinfo");
 }
 
 static void
@@ -774,12 +764,14 @@ static void
 sweep_none(void)
 {
 	unsigned char seq[8];
-	for (long long i = 0; i < SWEEP / 4; i++) {
+	for (long long i = 0; i < SWEEP; i++) {
 		size_t n = u32(8);
 		for (size_t j = 0; j < n; j++)
 			seq[j] = (unsigned char)(rnd() & 0xff);
 		test_none_mbrtowc_case(F_NONE_MBRTOWC, (const char *)seq, n,
 		    (rnd() & 1) != 0);
+	}
+	for (long long i = 0; i < SWEEP; i++) {
 		test_none_wcrtomb_case(F_NONE_WCRTOMB,
 		    (wchar_t)(rnd() & 0x1ff), (rnd() & 1) != 0);
 	}
@@ -789,11 +781,13 @@ static void
 sweep_gb(void)
 {
 	unsigned char seq[8];
-	for (long long i = 0; i < SWEEP / 4; i++) {
+	for (long long i = 0; i < SWEEP; i++) {
 		size_t n = u32(8);
 		for (size_t j = 0; j < n; j++)
 			seq[j] = (unsigned char)(rnd() & 0xff);
 		test_gb_mbrtowc_bytes(F_GB_MBRTOWC, seq, n, u32(5));
+	}
+	for (long long i = 0; i < SWEEP; i++) {
 		test_gb_wcrtomb_one(F_GB_WCRTOMB, (wchar_t)(rnd()));
 	}
 }
@@ -804,7 +798,7 @@ sweep_nl(void)
 	static const char *encs[] = {
 		"UTF-8", "EUC-JP", "NONE", "NONE:foo", "BIG5", "MSKanji"
 	};
-	for (long long i = 0; i < SWEEP / 8; i++) {
+	for (long long i = 0; i < SWEEP; i++) {
 		int item = (int)(rnd() % 80);
 		const char *enc = encs[u32(6)];
 		test_nl_one(F_NL_LANGINFO_L, item, enc);

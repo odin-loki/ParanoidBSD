@@ -580,7 +580,7 @@ __bt_defcmp(const DBT *a, const DBT *b)
 	u_char *p1, *p2;
 
 	len = MIN(a->size, b->size);
-	for (p1 = a->data, p2 = b->data; len--; ++p1, ++p2)
+	for (p1 = (u_char *)a->data, p2 = (u_char *)b->data; len--; ++p1, ++p2)
 		if (*p1 != *p2)
 			return ((int)*p1 - (int)*p2);
 	return ((int)a->size - (int)b->size);
@@ -594,7 +594,7 @@ __bt_defpfx(const DBT *a, const DBT *b)
 
 	cnt = 1;
 	len = MIN(a->size, b->size);
-	for (p1 = a->data, p2 = b->data; len--; ++p1, ++p2, ++cnt)
+	for (p1 = (u_char *)a->data, p2 = (u_char *)b->data; len--; ++p1, ++p2, ++cnt)
 		if (*p1 != *p2)
 			return (cnt);
 
@@ -769,8 +769,6 @@ __bt_dpage(PAGE *h)
 void
 __bt_stat(DB *dbp)
 {
-	extern unsigned long bt_cache_hit, bt_cache_miss, bt_pfxsaved, bt_rootsplit;
-	extern unsigned long bt_sortsplit, bt_split;
 	BTREE *t;
 	PAGE *h;
 	pgno_t i, pcont, pinternal, pleaf;
