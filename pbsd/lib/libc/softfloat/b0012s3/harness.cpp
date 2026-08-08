@@ -132,9 +132,11 @@ check_neg(const char *phase, Val a)
 	++st_neg.cases;
 	Val rv{ rr.high, rr.low };
 	Val pv{ pr.high, pr.low };
-	if (rv.high != pv.high || rv.low != pv.low || rfl != pfl ||
+	bool bad = rv.high != pv.high || rv.low != pv.low || rfl != pfl ||
 	    !bufs_equal(bufRef, bufPort) ||
-	    std::memcmp(bufRef, pristine, BUFSZ) != 0) {
+	    std::memcmp(bufRef, pristine, OFF_OUT) != 0 ||
+	    std::memcmp(bufPort, pristine, OFF_OUT) != 0;
+	if (bad) {
 		report(st_neg, phase, "result", a.high, a.low, 0, 0, 0,
 		    pv.high, pv.low, pfl, rfl);
 		++st_neg.failures;
@@ -177,7 +179,8 @@ check_mul(const char *phase, Val a, Val b)
 	Val pv{ pr.high, pr.low };
 	if (rv.high != pv.high || rv.low != pv.low || rfl != pfl ||
 	    !bufs_equal(bufRef, bufPort) ||
-	    std::memcmp(bufRef, pristine, BUFSZ) != 0)
+	    std::memcmp(bufRef, pristine, OFF_OUT + 16) != 0 ||
+	    std::memcmp(bufPort, pristine, OFF_OUT + 16) != 0)
 		++st_mul.failures;
 }
 
@@ -208,7 +211,8 @@ check_six(const char *phase, std::int32_t si)
 	Val pv{ pr.high, pr.low };
 	if (rv.high != pv.high || rv.low != pv.low || rfl != pfl ||
 	    !bufs_equal(bufRef, bufPort) ||
-	    std::memcmp(bufRef, pristine, BUFSZ) != 0)
+	    std::memcmp(bufRef, pristine, OFF_IN + sizeof si) != 0 ||
+	    std::memcmp(bufPort, pristine, OFF_IN + sizeof si) != 0)
 		++st_six.failures;
 }
 

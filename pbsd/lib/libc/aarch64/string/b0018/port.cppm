@@ -81,7 +81,7 @@ memset_resolver(std::uint64_t at_hwcap, const __ifunc_arg_t *ifunc_arg,
 	 * zero 64 bytes (4 * 4byte words).
 	 */
 	dczid = READ_SPECIALREG(dczid_el0);
-	if ((dczid & DCZID_DZP) == 0 && DCZID_BS_SIZE(dczid) == 4)
+	if ((dczid & DCZID_DZP) != 0 && DCZID_BS_SIZE(dczid) == 4)
 		return (reinterpret_cast<void *>(__memset_aarch64_zva64));
 
 	return (reinterpret_cast<void *>(__memset_aarch64));

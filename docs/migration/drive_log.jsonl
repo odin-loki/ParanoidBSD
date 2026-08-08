@@ -1678,3 +1678,4 @@
 {"batch": "b0023", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: IR differs for 2/3: __gdtoa_locks_size, __gdtoa_locks_elemsize)", "how": "agent", "ts": "2026-08-08T09:20:23Z"}
 {"batch": "b0016s4", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T09:20:43Z"}
 {"batch": "b0024", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:20:47Z"}
+{"batch": "b0025", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:21:14Z"}
