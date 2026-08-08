@@ -1284,6 +1284,164 @@ def gen_round_pack_int_test(f):
 '''
 
 
+def gen_round_pack_float_test(f):
+    if 'Float32' in f:
+        sigty, rety = 'bits32', 'float32'
+        zexp = 'int16'
+    elif 'Float64' in f:
+        sigty, rety = 'bits64', 'float64'
+        zexp = 'int16'
+    elif 'Floatx80' in f:
+        sigty, rety = 'bits64', 'floatx80'
+        zexp = 'int32'
+    else:
+        sigty, rety = 'bits64', 'float128'
+        zexp = 'int32'
+    if f == 'roundAndPackFloatx80' or f == 'roundAndPackFloat128':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        flag zs = urand32() & 1;
+        {zexp} ze = static_cast<{zexp}>(urand32() & 0x7FFF);
+        {sigty} z0 = urand64(), z1 = urand64();
+        sync_globals_from_port();
+        {rety} rp = port::{f}(zs, ze, z0, z1);
+        {rety} rr = ref_{f}(zs, ze, z0, z1);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }}
+'''
+    return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        flag zs = urand32() & 1;
+        {zexp} ze = static_cast<{zexp}>(urand32() & 0x7FF);
+        {sigty} zsig = static_cast<{sigty}>(urand64());
+        sync_globals_from_port();
+        {rety} rp = port::{f}(zs, ze, zsig);
+        {rety} rr = ref_{f}(zs, ze, zsig);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }}
+'''
+
+
+def gen_sig_arith_test(f):
+    ty = sig_float_type(f)
+    rand = {'float32': 'f32_rand', 'float64': 'f64_rand',
+            'floatx80': 'fx80_rand', 'float128': 'f128_rand'}[ty]
+    return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        {ty} a = {rand}(), b = {rand}();
+        flag zs = urand32() & 1;
+        sync_globals_from_port();
+        {ty} rp = port::{f}(a, b, zs);
+        {ty} rr = ref_{f}(a, b, zs);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }}
+'''
+
+
+def gen_nan_internal_test(f):
+    if 'ToCommonNaN' in f:
+        ty = sig_float_type(f)
+        rand = {'float32': 'f32_rand', 'float64': 'f64_rand',
+                'floatx80': 'fx80_rand', 'float128': 'f128_rand'}[ty]
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        {ty} a = {rand}();
+        sync_globals_from_port();
+        commonNaNT rp = port::{f}(a);
+        commonNaNT rr = ref_{f}(a);
+        cases++;
+        if (rp.sign != rr.sign || rp.high != rr.high || rp.low != rr.low) failures++;
+        sync_globals_to_port();
+    }}
+'''
+    ty = sig_float_type(f)
+    return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        commonNaNT a;
+        a.sign = urand32() & 1;
+        a.high = urand64();
+        a.low = urand64();
+        sync_globals_from_port();
+        {ty} rp = port::{f}(a);
+        {ty} rr = ref_{f}(a);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }}
+'''
+
+
+def gen_internal_bits_test(f):
+    if f == 'countLeadingZeros32':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits32 a = urand32();
+        sync_globals_from_port();
+        int8_t rp = port::{f}(a);
+        int8_t rr = ref_{f}(a);
+        cases++;
+        if (rp != rr) failures++;
+    }}
+'''
+    if f == 'countLeadingZeros64':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits64 a = urand64();
+        sync_globals_from_port();
+        int8_t rp = port::{f}(a);
+        int8_t rr = ref_{f}(a);
+        cases++;
+        if (rp != rr) failures++;
+    }}
+'''
+    if f == 'estimateDiv128To64':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits64 a0 = urand64(), a1 = urand64();
+        bits64 b = urand64() | (1ULL << 63);
+        sync_globals_from_port();
+        bits64 rp = port::{f}(a0, a1, b);
+        bits64 rr = ref_{f}(a0, a1, b);
+        cases++;
+        if (rp != rr) failures++;
+    }}
+'''
+    return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        int16 aexp = static_cast<int16>(urand32() & 0xFF);
+        bits32 a = urand32() | (1u << 31);
+        sync_globals_from_port();
+        bits32 rp = port::{f}(aexp, a);
+        bits32 rr = ref_{f}(aexp, a);
+        cases++;
+        if (rp != rr) failures++;
+    }}
+'''
+
+
+def gen_propagate_test(f):
+    ty = sig_float_type(f)
+    rand = {'float32': 'f32_rand', 'float64': 'f64_rand',
+            'floatx80': 'fx80_rand', 'float128': 'f128_rand'}[ty]
+    return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        {ty} a = {rand}(), b = {rand}();
+        sync_globals_from_port();
+        {ty} rp = port::{f}(a, b);
+        {ty} rr = ref_{f}(a, b);
+        cases++;
+        if (rp != rr) failures++;
+        sync_globals_to_port();
+    }}
+'''
+
+
 def gen_generic_test(f, cls):
     return f'''
     /* generic smoke: skipped detailed typing for {cls} */

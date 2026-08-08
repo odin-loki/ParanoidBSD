@@ -1,0 +1,10 @@
+{
+  "batch": "b0080s2",
+  "verified": "2026-08-08T11:22:29Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd batch b0080s2 differential test\n\n\n  function              cases   failures   result\n  ----------------------------------------------------\n  carg                 255457          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_carg.c": "6b38a5709c7fc552"
+  }
+}

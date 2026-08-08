@@ -319,26 +319,33 @@ void
 check_iconvlist(void *userdata)
 {
 	MockSnap ref_s, port_s;
-	unsigned long ref_hits = 1, port_hits = 1;
+	unsigned long shared_hits = 1;
+	unsigned long ref_result = 1, port_result = 1;
+	void *data = userdata == nullptr ? nullptr : &shared_hits;
 	char msg[160];
 
 	ncase[F_LIST]++;
 
+	shared_hits = 1;
 	b0063_mock_reset();
-	ref_iconvlist(user_cb, userdata == nullptr ? nullptr : &ref_hits);
+	ref_iconvlist(user_cb, data);
 	b0063_mock_snap(&ref_s);
+	ref_result = shared_hits;
 
+	if (data != nullptr)
+		shared_hits = 1;
 	b0063_mock_reset();
-	port::iconvlist(user_cb, userdata == nullptr ? nullptr : &port_hits);
+	port::iconvlist(user_cb, data);
 	b0063_mock_snap(&port_s);
+	port_result = shared_hits;
 
 	if (!snaps_equal(ref_s, port_s)) {
 		std::snprintf(msg, sizeof(msg), "mock snapshot mismatch");
 		report_fail(F_LIST, msg);
 	}
-	if (userdata != nullptr && ref_hits != port_hits) {
+	if (data != nullptr && ref_result != port_result) {
 		std::snprintf(msg, sizeof(msg), "cb digest ref=%lu port=%lu",
-		    ref_hits, port_hits);
+		    ref_result, port_result);
 		report_fail(F_LIST, msg);
 	}
 }

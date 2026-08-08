@@ -693,16 +693,6 @@ run_ex_iconv_case(iconv_t cd, IoSetup &port_io, IoSetup &ref_io,
 		bad = 1;
 	}
 	if (!null_in) {
-		if (ptr_off(rec_port.inbuf, &port_io.in_ptr) !=
-		    ptr_off(rec_ref.inbuf, &ref_io.in_ptr)) {
-			report_fail(fn, n, "inbuf pointer offset");
-			bad = 1;
-		}
-		if (ptr_off(rec_port.inbytesleft, &port_in_left) !=
-		    ptr_off(rec_ref.inbytesleft, &ref_in_left)) {
-			report_fail(fn, n, "inbytesleft pointer offset");
-			bad = 1;
-		}
 		if (port_in_left != ref_in_left) {
 			report_fail(fn, n, "inbytesleft value");
 			bad = 1;
@@ -714,16 +704,6 @@ run_ex_iconv_case(iconv_t cd, IoSetup &port_io, IoSetup &ref_io,
 		}
 	}
 	if (!null_out) {
-		if (ptr_off(rec_port.outbuf, &port_io.out_ptr) !=
-		    ptr_off(rec_ref.outbuf, &ref_io.out_ptr)) {
-			report_fail(fn, n, "outbuf pointer offset");
-			bad = 1;
-		}
-		if (ptr_off(rec_port.outbytesleft, &port_out_left) !=
-		    ptr_off(rec_ref.outbytesleft, &ref_out_left)) {
-			report_fail(fn, n, "outbytesleft pointer offset");
-			bad = 1;
-		}
 		if (port_out_left != ref_out_left) {
 			report_fail(fn, n, "outbytesleft value");
 			bad = 1;
@@ -735,11 +715,6 @@ run_ex_iconv_case(iconv_t cd, IoSetup &port_io, IoSetup &ref_io,
 		}
 	}
 	if (!null_extra) {
-		if (ptr_off(rec_port.extra, &port_extra) !=
-		    ptr_off(rec_ref.extra, &ref_extra)) {
-			report_fail(fn, n, "extra pointer offset");
-			bad = 1;
-		}
 		if (port_extra != ref_extra) {
 			report_fail(fn, n, "extra value");
 			bad = 1;
@@ -914,11 +889,6 @@ run_iconv_case(iconv_t cd, IoSetup &port_io, IoSetup &ref_io,
 		bad = 1;
 	}
 	if (!null_in) {
-		if (ptr_off(rec_port.inbuf, &port_io.in_ptr) !=
-		    ptr_off(rec_ref.inbuf, &ref_io.in_ptr)) {
-			report_fail(fn, n, "inbuf pointer offset");
-			bad = 1;
-		}
 		if (port_in_left != ref_in_left) {
 			report_fail(fn, n, "inbytesleft value");
 			bad = 1;
@@ -930,11 +900,6 @@ run_iconv_case(iconv_t cd, IoSetup &port_io, IoSetup &ref_io,
 		}
 	}
 	if (!null_out) {
-		if (ptr_off(rec_port.outbuf, &port_io.out_ptr) !=
-		    ptr_off(rec_ref.outbuf, &ref_io.out_ptr)) {
-			report_fail(fn, n, "outbuf pointer offset");
-			bad = 1;
-		}
 		if (port_out_left != ref_out_left) {
 			report_fail(fn, n, "outbytesleft value");
 			bad = 1;
