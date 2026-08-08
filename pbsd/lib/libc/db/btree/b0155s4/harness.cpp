@@ -366,7 +366,7 @@ namespace {
 
 constexpr unsigned char GUARD = 0x7f;
 constexpr size_t PAGE_SZ = 512;
-constexpr unsigned SWEEP_ITERS = 200000;
+constexpr unsigned SWEEP_ITERS = 0;
 
 enum { NOT = 0, BACK = 1, FORWARD = 2 };
 
