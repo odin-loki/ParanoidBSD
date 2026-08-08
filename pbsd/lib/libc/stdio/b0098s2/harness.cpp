@@ -83,7 +83,6 @@ static void init_streams()
 	if (outfd < 0)
 		die("mkstemp");
 	g_out_rfd = outfd;
-	close(outfd);
 
 	if (!freopen(g_out_path, "w+", stdout))
 		die("freopen stdout");
@@ -562,7 +561,7 @@ static int gen_printf_fmt(Rng &r, wchar_t *out, size_t cap)
 
 static void sweep_printf(long iters)
 {
-	Rng r(0x0098S2BEEFCAFE1234ULL);
+	Rng r(0x0098B2BEEFCAFE1234ULL);
 	wchar_t fmt[128];
 	PArgs a;
 	for (long it = 0; it < iters; it++) {

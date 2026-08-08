@@ -92,6 +92,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/db/test/hash.tests/b0185/port.cppm
   lib/libc/gdtoa/b0023/port.cppm
   lib/libc/gdtoa/b0066/port.cppm
+  lib/libc/gdtoa/b0066s1/port.cppm
+  lib/libc/gdtoa/b0066s3/port.cppm
   lib/libc/gen/alarm_m/port.cppm
   lib/libc/gen/arc4random_uniform_m/port.cppm
   lib/libc/gen/b0013/port.cppm
@@ -362,6 +364,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/ld128/b0084/port.cppm
   lib/msun/ld128/b0088/port.cppm
   lib/msun/ld128/b0088s1/port.cppm
+  lib/msun/ld128/b0088s2/port.cppm
   lib/msun/ld128/b0089/port.cppm
   lib/msun/ld128/k_cosl_m/port.cppm
   lib/msun/ld128/k_tanl_m/port.cppm
@@ -445,6 +448,10 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/dump/unctime_m/port.cppm
   sbin/ipf/libipf/b0123/port.cppm
   sbin/ipf/libipf/b0124/port.cppm
+  sbin/ipf/libipf/b0124s1/port.cppm
+  sbin/ipf/libipf/b0124s2/port.cppm
+  sbin/ipf/libipf/b0124s3/port.cppm
+  sbin/ipf/libipf/b0124s4/port.cppm
   sbin/ipf/libipf/b0160/port.cppm
   sbin/kldunload/kldunload_m/port.cppm
   sbin/nfsiod/nfsiod_m/port.cppm
