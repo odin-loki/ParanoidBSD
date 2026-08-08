@@ -39,7 +39,7 @@ struct FILE {
 	void *_cookie;
 	int (*_close)(void *);
 	int (*_read)(void *, char *, int);
-	fpos_t (*_seek)(void *, fpos_t, int);
+	long (*_seek)(void *, long, int);
 	int (*_write)(void *, const char *, int);
 	struct __sbuf _ub;
 	unsigned char *_up;
@@ -48,7 +48,7 @@ struct FILE {
 	unsigned char _nbuf[1];
 	struct __sbuf _lb;
 	int _blksize;
-	fpos_t _offset;
+	long _offset;
 	void *_fl_mutex;
 	void *_fl_owner;
 	int _fl_count;
@@ -78,7 +78,13 @@ struct __locale_struct {
 	void *components[6];
 };
 
-typedef struct __locale_struct *locale_t;
+typedef void *locale_t;
+
+#define FIX_LOCALE(l)	((void)(l))
+
+extern "C" struct xlocale_ctype *b0118_get_ctype(void);
+
+#define XLOCALE_CTYPE(x) (b0118_get_ctype())
 
 #define	__SLBF	0x0001
 #define	__SNBF	0x0002
@@ -107,9 +113,6 @@ typedef struct __locale_struct *locale_t;
 #define	FLOCKFILE_CANCELSAFE(fp)	do { (void)(fp); } while (0)
 #define	FUNLOCKFILE_CANCELSAFE()	do { } while (0)
 
-#define XLC_CTYPE	(LC_CTYPE - 1)
-#define XLOCALE_CTYPE(x) ((struct xlocale_ctype *)(x)->components[XLC_CTYPE])
-
 extern "C" {
 int		__srefill(::FILE *);
 int		__sfvwrite(::FILE *, struct __suio *);
@@ -118,9 +121,9 @@ int		__sflags(const char *, int *);
 int		_fcntl(int, int, ...);
 int		__sread(void *, char *, int);
 int		__swrite(void *, const char *, int);
-fpos_t		__sseek(void *, fpos_t, int);
+long		__sseek(void *, long, int);
 int		__sclose(void *);
-locale_t	__get_locale(void);
+void		*__get_locale(void);
 }
 
 namespace detail {
@@ -128,19 +131,11 @@ namespace detail {
 static locale_t
 get_real_locale(locale_t locale)
 {
-	switch ((intptr_t)locale) {
-	case 0:
-		return (__get_locale());
-	case -1:
-		return ((locale_t)-1);
-	default:
-		return (locale);
-	}
+	(void)locale;
+	return (locale);
 }
 
 } /* namespace detail */
-
-#define FIX_LOCALE(l)	((l) = detail::get_real_locale(l))
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -551,7 +546,7 @@ fdopen(int fd, const char *mode)
 	fp->_cookie = fp;
 	fp->_read = __sread;
 	fp->_write = __swrite;
-	fp->_seek = __sseek;
+	fp->_seek = reinterpret_cast<long (*)(void *, long, int)>(__sseek);
 	fp->_close = __sclose;
 	return (fp);
 }

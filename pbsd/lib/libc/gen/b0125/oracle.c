@@ -1,54 +1,42 @@
-module;
+/*
+ * Reference oracle for batch b0125.
+ *
+ * The original HardenedBSD sources are concatenated below with every function
+ * renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.
+ */
 
-#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+
+#include <errno.h>
+#include <limits.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <sched.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
+
+#ifndef LONG_BIT
+#define	LONG_BIT	(sizeof(long) * CHAR_BIT)
 #endif
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <wchar.h>
-#include <locale.h>
-
-#if defined(__has_include)
-#if __has_include(<xlocale.h>)
-#include <xlocale.h>
-#endif
-#else
-#ifdef __FreeBSD__
-#include <xlocale.h>
-#endif
+#ifndef CPUCLOCK_WHICH_PID
+#define	CPUCLOCK_WHICH_PID	0
 #endif
 
-export module pbsd.lib.libc.stdio.b0092;
-
-#ifndef fgetwc_l
-static inline wint_t
-fgetwc_l(FILE *stream, locale_t locale)
-{
-	(void)locale;
-	return (fgetwc(stream));
-}
+#ifndef _ID_T_DECLARED
+typedef	pid_t	id_t;
+#define	_ID_T_DECLARED
 #endif
 
-#ifndef vfwscanf_l
-static inline int
-vfwscanf_l(FILE *stream, locale_t locale, const wchar_t *format, va_list arg)
-{
-	(void)locale;
-	return (vfwscanf(stream, format, arg));
-}
+#ifndef cpuset_t
+typedef	cpu_set_t	cpuset_t;
 #endif
 
-export namespace pbsd::lib_libc_stdio::b0092 {
+extern int clock_getcpuclockid2(id_t, int, clockid_t *);
 
 /*-
- * SPDX-License-Identifier: BSD-3-Clause
- *
- * Copyright (c) 1990, 1993
- *	The Regents of the University of California.  All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Chris Torek.
+ * Copyright (c) 2021 Stefan Esser <se@FreeBSD.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -58,14 +46,11 @@ export namespace pbsd::lib_libc_stdio::b0092 {
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -76,128 +61,74 @@ export namespace pbsd::lib_libc_stdio::b0092 {
  */
 
 void
-setbuffer(FILE *fp, char *buf, int size)
+ref___cpuset_free(cpuset_t *ptr)
 {
-
-	(void)setvbuf(fp, buf, buf ? _IOFBF : _IONBF, (size_t)size);
+	free(ptr);
 }
 
-/*
- * set line buffering
+/*-
+ * Copyright (c) 2021 Stefan Esser <se@FreeBSD.org>
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
+
+cpuset_t *
+ref___cpuset_alloc(size_t ncpus)
+{
+	return (malloc(CPU_ALLOC_SIZE(ncpus)));
+}
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2012 David Xu <davidxu@FreeBSD.org>.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY DANIEL EISCHEN AND CONTRIBUTORS ``AS IS''
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
 int
-setlinebuf(FILE *fp)
+ref_clock_getcpuclockid(pid_t pid, clockid_t *clock_id)
 {
-
-	return (setvbuf(fp, (char *)NULL, _IOLBF, (size_t)0));
+	if (clock_getcpuclockid2(pid, CPUCLOCK_WHICH_PID, clock_id))
+		return (errno);
+	return (0);
 }
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2002 Tim J. Robbins
- * All rights reserved.
- *
- * Copyright (c) 2011 The FreeBSD Foundation
- *
- * Portions of this software were developed by David Chisnall
- * under sponsorship from the FreeBSD Foundation.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-extern "C" int
-wscanf(const wchar_t * __restrict fmt, ...)
-{
-	va_list ap;
-	int r;
-
-	va_start(ap, fmt);
-	r = vfwscanf(stdin, fmt, ap);
-	va_end(ap);
-
-	return (r);
-}
-extern "C" int
-wscanf_l(locale_t locale, const wchar_t * __restrict fmt, ...)
-{
-	va_list ap;
-	int r;
-
-	va_start(ap, fmt);
-	r = vfwscanf_l(stdin, locale, fmt, ap);
-	va_end(ap);
-
-	return (r);
-}
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2002 Tim J. Robbins.
- * All rights reserved.
- *
- * Copyright (c) 2011 The FreeBSD Foundation
- *
- * Portions of this software were developed by David Chisnall
- * under sponsorship from the FreeBSD Foundation.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-/*
- * Synonym for fgetwc(). The only difference is that getwc(), if it is a
- * macro, may evaluate `fp' more than once.
- */
-wint_t
-getwc(FILE *fp)
-{
-
-	return (fgetwc(fp));
-}
-wint_t
-getwc_l(FILE *fp, locale_t locale)
-{
-
-	return (fgetwc_l(fp, locale));
-}
-
-} /* namespace pbsd::lib_libc_stdio::b0092 */

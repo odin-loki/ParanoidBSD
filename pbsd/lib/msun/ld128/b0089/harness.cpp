@@ -143,10 +143,33 @@ static stat st_log2l = { "log2l", 0, 0, 0 };
 static const unsigned MAX_REPORT = 8;
 
 static void
+fpu_reset(void)
+{
+#if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__))
+	asm volatile("finit" : : : "memory");
+#endif
+}
+
+static ldrep
+capture_unary(long double (*fn)(long double), long double x)
+{
+	fpu_reset();
+	return ldbits(fn(x));
+}
+
+static ldrep
+capture_binary(long double (*fn)(long double, long double), long double x,
+    long double y)
+{
+	fpu_reset();
+	return ldbits(fn(x, y));
+}
+
+static void
 check_exp2l(long double x, const char *tag)
 {
-	ldrep p = ldbits(port_exp2l(x));
-	ldrep o = ldbits(ref_exp2l(x));
+	ldrep p = capture_unary(port_exp2l, x);
+	ldrep o = capture_unary(ref_exp2l, x);
 
 	st_exp2l.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
@@ -167,8 +190,8 @@ check_exp2l(long double x, const char *tag)
 static void
 check_erfl(long double x, const char *tag)
 {
-	ldrep p = ldbits(port_erfl(x));
-	ldrep o = ldbits(ref_erfl(x));
+	ldrep p = capture_unary(port_erfl, x);
+	ldrep o = capture_unary(ref_erfl, x);
 
 	st_erfl.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
@@ -189,8 +212,8 @@ check_erfl(long double x, const char *tag)
 static void
 check_erfcl(long double x, const char *tag)
 {
-	ldrep p = ldbits(port_erfcl(x));
-	ldrep o = ldbits(ref_erfcl(x));
+	ldrep p = capture_unary(port_erfcl, x);
+	ldrep o = capture_unary(ref_erfcl, x);
 
 	st_erfcl.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
@@ -211,8 +234,8 @@ check_erfcl(long double x, const char *tag)
 static void
 check_logl(long double x, const char *tag)
 {
-	ldrep p = ldbits(port_logl(x));
-	ldrep o = ldbits(ref_logl(x));
+	ldrep p = capture_unary(port_logl, x);
+	ldrep o = capture_unary(ref_logl, x);
 
 	st_logl.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
@@ -233,8 +256,8 @@ check_logl(long double x, const char *tag)
 static void
 check_log1pl(long double x, const char *tag)
 {
-	ldrep p = ldbits(port_log1pl(x));
-	ldrep o = ldbits(ref_log1pl(x));
+	ldrep p = capture_unary(port_log1pl, x);
+	ldrep o = capture_unary(ref_log1pl, x);
 
 	st_log1pl.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
@@ -255,8 +278,8 @@ check_log1pl(long double x, const char *tag)
 static void
 check_log10l(long double x, const char *tag)
 {
-	ldrep p = ldbits(port_log10l(x));
-	ldrep o = ldbits(ref_log10l(x));
+	ldrep p = capture_unary(port_log10l, x);
+	ldrep o = capture_unary(ref_log10l, x);
 
 	st_log10l.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
@@ -277,8 +300,8 @@ check_log10l(long double x, const char *tag)
 static void
 check_log2l(long double x, const char *tag)
 {
-	ldrep p = ldbits(port_log2l(x));
-	ldrep o = ldbits(ref_log2l(x));
+	ldrep p = capture_unary(port_log2l, x);
+	ldrep o = capture_unary(ref_log2l, x);
 
 	st_log2l.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
@@ -299,8 +322,8 @@ check_log2l(long double x, const char *tag)
 static void
 check_powl(long double x, long double y, const char *tag)
 {
-	ldrep p = ldbits(port_powl(x, y));
-	ldrep o = ldbits(ref_powl(x, y));
+	ldrep p = capture_binary(port_powl, x, y);
+	ldrep o = capture_binary(ref_powl, x, y);
 	st_powl.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
 		return;
@@ -475,23 +498,6 @@ int main()
 	std::printf("PBSD batch b0089 differential harness\n");
 	std::printf("LDBL_MANT_DIG=%d, comparing %zu bytes of long double\n\n",
 	    (int)LDBL_MANT_DIG, LD_SIG);
-
-	{
-		long double x = mkld(0x3fff, 0x8080808080808080ull,
-		    0xfefefefefefefefeull);
-		ldrep p = ldbits(port_erfl(x));
-		ldrep r = ldbits(ref_erfl(x));
-
-		std::printf("selftest x=");
-		ldhex(ldbits(x));
-		std::printf(" p=");
-		ldhex(p);
-		std::printf(" r=");
-		ldhex(r);
-		std::printf(" eq=%d\n", guarded_equal(p.b, r.b, sizeof(p.b)));
-		check_erfl(x, "selftest-call");
-		std::printf("after check_erfl selftest-call\n\n");
-	}
 
 	edge_cases();
 	random_sweep();

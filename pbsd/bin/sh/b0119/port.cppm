@@ -136,13 +136,13 @@ stalloc(int nbytes)
 	return (char *)std::malloc((std::size_t)nbytes);
 }
 
-export union yystype {
+union yystype {
 	arith_t val;
 	char *name;
 };
 
-export const char *arith_buf;
-export union yystype yylval;
+const char *arith_buf;
+union yystype yylval;
 
 int
 is_number(const char *p)
@@ -197,7 +197,7 @@ is_number(const char *p)
  */
 
 arith_t
-strtoarith_t(const char *restrict nptr, char **restrict endptr)
+strtoarith_t(const char *nptr, char **endptr)
 {
 	arith_t val;
 

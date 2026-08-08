@@ -528,6 +528,31 @@ test_scanf_char(StatId which, const char *label, const unsigned char *input,
 	return ok;
 }
 
+bool
+test_scanf_int_null_locale(const char *label, const unsigned char *input,
+    std::size_t n, const char *fmt)
+{
+	GuardedInt gi_r, gi_p;
+
+	gi_r.fill_guard();
+	gi_p.fill_guard();
+
+	int rr = call_ref_scanf_l(nullptr, input, n, fmt, &gi_r.val);
+	int rp = call_port_scanf_l(nullptr, input, n, fmt, &gi_p.val);
+
+	bool ok = true;
+	if (rr != rp) {
+		fail_msg(S_SCANF_L, label, "return mismatch");
+		ok = false;
+	}
+	if (!gi_r.eq(gi_p)) {
+		fail_msg(S_SCANF_L, label, "int/guard mismatch");
+		ok = false;
+	}
+	case_inc(S_SCANF_L);
+	return ok;
+}
+
 void
 run_scanf_edges(StatId which)
 {
@@ -551,6 +576,8 @@ run_scanf_edges(StatId which)
 	test_scanf_int(which, "d eof", d42, 0, "%d");
 	test_scanf_int(which, "x ab", chex, sizeof(chex), "%x");
 	test_scanf_str(which, "s hi", word, sizeof(word), "%s");
+	if (which == S_SCANF_L)
+		test_scanf_int_null_locale("null locale", d42, sizeof(d42), "%d");
 }
 
 void

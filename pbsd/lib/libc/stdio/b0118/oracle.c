@@ -17,14 +17,31 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <wchar.h>
-#include <locale.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <uchar.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
 #endif
+
+#ifndef O_VERIFY
+#define O_VERIFY 0
+#endif
+
+#ifndef O_EXEC
+#define O_EXEC 0
+#endif
+
+#define EOF (-1)
+typedef long fpos_t;
+
+extern void *memcpy(void *, const void *, size_t);
+extern void *memchr(const void *, int, size_t);
+extern void *memset(void *, int, size_t);
+extern size_t mbsnrtowcs(wchar_t * __restrict, const char ** __restrict, size_t,
+    size_t, mbstate_t * __restrict);
+extern int mbsinit(const mbstate_t *);
 
 struct __sbuf {
 	unsigned char *_base;
@@ -60,6 +77,7 @@ struct __sFILE {
 	int _flags2;
 };
 typedef struct __sFILE FILE;
+typedef void *locale_t;
 
 #define	__SLBF	0x0001
 #define	__SNBF	0x0002
@@ -105,13 +123,8 @@ struct xlocale_ctype {
 	int (*__mbsinit)(const mbstate_t *);
 };
 
-#define XLC_CTYPE	(LC_CTYPE - 1)
-#define XLOCALE_CTYPE(x) ((struct xlocale_ctype *)(x)->components[XLC_CTYPE])
-
-struct __locale_struct {
-	void *components[6];
-};
-typedef struct __locale_struct *locale_t;
+#define FIX_LOCALE(l)	((void)(l))
+#define XLOCALE_CTYPE(x) (&b0118_ctype)
 
 typedef struct b0118_stream {
 	const unsigned char *data;
@@ -130,23 +143,6 @@ typedef struct b0118_write_ctx {
 
 static FILE *b0118_sfp_target;
 static struct xlocale_ctype b0118_ctype;
-static struct __locale_struct b0118_locale_obj;
-static locale_t b0118_locale;
-
-static locale_t
-b0118_get_real_locale(locale_t locale)
-{
-	switch ((intptr_t)locale) {
-	case 0:
-		return (b0118_locale);
-	case -1:
-		return ((locale_t)-1);
-	default:
-		return (locale);
-	}
-}
-
-#define FIX_LOCALE(l)	((l) = b0118_get_real_locale(l))
 
 static size_t
 b0118_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
@@ -166,14 +162,12 @@ b0118_locale_setup(void)
 {
 	b0118_ctype.__mbsnrtowcs = b0118_mbsnrtowcs;
 	b0118_ctype.__mbsinit = b0118_mbsinit;
-	b0118_locale_obj.components[XLC_CTYPE] = &b0118_ctype;
-	b0118_locale = (locale_t)&b0118_locale_obj;
 }
 
-static inline locale_t
+static inline void *
 __get_locale(void)
 {
-	return (b0118_locale);
+	return ((void *)0);
 }
 
 void
@@ -837,4 +831,10 @@ void
 b0118_oracle_init(void)
 {
 	b0118_locale_setup();
+}
+
+struct xlocale_ctype *
+b0118_get_ctype(void)
+{
+	return (&b0118_ctype);
 }

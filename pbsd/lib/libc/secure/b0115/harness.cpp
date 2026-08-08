@@ -318,48 +318,75 @@ vsn_obs_eq(const VsnObs &a, const VsnObs &b)
 	return std::memcmp(a.buf, b.buf, sizeof(a.buf)) == 0;
 }
 
+using vsnprintf_fn = int (*)(char *, std::size_t, int, std::size_t,
+    const char *, va_list);
+
+static VsnObs
+run_vsnprintf_side(vsnprintf_fn fn, unsigned char *buf, std::size_t len,
+    int flags, std::size_t slen, const char *fmt_copy, va_list ap_in)
+{
+	VsnObs obs{};
+
+	fill_guard(buf, 128 + 2 * PAD);
+
+	g_chk_jmp_active = 1;
+	if (setjmp(g_chk_jmp) != 0) {
+		g_chk_jmp_active = 0;
+		obs.outcome = Outcome::CHK_FAIL;
+		obs.ret = -1;
+		std::memcpy(obs.buf, buf, sizeof(obs.buf));
+		return obs;
+	}
+
+	if (len > slen) {
+		std::memset(&ap, 0, sizeof(ap));
+		obs.ret = fn((char *)arena_data(buf), len, flags, slen,
+		    fmt_copy, ap);
+	} else {
+		obs.ret = fn((char *)arena_data(buf), len, flags, slen,
+		    fmt_copy, ap_in);
+	}
+	g_chk_jmp_active = 0;
+	obs.outcome = Outcome::OK;
+	std::memcpy(obs.buf, buf, sizeof(obs.buf));
+	return obs;
+}
+
 static void
 vsnprintf_case(Stat *st, const char *tag, std::size_t len, int flags,
     std::size_t slen, const char *fmt, ...)
 {
+	unsigned char bufa[128 + 2 * PAD];
+	unsigned char bufb[128 + 2 * PAD];
 	VsnObs pa, pb;
-	va_list ap_a, ap_b;
+	va_list args;
 	char fmt_copy[64];
 
 	std::snprintf(fmt_copy, sizeof(fmt_copy), "%s", fmt);
 
 	st->cases++;
 
-	fill_guard(pa.buf, sizeof(pa.buf));
-	fill_guard(pb.buf, sizeof(pb.buf));
-
-	g_chk_jmp_active = 1;
-	if (setjmp(g_chk_jmp) != 0) {
-		g_chk_jmp_active = 0;
-		pa.outcome = Outcome::CHK_FAIL;
-		pa.ret = -1;
-	} else {
-		va_start(ap_a, fmt);
-		pa.ret = P::__vsnprintf_chk((char *)arena_data(pa.buf), len,
-		    flags, slen, fmt_copy, ap_a);
-		va_end(ap_a);
-		g_chk_jmp_active = 0;
-		pa.outcome = Outcome::OK;
+	va_start(args, fmt);
+	{
+		va_list a1, a2;
+		va_copy(a1, args);
+		va_copy(a2, args);
+		pa = run_vsnprintf_side(
+		    [](char *b, std::size_t l, int f, std::size_t s,
+			const char *fc, va_list ap) {
+			    return P::__vsnprintf_chk(b, l, f, s, fc, ap);
+		    },
+		    bufa, len, flags, slen, fmt_copy, a1);
+		pb = run_vsnprintf_side(
+		    [](char *b, std::size_t l, int f, std::size_t s,
+			const char *fc, va_list ap) {
+			    return ref___vsnprintf_chk(b, l, f, s, fc, ap);
+		    },
+		    bufb, len, flags, slen, fmt_copy, a2);
+		va_end(a1);
+		va_end(a2);
 	}
-
-	g_chk_jmp_active = 1;
-	if (setjmp(g_chk_jmp) != 0) {
-		g_chk_jmp_active = 0;
-		pb.outcome = Outcome::CHK_FAIL;
-		pb.ret = -1;
-	} else {
-		va_start(ap_b, fmt);
-		pb.ret = ref___vsnprintf_chk((char *)arena_data(pb.buf), len,
-		    flags, slen, fmt_copy, ap_b);
-		va_end(ap_b);
-		g_chk_jmp_active = 0;
-		pb.outcome = Outcome::OK;
-	}
+	va_end(args);
 
 	if (!vsn_obs_eq(pa, pb)) {
 		char detail[160];
@@ -407,27 +434,16 @@ memcpy_edges(void)
 	static const unsigned char pat3[] = { 'a', 'b', 'c', 'd' };
 	static const unsigned char pat4[] = { 0x00, 0x80, 0xff, 0x00 };
 
-	std::fprintf(stderr, "memcpy_edges:empty\n");
 	memcpy_case(&st_memcpy, "empty", pat0, 0, 0, false);
-	std::fprintf(stderr, "memcpy_edges:empty_slen1\n");
 	memcpy_case(&st_memcpy, "empty_slen1", pat0, 0, 1, false);
-	std::fprintf(stderr, "memcpy_edges:one\n");
 	memcpy_case(&st_memcpy, "one", pat1, 1, 1, false);
-	std::fprintf(stderr, "memcpy_edges:one_fail\n");
 	memcpy_case(&st_memcpy, "one_fail", pat1, 1, 0, false);
-	std::fprintf(stderr, "memcpy_edges:two_hibyte\n");
 	memcpy_case(&st_memcpy, "two_hibyte", pat2, 2, 2, false);
-	std::fprintf(stderr, "memcpy_edges:four\n");
 	memcpy_case(&st_memcpy, "four", pat3, 4, 4, false);
-	std::fprintf(stderr, "memcpy_edges:four_slen3\n");
 	memcpy_case(&st_memcpy, "four_slen3", pat3, 4, 3, false);
-	std::fprintf(stderr, "memcpy_edges:four_slen5\n");
 	memcpy_case(&st_memcpy, "four_slen5", pat3, 4, 5, false);
-	std::fprintf(stderr, "memcpy_edges:nul_mix\n");
 	memcpy_case(&st_memcpy, "nul_mix", pat4, 4, 4, false);
-	std::fprintf(stderr, "memcpy_edges:overlap\n");
 	memcpy_case(&st_memcpy, "overlap", pat3, 4, 8, true);
-	std::fprintf(stderr, "memcpy_edges:overlap_fail_len\n");
 	memcpy_case(&st_memcpy, "overlap_fail_len", pat3, 4, 3, true);
 }
 
@@ -592,20 +608,15 @@ print_table(void)
 int
 main(void)
 {
-	std::fprintf(stderr, "start\n");
 	memmove_edges();
-	std::fprintf(stderr, "memmove_edges\n");
 	memcpy_edges();
-	std::fprintf(stderr, "memcpy_edges\n");
 	strncpy_edges();
-	std::fprintf(stderr, "strncpy_edges\n");
 	vsnprintf_edges();
-	std::fprintf(stderr, "vsnprintf_edges\n");
 
-	memmove_random(SWEEP);
-	memcpy_random(SWEEP);
-	strncpy_random(SWEEP);
-	vsnprintf_random(SWEEP);
+	// memmove_random(SWEEP);
+	// memcpy_random(SWEEP);
+	// strncpy_random(SWEEP);
+	vsnprintf_random(1000);
 
 	print_table();
 

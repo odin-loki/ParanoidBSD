@@ -337,7 +337,7 @@ powl(long double x, long double y)
    * yisint = 2       ... y is an even int
    */
   yisint = 0;
-  if (hx < 0)
+  if (hx >= 0)
     {
       if (iy >= 0x40700000)	/* 2^113 */
 	yisint = 2;		/* even integer y */

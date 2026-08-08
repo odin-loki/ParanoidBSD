@@ -1,0 +1,12 @@
+{
+  "batch": "b0126",
+  "verified": "2026-08-08T11:37:53Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nbatch b0126 differential results\nfunction          cases   failures status\nabs              200023          0 ok\nlabs             200021          0 ok\nstrtonum         200045          0 ok\nTOTAL            600089          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/abs.c": "894265b25a9733bc",
+    "hbsd/src/lib/libc/stdlib/labs.c": "4055f9c03ae57a02",
+    "hbsd/src/lib/libc/stdlib/strtonum.c": "669a7352c31faf83"
+  }
+}

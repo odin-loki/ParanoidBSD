@@ -47,6 +47,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/b0087/port.cppm
   lib/libc/gen/b0090/port.cppm
   lib/libc/gen/b0102/port.cppm
+  lib/libc/gen/b0125/port.cppm
   lib/libc/gen/check_utility_compat_m/port.cppm
   lib/libc/gen/clock_m/port.cppm
   lib/libc/gen/devname_m/port.cppm
@@ -189,6 +190,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdlib/b0021/port.cppm
   lib/libc/stdlib/b0065/port.cppm
   lib/libc/stdlib/b0069/port.cppm
+  lib/libc/stdlib/b0126/port.cppm
   lib/libc/stdlib/getsubopt_m/port.cppm
   lib/libc/stdlib/hcreate_m/port.cppm
   lib/libc/stdlib/reallocarray_m/port.cppm
@@ -326,6 +328,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/s_trunc_m/port.cppm
   lib/msun/src/s_truncf_m/port.cppm
   sbin/dump/unctime_m/port.cppm
+  sbin/ipf/libipf/b0123/port.cppm
+  sbin/ipf/libipf/b0124/port.cppm
   sbin/kldunload/kldunload_m/port.cppm
   sbin/nfsiod/nfsiod_m/port.cppm
   sbin/nvmecontrol/nc_util_m/port.cppm

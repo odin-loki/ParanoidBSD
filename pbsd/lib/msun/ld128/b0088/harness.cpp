@@ -20,16 +20,6 @@ import pbsd.lib.msun.ld128.b0088;
 namespace port = pbsd::lib_msun_ld128::b0088;
 
 extern "C" {
-long double _Complex pbsd_b0088_cexpl(long double _Complex);
-}
-
-static long double _Complex
-call_port_cexpl(long double _Complex z)
-{
-	return pbsd_b0088_cexpl(z);
-}
-
-extern "C" {
 long double ref_cospil(long double);
 long double ref_sinpil(long double);
 long double ref_tanpil(long double);
@@ -150,11 +140,16 @@ static void
 check_cexpl(long double _Complex z, const char *tag)
 {
 	long double _Complex p, o;
+	long double pr, pi, orr, oi;
 
 	st_cexpl.cases++;
-	p = call_port_cexpl(z);
+	p = port::cexpl(z);
 	o = ref_cexpl(z);
-	if (cx_equal(p, o))
+	pr = creall(p);
+	pi = cimagl(p);
+	orr = creall(o);
+	oi = cimagl(o);
+	if (ld_equal(pr, orr) && ld_equal(pi, oi))
 		return;
 	report_cx_fail(st_cexpl, tag, p, o);
 }
