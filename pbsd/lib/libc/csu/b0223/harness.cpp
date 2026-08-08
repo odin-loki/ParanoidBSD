@@ -362,9 +362,6 @@ bool test_process_irelocs_case(Stat &st, int n, const Elf_Rela *entries)
 bool test_finalizer_case(Stat &st, int fini_n, std::uintptr_t fn0,
     std::uintptr_t fn1)
 {
-	if (dynamic_linked())
-		return true;
-
 	st.cases++;
 	reset_all();
 	setup_arrays(0, 0, fini_n);
@@ -465,9 +462,6 @@ bool test_handle_irelocs_case(Stat &st, EnvStack &stack,
     const std::vector<const char *> &envs, const Elf_Auxinfo *auxv,
     int aux_count, int rela_n)
 {
-	if (dynamic_linked())
-		return true;
-
 	st.cases++;
 	reset_all();
 	stack.reset_env(envs, auxv, aux_count);

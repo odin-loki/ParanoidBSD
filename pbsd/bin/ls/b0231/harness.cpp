@@ -368,22 +368,16 @@ test_name_like(Stat &st, CmpFn ref_fn, CmpFn port_fn, long sweep_n)
 	FtsNode a(""), b("");
 	test_cmp_pair(st, ref_fn, port_fn, a, b, 0, "empty");
 
-	a.name = "a";
-	b.name = "b";
-	a.ent.fts_name = a.name.data();
-	b.ent.fts_name = b.name.data();
+	a.set_name("a");
+	b.set_name("b");
 	test_cmp_pair(st, ref_fn, port_fn, a, b, 0, "ab");
 
-	a.name = "file1";
-	b.name = "file10";
-	a.ent.fts_name = a.name.data();
-	b.ent.fts_name = b.name.data();
+	a.set_name("file1");
+	b.set_name("file10");
 	test_cmp_pair(st, ref_fn, port_fn, a, b, 0, "vers");
 
-	a.name = "\xff";
-	b.name = "\xfe";
-	a.ent.fts_name = a.name.data();
-	b.ent.fts_name = b.name.data();
+	a.set_name("\xff");
+	b.set_name("\xfe");
 	test_cmp_pair(st, ref_fn, port_fn, a, b, 0, "highbit");
 
 	for (long i = 0; i < sweep_n; i++) {
@@ -413,9 +407,7 @@ test_sizecmp(long sweep_n)
 	test_cmp_pair(st_sizecmp, ref_sizecmp, P::sizecmp, a, b, 0, "size lt");
 	a.set_size(5);
 	b.set_size(5);
-	b.name = "z";
-	a.ent.fts_name = a.name.data();
-	b.ent.fts_name = b.name.data();
+	b.set_name("z");
 	test_cmp_pair(st_sizecmp, ref_sizecmp, P::sizecmp, a, b, 0, "tie");
 
 	for (long i = 0; i < sweep_n; i++) {

@@ -48,7 +48,7 @@ as_cinfo(const P::info *ip)
 
 extern "C" {
 int ref_msearch(char ***, CInfo *);
-void ref_print(P::termios *, P::winsize *, int, P::FMT);
+void ref_print(CInfo::termios_type *, CInfo::winsize_type *, int, int);
 int ref_ksearch(char ***, CInfo *);
 void ref_f_all(CInfo *);
 void ref_f_cbreak(CInfo *);
@@ -196,7 +196,7 @@ struct Rng {
 	std::uint8_t u8() { return (std::uint8_t)next(); }
 	int i32() { return (int)u32(); }
 	bool bit() { return (u32() & 1) != 0; }
-} rng(0x00b0227sttyULL);
+} rng(0x00b0227ULL);
 
 static void
 reset_hooks()

@@ -678,61 +678,9 @@ static int is_number(const char *p)
 	return 1;
 }
 
-void port_reset_state(void)
-{
-	int i;
-	port_suppressint = 1;
-	port_intpending = 0;
-	port_error_flag = 0;
-	port_argptr = NULL;
-	port_nextopt_optptr = NULL;
-	port_shoptarg = NULL;
-	out1 = &output;
-	out2 = &errout;
-	if (output.buf) { std::free(output.buf); output.buf = NULL; }
-	output.nextc = NULL;
-	output.bufend = NULL;
-	output.flags = 0;
-	if (errout.buf) { std::free(errout.buf); errout.buf = NULL; }
-	errout.nextc = NULL;
-	errout.bufend = NULL;
-	errout.flags = 0;
-	if (memout.buf) { std::free(memout.buf); memout.buf = NULL; }
-	memout.nextc = NULL;
-	memout.bufend = NULL;
-	memout.bufsize = 64;
-	memout.flags = 0;
-	while (stackp) {
-		struct stack_block *sp = stackp;
-		stackp = sp->prev;
-		std::free(sp);
-	}
-	stacknxt = NULL;
-	stacknleft = 0;
-	sstrend = NULL;
-	for (i = 0; i < port_var_n; i++) {
-		std::free(port_vars[i].name);
-		std::free(port_vars[i].val);
-	}
-	port_var_n = 0;
-	Pflag = 0;
-	iflag = 0;
-	mflag = 0;
-	debug = 0;
-	rootshell = 1;
-	verifyflag = 0;
-	vflag = 0;
-	whichprompt = 1;
-	suppressint = 0;
-	evalskip = 0;
-	skipcount = 0;
-	exitstatus = 0;
-	oexitstatus = 0;
-}
-
-void port_set_out1_memout(void) { out1 = &memout; }
-void port_restore_out1(void) { out1 = &output; }
-struct output *port_get_memout(void) { return &memout; }
+void port_set_out1_memout(void);
+void port_restore_out1(void);
+struct output *port_get_memout(void);
 
 '''
 
