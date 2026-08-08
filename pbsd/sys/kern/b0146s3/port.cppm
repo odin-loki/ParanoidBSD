@@ -2,6 +2,7 @@ module;
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 
 export module pbsd.sys.kern.b0146s3;
 
@@ -37,14 +38,49 @@ struct malloc_type {
 	const char *ks_shortdesc;
 };
 
-extern "C" void *pbsd_kern_malloc(std::size_t size, malloc_type *type, int flags);
-extern "C" void pbsd_kern_free(void *addr, malloc_type *type);
+inline int g_malloc_calls;
+inline int g_malloc_fail_at;
+inline std::size_t g_malloc_last_size;
+inline int g_malloc_last_flags;
 
-inline void malloc_reset() noexcept;
-inline void malloc_fail_at(int n) noexcept;
+inline void malloc_reset() noexcept
+{
+	g_malloc_calls = 0;
+	g_malloc_fail_at = 0;
+	g_malloc_last_size = 0;
+	g_malloc_last_flags = 0;
+}
 
-#define malloc(s, t, f) pbsd_kern_malloc((s), (t), (f))
-#define free(p, t) pbsd_kern_free((p), (t))
+inline void malloc_fail_at(int n) noexcept
+{
+	g_malloc_fail_at = n;
+}
+
+inline void *
+kern_malloc(u_long size, malloc_type *type, int flags)
+{
+	void *p;
+
+	(void)type;
+
+	g_malloc_calls++;
+	g_malloc_last_size = size;
+	g_malloc_last_flags = flags;
+	if (g_malloc_fail_at != 0 && g_malloc_calls >= g_malloc_fail_at)
+		return (nullptr);
+	p = std::malloc(size);
+	return (p);
+}
+
+inline void
+kern_free(void *addr, malloc_type *type)
+{
+	(void)type;
+	std::free(addr);
+}
+
+#define malloc kern_malloc
+#define free kern_free
 
 } // namespace pbsd::sys_kern::b0146s3::detail
 
@@ -126,7 +162,7 @@ KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
 	hashsize >>= 1;
 
 	hashtbl = static_cast<generic_list_head *>(
-	    detail::malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
+	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
 	    hash_mflags(flags)));
 	if (hashtbl != nullptr) {
 		for (i = 0; i < hashsize; i++)
@@ -152,7 +188,7 @@ hashdestroy(void *vhashtbl, malloc_type *type, u_long hashmask)
 	for (hp = hashtbl; hp <= &hashtbl[hashmask]; hp++)
 KASSERT(LIST_EMPTY(hp), ("%s: hashtbl %p not empty "
 		    "(malloc type %s)", __func__, hashtbl, type->ks_shortdesc));
-detail::free(hashtbl, type);
+detail::kern_free(hashtbl, type);
 }
 
 static const int primes[] = { 1, 13, 31, 61, 127, 251, 509, 761, 1021, 1531,
@@ -179,7 +215,7 @@ KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
 	hashsize = primes[i - 1];
 
 	hashtbl = static_cast<generic_list_head *>(
-	    detail::malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
+	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
 	    hash_mflags(flags)));
 	if (hashtbl == nullptr)
 		return (nullptr);
@@ -197,26 +233,6 @@ phashinit(int elements, malloc_type *type, u_long *nentries)
 	return (phashinit_flags(elements, type, nentries, HASH_WAITOK));
 }
 
-} // namespace pbsd::sys_kern::b0146s3
-
-export namespace pbsd::sys_kern::b0146s3::detail {
-
-inline void malloc_reset() noexcept
-{
-	extern void pbsd_kern_env_reset(void);
-	pbsd_kern_env_reset();
-}
-
-inline void malloc_fail_at(int n) noexcept
-{
-	extern void pbsd_kern_fail_at(int n);
-	pbsd_kern_fail_at(n);
-}
-
-} // namespace pbsd::sys_kern::b0146s3::detail
-
-export namespace pbsd::sys_kern::b0146s3 {
-
 inline void malloc_reset() noexcept
 {
 	detail::malloc_reset();
@@ -225,6 +241,21 @@ inline void malloc_reset() noexcept
 inline void malloc_fail_at(int n) noexcept
 {
 	detail::malloc_fail_at(n);
+}
+
+inline int malloc_calls() noexcept
+{
+	return (detail::g_malloc_calls);
+}
+
+inline std::size_t malloc_last_size() noexcept
+{
+	return (detail::g_malloc_last_size);
+}
+
+inline int malloc_last_flags() noexcept
+{
+	return (detail::g_malloc_last_flags);
 }
 
 } // namespace pbsd::sys_kern::b0146s3

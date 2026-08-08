@@ -323,20 +323,29 @@ entry_slot(unsigned char *buf)
 
 static bool
 check_unlocked(int row, const char *label, dir_fixture *pa, dir_fixture *pb,
-    int flags, int expect_gd_calls, int expect_fix_calls)
+    int flags)
 {
 	dirent *dp_p;
 	dirent *dp_r;
 	long off_p;
 	long off_r;
+	int gd_base;
+	int gd_p;
+	int gd_r;
+	int fix_p;
+	int fix_r;
 
 	mutex_track_reset();
-	gd_mock_reset();
-	g_gd = g_gd; /* silence unused when not refill */
+	gd_base = g_gd.calls;
 	fix_mock_reset();
 
 	dp_p = port::_readdir_unlocked(&pa->dir, flags);
+	gd_p = g_gd.calls - gd_base;
+	fix_p = g_fix.calls;
+
 	dp_r = ref__readdir_unlocked(&pb->dir, flags);
+	gd_r = g_gd.calls - gd_base - gd_p;
+	fix_r = g_fix.calls - fix_p;
 
 	off_p = ptr_offset(pa, dp_p);
 	off_r = ptr_offset(pb, dp_r);
@@ -351,11 +360,11 @@ check_unlocked(int row, const char *label, dir_fixture *pa, dir_fixture *pb,
 		fail_row(row, label, "DIR/buffer state mismatch");
 		return (false);
 	}
-	if (g_gd.calls != expect_gd_calls) {
+	if (gd_p != gd_r) {
 		fail_row(row, label, "_getdirentries call count mismatch");
 		return (false);
 	}
-	if (g_fix.calls != expect_fix_calls) {
+	if (fix_p != fix_r) {
 		fail_row(row, label, "_fixtelldir call count mismatch");
 		return (false);
 	}
@@ -375,7 +384,6 @@ check_readdir(int row, const char *label, dir_fixture *pa, dir_fixture *pb,
 	prev_threaded = __isthreaded;
 	__isthreaded = threaded;
 	mutex_track_reset();
-	gd_mock_reset();
 	fix_mock_reset();
 
 	dp_p = port::readdir(&pa->dir);
@@ -421,7 +429,6 @@ check_readdir_r(int row, const char *label, dir_fixture *pa, dir_fixture *pb,
 	prev_threaded = __isthreaded;
 	__isthreaded = threaded;
 	mutex_track_reset();
-	gd_mock_reset();
 	fix_mock_reset();
 
 	slot_p = entry_slot(entry_p);
@@ -490,7 +497,7 @@ test_unlocked_hand(void)
 	write_dirent(pa.dir.dd_buf, 0, 42, 8, 3, "foo", 0);
 	write_dirent(pb.dir.dd_buf, 0, 42, 8, 3, "foo", 0);
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
-	(void)check_unlocked(R_UNLOCKED, "single_entry", &pa, &pb, RDU_SKIP, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "single_entry", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
@@ -505,7 +512,7 @@ test_unlocked_hand(void)
 	    _GENERIC_DIRSIZ((dirent *)(pa.dir.dd_buf +
 	    _GENERIC_DIRSIZ((dirent *)pa.dir.dd_buf)));
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
-	(void)check_unlocked(R_UNLOCKED, "skip_ino0", &pa, &pb, RDU_SKIP, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "skip_ino0", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
@@ -520,7 +527,7 @@ test_unlocked_hand(void)
 	    _GENERIC_DIRSIZ((dirent *)(pa.dir.dd_buf +
 	    _GENERIC_DIRSIZ((dirent *)pa.dir.dd_buf)));
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD | DTF_HIDEW;
-	(void)check_unlocked(R_UNLOCKED, "skip_wht", &pa, &pb, RDU_SKIP, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "skip_wht", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
@@ -529,14 +536,14 @@ test_unlocked_hand(void)
 	pa.dir.dd_size = pb.dir.dd_size = _GENERIC_DIRSIZ((dirent *)pa.dir.dd_buf);
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
 	(void)check_unlocked(R_UNLOCKED, "skip_short", &pa, &pb,
-	    RDU_SKIP | RDU_SHORT, 0, 0);
+	    RDU_SKIP | RDU_SHORT);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
 	pa.dir.dd_loc = pb.dir.dd_loc = 1;
 	pa.dir.dd_size = pb.dir.dd_size = 64;
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
-	(void)check_unlocked(R_UNLOCKED, "misaligned", &pa, &pb, RDU_SKIP, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "misaligned", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
@@ -546,36 +553,36 @@ test_unlocked_hand(void)
 	((dirent *)pb.dir.dd_buf)->d_reclen = 0;
 	pa.dir.dd_size = pb.dir.dd_size = 64;
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
-	(void)check_unlocked(R_UNLOCKED, "reclen_zero", &pa, &pb, RDU_SKIP, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "reclen_zero", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
 	write_dirent(pa.dir.dd_buf, 0, 1, 8, 1, "x", 0);
-	write_dirent(pb.dir.dd_buf, 0, 1, "x", 8, 1, "x", 0);
+	write_dirent(pb.dir.dd_buf, 0, 1, 8, 1, "x", 0);
 	((dirent *)pa.dir.dd_buf)->d_reclen = DIRBUF_LEN + 2;
 	((dirent *)pb.dir.dd_buf)->d_reclen = DIRBUF_LEN + 2;
 	pa.dir.dd_size = pb.dir.dd_size = DIRBUF_LEN;
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
-	(void)check_unlocked(R_UNLOCKED, "reclen_huge", &pa, &pb, RDU_SKIP, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "reclen_huge", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
 	pa.dir.dd_loc = pb.dir.dd_loc = DIRBUF_LEN;
 	pa.dir.dd_size = pb.dir.dd_size = DIRBUF_LEN;
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_READALL;
-	(void)check_unlocked(R_UNLOCKED, "readall_done", &pa, &pb, RDU_SKIP, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "readall_done", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
 	gd_mock_set(0, 0);
 	dir_copy(&pa, &pb);
-	(void)check_unlocked(R_UNLOCKED, "gd_zero", &pa, &pb, RDU_SKIP, 1, 1);
+	(void)check_unlocked(R_UNLOCKED, "gd_zero", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
 	gd_mock_set(-1, ENOENT);
 	dir_copy(&pa, &pb);
-	(void)check_unlocked(R_UNLOCKED, "gd_fail", &pa, &pb, RDU_SKIP, 1, 0);
+	(void)check_unlocked(R_UNLOCKED, "gd_fail", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
@@ -588,7 +595,7 @@ test_unlocked_hand(void)
 	pa.dir.dd_size = pb.dir.dd_size = 0;
 	pa.dir.dd_seek = pb.dir.dd_seek = 0;
 	pa.dir.dd_flags = pb.dir.dd_flags = 0;
-	(void)check_unlocked(R_UNLOCKED, "gd_refill", &pa, &pb, RDU_SKIP, 1, 1);
+	(void)check_unlocked(R_UNLOCKED, "gd_refill", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
@@ -597,7 +604,7 @@ test_unlocked_hand(void)
 	pa.dir.dd_flags = pb.dir.dd_flags = 0;
 	gd_mock_set(0, 0);
 	dir_copy(&pa, &pb);
-	(void)check_unlocked(R_UNLOCKED, "loc_past_size", &pa, &pb, RDU_SKIP, 1, 0);
+	(void)check_unlocked(R_UNLOCKED, "loc_past_size", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
@@ -605,7 +612,7 @@ test_unlocked_hand(void)
 	write_dirent(pb.dir.dd_buf, 0, 0, 8, 1, "n", 0);
 	pa.dir.dd_size = pb.dir.dd_size = _GENERIC_DIRSIZ((dirent *)pa.dir.dd_buf);
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
-	(void)check_unlocked(R_UNLOCKED, "ino0_no_skip", &pa, &pb, 0, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "ino0_no_skip", &pa, &pb, 0);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
@@ -622,7 +629,7 @@ test_unlocked_hand(void)
 		pa.dir.dd_size = pb.dir.dd_size = pa.dir.dd_len;
 		pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
 		(void)check_unlocked(R_UNLOCKED, "reclen_boundary", &pa, &pb,
-		    RDU_SKIP, 0, 0);
+		    RDU_SKIP);
 	}
 
 	dir_reset(&pa);
@@ -636,7 +643,7 @@ test_unlocked_hand(void)
 		    _GENERIC_DIRSIZ((dirent *)pa.dir.dd_buf);
 		pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
 		(void)check_unlocked(R_UNLOCKED, "highbit_name", &pa, &pb,
-		    RDU_SKIP, 0, 0);
+		    RDU_SKIP);
 	}
 
 	dir_reset(&pa);
@@ -650,13 +657,13 @@ test_unlocked_hand(void)
 	pa.dir.dd_size = pb.dir.dd_size =
 	    _GENERIC_DIRSIZ((dirent *)pa.dir.dd_buf) * 2;
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
-	(void)check_unlocked(R_UNLOCKED, "empty_names", &pa, &pb, RDU_SKIP, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "empty_names", &pa, &pb, RDU_SKIP);
 
 	dir_reset(&pa);
 	dir_reset(&pb);
 	pa.dir.dd_flags = pb.dir.dd_flags = __DTF_SKIPREAD;
 	pa.dir.dd_size = pb.dir.dd_size = 0;
-	(void)check_unlocked(R_UNLOCKED, "empty_buf", &pa, &pb, RDU_SKIP, 0, 0);
+	(void)check_unlocked(R_UNLOCKED, "empty_buf", &pa, &pb, RDU_SKIP);
 }
 
 static void
@@ -766,14 +773,14 @@ test_unlocked_sweep(void)
 		dir_fixture pa, pb;
 		int flags;
 		int use_refill;
-		int expect_gd;
-		int expect_fix;
 		char lbl[48];
 
+		gd_mock_reset();
+		fix_mock_reset();
 		dir_reset(&pa);
 		dir_reset(&pb);
 
-		rng_state = 0x0132s1ULL ^ (uint64_t)i;
+		rng_state = 0xb0132b1ULL ^ (uint64_t)i;
 		flags = (int)(rnd32() & (RDU_SKIP | RDU_SHORT));
 		pa.dir.dd_loc = pb.dir.dd_loc = (size_t)rnd_range(0, DIRBUF_LEN);
 		pa.dir.dd_size = pb.dir.dd_size = (size_t)rnd_range(0, DIRBUF_LEN);
@@ -795,26 +802,20 @@ test_unlocked_sweep(void)
 
 		use_refill = ((pa.dir.dd_flags & (__DTF_READALL | __DTF_SKIPREAD)) ==
 		    0 && pa.dir.dd_loc == 0);
-		expect_gd = use_refill ? 1 : 0;
-		expect_fix = 0;
 		if (use_refill) {
 			if ((rnd32() & 1u) != 0) {
 				size_t n = (size_t)rnd_range(1, 128);
 				gd_mock_refill((const unsigned char *)pa.dir.dd_buf,
 				    n, (off_t)rnd_range(0, 500));
-				expect_fix = 1;
 			} else {
 				gd_mock_set((rnd32() & 1u) ? 0 : -1,
 				    rnd_range(1, 255));
 			}
-		} else {
-			gd_mock_reset();
 		}
 
 		dir_copy(&pa, &pb);
 		std::snprintf(lbl, sizeof(lbl), "sweep_%ld", i);
-		(void)check_unlocked(R_UNLOCKED, lbl, &pa, &pb, flags,
-		    expect_gd, expect_fix);
+		(void)check_unlocked(R_UNLOCKED, lbl, &pa, &pb, flags);
 	}
 }
 
@@ -831,7 +832,7 @@ test_readdir_sweep(void)
 		dir_reset(&pa);
 		dir_reset(&pb);
 
-		rng_state = 0x0132s1aaULL ^ (uint64_t)i;
+		rng_state = 0xb0132b1aaULL ^ (uint64_t)i;
 		threaded = (int)(rnd32() & 1u);
 		pa.dir.dd_loc = pb.dir.dd_loc = (size_t)rnd_range(0, DIRBUF_LEN);
 		pa.dir.dd_size = pb.dir.dd_size = (size_t)rnd_range(0, DIRBUF_LEN);
@@ -865,7 +866,7 @@ test_readdir_r_sweep(void)
 		entry_buf_init(entry_p, GUARD);
 		entry_buf_init(entry_r, GUARD);
 
-		rng_state = 0x0132s1bbULL ^ (uint64_t)i;
+		rng_state = 0xb0132b1bbULL ^ (uint64_t)i;
 		threaded = (int)(rnd32() & 1u);
 		pa.dir.dd_loc = pb.dir.dd_loc = (size_t)rnd_range(0, DIRBUF_LEN);
 		pa.dir.dd_size = pb.dir.dd_size = (size_t)rnd_range(0, DIRBUF_LEN);

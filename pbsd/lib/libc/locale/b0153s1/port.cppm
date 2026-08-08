@@ -62,7 +62,7 @@ __get_locale(void)
 
 #define FIX_LOCALE(loc)	do {						\
 	if ((loc) == NULL)						\
-		(loc) = (locale_t)pbsd::lib_libc_locale::b0153s1::__get_locale(); \
+		(loc) = pbsd::lib_libc_locale::b0153s1::__get_locale();	\
 } while (0)
 
 extern "C" {
@@ -132,19 +132,19 @@ get_localeconv_flags(int *mon, int *num)
  */
 
 struct lconv *
-localeconv_l(locale_t loc)
+localeconv_l(port_locale_t loc)
 {
 	FIX_LOCALE(loc);
-    struct lconv *ret = &((port_xlocale *)loc)->lconv;
+    struct lconv *ret = &loc->lconv;
 
-    if (atomic_load_acq_int(&((port_xlocale *)loc)->monetary_locale_changed) != 0) {
+    if (atomic_load_acq_int(&loc->monetary_locale_changed) != 0) {
 	/* LC_MONETARY part */
         struct lc_monetary_T * mptr; 
 
 #define M_ASSIGN_STR(NAME) (ret->NAME = (char*)mptr->NAME)
 #define M_ASSIGN_CHAR(NAME) (ret->NAME = mptr->NAME[0])
 
-	mptr = __get_current_monetary_locale(loc);
+	mptr = __get_current_monetary_locale((locale_t)loc);
 	M_ASSIGN_STR(int_curr_symbol);
 	M_ASSIGN_STR(currency_symbol);
 	M_ASSIGN_STR(mon_decimal_point);
@@ -166,20 +166,20 @@ localeconv_l(locale_t loc)
 	M_ASSIGN_CHAR(int_n_sep_by_space);
 	M_ASSIGN_CHAR(int_p_sign_posn);
 	M_ASSIGN_CHAR(int_n_sign_posn);
-	atomic_store_rel_int(&((port_xlocale *)loc)->monetary_locale_changed, 0);
+	atomic_store_rel_int(&loc->monetary_locale_changed, 0);
     }
 
-    if (atomic_load_acq_int(&((port_xlocale *)loc)->numeric_locale_changed) != 0) {
+    if (atomic_load_acq_int(&loc->numeric_locale_changed) != 0) {
 	/* LC_NUMERIC part */
         struct lc_numeric_T * nptr; 
 
 #define N_ASSIGN_STR(NAME) (ret->NAME = (char*)nptr->NAME)
 
-	nptr = __get_current_numeric_locale(loc);
+	nptr = __get_current_numeric_locale((locale_t)loc);
 	N_ASSIGN_STR(decimal_point);
 	N_ASSIGN_STR(thousands_sep);
 	N_ASSIGN_STR(grouping);
-	atomic_store_rel_int(&((port_xlocale *)loc)->numeric_locale_changed, 0);
+	atomic_store_rel_int(&loc->numeric_locale_changed, 0);
     }
 
     return ret;
@@ -187,7 +187,7 @@ localeconv_l(locale_t loc)
 struct lconv *
 localeconv(void)
 {
-	return localeconv_l((locale_t)__get_locale());
+	return localeconv_l(__get_locale());
 }
 
 } /* export namespace pbsd::lib_libc_locale::b0153s1 */

@@ -1,44 +1,35 @@
 #!/bin/sh
-#
 # Build and run the b0105s2 differential test.
-#
-#   sh build.sh
-#
-# Compiles oracle.c as C11, port.cppm and harness.cpp as C++23 modules, links
-# the three together and execs the harness, so this script exits with the
-# harness' exit status: 0 only if every single case matched.
+# Usage: sh build.sh   (from pbsd/lib/libc/string/b0105s2/)
 
 set -e
 
+cd "$(dirname "$0")"
+
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS="-std=c11 -O2"
-CXXFLAGS="-std=c++23 -O2"
+OUT=./b0105s2_test
 
-MODNAME=pbsd.lib.libc.string.b0105s2
+rm -rf gcm.cache port.pcm port.o oracle.o harness.o "$OUT"
 
-src=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+"$CC" -std=c11 -O2 -c oracle.c -o oracle.o
 
-# Build out of tree: both GCC (gcm.cache) and Clang (*.pcm) drop module
-# artifacts into the working directory.
-build=${TMPDIR:-/tmp}/pbsd-b0105s2-build.$$
-rm -rf "$build"
-mkdir -p "$build"
-cd "$build"
-
-$CC $CFLAGS -c "$src/oracle.c" -o oracle.o
-
-if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX $CXXFLAGS -x c++-module --precompile "$src/port.cppm" -o port.pcm
-	$CXX $CXXFLAGS -c port.pcm -o port.o
-	$CXX $CXXFLAGS -fmodule-file="$MODNAME=port.pcm" \
-	    -c "$src/harness.cpp" -o harness.o
+if "$CXX" --version 2>&1 | grep -qi clang; then
+	# Clang: precompile the module interface, then feed it to the TU that
+	# imports it.
+	"$CXX" -std=c++23 -O2 -Wno-reserved-module-identifier \
+	    --precompile -x c++-module port.cppm -o port.pcm
+	"$CXX" -std=c++23 -O2 -c port.pcm -o port.o
+	"$CXX" -std=c++23 -O2 \
+	    -fmodule-file=pbsd.lib.libc.string.b0105s2=port.pcm \
+	    -c harness.cpp -o harness.o
 else
-	# GCC needs -fmodules-ts, and does not map the .cppm suffix itself.
-	$CXX $CXXFLAGS -fmodules-ts -x c++ -c "$src/port.cppm" -o port.o
-	$CXX $CXXFLAGS -fmodules-ts -c "$src/harness.cpp" -o harness.o
+	# GCC: -fmodules-ts, module interface compiled first so that the CMI
+	# lands in gcm.cache before harness.cpp imports it.
+	"$CXX" -std=c++23 -fmodules-ts -O2 -x c++ -c port.cppm -o port.o
+	"$CXX" -std=c++23 -fmodules-ts -O2 -c harness.cpp -o harness.o
 fi
 
-$CXX $CXXFLAGS -o harness harness.o port.o oracle.o
+"$CXX" -std=c++23 -O2 -o "$OUT" harness.o port.o oracle.o
 
-exec ./harness
+exec "$OUT"

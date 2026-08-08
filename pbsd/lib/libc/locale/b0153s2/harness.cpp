@@ -32,8 +32,6 @@ typedef struct {
 void			pbsd_reset_hooks(void);
 pbsd_wcsftime_hook_t	*pbsd_get_wcsftime_hook(void);
 struct ref_xlocale	*ref_get_test_locale(void);
-size_t	ref_wcsftime_l(wchar_t *, size_t, const wchar_t *, const struct tm *,
-	    struct ref_xlocale *);
 size_t	ref_wcsftime(wchar_t *, size_t, const wchar_t *, const struct tm *);
 }
 
@@ -58,7 +56,7 @@ wchook()
 	return (*pbsd_get_wcsftime_hook());
 }
 
-static uint64_t rng = 0xB0153S202ULL;
+static uint64_t rng = 0xB0153202ULL;
 
 static uint64_t
 rnd(void)
@@ -244,13 +242,6 @@ sweep_wcsftime(int f, bool use_l)
 		wchook().strftime_len = (size_t)u32(12);
 		run_wcsftime(f, use_l, fmt, u32(32) + 1, &tm, u32(4) == 0);
 	}
-}
-
-extern "C" struct ref_xlocale *
-ref_get_test_locale(void)
-{
-	extern struct _xlocale ref_test_locale;
-	return ((struct ref_xlocale *)&ref_test_locale);
 }
 
 int

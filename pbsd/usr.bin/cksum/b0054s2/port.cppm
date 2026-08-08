@@ -1,20 +1,3 @@
-// PBSD batch b0054s2 -- C++23 module port of usr.bin/cksum/crc.c.
-//
-// Faithful, behaviour-preserving port.  Signedness, evaluation order,
-// integer promotions, pointer arithmetic and the file-static running total
-// are reproduced exactly as the C original had them.
-
-module;
-
-#include <sys/types.h>
-
-#include <stdint.h>
-#include <unistd.h>
-
-export module pbsd.usr.bin.cksum.b0054s2;
-
-namespace pbsd::usr_bin_cksum::b0054s2 {
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -48,6 +31,17 @@ namespace pbsd::usr_bin_cksum::b0054s2 {
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+module;
+
+#include <sys/types.h>
+
+#include <stdint.h>
+#include <unistd.h>
+
+export module pbsd.usr.bin.cksum.b0054s2;
+
+namespace pbsd::usr_bin_cksum::b0054s2 {
 
 static const uint32_t crctab[] = {
 	0x0,
@@ -112,6 +106,8 @@ static const uint32_t crctab[] = {
  */
 static uint32_t crc_total = ~0;		/* The crc over a number of files. */
 
+#define	COMPUTE(var, ch)	(var) = (var) << 8 ^ crctab[(var) >> 24 ^ (ch)]
+
 export int
 crc(int fd, uint32_t *cval, off_t *clen)
 {
@@ -120,8 +116,6 @@ crc(int fd, uint32_t *cval, off_t *clen)
 	off_t len;
 	u_char *p;
 	u_char buf[16 * 1024];
-
-#define	COMPUTE(var, ch)	(var) = (var) << 8 ^ crctab[(var) >> 24 ^ (ch)]
 
 	lcrc = len = 0;
 	crc_total = ~crc_total;
@@ -146,18 +140,16 @@ crc(int fd, uint32_t *cval, off_t *clen)
 	return (0);
 }
 
-#undef COMPUTE
-
+/*
+ * crc_total is file-local state in the original translation unit and is
+ * therefore not observable through crc()'s interface.  Expose it so that the
+ * differential harness can check the running accumulator, including the case
+ * where crc() returns early and leaves it inverted.
+ */
 export uint32_t
-crc_total_get()
+crc_total_value(void)
 {
-	return crc_total;
+	return (crc_total);
 }
 
-export void
-crc_total_set(uint32_t v)
-{
-	crc_total = v;
 }
-
-} // namespace pbsd::usr_bin_cksum::b0054s2

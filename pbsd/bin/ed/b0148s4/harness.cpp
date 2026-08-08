@@ -44,7 +44,7 @@ struct Stat { const char *name; long cases, fails; };
 Stat stats[16];
 int nstats;
 
-std::uint64_t rng = 0xb0148s4deadbeefULL;
+std::uint64_t rng = 0xb01484deadbeefULL;
 
 std::uint64_t rnd()
 {

@@ -12,6 +12,7 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifndef LONG_BIT
@@ -46,27 +47,75 @@ struct malloc_type {
 #define	HASH_NOWAIT	0x00000001
 #define	HASH_WAITOK	0x00000002
 
-void pbsd_kern_env_reset(void);
-void pbsd_kern_fail_at(int n);
-void *pbsd_kern_malloc(size_t size, struct malloc_type *type, int flags);
-void pbsd_kern_free(void *addr, struct malloc_type *type);
-
-#define	malloc(s, t, f)	pbsd_kern_malloc((s), (t), (f))
-#define	free(p, t)	pbsd_kern_free((p), (t))
+static int	oracle_malloc_calls;
+static int	oracle_malloc_fail_at;
+static size_t	oracle_malloc_last_size;
+static int	oracle_malloc_last_flags;
 
 void
 oracle_malloc_reset(void)
 {
 
-	pbsd_kern_env_reset();
+	oracle_malloc_calls = 0;
+	oracle_malloc_fail_at = 0;
+	oracle_malloc_last_size = 0;
+	oracle_malloc_last_flags = 0;
 }
 
 void
 oracle_malloc_fail_at(int n)
 {
 
-	pbsd_kern_fail_at(n);
+	oracle_malloc_fail_at = n;
 }
+
+int
+oracle_malloc_calls_count(void)
+{
+
+	return (oracle_malloc_calls);
+}
+
+size_t
+oracle_malloc_last_size(void)
+{
+
+	return (oracle_malloc_last_size);
+}
+
+int
+oracle_malloc_last_flags(void)
+{
+
+	return (oracle_malloc_last_flags);
+}
+
+static void *
+oracle_kmalloc(u_long size, struct malloc_type *type, int flags)
+{
+	void *p;
+
+	(void)type;
+
+	oracle_malloc_calls++;
+	oracle_malloc_last_size = size;
+	oracle_malloc_last_flags = flags;
+	if (oracle_malloc_fail_at != 0 &&
+	    oracle_malloc_calls >= oracle_malloc_fail_at)
+		return (NULL);
+	p = malloc(size);
+	return (p);
+}
+
+static void
+oracle_kfree(void *addr, struct malloc_type *type)
+{
+	(void)type;
+	free(addr);
+}
+
+#define	malloc	oracle_kmalloc
+#define	free	oracle_kfree
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause

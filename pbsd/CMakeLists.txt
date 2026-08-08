@@ -22,6 +22,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/echo/b0171/port.cppm
   bin/ed/b0148/port.cppm
   bin/ed/b0148s1/port.cppm
+  bin/ed/b0148s2/port.cppm
+  bin/ed/b0148s3/port.cppm
   bin/ed/b0148s4/port.cppm
   bin/ed/b0193/port.cppm
   bin/getfacl/b0182/port.cppm
@@ -168,6 +170,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0147/port.cppm
   lib/libc/locale/b0153/port.cppm
   lib/libc/locale/b0153s1/port.cppm
+  lib/libc/locale/b0153s2/port.cppm
+  lib/libc/locale/b0153s3/port.cppm
   lib/libc/locale/b0156/port.cppm
   lib/libc/locale/b0159/port.cppm
   lib/libc/locale/isctype_m/port.cppm
@@ -175,6 +179,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/rpmatch_m/port.cppm
   lib/libc/locale/wctype_m/port.cppm
   lib/libc/nameser/b0154/port.cppm
+  lib/libc/nameser/b0154s1/port.cppm
   lib/libc/net/b0076/port.cppm
   lib/libc/net/b0129/port.cppm
   lib/libc/net/if_indextoname_m/port.cppm

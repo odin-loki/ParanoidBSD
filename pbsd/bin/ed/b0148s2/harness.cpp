@@ -42,7 +42,7 @@ struct Stat { const char *name; long cases, fails; };
 Stat stats[3];
 int nstats;
 
-std::uint64_t rng = 0xb0148s2facefeedULL;
+std::uint64_t rng = 0xb014842facefeedULL;
 
 std::uint64_t rnd()
 {
