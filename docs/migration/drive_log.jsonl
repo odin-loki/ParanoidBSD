@@ -1670,3 +1670,4 @@
 {"batch": "b0003", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:16:57Z"}
 {"batch": "b0016s1", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T09:17:17Z"}
 {"batch": "b0007", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T09:17:19Z"}
+{"batch": "b0008", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 2/2: ifunc_init, crt1_handle_rela)", "how": "agent", "ts": "2026-08-08T09:17:28Z"}

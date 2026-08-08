@@ -81,7 +81,7 @@ const void *ops_slot_ptr(const void *ops_base, int slot)
 
 void check_none_ops()
 {
-	const auto &port_ops = port::get_none_ops();
+	const port::mac_policy_ops port_ops = port::get_none_ops();
 	const struct mac_policy_ops *ref_ops = ref_none_ops();
 
 	++st_none_ops.cases;
@@ -119,7 +119,7 @@ void check_none_ops()
 }
 
 void check_conf_field_strings(const struct mac_policy_conf *ref_conf,
-    const port::mac_policy_conf &port_conf)
+    const port::mac_policy_conf port_conf)
 {
 	++st_mac_none_conf.cases;
 	if (ref_conf->mpc_name == nullptr ||
@@ -160,7 +160,7 @@ void check_conf_field_strings(const struct mac_policy_conf *ref_conf,
 }
 
 void check_conf_field_ints(const struct mac_policy_conf *ref_conf,
-    const port::mac_policy_conf &port_conf)
+    const port::mac_policy_conf port_conf)
 {
 	++st_mac_none_conf.cases;
 	if (ref_conf->mpc_loadtime_flags != MPC_LOADTIME_FLAG_UNLOADOK) {
@@ -226,9 +226,9 @@ void check_conf_field_ints(const struct mac_policy_conf *ref_conf,
 }
 
 void check_conf_ops_pointer(const struct mac_policy_conf *ref_conf,
-    const port::mac_policy_conf &port_conf,
+    const port::mac_policy_conf port_conf,
     const struct mac_policy_ops *ref_ops,
-    const port::mac_policy_ops &port_ops)
+    const port::mac_policy_ops port_ops)
 {
 	++st_mac_none_conf.cases;
 	if (ref_conf->mpc_ops != ref_ops) {
@@ -253,9 +253,9 @@ void check_conf_ops_pointer(const struct mac_policy_conf *ref_conf,
 void check_mac_none_conf()
 {
 	const struct mac_policy_conf *ref_conf = ref_mac_none_mac_policy_conf();
-	const auto &port_conf = port::get_mac_none_mac_policy_conf();
+	const port::mac_policy_conf port_conf = port::get_mac_none_mac_policy_conf();
 	const struct mac_policy_ops *ref_ops = ref_none_ops();
-	const auto &port_ops = port::get_none_ops();
+	const port::mac_policy_ops port_ops = port::get_none_ops();
 
 	++st_mac_none_conf.cases;
 	if (sizeof(port_conf) != sizeof(*ref_conf)) {
@@ -271,9 +271,9 @@ void check_mac_none_conf()
 void check_mac_none_mod()
 {
 	const moduledata_t *ref_mod = ref_mac_none_mod();
-	const auto &port_mod = port::get_mac_none_mod();
+	const port::moduledata_t port_mod = port::get_mac_none_mod();
 	const struct mac_policy_conf *ref_conf = ref_mac_none_mac_policy_conf();
-	const auto &port_conf = port::get_mac_none_mac_policy_conf();
+	const port::mac_policy_conf port_conf = port::get_mac_none_mac_policy_conf();
 
 	++st_mac_none_mod.cases;
 	if (ref_mod->name == nullptr || std::strcmp(ref_mod->name, "mac_none") != 0) {
@@ -316,10 +316,10 @@ void check_mac_none_mod()
 
 void run_random_sweep()
 {
-	const auto &port_ops = port::get_none_ops();
+	const port::mac_policy_ops port_ops = port::get_none_ops();
 	const struct mac_policy_ops *ref_ops = ref_none_ops();
 	const struct mac_policy_conf *ref_conf = ref_mac_none_mac_policy_conf();
-	const auto &port_conf = port::get_mac_none_mac_policy_conf();
+	const port::mac_policy_conf port_conf = port::get_mac_none_mac_policy_conf();
 
 	prng_seed(0xB0005D1FFULL);
 

@@ -372,13 +372,10 @@ static int mac_policy_modevent(module_t mod, int type, void *data)
 MAC_POLICY_SET(&none_ops, mac_none, "TrustedBSD MAC/None",
     MPC_LOADTIME_FLAG_UNLOADOK, nullptr);
 
-inline const mac_policy_ops &get_none_ops() { return none_ops; }
-inline const mac_policy_conf &get_mac_none_mac_policy_conf() {
+inline mac_policy_ops get_none_ops() { return none_ops; }
+inline mac_policy_conf get_mac_none_mac_policy_conf() {
 	return mac_none_mac_policy_conf;
 }
-inline const moduledata_t &get_mac_none_mod() { return mac_none_mod; }
-inline int (*get_mac_policy_modevent())(module_t, int, void *) {
-	return mac_policy_modevent;
-}
+inline moduledata_t get_mac_none_mod() { return mac_none_mod; }
 
 } /* namespace */

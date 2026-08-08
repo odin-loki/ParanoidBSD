@@ -15,8 +15,6 @@ module;
 
 #include <cstdint>
 
-using uint48 = std::uint64_t;
-
 export module pbsd.lib.libc.gen.b0013;
 
 #define	RAND48_SEED_0	(0x330e)
@@ -28,7 +26,8 @@ export module pbsd.lib.libc.gen.b0013;
 #define	RAND48_ADD	(0x000b)
 
 #define	TOUINT48(x, y, z)						\
-	((uint48)(x) + (((uint48)(y)) << 16) + (((uint48)(z)) << 32))
+	((std::uint64_t)(x) + (((std::uint64_t)(y)) << 16) +		\
+	    (((std::uint64_t)(z)) << 32))
 
 #define	RAND48_SEED	TOUINT48(RAND48_SEED_0, RAND48_SEED_1, RAND48_SEED_2)
 #define	RAND48_MULT	TOUINT48(RAND48_MULT_0, RAND48_MULT_1, RAND48_MULT_2)
