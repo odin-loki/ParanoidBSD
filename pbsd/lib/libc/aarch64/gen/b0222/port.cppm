@@ -52,7 +52,7 @@ typedef struct __mcontext mcontext_t;
 
 struct __stack_t {
 	void		*ss_sp;
-	__size_t	ss_size;
+	size_t		ss_size;
 	int		ss_flags;
 };
 
