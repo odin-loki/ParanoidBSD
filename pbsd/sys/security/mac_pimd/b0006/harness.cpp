@@ -185,9 +185,9 @@ void run_edge_cases(Stat &st)
 		/* high-bit cr_uid bytes */
 		{1, 0x80, 0x80, PRIV_NETINET_MROUTE},
 		{1, 0xFF, 0xFF, PRIV_NETINET_MROUTE},
-		{1, 0x80000000U, 0x80000000U, PRIV_NETINET_MROUTE},
-		{1, UINT32_MAX, UINT32_MAX, PRIV_NETINET_MROUTE},
-		{1, UINT32_MAX, UINT32_MAX, PRIV_NETINET_MROUTE - 1},
+		{1, static_cast<int>(0x80000000U), 0x80000000U, PRIV_NETINET_MROUTE},
+		{1, static_cast<int>(UINT32_MAX), UINT32_MAX, PRIV_NETINET_MROUTE},
+		{1, static_cast<int>(UINT32_MAX), UINT32_MAX, PRIV_NETINET_MROUTE - 1},
 
 		/* NUL-heavy is N/A for integers; boundary priv sweep */
 		{1, 42, 42, 495},

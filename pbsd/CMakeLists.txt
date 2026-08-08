@@ -206,6 +206,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/ld128/k_tanl_m/port.cppm
   lib/msun/ld80/b0082/port.cppm
   lib/msun/src/b0001/port.cppm
+  lib/msun/src/b0003/port.cppm
   lib/msun/src/b0030/port.cppm
   lib/msun/src/b0038/port.cppm
   lib/msun/src/b0057/port.cppm
@@ -266,6 +267,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/rcorder/ealloc_m/port.cppm
   sys/fs/procfs/procfs_type_m/port.cppm
   sys/net/toeplitz_m/port.cppm
+  sys/security/mac_ntpd/b0007/port.cppm
   sys/security/mac_pimd/b0006/port.cppm
   sys/x86/linux/b0037/port.cppm
   usr.bin/ar/util_m/port.cppm
