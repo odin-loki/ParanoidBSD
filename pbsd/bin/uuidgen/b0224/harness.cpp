@@ -74,7 +74,7 @@ struct Rng {
 	std::uint32_t u32() { return (std::uint32_t)next(); }
 	std::uint8_t u8() { return (std::uint8_t)next(); }
 	int i32() { return (int)u32(); }
-} rng(0x00b0224uuidULL);
+} rng(0x00b0224a5ULL);
 
 struct StatusWrap {
 	unsigned char pre;
@@ -97,7 +97,7 @@ status_guards_ok(const StatusWrap &w)
 }
 
 static void
-fill_uuid(::uuid &u, Rng &r, bool hi_bytes)
+fill_uuid(OracleUuid &u, Rng &r, bool hi_bytes)
 {
 	u.time_low = r.u32();
 	u.time_mid = (std::uint16_t)r.u32();
@@ -116,7 +116,7 @@ fill_uuid(::uuid &u, Rng &r, bool hi_bytes)
 }
 
 static void
-cmp_compact_one(const ::uuid *u, char **s_r, char **s_p, StatusWrap *sw_r,
+cmp_compact_one(const OracleUuid *u, char **s_r, char **s_p, StatusWrap *sw_r,
     StatusWrap *sw_p, const char *tag)
 {
 	Stat &st = S("uuid_to_compact_string");
@@ -124,7 +124,8 @@ cmp_compact_one(const ::uuid *u, char **s_r, char **s_p, StatusWrap *sw_r,
 	std::uint32_t *status_p = sw_p ? &sw_p->st : nullptr;
 
 	ref_uuid_to_compact_string(u, s_r, status_r);
-	P::uuid_to_compact_string(u, s_p, status_p);
+	P::uuid_to_compact_string(reinterpret_cast<const P::uuid *>(u), s_p,
+	    status_p);
 
 	if (sw_r != nullptr && !status_guards_ok(*sw_r)) {
 		fail(st, std::string(tag + ": ref status guard").c_str());
@@ -153,7 +154,7 @@ test_uuid_to_compact_string_hand(void)
 	char *sr = nullptr;
 	char *sp = nullptr;
 	StatusWrap wr, wp;
-	::uuid u;
+	OracleUuid u;
 
 	init_status(wr);
 	init_status(wp);
@@ -232,7 +233,7 @@ static void
 test_uuid_to_compact_string_sweep(void)
 {
 	Stat &st = S("uuid_to_compact_string");
-	::uuid u;
+	OracleUuid u;
 
 	for (long i = 0; i < SWEEP; i++) {
 		char *sr = nullptr;

@@ -758,7 +758,7 @@ void run_libc_start1_tests()
 	test_libc_start1_case(st_libc_start1, 1, argv, env, 0, 0, 0, -1);
 	test_libc_start1_case(st_libc_start1, 0, argv, env, 0, 0, 0, 7);
 
-	prng_seed(0xSTART1);
+	prng_seed(0x5A471701ULL);
 	for (long i = 0; i < RANDOM_ITERATIONS; i++) {
 		int pre = dynamic_linked() ? 0 :
 		    static_cast<int>(prng_u32() % 3);
