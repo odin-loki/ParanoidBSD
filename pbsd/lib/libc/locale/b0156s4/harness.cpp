@@ -327,11 +327,11 @@ static void bind_locales(Fixture &fx)
 static void bind_posix()
 {
 	P::__xlocale_global_collate.__collate_load_error = 1;
-	ref___xlocale_global_collate.__collate_load_error = 1;
+	ref_xlocale_global_collate_ptr()->__collate_load_error = 1;
 	P::global_locale.components[XLC_COLLATE] =
 	    (P::xlocale_component *)&P::__xlocale_global_collate;
 	ref_global_locale.components[XLC_COLLATE] =
-	    (xlocale_component *)&ref___xlocale_global_collate;
+	    (xlocale_component *)ref_xlocale_global_collate_ptr();
 }
 
 static bool write_collate_file(const char *locname, const RefBacking &b)
@@ -460,7 +460,7 @@ static void test_load_tables_hand()
 		b.chars[i].pri[0] = i + 1;
 	if (write_collate_file("tstLC2", b)) {
 		P::__xlocale_global_collate.map = nullptr;
-		ref___xlocale_global_collate.map = nullptr;
+		ref_xlocale_global_collate_ptr()->map = nullptr;
 		int pv = P::__collate_load_tables("tstLC2");
 		int rv = ref___collate_load_tables("tstLC2");
 		bump(F_LOAD_TABLES);
