@@ -1,36 +1,3 @@
-/*
- * b0105s2 reference oracle: the original HardenedBSD C source, verbatim,
- * with the function renamed with a `ref_' prefix.  The function body is
- * UNMODIFIED.  Only #includes and portability defines differ.
- *
- *   hbsd/src/lib/libc/string/strcspn.c
- */
-
-#define _DEFAULT_SOURCE 1
-
-#include <sys/types.h>
-#include <limits.h>
-#include <string.h>
-
-/* <limits.h> only exposes LONG_BIT outside of strict ISO mode. */
-#ifndef LONG_BIT
-#if defined(__LP64__) || defined(_LP64)
-#define LONG_BIT 64
-#else
-#define LONG_BIT 32
-#endif
-#endif
-
-/* sys/types.h only exposes the BSD short type names outside strict ISO mode. */
-#ifndef __USE_MISC
-typedef unsigned char u_char;
-typedef unsigned long u_long;
-#endif
-
-/* ------------------------------------------------------------------------- */
-/* lib/libc/string/strcspn.c                                                 */
-/* ------------------------------------------------------------------------- */
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -58,6 +25,18 @@ typedef unsigned long u_long;
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE 1
+#endif
+
+#include <sys/types.h>
+#include <limits.h>
+#include <string.h>
+
+#ifndef LONG_BIT
+#define	LONG_BIT	(__SIZEOF_LONG__ * CHAR_BIT)
+#endif
 
 #define	IDX(c)	((u_char)(c) / LONG_BIT)
 #define	BIT(c)	((u_long)1 << ((u_char)(c) % LONG_BIT))

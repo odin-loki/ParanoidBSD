@@ -3,6 +3,7 @@ module;
 #include <climits>
 #include <cstddef>
 #include <cstdint>
+#include <sys/types.h>
 
 export module pbsd.sys.kern.b0146s1;
 

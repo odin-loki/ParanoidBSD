@@ -1,26 +1,12 @@
 /*
- * harness.cpp -- differential test: PBSD port (batch b0098) vs ref_ oracle.
+ * harness.cpp -- differential test: PBSD port (batch b0098s1) vs ref_ oracle.
  *
- * Functions under test:
+ * Function under test:
  *   vwscanf(const wchar_t *, va_list)   -- reads from stdin
- *   vwprintf(const wchar_t *, va_list)  -- writes to stdout
- *   setbuf(FILE *, char *)              -- installs a caller buffer
- *
- * Because all three touch the standard streams, stdin/stdout are redirected to
- * temporary files and the report is written to a dup() of the original fd 1.
- *
- * Every case runs BOTH implementations against byte-identical stream state and
- * compares every observable: return value, errno, error/eof flags, ftell(),
- * the raw fd offset, the bytes on disk, and the ENTIRE argument slab / caller
- * buffer (guard-filled with 0x7f) including bytes past the nominal write
- * window.
  */
 
 #include <cerrno>
-#include <cfloat>
 #include <climits>
-#include <clocale>
-#include <cmath>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
@@ -33,13 +19,11 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-import pbsd.lib.libc.stdio.b0098;
+import pbsd.lib.libc.stdio.b0098s1;
 
-namespace P = pbsd::lib_libc_stdio::b0098;
+namespace P = pbsd::lib_libc_stdio::b0098s1;
 
 extern "C" int ref_vwscanf(const wchar_t *__restrict fmt, va_list ap);
-extern "C" int ref_vwprintf(const wchar_t *__restrict fmt, va_list ap);
-extern "C" void ref_setbuf(FILE *__restrict fp, char *__restrict buf);
 
 /* ------------------------------------------------------------------ misc -- */
 
@@ -58,9 +42,7 @@ struct Tally {
 	long shown;
 };
 
-static Tally t_scanf  = { "vwscanf", 0, 0, 0 };
-static Tally t_printf = { "vwprintf", 0, 0, 0 };
-static Tally t_setbuf = { "setbuf", 0, 0, 0 };
+static Tally t_scanf = { "vwscanf", 0, 0, 0 };
 
 static const long SHOW_MAX = 8;
 
@@ -82,24 +64,9 @@ struct Rng {
 
 /* --------------------------------------------------------------- streams -- */
 
-static char g_out_path[] = "/tmp/pbsd_b0098_out_XXXXXX";
-static char g_in_path[]  = "/tmp/pbsd_b0098_in_XXXXXX";
-static char g_sb_a[]     = "/tmp/pbsd_b0098_sba_XXXXXX";
-static char g_sb_b[]     = "/tmp/pbsd_b0098_sbb_XXXXXX";
+static char g_in_path[] = "/tmp/pbsd_b0098s1_in_XXXXXX";
 
-static int g_out_rfd = -1; /* independent read fd on g_out_path */
-static int g_in_wfd  = -1; /* independent write fd on g_in_path  */
-
-static void make_tmp(char *tmpl, int *keep_fd)
-{
-	int fd = mkstemp(tmpl);
-	if (fd < 0)
-		die("mkstemp");
-	if (keep_fd)
-		*keep_fd = fd;
-	else
-		close(fd);
-}
+static int g_in_wfd = -1;
 
 static void init_streams()
 {
@@ -110,13 +77,10 @@ static void init_streams()
 	if (!g_rep)
 		die("fdopen");
 
-	make_tmp(g_out_path, &g_out_rfd);
-	make_tmp(g_in_path, &g_in_wfd);
-	make_tmp(g_sb_a, nullptr);
-	make_tmp(g_sb_b, nullptr);
+	g_in_wfd = mkstemp(g_in_path);
+	if (g_in_wfd < 0)
+		die("mkstemp");
 
-	if (!freopen(g_out_path, "w+", stdout))
-		die("freopen stdout");
 	if (!freopen(g_in_path, "r", stdin))
 		die("freopen stdin");
 }
@@ -124,46 +88,19 @@ static void init_streams()
 static void cleanup_streams()
 {
 	fflush(g_rep);
-	unlink(g_out_path);
+	if (g_in_wfd >= 0)
+		close(g_in_wfd);
 	unlink(g_in_path);
-	unlink(g_sb_a);
-	unlink(g_sb_b);
 }
 
-static void reset_stdout(bool fresh)
-{
-	if (fresh) {
-		if (!freopen(g_out_path, "w+", stdout))
-			die("freopen stdout");
-	} else {
-		rewind(stdout);
-		if (ftruncate(fileno(stdout), 0) != 0)
-			die("ftruncate stdout");
-		clearerr(stdout);
-	}
-}
-
-static void set_stdin(const unsigned char *d, size_t n, bool fresh)
+static void set_stdin(const unsigned char *d, size_t n, bool /*fresh*/)
 {
 	if (ftruncate(g_in_wfd, 0) != 0)
 		die("ftruncate stdin");
 	if (n && pwrite(g_in_wfd, d, n, 0) != (ssize_t)n)
 		die("pwrite stdin");
-	if (fresh) {
-		if (!freopen(g_in_path, "r", stdin))
-			die("freopen stdin");
-	} else {
-		rewind(stdin);
-		clearerr(stdin);
-	}
-}
-
-static long path_size(const char *p)
-{
-	struct stat st;
-	if (stat(p, &st) != 0)
-		return -1;
-	return (long)st.st_size;
+	if (!freopen(g_in_path, "r", stdin))
+		die("freopen stdin");
 }
 
 /* ------------------------------------------------------------------ slab -- */
@@ -591,727 +528,10 @@ static void sweep_scanf(long iters)
 	}
 }
 
-/* --------------------------------------------------------- vwprintf test -- */
-
-enum PKind {
-	P_NONE, P_INT, P_INT2, P_UINT, P_UINT3, P_WSTR, P_WSTR2, P_STR,
-	P_WC, P_DBL, P_DBL3, P_PTR, P_N, P_LL, P_LONG, P_SIZE, P_IWD,
-	P_WID_I, P_PREC_D, P_WID_PREC_D
-};
-
-struct PArgs {
-	int i1, i2;
-	int wid, prec; /* kept small: they feed '*' width/precision */
-	unsigned u1, u2, u3;
-	long l1;
-	long long ll;
-	size_t z;
-	double d1, d2, d3;
-	void *p;
-	wchar_t ws1[24], ws2[24];
-	char cs1[24];
-};
-
-static int cp(bool port, const wchar_t *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	int r = port ? P::vwprintf(fmt, ap) : ref_vwprintf(fmt, ap);
-	va_end(ap);
-	return r;
-}
-
-static int dispatch_printf(bool port, const wchar_t *fmt, int k, PArgs &a,
-    Slab &s)
-{
-	switch (k) {
-	case P_NONE:	return cp(port, fmt);
-	case P_INT:	return cp(port, fmt, a.i1);
-	case P_INT2:	return cp(port, fmt, a.i1, a.i2);
-	case P_UINT:	return cp(port, fmt, a.u1);
-	case P_UINT3:	return cp(port, fmt, a.u1, a.u2, a.u3);
-	case P_WSTR:	return cp(port, fmt, a.ws1);
-	case P_WSTR2:	return cp(port, fmt, a.ws1, a.ws2);
-	case P_STR:	return cp(port, fmt, a.cs1);
-	case P_WC:	return cp(port, fmt, (wint_t)a.u1);
-	case P_DBL:	return cp(port, fmt, a.d1);
-	case P_DBL3:	return cp(port, fmt, a.d1, a.d2, a.d3);
-	case P_WID_I:	return cp(port, fmt, a.wid, a.i1);
-	case P_PREC_D:	return cp(port, fmt, a.prec, a.d1);
-	case P_WID_PREC_D: return cp(port, fmt, a.wid, a.prec, a.d1);
-	case P_PTR:	return cp(port, fmt, a.p);
-	case P_N:	return cp(port, fmt, s_i3(s));
-	case P_LL:	return cp(port, fmt, a.ll);
-	case P_LONG:	return cp(port, fmt, a.l1);
-	case P_SIZE:	return cp(port, fmt, a.z);
-	case P_IWD:	return cp(port, fmt, a.i1, a.ws1, a.d1);
-	}
-	abort();
-}
-
-static const size_t OUTMAX = 8192;
-
-struct PCap {
-	int rv;
-	int en;
-	int err;
-	int err2;
-	int flushrv;
-	long tell;
-	size_t n;
-	Slab s;
-	unsigned char out[OUTMAX];
-};
-
-static PCap pa, pb;
-
-static void run_printf(bool port, const wchar_t *fmt, int kind, PArgs &args,
-    bool fresh, PCap &c)
-{
-	slab_guard(c.s);
-	memset(c.out, 0, sizeof c.out);
-	reset_stdout(fresh);
-	errno = 0;
-	int r = dispatch_printf(port, fmt, kind, args, c.s);
-	c.en = errno;
-	c.rv = r;
-	c.err = ferror(stdout) ? 1 : 0;
-	c.tell = (long)ftell(stdout);
-	c.flushrv = fflush(stdout);
-	c.err2 = ferror(stdout) ? 1 : 0;
-	ssize_t g = pread(g_out_rfd, c.out, OUTMAX, 0);
-	if (g < 0)
-		die("pread stdout");
-	if ((size_t)g == OUTMAX) {
-		errno = 0;
-		die("stdout capture overflow: widen OUTMAX");
-	}
-	c.n = (size_t)g;
-}
-
-static void check_printf(const wchar_t *fmt, int kind, PArgs &args, bool fresh,
-    const char *tag)
-{
-	run_printf(false, fmt, kind, args, fresh, pa);
-	run_printf(true, fmt, kind, args, fresh, pb);
-	t_printf.cases++;
-	bool ok = pa.rv == pb.rv && pa.en == pb.en && pa.err == pb.err &&
-	    pa.err2 == pb.err2 && pa.flushrv == pb.flushrv &&
-	    pa.tell == pb.tell && pa.n == pb.n &&
-	    memcmp(pa.out, pb.out, OUTMAX) == 0 &&
-	    memcmp(pa.s.b, pb.s.b, SLAB) == 0;
-	if (ok)
-		return;
-	t_printf.fails++;
-	if (t_printf.shown++ >= SHOW_MAX)
-		return;
-	fprintf(g_rep, "  FAIL vwprintf [%s] kind=%d fmt=", tag, kind);
-	show_wfmt(fmt);
-	fprintf(g_rep, "\n    ref : rv=%d errno=%d err=%d/%d flush=%d tell=%ld n=%zu out=",
-	    pa.rv, pa.en, pa.err, pa.err2, pa.flushrv, pa.tell, pa.n);
-	show_bytes(pa.out, pa.n);
-	fprintf(g_rep, "\n    port: rv=%d errno=%d err=%d/%d flush=%d tell=%ld n=%zu out=",
-	    pb.rv, pb.en, pb.err, pb.err2, pb.flushrv, pb.tell, pb.n);
-	show_bytes(pb.out, pb.n);
-	fputc('\n', g_rep);
-	dump_slab_diff(pa.s, pb.s);
-}
-
-struct PFmt {
-	const wchar_t *fmt;
-	int kind;
-};
-
-static const PFmt p_fmts[] = {
-	{ L"", P_NONE },
-	{ L"hello", P_NONE },
-	{ L"%%", P_NONE },
-	{ L"a%%b", P_NONE },
-	{ L"%d", P_INT },
-	{ L"%5d|%-5d", P_INT2 },
-	{ L"%+05d", P_INT },
-	{ L"% d", P_INT },
-	{ L"%*d", P_WID_I },
-	{ L"%.0d", P_INT },
-	{ L"%c", P_INT },
-	{ L"%u", P_UINT },
-	{ L"%#x %#o %u", P_UINT3 },
-	{ L"%X", P_UINT },
-	{ L"%ls", P_WSTR },
-	{ L"[%10ls][%-10.3ls]", P_WSTR2 },
-	{ L"%.0ls", P_WSTR },
-	{ L"%s", P_STR },
-	{ L"%10.4s", P_STR },
-	{ L"%lc", P_WC },
-	{ L"%5lc", P_WC },
-	{ L"%f %e %g", P_DBL3 },
-	{ L"%.0f", P_DBL },
-	{ L"%a", P_DBL },
-	{ L"%.*f", P_PREC_D },
-	{ L"%*.*f", P_WID_PREC_D },
-	{ L"%20.10e", P_DBL },
-	{ L"%G", P_DBL },
-	{ L"%p", P_PTR },
-	{ L"ab%ncd", P_N },
-	{ L"%lld", P_LL },
-	{ L"%ld", P_LONG },
-	{ L"%zu", P_SIZE },
-	{ L"%d[%ls]%.3f", P_IWD },
-	{ L"%hhd %hd", P_INT2 },
-	{ L"\x80\xff", P_NONE },
-	{ L"%d\x80%ls", P_IWD },
-};
-static const size_t P_NFMT = sizeof(p_fmts) / sizeof(p_fmts[0]);
-
-static void set_ws(wchar_t *dst, size_t cap, const wchar_t *src)
-{
-	size_t i = 0;
-	for (; src[i] && i + 1 < cap; i++)
-		dst[i] = src[i];
-	dst[i] = L'\0';
-}
-
-static void hand_printf()
-{
-	static const wchar_t *wstrs[] = {
-		L"", L"a", L"abc", L"\x7f", L"\x80", L"\xff",
-		L"a\x80" L"b", L"\x100", L"\x10000",
-		L"0123456789012345678901"
-	};
-	static const char *cstrs[] = {
-		"", "a", "abc", "\x7f", "\x80", "\xff", "a\x80" "b",
-		"0123456789012345678901"
-	};
-	static const int ints[] = { 0, 1, -1, 2, -2, 7, -7, INT_MAX, INT_MIN,
-		255, -255, 1000000 };
-	static const double dbls[] = { 0.0, -0.0, 1.0, -1.0, 0.5, -0.5,
-		3.14159265358979, 1e300, 1e-300, DBL_MAX, DBL_MIN,
-		4.9406564584124654e-324, 1.0 / 0.0, -1.0 / 0.0, 0.0 / 0.0 };
-	static const size_t NW = sizeof(wstrs) / sizeof(wstrs[0]);
-	static const size_t NC = sizeof(cstrs) / sizeof(cstrs[0]);
-	static const size_t NI = sizeof(ints) / sizeof(ints[0]);
-	static const size_t ND = sizeof(dbls) / sizeof(dbls[0]);
-	size_t bundles = NW;
-	if (NC > bundles) bundles = NC;
-	if (NI > bundles) bundles = NI;
-	if (ND > bundles) bundles = ND;
-
-	PArgs a;
-	for (size_t b = 0; b < bundles; b++) {
-		memset(&a, 0, sizeof a);
-		a.i1 = ints[b % NI];
-		a.i2 = ints[(b + 3) % NI];
-		a.wid = (int)(b % 9) - 4;
-		a.prec = (int)(b % 7) - 1;
-		a.u1 = (unsigned)ints[b % NI];
-		a.u2 = (unsigned)ints[(b + 1) % NI];
-		a.u3 = (unsigned)ints[(b + 2) % NI];
-		a.l1 = (long)ints[b % NI];
-		a.ll = (long long)ints[b % NI] * 1000000007LL;
-		a.z = (size_t)(unsigned)ints[b % NI];
-		a.d1 = dbls[b % ND];
-		a.d2 = dbls[(b + 1) % ND];
-		a.d3 = dbls[(b + 2) % ND];
-		a.p = (void *)(uintptr_t)0x123456789abcdefULL;
-		set_ws(a.ws1, 24, wstrs[b % NW]);
-		set_ws(a.ws2, 24, wstrs[(b + 1) % NW]);
-		strncpy(a.cs1, cstrs[b % NC], sizeof a.cs1 - 1);
-		a.cs1[sizeof a.cs1 - 1] = '\0';
-		for (size_t f = 0; f < P_NFMT; f++)
-			check_printf(p_fmts[f].fmt, p_fmts[f].kind, a, true,
-			    "hand");
-	}
-	/* '*' width/precision: both sides of every interesting boundary. */
-	static const int widths[] = { -40, -2, -1, 0, 1, 2, 39, 40 };
-	static const int precs[] = { -1, 0, 1, 2, 17, 25 };
-	for (size_t w = 0; w < sizeof(widths) / sizeof(widths[0]); w++)
-		for (size_t p = 0; p < sizeof(precs) / sizeof(precs[0]); p++) {
-			memset(&a, 0, sizeof a);
-			a.wid = widths[w];
-			a.prec = precs[p];
-			a.i1 = -12345;
-			a.d1 = -1.0 / 3.0;
-			set_ws(a.ws1, 24, L"wz");
-			check_printf(L"%*d", P_WID_I, a, true, "hand");
-			check_printf(L"%.*f", P_PREC_D, a, true, "hand");
-			check_printf(L"%*.*f", P_WID_PREC_D, a, true, "hand");
-			check_printf(L"%-*.*e", P_WID_PREC_D, a, true, "hand");
-		}
-}
-
-static double pick_double(Rng &r)
-{
-	unsigned k = r.below(100);
-	if (k < 10)
-		return 0.0;
-	if (k < 14)
-		return -0.0;
-	if (k < 18)
-		return 1.0 / 0.0;
-	if (k < 22)
-		return -1.0 / 0.0;
-	if (k < 26)
-		return 0.0 / 0.0;
-	if (k < 34)
-		return (double)(int)r.u32();
-	if (k < 45) {
-		double m = (double)(int)r.u32();
-		return m / 4096.0;
-	}
-	if (k < 55)
-		return DBL_MAX;
-	if (k < 62)
-		return DBL_MIN;
-	if (k < 70)
-		return 4.9406564584124654e-324;
-	uint64_t bits = ((uint64_t)r.u32() << 32) | r.u32();
-	double d;
-	memcpy(&d, &bits, sizeof d);
-	if (std::isnan(d))
-		d = 1.5;
-	return d;
-}
-
-static int gen_printf_fmt(Rng &r, wchar_t *out, size_t cap)
-{
-	struct Conv {
-		const wchar_t *c;
-		int k;
-		int numeric;
-	};
-	static const Conv tbl[] = {
-		{ L"d", P_INT, 1 }, { L"i", P_INT, 1 }, { L"c", P_INT, 0 },
-		{ L"u", P_UINT, 1 }, { L"x", P_UINT, 1 }, { L"X", P_UINT, 1 },
-		{ L"o", P_UINT, 1 }, { L"ls", P_WSTR, 0 }, { L"s", P_STR, 0 },
-		{ L"f", P_DBL, 1 }, { L"e", P_DBL, 1 }, { L"g", P_DBL, 1 },
-		{ L"E", P_DBL, 1 }, { L"G", P_DBL, 1 }, { L"a", P_DBL, 1 },
-		{ L"lc", P_WC, 0 }, { L"lld", P_LL, 1 }, { L"ld", P_LONG, 1 },
-		{ L"zu", P_SIZE, 1 }, { L"p", P_PTR, 0 }, { L"hhd", P_INT, 1 },
-		{ L"hd", P_INT, 1 },
-	};
-	static const size_t NT = sizeof(tbl) / sizeof(tbl[0]);
-	size_t o = 0;
-	int kind = P_NONE;
-
-	unsigned pre = r.below(4);
-	for (unsigned i = 0; i < pre && o + 3 < cap; i++) {
-		wchar_t ch = pick_wchar(r);
-		if (ch == L'%') {
-			out[o++] = L'%';
-			out[o++] = L'%';
-		} else if (ch) {
-			out[o++] = ch;
-		}
-	}
-	if (r.chance(85) && o + 32 < cap) {
-		const Conv &cv = tbl[r.below((unsigned)NT)];
-		out[o++] = L'%';
-		unsigned nflag = r.below(3);
-		for (unsigned i = 0; i < nflag; i++) {
-			static const wchar_t fl[] = { L'-', L'+', L' ', L'0' };
-			out[o++] = fl[r.below(4)];
-		}
-		if (cv.numeric && r.chance(20))
-			out[o++] = L'#';
-		if (r.chance(50)) {
-			unsigned w = r.below(41);
-			wchar_t tmp[8];
-			int tn = 0;
-			if (!w)
-				tmp[tn++] = L'0';
-			while (w) {
-				tmp[tn++] = (wchar_t)(L'0' + (w % 10));
-				w /= 10;
-			}
-			while (tn)
-				out[o++] = tmp[--tn];
-		}
-		if (r.chance(40)) {
-			out[o++] = L'.';
-			unsigned pr = r.below(21);
-			wchar_t tmp[8];
-			int tn = 0;
-			if (!pr)
-				tmp[tn++] = L'0';
-			while (pr) {
-				tmp[tn++] = (wchar_t)(L'0' + (pr % 10));
-				pr /= 10;
-			}
-			while (tn)
-				out[o++] = tmp[--tn];
-		}
-		for (size_t i = 0; cv.c[i]; i++)
-			out[o++] = cv.c[i];
-		kind = cv.k;
-	}
-	unsigned post = r.below(4);
-	for (unsigned i = 0; i < post && o + 3 < cap; i++) {
-		wchar_t ch = pick_wchar(r);
-		if (ch == L'%') {
-			out[o++] = L'%';
-			out[o++] = L'%';
-		} else if (ch) {
-			out[o++] = ch;
-		}
-	}
-	out[o] = L'\0';
-	return kind;
-}
-
-static void sweep_printf(long iters)
-{
-	Rng r(0x0098BEEFCAFE1234ULL);
-	wchar_t fmt[128];
-	PArgs a;
-	for (long it = 0; it < iters; it++) {
-		memset(&a, 0, sizeof a);
-		a.i1 = (int)r.u32();
-		if (r.chance(30))
-			a.i1 = (int)(r.below(80)) - 40;
-		a.i2 = (int)(r.below(80)) - 40;
-		a.wid = (int)(r.below(84)) - 42;
-		a.prec = (int)(r.below(28)) - 2;
-		a.u1 = r.u32();
-		if (r.chance(35))
-			a.u1 = r.below(0x120);
-		a.u2 = r.u32();
-		a.u3 = r.below(9);
-		a.l1 = (long)(int)r.u32();
-		a.ll = (long long)((unsigned long long)r.u32() << 32 | r.u32());
-		a.z = (size_t)r.u32();
-		a.d1 = pick_double(r);
-		a.d2 = pick_double(r);
-		a.d3 = pick_double(r);
-		a.p = r.chance(20) ? nullptr
-				   : (void *)(uintptr_t)((unsigned long long)r.u32() << 4);
-		unsigned wn = r.below(12);
-		for (unsigned i = 0; i < wn; i++)
-			a.ws1[i] = pick_wchar(r);
-		a.ws1[wn] = L'\0';
-		wn = r.below(12);
-		for (unsigned i = 0; i < wn; i++)
-			a.ws2[i] = pick_wchar(r);
-		a.ws2[wn] = L'\0';
-		unsigned cn = r.below(12);
-		for (unsigned i = 0; i < cn; i++) {
-			unsigned char ch = pick_byte(r);
-			a.cs1[i] = (char)(ch ? ch : 'z');
-		}
-		a.cs1[cn] = '\0';
-
-		int kind;
-		const wchar_t *use;
-		if (r.chance(50)) {
-			size_t pi = r.below((unsigned)P_NFMT);
-			use = p_fmts[pi].fmt;
-			kind = p_fmts[pi].kind;
-		} else {
-			kind = gen_printf_fmt(r, fmt, 128);
-			use = fmt;
-		}
-		bool fresh = (it % 4096) == 0;
-		check_printf(use, kind, a, fresh, "sweep");
-	}
-}
-
-/* ---------------------------------------------------------- setbuf test -- */
-
-static const size_t SB_BUFCAP = (size_t)BUFSIZ + 64;
-static const size_t SB_DATAMAX = (size_t)BUFSIZ * 2 + 64;
-static const size_t SB_FILECAP = (size_t)BUFSIZ * 2 + 512;
-
-struct BCap {
-	long fsize_before;
-	long lpos;
-	long tell;
-	long fsize_after;
-	int err;
-	int eof;
-	int en;
-	int flush_mid;
-	int flush_end;
-	int closerv;
-	int nrd;
-	int rd[72];
-	size_t fn;
-	unsigned char fb[SB_FILECAP];
-	unsigned char buf[SB_BUFCAP];
-};
-
-static BCap ba, bb;
-
-struct SbSpec {
-	int mode;    /* 0 = write test, 1 = read test */
-	int use_buf; /* pass caller buffer or NULL */
-	size_t n;    /* payload size */
-	int method;
-	size_t nread;
-	int flush_mid;
-};
-
-static void run_setbuf(bool port, const char *path, const SbSpec &sp,
-    const unsigned char *data, BCap &c)
-{
-	memset(&c, 0, sizeof c);
-	memset(c.buf, 0x7f, SB_BUFCAP);
-	c.flush_mid = -3;
-
-	FILE *f;
-	if (sp.mode == 1) {
-		int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0600);
-		if (fd < 0)
-			die("open");
-		if (sp.n && write(fd, data, sp.n) != (ssize_t)sp.n)
-			die("write");
-		close(fd);
-		f = fopen(path, "r");
-	} else {
-		f = fopen(path, "w+");
-	}
-	if (!f)
-		die("fopen");
-
-	if (port)
-		P::setbuf(f, sp.use_buf ? (char *)c.buf : nullptr);
-	else
-		ref_setbuf(f, sp.use_buf ? (char *)c.buf : nullptr);
-
-	errno = 0;
-	if (sp.mode == 0) {
-		switch (sp.method) {
-		case 0:
-			fwrite(data, 1, sp.n, f);
-			break;
-		case 1:
-			for (size_t i = 0; i < sp.n; i++)
-				fputc(data[i], f);
-			break;
-		default: {
-			size_t i = 0;
-			while (i < sp.n) {
-				size_t k = sp.n - i;
-				if (k > 7)
-					k = 7;
-				fwrite(data + i, 1, k, f);
-				i += k;
-			}
-			break;
-		}
-		}
-		if (sp.flush_mid)
-			c.flush_mid = fflush(f);
-	} else {
-		size_t k = sp.nread;
-		if (k > 72)
-			k = 72;
-		switch (sp.method) {
-		case 0:
-			c.nrd = (int)k;
-			for (size_t i = 0; i < k; i++)
-				c.rd[i] = fgetc(f);
-			break;
-		case 1: {
-			unsigned char tmp[72];
-			size_t got = fread(tmp, 1, k, f);
-			c.nrd = (int)k;
-			for (size_t i = 0; i < k; i++)
-				c.rd[i] = (i < got) ? (int)tmp[i] : -2;
-			break;
-		}
-		default: {
-			int ch = fgetc(f);
-			c.rd[0] = ch;
-			if (ch != EOF)
-				ungetc(ch, f);
-			c.rd[1] = fgetc(f);
-			c.nrd = 2;
-			break;
-		}
-		}
-	}
-	c.en = errno;
-	c.err = ferror(f) ? 1 : 0;
-	c.eof = feof(f) ? 1 : 0;
-	c.fsize_before = path_size(path);
-	c.lpos = (long)lseek(fileno(f), 0, SEEK_CUR);
-	c.tell = (long)ftell(f);
-	c.flush_end = fflush(f);
-	c.fsize_after = path_size(path);
-	c.closerv = fclose(f);
-
-	int fd = open(path, O_RDONLY);
-	if (fd < 0)
-		die("reopen");
-	ssize_t g = read(fd, c.fb, SB_FILECAP);
-	close(fd);
-	c.fn = (g > 0) ? (size_t)g : 0;
-}
-
-static void check_setbuf(const SbSpec &sp, const unsigned char *data,
-    const char *tag)
-{
-	run_setbuf(false, g_sb_a, sp, data, ba);
-	run_setbuf(true, g_sb_b, sp, data, bb);
-	t_setbuf.cases++;
-	if (memcmp(&ba, &bb, sizeof ba) == 0)
-		return;
-	t_setbuf.fails++;
-	if (t_setbuf.shown++ >= SHOW_MAX)
-		return;
-	fprintf(g_rep,
-	    "  FAIL setbuf [%s] mode=%d use_buf=%d n=%zu method=%d nread=%zu flush_mid=%d\n",
-	    tag, sp.mode, sp.use_buf, sp.n, sp.method, sp.nread, sp.flush_mid);
-	fprintf(g_rep,
-	    "    ref : size_before=%ld lpos=%ld tell=%ld size_after=%ld err=%d eof=%d errno=%d fm=%d fe=%d close=%d fn=%zu\n",
-	    ba.fsize_before, ba.lpos, ba.tell, ba.fsize_after, ba.err, ba.eof,
-	    ba.en, ba.flush_mid, ba.flush_end, ba.closerv, ba.fn);
-	fprintf(g_rep,
-	    "    port: size_before=%ld lpos=%ld tell=%ld size_after=%ld err=%d eof=%d errno=%d fm=%d fe=%d close=%d fn=%zu\n",
-	    bb.fsize_before, bb.lpos, bb.tell, bb.fsize_after, bb.err, bb.eof,
-	    bb.en, bb.flush_mid, bb.flush_end, bb.closerv, bb.fn);
-	if (ba.nrd != bb.nrd)
-		fprintf(g_rep, "    nrd differs: %d vs %d\n", ba.nrd, bb.nrd);
-	else
-		for (int i = 0; i < ba.nrd; i++)
-			if (ba.rd[i] != bb.rd[i])
-				fprintf(g_rep, "    rd[%d]: ref=%d port=%d\n",
-				    i, ba.rd[i], bb.rd[i]);
-	long shown = 0;
-	for (size_t i = 0; i < SB_BUFCAP && shown < 8; i++)
-		if (ba.buf[i] != bb.buf[i]) {
-			fprintf(g_rep, "    buf[%zu]: ref=%02x port=%02x\n", i,
-			    ba.buf[i], bb.buf[i]);
-			shown++;
-		}
-	shown = 0;
-	for (size_t i = 0; i < SB_FILECAP && shown < 8; i++)
-		if (ba.fb[i] != bb.fb[i]) {
-			fprintf(g_rep, "    file[%zu]: ref=%02x port=%02x\n", i,
-			    ba.fb[i], bb.fb[i]);
-			shown++;
-		}
-}
-
-static unsigned char *g_data;
-
-static void fill_pattern(unsigned char *d, size_t n, int which)
-{
-	for (size_t i = 0; i < n; i++) {
-		switch (which) {
-		case 0:
-			d[i] = (unsigned char)('A' + (i % 26));
-			break;
-		case 1:
-			d[i] = (i % 17 == 0) ? 0
-					     : (unsigned char)(0x80 | (i & 0x7f));
-			break;
-		case 2:
-			d[i] = 0;
-			break;
-		default:
-			d[i] = (unsigned char)(i * 7 + 0x80);
-			break;
-		}
-	}
-}
-
-static void hand_setbuf()
-{
-	const size_t bs = (size_t)BUFSIZ;
-	size_t sizes[] = { 0, 1, 2, 7, 8, 63, 64, 127, bs - 2, bs - 1, bs,
-		bs + 1, bs + 2, 2 * bs - 1, 2 * bs, 2 * bs + 7 };
-	const size_t NS = sizeof(sizes) / sizeof(sizes[0]);
-	size_t reads[] = { 1, 2, 3, 8, 72 };
-	const size_t NR = sizeof(reads) / sizeof(reads[0]);
-
-	for (int pat = 0; pat < 4; pat++) {
-		fill_pattern(g_data, SB_DATAMAX, pat);
-		for (size_t si = 0; si < NS; si++) {
-			size_t n = sizes[si];
-			if (n > SB_DATAMAX)
-				continue;
-			for (int ub = 0; ub < 2; ub++) {
-				for (int m = 0; m < 3; m++) {
-					SbSpec w = { 0, ub, n, m, 0, 0 };
-					check_setbuf(w, g_data, "hand");
-					SbSpec w2 = { 0, ub, n, m, 0, 1 };
-					check_setbuf(w2, g_data, "hand");
-					for (size_t ri = 0; ri < NR; ri++) {
-						SbSpec rd = { 1, ub, n, m,
-							reads[ri], 0 };
-						check_setbuf(rd, g_data,
-						    "hand");
-					}
-				}
-			}
-		}
-	}
-}
-
-static void sweep_setbuf(long iters)
-{
-	Rng r(0x0098FEEDFACE5678ULL);
-	const size_t bs = (size_t)BUFSIZ;
-	for (long it = 0; it < iters; it++) {
-		SbSpec sp;
-		sp.mode = (int)r.below(2);
-		sp.use_buf = (int)r.below(2);
-		sp.method = (int)r.below(3);
-		sp.flush_mid = (int)r.below(2);
-		sp.nread = 1 + r.below(72);
-		unsigned shape = r.below(1000);
-		if (shape < 12)
-			sp.n = bs - 1;
-		else if (shape < 24)
-			sp.n = bs;
-		else if (shape < 36)
-			sp.n = bs + 1;
-		else if (shape < 44)
-			sp.n = bs + 2;
-		else if (shape < 50)
-			sp.n = 2 * bs;
-		else if (shape < 56)
-			sp.n = 2 * bs + 7;
-		else if (shape < 62)
-			sp.n = bs - 2;
-		else if (shape < 120)
-			sp.n = 0;
-		else if (shape < 180)
-			sp.n = 1;
-		else
-			sp.n = r.below(97);
-		size_t fill = sp.n < 96 ? 96 : sp.n;
-		if (fill > SB_DATAMAX)
-			fill = SB_DATAMAX;
-		fill_pattern(g_data, fill, (int)r.below(4));
-		if (r.chance(30))
-			for (size_t i = 0; i < fill; i++)
-				g_data[i] = pick_byte(r);
-		check_setbuf(sp, g_data, "sweep");
-	}
-}
-
-/* ----------------------------------------------------------------- main -- */
 
 static void warmup()
 {
-	/*
-	 * Touch every code path glibc lazily initialises (wide stream
-	 * orientation, mbstate conversion tables, float formatting) on both
-	 * sides before any comparison, so first-call effects cannot show up as
-	 * a spurious divergence.
-	 */
 	static SCap sc;
-	static PArgs a;
-	memset(&a, 0, sizeof a);
-	a.d1 = a.d2 = a.d3 = 1.5;
-	a.i1 = a.i2 = 1;
-	a.u1 = 65;
-	a.z = 1;
-	a.p = (void *)(uintptr_t)1;
-	set_ws(a.ws1, 24, L"aa");
-	set_ws(a.ws2, 24, L"bb");
-	strcpy(a.cs1, "aa");
 	const unsigned char in[] = "12 34 ab 5.5 x";
 	for (int pass = 0; pass < 2; pass++) {
 		bool port = pass != 0;
@@ -1320,27 +540,13 @@ static void warmup()
 		run_scanf(port, L"%lf", S_DBL, in, sizeof in - 1, true, sc);
 		run_scanf(port, L"%lc", S_LC, in, sizeof in - 1, true, sc);
 		run_scanf(port, L"%31l[0-9]", S_WS, in, sizeof in - 1, true, sc);
-		run_printf(port, L"%d", P_INT, a, true, pa);
-		run_printf(port, L"%ls", P_WSTR, a, true, pa);
-		run_printf(port, L"%s", P_STR, a, true, pa);
-		run_printf(port, L"%f %e %g", P_DBL3, a, true, pa);
-		run_printf(port, L"%a", P_DBL, a, true, pa);
-		run_printf(port, L"%lc", P_WC, a, true, pa);
-		run_printf(port, L"%p", P_PTR, a, true, pa);
-		run_printf(port, L"%zu", P_SIZE, a, true, pa);
 	}
-	/* Reset scanf's warmup slab expectations: nothing to do, caps unused. */
 	(void)sc;
 }
 
 int main()
 {
 	init_streams();
-
-	g_data = (unsigned char *)malloc(SB_DATAMAX);
-	if (!g_data)
-		die("malloc");
-
 	warmup();
 
 	const long SWEEP = 200000;
@@ -1348,29 +554,15 @@ int main()
 	hand_scanf();
 	sweep_scanf(SWEEP);
 
-	hand_printf();
-	sweep_printf(SWEEP);
-
-	hand_setbuf();
-	sweep_setbuf(SWEEP);
-
-	const Tally *all[] = { &t_scanf, &t_printf, &t_setbuf };
-	long total_fail = 0;
 	fprintf(g_rep, "\n%-12s %12s %12s  %s\n", "function", "cases",
 	    "failures", "result");
 	fprintf(g_rep, "------------------------------------------------------\n");
-	for (int i = 0; i < 3; i++) {
-		fprintf(g_rep, "%-12s %12ld %12ld  %s\n", all[i]->name,
-		    all[i]->cases, all[i]->fails,
-		    all[i]->fails ? "FAIL" : "ok");
-		total_fail += all[i]->fails;
-	}
+	fprintf(g_rep, "%-12s %12ld %12ld  %s\n", t_scanf.name,
+	    t_scanf.cases, t_scanf.fails, t_scanf.fails ? "FAIL" : "ok");
 	fprintf(g_rep, "------------------------------------------------------\n");
 	fprintf(g_rep, "%-12s %12ld %12ld  %s\n", "TOTAL",
-	    t_scanf.cases + t_printf.cases + t_setbuf.cases, total_fail,
-	    total_fail ? "FAIL" : "ok");
+	    t_scanf.cases, t_scanf.fails, t_scanf.fails ? "FAIL" : "ok");
 
-	free(g_data);
 	cleanup_streams();
-	return total_fail ? 1 : 0;
+	return t_scanf.fails ? 1 : 0;
 }

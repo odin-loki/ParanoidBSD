@@ -14,6 +14,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
 
 #ifndef LONG_BIT
 #define	LONG_BIT	(sizeof(long) * CHAR_BIT)
