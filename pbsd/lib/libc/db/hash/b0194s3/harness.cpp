@@ -457,23 +457,28 @@ static void test_hash_realloc()
 	guard_fill(oldmem_p, 32);
 	std::memcpy(oldmem_r, "seed-data-for-realloc!!", 23);
 	std::memcpy(oldmem_p, "seed-data-for-realloc!!", 23);
-	SEGMENT dirr = (SEGMENT)(void *)oldmem_r;
-	SEGMENT dirp = (SEGMENT)(void *)oldmem_p;
-	void *vr = ref_hash_realloc(&dirr, 32, 64);
-	void *vp = P::hash_realloc((P::SEGMENT *)&dirp, 32, 64);
+	HTAB hr, hp;
+	init_htab_base(&hr);
+	init_htab_base(&hp);
+	SEGMENT segr = (SEGMENT)(void *)oldmem_r;
+	SEGMENT segp = (SEGMENT)(void *)oldmem_p;
+	hr.dir = &segr;
+	hp.dir = &segp;
+	void *vr = ref_hash_realloc(&hr.dir, 32, 64);
+	void *vp = P::hash_realloc(reinterpret_cast<P::SEGMENT **>(&hp.dir), 32, 64);
 	check(F_HASH_REALLOC, (vr != nullptr) == (vp != nullptr), "null");
 	if (vr && vp) {
 		check(F_HASH_REALLOC,
-		    std::memcmp((char *)dirr, "seed-data-for-realloc!!", 23) == 0,
+		    std::memcmp((char *)hr.dir, "seed-data-for-realloc!!", 23) == 0,
 		    "ref data");
 		check(F_HASH_REALLOC,
-		    std::memcmp((char *)dirp, "seed-data-for-realloc!!", 23) == 0,
+		    std::memcmp((char *)hp.dir, "seed-data-for-realloc!!", 23) == 0,
 		    "port data");
 	}
 	if (vr)
-		std::free(dirr);
+		std::free(hr.dir);
 	if (vp)
-		std::free(dirp);
+		std::free(hp.dir);
 }
 
 static void test_init_htab()
