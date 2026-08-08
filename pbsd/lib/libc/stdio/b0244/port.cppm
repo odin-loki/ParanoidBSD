@@ -5,6 +5,7 @@ module;
 #include <cstddef>
 #include <cstdint>
 #include <cstdarg>
+#include <sys/types.h>
 
 export module pbsd.lib.libc.stdio.b0244;
 

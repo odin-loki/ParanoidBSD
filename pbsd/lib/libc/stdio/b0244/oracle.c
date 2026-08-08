@@ -28,23 +28,6 @@ typedef struct __sFILE FILE;
 
 int	__isthreaded;
 
-void
-_flockfile(void *fp)
-{
-	(void)fp;
-	mock_flock_calls++;
-}
-
-void
-_funlockfile(void *fp)
-{
-	(void)fp;
-	mock_funlock_calls++;
-}
-
-#define	FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
-#define	FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
-
 /* Harness-visible mock state */
 int	mock_fwalk_calls;
 void	*mock_fwalk_fn;
@@ -66,6 +49,23 @@ int	mock_vdprintf_last_arg;
 
 int	mock_flock_calls;
 int	mock_funlock_calls;
+
+void
+_flockfile(void *fp)
+{
+	(void)fp;
+	mock_flock_calls++;
+}
+
+void
+_funlockfile(void *fp)
+{
+	(void)fp;
+	mock_funlock_calls++;
+}
+
+#define	FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
+#define	FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
 
 int
 _fwalk(int (*function)(FILE *))

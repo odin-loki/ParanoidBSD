@@ -820,6 +820,7 @@ again:
 		return ~primary(op, val, yylex(), noeval);
 	default:
 		yyerror("expecting primary");
+		return 0;
 	}
 }
 

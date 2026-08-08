@@ -8,6 +8,7 @@
  */
 
 #include <sys/types.h>
+#include <unistd.h>
 
 #include <climits>
 #include <cstdarg>
@@ -1029,6 +1030,9 @@ int
 main(void)
 {
 	long total_fail = 0;
+
+	/* Watchdog: a port that loops forever must not look like a pass. */
+	alarm(300);
 
 	test_check_addr_range();
 	test_marks();

@@ -718,6 +718,26 @@ test_arith_sweep()
 	}
 }
 
+static int
+run_ref_letcmd(int argc, char **argv, int *out)
+{
+	oracle_reset_state();
+	if (setjmp(b0228_jmp) != 0)
+		return -1;
+	*out = ref_letcmd(argc, argv);
+	return 0;
+}
+
+static int
+run_port_letcmd(int argc, char **argv, int *out)
+{
+	P::port_reset_state();
+	if (setjmp(P::b0228_jmp) != 0)
+		return -1;
+	*out = port_letcmd(argc, argv);
+	return 0;
+}
+
 static void
 test_letcmd()
 {
@@ -729,39 +749,33 @@ test_letcmd()
 	char *av2[] = { a0, a1, nullptr };
 	char *av3[] = { a0, a2, nullptr };
 	char *av4[] = { a0, a1, a2, nullptr };
+	int ro = 0, po = 0;
+	int rr = 0, pr = 0;
 
-	oracle_reset_state();
-	P::port_reset_state();
-	int p1 = port_letcmd(1, av1);
-	int r1 = ref_letcmd(1, av1);
-	if (r1 != p1)
+	rr = run_ref_letcmd(1, av1, &ro);
+	pr = run_port_letcmd(1, av1, &po);
+	if (rr != pr || (rr == 0 && ro != po))
 		fail(st, "argc1");
 	else
 		ok(st);
 
-	oracle_reset_state();
-	P::port_reset_state();
-	int p2 = port_letcmd(2, av2);
-	int r2 = ref_letcmd(2, av2);
-	if (r2 != p2)
+	rr = run_ref_letcmd(2, av2, &ro);
+	pr = run_port_letcmd(2, av2, &po);
+	if (rr != pr || (rr == 0 && ro != po))
 		fail(st, "zero");
 	else
 		ok(st);
 
-	oracle_reset_state();
-	P::port_reset_state();
-	int p3 = port_letcmd(2, av3);
-	int r3 = ref_letcmd(2, av3);
-	if (r3 != p3)
+	rr = run_ref_letcmd(2, av3, &ro);
+	pr = run_port_letcmd(2, av3, &po);
+	if (rr != pr || (rr == 0 && ro != po))
 		fail(st, "expr");
 	else
 		ok(st);
 
-	oracle_reset_state();
-	P::port_reset_state();
-	int p4 = port_letcmd(3, av4);
-	int r4 = ref_letcmd(3, av4);
-	if (r4 != p4)
+	rr = run_ref_letcmd(3, av4, &ro);
+	pr = run_port_letcmd(3, av4, &po);
+	if (rr != pr || (rr == 0 && ro != po))
 		fail(st, "concat");
 	else
 		ok(st);
@@ -772,11 +786,9 @@ test_letcmd()
 		std::snprintf(e2, sizeof(e2), "%d", (int)(rng.u32() % 500));
 		char let[] = "let";
 		char *av[] = { let, e1, e2, nullptr };
-		oracle_reset_state();
-		P::port_reset_state();
-		int pr = port_letcmd(3, av);
-		int rr = ref_letcmd(3, av);
-		if (rr != pr)
+		rr = run_ref_letcmd(3, av, &ro);
+		pr = run_port_letcmd(3, av, &po);
+		if (rr != pr || (rr == 0 && ro != po))
 			fail(st, "sweep");
 		else
 			ok(st);
@@ -786,7 +798,20 @@ test_letcmd()
 int
 main()
 {
+	test_add_hand();
+	test_add_sweep();
+	test_add_one_hand();
+	test_add_one_sweep();
+	test_add_default();
+	test_init_finish();
+	test_output_type_macros();
+	test_main();
+	test_do_binop_hand();
+	test_do_binop_sweep();
+	test_arith_lookupvarint();
+	test_arith_hand();
 	test_letcmd();
+	test_arith_sweep();
 
 	unsigned long long total = 0, fails = 0;
 	std::printf("\n%-22s %12s %12s\n", "function", "cases", "failures");
