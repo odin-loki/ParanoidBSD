@@ -1,0 +1,10 @@
+{
+  "batch": "b0250",
+  "verified": "2026-08-08T23:08:05Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 24/24: test_set_x87_control, test_set_x87_status, test_set_x87_tag, test_set_x87_other)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                  cases     failures\n--------                  -----     --------\nfeclearexcept            201024            0\nfegetexceptflag          200035            0\nfesetexceptflag          200025            0\nferaiseexcept            200012            0\nfetestexcept             200007            0\nfegetround               200006            0\nfesetround               200010            0\nfegetenv                 200003            0\nfeholdexcept             200003            0\nfesetenv                 200002            0\nfeupdateenv              200002            0\nfeenableexcept           200013            0\nfedisableexcept          200013            0\n__fe_dfl_env                  1            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/amd64/fenv.c": "30ee051b35ac3d86"
+  }
+}

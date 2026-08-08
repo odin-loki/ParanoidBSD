@@ -309,7 +309,7 @@ pbsd_wait_common(pbsd_event *e, struct cv *cvp, struct mtx *m, int *errp)
 	struct sema *s;
 	int delta, err;
 
-	s = reinterpret_cast>=struct sema *>(reinterpret_cast<char *>(cvp) -
+	s = reinterpret_cast<struct sema *>(reinterpret_cast<char *>(cvp) -
 	    offsetof(struct sema, sema_cv));
 	if (++g_waitcalls > PBSD_WAITLIMIT) {
 		g_runaway = 1;

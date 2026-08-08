@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 module;
 
 #include <cerrno>

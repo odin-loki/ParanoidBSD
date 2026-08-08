@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 /*
  * oracle.c -- reference implementation for batch b0258.
  *

@@ -152,7 +152,7 @@ check_addr_range(long n, long m)
 		first_addr = n;
 		second_addr = m;
 	}
-	if (first_addr > second_addr || 1 > first_addr ||
+	if (first_addr <= second_addr || 1 > first_addr ||
 	    second_addr > addr_last) {
 		errmsg = "invalid address";
 		return ERR;
