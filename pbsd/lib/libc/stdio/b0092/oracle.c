@@ -1,3 +1,52 @@
+/*
+ * b0092 oracle -- the specification.
+ *
+ * hbsd/src/lib/libc/stdio/setbuffer.c, wscanf.c, and getwc.c concatenated,
+ * with every function renamed with a `ref_' prefix.  Function bodies are
+ * UNMODIFIED.
+ */
+
+#include <stddef.h>
+#include <limits.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <wchar.h>
+#include <locale.h>
+
+#if defined(__has_include)
+#if __has_include(<xlocale.h>)
+#include <xlocale.h>
+#endif
+#else
+#ifdef __FreeBSD__
+#include <xlocale.h>
+#endif
+#endif
+
+#ifndef LONG_BIT
+#define LONG_BIT (sizeof(long) * CHAR_BIT)
+#endif
+
+#ifndef fgetwc_l
+static inline wint_t
+fgetwc_l(FILE *stream, locale_t locale)
+{
+	(void)locale;
+	return (fgetwc(stream));
+}
+#endif
+
+#ifndef vfwscanf_l
+static inline int
+vfwscanf_l(FILE *stream, locale_t locale, const wchar_t *format, va_list arg)
+{
+	(void)locale;
+	return (vfwscanf(stream, format, arg));
+}
+#endif
+
+/* ======================= setbuffer.c ======================= */
+
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -32,8 +81,6 @@
  * SUCH DAMAGE.
  */
 
-#include <stdio.h>
-
 void
 ref_setbuffer(FILE *fp, char *buf, int size)
 {
@@ -50,6 +97,8 @@ ref_setlinebuf(FILE *fp)
 
 	return (setvbuf(fp, (char *)NULL, _IOLBF, (size_t)0));
 }
+
+/* ======================= wscanf.c ======================= */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -84,10 +133,6 @@ ref_setlinebuf(FILE *fp)
  * SUCH DAMAGE.
  */
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <wchar.h>
-
 int
 ref_wscanf(const wchar_t * __restrict fmt, ...)
 {
@@ -100,6 +145,20 @@ ref_wscanf(const wchar_t * __restrict fmt, ...)
 
 	return (r);
 }
+int
+ref_wscanf_l(locale_t locale, const wchar_t * __restrict fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = vfwscanf_l(stdin, locale, fmt, ap);
+	va_end(ap);
+
+	return (r);
+}
+
+/* ======================= getwc.c ======================= */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -134,9 +193,6 @@ ref_wscanf(const wchar_t * __restrict fmt, ...)
  * SUCH DAMAGE.
  */
 
-#include <stdio.h>
-#include <wchar.h>
-
 /*
  * Synonym for fgetwc(). The only difference is that getwc(), if it is a
  * macro, may evaluate `fp' more than once.
@@ -146,4 +202,10 @@ ref_getwc(FILE *fp)
 {
 
 	return (fgetwc(fp));
+}
+wint_t
+ref_getwc_l(FILE *fp, locale_t locale)
+{
+
+	return (fgetwc_l(fp, locale));
 }

@@ -139,14 +139,6 @@ module;
 #define	__weak_symbol	__attribute__((__weak__))
 #endif
 
-#ifndef _IDTYPE_T_DECLARED
-typedef enum {
-	P_PID, P_PPID, P_PGID, P_SID, P_CID, P_UID, P_GID, P_ALL,
-	P_LWPID, P_TASKID, P_PROJID, P_POOLID, P_JAILID, P_CTID,
-	P_CPUID, P_PSETID
-} idtype_t;
-#endif
-
 struct __wrusage;
 
 #define	__ssp_real_(fun)	fun

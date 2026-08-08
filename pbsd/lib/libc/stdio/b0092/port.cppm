@@ -43,20 +43,20 @@ export module pbsd.lib.libc.stdio.b0092;
 export namespace pbsd::lib_libc_stdio::b0092 {
 
 void
-setbuffer(FILE *fp, char *buf, int size)
+setbuffer(std::FILE *fp, char *buf, int size)
 {
 
-	(void)setvbuf(fp, buf, buf ? _IOFBF : _IONBF, (size_t)size);
+	(void)::setvbuf(fp, buf, buf ? _IOFBF : _IONBF, (size_t)size);
 }
 
 /*
  * set line buffering
  */
 int
-setlinebuf(FILE *fp)
+setlinebuf(std::FILE *fp)
 {
 
-	return (setvbuf(fp, (char *)NULL, _IOLBF, (size_t)0));
+	return (::setvbuf(fp, (char *)NULL, _IOLBF, (size_t)0));
 }
 
 /*-
@@ -99,7 +99,7 @@ wscanf(const wchar_t * __restrict fmt, ...)
 	int r;
 
 	std::va_start(ap, fmt);
-	r = vfwscanf(stdin, fmt, ap);
+	r = ::vfwscanf(stdin, fmt, ap);
 	std::va_end(ap);
 
 	return (r);

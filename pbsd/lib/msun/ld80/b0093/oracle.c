@@ -6,6 +6,7 @@
  * compilation is provided above the concatenated sources.
  */
 
+#define _GNU_SOURCE
 #include <complex.h>
 #include <float.h>
 #include <math.h>
@@ -114,22 +115,6 @@ rnintl(long double x)
 #define	irint(x)	((int)(x))
 
 /* === kernel support === */
-/*
- * ====================================================
- * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
- * Copyright (c) 2008 Steven G. Kargl, David Schultz, Bruce D. Evans.
- *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
- * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
- * is preserved.
- * ====================================================
- */
-
-/*
- * ld80 version of k_cos.c.  See ../src/k_cos.c for most comments.
- */
-
 
 /*
  * Domain [-0.7854, 0.7854], range ~[-2.43e-23, 2.425e-23]:
@@ -187,22 +172,6 @@ __kernel_cosl(long double x, long double y)
 	w  = one-hz;
 	return w + (((one-w)-hz) + (z*r-x*y));
 }
-/*
- * ====================================================
- * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
- * Copyright (c) 2008 Steven G. Kargl, David Schultz, Bruce D. Evans.
- *
- * Developed at SunSoft, a Sun Microsystems, Inc. business.
- * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
- * is preserved.
- * ====================================================
- */
-
-/*
- * ld80 version of k_sin.c.  See ../src/k_sin.c for most comments.
- */
-
 
 static const double
 half =  0.5;
@@ -244,21 +213,6 @@ __kernel_sinl(long double x, long double y, int iy)
 	if(iy==0) return x+v*(S1+z*r);
 	else      return x-((z*(half*y-v*r)-y)-v*S1);
 }
-/*
- * ====================================================
- * Copyright 2004 Sun Microsystems, Inc.  All Rights Reserved.
- * Copyright (c) 2008 Steven G. Kargl, David Schultz, Bruce D. Evans.
- *
- * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice
- * is preserved.
- * ====================================================
- */
-
-/*
- * ld80 version of k_tan.c.  See ../src/k_tan.c for most comments.
- */
-
 
 /*
  * Domain [-0.67434, 0.67434], range ~[-2.25e-22, 1.921e-22]
@@ -769,6 +723,11 @@ ref_cexpl (long double complex z)
 /* lib/msun/ld80/s_cospil.c */
 /* ================================================================== */
 
+#define __kernel_cospil __kernel_cospil_cospil
+#define __kernel_sinpil __kernel_sinpil_cospil
+#define vzero vzero_cospil
+#define pi_hi pi_hi_cospil
+#define pi_lo pi_lo_cospil
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -970,11 +929,19 @@ ref_cospil(long double x)
 	 */
 	RETURNI(ix >= 0x403f ? 1 : ((lx & 1) ? -1 : 1));
 }
+#undef __kernel_cospil
+#undef __kernel_sinpil
+#undef vzero
+#undef pi_hi
+#undef pi_lo
 
 /* ================================================================== */
 /* lib/msun/ld80/s_sinpil.c */
 /* ================================================================== */
 
+#define __kernel_cospil __kernel_cospil_sinpil
+#define __kernel_sinpil __kernel_sinpil_sinpil
+#define vzero vzero_sinpil
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -1185,11 +1152,21 @@ ref_sinpil(long double x)
 	 */
 	RETURNI(copysignl(0, x));
 }
+#undef __kernel_cospil
+#undef __kernel_sinpil
+#undef vzero
+#undef pi_hi
+#undef pi_lo
 
 /* ================================================================== */
 /* lib/msun/ld80/s_tanpil.c */
 /* ================================================================== */
 
+#define __kernel_cospil __kernel_cospil_tanpil
+#define __kernel_sinpil __kernel_sinpil_tanpil
+#define vzero vzero_tanpil
+#define pi_hi pi_hi_tanpil
+#define pi_lo pi_lo_tanpil
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -1319,3 +1296,8 @@ ref_tanpil(long double x)
 	t = ix >= 0x403f ? 0 : (copysignl(0, (lx & 1) ? -1 : 1));
 	RETURNI((hx & 0x8000) ? -t : t);
 }
+#undef __kernel_cospil
+#undef __kernel_sinpil
+#undef vzero
+#undef pi_hi
+#undef pi_lo

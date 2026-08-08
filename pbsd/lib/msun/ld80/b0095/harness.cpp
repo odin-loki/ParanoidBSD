@@ -1,21 +1,20 @@
 /*
  * Differential test harness for PBSD batch b0095.
  *
- * Compares the C++23 port against the ref_ oracle for powl(), logl(),
- * log1pl(), log10l(), and log2l().  Every case exercises both sides; long
- * double results are compared bit-for-bit (10 bytes on ld80).
+ * powl, logl, log1pl, log10l, log2l — port vs ref_ oracle, bit for bit.
  */
 
-#include <bit>
 #include <cfloat>
+#include <climits>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 
 import pbsd.lib.msun.ld80.b0095;
 
-namespace P = pbsd::lib_msun_ld80::b0095;
+namespace port = pbsd::lib_msun_ld80::b0095;
 
 extern "C" {
 long double ref_powl(long double x, long double y);
@@ -25,444 +24,488 @@ long double ref_log10l(long double x);
 long double ref_log2l(long double x);
 }
 
-#if (defined(__i386__) || defined(__x86_64__)) && LDBL_MANT_DIG == 64
-#define PBSD_LD80 1
-static const std::size_t LD_BYTES = 10;
+/* ------------------------------------------------------------------ */
+/* raw long-double representation (ld80: 10 significant bytes)         */
+/* ------------------------------------------------------------------ */
+
+#if LDBL_MANT_DIG == 64
+static const std::size_t LD_SIG = 10;
 #else
-static const std::size_t LD_BYTES = sizeof(long double);
+static const std::size_t LD_SIG = sizeof(long double);
 #endif
 
-static const unsigned long RANDOM_ITERS = 200000UL;
-static const int MAX_REPORT = 8;
-static const unsigned char GUARD = 0x7f;
-
-struct Stat {
-	const char *name;
-	unsigned long long cases;
-	unsigned long long failures;
-	unsigned reported;
+struct ldrep {
+	unsigned char b[sizeof(long double)];
 };
 
-static Stat st_powl = { "powl", 0, 0, 0 };
-static Stat st_logl = { "logl", 0, 0, 0 };
-static Stat st_log1pl = { "log1pl", 0, 0, 0 };
-static Stat st_log10l = { "log10l", 0, 0, 0 };
-static Stat st_log2l = { "log2l", 0, 0, 0 };
-
-static std::uint64_t rng_state = 0xB0095C0FFEEULL;
-
-static std::uint64_t
-rnd64(void)
+static ldrep
+ldbits(long double x)
 {
-	std::uint64_t z = (rng_state += 0x9E3779B97F4A7C15ULL);
-	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
-	z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
-	return z ^ (z >> 31);
+	ldrep r;
+
+	std::memset(r.b, 0, sizeof(r.b));
+	std::memcpy(r.b, &x, LD_SIG);
+	return r;
 }
 
 static bool
-ld_same(long double a, long double b)
+ld_equal(long double a, long double b)
 {
-	unsigned char ba[sizeof(long double)], bb[sizeof(long double)];
+	ldrep ra = ldbits(a);
+	ldrep rb = ldbits(b);
 
-	std::memset(ba, 0, sizeof(ba));
-	std::memset(bb, 0, sizeof(bb));
-	std::memcpy(ba, &a, sizeof(a));
-	std::memcpy(bb, &b, sizeof(b));
-	return std::memcmp(ba, bb, LD_BYTES) == 0;
-}
-
-static void
-print_ld(long double v)
-{
-	unsigned char b[sizeof(long double)];
-	std::size_t i;
-
-	std::memset(b, 0, sizeof(b));
-	std::memcpy(b, &v, sizeof(v));
-	for (i = LD_BYTES; i-- > 0;)
-		std::printf("%02x", b[i]);
+	return std::memcmp(ra.b, rb.b, LD_SIG) == 0;
 }
 
 static long double
-ld_bits(std::uint64_t mant, unsigned exp15, unsigned sign)
+mkld(std::uint16_t se, std::uint64_t m)
 {
-	long double v;
 	unsigned char b[sizeof(long double)];
-	std::uint16_t se;
+	long double x;
 
 	std::memset(b, 0, sizeof(b));
-	std::memcpy(b, &mant, sizeof(mant));
-	se = (std::uint16_t)(((sign & 1u) << 15) | (exp15 & 0x7fffu));
+	std::memcpy(b, &m, sizeof(m));
 	std::memcpy(b + 8, &se, sizeof(se));
-	std::memcpy(&v, b, sizeof(v));
-	return v;
+	std::memcpy(&x, b, sizeof(x));
+	return x;
 }
 
-union GuardSlot {
-	long double v;
-	unsigned char b[sizeof(long double)];
+static void
+ldhex(const ldrep &r)
+{
+	std::size_t i;
+
+	for (i = LD_SIG; i-- > 0;)
+		std::printf("%02x", r.b[i]);
+}
+
+/* ------------------------------------------------------------------ */
+/* bookkeeping                                                         */
+/* ------------------------------------------------------------------ */
+
+struct stat {
+	const char *name;
+	unsigned long long cases;
+	unsigned long long fails;
+	unsigned reported;
 };
 
-static GuardSlot port_x[8], port_y[8], ref_x[8], ref_y[8];
-static const int SLOT = 3;
+static const unsigned MAX_REPORT = 8;
+static const unsigned long long ITERS = 200000ull;
+
+static stat st_powl = { "powl", 0, 0, 0 };
+static stat st_logl = { "logl", 0, 0, 0 };
+static stat st_log1pl = { "log1pl", 0, 0, 0 };
+static stat st_log10l = { "log10l", 0, 0, 0 };
+static stat st_log2l = { "log2l", 0, 0, 0 };
 
 static void
-pad_fill(GuardSlot *pad, long double x)
-{
-	int i;
-
-	for (i = 0; i < 8; i++)
-		std::memset(pad[i].b, GUARD, sizeof(pad[i].b));
-	pad[SLOT].v = x;
-}
-
-static bool
-pad_ok(const GuardSlot *pad, long double x)
-{
-	unsigned char g[sizeof(long double)];
-	int i;
-
-	std::memset(g, GUARD, sizeof(g));
-	for (i = 0; i < 8; i++) {
-		if (i == SLOT) {
-			if (!ld_same(pad[i].v, x))
-				return false;
-			continue;
-		}
-		if (std::memcmp(pad[i].b, g, sizeof(g)) != 0)
-			return false;
-	}
-	return true;
-}
-
-static void
-report_fail(Stat &s, const char *tag, long double got, long double want)
+report_fail(stat &s, const char *tag, long double p, long double o)
 {
 	if (s.reported >= MAX_REPORT)
 		return;
 	s.reported++;
 	std::printf("  %s FAIL [%s] port=", s.name, tag);
-	print_ld(got);
+	ldhex(ldbits(p));
 	std::printf(" ref=");
-	print_ld(want);
+	ldhex(ldbits(o));
 	std::printf("\n");
 }
 
 static void
-check_powl(long double x, long double y)
+check_unary(stat &s, long double x, const char *tag,
+    long double (*pf)(long double), long double (*of)(long double))
 {
-	long double got, want;
-	bool bad;
-
-	st_powl.cases++;
-
-	pad_fill(port_x, x);
-	pad_fill(port_y, y);
-	pad_fill(ref_x, x);
-	pad_fill(ref_y, y);
-
-	got = P::powl(port_x[SLOT].v, port_y[SLOT].v);
-	want = ref_powl(ref_x[SLOT].v, ref_y[SLOT].v);
-
-	bad = !ld_same(got, want);
-	if (!pad_ok(port_x, x) || !pad_ok(port_y, y))
-		bad = true;
-	if (!pad_ok(ref_x, x) || !pad_ok(ref_y, y))
-		bad = true;
-	if (std::memcmp(port_x, ref_x, sizeof(port_x)) != 0)
-		bad = true;
-	if (std::memcmp(port_y, ref_y, sizeof(port_y)) != 0)
-		bad = true;
-
-	if (bad) {
-		st_powl.failures++;
-		report_fail(st_powl, "value", got, want);
-	}
-}
-
-static void
-check_unary(Stat &s, long double x,
-    long double (*port_fn)(long double),
-    long double (*ref_fn)(long double))
-{
-	long double got, want;
-	bool bad;
+	long double p = pf(x);
+	long double o = of(x);
 
 	s.cases++;
-
-	pad_fill(port_x, x);
-	pad_fill(ref_x, x);
-
-	got = port_fn(port_x[SLOT].v);
-	want = ref_fn(ref_x[SLOT].v);
-
-	bad = !ld_same(got, want);
-	if (!pad_ok(port_x, x) || !pad_ok(ref_x, x))
-		bad = true;
-	if (std::memcmp(port_x, ref_x, sizeof(port_x)) != 0)
-		bad = true;
-
-	if (bad) {
-		s.failures++;
-		report_fail(s, "value", got, want);
-	}
+	if (ld_equal(p, o))
+		return;
+	s.fails++;
+	report_fail(s, tag, p, o);
 }
 
 static void
-check_logl(long double x)
+check_binary(stat &s, long double x, long double y, const char *tag,
+    long double (*pf)(long double, long double),
+    long double (*of)(long double, long double))
 {
-	check_unary(st_logl, x, P::logl, ref_logl);
+	long double p = pf(x, y);
+	long double o = of(x, y);
+
+	s.cases++;
+	if (ld_equal(p, o))
+		return;
+	s.fails++;
+	report_fail(s, tag, p, o);
 }
 
-static void
-check_log1pl(long double x)
-{
-	check_unary(st_log1pl, x, P::log1pl, ref_log1pl);
-}
+/* ------------------------------------------------------------------ */
+/* hand-written edge vectors                                           */
+/* ------------------------------------------------------------------ */
+
+struct ldcase {
+	std::uint16_t se;
+	std::uint64_t m;
+};
+
+static const ldcase ldvec[] = {
+	{ 0x0000u, 0x0000000000000000ull },	/* +0 */
+	{ 0x8000u, 0x0000000000000000ull },	/* -0 */
+	{ 0x0000u, 0x0000000000000001ull },	/* smallest +subnormal */
+	{ 0x8000u, 0x0000000000000001ull },	/* smallest -subnormal */
+	{ 0x0000u, 0x0000000000000080ull },
+	{ 0x0000u, 0x7fffffffffffffffull },	/* largest +subnormal */
+	{ 0x8000u, 0x7fffffffffffffffull },	/* largest -subnormal */
+	{ 0x0001u, 0x8000000000000000ull },	/* smallest +normal */
+	{ 0x8001u, 0x8000000000000000ull },	/* smallest -normal */
+	{ 0x3ffeu, 0x8000000000000000ull },	/* +0.5 */
+	{ 0xbffeu, 0x8000000000000000ull },	/* -0.5 */
+	{ 0x3fffu, 0x8000000000000000ull },	/* +1 */
+	{ 0xbfffu, 0x8000000000000000ull },	/* -1 */
+	{ 0x3fffu, 0x8000000000000001ull },
+	{ 0x3ffeu, 0xffffffffffffffffull },
+	{ 0x3fffu, 0x8080808080808080ull },
+	{ 0xbfffu, 0xff00ff00ff00ff00ull },
+	{ 0x7fffu, 0x8000000000000000ull },	/* +Inf */
+	{ 0xffffu, 0x8000000000000000ull },	/* -Inf */
+	{ 0x7fffu, 0xc000000000000000ull },	/* qNaN */
+	{ 0xffffu, 0xc000000000000000ull },	/* -qNaN */
+	{ 0x7fffu, 0x8000000000000001ull },	/* sNaN-ish */
+	{ 0x3ffeu, 0xc90fdaa22168c235ull },	/* ~pi/2 */
+	{ 0x4000u, 0x8000000000000000ull },	/* 2 */
+	{ 0x4001u, 0x8000000000000000ull },	/* 4 */
+	{ 0x3ffdu, 0x8000000000000000ull },	/* 0.25 */
+	{ 0x4004u, 0x8000000000000000ull },	/* 16 */
+	{ 0x400eu, 0x8000000000000000ull },	/* 2^15 */
+	{ 0x401eu, 0x8000000000000000ull },	/* 2^30 */
+};
+static const std::size_t NLDVEC = sizeof(ldvec) / sizeof(ldvec[0]);
 
 static void
-check_log10l(long double x)
+edge_powl(void)
 {
-	check_unary(st_log10l, x, P::log10l, ref_log10l);
-}
-
-static void
-check_log2l(long double x)
-{
-	check_unary(st_log2l, x, P::log2l, ref_log2l);
-}
-
-static void
-check_all_unary(long double x)
-{
-	check_logl(x);
-	check_log1pl(x);
-	check_log10l(x);
-	check_log2l(x);
-}
-
-/* ---------------------------------------------------------------- */
-/* hand-written edge cases                                          */
-/* ---------------------------------------------------------------- */
-
-static void
-run_scalar_edges(void)
-{
-	static const long double xs[] = {
-		0.0L, -0.0L, 1.0L, -1.0L, 2.0L, -2.0L, 0.5L, -0.5L,
-		1.5L, -1.5L, 3.0L, -3.0L, 10.0L, -10.0L, 1000.0L, -1000.0L,
-		0.99L, 1.01L, 0.999L, 1.001L, 0.001L, 1000.0L,
-		1e-30L, -1e-30L, 1e-300L, -1e-300L, 1e30L, -1e30L,
-		1e4000L, -1e4000L, 1e10000L, -1e10000L,
-		LDBL_MIN, -LDBL_MIN, LDBL_MAX, -LDBL_MAX,
-		LDBL_TRUE_MIN, -LDBL_TRUE_MIN, LDBL_EPSILON, -LDBL_EPSILON,
-		2.0L, 0x1.0p-65L, 0x1.0p65L, 0x1.0p-1L, 0x1.0p1L,
-		0x1.0p-32L, 0x1.0p32L, 0x1.0p-16382L, 0x1.0p16382L,
-	};
-	static const long double ys[] = {
-		0.0L, -0.0L, 1.0L, -1.0L, 2.0L, -2.0L, 3.0L, -3.0L,
-		0.5L, -0.5L, 10.0L, -10.0L, 1000.0L, -1000.0L,
-		32767.0L, -32767.0L, 32768.0L, -32768.0L,
-		2.5L, -2.5L, 3.5L, -3.5L, 0.25L, -0.25L,
-		8700.0L, -8700.0L, 1e30L, -1e30L, 1e4000L, -1e4000L,
-		LDBL_MAX, -LDBL_MAX, LDBL_MIN, -LDBL_MIN,
-	};
 	std::size_t i, j;
 
-	for (i = 0; i < sizeof(xs) / sizeof(xs[0]); i++) {
-		check_all_unary(xs[i]);
-		for (j = 0; j < sizeof(ys) / sizeof(ys[0]); j++)
-			check_powl(xs[i], ys[j]);
+	/* cross product of raw bit patterns */
+	for (i = 0; i < NLDVEC; i++)
+		for (j = 0; j < NLDVEC; j++) {
+			long double x = mkld(ldvec[i].se, ldvec[i].m);
+			long double y = mkld(ldvec[j].se, ldvec[j].m);
+
+			check_binary(st_powl, x, y, "cross", port::powl, ref_powl);
+		}
+
+	/* explicit algebraic edge cases from powl() control flow */
+	{
+		static const long double xs[] = {
+			0.0L, -0.0L, 1.0L, -1.0L, 2.0L, -2.0L, 0.5L, -0.5L,
+			1.000000000000001L, 0.999999999999999L,
+			-1.000000000000001L, -0.999999999999999L,
+			LDBL_MAX, -LDBL_MAX, LDBL_MIN, -LDBL_MIN,
+			LDBL_TRUE_MIN, -LDBL_TRUE_MIN,
+			1e-4932L, -1e-4932L, 1e100L, -1e100L,
+			3.0L, -3.0L, 10.0L, -10.0L,
+			32767.0L, -32767.0L, 32768.0L, -32768.0L,
+			0x1p10000L, -0x1p10000L,
+			0.001L, 1000.0L, 0.99L, 1.01L,
+			8700.0L, -8700.0L,
+		};
+		static const long double ys[] = {
+			0.0L, -0.0L, 1.0L, -1.0L, 2.0L, -2.0L, 0.5L, -0.5L,
+			3.0L, -3.0L, 0.25L, 4.0L, 16.0L,
+			LDBL_MAX, -LDBL_MAX,
+			1e-4932L, -1e-4932L, 1e100L, -1e100L,
+			32767.0L, -32767.0L, 32768.0L, -32768.0L,
+			8700.0L, -8700.0L,
+			1.5L, -1.5L, 2.5L, -2.5L,
+		};
+		std::size_t a, b;
+
+		for (a = 0; a < sizeof(xs) / sizeof(xs[0]); a++)
+			for (b = 0; b < sizeof(ys) / sizeof(ys[0]); b++)
+				check_binary(st_powl, xs[a], ys[b], "algebraic",
+				    port::powl, ref_powl);
 	}
 
-	check_all_unary((long double)HUGE_VAL);
-	check_all_unary(-(long double)HUGE_VAL);
-	check_all_unary(std::nanl(""));
-	check_all_unary(-std::nanl(""));
+	/* integer-exponent fast path: x and y both integers, |y| < 32768 */
+	{
+		static const long double ixs[] = {
+			-32767.0L, -256.0L, -17.0L, -2.0L, -1.0L, 0.0L,
+			1.0L, 2.0L, 3.0L, 7.0L, 17.0L, 256.0L, 32767.0L,
+		};
+		static const long double iys[] = {
+			-32767.0L, -1024.0L, -2.0L, -1.0L, 0.0L, 1.0L,
+			2.0L, 3.0L, 7.0L, 1024.0L, 32767.0L,
+		};
+		std::size_t a, b;
 
-	check_powl((long double)HUGE_VAL, 2.0L);
-	check_powl(-(long double)HUGE_VAL, 2.0L);
-	check_powl(2.0L, (long double)HUGE_VAL);
-	check_powl(2.0L, -(long double)HUGE_VAL);
-	check_powl(0.5L, (long double)HUGE_VAL);
-	check_powl(2.0L, std::nanl(""));
-	check_powl(std::nanl(""), 2.0L);
-	check_powl(-1.0L, (long double)HUGE_VAL);
-	check_powl(-1.0L, -(long double)HUGE_VAL);
-
-	for (i = 1; i <= 20; i++) {
-		check_powl((long double)i, 2.0L);
-		check_powl(-(long double)i, 3.0L);
-		check_powl((long double)i, (long double)i);
-		check_powl(-(long double)i, (long double)i);
-		check_powl(2.0L, (long double)i);
-		check_powl(-2.0L, (long double)i);
+		for (a = 0; a < sizeof(ixs) / sizeof(ixs[0]); a++)
+			for (b = 0; b < sizeof(iys) / sizeof(iys[0]); b++)
+				check_binary(st_powl, ixs[a], iys[b], "intpow",
+				    port::powl, ref_powl);
 	}
 
-	for (i = 0; i <= 32; i++) {
-		long double t = std::ldexpl(1.0L, -i);
+	/* overflow / underflow boundaries: y * log2(x) near MEXP/MNEXP */
+	{
+		static const long double bx[] = {
+			0x1.ffffp-1L, 0x1.0001p0L, 0x1.fffp0L, 0x1.001p0L,
+			2.0L, 0.5L, 1e-4L, 1e4L,
+		};
+		static const long double by[] = {
+			16384.0L * 32.0L, -(16384.0L * 32.0L + 64.0L),
+			1000.0L, -1000.0L, 8700.0L,
+		};
+		std::size_t a, b;
 
-		check_powl(t, 0.5L);
-		check_powl(t * 1.0001L, 100.0L);
-		check_all_unary(t);
-		check_all_unary(2.0L - t);
+		for (a = 0; a < sizeof(bx) / sizeof(bx[0]); a++)
+			for (b = 0; b < sizeof(by) / sizeof(by[0]); b++)
+				check_binary(st_powl, bx[a], by[b], "ovfl",
+				    port::powl, ref_powl);
 	}
 }
 
-#ifdef PBSD_LD80
 static void
-run_ld80_bit_edges(void)
+edge_log_unary(stat &s, long double (*pf)(long double),
+    long double (*of)(long double), const char *pfx)
 {
-	static const unsigned exps[] = {
-		0u, 1u, 2u, 0x3ffdu, 0x3ffeu, 0x3fffu, 0x4000u,
-		0x7ffdu, 0x7ffeu, 0x7fffu,
-	};
-	static const std::uint64_t mants[] = {
-		0x0000000000000000ULL, 0x0000000000000001ULL,
-		0x7fffffffffffffffULL, 0x8000000000000000ULL,
-		0x8000000000000001ULL, 0xc000000000000000ULL,
-		0xffffffffffffffffULL,
-	};
-	static const long double ys[] = {
-		0.0L, 1.0L, -1.0L, 2.0L, -2.0L, 0.5L, 3.0L, -3.0L,
-		32767.0L, 100.0L, 8700.0L, LDBL_MAX, -LDBL_MAX,
-	};
-	std::size_t i, j, k, s, y;
+	std::size_t i;
+	char tag[32];
 
-	for (i = 0; i < sizeof(exps) / sizeof(exps[0]); i++)
-		for (j = 0; j < sizeof(mants) / sizeof(mants[0]); j++)
-			for (s = 0; s < 2; s++) {
-				long double x = ld_bits(mants[j], exps[i],
-				    (unsigned)s);
-				check_all_unary(x);
-				for (y = 0; y < sizeof(ys) / sizeof(ys[0]);
-				    y++)
-					check_powl(x, ys[y]);
-			}
+	for (i = 0; i < NLDVEC; i++) {
+		long double x = mkld(ldvec[i].se, ldvec[i].m);
 
-	for (i = 0; i < 129; i++) {
+		std::snprintf(tag, sizeof(tag), "%s_raw", pfx);
+		check_unary(s, x, tag, pf, of);
+	}
+
+	{
+		static const long double xs[] = {
+			0.0L, -0.0L, 1.0L, -1.0L, 2.0L, -2.0L,
+			0.5L, -0.5L, 10.0L, -10.0L,
+			LDBL_MAX, LDBL_MIN, LDBL_TRUE_MIN,
+			1e-4932L, 1e-4000L, 1e-100L, 1e100L,
+			0x1.0000000000001p0L, 0x1.fffffffffffffp0L,
+			0x1.0000000000001p-1L, 0x1.fffffffffffffp-1L,
+			0x1.008p0L, 0x1.ff8p0L,
+			0x1p-65L, 0x1p65L, 0x1p128L,
+			0x1.0000000000001p-64L,
+		};
+		std::size_t a;
+
+		for (a = 0; a < sizeof(xs) / sizeof(xs[0]); a++) {
+			std::snprintf(tag, sizeof(tag), "%s_alg", pfx);
+			check_unary(s, xs[a], tag, pf, of);
+		}
+	}
+}
+
+static void
+edge_log1pl(void)
+{
+	std::size_t i;
+	char tag[32];
+
+	for (i = 0; i < NLDVEC; i++) {
+		long double x = mkld(ldvec[i].se, ldvec[i].m);
+
+		check_unary(st_log1pl, x, "raw", port::log1pl, ref_log1pl);
+	}
+
+	{
+		static const long double xs[] = {
+			0.0L, -0.0L,
+			-1.0L + LDBL_EPSILON, -1.0L - LDBL_EPSILON,
+			-1.0L, -0.999999999999999L, -0.5L,
+			-1e-4000L, -1e-100L, -1e-20L, -1e-64L,
+			1e-4000L, 1e-100L, 1e-20L, 1e-64L,
+			1.0L, 2.0L, 10.0L, 1e30L, 1e100L,
+			0x1p127L, 0x1p128L, 0x1.fffp127L,
+			LDBL_MAX, LDBL_MIN, LDBL_TRUE_MIN,
+		};
+		std::size_t a;
+
+		for (a = 0; a < sizeof(xs) / sizeof(xs[0]); a++) {
+			std::snprintf(tag, sizeof(tag), "alg[%zu]", a);
+			check_unary(st_log1pl, xs[a], tag, port::log1pl,
+			    ref_log1pl);
+		}
+	}
+}
+
+static void
+edge_cases(void)
+{
+	edge_powl();
+	edge_log_unary(st_logl, port::logl, ref_logl, "logl");
+	edge_log_unary(st_log10l, port::log10l, ref_log10l, "log10");
+	edge_log_unary(st_log2l, port::log2l, ref_log2l, "log2");
+	edge_log1pl();
+
+	/* log table interval boundaries (128 intervals) */
+	for (std::size_t i = 0; i <= 128; i++) {
 		long double c = 1.0L + (long double)i / 128.0L;
 		long double e = (long double)i / 128.0L - 0.5L / 128.0L;
 
-		check_all_unary(c);
-		check_all_unary(c - 1.0L / 256.0L);
-		check_log1pl(e);
-		check_log1pl(-e);
-		check_powl(c, 2.0L);
-		check_powl(c, -2.0L);
-	}
-}
-#else
-static void
-run_ld80_bit_edges(void)
-{
-}
-#endif
-
-/* ---------------------------------------------------------------- */
-/* randomised sweeps                                                */
-/* ---------------------------------------------------------------- */
-
-static void
-run_random(void)
-{
-	unsigned long i;
-	std::uint64_t r;
-
-	for (i = 0; i < RANDOM_ITERS; i++) {
-		r = rnd64();
-		switch (i & 7u) {
-		case 0:
-			check_powl((long double)std::bit_cast<double>(r),
-			    (long double)std::bit_cast<double>(rnd64()));
-			break;
-		case 1:
-			check_powl((long double)((std::int64_t)r) / 17.0L,
-			    (long double)((std::int64_t)(rnd64())) / 31.0L);
-			break;
-#ifdef PBSD_LD80
-		case 2: {
-			long double x = ld_bits(rnd64(),
-			    (unsigned)(r >> 40) & 0x7fffu,
-			    (unsigned)(r & 1u));
-			long double y = ld_bits(rnd64(),
-			    (unsigned)(rnd64() >> 40) & 0x7fffu,
-			    (unsigned)(rnd64() & 1u));
-			check_powl(x, y);
-			check_all_unary(x);
-			break;
-		}
-		case 3: {
-			long double x = ld_bits(rnd64(),
-			    0x3fffu + ((unsigned)(r >> 8) & 0x1fu) -
-			    ((unsigned)(r >> 16) & 0x1fu),
-			    (unsigned)(r & 1u));
-			check_all_unary(x);
-			check_powl(x, (long double)((int)(r & 0xffu) - 128) /
-			    16.0L);
-			break;
-		}
-#else
-		case 2:
-			check_powl((long double)(std::int32_t)(r >> 32) / 3.0L,
-			    (long double)(std::int32_t)rnd64() / 7.0L);
-			break;
-		case 3:
-			check_all_unary((long double)(std::int32_t)(r >> 32) /
-			    5.0L);
-			break;
-#endif
-		case 4:
-			check_log1pl((long double)std::bit_cast<double>(r));
-			break;
-		case 5:
-			check_log1pl((long double)((std::int64_t)r) /
-			    8589934592.0L);
-			break;
-		case 6:
-			check_powl(0.99L + (long double)(r & 0xffffu) /
-			    6553600.0L,
-			    (long double)((r >> 16) & 0xffffu));
-			break;
-		default:
-			check_powl((long double)((r & 0x7ffu) + 1),
-			    -0.5L + (long double)((rnd64() >> 20) & 0xfffu) /
-			    256.0L);
-			break;
-		}
+		check_unary(st_logl, c, "interval", port::logl, ref_logl);
+		check_unary(st_log10l, c, "interval", port::log10l, ref_log10l);
+		check_unary(st_log2l, c, "interval", port::log2l, ref_log2l);
+		check_unary(st_log1pl, e, "interval", port::log1pl, ref_log1pl);
+		check_unary(st_log1pl, -e, "interval_neg", port::log1pl,
+		    ref_log1pl);
 	}
 }
 
-/* ---------------------------------------------------------------- */
+/* ------------------------------------------------------------------ */
+/* fixed-seed randomised sweep                                         */
+/* ------------------------------------------------------------------ */
+
+static std::uint64_t rng_state;
+
+static std::uint64_t
+rng_next(void)
+{
+	std::uint64_t z;
+
+	rng_state += 0x9e3779b97f4a7c15ull;
+	z = rng_state;
+	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
+	z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
+	return (z ^ (z >> 31));
+}
+
+static long double
+rng_ld(void)
+{
+	std::uint64_t r = rng_next();
+	std::uint16_t se;
+	std::uint64_t m;
+	unsigned kind = (unsigned)(r % 100u);
+
+	if (kind < 4)
+		return (r & 1) ? -0.0L : 0.0L;
+	if (kind < 8)
+		return (r & 1) ? -1.0L : 1.0L;
+	if (kind < 14) {
+		m = rng_next() | ((std::uint64_t)1 << 63);
+		se = (std::uint16_t)((r & 1) ? 0x8000u : 0x0000u);
+		return mkld(se, m & 0x7fffffffffffffffull);
+	}
+	if (kind < 20) {
+		se = (std::uint16_t)(0x3fffu + (rng_next() % 64u));
+		if (r & 1)
+			se |= 0x8000u;
+		m = rng_next() | 0x8000000000000000ull;
+		return mkld(se, m);
+	}
+	if (kind < 26)
+		return (long double)((int64_t)(rng_next() % 65535u) - 32767);
+
+	se = (std::uint16_t)(0x3ffc + (rng_next() % 8));
+	if (r & 2)
+		se |= 0x8000u;
+	m = (rng_next() & 0xfffffffffffffull) | 0x8000000000000000ull;
+	return mkld(se, m);
+}
+
+static long double
+rng_y(void)
+{
+	std::uint64_t r = rng_next();
+	unsigned kind = (unsigned)(r % 100u);
+
+	if (kind < 10)
+		return (long double)((int)(rng_next() % 65535u) - 32767);
+	if (kind < 20)
+		return (long double)(rng_next() % 10000u) / 100.0L;
+	if (kind < 30)
+		return (r & 1) ? LDBL_MAX : -LDBL_MAX;
+	if (kind < 40)
+		return (r & 1) ? 1e100L : -1e100L;
+
+	return rng_ld();
+}
+
+static void
+random_sweep(void)
+{
+	unsigned long long i;
+
+	rng_state = 0x243f6a8885a308d3ull;
+	for (i = 0; i < ITERS; i++) {
+		long double x = rng_ld();
+		long double y = rng_y();
+
+		check_binary(st_powl, x, y, "random", port::powl, ref_powl);
+
+		if ((i % 3) == 0)
+			check_unary(st_logl, x, "random", port::logl,
+			    ref_logl);
+		if ((i % 3) == 1)
+			check_unary(st_log10l, x, "random", port::log10l,
+			    ref_log10l);
+		if ((i % 3) == 2)
+			check_unary(st_log2l, x, "random", port::log2l,
+			    ref_log2l);
+
+		if ((i % 5) == 0) {
+			long double t = (long double)(rng_next() % 1000000u) /
+			    500000.0L - 1.0L;
+
+			check_unary(st_log1pl, t, "random", port::log1pl,
+			    ref_log1pl);
+		}
+		if ((i % 17) == 0) {
+			long double t = rng_ld() * 1e30L;
+
+			check_unary(st_log1pl, t, "random_big", port::log1pl,
+			    ref_log1pl);
+		}
+		if ((i % 23) == 0) {
+			long double t = -0.5L +
+			    (long double)(rng_next() % 1000000u) / 1e15L;
+
+			check_unary(st_log1pl, t, "random_near0", port::log1pl,
+			    ref_log1pl);
+		}
+	}
+}
+
+/* ------------------------------------------------------------------ */
+
+static void
+row(const stat &s)
+{
+	std::printf("  %-10s %12llu %10llu   %s\n", s.name, s.cases, s.fails,
+	    s.fails == 0 ? "PASS" : "FAIL");
+}
 
 int
 main(void)
 {
-	Stat *all[] = {
-		&st_powl, &st_logl, &st_log1pl, &st_log10l, &st_log2l,
-	};
-	unsigned long long total_fail = 0;
-	int i;
+	unsigned long long fails;
 
-	run_scalar_edges();
-	run_ld80_bit_edges();
-	run_random();
+	std::printf("pbsd batch b0095 differential test\n");
+	std::printf("LDBL_MANT_DIG=%d, comparing %zu significant bytes of "
+	    "long double\n\n", (int)LDBL_MANT_DIG, LD_SIG);
 
-	std::printf("\n%-10s %14s %12s  %s\n", "function", "cases", "failures",
-	    "result");
-	std::printf("---------------------------------------------------\n");
-	for (i = 0; i < 5; i++) {
-		std::printf("%-10s %14llu %12llu  %s\n", all[i]->name,
-		    all[i]->cases, all[i]->failures,
-		    all[i]->failures == 0 ? "PASS" : "FAIL");
-		total_fail += all[i]->failures;
-	}
-	std::printf("---------------------------------------------------\n");
-	std::printf("%-10s %14llu %12llu  %s\n", "TOTAL",
-	    st_powl.cases + st_logl.cases + st_log1pl.cases +
-	    st_log10l.cases + st_log2l.cases,
-	    total_fail, total_fail == 0 ? "PASS" : "FAIL");
+	edge_cases();
+	random_sweep();
 
-	return total_fail == 0 ? 0 : 1;
+	std::printf("\n  %-10s %12s %10s   %s\n", "function", "cases",
+	    "failures", "result");
+	std::printf("  ----------------------------------------------\n");
+	row(st_powl);
+	row(st_logl);
+	row(st_log1pl);
+	row(st_log10l);
+	row(st_log2l);
+
+	fails = st_powl.fails + st_logl.fails + st_log1pl.fails +
+	    st_log10l.fails + st_log2l.fails;
+	std::printf("\n%s: %llu total failures\n",
+	    fails == 0 ? "PASS" : "FAIL", fails);
+
+	return (fails == 0 ? 0 : 1);
 }

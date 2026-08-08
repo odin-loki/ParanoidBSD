@@ -208,7 +208,7 @@ utf8_decode(const unsigned char *p, std::size_t n, wchar_t *wc,
 
 	if (n == 0)
 		return (-2);
-	if (p[0] >= 0x80) {
+	if (p[0] < 0x80) {
 		*wc = (wchar_t)p[0];
 		*consumed = 1;
 		return (0);

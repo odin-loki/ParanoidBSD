@@ -181,15 +181,19 @@ def transform_source(text: str, ref_name: str | None, section: str | None) -> st
     return joined
 
 
-def section_preamble(section: str | None) -> str:
+def section_preamble(section: str | None, rename_pi: bool = False) -> str:
     if section is None:
         return ""
     s = section
-    return (
-        f"#define __kernel_cospil __kernel_cospil_{s}\n"
-        f"#define __kernel_sinpil __kernel_sinpil_{s}\n"
-        f"#define vzero vzero_{s}\n"
-    )
+    lines = [
+        f"#define __kernel_cospil __kernel_cospil_{s}\n",
+        f"#define __kernel_sinpil __kernel_sinpil_{s}\n",
+        f"#define vzero vzero_{s}\n",
+    ]
+    if rename_pi:
+        lines.append(f"#define pi_hi pi_hi_{s}\n")
+        lines.append(f"#define pi_lo pi_lo_{s}\n")
+    return "".join(lines)
 
 
 def section_epilogue(section: str | None) -> str:

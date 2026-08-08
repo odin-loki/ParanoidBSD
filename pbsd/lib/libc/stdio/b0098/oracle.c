@@ -9,17 +9,45 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <wchar.h>
+
+#if defined(__has_include)
+#if __has_include(<xlocale.h>)
 #include <xlocale.h>
+#endif
+#elif defined(__FreeBSD__) || defined(__APPLE__)
+#include <xlocale.h>
+#endif
+
+#include <locale.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
 #endif
 
-#ifndef _IOFBF
-#define _IOFBF 0
+#ifndef _XLOCALE_H_
+#ifndef vfwscanf_l
+static int
+vfwscanf_l(FILE *stream, locale_t loc, const wchar_t *fmt, va_list ap)
+{
+	locale_t old = uselocale(loc);
+	int r = vfwscanf(stream, fmt, ap);
+
+	uselocale(old);
+	return r;
+}
 #endif
-#ifndef _IONBF
-#define _IONBF 2
+
+#ifndef vfwprintf_l
+static int
+vfwprintf_l(FILE *stream, locale_t loc, const wchar_t *fmt, va_list ap)
+{
+	locale_t old = uselocale(loc);
+	int r = vfwprintf(stream, fmt, ap);
+
+	uselocale(old);
+	return r;
+}
+#endif
 #endif
 
 /*-

@@ -23,7 +23,7 @@ for f in -fmodules-ts -fmodules ""; do
 done
 
 rm -rf gcm.cache pcm.cache
-mkdir -p pcm.cache
+mkdir -p pcm.cache gcm.cache
 rm -f oracle.o port.o harness.o harness
 
 $CC $CFLAGS -c oracle.c -o oracle.o

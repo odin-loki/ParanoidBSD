@@ -10,28 +10,13 @@ module;
 
 export module pbsd.usr.sbin.cxgbetool.b0085;
 
-export namespace pbsd::usr_sbin_cxgbetool::b0085 {
+namespace pbsd::usr_sbin_cxgbetool::b0085::detail {
 
 struct reg_info {
 	const char *name;
 	std::uint32_t addr;
 	std::uint32_t len;
 };
-
-extern const reg_info t4vf_sge_regs[];
-extern const reg_info t5vf_sge_regs[];
-extern const reg_info t4vf_mps_regs[];
-extern const reg_info t4vf_pl_regs[];
-extern const reg_info t5vf_pl_regs[];
-extern const reg_info t6vf_pl_regs[];
-extern const reg_info t4vf_cim_regs[];
-extern const reg_info t4vf_mbdata_regs[];
-
-} // namespace pbsd::usr_sbin_cxgbetool::b0085
-
-module :private;
-
-namespace pbsd::usr_sbin_cxgbetool::b0085 {
 
 const reg_info t4vf_sge_regs[] = {
 	{ "SGE_KDOORBELL",			0x000, 0 },
@@ -195,5 +180,20 @@ const reg_info t4vf_mbdata_regs[] = {
 
 	{ nullptr, 0, 0 }
 };
+
+} // namespace pbsd::usr_sbin_cxgbetool::b0085::detail
+
+export namespace pbsd::usr_sbin_cxgbetool::b0085 {
+
+export using reg_info = detail::reg_info;
+
+export inline const reg_info *const t4vf_sge_regs = detail::t4vf_sge_regs;
+export inline const reg_info *const t5vf_sge_regs = detail::t5vf_sge_regs;
+export inline const reg_info *const t4vf_mps_regs = detail::t4vf_mps_regs;
+export inline const reg_info *const t4vf_pl_regs = detail::t4vf_pl_regs;
+export inline const reg_info *const t5vf_pl_regs = detail::t5vf_pl_regs;
+export inline const reg_info *const t6vf_pl_regs = detail::t6vf_pl_regs;
+export inline const reg_info *const t4vf_cim_regs = detail::t4vf_cim_regs;
+export inline const reg_info *const t4vf_mbdata_regs = detail::t4vf_mbdata_regs;
 
 } // namespace pbsd::usr_sbin_cxgbetool::b0085

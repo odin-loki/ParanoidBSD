@@ -77,14 +77,14 @@ export namespace pbsd::lib_libc_stdio::b0098 {
  */
 
 int
-vwscanf(const wchar_t * __restrict fmt, va_list ap)
+vwscanf(const wchar_t * __restrict fmt, std::va_list ap)
 {
-	return (vfwscanf(stdin, fmt, ap));
+	return (::vfwscanf(stdin, fmt, ap));
 }
 int
-vwscanf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
+vwscanf_l(::locale_t locale, const wchar_t * __restrict fmt, std::va_list ap)
 {
-	return (vfwscanf_l(stdin, locale, fmt, ap));
+	return (::vfwscanf_l(stdin, locale, fmt, ap));
 }
 
 /*-
@@ -121,14 +121,14 @@ vwscanf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
  */
 
 int
-vwprintf(const wchar_t * __restrict fmt, va_list ap)
+vwprintf(const wchar_t * __restrict fmt, std::va_list ap)
 {
-	return (vfwprintf(stdout, fmt, ap));
+	return (::vfwprintf(stdout, fmt, ap));
 }
 int
-vwprintf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
+vwprintf_l(::locale_t locale, const wchar_t * __restrict fmt, std::va_list ap)
 {
-	return (vfwprintf_l(stdout, locale, fmt, ap));
+	return (::vfwprintf_l(stdout, locale, fmt, ap));
 }
 
 /*-
@@ -166,9 +166,9 @@ vwprintf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
  */
 
 void
-setbuf(FILE * __restrict fp, char * __restrict buf)
+setbuf(std::FILE * __restrict fp, char * __restrict buf)
 {
-	(void) setvbuf(fp, buf, buf ? _IOFBF : _IONBF, BUFSIZ);
+	(void) ::setvbuf(fp, buf, buf ? _IOFBF : _IONBF, BUFSIZ);
 }
 
 } // namespace pbsd::lib_libc_stdio::b0098

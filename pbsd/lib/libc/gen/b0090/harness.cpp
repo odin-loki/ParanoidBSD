@@ -155,10 +155,10 @@ __getgroupmembership(const char *uname, gid_t agroup, gid_t *groups,
 
 	if (groups != nullptr && grpcnt_in > 0) {
 		cap = grpcnt_in < ngroups ? grpcnt_in : ngroups;
+		if (cap > 64)
+			cap = 64;
 		for (i = 0; i < cap; i++)
 			groups[i] = agroup + (gid_t)(i + 1);
-		for (; i < grpcnt_in; i++)
-			groups[i] = (gid_t)0x7f7f7f7fu;
 	}
 
 	return (ret);

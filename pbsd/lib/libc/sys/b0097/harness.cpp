@@ -418,17 +418,17 @@ case_wait6(idtype_t idtype, id_t id, int options, int use_status, int use_ru,
 
 	memset(st_a, GUARD, sizeof(st_a));
 	memset(st_b, GUARD, sizeof(st_b));
-	memset(ru_a, GUARD, sizeof(ru_a));
-	memset(ru_b, GUARD, sizeof(ru_b));
-	memset(info_a, GUARD, sizeof(info_a));
-	memset(info_b, GUARD, sizeof(info_b));
+	memset(ru_buf_a, GUARD, sizeof(ru_buf_a));
+	memset(ru_buf_b, GUARD, sizeof(ru_buf_b));
+	memset(info_buf_a, GUARD, sizeof(info_buf_a));
+	memset(info_buf_b, GUARD, sizeof(info_buf_b));
 
 	status_a = use_status ? (int *)(st_a + 16) : NULL;
 	status_b = use_status ? (int *)(st_b + 16) : NULL;
-	ru_a = use_ru ? (struct __wrusage *)(ru_a + 16) : NULL;
-	ru_b = use_ru ? (struct __wrusage *)(ru_b + 16) : NULL;
-	info_a = use_infop ? (siginfo_t *)(info_a + 16) : NULL;
-	info_b = use_infop ? (siginfo_t *)(info_b + 16) : NULL;
+	ru_a = use_ru ? (struct __wrusage *)(ru_buf_a + 16) : NULL;
+	ru_b = use_ru ? (struct __wrusage *)(ru_buf_b + 16) : NULL;
+	info_a = use_infop ? (siginfo_t *)(info_buf_a + 16) : NULL;
+	info_b = use_infop ? (siginfo_t *)(info_buf_b + 16) : NULL;
 
 	install_ref_mocks();
 	mock_reset(ret);
@@ -458,11 +458,11 @@ case_wait6(idtype_t idtype, id_t id, int options, int use_status, int use_ru,
 		fail(FN_WAIT6, "status_buf", ctx);
 		return (false);
 	}
-	if (use_ru && memcmp(ru_a, ru_b, sizeof(ru_a)) != 0) {
+	if (use_ru && memcmp(ru_buf_a, ru_buf_b, sizeof(ru_buf_a)) != 0) {
 		fail(FN_WAIT6, "ru_buf", ctx);
 		return (false);
 	}
-	if (use_infop && memcmp(info_a, info_b, sizeof(info_a)) != 0) {
+	if (use_infop && memcmp(info_buf_a, info_buf_b, sizeof(info_buf_a)) != 0) {
 		fail(FN_WAIT6, "info_buf", ctx);
 		return (false);
 	}

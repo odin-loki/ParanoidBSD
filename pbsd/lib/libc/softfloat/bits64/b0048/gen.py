@@ -920,8 +920,10 @@ def edge_and_rand_fcmp(f, ty, rand_fn):
 
 
 def zero_val(ty: str) -> str:
-    if ty in ('float128', 'floatx80'):
-        return '{{0, 0}}'
+    if ty == 'float128':
+        return '{0ULL, 0ULL}'
+    if ty == 'floatx80':
+        return '{0, 0ULL}'
     return '0'
 
 
