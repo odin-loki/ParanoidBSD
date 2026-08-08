@@ -1,8 +1,27 @@
 module;
 
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
+#undef _ns_flagdata
+#undef ns_skiprr
+#undef ns_initparse
+#undef ns_parserr
+#undef ns_parserr2
+#undef ns_samename
+#undef ns_samedomain
+#undef ns_makecanon
+#undef ns_get16
+#undef ns_get32
+#undef ns_put16
+#undef ns_put32
+#undef ns_format_ttl
+#undef ns_parse_ttl
+#undef ns_msg_getflag
 #include <ctype.h>
 #include <cerrno>
 #include <cstdio>
@@ -10,9 +29,15 @@ module;
 #include <strings.h>
 #include <resolv.h>
 
+export module pbsd.lib.libc.nameser.b0154;
+
+export namespace pbsd::lib_libc_nameser::b0154 {
+
 #ifndef NS_MAXNNAME
 #define NS_MAXNNAME	256
 typedef u_char ns_nname[NS_MAXNNAME];
+#endif
+
 typedef struct __ns_rr2 {
 	ns_nname	nname;
 	size_t		nnamel;
@@ -22,11 +47,6 @@ typedef struct __ns_rr2 {
 	int		rdlength;
 	const u_char *	rdata;
 } ns_rr2;
-#endif
-
-export module pbsd.lib.libc.nameser.b0154;
-
-export namespace pbsd::lib_libc_nameser::b0154 {
 
 #ifndef SPRINTF_CHAR
 # define SPRINTF(x) ((size_t)std::sprintf x)
@@ -351,12 +371,6 @@ ns_samedomain(const char *a, const char *b)
 }
 
 int
-ns_subdomain(const char *a, const char *b)
-{
-	return (ns_samename(a, b) != 1 && ns_samedomain(a, b));
-}
-
-int
 ns_makecanon(const char *src, char *dst, size_t dstsize)
 {
 	size_t n = strlen(src);
@@ -391,6 +405,12 @@ ns_samename(const char *a, const char *b)
 		return (0);
 }
 
+int
+ns_subdomain(const char *a, const char *b)
+{
+	return (ns_samename(a, b) != 1 && ns_samedomain(a, b));
+}
+
 /*-
  * SPDX-License-Identifier: ISC
  *
@@ -413,14 +433,8 @@ ns_samename(const char *a, const char *b)
 extern "C" int ns_name_unpack2(const u_char *, const u_char *, const u_char *,
     u_char *, size_t, size_t *);
 
-int
-ns_msg_getflag(ns_msg handle, int flag)
-{
-	return(((handle)._flags & _ns_flagdata[flag].mask) >> _ns_flagdata[flag].shift);
-}
-
-int
-ns_skiprr(const u_char *ptr, const u_char *eom, ns_sect section, int count)
+static int
+skiprr_impl(const u_char *ptr, const u_char *eom, ns_sect section, int count)
 {
 	const u_char *optr = ptr;
 
@@ -442,6 +456,18 @@ ns_skiprr(const u_char *ptr, const u_char *eom, ns_sect section, int count)
 	if (ptr > eom)
 		RETERR(EMSGSIZE);
 	return (ptr - optr);
+}
+
+int
+ns_msg_getflag(ns_msg handle, int flag)
+{
+	return(((handle)._flags & _ns_flagdata[flag].mask) >> _ns_flagdata[flag].shift);
+}
+
+int
+ns_skiprr(const u_char *ptr, const u_char *eom, ns_sect section, int count)
+{
+	return (skiprr_impl(ptr, eom, section, count));
 }
 
 int
@@ -467,7 +493,7 @@ ns_initparse(const u_char *msg, int msglen, ns_msg *handle)
 		if (handle->_counts[i] == 0)
 			handle->_sections[i] = NULL;
 		else {
-			int b = ns_skiprr(msg, eom, (ns_sect)i,
+			int b = skiprr_impl(msg, eom, (ns_sect)i,
 					  handle->_counts[i]);
 
 			if (b < 0)
@@ -500,7 +526,7 @@ ns_parserr(ns_msg *handle, ns_sect section, int rrnum, ns_rr *rr)
 	if (rrnum < handle->_rrnum)
 		detail::setsection(handle, section);
 	if (rrnum > handle->_rrnum) {
-		b = ns_skiprr(handle->_msg_ptr, handle->_eom, section,
+		b = skiprr_impl(handle->_msg_ptr, handle->_eom, section,
 			      rrnum - handle->_rrnum);
 
 		if (b < 0)
@@ -556,7 +582,7 @@ ns_parserr2(ns_msg *handle, ns_sect section, int rrnum, ns_rr2 *rr)
 	if (rrnum < handle->_rrnum)
 		detail::setsection(handle, section);
 	if (rrnum > handle->_rrnum) {
-		b = ns_skiprr(handle->_msg_ptr, handle->_eom, section,
+		b = skiprr_impl(handle->_msg_ptr, handle->_eom, section,
 			      rrnum - handle->_rrnum);
 
 		if (b < 0)

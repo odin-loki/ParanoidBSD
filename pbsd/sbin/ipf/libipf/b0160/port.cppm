@@ -5,6 +5,7 @@ module;
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <strings.h>
 
 export module pbsd.sbin.ipf.libipf.b0160;
 
@@ -17,7 +18,7 @@ export namespace pbsd::sbin_ipf_libipf::b0160 {
 #define AF_INET 2
 #define AF_INET6 28
 
-#define MAX_ICMPCODE 16
+inline constexpr int MAX_ICMPCODE = 16;
 
 typedef std::uint32_t u_32_t;
 
@@ -94,10 +95,12 @@ typedef struct {
  */
 
 char *icmpcodes[MAX_ICMPCODE + 1] = {
-	"net-unr", "host-unr", "proto-unr", "port-unr", "needfrag", "srcfail",
-	"net-unk", "host-unk", "isolate", "net-prohib", "host-prohib",
-	"net-tos", "host-tos", "filter-prohib", "host-preced", "preced-cutoff",
-	nullptr
+	(char *)"net-unr", (char *)"host-unr", (char *)"proto-unr",
+	(char *)"port-unr", (char *)"needfrag", (char *)"srcfail",
+	(char *)"net-unk", (char *)"host-unk", (char *)"isolate",
+	(char *)"net-prohib", (char *)"host-prohib", (char *)"net-tos",
+	(char *)"host-tos", (char *)"filter-prohib", (char *)"host-preced",
+	(char *)"preced-cutoff", nullptr
 };
 
 icmptype_t icmptypelist[] = {
@@ -186,7 +189,7 @@ dupmbt(mb_t *orig)
 	m->mb_len = orig->mb_len;
 	m->mb_next = nullptr;
 	m->mb_data = (char *)m->mb_buf + (orig->mb_data - (char *)orig->mb_buf);
-	std::memcpy(orig->mb_data, m->mb_data, (std::size_t)m->mb_len);
+	bcopy(orig->mb_data, m->mb_data, m->mb_len);
 	return (m);
 }
 
@@ -231,7 +234,7 @@ getoptbyname(char *optname)
 	struct ipopt_names *io;
 
 	for (io = ionames; io->on_name; io++)
-		if (!std::strcasecmp(optname, io->on_name))
+		if (!strcasecmp(optname, io->on_name))
 			return (io->on_bit);
 	return ((u_32_t)-1);
 }

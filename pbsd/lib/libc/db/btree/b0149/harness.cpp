@@ -527,7 +527,11 @@ void check_bt_psplit(u_int32_t ptype, int nents, indx_t skip, size_t ilen,
 	lp_r->lower = lp_r->upper = BTDATAOFF;
 	rp_r->lower = rp_r->upper = BTDATAOFF;
 	lp_r->flags = rp_r->flags = ptype;
-	c.tr.bt_cursor = c.tp.bt_cursor;
+	if (curs_init) {
+		c.tr.bt_cursor.flags = CURS_INIT;
+		c.tr.bt_cursor.pg.pgno = sr->pgno;
+		c.tr.bt_cursor.pg.index = curs_idx;
+	}
 	skip_r = skip;
 	restore_mock(snap);
 
@@ -536,7 +540,9 @@ void check_bt_psplit(u_int32_t ptype, int nents, indx_t skip, size_t ilen,
 	std::memcpy(c.src_p, res_src_p, PAGE_SZ);
 	std::memcpy(c.lp_p, res_lp_p, PAGE_SZ);
 	std::memcpy(c.rp_p, res_rp_p, PAGE_SZ);
-	c.tp.bt_cursor = res_cur_p;
+	c.tp.bt_cursor.flags = res_cur_p.flags;
+	c.tp.bt_cursor.pg.pgno = res_cur_p.pg.pgno;
+	c.tp.bt_cursor.pg.index = res_cur_p.pg.index;
 	skip_p = res_skip_p;
 
 	char msg[256];
@@ -577,9 +583,9 @@ void check_bt_rroot(int l_is_rleaf, int r_is_rleaf, int nents_l, int nents_r)
 	recno_t nrecs_r[] = { 7, 21 };
 	pgno_t pgs_l[] = { 30, 31 };
 	pgno_t pgs_r[] = { 40, 41 };
-	u_int32_t rsizes_l[] = { 4, 6 };
-	u_int32_t rsizes_r[] = { 3, 8 };
-	u_char zf[2] = { 0, 0 };
+	u_int32_t rsizes_l[] = { 4, 6, 3, 5 };
+	u_int32_t rsizes_r[] = { 3, 8, 2, 4 };
+	u_char zf[] = { 0, 0, 0, 0 };
 
 	test_mock_reset();
 	init_tree(tp, mp_p, db_p, R_RECNO, PAGE_SZ);

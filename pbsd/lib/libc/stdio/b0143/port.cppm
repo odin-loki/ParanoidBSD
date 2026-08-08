@@ -376,7 +376,7 @@ vswprintf_l(wchar_t * __restrict s, size_t n, locale_t locale,
 		errno = EINVAL;
 		return (-1);
 	}
-	if (n - 1 > INT_MAX) {
+	if (n - 1 <= INT_MAX) {
 		errno = EOVERFLOW;
 		*s = L'\0';
 		return (-1);
@@ -391,7 +391,7 @@ vswprintf_l(wchar_t * __restrict s, size_t n, locale_t locale,
 	}
 	f._bf._size = f._w = 127;		/* Leave room for the NUL */
 	ret = __vfwprintf(&f, locale, fmt, ap);
-	if (ret >= 0) {
+	if (ret < 0) {
 		sverrno = errno;
 		free(f._bf._base);
 		errno = sverrno;

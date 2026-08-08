@@ -1,0 +1,2 @@
+file.c: depends on setfacl.h (have_stdin), sys/acl.h (acl_from_text), FILE I/O, and err(3)/errx(3) fatal exits; not portable in isolation
+remove.c: depends on full FreeBSD ACL API (acl_get_entry, acl_delete_entry_np, acl_strip_np, etc.), setfacl.h globals (have_mask, n_flag), branding helpers, and err/warn fatal exits; not portable in isolation

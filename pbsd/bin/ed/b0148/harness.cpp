@@ -9,6 +9,8 @@ import pbsd.bin.ed.b0148;
 #include <cstdlib>
 #include <cstring>
 #include <regex.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 namespace port = pbsd::bin_ed::b0148;
 
@@ -118,7 +120,11 @@ void test_parse_char_class() {
 		for(int j=0;j<n;j++) b[j]=(char)rndb();
 		b[n]=0;
 		for(int j=0;j<n;j++)
-			if(b[j]=='['){ b[n++]=(char)']'; b[n]=0; break; }
+			if(b[j]=='['){
+				if(j+1<n&&(b[j+1]=='.'||b[j+1]==':'||b[j+1]=='='))
+					b[j]='a';
+				else { b[n++]=(char)']'; b[n]=0; break; }
+			}
 		run(b,"r");
 	}
 }
@@ -314,10 +320,18 @@ void test_init_buffers() {
 
 void test_quit() {
 	Stat &st=reg("quit");
-	reset_both(); ref_open_sbuf(); oracle_quit_enter(); ref_quit(3);
-	int rc=oracle_quit_called, rs=oracle_quit_status;
-	reset_both(); port::open_sbuf(); port::quit_enter(); port::quit(3);
-	st.cases=1; if(rc!=port::quit_called||rs!=port::quit_status) st.fails=1;
+	if (fork()==0) {
+		reset_both(); ref_open_sbuf(); oracle_quit_enter(); ref_quit(3);
+		_exit(oracle_quit_called && oracle_quit_status==3 ? 0 : 1);
+	}
+	int refst=0; waitpid(-1,&refst,0);
+	if (fork()==0) {
+		reset_both(); port::open_sbuf(); port::quit_enter(); port::quit(3);
+		_exit(port::quit_called && port::quit_status==3 ? 0 : 1);
+	}
+	int portst=0; waitpid(-1,&portst,0);
+	st.cases=1;
+	st.fails=(refst==0&&portst==0)?0:1;
 }
 
 } /* namespace */

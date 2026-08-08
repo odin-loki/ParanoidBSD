@@ -36,6 +36,13 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdint.h>
+
+typedef unsigned int u_int;
+
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0
+#endif
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)

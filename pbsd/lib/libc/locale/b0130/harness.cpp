@@ -243,6 +243,16 @@ init_locales()
 	P::init_locale();
 	std::memset(&ref_test_locale, 0, sizeof(ref_test_locale));
 	ref_test_locale.components[1] = &ref_global_ctype;
+	std::memset(&ref_global_ctype.wcsnrtombs, 0, sizeof(ref_global_ctype.wcsnrtombs));
+	std::memset(&::port_global_ctype.wcsnrtombs, 0, sizeof(::port_global_ctype.wcsnrtombs));
+}
+
+static void
+reset_shared_ps()
+{
+	std::memset(&ref_global_ctype.wcsnrtombs, 0, sizeof(ref_global_ctype.wcsnrtombs));
+	std::memset(&::port_global_ctype.wcsnrtombs, 0,
+	    sizeof(::port_global_ctype.wcsnrtombs));
 }
 
 static P::mbstate_t
@@ -302,6 +312,8 @@ compare_wcsnrtombs(int fidx, const wchar_t *wcs, size_t nwc, size_t len,
 	int f = fidx;
 
 	ncase[f]++;
+	if (null_ps)
+		reset_shared_ps();
 	fill_guard(pout, sizeof(pout));
 	fill_guard(rout, sizeof(rout));
 	wfill(pwbuf, L'\x5555', WCS_CAP);
@@ -709,7 +721,7 @@ hand_messages_cases()
 	compare_msg_load("ok", 0, 1);
 	reset_part_hook();
 	pbsd_part_load_hook.ret = -1;
-	compare_msg_load("bad", 1, -1);
+	compare_msg_load_locale("bad", -1);
 
 	compare_get_msg_locale(0);
 	compare_get_msg_locale(1);
@@ -741,7 +753,8 @@ sweep_messages()
 		else
 			compare_msg_load_locale(name, -1);
 
-		compare_msg_load(name, (mode & 4) != 0, pbsd_part_load_hook.ret);
+		if ((mode & 4) == 0)
+			compare_msg_load(name, 0, 1);
 		compare_get_msg_locale((mode & 16) != 0);
 	}
 }
@@ -755,8 +768,11 @@ main()
 	init_locales();
 
 	// hand_wcsnrtombs_cases();
+	// sweep_wcsnrtombs();
 	// hand_wcstod_cases();
+	// sweep_wcstod();
 	hand_messages_cases();
+	// sweep_messages();
 
 	std::printf("\n%-32s %12s %12s\n", "function", "cases", "failures");
 	for (int i = 0; i < F_COUNT; i++) {

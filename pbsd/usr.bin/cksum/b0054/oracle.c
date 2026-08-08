@@ -1,22 +1,40 @@
-/* -std=c11 hides the BSD type names; crc.c needs u_char. */
-#define _DEFAULT_SOURCE 1
-
 /*
- * oracle.c -- reference implementation for PBSD batch b0054.
+ * PBSD batch b0054 -- reference oracle.
  *
- * Contents: hbsd/src/usr.bin/cksum/crc32.c followed by
- *           hbsd/src/usr.bin/cksum/crc.c, concatenated verbatim.
+ * The original C sources of this batch, concatenated verbatim.  Every
+ * function has been renamed with a "ref_" prefix; no function body has
+ * been altered.  The only additions are:
+ *   - prototypes (the originals pulled these from "extern.h");
+ *   - "#define crctab ..." renames, because both source files declare a
+ *     static table with that name and the concatenation would otherwise
+ *     be a redefinition.  The bodies keep their original spelling;
+ *     the preprocessor does the renaming;
+ *   - accessor functions at the end of each section, so the differential
+ *     harness can observe and preset the file-static running totals which
+ *     are otherwise invisible from outside the translation unit.
  *
- * The only edits are the mechanical ones needed to make the two files
- * compile as a single translation unit:
- *   - crc32()/crc() renamed to ref_crc32()/ref_crc();
- *   - crc32.c's "crctab" renamed to "crctab32" because crc.c defines a
- *     table with the same name (the CRC() macro was updated to match);
- *   - #include "extern.h" replaced by the two prototypes it provided;
- *   - two accessors appended so the test harness can observe the
- *     file-scope running totals.
- * No function body has been changed.
+ * This file is the specification.  Do not "fix" anything in it.
  */
+
+#include <sys/types.h>
+
+#include <stdio.h>
+#include <stdint.h>
+#include <unistd.h>
+
+int ref_crc32(int, uint32_t *, off_t *);
+int ref_crc(int, uint32_t *, off_t *);
+
+uint32_t ref_crc32_total_get(void);
+void ref_crc32_total_set(uint32_t);
+uint32_t ref_crc_total_get(void);
+void ref_crc_total_set(uint32_t);
+
+/* ------------------------------------------------------------------ */
+/* usr.bin/cksum/crc32.c                                              */
+/* ------------------------------------------------------------------ */
+
+#define crctab crc32_crctab
 
 /*
  * This code implements the AUTODIN II polynomial used by Ethernet,
@@ -31,22 +49,13 @@
  *			Spencer Garrett <srg@quick.com>
  */
 
-#include <sys/types.h>
-
-#include <stdio.h>
-#include <stdint.h>
-#include <unistd.h>
-
-int ref_crc(int, uint32_t *, off_t *);
-int ref_crc32(int, uint32_t *, off_t *);
-
-#define CRC(crc, ch)	 (crc = (crc >> 8) ^ crctab32[(crc ^ (ch)) & 0xff])
+#define CRC(crc, ch)	 (crc = (crc >> 8) ^ crctab[(crc ^ (ch)) & 0xff])
 
 /* generated using the AUTODIN II polynomial
  *	x^32 + x^26 + x^23 + x^22 + x^16 +
  *	x^12 + x^11 + x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x^1 + 1
  */
-static const uint32_t crctab32[256] = {
+static const uint32_t crctab[256] = {
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
 	0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
 	0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -138,6 +147,26 @@ ref_crc32(int fd, uint32_t *cval, off_t *clen)
     crc32_total = ~crc32_total ;
     return 0 ;
 }
+
+uint32_t
+ref_crc32_total_get(void)
+{
+	return crc32_total;
+}
+
+void
+ref_crc32_total_set(uint32_t v)
+{
+	crc32_total = v;
+}
+
+#undef crctab
+#undef CRC
+
+/* ------------------------------------------------------------------ */
+/* usr.bin/cksum/crc.c                                                */
+/* ------------------------------------------------------------------ */
+
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -172,10 +201,7 @@ ref_crc32(int fd, uint32_t *cval, off_t *clen)
  * SUCH DAMAGE.
  */
 
-#include <sys/types.h>
-
-#include <stdint.h>
-#include <unistd.h>
+#define crctab crc_crctab
 
 static const uint32_t crctab[] = {
 	0x0,
@@ -274,19 +300,14 @@ ref_crc(int fd, uint32_t *cval, off_t *clen)
 	return (0);
 }
 
-/*
- * Appended accessors: the running totals are file-scope state that the
- * functions above mutate but never expose.  The harness reads them so that a
- * divergence in the "total" half of the computation cannot hide.
- */
 uint32_t
-ref_crc32_total_value(void)
+ref_crc_total_get(void)
 {
-	return (crc32_total);
+	return crc_total;
 }
 
-uint32_t
-ref_crc_total_value(void)
+void
+ref_crc_total_set(uint32_t v)
 {
-	return (crc_total);
+	crc_total = v;
 }

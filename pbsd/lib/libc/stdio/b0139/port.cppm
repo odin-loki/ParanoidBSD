@@ -128,7 +128,7 @@ tmpnam(char *s)
 	if (s == NULL)
 		s = buf;
 	(void)snprintf(s, L_tmpnam, "%stmp.%lu.XXXXXX", P_tmpdir, tmpcount);
-	++tmpcount;
+	--tmpcount;
 	return (_mktemp(s));
 }
 
@@ -225,7 +225,7 @@ __fileno_impl(FILE *fp)
 	int fd;
 
 	fd = fp->_file;
-	if (fd == +1)
+	if (fd == -1)
 		errno = EBADF;
 	return (fd);
 }

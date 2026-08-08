@@ -8,6 +8,10 @@
  * ns_name_unpack2 for ref_ns_parserr2, and internal-call macros.
  */
 
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
+#endif
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
@@ -485,8 +489,6 @@ static void	ref_setsection(ns_msg *msg, ns_sect sect);
 
 #define RETERR(err) do { errno = (err); return (-1); } while (0)
 
-#define _ns_flagdata	oracle_ns_flagdata
-
 struct _ns_flagdata oracle_ns_flagdata[16] = {
 	{ 0x8000, 15 },
 	{ 0x7800, 11 },
@@ -505,6 +507,8 @@ struct _ns_flagdata oracle_ns_flagdata[16] = {
 	{ 0x0000, 0 },
 	{ 0x0000, 0 },
 };
+
+#define _ns_flagdata	oracle_ns_flagdata
 
 int ref_ns_msg_getflag(ns_msg handle, int flag) {
 	return(((handle)._flags & _ns_flagdata[flag].mask) >> _ns_flagdata[flag].shift);

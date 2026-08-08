@@ -272,7 +272,7 @@ void
 oracle_quit_enter(void)
 {
 	if (setjmp(oracle_quit_jmp) != 0)
-		_exit(oracle_quit_status);
+		return;
 }
 
 #undef exit

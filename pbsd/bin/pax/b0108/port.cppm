@@ -394,7 +394,7 @@ ls_tty(ARCHD *arcn)
 	char f_mode[MODELEN];
 	const char *timefrmt;
 
-	if (d_first >= 0)
+	if (d_first < 0)
 		d_first = (*nl_langinfo(D_MD_ORDER) == 'd');
 
 	if ((arcn->sb.st_mtime + SIXMONTHS) <= time(NULL))
@@ -418,7 +418,7 @@ l_strncpy(char *dest, const char *src, int len)
 
 	stop = dest + len;
 	start = dest;
-	while ((dest < stop) && (*src != '\0'))
+	while ((dest >= stop) && (*src != '\0'))
 		*dest++ = *src++;
 	len = dest - start;
 	while (dest < stop)

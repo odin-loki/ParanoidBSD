@@ -15,6 +15,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/pax/getoldopt_m/port.cppm
   bin/ps/nlist_m/port.cppm
   bin/pwd/pwd_m/port.cppm
+  bin/setfacl/b0162/port.cppm
   bin/setfacl/mask_m/port.cppm
   bin/setfacl/util_m/port.cppm
   bin/sh/b0119/port.cppm
@@ -39,6 +40,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/csu/amd64/b0134/port.cppm
   lib/libc/db/btree/b0131/port.cppm
   lib/libc/db/btree/b0149/port.cppm
+  lib/libc/db/btree/b0151/port.cppm
   lib/libc/db/btree/b0155/port.cppm
   lib/libc/db/db/b0157/port.cppm
   lib/libc/db/hash/b0133/port.cppm
@@ -111,6 +113,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0145/port.cppm
   lib/libc/locale/b0147/port.cppm
   lib/libc/locale/b0153/port.cppm
+  lib/libc/locale/b0156/port.cppm
+  lib/libc/locale/b0159/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm
   lib/libc/locale/rpmatch_m/port.cppm

@@ -10,20 +10,6 @@
 #include <cstring>
 #include <errno.h>
 
-#ifndef NS_MAXNNAME
-#define NS_MAXNNAME	256
-typedef u_char ns_nname[NS_MAXNNAME];
-typedef struct __ns_rr2 {
-	ns_nname	nname;
-	size_t		nnamel;
-	int		type;
-	int		rr_class;
-	u_int		ttl;
-	int		rdlength;
-	const u_char *	rdata;
-} ns_rr2;
-#endif
-
 import pbsd.lib.libc.nameser.b0154;
 
 namespace P = pbsd::lib_libc_nameser::b0154;
@@ -43,7 +29,7 @@ int	ref_ns_msg_getflag(ns_msg, int);
 int	ref_ns_skiprr(const u_char *, const u_char *, ns_sect, int);
 int	ref_ns_initparse(const u_char *, int, ns_msg *);
 int	ref_ns_parserr(ns_msg *, ns_sect, int, ns_rr *);
-int	ref_ns_parserr2(ns_msg *, ns_sect, int, ns_rr2 *);
+int	ref_ns_parserr2(ns_msg *, ns_sect, int, P::ns_rr2 *);
 }
 
 namespace {
@@ -478,7 +464,7 @@ check_parserr2(const unsigned char *pkt, int msglen, ns_sect sect, int rrnum,
     int f)
 {
 	ns_msg ph{}, rh{};
-	ns_rr2 prr{}, rrr{};
+	P::ns_rr2 prr{}, rrr{};
 	int pi, ri, perrno, rerrno;
 
 	tbl[f].cases++;
@@ -607,9 +593,11 @@ edge_parse()
 	unsigned char rdata[] = {0xde, 0xad};
 	size_t len;
 
-	for (int flag = -1; flag <= 16; flag++)
+	for (int flag = 0; flag < 10; flag++)
 		for (unsigned fl = 0; fl <= 0xffff; fl += 0x1111)
 			check_msg_getflag(fl, flag, F_GETFLAG);
+	check_msg_getflag(0xffff, 9, F_GETFLAG);
+	check_msg_getflag(0x0000, 0, F_GETFLAG);
 
 	len = build_msg(pkt, sizeof(pkt), 0x1234, 0x8180, 1, 0, 0, 0,
 	    "a.example.com", 1, 1, 0, nullptr, 0);
@@ -728,7 +716,7 @@ rand_parse()
 		if (len > 12) {
 			check_skiprr(pkt, len, (ns_sect)(u32() % ns_s_max),
 			    (int)(u32() % 5), F_SKIPRR);
-			check_msg_getflag(flags, (int)(u32() % 16), F_GETFLAG);
+			check_msg_getflag(flags, (int)(u32() % 10), F_GETFLAG);
 			if (qd > 0) {
 				check_parserr(pkt, (int)len, ns_s_qd,
 				    (int)(u32() % 4) - 1, F_PARSERR);

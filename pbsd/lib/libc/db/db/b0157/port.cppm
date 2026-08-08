@@ -6,7 +6,12 @@ module;
 #include <fcntl.h>
 #include <climits>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
+
+#ifndef O_NOFOLLOW
+#define O_NOFOLLOW 0
+#endif
 
 export module pbsd.lib.libc.db.db.b0157;
 

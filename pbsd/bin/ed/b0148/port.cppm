@@ -243,10 +243,10 @@ inline void handle_int(int s)
 	(void)s;
 }
 
-inline void quit_enter(void)
+void quit_enter(void)
 {
 	if (setjmp(quit_jmp) != 0)
-		_exit(quit_status);
+		return;
 }
 
 #define port_exit(n) \
@@ -307,7 +307,7 @@ char *translit_text(char *s, int len, int from, int to);
  * SUCH DAMAGE.
  */
 
-inline pattern_t *
+pattern_t *
 get_compiled_pattern(void)
 {
 	static pattern_t *expr = NULL;
@@ -345,7 +345,7 @@ get_compiled_pattern(void)
 }
 
 
-inline char *
+char *
 extract_pattern(int delimiter)
 {
 	static char *lhbuf = NULL;	/* buffer */
@@ -380,7 +380,7 @@ extract_pattern(int delimiter)
 }
 
 
-inline char *
+char *
 parse_char_class(char *s)
 {
 	int c, d;
@@ -430,7 +430,7 @@ inline undo_t *ustack = NULL;			/* undo stack */
 inline long usize = 0;				/* stack size variable */
 inline long u_p = 0;				/* undo stack pointer */
 
-inline undo_t *
+undo_t *
 push_undo_stack(int type, long from, long to)
 {
 	undo_t *t;
@@ -472,7 +472,7 @@ push_undo_stack(int type, long from, long to)
 inline long u_current_addr = -1;	/* if >= 0, undo enabled */
 inline long u_addr_last = -1;		/* if >= 0, undo enabled */
 
-inline int
+int
 pop_undo_stack(void)
 {
 	long n;
@@ -520,7 +520,7 @@ pop_undo_stack(void)
 }
 
 
-inline void
+void
 clear_undo_stack(void)
 {
 	line_t *lp, *ep, *tl;
@@ -568,7 +568,7 @@ clear_undo_stack(void)
  */
 
 
-inline int
+int
 build_active_list(int isgcmd)
 {
 	pattern_t *pat;
@@ -599,7 +599,7 @@ build_active_list(int isgcmd)
 }
 
 
-inline long
+long
 exec_global(int interact, int gflag)
 {
 	static char *ocmd = NULL;
@@ -670,7 +670,7 @@ inline long active_size;	/* size of active_list */
 inline long active_ptr;		/* active_list index (non-decreasing) */
 inline long active_ndx;		/* active_list index (modulo active_last) */
 
-inline int
+int
 set_active_node(line_t *lp)
 {
 	if (active_last + 1 > active_size) {
@@ -707,7 +707,7 @@ set_active_node(line_t *lp)
 }
 
 
-inline void
+void
 unset_active_nodes(line_t *np, line_t *mp)
 {
 	line_t *lp;
@@ -723,7 +723,7 @@ unset_active_nodes(line_t *np, line_t *mp)
 }
 
 
-inline line_t *
+line_t *
 next_active_node(void)
 {
 	while (active_ptr < active_last && active_list[active_ptr] == NULL)
@@ -732,7 +732,7 @@ next_active_node(void)
 }
 
 
-inline void
+void
 clear_active_list(void)
 {
 	SPL1();
@@ -776,7 +776,7 @@ inline off_t sfseek;			/* scratch file position */
 inline int seek_write;			/* seek before writing */
 inline line_t buffer_head;		/* incore buffer */
 
-inline char *
+char *
 get_sbuf_line(line_t *lp)
 {
 	static char *sfbuf = NULL;	/* buffer */
@@ -809,7 +809,7 @@ get_sbuf_line(line_t *lp)
 }
 
 
-inline const char *
+const char *
 put_sbuf_line(const char *cs)
 {
 	line_t *lp;
@@ -857,7 +857,7 @@ put_sbuf_line(const char *cs)
 }
 
 
-inline void
+void
 add_line_node(line_t *lp)
 {
 	line_t *cp;
@@ -869,7 +869,7 @@ add_line_node(line_t *lp)
 }
 
 
-inline long
+long
 get_line_node_addr(line_t *lp)
 {
 	line_t *cp = &buffer_head;
@@ -885,7 +885,7 @@ get_line_node_addr(line_t *lp)
 }
 
 
-inline line_t *
+line_t *
 get_addressed_line_node(long n)
 {
 	static line_t *lp = &buffer_head;
@@ -916,7 +916,7 @@ get_addressed_line_node(long n)
 
 inline char sfn[15] = "";			/* scratch file name */
 
-inline int
+int
 open_sbuf(void)
 {
 	int fd;
@@ -939,7 +939,7 @@ open_sbuf(void)
 }
 
 
-inline int
+int
 close_sbuf(void)
 {
 	if (sfp) {
@@ -956,7 +956,7 @@ close_sbuf(void)
 }
 
 
-inline void
+void
 quit(int n)
 {
 	if (sfp) {
@@ -969,7 +969,7 @@ quit(int n)
 
 inline unsigned char ctab[256];		/* character translation table */
 
-inline void
+void
 init_buffers(void)
 {
 	int i = 0;
@@ -993,7 +993,7 @@ init_buffers(void)
 }
 
 
-inline char *
+char *
 translit_text(char *s, int len, int from, int to)
 {
 	static int i = 0;

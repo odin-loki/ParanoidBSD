@@ -11,6 +11,7 @@ module;
 
 #include <climits>
 #include <cstddef>
+#include <cstdint>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
@@ -18,6 +19,13 @@ module;
 export module pbsd.lib.libc.locale.b0153;
 
 extern "C" {
+#define __mbstate_t_defined 1
+typedef union {
+	char		__mbstate8[128];
+	long long	_mbstateL;
+} __mbstate_t;
+typedef __mbstate_t mbstate_t;
+
 #include <fcntl.h>
 #include <limits.h>
 #include <locale.h>
@@ -30,12 +38,13 @@ extern "C" {
 #define PATH_MAX	4096
 #endif
 
-#define __mbstate_t_defined 1
-typedef union {
-	char		__mbstate8[128];
-	long long	_mbstateL;
-} __mbstate_t;
-typedef __mbstate_t mbstate_t;
+#ifndef O_CLOEXEC
+#define O_CLOEXEC	0
+#endif
+
+#ifndef EFTYPE
+#define EFTYPE		79
+#endif
 
 #ifndef u_char
 typedef unsigned char u_char;
@@ -353,7 +362,7 @@ wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src,
 }
 
 size_t
-strftime_l(char * __restrict s, size_t max, const char * __restrict fmt,
+pbsd_strftime_l(char * __restrict s, size_t max, const char * __restrict fmt,
     const struct tm * __restrict tm, port_locale_t locale)
 {
 	size_t n;
@@ -596,7 +605,7 @@ localeconv_l(locale_t loc)
 	struct lconv *ret = &loc->lconv;
 
 	if (atomic_load_acq_int(&loc->monetary_locale_changed) != 0) {
-		struct lc_monetary_T *mptr;
+		struct ::lc_monetary_T *mptr;
 
 #define M_ASSIGN_STR(NAME) (ret->NAME = (char*)mptr->NAME)
 #define M_ASSIGN_CHAR(NAME) (ret->NAME = mptr->NAME[0])
@@ -627,7 +636,7 @@ localeconv_l(locale_t loc)
 	}
 
 	if (atomic_load_acq_int(&loc->numeric_locale_changed) != 0) {
-		struct lc_numeric_T *nptr;
+		struct ::lc_numeric_T *nptr;
 
 #define N_ASSIGN_STR(NAME) (ret->NAME = (char*)nptr->NAME)
 
@@ -652,7 +661,7 @@ wcsftime_l(wchar_t * __restrict wcs, std::size_t maxsize,
 	const wchar_t * __restrict format, const struct tm * __restrict timeptr,
 	locale_t locale)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	mbstate_t mbs;
 	char *dst, *sformat;
 	const char *dstp;
@@ -679,7 +688,7 @@ wcsftime_l(wchar_t * __restrict wcs, std::size_t maxsize,
 	}
 	if ((dst = (char *)std::malloc(maxsize * MB_CUR_MAX)) == NULL)
 		goto error;
-	if (strftime_l(dst, maxsize, sformat, timeptr, locale) == 0)
+	if (pbsd_strftime_l(dst, maxsize, sformat, timeptr, locale) == 0)
 		goto error;
 	dstp = dst;
 	mbs = initial;
