@@ -10,7 +10,10 @@ import pbsd.lib.libc.locale.b0058;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cwchar>
+
+#ifndef WEOF
+#define WEOF	((unsigned int)-1)
+#endif
 
 namespace port = pbsd::lib_libc_locale::b0058;
 

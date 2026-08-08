@@ -171,7 +171,9 @@ ref_mock_want_sign(const ref_mbstate_t *ps)
 	return (((const utf8_state_t *)ps)->want > 0);
 }
 
-static int (*const backends[])(const P::pbsd_mbstate_t *) = {
+static constexpr int nbackends = 5;
+
+static int (*const backends[nbackends])(const P::pbsd_mbstate_t *) = {
 	mock_utf8_mbsinit,
 	mock_always_one,
 	mock_always_zero,
@@ -179,16 +181,13 @@ static int (*const backends[])(const P::pbsd_mbstate_t *) = {
 	mock_want_sign
 };
 
-static int (*const ref_backends[])(const ref_mbstate_t *) = {
+static int (*const ref_backends[nbackends])(const ref_mbstate_t *) = {
 	ref_mock_utf8_mbsinit,
 	ref_mock_always_one,
 	ref_mock_always_zero,
 	ref_mock_parity,
 	ref_mock_want_sign
 };
-
-static const int nbackends =
-    (int)(sizeof(backends) / sizeof(backends[0]));
 
 struct Env {
 	P::pbsd_xlocale_ctype	custom_p[nbackends];

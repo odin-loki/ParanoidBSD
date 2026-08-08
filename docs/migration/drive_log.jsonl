@@ -1734,3 +1734,4 @@
 {"batch": "b0041", "status": "VERIFIED", "detail": "harness green + IR-identical for all 9 functions", "how": "agent", "ts": "2026-08-08T11:21:47Z"}
 {"batch": "b0079s4", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-08-08T11:22:00Z"}
 {"batch": "b0079s1", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: oracle would not compile to IR)", "how": "agent", "ts": "2026-08-08T11:22:02Z"}
+{"batch": "b0064", "status": "VERIFIED", "detail": "harness green + 5/5 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:22:21Z"}

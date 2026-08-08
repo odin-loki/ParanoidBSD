@@ -225,7 +225,7 @@ port_wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 	return (len);
 }
 
-std::size_t
+static std::size_t
 mbrtowc_l(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n,
     mbstate_t * __restrict ps, port_locale_t locale)
 {
@@ -235,7 +235,7 @@ mbrtowc_l(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n,
 	return (XLOCALE_CTYPE(locale)->__mbrtowc(pwc, s, n, ps));
 }
 
-port_locale_t
+static port_locale_t
 __get_locale()
 {
 

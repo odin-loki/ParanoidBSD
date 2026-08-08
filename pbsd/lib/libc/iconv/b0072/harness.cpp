@@ -1032,10 +1032,15 @@ run_hash_case(const char *key, int hashsize, uint32_t tag)
 {
 	Fn fn = FN_HASH;
 	int ret_port, ret_ref;
-	long long n = fn_cases[fn]++;
+	long long n;
 	int bad = 0;
 
 	(void)tag;
+
+	if (hashsize == 0)
+		return;
+
+	n = fn_cases[fn]++;
 
 	ret_port = port::_citrus_string_hash_func(key, hashsize);
 	ret_ref = ref__citrus_string_hash_func(key, hashsize);

@@ -17,7 +17,7 @@ using port::__iconv_bool;
 
 extern "C" {
 const char *ref_iconv_canonicalize(const char *);
-int ref___iconv_get_list(char ***, size_t *, _Bool);
+int ref___iconv_get_list(char ***, size_t *, bool);
 void ref_iconvlist(int (*)(unsigned int, const char *const *, void *), void *);
 void ref_iconv_set_relocation_prefix(const char *, const char *);
 
@@ -28,7 +28,7 @@ typedef struct B0063MockSnap {
 	int			get_list_ret;
 	char			***get_list_a;
 	size_t			*get_list_b;
-	_Bool			get_list_c;
+	bool			get_list_c;
 	char			**get_list_out;
 	size_t			get_list_count;
 	int			(*iconvlist_fn)(unsigned int, const char *const *, void *);
@@ -282,7 +282,7 @@ check_get_list(__iconv_bool c, char ***a_in, size_t *b_in)
 	b_p = (size_t *)(ps.b_slot + SLOT_PAD);
 
 	if (a_in != nullptr)
-		*a_r = *a_p = **a_in;
+		*a_r = *a_p = *a_in;
 	if (b_in != nullptr)
 		*b_r = *b_p = *b_in;
 

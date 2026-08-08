@@ -451,6 +451,8 @@ def classify_functions(funcs: set[str]) -> dict[str, str]:
             classes[f] = 'float_arith'
         elif any(f.endswith(s) for s in ('_sqrt', '_round_to_int')):
             classes[f] = 'float_unary'
+        elif f.startswith('propagate'):
+            classes[f] = 'propagate'
         elif any(f.endswith(s) for s in ('_eq', '_le', '_lt', '_eq_signaling',
                                           '_le_quiet', '_lt_quiet')):
             classes[f] = 'float_cmp'
@@ -857,7 +859,7 @@ def gen_test_functions(funcs: set[str], classes: dict[str, str]) -> str:
             code += gen_nan_internal_test(f)
         elif cls == 'internal_bits':
             code += gen_internal_bits_test(f)
-        elif cls.startswith('propagate'):
+        elif cls == 'propagate':
             code += gen_propagate_test(f)
         elif cls in ('misc'):
             code += gen_generic_test(f, cls)

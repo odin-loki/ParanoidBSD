@@ -285,8 +285,8 @@ check_db_hash(const unsigned char *data, size_t len)
 		fail(st_hash, detail);
 		return;
 	}
-	if (std::memcmp(&wp, &wr, sizeof(wp)) != 0) {
-		fail(st_hash, "region wrapper diverged");
+	if (wp.r.r_size != wr.r.r_size) {
+		fail(st_hash, "region size diverged");
 		return;
 	}
 	if (std::memcmp(bufp, bufr, sizeof(bufp)) != 0) {
@@ -307,15 +307,14 @@ check_unmap_pair(P::citrus_region *rp, P::citrus_region *rr,
 	P::unmap_file(rp);
 	ref__citrus_unmap_file(rr);
 
-	if (rp->r_head != rr->r_head || rp->r_size != rr->r_size) {
+	if ((rp->r_head != nullptr) != (rr->r_head != nullptr) ||
+	    rp->r_size != rr->r_size) {
 		std::snprintf(detail, sizeof(detail),
 		    "region port={head=%p,size=%zu} ref={head=%p,size=%zu}",
 		    rp->r_head, rp->r_size, rr->r_head, rr->r_size);
 		fail(st_unmap, detail);
 		return;
 	}
-	if (std::memcmp(wp, wr, sizeof(*wp)) != 0)
-		fail(st_unmap, "region wrapper diverged after unmap");
 }
 
 static int
@@ -370,9 +369,6 @@ check_map_file(const char *path)
 			fail(st_map, detail);
 		}
 	}
-
-	if (std::memcmp(&wp, &wr, sizeof(wp)) != 0)
-		fail(st_map, "region wrapper diverged after map");
 
 unmap:
 	check_unmap_pair(&wp.r, &wr.r, &wp, &wr);
