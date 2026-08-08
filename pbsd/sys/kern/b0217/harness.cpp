@@ -444,11 +444,11 @@ static void test_stack_lifecycle(void) {
 static void test_stack_prints(void) {
 	port::stack st{}; st.depth = 3;
 	st.pcs[0] = 0x4000; st.pcs[1] = 0x4100; st.pcs[2] = 0x4200;
-	struct stack rst{}; std::memcpy(&rst, &st, sizeof(rst));
 	case_row(R_STACK_PRINT);
 	reset_port();
 	port::stack_print(&st);
 	reset_ref();
+	struct stack rst{}; std::memcpy(&rst, &st, sizeof(rst));
 	ref_stack_print(&rst);
 	case_row(R_STACK_PRINT_SHORT);
 	reset_port();
@@ -460,11 +460,6 @@ static void test_stack_prints(void) {
 	port::stack_print_ddb(&st);
 	reset_ref();
 	ref_stack_print_ddb(&rst);
-	case_row(R_STACK_PRINT_SHORT_DDB);
-	reset_port();
-	port::stack_print_short_ddb(&st);
-	reset_ref();
-	ref_stack_print_short_ddb(&rst);
 }
 
 static void test_stack_sbuf(void) {

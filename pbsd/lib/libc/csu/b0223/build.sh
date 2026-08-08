@@ -34,21 +34,18 @@ echo "building batch b0223 with $CC / $CXX ($compiler modules)"
 
 $CC $CFLAGS -c "$srcdir/oracle.c" -o oracle.o
 
-LDFLAGS=""
-
 if [ "$compiler" = clang ]; then
 	$CXX $CXXFLAGS -x c++-module --precompile "$srcdir/port.cppm" \
 	    -o port.pcm
 	$CXX $CXXFLAGS -c port.pcm -o port.o
 	$CXX $CXXFLAGS -fmodule-file="$modname=port.pcm" \
 	    -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS $LDFLAGS -o harness harness.o port.o oracle.o -lgcc
+	$CXX $CXXFLAGS -o harness harness.o port.o oracle.o
 else
 	rm -rf gcm.cache
 	$CXX $CXXFLAGS -fmodules-ts -x c++ -c "$srcdir/port.cppm" -o port.o
 	$CXX $CXXFLAGS -fmodules-ts -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS -fmodules-ts $LDFLAGS -o harness harness.o port.o oracle.o \
-	    -lgcc
+	$CXX $CXXFLAGS -fmodules-ts -o harness harness.o port.o oracle.o
 fi
 
 exec ./harness

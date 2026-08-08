@@ -1,11 +1,7 @@
 module;
 
-extern "C" {
-#define complex _Complex
-#include <complex.h>
 #include <float.h>
 #include <math.h>
-}
 
 #ifndef __weak_reference
 #define __weak_reference(sym, alias)
@@ -14,6 +10,17 @@ extern "C" {
 export module pbsd.lib.msun.src.b0236;
 
 export namespace pbsd::lib_msun_src::b0236 {
+
+typedef __complex__ float float_complex_t;
+typedef __complex__ double double_complex_t;
+typedef __complex__ long double long_double_complex_t;
+
+extern "C" float crealf(float_complex_t);
+extern "C" float cimagf(float_complex_t);
+extern "C" double creal(double_complex_t);
+extern "C" double cimag(double_complex_t);
+extern "C" long double creall(long_double_complex_t);
+extern "C" long double cimagl(long_double_complex_t);
 
 /*
  * dremf() wrapper for remainderf().
@@ -36,10 +43,10 @@ dremf(float x, float y)
  */
 
 float
-cabsf(float complex z)
+cabsf(float_complex_t z)
 {
 
-	return (::hypotf(::crealf(z), ::cimagf(z)));
+	return (::hypotf(crealf(z), cimagf(z)));
 }
 
 /*
@@ -52,9 +59,9 @@ cabsf(float complex z)
  */
 
 long double
-cabsl(long double complex z)
+cabsl(long_double_complex_t z)
 {
-	return (::hypotl(::creall(z), ::cimagl(z)));
+	return (::hypotl(creall(z), cimagl(z)));
 }
 
 /*
@@ -65,9 +72,9 @@ cabsl(long double complex z)
  */
 
 double
-cabs(double complex z)
+cabs(double_complex_t z)
 {
-	return (::hypot(::creal(z), ::cimag(z)));
+	return (::hypot(creal(z), cimag(z)));
 }
 
 #if LDBL_MANT_DIG == 53

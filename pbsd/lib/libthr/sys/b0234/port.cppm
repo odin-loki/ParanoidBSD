@@ -48,12 +48,12 @@ export namespace pbsd::lib_libthr_sys::b0234 {
 int *
 __error_threaded(void)
 {
-	extern "C" struct pthread {
+	struct pthread {
 		int error;
 	};
-	extern "C" struct pthread *_thr_initial;
-	extern "C" struct pthread *_get_curthread(void);
-	extern "C" int __libsys_errno;
+	extern struct pthread *_thr_initial asm("_thr_initial");
+	extern struct pthread *_get_curthread(void) asm("_get_curthread");
+	extern int __libsys_errno asm("__libsys_errno");
 	struct pthread *curthread;
 
 	if (_thr_initial != NULL) {

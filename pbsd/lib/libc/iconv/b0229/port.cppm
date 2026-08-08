@@ -165,7 +165,7 @@ const char *_citrus_memory_stream_matchline(struct _citrus_memory_stream * __res
     const char * __restrict key, size_t * __restrict rlen, int ic)
 { const char *p, *q; size_t keylen, len; keylen = strlen(key);
   for (;;) { p = _memstream_getln(ms, &len); if (!p) return NULL;
-    q = memchr(p, '#', len); if (q) len = (size_t)(q - p); _bcs_trunc_rws_len(p, &len);
+    q = (const char *)memchr(p, '#', len); if (q) len = (size_t)(q - p); _bcs_trunc_rws_len(p, &len);
     if (!len) continue; p = _bcs_skip_ws_len(p, &len); q = _bcs_skip_nonws_len(p, &len);
     if ((size_t)(q - p) == keylen) {
       if (ic) { if (!memcmp(key, p, keylen)) break; }
@@ -240,6 +240,7 @@ struct _citrus_mapper {
   struct _citrus_mapper_traits *cm_traits; LIST_ENTRY(_citrus_mapper) cm_entry;
   int cm_refcount; char *cm_key;
 };
+void _citrus_mapper_close(struct _citrus_mapper *);
 #define _mapper_close _citrus_mapper_close
 
 #define B0229_MAX_MOD 16
@@ -329,7 +330,7 @@ _citrus_db_factory_create(struct _citrus_db_factory **rdf,
 {
 	struct _citrus_db_factory *df;
 
-	df = malloc(sizeof(*df));
+	df = (decltype(df))malloc(sizeof(*df));
 	if (df == NULL)
 		return (errno);
 	df->df_num_entries = 0;
@@ -371,7 +372,7 @@ _citrus_db_factory_add(struct _citrus_db_factory *df, struct _region *key,
 {
 	struct _citrus_db_factory_entry *de;
 
-	de = malloc(sizeof(*de));
+	de = (decltype(de))malloc(sizeof(*de));
 	if (de == NULL)
 		return (-1);
 
@@ -412,7 +413,7 @@ _citrus_db_factory_add8_by_string(struct _citrus_db_factory *df,
 	struct _region r;
 	uint8_t *p;
 
-	p = malloc(sizeof(*p));
+	p = (decltype(p))malloc(sizeof(*p));
 	if (p == NULL)
 		return (errno);
 	*p = val;
@@ -427,7 +428,7 @@ _citrus_db_factory_add16_by_string(struct _citrus_db_factory *df,
 	struct _region r;
 	uint16_t *p;
 
-	p = malloc(sizeof(*p));
+	p = (decltype(p))malloc(sizeof(*p));
 	if (p == NULL)
 		return (errno);
 	*p = htons(val);
@@ -442,7 +443,7 @@ _citrus_db_factory_add32_by_string(struct _citrus_db_factory *df,
 	struct _region r;
 	uint32_t *p;
 
-	p = malloc(sizeof(*p));
+	p = (decltype(p))malloc(sizeof(*p));
 	if (p == NULL)
 		return (errno);
 	*p = htonl(val);
@@ -657,7 +658,7 @@ _citrus_db_open(struct _citrus_db **rdb, struct _region *r, const char *magic,
 	    _memstream_remainder(&ms))
 		return (EFTYPE);
 
-	db = malloc(sizeof(*db));
+	db = (decltype(db))malloc(sizeof(*db));
 	if (db == NULL)
 		return (errno);
 	db->db_region = *r;
@@ -1077,7 +1078,7 @@ retry:
 	if (p == NULL)
 		return (ENOENT);
 	/* ignore comment */
-	q = memchr(p, T_COMM, len);
+	q = (const char *)memchr(p, T_COMM, len);
 	if (q) {
 		len = q - p;
 	}
@@ -1169,7 +1170,7 @@ _citrus_lookup_seq_open(struct _citrus_lookup **rcl, const char *name,
 	int ret;
 	struct _citrus_lookup *cl;
 
-	cl = malloc(sizeof(*cl));
+	cl = (decltype(cl))malloc(sizeof(*cl));
 	if (cl == NULL)
 		return (errno);
 
@@ -1329,7 +1330,7 @@ _citrus_mapper_create_area(
 	if (ret)
 		goto quit;
 
-	ma = malloc(sizeof(*ma));
+	ma = (decltype(ma))malloc(sizeof(*ma));
 	if (ma == NULL) {
 		ret = errno;
 		goto quit;
@@ -1395,7 +1396,7 @@ lookup_mapper_entry(const char *dir, const char *mapname, void *linebuf,
 		goto quit;
 	}
 
-	p = linebuf;
+	p = (char *)linebuf;
 	/* get module name */
 	*module = p;
 	cq = _bcs_skip_nonws_len(cp, &len);
@@ -1448,7 +1449,7 @@ mapper_open(struct _citrus_mapper_area *__restrict ma,
 	int ret;
 
 	/* initialize mapper handle */
-	cm = malloc(sizeof(*cm));
+	cm = (decltype(cm))malloc(sizeof(*cm));
 	if (!cm)
 		return (errno);
 
@@ -1471,7 +1472,7 @@ mapper_open(struct _citrus_mapper_area *__restrict ma,
 		ret = EOPNOTSUPP;
 		goto err;
 	}
-	cm->cm_ops = malloc(sizeof(*cm->cm_ops));
+	cm->cm_ops = (decltype(cm->cm_ops))malloc(sizeof(*cm->cm_ops));
 	if (!cm->cm_ops) {
 		ret = errno;
 		goto err;
@@ -1489,7 +1490,7 @@ mapper_open(struct _citrus_mapper_area *__restrict ma,
 	}
 
 	/* allocate traits structure */
-	cm->cm_traits = malloc(sizeof(*cm->cm_traits));
+	cm->cm_traits = (decltype(cm->cm_traits))malloc(sizeof(*cm->cm_traits));
 	if (cm->cm_traits == NULL) {
 		ret = errno;
 		goto err;

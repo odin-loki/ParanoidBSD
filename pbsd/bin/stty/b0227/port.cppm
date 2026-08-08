@@ -43,13 +43,6 @@ export namespace pbsd::bin_stty::b0227 {
 #define __dead2 __attribute__((__noreturn__))
 #endif
 
-#ifndef __dead2
-#define __dead2 __attribute__((__noreturn__))
-#endif
-
-extern int ioctl(int, unsigned long, ...);
-void usage(void) __dead2;
-
 /* BSD termios (do not use host termios.h) */
 #define VEOF		0
 #define VEOL		1

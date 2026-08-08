@@ -269,19 +269,31 @@ struct CtxBuf {
 	}
 };
 
-static bool
-buf_same(const CtxBuf &a, const CtxBuf &b, char *msg, size_t msgsz)
+static void
+normalize_ctx(char *ctx)
 {
-	if (a.ctxsz != b.ctxsz) {
-		std::snprintf(msg, msgsz, "ctxsz mismatch");
-		return (false);
-	}
-	if (std::memcmp(a.base, b.base, a.total) != 0) {
-		for (size_t i = 0; i < a.total; i++) {
-			if (a.base[i] != b.base[i]) {
+	auto *u = (ref_abi::ucontext *)ctx;
+	struct gpregs *gp = &u->uc_mcontext.mc_gpregs;
+
+	if (u->uc_mcontext.mc_ptr != 0)
+		u->uc_mcontext.mc_ptr -= (uint64_t)(uintptr_t)ctx;
+	gp->gp_x[20] -= (uint64_t)(uintptr_t)ctx;
+}
+
+static bool
+ctx_same(char *ctx_a, char *ctx_b, size_t sz, char *msg, size_t msgsz)
+{
+	std::vector<unsigned char> a(sz), b(sz);
+
+	std::memcpy(a.data(), ctx_a, sz);
+	std::memcpy(b.data(), ctx_b, sz);
+	normalize_ctx((char *)a.data());
+	normalize_ctx((char *)b.data());
+	if (std::memcmp(a.data(), b.data(), sz) != 0) {
+		for (size_t i = 0; i < sz; i++) {
+			if (a[i] != b[i]) {
 				std::snprintf(msg, msgsz,
-				    "byte[%zu] port=%02x ref=%02x", i,
-				    a.base[i], b.base[i]);
+				    "byte[%zu] port=%02x ref=%02x", i, a[i], b[i]);
 				return (false);
 			}
 		}

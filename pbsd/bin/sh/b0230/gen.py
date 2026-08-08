@@ -146,6 +146,8 @@ ORACLE_HEADER = r'''
 #define NO_HISTORY 1
 #define JOBS 1
 #define DEBUG 1
+#define __printf0like(...)
+#define __dead2
 
 typedef void *pointer;
 typedef void (*sig_t)(int);
@@ -439,6 +441,8 @@ export namespace pbsd::bin_sh::b0230 {
 #define NO_HISTORY 1
 #define JOBS 1
 #define DEBUG 1
+#define __printf0like(...)
+#define __dead2
 
 typedef void *pointer;
 typedef void (*sig_t)(int);
@@ -1014,11 +1018,18 @@ def main():
         port += f"\n/* --- {fname} --- */\n"
         if fname == "mknodes.c":
             port += "#define output mknodes_output\n"
+            port += "#define main mknodes_main\n"
+            port += "#define error mknodes_error\n"
+            port += "#define savestr mknodes_savestr\n"
+        if fname == "cd.c":
+            port += "#define new cd_new_var\n"
         if fname == "input.c":
             port += "#define pgetc_macro preadbuffer\n"
         port += portify_source(src, mapping)
         if fname == "mknodes.c":
-            port += "\n#undef output\n\n"
+            port += "\n#undef output\n#undef main\n#undef error\n#undef savestr\n\n"
+        if fname == "cd.c":
+            port += "\n#undef new\n\n"
 
     oracle += "\n"
     port += PORT_FOOTER

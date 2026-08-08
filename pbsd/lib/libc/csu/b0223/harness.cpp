@@ -129,8 +129,6 @@ bool want_report(Stat &s) { return s.reported++ < MAX_REPORT; }
 
 void note_fail(Stat &s) { s.fails++; }
 
-bool dynamic_linked() { return pbsd_dynamic_ptr != nullptr; }
-
 void set_link_mode(bool dynamic)
 {
 	if (dynamic)

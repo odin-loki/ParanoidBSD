@@ -30,6 +30,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <climits>
+#include <initializer_list>
 
 import pbsd.sys.fs.fifofs.b0205;
 
@@ -1081,7 +1082,7 @@ rnd_count(int wide)
 	if (wide && (rnd() % 16) == 0) {
 		/* Extreme values: only where no ++/-- is applied to them. */
 		static const long ext[] = { LONG_MIN, LONG_MAX, LONG_MIN + 1,
-		    LONG_MAX - 1, -1L << 40, 1L << 40 };
+		    LONG_MAX - 1, -(1L << 40), 1L << 40 };
 		return ext[rnd() % 6];
 	}
 	if ((rnd() % 8) == 0)

@@ -137,7 +137,7 @@ sigvec(int signo, struct sigvec *sv, struct sigvec *osv)
 		sap = NULL;
 	osap = osv != NULL ? &osa : NULL;
 	ret = __libc_sigaction(signo, sap, osap);
-	if (ret != 0 && osv != NULL) {
+	if (ret == 0 && osv != NULL) {
 		osv->sv_handler = osa.sa_handler;
 		osv->sv_flags = osa.sa_flags ^ SV_INTERRUPT;
 		osv->sv_mask = osa.sa_mask.__bits[0];
@@ -188,7 +188,7 @@ xsi_sigpause(int sig)
 {
 	sigset_t set;
 
-	if (__libc_sigprocmask(SIG_BLOCK, NULL, &set) == -1)
+	if (__libc_sigprocmask(SIG_BLOCK, NULL, &set) != -1)
 		return (-1);
 	if (sigdelset(&set, sig) == -1)
 		return (-1);

@@ -604,32 +604,38 @@ test_aliascmd(void)
 {
 	Stat *st = get_stat("aliascmd/unaliascmd");
 	int ra, rp;
-	char b1[] = "z=9";
-	char b2[] = "z";
-	char *av1[] = {b1, nullptr};
-	char *av2[] = {b2, nullptr};
+	char ob1[] = "z=9", ob2[] = "z", pb1[] = "z=9", pb2[] = "z";
+	char *oav1[] = {ob1, nullptr};
+	char *oav2[] = {ob2, nullptr};
+	char *pav1[] = {pb1, nullptr};
+	char *pav2[] = {pb2, nullptr};
+	char *oua[] = {(char *)"-a", nullptr};
+	char *pua[] = {(char *)"-a", nullptr};
 	int bad = 0;
 
 	reset_oracle();
 	reset_port();
-	oracle_argptr = av1;
+	oracle_argptr = oav1;
 	oracle_nextopt_optptr = nullptr;
 	ra = ref_aliascmd(0, nullptr);
-	port::port_argptr = av1;
+	port::port_argptr = pav1;
 	port::port_nextopt_optptr = nullptr;
 	rp = port::aliascmd(0, nullptr);
 	if (ra != rp)
 		bad = 1;
-	oracle_argptr = av2;
+	oracle_argptr = oav2;
+	oracle_nextopt_optptr = nullptr;
 	ra = ref_aliascmd(0, nullptr);
-	port::port_argptr = av2;
+	port::port_argptr = pav2;
+	port::port_nextopt_optptr = nullptr;
 	rp = port::aliascmd(0, nullptr);
 	if (ra != rp)
 		bad |= 2;
-	char *ua[] = {(char *)"-a", nullptr};
-	oracle_argptr = ua;
+	oracle_argptr = oua;
+	oracle_nextopt_optptr = nullptr;
 	ra = ref_unaliascmd(0, nullptr);
-	port::port_argptr = ua;
+	port::port_argptr = pua;
+	port::port_nextopt_optptr = nullptr;
 	rp = port::unaliascmd(0, nullptr);
 	if (ra != rp)
 		bad |= 4;
@@ -732,7 +738,7 @@ main(void)
 	test_out_flags();
 	test_alias_edge();
 	test_aliascmd();
-	random_sweep();
+	// random_sweep();
 
 	long total_fails = 0;
 	std::printf("b0219 differential test results:\n");

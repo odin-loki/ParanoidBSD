@@ -755,7 +755,9 @@ test_letcmd()
 int
 main()
 {
+	std::fprintf(stderr, "harness start\n");
 	test_add_hand();
+	std::fprintf(stderr, "after add_hand\n");
 	test_add_sweep();
 	test_add_one_hand();
 	test_add_one_sweep();
@@ -771,6 +773,7 @@ main()
 	test_letcmd();
 
 	unsigned long long total = 0, fails = 0;
+	std::fprintf(stderr, "harness done tests\n");
 	std::printf("\n%-22s %12s %12s\n", "function", "cases", "failures");
 	std::printf("%-22s %12s %12s\n", "--------", "-----", "--------");
 	for (int i = 0; i < NSTAT; i++) {

@@ -9,6 +9,8 @@
  * exhaustion, and the diagnostics recorded by the paxwarn double.
  */
 
+#define _DEFAULT_SOURCE
+
 #include <sys/types.h>
 #include <limits.h>
 #include <signal.h>
@@ -382,7 +384,7 @@ test_str_offt(void)
 	};
 	static const char digits[] = "0123456789";
 	static const char sufs[] = "bkmw";
-	char buf[64];
+	char buf[160];
 	size_t i, n;
 	int p, parts;
 
