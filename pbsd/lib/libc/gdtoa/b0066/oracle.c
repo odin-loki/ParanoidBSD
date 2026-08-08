@@ -366,14 +366,20 @@ ref___hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sig
  * SUCH DAMAGE.
  */
 
+#undef SIGFIGS
+#undef one
+
+#define SIGFIGS DBL_SIGFIGS_VAL
+#define one hdtoa_one
+
 /* Strings values used by dtoa() */
 #define	INFSTR	"Infinity"
 #define	NANSTR	"NaN"
 
 #define	DBL_ADJ	(DBL_MAX_EXP - 2)
-#define	SIGFIGS	((DBL_MANT_DIG + 3) / 4 + 1)
+#define	DBL_SIGFIGS_VAL	((DBL_MANT_DIG + 3) / 4 + 1)
 
-static const float one[] = { 1.0f, -1.0f };
+static const float hdtoa_one[] = { 1.0f, -1.0f };
 
 /*
  * This procedure converts a double-precision number in IEEE format

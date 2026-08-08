@@ -210,6 +210,9 @@ __ldtoa(long double *ld, int mode, int ndigits, int *decpt, int *sign,
 
 #if (LDBL_MANT_DIG > DBL_MANT_DIG)
 
+#define SIGFIGS LDBL_SIGFIGS_VAL
+#define one hldtoa_one
+
 /* Strings values used by dtoa() */
 #define	INFSTR	"Infinity"
 #define	NANSTR	"NaN"
@@ -233,9 +236,9 @@ typedef uint32_t manl_t;
 #endif
 
 #define	LDBL_ADJ	(LDBL_MAX_EXP - 2)
-#define	SIGFIGS		((LDBL_MANT_DIG + 3) / 4 + 1)
+#define	LDBL_SIGFIGS_VAL	((LDBL_MANT_DIG + 3) / 4 + 1)
 
-static const float one[] = { 1.0f, -1.0f };
+static const float hldtoa_one[] = { 1.0f, -1.0f };
 
 /*
  * This is the long double version of __hdtoa().
@@ -357,14 +360,20 @@ __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
  * SUCH DAMAGE.
  */
 
+#undef SIGFIGS
+#undef one
+
+#define SIGFIGS DBL_SIGFIGS_VAL
+#define one hdtoa_one
+
 /* Strings values used by dtoa() */
 #define	INFSTR	"Infinity"
 #define	NANSTR	"NaN"
 
 #define	DBL_ADJ	(DBL_MAX_EXP - 2)
-#define	SIGFIGS	((DBL_MANT_DIG + 3) / 4 + 1)
+#define	DBL_SIGFIGS_VAL	((DBL_MANT_DIG + 3) / 4 + 1)
 
-static const float one[] = { 1.0f, -1.0f };
+static const float hdtoa_one[] = { 1.0f, -1.0f };
 
 /*
  * This procedure converts a double-precision number in IEEE format
