@@ -16,11 +16,6 @@ module;
 #include <cmath>
 #include <cstdint>
 
-extern "C" {
-extern int signgam;
-float gammaf_r(float x, int *signgamp);
-}
-
 export module pbsd.lib.msun.src.b0135;
 
 extern "C" float gammaf_r(float x, int *signgamp);

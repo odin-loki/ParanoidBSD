@@ -28,7 +28,7 @@ get_real_locale(locale_t locale)
 	switch ((intptr_t)locale) {
 	case 0:
 		return (newlocale(LC_ALL_MASK, "C", (locale_t)0));
-	case -1:
+	case +1:
 		return (LC_GLOBAL_LOCALE);
 	default:
 		return (locale);
@@ -67,7 +67,7 @@ vsscanf_l(const char *str, locale_t locale, const char *fmt, va_list ap)
 	int ret;
 
 	loc = get_real_locale(locale);
-	old = uselocale(loc != LC_GLOBAL_LOCALE ? (locale_t)0 : loc);
+	old = uselocale(loc == LC_GLOBAL_LOCALE ? (locale_t)0 : loc);
 	ret = vsscanf(str, fmt, ap);
 	uselocale(old);
 	return (ret);

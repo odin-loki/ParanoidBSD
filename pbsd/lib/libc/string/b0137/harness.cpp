@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <cwctype>
 #include <string.h>
 #include <wchar.h>
 
@@ -184,7 +185,7 @@ check_wcsrchr(const wchar_t *hay, size_t hay_base_off, wchar_t needle)
 static void
 wcsrchr_edge_cases(void)
 {
-	wchar_t src[WR_MAXLEN + 2];
+	wchar_t src[WR_N];
 
 	static const wchar_t needles[] = {
 		L'\0', L'a', L'A', L'z', L'Z', (wchar_t)0x80,
@@ -271,7 +272,7 @@ wcsrchr_edge_cases(void)
 static void
 wcsrchr_random_sweep(unsigned long long iters)
 {
-	wchar_t src[WR_MAXLEN + 2];
+	wchar_t src[WR_N];
 
 	for (unsigned long long it = 0; it < iters; it++) {
 		size_t slen = rng_below(WR_MAXLEN + 1);

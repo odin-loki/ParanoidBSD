@@ -10,7 +10,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -93,13 +92,17 @@ oracle_malloc_fail_at(int n)
 static void *
 malloc_kern(size_t size, struct malloc_type *type, int flags)
 {
+	void *p;
+
 	(void)type;
-	(void)flags;
 
 	g_malloc_calls++;
 	if (g_malloc_fail_at != 0 && g_malloc_calls >= g_malloc_fail_at)
 		return (NULL);
-	return (malloc(size));
+	p = malloc(size);
+	if (p != NULL && (flags & M_ZERO) != 0)
+		memset(p, 0, size);
+	return (p);
 }
 
 #define malloc(size, type, flags) ({					\
@@ -126,41 +129,8 @@ free_kern(void *addr, struct malloc_type *type)
 
 #define free(addr, type) free_kern((addr), (type))
 
-static int g_printf_calls;
-static int g_backtrace_calls;
-
-int
-oracle_printf_calls(void)
-{
-	return (g_printf_calls);
-}
-
-int
-oracle_backtrace_calls(void)
-{
-	return (g_backtrace_calls);
-}
-
-void
-oracle_io_reset(void)
-{
-	g_printf_calls = 0;
-	g_backtrace_calls = 0;
-}
-
-int
-printf(const char *fmt, ...)
-{
-	(void)fmt;
-	g_printf_calls++;
-	return (0);
-}
-
-void
-kdb_backtrace(void)
-{
-	g_backtrace_calls++;
-}
+int printf(const char *fmt, ...);
+void kdb_backtrace(void);
 
 /* ------------------------------------------------------------------ */
 /* subr_dummy_vdso_tc.c */

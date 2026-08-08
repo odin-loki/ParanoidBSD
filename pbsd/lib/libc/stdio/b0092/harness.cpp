@@ -466,7 +466,6 @@ test_wscanf_int(StatId which, const char *label, const wchar_t *input,
 			rr = ref_wscanf_l(loc, fmt, &gi_r.val);
 			freelocale(loc);
 		}
-		pop_stdin();
 	}
 	if (push_stdin_wide(input, n)) {
 		if (which == S_WSCANF)
@@ -476,8 +475,8 @@ test_wscanf_int(StatId which, const char *label, const wchar_t *input,
 			rp = (wscanf_l)(loc, fmt, &gi_p.val);
 			freelocale(loc);
 		}
-		pop_stdin();
 	}
+	pop_stdin();
 
 	bool ok = true;
 	if (rr != rp) {
@@ -510,7 +509,6 @@ test_wscanf_wchar(StatId which, const char *label, const wchar_t *input,
 			rr = ref_wscanf_l(loc, fmt, gw_r.user());
 			freelocale(loc);
 		}
-		pop_stdin();
 	}
 	if (push_stdin_wide(input, n)) {
 		if (which == S_WSCANF)
@@ -520,8 +518,8 @@ test_wscanf_wchar(StatId which, const char *label, const wchar_t *input,
 			rp = (wscanf_l)(loc, fmt, gw_p.user());
 			freelocale(loc);
 		}
-		pop_stdin();
 	}
+	pop_stdin();
 
 	bool ok = true;
 	if (rr != rp) {
@@ -556,7 +554,6 @@ test_wscanf_two_int(StatId which, const char *label, const wchar_t *input,
 			rr = ref_wscanf_l(loc, fmt, &gi_r1.val, &gi_r2.val);
 			freelocale(loc);
 		}
-		pop_stdin();
 	}
 	if (push_stdin_wide(input, n)) {
 		if (which == S_WSCANF)
@@ -566,8 +563,8 @@ test_wscanf_two_int(StatId which, const char *label, const wchar_t *input,
 			rp = (wscanf_l)(loc, fmt, &gi_p1.val, &gi_p2.val);
 			freelocale(loc);
 		}
-		pop_stdin();
 	}
+	pop_stdin();
 
 	bool ok = true;
 	if (rr != rp) {
@@ -759,6 +756,7 @@ main(void)
 	run_setbuffer_random();
 	run_setlinebuf_edges();
 	run_setlinebuf_random();
+	reset_stdin_for_wscanf();
 	run_wscanf_edges(S_WSCANF);
 	run_wscanf_random(S_WSCANF);
 	run_wscanf_edges(S_WSCANF_L);

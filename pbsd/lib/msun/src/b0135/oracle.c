@@ -5,7 +5,8 @@
  * Every function has been renamed with a "ref_" prefix; the function bodies
  * are otherwise byte-for-byte unmodified.  The only additions are the
  * declarations and macros that the original files obtained from "math.h" and
- * "math_private.h".
+ * "math_private.h", plus gammaf_r from e_gammaf_r.c (a dependency of e_gammaf.c
+ * that is not part of this batch but is required for linking).
  *
  * This file is the specification.  Do not modify any function body.
  */
@@ -64,8 +65,14 @@ do {							\
 	(d) = sh_u.value;				\
 } while (0)
 
-extern float gammaf_r(float x, int *signgamp);
 extern int signgam;
+
+/* Dependency of e_gammaf.c (e_gammaf_r.c). */
+float
+gammaf_r(float x, int *signgamp)
+{
+	return lgammaf_r(x,signgamp);
+}
 
 /* ------------------------------------------------------------------ */
 /* s_scalbnf.c							      */
@@ -79,8 +86,6 @@ extern int signgam;
  * Please see https://git.musl-libc.org/cgit/musl/tree/COPYRIGHT
  * for all contributors to musl.
  */
-#include <math.h>
-#include <stdint.h>
 
 float ref_scalbnf(float x, int n)
 {
@@ -134,9 +139,6 @@ float ref_scalbnf(float x, int n)
  * fabsf(x) returns the absolute value of x.
  */
 
-#include "math.h"
-#include "math_private.h"
-
 float
 ref_fabsf(float x)
 {
@@ -166,9 +168,6 @@ ref_fabsf(float x)
  * copysign(x,y) returns a value with the magnitude of x and
  * with the sign bit of y.
  */
-
-#include "math.h"
-#include "math_private.h"
 
 double
 ref_copysign(double x, double y)
@@ -204,11 +203,6 @@ ref_copysign(double x, double y)
  *
  * Method: call gammaf_r
  */
-
-#include "math.h"
-#include "math_private.h"
-
-extern int signgam;
 
 float
 ref_gammaf(float x)

@@ -492,6 +492,18 @@ build_meta_be(unsigned char *buf, size_t bufsz)
 	write_u32_be(buf + 20, B_NODUPS);
 }
 
+void
+build_meta_host(unsigned char *buf, size_t bufsz)
+{
+	guard_fill(buf, bufsz);
+	*(uint32_t *)(buf + 0) = 0x053162;
+	*(uint32_t *)(buf + 4) = 3;
+	*(uint32_t *)(buf + 8) = 4096;
+	*(uint32_t *)(buf + 12) = 7;
+	*(uint32_t *)(buf + 16) = 99;
+	*(uint32_t *)(buf + 20) = B_NODUPS;
+}
+
 struct TreePort {
 	P::BTREE t;
 	P::MPOOL mp;
@@ -667,11 +679,15 @@ check_bt_sync(u_int flags, u_int32_t tflags, int meta_null, int sync_ret)
 {
 	TreePort pc;
 	TreeRef rc;
+	unsigned char meta_p[256];
+	unsigned char meta_r[256];
 
 	test_mock_reset();
 	test_mock.get_force_null = meta_null;
 	test_mock.sync_ret = sync_ret;
+	test_mock.new_page = meta_p;
 	init_tree_port(pc, tflags);
+	test_mock.new_page = meta_r;
 	init_tree_ref(rc, tflags);
 	pc.t.bt_psize = 512;
 	rc.t.bt_psize = 512;
@@ -680,7 +696,9 @@ check_bt_sync(u_int flags, u_int32_t tflags, int meta_null, int sync_ret)
 	pc.t.bt_nrecs = 100;
 	rc.t.bt_nrecs = 100;
 
+	test_mock.new_page = meta_p;
 	int rp = P::__bt_sync(&pc.db, flags);
+	test_mock.new_page = meta_r;
 	int rr = ref___bt_sync(&rc.db, flags);
 	char msg[256];
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d flags=%u tflags=0x%x",
@@ -695,12 +713,16 @@ check_bt_close(int with_allocs, int close_fd_ret, int sync_meta_null)
 {
 	TreePort pc;
 	TreeRef rc;
+	unsigned char meta_p[256];
+	unsigned char meta_r[256];
 	char *cp, *cr;
 
 	test_mock_reset();
 	test_mock.get_force_null = sync_meta_null;
 	test_mock.close_fd_ret = close_fd_ret;
+	test_mock.new_page = meta_p;
 	init_tree_port(pc, B_MODIFIED | B_METADIRTY);
+	test_mock.new_page = meta_r;
 	init_tree_ref(rc, B_MODIFIED | B_METADIRTY);
 	pc.t.bt_fd = 9;
 	rc.t.bt_fd = 9;
@@ -723,7 +745,9 @@ check_bt_close(int with_allocs, int close_fd_ret, int sync_meta_null)
 
 	P::DB *dbp_p = &pc.db;
 	DB *dbp_r = &rc.db;
+	test_mock.new_page = meta_p;
 	int rp = P::__bt_close(dbp_p);
+	test_mock.new_page = meta_r;
 	int rr = ref___bt_close(dbp_r);
 	char msg[256];
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d close_fd=%d", rp, rr,
@@ -892,28 +916,35 @@ test_random_sweep(void)
 				ks[e] = (uint32_t)(nextr() % 20u);
 				ds[e] = (uint32_t)(nextr() % 20u);
 			}
-			if (is_leaf) {
-				check_conv("__bt_pgin", P::__bt_pgin, ref___bt_pgin,
-				    B_NEEDSWAP, (pgno_t)(2 + nextr() % 100u),
-				    [&](unsigned char *b, size_t n) {
-					    build_bleaf_be(b, n, nent, flbuf, ks, ds);
-				    });
-				check_conv("__bt_pgout", P::__bt_pgout, ref___bt_pgout,
-				    B_NEEDSWAP, (pgno_t)(2 + nextr() % 100u),
-				    [&](unsigned char *b, size_t n) {
-					    build_bleaf_be(b, n, nent, flbuf, ks, ds);
-				    });
+			pgno_t pg = (pgno_t)(2 + nextr() % 100u);
+			if (i % 7u == 5u) {
+				if (is_leaf) {
+					check_conv("__bt_pgin", P::__bt_pgin, ref___bt_pgin,
+					    B_NEEDSWAP, pg,
+					    [&](unsigned char *b, size_t n) {
+						    build_bleaf_be(b, n, nent, flbuf, ks, ds);
+					    });
+				} else {
+					check_conv("__bt_pgin", P::__bt_pgin, ref___bt_pgin,
+					    B_NEEDSWAP, pg,
+					    [&](unsigned char *b, size_t n) {
+						    build_binternal_be(b, n, nent, flbuf, ks);
+					    });
+				}
 			} else {
-				check_conv("__bt_pgin", P::__bt_pgin, ref___bt_pgin,
-				    B_NEEDSWAP, (pgno_t)(2 + nextr() % 100u),
-				    [&](unsigned char *b, size_t n) {
-					    build_binternal_be(b, n, nent, flbuf, ks);
-				    });
-				check_conv("__bt_pgout", P::__bt_pgout, ref___bt_pgout,
-				    B_NEEDSWAP, (pgno_t)(2 + nextr() % 100u),
-				    [&](unsigned char *b, size_t n) {
-					    build_binternal_be(b, n, nent, flbuf, ks);
-				    });
+				if (is_leaf) {
+					check_conv("__bt_pgout", P::__bt_pgout, ref___bt_pgout,
+					    B_NEEDSWAP, pg,
+					    [&](unsigned char *b, size_t n) {
+						    build_bleaf_host(b, n, nent, flbuf, ks, ds);
+					    });
+				} else {
+					check_conv("__bt_pgout", P::__bt_pgout, ref___bt_pgout,
+					    B_NEEDSWAP, pg,
+					    [&](unsigned char *b, size_t n) {
+						    build_binternal_host(b, n, nent, flbuf, ks);
+					    });
+				}
 			}
 			break;
 		}

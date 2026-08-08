@@ -185,6 +185,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdio/b0109/port.cppm
   lib/libc/stdio/b0118/port.cppm
   lib/libc/stdio/b0127/port.cppm
+  lib/libc/stdio/b0139/port.cppm
+  lib/libc/stdio/b0140/port.cppm
   lib/libc/stdio/fgetpos_m/port.cppm
   lib/libc/stdio/flags_m/port.cppm
   lib/libc/stdio/funopen_m/port.cppm
@@ -348,6 +350,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/ping/utils_m/port.cppm
   sbin/rcorder/ealloc_m/port.cppm
   sys/fs/procfs/procfs_type_m/port.cppm
+  sys/geom/uzip/b0144/port.cppm
+  sys/kern/b0138/port.cppm
   sys/net/toeplitz_m/port.cppm
   sys/security/mac_none/b0005/port.cppm
   sys/security/mac_ntpd/b0007/port.cppm

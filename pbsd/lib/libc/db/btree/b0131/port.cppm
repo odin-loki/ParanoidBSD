@@ -65,7 +65,9 @@ typedef struct __db {
 #define	MPOOL_DIRTY	0x01
 #define	MPOOL_PAGE_NEXT	0x02
 
-typedef struct MPOOL MPOOL;
+struct MPOOL {
+	int opaque;
+};
 
 typedef struct _page {
 	pgno_t	pgno;
@@ -223,6 +225,7 @@ using PAGE = ::PAGE;
 using DB = ::DB;
 using DBT = ::DBT;
 using pgno_t = ::pgno_t;
+using MPOOL = ::MPOOL;
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause

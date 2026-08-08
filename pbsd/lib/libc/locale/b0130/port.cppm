@@ -13,6 +13,9 @@ module;
 #include <cstdlib>
 #include <cstring>
 
+export module pbsd.lib.libc.locale.b0130;
+
+extern "C" {
 #define __mbstate_t_defined 1
 typedef union {
 	char		__mbstate8[128];
@@ -20,7 +23,7 @@ typedef union {
 } __mbstate_t;
 typedef __mbstate_t mbstate_t;
 
-#include <cwchar>
+#include <wchar.h>
 
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX	4
@@ -30,7 +33,6 @@ typedef __mbstate_t mbstate_t;
 #define MB_CUR_MAX	4
 #endif
 
-extern "C" {
 typedef size_t (*wcrtomb_pfn_t)(char * __restrict, wchar_t, mbstate_t * __restrict);
 
 struct lc_messages_T {
@@ -54,23 +56,23 @@ struct xlocale_messages {
 	lc_messages_T	locale;
 };
 
-struct xlocale_ctype {
-	std::size_t	(*__wcsnrtombs)(char * __restrict,
-		    const wchar_t ** __restrict, std::size_t, std::size_t,
+struct port_xlocale_ctype {
+	size_t		(*__wcsnrtombs)(char * __restrict,
+		    const wchar_t ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
 	mbstate_t	wcsnrtombs;
 };
 
-struct xlocale {
+struct port_xlocale {
 	int		using_messages_locale;
 	void		*components[8];
 };
 
-typedef struct xlocale *locale_t;
+typedef struct port_xlocale *port_locale_t;
 
 enum {
-	XLC_CTYPE = 1,
-	XLC_MESSAGES = 5,
+	PORT_XLC_CTYPE = 1,
+	PORT_XLC_MESSAGES = 5,
 };
 
 #define _LDP_LOADED	1
@@ -81,38 +83,54 @@ enum {
 		(offsetof(struct lc_messages_T, yesstr) / sizeof(char *))
 
 size_t	pbsd_wcrtomb(char * __restrict, wchar_t, mbstate_t * __restrict);
-size_t	wcsrtombs_l(char * __restrict, const wchar_t ** __restrict,
-	    size_t, mbstate_t * __restrict, locale_t);
-int	iswspace_l(wint_t, locale_t);
-double	strtod_l(const char * __restrict, char ** __restrict, locale_t);
+size_t	pbsd_wcsrtombs_l(char * __restrict, const wchar_t ** __restrict,
+	    size_t, mbstate_t * __restrict, port_locale_t);
+int	pbsd_iswspace_l(wint_t, port_locale_t);
+double	pbsd_strtod_l(const char * __restrict, char ** __restrict,
+	    port_locale_t);
 int	__part_load_locale(const char *, int *, char **, const char *, int,
 	    int, const char **);
 
 extern xlocale_messages	__xlocale_global_messages;
-extern xlocale		__xlocale_global_locale;
+extern port_xlocale		__xlocale_global_locale;
+
+port_xlocale_ctype	port_global_ctype;
+port_xlocale		port_global_locale_storage;
+
+static inline port_xlocale_ctype *
+port_XLOCALE_CTYPE(port_locale_t l)
+{
+	return (static_cast<port_xlocale_ctype *>(l->components[PORT_XLC_CTYPE]));
 }
 
-export module pbsd.lib.libc.locale.b0130;
+static inline port_locale_t
+port_fix_locale(port_locale_t l)
+{
+	if (l == nullptr)
+		return (&port_global_locale_storage);
+	return (l);
+}
+
+#define FIX_LOCALE(l)	((l) = port_fix_locale(l))
+
+port_locale_t
+port_get_locale()
+{
+	return (&port_global_locale_storage);
+}
+}
 
 export namespace pbsd::lib_libc_locale::b0130 {
 
 using mbstate_t = ::mbstate_t;
-using locale_t = ::locale_t;
+using locale_t = ::port_locale_t;
+using wcrtomb_pfn_t = ::wcrtomb_pfn_t;
 
 struct lc_messages_T {
 	const char	*yesexpr;
 	const char	*noexpr;
 	const char	*yesstr;
 	const char	*nostr;
-};
-
-struct xlocale_component {
-	::xlocale_component_header	header;
-};
-
-struct xlocale_messages {
-	char			*buffer;
-	lc_messages_T		locale;
 };
 
 struct xlocale_ctype {
@@ -127,33 +145,14 @@ struct xlocale {
 	void		*components[8];
 };
 
-using wcrtomb_pfn_t = ::wcrtomb_pfn_t;
+#define XLOCALE_CTYPE(l)	port_XLOCALE_CTYPE(l)
 
-inline xlocale_ctype *
-XLOCALE_CTYPE(locale_t l)
-{
-	return (static_cast<xlocale_ctype *>(l->components[XLC_CTYPE]));
-}
+std::size_t
+__wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
+    std::size_t nwc, std::size_t len, mbstate_t * __restrict ps,
+    wcrtomb_pfn_t pwcrtomb);
 
-inline locale_t
-fix_locale(locale_t l)
-{
-	extern xlocale port_global_locale_storage;
-	if (l == nullptr)
-		return (&port_global_locale_storage);
-	return (l);
-}
-
-#define FIX_LOCALE(l)	((l) = fix_locale(l))
-
-inline locale_t
-__get_locale()
-{
-	extern xlocale port_global_locale_storage;
-	return (&port_global_locale_storage);
-}
-
-inline std::size_t
+static std::size_t
 dispatch_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
     std::size_t nwc, std::size_t len, mbstate_t * __restrict ps)
 {
@@ -163,19 +162,16 @@ dispatch_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 inline void
 init_locale()
 {
-	extern xlocale_ctype port_global_ctype;
-	extern xlocale port_global_locale_storage;
-
-	std::memset(&port_global_ctype, 0, sizeof(port_global_ctype));
-	port_global_ctype.__wcsnrtombs = dispatch_wcsnrtombs;
-	port_global_locale_storage.components[XLC_CTYPE] = &port_global_ctype;
+	std::memset(&::port_global_ctype, 0, sizeof(::port_global_ctype));
+	::port_global_ctype.__wcsnrtombs = dispatch_wcsnrtombs;
+	::port_global_locale_storage.components[PORT_XLC_CTYPE] =
+	    &::port_global_ctype;
 }
 
 inline locale_t
 global_locale()
 {
-	extern xlocale port_global_locale_storage;
-	return (&port_global_locale_storage);
+	return (&::port_global_locale_storage);
 }
 
 /*-
@@ -226,7 +222,7 @@ std::size_t
 wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src, std::size_t nwc,
     std::size_t len, mbstate_t * __restrict ps)
 {
-	return wcsnrtombs_l(dst, src, nwc, len, ps, __get_locale());
+	return wcsnrtombs_l(dst, src, nwc, len, ps, port_get_locale());
 }
 
 
@@ -345,13 +341,13 @@ wcstod_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 
 	wcp = nptr;
 	spaces = 0;
-	while (iswspace_l(*wcp, locale)) {
+	while (pbsd_iswspace_l(*wcp, locale)) {
 		wcp++;
 		spaces++;
 	}
 
 	mbs = initial;
-	if ((len = wcsrtombs_l(NULL, &wcp, 0, &mbs, locale)) == (std::size_t)-1) {
+	if ((len = pbsd_wcsrtombs_l(NULL, &wcp, 0, &mbs, locale)) == (std::size_t)-1) {
 		if (endptr != NULL)
 			*endptr = (wchar_t *)nptr;
 		return (0.0);
@@ -362,9 +358,9 @@ wcstod_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 		return (0.0);
 	}
 	mbs = initial;
-	wcsrtombs_l(buf, &wcp, len + 1, &mbs, locale);
+	pbsd_wcsrtombs_l(buf, &wcp, len + 1, &mbs, locale);
 
-	val = strtod_l(buf, &end, locale);
+	val = pbsd_strtod_l(buf, &end, locale);
 
 	if (endptr != NULL) {
 		*endptr = (wchar_t *)nptr + (end - buf);
@@ -379,7 +375,7 @@ wcstod_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 double
 wcstod(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr)
 {
-	return wcstod_l(nptr, endptr, __get_locale());
+	return wcstod_l(nptr, endptr, port_get_locale());
 }
 
 /*-
@@ -490,13 +486,8 @@ __messages_load(const char *name, locale_t l)
 __get_current_messages_locale(locale_t loc)
 {
 	return (loc->using_messages_locale ? &(static_cast<::xlocale_messages *>(
-	    loc->components[XLC_MESSAGES])->locale) :
+	    loc->components[PORT_XLC_MESSAGES])->locale) :
 	    (::lc_messages_T *)&_C_messages_locale);
 }
 
 } /* namespace pbsd::lib_libc_locale::b0130 */
-
-namespace {
-xlocale_ctype port_global_ctype;
-xlocale port_global_locale_storage;
-}

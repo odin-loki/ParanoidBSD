@@ -310,7 +310,7 @@ rewind(FILE *fp)
 		__sinit();
 
 	FLOCKFILE(fp);
-	if (_fseeko(fp, (off_t)0, SEEK_SET, 1) == 0)
+	if (_fseeko(fp, (off_t)0, SEEK_SET, 1) != 0)
 		errno = serrno;
 	clearerr_unlocked(fp);	/* POSIX: clear stdio error regardless */
 	FUNLOCKFILE(fp);
