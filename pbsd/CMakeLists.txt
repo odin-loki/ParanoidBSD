@@ -100,6 +100,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/quad/b0033/port.cppm
   lib/libc/quad/b0034/port.cppm
   lib/libc/quad/b0040/port.cppm
+  lib/libc/quad/b0042/port.cppm
   lib/libc/quad/divdi3_m/port.cppm
   lib/libc/quad/fixdfdi_m/port.cppm
   lib/libc/quad/fixsfdi_m/port.cppm

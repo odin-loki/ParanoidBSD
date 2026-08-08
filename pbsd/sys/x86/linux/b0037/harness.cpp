@@ -42,7 +42,7 @@ static const unsigned int AMDID_RDTSCP = 0x08000000;
 static const unsigned int CPUID_STDEXT_FSGSBASE = 0x00000001;
 static const unsigned int CPUID_STDEXT2_RDPID = 0x00400000;
 
-static const int SIGBUS = P::SIGBUS;
+static const int LINUX_SIGBUS = P::SIGBUS;
 
 struct Stat {
 	const char *name;
@@ -270,12 +270,12 @@ main(void)
 	for (int sig = -4; sig <= 72; sig++)
 		for (int tc = -8; tc <= 48; tc++)
 			check_trap(sig, tc);
-	check_trap(SIGBUS, INT_MIN);
-	check_trap(SIGBUS, INT_MAX);
+	check_trap(LINUX_SIGBUS, INT_MIN);
+	check_trap(LINUX_SIGBUS, INT_MAX);
 	check_trap(INT_MIN, 9);
 	check_trap(INT_MAX, 12);
-	check_trap(SIGBUS - 1, 9);
-	check_trap(SIGBUS + 1, 9);
+	check_trap(LINUX_SIGBUS - 1, 9);
+	check_trap(LINUX_SIGBUS + 1, 9);
 
 	/*
 	 * bsd_to_linux_trapcode: exhaustive across the whole table, both
@@ -373,7 +373,7 @@ main(void)
 
 		int sig;
 		if (below(2) == 0)
-			sig = SIGBUS;
+			sig = LINUX_SIGBUS;
 		else
 			sig = (int)below(96) - 12;
 		int tc;

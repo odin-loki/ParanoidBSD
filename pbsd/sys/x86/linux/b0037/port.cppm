@@ -100,11 +100,7 @@ int _bsd_to_linux_trapcode[] = {
 	15			/* 30 T_RESERVED */
 };
 
-} /* namespace pbsd::sys_x86_linux::b0037 */
-
-export module pbsd.sys.x86.linux.b0037;
-
-export namespace pbsd::sys_x86_linux::b0037 {
+} /* namespace */
 
 using u_int = unsigned int;
 

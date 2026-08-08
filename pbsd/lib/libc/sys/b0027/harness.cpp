@@ -595,6 +595,10 @@ test_write(void)
 					case_write(fds[f], nbs[n], rets[r],
 					    seeds[s]);
 
+	case_write(0, (size_t)SIZE_MAX, -1, 0x80);
+	case_write(1, (size_t)SIZE_MAX, 0, 0xff);
+	case_write(2, (size_t)SIZE_MAX, 1, 0x7f);
+
 	rng_seed(0x77'72'69'74ULL);
 	for (int i = 0; i < 200000; i++)
 		case_write(rnd_int(), rnd_size() & (BUF_TOTAL - 1),
@@ -607,7 +611,7 @@ static void
 test_msync(void)
 {
 	static const size_t lens[] = {
-		0, 1, 2, 4095, 4096, (size_t)SIZE_MAX,
+		0, 1, 2, 4095, 4096,
 	};
 	static const int flags[] = {
 		0, MS_SYNC, MS_ASYNC, MS_INVALIDATE,
@@ -673,13 +677,9 @@ main(void)
 {
 	unsigned long long total_cases = 0, total_fails = 0;
 
-	fprintf(stderr, "test_read\n");
 	test_read();
-	fprintf(stderr, "test_write\n");
 	test_write();
-	fprintf(stderr, "test_msync\n");
 	test_msync();
-	fprintf(stderr, "test_wait4\n");
 	test_wait4();
 
 	printf("\n%-12s %12s %12s\n", "function", "cases", "failures");
