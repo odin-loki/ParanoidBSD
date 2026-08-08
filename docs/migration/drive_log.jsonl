@@ -1719,3 +1719,4 @@
 {"batch": "b0044", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:18:06Z"}
 {"batch": "b0052", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T11:18:21Z"}
 {"batch": "b0069", "status": "VERIFIED", "detail": "harness green + IR-identical for all 8 functions", "how": "agent", "ts": "2026-08-08T11:18:33Z"}
+{"batch": "b0051", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 2/5: __udivdi3, __umoddi3)", "how": "agent", "ts": "2026-08-08T11:18:36Z"}

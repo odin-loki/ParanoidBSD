@@ -23,13 +23,13 @@ export namespace pbsd::usr_bin_cksum::b0054 {
  *			Spencer Garrett <srg@quick.com>
  */
 
-#define CRC(crc, ch)	 (crc = (crc >> 8) ^ crctab[(crc ^ (ch)) & 0xff])
+#define CRC(crc, ch)	 (crc = (crc >> 8) ^ crctab32[(crc ^ (ch)) & 0xff])
 
 /* generated using the AUTODIN II polynomial
  *	x^32 + x^26 + x^23 + x^22 + x^16 +
  *	x^12 + x^11 + x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x^1 + 1
  */
-static const uint32_t crctab[256] = {
+static const uint32_t crctab32[256] = {
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
 	0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
 	0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -162,7 +162,7 @@ crc32_total_value(void)
  * SUCH DAMAGE.
  */
 
-static const uint32_t crctab_posix[] = {
+static const uint32_t crctab[] = {
 	0x0,
 	0x04c11db7, 0x09823b6e, 0x0d4326d9, 0x130476dc, 0x17c56b6b,
 	0x1a864db2, 0x1e475005, 0x2608edb8, 0x22c9f00f, 0x2f8ad6d6,

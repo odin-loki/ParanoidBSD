@@ -223,7 +223,7 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 	d = 0;
 	for (t = v[1]; t < B / 2; t <<= 1)
 		d++;
-	if (d <= 0) {
+	if (d > 0) {
 		shl(&u[0], m + n, d);		/* u <<= d */
 		shl(&v[1], n - 1, d);		/* v <<= d */
 	}
