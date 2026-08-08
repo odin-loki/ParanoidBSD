@@ -1,54 +1,32 @@
 #!/bin/sh
-#
-# build.sh -- build and run the PBSD batch b0011 differential test.
-#
-# Run as:  sh build.sh
-#
-# Compiles oracle.c as C11, port.cppm and harness.cpp as C++23 modules,
-# links the three together and execs the harness, so the exit status of
-# this script is the exit status of the harness.
+# PBSD migration batch b0011 -- build and run the differential test.
+# Usage: sh build.sh   (from pbsd/lib/libc/softfloat/b0011/)
 
 set -e
 
-srcdir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$(dirname "$0")"
 
-: "${CC:=cc}"
-: "${CXX:=c++}"
-
-builddir="$srcdir/.build"
-mkdir -p "$builddir"
-cd "$builddir"
-
+CC=${CC:-cc}
+CXX=${CXX:-c++}
 CFLAGS="-std=c11 -O2"
 CXXFLAGS="-std=c++23 -O2"
 
-modname=pbsd.lib.libc.softfloat.b0011
+rm -rf gcm.cache port.pcm oracle.o port.o harness.o harness
 
-# Module support differs between the two toolchains we care about: GCC
-# wants -fmodules-ts and keeps its CMIs in ./gcm.cache, clang wants an
-# explicit precompile step and -fmodule-file=NAME=PATH.
-if "$CXX" --version 2>&1 | grep -i -q clang; then
-	compiler=clang
-else
-	compiler=gcc
-fi
+$CC $CFLAGS -c oracle.c -o oracle.o
 
-echo "building batch b0011 with $CC / $CXX ($compiler modules)"
-
-$CC $CFLAGS -c "$srcdir/oracle.c" -o oracle.o
-
-if [ "$compiler" = clang ]; then
-	$CXX $CXXFLAGS -x c++-module --precompile "$srcdir/port.cppm" \
-	    -o port.pcm
+if $CXX --version 2>&1 | grep -qi clang; then
+	# clang: precompile the interface unit, then feed the BMI back in.
+	$CXX $CXXFLAGS --precompile -x c++-module port.cppm -o port.pcm
 	$CXX $CXXFLAGS -c port.pcm -o port.o
-	$CXX $CXXFLAGS -fmodule-file="$modname=port.pcm" \
-	    -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS -o harness harness.o port.o oracle.o
+	$CXX $CXXFLAGS -fmodule-file=pbsd.lib.libc.softfloat.b0011=port.pcm \
+	    -c harness.cpp -o harness.o
 else
-	rm -rf gcm.cache
-	$CXX $CXXFLAGS -fmodules-ts -x c++ -c "$srcdir/port.cppm" -o port.o
-	$CXX $CXXFLAGS -fmodules-ts -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS -fmodules-ts -o harness harness.o port.o oracle.o
+	# gcc: -fmodules-ts, the CMI lands in ./gcm.cache
+	$CXX $CXXFLAGS -fmodules-ts -x c++ -c port.cppm -o port.o
+	$CXX $CXXFLAGS -fmodules-ts -c harness.cpp -o harness.o
 fi
+
+$CXX $CXXFLAGS -o harness oracle.o port.o harness.o
 
 exec ./harness

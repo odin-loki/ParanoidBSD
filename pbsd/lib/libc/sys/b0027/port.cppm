@@ -83,11 +83,12 @@ using interpos_sig_wait4 = pid_t (*)(pid_t, int *, int, ::rusage *);
 } /* namespace pbsd::lib_libc_sys::b0027 */
 
 #define	__libc_interposing_slot(interposno)				\
-	(*(interpos_func_t *)&libc_interposing[interposno])
+	(*(interpos_func_t *)&pbsd::lib_libc_sys::b0027::libc_interposing[interposno])
 
 #define	INTERPOS_SYS(syscall_name, ...)					\
-	(((interpos_sig_ ## syscall_name)__libc_interposing_slot(	\
-	    INTERPOS_ ## syscall_name))(__VA_ARGS__))
+	(((pbsd::lib_libc_sys::b0027::interpos_sig_ ## syscall_name)	\
+	    __libc_interposing_slot(INTERPOS_ ## syscall_name))		\
+	    (__VA_ARGS__))
 
 export namespace pbsd::lib_libc_sys::b0027 {
 

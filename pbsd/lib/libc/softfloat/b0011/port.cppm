@@ -11,12 +11,12 @@ module;
 
 #include <cstdint>
 
+export module pbsd.lib.libc.softfloat.b0011;
+
 extern "C" {
 char float32_le(std::uint32_t, std::uint32_t);
 char float64_eq(std::uint64_t, std::uint64_t);
 }
-
-export module pbsd.lib.libc.softfloat.b0011;
 
 export namespace pbsd::lib_libc_softfloat::b0011 {
 

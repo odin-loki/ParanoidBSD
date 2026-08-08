@@ -1683,3 +1683,4 @@
 {"batch": "b0033", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:22:30Z"}
 {"batch": "b0030", "status": "VERIFIED", "detail": "harness green + IR-identical for all 2 functions", "how": "agent", "ts": "2026-08-08T09:23:02Z"}
 {"batch": "b0005", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)", "how": "agent+escalate", "ts": "2026-08-08T09:23:07Z"}
+{"batch": "b0028", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:23:27Z"}

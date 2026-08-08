@@ -583,6 +583,11 @@ random_mbrtoc(Stats &st, bool is32, bool use_l)
 static void
 print_table(const Stats *stats, size_t n)
 {
+	if (n == 1) {
+		std::printf("%-16s %12llu %12llu\n",
+		    stats[0].name, stats[0].cases, stats[0].fails);
+		return;
+	}
 	std::printf("\n%-16s %12s %12s\n", "function", "cases", "failures");
 	std::printf("%-16s %12s %12s\n", "--------", "-----", "--------");
 	for (size_t i = 0; i < n; i++)
@@ -613,6 +618,8 @@ main()
 	random_mbrtoc(st_mbrtoc32_l, true, true);
 	random_mbrtoc(st_mbrtoc32, true, false);
 
+	std::printf("\n%-16s %12s %12s\n", "function", "cases", "failures");
+	std::printf("%-16s %12s %12s\n", "--------", "-----", "--------");
 	print_table(&st_c16rtomb_l, 1);
 	print_table(&st_c16rtomb, 1);
 	print_table(&st_c32rtomb_l, 1);

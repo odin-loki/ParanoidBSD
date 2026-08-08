@@ -1,472 +1,400 @@
 /*
- * Differential test harness for batch b0020s1.
+ * PBSD b0020s1 differential test.
  *
- * Compares pbsd::lib_libc_sys::b0020s1::pdwait (the C++23 port) against
- * ref_pdwait (the unmodified C oracle).
- *
- * pdwait() carries no arithmetic of its own: its entire observable behaviour
- * is (a) which interposing slot it dereferences, (b) the argument values it
- * forwards, in order, (c) how many times it forwards them, and (d) the result
- * it propagates back.  The harness therefore *is* the interposing table: it
- * installs a distinct recording implementation in every slot, so dispatching
- * through the wrong slot changes both the recorded tag and every byte the
- * callee writes.  The callee writes through the caller-supplied pointers, so
- * the usual guard-byte buffer comparison applies to all three of them.
+ * Drives the C++23 port and the ref_ oracle with identical arguments and
+ * compares everything observable: the return value, errno, which interposition
+ * slot was reached, the arguments the interposed callee received (pointers as
+ * offsets from each side's own buffer base) and the entire output buffer of
+ * each side including the guard bytes past the nominal write window.
  */
 
-#include <climits>
+#include <sys/types.h>
+#include <sys/resource.h>
+
+#include <cerrno>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <utility>
 
-/*
- * The opaque kernel structures __wrusage / __siginfo come from the module, so
- * that the harness names exactly the entities in the port's signature.
- */
+struct __wrusage {
+	struct rusage	wru_self;
+	struct rusage	wru_children;
+};
+
+struct __siginfo {
+	int		si_signo;
+	int		si_errno;
+	int		si_code;
+	int		si_pid;
+	unsigned int	si_uid;
+	int		si_status;
+	void		*si_addr;
+	long		si_value;
+	long		si_band;
+	int		__spare__[7];
+};
+
 import pbsd.lib.libc.sys.b0020s1;
 
 extern "C" {
 
 typedef int (*interpos_func_t)(void);
 
-int ref_pdwait(int fd, int *status, int options, __wrusage *ru,
-    __siginfo *infop);
-
-}
-
-/* ------------------------------------------------------------------ */
-/* The interposing table that both the port and the oracle dispatch through. */
-/* ------------------------------------------------------------------ */
-
-#define	PBSD_INTERPOS_SLOTS	16
-
-typedef int (*pdwait_impl_t)(int, int *, int, __wrusage *,
-    __siginfo *);
-
-/* Number of bytes the recording callee scribbles through ru / infop. */
-static const int RU_WRITE = 24;
-static const int INFO_WRITE = 20;
-
-struct Rec {
-	int calls;
-	int slot;
-	int fd;
-	int options;
-	const void *status_p;
-	const void *ru_p;
-	const void *infop_p;
-	int ret;
+enum {
+	INTERPOS_system,
+	INTERPOS_tcdrain,
+	INTERPOS_pdwait,
+	INTERPOS_wait4,
+	INTERPOS_MAX
 };
 
-static Rec g_rec;
+extern interpos_func_t __pbsd_interposing[INTERPOS_MAX];
 
-static void
-rec_reset(void)
-{
-	g_rec.calls = 0;
-	g_rec.slot = -0x7fff;
-	g_rec.fd = -0x7ffe;
-	g_rec.options = -0x7ffd;
-	g_rec.status_p = reinterpret_cast<const void *>(~static_cast<uintptr_t>(1));
-	g_rec.ru_p = reinterpret_cast<const void *>(~static_cast<uintptr_t>(2));
-	g_rec.infop_p = reinterpret_cast<const void *>(~static_cast<uintptr_t>(3));
-	g_rec.ret = -0x7ffc;
+int ref_pdwait(int fd, int *status, int options, struct __wrusage *ru,
+    struct __siginfo *infop);
+
 }
 
-/*
- * Deterministic, argument-order sensitive callee.  Every input participates in
- * both the return value and the bytes written, and with different weights, so
- * that transposing two arguments or dropping one is always observable.
- */
-static int
-mock_body(int slot, int fd, int *status, int options, __wrusage *ru,
-    __siginfo *infop)
+namespace {
+
+constexpr std::size_t align16(std::size_t n)
 {
-	g_rec.calls++;
+	return (n + 15u) & ~static_cast<std::size_t>(15u);
+}
+
+constexpr unsigned char GUARD = 0x7f;
+
+constexpr std::size_t STATUS_OFF = 16;
+constexpr std::size_t RU_OFF = 48;
+constexpr std::size_t INFO_OFF = RU_OFF + align16(sizeof(struct __wrusage));
+constexpr std::size_t BUF_SZ = INFO_OFF + align16(sizeof(struct __siginfo)) + 64;
+
+/* How much of each output object the interposed callee scribbles on. */
+constexpr std::size_t RU_WRITE = 24;
+constexpr std::size_t INFO_WRITE = 20;
+
+struct Record {
+	unsigned long	ncalls;
+	int		slot;
+	int		fd;
+	int		options;
+	int		*status;
+	struct __wrusage *ru;
+	struct __siginfo *infop;
+};
+
+Record g_rec;
+
+int
+mock_body(int slot, int fd, int *status, int options, struct __wrusage *ru,
+    struct __siginfo *infop)
+{
+	g_rec.ncalls++;
 	g_rec.slot = slot;
 	g_rec.fd = fd;
 	g_rec.options = options;
-	g_rec.status_p = status;
-	g_rec.ru_p = ru;
-	g_rec.infop_p = infop;
+	g_rec.status = status;
+	g_rec.ru = ru;
+	g_rec.infop = infop;
 
-	unsigned u_fd = static_cast<unsigned>(fd);
-	unsigned u_opt = static_cast<unsigned>(options);
-	unsigned u_slot = static_cast<unsigned>(slot);
+	std::uint32_t s = static_cast<std::uint32_t>(fd) * 2654435761u;
+	s ^= static_cast<std::uint32_t>(options) * 40503u + 0x2545f491u;
+	s ^= static_cast<std::uint32_t>(slot) * 0x9e3779b9u + 11u;
+	s ^= (status != nullptr ? 0x01000193u : 0u);
+	s ^= (ru != nullptr ? 0x0f0f0f0fu : 0u);
+	s ^= (infop != nullptr ? 0x33cc55aau : 0u);
 
-	if (status != nullptr) {
-		*status = static_cast<int>((u_fd * 1000003u) ^ (u_opt * 31u) ^
-		    (u_slot * 0x9e3779b9u) ^ 0x5a5a1234u);
-	}
+	if (status != nullptr)
+		*status = static_cast<int>(s);
 	if (ru != nullptr) {
 		unsigned char *p = reinterpret_cast<unsigned char *>(ru);
-		for (int i = 0; i < RU_WRITE; i++) {
-			p[i] = static_cast<unsigned char>(p[i] ^
-			    (u_fd + static_cast<unsigned>(i) * 7u +
-			     u_opt * 13u + u_slot * 101u + 0xa5u));
-		}
+		for (std::size_t i = 0; i < RU_WRITE; i++)
+			p[i] = static_cast<unsigned char>((s >> (i & 7u)) + i);
 	}
 	if (infop != nullptr) {
 		unsigned char *p = reinterpret_cast<unsigned char *>(infop);
-		for (int i = 0; i < INFO_WRITE; i++) {
-			p[i] = static_cast<unsigned char>(0x40u +
-			    static_cast<unsigned>(i) * 3u + (u_fd >> 3) +
-			    u_opt * 5u + u_slot * 17u);
-		}
+		for (std::size_t i = 0; i < INFO_WRITE; i++)
+			p[i] = static_cast<unsigned char>(
+			    (s >> ((i + 3u) & 7u)) ^ (i * 5u));
 	}
 
-	unsigned r = u_fd * 1000003u + u_opt * 31u + u_slot * 7919u;
-	r += (status != nullptr) ? 1u : 0u;
-	r += (ru != nullptr) ? 2u : 0u;
-	r += (infop != nullptr) ? 4u : 0u;
-	g_rec.ret = static_cast<int>(r);
-	return static_cast<int>(r);
-}
-
-template <int Slot>
-static int
-mock_slot(int fd, int *status, int options, __wrusage *ru,
-    __siginfo *infop)
-{
-	return mock_body(Slot, fd, status, options, ru, infop);
-}
-
-extern "C" {
-interpos_func_t __libc_interposing[PBSD_INTERPOS_SLOTS];
-}
-
-template <int... I>
-static void
-fill_table(std::integer_sequence<int, I...>)
-{
-	((__libc_interposing[I] =
-	    reinterpret_cast<interpos_func_t>(
-	        static_cast<pdwait_impl_t>(&mock_slot<I>))), ...);
-}
-
-/* ------------------------------------------------------------------ */
-/* Guarded buffers                                                     */
-/* ------------------------------------------------------------------ */
-
-#define	GUARD	0x7f
-
-static const int SBUF = 64;	/* status buffer  */
-static const int RBUF = 80;	/* __wrusage buffer */
-static const int IBUF = 72;	/* __siginfo buffer */
-
-struct Side {
-	alignas(16) unsigned char sbuf[SBUF];
-	alignas(16) unsigned char rbuf[RBUF];
-	alignas(16) unsigned char ibuf[IBUF];
-};
-
-static long long
-off_of(const void *p, const void *base)
-{
-	if (p == nullptr)
-		return -1;
-	return static_cast<long long>(reinterpret_cast<intptr_t>(p) -
-	    reinterpret_cast<intptr_t>(base));
-}
-
-/* ------------------------------------------------------------------ */
-/* Fixed-seed PRNG                                                     */
-/* ------------------------------------------------------------------ */
-
-static uint64_t g_state;
-
-static void
-rng_seed(uint64_t s)
-{
-	g_state = s;
-}
-
-static uint32_t
-rng_next(void)
-{
-	uint64_t x = g_state;
-	x ^= x << 13;
-	x ^= x >> 7;
-	x ^= x << 17;
-	g_state = x;
-	return static_cast<uint32_t>(x >> 32);
-}
-
-/* ------------------------------------------------------------------ */
-/* Case driver                                                         */
-/* ------------------------------------------------------------------ */
-
-struct Stats {
-	long long cases;
-	long long failures;
-};
-
-static Stats g_pdwait = { 0, 0 };
-static int g_reported = 0;
-
-static void
-fill_side(Side &s, uint32_t pattern, int soff, int roff, int ioff,
-    bool use_status, bool use_ru, bool use_infop)
-{
-	memset(s.sbuf, GUARD, sizeof(s.sbuf));
-	memset(s.rbuf, GUARD, sizeof(s.rbuf));
-	memset(s.ibuf, GUARD, sizeof(s.ibuf));
-
-	/*
-	 * The nominal write windows are seeded with identical input bytes on
-	 * both sides; everything outside stays at the guard byte so that a
-	 * write landing past the window is caught by the full-buffer compare.
-	 */
-	uint32_t h = pattern;
-	if (use_status) {
-		for (int i = 0; i < 4; i++) {
-			h = h * 1103515245u + 12345u;
-			s.sbuf[soff + i] = static_cast<unsigned char>(h >> 16);
-		}
-	}
-	if (use_ru) {
-		for (int i = 0; i < RU_WRITE; i++) {
-			h = h * 1103515245u + 12345u;
-			s.rbuf[roff + i] = static_cast<unsigned char>(h >> 16);
-		}
-	}
-	if (use_infop) {
-		for (int i = 0; i < INFO_WRITE; i++) {
-			h = h * 1103515245u + 12345u;
-			s.ibuf[ioff + i] = static_cast<unsigned char>(h >> 16);
-		}
-	}
-}
-
-static void
-report(const char *what, long long caseno, int fd, int options, int soff,
-    int roff, int ioff, bool us, bool ur, bool ui)
-{
-	if (g_reported >= 20)
-		return;
-	g_reported++;
-	printf("FAIL[%lld] pdwait: %s  (fd=%d options=%d soff=%d roff=%d "
-	    "ioff=%d status=%d ru=%d infop=%d)\n", caseno, what, fd, options,
-	    soff, roff, ioff, us ? 1 : 0, ur ? 1 : 0, ui ? 1 : 0);
-}
-
-static void
-run_case(int fd, int options, bool use_status, bool use_ru, bool use_infop,
-    int soff, int roff, int ioff, uint32_t pattern)
-{
-	Side a, b;
-	Rec rec_port, rec_ref;
-	int ret_port, ret_ref;
-	long long n = g_pdwait.cases++;
-	int bad = 0;
-
-	fill_side(a, pattern, soff, roff, ioff, use_status, use_ru, use_infop);
-	fill_side(b, pattern, soff, roff, ioff, use_status, use_ru, use_infop);
-
-	int *a_status = use_status ?
-	    reinterpret_cast<int *>(a.sbuf + soff) : nullptr;
-	int *b_status = use_status ?
-	    reinterpret_cast<int *>(b.sbuf + soff) : nullptr;
-	__wrusage *a_ru = use_ru ?
-	    reinterpret_cast<__wrusage *>(a.rbuf + roff) : nullptr;
-	__wrusage *b_ru = use_ru ?
-	    reinterpret_cast<__wrusage *>(b.rbuf + roff) : nullptr;
-	__siginfo *a_info = use_infop ?
-	    reinterpret_cast<__siginfo *>(a.ibuf + ioff) : nullptr;
-	__siginfo *b_info = use_infop ?
-	    reinterpret_cast<__siginfo *>(b.ibuf + ioff) : nullptr;
-
-	rec_reset();
-	ret_port = pbsd::lib_libc_sys::b0020s1::pdwait(fd, a_status, options,
-	    a_ru, a_info);
-	rec_port = g_rec;
-
-	rec_reset();
-	ret_ref = ref_pdwait(fd, b_status, options, b_ru, b_info);
-	rec_ref = g_rec;
-
-	if (ret_port != ret_ref) {
-		report("return value", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (rec_port.calls != rec_ref.calls) {
-		report("dispatch count", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (rec_port.slot != rec_ref.slot) {
-		report("interposing slot", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (rec_port.fd != rec_ref.fd) {
-		report("forwarded fd", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (rec_port.options != rec_ref.options) {
-		report("forwarded options", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (rec_port.ret != rec_ref.ret) {
-		report("callee result", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (off_of(rec_port.status_p, a.sbuf) != off_of(rec_ref.status_p, b.sbuf)) {
-		report("status pointer offset", n, fd, options, soff, roff,
-		    ioff, use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (off_of(rec_port.ru_p, a.rbuf) != off_of(rec_ref.ru_p, b.rbuf)) {
-		report("ru pointer offset", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (off_of(rec_port.infop_p, a.ibuf) != off_of(rec_ref.infop_p, b.ibuf)) {
-		report("infop pointer offset", n, fd, options, soff, roff,
-		    ioff, use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (memcmp(a.sbuf, b.sbuf, sizeof(a.sbuf)) != 0) {
-		report("status buffer", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (memcmp(a.rbuf, b.rbuf, sizeof(a.rbuf)) != 0) {
-		report("wrusage buffer", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-	if (memcmp(a.ibuf, b.ibuf, sizeof(a.ibuf)) != 0) {
-		report("siginfo buffer", n, fd, options, soff, roff, ioff,
-		    use_status, use_ru, use_infop);
-		bad = 1;
-	}
-
-	if (bad)
-		g_pdwait.failures++;
-}
-
-/* ------------------------------------------------------------------ */
-
-static const int SOFFS[] = { 0, 4, 32, SBUF - 4 };
-static const int ROFFS[] = { 0, 8, 33, RBUF - RU_WRITE };
-static const int IOFFS[] = { 0, 1, 27, IBUF - INFO_WRITE };
-static const int NOFFS = 4;
-
-static const int EDGE_INTS[] = {
-	INT_MIN, INT_MIN + 1, -65536, -256, -128, -2, -1, 0, 1, 2, 3, 7,
-	0x7f, 0x80, 0xff, 0x100, 65535, 65536, INT_MAX - 1, INT_MAX
-};
-static const int NEDGE = static_cast<int>(sizeof(EDGE_INTS) / sizeof(EDGE_INTS[0]));
-
-static void
-edge_cases(void)
-{
-	for (int i = 0; i < NEDGE; i++) {
-		for (int j = 0; j < NEDGE; j++) {
-			for (int mask = 0; mask < 8; mask++) {
-				for (int k = 0; k < NOFFS; k++) {
-					run_case(EDGE_INTS[i], EDGE_INTS[j],
-					    (mask & 1) != 0, (mask & 2) != 0,
-					    (mask & 4) != 0, SOFFS[k],
-					    ROFFS[k], IOFFS[k],
-					    static_cast<uint32_t>(i * 1315423911u +
-						j * 2654435761u + mask * 40503u +
-						k * 97u + 1u));
-				}
-			}
-		}
-	}
-
-	/* fd == options, so an argument transposition must still be caught
-	 * only by the other invariants; include it explicitly. */
-	for (int i = 0; i < NEDGE; i++) {
-		run_case(EDGE_INTS[i], EDGE_INTS[i], true, true, true,
-		    SOFFS[i % NOFFS], ROFFS[i % NOFFS], IOFFS[i % NOFFS],
-		    static_cast<uint32_t>(0xdead0000u + i));
-	}
-}
-
-static void
-random_sweep(long long iters)
-{
-	rng_seed(0x0020000100205310ULL);
-
-	for (long long n = 0; n < iters; n++) {
-		uint32_t r0 = rng_next();
-		uint32_t r1 = rng_next();
-		uint32_t r2 = rng_next();
-
-		int fd;
-		int options;
-
-		/* Mix wide random values with small/near-boundary ones. */
-		switch (r2 & 3u) {
-		case 0:
-			fd = static_cast<int>(r0);
-			break;
-		case 1:
-			fd = static_cast<int>(r0 % 4096u) - 2048;
-			break;
-		case 2:
-			fd = static_cast<int>(r0 & 0xffu);
-			break;
-		default:
-			fd = static_cast<int>(r0 | 0x80000000u);
-			break;
-		}
-		switch ((r2 >> 2) & 3u) {
-		case 0:
-			options = static_cast<int>(r1);
-			break;
-		case 1:
-			options = static_cast<int>(r1 % 8u);
-			break;
-		case 2:
-			options = -static_cast<int>(r1 % 4096u);
-			break;
-		default:
-			options = static_cast<int>(r1 & 0xffffu);
-			break;
-		}
-		if ((r2 & 0x3fu) == 0u)
-			options = fd;
-
-		int mask = static_cast<int>((r2 >> 4) & 7u);
-		int soff = static_cast<int>(((r2 >> 7) % (SBUF / 4)) * 4);
-		int roff = static_cast<int>((rng_next() % (RBUF - RU_WRITE + 1)));
-		int ioff = static_cast<int>((rng_next() % (IBUF - INFO_WRITE + 1)));
-
-		run_case(fd, options, (mask & 1) != 0, (mask & 2) != 0,
-		    (mask & 4) != 0, soff, roff, ioff, rng_next());
-	}
+	errno = static_cast<int>(s % 97u) + 1;
+	return static_cast<int>(s) - 1;
 }
 
 int
-main(void)
+mock_slot0(int fd, int *st, int op, struct __wrusage *ru, struct __siginfo *in)
 {
-	fill_table(std::make_integer_sequence<int, PBSD_INTERPOS_SLOTS>{});
+	return mock_body(0, fd, st, op, ru, in);
+}
 
-	edge_cases();
-	random_sweep(250000);
+int
+mock_slot1(int fd, int *st, int op, struct __wrusage *ru, struct __siginfo *in)
+{
+	return mock_body(1, fd, st, op, ru, in);
+}
 
-	printf("\n%-24s %12s %12s %s\n", "FUNCTION", "CASES", "FAILURES",
-	    "RESULT");
-	printf("%-24s %12s %12s %s\n", "------------------------",
-	    "------------", "------------", "------");
-	printf("%-24s %12lld %12lld %s\n", "pdwait", g_pdwait.cases,
-	    g_pdwait.failures, g_pdwait.failures == 0 ? "PASS" : "FAIL");
+int
+mock_slot2(int fd, int *st, int op, struct __wrusage *ru, struct __siginfo *in)
+{
+	return mock_body(2, fd, st, op, ru, in);
+}
 
-	long long total_cases = g_pdwait.cases;
-	long long total_fail = g_pdwait.failures;
+int
+mock_slot3(int fd, int *st, int op, struct __wrusage *ru, struct __siginfo *in)
+{
+	return mock_body(3, fd, st, op, ru, in);
+}
 
-	printf("%-24s %12lld %12lld %s\n", "TOTAL", total_cases, total_fail,
-	    total_fail == 0 ? "PASS" : "FAIL");
+void
+install_mocks()
+{
+	using fn_t = int (*)(int, int *, int, struct __wrusage *,
+	    struct __siginfo *);
 
-	return total_fail == 0 ? 0 : 1;
+	__pbsd_interposing[INTERPOS_system] =
+	    reinterpret_cast<interpos_func_t>(static_cast<fn_t>(mock_slot0));
+	__pbsd_interposing[INTERPOS_tcdrain] =
+	    reinterpret_cast<interpos_func_t>(static_cast<fn_t>(mock_slot1));
+	__pbsd_interposing[INTERPOS_pdwait] =
+	    reinterpret_cast<interpos_func_t>(static_cast<fn_t>(mock_slot2));
+	__pbsd_interposing[INTERPOS_wait4] =
+	    reinterpret_cast<interpos_func_t>(static_cast<fn_t>(mock_slot3));
+}
+
+alignas(16) unsigned char g_buf_port[BUF_SZ];
+alignas(16) unsigned char g_buf_ref[BUF_SZ];
+
+std::ptrdiff_t
+off_of(const void *p, const unsigned char *base)
+{
+	if (p == nullptr)
+		return -1;
+	return reinterpret_cast<const unsigned char *>(p) - base;
+}
+
+unsigned long g_cases;
+unsigned long g_failures;
+unsigned long g_reported;
+
+void
+fail(const char *what, int fd, int options, bool has_status, bool has_ru,
+    bool has_infop)
+{
+	g_failures++;
+	if (g_reported < 20) {
+		g_reported++;
+		std::printf("FAIL pdwait: %s  fd=%d options=%d "
+		    "status=%s ru=%s infop=%s\n", what, fd, options,
+		    has_status ? "buf" : "NULL", has_ru ? "buf" : "NULL",
+		    has_infop ? "buf" : "NULL");
+	}
+}
+
+void
+run_case(int fd, int options, bool has_status, bool has_ru, bool has_infop)
+{
+	g_cases++;
+
+	std::memset(g_buf_port, GUARD, BUF_SZ);
+	std::memset(g_buf_ref, GUARD, BUF_SZ);
+
+	int *st_p = has_status ?
+	    reinterpret_cast<int *>(g_buf_port + STATUS_OFF) : nullptr;
+	int *st_r = has_status ?
+	    reinterpret_cast<int *>(g_buf_ref + STATUS_OFF) : nullptr;
+	struct __wrusage *ru_p = has_ru ?
+	    reinterpret_cast<struct __wrusage *>(g_buf_port + RU_OFF) : nullptr;
+	struct __wrusage *ru_r = has_ru ?
+	    reinterpret_cast<struct __wrusage *>(g_buf_ref + RU_OFF) : nullptr;
+	struct __siginfo *in_p = has_infop ?
+	    reinterpret_cast<struct __siginfo *>(g_buf_port + INFO_OFF) :
+	    nullptr;
+	struct __siginfo *in_r = has_infop ?
+	    reinterpret_cast<struct __siginfo *>(g_buf_ref + INFO_OFF) :
+	    nullptr;
+
+	std::memset(&g_rec, 0, sizeof(g_rec));
+	errno = 0;
+	int ret_p = pbsd::lib_libc_sys::b0020s1::pdwait(fd, st_p, options,
+	    ru_p, in_p);
+	int errno_p = errno;
+	Record rec_p = g_rec;
+
+	std::memset(&g_rec, 0, sizeof(g_rec));
+	errno = 0;
+	int ret_r = ref_pdwait(fd, st_r, options, ru_r, in_r);
+	int errno_r = errno;
+	Record rec_r = g_rec;
+
+	if (ret_p != ret_r) {
+		fail("return value", fd, options, has_status, has_ru,
+		    has_infop);
+		return;
+	}
+	if (errno_p != errno_r) {
+		fail("errno", fd, options, has_status, has_ru, has_infop);
+		return;
+	}
+	if (rec_p.ncalls != 1 || rec_r.ncalls != 1 ||
+	    rec_p.ncalls != rec_r.ncalls) {
+		fail("call count", fd, options, has_status, has_ru, has_infop);
+		return;
+	}
+	if (rec_p.slot != rec_r.slot) {
+		fail("interposition slot", fd, options, has_status, has_ru,
+		    has_infop);
+		return;
+	}
+	if (rec_p.fd != rec_r.fd || rec_p.fd != fd) {
+		fail("fd argument", fd, options, has_status, has_ru,
+		    has_infop);
+		return;
+	}
+	if (rec_p.options != rec_r.options || rec_p.options != options) {
+		fail("options argument", fd, options, has_status, has_ru,
+		    has_infop);
+		return;
+	}
+	if (off_of(rec_p.status, g_buf_port) !=
+	    off_of(rec_r.status, g_buf_ref)) {
+		fail("status pointer offset", fd, options, has_status, has_ru,
+		    has_infop);
+		return;
+	}
+	if (off_of(rec_p.ru, g_buf_port) != off_of(rec_r.ru, g_buf_ref)) {
+		fail("ru pointer offset", fd, options, has_status, has_ru,
+		    has_infop);
+		return;
+	}
+	if (off_of(rec_p.infop, g_buf_port) !=
+	    off_of(rec_r.infop, g_buf_ref)) {
+		fail("infop pointer offset", fd, options, has_status, has_ru,
+		    has_infop);
+		return;
+	}
+	if (std::memcmp(g_buf_port, g_buf_ref, BUF_SZ) != 0) {
+		fail("output buffer", fd, options, has_status, has_ru,
+		    has_infop);
+		return;
+	}
+}
+
+void
+run_all_null_combos(int fd, int options)
+{
+	for (int mask = 0; mask < 8; mask++)
+		run_case(fd, options, (mask & 1) != 0, (mask & 2) != 0,
+		    (mask & 4) != 0);
+}
+
+const int g_edge_ints[] = {
+	(-2147483647 - 1),		/* INT_MIN */
+	-2147483647,
+	-65536,
+	-256,
+	-129,
+	-128,
+	-127,
+	-2,
+	-1,
+	0,
+	1,
+	2,
+	3,
+	4,
+	8,
+	16,
+	127,
+	128,
+	129,
+	255,
+	256,
+	32767,
+	32768,
+	65535,
+	65536,
+	2147483646,
+	2147483647,			/* INT_MAX */
+};
+
+std::uint64_t g_rng_state;
+
+std::uint32_t
+rng_next()
+{
+	/* xorshift64*, fixed seed. */
+	std::uint64_t x = g_rng_state;
+	x ^= x >> 12;
+	x ^= x << 25;
+	x ^= x >> 27;
+	g_rng_state = x;
+	return static_cast<std::uint32_t>((x * 0x2545f4914f6cdd1dULL) >> 32);
+}
+
+int
+rng_int()
+{
+	std::uint32_t r = rng_next();
+
+	switch (r & 3u) {
+	case 0:
+		/* Full 32-bit range. */
+		return static_cast<int>(rng_next());
+	case 1:
+		/* Small non-negative, exercises the low fd/options range. */
+		return static_cast<int>(rng_next() % 64u);
+	case 2:
+		/* Small negative. */
+		return -static_cast<int>(rng_next() % 64u) - 1;
+	default: {
+		/* Boundary values and single high-bit bytes. */
+		const std::size_t n = sizeof(g_edge_ints) /
+		    sizeof(g_edge_ints[0]);
+		return g_edge_ints[rng_next() % n];
+	}
+	}
+}
+
+} /* namespace */
+
+int
+main()
+{
+	install_mocks();
+
+	const std::size_t nedge = sizeof(g_edge_ints) / sizeof(g_edge_ints[0]);
+
+	/* Hand-written edge cases: every boundary fd against every boundary
+	 * options value, against every combination of NULL output pointers. */
+	for (std::size_t i = 0; i < nedge; i++)
+		for (std::size_t j = 0; j < nedge; j++)
+			run_all_null_combos(g_edge_ints[i], g_edge_ints[j]);
+
+	/* fd and options equal, so that an argument swap is invisible here and
+	 * must be caught by the asymmetric cases above and below. */
+	for (std::size_t i = 0; i < nedge; i++)
+		run_all_null_combos(g_edge_ints[i], g_edge_ints[i]);
+
+	/* Fixed-seed randomised sweep. */
+	g_rng_state = 0x0020000100000001ULL;
+	for (unsigned long iter = 0; iter < 250000UL; iter++) {
+		int fd = rng_int();
+		int options = rng_int();
+		std::uint32_t m = rng_next();
+		run_case(fd, options, (m & 1u) != 0, (m & 2u) != 0,
+		    (m & 4u) != 0);
+	}
+
+	std::printf("\n%-16s %12s %12s\n", "function", "cases", "failures");
+	std::printf("%-16s %12lu %12lu\n", "pdwait", g_cases, g_failures);
+
+	if (g_failures != 0) {
+		std::printf("\nRESULT: FAIL (%lu of %lu cases diverged)\n",
+		    g_failures, g_cases);
+		return 1;
+	}
+	std::printf("\nRESULT: PASS (all %lu cases matched)\n", g_cases);
+	return 0;
 }
