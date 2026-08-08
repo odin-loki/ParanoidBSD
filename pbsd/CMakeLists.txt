@@ -75,6 +75,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/valloc_m/port.cppm
   lib/libc/iconv/b0062/port.cppm
   lib/libc/iconv/b0063/port.cppm
+  lib/libc/locale/b0002/port.cppm
   lib/libc/locale/b0045/port.cppm
   lib/libc/locale/b0075/port.cppm
   lib/libc/locale/b0083/port.cppm
@@ -123,6 +124,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0016/port.cppm
   lib/libc/softfloat/b0016s1/port.cppm
   lib/libc/softfloat/b0016s2/port.cppm
+  lib/libc/softfloat/b0016s3/port.cppm
   lib/libc/softfloat/b0052/port.cppm
   lib/libc/stdbit/b0026/port.cppm
   lib/libc/stdbit/b0036/port.cppm

@@ -1,12 +1,4 @@
 /*
- * oracle.c -- reference implementation for PBSD batch b0022.
- *
- * The original HardenedBSD C sources of this batch, concatenated, with every
- * externally visible name given a "ref_" prefix.  Initialisers and function
- * bodies are unmodified.
- */
-
-/*
  * infinity.c
  */
 

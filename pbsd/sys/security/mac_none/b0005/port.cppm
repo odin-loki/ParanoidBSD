@@ -112,11 +112,13 @@ struct mac_policy_ops {
 	void *mpo_ip6q_destroy_label{};
 	void *mpo_ip6q_init_label{};
 	void *mpo_ip6q_match{};
+	void *mpo_ip6q_reassemble{};
 	void *mpo_ip6q_update{};
 	void *mpo_ipq_create{};
 	void *mpo_ipq_destroy_label{};
 	void *mpo_ipq_init_label{};
 	void *mpo_ipq_match{};
+	void *mpo_ipq_reassemble{};
 	void *mpo_ipq_update{};
 	void *mpo_kdb_check_backend{};
 	void *mpo_kenv_check_dump{};

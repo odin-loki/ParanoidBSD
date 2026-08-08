@@ -34,19 +34,38 @@ export module pbsd.sys.security.mac.pimd.b0006;
 
 export namespace pbsd::sys_security_mac_pimd::b0006 {
 
-inline constexpr int EPERM = 1;
-inline constexpr int PRIV_NETINET_MROUTE = 496;
-
+/*
+ * Kernel types and constants the translation unit pulled in via
+ * <sys/param.h>, <sys/priv.h>, <sys/ucred.h> and <security/mac/mac_policy.h>.
+ * Only the members and values actually reachable from pimd_priv_grant() are
+ * reproduced; cr_uid keeps its unsigned kernel type so the comparison against
+ * the signed sysctl variable converts exactly as it does in the original.
+ */
+using u_int = unsigned int;
 using uid_t = std::uint32_t;
+using gid_t = std::uint32_t;
+
+inline constexpr int PRIV_NETINET_MROUTE = 496;
+inline constexpr int EPERM = 1;
 
 struct ucred {
+	u_int	cr_ref;
 	uid_t	cr_uid;
+	uid_t	cr_ruid;
+	uid_t	cr_svuid;
+	gid_t	cr_rgid;
+	gid_t	cr_svgid;
+};
+
+struct mac_policy_ops {
+	int (*mpo_priv_grant)(struct ucred *cred, int priv);
 };
 
 inline int pimd_enabled = 0;
+
 inline int pimd_uid = 0;
 
-static int
+int
 pimd_priv_grant(struct ucred *cred, int priv)
 {
 
@@ -61,11 +80,9 @@ pimd_priv_grant(struct ucred *cred, int priv)
 	return (EPERM);
 }
 
-int
-pimd_priv_grant_export(struct ucred *cred, int priv)
+inline struct mac_policy_ops pimd_ops =
 {
+	.mpo_priv_grant = pimd_priv_grant,
+};
 
-	return (pimd_priv_grant(cred, priv));
-}
-
-} // namespace pbsd::sys_security_mac_pimd::b0006
+} /* namespace pbsd::sys_security_mac_pimd::b0006 */

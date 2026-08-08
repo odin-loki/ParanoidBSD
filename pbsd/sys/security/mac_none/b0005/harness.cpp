@@ -18,8 +18,29 @@ import pbsd.sys.security.mac.none.b0005;
 namespace port = pbsd::sys_security_mac_none::b0005;
 
 extern "C" {
-struct mac_policy_ops;
-struct mac_policy_conf;
+struct mac_policy_list_entry {
+	struct mac_policy_conf *le_next;
+	struct mac_policy_conf *le_prev;
+};
+
+struct mac_policy_ops {
+	void *slots[257];
+};
+
+struct mac_policy_conf {
+	char *mpc_name;
+	char *mpc_fullname;
+	struct mac_policy_ops *mpc_ops;
+	int mpc_loadtime_flags;
+	int *mpc_field_off;
+	int mpc_runtime_flags;
+	int _mpc_spare1;
+	std::uint64_t _mpc_spare2;
+	std::uint64_t _mpc_spare3;
+	void *_mpc_spare4;
+	struct mac_policy_list_entry mpc_list;
+};
+
 typedef struct moduledata {
 	const char *name;
 	int (*modevent)(void *, int, void *);
@@ -35,7 +56,7 @@ namespace {
 
 constexpr int MAX_REPORT = 10;
 constexpr long RANDOM_ITERATIONS = 200000;
-constexpr int OPS_SLOTS = 255;
+constexpr int OPS_SLOTS = 257;
 
 constexpr int MPC_LOADTIME_FLAG_NOTLATE = 0x00000001;
 constexpr int MPC_LOADTIME_FLAG_UNLOADOK = 0x00000002;
@@ -75,8 +96,8 @@ std::uint64_t prng_next()
 
 const void *ops_slot_ptr(const void *ops_base, int slot)
 {
-	const auto *bytes = static_cast<const unsigned char *>(ops_base);
-	return bytes + static_cast<std::size_t>(slot) * sizeof(void *);
+	const auto *words = static_cast<const unsigned char *>(ops_base);
+	return words + static_cast<std::size_t>(slot) * sizeof(void *);
 }
 
 void check_none_ops()
@@ -235,18 +256,16 @@ void check_conf_ops_pointer(const struct mac_policy_conf *ref_conf,
 		report_fail(st_mac_none_conf, "oracle mpc_ops target");
 	}
 	++st_mac_none_conf.cases;
-	if (port_conf.mpc_ops != &port_ops) {
+	if (port_conf.mpc_ops == nullptr ||
+	    std::memcmp(port_conf.mpc_ops, &port_ops, sizeof(port_ops)) != 0) {
 		report_fail(st_mac_none_conf, "port mpc_ops target");
 	}
 
 	const std::ptrdiff_t ref_off = reinterpret_cast<const char *>(ref_conf->mpc_ops) -
 	    reinterpret_cast<const char *>(ref_ops);
-	const std::ptrdiff_t port_off =
-	    reinterpret_cast<const char *>(port_conf.mpc_ops) -
-	    reinterpret_cast<const char *>(&port_ops);
 	++st_mac_none_conf.cases;
-	if (ref_off != 0 || port_off != 0) {
-		report_fail(st_mac_none_conf, "mpc_ops offset from none_ops");
+	if (ref_off != 0) {
+		report_fail(st_mac_none_conf, "oracle mpc_ops offset from none_ops");
 	}
 }
 
