@@ -426,14 +426,15 @@ init_tree_ref(TreeRef &c, u_int32_t flags)
 void
 check_bt_free(int put_ret)
 {
-	TreeCopy pc, rc;
-	PAGE *ph = (PAGE *)pc.pagebuf;
+	TreePort pc;
+	TreeRef rc;
+	P::PAGE *ph = (P::PAGE *)pc.pagebuf;
 	PAGE *rh = (PAGE *)rc.pagebuf;
 
 	test_mock_reset();
 	test_mock.put_ret = put_ret;
-	init_tree(pc, 0);
-	init_tree(rc, 0);
+	init_tree_port(pc, 0);
+	init_tree_ref(rc, 0);
 	guard_fill(pc.pagebuf, sizeof(pc.pagebuf));
 	guard_fill(rc.pagebuf, sizeof(rc.pagebuf));
 	ph->pgno = 42;
@@ -462,24 +463,25 @@ check_bt_free(int put_ret)
 void
 check_bt_new(int freelist, int get_null, int new_null)
 {
-	TreeCopy pc, rc;
-	PAGE *fp = (PAGE *)pc.pagebuf;
+	TreePort pc;
+	TreeRef rc;
+	P::PAGE *fp = (P::PAGE *)pc.pagebuf;
 	PAGE *fr = (PAGE *)rc.pagebuf;
 	pgno_t npg_p = 0, npg_r = 0;
 
 	test_mock_reset();
-	test_mock.new_page = fp;
+	test_mock.new_page = fr;
 	test_mock.new_pgno = 55;
 	test_mock.get_force_null = get_null;
 	test_mock.new_force_null = new_null;
-	init_tree(pc, 0);
-	init_tree(rc, 0);
+	init_tree_port(pc, 0);
+	init_tree_ref(rc, 0);
 	fp->nextpg = 88;
 	fr->nextpg = 88;
 	pc.t.bt_free = freelist ? 5 : P_INVALID;
 	rc.t.bt_free = freelist ? 5 : P_INVALID;
 
-	PAGE *pp = P::__bt_new(&pc.t, &npg_p);
+	P::PAGE *pp = P::__bt_new(&pc.t, &npg_p);
 	PAGE *pr = ref___bt_new(&rc.t, &npg_r);
 
 	char msg[256];
@@ -491,7 +493,8 @@ check_bt_new(int freelist, int get_null, int new_null)
 		std::snprintf(msg, sizeof(msg), "offset port=%td ref=%td",
 		    (char *)pp - (char *)pc.pagebuf,
 		    (char *)pr - (char *)rc.pagebuf);
-		check_eq(F_BT_NEW, (pp - (PAGE *)pc.pagebuf) == (pr - (PAGE *)rc.pagebuf),
+		check_eq(F_BT_NEW,
+		    (pp - (P::PAGE *)pc.pagebuf) == (pr - (PAGE *)rc.pagebuf),
 		    msg);
 	}
 	std::snprintf(msg, sizeof(msg), "npg port=%u ref=%u", (unsigned)npg_p,
@@ -506,10 +509,11 @@ void
 check_bt_get(u_int flags, int had_pinned, int search_null, int exact,
     u_int32_t tflags, int ret_stat)
 {
-	TreeCopy pc, rc;
-	DBT key, data_p, data_r;
-	unsigned char keybuf[8];
+	TreePort pc;
+	TreeRef rc;
 	unsigned char pagebuf_r[PAGE_SZ];
+	P::DBT key, data_p, data_r;
+	unsigned char keybuf[8];
 	int ep = 0, er = 0;
 
 	test_mock_reset();
@@ -521,14 +525,14 @@ check_bt_get(u_int flags, int had_pinned, int search_null, int exact,
 	test_mock.ret_data[1] = 0xad;
 	test_mock.ret_data[2] = 0xbe;
 	test_mock.ret_data[3] = 0xef;
-	init_tree(pc, tflags);
-	init_tree(rc, tflags);
-	test_mock.new_page = (PAGE *)pagebuf_r;
+	init_tree_port(pc, tflags);
+	init_tree_ref(rc, tflags);
+	test_mock.new_page = pagebuf_r;
 	key.data = keybuf;
 	key.size = sizeof(keybuf);
 	std::memset(keybuf, 0xa5, sizeof(keybuf));
 	if (had_pinned) {
-		pc.t.bt_pinned = (PAGE *)pc.pagebuf;
+		pc.t.bt_pinned = (P::PAGE *)pc.pagebuf;
 		rc.t.bt_pinned = (PAGE *)rc.pagebuf;
 	}
 
@@ -557,13 +561,14 @@ check_bt_get(u_int flags, int had_pinned, int search_null, int exact,
 void
 check_bt_sync(u_int flags, u_int32_t tflags, int meta_null, int sync_ret)
 {
-	TreeCopy pc, rc;
+	TreePort pc;
+	TreeRef rc;
 
 	test_mock_reset();
 	test_mock.get_force_null = meta_null;
 	test_mock.sync_ret = sync_ret;
-	init_tree(pc, tflags);
-	init_tree(rc, tflags);
+	init_tree_port(pc, tflags);
+	init_tree_ref(rc, tflags);
 	pc.t.bt_psize = 512;
 	rc.t.bt_psize = 512;
 	pc.t.bt_free = 3;
@@ -584,14 +589,15 @@ check_bt_sync(u_int flags, u_int32_t tflags, int meta_null, int sync_ret)
 void
 check_bt_close(int with_allocs, int close_fd_ret, int sync_meta_null)
 {
-	TreeCopy pc, rc;
+	TreePort pc;
+	TreeRef rc;
 	char *cp, *cr;
 
 	test_mock_reset();
 	test_mock.get_force_null = sync_meta_null;
 	test_mock.close_fd_ret = close_fd_ret;
-	init_tree(pc, B_MODIFIED | B_METADIRTY);
-	init_tree(rc, B_MODIFIED | B_METADIRTY);
+	init_tree_port(pc, B_MODIFIED | B_METADIRTY);
+	init_tree_ref(rc, B_MODIFIED | B_METADIRTY);
 	pc.t.bt_fd = 9;
 	rc.t.bt_fd = 9;
 	if (with_allocs) {
@@ -611,7 +617,7 @@ check_bt_close(int with_allocs, int close_fd_ret, int sync_meta_null)
 		rc.t.bt_rdata.size = 64;
 	}
 
-	DB *dbp_p = &pc.db;
+	P::DB *dbp_p = &pc.db;
 	DB *dbp_r = &rc.db;
 	int rp = P::__bt_close(dbp_p);
 	int rr = ref___bt_close(dbp_r);
@@ -621,14 +627,16 @@ check_bt_close(int with_allocs, int close_fd_ret, int sync_meta_null)
 	check_eq(F_BT_CLOSE, rp == rr, msg);
 }
 
+template<typename Builder>
 void
 check_conv(const char *which, void (*port_fn)(void *, pgno_t, void *),
     void (*ref_fn)(void *, pgno_t, void *), u_int32_t tflags, pgno_t pg,
-    void (*builder)(unsigned char *, size_t))
+    Builder builder)
 {
 	unsigned char buf_p[PAGE_SZ];
 	unsigned char buf_r[PAGE_SZ];
-	BTREE tp, tr;
+	P::BTREE tp;
+	BTREE tr;
 
 	std::memset(&tp, 0, sizeof(tp));
 	std::memset(&tr, 0, sizeof(tr));
@@ -705,14 +713,13 @@ test_bt_close_edges(void)
 void
 test_conv_edges(void)
 {
-	u_char bif[] = { 0, P_BIGKEY, 0 };
-	u_char blf[] = { 0, P_BIGKEY | P_BIGDATA, P_BIGDATA };
-	uint32_t ks[] = { 0, 4, 8 };
-	uint32_t ds[] = { 0, 3, 6 };
+	static u_char bif[] = { 0, P_BIGKEY, 0 };
+	static u_char blf[] = { 0, P_BIGKEY | P_BIGDATA, P_BIGDATA };
+	static uint32_t ks[] = { 0, 4, 8 };
+	static uint32_t ds[] = { 0, 3, 6 };
 
 	check_conv("__bt_pgin", P::__bt_pgin, ref___bt_pgin, 0, 2,
 	    [](unsigned char *b, size_t n) {
-		    (void)n;
 		    build_binternal_be(b, PAGE_SZ, 1, bif, ks);
 	    });
 	check_conv("__bt_pgin", P::__bt_pgin, ref___bt_pgin, B_NEEDSWAP, P_META,

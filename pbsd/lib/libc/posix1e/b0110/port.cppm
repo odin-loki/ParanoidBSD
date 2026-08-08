@@ -1,83 +1,3 @@
-// PBSD port of HardenedBSD lib/libc/posix1e batch b0110.
-//
-// Sources ported here (faithfully, bugs and all):
-//   hbsd/src/lib/libc/posix1e/mac_set.c
-//   hbsd/src/lib/libc/posix1e/acl_delete.c
-//   hbsd/src/lib/libc/posix1e/extattr.c
-//   hbsd/src/lib/libc/posix1e/acl_copy.c
-//
-// Original copyright headers are reproduced verbatim above each ported unit.
-
-module;
-
-#include <sys/types.h>
-
-#include <cerrno>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-
-export module pbsd.lib.libc.posix1e.b0110;
-
-export using acl_tag_t = std::uint32_t;
-export using acl_perm_t = std::uint32_t;
-export using acl_entry_type_t = std::uint16_t;
-export using acl_flag_t = std::uint16_t;
-
-export struct mac {
-	size_t		 m_buflen;
-	char		*m_string;
-};
-
-export struct acl_entry {
-	acl_tag_t		ae_tag;
-	std::uint32_t		ae_id;
-	acl_perm_t		ae_perm;
-	acl_entry_type_t	ae_entry_type;
-	acl_flag_t		ae_flags;
-};
-
-export struct acl {
-	unsigned char	_opaque;
-};
-
-export using acl_entry_t = struct acl_entry *;
-export using acl_type_t = int;
-export using acl_t = struct acl *;
-
-#define ACL_TYPE_ACCESS_OLD	0x00000000
-#define ACL_TYPE_DEFAULT_OLD	0x00000001
-#define ACL_TYPE_ACCESS		0x00000002
-#define ACL_TYPE_DEFAULT	0x00000003
-#define ACL_TYPE_NFS4		0x00000004
-
-/* <sys/extattr.h> */
-#define EXTATTR_NAMESPACE_EMPTY			0x00000000
-#define EXTATTR_NAMESPACE_EMPTY_STRING		"empty"
-#define EXTATTR_NAMESPACE_USER			0x00000001
-#define EXTATTR_NAMESPACE_USER_STRING		"user"
-#define EXTATTR_NAMESPACE_SYSTEM		0x00000002
-#define EXTATTR_NAMESPACE_SYSTEM_STRING		"system"
-
-extern "C" {
-extern	int	__mac_set_fd(int fd, struct mac *mac_p);
-extern	int	__mac_set_file(const char *path_p, struct mac *mac_p);
-extern	int	__mac_set_link(const char *path_p, struct mac *mac_p);
-extern	int	__mac_set_proc(struct mac *mac_p);
-
-extern	int	__acl_delete_file(const char *path_p, acl_type_t type);
-extern	int	__acl_delete_link(const char *path_p, acl_type_t type);
-extern	int	___acl_delete_fd(int filedes, acl_type_t type);
-
-extern	int	_acl_type_unold(acl_type_t type);
-extern	int	_entry_brand(const acl_entry_t entry);
-extern	int	_entry_brand_may_be(const acl_entry_t entry, int brand);
-extern	void	_entry_brand_as(const acl_entry_t entry, int brand);
-}
-
-export namespace pbsd::lib_libc_posix1e::b0110 {
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -110,36 +30,6 @@ export namespace pbsd::lib_libc_posix1e::b0110 {
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-/* mac_set.c */
-
-int
-mac_set_fd(int fd, struct mac *label)
-{
-
-	return (__mac_set_fd(fd, label));
-}
-
-int
-mac_set_file(const char *path, struct mac *label)
-{
-
-	return (__mac_set_file(path, label));
-}
-
-int
-mac_set_link(const char *path, struct mac *label)
-{
-
-	return (__mac_set_link(path, label));
-}
-
-int
-mac_set_proc(struct mac *label)
-{
-
-	return (__mac_set_proc(label));
-}
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -169,10 +59,181 @@ mac_set_proc(struct mac *label)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2001 Robert N. M. Watson
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2001-2002 Chris D. Faulhaber
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+module;
+
+#include <sys/types.h>
+
+#include <errno.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+export module pbsd.lib.libc.posix1e.b0110;
+
+export namespace pbsd::lib_libc_posix1e::b0110 {
+
 /*
+ * Declarations lifted from the headers the original translation units
+ * included: <sys/mac.h>, <sys/acl.h> and <sys/extattr.h>.
+ */
+
+struct mac {
+	size_t	 m_buflen;
+	char	*m_string;
+};
+typedef struct mac *mac_t;
+
+typedef uint32_t	acl_tag_t;
+typedef uint32_t	acl_perm_t;
+typedef uint16_t	acl_entry_type_t;
+typedef uint16_t	acl_flag_t;
+typedef int		acl_type_t;
+typedef uint32_t	acl_uid_t;	/* uid_t */
+
+struct acl_entry {
+	acl_tag_t		ae_tag;
+	acl_uid_t		ae_id;
+	acl_perm_t		ae_perm;
+	/* NFSv4 entry fields */
+	acl_entry_type_t	ae_entry_type;
+	acl_flag_t		ae_flags;
+};
+typedef struct acl_entry *acl_entry_t;
+
+struct acl_t_struct;
+typedef struct acl_t_struct *acl_t;
+
+typedef ::ssize_t ssize_t;
+
+inline constexpr acl_type_t ACL_TYPE_ACCESS_OLD		= 0x00000000;
+inline constexpr acl_type_t ACL_TYPE_DEFAULT_OLD	= 0x00000001;
+inline constexpr acl_type_t ACL_TYPE_ACCESS		= 0x00000002;
+inline constexpr acl_type_t ACL_TYPE_DEFAULT		= 0x00000003;
+inline constexpr acl_type_t ACL_TYPE_NFS4		= 0x00000004;
+
+inline constexpr int ACL_BRAND_UNKNOWN	= 0;
+inline constexpr int ACL_BRAND_POSIX	= 1;
+inline constexpr int ACL_BRAND_NFS4	= 2;
+
+inline constexpr int	   EXTATTR_NAMESPACE_EMPTY		= 0x00000000;
+inline constexpr const char *EXTATTR_NAMESPACE_EMPTY_STRING	= "empty";
+inline constexpr int	   EXTATTR_NAMESPACE_USER		= 0x00000001;
+inline constexpr const char *EXTATTR_NAMESPACE_USER_STRING	= "user";
+inline constexpr int	   EXTATTR_NAMESPACE_SYSTEM		= 0x00000002;
+inline constexpr const char *EXTATTR_NAMESPACE_SYSTEM_STRING	= "system";
+
+/*
+ * Interfaces that live outside of these translation units: the syscall
+ * stubs and the acl_support.h / acl_branding.c helpers.
+ */
+extern "C" int	__mac_set_fd(int fd, struct mac *mac_p);
+extern "C" int	__mac_set_file(const char *path_p, struct mac *mac_p);
+extern "C" int	__mac_set_link(const char *path_p, struct mac *mac_p);
+extern "C" int	__mac_set_proc(struct mac *mac_p);
+
+extern "C" int	__acl_delete_file(const char *path_p, acl_type_t type);
+extern "C" int	__acl_delete_link(const char *path_p, acl_type_t type);
+extern "C" int	___acl_delete_fd(int filedes, acl_type_t type);
+
+extern "C" acl_type_t	_acl_type_unold(acl_type_t type);
+
+extern "C" int	_entry_brand(acl_entry_t entry);
+extern "C" int	_entry_brand_may_be(acl_entry_t entry, int brand);
+extern "C" void	_entry_brand_as(acl_entry_t entry, int brand);
+
+/*
+ * lib/libc/posix1e/mac_set.c
+ */
+
+int
+mac_set_fd(int fd, struct mac *label)
+{
+
+	return (__mac_set_fd(fd, label));
+}
+
+int
+mac_set_file(const char *path, struct mac *label)
+{
+
+	return (__mac_set_file(path, label));
+}
+
+int
+mac_set_link(const char *path, struct mac *label)
+{
+
+	return (__mac_set_link(path, label));
+}
+
+int
+mac_set_proc(struct mac *label)
+{
+
+	return (__mac_set_proc(label));
+}
+
+/*
+ * lib/libc/posix1e/acl_delete.c
+ *
  * acl_delete_def_file -- remove a default acl from a file
  */
-/* acl_delete.c */
 
 int
 acl_delete_def_file(const char *path_p)
@@ -212,37 +273,11 @@ acl_delete_fd_np(int filedes, acl_type_t type)
 	return (___acl_delete_fd(filedes, type));
 }
 
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2001 Robert N. M. Watson
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
 /*
+ * lib/libc/posix1e/extattr.c
+ *
  * TrustedBSD: Utility functions for extended attributes.
  */
-/* extattr.c */
 
 int
 extattr_namespace_to_string(int attrnamespace, char **string)
@@ -283,36 +318,9 @@ extattr_string_to_namespace(const char *string, int *attrnamespace)
 	}
 }
 
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2001-2002 Chris D. Faulhaber
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-/* acl_copy.c */
-
 /*
+ * lib/libc/posix1e/acl_copy.c
+ *
  * acl_copy_entry() (23.4.4): copy the contents of ACL entry src_d to
  * ACL entry dest_d
  */
@@ -360,4 +368,4 @@ acl_copy_int(const void *buf_p)
 	return (NULL);
 }
 
-} // namespace pbsd::lib_libc_posix1e::b0110
+} /* namespace pbsd::lib_libc_posix1e::b0110 */

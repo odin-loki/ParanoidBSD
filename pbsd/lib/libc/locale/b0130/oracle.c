@@ -49,8 +49,6 @@ typedef __mbstate_t mbstate_t;
 
 typedef size_t (*wcrtomb_pfn_t)(char * __restrict, wchar_t, mbstate_t * __restrict);
 
-typedef struct xlocale *locale_t;
-
 enum {
 	XLC_CTYPE = 1,
 	XLC_MESSAGES = 5,

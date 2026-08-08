@@ -61,13 +61,12 @@ struct xlocale_ctype {
 	mbstate_t	wcsnrtombs;
 };
 
-struct xlocale_struct {
+struct xlocale {
 	int		using_messages_locale;
 	void		*components[8];
 };
 
-typedef struct xlocale_struct xlocale;
-using locale_t = xlocale *;
+typedef struct xlocale *locale_t;
 
 enum {
 	XLC_CTYPE = 1,

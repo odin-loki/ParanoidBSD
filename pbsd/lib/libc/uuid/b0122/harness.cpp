@@ -17,10 +17,12 @@
  */
 
 #include <climits>
+#include <csignal>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <unistd.h>
 
 import pbsd.lib.libc.uuid.b0122;
 
@@ -499,11 +501,31 @@ rng_next(void)
 
 /* ------------------------------------------------------------------ */
 
+/*
+ * A port that faults -- e.g. one that writes through the null status pointer
+ * or dereferences a null uuid_t -- has diverged just as surely as one that
+ * returns the wrong answer.  Turn the signal into an ordinary failing exit so
+ * the divergence is reported rather than merely killing the process.
+ */
+extern "C" void
+crash_handler(int sig)
+{
+	static const char msg[] =
+	    "\n  FAIL port faulted (signal); divergence from oracle\nFAIL\n";
+
+	(void)sig;
+	(void)!write(STDOUT_FILENO, msg, sizeof(msg) - 1);
+	_exit(1);
+}
+
 int
 main(void)
 {
 	unsigned char in[16];
 	int i, k;
+
+	std::signal(SIGSEGV, crash_handler);
+	std::signal(SIGBUS, crash_handler);
 
 	build_patterns();
 

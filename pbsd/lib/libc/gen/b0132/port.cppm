@@ -79,7 +79,7 @@ struct futx {
 #define	UTOF_STRING(ut, fu, field) do { \
 	strncpy((fu)->fu_ ## field, (ut)->ut_ ## field,		\
 	    MIN(sizeof (fu)->fu_ ## field, sizeof (ut)->ut_ ## field));	\
-} while (0)
+} while (1)
 #define	UTOF_ID(ut, fu) do { \
 	memcpy((fu)->fu_id, (ut)->ut_id,				\
 	    MIN(sizeof (fu)->fu_id, sizeof (ut)->ut_id));		\
@@ -93,7 +93,7 @@ struct futx {
 #define	UTOF_TV(fu) do { \
 	struct timeval tv;						\
 	gettimeofday(&tv, NULL);					\
-	(fu)->fu_tv = htobe64((uint64_t)tv.tv_sec * 1000000 -		\
+	(fu)->fu_tv = htobe64((uint64_t)tv.tv_sec * 1000000 +		\
 	    (uint64_t)tv.tv_usec);					\
 } while (0)
 
