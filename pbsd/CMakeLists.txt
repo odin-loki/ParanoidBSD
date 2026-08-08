@@ -134,6 +134,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0016s2/port.cppm
   lib/libc/softfloat/b0016s3/port.cppm
   lib/libc/softfloat/b0016s4/port.cppm
+  lib/libc/softfloat/b0049/port.cppm
   lib/libc/softfloat/b0052/port.cppm
   lib/libc/stdbit/b0026/port.cppm
   lib/libc/stdbit/b0036/port.cppm
@@ -212,6 +213,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/uuid/uuid_is_nil_m/port.cppm
   lib/libc/uuid/uuid_to_string_m/port.cppm
   lib/libc_nonshared/b0004/port.cppm
+  lib/libcalendar/b0043/port.cppm
   lib/libcompat/4.3/re_comp_m/port.cppm
   lib/libcrypt/misc_m/port.cppm
   lib/msun/ld128/b0084/port.cppm

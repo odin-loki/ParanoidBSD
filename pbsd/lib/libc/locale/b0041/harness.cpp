@@ -9,6 +9,7 @@ import pbsd.lib.libc.locale.b0041;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cwchar>
 
 namespace port = pbsd::lib_libc_locale::b0041;
 
@@ -248,7 +249,7 @@ hand_wcstombs(Stats &st, bool use_l)
 {
 	static const wchar_t empty[] = { L'\0' };
 	static const wchar_t one[] = { L'a', L'\0' };
-	static const wchar_t two[] = { L'ab', L'\0' };
+	static const wchar_t two[] = { L'a', L'b', L'\0' };
 	static const wchar_t nul_mid[] = { L'a', L'\0', L'b', L'\0' };
 	static const wchar_t euro[] = { 0x20ac, L'\0' };
 	static const wchar_t plane[] = { 0x10000, L'\0' };

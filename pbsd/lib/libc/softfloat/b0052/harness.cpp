@@ -137,12 +137,13 @@ check_get(Stat &st, int (port_fn)(), int (*ref_fn)(), const State &init)
 	State gs = get_ref();
 	State gp = get_port();
 
-	if (got != want || !states_equal(gs, gp) || !states_equal(gs, init))
+	if (got != want || !states_equal(gs, gp) || !states_equal(gs, init)) {
 		st.fails++;
-	else if (got != want)
-		report(st, "ret", 0, got, want, gs, init, gp, init);
-	else if (!states_equal(gs, gp))
-		report(st, "state", 0, got, want, gs, init, gp, init);
+		if (got != want)
+			report(st, "ret", 0, got, want, gs, init, gp, init);
+		else
+			report(st, "state", 0, got, want, gs, init, gp, init);
+	}
 }
 
 void
@@ -165,13 +166,15 @@ check_set(Stat &st, int (port_fn)(int), int (*ref_fn)(int), const State &init,
 	else
 		want_state.rounding = arg;
 
-	if (got != want || !states_equal(gs, gp) || !states_equal(gs, want_state))
+	if (got != want || !states_equal(gs, gp) || !states_equal(gs, want_state)) {
 		st.fails++;
-	else if (got != want)
-		report(st, "ret", arg, got, want, gs, want_state, gp, want_state);
-	else if (!states_equal(gs, gp))
-		report(st, "state", arg, got, want, gs, want_state, gp,
-		    want_state);
+		if (got != want)
+			report(st, "ret", arg, got, want, gs, want_state, gp,
+			    want_state);
+		else
+			report(st, "state", arg, got, want, gs, want_state, gp,
+			    want_state);
+	}
 }
 
 const int edge_vals[] = {
@@ -193,13 +196,11 @@ const int edge_vals[] = {
 	0x8000,
 	0xffff,
 	0x7fffffff,
-	0x80000000,
+	static_cast<int>(0x80000000u),
 	-1,
 	-2,
 	-128,
 	-129,
-	0x7fffffff,
-	0x80000000,
 	port::float_round_nearest_even,
 	port::float_round_to_zero,
 	port::float_round_down,
