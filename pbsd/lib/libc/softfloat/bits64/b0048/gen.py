@@ -459,34 +459,210 @@ def classify_functions(funcs: set[str]) -> dict[str, str]:
     return classes
 
 
-def gen_harness(funcs: set[str], classes: dict[str, str]) -> str:
-    h = r'''// harness.cpp -- differential test for PBSD batch b0048.
-
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <vector>
-
-import pbsd.lib.libc.softfloat.bits64.b0048;
-namespace port = pbsd::lib_libc_softfloat_bits64::b0048;
-
-using std::uint8_t;
-using std::uint16_t;
-using std::uint32_t;
-using std::uint64_t;
-using std::int8_t;
-using std::int16_t;
-using std::int32_t;
-using std::int64_t;
-
-extern "C" {
-'''
-
+def gen_extern_decls(funcs: set[str], classes: dict[str, str]) -> str:
+    lines = [
+        'extern int ref_float_rounding_mode;',
+        'extern int ref_float_exception_flags;',
+        'extern int ref_floatx80_rounding_precision;',
+        'extern int ref_float_detect_tininess;',
+        'extern int ref_float_exception_mask;',
+    ]
     for f in sorted(funcs):
-        h += f'extern int ref_{f}();\n'  # placeholder - fix below
+        cls = classes[f]
+        if cls == 'float_cmp':
+            ty = sig_float_type(f)
+            lines.append(f'flag ref_{f}({ty} a, {ty} b);')
+        elif cls == 'float_arith':
+            ty = sig_float_type(f)
+            lines.append(f'{ty} ref_{f}({ty} a, {ty} b);')
+        elif cls == 'float_unary':
+            ty = sig_float_type(f)
+            lines.append(f'{ty} ref_{f}({ty} a);')
+        elif cls == 'int_to_float':
+            if f.startswith('int32'):
+                lines.append(f'{sig_float_type(f)} ref_{f}(int32_t a);')
+            elif f.startswith('int64'):
+                lines.append(f'{sig_float_type(f)} ref_{f}(int64_t a);')
+            else:
+                lines.append(f'{sig_float_type(f)} ref_{f}(uint32_t a);')
+        elif cls == 'float_to_int':
+            ty = sig_float_type(f)
+            if 'int32' in f:
+                lines.append(f'int32_t ref_{f}({ty} a);')
+            else:
+                lines.append(f'int64_t ref_{f}({ty} a);')
+        elif cls == 'float_convert':
+            src, dst = f.split('_to_', 1)
+            sm = {'float32': 'float32', 'float64': 'float64',
+                  'floatx80': 'floatx80', 'float128': 'float128'}
+            lines.append(f'{sm[dst]} ref_{f}({sm[src]} a);')
+        elif cls in ('is_nan', 'is_sig_nan'):
+            lines.append(f'flag ref_{f}({sig_float_type(f)} a);')
+        elif cls == 'extract_pack':
+            lines.append(proto_extract_pack(f))
+        elif cls == 'shift_ptr':
+            if '32' in f and '128' not in f and '192' not in f:
+                lines.append(f'void ref_{f}(bits32 a, int16 count, bits32 *zPtr);')
+            elif '128Extra' in f or '64Extra' in f:
+                if '128Extra' in f:
+                    lines.append(
+                        f'void ref_{f}(bits64 a0, bits64 a1, bits64 a2, int16 count, '
+                        'bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);')
+                else:
+                    lines.append(
+                        f'void ref_{f}(bits64 a0, bits64 a1, int16 count, '
+                        'bits64 *z0Ptr, bits64 *z1Ptr);')
+            elif '128' in f:
+                lines.append(
+                    f'void ref_{f}(bits64 a0, bits64 a1, int16 count, '
+                    'bits64 *z0Ptr, bits64 *z1Ptr);')
+            else:
+                lines.append(f'void ref_{f}(bits64 a, int16 count, bits64 *zPtr);')
+        elif cls == 'wide_arith':
+            lines.append(proto_wide_arith(f))
+        elif cls == 'cmp128':
+            lines.append(
+                f'flag ref_{f}(bits64 a0, bits64 a1, bits64 b0, bits64 b1);')
+        elif cls == 'normalize_ptr':
+            lines.append(proto_normalize(f))
+        elif cls == 'float_raise':
+            lines.append('void ref_float_raise(int flags);')
+        elif cls == 'round_pack_int':
+            if f == 'roundAndPackInt32':
+                lines.append('int32_t ref_roundAndPackInt32(flag zSign, bits64 absZ);')
+            else:
+                lines.append(
+                    'int64_t ref_roundAndPackInt64(flag zSign, bits64 absZ0, bits64 absZ1);')
+        elif cls == 'round_pack_float':
+            lines.append(proto_round_pack_float(f))
+        elif cls == 'sig_arith':
+            ty = sig_float_type(f)
+            lines.append(f'{ty} ref_{f}({ty} a, {ty} b, flag zSign);')
+        elif cls == 'nan_internal':
+            if 'ToCommonNaN' in f:
+                lines.append(f'commonNaNT ref_{f}({sig_float_type(f)} a);')
+            else:
+                lines.append(f'{sig_float_type(f)} ref_{f}(commonNaNT a);')
+        elif cls == 'internal_bits':
+            lines.append(proto_internal_bits(f))
+        elif f == 'propagateFloat32NaN':
+            lines.append('float32 ref_propagateFloat32NaN(float32 a, float32 b);')
+        elif f == 'propagateFloat64NaN':
+            lines.append('float64 ref_propagateFloat64NaN(float64 a, float64 b);')
+        elif f == 'propagateFloatx80NaN':
+            lines.append('floatx80 ref_propagateFloatx80NaN(floatx80 a, floatx80 b);')
+        elif f == 'propagateFloat128NaN':
+            lines.append('float128 ref_propagateFloat128NaN(float128 a, float128 b);')
+        else:
+            lines.append(f'int ref_{f}(); /* misc */')
+    return '\n'.join(lines)
 
-    # Actually we need proper extern declarations - generate from classes
+
+def sig_float_type(f: str) -> str:
+    if 'float32' in f and 'float128' not in f and 'floatx80' not in f and 'float64' not in f:
+        return 'float32'
+    if 'float64' in f:
+        return 'float64'
+    if 'floatx80' in f:
+        return 'floatx80'
+    if 'float128' in f:
+        return 'float128'
+    return 'float64'
+
+
+def proto_extract_pack(f: str) -> str:
+    if f.startswith('extractFloat32'):
+        return f'bits32 ref_{f}(float32 a);'
+    if f.startswith('extractFloat64'):
+        return f'bits64 ref_{f}(float64 a);'
+    if f.startswith('extractFloatx80'):
+        if f == 'extractFloatx80Exp':
+            return f'int32 ref_{f}(floatx80 a);'
+        return f'bits64 ref_{f}(floatx80 a);'
+    if f.startswith('extractFloat128'):
+        if f == 'extractFloat128Exp':
+            return f'int32 ref_{f}(float128 a);'
+        return f'bits64 ref_{f}(float128 a);'
+    if f == 'packFloat32':
+        return 'float32 ref_packFloat32(flag zSign, int16 zExp, bits32 zSig);'
+    if f == 'packFloat64':
+        return 'float64 ref_packFloat64(flag zSign, int16 zExp, bits64 zSig);'
+    if f == 'packFloatx80':
+        return 'floatx80 ref_packFloatx80(flag zSign, int32 zExp, bits64 zSig);'
+    if f == 'packFloat128':
+        return 'float128 ref_packFloat128(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);'
+    return f'int ref_{f}();'
+
+
+def proto_wide_arith(f: str) -> str:
+    if f == 'mul64To128':
+        return 'void ref_mul64To128(bits64 a, bits64 b, bits64 *z0Ptr, bits64 *z1Ptr);'
+    if f in ('add128', 'sub128'):
+        return (
+            f'void ref_{f}(bits64 a0, bits64 a1, bits64 b0, bits64 b1, '
+            'bits64 *z0Ptr, bits64 *z1Ptr);')
+    if f in ('add192', 'sub192'):
+        return (
+            f'void ref_{f}(bits64 a0, bits64 a1, bits64 a2, bits64 b0, bits64 b1, '
+            'bits64 b2, bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);')
+    if f == 'mul128By64To192':
+        return (
+            'void ref_mul128By64To192(bits64 a0, bits64 a1, bits64 b, '
+            'bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);')
+    if f == 'mul128To256':
+        return (
+            'void ref_mul128To256(bits64 a0, bits64 a1, bits64 b0, bits64 b1, '
+            'bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr, bits64 *z3Ptr);')
+    return f'void ref_{f}();'
+
+
+def proto_normalize(f: str) -> str:
+    if f == 'normalizeFloat128Subnormal':
+        return (
+            'void ref_normalizeFloat128Subnormal(bits64 aSig0, bits64 aSig1, '
+            'int16 *zExpPtr, bits64 *zSig0Ptr, bits64 *zSig1Ptr);')
+    if f == 'normalizeFloat32Subnormal':
+        return 'void ref_normalizeFloat32Subnormal(bits32 aSig, int16 *zExpPtr, bits32 *zSigPtr);'
+    if f == 'normalizeFloat64Subnormal':
+        return 'void ref_normalizeFloat64Subnormal(bits64 aSig, int16 *zExpPtr, bits64 *zSigPtr);'
+    return 'void ref_normalizeFloatx80Subnormal(bits64 aSig, int32 *zExpPtr, bits64 *zSigPtr);'
+
+
+def proto_round_pack_float(f: str) -> str:
+    if 'Float32' in f:
+        if f.startswith('normalizeRoundAndPack'):
+            return f'float32 ref_{f}(flag zSign, int16 zExp, bits32 zSig);'
+        if f == 'roundAndPackFloat32':
+            return 'float32 ref_roundAndPackFloat32(flag zSign, int16 zExp, bits32 zSig);'
+        return f'float32 ref_{f}(flag zSign, int16 zExp, bits32 zSig);'
+    if 'Float64' in f:
+        return f'float64 ref_{f}(flag zSign, int16 zExp, bits64 zSig);'
+    if 'Floatx80' in f:
+        if f == 'roundAndPackFloatx80':
+            return (
+                'floatx80 ref_roundAndPackFloatx80(flag zSign, int32 zExp, '
+                'bits64 zSig0, bits64 zSig1);')
+        return f'floatx80 ref_{f}(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);'
+    if f == 'roundAndPackFloat128':
+        return (
+            'float128 ref_roundAndPackFloat128(flag zSign, int32 zExp, '
+            'bits64 zSig0, bits64 zSig1);')
+    return f'float128 ref_{f}(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);'
+
+
+def proto_internal_bits(f: str) -> str:
+    if f == 'countLeadingZeros32':
+        return 'int8 ref_countLeadingZeros32(bits32 a);'
+    if f == 'countLeadingZeros64':
+        return 'int8 ref_countLeadingZeros64(bits64 a);'
+    if f == 'estimateDiv128To64':
+        return 'bits64 ref_estimateDiv128To64(bits64 a0, bits64 a1, bits64 b);'
+    if f == 'estimateSqrt32':
+        return 'bits32 ref_estimateSqrt32(int16 aExp, bits32 a);'
+    return f'int ref_{f}();'
+
+
+def gen_harness(funcs: set[str], classes: dict[str, str]) -> str:
     h = r'''// harness.cpp -- differential test for PBSD batch b0048.
 
 #include <cstdint>
@@ -514,28 +690,12 @@ typedef port::float32 float32;
 typedef port::float64 float64;
 typedef port::floatx80 floatx80;
 typedef port::float128 float128;
+typedef port::commonNaNT commonNaNT;
 
 extern "C" {
 '''
-
-    # Minimal extern decls - use weak approach: include oracle decl header inline
-    decls = {
-        'flag': 'int', 'int8': 'int', 'int16': 'int', 'int32': 'int',
-        'int64': 'long long', 'bits32': 'unsigned int', 'bits64': 'unsigned long long',
-        'float32': 'unsigned int', 'float64': 'unsigned long long',
-    }
-
-    def cref(t):
-        return t
-
-    # Shared globals
-    h += 'extern int ref_float_rounding_mode;\n'
-    h += 'extern int ref_float_exception_flags;\n'
-    h += 'extern int ref_floatx80_rounding_precision;\n'
-    h += 'extern int ref_float_detect_tininess;\n'
-    h += 'extern int ref_float_exception_mask;\n'
-
-    h += '}\n\n'
+    h += gen_extern_decls(funcs, classes)
+    h += '\n}\n\n'
 
     h += r'''
 static uint32_t rng_state = 0xB0048u;

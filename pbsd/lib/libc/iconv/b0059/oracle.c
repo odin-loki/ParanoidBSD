@@ -358,6 +358,15 @@ _FUNCNAME(const char *nptr, char **endptr, int base)
  * SUCH DAMAGE.
  */
 
+#undef _FUNCNAME
+#undef __INT
+#undef __INT_MIN
+#undef __INT_MAX
+#undef isspace
+#undef isdigit
+#undef isalpha
+#undef isupper
+
 #define	_FUNCNAME	ref__bcs_strtoul
 #define	__UINT		unsigned long int
 #define	__UINT_MAX	ULONG_MAX

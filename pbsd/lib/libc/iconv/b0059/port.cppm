@@ -135,7 +135,7 @@ bcs_strtol(const char *nptr, char **endptr, int base)
 	if (base && (base < 2 || base > 36)) {
 		errno = EINVAL;
 		if (endptr != NULL)
-			*endptr = __DECONST(void *, nptr);
+			*endptr = (char *)__DECONST(void *, nptr);
 		return (0);
 	}
 
@@ -214,7 +214,7 @@ bcs_strtol(const char *nptr, char **endptr, int base)
 		}
 	}
 	if (endptr != NULL)
-		*endptr = __DECONST(void *, any ? s - 1 : nptr);
+		*endptr = (char *)__DECONST(void *, any ? s - 1 : nptr);
 	return (acc);
 }
 
@@ -288,7 +288,7 @@ bcs_strtoul(const char *nptr, char **endptr, int base)
 	if (neg && any > 0)
 		acc = -acc;
 	if (endptr != NULL)
-		*endptr = __DECONST(void *, any ? s - 1 : nptr);
+		*endptr = (char *)__DECONST(void *, any ? s - 1 : nptr);
 	return (acc);
 }
 
