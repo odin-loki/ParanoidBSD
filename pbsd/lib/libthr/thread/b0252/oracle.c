@@ -10,9 +10,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-typedef struct pthread *pthread_t;
+struct pthread;
 extern struct pthread *_thr_initial;
-extern pthread_t _get_curthread(void);
+extern struct pthread *_get_curthread(void);
 extern void _thr_check_init(void);
 extern void _pthread_resume_all_np(void);
 #ifdef __cplusplus
@@ -74,6 +74,9 @@ b0252_get_resume_all_count(void)
 {
 	return (b0252_resume_all_count);
 }
+
+int _pthread_equal(pthread_t t1, pthread_t t2);
+pthread_t _pthread_self(void);
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause

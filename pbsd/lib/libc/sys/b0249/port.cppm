@@ -144,17 +144,6 @@ module;
 #define	B0249_NEED_EVENT_STUB
 #endif
 
-#if defined(B0249_NEED_EVENT_STUB)
-struct kevent {
-	uintptr_t ident;
-	short filter;
-	unsigned short flags;
-	unsigned int fflags;
-	intptr_t data;
-	void *udata;
-};
-#endif
-
 #ifndef __weak_symbol
 #define	__weak_symbol	__attribute__((__weak__))
 #endif
@@ -165,6 +154,17 @@ struct kevent {
 export module pbsd.lib.libc.sys.b0249;
 
 namespace pbsd::lib_libc_sys::b0249 {
+
+#if defined(B0249_NEED_EVENT_STUB)
+struct kevent {
+	uintptr_t ident;
+	short filter;
+	unsigned short flags;
+	unsigned int fflags;
+	intptr_t data;
+	void *udata;
+};
+#endif
 
 using interpos_func_t = int (*)(void);
 

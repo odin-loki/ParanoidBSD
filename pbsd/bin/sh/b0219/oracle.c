@@ -170,6 +170,8 @@ struct output {
 #define out2c(c)	ref_outcslow(c, out2)
 
 /* memalloc.h */
+struct stack_block;
+
 struct stackmark {
 	struct stack_block *stackp;
 	char *stacknxt;

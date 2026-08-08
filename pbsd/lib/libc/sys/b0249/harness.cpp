@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <type_traits>
 #include <ucontext.h>
 #include <sys/fcntl.h>
 
@@ -75,6 +76,14 @@ int ref_open(const char *path, int flags, ...);
 import pbsd.lib.libc.sys.b0249;
 
 namespace port = pbsd::lib_libc_sys::b0249;
+
+template<typename R, typename A0, typename A1, typename A2, typename A3,
+    typename A4, typename A5>
+A1 port_kevent_arg1(R (*)(A0, A1, A2, A3, A4, A5));
+
+using port_kevent_ptr = decltype(port_kevent_arg1(&port::kevent));
+using port_kevent_mut_ptr = std::remove_const_t<
+    std::remove_pointer_t<port_kevent_ptr>> *;
 
 #define	GUARD		0x7f
 
@@ -572,7 +581,7 @@ case_recvfrom(int s, const void *msg, size_t len, int flags,
 	base_flen = flenb;
 	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
-	rb = port::__ssp_real(recvfrom)(s,
+	rb = port::recvfrom(s,
 	    msg != nullptr ? (void *)(bufb + BUF_PAD) : nullptr, len, flags,
 	    from != nullptr ? (struct sockaddr *)(addrb + ADDR_PAD) : nullptr,
 	    fromlen != nullptr ? (socklen_t *)(flenb + FLEN_PAD) : nullptr);
@@ -647,8 +656,9 @@ case_kevent(int kq, const struct kevent *ch, int nchanges,
 	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
 	rb = port::kevent(kq, ch != nullptr ?
-	    (const struct kevent *)(chb + KEV_OFF) : nullptr, nchanges,
-	    ev != nullptr ? (struct kevent *)(evb + KEV_OFF) : nullptr,
+	    reinterpret_cast<port_kevent_ptr>(chb + KEV_OFF) : nullptr,
+	    nchanges, ev != nullptr ?
+	    reinterpret_cast<port_kevent_mut_ptr>(evb + KEV_OFF) : nullptr,
 	    nevents, ts != nullptr ?
 	    (const struct timespec *)(tsb + TS_PAD) : nullptr);
 	snap_b = mock;

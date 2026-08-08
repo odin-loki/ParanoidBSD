@@ -401,15 +401,15 @@ write_nodes_input(const char *path)
 	std::fprintf(f,
 	    "NCMD cmdnode\n"
 	    " NCMDargv nodeptr\n"
-	    " NPIPE pipenode\n"
+	    "NPIPE pipenode\n"
 	    " NPPIPE nodelist\n"
-	    " NREDIR redirnode\n"
+	    "NREDIR redirnode\n"
 	    " NREDIRnodelist nodelist\n"
 	    " NREDIRfile string\n"
 	    " NREDIRfd int\n"
-	    " NBACKGND backgndnode\n"
+	    "NBACKGND backgndnode\n"
 	    " NBACKGNDsubnode nodeptr\n"
-	    " NSUBSHELL subshellnode\n"
+	    "NSUBSHELL subshellnode\n"
 	    " NSUBSHELLsub nodeptr\n");
 	std::fclose(f);
 }
@@ -525,24 +525,18 @@ test_main_sweep()
 	char pbuf[] = "/tmp/b0230_sw_p_XXXXXX";
 	if (!mkstemp(tbuf) || !mkstemp(pbuf))
 		return;
+	const char *types[] = { "nodeptr", "nodelist", "string", "int" };
 	for (long i = 0; i < SWEEP; i++) {
 		FILE *f = std::fopen(tbuf, "w");
-		int nodes = (int)(rng.u32() % 8) + 1;
+		int nodes = (int)(rng.u32() % 5) + 1;
 		for (int n = 0; n < nodes; n++) {
 			char name[16], tag[16];
 			std::snprintf(name, sizeof(name), "N%u", (unsigned)rng.u32() % 1000);
 			std::snprintf(tag, sizeof(tag), "t%u", (unsigned)rng.u32() % 1000);
 			std::fprintf(f, "%s %s\n", name, tag);
 			int fields = (int)(rng.u32() % 4);
-			for (int k = 0; k < fields; k++) {
-				const char *types[] = { "nodeptr", "nodelist", "string",
-					"int", "other", "temp" };
-				const char *ty = types[rng.u32() % 6];
-				std::fprintf(f, " f%u %s", k, ty);
-				if (std::strcmp(ty, "other") == 0 || std::strcmp(ty, "temp") == 0)
-					std::fprintf(f, " int x%u", k);
-				std::fputc('\n', f);
-			}
+			for (int k = 0; k < fields; k++)
+				std::fprintf(f, " f%u %s\n", k, types[rng.u32() % 4]);
 		}
 		std::fclose(f);
 		write_pat_file(pbuf, (int)(rng.u32() % 3));

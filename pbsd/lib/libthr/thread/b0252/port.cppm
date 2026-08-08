@@ -8,6 +8,8 @@ export module pbsd.lib.libthr.thread.b0252;
 
 export namespace pbsd::lib_libthr_thread::b0252 {
 
+typedef struct pthread *pthread_t;
+
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *

@@ -1,0 +1,13 @@
+{
+  "batch": "b0252",
+  "verified": "2026-08-08T23:05:31Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0252 differential results\nfunction                  cases   failures status\n_thr_equal               200010          0 ok\n_Tthr_self               200004          0 ok\n_thr_main_np             200008          0 ok\n_pthread_multi_np        200002          0 ok\nTOTAL                    800024          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libthr/thread/thr_main_np.c": "e86212a36812f5ec",
+    "hbsd/src/lib/libthr/thread/thr_equal.c": "5969c4b80b1348db",
+    "hbsd/src/lib/libthr/thread/thr_self.c": "11a213f2eb767630",
+    "hbsd/src/lib/libthr/thread/thr_multi_np.c": "018f28945e436393"
+  }
+}

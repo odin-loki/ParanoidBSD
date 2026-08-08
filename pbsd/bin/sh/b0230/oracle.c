@@ -454,21 +454,30 @@ ref_mknodes_savestr(const char *s)
 
 void oracle_mknodes_reset(void)
 {
-	int i;
+	int i, j;
 
+	for (i = 0; i < ntypes; i++) {
+		free(nodename[i]);
+		nodename[i] = NULL;
+	}
+	for (i = 0; i < nstr; i++) {
+		free(str[i].tag);
+		str[i].tag = NULL;
+		for (j = 0; j < str[i].nfields; j++) {
+			free(str[i].field[j].name);
+			free(str[i].field[j].decl);
+			str[i].field[j].name = NULL;
+			str[i].field[j].decl = NULL;
+		}
+		str[i].nfields = 0;
+		str[i].done = 0;
+	}
 	ntypes = 0;
 	nstr = 0;
 	curstr = NULL;
 	linno = 0;
 	line[0] = '\0';
 	linep = line;
-	for (i = 0; i < MAXTYPES; i++) {
-		nodename[i] = NULL;
-		nodestr[i] = NULL;
-		str[i].tag = NULL;
-		str[i].nfields = 0;
-		str[i].done = 0;
-	}
 }
 
 void oracle_mknodes_set_line(const char *s)
