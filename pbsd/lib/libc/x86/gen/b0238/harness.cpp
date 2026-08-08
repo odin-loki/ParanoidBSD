@@ -449,8 +449,9 @@ test_fill2_edges(void)
 		rb.ucp()->uc_mcontext.mc_flags = 0xfffffffbu;
 		ncases[F_FILL2]++;
 		if (P::__fillcontextx2(pb.ctx()) !=
-		    ref___fillcontextx2(rb.ctx()) ||
-		    !mcontext_fields_match(pb.ucp()->uc_mcontext,
+		    ref___fillcontextx2(rb.ctx()))
+			report(F_FILL2, "flags-or", "preset mc_flags case");
+		else if (!mcontext_fields_match(pb.ucp()->uc_mcontext,
 		    rb.ucp()->uc_mcontext, pb.ctx(), rb.ctx(),
 		    "flags-or", F_FILL2)) {
 			report(F_FILL2, "flags-or", "preset mc_flags case");

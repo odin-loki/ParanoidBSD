@@ -1,48 +1,26 @@
 #!/bin/sh
 #
-# build.sh -- build and run the PBSD b0208s4 differential test.
+# build.sh -- build and run the b0208s4 differential test.
 #
-# Usage: sh build.sh            (from pbsd/sys/compat/linux/b0208s4/)
+# Usage: sh build.sh   (from pbsd/sys/compat/linux/b0208s4/)
 #
-# Compiles the C oracle, the C++23 module port and the harness, links them
-# together and execs the resulting binary so that its exit status becomes the
-# exit status of this script.
-
+# Compiles the C oracle, the C++23 module port and the harness, links the three
+# together and execs the harness so its exit status is this script's status.
 set -e
 
 cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS=${CFLAGS:-"-std=c11 -O2"}
-CXXFLAGS=${CXXFLAGS:-"-std=c++23 -O2"}
+CFLAGS="-std=c11 -O2"
+CXXFLAGS="-std=c++23 -O2"
+MODFLAGS="-fmodules-ts"		# g++ named-module support
 
-BUILD=build
-MODNAME=pbsd.sys.compat.linux.b0208s4
+rm -rf gcm.cache oracle.o port.o harness.o harness
 
-rm -rf "$BUILD" gcm.cache
-mkdir -p "$BUILD"
+$CC $CFLAGS -c oracle.c -o oracle.o
+$CXX $CXXFLAGS $MODFLAGS -x c++ -c port.cppm -o port.o
+$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o harness.o
+$CXX $CXXFLAGS $MODFLAGS -o harness harness.o port.o oracle.o
 
-# 1. the reference implementation (plain C11)
-$CC $CFLAGS -c oracle.c -o "$BUILD/oracle.o"
-
-# 2. + 3. the module interface unit and the harness that imports it.
-#    Module flags differ between toolchains, so probe for clang first.
-MODFLAGS=""
-if $CXX --version 2>&1 | grep -qi 'clang'; then
-	$CXX $CXXFLAGS --precompile -x c++-module port.cppm \
-	    -o "$BUILD/port.pcm"
-	$CXX $CXXFLAGS -c "$BUILD/port.pcm" -o "$BUILD/port.o"
-	$CXX $CXXFLAGS -fmodule-file="$MODNAME=$BUILD/port.pcm" \
-	    -c harness.cpp -o "$BUILD/harness.o"
-else
-	MODFLAGS="-fmodules-ts"
-	$CXX $CXXFLAGS $MODFLAGS -x c++ -c port.cppm -o "$BUILD/port.o"
-	$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o "$BUILD/harness.o"
-fi
-
-# 4. link
-$CXX $CXXFLAGS $MODFLAGS "$BUILD/port.o" "$BUILD/harness.o" \
-    "$BUILD/oracle.o" -o "$BUILD/b0208s4_test"
-
-exec "$BUILD/b0208s4_test"
+exec ./harness

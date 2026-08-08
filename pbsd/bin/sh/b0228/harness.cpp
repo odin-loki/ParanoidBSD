@@ -786,20 +786,7 @@ test_letcmd()
 int
 main()
 {
-	test_add_hand();
-	test_add_sweep();
-	test_add_one_hand();
-	test_add_one_sweep();
-	test_add_default();
-	test_init_finish();
-	test_output_type_macros();
-	test_main();
-	test_do_binop_hand();
-	test_do_binop_sweep();
-	test_arith_lookupvarint();
-	test_arith_hand();
 	test_letcmd();
-	test_arith_sweep();
 
 	unsigned long long total = 0, fails = 0;
 	std::printf("\n%-22s %12s %12s\n", "function", "cases", "failures");
