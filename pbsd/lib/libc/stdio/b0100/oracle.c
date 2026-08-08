@@ -1,22 +1,15 @@
 /*
- * Reference oracle for batch b0100.
+ * b0100 oracle -- the specification.
  *
- * Original HardenedBSD sources concatenated, every function renamed with a
- * ref_ prefix.  Function bodies are UNMODIFIED.
- *
- * Sources:
- *   hbsd/src/lib/libc/stdio/wprintf.c
- *   hbsd/src/lib/libc/stdio/clrerr.c
- *   hbsd/src/lib/libc/stdio/feof.c
- *
- * Declarations for libc stdout/vfwprintf and the private stdio FILE layout are
- * provided below so the unmodified bodies compile and link.
+ * hbsd/src/lib/libc/stdio/wprintf.c, clrerr.c, and feof.c concatenated,
+ * with every function renamed with a `ref_' prefix.  Function bodies are
+ * UNMODIFIED.  Only defines/declarations that the unavailable FreeBSD/
+ * HardenedBSD headers used to supply have been added.
  */
 
 #include <stddef.h>
 #include <limits.h>
 #include <stdarg.h>
-#include <wchar.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
@@ -24,9 +17,11 @@
 
 struct _IO_FILE;
 extern struct _IO_FILE *stdout;
-int vfwprintf(struct _IO_FILE * __restrict, const wchar_t * __restrict, va_list);
+int vfwprintf(struct _IO_FILE * __restrict, const wchar_t * __restrict,
+    va_list);
 
-typedef void *locale_t;
+struct __locale_struct;
+typedef struct __locale_struct *locale_t;
 #define LC_GLOBAL_LOCALE ((locale_t)0)
 
 int
@@ -36,6 +31,8 @@ vfwprintf_l(struct _IO_FILE * __restrict fp, locale_t locale,
 	(void)locale;
 	return vfwprintf(fp, fmt, ap);
 }
+
+/* ======================= wprintf.c ======================= */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -115,19 +112,21 @@ typedef struct __sFILE FILE;
 int	__isthreaded;
 
 void
-_flockfile(FILE *fp)
+_flockfile(void *fp)
 {
 	(void)fp;
 }
 
 void
-_funlockfile(FILE *fp)
+_funlockfile(void *fp)
 {
 	(void)fp;
 }
 
 #define	FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
 #define	FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
+
+/* ======================= clrerr.c ======================= */
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -162,6 +161,14 @@ _funlockfile(FILE *fp)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+/* #include "namespace.h"		-- unavailable, substituted above */
+/* #include <stdio.h>			-- unavailable, substituted above */
+/* #include "un-namespace.h"		-- unavailable, substituted above */
+/* #include "libc_private.h"		-- unavailable, substituted above */
+
+#undef clearerr
+#undef clearerr_unlocked
 
 void
 ref_clearerr(FILE *fp)
@@ -178,6 +185,8 @@ ref_clearerr_unlocked(FILE *fp)
 	__sclearerr(fp);
 }
 
+/* ======================= feof.c ======================= */
+
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -211,6 +220,14 @@ ref_clearerr_unlocked(FILE *fp)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+/* #include "namespace.h"		-- unavailable, substituted above */
+/* #include <stdio.h>			-- unavailable, substituted above */
+/* #include "un-namespace.h"		-- unavailable, substituted above */
+/* #include "libc_private.h"		-- unavailable, substituted above */
+
+#undef feof
+#undef feof_unlocked
 
 int
 ref_feof(FILE *fp)

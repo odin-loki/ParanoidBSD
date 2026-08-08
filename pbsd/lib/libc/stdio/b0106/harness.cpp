@@ -13,10 +13,6 @@
 #include <cstring>
 #include <unistd.h>
 #include <fcntl.h>
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
 #include <locale.h>
 
 import pbsd.lib.libc.stdio.b0106;

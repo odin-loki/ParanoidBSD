@@ -51,6 +51,21 @@ union IEEEl2bits {
 
 #define LD80C(man, exp, val) { .e = (val) }
 
+#define	SET_FLOAT_WORD(d,i)					\
+do {								\
+	union { float value; unsigned int word; } sf_u;		\
+	sf_u.word = (i);					\
+	(d) = sf_u.value;					\
+} while (0)
+
+#define	SET_LDBL_EXPSIGN(d,v)					\
+do {								\
+	union IEEEl2bits se_u;					\
+	se_u.e = (d);						\
+	se_u.xbits.expsign = (v);				\
+	(d) = se_u.e;						\
+} while (0)
+
 static inline long double
 rnintl(long double x)
 {
@@ -591,7 +606,6 @@ __ldexp_cexpl(long double complex z, int expt)
 }
 #endif /* _COMPLEX_H */
 
-#undef tbl
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -857,6 +871,7 @@ ref_expm1l(long double x)
 		t = SUM2P(tbl[n2].hi - twomk, tbl[n2].lo + t * (q + r1));
 	RETURNI(t * twopk);
 }
+#undef tbl
 
 #define huge exp2l_huge
 #define twom10000 exp2l_twom10000

@@ -3371,7 +3371,7 @@ static void test_packFloatx80()
         floatx80 rp = port::packFloatx80(zs, ze, zsig);
         floatx80 rr = ref_packFloatx80(zs, ze, zsig);
         cases++;
-        if (rp != rr || rp.low != rr.low || rp.high != rr.high) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     }
     record(name, cases, failures);
 }

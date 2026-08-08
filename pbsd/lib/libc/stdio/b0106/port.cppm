@@ -4,11 +4,15 @@ module;
 #define _GNU_SOURCE
 #endif
 
-#include <climits>
-#include <cstdarg>
-#include <cstdio>
-#include <cstring>
+#define fputs_unlocked __glibc_fputs_unlocked
+#include <limits.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 #include <locale.h>
+#undef fputs_unlocked
+
+export module pbsd.lib.libc.stdio.b0106;
 
 struct __siov {
 	void *iov_base;
@@ -30,13 +34,9 @@ struct __suio {
 			(loc) = __get_locale();				\
 	} while (0)
 
-extern "C" {
-locale_t __get_locale(void);
-int __sfvwrite(FILE *, struct __suio *);
-int __svfscanf(FILE *, locale_t, const char *, std::va_list);
-}
-
-export module pbsd.lib.libc.stdio.b0106;
+extern "C" locale_t __get_locale(void);
+extern "C" int __sfvwrite(FILE *, struct __suio *);
+extern "C" int __svfscanf(FILE *, locale_t, const char *, va_list);
 
 export namespace pbsd::lib_libc_stdio::b0106 {
 
@@ -85,7 +85,7 @@ fputs_unlocked(const char * __restrict s, FILE * __restrict fp)
 	struct __siov iov;
 
 	iov.iov_base = (void *)s;
-	uio.uio_resid = iov.iov_len = std::strlen(s);
+	uio.uio_resid = iov.iov_len = strlen(s);
 	uio.uio_iov = &iov;
 	uio.uio_iovcnt = 1;
 	ORIENT(fp, -1);
@@ -149,27 +149,27 @@ int
 scanf(char const * __restrict fmt, ...)
 {
 	int ret;
-	std::va_list ap;
+	va_list ap;
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	FLOCKFILE_CANCELSAFE(stdin);
 	ret = __svfscanf(stdin, __get_locale(), fmt, ap);
 	FUNLOCKFILE_CANCELSAFE();
-	std::va_end(ap);
+	va_end(ap);
 	return (ret);
 }
 int
 scanf_l(locale_t locale, char const * __restrict fmt, ...)
 {
 	int ret;
-	std::va_list ap;
+	va_list ap;
 	FIX_LOCALE(locale);
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	FLOCKFILE_CANCELSAFE(stdin);
 	ret = __svfscanf(stdin, locale, fmt, ap);
 	FUNLOCKFILE_CANCELSAFE();
-	std::va_end(ap);
+	va_end(ap);
 	return (ret);
 }
 

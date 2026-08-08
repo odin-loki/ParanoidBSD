@@ -2,25 +2,37 @@ module;
 
 #define _GNU_SOURCE
 
-#include <clocale>
 #include <cstdarg>
 #include <cstdio>
 #include <cwchar>
+#include <clocale>
 
-#if defined(__has_include)
-#if __has_include(<xlocale.h>)
+#if defined(__FreeBSD__) || defined(__APPLE__)
 #include <xlocale.h>
-#endif
-#elif defined(__FreeBSD__) || defined(__APPLE__)
-#include <xlocale.h>
+#else
+typedef struct __locale_struct *locale_t;
+extern "C" locale_t uselocale(locale_t);
+static int
+vfwscanf_l(FILE *stream, locale_t locale, const wchar_t *fmt, std::va_list ap)
+{
+	locale_t old = uselocale(locale);
+	int r = vfwscanf(stream, fmt, ap);
+
+	uselocale(old);
+	return r;
+}
+static int
+vfwprintf_l(FILE *stream, locale_t locale, const wchar_t *fmt, std::va_list ap)
+{
+	locale_t old = uselocale(locale);
+	int r = vfwprintf(stream, fmt, ap);
+
+	uselocale(old);
+	return r;
+}
 #endif
 
 export module pbsd.lib.libc.stdio.b0098;
-
-#ifndef _XLOCALE_H_
-extern "C" int vfwscanf_l(std::FILE *, ::locale_t, const wchar_t *, std::va_list);
-extern "C" int vfwprintf_l(std::FILE *, ::locale_t, const wchar_t *, std::va_list);
-#endif
 
 export namespace pbsd::lib_libc_stdio::b0098 {
 
@@ -58,14 +70,14 @@ export namespace pbsd::lib_libc_stdio::b0098 {
  */
 
 int
-vwscanf(const wchar_t * __restrict fmt, std::va_list ap)
+vwscanf(const wchar_t * __restrict fmt, va_list ap)
 {
-	return (::vfwscanf(stdin, fmt, ap));
+	return (vfwscanf(stdin, fmt, ap));
 }
 int
-vwscanf_l(::locale_t locale, const wchar_t * __restrict fmt, std::va_list ap)
+vwscanf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
 {
-	return (::vfwscanf_l(stdin, locale, fmt, ap));
+	return (vfwscanf_l(stdin, locale, fmt, ap));
 }
 
 /*-
@@ -102,14 +114,14 @@ vwscanf_l(::locale_t locale, const wchar_t * __restrict fmt, std::va_list ap)
  */
 
 int
-vwprintf(const wchar_t * __restrict fmt, std::va_list ap)
+vwprintf(const wchar_t * __restrict fmt, va_list ap)
 {
-	return (::vfwprintf(stdout, fmt, ap));
+	return (vfwprintf(stdout, fmt, ap));
 }
 int
-vwprintf_l(::locale_t locale, const wchar_t * __restrict fmt, std::va_list ap)
+vwprintf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
 {
-	return (::vfwprintf_l(stdout, locale, fmt, ap));
+	return (vfwprintf_l(stdout, locale, fmt, ap));
 }
 
 /*-
@@ -147,9 +159,9 @@ vwprintf_l(::locale_t locale, const wchar_t * __restrict fmt, std::va_list ap)
  */
 
 void
-setbuf(std::FILE * __restrict fp, char * __restrict buf)
+setbuf(FILE * __restrict fp, char * __restrict buf)
 {
-	(void) ::setvbuf(fp, buf, buf ? _IOFBF : _IONBF, BUFSIZ);
+	(void) setvbuf(fp, buf, buf ? _IOFBF : _IONBF, BUFSIZ);
 }
 
 } // namespace pbsd::lib_libc_stdio::b0098

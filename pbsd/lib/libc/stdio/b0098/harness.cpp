@@ -361,12 +361,12 @@ scan_case_ws(Stat *st, locale_t loc, const unsigned char *data, std::size_t len,
 	if (std::freopen(path, "r", stdin) == nullptr)
 		std::exit(2);
 	clearerr(stdin);
-	ra = port_vwscanf_l(loc, L"%ls", aw);
+	ra = do_port_scan(loc, L"%ls", aw);
 
 	if (std::freopen(path, "r", stdin) == nullptr)
 		std::exit(2);
 	clearerr(stdin);
-	rb = ref_vwscanf_l(loc, L"%ls", bw);
+	rb = do_ref_scan(loc, L"%ls", bw);
 
 	st->cases++;
 	bad = (ra != rb || std::memcmp(abuf, bbuf, sizeof(abuf)) != 0);
@@ -556,13 +556,13 @@ print_case_d(Stat *st, locale_t loc, const wchar_t *fmt, int v, const char *tag)
 
 	if (freopen(path_a, "w", stdout) == nullptr)
 		std::exit(2);
-	a.ret = port_vwprintf_l(loc, fmt, v);
+	a.ret = do_port_print(loc, fmt, v);
 	std::fflush(stdout);
 	read_output_file(path_a, a.out, sizeof(a.out), &a.out_len);
 
 	if (freopen(path_b, "w", stdout) == nullptr)
 		std::exit(2);
-	b.ret = ref_vwprintf_l(loc, fmt, v);
+	b.ret = do_ref_print(loc, fmt, v);
 	std::fflush(stdout);
 	read_output_file(path_b, b.out, sizeof(b.out), &b.out_len);
 
@@ -591,13 +591,13 @@ print_case_d2(Stat *st, locale_t loc, int v1, int v2, const char *tag)
 
 	if (freopen(path_a, "w", stdout) == nullptr)
 		std::exit(2);
-	a.ret = port_vwprintf_l(loc, L"%d %d", v1, v2);
+	a.ret = do_port_print(loc, L"%d %d", v1, v2);
 	std::fflush(stdout);
 	read_output_file(path_a, a.out, sizeof(a.out), &a.out_len);
 
 	if (freopen(path_b, "w", stdout) == nullptr)
 		std::exit(2);
-	b.ret = ref_vwprintf_l(loc, L"%d %d", v1, v2);
+	b.ret = do_ref_print(loc, L"%d %d", v1, v2);
 	std::fflush(stdout);
 	read_output_file(path_b, b.out, sizeof(b.out), &b.out_len);
 

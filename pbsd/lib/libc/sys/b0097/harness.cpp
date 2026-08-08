@@ -426,7 +426,8 @@ case_wait6(idtype_t idtype, id_t id, int *status, int options,
 	unsigned char info_a[sizeof(siginfo_t) + 2 * INFO_GUARD_PAD];
 	unsigned char info_b[sizeof(siginfo_t) + 2 * INFO_GUARD_PAD];
 	int *psa, *psb;
-	struct __wrusage *rua, *rub;
+	struct __wrusage *rua;
+	port::__wrusage *rub_p;
 	siginfo_t *ia, *ib;
 	Snap snap_a, snap_b;
 	pid_t ra, rb;
@@ -447,8 +448,8 @@ case_wait6(idtype_t idtype, id_t id, int *status, int options,
 	    (int *)(status_b + STATUS_GUARD_PAD) : nullptr;
 	rua = ru != nullptr ?
 	    (struct __wrusage *)(ru_a + RU_GUARD_PAD) : nullptr;
-	rub = ru != nullptr ?
-	    reinterpret_cast<port::__wrusage *>(ru_b + RU_GUARD_PAD) : nullptr;
+	rub_p = ru != nullptr ?
+	    (port::__wrusage *)(ru_b + RU_GUARD_PAD) : nullptr;
 	ia = infop != nullptr ?
 	    (siginfo_t *)(info_a + INFO_GUARD_PAD) : nullptr;
 	ib = infop != nullptr ?
@@ -461,9 +462,7 @@ case_wait6(idtype_t idtype, id_t id, int *status, int options,
 
 	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
-	rb = port::wait6(idtype, id, psb, options,
-	    reinterpret_cast<port::__wrusage *>(rub),
-	    ib);
+	rb = port::wait6(idtype, id, psb, options, rub_p, ib);
 	snap_b = take_snap();
 
 	snprintf(ctx, sizeof(ctx),

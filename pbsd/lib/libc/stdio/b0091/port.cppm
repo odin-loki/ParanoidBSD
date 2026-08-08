@@ -10,11 +10,6 @@ module;
 #include <cwchar>
 #include <locale.h>
 
-extern "C" {
-wint_t fgetwc_l(FILE *fp, locale_t loc);
-wint_t fputwc_l(wchar_t wc, FILE *fp, locale_t loc);
-}
-
 export module pbsd.lib.libc.stdio.b0091;
 
 namespace {
@@ -46,6 +41,26 @@ get_real_locale(::locale_t locale)
 }
 
 #define FIX_LOCALE(l) (l = get_real_locale(l))
+
+static inline ::wint_t
+b0091_fgetwc_l(std::FILE *fp, ::locale_t loc)
+{
+	::locale_t old = ::uselocale(loc);
+	::wint_t w = ::fgetwc(fp);
+
+	::uselocale(old);
+	return (w);
+}
+
+static inline ::wint_t
+b0091_fputwc_l(wchar_t wc, std::FILE *fp, ::locale_t loc)
+{
+	::locale_t old = ::uselocale(loc);
+	::wint_t w = ::fputwc(wc, fp);
+
+	::uselocale(old);
+	return (w);
+}
 
 static inline ::locale_t
 __get_locale(void)
@@ -106,7 +121,7 @@ getwchar(void)
 ::wint_t
 getwchar_l(::locale_t locale)
 {
-	return (::fgetwc_l(stdin, locale));
+	return (b0091_fgetwc_l(stdin, locale));
 }
 
 /*-
@@ -149,7 +164,7 @@ getwchar_l(::locale_t locale)
 putwchar_l(wchar_t wc, ::locale_t locale)
 {
 	FIX_LOCALE(locale);
-	return (::fputwc_l(wc, stdout, locale));
+	return (b0091_fputwc_l(wc, stdout, locale));
 }
 ::wint_t
 putwchar(wchar_t wc)

@@ -150,10 +150,6 @@ export module pbsd.lib.libc.sys.b0097;
 
 namespace pbsd::lib_libc_sys::b0097 {
 
-struct __wrusage {
-	unsigned char	opaque[128];
-};
-
 using interpos_func_t = int (*)(void);
 
 enum {
@@ -185,6 +181,10 @@ using interpos_sig_ppoll = int (*)(struct pollfd *, nfds_t,
 
 export namespace pbsd::lib_libc_sys::b0097 {
 
+struct __wrusage {
+	unsigned char	opaque[128];
+};
+
 interpos_func_t __libc_interposing[INTERPOS_MAX];
 
 [[gnu::weak]] pid_t
@@ -214,22 +214,6 @@ __ssp_real(ppoll)(struct pollfd pfd[], nfds_t nfds,
     const sigset_t *__restrict newsigmask)
 {
 	return (INTERPOS_SYS(ppoll, pfd, nfds, timeout, newsigmask));
-}
-
-/*
- * Test-only access to this module's interposing table.  Not part of any
- * ported function; libc fills the real table from _libc_init().
- */
-void
-set_interpos(int slot, interpos_func_t func)
-{
-	__libc_interposing[slot] = func;
-}
-
-interpos_func_t
-get_interpos(int slot)
-{
-	return (__libc_interposing[slot]);
 }
 
 } /* namespace pbsd::lib_libc_sys::b0097 */

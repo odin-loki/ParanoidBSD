@@ -349,6 +349,7 @@ def make_rename_macros(names: list[str]) -> str:
     lines.append('')
     lines.append('/* Expose file-scope static helpers to the harness linker. */')
     lines.append('#define static')
+    lines.append('#define INLINE')
     return '\n'.join(lines) + '\n\n'
 
 
@@ -1124,6 +1125,7 @@ def gen_extract_pack_test(f):
     }}
 '''
     if f == 'packFloatx80':
+        cmp = cmp_expr('floatx80')
         return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         flag zs = urand32() & 1;
@@ -1133,7 +1135,7 @@ def gen_extract_pack_test(f):
         floatx80 rp = port::{f}(zs, ze, zsig);
         floatx80 rr = ref_{f}(zs, ze, zsig);
         cases++;
-        if (rp != rr || rp.low != rr.low || rp.high != rr.high) failures++;
+        if ({cmp}) failures++;
     }}
 '''
     if f == 'packFloat128':

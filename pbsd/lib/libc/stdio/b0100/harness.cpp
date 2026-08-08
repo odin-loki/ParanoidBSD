@@ -195,9 +195,13 @@ static void
 test_wprintf_case(int fn, const wchar_t *fmt, ...)
 {
 	int refret, portret;
+	int refbytes, portbytes;
 	unsigned char refbuf[4096], portbuf[4096];
 	int reffd, portfd;
 	va_list ap;
+
+	std::memset(refbuf, GUARD, sizeof(refbuf));
+	std::memset(portbuf, GUARD, sizeof(portbuf));
 
 	ncase[fn]++;
 
@@ -205,15 +209,16 @@ test_wprintf_case(int fn, const wchar_t *fmt, ...)
 	va_start(ap, fmt);
 	refret = ref_wprintf(fmt, ap);
 	va_end(ap);
-	refret = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
+	refbytes = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
 
 	portfd = stdout_capture_open();
 	va_start(ap, fmt);
 	portret = P::wprintf(fmt, ap);
 	va_end(ap);
-	portret = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
+	portbytes = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
 
-	if (refret != portret || std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
+	if (refret != portret || refbytes != portbytes ||
+	    std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
 		record_fail(fn);
 }
 
@@ -221,9 +226,13 @@ static void
 test_wprintf_l_case(int fn, locale_t loc, const wchar_t *fmt, ...)
 {
 	int refret, portret;
+	int refbytes, portbytes;
 	unsigned char refbuf[4096], portbuf[4096];
 	int reffd, portfd;
 	va_list ap;
+
+	std::memset(refbuf, GUARD, sizeof(refbuf));
+	std::memset(portbuf, GUARD, sizeof(portbuf));
 
 	ncase[fn]++;
 
@@ -231,15 +240,16 @@ test_wprintf_l_case(int fn, locale_t loc, const wchar_t *fmt, ...)
 	va_start(ap, fmt);
 	refret = ref_wprintf_l(loc, fmt, ap);
 	va_end(ap);
-	refret = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
+	refbytes = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
 
 	portfd = stdout_capture_open();
 	va_start(ap, fmt);
 	portret = P::wprintf_l(loc, fmt, ap);
 	va_end(ap);
-	portret = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
+	portbytes = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
 
-	if (refret != portret || std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
+	if (refret != portret || refbytes != portbytes ||
+	    std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
 		record_fail(fn);
 }
 
@@ -381,7 +391,11 @@ sweep_wprintf(int fn)
 
 		unsigned char refbuf[4096], portbuf[4096];
 		int refret, portret;
+		int refbytes, portbytes;
 		int reffd, portfd;
+
+		std::memset(refbuf, GUARD, sizeof(refbuf));
+		std::memset(portbuf, GUARD, sizeof(portbuf));
 
 		reffd = stdout_capture_open();
 		if (std::wcscmp(fmt, L"%d") == 0)
@@ -404,7 +418,7 @@ sweep_wprintf(int fn)
 			refret = ref_wprintf(fmt, a, b);
 		else
 			refret = ref_wprintf(fmt, a, b, c);
-		refret = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
+		refbytes = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
 
 		portfd = stdout_capture_open();
 		if (std::wcscmp(fmt, L"%d") == 0)
@@ -427,9 +441,9 @@ sweep_wprintf(int fn)
 			portret = P::wprintf(fmt, a, b);
 		else
 			portret = P::wprintf(fmt, a, b, c);
-		portret = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
+		portbytes = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
 
-		if (refret != portret ||
+		if (refret != portret || refbytes != portbytes ||
 		    std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
 			record_fail(fn);
 	}
@@ -458,7 +472,11 @@ sweep_wprintf_l(int fn, locale_t loc)
 
 		unsigned char refbuf[4096], portbuf[4096];
 		int refret, portret;
+		int refbytes, portbytes;
 		int reffd, portfd;
+
+		std::memset(refbuf, GUARD, sizeof(refbuf));
+		std::memset(portbuf, GUARD, sizeof(portbuf));
 
 		reffd = stdout_capture_open();
 		if (std::wcscmp(fmt, L"%d") == 0)
@@ -477,7 +495,7 @@ sweep_wprintf_l(int fn, locale_t loc)
 			refret = ref_wprintf_l(loc, fmt, a);
 		else
 			refret = ref_wprintf_l(loc, fmt, a, b);
-		refret = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
+		refbytes = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
 
 		portfd = stdout_capture_open();
 		if (std::wcscmp(fmt, L"%d") == 0)
@@ -496,9 +514,9 @@ sweep_wprintf_l(int fn, locale_t loc)
 			portret = P::wprintf_l(loc, fmt, a);
 		else
 			portret = P::wprintf_l(loc, fmt, a, b);
-		portret = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
+		portbytes = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
 
-		if (refret != portret ||
+		if (refret != portret || refbytes != portbytes ||
 		    std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
 			record_fail(fn);
 	}

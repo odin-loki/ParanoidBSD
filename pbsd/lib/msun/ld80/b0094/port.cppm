@@ -10,7 +10,7 @@ module;
 
 export module pbsd.lib.msun.ld80.b0094;
 
-namespace pbsd::lib_msun_ld80::b0094 {
+export namespace pbsd::lib_msun_ld80::b0094 {
 
 #define BIAS (LDBL_MAX_EXP - 1)
 
@@ -42,6 +42,21 @@ union IEEEl2bits {
 
 #define LD80C(man, exp, val) { .e = (val) }
 
+#define	SET_FLOAT_WORD(d,i)					\
+do {								\
+	union { float value; unsigned int word; } sf_u;		\
+	sf_u.word = (i);					\
+	(d) = sf_u.value;					\
+} while (0)
+
+#define	SET_LDBL_EXPSIGN(d,v)					\
+do {								\
+	union IEEEl2bits se_u;					\
+	se_u.e = (d);						\
+	se_u.xbits.expsign = (v);				\
+	(d) = se_u.e;						\
+} while (0)
+
 static inline long double
 rnintl(long double x)
 {
@@ -50,9 +65,6 @@ rnintl(long double x)
 
 #define irint(x) ((int)(x))
 
-} /* namespace pbsd::lib_msun_ld80::b0094 */
-
-export namespace pbsd::lib_msun_ld80::b0094 {
 
 /*
  * ====================================================
@@ -245,7 +257,7 @@ invln2u = LD80C(0xb8aa3b295c17f0bc,   0,  1.44269504088896340739e+00L);
 
 /* returns exp(r = x + c) for |c| < |x| with no overlap.  */
 
-static long double
+long double
 __exp__D(long double x, long double c)
 {
 	long double hi, lo, z;
@@ -585,7 +597,6 @@ __ldexp_cexpl(long double complex z, int expt)
 }
 #endif /* _COMPLEX_H */
 
-#undef tbl
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -851,6 +862,7 @@ expm1l(long double x)
 		t = SUM2P(tbl[n2].hi - twomk, tbl[n2].lo + t * (q + r1));
 	RETURNI(t * twopk);
 }
+#undef tbl
 
 #define huge exp2l_huge
 #define twom10000 exp2l_twom10000

@@ -49,20 +49,22 @@ fp_except_t ref_fpgetsticky(void);
 #define	FP_STKY_OFF	0
 #define	SSE_STKY_FLD	0x3f
 
-struct FpEnv28 {
-	unsigned fcw;
-	unsigned fsw;
-	unsigned ftw;
-	unsigned fpu_op;
-	unsigned fpu_sel;
-	unsigned fpu_ip;
-	unsigned fpu_dp;
+struct alignas(16) FpEnv28 {
+	unsigned	fcw;
+	unsigned	fsw;
+	unsigned	ftw;
+	unsigned	fpu_op;
+	unsigned	fpu_sel;
+	unsigned	fpu_ip;
+	unsigned	fpu_dp;
 };
 
 struct SavedFp {
-	FpEnv28	x87;
+	FpEnv28		x87;
 	unsigned	mxcsr;
 };
+
+alignas(16) static FpEnv28 g_fp_env;
 
 struct FnStats {
 	const char	*name;
@@ -114,14 +116,16 @@ ldmxcsr(unsigned mxcsr)
 static void
 save_fp(SavedFp *s)
 {
-	fnstenv(&s->x87);
+	fnstenv(&g_fp_env);
+	s->x87 = g_fp_env;
 	stmxcsr(&s->mxcsr);
 }
 
 static void
 restore_fp(const SavedFp *s)
 {
-	fldenv(&s->x87);
+	g_fp_env = s->x87;
+	fldenv(&g_fp_env);
 	ldmxcsr(s->mxcsr);
 }
 
@@ -148,12 +152,11 @@ static void
 apply_fp_state(const SavedFp *base, unsigned short cw, unsigned short sw,
     unsigned mxcsr)
 {
-	FpEnv28 env = base->x87;
-
-	env.fcw = (env.fcw & ~0xffffu) | (cw & 0xffffu);
-	env.fsw = (env.fsw & ~0xffffu) |
-	    ((env.fsw & ~FP_STKY_FLD) | (sw & FP_STKY_FLD)) & 0xffffu;
-	fldenv(&env);
+	g_fp_env = base->x87;
+	g_fp_env.fcw = (g_fp_env.fcw & ~0xffffu) | (cw & 0xffffu);
+	g_fp_env.fsw = (g_fp_env.fsw & ~0xffffu) |
+	    ((g_fp_env.fsw & ~FP_STKY_FLD) | (sw & FP_STKY_FLD)) & 0xffffu;
+	fldenv(&g_fp_env);
 	ldmxcsr(mxcsr);
 }
 
@@ -179,11 +182,8 @@ test_fpgetprec(const SavedFp *base, unsigned rnd, unsigned prc,
 	unsigned short cw;
 	int refv, portv;
 
-	std::fprintf(stderr, "test_fpgetprec rnd=%u prc=%u mask=%u\n", rnd, prc,
-	    mask_en);
 	cw = build_cw(rnd, prc, mask_en);
 	apply_fp_state(base, cw, 0, base->mxcsr);
-	std::fprintf(stderr, "test_fpgetprec applied\n");
 	refv = ref_fpgetprec();
 	portv = port::fpgetprec();
 	compare_int("fpgetprec", refv, portv, &stats_fpgetprec);
@@ -196,15 +196,10 @@ test_fpgetround(const SavedFp *base, unsigned rnd, unsigned prc,
 	unsigned short cw;
 	int refv, portv;
 
-	std::fprintf(stderr, "test_fpgetround rnd=%u prc=%u mask=%u\n", rnd, prc,
-	    mask_en);
 	cw = build_cw(rnd, prc, mask_en);
 	apply_fp_state(base, cw, 0, base->mxcsr);
-	std::fprintf(stderr, "test_fpgetround applied\n");
 	refv = ref_fpgetround();
-	std::fprintf(stderr, "test_fpgetround ref=%d\n", refv);
 	portv = port::fpgetround();
-	std::fprintf(stderr, "test_fpgetround port=%d\n", portv);
 	compare_int("fpgetround", refv, portv, &stats_fpgetround);
 }
 
@@ -240,11 +235,9 @@ run_hand_cases(const SavedFp *base)
 	unsigned rnd, prc, mask, bit;
 	unsigned mxcsr_base;
 
-	std::fprintf(stderr, "hand: start\n");
 	mxcsr_base = base->mxcsr & ~SSE_STKY_FLD;
 
 	/* default / live state */
-	std::fprintf(stderr, "hand: default\n");
 	test_fpgetprec(base, ref_fpgetround(), ref_fpgetprec(),
 	    ref_fpgetmask());
 	test_fpgetround(base, ref_fpgetround(), ref_fpgetprec(),
@@ -309,7 +302,6 @@ run_hand_cases(const SavedFp *base)
 	test_fpgetsticky(base, build_cw(0, 0, 0), 0, mxcsr_base);
 	test_fpgetsticky(base, build_cw(3, 3, 0x3f), FP_STKY_FLD,
 	    mxcsr_base | SSE_STKY_FLD);
-	std::fprintf(stderr, "hand: done\n");
 }
 
 static void
@@ -352,8 +344,6 @@ main()
 
 	save_fp(&saved);
 	run_hand_cases(&saved);
-	std::fprintf(stderr, "harness: hand done\n");
-	return 0;
 	run_random_sweep(&saved);
 	restore_fp(&saved);
 

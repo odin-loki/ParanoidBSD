@@ -11,6 +11,7 @@ module;
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
+#define complex _Complex
 #include <complex.h>
 #include <math.h>
 #include <cstdint>
@@ -25,17 +26,6 @@ export namespace pbsd::lib_msun_ld80::b0093 {
 
 #ifndef _COMPLEX_H
 #define _COMPLEX_H 1
-#endif
-
-#ifndef creall
-#define creall(__z) __builtin_creall(__z)
-#endif
-#ifndef cimagl
-#define cimagl(__z) __builtin_cimagl(__z)
-#endif
-#ifndef CMPLXL
-#define CMPLXL(__x, __y) \
-	((__extension__)(long double _Complex){(long double)(__x), (long double)(__y)})
 #endif
 
 union IEEEl2bits {
@@ -99,7 +89,16 @@ do {								\
 #define	RETURNI(x)	return (x)
 
 #ifndef CMPLXL
-#define CMPLXL(x, y) __builtin_complex((long double)(x), (long double)(y))
+static inline long double _Complex
+CMPLXL_impl(long double x, long double y)
+{
+	long double _Complex z = 0;
+
+	__real__ z = x;
+	__imag__ z = y;
+	return (z);
+}
+#define CMPLXL(x, y) CMPLXL_impl((long double)(x), (long double)(y))
 #endif
 #define creall __real__
 #define cimagl __imag__

@@ -17,10 +17,14 @@ module;
 #include <xlocale.h>
 #endif
 
+export module pbsd.lib.libc.stdio.b0103;
+
+export namespace pbsd::lib_libc_stdio::b0103 {
+
 #ifndef _XLOCALE_H_
 #ifndef vfwscanf_l
 static int
-vfwscanf_l(std::FILE *stream, ::locale_t loc, const wchar_t *fmt, std::va_list ap)
+vfwscanf_l(FILE *stream, ::locale_t loc, const wchar_t *fmt, va_list ap)
 {
 	::locale_t old = uselocale(loc);
 	int r = ::vfwscanf(stream, fmt, ap);
@@ -32,7 +36,7 @@ vfwscanf_l(std::FILE *stream, ::locale_t loc, const wchar_t *fmt, std::va_list a
 
 #ifndef vfwprintf_l
 static int
-vfwprintf_l(std::FILE *stream, ::locale_t loc, const wchar_t *fmt, std::va_list ap)
+vfwprintf_l(FILE *stream, ::locale_t loc, const wchar_t *fmt, va_list ap)
 {
 	::locale_t old = uselocale(loc);
 	int r = ::vfwprintf(stream, fmt, ap);
@@ -44,7 +48,7 @@ vfwprintf_l(std::FILE *stream, ::locale_t loc, const wchar_t *fmt, std::va_list 
 
 #ifndef vswscanf_l
 static int
-vswscanf_l(const wchar_t *str, ::locale_t loc, const wchar_t *fmt, std::va_list ap)
+vswscanf_l(const wchar_t *str, ::locale_t loc, const wchar_t *fmt, va_list ap)
 {
 	::locale_t old = uselocale(loc);
 	int r = ::vswscanf(str, fmt, ap);
@@ -54,10 +58,6 @@ vswscanf_l(const wchar_t *str, ::locale_t loc, const wchar_t *fmt, std::va_list 
 }
 #endif
 #endif
-
-export module pbsd.lib.libc.stdio.b0103;
-
-export namespace pbsd::lib_libc_stdio::b0103 {
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -95,24 +95,24 @@ export namespace pbsd::lib_libc_stdio::b0103 {
 int
 fwscanf(FILE * __restrict fp, const wchar_t * __restrict fmt, ...)
 {
-	std::va_list ap;
+	va_list ap;
 	int r;
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	r = vfwscanf(fp, fmt, ap);
-	std::va_end(ap);
+	va_end(ap);
 
 	return (r);
 }
 int
 fwscanf_l(FILE * __restrict fp, locale_t locale, const wchar_t * __restrict fmt, ...)
 {
-	std::va_list ap;
+	va_list ap;
 	int r;
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	r = vfwscanf_l(fp, locale, fmt, ap);
-	std::va_end(ap);
+	va_end(ap);
 
 	return (r);
 }
@@ -154,11 +154,11 @@ int
 fwprintf(FILE * __restrict fp, const wchar_t * __restrict fmt, ...)
 {
 	int ret;
-	std::va_list ap;
+	va_list ap;
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	ret = vfwprintf(fp, fmt, ap);
-	std::va_end(ap);
+	va_end(ap);
 
 	return (ret);
 }
@@ -166,11 +166,11 @@ int
 fwprintf_l(FILE * __restrict fp, locale_t locale, const wchar_t * __restrict fmt, ...)
 {
 	int ret;
-	std::va_list ap;
+	va_list ap;
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	ret = vfwprintf_l(fp, locale, fmt, ap);
-	std::va_end(ap);
+	va_end(ap);
 
 	return (ret);
 }
@@ -211,12 +211,12 @@ fwprintf_l(FILE * __restrict fp, locale_t locale, const wchar_t * __restrict fmt
 int
 swscanf(const wchar_t * __restrict str, const wchar_t * __restrict fmt, ...)
 {
-	std::va_list ap;
+	va_list ap;
 	int r;
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	r = vswscanf(str, fmt, ap);
-	std::va_end(ap);
+	va_end(ap);
 
 	return (r);
 }
@@ -224,12 +224,12 @@ int
 swscanf_l(const wchar_t * __restrict str, locale_t locale,
 		const wchar_t * __restrict fmt, ...)
 {
-	std::va_list ap;
+	va_list ap;
 	int r;
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	r = vswscanf_l(str, locale, fmt, ap);
-	std::va_end(ap);
+	va_end(ap);
 
 	return (r);
 }
