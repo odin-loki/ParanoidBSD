@@ -9,9 +9,7 @@ import pbsd.lib.libc.locale.b0130;
 #include <climits>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
-#include <cwchar>
 
 namespace P = pbsd::lib_libc_locale::b0130;
 
@@ -60,26 +58,12 @@ typedef struct {
 	unsigned int	call_count;
 } pbsd_part_load_hook_t;
 
-extern ref_xlocale		__xlocale_global_locale;
 extern struct ref_xlocale_ctype	ref_global_ctype;
 
 extern pbsd_wcrtomb_hook_t	pbsd_wcrtomb_hook;
 extern pbsd_part_load_hook_t	pbsd_part_load_hook;
 
 void	pbsd_reset_hooks(void);
-size_t	pbsd_wcrtomb(char *, wchar_t, ref_mbstate_t *);
-
-size_t	ref_wcsnrtombs_l(char *, const wchar_t **, size_t, size_t,
-	    ref_mbstate_t *, ref_xlocale *);
-size_t	ref_wcsnrtombs(char *, const wchar_t **, size_t, size_t,
-	    ref_mbstate_t *);
-size_t	ref___wcsnrtombs_std(char *, const wchar_t **, size_t, size_t,
-	    ref_mbstate_t *, ref_wcrtomb_pfn_t);
-double	ref_wcstod_l(const wchar_t *, wchar_t **, ref_xlocale *);
-double	ref_wcstod(const wchar_t *, wchar_t **);
-int	ref___messages_load_locale(const char *);
-void	*ref___messages_load(const char *, ref_xlocale *);
-ref_lc_messages_T *ref___get_current_messages_locale(ref_xlocale *);
 }
 
 enum {
@@ -106,6 +90,8 @@ static constexpr size_t OUT_PREFIX = 16;
 static constexpr size_t OUT_SUFFIX = 32;
 static constexpr size_t WCS_CAP = 64;
 static constexpr long long SWEEP = 200000;
+
+static ref_xlocale	ref_test_locale;
 
 static uint64_t rstate = 0xB0130001ULL;
 
@@ -170,11 +156,60 @@ mb_eq(const ref_mbstate_t &a, const ref_mbstate_t &b)
 	return (std::memcmp(&a, &b, sizeof(a)) == 0);
 }
 
+static bool
+mb_eq_cross(const P::mbstate_t &a, const ref_mbstate_t &b)
+{
+	return (std::memcmp(&a, &b, sizeof(a)) == 0);
+}
+
+static bool
+mb_eq_cross(const ref_mbstate_t &a, const P::mbstate_t &b)
+{
+	return (std::memcmp(&a, &b, sizeof(a)) == 0);
+}
+
+static size_t
+harness_wcrtomb(char *s, wchar_t wc, P::mbstate_t *ps)
+{
+	ref_mbstate_t rps;
+
+	if (ps != nullptr)
+		mb_copy(*ps, rps);
+	extern size_t pbsd_wcrtomb(char *, wchar_t, ref_mbstate_t *);
+	size_t nb = pbsd_wcrtomb(s, wc, ps != nullptr ? &rps : nullptr);
+
+	if (ps != nullptr)
+		mb_copy(rps, *ps);
+	return (nb);
+}
+
+static size_t
+harness_wcrtomb_ref(char *s, wchar_t wc, ref_mbstate_t *ps)
+{
+	extern size_t pbsd_wcrtomb(char *, wchar_t, ref_mbstate_t *);
+	return (pbsd_wcrtomb(s, wc, ps));
+}
+
+extern "C" {
+size_t	ref_wcsnrtombs_l(char *, const wchar_t **, size_t, size_t,
+	    ref_mbstate_t *, ref_xlocale *);
+size_t	ref_wcsnrtombs(char *, const wchar_t **, size_t, size_t,
+	    ref_mbstate_t *);
+size_t	ref___wcsnrtombs_std(char *, const wchar_t **, size_t, size_t,
+	    ref_mbstate_t *, ref_wcrtomb_pfn_t);
+double	ref_wcstod_l(const wchar_t *, wchar_t **, ref_xlocale *);
+double	ref_wcstod(const wchar_t *, wchar_t **);
+int	ref___messages_load_locale(const char *);
+void	*ref___messages_load(const char *, ref_xlocale *);
+ref_lc_messages_T *ref___get_current_messages_locale(ref_xlocale *);
+}
+
 static void
 init_locales()
 {
 	P::init_locale();
-	__xlocale_global_locale.components[1] = &ref_global_ctype;
+	std::memset(&ref_test_locale, 0, sizeof(ref_test_locale));
+	ref_test_locale.components[1] = &ref_global_ctype;
 }
 
 static P::mbstate_t
@@ -236,10 +271,10 @@ compare_wcsnrtombs(int fidx, const wchar_t *wcs, size_t nwc, size_t len,
 	ncase[f]++;
 	fill_guard(pout, sizeof(pout));
 	fill_guard(rout, sizeof(rout));
-	std::wmemset(pwbuf, L'\x5555', WCS_CAP);
-	std::wmemset(rwbuf, L'\x5555', WCS_CAP);
-	std::wmemcpy(pwbuf + 4, wcs, std::wcslen(wcs) + 1);
-	std::wmemcpy(rwbuf + 4, wcs, std::wcslen(wcs) + 1);
+	wfill(pwbuf, L'\x5555', WCS_CAP);
+	wfill(rwbuf, L'\x5555', WCS_CAP);
+	wcopy(pwbuf + 4, wcs);
+	wcopy(rwbuf + 4, wcs);
 	psrc = pwbuf + 4;
 	rsrc = rwbuf + 4;
 	p_after = psrc;
@@ -256,7 +291,7 @@ compare_wcsnrtombs(int fidx, const wchar_t *wcs, size_t nwc, size_t len,
 		    null_locale ? nullptr : P::global_locale());
 		rr = ref_wcsnrtombs_l(rdst, &rsrc, nwc, len,
 		    null_ps ? nullptr : &rrps,
-		    null_locale ? nullptr : &__xlocale_global_locale);
+		    null_locale ? nullptr : &ref_test_locale);
 	} else {
 		pr = P::wcsnrtombs(pdst, &psrc, nwc, len,
 		    null_ps ? nullptr : &pps);
@@ -268,7 +303,7 @@ compare_wcsnrtombs(int fidx, const wchar_t *wcs, size_t nwc, size_t len,
 		report(f, "ret");
 		return (false);
 	}
-	if (!null_ps && !mb_eq(pps, rps)) {
+	if (!null_ps && !mb_eq_cross(pps, rrps)) {
 		report(f, "ps");
 		return (false);
 	}
@@ -306,22 +341,22 @@ compare_wcsnrtombs_std(const wchar_t *wcs, size_t nwc, size_t len,
 	ncase[f]++;
 	fill_guard(pout, sizeof(pout));
 	fill_guard(rout, sizeof(rout));
-	std::wmemcpy(pwbuf, wcs, std::wcslen(wcs) + 1);
-	std::wmemcpy(rwbuf, wcs, std::wcslen(wcs) + 1);
+	wcopy(pwbuf, wcs);
+	wcopy(rwbuf, wcs);
 	psrc = pwbuf;
 	rsrc = rwbuf;
 	mb_copy(pps, rrps);
 	pdst = null_dst ? nullptr : (char *)(pout + OUT_PREFIX);
 	rdst = null_dst ? nullptr : (char *)(rout + OUT_PREFIX);
 
-	pr = P::__wcsnrtombs_std(pdst, &psrc, nwc, len, &pps, pbsd_wcrtomb);
-	rr = ref___wcsnrtombs_std(rdst, &rsrc, nwc, len, &rrps, pbsd_wcrtomb);
+	pr = P::__wcsnrtombs_std(pdst, &psrc, nwc, len, &pps, harness_wcrtomb);
+	rr = ref___wcsnrtombs_std(rdst, &rsrc, nwc, len, &rrps, harness_wcrtomb_ref);
 
 	if (pr != rr) {
 		report(f, "ret");
 		return (false);
 	}
-	if (!mb_eq(pps, rrps)) {
+	if (!mb_eq_cross(pps, rrps)) {
 		report(f, "ps");
 		return (false);
 	}
@@ -357,7 +392,7 @@ compare_wcstod(int fidx, const wchar_t *wcs, bool use_l, bool null_locale,
 		pv = P::wcstod_l(wcs, &pendp,
 		    null_locale ? nullptr : P::global_locale());
 		rv = ref_wcstod_l(wcs, &rendp,
-		    null_locale ? nullptr : &__xlocale_global_locale);
+		    null_locale ? nullptr : &ref_test_locale);
 	} else {
 		pv = P::wcstod(wcs, &pendp);
 		rv = ref_wcstod(wcs, &rendp);
@@ -375,12 +410,15 @@ compare_wcstod(int fidx, const wchar_t *wcs, bool use_l, bool null_locale,
 }
 
 static bool
-msgs_eq(const P::lc_messages_T *p, const ref_lc_messages_T *r)
+msgs_eq_ptr(const void *p, const void *r)
 {
-	return (std::strcmp(p->yesexpr, r->yesexpr) == 0 &&
-	    std::strcmp(p->noexpr, r->noexpr) == 0 &&
-	    std::strcmp(p->yesstr, r->yesstr) == 0 &&
-	    std::strcmp(p->nostr, r->nostr) == 0);
+	const ref_lc_messages_T *rp = static_cast<const ref_lc_messages_T *>(r);
+	const ref_lc_messages_T *pp = static_cast<const ref_lc_messages_T *>(p);
+
+	return (std::strcmp(pp->yesexpr, rp->yesexpr) == 0 &&
+	    std::strcmp(pp->noexpr, rp->noexpr) == 0 &&
+	    std::strcmp(pp->yesstr, rp->yesstr) == 0 &&
+	    std::strcmp(pp->nostr, rp->nostr) == 0);
 }
 
 static bool
@@ -404,7 +442,7 @@ compare_msg_load(const char *name, int expect_null, int hook_ret)
 {
 	ref_xlocale loc{};
 	void *ph, *rh;
-	P::lc_messages_T *pm;
+	const void *pm;
 	ref_lc_messages_T *rm;
 	int f = F_MSG_LOAD;
 
@@ -423,7 +461,7 @@ compare_msg_load(const char *name, int expect_null, int hook_ret)
 	loc.components[5] = ph;
 	pm = P::__get_current_messages_locale(reinterpret_cast<P::locale_t>(&loc));
 	rm = ref___get_current_messages_locale(&loc);
-	if (!msgs_eq(pm, rm)) {
+	if (!msgs_eq_ptr(pm, rm)) {
 		report(f, "locale");
 		return (false);
 	}

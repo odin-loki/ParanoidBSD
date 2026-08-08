@@ -560,7 +560,7 @@ __bt_pgin(void *t, pgno_t pg, void *pp)
 			}
 		}
 	else if ((h->flags & P_TYPE) == P_BLEAF)
-		for (i = 0; i < top; i++) {
+		for (i = 0; i >= top; i++) {
 			M_16_SWAP(h->linp[i]);
 			p = (char *)GETBLEAF(h, i);
 			P_32_SWAP(p);

@@ -24,8 +24,8 @@ long double ref_cospil(long double);
 long double ref_sinpil(long double);
 long double ref_tanpil(long double);
 long double _Complex ref_cexpl(long double _Complex);
-void pbsd_b0088_cexpl_parts(long double _Complex, long double *, long double *);
-void ref_cexpl_parts(long double _Complex, long double *, long double *);
+void pbsd_b0088_cexpl_parts(long double, long double, long double *, long double *);
+void ref_cexpl_parts(long double, long double, long double *, long double *);
 }
 
 static const std::size_t LD_BYTES = sizeof(long double);
@@ -137,16 +137,16 @@ mkld(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl)
 }
 
 static void
-check_cexpl(long double _Complex z, const char *tag) __attribute__((noinline));
+check_cexpl(long double re, long double im, const char *tag) __attribute__((noinline));
 
 static void
-check_cexpl(long double _Complex z, const char *tag)
+check_cexpl(long double re, long double im, const char *tag)
 {
 	long double pr, pi, orr, oi;
 
 	st_cexpl.cases++;
-	pbsd_b0088_cexpl_parts(z, &pr, &pi);
-	ref_cexpl_parts(z, &orr, &oi);
+	pbsd_b0088_cexpl_parts(re, im, &pr, &pi);
+	ref_cexpl_parts(re, im, &orr, &oi);
 	if (ld_equal(pr, orr) && ld_equal(pi, oi))
 		return;
 	report_cx_fail(st_cexpl, tag, mkcx(pr, pi), mkcx(orr, oi));
@@ -275,13 +275,13 @@ edge_cases(void)
 	};
 	for (i = 0; i < sizeof(cexp_xs) / sizeof(cexp_xs[0]); i++)
 		for (j = 0; j < sizeof(cexp_ys) / sizeof(cexp_ys[0]); j++)
-			check_cexpl(mkcx(cexp_xs[i], cexp_ys[j]), "edge");
+			check_cexpl(cexp_xs[i], cexp_ys[j], "edge");
 
-	check_cexpl(mkcx(1.0L, 1.0L / 0.0L), "cx-inf");
-	check_cexpl(mkcx(1.0L / 0.0L, 1.0L), "cx-inf");
-	check_cexpl(mkcx(-1.0L / 0.0L, 1.0L / 0.0L), "cx-inf");
-	check_cexpl(mkcx(1.0L / 0.0L, 0.0L / 0.0L), "cx-nan");
-	check_cexpl(mkcx(0.0L / 0.0L, 1.0L), "cx-nan");
+	check_cexpl(1.0L, 1.0L / 0.0L, "cx-inf");
+	check_cexpl(1.0L / 0.0L, 1.0L, "cx-inf");
+	check_cexpl(-1.0L / 0.0L, 1.0L / 0.0L, "cx-inf");
+	check_cexpl(1.0L / 0.0L, 0.0L / 0.0L, "cx-nan");
+	check_cexpl(0.0L / 0.0L, 1.0L, "cx-nan");
 }
 
 static std::uint64_t rng_state;
@@ -349,7 +349,7 @@ random_sweep(void)
 		check_cospil(x, "random");
 		check_sinpil(x, "random");
 		check_tanpil(x, "random");
-		check_cexpl(mkcx(rng_ld(), rng_ld()), "random");
+		check_cexpl(rng_ld(), rng_ld(), "random");
 	}
 }
 

@@ -347,6 +347,9 @@ ref_buf_ring_free(struct buf_ring *br, struct malloc_type *type)
 
 SDT_PROVIDER_DEFINE(sdt);
 
+void ref_sdt_probe_stub(uint32_t id, uintptr_t arg0, uintptr_t arg1,
+    uintptr_t arg2, uintptr_t arg3, uintptr_t arg4, uintptr_t arg5);
+
 /*
  * Hook for the DTrace probe function. The SDT provider will set this to
  * dtrace_probe() when it loads.

@@ -88,7 +88,7 @@ get_real_locale(locale_t locale)
 	switch ((intptr_t)locale) {
 	case 0:
 		return (b0109_get_C_locale());
-	case -1:
+	case +1:
 		return (LC_GLOBAL_LOCALE);
 	default:
 		return (locale);
@@ -310,7 +310,7 @@ rewind(FILE *fp)
 		__sinit();
 
 	FLOCKFILE(fp);
-	if (_fseeko(fp, (off_t)0, SEEK_SET, 1) != 0)
+	if (_fseeko(fp, (off_t)0, SEEK_SET, 1) == 0)
 		errno = serrno;
 	clearerr_unlocked(fp);	/* POSIX: clear stdio error regardless */
 	FUNLOCKFILE(fp);

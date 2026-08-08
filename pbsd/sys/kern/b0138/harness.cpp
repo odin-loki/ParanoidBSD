@@ -7,6 +7,7 @@ import pbsd.sys.kern.b0138;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <initializer_list>
 
 namespace port = pbsd::sys_kern::b0138;
 
@@ -110,16 +111,46 @@ io_reset(void)
 
 /* ----------------------------------------------------------- oracle declarations */
 
+struct vdso_timehands {
+	uint64_t pad[4];
+};
+
+struct vdso_timehands32 {
+	uint32_t pad[4];
+};
+
+struct timecounter {
+	void *tc_priv;
+};
+
+#ifndef CACHE_LINE_SIZE
+#define CACHE_LINE_SIZE 64
+#endif
+
+struct buf_ring {
+	uint32_t br_prod_head;
+	uint32_t br_prod_tail;
+	int br_prod_size;
+	int br_prod_mask;
+	uint64_t br_drops;
+	uint32_t br_cons_head __attribute__((aligned(CACHE_LINE_SIZE)));
+	uint32_t br_cons_tail;
+	int br_cons_size;
+	int br_cons_mask;
+	void *br_ring[0] __attribute__((aligned(CACHE_LINE_SIZE)));
+};
+
+struct malloc_type {
+	const char *ks_shortdesc;
+};
+
+struct mtx {
+	int dummy;
+};
+
 extern "C" {
 typedef void (*sdt_probe_func_t)(uint32_t, uintptr_t, uintptr_t,
     uintptr_t, uintptr_t, uintptr_t, uintptr_t);
-
-struct vdso_timehands;
-struct vdso_timehands32;
-struct timecounter;
-struct buf_ring;
-struct malloc_type;
-struct mtx;
 
 uint32_t ref_cpu_fill_vdso_timehands(struct vdso_timehands *, struct timecounter *);
 uint32_t ref_cpu_fill_vdso_timehands32(struct vdso_timehands32 *,
@@ -159,7 +190,7 @@ probe_log_reset(probe_log *log)
 	std::memset(log, 0, sizeof(*log));
 }
 
-extern "C" static void
+static void
 port_record_probe(uint32_t id, uintptr_t a0, uintptr_t a1, uintptr_t a2,
     uintptr_t a3, uintptr_t a4, uintptr_t a5)
 {
@@ -173,7 +204,7 @@ port_record_probe(uint32_t id, uintptr_t a0, uintptr_t a1, uintptr_t a2,
 	port_probe_log.args[5] = a5;
 }
 
-extern "C" static void
+extern "C" void
 ref_record_probe(uint32_t id, uintptr_t a0, uintptr_t a1, uintptr_t a2,
     uintptr_t a3, uintptr_t a4, uintptr_t a5)
 {

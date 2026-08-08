@@ -35,9 +35,13 @@
 #define NL_TEXTMAX 2048
 #endif
 
+#include <stdio.h>
+
 /* ------------------------------------------------------------------------ */
 /* vdprintf internals (custom FILE layout)                                   */
 /* ------------------------------------------------------------------------ */
+
+#undef FILE
 
 struct __sbuf {
 	unsigned char *_base;

@@ -103,6 +103,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0083/port.cppm
   lib/libc/locale/b0128/port.cppm
   lib/libc/locale/b0130/port.cppm
+  lib/libc/locale/b0145/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm
   lib/libc/locale/rpmatch_m/port.cppm
@@ -187,6 +188,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdio/b0127/port.cppm
   lib/libc/stdio/b0139/port.cppm
   lib/libc/stdio/b0140/port.cppm
+  lib/libc/stdio/b0143/port.cppm
   lib/libc/stdio/fgetpos_m/port.cppm
   lib/libc/stdio/flags_m/port.cppm
   lib/libc/stdio/funopen_m/port.cppm

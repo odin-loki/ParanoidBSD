@@ -966,7 +966,8 @@ ref___ldexp_cexpl(long double complex z, int expt)
 	scale2 = 1;
 	SET_LDBL_EXPSIGN(scale2, BIAS + expt - half_expt);
 
-	sincosl(y, &s, &c);
+	s = sinl(y);
+	c = cosl(y);
 	return (CMPLXL(c * exp_x * scale1 * scale2,
 	    s * exp_x * scale1 * scale2));
 }
@@ -1008,15 +1009,13 @@ cexp_ovfl = 2.27892930024498818830197576893019292e+04L,
 exp_ovfl = 1.13565234062941439494919310779707649e+04L;
 
 static inline void
-ref___ldexp_cexpl_parts(long double complex z, int expt, long double *re,
+ref___ldexp_cexpl_parts(long double x, long double y, int expt, long double *re,
     long double *im)
 {
 	long double c, exp_x, hi, lo, s;
-	long double x, y, scale1, scale2;
+	long double scale1, scale2;
 	int half_expt, k;
 
-	x = creall(z);
-	y = cimagl(z);
 	ref___k_expl(x, &hi, &lo, &k);
 
 	exp_x = (lo + hi) * 0x1p16382L;
@@ -1028,18 +1027,16 @@ ref___ldexp_cexpl_parts(long double complex z, int expt, long double *re,
 	scale2 = 1;
 	SET_LDBL_EXPSIGN(scale2, BIAS + expt - half_expt);
 
-	sincosl(y, &s, &c);
+	s = sinl(y);
+	c = cosl(y);
 	*re = c * exp_x * scale1 * scale2;
 	*im = s * exp_x * scale1 * scale2;
 }
 
 static void
-ref_cexpl_parts_impl(long double complex z, long double *re, long double *im)
+ref_cexpl_parts_impl(long double x, long double y, long double *re, long double *im)
 {
-	long double c, exp_x, s, x, y;
-
-	x = creall(z);
-	y = cimagl(z);
+	long double c, exp_x, s;
 
 	/* cexp(x + I 0) = exp(x) + I 0 */
 	if (y == 0) {
@@ -1049,7 +1046,8 @@ ref_cexpl_parts_impl(long double complex z, long double *re, long double *im)
 	}
 	/* cexp(0 + I y) = cos(y) + I sin(y) */
 	if (x == 0) {
-		sincosl(y, &s, &c);
+		s = sinl(y);
+		c = cosl(y);
 		*re = c;
 		*im = s;
 		return;
@@ -1079,7 +1077,7 @@ ref_cexpl_parts_impl(long double complex z, long double *re, long double *im)
 		 * x is between exp_ovfl and cexp_ovfl, so we must scale to
 		 * avoid overflow in exp(x).
 		 */
-		ref___ldexp_cexpl_parts(z, 0, re, im);
+		ref___ldexp_cexpl_parts(x, y, 0, re, im);
 		return;
 	}
 
@@ -1091,7 +1089,8 @@ ref_cexpl_parts_impl(long double complex z, long double *re, long double *im)
 	 *  -  x = NaN (spurious inexact exception from y)
 	 */
 	exp_x = expl(x);
-	sincosl(y, &s, &c);
+	s = sinl(y);
+	c = cosl(y);
 	*re = exp_x * c;
 	*im = exp_x * s;
 }
@@ -1109,7 +1108,8 @@ ref_cexpl(long double complex z)
 		return (CMPLXL(expl(x), y));
 	/* cexp(0 + I y) = cos(y) + I sin(y) */
 	if (x == 0) {
-		sincosl(y, &s, &c);
+		s = sinl(y);
+		c = cosl(y);
 		return (CMPLXL(c, s));
 	}
 
@@ -1141,13 +1141,14 @@ ref_cexpl(long double complex z)
 		 *  -  x = NaN (spurious inexact exception from y)
 		 */
 		exp_x = expl(x);
-		sincosl(y, &s, &c);
+		s = sinl(y);
+		c = cosl(y);
 		return (CMPLXL(exp_x * c, exp_x * s));
 	}
 }
 
 void
-ref_cexpl_parts(long double complex z, long double *re, long double *im)
+ref_cexpl_parts(long double x, long double y, long double *re, long double *im)
 {
-	ref_cexpl_parts_impl(z, re, im);
+	ref_cexpl_parts_impl(x, y, re, im);
 }

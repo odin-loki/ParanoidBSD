@@ -147,27 +147,6 @@ struct xlocale {
 
 #define XLOCALE_CTYPE(l)	port_XLOCALE_CTYPE(l)
 
-std::size_t
-__wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
-    std::size_t nwc, std::size_t len, mbstate_t * __restrict ps,
-    wcrtomb_pfn_t pwcrtomb);
-
-static std::size_t
-dispatch_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
-    std::size_t nwc, std::size_t len, mbstate_t * __restrict ps)
-{
-	return (__wcsnrtombs_std(dst, src, nwc, len, ps, pbsd_wcrtomb));
-}
-
-inline void
-init_locale()
-{
-	std::memset(&::port_global_ctype, 0, sizeof(::port_global_ctype));
-	::port_global_ctype.__wcsnrtombs = dispatch_wcsnrtombs;
-	::port_global_locale_storage.components[PORT_XLC_CTYPE] =
-	    &::port_global_ctype;
-}
-
 inline locale_t
 global_locale()
 {
@@ -291,6 +270,22 @@ __wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
 	}
 	*src = s;
 	return (nbytes);
+}
+
+std::size_t
+dispatch_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
+    std::size_t nwc, std::size_t len, mbstate_t * __restrict ps)
+{
+	return (__wcsnrtombs_std(dst, src, nwc, len, ps, pbsd_wcrtomb));
+}
+
+inline void
+init_locale()
+{
+	std::memset(&::port_global_ctype, 0, sizeof(::port_global_ctype));
+	::port_global_ctype.__wcsnrtombs = dispatch_wcsnrtombs;
+	::port_global_locale_storage.components[PORT_XLC_CTYPE] =
+	    &::port_global_ctype;
 }
 
 /*-

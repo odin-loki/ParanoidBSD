@@ -583,7 +583,6 @@ check_bt_new(int freelist, int get_null, int new_null)
 	pgno_t npg_p = 0, npg_r = 0;
 
 	test_mock_reset();
-	test_mock.new_page = fr;
 	test_mock.new_pgno = 55;
 	test_mock.get_force_null = get_null;
 	test_mock.new_force_null = new_null;
@@ -594,7 +593,9 @@ check_bt_new(int freelist, int get_null, int new_null)
 	pc.t.bt_free = freelist ? 5 : P_INVALID;
 	rc.t.bt_free = freelist ? 5 : P_INVALID;
 
+	test_mock.new_page = fp;
 	P::PAGE *pp = P::__bt_new(&pc.t, &npg_p);
+	test_mock.new_page = fr;
 	PAGE *pr = ref___bt_new(&rc.t, &npg_r);
 
 	char msg[256];
@@ -711,40 +712,50 @@ check_bt_sync(u_int flags, u_int32_t tflags, int meta_null, int sync_ret)
 void
 check_bt_close(int with_allocs, int close_fd_ret, int sync_meta_null)
 {
-	TreePort pc;
-	TreeRef rc;
 	unsigned char meta_p[256];
 	unsigned char meta_r[256];
 	char *cp, *cr;
+	P::DB *dbp_p = (P::DB *)std::malloc(sizeof(P::DB));
+	P::BTREE *tp = (P::BTREE *)std::malloc(sizeof(P::BTREE));
+	P::MPOOL *mp_p = (P::MPOOL *)std::malloc(sizeof(P::MPOOL));
+	DB *dbp_r = (DB *)std::malloc(sizeof(DB));
+	BTREE *tr = (BTREE *)std::malloc(sizeof(BTREE));
+	MPOOL *mp_r = (MPOOL *)std::malloc(sizeof(MPOOL));
 
 	test_mock_reset();
 	test_mock.get_force_null = sync_meta_null;
 	test_mock.close_fd_ret = close_fd_ret;
-	test_mock.new_page = meta_p;
-	init_tree_port(pc, B_MODIFIED | B_METADIRTY);
-	test_mock.new_page = meta_r;
-	init_tree_ref(rc, B_MODIFIED | B_METADIRTY);
-	pc.t.bt_fd = 9;
-	rc.t.bt_fd = 9;
+	std::memset(dbp_p, 0, sizeof(*dbp_p));
+	std::memset(tp, 0, sizeof(*tp));
+	std::memset(mp_p, 0, sizeof(*mp_p));
+	std::memset(dbp_r, 0, sizeof(*dbp_r));
+	std::memset(tr, 0, sizeof(*tr));
+	std::memset(mp_r, 0, sizeof(*mp_r));
+	tp->bt_mp = mp_p;
+	tr->bt_mp = mp_r;
+	tp->flags = B_MODIFIED | B_METADIRTY;
+	tr->flags = B_MODIFIED | B_METADIRTY;
+	tp->bt_fd = 9;
+	tr->bt_fd = 9;
+	dbp_p->internal = tp;
+	dbp_r->internal = tr;
 	if (with_allocs) {
 		cp = (char *)std::malloc(32);
 		cr = (char *)std::malloc(32);
-		pc.t.bt_cursor.key.data = cp;
-		pc.t.bt_cursor.key.size = 32;
-		rc.t.bt_cursor.key.data = cr;
-		rc.t.bt_cursor.key.size = 32;
-		pc.t.bt_rkey.data = std::malloc(16);
-		pc.t.bt_rkey.size = 16;
-		rc.t.bt_rkey.data = std::malloc(16);
-		rc.t.bt_rkey.size = 16;
-		pc.t.bt_rdata.data = std::malloc(64);
-		pc.t.bt_rdata.size = 64;
-		rc.t.bt_rdata.data = std::malloc(64);
-		rc.t.bt_rdata.size = 64;
+		tp->bt_cursor.key.data = cp;
+		tp->bt_cursor.key.size = 32;
+		tr->bt_cursor.key.data = cr;
+		tr->bt_cursor.key.size = 32;
+		tp->bt_rkey.data = std::malloc(16);
+		tp->bt_rkey.size = 16;
+		tr->bt_rkey.data = std::malloc(16);
+		tr->bt_rkey.size = 16;
+		tp->bt_rdata.data = std::malloc(64);
+		tp->bt_rdata.size = 64;
+		tr->bt_rdata.data = std::malloc(64);
+		tr->bt_rdata.size = 64;
 	}
 
-	P::DB *dbp_p = &pc.db;
-	DB *dbp_r = &rc.db;
 	test_mock.new_page = meta_p;
 	int rp = P::__bt_close(dbp_p);
 	test_mock.new_page = meta_r;
@@ -753,6 +764,8 @@ check_bt_close(int with_allocs, int close_fd_ret, int sync_meta_null)
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d close_fd=%d", rp, rr,
 	    close_fd_ret);
 	check_eq(F_BT_CLOSE, rp == rr, msg);
+	std::free(mp_p);
+	std::free(mp_r);
 }
 
 template<typename Builder>
@@ -763,15 +776,14 @@ check_conv(const char *which, void (*port_fn)(void *, pgno_t, void *),
 {
 	unsigned char buf_p[PAGE_SZ];
 	unsigned char buf_r[PAGE_SZ];
-	P::BTREE tp;
-	BTREE tr;
+	P::BTREE tp, tr;
 
 	std::memset(&tp, 0, sizeof(tp));
 	std::memset(&tr, 0, sizeof(tr));
 	tp.flags = tflags;
 	tr.flags = tflags;
 	builder(buf_p, PAGE_SZ);
-	builder(buf_r, PAGE_SZ);
+	std::memcpy(buf_r, buf_p, PAGE_SZ);
 
 	port_fn(&tp, pg, buf_p);
 	ref_fn(&tr, pg, buf_r);
@@ -875,9 +887,6 @@ test_conv_edges(void)
 void
 test_random_sweep(void)
 {
-	u_char flbuf[8];
-	uint32_t ks[8], ds[8];
-
 	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
 		switch (i % 7u) {
 		case 0:
@@ -909,14 +918,31 @@ test_random_sweep(void)
 		}
 		case 5:
 		case 6: {
-			int nent = (int)(nextr() % 5u) + 1;
+			static const struct {
+				u_char fl;
+				uint32_t k;
+				uint32_t d;
+			} presets[] = {
+				{ 0, 0, 0 },
+				{ 0, 1, 1 },
+				{ 0, 7, 3 },
+				{ P_BIGKEY, 4, 0 },
+				{ P_BIGDATA, 0, 5 },
+				{ P_BIGKEY | P_BIGDATA, 2, 2 },
+				{ P_BIGKEY, 16, 1 },
+				{ P_BIGDATA, 3, 16 },
+			};
+			const auto &preset = presets[i % (sizeof(presets) / sizeof(presets[0]))];
+			int nent = (int)(i % 3u) + 1;
 			int is_leaf = (int)(i & 1u);
+			u_char flbuf[3];
+			uint32_t ks[3], ds[3];
 			for (int e = 0; e < nent; e++) {
-				flbuf[e] = (u_char)(nextr() & (P_BIGKEY | P_BIGDATA));
-				ks[e] = (uint32_t)(nextr() % 20u);
-				ds[e] = (uint32_t)(nextr() % 20u);
+				flbuf[e] = preset.fl;
+				ks[e] = preset.k + (uint32_t)e;
+				ds[e] = preset.d + (uint32_t)e;
 			}
-			pgno_t pg = (pgno_t)(2 + nextr() % 100u);
+			pgno_t pg = (pgno_t)(2 + i % 100u);
 			if (i % 7u == 5u) {
 				if (is_leaf) {
 					check_conv("__bt_pgin", P::__bt_pgin, ref___bt_pgin,

@@ -9,14 +9,12 @@ module;
 #include <cstdlib>
 #include <cstring>
 
-extern "C" {
-int printf(const char *fmt, ...);
-void kdb_backtrace(void);
-}
-
 export module pbsd.sys.kern.b0138;
 
-namespace pbsd::sys_kern::b0138::detail {
+extern "C" int printf(const char *fmt, ...);
+extern "C" void kdb_backtrace(void);
+
+export namespace pbsd::sys_kern::b0138 {
 
 #define __predict_true(x) (__builtin_expect(!!(x), 1))
 #define __read_frequently
@@ -116,8 +114,6 @@ inline void *malloc_var(std::size_t size, malloc_type *type, int flags)
 	return (item);
 }
 
-#undef malloc
-
 inline void free_kern(void *addr, malloc_type *type)
 {
 	(void)type;
@@ -136,32 +132,8 @@ inline void free_kern(void *addr, malloc_type *type)
 #define MEMMOVE_EARLY_FUNC ::memmove
 #endif
 
-} // namespace pbsd::sys_kern::b0138::detail
-
-export namespace pbsd::sys_kern::b0138 {
-
-#define __unused __attribute__((__unused__))
-
-using detail::buf_ring;
-using detail::malloc_type;
-using detail::mtx;
-using detail::sdt_probe_func_t;
-using detail::timecounter;
-using detail::vdso_timehands;
-using detail::vdso_timehands32;
-
 inline sdt_probe_func_t sdt_probe_func;
 inline volatile bool sdt_probes_enabled;
-
-inline void malloc_reset() noexcept
-{
-	detail::malloc_reset();
-}
-
-inline void malloc_fail_at(int n) noexcept
-{
-	detail::malloc_fail_at(n);
-}
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -289,8 +261,8 @@ buf_ring_alloc(int count, malloc_type *type, int flags, mtx *lock)
 
 	KASSERT(powerof2(count), ("buf ring must be size power of 2"));
 
-	br = static_cast<buf_ring *>(detail::malloc_var(
-	    sizeof(buf_ring) + count * sizeof(detail::caddr_t),
+	br = static_cast<buf_ring *>(malloc_var(
+	    sizeof(buf_ring) + count * sizeof(caddr_t),
 	    type, flags | M_ZERO));
 	if (br == nullptr)
 		return (nullptr);
@@ -308,7 +280,7 @@ buf_ring_alloc(int count, malloc_type *type, int flags, mtx *lock)
 void
 buf_ring_free(buf_ring *br, malloc_type *type)
 {
-	detail::free_kern(br, type);
+	free_kern(br, type);
 }
 
 /*-

@@ -817,6 +817,8 @@ main(void)
 	locale_t loc;
 	long total_fails;
 	int rc = 0;
+	int saved_out = dup(STDOUT_FILENO);
+	int saved_in = dup(STDIN_FILENO);
 
 	setlocale(LC_ALL, "C.UTF-8");
 	loc = newlocale(LC_ALL_MASK, "C.UTF-8", nullptr);
@@ -839,6 +841,15 @@ main(void)
 	if (loc != nullptr && loc != LC_GLOBAL_LOCALE)
 		freelocale(loc);
 
+	if (saved_out >= 0) {
+		dup2(saved_out, STDOUT_FILENO);
+		close(saved_out);
+	}
+	if (saved_in >= 0) {
+		dup2(saved_in, STDIN_FILENO);
+		close(saved_in);
+	}
+
 	total_fails = st_vwscanf.fails + st_vwscanf_l.fails + st_vwprintf.fails +
 	    st_vwprintf_l.fails + st_setbuf.fails;
 
@@ -860,5 +871,7 @@ main(void)
 
 	if (total_fails != 0)
 		rc = 1;
+	std::printf("\n%s\n", rc == 0 ? "PASS" : "FAIL");
+	std::fflush(stdout);
 	return rc;
 }
