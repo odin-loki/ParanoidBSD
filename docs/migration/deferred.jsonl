@@ -25,3 +25,4 @@
 {"path": "hbsd/src/lib/libc/db/hash/hash_bigkey.c", "batch": "b0194s1", "reasons": ["AUTO_FAILED"], "detail": "worker crashed: FileNotFoundError(2, 'No such file or directory')", "attempts": 0, "queued": "2026-08-08T22:35:45Z"}
 {"path": "hbsd/src/lib/msun/ld80/s_logl.c", "batch": "b0095s2", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:43:07Z"}
 {"path": "hbsd/src/usr.bin/cksum/crc32.c", "batch": "b0054s1", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:43:10Z"}
+{"path": "hbsd/src/usr.bin/cksum/crc.c", "batch": "b0054s2", "reasons": ["AUTO_FAILED"], "detail": "missing harness.cpp\n(mechanical path first said: not attempted (mechanical phase runs separately))", "attempts": 0, "queued": "2026-08-08T22:43:15Z"}
