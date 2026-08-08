@@ -238,7 +238,6 @@ ref_vdprintf(int fd, const char * __restrict fmt, va_list ap)
 /* xprintf_errno internals                                                   */
 /* ------------------------------------------------------------------------ */
 
-#include <stdio.h>
 #include <wchar.h>
 
 struct printf_info {

@@ -297,6 +297,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0086/port.cppm
   lib/msun/src/b0135/port.cppm
   lib/msun/src/b0136/port.cppm
+  lib/msun/src/b0141/port.cppm
   lib/msun/src/e_acosh_m/port.cppm
   lib/msun/src/e_acoshf_m/port.cppm
   lib/msun/src/e_atanh_m/port.cppm

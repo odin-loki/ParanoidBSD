@@ -2,6 +2,8 @@
  * Differential harness for batch b0130.
  */
 
+#include <cstdlib>
+
 import pbsd.lib.libc.locale.b0130;
 
 #include <climits>
