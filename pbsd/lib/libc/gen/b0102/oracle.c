@@ -1,51 +1,61 @@
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
 /*
- * Reference oracle for batch b0100.
+ * Reference oracle for batch b0102.
  *
- * Original HardenedBSD sources concatenated, every function renamed with a
- * ref_ prefix.  Function bodies are UNMODIFIED.
- *
- * Sources:
- *   hbsd/src/lib/libc/stdio/wprintf.c
- *   hbsd/src/lib/libc/stdio/clrerr.c
- *   hbsd/src/lib/libc/stdio/feof.c
- *
- * Declarations for libc stdout/vfwprintf and the private stdio FILE layout are
- * provided below so the unmodified bodies compile and link.
+ * The original HardenedBSD sources are concatenated below with every function
+ * renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.  Only the
+ * macro definitions and external declarations that the host environment does
+ * not provide have been added.
  */
 
-#include <stddef.h>
+#include <errno.h>
 #include <limits.h>
-#include <stdarg.h>
-#include <wchar.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stddef.h>
+#include <sys/types.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
 #endif
 
-struct _IO_FILE;
-extern struct _IO_FILE *stdout;
-int vfwprintf(struct _IO_FILE * __restrict, const wchar_t * __restrict, va_list);
+#define	LIO_READ		1
+#define	LIO_WRITE		2
+#define	LIO_NOP			4
+#define	LIO_FOFFSET		0x10
+#define	LIO_VECTORED		0x20
+#define	LIO_WAIT		0
+#define	LIO_NOWAIT		1
+#define	AIO_OP2_FOFFSET		0x0001
+#define	AIO_OP2_VECTORED	0x0002
+#define	GETENTROPY_MAX		256
 
-typedef void *locale_t;
-#define LC_GLOBAL_LOCALE ((locale_t)0)
+struct aiocb {
+	int	aio_lio_opcode;
+};
 
-int
-vfwprintf_l(struct _IO_FILE * __restrict fp, locale_t locale,
-    const wchar_t * __restrict fmt, va_list ap)
-{
-	(void)locale;
-	return vfwprintf(fp, fmt, ap);
-}
+struct DIR {
+	pthread_mutex_t	dd_lock;
+};
+
+extern int lio_listio(int, struct aiocb *const *, int, void *);
+extern int aio_error(const struct aiocb *);
+extern void _seekdir(struct DIR *, long);
+extern void _pthread_mutex_lock(pthread_mutex_t *);
+extern void _pthread_mutex_unlock(pthread_mutex_t *);
+extern int __isthreaded;
+extern int __libc_sigaction(int, const struct sigaction *, struct sigaction *);
+extern ssize_t getrandom(void *, size_t, unsigned int);
+extern int raise(int);
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2002 Tim J. Robbins
- * All rights reserved.
+ * Copyright (c) 2024 The FreeBSD Foundation
  *
- * Copyright (c) 2011 The FreeBSD Foundation
- *
- * Portions of this software were developed by David Chisnall
+ * This software were developed by Konstantin Belousov <kib@FreeBSD.org>
  * under sponsorship from the FreeBSD Foundation.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -71,72 +81,35 @@ vfwprintf_l(struct _IO_FILE * __restrict fp, locale_t locale,
  */
 
 int
-ref_wprintf(const wchar_t * __restrict fmt, ...)
+ref_aio_write2(struct aiocb *iocb, int flags)
 {
-	int ret;
-	va_list ap;
+	int error;
 
-	va_start(ap, fmt);
-	ret = vfwprintf(stdout, fmt, ap);
-	va_end(ap);
+	if ((flags & ~(AIO_OP2_FOFFSET | AIO_OP2_VECTORED)) != 0) {
+		errno = EINVAL;
+		return (-1);
+	}
+	iocb->aio_lio_opcode = LIO_WRITE;
+	if ((flags & AIO_OP2_FOFFSET) != 0)
+		iocb->aio_lio_opcode |= LIO_FOFFSET;
+	if ((flags & AIO_OP2_VECTORED) != 0)
+		iocb->aio_lio_opcode |= LIO_VECTORED;
 
-	return (ret);
+	error = lio_listio(LIO_NOWAIT, &iocb, 1, NULL);
+	if (error == -1 && errno == EIO) {
+		error = aio_error(iocb);
+		if (error != -1 && error != 0)
+			errno = error;
+		error = -1;
+	}
+	return (error);
 }
-int
-ref_wprintf_l(locale_t locale, const wchar_t * __restrict fmt, ...)
-{
-	int ret;
-	va_list ap;
-
-	va_start(ap, fmt);
-	ret = vfwprintf_l(stdout, locale, fmt, ap);
-	va_end(ap);
-
-	return (ret);
-}
-
-#ifndef _STDFILE_DECLARED
-#define _STDFILE_DECLARED
-struct __sFILE {
-	unsigned char	*_p;
-	int		_r;
-	int		_w;
-	short		_flags;
-	short		_file;
-};
-typedef struct __sFILE FILE;
-#endif
-
-#define	__SEOF	0x0020
-#define	__SERR	0x0040
-#define	__sfeof(p)	(((p)->_flags & __SEOF) != 0)
-#define	__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
-
-int	__isthreaded;
-
-void
-_flockfile(FILE *fp)
-{
-	(void)fp;
-}
-
-void
-_funlockfile(FILE *fp)
-{
-	(void)fp;
-}
-
-#define	FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
-#define	FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 1990, 1993
+ * Copyright (c) 1983, 1993
  *	The Regents of the University of California.  All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Chris Torek.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -163,29 +136,25 @@ _funlockfile(FILE *fp)
  * SUCH DAMAGE.
  */
 
+/*
+ * Seek to an entry in a directory.
+ * _seekdir is in telldir.c so that it can share opaque data structures.
+ */
 void
-ref_clearerr(FILE *fp)
+ref_seekdir(struct DIR *dirp, long loc)
 {
-	FLOCKFILE(fp);
-	__sclearerr(fp);
-	FUNLOCKFILE(fp);
-}
-
-void
-ref_clearerr_unlocked(FILE *fp)
-{
-
-	__sclearerr(fp);
+	if (__isthreaded)
+		_pthread_mutex_lock(&dirp->dd_lock);
+	_seekdir(dirp, loc);
+	if (__isthreaded)
+		_pthread_mutex_unlock(&dirp->dd_lock);
 }
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 1990, 1993
+ * Copyright (c) 1985, 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Chris Torek.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -212,20 +181,91 @@ ref_clearerr_unlocked(FILE *fp)
  * SUCH DAMAGE.
  */
 
-int
-ref_feof(FILE *fp)
-{
-	int	ret;
+/*
+ * Almost backwards compatible signal.
+ */
 
-	FLOCKFILE(fp);
-	ret= __sfeof(fp);
-	FUNLOCKFILE(fp);
-	return (ret);
+sigset_t _sigintr;	/* shared with siginterrupt */
+
+sig_t
+ref_signal(int s, sig_t a)
+{
+	struct sigaction sa, osa;
+
+	sa.sa_handler = a;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	if (!sigismember(&_sigintr, s))
+		sa.sa_flags |= SA_RESTART;
+	if (__libc_sigaction(s, &sa, &osa) < 0)
+		return (SIG_ERR);
+	return (osa.sa_handler);
+}
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2018 Conrad Meyer <cem@FreeBSD.org>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+static inline void
+_getentropy_fail(void)
+{
+	raise(SIGKILL);
 }
 
 int
-ref_feof_unlocked(FILE *fp)
+ref_getentropy(void *buf, size_t buflen)
 {
+	ssize_t rd;
 
-	return (__sfeof(fp));
+	if (buflen > GETENTROPY_MAX) {
+		errno = EINVAL;
+		return (-1);
+	}
+
+	while (buflen > 0) {
+		rd = getrandom(buf, buflen, 0);
+		if (rd == -1) {
+			switch (errno) {
+			case EINTR:
+				continue;
+			case EFAULT:
+				return (-1);
+			default:
+				_getentropy_fail();
+			}
+		}
+
+		/* This cannot happen. */
+		if (rd == 0)
+			_getentropy_fail();
+
+		buf = (char *)buf + rd;
+		buflen -= rd;
+	}
+
+	return (0);
 }

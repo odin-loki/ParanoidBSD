@@ -289,22 +289,29 @@ struct VprintfObs {
 };
 
 static int
-capture_stdout_vprintf(int (*fn)(const char *__restrict, va_list),
-    const char *fmt, va_list ap_in)
+capture_stdout_vprintf(GuardArena &out,
+    int (*fn)(const char *__restrict, va_list), const char *fmt,
+    va_list ap_in)
 {
 	char path[] = "/tmp/pbsd_b0101_vp_XXXXXX";
-	int fd;
-	FILE *saved;
+	int fd, saved_stdout;
 	va_list ap;
 	int ret;
+	FILE *cap;
 
+	out.fill();
 	fd = mkstemp(path);
 	if (fd < 0)
 		return -9999;
 	close(fd);
 
-	saved = stdout;
-	if (freopen(path, "w+", stdout) == nullptr) {
+	saved_stdout = dup(STDOUT_FILENO);
+	if (saved_stdout < 0) {
+		unlink(path);
+		return -9998;
+	}
+	if (freopen(path, "w", stdout) == nullptr) {
+		close(saved_stdout);
 		unlink(path);
 		return -9998;
 	}
@@ -312,10 +319,58 @@ capture_stdout_vprintf(int (*fn)(const char *__restrict, va_list),
 	ret = fn(fmt, ap);
 	va_end(ap);
 	fflush(stdout);
-	if (saved != nullptr)
-		freopen("/dev/tty", "w", stdout);
+	dup2(saved_stdout, STDOUT_FILENO);
+	close(saved_stdout);
+
+	cap = fopen(path, "rb");
+	if (cap != nullptr) {
+		(void)fread(out.bytes + PRE, 1, USER, cap);
+		fclose(cap);
+	}
 	unlink(path);
-	(void)saved;
+	return ret;
+}
+
+static int
+capture_stdout_vprintf_l(GuardArena &out,
+    int (*fn)(locale_t, const char *__restrict, va_list), locale_t loc,
+    const char *fmt, va_list ap_in)
+{
+	char path[] = "/tmp/pbsd_b0101_vpl_XXXXXX";
+	int fd, saved_stdout;
+	va_list ap;
+	int ret;
+	FILE *cap;
+
+	out.fill();
+	fd = mkstemp(path);
+	if (fd < 0)
+		return -9999;
+	close(fd);
+
+	saved_stdout = dup(STDOUT_FILENO);
+	if (saved_stdout < 0) {
+		unlink(path);
+		return -9998;
+	}
+	if (freopen(path, "w", stdout) == nullptr) {
+		close(saved_stdout);
+		unlink(path);
+		return -9998;
+	}
+	va_copy(ap, ap_in);
+	ret = fn(loc, fmt, ap);
+	va_end(ap);
+	fflush(stdout);
+	dup2(saved_stdout, STDOUT_FILENO);
+	close(saved_stdout);
+
+	cap = fopen(path, "rb");
+	if (cap != nullptr) {
+		(void)fread(out.bytes + PRE, 1, USER, cap);
+		fclose(cap);
+	}
+	unlink(path);
 	return ret;
 }
 
@@ -324,26 +379,11 @@ run_vprintf_port(const char *fmt, va_list ap)
 {
 	VprintfObs obs{};
 
-	obs.out.fill();
-	obs.ret = capture_stdout_vprintf(
+	obs.ret = capture_stdout_vprintf(obs.out,
 	    [](const char *f, va_list a) -> int {
 		    return port::vprintf(f, a);
 	    },
 	    fmt, ap);
-	if (obs.ret == -9999 || obs.ret == -9998)
-		return obs;
-
-	char path[] = "/tmp/pbsd_b0101_vp_XXXXXX";
-	int fd = mkstemp(path);
-	if (fd < 0)
-		return obs;
-	close(fd);
-	FILE *cap = fopen(path, "rb");
-	if (cap != nullptr) {
-		(void)fread(obs.out.bytes + PRE, 1, USER, cap);
-		fclose(cap);
-	}
-	unlink(path);
 	return obs;
 }
 
@@ -352,50 +392,8 @@ run_vprintf_ref(const char *fmt, va_list ap)
 {
 	VprintfObs obs{};
 
-	obs.out.fill();
-	obs.ret = capture_stdout_vprintf(ref_vprintf, fmt, ap);
-	if (obs.ret == -9999 || obs.ret == -9998)
-		return obs;
-
-	char path[] = "/tmp/pbsd_b0101_vp_XXXXXX";
-	int fd = mkstemp(path);
-	if (fd < 0)
-		return obs;
-	close(fd);
-	FILE *cap = fopen(path, "rb");
-	if (cap != nullptr) {
-		(void)fread(obs.out.bytes + PRE, 1, USER, cap);
-		fclose(cap);
-	}
-	unlink(path);
+	obs.ret = capture_stdout_vprintf(obs.out, ref_vprintf, fmt, ap);
 	return obs;
-}
-
-static int
-capture_stdout_vprintf_l(int (*fn)(locale_t, const char *__restrict, va_list),
-    locale_t loc, const char *fmt, va_list ap_in)
-{
-	char path[] = "/tmp/pbsd_b0101_vpl_XXXXXX";
-	int fd;
-	va_list ap;
-	int ret;
-
-	fd = mkstemp(path);
-	if (fd < 0)
-		return -9999;
-	close(fd);
-
-	if (freopen(path, "w+", stdout) == nullptr) {
-		unlink(path);
-		return -9998;
-	}
-	va_copy(ap, ap_in);
-	ret = fn(loc, fmt, ap);
-	va_end(ap);
-	fflush(stdout);
-	freopen("/dev/tty", "w", stdout);
-	unlink(path);
-	return ret;
 }
 
 static VprintfObs
@@ -403,8 +401,7 @@ run_vprintf_l_port(locale_t loc, const char *fmt, va_list ap)
 {
 	VprintfObs obs{};
 
-	obs.out.fill();
-	obs.ret = capture_stdout_vprintf_l(
+	obs.ret = capture_stdout_vprintf_l(obs.out,
 	    [](locale_t l, const char *f, va_list a) -> int {
 		    return port::vprintf_l(l, f, a);
 	    },
@@ -417,8 +414,7 @@ run_vprintf_l_ref(locale_t loc, const char *fmt, va_list ap)
 {
 	VprintfObs obs{};
 
-	obs.out.fill();
-	obs.ret = capture_stdout_vprintf_l(ref_vprintf_l, loc, fmt, ap);
+	obs.ret = capture_stdout_vprintf_l(obs.out, ref_vprintf_l, loc, fmt, ap);
 	return obs;
 }
 
@@ -511,13 +507,10 @@ vprintf_edges(locale_t loc)
 static void
 vprintf_random(locale_t loc, long n)
 {
-	char fmt[32];
 	char str[64];
-	int vals[4];
 
 	for (long t = 0; t < n; t++) {
-		unsigned pick = rnd_u32() % 10u;
-		va_list ap;
+		unsigned pick = rnd_u32() % 8u;
 
 		switch (pick) {
 		case 0:
@@ -559,21 +552,14 @@ vprintf_random(locale_t loc, long n)
 			VPRINTF_CASE(S_VPRINTF_L, loc, 1, "random", "%s", str);
 			break;
 		}
-		default: {
-			vals[0] = (int)rnd_u32();
-			vals[1] = (int)rnd_u32();
-			vals[2] = (int)(rnd_u32() & 0xff);
-			std::snprintf(fmt, sizeof(fmt), "%%d %%u %%c");
-			va_start(ap, fmt);
-			vprintf_case_va(S_VPRINTF, loc, 0, fmt, ap, "random",
-			    "random");
-			va_end(ap);
-			va_start(ap, fmt);
-			vprintf_case_va(S_VPRINTF_L, loc, 1, fmt, ap,
-			    "random", "random");
-			va_end(ap);
+		default:
+			VPRINTF_CASE(S_VPRINTF, loc, 0, "random", "%d %u %c",
+			    (int)rnd_u32(), rnd_u32(),
+			    (int)(rnd_u32() & 0xff));
+			VPRINTF_CASE(S_VPRINTF_L, loc, 1, "random",
+			    "%d %u %c", (int)rnd_u32(), rnd_u32(),
+			    (int)(rnd_u32() & 0xff));
 			break;
-		}
 		}
 	}
 }

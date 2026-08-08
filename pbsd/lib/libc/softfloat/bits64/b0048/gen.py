@@ -476,7 +476,11 @@ def gen_extern_decls(funcs: set[str], classes: dict[str, str]) -> str:
                 lines.append(
                     f'void ref_{f}(bits64 a0, bits64 a1, bits64 a2, int16 count, '
                     'bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);')
-            elif '128Extra' in f or f in ('shift128Right', 'shift128RightJamming'):
+            elif f == 'shift64ExtraRightJamming':
+                lines.append(
+                    f'void ref_{f}(bits64 a0, bits64 a1, int16 count, '
+                    'bits64 *z0Ptr, bits64 *z1Ptr);')
+            elif '128Extra' in f:
                 if '128Extra' in f:
                     lines.append(
                         f'void ref_{f}(bits64 a0, bits64 a1, bits64 a2, int16 count, '
@@ -602,7 +606,7 @@ def proto_normalize(f: str) -> str:
     if f == 'normalizeFloat128Subnormal':
         return (
             'void ref_normalizeFloat128Subnormal(bits64 aSig0, bits64 aSig1, '
-            'int16 *zExpPtr, bits64 *zSig0Ptr, bits64 *zSig1Ptr);')
+            'int32 *zExpPtr, bits64 *zSig0Ptr, bits64 *zSig1Ptr);')
     if f == 'normalizeFloat32Subnormal':
         return 'void ref_normalizeFloat32Subnormal(bits32 aSig, int16 *zExpPtr, bits32 *zSigPtr);'
     if f == 'normalizeFloat64Subnormal':
@@ -612,23 +616,17 @@ def proto_normalize(f: str) -> str:
 
 def proto_round_pack_float(f: str) -> str:
     if 'Float32' in f:
-        if f.startswith('normalizeRoundAndPack'):
-            return f'float32 ref_{f}(flag zSign, int16 zExp, bits32 zSig);'
-        if f == 'roundAndPackFloat32':
-            return 'float32 ref_roundAndPackFloat32(flag zSign, int16 zExp, bits32 zSig);'
         return f'float32 ref_{f}(flag zSign, int16 zExp, bits32 zSig);'
     if 'Float64' in f:
         return f'float64 ref_{f}(flag zSign, int16 zExp, bits64 zSig);'
     if 'Floatx80' in f:
-        if f == 'roundAndPackFloatx80':
-            return (
-                'floatx80 ref_roundAndPackFloatx80(flag zSign, int32 zExp, '
-                'bits64 zSig0, bits64 zSig1);')
-        return f'floatx80 ref_{f}(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);'
+        return (
+            f'floatx80 ref_{f}(int8 roundingPrecision, flag zSign, int32 zExp, '
+            'bits64 zSig0, bits64 zSig1);')
     if f == 'roundAndPackFloat128':
         return (
             'float128 ref_roundAndPackFloat128(flag zSign, int32 zExp, '
-            'bits64 zSig0, bits64 zSig1);')
+            'bits64 zSig0, bits64 zSig1, bits64 zSig2);')
     return f'float128 ref_{f}(flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1);'
 
 
@@ -1324,7 +1322,7 @@ def gen_normalize_test(f):
         return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         bits64 sig0 = urand64(), sig1 = urand64();
-        int32 exp_p = 0x7F7F7F7F, exp_r = 0x7F7F7F7F;
+        int16 exp_p = 0x7F7F, exp_r = 0x7F7F;
         bits64 z0p = sig0, z1p = sig1, z0r = sig0, z1r = sig1;
         sync_globals_from_port();
         port::{f}(sig0, sig1, &exp_p, &z0p, &z1p);
@@ -1362,7 +1360,7 @@ def gen_normalize_test(f):
     return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         bits64 sig = urand64();
-        int32 exp_p = 0x7F7F7F7F, exp_r = 0x7F7F7F7F;
+        int16 exp_p = 0x7F7F, exp_r = 0x7F7F;
         bits64 sig_p = sig, sig_r = sig;
         sync_globals_from_port();
         port::{f}(sig, &exp_p, &sig_p);
@@ -1416,45 +1414,80 @@ def gen_round_pack_int_test(f):
 
 
 def gen_round_pack_float_test(f):
-    if 'Float32' in f:
-        sigty, rety = 'bits32', 'float32'
-        zexp = 'int16'
-    elif 'Float64' in f:
-        sigty, rety = 'bits64', 'float64'
-        zexp = 'int16'
-    elif 'Floatx80' in f:
-        sigty, rety = 'bits64', 'floatx80'
-        zexp = 'int32'
-    else:
-        sigty, rety = 'bits64', 'float128'
-        zexp = 'int32'
-    if f == 'roundAndPackFloatx80' or f == 'roundAndPackFloat128':
+    if f in ('roundAndPackFloat32', 'normalizeRoundAndPackFloat32'):
         return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         flag zs = urand32() & 1;
-        {zexp} ze = static_cast<{zexp}>(urand32() & 0x7FFF);
-        {sigty} z0 = urand64(), z1 = urand64();
+        int16 ze = static_cast<int16>(urand32() & 0x7FF);
+        bits32 zsig = urand32();
         sync_globals_from_port();
-        {rety} rp = port::{f}(zs, ze, z0, z1);
-        {rety} rr = ref_{f}(zs, ze, z0, z1);
+        float32 rp = port::{f}(zs, ze, zsig);
+        float32 rr = ref_{f}(zs, ze, zsig);
         cases++;
         if (rp != rr) failures++;
         sync_globals_to_port();
     }}
 '''
-    return f'''
+    if f in ('roundAndPackFloat64', 'normalizeRoundAndPackFloat64'):
+        return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         flag zs = urand32() & 1;
-        {zexp} ze = static_cast<{zexp}>(urand32() & 0x7FF);
-        {sigty} zsig = static_cast<{sigty}>(urand64());
+        int16 ze = static_cast<int16>(urand32() & 0x7FF);
+        bits64 zsig = urand64();
         sync_globals_from_port();
-        {rety} rp = port::{f}(zs, ze, zsig);
-        {rety} rr = ref_{f}(zs, ze, zsig);
+        float64 rp = port::{f}(zs, ze, zsig);
+        float64 rr = ref_{f}(zs, ze, zsig);
         cases++;
         if (rp != rr) failures++;
         sync_globals_to_port();
     }}
 '''
+    if f == 'roundAndPackFloat128':
+        cmp = cmp_expr('float128')
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        flag zs = urand32() & 1;
+        int32 ze = static_cast<int32>(urand32() & 0x7FFF);
+        bits64 z0 = urand64(), z1 = urand64(), z2 = urand64();
+        sync_globals_from_port();
+        float128 rp = port::{f}(zs, ze, z0, z1, z2);
+        float128 rr = ref_{f}(zs, ze, z0, z1, z2);
+        cases++;
+        if ({cmp}) failures++;
+        sync_globals_to_port();
+    }}
+'''
+    if f == 'normalizeRoundAndPackFloat128':
+        cmp = cmp_expr('float128')
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        flag zs = urand32() & 1;
+        int32 ze = static_cast<int32>(urand32() & 0x7FFF);
+        bits64 z0 = urand64(), z1 = urand64();
+        sync_globals_from_port();
+        float128 rp = port::{f}(zs, ze, z0, z1);
+        float128 rr = ref_{f}(zs, ze, z0, z1);
+        cases++;
+        if ({cmp}) failures++;
+        sync_globals_to_port();
+    }}
+'''
+    if f in ('roundAndPackFloatx80', 'normalizeRoundAndPackFloatx80'):
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        int8 rprec = static_cast<int8>((urand32() % 3) * 32 + 32);
+        flag zs = urand32() & 1;
+        int32 ze = static_cast<int32>(urand32() & 0x7FFF);
+        bits64 z0 = urand64(), z1 = urand64();
+        sync_globals_from_port();
+        floatx80 rpv = port::{f}(rprec, zs, ze, z0, z1);
+        floatx80 rrv = ref_{f}(rprec, zs, ze, z0, z1);
+        cases++;
+        if ({cmp_expr('floatx80', 'rpv', 'rrv')}) failures++;
+        sync_globals_to_port();
+    }}
+'''
+    return gen_generic_test(f, 'round_pack_float')
 
 
 def gen_sig_arith_test(f):

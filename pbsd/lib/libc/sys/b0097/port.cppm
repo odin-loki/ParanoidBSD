@@ -135,6 +135,10 @@ module;
 #include <signal.h>
 #include <time.h>
 
+#ifdef ppoll
+#undef ppoll
+#endif
+
 #ifndef __weak_symbol
 #define	__weak_symbol	__attribute__((__weak__))
 #endif

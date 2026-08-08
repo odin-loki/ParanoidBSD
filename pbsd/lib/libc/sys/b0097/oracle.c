@@ -25,7 +25,9 @@
 #define	__weak_symbol	__attribute__((__weak__))
 #endif
 
-struct __wrusage;
+struct __wrusage {
+	unsigned char	opaque[128];
+};
 
 #define	__ssp_real_(fun)	fun
 #define	__ssp_real(fun)		__ssp_real_(fun)

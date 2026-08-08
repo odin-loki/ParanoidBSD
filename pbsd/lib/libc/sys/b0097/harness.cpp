@@ -2,11 +2,10 @@
  * harness.cpp -- differential test for PBSD batch b0097.
  *
  * wait6, sendto, clock_nanosleep and ppoll are libc interposition wrappers:
- * each loads a function pointer from the interposing table and tail-calls it
+ * each loads a function pointer from __libc_interposing[] and tail-calls it
  * with the original argument list.  The harness installs instrumented mocks in
  * both the oracle (ref_*) and port tables, then compares the mock-visible
- * syscall tag, every forwarded argument and return value.  Functions that write
- * through caller-supplied buffers use 0x7f guard bytes and are compared in full.
+ * syscall tag, forwarded arguments, output-buffer writes and return value.
  */
 
 #include <limits.h>
@@ -14,14 +13,17 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <netinet/in.h>
+#include <signal.h>
+#include <time.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <poll.h>
-#include <signal.h>
-#include <time.h>
-#include <unistd.h>
+#include <netinet/in.h>
+
+#ifndef SSIZE_MIN
+#define	SSIZE_MIN	((ssize_t)(-SSIZE_MAX - 1))
+#endif
 
 extern "C" {
 
@@ -35,7 +37,11 @@ enum {
 	INTERPOS_MAX
 };
 
-struct __wrusage;
+struct __wrusage {
+	unsigned char	opaque[128];
+};
+
+extern interpos_func_t ref___libc_interposing[INTERPOS_MAX];
 
 pid_t ref_wait6(idtype_t idtype, id_t id, int *status, int options,
     struct __wrusage *ru, siginfo_t *infop);
@@ -46,20 +52,24 @@ int ref_clock_nanosleep(clockid_t clock_id, int flags,
 int ref_ppoll(struct pollfd pfd[], nfds_t nfds,
     const struct timespec *timeout, const sigset_t *newsigmask);
 
-void ref_set_interpos(int slot, interpos_func_t func);
-
 }
 
 import pbsd.lib.libc.sys.b0097;
 
 namespace port = pbsd::lib_libc_sys::b0097;
 
-#define	GUARD		0x7f
-#define	BUF_TOTAL	512
-#define	DATA_OFF	64
-#define	DATA_CAP	(BUF_TOTAL - DATA_OFF)
-#define	DIGEST_MAX	64
-#define	PFD_MAX		16
+#define	GUARD			0x7f
+#define	MSG_CAP			64
+#define	MSG_GUARD_PAD		16
+#define	ADDR_CAP		64
+#define	ADDR_GUARD_PAD		16
+#define	PFD_MAX			8
+#define	PFD_GUARD_PAD		4
+#define	TS_GUARD_PAD		8
+#define	SIGSET_GUARD_PAD	8
+#define	RU_GUARD_PAD		16
+#define	INFO_GUARD_PAD		16
+#define	STATUS_GUARD_PAD	16
 
 #define	PBSD_TAG_NONE		0
 #define	PBSD_TAG_WAIT6		1
@@ -73,24 +83,19 @@ struct MockState {
 	idtype_t		idtype;
 	id_t			id;
 	int			options;
-	int			status_is_null;
-	int			ru_is_null;
-	int			infop_is_null;
-	int			status_out;
 	int			s;
 	size_t			len;
 	int			flags;
 	socklen_t		tolen;
-	const void		*to_ptr;
 	clockid_t		clock_id;
-	int			cn_flags;
-	int			rqtp_is_null;
-	int			rmtp_is_null;
 	nfds_t			nfds;
-	int			timeout_is_null;
-	int			sigmask_is_null;
-	unsigned char		wdigest[DIGEST_MAX];
-	size_t			wdigest_len;
+	unsigned char		msg_hash;
+	unsigned char		addr_hash;
+	unsigned char		rqtp_hash;
+	unsigned char		timeout_hash;
+	unsigned char		sigmask_hash;
+	unsigned char		pfd_hash;
+	int			status_out;
 	long long		prog_ret;
 };
 
@@ -104,37 +109,51 @@ mock_reset(long long ret)
 }
 
 static void
-mock_digest(const void *buf, size_t nbytes)
+mock_enter(int tag)
 {
-	size_t n = nbytes;
+	mock.ncalls++;
+	mock.tag = tag;
+}
 
-	if (n > DIGEST_MAX)
-		n = DIGEST_MAX;
-	mock.wdigest_len = n;
-	if (n > 0 && buf != NULL)
-		memcpy(mock.wdigest, buf, n);
+static unsigned
+hash_bytes(const void *p, size_t n)
+{
+	const unsigned char *b = (const unsigned char *)p;
+	unsigned h = 2166136261u;
+
+	for (size_t i = 0; i < n; i++) {
+		h ^= b[i];
+		h *= 16777619u;
+	}
+	return (h);
+}
+
+static void
+fill_pattern(unsigned char *p, size_t n, unsigned char seed)
+{
+	for (size_t i = 0; i < n; i++)
+		p[i] = (unsigned char)(seed + (unsigned char)i);
 }
 
 static pid_t
 mock_wait6(idtype_t idtype, id_t id, int *status, int options,
     struct __wrusage *ru, siginfo_t *infop)
 {
-	mock.ncalls++;
-	mock.tag = PBSD_TAG_WAIT6;
+	mock_enter(PBSD_TAG_WAIT6);
 	mock.idtype = idtype;
 	mock.id = id;
 	mock.options = options;
-	mock.status_is_null = (status == NULL);
-	mock.ru_is_null = (ru == NULL);
-	mock.infop_is_null = (infop == NULL);
-	mock.status_out = (int)(mock.prog_ret ^ 0x5a5a5a5a);
 
-	if (status != NULL)
-		*status = mock.status_out;
-	if (ru != NULL)
-		memset(ru, 0x42, 64);
-	if (infop != NULL)
-		memset(infop, 0x33, sizeof(*infop));
+	if (status != nullptr) {
+		*status = (int)(0x7f00 ^ (unsigned)options);
+		mock.status_out = *status;
+	}
+	if (ru != nullptr)
+		fill_pattern((unsigned char *)ru, sizeof(struct __wrusage),
+		    (unsigned char)(id & 0xff));
+	if (infop != nullptr)
+		fill_pattern((unsigned char *)infop, sizeof(siginfo_t),
+		    (unsigned char)((id >> 8) & 0xff));
 
 	return ((pid_t)mock.prog_ret);
 }
@@ -143,14 +162,15 @@ static ssize_t
 mock_sendto(int s, const void *msg, size_t len, int flags,
     const struct sockaddr *to, socklen_t tolen)
 {
-	mock.ncalls++;
-	mock.tag = PBSD_TAG_SENDTO;
+	mock_enter(PBSD_TAG_SENDTO);
 	mock.s = s;
 	mock.len = len;
 	mock.flags = flags;
 	mock.tolen = tolen;
-	mock.to_ptr = to;
-	mock_digest(msg, len);
+	if (msg != nullptr && len > 0)
+		mock.msg_hash = (unsigned char)hash_bytes(msg, len);
+	if (to != nullptr && tolen > 0)
+		mock.addr_hash = (unsigned char)hash_bytes(to, tolen);
 	return ((ssize_t)mock.prog_ret);
 }
 
@@ -158,60 +178,51 @@ static int
 mock_clock_nanosleep(clockid_t clock_id, int flags,
     const struct timespec *rqtp, struct timespec *rmtp)
 {
-	mock.ncalls++;
-	mock.tag = PBSD_TAG_CLOCK_NANOSLEEP;
+	mock_enter(PBSD_TAG_CLOCK_NANOSLEEP);
 	mock.clock_id = clock_id;
-	mock.cn_flags = flags;
-	mock.rqtp_is_null = (rqtp == NULL);
-	mock.rmtp_is_null = (rmtp == NULL);
-	if (rqtp != NULL)
-		mock_digest(rqtp, sizeof(*rqtp));
-	if (rmtp != NULL) {
-		rmtp->tv_sec = (time_t)(mock.prog_ret ^ 0x1111);
-		rmtp->tv_nsec = (long)(mock.prog_ret ^ 0x2222);
+	mock.flags = flags;
+	if (rqtp != nullptr)
+		mock.rqtp_hash = (unsigned char)hash_bytes(rqtp,
+		    sizeof(struct timespec));
+	if (rmtp != nullptr) {
+		rmtp->tv_sec = (time_t)(clock_id ^ flags);
+		rmtp->tv_nsec = (long)(flags ^ 0x55);
 	}
 	return ((int)mock.prog_ret);
 }
 
 static int
-mock_ppoll(struct pollfd pfd[], nfds_t nfds,
-    const struct timespec *timeout, const sigset_t *newsigmask)
+mock_ppoll(struct pollfd pfd[], nfds_t nfds, const struct timespec *timeout,
+    const sigset_t *newsigmask)
 {
-	mock.ncalls++;
-	mock.tag = PBSD_TAG_PPOLL;
-	mock.nfds = nfds;
-	mock.timeout_is_null = (timeout == NULL);
-	mock.sigmask_is_null = (newsigmask == NULL);
-	if (timeout != NULL)
-		mock_digest(timeout, sizeof(*timeout));
-	if (newsigmask != NULL)
-		mock_digest(newsigmask, sizeof(*newsigmask));
+	nfds_t i, n;
 
-	if (pfd != NULL) {
-		for (nfds_t i = 0; i < nfds && i < PFD_MAX; i++)
-			pfd[i].revents = (short)((mock.prog_ret + (long long)i) & 0xffff);
+	mock_enter(PBSD_TAG_PPOLL);
+	mock.nfds = nfds;
+	if (timeout != nullptr)
+		mock.timeout_hash = (unsigned char)hash_bytes(timeout,
+		    sizeof(struct timespec));
+	if (newsigmask != nullptr)
+		mock.sigmask_hash = (unsigned char)hash_bytes(newsigmask,
+		    sizeof(sigset_t));
+	if (pfd != nullptr && nfds > 0) {
+		n = nfds < PFD_MAX ? nfds : (nfds_t)PFD_MAX;
+		mock.pfd_hash = (unsigned char)hash_bytes(pfd,
+		    (size_t)n * sizeof(struct pollfd));
+		for (i = 0; i < n; i++)
+			pfd[i].revents = (short)(pfd[i].events ^ 0x7f);
 	}
 	return ((int)mock.prog_ret);
 }
 
 static void
-install_ref_mocks(void)
+install_mocks(interpos_func_t *table)
 {
-	ref_set_interpos(INTERPOS_wait6, (interpos_func_t)mock_wait6);
-	ref_set_interpos(INTERPOS_sendto, (interpos_func_t)mock_sendto);
-	ref_set_interpos(INTERPOS_clock_nanosleep,
-	    (interpos_func_t)mock_clock_nanosleep);
-	ref_set_interpos(INTERPOS_ppoll, (interpos_func_t)mock_ppoll);
-}
-
-static void
-install_port_mocks(void)
-{
-	port::set_interpos(INTERPOS_wait6, (interpos_func_t)mock_wait6);
-	port::set_interpos(INTERPOS_sendto, (interpos_func_t)mock_sendto);
-	port::set_interpos(INTERPOS_clock_nanosleep,
-	    (interpos_func_t)mock_clock_nanosleep);
-	port::set_interpos(INTERPOS_ppoll, (interpos_func_t)mock_ppoll);
+	table[INTERPOS_wait6] = (interpos_func_t)mock_wait6;
+	table[INTERPOS_sendto] = (interpos_func_t)mock_sendto;
+	table[INTERPOS_clock_nanosleep] =
+	    (interpos_func_t)mock_clock_nanosleep;
+	table[INTERPOS_ppoll] = (interpos_func_t)mock_ppoll;
 }
 
 struct Snap {
@@ -220,23 +231,19 @@ struct Snap {
 	idtype_t		idtype;
 	id_t			id;
 	int			options;
-	int			status_is_null;
-	int			ru_is_null;
-	int			infop_is_null;
 	int			s;
 	size_t			len;
 	int			flags;
 	socklen_t		tolen;
-	const void		*to_ptr;
 	clockid_t		clock_id;
-	int			cn_flags;
-	int			rqtp_is_null;
-	int			rmtp_is_null;
 	nfds_t			nfds;
-	int			timeout_is_null;
-	int			sigmask_is_null;
-	unsigned char		wdigest[DIGEST_MAX];
-	size_t			wdigest_len;
+	unsigned char		msg_hash;
+	unsigned char		addr_hash;
+	unsigned char		rqtp_hash;
+	unsigned char		timeout_hash;
+	unsigned char		sigmask_hash;
+	unsigned char		pfd_hash;
+	int			status_out;
 };
 
 static Snap
@@ -244,29 +251,24 @@ take_snap(void)
 {
 	Snap s;
 
-	memset(&s, 0, sizeof(s));
 	s.ncalls = mock.ncalls;
 	s.tag = mock.tag;
 	s.idtype = mock.idtype;
 	s.id = mock.id;
 	s.options = mock.options;
-	s.status_is_null = mock.status_is_null;
-	s.ru_is_null = mock.ru_is_null;
-	s.infop_is_null = mock.infop_is_null;
 	s.s = mock.s;
 	s.len = mock.len;
 	s.flags = mock.flags;
 	s.tolen = mock.tolen;
-	s.to_ptr = mock.to_ptr;
 	s.clock_id = mock.clock_id;
-	s.cn_flags = mock.cn_flags;
-	s.rqtp_is_null = mock.rqtp_is_null;
-	s.rmtp_is_null = mock.rmtp_is_null;
 	s.nfds = mock.nfds;
-	s.timeout_is_null = mock.timeout_is_null;
-	s.sigmask_is_null = mock.sigmask_is_null;
-	s.wdigest_len = mock.wdigest_len;
-	memcpy(s.wdigest, mock.wdigest, DIGEST_MAX);
+	s.msg_hash = mock.msg_hash;
+	s.addr_hash = mock.addr_hash;
+	s.rqtp_hash = mock.rqtp_hash;
+	s.timeout_hash = mock.timeout_hash;
+	s.sigmask_hash = mock.sigmask_hash;
+	s.pfd_hash = mock.pfd_hash;
+	s.status_out = mock.status_out;
 	return (s);
 }
 
@@ -310,49 +312,60 @@ static bool
 cmp_snap(int fn, const Snap &a, const Snap &b, const char *ctx)
 {
 	if (a.ncalls != b.ncalls || a.tag != b.tag || a.idtype != b.idtype ||
-	    a.id != b.id || a.options != b.options ||
-	    a.status_is_null != b.status_is_null ||
-	    a.ru_is_null != b.ru_is_null ||
-	    a.infop_is_null != b.infop_is_null || a.s != b.s ||
+	    a.id != b.id || a.options != b.options || a.s != b.s ||
 	    a.len != b.len || a.flags != b.flags || a.tolen != b.tolen ||
-	    a.to_ptr != b.to_ptr || a.clock_id != b.clock_id ||
-	    a.cn_flags != b.cn_flags || a.rqtp_is_null != b.rqtp_is_null ||
-	    a.rmtp_is_null != b.rmtp_is_null || a.nfds != b.nfds ||
-	    a.timeout_is_null != b.timeout_is_null ||
-	    a.sigmask_is_null != b.sigmask_is_null ||
-	    a.wdigest_len != b.wdigest_len ||
-	    memcmp(a.wdigest, b.wdigest, DIGEST_MAX) != 0) {
+	    a.clock_id != b.clock_id || a.nfds != b.nfds ||
+	    a.msg_hash != b.msg_hash || a.addr_hash != b.addr_hash ||
+	    a.rqtp_hash != b.rqtp_hash || a.timeout_hash != b.timeout_hash ||
+	    a.sigmask_hash != b.sigmask_hash || a.pfd_hash != b.pfd_hash ||
+	    a.status_out != b.status_out) {
 		char msg[640];
 
 		snprintf(msg, sizeof(msg),
-		    "%s ref={tag=%d idt=%d id=%llu opt=%d s=%d len=%zu fl=%d "
-		    "clk=%d cnfl=%d nfds=%llu wdl=%zu} "
-		    "port={tag=%d idt=%d id=%llu opt=%d s=%d len=%zu fl=%d "
-		    "clk=%d cnfl=%d nfds=%llu wdl=%zu}", ctx,
-		    a.tag, (int)a.idtype, (unsigned long long)a.id, a.options,
-		    a.s, a.len, a.flags, (int)a.clock_id, a.cn_flags,
-		    (unsigned long long)a.nfds, a.wdigest_len,
-		    b.tag, (int)b.idtype, (unsigned long long)b.id, b.options,
-		    b.s, b.len, b.flags, (int)b.clock_id, b.cn_flags,
-		    (unsigned long long)b.nfds, b.wdigest_len);
+		    "%s ref={nc=%llu tg=%d idt=%d id=%lld opt=%d s=%d "
+		    "len=%zu fl=%d tolen=%u clk=%d nfds=%llu mh=%u ah=%u "
+		    "rqh=%u th=%u sh=%u ph=%u st=%d} "
+		    "port={nc=%llu tg=%d idt=%d id=%lld opt=%d s=%d "
+		    "len=%zu fl=%d tolen=%u clk=%d nfds=%llu mh=%u ah=%u "
+		    "rqh=%u th=%u sh=%u ph=%u st=%d}",
+		    ctx, a.ncalls, a.tag, (int)a.idtype, (long long)a.id,
+		    a.options, a.s, a.len, a.flags, (unsigned)a.tolen,
+		    (int)a.clock_id, (unsigned long long)a.nfds, a.msg_hash,
+		    a.addr_hash, a.rqtp_hash, a.timeout_hash, a.sigmask_hash,
+		    a.pfd_hash, a.status_out, b.ncalls, b.tag, (int)b.idtype,
+		    (long long)b.id, b.options, b.s, b.len, b.flags,
+		    (unsigned)b.tolen, (int)b.clock_id,
+		    (unsigned long long)b.nfds, b.msg_hash, b.addr_hash,
+		    b.rqtp_hash, b.timeout_hash, b.sigmask_hash, b.pfd_hash,
+		    b.status_out);
 		fail(fn, "mock", msg);
 		return (false);
 	}
 	return (true);
 }
 
-static void
-fill_buf(unsigned char *buf, size_t off, size_t len, unsigned seed)
+static bool
+cmp_buf(int fn, const unsigned char *a, const unsigned char *b, size_t n,
+    const char *ctx)
 {
-	for (size_t i = 0; i < BUF_TOTAL; i++)
-		buf[i] = GUARD;
-	for (size_t i = 0; i < len; i++) {
-		unsigned v = (seed + (unsigned)i * 17u) & 0xffu;
+	for (size_t i = 0; i < n; i++) {
+		if (a[i] != b[i]) {
+			char msg[192];
 
-		if ((i & 3u) == 0u)
-			v = 0;
-		buf[off + i] = (unsigned char)v;
+			snprintf(msg, sizeof(msg),
+			    "%s byte[%zu] ref=0x%02x port=0x%02x", ctx, i,
+			    a[i], b[i]);
+			fail(fn, "buffer", msg);
+			return (false);
+		}
 	}
+	return (true);
+}
+
+static void
+fill_guard(unsigned char *buf, size_t n)
+{
+	memset(buf, GUARD, n);
 }
 
 static uint64_t rng_state;
@@ -380,12 +393,6 @@ rnd_int(void)
 	return ((int)(u ^ (u >> 1)));
 }
 
-static unsigned
-rnd_u32(void)
-{
-	return (rng_u32());
-}
-
 static long long
 rnd_ret(void)
 {
@@ -394,459 +401,536 @@ rnd_ret(void)
 	return ((long long)(int32_t)u);
 }
 
-static size_t
-rnd_size(void)
+static unsigned char
+rnd_byte(void)
 {
-	return ((size_t)rng_u32());
+	return ((unsigned char)rng_u32());
 }
 
-static bool
-case_wait6(idtype_t idtype, id_t id, int options, int use_status, int use_ru,
-    int use_infop, long long ret)
+static size_t
+rnd_size(size_t max)
 {
-	unsigned char st_a[sizeof(int) + 32], st_b[sizeof(int) + 32];
-	unsigned char ru_buf_a[128], ru_buf_b[128];
-	unsigned char info_buf_a[sizeof(siginfo_t) + 32];
-	unsigned char info_buf_b[sizeof(siginfo_t) + 32];
-	int *status_a, *status_b;
-	struct __wrusage *ru_a, *ru_b;
-	siginfo_t *info_a, *info_b;
-	Snap sa, sb;
+	if (max == 0)
+		return (0);
+	return ((size_t)rng_u32() % (max + 1));
+}
+
+static void
+case_wait6(idtype_t idtype, id_t id, int *status, int options,
+    struct __wrusage *ru, siginfo_t *infop, long long ret)
+{
+	unsigned char status_a[sizeof(int) + 2 * STATUS_GUARD_PAD];
+	unsigned char status_b[sizeof(int) + 2 * STATUS_GUARD_PAD];
+	unsigned char ru_a[sizeof(struct __wrusage) + 2 * RU_GUARD_PAD];
+	unsigned char ru_b[sizeof(struct __wrusage) + 2 * RU_GUARD_PAD];
+	unsigned char info_a[sizeof(siginfo_t) + 2 * INFO_GUARD_PAD];
+	unsigned char info_b[sizeof(siginfo_t) + 2 * INFO_GUARD_PAD];
+	int *psa, *psb;
+	struct __wrusage *rua;
+	port::__wrusage *rub;
+	siginfo_t *ia, *ib;
+	Snap snap_a, snap_b;
 	pid_t ra, rb;
-	char ctx[320];
+	char ctx[256];
 
 	fn_cases[FN_WAIT6]++;
 
-	memset(st_a, GUARD, sizeof(st_a));
-	memset(st_b, GUARD, sizeof(st_b));
-	memset(ru_buf_a, GUARD, sizeof(ru_buf_a));
-	memset(ru_buf_b, GUARD, sizeof(ru_buf_b));
-	memset(info_buf_a, GUARD, sizeof(info_buf_a));
-	memset(info_buf_b, GUARD, sizeof(info_buf_b));
+	fill_guard(status_a, sizeof(status_a));
+	fill_guard(status_b, sizeof(status_b));
+	fill_guard(ru_a, sizeof(ru_a));
+	fill_guard(ru_b, sizeof(ru_b));
+	fill_guard(info_a, sizeof(info_a));
+	fill_guard(info_b, sizeof(info_b));
 
-	status_a = use_status ? (int *)(st_a + 16) : NULL;
-	status_b = use_status ? (int *)(st_b + 16) : NULL;
-	ru_a = use_ru ? (struct __wrusage *)(ru_buf_a + 16) : NULL;
-	ru_b = use_ru ? (struct __wrusage *)(ru_buf_b + 16) : NULL;
-	info_a = use_infop ? (siginfo_t *)(info_buf_a + 16) : NULL;
-	info_b = use_infop ? (siginfo_t *)(info_buf_b + 16) : NULL;
+	psa = status != nullptr ?
+	    (int *)(status_a + STATUS_GUARD_PAD) : nullptr;
+	psb = status != nullptr ?
+	    (int *)(status_b + STATUS_GUARD_PAD) : nullptr;
+	rua = ru != nullptr ?
+	    (struct __wrusage *)(ru_a + RU_GUARD_PAD) : nullptr;
+	rub = ru != nullptr ?
+	    reinterpret_cast<port::__wrusage *>(ru_b + RU_GUARD_PAD) : nullptr;
+	ia = infop != nullptr ?
+	    (siginfo_t *)(info_a + INFO_GUARD_PAD) : nullptr;
+	ib = infop != nullptr ?
+	    (siginfo_t *)(info_b + INFO_GUARD_PAD) : nullptr;
 
-	install_ref_mocks();
+	install_mocks(ref___libc_interposing);
 	mock_reset(ret);
-	ra = ref_wait6(idtype, id, status_a, options, ru_a, info_a);
-	sa = take_snap();
+	ra = ref_wait6(idtype, id, psa, options, rua, ia);
+	snap_a = take_snap();
 
-	install_port_mocks();
+	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
-	rb = port::wait6(idtype, id, status_b, options, ru_b, info_b);
-	sb = take_snap();
+	rb = port::wait6(idtype, id, psb, options,
+	    reinterpret_cast<port::__wrusage *>(rub),
+	    ib);
+	snap_b = take_snap();
 
 	snprintf(ctx, sizeof(ctx),
-	    "idt=%d id=%llu opt=%d st=%d ru=%d info=%d ret=%lld",
-	    (int)idtype, (unsigned long long)id, options, use_status, use_ru,
-	    use_infop, ret);
-	cmp_snap(FN_WAIT6, sa, sb, ctx);
+	    "idtype=%d id=%lld opt=%d ret=%lld", (int)idtype,
+	    (long long)id, options, ret);
+	cmp_snap(FN_WAIT6, snap_a, snap_b, ctx);
+	cmp_buf(FN_WAIT6, status_a, status_b, sizeof(status_a), ctx);
+	cmp_buf(FN_WAIT6, ru_a, ru_b, sizeof(ru_a), ctx);
+	cmp_buf(FN_WAIT6, info_a, info_b, sizeof(info_a), ctx);
 
 	if (ra != rb) {
-		char msg[384];
+		char msg[224];
 
-		snprintf(msg, sizeof(msg), "%s ref=%d port=%d", ctx, (int)ra,
-		    (int)rb);
+		snprintf(msg, sizeof(msg), "%s ref=%lld port=%lld", ctx,
+		    (long long)ra, (long long)rb);
 		fail(FN_WAIT6, "return", msg);
-		return (false);
 	}
-	if (use_status && memcmp(st_a, st_b, sizeof(st_a)) != 0) {
-		fail(FN_WAIT6, "status_buf", ctx);
-		return (false);
-	}
-	if (use_ru && memcmp(ru_buf_a, ru_buf_b, sizeof(ru_buf_a)) != 0) {
-		fail(FN_WAIT6, "ru_buf", ctx);
-		return (false);
-	}
-	if (use_infop && memcmp(info_buf_a, info_buf_b, sizeof(info_buf_a)) != 0) {
-		fail(FN_WAIT6, "info_buf", ctx);
-		return (false);
-	}
-	return (true);
 }
 
-static struct sockaddr_in sock_storage;
-
-static bool
-case_sendto(int s, size_t len, int flags, int use_to, socklen_t tolen,
-    long long ret, unsigned pat_seed)
+static void
+case_sendto(int s, const void *msg, size_t len, int flags,
+    const struct sockaddr *to, socklen_t tolen, long long ret)
 {
-	unsigned char buf_a[BUF_TOTAL], buf_b[BUF_TOTAL];
-	unsigned char to_a[sizeof(struct sockaddr_in) + 32];
-	unsigned char to_b[sizeof(struct sockaddr_in) + 32];
-	struct sockaddr *to_ref, *to_port;
-	Snap sa, sb;
+	unsigned char msg_a[MSG_CAP + 2 * MSG_GUARD_PAD];
+	unsigned char msg_b[MSG_CAP + 2 * MSG_GUARD_PAD];
+	unsigned char addr_a[ADDR_CAP + 2 * ADDR_GUARD_PAD];
+	unsigned char addr_b[ADDR_CAP + 2 * ADDR_GUARD_PAD];
+	const void *ma, *mb;
+	const struct sockaddr *ta, *tb;
+	Snap snap_a, snap_b;
 	ssize_t ra, rb;
-	char ctx[320];
+	char ctx[256];
+	size_t total_msg, total_addr, copy_len, copy_tolen;
 
 	fn_cases[FN_SENDTO]++;
 
-	fill_buf(buf_a, DATA_OFF, BUF_TOTAL - DATA_OFF, pat_seed);
-	fill_buf(buf_b, DATA_OFF, BUF_TOTAL - DATA_OFF, pat_seed);
-	memset(to_a, GUARD, sizeof(to_a));
-	memset(to_b, GUARD, sizeof(to_b));
-	memcpy(to_a + 16, &sock_storage, sizeof(sock_storage));
-	memcpy(to_b + 16, &sock_storage, sizeof(sock_storage));
-	to_ref = use_to ? (struct sockaddr *)(to_a + 16) : NULL;
-	to_port = use_to ? (struct sockaddr *)(to_b + 16) : NULL;
+	total_msg = MSG_CAP + 2 * MSG_GUARD_PAD;
+	total_addr = ADDR_CAP + 2 * ADDR_GUARD_PAD;
+	fill_guard(msg_a, total_msg);
+	fill_guard(msg_b, total_msg);
+	fill_guard(addr_a, total_addr);
+	fill_guard(addr_b, total_addr);
 
-	install_ref_mocks();
+	ma = msg;
+	mb = msg;
+	if (msg != nullptr) {
+		ma = msg_a + MSG_GUARD_PAD;
+		mb = msg_b + MSG_GUARD_PAD;
+		copy_len = len < MSG_CAP ? len : MSG_CAP;
+		memcpy((void *)(msg_a + MSG_GUARD_PAD), msg, copy_len);
+		memcpy((void *)(msg_b + MSG_GUARD_PAD), msg, copy_len);
+	}
+
+	ta = to;
+	tb = to;
+	if (to != nullptr) {
+		ta = (const struct sockaddr *)(addr_a + ADDR_GUARD_PAD);
+		tb = (const struct sockaddr *)(addr_b + ADDR_GUARD_PAD);
+		copy_tolen = tolen < ADDR_CAP ? tolen : ADDR_CAP;
+		memcpy((void *)(addr_a + ADDR_GUARD_PAD), to, copy_tolen);
+		memcpy((void *)(addr_b + ADDR_GUARD_PAD), to, copy_tolen);
+	}
+
+	install_mocks(ref___libc_interposing);
 	mock_reset(ret);
-	ra = ref_sendto(s, buf_a + DATA_OFF, len, flags, to_ref, tolen);
-	sa = take_snap();
+	ra = ref_sendto(s, ma, len, flags, ta, tolen);
+	snap_a = take_snap();
 
-	install_port_mocks();
+	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
-	rb = port::sendto(s, buf_b + DATA_OFF, len, flags, to_port, tolen);
-	sb = take_snap();
+	rb = port::sendto(s, mb, len, flags, tb, tolen);
+	snap_b = take_snap();
 
-	snprintf(ctx, sizeof(ctx),
-	    "s=%d len=%zu fl=%d to=%d tolen=%u ret=%lld seed=%u", s, len,
-	    flags, use_to, (unsigned)tolen, ret, pat_seed);
-	cmp_snap(FN_SENDTO, sa, sb, ctx);
+	snprintf(ctx, sizeof(ctx), "s=%d len=%zu flags=%d tolen=%u ret=%lld",
+	    s, len, flags, (unsigned)tolen, ret);
+	cmp_snap(FN_SENDTO, snap_a, snap_b, ctx);
+	cmp_buf(FN_SENDTO, msg_a, msg_b, total_msg, ctx);
+	cmp_buf(FN_SENDTO, addr_a, addr_b, total_addr, ctx);
 
 	if (ra != rb) {
-		char msg[384];
+		char msg[224];
 
 		snprintf(msg, sizeof(msg), "%s ref=%lld port=%lld", ctx,
 		    (long long)ra, (long long)rb);
 		fail(FN_SENDTO, "return", msg);
-		return (false);
 	}
-	if (memcmp(buf_a, buf_b, BUF_TOTAL) != 0) {
-		fail(FN_SENDTO, "msg_buf", ctx);
-		return (false);
-	}
-	if (use_to && memcmp(to_a, to_b, sizeof(to_a)) != 0) {
-		fail(FN_SENDTO, "to_buf", ctx);
-		return (false);
-	}
-	return (true);
 }
 
-static bool
-case_clock_nanosleep(clockid_t clock_id, int flags, int use_rqtp, int use_rmtp,
-    long long ret, unsigned pat_seed)
+static void
+case_clock_nanosleep(clockid_t clock_id, int flags,
+    const struct timespec *rqtp, struct timespec *rmtp, long long ret)
 {
-	unsigned char rq_a[sizeof(struct timespec) + 32];
-	unsigned char rq_b[sizeof(struct timespec) + 32];
-	unsigned char rm_a[sizeof(struct timespec) + 32];
-	unsigned char rm_b[sizeof(struct timespec) + 32];
-	const struct timespec *rq_ref, *rq_port;
-	struct timespec *rm_ref, *rm_port;
-	Snap sa, sb;
+	unsigned char rq_a[sizeof(struct timespec) + 2 * TS_GUARD_PAD];
+	unsigned char rq_b[sizeof(struct timespec) + 2 * TS_GUARD_PAD];
+	unsigned char rm_a[sizeof(struct timespec) + 2 * TS_GUARD_PAD];
+	unsigned char rm_b[sizeof(struct timespec) + 2 * TS_GUARD_PAD];
+	const struct timespec *rqa, *rqb;
+	struct timespec *rma, *rmb;
+	Snap snap_a, snap_b;
 	int ra, rb;
-	char ctx[320];
+	char ctx[256];
 
 	fn_cases[FN_CLOCK_NANOSLEEP]++;
 
-	memset(rq_a, GUARD, sizeof(rq_a));
-	memset(rq_b, GUARD, sizeof(rq_b));
-	memset(rm_a, GUARD, sizeof(rm_a));
-	memset(rm_b, GUARD, sizeof(rm_b));
-	if (use_rqtp) {
-		struct timespec *rq = (struct timespec *)(rq_a + 16);
+	fill_guard(rq_a, sizeof(rq_a));
+	fill_guard(rq_b, sizeof(rq_b));
+	fill_guard(rm_a, sizeof(rm_a));
+	fill_guard(rm_b, sizeof(rm_b));
 
-		rq->tv_sec = (time_t)(pat_seed ^ 0x1234);
-		rq->tv_nsec = (long)(pat_seed ^ 0x5678);
-		rq = (struct timespec *)(rq_b + 16);
-		rq->tv_sec = (time_t)(pat_seed ^ 0x1234);
-		rq->tv_nsec = (long)(pat_seed ^ 0x5678);
-	}
-	rq_ref = use_rqtp ? (const struct timespec *)(rq_a + 16) : NULL;
-	rq_port = use_rqtp ? (const struct timespec *)(rq_b + 16) : NULL;
-	rm_ref = use_rmtp ? (struct timespec *)(rm_a + 16) : NULL;
-	rm_port = use_rmtp ? (struct timespec *)(rm_b + 16) : NULL;
+	rqa = rqtp != nullptr ?
+	    (const struct timespec *)(rq_a + TS_GUARD_PAD) : nullptr;
+	rqb = rqtp != nullptr ?
+	    (const struct timespec *)(rq_b + TS_GUARD_PAD) : nullptr;
+	rma = rmtp != nullptr ?
+	    (struct timespec *)(rm_a + TS_GUARD_PAD) : nullptr;
+	rmb = rmtp != nullptr ?
+	    (struct timespec *)(rm_b + TS_GUARD_PAD) : nullptr;
 
-	install_ref_mocks();
+	if (rqtp != nullptr)
+		memcpy((void *)(rq_a + TS_GUARD_PAD), rqtp, sizeof(*rqtp));
+	if (rqtp != nullptr)
+		memcpy((void *)(rq_b + TS_GUARD_PAD), rqtp, sizeof(*rqtp));
+
+	install_mocks(ref___libc_interposing);
 	mock_reset(ret);
-	ra = ref_clock_nanosleep(clock_id, flags, rq_ref, rm_ref);
-	sa = take_snap();
+	ra = ref_clock_nanosleep(clock_id, flags, rqa, rma);
+	snap_a = take_snap();
 
-	install_port_mocks();
+	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
-	rb = port::clock_nanosleep(clock_id, flags, rq_port, rm_port);
-	sb = take_snap();
+	rb = port::clock_nanosleep(clock_id, flags, rqb, rmb);
+	snap_b = take_snap();
 
-	snprintf(ctx, sizeof(ctx),
-	    "clk=%d fl=%d rq=%d rm=%d ret=%lld seed=%u", (int)clock_id, flags,
-	    use_rqtp, use_rmtp, ret, pat_seed);
-	cmp_snap(FN_CLOCK_NANOSLEEP, sa, sb, ctx);
+	snprintf(ctx, sizeof(ctx), "clk=%d flags=%d ret=%lld", (int)clock_id,
+	    flags, ret);
+	cmp_snap(FN_CLOCK_NANOSLEEP, snap_a, snap_b, ctx);
+	cmp_buf(FN_CLOCK_NANOSLEEP, rq_a, rq_b, sizeof(rq_a), ctx);
+	cmp_buf(FN_CLOCK_NANOSLEEP, rm_a, rm_b, sizeof(rm_a), ctx);
 
 	if (ra != rb) {
-		char msg[384];
+		char msg[224];
 
 		snprintf(msg, sizeof(msg), "%s ref=%d port=%d", ctx, ra, rb);
 		fail(FN_CLOCK_NANOSLEEP, "return", msg);
-		return (false);
 	}
-	if (use_rmtp && memcmp(rm_a, rm_b, sizeof(rm_a)) != 0) {
-		fail(FN_CLOCK_NANOSLEEP, "rmtp_buf", ctx);
-		return (false);
-	}
-	return (true);
 }
 
-static bool
-case_ppoll(nfds_t nfds, int use_timeout, int use_sigmask, long long ret,
-    unsigned pat_seed)
+static void
+case_ppoll(struct pollfd pfd[], nfds_t nfds, const struct timespec *timeout,
+    const sigset_t *newsigmask, long long ret)
 {
-	unsigned char pfd_a[(PFD_MAX + 2) * sizeof(struct pollfd)];
-	unsigned char pfd_b[(PFD_MAX + 2) * sizeof(struct pollfd)];
-	unsigned char ts_a[sizeof(struct timespec) + 32];
-	unsigned char ts_b[sizeof(struct timespec) + 32];
-	unsigned char sig_a[sizeof(sigset_t) + 32];
-	unsigned char sig_b[sizeof(sigset_t) + 32];
-	struct pollfd *pf_ref, *pf_port;
-	const struct timespec *ts_ref, *ts_port;
-	const sigset_t *sig_ref, *sig_port;
-	Snap sa, sb;
+	unsigned char pfd_a[(PFD_MAX + 2 * PFD_GUARD_PAD) * sizeof(struct pollfd)];
+	unsigned char pfd_b[(PFD_MAX + 2 * PFD_GUARD_PAD) * sizeof(struct pollfd)];
+	unsigned char ts_a[sizeof(struct timespec) + 2 * TS_GUARD_PAD];
+	unsigned char ts_b[sizeof(struct timespec) + 2 * TS_GUARD_PAD];
+	unsigned char mask_a[sizeof(sigset_t) + 2 * SIGSET_GUARD_PAD];
+	unsigned char mask_b[sizeof(sigset_t) + 2 * SIGSET_GUARD_PAD];
+	struct pollfd *pa, *pb;
+	const struct timespec *ta, *tb;
+	const sigset_t *ma, *mb;
+	nfds_t copy_n;
+	Snap snap_a, snap_b;
 	int ra, rb;
-	char ctx[320];
+	char ctx[256];
+	size_t total_pfd;
 
 	fn_cases[FN_PPOLL]++;
 
-	memset(pfd_a, GUARD, sizeof(pfd_a));
-	memset(pfd_b, GUARD, sizeof(pfd_b));
-	memset(ts_a, GUARD, sizeof(ts_a));
-	memset(ts_b, GUARD, sizeof(ts_b));
-	memset(sig_a, GUARD, sizeof(sig_a));
-	memset(sig_b, GUARD, sizeof(sig_b));
+	total_pfd = (PFD_MAX + 2 * PFD_GUARD_PAD) * sizeof(struct pollfd);
+	fill_guard(pfd_a, total_pfd);
+	fill_guard(pfd_b, total_pfd);
+	fill_guard(ts_a, sizeof(ts_a));
+	fill_guard(ts_b, sizeof(ts_b));
+	fill_guard(mask_a, sizeof(mask_a));
+	fill_guard(mask_b, sizeof(mask_b));
 
-	pf_ref = (struct pollfd *)(pfd_a + sizeof(struct pollfd));
-	pf_port = (struct pollfd *)(pfd_b + sizeof(struct pollfd));
-	for (nfds_t i = 0; i < nfds && i < PFD_MAX; i++) {
-		pf_ref[i].fd = (int)(pat_seed + i);
-		pf_ref[i].events = (short)((pat_seed >> (i & 3u)) & 0xffff);
-		pf_ref[i].revents = 0;
-		pf_port[i].fd = pf_ref[i].fd;
-		pf_port[i].events = pf_ref[i].events;
-		pf_port[i].revents = 0;
+	pa = pfd != nullptr ?
+	    (struct pollfd *)(pfd_a + PFD_GUARD_PAD * sizeof(struct pollfd)) :
+	    nullptr;
+	pb = pfd != nullptr ?
+	    (struct pollfd *)(pfd_b + PFD_GUARD_PAD * sizeof(struct pollfd)) :
+	    nullptr;
+	if (pfd != nullptr && nfds > 0) {
+		copy_n = nfds < PFD_MAX ? nfds : (nfds_t)PFD_MAX;
+		memcpy(pa, pfd, (size_t)copy_n * sizeof(struct pollfd));
+		memcpy(pb, pfd, (size_t)copy_n * sizeof(struct pollfd));
 	}
-	if (use_timeout) {
-		struct timespec *ts = (struct timespec *)(ts_a + 16);
 
-		ts->tv_sec = (time_t)(pat_seed ^ 0xabcd);
-		ts->tv_nsec = (long)(pat_seed ^ 0xef01);
-		ts = (struct timespec *)(ts_b + 16);
-		ts->tv_sec = (time_t)(pat_seed ^ 0xabcd);
-		ts->tv_nsec = (long)(pat_seed ^ 0xef01);
-	}
-	ts_ref = use_timeout ? (const struct timespec *)(ts_a + 16) : NULL;
-	ts_port = use_timeout ? (const struct timespec *)(ts_b + 16) : NULL;
-	sig_ref = use_sigmask ? (const sigset_t *)(sig_a + 16) : NULL;
-	sig_port = use_sigmask ? (const sigset_t *)(sig_b + 16) : NULL;
-	if (use_sigmask) {
-		memset((void *)(sig_a + 16), (int)(pat_seed & 0xff),
+	ta = timeout != nullptr ?
+	    (const struct timespec *)(ts_a + TS_GUARD_PAD) : nullptr;
+	tb = timeout != nullptr ?
+	    (const struct timespec *)(ts_b + TS_GUARD_PAD) : nullptr;
+	ma = newsigmask != nullptr ?
+	    (const sigset_t *)(mask_a + SIGSET_GUARD_PAD) : nullptr;
+	mb = newsigmask != nullptr ?
+	    (const sigset_t *)(mask_b + SIGSET_GUARD_PAD) : nullptr;
+	if (timeout != nullptr)
+		memcpy((void *)(ts_a + TS_GUARD_PAD), timeout, sizeof(*timeout));
+	if (timeout != nullptr)
+		memcpy((void *)(ts_b + TS_GUARD_PAD), timeout, sizeof(*timeout));
+	if (newsigmask != nullptr) {
+		memcpy((void *)(mask_a + SIGSET_GUARD_PAD), newsigmask,
 		    sizeof(sigset_t));
-		memset((void *)(sig_b + 16), (int)(pat_seed & 0xff),
+		memcpy((void *)(mask_b + SIGSET_GUARD_PAD), newsigmask,
 		    sizeof(sigset_t));
 	}
 
-	install_ref_mocks();
+	install_mocks(ref___libc_interposing);
 	mock_reset(ret);
-	ra = ref_ppoll(pf_ref, nfds, ts_ref, sig_ref);
-	sa = take_snap();
+	ra = ref_ppoll(pa, nfds, ta, ma);
+	snap_a = take_snap();
 
-	install_port_mocks();
+	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
-	rb = port::ppoll(pf_port, nfds, ts_port, sig_port);
-	sb = take_snap();
+	rb = port::ppoll(pb, nfds, tb, mb);
+	snap_b = take_snap();
 
-	snprintf(ctx, sizeof(ctx),
-	    "nfds=%llu to=%d sig=%d ret=%lld seed=%u",
-	    (unsigned long long)nfds, use_timeout, use_sigmask, ret, pat_seed);
-	cmp_snap(FN_PPOLL, sa, sb, ctx);
+	snprintf(ctx, sizeof(ctx), "nfds=%llu ret=%lld",
+	    (unsigned long long)nfds, ret);
+	cmp_snap(FN_PPOLL, snap_a, snap_b, ctx);
+	cmp_buf(FN_PPOLL, pfd_a, pfd_b, total_pfd, ctx);
+	cmp_buf(FN_PPOLL, ts_a, ts_b, sizeof(ts_a), ctx);
+	cmp_buf(FN_PPOLL, mask_a, mask_b, sizeof(mask_a), ctx);
 
 	if (ra != rb) {
-		char msg[384];
+		char msg[224];
 
 		snprintf(msg, sizeof(msg), "%s ref=%d port=%d", ctx, ra, rb);
 		fail(FN_PPOLL, "return", msg);
-		return (false);
 	}
-	if (memcmp(pfd_a, pfd_b, sizeof(pfd_a)) != 0) {
-		fail(FN_PPOLL, "pfd_buf", ctx);
-		return (false);
-	}
-	if (use_timeout && memcmp(ts_a, ts_b, sizeof(ts_a)) != 0) {
-		fail(FN_PPOLL, "timeout_buf", ctx);
-		return (false);
-	}
-	if (use_sigmask && memcmp(sig_a, sig_b, sizeof(sig_a)) != 0) {
-		fail(FN_PPOLL, "sigmask_buf", ctx);
-		return (false);
-	}
-	return (true);
 }
 
 static void
 test_wait6(void)
 {
 	static const idtype_t idtypes[] = {
-		P_ALL, P_PID, P_PGID, (idtype_t)0, (idtype_t)1,
-		(idtype_t)0x7f, (idtype_t)0x80, (idtype_t)INT_MAX,
+		P_PID, P_PGID, P_ALL,
+		(idtype_t)0, (idtype_t)0x7f, (idtype_t)0x80, (idtype_t)INT_MAX,
 	};
 	static const id_t ids[] = {
-		(id_t)0, (id_t)1, (id_t)INT_MAX, (id_t)UINT_MAX,
+		(id_t)0, (id_t)1, (id_t)-1, (id_t)INT_MAX, (id_t)INT_MIN,
+		(id_t)0x7f, (id_t)0x80,
 	};
-	static const int opts[] = {
-		0, WNOHANG, WUNTRACED, -1, INT_MAX, 0x7f, 0x80,
+	static const int optss[] = {
+		0, WNOHANG, WUNTRACED, WCONTINUED, INT_MIN, INT_MAX,
+		0x7f, 0x80,
 	};
 	static const long long rets[] = {
 		-1, 0, 1, INT_MIN, INT_MAX, 0x7f, 0x80,
 	};
 
+	int status;
+	struct __wrusage ru;
+	siginfo_t info;
+
 	for (size_t t = 0; t < sizeof(idtypes) / sizeof(idtypes[0]); t++)
 		for (size_t i = 0; i < sizeof(ids) / sizeof(ids[0]); i++)
-			for (size_t o = 0; o < sizeof(opts) / sizeof(opts[0]); o++)
-				for (int st = 0; st < 2; st++)
-					for (int ru = 0; ru < 2; ru++)
-						for (int info = 0; info < 2; info++)
-							for (size_t r = 0;
-							    r < sizeof(rets) /
-							    sizeof(rets[0]); r++)
-								case_wait6(
-								    idtypes[t],
-								    ids[i],
-								    opts[o], st,
-								    ru, info,
-								    rets[r]);
+			for (size_t o = 0; o < sizeof(optss) / sizeof(optss[0]); o++)
+				for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++) {
+					case_wait6(idtypes[t], ids[i], nullptr,
+					    optss[o], nullptr, nullptr, rets[r]);
+					case_wait6(idtypes[t], ids[i], &status,
+					    optss[o], nullptr, nullptr, rets[r]);
+					case_wait6(idtypes[t], ids[i], nullptr,
+					    optss[o], &ru, nullptr, rets[r]);
+					case_wait6(idtypes[t], ids[i], nullptr,
+					    optss[o], nullptr, &info, rets[r]);
+					case_wait6(idtypes[t], ids[i], &status,
+					    optss[o], &ru, &info, rets[r]);
+				}
 
-	rng_seed(0x77'61'69'74'36ULL);
-	for (int i = 0; i < 200000; i++)
-		case_wait6((idtype_t)rnd_int(), (id_t)rnd_u32(), rnd_int(),
-		    rnd_int() & 1, rnd_int() & 1, rnd_int() & 1, rnd_ret());
+	rng_seed(0x7761'6974ULL);
+	for (int n = 0; n < 200000; n++) {
+		idtype_t idtype = (idtype_t)rnd_int();
+		id_t id = (id_t)rnd_int();
+		int options = rnd_int();
+		long long ret = rnd_ret();
+		int use_status = (int)(rng_u32() & 1u);
+		int use_ru = (int)(rng_u32() & 1u);
+		int use_info = (int)(rng_u32() & 1u);
+
+		case_wait6(idtype, id,
+		    use_status ? &status : nullptr, options,
+		    use_ru ? &ru : nullptr,
+		    use_info ? &info : nullptr, ret);
+	}
 }
 
 static void
 test_sendto(void)
 {
+	unsigned char msg_bufs[4][MSG_CAP];
+	unsigned char addr_bufs[4][ADDR_CAP];
 	static const int socks[] = {
-		INT_MIN, -1, 0, 1, 0x7f, 0x80, 0xff, INT_MAX,
+		INT_MIN, -1, 0, 1, 2, 0x7e, 0x7f, 0x80, INT_MAX,
 	};
 	static const size_t lens[] = {
-		0, 1, 2, DATA_OFF, DATA_CAP,
+		0, 1, 2, MSG_CAP, MSG_CAP + 1, (size_t)SSIZE_MAX,
 	};
-	static const int flags[] = {
-		0, MSG_OOB, MSG_DONTWAIT, -1, INT_MAX, 0x7f, 0x80,
+	static const int flagss[] = {
+		0, MSG_DONTWAIT, MSG_OOB, INT_MIN, INT_MAX, 0x7f, 0x80,
 	};
-	static const socklen_t tolen[] = {
-		0, sizeof(struct sockaddr_in), (socklen_t)INT_MAX,
-	};
-	static const unsigned seeds[] = {
-		0, 1, 0x7f, 0x80, 0xff, 0xdeadbeef,
+	static const socklen_t tolens[] = {
+		0, 1, 2, sizeof(struct sockaddr_in), (socklen_t)ADDR_CAP,
+		(socklen_t)(ADDR_CAP + 1),
 	};
 	static const long long rets[] = {
-		-1, 0, 1, SSIZE_MAX, INT_MIN, INT_MAX, 0x7f, 0x80,
+		-1, 0, 1, SSIZE_MAX, SSIZE_MIN, 0x7f, 0x80,
 	};
 
-	memset(&sock_storage, 0, sizeof(sock_storage));
-	sock_storage.sin_family = AF_INET;
-	sock_storage.sin_port = 0x1234;
+	for (size_t b = 0; b < sizeof(msg_bufs) / sizeof(msg_bufs[0]); b++)
+		for (size_t i = 0; i < sizeof(msg_bufs[0]); i++)
+			msg_bufs[b][i] = (unsigned char)(0x80 + b * 11 + i);
+	for (size_t b = 0; b < sizeof(addr_bufs) / sizeof(addr_bufs[0]); b++)
+		for (size_t i = 0; i < sizeof(addr_bufs[0]); i++)
+			addr_bufs[b][i] = (unsigned char)(b ^ (unsigned char)i);
 
 	for (size_t s = 0; s < sizeof(socks) / sizeof(socks[0]); s++)
 		for (size_t l = 0; l < sizeof(lens) / sizeof(lens[0]); l++)
-			for (size_t f = 0; f < sizeof(flags) / sizeof(flags[0]); f++)
-				for (int to = 0; to < 2; to++)
-					for (size_t tl = 0;
-					    tl < sizeof(tolen) / sizeof(tolen[0]);
-					    tl++)
-						for (size_t sd = 0;
-						    sd < sizeof(seeds) /
-						    sizeof(seeds[0]); sd++)
-							for (size_t r = 0;
-							    r < sizeof(rets) /
-							    sizeof(rets[0]); r++)
-								case_sendto(
-								    socks[s],
-								    lens[l],
-								    flags[f], to,
-								    tolen[tl],
-								    rets[r],
-								    seeds[sd]);
+			for (size_t f = 0; f < sizeof(flagss) / sizeof(flagss[0]); f++)
+				for (size_t t = 0; t < sizeof(tolens) / sizeof(tolens[0]); t++)
+					for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++) {
+						case_sendto(socks[s], nullptr,
+						    lens[l], flagss[f], nullptr,
+						    tolens[t], rets[r]);
+						case_sendto(socks[s], msg_bufs[0],
+						    lens[l], flagss[f],
+						    (const struct sockaddr *)
+						    addr_bufs[1], tolens[t],
+						    rets[r]);
+					}
 
-	case_sendto(0, (size_t)SIZE_MAX, 0, 1,
-	    sizeof(struct sockaddr_in), -1, 0x80);
-	case_sendto(1, (size_t)SIZE_MAX, MSG_OOB, 0, 0, 0, 0xff);
+	for (unsigned char b = 0; b < 0xff; b += 0x1f) {
+		msg_bufs[0][0] = b;
+		msg_bufs[0][1] = (unsigned char)(b ^ 0xff);
+		addr_bufs[0][0] = (unsigned char)~b;
+		case_sendto(3, msg_bufs[0], 2, (int)(int8_t)b,
+		    (const struct sockaddr *)addr_bufs[0], 2,
+		    (long long)(int8_t)b);
+	}
 
-	rng_seed(0x73'65'6e'64ULL);
-	for (int i = 0; i < 200000; i++)
-		case_sendto(rnd_int(), rnd_size() & (BUF_TOTAL - 1), rnd_int(),
-		    rnd_int() & 1, (socklen_t)rnd_u32(), rnd_ret(), rnd_u32());
+	rng_seed(0x736e'6474ULL);
+	for (int n = 0; n < 200000; n++) {
+		unsigned char mb[MSG_CAP];
+		unsigned char ab[ADDR_CAP];
+		size_t len = rnd_size(MSG_CAP);
+		socklen_t tolen = (socklen_t)rnd_size(ADDR_CAP);
+
+		for (size_t i = 0; i < len; i++)
+			mb[i] = (unsigned char)rnd_byte();
+		for (size_t i = 0; i < tolen; i++)
+			ab[i] = (unsigned char)rnd_byte();
+		case_sendto(rnd_int(), len > 0 ? mb : nullptr, len, rnd_int(),
+		    tolen > 0 ? (const struct sockaddr *)ab : nullptr, tolen,
+		    rnd_ret());
+	}
 }
 
 static void
 test_clock_nanosleep(void)
 {
+	struct timespec rq, rm;
 	static const clockid_t clocks[] = {
-		CLOCK_REALTIME, CLOCK_MONOTONIC, (clockid_t)-1,
-		(clockid_t)INT_MAX, (clockid_t)0x7f, (clockid_t)0x80,
+		CLOCK_REALTIME, CLOCK_MONOTONIC, CLOCK_PROCESS_CPUTIME_ID,
+		(clockid_t)0, (clockid_t)-1, (clockid_t)INT_MAX,
+		(clockid_t)0x7f, (clockid_t)0x80,
 	};
-	static const int flags[] = {
-		0, TIMER_ABSTIME, -1, INT_MAX, 0x7f, 0x80,
-	};
-	static const unsigned seeds[] = {
-		0, 1, 0x7f, 0x80, 0xff, 0xcafebabe,
+	static const int flagss[] = {
+		0, TIMER_ABSTIME, INT_MIN, INT_MAX, 0x7f, 0x80,
 	};
 	static const long long rets[] = {
 		-1, 0, 1, INT_MIN, INT_MAX, 0x7f, 0x80,
 	};
 
 	for (size_t c = 0; c < sizeof(clocks) / sizeof(clocks[0]); c++)
-		for (size_t f = 0; f < sizeof(flags) / sizeof(flags[0]); f++)
-			for (int rq = 0; rq < 2; rq++)
-				for (int rm = 0; rm < 2; rm++)
-					for (size_t s = 0;
-					    s < sizeof(seeds) / sizeof(seeds[0]);
-					    s++)
-						for (size_t r = 0;
-						    r < sizeof(rets) /
-						    sizeof(rets[0]); r++)
-							case_clock_nanosleep(
-							    clocks[c], flags[f],
-							    rq, rm, rets[r],
-							    seeds[s]);
+		for (size_t f = 0; f < sizeof(flagss) / sizeof(flagss[0]); f++)
+			for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++) {
+				rq.tv_sec = 0;
+				rq.tv_nsec = 0;
+				case_clock_nanosleep(clocks[c], flagss[f],
+				    nullptr, nullptr, rets[r]);
+				case_clock_nanosleep(clocks[c], flagss[f],
+				    &rq, nullptr, rets[r]);
+				case_clock_nanosleep(clocks[c], flagss[f],
+				    nullptr, &rm, rets[r]);
+				case_clock_nanosleep(clocks[c], flagss[f],
+				    &rq, &rm, rets[r]);
+			}
 
-	rng_seed(0x63'6c'6f'63'6bULL);
-	for (int i = 0; i < 200000; i++)
+	for (long sec = -1; sec <= 2; sec++)
+		for (long nsec = 0; nsec <= 2; nsec++) {
+			rq.tv_sec = sec;
+			rq.tv_nsec = nsec;
+			case_clock_nanosleep(CLOCK_REALTIME, 0, &rq, &rm,
+			    (long long)(sec ^ nsec));
+		}
+
+	rng_seed(0x636c'6b6eULL);
+	for (int n = 0; n < 200000; n++) {
+		rq.tv_sec = (time_t)rnd_int();
+		rq.tv_nsec = (long)rnd_int();
 		case_clock_nanosleep((clockid_t)rnd_int(), rnd_int(),
-		    rnd_int() & 1, rnd_int() & 1, rnd_ret(), rnd_u32());
+		    (rng_u32() & 1u) ? &rq : nullptr,
+		    (rng_u32() & 1u) ? &rm : nullptr, rnd_ret());
+	}
 }
 
 static void
 test_ppoll(void)
 {
-	static const nfds_t nfds_vals[] = {
-		0, 1, 2, PFD_MAX - 1, PFD_MAX, PFD_MAX + 1, (nfds_t)INT_MAX,
-	};
-	static const unsigned seeds[] = {
-		0, 1, 0x7f, 0x80, 0xff, 0xfeedface,
+	struct pollfd pfds[PFD_MAX];
+	struct timespec ts;
+	sigset_t mask;
+	static const nfds_t nfds_list[] = {
+		0, 1, 2, (nfds_t)PFD_MAX, (nfds_t)(PFD_MAX + 1),
+		(nfds_t)(PFD_MAX + 4), (nfds_t)INT_MAX,
 	};
 	static const long long rets[] = {
 		-1, 0, 1, INT_MIN, INT_MAX, 0x7f, 0x80,
 	};
 
-	for (size_t n = 0; n < sizeof(nfds_vals) / sizeof(nfds_vals[0]); n++)
-		for (int to = 0; to < 2; to++)
-			for (int sig = 0; sig < 2; sig++)
-				for (size_t s = 0;
-				    s < sizeof(seeds) / sizeof(seeds[0]); s++)
-					for (size_t r = 0;
-					    r < sizeof(rets) / sizeof(rets[0]);
-					    r++)
-						case_ppoll(nfds_vals[n], to, sig,
-						    rets[r], seeds[s]);
+	for (size_t n = 0; n < sizeof(nfds_list) / sizeof(nfds_list[0]); n++)
+		for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++) {
+			case_ppoll(nullptr, nfds_list[n], nullptr, nullptr,
+			    rets[r]);
+			case_ppoll(pfds, nfds_list[n], nullptr, nullptr,
+			    rets[r]);
+			case_ppoll(pfds, nfds_list[n], &ts, nullptr, rets[r]);
+			case_ppoll(pfds, nfds_list[n], nullptr, &mask,
+			    rets[r]);
+			case_ppoll(pfds, nfds_list[n], &ts, &mask, rets[r]);
+		}
 
-	rng_seed(0x70'70'6f'6c'6cULL);
-	for (int i = 0; i < 200000; i++)
-		case_ppoll((nfds_t)(rnd_u32() & 0x1f), rnd_int() & 1,
-		    rnd_int() & 1, rnd_ret(), rnd_u32());
+	for (int i = 0; i < PFD_MAX; i++) {
+		pfds[i].fd = i - 2;
+		pfds[i].events = (short)(0x80 + i);
+		pfds[i].revents = 0;
+	}
+	for (unsigned char b = 0; b < 0xff; b += 0x2f) {
+		ts.tv_sec = (time_t)(int8_t)b;
+		ts.tv_nsec = (long)(int8_t)(~b);
+		sigemptyset(&mask);
+		sigaddset(&mask, SIGINT);
+		case_ppoll(pfds, (nfds_t)((b & 3) + 1), &ts, &mask,
+		    (long long)(int8_t)b);
+	}
+
+	rng_seed(0x7070'6f6cULL);
+	for (int n = 0; n < 200000; n++) {
+		nfds_t nfds = (nfds_t)rnd_int();
+		nfds_t use = nfds > PFD_MAX ? (nfds_t)PFD_MAX : nfds;
+
+		for (nfds_t i = 0; i < use; i++) {
+			pfds[i].fd = rnd_int();
+			pfds[i].events = (short)rnd_int();
+			pfds[i].revents = (short)rnd_int();
+		}
+		ts.tv_sec = (time_t)rnd_int();
+		ts.tv_nsec = (long)rnd_int();
+		sigemptyset(&mask);
+		if ((rng_u32() & 3u) == 0)
+			sigaddset(&mask, (int)(rng_u32() % 32));
+		case_ppoll(nfds > 0 ? pfds : nullptr, nfds,
+		    (rng_u32() & 1u) ? &ts : nullptr,
+		    (rng_u32() & 1u) ? &mask : nullptr, rnd_ret());
+	}
 }
 
 int

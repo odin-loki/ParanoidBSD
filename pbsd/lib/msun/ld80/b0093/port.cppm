@@ -8,10 +8,12 @@
 
 module;
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <complex.h>
-#include <cstdint>
 #include <math.h>
+#include <cstdint>
 
 #ifndef LONG_BIT
 #define LONG_BIT (8 * sizeof(long))
@@ -21,22 +23,19 @@ export module pbsd.lib.msun.ld80.b0093;
 
 export namespace pbsd::lib_msun_ld80::b0093 {
 
-/*
- * port.cppm -- batch b0093 reference implementation.
- *
- * The original HardenedBSD C sources concatenated verbatim (with ref_
- * prefixes on the four exported functions).  Support code required for
- * compilation is provided above the concatenated sources.
- */
+#ifndef _COMPLEX_H
+#define _COMPLEX_H 1
+#endif
 
-#define _GNU_SOURCE
-#include <complex.h>
-#include <float.h>
-#include <math.h>
-#include <stdint.h>
-
-#ifndef LONG_BIT
-#define LONG_BIT (8 * sizeof(long))
+#ifndef creall
+#define creall(__z) __builtin_creall(__z)
+#endif
+#ifndef cimagl
+#define cimagl(__z) __builtin_cimagl(__z)
+#endif
+#ifndef CMPLXL
+#define CMPLXL(__x, __y) \
+	((__extension__)(long double _Complex){(long double)(__x), (long double)(__y)})
 #endif
 
 union IEEEl2bits {
@@ -98,6 +97,12 @@ do {								\
 
 #define	ENTERI()
 #define	RETURNI(x)	return (x)
+
+#ifndef CMPLXL
+#define CMPLXL(x, y) __builtin_complex((long double)(x), (long double)(y))
+#endif
+#define creall __real__
+#define cimagl __imag__
 
 #define	_2sumF(a, b) do {	\
 	__typeof(a) __w;	\

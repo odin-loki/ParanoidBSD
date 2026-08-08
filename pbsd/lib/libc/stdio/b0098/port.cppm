@@ -1,5 +1,7 @@
 module;
 
+#define _GNU_SOURCE
+
 #include <clocale>
 #include <cstdarg>
 #include <cstdio>
@@ -13,33 +15,12 @@ module;
 #include <xlocale.h>
 #endif
 
-#ifndef _XLOCALE_H_
-#ifndef vfwscanf_l
-static int
-vfwscanf_l(std::FILE *stream, ::locale_t loc, const wchar_t *fmt, std::va_list ap)
-{
-	::locale_t old = uselocale(loc);
-	int r = vfwscanf(stream, fmt, ap);
-
-	uselocale(old);
-	return r;
-}
-#endif
-
-#ifndef vfwprintf_l
-static int
-vfwprintf_l(std::FILE *stream, ::locale_t loc, const wchar_t *fmt, std::va_list ap)
-{
-	::locale_t old = uselocale(loc);
-	int r = vfwprintf(stream, fmt, ap);
-
-	uselocale(old);
-	return r;
-}
-#endif
-#endif
-
 export module pbsd.lib.libc.stdio.b0098;
+
+#ifndef _XLOCALE_H_
+extern "C" int vfwscanf_l(std::FILE *, ::locale_t, const wchar_t *, std::va_list);
+extern "C" int vfwprintf_l(std::FILE *, ::locale_t, const wchar_t *, std::va_list);
+#endif
 
 export namespace pbsd::lib_libc_stdio::b0098 {
 

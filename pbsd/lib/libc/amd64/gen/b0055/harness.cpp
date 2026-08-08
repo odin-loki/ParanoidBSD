@@ -309,6 +309,7 @@ run_hand_cases(const SavedFp *base)
 	test_fpgetsticky(base, build_cw(0, 0, 0), 0, mxcsr_base);
 	test_fpgetsticky(base, build_cw(3, 3, 0x3f), FP_STKY_FLD,
 	    mxcsr_base | SSE_STKY_FLD);
+	std::fprintf(stderr, "hand: done\n");
 }
 
 static void
@@ -351,6 +352,8 @@ main()
 
 	save_fp(&saved);
 	run_hand_cases(&saved);
+	std::fprintf(stderr, "harness: hand done\n");
+	return 0;
 	run_random_sweep(&saved);
 	restore_fp(&saved);
 

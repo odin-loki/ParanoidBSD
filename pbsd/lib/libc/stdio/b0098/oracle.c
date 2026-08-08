@@ -27,7 +27,7 @@
 
 #ifndef _XLOCALE_H_
 #ifndef vfwscanf_l
-static int
+int
 vfwscanf_l(FILE *stream, locale_t loc, const wchar_t *fmt, va_list ap)
 {
 	locale_t old = uselocale(loc);
@@ -39,7 +39,7 @@ vfwscanf_l(FILE *stream, locale_t loc, const wchar_t *fmt, va_list ap)
 #endif
 
 #ifndef vfwprintf_l
-static int
+int
 vfwprintf_l(FILE *stream, locale_t loc, const wchar_t *fmt, va_list ap)
 {
 	locale_t old = uselocale(loc);

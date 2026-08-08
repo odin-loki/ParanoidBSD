@@ -1,8 +1,7 @@
 #!/bin/sh
 #
-# Build and run the b0101 differential test.  Run as `sh build.sh' from
-# pbsd/lib/libc/stdio/b0101/.  The harness's exit status is this script's exit
-# status.
+# Build and run the b0108 differential test.  Run as `sh build.sh' from
+# pbsd/bin/pax/b0108/.  The harness's exit status is this script's exit status.
 
 set -e
 
@@ -13,7 +12,7 @@ CXX=${CXX:-c++}
 CFLAGS=${CFLAGS:--O2}
 CXXFLAGS=${CXXFLAGS:--O2}
 
-MODNAME=pbsd.lib.libc.stdio.b0101
+MODNAME=pbsd.bin.pax.b0108
 
 rm -rf gcm.cache
 rm -f oracle.o port.o harness.o port.pcm harness
@@ -31,6 +30,6 @@ else
 	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c harness.cpp -o harness.o
 fi
 
-$CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o
+$CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o -lbsd
 
 exec ./harness

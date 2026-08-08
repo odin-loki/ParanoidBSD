@@ -2,14 +2,13 @@
  * Differential test harness for PBSD batch b0088.
  *
  * Compares cospil(), sinpil(), tanpil(), and cexpl() against the ref_
- * oracle.  Long double and complex results are compared bit-for-bit.
+ * oracle, bit-for-bit.
  */
 
-#include <bit>
-#include <ccomplex>
 #include <cfloat>
 #include <climits>
 #include <cmath>
+#include <complex.h>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -17,531 +16,357 @@
 
 import pbsd.lib.msun.ld128.b0088;
 
-namespace P = pbsd::lib_msun_ld128::b0088;
+namespace port = pbsd::lib_msun_ld128::b0088;
+
+typedef _Complex long double ldouble_complex;
 
 extern "C" {
-long double ref_cospil(long double x);
-long double ref_sinpil(long double x);
-long double ref_tanpil(long double x);
-long double complex ref_cexpl(long double complex z);
+long double ref_cospil(long double);
+long double ref_sinpil(long double);
+long double ref_tanpil(long double);
+ldouble_complex ref_cexpl(ldouble_complex);
 }
 
-#if LDBL_MANT_DIG == 113
-static const std::size_t LD_SIG = sizeof(long double);
-#else
-static const std::size_t LD_SIG = sizeof(long double);
-#endif
+static const std::size_t LD_BYTES = sizeof(long double);
+static const std::size_t CX_BYTES = sizeof(ldouble_complex);
+static const unsigned long long RANDOM_ITERS = 200000ull;
+static const unsigned MAX_REPORT = 8;
 
-static const unsigned long RANDOM_ITERS = 200000UL;
-static const int MAX_REPORT = 8;
-static const unsigned char GUARD = 0x7f;
-
-struct Stat {
+struct stat {
 	const char *name;
 	unsigned long long cases;
-	unsigned long long failures;
+	unsigned long long fails;
 	unsigned reported;
 };
 
-static Stat st_cospil = { "cospil", 0, 0, 0 };
-static Stat st_sinpil = { "sinpil", 0, 0, 0 };
-static Stat st_tanpil = { "tanpil", 0, 0, 0 };
-static Stat st_cexpl = { "cexpl", 0, 0, 0 };
+static stat st_cospil = { "cospil", 0, 0, 0 };
+static stat st_sinpil = { "sinpil", 0, 0, 0 };
+static stat st_tanpil = { "tanpil", 0, 0, 0 };
+static stat st_cexpl = { "cexpl", 0, 0, 0 };
 
-static std::uint64_t rng_state = 0xB0088ULL;
-
-static std::uint64_t
-rnd64(void)
+static bool
+ld_equal(long double a, long double b)
 {
-	std::uint64_t z = (rng_state += 0x9E3779B97F4A7C15ULL);
-	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
-	z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
-	return z ^ (z >> 31);
+	return std::memcmp(&a, &b, LD_BYTES) == 0;
 }
 
 static bool
-ld_same(long double a, long double b)
+cx_equal(ldouble_complex a, ldouble_complex b)
 {
-	unsigned char ba[sizeof(long double)], bb[sizeof(long double)];
-
-	std::memset(ba, 0, sizeof(ba));
-	std::memset(bb, 0, sizeof(bb));
-	std::memcpy(ba, &a, sizeof(a));
-	std::memcpy(bb, &b, sizeof(b));
-	return std::memcmp(ba, bb, LD_SIG) == 0;
-}
-
-static bool
-cx_same(long double complex a, long double complex b)
-{
-	return ld_same(creall(a), creall(b)) && ld_same(cimagl(a), cimagl(b));
+	return std::memcmp(&a, &b, CX_BYTES) == 0;
 }
 
 static void
-print_ld(long double v)
+ldhex(long double x)
 {
-	unsigned char b[sizeof(long double)];
-	std::size_t i;
+	const auto *p = reinterpret_cast<const unsigned char *>(&x);
 
-	std::memset(b, 0, sizeof(b));
-	std::memcpy(b, &v, sizeof(v));
-	for (i = LD_SIG; i-- > 0;)
-		std::printf("%02x", b[i]);
+	for (std::size_t i = LD_BYTES; i-- > 0;)
+		std::printf("%02x", p[i]);
+}
+
+static void
+report_ld_fail(stat &s, const char *tag, long double got, long double want)
+{
+	s.fails++;
+	if (s.reported >= MAX_REPORT)
+		return;
+	s.reported++;
+	std::printf("  %s FAIL [%s] port=", s.name, tag);
+	ldhex(got);
+	std::printf(" ref=");
+	ldhex(want);
+	std::printf("\n");
+}
+
+static void
+report_cx_fail(stat &s, const char *tag, ldouble_complex got,
+    ldouble_complex want)
+{
+	s.fails++;
+	if (s.reported >= MAX_REPORT)
+		return;
+	s.reported++;
+	std::printf("  %s FAIL [%s] port=", s.name, tag);
+	ldhex(__real__(got));
+	std::printf("+");
+	ldhex(__imag__(got));
+	std::printf("i ref=");
+	ldhex(__real__(want));
+	std::printf("+");
+	ldhex(__imag__(want));
+	std::printf("i\n");
+}
+
+static void
+check_cospil(long double x, const char *tag)
+{
+	long double p, o;
+
+	st_cospil.cases++;
+	p = port::cospil(x);
+	o = ref_cospil(x);
+	if (ld_equal(p, o))
+		return;
+	report_ld_fail(st_cospil, tag, p, o);
+}
+
+static void
+check_sinpil(long double x, const char *tag)
+{
+	long double p, o;
+
+	st_sinpil.cases++;
+	p = port::sinpil(x);
+	o = ref_sinpil(x);
+	if (ld_equal(p, o))
+		return;
+	report_ld_fail(st_sinpil, tag, p, o);
+}
+
+static void
+check_tanpil(long double x, const char *tag)
+{
+	long double p, o;
+
+	st_tanpil.cases++;
+	p = port::tanpil(x);
+	o = ref_tanpil(x);
+	if (ld_equal(p, o))
+		return;
+	report_ld_fail(st_tanpil, tag, p, o);
+}
+
+static void
+check_cexpl(ldouble_complex z, const char *tag)
+{
+	ldouble_complex p, o;
+
+	st_cexpl.cases++;
+	p = port::cexpl(z);
+	o = ref_cexpl(z);
+	if (cx_equal(p, o))
+		return;
+	report_cx_fail(st_cexpl, tag, p, o);
 }
 
 static long double
-mkld(std::uint64_t manh, std::uint64_t manl, std::uint16_t expsign)
+mkld(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl)
 {
-	unsigned char b[sizeof(long double)];
+	unsigned char b[16];
 	long double x;
 
 	std::memset(b, 0, sizeof(b));
 	std::memcpy(b, &manl, sizeof(manl));
-	std::memcpy(b + 8, &manh, sizeof(manh));
+	std::memcpy(b + 8, &manh, 6);
 	std::memcpy(b + 14, &expsign, sizeof(expsign));
 	std::memcpy(&x, b, sizeof(x));
 	return x;
 }
 
-union GuardSlot {
-	long double v;
-	unsigned char b[sizeof(long double)];
-};
-
-static GuardSlot port_x[8], ref_x[8];
-static const int SLOT = 3;
-
-static void
-pad_fill(GuardSlot *pad, long double x)
+static ldouble_complex
+mkcx(long double re, long double im)
 {
-	int i;
+	ldouble_complex z;
 
-	for (i = 0; i < 8; i++)
-		std::memset(pad[i].b, GUARD, sizeof(pad[i].b));
-	pad[SLOT].v = x;
-}
-
-static bool
-pad_ok(const GuardSlot *pad, long double x)
-{
-	unsigned char g[sizeof(long double)];
-	int i;
-
-	std::memset(g, GUARD, sizeof(g));
-	for (i = 0; i < 8; i++) {
-		if (i == SLOT) {
-			if (!ld_same(pad[i].v, x))
-				return false;
-			continue;
-		}
-		if (std::memcmp(pad[i].b, g, sizeof(g)) != 0)
-			return false;
-	}
-	return true;
+	__real__(z) = re;
+	__imag__(z) = im;
+	return z;
 }
 
 static void
-report_ld_fail(Stat &s, const char *tag, long double got, long double want)
-{
-	if (s.reported >= MAX_REPORT)
-		return;
-	s.reported++;
-	std::printf("  %s FAIL [%s] port=", s.name, tag);
-	print_ld(got);
-	std::printf(" ref=");
-	print_ld(want);
-	std::printf("\n");
-}
-
-static void
-report_cx_fail(Stat &s, const char *tag,
-    long double complex got, long double complex want)
-{
-	if (s.reported >= MAX_REPORT)
-		return;
-	s.reported++;
-	std::printf("  %s FAIL [%s] port=(", s.name, tag);
-	print_ld(creall(got));
-	std::printf(",");
-	print_ld(cimagl(got));
-	std::printf(") ref=(");
-	print_ld(creall(want));
-	std::printf(",");
-	print_ld(cimagl(want));
-	std::printf(")\n");
-}
-
-static void
-check_cospil(long double x)
-{
-	long double got, want;
-	bool bad;
-
-	st_cospil.cases++;
-
-	pad_fill(port_x, x);
-	pad_fill(ref_x, x);
-
-	got = P::cospil(port_x[SLOT].v);
-	want = ref_cospil(ref_x[SLOT].v);
-
-	bad = !ld_same(got, want);
-	if (!pad_ok(port_x, x) || !pad_ok(ref_x, x))
-		bad = true;
-	if (std::memcmp(port_x, ref_x, sizeof(port_x)) != 0)
-		bad = true;
-
-	if (bad) {
-		st_cospil.failures++;
-		report_ld_fail(st_cospil, "value", got, want);
-	}
-}
-
-static void
-check_sinpil(long double x)
-{
-	long double got, want;
-	bool bad;
-
-	st_sinpil.cases++;
-
-	pad_fill(port_x, x);
-	pad_fill(ref_x, x);
-
-	got = P::sinpil(port_x[SLOT].v);
-	want = ref_sinpil(ref_x[SLOT].v);
-
-	bad = !ld_same(got, want);
-	if (!pad_ok(port_x, x) || !pad_ok(ref_x, x))
-		bad = true;
-	if (std::memcmp(port_x, ref_x, sizeof(port_x)) != 0)
-		bad = true;
-
-	if (bad) {
-		st_sinpil.failures++;
-		report_ld_fail(st_sinpil, "value", got, want);
-	}
-}
-
-static void
-check_tanpil(long double x)
-{
-	long double got, want;
-	bool bad;
-
-	st_tanpil.cases++;
-
-	pad_fill(port_x, x);
-	pad_fill(ref_x, x);
-
-	got = P::tanpil(port_x[SLOT].v);
-	want = ref_tanpil(ref_x[SLOT].v);
-
-	bad = !ld_same(got, want);
-	if (!pad_ok(port_x, x) || !pad_ok(ref_x, x))
-		bad = true;
-	if (std::memcmp(port_x, ref_x, sizeof(port_x)) != 0)
-		bad = true;
-
-	if (bad) {
-		st_tanpil.failures++;
-		report_ld_fail(st_tanpil, "value", got, want);
-	}
-}
-
-static void
-check_cexpl(long double complex z)
-{
-	long double complex got, want;
-	bool bad;
-
-	st_cexpl.cases++;
-
-	got = P::cexpl(z);
-	want = ref_cexpl(z);
-
-	bad = !cx_same(got, want);
-
-	if (bad) {
-		st_cexpl.failures++;
-		report_cx_fail(st_cexpl, "value", got, want);
-	}
-}
-
-static void
-check_all_real(long double x)
-{
-	check_cospil(x);
-	check_sinpil(x);
-	check_tanpil(x);
-}
-
-static void
-check_all_complex(long double x, long double y)
-{
-	check_cexpl(x + y * 1.0iL);
-}
-
-/* ---------------------------------------------------------------- */
-/* hand-written edge cases                                          */
-/* ---------------------------------------------------------------- */
-
-static void
-run_scalar_edges(void)
+edge_cases(void)
 {
 	static const long double xs[] = {
 		0.0L, -0.0L,
-		0x1p-120L, -0x1p-120L,
+		1e-4932L, -1e-4932L,
 		0x1p-61L, -0x1p-61L,
 		0x1p-60L, -0x1p-60L,
 		0x1p-59L, -0x1p-59L,
-		0x1p-113L, -0x1p-113L,
-		0.25L - 0x1p-60L, 0.25L, 0.25L + 0x1p-60L,
-		0.5L - 0x1p-60L, 0.5L, 0.5L + 0x1p-60L,
-		0.75L - 0x1p-60L, 0.75L, 0.75L + 0x1p-60L,
-		1.0L - 0x1p-60L, 1.0L, 1.0L + 0x1p-60L,
-		-1.0L, 2.0L, -2.0L, 3.0L, -3.0L,
-		0.125L, -0.125L, 0.375L, -0.375L, 0.625L, -0.625L,
-		0.875L, -0.875L, 1.5L, -1.5L,
-		0x1p111L, -0x1p111L,
+		0.1L, -0.1L,
+		0.25L, -0.25L,
+		0.25L - 0x1p-100L, -(0.25L - 0x1p-100L),
+		0.25L + 0x1p-100L, -(0.25L + 0x1p-100L),
+		0.5L, -0.5L,
+		0.5L - 0x1p-100L, -(0.5L - 0x1p-100L),
+		0.5L + 0x1p-100L, -(0.5L + 0x1p-100L),
+		0.75L, -0.75L,
+		0.75L - 0x1p-100L, -(0.75L - 0x1p-100L),
+		0.75L + 0x1p-100L, -(0.75L + 0x1p-100L),
+		1.0L, -1.0L,
+		1.0L - 0x1p-100L, -(1.0L - 0x1p-100L),
+		1.5L, -1.5L,
+		2.0L, -2.0L,
+		2.5L, -2.5L,
+		3.0L, -3.0L,
+		10.0L, -10.0L,
 		0x1p112L, -0x1p112L,
-		0x1p112L + 0.5L, -0x1p112L - 0.5L,
-		0x1p112L + 1.0L, -0x1p112L - 1.0L,
+		0x1p112L + 0.1L, -(0x1p112L + 0.1L),
+		0x1p112L + 0.5L, -(0x1p112L + 0.5L),
+		0x1p112L + 0.75L, -(0x1p112L + 0.75L),
+		0x1p112L + 1.0L, -(0x1p112L + 1.0L),
+		0x1p113L - 1.0L, -(0x1p113L - 1.0L),
 		0x1p113L, -0x1p113L,
-		0x1p113L + 1.0L, -0x1p113L - 1.0L,
-		0x1p114L, -0x1p114L,
-		1.13565234062941439494919310779707649e+04L,
-		1.13565234062941439494919310779707650e+04L,
-		2.27892930024498818830197576893019292e+04L,
-		2.27892930024498818830197576893019293e+04L,
-		LDBL_MIN, -LDBL_MIN, LDBL_MAX, -LDBL_MAX,
-		LDBL_EPSILON, -LDBL_EPSILON,
+		0x1p113L + 1.0L, -(0x1p113L + 1.0L),
+		LDBL_TRUE_MIN, -LDBL_TRUE_MIN,
+		LDBL_MIN, -LDBL_MIN,
+		1.0L / 0.0L, -1.0L / 0.0L,
+		0.0L / 0.0L,
 	};
-	std::size_t i;
-
-	for (i = 0; i < sizeof(xs) / sizeof(xs[0]); i++)
-		check_all_real(xs[i]);
-
-	check_all_real((long double)HUGE_VAL);
-	check_all_real(-(long double)HUGE_VAL);
-	check_all_real(std::nanl(""));
-	check_all_real(-std::nanl(""));
-
-	for (i = 1; i <= 20; i++) {
-		check_all_real((long double)i);
-		check_all_real(-(long double)i);
-		check_all_real((long double)i + 0.5L);
-		check_all_real(-(long double)i - 0.5L);
-		check_all_real((long double)i + 0.25L);
-		check_all_real((long double)i + 0.75L);
-	}
-
-	for (i = 0; i <= 64; i++) {
-		long double t = std::ldexpl(1.0L, -i);
-
-		check_all_real(t);
-		check_all_real(-t);
-		check_all_real(0.25L - t);
-		check_all_real(0.25L + t);
-		check_all_real(0.5L - t);
-		check_all_real(0.5L + t);
-		check_all_real(0.75L - t);
-		check_all_real(0.75L + t);
-		check_all_real(1.0L - t);
-		check_all_real(1.0L + t);
-	}
-}
-
-static void
-run_complex_edges(void)
-{
-	static const long double vals[] = {
-		0.0L, -0.0L, 1.0L, -1.0L, 0.5L, -0.5L,
-		0x1p-60L, 0x1p60L, 0x1p112L, 0x1p113L,
-		1.13565234062941439494919310779707649e+04L,
-		1.13565234062941439494919310779707650e+04L,
-		2.27892930024498818830197576893019292e+04L,
-		2.27892930024498818830197576893019293e+04L,
-		LDBL_MAX, -LDBL_MAX,
+	struct ldcase {
+		std::uint16_t se;
+		std::uint64_t manh;
+		std::uint64_t manl;
+	};
+	static const ldcase ldvec[] = {
+		{ 0x0000u, 0x0000000000000000ull, 0x0000000000000001ull },
+		{ 0x8000u, 0x0000000000000000ull, 0x0000000000000001ull },
+		{ 0x3fffu, 0x8000000000000000ull, 0x0000000000000000ull },
+		{ 0xbfffu, 0x8000000000000000ull, 0x0000000000000000ull },
+		{ 0x3ffeu, 0x8000000000000000ull, 0x0000000000000000ull },
+		{ 0xbffeu, 0x8000000000000000ull, 0x0000000000000000ull },
 	};
 	std::size_t i, j;
 
-	check_cexpl(0.0L + 0.0iL);
-	check_cexpl(1.0L + 0.0iL);
-	check_cexpl(0.0L + 1.0iL);
-	check_cexpl(-0.0L + 0.0iL);
-	check_cexpl(0.0L - 0.0iL);
-
-	for (i = 0; i < sizeof(vals) / sizeof(vals[0]); i++) {
-		for (j = 0; j < sizeof(vals) / sizeof(vals[0]); j++)
-			check_all_complex(vals[i], vals[j]);
+	for (i = 0; i < sizeof(xs) / sizeof(xs[0]); i++) {
+		check_cospil(xs[i], "edge");
+		check_sinpil(xs[i], "edge");
+		check_tanpil(xs[i], "edge");
 	}
 
-	check_cexpl((long double)HUGE_VAL + 0.0iL);
-	check_cexpl(-(long double)HUGE_VAL + 0.0iL);
-	check_cexpl(std::nanl("") + 0.0iL);
-	check_cexpl(0.0L + (long double)HUGE_VAL * 1.0iL);
-	check_cexpl(0.0L - (long double)HUGE_VAL * 1.0iL);
-	check_cexpl(0.0L + std::nanl("") * 1.0iL);
-	check_cexpl((long double)HUGE_VAL + (long double)HUGE_VAL * 1.0iL);
-	check_cexpl(-(long double)HUGE_VAL + (long double)HUGE_VAL * 1.0iL);
-	check_cexpl((long double)HUGE_VAL + std::nanl("") * 1.0iL);
-	check_cexpl(std::nanl("") + (long double)HUGE_VAL * 1.0iL);
-	check_cexpl(std::nanl("") + std::nanl("") * 1.0iL);
+	for (i = 0; i < sizeof(ldvec) / sizeof(ldvec[0]); i++) {
+		long double x = mkld(ldvec[i].se, ldvec[i].manh, ldvec[i].manl);
+		check_cospil(x, "bits");
+		check_sinpil(x, "bits");
+		check_tanpil(x, "bits");
+	}
+
+	static const long double cexp_xs[] = {
+		0.0L, -0.0L, 1.0L, -1.0L, 0.5L,
+		1.13565234062941439494919310779707649e+04L,
+		1.13565234062941439494919310779707650e+04L,
+		2.27892930024498818830197576893019292e+04L,
+		2.27892930024498818830197576893019293e+04L,
+		1.0L / 0.0L, -1.0L / 0.0L,
+		0.0L / 0.0L,
+	};
+	static const long double cexp_ys[] = {
+		0.0L, -0.0L, 1.0L, -1.0L,
+		0x1.921fb54442d1846p+1L, -0x1.921fb54442d1846p+1L,
+		1.0L / 0.0L, -1.0L / 0.0L,
+		0.0L / 0.0L,
+	};
+	for (i = 0; i < sizeof(cexp_xs) / sizeof(cexp_xs[0]); i++)
+		for (j = 0; j < sizeof(cexp_ys) / sizeof(cexp_ys[0]); j++)
+			check_cexpl(mkcx(cexp_xs[i], cexp_ys[j]), "edge");
+
+	check_cexpl(mkcx(1.0L, 1.0L / 0.0L), "cx-inf");
+	check_cexpl(mkcx(1.0L / 0.0L, 1.0L), "cx-inf");
+	check_cexpl(mkcx(-1.0L / 0.0L, 1.0L / 0.0L), "cx-inf");
+	check_cexpl(mkcx(1.0L / 0.0L, 0.0L / 0.0L), "cx-nan");
+	check_cexpl(mkcx(0.0L / 0.0L, 1.0L), "cx-nan");
+}
+
+static std::uint64_t rng_state;
+
+static std::uint64_t
+rng_next(void)
+{
+	std::uint64_t z;
+
+	rng_state += 0x9e3779b97f4a7c15ull;
+	z = rng_state;
+	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ull;
+	z = (z ^ (z >> 27)) * 0x94d049bb133111ebull;
+	return (z ^ (z >> 31));
+}
+
+static long double
+rng_ld(void)
+{
+	unsigned char b[16];
+	std::uint64_t r = rng_next();
+	unsigned kind = (unsigned)(r % 100u);
+
+	std::memset(b, 0, sizeof(b));
+	if (kind < 6) {
+		std::uint16_t expsign = (std::uint16_t)((r & 1) ? 0x8000u : 0x0000u);
+		std::memcpy(b + 14, &expsign, 2);
+	} else if (kind < 12) {
+		std::uint64_t manl = rng_next();
+		std::uint16_t expsign = (std::uint16_t)(rng_next() & 0xffffu);
+		std::memcpy(b, &manl, 8);
+		std::memcpy(b + 14, &expsign, 2);
+	} else if (kind < 20) {
+		std::uint64_t manh = rng_next() & 0x0000ffffffffffffull;
+		std::uint64_t manl = rng_next();
+		std::uint16_t expsign = (std::uint16_t)(0x3fffu + (rng_next() % 64u));
+		if (r & 1)
+			expsign |= 0x8000u;
+		std::memcpy(b, &manl, 8);
+		std::memcpy(b + 8, &manh, 6);
+		std::memcpy(b + 14, &expsign, 2);
+	} else {
+		long double s = (long double)((rng_next() % 2000001u) - 1000000u);
+		s *= 0x1p-100L * (long double)(1 + (rng_next() % 1000u));
+		if (kind < 40)
+			s *= 0x1p100L;
+		if (kind < 55)
+			s += (long double)((rng_next() % 7u) - 3u) * 0x1p112L;
+		std::memcpy(b, &s, sizeof(s));
+	}
+	long double x;
+	std::memcpy(&x, b, sizeof(x));
+	return x;
 }
 
 static void
-run_ld128_bit_edges(void)
+random_sweep(void)
 {
-	static const std::uint16_t exps[] = {
-		0x0000u, 0x0001u, 0x3ffeu, 0x3fffu, 0x4000u, 0x7ffeu, 0x7fffu,
-	};
-	static const std::uint64_t manhs[] = {
-		0x000000000000ULL, 0x000000000001ULL,
-		0x0000800000000000ULL, 0xffffffffffffULL,
-	};
-	static const std::uint64_t manls[] = {
-		0x0000000000000000ULL, 0x0000000000000001ULL,
-		0x8000000000000000ULL, 0xffffffffffffffffULL,
-	};
-	std::size_t e, mh, ml, s;
+	unsigned long long i;
 
-	for (e = 0; e < sizeof(exps) / sizeof(exps[0]); e++)
-		for (mh = 0; mh < sizeof(manhs) / sizeof(manhs[0]); mh++)
-			for (ml = 0; ml < sizeof(manls) / sizeof(manls[0]); ml++)
-				for (s = 0; s < 2; s++) {
-					long double x = mkld(
-					    manhs[mh], manls[ml],
-					    (std::uint16_t)(exps[e] |
-					    (s ? 0x8000u : 0u)));
-					check_all_real(x);
-					check_cexpl(x + 0.0iL);
-					check_cexpl(x + x * 1.0iL);
-				}
-}
-
-/* ---------------------------------------------------------------- */
-/* randomised sweeps                                                */
-/* ---------------------------------------------------------------- */
-
-static void
-run_random(void)
-{
-	unsigned long i;
-	std::uint64_t r;
-
+	rng_state = 0x243f6a8885a308d3ull;
 	for (i = 0; i < RANDOM_ITERS; i++) {
-		r = rnd64();
-		switch (i & 15u) {
-		case 0:
-			check_all_real((long double)std::bit_cast<double>(r));
-			break;
-		case 1:
-			check_all_real((long double)((std::int64_t)r) / 17.0L);
-			break;
-		case 2: {
-			long double x = mkld(rnd64() & 0x0000ffffffffffffULL,
-			    rnd64(),
-			    (std::uint16_t)((r >> 40) & 0x7fffu |
-			    ((r & 1u) ? 0x8000u : 0u)));
-			check_all_real(x);
-			check_cexpl(x + (long double)std::bit_cast<double>(
-			    rnd64()) * 1.0iL);
-			break;
-		}
-		case 3: {
-			long double x = 0.25L + (long double)((r & 0xffffu) -
-			    32768) / 65536.0L;
-			check_all_real(x);
-			break;
-		}
-		case 4:
-			check_all_real(0.5L + (long double)((r & 0xffffu) -
-			    32768) / 131072.0L);
-			break;
-		case 5:
-			check_all_real(0.75L + (long double)((r & 0xffffu) -
-			    32768) / 131072.0L);
-			break;
-		case 6:
-			check_all_real(1.0L + (long double)((r & 0xffffu) -
-			    32768) / 65536.0L);
-			break;
-		case 7:
-			check_all_real(std::ldexpl(1.0L,
-			    (int)((r >> 16) & 0x7fu) - 64));
-			break;
-		case 8:
-			check_all_real(std::ldexpl(1.0L,
-			    (int)((r >> 16) & 0xffu) + 100));
-			break;
-		case 9:
-			check_cexpl((long double)std::bit_cast<double>(r) +
-			    (long double)std::bit_cast<double>(rnd64()) *
-			    1.0iL);
-			break;
-		case 10:
-			check_cexpl(11356.0L + (long double)((r & 0xfffu)) /
-			    16.0L + (long double)((rnd64() & 0xfffu)) *
-			    1.0iL);
-			break;
-		case 11:
-			check_cexpl(22789.0L + (long double)((r & 0xfffu)) /
-			    16.0L + (long double)((rnd64() & 0xfffu)) *
-			    1.0iL);
-			break;
-		case 12:
-			check_all_real((long double)((r & 0x7ffu) + 1) *
-			    0.25L);
-			break;
-		case 13:
-			check_all_real(fmodl((long double)((std::int64_t)r),
-			    2.0L));
-			break;
-		case 14:
-			check_cexpl((long double)((std::int64_t)r) / 3.0L +
-			    (long double)((std::int64_t)(rnd64())) / 7.0L *
-			    1.0iL);
-			break;
-		default:
-			check_all_real((long double)(std::int32_t)(r >> 32) /
-			    5.0L);
-			break;
-		}
+		long double x = rng_ld();
+
+		check_cospil(x, "random");
+		check_sinpil(x, "random");
+		check_tanpil(x, "random");
+		check_cexpl(mkcx(rng_ld(), rng_ld()), "random");
 	}
 }
 
-/* ---------------------------------------------------------------- */
+static void
+row(const stat &s)
+{
+	std::printf("  %-18s %12llu %10llu   %s\n", s.name, s.cases, s.fails,
+	    s.fails == 0 ? "PASS" : "FAIL");
+}
 
 int
 main(void)
 {
-	Stat *all[] = { &st_cospil, &st_sinpil, &st_tanpil, &st_cexpl };
-	unsigned long long total_fail = 0;
-	int i;
+	unsigned long long fails;
 
-	std::printf("LDBL_MANT_DIG=%d, comparing %zu bytes of long double\n\n",
-	    (int)LDBL_MANT_DIG, LD_SIG);
+	std::printf("pbsd batch b0088 differential test\n");
+	std::printf("LDBL_MANT_DIG=%d, comparing %zu-byte long double / "
+	    "%zu-byte complex\n\n", (int)LDBL_MANT_DIG, LD_BYTES, CX_BYTES);
 
-	run_scalar_edges();
-	run_complex_edges();
-	run_ld128_bit_edges();
-	run_random();
+	edge_cases();
+	random_sweep();
 
-	std::printf("\n%-10s %14s %12s  %s\n", "function", "cases", "failures",
-	    "result");
-	std::printf("---------------------------------------------------\n");
-	for (i = 0; i < 4; i++) {
-		std::printf("%-10s %14llu %12llu  %s\n", all[i]->name,
-		    all[i]->cases, all[i]->failures,
-		    all[i]->failures == 0 ? "PASS" : "FAIL");
-		total_fail += all[i]->failures;
-	}
-	std::printf("---------------------------------------------------\n");
-	std::printf("%-10s %14llu %12llu  %s\n", "TOTAL",
-	    st_cospil.cases + st_sinpil.cases + st_tanpil.cases +
-	    st_cexpl.cases,
-	    total_fail, total_fail == 0 ? "PASS" : "FAIL");
+	std::printf("\n  %-18s %12s %10s   %s\n", "function", "cases",
+	    "failures", "result");
+	std::printf("  ------------------------------------------------------\n");
+	row(st_cospil);
+	row(st_sinpil);
+	row(st_tanpil);
+	row(st_cexpl);
 
-	return total_fail == 0 ? 0 : 1;
+	fails = st_cospil.fails + st_sinpil.fails + st_tanpil.fails +
+	    st_cexpl.fails;
+	std::printf("\n%s: %llu total failures\n",
+	    fails == 0 ? "PASS" : "FAIL", fails);
+
+	return (fails == 0 ? 0 : 1);
 }

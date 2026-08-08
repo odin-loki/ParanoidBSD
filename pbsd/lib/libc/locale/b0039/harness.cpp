@@ -109,7 +109,7 @@ mb_copy(const P::mbstate_t &s, ref_mbstate_t &d)
 {
 
 	std::memset(&d, 0, sizeof(d));
-	std::memcpy(&d, &s, sizeof(s));
+	std::memcpy(&d, &s, sizeof(d));
 }
 
 static void
@@ -117,7 +117,7 @@ mb_copy(const ref_mbstate_t &s, P::mbstate_t &d)
 {
 
 	std::memset(&d, 0, sizeof(d));
-	std::memcpy(&d, &s, sizeof(s));
+	std::memcpy(&d, &s, sizeof(d));
 }
 
 static bool
@@ -502,8 +502,12 @@ do_wcsrtombs(const wchar_t *in, size_t inlen, size_t len, bool dst_null,
 		mb_copy(e->port_ctype.wcsrtombs, loc_ref);
 		if (!mb_eq(e->ref_ctype.wcsrtombs, loc_ref))
 			report(f, "locale mbstate_t");
-	} else if (!mb_eq(ps_p, ps_seed) || !mb_eq(ps_ref, ps_seed)) {
-		report(f, "caller mbstate_t");
+	} else {
+		ref_mbstate_t expected;
+
+		mb_copy(ps_seed, expected);
+		if (!mb_eq(ps_p, ps_seed) || !mb_eq(ps_ref, expected))
+			report(f, "caller mbstate_t");
 	}
 }
 

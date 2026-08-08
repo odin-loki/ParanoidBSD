@@ -32,6 +32,7 @@
 module;
 
 #define _POSIX_C_SOURCE 200809L
+#define __SSP_FORTIFY_LEVEL 0
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -43,6 +44,13 @@ module;
 #else
 #include <sys/aio.h>
 #endif
+
+#ifndef __weak_symbol
+#define	__weak_symbol	__attribute__((__weak__))
+#endif
+
+#define	__ssp_real_(fun)	fun
+#define	__ssp_real(fun)		__ssp_real_(fun)
 
 export module pbsd.lib.libc.sys.b0096;
 
@@ -79,8 +87,8 @@ export namespace pbsd::lib_libc_sys::b0096 {
 
 interpos_func_t __libc_interposing[INTERPOS_MAX];
 
-[[gnu::weak]] ssize_t
-recvmsg(int s, struct msghdr *msg, int flags)
+[[gnu::weak]] ssize_t __weak_symbol
+__ssp_real(recvmsg)(int s, struct msghdr *msg, int flags)
 {
 	return (INTERPOS_SYS(recvmsg, s, msg, flags));
 }

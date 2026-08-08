@@ -12,6 +12,7 @@
  */
 
 #define _POSIX_C_SOURCE 200809L
+#define __SSP_FORTIFY_LEVEL 0
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -23,6 +24,15 @@
 #else
 #include <sys/aio.h>
 #endif
+
+#ifndef __weak_symbol
+#define	__weak_symbol	__attribute__((__weak__))
+#endif
+
+#define	__ssp_real_(fun)	fun
+#define	__ssp_real(fun)		__ssp_real_(fun)
+#define	ref___ssp_real_(fun)	ref_##fun
+#define	ref___ssp_real(fun)	ref___ssp_real_(fun)
 
 typedef int (*interpos_func_t)(void);
 
@@ -81,9 +91,8 @@ interpos_func_t ref___libc_interposing[INTERPOS_MAX];
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma weak ref_recvmsg
-ssize_t
-ref_recvmsg(int s, struct msghdr *msg, int flags)
+ssize_t __weak_symbol
+ref___ssp_real(recvmsg)(int s, struct msghdr *msg, int flags)
 {
 	return (INTERPOS_SYS(recvmsg, s, msg, flags));
 }
