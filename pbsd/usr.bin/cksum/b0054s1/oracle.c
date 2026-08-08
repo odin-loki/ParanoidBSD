@@ -1,26 +1,11 @@
 /*
- * PBSD batch b0054s1 -- reference oracle.
+ * PBSD batch b0054s1 oracle -- reference implementation.
  *
- * The original C source of this batch, verbatim.  The function has been
- * renamed with a "ref_" prefix; no function body has been altered.  The
- * only additions are:
- *   - prototypes (the original pulled these from "extern.h");
- *   - accessor functions at the end so the differential harness can observe
- *     and preset the file-static running total.
- *
- * This file is the specification.  Do not "fix" anything in it.
+ * usr.bin/cksum/crc32.c, verbatim, with every function renamed to a ref_
+ * prefix.  Function bodies are untouched.  The only additions are the
+ * declarations that "extern.h" would have supplied and a read-only accessor
+ * for the file-static accumulator so the harness can observe it.
  */
-
-#include <sys/types.h>
-
-#include <stdio.h>
-#include <stdint.h>
-#include <unistd.h>
-
-int ref_crc32(int, uint32_t *, off_t *);
-
-uint32_t ref_crc32_total_get(void);
-void ref_crc32_total_set(uint32_t);
 
 /*
  * This code implements the AUTODIN II polynomial used by Ethernet,
@@ -34,6 +19,16 @@ void ref_crc32_total_set(uint32_t);
  * use.  An error-free packet will leave 0xDEBB20E3 in the crc.
  *			Spencer Garrett <srg@quick.com>
  */
+
+#include <sys/types.h>
+
+#include <stdio.h>
+#include <stdint.h>
+#include <unistd.h>
+
+/* from "extern.h" */
+int ref_crc32(int fd, uint32_t *cval, off_t *clen);
+uint32_t ref_crc32_total_peek(void);
 
 #define CRC(crc, ch)	 (crc = (crc >> 8) ^ crctab[(crc ^ (ch)) & 0xff])
 
@@ -134,14 +129,9 @@ ref_crc32(int fd, uint32_t *cval, off_t *clen)
     return 0 ;
 }
 
+/* Harness accessor for the file-static accumulator; not part of the original. */
 uint32_t
-ref_crc32_total_get(void)
+ref_crc32_total_peek(void)
 {
 	return crc32_total;
-}
-
-void
-ref_crc32_total_set(uint32_t v)
-{
-	crc32_total = v;
 }

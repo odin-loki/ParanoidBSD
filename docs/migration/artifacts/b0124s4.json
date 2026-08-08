@@ -1,0 +1,10 @@
+{
+  "batch": "b0124s4",
+  "verified": "2026-08-08T22:14:31Z",
+  "evidence": "harness green + 2/2 mutations killed (IR: IR differs for 1/1: msgdsize)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction          cases    fails\nmsgdsize         200016        0\n",
+  "input_hashes": {
+    "hbsd/src/sbin/ipf/libipf/msgdsize.c": "da3105f0869f2599"
+  }
+}

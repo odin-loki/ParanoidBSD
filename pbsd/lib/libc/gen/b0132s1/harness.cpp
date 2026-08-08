@@ -44,9 +44,9 @@ using DIR = port::DIR;
 #define	_GENERIC_DIRSIZ(dp)	_GENERIC_DIRLEN((dp)->d_namlen)
 
 extern "C" {
-struct dirent *ref__readdir_unlocked(DIR *, int);
-struct dirent *ref_readdir(DIR *);
-int ref___readdir_r(DIR *, struct dirent *, struct dirent **);
+dirent *ref__readdir_unlocked(DIR *, int);
+dirent *ref_readdir(DIR *);
+int ref___readdir_r(DIR *, dirent *, dirent **);
 }
 
 /* ------------------------------------------------------------------ shared */
@@ -70,7 +70,7 @@ static stat_row rows[] = {
 
 int __isthreaded = 0;
 
-static uint64_t rng_state = 0x00b0132s1feedULL;
+static uint64_t rng_state = 0xb0132b1feedULL;
 
 static inline uint64_t
 rnd64(void)
@@ -110,7 +110,7 @@ fail_row(int row, const char *label, const char *detail)
 
 /* ----------------------------------------------------------- pthread stubs */
 
-struct pthread_mutex {
+struct dir_mutex {
 	int	locked;
 };
 
@@ -122,7 +122,7 @@ _pthread_mutex_lock(struct pthread_mutex **mptr)
 {
 	g_mutex_lock_calls++;
 	if (mptr != NULL && *mptr != NULL)
-		(*mptr)->locked = 1;
+		((dir_mutex *)*mptr)->locked = 1;
 	return (0);
 }
 
@@ -131,7 +131,7 @@ _pthread_mutex_unlock(struct pthread_mutex **mptr)
 {
 	g_mutex_unlock_calls++;
 	if (mptr != NULL && *mptr != NULL)
-		(*mptr)->locked = 0;
+		((dir_mutex *)*mptr)->locked = 0;
 	return (0);
 }
 
@@ -233,7 +233,7 @@ _fixtelldir(DIR *dirp, off_t oldseek, size_t oldloc)
 struct dir_fixture {
 	unsigned char	raw[BUF_PAD + DIRBUF_LEN + BUF_PAD];
 	DIR		dir;
-	pthread_mutex	mutex;
+	dir_mutex	mutex;
 };
 
 static void
@@ -244,7 +244,7 @@ dir_reset(dir_fixture *fx)
 	fx->dir.dd_fd = 7;
 	fx->dir.dd_buf = (char *)(fx->raw + BUF_PAD);
 	fx->dir.dd_len = DIRBUF_LEN;
-	fx->dir.dd_lock = &fx->mutex;
+	fx->dir.dd_lock = (port::pthread_mutex *)&fx->mutex;
 }
 
 static void
@@ -252,7 +252,7 @@ dir_copy(const dir_fixture *src, dir_fixture *dst)
 {
 	std::memcpy(dst, src, sizeof(*dst));
 	dst->dir.dd_buf = (char *)(dst->raw + BUF_PAD);
-	dst->dir.dd_lock = &dst->mutex;
+	dst->dir.dd_lock = (port::pthread_mutex *)&dst->mutex;
 }
 
 static bool

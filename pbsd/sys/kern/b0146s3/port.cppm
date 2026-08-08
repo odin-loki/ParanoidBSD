@@ -197,9 +197,6 @@ phashinit(int elements, malloc_type *type, u_long *nentries)
 	return (phashinit_flags(elements, type, nentries, HASH_WAITOK));
 }
 
-inline void malloc_reset() noexcept;
-inline void malloc_fail_at(int n) noexcept;
-
 } // namespace pbsd::sys_kern::b0146s3
 
 export namespace pbsd::sys_kern::b0146s3::detail {

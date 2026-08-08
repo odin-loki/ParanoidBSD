@@ -1,15 +1,29 @@
 /*
- * oracle.c -- concatenated reference implementations for PBSD batch b0124s1.
+ * Reference oracle for batch b0124s1.
+ *
+ * Sources concatenated verbatim from HardenedBSD, every function renamed
+ * with a ref_ prefix.  Function bodies are UNMODIFIED.  Only the includes
+ * and the defines that "ipf.h" would have supplied have been added.
  */
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
 
 #include <stdio.h>
 #include <string.h>
 
-#define PRINTF (void)printf
+#ifndef	LONG_BIT
+#define	LONG_BIT	(sizeof(long) * 8)
+#endif
+
+/* from sbin/ipf/libipf/ipf.h */
+#ifndef	PRINTF
+#define	PRINTF	(void)printf
+#endif
+#ifndef	FPRINTF
+#define	FPRINTF	(void)fprintf
+#endif
+
+/* ------------------------------------------------------------------------ */
+/* sbin/ipf/libipf/printifname.c                                            */
+/* ------------------------------------------------------------------------ */
 
 /*
  * Copyright (C) 2012 by Darren Reed.

@@ -46,6 +46,8 @@ struct malloc_type {
 #define	HASH_NOWAIT	0x00000001
 #define	HASH_WAITOK	0x00000002
 
+void pbsd_kern_env_reset(void);
+void pbsd_kern_fail_at(int n);
 void *pbsd_kern_malloc(size_t size, struct malloc_type *type, int flags);
 void pbsd_kern_free(void *addr, struct malloc_type *type);
 
