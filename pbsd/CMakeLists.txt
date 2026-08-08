@@ -410,6 +410,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libcrypt/misc_m/port.cppm
   lib/libthr/arch/amd64/amd64/b0111/port.cppm
   lib/libthr/sys/b0234/port.cppm
+  lib/libthr/thread/b0252/port.cppm
   lib/msun/aarch64/b0201/port.cppm
   lib/msun/ld128/b0073/port.cppm
   lib/msun/ld128/b0084/port.cppm

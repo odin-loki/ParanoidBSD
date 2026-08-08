@@ -15,12 +15,33 @@
 #define __SSP_FORTIFY_LEVEL 0
 
 #include <sys/types.h>
+#include <stdint.h>
 #include <ucontext.h>
 #include <sys/socket.h>
-#include <sys/event.h>
 #include <sys/time.h>
 #include <sys/fcntl.h>
 #include <stdarg.h>
+
+#if defined(__has_include)
+#if __has_include(<sys/event.h>)
+#include <sys/event.h>
+#else
+#define	B0249_NEED_EVENT_STUB
+#endif
+#else
+#define	B0249_NEED_EVENT_STUB
+#endif
+
+#if defined(B0249_NEED_EVENT_STUB)
+struct kevent {
+	uintptr_t ident;
+	short filter;
+	unsigned short flags;
+	unsigned int fflags;
+	intptr_t data;
+	void *udata;
+};
+#endif
 
 #ifndef __weak_symbol
 #define	__weak_symbol	__attribute__((__weak__))
