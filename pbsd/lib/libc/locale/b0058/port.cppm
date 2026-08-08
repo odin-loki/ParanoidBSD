@@ -17,7 +17,6 @@ typedef union {
 } __mbstate_t;
 typedef __mbstate_t mbstate_t;
 
-#include <uchar.h>
 #include <wchar.h>
 
 #ifndef EOF
@@ -267,6 +266,17 @@ global_locale()
 {
 
 	return (&port_global_locale);
+}
+
+inline void
+snapshot_locale_states(mbstate_t *mbrtoc32, mbstate_t *mbrlen,
+    mbstate_t *wcrtomb, mbstate_t *mbrtowc)
+{
+
+	*mbrtoc32 = port_global_ctype.mbrtoc32;
+	*mbrlen = port_global_ctype.mbrlen;
+	*wcrtomb = port_global_ctype.wcrtomb;
+	*mbrtowc = port_global_ctype.mbrtowc;
 }
 
 /*-

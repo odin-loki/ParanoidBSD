@@ -1,3 +1,5 @@
+#define _DEFAULT_SOURCE
+
 /*
  * PBSD batch b0059 -- reference oracle.
  *
@@ -20,6 +22,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
 
 #ifndef LONG_BIT
 #define	LONG_BIT	(sizeof(long) * CHAR_BIT)

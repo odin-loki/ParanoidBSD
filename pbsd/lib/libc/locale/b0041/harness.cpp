@@ -55,10 +55,10 @@ struct Stats {
 };
 
 static constexpr unsigned char GUARD = 0x7f;
-static constexpr size_t OUT_CAP = 64;
+static constexpr size_t OUT_CAP = 128;
 static constexpr size_t OUT_PREFIX = 8;
 static constexpr size_t OUT_SUFFIX = 16;
-static constexpr size_t WRITE_MAX = OUT_CAP - OUT_PREFIX - OUT_SUFFIX;
+static constexpr size_t WRITE_MAX = 64;
 static constexpr size_t WCS_CAP = 32;
 static constexpr unsigned long long RANDOM_ITERS = 200000;
 
