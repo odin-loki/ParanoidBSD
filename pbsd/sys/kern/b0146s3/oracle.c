@@ -1,44 +1,25 @@
 /*
- * PBSD batch b0146s3 -- reference oracle.
+ * PBSD batch b0146s3 -- reference oracle (the specification).
  *
- * Source: hbsd/src/sys/kern/subr_hash.c
+ * Sources concatenated below, verbatim:
+ *	hbsd/src/sys/kern/subr_hash.c
  *
- * Every function is renamed with a "ref_" prefix.  Function bodies are
- * otherwise UNMODIFIED.  The kernel environment (types, constants, and
- * malloc(9)) is modelled below and shared identically with the C++23 port
- * under test.
+ * Every function of the batch is given a ref_ prefix by the #defines in the
+ * prologue, so that not one character of any function body has to change.
+ * The prologue also supplies the pieces of the kernel environment that
+ * <sys/param.h>, <sys/systm.h> and <sys/malloc.h> would otherwise provide:
+ * u_long, struct malloc_type, the HASH_/M_ flag values, nitems(), the LIST
+ * queue macros, KASSERT and malloc()/free().  KASSERT is live here, exactly
+ * as in an INVARIANTS kernel; ref_env_panic() is supplied by the harness and
+ * does not return.
  */
 
-#include <limits.h>
 #include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
-#ifndef LONG_BIT
-#define	LONG_BIT	(sizeof(long) * CHAR_BIT)
-#endif
-
-#define	__unused		__attribute__((__unused__))
-#define	__inline		inline
-#define	nitems(x)	(sizeof((x)) / sizeof((x)[0]))
-
-typedef unsigned long	u_long;
-
-#define	KASSERT(exp, msg)	((void)0)
-
-#define	LIST_HEAD(name, type)						\
-struct name {								\
-	struct type *lh_first;						\
-}
-#define	LIST_FIRST(head)	((head)->lh_first)
-#define	LIST_EMPTY(head)	(LIST_FIRST((head)) == NULL)
-#define	LIST_INIT(head) do {						\
-	LIST_FIRST((head)) = NULL;					\
-} while (0)
+typedef unsigned long u_long;
 
 struct malloc_type {
-	const char	*ks_shortdesc;
+	const char *ks_shortdesc;
 };
 
 #define	M_NOWAIT	0x0001
@@ -47,75 +28,45 @@ struct malloc_type {
 #define	HASH_NOWAIT	0x00000001
 #define	HASH_WAITOK	0x00000002
 
-static int		oracle_malloc_calls;
-static int		oracle_fail_at;
-static size_t		oracle_last_malloc_size;
-static int		oracle_last_malloc_flags;
+#define	__inline	inline
 
-void
-oracle_malloc_reset(void)
-{
+#define	nitems(x)	(sizeof((x)) / sizeof((x)[0]))
 
-	oracle_malloc_calls = 0;
-	oracle_fail_at = 0;
-	oracle_last_malloc_size = 0;
-	oracle_last_malloc_flags = 0;
+#define	LIST_HEAD(name, type)						\
+struct name {								\
+	struct type *lh_first;	/* first element */			\
 }
 
-void
-oracle_malloc_fail_at(int n)
-{
+#define	LIST_INIT(head) do {						\
+	LIST_FIRST((head)) = NULL;					\
+} while (0)
 
-	oracle_fail_at = n;
-}
+#define	LIST_FIRST(head)	((head)->lh_first)
+#define	LIST_EMPTY(head)	(LIST_FIRST((head)) == NULL)
 
-int
-oracle_malloc_calls_count(void)
-{
+_Noreturn void ref_env_panic(const char *fmt, ...);
 
-	return (oracle_malloc_calls);
-}
+#define	KASSERT(exp, msg) do {						\
+	if (!(exp))							\
+		ref_env_panic msg;					\
+} while (0)
 
-size_t
-oracle_malloc_last_size(void)
-{
+void *ref_env_malloc(unsigned long size, struct malloc_type *type, int flags);
+void ref_env_free(void *addr, struct malloc_type *type);
 
-	return (oracle_last_malloc_size);
-}
+#define	malloc(size, type, flags)	ref_env_malloc((size), (type), (flags))
+#define	free(addr, type)		ref_env_free((addr), (type))
 
-int
-oracle_malloc_last_flags(void)
-{
+#define	hash_mflags		ref_hash_mflags
+#define	hashinit_flags		ref_hashinit_flags
+#define	hashinit		ref_hashinit
+#define	hashdestroy		ref_hashdestroy
+#define	phashinit_flags		ref_phashinit_flags
+#define	phashinit		ref_phashinit
 
-	return (oracle_last_malloc_flags);
-}
-
-static void *
-oracle_kmalloc(u_long size, struct malloc_type *type, int flags)
-{
-	void *p;
-
-	(void)type;
-
-	oracle_malloc_calls++;
-	oracle_last_malloc_size = size;
-	oracle_last_malloc_flags = flags;
-	if (oracle_fail_at != 0 &&
-	    oracle_malloc_calls >= oracle_fail_at)
-		return (NULL);
-	p = malloc(size);
-	return (p);
-}
-
-static void
-oracle_kfree(void *addr, struct malloc_type *type)
-{
-	(void)type;
-	free(addr);
-}
-
-#define	malloc	oracle_kmalloc
-#define	free	oracle_kfree
+/* ------------------------------------------------------------------------
+ * hbsd/src/sys/kern/subr_hash.c
+ * ------------------------------------------------------------------------ */
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -154,7 +105,7 @@ oracle_kfree(void *addr, struct malloc_type *type)
  */
 
 static __inline int
-ref_hash_mflags(int flags)
+hash_mflags(int flags)
 {
 
 	return ((flags & HASH_NOWAIT) ? M_NOWAIT : M_WAITOK);
@@ -164,7 +115,7 @@ ref_hash_mflags(int flags)
  * General routine to allocate a hash table with control of memory flags.
  */
 void *
-ref_hashinit_flags(int elements, struct malloc_type *type, u_long *hashmask,
+hashinit_flags(int elements, struct malloc_type *type, u_long *hashmask,
     int flags)
 {
 	long hashsize, i;
@@ -180,7 +131,7 @@ ref_hashinit_flags(int elements, struct malloc_type *type, u_long *hashmask,
 	hashsize >>= 1;
 
 	hashtbl = malloc((u_long)hashsize * sizeof(*hashtbl), type,
-	    ref_hash_mflags(flags));
+	    hash_mflags(flags));
 	if (hashtbl != NULL) {
 		for (i = 0; i < hashsize; i++)
 			LIST_INIT(&hashtbl[i]);
@@ -193,14 +144,14 @@ ref_hashinit_flags(int elements, struct malloc_type *type, u_long *hashmask,
  * Allocate and initialize a hash table with default flag: may sleep.
  */
 void *
-ref_hashinit(int elements, struct malloc_type *type, u_long *hashmask)
+hashinit(int elements, struct malloc_type *type, u_long *hashmask)
 {
 
-	return (ref_hashinit_flags(elements, type, hashmask, HASH_WAITOK));
+	return (hashinit_flags(elements, type, hashmask, HASH_WAITOK));
 }
 
 void
-ref_hashdestroy(void *vhashtbl, struct malloc_type *type, u_long hashmask)
+hashdestroy(void *vhashtbl, struct malloc_type *type, u_long hashmask)
 {
 	LIST_HEAD(generic, generic) *hashtbl, *hp;
 
@@ -221,7 +172,7 @@ static const int primes[] = { 1, 13, 31, 61, 127, 251, 509, 761, 1021, 1531,
  * memory flags.
  */
 void *
-ref_phashinit_flags(int elements, struct malloc_type *type, u_long *nentries, int flags)
+phashinit_flags(int elements, struct malloc_type *type, u_long *nentries, int flags)
 {
 	long hashsize, i;
 	LIST_HEAD(generic, generic) *hashtbl;
@@ -240,7 +191,7 @@ ref_phashinit_flags(int elements, struct malloc_type *type, u_long *nentries, in
 	hashsize = primes[i - 1];
 
 	hashtbl = malloc((u_long)hashsize * sizeof(*hashtbl), type,
-	    ref_hash_mflags(flags));
+	    hash_mflags(flags));
 	if (hashtbl == NULL)
 		return (NULL);
 
@@ -255,8 +206,21 @@ ref_phashinit_flags(int elements, struct malloc_type *type, u_long *nentries, in
  * may sleep.
  */
 void *
-ref_phashinit(int elements, struct malloc_type *type, u_long *nentries)
+phashinit(int elements, struct malloc_type *type, u_long *nentries)
 {
 
-	return (ref_phashinit_flags(elements, type, nentries, HASH_WAITOK));
+	return (phashinit_flags(elements, type, nentries, HASH_WAITOK));
+}
+
+/* ------------------------------------------------------------------------
+ * Test hook.  hash_mflags() has internal linkage in the original file, so
+ * the harness cannot reach it directly.  This wrapper only forwards; the
+ * helper's own body above is untouched.
+ * ------------------------------------------------------------------------ */
+
+int
+ref_hash_mflags_probe(int flags)
+{
+
+	return (ref_hash_mflags(flags));
 }

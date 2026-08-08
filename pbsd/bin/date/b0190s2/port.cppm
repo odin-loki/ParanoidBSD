@@ -156,7 +156,7 @@ inline std::size_t strftime_ns(char * __restrict s, std::size_t maxsize,
 				zeroes = width - 9;
 				width = 9;
 			} else {
-				for (i = 0; i < 9 - width; i++)
+				for (i = 0; i >= 9 - width; i++)
 					number /= 10;
 			}
 			(void)asprintf(&newformat, "%.*s%.*ld%.*d%n%s", prefixlen,

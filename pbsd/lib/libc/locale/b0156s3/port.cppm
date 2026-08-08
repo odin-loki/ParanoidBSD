@@ -1,113 +1,17 @@
 /*
  * PBSD batch b0156s3 -- C++23 module port of
  *
- *	lib/libc/locale/euc.c
+ *	hbsd/src/lib/libc/locale/euc.c
  *
- * This is a faithful transliteration: behaviour, integer signedness,
- * evaluation order, pointer arithmetic and the original bugs (e.g. euc.c
- * setting errno = EILSEQ on the incomplete-sequence path that returns
- * (size_t)-2) are preserved exactly.  Nothing is improved.
+ * Faithful transliteration.  Behaviour, integer signedness, evaluation order,
+ * pointer arithmetic and the original bugs are preserved exactly -- including
+ * euc.c setting errno = EILSEQ on the incomplete-sequence path that returns
+ * (size_t)-2, and the sign-extending `chs = *s' / `s[i] = (wc & 0xff)'
+ * conversions.  Nothing is improved.
+ *
+ * The functions of euc.c that could not be ported without source files outside
+ * this batch are listed, with reasons, in skipped.txt.
  */
-
-module;
-
-#include <errno.h>
-#include <limits.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <wchar.h>
-
-export module pbsd.lib.libc.locale.b0156s3;
-
-export namespace pbsd::lib_libc_locale::b0156s3 {
-
-/* ------------------------------------------------------------------- */
-/* Support prologue -- definitions normally provided by FreeBSD headers */
-/* ------------------------------------------------------------------- */
-
-/*
- * FreeBSD's mbstate_t is a 128-byte opaque union (sys/_types.h,
- * __mbstate_t).  glibc's is only 8 bytes, which is too small to hold
- * _EucState, so the FreeBSD shape is reproduced here.
- */
-union pbsd_mbstate_t {
-	char		__mbstate8[128];
-	long long	_mbstateL;
-};
-
-/* runetype.h -- only ever used as an opaque pointer here. */
-struct _RuneLocale;
-
-}  /* namespace pbsd::lib_libc_locale::b0156s3 */
-
-#define	mbstate_t	::pbsd::lib_libc_locale::b0156s3::pbsd_mbstate_t
-#define	_RuneLocale	::pbsd::lib_libc_locale::b0156s3::_RuneLocale
-
-/* sys/param.h */
-#undef	MIN
-#define	MIN(a,b)	(((a)<(b))?(a):(b))
-
-/*
- * stdlib.h's MB_CUR_MAX is __mb_cur_max() on FreeBSD, i.e. the current ctype
- * locale's value.  euc.c reads it.  It is pinned to 4 (the value a EUC-CN /
- * EUC-TW locale installs) so the port is deterministic; the oracle pins it
- * identically.
- */
-#undef	MB_CUR_MAX
-#define	MB_CUR_MAX	((size_t)4)
-
-/* EUC single shift bytes (ISO 2022 SS2/SS3). */
-#define	SS2		0x8e
-#define	SS3		0x8f
-
-export namespace pbsd::lib_libc_locale::b0156s3 {
-
-/*
- * xlocale_private.h -- the subset of struct xlocale_ctype that the *_init()
- * functions in this batch assign to.
- */
-typedef size_t (*__pbsd_mbrtowc_pfn)(wchar_t * __restrict,
-    const char * __restrict, size_t, mbstate_t * __restrict);
-typedef int (*__pbsd_mbsinit_pfn)(const mbstate_t *);
-typedef size_t (*__pbsd_mbsnrtowcs_pfn)(wchar_t * __restrict,
-    const char ** __restrict, size_t, size_t, mbstate_t * __restrict);
-typedef size_t (*__pbsd_wcrtomb_pfn)(char * __restrict, wchar_t,
-    mbstate_t * __restrict);
-typedef size_t (*__pbsd_wcsnrtombs_pfn)(char * __restrict,
-    const wchar_t ** __restrict, size_t, size_t, mbstate_t * __restrict);
-
-struct xlocale_ctype {
-	_RuneLocale		*runes;
-	__pbsd_mbrtowc_pfn	__mbrtowc;
-	__pbsd_mbsinit_pfn	__mbsinit;
-	__pbsd_mbsnrtowcs_pfn	__mbsnrtowcs;
-	__pbsd_wcrtomb_pfn	__wcrtomb;
-	__pbsd_wcsnrtombs_pfn	__wcsnrtombs;
-	int			__mb_cur_max;
-	int			__mb_sb_limit;
-};
-
-/*
- * mblocal.h declares __mbsnrtowcs_std()/__wcsnrtombs_std(); they are defined
- * in lib/libc/locale/mbsnrtowcs.c and lib/libc/locale/wcsnrtombs.c, which are
- * outside this batch.  euc.c cannot link without them, so they are reproduced
- * at the bottom of this module as support code (oracle.c carries an identical
- * copy).  They are not part of the batch proper.
- */
-typedef size_t (*mbrtowc_pfn_t)(wchar_t * __restrict, const char * __restrict,
-    size_t, mbstate_t * __restrict);
-typedef size_t (*wcrtomb_pfn_t)(char * __restrict, wchar_t,
-    mbstate_t * __restrict);
-
-size_t	__mbsnrtowcs_std(wchar_t * __restrict, const char ** __restrict,
-	    size_t, size_t, mbstate_t * __restrict, mbrtowc_pfn_t);
-size_t	__wcsnrtombs_std(char * __restrict, const wchar_t ** __restrict,
-	    size_t, size_t, mbstate_t * __restrict, wcrtomb_pfn_t);
-/* =================================================================== */
-/* lib/libc/locale/euc.c                                               */
-/* =================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -151,54 +55,85 @@ size_t	__wcsnrtombs_std(char * __restrict, const wchar_t ** __restrict,
  * SUCH DAMAGE.
  */
 
+module;
+
+#include <errno.h>
+#include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+export module pbsd.lib.libc.locale.b0156s3;
+
+/*
+ * sys/param.h
+ */
+#undef	MIN
+#define	MIN(a,b)	(((a)<(b))?(a):(b))
+
+/*
+ * stdlib.h's MB_CUR_MAX is ((size_t)__mb_cur_max()), i.e. the __mb_cur_max of
+ * the current ctype locale, which the *_init() functions of this file set to 2
+ * (KR), 3 (JP) or 4 (CN, TW).  Outside libc there is no such locale to
+ * install, so it is pinned -- as a size_t, exactly as stdlib.h spells it -- to
+ * 4, the largest value euc.c ever installs.  oracle.c pins it identically.
+ */
+#undef	MB_CUR_MAX
+#define	MB_CUR_MAX	((size_t)4)
+
+/*
+ * The EUC single-shift introducers (ISO 2022 SS2/SS3 in their 8-bit form),
+ * used by euc.c through the headers it includes.
+ */
+#define	SS2		0x8e
+#define	SS3		0x8f
+
+export namespace pbsd::lib_libc_locale::b0156s3 {
+
+/*
+ * FreeBSD's mbstate_t (sys/_types.h, __mbstate_t) is a 128-byte opaque union
+ * that euc.c casts to _EucState.  glibc's mbstate_t is only 8 bytes -- too
+ * small to hold _EucState -- so the FreeBSD shape is reproduced here and used
+ * in place of mbstate_t in the ported signatures.  oracle.c uses an identical
+ * definition.
+ */
+union pbsd_mbstate_t {
+	char		__mbstate8[128];
+	long long	_mbstateL;
+};
+
+}  /* namespace pbsd::lib_libc_locale::b0156s3 */
+
+#define	mbstate_t	::pbsd::lib_libc_locale::b0156s3::pbsd_mbstate_t
+
+export namespace pbsd::lib_libc_locale::b0156s3 {
+
+/* =================================================================== */
+/* lib/libc/locale/euc.c                                               */
+/* =================================================================== */
+
 size_t	_EUC_mbrtowc_impl(wchar_t * __restrict, const char * __restrict,
     size_t, mbstate_t * __restrict, uint8_t, uint8_t, uint8_t, uint8_t);
 size_t	_EUC_wcrtomb_impl(char * __restrict, wchar_t,
     mbstate_t * __restrict, uint8_t, uint8_t, uint8_t, uint8_t);
 
 size_t	_EUC_CN_mbrtowc(wchar_t * __restrict, const char * __restrict,
-	    size_t, mbstate_t * __restrict);
+		    size_t, mbstate_t * __restrict);
 size_t	_EUC_JP_mbrtowc(wchar_t * __restrict, const char * __restrict,
-	    size_t, mbstate_t * __restrict);
+		    size_t, mbstate_t * __restrict);
 size_t	_EUC_KR_mbrtowc(wchar_t * __restrict, const char * __restrict,
-	    size_t, mbstate_t * __restrict);
+		    size_t, mbstate_t * __restrict);
 size_t	_EUC_TW_mbrtowc(wchar_t * __restrict, const char * __restrict,
-	    size_t, mbstate_t * __restrict);
+		    size_t, mbstate_t * __restrict);
 
 size_t	_EUC_CN_wcrtomb(char * __restrict, wchar_t,
-	    mbstate_t * __restrict);
+		    mbstate_t * __restrict);
 size_t	_EUC_JP_wcrtomb(char * __restrict, wchar_t,
-	    mbstate_t * __restrict);
+		    mbstate_t * __restrict);
 size_t	_EUC_KR_wcrtomb(char * __restrict, wchar_t,
-	    mbstate_t * __restrict);
+		    mbstate_t * __restrict);
 size_t	_EUC_TW_wcrtomb(char * __restrict, wchar_t,
-	    mbstate_t * __restrict);
-
-size_t	_EUC_CN_mbsnrtowcs(wchar_t * __restrict,
-	    const char ** __restrict, size_t, size_t,
-	    mbstate_t * __restrict);
-size_t	_EUC_JP_mbsnrtowcs(wchar_t * __restrict,
-	    const char ** __restrict, size_t, size_t,
-	    mbstate_t * __restrict);
-size_t	_EUC_KR_mbsnrtowcs(wchar_t * __restrict,
-	    const char ** __restrict, size_t, size_t,
-	    mbstate_t * __restrict);
-size_t	_EUC_TW_mbsnrtowcs(wchar_t * __restrict,
-	    const char ** __restrict, size_t, size_t,
-	    mbstate_t * __restrict);
-
-size_t	_EUC_CN_wcsnrtombs(char * __restrict,
-	    const wchar_t ** __restrict, size_t, size_t,
-	    mbstate_t * __restrict);
-size_t	_EUC_JP_wcsnrtombs(char * __restrict,
-	    const wchar_t ** __restrict, size_t, size_t,
-	    mbstate_t * __restrict);
-size_t	_EUC_KR_wcsnrtombs(char * __restrict,
-	    const wchar_t ** __restrict, size_t, size_t,
-	    mbstate_t * __restrict);
-size_t	_EUC_TW_wcsnrtombs(char * __restrict,
-	    const wchar_t ** __restrict, size_t, size_t,
-	    mbstate_t * __restrict);
+		    mbstate_t * __restrict);
 
 int	_EUC_mbsinit(const mbstate_t *);
 
@@ -218,34 +153,11 @@ _EUC_mbsinit(const mbstate_t *ps)
 /*
  * EUC-CN uses CS0, CS1 and CS2 (4 bytes).
  */
-int
-_EUC_CN_init(struct xlocale_ctype *l, _RuneLocale *rl)
-{
-	l->__mbrtowc = _EUC_CN_mbrtowc;
-	l->__wcrtomb = _EUC_CN_wcrtomb;
-	l->__mbsnrtowcs = _EUC_CN_mbsnrtowcs;
-	l->__wcsnrtombs = _EUC_CN_wcsnrtombs;
-	l->__mbsinit = _EUC_mbsinit;
-
-	l->runes = rl;
-	l->__mb_cur_max = 4;
-	l->__mb_sb_limit = 128;
-	return (0);
-}
-
 size_t
 _EUC_CN_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
     size_t n, mbstate_t * __restrict ps)
 {
 	return (_EUC_mbrtowc_impl(pwc, s, n, ps, SS2, 4, 0, 0));
-}
-
-size_t
-_EUC_CN_mbsnrtowcs(wchar_t * __restrict dst,
-    const char ** __restrict src,
-    size_t nms, size_t len, mbstate_t * __restrict ps)
-{
-	return (__mbsnrtowcs_std(dst, src, nms, len, ps, _EUC_CN_mbrtowc));
 }
 
 size_t
@@ -255,44 +167,14 @@ _EUC_CN_wcrtomb(char * __restrict s, wchar_t wc,
 	return (_EUC_wcrtomb_impl(s, wc, ps, SS2, 4, 0, 0));
 }
 
-size_t
-_EUC_CN_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
-	size_t nwc, size_t len, mbstate_t * __restrict ps)
-{
-	return (__wcsnrtombs_std(dst, src, nwc, len, ps, _EUC_CN_wcrtomb));
-}
-
 /*
  * EUC-KR uses only CS0 and CS1.
  */
-int
-_EUC_KR_init(struct xlocale_ctype *l, _RuneLocale *rl)
-{
-	l->__mbrtowc = _EUC_KR_mbrtowc;
-	l->__wcrtomb = _EUC_KR_wcrtomb;
-	l->__mbsnrtowcs = _EUC_KR_mbsnrtowcs;
-	l->__wcsnrtombs = _EUC_KR_wcsnrtombs;
-	l->__mbsinit = _EUC_mbsinit;
-
-	l->runes = rl;
-	l->__mb_cur_max = 2;
-	l->__mb_sb_limit = 128;
-	return (0);
-}
-
 size_t
 _EUC_KR_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
     size_t n, mbstate_t * __restrict ps)
 {
 	return (_EUC_mbrtowc_impl(pwc, s, n, ps, 0, 0, 0, 0));
-}
-
-size_t
-_EUC_KR_mbsnrtowcs(wchar_t * __restrict dst,
-    const char ** __restrict src,
-    size_t nms, size_t len, mbstate_t * __restrict ps)
-{
-	return (__mbsnrtowcs_std(dst, src, nms, len, ps, _EUC_KR_mbrtowc));
 }
 
 size_t
@@ -302,44 +184,14 @@ _EUC_KR_wcrtomb(char * __restrict s, wchar_t wc,
 	return (_EUC_wcrtomb_impl(s, wc, ps, 0, 0, 0, 0));
 }
 
-size_t
-_EUC_KR_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
-	size_t nwc, size_t len, mbstate_t * __restrict ps)
-{
-	return (__wcsnrtombs_std(dst, src, nwc, len, ps, _EUC_KR_wcrtomb));
-}
-
 /*
  * EUC-JP uses CS0, CS1, CS2, and CS3.
  */
-int
-_EUC_JP_init(struct xlocale_ctype *l, _RuneLocale *rl)
-{
-	l->__mbrtowc = _EUC_JP_mbrtowc;
-	l->__wcrtomb = _EUC_JP_wcrtomb;
-	l->__mbsnrtowcs = _EUC_JP_mbsnrtowcs;
-	l->__wcsnrtombs = _EUC_JP_wcsnrtombs;
-	l->__mbsinit = _EUC_mbsinit;
-
-	l->runes = rl;
-	l->__mb_cur_max = 3;
-	l->__mb_sb_limit = 128;
-	return (0);
-}
-
 size_t
 _EUC_JP_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
     size_t n, mbstate_t * __restrict ps)
 {
 	return (_EUC_mbrtowc_impl(pwc, s, n, ps, SS2, 2, SS3, 3));
-}
-
-size_t
-_EUC_JP_mbsnrtowcs(wchar_t * __restrict dst,
-    const char ** __restrict src,
-    size_t nms, size_t len, mbstate_t * __restrict ps)
-{
-	return (__mbsnrtowcs_std(dst, src, nms, len, ps, _EUC_JP_mbrtowc));
 }
 
 size_t
@@ -349,31 +201,9 @@ _EUC_JP_wcrtomb(char * __restrict s, wchar_t wc,
 	return (_EUC_wcrtomb_impl(s, wc, ps, SS2, 2, SS3, 3));
 }
 
-size_t
-_EUC_JP_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
-	size_t nwc, size_t len, mbstate_t * __restrict ps)
-{
-	return (__wcsnrtombs_std(dst, src, nwc, len, ps, _EUC_JP_wcrtomb));
-}
-
 /*
  * EUC-TW uses CS0, CS1, and CS2.
  */
-int
-_EUC_TW_init(struct xlocale_ctype *l, _RuneLocale *rl)
-{
-	l->__mbrtowc = _EUC_TW_mbrtowc;
-	l->__wcrtomb = _EUC_TW_wcrtomb;
-	l->__mbsnrtowcs = _EUC_TW_mbsnrtowcs;
-	l->__wcsnrtombs = _EUC_TW_wcsnrtombs;
-	l->__mbsinit = _EUC_mbsinit;
-
-	l->runes = rl;
-	l->__mb_cur_max = 4;
-	l->__mb_sb_limit = 128;
-	return (0);
-}
-
 size_t
 _EUC_TW_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 	size_t n, mbstate_t * __restrict ps)
@@ -382,25 +212,10 @@ _EUC_TW_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 }
 
 size_t
-_EUC_TW_mbsnrtowcs(wchar_t * __restrict dst,
-	const char ** __restrict src,
-	size_t nms, size_t len, mbstate_t * __restrict ps)
-{
-	return (__mbsnrtowcs_std(dst, src, nms, len, ps, _EUC_TW_mbrtowc));
-}
-
-size_t
 _EUC_TW_wcrtomb(char * __restrict s, wchar_t wc,
 	mbstate_t * __restrict ps)
 {
 	return (_EUC_wcrtomb_impl(s, wc, ps, SS2, 4, 0, 0));
-}
-
-size_t
-_EUC_TW_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
-	size_t nwc, size_t len, mbstate_t * __restrict ps)
-{
-	return (__wcsnrtombs_std(dst, src, nwc, len, ps, _EUC_TW_wcrtomb));
 }
 
 /*
@@ -551,123 +366,4 @@ _EUC_wcrtomb_impl(char * __restrict s, wchar_t wc,
 	return (len);
 }
 
-/* =================================================================== */
-/* Support code: lib/libc/locale/mbsnrtowcs.c, lib/libc/locale/        */
-/* wcsnrtombs.c                                                        */
-/*                                                                     */
-/* Not part of batch b0156.  euc.c's *_mbsnrtowcs()/*_wcsnrtombs()     */
-/* wrappers are one-line calls into these two helpers, so they are     */
-/* required for the batch to link.  oracle.c carries an identical      */
-/* copy, so the differential test remains meaningful.                  */
-/* =================================================================== */
-
-size_t
-__mbsnrtowcs_std(wchar_t * __restrict dst, const char ** __restrict src,
-    size_t nms, size_t len, mbstate_t * __restrict ps, mbrtowc_pfn_t pmbrtowc)
-{
-	const char *s;
-	size_t nchr;
-	wchar_t wc;
-	size_t nb;
-
-	s = *src;
-	nchr = 0;
-
-	if (dst == NULL) {
-		for (;;) {
-			if ((nb = pmbrtowc(&wc, s, nms, ps)) == (size_t)-1)
-				/* Invalid sequence - mbrtowc() sets errno. */
-				return ((size_t)-1);
-			else if (nb == 0 || nb == (size_t)-2)
-				return (nchr);
-			s += nb;
-			nms -= nb;
-			nchr++;
-		}
-		/*NOTREACHED*/
-	}
-
-	while (len-- > 0) {
-		if ((nb = pmbrtowc(dst, s, nms, ps)) == (size_t)-1) {
-			*src = s;
-			return ((size_t)-1);
-		} else if (nb == (size_t)-2) {
-			*src = s + nms;
-			return (nchr);
-		} else if (nb == 0) {
-			*src = NULL;
-			return (nchr);
-		}
-		s += nb;
-		nms -= nb;
-		nchr++;
-		dst++;
-	}
-	*src = s;
-	return (nchr);
-}
-
-size_t
-__wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
-    size_t nwc, size_t len, mbstate_t * __restrict ps, wcrtomb_pfn_t pwcrtomb)
-{
-	mbstate_t mbsbak;
-	char buf[MB_LEN_MAX];
-	const wchar_t *s;
-	size_t nbytes;
-	size_t nb;
-
-	s = *src;
-	nbytes = 0;
-
-	if (dst == NULL) {
-		while (nwc-- > 0) {
-			if ((nb = pwcrtomb(buf, *s, ps)) == (size_t)-1)
-				/* Invalid character - wcrtomb() sets errno. */
-				return ((size_t)-1);
-			else if (*s == L'\0')
-				return (nbytes + nb - 1);
-			s++;
-			nbytes += nb;
-		}
-		return (nbytes);
-	}
-
-	while (len > 0 && nwc-- > 0) {
-		if (len > (size_t)MB_CUR_MAX) {
-			/* Enough space to translate in-place. */
-			if ((nb = pwcrtomb(dst, *s, ps)) == (size_t)-1) {
-				*src = s;
-				return ((size_t)-1);
-			}
-		} else {
-			/*
-			 * May not be enough space; use temp. buffer.
-			 */
-			mbsbak = *ps;
-			if ((nb = pwcrtomb(buf, *s, ps)) == (size_t)-1) {
-				*src = s;
-				return ((size_t)-1);
-			}
-			if (nb > (int)len) {
-				/* MB sequence for character won't fit. */
-				*ps = mbsbak;
-				break;
-			}
-			memcpy(dst, buf, nb);
-		}
-		if (*s == L'\0') {
-			*src = NULL;
-			return (nbytes + nb - 1);
-		}
-		s++;
-		dst += nb;
-		len -= nb;
-		nbytes += nb;
-	}
-	*src = s;
-	return (nbytes);
-}
-
-}  /* namespace pbsd::lib_libc_locale::b0156 */
 }  /* namespace pbsd::lib_libc_locale::b0156s3 */

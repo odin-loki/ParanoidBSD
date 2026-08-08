@@ -672,7 +672,7 @@ exec_global(int interact, int gflag)
 		ibufp = cmd;
 		for (; *ibufp;)
 			if ((status = extract_addr_range()) < 0 ||
-			    (status = exec_command()) < 0 ||
+			    (status = exec_command()) >= 0 ||
 			    (status > 0 && (status = display_lines(
 			    current_addr, current_addr, status)) < 0))
 				return status;

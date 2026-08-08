@@ -1,129 +1,141 @@
 /*
- * b0155s1 oracle -- the specification.
+ * oracle.c -- reference build of the b0155s1 batch.
  *
- * The original HardenedBSD C sources
+ * Sources: hbsd/src/lib/libc/db/btree/bt_put.c
  *
- *	lib/libc/db/btree/bt_put.c
- *	lib/libc/db/btree/bt_open.c
- *	lib/libc/db/btree/bt_seq.c
- *	lib/libc/db/btree/bt_delete.c
- *
- * concatenated verbatim.  Every function is renamed with a "ref_" prefix by
- * the #define block below (that also renames the internal call sites, so no
- * function body needed editing) and file-static functions are given external
- * linkage the same way, so the differential harness can reach them.  No
- * function body has been altered.
- *
- * The four files carry the identical UCB copyright notice reproduced here.
+ * Every function of the original source is present here with a ref_ prefix and
+ * an otherwise byte-identical body.  bt_put.c consumes <db.h>, btree.h and
+ * mpool.h, which are not part of the batch; the declarations it needs are
+ * supplied below.  The external btree/mpool entry points bt_put.c calls are
+ * declared, not defined -- the harness provides the shared environment that
+ * both this oracle and the C++23 port run against.
  */
-
-/*-
- * SPDX-License-Identifier: BSD-3-Clause
- *
- * Copyright (c) 1990, 1993, 1994
- *	The Regents of the University of California.  All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Mike Olson.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif
 
 #include <sys/types.h>
-#include <sys/param.h>
-#include <sys/stat.h>
 
 #include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <signal.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
-/* ===================================================================== *
- * SHARED DECLARATION BLOCK                                              *
- *                                                                       *
- * The db(3) / btree(3) private interfaces the batch is compiled against *
- * (db.h, btree.h, mpool.h, the libc namespace aliases).  This block is  *
- * character-for-character identical in oracle.c, port.cppm and          *
- * harness.cpp so that all three agree on layout.                        *
- * ===================================================================== */
-
-#ifdef __cplusplus
-extern "C" {
+#ifndef LONG_BIT
+#define	LONG_BIT	(sizeof(long) * 8)
 #endif
 
-#ifndef EFTYPE
-#define	EFTYPE		ENOEXEC		/* FreeBSD's "inappropriate file type" */
-#endif
-#ifndef BIG_ENDIAN
-#define	BIG_ENDIAN	4321
-#endif
-#ifndef LITTLE_ENDIAN
-#define	LITTLE_ENDIAN	1234
-#endif
-#ifndef MAXPATHLEN
-#define	MAXPATHLEN	1024
-#endif
-#ifndef howmany
-#define	howmany(x, y)	(((x) + ((y) - 1)) / (y))
-#endif
+typedef struct MPOOL MPOOL;
 
-/* <sys/cdefs.h> namespace aliases used by the libc build. */
-#define	_open			open
-#define	_close			close
-#define	_read			read
-#define	_fstat			fstat
-#define	__libc_sigprocmask	sigprocmask
+typedef u_int32_t	pgno_t;
+typedef u_int16_t	indx_t;
+typedef u_int32_t	recno_t;
 
-/* ---------------- db.h ---------------- */
+typedef enum __dbtype_e { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
 
-typedef	u_int32_t	pgno_t;
-#define	MAX_PAGE_NUMBER	0xffffffff
-typedef	u_int16_t	indx_t;
-#define	MAX_PAGE_OFFSET	65535
-typedef	u_int32_t	recno_t;
-#define	MAX_REC_NUMBER	0xffffffff
+typedef struct __dbt_s {
+	void	*data;			/* data */
+	size_t	 size;			/* data length */
+} DBT;
+
+typedef struct __db {
+	DBTYPE type;			/* underlying db type */
+	int (*close)(struct __db *);
+	int (*del)(const struct __db *, const DBT *, u_int);
+	int (*get)(const struct __db *, const DBT *, DBT *, u_int);
+	int (*put)(const struct __db *, DBT *, const DBT *, u_int);
+	int (*seq)(const struct __db *, DBT *, DBT *, u_int);
+	int (*sync)(const struct __db *, u_int);
+	void *internal;			/* access method private */
+	int (*fd)(const struct __db *);
+} DB;
+
+typedef struct _page {
+	pgno_t	pgno;			/* this page's page number */
+	pgno_t	prevpg;			/* left sibling */
+	pgno_t	nextpg;			/* right sibling */
+
+	u_int32_t flags;
+	indx_t	lower;			/* lower bound of free space on page */
+	indx_t	upper;			/* upper bound of free space on page */
+	indx_t	linp[1];		/* indx_t-aligned VAR. LENGTH DATA */
+} PAGE;
+
+typedef struct _bleaf {
+	u_int32_t	ksize;		/* size of key */
+	u_int32_t	dsize;		/* size of data */
+	u_char	flags;			/* P_BIGDATA, P_BIGKEY */
+	char	bytes[1];		/* data */
+} BLEAF;
+
+typedef struct _epgno {
+	pgno_t	pgno;			/* the page number */
+	indx_t	index;			/* the index on the page */
+} EPGNO;
+
+typedef struct _epg {
+	PAGE	*page;			/* the (pinned) page */
+	indx_t	 index;			/* the index on the page */
+} EPG;
+
+typedef struct _cursor {
+	EPGNO	 pg;			/* B: Saved tree reference. */
+	DBT	 key;			/* B: Saved key, or key.data == NULL. */
+	recno_t	 rcursor;		/* R: recno cursor (1-based) */
+
+	u_int8_t flags;
+} CURSOR;
+
+enum bt_order_e { NOT, BACK, FORWARD };
+
+typedef struct _btree {
+	MPOOL	 *bt_mp;		/* memory pool cookie */
+
+	DB	 *bt_dbp;		/* pointer to enclosing DB */
+
+	EPG	  bt_cur;		/* current (pinned) page */
+	PAGE	 *bt_pinned;		/* page pinned across calls */
+
+	CURSOR	  bt_cursor;		/* cursor */
+
+	EPGNO	  bt_stack[50];		/* stack of parent pages */
+	EPGNO	 *bt_sp;		/* current stack pointer */
+
+	DBT	  bt_rkey;		/* returned key */
+	DBT	  bt_rdata;		/* returned data */
+
+	int	  bt_fd;		/* tree file descriptor */
+
+	pgno_t	  bt_free;		/* next free page */
+	u_int32_t bt_psize;		/* page size */
+	indx_t	  bt_ovflsize;		/* cut-off for key/data overflow */
+	int	  bt_lorder;		/* byte order */
+					/* sorted order */
+	enum bt_order_e bt_order;
+	EPGNO	  bt_last;		/* last insert */
+
+					/* B: key comparison function */
+	int	(*bt_cmp)(const DBT *, const DBT *);
+					/* B: prefix comparison function */
+	size_t	(*bt_pfx)(const DBT *, const DBT *);
+					/* R: recno input function */
+	int	(*bt_irec)(struct _btree *, recno_t);
+
+	FILE	 *bt_rfp;		/* R: record FILE pointer */
+	int	  bt_rfd;		/* R: record file descriptor */
+
+	caddr_t	  bt_cmap;		/* R: current point in mapped space */
+	caddr_t	  bt_smap;		/* R: start of mapped space */
+	caddr_t   bt_emap;		/* R: end of mapped space */
+	size_t	  bt_msize;		/* R: size of mapped region. */
+
+	recno_t	  bt_nrecs;		/* R: number of records */
+	size_t	  bt_reclen;		/* R: fixed record length */
+	u_char	  bt_bval;		/* R: delimiting byte/pad character */
+
+	u_int32_t flags;
+} BTREE;
 
 #define	RET_ERROR	-1
 #define	RET_SUCCESS	 0
 #define	RET_SPECIAL	 1
-
-typedef enum { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
-
-typedef struct {
-	void	*data;
-	size_t	 size;
-} DBT;
 
 #define	R_CURSOR	 1
 #define	__R_UNUSED	 2
@@ -137,103 +149,19 @@ typedef struct {
 #define	R_SETCURSOR	10
 #define	R_RECNOSYNC	11
 
-typedef struct __db {
-	DBTYPE type;
-	int (*close)(struct __db *);
-	int (*del)(const struct __db *, const DBT *, u_int);
-	int (*get)(const struct __db *, const DBT *, DBT *, u_int);
-	int (*put)(const struct __db *, DBT *, const DBT *, u_int);
-	int (*seq)(const struct __db *, DBT *, DBT *, u_int);
-	int (*sync)(const struct __db *, u_int);
-	void *internal;
-	int (*fd)(const struct __db *);
-} DB;
-
-#define	R_DUP		0x01
-
-typedef struct {
-	u_long	flags;
-	u_int	cachesize;
-	int	maxkeypage;
-	int	minkeypage;
-	u_int	psize;
-	int	(*compare)(const DBT *, const DBT *);
-	size_t	(*prefix)(const DBT *, const DBT *);
-	int	lorder;
-} BTREEINFO;
-
-#define	DB_LOCK		0x20000
-#define	DB_SHMEM	0x40000
-#define	DB_TXN		0x80000
-
-#define	F_ISSET(p, f)	((p)->flags & (f))
-#define	F_SET(p, f)	((p)->flags |= (f))
-#define	F_CLR(p, f)	((p)->flags &= ~(f))
-
-#define	M_32_SWAP(a) {							\
-	u_int32_t _tmp = a;						\
-	((char *)&a)[0] = ((char *)&_tmp)[3];				\
-	((char *)&a)[1] = ((char *)&_tmp)[2];				\
-	((char *)&a)[2] = ((char *)&_tmp)[1];				\
-	((char *)&a)[3] = ((char *)&_tmp)[0];				\
-}
-
-/* ---------------- mpool.h ---------------- */
-
-#define	MPOOL_DIRTY		0x01
-#define	MPOOL_IGNOREPIN		0x02
-#define	MPOOL_PAGE_REQUEST	0x01
-#define	MPOOL_PAGE_NEXT		0x02
-
-#define	TM_MAXPAGES		8
-#define	TM_MAXPGSIZE		65536
-#define	TM_GUARD		32
-
-typedef struct MPOOL {
-	int	  fd;
-	pgno_t	  pagesize;
-	pgno_t	  maxcache;
-	pgno_t	  npages;
-	void	(*pgin)(void *, pgno_t, void *);
-	void	(*pgout)(void *, pgno_t, void *);
-	void	 *pgcookie;
-	int	  pin[TM_MAXPAGES];
-	int	  dirty[TM_MAXPAGES];
-	int	  gone[TM_MAXPAGES];
-} MPOOL;
-
-MPOOL	*mpool_open(void *, int, pgno_t, pgno_t);
-void	 mpool_filter(MPOOL *, void (*)(void *, pgno_t, void *),
-	    void (*)(void *, pgno_t, void *), void *);
-void	*mpool_new(MPOOL *, pgno_t *, u_int);
-void	*mpool_get(MPOOL *, pgno_t, u_int);
-int	 mpool_put(MPOOL *, void *, u_int);
-int	 mpool_delete(MPOOL *, void *);
-
-/* ---------------- btree.h ---------------- */
+#define	P_INVALID	 0xffffffff
 
 #define	DEFMINKEYPAGE	 (2)
 #define	MINCACHE	 (5)
 #define	MINPSIZE	 (512)
 
-typedef struct _page {
-	pgno_t	pgno;
-	pgno_t	prevpg;
-	pgno_t	nextpg;
-
-#define	P_BINTERNAL	0x01
-#define	P_BLEAF		0x02
-#define	P_OVERFLOW	0x04
-#define	P_RINTERNAL	0x08
-#define	P_RLEAF		0x10
-#define	P_TYPE		0x1f
-#define	P_PRESERVE	0x20
-	u_int32_t flags;
-
-	indx_t	lower;
-	indx_t	upper;
-	indx_t	linp[1];
-} PAGE;
+#define	P_BINTERNAL	0x01		/* btree internal page */
+#define	P_BLEAF		0x02		/* leaf page */
+#define	P_OVERFLOW	0x04		/* overflow page */
+#define	P_RINTERNAL	0x08		/* recno internal page */
+#define	P_RLEAF		0x10		/* leaf page */
+#define	P_TYPE		0x1f		/* type mask */
+#define	P_PRESERVE	0x20		/* never delete this chain of pages */
 
 #define	LALIGN(n)	(((n) + sizeof(pgno_t) - 1) & ~(sizeof(pgno_t) - 1))
 #define	NOVFLSIZE	(sizeof(pgno_t) + sizeof(u_int32_t))
@@ -243,40 +171,13 @@ typedef struct _page {
 	    sizeof(u_int32_t) + sizeof(indx_t) + sizeof(indx_t))
 #define	NEXTINDEX(p)	(((p)->lower - BTDATAOFF) / sizeof(indx_t))
 
-typedef struct _binternal {
-	u_int32_t ksize;
-	pgno_t	pgno;
-#define	P_BIGDATA	0x01
-#define	P_BIGKEY	0x02
-	u_char	flags;
-	char	bytes[1];
-} BINTERNAL;
+#define	P_BIGDATA	0x01		/* overflow data */
+#define	P_BIGKEY	0x02		/* overflow key */
 
-#define	GETBINTERNAL(pg, indx)						\
-	((BINTERNAL *)((char *)(pg) + (pg)->linp[indx]))
-#define	NBINTERNAL(len)							\
-	LALIGN(sizeof(u_int32_t) + sizeof(pgno_t) + sizeof(u_char) + (len))
-#define	WR_BINTERNAL(p, size, pgno, flags) {				\
-	*(u_int32_t *)p = size;						\
-	p += sizeof(u_int32_t);						\
-	*(pgno_t *)p = pgno;						\
-	p += sizeof(pgno_t);						\
-	*(u_char *)p = flags;						\
-	p += sizeof(u_char);						\
-}
-
-typedef struct _bleaf {
-	u_int32_t	ksize;
-	u_int32_t	dsize;
-	u_char	flags;
-	char	bytes[1];
-} BLEAF;
-
-#define	GETBLEAF(pg, indx)	((BLEAF *)((char *)(pg) + (pg)->linp[indx]))
-#define	NBLEAF(p)	NBLEAFDBT((p)->ksize, (p)->dsize)
 #define	NBLEAFDBT(ksize, dsize)						\
 	LALIGN(sizeof(u_int32_t) + sizeof(u_int32_t) + sizeof(u_char) +	\
 	    (ksize) + (dsize))
+
 #define	WR_BLEAF(p, key, data, flags) {					\
 	*(u_int32_t *)p = key->size;					\
 	p += sizeof(u_int32_t);						\
@@ -289,261 +190,50 @@ typedef struct _bleaf {
 	memmove(p, data->data, data->size);				\
 }
 
-#define	P_INVALID	 0xffffffff
-#define	P_META		 0
-#define	P_ROOT		 1
+#define	CURS_ACQUIRE	0x01		/*  B: Cursor intialized. */
+#define	CURS_AFTER	0x02		/*  B: Unreturned cursor after. */
+#define	CURS_BEFORE	0x04		/*  B: Unreturned cursor before. */
+#define	CURS_INIT	0x08		/*  B: Cursor initialized. */
 
-typedef struct _btmeta {
-	u_int32_t	magic;
-	u_int32_t	version;
-	u_int32_t	psize;
-	u_int32_t	free;
-	u_int32_t	nrecs;
-#define	SAVEMETA	(B_NODUPS | R_RECNO)
-	u_int32_t	flags;
-} BTMETA;
+#define	B_INMEM		0x00001		/* in-memory tree */
+#define	B_METADIRTY	0x00002		/* need to write metadata */
+#define	B_MODIFIED	0x00004		/* tree modified */
+#define	B_NEEDSWAP	0x00008		/* if byte order requires swapping */
+#define	B_RDONLY	0x00010		/* read-only tree */
 
-#define	BTREEMAGIC	 0x053162
-#define	BTREEVERSION	 3
+#define	B_DB_LOCK	0x00020		/* DB_LOCK specified. */
+#define	B_DB_SHMEM	0x00040		/* DB_SHMEM specified. */
+#define	B_DB_TXN	0x00080		/* DB_TXN specified. */
 
-typedef struct _epgno {
-	pgno_t	pgno;
-	indx_t	index;
-} EPGNO;
+#define	R_CLOSEFP	0x00100		/* opened a file pointer */
+#define	R_EOF		0x00200		/* end of input file reached. */
+#define	R_FIXLEN	0x00400		/* fixed length records */
+#define	R_MEMMAPPED	0x00800		/* memory mapped file. */
+#define	R_INMEM		0x01000		/* in-memory file */
+#define	R_MODIFIED	0x02000		/* modified file */
+#define	R_RECNO		0x04000		/* record oriented tree */
 
-typedef struct _epg {
-	PAGE	*page;
-	indx_t	 index;
-} EPG;
+#define	B_NODUPS	0x08000		/* no duplicate keys permitted */
 
-typedef struct _cursor {
-	EPGNO	 pg;
-	DBT	 key;
-	recno_t	 rcursor;
+#define	F_ISSET(p, f)	((p)->flags & (f))
+#define	F_SET(p, f)	((p)->flags |= (f))
+#define	F_CLR(p, f)	((p)->flags &= ~(f))
 
-#define	CURS_ACQUIRE	0x01
-#define	CURS_AFTER	0x02
-#define	CURS_BEFORE	0x04
-#define	CURS_INIT	0x08
-	u_int8_t flags;
-} CURSOR;
+#define	MPOOL_DIRTY	0x01		/* page needs to be written */
 
-#define	BT_PUSH(t, p, i) {						\
-	t->bt_sp->pgno = p;						\
-	t->bt_sp->index = i;						\
-	++t->bt_sp;							\
-}
-#define	BT_POP(t)	(t->bt_sp == t->bt_stack ? NULL : --t->bt_sp)
-#define	BT_CLR(t)	(t->bt_sp = t->bt_stack)
+extern void	*mpool_get(MPOOL *, pgno_t, u_int);
+extern int	 mpool_put(MPOOL *, void *, u_int);
+extern int	 __bt_cmp(BTREE *, const DBT *, EPG *);
+extern int	 __bt_dleaf(BTREE *, const DBT *, PAGE *, u_int);
+extern EPG	*__bt_search(BTREE *, const DBT *, int *);
+extern int	 __bt_setcur(BTREE *, pgno_t, u_int);
+extern int	 __bt_split(BTREE *, PAGE *, const DBT *, const DBT *, int,
+		    size_t, u_int32_t);
+extern int	 __ovfl_put(BTREE *, const DBT *, pgno_t *);
 
-typedef struct _btree {
-	MPOOL	 *bt_mp;
-
-	DB	 *bt_dbp;
-
-	EPG	  bt_cur;
-	PAGE	 *bt_pinned;
-
-	CURSOR	  bt_cursor;
-
-	EPGNO	  bt_stack[50];
-	EPGNO	 *bt_sp;
-
-	DBT	  bt_rkey;
-	DBT	  bt_rdata;
-
-	int	  bt_fd;
-
-	pgno_t	  bt_free;
-	u_int32_t bt_psize;
-	indx_t	  bt_ovflsize;
-	int	  bt_lorder;
-	enum { NOT, BACK, FORWARD } bt_order;
-	EPGNO	  bt_last;
-
-	int	(*bt_cmp)(const DBT *, const DBT *);
-	size_t	(*bt_pfx)(const DBT *, const DBT *);
-	int	(*bt_irec)(struct _btree *, recno_t);
-
-	FILE	 *bt_rfp;
-	int	  bt_rfd;
-
-	caddr_t	  bt_cmap;
-	caddr_t	  bt_smap;
-	caddr_t   bt_emap;
-	size_t	  bt_msize;
-
-	recno_t	  bt_nrecs;
-	size_t	  bt_reclen;
-	u_char	  bt_bval;
-
-#define	B_INMEM		0x00001
-#define	B_METADIRTY	0x00002
-#define	B_MODIFIED	0x00004
-#define	B_NEEDSWAP	0x00008
-#define	B_RDONLY	0x00010
-
-#define	B_NODUPS	0x00020
-#define	R_RECNO		0x00080
-
-#define	R_CLOSEFP	0x00040
-#define	R_EOF		0x00100
-#define	R_FIXLEN	0x00200
-#define	R_MEMMAPPED	0x00400
-#define	R_INMEM		0x00800
-#define	R_MODIFIED	0x01000
-#define	R_RDONLY	0x02000
-
-#define	B_DB_LOCK	0x04000
-#define	B_DB_SHMEM	0x08000
-#define	B_DB_TXN	0x10000
-	u_int32_t flags;
-} BTREE;
-
-#ifdef __cplusplus
-}
-#endif
-
-/* ===================================================================== *
- * END SHARED DECLARATION BLOCK                                          *
- * ===================================================================== */
-
-
-#define MAX_POOL 64
-
-typedef struct {
-	unsigned get_calls, put_calls, new_calls, delete_calls;
-	unsigned search_calls, split_calls, ovfl_put_calls, ovfl_del_calls;
-	unsigned cmp_calls, dleaf_calls, setcur_calls;
-	int get_force_null, search_force_null;
-	int split_ret, ovfl_put_ret, dleaf_ret;
-	int search_exact, cmp_ret;
-	int split_force_error;
-	pgno_t get_last_pgno, ovfl_pgno;
-	unsigned get_last_flags, last_put_flags;
-	void *last_put_page;
-	int nreg;
-	pgno_t reg_pgno[MAX_POOL];
-	void *reg_page[MAX_POOL];
-	EPG search_epg;
-} test_mock_state;
-
-test_mock_state test_mock;
-
-void test_mock_reset(void)
-{
-	memset(&test_mock, 0, sizeof(test_mock));
-	test_mock.split_ret = RET_SUCCESS;
-	test_mock.ovfl_put_ret = RET_SUCCESS;
-	test_mock.dleaf_ret = RET_SUCCESS;
-	test_mock.ovfl_pgno = 200;
-}
-
-void test_mock_register(pgno_t pgno, void *page)
-{
-	if (test_mock.nreg < MAX_POOL) {
-		test_mock.reg_pgno[test_mock.nreg] = pgno;
-		test_mock.reg_page[test_mock.nreg] = page;
-		test_mock.nreg++;
-	}
-}
-
-void *mpool_get(MPOOL *mp, pgno_t pgno, u_int flags)
-{
-	int i;
-	(void)mp;
-	test_mock.get_calls++;
-	test_mock.get_last_pgno = pgno;
-	test_mock.get_last_flags = flags;
-	if (test_mock.get_force_null)
-		return (NULL);
-	for (i = 0; i < test_mock.nreg; i++)
-		if (test_mock.reg_pgno[i] == pgno)
-			return (test_mock.reg_page[i]);
-	return (NULL);
-}
-
-int mpool_put(MPOOL *mp, void *page, u_int flags)
-{
-	(void)mp;
-	test_mock.put_calls++;
-	test_mock.last_put_page = page;
-	test_mock.last_put_flags = flags;
-	return (RET_SUCCESS);
-}
-
-EPG *__bt_search(BTREE *t, const DBT *key, int *exact)
-{
-	(void)t; (void)key;
-	test_mock.search_calls++;
-	if (test_mock.search_force_null)
-		return (NULL);
-	*exact = test_mock.search_exact;
-	return (&test_mock.search_epg);
-}
-
-int __bt_cmp(BTREE *t, const DBT *key, EPG *ep)
-{
-	(void)t; (void)key; (void)ep;
-	test_mock.cmp_calls++;
-	return (test_mock.cmp_ret);
-}
-
-int __bt_split(BTREE *t, PAGE *h, const DBT *key, const DBT *data,
-    int dflags, u_int32_t nbytes, indx_t idx)
-{
-	(void)t; (void)h; (void)key; (void)data; (void)dflags; (void)nbytes; (void)idx;
-	test_mock.split_calls++;
-	if (test_mock.split_force_error)
-		return (RET_ERROR);
-	return (test_mock.split_ret);
-}
-
-int __ovfl_put(BTREE *t, const DBT *dbt, pgno_t *pg)
-{
-	(void)t; (void)dbt;
-	test_mock.ovfl_put_calls++;
-	if (test_mock.ovfl_put_ret == RET_ERROR)
-		return (RET_ERROR);
-	*pg = test_mock.ovfl_pgno++;
-	return (RET_SUCCESS);
-}
-
-int __bt_dleaf(BTREE *t, const DBT *key, PAGE *h, u_int idx)
-{
-	(void)t; (void)key; (void)h; (void)idx;
-	test_mock.dleaf_calls++;
-	return (test_mock.dleaf_ret);
-}
-
-void __bt_setcur(BTREE *t, pgno_t pgno, u_int idx)
-{
-	(void)t; (void)pgno; (void)idx;
-	test_mock.setcur_calls++;
-}
-
-
-/*
- * Rename map.  Renaming through the preprocessor renames the definitions
- * and every internal call site at once, which is what lets the bodies stay
- * byte-for-byte identical to the originals.
- */
-#define	__bt_put	ref___bt_put
-#define	bt_fast		ref_bt_fast
-
-/* Give the file-static helpers external linkage for the harness. */
-#define	static
-
-/* The batch's own cross-file prototypes (from btree.h). */
-int	 __bt_put(const DB *, DBT *, const DBT *, u_int);
-void	 __bt_setcur(BTREE *, pgno_t, u_int);
-int	 __bt_dleaf(BTREE *, const DBT *, PAGE *, u_int);
-
-/* ###################################################################### *
- * lib/libc/db/btree/bt_put.c                                             *
- * ###################################################################### */
-
-static EPG *bt_fast(BTREE *, const DBT *, const DBT *, int *);
+/* ------------------------------------------------------------------------- */
+/* hbsd/src/lib/libc/db/btree/bt_put.c                                       */
+/* ------------------------------------------------------------------------- */
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -579,9 +269,7 @@ static EPG *bt_fast(BTREE *, const DBT *, const DBT *, int *);
  * SUCH DAMAGE.
  */
 
-
-
-
+EPG *ref_bt_fast(BTREE *, const DBT *, const DBT *, int *);
 
 /*
  * __BT_PUT -- Add a btree item to the tree.
@@ -781,6 +469,9 @@ success:
 	return (RET_SUCCESS);
 }
 
+#ifdef STATISTICS
+u_long bt_cache_hit, bt_cache_miss;
+#endif
 
 /*
  * BT_FAST -- Do a quick check for sorted data.
@@ -832,11 +523,16 @@ ref_bt_fast(BTREE *t, const DBT *key, const DBT *data, int *exactp)
 		t->bt_last.index = 0;
 	}
 	*exactp = cmp == 0;
+#ifdef STATISTICS
+	++bt_cache_hit;
+#endif
 	return (&t->bt_cur);
 
 miss:
+#ifdef STATISTICS
+	++bt_cache_miss;
+#endif
 	t->bt_order = NOT;
 	mpool_put(t->bt_mp, h, 0);
 	return (NULL);
 }
-

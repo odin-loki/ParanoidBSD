@@ -186,7 +186,7 @@ unsigned long long n_cases[F_COUNT];
 unsigned long long n_fails[F_COUNT];
 unsigned reported[F_COUNT];
 
-uint64_t rng = 0xb0194s2deadbeefULL;
+uint64_t rng = 0xb0194a2deadbeefULL;
 
 uint64_t nextr()
 {

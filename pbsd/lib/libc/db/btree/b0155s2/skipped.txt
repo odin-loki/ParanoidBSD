@@ -1,0 +1,3 @@
+bt_open.c:__bt_open  -- needs the BTREE/BTMETA/DB/BTREEINFO layouts plus MINPSIZE, MAX_PAGE_OFFSET, BTDATAOFF, NBLEAFDBT, DEFMINKEYPAGE, MINCACHE, F_SET and the mpool_* buffer-cache API, all declared in btree.h/db.h/mpool.h which are not part of this batch; those types cannot be reconstructed faithfully from bt_open.c alone.
+bt_open.c:nroot      -- needs the PAGE and BTREE layouts and mpool_get/mpool_new/mpool_put/mpool_delete, declared outside this batch.
+bt_open.c:__bt_fd    -- needs the BTREE layout, the B_INMEM flag bit and mpool_put, declared outside this batch.

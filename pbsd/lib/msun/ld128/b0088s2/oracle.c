@@ -1,64 +1,64 @@
 /*
  * PBSD batch b0088s2 -- reference oracle.
  *
- * The original HardenedBSD C sources for this batch, concatenated, with every
- * function renamed with a "ref_" prefix (done with the preprocessor below so
- * that no function body is touched).  Function bodies are byte-for-byte the
- * originals.
+ * The original HardenedBSD C sources, concatenated verbatim.  Every function
+ * is renamed with a ref_ prefix; the renaming is done with the preprocessor
+ * so that not one character of any function body is altered.
  *
- * Sources (from hbsd/src/lib/msun/):
- *	ld128/s_sinpil.c
- * plus the support kernels those files #include:
- *	ld128/k_cospil.h, ld128/k_sinpil.h,
- *	ld128/k_cosl.c, ld128/k_sinl.c
- * and the pieces of src/math_private.h they use.
+ * Sources, in order:
+ *	lib/msun/ld128/k_cosl.c
+ *	lib/msun/ld128/k_sinl.c
+ *	lib/msun/ld128/k_cospil.h
+ *	lib/msun/ld128/k_sinpil.h
+ *	lib/msun/ld128/s_sinpil.c		(the batch)
  *
- * Deviations from a literal concatenation, all outside of function bodies:
+ * Supporting definitions that normally come from headers which are not part
+ * of this batch are reproduced verbatim below:
+ *	union IEEEl2bits	lib/libc/aarch64/_fpmath.h
+ *	_2sumF			lib/msun/src/math_private.h  (!DEBUG variant)
+ *	FFLOORL128		lib/msun/src/math_private.h
  *
- *   - The definitions that libm's private headers would supply (union
- *     IEEEl2bits, _2sumF, FFLOORL128) are spelled out here, because this
- *     host is not FreeBSD.
- *
- *   - This host's long double is the x87 80-bit format (LDBL_MANT_DIG == 64),
- *     not IEEE binary128, so union IEEEl2bits and FFLOORL128 are given in
- *     their 80-bit form.  FFLOORL128 computes the same thing the ld128 macro
- *     computes: for its callers' domain (1 <= x < 0x1p112) it clears the
- *     fraction bits of the mantissa, i.e. ai = floor(x), ar = x - ai.
- *
- *   - pi_hi, pi_lo and vzero are defined once instead of once per source file,
- *     since s_sinpil.c defines them identically.
- *
- *   - Functions that were "static" or "static inline" are given external
- *     linkage so the differential harness can reach them.
+ * These are the ld128 sources: they require `long double' to be IEEE 754
+ * binary128, which is exactly what the reproduced union IEEEl2bits describes.
+ * On x86-64 the default long double is the x87 80-bit format, so this file
+ * must be compiled with -mlong-double-128 (build.sh does that).  The check
+ * below enforces it.
  */
-
-#define _GNU_SOURCE
 
 #include <float.h>
 #include <math.h>
 #include <stdint.h>
+#include <quadmath.h>
 
-/* ------------------------------------------------------------------ */
-/* <machine/_fpmath.h> for this host (x86 80-bit extended).		*/
-/* ------------------------------------------------------------------ */
+#if LDBL_MANT_DIG != 113
+#error "b0088s2 is ld128 code: compile with -mlong-double-128"
+#endif
 
+/*
+ * With -mlong-double-128 the compiler still emits a call to the host libm's
+ * fmodl(), which on this platform is the x87 80-bit entry point.  fmodq() is
+ * the binary128 entry point, i.e. what fmodl() is on a real ld128 platform.
+ */
+#define	fmodl	fmodq
+
+/* lib/libc/aarch64/_fpmath.h */
 union IEEEl2bits {
 	long double	e;
 	struct {
-		unsigned long long	man	:64;
-		unsigned int		exp	:15;
-		unsigned int		sign	:1;
+		unsigned long	manl	:64;
+		unsigned long	manh	:48;
+		unsigned int	exp	:15;
+		unsigned int	sign	:1;
 	} bits;
+	/* TODO andrew: Check the packing here */
 	struct {
-		unsigned long long	man	:64;
-		unsigned int		expsign	:16;
+		unsigned long	manl	:64;
+		unsigned long	manh	:48;
+		unsigned int	expsign	:16;
 	} xbits;
 };
 
-/* ------------------------------------------------------------------ */
-/* src/math_private.h								*/
-/* ------------------------------------------------------------------ */
-
+/* lib/msun/src/math_private.h */
 #define	_2sumF(a, b) do {	\
 	__typeof(a) __w;	\
 				\
@@ -67,35 +67,39 @@ union IEEEl2bits {
 	(a) = __w;		\
 } while (0)
 
-/*
- * FFLOORL128() in the 80-bit shape.  e is the unbiased exponent; the 80-bit
- * mantissa field holds the explicit integer bit at bit 63, so the fraction
- * occupies the low 63 - e bits and there is no fraction at all once e >= 63.
- */
+/* lib/msun/src/math_private.h */
 #define FFLOORL128(x, ai, ar) do {			\
 	union IEEEl2bits u;				\
 	uint64_t m;					\
 	int e;						\
 	u.e = (x);					\
 	e = u.bits.exp - 16383;				\
-	if (e < 63) {					\
-		m = (uint64_t)-1 >> (e + 1);		\
-		u.bits.man &= ~m;			\
+	if (e < 48) {					\
+		m = ((1llu << 49) - 1) >> (e + 1);	\
+		u.bits.manh &= ~m;			\
+		u.bits.manl = 0;			\
+	} else {					\
+		m = (uint64_t)-1 >> (e - 48);		\
+		u.bits.manl &= ~m;			\
 	}						\
 	(ai) = u.e;					\
 	(ar) = (x) - (ai);				\
 } while (0)
 
-/* ------------------------------------------------------------------ */
-/* Rename every function with a ref_ prefix.				*/
-/* ------------------------------------------------------------------ */
-
+/*
+ * Rename every ported function to its ref_ alias.  Definitions and call
+ * sites are rewritten together, so the bodies below stay byte for byte
+ * identical to the originals.
+ */
 #define	__kernel_cosl		ref___kernel_cosl
 #define	__kernel_sinl		ref___kernel_sinl
 #define	__kernel_cospil		ref___kernel_cospil
 #define	__kernel_sinpil		ref___kernel_sinpil
 #define	sinpil			ref_sinpil
 
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/k_cosl.c						*/
+/* ------------------------------------------------------------------ */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -150,6 +154,9 @@ __kernel_cosl(long double x, long double y)
 	return w + (((one-w)-hz) + (z*r-x*y));
 }
 
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/k_sinl.c						*/
+/* ------------------------------------------------------------------ */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -206,17 +213,47 @@ __kernel_sinl(long double x, long double y, int iy)
 
 /*
  * pi_hi contains the leading 56 bits of a 169 bit approximation for pi.
+ * (from lib/msun/ld128/s_sinpil.c, hoisted here because k_cospil.h and
+ * k_sinpil.h are included by s_sinpil.c after it defines these.)
  */
 static const long double
 pi_hi = 3.14159265358979322702026593105983920e+00L,
 pi_lo = 1.14423774522196636802434264184180742e-17L;
 
-/*
- * ld128/k_cospil.h
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/k_cospil.h						*/
+/* ------------------------------------------------------------------ */
+/*-
+ * Copyright (c) 2017 Steven G. Kargl
+ * All rights reserved.
  *
- * Copyright (c) 2017 Steven G. Kargl.  See ../src/k_cospi.c for
- * implementation details.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice unmodified, this list of conditions, and the following
+ *    disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+/*
+ * See ../src/k_cospi.c for implementation details.
+ */
+
+/* `static inline' dropped so the harness can call the oracle directly. */
 long double
 __kernel_cospil(long double x)
 {
@@ -230,12 +267,40 @@ __kernel_cospil(long double x)
 	return (__kernel_cosl(hi, lo));
 }
 
-/*
- * ld128/k_sinpil.h
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/k_sinpil.h						*/
+/* ------------------------------------------------------------------ */
+/*-
+ * Copyright (c) 2017 Steven G. Kargl
+ * All rights reserved.
  *
- * Copyright (c) 2017 Steven G. Kargl.  See ../src/k_sinpi.c for
- * implementation details.
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice unmodified, this list of conditions, and the following
+ *    disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+/*
+ * See ../src/k_sinpi.c for implementation details.
+ */
+
+/* `static inline' dropped so the harness can call the oracle directly. */
 long double
 __kernel_sinpil(long double x)
 {
@@ -249,8 +314,9 @@ __kernel_sinpil(long double x)
 	return (__kernel_sinl(hi, lo, 1));
 }
 
-volatile static const double vzero = 0;
-
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/s_sinpil.c						*/
+/* ------------------------------------------------------------------ */
 /*-
  * Copyright (c) 2017-2023 Steven G. Kargl
  * All rights reserved.
@@ -280,6 +346,8 @@ volatile static const double vzero = 0;
 /*
  * See ../src/s_sinpi.c for implementation details.
  */
+
+volatile static const double vzero = 0;
 
 long double
 sinpil(long double x)

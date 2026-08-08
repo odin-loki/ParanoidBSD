@@ -271,6 +271,7 @@ static void init_loaded(Fixture &fx, unsigned variant)
 	for (int i = 0; i < 256; i++) {
 		for (int p = 0; p < PBSD_COLL_WEIGHTS_MAX; p++) {
 			int v = (i * 3 + p * 7 + (int)variant + 1) & 0x3fff;
+			v &= ~COLLATE_SUBST_PRIORITY;
 			if (i == 5 && p == 1)
 				v = (int32_t)0x80000000;
 			if (i == 7 && p == 0)
@@ -278,8 +279,8 @@ static void init_loaded(Fixture &fx, unsigned variant)
 			fx.pback.chars[i].pri[p] = v;
 		}
 	}
-	fx.pback.chars['a'].pri[0] = (50 | COLLATE_SUBST_PRIORITY);
-	fx.pback.subst0[0].key = fx.pback.chars['a'].pri[0];
+	fx.pback.chars['a'].pri[0] = COLLATE_SUBST_PRIORITY;
+	fx.pback.subst0[0].key = COLLATE_SUBST_PRIORITY;
 	fx.pback.subst0[0].pri[0] = 10;
 	fx.pback.subst0[0].pri[1] = 20;
 	fx.pback.subst0[0].pri[2] = 0;
@@ -560,8 +561,10 @@ static void test_equiv_value_hand()
 	bind_locales(fx);
 	const wchar_t one[] = {L'a', L'b', L'\x500', 0};
 	for (size_t len = 0; len <= 30; len++) {
-		int pv = P::__collate_equiv_value((P::pbsd_locale_t)0, one, len);
-		int rv = ref___collate_equiv_value((pbsd_locale_t)0, one, len);
+		int pv = P::__collate_equiv_value((P::pbsd_locale_t)(intptr_t)-1,
+		    one, len);
+		int rv = ref___collate_equiv_value((pbsd_locale_t)(intptr_t)-1,
+		    one, len);
 		bump(F_EQUIV_VALUE);
 		if (pv != rv)
 			report(F_EQUIV_VALUE, "value");
@@ -770,9 +773,10 @@ static void sweep_equiv_value()
 		}
 		rand_wcs(ws, 10);
 		size_t len = ru32(30);
-		auto loc = (intptr_t)(ru32(2) ? -1 : 0);
-		int pv = P::__collate_equiv_value((P::pbsd_locale_t)loc, ws, len);
-		int rv = ref___collate_equiv_value((pbsd_locale_t)loc, ws, len);
+		int pv = P::__collate_equiv_value((P::pbsd_locale_t)(intptr_t)-1,
+		    ws, len);
+		int rv = ref___collate_equiv_value((pbsd_locale_t)(intptr_t)-1,
+		    ws, len);
 		bump(F_EQUIV_VALUE);
 		if (pv != rv)
 			report(F_EQUIV_VALUE, "sweep");

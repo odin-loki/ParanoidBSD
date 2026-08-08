@@ -457,27 +457,23 @@ static void test_hash_realloc()
 	guard_fill(oldmem_p, 32);
 	std::memcpy(oldmem_r, "seed-data-for-realloc!!", 23);
 	std::memcpy(oldmem_p, "seed-data-for-realloc!!", 23);
-	SEGMENT **dirr = (SEGMENT **)std::malloc(sizeof(SEGMENT *));
-	SEGMENT **dirp = (SEGMENT **)std::malloc(sizeof(SEGMENT *));
-	*dirr = (SEGMENT)oldmem_r;
-	*dirp = (SEGMENT)oldmem_p;
+	SEGMENT dirr = (SEGMENT)(void *)oldmem_r;
+	SEGMENT dirp = (SEGMENT)(void *)oldmem_p;
 	void *vr = ref_hash_realloc(&dirr, 32, 64);
-	void *vp = P::hash_realloc((P::SEGMENT **)&dirp, 32, 64);
+	void *vp = P::hash_realloc((P::SEGMENT *)&dirp, 32, 64);
 	check(F_HASH_REALLOC, (vr != nullptr) == (vp != nullptr), "null");
 	if (vr && vp) {
 		check(F_HASH_REALLOC,
-		    std::memcmp(*dirr, "seed-data-for-realloc!!", 23) == 0,
+		    std::memcmp((char *)dirr, "seed-data-for-realloc!!", 23) == 0,
 		    "ref data");
 		check(F_HASH_REALLOC,
-		    std::memcmp(*dirp, "seed-data-for-realloc!!", 23) == 0,
+		    std::memcmp((char *)dirp, "seed-data-for-realloc!!", 23) == 0,
 		    "port data");
 	}
 	if (vr)
-		std::free(*dirr);
+		std::free(dirr);
 	if (vp)
-		std::free(*dirp);
-	std::free(dirr);
-	std::free(dirp);
+		std::free(dirp);
 }
 
 static void test_init_htab()
@@ -1014,10 +1010,10 @@ static void test_init_hash()
 	info.nelem = 32;
 	info.bsize = PAGE_BSIZE;
 	HTAB *tr = ref_init_hash(&hr, nullptr, &info);
-	P::HTAB th;
+	HTAB th;
 	std::memset(&th, 0, sizeof(th));
 	th.fp = -1;
-	HTAB *tp = P::init_hash(ph(&th), nullptr, phi(&info));
+	HTAB *tp = reinterpret_cast<HTAB *>(P::init_hash(ph(&th), nullptr, phi(&info)));
 	check(F_INIT_HASH, (tr != nullptr) == (tp != nullptr), "init null file");
 	if (tr) {
 		check(F_INIT_HASH, tr->hdr.bsize == tp->hdr.bsize, "bsize");
@@ -1029,24 +1025,24 @@ static void test_init_hash()
 	hash_mock_reset();
 	info.lorder = 9999;
 	tr = ref_init_hash(&hr, nullptr, &info);
-	tp = P::init_hash(ph(&th), nullptr, phi(&info));
+	tp = reinterpret_cast<HTAB *>(P::init_hash(ph(&th), nullptr, phi(&info)));
 	check(F_INIT_HASH, (tr == nullptr) && (tp == nullptr), "bad lorder");
 
 	char tmpl[] = "/tmp/pbsd-hash-XXXXXX";
 	int fd = mkstemp(tmpl);
-	std::ftruncate(fd, 0);
+	ftruncate(fd, 0);
 	close(fd);
 	hash_mock_reset();
 	info.lorder = 0;
 	info.bsize = 0;
 	tr = ref_init_hash(&hr, tmpl, &info);
-	tp = P::init_hash(ph(&th), tmpl, phi(&info));
+	tp = reinterpret_cast<HTAB *>(P::init_hash(ph(&th), tmpl, phi(&info)));
 	check(F_INIT_HASH, (tr != nullptr) == (tp != nullptr), "file stat");
 	if (tr)
 		ref_hdestroy(tr);
 	if (tp)
 		P::hdestroy(ph(tp));
-	std::unlink(tmpl);
+	unlink(tmpl);
 }
 
 static void test_hash_open()
@@ -1071,7 +1067,7 @@ static void test_hash_open()
 		check(F_HASH_CLOSE, ref_hash_close(dr) == 0, "close ref file");
 	if (dp)
 		check(F_HASH_CLOSE, P::hash_close(pdb((DB *)dp)) == 0, "close port file");
-	std::unlink(tmpl);
+	unlink(tmpl);
 
 	hash_mock_reset();
 	char tmpl2[] = "/tmp/pbsd-hopen2-XXXXXX";
@@ -1087,7 +1083,7 @@ static void test_hash_open()
 		ref_hash_close(dr);
 	if (dp)
 		P::hash_close(pdb((DB *)dp));
-	std::unlink(tmpl2);
+	unlink(tmpl2);
 
 	hash_mock_reset();
 	dr = ref___hash_open(nullptr, O_WRONLY, 0, nullptr, 0);

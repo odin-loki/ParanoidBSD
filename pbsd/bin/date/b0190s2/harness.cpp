@@ -164,7 +164,7 @@ static void iso8601_select(int idx) {
 	if (idx < 0) idx = 0;
 	if (idx >= n) idx = n - 1;
 	ref_test_set_iso8601_selected(&fmts[idx]);
-	P::test_set_iso8601_selected(reinterpret_cast<const P::iso8601_fmt*>(&fmts[idx]));
+	P::test_set_iso8601_selected(&P::test_iso8601_fmts()[idx]);
 }
 
 void
@@ -212,7 +212,7 @@ test_strftime_ns()
 	run("%0N", 0L, 1, 64);
 	run("%99N", 1L, 1, 256);
 
-	for (long i = 0; i < SWEEP / 2; i++) {
+	for (long i = 0; i < SWEEP; i++) {
 		char fmt[64];
 		int flen = rng.bits(0, 40);
 		int fp = 0;
@@ -480,6 +480,7 @@ int main() {
 	tzset();
 	(void)setlocale(LC_TIME, "C");
 	cap_restore_force();
+	iso8601_select(0);
 	test_strftime_ns();
 	test_setthetime();
 	test_printdate();

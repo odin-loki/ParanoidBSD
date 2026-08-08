@@ -105,7 +105,7 @@ constexpr int GLS = 004;
 constexpr int GNP = 010;
 constexpr int GSG = 020;
 constexpr int GLB = 001;
-constexpr long RANDOM_TARGET = 128900;
+constexpr long RANDOM_TARGET = 200000;
 constexpr size_t IBUFSZ = 65536;
 
 struct Stat {
@@ -457,7 +457,7 @@ void test_extract_addr_range()
 	run("0\n", 1, 5);
 	run("999999999999999999\n", 1, 5);
 
-	for (long i = 0; i < 10000; ++i) {
+	for (long i = 0; i < 15000; ++i) {
 		long a = rnd_long(0, 10);
 		long b = rnd_long(0, 10);
 		std::string cmd = std::to_string(a);
@@ -492,7 +492,7 @@ void test_next_addr()
 	run("-1\n", 2, 6);
 	run("%\n", 2, 6);
 	run("999999999999999999\n", 1, 5);
-	for (long i = 0; i < 10000; ++i) {
+	for (long i = 0; i < 15000; ++i) {
 		int kind = static_cast<int>(rnd() % 6);
 		std::string cmd;
 		switch (kind) {
@@ -533,7 +533,7 @@ void test_exec_command()
 	run({"a\n", "b\n"}, "1,2j\n");
 	run({"aa\n"}, "1s/a/b/\n");
 	run({"a\n", "b\n"}, "1,2n\n");
-	for (long i = 0; i < 1200; ++i) {
+	for (long i = 0; i < 3000; ++i) {
 		std::vector<std::string> lines;
 		int k = static_cast<int>(rnd() % 4) + 1;
 		for (int j = 0; j < k; ++j)
@@ -561,7 +561,7 @@ void test_check_addr_range()
 	run(0, 1, 5);
 	run(1, 5, 5);
 	run(5, 1, 5);
-	for (long i = 0; i < 10000; ++i) {
+	for (long i = 0; i < 15000; ++i) {
 		run(rnd_long(0, 12), rnd_long(0, 12), rnd_long(0, 12));
 		random_iters++;
 	}
@@ -593,7 +593,7 @@ void test_get_matching_node_addr()
 	run({"b\n", "c\n"}, 1, 1);
 	run({std::string("a\0\n", 3)}, 1, 1);
 	run({std::string("\x80", 1) + "a\n", std::string("\xff\n", 2)}, 1, 1);
-	for (long i = 0; i < 4000; ++i) {
+	for (long i = 0; i < 8000; ++i) {
 		std::vector<std::string> lines;
 		int k = static_cast<int>(rnd() % 5) + 1;
 		for (int j = 0; j < k; ++j)
@@ -625,7 +625,7 @@ void test_get_filename()
 	run("a\\ b\n");
 	run(std::string("x\x80\xff\n", 4));
 	run(std::string(500, 'K') + "\n");
-	for (long i = 0; i < 9000; ++i) {
+	for (long i = 0; i < 13000; ++i) {
 		std::string f;
 		int n = static_cast<int>(rnd() % 20);
 		for (int j = 0; j < n; ++j) {
@@ -658,7 +658,7 @@ void test_get_shell_command()
 	run("a\\!b\n");
 	run(std::string("x\x80\xff\n", 4));
 	run(std::string(510, 'L') + "\n");
-	for (long i = 0; i < 8000; ++i) {
+	for (long i = 0; i < 12000; ++i) {
 		std::string s;
 		int n = static_cast<int>(rnd() % 24);
 		for (int j = 0; j < n; ++j) {
@@ -694,7 +694,7 @@ void test_append_lines()
 	run({"a\n"}, std::string("\0\n.\n", 4), 1);
 	run({"a\n"}, "\x80\xff\n.\n", 1);
 	run({"a\n"}, std::string(510, 'M') + "\n.\n", 1);
-	for (long i = 0; i < 1200; ++i) {
+	for (long i = 0; i < 1800; ++i) {
 		std::string app;
 		int ln = static_cast<int>(rnd() % 3) + 1;
 		for (int j = 0; j < ln; ++j)
@@ -728,7 +728,7 @@ void test_join_lines()
 	run({"\x80\n", "\xff\n"}, 1, 2);
 	run({std::string(260, 'N') + "\n", "x\n"}, 1, 2);
 	run({"one\n"}, 1, 1);
-	for (long i = 0; i < 1200; ++i) {
+	for (long i = 0; i < 1800; ++i) {
 		std::vector<std::string> lines;
 		int k = static_cast<int>(rnd() % 4) + 2;
 		for (int j = 0; j < k; ++j)
@@ -763,7 +763,7 @@ void test_move_lines()
 	run({std::string("a\0\n", 3), "b\n", "c\n"}, 1, 2, 3);
 	run({"\x80\n", "\xff\n", "c\n"}, 1, 2, 3);
 	run({std::string(260, 'O') + "\n", "x\n", "y\n"}, 1, 2, 3);
-	for (long i = 0; i < 1200; ++i) {
+	for (long i = 0; i < 1800; ++i) {
 		std::vector<std::string> lines;
 		int k = static_cast<int>(rnd() % 5) + 3;
 		for (int j = 0; j < k; ++j)
@@ -799,7 +799,7 @@ void test_copy_lines()
 	run({"\x80\n", "\xff\n"}, 1, 2, 2);
 	run({std::string(280, 'P') + "\n", "x\n"}, 1, 1, 1);
 	run({"one\n"}, 1, 1, 1);
-	for (long i = 0; i < 1200; ++i) {
+	for (long i = 0; i < 1800; ++i) {
 		std::vector<std::string> lines;
 		int k = static_cast<int>(rnd() % 4) + 2;
 		for (int j = 0; j < k; ++j)
@@ -832,7 +832,7 @@ void test_delete_lines()
 	run({"\x80\n", "\xff\n"}, 2, 2);
 	run({std::string(260, 'Q') + "\n", "x\n"}, 1, 1);
 	run({"one\n"}, 1, 1);
-	for (long i = 0; i < 1200; ++i) {
+	for (long i = 0; i < 1800; ++i) {
 		std::vector<std::string> lines;
 		int k = static_cast<int>(rnd() % 4) + 2;
 		for (int j = 0; j < k; ++j)
@@ -867,7 +867,7 @@ void test_display_lines()
 	run({"\x80\n", "\xff\n"}, 1, 2, GNP);
 	run({std::string(260, 'R') + "\n", "x\n"}, 1, 2, GLS | GNP);
 	run({"one\n"}, 1, 1, 0);
-	for (long i = 0; i < 1200; ++i) {
+	for (long i = 0; i < 1800; ++i) {
 		std::vector<std::string> lines;
 		int k = static_cast<int>(rnd() % 4) + 1;
 		for (int j = 0; j < k; ++j)
@@ -902,7 +902,7 @@ void test_mark_line_node()
 	run('A', 1);
 	run('\x80', 1);
 	run('m', 3);
-	for (long i = 0; i < 7000; ++i) {
+	for (long i = 0; i < 9000; ++i) {
 		int c = rndb();
 		run(c, rnd_long(1, 3));
 		random_iters++;
@@ -931,7 +931,7 @@ void test_get_marked_node_addr()
 	run('z');
 	run('A');
 	run('\x80');
-	for (long i = 0; i < 7000; ++i) {
+	for (long i = 0; i < 9000; ++i) {
 		run(rndb());
 		random_iters++;
 	}
@@ -961,7 +961,7 @@ void test_unmark_line_node()
 	run('z', 3);
 	run('A', 1);
 	run('\x80', 2);
-	for (long i = 0; i < 5000; ++i) {
+	for (long i = 0; i < 7000; ++i) {
 		run(static_cast<int>('a' + (rnd() % 26)), rnd_long(1, 3));
 		random_iters++;
 	}
@@ -993,7 +993,7 @@ void test_dup_line_node()
 	run("\x80\xff\n");
 	run(std::string(512, 'S') + "\n");
 	run("Z\n");
-	for (long i = 0; i < 5000; ++i) {
+	for (long i = 0; i < 7000; ++i) {
 		run(rand_line(30, true, true));
 		random_iters++;
 	}
@@ -1020,7 +1020,7 @@ void test_has_trailing_escape()
 	run("a\\");
 	run(std::string("\x80\\", 2));
 	run(std::string(511, '\\'));
-	for (long i = 0; i < 12000; ++i) {
+	for (long i = 0; i < 25000; ++i) {
 		std::string s;
 		int n = static_cast<int>(rnd() % 24);
 		for (int j = 0; j < n; ++j)
@@ -1048,7 +1048,7 @@ void test_strip_escapes()
 	run("\\a");
 	run(std::string("\x80\\\xff", 3));
 	run(std::string(520, '\\'));
-	for (long i = 0; i < 12000; ++i) {
+	for (long i = 0; i < 25000; ++i) {
 		std::string s;
 		int n = static_cast<int>(rnd() % 30);
 		for (int j = 0; j < n; ++j)
@@ -1079,7 +1079,7 @@ void test_signal_hup()
 	run(1, SIGINT);
 	run(0, 1);
 	run(1, 31);
-	for (long i = 0; i < 2500; ++i) {
+	for (long i = 0; i < 3500; ++i) {
 		run(static_cast<int>(rnd() & 1), static_cast<int>(rnd_long(1, 31)));
 		random_iters++;
 	}
@@ -1106,7 +1106,7 @@ void test_signal_int()
 	run(1, SIGHUP);
 	run(0, 2);
 	run(1, 30);
-	for (long i = 0; i < 2500; ++i) {
+	for (long i = 0; i < 3500; ++i) {
 		run(static_cast<int>(rnd() & 1), static_cast<int>(rnd_long(1, 31)));
 		random_iters++;
 	}
@@ -1132,7 +1132,7 @@ void test_handle_hup()
 	run(1);
 	run(30);
 	run(31);
-	for (long i = 0; i < 2500; ++i) {
+	for (long i = 0; i < 3500; ++i) {
 		run(static_cast<int>(rnd_long(1, 31)));
 		random_iters++;
 	}
@@ -1158,7 +1158,7 @@ void test_handle_int()
 	run(1);
 	run(30);
 	run(31);
-	for (long i = 0; i < 2500; ++i) {
+	for (long i = 0; i < 3500; ++i) {
 		run(static_cast<int>(rnd_long(1, 31)));
 		random_iters++;
 	}
@@ -1182,7 +1182,7 @@ void test_handle_winch()
 	run(2);
 	run(30);
 	run(31);
-	for (long i = 0; i < 2500; ++i) {
+	for (long i = 0; i < 3500; ++i) {
 		run(static_cast<int>(rnd_long(1, 31)));
 		random_iters++;
 	}
@@ -1206,7 +1206,7 @@ void test_is_legal_filename()
 	run("/tmp/x");
 	run(std::string("\x80\xff", 2));
 	run(std::string(512, 'T'));
-	for (long i = 0; i < 9000; ++i) {
+	for (long i = 0; i < 14000; ++i) {
 		std::string s;
 		int n = static_cast<int>(rnd() % 24);
 		for (int j = 0; j < n; ++j) {

@@ -12,10 +12,11 @@ import pbsd.sys.kern.b0146s1;
 
 namespace port = pbsd::sys_kern::b0146s1;
 
-#define GUARD     0x7f
-#define PAD       32u
-#define SWEEP     200000L
-#define MAX_PRINT 12
+#define GUARD       0x7f
+#define PAD         32u
+#define SWEEP       200000L
+#define SWEEP_MAX   512u
+#define MAX_PRINT   12
 
 struct stat_row {
 	const char *name;
@@ -95,14 +96,10 @@ bufs_match(const unsigned char *a, const unsigned char *b, std::size_t n)
 }
 
 static void
-test_kern_getrandom_one(std::size_t buflen, unsigned int flags, int rr_err,
-    int rr_block, ssize_t rr_xfer)
+run_kern_getrandom(unsigned char *pb, unsigned char *rb, std::size_t buflen,
+    unsigned int flags, int rr_err, int rr_block, ssize_t rr_xfer)
 {
-	case_row(R_KERN);
-
 	const std::size_t total = buflen + PAD * 2;
-	unsigned char *pb = static_cast<unsigned char *>(std::malloc(total));
-	unsigned char *rb = static_cast<unsigned char *>(std::malloc(total));
 
 	std::memset(pb, GUARD, total);
 	std::memset(rb, GUARD, total);
@@ -126,20 +123,13 @@ test_kern_getrandom_one(std::size_t buflen, unsigned int flags, int rr_err,
 		fail_row(R_KERN, "td_retval", "bytes returned");
 	if (!bufs_match(pb, rb, total))
 		fail_row(R_KERN, "buffer", "guard/data mismatch");
-
-	std::free(pb);
-	std::free(rb);
 }
 
 static void
-test_sys_getrandom_one(std::size_t buflen, unsigned int flags, int rr_err,
-    int rr_block, ssize_t rr_xfer)
+run_sys_getrandom(unsigned char *pb, unsigned char *rb, std::size_t buflen,
+    unsigned int flags, int rr_err, int rr_block, ssize_t rr_xfer)
 {
-	case_row(R_SYS);
-
 	const std::size_t total = buflen + PAD * 2;
-	unsigned char *pb = static_cast<unsigned char *>(std::malloc(total));
-	unsigned char *rb = static_cast<unsigned char *>(std::malloc(total));
 
 	std::memset(pb, GUARD, total);
 	std::memset(rb, GUARD, total);
@@ -163,6 +153,35 @@ test_sys_getrandom_one(std::size_t buflen, unsigned int flags, int rr_err,
 		fail_row(R_SYS, "td_retval", "bytes returned");
 	if (!bufs_match(pb, rb, total))
 		fail_row(R_SYS, "buffer", "guard/data mismatch");
+}
+
+static void
+test_kern_getrandom_one(std::size_t buflen, unsigned int flags, int rr_err,
+    int rr_block, ssize_t rr_xfer)
+{
+	case_row(R_KERN);
+
+	const std::size_t total = buflen + PAD * 2;
+	unsigned char *pb = static_cast<unsigned char *>(std::malloc(total));
+	unsigned char *rb = static_cast<unsigned char *>(std::malloc(total));
+
+	run_kern_getrandom(pb, rb, buflen, flags, rr_err, rr_block, rr_xfer);
+
+	std::free(pb);
+	std::free(rb);
+}
+
+static void
+test_sys_getrandom_one(std::size_t buflen, unsigned int flags, int rr_err,
+    int rr_block, ssize_t rr_xfer)
+{
+	case_row(R_SYS);
+
+	const std::size_t total = buflen + PAD * 2;
+	unsigned char *pb = static_cast<unsigned char *>(std::malloc(total));
+	unsigned char *rb = static_cast<unsigned char *>(std::malloc(total));
+
+	run_sys_getrandom(pb, rb, buflen, flags, rr_err, rr_block, rr_xfer);
 
 	std::free(pb);
 	std::free(rb);
@@ -202,33 +221,26 @@ test_hand(void)
 		}
 	}
 
-	/* EINVAL from read_random_uio */
 	test_kern_getrandom_one(64, 0, EINVAL, 0, -1);
 	test_sys_getrandom_one(64, 0, EINVAL, 0, -1);
 
-	/* EWOULDBLOCK on nonblocking */
 	test_kern_getrandom_one(64, 0x0001, 0, 1, -1);
 	test_sys_getrandom_one(64, 0x0001, 0, 1, -1);
 
-	/* GRND_INSECURE implies nonblock: block path */
 	test_kern_getrandom_one(64, 0x0004, 0, 1, -1);
 	test_sys_getrandom_one(64, 0x0004, 0, 1, -1);
 
-	/* GRND_INSECURE | GRND_NONBLOCK */
 	test_kern_getrandom_one(64, 0x0005, 0, 1, -1);
 	test_sys_getrandom_one(64, 0x0005, 0, 1, -1);
 
-	/* Partial transfer: zero bytes */
 	test_kern_getrandom_one(64, 0, 0, 0, 0);
 	test_sys_getrandom_one(64, 0, 0, 0, 0);
 
-	/* Partial transfer: short read */
 	test_kern_getrandom_one(64, 0, 0, 0, 32);
 	test_sys_getrandom_one(64, 0, 0, 0, 32);
 	test_kern_getrandom_one(1, 0, 0, 0, 32);
 	test_sys_getrandom_one(1, 0, 0, 0, 32);
 
-	/* Single byte with high-bit pattern in buffer pre-fill */
 	{
 		const std::size_t len = 1;
 		const std::size_t total = len + PAD * 2;
@@ -271,8 +283,11 @@ test_hand(void)
 static void
 test_sweep(void)
 {
+	static unsigned char pb[SWEEP_MAX + PAD * 2];
+	static unsigned char rb[SWEEP_MAX + PAD * 2];
+
 	for (long i = 0; i < SWEEP; i++) {
-		std::size_t len = rnd32() % 512;
+		std::size_t len = rnd32() % (SWEEP_MAX + 1);
 		unsigned int flags = rnd32() & 0xff;
 		int err = 0;
 		int block = (rnd32() & 3) == 0 ? 1 : 0;
@@ -280,13 +295,20 @@ test_sweep(void)
 
 		if ((rnd32() % 50) == 0)
 			err = EWOULDBLOCK;
-		if ((rnd32() % 100) == 0)
-			len = (size_t)INT_MAX + (rnd32() % 16);
 		if ((rnd32() % 200) == 0)
 			len = 0;
 
-		test_kern_getrandom_one(len, flags, err, block, xfer);
-		test_sys_getrandom_one(len, flags, err, block, xfer);
+		case_row(R_KERN);
+		run_kern_getrandom(pb, rb, len, flags, err, block, xfer);
+
+		case_row(R_SYS);
+		run_sys_getrandom(pb, rb, len, flags, err, block, xfer);
+
+		if ((rnd32() % 100) == 0) {
+			len = (size_t)INT_MAX + (rnd32() % 16);
+			test_kern_getrandom_one(len, flags, err, block, xfer);
+			test_sys_getrandom_one(len, flags, err, block, xfer);
+		}
 	}
 }
 

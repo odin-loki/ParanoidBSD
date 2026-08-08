@@ -1,56 +1,68 @@
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
 /*
- * oracle.c -- reference specification for PBSD batch b0148s4 (buf.c).
+ * PBSD batch b0148s4 -- reference oracle.
  *
- * Original HardenedBSD ed source concatenated; every batch function is
- * renamed with a ref_ prefix.  Function bodies are UNMODIFIED.  Supporting
- * types, macros, globals, and ed.h shims are added only where required so
- * the unmodified bodies compile and link.
+ * This is HardenedBSD src/bin/ed/buf.c with every function renamed with a
+ * "ref_" prefix.  Function bodies are unmodified.  The only additions are the
+ * declarations that buf.c used to pull in from ed.h / the rest of ed, and a
+ * handful of observation hooks at the bottom of the file.
  */
+
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+#include <sys/file.h>
+#include <sys/stat.h>
 
 #include <errno.h>
 #include <limits.h>
-#include <setjmp.h>
 #include <signal.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/stat.h>
 
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
+/* ---- transplanted from ed.h --------------------------------------------- */
 
 #define ERR		(-2)
 
-#define MINBUFSZ 512
+#define MINBUFSZ 512		/* minimum buffer size - must be > 0 */
 #ifdef INT_MAX
-# define LINECHARS INT_MAX
+# define LINECHARS INT_MAX	/* max chars per line */
 #else
 # define LINECHARS MAXINT
 #endif
 
-typedef struct line {
+#ifndef LONG_BIT
+# define LONG_BIT (sizeof(long) * CHAR_BIT)
+#endif
+
+/* Line node */
+typedef struct	line {
 	struct line	*q_forw;
 	struct line	*q_back;
-	off_t		seek;
-	int		len;
+	off_t		seek;		/* address of line in scratch buffer */
+	int		len;		/* length of line */
 } line_t;
 
 #ifndef max
 # define max(a,b) ((a) > (b) ? (a) : (b))
 #endif
+#ifndef min
+# define min(a,b) ((a) < (b) ? (a) : (b))
+#endif
 
+/* SPL1: disable some interrupts (requires reliable signals) */
 #define SPL1() mutex++
 
+/* SPL0: enable all interrupts; check sigflags (requires reliable signals) */
 #define SPL0() \
 if (--mutex == 0) { \
 	if (sigflags & (1 << (SIGHUP - 1))) handle_hup(SIGHUP); \
 	if (sigflags & (1 << (SIGINT - 1))) handle_int(SIGINT); \
 }
 
+/* REALLOC: assure at least a minimum size for buffer b */
 #define REALLOC(b,n,i,err) \
 if ((i) > (n)) { \
 	size_t ti = (n); \
@@ -67,105 +79,59 @@ if ((i) > (n)) { \
 	SPL0(); \
 }
 
+/* REQUE: link pred before succ */
 #define REQUE(pred, succ) (pred)->q_forw = (succ), (succ)->q_back = (pred)
 
+/* INSQUE: insert elem in circular queue after pred */
 #define INSQUE(elem, pred) \
 { \
 	REQUE((elem), (pred)->q_forw); \
 	REQUE((pred), elem); \
 }
 
+/* ---- objects that buf.c gets from the other ed sources ------------------- */
+
 char stdinbuf[1];
 
 int isbinary;
+int newline_added;
 int mutex;
 int sigflags;
-int newline_added;
 
 long addr_last;
 long current_addr;
 
 const char *errmsg = "";
 
-int oracle_malloc_fail_at;
-int oracle_malloc_calls;
-int oracle_quit_status;
-int oracle_quit_called;
-
-static void *
-oracle_malloc(size_t n)
-{
-	void *p;
-
-	oracle_malloc_calls++;
-	if (oracle_malloc_fail_at != 0 &&
-	    oracle_malloc_calls >= oracle_malloc_fail_at)
-		return (NULL);
-	p = malloc(n);
-	return (p);
-}
-
-#define malloc oracle_malloc
+long hup_calls;
+long int_calls;
 
 void
-oracle_reset_hooks(void)
+handle_hup(int signo)
 {
-	oracle_malloc_fail_at = 0;
-	oracle_malloc_calls = 0;
-	oracle_quit_status = 0;
-	oracle_quit_called = 0;
+	(void)signo;
+	hup_calls++;
 }
 
 void
-oracle_reset_globals(void)
+handle_int(int signo)
 {
-	isbinary = 0;
-	mutex = 0;
-	sigflags = 0;
-	newline_added = 0;
-	addr_last = 0;
-	current_addr = 0;
-	errmsg = "";
-	oracle_reset_hooks();
+	(void)signo;
+	int_calls++;
 }
 
-void
-handle_hup(int s)
-{
-	(void)s;
-}
+void ref_add_line_node(line_t *);
+int ref_close_sbuf(void);
+line_t *ref_get_addressed_line_node(long);
+long ref_get_line_node_addr(line_t *);
+char *ref_get_sbuf_line(line_t *);
+void ref_init_buffers(void);
+int ref_open_sbuf(void);
+const char *ref_put_sbuf_line(const char *);
+void ref_quit(int);
+char *ref_translit_text(char *, int, int, int);
 
-void
-handle_int(int s)
-{
-	(void)s;
-}
-
-static jmp_buf oracle_quit_jmp;
-
-void
-oracle_quit_enter(void)
-{
-	if (setjmp(oracle_quit_jmp) != 0)
-		return;
-}
-
-#undef exit
-#define exit(n) \
-	do { \
-		oracle_quit_status = (n); \
-		oracle_quit_called = 1; \
-		longjmp(oracle_quit_jmp, 1); \
-	} while (0)
-
-line_t *ref_get_addressed_line_node(long n);
-void ref_add_line_node(line_t *lp);
-
-#define get_addressed_line_node	ref_get_addressed_line_node
-#define add_line_node		ref_add_line_node
-#define open_sbuf		ref_open_sbuf
-#define close_sbuf		ref_close_sbuf
-#define quit			ref_quit
+/* ---- src/bin/ed/buf.c ---------------------------------------------------- */
 
 /* buf.c: This file contains the scratch-file buffer routines for the
    ed line editor. */
@@ -195,12 +161,13 @@ void ref_add_line_node(line_t *lp);
  * SUCH DAMAGE.
  */
 
-
 static FILE *sfp;			/* scratch file pointer */
 static off_t sfseek;			/* scratch file position */
 static int seek_write;			/* seek before writing */
 static line_t buffer_head;		/* incore buffer */
 
+/* get_sbuf_line: get a line of text from the scratch file; return pointer
+   to the text */
 char *
 ref_get_sbuf_line(line_t *lp)
 {
@@ -234,6 +201,8 @@ ref_get_sbuf_line(line_t *lp)
 }
 
 
+/* put_sbuf_line: write a line of text to the scratch file and add a line node
+   to the editor buffer;  return a pointer to the end of the text */
 const char *
 ref_put_sbuf_line(const char *cs)
 {
@@ -276,24 +245,26 @@ ref_put_sbuf_line(const char *cs)
 	}
 	lp->len = len;
 	lp->seek  = sfseek;
-	add_line_node(lp);
+	ref_add_line_node(lp);
 	sfseek += len;			/* update file position */
 	return ++s;
 }
 
 
+/* add_line_node: add a line node in the editor buffer after the current line */
 void
 ref_add_line_node(line_t *lp)
 {
 	line_t *cp;
 
-	cp = get_addressed_line_node(current_addr);				/* this get_addressed_line_node last! */
+	cp = ref_get_addressed_line_node(current_addr);				/* this get_addressed_line_node last! */
 	INSQUE(lp, cp);
 	addr_last++;
 	current_addr++;
 }
 
 
+/* get_line_node_addr: return line number of pointer */
 long
 ref_get_line_node_addr(line_t *lp)
 {
@@ -305,11 +276,12 @@ ref_get_line_node_addr(line_t *lp)
 	if (n && cp == &buffer_head) {
 		errmsg = "invalid address";
 		return ERR;
-	}
+	 }
 	 return n;
 }
 
 
+/* get_addressed_line_node: return pointer to a line node in the editor buffer */
 line_t *
 ref_get_addressed_line_node(long n)
 {
@@ -341,6 +313,7 @@ ref_get_addressed_line_node(long n)
 
 static char sfn[15] = "";			/* scratch file name */
 
+/* open_sbuf: open scratch file */
 int
 ref_open_sbuf(void)
 {
@@ -364,6 +337,7 @@ ref_open_sbuf(void)
 }
 
 
+/* close_sbuf: close scratch file */
 int
 ref_close_sbuf(void)
 {
@@ -381,6 +355,7 @@ ref_close_sbuf(void)
 }
 
 
+/* quit: remove_lines scratch file and exit */
 void
 ref_quit(int n)
 {
@@ -394,6 +369,7 @@ ref_quit(int n)
 
 static unsigned char ctab[256];		/* character translation table */
 
+/* init_buffers: open scratch buffer; initialize line queue */
 void
 ref_init_buffers(void)
 {
@@ -410,14 +386,15 @@ ref_init_buffers(void)
 	/* Ensure stdout is line buffered. This avoids bogus delays
 	   of output if stdout is piped through utilities to a terminal. */
 	setvbuf(stdout, NULL, _IOLBF, 0);
-	if (open_sbuf() < 0)
-		quit(2);
+	if (ref_open_sbuf() < 0)
+		ref_quit(2);
 	REQUE(&buffer_head, &buffer_head);
 	for (i = 0; i < 256; i++)
 		ctab[i] = i;
 }
 
 
+/* translit_text: translate characters in a string */
 char *
 ref_translit_text(char *s, int len, int from, int to)
 {
@@ -432,10 +409,40 @@ ref_translit_text(char *s, int len, int from, int to)
 	return s;
 }
 
-void
-oracle_reset_batch(void)
+/* ---- observation hooks (not part of buf.c) ------------------------------- */
+
+line_t *
+ref_bh_ptr(void)
 {
-	ref_close_sbuf();
-	oracle_reset_globals();
-	REQUE(&buffer_head, &buffer_head);
+	return &buffer_head;
+}
+
+unsigned char *
+ref_ctab_ptr(void)
+{
+	return ctab;
+}
+
+char *
+ref_sfn_ptr(void)
+{
+	return sfn;
+}
+
+FILE *
+ref_sfp_ptr(void)
+{
+	return sfp;
+}
+
+off_t
+ref_sfseek_val(void)
+{
+	return sfseek;
+}
+
+int
+ref_seek_write_val(void)
+{
+	return seek_write;
 }

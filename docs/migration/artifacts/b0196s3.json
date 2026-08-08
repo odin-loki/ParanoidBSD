@@ -1,0 +1,10 @@
+{
+  "batch": "b0196s3",
+  "verified": "2026-08-08T22:41:45Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/2: pmap_set, pmap_unset)",
+  "ir_equivalent": false,
+  "harness_output": "\n=== b0196s3 differential test results ===\npmap_set          cases=124862  failures=0\npmap_unset        cases=75224  failures=0\nTOTAL failures: 0\nport.cppm:78:10: warning: '#include <filename>' attaches the declarations to the named module 'pbsd.lib.libc.rpc.b0196s3', which is not usually intended; consider moving that directive before the module declaration [-Winclude-angled-in-module-purview]\n   78 | #include <cstdio>\n      |          ^\nport.cppm:79:10: warning: '#include <filename>' attaches the declarations to the named module 'pbsd.lib.libc.rpc.b0196s3', which is not usually intended; consider moving that directive before the module declaration [-Winclude-angled-in-module-purview]\n   79 | #include <cstdlib>\n      |          ^\n2 warnings generated.\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/rpc/pmap_clnt.c": "31ab7ad0a1fbe395"
+  }
+}

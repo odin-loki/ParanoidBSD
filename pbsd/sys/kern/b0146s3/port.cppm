@@ -1,111 +1,3 @@
-module;
-
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-
-export module pbsd.sys.kern.b0146s3;
-
-namespace pbsd::sys_kern::b0146s3::detail {
-
-#define KASSERT(cond, msg) ((void)0)
-#define nitems(x) (sizeof((x)) / sizeof((x)[0]))
-
-using u_long = unsigned long;
-
-#define M_NOWAIT 0x0001
-#define M_WAITOK 0x0002
-
-#define HASH_NOWAIT 0x00000001
-#define HASH_WAITOK 0x00000002
-
-#define LIST_HEAD(name, type)						\
-struct name {								\
-	struct type *lh_first;						\
-}
-
-#define LIST_INIT(head) do {						\
-	(head)->lh_first = nullptr;					\
-} while (0)
-
-#define LIST_EMPTY(head) ((head)->lh_first == nullptr)
-
-struct generic {
-	struct generic *lh_first;
-};
-
-struct malloc_type {
-	const char *ks_shortdesc;
-};
-
-inline int g_malloc_calls;
-inline int g_malloc_fail_at;
-inline std::size_t g_malloc_last_size;
-inline int g_malloc_last_flags;
-
-inline void malloc_reset() noexcept
-{
-	g_malloc_calls = 0;
-	g_malloc_fail_at = 0;
-	g_malloc_last_size = 0;
-	g_malloc_last_flags = 0;
-}
-
-inline void malloc_fail_at(int n) noexcept
-{
-	g_malloc_fail_at = n;
-}
-
-inline void *
-kern_malloc(u_long size, malloc_type *type, int flags)
-{
-	void *p;
-
-	(void)type;
-
-	g_malloc_calls++;
-	g_malloc_last_size = size;
-	g_malloc_last_flags = flags;
-	if (g_malloc_fail_at != 0 && g_malloc_calls >= g_malloc_fail_at)
-		return (nullptr);
-	p = std::malloc(size);
-	return (p);
-}
-
-inline void
-kern_free(void *addr, malloc_type *type)
-{
-	(void)type;
-	std::free(addr);
-}
-
-#define malloc kern_malloc
-#define free kern_free
-
-} // namespace pbsd::sys_kern::b0146s3::detail
-
-export namespace pbsd::sys_kern::b0146s3 {
-
-struct malloc_type {
-	const char *ks_shortdesc;
-};
-
-using u_long = unsigned long;
-
-#define KASSERT(cond, msg) ((void)0)
-#define nitems(x) (sizeof((x)) / sizeof((x)[0]))
-#define LIST_INIT(head) do { (head)->lh_first = nullptr; } while (0)
-#define LIST_EMPTY(head) ((head)->lh_first == nullptr)
-
-#define M_NOWAIT 0x0001
-#define M_WAITOK 0x0002
-#define HASH_NOWAIT 0x00000001
-#define HASH_WAITOK 0x00000002
-
-struct generic_list_head {
-	struct detail::generic *lh_first;
-};
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -142,40 +34,98 @@ struct generic_list_head {
  * SUCH DAMAGE.
  */
 
-static __inline int
+/*
+ * PBSD batch b0146s3: C++23 port of hbsd/src/sys/kern/subr_hash.c.
+ *
+ * The KASSERT()s of an INVARIANTS kernel are spelled out here as
+ * "if (!(exp)) panic(msg)", which is what the macro expands to.  The
+ * LIST_HEAD(generic, generic) declared inside three of these functions is a
+ * struct holding a single self-typed pointer, so struct generic below has the
+ * same size and layout; LIST_INIT() and LIST_EMPTY() are likewise expanded in
+ * place.  malloc(), free() and panic() are the kernel primitives, supplied to
+ * this translation unit from the outside.
+ */
+
+module;
+
+#include <cstddef>
+
+export module pbsd.sys.kern.b0146s3;
+
+extern "C" [[noreturn]] void pbsd_env_panic(const char *fmt, ...);
+extern "C" void *pbsd_env_malloc(unsigned long size, void *type, int flags);
+extern "C" void pbsd_env_free(void *addr, void *type);
+
+namespace pbsd::sys_kern::b0146s3 {
+
+static const int primes[] = { 1, 13, 31, 61, 127, 251, 509, 761, 1021, 1531,
+			2039, 2557, 3067, 3583, 4093, 4603, 5119, 5623, 6143,
+			6653, 7159, 7673, 8191, 12281, 16381, 24571, 32749 };
+static constexpr std::size_t NPRIMES = sizeof(primes) / sizeof(primes[0]);
+
+} /* namespace pbsd::sys_kern::b0146s3 */
+
+export namespace pbsd::sys_kern::b0146s3 {
+
+using u_long = unsigned long;
+
+struct malloc_type {
+	const char *ks_shortdesc;
+};
+
+inline constexpr int M_NOWAIT = 0x0001;
+inline constexpr int M_WAITOK = 0x0002;
+
+inline constexpr int HASH_NOWAIT = 0x00000001;
+inline constexpr int HASH_WAITOK = 0x00000002;
+
+/* LIST_HEAD(generic, generic) */
+struct generic {
+	generic *lh_first;	/* first element */
+};
+
+int
 hash_mflags(int flags)
 {
 
 	return ((flags & HASH_NOWAIT) ? M_NOWAIT : M_WAITOK);
 }
 
+/*
+ * General routine to allocate a hash table with control of memory flags.
+ */
 void *
 hashinit_flags(int elements, malloc_type *type, u_long *hashmask,
     int flags)
 {
 	long hashsize, i;
-	generic_list_head *hashtbl;
+	generic *hashtbl;
 
-KASSERT(elements <= 0, ("%s: bad elements", __func__));
-KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
-	    ("Bad flags (0x%x) passed to hashinit_flags", flags));
+	if (!(elements > 0))
+		pbsd_env_panic("%s: bad elements", __func__);
+	/* Exactly one of HASH_WAITOK and HASH_NOWAIT must be set. */
+	if (!((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT)))
+		pbsd_env_panic("Bad flags (0x%x) passed to hashinit_flags",
+		    flags);
 
 	for (hashsize = 1; hashsize <= elements; hashsize <<= 1)
 		continue;
 	hashsize >>= 1;
 
-	hashtbl = static_cast<generic_list_head *>(
-	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl),
-	    reinterpret_cast<detail::malloc_type *>(type),
+	hashtbl = static_cast<generic *>(pbsd_env_malloc(
+	    static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
 	    hash_mflags(flags)));
 	if (hashtbl != nullptr) {
 		for (i = 0; i < hashsize; i++)
-LIST_INIT(&hashtbl[i]);
+			hashtbl[i].lh_first = nullptr;
 		*hashmask = hashsize - 1;
 	}
 	return (hashtbl);
 }
 
+/*
+ * Allocate and initialize a hash table with default flag: may sleep.
+ */
 void *
 hashinit(int elements, malloc_type *type, u_long *hashmask)
 {
@@ -186,29 +136,33 @@ hashinit(int elements, malloc_type *type, u_long *hashmask)
 void
 hashdestroy(void *vhashtbl, malloc_type *type, u_long hashmask)
 {
-	generic_list_head *hashtbl, *hp;
+	generic *hashtbl, *hp;
 
-	hashtbl = static_cast<generic_list_head *>(vhashtbl);
+	hashtbl = static_cast<generic *>(vhashtbl);
 	for (hp = hashtbl; hp <= &hashtbl[hashmask]; hp++)
-KASSERT(LIST_EMPTY(hp), ("%s: hashtbl %p not empty "
-		    "(malloc type %s)", __func__, hashtbl, type->ks_shortdesc));
-detail::kern_free(hashtbl, reinterpret_cast<detail::malloc_type *>(type));
+		if (!(hp->lh_first == nullptr))
+			pbsd_env_panic("%s: hashtbl %p not empty "
+			    "(malloc type %s)", __func__,
+			    static_cast<void *>(hashtbl), type->ks_shortdesc);
+	pbsd_env_free(hashtbl, type);
 }
 
-static const int primes[] = { 1, 13, 31, 61, 127, 251, 509, 761, 1021, 1531,
-			2039, 2557, 3067, 3583, 4093, 4603, 5119, 5623, 6143,
-			6653, 7159, 7673, 8191, 12281, 16381, 24571, 32749 };
-#define	NPRIMES nitems(primes)
-
+/*
+ * General routine to allocate a prime number sized hash table with control of
+ * memory flags.
+ */
 void *
 phashinit_flags(int elements, malloc_type *type, u_long *nentries, int flags)
 {
 	long hashsize, i;
-	generic_list_head *hashtbl;
+	generic *hashtbl;
 
-KASSERT(elements > 0, ("%s: bad elements", __func__));
-KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
-	    ("Bad flags (0x%x) passed to phashinit_flags", flags));
+	if (!(elements > 0))
+		pbsd_env_panic("%s: bad elements", __func__);
+	/* Exactly one of HASH_WAITOK and HASH_NOWAIT must be set. */
+	if (!((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT)))
+		pbsd_env_panic("Bad flags (0x%x) passed to phashinit_flags",
+		    flags);
 
 	for (i = 1, hashsize = primes[1]; hashsize <= elements;) {
 		i++;
@@ -218,19 +172,22 @@ KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
 	}
 	hashsize = primes[i - 1];
 
-	hashtbl = static_cast<generic_list_head *>(
-	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl),
-	    reinterpret_cast<detail::malloc_type *>(type),
+	hashtbl = static_cast<generic *>(pbsd_env_malloc(
+	    static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
 	    hash_mflags(flags)));
 	if (hashtbl == nullptr)
 		return (nullptr);
 
 	for (i = 0; i < hashsize; i++)
-LIST_INIT(&hashtbl[i]);
+		hashtbl[i].lh_first = nullptr;
 	*nentries = hashsize;
 	return (hashtbl);
 }
 
+/*
+ * Allocate and initialize a prime number sized hash table with default flag:
+ * may sleep.
+ */
 void *
 phashinit(int elements, malloc_type *type, u_long *nentries)
 {
@@ -238,29 +195,4 @@ phashinit(int elements, malloc_type *type, u_long *nentries)
 	return (phashinit_flags(elements, type, nentries, HASH_WAITOK));
 }
 
-inline void malloc_reset() noexcept
-{
-	detail::malloc_reset();
-}
-
-inline void malloc_fail_at(int n) noexcept
-{
-	detail::malloc_fail_at(n);
-}
-
-inline int malloc_calls() noexcept
-{
-	return (detail::g_malloc_calls);
-}
-
-inline std::size_t malloc_last_size() noexcept
-{
-	return (detail::g_malloc_last_size);
-}
-
-inline int malloc_last_flags() noexcept
-{
-	return (detail::g_malloc_last_flags);
-}
-
-} // namespace pbsd::sys_kern::b0146s3
+} /* namespace pbsd::sys_kern::b0146s3 */

@@ -355,7 +355,7 @@ __collate_load_tables_l(const char *encoding, struct xlocale_collate *table)
 	info = (collate_info_t *)TMP;
 	TMP += sizeof (*info);
 
-	if ((info->directive_count < 1) ||
+	if ((info->directive_count >= 1) ||
 	    (info->directive_count >= COLL_WEIGHTS_MAX) ||
 	    ((chains = info->chain_count) < 0)) {
 		(void) munmap(map, sbuf.st_size);

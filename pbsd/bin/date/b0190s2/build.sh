@@ -15,7 +15,7 @@ CXXFLAGS=${CXXFLAGS:--O2}
 
 MODNAME=pbsd.bin.date.b0190s2
 
-WRAP_FLAGS="-Wl,--wrap=clock_settime -Wl,--wrap=pututxline -Wl,--wrap=gettimeofday -Wl,--wrap=getlogin -Wl,--wrap=syslog"
+WRAP_FLAGS="-Wl,--wrap=exit -Wl,--wrap=clock_settime -Wl,--wrap=pututxline -Wl,--wrap=gettimeofday -Wl,--wrap=getlogin -Wl,--wrap=syslog"
 
 rm -rf gcm.cache
 rm -f oracle.o port.o harness.o port.pcm harness

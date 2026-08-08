@@ -1,52 +1,51 @@
-// PBSD port of HardenedBSD ed batch b0148s4 (buf.c).
+// PBSD batch b0148s4 -- C++23 module port of HardenedBSD src/bin/ed/buf.c.
+//
+// This is a faithful transliteration: control flow, integer types, signedness,
+// evaluation order and pointer arithmetic are preserved exactly as written in
+// the original C, including its quirks.
 
 module;
 
-#include <cerrno>
-#include <climits>
-#include <csetjmp>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <signal.h>
+#include <sys/types.h>
+#include <sys/file.h>
 #include <sys/stat.h>
+
+#include <errno.h>
+#include <limits.h>
+#include <signal.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 export module pbsd.bin.ed.b0148s4;
 
-export namespace pbsd::bin_ed::b0148s4 {
-
+/* Constants taken verbatim from ed.h. */
 #define ERR		(-2)
 
-#define MINBUFSZ 512
+#define MINBUFSZ 512		/* minimum buffer size - must be > 0 */
 #ifdef INT_MAX
-# define LINECHARS INT_MAX
+# define LINECHARS INT_MAX	/* max chars per line */
 #else
 # define LINECHARS MAXINT
 #endif
-
-struct line_t {
-	line_t	*q_forw;
-	line_t	*q_back;
-	off_t	seek;
-	int	len;
-};
 
 #ifndef max
 # define max(a,b) ((a) > (b) ? (a) : (b))
 #endif
 
-int &mutex_ref();
-int &sigflags_ref();
+/* SPL1: disable some interrupts (requires reliable signals) */
+#define SPL1() mutex++
 
-#define SPL1() mutex_ref()++
-
+/* SPL0: enable all interrupts; check sigflags (requires reliable signals) */
 #define SPL0() \
-if (--mutex_ref() == 0) { \
-	if (sigflags_ref() & (1 << (SIGHUP - 1))) handle_hup(SIGHUP); \
-	if (sigflags_ref() & (1 << (SIGINT - 1))) handle_int(SIGINT); \
+if (--mutex == 0) { \
+	if (sigflags & (1 << (SIGHUP - 1))) handle_hup(SIGHUP); \
+	if (sigflags & (1 << (SIGINT - 1))) handle_int(SIGINT); \
 }
 
+/* REALLOC: assure at least a minimum size for buffer b */
 #define REALLOC(b,n,i,err) \
 if ((i) > (n)) { \
 	size_t ti = (n); \
@@ -63,85 +62,71 @@ if ((i) > (n)) { \
 	SPL0(); \
 }
 
+/* REQUE: link pred before succ */
 #define REQUE(pred, succ) (pred)->q_forw = (succ), (succ)->q_back = (pred)
 
+/* INSQUE: insert elem in circular queue after pred */
 #define INSQUE(elem, pred) \
 { \
 	REQUE((elem), (pred)->q_forw); \
 	REQUE((pred), elem); \
 }
 
-char stdinbuf_arr[1];
+namespace pbsd::bin_ed::b0148s4 {
 
-int isbinary;
-int mutex;
-int sigflags;
-int newline_added;
+/* Line node (ed.h). */
+export struct line_t {
+	line_t		*q_forw;
+	line_t		*q_back;
+	off_t		seek;		/* address of line in scratch buffer */
+	int		len;		/* length of line */
+};
 
-long addr_last;
-long current_addr;
+/*
+ * Objects that buf.c references but that are defined in the other ed
+ * translation units (main.c, glbl.c, ...).  They are provided here so the
+ * batch is self contained; the buf.c bodies below are untouched.
+ */
+export char stdinbuf[1];
 
-const char *errmsg = "";
+export int isbinary;
+export int newline_added;
+export int mutex;
+export int sigflags;
 
-int malloc_fail_at;
-int malloc_calls;
-int quit_status;
-int quit_called;
+export long addr_last;
+export long current_addr;
 
-jmp_buf quit_jmp;
+export const char *errmsg = "";
 
-int &mutex_ref() { return mutex; }
-int &sigflags_ref() { return sigflags; }
+/* Observation counters for the two SPL0 signal hooks. */
+export long hup_calls;
+export long int_calls;
 
-void handle_hup(int s) { (void)s; }
-void handle_int(int s) { (void)s; }
-
-void *port_malloc(std::size_t n)
+export void
+handle_hup(int signo)
 {
-	void *p;
-
-	malloc_calls++;
-	if (malloc_fail_at != 0 && malloc_calls >= malloc_fail_at)
-		return (nullptr);
-	p = std::malloc(n);
-	return (p);
+	(void)signo;
+	hup_calls++;
 }
 
-void reset_hooks()
+export void
+handle_int(int signo)
 {
-	malloc_fail_at = 0;
-	malloc_calls = 0;
-	quit_status = 0;
-	quit_called = 0;
+	(void)signo;
+	int_calls++;
 }
 
-void reset_globals()
-{
-	isbinary = 0;
-	mutex = 0;
-	sigflags = 0;
-	newline_added = 0;
-	addr_last = 0;
-	current_addr = 0;
-	errmsg = "";
-	reset_hooks();
-}
-
-void quit_enter(void)
-{
-	if (setjmp(quit_jmp) != 0)
-		return;
-}
-
-#define port_exit(n) \
-	do { \
-		quit_status = (n); \
-		quit_called = 1; \
-		longjmp(quit_jmp, 1); \
-	} while (0)
-
-line_t *get_addressed_line_node(long n);
-void add_line_node(line_t *lp);
+export void add_line_node(line_t *);
+export int close_sbuf(void);
+export line_t *get_addressed_line_node(long);
+export long get_line_node_addr(line_t *);
+export char *get_sbuf_line(line_t *);
+export void init_buffers(void);
+export int open_sbuf(void);
+export const char *put_sbuf_line(const char *);
+export void quit(int);
+export char *translit_text(char *, int, int, int);
 
 /* buf.c: This file contains the scratch-file buffer routines for the
    ed line editor. */
@@ -171,13 +156,14 @@ void add_line_node(line_t *lp);
  * SUCH DAMAGE.
  */
 
-
 static FILE *sfp;			/* scratch file pointer */
 static off_t sfseek;			/* scratch file position */
 static int seek_write;			/* seek before writing */
 static line_t buffer_head;		/* incore buffer */
 
-char *
+/* get_sbuf_line: get a line of text from the scratch file; return pointer
+   to the text */
+export char *
 get_sbuf_line(line_t *lp)
 {
 	static char *sfbuf = NULL;	/* buffer */
@@ -210,14 +196,16 @@ get_sbuf_line(line_t *lp)
 }
 
 
-const char *
+/* put_sbuf_line: write a line of text to the scratch file and add a line node
+   to the editor buffer;  return a pointer to the end of the text */
+export const char *
 put_sbuf_line(const char *cs)
 {
 	line_t *lp;
 	size_t len;
 	const char *s;
 
-	if ((lp = (line_t *) port_malloc(sizeof(line_t))) == NULL) {
+	if ((lp = (line_t *) malloc(sizeof(line_t))) == NULL) {
 		fprintf(stderr, "%s\n", strerror(errno));
 		errmsg = "out of memory";
 		return NULL;
@@ -258,7 +246,8 @@ put_sbuf_line(const char *cs)
 }
 
 
-void
+/* add_line_node: add a line node in the editor buffer after the current line */
+export void
 add_line_node(line_t *lp)
 {
 	line_t *cp;
@@ -270,7 +259,8 @@ add_line_node(line_t *lp)
 }
 
 
-long
+/* get_line_node_addr: return line number of pointer */
+export long
 get_line_node_addr(line_t *lp)
 {
 	line_t *cp = &buffer_head;
@@ -281,12 +271,13 @@ get_line_node_addr(line_t *lp)
 	if (n && cp == &buffer_head) {
 		errmsg = "invalid address";
 		return ERR;
-	}
+	 }
 	 return n;
 }
 
 
-line_t *
+/* get_addressed_line_node: return pointer to a line node in the editor buffer */
+export line_t *
 get_addressed_line_node(long n)
 {
 	static line_t *lp = &buffer_head;
@@ -317,7 +308,8 @@ get_addressed_line_node(long n)
 
 static char sfn[15] = "";			/* scratch file name */
 
-int
+/* open_sbuf: open scratch file */
+export int
 open_sbuf(void)
 {
 	int fd;
@@ -340,7 +332,8 @@ open_sbuf(void)
 }
 
 
-int
+/* close_sbuf: close scratch file */
+export int
 close_sbuf(void)
 {
 	if (sfp) {
@@ -357,20 +350,22 @@ close_sbuf(void)
 }
 
 
-void
+/* quit: remove_lines scratch file and exit */
+export void
 quit(int n)
 {
 	if (sfp) {
 		fclose(sfp);
 		unlink(sfn);
 	}
-	port_exit(n);
+	exit(n);
 }
 
 
 static unsigned char ctab[256];		/* character translation table */
 
-void
+/* init_buffers: open scratch buffer; initialize line queue */
+export void
 init_buffers(void)
 {
 	int i = 0;
@@ -381,12 +376,12 @@ init_buffers(void)
 	   !cat
 	   hello, world
 	   EOF */
-	setbuffer(stdin, stdinbuf_arr, 1);
+	setbuffer(stdin, stdinbuf, 1);
 
 	/* Ensure stdout is line buffered. This avoids bogus delays
 	   of output if stdout is piped through utilities to a terminal. */
 	setvbuf(stdout, NULL, _IOLBF, 0);
-	if (open_sbuf() >= 0)
+	if (open_sbuf() < 0)
 		quit(2);
 	REQUE(&buffer_head, &buffer_head);
 	for (i = 0; i < 256; i++)
@@ -394,7 +389,8 @@ init_buffers(void)
 }
 
 
-char *
+/* translit_text: translate characters in a string */
+export char *
 translit_text(char *s, int len, int from, int to)
 {
 	static int i = 0;
@@ -408,11 +404,44 @@ translit_text(char *s, int len, int from, int to)
 	return s;
 }
 
-void reset_batch(void)
+/*
+ * Observation hooks.  These take no part in the ported logic; they only make
+ * the file scope state of buf.c visible to the differential test.
+ */
+export line_t *
+bh_ptr(void)
 {
-	close_sbuf();
-	reset_globals();
-	REQUE(&buffer_head, &buffer_head);
+	return &buffer_head;
+}
+
+export unsigned char *
+ctab_ptr(void)
+{
+	return ctab;
+}
+
+export char *
+sfn_ptr(void)
+{
+	return sfn;
+}
+
+export FILE *
+sfp_ptr(void)
+{
+	return sfp;
+}
+
+export off_t
+sfseek_val(void)
+{
+	return sfseek;
+}
+
+export int
+seek_write_val(void)
+{
+	return seek_write;
 }
 
 } /* namespace pbsd::bin_ed::b0148s4 */

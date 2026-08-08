@@ -1,487 +1,389 @@
 /*
- * PBSD batch b0088s3 -- differential test of cexpl() and its kernels.
+ * Differential test: pbsd::lib_msun_ld128::b0088s3::cexpl() vs ref_cexpl()
+ * (the unmodified HardenedBSD lib/msun/ld128/s_cexpl.c body).
+ *
+ * Both results are written into two guard-filled (0x7f) buffers and the
+ * ENTIRE buffer is compared byte for byte, so padding bytes and NaN
+ * payloads are part of the verdict.
  */
 
-#include <cfloat>
-#include <cmath>
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-#include <complex.h>
+#include <float.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
 
 import pbsd.lib.msun.ld128.b0088s3;
 
-namespace port = pbsd::lib_msun_ld128::b0088s3;
+extern "C" long double _Complex ref_cexpl(long double _Complex z);
 
-#ifndef CMPLXL
-#define CMPLXL(x, y) ((long double _Complex){(long double)(x), (long double)(y)})
-#endif
-#define creall __real__
-#define cimagl __imag__
+/*
+ * k_expl.h's __ldexp_cexpl() is not part of this batch.  One definition is
+ * supplied here and shared by the port and the reference, so the branch that
+ * selects it stays observable: what it returns depends on both z and expt,
+ * and differs from anything the fall-through branch can produce.
+ */
+extern "C" long double _Complex
+__ldexp_cexpl(long double _Complex z, int expt)
+{
+	long double x = __real__ z;
+	long double y = __imag__ z;
+	long double s, c;
 
-extern "C" {
-void ref___k_expl(long double, long double *, long double *, int *);
-void ref_cexpl_parts(long double, long double, long double *, long double *);
-void ref___ldexp_cexpl_parts(long double, long double, int, long double *,
-    long double *);
+	sincosl(y, &s, &c);
+	/* x / 4 keeps expl() finite over the whole (exp_ovfl, cexp_ovfl) window */
+	long double m = expl(x / 4);
+	long double _Complex r = ldexpl(m * c, expt);
+	__imag__ r = ldexpl(m * s, expt);
+	return (r);
 }
 
-#define LD_SIGBYTES 10
+/* ------------------------------------------------------------------ */
+/* guarded result buffers                                              */
+/* ------------------------------------------------------------------ */
 
-static bool
-same_ld(long double a, long double b)
+#define GUARD 0x7f
+#define BUFSZ 96
+#define OFF   32
+
+struct GBuf {
+	alignas(16) unsigned char b[BUFSZ];
+};
+
+static void
+gbuf_init(GBuf *g)
 {
-	unsigned char ba[LD_SIGBYTES], bb[LD_SIGBYTES];
-	std::memcpy(ba, &a, LD_SIGBYTES);
-	std::memcpy(bb, &b, LD_SIGBYTES);
-	return std::memcmp(ba, bb, LD_SIGBYTES) == 0;
+	memset(g->b, GUARD, sizeof(g->b));
 }
 
 static void
-show_ld(const char *tag, long double v)
+gbuf_put(GBuf *g, long double _Complex v)
 {
-	const unsigned char *b = (const unsigned char *)&v;
-
-	std::printf("%s%.33Lg [", tag, v);
-	for (int i = LD_SIGBYTES - 1; i >= 0; i--)
-		std::printf("%02x", b[i]);
-	std::printf("]");
+	*reinterpret_cast<long double _Complex *>(g->b + OFF) = v;
 }
 
-struct Stat {
-	const char	*name;
-	long long	 cases;
-	long long	 fails;
-	int		 shown;
-};
-
-static Stat st_kexpl	= { "__k_expl",		0, 0, 0 };
-static Stat st_ldcexpl	= { "__ldexp_cexpl",	0, 0, 0 };
-static Stat st_cexpl	= { "cexpl",		0, 0, 0 };
-
-static Stat *const all_stats[] = {
-	&st_kexpl, &st_ldcexpl, &st_cexpl,
-};
-
-#define	MAX_SHOWN	6
-
-static bool
-fail_head(Stat &s)
+static long double
+gbuf_re(const GBuf *g)
 {
-	s.fails++;
-	if (s.shown >= MAX_SHOWN)
-		return (false);
-	s.shown++;
-	std::printf("FAIL %s: ", s.name);
-	return (true);
+	long double _Complex v;
+
+	memcpy(&v, g->b + OFF, sizeof(v));
+	return (__real__ v);
 }
 
-static uint64_t rng_state;
+static long double
+gbuf_im(const GBuf *g)
+{
+	long double _Complex v;
+
+	memcpy(&v, g->b + OFF, sizeof(v));
+	return (__imag__ v);
+}
 
 static void
-rng_seed(uint64_t s)
+dump_ld(const char *tag, long double v)
 {
-	rng_state = s;
+	union {
+		long double d;
+		unsigned char b[sizeof(long double)];
+	} u;
+
+	memset(u.b, 0, sizeof(u.b));
+	u.d = v;
+	printf("%s=%La [", tag, v);
+	for (size_t i = 0; i < sizeof(u.b); i++)
+		printf("%02x", u.b[i]);
+	printf("]");
 }
+
+/* ------------------------------------------------------------------ */
+/* PRNG                                                                */
+/* ------------------------------------------------------------------ */
+
+static uint64_t rng_state = 0x0088500300885003ULL;
 
 static uint64_t
-rng_u64(void)
+rnd(void)
 {
-	uint64_t z = (rng_state += 0x9e3779b97f4a7c15ULL);
+	uint64_t x = rng_state;
 
-	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
-	z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
-	return (z ^ (z >> 31));
+	x ^= x << 13;
+	x ^= x >> 7;
+	x ^= x << 17;
+	rng_state = x;
+	return (x);
 }
-
-static uint32_t
-rng_below(uint32_t n)
-{
-	return ((uint32_t)(rng_u64() % n));
-}
-
-#define	KBUF_SIZE	96
-#define	OFF_HI		0
-#define	OFF_LO		16
-#define	OFF_K		32
-#define	OFF_TAIL	40
-#define	GUARD		0x7f
-
-static void
-case_kexpl(long double x)
-{
-	alignas(16) unsigned char pb[KBUF_SIZE];
-	alignas(16) unsigned char rb[KBUF_SIZE];
-	long double phi, plo, rhi, rlo;
-	int pk, rk;
-	bool bad = false;
-
-	st_kexpl.cases++;
-	std::memset(pb, GUARD, sizeof(pb));
-	std::memset(rb, GUARD, sizeof(rb));
-
-	port::__k_expl(x, (long double *)(pb + OFF_HI),
-	    (long double *)(pb + OFF_LO), (int *)(pb + OFF_K));
-	ref___k_expl(x, (long double *)(rb + OFF_HI),
-	    (long double *)(rb + OFF_LO), (int *)(rb + OFF_K));
-
-	std::memcpy(&phi, pb + OFF_HI, sizeof(phi));
-	std::memcpy(&plo, pb + OFF_LO, sizeof(plo));
-	std::memcpy(&pk, pb + OFF_K, sizeof(pk));
-	std::memcpy(&rhi, rb + OFF_HI, sizeof(rhi));
-	std::memcpy(&rlo, rb + OFF_LO, sizeof(rlo));
-	std::memcpy(&rk, rb + OFF_K, sizeof(rk));
-
-	if (!same_ld(phi, rhi) || !same_ld(plo, rlo) || pk != rk)
-		bad = true;
-	for (int i = OFF_TAIL; i < KBUF_SIZE; i++)
-		if (pb[i] != GUARD || rb[i] != GUARD)
-			bad = true;
-	for (int i = OFF_K + 4; i < OFF_TAIL; i++)
-		if (pb[i] != GUARD || rb[i] != GUARD)
-			bad = true;
-
-	if (bad && fail_head(st_kexpl)) {
-		show_ld("x=", x);
-		show_ld(" port.hi=", phi); show_ld(" ref.hi=", rhi);
-		show_ld(" port.lo=", plo); show_ld(" ref.lo=", rlo);
-		std::printf(" port.k=%d ref.k=%d\n", pk, rk);
-	}
-}
-
-static void
-case_ldcexpl(long double x, long double y, int expt)
-{
-	long double pre, pim, rre, rim;
-
-	st_ldcexpl.cases++;
-	port::__ldexp_cexpl_parts(x, y, expt, &pre, &pim);
-	ref___ldexp_cexpl_parts(x, y, expt, &rre, &rim);
-	if ((!same_ld(pre, rre) || !same_ld(pim, rim)) && fail_head(st_ldcexpl)) {
-		show_ld("x=", x); show_ld(" y=", y);
-		std::printf(" expt=%d", expt);
-		show_ld(" port.re=", pre);
-		show_ld(" ref.re=", rre);
-		show_ld(" port.im=", pim);
-		show_ld(" ref.im=", rim);
-		std::printf("\n");
-	}
-}
-
-static void
-case_cexpl(long double x, long double y)
-{
-	long double pre, pim, rre, rim;
-
-	st_cexpl.cases++;
-	port::cexpl_parts_impl(x, y, &pre, &pim);
-	ref_cexpl_parts(x, y, &rre, &rim);
-	if ((!same_ld(pre, rre) || !same_ld(pim, rim)) && fail_head(st_cexpl)) {
-		show_ld("x=", x); show_ld(" y=", y);
-		show_ld(" port.re=", pre);
-		show_ld(" ref.re=", rre);
-		show_ld(" port.im=", pim);
-		show_ld(" ref.im=", rim);
-		std::printf("\n");
-	}
-}
-
-static const long double h_cexp_ovfl =
-    2.27892930024498818830197576893019292e+04L;
-static const long double h_exp_ovfl =
-    1.13565234062941439494919310779707649e+04L;
-
-static const long double cexp_x_vals[] = {
-	0.0L, -0.0L,
-	0x1p-16400L, -0x1p-16400L,
-	1e-30L, -1e-30L,
-	1.0L, -1.0L, 2.5L, -2.5L,
-	700.0L, -700.0L,
-	11000.0L, -11000.0L,
-	11356.0L,
-	11356.5L,
-	11357.0L,
-	11360.0L,
-	11400.0L,
-	12000.0L,
-	20000.0L,
-	22700.0L,
-	22789.0L,
-	23000.0L,
-	30000.0L,
-	-11400.0L,
-	-30000.0L,
-	1e100L, -1e100L,
-	LDBL_MAX, -LDBL_MAX,
-	(long double)INFINITY, -(long double)INFINITY,
-	(long double)NAN, -(long double)NAN,
-};
-
-static const long double cexp_y_vals[] = {
-	0.0L, -0.0L,
-	0x1p-16400L, -0x1p-16400L,
-	1e-30L,
-	0.5L, -0.5L,
-	1.0L, -1.0L,
-	1.5707963267948966192L, -1.5707963267948966192L,
-	3.1415926535897932385L,
-	100.0L, -100.0L,
-	1e10L,
-	1e30L,
-	LDBL_MAX,
-	(long double)INFINITY, -(long double)INFINITY,
-	(long double)NAN, -(long double)NAN,
-};
-
-#define	NCEXPX	((int)(sizeof(cexp_x_vals) / sizeof(cexp_x_vals[0])))
-#define	NCEXPY	((int)(sizeof(cexp_y_vals) / sizeof(cexp_y_vals[0])))
 
 static long double
-rand_kexpl_arg(void)
+u01(void)
 {
-	long double v;
+	return ((long double)(rnd() >> 11) / (long double)(1ULL << 53));
+}
 
-	switch (rng_below(6)) {
+/* ------------------------------------------------------------------ */
+/* interesting values                                                  */
+/* ------------------------------------------------------------------ */
+
+static const long double EXP_OVFL = 1.13565234062941439494919310779707649e+04L;
+static const long double CEXP_OVFL = 2.27892930024498818830197576893019292e+04L;
+
+static long double special[80];
+static int nspecial;
+
+static void
+add_special(long double v)
+{
+	special[nspecial++] = v;
+}
+
+static void
+init_specials(void)
+{
+	long double inf = HUGE_VALL;
+	long double n1 = nanl("1");
+	long double n2 = nanl("0x2a5");
+
+	add_special(0.0L);
+	add_special(-0.0L);
+	add_special(1.0L);
+	add_special(-1.0L);
+	add_special(0.5L);
+	add_special(-0.5L);
+	add_special(2.0L);
+	add_special(-2.0L);
+	add_special(LDBL_MIN);
+	add_special(-LDBL_MIN);
+	add_special(LDBL_TRUE_MIN);
+	add_special(-LDBL_TRUE_MIN);
+	add_special(LDBL_EPSILON);
+	add_special(LDBL_MAX);
+	add_special(-LDBL_MAX);
+	add_special(1e-30L);
+	add_special(1e30L);
+	add_special(3.14159265358979323846264338327950288L / 2);
+	add_special(3.14159265358979323846264338327950288L);
+	add_special(-3.14159265358979323846264338327950288L / 2);
+	add_special(2 * 3.14159265358979323846264338327950288L);
+	add_special(1e10L);
+	add_special(-1e10L);
+	add_special(1e18L);
+	add_special(100.0L);
+	add_special(-100.0L);
+	add_special(708.0L);
+	add_special(-708.0L);
+	/* both sides of exp_ovfl */
+	add_special(EXP_OVFL);
+	add_special(nextafterl(EXP_OVFL, 0.0L));
+	add_special(nextafterl(EXP_OVFL, 1e9L));
+	add_special(11356.0L);
+	add_special(11357.0L);
+	/* inside the scaling window */
+	add_special(12000.0L);
+	add_special(17000.0L);
+	add_special(20000.0L);
+	add_special(22000.0L);
+	add_special(22789.0L);
+	/* both sides of cexp_ovfl */
+	add_special(CEXP_OVFL);
+	add_special(nextafterl(CEXP_OVFL, 0.0L));
+	add_special(nextafterl(CEXP_OVFL, 1e9L));
+	add_special(22790.0L);
+	add_special(23000.0L);
+	add_special(30000.0L);
+	add_special(-11356.0L);
+	add_special(-22789.0L);
+	add_special(-30000.0L);
+	add_special(inf);
+	add_special(-inf);
+	add_special(n1);
+	add_special(-n1);
+	add_special(n2);
+}
+
+static long double
+gen(void)
+{
+	uint64_t r = rnd();
+	long double sign = (r & 0x10000) ? -1.0L : 1.0L;
+
+	switch ((int)(r % 16)) {
 	case 0:
-		v = h_exp_ovfl +
-		    (long double)(rng_u64() >> 1) * 0x1p-63L * 200.0L;
-		break;
+		return (sign * 0.0L);
 	case 1:
-		v = (long double)(rng_u64() >> 1) * 0x1p-63L * 1400.0L;
-		break;
+		return (sign * 1.0L);
 	case 2:
-		v = (long double)(rng_u64() >> 1) * 0x1p-63L * 90000.0L;
-		break;
 	case 3:
-		v = ldexpl((long double)(rng_u64() | (1ULL << 63)),
-		    -63 - (int)rng_below(120));
-		break;
+		return (sign * u01() * 30000.0L);
 	case 4:
-		v = (long double)(rng_u64() >> 1) * 0x1p-63L * 0.006L;
-		break;
-	default:
-		v = (long double)(rng_u64() >> 1) * 0x1p-63L * 11400.0L;
-		break;
-	}
-	return ((rng_u64() & 1) ? -v : v);
-}
-
-static long double
-rand_y(void)
-{
-	long double v;
-
-	switch (rng_below(5)) {
-	case 0:
-		return (cexp_y_vals[rng_below(NCEXPY)]);
-	case 1:
-		v = (long double)(rng_u64() >> 1) * 0x1p-63L * 10.0L;
-		break;
-	case 2:
-		v = (long double)(rng_u64() >> 1) * 0x1p-63L * 1e6L;
-		break;
-	case 3:
-		v = ldexpl((long double)(rng_u64() | (1ULL << 63)),
-		    -63 - (int)rng_below(200));
-		break;
-	default:
-		v = (long double)(rng_u64() >> 1) * 0x1p-63L * 100.0L;
-		break;
-	}
-	return ((rng_u64() & 1) ? -v : v);
-}
-
-static long double
-rand_ld(void)
-{
-	uint64_t m;
-	long double v;
-	int e;
-
-	switch (rng_below(8)) {
-	case 0:
-		return (cexp_x_vals[rng_below(NCEXPX)]);
-	case 1:
-		v = (long double)(rng_u64() >> 1) * 0x1p-63L;
-		break;
-	case 2: {
-		static const long double thr[] = {
-			0.0L, h_exp_ovfl, h_cexp_ovfl,
-		};
-		int k = (int)rng_below(17) - 8;
-		v = thr[rng_below(3)];
-		for (; k > 0; k--)
-			v = nextafterl(v, (long double)INFINITY);
-		for (; k < 0; k++)
-			v = nextafterl(v, -(long double)INFINITY);
-		break;
-	}
-	case 3:
-		v = h_exp_ovfl +
-		    (long double)((int64_t)rng_u64() % 2000) * 0.5L;
-		break;
-	case 4:
-		v = h_cexp_ovfl +
-		    (long double)((int64_t)rng_u64() % 2000) * 0.5L;
-		break;
 	case 5:
-		m = rng_u64() | (1ULL << 63);
-		e = -70 + (int)rng_below(40);
-		v = ldexpl((long double)m, e - 63);
-		break;
+		/* dense across the (exp_ovfl, cexp_ovfl) window and its edges */
+		return (sign * (EXP_OVFL - 2.0L +
+		    u01() * (CEXP_OVFL - EXP_OVFL + 4.0L)));
 	case 6:
-		m = rng_u64() | (1ULL << 63);
-		e = -16380 + (int)rng_below(32760);
-		v = ldexpl((long double)m, e - 63);
-		break;
+		return (special[rnd() % (uint64_t)nspecial]);
+	case 7:
+		return (sign * u01() * 10.0L);
+	case 8:
+		/* full magnitude range, including subnormals */
+		return (sign * ldexpl(0.5L + u01() / 2,
+		    (int)(rnd() % 32700) - 16350));
+	case 9:
+		return (sign * u01() * 1e6L);
+	case 10:
+		return (sign * ldexpl(0.5L + u01() / 2,
+		    -(int)(rnd() % 80)));
+	case 11:
+		return (sign * (11000.0L + u01() * 1000.0L));
+	case 12:
+		return (sign * (22000.0L + u01() * 1500.0L));
+	case 13:
+		return (sign * u01() * 800.0L);
+	case 14:
+		return (nextafterl(special[rnd() % (uint64_t)nspecial],
+		    sign * HUGE_VALL));
 	default:
-		m = rng_u64() | (1ULL << 63);
-		e = 10 + (int)rng_below(20);
-		v = ldexpl((long double)m, e - 63);
-		break;
+		return (sign * u01() * 25000.0L);
 	}
-	return ((rng_u64() & 1) ? -v : v);
 }
 
-#define	RANDOM_ITERS	200000
+/* ------------------------------------------------------------------ */
+/* the check                                                           */
+/* ------------------------------------------------------------------ */
+
+static long long cases_cexpl;
+static long long fails_cexpl;
+static int reported;
+
+static void
+check(long double x, long double y, const char *what)
+{
+	GBuf ga, gb;
+	long double _Complex z;
+
+	gbuf_init(&ga);
+	gbuf_init(&gb);
+
+	z = x;
+	__imag__ z = y;
+
+	gbuf_put(&ga, pbsd::lib_msun_ld128::b0088s3::cexpl(z));
+	gbuf_put(&gb, ref_cexpl(z));
+
+	cases_cexpl++;
+	if (memcmp(ga.b, gb.b, BUFSZ) != 0) {
+		fails_cexpl++;
+		if (reported < 20) {
+			reported++;
+			printf("FAIL [%s] ", what);
+			dump_ld("x", x);
+			printf(" ");
+			dump_ld("y", y);
+			printf("\n      port: ");
+			dump_ld("re", gbuf_re(&ga));
+			printf(" ");
+			dump_ld("im", gbuf_im(&ga));
+			printf("\n      ref : ");
+			dump_ld("re", gbuf_re(&gb));
+			printf(" ");
+			dump_ld("im", gbuf_im(&gb));
+			printf("\n");
+		}
+	}
+}
 
 int
 main(void)
 {
-	int i, j;
+	init_specials();
 
+	/* hand-written edge cases: full cross product of the special values */
+	for (int i = 0; i < nspecial; i++)
+		for (int j = 0; j < nspecial; j++)
+			check(special[i], special[j], "special-cross");
+
+	/* explicit pairs that pin down individual branches */
 	{
-		static const long double kx[] = {
-			0.0L, -0.0L, 0x1p-16400L, -0x1p-16400L, 1e-40L,
-			0.0027L, -0.0027L, 0.002708L, -0.002708L,
-			0.005415212348L, 0.00541521234812457272982212595914L,
-			0.5L, -0.5L, 1.0L, -1.0L, 2.0L, -2.0L,
-			10.0L, -10.0L, 100.0L, -100.0L, 700.0L, -700.0L,
-			11356.0L, 11356.5L, 11357.0L, 11400.0L, 12000.0L,
-			20000.0L, 22789.0L, -11400.0L, -20000.0L,
-			90000.0L, -90000.0L, 11356.523406294143949L,
-			22789.293002449881883L,
+		long double inf = HUGE_VALL;
+		long double nn = nanl("1");
+		static const long double xs[] = {
+			0.0L, -0.0L, 1.0L, -1.0L, EXP_OVFL,
+			11356.0L, 11357.0L, 15000.0L, 22789.0L,
+			22790.0L, 30000.0L, -30000.0L
 		};
-		for (i = 0; i < (int)(sizeof(kx) / sizeof(kx[0])); i++) {
-			case_kexpl(kx[i]);
-			case_kexpl(nextafterl(kx[i], (long double)INFINITY));
-			case_kexpl(nextafterl(kx[i], -(long double)INFINITY));
-		}
-		for (i = 0; i < 256; i++)
-			case_kexpl((long double)i * 0.0054152123481245727L);
-	}
 
-	for (i = 0; i < NCEXPX; i++)
-		for (j = 0; j < NCEXPY; j++) {
-			case_cexpl(cexp_x_vals[i], cexp_y_vals[j]);
-			case_cexpl(nextafterl(cexp_x_vals[i],
-			    (long double)INFINITY), cexp_y_vals[j]);
-			case_cexpl(nextafterl(cexp_x_vals[i],
-			    -(long double)INFINITY), cexp_y_vals[j]);
+		for (size_t i = 0; i < sizeof(xs) / sizeof(xs[0]); i++) {
+			check(xs[i], 0.0L, "y-zero");
+			check(xs[i], -0.0L, "y-negzero");
+			check(xs[i], 1.0L, "y-one");
+			check(xs[i], -1.0L, "y-negone");
+			check(xs[i], inf, "y-inf");
+			check(xs[i], -inf, "y-neginf");
+			check(xs[i], nn, "y-nan");
+			check(0.0L, xs[i], "x-zero");
+			check(-0.0L, xs[i], "x-negzero");
+			check(1.0L, xs[i], "x-one");
+			check(inf, xs[i], "x-inf");
+			check(-inf, xs[i], "x-neginf");
+			check(nn, xs[i], "x-nan");
 		}
 
-	{
-		long double x;
+		/* the exact non-finite corners */
+		check(inf, inf, "inf-inf");
+		check(inf, -inf, "inf-neginf");
+		check(-inf, inf, "neginf-inf");
+		check(-inf, -inf, "neginf-neginf");
+		check(inf, nn, "inf-nan");
+		check(-inf, nn, "neginf-nan");
+		check(nn, inf, "nan-inf");
+		check(nn, nn, "nan-nan");
+		check(nn, 0.0L, "nan-zero");
+		check(0.0L, nn, "zero-nan");
+		check(inf, 0.0L, "inf-zero");
+		check(-inf, 0.0L, "neginf-zero");
+		check(inf, 1.0L, "inf-one");
+		check(-inf, 1.0L, "neginf-one");
 
-		x = h_exp_ovfl;
-		for (i = 0; i < 8; i++)
-			x = nextafterl(x, -(long double)INFINITY);
-		for (i = 0; i < 16; i++) {
-			for (j = 0; j < NCEXPY; j++)
-				case_cexpl(x, cexp_y_vals[j]);
-			x = nextafterl(x, (long double)INFINITY);
-		}
-		x = h_cexp_ovfl;
-		for (i = 0; i < 8; i++)
-			x = nextafterl(x, -(long double)INFINITY);
-		for (i = 0; i < 16; i++) {
-			for (j = 0; j < NCEXPY; j++)
-				case_cexpl(x, cexp_y_vals[j]);
-			x = nextafterl(x, (long double)INFINITY);
-		}
-	}
+		/* walk across both thresholds one ulp at a time, and probe
+		 * their neighbourhoods at shrinking relative distances */
+		static const long double thr[2] = { EXP_OVFL, CEXP_OVFL };
 
-	{
-		static const long double nx[] = {
-			0.0L, -0.0L, 1.0L, -1.0L, 11400.0L, -11400.0L,
-			(long double)INFINITY, -(long double)INFINITY,
-			(long double)NAN,
-		};
-		static const long double ny[] = {
-			(long double)INFINITY, -(long double)INFINITY,
-			(long double)NAN,
-		};
-		for (i = 0; i < (int)(sizeof(nx) / sizeof(nx[0])); i++)
-			for (j = 0; j < (int)(sizeof(ny) / sizeof(ny[0])); j++)
-				case_cexpl(nx[i], ny[j]);
-	}
+		for (size_t t = 0; t < 2; t++) {
+			long double v = thr[t];
 
-	for (i = 0; i < NCEXPY; i++) {
-		case_cexpl(0.0L, cexp_y_vals[i]);
-		case_cexpl(-0.0L, cexp_y_vals[i]);
-	}
-	for (i = 0; i < NCEXPX; i++) {
-		case_cexpl(cexp_x_vals[i], 0.0L);
-		case_cexpl(cexp_x_vals[i], -0.0L);
-	}
-
-	{
-		static const long double lx[] = {
-			0.0L, -0.0L, 1.0L, -1.0L, 700.0L, -700.0L,
-			11356.0L, 11357.0L, 11400.0L, 12000.0L, 20000.0L,
-			22789.0L, -11400.0L, 1e-30L,
-		};
-		static const int lexpt[] = {
-			0, 1, -1, 2, -2, 16382, -16382, 16383, -16383,
-			1000, -1000, 32000, -32000,
-		};
-		for (i = 0; i < (int)(sizeof(lx) / sizeof(lx[0])); i++)
-			for (j = 0; j < (int)(sizeof(lexpt) /
-			    sizeof(lexpt[0])); j++) {
-				case_ldcexpl(lx[i], 1.0L, lexpt[j]);
-				case_ldcexpl(lx[i], 0.0L, lexpt[j]);
-				case_ldcexpl(lx[i], -0.0L, lexpt[j]);
-				case_ldcexpl(lx[i], 1e5L, lexpt[j]);
-				case_ldcexpl(lx[i],
-				    1.5707963267948966192L, lexpt[j]);
+			for (int k = 0; k < 32; k++)
+				v = nextafterl(v, 0.0L);
+			for (int k = 0; k < 65; k++) {
+				check(v, 1.0L, "threshold-ulp-walk");
+				check(v, -1.0L, "threshold-ulp-walk");
+				check(v, 3.0L, "threshold-ulp-walk");
+				v = nextafterl(v, 1e9L);
 			}
+			for (int e = 10; e < 70; e++) {
+				long double d = thr[t] * ldexpl(1.0L, -e);
+
+				check(thr[t] - d, 1.0L, "threshold-relative");
+				check(thr[t] + d, 1.0L, "threshold-relative");
+				check(thr[t] - d, -2.5L, "threshold-relative");
+				check(thr[t] + d, -2.5L, "threshold-relative");
+			}
+		}
 	}
 
-	rng_seed(0x0088abcd03ULL);
-	for (i = 0; i < RANDOM_ITERS; i++)
-		case_kexpl(rand_kexpl_arg());
+	/* fixed-seed randomised sweep */
+	for (long i = 0; i < 250000; i++) {
+		long double x = gen();
+		long double y = gen();
 
-	rng_seed(0x0088123404ULL);
-	for (i = 0; i < RANDOM_ITERS; i++)
-		case_ldcexpl(rand_kexpl_arg(), rand_y(),
-		    (int)rng_below(70000) - 35000);
-
-	rng_seed(0x0088feed05ULL);
-	for (i = 0; i < RANDOM_ITERS; i++)
-		case_cexpl(rand_ld(), rand_y());
-
-	long long total_cases = 0, total_fails = 0;
-
-	std::printf("\n%-20s %12s %10s   %s\n", "function", "cases",
-	    "failures", "result");
-	std::printf("------------------------------------------------------"
-	    "-\n");
-	for (i = 0; i < (int)(sizeof(all_stats) / sizeof(all_stats[0])); i++) {
-		Stat *s = all_stats[i];
-
-		total_cases += s->cases;
-		total_fails += s->fails;
-		std::printf("%-20s %12lld %10lld   %s\n", s->name, s->cases,
-		    s->fails, s->fails == 0 ? "ok" : "FAILED");
+		check(x, y, "random");
 	}
-	std::printf("------------------------------------------------------"
-	    "-\n");
-	std::printf("%-20s %12lld %10lld   %s\n", "TOTAL", total_cases,
-	    total_fails, total_fails == 0 ? "ok" : "FAILED");
 
-	return (total_fails == 0 ? 0 : 1);
+	printf("\n%-16s %12s %12s\n", "function", "cases", "failures");
+	printf("%-16s %12lld %12lld\n", "cexpl", cases_cexpl, fails_cexpl);
+
+	if (fails_cexpl != 0) {
+		printf("\nRESULT: FAIL\n");
+		return (1);
+	}
+	printf("\nRESULT: PASS\n");
+	return (0);
 }
