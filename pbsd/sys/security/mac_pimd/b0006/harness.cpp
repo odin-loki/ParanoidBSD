@@ -140,12 +140,16 @@ run_case(const char *phase, bool set_enabled, int enabled, bool set_uidvar,
 		report(phase, port::pimd_enabled, port::pimd_uid, cr_uid, priv,
 		    pr, orr, "arena bytes");
 	}
-	/* The globals must not have been disturbed by either callee. */
+	/*
+	 * The two sysctl variables must agree afterwards: neither callee may
+	 * disturb them, and in the pristine phase where nothing wrote them a
+	 * disagreement means a static initialiser differs.
+	 */
 	if (port::pimd_enabled != pimd_enabled ||
 	    port::pimd_uid != pimd_uid) {
 		bad = true;
 		report(phase, port::pimd_enabled, port::pimd_uid, cr_uid, priv,
-		    pr, orr, "global state");
+		    pr, orr, "global state divergence");
 	}
 
 	if (bad)

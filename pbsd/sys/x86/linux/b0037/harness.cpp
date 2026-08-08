@@ -42,7 +42,7 @@ static const unsigned int AMDID_RDTSCP = 0x08000000;
 static const unsigned int CPUID_STDEXT_FSGSBASE = 0x00000001;
 static const unsigned int CPUID_STDEXT2_RDPID = 0x00400000;
 
-static const int LINUX_SIGBUS = P::SIGBUS;
+static const int LINUX_SIGBUS = 10;
 
 struct Stat {
 	const char *name;

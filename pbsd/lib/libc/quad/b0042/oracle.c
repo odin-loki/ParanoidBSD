@@ -34,68 +34,67 @@
  */
 
 /*
- * Port of:
+ * Reference oracle for batch b0042: the concatenated originals of
+ *
  *	lib/libc/quad/floatdisf.c
  *	lib/libc/quad/ashrdi3.c
  *	lib/libc/quad/fixunsdfdi.c
  *	lib/libc/quad/fixunssfdi.c
+ *
+ * each of which carries the identical copyright notice reproduced above,
+ * as does the private header lib/libc/quad/quad.h that they all include.
+ * The only edits are the `ref_' prefix on each function name and the
+ * preamble below, which supplies the declarations "quad.h" would have
+ * supplied.  No function body has been touched.
  */
 
-module;
+#include <limits.h>
+#include <stdint.h>
 
-#include <climits>
-#include <cstdint>
-
-export module pbsd.lib.libc.quad.b0042;
-
-export namespace pbsd::lib_libc_quad::b0042 {
+/* ------------------------------------------------------------------ */
+/* lib/libc/quad/quad.h, and the <sys/types.h> names it relies on.    */
+/* ------------------------------------------------------------------ */
 
 typedef long long quad_t;
 typedef unsigned long long u_quad_t;
 
-} // namespace pbsd::lib_libc_quad::b0042
-
-namespace pbsd::lib_libc_quad::b0042 {
-
-typedef std::int32_t quad_long;
-typedef std::uint32_t quad_u_long;
+typedef int32_t quad_long;
+typedef uint32_t quad_u_long;
 typedef unsigned long u_long;
 
 union uu {
-	quad_t	q;
-	quad_t	uq;
-	quad_long	sl[2];
-	quad_u_long	ul[2];
+	quad_t	q;		/* as a (signed) quad */
+	quad_t	uq;		/* as an unsigned quad */
+	quad_long	sl[2];	/* as two signed longs */
+	quad_u_long	ul[2];	/* as two unsigned longs */
 };
 
 #if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
     __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-inline constexpr int H = 0;
-inline constexpr int L = 1;
+#define	H		0	/* _QUAD_HIGHWORD */
+#define	L		1	/* _QUAD_LOWWORD */
 #else
-inline constexpr int H = 1;
-inline constexpr int L = 0;
+#define	H		1	/* _QUAD_HIGHWORD */
+#define	L		0	/* _QUAD_LOWWORD */
 #endif
 
-inline constexpr int QUAD_BITS = sizeof(quad_t) * CHAR_BIT;
-inline constexpr int LONG_BITS = sizeof(quad_long) * CHAR_BIT;
-inline constexpr int HALF_BITS = sizeof(quad_long) * CHAR_BIT / 2;
+#define	QUAD_BITS	(sizeof(quad_t) * CHAR_BIT)
+#define	LONG_BITS	(sizeof(quad_long) * CHAR_BIT)
+#define	HALF_BITS	(sizeof(quad_long) * CHAR_BIT / 2)
 
-typedef unsigned int qshift_t;
+typedef unsigned int	qshift_t;
 
-#define	ONE_FOURTH	(1L << (LONG_BITS - 2))
-#define	ONE_HALF	(ONE_FOURTH * 2.0)
-#define	ONE		(ONE_FOURTH * 4.0)
+#define	UQUAD_MAX	(~(u_quad_t)0)
 
-} // namespace pbsd::lib_libc_quad::b0042
-
-export namespace pbsd::lib_libc_quad::b0042 {
+/* ------------------------------------------------------------------ */
+/* lib/libc/quad/floatdisf.c                                          */
+/* ------------------------------------------------------------------ */
 
 /*
  * Convert (signed) quad to float.
  */
 float
-__floatdisf(quad_t x)
+ref___floatdisf(quad_t x)
 {
 	float f;
 	union uu u;
@@ -124,17 +123,21 @@ __floatdisf(quad_t x)
 	return (neg ? -f : f);
 }
 
+/* ------------------------------------------------------------------ */
+/* lib/libc/quad/ashrdi3.c                                            */
+/* ------------------------------------------------------------------ */
+
 /*
  * Shift a (signed) quad value right (arithmetic shift right).
  */
 quad_t
-__ashrdi3(quad_t a, qshift_t shift)
+ref___ashrdi3(quad_t a, qshift_t shift)
 {
 	union uu aa;
 
 	aa.q = a;
 	if (shift >= LONG_BITS) {
-		quad_long s;
+		long s;
 
 		/*
 		 * Smear bits rightward using the machine's right-shift
@@ -155,25 +158,33 @@ __ashrdi3(quad_t a, qshift_t shift)
 	return (aa.q);
 }
 
+/* ------------------------------------------------------------------ */
+/* lib/libc/quad/fixunsdfdi.c                                         */
+/* ------------------------------------------------------------------ */
+
+#define	ONE_FOURTH	(1L << (LONG_BITS - 2))
+#define	ONE_HALF	(ONE_FOURTH * 2.0)
+#define	ONE		(ONE_FOURTH * 4.0)
+
 /*
  * Convert double to (unsigned) quad.
  * Not sure what to do with negative numbers---for now, anything out
  * of range becomes UQUAD_MAX.
  */
 u_quad_t
-__fixunsdfdi(double x)
+ref___fixunsdfdi(double x)
 {
 	double toppart;
 	union uu t;
 
 	if (x < 0)
-		return (~(u_quad_t)0);	/* ??? should be 0?  ERANGE??? */
+		return (UQUAD_MAX);	/* ??? should be 0?  ERANGE??? */
 #ifdef notdef				/* this falls afoul of a GCC bug */
 	if (x >= UQUAD_MAX)
 		return (UQUAD_MAX);
 #else					/* so we wire in 2^64-1 instead */
 	if (x >= 18446744073709551615.0)
-		return (~(u_quad_t)0);
+		return (UQUAD_MAX);
 #endif
 	/*
 	 * Get the upper part of the result.  Note that the divide
@@ -204,6 +215,10 @@ __fixunsdfdi(double x)
 	return (t.uq);
 }
 
+/* ------------------------------------------------------------------ */
+/* lib/libc/quad/fixunssfdi.c                                         */
+/* ------------------------------------------------------------------ */
+
 /*
  * Convert float to (unsigned) quad.  We do most of our work in double,
  * out of sheer paranoia.
@@ -214,19 +229,19 @@ __fixunsdfdi(double x)
  * N.B.: must use new ANSI syntax (sorry).
  */
 u_quad_t
-__fixunssfdi(float f)
+ref___fixunssfdi(float f)
 {
 	double x, toppart;
 	union uu t;
 
 	if (f < 0)
-		return (~(u_quad_t)0);	/* ??? should be 0?  ERANGE??? */
+		return (UQUAD_MAX);	/* ??? should be 0?  ERANGE??? */
 #ifdef notdef				/* this falls afoul of a GCC bug */
 	if (f >= UQUAD_MAX)
 		return (UQUAD_MAX);
 #else					/* so we wire in 2^64-1 instead */
 	if (f >= 18446744073709551615.0)
-		return (~(u_quad_t)0);
+		return (UQUAD_MAX);
 #endif
 	x = f;
 	/*
@@ -257,5 +272,3 @@ __fixunssfdi(float f)
 	t.ul[L] = (u_long)x;
 	return (t.uq);
 }
-
-} // namespace pbsd::lib_libc_quad::b0042

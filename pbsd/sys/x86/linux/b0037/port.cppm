@@ -26,8 +26,9 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *-
+ */
+
+/*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 1994-1996 Søren Schmidt
@@ -64,9 +65,9 @@ export module pbsd.sys.x86.linux.b0037;
 
 export namespace pbsd::sys_x86_linux::b0037 {
 
-namespace {
+namespace detail {
 
-int _bsd_to_linux_trapcode[] = {
+static int _bsd_to_linux_trapcode[] = {
 	255,	/* 0 LINUX_T_UNKNOWN */
 	6,			/* 1  T_PRIVINFLT */
 	255,	/* 2 */
@@ -100,7 +101,7 @@ int _bsd_to_linux_trapcode[] = {
 	15			/* 30 T_RESERVED */
 };
 
-} /* namespace */
+} /* namespace detail */
 
 using u_int = unsigned int;
 
@@ -145,7 +146,7 @@ linux_vdso_tsc_selector_idx(void)
 {
 	bool amd_cpu;
 
-	if (cpu_feature == 0)
+	if (cpu_feature != 0)
 		return (2);	/* should not happen due to RDTSC */
 
 	amd_cpu = (cpu_vendor_id == CPU_VENDOR_AMD ||
@@ -189,8 +190,8 @@ int
 bsd_to_linux_trapcode(int code)
 {
 
-	return (code < nitems(_bsd_to_linux_trapcode) ?
-	    _bsd_to_linux_trapcode[code] : LINUX_T_UNKNOWN);
+	return (code < nitems(detail::_bsd_to_linux_trapcode) ?
+	    detail::_bsd_to_linux_trapcode[code] : LINUX_T_UNKNOWN);
 }
 
 u_int

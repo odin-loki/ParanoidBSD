@@ -123,7 +123,7 @@ ndaysj(date *dt)
 {
 	date    idt;		/* Internal date representation */
 
-	if (date2idt(&idt, dt) == nullptr)
+	if (date2idt(&idt, dt) == 0)
 		return (-1);
 	else
 		return (ndaysji(&idt));
@@ -202,7 +202,7 @@ ndaysg(date *dt)
 {
 	date    idt;		/* Internal date representation */
 
-	if (date2idt(&idt, dt) == nullptr)
+	if (date2idt(&idt, dt) == 0)
 		return (-1);
 	return (ndaysgi(&idt));
 }
@@ -323,7 +323,7 @@ date2idt(date *idt, date *dt)
 		idt->y = dt->y - 1;
 	}
 	if (idt->m < 0 || idt->m > 11 || idt->y < 0)
-		return (nullptr);
+		return (0);
 	else
 		return idt;
 }
@@ -342,7 +342,7 @@ idt2date(date *dt, date *idt)
 		dt->y = idt->y + 1;
 	}
 	if (dt->m < 1)
-		return (nullptr);
+		return (0);
 	else
 		return (dt);
 }
