@@ -13,16 +13,31 @@ module;
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
-#include <wchar.h>
+
+#ifndef MB_CUR_MAX
+#define MB_CUR_MAX 4
+#endif
 
 export module pbsd.lib.libc.locale.b0153s4;
+
+#define __mbstate_t_defined 1
+typedef union {
+	char		__mbstate8[128];
+	long long	_mbstateL;
+} __mbstate_t;
+typedef __mbstate_t mbstate_t;
+
+#include <wchar.h>
 
 #ifndef MIN
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
 export namespace pbsd::lib_libc_locale::b0153s4 {
+
+using ::mbstate_t;
 
 typedef int __ct_rune_t;
 typedef __ct_rune_t __rune_t;
@@ -115,11 +130,8 @@ typedef size_t (*wcrtomb_pfn_t)(char * __restrict, wchar_t,
  */
 
 /*
- * _GB2312_init() sets l->__mb_cur_max = 2, i.e. MB_CUR_MAX is 2 for every
- * caller of the functions below.
+ * _GB2312_init() sets l->__mb_cur_max = 2.
  */
-#undef MB_CUR_MAX
-#define MB_CUR_MAX 2
 
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX 4

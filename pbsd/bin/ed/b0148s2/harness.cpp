@@ -23,6 +23,7 @@ extern const char *errmsg;
 extern int oracle_malloc_fail_at;
 extern int oracle_malloc_calls;
 void oracle_reset_batch(void);
+void oracle_inject_orphan_udel(long addr);
 void *ref_push_undo_stack(int, long, long);
 int ref_pop_undo_stack(void);
 void ref_clear_undo_stack(void);
@@ -150,6 +151,28 @@ void enable_undo_port(long ca, long al)
 	port::u_addr_last = al;
 }
 
+int undo_type_rand()
+{
+	int ty = (int)(rnd() % 4);
+	if (ty == 1)
+		ty = 0;
+	return ty;
+}
+
+void push_pair_ref(int ty, long f, long t)
+{
+	ref_push_undo_stack(ty, f, t);
+	if (ty == 2 || ty == 3)
+		ref_push_undo_stack(ty, f, t);
+}
+
+void push_pair_port(int ty, long f, long t)
+{
+	port::push_undo_stack(ty, f, t);
+	if (ty == 2 || ty == 3)
+		port::push_undo_stack(ty, f, t);
+}
+
 void test_push_undo_stack()
 {
 	Stat &st = reg("push_undo_stack");
@@ -196,10 +219,8 @@ void test_push_undo_stack()
 		add_lines_port(5);
 		enable_undo_ref(3, 5);
 		enable_undo_port(3, 5);
-		ref_push_undo_stack(type, from, to);
-		port::push_undo_stack(type, from, to);
-		ref_push_undo_stack(type, from, to);
-		port::push_undo_stack(type, from, to);
+		push_pair_ref(type, from, to);
+		push_pair_port(type, from, to);
 		int rp = ref_pop_undo_stack();
 		int pp = port::pop_undo_stack();
 		st.cases++;
@@ -211,7 +232,7 @@ void test_push_undo_stack()
 
 	run_pair(2, 1, 3);
 	run_pair(3, 2, 4);
-#if 0
+
 	for (long i = 0; i < RANDOM_ITERS / 3; i++) {
 		int type = (int)(rnd() % 5);
 		long from = rndl() % 6;
@@ -227,10 +248,8 @@ void test_push_undo_stack()
 			add_lines_port(5);
 			enable_undo_ref(3, 5);
 			enable_undo_port(3, 5);
-			ref_push_undo_stack(type, from, to);
-			port::push_undo_stack(type, from, to);
-			ref_push_undo_stack(type, from, to);
-			port::push_undo_stack(type, from, to);
+			push_pair_ref(type, from, to);
+			push_pair_port(type, from, to);
 			int rp = ref_pop_undo_stack();
 			int pp = port::pop_undo_stack();
 			st.cases++;
@@ -242,9 +261,7 @@ void test_push_undo_stack()
 			run(type, from, to, mfail);
 		}
 	}
-#endif
 
-#if 0
 	for (long i = 0; i < 150; i++) {
 		reset_both();
 		if (!scratch_both())
@@ -255,8 +272,8 @@ void test_push_undo_stack()
 		enable_undo_ref(n, n);
 		enable_undo_port(n, n);
 		for (int j = 0; j < 105; j++) {
-			void *ru = ref_push_undo_stack((int)(rnd() % 4), 1, n);
-			void *pu = port::push_undo_stack((int)(rnd() % 4), 1, n);
+			void *ru = ref_push_undo_stack(undo_type_rand(), 1, n);
+			void *pu = port::push_undo_stack(undo_type_rand(), 1, n);
 			st.cases++;
 			if ((ru == nullptr) != (pu == nullptr))
 				st.fails++;
@@ -264,7 +281,6 @@ void test_push_undo_stack()
 		ref_close_sbuf();
 		port::close_sbuf();
 	}
-#endif
 }
 
 void test_pop_undo_stack()
@@ -294,12 +310,8 @@ void test_pop_undo_stack()
 			int ty = i % 4;
 			long f = 1 + (i % 3);
 			long t = 2 + (i % 3);
-			ref_push_undo_stack(ty, f, t);
-			port::push_undo_stack(ty, f, t);
-			if (ty == 2 || ty == 3) {
-				ref_push_undo_stack(ty, f, t);
-				port::push_undo_stack(ty, f, t);
-			}
+			push_pair_ref(ty, f, t);
+			push_pair_port(ty, f, t);
 		}
 		int rp = ref_pop_undo_stack();
 		int pp = port::pop_undo_stack();
@@ -342,12 +354,8 @@ void test_pop_undo_stack()
 			int ty = (int)(rnd() % 5);
 			long f = rndl() % (n + 1);
 			long t = rndl() % (n + 1);
-			ref_push_undo_stack(ty, f, t);
-			port::push_undo_stack(ty, f, t);
-			if (ty == 2 || ty == 3) {
-				ref_push_undo_stack(ty, f, t);
-				port::push_undo_stack(ty, f, t);
-			}
+			push_pair_ref(ty, f, t);
+			push_pair_port(ty, f, t);
 		}
 		int rp = ref_pop_undo_stack();
 		int pp = port::pop_undo_stack();
@@ -363,7 +371,7 @@ void test_clear_undo_stack()
 {
 	Stat &st = reg("clear_undo_stack");
 
-	auto run = [&](int pushes) {
+	auto run = [&](int pushes, bool orphan) {
 		reset_both();
 		if (!scratch_both())
 			return;
@@ -372,13 +380,14 @@ void test_clear_undo_stack()
 		enable_undo_ref(3, 5);
 		enable_undo_port(3, 5);
 		for (int i = 0; i < pushes; i++) {
-			int ty = (int)(rnd() % 4);
-			ref_push_undo_stack(ty, 1, 3);
-			port::push_undo_stack(ty, 1, 3);
-			if (ty == 2 || ty == 3) {
-				ref_push_undo_stack(ty, 1, 3);
-				port::push_undo_stack(ty, 1, 3);
-			}
+			int ty = undo_type_rand();
+			push_pair_ref(ty, 1, 3);
+			push_pair_port(ty, 1, 3);
+		}
+		if (orphan && addr_last > 1) {
+			long a = 1 + (long)(rnd() % addr_last);
+			oracle_inject_orphan_udel(a);
+			port::inject_orphan_udel(a);
 		}
 		ref_clear_undo_stack();
 		port::clear_undo_stack();
@@ -389,15 +398,16 @@ void test_clear_undo_stack()
 		port::close_sbuf();
 	};
 
-	run(0);
-	run(1);
-	run(3);
-	run(6);
-	run(10);
+	run(0, false);
+	run(1, false);
+	run(3, false);
+	run(6, true);
+	run(10, true);
 
 	for (long i = 0; i < RANDOM_ITERS / 3; i++) {
 		int pushes = (int)(rnd() % 15);
-		run(pushes);
+		int orphan = (int)(rnd() & 1);
+		run(pushes, orphan);
 	}
 }
 
@@ -405,13 +415,9 @@ void test_clear_undo_stack()
 
 int main()
 {
-#if 0
 	test_push_undo_stack();
-#endif
 	test_pop_undo_stack();
-#if 0
 	test_clear_undo_stack();
-#endif
 
 	std::printf("PBSD batch b0148s2 differential test\n\n");
 	std::printf("%-28s %12s %12s %10s\n", "function", "cases", "failures",

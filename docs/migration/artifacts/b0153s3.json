@@ -1,0 +1,10 @@
+{
+  "batch": "b0153s3",
+  "verified": "2026-08-08T22:17:54Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/2: __part_load_locale)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                      cases     failures\nsplit_lines                  200009            0\n__part_load_locale           200015            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/ldpart.c": "7b6dc53b72cba6df"
+  }
+}

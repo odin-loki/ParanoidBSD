@@ -88,6 +88,9 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/db/btree/b0151/port.cppm
   lib/libc/db/btree/b0155/port.cppm
   lib/libc/db/btree/b0155s1/port.cppm
+  lib/libc/db/btree/b0155s2/port.cppm
+  lib/libc/db/btree/b0155s3/port.cppm
+  lib/libc/db/btree/b0155s4/port.cppm
   lib/libc/db/db/b0157/port.cppm
   lib/libc/db/hash/b0133/port.cppm
   lib/libc/db/hash/hash_log2_m/port.cppm
@@ -175,6 +178,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0153s3/port.cppm
   lib/libc/locale/b0153s4/port.cppm
   lib/libc/locale/b0156/port.cppm
+  lib/libc/locale/b0156s2/port.cppm
+  lib/libc/locale/b0156s3/port.cppm
   lib/libc/locale/b0159/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm

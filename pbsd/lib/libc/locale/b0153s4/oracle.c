@@ -18,6 +18,14 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+
+#define __mbstate_t_defined 1
+typedef union {
+	char		__mbstate8[128];
+	long long	_mbstateL;
+} __mbstate_t;
+typedef __mbstate_t mbstate_t;
+
 #include <wchar.h>
 
 #ifndef u_char

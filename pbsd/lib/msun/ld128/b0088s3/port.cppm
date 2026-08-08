@@ -22,17 +22,15 @@ export namespace pbsd::lib_msun_ld128::b0088s3 {
 
 /* ld128 IEEEl2bits (binary128) */
 union IEEEl2bits {
-	long double e;
+	long double	e;
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
-		unsigned int exp :15;
-		unsigned int sign :1;
+		unsigned long long	man	:64;
+		unsigned int		exp	:15;
+		unsigned int		sign	:1;
 	} bits;
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
-		unsigned int expsign :16;
+		unsigned long long	man	:64;
+		unsigned int		expsign	:16;
 	} xbits;
 };
 
@@ -48,35 +46,6 @@ union IEEEl2bits {
 	se_u.e = (d);				\
 	se_u.xbits.expsign = (v);		\
 	(d) = se_u.e;				\
-} while (0)
-
-typedef union {
-	float value;
-	unsigned int word;
-} ieee_float_shape_type;
-
-#define SET_FLOAT_WORD(d,i) do {		\
-	ieee_float_shape_type sf_u;		\
-	sf_u.word = (i);			\
-	(d) = sf_u.value;			\
-} while (0)
-
-#define FFLOORL128(x, ai, ar) do {			\
-	union IEEEl2bits u;				\
-	uint64_t m;					\
-	int e;						\
-	u.e = (x);					\
-	e = u.bits.exp - 16383;				\
-	if (e < 48) {					\
-		m = ((1llu << 49) - 1) >> (e + 1);	\
-		u.bits.manh &= ~m;			\
-		u.bits.manl = 0;			\
-	} else {					\
-		m = (uint64_t)-1 >> (e - 48);		\
-		u.bits.manl &= ~m;			\
-	}						\
-	(ai) = u.e;					\
-	(ar) = (x) - (ai);				\
 } while (0)
 
 static inline double rnint(double x)
@@ -349,37 +318,6 @@ __k_expl(long double x, long double *hip, long double *lop, int *kp)
 	t = tbl[n2].lo + tbl[n2].hi;
 	*hip = tbl[n2].hi;
 	*lop = tbl[n2].lo + t * (q + r1);
-}
-
-/*
- * XXX: the rest of the functions are identical for ld80 and ld128.
- * However, we should use scalbnl() for ld128, since long double
- * multiplication was very slow on sparc64 and no new evaluation has
- * been made for aarch64 and/or riscv.
- */
-
-static inline void
-k_hexpl(long double x, long double *hip, long double *lop)
-{
-	float twopkm1;
-	int k;
-
-	__k_expl(x, hip, lop, &k);
-	SET_FLOAT_WORD(twopkm1, 0x3f800000 + ((k - 1) << 23));
-	*hip *= twopkm1;
-	*lop *= twopkm1;
-}
-
-static inline long double
-hexpl(long double x)
-{
-	long double hi, lo, twopkm2;
-	int k;
-
-	twopkm2 = 1;
-	__k_expl(x, &hi, &lo, &k);
-	SET_LDBL_EXPSIGN(twopkm2, BIAS + k - 2);
-	return (lo + hi) * 2 * twopkm2;
 }
 
 /*

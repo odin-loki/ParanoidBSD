@@ -358,7 +358,7 @@ typedef struct _btree {
 	u_int32_t bt_psize;
 	indx_t	  bt_ovflsize;
 	int	  bt_lorder;
-	enum _bt_order bt_order;
+	enum { NOT, BACK, FORWARD } bt_order;
 	EPGNO	  bt_last;
 
 	int	(*bt_cmp)(const DBT *, const DBT *);
@@ -400,15 +400,6 @@ typedef struct _btree {
 	u_int32_t flags;
 } BTREE;
 
-/* Support routines the batch calls but that live outside it. */
-int	 __bt_cmp(BTREE *, const DBT *, EPG *);
-EPG	*__bt_search(BTREE *, const DBT *, int *);
-int	 __bt_split(BTREE *, PAGE *, const DBT *, const DBT *, int,
-	    u_int32_t, indx_t);
-int	 __ovfl_put(BTREE *, const DBT *, pgno_t *);
-int	 __bt_dleaf(BTREE *, const DBT *, PAGE *, u_int);
-void	 __bt_setcur(BTREE *, pgno_t, u_int);
-
 #ifdef __cplusplus
 }
 #endif
@@ -416,6 +407,121 @@ void	 __bt_setcur(BTREE *, pgno_t, u_int);
 /* ===================================================================== *
  * END SHARED DECLARATION BLOCK                                          *
  * ===================================================================== */
+
+
+#define MAX_POOL 64
+
+typedef struct {
+	unsigned get_calls, put_calls, new_calls, delete_calls;
+	unsigned search_calls, split_calls, ovfl_put_calls, ovfl_del_calls;
+	unsigned cmp_calls, dleaf_calls, setcur_calls;
+	int get_force_null, search_force_null;
+	int split_ret, ovfl_put_ret, dleaf_ret;
+	int search_exact, cmp_ret;
+	int split_force_error;
+	pgno_t get_last_pgno, ovfl_pgno;
+	unsigned get_last_flags, last_put_flags;
+	void *last_put_page;
+	int nreg;
+	pgno_t reg_pgno[MAX_POOL];
+	void *reg_page[MAX_POOL];
+	EPG search_epg;
+} test_mock_state;
+
+test_mock_state test_mock;
+
+void test_mock_reset(void)
+{
+	memset(&test_mock, 0, sizeof(test_mock));
+	test_mock.split_ret = RET_SUCCESS;
+	test_mock.ovfl_put_ret = RET_SUCCESS;
+	test_mock.dleaf_ret = RET_SUCCESS;
+	test_mock.ovfl_pgno = 200;
+}
+
+void test_mock_register(pgno_t pgno, void *page)
+{
+	if (test_mock.nreg < MAX_POOL) {
+		test_mock.reg_pgno[test_mock.nreg] = pgno;
+		test_mock.reg_page[test_mock.nreg] = page;
+		test_mock.nreg++;
+	}
+}
+
+void *mpool_get(MPOOL *mp, pgno_t pgno, u_int flags)
+{
+	int i;
+	(void)mp;
+	test_mock.get_calls++;
+	test_mock.get_last_pgno = pgno;
+	test_mock.get_last_flags = flags;
+	if (test_mock.get_force_null)
+		return (NULL);
+	for (i = 0; i < test_mock.nreg; i++)
+		if (test_mock.reg_pgno[i] == pgno)
+			return (test_mock.reg_page[i]);
+	return (NULL);
+}
+
+int mpool_put(MPOOL *mp, void *page, u_int flags)
+{
+	(void)mp;
+	test_mock.put_calls++;
+	test_mock.last_put_page = page;
+	test_mock.last_put_flags = flags;
+	return (RET_SUCCESS);
+}
+
+EPG *__bt_search(BTREE *t, const DBT *key, int *exact)
+{
+	(void)t; (void)key;
+	test_mock.search_calls++;
+	if (test_mock.search_force_null)
+		return (NULL);
+	*exact = test_mock.search_exact;
+	return (&test_mock.search_epg);
+}
+
+int __bt_cmp(BTREE *t, const DBT *key, EPG *ep)
+{
+	(void)t; (void)key; (void)ep;
+	test_mock.cmp_calls++;
+	return (test_mock.cmp_ret);
+}
+
+int __bt_split(BTREE *t, PAGE *h, const DBT *key, const DBT *data,
+    int dflags, u_int32_t nbytes, indx_t idx)
+{
+	(void)t; (void)h; (void)key; (void)data; (void)dflags; (void)nbytes; (void)idx;
+	test_mock.split_calls++;
+	if (test_mock.split_force_error)
+		return (RET_ERROR);
+	return (test_mock.split_ret);
+}
+
+int __ovfl_put(BTREE *t, const DBT *dbt, pgno_t *pg)
+{
+	(void)t; (void)dbt;
+	test_mock.ovfl_put_calls++;
+	if (test_mock.ovfl_put_ret == RET_ERROR)
+		return (RET_ERROR);
+	*pg = test_mock.ovfl_pgno++;
+	return (RET_SUCCESS);
+}
+
+int __bt_dleaf(BTREE *t, const DBT *key, PAGE *h, u_int idx)
+{
+	(void)t; (void)key; (void)h; (void)idx;
+	test_mock.dleaf_calls++;
+	return (test_mock.dleaf_ret);
+}
+
+void __bt_setcur(BTREE *t, pgno_t pgno, u_int idx)
+{
+	(void)t; (void)pgno; (void)idx;
+	test_mock.setcur_calls++;
+}
+
 
 /*
  * Rename map.  Renaming through the preprocessor renames the definitions

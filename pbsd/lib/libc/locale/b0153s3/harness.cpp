@@ -226,10 +226,7 @@ run_part_load(const char *name, const char *category, int maxl, int minl,
 	if (!chk_int(f, pr, rr))
 		return (false);
 	if (pr != expect) {
-		if (nprinted[f]++ < 8)
-			std::printf("  FAIL %-22s : code pr=%d rr=%d expect=%d pe=%d re=%d\n",
-			    fname[f], pr, rr, expect, pe, re);
-		nfail[f]++;
+		report(f, "code");
 		return (false);
 	}
 	if (pe != re) {
@@ -380,26 +377,25 @@ sweep_part_load()
 		int minl = 1 + (int)u32(maxl);
 		int expect = LDP_ERROR;
 
-		if (!ldhook().open_fail && !ldhook().fstat_fail &&
-		    !ldhook().malloc_fail && !ldhook().read_fail &&
-		    ldhook().file_size > 0 && content[pos - 1] == '\n') {
-			if (std::strcmp(name, "C") == 0 ||
-			    std::strcmp(name, "POSIX") == 0 ||
-			    std::strncmp(name, "C.", 2) == 0)
-				expect = LDP_CACHE;
-			else {
-				int nl = 0;
-				for (size_t j = 0; j < (size_t)pos; j++)
-					if (content[j] == '\n')
-						nl++;
-				if (nl >= minl)
-					expect = LDP_LOADED;
-			}
-		}
-
-		if (std::strcmp(name, "cached") == 0 && expect == LDP_LOADED &&
+		if (std::strcmp(name, "C") == 0 ||
+		    std::strcmp(name, "POSIX") == 0 ||
+		    std::strncmp(name, "C.", 2) == 0) {
+			expect = LDP_CACHE;
+		} else if (std::strcmp(name, "cached") == 0 &&
 		    cache_p != nullptr) {
 			expect = LDP_CACHE;
+		} else if (!ldhook().open_fail && !ldhook().fstat_fail &&
+		    !ldhook().malloc_fail && !ldhook().read_fail &&
+		    ldhook().file_size > 0 && content[pos - 1] == '\n') {
+			int nl = 0;
+			for (size_t j = 0; j < (size_t)pos; j++)
+				if (content[j] == '\n')
+					nl++;
+			if (nl >= minl)
+				expect = LDP_LOADED;
+		}
+
+		if (std::strcmp(name, "cached") == 0 && cache_p != nullptr) {
 			run_part_load(name, "LC_FAKE", maxl, minl, expect,
 			    &cache_p, &cache_r);
 			continue;

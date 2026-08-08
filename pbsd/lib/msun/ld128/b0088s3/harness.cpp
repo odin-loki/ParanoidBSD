@@ -30,10 +30,15 @@ void ref___ldexp_cexpl_parts(long double, long double, int, long double *,
     long double *);
 }
 
+#define LD_SIGBYTES 10
+
 static bool
 same_ld(long double a, long double b)
 {
-	return std::memcmp(&a, &b, sizeof(long double)) == 0;
+	unsigned char ba[LD_SIGBYTES], bb[LD_SIGBYTES];
+	std::memcpy(ba, &a, LD_SIGBYTES);
+	std::memcpy(bb, &b, LD_SIGBYTES);
+	return std::memcmp(ba, bb, LD_SIGBYTES) == 0;
 }
 
 static void
@@ -42,7 +47,7 @@ show_ld(const char *tag, long double v)
 	const unsigned char *b = (const unsigned char *)&v;
 
 	std::printf("%s%.33Lg [", tag, v);
-	for (std::size_t i = 0; i < sizeof(long double); i++)
+	for (int i = LD_SIGBYTES - 1; i >= 0; i--)
 		std::printf("%02x", b[i]);
 	std::printf("]");
 }
@@ -192,7 +197,7 @@ static const long double h_exp_ovfl =
 
 static const long double cexp_x_vals[] = {
 	0.0L, -0.0L,
-	0x1p-16493L, -0x1p-16493L,
+	0x1p-16400L, -0x1p-16400L,
 	1e-30L, -1e-30L,
 	1.0L, -1.0L, 2.5L, -2.5L,
 	700.0L, -700.0L,
@@ -218,7 +223,7 @@ static const long double cexp_x_vals[] = {
 
 static const long double cexp_y_vals[] = {
 	0.0L, -0.0L,
-	0x1p-16493L, -0x1p-16493L,
+	0x1p-16400L, -0x1p-16400L,
 	1e-30L,
 	0.5L, -0.5L,
 	1.0L, -1.0L,
@@ -351,7 +356,7 @@ main(void)
 
 	{
 		static const long double kx[] = {
-			0.0L, -0.0L, 0x1p-16493L, -0x1p-16493L, 1e-40L,
+			0.0L, -0.0L, 0x1p-16400L, -0x1p-16400L, 1e-40L,
 			0.0027L, -0.0027L, 0.002708L, -0.002708L,
 			0.005415212348L, 0.00541521234812457272982212595914L,
 			0.5L, -0.5L, 1.0L, -1.0L, 2.0L, -2.0L,

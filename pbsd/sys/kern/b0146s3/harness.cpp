@@ -13,8 +13,8 @@ namespace port = pbsd::sys_kern::b0146s3;
 #define SWEEP     200000L
 #define MAX_PRINT 12
 
-#define HASH_WAITOK 0x00000001
-#define HASH_NOWAIT 0x00000002
+#define HASH_NOWAIT 0x00000001
+#define HASH_WAITOK 0x00000002
 
 struct stat_row {
 	const char *name;

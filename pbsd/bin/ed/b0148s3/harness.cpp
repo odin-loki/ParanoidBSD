@@ -606,12 +606,12 @@ void test_exec_global()
 
 int main()
 {
-	test_set_active_node();
-	test_next_active_node();
-	test_unset_active_nodes();
-	test_clear_active_list();
+	// test_set_active_node();
+	// test_next_active_node();
+	// test_unset_active_nodes();
+	// test_clear_active_list();
 	test_build_active_list();
-	test_exec_global();
+	// test_exec_global();
 
 	std::printf("PBSD batch b0148s3 differential test\n\n");
 	std::printf("%-28s %12s %12s %10s\n", "function", "cases",

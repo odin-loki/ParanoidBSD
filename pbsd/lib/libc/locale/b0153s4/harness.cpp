@@ -9,9 +9,10 @@ import pbsd.lib.libc.locale.b0153s4;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cwchar>
 
 namespace P = pbsd::lib_libc_locale::b0153s4;
+
+using port_mbstate_t = P::mbstate_t;
 
 extern "C" {
 typedef union {
@@ -50,6 +51,7 @@ typedef struct {
 } ref_rune_locale;
 
 struct ref_xlocale_ctype {
+	ref_rune_locale	*runes;
 	size_t		(*__mbrtowc)(wchar_t *, const char *, size_t,
 		    ref_mbstate_t *);
 	int		(*__mbsinit)(const ref_mbstate_t *);
@@ -58,7 +60,6 @@ struct ref_xlocale_ctype {
 	size_t		(*__wcrtomb)(char *, wchar_t, ref_mbstate_t *);
 	size_t		(*__wcsnrtombs)(char *, const wchar_t **, size_t, size_t,
 		    ref_mbstate_t *);
-	ref_rune_locale	*runes;
 	int		__mb_cur_max;
 	int		__mb_sb_limit;
 };
@@ -140,21 +141,21 @@ chk_ret(int f, size_t pv, size_t rv, int perrno, int rerrno)
 }
 
 static void
-mb_copy(const mbstate_t &s, ref_mbstate_t &d)
+mb_copy(const port_mbstate_t &s, ref_mbstate_t &d)
 {
 	std::memset(&d, 0, sizeof(d));
 	std::memcpy(&d, &s, sizeof(ref_mbstate_t));
 }
 
 static void
-mb_copy(const ref_mbstate_t &s, mbstate_t &d)
+mb_copy(const ref_mbstate_t &s, port_mbstate_t &d)
 {
 	std::memset(&d, 0, sizeof(d));
 	std::memcpy(&d, &s, sizeof(ref_mbstate_t));
 }
 
 static bool
-mb_eq(const mbstate_t &a, const ref_mbstate_t &b)
+mb_eq(const port_mbstate_t &a, const ref_mbstate_t &b)
 {
 	return (std::memcmp(&a, &b, sizeof(ref_mbstate_t)) == 0);
 }
@@ -173,7 +174,7 @@ fill_wguard(wchar_t *b, size_t n)
 }
 
 static void
-set_gb_state(mbstate_t &s, int count, unsigned char b0 = 0, unsigned char b1 = 0)
+set_gb_state(port_mbstate_t &s, int count, unsigned char b0 = 0, unsigned char b1 = 0)
 {
 	unsigned char buf[128]{};
 
@@ -213,7 +214,7 @@ test_gb2312_init(int f)
 static void
 test_gb2312_mbsinit(int f)
 {
-	mbstate_t ps{};
+	port_mbstate_t ps{};
 	ref_mbstate_t rs{};
 
 	chk_int(f, P::GB2312_mbsinit(nullptr), ref__GB2312_mbsinit(nullptr));
@@ -273,7 +274,7 @@ sweep_gb_check(int f)
 template<typename MbrFn, typename RefMbrFn>
 static bool
 run_mbr(int f, MbrFn fn, RefMbrFn ref_fn, const char *s, size_t n,
-    mbstate_t &ps, ref_mbstate_t &rs, bool null_pwc)
+    port_mbstate_t &ps, ref_mbstate_t &rs, bool null_pwc)
 {
 	wchar_t pw{}, rw{};
 	int pe, re;
@@ -301,7 +302,7 @@ template<typename MbrFn, typename RefMbrFn>
 static void
 edge_mbr(int f, MbrFn fn, RefMbrFn ref_fn)
 {
-	mbstate_t ps{};
+	port_mbstate_t ps{};
 	ref_mbstate_t rs{};
 	char buf[8];
 
@@ -358,7 +359,7 @@ sweep_mbr(int f, MbrFn fn, RefMbrFn ref_fn)
 	char in[16];
 
 	for (long long i = 0; i < SWEEP; i++) {
-		mbstate_t ps{};
+		port_mbstate_t ps{};
 		ref_mbstate_t rs{};
 		size_t len = u32(8) + 1;
 		bool null_pwc = (u32(2) == 0);
@@ -394,7 +395,7 @@ sweep_mbr(int f, MbrFn fn, RefMbrFn ref_fn)
 
 template<typename WctFn, typename RefWctFn>
 static bool
-run_wct(int f, WctFn fn, RefWctFn ref_fn, wchar_t wc, mbstate_t &ps,
+run_wct(int f, WctFn fn, RefWctFn ref_fn, wchar_t wc, port_mbstate_t &ps,
     ref_mbstate_t &rs, bool null_out)
 {
 	int pe, re;
@@ -425,7 +426,7 @@ template<typename WctFn, typename RefWctFn>
 static void
 edge_wct(int f, WctFn fn, RefWctFn ref_fn)
 {
-	mbstate_t ps{};
+	port_mbstate_t ps{};
 	ref_mbstate_t rs{};
 
 	run_wct(f, fn, ref_fn, L'a', ps, rs, true);
@@ -443,7 +444,7 @@ static void
 sweep_wct(int f, WctFn fn, RefWctFn ref_fn)
 {
 	for (long long i = 0; i < SWEEP; i++) {
-		mbstate_t ps{};
+		port_mbstate_t ps{};
 		ref_mbstate_t rs{};
 		wchar_t wc = (wchar_t)(rnd() & 0xffff);
 		bool null_out = (u32(5) == 0);
@@ -464,7 +465,7 @@ run_mbs(int f, MbsFn fn, RefMbsFn ref_fn, const char *bytes, size_t nms,
 	char in_p[64], in_r[64];
 	wchar_t out_p[32], out_r[32];
 	const char *sp, *sr;
-	mbstate_t ps_p{}, ps_r{};
+	port_mbstate_t ps_p{}, ps_r{};
 	ref_mbstate_t rs_p{}, rs_r{};
 	int pe, re;
 
@@ -540,7 +541,7 @@ run_wcs(int f, WcsFn fn, RefWcsFn ref_fn, const wchar_t *wcs, size_t nwc,
 	unsigned char out_p[64], out_r[64];
 	wchar_t in_p[32], in_r[32];
 	const wchar_t *sp, *sr;
-	mbstate_t ps_p{}, ps_r{};
+	port_mbstate_t ps_p{}, ps_r{};
 	ref_mbstate_t rs_p{}, rs_r{};
 	int pe, re;
 	size_t wlen = 0;

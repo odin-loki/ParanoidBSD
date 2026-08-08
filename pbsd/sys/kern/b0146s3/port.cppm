@@ -16,8 +16,8 @@ using u_long = unsigned long;
 #define M_NOWAIT 0x0001
 #define M_WAITOK 0x0002
 
-#define HASH_WAITOK 0x00000001
-#define HASH_NOWAIT 0x00000002
+#define HASH_NOWAIT 0x00000001
+#define HASH_WAITOK 0x00000002
 
 #define LIST_HEAD(name, type)						\
 struct name {								\
@@ -99,8 +99,8 @@ using u_long = unsigned long;
 
 #define M_NOWAIT 0x0001
 #define M_WAITOK 0x0002
-#define HASH_WAITOK 0x00000001
-#define HASH_NOWAIT 0x00000002
+#define HASH_NOWAIT 0x00000001
+#define HASH_WAITOK 0x00000002
 
 struct generic_list_head {
 	struct detail::generic *lh_first;

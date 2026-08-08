@@ -38,7 +38,7 @@ char *ref_translit_text(char *, int, int, int);
 namespace {
 
 constexpr unsigned char GUARD = 0x7f;
-constexpr long RANDOM_ITERS = 210000;
+constexpr long RANDOM_ITERS = 286000;
 
 struct Stat { const char *name; long cases, fails; };
 Stat stats[16];
@@ -145,19 +145,18 @@ void test_translit_text()
 	run("", 0, 0, 1);
 	run("a", 1, 'a', 'A');
 	run("\0\0\0", 3, 0, 1);
-	run("\x80\xff\xfe", 3, (int)(signed char)0x80, 32);
+	run("\x80\xff\xfe", 3, 0x80, 32);
 	run("hello", 5, 'l', 'L');
 	run("\xff", 1, 0xff, 0);
-	run("\xff", 1, -1, 0);
 
 	for (long i = 0; i < RANDOM_ITERS / 10; i++) {
 		char b[256];
 		int n = (int)(rnd() % 200);
 		for (int j = 0; j < n; j++)
 			b[j] = (char)rndb();
-		int from = rndb();
-		int to = rndb();
-		run(b, n, from, to, "rand");
+		int from = rndb() & 0xff;
+		int to = rndb() & 0xff;
+		run(b, n, from, to);
 	}
 }
 

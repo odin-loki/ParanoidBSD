@@ -317,6 +317,47 @@ void discard_undo_stack(void)
 	u_addr_last = -1;
 }
 
+static undo_t *
+push_undo_nodes(int type, line_t *h, line_t *t)
+{
+	undo_t *tp;
+
+#if defined(sun) || defined(NO_REALLOC_NULL)
+	if (ustack == NULL &&
+	    (ustack = (undo_t *) malloc((usize = USIZE) * sizeof(undo_t))) == NULL) {
+		fprintf(stderr, "%s\n", strerror(errno));
+		errmsg = "out of memory";
+		return NULL;
+	}
+#endif
+	tp = ustack;
+	if (u_p < usize ||
+	    (tp = (undo_t *) realloc(ustack, (usize += USIZE) * sizeof(undo_t))) != NULL) {
+		ustack = tp;
+		ustack[u_p].type = type;
+		ustack[u_p].h = h;
+		ustack[u_p].t = t;
+		return ustack + u_p++;
+	}
+	fprintf(stderr, "%s\n", strerror(errno));
+	errmsg = "out of memory";
+	clear_undo_stack();
+	free(ustack);
+	ustack = NULL;
+	usize = 0;
+	return NULL;
+}
+
+void inject_orphan_udel(long n)
+{
+	line_t *lp;
+
+	lp = get_addressed_line_node(n);
+	REQUE(lp->q_back, lp->q_forw);
+	addr_last--;
+	push_undo_nodes(UDEL, lp, lp);
+}
+
 static line_t **active_list;
 static long active_last;
 static long active_size;

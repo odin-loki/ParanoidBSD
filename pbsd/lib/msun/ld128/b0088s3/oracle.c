@@ -16,23 +16,22 @@
 #include <float.h>
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
 /* ------------------------------------------------------------------ */
 /* <machine/_fpmath.h> ld128 (binary128)				*/
 /* ------------------------------------------------------------------ */
 
 union IEEEl2bits {
-	long double e;
+	long double	e;
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
-		unsigned int exp :15;
-		unsigned int sign :1;
+		unsigned long long	man	:64;
+		unsigned int		exp	:15;
+		unsigned int		sign	:1;
 	} bits;
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
-		unsigned int expsign :16;
+		unsigned long long	man	:64;
+		unsigned int		expsign	:16;
 	} xbits;
 };
 
@@ -441,12 +440,10 @@ void
 ref_cexpl_parts(long double x, long double y, long double *re, long double *im)
 {
 	long double complex z;
-	const unsigned char *p;
 
 	z = cexpl(CMPLXL(x, y));
-	p = (const unsigned char *)&z;
-	memcpy(re, p, sizeof(*re));
-	memcpy(im, p + sizeof(*re), sizeof(*im));
+	*re = creall(z);
+	*im = cimagl(z);
 }
 
 void
@@ -454,10 +451,8 @@ ref___ldexp_cexpl_parts(long double x, long double y, int expt,
     long double *re, long double *im)
 {
 	long double complex z;
-	const unsigned char *p;
 
 	z = __ldexp_cexpl(CMPLXL(x, y), expt);
-	p = (const unsigned char *)&z;
-	memcpy(re, p, sizeof(*re));
-	memcpy(im, p + sizeof(*re), sizeof(*im));
+	*re = creall(z);
+	*im = cimagl(z);
 }
