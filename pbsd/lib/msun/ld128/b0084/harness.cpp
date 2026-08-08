@@ -146,11 +146,11 @@ mkld128(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl)
 	union {
 		long double e;
 		struct {
-			std::uint64_t manl;
-			std::uint64_t manh;
-			std::uint16_t expsign;
+			unsigned long manl : 64;
+			unsigned long manh : 48;
+			unsigned int expsign : 16;
 		} x;
-	} u;
+	} u = {};
 
 	u.x.manl = manl;
 	u.x.manh = manh;
@@ -284,8 +284,8 @@ edge_cases_math()
 	std::size_t i;
 
 	for (i = 0; i < sizeof(ldvec) / sizeof(ldvec[0]); ++i) {
-		long double x = mkld128(ldvec[i].manl, ldvec[i].manh,
-		    ldvec[i].expsign);
+		long double x = mkld128(ldvec[i].expsign, ldvec[i].manh,
+		    ldvec[i].manl);
 		check_expl(x, "ldvec");
 		check_expm1l(x, "ldvec");
 		check_lgammal_r(x, "ldvec");

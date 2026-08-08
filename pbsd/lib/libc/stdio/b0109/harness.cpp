@@ -414,25 +414,28 @@ swprintf_cmp(StatId which, const char *label, GuardedWBuf &rb, GuardedWBuf &pb,
 	return ok;
 }
 
-#define SWPRINTF_CASE(which, loc, use_l, label, fmt, ...)                      \
-	do {                                                                       \
-		GuardedWBuf rb, pb;                                                    \
-		rb.fill_guard();                                                       \
-		pb.fill_guard();                                                       \
-		int rr, rp;                                                            \
-		if (use_l) {                                                           \
-			rr = ref_swprintf_l(rb.user(), GuardedWBuf::WUSER + 1, loc,     \
-			    fmt, ##__VA_ARGS__);                                     \
-			rp = port::swprintf_l(pb.user(), GuardedWBuf::WUSER + 1, loc,  \
-			    fmt, ##__VA_ARGS__);                                     \
-		} else {                                                               \
-			rr = ref_swprintf(rb.user(), GuardedWBuf::WUSER + 1, fmt,      \
-			    ##__VA_ARGS__);                                          \
-			rp = port::swprintf(pb.user(), GuardedWBuf::WUSER + 1, fmt,    \
-			    ##__VA_ARGS__);                                          \
-		}                                                                      \
-		swprintf_cmp(which, label, rb, pb, rr, rp);                           \
-	} while (0)
+template <typename... Args>
+void
+swprintf_do_case(StatId which, locale_t loc, int use_l, const char *label,
+    const wchar_t *fmt, Args... args)
+{
+	GuardedWBuf rb, pb;
+	int rr, rp;
+
+	rb.fill_guard();
+	pb.fill_guard();
+	if (use_l) {
+		rr = ref_swprintf_l(rb.user(), GuardedWBuf::WUSER + 1, loc, fmt,
+		    args...);
+		rp = port::swprintf_l(pb.user(), GuardedWBuf::WUSER + 1, loc, fmt,
+		    args...);
+	} else {
+		rr = ref_swprintf(rb.user(), GuardedWBuf::WUSER + 1, fmt, args...);
+		rp = port::swprintf(pb.user(), GuardedWBuf::WUSER + 1, fmt,
+		    args...);
+	}
+	swprintf_cmp(which, label, rb, pb, rr, rp);
+}
 
 void
 run_swprintf_edges(StatId which, locale_t loc, int use_l)
@@ -442,23 +445,23 @@ run_swprintf_edges(StatId which, locale_t loc, int use_l)
 	static const wchar_t whi[] = { (wchar_t)0x80, (wchar_t)0xff, 0 };
 	static const wchar_t wnul[] = { L'a', L'\0', L'b', 0 };
 
-	SWPRINTF_CASE(which, loc, use_l, "empty", L"");
-	SWPRINTF_CASE(which, loc, use_l, "pct", L"%%");
-	SWPRINTF_CASE(which, loc, use_l, "int0", L"%d", 0);
-	SWPRINTF_CASE(which, loc, use_l, "int-1", L"%d", -1);
-	SWPRINTF_CASE(which, loc, use_l, "intmax", L"%d", INT_MAX);
-	SWPRINTF_CASE(which, loc, use_l, "intmin", L"%d", INT_MIN);
-	SWPRINTF_CASE(which, loc, use_l, "char", L"%c", L'Z');
-	SWPRINTF_CASE(which, loc, use_l, "charhi", L"%c", (wchar_t)0xff);
-	SWPRINTF_CASE(which, loc, use_l, "str", L"%ls", ws);
-	SWPRINTF_CASE(which, loc, use_l, "strempty", L"%ls", wempty);
-	SWPRINTF_CASE(which, loc, use_l, "strhi", L"%ls", whi);
-	SWPRINTF_CASE(which, loc, use_l, "strnul", L"%ls", wnul);
-	SWPRINTF_CASE(which, loc, use_l, "width", L"%5d", 42);
-	SWPRINTF_CASE(which, loc, use_l, "hex", L"%x", 0xdead);
-	SWPRINTF_CASE(which, loc, use_l, "n0", L"%d", 7);
-	SWPRINTF_CASE(which, loc, use_l, "n1", L"%d", 1);
-	SWPRINTF_CASE(which, loc, use_l, "mix", L"%d %ls %c", 7, ws, L'!');
+	swprintf_do_case(which, loc, use_l, "empty", L"");
+	swprintf_do_case(which, loc, use_l, "pct", L"%%");
+	swprintf_do_case(which, loc, use_l, "int0", L"%d", 0);
+	swprintf_do_case(which, loc, use_l, "int-1", L"%d", -1);
+	swprintf_do_case(which, loc, use_l, "intmax", L"%d", INT_MAX);
+	swprintf_do_case(which, loc, use_l, "intmin", L"%d", INT_MIN);
+	swprintf_do_case(which, loc, use_l, "char", L"%c", L'Z');
+	swprintf_do_case(which, loc, use_l, "charhi", L"%c", (wchar_t)0xff);
+	swprintf_do_case(which, loc, use_l, "str", L"%ls", ws);
+	swprintf_do_case(which, loc, use_l, "strempty", L"%ls", wempty);
+	swprintf_do_case(which, loc, use_l, "strhi", L"%ls", whi);
+	swprintf_do_case(which, loc, use_l, "strnul", L"%ls", wnul);
+	swprintf_do_case(which, loc, use_l, "width", L"%5d", 42);
+	swprintf_do_case(which, loc, use_l, "hex", L"%x", 0xdead);
+	swprintf_do_case(which, loc, use_l, "n0", L"%d", 7);
+	swprintf_do_case(which, loc, use_l, "n1", L"%d", 1);
+	swprintf_do_case(which, loc, use_l, "mix", L"%d %ls %c", 7, ws, L'!');
 }
 
 void
@@ -474,36 +477,36 @@ run_swprintf_random(StatId which, locale_t loc, int use_l)
 		std::snprintf(label, sizeof(label), "rnd%u", i);
 		switch (kind) {
 		case 0:
-			SWPRINTF_CASE(which, loc, use_l, label, L"%d", rnd_i32());
+			swprintf_do_case(which, loc, use_l, label, L"%d", rnd_i32());
 			break;
 		case 1:
-			SWPRINTF_CASE(which, loc, use_l, label, L"%c",
+			swprintf_do_case(which, loc, use_l, label, L"%c",
 			    (wchar_t)(rnd_u32() & 0xffff));
 			break;
 		case 2:
 			for (std::size_t j = 0; j < 8; j++)
 				str[j] = (wchar_t)(rnd_u32() & 0xff);
 			str[8] = 0;
-			SWPRINTF_CASE(which, loc, use_l, label, L"%ls", str);
+			swprintf_do_case(which, loc, use_l, label, L"%ls", str);
 			break;
 		case 3:
-			SWPRINTF_CASE(which, loc, use_l, label, L"%%");
+			swprintf_do_case(which, loc, use_l, label, L"%%");
 			break;
 		case 4:
-			SWPRINTF_CASE(which, loc, use_l, label, L"");
+			swprintf_do_case(which, loc, use_l, label, L"");
 			break;
 		case 5:
-			SWPRINTF_CASE(which, loc, use_l, label, L"%#x",
+			swprintf_do_case(which, loc, use_l, label, L"%#x",
 			    rnd_i32());
 			break;
 		case 6:
-			SWPRINTF_CASE(which, loc, use_l, label, L"%d %d",
+			swprintf_do_case(which, loc, use_l, label, L"%d %d",
 			    rnd_i32(), rnd_i32());
 			break;
 		default:
 			std::swprintf(fmt, 32, L"%%%du",
 			    (int)(rnd_u32() % 20));
-			SWPRINTF_CASE(which, loc, use_l, label, fmt, rnd_i32());
+			swprintf_do_case(which, loc, use_l, label, fmt, rnd_i32());
 			break;
 		}
 	}

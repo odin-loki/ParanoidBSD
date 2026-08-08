@@ -6,6 +6,10 @@
  * caller buffer (guard bytes included) are compared.
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <climits>
 #include <cstdarg>
 #include <cstdint>

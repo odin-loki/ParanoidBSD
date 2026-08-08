@@ -285,10 +285,76 @@ setup_write(WriteCoreR &r, WriteCoreP &p, std::size_t max_write, int fail)
 	p.fp._flags = __SWR;
 }
 
+static bool
+ptr_in_buf(const unsigned char *p, const unsigned char *buf, std::size_t cap)
+{
+	return p >= buf && p < buf + cap;
+}
+
+bool
+fp_fields_eq(const ref_FILE &r, const P::FILE &p)
+{
+	if (r._r != p._r)
+		return false;
+	if (r._w != p._w)
+		return false;
+	if (r._flags != p._flags)
+		return false;
+	if (r._file != p._file)
+		return false;
+	if (r._bf._size != p._bf._size)
+		return false;
+	if (r._lbfsize != p._lbfsize)
+		return false;
+	if (r._ur != p._ur)
+		return false;
+	if (r._blksize != p._blksize)
+		return false;
+	if (r._offset != p._offset)
+		return false;
+	if (r._orientation != p._orientation)
+		return false;
+	if (r._flags2 != p._flags2)
+		return false;
+	if (std::memcmp(&r._mbstate, &p._mbstate, sizeof(mbstate_t)) != 0)
+		return false;
+	if (std::memcmp(r._ubuf, p._ubuf, sizeof(r._ubuf)) != 0)
+		return false;
+	if (std::memcmp(r._nbuf, p._nbuf, sizeof(r._nbuf)) != 0)
+		return false;
+	if (r._read != p._read)
+		return false;
+	if (r._write != p._write)
+		return false;
+	if (r._seek != p._seek)
+		return false;
+	if (r._close != p._close)
+		return false;
+	return true;
+}
+
 bool
 read_core_eq(const ReadCoreR &r, const ReadCoreP &p)
 {
-	if (std::memcmp(&r.fp, &p.fp, sizeof(r.fp)) != 0)
+	if (!fp_fields_eq(r.fp, p.fp))
+		return false;
+	if (r.fp._p != nullptr && p.fp._p != nullptr) {
+		if (ptr_in_buf(r.fp._p, r.iobuf, sizeof(r.iobuf)) &&
+		    ptr_in_buf(p.fp._p, p.iobuf, sizeof(p.iobuf))) {
+			if (r.fp._p - r.iobuf != p.fp._p - p.iobuf)
+				return false;
+		} else if (r.fp._p != p.fp._p)
+			return false;
+	} else if (r.fp._p != p.fp._p)
+		return false;
+	if (r.fp._bf._base != nullptr && p.fp._bf._base != nullptr) {
+		if (ptr_in_buf(r.fp._bf._base, r.iobuf, sizeof(r.iobuf)) &&
+		    ptr_in_buf(p.fp._bf._base, p.iobuf, sizeof(p.iobuf))) {
+			if (r.fp._bf._base - r.iobuf != p.fp._bf._base - p.iobuf)
+				return false;
+		} else if (r.fp._bf._base != p.fp._bf._base)
+			return false;
+	} else if (r.fp._bf._base != p.fp._bf._base)
 		return false;
 	if (r.stream.pos != p.stream.pos)
 		return false;
@@ -308,7 +374,7 @@ read_core_eq(const ReadCoreR &r, const ReadCoreP &p)
 bool
 write_core_eq(const WriteCoreR &r, const WriteCoreP &p)
 {
-	if (std::memcmp(&r.fp, &p.fp, sizeof(r.fp)) != 0)
+	if (!fp_fields_eq(r.fp, p.fp))
 		return false;
 	if (r.wctx.out_len != p.wctx.out_len)
 		return false;
@@ -328,7 +394,7 @@ write_core_eq(const WriteCoreR &r, const WriteCoreP &p)
 bool
 fd_core_eq(const FdCoreR &r, const FdCoreP &p)
 {
-	if (std::memcmp(&r.fp, &p.fp, sizeof(r.fp)) != 0)
+	if (!fp_fields_eq(r.fp, p.fp))
 		return false;
 	if (std::memcmp(r.pre, p.pre, sizeof(r.pre)) != 0)
 		return false;

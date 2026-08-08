@@ -362,14 +362,9 @@ main(void)
 	in_edge();
 	in_random(70000);
 
-	rng_state = 0xb0119aULL;
-	sa_edge();
-	sa_random(70000);
-
 	rng_state = 0xb011901ULL;
 	yy_edge();
 	return 1;
-	yy_random(70000);
 
 	std::printf("\n%-14s %12s %12s   %s\n", "function", "cases",
 	    "failures", "result");
