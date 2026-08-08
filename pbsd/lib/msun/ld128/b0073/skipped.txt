@@ -1,2 +1,2 @@
-hbsd/src/lib/msun/ld128/b_tgammal.c	only `#include "tgamma128.c"` (not in this batch); the included implementation is gated on `LDBL_MANT_DIG == 113` binary128, but this host's long double is x87 80-bit (`LDBL_MANT_DIG=64`).
-hbsd/src/lib/msun/ld128/s_nanl.c	nanl() depends on `_scan_nan()` (lib/msun/src/s_nan.c) and the ld128 `union IEEEl2bits` layout (`bits[4]`, `manh |= 1ULL << 47`); neither is in this batch and the host `IEEEl2bits` is the x87 80-bit layout, so a faithful port is impossible.
+b_tgammal.c: contains no code of its own -- it only "#define tgamma128 tgammal" and "#include \"tgamma128.c\"" (contrib/arm-optimized-routines/math/tgamma128.c), which is not part of this batch, so there is no function body here to port.
+s_nanl.c: nanl() is built entirely out of _scan_nan() (lib/msun/src/s_nan.c) and union IEEEl2bits (fpmath.h); neither is part of this batch, so a faithful port cannot be written from the listed sources.

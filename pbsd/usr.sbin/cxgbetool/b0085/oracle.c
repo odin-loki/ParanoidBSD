@@ -4,6 +4,7 @@
  * code.
  */
 
+#include <stddef.h>
 #include <stdint.h>
 
 struct reg_info {

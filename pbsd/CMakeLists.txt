@@ -158,6 +158,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdbit/stdc_first_trailing_one_m/port.cppm
   lib/libc/stdbit/stdc_first_trailing_zero_m/port.cppm
   lib/libc/stdbit/stdc_has_single_bit_m/port.cppm
+  lib/libc/stdio/b0092/port.cppm
+  lib/libc/stdio/b0098/port.cppm
   lib/libc/stdio/fgetpos_m/port.cppm
   lib/libc/stdio/flags_m/port.cppm
   lib/libc/stdio/funopen_m/port.cppm
@@ -218,6 +220,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/sys/b0025/port.cppm
   lib/libc/sys/b0027/port.cppm
   lib/libc/sys/b0028/port.cppm
+  lib/libc/sys/b0096/port.cppm
+  lib/libc/sys/b0097/port.cppm
   lib/libc/uuid/b0019/port.cppm
   lib/libc/uuid/uuid_compare_m/port.cppm
   lib/libc/uuid/uuid_equal_m/port.cppm
@@ -233,6 +237,9 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/ld128/k_cosl_m/port.cppm
   lib/msun/ld128/k_tanl_m/port.cppm
   lib/msun/ld80/b0082/port.cppm
+  lib/msun/ld80/b0093/port.cppm
+  lib/msun/ld80/b0094/port.cppm
+  lib/msun/ld80/b0095/port.cppm
   lib/msun/src/b0001/port.cppm
   lib/msun/src/b0003/port.cppm
   lib/msun/src/b0030/port.cppm
@@ -308,6 +315,10 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/security/mac_pimd/b0006/port.cppm
   sys/security/mac_stub/b0046/port.cppm
   sys/security/mac_veriexec/b0029/port.cppm
+  sys/security/mac_veriexec/b0029s1/port.cppm
+  sys/security/mac_veriexec/b0029s2/port.cppm
+  sys/security/mac_veriexec/b0029s3/port.cppm
+  sys/security/mac_veriexec/b0029s4/port.cppm
   sys/x86/linux/b0037/port.cppm
   usr.bin/ar/util_m/port.cppm
   usr.bin/calendar/ostern_m/port.cppm

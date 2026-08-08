@@ -275,12 +275,23 @@ def clean_batch(outdir: Path) -> None:
 
 
 def git(*args) -> int:
-    r = sh(["git", "-C", str(ROOT), *args])
-    if r.returncode != 0 and args and args[0] == "commit":
-        err = (r.stderr or r.stdout or "").strip().splitlines()
-        if err and "nothing to commit" not in " ".join(err):
-            say(f"WARNING: git commit failed — {err[0][:90]}")
-    return r.returncode
+    """Run git in the repo root. Retries commits when index.lock is transient."""
+    for attempt in range(8):
+        r = sh(["git", "-C", str(ROOT), *args])
+        if r.returncode == 0:
+            return 0
+        if not args or args[0] != "commit":
+            return r.returncode
+        err = (r.stderr or r.stdout or "").strip()
+        if "nothing to commit" in err:
+            return 0
+        if "index.lock" in err and attempt < 7:
+            time.sleep(0.25 * (attempt + 1))
+            continue
+        if err:
+            say(f"WARNING: git commit failed — {err.splitlines()[0][:90]}")
+        return r.returncode
+    return 1
 
 
 def preflight() -> bool:

@@ -469,9 +469,14 @@ def gen_extern_decls(funcs: set[str], classes: dict[str, str]) -> str:
         elif cls == 'extract_pack':
             lines.append(proto_extract_pack(f))
         elif cls == 'shift_ptr':
-            if '32' in f and '128' not in f and '192' not in f:
-                lines.append(f'void ref_{f}(bits32 a, int16 count, bits32 *zPtr);')
-            elif '128Extra' in f or '64Extra' in f:
+            if f == 'shortShift128Left':
+                lines.append(
+                    f'void ref_{f}(bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr);')
+            elif f == 'shortShift192Left':
+                lines.append(
+                    f'void ref_{f}(bits64 a0, bits64 a1, bits64 a2, int16 count, '
+                    'bits64 *z0Ptr, bits64 *z1Ptr, bits64 *z2Ptr);')
+            elif '128Extra' in f or f in ('shift128Right', 'shift128RightJamming'):
                 if '128Extra' in f:
                     lines.append(
                         f'void ref_{f}(bits64 a0, bits64 a1, bits64 a2, int16 count, '
@@ -484,6 +489,8 @@ def gen_extern_decls(funcs: set[str], classes: dict[str, str]) -> str:
                 lines.append(
                     f'void ref_{f}(bits64 a0, bits64 a1, int16 count, '
                     'bits64 *z0Ptr, bits64 *z1Ptr);')
+            elif '32' in f:
+                lines.append(f'void ref_{f}(bits32 a, int16 count, bits32 *zPtr);')
             else:
                 lines.append(f'void ref_{f}(bits64 a, int16 count, bits64 *zPtr);')
         elif cls == 'wide_arith_ptr':
@@ -666,6 +673,9 @@ typedef port::float64 float64;
 typedef port::floatx80 floatx80;
 typedef port::float128 float128;
 typedef port::commonNaNT commonNaNT;
+typedef port::int8 int8;
+typedef port::int16 int16;
+typedef port::int32 int32;
 
 extern "C" {
 '''
@@ -922,45 +932,34 @@ def edge_and_rand_float_unary(f, ty, rand_fn):
 
 
 def gen_int_to_float_test(f):
-    if 'int32' in f:
-        ty = 'int32_t'
-        to_ty = f.split('int32_to_')[1].replace('float', 'float')
-        if 'float32' in f:
-            rt, rand = 'float32', 'f32_rand'
-        elif 'float64' in f:
-            rt, rand = 'float64', 'f64_rand'
-        elif 'floatx80' in f:
-            rt, rand = 'floatx80', 'fx80_rand'
-        else:
-            rt, rand = 'float128', 'f128_rand'
+    rt = sig_float_type(f)
+    if f.startswith('int32'):
+        ity = 'int32_t'
+        rand_loop = 'static_cast<int32_t>(urand32())'
+    elif f.startswith('int64'):
+        ity = 'int64_t'
+        rand_loop = 'static_cast<int64_t>(urand64())'
     else:
-        ty = 'int64_t'
-        if 'float32' in f:
-            rt = 'float32'
-        elif 'float64' in f:
-            rt = 'float64'
-        elif 'floatx80' in f:
-            rt = 'floatx80'
-        else:
-            rt = 'float128'
+        ity = 'uint32_t'
+        rand_loop = 'urand32()'
+    cmp = cmp_expr(rt, 'rp', 'rr')
     return f'''
-    static const {ty} vals[] = {{0, 1, -1, 2, -2, 0x7FFFFFFF, (int32_t)0x80000000,
-        0x7F, 0x80, 0xFF, 0x100, 0x7FFFFF, (int32_t)0x80000000}};
-    for ({ty} v : vals) {{
+    static const {ity} vals[] = {{0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu}};
+    for ({ity} v : vals) {{
         sync_globals_from_port();
         {rt} rp = port::{f}(v);
         {rt} rr = ref_{f}(v);
         cases++;
-        if (rp != rr) failures++;
+        if ({cmp}) failures++;
         sync_globals_to_port();
     }}
     for (unsigned i = 0; i < 200000u; ++i) {{
-        {ty} v = static_cast<{ty}>(urand32());
+        {ity} v = {rand_loop};
         sync_globals_from_port();
         {rt} rp = port::{f}(v);
         {rt} rr = ref_{f}(v);
         cases++;
-        if (rp != rr) failures++;
+        if ({cmp}) failures++;
         sync_globals_to_port();
     }}
 '''
@@ -1115,15 +1114,71 @@ def gen_extract_pack_test(f):
 
 
 def gen_shift_ptr_test(f):
+    if f == 'shortShift128Left':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits64 a0 = urand64(), a1 = urand64();
+        int16 cnt = static_cast<int16>(urand32() & 0x3F);
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
+        sync_globals_from_port();
+        port::{f}(a0, a1, cnt, &z0p, &z1p);
+        ref_{f}(a0, a1, cnt, &z0r, &z1r);
+        cases++;
+        if (z0p != z0r || z1p != z1r) failures++;
+    }}
+'''
+    if f == 'shortShift192Left':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits64 a0 = urand64(), a1 = urand64(), a2 = urand64();
+        int16 cnt = static_cast<int16>(urand32() & 0x3F);
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL, z2p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
+        sync_globals_from_port();
+        port::{f}(a0, a1, a2, cnt, &z0p, &z1p, &z2p);
+        ref_{f}(a0, a1, a2, cnt, &z0r, &z1r, &z2r);
+        cases++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r) failures++;
+    }}
+'''
+    if '128Extra' in f or f in ('shift128Right', 'shift128RightJamming'):
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits64 a0 = urand64(), a1 = urand64();
+        int16 cnt = static_cast<int16>(urand32() & 0x7F);
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
+        sync_globals_from_port();
+        port::{f}(a0, a1, cnt, &z0p, &z1p);
+        ref_{f}(a0, a1, cnt, &z0r, &z1r);
+        cases++;
+        if (z0p != z0r || z1p != z1r) failures++;
+    }}
+'''
+    if '64Extra' in f:
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits64 a0 = urand64(), a1 = urand64();
+        int16 cnt = static_cast<int16>(urand32() & 0x7F);
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
+        sync_globals_from_port();
+        port::{f}(a0, a1, cnt, &z0p, &z1p);
+        ref_{f}(a0, a1, cnt, &z0r, &z1r);
+        cases++;
+        if (z0p != z0r || z1p != z1r) failures++;
+    }}
+'''
     if '32' in f:
-        aty, bty = 'bits32', 'uint32_t'
+        aty = 'bits32'
     else:
-        aty, bty = 'bits64', 'uint64_t'
+        aty = 'bits64'
     return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         {aty} a = static_cast<{aty}>(urand64());
         int16 cnt = static_cast<int16>(urand32() & 0x7F);
-        {aty} zp = 0x7F7F7F7F, zr = 0x7F7F7F7F;
+        {aty} zp = static_cast<{aty}>(0x7F7F7F7F7F7F7F7FULL), zr = static_cast<{aty}>(0x7F7F7F7F7F7F7F7FULL);
         sync_globals_from_port();
         port::{f}(a, cnt, &zp);
         ref_{f}(a, cnt, &zr);
@@ -1329,6 +1384,7 @@ def gen_sig_arith_test(f):
     ty = sig_float_type(f)
     rand = {'float32': 'f32_rand', 'float64': 'f64_rand',
             'floatx80': 'fx80_rand', 'float128': 'f128_rand'}[ty]
+    cmp = cmp_expr(ty, 'rp', 'rr')
     return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         {ty} a = {rand}(), b = {rand}();
@@ -1337,7 +1393,7 @@ def gen_sig_arith_test(f):
         {ty} rp = port::{f}(a, b, zs);
         {ty} rr = ref_{f}(a, b, zs);
         cases++;
-        if (rp != rr) failures++;
+        if ({cmp}) failures++;
         sync_globals_to_port();
     }}
 '''
@@ -1456,10 +1512,10 @@ int main()
 {{
 {calls}
     unsigned total_fail = 0;
-    std::printf("function                          cases     failures\n");
-    std::printf("--------------------------------  --------  --------\n");
+    std::printf("function                          cases     failures\\n");
+    std::printf("--------------------------------  --------  --------\\n");
     for (const auto &s : stats) {{
-        std::printf("%-32s  %8u  %8u\n", s.name, s.cases, s.failures);
+        std::printf("%-32s  %8u  %8u\\n", s.name, s.cases, s.failures);
         total_fail += s.failures;
     }}
     return total_fail ? 1 : 0;

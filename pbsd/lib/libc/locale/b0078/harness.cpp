@@ -216,7 +216,8 @@ env_init(Env &e, int mbmax)
 	e.mb_cur_max = mbmax;
 	ref_locale_init(&e.ref_loc, &e.ref_ctype, &e.ref_runes, mbmax);
 	P::pbsd_locale_init(&e.port_loc, &e.port_ctype, &e.port_runes, mbmax);
-	e.ref_runes.__runetype_ext.__ranges = e.rtab.ranges;
+	e.ref_runes.__runetype_ext.__ranges =
+	    (ref_rune_entry *)e.rtab.ranges;
 	e.port_runes.__runetype_ext.__ranges = e.rtab.ranges;
 }
 
@@ -364,9 +365,9 @@ sweep_runetype(int f, bool use_l)
 			break;
 		}
 		if (use_l) {
-			locale_t rl = (u32(3) == 0) ? nullptr :
+			ref_locale_t rl = (u32(3) == 0) ? nullptr :
 			    ((u32(2) == 0) ? &altenv.ref_loc : &genv.ref_loc);
-			locale_t pl = (rl == &altenv.ref_loc) ? &altenv.port_loc :
+			P::locale_t pl = (rl == &altenv.ref_loc) ? &altenv.port_loc :
 			    (rl == nullptr ? nullptr : &genv.port_loc);
 			pv = P::___runetype_l(c, pl);
 			rv = ref____runetype_l(c, rl);
@@ -402,8 +403,8 @@ test_nextwctype_edge(void)
 	chk_wint(F_NEXTWCTYPE_L, pv, rv);
 
 	/* cached miss for rare mask */
-	pv = P::nextwctype_l(50, (wctype_t)0x80000000UL, &genv.port_loc);
-	rv = ref_nextwctype_l(50, (wctype_t)0x80000000UL, &genv.ref_loc);
+	pv = P::nextwctype_l(50, (P::wctype_t)0x80000000UL, &genv.port_loc);
+	rv = ref_nextwctype_l(50, 0x80000000UL, &genv.ref_loc);
 	chk_wint(F_NEXTWCTYPE_L, pv, rv);
 
 	/* below first ext range -> noinc path */
@@ -445,12 +446,12 @@ test_nextwctype_edge(void)
 static void
 sweep_nextwctype(int f, bool use_l)
 {
-	static const wctype_t masks[] = {
+	static const P::wctype_t masks[] = {
 		T_ALPHA, T_DIGIT, T_SPACE, T_UPPER, T_PUNCT,
 		T_ALPHA | T_DIGIT, 0UL, 0xffffffffUL
 	};
 	wint_t wc, pv, rv;
-	wctype_t wct;
+	P::wctype_t wct;
 
 	for (long long i = 0; i < SWEEP; i++) {
 		wct = masks[u32(8)];
@@ -478,8 +479,8 @@ sweep_nextwctype(int f, bool use_l)
 			break;
 		}
 		if (use_l) {
-			locale_t rl = (u32(3) == 0) ? nullptr : &genv.ref_loc;
-			locale_t pl = (rl == nullptr) ? nullptr : &genv.port_loc;
+			ref_locale_t rl = (u32(3) == 0) ? nullptr : &genv.ref_loc;
+			P::locale_t pl = (rl == nullptr) ? nullptr : &genv.port_loc;
 			pv = P::nextwctype_l(wc, wct, pl);
 			rv = ref_nextwctype_l(wc, wct, rl);
 		} else {
@@ -596,7 +597,7 @@ run_mbs_std_case(const MbsCase &tc)
 	wchar_t out_p[48], out_r[48];
 	const char *sp, *sr;
 	size_t pv, rv;
-	mbstate_t ps_p, ps_r;
+	P::mbstate_t ps_p, ps_r;
 	ref_mbstate_t ps_ref_p, ps_ref_r;
 	int f = F___MBSNRTOWCS_STD;
 
@@ -627,8 +628,9 @@ run_mbs_std_case(const MbsCase &tc)
 		report(f, "wchar buffer mismatch");
 		return;
 	}
-	if ((sp - in_p) != (sr - in_r)) {
-		report(f, "src offset mismatch");
+	if ((sp == nullptr) != (sr == nullptr) ||
+	    (sp != nullptr && sr != nullptr && (sp - in_p) != (sr - in_r))) {
+		report(f, "src pointer mismatch");
 		return;
 	}
 	if (!bufs_eq(in_p, in_r, sizeof(in_p))) {
@@ -644,7 +646,7 @@ run_mbs_wrap_case(int f, bool use_l, const MbsCase &tc)
 	wchar_t out_p[48], out_r[48];
 	const char *sp, *sr;
 	size_t pv, rv;
-	mbstate_t ps_p, ps_r, loc_p, loc_r;
+	P::mbstate_t ps_p, ps_r, loc_p, loc_r;
 	ref_mbstate_t ps_ref_p, ps_ref_r, loc_ref_p, loc_ref_r;
 
 	ncase[f]++;
@@ -657,11 +659,10 @@ run_mbs_wrap_case(int f, bool use_l, const MbsCase &tc)
 	std::memset(&ps_p, 0x33, sizeof(ps_p));
 	std::memset(&ps_r, 0x33, sizeof(ps_r));
 	std::memset(&loc_p, 0x44, sizeof(loc_p));
-	std::memset(&loc_r, 0x44, sizeof(loc_r));
-	genv.port_ctype.mbsnrtowcs = loc_p;
-	genv.ref_ctype.mbsnrtowcs = loc_ref_p;
-	mb_copy(ps_p, ps_ref_p);
 	mb_copy(loc_p, loc_ref_p);
+	genv.port_ctype.mbsnrtowcs = loc_p;
+	std::memcpy(&genv.ref_ctype.mbsnrtowcs, &loc_ref_p, sizeof(loc_ref_p));
+	mb_copy(ps_p, ps_ref_p);
 
 	sp = in_p + 8;
 	sr = in_r + 8;
@@ -697,8 +698,16 @@ run_mbs_wrap_case(int f, bool use_l, const MbsCase &tc)
 		return;
 	}
 	if (tc.ps_null) {
-		if (std::memcmp(&genv.port_ctype.mbsnrtowcs,
-		    &genv.ref_ctype.mbsnrtowcs, sizeof(loc_p)) != 0)
+		ref_mbstate_t ref_st;
+		P::mbstate_t port_st;
+
+		std::memcpy(&ref_st, &genv.ref_ctype.mbsnrtowcs, sizeof(ref_st));
+		port_st = genv.port_ctype.mbsnrtowcs;
+		mb_copy(port_st, ref_st);
+		if (std::memcmp(&genv.port_ctype.mbsnrtowcs, &port_st,
+		    sizeof(port_st)) != 0 ||
+		    std::memcmp(&genv.ref_ctype.mbsnrtowcs, &ref_st,
+		    sizeof(ref_st)) != 0)
 			report(f, "locale mbstate mismatch");
 	} else if (std::memcmp(&ps_p, &ps_ref_p, sizeof(ps_p)) != 0) {
 		report(f, "ps mismatch");
@@ -782,14 +791,17 @@ sweep_mbs_std(void)
 		fill_wguard(out_r, std::size(out_r));
 		sp = in_p + 4;
 		sr = in_r + 4;
-		mbstate_t ps_p{}, ps_r{};
+		P::mbstate_t ps_p{}, ps_r{};
 		ref_mbstate_t ps_ref_p{}, ps_ref_r{};
 		size_t pv = P::__mbsnrtowcs_std(dst_null ? nullptr : out_p, &sp,
 		    nms, len, &ps_p, P::pbsd_test_mbrtowc);
 		size_t rv = ref___mbsnrtowcs_std(dst_null ? nullptr : out_r, &sr,
 		    nms, len, &ps_ref_p, test_mbrtowc);
 		if (pv != rv || (!dst_null && !wbufs_eq(out_p, out_r,
-		    std::size(out_p))) || (sp - in_p) != (sr - in_r) ||
+		    std::size(out_p))) ||
+		    (sp == nullptr) != (sr == nullptr) ||
+		    (sp != nullptr && sr != nullptr &&
+		    (sp - in_p) != (sr - in_r)) ||
 		    !bufs_eq(in_p, in_r, sizeof(in_p)))
 			report(f, "random");
 	}
@@ -819,7 +831,7 @@ sweep_mbs_wrap(int f, bool use_l)
 		fill_wguard(out_r, std::size(out_r));
 		sp = in_p + 4;
 		sr = in_r + 4;
-		mbstate_t ps_p{}, ps_r{};
+		P::mbstate_t ps_p{}, ps_r{};
 		ref_mbstate_t ps_ref_p{}, ps_ref_r{};
 		std::memset(&genv.port_ctype.mbsnrtowcs, 0x12,
 		    sizeof(genv.port_ctype.mbsnrtowcs));

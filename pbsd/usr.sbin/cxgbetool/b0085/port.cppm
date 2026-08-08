@@ -4,11 +4,13 @@
  * code.
  */
 
-export module pbsd.usr.sbin.cxgbetool.b0085;
+module;
 
 #include <cstdint>
 
-export namespace pbsd::usr_sbin_cxgbetool::b0085 {
+export module pbsd.usr.sbin.cxgbetool.b0085;
+
+namespace pbsd::usr_sbin_cxgbetool::b0085::detail {
 
 struct reg_info {
 	const char *name;
@@ -16,7 +18,7 @@ struct reg_info {
 	std::uint32_t len;
 };
 
-inline const reg_info t4vf_sge_regs[] = {
+const reg_info t4vf_sge_regs[] = {
 	{ "SGE_KDOORBELL",			0x000, 0 },
 		{ "QID", 15, 17 },
 		{ "Priority", 14, 1 },
@@ -30,7 +32,7 @@ inline const reg_info t4vf_sge_regs[] = {
 	{ nullptr, 0, 0 }
 };
 
-inline const reg_info t5vf_sge_regs[] = {
+const reg_info t5vf_sge_regs[] = {
 	{ "SGE_VF_KDOORBELL",			0x000, 0 },
 		{ "QID", 15, 17 },
 		{ "Priority", 14, 1 },
@@ -45,7 +47,7 @@ inline const reg_info t5vf_sge_regs[] = {
 	{ nullptr, 0, 0 }
 };
 
-inline const reg_info t4vf_mps_regs[] = {
+const reg_info t4vf_mps_regs[] = {
 	{ "MPS_VF_CTL",	0x100, 0 },
 		{ "TxEn", 1, 1 },
 		{ "RxEn", 0, 1 },
@@ -94,7 +96,7 @@ inline const reg_info t4vf_mps_regs[] = {
 	{ nullptr, 0, 0 }
 };
 
-inline const reg_info t4vf_pl_regs[] = {
+const reg_info t4vf_pl_regs[] = {
 	{ "PL_VF_WHOAMI",			0x200, 0 },
 		{ "PortxMap", 24, 3 },
 		{ "SourceBus", 16, 2 },
@@ -105,7 +107,7 @@ inline const reg_info t4vf_pl_regs[] = {
 	{ nullptr, 0, 0 }
 };
 
-inline const reg_info t5vf_pl_regs[] = {
+const reg_info t5vf_pl_regs[] = {
 	{ "PL_WHOAMI",				0x200, 0 },
 		{ "PortxMap", 24, 3 },
 		{ "SourceBus", 16, 2 },
@@ -120,7 +122,7 @@ inline const reg_info t5vf_pl_regs[] = {
 	{ nullptr, 0, 0 }
 };
 
-inline const reg_info t6vf_pl_regs[] = {
+const reg_info t6vf_pl_regs[] = {
 	{ "PL_WHOAMI",				0x200, 0 },
 		{ "PortxMap", 24, 3 },
 		{ "SourceBus", 16, 2 },
@@ -135,7 +137,7 @@ inline const reg_info t6vf_pl_regs[] = {
 	{ nullptr, 0, 0 }
 };
 
-inline const reg_info t4vf_cim_regs[] = {
+const reg_info t4vf_cim_regs[] = {
 	/*
 	 * Note: the Mailbox Control register has read side-effects so
 	 * the driver simply returns 0xffff for this register.
@@ -151,7 +153,7 @@ inline const reg_info t4vf_cim_regs[] = {
 	{ nullptr, 0, 0 }
 };
 
-inline const reg_info t4vf_mbdata_regs[] = {
+const reg_info t4vf_mbdata_regs[] = {
 	{ "CIM_VF_EXT_MAILBOX_DATA_00",		0x240, 0 },
 		{ "Return", 8, 8 },
 		{ "Length16", 0, 8 },
@@ -178,5 +180,20 @@ inline const reg_info t4vf_mbdata_regs[] = {
 
 	{ nullptr, 0, 0 }
 };
+
+} // namespace pbsd::usr_sbin_cxgbetool::b0085::detail
+
+export namespace pbsd::usr_sbin_cxgbetool::b0085 {
+
+using reg_info = detail::reg_info;
+
+inline const reg_info *const t4vf_sge_regs = detail::t4vf_sge_regs;
+inline const reg_info *const t5vf_sge_regs = detail::t5vf_sge_regs;
+inline const reg_info *const t4vf_mps_regs = detail::t4vf_mps_regs;
+inline const reg_info *const t4vf_pl_regs = detail::t4vf_pl_regs;
+inline const reg_info *const t5vf_pl_regs = detail::t5vf_pl_regs;
+inline const reg_info *const t6vf_pl_regs = detail::t6vf_pl_regs;
+inline const reg_info *const t4vf_cim_regs = detail::t4vf_cim_regs;
+inline const reg_info *const t4vf_mbdata_regs = detail::t4vf_mbdata_regs;
 
 } // namespace pbsd::usr_sbin_cxgbetool::b0085

@@ -229,6 +229,9 @@ def gen_port():
     macros = read("bits32/softfloat-macros")
     specialize = strip_specialize(read("softfloat-specialize"))
     body = strip_softfloat_c(read("bits32/softfloat.c"))
+    body = body.replace(
+        "&sigMean0, &sigMean1",
+        "(bits32 *)&sigMean0, &sigMean1")
 
     header = '''/* $NetBSD: softfloat.c,v 1.1 2002/05/21 23:51:07 bjh21 Exp $ */
 module;

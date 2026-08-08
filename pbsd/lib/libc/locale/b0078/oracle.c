@@ -267,7 +267,7 @@ int ref____mb_cur_max_l(ref_locale_t locale)
 /* ------------------------------------------------------------------ */
 
 wint_t
-ref_nextwctype_l(wint_t wc, wctype_t wct, locale_t locale)
+ref_nextwctype_l(wint_t wc, wctype_t wct, ref_locale_t locale)
 {
 	size_t lim;
 	FIX_LOCALE(locale);
@@ -337,7 +337,7 @@ ref_nextwctype(wint_t wc, wctype_t wct)
 
 size_t
 ref_mbsnrtowcs_l(wchar_t * __restrict dst, const char ** __restrict src,
-    size_t nms, size_t len, mbstate_t * __restrict ps, locale_t locale)
+    size_t nms, size_t len, mbstate_t * __restrict ps, ref_locale_t locale)
 {
 	FIX_LOCALE(locale);
 	if (ps == NULL)

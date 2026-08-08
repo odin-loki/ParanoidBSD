@@ -1,10 +1,12 @@
-// PBSD port of HardenedBSD lib/msun/ld128 -- batch b0073.
+// PBSD -- C++23 port of HardenedBSD lib/msun/ld128, batch b0073.
 //
-// Sources ported here (faithfully, bug-for-bug):
-//   lib/msun/ld128/k_sinl.c   -- __kernel_sinl()
-//
-// lib/msun/ld128/b_tgammal.c and lib/msun/ld128/s_nanl.c are not ported here;
-// see skipped.txt.
+// Ported: k_sinl.c
+// Skipped: b_tgammal.c, s_nanl.c (see skipped.txt).
+module;
+
+export module pbsd.lib.msun.ld128.b0073;
+
+namespace pbsd::lib_msun_ld128::b0073 {
 
 /*
  * ====================================================
@@ -17,10 +19,6 @@
  * is preserved.
  * ====================================================
  */
-
-export module pbsd.lib.msun.ld128.b0073;
-
-namespace pbsd::lib_msun_ld128::b0073 {
 
 /*
  * ld128 version of k_sin.c.  See ../src/k_sin.c for most comments.
@@ -51,7 +49,7 @@ S10 =  0.19572940011906109418080609928334380560135358385256e-19,
 S11 = -0.38680813379701966970673724299207480965452616911420e-22,
 S12 =  0.64038150078671872796678569586315881020659912139412e-25;
 
-} /* namespace pbsd::lib_msun_ld128::b0073 */
+} // namespace pbsd::lib_msun_ld128::b0073
 
 export namespace pbsd::lib_msun_ld128::b0073 {
 
@@ -68,4 +66,4 @@ __kernel_sinl(long double x, long double y, int iy)
 	else      return x-((z*(half*y-v*r)-y)-v*S1);
 }
 
-} /* namespace pbsd::lib_msun_ld128::b0073 */
+} // namespace pbsd::lib_msun_ld128::b0073

@@ -1,26 +1,13 @@
 /*
- * oracle.c -- batch b0073 reference implementation.
+ * PBSD batch b0073 oracle: the original HardenedBSD lib/msun/ld128 sources,
+ * concatenated, with every function renamed with a "ref_" prefix.  Function
+ * bodies are unmodified -- this file is the specification.
  *
- * The original HardenedBSD C sources concatenated verbatim, with every
- * function renamed with a ref_ prefix.  No function body has been modified.
- *
- * Concatenated sources:
- *   lib/msun/ld128/k_sinl.c
- *
- * The only non-rename edit is the removal of the #include for math_private.h,
- * which supplies prototypes only; nothing the body references comes from it.
- *
- * lib/msun/ld128/b_tgammal.c and lib/msun/ld128/s_nanl.c are not represented
- * here; see skipped.txt.
+ * Sources included: k_sinl.c
+ * Sources omitted:  b_tgammal.c, s_nanl.c (see skipped.txt)
  */
 
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
-
-/* ================================================================== */
-/* lib/msun/ld128/k_sinl.c					      */
-/* ================================================================== */
+/* ---------------------------------------------------------------- k_sinl.c */
 
 /*
  * ====================================================
@@ -38,6 +25,10 @@
  * ld128 version of k_sin.c.  See ../src/k_sin.c for most comments.
  */
 
+/*
+ * "math_private.h" is not available outside the msun build; nothing in this
+ * translation unit uses anything from it.
+ */
 /* #include "math_private.h" */
 
 static const double
