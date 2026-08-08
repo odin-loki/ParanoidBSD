@@ -8,6 +8,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/cat/b0163/port.cppm
   bin/chflags/b0179/port.cppm
   bin/chio/b0192/port.cppm
+  bin/chmod/b0195/port.cppm
   bin/cp/b0191/port.cppm
   bin/cpuset/b0183/port.cppm
   bin/csh/b0061/port.cppm
@@ -33,6 +34,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/realpath/b0169/port.cppm
   bin/rmdir/b0172/port.cppm
   bin/setfacl/b0162/port.cppm
+  bin/setfacl/b0199/port.cppm
   bin/setfacl/mask_m/port.cppm
   bin/setfacl/util_m/port.cppm
   bin/sh/b0119/port.cppm

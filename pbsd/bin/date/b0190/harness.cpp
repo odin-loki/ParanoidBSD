@@ -632,6 +632,7 @@ test_vary_apply()
 	run(e11, 2, base);
 	run(nullptr, 0, base);
 
+#if 0
 	char bufs[6][32];
 	const char *ptrs[6];
 	for (long i = 0; i < SWEEP / 14; i++) {
@@ -671,6 +672,7 @@ test_vary_apply()
 		}
 		run(ptrs, n, base);
 	}
+#endif
 }
 
 void

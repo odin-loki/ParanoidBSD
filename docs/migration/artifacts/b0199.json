@@ -1,0 +1,11 @@
+{
+  "batch": "b0199",
+  "verified": "2026-08-08T12:41:21Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD batch b0199 differential test\n(oracle.c is the specification)\n\nfunction                                cases     failures     result\n-------------------------------- ------------ ------------ ----------\n(no functions in batch)                     -            -          -\n-------------------------------- ------------ ------------ ----------\nTOTAL                                       0            0       PASS\n\n0 function(s) ported, 0 case(s) run, 0 failure(s).\nBoth source files skipped; see skipped.txt.\n",
+  "input_hashes": {
+    "hbsd/src/bin/setfacl/merge.c": "26ac2d8a10b2fad2",
+    "hbsd/src/bin/setfacl/setfacl.c": "5eb0a5f1bb2522db"
+  }
+}

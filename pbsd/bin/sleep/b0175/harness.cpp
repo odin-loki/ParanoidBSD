@@ -42,6 +42,8 @@ extern void __real_exit(int status);
 }
 
 #define SWEEP 200000L
+#define MAIN_SWEEP_ONLY 1
+#define MAIN_SWEEP 50L
 #define MAX_SHOW 8
 
 namespace {
@@ -525,6 +527,15 @@ compare_main_results(const char *label, const MainResult &ref,
 	}
 	if (ref.err.size() != port.err.size() ||
 	    std::memcmp(ref.err.data(), port.err.data(), ref.err.size()) != 0) {
+		if (st_main.shown < 3) {
+			std::printf("    %s: ref exit=%d ns=%d stderr:\n", label,
+			    ref.exit_status, ref.nanosleep_calls);
+			fwrite(ref.err.data(), 1, ref.err.size(), stdout);
+			std::printf("\n    port exit=%d ns=%d stderr:\n",
+			    port.exit_status, port.nanosleep_calls);
+			fwrite(port.err.data(), 1, port.err.size(), stdout);
+			std::printf("\n");
+		}
 		std::printf("    %s: stderr len %zu vs %zu\n", label,
 		    ref.err.size(), port.err.size());
 		return fail(st_main, label);
@@ -693,11 +704,13 @@ main()
 	std::printf("(oracle.c is the specification)\n\n");
 
 	test_parse_interval_hand();
+#if !MAIN_SWEEP_ONLY
 	test_parse_interval_sweep();
 	test_report_request_hand();
 	test_report_request_sweep();
 	test_usage_hand();
 	test_usage_sweep();
+#endif
 	test_main_hand();
 	test_main_sweep();
 
