@@ -1,0 +1,11 @@
+{
+  "batch": "b0043",
+  "verified": "2026-08-08T11:39:25Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 7/9: jdate, ndaysj, gdate, ndaysg)",
+  "ir_equivalent": false,
+  "harness_output": "=== compiling oracle.c (cc -std=c11 -O2)\n=== compiling port.cppm (c++ -std=c++23 -O2 -fmodules-ts)\n=== compiling harness.cpp\n=== linking\n=== running\n\nfunction              cases       failures\n----------------------------------------------\neasterg              222329              0\neasterog             222140              0\neasteroj             222232              0\ngdate                222374              0\njdate                222304              0\nndaysg               222256              0\nndaysj               222369              0\nweek                 222923              0\nweekday              222440              0\n----------------------------------------------\nTOTAL               2001367              0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libcalendar/easter.c": "a518ab477088c492",
+    "hbsd/src/lib/libcalendar/calendar.c": "43da53a23ca86856"
+  }
+}

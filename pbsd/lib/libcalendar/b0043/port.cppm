@@ -326,7 +326,7 @@ date2idt(date *idt, date *dt)
 		idt->m = dt->m + 9;
 		idt->y = dt->y - 1;
 	}
-	if (idt->m < 0 || idt->m > 11 || idt->y >= 0)
+	if (idt->m < 0 || idt->m > 11 || idt->y < 0)
 		return (NULL);
 	else
 		return idt;

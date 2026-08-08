@@ -243,8 +243,11 @@ case_alloc(const char *label, size_t ncpus)
 
 	r.cases++;
 
+	std::fprintf(stderr, "alloc %zu\n", ncpus);
 	pa = ref___cpuset_alloc(ncpus);
+	std::fprintf(stderr, "ref pa=%p\n", (void *)pa);
 	pb = port::__cpuset_alloc(ncpus);
+	std::fprintf(stderr, "port pb=%p\n", (void *)pb);
 
 	if ((pa == NULL) != (pb == NULL)) {
 		fail_row(R_ALLOC, label, "null mismatch");
@@ -259,8 +262,11 @@ case_alloc(const char *label, size_t ncpus)
 		return;
 
 	need = alloc_bytes(ncpus);
+	std::fprintf(stderr, "need=%zu\n", need);
 	ua = malloc_usable_size(pa);
+	std::fprintf(stderr, "ua=%zu\n", ua);
 	ub = malloc_usable_size(pb);
+	std::fprintf(stderr, "ub=%zu\n", ub);
 	if (ua != ub) {
 		fail_row(R_ALLOC, label, "usable size mismatch");
 		std::free(pa);

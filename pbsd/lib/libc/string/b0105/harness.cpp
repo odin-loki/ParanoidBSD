@@ -1,785 +1,710 @@
-/*
- * harness.cpp -- differential test for PBSD batch b0105.
- *
- * Every case is executed twice: once against the C++ port (module
- * pbsd.lib.libc.string.b0105) and once against the unmodified C reference in
- * oracle.c.  Return values, pointer *offsets* (never raw addresses) and the
- * complete contents of every buffer -- including the guard bytes past the
- * nominal write window -- are compared after each call.
- */
+// b0105 differential test harness.
+//
+// Every case is run through both the C++23 port (module
+// pbsd.lib.libc.string.b0105) and the untouched C oracle (ref_* in oracle.c),
+// and every observable is compared: return values, pointer offsets relative to
+// the buffer base, and the FULL contents of every buffer handed to the
+// function -- including the bytes past the nominal write window and the
+// nominally read-only inputs.
 
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
+#include <cwchar>
 
 import pbsd.lib.libc.string.b0105;
 
-namespace port = pbsd::lib_libc_string::b0105;
+namespace P = pbsd::lib_libc_string::b0105;
 
-extern "C" std::size_t ref_strspn(const char *s, const char *charset);
-extern "C" std::size_t ref_strcspn(const char *s, const char *charset);
-extern "C" char *ref_strsep(char **stringp, const char *delim);
-extern "C" std::size_t ref_wcslcpy(wchar_t *dst, const wchar_t *src,
-    std::size_t siz);
+extern "C" {
+std::size_t ref_strspn(const char *s, const char *charset);
+std::size_t ref_strcspn(const char *s, const char *charset);
+char *ref_strsep(char **stringp, const char *delim);
+std::size_t ref_wcslcpy(wchar_t *dst, const wchar_t *src, std::size_t siz);
+}
 
-/* ------------------------------------------------------------------------ */
-/* infrastructure                                                            */
-/* ------------------------------------------------------------------------ */
+using std::size_t;
+using std::uint32_t;
+using std::uint64_t;
 
-static const unsigned char GUARD = 0x7f;
-static const int MAX_REPORT = 8;
+/* ------------------------------------------------------------------ */
+/* bookkeeping                                                        */
+/* ------------------------------------------------------------------ */
 
 struct Stat {
 	const char *name;
-	long cases;
-	long fails;
-	int reported;
+	unsigned long long cases;
+	unsigned long long fails;
+	int shown;
 };
 
-static Stat st_strspn = { "strspn", 0, 0, 0 };
+static Stat st_strspn  = { "strspn",  0, 0, 0 };
 static Stat st_strcspn = { "strcspn", 0, 0, 0 };
-static Stat st_strsep = { "strsep", 0, 0, 0 };
+static Stat st_strsep  = { "strsep",  0, 0, 0 };
 static Stat st_wcslcpy = { "wcslcpy", 0, 0, 0 };
 
-static std::uint64_t rng_state;
+static const int MAX_SHOW = 8;
 
-static inline std::uint64_t
-rnd(void)
+static bool
+begin_fail(Stat &st, const char *what)
 {
-	std::uint64_t z = (rng_state += 0x9e3779b97f4a7c15ULL);
-
-	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
-	z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
-	return z ^ (z >> 31);
-}
-
-static inline std::size_t
-rnd_mod(std::size_t m)
-{
-	return (std::size_t)(rnd() % (std::uint64_t)m);
+	st.fails++;
+	if (st.shown >= MAX_SHOW)
+		return false;
+	st.shown++;
+	std::printf("FAIL %s: %s\n", st.name, what);
+	return true;
 }
 
 static void
-dump_bytes(const char *label, const unsigned char *p, std::size_t n)
+dump_bytes(const char *label, const unsigned char *p, size_t n)
 {
-	std::printf("      %s:", label);
-	for (std::size_t i = 0; i < n; i++)
+	std::printf("    %s[%zu] =", label, n);
+	for (size_t i = 0; i < n; i++)
 		std::printf(" %02x", (unsigned)p[i]);
 	std::printf("\n");
 }
 
 static void
-dump_wide(const char *label, const wchar_t *p, std::size_t n)
+dump_wide(const char *label, const wchar_t *p, size_t n)
 {
-	std::printf("      %s:", label);
-	for (std::size_t i = 0; i < n; i++)
+	std::printf("    %s[%zu] =", label, n);
+	for (size_t i = 0; i < n; i++)
 		std::printf(" %08lx", (unsigned long)(std::uint32_t)p[i]);
 	std::printf("\n");
 }
 
-/* ------------------------------------------------------------------------ */
-/* strspn / strcspn                                                          */
-/* ------------------------------------------------------------------------ */
+/* index of the first differing byte between two equally sized buffers, or -1 */
+static long
+first_diff(const void *a, const void *b, size_t n)
+{
+	const unsigned char *pa = (const unsigned char *)a;
+	const unsigned char *pb = (const unsigned char *)b;
 
-static const std::size_t SBUF = 96;
+	for (size_t i = 0; i < n; i++)
+		if (pa[i] != pb[i])
+			return (long)i;
+	return -1;
+}
+
+/* ------------------------------------------------------------------ */
+/* deterministic RNG (splitmix64, fixed seed)                         */
+/* ------------------------------------------------------------------ */
+
+struct Rng {
+	uint64_t s;
+
+	explicit Rng(uint64_t seed) : s(seed) {}
+
+	uint64_t next()
+	{
+		s += 0x9E3779B97F4A7C15ull;
+		uint64_t z = s;
+		z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+		z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+		return z ^ (z >> 31);
+	}
+	uint32_t below(uint32_t n) { return (uint32_t)(next() % n); }
+	bool pct(uint32_t p) { return below(100) < p; }
+};
+
+/* ------------------------------------------------------------------ */
+/* byte buffers                                                       */
+/* ------------------------------------------------------------------ */
+
+static const unsigned char GUARD = 0x7f;
+
+static const size_t SBUF = 128;		/* char buffer capacity */
+static const size_t MAXS = 48;		/* longest generated string */
+
+/*
+ * Fill an entire buffer with the guard byte, then lay a NUL-terminated string
+ * at its base.  Everything from buf[len+1] on stays 0x7f, so a port that walks
+ * off the end of the string reads a well-defined byte, and a port that writes
+ * off the end is caught by the whole-buffer comparison.
+ */
+static void
+fill_str(char *buf, size_t cap, const unsigned char *body, size_t len)
+{
+	std::memset(buf, GUARD, cap);
+	for (size_t i = 0; i < len; i++)
+		buf[i] = (char)body[i];
+	buf[len] = '\0';
+}
+
+/* ------------------------------------------------------------------ */
+/* strspn / strcspn                                                   */
+/* ------------------------------------------------------------------ */
 
 static void
-span_run(Stat &st,
-    std::size_t (*port_fn)(const char *, const char *),
-    std::size_t (*ref_fn)(const char *, const char *),
-    const char *s, std::size_t slen, const char *cs, std::size_t cslen,
-    const char *tag)
+t_strspn(const unsigned char *body, size_t blen, const unsigned char *cs,
+    size_t clen)
 {
 	char sa[SBUF], sb[SBUF], ca[SBUF], cb[SBUF];
 
-	if (slen + 1 > SBUF || cslen + 1 > SBUF) {
-		std::fprintf(stderr,
-		    "harness bug: %s would overflow (slen=%zu cslen=%zu)\n",
-		    tag, slen, cslen);
-		std::exit(2);
-	}
+	fill_str(sa, SBUF, body, blen);
+	fill_str(sb, SBUF, body, blen);
+	fill_str(ca, SBUF, cs, clen);
+	fill_str(cb, SBUF, cs, clen);
 
-	std::memset(sa, GUARD, sizeof(sa));
-	std::memset(sb, GUARD, sizeof(sb));
-	std::memset(ca, GUARD, sizeof(ca));
-	std::memset(cb, GUARD, sizeof(cb));
-	std::memcpy(sa, s, slen + 1);
-	std::memcpy(sb, s, slen + 1);
-	std::memcpy(ca, cs, cslen + 1);
-	std::memcpy(cb, cs, cslen + 1);
+	size_t rp = P::strspn(sa, ca);
+	size_t ro = ref_strspn(sb, cb);
 
-	std::size_t ra = port_fn(sa, ca);
-	std::size_t rb = ref_fn(sb, cb);
-
-	int bad_ret = (ra != rb);
-	int bad_s = (std::memcmp(sa, sb, sizeof(sa)) != 0);
-	int bad_cs = (std::memcmp(ca, cb, sizeof(ca)) != 0);
-
-	st.cases++;
-	if (bad_ret || bad_s || bad_cs) {
-		st.fails++;
-		if (st.reported < MAX_REPORT) {
-			st.reported++;
-			std::printf("  FAIL %s [%s] slen=%zu cslen=%zu%s%s%s\n",
-			    st.name, tag, slen, cslen,
-			    bad_ret ? " ret" : "", bad_s ? " sbuf" : "",
-			    bad_cs ? " csbuf" : "");
-			std::printf("      port_ret=%zu ref_ret=%zu\n", ra, rb);
-			dump_bytes("port_s ", (unsigned char *)sa, slen + 1);
-			dump_bytes("ref_s  ", (unsigned char *)sb, slen + 1);
-			dump_bytes("port_cs", (unsigned char *)ca, cslen + 1);
-			dump_bytes("ref_cs ", (unsigned char *)cb, cslen + 1);
+	st_strspn.cases++;
+	if (rp != ro || std::memcmp(sa, sb, SBUF) != 0 ||
+	    std::memcmp(ca, cb, SBUF) != 0) {
+		if (begin_fail(st_strspn, "mismatch")) {
+			dump_bytes("s", body, blen);
+			dump_bytes("charset", cs, clen);
+			std::printf("    port=%zu ref=%zu s_diff@%ld charset_diff@%ld\n",
+			    rp, ro, first_diff(sa, sb, SBUF),
+			    first_diff(ca, cb, SBUF));
 		}
 	}
 }
 
-static const char *const span_s[] = {
-	"",
-	"a",
-	"b",
-	"z",
-	"ab",
-	"ba",
-	"abc",
-	"cba",
-	"abcdefghij",
-	"aaaaaaaaaa",
-	"bbbbbbbbbb",
-	"\x80",
-	"\xff",
-	"\x7f",
-	"\x01",
-	"\x40",
-	"\x3f",
-	"\x80\xff\x7f",
-	"a\x80" "b",
-	"\xff" "a\xff",
-	"aaaaaaaaaaq",
-	"qaaaaaaaaaa",
-	"\x80\x80\x80\x80",
-	"\xfe\xfd\xfc\xfb",
-	"MNOP",
-	"\x00",
-	"a\x00" "b",
-};
-
-static const char *const span_cs[] = {
-	"",
-	"a",
-	"b",
-	"c",
-	"z",
-	"q",
-	"Z",
-	"\x80",
-	"\xff",
-	"\x7f",
-	"\x01",
-	"\x40",
-	"\x3f",
-	"ac",
-	"ca",
-	"\x80\xff",
-	"\xff\x80",
-	"abcdefghij",
-	"XYZ",
-	"\xfb\xfc",
-	"MNOP",
-	"\x7f\x01",
-	"abc",
-	"a",
-	"\xfe",
-};
-
 static void
-span_edge(Stat &st,
-    std::size_t (*port_fn)(const char *, const char *),
-    std::size_t (*ref_fn)(const char *, const char *))
+t_strcspn(const unsigned char *body, size_t blen, const unsigned char *cs,
+    size_t clen)
 {
-	std::size_t ns = sizeof(span_s) / sizeof(span_s[0]);
-	std::size_t nc = sizeof(span_cs) / sizeof(span_cs[0]);
+	char sa[SBUF], sb[SBUF], ca[SBUF], cb[SBUF];
 
-	for (std::size_t i = 0; i < ns; i++)
-		for (std::size_t j = 0; j < nc; j++)
-			span_run(st, port_fn, ref_fn, span_s[i],
-			    std::strlen(span_s[i]), span_cs[j],
-			    std::strlen(span_cs[j]), "grid");
+	fill_str(sa, SBUF, body, blen);
+	fill_str(sb, SBUF, body, blen);
+	fill_str(ca, SBUF, cs, clen);
+	fill_str(cb, SBUF, cs, clen);
 
-	/* every byte value on both sides */
-	{
-		char s[2], cs[2];
+	size_t rp = P::strcspn(sa, ca);
+	size_t ro = ref_strcspn(sb, cb);
 
-		s[1] = '\0';
-		cs[1] = '\0';
-		for (int v = 0; v < 256; v++) {
-			s[0] = (char)v;
-			cs[0] = (char)v;
-			span_run(st, port_fn, ref_fn, s, 1, cs, 1, "byte-eq");
-			cs[0] = (char)((v + 1) & 0xff);
-			if (cs[0] == '\0')
-				cs[0] = '\x01';
-			span_run(st, port_fn, ref_fn, s, 1, cs, 1, "byte-ne");
-			span_run(st, port_fn, ref_fn, s, 1, "", 0, "byte-empty-cs");
+	st_strcspn.cases++;
+	if (rp != ro || std::memcmp(sa, sb, SBUF) != 0 ||
+	    std::memcmp(ca, cb, SBUF) != 0) {
+		if (begin_fail(st_strcspn, "mismatch")) {
+			dump_bytes("s", body, blen);
+			dump_bytes("charset", cs, clen);
+			std::printf("    port=%zu ref=%zu s_diff@%ld charset_diff@%ld\n",
+			    rp, ro, first_diff(sa, sb, SBUF),
+			    first_diff(ca, cb, SBUF));
 		}
 	}
-
-	/* LONG_BIT bucket boundaries (64-bit: 0, 63, 64, 127, 128, 255) */
-	{
-		static const int bounds[] = {
-			0, 1, 62, 63, 64, 65, 126, 127, 128, 129, 254, 255
-		};
-		char s[4], cs[4];
-
-		for (std::size_t bi = 0; bi < sizeof(bounds) / sizeof(bounds[0]);
-		    bi++) {
-			int v = bounds[bi];
-			s[0] = (char)v;
-			s[1] = 'x';
-			s[2] = 'y';
-			s[3] = '\0';
-			cs[0] = (char)v;
-			cs[1] = '\0';
-			span_run(st, port_fn, ref_fn, s, 3, cs, 1, "bound-hit");
-			cs[0] = (char)((v + 1) & 0xff);
-			if (cs[0] == '\0')
-				cs[0] = '\x02';
-			span_run(st, port_fn, ref_fn, s, 3, cs, 1, "bound-miss");
-		}
-	}
-
-	/* prefix lengths flush against buffer end */
-	{
-		char s[SBUF], cs[2];
-
-		cs[1] = '\0';
-		for (std::size_t len = 0; len + 1 < SBUF; len++) {
-			for (std::size_t i = 0; i < len; i++)
-				s[i] = 'a';
-			s[len] = '\0';
-			cs[0] = 'a';
-			span_run(st, port_fn, ref_fn, s, len, cs, 1, "full-prefix");
-			cs[0] = 'b';
-			span_run(st, port_fn, ref_fn, s, len, cs, 1, "zero-prefix");
-		}
-	}
-
-	/* NUL-heavy strings */
-	{
-		char s[8] = { 'a', '\0', 'b', '\0', 'c', '\0', 'd', '\0' };
-		char cs[4] = { 'a', 'b', 'c', '\0' };
-		span_run(st, port_fn, ref_fn, s, 7, cs, 3, "nul-heavy");
-		span_run(st, port_fn, ref_fn, s, 7, "", 0, "nul-heavy-empty-cs");
-	}
-
-	/* duplicate charset entries */
-	{
-		char cs[8];
-		for (int i = 0; i < 7; i++)
-			cs[i] = (char)('a' + (i % 3));
-		cs[7] = '\0';
-		span_run(st, port_fn, ref_fn, "abcabc", 6, cs, 7, "dup-cs");
-	}
-}
-
-static const unsigned char span_alpha[] = {
-	'a', 'b', 'c', 0x01, 0x3f, 0x40, 0x7f, 0x80, 0xfe, 0xff, 'z', '\0'
-};
-
-static void
-span_random(Stat &st,
-    std::size_t (*port_fn)(const char *, const char *),
-    std::size_t (*ref_fn)(const char *, const char *),
-    long iters)
-{
-	char s[SBUF], cs[SBUF];
-	std::size_t na = sizeof(span_alpha) / sizeof(span_alpha[0]);
-
-	for (long it = 0; it < iters; it++) {
-		std::size_t slen, cslen;
-		int wide = (rnd_mod(5) == 0);
-
-		if (rnd_mod(25) == 0)
-			slen = 60 + rnd_mod(35);
-		else
-			slen = rnd_mod(20);
-		if (rnd_mod(25) == 0)
-			cslen = 40 + rnd_mod(55);
-		else
-			cslen = rnd_mod(16);
-
-		for (std::size_t i = 0; i < slen; i++)
-			s[i] = wide ? (char)(rnd_mod(256))
-			    : (char)span_alpha[rnd_mod(na)];
-		s[slen] = '\0';
-		for (std::size_t i = 0; i < cslen; i++)
-			cs[i] = wide ? (char)(rnd_mod(256))
-			    : (char)span_alpha[rnd_mod(na)];
-		cs[cslen] = '\0';
-
-		span_run(st, port_fn, ref_fn, s, slen, cs, cslen, "rand");
-	}
-}
-
-/* ------------------------------------------------------------------------ */
-/* strsep                                                                    */
-/* ------------------------------------------------------------------------ */
-
-static const std::size_t SEPBUF = 96;
-static const std::size_t DELIMBUF = 32;
-
-static long
-ptr_off(char *base, char *p)
-{
-	return (p == nullptr) ? -1L : (long)(p - base);
 }
 
 static void
-sep_fail(Stat &st, const char *tag, const char *why, long step,
-    long tok_a, long tok_b, long sp_a, long sp_b,
-    const unsigned char *a, const unsigned char *b, std::size_t n)
+t_span_both(const unsigned char *body, size_t blen, const unsigned char *cs,
+    size_t clen)
 {
-	st.fails++;
-	if (st.reported < MAX_REPORT) {
-		st.reported++;
-		std::printf("  FAIL strsep [%s] step=%ld %s\n", tag, step, why);
-		std::printf("      port_tok=%ld ref_tok=%ld port_sp=%ld "
-		    "ref_sp=%ld\n", tok_a, tok_b, sp_a, sp_b);
-		dump_bytes("port_buf", a, n);
-		dump_bytes("ref_buf ", b, n);
-	}
+	t_strspn(body, blen, cs, clen);
+	t_strcspn(body, blen, cs, clen);
 }
 
+/* ------------------------------------------------------------------ */
+/* strsep                                                             */
+/* ------------------------------------------------------------------ */
+
 static void
-sep_run(const char *input, std::size_t inlen, const char *delim,
-    std::size_t dlen, const char *tag)
+t_strsep(const unsigned char *body, size_t blen, const unsigned char *dl,
+    size_t dlen)
 {
-	unsigned char a[SEPBUF], b[SEPBUF];
-	unsigned char da[DELIMBUF], db[DELIMBUF];
-	char *spa, *spb;
+	char a[SBUF], b[SBUF], da[SBUF], db[SBUF];
 
-	if (inlen + 1 > SEPBUF || dlen + 1 > DELIMBUF) {
-		std::fprintf(stderr,
-		    "harness bug: %s would overflow (inlen=%zu dlen=%zu)\n",
-		    tag, inlen, dlen);
-		std::exit(2);
-	}
+	fill_str(a, SBUF, body, blen);
+	fill_str(b, SBUF, body, blen);
+	fill_str(da, SBUF, dl, dlen);
+	fill_str(db, SBUF, dl, dlen);
 
-	std::memset(a, GUARD, sizeof(a));
-	std::memset(b, GUARD, sizeof(b));
-	std::memset(da, GUARD, sizeof(da));
-	std::memset(db, GUARD, sizeof(db));
-	std::memcpy(a, input, inlen + 1);
-	std::memcpy(b, input, inlen + 1);
-	std::memcpy(da, delim, dlen + 1);
-	std::memcpy(db, delim, dlen + 1);
+	char *pa = a;
+	char *pb = b;
+	size_t limit = blen + 8;	/* a correct run yields at most blen+1 tokens */
+	bool done = false;
 
-	spa = (char *)a;
-	spb = (char *)b;
+	for (size_t it = 0; it <= limit; it++) {
+		char *ta = P::strsep(&pa, da);
+		char *tb = ref_strsep(&pb, db);
 
-	for (long step = 0;; step++) {
-		char *ra = port::strsep(&spa, (char *)da);
-		char *rb = ref_strsep(&spb, (char *)db);
-
-		long tok_a = ptr_off((char *)a, ra);
-		long tok_b = ptr_off((char *)b, rb);
-		long sp_off_a = ptr_off((char *)a, spa);
-		long sp_off_b = ptr_off((char *)b, spb);
+		/* offsets only -- never raw addresses */
+		long toka = (ta == nullptr) ? -1 : (long)(ta - a);
+		long tokb = (tb == nullptr) ? -1 : (long)(tb - b);
+		long sta = (pa == nullptr) ? -1 : (long)(pa - a);
+		long stb = (pb == nullptr) ? -1 : (long)(pb - b);
 
 		st_strsep.cases++;
-		if (tok_a != tok_b || sp_off_a != sp_off_b ||
-		    std::memcmp(a, b, sizeof(a)) != 0 ||
-		    std::memcmp(da, db, sizeof(da)) != 0) {
-			const char *why = "mismatch";
-			if (tok_a != tok_b)
-				why = "tok_off";
-			else if (sp_off_a != sp_off_b)
-				why = "sp_off";
-			else if (std::memcmp(a, b, sizeof(a)) != 0)
-				why = "buf";
-			else
-				why = "delim";
-			sep_fail(st_strsep, tag, why, step, tok_a, tok_b,
-			    sp_off_a, sp_off_b, a, b, sizeof(a));
+		if (toka != tokb || sta != stb ||
+		    std::memcmp(a, b, SBUF) != 0 ||
+		    std::memcmp(da, db, SBUF) != 0) {
+			if (begin_fail(st_strsep, "mismatch")) {
+				dump_bytes("s", body, blen);
+				dump_bytes("delim", dl, dlen);
+				std::printf("    iter=%zu tok port=%ld ref=%ld "
+				    "state port=%ld ref=%ld buf_diff@%ld "
+				    "delim_diff@%ld\n", it, toka, tokb, sta, stb,
+				    first_diff(a, b, SBUF),
+				    first_diff(da, db, SBUF));
+			}
+			return;
 		}
-
-		if (ra == nullptr && rb == nullptr)
+		if (toka < 0) {
+			done = true;
 			break;
+		}
+	}
+
+	if (!done) {
+		st_strsep.cases++;
+		if (begin_fail(st_strsep, "iteration limit exceeded")) {
+			dump_bytes("s", body, blen);
+			dump_bytes("delim", dl, dlen);
+		}
 	}
 }
 
 static void
-sep_null_stringp(const char *delim, std::size_t dlen, const char *tag)
+t_strsep_null(const unsigned char *dl, size_t dlen)
 {
-	unsigned char da[DELIMBUF], db[DELIMBUF];
-	char *spa = nullptr;
-	char *spb = nullptr;
+	char da[SBUF], db[SBUF];
 
-	std::memset(da, GUARD, sizeof(da));
-	std::memset(db, GUARD, sizeof(db));
-	std::memcpy(da, delim, dlen + 1);
-	std::memcpy(db, delim, dlen + 1);
+	fill_str(da, SBUF, dl, dlen);
+	fill_str(db, SBUF, dl, dlen);
 
-	char *ra = port::strsep(&spa, (char *)da);
-	char *rb = ref_strsep(&spb, (char *)db);
+	char *pa = nullptr;
+	char *pb = nullptr;
+	char *ta = P::strsep(&pa, da);
+	char *tb = ref_strsep(&pb, db);
 
 	st_strsep.cases++;
-	if (ra != nullptr || rb != nullptr || spa != nullptr || spb != nullptr ||
-	    std::memcmp(da, db, sizeof(da)) != 0) {
-		st_strsep.fails++;
-		if (st_strsep.reported < MAX_REPORT) {
-			st_strsep.reported++;
-			std::printf("  FAIL strsep [%s] null-stringp\n", tag);
-			std::printf("      port=%p ref=%p spa=%p spb=%p\n",
-			    (void *)ra, (void *)rb, (void *)spa, (void *)spb);
+	if (ta != nullptr || tb != nullptr || pa != nullptr || pb != nullptr ||
+	    std::memcmp(da, db, SBUF) != 0) {
+		if (begin_fail(st_strsep, "NULL *stringp")) {
+			dump_bytes("delim", dl, dlen);
+			std::printf("    tok_null port=%d ref=%d state_null "
+			    "port=%d ref=%d delim_diff@%ld\n", ta == nullptr,
+			    tb == nullptr, pa == nullptr, pb == nullptr,
+			    first_diff(da, db, SBUF));
 		}
 	}
 }
 
-static const char *const sep_in[] = {
-	"",
-	"a",
-	",",
-	",,",
-	"a,",
-	",a",
-	"a,b",
-	"a,,b",
-	"a,b,c",
-	"no-delims",
-	"\x80,\xff",
-	"a\x80" "b,c",
-	"foo;bar;baz",
-	";;;",
-	"x",
-	"a\x00" "b",
-	"\xff" "a\xff" "b",
-	"token",
-	" leading",
-	"trail ",
-};
+/* ------------------------------------------------------------------ */
+/* wcslcpy                                                            */
+/* ------------------------------------------------------------------ */
 
-static const char *const sep_delim[] = {
-	"",
-	",",
-	";",
-	",;",
-	"\x80",
-	"\xff",
-	"a",
-	"ab",
-	" ,",
-	"\x7f",
-	"\x01",
-	"token",
-	"xyz",
-	"\xfe\xfd",
-};
+static const size_t WDCAP = 96;		/* dst capacity, wchar_t units */
+static const size_t WSCAP = 64;		/* src capacity, wchar_t units */
+static const size_t MAXW = 40;		/* longest generated src */
 
 static void
-sep_edge(void)
+t_wcslcpy(const wchar_t *body, size_t blen, size_t siz)
 {
-	std::size_t ni = sizeof(sep_in) / sizeof(sep_in[0]);
-	std::size_t nd = sizeof(sep_delim) / sizeof(sep_delim[0]);
+	wchar_t da[WDCAP], db[WDCAP], sa[WSCAP], sb[WSCAP];
 
-	for (std::size_t i = 0; i < ni; i++)
-		for (std::size_t j = 0; j < nd; j++)
-			sep_run(sep_in[i], std::strlen(sep_in[i]),
-			    sep_delim[j], std::strlen(sep_delim[j]), "grid");
-
-	for (std::size_t j = 0; j < nd; j++)
-		sep_null_stringp(sep_delim[j], std::strlen(sep_delim[j]),
-		    "grid");
-
-	/* every byte as single-char delimiter */
-	{
-		char in[4] = { 'a', 'b', 'c', '\0' };
-		char d[2];
-
-		d[1] = '\0';
-		for (int v = 0; v < 256; v++) {
-			d[0] = (char)v;
-			sep_run(in, 3, d, 1, "byte-delim");
-		}
+	std::memset(da, GUARD, sizeof da);
+	std::memset(db, GUARD, sizeof db);
+	std::memset(sa, GUARD, sizeof sa);
+	std::memset(sb, GUARD, sizeof sb);
+	for (size_t i = 0; i < blen; i++) {
+		sa[i] = body[i];
+		sb[i] = body[i];
 	}
+	sa[blen] = 0;
+	sb[blen] = 0;
 
-	/* consecutive empty tokens */
-	{
-		char in[16];
-		for (int n = 0; n < 8; n++) {
-			std::size_t k = 0;
-			for (int i = 0; i < n; i++)
-				in[k++] = ',';
-			in[k++] = 'x';
-			in[k] = '\0';
-			sep_run(in, k, ",", 1, "empty-tok");
-		}
-	}
-
-	/* changing delimiter between calls within one exhaustion */
-	{
-		unsigned char a[SEPBUF], b[SEPBUF];
-		unsigned char da[DELIMBUF], db[DELIMBUF];
-		const char *input = "a,b;c,d";
-		const char *delims[] = { ",", ";" };
-		char *spa, *spb;
-		std::size_t inlen = std::strlen(input);
-
-		std::memset(a, GUARD, sizeof(a));
-		std::memset(b, GUARD, sizeof(b));
-		std::memcpy(a, input, inlen + 1);
-		std::memcpy(b, input, inlen + 1);
-		spa = (char *)a;
-		spb = (char *)b;
-
-		for (long step = 0;; step++) {
-			const char *d = delims[step & 1];
-			std::memset(da, GUARD, sizeof(da));
-			std::memset(db, GUARD, sizeof(db));
-			std::memcpy(da, d, 2);
-			std::memcpy(db, d, 2);
-
-			char *ra = port::strsep(&spa, (char *)da);
-			char *rb = ref_strsep(&spb, (char *)db);
-
-			long tok_a = ptr_off((char *)a, ra);
-			long tok_b = ptr_off((char *)b, rb);
-			long sp_off_a = ptr_off((char *)a, spa);
-			long sp_off_b = ptr_off((char *)b, spb);
-
-			st_strsep.cases++;
-			if (tok_a != tok_b || sp_off_a != sp_off_b ||
-			    std::memcmp(a, b, sizeof(a)) != 0) {
-				sep_fail(st_strsep, "swap-delim", "mismatch",
-				    step, tok_a, tok_b, sp_off_a, sp_off_b,
-				    a, b, sizeof(a));
-			}
-			if (ra == nullptr && rb == nullptr)
-				break;
-		}
-	}
-}
-
-static const unsigned char sep_alpha[] = {
-	'a', 'b', ',', ';', 0x80, 0xff, 0x7f, 0x01, '\0'
-};
-
-static void
-sep_random(long iters)
-{
-	char in[SEPBUF], d[DELIMBUF];
-	std::size_t na = sizeof(sep_alpha) / sizeof(sep_alpha[0]);
-
-	for (long it = 0; it < iters; it++) {
-		std::size_t inlen = rnd_mod(24);
-		std::size_t dlen = rnd_mod(8);
-		int wide = (rnd_mod(6) == 0);
-
-		for (std::size_t i = 0; i < inlen; i++)
-			in[i] = wide ? (char)(rnd_mod(256))
-			    : (char)sep_alpha[rnd_mod(na)];
-		in[inlen] = '\0';
-		for (std::size_t i = 0; i < dlen; i++)
-			d[i] = wide ? (char)(rnd_mod(256))
-			    : (char)sep_alpha[rnd_mod(na)];
-		d[dlen] = '\0';
-
-		sep_run(in, inlen, d, dlen, "rand");
-
-		if (rnd_mod(50) == 0)
-			sep_null_stringp(d, dlen, "rand");
-	}
-}
-
-/* ------------------------------------------------------------------------ */
-/* wcslcpy                                                                   */
-/* ------------------------------------------------------------------------ */
-
-static const std::size_t WDST = 96;
-static const std::size_t WSRC = 64;
-
-static void
-lcp_run(const wchar_t *src, std::size_t slen, std::size_t siz, const char *tag)
-{
-	wchar_t a[WDST], b[WDST];
-	wchar_t sa[WSRC], sb[WSRC];
-
-	if (slen + 1 > WSRC) {
-		std::fprintf(stderr,
-		    "harness bug: %s would overflow (slen=%zu)\n", tag, slen);
-		std::exit(2);
-	}
-
-	std::memset(a, GUARD, sizeof(a));
-	std::memset(b, GUARD, sizeof(b));
-	std::memset(sa, GUARD, sizeof(sa));
-	std::memset(sb, GUARD, sizeof(sb));
-	std::memcpy(sa, src, (slen + 1) * sizeof(wchar_t));
-	std::memcpy(sb, src, (slen + 1) * sizeof(wchar_t));
-
-	std::size_t ra = port::wcslcpy(a, sa, siz);
-	std::size_t rb = ref_wcslcpy(b, sb, siz);
-
-	int bad_ret = (ra != rb);
-	int bad_dst = (std::memcmp(a, b, sizeof(a)) != 0);
-	int bad_src = (std::memcmp(sa, sb, sizeof(sa)) != 0);
+	size_t rp = P::wcslcpy(da, sa, siz);
+	size_t ro = ref_wcslcpy(db, sb, siz);
 
 	st_wcslcpy.cases++;
-	if (bad_ret || bad_dst || bad_src) {
-		st_wcslcpy.fails++;
-		if (st_wcslcpy.reported < MAX_REPORT) {
-			st_wcslcpy.reported++;
-			std::printf("  FAIL wcslcpy [%s] slen=%zu siz=%zu%s%s%s\n",
-			    tag, slen, siz, bad_ret ? " ret" : "",
-			    bad_dst ? " dst" : "", bad_src ? " src" : "");
-			std::printf("      port_ret=%zu ref_ret=%zu\n", ra, rb);
-			dump_wide("port_dst", a, WDST);
-			dump_wide("ref_dst ", b, WDST);
+	if (rp != ro || std::memcmp(da, db, sizeof da) != 0 ||
+	    std::memcmp(sa, sb, sizeof sa) != 0) {
+		if (begin_fail(st_wcslcpy, "mismatch")) {
+			dump_wide("src", body, blen);
+			std::printf("    siz=%zu port=%zu ref=%zu dst_diff@%ld "
+			    "src_diff@%ld\n", siz, rp, ro,
+			    first_diff(da, db, sizeof da),
+			    first_diff(sa, sb, sizeof sa));
+			size_t show = blen + 4 < WDCAP ? blen + 4 : WDCAP;
+			dump_wide("dst_port", da, show);
+			dump_wide("dst_ref ", db, show);
 		}
 	}
 }
 
-static const wchar_t *const lcp_srcs[] = {
-	L"",
-	L"a",
-	L"ab",
-	L"abc",
-	L"abcd",
-	L"hello",
-	L"\x7f",
-	L"\x80",
-	L"\xffff",
-	L"\x10000",
-	L"a\x000" "b",
-};
+/* sweep every interesting size for one src */
+static void
+t_wcslcpy_sizes(const wchar_t *body, size_t blen)
+{
+	t_wcslcpy(body, blen, 0);
+	t_wcslcpy(body, blen, 1);
+	t_wcslcpy(body, blen, 2);
+	if (blen >= 1)
+		t_wcslcpy(body, blen, blen - 1);
+	t_wcslcpy(body, blen, blen);
+	t_wcslcpy(body, blen, blen + 1);
+	t_wcslcpy(body, blen, blen + 2);
+	t_wcslcpy(body, blen, MAXW + 4);
+}
 
-static const std::size_t lcp_siz[] = { 0, 1, 2, 3, 4, 5, 8, 16, 32, 64 };
+/* ------------------------------------------------------------------ */
+/* hand-written cases                                                 */
+/* ------------------------------------------------------------------ */
+
+#define BYTES(lit) (const unsigned char *)(lit), (sizeof(lit) - 1)
 
 static void
-lcp_edge(void)
+hand_span(void)
 {
-	std::size_t ns = sizeof(lcp_srcs) / sizeof(lcp_srcs[0]);
-	std::size_t nz = sizeof(lcp_siz) / sizeof(lcp_siz[0]);
+	/* empty string / empty charset -- both early-return paths */
+	t_span_both(BYTES(""), BYTES(""));
+	t_span_both(BYTES(""), BYTES("abc"));
+	t_span_both(BYTES("a"), BYTES(""));
+	t_span_both(BYTES("abc"), BYTES(""));
 
-	for (std::size_t i = 0; i < ns; i++) {
-		std::size_t slen = std::wcslen(lcp_srcs[i]);
-		for (std::size_t j = 0; j < nz; j++)
-			lcp_run(lcp_srcs[i], slen, lcp_siz[j], "grid");
+	/* single character, both sides of the membership test */
+	t_span_both(BYTES("a"), BYTES("a"));
+	t_span_both(BYTES("a"), BYTES("b"));
+	t_span_both(BYTES("b"), BYTES("a"));
 
-		if (slen > 0) {
-			lcp_run(lcp_srcs[i], slen, slen - 1, "siz=slen-1");
-			lcp_run(lcp_srcs[i], slen, slen, "siz=slen");
-			lcp_run(lcp_srcs[i], slen, slen + 1, "siz=slen+1");
-		}
+	/* whole string in the set: forces the scan to stop on the NUL */
+	t_span_both(BYTES("aaa"), BYTES("a"));
+	t_span_both(BYTES("abc"), BYTES("cba"));
+	t_span_both(BYTES("abcd"), BYTES("cba"));
+	t_span_both(BYTES("abcdefghijklmnopqrstuvwxyz"),
+	    BYTES("zyxwvutsrqponmlkjihgfedcba"));
+
+	/* a charset containing the guard byte makes any walk past the
+	 * terminating NUL observable in the return value */
+	t_span_both(BYTES("abc"), BYTES("\x7f"));
+	t_span_both(BYTES("abc"), BYTES("\x7f" "x"));
+	t_span_both(BYTES("\x7f\x7f"), BYTES("\x7f"));
+	t_span_both(BYTES("\x7f\x7f" "a"), BYTES("\x7f"));
+
+	/* LONG_BIT lane boundaries: 0x3f|0x40 (tbl[0]|tbl[1]),
+	 * 0x7f|0x80 (tbl[1]|tbl[2]), 0xbf|0xc0 (tbl[2]|tbl[3]) */
+	t_span_both(BYTES("\x01"), BYTES("\x01"));
+	t_span_both(BYTES("\x3f"), BYTES("\x3f"));
+	t_span_both(BYTES("\x40"), BYTES("\x40"));
+	t_span_both(BYTES("\x3f"), BYTES("\x40"));
+	t_span_both(BYTES("\x40"), BYTES("\x3f"));
+	t_span_both(BYTES("\x7f"), BYTES("\x80"));
+	t_span_both(BYTES("\x80"), BYTES("\x7f"));
+	t_span_both(BYTES("\x80"), BYTES("\x80"));
+	t_span_both(BYTES("\xbf"), BYTES("\xc0"));
+	t_span_both(BYTES("\xc0"), BYTES("\xbf"));
+	t_span_both(BYTES("\xc0"), BYTES("\xc0"));
+	t_span_both(BYTES("\xff"), BYTES("\xff"));
+	t_span_both(BYTES("\xfe"), BYTES("\xff"));
+	t_span_both(BYTES("\xff"), BYTES("\xfe"));
+
+	/* the bytes whose bit is bit 0 of each table lane: a bogus lane
+	 * initialiser shows up here and nowhere else */
+	t_span_both(BYTES("\x40\x80\xc0"), BYTES("\x40\x80\xc0"));
+	t_span_both(BYTES("\x40\x80\xc0"), BYTES("x"));
+	t_span_both(BYTES("@"), BYTES("x"));
+	t_span_both(BYTES("@"), BYTES("\x7f"));
+	t_span_both(BYTES("\x80"), BYTES("x"));
+	t_span_both(BYTES("\xc0"), BYTES("x"));
+	t_span_both(BYTES("@@@"), BYTES("@"));
+
+	/* high-bit bytes across the whole 0x80..0xff range */
+	t_span_both(BYTES("\x80\x81\x82\x83\xfd\xfe\xff"),
+	    BYTES("\xff\xfe\xfd\x83\x82\x81\x80"));
+	t_span_both(BYTES("\x80\x81\x82\x83\xfd\xfe\xff"), BYTES("\x80\x81"));
+	t_span_both(BYTES("\x80\x81\x82\x83\xfd\xfe\xff"), BYTES("\xff"));
+
+	/* match at the front, the middle and the end of a longer string */
+	t_span_both(BYTES("aaaaaaaab"), BYTES("a"));
+	t_span_both(BYTES("baaaaaaaa"), BYTES("a"));
+	t_span_both(BYTES("aaaabaaaa"), BYTES("a"));
+	t_span_both(BYTES("xxxxxxxxa"), BYTES("a"));
+	t_span_both(BYTES("axxxxxxxx"), BYTES("a"));
+	t_span_both(BYTES("xxxxaxxxx"), BYTES("a"));
+
+	/* embedded NUL: only the leading substring is visible */
+	t_span_both(BYTES("ab\0cd"), BYTES("abcd"));
+	t_span_both(BYTES("ab\0cd"), BYTES("cd"));
+}
+
+static void
+hand_strsep(void)
+{
+	/* *stringp == NULL */
+	t_strsep_null(BYTES(","));
+	t_strsep_null(BYTES(""));
+
+	/* empty inputs */
+	t_strsep(BYTES(""), BYTES(""));
+	t_strsep(BYTES(""), BYTES(","));
+	t_strsep(BYTES("a"), BYTES(""));
+	t_strsep(BYTES("abc"), BYTES(""));
+
+	/* single separator, every position */
+	t_strsep(BYTES("a,b"), BYTES(","));
+	t_strsep(BYTES(",a"), BYTES(","));
+	t_strsep(BYTES("a,"), BYTES(","));
+	t_strsep(BYTES(","), BYTES(","));
+	t_strsep(BYTES(",,"), BYTES(","));
+	t_strsep(BYTES(",,,"), BYTES(","));
+	t_strsep(BYTES("a,b,c,d"), BYTES(","));
+	t_strsep(BYTES("a,,b"), BYTES(","));
+
+	/* no separator present at all: one token, then NULL */
+	t_strsep(BYTES("abc"), BYTES(","));
+	t_strsep(BYTES("abc"), BYTES("xyz"));
+
+	/* a delimiter set containing the guard byte: walking past the
+	 * terminating NUL changes the token boundaries observably */
+	t_strsep(BYTES("abc"), BYTES("\x7f"));
+	t_strsep(BYTES("a,b"), BYTES(",\x7f"));
+
+	/* multi-character delimiter sets: the match has to be found at
+	 * delim[1], delim[2], ... not only at delim[0] */
+	t_strsep(BYTES("a;b"), BYTES(",;"));
+	t_strsep(BYTES("a;b"), BYTES("xy;"));
+	t_strsep(BYTES("a;b,c"), BYTES(",;"));
+	t_strsep(BYTES("a;b,c"), BYTES(";,"));
+	t_strsep(BYTES("a.b:c;d,e"), BYTES(",;:."));
+	t_strsep(BYTES("abcdefg"), BYTES("uvwxyz"));
+
+	/* high-bit delimiters: c and sc are int-promoted plain chars, so the
+	 * sign extension has to match on both sides */
+	t_strsep(BYTES("a\x80" "b"), BYTES("\x80"));
+	t_strsep(BYTES("a\xff" "b"), BYTES("\xff"));
+	t_strsep(BYTES("a\xff" "b"), BYTES("\x7f\xff"));
+	t_strsep(BYTES("\x80\xff\xc0"), BYTES("\x80\xc0"));
+	t_strsep(BYTES("\xff\xff\xff"), BYTES("\xff"));
+	t_strsep(BYTES("a\xc0" "b\xbf" "c"), BYTES("\xc0\xbf"));
+	t_strsep(BYTES("abc"), BYTES("\x80\x81\x82"));
+
+	/* every byte a separator, and long runs */
+	t_strsep(BYTES("aaaaaaaa"), BYTES("a"));
+	t_strsep(BYTES("aaaaaaaab"), BYTES("a"));
+	t_strsep(BYTES("baaaaaaaa"), BYTES("a"));
+	t_strsep(BYTES("a,b;c,d;e,f;g,h"), BYTES(",;"));
+
+	/* embedded NUL terminates the buffer early */
+	t_strsep(BYTES("ab\0cd"), BYTES(","));
+	t_strsep(BYTES("a,b\0c,d"), BYTES(","));
+}
+
+static void
+hand_wcslcpy(void)
+{
+	wchar_t buf[MAXW + 1];
+
+	/* empty src, every size */
+	buf[0] = 0;
+	t_wcslcpy_sizes(buf, 0);
+
+	/* one wide char, every size */
+	static const wchar_t singles[] = {
+		1, L'a', 0x7f, 0x80, 0xff, 0x100, 0xfffd, 0xffff, 0x10ffff,
+		0x7f7f7f7f
+	};
+	for (size_t i = 0; i < sizeof singles / sizeof singles[0]; i++) {
+		buf[0] = singles[i];
+		t_wcslcpy_sizes(buf, 1);
 	}
 
-	/* exact-fill and near-fill against buffer end */
-	{
-		wchar_t src[WSRC];
-		for (std::size_t slen = 0; slen <= 12; slen++) {
-			for (std::size_t i = 0; i < slen; i++)
-				src[i] = (wchar_t)(0x100 + i);
-			src[slen] = L'\0';
-
-			for (std::size_t siz = 0; siz <= slen + 2; siz++)
-				lcp_run(src, slen, siz, "exact-fill");
-		}
+	/* short ascending runs (covers the siz == len truncation boundary) */
+	for (size_t n = 1; n <= 10; n++) {
+		for (size_t i = 0; i < n; i++)
+			buf[i] = (wchar_t)(L'a' + i);
+		t_wcslcpy_sizes(buf, n);
 	}
 
-	/* siz==0 must not write dst */
-	{
-		wchar_t src[] = L"xyz";
-		lcp_run(src, 3, 0, "siz0");
+	/* runs of the guard value itself, so a stale guard word left in dst
+	 * cannot masquerade as copied data */
+	for (size_t n = 1; n <= 6; n++) {
+		for (size_t i = 0; i < n; i++)
+			buf[i] = (wchar_t)0x7f7f7f7f;
+		t_wcslcpy_sizes(buf, n);
+	}
+
+	/* high code points */
+	for (size_t n = 1; n <= 6; n++) {
+		for (size_t i = 0; i < n; i++)
+			buf[i] = (wchar_t)(0x10fff0 + i);
+		t_wcslcpy_sizes(buf, n);
+	}
+
+	/* longest src, exhaustive size sweep including 0 and len +/- 1 */
+	for (size_t i = 0; i < MAXW; i++)
+		buf[i] = (wchar_t)(1 + i * 7);
+	for (size_t siz = 0; siz <= MAXW + 4; siz++)
+		t_wcslcpy(buf, MAXW, siz);
+
+	/* mid-length src, exhaustive size sweep */
+	for (size_t i = 0; i < 7; i++)
+		buf[i] = (wchar_t)(0x80 + i);
+	for (size_t siz = 0; siz <= 12; siz++)
+		t_wcslcpy(buf, 7, siz);
+}
+
+/* ------------------------------------------------------------------ */
+/* randomised sweeps (fixed seeds)                                    */
+/* ------------------------------------------------------------------ */
+
+static const unsigned char AL_SMALL[] = { 'a', 'b', 'c' };
+static const unsigned char AL_SEP[] = {
+	'a', 'b', 'c', ',', ';', 0x7f, 0x80, 0xc0, 0xff
+};
+static const unsigned char AL_BOUND[] = {
+	0x01, 0x3e, 0x3f, 0x40, 0x41, 0x7e, 0x7f, 0x80, 0x81,
+	0xbe, 0xbf, 0xc0, 0xc1, 0xfe, 0xff
+};
+
+static unsigned char
+gen_byte(Rng &r, int mode)
+{
+	switch (mode) {
+	case 0:
+		return (unsigned char)(1 + r.below(255));	/* 0x01..0xff */
+	case 1:
+		return AL_SMALL[r.below((uint32_t)sizeof AL_SMALL)];
+	case 2:
+		return AL_BOUND[r.below((uint32_t)sizeof AL_BOUND)];
+	case 3:
+		return (unsigned char)(0x80 + r.below(0x80));	/* high bit set */
+	default:
+		return AL_SEP[r.below((uint32_t)sizeof AL_SEP)];
 	}
 }
 
-static const wchar_t lcp_alpha[] = {
-	(wchar_t)0x0001, (wchar_t)0x007f, (wchar_t)0x0080, (wchar_t)0x00ff,
-	(wchar_t)0x0100, (wchar_t)0xffff, (wchar_t)0x41, (wchar_t)0x61,
-};
+static void
+sweep_span(void)
+{
+	Rng r(0x5350414E5F4231ull);
+	unsigned char s[MAXS + 1], cs[MAXS + 1];
+
+	for (int iter = 0; iter < 200000; iter++) {
+		int mode = (int)r.below(5);
+		size_t clen = r.below(9);		/* 0..8 */
+		for (size_t i = 0; i < clen; i++)
+			cs[i] = gen_byte(r, mode);
+
+		size_t slen = r.below(25);		/* 0..24 */
+		for (size_t i = 0; i < slen; i++) {
+			/* mostly draw from the charset so the scan really runs,
+			 * sometimes from outside so that it stops early */
+			if (clen != 0 && r.pct(75))
+				s[i] = cs[r.below((uint32_t)clen)];
+			else
+				s[i] = gen_byte(r, mode);
+		}
+		t_span_both(s, slen, cs, clen);
+	}
+}
 
 static void
-lcp_random(long iters)
+sweep_strsep(void)
 {
-	wchar_t src[WSRC];
-	std::size_t na = sizeof(lcp_alpha) / sizeof(lcp_alpha[0]);
+	Rng r(0x5345505F4231ull);
+	unsigned char s[MAXS + 1], dl[MAXS + 1];
 
-	for (long it = 0; it < iters; it++) {
-		std::size_t slen = rnd_mod(20);
-		for (std::size_t i = 0; i < slen; i++)
-			src[i] = lcp_alpha[rnd_mod(na)];
-		src[slen] = L'\0';
+	for (int iter = 0; iter < 200000; iter++) {
+		int mode = (iter % 5 == 0) ? 0 : 4;
+		size_t dlen = r.below(5);		/* 0..4 */
+		for (size_t i = 0; i < dlen; i++)
+			dl[i] = gen_byte(r, mode);
 
-		std::size_t siz;
-		switch ((int)rnd_mod(10)) {
-		case 0: case 1: case 2: case 3:
-			siz = rnd_mod(24);
-			break;
-		case 4: case 5:
-			siz = slen;
-			break;
-		case 6:
-			siz = slen ? slen - 1 : 0;
-			break;
-		case 7:
-			siz = slen + 1;
-			break;
-		case 8:
+		size_t slen = r.below(21);		/* 0..20 */
+		for (size_t i = 0; i < slen; i++) {
+			if (dlen != 0 && r.pct(40))
+				s[i] = dl[r.below((uint32_t)dlen)];
+			else
+				s[i] = gen_byte(r, mode);
+		}
+		t_strsep(s, slen, dl, dlen);
+		if ((iter & 0x3ff) == 0)
+			t_strsep_null(dl, dlen);
+	}
+}
+
+static void
+sweep_wcslcpy(void)
+{
+	Rng r(0x57435343505931ull);
+	wchar_t src[MAXW + 1];
+
+	for (int iter = 0; iter < 200000; iter++) {
+		size_t blen = r.below((uint32_t)MAXW + 1);	/* 0..MAXW */
+		for (size_t i = 0; i < blen; i++) {
+			wchar_t c;
+			switch (r.below(4)) {
+			case 0:
+				c = (wchar_t)(1 + r.below(255));
+				break;
+			case 1:
+				c = (wchar_t)(0x80 + r.below(0x80));
+				break;
+			case 2:
+				c = (wchar_t)(1 + r.below(0x10ffff));
+				break;
+			default:
+				c = (wchar_t)0x7f7f7f7f;
+				break;
+			}
+			src[i] = c;
+		}
+
+		/* sizes clustered on the truncation boundary, plus 0 and
+		 * values well past the end of src */
+		size_t siz;
+		switch (r.below(6)) {
+		case 0:
 			siz = 0;
 			break;
+		case 1:
+			siz = 1;
+			break;
+		case 2:
+			siz = blen;
+			break;
+		case 3:
+			siz = blen + 1;
+			break;
+		case 4:
+			siz = (blen == 0) ? 0 : blen - 1;
+			break;
 		default:
-			siz = (std::size_t)-1;
+			siz = r.below((uint32_t)MAXW + 5);
 			break;
 		}
-
-		lcp_run(src, slen, siz, "rand");
+		t_wcslcpy(src, blen, siz);
 	}
 }
 
-/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ */
 
 int
 main(void)
 {
-	rng_state = 0x0105b0105ULL;
-	span_edge(st_strspn, port::strspn, ref_strspn);
-	span_random(st_strspn, port::strspn, ref_strspn, 200000);
+	hand_span();
+	hand_strsep();
+	hand_wcslcpy();
 
-	rng_state = 0x0105c0105ULL;
-	span_edge(st_strcspn, port::strcspn, ref_strcspn);
-	span_random(st_strcspn, port::strcspn, ref_strcspn, 200000);
+	sweep_span();
+	sweep_strsep();
+	sweep_wcslcpy();
 
-	rng_state = 0x0105d0105ULL;
-	sep_edge();
-	sep_random(200000);
+	const Stat *all[] = { &st_strspn, &st_strcspn, &st_strsep, &st_wcslcpy };
+	unsigned long long tc = 0, tf = 0;
 
-	rng_state = 0x0105e0105ULL;
-	lcp_edge();
-	lcp_random(200000);
-
-	std::printf("\n%-12s %12s %12s   %s\n", "function", "cases",
+	std::printf("\n");
+	std::printf("+-----------+--------------+--------------+--------+\n");
+	std::printf("| %-9s | %12s | %12s | %-6s |\n", "function", "cases",
 	    "failures", "result");
-	std::printf("%-12s %12s %12s   %s\n", "------------", "------------",
-	    "------------", "------");
-
-	const Stat *all[] = {
-		&st_strspn, &st_strcspn, &st_strsep, &st_wcslcpy
-	};
-	long total_fail = 0;
-	long total_case = 0;
-
-	for (std::size_t i = 0; i < sizeof(all) / sizeof(all[0]); i++) {
-		std::printf("%-12s %12ld %12ld   %s\n", all[i]->name,
+	std::printf("+-----------+--------------+--------------+--------+\n");
+	for (size_t i = 0; i < sizeof all / sizeof all[0]; i++) {
+		std::printf("| %-9s | %12llu | %12llu | %-6s |\n", all[i]->name,
 		    all[i]->cases, all[i]->fails,
 		    all[i]->fails == 0 ? "PASS" : "FAIL");
-		total_fail += all[i]->fails;
-		total_case += all[i]->cases;
+		tc += all[i]->cases;
+		tf += all[i]->fails;
 	}
-	std::printf("%-12s %12s %12s   %s\n", "------------", "------------",
-	    "------------", "------");
-	std::printf("%-12s %12ld %12ld   %s\n", "TOTAL", total_case,
-	    total_fail, total_fail == 0 ? "PASS" : "FAIL");
+	std::printf("+-----------+--------------+--------------+--------+\n");
+	std::printf("| %-9s | %12llu | %12llu | %-6s |\n", "TOTAL", tc, tf,
+	    tf == 0 ? "PASS" : "FAIL");
+	std::printf("+-----------+--------------+--------------+--------+\n");
 
-	return total_fail == 0 ? 0 : 1;
+	return tf == 0 ? 0 : 1;
 }

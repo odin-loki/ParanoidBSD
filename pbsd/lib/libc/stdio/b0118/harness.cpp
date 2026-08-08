@@ -27,6 +27,8 @@ typedef struct b0118_stream {
 	size_t len;
 	size_t pos;
 	int err_on_refill;
+	unsigned char *buf;
+	size_t buf_cap;
 } b0118_stream;
 
 typedef struct b0118_write_ctx {
@@ -236,7 +238,10 @@ setup_read(ReadCoreR &r, ReadCoreP &p, const unsigned char *data, std::size_t le
 	r.stream.len = len;
 	r.stream.pos = preload;
 	r.stream.err_on_refill = err_on_refill;
+	r.stream.buf = r.iobuf;
+	r.stream.buf_cap = sizeof(r.iobuf);
 	p.stream = r.stream;
+	p.stream.buf = p.iobuf;
 
 	r.fp._cookie = &r.stream;
 	p.fp._cookie = &p.stream;
@@ -352,7 +357,7 @@ test_fwrite_one(StatId which, const char *label, const unsigned char *src,
 		ok = false;
 	if (std::memcmp(rc.outbuf, pc.outbuf, sizeof(rc.outbuf)) != 0)
 		ok = false;
-	if (std::memcmp(&rc, &pc, sizeof(rc)) != 0)
+	if (!write_core_eq(rc, pc))
 		ok = false;
 
 	if (!ok)

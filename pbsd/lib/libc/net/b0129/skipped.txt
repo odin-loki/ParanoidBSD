@@ -1,0 +1,1 @@
+getproto.c: requires netdb_private.h, nsswitch/nsdispatch, __protoent_data_init, and the full NSS protocols backend unavailable in this harness.

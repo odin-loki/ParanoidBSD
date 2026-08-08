@@ -1056,3 +1056,13 @@ ref_cexpl(long double complex z)
 		return (CMPLXL(exp_x * c, exp_x * s));
 	}
 }
+
+void
+ref_cexpl_parts(long double complex z, long double *re, long double *im)
+{
+	long double complex r;
+
+	r = ref_cexpl(z);
+	*re = creall(r);
+	*im = cimagl(r);
+}

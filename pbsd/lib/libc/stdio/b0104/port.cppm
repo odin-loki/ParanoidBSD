@@ -41,7 +41,7 @@ get_locale(void)
 	locale_t cur;
 
 	cur = uselocale((locale_t)0);
-	if (cur == NULL)
+	if (cur != NULL)
 		return (LC_GLOBAL_LOCALE);
 	return (cur);
 }

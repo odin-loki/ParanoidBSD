@@ -355,29 +355,19 @@ yy_random(long count)
 int
 main(void)
 {
-	std::printf("phase0\n");
-	std::fflush(stdout);
 	rng_state = 0xb0119b0119ULL;
 	in_edge();
-	std::printf("phase1\n");
-	std::fflush(stdout);
 	in_random(70000);
-	std::printf("phase2\n");
-	std::fflush(stdout);
 
 	rng_state = 0xb0119aULL;
 	sa_edge();
-	std::printf("phase3\n");
-	std::fflush(stdout);
 	sa_random(70000);
-	std::printf("phase4\n");
-	std::fflush(stdout);
 
 	rng_state = 0xb011901ULL;
 	yy_edge();
-	std::printf("phase5\n");
-	std::fflush(stdout);
-	return 0;
+	yy_random(70000);
+
+	std::printf("\n%-14s %12s %12s   %s\n", "function", "cases",
 	    "failures", "result");
 	std::printf("%-14s %12s %12s   %s\n", "--------------", "------------",
 	    "------------", "------");

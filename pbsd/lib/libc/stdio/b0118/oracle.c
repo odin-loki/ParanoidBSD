@@ -131,6 +131,8 @@ typedef struct b0118_stream {
 	size_t len;
 	size_t pos;
 	int err_on_refill;
+	unsigned char *buf;
+	size_t buf_cap;
 } b0118_stream;
 
 typedef struct b0118_write_ctx {
@@ -205,13 +207,19 @@ __srefill(FILE *fp)
 
 	{
 		size_t avail = st->len - st->pos;
-		size_t chunk = avail > 128 ? 128 : avail;
+		unsigned char *dbuf = st->buf != NULL ? st->buf : fp->_nbuf;
+		size_t dcap = st->buf != NULL ? st->buf_cap : 1;
+		size_t chunk = avail > dcap ? dcap : avail;
+		if (chunk > 128)
+			chunk = 128;
+		if (chunk > dcap)
+			chunk = dcap;
 
-		memcpy(fp->_nbuf, st->data + st->pos, chunk);
+		memcpy(dbuf, st->data + st->pos, chunk);
 		st->pos += chunk;
-		fp->_bf._base = fp->_nbuf;
-		fp->_bf._size = 1;
-		fp->_p = fp->_nbuf;
+		fp->_bf._base = dbuf;
+		fp->_bf._size = (int)dcap;
+		fp->_p = dbuf;
 		fp->_r = (int)chunk;
 		fp->_flags |= __SRD;
 	}

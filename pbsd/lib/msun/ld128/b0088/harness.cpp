@@ -25,6 +25,7 @@ long double ref_sinpil(long double);
 long double ref_tanpil(long double);
 long double _Complex ref_cexpl(long double _Complex);
 void pbsd_b0088_cexpl_parts(long double _Complex, long double *, long double *);
+void ref_cexpl_parts(long double _Complex, long double *, long double *);
 }
 
 static const std::size_t LD_BYTES = sizeof(long double);
@@ -89,13 +90,19 @@ port_cexpl_im(long double _Complex z)
 static long double
 ref_cexpl_re(long double _Complex z)
 {
-	return creall(ref_cexpl(z));
+	long double re, im;
+
+	ref_cexpl_parts(z, &re, &im);
+	return re;
 }
 
 static long double
 ref_cexpl_im(long double _Complex z)
 {
-	return cimagl(ref_cexpl(z));
+	long double re, im;
+
+	ref_cexpl_parts(z, &re, &im);
+	return im;
 }
 
 static void
