@@ -4,13 +4,12 @@
 
 import pbsd.lib.libc.locale.b0002;
 
-#include <cerrno>
 #include <climits>
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <uchar.h>
 
 namespace port = pbsd::lib_libc_locale::b0002;
 
@@ -19,32 +18,32 @@ typedef union {
 	char		__mbstate8[128];
 	long long	_mbstateL;
 } __mbstate_t;
-typedef __mbstate_t mbstate_t;
+typedef __mbstate_t ref_mbstate_t;
+
+#include <uchar.h>
 
 extern "C" {
 typedef struct xlocale *ref_locale_t;
 
-extern struct port_xlocale port_global_locale;
-extern struct port_xlocale_ctype port_global_ctype;
 extern struct xlocale ref_global_locale;
 extern struct xlocale_ctype ref_global_ctype;
 
-size_t ref_c16rtomb_l(char *, char16_t, mbstate_t *, ref_locale_t);
-size_t ref_c16rtomb(char *, char16_t, mbstate_t *);
-size_t ref_c32rtomb_l(char *, char32_t, mbstate_t *, ref_locale_t);
-size_t ref_c32rtomb(char *, char32_t, mbstate_t *);
-size_t ref_mbrtoc16_l(char16_t *, const char *, size_t, mbstate_t *, ref_locale_t);
-size_t ref_mbrtoc16(char16_t *, const char *, size_t, mbstate_t *);
-size_t ref_mbrtoc32_l(char32_t *, const char *, size_t, mbstate_t *, ref_locale_t);
-size_t ref_mbrtoc32(char32_t *, const char *, size_t, mbstate_t *);
+size_t ref_c16rtomb_l(char *, char16_t, ref_mbstate_t *, ref_locale_t);
+size_t ref_c16rtomb(char *, char16_t, ref_mbstate_t *);
+size_t ref_c32rtomb_l(char *, char32_t, ref_mbstate_t *, ref_locale_t);
+size_t ref_c32rtomb(char *, char32_t, ref_mbstate_t *);
+size_t ref_mbrtoc16_l(char16_t *, const char *, size_t, ref_mbstate_t *, ref_locale_t);
+size_t ref_mbrtoc16(char16_t *, const char *, size_t, ref_mbstate_t *);
+size_t ref_mbrtoc32_l(char32_t *, const char *, size_t, ref_mbstate_t *, ref_locale_t);
+size_t ref_mbrtoc32(char32_t *, const char *, size_t, ref_mbstate_t *);
 extern int ref_iconv_open_fail;
 }
 
 struct xlocale_ctype {
-	mbstate_t	mbrtoc16;
-	mbstate_t	mbrtoc32;
-	mbstate_t	c16rtomb;
-	mbstate_t	c32rtomb;
+	ref_mbstate_t	mbrtoc16;
+	ref_mbstate_t	mbrtoc32;
+	ref_mbstate_t	c16rtomb;
+	ref_mbstate_t	c32rtomb;
 };
 
 struct xlocale {
@@ -87,12 +86,18 @@ xorshift32()
 static void
 init_locales()
 {
-	port_global_locale.components[1] = &port_global_ctype;
+	port::init_locale();
 	ref_global_locale.components[1] = &ref_global_ctype;
 }
 
 static void
-zero_state(mbstate_t *ps)
+zero_state(port::mbstate_t *ps)
+{
+	memset(ps, 0, sizeof(*ps));
+}
+
+static void
+zero_state(ref_mbstate_t *ps)
 {
 	memset(ps, 0, sizeof(*ps));
 }
@@ -162,7 +167,8 @@ static bool
 compare_rtomb_l(Stats &st, char16_t c, bool use_l, bool null_ps)
 {
 	unsigned char pout[OUT_CAP], rout[OUT_CAP];
-	mbstate_t pstate, rstate;
+	port::mbstate_t pstate;
+	ref_mbstate_t rstate;
 	size_t pr, rr;
 	int perrno, rerrno;
 
@@ -175,7 +181,7 @@ compare_rtomb_l(Stats &st, char16_t c, bool use_l, bool null_ps)
 	errno = 0;
 	if (use_l) {
 		pr = port::c16rtomb_l((char *)(pout + 4), c,
-		    null_ps ? nullptr : &pstate, &port_global_locale);
+		    null_ps ? nullptr : &pstate, port::global_locale());
 		perrno = errno;
 		errno = 0;
 		rr = ref_c16rtomb_l((char *)(rout + 4), c,
@@ -206,7 +212,8 @@ static bool
 compare_c32rtomb_l(Stats &st, char32_t c, bool use_l, bool null_ps)
 {
 	unsigned char pout[OUT_CAP], rout[OUT_CAP];
-	mbstate_t pstate, rstate;
+	port::mbstate_t pstate;
+	ref_mbstate_t rstate;
 	size_t pr, rr;
 	int perrno, rerrno;
 
@@ -219,7 +226,7 @@ compare_c32rtomb_l(Stats &st, char32_t c, bool use_l, bool null_ps)
 	errno = 0;
 	if (use_l) {
 		pr = port::c32rtomb_l((char *)(pout + 4), c,
-		    null_ps ? nullptr : &pstate, &port_global_locale);
+		    null_ps ? nullptr : &pstate, port::global_locale());
 		perrno = errno;
 		errno = 0;
 		rr = ref_c32rtomb_l((char *)(rout + 4), c,
@@ -248,7 +255,8 @@ compare_mbrtoc_l(Stats &st, const unsigned char *in, size_t n, bool is32,
 {
 	unsigned char pin[64], rin[64];
 	unsigned char pwcbuf[16], rwcbuf[16];
-	mbstate_t pstate, rstate;
+	port::mbstate_t pstate;
+	ref_mbstate_t rstate;
 	char16_t p16, r16;
 	char32_t p32, r32;
 	size_t pr, rr;
@@ -269,7 +277,7 @@ compare_mbrtoc_l(Stats &st, const unsigned char *in, size_t n, bool is32,
 		if (use_l) {
 			pr = port::mbrtoc32_l(null_pc ? nullptr : (char32_t *)(pwcbuf + 4),
 			    (const char *)(pin + 8), n,
-			    null_ps ? nullptr : &pstate, &port_global_locale);
+			    null_ps ? nullptr : &pstate, port::global_locale());
 			perrno = errno;
 			errno = 0;
 			rr = ref_mbrtoc32_l(null_pc ? nullptr : (char32_t *)(rwcbuf + 4),
@@ -287,14 +295,13 @@ compare_mbrtoc_l(Stats &st, const unsigned char *in, size_t n, bool is32,
 			    null_ps ? nullptr : &rstate);
 			rerrno = errno;
 		}
-		p16 = r16 = 0;
 		memcpy(&p32, pwcbuf + 4, sizeof(p32));
 		memcpy(&r32, rwcbuf + 4, sizeof(r32));
 	} else {
 		if (use_l) {
 			pr = port::mbrtoc16_l(null_pc ? nullptr : (char16_t *)(pwcbuf + 4),
 			    (const char *)(pin + 8), n,
-			    null_ps ? nullptr : &pstate, &port_global_locale);
+			    null_ps ? nullptr : &pstate, port::global_locale());
 			perrno = errno;
 			errno = 0;
 			rr = ref_mbrtoc16_l(null_pc ? nullptr : (char16_t *)(rwcbuf + 4),
@@ -314,7 +321,6 @@ compare_mbrtoc_l(Stats &st, const unsigned char *in, size_t n, bool is32,
 		}
 		memcpy(&p16, pwcbuf + 4, sizeof(p16));
 		memcpy(&r16, rwcbuf + 4, sizeof(r16));
-		p32 = r32 = 0;
 	}
 
 	if (pr != rr || perrno != rerrno)
@@ -333,7 +339,8 @@ compare_mbrtoc_l(Stats &st, const unsigned char *in, size_t n, bool is32,
 static bool
 compare_reset_rtomb(Stats &st, bool is32, bool use_l)
 {
-	mbstate_t pstate, rstate;
+	port::mbstate_t pstate;
+	ref_mbstate_t rstate;
 	size_t pr, rr;
 
 	st.cases++;
@@ -342,7 +349,7 @@ compare_reset_rtomb(Stats &st, bool is32, bool use_l)
 	errno = 0;
 	if (is32) {
 		if (use_l) {
-			pr = port::c32rtomb_l(nullptr, 0, &pstate, &port_global_locale);
+			pr = port::c32rtomb_l(nullptr, 0, &pstate, port::global_locale());
 			rr = ref_c32rtomb_l(nullptr, 0, &rstate, &ref_global_locale);
 		} else {
 			pr = port::c32rtomb(nullptr, 0, &pstate);
@@ -350,7 +357,7 @@ compare_reset_rtomb(Stats &st, bool is32, bool use_l)
 		}
 	} else {
 		if (use_l) {
-			pr = port::c16rtomb_l(nullptr, 0, &pstate, &port_global_locale);
+			pr = port::c16rtomb_l(nullptr, 0, &pstate, port::global_locale());
 			rr = ref_c16rtomb_l(nullptr, 0, &rstate, &ref_global_locale);
 		} else {
 			pr = port::c16rtomb(nullptr, 0, &pstate);
@@ -365,7 +372,8 @@ compare_reset_rtomb(Stats &st, bool is32, bool use_l)
 static bool
 compare_reset_mbrtoc(Stats &st, bool is32, bool use_l)
 {
-	mbstate_t pstate, rstate;
+	port::mbstate_t pstate;
+	ref_mbstate_t rstate;
 	size_t pr, rr;
 
 	st.cases++;
@@ -375,7 +383,7 @@ compare_reset_mbrtoc(Stats &st, bool is32, bool use_l)
 	if (is32) {
 		if (use_l)
 			pr = port::mbrtoc32_l(nullptr, nullptr, 0, &pstate,
-			    &port_global_locale);
+			    port::global_locale());
 		else
 			pr = port::mbrtoc32(nullptr, nullptr, 0, &pstate);
 		rr = use_l ?
@@ -384,7 +392,7 @@ compare_reset_mbrtoc(Stats &st, bool is32, bool use_l)
 	} else {
 		if (use_l)
 			pr = port::mbrtoc16_l(nullptr, nullptr, 0, &pstate,
-			    &port_global_locale);
+			    port::global_locale());
 		else
 			pr = port::mbrtoc16(nullptr, nullptr, 0, &pstate);
 		rr = use_l ?
@@ -399,7 +407,8 @@ compare_reset_mbrtoc(Stats &st, bool is32, bool use_l)
 static bool
 compare_open_fail(Stats &st, bool is32, bool rtomb)
 {
-	mbstate_t pstate, rstate;
+	port::mbstate_t pstate;
+	ref_mbstate_t rstate;
 	size_t pr, rr;
 	int perrno, rerrno;
 
@@ -410,24 +419,24 @@ compare_open_fail(Stats &st, bool is32, bool rtomb)
 	errno = 0;
 	if (rtomb) {
 		if (is32) {
-			pr = port::c32rtomb_l((char *)1, 0, &pstate, &port_global_locale);
+			pr = port::c32rtomb_l((char *)1, 0, &pstate, port::global_locale());
 			perrno = errno;
 			errno = 0;
 			rr = ref_c32rtomb_l((char *)1, 0, &rstate, &ref_global_locale);
 		} else {
-			pr = port::c16rtomb_l((char *)1, 0, &pstate, &port_global_locale);
+			pr = port::c16rtomb_l((char *)1, 0, &pstate, port::global_locale());
 			perrno = errno;
 			errno = 0;
 			rr = ref_c16rtomb_l((char *)1, 0, &rstate, &ref_global_locale);
 		}
 	} else {
 		if (is32) {
-			pr = port::mbrtoc32_l(nullptr, "", 0, &pstate, &port_global_locale);
+			pr = port::mbrtoc32_l(nullptr, "", 0, &pstate, port::global_locale());
 			perrno = errno;
 			errno = 0;
 			rr = ref_mbrtoc32_l(nullptr, "", 0, &rstate, &ref_global_locale);
 		} else {
-			pr = port::mbrtoc16_l(nullptr, "", 0, &pstate, &port_global_locale);
+			pr = port::mbrtoc16_l(nullptr, "", 0, &pstate, port::global_locale());
 			perrno = errno;
 			errno = 0;
 			rr = ref_mbrtoc16_l(nullptr, "", 0, &rstate, &ref_global_locale);

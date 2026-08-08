@@ -81,7 +81,6 @@ do {								\
 } while (0)
 #endif
 #endif
-#endif
 
 #ifndef STRICT_ASSIGN
 #define	STRICT_ASSIGN(type, lval, rval)	((lval) = (rval))

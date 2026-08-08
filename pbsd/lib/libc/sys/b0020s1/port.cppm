@@ -7,40 +7,67 @@
  * under sponsorship from the FreeBSD Foundation.
  */
 
-export module pbsd.lib.libc.sys.b0020s1;
-
 /*
- * Declarations the original translation unit obtained from <sys/types.h>,
- * <sys/procdesc.h> and the private header "libc_private.h".  The two opaque
- * kernel structures are exported so that importers name the same entities
- * that appear in pdwait()'s signature.
+ * PBSD b0020s1: C++23 port of hbsd/src/lib/libc/sys/pdwait.c.
+ *
+ * <sys/procdesc.h> and "libc_private.h" are libc-private FreeBSD headers with
+ * no PBSD module yet, so the declarations they supply are reproduced in the
+ * global module fragment.  The interposition table itself is defined by the
+ * oracle translation unit and shared, so both sides dispatch through the same
+ * slots.
  */
 
-export struct __wrusage;
-export struct __siginfo;
+module;
+
+#include <sys/types.h>
+#include <sys/resource.h>
+
+struct __wrusage {
+	struct rusage	wru_self;
+	struct rusage	wru_children;
+};
+
+struct __siginfo {
+	int		si_signo;
+	int		si_errno;
+	int		si_code;
+	int		si_pid;
+	unsigned int	si_uid;
+	int		si_status;
+	void		*si_addr;
+	long		si_value;
+	long		si_band;
+	int		__spare__[7];
+};
 
 extern "C" {
 
 typedef int (*interpos_func_t)(void);
 
-extern interpos_func_t __libc_interposing[];
+enum {
+	INTERPOS_system,
+	INTERPOS_tcdrain,
+	INTERPOS_pdwait,
+	INTERPOS_wait4,
+	INTERPOS_MAX
+};
 
-int __sys_pdwait(int fd, int *status, int options, struct __wrusage *ru,
-    struct __siginfo *infop);
+extern interpos_func_t __pbsd_interposing[INTERPOS_MAX];
 
 }
 
-#define	INTERPOS_pdwait		11
-
-#define	__libc_interposing_slot(i)	(&__libc_interposing[i])
+#define	__libc_interposing_slot(n)	(&__pbsd_interposing[(n)])
 
 #define	INTERPOS_SYS(syscall, ...)					\
-	((reinterpret_cast<decltype(&::__sys_ ## syscall)>(*		\
-	    (__libc_interposing_slot(INTERPOS_ ## syscall))))(__VA_ARGS__))
+	(((__typeof__(syscall) *)*(__libc_interposing_slot(		\
+	    INTERPOS_##syscall)))(__VA_ARGS__))
+
+export module pbsd.lib.libc.sys.b0020s1;
 
 export namespace pbsd::lib_libc_sys::b0020s1 {
 
-int
+/* The original carries "#pragma weak pdwait". */
+[[gnu::weak]] int
 pdwait(int fd, int *status, int options, struct __wrusage *ru,
     struct __siginfo *infop)
 {
