@@ -166,7 +166,7 @@ fdopen(int fd, const char *mode)
 		return (NULL);
 	}
 
-	if ((fp = __sfp()) != NULL)
+	if ((fp = __sfp()) == NULL)
 		return (NULL);
 
 	if ((oflags & O_CLOEXEC) != 0) {

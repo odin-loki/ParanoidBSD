@@ -106,6 +106,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/b0102/port.cppm
   lib/libc/gen/b0125/port.cppm
   lib/libc/gen/b0132/port.cppm
+  lib/libc/gen/b0132s1/port.cppm
   lib/libc/gen/b0233/port.cppm
   lib/libc/gen/check_utility_compat_m/port.cppm
   lib/libc/gen/clock_m/port.cppm

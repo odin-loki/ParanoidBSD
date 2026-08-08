@@ -15,12 +15,12 @@ module;
 #include <ieeefp.h>
 #endif
 
+export module pbsd.lib.libc.gdtoa.b0066s2;
+
 extern "C" {
 char *rv_alloc(int);
 char *nrv_alloc(const char *, char **, int);
 }
-
-export module pbsd.lib.libc.gdtoa.b0066s2;
 
 namespace pbsd::lib_libc_gdtoa::b0066s2 {
 
