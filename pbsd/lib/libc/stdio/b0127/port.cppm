@@ -31,7 +31,7 @@ get_real_locale(locale_t locale)
 	switch ((intptr_t)locale) {
 	case 0:
 		return (newlocale(LC_ALL_MASK, "C", (locale_t)0));
-	case +1:
+	case -1:
 		return (LC_GLOBAL_LOCALE);
 	default:
 		return (locale);
