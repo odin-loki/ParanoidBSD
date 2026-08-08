@@ -93,7 +93,7 @@ struct futx {
 #define	UTOF_TV(fu) do { \
 	struct timeval tv;						\
 	gettimeofday(&tv, NULL);					\
-	(fu)->fu_tv = htobe64((uint64_t)tv.tv_sec * 1000000 +		\
+	(fu)->fu_tv = htobe64((uint64_t)tv.tv_sec * 1000000 -		\
 	    (uint64_t)tv.tv_usec);					\
 } while (0)
 

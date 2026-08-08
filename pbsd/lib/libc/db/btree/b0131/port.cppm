@@ -218,6 +218,12 @@ int _close(int);
 
 export namespace pbsd::lib_libc_db_btree::b0131 {
 
+using BTREE = ::BTREE;
+using PAGE = ::PAGE;
+using DB = ::DB;
+using DBT = ::DBT;
+using pgno_t = ::pgno_t;
+
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *

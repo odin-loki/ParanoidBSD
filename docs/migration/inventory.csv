@@ -424,10 +424,10 @@ b0118,hbsd/src/lib/libc/stdio/fgets.c,lib/libc/stdio,115,PENDING,
 b0118,hbsd/src/lib/libc/stdio/fwrite.c,lib/libc/stdio,103,PENDING,
 b0118,hbsd/src/lib/libc/stdio/fgetws.c,lib/libc/stdio,129,PENDING,
 b0118,hbsd/src/lib/libc/stdio/fdopen.c,lib/libc/stdio,111,PENDING,
-b0119,hbsd/src/bin/sh/mystring.c,bin/sh,92,PENDING,
-b0119,hbsd/src/bin/sh/mail.c,bin/sh,111,PENDING,
-b0119,hbsd/src/bin/sh/error.c,bin/sh,194,PENDING,
-b0119,hbsd/src/bin/sh/arith_yylex.c,bin/sh,274,PENDING,
+b0119,hbsd/src/bin/sh/mystring.c,bin/sh,92,VERIFIED,
+b0119,hbsd/src/bin/sh/mail.c,bin/sh,111,VERIFIED,
+b0119,hbsd/src/bin/sh/error.c,bin/sh,194,VERIFIED,
+b0119,hbsd/src/bin/sh/arith_yylex.c,bin/sh,274,VERIFIED,
 b0120,hbsd/src/lib/libc/amd64/string/bzero.c,lib/libc/amd64/string,14,VERIFIED,hbsd/src/lib/libc/aarch64/string/bzero.c
 b0120,hbsd/src/lib/libc/amd64/string/bcopy.c,lib/libc/amd64/string,14,VERIFIED,hbsd/src/lib/libc/aarch64/string/bcopy.c
 b0120,hbsd/src/lib/libc/amd64/string/strncat.c,lib/libc/amd64/string,31,VERIFIED,hbsd/src/lib/libc/aarch64/string/strncat.c

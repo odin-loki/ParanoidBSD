@@ -138,7 +138,20 @@ module;
 
 export module pbsd.lib.libc.sys.b0097;
 
+/*
+ * libc_private.h is not available outside the libc build, so the declarations
+ * it supplies -- interpos_func_t, the INTERPOS_* slot numbers, the
+ * __libc_interposing table, __libc_interposing_slot() and INTERPOS_SYS() -- are
+ * supplied here, as is struct __wrusage from FreeBSD's <sys/wait.h>.  The
+ * ported function bodies are unchanged from the originals.
+ */
+
 namespace pbsd::lib_libc_sys::b0097 {
+
+/* wait6() only forwards the pointer, so only the size matters. */
+struct __wrusage {
+	unsigned char	opaque[128];
+};
 
 using interpos_func_t = int (*)(void);
 
@@ -170,14 +183,6 @@ using interpos_sig_ppoll = int (*)(struct pollfd *, nfds_t,
 	    (__VA_ARGS__))
 
 export namespace pbsd::lib_libc_sys::b0097 {
-
-/*
- * struct __wrusage comes from FreeBSD's <sys/wait.h>, which the host libc does
- * not provide.  wait6() only forwards the pointer, so only the size matters.
- */
-struct __wrusage {
-	unsigned char	opaque[128];
-};
 
 interpos_func_t __libc_interposing[INTERPOS_MAX];
 

@@ -1783,3 +1783,4 @@
 {"batch": "b0133", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-08-08T11:42:30Z"}
 {"batch": "b0061", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:43:10Z"}
 {"batch": "b0128", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 5/15: reset_malloc, set_malloc_fail_at, reset_locale_states, mbrtoc16_l)", "how": "agent", "ts": "2026-08-08T11:43:59Z"}
+{"batch": "b0119", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:44:15Z"}

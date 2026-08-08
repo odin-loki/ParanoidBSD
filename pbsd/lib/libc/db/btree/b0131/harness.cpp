@@ -28,7 +28,9 @@ typedef struct __db {
 	void *internal;
 } DB;
 
-typedef struct MPOOL MPOOL;
+typedef struct MPOOL {
+	char dummy;
+} MPOOL;
 
 typedef struct _page {
 	pgno_t pgno;
@@ -389,7 +391,14 @@ build_meta_be(unsigned char *buf, size_t bufsz)
 	write_u32_be(buf + 20, B_NODUPS);
 }
 
-struct TreeCopy {
+struct TreePort {
+	P::BTREE t;
+	MPOOL mp;
+	P::DB db;
+	unsigned char pagebuf[PAGE_SZ];
+};
+
+struct TreeRef {
 	BTREE t;
 	MPOOL mp;
 	DB db;
@@ -397,7 +406,16 @@ struct TreeCopy {
 };
 
 void
-init_tree(TreeCopy &c, u_int32_t flags)
+init_tree_port(TreePort &c, u_int32_t flags)
+{
+	std::memset(&c, 0, sizeof(c));
+	c.t.bt_mp = &c.mp;
+	c.t.flags = flags;
+	c.db.internal = &c.t;
+}
+
+void
+init_tree_ref(TreeRef &c, u_int32_t flags)
 {
 	std::memset(&c, 0, sizeof(c));
 	c.t.bt_mp = &c.mp;

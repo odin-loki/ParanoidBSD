@@ -249,6 +249,24 @@ utmpx_bufs_match(const port::utmpx *a, const port::utmpx *b)
 
 /* ----------------------------------------------------------- utx_to_futx */
 
+static bool
+utx_to_futx_calls_tv(short type)
+{
+	switch (type) {
+	case BOOT_TIME:
+	case OLD_TIME:
+	case NEW_TIME:
+	case SHUTDOWN_TIME:
+	case USER_PROCESS:
+	case INIT_PROCESS:
+	case LOGIN_PROCESS:
+	case DEAD_PROCESS:
+		return (true);
+	default:
+		return (false);
+	}
+}
+
 static void
 test_utx_to_futx_one(int row, const char *label, const port::utmpx *ut,
     time_t tv_sec, suseconds_t tv_usec)
@@ -283,7 +301,7 @@ test_utx_to_futx_one(int row, const char *label, const port::utmpx *ut,
 		fail_row(row, label, "ref fu guard clobbered");
 	if (!futx_bufs_match(ga, gb))
 		fail_row(row, label, "futx mismatch");
-	if (g_tv.calls != 1)
+	if (g_tv.calls != (utx_to_futx_calls_tv(ut->ut_type) ? 1 : 0))
 		fail_row(row, label, "gettimeofday call count");
 }
 
