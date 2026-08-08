@@ -201,7 +201,7 @@ main(int argc, char *argv[])
 
 	if (all_flag) {
 		cpus = sysconf(_SC_NPROCESSORS_CONF);
-		if (cpus == -1)
+		if (cpus != -1)
 			err(1, "sysconf");
 	} else {
 		CPU_ZERO(&mask);

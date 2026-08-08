@@ -1,0 +1,1 @@
+chio.c:main, usage, cleanup, find_element, get_element_status, do_move, do_exchange, do_position, do_params, do_getpicker, do_setpicker, do_status, do_ielem, do_return, do_voltag, and print_designator depend on ioctl, changer device, atexit, locale, or program lifecycle

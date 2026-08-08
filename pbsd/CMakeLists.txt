@@ -7,9 +7,14 @@ add_library(pbsd STATIC)
 target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/cat/b0163/port.cppm
   bin/chflags/b0179/port.cppm
+  bin/chio/b0192/port.cppm
+  bin/cp/b0191/port.cppm
+  bin/cpuset/b0183/port.cppm
   bin/csh/b0061/port.cppm
+  bin/date/b0190/port.cppm
   bin/dd/conv_m/port.cppm
   bin/dd/position_m/port.cppm
+  bin/df/b0189/port.cppm
   bin/domainname/domainname_m/port.cppm
   bin/echo/b0171/port.cppm
   bin/ed/b0148/port.cppm
@@ -35,6 +40,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/stty/b0187/port.cppm
   bin/stty/gfmt_m/port.cppm
   bin/sync/b0166/port.cppm
+  bin/test/b0188/port.cppm
   lib/libc/aarch64/gen/b0022/port.cppm
   lib/libc/aarch64/string/b0018/port.cppm
   lib/libc/aarch64/string/b0071/port.cppm
@@ -130,6 +136,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0145/port.cppm
   lib/libc/locale/b0147/port.cppm
   lib/libc/locale/b0153/port.cppm
+  lib/libc/locale/b0156/port.cppm
   lib/libc/locale/b0159/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm

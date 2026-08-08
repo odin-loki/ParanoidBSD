@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #ifndef LONG_BIT
@@ -117,9 +118,10 @@ typedef struct _domainset domainset_t;
 typedef int cpulevel_t;
 typedef int cpuwhich_t;
 typedef int cpusetid_t;
-typedef int id_t;
+#ifndef _LWPID_T_DECLARED
 typedef int lwpid_t;
-typedef int pid_t;
+#define _LWPID_T_DECLARED
+#endif
 
 char jail_errmsg[1024];
 
