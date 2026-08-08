@@ -17,7 +17,7 @@ using port::__iconv_bool;
 
 extern "C" {
 const char *ref_iconv_canonicalize(const char *);
-int ref___iconv_get_list(char ***, size_t *, __iconv_bool);
+int ref___iconv_get_list(char ***, size_t *, _Bool);
 void ref_iconvlist(int (*)(unsigned int, const char *const *, void *), void *);
 void ref_iconv_set_relocation_prefix(const char *, const char *);
 }
@@ -537,8 +537,8 @@ run_edge_cases(void)
 {
 	unsigned char pool[STR_POOL];
 	static char dummy0[] = "seed0";
-	static char dummy1[] = "seed1";
-	static char **seed_list = dummy0;
+	static char *entries[] = {dummy0, dummy1, nullptr};
+	char **seed_list = entries;
 	char ***a_seed = &seed_list;
 	size_t b_seed = 99;
 	unsigned i;

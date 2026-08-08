@@ -57,7 +57,7 @@ struct CtlRec {
 
 struct FreeRec {
 	int	calls;
-	const char **arg_a;
+	char	**arg_a;
 	size_t	arg_b;
 };
 
@@ -95,7 +95,7 @@ static void
 free_reset(void)
 {
 	g_free.calls = 0;
-	g_free.arg_a = reinterpret_cast<const char **>(
+	g_free.arg_a = reinterpret_cast<char **>(
 	    static_cast<intptr_t>(-0x3331));
 	g_free.arg_b = static_cast<size_t>(-1);
 }
@@ -187,7 +187,7 @@ extern "C" void
 __bsd___iconv_free_list(char **a, size_t b)
 {
 	g_free.calls++;
-	g_free.arg_a = reinterpret_cast<const char **>(a);
+	g_free.arg_a = a;
 	g_free.arg_b = b;
 
 	for (size_t i = 0; i < b; i++) {
@@ -198,8 +198,7 @@ __bsd___iconv_free_list(char **a, size_t b)
 		unsigned char *p = reinterpret_cast<unsigned char *>(a[i]);
 		p[0] = static_cast<unsigned char>(0x80u | (i & 0x7fu));
 		p[1] = static_cast<unsigned char>((b >> (i & 3)) & 0xffu);
-		p[2] = static_cast<unsigned char>(
-		    (reinterpret_cast<intptr_t>(a) >> (i & 7)) & 0xffu);
+		p[2] = static_cast<unsigned char>((i * 17u + b) & 0xffu);
 	}
 }
 
@@ -612,8 +611,9 @@ random_ctl_sweep(long long iters)
 		if ((rng_u32() & 3u) == 0u)
 			req = EDGE_INTS[rng_u32() % static_cast<unsigned>(NEDGE)];
 		CtlBuf pa, pb;
-		fill_ctl_buf(pa, rng_u32());
-		fill_ctl_buf(pb, rng_u32());
+		uint32_t seed = rng_u32();
+		fill_ctl_buf(pa, seed);
+		fill_ctl_buf(pb, seed);
 		bool use_c = (rng_u32() & 7u) != 0u;
 		int off = static_cast<int>(rng_u32() % CTL_PAD);
 		void *pc = use_c ? ctl_ptr(pa, off) : nullptr;
@@ -660,11 +660,11 @@ run_free_case(ListSetup &port_ls, ListSetup &ref_ls, size_t count,
 		report_fail(fn, n, "count argument");
 		bad = 1;
 	}
-	if (rec_port.arg_a != reinterpret_cast<const char **>(port_ls.slots)) {
+	if (rec_port.arg_a != port_ls.slots) {
 		report_fail(fn, n, "port list pointer");
 		bad = 1;
 	}
-	if (rec_ref.arg_a != reinterpret_cast<const char **>(ref_ls.slots)) {
+	if (rec_ref.arg_a != ref_ls.slots) {
 		report_fail(fn, n, "ref list pointer");
 		bad = 1;
 	}

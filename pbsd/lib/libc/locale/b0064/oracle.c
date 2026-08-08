@@ -87,6 +87,20 @@ ref_locale_init(void)
 	ref_global_locale.components[XLC_CTYPE] = &ref_global_ctype;
 }
 
+locale_t
+ref_c_locale_ptr(void)
+{
+
+	return (&ref_c_locale);
+}
+
+locale_t
+ref_global_locale_ptr(void)
+{
+
+	return (&ref_global_locale);
+}
+
 /* ------------------------------------------------------------------ */
 /* hbsd/src/lib/libc/locale/mbsinit.c					*/
 /* ------------------------------------------------------------------ */

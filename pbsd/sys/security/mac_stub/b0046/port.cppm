@@ -65,9 +65,15 @@ constexpr int EPERM = 1;
 #define SOCK_LOCK_ASSERT(so) ((void)0)
 
 typedef unsigned int u_int;
+typedef unsigned long u_long;
 typedef unsigned int accmode_t;
 typedef unsigned long acl_type_t;
 typedef long db_expr_t;
+
+struct timespec {
+	long tv_sec;
+	long tv_nsec;
+};
 
 struct mac_policy_conf;
 struct thread;
@@ -105,7 +111,6 @@ struct componentname;
 struct vattr;
 struct image_params;
 struct acl;
-struct timespec;
 
 export void
 stub_destroy(struct mac_policy_conf *conf)

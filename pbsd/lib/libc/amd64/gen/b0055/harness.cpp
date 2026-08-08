@@ -144,8 +144,9 @@ apply_fp_state(const SavedFp *base, unsigned short cw, unsigned short sw,
 {
 	FpEnv28 env = base->x87;
 
-	env.fcw = cw;
-	env.fsw = (env.fsw & ~FP_STKY_FLD) | (sw & FP_STKY_FLD);
+	env.fcw = (env.fcw & ~0xffffu) | (cw & 0xffffu);
+	env.fsw = (env.fsw & ~0xffffu) |
+	    ((env.fsw & ~FP_STKY_FLD) | (sw & FP_STKY_FLD)) & 0xffffu;
 	fldenv(&env);
 	ldmxcsr(mxcsr);
 }

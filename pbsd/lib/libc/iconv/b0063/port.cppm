@@ -40,13 +40,13 @@ module;
 
 #include <stddef.h>
 
+export module pbsd.lib.libc.iconv.b0063;
+
 /*
  * <iconv.h> declares the __bsd_* entry points that these shims forward to and
  * defines __iconv_bool.  The FreeBSD/HardenedBSD header spells __iconv_bool as
  * "bool" when compiled as C++, as "_Bool" for C99 and later, and as "int"
- * otherwise; the C++ spelling is reproduced here.  The declarations are placed
- * in the global module fragment so that they keep C language linkage and refer
- * to the very same entities the C translation units see.
+ * otherwise; the C++ spelling is reproduced here.
  */
 typedef bool __iconv_bool;
 
@@ -57,9 +57,9 @@ void __bsd_iconvlist(int (*)(unsigned int, const char *const *, void *), void *)
 void __bsd_iconv_set_relocation_prefix(const char *, const char *);
 }
 
-export module pbsd.lib.libc.iconv.b0063;
-
 export namespace pbsd::lib_libc_iconv::b0063 {
+
+using __iconv_bool = ::__iconv_bool;
 
 /* lib/libc/iconv/iconv_canonicalize.c */
 const char *

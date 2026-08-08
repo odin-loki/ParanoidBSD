@@ -56,6 +56,9 @@ struct Stats {
 
 static constexpr unsigned char GUARD = 0x7f;
 static constexpr size_t OUT_CAP = 64;
+static constexpr size_t OUT_PREFIX = 8;
+static constexpr size_t OUT_SUFFIX = 16;
+static constexpr size_t WRITE_MAX = OUT_CAP - OUT_PREFIX - OUT_SUFFIX;
 static constexpr size_t WCS_CAP = 32;
 static constexpr unsigned long long RANDOM_ITERS = 200000;
 
@@ -121,36 +124,41 @@ report_fail(Stats &st, const char *tag)
 
 static bool
 compare_wcstombs_l(Stats &st, const wchar_t *pwcs, size_t n, bool use_l,
-    bool null_locale)
+    bool null_locale, bool null_dst)
 {
 	unsigned char pout[OUT_CAP], rout[OUT_CAP];
 	size_t pr, rr;
+	char *pdst;
+	char *rdst;
 
 	st.cases++;
 	fill_guard(pout, sizeof(pout));
 	fill_guard(rout, sizeof(rout));
 
+	pdst = null_dst ? nullptr : (char *)(pout + OUT_PREFIX);
+	rdst = null_dst ? nullptr : (char *)(rout + OUT_PREFIX);
+
 	if (use_l) {
-		pr = port::wcstombs_l((char *)(pout + 8), pwcs, n,
+		pr = port::wcstombs_l(pdst, pwcs, n,
 		    null_locale ? nullptr : port::global_locale());
-		rr = ref_wcstombs_l((char *)(rout + 8), pwcs, n,
+		rr = ref_wcstombs_l(rdst, pwcs, n,
 		    null_locale ? nullptr : &ref_global_locale);
 	} else {
-		pr = port::wcstombs((char *)(pout + 8), pwcs, n);
-		rr = ref_wcstombs((char *)(rout + 8), pwcs, n);
+		pr = port::wcstombs(pdst, pwcs, n);
+		rr = ref_wcstombs(rdst, pwcs, n);
 	}
 
 	if (pr != rr) {
 		report_fail(st, "ret");
 		return (false);
 	}
-	if (!guards_intact(pout, 8) || !guards_intact(pout + 8 + OUT_CAP - 16,
-	    OUT_CAP - 16 - 8)) {
+	if (!guards_intact(pout, OUT_PREFIX) ||
+	    !guards_intact(pout + OUT_CAP - OUT_SUFFIX, OUT_SUFFIX)) {
 		report_fail(st, "port guard");
 		return (false);
 	}
-	if (!guards_intact(rout, 8) || !guards_intact(rout + 8 + OUT_CAP - 16,
-	    OUT_CAP - 16 - 8)) {
+	if (!guards_intact(rout, OUT_PREFIX) ||
+	    !guards_intact(rout + OUT_CAP - OUT_SUFFIX, OUT_SUFFIX)) {
 		report_fail(st, "ref guard");
 		return (false);
 	}
@@ -261,23 +269,25 @@ hand_wcstombs(Stats &st, bool use_l)
 	static const wchar_t bad[] = { 0xd800, L'\0' };
 	static const wchar_t mix[] = { L'A', 0x00a2, 0x20ac, 0x10348, L'\0' };
 
-	compare_wcstombs_l(st, empty, 0, use_l, false);
-	compare_wcstombs_l(st, empty, 1, use_l, false);
-	compare_wcstombs_l(st, empty, OUT_CAP, use_l, false);
-	compare_wcstombs_l(st, one, 0, use_l, false);
-	compare_wcstombs_l(st, one, 1, use_l, false);
-	compare_wcstombs_l(st, one, 2, use_l, false);
-	compare_wcstombs_l(st, two, 1, use_l, false);
-	compare_wcstombs_l(st, two, 2, use_l, false);
-	compare_wcstombs_l(st, two, 3, use_l, false);
-	compare_wcstombs_l(st, nul_mid, 4, use_l, false);
-	compare_wcstombs_l(st, euro, 2, use_l, false);
-	compare_wcstombs_l(st, euro, 4, use_l, false);
-	compare_wcstombs_l(st, plane, 5, use_l, false);
-	compare_wcstombs_l(st, bad, 4, use_l, false);
-	compare_wcstombs_l(st, mix, 16, use_l, false);
-	compare_wcstombs_l(st, mix, 3, use_l, false);
-	compare_wcstombs_l(st, one, 2, use_l, true);
+	compare_wcstombs_l(st, empty, 0, use_l, false, false);
+	compare_wcstombs_l(st, empty, 1, use_l, false, false);
+	compare_wcstombs_l(st, empty, WRITE_MAX, use_l, false, false);
+	compare_wcstombs_l(st, one, 0, use_l, false, false);
+	compare_wcstombs_l(st, one, 1, use_l, false, false);
+	compare_wcstombs_l(st, one, 2, use_l, false, false);
+	compare_wcstombs_l(st, two, 1, use_l, false, false);
+	compare_wcstombs_l(st, two, 2, use_l, false, false);
+	compare_wcstombs_l(st, two, 3, use_l, false, false);
+	compare_wcstombs_l(st, nul_mid, 4, use_l, false, false);
+	compare_wcstombs_l(st, euro, 2, use_l, false, false);
+	compare_wcstombs_l(st, euro, 4, use_l, false, false);
+	compare_wcstombs_l(st, plane, 5, use_l, false, false);
+	compare_wcstombs_l(st, bad, 4, use_l, false, false);
+	compare_wcstombs_l(st, mix, WRITE_MAX, use_l, false, false);
+	compare_wcstombs_l(st, mix, 3, use_l, false, false);
+	compare_wcstombs_l(st, one, 2, use_l, true, false);
+	compare_wcstombs_l(st, mix, 16, use_l, false, true);
+	compare_wcstombs_l(st, empty, 0, use_l, false, true);
 }
 
 static void
@@ -358,7 +368,8 @@ random_wcstombs(Stats &st, bool use_l)
 
 	for (unsigned long long i = 0; i < RANDOM_ITERS; i++) {
 		size_t len = (size_t)(xorshift32() % WCS_CAP);
-		size_t n = (size_t)(xorshift32() % OUT_CAP);
+		size_t n = (size_t)(xorshift32() % (WRITE_MAX + 1));
+		bool null_dst = (xorshift32() & 0x1ffu) == 0;
 
 		for (size_t j = 0; j < len; j++) {
 			uint32_t r = xorshift32();
@@ -371,7 +382,7 @@ random_wcstombs(Stats &st, bool use_l)
 		}
 		wcs[len - 1] = L'\0';
 		if (!compare_wcstombs_l(st, wcs, n, use_l,
-		    (xorshift32() & 0x3ffu) == 0))
+		    (xorshift32() & 0x3ffu) == 0, null_dst))
 			return;
 	}
 }

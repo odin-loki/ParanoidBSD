@@ -36,7 +36,6 @@ typedef __mbstate_t mbstate_t;
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 

@@ -35,6 +35,8 @@ struct date {
 #define easterog		ref_easterog
 #define easteroj		ref_easteroj
 
+int ref_weekday(int nd);
+
 /* ------------------------------------------------------------------ */
 /* hbsd/src/lib/libcalendar/calendar.c                                */
 /* ------------------------------------------------------------------ */

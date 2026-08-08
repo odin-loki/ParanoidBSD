@@ -1,16 +1,5 @@
 module;
 
-#include <cerrno>
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-export module pbsd.lib.libc.locale.b0058;
-
-extern "C" {
 #define __mbstate_t_defined 1
 typedef union {
 	char		__mbstate8[128];
@@ -18,8 +7,19 @@ typedef union {
 } __mbstate_t;
 typedef __mbstate_t mbstate_t;
 
+#include <cerrno>
+#include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+
 #include <uchar.h>
 #include <wchar.h>
+
+export module pbsd.lib.libc.locale.b0058;
+
+extern "C" {
 
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX	4
@@ -304,7 +304,7 @@ mbrtoc32_l(char32_t * __restrict pc32, const char * __restrict s, std::size_t n,
 		ps = &(XLOCALE_CTYPE(locale)->mbrtoc32);
 
 	/* Assume wchar_t uses UTF-32. */
-	return (mbrtowc_l(pc32, s, n, ps, locale));
+	return (mbrtowc_l((wchar_t *)(void *)pc32, s, n, ps, locale));
 }
 
 std::size_t
@@ -400,7 +400,7 @@ wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 int
 wctob_l(wint_t c, port_locale_t locale)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	mbstate_t mbs = initial;
 	char buf[MB_LEN_MAX];
 	FIX_LOCALE(locale);

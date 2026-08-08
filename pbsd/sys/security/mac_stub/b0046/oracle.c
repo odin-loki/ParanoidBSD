@@ -60,10 +60,16 @@
 #include <sys/types.h>
 
 typedef unsigned int u_int;
+typedef unsigned long u_long;
 typedef unsigned int accmode_t;
 typedef unsigned long acl_type_t;
 typedef long db_expr_t;
 #include <stdbool.h>
+
+struct timespec {
+	long tv_sec;
+	long tv_nsec;
+};
 
 struct mac_policy_conf;
 struct thread;
@@ -101,7 +107,6 @@ struct componentname;
 struct vattr;
 struct image_params;
 struct acl;
-struct timespec;
 
 
 void

@@ -28,6 +28,8 @@
 
 module;
 
+#include <cstddef>
+
 export module pbsd.lib.libcalendar.b0043;
 
 export namespace pbsd::lib_libcalendar::b0043 {

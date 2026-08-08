@@ -30,7 +30,6 @@ module;
 #include <stddef.h>
 
 #ifndef dlfunc
-extern "C" void *dlsym(void *, const char *);
 static void *
 dlfunc(void *handle, const char *symbol)
 {
@@ -57,14 +56,14 @@ typedef int dl_iconv_close_t(iconv_t);
 
 typedef iconv_t iconv_open_t(const char *, const char *);
 
-export dl_iconv_t *dl_iconv;
-export dl_iconv_close_t *dl_iconv_close;
+dl_iconv_t *dl_iconv;
+dl_iconv_close_t *dl_iconv_close;
 
 static int initialized;
 static void *iconvlib;
 static iconv_open_t *iconv_open;
 
-export iconv_t
+iconv_t
 dl_iconv_open(const char *tocode, const char *fromcode)
 {
 	if (initialized) {

@@ -1,0 +1,13 @@
+{
+  "batch": "b0062",
+  "verified": "2026-08-08T11:19:26Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nFUNCTION                        CASES     FAILURES RESULT\n------------------------ ------------ ------------ ------\niconv_close                    200011            0 PASS\niconvctl                       203520            0 PASS\n__iconv_free_list              200068            0 PASS\niconv_open                     200084            0 PASS\nTOTAL                          803683            0 PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/iconv/iconv_close.c": "5763129dd3ce30c8",
+    "hbsd/src/lib/libc/iconv/iconvctl.c": "3a403485d5e6c230",
+    "hbsd/src/lib/libc/iconv/__iconv_free_list.c": "b48ce9f4f668a37a",
+    "hbsd/src/lib/libc/iconv/iconv_open.c": "fa0100f0945b9326"
+  }
+}
