@@ -51,6 +51,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/test/b0188/port.cppm
   bin/timeout/b0197/port.cppm
   lib/libc/aarch64/gen/b0022/port.cppm
+  lib/libc/aarch64/gen/b0222/port.cppm
   lib/libc/aarch64/string/b0018/port.cppm
   lib/libc/aarch64/string/b0071/port.cppm
   lib/libc/aarch64/string/b0112/port.cppm
@@ -68,6 +69,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/compat-43/setruid_m/port.cppm
   lib/libc/csu/aarch64/b0008/port.cppm
   lib/libc/csu/amd64/b0134/port.cppm
+  lib/libc/csu/b0223/port.cppm
   lib/libc/db/btree/b0131/port.cppm
   lib/libc/db/btree/b0149/port.cppm
   lib/libc/db/btree/b0151/port.cppm

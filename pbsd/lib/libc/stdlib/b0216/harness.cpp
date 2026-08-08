@@ -394,6 +394,9 @@ case_tree_op(int op, int key, P::posix_tnode **proot, P::posix_tnode **rroot,
 	unsigned pi, ri;
 	bool pnull, rnull;
 
+	(void)pi;
+	(void)ri;
+
 	if (op == 0) {
 		P::posix_tnode *tp = P::tsearch(&pkeys[key], proot, icmp);
 		P::posix_tnode *tr = ref_tsearch(&rkeys[key], rroot, icmp);
@@ -401,8 +404,8 @@ case_tree_op(int op, int key, P::posix_tnode **proot, P::posix_tnode **rroot,
 		rnull = tr == nullptr;
 		bool ok = pnull == rnull;
 		if (!pnull && !rnull) {
-			ok = ok && *(const int *)tp->key == key &&
-			    *(const int *)tr->key == key;
+			ok = ok && *(const int *)tp->key == pkeys[key] &&
+			    *(const int *)tr->key == rkeys[key];
 			ppresent[key] = true;
 			rpresent[key] = true;
 		}
@@ -430,8 +433,6 @@ case_tree_op(int op, int key, P::posix_tnode **proot, P::posix_tnode **rroot,
 		    "tree state key=%d op=%d", key, op);
 
 	(void)nkeys;
-	(void)pi;
-	(void)ri;
 }
 
 static void
@@ -521,7 +522,8 @@ case_realpath(const char *path, char *resolved, bool use_buf)
 		ok = (pp == nullptr) == (pr == nullptr) && e1 == e2;
 		if (pp != nullptr && pr != nullptr)
 			ok = ok && std::strcmp(pa, ra) == 0;
-		if (pp == nullptr && pr == nullptr)
+		else if (pp == nullptr && pr == nullptr && path != nullptr &&
+		    path[0] != '\0')
 			ok = ok && std::strcmp(pa, ra) == 0;
 		record_case(F_REALPATH, ok,
 		    "path=\"%s\" buf port=%s/%d ref=%s/%d",

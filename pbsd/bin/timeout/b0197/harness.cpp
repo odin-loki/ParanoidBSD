@@ -171,12 +171,12 @@ setitimer(__itimer_which_t which, const struct itimerval *__restrict nv,
 	return (0);
 }
 
-#define RUN_SIDE(cap, stmt)				\
+#define RUN_SIDE(cap, ...)				\
 	do {						\
 		g_cur = &(cap);				\
 		cap_reset(&(cap));			\
 		if (setjmp(g_jmp) == 0) {		\
-			stmt;				\
+			__VA_ARGS__;			\
 			(cap).returned = 1;		\
 		}					\
 	} while (0)
@@ -970,8 +970,12 @@ test_set_interval(void)
 	for (k = 0; k <= 1000; k++)
 		setiv_both((double)k / 1000.0);
 
-	for (long it = 0; it < 250000; it++)
-		setiv_case(gen_interval(), (int)rnd_below(4) == 0);
+	for (long it = 0; it < 250000; it++) {
+		double iv = gen_interval();
+		int fail = (rnd_below(4) == 0);
+
+		setiv_case(iv, fail);
+	}
 }
 
 /* -------------------------------------------------------- log_termination */

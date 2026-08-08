@@ -335,7 +335,7 @@ extern int copyout(const void *kaddr, void *uaddr, size_t len);
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 1994-1996 Soren Schmidt
+ * Copyright (c) 1994-1996 Søren Schmidt
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without

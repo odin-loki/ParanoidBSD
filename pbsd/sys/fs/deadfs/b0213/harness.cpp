@@ -1,588 +1,721 @@
-// Differential test harness for PBSD batch b0213.
+/*
+ * Differential test harness for PBSD batch b0213
+ * (hbsd/src/sys/fs/deadfs/dead_vnops.c).
+ *
+ * Every ported function is driven with identical inputs alongside the ref_
+ * oracle compiled from the unmodified C source.  Return values are compared,
+ * and the ENTIRE surrounding scratch object -- guard-filled with 0x7f, well
+ * past the nominal write window -- is compared byte for byte after every
+ * call.  Pointer results are compared as offsets from their own scratch
+ * base, never as raw addresses.
+ */
 
-import pbsd.sys.fs.deadfs.b0213;
-
-#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
+
+import pbsd.sys.fs.deadfs.b0213;
 
 namespace P = pbsd::sys_fs_deadfs::b0213;
 
-#define GUARD		0x7f
-#define SWEEP		200000L
-#define MAX_SHOW	8
-
-#define ENOTDIR		20
-#define ENXIO		6
-
-#define POLLIN		0x0001
-#define POLLPRI		0x0002
-#define POLLOUT		0x0004
-#define POLLRDNORM	0x0040
-#define POLLRDBAND	0x0080
-#define POLLWRBAND	0x0100
-#define POLLERR		0x0008
-#define POLLHUP		0x0010
-#define POLLNVAL	0x0020
-
-#define POLLSTANDARD	(POLLIN|POLLPRI|POLLOUT|POLLRDNORM|POLLRDBAND|\
-			 POLLWRBAND|POLLERR|POLLHUP|POLLNVAL)
-
-#define POLLINIGNEOF	0x2000
-#define POLLRDHUP	0x4000
-
-#define VV_ISTTY	0x0002u
-
-struct Stat {
-	const char *name;
-	unsigned long long cases;
-	unsigned long long fails;
-	int shown;
-};
-
-static Stat st_getwritemount = { "dead_getwritemount", 0, 0, 0 };
-static Stat st_lookup = { "dead_lookup", 0, 0, 0 };
-static Stat st_open = { "dead_open", 0, 0, 0 };
-static Stat st_close = { "dead_close", 0, 0, 0 };
-static Stat st_read = { "dead_read", 0, 0, 0 };
-static Stat st_write = { "dead_write", 0, 0, 0 };
-static Stat st_poll = { "dead_poll", 0, 0, 0 };
-static Stat st_unset_text = { "dead_unset_text", 0, 0, 0 };
+/* ------------------------------------------------------------------ */
+/* Oracle declarations: layouts must match oracle.c exactly.           */
+/* ------------------------------------------------------------------ */
 
 extern "C" {
-struct mount;
-struct vnode {
-	unsigned int v_vflag;
-};
-struct vop_getwritemount_args {
-	struct mount **a_mpp;
-};
-struct vop_lookup_args {
-	struct vnode **a_vpp;
-};
-struct vop_open_args {
-	int dummy;
-};
-struct vop_close_args {
-	int dummy;
-};
-struct vop_read_args {
-	struct vnode *a_vp;
-};
-struct vop_write_args {
-	int dummy;
-};
-struct vop_poll_args {
-	int a_events;
-};
-struct vop_unset_text_args {
-	int dummy;
+
+struct ref_mount;
+
+struct ref_vnode {
+	std::uint32_t	v_vflag;
 };
 
-int ref_dead_getwritemount(struct vop_getwritemount_args *ap);
-int ref_dead_lookup(struct vop_lookup_args *ap);
-int ref_dead_open(struct vop_open_args *ap);
-int ref_dead_close(struct vop_close_args *ap);
-int ref_dead_read(struct vop_read_args *ap);
-int ref_dead_write(struct vop_write_args *ap);
-int ref_dead_poll(struct vop_poll_args *ap);
-int ref_dead_unset_text(struct vop_unset_text_args *ap);
-}
-
-struct Rng {
-	std::uint64_t s;
-
-	explicit Rng(std::uint64_t seed) : s(seed) {}
-
-	std::uint64_t next()
-	{
-		s += 0x9E3779B97F4A7C15ull;
-		std::uint64_t z = s;
-		z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
-		z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
-		return z ^ (z >> 31);
-	}
-
-	std::uint32_t u32() { return (std::uint32_t)next(); }
+struct ref_vop_getwritemount_args {
+	ref_vnode	*a_vp;
+	ref_mount	**a_mpp;
 };
 
-static Rng rng(0x00b0213deadULL);
+struct ref_vop_lookup_args {
+	ref_vnode	*a_dvp;
+	ref_vnode	**a_vpp;
+};
 
+struct ref_vop_open_args {
+	ref_vnode	*a_vp;
+	int		a_mode;
+	int		a_fdidx;
+};
+
+struct ref_vop_close_args {
+	ref_vnode	*a_vp;
+	int		a_fflag;
+};
+
+struct ref_vop_read_args {
+	ref_vnode	*a_vp;
+	int		a_ioflag;
+};
+
+struct ref_vop_write_args {
+	ref_vnode	*a_vp;
+	int		a_ioflag;
+};
+
+struct ref_vop_poll_args {
+	ref_vnode	*a_vp;
+	int		a_events;
+};
+
+struct ref_vop_unset_text_args {
+	ref_vnode	*a_vp;
+};
+
+int ref_dead_getwritemount(ref_vop_getwritemount_args *ap);
+int ref_dead_lookup(ref_vop_lookup_args *ap);
+int ref_dead_open(ref_vop_open_args *ap);
+int ref_dead_close(ref_vop_close_args *ap);
+int ref_dead_read(ref_vop_read_args *ap);
+int ref_dead_write(ref_vop_write_args *ap);
+int ref_dead_poll(ref_vop_poll_args *ap);
+int ref_dead_unset_text(ref_vop_unset_text_args *ap);
+
+} /* extern "C" */
+
+/* ------------------------------------------------------------------ */
+/* Guard-filled scratch objects                                        */
+/* ------------------------------------------------------------------ */
+
+static const unsigned char GUARD = 0x7f;
+
+struct ScratchP {
+	P::vnode	vp;
+	unsigned char	pad0[28];
+	P::mount	*mp;
+	unsigned char	pad1[24];
+	P::vnode	*vpp;
+	unsigned char	pad2[24];
+};
+
+struct ScratchR {
+	ref_vnode	vp;
+	unsigned char	pad0[28];
+	ref_mount	*mp;
+	unsigned char	pad1[24];
+	ref_vnode	*vpp;
+	unsigned char	pad2[24];
+};
+
+static_assert(sizeof(ScratchP) == sizeof(ScratchR), "scratch size mismatch");
+static_assert(offsetof(ScratchP, mp) == offsetof(ScratchR, mp), "mp offset");
+static_assert(offsetof(ScratchP, vpp) == offsetof(ScratchR, vpp), "vpp offset");
+static_assert(offsetof(ScratchP, pad2) == offsetof(ScratchR, pad2), "pad2");
+
+template <class S>
 static bool
-fail(Stat &st, const char *what)
+pads_intact(const S &s)
 {
-	st.fails++;
-	if (st.shown < MAX_SHOW) {
-		st.shown++;
-		std::printf("  FAIL %s: %s\n", st.name, what);
-	}
-	return false;
-}
-
-static bool
-guards_intact(const unsigned char *buf, std::size_t n)
-{
-	for (std::size_t i = 0; i < n; i++) {
-		if (buf[i] != GUARD)
+	for (std::size_t i = 0; i < sizeof(s.pad0); i++)
+		if (s.pad0[i] != GUARD)
 			return false;
-	}
+	for (std::size_t i = 0; i < sizeof(s.pad1); i++)
+		if (s.pad1[i] != GUARD)
+			return false;
+	for (std::size_t i = 0; i < sizeof(s.pad2); i++)
+		if (s.pad2[i] != GUARD)
+			return false;
 	return true;
 }
 
-template <typename T>
-struct GuardedPtr {
-	unsigned char pre;
-	T *ptr;
-	unsigned char post;
+/*
+ * Whole-object byte comparison, including every guard byte outside the
+ * nominal write window.
+ */
+static bool
+scratch_equal(const ScratchP &a, const ScratchR &b)
+{
+	return std::memcmp(&a, &b, sizeof(ScratchP)) == 0;
+}
 
-	void init(T *initial)
-	{
-		pre = GUARD;
-		ptr = initial;
-		post = GUARD;
-	}
+/*
+ * Pointers are never compared raw between the two runs: they are normalised
+ * to an offset from their own scratch base.  -1 means NULL, -2 means the
+ * pointer landed outside the scratch object.
+ */
+static long
+ptr_off(const void *p, const void *base, std::size_t n)
+{
+	std::uintptr_t v, b;
 
-	T **slot() { return &ptr; }
+	if (p == nullptr)
+		return -1;
+	v = reinterpret_cast<std::uintptr_t>(p);
+	b = reinterpret_cast<std::uintptr_t>(base);
+	if (v >= b && v < b + n)
+		return static_cast<long>(v - b);
+	return -2;
+}
 
-	bool ok() const { return pre == GUARD && post == GUARD; }
+/* ------------------------------------------------------------------ */
+/* Bookkeeping                                                         */
+/* ------------------------------------------------------------------ */
+
+enum {
+	F_GETWRITEMOUNT = 0,
+	F_LOOKUP,
+	F_OPEN,
+	F_CLOSE,
+	F_READ,
+	F_WRITE,
+	F_POLL,
+	F_UNSET_TEXT,
+	NFUNC
 };
 
+static const char *fname[NFUNC] = {
+	"dead_getwritemount",
+	"dead_lookup",
+	"dead_open",
+	"dead_close",
+	"dead_read",
+	"dead_write",
+	"dead_poll",
+	"dead_unset_text",
+};
+
+static unsigned long fcases[NFUNC];
+static unsigned long ffails[NFUNC];
+static unsigned long fshown[NFUNC];
+
 static bool
-run_getwritemount_case(Stat &st, void *initial)
+should_show(int i)
 {
-	st.cases++;
+	ffails[i]++;
+	return fshown[i]++ < 8;
+}
 
-	GuardedPtr<struct mount> gr;
-	GuardedPtr<P::mount> gp;
-	gr.init((struct mount *)initial);
-	gp.init((P::mount *)initial);
+/* ------------------------------------------------------------------ */
+/* Per-function differential cases                                     */
+/* ------------------------------------------------------------------ */
 
-	struct vop_getwritemount_args ar = { gr.slot() };
-	P::vop_getwritemount_args ap = { gp.slot() };
+static void
+t_getwritemount(std::uint32_t vflag)
+{
+	ScratchP sp;
+	ScratchR sr;
 
-	int rr = ref_dead_getwritemount(&ar);
+	std::memset(&sp, GUARD, sizeof(sp));
+	std::memset(&sr, GUARD, sizeof(sr));
+	sp.vp.v_vflag = vflag;
+	sr.vp.v_vflag = vflag;
+
+	P::vop_getwritemount_args ap;
+	ref_vop_getwritemount_args ar;
+
+	ap.a_vp = &sp.vp;
+	ap.a_mpp = &sp.mp;
+	ar.a_vp = &sr.vp;
+	ar.a_mpp = &sr.mp;
+
 	int rp = P::dead_getwritemount(&ap);
+	int rr = ref_dead_getwritemount(&ar);
 
-	if (rr != rp) {
-		std::printf("    ret %d vs %d (initial=%p)\n", rr, rp, initial);
-		return fail(st, "return");
-	}
-	if (gr.ptr != nullptr || gp.ptr != nullptr) {
-		std::printf("    ptr %p vs %p (expected NULL)\n",
-		    (void *)gr.ptr, (void *)gp.ptr);
-		return fail(st, "output ptr");
-	}
-	if (!gr.ok() || !gp.ok())
-		return fail(st, "guard bytes");
-	return true;
+	long op = ptr_off(sp.mp, &sp, sizeof(sp));
+	long orr = ptr_off(sr.mp, &sr, sizeof(sr));
+
+	fcases[F_GETWRITEMOUNT]++;
+	bool ok = rp == rr && scratch_equal(sp, sr) && op == orr &&
+	    pads_intact(sp) && pads_intact(sr) &&
+	    sp.vp.v_vflag == vflag && sr.vp.v_vflag == vflag &&
+	    ap.a_vp == &sp.vp && ap.a_mpp == &sp.mp &&
+	    ar.a_vp == &sr.vp && ar.a_mpp == &sr.mp;
+	if (!ok && should_show(F_GETWRITEMOUNT))
+		std::printf("  FAIL dead_getwritemount vflag=0x%08lx: "
+		    "ret %d/%d mpp-off %ld/%ld buffer=%s\n",
+		    (unsigned long)vflag, rp, rr, op, orr,
+		    scratch_equal(sp, sr) ? "same" : "DIFFER");
 }
 
 static void
-test_dead_getwritemount(void)
+t_lookup(std::uint32_t vflag)
 {
-	struct mount sentinel;
-	struct mount *ptrs[] = {
-		&sentinel,
-		(struct mount *)0xdeadbeefUL,
-		(struct mount *)0x80UL,
-		(struct mount *)-1,
-		nullptr,
-	};
+	ScratchP sp;
+	ScratchR sr;
 
-	for (auto p : ptrs)
-		run_getwritemount_case(st_getwritemount, p);
+	std::memset(&sp, GUARD, sizeof(sp));
+	std::memset(&sr, GUARD, sizeof(sr));
+	sp.vp.v_vflag = vflag;
+	sr.vp.v_vflag = vflag;
 
-	for (long i = 0; i < SWEEP; i++) {
-		uintptr_t v = (uintptr_t)rng.u32();
-		v |= (uintptr_t)rng.u32() << 32;
-		run_getwritemount_case(st_getwritemount, (void *)v);
-	}
-}
+	P::vop_lookup_args ap;
+	ref_vop_lookup_args ar;
 
-static bool
-run_lookup_case(Stat &st, void *initial)
-{
-	st.cases++;
+	ap.a_dvp = &sp.vp;
+	ap.a_vpp = &sp.vpp;
+	ar.a_dvp = &sr.vp;
+	ar.a_vpp = &sr.vpp;
 
-	GuardedPtr<struct vnode> gr;
-	GuardedPtr<P::vnode> gp;
-	gr.init((struct vnode *)initial);
-	gp.init((P::vnode *)initial);
-
-	struct vop_lookup_args ar = { gr.slot() };
-	P::vop_lookup_args ap = { gp.slot() };
-
-	int rr = ref_dead_lookup(&ar);
 	int rp = P::dead_lookup(&ap);
+	int rr = ref_dead_lookup(&ar);
 
-	if (rr != rp) {
-		std::printf("    ret %d vs %d (initial=%p)\n", rr, rp, initial);
-		return fail(st, "return");
-	}
-	if (rr != ENOTDIR) {
-		std::printf("    unexpected ret %d\n", rr);
-		return fail(st, "ENOTDIR");
-	}
-	if (gr.ptr != nullptr || gp.ptr != nullptr) {
-		std::printf("    ptr %p vs %p (expected NULL)\n",
-		    (void *)gr.ptr, (void *)gp.ptr);
-		return fail(st, "output ptr");
-	}
-	if (!gr.ok() || !gp.ok())
-		return fail(st, "guard bytes");
-	return true;
+	long op = ptr_off(sp.vpp, &sp, sizeof(sp));
+	long orr = ptr_off(sr.vpp, &sr, sizeof(sr));
+
+	fcases[F_LOOKUP]++;
+	bool ok = rp == rr && scratch_equal(sp, sr) && op == orr &&
+	    pads_intact(sp) && pads_intact(sr) &&
+	    sp.vp.v_vflag == vflag && sr.vp.v_vflag == vflag &&
+	    ap.a_dvp == &sp.vp && ap.a_vpp == &sp.vpp &&
+	    ar.a_dvp == &sr.vp && ar.a_vpp == &sr.vpp;
+	if (!ok && should_show(F_LOOKUP))
+		std::printf("  FAIL dead_lookup vflag=0x%08lx: "
+		    "ret %d/%d vpp-off %ld/%ld buffer=%s\n",
+		    (unsigned long)vflag, rp, rr, op, orr,
+		    scratch_equal(sp, sr) ? "same" : "DIFFER");
 }
 
 static void
-test_dead_lookup(void)
+t_open(std::uint32_t vflag, int mode, int fdidx)
 {
-	struct vnode sentinel;
+	ScratchP sp;
+	ScratchR sr;
 
-	for (void *p : {
-		 (void *)&sentinel,
-		 (void *)0xfeedfaceUL,
-		 (void *)0x80UL,
-		 (void *)-1,
-		 nullptr,
-	     })
-		run_lookup_case(st_lookup, p);
+	std::memset(&sp, GUARD, sizeof(sp));
+	std::memset(&sr, GUARD, sizeof(sr));
+	sp.vp.v_vflag = vflag;
+	sr.vp.v_vflag = vflag;
 
-	for (long i = 0; i < SWEEP; i++) {
-		uintptr_t v = (uintptr_t)rng.u32();
-		v |= (uintptr_t)rng.u32() << 32;
-		run_lookup_case(st_lookup, (void *)v);
-	}
-}
+	P::vop_open_args ap;
+	ref_vop_open_args ar;
 
-static bool
-run_ret_case(Stat &st, int (*ref_fn)(void *), int (*port_fn)(void *), void *ap)
-{
-	st.cases++;
-	int rr = ref_fn(ap);
-	int rp = port_fn(ap);
-	if (rr != rp) {
-		std::printf("    ret %d vs %d\n", rr, rp);
-		return fail(st, "return");
-	}
-	return true;
-}
+	ap.a_vp = &sp.vp;
+	ap.a_mode = mode;
+	ap.a_fdidx = fdidx;
+	ar.a_vp = &sr.vp;
+	ar.a_mode = mode;
+	ar.a_fdidx = fdidx;
 
-static int
-wrap_ref_open(void *p)
-{
-	return ref_dead_open((struct vop_open_args *)p);
-}
+	int rp = P::dead_open(&ap);
+	int rr = ref_dead_open(&ar);
 
-static int
-wrap_port_open(void *p)
-{
-	return P::dead_open((P::vop_open_args *)p);
-}
-
-static int
-wrap_ref_close(void *p)
-{
-	return ref_dead_close((struct vop_close_args *)p);
-}
-
-static int
-wrap_port_close(void *p)
-{
-	return P::dead_close((P::vop_close_args *)p);
-}
-
-static int
-wrap_ref_write(void *p)
-{
-	return ref_dead_write((struct vop_write_args *)p);
-}
-
-static int
-wrap_port_write(void *p)
-{
-	return P::dead_write((P::vop_write_args *)p);
-}
-
-static int
-wrap_ref_unset(void *p)
-{
-	return ref_dead_unset_text((struct vop_unset_text_args *)p);
-}
-
-static int
-wrap_port_unset(void *p)
-{
-	return P::dead_unset_text((P::vop_unset_text_args *)p);
+	fcases[F_OPEN]++;
+	bool ok = rp == rr && scratch_equal(sp, sr) &&
+	    pads_intact(sp) && pads_intact(sr) &&
+	    sp.vp.v_vflag == vflag && sr.vp.v_vflag == vflag &&
+	    ap.a_mode == mode && ar.a_mode == mode &&
+	    ap.a_fdidx == fdidx && ar.a_fdidx == fdidx &&
+	    ap.a_vp == &sp.vp && ar.a_vp == &sr.vp;
+	if (!ok && should_show(F_OPEN))
+		std::printf("  FAIL dead_open vflag=0x%08lx mode=%d fdidx=%d: "
+		    "ret %d/%d buffer=%s\n", (unsigned long)vflag, mode, fdidx,
+		    rp, rr, scratch_equal(sp, sr) ? "same" : "DIFFER");
 }
 
 static void
-test_dead_open(void)
+t_close(std::uint32_t vflag, int fflag)
 {
-	struct vop_open_args ar = { 0 };
-	P::vop_open_args ap = { 0 };
+	ScratchP sp;
+	ScratchR sr;
 
-	run_ret_case(st_open, wrap_ref_open, wrap_port_open, &ar);
+	std::memset(&sp, GUARD, sizeof(sp));
+	std::memset(&sr, GUARD, sizeof(sr));
+	sp.vp.v_vflag = vflag;
+	sr.vp.v_vflag = vflag;
 
-	for (long i = 0; i < SWEEP; i++) {
-		ar.dummy = (int)rng.u32();
-		ap.dummy = ar.dummy;
-		run_ret_case(st_open, wrap_ref_open, wrap_port_open, &ar);
-	}
+	P::vop_close_args ap;
+	ref_vop_close_args ar;
+
+	ap.a_vp = &sp.vp;
+	ap.a_fflag = fflag;
+	ar.a_vp = &sr.vp;
+	ar.a_fflag = fflag;
+
+	int rp = P::dead_close(&ap);
+	int rr = ref_dead_close(&ar);
+
+	fcases[F_CLOSE]++;
+	bool ok = rp == rr && scratch_equal(sp, sr) &&
+	    pads_intact(sp) && pads_intact(sr) &&
+	    sp.vp.v_vflag == vflag && sr.vp.v_vflag == vflag &&
+	    ap.a_fflag == fflag && ar.a_fflag == fflag &&
+	    ap.a_vp == &sp.vp && ar.a_vp == &sr.vp;
+	if (!ok && should_show(F_CLOSE))
+		std::printf("  FAIL dead_close vflag=0x%08lx fflag=%d: "
+		    "ret %d/%d buffer=%s\n", (unsigned long)vflag, fflag,
+		    rp, rr, scratch_equal(sp, sr) ? "same" : "DIFFER");
 }
 
 static void
-test_dead_close(void)
+t_read(std::uint32_t vflag, int ioflag)
 {
-	struct vop_close_args ar = { 0 };
-	P::vop_close_args ap = { 0 };
+	ScratchP sp;
+	ScratchR sr;
 
-	run_ret_case(st_close, wrap_ref_close, wrap_port_close, &ar);
+	std::memset(&sp, GUARD, sizeof(sp));
+	std::memset(&sr, GUARD, sizeof(sr));
+	sp.vp.v_vflag = vflag;
+	sr.vp.v_vflag = vflag;
 
-	for (long i = 0; i < SWEEP; i++) {
-		ar.dummy = (int)rng.u32();
-		ap.dummy = ar.dummy;
-		run_ret_case(st_close, wrap_ref_close, wrap_port_close, &ar);
-	}
-}
+	P::vop_read_args ap;
+	ref_vop_read_args ar;
 
-static void
-test_dead_write(void)
-{
-	struct vop_write_args ar = { 0 };
-	P::vop_write_args ap = { 0 };
+	ap.a_vp = &sp.vp;
+	ap.a_ioflag = ioflag;
+	ar.a_vp = &sr.vp;
+	ar.a_ioflag = ioflag;
 
-	run_ret_case(st_write, wrap_ref_write, wrap_port_write, &ar);
-	if (st_write.fails == 0 && st_write.cases > 0) {
-		int rr = ref_dead_write(&ar);
-		if (rr != ENXIO)
-			fail(st_write, "ENXIO");
-	}
-
-	for (long i = 0; i < SWEEP; i++) {
-		ar.dummy = (int)rng.u32();
-		ap.dummy = ar.dummy;
-		run_ret_case(st_write, wrap_ref_write, wrap_port_write, &ar);
-	}
-}
-
-static void
-test_dead_unset_text(void)
-{
-	struct vop_unset_text_args ar = { 0 };
-	P::vop_unset_text_args ap = { 0 };
-
-	run_ret_case(st_unset_text, wrap_ref_unset, wrap_port_unset, &ar);
-
-	for (long i = 0; i < SWEEP; i++) {
-		ar.dummy = (int)rng.u32();
-		ap.dummy = ar.dummy;
-		run_ret_case(st_unset_text, wrap_ref_unset, wrap_port_unset, &ar);
-	}
-}
-
-static bool
-run_read_case(Stat &st, unsigned int vflag)
-{
-	st.cases++;
-
-	unsigned char buf_r[sizeof(struct vnode) + 2];
-	unsigned char buf_p[sizeof(P::vnode) + 2];
-
-	std::memset(buf_r, GUARD, sizeof(buf_r));
-	std::memset(buf_p, GUARD, sizeof(buf_p));
-
-	struct vnode *vr = (struct vnode *)(buf_r + 1);
-	P::vnode *vp = (P::vnode *)(buf_p + 1);
-
-	vr->v_vflag = vflag;
-	vp->v_vflag = vflag;
-
-	struct vop_read_args ar = { vr };
-	P::vop_read_args ap = { vp };
-
-	int rr = ref_dead_read(&ar);
 	int rp = P::dead_read(&ap);
+	int rr = ref_dead_read(&ar);
 
-	if (rr != rp) {
-		std::printf("    ret %d vs %d (vflag=0x%x)\n", rr, rp, vflag);
-		return fail(st, "return");
-	}
-	int expect = (vflag & VV_ISTTY) ? 0 : ENXIO;
-	if (rr != expect) {
-		std::printf("    ret %d expect %d (vflag=0x%x)\n", rr, expect,
-		    vflag);
-		return fail(st, "expected errno");
-	}
-	if (!guards_intact(buf_r, 1) || !guards_intact(buf_r + 1 + sizeof(*vr), 1))
-		return fail(st, "guard bytes ref");
-	if (!guards_intact(buf_p, 1) || !guards_intact(buf_p + 1 + sizeof(*vp), 1))
-		return fail(st, "guard bytes port");
-	if (vr->v_vflag != vflag || vp->v_vflag != vflag)
-		return fail(st, "vnode mutated");
-	return true;
+	fcases[F_READ]++;
+	bool ok = rp == rr && scratch_equal(sp, sr) &&
+	    pads_intact(sp) && pads_intact(sr) &&
+	    sp.vp.v_vflag == vflag && sr.vp.v_vflag == vflag &&
+	    ap.a_ioflag == ioflag && ar.a_ioflag == ioflag &&
+	    ap.a_vp == &sp.vp && ar.a_vp == &sr.vp;
+	if (!ok && should_show(F_READ))
+		std::printf("  FAIL dead_read vflag=0x%08lx ioflag=%d: "
+		    "ret %d/%d buffer=%s\n", (unsigned long)vflag, ioflag,
+		    rp, rr, scratch_equal(sp, sr) ? "same" : "DIFFER");
 }
 
 static void
-test_dead_read(void)
+t_write(std::uint32_t vflag, int ioflag)
 {
-	unsigned int flags[] = {
-		0,
-		VV_ISTTY,
-		VV_ISTTY - 1,
-		VV_ISTTY + 1,
-		VV_ISTTY | 0x80000000u,
-		0xffffffffu,
-		0x80u,
-		0xffu,
-		0x0001u,
-		0x0004u,
-	};
+	ScratchP sp;
+	ScratchR sr;
 
-	for (unsigned int f : flags)
-		run_read_case(st_read, f);
+	std::memset(&sp, GUARD, sizeof(sp));
+	std::memset(&sr, GUARD, sizeof(sr));
+	sp.vp.v_vflag = vflag;
+	sr.vp.v_vflag = vflag;
 
-	for (long i = 0; i < SWEEP; i++)
-		run_read_case(st_read, rng.u32());
+	P::vop_write_args ap;
+	ref_vop_write_args ar;
+
+	ap.a_vp = &sp.vp;
+	ap.a_ioflag = ioflag;
+	ar.a_vp = &sr.vp;
+	ar.a_ioflag = ioflag;
+
+	int rp = P::dead_write(&ap);
+	int rr = ref_dead_write(&ar);
+
+	fcases[F_WRITE]++;
+	bool ok = rp == rr && scratch_equal(sp, sr) &&
+	    pads_intact(sp) && pads_intact(sr) &&
+	    sp.vp.v_vflag == vflag && sr.vp.v_vflag == vflag &&
+	    ap.a_ioflag == ioflag && ar.a_ioflag == ioflag &&
+	    ap.a_vp == &sp.vp && ar.a_vp == &sr.vp;
+	if (!ok && should_show(F_WRITE))
+		std::printf("  FAIL dead_write vflag=0x%08lx ioflag=%d: "
+		    "ret %d/%d buffer=%s\n", (unsigned long)vflag, ioflag,
+		    rp, rr, scratch_equal(sp, sr) ? "same" : "DIFFER");
+}
+
+static void
+t_poll(std::uint32_t vflag, int events)
+{
+	ScratchP sp;
+	ScratchR sr;
+
+	std::memset(&sp, GUARD, sizeof(sp));
+	std::memset(&sr, GUARD, sizeof(sr));
+	sp.vp.v_vflag = vflag;
+	sr.vp.v_vflag = vflag;
+
+	P::vop_poll_args ap;
+	ref_vop_poll_args ar;
+
+	ap.a_vp = &sp.vp;
+	ap.a_events = events;
+	ar.a_vp = &sr.vp;
+	ar.a_events = events;
+
+	int rp = P::dead_poll(&ap);
+	int rr = ref_dead_poll(&ar);
+
+	fcases[F_POLL]++;
+	bool ok = rp == rr && scratch_equal(sp, sr) &&
+	    pads_intact(sp) && pads_intact(sr) &&
+	    sp.vp.v_vflag == vflag && sr.vp.v_vflag == vflag &&
+	    ap.a_events == events && ar.a_events == events &&
+	    ap.a_vp == &sp.vp && ar.a_vp == &sr.vp;
+	if (!ok && should_show(F_POLL))
+		std::printf("  FAIL dead_poll events=0x%08lx (%d): "
+		    "ret 0x%x/0x%x buffer=%s\n",
+		    (unsigned long)(unsigned)events, events,
+		    (unsigned)rp, (unsigned)rr,
+		    scratch_equal(sp, sr) ? "same" : "DIFFER");
+}
+
+static void
+t_unset_text(std::uint32_t vflag)
+{
+	ScratchP sp;
+	ScratchR sr;
+
+	std::memset(&sp, GUARD, sizeof(sp));
+	std::memset(&sr, GUARD, sizeof(sr));
+	sp.vp.v_vflag = vflag;
+	sr.vp.v_vflag = vflag;
+
+	P::vop_unset_text_args ap;
+	ref_vop_unset_text_args ar;
+
+	ap.a_vp = &sp.vp;
+	ar.a_vp = &sr.vp;
+
+	int rp = P::dead_unset_text(&ap);
+	int rr = ref_dead_unset_text(&ar);
+
+	fcases[F_UNSET_TEXT]++;
+	bool ok = rp == rr && scratch_equal(sp, sr) &&
+	    pads_intact(sp) && pads_intact(sr) &&
+	    sp.vp.v_vflag == vflag && sr.vp.v_vflag == vflag &&
+	    ap.a_vp == &sp.vp && ar.a_vp == &sr.vp;
+	if (!ok && should_show(F_UNSET_TEXT))
+		std::printf("  FAIL dead_unset_text vflag=0x%08lx: "
+		    "ret %d/%d buffer=%s\n", (unsigned long)vflag, rp, rr,
+		    scratch_equal(sp, sr) ? "same" : "DIFFER");
+}
+
+/* ------------------------------------------------------------------ */
+/* Input generation                                                    */
+/* ------------------------------------------------------------------ */
+
+static std::uint64_t rng_state = 0x0123456789abcdefULL;
+
+static std::uint64_t
+nextr(void)
+{
+	std::uint64_t x = rng_state;
+
+	x ^= x >> 12;
+	x ^= x << 25;
+	x ^= x >> 27;
+	rng_state = x;
+	return x * 0x2545f4914f6cdd1dULL;
+}
+
+static const std::uint32_t ISTTY = static_cast<std::uint32_t>(P::VV_ISTTY);
+static const int STD = P::POLLSTANDARD;
+
+static std::uint32_t
+gen_vflag(void)
+{
+	std::uint32_t r = static_cast<std::uint32_t>(nextr());
+
+	switch (r % 10u) {
+	case 0:
+		return 0u;
+	case 1:
+		return ISTTY;
+	case 2:
+		return ~ISTTY;
+	case 3:
+		return 1u << (nextr() % 32u);
+	case 4:
+		/* random, never the tty bit */
+		return static_cast<std::uint32_t>(nextr()) & ~ISTTY;
+	case 5:
+		/* random, always the tty bit */
+		return static_cast<std::uint32_t>(nextr()) | ISTTY;
+	case 6:
+		return static_cast<std::uint32_t>(nextr()) & 0x3fffu;
+	case 7:
+		return 0xffffffffu;
+	case 8:
+		return ISTTY | (1u << (nextr() % 32u));
+	default:
+		return static_cast<std::uint32_t>(nextr());
+	}
 }
 
 static int
-expected_poll(int events)
+gen_events(void)
 {
-	if (events & ~POLLSTANDARD)
-		return POLLNVAL;
-	return POLLHUP | ((POLLIN | POLLRDNORM) & events);
-}
+	std::uint32_t r = static_cast<std::uint32_t>(nextr());
+	std::uint32_t s = static_cast<std::uint32_t>(STD);
 
-static bool
-run_poll_case(Stat &st, int events)
-{
-	st.cases++;
-
-	struct vop_poll_args ar = { events };
-	P::vop_poll_args ap = { events };
-
-	int rr = ref_dead_poll(&ar);
-	int rp = P::dead_poll(&ap);
-	int expect = expected_poll(events);
-
-	if (rr != rp) {
-		std::printf("    ret 0x%x vs 0x%x (events=0x%x)\n", rr, rp,
-		    events);
-		return fail(st, "return mismatch");
-	}
-	if (rr != expect) {
-		std::printf("    ret 0x%x expect 0x%x (events=0x%x)\n", rr,
-		    expect, events);
-		return fail(st, "oracle sanity");
-	}
-	return true;
-}
-
-static void
-test_dead_poll(void)
-{
-	int hand[] = {
-		0,
-		POLLIN,
-		POLLRDNORM,
-		POLLIN | POLLRDNORM,
-		POLLOUT,
-		POLLPRI,
-		POLLRDBAND,
-		POLLWRBAND,
-		POLLERR,
-		POLLHUP,
-		POLLNVAL,
-		POLLSTANDARD,
-		POLLSTANDARD & ~POLLIN,
-		POLLSTANDARD & ~POLLRDNORM,
-		POLLSTANDARD & ~(POLLIN | POLLRDNORM),
-		POLLSTANDARD | POLLIN,
-		0x200,
-		0x2000,
-		0x4000,
-		POLLINIGNEOF,
-		POLLRDHUP,
-		POLLINIGNEOF | POLLIN,
-		POLLRDHUP | POLLRDNORM,
-		~0,
-		-1,
-		0x7fffffff,
-		0x80000000,
-		(int)0xdeadbeef,
-		POLLSTANDARD + 1,
-		POLLSTANDARD - 1,
-		(POLLIN | POLLRDNORM) ^ POLLIN,
-		(POLLIN | POLLRDNORM) ^ POLLRDNORM,
-	};
-
-	for (int e : hand)
-		run_poll_case(st_poll, e);
-
-	for (int bit = 9; bit <= 31; bit++) {
-		int e = 1 << bit;
-		if ((e & ~POLLSTANDARD) != 0)
-			run_poll_case(st_poll, e);
-	}
-
-	for (long i = 0; i < SWEEP; i++) {
-		int events;
-		switch (rng.u32() % 5) {
-		case 0:
-			events = (int)rng.u32();
-			break;
-		case 1:
-			events = (int)(rng.u32() & POLLSTANDARD);
-			break;
-		case 2:
-			events = (int)(rng.u32() | POLLINIGNEOF);
-			break;
-		case 3:
-			events = (int)(rng.u32() & (POLLIN | POLLRDNORM));
-			break;
-		default:
-			events = (int)(rng.u32() & 0xffff);
-			break;
-		}
-		run_poll_case(st_poll, events);
+	switch (r % 12u) {
+	case 0:
+		return 0;
+	case 1:
+		return STD;
+	case 2:
+		/* strictly inside POLLSTANDARD */
+		return static_cast<int>(static_cast<std::uint32_t>(nextr()) & s);
+	case 3:
+		return static_cast<int>(1u << (nextr() % 31u));
+	case 4:
+		return P::POLLIN;
+	case 5:
+		return P::POLLRDNORM;
+	case 6:
+		return P::POLLIN | P::POLLRDNORM;
+	case 7:
+		/* one past the top of POLLSTANDARD */
+		return STD + 1;
+	case 8:
+		return static_cast<int>(static_cast<std::uint32_t>(nextr()));
+	case 9:
+		/* only bits outside POLLSTANDARD */
+		return static_cast<int>(static_cast<std::uint32_t>(nextr()) & ~s);
+	case 10:
+		/* in-standard bits plus exactly one out-of-standard bit */
+		return static_cast<int>(
+		    (static_cast<std::uint32_t>(nextr()) & s) |
+		    (1u << (9u + nextr() % 22u)));
+	default:
+		return -static_cast<int>(
+		    static_cast<std::uint32_t>(nextr()) & 0x7fffffffu);
 	}
 }
 
-static void
-print_stat(const Stat &st)
-{
-	std::printf("%-22s %10llu %10llu\n", st.name,
-	    (unsigned long long)st.cases, (unsigned long long)st.fails);
-}
+/* ------------------------------------------------------------------ */
 
 int
-main()
+main(void)
 {
-	test_dead_getwritemount();
-	test_dead_lookup();
-	test_dead_open();
-	test_dead_close();
-	test_dead_read();
-	test_dead_write();
-	test_dead_poll();
-	test_dead_unset_text();
+	static const std::uint32_t edge_vflag[] = {
+		0u,
+		1u,				/* VV_ROOT, not a tty */
+		2u,				/* VV_ISTTY alone */
+		3u,				/* tty plus another bit */
+		0xfffffffdu,			/* everything but the tty bit */
+		0xffffffffu,			/* everything */
+		0x80000000u,			/* high bit only */
+		0x7fffffffu,
+		0x7f7f7f7fu,			/* the guard pattern itself */
+		0x00000004u,
+		0x00002000u,
+		0x00001ffeu,
+	};
+	static const int edge_events[] = {
+		0,
+		P::POLLIN,
+		P::POLLPRI,
+		P::POLLOUT,
+		P::POLLERR,
+		P::POLLHUP,
+		P::POLLNVAL,
+		P::POLLRDNORM,
+		P::POLLRDBAND,
+		P::POLLWRBAND,
+		P::POLLIN | P::POLLRDNORM,
+		P::POLLIN | P::POLLPRI,
+		P::POLLRDNORM | P::POLLHUP,
+		P::POLLSTANDARD,		/* boundary: all standard bits */
+		P::POLLSTANDARD + 1,		/* boundary: first value past */
+		0x0200,				/* lowest non-standard bit */
+		P::POLLINIGNEOF,
+		P::POLLRDHUP,
+		P::POLLSTANDARD | P::POLLINIGNEOF,
+		P::POLLIN | P::POLLRDHUP,
+		P::POLLRDNORM | 0x0200,
+		-1,
+		0x7fffffff,
+		static_cast<int>(0x80000000u),
+		static_cast<int>(0xffff0000u),
+		0x0400,
+		0x0800,
+		0x1000,
+		0x00010000,
+	};
+	static const int edge_scalars[] = {
+		0, 1, -1, 2, 0x7fffffff, static_cast<int>(0x80000000u), 0x7f,
+	};
 
-	std::printf("\n%-22s %10s %10s\n", "function", "cases", "failures");
-	print_stat(st_getwritemount);
-	print_stat(st_lookup);
-	print_stat(st_open);
-	print_stat(st_close);
-	print_stat(st_read);
-	print_stat(st_write);
-	print_stat(st_poll);
-	print_stat(st_unset_text);
+	const std::size_t nvf = sizeof(edge_vflag) / sizeof(edge_vflag[0]);
+	const std::size_t nev = sizeof(edge_events) / sizeof(edge_events[0]);
+	const std::size_t nsc = sizeof(edge_scalars) / sizeof(edge_scalars[0]);
 
-	unsigned long long total_fails = st_getwritemount.fails + st_lookup.fails +
-	    st_open.fails + st_close.fails + st_read.fails + st_write.fails +
-	    st_poll.fails + st_unset_text.fails;
+	for (std::size_t i = 0; i < nvf; i++) {
+		t_getwritemount(edge_vflag[i]);
+		t_lookup(edge_vflag[i]);
+		t_unset_text(edge_vflag[i]);
+		for (std::size_t j = 0; j < nsc; j++) {
+			t_open(edge_vflag[i], edge_scalars[j],
+			    edge_scalars[(j + 1) % nsc]);
+			t_close(edge_vflag[i], edge_scalars[j]);
+			t_read(edge_vflag[i], edge_scalars[j]);
+			t_write(edge_vflag[i], edge_scalars[j]);
+		}
+	}
+
+	/* every bit of v_vflag alone, with the tty bit, and inverted */
+	for (int b = 0; b < 32; b++) {
+		std::uint32_t v = 1u << b;
+
+		t_read(v, 0);
+		t_read(v | ISTTY, 0);
+		t_read(~v, 0);
+		t_write(v, 0);
+		t_getwritemount(v);
+		t_lookup(v);
+		t_open(v, b, -b);
+		t_close(v, b);
+		t_unset_text(v);
+	}
+
+	for (std::size_t i = 0; i < nev; i++) {
+		t_poll(0u, edge_events[i]);
+		t_poll(ISTTY, edge_events[i]);
+		t_poll(0xffffffffu, edge_events[i]);
+	}
+
+	/* every single-bit event, and each bit added to / removed from STD */
+	for (int b = 0; b < 32; b++) {
+		int e = static_cast<int>(1u << b);
+
+		t_poll(0u, e);
+		t_poll(0u, e | P::POLLIN);
+		t_poll(0u, e | P::POLLRDNORM);
+		t_poll(0u, STD & ~e);
+		t_poll(0u, STD | e);
+	}
+
+	/* exhaustive sweep of every subset of POLLSTANDARD (0x1ff) */
+	for (int e = 0; e <= P::POLLSTANDARD; e++)
+		t_poll(0u, e);
+
+	/* fixed-seed randomised sweep */
+	const unsigned long ITER = 250000UL;
+
+	for (unsigned long n = 0; n < ITER; n++) {
+		std::uint32_t vflag = gen_vflag();
+		int events = gen_events();
+		int s1 = static_cast<int>(static_cast<std::uint32_t>(nextr()));
+		int s2 = static_cast<int>(static_cast<std::uint32_t>(nextr()));
+
+		t_getwritemount(vflag);
+		t_lookup(vflag);
+		t_open(vflag, s1, s2);
+		t_close(vflag, s1);
+		t_read(vflag, s1);
+		t_write(vflag, s2);
+		t_poll(vflag, events);
+		t_unset_text(vflag);
+	}
+
+	unsigned long total_cases = 0;
+	unsigned long total_fails = 0;
+
+	std::printf("\n%-24s %12s %12s  %s\n", "function", "cases", "failures",
+	    "result");
+	std::printf("-----------------------------------------------"
+	    "--------------------\n");
+	for (int i = 0; i < NFUNC; i++) {
+		total_cases += fcases[i];
+		total_fails += ffails[i];
+		std::printf("%-24s %12lu %12lu  %s\n", fname[i], fcases[i],
+		    ffails[i], ffails[i] == 0 ? "PASS" : "FAIL");
+	}
+	std::printf("-----------------------------------------------"
+	    "--------------------\n");
+	std::printf("%-24s %12lu %12lu  %s\n", "TOTAL", total_cases,
+	    total_fails, total_fails == 0 ? "PASS" : "FAIL");
 
 	return total_fails == 0 ? 0 : 1;
 }
