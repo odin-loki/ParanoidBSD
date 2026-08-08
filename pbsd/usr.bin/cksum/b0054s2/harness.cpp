@@ -345,6 +345,66 @@ errors(void)
 	}
 }
 
+/*
+ * Cases that start from a chosen crc_total instead of whatever the running
+ * history happens to be.  crc() inverts crc_total on entry, so presetting v
+ * makes the accumulator start at ~v; picking the first data byte equal to
+ * (~v >> 24) drives the crc_total COMPUTE straight into crctab[0].
+ */
+static void
+state(void)
+{
+	size_t i, j;
+
+	for (i = 0; i < 256; i++) {
+		uint32_t notv = ((uint32_t)i << 24) | 0x5a5a5au;
+
+		preset = (long long)(uint32_t)~notv;
+		data[0] = (unsigned char)i;
+		for (j = 1; j < 24; j++)
+			data[j] = (unsigned char)(0xff - j);
+		run_data(&st_state, "crctab[0] via crc_total", (long)i, data,
+		    24);
+	}
+
+	{
+		static const uint32_t presets[] = {
+			0x00000000u, 0xffffffffu, 0x00000001u, 0xfffffffeu,
+			0x80000000u, 0x7fffffffu, 0x000000ffu, 0xff000000u,
+			0x12345678u, 0xdeadbeefu
+		};
+
+		for (i = 0; i < sizeof(presets) / sizeof(presets[0]); i++) {
+			preset = (long long)presets[i];
+
+			run_data(&st_state, "preset, empty", (long)i, data, 0);
+
+			data[0] = 0x00;
+			run_data(&st_state, "preset, one NUL", (long)i, data, 1);
+
+			data[0] = 0xff;
+			run_data(&st_state, "preset, one 0xff", (long)i, data,
+			    1);
+
+			for (j = 0; j < 300; j++)
+				data[j] = (unsigned char)(j * 17u);
+			run_data(&st_state, "preset, 300 bytes", (long)i, data,
+			    300);
+
+			memset(data, 0, 300);
+			run_data(&st_state, "preset, 300 NULs", (long)i, data,
+			    300);
+
+			/* Error return from a known state: no re-inversion. */
+			check(&st_state, "preset, fd = -1", (long)i, -1, false);
+			check(&st_state, "preset, write-only fd", (long)i,
+			    wronly_fd, false);
+		}
+	}
+
+	preset = -1;
+}
+
 static void
 sweep(void)
 {
@@ -438,12 +498,13 @@ main(void)
 	patterns();
 	sizes();
 	errors();
+	state();
 	sweep();
 
 	cases = st_patterns.cases + st_sizes.cases + st_errors.cases +
-	    st_random.cases;
+	    st_state.cases + st_random.cases;
 	fails = st_patterns.fails + st_sizes.fails + st_errors.fails +
-	    st_random.fails;
+	    st_state.fails + st_random.fails;
 
 	printf("\n");
 	printf("  %-14s %-18s %10s %10s\n", "function", "group", "cases",
@@ -452,12 +513,13 @@ main(void)
 	row(&st_patterns);
 	row(&st_sizes);
 	row(&st_errors);
+	row(&st_state);
 	row(&st_random);
 	printf("  ---------------------------------------------------------\n");
 	printf("  %-14s %-18s %10ld %10ld\n", "crc", "TOTAL", cases, fails);
 	printf("\n");
-	printf("  (every case also compares crc_total_value() against\n");
-	printf("   ref_crc_total_value(), and the entire 64-byte guarded\n");
+	printf("  (every case also compares crc_total_get() against\n");
+	printf("   ref_crc_total_get(), and the entire 64-byte guarded\n");
 	printf("   out-parameter buffer, not just the return value)\n");
 	printf("\n");
 	printf("  RESULT: %s\n", fails == 0 ? "PASS" : "FAIL");

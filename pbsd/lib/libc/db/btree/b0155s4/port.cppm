@@ -121,8 +121,6 @@ typedef struct {
 #define	MPOOL_DIRTY	0x01
 #define	MPOOL_PAGE_NEXT	0x02
 
-enum { NOT, BACK, FORWARD };
-
 struct MPOOL { int opaque; };
 
 typedef struct _page {

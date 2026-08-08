@@ -56,6 +56,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/sh/bltin/b0218/port.cppm
   bin/sleep/b0175/port.cppm
   bin/stty/b0187/port.cppm
+  bin/stty/b0187s1/port.cppm
   bin/stty/b0227/port.cppm
   bin/stty/gfmt_m/port.cppm
   bin/sync/b0166/port.cppm
@@ -178,6 +179,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0153s3/port.cppm
   lib/libc/locale/b0153s4/port.cppm
   lib/libc/locale/b0156/port.cppm
+  lib/libc/locale/b0156s1/port.cppm
   lib/libc/locale/b0156s2/port.cppm
   lib/libc/locale/b0156s3/port.cppm
   lib/libc/locale/b0159/port.cppm

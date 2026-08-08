@@ -52,6 +52,8 @@
 #define MINCACHE	(5)
 #define MINPSIZE	(512)
 
+#undef BIG_ENDIAN
+#undef LITTLE_ENDIAN
 #define BIG_ENDIAN	4321
 #define LITTLE_ENDIAN	1234
 

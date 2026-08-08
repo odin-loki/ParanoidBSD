@@ -16,20 +16,7 @@ module;
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef MB_CUR_MAX
-#define MB_CUR_MAX 4
-#endif
-
 export module pbsd.lib.libc.locale.b0153s4;
-
-#define __mbstate_t_defined 1
-typedef union {
-	char		__mbstate8[128];
-	long long	_mbstateL;
-} __mbstate_t;
-typedef __mbstate_t mbstate_t;
-
-#include <wchar.h>
 
 #ifndef MIN
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
@@ -37,7 +24,9 @@ typedef __mbstate_t mbstate_t;
 
 export namespace pbsd::lib_libc_locale::b0153s4 {
 
-using ::mbstate_t;
+struct mbstate_t {
+	char	__mbstate8[128];
+};
 
 typedef int __ct_rune_t;
 typedef __ct_rune_t __rune_t;

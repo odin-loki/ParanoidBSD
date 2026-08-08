@@ -295,7 +295,7 @@ get_addressed_line_node(long n)
 	SPL1();
 	if (n > on)
 		if (n <= (on + addr_last) >> 1)
-			for (; on < n; on++)
+			for (; on >= n; on++)
 				lp = lp->q_forw;
 		else {
 			lp = buffer_head.q_back;

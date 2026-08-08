@@ -75,6 +75,8 @@ size_t	ref__GB2312_wcsnrtombs(char *, const wchar_t **, size_t, size_t,
 	    ref_mbstate_t *);
 }
 
+static_assert(sizeof(port_mbstate_t) == sizeof(ref_mbstate_t));
+
 enum {
 	F_GB2312_INIT, F_GB2312_MBSINIT, F_GB2312_CHECK, F_GB2312_MBRTOWC,
 	F_GB2312_WCRTOMB, F_GB2312_MBSNRTOWCS, F_GB2312_WCSNRTOMBS, F_COUNT

@@ -272,6 +272,10 @@ int __bt_ret(BTREE *t, EPG *e, DBT *key, DBT *rkey, DBT *data, DBT *rdata, int c
 	return test_mock.ret_status;
 }
 
+int ref___bt_seqset(BTREE *, EPG *, DBT *, int);
+int ref___bt_seqadv(BTREE *, EPG *, int);
+int ref___bt_first(BTREE *, const DBT *, EPG *, int *);
+void ref___bt_setcur(BTREE *, pgno_t, u_int);
 
 /* --- bt_seq.c --- */
 

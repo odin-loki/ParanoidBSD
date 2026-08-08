@@ -355,6 +355,7 @@ void inject_orphan_udel(long n)
 	lp = get_addressed_line_node(n);
 	REQUE(lp->q_back, lp->q_forw);
 	addr_last--;
+	get_addressed_line_node(0);
 	push_undo_nodes(UDEL, lp, lp);
 }
 
