@@ -1,14 +1,64 @@
 /*
  * PBSD batch b0153s2 -- reference oracle.
  *
- * Original HardenedBSD source concatenated, every function renamed with
- * a ref_ prefix.  Function bodies are UNMODIFIED except for internal static
- * call targets renamed to match.
+ * The original HardenedBSD source, concatenated, with every function renamed
+ * with a ref_ prefix.  Function bodies are UNMODIFIED; the internal call from
+ * ref_wcsftime() to wcsftime_l() is redirected with a #define so that even
+ * that body is left byte-for-byte as it appears upstream.
  *
  * Source:
  *   hbsd/src/lib/libc/locale/wcsftime.c
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2002 Tim J. Robbins
+ * All rights reserved.
+ *
+ * Copyright (c) 2011 The FreeBSD Foundation
+ *
+ * Portions of this software were developed by David Chisnall
+ * under sponsorship from the FreeBSD Foundation.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+#include <errno.h>
+#include <limits.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <time.h>
+#include <wchar.h>
+/* #include "xlocale_private.h" -- supplied by the definitions below. */
+
+/*
+ * Definitions that come from FreeBSD's <sys/limits.h> and
+ * <xlocale_private.h>, neither of which exists on the host toolchain.
+ */
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX	((size_t)-1)
 #endif
@@ -17,206 +67,58 @@
 #define LONG_BIT	(sizeof(long) * CHAR_BIT)
 #endif
 
-#include <errno.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <time.h>
-#include <wchar.h>
-#include <locale.h>
-#include <string.h>
+#define __get_locale()	(uselocale((locale_t)0))
 
-#ifndef MB_CUR_MAX
-#define MB_CUR_MAX	4
-#endif
-
-struct _xlocale {
-	long	dummy;
-};
-
-typedef struct _xlocale *locale_t;
-
-typedef struct {
-	int			wcsrtombs_fail;
-	int			fail_malloc_at;
-	int			malloc_calls;
-	int			strftime_zero;
-	size_t			strftime_len;
-	int			mbsrtowcs_fail;
-	int			mbsrtowcs_incomplete;
-	int			mbsrtowcs_dstp_left;
-	size_t			mbsrtowcs_count;
-} pbsd_wcsftime_hook_t;
-
-pbsd_wcsftime_hook_t	pbsd_wcsftime_hook;
-
-struct _xlocale	ref_test_locale;
-
-void
-pbsd_reset_hooks(void)
-{
-	memset(&pbsd_wcsftime_hook, 0, sizeof(pbsd_wcsftime_hook));
-	memset(&ref_test_locale, 0, sizeof(ref_test_locale));
-}
-
-pbsd_wcsftime_hook_t *
-pbsd_get_wcsftime_hook(void)
-{
-	return (&pbsd_wcsftime_hook);
-}
-
-static void __attribute__((constructor))
-ref_oracle_init(void)
-{
-	pbsd_reset_hooks();
-}
-
-#define FIX_LOCALE(loc)		if ((loc) == NULL) (loc) = ref___get_locale()
-#define __get_locale()		ref___get_locale()
-
-locale_t
-ref___get_locale(void)
-{
-	return (&ref_test_locale);
-}
-
-struct _xlocale *
-ref_get_test_locale(void)
-{
-	return (&ref_test_locale);
-}
-
-void *__real_malloc(size_t);
-
-void *
-__wrap_malloc(size_t n)
-{
-	if (pbsd_wcsftime_hook.fail_malloc_at > 0) {
-		pbsd_wcsftime_hook.malloc_calls++;
-		if (pbsd_wcsftime_hook.malloc_calls ==
-		    pbsd_wcsftime_hook.fail_malloc_at)
-			return (NULL);
-	}
-	return (__real_malloc(n));
-}
+#define FIX_LOCALE(l)	do {						\
+	if ((l) == NULL)						\
+		(l) = __get_locale();					\
+} while (0)
 
 static size_t
-mock_wcs_to_mbs_len(const wchar_t *ws)
-{
-	size_t n = 0;
-
-	while (ws[n] != L'\0') {
-		if (ws[n] > 0xff)
-			return ((size_t)-1);
-		n++;
-	}
-	return (n);
-}
-
-static size_t
-mock_wcs_to_mbs(char *dst, const wchar_t *ws, size_t cap)
-{
-	size_t i;
-
-	for (i = 0; ws[i] != L'\0'; i++) {
-		if (ws[i] > 0xff)
-			return ((size_t)-1);
-		if (dst != NULL) {
-			if (i + 1 >= cap)
-				break;
-			dst[i] = (char)ws[i];
-		}
-	}
-	if (dst != NULL && cap > 0)
-		dst[i] = '\0';
-	return (i);
-}
-
-size_t
 wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src,
-    size_t len, mbstate_t * __restrict ps, locale_t locale)
+    size_t len, mbstate_t * __restrict ps, locale_t loc)
 {
-	const wchar_t *s;
-	size_t n;
+	locale_t old;
+	size_t r;
 
-	(void)ps;
-	(void)locale;
-	if (pbsd_wcsftime_hook.wcsrtombs_fail != 0)
-		return ((size_t)-1);
-	if (src == NULL)
-		return ((size_t)-1);
-	s = *src;
-	if (s == NULL)
-		return ((size_t)-1);
-	n = mock_wcs_to_mbs_len(s);
-	if (n == (size_t)-1)
-		return ((size_t)-1);
-	if (dst != NULL) {
-		if (n + 1 > len)
-			return ((size_t)-1);
-		mock_wcs_to_mbs(dst, s, len);
-		*src = s + n;
-	}
-	return (n);
+	old = uselocale(loc);
+	r = wcsrtombs(dst, src, len, ps);
+	uselocale(old);
+	return (r);
 }
 
-size_t
-strftime_l(char * __restrict s, size_t max, const char * __restrict fmt,
-    const struct tm * __restrict tm, locale_t locale)
-{
-	size_t n;
-
-	(void)fmt;
-	(void)tm;
-	(void)locale;
-	if (pbsd_wcsftime_hook.strftime_zero != 0)
-		return (0);
-	n = pbsd_wcsftime_hook.strftime_len;
-	if (n == 0)
-		n = 4;
-	if (s != NULL && max > 0) {
-		if (n >= max)
-			n = max - 1;
-		memset(s, 'X', n);
-		s[n] = '\0';
-	}
-	return (n);
-}
-
-size_t
+static size_t
 mbsrtowcs_l(wchar_t * __restrict dst, const char ** __restrict src,
-    size_t len, mbstate_t * __restrict ps, locale_t locale)
+    size_t len, mbstate_t * __restrict ps, locale_t loc)
 {
-	const char *s;
-	size_t i, n;
+	locale_t old;
+	size_t r;
 
-	(void)ps;
-	(void)locale;
-	if (pbsd_wcsftime_hook.mbsrtowcs_fail != 0)
-		return ((size_t)-1);
-	if (pbsd_wcsftime_hook.mbsrtowcs_incomplete != 0)
-		return ((size_t)-2);
-	if (src == NULL)
-		return ((size_t)-1);
-	s = *src;
-	if (s == NULL)
-		return ((size_t)-1);
-	n = pbsd_wcsftime_hook.mbsrtowcs_count;
-	if (n == 0) {
-		while (s[n] != '\0')
-			n++;
-	}
-	if (dst != NULL) {
-		for (i = 0; i < n && i < len; i++)
-			dst[i] = (unsigned char)s[i];
-		if (pbsd_wcsftime_hook.mbsrtowcs_dstp_left != 0)
-			*src = s + 1;
-		else
-			*src = NULL;
-	}
-	return (n);
+	old = uselocale(loc);
+	r = mbsrtowcs(dst, src, len, ps);
+	uselocale(old);
+	return (r);
 }
 
-/* wcsftime.c */
+size_t	ref_wcsftime_l(wchar_t * __restrict, size_t,
+	    const wchar_t * __restrict, const struct tm * __restrict,
+	    locale_t);
+size_t	ref_wcsftime(wchar_t * __restrict, size_t,
+	    const wchar_t * __restrict, const struct tm * __restrict);
+
+/*
+ * Convert date and time to a wide-character string.
+ *
+ * This is the wide-character counterpart of strftime(). So that we do not
+ * have to duplicate the code of strftime(), we convert the format string to
+ * multibyte, call strftime(), then convert the result back into wide
+ * characters.
+ *
+ * This technique loses in the presence of stateful multibyte encoding if any
+ * of the conversions in the format string change conversion state. When
+ * stateful encoding is implemented, we will need to reset the state between
+ * format specifications in the format string.
+ */
 size_t
 ref_wcsftime_l(wchar_t * __restrict wcs, size_t maxsize,
 	const wchar_t * __restrict format, const struct tm * __restrict timeptr,
@@ -279,9 +181,12 @@ error:
 	errno = sverrno;
 	return (0);
 }
+
+#define wcsftime_l	ref_wcsftime_l
+
 size_t
 ref_wcsftime(wchar_t * __restrict wcs, size_t maxsize,
 	const wchar_t * __restrict format, const struct tm * __restrict timeptr)
 {
-	return ref_wcsftime_l(wcs, maxsize, format, timeptr, __get_locale());
+	return wcsftime_l(wcs, maxsize, format, timeptr, __get_locale());
 }

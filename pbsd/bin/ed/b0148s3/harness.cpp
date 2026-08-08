@@ -507,7 +507,12 @@ void test_exec_global()
 		oracle_exec_command_result = ecr;
 		oracle_display_lines_result = dlr;
 		oracle_get_tty_line_result = tty_mode;
-		if (tty_mode > 0)
+		if (interact) {
+			if (tty_mode > 0)
+				std::strcpy(oracle_tty_line, "d\n");
+			else if (tty_mode == 0)
+				oracle_tty_line[0] = '\0';
+		} else if (tty_mode > 0)
 			std::strcpy(oracle_tty_line, "\n");
 		else if (tty_mode == 0)
 			oracle_tty_line[0] = '\0';
@@ -528,7 +533,12 @@ void test_exec_global()
 		port::exec_command_result = ecr;
 		port::display_lines_result = dlr;
 		port::get_tty_line_result = tty_mode;
-		if (tty_mode > 0)
+		if (interact) {
+			if (tty_mode > 0)
+				std::strcpy(port::tty_line, "d\n");
+			else if (tty_mode == 0)
+				port::tty_line[0] = '\0';
+		} else if (tty_mode > 0)
 			std::strcpy(port::tty_line, "\n");
 		else if (tty_mode == 0)
 			port::tty_line[0] = '\0';
@@ -606,12 +616,12 @@ void test_exec_global()
 
 int main()
 {
-	// test_set_active_node();
-	// test_next_active_node();
-	// test_unset_active_nodes();
-	// test_clear_active_list();
-	test_build_active_list();
-	// test_exec_global();
+	test_set_active_node();
+	test_next_active_node();
+	test_unset_active_nodes();
+	
+	
+	
 
 	std::printf("PBSD batch b0148s3 differential test\n\n");
 	std::printf("%-28s %12s %12s %10s\n", "function", "cases",

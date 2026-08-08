@@ -8,6 +8,8 @@ module;
 #include <cerrno>
 #include <fcntl.h>
 #include <climits>
+#undef COLL_WEIGHTS_MAX
+#define COLL_WEIGHTS_MAX 10
 #include <clocale>
 #include <cstddef>
 #include <cstdint>
@@ -61,11 +63,6 @@ inline size_t strlcat(char *dst, const char *src, size_t siz)
 
 #define ENCODING_LEN 31
 #define XLOCALE_DEF_VERSION_LEN 12
-
-#if COLL_WEIGHTS_MAX == 0
-#undef COLL_WEIGHTS_MAX
-#define COLL_WEIGHTS_MAX 10
-#endif
 
 #define COLLATE_STR_LEN		24
 #define COLLATE_FMT_VERSION_LEN	12
@@ -156,7 +153,7 @@ struct _xlocale {
 typedef struct _xlocale *pbsd_locale_t;
 #define locale_t pbsd_locale_t
 
-static char path_locale_buf[256];
+static char path_locale_buf[256] = "/usr/share/locale";
 inline char *_PathLocale = path_locale_buf;
 
 struct _xlocale global_locale;

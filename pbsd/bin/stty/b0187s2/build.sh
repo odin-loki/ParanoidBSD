@@ -3,6 +3,9 @@
 # Build and run the b0187s2 differential test.  Run as `sh build.sh' from
 # pbsd/bin/stty/b0187s2/.  The harness's exit status is this script's exit
 # status.
+#
+# The harness intercepts the exit(1) at the end of usage() with the linker's
+# --wrap=exit, so both the port and the oracle can be driven in-process.
 
 set -e
 
@@ -31,9 +34,7 @@ else
 	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c harness.cpp -o harness.o
 fi
 
-$CXX -std=c++23 $CXXFLAGS \
-    -Wl,--wrap=tcgetattr -Wl,--wrap=tcsetattr -Wl,--wrap=ioctl \
-    -Wl,--wrap=open -Wl,--wrap=isatty -Wl,--wrap=fstat \
-    -o harness harness.o port.o oracle.o
+$CXX -std=c++23 $CXXFLAGS -Wl,--wrap=exit -o harness \
+    harness.o port.o oracle.o
 
 exec ./harness

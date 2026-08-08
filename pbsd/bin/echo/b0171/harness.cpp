@@ -2,8 +2,8 @@
  * harness.cpp -- differential test for PBSD batch b0171 (echo.c).
  *
  * echo.c defines main(), which builds an iovec list and writev(2)s to stdout.
- * Each case forks a child to run ref_main or port::main, captures stdout, and
- * compares exit status and output bytes.
+ * Each case runs ref_main and port::main in-process; stdout is captured by a
+ * writev(2) linker wrap and compared byte-for-byte.
  */
 
 #define _GNU_SOURCE
@@ -13,9 +13,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fcntl.h>
 #include <setjmp.h>
-#include <sys/wait.h>
+#include <sys/uio.h>
 #include <unistd.h>
 #include <vector>
 
@@ -32,6 +31,7 @@ void oracle_err_disarm(void);
 int ref_main(int argc, char *argv[]);
 extern void *(*__malloc_hook)(size_t);
 void *__real_malloc(size_t);
+ssize_t __real_writev(int fd, const struct iovec *iov, int iovcnt);
 }
 
 #define SWEEP 200000L
@@ -40,6 +40,7 @@ void *__real_malloc(size_t);
 namespace {
 
 int g_fail_malloc;
+std::vector<unsigned char> g_writev_capture;
 
 extern "C" void *
 __wrap_malloc(size_t size)
@@ -47,6 +48,25 @@ __wrap_malloc(size_t size)
 	if (g_fail_malloc && __malloc_hook != nullptr)
 		return __malloc_hook(size);
 	return __real_malloc(size);
+}
+
+extern "C" ssize_t
+__wrap_writev(int fd, const struct iovec *iov, int iovcnt)
+{
+	ssize_t total = 0;
+
+	if (fd != STDOUT_FILENO)
+		return __real_writev(fd, iov, iovcnt);
+
+	for (int i = 0; i < iovcnt; i++) {
+		const unsigned char *base =
+		    static_cast<const unsigned char *>(iov[i].iov_base);
+		std::size_t len = iov[i].iov_len;
+
+		g_writev_capture.insert(g_writev_capture.end(), base, base + len);
+		total += static_cast<ssize_t>(len);
+	}
+	return total;
 }
 
 struct Stat {
@@ -58,6 +78,8 @@ struct Stat {
 
 struct EchoResult {
 	int exit_status;
+	int err_called;
+	int err_status;
 	std::vector<unsigned char> out;
 };
 
@@ -92,90 +114,51 @@ fail(Stat &st, const char *what)
 }
 
 EchoResult
-run_child(bool use_port, int argc, char **argv)
-{
-	int outpipe[2];
-	pid_t pid;
-
-	if (pipe(outpipe) != 0) {
-		std::perror("pipe");
-		std::exit(2);
-	}
-
-	pid = fork();
-	if (pid < 0) {
-		std::perror("fork");
-		std::exit(2);
-	}
-
-	if (pid == 0) {
-		close(outpipe[0]);
-		if (dup2(outpipe[1], STDOUT_FILENO) < 0)
-			_exit(127);
-		close(outpipe[1]);
-
-		if (use_port) {
-			P::port_err_arm();
-			if (setjmp(P::port_err_jmp) == 0) {
-				int ret = P::main(argc, argv);
-				P::port_err_disarm();
-				_exit(ret);
-			}
-			P::port_err_disarm();
-			_exit(P::port_err_status);
-		}
-
-		oracle_err_arm();
-		if (setjmp(oracle_err_jmp) == 0) {
-			int ret = ref_main(argc, argv);
-			oracle_err_disarm();
-			_exit(ret);
-		}
-		oracle_err_disarm();
-		_exit(oracle_err_status);
-	}
-
-	close(outpipe[1]);
-
-	EchoResult res{};
-	unsigned char buf[8192];
-	ssize_t nr;
-
-	while ((nr = read(outpipe[0], buf, sizeof(buf))) > 0) {
-		res.out.insert(res.out.end(), buf, buf + nr);
-	}
-	close(outpipe[0]);
-
-	int status = 0;
-	if (waitpid(pid, &status, 0) < 0) {
-		std::perror("waitpid");
-		std::exit(2);
-	}
-	if (WIFEXITED(status)) {
-		res.exit_status = WEXITSTATUS(status);
-	} else if (WIFSIGNALED(status)) {
-		res.exit_status = 128 + WTERMSIG(status);
-	}
-
-	return res;
-}
-
-EchoResult
 run_ref(int argc, char **argv)
 {
-	g_fail_malloc = 0;
+	EchoResult res{};
+
+	g_writev_capture.clear();
 	oracle_err_called = 0;
 	oracle_err_status = 0;
-	return run_child(false, argc, argv);
+
+	oracle_err_arm();
+	if (setjmp(oracle_err_jmp) == 0) {
+		res.exit_status = ref_main(argc, argv);
+		oracle_err_disarm();
+	} else {
+		oracle_err_disarm();
+		res.exit_status = oracle_err_status;
+	}
+
+	res.err_called = oracle_err_called;
+	res.err_status = oracle_err_status;
+	res.out = g_writev_capture;
+	return res;
 }
 
 EchoResult
 run_port(int argc, char **argv)
 {
-	g_fail_malloc = 0;
+	EchoResult res{};
+
+	g_writev_capture.clear();
 	P::port_err_called = 0;
 	P::port_err_status = 0;
-	return run_child(true, argc, argv);
+
+	P::port_err_arm();
+	if (setjmp(P::port_err_jmp) == 0) {
+		res.exit_status = P::main(argc, argv);
+		P::port_err_disarm();
+	} else {
+		P::port_err_disarm();
+		res.exit_status = P::port_err_status;
+	}
+
+	res.err_called = P::port_err_called;
+	res.err_status = P::port_err_status;
+	res.out = g_writev_capture;
+	return res;
 }
 
 bool
@@ -192,12 +175,22 @@ run_case(const char *label, int argc, char **argv)
 {
 	st_main.cases++;
 
+	g_fail_malloc = 0;
+	__malloc_hook = nullptr;
+
 	EchoResult ref = run_ref(argc, argv);
 	EchoResult port = run_port(argc, argv);
 
 	if (ref.exit_status != port.exit_status) {
 		std::printf("    %s: exit %d vs %d\n", label, ref.exit_status,
 		    port.exit_status);
+		return fail(st_main, label);
+	}
+	if (ref.err_called != port.err_called ||
+	    ref.err_status != port.err_status) {
+		std::printf("    %s: err %d/%d vs %d/%d\n", label,
+		    ref.err_called, ref.err_status, port.err_called,
+		    port.err_status);
 		return fail(st_main, label);
 	}
 	if (!outputs_equal(ref.out, port.out)) {
@@ -217,19 +210,18 @@ malloc_always_fail(size_t)
 bool
 run_malloc_fail_case(const char *label, int argc, char **argv)
 {
+	EchoResult ref{};
+	EchoResult port{};
+
 	st_main.cases++;
 
 	g_fail_malloc = 1;
 	__malloc_hook = malloc_always_fail;
-	oracle_err_called = 0;
-	oracle_err_status = 0;
-	EchoResult ref = run_child(false, argc, argv);
+	ref = run_ref(argc, argv);
 
 	g_fail_malloc = 1;
 	__malloc_hook = malloc_always_fail;
-	P::port_err_called = 0;
-	P::port_err_status = 0;
-	EchoResult port = run_child(true, argc, argv);
+	port = run_port(argc, argv);
 
 	g_fail_malloc = 0;
 	__malloc_hook = nullptr;
@@ -374,7 +366,7 @@ test_main_sweep()
 
 	for (long i = 0; i < SWEEP; i++) {
 		std::size_t extra = static_cast<std::size_t>(rng.next() % 16u);
-		std::vector<char *> argv(extra + 2, nullptr);
+		std::vector<char *> argv(extra + 3, nullptr);
 		static char prog[] = "echo";
 
 		argv[0] = prog;

@@ -1,67 +1,3 @@
-/*
- * pbsd.lib.libc.locale.b0153s2 - C++23 port of batch b0153s2.
- *
- * Source: lib/libc/locale/wcsftime.c
- *
- * Faithful port: same control flow, operand types, signedness, evaluation
- * order, pointer arithmetic, and bugs.  Copyright headers from the original
- * are kept with the code they cover.
- */
-
-module;
-
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif
-
-#include <errno.h>
-#include <limits.h>
-#include <locale.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <time.h>
-#include <wchar.h>
-
-export module pbsd.lib.libc.locale.b0153s2;
-
-#ifndef SIZE_T_MAX
-#define SIZE_T_MAX SIZE_MAX
-#endif
-
-export namespace pbsd::lib_libc_locale::b0153s2 {
-
-locale_t
-test_locale()
-{
-	static locale_t cached;
-
-	if (cached == NULL)
-		cached = newlocale(LC_ALL_MASK, "C", NULL);
-	return (cached);
-}
-
-} /* export namespace - helpers only */
-
-export namespace pbsd::lib_libc_locale::b0153s2 {
-
-extern "C" {
-size_t	wcsrtombs_l(char * __restrict, const wchar_t ** __restrict, size_t,
-	    mbstate_t * __restrict, locale_t);
-size_t	mbsrtowcs_l(wchar_t * __restrict, const char ** __restrict, size_t,
-	    mbstate_t * __restrict, locale_t);
-size_t	strftime_l(char * __restrict, size_t, const char * __restrict,
-	    const struct tm * __restrict, locale_t);
-}
-
-#define FIX_LOCALE(l)	do {						\
-	if ((l) == NULL)						\
-		(l) = pbsd::lib_libc_locale::b0153s2::test_locale();	\
-} while (0)
-
-#define __get_locale()	pbsd::lib_libc_locale::b0153s2::test_locale()
-
-export namespace pbsd::lib_libc_locale::b0153s2 {
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -94,6 +30,87 @@ export namespace pbsd::lib_libc_locale::b0153s2 {
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+/*
+ * PBSD batch b0153s2 -- C++23 module port of:
+ *   hbsd/src/lib/libc/locale/wcsftime.c
+ */
+
+module;
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
+#include <errno.h>
+#include <limits.h>
+#include <locale.h>
+#include <stdlib.h>
+#include <time.h>
+#include <wchar.h>
+
+export module pbsd.lib.libc.locale.b0153s2;
+
+/*
+ * Stand-ins for the libc-internal facilities that wcsftime.c relies on:
+ * SIZE_T_MAX from FreeBSD's <sys/limits.h>, and FIX_LOCALE, __get_locale()
+ * and the extended-locale wide character conversions from
+ * <xlocale_private.h>.  Only these interfaces are supplied here; the ported
+ * function bodies below are unchanged from the original.
+ */
+#ifndef SIZE_T_MAX
+#define SIZE_T_MAX	((size_t)-1)
+#endif
+
+#ifndef LONG_BIT
+#define LONG_BIT	(sizeof(long) * CHAR_BIT)
+#endif
+
+#define FIX_LOCALE(l)	do {						\
+	if ((l) == NULL)						\
+		(l) = __get_locale();					\
+} while (0)
+
+namespace pbsd::lib_libc_locale::b0153s2 {
+
+/* Not exported: module linkage, these replace <xlocale_private.h>. */
+
+locale_t
+__get_locale(void)
+{
+
+	return (uselocale((locale_t)0));
+}
+
+size_t
+wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src,
+    size_t len, mbstate_t * __restrict ps, locale_t loc)
+{
+	locale_t old;
+	size_t r;
+
+	old = uselocale(loc);
+	r = ::wcsrtombs(dst, src, len, ps);
+	uselocale(old);
+	return (r);
+}
+
+size_t
+mbsrtowcs_l(wchar_t * __restrict dst, const char ** __restrict src,
+    size_t len, mbstate_t * __restrict ps, locale_t loc)
+{
+	locale_t old;
+	size_t r;
+
+	old = uselocale(loc);
+	r = ::mbsrtowcs(dst, src, len, ps);
+	uselocale(old);
+	return (r);
+}
+
+} /* namespace pbsd::lib_libc_locale::b0153s2 */
+
+export namespace pbsd::lib_libc_locale::b0153s2 {
 
 /*
  * Convert date and time to a wide-character string.
@@ -171,12 +188,18 @@ error:
 	return (0);
 }
 
+/*
+ * The host <wchar.h> also declares a ::wcsftime_l, which argument-dependent
+ * lookup would drag into the call below.  Redirect the name so that the body
+ * itself can stay exactly as it is upstream.
+ */
+#define wcsftime_l	::pbsd::lib_libc_locale::b0153s2::wcsftime_l
+
 size_t
 wcsftime(wchar_t * __restrict wcs, size_t maxsize,
 	const wchar_t * __restrict format, const struct tm * __restrict timeptr)
 {
-	return pbsd::lib_libc_locale::b0153s2::wcsftime_l(wcs, maxsize, format,
-	    timeptr, __get_locale());
+	return wcsftime_l(wcs, maxsize, format, timeptr, __get_locale());
 }
 
-} /* export namespace pbsd::lib_libc_locale::b0153s2 */
+} /* namespace pbsd::lib_libc_locale::b0153s2 */

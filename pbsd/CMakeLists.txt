@@ -15,6 +15,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/csh/b0061/port.cppm
   bin/date/b0190/port.cppm
   bin/date/b0190s1/port.cppm
+  bin/date/b0190s2/port.cppm
   bin/dd/b0215/port.cppm
   bin/dd/b0220/port.cppm
   bin/dd/conv_m/port.cppm
@@ -28,6 +29,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/ed/b0148s3/port.cppm
   bin/ed/b0148s4/port.cppm
   bin/ed/b0193/port.cppm
+  bin/ed/b0193s3/port.cppm
   bin/getfacl/b0182/port.cppm
   bin/hostname/hostname_m/port.cppm
   bin/kenv/b0180/port.cppm
@@ -223,6 +225,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/quad/fixsfdi_m/port.cppm
   lib/libc/regex/regfree_m/port.cppm
   lib/libc/rpc/b0196/port.cppm
+  lib/libc/rpc/b0196s1/port.cppm
   lib/libc/rpc/bindresvport_m/port.cppm
   lib/libc/rpc/des_soft_m/port.cppm
   lib/libc/rpc/rtime_m/port.cppm

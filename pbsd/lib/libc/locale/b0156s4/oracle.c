@@ -9,6 +9,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#undef COLL_WEIGHTS_MAX
+#define COLL_WEIGHTS_MAX 10
 #include <locale.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -58,11 +60,6 @@ size_t strlcat(char *dst, const char *src, size_t siz)
 
 #define ENCODING_LEN 31
 #define XLOCALE_DEF_VERSION_LEN 12
-
-#if COLL_WEIGHTS_MAX == 0
-#undef COLL_WEIGHTS_MAX
-#define COLL_WEIGHTS_MAX 10
-#endif
 
 #define COLLATE_STR_LEN		24
 #define COLLATE_FMT_VERSION_LEN	12
@@ -153,7 +150,8 @@ struct _xlocale {
 typedef struct _xlocale *pbsd_locale_t;
 #define locale_t pbsd_locale_t
 
-char *_PathLocale = "/usr/share/locale";
+static char path_locale_buf[256] = "/usr/share/locale";
+char *_PathLocale = path_locale_buf;
 
 struct _xlocale ref_global_locale;
 struct _xlocale ref_C_locale;
@@ -1169,4 +1167,10 @@ found:
 	if (rlen)
 		*rlen = clen;
 	return (len);
+}
+
+struct xlocale_collate *
+ref_xlocale_global_collate_ptr(void)
+{
+	return (&__xlocale_global_collate);
 }

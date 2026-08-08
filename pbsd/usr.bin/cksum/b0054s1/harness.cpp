@@ -8,7 +8,7 @@
  *   - the int return value;
  *   - the ENTIRE output buffer holding *cval and *clen, guard-filled with
  *     0x7f, including the bytes either side of the nominal write windows,
- *     so that a port which fails to write (or over-writes) is caught;
+ *     so a port that fails to write (or over-writes) is caught;
  *   - the file-static crc32_total accumulator after every call, since it
  *     carries state across calls and is deliberately left complemented when
  *     crc32() takes the read-error return.
@@ -18,6 +18,7 @@
  * is the stateful part and it is compared after each and every invocation.
  */
 
+#include <csignal>
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
@@ -56,6 +57,57 @@ fatal(const char *m)
 {
 	std::perror(m);
 	std::exit(2);
+}
+
+/* ------------------------------------------------------------------ */
+/* watchdog                                                            */
+
+/*
+ * A divergent implementation can run away instead of returning a wrong
+ * answer: a flipped loop condition spins forever at EOF, a flipped decrement
+ * walks off the stack buffer.  Both are failures, so report them as exit
+ * status 1 rather than as a hang or a signal death.
+ */
+extern "C" void
+bail(int sig)
+{
+	static const char msg[] =
+	    "b0054s1: FAILED (harness did not terminate normally)\n";
+	ssize_t r = write(2, msg, sizeof(msg) - 1);
+	(void)r;
+	(void)sig;
+	_exit(1);
+}
+
+/*
+ * SA_ONSTACK matters here: a runaway pointer walk overflows the stack, and
+ * without an alternate stack the SIGSEGV handler cannot be entered at all.
+ */
+static void
+install_watchdog(unsigned int seconds)
+{
+	/* glibc's SIGSTKSZ is a sysconf() call, so size the stack ourselves. */
+	static char altstack[256 * 1024];
+	stack_t ss;
+
+	ss.ss_sp = altstack;
+	ss.ss_size = sizeof(altstack);
+	ss.ss_flags = 0;
+	if (sigaltstack(&ss, nullptr) != 0)
+		fatal("sigaltstack");
+
+	struct sigaction sa;
+	std::memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = bail;
+	sa.sa_flags = SA_ONSTACK;
+	sigemptyset(&sa.sa_mask);
+
+	static const int sigs[] = { SIGALRM, SIGSEGV, SIGBUS, SIGFPE, SIGILL };
+	for (std::size_t i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++)
+		if (sigaction(sigs[i], &sa, nullptr) != 0)
+			fatal("sigaction");
+
+	alarm(seconds);
 }
 
 /* ------------------------------------------------------------------ */
@@ -99,7 +151,7 @@ static int g_badfd = -1;
 
 /*
  * Run both implementations against the same descriptor.  `seekable' is false
- * for the deliberately-unreadable descriptor used to reach the error return.
+ * for the deliberately unreadable descriptor used to reach the error return.
  */
 static void
 do_case(const char *kind, long idx, long long nbytes, int fd, bool seekable)
@@ -185,7 +237,7 @@ error_case(long idx)
 }
 
 /* ------------------------------------------------------------------ */
-/* deterministic PRNG (xorshift64*, fixed seed)                        */
+/* deterministic PRNG (xorshift64, fixed seed)                         */
 
 static uint64_t rng_state = 0x00b0054100000001ULL;
 
@@ -250,7 +302,7 @@ main(void)
 {
 	char tmpl[] = "/tmp/pbsd_b0054s1_XXXXXX";
 
-	rng_state = 0x00b0054100000001ULL;
+	install_watchdog(90);	/* a clean run takes a few seconds */
 
 	g_tmpfd = mkstemp(tmpl);
 	if (g_tmpfd < 0)
@@ -291,7 +343,7 @@ main(void)
 		}
 	}
 
-	/* NUL-heavy and 0xff-heavy runs of assorted lengths */
+	/* NUL-heavy and high-bit-heavy runs of assorted lengths */
 	{
 		static const std::size_t runs[] = { 3, 7, 8, 15, 16, 63, 64,
 		    127, 128, 255, 256, 257, 511, 512, 1023, 1024, 4095, 4096 };
@@ -307,7 +359,7 @@ main(void)
 		}
 	}
 
-	/* the whole byte range, forwards and backwards, plus the high half */
+	/* the whole byte range, forwards and backwards, plus each half */
 	{
 		for (unsigned i = 0; i < 256; i++)
 			data[i] = static_cast<unsigned char>(i);
@@ -323,14 +375,14 @@ main(void)
 		data_case("low-bit", id++, data, 128);
 	}
 
-	/* single high-bit byte embedded in NULs at every position of 64 */
+	/* one high-bit byte embedded in NULs at every position of 64 */
 	for (std::size_t pos = 0; pos < 64; pos++) {
 		fill_const(64, 0x00);
 		data[pos] = 0xff;
 		data_case("embedded-ff", static_cast<long>(pos), data, 64);
 	}
 
-	/* read(2) chunk boundaries: BUFSIZ-2 .. BUFSIZ+2, 2*BUFSIZ+-1, 3*BUFSIZ+7 */
+	/* read(2) chunk boundaries: BUFSIZ and 2*BUFSIZ either side, 3*BUFSIZ+7 */
 	{
 		const std::size_t sizes[] = {
 			B - 2, B - 1, B, B + 1, B + 2,
@@ -366,7 +418,6 @@ main(void)
 	data_case("after-error", id++, data, 37);
 	error_case(id++);
 	error_case(id++);
-	fill_pattern(0, 1u, 0u);
 	data_case("empty-after-error", id++, data, 0);
 	fill_const(1, 0x80);
 	data_case("single-after-error", id++, data, 1);

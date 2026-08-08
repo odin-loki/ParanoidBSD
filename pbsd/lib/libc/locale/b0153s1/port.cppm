@@ -1,99 +1,3 @@
-/*
- * pbsd.lib.libc.locale.b0153s1 - C++23 port of batch b0153s1.
- *
- * Source:
- *	lib/libc/locale/localeconv.c
- */
-
-module;
-
-#include <locale.h>
-#include <stdint.h>
-#include <string.h>
-
-export module pbsd.lib.libc.locale.b0153s1;
-
-struct port_xlocale_component {
-	long		retain_count;
-	void		(*destructor)(void *);
-	char		locale[32];
-	char		version[12];
-};
-
-struct port_xlocale {
-	long		retain_count;
-	void		(*destructor)(void *);
-	port_xlocale_component *components[6];
-	int		monetary_locale_changed;
-	int		using_monetary_locale;
-	int		numeric_locale_changed;
-	int		using_numeric_locale;
-	int		using_time_locale;
-	int		using_messages_locale;
-	struct lconv	lconv;
-	char		*csym;
-};
-
-typedef port_xlocale *port_locale_t;
-
-namespace pbsd::lib_libc_locale::b0153s1 {
-
-static port_xlocale port_test_locale;
-
-static inline int
-atomic_load_acq_int(volatile int *p)
-{
-	return (*p);
-}
-
-static inline void
-atomic_store_rel_int(volatile int *p, int v)
-{
-	*p = v;
-}
-
-port_locale_t
-__get_locale(void)
-{
-	return (&port_test_locale);
-}
-
-} /* namespace pbsd::lib_libc_locale::b0153s1 */
-
-#define FIX_LOCALE(loc)	do {						\
-	if ((loc) == NULL)						\
-		(loc) = pbsd::lib_libc_locale::b0153s1::__get_locale();	\
-} while (0)
-
-extern "C" {
-struct lc_monetary_T;
-struct lc_numeric_T;
-struct lc_monetary_T *__get_current_monetary_locale(locale_t);
-struct lc_numeric_T *__get_current_numeric_locale(locale_t);
-}
-
-export namespace pbsd::lib_libc_locale::b0153s1 {
-
-void
-set_localeconv_flags(int mon, int num)
-{
-	port_test_locale.monetary_locale_changed = mon;
-	port_test_locale.numeric_locale_changed = num;
-}
-
-port_locale_t
-test_locale(void)
-{
-	return (&port_test_locale);
-}
-
-void
-get_localeconv_flags(int *mon, int *num)
-{
-	*mon = port_test_locale.monetary_locale_changed;
-	*num = port_test_locale.numeric_locale_changed;
-}
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -131,8 +35,153 @@ get_localeconv_flags(int *mon, int *num)
  * SUCH DAMAGE.
  */
 
+module;
+
+#include <cstddef>
+
+export module pbsd.lib.libc.locale.b0153s1;
+
+/*
+ * Declarations that localeconv.c picks up from <locale.h>, "lmonetary.h",
+ * "lnumeric.h" and "xlocale_private.h".  They are reproduced here with the
+ * FreeBSD layout and types so the ported bodies below compile against exactly
+ * what the originals saw.
+ */
+
+export namespace pbsd::lib_libc_locale::b0153s1 {
+
+/* <locale.h> */
+struct lconv {
+	char	*decimal_point;
+	char	*thousands_sep;
+	char	*grouping;
+	char	*int_curr_symbol;
+	char	*currency_symbol;
+	char	*mon_decimal_point;
+	char	*mon_thousands_sep;
+	char	*mon_grouping;
+	char	*positive_sign;
+	char	*negative_sign;
+	char	int_frac_digits;
+	char	frac_digits;
+	char	p_cs_precedes;
+	char	p_sep_by_space;
+	char	n_cs_precedes;
+	char	n_sep_by_space;
+	char	p_sign_posn;
+	char	n_sign_posn;
+	char	int_p_cs_precedes;
+	char	int_n_cs_precedes;
+	char	int_p_sep_by_space;
+	char	int_n_sep_by_space;
+	char	int_p_sign_posn;
+	char	int_n_sign_posn;
+};
+
+/* "lmonetary.h" */
+struct lc_monetary_T {
+	const char	*int_curr_symbol;
+	const char	*currency_symbol;
+	const char	*mon_decimal_point;
+	const char	*mon_thousands_sep;
+	const char	*mon_grouping;
+	const char	*positive_sign;
+	const char	*negative_sign;
+	const char	*int_frac_digits;
+	const char	*frac_digits;
+	const char	*p_cs_precedes;
+	const char	*p_sep_by_space;
+	const char	*n_cs_precedes;
+	const char	*n_sep_by_space;
+	const char	*p_sign_posn;
+	const char	*n_sign_posn;
+	const char	*int_p_cs_precedes;
+	const char	*int_p_sep_by_space;
+	const char	*int_n_cs_precedes;
+	const char	*int_n_sep_by_space;
+	const char	*int_p_sign_posn;
+	const char	*int_n_sign_posn;
+};
+
+/* "lnumeric.h" */
+struct lc_numeric_T {
+	const char	*decimal_point;
+	const char	*thousands_sep;
+	const char	*grouping;
+};
+
+/* "xlocale_private.h" */
+struct _xlocale {
+	struct lconv		 lconv;
+	int			 monetary_locale_changed;
+	int			 numeric_locale_changed;
+	struct lc_monetary_T	*__mon;
+	struct lc_numeric_T	*__num;
+};
+
+typedef struct _xlocale *locale_t;
+
+locale_t __current_locale = NULL;
+
+inline locale_t
+__get_locale(void)
+{
+	return __current_locale;
+}
+
+inline struct lc_monetary_T *
+__get_current_monetary_locale(locale_t loc)
+{
+	return loc->__mon;
+}
+
+inline struct lc_numeric_T *
+__get_current_numeric_locale(locale_t loc)
+{
+	return loc->__num;
+}
+
+/* <machine/atomic.h> */
+inline int
+atomic_load_acq_int(volatile int *p)
+{
+	return __atomic_load_n(p, __ATOMIC_ACQUIRE);
+}
+
+inline void
+atomic_store_rel_int(volatile int *p, int v)
+{
+	__atomic_store_n(p, v, __ATOMIC_RELEASE);
+}
+
+/*
+ * "xlocale_private.h" spells this as
+ *	#define FIX_LOCALE(l) do { if (NULL == l) l = __get_locale(); } while(0)
+ * i.e. it overwrites its argument in place; a reference parameter reproduces
+ * that exactly.
+ */
+inline void
+FIX_LOCALE(locale_t &l)
+{
+	if (NULL == l)
+		l = __get_locale();
+}
+
+/* 
+ * The localeconv() function constructs a struct lconv from the current
+ * monetary and numeric locales.
+ *
+ * Because localeconv() may be called many times (especially by library
+ * routines like printf() & strtod()), the appropriate members of the
+ * lconv structure are computed only when the monetary or numeric 
+ * locale has been changed.
+ */
+
+/*
+ * Return the current locale conversion.
+ */
 struct lconv *
-localeconv_l(port_locale_t loc)
+localeconv_l(locale_t loc)
 {
 	FIX_LOCALE(loc);
     struct lconv *ret = &loc->lconv;
@@ -144,7 +193,7 @@ localeconv_l(port_locale_t loc)
 #define M_ASSIGN_STR(NAME) (ret->NAME = (char*)mptr->NAME)
 #define M_ASSIGN_CHAR(NAME) (ret->NAME = mptr->NAME[0])
 
-	mptr = __get_current_monetary_locale((locale_t)loc);
+	mptr = __get_current_monetary_locale(loc);
 	M_ASSIGN_STR(int_curr_symbol);
 	M_ASSIGN_STR(currency_symbol);
 	M_ASSIGN_STR(mon_decimal_point);
@@ -175,7 +224,7 @@ localeconv_l(port_locale_t loc)
 
 #define N_ASSIGN_STR(NAME) (ret->NAME = (char*)nptr->NAME)
 
-	nptr = __get_current_numeric_locale((locale_t)loc);
+	nptr = __get_current_numeric_locale(loc);
 	N_ASSIGN_STR(decimal_point);
 	N_ASSIGN_STR(thousands_sep);
 	N_ASSIGN_STR(grouping);
@@ -190,4 +239,4 @@ localeconv(void)
 	return localeconv_l(__get_locale());
 }
 
-} /* export namespace pbsd::lib_libc_locale::b0153s1 */
+} /* namespace pbsd::lib_libc_locale::b0153s1 */

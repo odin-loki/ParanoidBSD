@@ -1,38 +1,40 @@
 /*
  * PBSD batch b0093s1 -- reference oracle.
  *
- * The original HardenedBSD C source
+ * The original C sources of the batch, concatenated, with every function
+ * renamed with a "ref_" prefix.  Function bodies are unmodified.
  *
- *	lib/msun/ld80/s_cexpl.c
+ * Sources, in inclusion order:
  *
- * concatenated verbatim.  Every function is renamed with a "ref_" prefix.
- * The renaming is done with the preprocessor so that no function body is
- * modified in any way: only the token that names the function is
- * substituted, the body text is untouched.
+ *	lib/libc/amd64/_fpmath.h	(union IEEEl2bits, as pulled in by
+ *					 lib/libc/include/fpmath.h)
+ *	lib/msun/src/math_private.h	(the parts s_cexpl.c reaches)
+ *	lib/msun/ld80/k_expl.h		(__k_expl, __ldexp_cexpl)
+ *	lib/msun/ld80/s_cexpl.c		(cexpl)
  *
- * Support code that s_cexpl.c requires but that does not live in it
- * (union IEEEl2bits from lib/libc/amd64/_fpmath.h, macros from
- * lib/msun/src/math_private.h, and __k_expl()/__ldexp_cexpl() from
- * lib/msun/ld80/k_expl.h) is reproduced verbatim first.  Only defines were
- * added; no function body was changed.  __ldexp_cexpl() is given external
- * linkage so that the C++ port resolves it against this very definition,
- * which is how msun itself resolves it (it is a separate translation unit
- * of libm, not part of b0093s1).
+ * Added, because the sources are not self contained outside the msun
+ * build: _GNU_SOURCE (for sincosl), __CONCAT (from sys/cdefs.h) and the
+ * <complex.h>/<float.h>/<math.h>/<stdint.h> includes.  The unreferenced
+ * k_expl.h kernels k_hexpl() and hexpl() are not part of this batch and
+ * are left out; nothing else is changed.
  */
 
-#define	_GNU_SOURCE		/* sincosl() */
+#define	_GNU_SOURCE
 
 #include <complex.h>
 #include <float.h>
 #include <math.h>
 #include <stdint.h>
 
-#ifndef LONG_BIT
-#define	LONG_BIT	(8 * (int)sizeof(long))
-#endif
+/* sys/cdefs.h -- glibc's __CONCAT does not expand its arguments first, and
+   rnintl() relies on LDBL_MANT_DIG being expanded before it is pasted. */
+#undef	__CONCAT1
+#undef	__CONCAT
+#define	__CONCAT1(x,y)	x ## y
+#define	__CONCAT(x,y)	__CONCAT1(x,y)
 
 /* ------------------------------------------------------------------ */
-/* from lib/libc/amd64/_fpmath.h					    */
+/* lib/libc/amd64/_fpmath.h					      */
 /* ------------------------------------------------------------------ */
 
 union IEEEl2bits {
@@ -59,20 +61,13 @@ union IEEEl2bits {
 #define	LDBL_MANL_SIZE	32
 
 /* ------------------------------------------------------------------ */
-/* from lib/msun/src/math_private.h				    */
+/* lib/msun/src/math_private.h					      */
 /* ------------------------------------------------------------------ */
 
-typedef union {
-	float value;
-	uint32_t word;
-} ieee_float_shape_type;
-
-#define SET_FLOAT_WORD(d,i)					\
-do {								\
-  ieee_float_shape_type sf_u;					\
-  sf_u.word = (i);						\
-  (d) = sf_u.value;						\
-} while (0)
+/*
+ * Get expsign and mantissa as 16 bit and 64 bit ints from an 80 bit long
+ * double.
+ */
 
 #define	EXTRACT_LDBL80_WORDS(ix0,ix1,d)				\
 do {								\
@@ -82,6 +77,11 @@ do {								\
   (ix1) = ew_u.xbits.man;					\
 } while (0)
 
+/*
+ * Set an 80 bit long double from a 16 bit int expsign and a 64 bit int
+ * mantissa.
+ */
+
 #define	INSERT_LDBL80_WORDS(d,ix0,ix1)				\
 do {								\
   union IEEEl2bits iw_u;					\
@@ -89,6 +89,8 @@ do {								\
   iw_u.xbits.man = (ix1);					\
   (d) = iw_u.e;							\
 } while (0)
+
+/* Set expsign of a long double from a 16 bit int.  */
 
 #define	SET_LDBL_EXPSIGN(d,v)					\
 do {								\
@@ -98,69 +100,138 @@ do {								\
   (d) = se_u.e;							\
 } while (0)
 
-/*
- * The non-__i386__ spelling: "The above works on non-i386 too, but we use
- * this to check v."
- */
-#define	LD80C(m, ex, v)	{ .e = (v), }
-
-/* Support switching the mode to FP_PE if necessary; not __i386__ here. */
+/* Support switching the mode to FP_PE if necessary. */
+#if defined(__i386__) && !defined(NO_FPSETPREC)
+#define	ENTERI() ENTERIT(long double)
+#define	ENTERIT(returntype)			\
+	returntype __retval;			\
+	fp_prec_t __oprec;			\
+						\
+	if ((__oprec = fpgetprec()) != FP_PE)	\
+		fpsetprec(FP_PE)
+#define	RETURNI(x) do {				\
+	__retval = (x);				\
+	if (__oprec != FP_PE)			\
+		fpsetprec(__oprec);		\
+	RETURNF(__retval);			\
+} while (0)
+#else
 #define	ENTERI()
 #define	ENTERIT(x)
 #define	RETURNI(x)	RETURNF(x)
-#define	ENTERV()
-#define	RETURNV()	return
+#endif
 
 /* Default return statement if hack*_t() is not used. */
 #define      RETURNF(v)      return (v)
 
-#define	_2sumF(a, b) do {	\
-	__typeof(a) __w;	\
-				\
-	__w = (a) + (b);	\
-	(b) = ((a) - __w) + (b); \
-	(a) = __w;		\
-} while (0)
+/*
+ * C99 specifies that complex numbers have the same representation as
+ * an array of two elements, where the first element is the real part
+ * and the second element is the imaginary part.
+ */
+typedef union {
+	long double complex f;
+	long double a[2];
+} long_double_complex;
+#define	REALPART(z)	((z).a[0])
+#define	IMAGPART(z)	((z).a[1])
 
-#define	FFLOORL80(x, j0, ix, lx) do {			\
-	j0 = ix - 0x3fff + 1;				\
-	if ((j0) < 32) {				\
-		(lx) = ((lx) >> 32) << 32;		\
-		(lx) &= ~((((lx) << 32)-1) >> (j0));	\
-	} else {					\
-		uint64_t _m;				\
-		_m = (uint64_t)-1 >> (j0);		\
-		if ((lx) & _m) (lx) &= ~_m;		\
-	}						\
-	INSERT_LDBL80_WORDS((x), (ix), (lx));		\
-} while (0)
+#ifndef CMPLXL
+static __inline long double complex
+CMPLXL(long double x, long double y)
+{
+	long_double_complex z;
+
+	REALPART(z) = x;
+	IMAGPART(z) = y;
+	return (z.f);
+}
+#endif
 
 /*
- * FreeBSD's sys/cdefs.h spells __CONCAT with the two level expansion that
- * rnintl() relies on to paste LDBL_MANT_DIG; glibc's __CONCAT is one level.
+ * The rnint() family rounds to the nearest integer for a restricted range
+ * range of args (up to about 2**MANT_DIG).  We assume that the current
+ * rounding mode is FE_TONEAREST so that this can be done efficiently.
  */
-#undef	__CONCAT
-#undef	__CONCAT1
-#define	__CONCAT1(x,y)	x ## y
-#define	__CONCAT(x,y)	__CONCAT1(x,y)
 
+#ifdef LDBL_MANT_DIG
 static inline long double
-rnintl(long double x)
+ref_rnintl(long double x)
 {
 	return (x + __CONCAT(0x1.8p, LDBL_MANT_DIG) / 2 -
 	    __CONCAT(0x1.8p, LDBL_MANT_DIG) / 2);
 }
+#endif /* LDBL_MANT_DIG */
 
 /*
- * math_private.h picks the fistl variant with
- *	#if defined(amd64) || defined(__i386__)
- * and the bare token "amd64" is predefined by no compiler, so amd64 builds
- * of msun use the plain cast.  That is what is reproduced here.
+ * irint() and i64rint() give the same result as casting to their integer
+ * return type provided their arg is a floating point integer.  They can
+ * sometimes be more efficient because no rounding is required.
  */
+#if defined(amd64) || defined(__i386__)
+#define	irint(x)						\
+    (sizeof(x) == sizeof(float) &&				\
+    sizeof(__float_t) == sizeof(long double) ? ref_irintf(x) :	\
+    sizeof(x) == sizeof(double) &&				\
+    sizeof(__double_t) == sizeof(long double) ? ref_irintd(x) :	\
+    sizeof(x) == sizeof(long double) ? ref_irintl(x) : (int)(x))
+#else
 #define	irint(x)	((int)(x))
-/* ------------------------------------------------------------------ */
-/* from lib/msun/ld80/k_expl.h					    */
-/* ------------------------------------------------------------------ */
+#endif
+
+#if defined(__amd64__) || defined(__i386__)
+static __inline int
+ref_irintl(long double x)
+{
+	int n;
+
+	__asm("fistl %0" : "=m" (n) : "t" (x));
+	return (n);
+}
+#endif
+
+/* ================================================================== */
+/* lib/msun/ld80/k_expl.h					      */
+/* ================================================================== */
+
+/* from: FreeBSD: head/lib/msun/ld80/s_expl.c 251343 2013-06-03 19:51:32Z kargl */
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2009-2013 Steven G. Kargl
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice unmodified, this list of conditions, and the following
+ *    disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Optimized by Bruce D. Evans.
+ */
+
+/*
+ * See s_expl.c for more comments about __k_expl().
+ *
+ * See ../src/e_exp.c and ../src/k_exp.h for precision-independent comments
+ * about the secondary kernels.
+ */
 
 #define	INTERVALS	128
 #define	LOG2_INTERVALS	7
@@ -189,13 +260,23 @@ A6 =  1.3888891738560272e-3;		/*  0x16c16c651633ae.0p-62 */
 /*
  * 2^(i/INTERVALS) for i in [0,INTERVALS] is represented by two values where
  * the first 53 bits of the significand are stored in hi and the next 53
- * bits are in lo.
+ * bits are in lo.  Tang's paper states that the trailing 6 bits of hi must
+ * be zero for his algorithm in both single and double precision, because
+ * the table is re-used in the implementation of expm1() where a floating
+ * point addition involving hi must be exact.  Here hi is double, so
+ * converting it to long double gives 11 trailing zero bits.
  */
 static const struct {
 	double	hi;
 	double	lo;
 } tbl[INTERVALS] = {
 	{ 0x1p+0, 0x0p+0 },
+	/*
+	 * XXX hi is rounded down, and the formatting is not quite normal.
+	 * But I rather like both.  The 0x1.*p format is good for 4N+1
+	 * mantissa bits.  Rounding down makes the lo terms positive,
+	 * so that the columnar formatting can be simpler.
+	 */
 	{ 0x1.0163da9fb3335p+0, 0x1.b61299ab8cdb7p-54 },
 	{ 0x1.02c9a3e778060p+0, 0x1.dcdef95949ef4p-53 },
 	{ 0x1.04315e86e7f84p+0, 0x1.7ae71f3441b49p-53 },
@@ -331,13 +412,13 @@ static const struct {
  * "huge" is anything that would make fn*L1 inexact (|x| > ~2**17*ln2).
  */
 static inline void
-__k_expl(long double x, long double *hip, long double *lop, int *kp)
+ref___k_expl(long double x, long double *hip, long double *lop, int *kp)
 {
 	long double fn, q, r, r1, r2, t, z;
 	int n, n2;
 
 	/* Reduce x to (k*ln2 + endpoint[n2] + r1 + r2). */
-	fn = rnintl(x * INV_L);
+	fn = ref_rnintl(x * INV_L);
 	r = x - fn * L1 - fn * L2;	/* r = r1 + r2 done independently. */
 	n = irint(fn);
 	n2 = (unsigned)n % INTERVALS;
@@ -348,20 +429,22 @@ __k_expl(long double x, long double *hip, long double *lop, int *kp)
 
 	/* Evaluate expl(endpoint[n2] + r1 + r2) = tbl[n2] * expl(r1 + r2). */
 	z = r * r;
+#if 0
+	q = r2 + z * (A2 + r * A3) + z * z * (A4 + r * A5) + z * z * z * A6;
+#else
 	q = r2 + z * A2 + z * r * (A3 + r * A4 + z * (A5 + r * A6));
+#endif
 	t = (long double)tbl[n2].lo + tbl[n2].hi;
 	*hip = tbl[n2].hi;
 	*lop = tbl[n2].lo + t * (q + r1);
 }
 
+#ifdef _COMPLEX_H
 /*
  * See ../src/k_exp.c for details.
- *
- * The "static inline" of k_expl.h is dropped so that the C++ port resolves
- * __ldexp_cexpl() against this definition.  The body is unmodified.
  */
-long double complex
-__ldexp_cexpl(long double complex z, int expt)
+static inline long double complex
+ref___ldexp_cexpl(long double complex z, int expt)
 {
 	long double c, exp_x, hi, lo, s;
 	long double x, y, scale1, scale2;
@@ -369,7 +452,7 @@ __ldexp_cexpl(long double complex z, int expt)
 
 	x = creall(z);
 	y = cimagl(z);
-	__k_expl(x, &hi, &lo, &k);
+	ref___k_expl(x, &hi, &lo, &k);
 
 	exp_x = (lo + hi) * 0x1p16382L;
 	expt += k - 16382;
@@ -384,12 +467,11 @@ __ldexp_cexpl(long double complex z, int expt)
 	return (CMPLXL(c * exp_x * scale1 * scale2,
 	    s * exp_x * scale1 * scale2));
 }
+#endif /* _COMPLEX_H */
 
 /* ================================================================== */
 /* lib/msun/ld80/s_cexpl.c					      */
 /* ================================================================== */
-
-#define	cexpl	ref_cexpl
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -422,7 +504,7 @@ __ldexp_cexpl(long double complex z, int expt)
  */
 
 long double complex
-cexpl (long double complex z)
+ref_cexpl (long double complex z)
 {
 	long double c, exp_x, s, x, y;
 	uint64_t lx, ly;
@@ -470,7 +552,7 @@ cexpl (long double complex z)
 		 * x is between exp_ovfl and cexp_ovfl, so we must scale to
 		 * avoid overflow in exp(x).
 		 */
-		RETURNI(__ldexp_cexpl(z, 0));
+		RETURNI(ref___ldexp_cexpl(z, 0));
 	} else {
 		/*
 		 * Cases covered here:

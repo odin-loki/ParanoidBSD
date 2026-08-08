@@ -1,63 +1,3 @@
-module;
-
-#ifndef __dead2
-#define __dead2 __attribute__((__noreturn__))
-#endif
-
-#define _DEFAULT_SOURCE
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-
-#include <ctype.h>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-#include <err.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <unistd.h>
-
-#include <termios.h>
-
-#if defined(__linux__)
-#include <bsd/stdlib.h>
-#endif
-
-export module pbsd.bin.stty.b0187s2;
-
-export namespace pbsd::bin_stty::b0187s2 {
-
-struct info {
-	int fd;
-	int ldisc;
-	int off;
-	int set;
-	int wset;
-	const char *arg;
-	struct termios t;
-	struct winsize win;
-};
-
-enum FMT { NOTSET, GFLAG, BSD, POSIX };
-
-} // namespace pbsd::bin_stty::b0187s2
-
-extern "C" {
-void checkredirect(void);
-int ksearch(char ***, pbsd::bin_stty::b0187s2::info *);
-int csearch(char ***, pbsd::bin_stty::b0187s2::info *);
-int msearch(char ***, pbsd::bin_stty::b0187s2::info *);
-void print(struct termios *, struct winsize *, int,
-    pbsd::bin_stty::b0187s2::FMT);
-void gprint(struct termios *, struct winsize *, int);
-void gread(struct termios *, char *);
-}
-
-export namespace pbsd::bin_stty::b0187s2 {
-
 /*-
  * Copyright (c) 1989, 1991, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
@@ -87,109 +27,23 @@ export namespace pbsd::bin_stty::b0187s2 {
  * SUCH DAMAGE.
  */
 
-void usage(void) __dead2;
+module;
 
-int
-main(int argc, char *argv[])
-{
-	struct info i;
-	enum FMT fmt;
-	int ch;
-	const char *file, *errstr = NULL;
+#include <sys/types.h>
 
-	fmt = NOTSET;
-	i.fd = STDIN_FILENO;
-	file = "stdin";
+#include <ctype.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
-	opterr = 0;
-	while (optind < argc &&
-	    strspn(argv[optind], "-aefg") == strlen(argv[optind]) &&
-	    (ch = getopt(argc, argv, "aef:g")) != -1)
-		switch(ch) {
-		case 'a':		/* undocumented: POSIX compatibility */
-			fmt = POSIX;
-			break;
-		case 'e':
-			fmt = BSD;
-			break;
-		case 'f':
-			if ((i.fd = open(optarg, O_RDONLY | O_NONBLOCK)) < 0)
-				err(1, "%s", optarg);
-			file = optarg;
-			break;
-		case 'g':
-			fmt = GFLAG;
-			break;
-		case '?':
-		default:
-			goto args;
-		}
+export module pbsd.bin.stty.b0187s2;
 
-args:	argc -= optind;
-	argv += optind;
+export namespace pbsd::bin_stty::b0187s2 {
 
-	if (tcgetattr(i.fd, &i.t) < 0)
-		errx(1, "%s isn't a terminal", file);
-	if (ioctl(i.fd, TIOCGETD, &i.ldisc) < 0)
-		err(1, "TIOCGETD");
-	if (ioctl(i.fd, TIOCGWINSZ, &i.win) < 0)
-		warn("TIOCGWINSZ");
-
-	checkredirect();			/* conversion aid */
-
-	switch(fmt) {
-	case NOTSET:
-		if (*argv)
-			break;
-		/* FALLTHROUGH */
-	case BSD:
-	case POSIX:
-		print(&i.t, &i.win, i.ldisc, fmt);
-		break;
-	case GFLAG:
-		gprint(&i.t, &i.win, i.ldisc);
-		break;
-	}
-
-	for (i.set = i.wset = 0; *argv; ++argv) {
-		if (ksearch(&argv, &i))
-			continue;
-
-		if (csearch(&argv, &i))
-			continue;
-
-		if (msearch(&argv, &i))
-			continue;
-
-		if (isdigit(**argv)) {
-			speed_t speed;
-
-			speed = strtonum(*argv, 0, UINT_MAX, &errstr);
-			if (errstr)
-				err(1, "speed");
-			cfsetospeed(&i.t, speed);
-			cfsetispeed(&i.t, speed);
-			i.set = 1;
-			continue;
-		}
-
-		if (!strncmp(*argv, "gfmt1", sizeof("gfmt1") - 1)) {
-			gread(&i.t, *argv + sizeof("gfmt1") - 1);
-			i.set = 1;
-			continue;
-		}
-
-		warnx("illegal option -- %s", *argv);
-		usage();
-	}
-
-	if (i.set && tcsetattr(i.fd, 0, &i.t) < 0)
-		err(1, "tcsetattr");
-	if (i.wset && ioctl(i.fd, TIOCSWINSZ, &i.win) < 0)
-		warn("TIOCSWINSZ");
-	exit(0);
-}
-
+/* From bin/stty/stty.c. */
 void
 usage(void)
 {
@@ -199,4 +53,4 @@ usage(void)
 	exit (1);
 }
 
-} // namespace pbsd::bin_stty::b0187s2
+} /* namespace pbsd::bin_stty::b0187s2 */

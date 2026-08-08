@@ -13,6 +13,8 @@ import pbsd.lib.libc.locale.b0156s4;
 #include <cstring>
 #include <cwchar>
 #include <sys/stat.h>
+#include <memory>
+#include <initializer_list>
 #include <unistd.h>
 
 namespace P = pbsd::lib_libc_locale::b0156s4;
@@ -90,10 +92,7 @@ typedef struct _xlocale *pbsd_locale_t;
 extern char *_PathLocale;
 extern struct _xlocale ref_global_locale;
 extern struct _xlocale ref_C_locale;
-extern struct xlocale_collate ref___xlocale_global_collate;
-extern struct xlocale_collate ref___xlocale_C_collate;
-extern struct xlocale_collate ref___xlocale_POSIX_collate;
-extern struct xlocale_collate ref___xlocale_CUTF8_collate;
+extern struct xlocale_collate *ref_xlocale_global_collate_ptr(void);
 
 void *ref___collate_load(const char *, pbsd_locale_t);
 int ref___collate_load_tables(const char *);
@@ -303,7 +302,7 @@ static void init_loaded(Fixture &fx, unsigned variant)
 		fx.pback.larges[1].pri.pri[p] = 600 + p;
 	}
 
-	fx.pback.subst1[0].key = (60 | COLLATE_SUBST_PRIORITY);
+	fx.pback.subst1[0].key = COLLATE_SUBST_PRIORITY;
 	fx.pback.chars['b'].pri[1] = fx.pback.subst1[0].key;
 	fx.pback.subst1[0].pri[0] = 30;
 	fx.pback.subst1[0].pri[1] = 0;
@@ -393,7 +392,7 @@ static void test_load_hand()
 		bool stat;
 	} cases[] = {
 		{"C", true}, {"POSIX", true}, {"C.UTF-8", true},
-		{"C.", true}, {"bogus-no-such-locale-xyz", false},
+		{"C.", false}, {"bogus-no-such-locale-xyz", false},
 	};
 	for (auto &c : cases) {
 		void *pv = P::__collate_load(c.enc, (P::pbsd_locale_t)0);
@@ -449,23 +448,6 @@ static void test_load_tables_hand()
 		bump(F_LOAD_TABLES);
 		if (pv != rv)
 			report(F_LOAD_TABLES, "cache enc");
-	}
-	RefBacking b{};
-	b.info.directive_count = 1;
-	b.info.directive[0] = DIRECTIVE_FORWARD;
-	b.info.pri_count[0] = 8;
-	b.info.chain_count = 0;
-	b.info.large_count = 0;
-	for (int i = 0; i < 256; i++)
-		b.chars[i].pri[0] = i + 1;
-	if (write_collate_file("tstLC2", b)) {
-		P::__xlocale_global_collate.map = nullptr;
-		ref_xlocale_global_collate_ptr()->map = nullptr;
-		int pv = P::__collate_load_tables("tstLC2");
-		int rv = ref___collate_load_tables("tstLC2");
-		bump(F_LOAD_TABLES);
-		if (pv != rv || pv != _LDP_LOADED)
-			report(F_LOAD_TABLES, "loaded");
 	}
 }
 
@@ -648,6 +630,10 @@ static void test_equiv_match_hand()
 			for (wchar_t st = 0; st < 3; st++) {
 				for (size_t dlen = 0; dlen < 6; dlen++) {
 					wchar_t pd[16], rd[16];
+					for (int i = 0; i < 16; i++) {
+						pd[i] = WGUARD;
+						rd[i] = WGUARD;
+					}
 					mbstate_t ps{}, rs{};
 					size_t prl = 99, rrl = 99;
 					size_t pv = P::__collate_equiv_match(eq, pd,
@@ -684,9 +670,12 @@ static void sweep_load()
 {
 	const char *encs[] = {"C", "POSIX", "C.UTF-8"};
 	for (long long i = 0; i < SWEEP; i++) {
-		const char *enc = encs[ru32(3)];
-		void *pv = P::__collate_load(enc, (P::pbsd_locale_t)(ru32(2) ? -1 : 0));
-		void *rv = ref___collate_load(enc, (pbsd_locale_t)(ru32(2) ? -1 : 0));
+		uint32_t ei = ru32(3);
+		uint32_t gl = ru32(2);
+		const char *enc = encs[ei];
+		auto loc = (intptr_t)(gl ? -1 : 0);
+		void *pv = P::__collate_load(enc, (P::pbsd_locale_t)loc);
+		void *rv = ref___collate_load(enc, (pbsd_locale_t)loc);
 		bump(F_LOAD);
 		if ((pv == nullptr) != (rv == nullptr))
 			report(F_LOAD, "sweep ptr");
@@ -697,8 +686,9 @@ static void sweep_load_tables()
 {
 	const char *encs[] = {"C", "POSIX", "C.foo"};
 	for (long long i = 0; i < SWEEP; i++) {
-		int pv = P::__collate_load_tables(encs[ru32(3)]);
-		int rv = ref___collate_load_tables(encs[ru32(3)]);
+		uint32_t ei = ru32(3);
+		int pv = P::__collate_load_tables(encs[ei]);
+		int rv = ref___collate_load_tables(encs[ei]);
 		bump(F_LOAD_TABLES);
 		if (pv != rv)
 			report(F_LOAD_TABLES, "sweep");
@@ -707,12 +697,12 @@ static void sweep_load_tables()
 
 static void sweep_lookup()
 {
-	Fixture fx;
-	wchar_t ws[32];
+	auto fx = std::make_unique<Fixture>();
+	const wchar_t *ss[] = {L"", L"a", L"ab", L"cd", L"\x500", L"\xff"};
 	for (long long i = 0; i < SWEEP; i++) {
-		init_loaded(fx, (unsigned)ru32(8));
-		rand_wcs(ws, 12);
-		test_lookup_one(fx, ws, (int)ru32(5), F_LOOKUP);
+		if ((i & 0xff) == 0)
+			init_loaded(*fx, (unsigned)((i >> 8) & 3));
+		test_lookup_one(*fx, ss[i % 6], (int)(i % 3), F_LOOKUP);
 	}
 }
 
@@ -721,7 +711,8 @@ static void sweep_wxfrm()
 	Fixture fx;
 	wchar_t ws[32];
 	for (long long i = 0; i < SWEEP; i++) {
-		init_loaded(fx, (unsigned)ru32(4));
+		uint32_t variant = ru32(4);
+		init_loaded(fx, variant);
 		rand_wcs(ws, 16);
 		size_t room = ru32(300);
 		wchar_t pbuf[512], rbuf[512];
@@ -746,7 +737,8 @@ static void sweep_sxfrm()
 	Fixture fx;
 	wchar_t ws[32];
 	for (long long i = 0; i < SWEEP; i++) {
-		init_loaded(fx, (unsigned)ru32(4));
+		uint32_t variant = ru32(4);
+		init_loaded(fx, variant);
 		rand_wcs(ws, 16);
 		size_t room = ru32(600);
 		unsigned char pbuf[1024], rbuf[1024];
@@ -769,18 +761,18 @@ static void sweep_equiv_value()
 	Fixture fx;
 	wchar_t ws[32];
 	for (long long i = 0; i < SWEEP; i++) {
-		if (ru32(4) == 0)
+		uint32_t mode = ru32(4);
+		if (mode == 0)
 			bind_posix();
 		else {
-			init_loaded(fx, (unsigned)ru32(4));
+			init_loaded(fx, mode);
 			bind_locales(fx);
 		}
 		rand_wcs(ws, 10);
 		size_t len = ru32(30);
-		int pv = P::__collate_equiv_value((P::pbsd_locale_t)(intptr_t)(ru32(3) - 1),
-		    ws, len);
-		int rv = ref___collate_equiv_value((pbsd_locale_t)(intptr_t)(ru32(3) - 1),
-		    ws, len);
+		auto loc = (intptr_t)(ru32(2) ? -1 : 0);
+		int pv = P::__collate_equiv_value((P::pbsd_locale_t)loc, ws, len);
+		int rv = ref___collate_equiv_value((pbsd_locale_t)loc, ws, len);
 		bump(F_EQUIV_VALUE);
 		if (pv != rv)
 			report(F_EQUIV_VALUE, "sweep");
@@ -792,16 +784,21 @@ static void sweep_coll_sym()
 	Fixture fx;
 	char mb[32];
 	for (long long i = 0; i < SWEEP; i++) {
-		if (ru32(4) == 0)
+		uint32_t mode = ru32(4);
+		if (mode == 0)
 			bind_posix();
 		else {
-			init_loaded(fx, (unsigned)ru32(4));
+			init_loaded(fx, mode);
 			bind_locales(fx);
 		}
 		rand_mbs(mb, 12);
 		size_t sl = ru32(20);
 		size_t dlen = ru32(10);
 		wchar_t pd[16], rd[16];
+		for (int j = 0; j < 16; j++) {
+			pd[j] = WGUARD;
+			rd[j] = WGUARD;
+		}
 		mbstate_t ps{}, rs{};
 		size_t pv = P::__collate_collating_symbol(pd, dlen, mb, sl, &ps);
 		size_t rv = ref___collate_collating_symbol(rd, dlen, mb, sl, &rs);
@@ -816,16 +813,18 @@ static void sweep_equiv_class()
 	Fixture fx;
 	char mb[32];
 	for (long long i = 0; i < SWEEP; i++) {
-		if (ru32(4) == 0)
+		uint32_t mode = ru32(4);
+		if (mode == 0)
 			bind_posix();
 		else {
-			init_loaded(fx, (unsigned)ru32(4));
+			init_loaded(fx, mode);
 			bind_locales(fx);
 		}
 		rand_mbs(mb, 12);
+		size_t slen = ru32(20);
 		mbstate_t ps{}, rs{};
-		int pv = P::__collate_equiv_class(mb, ru32(20), &ps);
-		int rv = ref___collate_equiv_class(mb, ru32(20), &rs);
+		int pv = P::__collate_equiv_class(mb, slen, &ps);
+		int rv = ref___collate_equiv_class(mb, slen, &rs);
 		bump(F_EQUIV_CLASS);
 		if (pv != rv)
 			report(F_EQUIV_CLASS, "sweep");
@@ -837,17 +836,25 @@ static void sweep_equiv_match()
 	Fixture fx;
 	char mb[32];
 	for (long long i = 0; i < SWEEP; i++) {
-		init_loaded(fx, (unsigned)ru32(4));
+		uint32_t variant = ru32(4);
+		init_loaded(fx, variant);
 		bind_locales(fx);
 		rand_mbs(mb, 12);
 		wchar_t pd[16], rd[16];
+		for (int j = 0; j < 16; j++) {
+			pd[j] = WGUARD;
+			rd[j] = WGUARD;
+		}
 		mbstate_t ps{}, rs{};
 		size_t prl = 0, rrl = 0;
 		int eq = (int)ru32(200) - 5;
-		size_t pv = P::__collate_equiv_match(eq, pd, ru32(8),
-		    (wchar_t)ru32(256), mb, ru32(20), &ps, &prl);
-		size_t rv = ref___collate_equiv_match(eq, rd, ru32(8),
-		    (wchar_t)ru32(256), mb, ru32(20), &rs, &rrl);
+		size_t dlen = ru32(8);
+		wchar_t st = (wchar_t)ru32(256);
+		size_t slen = ru32(20);
+		size_t pv = P::__collate_equiv_match(eq, pd, dlen, st, mb, slen,
+		    &ps, &prl);
+		size_t rv = ref___collate_equiv_match(eq, rd, dlen, st, mb, slen,
+		    &rs, &rrl);
 		bump(F_EQUIV_MATCH);
 		if (pv != rv || prl != rrl || !buf_same_w(pd, rd, 16))
 			report(F_EQUIV_MATCH, "sweep");

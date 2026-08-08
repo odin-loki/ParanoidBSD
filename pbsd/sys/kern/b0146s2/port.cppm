@@ -7,12 +7,12 @@
 /*
  * PBSD port of hbsd/src/sys/kern/subr_efi_map.c (batch b0146s2).
  *
- * The kernel environment this file lived in is not available here, so the
- * declarations that used to come from <sys/efi.h>, <sys/efi_map.h>,
- * <sys/physmem.h> and <machine/efi.h> are reproduced verbatim below.  The
- * kernel printf and the physmem region calls are left as external C symbols
- * so that the surrounding environment supplies them, exactly as the kernel
- * link does.
+ * The kernel headers this file used to include (<sys/param.h>, <sys/efi.h>,
+ * <sys/efi_map.h>, <sys/physmem.h>, <machine/efi.h>, <machine/vmparam.h>) are
+ * not available here, so the declarations they provided are reproduced below.
+ * The kernel services the code calls out to - printf() and the two physmem
+ * region calls - are thin forwarders onto the external C symbols that the
+ * environment supplies, so that the function bodies themselves are unchanged.
  */
 module;
 
@@ -21,11 +21,12 @@ module;
 
 export module pbsd.sys.kern.b0146s2;
 
+/* Kernel services provided by the environment (see harness.cpp). */
 extern "C" {
-void physmem_hardware_region(std::uint64_t pa, std::uint64_t sz);
-void physmem_exclude_region(std::uint64_t pa, std::uint64_t sz,
+void pbsd_physmem_hardware_region(std::uint64_t pa, std::uint64_t sz);
+void pbsd_physmem_exclude_region(std::uint64_t pa, std::uint64_t sz,
     std::uint32_t flags);
-int efi_test_printf(const char *fmt, ...);
+int pbsd_kern_printf(const char *fmt, ...);
 }
 
 export namespace pbsd::sys_kern::b0146s2 {
@@ -36,22 +37,37 @@ using std::uint64_t;
 using std::uint8_t;
 using std::uintmax_t;
 
-/* <sys/efi.h> */
+/* sys/efi.h */
+struct efi_map_header {
+	uint64_t	memory_size;
+	uint64_t	descriptor_size;
+	uint32_t	descriptor_version;
+};
+
+struct efi_md {
+	uint32_t	md_type;
+	uint32_t	md_pad;
+	uint64_t	md_phys;
+	uint64_t	md_virt;
+	uint64_t	md_pages;
+	uint64_t	md_attr;
+};
+
 inline constexpr uint32_t EFI_MD_TYPE_NULL = 0;
-inline constexpr uint32_t EFI_MD_TYPE_CODE = 1;		/* Loader text. */
-inline constexpr uint32_t EFI_MD_TYPE_DATA = 2;		/* Loader data. */
-inline constexpr uint32_t EFI_MD_TYPE_BS_CODE = 3;	/* Boot services text. */
-inline constexpr uint32_t EFI_MD_TYPE_BS_DATA = 4;	/* Boot services data. */
-inline constexpr uint32_t EFI_MD_TYPE_RT_CODE = 5;	/* Runtime services text. */
-inline constexpr uint32_t EFI_MD_TYPE_RT_DATA = 6;	/* Runtime services data. */
-inline constexpr uint32_t EFI_MD_TYPE_FREE = 7;		/* Unused/free memory. */
-inline constexpr uint32_t EFI_MD_TYPE_BAD = 8;		/* Bad memory. */
-inline constexpr uint32_t EFI_MD_TYPE_RECLAIM = 9;	/* ACPI reclaimable memory. */
-inline constexpr uint32_t EFI_MD_TYPE_FIRMWARE = 10;	/* ACPI NVS memory. */
-inline constexpr uint32_t EFI_MD_TYPE_IOMEM = 11;	/* Memory-mapped I/O. */
-inline constexpr uint32_t EFI_MD_TYPE_IOPORT = 12;	/* I/O port space. */
-inline constexpr uint32_t EFI_MD_TYPE_PALCODE = 13;	/* Itanium PAL code. */
-inline constexpr uint32_t EFI_MD_TYPE_PERSISTENT = 14;	/* Persistent memory. */
+inline constexpr uint32_t EFI_MD_TYPE_CODE = 1;
+inline constexpr uint32_t EFI_MD_TYPE_DATA = 2;
+inline constexpr uint32_t EFI_MD_TYPE_BS_CODE = 3;
+inline constexpr uint32_t EFI_MD_TYPE_BS_DATA = 4;
+inline constexpr uint32_t EFI_MD_TYPE_RT_CODE = 5;
+inline constexpr uint32_t EFI_MD_TYPE_RT_DATA = 6;
+inline constexpr uint32_t EFI_MD_TYPE_FREE = 7;
+inline constexpr uint32_t EFI_MD_TYPE_BAD = 8;
+inline constexpr uint32_t EFI_MD_TYPE_RECLAIM = 9;
+inline constexpr uint32_t EFI_MD_TYPE_FIRMWARE = 10;
+inline constexpr uint32_t EFI_MD_TYPE_IOMEM = 11;
+inline constexpr uint32_t EFI_MD_TYPE_IOPORT = 12;
+inline constexpr uint32_t EFI_MD_TYPE_PALCODE = 13;
+inline constexpr uint32_t EFI_MD_TYPE_PERSISTENT = 14;
 
 inline constexpr uint64_t EFI_MD_ATTR_UC = 0x0000000000000001UL;
 inline constexpr uint64_t EFI_MD_ATTR_WC = 0x0000000000000002UL;
@@ -66,25 +82,7 @@ inline constexpr uint64_t EFI_MD_ATTR_MORE_RELIABLE = 0x0000000000010000UL;
 inline constexpr uint64_t EFI_MD_ATTR_RO = 0x0000000000020000UL;
 inline constexpr uint64_t EFI_MD_ATTR_RT = 0x8000000000000000UL;
 
-struct efi_md {
-	uint32_t	md_type;
-	uint32_t	__pad;
-	uint64_t	md_phys;
-	uint64_t	md_virt;
-	uint64_t	md_pages;
-	uint64_t	md_attr;
-};
-
-struct efi_map_header {
-	size_t		memory_size;
-	size_t		descriptor_size;
-	uint32_t	descriptor_version;
-};
-
-/* <sys/efi_map.h> */
-using efi_map_entry_cb = void (*)(struct efi_md *, void *);
-
-/* <machine/efi.h> */
+/* machine/efi.h */
 inline constexpr int EFI_PAGE_SHIFT = 12;
 inline constexpr int EFI_PAGE_SIZE = 1 << EFI_PAGE_SHIFT;
 
@@ -95,11 +93,36 @@ efi_next_descriptor(struct efi_md *md, size_t size)
 	return ((struct efi_md *)(((uint8_t *)md) + size));
 }
 
-/* <sys/physmem.h> */
-inline constexpr uint32_t EXFLAG_NODUMP = 0x0001;
-inline constexpr uint32_t EXFLAG_NOALLOC = 0x0002;
+/* sys/efi_map.h */
+using efi_map_entry_cb = void (*)(struct efi_md *, void *argp);
 
-/* <sys/param.h> */
+/* sys/physmem.h */
+inline constexpr uint32_t EXFLAG_NOALLOC = 0x0001;
+
+inline void
+physmem_hardware_region(uint64_t pa, uint64_t sz)
+{
+
+	pbsd_physmem_hardware_region(pa, sz);
+}
+
+inline void
+physmem_exclude_region(uint64_t pa, uint64_t sz, uint32_t flags)
+{
+
+	pbsd_physmem_exclude_region(pa, sz, flags);
+}
+
+/* sys/systm.h */
+template <class... Args>
+inline int
+printf(const char *fmt, Args... args)
+{
+
+	return (pbsd_kern_printf(fmt, args...));
+}
+
+/* sys/param.h */
 template <class T, size_t N>
 constexpr size_t
 nitems(T (&)[N])
@@ -234,40 +257,40 @@ print_efi_map_entry(struct efi_md *p, void *argp [[maybe_unused]])
 		type = types[p->md_type];
 	else
 		type = "<INVALID>";
-	efi_test_printf("%23s %012jx %012jx %08jx ", type, (uintmax_t)p->md_phys,
+	printf("%23s %012jx %012jx %08jx ", type, (uintmax_t)p->md_phys,
 	    (uintmax_t)p->md_virt, (uintmax_t)p->md_pages);
 	if (p->md_attr & EFI_MD_ATTR_UC)
-		efi_test_printf("UC ");
+		printf("UC ");
 	if (p->md_attr & EFI_MD_ATTR_WC)
-		efi_test_printf("WC ");
+		printf("WC ");
 	if (p->md_attr & EFI_MD_ATTR_WT)
-		efi_test_printf("WT ");
+		printf("WT ");
 	if (p->md_attr & EFI_MD_ATTR_WB)
-		efi_test_printf("WB ");
+		printf("WB ");
 	if (p->md_attr & EFI_MD_ATTR_UCE)
-		efi_test_printf("UCE ");
+		printf("UCE ");
 	if (p->md_attr & EFI_MD_ATTR_WP)
-		efi_test_printf("WP ");
+		printf("WP ");
 	if (p->md_attr & EFI_MD_ATTR_RP)
-		efi_test_printf("RP ");
+		printf("RP ");
 	if (p->md_attr & EFI_MD_ATTR_XP)
-		efi_test_printf("XP ");
+		printf("XP ");
 	if (p->md_attr & EFI_MD_ATTR_NV)
-		efi_test_printf("NV ");
+		printf("NV ");
 	if (p->md_attr & EFI_MD_ATTR_MORE_RELIABLE)
-		efi_test_printf("MORE_RELIABLE ");
+		printf("MORE_RELIABLE ");
 	if (p->md_attr & EFI_MD_ATTR_RO)
-		efi_test_printf("RO ");
+		printf("RO ");
 	if (p->md_attr & EFI_MD_ATTR_RT)
-		efi_test_printf("RUNTIME");
-	efi_test_printf("\n");
+		printf("RUNTIME");
+	printf("\n");
 }
 
 void
 efi_map_print_entries(struct efi_map_header *efihdr)
 {
 
-	efi_test_printf("%23s %12s %12s %8s %4s\n",
+	printf("%23s %12s %12s %8s %4s\n",
 	    "Type", "Physical", "Virtual", "#Pages", "Attr");
 	efi_map_foreach_entry(efihdr, print_efi_map_entry, NULL);
 }

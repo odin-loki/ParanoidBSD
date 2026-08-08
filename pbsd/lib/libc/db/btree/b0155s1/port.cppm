@@ -1,316 +1,3 @@
-module;
-
-#include <cerrno>
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
-#include <signal.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-export module pbsd.lib.libc.db.btree.b0155s1;
-
-#include <sys/types.h>
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
-
-#ifndef O_CLOEXEC
-#define O_CLOEXEC 02000000
-#endif
-
-#ifndef EFTYPE
-#define EFTYPE 79
-#endif
-
-#ifndef MAXPATHLEN
-#define MAXPATHLEN 4096
-#endif
-
-#ifndef howmany
-#define howmany(x, y) (((x) + ((y) - 1)) / (y))
-#endif
-
-#define RET_ERROR	-1
-#define RET_SUCCESS	 0
-#define RET_SPECIAL	 1
-
-#define	MAX_PAGE_OFFSET	65535
-#define	BTREEMAGIC	0x053162
-#define	BTREEVERSION	3
-#define DEFMINKEYPAGE	(2)
-#define MINCACHE	(5)
-#define MINPSIZE	(512)
-
-#undef BIG_ENDIAN
-#undef LITTLE_ENDIAN
-#define BIG_ENDIAN	4321
-#define LITTLE_ENDIAN	1234
-
-#define __DBINTERFACE_PRIVATE
-#define	M_32_SWAP(a) {							\
-	uint32_t _tmp = (a);						\
-	((char *)&(a))[0] = ((char *)&_tmp)[3];				\
-	((char *)&(a))[1] = ((char *)&_tmp)[2];				\
-	((char *)&(a))[2] = ((char *)&_tmp)[1];				\
-	((char *)&(a))[3] = ((char *)&_tmp)[0];				\
-}
-
-typedef uint32_t	pgno_t;
-typedef uint16_t	indx_t;
-typedef uint32_t	recno_t;
-
-typedef enum { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
-
-typedef struct {
-	void	*data;
-	size_t	 size;
-} DBT;
-
-typedef struct __db {
-	DBTYPE type;
-	int (*close)(struct __db *);
-	int (*del)(const struct __db *, const DBT *, unsigned int);
-	int (*get)(const struct __db *, const DBT *, DBT *, unsigned int);
-	int (*put)(const struct __db *, DBT *, const DBT *, unsigned int);
-	int (*seq)(const struct __db *, DBT *, DBT *, unsigned int);
-	int (*sync)(const struct __db *, unsigned int);
-	void *internal;
-	int (*fd)(const struct __db *);
-} DB;
-
-typedef struct {
-#define	R_DUP		0x01
-	unsigned long	flags;
-	unsigned int	cachesize;
-	int		maxkeypage;
-	int		minkeypage;
-	unsigned int	psize;
-	int		(*compare)(const DBT *, const DBT *);
-	size_t		(*prefix)(const DBT *, const DBT *);
-	int		lorder;
-} BTREEINFO;
-
-#define	R_CURSOR	1
-#define	R_FIRST		3
-#define	R_LAST		6
-#define	R_NEXT		7
-#define	R_NOOVERWRITE	8
-#define	R_PREV		9
-#define	R_SETCURSOR	10
-
-#if UINT_MAX > 65535
-#define	DB_LOCK		0x20000000
-#define	DB_SHMEM	0x40000000
-#define	DB_TXN		0x80000000
-#else
-#define	DB_LOCK		    0x2000
-#define	DB_SHMEM	    0x4000
-#define	DB_TXN		    0x8000
-#endif
-
-#define	F_SET(p, f)	(p)->flags |= (f)
-#define	F_CLR(p, f)	(p)->flags &= ~(f)
-#define	F_ISSET(p, f)	((p)->flags & (f))
-
-#define	MPOOL_DIRTY	0x01
-#define	MPOOL_PAGE_NEXT	0x02
-
-enum { NOT, BACK, FORWARD };
-
-struct MPOOL { int opaque; };
-
-typedef struct _page {
-	pgno_t	pgno;
-	pgno_t	prevpg;
-	pgno_t	nextpg;
-#define	P_BINTERNAL	0x01
-#define	P_BLEAF		0x02
-#define	P_OVERFLOW	0x04
-#define	P_RINTERNAL	0x08
-#define	P_RLEAF		0x10
-#define P_TYPE		0x1f
-#define	P_PRESERVE	0x20
-	u_int32_t flags;
-	indx_t	lower;
-	indx_t	upper;
-	indx_t	linp[1];
-} PAGE;
-
-#define	P_INVALID	 0xffffffff
-#define	P_META		 0
-#define	P_ROOT		 1
-
-#define	BTDATAOFF							\
-	(sizeof(pgno_t) + sizeof(pgno_t) + sizeof(pgno_t) +		\
-	    sizeof(u_int32_t) + sizeof(indx_t) + sizeof(indx_t))
-#define	NEXTINDEX(p)	(((p)->lower - BTDATAOFF) / sizeof(indx_t))
-#define	LALIGN(n)	(((n) + sizeof(pgno_t) - 1) & ~(sizeof(pgno_t) - 1))
-#define	NOVFLSIZE	(sizeof(pgno_t) + sizeof(u_int32_t))
-
-typedef struct _binternal {
-	u_int32_t ksize;
-	pgno_t	pgno;
-#define	P_BIGDATA	0x01
-#define	P_BIGKEY	0x02
-	u_char	flags;
-	char	bytes[1];
-} BINTERNAL;
-
-#define	GETBINTERNAL(pg, indx)						\
-	((BINTERNAL *)((char *)(pg) + (pg)->linp[indx]))
-
-#define NBINTERNAL(len)							\
-	LALIGN(sizeof(u_int32_t) + sizeof(pgno_t) + sizeof(u_char) + (len))
-
-typedef struct _bleaf {
-	u_int32_t	ksize;
-	u_int32_t	dsize;
-	u_char	flags;
-	char	bytes[1];
-} BLEAF;
-
-#define	GETBLEAF(pg, indx)						\
-	((BLEAF *)((char *)(pg) + (pg)->linp[indx]))
-
-#define NBLEAF(p)	NBLEAFDBT((p)->ksize, (p)->dsize)
-
-#define NBLEAFDBT(ksize, dsize)						\
-	LALIGN(sizeof(u_int32_t) + sizeof(u_int32_t) + sizeof(u_char) +	\
-	    (ksize) + (dsize))
-
-#define	WR_BLEAF(p, key, data, flags) {					\
-	*(u_int32_t *)p = key->size;					\
-	p += sizeof(u_int32_t);						\
-	*(u_int32_t *)p = data->size;					\
-	p += sizeof(u_int32_t);						\
-	*(u_char *)p = flags;						\
-	p += sizeof(u_char);						\
-	memmove(p, key->data, key->size);				\
-	p += key->size;							\
-	memmove(p, data->data, data->size);				\
-}
-
-typedef struct _epgno {
-	pgno_t	pgno;
-	indx_t	index;
-} EPGNO;
-
-typedef struct _epg {
-	PAGE	*page;
-	indx_t	 index;
-} EPG;
-
-typedef struct _cursor {
-	EPGNO	 pg;
-	DBT	 key;
-	recno_t	 rcursor;
-#define	CURS_ACQUIRE	0x01
-#define	CURS_AFTER	0x02
-#define	CURS_BEFORE	0x04
-#define	CURS_INIT	0x08
-	u_int8_t flags;
-} CURSOR;
-
-typedef struct _btmeta {
-	u_int32_t	magic;
-	u_int32_t	version;
-	u_int32_t	psize;
-	u_int32_t	free;
-	u_int32_t	nrecs;
-#define	SAVEMETA	(B_NODUPS | R_RECNO)
-	u_int32_t	flags;
-} BTMETA;
-
-typedef struct _btree {
-	MPOOL	 *bt_mp;
-	DB	 *bt_dbp;
-	EPG	  bt_cur;
-	PAGE	 *bt_pinned;
-	CURSOR	  bt_cursor;
-#define	BT_PUSH(t, p, i) {						\
-	t->bt_sp->pgno = p;						\
-	t->bt_sp->index = i;						\
-	++t->bt_sp;							\
-}
-#define	BT_POP(t)	(t->bt_sp == t->bt_stack ? NULL : --t->bt_sp)
-#define	BT_CLR(t)	(t->bt_sp = t->bt_stack)
-	EPGNO	  bt_stack[50];
-	EPGNO	 *bt_sp;
-	DBT	  bt_rkey;
-	DBT	  bt_rdata;
-	int	  bt_fd;
-	pgno_t	  bt_free;
-	u_int32_t bt_psize;
-	indx_t	  bt_ovflsize;
-	int	  bt_lorder;
-	int	  bt_order;
-	EPGNO	  bt_last;
-	int	(*bt_cmp)(const DBT *, const DBT *);
-	size_t	(*bt_pfx)(const DBT *, const DBT *);
-	int	(*bt_irec)(struct _btree *, recno_t);
-	FILE	 *bt_rfp;
-	int	  bt_rfd;
-	caddr_t	  bt_cmap;
-	caddr_t	  bt_smap;
-	caddr_t   bt_emap;
-	size_t	  bt_msize;
-	recno_t	  bt_nrecs;
-	size_t	  bt_reclen;
-	u_char	  bt_bval;
-#define	B_INMEM		0x00001
-#define	B_METADIRTY	0x00002
-#define	B_MODIFIED	0x00004
-#define	B_NEEDSWAP	0x00008
-#define	B_RDONLY	0x00010
-#define	B_NODUPS	0x00020
-#define	R_RECNO		0x00080
-#define	R_CLOSEFP	0x00040
-#define	R_EOF		0x00100
-#define	R_FIXLEN	0x00200
-#define	R_MEMMAPPED	0x00400
-#define	R_INMEM		0x00800
-#define	R_MODIFIED	0x01000
-#define	R_RDONLY	0x02000
-#define	B_DB_LOCK	0x04000
-#define	B_DB_SHMEM	0x08000
-#define	B_DB_TXN	0x10000
-	u_int32_t flags;
-} BTREE;
-
-extern "C" {
-void *mpool_get(MPOOL *, pgno_t, unsigned int);
-int mpool_put(MPOOL *, void *, unsigned int);
-EPG *__bt_search(BTREE *, const DBT *, int *);
-int __bt_cmp(BTREE *, const DBT *, EPG *);
-int __bt_split(BTREE *, PAGE *, const DBT *, const DBT *, int, u_int32_t, indx_t);
-int __ovfl_put(BTREE *, const DBT *, pgno_t *);
-int __bt_dleaf(BTREE *, const DBT *, PAGE *, u_int);
-void __bt_setcur(BTREE *, pgno_t, u_int);
-}
-
-export namespace pbsd::lib_libc_db_btree::b0155s1 {
-
-using BTREE = ::BTREE;
-using PAGE = ::PAGE;
-using DB = ::DB;
-using DBT = ::DBT;
-using EPG = ::EPG;
-using CURSOR = ::CURSOR;
-using BTREEINFO = ::BTREEINFO;
-using BTMETA = ::BTMETA;
-using pgno_t = ::pgno_t;
-using indx_t = ::indx_t;
-using MPOOL = ::MPOOL;
-
-int	__bt_put(const DB *, DBT *, const DBT *, u_int);
-EPG	*bt_fast(BTREE *, const DBT *, const DBT *, int *);
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -345,265 +32,235 @@ EPG	*bt_fast(BTREE *, const DBT *, const DBT *, int *);
  * SUCH DAMAGE.
  */
 
+module;
 
+#include <sys/types.h>
 
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-
-/*
- * __BT_PUT -- Add a btree item to the tree.
- *
- * Parameters:
- *	dbp:	pointer to access method
- *	key:	key
- *	data:	data
- *	flag:	R_NOOVERWRITE, R_SETCURSOR, R_CURSOR
- *
- * Returns:
- *	RET_ERROR, RET_SUCCESS and RET_SPECIAL if the key is already in the
- *	tree and R_NOOVERWRITE specified.
- */
-int
-__bt_put(const DB *dbp, DBT *key, const DBT *data, u_int flags)
-{
-	BTREE *t;
-	DBT tkey, tdata;
-	EPG *e;
-	PAGE *h;
-	indx_t idx, nxtindex;
-	pgno_t pg;
-	u_int32_t nbytes, tmp;
-	int dflags, exact, status;
-	char *dest, db[NOVFLSIZE], kb[NOVFLSIZE];
-
-	t = (BTREE *)dbp->internal;
-
-	/* Toss any page pinned across calls. */
-	if (t->bt_pinned != NULL) {
-		mpool_put(t->bt_mp, t->bt_pinned, 0);
-		t->bt_pinned = NULL;
-	}
-
-	/* Check for change to a read-only tree. */
-	if (F_ISSET(t, B_RDONLY)) {
-		errno = EPERM;
-		return (RET_ERROR);
-	}
-
-	switch (flags) {
-	case 0:
-	case R_NOOVERWRITE:
-	case R_SETCURSOR:
-		break;
-	case R_CURSOR:
-		/*
-		 * If flags is R_CURSOR, put the cursor.  Must already
-		 * have started a scan and not have already deleted it.
-		 */
-		if (F_ISSET(&t->bt_cursor, CURS_INIT) &&
-		    !F_ISSET(&t->bt_cursor,
-			CURS_ACQUIRE | CURS_AFTER | CURS_BEFORE))
-			break;
-		/* FALLTHROUGH */
-	default:
-		errno = EINVAL;
-		return (RET_ERROR);
-	}
-
-	/*
-	 * If the key/data pair won't fit on a page, store it on overflow
-	 * pages.  Only put the key on the overflow page if the pair are
-	 * still too big after moving the data to an overflow page.
-	 *
-	 * XXX
-	 * If the insert fails later on, the overflow pages aren't recovered.
-	 */
-	dflags = 0;
-	if (key->size + data->size > t->bt_ovflsize) {
-		if (key->size > t->bt_ovflsize) {
-storekey:		if (__ovfl_put(t, key, &pg) == RET_ERROR)
-				return (RET_ERROR);
-			tkey.data = kb;
-			tkey.size = NOVFLSIZE;
-			memmove(kb, &pg, sizeof(pgno_t));
-			tmp = key->size;
-			memmove(kb + sizeof(pgno_t),
-			    &tmp, sizeof(u_int32_t));
-			dflags |= P_BIGKEY;
-			key = &tkey;
-		}
-		if (key->size + data->size > t->bt_ovflsize) {
-			if (__ovfl_put(t, data, &pg) == RET_ERROR)
-				return (RET_ERROR);
-			tdata.data = db;
-			tdata.size = NOVFLSIZE;
-			memmove(db, &pg, sizeof(pgno_t));
-			tmp = data->size;
-			memmove(db + sizeof(pgno_t),
-			    &tmp, sizeof(u_int32_t));
-			dflags |= P_BIGDATA;
-			data = &tdata;
-		}
-		if (key->size + data->size > t->bt_ovflsize)
-			goto storekey;
-	}
-
-	/* Replace the cursor. */
-	if (flags == R_CURSOR) {
-		if ((h = (PAGE *)mpool_get(t->bt_mp, t->bt_cursor.pg.pgno, 0)) == NULL)
-			return (RET_ERROR);
-		idx = t->bt_cursor.pg.index;
-		goto delete_lbl;
-	}
-
-	/*
-	 * Find the key to delete, or, the location at which to insert.
-	 * Bt_fast and __bt_search both pin the returned page.
-	 */
-	if (t->bt_order == NOT || (e = bt_fast(t, key, data, &exact)) == NULL)
-		if ((e = __bt_search(t, key, &exact)) == NULL)
-			return (RET_ERROR);
-	h = e->page;
-	idx = e->index;
-
-	/*
-	 * Add the key/data pair to the tree.  If an identical key is already
-	 * in the tree, and R_NOOVERWRITE is set, an error is returned.  If
-	 * R_NOOVERWRITE is not set, the key is either added (if duplicates are
-	 * permitted) or an error is returned.
-	 */
-	switch (flags) {
-	case R_NOOVERWRITE:
-		if (!exact)
-			break;
-		mpool_put(t->bt_mp, h, 0);
-		return (RET_SPECIAL);
-	default:
-		if (!exact || !F_ISSET(t, B_NODUPS))
-			break;
-		/*
-		 * !!!
-		 * Note, the delete may empty the page, so we need to put a
-		 * new entry into the page immediately.
-		 */
-delete_lbl:		if (__bt_dleaf(t, key, h, idx) == RET_ERROR) {
-			mpool_put(t->bt_mp, h, 0);
-			return (RET_ERROR);
-		}
-		break;
-	}
-
-	/*
-	 * If not enough room, or the user has put a ceiling on the number of
-	 * keys permitted in the page, split the page.  The split code will
-	 * insert the key and data and unpin the current page.  If inserting
-	 * into the offset array, shift the pointers up.
-	 */
-	nbytes = NBLEAFDBT(key->size, data->size);
-	if ((u_int32_t)(h->upper - h->lower) < nbytes + sizeof(indx_t)) {
-		if ((status = __bt_split(t, h, key,
-		    data, dflags, nbytes, idx)) != RET_SUCCESS)
-			return (status);
-		goto success;
-	}
-
-	if (idx < (nxtindex = NEXTINDEX(h)))
-		memmove(h->linp + idx + 1, h->linp + idx,
-		    (nxtindex - idx) * sizeof(indx_t));
-	h->lower += sizeof(indx_t);
-
-	h->linp[idx] = h->upper -= nbytes;
-	dest = (char *)h + h->upper;
-	WR_BLEAF(dest, key, data, dflags);
-
-	/* If the cursor is on this page, adjust it as necessary. */
-	if (F_ISSET(&t->bt_cursor, CURS_INIT) &&
-	    !F_ISSET(&t->bt_cursor, CURS_ACQUIRE) &&
-	    t->bt_cursor.pg.pgno == h->pgno && t->bt_cursor.pg.index >= idx)
-		++t->bt_cursor.pg.index;
-
-	if (t->bt_order == NOT) {
-		if (h->nextpg == P_INVALID) {
-			if (idx == NEXTINDEX(h) - 1) {
-				t->bt_order = FORWARD;
-				t->bt_last.index = idx;
-				t->bt_last.pgno = h->pgno;
-			}
-		} else if (h->prevpg == P_INVALID) {
-			if (idx == 0) {
-				t->bt_order = BACK;
-				t->bt_last.index = 0;
-				t->bt_last.pgno = h->pgno;
-			}
-		}
-	}
-
-	mpool_put(t->bt_mp, h, MPOOL_DIRTY);
-
-success:
-	if (flags == R_SETCURSOR)
-		__bt_setcur(t, e->page->pgno, e->index);
-
-	F_SET(t, B_MODIFIED);
-	return (RET_SUCCESS);
-}
-
+export module pbsd.lib.libc.db.btree.b0155s1;
 
 /*
- * BT_FAST -- Do a quick check for sorted data.
- *
- * Parameters:
- *	t:	tree
- *	key:	key to insert
- *
- * Returns:
- *	EPG for new record or NULL if not found.
+ * The batch supplies bt_put.c only; <db.h>, btree.h and mpool.h are not part
+ * of it.  The declarations bt_put.c consumes are reproduced below with the
+ * same layout, so the ported code compiles and can be driven against the
+ * C oracle over a shared environment.
  */
-EPG *
-bt_fast(BTREE *t, const DBT *key, const DBT *data, int *exactp)
-{
-	PAGE *h;
-	u_int32_t nbytes;
-	int cmp;
+export {
 
-	if ((h = (PAGE *)mpool_get(t->bt_mp, t->bt_last.pgno, 0)) == NULL) {
-		t->bt_order = NOT;
-		return (NULL);
-	}
-	t->bt_cur.page = h;
-	t->bt_cur.index = t->bt_last.index;
+typedef struct MPOOL MPOOL;
 
-	/*
-	 * If won't fit in this page or have too many keys in this page,
-	 * have to search to get split stack.
-	 */
-	nbytes = NBLEAFDBT(key->size, data->size);
-	if ((u_int32_t)(h->upper - h->lower) < nbytes + sizeof(indx_t))
-		goto miss;
+typedef u_int32_t	pgno_t;
+typedef u_int16_t	indx_t;
+typedef u_int32_t	recno_t;
 
-	if (t->bt_order == FORWARD) {
-		if (t->bt_cur.page->nextpg != P_INVALID)
-			goto miss;
-		if (t->bt_cur.index != NEXTINDEX(h) - 1)
-			goto miss;
-		if ((cmp = __bt_cmp(t, key, &t->bt_cur)) < 0)
-			goto miss;
-		t->bt_last.index = cmp ? ++t->bt_cur.index : t->bt_cur.index;
-	} else {
-		if (t->bt_cur.page->prevpg != P_INVALID)
-			goto miss;
-		if (t->bt_cur.index != 0)
-			goto miss;
-		if ((cmp = __bt_cmp(t, key, &t->bt_cur)) > 0)
-			goto miss;
-		t->bt_last.index = 0;
-	}
-	*exactp = cmp == 0;
-	return (&t->bt_cur);
+typedef enum __dbtype_e { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
 
-miss:
-	t->bt_order = NOT;
-	mpool_put(t->bt_mp, h, 0);
-	return (NULL);
+typedef struct __dbt_s {
+	void	*data;			/* data */
+	size_t	 size;			/* data length */
+} DBT;
+
+typedef struct __db {
+	DBTYPE type;			/* underlying db type */
+	int (*close)(struct __db *);
+	int (*del)(const struct __db *, const DBT *, u_int);
+	int (*get)(const struct __db *, const DBT *, DBT *, u_int);
+	int (*put)(const struct __db *, DBT *, const DBT *, u_int);
+	int (*seq)(const struct __db *, DBT *, DBT *, u_int);
+	int (*sync)(const struct __db *, u_int);
+	void *internal;			/* access method private */
+	int (*fd)(const struct __db *);
+} DB;
+
+typedef struct _page {
+	pgno_t	pgno;			/* this page's page number */
+	pgno_t	prevpg;			/* left sibling */
+	pgno_t	nextpg;			/* right sibling */
+
+	u_int32_t flags;
+	indx_t	lower;			/* lower bound of free space on page */
+	indx_t	upper;			/* upper bound of free space on page */
+	indx_t	linp[1];		/* indx_t-aligned VAR. LENGTH DATA */
+} PAGE;
+
+typedef struct _bleaf {
+	u_int32_t	ksize;		/* size of key */
+	u_int32_t	dsize;		/* size of data */
+	u_char	flags;			/* P_BIGDATA, P_BIGKEY */
+	char	bytes[1];		/* data */
+} BLEAF;
+
+typedef struct _epgno {
+	pgno_t	pgno;			/* the page number */
+	indx_t	index;			/* the index on the page */
+} EPGNO;
+
+typedef struct _epg {
+	PAGE	*page;			/* the (pinned) page */
+	indx_t	 index;			/* the index on the page */
+} EPG;
+
+typedef struct _cursor {
+	EPGNO	 pg;			/* B: Saved tree reference. */
+	DBT	 key;			/* B: Saved key, or key.data == NULL. */
+	recno_t	 rcursor;		/* R: recno cursor (1-based) */
+
+	u_int8_t flags;
+} CURSOR;
+
+enum bt_order_e { NOT, BACK, FORWARD };
+
+typedef struct _btree {
+	MPOOL	 *bt_mp;		/* memory pool cookie */
+
+	DB	 *bt_dbp;		/* pointer to enclosing DB */
+
+	EPG	  bt_cur;		/* current (pinned) page */
+	PAGE	 *bt_pinned;		/* page pinned across calls */
+
+	CURSOR	  bt_cursor;		/* cursor */
+
+	EPGNO	  bt_stack[50];		/* stack of parent pages */
+	EPGNO	 *bt_sp;		/* current stack pointer */
+
+	DBT	  bt_rkey;		/* returned key */
+	DBT	  bt_rdata;		/* returned data */
+
+	int	  bt_fd;		/* tree file descriptor */
+
+	pgno_t	  bt_free;		/* next free page */
+	u_int32_t bt_psize;		/* page size */
+	indx_t	  bt_ovflsize;		/* cut-off for key/data overflow */
+	int	  bt_lorder;		/* byte order */
+					/* sorted order */
+	enum bt_order_e bt_order;
+	EPGNO	  bt_last;		/* last insert */
+
+					/* B: key comparison function */
+	int	(*bt_cmp)(const DBT *, const DBT *);
+					/* B: prefix comparison function */
+	size_t	(*bt_pfx)(const DBT *, const DBT *);
+					/* R: recno input function */
+	int	(*bt_irec)(struct _btree *, recno_t);
+
+	FILE	 *bt_rfp;		/* R: record FILE pointer */
+	int	  bt_rfd;		/* R: record file descriptor */
+
+	caddr_t	  bt_cmap;		/* R: current point in mapped space */
+	caddr_t	  bt_smap;		/* R: start of mapped space */
+	caddr_t   bt_emap;		/* R: end of mapped space */
+	size_t	  bt_msize;		/* R: size of mapped region. */
+
+	recno_t	  bt_nrecs;		/* R: number of records */
+	size_t	  bt_reclen;		/* R: fixed record length */
+	u_char	  bt_bval;		/* R: delimiting byte/pad character */
+
+	u_int32_t flags;
+} BTREE;
+
 }
 
-} // namespace pbsd::lib_libc_db_btree::b0155s1
+#define	RET_ERROR	-1
+#define	RET_SUCCESS	 0
+#define	RET_SPECIAL	 1
+
+#define	R_CURSOR	 1
+#define	__R_UNUSED	 2
+#define	R_FIRST		 3
+#define	R_IAFTER	 4
+#define	R_IBEFORE	 5
+#define	R_LAST		 6
+#define	R_NEXT		 7
+#define	R_NOOVERWRITE	 8
+#define	R_PREV		 9
+#define	R_SETCURSOR	10
+#define	R_RECNOSYNC	11
+
+#define	P_INVALID	 0xffffffff
+
+#define	DEFMINKEYPAGE	 (2)
+#define	MINCACHE	 (5)
+#define	MINPSIZE	 (512)
+
+#define	P_BINTERNAL	0x01		/* btree internal page */
+#define	P_BLEAF		0x02		/* leaf page */
+#define	P_OVERFLOW	0x04		/* overflow page */
+#define	P_RINTERNAL	0x08		/* recno internal page */
+#define	P_RLEAF		0x10		/* leaf page */
+#define	P_TYPE		0x1f		/* type mask */
+#define	P_PRESERVE	0x20		/* never delete this chain of pages */
+
+#define	LALIGN(n)	(((n) + sizeof(pgno_t) - 1) & ~(sizeof(pgno_t) - 1))
+#define	NOVFLSIZE	(sizeof(pgno_t) + sizeof(u_int32_t))
+
+#define	BTDATAOFF							\
+	(sizeof(pgno_t) + sizeof(pgno_t) + sizeof(pgno_t) +		\
+	    sizeof(u_int32_t) + sizeof(indx_t) + sizeof(indx_t))
+#define	NEXTINDEX(p)	(((p)->lower - BTDATAOFF) / sizeof(indx_t))
+
+#define	P_BIGDATA	0x01		/* overflow data */
+#define	P_BIGKEY	0x02		/* overflow key */
+
+#define	NBLEAFDBT(ksize, dsize)						\
+	LALIGN(sizeof(u_int32_t) + sizeof(u_int32_t) + sizeof(u_char) +	\
+	    (ksize) + (dsize))
+
+#define	WR_BLEAF(p, key, data, flags) {					\
+	*(u_int32_t *)p = key->size;					\
+	p += sizeof(u_int32_t);						\
+	*(u_int32_t *)p = data->size;					\
+	p += sizeof(u_int32_t);						\
+	*(u_char *)p = flags;						\
+	p += sizeof(u_char);						\
+	memmove(p, key->data, key->size);				\
+	p += key->size;							\
+	memmove(p, data->data, data->size);				\
+}
+
+#define	CURS_ACQUIRE	0x01		/*  B: Cursor intialized. */
+#define	CURS_AFTER	0x02		/*  B: Unreturned cursor after. */
+#define	CURS_BEFORE	0x04		/*  B: Unreturned cursor before. */
+#define	CURS_INIT	0x08		/*  B: Cursor initialized. */
+
+#define	B_INMEM		0x00001		/* in-memory tree */
+#define	B_METADIRTY	0x00002		/* need to write metadata */
+#define	B_MODIFIED	0x00004		/* tree modified */
+#define	B_NEEDSWAP	0x00008		/* if byte order requires swapping */
+#define	B_RDONLY	0x00010		/* read-only tree */
+
+#define	B_DB_LOCK	0x00020		/* DB_LOCK specified. */
+#define	B_DB_SHMEM	0x00040		/* DB_SHMEM specified. */
+#define	B_DB_TXN	0x00080		/* DB_TXN specified. */
+
+#define	R_CLOSEFP	0x00100		/* opened a file pointer */
+#define	R_EOF		0x00200		/* end of input file reached. */
+#define	R_FIXLEN	0x00400		/* fixed length records */
+#define	R_MEMMAPPED	0x00800		/* memory mapped file. */
+#define	R_INMEM		0x01000		/* in-memory file */
+#define	R_MODIFIED	0x02000		/* modified file */
+#define	R_RECNO		0x04000		/* record oriented tree */
+
+#define	B_NODUPS	0x08000		/* no duplicate keys permitted */
+
+#define	F_ISSET(p, f)	((p)->flags & (f))
+#define	F_SET(p, f)	((p)->flags |= (f))
+#define	F_CLR(p, f)	((p)->flags &= ~(f))
+
+#define	MPOOL_DIRTY	0x01		/* page needs to be written */
+
+extern "C" {
+void	*mpool_get(MPOOL *, pgno_t, u_int);
+int	 mpool_put(MPOOL *, void *, u_int);
+int	 __bt_cmp(BTREE *, const DBT *, EPG *);
+int	 __bt_dleaf(BTREE *, const DBT *, PAGE *, u_int);
+EPG	*__bt_search(BTREE *, const DBT *, int *);
+int	 __bt_setcur(BTREE *, pgno_t, u_int);
+int	 __bt_split(BTREE *, PAGE *, const DBT *, const DBT *, int, size_t,
+	    u_int32_t);
+int	 __ovfl_put(BTREE *, const DBT *, pgno_t *);
+}
+/*__BODY__*/

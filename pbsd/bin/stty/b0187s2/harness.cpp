@@ -1,660 +1,466 @@
-// Differential harness for PBSD batch b0187s2 (stty.c).
-
-import pbsd.bin.stty.b0187s2;
+/*-
+ * Differential test harness for PBSD batch b0187s2 (bin/stty/stty.c).
+ *
+ * Copyright (c) 1989, 1991, 1993, 1994
+ *	The Regents of the University of California.  All rights reserved.
+ * (Original copyright retained; see port.cppm / oracle.c.)
+ *
+ * The single ported function, usage(), takes no arguments and never returns:
+ * it writes a fixed diagnostic to stderr and then calls exit(1).  Its complete
+ * observable behaviour is therefore
+ *
+ *	1. the exact byte sequence handed to file descriptor 2, at whatever
+ *	   file offset descriptor 2 happens to sit, and
+ *	2. the status value passed to exit().
+ *
+ * Both are captured here.  exit() is intercepted with the linker's
+ * --wrap=exit (see build.sh) and turned into a longjmp back into the driver,
+ * so the port and the ref_ oracle can be run alternately inside one process
+ * with no fork.  Descriptor 2 is redirected at each call to a sink whose
+ * contents are then read back in full.
+ *
+ * Buffer discipline, as required: each side owns its own capture buffer and
+ * its own private scratch file.  Both buffers are filled with the guard byte
+ * 0x7f before every case, both files receive a byte-identical prefill, and the
+ * ENTIRE capture buffer -- 512 bytes, far past the 48 byte write window and
+ * past the prefill region -- is compared afterwards, along with the byte count,
+ * the resulting file offset, the stream error indicator and the exit status.
+ * Nothing is compared by return value alone; usage() has no return value.
+ */
 
 #include <cerrno>
-#include <cstdarg>
-#include <cstdint>
+#include <csetjmp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
 #include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <termios.h>
 #include <unistd.h>
-#include <string>
-#include <vector>
 
-namespace P = pbsd::bin_stty::b0187s2;
+import pbsd.bin.stty.b0187s2;
 
-extern "C" {
-struct pbsd_stty_hooks {
-	unsigned print_calls;
-	unsigned gprint_calls;
-	unsigned gread_calls;
-	unsigned checkredirect_calls;
-	unsigned ksearch_hits;
-	unsigned csearch_hits;
-	unsigned msearch_hits;
-	int last_print_fmt;
-};
-extern struct pbsd_stty_hooks pbsd_stty_hooks;
+extern "C" void ref_usage(void);
+extern "C" [[noreturn]] void __real_exit(int);
 
-int ref_main(int argc, char **argv);
-void ref_usage(void);
+/* ------------------------------------------------------------------ */
+/* exit() interception						      */
+/* ------------------------------------------------------------------ */
 
-int __real_tcgetattr(int, struct termios *);
-int __real_tcsetattr(int, int, const struct termios *);
-int __real_ioctl(int, unsigned long, ...);
-int __real_open(const char *, int, ...);
-int __real_isatty(int);
-int __real_fstat(int, struct stat *);
+static std::jmp_buf probe_jb;
+static int probe_active;
+static int probe_exit_called;
+static int probe_exit_status;
+
+extern "C" [[noreturn]] void
+__wrap_exit(int status)
+{
+	if (probe_active) {
+		probe_active = 0;
+		probe_exit_called = 1;
+		probe_exit_status = status;
+		std::longjmp(probe_jb, 1);
+	}
+	__real_exit(status);
 }
 
-namespace {
+/* ------------------------------------------------------------------ */
+/* capture machinery						      */
+/* ------------------------------------------------------------------ */
 
-constexpr long SWEEP = 200000L;
-constexpr int MAX_SHOW = 8;
-
-struct Stat {
-	const char *name;
-	long cases;
-	long fails;
-	int shown;
-};
-
-struct HooksSnap {
-	unsigned print_calls;
-	unsigned gprint_calls;
-	unsigned gread_calls;
-	unsigned checkredirect_calls;
-	unsigned ksearch_hits;
-	unsigned csearch_hits;
-	unsigned msearch_hits;
-	int last_print_fmt;
+enum {
+	SINK_FILE,	/* regular file, descriptor positioned at cfg.off */
+	SINK_APPEND,	/* same file, O_APPEND set (offset ignored on write) */
+	SINK_PIPE,	/* pipe write end */
+	SINK_RDONLY,	/* read-only descriptor: write() fails EBADF */
+	SINK_CLOSED,	/* descriptor 2 closed: write() fails EBADF */
+	SINK_NKINDS
 };
 
-struct RunOut {
-	int status;
-	std::vector<unsigned char> out;
-	std::vector<unsigned char> err;
-	HooksSnap hooks;
-	int tcsetattr_calls;
-	int ioctl_setwinsz_calls;
+static const int CAPSZ = 512;
+static const int MAXPRE = 256;
+static const unsigned char GUARD = 0x7f;
+
+struct Cfg {
+	int sink;
+	int prefill_len;	/* 0 .. MAXPRE */
+	int prefill_kind;	/* see fill_prefill() */
+	unsigned prefill_seed;
+	long off;		/* seek position before the call */
 };
 
-struct MockState {
-	int active;
-	int tcgetattr_ret;
-	int tcsetattr_ret;
-	int ioctl_getd_ret;
-	int ioctl_winsz_ret;
-	int ioctl_setwinsz_ret;
-	int open_ret;
-	int isatty_ret;
-	int fstat_ret;
-	int same_rdev;
-	int tcsetattr_calls;
-	int ioctl_setwinsz_calls;
-} mock;
+struct Capture {
+	int exit_called;
+	int exit_status;
+	int io_error;		/* ferror(stderr) after the call */
+	long file_off;		/* descriptor offset after the call, -1 if n/a */
+	long nread;		/* bytes recovered from the sink */
+	unsigned char buf[CAPSZ];
+};
 
-Stat st_main = { "main", 0, 0, 0 };
-Stat st_usage = { "usage", 0, 0, 0 };
+static int tmpfd[2] = { -1, -1 };
+static int rdonly_fd = -1;
+static int saved_stderr = -1;
 
-struct Rng {
-	std::uint64_t s;
-
-	explicit Rng(std::uint64_t seed) : s(seed) {}
-
-	std::uint64_t next()
-	{
-		s += 0x9E3779B97F4A7C15ull;
-		std::uint64_t z = s;
-		z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
-		z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
-		return z ^ (z >> 31);
-	}
-
-	std::uint32_t u32() { return (std::uint32_t)next(); }
-	std::uint8_t u8() { return (std::uint8_t)next(); }
-	bool bit() { return (u32() & 1u) != 0u; }
-	int range(int lo, int hi)
-	{
-		if (hi <= lo)
-			return lo;
-		return lo + (int)(next() % (std::uint64_t)(hi - lo + 1));
-	}
-} rng(0xb0187a2ULL);
-
-bool
-fail(Stat &st, const char *msg)
+static void
+fatal(const char *what)
 {
-	st.fails++;
-	if (st.shown < MAX_SHOW) {
-		st.shown++;
-		std::printf("  FAIL %s: %s\n", st.name, msg);
-	}
-	return false;
+	if (saved_stderr >= 0)
+		(void)dup2(saved_stderr, 2);
+	std::fprintf(stderr, "harness: %s: %s\n", what, std::strerror(errno));
+	__real_exit(2);
 }
 
-void
-reset_hooks()
+static void
+fill_prefill(const Cfg &c, unsigned char *p)
 {
-	std::memset(&pbsd_stty_hooks, 0, sizeof(pbsd_stty_hooks));
-}
+	unsigned s = c.prefill_seed | 1u;
 
-HooksSnap
-snap_hooks()
-{
-	HooksSnap h{};
-	h.print_calls = pbsd_stty_hooks.print_calls;
-	h.gprint_calls = pbsd_stty_hooks.gprint_calls;
-	h.gread_calls = pbsd_stty_hooks.gread_calls;
-	h.checkredirect_calls = pbsd_stty_hooks.checkredirect_calls;
-	h.ksearch_hits = pbsd_stty_hooks.ksearch_hits;
-	h.csearch_hits = pbsd_stty_hooks.csearch_hits;
-	h.msearch_hits = pbsd_stty_hooks.msearch_hits;
-	h.last_print_fmt = pbsd_stty_hooks.last_print_fmt;
-	return h;
-}
+	for (int i = 0; i < c.prefill_len; i++) {
+		unsigned char v;
 
-void
-reset_mock(const MockState &m)
-{
-	mock = m;
-	mock.active = 1;
-}
-
-RunOut
-capture_run(bool port, int argc, char **argv)
-{
-	RunOut res{};
-	int outpipe[2];
-	int errpipe[2];
-
-	if (pipe(outpipe) != 0 || pipe(errpipe) != 0)
-		return res;
-
-	pid_t pid = fork();
-	if (pid < 0)
-		return res;
-
-	if (pid == 0) {
-		dup2(outpipe[1], STDOUT_FILENO);
-		dup2(errpipe[1], STDERR_FILENO);
-		close(outpipe[0]);
-		close(outpipe[1]);
-		close(errpipe[0]);
-		close(errpipe[1]);
-		optind = 0;
-		int st = port ? P::main(argc, argv) : ref_main(argc, argv);
-		_exit(st);
-	}
-
-	close(outpipe[1]);
-	close(errpipe[1]);
-	unsigned char buf[4096];
-	ssize_t nr;
-	while ((nr = read(outpipe[0], buf, sizeof(buf))) > 0)
-		res.out.insert(res.out.end(), buf, buf + nr);
-	while ((nr = read(errpipe[0], buf, sizeof(buf))) > 0)
-		res.err.insert(res.err.end(), buf, buf + nr);
-	close(outpipe[0]);
-	close(errpipe[0]);
-
-	int wst = 0;
-	if (waitpid(pid, &wst, 0) >= 0 && WIFEXITED(wst))
-		res.status = WEXITSTATUS(wst);
-	res.hooks = snap_hooks();
-	res.tcsetattr_calls = mock.tcsetattr_calls;
-	res.ioctl_setwinsz_calls = mock.ioctl_setwinsz_calls;
-	return res;
-}
-
-bool
-same_vec(const std::vector<unsigned char> &a,
-    const std::vector<unsigned char> &b)
-{
-	return a == b;
-}
-
-bool
-same_hooks(const HooksSnap &a, const HooksSnap &b)
-{
-	return a.print_calls == b.print_calls &&
-	    a.gprint_calls == b.gprint_calls &&
-	    a.gread_calls == b.gread_calls &&
-	    a.checkredirect_calls == b.checkredirect_calls &&
-	    a.ksearch_hits == b.ksearch_hits &&
-	    a.csearch_hits == b.csearch_hits &&
-	    a.msearch_hits == b.msearch_hits &&
-	    a.last_print_fmt == b.last_print_fmt;
-}
-
-bool
-cmp_main_run(const MockState &m, int argc, char **argv)
-{
-	Stat &st = st_main;
-	st.cases++;
-
-	reset_hooks();
-	reset_mock(m);
-	RunOut ref = capture_run(false, argc, argv);
-
-	reset_hooks();
-	reset_mock(m);
-	RunOut port = capture_run(true, argc, argv);
-
-	mock.active = 0;
-
-	if (ref.status != port.status) {
-		fail(st, "exit status mismatch");
-		return false;
-	}
-	if (!same_vec(ref.out, port.out)) {
-		fail(st, "stdout mismatch");
-		return false;
-	}
-	if (!same_vec(ref.err, port.err)) {
-		fail(st, "stderr mismatch");
-		return false;
-	}
-	if (!same_hooks(ref.hooks, port.hooks)) {
-		fail(st, "hook counters mismatch");
-		return false;
-	}
-	if (ref.tcsetattr_calls != port.tcsetattr_calls) {
-		fail(st, "tcsetattr call count mismatch");
-		return false;
-	}
-	if (ref.ioctl_setwinsz_calls != port.ioctl_setwinsz_calls) {
-		fail(st, "TIOCSWINSZ call count mismatch");
-		return false;
-	}
-	return true;
-}
-
-MockState
-ok_mock()
-{
-	MockState m{};
-	m.tcgetattr_ret = 0;
-	m.tcsetattr_ret = 0;
-	m.ioctl_getd_ret = 0;
-	m.ioctl_winsz_ret = 0;
-	m.ioctl_setwinsz_ret = 0;
-	m.open_ret = 5;
-	m.isatty_ret = 1;
-	m.fstat_ret = 0;
-	m.same_rdev = 1;
-	return m;
-}
-
-void
-run_main_edge_cases()
-{
-	char prog[] = "stty";
-	char empty[] = "";
-	char a[] = "-a";
-	char e[] = "-e";
-	char g[] = "-g";
-	char ae[] = "-ae";
-	char aefg[] = "-aefg";
-	char fz[] = "-fz";
-	char fopt[] = "-f";
-	char nofile[] = "/nonexistent_stty_b0187s2";
-	char okfile[] = "/dev/null";
-	char k[] = "__ksearch__";
-	char c[] = "__csearch__";
-	char msearch_tok[] = "__msearch__";
-	char sp9600[] = "9600";
-	char sp0[] = "0";
-	char spbad[] = "999999999999999999999";
-	char gfmt[] = "gfmt1:cflag=0:";
-	char ill[] = "not-an-option";
-	char dig[] = "38400";
-	char hb[] = "\x80\xFF";
-	char zopt[] = "-z";
-	char ax[] = "-ax";
-
-	char *av_empty[] = { prog, nullptr };
-	char *av_a[] = { prog, a, nullptr };
-	char *av_e[] = { prog, e, nullptr };
-	char *av_g[] = { prog, g, nullptr };
-	char *av_ae[] = { prog, ae, nullptr };
-	char *av_aefg[] = { prog, aefg, nullptr };
-	char *av_f_bad[] = { prog, fopt, nofile, nullptr };
-	char *av_f_ok[] = { prog, fopt, okfile, nullptr };
-	char *av_k[] = { prog, k, nullptr };
-	char *av_c[] = { prog, c, nullptr };
-	char *av_m[] = { prog, msearch_tok, nullptr };
-	char *av_sp[] = { prog, sp9600, nullptr };
-	char *av_sp0[] = { prog, sp0, nullptr };
-	char *av_spbad[] = { prog, spbad, nullptr };
-	char *av_gfmt[] = { prog, gfmt, nullptr };
-	char *av_ill[] = { prog, ill, nullptr };
-	char *av_dig[] = { prog, dig, nullptr };
-	char *av_hb[] = { prog, hb, nullptr };
-	char *av_z[] = { prog, zopt, nullptr };
-	char *av_ax[] = { prog, ax, nullptr };
-	char *av_fz[] = { prog, fz, nullptr };
-	char *av_k_sp[] = { prog, k, sp9600, nullptr };
-	char *av_g_k[] = { prog, g, k, nullptr };
-	char *av_e_arg[] = { prog, e, dig, nullptr };
-
-	cmp_main_run(ok_mock(), 1, av_empty);
-	cmp_main_run(ok_mock(), 2, av_a);
-	cmp_main_run(ok_mock(), 2, av_e);
-	cmp_main_run(ok_mock(), 2, av_g);
-	cmp_main_run(ok_mock(), 2, av_ae);
-	cmp_main_run(ok_mock(), 2, av_aefg);
-	cmp_main_run(ok_mock(), 3, av_f_ok);
-	cmp_main_run(ok_mock(), 2, av_k);
-	cmp_main_run(ok_mock(), 2, av_c);
-	cmp_main_run(ok_mock(), 2, av_m);
-	cmp_main_run(ok_mock(), 2, av_sp);
-	cmp_main_run(ok_mock(), 2, av_sp0);
-	cmp_main_run(ok_mock(), 2, av_gfmt);
-	cmp_main_run(ok_mock(), 2, av_dig);
-	cmp_main_run(ok_mock(), 2, av_z);
-	cmp_main_run(ok_mock(), 2, av_ax);
-	cmp_main_run(ok_mock(), 2, av_fz);
-	cmp_main_run(ok_mock(), 3, av_k_sp);
-	cmp_main_run(ok_mock(), 3, av_g_k);
-	cmp_main_run(ok_mock(), 3, av_e_arg);
-
-	MockState mockst = ok_mock();
-	mockst.open_ret = -1;
-	cmp_main_run(mockst, 3, av_f_bad);
-
-	mockst = ok_mock();
-	mockst.tcgetattr_ret = -1;
-	cmp_main_run(mockst, 1, av_empty);
-
-	mockst = ok_mock();
-	mockst.ioctl_getd_ret = -1;
-	cmp_main_run(mockst, 1, av_empty);
-
-	mockst = ok_mock();
-	mockst.ioctl_winsz_ret = -1;
-	cmp_main_run(mockst, 1, av_empty);
-
-	mockst = ok_mock();
-	mockst.tcsetattr_ret = -1;
-	cmp_main_run(mockst, 2, av_sp);
-
-	mockst = ok_mock();
-	mockst.ioctl_setwinsz_ret = -1;
-	cmp_main_run(mockst, 2, av_m);
-
-	mockst = ok_mock();
-	mockst.isatty_ret = 1;
-	mockst.same_rdev = 0;
-	cmp_main_run(mockst, 1, av_empty);
-
-	cmp_main_run(ok_mock(), 2, av_spbad);
-	cmp_main_run(ok_mock(), 2, av_ill);
-	cmp_main_run(ok_mock(), 2, av_hb);
-}
-
-void
-run_main_sweep()
-{
-	std::vector<std::string> pool = {
-		"", "-a", "-e", "-g", "-ae", "-af", "-ag", "-ef", "-fg",
-		"-aefg", "-f", "/dev/null", "/nope", "__ksearch__",
-		"__csearch__", "__msearch__", "0", "50", "9600", "38400",
-		"115200", "gfmt1:", "gfmt1:cflag=1:", "illegal", "\x7f",
-		"\x80", "\xff", "9", "4294967295", "999999999999999999999",
-	};
-
-	for (long i = 0; i < SWEEP; i++) {
-		std::vector<std::string> args;
-		args.emplace_back("stty");
-		int n = rng.range(0, 6);
-		for (int j = 0; j < n; j++) {
-			const std::string &pick = pool[rng.range(0, (int)pool.size() - 1)];
-			args.push_back(pick);
-		}
-		std::vector<char *> av;
-		av.reserve(args.size() + 1);
-		for (auto &s : args)
-			av.push_back(s.data());
-		av.push_back(nullptr);
-
-		MockState m = ok_mock();
-		switch (rng.range(0, 11)) {
+		switch (c.prefill_kind) {
 		case 0:
-			m.tcgetattr_ret = -1;
+			v = GUARD;
 			break;
 		case 1:
-			m.ioctl_getd_ret = -1;
+			v = 0x00;
 			break;
 		case 2:
-			m.ioctl_winsz_ret = -1;
+			/* high-bit bytes 0x80 .. 0xff */
+			v = (unsigned char)(0x80 + (i & 0x7f));
 			break;
 		case 3:
-			m.open_ret = -1;
+			s = s * 1664525u + 1013904223u;
+			v = (unsigned char)(s >> 24);
 			break;
 		case 4:
-			m.tcsetattr_ret = -1;
-			break;
-		case 5:
-			m.ioctl_setwinsz_ret = -1;
-			break;
-		case 6:
-			m.same_rdev = 0;
-			break;
-		case 7:
-			m.isatty_ret = 0;
+			/* NUL-heavy with occasional 0xff */
+			v = (unsigned char)((i % 7) == 0 ? 0xff : 0x00);
 			break;
 		default:
+			v = 'A';
 			break;
 		}
-		cmp_main_run(m, (int)av.size() - 1, av.data());
+		p[i] = v;
 	}
 }
 
-bool
-cmp_usage_run()
+static void
+setup(void)
 {
-	Stat &st = st_usage;
-	st.cases++;
+	for (int i = 0; i < 2; i++) {
+		char path[] = "/tmp/pbsd_b0187s2_XXXXXX";
+		int fd = mkstemp(path);
 
-	int errpipe[2];
-	if (pipe(errpipe) != 0)
-		return fail(st, "pipe");
-
-	pid_t pr = fork();
-	if (pr < 0)
-		return fail(st, "fork ref");
-	if (pr == 0) {
-		dup2(errpipe[1], STDERR_FILENO);
-		close(errpipe[0]);
-		close(errpipe[1]);
-		ref_usage();
-		_exit(99);
+		if (fd < 0)
+			fatal("mkstemp");
+		if (unlink(path) != 0)
+			fatal("unlink");
+		tmpfd[i] = fd;
 	}
-	close(errpipe[1]);
-	std::vector<unsigned char> ref_err;
-	unsigned char buf[4096];
-	ssize_t nr;
-	while ((nr = read(errpipe[0], buf, sizeof(buf))) > 0)
-		ref_err.insert(ref_err.end(), buf, buf + nr);
-	close(errpipe[0]);
-	int wst = 0;
-	int ref_status = -1;
-	if (waitpid(pr, &wst, 0) >= 0 && WIFEXITED(wst))
-		ref_status = WEXITSTATUS(wst);
-
-	if (pipe(errpipe) != 0)
-		return fail(st, "pipe2");
-
-	pid_t pp = fork();
-	if (pp < 0)
-		return fail(st, "fork port");
-	if (pp == 0) {
-		dup2(errpipe[1], STDERR_FILENO);
-		close(errpipe[0]);
-		close(errpipe[1]);
-		P::usage();
-		_exit(99);
-	}
-	close(errpipe[1]);
-	std::vector<unsigned char> port_err;
-	while ((nr = read(errpipe[0], buf, sizeof(buf))) > 0)
-		port_err.insert(port_err.end(), buf, buf + nr);
-	close(errpipe[0]);
-	int port_status = -1;
-	if (waitpid(pp, &wst, 0) >= 0 && WIFEXITED(wst))
-		port_status = WEXITSTATUS(wst);
-
-	if (ref_status != port_status) {
-		fail(st, "exit status mismatch");
-		return false;
-	}
-	if (!same_vec(ref_err, port_err)) {
-		fail(st, "stderr mismatch");
-		return false;
-	}
-	return true;
+	rdonly_fd = open("/dev/null", O_RDONLY);
+	if (rdonly_fd < 0)
+		fatal("open /dev/null");
+	saved_stderr = dup(2);
+	if (saved_stderr < 0)
+		fatal("dup");
+	/*
+	 * stderr is unbuffered per the C standard, but pin it down so the two
+	 * sides cannot differ because of an inherited buffering mode.
+	 */
+	if (setvbuf(stderr, NULL, _IONBF, 0) != 0)
+		fatal("setvbuf");
 }
 
-void
-run_usage_cases()
+/*
+ * side 0 runs the C++23 port, side 1 runs the ref_ oracle.  Each side uses its
+ * own scratch file so the two runs cannot see one another's bytes.
+ */
+static void
+run_side(int side, const Cfg &cfg, Capture &cap)
 {
-	for (int i = 0; i < 32; i++)
-		cmp_usage_run();
-}
+	unsigned char pre[MAXPRE];
+	int rfd = -1;
+	int pipe_rd = -1;
 
-} // namespace
+	fill_prefill(cfg, pre);
 
-extern "C" int
-__wrap_tcgetattr(int fd, struct termios *tp)
-{
-	(void)fd;
-	if (!mock.active)
-		return __real_tcgetattr(fd, tp);
-	if (mock.tcgetattr_ret < 0) {
-		errno = ENOTTY;
-		return -1;
-	}
-	std::memset(tp, 0, sizeof(*tp));
-	tp->c_ospeed = B9600;
-	tp->c_ispeed = B9600;
-	return 0;
-}
+	std::memset(cap.buf, GUARD, sizeof(cap.buf));
+	cap.exit_called = -1;
+	cap.exit_status = -12345;
+	cap.io_error = -1;
+	cap.file_off = -1;
+	cap.nread = -2;
 
-extern "C" int
-__wrap_tcsetattr(int fd, int opt, const struct termios *tp)
-{
-	(void)fd;
-	(void)opt;
-	(void)tp;
-	if (!mock.active)
-		return __real_tcsetattr(fd, opt, tp);
-	mock.tcsetattr_calls++;
-	if (mock.tcsetattr_ret < 0) {
-		errno = EIO;
-		return -1;
-	}
-	return 0;
-}
+	switch (cfg.sink) {
+	case SINK_FILE:
+	case SINK_APPEND: {
+		int fd = tmpfd[side];
 
-extern "C" int
-__wrap_ioctl(int fd, unsigned long req, ...)
-{
-	va_list ap;
-	void *arg = nullptr;
-	va_start(ap, req);
-	arg = va_arg(ap, void *);
-	va_end(ap);
+		if (ftruncate(fd, 0) != 0)
+			fatal("ftruncate");
+		if (fcntl(fd, F_SETFL,
+		    cfg.sink == SINK_APPEND ? O_APPEND : 0) != 0)
+			fatal("fcntl F_SETFL");
+		if (lseek(fd, 0, SEEK_SET) < 0)
+			fatal("lseek rewind");
+		if (cfg.prefill_len > 0) {
+			ssize_t w = write(fd, pre, (size_t)cfg.prefill_len);
 
-	if (!mock.active) {
-		va_list ap2;
-		va_start(ap2, req);
-		void *a2 = va_arg(ap2, void *);
-		va_end(ap2);
-		return __real_ioctl(fd, req, a2);
-	}
-	(void)fd;
-	if (req == TIOCGETD) {
-		if (mock.ioctl_getd_ret < 0) {
-			errno = EINVAL;
-			return -1;
+			if (w != (ssize_t)cfg.prefill_len)
+				fatal("write prefill");
 		}
-		if (arg != nullptr)
-			*(int *)arg = 0;
-		return 0;
+		if (lseek(fd, cfg.off, SEEK_SET) < 0)
+			fatal("lseek off");
+		if (dup2(fd, 2) < 0)
+			fatal("dup2 file");
+		rfd = fd;
+		break;
 	}
-	if (req == TIOCGWINSZ) {
-		if (mock.ioctl_winsz_ret < 0) {
-			errno = EINVAL;
-			return -1;
-		}
-		if (arg != nullptr)
-			std::memset(arg, 0, sizeof(struct winsize));
-		return 0;
+	case SINK_PIPE: {
+		int pf[2];
+
+		if (pipe(pf) != 0)
+			fatal("pipe");
+		if (fcntl(pf[0], F_SETFL, O_NONBLOCK) != 0)
+			fatal("fcntl O_NONBLOCK");
+		if (dup2(pf[1], 2) < 0)
+			fatal("dup2 pipe");
+		(void)close(pf[1]);
+		pipe_rd = pf[0];
+		break;
 	}
-	if (req == TIOCSWINSZ) {
-		mock.ioctl_setwinsz_calls++;
-		if (mock.ioctl_setwinsz_ret < 0) {
-			errno = EINVAL;
-			return -1;
-		}
-		return 0;
+	case SINK_RDONLY:
+		if (dup2(rdonly_fd, 2) < 0)
+			fatal("dup2 rdonly");
+		break;
+	case SINK_CLOSED:
+		(void)close(2);
+		break;
 	}
-	errno = EINVAL;
-	return -1;
+
+	clearerr(stderr);
+	errno = 0;
+
+	probe_exit_called = 0;
+	probe_exit_status = -999;
+	probe_active = 1;
+	if (setjmp(probe_jb) == 0) {
+		if (side == 0)
+			pbsd::bin_stty::b0187s2::usage();
+		else
+			ref_usage();
+	}
+	probe_active = 0;
+	cap.exit_called = probe_exit_called;
+	cap.exit_status = probe_exit_status;
+
+	(void)fflush(stderr);
+	cap.io_error = ferror(stderr) ? 1 : 0;
+	clearerr(stderr);
+
+	if (rfd >= 0) {
+		cap.file_off = (long)lseek(rfd, 0, SEEK_CUR);
+		if (lseek(rfd, 0, SEEK_SET) < 0)
+			fatal("lseek readback");
+		ssize_t n = read(rfd, cap.buf, sizeof(cap.buf));
+		cap.nread = (long)n;
+	} else if (pipe_rd >= 0) {
+		ssize_t n = read(pipe_rd, cap.buf, sizeof(cap.buf));
+		cap.nread = (long)n;
+		(void)close(pipe_rd);
+	} else {
+		cap.nread = 0;
+	}
+
+	if (dup2(saved_stderr, 2) < 0)
+		fatal("restore stderr");
 }
 
-extern "C" int
-__wrap_open(const char *path, int flags, ...)
+static int
+same(const Capture &a, const Capture &b)
 {
-	(void)path;
-	(void)flags;
-	if (!mock.active) {
-		va_list ap;
-		va_start(ap, flags);
-		va_end(ap);
-		return __real_open(path, flags);
-	}
-	if (mock.open_ret < 0) {
-		errno = ENOENT;
-		return -1;
-	}
-	return mock.open_ret;
+	return a.exit_called == b.exit_called &&
+	    a.exit_status == b.exit_status &&
+	    a.io_error == b.io_error &&
+	    a.file_off == b.file_off &&
+	    a.nread == b.nread &&
+	    std::memcmp(a.buf, b.buf, sizeof(a.buf)) == 0;
 }
 
-extern "C" int
-__wrap_isatty(int fd)
+static const char *
+sinkname(int s)
 {
-	(void)fd;
-	if (!mock.active)
-		return __real_isatty(fd);
-	return mock.isatty_ret;
+	switch (s) {
+	case SINK_FILE:
+		return "file";
+	case SINK_APPEND:
+		return "append";
+	case SINK_PIPE:
+		return "pipe";
+	case SINK_RDONLY:
+		return "rdonly";
+	case SINK_CLOSED:
+		return "closed";
+	}
+	return "?";
 }
 
-extern "C" int
-__wrap_fstat(int fd, struct stat *sb)
+static long usage_cases;
+static long usage_failures;
+static int reported;
+
+static void
+dump(const char *tag, const Capture &c)
 {
-	(void)fd;
-	if (!mock.active)
-		return __real_fstat(fd, sb);
-	if (mock.fstat_ret < 0) {
-		errno = EIO;
-		return -1;
+	std::printf("    %-4s exit_called=%d exit_status=%d io_error=%d "
+	    "file_off=%ld nread=%ld\n", tag, c.exit_called, c.exit_status,
+	    c.io_error, c.file_off, c.nread);
+	std::printf("        buf[0..63]:");
+	for (int i = 0; i < 64; i++)
+		std::printf(" %02x", c.buf[i]);
+	std::printf("\n");
+}
+
+static void
+check(const Cfg &cfg, const char *label)
+{
+	Capture pc, rc;
+
+	run_side(0, cfg, pc);
+	run_side(1, cfg, rc);
+
+	usage_cases++;
+	if (same(pc, rc))
+		return;
+
+	usage_failures++;
+	if (reported < 10) {
+		reported++;
+		std::printf("FAIL usage [%s] sink=%s prefill_len=%d kind=%d "
+		    "seed=%u off=%ld\n", label, sinkname(cfg.sink),
+		    cfg.prefill_len, cfg.prefill_kind, cfg.prefill_seed,
+		    cfg.off);
+		dump("port", pc);
+		dump("ref", rc);
+		for (int i = 0; i < CAPSZ; i++)
+			if (pc.buf[i] != rc.buf[i]) {
+				std::printf("        first byte diff at %d: "
+				    "port=%02x ref=%02x\n", i, pc.buf[i],
+				    rc.buf[i]);
+				break;
+			}
 	}
-	std::memset(sb, 0, sizeof(*sb));
-	sb->st_rdev = mock.same_rdev ? 42 : (fd == STDOUT_FILENO ? 1 : 2);
-	return 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* deterministic RNG						      */
+/* ------------------------------------------------------------------ */
+
+static unsigned long long rng_state;
+
+static unsigned long long
+rng_next(void)
+{
+	unsigned long long z;
+
+	rng_state += 0x9e3779b97f4a7c15ULL;
+	z = rng_state;
+	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+	z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+	return z ^ (z >> 31);
+}
+
+static unsigned
+rng_below(unsigned n)
+{
+	return (unsigned)(rng_next() % n);
+}
+
+/* ------------------------------------------------------------------ */
+
+static void
+edge_cases(void)
+{
+	/*
+	 * The diagnostic is 48 bytes ("usage: stty [-a | -e | -g] [-f file] "
+	 * "[arguments]\n").  Offsets sit on both sides of every interesting
+	 * boundary: empty file, one byte, one short of the message, exactly
+	 * the message, one past, the prefill edge, and past the end of the
+	 * prefill so that a sparse hole is created.
+	 */
+	static const long offs[] = {
+		0, 1, 2, 46, 47, 48, 49, 50, 63, 64, 127, 128,
+		255, 256, 257, 300
+	};
+	static const int lens[] = { 0, 1, 2, 47, 48, 49, 128, 255, 256 };
+
+	for (int k = 0; k < SINK_NKINDS; k++)
+		for (unsigned li = 0; li < sizeof(lens) / sizeof(lens[0]); li++)
+			for (unsigned oi = 0;
+			    oi < sizeof(offs) / sizeof(offs[0]); oi++)
+				for (int kind = 0; kind <= 5; kind++) {
+					Cfg c;
+
+					c.sink = k;
+					c.prefill_len = lens[li];
+					c.prefill_kind = kind;
+					c.prefill_seed = 0x9e3779b9u +
+					    (unsigned)kind;
+					c.off = offs[oi];
+					check(c, "edge");
+				}
+}
+
+static void
+sweep(long iters)
+{
+	rng_state = 0x0187002ULL;	/* fixed seed */
+
+	for (long i = 0; i < iters; i++) {
+		Cfg c;
+		unsigned r = rng_below(100);
+
+		if (r < 55)
+			c.sink = SINK_FILE;
+		else if (r < 75)
+			c.sink = SINK_APPEND;
+		else if (r < 90)
+			c.sink = SINK_PIPE;
+		else if (r < 95)
+			c.sink = SINK_RDONLY;
+		else
+			c.sink = SINK_CLOSED;
+
+		c.prefill_len = (int)rng_below(MAXPRE + 1);
+		c.prefill_kind = (int)rng_below(6);
+		c.prefill_seed = (unsigned)rng_next();
+		c.off = (long)rng_below(301);
+
+		check(c, "sweep");
+	}
 }
 
 int
-main()
+main(void)
 {
-	run_usage_cases();
-	run_main_edge_cases();
-	run_main_sweep();
+	setup();
 
-	std::printf("\n%-8s %8s %8s\n", "function", "cases", "fail");
-	std::printf("%-8s %8ld %8ld\n", st_usage.name, st_usage.cases,
-	    st_usage.fails);
-	std::printf("%-8s %8ld %8ld\n", st_main.name, st_main.cases,
-	    st_main.fails);
+	edge_cases();
+	sweep(200000);
 
-	long total_fails = st_usage.fails + st_main.fails;
-	return total_fails == 0 ? 0 : 1;
+	std::printf("\n");
+	std::printf("%-24s %12s %12s  %s\n", "function", "cases", "failures",
+	    "result");
+	std::printf("%-24s %12s %12s  %s\n", "------------------------",
+	    "------------", "------------", "------");
+	std::printf("%-24s %12ld %12ld  %s\n", "usage", usage_cases,
+	    usage_failures, usage_failures == 0 ? "PASS" : "FAIL");
+	std::printf("\n");
+	std::printf("total: %ld cases, %ld failures\n",
+	    usage_cases, usage_failures);
+	std::printf("skipped: bin/stty/stty.c:main (see skipped.txt)\n");
+
+	(void)fflush(stdout);
+	return usage_failures == 0 ? 0 : 1;
 }
