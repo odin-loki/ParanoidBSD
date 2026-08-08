@@ -986,7 +986,7 @@ erange:
 
 /*
  * Convert an expression of the following forms to an off_t.  This is the
- * same as ref_get_num(), but it uses signed numbers.
+ * same as get_num(), but it uses signed numbers.
  *
  * The major problem here is that an off_t may not necessarily be a intmax_t.
  */

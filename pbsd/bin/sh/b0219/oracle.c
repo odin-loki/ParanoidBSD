@@ -36,6 +36,32 @@
 #define out1c(c) outc((c), out1)
 #define out2c(c) outcslow((c), out2)
 
+struct oracle_fwopen_cookie {
+	void *cookie;
+	int (*writefn)(void *, const char *, int);
+};
+
+static ssize_t
+oracle_fwcookie_write(void *c, const char *buf, size_t size)
+{
+	struct oracle_fwopen_cookie *fc = (struct oracle_fwopen_cookie *)c;
+	int r = fc->writefn(fc->cookie, buf, (int)size);
+	return (r < 0) ? -1 : (ssize_t)r;
+}
+
+static FILE *
+oracle_fwopen(void *cookie, int (*writefn)(void *, const char *, int))
+{
+	static struct oracle_fwopen_cookie fc;
+	static cookie_io_functions_t io = { NULL, oracle_fwcookie_write, NULL, NULL };
+
+	fc.cookie = cookie;
+	fc.writefn = writefn;
+	return fopencookie(&fc, "w", io);
+}
+
+#define fwopen oracle_fwopen
+
 #define __unused
 
 typedef void *pointer;
@@ -213,6 +239,21 @@ void oracle_reset_state(void)
 	stacknxt = NULL;
 	stacknleft = 0;
 	sstrend = NULL;
+}
+
+struct output *oracle_get_memout(void)
+{
+	return &memout;
+}
+
+void oracle_set_out1_memout(void)
+{
+	out1 = &memout;
+}
+
+void oracle_restore_out1(void)
+{
+	out1 = &output;
 }
 
 

@@ -299,9 +299,15 @@ run_port(const Scenario &sc, Result &r)
 		pt::vop_reclaim_args ap;
 
 		ap.a_vp = ovp;
-		r.reclaim_ret = sc.extra ?
-		    pt::mntfs_vnodeops.vop_reclaim(&ap) : pt::mntfs_reclaim(&ap);
-		r.reclaim_valid = 1;
+		if (!sc.extra) {
+			r.reclaim_ret = pt::mntfs_reclaim(&ap);
+			r.reclaim_valid = 1;
+		} else if (pt::mntfs_vnodeops.vop_reclaim != nullptr) {
+			r.reclaim_ret = pt::mntfs_vnodeops.vop_reclaim(&ap);
+			r.reclaim_valid = 1;
+		} else {
+			r.reclaim_valid = 2;
+		}
 		break;
 	}
 	case OP_ALLOCVP:
@@ -322,8 +328,13 @@ run_port(const Scenario &sc, Result &r)
 			pt::vop_reclaim_args ap;
 
 			ap.a_vp = ret;
-			r.reclaim_ret = pt::mntfs_vnodeops.vop_reclaim(&ap);
-			r.reclaim_valid = 1;
+			if (pt::mntfs_vnodeops.vop_reclaim != nullptr) {
+				r.reclaim_ret =
+				    pt::mntfs_vnodeops.vop_reclaim(&ap);
+				r.reclaim_valid = 1;
+			} else {
+				r.reclaim_valid = 2;
+			}
 			pt::mntfs_freevp(ret);
 		}
 		break;
@@ -395,10 +406,16 @@ run_ref(const Scenario &sc, Result &r)
 		ora::vop_reclaim_args ap;
 
 		ap.a_vp = ovp;
-		r.reclaim_ret = sc.extra ?
-		    ora::ref_mntfs_vnodeops.vop_reclaim(&ap) :
-		    ora::ref_mntfs_reclaim(&ap);
-		r.reclaim_valid = 1;
+		if (!sc.extra) {
+			r.reclaim_ret = ora::ref_mntfs_reclaim(&ap);
+			r.reclaim_valid = 1;
+		} else if (ora::ref_mntfs_vnodeops.vop_reclaim != nullptr) {
+			r.reclaim_ret =
+			    ora::ref_mntfs_vnodeops.vop_reclaim(&ap);
+			r.reclaim_valid = 1;
+		} else {
+			r.reclaim_valid = 2;
+		}
 		break;
 	}
 	case OP_ALLOCVP:
@@ -419,9 +436,13 @@ run_ref(const Scenario &sc, Result &r)
 			ora::vop_reclaim_args ap;
 
 			ap.a_vp = ret;
-			r.reclaim_ret =
-			    ora::ref_mntfs_vnodeops.vop_reclaim(&ap);
-			r.reclaim_valid = 1;
+			if (ora::ref_mntfs_vnodeops.vop_reclaim != nullptr) {
+				r.reclaim_ret =
+				    ora::ref_mntfs_vnodeops.vop_reclaim(&ap);
+				r.reclaim_valid = 1;
+			} else {
+				r.reclaim_valid = 2;
+			}
 			ora::ref_mntfs_freevp(ret);
 		}
 		break;

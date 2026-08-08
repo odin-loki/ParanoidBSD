@@ -703,6 +703,13 @@ ref_vfs_hashinit(void *dummy __unused)
 }
 
 
+u_int
+ref_vfs_hash_index(struct vnode *vp)
+{
+
+	return (vp->v_hash + vp->v_mount->mnt_hashseed);
+}
+
 static struct vfs_hash_head *
 ref_vfs_hash_bucket(const struct mount *mp, u_int hash)
 {
@@ -912,7 +919,7 @@ ref_vfs_hash_changesize(u_long newmaxvnodes)
 #define TSLOGSIZE 262144
 #endif
 
-static volatile long nrecs = 0;
+volatile long nrecs = 0;
 static struct timestamp {
 	void * td;
 	int type;

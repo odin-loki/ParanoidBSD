@@ -44,12 +44,14 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/setfacl/util_m/port.cppm
   bin/sh/b0119/port.cppm
   bin/sh/b0219/port.cppm
+  bin/sh/bltin/b0218/port.cppm
   bin/sleep/b0175/port.cppm
   bin/stty/b0187/port.cppm
   bin/stty/gfmt_m/port.cppm
   bin/sync/b0166/port.cppm
   bin/test/b0188/port.cppm
   bin/timeout/b0197/port.cppm
+  bin/uuidgen/b0224/port.cppm
   lib/libc/aarch64/gen/b0022/port.cppm
   lib/libc/aarch64/gen/b0222/port.cppm
   lib/libc/aarch64/string/b0018/port.cppm
@@ -409,6 +411,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/nvmecontrol/nc_util_m/port.cppm
   sbin/ping/utils_m/port.cppm
   sbin/rcorder/ealloc_m/port.cppm
+  sys/compat/freebsd32/b0206/port.cppm
   sys/compat/linuxkpi/common/src/b0209/port.cppm
   sys/fs/deadfs/b0213/port.cppm
   sys/fs/mntfs/b0211/port.cppm

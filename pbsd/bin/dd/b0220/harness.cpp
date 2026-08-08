@@ -236,13 +236,23 @@ snap_port()
 }
 
 static bool
+name_eq(const char *a, const char *b)
+{
+	if (a == b)
+		return true;
+	if (a == nullptr || b == nullptr)
+		return a == b;
+	return std::strcmp(a, b) == 0;
+}
+
+static bool
 snap_eq(const Snap &a, const Snap &b)
 {
 	return a.ddflags == b.ddflags && a.in_dbsz == b.in_dbsz &&
 	    a.out_dbsz == b.out_dbsz && a.cbsz == b.cbsz &&
 	    a.cpy_cnt == b.cpy_cnt && a.files_cnt == b.files_cnt &&
 	    a.fill_char == b.fill_char && a.speed == b.speed &&
-	    a.in_name == b.in_name && a.out_name == b.out_name &&
+	    name_eq(a.in_name, b.in_name) && name_eq(a.out_name, b.out_name) &&
 	    a.in_offset == b.in_offset && a.out_offset == b.out_offset &&
 	    a.ctab_fp_val == b.ctab_fp_val && a.cfunc_kind == b.cfunc_kind;
 }
@@ -646,19 +656,26 @@ test_get_off_sweep(long n)
 typedef void (*Farg)(char *);
 
 static bool
-run_f(const char *name, Farg ref, Farg port, char *arg, std::uint64_t flags_before)
+run_f(const char *name, Farg ref, Farg port, const char *arg,
+    std::uint64_t flags_before)
 {
 	Stat &st = S(name);
+	char bufr[256];
+	char bufp[256];
+	std::strncpy(bufr, arg, sizeof(bufr) - 1);
+	bufr[sizeof(bufr) - 1] = '\0';
+	std::strncpy(bufp, arg, sizeof(bufp) - 1);
+	bufp[sizeof(bufp) - 1] = '\0';
 	reset_both();
 	ddflags = flags_before;
 	P::ddflags = flags_before;
 	int er = 0, ep = 0;
 	if (setjmp(b0220_jmp) == 0)
-		ref(arg);
+		ref(bufr);
 	else
 		er = b0220_err_exit;
 	if (setjmp(P::b0220_jmp) == 0)
-		port(arg);
+		port(bufp);
 	else
 		ep = P::b0220_err_exit;
 	ok(st);
@@ -678,35 +695,32 @@ run_f(const char *name, Farg ref, Farg port, char *arg, std::uint64_t flags_befo
 static void
 test_f_edges()
 {
-	char buf[128];
-	(void)run_f("f_bs", ref_f_bs, P::f_bs, (char *)"512", 0);
-	(void)run_f("f_cbs", ref_f_cbs, P::f_cbs, (char *)"80", 0);
-	(void)run_f("f_count", ref_f_count, P::f_count, (char *)"0", 0);
-	(void)run_f("f_count", ref_f_count, P::f_count, (char *)"10", 0);
-	(void)run_f("f_files", ref_f_files, P::f_files, (char *)"3", 0);
-	(void)run_f("f_fillchar", ref_f_fillchar, P::f_fillchar, (char *)"X", 0);
-	(void)run_f("f_fillchar", ref_f_fillchar, P::f_fillchar, (char *)"\xff", 0);
-	(void)run_f("f_ibs", ref_f_ibs, P::f_ibs, (char *)"1024", 0);
-	(void)run_f("f_ibs", ref_f_ibs, P::f_ibs, (char *)"2048",
+	(void)run_f("f_bs", ref_f_bs, P::f_bs, "512", 0);
+	(void)run_f("f_cbs", ref_f_cbs, P::f_cbs, "80", 0);
+	(void)run_f("f_count", ref_f_count, P::f_count, "0", 0);
+	(void)run_f("f_count", ref_f_count, P::f_count, "10", 0);
+	(void)run_f("f_files", ref_f_files, P::f_files, "3", 0);
+	(void)run_f("f_fillchar", ref_f_fillchar, P::f_fillchar, "X", 0);
+	(void)run_f("f_fillchar", ref_f_fillchar, P::f_fillchar, "\xff", 0);
+	(void)run_f("f_ibs", ref_f_ibs, P::f_ibs, "1024", 0);
+	(void)run_f("f_ibs", ref_f_ibs, P::f_ibs, "2048",
 	    0x0000000000000004ULL);
-	(void)run_f("f_if", ref_f_if, P::f_if, (char *)"/dev/zero", 0);
-	(void)run_f("f_iflag", ref_f_iflag, P::f_iflag, (char *)"direct", 0);
-	(void)run_f("f_iflag", ref_f_iflag, P::f_iflag, (char *)"direct,fullblock", 0);
-	(void)run_f("f_obs", ref_f_obs, P::f_obs, (char *)"512", 0);
-	(void)run_f("f_of", ref_f_of, P::f_of, (char *)"outfile", 0);
-	(void)run_f("f_oflag", ref_f_oflag, P::f_oflag, (char *)"direct,fsync", 0);
-	(void)run_f("f_seek", ref_f_seek, P::f_seek, (char *)"10", 0);
-	(void)run_f("f_skip", ref_f_skip, P::f_skip, (char *)"5k", 0);
-	(void)run_f("f_speed", ref_f_speed, P::f_speed, (char *)"1000", 0);
-	(void)run_f("f_status", ref_f_status, P::f_status, (char *)"none", 0);
-	(void)run_f("f_status", ref_f_status, P::f_status, (char *)"noxfer", 0);
-	(void)run_f("f_status", ref_f_status, P::f_status, (char *)"progress", 0);
-	std::snprintf(buf, sizeof(buf), "ascii,swab,sync");
-	(void)run_f("f_conv", ref_f_conv, P::f_conv, buf, 0);
-	std::snprintf(buf, sizeof(buf), "block");
-	(void)run_f("f_conv", ref_f_conv, P::f_conv, buf, 0);
-	(void)run_f("f_bs", ref_f_bs, P::f_bs, (char *)"0", 0);
-	(void)run_f("f_fillchar", ref_f_fillchar, P::f_fillchar, (char *)"ab", 0);
+	(void)run_f("f_if", ref_f_if, P::f_if, "/dev/zero", 0);
+	(void)run_f("f_iflag", ref_f_iflag, P::f_iflag, "direct", 0);
+	(void)run_f("f_iflag", ref_f_iflag, P::f_iflag, "direct,fullblock", 0);
+	(void)run_f("f_obs", ref_f_obs, P::f_obs, "512", 0);
+	(void)run_f("f_of", ref_f_of, P::f_of, "outfile", 0);
+	(void)run_f("f_oflag", ref_f_oflag, P::f_oflag, "direct,fsync", 0);
+	(void)run_f("f_seek", ref_f_seek, P::f_seek, "10", 0);
+	(void)run_f("f_skip", ref_f_skip, P::f_skip, "5k", 0);
+	(void)run_f("f_speed", ref_f_speed, P::f_speed, "1000", 0);
+	(void)run_f("f_status", ref_f_status, P::f_status, "none", 0);
+	(void)run_f("f_status", ref_f_status, P::f_status, "noxfer", 0);
+	(void)run_f("f_status", ref_f_status, P::f_status, "progress", 0);
+	(void)run_f("f_conv", ref_f_conv, P::f_conv, "ascii,swab,sync", 0);
+	(void)run_f("f_conv", ref_f_conv, P::f_conv, "block", 0);
+	(void)run_f("f_bs", ref_f_bs, P::f_bs, "0", 0);
+	(void)run_f("f_fillchar", ref_f_fillchar, P::f_fillchar, "ab", 0);
 }
 
 /* ------------------------------------------------------------------ */

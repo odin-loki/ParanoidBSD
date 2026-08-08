@@ -1,0 +1,2 @@
+uuidgen.c:usage - unconditionally calls exit(1), so it cannot be invoked repeatedly in-process for a differential sweep.
+uuidgen.c:main - requires capsicum sandbox, getopt, fopen, uuidgen(2), and a full hosted program entry; not suitable for in-process differential comparison.

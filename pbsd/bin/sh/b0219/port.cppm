@@ -34,10 +34,6 @@ module;
 #define ALIGN(p) (((unsigned long)(p) + ALIGNBYTES) & ~ALIGNBYTES)
 #endif
 
-#ifndef fwopen
-#define fwopen(cookie, writefn) funopen((cookie), NULL, (writefn), NULL, NULL)
-#endif
-
 export module pbsd.bin.sh.b0219;
 
 export namespace pbsd::bin_sh::b0219 {
@@ -100,8 +96,7 @@ void error(const char *fmt, ...)
 	va_start(ap, fmt);
 	std::vfprintf(stderr, fmt, ap);
 	va_end(ap);
-	std::fprintf(stderr, "
-");
+	std::fprintf(stderr, "\n");
 	std::abort();
 }
 
@@ -111,8 +106,7 @@ void warning(const char *fmt, ...)
 	va_start(ap, fmt);
 	std::vfprintf(stderr, fmt, ap);
 	va_end(ap);
-	std::fprintf(stderr, "
-");
+	std::fprintf(stderr, "\n");
 }
 
 char **port_argptr;
@@ -190,6 +184,32 @@ void doformat(struct output *dest, const char *f, va_list ap);
 #define INTON do { if (--port_suppressint == 0 && port_intpending) port_onint(); } while (0)
 #define is_int_on() port_suppressint
 #define int_pending() port_intpending
+
+struct fwopen_cookie {
+	void *cookie;
+	int (*writefn)(void *, const char *, int);
+};
+
+static ssize_t
+port_fwcookie_write(void *c, const char *buf, size_t size)
+{
+	struct fwopen_cookie *fc = (struct fwopen_cookie *)c;
+	int r = fc->writefn(fc->cookie, buf, (int)size);
+	return (r < 0) ? -1 : (ssize_t)r;
+}
+
+static FILE *
+port_fwopen(void *cookie, int (*writefn)(void *, const char *, int))
+{
+	static struct fwopen_cookie fc;
+	static cookie_io_functions_t io = { NULL, port_fwcookie_write, NULL, NULL };
+
+	fc.cookie = cookie;
+	fc.writefn = writefn;
+	return fopencookie(&fc, "w", io);
+}
+
+#define fwopen port_fwopen
 
 void port_reset_state(void)
 {
@@ -1171,5 +1191,19 @@ iteralias(const struct alias *index)
 	return (NULL);
 }
 
+struct output *port_get_memout(void)
+{
+	return &memout;
+}
+
+void port_set_out1_memout(void)
+{
+	out1 = &memout;
+}
+
+void port_restore_out1(void)
+{
+	out1 = &output;
+}
 
 } // namespace

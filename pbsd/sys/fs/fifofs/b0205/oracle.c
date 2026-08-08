@@ -1,370 +1,3 @@
-/*
- * oracle.c -- reference implementation for PBSD batch b0205.
- *
- * The original HardenedBSD kernel source is included below with every
- * function renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.
- * Supporting types, macros, and shims are added only where the original file
- * obtained them from kernel headers.
- */
-
-#define _KERNEL
-#define _POSIX_C_SOURCE 200809L
-
-#include <pthread.h>
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
-
-#define EINVAL		22
-#define ENXIO		6
-#define ENOMEM		12
-
-#define FREAD		0x00000001
-#define FWRITE		0x00000002
-#define FEXEC		0x00000020
-#define O_NONBLOCK	0x00000004
-#define F_FLOCK		0x020
-
-#define DTYPE_FIFO	4
-
-#define PIPE_WANTR	0x008
-#define PIPE_WANTW	0x010
-#define PIPE_EOF	0x080
-
-#define M_WAITOK	0x0002
-#define M_ZERO		0x0100
-
-#define PDROP		0x200
-#define PCATCH		0x100
-#define PSOCK		(PRI_MIN_KERN + 6)
-#define PRI_MIN_KERN	0
-
-#define SIGDEFERSTOP_OFF	1
-
-#define LK_EXCLUSIVE	0x0001
-#define LK_RETRY	0x0004
-
-typedef unsigned int u_int;
-
-struct malloc_type {
-	const char *ks_shortdesc;
-};
-
-struct mtx {
-	pthread_mutex_t lock;
-};
-
-struct pipepair {
-	struct mtx pp_mtx;
-};
-
-struct pipe {
-	struct pipepair *pipe_pair;
-	u_int pipe_state;
-	int pipe_wgen;
-};
-
-struct fileops {
-	int dummy;
-};
-
-struct file {
-	u_int f_flag;
-	const struct fileops *f_ops;
-	int f_pipegen;
-	short f_type;
-	void *f_data;
-};
-
-struct thread {
-	int dummy;
-};
-
-struct fifoinfo {
-	struct pipe *fi_pipe;
-	long fi_readers;
-	long fi_writers;
-	u_int fi_rgen;
-	u_int fi_wgen;
-};
-
-struct vnode {
-	struct fifoinfo *v_fifoinfo;
-};
-
-struct vop_open_args {
-	struct vnode *a_vp;
-	int a_mode;
-	struct thread *a_td;
-	struct file *a_fp;
-};
-
-struct vop_close_args {
-	struct vnode *a_vp;
-	int a_fflag;
-};
-
-struct vop_print_args {
-	struct vnode *a_vp;
-};
-
-struct vop_advlock_args {
-	struct vnode *a_vp;
-	void *a_id;
-	int a_op;
-	void *a_fl;
-	int a_flags;
-};
-
-#define PIPE_MTX(pipe)		(&(pipe)->pipe_pair->pp_mtx)
-#define PIPE_LOCK(pipe)		pthread_mutex_lock(&PIPE_MTX(pipe)->lock)
-#define PIPE_UNLOCK(pipe)	pthread_mutex_unlock(&PIPE_MTX(pipe)->lock)
-
-#define ASSERT_VOP_ELOCKED(vp, msg)	do { (void)(vp); (void)(msg); } while (0)
-#define KASSERT(cond, msg)		do { (void)(cond); (void)(msg); } while (0)
-#define VOP_UNLOCK(vp)		do { (void)(vp); } while (0)
-#define vn_lock(vp, flags)		do { (void)(vp); (void)(flags); } while (0)
-
-static struct malloc_type M_VNODE[1];
-
-const struct fileops badfileops = { 0 };
-const struct fileops pipeops = { 1 };
-
-static void *(*stdlib_malloc_fn)(size_t);
-static void (*stdlib_free_fn)(void *);
-static int stdlib_hooks_ready;
-
-static void
-oracle_init_stdlib_hooks(void)
-{
-	if (stdlib_hooks_ready)
-		return;
-	stdlib_malloc_fn = malloc;
-	stdlib_free_fn = free;
-	stdlib_hooks_ready = 1;
-}
-
-int ref_pipe_named_ctor_ret;
-int ref_msleep_ret;
-int ref_vop_stdadvlock_ret;
-
-int ref_msleep_calls;
-void *ref_msleep_chan;
-int ref_msleep_pri;
-
-int ref_wakeup_calls;
-void *ref_wakeup_log[64];
-
-int ref_pipeselwakeup_calls;
-int ref_pipe_dtor_calls;
-
-int ref_finit_calls;
-u_int ref_finit_flag;
-short ref_finit_type;
-void *ref_finit_data;
-const struct fileops *ref_finit_ops;
-
-int ref_vop_stdadvlock_calls;
-int ref_vop_stdadvlock_flags;
-
-char ref_printf_buf[1024];
-size_t ref_printf_len;
-
-void
-ref_stub_reset(void)
-{
-	oracle_init_stdlib_hooks();
-
-	ref_pipe_named_ctor_ret = 0;
-	ref_msleep_ret = 0;
-	ref_vop_stdadvlock_ret = 0;
-
-	ref_msleep_calls = 0;
-	ref_msleep_chan = NULL;
-	ref_msleep_pri = 0;
-
-	ref_wakeup_calls = 0;
-	memset(ref_wakeup_log, 0, sizeof(ref_wakeup_log));
-
-	ref_pipeselwakeup_calls = 0;
-	ref_pipe_dtor_calls = 0;
-
-	ref_finit_calls = 0;
-	ref_finit_flag = 0;
-	ref_finit_type = 0;
-	ref_finit_data = NULL;
-	ref_finit_ops = NULL;
-
-	ref_vop_stdadvlock_calls = 0;
-	ref_vop_stdadvlock_flags = 0;
-
-	ref_printf_buf[0] = '\0';
-	ref_printf_len = 0;
-}
-
-int
-printf(const char *fmt, ...)
-{
-	va_list ap;
-	int n;
-
-	va_start(ap, fmt);
-	n = vsnprintf(ref_printf_buf + ref_printf_len,
-	    sizeof(ref_printf_buf) - ref_printf_len, fmt, ap);
-	va_end(ap);
-	if (n > 0) {
-		size_t add = (size_t)n;
-		if (ref_printf_len + add >= sizeof(ref_printf_buf))
-			add = sizeof(ref_printf_buf) - ref_printf_len - 1;
-		ref_printf_len += add;
-	}
-	return (n);
-}
-
-int
-pipe_named_ctor(struct pipe **ppipe, struct thread *td)
-{
-	struct pipepair *pp;
-	struct pipe *p;
-
-	(void)td;
-	oracle_init_stdlib_hooks();
-	if (ref_pipe_named_ctor_ret != 0)
-		return (ref_pipe_named_ctor_ret);
-	pp = stdlib_malloc_fn(sizeof(*pp));
-	p = stdlib_malloc_fn(sizeof(*p));
-	if (pp == NULL || p == NULL) {
-		stdlib_free_fn(pp);
-		stdlib_free_fn(p);
-		return (ENOMEM);
-	}
-	memset(pp, 0, sizeof(*pp));
-	memset(p, 0, sizeof(*p));
-	pthread_mutex_init(&pp->pp_mtx.lock, NULL);
-	p->pipe_pair = pp;
-	*ppipe = p;
-	return (0);
-}
-
-void
-pipe_dtor(struct pipe *dpipe)
-{
-
-	ref_pipe_dtor_calls++;
-	if (dpipe != NULL && dpipe->pipe_pair != NULL) {
-		pthread_mutex_destroy(&dpipe->pipe_pair->pp_mtx.lock);
-		stdlib_free_fn(dpipe->pipe_pair);
-	}
-	stdlib_free_fn(dpipe);
-}
-
-static void *
-kern_malloc(unsigned long size, struct malloc_type *type, int flags)
-{
-	void *p;
-
-	(void)type;
-	oracle_init_stdlib_hooks();
-	p = stdlib_malloc_fn((size_t)size);
-	if (p != NULL && (flags & M_ZERO) != 0)
-		memset(p, 0, (size_t)size);
-	return (p);
-}
-
-static void
-kern_free(void *addr, struct malloc_type *type)
-{
-
-	(void)type;
-	if (addr != NULL)
-		stdlib_free_fn(addr);
-}
-
-#define malloc(size, type, flags)	kern_malloc((size), (type), (flags))
-#define free(addr, type)		kern_free((addr), (type))
-
-int
-msleep(void *chan, struct mtx *mtx, int pri, const char *wmesg, int timo)
-{
-
-	(void)wmesg;
-	(void)timo;
-	ref_msleep_calls++;
-	ref_msleep_chan = chan;
-	ref_msleep_pri = pri;
-	if (mtx != NULL && (pri & PDROP) != 0)
-		pthread_mutex_unlock(&mtx->lock);
-	return (ref_msleep_ret);
-}
-
-void
-wakeup(void *chan)
-{
-
-	if (ref_wakeup_calls < (int)(sizeof(ref_wakeup_log) / sizeof(ref_wakeup_log[0])))
-		ref_wakeup_log[ref_wakeup_calls] = chan;
-	ref_wakeup_calls++;
-}
-
-void
-pipeselwakeup(struct pipe *cpipe)
-{
-
-	(void)cpipe;
-	ref_pipeselwakeup_calls++;
-}
-
-void
-finit(struct file *fp, u_int flag, short type, void *data,
-    const struct fileops *ops)
-{
-
-	ref_finit_calls++;
-	ref_finit_flag = flag;
-	ref_finit_type = type;
-	ref_finit_data = data;
-	ref_finit_ops = ops;
-	fp->f_flag = flag;
-	fp->f_type = type;
-	fp->f_data = data;
-	fp->f_ops = ops;
-}
-
-int
-vop_stdadvlock(struct vop_advlock_args *ap)
-{
-
-	ref_vop_stdadvlock_calls++;
-	ref_vop_stdadvlock_flags = ap->a_flags;
-	return (ref_vop_stdadvlock_ret);
-}
-
-int
-sigdeferstop(int how)
-{
-
-	(void)how;
-	return (0);
-}
-
-void
-sigallowstop(int deferred)
-{
-
-	(void)deferred;
-}
-
-#define fifo_cleanup		ref_fifo_cleanup
-#define fifo_printinfo		ref_fifo_printinfo
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -399,6 +32,225 @@ sigallowstop(int deferred)
  * SUCH DAMAGE.
  */
 
+/*
+ * PBSD batch b0205 -- reference oracle for sys/fs/fifofs/fifo_vnops.c.
+ *
+ * Every function of the original file appears below with a ref_ prefix and an
+ * UNMODIFIED body.  The original #includes name kernel headers that do not
+ * exist outside the kernel build, so the declarations, structures and macros
+ * that the bodies depend on are supplied here instead.  Each kernel primitive
+ * is routed to a pbsd_* hook implemented by harness.cpp; the port is wired to
+ * the very same hooks, so the two sides run in an identical environment and
+ * any behavioural difference is a porting bug.
+ *
+ * Only declarations/defines are added.  No function body is touched.
+ */
+
+#include <stdarg.h>
+#include <stddef.h>
+
+typedef unsigned int u_int;
+
+#ifndef LONG_BIT
+#define LONG_BIT (8 * (int)sizeof(long))
+#endif
+
+/* Error numbers (sys/errno.h). */
+#define EINVAL		22
+#define ENXIO		6
+#define EINTR		4
+
+/* Kernel file flags (sys/fcntl.h). */
+#define FREAD		0x0001
+#define FWRITE		0x0002
+#define O_NONBLOCK	0x0004
+#define O_EXEC		0x00040000
+#define FEXEC		O_EXEC
+#define F_FLOCK		0x020
+
+/* struct pipe pipe_state bits (sys/pipe.h). */
+#define PIPE_ASYNC	0x004
+#define PIPE_WANTR	0x008
+#define PIPE_WANTW	0x010
+#define PIPE_WANT	0x020
+#define PIPE_SEL	0x040
+#define PIPE_EOF	0x080
+#define PIPE_LOCKFL	0x100
+#define PIPE_LWANT	0x200
+#define PIPE_DIRECTW	0x400
+#define PIPE_DIRECTOK	0x800
+
+/* malloc(9) flags (sys/malloc.h). */
+#define M_NOWAIT	0x0001
+#define M_WAITOK	0x0002
+#define M_ZERO		0x0100
+
+/* lockmgr(9) flags (sys/lockmgr.h). */
+#define LK_RETRY	0x000400
+#define LK_EXCLUSIVE	0x080000
+
+/* msleep(9) priority modifiers (sys/param.h, sys/priority.h). */
+#define PSOCK		24
+#define PCATCH		0x100
+#define PDROP		0x200
+
+/* sigdeferstop(9) modes (sys/signalvar.h). */
+#define SIGDEFERSTOP_OFF	0
+
+/* struct file descriptor types (sys/file.h). */
+#define DTYPE_FIFO	8
+
+struct fifoinfo;
+
+/*
+ * Model of the kernel objects the ported functions touch.  Only the fields
+ * named by the function bodies are present, with the original types:
+ * pipe_state is u_int, the fifoinfo reader/writer counts are long and the
+ * generation counters are u_int, so every conversion the original performs
+ * (notably the long -> int of pipe_wgen - fi_writers) is preserved.
+ */
+struct pipe {
+	u_int	pipe_state;
+	int	pipe_wgen;
+};
+
+struct file {
+	u_int		f_flag;
+	int		f_pipegen;
+	const void	*f_ops;
+};
+
+struct vnode {
+	struct fifoinfo	*v_fifoinfo;
+};
+
+struct thread {
+	int	td_tid;
+};
+
+struct flock {
+	long	l_start;
+	long	l_len;
+	int	l_pid;
+	short	l_type;
+	short	l_whence;
+};
+
+struct vop_open_args {
+	struct vnode	*a_vp;
+	int		a_mode;
+	struct thread	*a_td;
+	struct file	*a_fp;
+};
+
+struct vop_close_args {
+	struct vnode	*a_vp;
+	int		a_fflag;
+	struct thread	*a_td;
+};
+
+struct vop_print_args {
+	struct vnode	*a_vp;
+};
+
+struct vop_advlock_args {
+	struct vnode	*a_vp;
+	void		*a_id;
+	int		a_op;
+	struct flock	*a_fl;
+	int		a_flags;
+};
+
+/* Hooks implemented by harness.cpp; shared with the port. */
+extern int	pbsd_kprintf(const char *fmt, ...);
+extern void	*pbsd_kmalloc(unsigned long size, void *mtp, int flags);
+extern void	pbsd_kfree(void *addr, void *mtp);
+extern int	pbsd_pipe_named_ctor(void **pp, void *td);
+extern void	pbsd_pipe_dtor(void *cpipe);
+extern void	pbsd_pipe_lock(void *cpipe);
+extern void	pbsd_pipe_unlock(void *cpipe);
+extern void	pbsd_wakeup(void *chan);
+extern void	pbsd_pipeselwakeup(void *cpipe);
+extern void	pbsd_assert_vop_elocked(void *vp, const char *str);
+extern void	pbsd_vop_unlock(void *vp);
+extern void	pbsd_vn_lock(void *vp, int flags);
+extern int	pbsd_sigdeferstop(int mode);
+extern void	pbsd_sigallowstop(int prev);
+extern int	pbsd_msleep(void *chan, void *mtx, int pri, const char *wmesg,
+		    int timo);
+extern void	pbsd_finit(void *fp, u_int flag, int type, void *data,
+		    const void *ops);
+extern int	pbsd_vop_stdadvlock(void *ap);
+
+/* Shared singletons so that &pipeops / M_VNODE compare equal on both sides. */
+extern int	pbsd_M_VNODE_obj;
+extern int	pbsd_pipeops_obj;
+extern int	pbsd_badfileops_obj;
+
+#define M_VNODE			(&pbsd_M_VNODE_obj)
+#define pipeops			pbsd_pipeops_obj
+#define badfileops		pbsd_badfileops_obj
+
+#define printf			pbsd_kprintf
+#define malloc(sz, mt, fl)	pbsd_kmalloc((unsigned long)(sz), (mt), (fl))
+#define free(p, mt)		pbsd_kfree((void *)(p), (mt))
+#define pipe_named_ctor(pp, td)	pbsd_pipe_named_ctor((void **)(pp), (void *)(td))
+#define pipe_dtor(p)		pbsd_pipe_dtor((void *)(p))
+#define PIPE_LOCK(p)		pbsd_pipe_lock((void *)(p))
+#define PIPE_UNLOCK(p)		pbsd_pipe_unlock((void *)(p))
+#define PIPE_MTX(p)		((void *)(p))
+#define wakeup(c)		pbsd_wakeup((void *)(c))
+#define pipeselwakeup(p)	pbsd_pipeselwakeup((void *)(p))
+#define ASSERT_VOP_ELOCKED(vp, s) pbsd_assert_vop_elocked((void *)(vp), (s))
+#define VOP_UNLOCK(vp)		pbsd_vop_unlock((void *)(vp))
+#define vn_lock(vp, f)		pbsd_vn_lock((void *)(vp), (f))
+#define sigdeferstop(m)		pbsd_sigdeferstop(m)
+#define sigallowstop(p)		pbsd_sigallowstop(p)
+#define msleep(c, m, p, w, t)	pbsd_msleep((void *)(c), (void *)(m), (p), (w), (t))
+#define finit(fp, fl, ty, d, o)	pbsd_finit((void *)(fp), (fl), (ty), (void *)(d), \
+				    (const void *)(o))
+#define vop_stdadvlock(ap)	pbsd_vop_stdadvlock((void *)(ap))
+
+/* KASSERT is a no-op in a kernel built without INVARIANTS. */
+#define KASSERT(exp, msg)	((void)0)
+
+/* Internal callees keep their original spelling inside the bodies. */
+#define fifo_cleanup		ref_fifo_cleanup
+#define fifo_printinfo		ref_fifo_printinfo
+
+void	ref_fifo_cleanup(struct vnode *vp);
+int	ref_fifo_open(struct vop_open_args *ap);
+int	ref_fifo_close(struct vop_close_args *ap);
+int	ref_fifo_printinfo(struct vnode *vp);
+int	ref_fifo_print(struct vop_print_args *ap);
+int	ref_fifo_advlock(struct vop_advlock_args *ap);
+
+/* ---------------- original sys/fs/fifofs/fifo_vnops.c body ---------------- */
+
+/*
+ * This structure is associated with the FIFO vnode and stores
+ * the state associated with the FIFO.
+ * Notes about locking:
+ *   - fi_pipe is invariant since init time.
+ *   - fi_readers and fi_writers are protected by the vnode lock.
+ */
+struct fifoinfo {
+	struct pipe *fi_pipe;
+	long	fi_readers;
+	long	fi_writers;
+	u_int	fi_rgen;
+	u_int	fi_wgen;
+};
+
+/*
+ * The vop_vector fifo_specops initialiser and the VFS_VOP_VECTOR_REGISTER()
+ * that follows it are data definitions, not functions, and they name vop
+ * types that only exist inside the kernel; they are omitted.
+ */
+
+/*
+ * Dispose of fifo resources.
+ */
 void
 ref_fifo_cleanup(struct vnode *vp)
 {
@@ -413,6 +265,10 @@ ref_fifo_cleanup(struct vnode *vp)
 	}
 }
 
+/*
+ * Open called to set up a new instance of a fifo or
+ * to find an active instance of a fifo.
+ */
 /* ARGSUSED */
 int
 ref_fifo_open(struct vop_open_args *ap)
@@ -545,6 +401,9 @@ ref_fifo_open(struct vop_open_args *ap)
 	return (0);
 }
 
+/*
+ * Device close routine
+ */
 /* ARGSUSED */
 int
 ref_fifo_close(struct vop_close_args *ap)
@@ -600,6 +459,9 @@ ref_fifo_close(struct vop_close_args *ap)
 	return (0);
 }
 
+/*
+ * Print out internal contents of a fifo vnode.
+ */
 int
 ref_fifo_printinfo(struct vnode *vp)
 {
@@ -614,6 +476,9 @@ ref_fifo_printinfo(struct vnode *vp)
 	return (0);
 }
 
+/*
+ * Print out the contents of a fifo vnode.
+ */
 int
 ref_fifo_print(struct vop_print_args *ap)
 {
@@ -623,6 +488,9 @@ ref_fifo_print(struct vop_print_args *ap)
 	return (0);
 }
 
+/*
+ * Fifo advisory byte-level locks.
+ */
 /* ARGSUSED */
 int
 ref_fifo_advlock(struct vop_advlock_args *ap)
@@ -632,6 +500,3 @@ ref_fifo_advlock(struct vop_advlock_args *ap)
 		return (EINVAL);
 	return (vop_stdadvlock(ap));
 }
-
-#undef free
-#undef malloc

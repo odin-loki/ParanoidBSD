@@ -55,7 +55,9 @@ def strip_source(text, name):
             continue
         if "FEATURE(" in line:
             continue
-        if "SYSINIT(" in line or "SYSCTL_PROC(" in line:
+        if "SYSINIT(" in line:
+            continue
+        if "SYSCTL_PROC(" in line:
             skip = 1
             continue
         if skip:
@@ -76,6 +78,8 @@ def strip_source(text, name):
     text = text.replace("* ref_clockcalib(", "* clockcalib(")
     text = text.replace("code in ref_tslog()", "code in tslog()")
     text = text.replace("than ref_tslog() takes", "than tslog() takes")
+    if name == "kern_tslog":
+        text = text.replace("static volatile long nrecs", "volatile long nrecs")
     return text + "\n"
 
 
@@ -1184,10 +1188,12 @@ inline void set_vget_error(int v) {{ detail::model_vget_error = v; }}
 inline void set_linker_fail(int v) {{ detail::model_linker_fail = v; }}
 inline void set_linker_block(int v) {{ detail::model_linker_block = v; }}
 inline void set_bootverbose(int v) {{ detail::bootverbose = v; }}
+inline void set_timecounter(timecounter *tc) {{ detail::timecounter = tc; }}
 inline void set_sbuf_fail(int v) {{ detail::model_sbuf_fail = v; }}
 inline int ktr_count() {{ return detail::model_ktr_n; }}
 inline const char *out_text() {{ return detail::model_out; }}
 inline std::size_t out_length() {{ return detail::model_out_n; }}
+inline long tslog_record_count() {{ return nrecs; }}
 
 }} // namespace
 '''

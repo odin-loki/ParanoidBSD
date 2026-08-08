@@ -1,223 +1,3 @@
-module;
-
-#ifndef __dead2
-#define __dead2	__attribute__((__noreturn__))
-#endif
-
-#define _DEFAULT_SOURCE
-
-#include <ctype.h>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-#include <err.h>
-#include <errno.h>
-#include <limits.h>
-#include <signal.h>
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
-
-#ifndef SIG2STR_MAX
-#define SIG2STR_MAX	32
-#endif
-
-#ifndef NSIG
-#define NSIG	65
-#endif
-
-export module pbsd.bin.kill.b0177;
-
-export namespace pbsd::bin_kill::b0177 {
-
-namespace {
-
-size_t
-kill_shim_strlcpy(char *dst, const char *src, size_t siz)
-{
-	size_t len;
-
-	len = strlen(src);
-	if (siz != 0) {
-		if (len >= siz)
-			len = siz - 1;
-		memcpy(dst, src, len);
-		dst[len] = '\0';
-	}
-	return (strlen(src));
-}
-
-long long
-kill_shim_strtonum(const char *nptr, long long minval, long long maxval,
-    const char **err)
-{
-	char *end;
-	long long val;
-
-	*err = NULL;
-	errno = 0;
-	val = strtoll(nptr, &end, 10);
-	if (nptr[0] == '\0' || *end != '\0') {
-		*err = "invalid";
-		return (0);
-	}
-	if (errno == ERANGE || val < minval || val > maxval) {
-		*err = "out of range";
-		return (0);
-	}
-	return (val);
-}
-
-const char *const sys_signame[NSIG] = {
-	[0] =		"Signal 0",
-	[1] =		"HUP",
-	[2] =		"INT",
-	[3] =		"QUIT",
-	[4] =		"ILL",
-	[5] =		"TRAP",
-	[6] =		"ABRT",
-	[7] =		"BUS",
-	[8] =		"FPE",
-	[9] =		"KILL",
-	[10] =		"USR1",
-	[11] =		"SEGV",
-	[12] =		"USR2",
-	[13] =		"PIPE",
-	[14] =		"ALRM",
-	[15] =		"TERM",
-	[16] =		"STKFLT",
-	[17] =		"CHLD",
-	[18] =		"CONT",
-	[19] =		"STOP",
-	[20] =		"TSTP",
-	[21] =		"TTIN",
-	[22] =		"TTOU",
-	[23] =		"URG",
-	[24] =		"XCPU",
-	[25] =		"XFSZ",
-	[26] =		"VTALRM",
-	[27] =		"PROF",
-	[28] =		"WINCH",
-	[29] =		"IO",
-	[30] =		"INFO",
-	[31] =		"SYS",
-	[32] =		"",
-	[33] =		"",
-	[34] =		"",
-	[35] =		"",
-	[36] =		"",
-	[37] =		"",
-	[38] =		"",
-	[39] =		"",
-	[40] =		"",
-	[41] =		"",
-	[42] =		"",
-	[43] =		"",
-	[44] =		"",
-	[45] =		"",
-	[46] =		"",
-	[47] =		"",
-	[48] =		"",
-	[49] =		"",
-	[50] =		"",
-	[51] =		"",
-	[52] =		"",
-	[53] =		"",
-	[54] =		"",
-	[55] =		"",
-	[56] =		"",
-	[57] =		"",
-	[58] =		"",
-	[59] =		"",
-	[60] =		"",
-	[61] =		"",
-	[62] =		"",
-	[63] =		"",
-	[64] =		"",
-};
-
-const int sys_nsig = NSIG;
-
-const char kill_rtmin_str[] = "RTMIN";
-const char kill_rtmax_str[] = "RTMAX";
-
-int
-sig2str(int signum, char *str)
-{
-	if (signum <= 0 || signum > SIGRTMAX)
-		return (-1);
-
-	if (signum < sys_nsig)
-		(void)kill_shim_strlcpy(str, sys_signame[signum], SIG2STR_MAX);
-	else if (signum < SIGRTMIN)
-		(void)snprintf(str, SIG2STR_MAX, "%d", signum);
-	else if (signum == SIGRTMIN)
-		(void)kill_shim_strlcpy(str, kill_rtmin_str, SIG2STR_MAX);
-	else if (signum == SIGRTMAX)
-		(void)kill_shim_strlcpy(str, kill_rtmax_str, SIG2STR_MAX);
-	else if (signum <= (SIGRTMIN + SIGRTMAX) / 2)
-		(void)snprintf(str, SIG2STR_MAX, "%s+%d",
-		    kill_rtmin_str, signum - SIGRTMIN);
-	else
-		(void)snprintf(str, SIG2STR_MAX, "%s-%d",
-		    kill_rtmax_str, SIGRTMAX - signum);
-
-	return (0);
-}
-
-int
-str2sig(const char *str, int *pnum)
-{
-	const char *errstr;
-	long long n;
-	int sig;
-	int rtend = sizeof(kill_rtmin_str) - 1;
-
-	if (strncasecmp(str, "SIG", 3) == 0)
-		str += 3;
-
-	if (strncasecmp(str, kill_rtmin_str, sizeof(kill_rtmin_str) - 1) == 0 ||
-	    strncasecmp(str, kill_rtmax_str, sizeof(kill_rtmax_str) - 1) == 0) {
-		sig = (toupper((unsigned char)str[4]) == 'X') ? SIGRTMAX : SIGRTMIN;
-		n = 0;
-		if (str[rtend] == '+' || str[rtend] == '-') {
-			n = kill_shim_strtonum(str + rtend, INT_MIN, INT_MAX,
-			    &errstr);
-			if (n == 0 || errstr != NULL)
-				return (-1);
-		} else if (str[rtend] != '\0') {
-			return (-1);
-		}
-		sig += (int)n;
-		if (sig < SIGRTMIN || sig > SIGRTMAX)
-			return (-1);
-		*pnum = sig;
-		return (0);
-	}
-
-	if (isdigit((unsigned char)str[0])) {
-		n = kill_shim_strtonum(str, 1, SIGRTMAX, &errstr);
-		if (errstr == NULL) {
-			*pnum = (int)n;
-			return (0);
-		}
-	}
-
-	for (sig = 1; sig < sys_nsig; sig++) {
-		if (sys_signame[sig] != NULL &&
-		    strcasecmp(sys_signame[sig], str) == 0) {
-			*pnum = sig;
-			return (0);
-		}
-	}
-
-	return (-1);
-}
-
-} // namespace
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -253,6 +33,39 @@ str2sig(const char *str, int *pnum)
  * as a builtin for /bin/sh (#define SHELL).
  */
 
+module;
+
+#include <ctype.h>
+#include <err.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#ifndef __dead2
+#define	__dead2	__attribute__((__noreturn__))
+#endif
+
+#ifndef SIG2STR_MAX
+#define	SIG2STR_MAX	17
+#endif
+
+export module pbsd.bin.kill.b0177;
+
+/*
+ * FreeBSD libc interfaces the host libc lacks; oracle.c defines them, so the
+ * port and the reference share one implementation of the support code.
+ */
+extern "C" {
+extern const char *const sys_signame[];
+extern int sys_nsig;
+int sig2str(int, char *);
+int str2sig(const char *, int *);
+}
+
+export namespace pbsd::bin_kill::b0177 {
+
 void nosig(const char *);
 void printsignals(FILE *);
 void usage(void) __dead2;
@@ -277,7 +90,7 @@ main(int argc, char *argv[])
 		if (argc > 1)
 			usage();
 		if (argc == 1) {
-			if (!isdigit((unsigned char)**argv))
+			if (!isdigit(**argv))
 				usage();
 			numsig = strtol(*argv, &ep, 10);
 			if (!**argv || *ep)
@@ -320,6 +133,11 @@ main(int argc, char *argv[])
 		usage();
 
 	for (errors = 0; argc; argc--, argv++) {
+#ifdef SHELL
+		if (**argv == '%')
+			ret = killjob(*argv, numsig);
+		else
+#endif
 		{
 			pidl = strtol(*argv, &ep, 10);
 			/* Check for overflow of pid_t. */
@@ -343,7 +161,11 @@ nosig(const char *name)
 
 	warnx("unknown signal %s; valid signals:", name);
 	printsignals(stderr);
+#ifdef SHELL
+	error(NULL);
+#else
 	exit(2);
+#endif
 }
 
 void
@@ -369,7 +191,11 @@ usage(void)
 		"       kill -l [exit_status]",
 		"       kill -signal_name pid ...",
 		"       kill -signal_number pid ...");
+#ifdef SHELL
+	error(NULL);
+#else
 	exit(2);
+#endif
 }
 
 } // namespace pbsd::bin_kill::b0177

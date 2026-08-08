@@ -367,6 +367,13 @@ vfs_hashinit(void *dummy __unused)
 }
 
 
+u_int
+vfs_hash_index(struct vnode *vp)
+{
+
+	return (vp->v_hash + vp->v_mount->mnt_hashseed);
+}
+
 static struct vfs_hash_head *
 vfs_hash_bucket(const struct mount *mp, u_int hash)
 {
@@ -576,7 +583,7 @@ vfs_hash_changesize(u_long newmaxvnodes)
 #define TSLOGSIZE 262144
 #endif
 
-static volatile long nrecs = 0;
+volatile long nrecs = 0;
 static struct timestamp {
 	void * td;
 	int type;
@@ -1238,15 +1245,33 @@ inline void reset_all() {
 	tslog_reset();
 }
 
+using mount = detail::mount;
+using vnode = detail::vnode;
+using thread = detail::thread;
+using stack = detail::stack;
+using sbuf = detail::sbuf;
+using sysctl_req = detail::sysctl_req;
+using sysinit_tslog = detail::sysinit_tslog;
+using timecounter = detail::timecounter;
+
+inline constexpr int M_WAITOK = detail::M_WAITOK;
+inline constexpr int TS_ENTER = detail::TS_ENTER;
+inline constexpr int TS_EXIT = detail::TS_EXIT;
+inline constexpr int TS_THREAD = detail::TS_THREAD;
+inline constexpr int TS_EVENT = detail::TS_EVENT;
+inline constexpr int STACK_SBUF_FMT_LONG = detail::STACK_SBUF_FMT_LONG;
+
 inline void malloc_fail_at(int n) { detail::model_malloc_fail = n; }
 inline void set_vget_enoent(int v) { detail::model_vget_enoent = v; }
 inline void set_vget_error(int v) { detail::model_vget_error = v; }
 inline void set_linker_fail(int v) { detail::model_linker_fail = v; }
 inline void set_linker_block(int v) { detail::model_linker_block = v; }
 inline void set_bootverbose(int v) { detail::bootverbose = v; }
+inline void set_timecounter(timecounter *tc) { detail::timecounter = tc; }
 inline void set_sbuf_fail(int v) { detail::model_sbuf_fail = v; }
 inline int ktr_count() { return detail::model_ktr_n; }
 inline const char *out_text() { return detail::model_out; }
 inline std::size_t out_length() { return detail::model_out_n; }
+inline long tslog_record_count() { return nrecs; }
 
 } // namespace

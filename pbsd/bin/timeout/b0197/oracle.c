@@ -1,327 +1,4 @@
 /*-
- * oracle.c -- reference specification for PBSD batch b0197 (timeout.c).
- *
- * timeout.c is renamed with a ref_ prefix; bodies are otherwise UNMODIFIED.
- * Supporting defines, globals, and shims are added only where required so the
- * unmodified bodies compile and link.
- */
-
-#define _GNU_SOURCE
-#define _DEFAULT_SOURCE
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * CHAR_BIT)
-#endif
-
-#ifndef __dead2
-#define __dead2	__attribute__((__noreturn__))
-#endif
-
-#ifndef __printflike
-#define __printflike(fmtarg, firstvararg)
-#endif
-
-#ifndef NSIG
-#define NSIG	65
-#endif
-
-#ifndef SIG2STR_MAX
-#define SIG2STR_MAX	32
-#endif
-
-#ifndef SIGEMT
-#define SIGEMT	7
-#endif
-
-#ifndef u_int
-typedef unsigned int u_int;
-#endif
-
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <getopt.h>
-#include <limits.h>
-#include <setjmp.h>
-#include <signal.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/resource.h>
-#include <sys/time.h>
-#include <sys/wait.h>
-
-#ifndef __FreeBSD__
-#ifndef _SYS_PROCCTL_H_
-#define _SYS_PROCCTL_H_
-#define	PROC_REAP_ACQUIRE	2
-#define	PROC_REAP_RELEASE	3
-#define	PROC_REAP_STATUS	4
-#define	PROC_REAP_KILL		6
-struct procctl_reaper_status {
-	u_int	rs_flags;
-	u_int	rs_children;
-	u_int	rs_descendants;
-	pid_t	rs_reaper;
-	pid_t	rs_pid;
-	u_int	rs_pad0[15];
-};
-struct procctl_reaper_kill {
-	int	rk_sig;
-	u_int	rk_flags;
-	pid_t	rk_subtree;
-	u_int	rk_killed;
-	pid_t	rk_fpid;
-	u_int	rk_pad0[15];
-};
-int	procctl(idtype_t, id_t, int, void *);
-#endif
-#endif
-
-#define EXIT_TIMEOUT	124
-#define EXIT_INVALID	125
-#define EXIT_CMD_ERROR	126
-#define EXIT_CMD_NOENT	127
-
-jmp_buf oracle_err_jmp;
-static int oracle_err_armed;
-int oracle_err_called;
-int oracle_err_status;
-int oracle_warn_called;
-int oracle_warnx_called;
-
-void
-oracle_err_arm(void)
-{
-	oracle_err_armed = 1;
-}
-
-void
-oracle_err_disarm(void)
-{
-	oracle_err_armed = 0;
-}
-
-static void
-timeout_oracle_err(int eval, const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fputc('\n', stderr);
-	oracle_err_called = 1;
-	oracle_err_status = eval;
-	if (oracle_err_armed)
-		longjmp(oracle_err_jmp, 1);
-	exit(eval);
-}
-
-static void
-timeout_oracle_errx(int eval, const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fputc('\n', stderr);
-	oracle_err_called = 1;
-	oracle_err_status = eval;
-	if (oracle_err_armed)
-		longjmp(oracle_err_jmp, 1);
-	exit(eval);
-}
-
-static void
-timeout_oracle_warn(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fputc('\n', stderr);
-	oracle_warn_called++;
-}
-
-static void
-timeout_oracle_warnx(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fputc('\n', stderr);
-	oracle_warnx_called++;
-}
-
-#define err	timeout_oracle_err
-#define errx	timeout_oracle_errx
-#define warn	timeout_oracle_warn
-#define warnx	timeout_oracle_warnx
-
-static size_t
-timeout_shim_strlcpy(char *dst, const char *src, size_t siz)
-{
-	size_t len;
-
-	len = strlen(src);
-	if (siz != 0) {
-		if (len >= siz)
-			len = siz - 1;
-		memcpy(dst, src, len);
-		dst[len] = '\0';
-	}
-	return (strlen(src));
-}
-
-static long long
-timeout_shim_strtonum(const char *nptr, long long minval, long long maxval,
-    const char **errstr)
-{
-	char *end;
-	long long val;
-
-	*errstr = NULL;
-	errno = 0;
-	val = strtoll(nptr, &end, 10);
-	if (nptr[0] == '\0' || *end != '\0') {
-		*errstr = "invalid";
-		return (0);
-	}
-	if (errno == ERANGE || val < minval || val > maxval) {
-		*errstr = "out of range";
-		return (0);
-	}
-	return (val);
-}
-
-const char *const sys_signame[NSIG] = {
-	[0] =		"Signal 0",
-	[1] =		"HUP",
-	[2] =		"INT",
-	[3] =		"QUIT",
-	[4] =		"ILL",
-	[5] =		"TRAP",
-	[6] =		"ABRT",
-	[7] =		"BUS",
-	[8] =		"FPE",
-	[9] =		"KILL",
-	[10] =		"USR1",
-	[11] =		"SEGV",
-	[12] =		"USR2",
-	[13] =		"PIPE",
-	[14] =		"ALRM",
-	[15] =		"TERM",
-	[16] =		"STKFLT",
-	[17] =		"CHLD",
-	[18] =		"CONT",
-	[19] =		"STOP",
-	[20] =		"TSTP",
-	[21] =		"TTIN",
-	[22] =		"TTOU",
-	[23] =		"URG",
-	[24] =		"XCPU",
-	[25] =		"XFSZ",
-	[26] =		"VTALRM",
-	[27] =		"PROF",
-	[28] =		"WINCH",
-	[29] =		"IO",
-	[30] =		"INFO",
-	[31] =		"SYS",
-};
-
-const int sys_nsig = NSIG;
-
-static const char timeout_rtmin_str[] = "RTMIN";
-static const char timeout_rtmax_str[] = "RTMAX";
-
-int
-str2sig(const char *str, int *pnum)
-{
-	const char *errstr;
-	long long n;
-	int sig;
-	int rtend = sizeof(timeout_rtmin_str) - 1;
-
-	if (strncasecmp(str, "SIG", 3) == 0)
-		str += 3;
-
-	if (strncasecmp(str, timeout_rtmin_str,
-	    sizeof(timeout_rtmin_str) - 1) == 0 ||
-	    strncasecmp(str, timeout_rtmax_str,
-	    sizeof(timeout_rtmax_str) - 1) == 0) {
-		sig = (toupper((unsigned char)str[4]) == 'X') ? SIGRTMAX : SIGRTMIN;
-		n = 0;
-		if (str[rtend] == '+' || str[rtend] == '-') {
-			n = timeout_shim_strtonum(str + rtend, INT_MIN, INT_MAX,
-			    &errstr);
-			if (n == 0 || errstr != NULL)
-				return (-1);
-		} else if (str[rtend] != '\0') {
-			return (-1);
-		}
-		sig += (int)n;
-		if (sig < SIGRTMIN || sig > SIGRTMAX)
-			return (-1);
-		*pnum = sig;
-		return (0);
-	}
-
-	if (isdigit((unsigned char)str[0])) {
-		n = timeout_shim_strtonum(str, 1, SIGRTMAX, &errstr);
-		if (errstr == NULL) {
-			*pnum = (int)n;
-			return (0);
-		}
-	}
-
-	for (sig = 1; sig < sys_nsig; sig++) {
-		if (sys_signame[sig] != NULL &&
-		    strcasecmp(sys_signame[sig], str) == 0) {
-			*pnum = sig;
-			return (0);
-		}
-	}
-
-	return (-1);
-}
-
-static const char *
-getprogname(void)
-{
-#if defined(__GLIBC__)
-	extern char *program_invocation_short_name;
-	return (program_invocation_short_name);
-#else
-	return ("timeout");
-#endif
-}
-
-volatile sig_atomic_t sig_chld = 0;
-volatile sig_atomic_t sig_alrm = 0;
-volatile sig_atomic_t sig_term = 0;
-volatile sig_atomic_t sig_other = 0;
-int killsig = SIGTERM;
-const char *command = NULL;
-bool verbose = false;
-
-#define usage		ref_usage
-#define logv		ref_logv
-#define parse_duration	ref_parse_duration
-#define sig_handler	ref_sig_handler
-#define send_sig	ref_send_sig
-#define set_interval	ref_set_interval
-#define kill_self	ref_kill_self
-#define log_termination	ref_log_termination
-
-/*-
  * Copyright (c) 2014 Baptiste Daroussin <bapt@FreeBSD.org>
  * Copyright (c) 2014 Vsevolod Stakhov <vsevolod@FreeBSD.org>
  * Copyright (c) 2025 Aaron LI <aly@aaronly.me>
@@ -349,16 +26,54 @@ bool verbose = false;
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-void __dead2
-ref_usage(void)
-{
-	fprintf(stderr,
-	    "Usage: %s [-f | --foreground] [-k time | --kill-after time]"
-	    " [-p | --preserve-status] [-s signal | --signal signal] "
-	    " [-v | --verbose] <duration> <command> [arg ...]\n",
-	    getprogname());
-	exit(EXIT_FAILURE);
-}
+/*
+ * PBSD batch b0197 reference oracle -- hbsd/src/bin/timeout/timeout.c
+ *
+ * Every ported function appears here with a ref_ prefix; the bodies are
+ * verbatim.  The file-scope state lost its `static` so the differential
+ * harness can seed and read it.  See skipped.txt for the functions that are
+ * not part of this batch.
+ */
+
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
+#include <sys/resource.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+
+#include <err.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#ifndef __printflike
+#define __printflike(fmtarg, firstvararg) \
+	__attribute__((__format__(__printf__, fmtarg, firstvararg)))
+#endif
+
+/* FreeBSD signal that this platform's <signal.h> does not provide. */
+#ifndef SIGEMT
+#define SIGEMT 32
+#endif
+
+#define EXIT_TIMEOUT	124
+#define EXIT_INVALID	125
+#define EXIT_CMD_ERROR	126
+#define EXIT_CMD_NOENT	127
+
+volatile sig_atomic_t sig_chld = 0;
+volatile sig_atomic_t sig_alrm = 0;
+volatile sig_atomic_t sig_term = 0; /* signal to terminate children */
+volatile sig_atomic_t sig_other = 0; /* signal to propagate */
+int killsig = SIGTERM; /* signal to kill children */
+bool verbose = false;
 
 void __printflike(1, 2)
 ref_logv(const char *fmt, ...)
@@ -458,49 +173,6 @@ ref_sig_handler(int signo)
 }
 
 void
-ref_send_sig(pid_t pid, int signo, bool foreground)
-{
-	struct procctl_reaper_kill rk;
-
-	logv("sending signal %s(%d) to command '%s'",
-	    sys_signame[signo], signo, command);
-	if (foreground) {
-		if (kill(pid, signo) < 0 && errno != ESRCH)
-			warn("kill(%d, %s)", (int)pid, sys_signame[signo]);
-	} else {
-		memset(&rk, 0, sizeof(rk));
-		rk.rk_sig = signo;
-		if (procctl(P_PID, getpid(), PROC_REAP_KILL, &rk) < 0 &&
-		    errno != ESRCH) {
-			warn("procctl(PROC_REAP_KILL)");
-			if (rk.rk_fpid > 0) {
-				warnx("failed to signal some processes:"
-				    " first pid=%d", (int)rk.rk_fpid);
-			}
-		}
-		logv("signaled %u processes", rk.rk_killed);
-	}
-
-	/*
-	 * If the child process was stopped by a signal, POSIX.1-2024
-	 * requires to send a SIGCONT signal.  However, the standard also
-	 * allows to send a SIGCONT regardless of the stop state, as we
-	 * are doing here.
-	 */
-	if (signo != SIGKILL && signo != SIGSTOP && signo != SIGCONT) {
-		logv("sending signal %s(%d) to command '%s'",
-		    sys_signame[SIGCONT], SIGCONT, command);
-		if (foreground) {
-			kill(pid, SIGCONT);
-		} else {
-			memset(&rk, 0, sizeof(rk));
-			rk.rk_sig = SIGCONT;
-			procctl(P_PID, getpid(), PROC_REAP_KILL, &rk);
-		}
-	}
-}
-
-void
 ref_set_interval(double iv)
 {
 	struct itimerval tim;
@@ -516,280 +188,17 @@ ref_set_interval(double iv)
 		err(EXIT_FAILURE, "setitimer()");
 }
 
-void __dead2
-ref_kill_self(int signo)
-{
-	sigset_t mask;
-	struct rlimit rl;
-
-	logv("killing self with signal %s(%d)", sys_signame[signo], signo);
-
-	/* Disable core generation. */
-	memset(&rl, 0, sizeof(rl));
-	setrlimit(RLIMIT_CORE, &rl);
-
-	/* Reset the signal disposition and make sure it's unblocked. */
-	signal(signo, SIG_DFL);
-	sigfillset(&mask);
-	sigdelset(&mask, signo);
-	sigprocmask(SIG_SETMASK, &mask, NULL);
-
-	raise(signo);
-	err(128 + signo, "raise(%d)", signo);
-}
-
 void
 ref_log_termination(const char *name, const siginfo_t *si)
 {
 	if (si->si_code == CLD_EXITED) {
-		logv("%s: pid=%d, exit=%d", name, si->si_pid, si->si_status);
+		ref_logv("%s: pid=%d, exit=%d", name, si->si_pid,
+		    si->si_status);
 	} else if (si->si_code == CLD_DUMPED || si->si_code == CLD_KILLED) {
-		logv("%s: pid=%d, sig=%d", name, si->si_pid, si->si_status);
+		ref_logv("%s: pid=%d, sig=%d", name, si->si_pid,
+		    si->si_status);
 	} else {
-		logv("%s: pid=%d, reason=%d, status=%d", name, si->si_pid,
+		ref_logv("%s: pid=%d, reason=%d, status=%d", name, si->si_pid,
 		    si->si_code, si->si_status);
 	}
 }
-
-int
-ref_main(int argc, char **argv)
-{
-	struct procctl_reaper_status info;
-	siginfo_t si, child_si;
-	struct sigaction sa;
-	sigset_t zeromask, allmask, oldmask;
-	double first_kill;
-	double second_kill = 0;
-	ssize_t error;
-	pid_t pid;
-	int pp[2];
-	int ch, sig;
-	int pstat = 0;
-	char c;
-	bool foreground = false;
-	bool preserve = false;
-	bool timedout = false;
-	bool do_second_kill = false;
-	bool child_done = false;
-
-	const char optstr[] = "+fhk:ps:v";
-	const struct option longopts[] = {
-		{ "foreground",      no_argument,       NULL, 'f' },
-		{ "help",            no_argument,       NULL, 'h' },
-		{ "kill-after",      required_argument, NULL, 'k' },
-		{ "preserve-status", no_argument,       NULL, 'p' },
-		{ "signal",          required_argument, NULL, 's' },
-		{ "verbose",         no_argument,       NULL, 'v' },
-		{ NULL,              0,                 NULL,  0  },
-	};
-
-	while ((ch = getopt_long(argc, argv, optstr, longopts, NULL)) != -1) {
-		switch (ch) {
-		case 'f':
-			foreground = true;
-			break;
-		case 'k':
-			do_second_kill = true;
-			second_kill = parse_duration(optarg);
-			break;
-		case 'p':
-			preserve = true;
-			break;
-		case 's':
-			if (str2sig(optarg, &killsig) != 0)
-				errx(EXIT_INVALID, "invalid signal");
-			break;
-		case 'v':
-			verbose = true;
-			break;
-		case 0:
-			break;
-		default:
-			usage();
-		}
-	}
-
-	argc -= optind;
-	argv += optind;
-	if (argc < 2)
-		usage();
-
-	first_kill = parse_duration(argv[0]);
-	argc--;
-	argv++;
-	command = argv[0];
-
-	if (!foreground) {
-		/* Acquire a reaper */
-		if (procctl(P_PID, getpid(), PROC_REAP_ACQUIRE, NULL) < 0)
-			err(EXIT_FAILURE, "procctl(PROC_REAP_ACQUIRE)");
-	}
-
-	/* Block all signals to avoid racing against the child. */
-	sigfillset(&allmask);
-	if (sigprocmask(SIG_BLOCK, &allmask, &oldmask) < 0)
-		err(EXIT_FAILURE, "sigprocmask()");
-
-	if (pipe2(pp, O_CLOEXEC) < 0)
-		err(EXIT_FAILURE, "pipe2");
-
-	pid = fork();
-	if (pid < 0)
-		err(EXIT_FAILURE, "fork()");
-	if (pid == 0) {
-		/*
-		 * child process
-		 *
-		 * POSIX.1-2024 requires that the child process inherit the
-		 * same signal dispositions as the timeout(1) utility
-		 * inherited, except for the signal to be sent upon timeout.
-		 */
-		signal(killsig, SIG_DFL);
-		if (sigprocmask(SIG_SETMASK, &oldmask, NULL) < 0)
-			err(EXIT_FAILURE, "sigprocmask(oldmask)");
-
-		(void)close(pp[1]);
-		error = read(pp[0], &c, 1);
-		if (error < 0)
-			err(EXIT_FAILURE, "read from control pipe");
-		if (error == 0)
-			errx(EXIT_FAILURE, "eof from control pipe");
-		execvp(argv[0], argv);
-		warn("exec(%s)", argv[0]);
-		_exit(errno == ENOENT ? EXIT_CMD_NOENT : EXIT_CMD_ERROR);
-	}
-
-	/* parent continues here */
-	(void)close(pp[0]);
-
-	/* Catch all signals in order to propagate them. */
-	memset(&sa, 0, sizeof(sa));
-	sigfillset(&sa.sa_mask);
-	sa.sa_handler = sig_handler;
-	sa.sa_flags = SA_RESTART;
-	for (sig = 1; sig < sys_nsig; sig++) {
-		switch (sig) {
-		case SIGTTIN:
-		case SIGTTOU:
-			/* Don't stop if background child needs TTY */
-			if (signal(sig, SIG_IGN) == SIG_ERR)
-				err(EXIT_FAILURE, "signal(%d)", sig);
-			break;
-		case SIGKILL:
-		case SIGSTOP:
-		case SIGCONT:
-			/* These can't be caught or ignored */
-			break;
-		default:
-			if (sigaction(sig, &sa, NULL) < 0)
-				err(EXIT_FAILURE, "sigaction(%d)", sig);
-		}
-	}
-
-	/* Start the timer */
-	set_interval(first_kill);
-
-	/* Let the child know we're ready */
-	error = write(pp[1], "a", 1);
-	if (error < 0)
-		err(EXIT_FAILURE, "write to control pipe");
-	if (error == 0)
-		errx(EXIT_FAILURE, "short write to control pipe");
-	(void)close(pp[1]);
-
-	sigemptyset(&zeromask);
-	for (;;) {
-		sigsuspend(&zeromask);
-
-		if (sig_chld) {
-			sig_chld = 0;
-
-			for (;;) {
-				memset(&si, 0, sizeof(si));
-				if (waitid(P_ALL, -1, &si,
-				    WEXITED | WNOHANG) < 0) {
-					if (errno != EINTR)
-						break;
-				} else if (si.si_pid == pid) {
-					child_si = si;
-					child_done = true;
-					log_termination("child terminated",
-					    &child_si);
-				} else if (si.si_pid != 0) {
-					/*
-					 * Collect grandchildren zombies.
-					 * Only effective if we're a reaper.
-					 */
-					log_termination("collected zombie",
-					    &si);
-				} else /* si.si_pid == 0 */ {
-					break;
-				}
-			}
-			if (child_done) {
-				if (foreground) {
-					break;
-				} else {
-					procctl(P_PID, getpid(),
-					    PROC_REAP_STATUS, &info);
-					if (info.rs_children == 0)
-						break;
-				}
-			}
-		} else if (sig_alrm || sig_term) {
-			if (sig_alrm) {
-				sig = killsig;
-				sig_alrm = 0;
-				timedout = true;
-				logv("time limit reached or received SIGALRM");
-			} else {
-				sig = sig_term;
-				sig_term = 0;
-				logv("received terminating signal %s(%d)",
-				    sys_signame[sig], sig);
-			}
-
-			send_sig(pid, sig, foreground);
-
-			if (do_second_kill) {
-				set_interval(second_kill);
-				do_second_kill = false;
-				killsig = SIGKILL;
-			}
-
-		} else if (sig_other) {
-			/* Propagate any other signals. */
-			sig = sig_other;
-			sig_other = 0;
-			logv("received signal %s(%d)", sys_signame[sig], sig);
-
-			send_sig(pid, sig, foreground);
-		}
-	}
-
-	if (!foreground)
-		procctl(P_PID, getpid(), PROC_REAP_RELEASE, NULL);
-
-	if (timedout && !preserve) {
-		pstat = EXIT_TIMEOUT;
-	} else if (child_si.si_code == CLD_DUMPED ||
-	    child_si.si_code == CLD_KILLED) {
-		kill_self(child_si.si_status);
-		/* NOTREACHED */
-	} else if (child_si.si_code == CLD_EXITED) {
-		pstat = child_si.si_status;
-	} else {
-		pstat = EXIT_FAILURE;
-	}
-
-	return (pstat);
-}
-
-#undef usage
-#undef logv
-#undef parse_duration
-#undef sig_handler
-#undef send_sig
-#undef set_interval
-#undef kill_self
-#undef log_termination
