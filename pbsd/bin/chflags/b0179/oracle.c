@@ -34,10 +34,10 @@
 #include <sys/types.h>
 
 #if defined(__linux__)
-struct pbsd_stat {
+struct pbsd_filestat {
 	unsigned long st_flags;
 };
-#define stat pbsd_stat
+#define stat pbsd_filestat
 #endif
 
 #include <sys/stat.h>
@@ -88,6 +88,10 @@ struct pbsd_stat {
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#if defined(__linux__)
+int chflagsat(int, const char *, unsigned long, int);
+#endif
 
 #define longestflaglen	12
 static struct {
@@ -184,9 +188,9 @@ volatile sig_atomic_t ref_siginfo;
 #define usage ref_usage
 #define siginfo_handler ref_siginfo_handler
 
-static void ref_usage(void) __dead2;
+void ref_usage(void) __dead2;
 
-static void
+void
 ref_siginfo_handler(int sig __unused)
 {
 
@@ -348,7 +352,7 @@ ref_main(int argc, char *argv[])
 	exit(rval);
 }
 
-static void
+void
 ref_usage(void)
 {
 	(void)fprintf(stderr,

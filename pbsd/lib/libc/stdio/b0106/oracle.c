@@ -324,6 +324,10 @@ pbsd_shim_funlockfile(struct pbsd_shim_file *fp)
 int
 pbsd_shim_sputc(int c, struct pbsd_shim_file *fp)
 {
+	pbsd_shim_sputc_last_c = c;
+	pbsd_shim_sputc_calls++;
+	pbsd_shim_sputc_trace = pbsd_shim_sputc_trace * 1000003ULL +
+	    (unsigned long long)(unsigned int)c;
 	if ((fp->_flags & __SWR) == 0) {
 		fp->_flags |= __SERR;
 		return (EOF);
@@ -350,6 +354,11 @@ pbsd_shim_sfvwrite(struct pbsd_shim_file *fp, struct __suio *uio)
 	size_t n;
 	int resid, i;
 
+	pbsd_shim_sfvwrite_calls++;
+	pbsd_shim_sfvwrite_entry_iovcnt = uio->uio_iovcnt;
+	pbsd_shim_sfvwrite_entry_resid = uio->uio_resid;
+	pbsd_shim_sfvwrite_entry_iovlen = uio->uio_iov[0].iov_len;
+	pbsd_shim_sfvwrite_entry_iovbase = uio->uio_iov[0].iov_base;
 	if ((resid = uio->uio_resid) == 0)
 		return (0);
 	if ((fp->_flags & __SWR) == 0) {

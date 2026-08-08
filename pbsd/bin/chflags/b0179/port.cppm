@@ -13,10 +13,10 @@ module;
 #include <sys/types.h>
 
 #if defined(__linux__)
-struct pbsd_stat {
+struct pbsd_filestat {
 	unsigned long st_flags;
 };
-#define stat pbsd_stat
+#define stat pbsd_filestat
 #endif
 
 #include <sys/stat.h>

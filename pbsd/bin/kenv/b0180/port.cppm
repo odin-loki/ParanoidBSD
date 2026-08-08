@@ -19,11 +19,11 @@ module;
 #define KENV_DUMP_LOADER	7
 #endif
 
-extern "C" int kenv(int action, const char *name, char *value, int len);
-
 export module pbsd.bin.kenv.b0180;
 
 export namespace pbsd::bin_kenv::b0180 {
+
+extern "C" int kenv(int action, const char *name, char *value, int len);
 
 /*-
  * Copyright (c) 2000  Peter Wemm <peter@freebsd.org>
