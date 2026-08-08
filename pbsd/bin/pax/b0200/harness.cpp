@@ -223,8 +223,8 @@ void test_sel_chk_one(const port::ARCHD *aref, const port::ARCHD *aport)
 void test_sel_chk_edge(void)
 {
 	port::ARCHD aref{}, aport{};
-	init_archd(&aref, "f", port::PAX_REG);
-	init_archd(&aport, "f", port::PAX_REG);
+	init_archd(&aref, "f", PAX_REG);
+	init_archd(&aport, "f", PAX_REG);
 	test_sel_chk_one(&aref, &aport);
 
 	char s[32], s2[32];
@@ -263,8 +263,8 @@ void test_sel_chk_random(void)
 	for (unsigned i = 0; i < RAND_ITERS; i++) {
 		char sref[32], sport[32];
 		port::ARCHD aref{}, aport{};
-		init_archd(&aref, "f", port::PAX_REG);
-		init_archd(&aport, "f", port::PAX_REG);
+		init_archd(&aref, "f", PAX_REG);
+		init_archd(&aport, "f", PAX_REG);
 		aref.sb.st_uid = (uid_t)rnd_u32();
 		aport.sb.st_uid = aref.sb.st_uid;
 		aref.sb.st_gid = (gid_t)rnd_u32();
@@ -527,8 +527,8 @@ void test_usr_match_edge(void)
 	port::usr_add(s2);
 
 	port::ARCHD aref{}, aport{};
-	init_archd(&aref, "f", port::PAX_REG);
-	init_archd(&aport, "f", port::PAX_REG);
+	init_archd(&aref, "f", PAX_REG);
+	init_archd(&aport, "f", PAX_REG);
 	aref.sb.st_uid = getuid();
 	aport.sb.st_uid = getuid();
 	case_inc(S_USR_MATCH);
@@ -551,8 +551,8 @@ void test_usr_match_random(void)
 		ref_usr_add(sref);
 		port::usr_add(sport);
 		port::ARCHD aref{}, aport{};
-		init_archd(&aref, "f", port::PAX_REG);
-		init_archd(&aport, "f", port::PAX_REG);
+		init_archd(&aref, "f", PAX_REG);
+		init_archd(&aport, "f", PAX_REG);
 		aref.sb.st_uid = (uid_t)rnd_u32();
 		aport.sb.st_uid = aref.sb.st_uid;
 		case_inc(S_USR_MATCH);
@@ -570,8 +570,8 @@ void test_grp_match_edge(void)
 	port::grp_add(s2);
 
 	port::ARCHD aref{}, aport{};
-	init_archd(&aref, "f", port::PAX_REG);
-	init_archd(&aport, "f", port::PAX_REG);
+	init_archd(&aref, "f", PAX_REG);
+	init_archd(&aport, "f", PAX_REG);
 	aref.sb.st_gid = getgid();
 	aport.sb.st_gid = getgid();
 	case_inc(S_GRP_MATCH);
@@ -594,8 +594,8 @@ void test_grp_match_random(void)
 		ref_grp_add(sref);
 		port::grp_add(sport);
 		port::ARCHD aref{}, aport{};
-		init_archd(&aref, "f", port::PAX_REG);
-		init_archd(&aport, "f", port::PAX_REG);
+		init_archd(&aref, "f", PAX_REG);
+		init_archd(&aport, "f", PAX_REG);
 		aref.sb.st_gid = (gid_t)rnd_u32();
 		aport.sb.st_gid = aref.sb.st_gid;
 		case_inc(S_GRP_MATCH);
@@ -607,8 +607,8 @@ void test_grp_match_random(void)
 void test_trng_match_edge(void)
 {
 	port::ARCHD aref{}, aport{};
-	init_archd(&aref, "f", port::PAX_REG);
-	init_archd(&aport, "f", port::PAX_REG);
+	init_archd(&aref, "f", PAX_REG);
+	init_archd(&aport, "f", PAX_REG);
 	case_inc(S_TRNG_MATCH);
 	if (ref_trng_match(&aref) != port::trng_match(&aport))
 		fail_msg(S_TRNG_MATCH, "empty", "mismatch");
@@ -666,8 +666,8 @@ void test_trng_match_random(void)
 		ref_trng_add(trref);
 		port::trng_add(trport);
 		port::ARCHD aref{}, aport{};
-		init_archd(&aref, "f", port::PAX_REG);
-		init_archd(&aport, "f", port::PAX_REG);
+		init_archd(&aref, "f", PAX_REG);
+		init_archd(&aport, "f", PAX_REG);
 		aref.sb.st_mtime = (time_t)rnd_i32();
 		aport.sb.st_mtime = aref.sb.st_mtime;
 		aref.sb.st_ctime = (time_t)rnd_i32();
@@ -810,31 +810,29 @@ void test_file_flush_random(void)
 		test_file_flush_one((int)(rnd_u32() & 1u));
 }
 
-void test_set_crc_one(int fdval, off_t size, const char *payload)
+void test_set_crc_one(const char *fname, int fdval, off_t size,
+    const unsigned char *payload, int plen)
 {
-	std::string td = mk_temp_dir();
-	if (td.empty())
-		return;
 	char fref[512], fport[512];
-	std::snprintf(fref, sizeof(fref), "%s/crc.dat", td.c_str());
-	std::snprintf(fport, sizeof(fport), "%s/crc.dat", td.c_str());
+	std::snprintf(fref, sizeof(fref), "%s/%s", g_tmpbase, fname);
+	std::snprintf(fport, sizeof(fport), "%s/%s", g_tmpbase, fname);
 
-	if (payload != nullptr) {
+	if (payload != nullptr && plen > 0) {
 		int wfd = open(fref, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (wfd >= 0) {
-			(void)write(wfd, payload, std::strlen(payload));
+			(void)write(wfd, payload, (std::size_t)plen);
 			close(wfd);
 		}
 		wfd = open(fport, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (wfd >= 0) {
-			(void)write(wfd, payload, std::strlen(payload));
+			(void)write(wfd, payload, (std::size_t)plen);
 			close(wfd);
 		}
 	}
 
 	port::ARCHD aref{}, aport{};
-	init_archd(&aref, fref, port::PAX_REG);
-	init_archd(&aport, fport, port::PAX_REG);
+	init_archd(&aref, fref, PAX_REG);
+	init_archd(&aport, fport, PAX_REG);
 	aref.sb.st_size = size;
 	aport.sb.st_size = size;
 	aref.org_name = fref;
@@ -846,29 +844,34 @@ void test_set_crc_one(int fdval, off_t size, const char *payload)
 	int rref = ref_set_crc(&aref, fdr);
 	int rport = port::set_crc(&aport, fdp);
 	if (rref != rport || aref.crc != aport.crc)
-		fail_msg(S_SET_CRC, "crc", "mismatch");
+		fail_msg(S_SET_CRC, fname, "mismatch");
 	if (fdr >= 0) close(fdr);
 	if (fdp >= 0) close(fdp);
+	unlink(fref);
+	unlink(fport);
 }
 
 void test_set_crc_edge(void)
 {
-	test_set_crc_one(-1, 0, nullptr);
-	test_set_crc_one(0, 17, "crc test payload");
+	test_set_crc_one("crc_neg", -1, 0, nullptr, 0);
+	const unsigned char data[] = "crc test payload";
+	test_set_crc_one("crc_edge", 0, (off_t)(sizeof(data) - 1),
+	    data, (int)(sizeof(data) - 1));
 }
 
 void test_set_crc_random(void)
 {
+	unsigned char payload[256];
 	for (unsigned i = 0; i < RAND_ITERS; i++) {
 		if ((rnd_u32() & 7u) == 0) {
-			test_set_crc_one(-1, 0, nullptr);
+			test_set_crc_one("crc_neg", -1, 0, nullptr, 0);
 			continue;
 		}
-		char payload[256];
 		int n = (int)(rnd_u32() % 200u) + 1;
-		fill_random_string((unsigned char *)payload, n, true);
-		payload[n] = '\0';
-		test_set_crc_one(0, n, payload);
+		fill_random_string(payload, n, true);
+		char fname[64];
+		std::snprintf(fname, sizeof(fname), "crc_%u.dat", rnd_u32());
+		test_set_crc_one(fname, 0, n, payload, n);
 	}
 }
 

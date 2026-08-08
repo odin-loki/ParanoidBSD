@@ -28,3 +28,4 @@
 {"path": "hbsd/src/usr.bin/cksum/crc.c", "batch": "b0054s2", "reasons": ["AUTO_FAILED"], "detail": "missing harness.cpp\n(mechanical path first said: not attempted (mechanical phase runs separately))", "attempts": 0, "queued": "2026-08-08T22:43:15Z"}
 {"path": "hbsd/src/lib/msun/ld80/s_cexpl.c", "batch": "b0093s1", "reasons": ["AUTO_FAILED"], "detail": "mutation check: harness failed to detect: equality, equality, equality\n(mechanical path first said: not attempted (mechanical phase runs separately))", "attempts": 0, "queued": "2026-08-08T22:43:57Z"}
 {"path": "hbsd/src/bin/date/vary.c", "batch": "b0190s1", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:54:54Z"}
+{"path": "hbsd/src/lib/libc/db/btree/bt_put.c", "batch": "b0155s1", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:55:06Z"}

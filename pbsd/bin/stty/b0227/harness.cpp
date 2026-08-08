@@ -141,7 +141,7 @@ __wrap_usage(void)
 {
 	if (g_test_active) {
 		g_usage_count++;
-		return;
+		longjmp(g_usage_jmp, 1);
 	}
 	std::abort();
 }
@@ -273,6 +273,13 @@ fill_info(P::info &ip, Rng &r, bool hi)
 	ip.win.ws_col = (unsigned short)(r.u32() & 0xffffu);
 	ip.win.ws_xpixel = (unsigned short)(r.u32() & 0xffffu);
 	ip.win.ws_ypixel = (unsigned short)(r.u32() & 0xffffu);
+}
+
+static void
+dup_info(P::info &ip_r, P::info &ip_p, Rng &r, bool hi)
+{
+	fill_info(ip_r, r, hi);
+	ip_p = ip_r;
 }
 
 static bool
