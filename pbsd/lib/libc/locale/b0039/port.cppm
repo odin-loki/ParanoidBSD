@@ -4,7 +4,6 @@ module;
 #include <climits>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 
 export module pbsd.lib.libc.locale.b0039;
 
@@ -15,10 +14,6 @@ typedef union {
 	long long	_mbstateL;
 } __mbstate_t;
 typedef __mbstate_t mbstate_t;
-
-#include <wchar.h>
-
-typedef struct xlocale *locale_t;
 
 enum {
 	PORT_XLC_CTYPE = 1,
@@ -52,7 +47,7 @@ std::size_t mock_wcsnrtombs(char * __restrict, const wchar_t ** __restrict,
 std::size_t mock_mbrtowc(wchar_t * __restrict, const char * __restrict,
     std::size_t, mbstate_t * __restrict);
 int __wcwidth(wchar_t);
-int __wcwidth_l(wchar_t, locale_t);
+int __wcwidth_l(wchar_t, port_xlocale *);
 
 port_locale_t
 port_get_locale()
@@ -234,7 +229,7 @@ int
 mbtowc_l(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n,
     port_locale_t locale)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial = {};
 	std::size_t rval;
 	FIX_LOCALE(locale);
 
@@ -246,7 +241,7 @@ mbtowc_l(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n,
 	rval = XLOCALE_CTYPE(locale)->__mbrtowc(pwc, s, n,
 	    &(XLOCALE_CTYPE(locale)->mbtowc));
 	switch (rval) {
-	case (std::size_t)-2:
+	case (std::size_t)+2:
 		errno = EILSEQ;
 		/* FALLTHROUGH */
 	case (std::size_t)-1:

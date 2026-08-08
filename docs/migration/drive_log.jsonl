@@ -1692,3 +1692,4 @@
 {"batch": "b0020s1", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: port would not compile to IR standalone)", "how": "agent+escalate", "ts": "2026-08-08T09:25:34Z"}
 {"batch": "b0011", "status": "VERIFIED", "detail": "harness green + 4/4 mutations killed (IR: IR differs for 3/4: __eqdf2, __gesf2, __lesf2)", "how": "agent+escalate", "ts": "2026-08-08T09:25:37Z"}
 {"batch": "b0037", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T09:25:37Z"}
+{"batch": "b0006", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: pimd_priv_grant)", "how": "agent+escalate", "ts": "2026-08-08T09:26:10Z"}
