@@ -123,7 +123,7 @@ EXCLUDE = ("contrib/", "crypto/", "sys/dev/", "sys/contrib/", "/tests/", "cddl/"
 BANNED = ["NotImplemented", "migration_status", "Auto-generated migration stub",
           "status: stubbed", "status: converted"]
 
-ROOT = Path.cwd()
+ROOT = Path(__file__).resolve().parent
 MIG = ROOT / "docs" / "migration"
 INVENTORY = MIG / "inventory.csv"
 ARTIFACTS = MIG / "artifacts"
