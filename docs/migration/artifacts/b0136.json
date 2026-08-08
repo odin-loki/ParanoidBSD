@@ -1,0 +1,10 @@
+{
+  "batch": "b0136",
+  "verified": "2026-08-08T11:46:18Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\n=== scalbnl differential test ===\nfunction          cases     failures\nscalbnl          214695            0\n\nbranch coverage (input n before call):\n  n>16383:        105863\n  n>32766:        104468\n  n>49149:        102222\n  n<-16382:       106043\n  n<-32765:       104869\n  n<-49148:       102626\n  -16382<=n<=16383: 2789\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_scalbnl.c": "20e5fca96bc1ff41"
+  }
+}

@@ -69,8 +69,6 @@ union IEEEl2bits {
  */
 #include <math.h>
 #include <float.h>
-#include "math_private.h"
-#include "fpmath.h"
 /*
  * scalbnl (long double x, int n)
  * scalbnl(x,n) returns x* 2**n  computed by  exponent

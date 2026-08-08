@@ -380,15 +380,116 @@ build_bleaf_be(unsigned char *buf, size_t bufsz, int nents,
 }
 
 void
-build_meta_be(unsigned char *buf, size_t bufsz)
+build_binternal_host(unsigned char *buf, size_t bufsz, int nents,
+    const u_char *entry_flags, const uint32_t *ksizes)
+{
+	PAGE *pg;
+	size_t off;
+	int i;
+
+	guard_fill(buf, bufsz);
+	pg = (PAGE *)buf;
+	pg->pgno = rnd_u32();
+	pg->prevpg = rnd_u32();
+	pg->nextpg = rnd_u32();
+	pg->flags = P_BINTERNAL;
+	off = bufsz;
+	for (i = nents - 1; i >= 0; i--) {
+		size_t ksz, pos;
+		unsigned char *e;
+
+		ksz = ksizes ? ksizes[i] : (size_t)(rnd_u32() % 16u);
+		off -= align_pg(sizeof(uint32_t) + sizeof(pgno_t) + sizeof(u_char) +
+		    ((entry_flags[i] & P_BIGKEY) ?
+			(sizeof(uint32_t) + sizeof(pgno_t)) : 0) + ksz);
+		e = buf + off;
+		*(uint32_t *)e = (uint32_t)ksz;
+		*(pgno_t *)(e + 4) = rnd_u32();
+		e[8] = entry_flags[i];
+		pos = 9;
+		if (entry_flags[i] & P_BIGKEY) {
+			*(uint32_t *)(e + pos) = rnd_u32();
+			pos += 4;
+			*(pgno_t *)(e + pos) = rnd_u32();
+			pos += 4;
+		}
+		for (size_t k = 0; k < ksz; k++)
+			e[pos + k] = rnd_byte();
+		pg->linp[i] = (indx_t)off;
+	}
+	pg->lower = (indx_t)(BTDATAOFF + nents * sizeof(indx_t));
+	pg->upper = (indx_t)off;
+}
+
+void
+build_bleaf_host(unsigned char *buf, size_t bufsz, int nents,
+    const u_char *entry_flags, const uint32_t *ksizes, const uint32_t *dsizes)
+{
+	PAGE *pg;
+	size_t off;
+	int i;
+
+	guard_fill(buf, bufsz);
+	pg = (PAGE *)buf;
+	pg->pgno = rnd_u32();
+	pg->prevpg = rnd_u32();
+	pg->nextpg = rnd_u32();
+	pg->flags = P_BLEAF;
+	off = bufsz;
+	for (i = nents - 1; i >= 0; i--) {
+		size_t ksz, dsz, pos, esz;
+		unsigned char *e;
+		u_char fl;
+
+		ksz = ksizes ? ksizes[i] : (size_t)(rnd_u32() % 12u);
+		dsz = dsizes ? dsizes[i] : (size_t)(rnd_u32() % 12u);
+		fl = entry_flags[i];
+		esz = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(u_char);
+		if (fl & (P_BIGKEY | P_BIGDATA)) {
+			if (fl & P_BIGKEY)
+				esz += sizeof(uint32_t) + sizeof(pgno_t);
+			if (fl & P_BIGDATA)
+				esz += sizeof(uint32_t) + sizeof(pgno_t);
+		}
+		esz += ksz + dsz;
+		off -= align_pg(esz);
+		e = buf + off;
+		*(uint32_t *)e = (uint32_t)ksz;
+		*(uint32_t *)(e + 4) = (uint32_t)dsz;
+		e[8] = fl;
+		pos = 9;
+		if (fl & (P_BIGKEY | P_BIGDATA)) {
+			if (fl & P_BIGKEY) {
+				*(uint32_t *)(e + pos) = rnd_u32();
+				pos += 4;
+				*(pgno_t *)(e + pos) = rnd_u32();
+				pos += 4;
+			}
+			if (fl & P_BIGDATA) {
+				*(uint32_t *)(e + pos) = rnd_u32();
+				pos += 4;
+				*(pgno_t *)(e + pos) = rnd_u32();
+				pos += 4;
+			}
+		}
+		for (size_t k = 0; k < ksz + dsz; k++)
+			e[pos + k] = rnd_byte();
+		pg->linp[i] = (indx_t)off;
+	}
+	pg->lower = (indx_t)(BTDATAOFF + nents * sizeof(indx_t));
+	pg->upper = (indx_t)off;
+}
+
+void
+build_meta_host(unsigned char *buf, size_t bufsz)
 {
 	guard_fill(buf, bufsz);
-	write_u32_be(buf + 0, 0x053162);
-	write_u32_be(buf + 4, 3);
-	write_u32_be(buf + 8, 4096);
-	write_u32_be(buf + 12, 7);
-	write_u32_be(buf + 16, 99);
-	write_u32_be(buf + 20, B_NODUPS);
+	*(uint32_t *)(buf + 0) = 0x053162;
+	*(uint32_t *)(buf + 4) = 3;
+	*(uint32_t *)(buf + 8) = 4096;
+	*(uint32_t *)(buf + 12) = 7;
+	*(uint32_t *)(buf + 16) = 99;
+	*(uint32_t *)(buf + 20) = B_NODUPS;
 }
 
 struct TreePort {
@@ -651,7 +752,7 @@ check_conv(const char *which, void (*port_fn)(void *, pgno_t, void *),
 	port_fn(&tp, pg, buf_p);
 	ref_fn(&tr, pg, buf_r);
 
-	int fn = (which[0] == 'p' && which[4] == 'i') ? F_BT_PGIN : F_BT_PGOUT;
+	int fn = (std::strcmp(which, "__bt_pgin") == 0) ? F_BT_PGIN : F_BT_PGOUT;
 	if (!bufs_eq(buf_p, buf_r, PAGE_SZ)) {
 		char msg[128];
 		std::snprintf(msg, sizeof(msg), "%s pg=%u tflags=0x%x mismatch",
