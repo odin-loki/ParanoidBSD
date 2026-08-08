@@ -1,10 +1,12 @@
 /*
- * oracle.c -- reference implementations for batch b0105.
+ * b0105 reference oracle: the original HardenedBSD C sources, concatenated
+ * verbatim, with every function renamed with a `ref_' prefix.  Function
+ * bodies are UNMODIFIED.  Only #includes and portability defines differ.
  *
- * The original HardenedBSD/FreeBSD sources, concatenated verbatim.  Every
- * function has been renamed with a "ref_" prefix; the bodies are unmodified.
- * Only includes / feature-test macros / missing defines were adjusted so the
- * code builds with `cc -std=c11 -O2` on a hosted glibc toolchain.
+ *   hbsd/src/lib/libc/string/strspn.c
+ *   hbsd/src/lib/libc/string/strcspn.c
+ *   hbsd/src/lib/libc/string/strsep.c
+ *   hbsd/src/lib/libc/string/wcslcpy.c
  */
 
 #define _DEFAULT_SOURCE 1
@@ -13,18 +15,26 @@
 #include <limits.h>
 #include <string.h>
 #include <stdio.h>
-#include <stddef.h>
 #include <wchar.h>
 
-/* <limits.h> only exposes LONG_BIT under X/Open; supply it if absent. */
+/* <limits.h> only exposes LONG_BIT outside of strict ISO mode. */
 #ifndef LONG_BIT
-#define LONG_BIT (__SIZEOF_LONG__ * 8)
+#if defined(__LP64__) || defined(_LP64)
+#define LONG_BIT 64
+#else
+#define LONG_BIT 32
+#endif
 #endif
 
-/* <sys/types.h> only exposes these under __USE_MISC; C11 permits the
- * redundant typedef when it does. */
+/* sys/types.h only exposes the BSD short type names outside strict ISO mode. */
+#ifndef __USE_MISC
 typedef unsigned char u_char;
 typedef unsigned long u_long;
+#endif
+
+/* ------------------------------------------------------------------------- */
+/* lib/libc/string/strspn.c                                                  */
+/* ------------------------------------------------------------------------- */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -93,6 +103,10 @@ ref_strspn(const char *s, const char *charset)
 	return (s1 - s);
 }
 
+/* ------------------------------------------------------------------------- */
+/* lib/libc/string/strcspn.c                                                 */
+/* ------------------------------------------------------------------------- */
+
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -157,6 +171,10 @@ ref_strcspn(const char *s, const char *charset)
 	}
 	return (s1 - s);
 }
+
+/* ------------------------------------------------------------------------- */
+/* lib/libc/string/strsep.c                                                  */
+/* ------------------------------------------------------------------------- */
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -226,6 +244,10 @@ ref_strsep(char **stringp, const char *delim)
 	}
 	/* NOTREACHED */
 }
+
+/* ------------------------------------------------------------------------- */
+/* lib/libc/string/wcslcpy.c                                                 */
+/* ------------------------------------------------------------------------- */
 
 /*
  * SPDX-License-Identifier: BSD-3-Clause

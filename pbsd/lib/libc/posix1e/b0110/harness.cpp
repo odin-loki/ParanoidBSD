@@ -40,45 +40,23 @@ namespace port = pbsd::lib_libc_posix1e::b0110;
 #define	EXTATTR_NAMESPACE_SYSTEM	0x00000002
 #define	EXTATTR_NAMESPACE_SYSTEM_STRING	"system"
 
-typedef std::uint32_t	acl_tag_t;
-typedef std::uint32_t	acl_perm_t;
-typedef std::uint16_t	acl_entry_type_t;
-typedef std::uint16_t	acl_flag_t;
-typedef int		acl_type_t;
-
-struct mac {
-	size_t		 m_buflen;
-	char		*m_string;
-};
-
-struct acl_entry {
-	acl_tag_t		ae_tag;
-	std::uint32_t		ae_id;
-	acl_perm_t		ae_perm;
-	acl_entry_type_t	ae_entry_type;
-	acl_flag_t		ae_flags;
-};
-typedef struct acl_entry	*acl_entry_t;
-
-struct acl {
-	unsigned int		acl_maxcnt;
-	unsigned int		acl_cnt;
-	int			acl_spare[4];
-	struct acl_entry	acl_entry[ACL_MAX_ENTRIES];
-};
-
 struct acl_t_struct {
-	struct acl		ats_acl;
+	struct {
+		unsigned int		acl_maxcnt;
+		unsigned int		acl_cnt;
+		int			acl_spare[4];
+		acl_entry		acl_entry[ACL_MAX_ENTRIES];
+	}			ats_acl;
 	int			ats_cur_entry;
 	int			ats_brand;
 };
-typedef struct acl_t_struct	*acl_t;
+typedef struct acl_t_struct	*acl_t_full;
 
 extern "C" {
-int ref_mac_set_fd(int, struct mac *);
-int ref_mac_set_file(const char *, struct mac *);
-int ref_mac_set_link(const char *, struct mac *);
-int ref_mac_set_proc(struct mac *);
+int ref_mac_set_fd(int, mac *);
+int ref_mac_set_file(const char *, mac *);
+int ref_mac_set_link(const char *, mac *);
+int ref_mac_set_proc(mac *);
 int ref_acl_delete_def_file(const char *);
 int ref_acl_delete_def_link_np(const char *);
 int ref_acl_delete_file_np(const char *, acl_type_t);
@@ -89,6 +67,17 @@ int ref_extattr_string_to_namespace(const char *, int *);
 int ref_acl_copy_entry(acl_entry_t, acl_entry_t);
 ssize_t ref_acl_copy_ext(void *, acl_t, ssize_t);
 acl_t ref_acl_copy_int(const void *);
+void mock_reset(void);
+struct mock_snap {
+	int		set;
+	int		kind;
+	int		fd;
+	const char	*path;
+	mac		*label;
+	acl_type_t	type;
+	int		ret;
+};
+struct mock_snap mock_capture(void);
 }
 
 /* ------------------------------------------------------------------ stats */
@@ -170,241 +159,6 @@ fail_stat(int idx, const char *tag, const char *detail)
 
 /* -------------------------------------------------------- shared internals */
 
-static acl_t
-entry2acl(acl_entry_t entry)
-{
-	return ((acl_t)(((long)entry >> _ACL_T_ALIGNMENT_BITS)
-	    << _ACL_T_ALIGNMENT_BITS));
-}
-
-extern "C" int
-_acl_type_unold(acl_type_t type)
-{
-
-	switch (type) {
-	case ACL_TYPE_ACCESS_OLD:
-		return (ACL_TYPE_ACCESS);
-	case ACL_TYPE_DEFAULT_OLD:
-		return (ACL_TYPE_DEFAULT);
-	default:
-		return (type);
-	}
-}
-
-extern "C" int
-_acl_brand(const acl_t acl)
-{
-
-	return (acl->ats_brand);
-}
-
-extern "C" int
-_entry_brand(const acl_entry_t entry)
-{
-
-	return (_acl_brand(entry2acl(entry)));
-}
-
-extern "C" int
-_acl_brand_may_be(const acl_t acl, int brand)
-{
-
-	if (_acl_brand(acl) == ACL_BRAND_UNKNOWN)
-		return (1);
-
-	if (_acl_brand(acl) == brand)
-		return (1);
-
-	return (0);
-}
-
-extern "C" int
-_entry_brand_may_be(const acl_entry_t entry, int brand)
-{
-
-	return (_acl_brand_may_be(entry2acl(entry), brand));
-}
-
-extern "C" void
-_acl_brand_as(acl_t acl, int brand)
-{
-
-	acl->ats_brand = brand;
-}
-
-extern "C" void
-_entry_brand_as(const acl_entry_t entry, int brand)
-{
-
-	_acl_brand_as(entry2acl(entry), brand);
-}
-
-/* ----------------------------------------------------------- syscall mocks */
-
-enum mock_kind {
-	MOCK_MAC_FD = 1,
-	MOCK_MAC_FILE,
-	MOCK_MAC_LINK,
-	MOCK_MAC_PROC,
-	MOCK_ACL_FILE,
-	MOCK_ACL_LINK,
-	MOCK_ACL_FD,
-};
-
-struct mock_rec {
-	int		kind;
-	int		fd;
-	const char	*path;
-	struct mac	*label;
-	acl_type_t	type;
-	int		ret;
-};
-
-static mock_rec g_mock;
-static int g_mock_set;
-
-static void
-mock_reset(void)
-{
-	std::memset(&g_mock, 0, sizeof(g_mock));
-	g_mock_set = 0;
-}
-
-static int
-mac_ret(int fd, struct mac *label)
-{
-	int v = fd * 31;
-
-	if (label != nullptr)
-		v ^= (int)label->m_buflen ^ (int)(uintptr_t)label->m_string;
-	return (v ^ 0x5a5a);
-}
-
-static int
-acl_ret(const char *path, acl_type_t type)
-{
-	int v = (int)type * 17;
-
-	if (path != nullptr)
-		v ^= (int)std::strlen(path);
-	return (v ^ 0x1234);
-}
-
-static int
-acl_fd_ret(int fd, acl_type_t type)
-{
-
-	return ((fd * 23) ^ ((int)type * 41) ^ 0xbeef);
-}
-
-extern "C" int
-__mac_set_fd(int fd, struct mac *mac_p)
-{
-
-	g_mock.kind = MOCK_MAC_FD;
-	g_mock.fd = fd;
-	g_mock.label = mac_p;
-	g_mock.ret = mac_ret(fd, mac_p);
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-extern "C" int
-__mac_set_file(const char *path_p, struct mac *mac_p)
-{
-
-	g_mock.kind = MOCK_MAC_FILE;
-	g_mock.path = path_p;
-	g_mock.label = mac_p;
-	g_mock.ret = mac_ret(1, mac_p) ^ (int)(uintptr_t)path_p;
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-extern "C" int
-__mac_set_link(const char *path_p, struct mac *mac_p)
-{
-
-	g_mock.kind = MOCK_MAC_LINK;
-	g_mock.path = path_p;
-	g_mock.label = mac_p;
-	g_mock.ret = mac_ret(2, mac_p) ^ (int)(uintptr_t)path_p;
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-extern "C" int
-__mac_set_proc(struct mac *mac_p)
-{
-
-	g_mock.kind = MOCK_MAC_PROC;
-	g_mock.label = mac_p;
-	g_mock.ret = mac_ret(3, mac_p);
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-extern "C" int
-__acl_delete_file(const char *path_p, acl_type_t type)
-{
-
-	g_mock.kind = MOCK_ACL_FILE;
-	g_mock.path = path_p;
-	g_mock.type = type;
-	g_mock.ret = acl_ret(path_p, type);
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-extern "C" int
-__acl_delete_link(const char *path_p, acl_type_t type)
-{
-
-	g_mock.kind = MOCK_ACL_LINK;
-	g_mock.path = path_p;
-	g_mock.type = type;
-	g_mock.ret = acl_ret(path_p, type) ^ 0x100;
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-extern "C" int
-___acl_delete_fd(int filedes, acl_type_t type)
-{
-
-	g_mock.kind = MOCK_ACL_FD;
-	g_mock.fd = filedes;
-	g_mock.type = type;
-	g_mock.ret = acl_fd_ret(filedes, type);
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-struct mock_snap {
-	int		set;
-	int		kind;
-	int		fd;
-	const char	*path;
-	struct mac	*label;
-	acl_type_t	type;
-	int		ret;
-};
-
-static mock_snap
-mock_capture(void)
-{
-	mock_snap s;
-
-	s.set = g_mock_set;
-	s.kind = g_mock.kind;
-	s.fd = g_mock.fd;
-	s.path = g_mock.path;
-	s.label = g_mock.label;
-	s.type = g_mock.type;
-	s.ret = g_mock.ret;
-	return (s);
-}
-
 static bool
 mock_eq(const mock_snap &a, const mock_snap &b)
 {
@@ -416,10 +170,10 @@ mock_eq(const mock_snap &a, const mock_snap &b)
 
 /* ---------------------------------------------------------- ACL allocation */
 
-static acl_t
+static acl_t_full
 alloc_acl(void)
 {
-	acl_t acl;
+	acl_t_full acl;
 	int error;
 
 	error = posix_memalign((void **)&acl, 1 << _ACL_T_ALIGNMENT_BITS,
@@ -433,7 +187,7 @@ alloc_acl(void)
 }
 
 static void
-free_acl(acl_t acl)
+free_acl(acl_t_full acl)
 {
 	std::free(acl);
 }
@@ -441,7 +195,7 @@ free_acl(acl_t acl)
 /* -------------------------------------------------------------- MAC tests */
 
 static void
-fill_mac(struct mac *m, size_t buflen, char *buf, size_t bufsz,
+fill_mac(mac *m, size_t buflen, char *buf, size_t bufsz,
     const char *s)
 {
 	std::memset(buf, GUARD, bufsz);
@@ -453,8 +207,8 @@ fill_mac(struct mac *m, size_t buflen, char *buf, size_t bufsz,
 }
 
 static bool
-mac_run(int idx, int (*port_fn)(int, struct mac *),
-    int (*ref_fn)(int, struct mac *), int fd, struct mac *label,
+mac_run(int idx, int (*port_fn)(int, mac *),
+    int (*ref_fn)(int, mac *), int fd, mac *label,
     const char *tag)
 {
 	int rp, rr, ep, er;
@@ -481,9 +235,9 @@ mac_run(int idx, int (*port_fn)(int, struct mac *),
 }
 
 static bool
-mac_run_path(int idx, int (*port_fn)(const char *, struct mac *),
-    int (*ref_fn)(const char *, struct mac *), const char *path,
-    struct mac *label, const char *tag)
+mac_run_path(int idx, int (*port_fn)(const char *, mac *),
+    int (*ref_fn)(const char *, mac *), const char *path,
+    mac *label, const char *tag)
 {
 	int rp, rr, ep, er;
 	mock_snap mp, mr;
@@ -509,8 +263,8 @@ mac_run_path(int idx, int (*port_fn)(const char *, struct mac *),
 }
 
 static bool
-mac_run_proc(int idx, int (*port_fn)(struct mac *),
-    int (*ref_fn)(struct mac *), struct mac *label, const char *tag)
+mac_run_proc(int idx, int (*port_fn)(mac *),
+    int (*ref_fn)(mac *), mac *label, const char *tag)
 {
 	int rp, rr, ep, er;
 	mock_snap mp, mr;
@@ -539,7 +293,7 @@ static void
 test_mac_edge(void)
 {
 	char mbuf[64];
-	struct mac m;
+	mac m;
 
 	fill_mac(&m, 0, mbuf, sizeof(mbuf), "");
 	mac_run(S_MAC_FD, port::mac_set_fd, ref_mac_set_fd, 0, &m, "fd0");
@@ -577,7 +331,7 @@ static void
 test_mac_random(void)
 {
 	char mbuf[96];
-	struct mac m;
+	mac m;
 
 	for (long it = 0; it < SWEEP_ITERS; it++) {
 		size_t blen = (size_t)(rnd32() % 80);
@@ -708,7 +462,7 @@ static const acl_type_t acl_types[] = {
 	4,
 	5,
 	0x7fffffff,
-	0x80000000,
+	(int)0x80000000,
 };
 
 static void
@@ -891,135 +645,145 @@ test_extattr_random(void)
 
 /* -------------------------------------------------------- acl_copy_entry */
 
-struct entry_blob {
-	unsigned char		pre[32];
-	struct acl_entry	entry;
-	unsigned char		post[32];
-};
-
 static void
-init_entry_blob(entry_blob &b, acl_tag_t tag, std::uint32_t id,
-    acl_perm_t perm, acl_entry_type_t etype, acl_flag_t flags)
+acl_clone(acl_t_full dst, const acl_t_full src)
 {
-	std::memset(&b, GUARD, sizeof(b));
-	b.entry.ae_tag = tag;
-	b.entry.ae_id = id;
-	b.entry.ae_perm = perm;
-	b.entry.ae_entry_type = etype;
-	b.entry.ae_flags = flags;
+
+	std::memcpy(dst, src, sizeof(*dst));
 }
 
 static bool
-ace_run(acl_entry_t dest, acl_entry_t src, const char *tag)
+ace_run_ptrs(acl_entry_t dest_p, acl_entry_t src_p, acl_entry_t dest_r,
+    acl_entry_t src_r, const char *tag)
 {
 	int rp, rr, ep, er;
-	unsigned char dp_pre[32], dp_post[32], dr_pre[32], dr_post[32];
-	unsigned char sp_pre[32], sp_post[32], sr_pre[32], sr_post[32];
-	entry_blob db, sb, dbr, sbr;
+	unsigned char snap_dp[sizeof(struct acl_t_struct)];
+	unsigned char snap_dr[sizeof(struct acl_t_struct)];
+	unsigned char snap_sp[sizeof(struct acl_t_struct)];
+	unsigned char snap_sr[sizeof(struct acl_t_struct)];
+	acl_t_full adp, adr, asp, asr;
 
-	if (dest != nullptr) {
-		std::memcpy(&db.entry, dest, sizeof(db.entry));
-		std::memcpy(dp_pre, (unsigned char *)dest - 32, 32);
-		std::memcpy(dp_post, (unsigned char *)dest + sizeof(*dest),
-		    32);
-	}
-	if (src != nullptr) {
-		std::memcpy(&sb.entry, src, sizeof(sb.entry));
-		std::memcpy(sp_pre, (unsigned char *)src - 32, 32);
-		std::memcpy(sp_post, (unsigned char *)src + sizeof(*src), 32);
-	}
+	adp = (dest_p != nullptr) ?
+	    (acl_t_full)(((long)dest_p >> _ACL_T_ALIGNMENT_BITS)
+	    << _ACL_T_ALIGNMENT_BITS) : nullptr;
+	adr = (dest_r != nullptr) ?
+	    (acl_t_full)(((long)dest_r >> _ACL_T_ALIGNMENT_BITS)
+	    << _ACL_T_ALIGNMENT_BITS) : nullptr;
+	asp = (src_p != nullptr) ?
+	    (acl_t_full)(((long)src_p >> _ACL_T_ALIGNMENT_BITS)
+	    << _ACL_T_ALIGNMENT_BITS) : nullptr;
+	asr = (src_r != nullptr) ?
+	    (acl_t_full)(((long)src_r >> _ACL_T_ALIGNMENT_BITS)
+	    << _ACL_T_ALIGNMENT_BITS) : nullptr;
+
+	if (adp != nullptr)
+		std::memcpy(snap_dp, adp, sizeof(snap_dp));
+	if (adr != nullptr)
+		std::memcpy(snap_dr, adr, sizeof(snap_dr));
+	if (asp != nullptr)
+		std::memcpy(snap_sp, asp, sizeof(snap_sp));
+	if (asr != nullptr)
+		std::memcpy(snap_sr, asr, sizeof(snap_sr));
 
 	mock_reset();
 	errno = 0;
-	rp = port::acl_copy_entry(dest, src);
+	rp = port::acl_copy_entry(dest_p, src_p);
 	ep = errno;
 
 	mock_reset();
 	errno = 0;
-	rr = ref_acl_copy_entry(dest, src);
+	rr = ref_acl_copy_entry(dest_r, src_r);
 	er = errno;
-
-	if (dest != nullptr) {
-		std::memcpy(&dbr.entry, dest, sizeof(dbr.entry));
-		std::memcpy(dr_pre, (unsigned char *)dest - 32, 32);
-		std::memcpy(dr_post, (unsigned char *)dest + sizeof(*dest),
-		    32);
-	}
-	if (src != nullptr) {
-		std::memcpy(&sbr.entry, src, sizeof(sbr.entry));
-		std::memcpy(sr_pre, (unsigned char *)src - 32, 32);
-		std::memcpy(sr_post, (unsigned char *)src + sizeof(*src), 32);
-	}
 
 	stats[S_ACE].cases++;
 	bool bad = (rp != rr || ep != er);
-	if (!bad && dest != nullptr) {
-		bad = (std::memcmp(&db.entry, &dbr.entry, sizeof(db.entry)) !=
-		    0 || std::memcmp(dp_pre, dr_pre, 32) != 0 ||
-		    std::memcmp(dp_post, dr_post, 32) != 0);
-	}
-	if (!bad && src != nullptr) {
-		bad = (std::memcmp(&sb.entry, &sbr.entry, sizeof(sb.entry)) !=
-		    0 || std::memcmp(sp_pre, sr_pre, 32) != 0 ||
-		    std::memcmp(sp_post, sr_post, 32) != 0);
-	}
+	if (!bad && adp != nullptr && adr != nullptr)
+		bad = (std::memcmp(adp, adr, sizeof(*adp)) != 0);
+	if (!bad && asp != nullptr && asr != nullptr)
+		bad = (std::memcmp(asp, asr, sizeof(*asp)) != 0);
 	if (bad)
-		fail_stat(S_ACE, tag, "rv/errno/entry");
+		fail_stat(S_ACE, tag, "rv/errno/acl");
 	return (!bad);
 }
 
 static bool
-ace_run_pair(acl_t dest_acl, int dest_idx, acl_t src_acl, int src_idx,
-    const char *tag)
+ace_run_pair(int dest_idx, int src_idx, const acl_t_full dest_tpl,
+    const acl_t_full src_tpl, const char *tag)
 {
-	acl_entry_t dest = &dest_acl->ats_acl.acl_entry[dest_idx];
-	acl_entry_t src = &src_acl->ats_acl.acl_entry[src_idx];
+	acl_t_full da = alloc_acl();
+	acl_t_full db = alloc_acl();
+	acl_t_full sa = alloc_acl();
+	acl_t_full sb = alloc_acl();
+	bool ok;
 
-	return (ace_run(dest, src, tag));
+	acl_clone(da, dest_tpl);
+	acl_clone(db, dest_tpl);
+	acl_clone(sa, src_tpl);
+	acl_clone(sb, src_tpl);
+
+	ok = ace_run_ptrs(&da->ats_acl.acl_entry[dest_idx],
+	    &sa->ats_acl.acl_entry[src_idx], &db->ats_acl.acl_entry[dest_idx],
+	    &sb->ats_acl.acl_entry[src_idx], tag);
+
+	free_acl(da);
+	free_acl(db);
+	free_acl(sa);
+	free_acl(sb);
+	return (ok);
 }
 
 static void
 test_acl_copy_entry_edge(void)
 {
-	acl_t da = alloc_acl();
-	acl_t sa = alloc_acl();
+	acl_t_full dest = alloc_acl();
+	acl_t_full src = alloc_acl();
 
-	ace_run(nullptr, &da->ats_acl.acl_entry[0], "null-dest");
-	ace_run(&da->ats_acl.acl_entry[0], nullptr, "null-src");
-	ace_run(&da->ats_acl.acl_entry[0], &da->ats_acl.acl_entry[0],
-	    "same");
+	ace_run_ptrs(nullptr, &src->ats_acl.acl_entry[0], nullptr,
+	    &src->ats_acl.acl_entry[0], "null-dest");
+	ace_run_ptrs(&dest->ats_acl.acl_entry[0], nullptr,
+	    &dest->ats_acl.acl_entry[0], nullptr, "null-src");
+	{
+		acl_t_full same_a = alloc_acl();
+		acl_t_full same_b = alloc_acl();
 
-	da->ats_brand = ACL_BRAND_POSIX;
-	sa->ats_brand = ACL_BRAND_NFS4;
-	init_entry_blob(*(entry_blob *)&sa->ats_acl.acl_entry[0], 1, 2, 3, 4, 5);
-	sa->ats_acl.acl_entry[0] =
-	    ((entry_blob *)&sa->ats_acl.acl_entry[0])->entry;
-	ace_run_pair(da, 0, sa, 0, "brand-mismatch");
+		acl_clone(same_b, same_a);
+		ace_run_ptrs(&same_a->ats_acl.acl_entry[0],
+		    &same_a->ats_acl.acl_entry[0],
+		    &same_b->ats_acl.acl_entry[0],
+		    &same_b->ats_acl.acl_entry[0], "same");
+		free_acl(same_a);
+		free_acl(same_b);
+	}
 
-	da->ats_brand = ACL_BRAND_UNKNOWN;
-	sa->ats_brand = ACL_BRAND_POSIX;
-	sa->ats_acl.acl_entry[1].ae_tag = 10;
-	sa->ats_acl.acl_entry[1].ae_id = 20;
-	sa->ats_acl.acl_entry[1].ae_perm = 0x80ff;
-	sa->ats_acl.acl_entry[1].ae_entry_type = 0xff;
-	sa->ats_acl.acl_entry[1].ae_flags = 0x7f00;
-	ace_run_pair(da, 0, sa, 1, "ok-unknown-dest");
+	dest->ats_brand = ACL_BRAND_POSIX;
+	src->ats_brand = ACL_BRAND_NFS4;
+	src->ats_acl.acl_entry[0].ae_tag = 1;
+	ace_run_pair(0, 0, dest, src, "brand-mismatch");
 
-	da->ats_brand = ACL_BRAND_POSIX;
-	sa->ats_brand = ACL_BRAND_POSIX;
-	sa->ats_acl.acl_entry[2].ae_tag = 0xffffffff;
-	sa->ats_acl.acl_entry[2].ae_id = 0;
-	sa->ats_acl.acl_entry[2].ae_perm = 0;
-	sa->ats_acl.acl_entry[2].ae_entry_type = 0;
-	sa->ats_acl.acl_entry[2].ae_flags = 0;
-	ace_run_pair(da, 1, sa, 2, "ok-posix");
+	dest->ats_brand = ACL_BRAND_UNKNOWN;
+	src->ats_brand = ACL_BRAND_POSIX;
+	src->ats_acl.acl_entry[1].ae_tag = 10;
+	src->ats_acl.acl_entry[1].ae_id = 20;
+	src->ats_acl.acl_entry[1].ae_perm = 0x80ff;
+	src->ats_acl.acl_entry[1].ae_entry_type = 0xff;
+	src->ats_acl.acl_entry[1].ae_flags = 0x7f00;
+	ace_run_pair(0, 1, dest, src, "ok-unknown-dest");
 
-	da->ats_brand = ACL_BRAND_NFS4;
-	sa->ats_brand = ACL_BRAND_NFS4;
-	ace_run_pair(da, 2, sa, 0, "ok-nfs4");
+	dest->ats_brand = ACL_BRAND_POSIX;
+	src->ats_brand = ACL_BRAND_POSIX;
+	src->ats_acl.acl_entry[2].ae_tag = 0xffffffff;
+	src->ats_acl.acl_entry[2].ae_id = 0;
+	src->ats_acl.acl_entry[2].ae_perm = 0;
+	src->ats_acl.acl_entry[2].ae_entry_type = 0;
+	src->ats_acl.acl_entry[2].ae_flags = 0;
+	ace_run_pair(1, 2, dest, src, "ok-posix");
 
-	free_acl(da);
-	free_acl(sa);
+	dest->ats_brand = ACL_BRAND_NFS4;
+	src->ats_brand = ACL_BRAND_NFS4;
+	ace_run_pair(2, 0, dest, src, "ok-nfs4");
+
+	free_acl(dest);
+	free_acl(src);
 }
 
 static void
@@ -1027,23 +791,23 @@ test_acl_copy_entry_random(void)
 {
 
 	for (long it = 0; it < SWEEP_ITERS; it++) {
-		acl_t da = alloc_acl();
-		acl_t sa = alloc_acl();
+		acl_t_full dest = alloc_acl();
+		acl_t_full src = alloc_acl();
 		int di = (int)(rnd32() % 8);
 		int si = (int)(rnd32() % 8);
 
-		da->ats_brand = (int)(rnd32() % 3);
-		sa->ats_brand = (int)(rnd32() % 3);
-		sa->ats_acl.acl_entry[si].ae_tag = rnd32();
-		sa->ats_acl.acl_entry[si].ae_id = rnd32();
-		sa->ats_acl.acl_entry[si].ae_perm = rnd32();
-		sa->ats_acl.acl_entry[si].ae_entry_type =
+		dest->ats_brand = (int)(rnd32() % 3);
+		src->ats_brand = (int)(rnd32() % 3);
+		src->ats_acl.acl_entry[si].ae_tag = rnd32();
+		src->ats_acl.acl_entry[si].ae_id = rnd32();
+		src->ats_acl.acl_entry[si].ae_perm = rnd32();
+		src->ats_acl.acl_entry[si].ae_entry_type =
 		    (acl_entry_type_t)(rnd32() & 0xffff);
-		sa->ats_acl.acl_entry[si].ae_flags =
+		src->ats_acl.acl_entry[si].ae_flags =
 		    (acl_flag_t)(rnd32() & 0xffff);
-		ace_run_pair(da, di, sa, si, "rand");
-		free_acl(da);
-		free_acl(sa);
+		ace_run_pair(di, si, dest, src, "rand");
+		free_acl(dest);
+		free_acl(src);
 	}
 }
 
@@ -1068,13 +832,13 @@ acx_run(void *buf, ssize_t size, const char *tag)
 	mock_reset();
 	errno = 0;
 	rp = (int)port::acl_copy_ext(buf != nullptr ? ba : nullptr,
-	    (acl_t)0x1234, size);
+	    reinterpret_cast<acl_t>((void *)(uintptr_t)0x1234), size);
 	ep = errno;
 
 	mock_reset();
 	errno = 0;
 	rr = (int)ref_acl_copy_ext(buf != nullptr ? bb : nullptr,
-	    (acl_t)0x1234, size);
+	    (acl_t)(uintptr_t)0x1234, size);
 	er = errno;
 
 	stats[S_ACX].cases++;

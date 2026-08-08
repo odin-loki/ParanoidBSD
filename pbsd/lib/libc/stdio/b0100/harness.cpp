@@ -558,9 +558,9 @@ main(void)
 	if (loc != LC_GLOBAL_LOCALE)
 		freelocale(loc);
 
-	std::printf("\n%-22s %12s %12s\n", "function", "cases", "failures");
+	std::fprintf(stderr, "\n%-22s %12s %12s\n", "function", "cases", "failures");
 	for (int i = 0; i < F_COUNT; i++)
-		std::printf("%-22s %12lld %12lld\n", fname[i], ncase[i],
+		std::fprintf(stderr, "%-22s %12lld %12lld\n", fname[i], ncase[i],
 		    nfail[i]);
 
 	long long total_fail = 0;

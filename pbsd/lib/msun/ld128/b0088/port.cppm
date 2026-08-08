@@ -11,7 +11,7 @@ module;
 
 export module pbsd.lib.msun.ld128.b0088;
 
-namespace pbsd::lib_msun_ld128::b0088 {
+export namespace pbsd::lib_msun_ld128::b0088 {
 
 #ifndef CMPLXL
 static inline long double _Complex
@@ -672,7 +672,6 @@ hexpl(long double x)
 	return (lo + hi) * 2 * twopkm2;
 }
 
-#ifdef _COMPLEX_H
 /*
  * See ../src/k_exp.c for details.
  */
@@ -700,13 +699,6 @@ __ldexp_cexpl(long double _Complex z, int expt)
 	return (CMPLXL(c * exp_x * scale1 * scale2,
 	    s * exp_x * scale1 * scale2));
 }
-#endif /* _COMPLEX_H */
-
-
-} // namespace pbsd::lib_msun_ld128::b0088
-
-export namespace pbsd::lib_msun_ld128::b0088 {
-
 
 /* s_cospil.c */
 /*-
@@ -994,8 +986,11 @@ static const long double
 cexp_ovfl = 2.27892930024498818830197576893019292e+04L,
 exp_ovfl = 1.13565234062941439494919310779707649e+04L;
 
-long double _Complex
-cexpl(long double _Complex z)
+extern "C" long double _Complex
+pbsd_b0088_cexpl(long double _Complex z)
+{
+	return cexpl(z);
+}
 {
 	long double c, exp_x, s, x, y;
 

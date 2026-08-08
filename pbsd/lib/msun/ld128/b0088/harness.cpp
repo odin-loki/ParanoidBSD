@@ -17,7 +17,15 @@
 
 import pbsd.lib.msun.ld128.b0088;
 
-namespace port = pbsd::lib_msun_ld128::b0088;
+extern "C" {
+long double _Complex pbsd_b0088_cexpl(long double _Complex);
+}
+
+static long double _Complex
+call_port_cexpl(long double _Complex z)
+{
+	return pbsd_b0088_cexpl(z);
+}
 
 extern "C" {
 long double ref_cospil(long double);
@@ -142,7 +150,7 @@ check_cexpl(long double _Complex z, const char *tag)
 	long double _Complex p, o;
 
 	st_cexpl.cases++;
-	p = port::cexpl(z);
+	p = call_port_cexpl(z);
 	o = ref_cexpl(z);
 	if (cx_equal(p, o))
 		return;

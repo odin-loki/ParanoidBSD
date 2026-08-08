@@ -1,28 +1,37 @@
-module;
+/*
+ * oracle.c -- reference implementations for batch b0115.
+ *
+ * The original HardenedBSD/NetBSD sources, concatenated verbatim.  Every
+ * function has been renamed with a "ref_" prefix; the bodies are unmodified.
+ * Only includes / feature-test macros / missing defines were adjusted so the
+ * code builds with `cc -std=c11 -O2` on a hosted glibc toolchain.
+ */
 
-#include <cstdarg>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
+#define _DEFAULT_SOURCE 1
 
-export module pbsd.lib.libc.secure.b0115;
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <string.h>
 
-namespace pbsd::lib_libc_secure::b0115 {
-
-extern "C" void __chk_fail(void);
+#ifndef SIZE_MAX
+#define SIZE_MAX ((size_t)-1)
+#endif
 
 static inline int
-__ssp_overlap(const void *leftp, const void *rightp, std::size_t sz)
+__ssp_overlap(const void *leftp, const void *rightp, size_t sz)
 {
-	auto left = reinterpret_cast<std::uintptr_t>(leftp);
-	auto right = reinterpret_cast<std::uintptr_t>(rightp);
+	uintptr_t left = (uintptr_t)leftp;
+	uintptr_t right = (uintptr_t)rightp;
 
 	if (left <= right)
 		return (SIZE_MAX - sz < left || right < left + sz);
 
 	return (SIZE_MAX - sz < right || left < right + sz);
 }
+
+void __chk_fail(void);
 
 /*-
  *
@@ -58,12 +67,13 @@ __ssp_overlap(const void *leftp, const void *rightp, std::size_t sz)
 
 #undef memmove
 
-export void *
-__memmove_chk(void *dst, const void *src, std::size_t len, std::size_t slen)
+void *
+ref___memmove_chk(void *dst, const void *src, size_t len,
+    size_t slen)
 {
 	if (len > slen)
 		__chk_fail();
-	return (std::memmove(dst, src, len));
+	return (memmove(dst, src, len));
 }
 
 /*-
@@ -100,9 +110,9 @@ __memmove_chk(void *dst, const void *src, std::size_t len, std::size_t slen)
 
 #undef memcpy
 
-export void *
-__memcpy_chk(void * __restrict dst, const void * __restrict src,
-    std::size_t len, std::size_t slen)
+void *
+ref___memcpy_chk(void * __restrict dst, const void * __restrict src, size_t len,
+    size_t slen)
 {
 	if (len > slen)
 		__chk_fail();
@@ -110,7 +120,7 @@ __memcpy_chk(void * __restrict dst, const void * __restrict src,
 	if (__ssp_overlap(src, dst, len))
 		__chk_fail();
 
-	return (std::memcpy(dst, src, len));
+	return (memcpy(dst, src, len));
 }
 
 /*-
@@ -147,14 +157,14 @@ __memcpy_chk(void * __restrict dst, const void * __restrict src,
 
 #undef vsnprintf
 
-export int
-__vsnprintf_chk(char * __restrict buf, std::size_t len, int flags,
-    std::size_t slen, const char * __restrict fmt, std::va_list ap)
+int
+ref___vsnprintf_chk(char * __restrict buf, size_t len, int flags, size_t slen,
+    const char * __restrict fmt, va_list ap)
 {
 	if (len > slen)
 		__chk_fail();
 
-	return (std::vsnprintf(buf, len, fmt, ap));
+	return (vsnprintf(buf, len, fmt, ap));
 }
 
 /*-
@@ -191,9 +201,9 @@ __vsnprintf_chk(char * __restrict buf, std::size_t len, int flags,
 
 #undef strncpy
 
-export char *
-__strncpy_chk(char * __restrict dst, const char * __restrict src,
-    std::size_t len, std::size_t slen)
+char *
+ref___strncpy_chk(char * __restrict dst, const char * __restrict src, size_t len,
+    size_t slen)
 {
 	if (len > slen)
 		__chk_fail();
@@ -201,7 +211,5 @@ __strncpy_chk(char * __restrict dst, const char * __restrict src,
 	if (__ssp_overlap(src, dst, len))
 		__chk_fail();
 
-	return (std::strncpy(dst, src, len));
+	return (strncpy(dst, src, len));
 }
-
-} // namespace pbsd::lib_libc_secure::b0115

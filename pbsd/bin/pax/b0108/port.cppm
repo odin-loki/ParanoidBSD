@@ -92,12 +92,14 @@ struct archd {
 	int type;
 };
 
-extern int iflag;
-extern int vflag;
-extern int vfpart;
-extern int exit_val;
-extern const char *argv0;
-extern FILE *listf;
+int iflag = 0;
+int vflag = 0;
+int vfpart = 0;
+int exit_val = 0;
+const char *argv0 = "pax";
+FILE *listf = nullptr;
+
+u_int
 st_hash(char *name, int len, int tabsz)
 {
 	char *pt;
@@ -835,12 +837,5 @@ gid_name(char *name, gid_t *gid)
 	*gid = ptr->gid = gr->gr_gid;
 	return(0);
 }
-
-int iflag = 0;
-int vflag = 0;
-int vfpart = 0;
-int exit_val = 0;
-const char *argv0 = "pax";
-FILE *listf = nullptr;
 
 } // namespace pbsd::bin_pax::b0108

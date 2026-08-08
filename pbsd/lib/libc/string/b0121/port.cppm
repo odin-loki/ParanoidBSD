@@ -1,65 +1,7 @@
-// PBSD port of HardenedBSD lib/libc/string batch b0113.
-//
-// Sources:
-//   hbsd/src/lib/libc/string/mempcpy.c
-//   hbsd/src/lib/libc/string/wcpncpy.c
-//   hbsd/src/lib/libc/string/wmempcpy.c
-//
-// The original copyright notices are reproduced verbatim above each ported
-// function.  Behaviour is preserved exactly, including pointer arithmetic and
-// evaluation order.
-
-module;
-
-#include <stddef.h>
-#include <string.h>
-#include <wchar.h>
-
-export module pbsd.lib.libc.string.b0113;
-
-export namespace pbsd::lib_libc_string::b0113 {
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2021 The FreeBSD Foundation
- *
- * This software was developed by Konstantin Belousov <kib@FreeBSD.org>
- * under sponsorship from the FreeBSD Foundation.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-void *
-mempcpy(void *__restrict dst, const void *__restrict src,
-    size_t len)
-{
-	return ((char *)memcpy(dst, src, len) + len);
-}
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2009 David Schultz <das@FreeBSD.org>
+ * Copyright (c)1999 Citrus Project,
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,31 +24,31 @@ mempcpy(void *__restrict dst, const void *__restrict src,
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ *	citrus Id: wmemmove.c,v 1.2 2000/12/20 14:08:31 itojun Exp
  */
 
-wchar_t *
-wcpncpy(wchar_t * __restrict dst, const wchar_t * __restrict src,
-    size_t n)
-{
+module;
 
-	for (; n--; dst++, src++) {
-		if (!(*dst = *src)) {
-			wchar_t *ret = dst;
-			while (n--)
-				*++dst = L'\0';
-			return (ret);
-		}
-	}
-	return (dst);
+#include <cstddef>
+#include <cstring>
+#include <cwchar>
+
+export module pbsd.lib.libc.string.b0121;
+
+export namespace pbsd::lib_libc_string::b0121 {
+
+wchar_t *
+wmemmove(wchar_t *d, const wchar_t *s, std::size_t n)
+{
+	return (wchar_t *)std::memmove(d, s, n * sizeof(wchar_t));
 }
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2021 The FreeBSD Foundation
- *
- * This software was developed by Konstantin Belousov <kib@FreeBSD.org>
- * under sponsorship from the FreeBSD Foundation.
+ * Copyright (c)1999 Citrus Project,
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -120,7 +62,7 @@ wcpncpy(wchar_t * __restrict dst, const wchar_t * __restrict src,
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -128,13 +70,64 @@ wcpncpy(wchar_t * __restrict dst, const wchar_t * __restrict src,
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ *	citrus Id: wcscpy.c,v 1.2 2000/12/21 04:51:09 itojun Exp
  */
 
 wchar_t *
-wmempcpy(wchar_t *__restrict dst, const wchar_t *__restrict src,
-    size_t len)
+wcscpy(wchar_t * __restrict s1, const wchar_t * __restrict s2)
 {
-	return (wmemcpy(dst, src, len) + len);
+	wchar_t *cp;
+
+	cp = s1;
+	while ((*cp++ = *s2++) != L'\0')
+		;
+
+	return (s1);
 }
 
-} // namespace pbsd::lib_libc_string::b0113
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c)1999 Citrus Project,
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ *	citrus Id: wmemset.c,v 1.2 2000/12/20 14:08:31 itojun Exp
+ */
+
+wchar_t	*
+wmemset(wchar_t *s, wchar_t c, std::size_t n)
+{
+	std::size_t i;
+	wchar_t *p;
+
+	p = (wchar_t *)s;
+	for (i = 0; i < n; i++) {
+		*p = c;
+		p++;
+	}
+	return s;
+}
+
+} // namespace pbsd::lib_libc_string::b0121

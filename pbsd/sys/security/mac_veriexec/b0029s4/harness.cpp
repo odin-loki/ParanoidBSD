@@ -157,13 +157,8 @@ run_case(Group &grp, const char *label, const unsigned char *ctx_bytes,
 	bool buf_bad = std::memcmp(bufA, bufB, BUFSZ) != 0;
 	bool reg_bad = std::memcmp(regA, regB, CTXREG) != 0;
 
-	grp.cases++;
-	if (buf_bad || reg_bad) {
-		grp.failures++;
-		report(label, ctx_off, buf_off, buf_bad, reg_bad);
-		return false;
-	}
-
+	/* Vacuity accounting reads the oracle's buffer, so it stays valid
+	 * whether or not the port agreed with it. */
 	for (std::size_t i = 0; i < DIGESTLEN; i++) {
 		if (bufB[buf_off + i] != GUARD) {
 			g_wrote++;
@@ -173,6 +168,13 @@ run_case(Group &grp, const char *label, const unsigned char *ctx_bytes,
 	for (std::size_t i = 0; i < DIGESTLEN; i++)
 		g_distinct_marker = g_distinct_marker * 1000003u +
 		    bufB[buf_off + i];
+
+	grp.cases++;
+	if (buf_bad || reg_bad) {
+		grp.failures++;
+		report(label, ctx_off, buf_off, buf_bad, reg_bad);
+		return false;
+	}
 	return true;
 }
 
@@ -249,11 +251,12 @@ run_kat(const char *msg, std::size_t len, const char *expect)
 	make_ctx_message(ctx, reinterpret_cast<const unsigned char *>(msg),
 	    len);
 	std::size_t bo = 5, co = CTX_OFF_MIN + 8;
-	bool ok = run_case(g_kat, "kat", ctx, co, bo);
+
+	run_case(g_kat, "kat", ctx, co, bo);
 
 	g_kat.cases++;
 	hexof(got, bufA + bo, DIGESTLEN);
-	if (!ok || std::strcmp(got, expect) != 0) {
+	if (std::strcmp(got, expect) != 0) {
 		g_kat.failures++;
 		std::printf("  MISMATCH kat len=%zu: port digest %s, "
 		    "expected %s\n", len, got, expect);
@@ -472,18 +475,20 @@ main(void)
 	    "---------", "---------");
 	std::printf("%-34s %9lu %9lu\n", "SHA1_Final", cases, failures);
 	std::printf("%-34s %9lu %9lu\n", "TOTAL", cases, failures);
-	std::printf("\noutput digest mix 0x%08lx, cases that wrote a digest "
-	    "%lu\n", g_distinct_marker & 0xffffffffull, g_wrote);
+	std::printf("\noutput digest mix 0x%08llx, cases that wrote a digest "
+	    "%lu\n",
+	    static_cast<unsigned long long>(g_distinct_marker & 0xffffffffu),
+	    g_wrote);
 
+	if (failures != 0) {
+		std::printf("\nFAIL: %lu of %lu cases diverged\n", failures,
+		    cases);
+		return 1;
+	}
 	/* A run in which nothing was ever written would compare guard bytes
 	 * against guard bytes and prove nothing. */
 	if (cases == 0 || g_wrote == 0) {
 		std::printf("\nFAIL: harness never observed a digest write\n");
-		return 1;
-	}
-	if (failures != 0) {
-		std::printf("\nFAIL: %lu of %lu cases diverged\n", failures,
-		    cases);
 		return 1;
 	}
 	std::printf("\nPASS: all %lu cases matched\n", cases);

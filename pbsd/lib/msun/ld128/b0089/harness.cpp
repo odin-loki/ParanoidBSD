@@ -4,7 +4,6 @@
 
 #include <cfloat>
 #include <climits>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -23,6 +22,46 @@ long double ref_logl(long double x);
 long double ref_log1pl(long double x);
 long double ref_log10l(long double x);
 long double ref_log2l(long double x);
+}
+
+static long double port_powl(long double x, long double y)
+{
+	return port::powl(x, y);
+}
+
+static long double port_exp2l(long double x)
+{
+	return port::exp2l(x);
+}
+
+static long double port_erfl(long double x)
+{
+	return port::erfl(x);
+}
+
+static long double port_erfcl(long double x)
+{
+	return port::erfcl(x);
+}
+
+static long double port_logl(long double x)
+{
+	return port::logl(x);
+}
+
+static long double port_log1pl(long double x)
+{
+	return port::log1pl(x);
+}
+
+static long double port_log10l(long double x)
+{
+	return port::log10l(x);
+}
+
+static long double port_log2l(long double x)
+{
+	return port::log2l(x);
 }
 
 union IEEEl2bits {
@@ -103,23 +142,156 @@ static stat st_log10l = { "log10l", 0, 0, 0 };
 static stat st_log2l = { "log2l", 0, 0, 0 };
 static const unsigned MAX_REPORT = 8;
 
-template <typename Fn>
 static void
-check_unary(stat &st, Fn port_fn, long double (*ref_fn)(long double),
-    long double x, const char *tag)
+check_exp2l(long double x, const char *tag)
 {
-	ldrep p = ldbits(port_fn(x));
-	ldrep o = ldbits(ref_fn(x));
-	st.cases++;
+	ldrep p = ldbits(port_exp2l(x));
+	ldrep o = ldbits(ref_exp2l(x));
+
+	st_exp2l.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
 		return;
-	st.fails++;
-	if (st.reported < MAX_REPORT) {
-		st.reported++;
-		std::printf("  %s FAIL [%s] x=", st.name, tag);
+	st_exp2l.fails++;
+	if (st_exp2l.reported < MAX_REPORT) {
+		st_exp2l.reported++;
+		std::printf("  exp2l FAIL [%s] x=", tag);
 		ldhex(ldbits(x));
-		std::printf(" port="); ldhex(p);
-		std::printf(" ref="); ldhex(o);
+		std::printf(" port=");
+		ldhex(p);
+		std::printf(" ref=");
+		ldhex(o);
+		std::printf("\n");
+	}
+}
+
+static void
+check_erfl(long double x, const char *tag)
+{
+	ldrep p = ldbits(port_erfl(x));
+	ldrep o = ldbits(ref_erfl(x));
+
+	st_erfl.cases++;
+	if (guarded_equal(p.b, o.b, sizeof(p.b)))
+		return;
+	st_erfl.fails++;
+	if (st_erfl.reported < MAX_REPORT) {
+		st_erfl.reported++;
+		std::printf("  erfl FAIL [%s] x=", tag);
+		ldhex(ldbits(x));
+		std::printf(" port=");
+		ldhex(p);
+		std::printf(" ref=");
+		ldhex(o);
+		std::printf("\n");
+	}
+}
+
+static void
+check_erfcl(long double x, const char *tag)
+{
+	ldrep p = ldbits(port_erfcl(x));
+	ldrep o = ldbits(ref_erfcl(x));
+
+	st_erfcl.cases++;
+	if (guarded_equal(p.b, o.b, sizeof(p.b)))
+		return;
+	st_erfcl.fails++;
+	if (st_erfcl.reported < MAX_REPORT) {
+		st_erfcl.reported++;
+		std::printf("  erfcl FAIL [%s] x=", tag);
+		ldhex(ldbits(x));
+		std::printf(" port=");
+		ldhex(p);
+		std::printf(" ref=");
+		ldhex(o);
+		std::printf("\n");
+	}
+}
+
+static void
+check_logl(long double x, const char *tag)
+{
+	ldrep p = ldbits(port_logl(x));
+	ldrep o = ldbits(ref_logl(x));
+
+	st_logl.cases++;
+	if (guarded_equal(p.b, o.b, sizeof(p.b)))
+		return;
+	st_logl.fails++;
+	if (st_logl.reported < MAX_REPORT) {
+		st_logl.reported++;
+		std::printf("  logl FAIL [%s] x=", tag);
+		ldhex(ldbits(x));
+		std::printf(" port=");
+		ldhex(p);
+		std::printf(" ref=");
+		ldhex(o);
+		std::printf("\n");
+	}
+}
+
+static void
+check_log1pl(long double x, const char *tag)
+{
+	ldrep p = ldbits(port_log1pl(x));
+	ldrep o = ldbits(ref_log1pl(x));
+
+	st_log1pl.cases++;
+	if (guarded_equal(p.b, o.b, sizeof(p.b)))
+		return;
+	st_log1pl.fails++;
+	if (st_log1pl.reported < MAX_REPORT) {
+		st_log1pl.reported++;
+		std::printf("  log1pl FAIL [%s] x=", tag);
+		ldhex(ldbits(x));
+		std::printf(" port=");
+		ldhex(p);
+		std::printf(" ref=");
+		ldhex(o);
+		std::printf("\n");
+	}
+}
+
+static void
+check_log10l(long double x, const char *tag)
+{
+	ldrep p = ldbits(port_log10l(x));
+	ldrep o = ldbits(ref_log10l(x));
+
+	st_log10l.cases++;
+	if (guarded_equal(p.b, o.b, sizeof(p.b)))
+		return;
+	st_log10l.fails++;
+	if (st_log10l.reported < MAX_REPORT) {
+		st_log10l.reported++;
+		std::printf("  log10l FAIL [%s] x=", tag);
+		ldhex(ldbits(x));
+		std::printf(" port=");
+		ldhex(p);
+		std::printf(" ref=");
+		ldhex(o);
+		std::printf("\n");
+	}
+}
+
+static void
+check_log2l(long double x, const char *tag)
+{
+	ldrep p = ldbits(port_log2l(x));
+	ldrep o = ldbits(ref_log2l(x));
+
+	st_log2l.cases++;
+	if (guarded_equal(p.b, o.b, sizeof(p.b)))
+		return;
+	st_log2l.fails++;
+	if (st_log2l.reported < MAX_REPORT) {
+		st_log2l.reported++;
+		std::printf("  log2l FAIL [%s] x=", tag);
+		ldhex(ldbits(x));
+		std::printf(" port=");
+		ldhex(p);
+		std::printf(" ref=");
+		ldhex(o);
 		std::printf("\n");
 	}
 }
@@ -127,7 +299,7 @@ check_unary(stat &st, Fn port_fn, long double (*ref_fn)(long double),
 static void
 check_powl(long double x, long double y, const char *tag)
 {
-	ldrep p = ldbits(port::powl(x, y));
+	ldrep p = ldbits(port_powl(x, y));
 	ldrep o = ldbits(ref_powl(x, y));
 	st_powl.cases++;
 	if (guarded_equal(p.b, o.b, sizeof(p.b)))
@@ -184,13 +356,13 @@ static void edge_cases(void)
 {
 	for (std::size_t i = 0; i < NLDVEC; i++) {
 		long double x = mkld(ldvec[i].se, ldvec[i].mh, ldvec[i].ml);
-		check_unary(st_exp2l, port::exp2l, ref_exp2l, x, "vec");
-		check_unary(st_erfl, port::erfl, ref_erfl, x, "vec");
-		check_unary(st_erfcl, port::erfcl, ref_erfcl, x, "vec");
-		check_unary(st_logl, port::logl, ref_logl, x, "vec");
-		check_unary(st_log1pl, port::log1pl, ref_log1pl, x, "vec");
-		check_unary(st_log10l, port::log10l, ref_log10l, x, "vec");
-		check_unary(st_log2l, port::log2l, ref_log2l, x, "vec");
+		check_exp2l(x, "vec");
+		check_erfl(x, "vec");
+		check_erfcl(x, "vec");
+		check_logl(x, "vec");
+		check_log1pl(x, "vec");
+		check_log10l(x, "vec");
+		check_log2l(x, "vec");
 	}
 	for (std::size_t i = 0; i < NLDVEC; i++)
 		for (std::size_t j = 0; j < NLDVEC; j++)
@@ -219,13 +391,13 @@ static void edge_cases(void)
 		__builtin_nanl(""), __builtin_infl(), -__builtin_infl(),
 	};
 	for (std::size_t a = 0; a < sizeof(xs)/sizeof(xs[0]); a++) {
-		check_unary(st_exp2l, port::exp2l, ref_exp2l, xs[a], "special");
-		check_unary(st_erfl, port::erfl, ref_erfl, xs[a], "special");
-		check_unary(st_erfcl, port::erfcl, ref_erfcl, xs[a], "special");
-		check_unary(st_logl, port::logl, ref_logl, xs[a], "special");
-		check_unary(st_log1pl, port::log1pl, ref_log1pl, xs[a], "special");
-		check_unary(st_log10l, port::log10l, ref_log10l, xs[a], "special");
-		check_unary(st_log2l, port::log2l, ref_log2l, xs[a], "special");
+		check_exp2l(xs[a], "special");
+		check_erfl(xs[a], "special");
+		check_erfcl(xs[a], "special");
+		check_logl(xs[a], "special");
+		check_log1pl(xs[a], "special");
+		check_log10l(xs[a], "special");
+		check_log2l(xs[a], "special");
 		for (std::size_t b = 0; b < sizeof(ys)/sizeof(ys[0]); b++)
 			check_powl(xs[a], ys[b], "special");
 	}
@@ -236,7 +408,7 @@ static void edge_cases(void)
 		__builtin_infl(), __builtin_nanl(""),
 	};
 	for (std::size_t a = 0; a < sizeof(log1p_xs)/sizeof(log1p_xs[0]); a++)
-		check_unary(st_log1pl, port::log1pl, ref_log1pl, log1p_xs[a], "log1p");
+		check_log1pl(log1p_xs[a], "log1p");
 	static const long double pow_pairs[][2] = {
 		{ 0.0L, 1.0L }, { -0.0L, 2.0L }, { -0.0L, 3.0L },
 		{ -1.0L, 2.0L }, { -1.0L, 3.0L }, { -1.0L, 0.5L },
@@ -282,13 +454,13 @@ static void random_sweep(void)
 	for (unsigned i = 0; i < 250000; i++) {
 		long double x = rand_ld(r, (int)r.next());
 		long double y = rand_ld(r, (int)(r.next() >> 8));
-		check_unary(st_exp2l, port::exp2l, ref_exp2l, x, "rand");
-		check_unary(st_erfl, port::erfl, ref_erfl, x, "rand");
-		check_unary(st_erfcl, port::erfcl, ref_erfcl, x, "rand");
-		check_unary(st_logl, port::logl, ref_logl, x, "rand");
-		check_unary(st_log1pl, port::log1pl, ref_log1pl, x, "rand");
-		check_unary(st_log10l, port::log10l, ref_log10l, x, "rand");
-		check_unary(st_log2l, port::log2l, ref_log2l, x, "rand");
+		check_exp2l(x, "rand");
+		check_erfl(x, "rand");
+		check_erfcl(x, "rand");
+		check_logl(x, "rand");
+		check_log1pl(x, "rand");
+		check_log10l(x, "rand");
+		check_log2l(x, "rand");
 		check_powl(x, y, "rand");
 	}
 }
@@ -303,6 +475,22 @@ int main()
 	std::printf("PBSD batch b0089 differential harness\n");
 	std::printf("LDBL_MANT_DIG=%d, comparing %zu bytes of long double\n\n",
 	    (int)LDBL_MANT_DIG, LD_SIG);
+
+	{
+		long double x = mkld(0x3fff, 0x8080808080808080ull,
+		    0xfefefefefefefefeull);
+		ldrep p = ldbits(port_erfl(x));
+		ldrep r = ldbits(ref_erfl(x));
+
+		std::printf("selftest x=");
+		ldhex(ldbits(x));
+		std::printf(" p=");
+		ldhex(p);
+		std::printf(" r=");
+		ldhex(r);
+		std::printf(" eq=%d\n\n", guarded_equal(p.b, r.b, sizeof(p.b)));
+	}
+
 	edge_cases();
 	random_sweep();
 	std::printf("%-8s %12s %12s\n", "function", "cases", "failures");

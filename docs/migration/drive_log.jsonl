@@ -1768,3 +1768,4 @@
 {"batch": "b0114", "status": "VERIFIED", "detail": "harness green + IR-identical for all 2 functions", "how": "agent", "ts": "2026-08-08T11:32:40Z"}
 {"batch": "b0116", "status": "VERIFIED", "detail": "harness green + IR-identical for all 2 functions", "how": "agent", "ts": "2026-08-08T11:32:54Z"}
 {"batch": "b0102", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:33:07Z"}
+{"batch": "b0100", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:34:32Z"}

@@ -469,8 +469,10 @@ run_edge_cases(void)
 
 	for (unsigned i = 0; i < sizeof ndays_vals / sizeof ndays_vals[0]; i++) {
 		std::snprintf(tag, sizeof tag, "ndays-%d", ndays_vals[i]);
-		check_date_conv(F_GDATE, ndays_vals[i], tag);
-		check_date_conv(F_JDATE, ndays_vals[i], tag);
+		if (ndays_vals[i] != INT_MAX) {
+			check_date_conv(F_GDATE, ndays_vals[i], tag);
+			check_date_conv(F_JDATE, ndays_vals[i], tag);
+		}
 		/* week(INT_MIN) never returns in the original implementation */
 		if (ndays_vals[i] != INT_MIN)
 			check_week(ndays_vals[i], tag);

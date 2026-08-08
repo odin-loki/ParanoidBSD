@@ -15,13 +15,6 @@ import pbsd.lib.libc.secure.b0115;
 namespace P = pbsd::lib_libc_secure::b0115;
 
 extern "C" {
-void *__memmove_chk(void *, const void *, size_t, size_t);
-void *__memcpy_chk(void *__restrict, const void *__restrict, size_t, size_t);
-int __vsnprintf_chk(char *__restrict, size_t, int, size_t,
-    const char *__restrict, va_list);
-char *__strncpy_chk(char *__restrict, const char *__restrict, size_t,
-    size_t);
-
 void *ref___memmove_chk(void *, const void *, size_t, size_t);
 void *ref___memcpy_chk(void *__restrict, const void *__restrict, size_t,
     size_t);
@@ -121,13 +114,15 @@ arena_data(unsigned char *arena)
 
 template<typename Fn>
 static MemObs
-run_mem(Fn fn, unsigned char *arena, const unsigned char *src,
-    std::size_t len, std::size_t slen)
+run_mem_at(Fn fn, unsigned char *arena, std::size_t dst_off, const void *src,
+    std::size_t len, std::size_t slen, bool copy_in)
 {
 	MemObs obs{};
 
 	fill_guard(arena, sizeof(obs.buf));
-	copy_payload(arena_data(arena), src, len);
+	if (copy_in)
+		copy_payload(arena_data(arena) + dst_off,
+		    (const unsigned char *)src, len);
 
 	g_chk_jmp_active = 1;
 	if (setjmp(g_chk_jmp) != 0) {
@@ -138,11 +133,19 @@ run_mem(Fn fn, unsigned char *arena, const unsigned char *src,
 		return obs;
 	}
 
-	obs.ret = fn(arena_data(arena), src, len, slen);
+	obs.ret = fn(arena_data(arena) + dst_off, src, len, slen);
 	g_chk_jmp_active = 0;
 	obs.outcome = Outcome::OK;
-	obs.ret_off = (unsigned char *)obs.ret - arena_data(arena);
+	obs.ret_off = (unsigned char *)obs.ret - (arena_data(arena) + dst_off);
 	return obs;
+}
+
+template<typename Fn>
+static MemObs
+run_mem(Fn fn, unsigned char *arena, const void *src, std::size_t len,
+    std::size_t slen, bool copy_in)
+{
+	return run_mem_at(fn, arena, 0, src, len, slen, copy_in);
 }
 
 static bool
@@ -172,7 +175,7 @@ check_mem(Stat *st, const char *tag, const MemObs &a, const MemObs &b)
 
 static void
 memmove_case(Stat *st, const char *tag, const unsigned char *src,
-    std::size_t len, std::size_t slen, std::ptrdiff_t dst_delta)
+    std::size_t len, std::size_t slen, std::size_t dst_off, std::size_t src_off)
 {
 	unsigned char arena_a[ARENA + 2 * PAD];
 	unsigned char arena_b[ARENA + 2 * PAD];
@@ -180,17 +183,34 @@ memmove_case(Stat *st, const char *tag, const unsigned char *src,
 	MemObs pa, pb;
 
 	std::memcpy(srcbuf, src, len);
-	if (dst_delta != 0) {
-		/* overlap layout inside arena_a/b data region */
-		std::memmove(arena_data(arena_a) + dst_delta, srcbuf, len);
-		std::memmove(arena_data(arena_b) + dst_delta, srcbuf, len);
-		pa = run_mem(P::__memmove_chk, arena_a, arena_data(arena_a),
-		    len, slen);
-		pb = run_mem(ref___memmove_chk, arena_b,
-		    arena_data(arena_b), len, slen);
+	if (src_off != dst_off) {
+		fill_guard(arena_a, sizeof(arena_a));
+		fill_guard(arena_b, sizeof(arena_b));
+		std::memcpy(arena_data(arena_a) + src_off, srcbuf, len);
+		std::memcpy(arena_data(arena_b) + src_off, srcbuf, len);
+		pa = run_mem_at(
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return P::__memmove_chk(d, s, l, sl);
+		    },
+		    arena_a, dst_off, arena_data(arena_a) + src_off, len, slen,
+		    false);
+		pb = run_mem_at(
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return ref___memmove_chk(d, s, l, sl);
+		    },
+		    arena_b, dst_off, arena_data(arena_b) + src_off, len, slen,
+		    false);
 	} else {
-		pa = run_mem(P::__memmove_chk, arena_a, srcbuf, len, slen);
-		pb = run_mem(ref___memmove_chk, arena_b, srcbuf, len, slen);
+		pa = run_mem(
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return P::__memmove_chk(d, s, l, sl);
+		    },
+		    arena_a, srcbuf, len, slen, true);
+		pb = run_mem(
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return ref___memmove_chk(d, s, l, sl);
+		    },
+		    arena_b, srcbuf, len, slen, true);
 	}
 	check_mem(st, tag, pa, pb);
 }
@@ -206,15 +226,31 @@ memcpy_case(Stat *st, const char *tag, const unsigned char *src,
 
 	std::memcpy(srcbuf, src, len);
 	if (use_overlap) {
-		std::memmove(arena_data(arena_a) + 8, srcbuf, len);
-		std::memmove(arena_data(arena_b) + 8, srcbuf, len);
-		pa = run_mem(P::__memcpy_chk, arena_a, arena_data(arena_a) + 4,
-		    len, slen);
-		pb = run_mem(ref___memcpy_chk, arena_b,
-		    arena_data(arena_b) + 4, len, slen);
+		fill_guard(arena_a, sizeof(arena_a));
+		fill_guard(arena_b, sizeof(arena_b));
+		std::memcpy(arena_data(arena_a) + 8, srcbuf, len);
+		std::memcpy(arena_data(arena_b) + 8, srcbuf, len);
+		pa = run_mem(
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return P::__memcpy_chk(d, s, l, sl);
+		    },
+		    arena_a, arena_data(arena_a) + 4, len, slen, false);
+		pb = run_mem(
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return ref___memcpy_chk(d, s, l, sl);
+		    },
+		    arena_b, arena_data(arena_b) + 4, len, slen, false);
 	} else {
-		pa = run_mem(P::__memcpy_chk, arena_a, srcbuf, len, slen);
-		pb = run_mem(ref___memcpy_chk, arena_b, srcbuf, len, slen);
+		pa = run_mem(
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return P::__memcpy_chk(d, s, l, sl);
+		    },
+		    arena_a, srcbuf, len, slen, true);
+		pb = run_mem(
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return ref___memcpy_chk(d, s, l, sl);
+		    },
+		    arena_b, srcbuf, len, slen, true);
 	}
 	check_mem(st, tag, pa, pb);
 }
@@ -231,35 +267,35 @@ strncpy_case(Stat *st, const char *tag, const char *src, std::size_t len,
 	std::memcpy(srcbuf, src, len);
 	srcbuf[len] = '\0';
 	if (use_overlap) {
-		std::memmove(arena_data(arena_a) + 16, srcbuf, len + 1);
-		std::memmove(arena_data(arena_b) + 16, srcbuf, len + 1);
+		fill_guard(arena_a, sizeof(arena_a));
+		fill_guard(arena_b, sizeof(arena_b));
+		std::memcpy(arena_data(arena_a) + 16, srcbuf, len + 1);
+		std::memcpy(arena_data(arena_b) + 16, srcbuf, len + 1);
 		pa = run_mem(
-		    [](char *d, const char *s, std::size_t l, std::size_t sl) {
-			    return (void *)P::__strncpy_chk(d, s, l, sl);
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return (void *)P::__strncpy_chk((char *)d,
+				(const char *)s, l, sl);
 		    },
-		    arena_a, (const unsigned char *)(arena_data(arena_a) + 8),
-		    len, slen);
+		    arena_a, arena_data(arena_a) + 8, len, slen, false);
 		pb = run_mem(
-		    [](char *d, const char *s, std::size_t l, std::size_t sl) {
-			    return (void *)ref___strncpy_chk(d, s, l, sl);
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return (void *)ref___strncpy_chk((char *)d,
+				(const char *)s, l, sl);
 		    },
-		    arena_b, (const unsigned char *)(arena_data(arena_b) + 8),
-		    len, slen);
+		    arena_b, arena_data(arena_b) + 8, len, slen, false);
 	} else {
 		pa = run_mem(
-		    [](char *d, const unsigned char *s, std::size_t l,
-			std::size_t sl) {
-			    return (void *)P::__strncpy_chk(d,
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return (void *)P::__strncpy_chk((char *)d,
 				(const char *)s, l, sl);
 		    },
-		    arena_a, (const unsigned char *)srcbuf, len, slen);
+		    arena_a, srcbuf, len, slen, true);
 		pb = run_mem(
-		    [](char *d, const unsigned char *s, std::size_t l,
-			std::size_t sl) {
-			    return (void *)ref___strncpy_chk(d,
+		    [](void *d, const void *s, std::size_t l, std::size_t sl) {
+			    return (void *)ref___strncpy_chk((char *)d,
 				(const char *)s, l, sl);
 		    },
-		    arena_b, (const unsigned char *)srcbuf, len, slen);
+		    arena_b, srcbuf, len, slen, true);
 	}
 	check_mem(st, tag, pa, pb);
 }
@@ -269,58 +305,6 @@ struct VsnObs {
 	int ret;
 	unsigned char buf[128 + 2 * PAD];
 };
-
-static int
-call_port_vsnprintf(char *buf, std::size_t len, int flags, std::size_t slen,
-    const char *fmt, ...)
-{
-	va_list ap;
-	int rv;
-
-	va_start(ap, fmt);
-	rv = P::__vsnprintf_chk(buf, len, flags, slen, fmt, ap);
-	va_end(ap);
-	return rv;
-}
-
-static int
-call_ref_vsnprintf(char *buf, std::size_t len, int flags, std::size_t slen,
-    const char *fmt, ...)
-{
-	va_list ap;
-	int rv;
-
-	va_start(ap, fmt);
-	rv = ref___vsnprintf_chk(buf, len, flags, slen, fmt, ap);
-	va_end(ap);
-	return rv;
-}
-
-static VsnObs
-run_vsnprintf(int (*fn)(char *, std::size_t, int, std::size_t,
-    const char *, ...),
-    std::size_t len, int flags, std::size_t slen, const char *fmt, ...)
-{
-	VsnObs obs{};
-	va_list ap;
-
-	fill_guard(obs.buf, sizeof(obs.buf));
-
-	g_chk_jmp_active = 1;
-	if (setjmp(g_chk_jmp) != 0) {
-		g_chk_jmp_active = 0;
-		obs.outcome = Outcome::CHK_FAIL;
-		obs.ret = -1;
-		return obs;
-	}
-
-	va_start(ap, fmt);
-	obs.ret = fn(arena_data(obs.buf), len, flags, slen, fmt, ap);
-	va_end(ap);
-	g_chk_jmp_active = 0;
-	obs.outcome = Outcome::OK;
-	return obs;
-}
 
 static bool
 vsn_obs_eq(const VsnObs &a, const VsnObs &b)
@@ -399,18 +383,19 @@ memmove_edges(void)
 	static const unsigned char pat4[] = { 'a', 'b', 'c', 'd', '\0' };
 	static const unsigned char pat5[] = { 0x80, 0x81, 0xff, 0x00, 0x7f };
 
-	memmove_case(&st_memmove, "empty", pat0, 0, 0, 0);
-	memmove_case(&st_memmove, "empty_slen1", pat0, 0, 1, 0);
-	memmove_case(&st_memmove, "one", pat1, 1, 1, 0);
-	memmove_case(&st_memmove, "one_fail", pat1, 1, 0, 0);
-	memmove_case(&st_memmove, "hibyte", pat2, 1, 1, 0);
-	memmove_case(&st_memmove, "0xff", pat3, 1, 1, 0);
-	memmove_case(&st_memmove, "four", pat4, 4, 4, 0);
-	memmove_case(&st_memmove, "four_slen3", pat4, 4, 3, 0);
-	memmove_case(&st_memmove, "four_slen5", pat4, 4, 5, 0);
-	memmove_case(&st_memmove, "nul_mid", pat5, 5, 5, 0);
-	memmove_case(&st_memmove, "overlap_fwd", pat4, 4, 8, 2);
-	memmove_case(&st_memmove, "overlap_back", pat4, 4, 8, -2);
+	memmove_case(&st_memmove, "empty", pat0, 0, 0, 0, 0);
+	memmove_case(&st_memmove, "empty_slen1", pat0, 0, 1, 0, 0);
+	memmove_case(&st_memmove, "one", pat1, 1, 1, 0, 0);
+	memmove_case(&st_memmove, "one_fail", pat1, 1, 0, 0, 0);
+	memmove_case(&st_memmove, "hibyte", pat2, 1, 1, 0, 0);
+	memmove_case(&st_memmove, "0xff", pat3, 1, 1, 0, 0);
+	memmove_case(&st_memmove, "four", pat4, 4, 4, 0, 0);
+	memmove_case(&st_memmove, "four_slen3", pat4, 4, 3, 0, 0);
+	memmove_case(&st_memmove, "four_slen5", pat4, 4, 5, 0, 0);
+	memmove_case(&st_memmove, "nul_mid", pat5, 5, 5, 0, 0);
+	memmove_case(&st_memmove, "overlap_fwd", pat4, 4, 8, 0, 2);
+	memmove_case(&st_memmove, "overlap_back", pat4, 4, 8, 2, 0);
+	memmove_case(&st_memmove, "touch_end", pat4, 4, 8, 0, 4);
 }
 
 static void
@@ -443,28 +428,18 @@ strncpy_edges(void)
 	static const char s2[] = "\x80\xff";
 	static const char s3[] = "abcd";
 	static const char s4[] = "abc";
-	static const char s5[] = "a\x00bcd";
+	static const char s5[] = { 'a', '\0', 'b', 'c', 'd', '\0' };
 
-	strncpy_case(&st_strncpy, "empty", (const unsigned char *)s0, 0, 0,
-	    false);
-	strncpy_case(&st_strncpy, "empty_slen1", (const unsigned char *)s0, 0,
-	    1, false);
-	strncpy_case(&st_strncpy, "one", (const unsigned char *)s1, 1, 1,
-	    false);
-	strncpy_case(&st_strncpy, "one_fail", (const unsigned char *)s1, 1, 0,
-	    false);
-	strncpy_case(&st_strncpy, "hibyte", (const unsigned char *)s2, 2, 2,
-	    false);
-	strncpy_case(&st_strncpy, "pad", (const unsigned char *)s3, 8, 8,
-	    false);
-	strncpy_case(&st_strncpy, "short_src", (const unsigned char *)s4, 8, 8,
-	    false);
-	strncpy_case(&st_strncpy, "early_nul", (const unsigned char *)s5, 6, 6,
-	    false);
-	strncpy_case(&st_strncpy, "slen3", (const unsigned char *)s3, 4, 3,
-	    false);
-	strncpy_case(&st_strncpy, "overlap", (const unsigned char *)s3, 4, 8,
-	    true);
+	strncpy_case(&st_strncpy, "empty", s0, 0, 0, false);
+	strncpy_case(&st_strncpy, "empty_slen1", s0, 0, 1, false);
+	strncpy_case(&st_strncpy, "one", s1, 1, 1, false);
+	strncpy_case(&st_strncpy, "one_fail", s1, 1, 0, false);
+	strncpy_case(&st_strncpy, "hibyte", s2, 2, 2, false);
+	strncpy_case(&st_strncpy, "pad", s3, 8, 8, false);
+	strncpy_case(&st_strncpy, "short_src", s4, 8, 8, false);
+	strncpy_case(&st_strncpy, "early_nul", s5, 6, 6, false);
+	strncpy_case(&st_strncpy, "slen3", s3, 4, 3, false);
+	strncpy_case(&st_strncpy, "overlap", s3, 4, 8, true);
 }
 
 static void
@@ -506,19 +481,18 @@ memmove_random(long n)
 			src[i] = (unsigned char)(rnd() & 0xff);
 
 		if (mode == 0)
-			memmove_case(&st_memmove, "rand", src, len, slen, 0);
+			memmove_case(&st_memmove, "rand", src, len, slen, 0, 0);
 		else if (mode == 1)
-			memmove_case(&st_memmove, "rand_ov", src, len, slen, 2);
+			memmove_case(&st_memmove, "rand_ov", src, len, slen, 0, 2);
 		else if (mode == 2)
-			memmove_case(&st_memmove, "rand_ovb", src, len, slen,
-			    -2);
-		else if (mode == 3 && slen > 0)
-			memmove_case(&st_memmove, "rand_eq",
-			    src, len, len == 0 ? 0 : slen - 1 + (rnd() % 2),
+			memmove_case(&st_memmove, "rand_ovb", src, len, slen, 2,
 			    0);
+		else if (mode == 3 && slen > 0)
+			memmove_case(&st_memmove, "rand_eq", src, len,
+			    len == 0 ? 0 : slen - 1 + (rnd() % 2), 0, 0);
 		else
 			memmove_case(&st_memmove, "rand_b", src, len,
-			    len + (rnd() % 3), 0);
+			    len + (rnd() % 3), 0, 0);
 	}
 }
 
@@ -557,8 +531,7 @@ strncpy_random(long n)
 
 		if ((rnd() & 7) == 0 && slen > 0)
 			slen = len + (rnd() % 2) - 1;
-		strncpy_case(&st_strncpy, "rand", (const unsigned char *)src,
-		    len, slen, overlap);
+		strncpy_case(&st_strncpy, "rand", src, len, slen, overlap);
 	}
 }
 

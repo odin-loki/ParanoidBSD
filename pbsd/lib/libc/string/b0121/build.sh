@@ -1,8 +1,8 @@
 #!/bin/sh
 #
-# build.sh -- build and run the PBSD b0115 differential test.
+# build.sh -- build and run the PBSD b0121 differential test.
 #
-# Usage: sh build.sh            (from pbsd/lib/libc/secure/b0115/)
+# Usage: sh build.sh            (from pbsd/lib/libc/string/b0121/)
 #
 # Compiles the C oracle, the C++23 module port and the harness, links them
 # together and execs the resulting binary so that its exit status becomes the
@@ -18,13 +18,16 @@ CFLAGS=${CFLAGS:-"-std=c11 -O2"}
 CXXFLAGS=${CXXFLAGS:-"-std=c++23 -O2"}
 
 BUILD=build
-MODNAME=pbsd.lib.libc.secure.b0115
+MODNAME=pbsd.lib.libc.string.b0121
 
 rm -rf "$BUILD" gcm.cache
 mkdir -p "$BUILD"
 
+# 1. the reference implementation (plain C11)
 $CC $CFLAGS -c oracle.c -o "$BUILD/oracle.o"
 
+# 2. + 3. the module interface unit and the harness that imports it.
+#    Module flags differ between toolchains, so probe for clang first.
 MODFLAGS=""
 if $CXX --version 2>&1 | grep -qi 'clang'; then
 	$CXX $CXXFLAGS --precompile -x c++-module port.cppm \
@@ -38,7 +41,8 @@ else
 	$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o "$BUILD/harness.o"
 fi
 
+# 4. link
 $CXX $CXXFLAGS $MODFLAGS "$BUILD/port.o" "$BUILD/harness.o" \
-    "$BUILD/oracle.o" -o "$BUILD/b0115_test"
+    "$BUILD/oracle.o" -o "$BUILD/b0121_test"
 
-exec "$BUILD/b0115_test"
+exec "$BUILD/b0121_test"

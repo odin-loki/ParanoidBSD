@@ -1,14 +1,16 @@
 module;
 
-#define _GNU_SOURCE
-
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 
+export module pbsd.lib.libc.secure.b0117;
+
 extern "C" void __chk_fail(void);
+
+namespace pbsd::lib_libc_secure::b0117 {
 
 static inline int
 __ssp_overlap(const void *leftp, const void *rightp, std::size_t sz)
@@ -21,10 +23,6 @@ __ssp_overlap(const void *leftp, const void *rightp, std::size_t sz)
 
 	return (SIZE_MAX - sz < right || left < right + sz);
 }
-
-export module pbsd.lib.libc.secure.b0117;
-
-export namespace pbsd::lib_libc_secure::b0117 {
 
 /*-
  *
@@ -60,7 +58,7 @@ export namespace pbsd::lib_libc_secure::b0117 {
 
 #undef stpncpy
 
-export char *
+char *
 __stpncpy_chk(char * __restrict dst, const char * __restrict src, std::size_t len,
     std::size_t slen)
 {
@@ -107,7 +105,7 @@ __stpncpy_chk(char * __restrict dst, const char * __restrict src, std::size_t le
 
 #undef memcpy
 
-export char *
+char *
 __strcpy_chk(char * __restrict dst, const char * __restrict src, std::size_t slen)
 {
 	std::size_t len = std::strlen(src) + 1;
@@ -155,21 +153,27 @@ __strcpy_chk(char * __restrict dst, const char * __restrict src, std::size_t sle
 
 #undef vsnprintf
 
-export int
+int
 __snprintf_chk(char * __restrict buf, std::size_t len, int flags, std::size_t slen,
     const char * __restrict fmt, ...)
 {
-	std::va_list ap;
+	va_list ap;
 	int rv;
 
 	if (len > slen)
 		__chk_fail();
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	rv = std::vsnprintf(buf, len, fmt, ap);
-	std::va_end(ap);
+	va_end(ap);
 
 	return (rv);
 }
 
 } // namespace pbsd::lib_libc_secure::b0117
+
+export namespace pbsd::lib_libc_secure::b0117 {
+using pbsd::lib_libc_secure::b0117::__stpncpy_chk;
+using pbsd::lib_libc_secure::b0117::__strcpy_chk;
+using pbsd::lib_libc_secure::b0117::__snprintf_chk;
+}
