@@ -4,6 +4,7 @@
 
 #define _GNU_SOURCE
 
+#include <algorithm>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>

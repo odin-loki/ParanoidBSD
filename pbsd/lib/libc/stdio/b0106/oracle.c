@@ -407,6 +407,16 @@ pbsd_shim_vfprintf(struct pbsd_shim_file *fp, locale_t locale, int serrno,
 
 	pbsd_shim_vfprintf_locale = locale;
 	pbsd_shim_vfprintf_serrno = serrno;
+	pbsd_shim_vfprintf_calls++;
+	pbsd_shim_vfprintf_entry_flags = fp->_flags;
+	pbsd_shim_vfprintf_entry_file = fp->_file;
+	pbsd_shim_vfprintf_entry_r = fp->_r;
+	pbsd_shim_vfprintf_entry_w = fp->_w;
+	pbsd_shim_vfprintf_entry_size = fp->_bf._size;
+	pbsd_shim_vfprintf_entry_lbfsize = fp->_lbfsize;
+	pbsd_shim_vfprintf_entry_orientation = fp->_orientation;
+	pbsd_shim_vfprintf_entry_base = fp->_bf._base;
+	pbsd_shim_vfprintf_entry_p = fp->_p;
 	if ((fp->_flags & __SWR) == 0) {
 		fp->_flags |= __SERR;
 		return (-1);

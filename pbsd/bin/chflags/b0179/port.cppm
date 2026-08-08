@@ -61,6 +61,10 @@ struct pbsd_filestat {
 #include <signal.h>
 #include <unistd.h>
 
+#if defined(__linux__)
+int chflagsat(int, const char *, unsigned long, int);
+#endif
+
 export module pbsd.bin.chflags.b0179;
 
 export namespace pbsd::bin_chflags::b0179 {
