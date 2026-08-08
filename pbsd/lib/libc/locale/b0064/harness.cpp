@@ -190,8 +190,6 @@ static int (*const ref_backends[])(const ref_mbstate_t *) = {
 static const int nbackends =
     (int)(sizeof(backends) / sizeof(backends[0]));
 
-static const int nbackends = 5;
-
 struct Env {
 	P::pbsd_xlocale_ctype	custom_p[nbackends];
 	P::pbsd_locale		custom_loc_p[nbackends];
