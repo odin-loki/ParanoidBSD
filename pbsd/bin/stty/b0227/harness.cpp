@@ -628,8 +628,7 @@ run_f_ispeed(const char *arg)
 	std::snprintf(ab_p, sizeof(ab_p), "%s", arg);
 	P::info ip_r{};
 	P::info ip_p{};
-	fill_info(ip_r, rng, true);
-	fill_info(ip_p, rng, true);
+	dup_info(ip_r, ip_p, rng, true);
 	ip_r.arg = ab_r;
 	ip_p.arg = ab_p;
 	ip_r.set = 0;
