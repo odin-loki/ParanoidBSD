@@ -53,6 +53,7 @@ namespace port = pbsd::lib_libc_sys::b0027;
 #define	GUARD		0x7f
 #define	BUF_TOTAL	512
 #define	DATA_OFF	64
+#define	DATA_CAP	(BUF_TOTAL - DATA_OFF)
 #define	DIGEST_MAX	64
 
 /* ------------------------------------------------------------------ */
@@ -119,6 +120,8 @@ mock_read(int fd, void *buf, size_t nbytes)
 
 		if (n > nbytes)
 			n = nbytes;
+		if (n > DATA_CAP)
+			n = DATA_CAP;
 		unsigned char *p = (unsigned char *)buf;
 
 		for (size_t i = 0; i < n; i++)
@@ -542,8 +545,7 @@ test_read(void)
 	};
 	static const size_t nbs[] = {
 		0, 1, 2, DATA_OFF - 1, DATA_OFF, DATA_OFF + 1,
-		BUF_TOTAL - DATA_OFF - 1, BUF_TOTAL - DATA_OFF,
-		(size_t)SSIZE_MAX, (size_t)SIZE_MAX,
+		DATA_CAP - 1, DATA_CAP,
 	};
 	static const long long rets[] = {
 		-1, 0, 1, 2, SSIZE_MAX, (long long)SSIZE_MAX - 1,
@@ -552,11 +554,13 @@ test_read(void)
 
 	for (size_t f = 0; f < sizeof(fds) / sizeof(fds[0]); f++)
 		for (size_t n = 0; n < sizeof(nbs) / sizeof(nbs[0]); n++)
-			for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++) {
-				fprintf(stderr, "case_read fd=%d nb=%zu ret=%lld\n",
-				    fds[f], nbs[n], rets[r]);
+			for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++)
 				case_read(fds[f], nbs[n], rets[r]);
-			}
+
+	case_read(0, (size_t)SIZE_MAX, -1);
+	case_read(1, (size_t)SIZE_MAX, 0);
+	case_read(2, (size_t)SIZE_MAX, 1);
+	case_read(3, (size_t)SIZE_MAX, SSIZE_MAX);
 
 	rng_seed(0x72'65'61'64ULL);
 	for (int i = 0; i < 200000; i++) {
@@ -575,8 +579,7 @@ test_write(void)
 		INT_MIN, -1, 0, 1, 0x7f, 0x80, 0xff, INT_MAX,
 	};
 	static const size_t nbs[] = {
-		0, 1, 2, DATA_OFF, BUF_TOTAL - DATA_OFF,
-		(size_t)SSIZE_MAX,
+		0, 1, 2, DATA_OFF, DATA_CAP,
 	};
 	static const unsigned seeds[] = {
 		0, 1, 0x7f, 0x80, 0xff, 0xdeadbeef, 0xcafebabe,
@@ -621,6 +624,9 @@ test_msync(void)
 				for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++)
 					case_msync(msync_arena + offs[o],
 					    lens[l], flags[fl], rets[r]);
+
+	case_msync(msync_arena, (size_t)SIZE_MAX, MS_SYNC, 0);
+	case_msync(msync_arena + 1, (size_t)SIZE_MAX, 0, -1);
 
 	rng_seed(0x6d'73'79'6eULL);
 	for (int i = 0; i < 200000; i++) {

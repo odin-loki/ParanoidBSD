@@ -31,7 +31,10 @@ module;
 #include <cstddef>
 #include <cstdint>
 
-extern "C" {
+export module pbsd.sys.security.mac.veriexec.b0029;
+
+export namespace pbsd::sys_security_mac_veriexec::b0029 {
+
 typedef char *caddr_t;
 
 struct sha1_ctxt {
@@ -51,20 +54,7 @@ struct sha1_ctxt {
 };
 typedef struct sha1_ctxt SHA1_CTX;
 
-#define	SHA1_RESULTLEN	(160 / 8)
-
-void sha1_init(struct sha1_ctxt *);
-void sha1_loop(struct sha1_ctxt *, const std::uint8_t *, std::size_t);
-void sha1_result(struct sha1_ctxt *, char[SHA1_RESULTLEN]);
-}
-
-export module pbsd.sys.security.mac.veriexec.b0029;
-
-export namespace pbsd::sys_security_mac_veriexec::b0029 {
-
-using ::SHA1_CTX;
-
-inline constexpr std::size_t SHA1_RESULTLEN = 160 / 8;
+extern "C" void sha1_result(struct sha1_ctxt *, char *);
 
 void
 SHA1_Final(unsigned char *buf, void *ctx)

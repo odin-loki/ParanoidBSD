@@ -64,6 +64,48 @@ export module pbsd.sys.x86.linux.b0037;
 
 export namespace pbsd::sys_x86_linux::b0037 {
 
+namespace {
+
+int _bsd_to_linux_trapcode[] = {
+	255,	/* 0 LINUX_T_UNKNOWN */
+	6,			/* 1  T_PRIVINFLT */
+	255,	/* 2 */
+	3,			/* 3  T_BPTFLT */
+	255,	/* 4 */
+	255,	/* 5 */
+	16,			/* 6  T_ARITHTRAP */
+	254,			/* 7  T_ASTFLT */
+	255,	/* 8 */
+	13,			/* 9  T_PROTFLT */
+	1,			/* 10 T_TRCTRAP */
+	255,	/* 11 */
+	14,			/* 12 T_PAGEFLT */
+	255,	/* 13 */
+	17,			/* 14 T_ALIGNFLT */
+	255,	/* 15 */
+	255,	/* 16 */
+	255,	/* 17 */
+	0,			/* 18 T_DIVIDE */
+	2,			/* 19 T_NMI */
+	4,			/* 20 T_OFLOW */
+	5,			/* 21 T_BOUND */
+	7,			/* 22 T_DNA */
+	8,			/* 23 T_DOUBLEFLT */
+	9,			/* 24 T_FPOPFLT */
+	10,			/* 25 T_TSSFLT */
+	11,			/* 26 T_SEGNPFLT */
+	12,			/* 27 T_STKFLT */
+	18,			/* 28 T_MCHK */
+	19,			/* 29 T_XMMFLT */
+	15			/* 30 T_RESERVED */
+};
+
+} /* namespace pbsd::sys_x86_linux::b0037 */
+
+export module pbsd.sys.x86.linux.b0037;
+
+export namespace pbsd::sys_x86_linux::b0037 {
+
 using u_int = unsigned int;
 
 inline constexpr u_int CPU_VENDOR_AMD = 0x1022;
@@ -130,40 +172,6 @@ linux_vdso_cpu_selector_idx(void)
 	return ((amd_feature & AMDID_RDTSCP) == 0 ?
 	    LINUX_VDSO_CPU_DEFAULT : LINUX_VDSO_CPU_RDTSCP);
 }
-
-static int _bsd_to_linux_trapcode[] = {
-	LINUX_T_UNKNOWN,	/* 0 */
-	6,			/* 1  T_PRIVINFLT */
-	LINUX_T_UNKNOWN,	/* 2 */
-	3,			/* 3  T_BPTFLT */
-	LINUX_T_UNKNOWN,	/* 4 */
-	LINUX_T_UNKNOWN,	/* 5 */
-	16,			/* 6  T_ARITHTRAP */
-	254,			/* 7  T_ASTFLT */
-	LINUX_T_UNKNOWN,	/* 8 */
-	13,			/* 9  T_PROTFLT */
-	1,			/* 10 T_TRCTRAP */
-	LINUX_T_UNKNOWN,	/* 11 */
-	14,			/* 12 T_PAGEFLT */
-	LINUX_T_UNKNOWN,	/* 13 */
-	17,			/* 14 T_ALIGNFLT */
-	LINUX_T_UNKNOWN,	/* 15 */
-	LINUX_T_UNKNOWN,	/* 16 */
-	LINUX_T_UNKNOWN,	/* 17 */
-	0,			/* 18 T_DIVIDE */
-	2,			/* 19 T_NMI */
-	4,			/* 20 T_OFLOW */
-	5,			/* 21 T_BOUND */
-	7,			/* 22 T_DNA */
-	8,			/* 23 T_DOUBLEFLT */
-	9,			/* 24 T_FPOPFLT */
-	10,			/* 25 T_TSSFLT */
-	11,			/* 26 T_SEGNPFLT */
-	12,			/* 27 T_STKFLT */
-	18,			/* 28 T_MCHK */
-	19,			/* 29 T_XMMFLT */
-	15			/* 30 T_RESERVED */
-};
 
 int
 linux_translate_traps(int signal, int trap_code)

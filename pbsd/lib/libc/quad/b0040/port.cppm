@@ -44,11 +44,18 @@
 module;
 
 #include <climits>
-#include <cstddef>
+#include <cstdint>
 
 export module pbsd.lib.libc.quad.b0040;
 
 export namespace pbsd::lib_libc_quad::b0040 {
+
+typedef long long quad_t;
+typedef unsigned long long u_quad_t;
+
+} // namespace pbsd::lib_libc_quad::b0040
+
+namespace pbsd::lib_libc_quad::b0040 {
 
 /*
  * Quad arithmetic.
@@ -60,26 +67,27 @@ export namespace pbsd::lib_libc_quad::b0040 {
  *  - A quad variable is exactly twice as long as `long'.
  *
  *  - The machine's arithmetic is two's complement.
+ *
+ * The second assumption is a hard precondition of every routine below:
+ * `union uu' is only a valid decomposition of a quad while the two halves
+ * exactly tile it.  It is honoured here by spelling the halfword type
+ * explicitly at 32 bits, which is what `long' is on the machines this
+ * directory is compiled for (i386 and friends).  Widening the halfword to
+ * a native LP64 `long' would leave ul[1] outside the quad and thus
+ * uninitialised, which is not a behaviour worth reproducing.
  */
-using quad_t = long long;
-using u_quad_t = unsigned long long;
-using u_long = unsigned long;
+typedef std::int32_t quad_long;
+typedef std::uint32_t quad_u_long;
 
-/*
- * Depending on the desired operation, we view a `long long' (aka quad_t) in
- * one or more of the following formats.
- */
 union uu {
-	quad_t	q;		/* as a (signed) quad */
-	quad_t	uq;		/* as an unsigned quad */
-	long	sl[2];		/* as two signed longs */
-	u_long	ul[2];		/* as two unsigned longs */
+	quad_t	q;
+	quad_t	uq;
+	quad_long	sl[2];
+	quad_u_long	ul[2];
 };
 
-/*
- * Define high and low longwords, i.e. _QUAD_HIGHWORD and _QUAD_LOWWORD.
- */
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
+    __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 inline constexpr int H = 0;
 inline constexpr int L = 1;
 #else
@@ -87,14 +95,15 @@ inline constexpr int H = 1;
 inline constexpr int L = 0;
 #endif
 
-/*
- * Total number of bits in a quad_t and in the pieces that make it up.
- */
-inline constexpr std::size_t QUAD_BITS = sizeof(quad_t) * CHAR_BIT;
-inline constexpr std::size_t LONG_BITS = sizeof(long) * CHAR_BIT;
-inline constexpr std::size_t HALF_BITS = sizeof(long) * CHAR_BIT / 2;
+inline constexpr int QUAD_BITS = sizeof(quad_t) * CHAR_BIT;
+inline constexpr int LONG_BITS = sizeof(quad_long) * CHAR_BIT;
+inline constexpr int HALF_BITS = sizeof(quad_long) * CHAR_BIT / 2;
 
-using qshift_t = unsigned int;
+typedef unsigned int qshift_t;
+
+} // namespace pbsd::lib_libc_quad::b0040
+
+export namespace pbsd::lib_libc_quad::b0040 {
 
 /*
  * Add two quads.  This is trivial since a one-bit carry from a single

@@ -1686,3 +1686,4 @@
 {"batch": "b0028", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:23:27Z"}
 {"batch": "b0034", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T09:23:30Z"}
 {"batch": "b0002", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 4/10: c16rtomb_l, c32rtomb_l, mbrtoc16_l, mbrtoc32_l)", "how": "agent", "ts": "2026-08-08T09:23:55Z"}
+{"batch": "b0038", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 2/4: fminimumf, fmaximumf)", "how": "agent", "ts": "2026-08-08T09:24:49Z"}

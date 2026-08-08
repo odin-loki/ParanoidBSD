@@ -11,9 +11,9 @@
  * PBSD b0020s1: C++23 port of hbsd/src/lib/libc/sys/pdwait.c.
  *
  * <sys/procdesc.h> and "libc_private.h" are libc-private FreeBSD headers with
- * no PBSD module yet, so the declarations they supply are reproduced in the
- * global module fragment.  The interposition table itself is defined by the
- * oracle translation unit and shared, so both sides dispatch through the same
+ * no PBSD module yet, so the declarations they supply are reproduced here.
+ * The interposition table itself is defined by the oracle translation unit and
+ * shared, so both sides of the differential test dispatch through the same
  * slots.
  */
 
@@ -22,12 +22,14 @@ module;
 #include <sys/types.h>
 #include <sys/resource.h>
 
-struct __wrusage {
+export module pbsd.lib.libc.sys.b0020s1;
+
+export struct __wrusage {
 	struct rusage	wru_self;
 	struct rusage	wru_children;
 };
 
-struct __siginfo {
+export struct __siginfo {
 	int		si_signo;
 	int		si_errno;
 	int		si_code;
@@ -61,8 +63,6 @@ extern interpos_func_t __pbsd_interposing[INTERPOS_MAX];
 #define	INTERPOS_SYS(syscall, ...)					\
 	(((__typeof__(syscall) *)*(__libc_interposing_slot(		\
 	    INTERPOS_##syscall)))(__VA_ARGS__))
-
-export module pbsd.lib.libc.sys.b0020s1;
 
 export namespace pbsd::lib_libc_sys::b0020s1 {
 

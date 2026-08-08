@@ -34,57 +34,50 @@
  */
 
 /*
- * Reference oracle: lib/libc/quad/{adddi3,ashldi3,lshldi3,floatdidf}.c
- * with every function renamed with a ref_ prefix.  Function bodies are
- * unmodified.
+ * Reference oracle for batch b0040: the concatenated originals of
+ *
+ *	lib/libc/quad/adddi3.c
+ *	lib/libc/quad/ashldi3.c
+ *	lib/libc/quad/lshldi3.c
+ *	lib/libc/quad/floatdidf.c
+ *
+ * each of which carries the identical copyright notice reproduced above,
+ * as does the private header lib/libc/quad/quad.h that they all include.
+ * The only edits are the `ref_' prefix on each function name and the
+ * preamble below, which supplies the declarations "quad.h" would have
+ * supplied.  No function body has been touched.
  */
 
 #include <limits.h>
+#include <stdint.h>
 
-/*
- * quad.h equivalent.  The types normally supplied by <sys/types.h> are
- * spelled out here so that this file builds standalone under -std=c11,
- * where glibc hides the BSD type names.
- */
-typedef long long		quad_t;
-typedef unsigned long long	u_quad_t;
-typedef unsigned long		u_long;
+typedef long long quad_t;
+typedef unsigned long long u_quad_t;
+
+typedef int32_t quad_long;
+typedef uint32_t quad_u_long;
 
 union uu {
-	quad_t	q;		/* as a (signed) quad */
-	quad_t	uq;		/* as an unsigned quad */
-	long	sl[2];		/* as two signed longs */
-	u_long	ul[2];		/* as two unsigned longs */
+	quad_t	q;
+	quad_t	uq;
+	quad_long	sl[2];
+	quad_u_long	ul[2];
 };
 
-/*
- * Define high and low longwords, i.e. _QUAD_HIGHWORD and _QUAD_LOWWORD.
- */
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#define	_QUAD_HIGHWORD	0
-#define	_QUAD_LOWWORD	1
+#if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
+    __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define	H		0
+#define	L		1
 #else
-#define	_QUAD_HIGHWORD	1
-#define	_QUAD_LOWWORD	0
+#define	H		1
+#define	L		0
 #endif
 
-#define	H		_QUAD_HIGHWORD
-#define	L		_QUAD_LOWWORD
-
 #define	QUAD_BITS	(sizeof(quad_t) * CHAR_BIT)
-#define	LONG_BITS	(sizeof(long) * CHAR_BIT)
-#define	HALF_BITS	(sizeof(long) * CHAR_BIT / 2)
-
-#define	HHALF(x)	((x) >> HALF_BITS)
-#define	LHALF(x)	((x) & ((1L << HALF_BITS) - 1))
-#define	LHUP(x)		((x) << HALF_BITS)
+#define	LONG_BITS	(sizeof(quad_long) * CHAR_BIT)
+#define	HALF_BITS	(sizeof(quad_long) * CHAR_BIT / 2)
 
 typedef unsigned int	qshift_t;
-
-quad_t	ref___adddi3(quad_t a, quad_t b);
-quad_t	ref___ashldi3(quad_t a, qshift_t shift);
-quad_t	ref___lshldi3(quad_t a, qshift_t shift);
-double	ref___floatdidf(quad_t x);
 
 /* ---------------------------------------------------------------- adddi3.c */
 

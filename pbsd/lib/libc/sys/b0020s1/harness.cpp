@@ -8,32 +8,11 @@
  * each side including the guard bytes past the nominal write window.
  */
 
-#include <sys/types.h>
-#include <sys/resource.h>
-
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-
-struct __wrusage {
-	struct rusage	wru_self;
-	struct rusage	wru_children;
-};
-
-struct __siginfo {
-	int		si_signo;
-	int		si_errno;
-	int		si_code;
-	int		si_pid;
-	unsigned int	si_uid;
-	int		si_status;
-	void		*si_addr;
-	long		si_value;
-	long		si_band;
-	int		__spare__[7];
-};
 
 import pbsd.lib.libc.sys.b0020s1;
 
