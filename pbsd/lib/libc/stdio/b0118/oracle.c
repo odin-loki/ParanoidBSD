@@ -164,7 +164,7 @@ b0118_locale_setup(void)
 	b0118_ctype.__mbsinit = b0118_mbsinit;
 }
 
-static inline void *
+void *
 __get_locale(void)
 {
 	return ((void *)0);

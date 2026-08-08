@@ -326,6 +326,7 @@ push_stdin_bytes(const unsigned char *data, std::size_t n)
 	dup2(pfd[0], STDIN_FILENO);
 	close(pfd[0]);
 	clearerr(stdin);
+	setvbuf(stdin, nullptr, _IONBF, 0);
 	return true;
 }
 
@@ -338,6 +339,7 @@ pop_stdin(void)
 		saved_stdin = -1;
 	}
 	clearerr(stdin);
+	setvbuf(stdin, nullptr, _IONBF, 0);
 }
 
 template<typename... Args>

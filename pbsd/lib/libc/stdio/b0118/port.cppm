@@ -4,6 +4,10 @@ module;
 #define _GNU_SOURCE
 #endif
 
+#ifndef O_EXEC
+#define O_EXEC 0
+#endif
+
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -392,7 +396,7 @@ fgetws_l(wchar_t * __restrict ws, int n, FILE * __restrict fp, locale_t locale)
 
 	sret = 0;
 	do {
-		src = fp->_p;
+		src = (const char *)fp->_p;
 		nl = (unsigned char *)memchr(fp->_p, '\n', fp->_r);
 		nconv = l->__mbsnrtowcs(wsp, &src,
 		    nl != NULL ? (nl - fp->_p + 1) : fp->_r,

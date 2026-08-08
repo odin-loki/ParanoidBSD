@@ -201,7 +201,7 @@ clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *rqtp,
 	return (INTERPOS_SYS(clock_nanosleep, clock_id, flags, rqtp, rmtp));
 }
 
-[[gnu::weak]] int __weak_symbol
+int __weak_symbol
 ppoll(struct pollfd pfd[], nfds_t nfds,
     const struct timespec *__restrict timeout,
     const sigset_t *__restrict newsigmask)

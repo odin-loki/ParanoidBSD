@@ -24,6 +24,7 @@ long double ref_cospil(long double);
 long double ref_sinpil(long double);
 long double ref_tanpil(long double);
 long double _Complex ref_cexpl(long double _Complex);
+void pbsd_b0088_cexpl_parts(long double _Complex, long double *, long double *);
 }
 
 static const std::size_t LD_BYTES = sizeof(long double);
@@ -46,6 +47,9 @@ static stat st_cexpl = { "cexpl", 0, 0, 0 };
 #define creall __real__
 #define cimagl __imag__
 
+static long double _Complex
+mkcx(long double re, long double im);
+
 static bool
 ld_equal(long double a, long double b)
 {
@@ -67,13 +71,19 @@ ref_cexpl_im(long double _Complex z) __attribute__((noinline));
 static long double
 port_cexpl_re(long double _Complex z)
 {
-	return creall(port::cexpl(z));
+	long double re, im;
+
+	pbsd_b0088_cexpl_parts(z, &re, &im);
+	return re;
 }
 
 static long double
 port_cexpl_im(long double _Complex z)
 {
-	return cimagl(port::cexpl(z));
+	long double re, im;
+
+	pbsd_b0088_cexpl_parts(z, &re, &im);
+	return im;
 }
 
 static long double
@@ -172,19 +182,16 @@ check_tanpil(long double x, const char *tag)
 static void
 check_cexpl(long double _Complex z, const char *tag)
 {
-	long double _Complex p, o;
 	long double pr, pi, orr, oi;
 
 	st_cexpl.cases++;
-	p = port::cexpl(z);
-	o = ref_cexpl(z);
-	pr = creall(p);
-	pi = cimagl(p);
-	orr = creall(o);
-	oi = cimagl(o);
+	pr = port_cexpl_re(z);
+	pi = port_cexpl_im(z);
+	orr = ref_cexpl_re(z);
+	oi = ref_cexpl_im(z);
 	if (ld_equal(pr, orr) && ld_equal(pi, oi))
 		return;
-	report_cx_fail(st_cexpl, tag, p, o);
+	report_cx_fail(st_cexpl, tag, mkcx(pr, pi), mkcx(orr, oi));
 }
 
 static long double

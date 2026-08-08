@@ -564,34 +564,68 @@ strncpy_random(long n)
 }
 
 static void
-vsnprintf_random(long n)
+vsnprintf_random_one(void)
 {
 	char sbuf[32];
+	const char *fmt = vsn_fmts[rnd_mod(sizeof(vsn_fmts) /
+	    sizeof(vsn_fmts[0]))];
+	std::size_t len = rnd_mod(64);
+	std::size_t slen = rnd_mod(72);
+	int flags = (int)(rnd() & 0xff);
+	int a = (int)rnd();
+	int b = (int)rnd();
+	long long ll = (long long)rnd();
+	short h = (short)rnd();
+	char c = (char)(rnd() & 0xff);
+	int prec = (int)(rnd_mod(8));
+	std::size_t sl = rnd_mod(sizeof(sbuf) - 1);
 
-	for (long t = 0; t < n; t++) {
-		const char *fmt = vsn_fmts[rnd_mod(sizeof(vsn_fmts) /
-		    sizeof(vsn_fmts[0]))];
-		std::size_t len = rnd_mod(64);
-		std::size_t slen = rnd_mod(72);
-		int flags = (int)(rnd() & 0xff);
-		int a = (int)rnd();
-		int b = (int)rnd();
-		long long ll = (long long)rnd();
-		short h = (short)rnd();
-		char c = (char)(rnd() & 0xff);
-		int prec = (int)(rnd_mod(8));
-		std::size_t sl = rnd_mod(sizeof(sbuf));
+	for (std::size_t i = 0; i < sl; i++)
+		sbuf[i] = (char)(rnd() & 0xff);
+	sbuf[sl] = '\0';
+	if (prec > (int)sl)
+		prec = (int)sl;
 
-		for (std::size_t i = 0; i < sl; i++)
-			sbuf[i] = (char)(rnd() & 0xff);
-		sbuf[sl] = '\0';
+	if ((rnd() & 7) == 0 && slen > 0)
+		slen = len + (rnd() % 2) - 1;
 
-		if ((rnd() & 7) == 0 && slen > 0)
-			slen = len + (rnd() % 2) - 1;
-
+	if (std::strcmp(fmt, "%s") == 0 || std::strcmp(fmt, "%3s") == 0)
 		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
-		    a, b, ll, h, c, prec, sbuf);
-	}
+		    sbuf);
+	else if (std::strcmp(fmt, "%c") == 0)
+		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
+		    c);
+	else if (std::strcmp(fmt, "%hd") == 0)
+		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
+		    h);
+	else if (std::strcmp(fmt, "%lld") == 0)
+		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
+		    ll);
+	else if (std::strcmp(fmt, "%.*s") == 0)
+		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
+		    prec, sbuf);
+	else if (std::strcmp(fmt, "%*d") == 0)
+		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
+		    b, a);
+	else if (std::strcmp(fmt, "%d %u %x") == 0)
+		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
+		    a, b, b);
+	else if (std::strcmp(fmt, "%c%s") == 0)
+		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
+		    c, sbuf);
+	else if (std::strcmp(fmt, "%s%c%d") == 0)
+		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
+		    sbuf, c, a);
+	else
+		vsnprintf_case(&st_vsnprintf, "rand", len, flags, slen, fmt,
+		    a);
+}
+
+static void
+vsnprintf_random(long n)
+{
+	for (long t = 0; t < n; t++)
+		vsnprintf_random_one();
 }
 
 static void
@@ -614,10 +648,10 @@ main(void)
 	strncpy_edges();
 	vsnprintf_edges();
 
-	// memmove_random(SWEEP);
-	// memcpy_random(SWEEP);
-	// strncpy_random(SWEEP);
-	vsnprintf_random(200000);
+	memmove_random(SWEEP);
+	memcpy_random(SWEEP);
+	strncpy_random(SWEEP);
+	vsnprintf_random(SWEEP);
 
 	print_table();
 

@@ -1037,3 +1037,13 @@ cexpl(long double _Complex z)
 }
 
 } // export namespace
+
+extern "C" void
+pbsd_b0088_cexpl_parts(long double _Complex z, long double *re, long double *im)
+{
+	long double _Complex r;
+
+	r = pbsd::lib_msun_ld128::b0088::cexpl(z);
+	*re = __real__ r;
+	*im = __imag__ r;
+}
