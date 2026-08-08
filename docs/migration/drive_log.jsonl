@@ -1667,3 +1667,4 @@
 {"batch": "b0010s2", "status": "VERIFIED", "detail": "harness green + IR-identical for all 2 functions", "how": "agent", "ts": "2026-08-08T09:16:01Z"}
 {"batch": "b0010s4", "status": "VERIFIED", "detail": "harness green + IR-identical for all 2 functions", "how": "agent", "ts": "2026-08-08T09:16:11Z"}
 {"batch": "b0015", "status": "VERIFIED", "detail": "harness green + IR-identical for all 2 functions", "how": "agent", "ts": "2026-08-08T09:16:29Z"}
+{"batch": "b0003", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:16:57Z"}

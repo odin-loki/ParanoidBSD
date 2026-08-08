@@ -8,10 +8,6 @@ namespace pbsd::sys_security_mac_ntpd::b0007 {
 
 using uid_t = unsigned int;
 
-struct ucred {
-	uid_t	cr_uid;			/* effective user id */
-};
-
 inline constexpr int PRIV_ADJTIME = 15;
 inline constexpr int PRIV_CLOCK_SETTIME = 17;
 inline constexpr int PRIV_NTP_ADJTIME = 16;
@@ -25,6 +21,10 @@ static int ntpd_uid = 123;
 } /* namespace pbsd::sys_security_mac_ntpd::b0007 */
 
 export namespace pbsd::sys_security_mac_ntpd::b0007 {
+
+struct ucred {
+	uid_t	cr_uid;			/* effective user id */
+};
 
 void
 set_ntpd_enabled(int v)

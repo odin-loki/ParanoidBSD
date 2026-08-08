@@ -115,6 +115,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0010s2/port.cppm
   lib/libc/softfloat/b0010s3/port.cppm
   lib/libc/softfloat/b0010s4/port.cppm
+  lib/libc/softfloat/b0011/port.cppm
   lib/libc/softfloat/b0012s1/port.cppm
   lib/libc/softfloat/b0012s2/port.cppm
   lib/libc/softfloat/b0012s4/port.cppm
@@ -267,6 +268,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/rcorder/ealloc_m/port.cppm
   sys/fs/procfs/procfs_type_m/port.cppm
   sys/net/toeplitz_m/port.cppm
+  sys/security/mac_none/b0005/port.cppm
   sys/security/mac_ntpd/b0007/port.cppm
   sys/security/mac_pimd/b0006/port.cppm
   sys/x86/linux/b0037/port.cppm
