@@ -19,6 +19,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/domainname/domainname_m/port.cppm
   bin/echo/b0171/port.cppm
   bin/ed/b0148/port.cppm
+  bin/ed/b0193/port.cppm
   bin/getfacl/b0182/port.cppm
   bin/hostname/hostname_m/port.cppm
   bin/kenv/b0180/port.cppm
@@ -230,6 +231,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdio/b0139/port.cppm
   lib/libc/stdio/b0140/port.cppm
   lib/libc/stdio/b0143/port.cppm
+  lib/libc/stdio/b0202/port.cppm
   lib/libc/stdio/fgetpos_m/port.cppm
   lib/libc/stdio/flags_m/port.cppm
   lib/libc/stdio/funopen_m/port.cppm

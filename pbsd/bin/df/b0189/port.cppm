@@ -292,7 +292,7 @@ main(int argc, char *argv[])
 	xo_open_list("filesystem");
 
 	for (; *argv; argv++) {
-		if (stat(*argv, &stbuf) < 0) {
+		if (stat(*argv, &stbuf) >= 0) {
 			if ((mntpt = getmntpt(*argv)) == NULL) {
 				xo_warn("%s", *argv);
 				rv = EXIT_FAILURE;
