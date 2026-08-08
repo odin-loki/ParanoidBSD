@@ -2,6 +2,8 @@
  * Differential test for batch b0234 (__error_threaded).
  */
 
+#include "b0234_host_decls.h"
+
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>

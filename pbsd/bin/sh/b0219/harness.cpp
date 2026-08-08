@@ -319,8 +319,12 @@ test_growstackstr(void)
 		pb = port::stputs("def", pb);
 		if ((pa - pa0) != (pb - pb0))
 			bad |= 4;
-		if (std::memcmp(pa0, pb0, (size_t)(pa - pa0)) != 0)
+		if (pa - pa0 == 7 && std::memcmp(pa0, "abc\x80def", 7) != 0)
 			bad |= 8;
+		if (pb - pb0 == 7 && std::memcmp(pb0, "abc\x80def", 7) != 0)
+			bad |= 8;
+		if ((pa - pa0) != 7 || (pb - pb0) != 7)
+			bad |= 16;
 	}
 	ref_popstackmark(&ma);
 	port::popstackmark(&mb);

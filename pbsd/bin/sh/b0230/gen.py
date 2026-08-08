@@ -624,6 +624,15 @@ port_fwopen(void *cookie, int (*writefn)(void *, const char *, int))
 
 #define fwopen port_fwopen
 
+void emptyoutbuf(struct output *dest);
+void outstr(const char *p, struct output *file);
+void outqstr(const char *p, struct output *file);
+void outbin(const void *data, size_t len, struct output *file);
+void outcslow(int c, struct output *file);
+void flushout(struct output *dest);
+int xwrite(int fd, const char *buf, int nbytes);
+void doformat(struct output *dest, const char *f, va_list ap);
+
 #define outc(c, file) \
 	((file)->nextc == (file)->bufend ? (emptyoutbuf(file), *(file)->nextc++ = (c)) : (*(file)->nextc++ = (c)))
 

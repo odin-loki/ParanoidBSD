@@ -1,6 +1,7 @@
 module;
 
 #include <cstddef>
+#include "b0234_host_decls.h"
 
 export module pbsd.lib.libthr.sys.b0234;
 
@@ -48,12 +49,6 @@ export namespace pbsd::lib_libthr_sys::b0234 {
 int *
 __error_threaded(void)
 {
-	struct pthread {
-		int error;
-	};
-	extern struct pthread *_thr_initial asm("_thr_initial");
-	extern struct pthread *_get_curthread(void) asm("_get_curthread");
-	extern int __libsys_errno asm("__libsys_errno");
 	struct pthread *curthread;
 
 	if (_thr_initial != NULL) {
