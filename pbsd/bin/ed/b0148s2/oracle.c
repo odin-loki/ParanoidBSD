@@ -102,12 +102,20 @@ const char *errmsg = "";
 
 int oracle_malloc_fail_at;
 int oracle_malloc_calls;
+int oracle_realloc_fail_at;
+int oracle_realloc_calls;
+int oracle_hup_calls;
+int oracle_int_calls;
 
 void
 oracle_reset_hooks(void)
 {
 	oracle_malloc_fail_at = 0;
 	oracle_malloc_calls = 0;
+	oracle_realloc_fail_at = 0;
+	oracle_realloc_calls = 0;
+	oracle_hup_calls = 0;
+	oracle_int_calls = 0;
 }
 
 static void *
@@ -120,6 +128,19 @@ oracle_malloc(size_t n)
 	    oracle_malloc_calls >= oracle_malloc_fail_at)
 		return (NULL);
 	p = malloc(n);
+	return (p);
+}
+
+static void *
+oracle_realloc(void *q, size_t n)
+{
+	void *p;
+
+	oracle_realloc_calls++;
+	if (oracle_realloc_fail_at != 0 &&
+	    oracle_realloc_calls >= oracle_realloc_fail_at)
+		return (NULL);
+	p = realloc(q, n);
 	return (p);
 }
 
@@ -151,12 +172,14 @@ void
 handle_hup(int s)
 {
 	(void)s;
+	oracle_hup_calls++;
 }
 
 void
 handle_int(int s)
 {
 	(void)s;
+	oracle_int_calls++;
 }
 
 undo_t *ref_push_undo_stack(int type, long from, long to);
@@ -182,6 +205,8 @@ int ref_close_sbuf(void);
 #define get_sbuf_line		ref_get_sbuf_line
 #define open_sbuf		ref_open_sbuf
 #define close_sbuf		ref_close_sbuf
+
+#define realloc oracle_realloc
 
 /* ------------------------------------------------------------------ */
 /* hbsd/src/bin/ed/undo.c                                                */
@@ -329,6 +354,39 @@ ref_clear_undo_stack(void)
 	u_addr_last = addr_last;
 }
 
+#undef realloc
+
+long
+oracle_u_p(void)
+{
+	return u_p;
+}
+
+long
+oracle_usize(void)
+{
+	return usize;
+}
+
+long
+oracle_ustack_off(void *e)
+{
+	if (e == NULL || ustack == NULL)
+		return (-1);
+	return ((undo_t *)e - ustack);
+}
+
+int
+oracle_stack_entry(long i, int *type, void **h, void **t)
+{
+	if (i < 0 || i >= u_p || ustack == NULL)
+		return (0);
+	*type = ustack[i].type;
+	*h = ustack[i].h;
+	*t = ustack[i].t;
+	return (1);
+}
+
 void
 oracle_discard_undo_stack(void)
 {
@@ -402,6 +460,24 @@ ref_clear_active_list(void)
 static FILE *sfp;
 static off_t sfseek;
 static line_t buffer_head;
+
+void *
+oracle_buffer_head(void)
+{
+	return (&buffer_head);
+}
+
+void *
+oracle_node_forw(void *p)
+{
+	return (((line_t *)p)->q_forw);
+}
+
+void *
+oracle_node_back(void *p)
+{
+	return (((line_t *)p)->q_back);
+}
 
 char *
 ref_get_sbuf_line(line_t *lp)

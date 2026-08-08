@@ -1271,7 +1271,7 @@ inline const char *out_text() { return detail::model_out; }
 inline std::size_t out_length() { return detail::model_out_n; }
 inline long tslog_record_count() { return nrecs; }
 
-inline bool tslog_get_record(long i, void **td, int *type, const char **f,
+bool tslog_get_record(long i, void **td, int *type, const char **f,
     const char **s, std::uint64_t *tsc)
 {
 	if (i < 0 || i >= (long)nitems(timestamps))
@@ -1284,7 +1284,7 @@ inline bool tslog_get_record(long i, void **td, int *type, const char **f,
 	return true;
 }
 
-inline bool tslog_user_get_record(pid_t pid, pid_t *ppid, std::uint64_t *tf,
+bool tslog_user_get_record(pid_t pid, pid_t *ppid, std::uint64_t *tf,
     std::uint64_t *te, const char **ex, const char **nm, int *reused)
 {
 	if (pid < 0 || pid > PID_MAX)

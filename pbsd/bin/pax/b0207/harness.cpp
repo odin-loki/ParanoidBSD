@@ -714,11 +714,15 @@ test_opt(void)
 	}
 
 	/* long chain of pairs */
-	n = 0;
-	for (i = 0; i < 30; i++)
-		n += (size_t)sprintf(buf + n, "%c%zu=%zu%s", 'a' + (int)i % 26,
-		    i, i * 7, i == 29 ? "" : ",");
-	opt_case(buf, n, 0);
+	{
+		char longbuf[512];
+
+		n = 0;
+		for (i = 0; i < 30; i++)
+			n += (size_t)sprintf(longbuf + n, "%c%zu=%zu%s",
+			    'a' + (int)i % 26, i, i * 7, i == 29 ? "" : ",");
+		opt_case(longbuf, n, 0);
+	}
 
 	opt_seq(seq1, 2);
 	opt_seq(seq2, 2);
@@ -766,7 +770,7 @@ main(void)
 	test_no_op();
 	test_st_hash();
 	test_str_offt();
-	// test_opt();
+	test_opt();
 
 	printf("\n%-24s %12s %12s %s\n", "function", "cases", "failures",
 	    "result");

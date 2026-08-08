@@ -44,6 +44,8 @@ module;
 #include <stdlib.h>
 #include <string.h>
 
+export module pbsd.bin.pax.b0204;
+
 extern "C" void paxwarn(int, const char *, ...);
 extern "C" int l_strncpy(char *, const char *, int);
 extern "C" unsigned long asc_ul(char *, int, int);
@@ -51,8 +53,6 @@ extern "C" unsigned long long asc_uqd(char *, int, int);
 extern "C" int uid_name(char *, uid_t *);
 extern "C" int gid_name(char *, gid_t *);
 extern "C" int dflag;
-
-export module pbsd.bin.pax.b0204;
 
 #define MAXBLK 64512
 #define BLKMULT 512
@@ -116,6 +116,15 @@ typedef struct { char name[TNMSZ],mode[8],uid[8],gid[8],size[12],mtime[12],chksu
 typedef struct { char c_magic[6],c_dev[6],c_ino[6],c_mode[6],c_uid[6],c_gid[6],c_nlink[6],c_rdev[6],c_mtime[11],c_namesize[6],c_filesize[11]; } HD_CPIO;
 typedef struct { unsigned char h_magic[2],h_dev[2],h_ino[2],h_mode[2],h_uid[2],h_gid[2],h_nlink[2],h_rdev[2],h_mtime_1[2],h_mtime_2[2],h_namesize[2],h_filesize_1[2],h_filesize_2[2]; } HD_BCPIO;
 typedef struct { char c_magic[6],c_ino[8],c_mode[8],c_uid[8],c_gid[8],c_nlink[8],c_mtime[8],c_filesize[8],c_maj[8],c_min[8],c_rmaj[8],c_rmin[8],c_namesize[8],c_chksum[8]; } HD_VCPIO;
+
+static int fn_match(char *, char *, char **);
+static char *range_match(char *, int);
+static int fix_path(char *, int *, char *, int);
+static int resub(regex_t *, regmatch_t *, char *, char *, char *, char *);
+static unsigned long tar_chksm(char *, int);
+static char *name_split(char *, int);
+static int ul_oct(unsigned long, char *, int, int);
+static int uqd_oct(unsigned long long, char *, int, int);
 
 static int
 fn_match(char *pattern, char *string, char **pend)

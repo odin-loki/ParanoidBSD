@@ -32,7 +32,7 @@
 #define __aligned(x)	__attribute__((__aligned__(x)))
 #endif
 
-typedef unsigned long long u_quad_t;
+#include <stdint.h>
 
 /*
  * from pax.h

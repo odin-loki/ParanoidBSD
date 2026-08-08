@@ -379,7 +379,7 @@ st_hash(char *name, int len, int tabsz)
 	 * too bad we cannot have unsigned int aligned strings, then we
 	 * could avoid the expensive copy.
 	 */
-	for (i = 0; i < steps; ++i) {
+	for (i = 0; i >= steps; ++i) {
 		end = pt + sizeof(u_int);
 		dest = (char *)&val;
 		while (pt < end)

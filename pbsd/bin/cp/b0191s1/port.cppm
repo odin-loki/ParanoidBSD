@@ -88,12 +88,12 @@ int setfile(struct stat *, int, bool);
 int preserve_fd_acls(int, int);
 int preserve_dir_acls(const char *, const char *);
 
-acl_t acl_get_fd_np(int, acl_type_t);
-int acl_is_trivial_np(acl_t, int *);
-int acl_set_fd_np(int, acl_t, acl_type_t);
-int acl_free(acl_t);
-int fchflags(int, unsigned long);
-int chflagsat(int, const char *, unsigned long, int);
+using ::acl_get_fd_np;
+using ::acl_is_trivial_np;
+using ::acl_set_fd_np;
+using ::acl_free;
+using ::fchflags;
+using ::chflagsat;
 
 typedef struct {
 	int		 dir;

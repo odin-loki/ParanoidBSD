@@ -1,1 +1,8 @@
-main — requires vary.h (vary_append/vary_apply/vary_destroy) not in batch source list; CLI integration not testable without vary
+hbsd/src/bin/date/date.c:main - program entry point; drives getopt(3), clock_gettime(2), stat(2), setenv(3), localtime(3), the external vary(3) helpers and exit(3); no differentially observable pure result.
+hbsd/src/bin/date/date.c:printdate - unconditionally writes to stdout and calls exit(EXIT_SUCCESS); cannot be called twice in one process for a differential comparison.
+hbsd/src/bin/date/date.c:printisodate - depends on the file-static iso8601_selected/iso8601_fmts option state and terminates the process through printdate().
+hbsd/src/bin/date/date.c:setthetime - mutates global machine state (clock_settime(2), pututxline(3), syslog(3)) and exits through badformat()/errx(3).
+hbsd/src/bin/date/date.c:badformat - warnx(3) then usage(), which calls exit(1); no return value to compare.
+hbsd/src/bin/date/date.c:iso8601_usage - errx(3); marked __dead2, never returns.
+hbsd/src/bin/date/date.c:multipleformats - errx(3); never returns.
+hbsd/src/bin/date/date.c:usage - fprintf(3) to stderr then exit(1); marked __dead2, never returns.

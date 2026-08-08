@@ -60,6 +60,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <errno.h>
+#include <sys/file.h>
 
 #ifndef LONG_BIT
 #define	LONG_BIT	(sizeof(long) * CHAR_BIT)
@@ -94,6 +95,9 @@ struct kinfo_proc {
 };
 
 typedef struct _kvm	kvm_t;
+
+extern char **kvm_getargv(kvm_t *kd, const struct kinfo_proc *kp, int nchr);
+extern int jail_getid(const char *name);
 
 #define	STATUS_MATCH	0
 #define	STATUS_NOMATCH	1

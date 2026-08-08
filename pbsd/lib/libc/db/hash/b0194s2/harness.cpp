@@ -411,27 +411,45 @@ void random_first_free(unsigned long long n)
 	}
 }
 
+void setup_squeeze_page(unsigned char *page, int bsize,
+    const unsigned char *ek, size_t eklen, const unsigned char *ev, size_t evlen,
+    u_int16_t ovfl_pageno)
+{
+	auto *bp = (u_int16_t *)page;
+	u_int16_t off = (u_int16_t)bsize;
+	off -= (u_int16_t)eklen;
+	std::memcpy(page + off, ek, eklen);
+	bp[1] = off;
+	off -= (u_int16_t)evlen;
+	std::memcpy(page + off, ev, evlen);
+	bp[2] = off;
+	int n = 2;
+	bp[n + 1] = ovfl_pageno;
+	bp[n + 2] = OVFLPAGE;
+	bp[0] = (u_int16_t)(n + 2);
+	bp[n + 3] = off - (u_int16_t)((bp[0] + 3) * sizeof(u_int16_t));
+	bp[n + 4] = off;
+}
+
 /* --- squeeze_key --- */
 
 void test_squeeze_once(int bsize, size_t klen, size_t vlen, const char *tag)
 {
 	unsigned char pa[BUF_CAP], pb[BUF_CAP];
 	unsigned char ka[32], kb[32], va[32], vb[32];
+	unsigned char ek[32], ev[32];
 	unsigned char keyf[32], valf[32];
 
 	for (size_t i = 0; i < klen; i++) {
+		ek[i] = (unsigned char)(0xA0 ^ i);
+		ev[i] = (unsigned char)(0xB0 ^ i);
 		keyf[i] = (unsigned char)(0x80 ^ i);
 		valf[i] = (unsigned char)(0x40 ^ i);
 	}
 	guard_fill(pa, BUF_CAP);
 	guard_fill(pb, BUF_CAP);
-	setup_pair_page(pa, bsize, keyf, 4, valf, 4, 1);
-	std::memcpy(pb, pa, bsize);
-	auto *bp = (u_int16_t *)pa;
-	bp[0] = 4;
-	bp[5] = 40;
-	bp[6] = OVFLPAGE;
-	std::memcpy(pb, pa, bsize);
+	setup_squeeze_page(pa, bsize, ek, klen, ev, vlen, 100);
+	std::memcpy(pb, pa, BUF_CAP);
 
 	copy_guarded(ka, keyf, klen, sizeof ka);
 	copy_guarded(kb, keyf, klen, sizeof kb);
@@ -1275,26 +1293,38 @@ void edge_ugly_split()
 	test_ugly_split_once(1, "move");
 	unsigned char opa[BUF_CAP], opb[BUF_CAP];
 	unsigned char npa[BUF_CAP], npb[BUF_CAP];
-	setup_pair_page(opa, 512, (unsigned char *)"a", 1, (unsigned char *)"b",
+	unsigned char op_init[BUF_CAP], np_init[BUF_CAP];
+	setup_pair_page(op_init, 512, (unsigned char *)"a", 1, (unsigned char *)"b",
 	    1, 0);
-	std::memcpy(opb, opa, 512);
-	page_init_raw(512, npa);
-	page_init_raw(512, npb);
+	page_init_raw(512, np_init);
+	std::memcpy(opa, op_init, 512);
+	std::memcpy(npa, np_init, 512);
 	auto *bp = (u_int16_t *)opa;
 	bp[2] = PARTIAL_KEY;
-	std::memcpy(opb, opa, 512);
 	hash_mock_reset();
 	hash_mock.big_split_ret = 0;
 	P::HTAB hp{};
 	HTAB hr{};
 	init_htab_port(hp, 512);
 	init_htab_ref(hr, 512);
-	P::BUFHEAD oba{}, obb{}, nba{}, nbb{};
+	P::BUFHEAD oba{}, nba{};
 	oba.page = (char *)opa;
-	obb.page = (char *)opb;
 	nba.page = (char *)npa;
-	nbb.page = (char *)npb;
+	oba.addr = 1;
+	nba.addr = 2;
 	int rp = P::ugly_split(&hp, 0, &oba, &nba, 512, 0);
+
+	std::memcpy(opb, op_init, 512);
+	bp = (u_int16_t *)opb;
+	bp[2] = PARTIAL_KEY;
+	std::memcpy(npb, np_init, 512);
+	P::BUFHEAD obb{}, nbb{};
+	obb.page = (char *)opb;
+	nbb.page = (char *)npb;
+	obb.addr = 1;
+	nbb.addr = 2;
+	hash_mock_reset();
+	hash_mock.big_split_ret = 0;
 	int rr = ref_ugly_split(&hr, 0, (BUFHEAD *)(void *)&obb,
 	    (BUFHEAD *)(void *)&nbb, 512, 0);
 	char msg[64];

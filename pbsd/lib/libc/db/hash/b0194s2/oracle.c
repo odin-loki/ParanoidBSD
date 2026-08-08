@@ -1012,7 +1012,15 @@ BUFHEAD *__get_buf(HTAB *hashp, u_int32_t addr, BUFHEAD *prev, int newpage) {
 int __call_hash(HTAB *h, char *k, int s) { (void)h;(void)k;(void)s; hash_mock.call_hash_calls++; return hash_mock.call_hash_ret; }
 int __big_delete(HTAB *h, BUFHEAD *b) { (void)h;(void)b; hash_mock.big_delete_calls++; return hash_mock.big_delete_ret; }
 int __big_split(HTAB *h, BUFHEAD *a, BUFHEAD *b, BUFHEAD *c, int d, u_int32_t e, SPLIT_RETURN *r) {
-	(void)h;(void)a;(void)b;(void)c;(void)d;(void)e; hash_mock.big_split_calls++; if (hash_mock.split_set) *r = hash_mock.split_ret; return hash_mock.big_split_ret;
+	(void)h;(void)d;(void)e; hash_mock.big_split_calls++;
+	if (hash_mock.split_set)
+		*r = hash_mock.split_ret;
+	else {
+		r->oldp = a;
+		r->newp = b;
+		r->nextp = c;
+	}
+	return hash_mock.big_split_ret;
 }
 int __big_insert(HTAB *h, BUFHEAD *b, const DBT *k, const DBT *v) { (void)h;(void)b;(void)k;(void)v; hash_mock.big_insert_calls++; return hash_mock.big_insert_ret; }
 int __expand_table(HTAB *h) { (void)h; hash_mock.expand_calls++; return hash_mock.expand_ret; }

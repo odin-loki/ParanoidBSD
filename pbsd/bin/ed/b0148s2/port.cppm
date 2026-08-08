@@ -117,10 +117,25 @@ void *port_malloc(std::size_t n)
 	return (p);
 }
 
+void *port_realloc(void *q, std::size_t n)
+{
+	void *p;
+
+	realloc_calls++;
+	if (realloc_fail_at != 0 && realloc_calls >= realloc_fail_at)
+		return (nullptr);
+	p = std::realloc(q, n);
+	return (p);
+}
+
 void reset_hooks()
 {
 	malloc_fail_at = 0;
 	malloc_calls = 0;
+	realloc_fail_at = 0;
+	realloc_calls = 0;
+	hup_calls = 0;
+	int_calls = 0;
 }
 
 void reset_globals()
@@ -146,11 +161,13 @@ void unmark_line_node(line_t *lp)
 void handle_hup(int s)
 {
 	(void)s;
+	hup_calls++;
 }
 
 void handle_int(int s)
 {
 	(void)s;
+	int_calls++;
 }
 
 line_t *get_addressed_line_node(long n);
@@ -168,6 +185,23 @@ int close_sbuf(void);
 FILE *sfp;
 off_t sfseek;
 line_t buffer_head;
+
+void *port_buffer_head()
+{
+	return (&buffer_head);
+}
+
+void *port_node_forw(void *p)
+{
+	return (((line_t *)p)->q_forw);
+}
+
+void *port_node_back(void *p)
+{
+	return (((line_t *)p)->q_back);
+}
+
+#define realloc port_realloc
 
 /* undo.c: This file contains the undo routines for the ed line editor */
 /*-
@@ -462,7 +496,7 @@ put_sbuf_line(const char *cs)
 	}
 	len = s - cs;
 	if (seek_write) {
-		if (fseeko(sfp, (off_t)0, SEEK_END) >= 0) {
+		if (fseeko(sfp, (off_t)0, SEEK_END) < 0) {
 			fprintf(stderr, "%s\n", strerror(errno));
 			errmsg = "cannot seek temp file";
 			free(lp);

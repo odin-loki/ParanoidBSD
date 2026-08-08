@@ -44,6 +44,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/pax/b0204/port.cppm
   bin/pax/b0207/port.cppm
   bin/pax/getoldopt_m/port.cppm
+  bin/pkill/b0210/port.cppm
   bin/ps/nlist_m/port.cppm
   bin/pwait/b0181/port.cppm
   bin/pwd/pwd_m/port.cppm
@@ -106,6 +107,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/db/hash/hash_log2_m/port.cppm
   lib/libc/db/mpool/b0226/port.cppm
   lib/libc/db/recno/rec_utils_m/port.cppm
+  lib/libc/db/test/b0203/port.cppm
   lib/libc/db/test/hash.tests/b0184/port.cppm
   lib/libc/db/test/hash.tests/b0185/port.cppm
   lib/libc/gdtoa/b0023/port.cppm

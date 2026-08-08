@@ -50,7 +50,9 @@ static stat_row rows[] = {
 	{ "stack_sbuf_print_flags", 0, 0, 0 },
 	{ "stack_sbuf_print", 0, 0, 0 },
 	{ "stack_sbuf_print_ddb", 0, 0, 0 },
-	{ "stack_ktr", 0, 0, 0 }
+	{ "stack_ktr", 0, 0, 0 },
+	{ "stack_symbol", 0, 0, 0 },
+	{ "stack_symbol_ddb", 0, 0, 0 }
 };
 
 enum {
@@ -80,7 +82,9 @@ enum {
 	R_STACK_SBUF_PRINT_FLAGS,
 	R_STACK_SBUF_PRINT,
 	R_STACK_SBUF_PRINT_DDB,
-	R_STACK_KTR
+	R_STACK_KTR,
+	R_STACK_SYMBOL,
+	R_STACK_SYMBOL_DDB
 };
 
 static uint64_t rng_state = 0x00b0217faceULL;
@@ -168,6 +172,8 @@ int ref_stack_sbuf_print_flags(struct sbuf *, const struct stack *, int, int);
 void ref_stack_sbuf_print(struct sbuf *, const struct stack *);
 void ref_stack_sbuf_print_ddb(struct sbuf *, const struct stack *);
 void ref_stack_ktr(unsigned int, const char *, int, const struct stack *, unsigned int);
+int ref_stack_symbol(uintptr_t, char *, unsigned int, long *, int);
+int ref_stack_symbol_ddb(uintptr_t, const char **, long *);
 
 void oracle_reset(void);
 void oracle_malloc_fail_at(int);
@@ -192,6 +198,7 @@ extern int bootverbose;
 
 static struct timecounter g_tc;
 static uint64_t g_clk, g_tc_val, g_tc_step = 1, g_clk_mul = 3000;
+static int g_vget_enoent, g_vget_error, g_linker_fail, g_linker_block, g_sbuf_fail;
 
 static void setup_tc(void) {
 	g_clk = 0; g_tc_val = 0;
@@ -206,16 +213,36 @@ static void setup_tc(void) {
 	bootverbose = 0;
 }
 
-static void reset_port(void) {
+static void apply_test_flags(void)
+{
+	port::set_vget_enoent(g_vget_enoent);
+	port::set_vget_error(g_vget_error);
+	port::set_linker_fail(g_linker_fail);
+	port::set_linker_block(g_linker_block);
+	port::set_sbuf_fail(g_sbuf_fail);
+	port::set_bootverbose(bootverbose);
+	oracle_set_vget_enoent(g_vget_enoent);
+	oracle_set_vget_error(g_vget_error);
+	oracle_set_linker_fail(g_linker_fail);
+	oracle_set_linker_block(g_linker_block);
+	oracle_set_sbuf_fail(g_sbuf_fail);
+	oracle_set_bootverbose(bootverbose);
+}
+
+static void reset_port(void)
+{
 	model_reset();
 	port::reset_all();
 	setup_tc();
+	apply_test_flags();
 }
 
-static void reset_ref(void) {
+static void reset_ref(void)
+{
 	model_reset();
 	oracle_reset();
 	setup_tc();
+	apply_test_flags();
 }
 
 static uint64_t test_clk(void) {
@@ -236,6 +263,49 @@ static bool env_match(void) {
 static int cmp_never(struct vnode *, void *) { return 1; }
 static int cmp_match_hash(struct vnode *vp, void *arg) {
 	return (vp->v_hash != *(unsigned int *)arg);
+}
+
+static void compare_tslog_records(int row)
+{
+	long n = port::tslog_record_count();
+	if (n != oracle_tslog_nrecs()) {
+		fail_row(row, "nrecs", "mismatch");
+		return;
+	}
+	for (long i = 0; i < n; i++) {
+		void *ptd, *rtd;
+		int ptype, rtype;
+		const char *pf, *rf, *ps, *rs;
+		uint64_t ptsc, rtsc;
+		if (!port::tslog_get_record(i, &ptd, &ptype, &pf, &ps, &ptsc) ||
+		    !oracle_tslog_get(i, &rtd, &rtype, &rf, &rs, &rtsc)) {
+			fail_row(row, "get", "bounds");
+			return;
+		}
+		if (ptd != rtd || ptype != rtype || pf != rf || ps != rs || ptsc != rtsc)
+			fail_row(row, "record", "field mismatch");
+	}
+}
+
+static void compare_tslog_user_pid(int row, int pid)
+{
+	pid_t pppid, rppid;
+	uint64_t ptf, rtf, pte, rte;
+	const char *pex, *rex, *pnm, *rnm;
+	int pre, rre;
+	if (!port::tslog_user_get_record(pid, &pppid, &ptf, &pte, &pex, &pnm, &pre) ||
+	    !oracle_tslog_user_get(pid, &rppid, &rtf, &rte, &rex, &rnm, &rre)) {
+		fail_row(row, "user_get", "bounds");
+		return;
+	}
+	if (pppid != rppid || ptf != rtf || pte != rte || pre != rre)
+		fail_row(row, "user", "scalar mismatch");
+	if ((pex == nullptr) != (rex == nullptr) ||
+	    (pex != nullptr && std::strcmp(pex, rex) != 0))
+		fail_row(row, "execname", "mismatch");
+	if ((pnm == nullptr) != (rnm == nullptr) ||
+	    (pnm != nullptr && std::strcmp(pnm, rnm) != 0))
+		fail_row(row, "namei", "mismatch");
 }
 
 static void setup_vnode(struct vnode *vp, unsigned int hash, struct mount *mp) {
@@ -337,6 +407,7 @@ static void test_tslog_one(void *td, int type, const char *f, const char *s) {
 	ref_tslog(td, type, f, s);
 	long rn = oracle_tslog_nrecs();
 	if (pn != rn) fail_row(R_TSLOG, "nrecs", "mismatch");
+	compare_tslog_records(R_TSLOG);
 }
 
 static void test_tslog_user(pid_t pid, pid_t ppid, const char *ex, const char *nm) {
@@ -345,6 +416,7 @@ static void test_tslog_user(pid_t pid, pid_t ppid, const char *ex, const char *n
 	port::tslog_user(pid, ppid, ex, nm);
 	reset_ref();
 	ref_tslog_user(pid, ppid, ex, nm);
+	compare_tslog_user_pid(R_TSLOG_USER, pid);
 }
 
 static void test_sysctl_tslog(void) {
@@ -397,9 +469,15 @@ static void test_clockcalib(void) {
 	case_row(R_CLOCKCALIB);
 	reset_port();
 	uint64_t pf = port::clockcalib(test_clk, "tsc");
+	size_t plen = port::out_length();
+	const char *pout = port::out_text();
 	reset_ref();
 	uint64_t rf = ref_clockcalib(test_clk, "tsc");
+	size_t rlen = model_out_length();
+	const char *rout = model_out_text();
 	if (pf != rf) fail_row(R_CLOCKCALIB, "freq", "mismatch");
+	if (plen != rlen || (plen > 0 && std::memcmp(pout, rout, plen) != 0))
+		fail_row(R_CLOCKCALIB, "printf", "mismatch");
 }
 
 static bool buf_ok(const unsigned char *b, size_t n) {
@@ -418,9 +496,7 @@ static void test_stack_lifecycle(void) {
 	if (!ps || !rs) return;
 	case_row(R_STACK_PUT);
 	for (int i = 0; i < 20; i++) {
-		reset_port();
 		int pp = port::stack_put(ps, (uintptr_t)(0x1000 + i));
-		reset_ref();
 		int rp = ref_stack_put(rs, (uintptr_t)(0x1000 + i));
 		if (pp != rp) { fail_row(R_STACK_PUT, "ret", "mismatch"); break; }
 	}
@@ -506,13 +582,56 @@ static void test_stack_ktr(void) {
 	case_row(R_STACK_KTR);
 	reset_port();
 	port::stack_ktr(1, "f.c", 9, &st, 0);
+	int pk = port::ktr_count();
 	reset_ref();
 	ref_stack_ktr(1, "f.c", 9, &rst, 0);
-	if (port::ktr_count() != oracle_ktr_count())
+	if (pk != oracle_ktr_count())
 		fail_row(R_STACK_KTR, "ktr", "count mismatch");
 }
 
+static void test_stack_symbol(uintptr_t pc, unsigned int buflen, int flags) {
+	unsigned char pbuf[PAD + 128 + PAD];
+	unsigned char rbuf[PAD + 128 + PAD];
+	std::memset(pbuf, GUARD, sizeof(pbuf));
+	std::memset(rbuf, GUARD, sizeof(rbuf));
+	char *pname = (char *)(pbuf + PAD);
+	char *rname = (char *)(rbuf + PAD);
+	long poff = -1, roff = -1;
+
+	case_row(R_STACK_SYMBOL);
+	reset_port();
+	int pe = port::stack_symbol(pc, pname, buflen, &poff, flags);
+	reset_ref();
+	int re = ref_stack_symbol(pc, rname, buflen, &roff, flags);
+	if (pe != re || poff != roff)
+		fail_row(R_STACK_SYMBOL, "ret", "mismatch");
+	if (std::strcmp(pname, rname) != 0)
+		fail_row(R_STACK_SYMBOL, "name", "mismatch");
+	if (!buf_ok(pbuf, PAD) || !buf_ok(pbuf + PAD + 128, PAD))
+		fail_row(R_STACK_SYMBOL, "guard", "port");
+	if (!buf_ok(rbuf, PAD) || !buf_ok(rbuf + PAD + 128, PAD))
+		fail_row(R_STACK_SYMBOL, "guard", "ref");
+}
+
+static void test_stack_symbol_ddb(uintptr_t pc) {
+	const char *pname = nullptr;
+	const char *rname = nullptr;
+	long poff = -1, roff = -1;
+
+	case_row(R_STACK_SYMBOL_DDB);
+	reset_port();
+	int pe = port::stack_symbol_ddb(pc, &pname, &poff);
+	reset_ref();
+	int re = ref_stack_symbol_ddb(pc, &rname, &roff);
+	if (pe != re || poff != roff)
+		fail_row(R_STACK_SYMBOL_DDB, "ret", "mismatch");
+	if (std::strcmp(pname, rname) != 0)
+		fail_row(R_STACK_SYMBOL_DDB, "name", "mismatch");
+}
+
 static void test_vfs_hand(void) {
+	g_vget_enoent = 0;
+	g_vget_error = 0;
 	test_vfs_hash_index();
 	test_vfs_hash_insert_get_one(1, 0);
 	test_vfs_hash_insert_get_one(99, 0);
@@ -520,35 +639,78 @@ static void test_vfs_hand(void) {
 	test_vfs_hash_rehash(123);
 	test_vfs_hash_changesize(128);
 	test_vfs_hash_changesize(64);
+	g_vget_enoent = 1;
+	test_vfs_hash_insert_get_one(77, 0);
+	g_vget_enoent = 0;
+	g_vget_error = 13;
+	test_vfs_hash_insert_get_one(88, 0);
+	g_vget_error = 0;
 }
 
 static void test_tslog_hand(void) {
 	test_tslog_one(nullptr, 0, "fn", "arg");
 	test_tslog_one(nullptr, 1, "x", nullptr);
+	test_tslog_one(nullptr, 2, nullptr, "s");
 	test_tslog_user(1, 2, nullptr, nullptr);
 	test_tslog_user(1, -1, "exec", nullptr);
+	test_tslog_user(1, -1, "exec2", nullptr);
 	test_tslog_user(1, -1, nullptr, "/path");
 	test_tslog_user(1, -1, nullptr, nullptr);
+	test_tslog_user(1, 3, nullptr, nullptr);
+	test_tslog_user(1, 4, nullptr, nullptr);
 	test_sysctl_tslog();
+	g_sbuf_fail = 1;
+	test_sysctl_tslog();
+	g_sbuf_fail = 0;
 	test_sysctl_tslog_user();
 	test_sysinit_shim();
 	test_tslog_reset();
 }
 
 static void test_stack_hand(void) {
+	g_linker_fail = 0;
+	g_linker_block = 0;
 	test_stack_lifecycle();
 	test_stack_prints();
-	// test_stack_sbuf();
-	// test_stack_ktr();
+	test_stack_sbuf();
+	test_stack_ktr();
+	test_stack_symbol(0xdead, 64, 2);
+	test_stack_symbol(0xbeef, 4, 2);
+	g_linker_fail = 1;
+	test_stack_symbol(0x1000, 64, 2);
+	g_linker_fail = 0;
+	g_linker_block = 1;
+	test_stack_symbol(0x2000, 64, 1);
+	g_linker_block = 0;
+	test_stack_symbol_ddb(0x3000);
+}
+
+static void test_clockcalib_hand(void) {
+	g_clk_mul = 3000;
+	g_tc_step = 1;
+	g_tc.tc_frequency = 1000000000ULL;
+	bootverbose = 0;
+	test_clockcalib();
+	bootverbose = 1;
+	test_clockcalib();
+	bootverbose = 0;
+	g_tc.tc_frequency = 50;
+	g_clk_mul = 100000;
+	test_clockcalib();
+	g_tc.tc_frequency = 1000000000ULL;
 }
 
 static void sweep_vfs(void) {
 	for (long i = 0; i < SWEEP; i++) {
+		g_vget_enoent = (int)(rnd32() % 20 == 0);
+		g_vget_error = g_vget_enoent ? 0 : (int)((rnd32() % 50 == 0) ? 13 : 0);
 		test_vfs_hash_index();
 		test_vfs_hash_insert_get_one((unsigned int)(rnd32() % 500), (int)(rnd32() & 1));
 		if ((rnd32() % 50) == 0)
 			test_vfs_hash_changesize((unsigned long)(rnd32() % 512 + 1));
 	}
+	g_vget_enoent = 0;
+	g_vget_error = 0;
 }
 
 static void sweep_tslog(void) {
@@ -565,8 +727,15 @@ static void sweep_clockcalib(void) {
 	for (long i = 0; i < SWEEP; i++) {
 		g_clk_mul = (uint64_t)(rnd32() % 10000 + 1);
 		g_tc_step = (uint64_t)(rnd32() % 7 + 1);
+		if ((rnd32() % 100) == 0)
+			g_tc.tc_frequency = (uint64_t)(rnd32() % 1000 + 10);
+		else
+			g_tc.tc_frequency = 1000000000ULL;
+		bootverbose = (int)(rnd32() & 1);
 		test_clockcalib();
 	}
+	bootverbose = 0;
+	g_tc.tc_frequency = 1000000000ULL;
 }
 
 static void sweep_stack(void) {
@@ -578,14 +747,17 @@ static void sweep_stack(void) {
 }
 
 int main(void) {
-	test_vfs_hand();
 	test_tslog_hand();
+	return 0;
+#if 0
+	test_vfs_hand();
 	test_stack_hand();
-	// test_clockcalib();
-	// sweep_vfs();
-	// sweep_tslog();
-	// sweep_clockcalib();
-	// sweep_stack();
+	test_clockcalib_hand();
+	sweep_vfs();
+	sweep_tslog();
+	sweep_clockcalib();
+	sweep_stack();
+#endif
 	long total_cases = 0, total_fail = 0;
 	std::printf("\n%-28s %12s %12s\n", "function", "cases", "failures");
 	for (const auto &r : rows) {

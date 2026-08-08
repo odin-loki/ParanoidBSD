@@ -276,17 +276,21 @@ ctx_same(char *ctx_a, char *ctx_b, size_t sz, char *msg, size_t msgsz)
 	std::vector<unsigned char> a(sz), b(sz);
 	auto *ua = (ref_abi::ucontext *)a.data();
 	auto *ub = (ref_abi::ucontext *)b.data();
+	const uint64_t base_a = (uint64_t)(uintptr_t)ctx_a;
+	const uint64_t base_b = (uint64_t)(uintptr_t)ctx_b;
+	const uint64_t end_a = base_a + sz;
+	const uint64_t end_b = base_b + sz;
 
 	std::memcpy(a.data(), ctx_a, sz);
 	std::memcpy(b.data(), ctx_b, sz);
 
-	if (ua->uc_mcontext.mc_ptr != 0)
-		ua->uc_mcontext.mc_ptr -= (uint64_t)(uintptr_t)ctx_a;
-	if (ub->uc_mcontext.mc_ptr != 0)
-		ub->uc_mcontext.mc_ptr -= (uint64_t)(uintptr_t)ctx_b;
-	if (ua->uc_mcontext.mc_gpregs.gp_x[20] == (uint64_t)(uintptr_t)ctx_a)
+	if (ua->uc_mcontext.mc_ptr >= base_a && ua->uc_mcontext.mc_ptr < end_a)
+		ua->uc_mcontext.mc_ptr -= base_a;
+	if (ub->uc_mcontext.mc_ptr >= base_b && ub->uc_mcontext.mc_ptr < end_b)
+		ub->uc_mcontext.mc_ptr -= base_b;
+	if (ua->uc_mcontext.mc_gpregs.gp_x[20] == base_a)
 		ua->uc_mcontext.mc_gpregs.gp_x[20] = 0;
-	if (ub->uc_mcontext.mc_gpregs.gp_x[20] == (uint64_t)(uintptr_t)ctx_b)
+	if (ub->uc_mcontext.mc_gpregs.gp_x[20] == base_b)
 		ub->uc_mcontext.mc_gpregs.gp_x[20] = 0;
 
 	if (std::memcmp(a.data(), b.data(), sz) != 0) {
@@ -505,8 +509,11 @@ op_getcontextx(int malloc_fail, int gc_fail, int gc_errno, const char *ctx)
 		report(F_GETCONTEXTX, ctx, msg);
 		goto cleanup;
 	}
-	if (pa != nullptr && std::memcmp(pa, pb, sz) != 0)
-		report(F_GETCONTEXTX, ctx, "ctx content mismatch");
+	if (pa != nullptr) {
+		char msg[256];
+		if (!ctx_same((char *)pa, (char *)pb, sz, msg, sizeof msg))
+			report(F_GETCONTEXTX, ctx, msg);
+	}
 
 cleanup:
 	std::free(pa);
@@ -543,10 +550,16 @@ op_makecontext(port::ucontext_t *ucp_port, ref_abi::ucontext *ucp_ref,
 		report(F_MAKECONTEXT, ctx, "input ucontext mismatch before call");
 		return;
 	}
-	if (std::memcmp(ucp_port, ucp_ref, sizeof(snap_port)) != 0) {
-		for (size_t off = 0; off < sizeof(snap_port); off++) {
-			const unsigned char *ap = (const unsigned char *)ucp_port;
-			const unsigned char *bp = (const unsigned char *)ucp_ref;
+
+	port::ucontext_t norm_port = *ucp_port;
+	ref_abi::ucontext norm_ref = *ucp_ref;
+	norm_port.uc_mcontext.mc_gpregs.gp_x[20] = 0;
+	norm_ref.uc_mcontext.mc_gpregs.gp_x[20] = 0;
+
+	if (std::memcmp(&norm_port, &norm_ref, sizeof(norm_port)) != 0) {
+		for (size_t off = 0; off < sizeof(norm_port); off++) {
+			const unsigned char *ap = (const unsigned char *)&norm_port;
+			const unsigned char *bp = (const unsigned char *)&norm_ref;
 			if (ap[off] != bp[off]) {
 				std::snprintf(msg, sizeof msg,
 				    "uc mismatch at %zu port=%02x ref=%02x",
@@ -637,7 +650,7 @@ static void edge_makecontext(void)
 {
 	port::ucontext_t up;
 	ref_abi::ucontext ur;
-	unsigned char stackp[256], stackr[256];
+	unsigned char stackp[256];
 	uint64_t args[8];
 	char ctx[96];
 	static const int argcs[] = { -1, 0, 1, 7, 8, 9 };
@@ -650,9 +663,8 @@ static void edge_makecontext(void)
 				std::memset(&up, 0, sizeof up);
 				std::memset(&ur, 0, sizeof ur);
 				std::memset(stackp, 0xa5, sizeof stackp);
-				std::memset(stackr, 0xa5, sizeof stackr);
 				setup_ucp_port(&up, (uintptr_t)stackp, sizes[si], 0);
-				setup_ucp_ref(&ur, (uintptr_t)stackr, sizes[si], 0);
+				setup_ucp_ref(&ur, (uintptr_t)stackp, sizes[si], 0);
 				for (int k = 0; k < 8; k++)
 					args[k] = (uint64_t)(0x80 + k) | ((uint64_t)k << 32);
 				std::snprintf(ctx, sizeof ctx,
@@ -667,7 +679,7 @@ static void edge_makecontext(void)
 		std::memset(&up, 0, sizeof up);
 		std::memset(&ur, 0, sizeof ur);
 		setup_ucp_port(&up, base, 32, 0);
-		setup_ucp_ref(&ur, base + 4096, 32, 0);
+		setup_ucp_ref(&ur, base, 32, 0);
 		for (int k = 0; k < 8; k++)
 			args[k] = rand_u64();
 		std::snprintf(ctx, sizeof ctx, "edge/make/align/base=%ju", (uintmax_t)base);
@@ -749,7 +761,7 @@ static void sweep_makecontext(void)
 {
 	port::ucontext_t up;
 	ref_abi::ucontext ur;
-	unsigned char stackp[512], stackr[512];
+	unsigned char stackp[512];
 	uint64_t args[8];
 	char ctx[64];
 
@@ -769,11 +781,11 @@ static void sweep_makecontext(void)
 		std::memset(&up, 0, sizeof up);
 		std::memset(&ur, 0, sizeof ur);
 		std::memset(stackp, (int)(0x80 | (rand_u64() & 0x7f)), sizeof stackp);
-		std::memset(stackr, (int)(0x80 | (rand_u64() & 0x7f)), sizeof stackr);
 		size_t ss = (size_t)(nextr() % 400);
 		uintptr_t off = (uintptr_t)(nextr() % 32);
-		setup_ucp_port(&up, (uintptr_t)(stackp + off), ss, (int)(nextr() & 3));
-		setup_ucp_ref(&ur, (uintptr_t)(stackr + off), ss, up.uc_stack.ss_flags);
+		uintptr_t sp = (uintptr_t)(stackp + off);
+		setup_ucp_port(&up, sp, ss, (int)(nextr() & 3));
+		setup_ucp_ref(&ur, sp, ss, up.uc_stack.ss_flags);
 		for (int k = 0; k < 8; k++)
 			args[k] = rand_u64();
 		void (*fn)(void) = dummy_funcs[(int)(nextr() % 4)];
@@ -814,10 +826,10 @@ main(void)
 
 	edge_getcontextx_size();
 	edge_fillcontextx2();
-#if 0
 	edge_fillcontextx();
 	edge_getcontextx();
 	edge_makecontext();
+#if 0
 	edge_ctx_done();
 #endif
 

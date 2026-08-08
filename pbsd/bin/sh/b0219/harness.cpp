@@ -248,8 +248,8 @@ test_ckmalloc_ckfree(void)
 			bad |= 4;
 		ref_ckfree(pa);
 		port::ckfree(pb);
-		ref_ckfree(sa);
-		port::ckfree(sb);
+		ref_ckfree((void *)sa);
+		port::ckfree((void *)sb);
 		void *pr = ref_ckrealloc(ref_ckmalloc(8), 32);
 		void *pp = port::ckrealloc(port::ckmalloc(8), 32);
 		if (pr == nullptr || pp == nullptr)
@@ -304,8 +304,8 @@ test_growstackstr(void)
 	port::stackmark mb;
 	ref_setstackmark(&ma);
 	port::setstackmark(&mb);
-	pa = (char *)ref_stalloc(0);
-	pb = (char *)port::stalloc(0);
+	pa = (char *)ref_stalloc(1);
+	pb = (char *)port::stalloc(1);
 	if (pa == nullptr || pb == nullptr)
 		bad = 1;
 	{
@@ -319,10 +319,15 @@ test_growstackstr(void)
 		pb = port::stputs("def", pb);
 		if ((pa - pa0) != (pb - pb0))
 			bad |= 4;
-		if (pa - pa0 == 7 && std::memcmp(pa0, "abc\x80def", 7) != 0)
-			bad |= 8;
-		if (pb - pb0 == 7 && std::memcmp(pb0, "abc\x80def", 7) != 0)
-			bad |= 8;
+		{
+			const unsigned char expect[7] = {
+				'a', 'b', 'c', 0x80, 'd', 'e', 'f'
+			};
+			if (pa - pa0 == 7 && std::memcmp(pa0, expect, 7) != 0)
+				bad |= 8;
+			if (pb - pb0 == 7 && std::memcmp(pb0, expect, 7) != 0)
+				bad |= 8;
+		}
 		if ((pa - pa0) != 7 || (pb - pb0) != 7)
 			bad |= 16;
 	}
@@ -619,6 +624,8 @@ test_aliascmd(void)
 
 	reset_oracle();
 	reset_port();
+	oracle_set_out1_memout();
+	port::port_set_out1_memout();
 	oracle_argptr = oav1;
 	oracle_nextopt_optptr = nullptr;
 	ra = ref_aliascmd(0, nullptr);
@@ -635,6 +642,8 @@ test_aliascmd(void)
 	rp = port::aliascmd(0, nullptr);
 	if (ra != rp)
 		bad |= 2;
+	oracle_restore_out1();
+	port::port_restore_out1();
 	oracle_argptr = oua;
 	oracle_nextopt_optptr = nullptr;
 	ra = ref_unaliascmd(0, nullptr);
