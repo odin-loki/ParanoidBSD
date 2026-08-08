@@ -1,0 +1,10 @@
+{
+  "batch": "b0010s4",
+  "verified": "2026-08-08T09:16:11Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "PBSD batch b0010s4 differential test\n(oracle.c is the specification; guard byte 0x7f)\n\n\nfunction                cases     failures     result\n---------------- ------------ ------------ ----------\n__eqsf2                286743            0       PASS\nfloat32_eq             286743            0       PASS\n---------------- ------------ ------------ ----------\nTOTAL                  573486            0       PASS\n\nRESULT: PASS (573486 cases, 0 divergences)\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/eqsf2.c": "31c76239cb0b59db"
+  }
+}
