@@ -4,6 +4,7 @@
  * cexpl, cospil, sinpil, tanpil compared bit-for-bit against oracle.c.
  */
 
+#include <cfloat>
 #include <climits>
 #include <cmath>
 #include <complex>
@@ -14,6 +15,21 @@
 
 #define complex _Complex
 #include <complex.h>
+
+#ifndef CMPLXL
+static inline long double _Complex
+harness_CMPLXL(long double x, long double y)
+{
+	long double _Complex z = 0;
+
+	__real__ z = x;
+	__imag__ z = y;
+	return (z);
+}
+#define CMPLXL(x, y) harness_CMPLXL((long double)(x), (long double)(y))
+#endif
+#define creall __real__
+#define cimagl __imag__
 
 import pbsd.lib.msun.ld80.b0093;
 

@@ -1762,3 +1762,4 @@
 {"batch": "b0096", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T11:29:31Z"}
 {"batch": "b0085", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: no ref_ functions in oracle IR)", "how": "agent", "ts": "2026-08-08T11:30:17Z"}
 {"batch": "b0094", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:30:45Z"}
+{"batch": "b0111", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-08-08T11:30:50Z"}

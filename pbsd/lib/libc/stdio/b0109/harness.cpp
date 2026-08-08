@@ -554,22 +554,6 @@ prep_rewindable(FILE *fp, const unsigned char *data, std::size_t len,
 }
 
 RewindObs
-observe_rewind_state(FILE *fp)
-{
-	RewindObs o{};
-
-	o.feof_u = feof_unlocked(fp);
-	o.ferror_u = ferror_unlocked(fp);
-	o.pos = ftell(fp);
-	guard_tail(o.tail);
-	if (o.pos >= 0)
-		(void)fread(o.tail, 1, sizeof(o.tail), fp);
-	std::rewind(fp);
-	o.first_c = std::fgetc(fp);
-	return o;
-}
-
-RewindObs
 call_ref_rewind(FILE *fp, int errno_before)
 {
 	RewindObs o{};
