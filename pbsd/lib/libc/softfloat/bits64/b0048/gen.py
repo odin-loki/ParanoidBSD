@@ -1428,6 +1428,7 @@ def gen_propagate_test(f):
     ty = sig_float_type(f)
     rand = {'float32': 'f32_rand', 'float64': 'f64_rand',
             'floatx80': 'fx80_rand', 'float128': 'f128_rand'}[ty]
+    cmp = cmp_expr(ty, 'rp', 'rr')
     return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         {ty} a = {rand}(), b = {rand}();
@@ -1435,7 +1436,7 @@ def gen_propagate_test(f):
         {ty} rp = port::{f}(a, b);
         {ty} rr = ref_{f}(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ({cmp}) failures++;
         sync_globals_to_port();
     }}
 '''

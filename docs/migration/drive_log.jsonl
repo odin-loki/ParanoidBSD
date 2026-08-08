@@ -1748,3 +1748,5 @@
 {"batch": "b0058", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/10: reset_locale_states)", "how": "agent", "ts": "2026-08-08T11:24:01Z"}
 {"batch": "b0059", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:24:11Z"}
 {"batch": "b0075", "status": "VERIFIED", "detail": "harness green + IR-identical for all 9 functions", "how": "agent", "ts": "2026-08-08T11:24:25Z"}
+{"batch": "b0029", "status": "REJECTED", "detail": "mutation check: only 0 of 1 candidate mutations compiled, need 1 (1 would not build)\n(mechanical path first said: not attempted (mechanical phase runs separately))", "how": "agent+escalate", "ts": "2026-08-08T11:24:34Z"}
+{"batch": "b0046", "status": "VERIFIED", "detail": "harness green + IR-identical for all 201 functions", "how": "agent", "ts": "2026-08-08T11:24:35Z"}
