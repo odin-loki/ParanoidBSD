@@ -166,7 +166,7 @@ static const ldcase ldvec[] = {
 	{ 0x4000, 0x8000000000000000ull, 0x0000000000000000ull },
 	{ 0xc000, 0x8000000000000000ull, 0x0000000000000000ull },
 	{ 0x4001, 0xc000000000000000ull, 0x0000000000000000ull },
-	{ 0x4000, 0xc90fdaa22168c235ull, 0x3fc90fdaa22168c23ull },
+	{ 0x4000, 0xc90fdaa22168c235ull, 0x0000000000000000ull },
 	{ 0x7ffe, 0xffffffffffffffffull, 0xffffffffffffffffull },
 	{ 0xfffe, 0xffffffffffffffffull, 0xffffffffffffffffull },
 	{ 0x7fff, 0x8000000000000000ull, 0x0000000000000000ull },

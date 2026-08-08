@@ -368,7 +368,7 @@ __kernel_tanl(long double x, long double y, int iy) {
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * src/s_cexp.c converted to long double complex by Steven G. Kargl
+ * src/s_cexp.c converted to long double _Complex by Steven G. Kargl
  */
 
 #include <complex.h>
@@ -650,8 +650,8 @@ hexpl(long double x)
 /*
  * See ../src/k_exp.c for details.
  */
-static inline long double complex
-__ldexp_cexpl(long double complex z, int expt)
+static inline long double _Complex
+__ldexp_cexpl(long double _Complex z, int expt)
 {
 	long double c, exp_x, hi, lo, s;
 	long double x, y, scale1, scale2;
@@ -676,8 +676,8 @@ __ldexp_cexpl(long double complex z, int expt)
 }
 #endif /* _COMPLEX_H */
 
-long double complex
-cexpl (long double complex z)
+long double _Complex
+cexpl (long double _Complex z)
 {
 	long double c, exp_x, s, x, y;
 	uint64_t lx, ly;

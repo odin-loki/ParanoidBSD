@@ -5,7 +5,10 @@
  * renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.
  */
 
+#define _GNU_SOURCE
+
 #include <limits.h>
+#include <locale.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <wchar.h>
@@ -17,8 +20,6 @@
 #elif defined(__FreeBSD__) || defined(__APPLE__)
 #include <xlocale.h>
 #endif
-
-#include <locale.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)

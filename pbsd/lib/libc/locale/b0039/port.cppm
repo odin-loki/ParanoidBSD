@@ -32,7 +32,7 @@ export module pbsd.lib.libc.locale.b0039;
 
 export namespace pbsd::lib_libc_locale::b0039 {
 
-struct mbstate_t {
+union mbstate_t {
 	char		__mbstate8[128];
 	long long	_mbstateL;
 };

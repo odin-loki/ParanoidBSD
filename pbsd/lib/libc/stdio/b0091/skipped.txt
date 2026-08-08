@@ -1,2 +1,0 @@
-fsetpos.c: host fpos_t is not scalar; the original (off_t)*pos cast does not compile here
-putwchar.c: depends on FreeBSD libc internals (FIX_LOCALE, __get_locale, xlocale_private.h)

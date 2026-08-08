@@ -26,9 +26,10 @@
  * SUCH DAMAGE.
  */
 
-module;
+export module pbsd.lib.msun.ld128.b0084;
 
-extern "C" {
+export namespace pbsd::lib_msun_ld128::b0084 {
+
 /*
  * asinl() and acosl()
  */
@@ -98,32 +99,5 @@ const long double aT[] = {
 };
 
 const long double pi_lo = 8.67181013012378102479704402604335225e-35L;
-}
 
-export module pbsd.lib.msun.ld128.b0084;
-
-export namespace pbsd::lib_msun_ld128::b0084 {
-using ::pS0;
-using ::pS1;
-using ::pS2;
-using ::pS3;
-using ::pS4;
-using ::pS5;
-using ::pS6;
-using ::pS7;
-using ::pS8;
-using ::pS9;
-using ::qS1;
-using ::qS2;
-using ::qS3;
-using ::qS4;
-using ::qS5;
-using ::qS6;
-using ::qS7;
-using ::qS8;
-using ::qS9;
-using ::atanhi;
-using ::atanlo;
-using ::aT;
-using ::pi_lo;
 } // namespace pbsd::lib_msun_ld128::b0084

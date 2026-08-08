@@ -160,9 +160,23 @@ mock_recvmsg(int s, struct msghdr *msg, int flags)
 			mock.addr_hash = (unsigned char)hash_bytes(msg->msg_name,
 			    msg->msg_namelen);
 		if (msg->msg_iov != nullptr && msg->msg_iovlen > 0) {
-			mock.iov_hash = (unsigned char)hash_bytes(msg->msg_iov,
-			    msg->msg_iovlen * sizeof(struct iovec));
-			for (k = 0; k < msg->msg_iovlen; k++) {
+			size_t niov = msg->msg_iovlen;
+			unsigned h = 2166136261u;
+
+			if (niov > IOV_MAX_TEST)
+				niov = IOV_MAX_TEST;
+			for (k = 0; k < niov; k++) {
+				size_t len = msg->msg_iov[k].iov_len;
+
+				h ^= hash_bytes(&len, sizeof(len));
+				if (msg->msg_iov[k].iov_base != nullptr && len > 0) {
+					if (len > IOV_DATA_CAP)
+						len = IOV_DATA_CAP;
+					h ^= hash_bytes(msg->msg_iov[k].iov_base, len);
+				}
+			}
+			mock.iov_hash = (unsigned char)h;
+			for (k = 0; k < niov; k++) {
 				if (msg->msg_iov[k].iov_base == nullptr)
 					continue;
 				lim = msg->msg_iov[k].iov_len;
@@ -964,7 +978,7 @@ test_pselect(void)
 		ts.tv_nsec = (long)rnd_ret();
 		sigemptyset(&sig);
 		if ((rng_u32() & 1u) != 0)
-			sigaddset(&sig, rnd_int() % NSIG);
+			sigaddset(&sig, (int)((unsigned)rnd_int() % (unsigned)NSIG));
 
 		switch (rng_u32() % 8u) {
 		case 0:

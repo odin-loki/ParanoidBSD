@@ -2814,7 +2814,7 @@ static void test_int32_to_float128()
     const char *name = "int32_to_float128";
     reset_globals();
 
-    static const int32_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const int32_t vals[] = {0, 1, 2, 0x7FFFFFFF, (int32_t)0x80000000, 0x7F, (int8_t)0x80, (int8_t)0xFF};
     for (int32_t v : vals) {
         sync_globals_from_port();
         float128 rp = port::int32_to_float128(v);
@@ -2841,7 +2841,7 @@ static void test_int32_to_float32()
     const char *name = "int32_to_float32";
     reset_globals();
 
-    static const int32_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const int32_t vals[] = {0, 1, 2, 0x7FFFFFFF, (int32_t)0x80000000, 0x7F, (int8_t)0x80, (int8_t)0xFF};
     for (int32_t v : vals) {
         sync_globals_from_port();
         float32 rp = port::int32_to_float32(v);
@@ -2868,7 +2868,7 @@ static void test_int32_to_float64()
     const char *name = "int32_to_float64";
     reset_globals();
 
-    static const int32_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const int32_t vals[] = {0, 1, 2, 0x7FFFFFFF, (int32_t)0x80000000, 0x7F, (int8_t)0x80, (int8_t)0xFF};
     for (int32_t v : vals) {
         sync_globals_from_port();
         float64 rp = port::int32_to_float64(v);
@@ -2895,7 +2895,7 @@ static void test_int32_to_floatx80()
     const char *name = "int32_to_floatx80";
     reset_globals();
 
-    static const int32_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const int32_t vals[] = {0, 1, 2, 0x7FFFFFFF, (int32_t)0x80000000, 0x7F, (int8_t)0x80, (int8_t)0xFF};
     for (int32_t v : vals) {
         sync_globals_from_port();
         floatx80 rp = port::int32_to_floatx80(v);
@@ -2922,7 +2922,7 @@ static void test_int64_to_float128()
     const char *name = "int64_to_float128";
     reset_globals();
 
-    static const int64_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const int64_t vals[] = {0, 1, -1, (int64_t)0x7FFFFFFFFFFFFFFFLL, (int64_t)0x8000000000000000ULL};
     for (int64_t v : vals) {
         sync_globals_from_port();
         float128 rp = port::int64_to_float128(v);
@@ -2949,7 +2949,7 @@ static void test_int64_to_float32()
     const char *name = "int64_to_float32";
     reset_globals();
 
-    static const int64_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const int64_t vals[] = {0, 1, -1, (int64_t)0x7FFFFFFFFFFFFFFFLL, (int64_t)0x8000000000000000ULL};
     for (int64_t v : vals) {
         sync_globals_from_port();
         float32 rp = port::int64_to_float32(v);
@@ -2976,7 +2976,7 @@ static void test_int64_to_float64()
     const char *name = "int64_to_float64";
     reset_globals();
 
-    static const int64_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const int64_t vals[] = {0, 1, -1, (int64_t)0x7FFFFFFFFFFFFFFFLL, (int64_t)0x8000000000000000ULL};
     for (int64_t v : vals) {
         sync_globals_from_port();
         float64 rp = port::int64_to_float64(v);
@@ -3003,7 +3003,7 @@ static void test_int64_to_floatx80()
     const char *name = "int64_to_floatx80";
     reset_globals();
 
-    static const int64_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const int64_t vals[] = {0, 1, -1, (int64_t)0x7FFFFFFFFFFFFFFFLL, (int64_t)0x8000000000000000ULL};
     for (int64_t v : vals) {
         sync_globals_from_port();
         floatx80 rp = port::int64_to_floatx80(v);
@@ -3580,15 +3580,15 @@ static void test_shift128ExtraRightJamming()
     reset_globals();
 
     for (unsigned i = 0; i < 200000u; ++i) {
-        bits64 a0 = urand64(), a1 = urand64();
+        bits64 a0 = urand64(), a1 = urand64(), a2 = urand64();
         int16 cnt = static_cast<int16>(urand32() & 0x7F);
-        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL;
-        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL, z2p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
         sync_globals_from_port();
-        port::shift128ExtraRightJamming(a0, a1, cnt, &z0p, &z1p);
-        ref_shift128ExtraRightJamming(a0, a1, cnt, &z0r, &z1r);
+        port::shift128ExtraRightJamming(a0, a1, a2, cnt, &z0p, &z1p, &z2p);
+        ref_shift128ExtraRightJamming(a0, a1, a2, cnt, &z0r, &z1r, &z2r);
         cases++;
-        if (z0p != z0r || z1p != z1r) failures++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r) failures++;
     }
     record(name, cases, failures);
 }
@@ -3858,7 +3858,7 @@ static void test_uint32_to_float128()
     const char *name = "uint32_to_float128";
     reset_globals();
 
-    static const uint32_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const uint32_t vals[] = {0u, 1u, 2u, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
     for (uint32_t v : vals) {
         sync_globals_from_port();
         float128 rp = port::uint32_to_float128(v);
@@ -3885,7 +3885,7 @@ static void test_uint32_to_float32()
     const char *name = "uint32_to_float32";
     reset_globals();
 
-    static const uint32_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const uint32_t vals[] = {0u, 1u, 2u, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
     for (uint32_t v : vals) {
         sync_globals_from_port();
         float32 rp = port::uint32_to_float32(v);
@@ -3912,7 +3912,7 @@ static void test_uint32_to_float64()
     const char *name = "uint32_to_float64";
     reset_globals();
 
-    static const uint32_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const uint32_t vals[] = {0u, 1u, 2u, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
     for (uint32_t v : vals) {
         sync_globals_from_port();
         float64 rp = port::uint32_to_float64(v);
@@ -3939,7 +3939,7 @@ static void test_uint32_to_floatx80()
     const char *name = "uint32_to_floatx80";
     reset_globals();
 
-    static const uint32_t vals[] = {0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
+    static const uint32_t vals[] = {0u, 1u, 2u, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu};
     for (uint32_t v : vals) {
         sync_globals_from_port();
         floatx80 rp = port::uint32_to_floatx80(v);

@@ -411,8 +411,12 @@ do_mbsrtowcs(const char *in, size_t inlen, size_t len, bool dst_null,
 		mb_copy(e->port_ctype.mbsrtowcs, loc_ref);
 		if (!mb_eq(e->ref_ctype.mbsrtowcs, loc_ref))
 			report(f, "locale mbstate_t");
-	} else if (!mb_eq(ps_p, ps_seed) || !mb_eq(ps_ref, ps_seed)) {
-		report(f, "caller mbstate_t");
+	} else {
+		ref_mbstate_t expected;
+
+		mb_copy(ps_seed, expected);
+		if (!mb_eq(ps_p, ps_seed) || !mb_eq(ps_ref, expected))
+			report(f, "caller mbstate_t");
 	}
 }
 

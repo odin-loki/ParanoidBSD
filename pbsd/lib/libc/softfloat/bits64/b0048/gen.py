@@ -1183,7 +1183,21 @@ def gen_shift_ptr_test(f):
         if (z0p != z0r || z1p != z1r || z2p != z2r) failures++;
     }}
 '''
-    if '128Extra' in f or f in ('shift128Right', 'shift128RightJamming'):
+    if f == 'shift128ExtraRightJamming':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits64 a0 = urand64(), a1 = urand64(), a2 = urand64();
+        int16 cnt = static_cast<int16>(urand32() & 0x7F);
+        bits64 z0p = 0x7F7F7F7F7F7F7F7FULL, z1p = 0x7F7F7F7F7F7F7F7FULL, z2p = 0x7F7F7F7F7F7F7F7FULL;
+        bits64 z0r = 0x7F7F7F7F7F7F7F7FULL, z1r = 0x7F7F7F7F7F7F7F7FULL, z2r = 0x7F7F7F7F7F7F7F7FULL;
+        sync_globals_from_port();
+        port::{f}(a0, a1, a2, cnt, &z0p, &z1p, &z2p);
+        ref_{f}(a0, a1, a2, cnt, &z0r, &z1r, &z2r);
+        cases++;
+        if (z0p != z0r || z1p != z1r || z2p != z2r) failures++;
+    }}
+'''
+    if f in ('shift128Right', 'shift128RightJamming'):
         return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         bits64 a0 = urand64(), a1 = urand64();
@@ -1306,33 +1320,55 @@ def gen_cmp128_test(f):
 
 
 def gen_normalize_test(f):
-    if 'Float32' in f:
-        sigty = 'bits32'
-    elif 'Float64' in f:
-        sigty = 'bits64'
-    elif 'Floatx80' in f:
-        sigty = 'bits64'
-    else:
-        sigty = 'bits64'
+    if f == 'normalizeFloat128Subnormal':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits64 sig0 = urand64(), sig1 = urand64();
+        int32 exp_p = 0x7F7F7F7F, exp_r = 0x7F7F7F7F;
+        bits64 z0p = sig0, z1p = sig1, z0r = sig0, z1r = sig1;
+        sync_globals_from_port();
+        port::{f}(sig0, sig1, &exp_p, &z0p, &z1p);
+        ref_{f}(sig0, sig1, &exp_r, &z0r, &z1r);
+        cases++;
+        if (exp_p != exp_r || z0p != z0r || z1p != z1r) failures++;
+    }}
+'''
+    if f == 'normalizeFloat32Subnormal':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits32 sig = urand32();
+        int16 exp_p = 0x7F7F, exp_r = 0x7F7F;
+        bits32 sig_p = sig, sig_r = sig;
+        sync_globals_from_port();
+        port::{f}(sig, &exp_p, &sig_p);
+        ref_{f}(sig, &exp_r, &sig_r);
+        cases++;
+        if (exp_p != exp_r || sig_p != sig_r) failures++;
+    }}
+'''
+    if f == 'normalizeFloat64Subnormal':
+        return f'''
+    for (unsigned i = 0; i < 200000u; ++i) {{
+        bits64 sig = urand64();
+        int16 exp_p = 0x7F7F, exp_r = 0x7F7F;
+        bits64 sig_p = sig, sig_r = sig;
+        sync_globals_from_port();
+        port::{f}(sig, &exp_p, &sig_p);
+        ref_{f}(sig, &exp_r, &sig_r);
+        cases++;
+        if (exp_p != exp_r || sig_p != sig_r) failures++;
+    }}
+'''
     return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
-        {sigty} sig = static_cast<{sigty}>(urand64());
-        int16 exp_p = 0x7F7F, exp_r = 0x7F7F;
-        {sigty} sig_p = sig, sig_r = sig;
+        bits64 sig = urand64();
+        int32 exp_p = 0x7F7F7F7F, exp_r = 0x7F7F7F7F;
+        bits64 sig_p = sig, sig_r = sig;
         sync_globals_from_port();
-        if (strcmp(name, "normalizeFloat128Subnormal") == 0) {{
-            bits64 sig0 = urand64(), sig1 = urand64();
-            bits64 z0p = sig0, z1p = sig1, z0r = sig0, z1r = sig1;
-            port::{f}(sig0, sig1, &exp_p, &z0p, &z1p);
-            ref_{f}(sig0, sig1, &exp_r, &z0r, &z1r);
-            cases++;
-            if (exp_p != exp_r || z0p != z0r || z1p != z1r) failures++;
-        }} else {{
-            port::{f}(sig, &exp_p, &sig_p);
-            ref_{f}(sig, &exp_r, &sig_r);
-            cases++;
-            if (exp_p != exp_r || sig_p != sig_r) failures++;
-        }}
+        port::{f}(sig, &exp_p, &sig_p);
+        ref_{f}(sig, &exp_r, &sig_r);
+        cases++;
+        if (exp_p != exp_r || sig_p != sig_r) failures++;
     }}
 '''
 

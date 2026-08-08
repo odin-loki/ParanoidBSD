@@ -2,13 +2,15 @@
  * b0103 differential test: pbsd::lib_libc_stdio::b0103 vs. the ref_ oracle.
  */
 
+#define _GNU_SOURCE
+
 #include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
-#include <xlocale.h>
+#include <clocale>
 
 import pbsd.lib.libc.stdio.b0103;
 

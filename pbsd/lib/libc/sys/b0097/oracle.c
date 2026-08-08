@@ -29,6 +29,8 @@ struct __wrusage;
 
 #define	__ssp_real_(fun)	fun
 #define	__ssp_real(fun)		__ssp_real_(fun)
+#define	ref___ssp_real_(fun)	ref_##fun
+#define	ref___ssp_real(fun)	ref___ssp_real_(fun)
 
 typedef int (*interpos_func_t)(void);
 
@@ -207,10 +209,30 @@ ref_clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *rqtp,
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifdef ppoll
+#undef ppoll
+#endif
+
 int __weak_symbol
-ref_ppoll(struct pollfd pfd[], nfds_t nfds,
+ref___ssp_real(ppoll)(struct pollfd pfd[], nfds_t nfds,
     const struct timespec *__restrict timeout,
     const sigset_t *__restrict newsigmask)
 {
 	return (INTERPOS_SYS(ppoll, pfd, nfds, timeout, newsigmask));
+}
+
+/*
+ * Test-only access to this translation unit's interposing table.  Not part of
+ * any ported function; libc fills the real table from _libc_init().
+ */
+void
+ref_set_interpos(int slot, interpos_func_t func)
+{
+	ref___libc_interposing[slot] = func;
+}
+
+interpos_func_t
+ref_get_interpos(int slot)
+{
+	return (ref___libc_interposing[slot]);
 }
