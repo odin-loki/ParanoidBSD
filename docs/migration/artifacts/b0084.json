@@ -1,0 +1,12 @@
+{
+  "batch": "b0084",
+  "verified": "2026-08-08T11:57:55Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "b0084 differential harness\nsymbol            cases      fails\npS0                8875          0\npS1                8624          0\npS2                8839          0\npS3                8643          0\npS4                8815          0\npS5                8645          0\npS6                8698          0\npS7                8669          0\npS8                8656          0\npS9                8567          0\nqS1                8611          0\nqS2                8750          0\nqS3                8552          0\nqS4                8749          0\nqS5                8723          0\nqS6                8746          0\nqS7                8537          0\nqS8                8710          0\nqS9                8759          0\npi_lo              8625          0\natanhi[]           8668          0\natanlo[]           8944          0\naT[]               8656          0\nexpl              66753          0\nexpm1l            66753          0\nlgammal_r         66752          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld128/invtrig.c": "b64d3b784b664f29",
+    "hbsd/src/lib/msun/ld128/s_expl.c": "3ebc95d7542b3e17",
+    "hbsd/src/lib/msun/ld128/e_lgammal_r.c": "46c8fc5acea3b38d"
+  }
+}

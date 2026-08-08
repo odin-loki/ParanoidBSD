@@ -513,15 +513,14 @@ compare_get_msg_locale(int using_custom)
 
 	ncase[f]++;
 	if (using_custom) {
-		static unsigned char blob[sizeof(void *) * 8];
+		static ref_xlocale_messages_slot slot;
 		loc.using_messages_locale = 1;
-		loc.components[5] = blob;
-		std::memset(blob, 0, sizeof(blob));
-		auto *slot = reinterpret_cast<ref_lc_messages_T *>(blob);
-		slot->yesexpr = "Y";
-		slot->noexpr = "N";
-		slot->yesstr = "aye";
-		slot->nostr = "nay";
+		loc.components[5] = &slot;
+		slot.buffer = nullptr;
+		slot.locale.yesexpr = "Y";
+		slot.locale.noexpr = "N";
+		slot.locale.yesstr = "aye";
+		slot.locale.nostr = "nay";
 	} else {
 		loc.using_messages_locale = 0;
 	}
@@ -687,6 +686,7 @@ static void
 hand_messages_cases()
 {
 	compare_get_msg_locale(0);
+	compare_get_msg_locale(1);
 }
 
 static void
