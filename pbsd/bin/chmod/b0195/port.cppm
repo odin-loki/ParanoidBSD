@@ -45,6 +45,8 @@ module;
 
 export module pbsd.bin.chmod.b0195;
 
+extern "C" long lpathconf(const char *, int);
+
 export namespace pbsd::bin_chmod::b0195 {
 
 /*-
@@ -180,7 +182,7 @@ done:	argv += optind;
 	}
 
 	mode = *argv;
-	if ((set = setmode(mode)) == NULL)
+	if ((set = (mode_t *)setmode(mode)) == NULL)
 		errx(1, "invalid file mode: %s", mode);
 
 	if ((ftsp = fts_open(++argv, fts_options, 0)) == NULL)

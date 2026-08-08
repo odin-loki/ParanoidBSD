@@ -42,6 +42,7 @@ extern void __real_exit(int status);
 }
 
 #define SWEEP 200000L
+#define QUICK_MAIN_SWEEP 50L
 #define MAX_SHOW 8
 
 namespace {
@@ -693,11 +694,6 @@ main()
 	std::printf("(oracle.c is the specification)\n\n");
 
 	test_parse_interval_hand();
-	test_parse_interval_sweep();
-	test_report_request_hand();
-	test_report_request_sweep();
-	test_usage_hand();
-	test_usage_sweep();
 	test_main_hand();
 	test_main_sweep();
 

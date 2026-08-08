@@ -25,6 +25,7 @@ typedef int bool_t;
 typedef uint32_t rpcprog_t;
 typedef uint32_t rpcvers_t;
 typedef uint32_t u_long;
+typedef uint32_t u_int32_t;
 typedef unsigned char u_char;
 
 enum clnt_stat { RPC_SUCCESS = 0 };
@@ -132,6 +133,7 @@ bool_t mock_rpcb_set_result = TRUE;
 bool_t mock_rpcb_unset_udp_result = FALSE;
 bool_t mock_rpcb_unset_tcp_result = FALSE;
 
+int mock_getnetconfig_calls = 0;
 int mock_crypt_no_loopback = 0;
 int mock_crypt_no_clnt = 0;
 int mock_crypt_null_result = 0;
@@ -162,6 +164,7 @@ mock_reset_b0196(void)
 	mock_rpcb_unset_udp_result = FALSE;
 	mock_rpcb_unset_tcp_result = FALSE;
 
+	mock_getnetconfig_calls = 0;
 	mock_crypt_no_loopback = 0;
 	mock_crypt_no_clnt = 0;
 	mock_crypt_null_result = 0;
@@ -225,15 +228,15 @@ thr_getspecific(thread_key_t k)
 	return mock_thr_getspecific_result;
 }
 
+extern void *__real_malloc(size_t);
+
 void *
-malloc(size_t n)
+__wrap_malloc(size_t n)
 {
 	if (mock_malloc_fail)
 		return NULL;
 	return __real_malloc(n);
 }
-
-extern void *__real_malloc(size_t);
 
 struct netconfig *
 __rpc_getconfip(const char *proto)
@@ -314,19 +317,17 @@ struct netconfig *
 getnetconfig(void *handle)
 {
 	static struct netconfig loop_nc;
-	static int returned = 0;
 
 	(void)handle;
 	if (mock_crypt_no_loopback)
 		return NULL;
-	if (returned) {
-		returned = 0;
-		return NULL;
+	mock_getnetconfig_calls++;
+	if (mock_getnetconfig_calls == 1) {
+		loop_nc.nc_protofmly = NC_LOOPBACK;
+		loop_nc.nc_proto = "loopback";
+		return &loop_nc;
 	}
-	returned = 1;
-	loop_nc.nc_protofmly = NC_LOOPBACK;
-	loop_nc.nc_proto = "loopback";
-	return &loop_nc;
+	return NULL;
 }
 
 void
@@ -812,12 +813,6 @@ ref_common_crypt(char *key, char *buf, unsigned len, unsigned mode,
 }
 
 #undef _des_crypt_call
-
-int
-_des_crypt_call(char *buf, int len, struct desparams *dparms)
-{
-	return ref__des_crypt_call(buf, len, dparms);
-}
 
 int
 xdr_desresp(void *xdrs, void *objp, unsigned int opt)

@@ -21,7 +21,7 @@ fi
 rm -rf "$OBJDIR" gcm.cache
 mkdir -p "$OBJDIR"
 
-$CC $CFLAGS -c oracle.c -o "$OBJDIR/oracle.o"
+$CC $CFLAGS -Wl,--wrap=malloc -c oracle.c -o "$OBJDIR/oracle.o"
 
 if [ "$PRECOMPILE" = clang ]; then
 	$CXX $CXXFLAGS $MODFLAGS --precompile -x c++-module port.cppm \

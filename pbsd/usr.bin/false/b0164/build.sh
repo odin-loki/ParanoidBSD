@@ -4,9 +4,14 @@
 # pbsd/usr.bin/false/b0164/.  The harness's exit status is this script's exit
 # status.
 #
-# `false' is a C++ keyword and cannot appear as a module-name token.  Sources
-# use the FALSE_MODSEG placeholder; this script expands it to f<ZWJ>alse
-# (U+200D) so the module reads as pbsd.usr.bin.false.b0164.
+# port.cppm and harness.cpp spell the module name in plain ASCII as
+# pbsd.usr.bin.false.b0164.  `false' is a C++ keyword and therefore not a
+# legal module-name token, so this script rewrites that one segment in
+# throwaway build copies of the sources before compiling.  clang accepts
+# f<ZWJ>alse (U+200D ZERO WIDTH JOINER), which reads as `false'; gcc's module
+# mapper cannot cope with a non-ASCII module name, so the gcc fallback path
+# uses the ASCII segment `false_' instead.  The sources themselves are never
+# modified.
 
 set -e
 
@@ -17,37 +22,63 @@ CXX=${CXX:-c++}
 CFLAGS=${CFLAGS:--O2}
 CXXFLAGS=${CXXFLAGS:--O2}
 
-ZWJ=$(printf '\342\200\215')
-MODSEG="f${ZWJ}alse"
-MODNAME="pbsd.usr.bin.${MODSEG}.b0164"
-
-if ! $CXX --version 2>&1 | grep -qi clang; then
-	if command -v clang++ >/dev/null 2>&1; then
-		CXX=clang++
-	fi
-fi
-
-sed "s/FALSE_MODSEG/${MODSEG}/g" port.cppm > .port.cppm
-sed "s/FALSE_MODSEG/${MODSEG}/g" harness.cpp > .harness.cpp
+ASCII_MOD='pbsd\.usr\.bin\.false\.b0164'
 
 rm -rf gcm.cache
-rm -f oracle.o port.o harness.o port.pcm harness
+rm -f oracle.o port.o harness.o port.pcm harness .port.cppm .harness.cpp
 
-trap 'rm -f .port.cppm .harness.cpp' EXIT
+trap 'rm -f .port.cppm .harness.cpp' EXIT INT HUP TERM
 
 $CC -std=c11 $CFLAGS -c oracle.c -o oracle.o
 
+gen_sources() {
+	sed "s/$ASCII_MOD/$1/g" port.cppm > .port.cppm
+	sed "s/$ASCII_MOD/$1/g" harness.cpp > .harness.cpp
+}
+
+build_clang() {
+	MOD="pbsd.usr.bin.f$(printf '\342\200\215')alse.b0164"
+	gen_sources "$MOD"
+	rm -f port.pcm port.o harness.o harness
+	$1 -std=c++23 $CXXFLAGS -Wno-unicode-zero-width \
+	    -x c++-module .port.cppm --precompile -o port.pcm &&
+	$1 -std=c++23 $CXXFLAGS -c port.pcm -o port.o &&
+	$1 -std=c++23 $CXXFLAGS -Wno-unicode-zero-width \
+	    -fmodule-file="$MOD=port.pcm" -c .harness.cpp -o harness.o &&
+	$1 -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o
+}
+
+build_gcc() {
+	MOD=pbsd.usr.bin.false_.b0164
+	gen_sources "$MOD"
+	rm -rf gcm.cache
+	rm -f port.o harness.o harness
+	$1 -std=c++23 -fmodules-ts $CXXFLAGS -c -x c++ .port.cppm -o port.o &&
+	$1 -std=c++23 -fmodules-ts $CXXFLAGS -c .harness.cpp -o harness.o &&
+	$1 -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o
+}
+
+set +e
+built=no
+
 if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX -std=c++23 $CXXFLAGS -x c++-module .port.cppm --precompile \
-	    -o port.pcm
-	$CXX -std=c++23 $CXXFLAGS -c port.pcm -o port.o
-	$CXX -std=c++23 $CXXFLAGS -fmodule-file="$MODNAME=port.pcm" \
-	    -c .harness.cpp -o harness.o
-else
-	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c -x c++ .port.cppm -o port.o
-	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c .harness.cpp -o harness.o
+	if build_clang "$CXX"; then built=yes; fi
 fi
 
-$CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o
+if [ "$built" = no ] && command -v clang++ >/dev/null 2>&1; then
+	if build_clang clang++; then built=yes; fi
+fi
+
+if [ "$built" = no ]; then
+	if build_gcc "$CXX"; then built=yes; fi
+fi
+
+if [ "$built" = no ]; then
+	echo "build.sh: failed to build the C++23 module" >&2
+	exit 1
+fi
+set -e
+
+rm -f .port.cppm .harness.cpp
 
 exec ./harness

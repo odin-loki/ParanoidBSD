@@ -29,21 +29,48 @@ struct trans {
 	const char *str;
 };
 
-inline trans trans_mon[] = {
-	{ 1, "january" }, { 2, "february" }, { 3, "march" }, { 4, "april" },
-	{ 5, "may"}, { 6, "june" }, { 7, "july" }, { 8, "august" },
-	{ 9, "september" }, { 10, "october" }, { 11, "november" }, { 12, "december" },
-	{ -1, nullptr }
-};
+inline const trans *
+trans_mon_table()
+{
+	static const trans t[] = {
+		{ 1, "january" }, { 2, "february" }, { 3, "march" }, { 4, "april" },
+		{ 5, "may"}, { 6, "june" }, { 7, "july" }, { 8, "august" },
+		{ 9, "september" }, { 10, "october" }, { 11, "november" },
+		{ 12, "december" },
+		{ -1, nullptr }
+	};
+	return t;
+}
 
-inline trans trans_wday[] = {
-	{ 0, "sunday" }, { 1, "monday" }, { 2, "tuesday" }, { 3, "wednesday" },
-	{ 4, "thursday" }, { 5, "friday" }, { 6, "saturday" },
-	{ -1, nullptr }
-};
+inline const trans *
+trans_wday_table()
+{
+	static const trans t[] = {
+		{ 0, "sunday" }, { 1, "monday" }, { 2, "tuesday" },
+		{ 3, "wednesday" }, { 4, "thursday" }, { 5, "friday" },
+		{ 6, "saturday" },
+		{ -1, nullptr }
+	};
+	return t;
+}
 
-inline char digits[] = "0123456789";
-inline int mdays[12] = { 31, 0, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+inline const char *
+digits_table()
+{
+	return "0123456789";
+}
+
+inline const int *
+mdays_table()
+{
+	static const int t[12] = { 31, 0, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+	return t;
+}
+
+#define trans_mon trans_mon_table()
+#define trans_wday trans_wday_table()
+#define digits digits_table()
+#define mdays mdays_table()
 
 inline std::jmp_buf port_err_jmp;
 inline int port_err_armed;
@@ -511,7 +538,7 @@ vary_apply(const vary *v, std::tm *t)
 			}
 		}
 	}
-	return nullptr;
+	return 0;
 }
 
 inline void

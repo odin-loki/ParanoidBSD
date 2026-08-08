@@ -37,6 +37,9 @@ import pbsd.bin.cp.b0191;
 
 namespace P = pbsd::bin_cp::b0191;
 
+typedef void *acl_t;
+typedef unsigned int acl_type_t;
+
 extern "C" {
 enum ref_op { RFILE_TO_FILE, RFILE_TO_DIR, RDIR_TO_DNE };
 
@@ -63,20 +66,77 @@ int ref_preserve_dir_acls(const char *source_dir, const char *dest_dir);
 void ref_usage(void);
 int ref_ftscmp(const FTSENT *const *a, const FTSENT *const *b);
 void ref_siginfo(int sig);
-int ref_copy(char *argv[], enum ref_op type, int fts_options,
+int ref_ref_copy(char *argv[], enum ref_op type, int fts_options,
     struct stat *root_stat);
 int ref_main(int argc, char *argv[]);
 
 void __real_exit(int status);
 long __real_sysconf(int name);
 void *__real_malloc(size_t size);
-int fchflags(int, unsigned long);
-int chflagsat(int, const char *, unsigned long, int);
-acl_t acl_get_fd_np(int, acl_type_t);
-int acl_is_trivial_np(acl_t, int *);
-int acl_set_fd_np(int, acl_t, acl_type_t);
-int acl_free(acl_t);
+int __real_fchflags(int, unsigned long);
+int __real_chflagsat(int, const char *, unsigned long, int);
+acl_t __real_acl_get_fd_np(int, acl_type_t);
+int __real_acl_is_trivial_np(acl_t, int *);
+int __real_acl_set_fd_np(int, acl_t, acl_type_t);
+int __real_acl_free(acl_t);
 }
+
+#if defined(__linux__)
+extern "C" int
+__real_fchflags(int fd, unsigned long flags)
+{
+	(void)fd;
+	(void)flags;
+	errno = EOPNOTSUPP;
+	return -1;
+}
+
+extern "C" int
+__real_chflagsat(int dirfd, const char *path, unsigned long flags, int atflag)
+{
+	(void)dirfd;
+	(void)path;
+	(void)flags;
+	(void)atflag;
+	errno = EOPNOTSUPP;
+	return -1;
+}
+
+extern "C" acl_t
+__real_acl_get_fd_np(int fd, acl_type_t type)
+{
+	(void)fd;
+	(void)type;
+	errno = EOPNOTSUPP;
+	return nullptr;
+}
+
+extern "C" int
+__real_acl_is_trivial_np(acl_t acl, int *trivial)
+{
+	(void)acl;
+	(void)trivial;
+	errno = EINVAL;
+	return -1;
+}
+
+extern "C" int
+__real_acl_set_fd_np(int fd, acl_t acl, acl_type_t type)
+{
+	(void)fd;
+	(void)acl;
+	(void)type;
+	errno = EOPNOTSUPP;
+	return -1;
+}
+
+extern "C" int
+__real_acl_free(acl_t acl)
+{
+	(void)acl;
+	return 0;
+}
+#endif
 
 #define SWEEP 200000L
 #define MAX_SHOW 8
@@ -142,9 +202,6 @@ Stat st_ftscmp = { "ftscmp", 0, 0, 0 };
 Stat st_siginfo = { "siginfo", 0, 0, 0 };
 Stat st_copy = { "copy", 0, 0, 0 };
 Stat st_main = { "main", 0, 0, 0 };
-
-typedef void *acl_t;
-typedef unsigned int acl_type_t;
 
 #ifndef ACL_TYPE_NFS4
 #define ACL_TYPE_NFS4 0x00000004
@@ -892,7 +949,7 @@ extern "C" int
 __wrap_fchflags(int fd, unsigned long flags)
 {
 	if (!g_test_active)
-		return fchflags(fd, flags);
+		return __real_fchflags(fd, flags);
 
 	FdMock *fm = fd_mock(fd);
 	if (fm == nullptr) {
@@ -918,7 +975,7 @@ __wrap_chflagsat(int dirfd, const char *path, unsigned long flags, int atflag)
 {
 	(void)atflag;
 	if (!g_test_active)
-		return chflagsat(dirfd, path, flags, atflag);
+		return __real_chflagsat(dirfd, path, flags, atflag);
 
 	std::string full = join_path(dirfd, path);
 	auto it = g_mock.chflags_fail.find(full);
@@ -970,7 +1027,7 @@ __wrap_acl_get_fd_np(int fd, acl_type_t type)
 {
 	(void)type;
 	if (!g_test_active)
-		return acl_get_fd_np(fd, type);
+		return __real_acl_get_fd_np(fd, type);
 
 	FdMock *fm = fd_mock(fd);
 	if (fm == nullptr) {
@@ -990,7 +1047,7 @@ extern "C" int
 __wrap_acl_is_trivial_np(acl_t acl, int *trivial)
 {
 	if (!g_test_active)
-		return acl_is_trivial_np(acl, trivial);
+		return __real_acl_is_trivial_np(acl, trivial);
 
 	for (const auto &kv : g_mock.fds) {
 		if (kv.second.acl_handle == (uintptr_t)acl) {
@@ -1012,7 +1069,7 @@ __wrap_acl_set_fd_np(int fd, acl_t acl, acl_type_t type)
 	(void)acl;
 	(void)type;
 	if (!g_test_active)
-		return acl_set_fd_np(fd, acl, type);
+		return __real_acl_set_fd_np(fd, acl, type);
 
 	FdMock *fm = fd_mock(fd);
 	if (fm == nullptr) {
@@ -1030,7 +1087,7 @@ extern "C" int
 __wrap_acl_free(acl_t acl)
 {
 	if (!g_test_active)
-		return acl_free(acl);
+		return __real_acl_free(acl);
 	(void)acl;
 	return 0;
 }
@@ -1745,7 +1802,7 @@ run_copy_case(const char *label, enum ref_op type)
 
 	int fts_options = FTS_NOCHDIR | FTS_PHYSICAL;
 	int saved = silence_stderr();
-	int rr = ref_copy(argv, type, fts_options, rootp);
+	int rr = ref_ref_copy(argv, type, fts_options, rootp);
 	char *end_ref = ref_to.end;
 	int rp = P::copy(argv, (P::op)type, fts_options, rootp);
 	char *end_port = P::to.end;
@@ -2091,8 +2148,50 @@ static void test_main_sweep()
 
 } // namespace
 
-int
-main()
+namespace pbsd::bin_cp::b0191 {
+
+int fchflags(int fd, unsigned long flags)
+{
+	return ::fchflags(fd, flags);
+}
+
+int chflagsat(int dirfd, const char *path, unsigned long flags, int atflag)
+{
+	return ::chflagsat(dirfd, path, flags, atflag);
+}
+
+acl_t acl_get_fd_np(int fd, acl_type_t type)
+{
+	return ::acl_get_fd_np(fd, type);
+}
+
+int acl_is_trivial_np(acl_t acl, int *trivial)
+{
+	return ::acl_is_trivial_np(acl, trivial);
+}
+
+int acl_set_fd_np(int fd, acl_t acl, acl_type_t type)
+{
+	return ::acl_set_fd_np(fd, acl, type);
+}
+
+int acl_free(acl_t acl)
+{
+	return ::acl_free(acl);
+}
+
+} // namespace pbsd::bin_cp::b0191
+
+extern "C" {
+int fchflags(int fd, unsigned long flags);
+int chflagsat(int dirfd, const char *path, unsigned long flags, int atflag);
+acl_t acl_get_fd_np(int fd, acl_type_t type);
+int acl_is_trivial_np(acl_t acl, int *trivial);
+int acl_set_fd_np(int fd, acl_t acl, acl_type_t type);
+int acl_free(acl_t acl);
+}
+
+namespace {
 {
 	test_copy_fallback_hand();
 	test_copy_file_hand();

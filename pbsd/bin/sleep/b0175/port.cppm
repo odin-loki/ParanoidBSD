@@ -14,24 +14,22 @@ module;
 
 #define _POSIX_C_SOURCE 200809L
 
-#include <csignal>
-#include <csetjmp>
-#include <cstdarg>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
-#include <cmath>
+#include <errno.h>
+#include <limits.h>
 #include <math.h>
-#include <climits>
-#include <cerrno>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include <unistd.h>
 
 export module pbsd.bin.sleep.b0175;
 
 export namespace pbsd::bin_sleep::b0175 {
 
-inline std::jmp_buf port_err_jmp;
+inline jmp_buf port_err_jmp;
 inline int port_err_armed;
 inline int port_err_called;
 inline int port_err_status;
@@ -55,14 +53,14 @@ err(int eval, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	std::vfprintf(stderr, fmt, ap);
+	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 	fputc('\n', stderr);
 	port_err_called = 1;
 	port_err_status = eval;
 	if (port_err_armed)
-		std::longjmp(port_err_jmp, 1);
-	std::exit(eval);
+		longjmp(port_err_jmp, 1);
+	exit(eval);
 }
 
 inline void
@@ -71,7 +69,7 @@ warnx(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	std::vfprintf(stderr, fmt, ap);
+	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 	fputc('\n', stderr);
 	port_warnx_called++;

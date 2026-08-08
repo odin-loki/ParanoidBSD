@@ -51,6 +51,10 @@
 #include <bsd/unistd.h>
 #endif
 
+#if defined(__linux__)
+long lpathconf(const char *, int);
+#endif
+
 #ifndef SIGINFO
 #define SIGINFO SIGUSR1
 #endif
@@ -79,6 +83,7 @@ volatile sig_atomic_t ref_siginfo;
 #define may_have_nfs4acl ref_may_have_nfs4acl
 
 void ref_usage(void) __dead2;
+int ref_may_have_nfs4acl(const FTSENT *ent, int hflag);
 
 void
 ref_siginfo_handler(int sig __unused)
@@ -278,3 +283,12 @@ ref_may_have_nfs4acl(const FTSENT *ent, int hflag)
 
 	return (supports_acls);
 }
+
+#if defined(__linux__)
+long
+lpathconf(const char *path, int name)
+{
+
+	return (pathconf(path, name));
+}
+#endif
