@@ -166,7 +166,7 @@ linux_vdso_cpu_selector_idx(void)
 	if ((cpu_stdext_feature2 & CPUID_STDEXT2_RDPID) != 0)
 		return (LINUX_VDSO_CPU_RDPID);
 
-	return ((amd_feature & AMDID_RDTSCP) != 0 ?
+	return ((amd_feature & AMDID_RDTSCP) == 0 ?
 	    LINUX_VDSO_CPU_DEFAULT : LINUX_VDSO_CPU_RDTSCP);
 }
 
