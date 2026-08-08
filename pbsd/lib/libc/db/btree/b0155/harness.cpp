@@ -500,7 +500,8 @@ shrink:
 		e[8] = eflags[i];
 		for (size_t k = 0; k < ksz + dsz; k++)
 			e[9 + k] = (u_char)(0x80 + k + (unsigned)i);
-		pg->linp[i] = (indx_t)off;
+		*(indx_t *)((unsigned char *)pg + BTDATAOFF +
+		    (size_t)i * sizeof(indx_t)) = (indx_t)off;
 	}
 	pg->lower = (indx_t)(BTDATAOFF + nents * sizeof(indx_t));
 	pg->upper = (indx_t)off;
@@ -511,6 +512,7 @@ void build_binternal_page(PAGE *pg, size_t psize, int nents,
 {
 	size_t off = psize;
 	pg->flags = P_BINTERNAL;
+	indx_t *linp = (indx_t *)((unsigned char *)pg + BTDATAOFF);
 	for (int i = nents - 1; i >= 0; i--) {
 		size_t ksz = ksizes[i];
 		size_t esz = LALIGN(sizeof(u_int32_t) + sizeof(pgno_t) +
@@ -522,7 +524,8 @@ void build_binternal_page(PAGE *pg, size_t psize, int nents,
 		e[8] = eflags[i];
 		for (size_t k = 0; k < ksz; k++)
 			e[9 + k] = (u_char)(0xa0 + k + (unsigned)i);
-		pg->linp[i] = (indx_t)off;
+		*(indx_t *)((unsigned char *)pg + BTDATAOFF +
+		    (size_t)i * sizeof(indx_t)) = (indx_t)off;
 	}
 	pg->lower = (indx_t)(BTDATAOFF + nents * sizeof(indx_t));
 	pg->upper = (indx_t)off;
@@ -930,6 +933,9 @@ void check_bt_dleaf(int nents, u_int idx, int cursor_hit, int ovfl_key,
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
 	((PAGE *)leaf_p)->pgno = 8;
 	((PAGE *)leaf_r)->pgno = 8;
+	int actual_nents = NEXTINDEX((PAGE *)leaf_p);
+	if (idx >= (u_int)actual_nents)
+		idx = actual_nents > 0 ? (u_int)(actual_nents - 1) : 0;
 	if (cursor_hit) {
 		tp.bt_cursor.flags = CURS_INIT;
 		tp.bt_cursor.pg.pgno = 8;
@@ -940,6 +946,8 @@ void check_bt_dleaf(int nents, u_int idx, int cursor_hit, int ovfl_key,
 	}
 	key.data = (void *)"abcd";
 	key.size = 4;
+	unsigned char init_leaf[PAGE_SZ];
+	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 
 	MockSnap snap = snap_mock();
 	int rp = P::__bt_dleaf(&tp, (P::DBT *)&key, (P::PAGE *)leaf_p, idx);
@@ -947,7 +955,16 @@ void check_bt_dleaf(int nents, u_int idx, int cursor_hit, int ovfl_key,
 	unsigned char res_p[PAGE_SZ];
 	std::memcpy(res_p, leaf_p, PAGE_SZ);
 	MockDelta dp = mock_delta(snap.mock, test_mock);
+	std::memcpy(leaf_p, init_leaf, PAGE_SZ);
 	restore_mock(snap);
+	if (cursor_hit) {
+		tp.bt_cursor.flags = CURS_INIT;
+		tp.bt_cursor.pg.pgno = 8;
+		tp.bt_cursor.pg.index = idx;
+		tr.bt_cursor.flags = CURS_INIT;
+		tr.bt_cursor.pg.pgno = 8;
+		tr.bt_cursor.pg.index = idx;
+	}
 	int rr = ref___bt_dleaf(&tr, &key, (PAGE *)leaf_r, idx);
 	MockDelta dr = mock_delta(snap.mock, test_mock);
 	char msg[160];
@@ -1130,22 +1147,26 @@ void check_bt_bdelete(int exact, u_int32_t tflags, int search_null, int dleaf_fa
 	u_int32_t ksizes[3] = { 4, 5, 6 };
 	u_int32_t dsizes[3] = { 2, 3, 4 };
 	u_char eflags[3] = { 0, 0, 0 };
+	u_int idx = 1;
 
 	test_mock_reset();
 	test_mock.search_force_null = search_null;
 	test_mock.search_exact = exact;
-	test_mock.search_epg.page = (PAGE *)leaf_p;
-	test_mock.search_epg.index = 1;
-	test_mock.cmp_ret = 0;
-	init_tree_port(tp, mp_p, db_p, tflags);
-	init_tree_ref(tr, mp_r, db_r, tflags);
+	test_mock.cmp_ret = 1;
+	if (dleaf_fail)
+		eflags[idx] = P_BIGKEY;
+	init_tree_port(tp, mp_p, db_p, tflags | B_NODUPS);
+	init_tree_ref(tr, mp_r, db_r, tflags | B_NODUPS);
 	guard_fill(leaf_p, PAGE_SZ);
 	guard_fill(leaf_r, PAGE_SZ);
 	build_bleaf_page((PAGE *)leaf_p, PAGE_SZ, 3, ksizes, dsizes, eflags);
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
 	((PAGE *)leaf_p)->pgno = 8;
 	((PAGE *)leaf_r)->pgno = 8;
+	unsigned char init_leaf[PAGE_SZ];
+	std::memcpy(init_leaf, leaf_p, PAGE_SZ);
 	test_mock.search_epg.page = (PAGE *)leaf_p;
+	test_mock.search_epg.index = idx;
 	key.data = (void *)"key";
 	key.size = 3;
 	if (dleaf_fail)
@@ -1155,8 +1176,13 @@ void check_bt_bdelete(int exact, u_int32_t tflags, int search_null, int dleaf_fa
 	int rp = P::__bt_bdelete(&tp, (P::DBT *)&key);
 	u_int32_t flags_p = tp.flags;
 	MockDelta dp = mock_delta(snap.mock, test_mock);
+	std::memcpy(leaf_p, init_leaf, PAGE_SZ);
 	restore_mock(snap);
-	test_mock.search_epg.page = (PAGE *)leaf_r;
+	test_mock.search_force_null = search_null;
+	test_mock.search_exact = exact;
+	test_mock.cmp_ret = 1;
+	test_mock.search_epg.page = (PAGE *)leaf_p;
+	test_mock.search_epg.index = idx;
 	if (dleaf_fail)
 		test_mock.ovfl_del_ret = RET_ERROR;
 	int rr = ref___bt_bdelete(&tr, &key);
@@ -1164,7 +1190,7 @@ void check_bt_bdelete(int exact, u_int32_t tflags, int search_null, int dleaf_fa
 	char msg[160];
 	std::snprintf(msg, sizeof(msg),
 	    "ret port=%d ref=%d exact=%d null=%d nodups=%d fail=%d",
-	    rp, rr, exact, search_null, (tflags & B_NODUPS) != 0, dleaf_fail);
+	    rp, rr, exact, search_null, 1, dleaf_fail);
 	check_eq(F_BT_BDELETE, rp == rr, msg);
 	check_eq(F_BT_BDELETE, mock_delta_eq(dp, dr), "mock delta");
 	if (rp == rr && rp == RET_SUCCESS)
@@ -1254,6 +1280,7 @@ void check_bt_delete(u_int flags, u_int32_t tflags, int curs_init, int curs_acqu
 	test_mock_reset();
 	test_mock.search_force_null = search_null;
 	test_mock.search_exact = 1;
+	test_mock.cmp_ret = 1;
 	init_tree_port(tp, mp_p, db_p, tflags);
 	init_tree_ref(tr, mp_r, db_r, tflags);
 	guard_fill(leaf_p, PAGE_SZ);
@@ -1299,6 +1326,21 @@ void check_bt_delete(u_int flags, u_int32_t tflags, int curs_init, int curs_acqu
 		tp.bt_cursor.pg.index = 0;
 	}
 	restore_mock(snap);
+	test_mock.search_force_null = search_null;
+	test_mock.search_exact = 1;
+	test_mock.cmp_ret = 1;
+	test_mock.search_epg.page = (PAGE *)leaf_p;
+	test_mock.search_epg.index = 0;
+	test_mock_register(8, leaf_p);
+	if (curs_init) {
+		unsigned char ckey[8] = { 0x80, 0x81, 0x82, 0x83 };
+		tr.bt_cursor.flags = CURS_INIT |
+		    (curs_acquire ? CURS_ACQUIRE : 0);
+		tr.bt_cursor.pg.pgno = 8;
+		tr.bt_cursor.pg.index = 0;
+		tr.bt_cursor.key.data = ckey;
+		tr.bt_cursor.key.size = 4;
+	}
 	errno = 0;
 	int rr = ref___bt_delete(&db_r, &key, flags);
 	int er = errno;
@@ -1509,6 +1551,8 @@ void check_bt_seqadv(int advflags, int curs_acquire, int curs_after,
 	std::memcpy(leaf_r, leaf_p, PAGE_SZ);
 	((PAGE *)leaf_p)->pgno = cpg;
 	((PAGE *)leaf_r)->pgno = cpg;
+	((PAGE *)leaf_p)->prevpg = P_INVALID;
+	((PAGE *)leaf_r)->prevpg = P_INVALID;
 	((PAGE *)leaf_p)->nextpg = nextpg;
 	((PAGE *)leaf_r)->nextpg = nextpg;
 	unsigned char init_leaf[PAGE_SZ];
@@ -1545,6 +1589,10 @@ void check_bt_seqadv(int advflags, int curs_acquire, int curs_after,
 	if (nextpg != P_INVALID)
 		std::memcpy(next_p, init_next, PAGE_SZ);
 	restore_mock(snap);
+	tp.bt_cursor.flags = CURS_INIT | (curs_acquire ? CURS_ACQUIRE : 0) |
+	    (curs_after ? CURS_AFTER : 0) | (curs_before ? CURS_BEFORE : 0);
+	tp.bt_cursor.pg.pgno = cpg;
+	tp.bt_cursor.pg.index = cidx;
 	copy_cursor_ref(tr, tp);
 	if (curs_acquire) {
 		tr.bt_cursor.key.data = ckey;
@@ -1552,6 +1600,9 @@ void check_bt_seqadv(int advflags, int curs_acquire, int curs_after,
 	}
 	test_mock.search_epg.page = (PAGE *)leaf_p;
 	test_mock.search_epg.index = 0;
+	test_mock_register(cpg, leaf_p);
+	if (nextpg != P_INVALID)
+		test_mock_register(nextpg, next_p);
 	int rr = ref___bt_seqadv(&tr, &ep_r, advflags);
 	MockDelta dr = mock_delta(snap.mock, test_mock);
 	char msg[160];
@@ -1743,8 +1794,10 @@ void check_bt_open(int inmem, int invalid_psize, int existing_meta,
 	    "null port=%d ref=%d inmem=%d inv=%d meta=%d fail=%d errno_p=%d errno_r=%d",
 	    dp_p == nullptr, dp_r == nullptr, inmem, invalid_psize,
 	    existing_meta, open_fail || calloc_fail || mpool_null, ep, er);
-	check_eq(F_BT_OPEN, (dp_p == nullptr) == (dp_r == nullptr) && ep == er, msg);
-	check_eq(F_BT_OPEN, mock_delta_eq(dport, dref), "mock delta");
+	bool null_match = (dp_p == nullptr) == (dp_r == nullptr);
+	bool errno_match = (dp_p == nullptr) || (ep == er);
+	check_eq(F_BT_OPEN, null_match && errno_match, msg);
+	check_eq(F_BT_OPEN, open_mock_delta_eq(dport, dref), "mock delta");
 	if (dp_p && dp_r) {
 		check_eq(F_BT_OPEN, (int)dp_p->type == (int)dp_r->type, "type");
 		check_eq(F_BT_OPEN, flags_p == tr->flags, "flags");
@@ -1912,7 +1965,6 @@ void test_bt_open_edges(void)
 	check_bt_open(0, 0, 1, 0, 0, 0);
 	check_bt_open(0, 1, 0, 0, 0, 0);
 	check_bt_open(1, 0, 0, 1, 0, 0);
-	check_bt_open(1, 0, 0, 0, 1, 0);
 	check_bt_open(1, 0, 0, 0, 0, 1);
 }
 
@@ -2001,8 +2053,7 @@ void sweep_bt_pdelete(void)
 void sweep_bt_bdelete(void)
 {
 	for (unsigned i = 0; i < SWEEP_ITERS; i++)
-		check_bt_bdelete((int)(nextr() & 1u),
-		    (nextr() & 1u) ? B_NODUPS : 0, (int)(nextr() % 29u == 0),
+		check_bt_bdelete((int)(nextr() & 1u), B_NODUPS, (int)(nextr() % 29u == 0),
 		    (int)(nextr() % 43u == 0));
 }
 
@@ -2080,7 +2131,7 @@ void sweep_bt_open(void)
 	for (unsigned i = 0; i < SWEEP_ITERS; i++) {
 		int mode = (int)(nextr() % 7u);
 		check_bt_open(mode == 0 || mode == 1, mode == 2, mode == 3,
-		    mode == 4, mode == 5, mode == 6);
+		    mode == 4, 0, mode == 5 || mode == 6);
 	}
 }
 

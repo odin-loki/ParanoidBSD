@@ -18,7 +18,8 @@ export module pbsd.lib.libc.locale.b0159;
 
 extern "C" {
 struct xlocale;
-typedef struct xlocale *locale_t;
+typedef struct xlocale *pbsd_locale_t;
+#define locale_t pbsd_locale_t
 
 #define __mbstate_t_defined 1
 typedef union {
@@ -32,6 +33,15 @@ typedef pbsd_mbstate_t mbstate_t;
 #define _BITS_TYPES_LOCALE_T_H	1
 #include <string.h>
 #include <wchar.h>
+#undef locale_t
+
+#ifndef MB_LEN_MAX
+#define MB_LEN_MAX	4
+#endif
+
+#ifndef MB_CUR_MAX
+#define MB_CUR_MAX	4
+#endif
 
 #ifndef __unused
 #define __unused	__attribute__((__unused__))
@@ -124,10 +134,6 @@ typedef unsigned char u_char;
 
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX	4
-#endif
-
-#ifndef MB_CUR_MAX
-#define MB_CUR_MAX	4
 #endif
 
 #ifndef MIN
@@ -304,12 +310,12 @@ void		free(void *);
 void		*reallocf(void *, size_t);
 int		asprintf(char **, const char *, ...);
 
-locale_t	__get_locale(void);
-struct lc_time_T *__get_current_time_locale(locale_t);
-struct lc_numeric_T *__get_current_numeric_locale(locale_t);
-struct lc_messages_T *__get_current_messages_locale(locale_t);
-struct lc_monetary_T *__get_current_monetary_locale(locale_t);
-struct pbsd_lconv *localeconv_l(locale_t);
+pbsd_locale_t	__get_locale(void);
+struct lc_time_T *__get_current_time_locale(pbsd_locale_t);
+struct lc_numeric_T *__get_current_numeric_locale(pbsd_locale_t);
+struct lc_messages_T *__get_current_messages_locale(pbsd_locale_t);
+struct lc_monetary_T *__get_current_monetary_locale(pbsd_locale_t);
+struct pbsd_lconv *localeconv_l(pbsd_locale_t);
 _RuneLocale	*_Read_RuneMagi(const char *);
 
 int	_ascii_init(struct xlocale_ctype *, _RuneLocale *);
@@ -327,8 +333,16 @@ int	_MSKanji_init(struct xlocale_ctype *, _RuneLocale *);
 
 export namespace pbsd::lib_libc_locale::b0159 {
 
-using mbstate_t = ::mbstate_t;
-using locale_t = ::locale_t;
+union mbstate_t {
+	char		__mbstate8[128];
+	long long	_mbstateL;
+};
+
+using mbrtowc_pfn_t = size_t (*)(wchar_t * __restrict, const char * __restrict,
+    size_t, mbstate_t * __restrict);
+using wcrtomb_pfn_t = size_t (*)(char * __restrict, wchar_t, mbstate_t * __restrict);
+
+using locale_t = pbsd_locale_t;
 using nl_item = ::nl_item;
 using _RuneLocale = ::_RuneLocale;
 
@@ -498,11 +512,11 @@ int
 _none_init(struct xlocale_ctype *l, _RuneLocale *rl)
 {
 
-	l->__mbrtowc = _none_mbrtowc;
-	l->__mbsinit = _none_mbsinit;
-	l->__mbsnrtowcs = _none_mbsnrtowcs;
-	l->__wcrtomb = _none_wcrtomb;
-	l->__wcsnrtombs = _none_wcsnrtombs;
+	l->__mbrtowc = (decltype(l->__mbrtowc))_none_mbrtowc;
+	l->__mbsinit = (decltype(l->__mbsinit))_none_mbsinit;
+	l->__mbsnrtowcs = (decltype(l->__mbsnrtowcs))_none_mbsnrtowcs;
+	l->__wcrtomb = (decltype(l->__wcrtomb))_none_wcrtomb;
+	l->__wcsnrtombs = (decltype(l->__wcsnrtombs))_none_wcsnrtombs;
 	l->runes = rl;
 	l->__mb_cur_max = 1;
 	l->__mb_sb_limit = 256;
@@ -877,11 +891,11 @@ int
 _GB18030_init(struct xlocale_ctype *l, _RuneLocale *rl)
 {
 
-	l->__mbrtowc = _GB18030_mbrtowc;
-	l->__wcrtomb = _GB18030_wcrtomb;
-	l->__mbsinit = _GB18030_mbsinit;
-	l->__mbsnrtowcs = _GB18030_mbsnrtowcs;
-	l->__wcsnrtombs = _GB18030_wcsnrtombs;
+	l->__mbrtowc = (decltype(l->__mbrtowc))_GB18030_mbrtowc;
+	l->__wcrtomb = (decltype(l->__wcrtomb))_GB18030_wcrtomb;
+	l->__mbsinit = (decltype(l->__mbsinit))_GB18030_mbsinit;
+	l->__mbsnrtowcs = (decltype(l->__mbsnrtowcs))_GB18030_mbsnrtowcs;
+	l->__wcsnrtombs = (decltype(l->__wcsnrtombs))_GB18030_wcsnrtombs;
 	l->runes = rl;
 	l->__mb_cur_max = 4;
 	l->__mb_sb_limit = 128;
@@ -1101,16 +1115,7 @@ _GB18030_wcsnrtombs(char * __restrict dst,
 
 
 
-#undef _CurrentRuneLocale
-extern _RuneLocale const *_CurrentRuneLocale;
-/*
- * A cached version of the runes for this thread.  Used by ctype.h
- */
 thread_local const _RuneLocale *_ThreadRuneLocale;
-
-extern int __mb_sb_limit;
-
-extern _RuneLocale	*_Read_RuneMagi(const char *);
 
 int		__setrunelocale(struct xlocale_ctype *l, const char *);
 
@@ -1119,7 +1124,7 @@ destruct_ctype(void *v)
 {
 	struct xlocale_ctype *l = (struct xlocale_ctype *)v;
 
-	if (&_DefaultRuneLocale != l->runes)
+	if (&::_DefaultRuneLocale != l->runes)
 		free(l->runes);
 	free(l);
 }
@@ -1134,7 +1139,7 @@ __getCurrentRuneLocale(void)
 void
 free_runes(_RuneLocale *rl)
 {
-	if ((rl != &_DefaultRuneLocale) && (rl)) {
+	if ((rl != &::_DefaultRuneLocale) && (rl)) {
 		free(rl);
 	}
 }
@@ -1152,15 +1157,15 @@ __setrunelocale(struct xlocale_ctype *l, const char *encoding)
 	 */
 	if (strcmp(encoding, "C") == 0 || strcmp(encoding, "POSIX") == 0) {
 		free_runes(saved.runes);
-		(void) _none_init(l, (_RuneLocale*)&_DefaultRuneLocale);
+		(void) _none_init(l, (_RuneLocale*)&::_DefaultRuneLocale);
 		return (0);
 	}
 
 	/* Range checking not needed, encoding length already checked before */
-	if (asprintf(&path, "%s/%s/LC_CTYPE", _PathLocale, encoding) == -1)
+	if (asprintf(&path, "%s/%s/LC_CTYPE", ::_PathLocale, encoding) == -1)
 		return (errno);
 
-	if ((rl = _Read_RuneMagi(path)) == nullptr) {
+	if ((rl = ::_Read_RuneMagi(path)) == nullptr) {
 		free(path);
 		errno = EINVAL;
 		return (errno);
@@ -1232,15 +1237,15 @@ __setrunelocale(struct xlocale_ctype *l, const char *encoding)
 int
 __wrap_setrunelocale(const char *locale)
 {
-	int ret = __setrunelocale(&__xlocale_global_ctype, locale);
+	int ret = __setrunelocale(&::__xlocale_global_ctype, locale);
 
 	if (ret != 0) {
 		errno = ret;
 		return (_LDP_ERROR);
 	}
-	__mb_cur_max = __xlocale_global_ctype.__mb_cur_max;
-	__mb_sb_limit = __xlocale_global_ctype.__mb_sb_limit;
-	_CurrentRuneLocale = __xlocale_global_ctype.runes;
+	::__mb_cur_max = ::__xlocale_global_ctype.__mb_cur_max;
+	::__mb_sb_limit = ::__xlocale_global_ctype.__mb_sb_limit;
+	::_CurrentRuneLocale = ::__xlocale_global_ctype.runes;
 	return (_LDP_LOADED);
 }
 
@@ -1249,7 +1254,7 @@ __set_thread_rune_locale(locale_t loc)
 {
 
 	if (loc == nullptr) {
-		_ThreadRuneLocale = &_DefaultRuneLocale;
+		_ThreadRuneLocale = &::_DefaultRuneLocale;
 	} else if (loc == LC_GLOBAL_LOCALE) {
 		_ThreadRuneLocale = 0;
 	} else {

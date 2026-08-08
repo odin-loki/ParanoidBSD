@@ -2,7 +2,10 @@
 #
 # build.sh -- build and run the PBSD b0160 differential test.
 #
-# Usage: sh build.sh            (from pbsd/sbin/ipf/libipf/b0160/)
+# Usage: sh build.sh		(from pbsd/sbin/ipf/libipf/b0160/)
+#
+# The harness interposes malloc so that the blocks dupmbt() allocates start
+# out filled with the guard byte, hence -Wl,--wrap=malloc.
 
 set -e
 
@@ -15,6 +18,7 @@ CXXFLAGS=${CXXFLAGS:-"-std=c++23 -O2"}
 
 BUILD=build
 MODNAME=pbsd.sbin.ipf.libipf.b0160
+TEST=$BUILD/b0160_test
 
 rm -rf "$BUILD" gcm.cache
 mkdir -p "$BUILD"
@@ -22,7 +26,7 @@ mkdir -p "$BUILD"
 $CC $CFLAGS -c oracle.c -o "$BUILD/oracle.o"
 
 MODFLAGS=""
-if $CXX --version 2>&1 | grep -qi 'clang'; then
+if $CXX --version 2>&1 | grep -qi clang; then
 	$CXX $CXXFLAGS --precompile -x c++-module port.cppm \
 	    -o "$BUILD/port.pcm"
 	$CXX $CXXFLAGS -c "$BUILD/port.pcm" -o "$BUILD/port.o"
@@ -35,6 +39,6 @@ else
 fi
 
 $CXX $CXXFLAGS $MODFLAGS "$BUILD/port.o" "$BUILD/harness.o" \
-    "$BUILD/oracle.o" -o "$BUILD/b0160_test"
+    "$BUILD/oracle.o" -Wl,--wrap=malloc -o "$TEST"
 
-exec "$BUILD/b0160_test"
+exec "$TEST"

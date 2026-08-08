@@ -1,8 +1,28 @@
 /*
  * harness.cpp -- differential test for PBSD batch b0160.
+ *
+ * Every ported entity is exercised against the ref_ oracle in oracle.c:
+ *
+ *   icmpcodes      (data, icmpcode.c)
+ *   icmptypelist   (data, link dependency)
+ *   ionames        (data, link dependency)
+ *   dupmbt         (dupmbt.c)
+ *   icmptypename   (icmptypename.c)
+ *   getoptbyname   (optvalue.c)
+ *   getoptbyvalue  (optvalue.c)
+ *
+ * dupmbt writes into a malloc'd mb_t.  malloc is interposed with
+ * -Wl,--wrap=malloc so that every block handed to the port and to the oracle
+ * starts out filled with the guard byte 0x7f and carries a 64 byte trailing
+ * guard region.  That makes the whole destination buffer -- including the
+ * bytes past the nominal bcopy() window and past the end of the object --
+ * deterministic and comparable, so a copy that is one byte short or one byte
+ * long is a hard failure rather than a coin flip.  Pointer results are only
+ * ever compared as offsets from their own buffer base.
  */
 
 #include <climits>
+#include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -15,16 +35,95 @@ namespace P = pbsd::sbin_ipf_libipf::b0160;
 
 extern "C" {
 extern char *ref_icmpcodes[];
+extern P::icmptype_t ref_icmptypelist[];
+extern P::ipopt_names ref_ionames[];
 P::mb_t *ref_dupmbt(P::mb_t *orig);
 char *ref_icmptypename(int family, int type);
 P::u_32_t ref_getoptbyname(char *optname);
 P::u_32_t ref_getoptbyvalue(int optval);
 }
 
-static constexpr std::size_t MB_BUF_WORDS = 2048;
 static constexpr unsigned char GUARD = 0x7f;
-static constexpr int MAX_REPORT = 8;
 static constexpr long SWEEP = 200000;
+static constexpr int MAX_REPORT = 6;
+static constexpr std::size_t MB_BUF_BYTES = sizeof(P::mb_t::mb_buf);
+
+/* ---------------------------------------------------------------------- */
+/* guard-filling malloc interposer                                        */
+/* ---------------------------------------------------------------------- */
+
+extern "C" void *__real_malloc(std::size_t n);
+
+static constexpr std::size_t ALLOC_HDR = 32;
+static constexpr std::size_t ALLOC_TAIL = 64;
+static constexpr std::uint64_t ALLOC_MAGIC = 0x5042534430313630ULL;
+
+extern "C" void *
+__wrap_malloc(std::size_t n)
+{
+	unsigned char *base;
+	std::uint64_t magic = ALLOC_MAGIC;
+
+	base = (unsigned char *)__real_malloc(ALLOC_HDR + n + ALLOC_TAIL);
+	if (base == nullptr)
+		return nullptr;
+	std::memset(base, GUARD, ALLOC_HDR + n + ALLOC_TAIL);
+	std::memcpy(base, &magic, sizeof(magic));
+	std::memcpy(base + sizeof(magic), &n, sizeof(n));
+	return base + ALLOC_HDR;
+}
+
+static std::size_t
+guard_size(const void *p)
+{
+	const unsigned char *base = (const unsigned char *)p - ALLOC_HDR;
+	std::uint64_t magic;
+	std::size_t n;
+
+	std::memcpy(&magic, base, sizeof(magic));
+	if (magic != ALLOC_MAGIC)
+		return 0;
+	std::memcpy(&n, base + sizeof(magic), sizeof(n));
+	return n;
+}
+
+/* Every byte of the header padding and of the trailing region must be GUARD. */
+static int
+guard_intact(const void *p)
+{
+	const unsigned char *base = (const unsigned char *)p - ALLOC_HDR;
+	std::size_t n = guard_size(p);
+	std::size_t i;
+
+	if (n == 0)
+		return 0;
+	for (i = sizeof(std::uint64_t) + sizeof(std::size_t); i < ALLOC_HDR;
+	    i++) {
+		if (base[i] != GUARD)
+			return 0;
+	}
+	for (i = 0; i < ALLOC_TAIL; i++) {
+		if (((const unsigned char *)p)[n + i] != GUARD)
+			return 0;
+	}
+	return 1;
+}
+
+static void
+guard_free(void *p)
+{
+	if (p == nullptr)
+		return;
+	if (guard_size(p) == 0) {
+		std::free(p);
+		return;
+	}
+	std::free((unsigned char *)p - ALLOC_HDR);
+}
+
+/* ---------------------------------------------------------------------- */
+/* bookkeeping                                                            */
+/* ---------------------------------------------------------------------- */
 
 struct Stat {
 	const char *name;
@@ -33,15 +132,45 @@ struct Stat {
 	int reported;
 };
 
-static Stat st_icmpcodes = { "icmpcodes", 0, 0, 0 };
+static Stat st_icmpcodes = { "icmpcodes[]", 0, 0, 0 };
+static Stat st_icmptypelist = { "icmptypelist[]", 0, 0, 0 };
+static Stat st_ionames = { "ionames[]", 0, 0, 0 };
 static Stat st_dupmbt = { "dupmbt", 0, 0, 0 };
 static Stat st_icmptypename = { "icmptypename", 0, 0, 0 };
 static Stat st_getoptbyname = { "getoptbyname", 0, 0, 0 };
 static Stat st_getoptbyvalue = { "getoptbyvalue", 0, 0, 0 };
 
-static std::uint64_t rng_state = 0xb0160feedfaceULL;
+static Stat *all_stats[] = { &st_icmpcodes, &st_icmptypelist, &st_ionames,
+	&st_dupmbt, &st_icmptypename, &st_getoptbyname, &st_getoptbyvalue };
 
-static inline std::uint64_t
+static void fail(Stat *st, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
+static void
+fail(Stat *st, const char *fmt, ...)
+{
+	st->fails++;
+	if (st->reported < MAX_REPORT) {
+		va_list ap;
+
+		st->reported++;
+		std::printf("  FAIL %-14s ", st->name);
+		va_start(ap, fmt);
+		std::vprintf(fmt, ap);
+		va_end(ap);
+		std::printf("\n");
+	}
+}
+
+static std::uint64_t rng_state;
+
+static void
+rng_seed(std::uint64_t s)
+{
+	rng_state = s;
+}
+
+static std::uint64_t
 rnd(void)
 {
 	std::uint64_t z = (rng_state += 0x9e3779b97f4a7c15ULL);
@@ -51,425 +180,745 @@ rnd(void)
 	return z ^ (z >> 31);
 }
 
-static inline std::size_t
+static std::size_t
 rnd_mod(std::size_t m)
 {
-	if (m == 0)
-		return 0;
-	return (std::size_t)(rnd() % (std::uint64_t)m);
-}
-
-static void
-stat_fail(Stat *st, const char *tag, const char *detail)
-{
-	st->fails++;
-	if (st->reported < MAX_REPORT) {
-		st->reported++;
-		std::printf("  FAIL %s [%s] %s\n", st->name, tag, detail);
-	}
+	return m == 0 ? 0 : (std::size_t)(rnd() % (std::uint64_t)m);
 }
 
 static const char *
-str_or_null(const char *s)
+show(const char *s)
 {
 	return s != nullptr ? s : "(null)";
 }
 
 static int
-streq_or_both_null(const char *a, const char *b)
+same_string(const char *a, const char *b)
 {
-	if (a == nullptr && b == nullptr)
-		return 1;
 	if (a == nullptr || b == nullptr)
-		return 0;
+		return a == b;
 	return std::strcmp(a, b) == 0;
 }
 
-/* ------------------------------------------------------------------------ */
-/* icmpcodes (data from icmpcode.c)                                          */
-/* ------------------------------------------------------------------------ */
+/* ---------------------------------------------------------------------- */
+/* icmpcodes[] -- the data table that is icmpcode.c                       */
+/* ---------------------------------------------------------------------- */
 
 static void
-icmpcodes_case(const char *tag, int idx)
+icmpcodes_case(int idx)
 {
-	const char *got = (idx >= 0 && idx <= P::MAX_ICMPCODE) ?
-	    P::icmpcodes[idx] :
-	    nullptr;
-	const char *ref = (idx >= 0 && idx <= P::MAX_ICMPCODE) ?
-	    ref_icmpcodes[idx] :
-	    nullptr;
+	const char *got = P::icmpcodes[idx];
+	const char *ref = ref_icmpcodes[idx];
 
 	st_icmpcodes.cases++;
-	if (!streq_or_both_null(got, ref)) {
-		stat_fail(&st_icmpcodes, tag, "string");
-		if (st_icmpcodes.reported <= MAX_REPORT) {
-			std::printf("      idx=%d port=%s ref=%s\n", idx,
-			    str_or_null(got), str_or_null(ref));
+	if (!same_string(got, ref))
+		fail(&st_icmpcodes, "idx=%d port=%s ref=%s", idx, show(got),
+		    show(ref));
+}
+
+static void
+test_icmpcodes(void)
+{
+	int i;
+
+	/* MAX_ICMPCODE sizes the array and is part of the ported interface. */
+	st_icmpcodes.cases++;
+	if (P::MAX_ICMPCODE != 16)
+		fail(&st_icmpcodes, "MAX_ICMPCODE=%d want 16",
+		    P::MAX_ICMPCODE);
+
+	/* Every slot, including the NULL terminator at MAX_ICMPCODE. */
+	for (i = 0; i <= 16; i++)
+		icmpcodes_case(i);
+
+	st_icmpcodes.cases++;
+	if (P::icmpcodes[16] != nullptr || ref_icmpcodes[16] != nullptr)
+		fail(&st_icmpcodes, "terminator not NULL port=%s ref=%s",
+		    show(P::icmpcodes[16]), show(ref_icmpcodes[16]));
+
+	rng_seed(0x1c3d5e7f9ab00160ULL);
+	for (long n = 0; n < SWEEP; n++)
+		icmpcodes_case((int)rnd_mod(17));
+}
+
+/* ---------------------------------------------------------------------- */
+/* icmptypelist[] and ionames[] -- data the batch functions walk          */
+/* ---------------------------------------------------------------------- */
+
+static void
+icmptypelist_case(int i)
+{
+	const P::icmptype_t *g = &P::icmptypelist[i];
+	const P::icmptype_t *r = &ref_icmptypelist[i];
+
+	st_icmptypelist.cases++;
+	if (!same_string(g->it_name, r->it_name) || g->it_v4 != r->it_v4 ||
+	    g->it_v6 != r->it_v6) {
+		fail(&st_icmptypelist, "i=%d port={%s,%d,%d} ref={%s,%d,%d}",
+		    i, show(g->it_name), g->it_v4, g->it_v6, show(r->it_name),
+		    r->it_v4, r->it_v6);
+	}
+}
+
+static int icmptypelist_n;
+
+static void
+test_icmptypelist(void)
+{
+	int i;
+
+	for (i = 0; ; i++) {
+		int gend = P::icmptypelist[i].it_name == nullptr;
+		int rend = ref_icmptypelist[i].it_name == nullptr;
+
+		st_icmptypelist.cases++;
+		if (gend != rend) {
+			fail(&st_icmptypelist, "terminator disagrees at i=%d "
+			    "port_end=%d ref_end=%d", i, gend, rend);
+			break;
 		}
+		icmptypelist_case(i);
+		if (gend)
+			break;
+	}
+	icmptypelist_n = i + 1;
+
+	rng_seed(0x2b4d6e8fa1c00160ULL);
+	for (long n = 0; n < SWEEP; n++)
+		icmptypelist_case((int)rnd_mod((std::size_t)icmptypelist_n));
+}
+
+static void
+ionames_case(int i)
+{
+	const P::ipopt_names *g = &P::ionames[i];
+	const P::ipopt_names *r = &ref_ionames[i];
+
+	st_ionames.cases++;
+	if (!same_string(g->on_name, r->on_name) ||
+	    g->on_value != r->on_value || g->on_bit != r->on_bit ||
+	    g->on_siz != r->on_siz) {
+		fail(&st_ionames,
+		    "i=%d port={%d,%#x,%d,%s} ref={%d,%#x,%d,%s}", i,
+		    g->on_value, (unsigned)g->on_bit, g->on_siz,
+		    show(g->on_name), r->on_value, (unsigned)r->on_bit,
+		    r->on_siz, show(r->on_name));
 	}
 }
 
-static void
-test_icmpcodes_edges(void)
-{
-	icmpcodes_case("null-term", P::MAX_ICMPCODE);
-	for (int i = 0; i < P::MAX_ICMPCODE; i++)
-		icmpcodes_case("idx", i);
-	icmpcodes_case("first", 0);
-	icmpcodes_case("last", P::MAX_ICMPCODE - 1);
-}
+static int ionames_n;
 
 static void
-test_icmpcodes_sweep(void)
+test_ionames(void)
 {
-	for (long i = 0; i < SWEEP; i++) {
-		int idx = (int)(rnd_mod((std::size_t)P::MAX_ICMPCODE + 1));
-		char tag[48];
-		std::snprintf(tag, sizeof(tag), "rnd%ld", i);
-		icmpcodes_case(tag, idx);
+	int i;
+
+	for (i = 0; ; i++) {
+		int gend = P::ionames[i].on_name == nullptr;
+		int rend = ref_ionames[i].on_name == nullptr;
+
+		st_ionames.cases++;
+		if (gend != rend) {
+			fail(&st_ionames, "terminator disagrees at i=%d "
+			    "port_end=%d ref_end=%d", i, gend, rend);
+			break;
+		}
+		ionames_case(i);
+		if (gend)
+			break;
 	}
+	ionames_n = i + 1;
+
+	rng_seed(0x3c5e7f90b2d00160ULL);
+	for (long n = 0; n < SWEEP; n++)
+		ionames_case((int)rnd_mod((std::size_t)ionames_n));
 }
 
-/* ------------------------------------------------------------------------ */
-/* dupmbt                                                                    */
-/* ------------------------------------------------------------------------ */
+/* ---------------------------------------------------------------------- */
+/* dupmbt                                                                 */
+/* ---------------------------------------------------------------------- */
 
-static void
-init_mb(P::mb_t *m, int len, std::ptrdiff_t data_off, const unsigned char *pat,
-    std::size_t patlen)
+static P::mb_t orig_p;
+static P::mb_t orig_r;
+static unsigned char saved_buf[MB_BUF_BYTES];
+
+/*
+ * Source bytes are chosen so that none of them is ever the guard byte.  A
+ * destination byte therefore says unambiguously whether bcopy() wrote it or
+ * left it alone, which is what makes an off-by-one copy length detectable
+ * rather than a 255-in-256 coin flip.
+ */
+static unsigned char
+src_byte(int pattern, std::size_t i, std::uint64_t *s)
 {
-	std::memset(m, GUARD, sizeof(*m));
-	m->mb_len = len;
-	m->mb_next = (P::mb_t *)(uintptr_t)0xdeadbeefUL;
-	m->mb_data = (char *)m->mb_buf + data_off;
-	for (std::size_t i = 0; i < sizeof(m->mb_buf); i++)
-		m->mb_buf[i] = GUARD ^ (unsigned long)(i & 0xff);
-	if (len > 0 && pat != nullptr) {
-		std::size_t n = (std::size_t)len;
-		if (patlen < n)
-			n = patlen;
-		std::memcpy(m->mb_data, pat, n);
+	unsigned char c;
+
+	switch (pattern) {
+	case 0:
+		c = 0x00;			/* NUL-heavy */
+		break;
+	case 1:
+		c = 0xff;
+		break;
+	case 2:
+		c = 0x80;			/* high-bit */
+		break;
+	case 3:
+		c = (unsigned char)(0x80 + (i & 0x7f));	/* 0x80..0xff */
+		break;
+	case 4:
+		c = (unsigned char)((i & 1) ? 0xff : 0x00);
+		break;
+	case 5:
+		c = (unsigned char)(i & 0xff);
+		break;
+	default:
+		*s = *s * 6364136223846793005ULL + 1442695040888963407ULL;
+		c = (unsigned char)(*s >> 33);
+		break;
 	}
+	return c == GUARD ? (unsigned char)0x80 : c;
 }
 
 static void
-dupmbt_case(const char *tag, int len, std::ptrdiff_t data_off,
-    const unsigned char *pat, std::size_t patlen)
+build_orig(std::size_t off, std::size_t len, int pattern, std::uint64_t seed)
 {
-	P::mb_t orig_p, orig_r;
-	unsigned char guard_p[sizeof(P::mb_t)];
-	unsigned char guard_r[sizeof(P::mb_t)];
+	unsigned char *b = (unsigned char *)orig_p.mb_buf;
+	std::uint64_t s = seed | 1;
+	std::size_t i;
 
-	init_mb(&orig_p, len, data_off, pat, patlen);
-	init_mb(&orig_r, len, data_off, pat, patlen);
-	std::memcpy(guard_p, &orig_p, sizeof(orig_p));
-	std::memcpy(guard_r, &orig_r, sizeof(orig_r));
+	std::memset(&orig_p, GUARD, sizeof(orig_p));
+	for (i = 0; i < MB_BUF_BYTES; i++)
+		b[i] = src_byte(pattern, i, &s);
 
-	P::mb_t *got = P::dupmbt(&orig_p);
-	P::mb_t *ref = ref_dupmbt(&orig_r);
+	orig_p.mb_next = (P::mb_t *)(std::uintptr_t)0x5a5a5a5a5a5a5a5aULL;
+	orig_p.mb_ifp = (void *)(std::uintptr_t)0xa5a5a5a5a5a5a5a5ULL;
+	orig_p.mb_flags = 0x13572468;
+	orig_p.mb_len = (int)len;
+	orig_p.mb_data = (char *)orig_p.mb_buf + off;
+
+	std::memcpy(&orig_r, &orig_p, sizeof(orig_r));
+	orig_r.mb_data = (char *)orig_r.mb_buf + off;
+	std::memcpy(saved_buf, b, MB_BUF_BYTES);
+}
+
+static std::ptrdiff_t
+data_off(const P::mb_t *m)
+{
+	return m->mb_data - (const char *)m->mb_buf;
+}
+
+/*
+ * Compare two mb_t objects in full, skipping only the mb_data field, whose
+ * raw value is an address and is compared separately as an offset.
+ */
+static int
+mb_equal_except_data(const P::mb_t *a, const P::mb_t *b)
+{
+	const unsigned char *pa = (const unsigned char *)a;
+	const unsigned char *pb = (const unsigned char *)b;
+	std::size_t head = offsetof(P::mb_t, mb_data);
+	std::size_t tail = head + sizeof(a->mb_data);
+
+	if (std::memcmp(pa, pb, head) != 0)
+		return 0;
+	return std::memcmp(pa + tail, pb + tail, sizeof(P::mb_t) - tail) == 0;
+}
+
+static std::size_t
+first_diff(const P::mb_t *a, const P::mb_t *b)
+{
+	const unsigned char *pa = (const unsigned char *)a;
+	const unsigned char *pb = (const unsigned char *)b;
+	std::size_t lo = offsetof(P::mb_t, mb_data);
+	std::size_t hi = lo + sizeof(a->mb_data);
+	std::size_t i;
+
+	for (i = 0; i < sizeof(P::mb_t); i++) {
+		if (pa[i] != pb[i] && (i < lo || i >= hi))
+			return i;
+	}
+	return sizeof(P::mb_t);
+}
+
+static void
+dupmbt_case(std::size_t off, std::size_t len, int pattern, std::uint64_t seed)
+{
+	P::mb_t *got;
+	P::mb_t *ref;
+
+	build_orig(off, len, pattern, seed);
+
+	got = P::dupmbt(&orig_p);
+	ref = ref_dupmbt(&orig_r);
 
 	st_dupmbt.cases++;
 
-	int bad = 0;
-	if ((got == nullptr) != (ref == nullptr))
-		bad = 1;
-	if (std::memcmp(&orig_p, guard_p, sizeof(orig_p)) != 0)
-		bad = 1;
-	if (std::memcmp(&orig_r, guard_r, sizeof(orig_r)) != 0)
-		bad = 1;
+	if ((got == nullptr) != (ref == nullptr)) {
+		fail(&st_dupmbt, "off=%zu len=%zu NULL-ness port=%d ref=%d",
+		    off, len, got == nullptr, ref == nullptr);
+	} else if (got == nullptr) {
+		/* Both declined to allocate; nothing else to compare. */
+	} else if (std::memcmp(orig_p.mb_buf, saved_buf, MB_BUF_BYTES) != 0 ||
+	    std::memcmp(orig_r.mb_buf, saved_buf, MB_BUF_BYTES) != 0) {
+		fail(&st_dupmbt, "off=%zu len=%zu source buffer modified", off,
+		    len);
+	} else if (orig_p.mb_len != (int)len || orig_r.mb_len != (int)len ||
+	    data_off(&orig_p) != (std::ptrdiff_t)off ||
+	    data_off(&orig_r) != (std::ptrdiff_t)off ||
+	    !mb_equal_except_data(&orig_p, &orig_r)) {
+		fail(&st_dupmbt, "off=%zu len=%zu source header modified", off,
+		    len);
+	} else if (data_off(got) != data_off(ref)) {
+		fail(&st_dupmbt,
+		    "off=%zu len=%zu mb_data offset port=%td ref=%td", off,
+		    len, data_off(got), data_off(ref));
+	} else if (!mb_equal_except_data(got, ref)) {
+		std::size_t d = first_diff(got, ref);
 
-	if (!bad && got != nullptr && ref != nullptr) {
-		std::ptrdiff_t off_got = got->mb_data - (char *)got->mb_buf;
-		std::ptrdiff_t off_ref = ref->mb_data - (char *)ref->mb_buf;
-		if (got->mb_len != ref->mb_len || got->mb_next != nullptr ||
-		    ref->mb_next != nullptr || off_got != off_ref)
-			bad = 1;
-		if (std::memcmp(got->mb_buf, ref->mb_buf, sizeof(got->mb_buf)) != 0)
-			bad = 1;
-		if (len > 0 &&
-		    std::memcmp(got->mb_data, ref->mb_data, (std::size_t)len) != 0)
-			bad = 1;
+		fail(&st_dupmbt, "off=%zu len=%zu pat=%d differ at mb_buf+%td "
+		    "port=%02x ref=%02x", off, len, pattern,
+		    (std::ptrdiff_t)d -
+		    (std::ptrdiff_t)offsetof(P::mb_t, mb_buf),
+		    ((const unsigned char *)got)[d],
+		    ((const unsigned char *)ref)[d]);
+	} else if (got->mb_next != nullptr || ref->mb_next != nullptr) {
+		fail(&st_dupmbt, "off=%zu len=%zu mb_next port=%p ref=%p", off,
+		    len, (void *)got->mb_next, (void *)ref->mb_next);
+	} else if (got->mb_len != (int)len || ref->mb_len != (int)len) {
+		fail(&st_dupmbt, "off=%zu len=%zu mb_len port=%d ref=%d", off,
+		    len, got->mb_len, ref->mb_len);
+	} else if (!guard_intact(got) || !guard_intact(ref)) {
+		fail(&st_dupmbt, "off=%zu len=%zu wrote outside the object "
+		    "(port_ok=%d ref_ok=%d)", off, len, guard_intact(got),
+		    guard_intact(ref));
+	} else if (len > 0 &&
+	    std::memcmp(got->mb_data, saved_buf + off, len) != 0) {
+		fail(&st_dupmbt, "off=%zu len=%zu payload not copied", off,
+		    len);
+	} else if (data_off(got) != (std::ptrdiff_t)off) {
+		fail(&st_dupmbt, "off=%zu len=%zu mb_data offset %td", off,
+		    len, data_off(got));
 	}
 
-	if (bad) {
-		stat_fail(&st_dupmbt, tag, "dup");
-		if (st_dupmbt.reported <= MAX_REPORT) {
-			std::printf(
-			    "      len=%d off=%td got=%p ref=%p\n", len,
-			    (ptrdiff_t)data_off, (void *)got, (void *)ref);
+	guard_free(got);
+	guard_free(ref);
+}
+
+static void
+test_dupmbt(void)
+{
+	static const std::size_t N = MB_BUF_BYTES;
+	int pat;
+
+	/* Hand-written edges: both sides of every boundary that exists. */
+	for (pat = 0; pat <= 6; pat++) {
+		dupmbt_case(0, 0, pat, 1);		/* empty, at base */
+		dupmbt_case(0, 1, pat, 2);		/* single byte */
+		dupmbt_case(0, 2, pat, 3);
+		dupmbt_case(1, 0, pat, 4);		/* empty, offset 1 */
+		dupmbt_case(1, 1, pat, 5);
+		dupmbt_case(7, 1, pat, 6);		/* unaligned */
+		dupmbt_case(8, 8, pat, 7);
+		dupmbt_case(0, N - 1, pat, 8);
+		dupmbt_case(0, N, pat, 9);		/* whole buffer */
+		dupmbt_case(1, N - 1, pat, 10);		/* ends exactly */
+		dupmbt_case(N - 1, 1, pat, 11);		/* last byte */
+		dupmbt_case(N, 0, pat, 12);		/* one past the end */
+		dupmbt_case(N / 2, N / 2, pat, 13);
+		dupmbt_case(N / 2, 0, pat, 14);
+		dupmbt_case(N / 2 - 1, 2, pat, 15);
+		dupmbt_case(3, 5, pat, 16);
+		dupmbt_case(4096, 4096, pat, 17);
+	}
+
+	rng_seed(0x4d6f809ac3e00160ULL);
+	for (long n = 0; n < SWEEP; n++) {
+		std::size_t off;
+		std::size_t len;
+		int p = (int)rnd_mod(7);
+
+		/*
+		 * Half the draws stay small so that short copies and small
+		 * offsets are common; the rest span the whole buffer,
+		 * including the off + len == sizeof(mb_buf) boundary.
+		 */
+		if ((rnd() & 1) != 0) {
+			off = rnd_mod(65);
+			len = rnd_mod(65);
+			if (off + len > N)
+				len = N - off;
+		} else {
+			off = rnd_mod(N + 1);
+			len = rnd_mod(N - off + 1);
+			if ((rnd() & 7) == 0)
+				len = N - off;	/* exactly to the end */
 		}
-	}
-
-	std::free(got);
-	std::free(ref);
-}
-
-static void
-test_dupmbt_edges(void)
-{
-	static const unsigned char empty[] = { 0 };
-	static const unsigned char one[] = { 0x00 };
-	static const unsigned char hi[] = { 0x80, 0xff, 0xfe, 0x81 };
-	static const unsigned char nulheavy[] = { 0x00, 0x00, 0x7f, 0x00, 0xff };
-
-	dupmbt_case("zero-len", 0, 0, empty, 0);
-	dupmbt_case("one-byte", 1, 0, one, 1);
-	dupmbt_case("hi-off", 4, 128, hi, sizeof(hi));
-	dupmbt_case("mid-off", 3, 512, hi, sizeof(hi));
-	dupmbt_case("end-off", 2, (std::ptrdiff_t)(MB_BUF_WORDS - 4), hi,
-	    sizeof(hi));
-	dupmbt_case("neg-off", 5, -3, nulheavy, sizeof(nulheavy));
-	dupmbt_case("large-len", 1024, 0, hi, sizeof(hi));
-	dupmbt_case("len-2048", 2048, 0, hi, sizeof(hi));
-	dupmbt_case("neg-len", -1, 0, hi, sizeof(hi));
-}
-
-static void
-test_dupmbt_sweep(void)
-{
-	unsigned char pat[256];
-
-	for (long i = 0; i < SWEEP; i++) {
-		for (std::size_t j = 0; j < sizeof(pat); j++)
-			pat[j] = (unsigned char)(rnd() & 0xff);
-		int len = (int)(std::int32_t)rnd();
-		std::ptrdiff_t off =
-		    (std::ptrdiff_t)(rnd_mod(MB_BUF_WORDS * 2)) - 64;
-		char tag[48];
-		std::snprintf(tag, sizeof(tag), "rnd%ld", i);
-		dupmbt_case(tag, len, off, pat, sizeof(pat));
+		dupmbt_case(off, len, p, rnd());
 	}
 }
 
-/* ------------------------------------------------------------------------ */
-/* icmptypename                                                              */
-/* ------------------------------------------------------------------------ */
+/* ---------------------------------------------------------------------- */
+/* icmptypename                                                           */
+/* ---------------------------------------------------------------------- */
 
 static void
-icmptypename_case(const char *tag, int family, int type)
+icmptypename_case(int family, int type)
 {
 	char *got = P::icmptypename(family, type);
 	char *ref = ref_icmptypename(family, type);
 
 	st_icmptypename.cases++;
-	if (!streq_or_both_null(got, ref)) {
-		stat_fail(&st_icmptypename, tag, "name");
-		if (st_icmptypename.reported <= MAX_REPORT) {
-			std::printf(
-			    "      fam=%d type=%d port=%s ref=%s\n", family,
-			    type, str_or_null(got), str_or_null(ref));
-		}
-	}
+	if (!same_string(got, ref))
+		fail(&st_icmptypename, "family=%d type=%d port=%s ref=%s",
+		    family, type, show(got), show(ref));
 }
 
-static void
-test_icmptypename_edges(void)
-{
-	static const int families[] = { 0, 2, 28, -1, 255 };
-	static const int types[] = { -1, 0, 1, 3, 4, 5, 8, 9, 10, 11, 12, 13,
-	    14, 15, 16, 17, 18, 42, 127, 128, 255, 256, 300, -128 };
+static const int fam_list[] = { 2, 28, 0, 1, 3, 10, -1, 255, 256, -28,
+	INT_MIN, INT_MAX };
+static constexpr std::size_t N_FAM =
+    sizeof(fam_list) / sizeof(fam_list[0]);
 
-	for (std::size_t i = 0; i < sizeof(families) / sizeof(families[0]); i++) {
-		for (std::size_t j = 0; j < sizeof(types) / sizeof(types[0]);
-		     j++) {
-			char tag[64];
-			std::snprintf(tag, sizeof(tag), "f%zu t%zu", i, j);
-			icmptypename_case(tag, families[i], types[j]);
-		}
+static void
+test_icmptypename(void)
+{
+	std::size_t f;
+	int t;
+
+	/*
+	 * Sweep every type in [-8, 300] for every interesting family.  That
+	 * covers each table row, both sides of the (type < 0) test, both
+	 * sides of the (type > 255) test, and the negative types that
+	 * separate (type < 0) || (type > 255) from its && mutant -- rows
+	 * exist with it_v4 == -1 and with it_v6 == -1, so a mutant that
+	 * lets type == -1 reach the loop returns a name instead of NULL.
+	 */
+	for (f = 0; f < N_FAM; f++) {
+		for (t = -8; t <= 300; t++)
+			icmptypename_case(fam_list[f], t);
+		icmptypename_case(fam_list[f], INT_MIN);
+		icmptypename_case(fam_list[f], INT_MAX);
+		icmptypename_case(fam_list[f], -256);
+		icmptypename_case(fam_list[f], 65536);
 	}
-}
 
-static void
-test_icmptypename_sweep(void)
-{
-	for (long i = 0; i < SWEEP; i++) {
-		int family = (int)(std::int32_t)rnd();
-		int type = (int)(rnd() & 0x1ff) - 64;
-		char tag[48];
-		std::snprintf(tag, sizeof(tag), "rnd%ld", i);
-		icmptypename_case(tag, family, type);
-	}
-}
+	rng_seed(0x5e7091abd4f00160ULL);
+	for (long n = 0; n < SWEEP; n++) {
+		int family;
+		int type;
+		std::uint64_t r = rnd();
 
-/* ------------------------------------------------------------------------ */
-/* getoptbyname                                                              */
-/* ------------------------------------------------------------------------ */
-
-static void
-fill_name(char *buf, std::size_t cap, int pattern, std::size_t len)
-{
-	static const unsigned char alpha[] = {
-	    0x00, 'n', 'o', 'p', 'r', 'r', 's', 'e', 'c', '-', 'c', 'l', 'a',
-	    's', 's', 'z', 's', 'u', 0x80, 0xff
-	};
-	const std::size_t na = sizeof(alpha);
-
-	if (cap == 0)
-		return;
-	if (len >= cap)
-		len = cap - 1;
-	for (std::size_t i = 0; i < len; i++) {
-		switch (pattern) {
+		switch (r & 3) {
 		case 0:
-			buf[i] = (char)alpha[i % na];
+			family = 2;			/* AF_INET */
 			break;
 		case 1:
-			buf[i] = (char)(0x80 + (i & 0x7f));
+			family = 28;			/* AF_INET6 */
 			break;
 		case 2:
-			buf[i] = (char)((i & 1) ? 'A' : 'a');
+			family = fam_list[rnd_mod(N_FAM)];
 			break;
 		default:
-			buf[i] = (char)(rnd() & 0xff);
+			family = (int)(std::int32_t)rnd();
 			break;
 		}
+		if ((r & 4) != 0)
+			type = (int)(std::int32_t)rnd();
+		else
+			type = (int)rnd_mod(330) - 16;
+		icmptypename_case(family, type);
 	}
-	buf[len] = '\0';
 }
 
+/* ---------------------------------------------------------------------- */
+/* getoptbyname                                                           */
+/* ---------------------------------------------------------------------- */
+
+static constexpr std::size_t NAMEBUF = 256;
+static constexpr std::size_t NAMEOFF = 64;
+
+/*
+ * Two buffers, both filled with the guard byte, both given the same input.
+ * The whole 256 bytes of each are compared afterwards, so a port that writes
+ * anywhere in its argument buffer is caught even though getoptbyname() is
+ * only supposed to read.
+ */
 static void
-getoptbyname_case(const char *tag, const char *name, int pattern)
+getoptbyname_case(const char *name, std::size_t nlen)
 {
-	char pa[128], pb[128];
+	char pbuf[NAMEBUF];
+	char rbuf[NAMEBUF];
+	P::u_32_t got;
+	P::u_32_t ref;
 
-	std::memset(pa, GUARD, sizeof(pa));
-	std::memset(pb, GUARD, sizeof(pb));
-	std::memcpy(pa + 16, name, std::strlen(name) + 1);
-	std::memcpy(pb + 16, name, std::strlen(name) + 1);
-	(void)pattern;
+	std::memset(pbuf, GUARD, sizeof(pbuf));
+	std::memset(rbuf, GUARD, sizeof(rbuf));
+	std::memcpy(pbuf + NAMEOFF, name, nlen);
+	pbuf[NAMEOFF + nlen] = '\0';
+	std::memcpy(rbuf + NAMEOFF, name, nlen);
+	rbuf[NAMEOFF + nlen] = '\0';
 
-	char *pname = pa + 16;
-	char *rname = pb + 16;
-
-	P::u_32_t got = P::getoptbyname(pname);
-	P::u_32_t ref = ref_getoptbyname(rname);
+	got = P::getoptbyname(pbuf + NAMEOFF);
+	ref = ref_getoptbyname(rbuf + NAMEOFF);
 
 	st_getoptbyname.cases++;
-	int bad = (got != ref);
-	if (std::memcmp(pa, pb, sizeof(pa)) != 0)
-		bad = 1;
-	if (bad) {
-		stat_fail(&st_getoptbyname, tag, bad ? "ret/buf" : "buf");
-		if (st_getoptbyname.reported <= MAX_REPORT) {
-			std::printf("      name=%s port=%u ref=%u\n", name,
-			    (unsigned)got, (unsigned)ref);
-		}
+	if (got != ref) {
+		fail(&st_getoptbyname, "name=\"%s\" port=%#x ref=%#x",
+		    rbuf + NAMEOFF, (unsigned)got, (unsigned)ref);
+	} else if (std::memcmp(pbuf, rbuf, sizeof(pbuf)) != 0) {
+		fail(&st_getoptbyname, "name=\"%s\" argument buffer diverged",
+		    rbuf + NAMEOFF);
 	}
 }
 
 static void
-test_getoptbyname_edges(void)
+getoptbyname_str(const char *name)
 {
-	static const char *names[] = {
-	    "", "nop", "NOP", "NoP", "rr", "RR", "zsu", "mtup", "mtur",
-	    "encode", "ts", "tr", "sec", "sec-class", "SEC-CLASS", "lsrr",
-	    "e-sec", "cipso", "satid", "ssrr", "addext", "visa", "imitd",
-	    "eip", "finn", "dps", "sdb", "nsapa", "rtralrt", "ump", "ah",
-	    "AH", "bogus", "n", "se", "secclass", "\xff", "\x80nop"
-	};
-
-	for (std::size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++)
-		getoptbyname_case("edge", names[i], 0);
+	getoptbyname_case(name, std::strlen(name));
 }
 
-static void
-test_getoptbyname_sweep(void)
-{
-	char name[96];
+static const char *known_names[] = { "nop", "rr", "zsu", "mtup", "mtur",
+	"encode", "ts", "tr", "sec", "sec-class", "lsrr", "e-sec", "cipso",
+	"satid", "ssrr", "addext", "visa", "imitd", "eip", "finn", "dps",
+	"sdb", "nsapa", "rtralrt", "ump", "ah" };
+static constexpr std::size_t N_KNOWN =
+    sizeof(known_names) / sizeof(known_names[0]);
 
-	for (long i = 0; i < SWEEP; i++) {
-		int pat = (int)(rnd() % 4);
-		std::size_t nlen = rnd_mod(sizeof(name) - 1);
-		fill_name(name, sizeof(name), pat, nlen);
-		if ((rnd() & 15) == 0) {
-			static const char *known[] = { "nop", "rr", "sec-class",
-			    "ah", "bogus" };
-			std::snprintf(name, sizeof(name), "%s",
-			    known[rnd_mod(sizeof(known) / sizeof(known[0]))]);
+static void
+test_getoptbyname(void)
+{
+	std::size_t i;
+	std::size_t j;
+	char buf[NAMEBUF];
+
+	getoptbyname_str("");
+	getoptbyname_str("\x7f");
+	getoptbyname_str("\x80");
+	getoptbyname_str("\xff");
+	getoptbyname_str("\xff\xfe\x80\x81");
+	getoptbyname_str("\x80nop");
+	getoptbyname_str("bogus");
+	getoptbyname_str("secclass");
+	getoptbyname_str("sec-clas");
+	getoptbyname_str("sec-classs");
+	getoptbyname_str("n");
+	getoptbyname_str("no");
+	getoptbyname_str("nopp");
+	getoptbyname_str("op");
+	getoptbyname_str("a");
+	getoptbyname_str("z");
+	getoptbyname_str("zz");
+
+	/* Names that stop early at an embedded NUL. */
+	getoptbyname_case("nop\0rr", 6);
+	getoptbyname_case("\0nop", 4);
+	getoptbyname_case("ah\0\0\0", 5);
+
+	/* Every table name, plus case variants and single-character edits. */
+	for (i = 0; i < N_KNOWN; i++) {
+		std::size_t n = std::strlen(known_names[i]);
+
+		getoptbyname_str(known_names[i]);
+
+		for (j = 0; j < n; j++) {
+			char c = known_names[i][j];
+
+			buf[j] = (c >= 'a' && c <= 'z') ?
+			    (char)(c - 'a' + 'A') : c;
 		}
-		char tag[48];
-		std::snprintf(tag, sizeof(tag), "rnd%ld", i);
-		getoptbyname_case(tag, name, pat);
+		buf[n] = '\0';
+		getoptbyname_str(buf);			/* upper cased */
+
+		for (j = 0; j < n; j++) {
+			char c = known_names[i][j];
+
+			buf[j] = ((j & 1) != 0 && c >= 'a' && c <= 'z') ?
+			    (char)(c - 'a' + 'A') : c;
+		}
+		buf[n] = '\0';
+		getoptbyname_str(buf);			/* mixed case */
+
+		std::memcpy(buf, known_names[i], n);
+		buf[n] = 'x';
+		buf[n + 1] = '\0';
+		getoptbyname_str(buf);			/* one char longer */
+
+		if (n > 0) {
+			std::memcpy(buf, known_names[i], n);
+			buf[n - 1] = '\0';
+			getoptbyname_str(buf);		/* one char shorter */
+		}
+
+		for (j = 0; j < n; j++) {
+			std::memcpy(buf, known_names[i], n + 1);
+			buf[j] = (char)(buf[j] ^ 0x01);
+			getoptbyname_str(buf);		/* one bit flipped */
+			std::memcpy(buf, known_names[i], n + 1);
+			buf[j] = (char)0x80;
+			getoptbyname_str(buf);		/* high-bit byte */
+		}
+	}
+
+	rng_seed(0x6f81a2bce5000160ULL);
+	for (long n = 0; n < SWEEP; n++) {
+		std::uint64_t r = rnd();
+		std::size_t len;
+
+		switch (r % 5) {
+		case 0: {				/* exact, random case */
+			const char *src = known_names[rnd_mod(N_KNOWN)];
+
+			len = std::strlen(src);
+			for (i = 0; i < len; i++) {
+				char c = src[i];
+
+				if ((rnd() & 1) != 0 && c >= 'a' && c <= 'z')
+					c = (char)(c - 'a' + 'A');
+				buf[i] = c;
+			}
+			break;
+		}
+		case 1: {				/* one byte perturbed */
+			const char *src = known_names[rnd_mod(N_KNOWN)];
+
+			len = std::strlen(src);
+			std::memcpy(buf, src, len);
+			buf[rnd_mod(len)] = (char)(rnd() & 0xff);
+			break;
+		}
+		case 2: {				/* length perturbed */
+			const char *src = known_names[rnd_mod(N_KNOWN)];
+
+			len = std::strlen(src);
+			std::memcpy(buf, src, len);
+			if ((rnd() & 1) != 0) {
+				len--;
+			} else {
+				buf[len] = (char)('a' + rnd_mod(26));
+				len++;
+			}
+			break;
+		}
+		case 3: {				/* small alphabet */
+			static const char alpha[] = "abcdeimnoprstuz-";
+
+			len = rnd_mod(12);
+			for (i = 0; i < len; i++)
+				buf[i] = alpha[rnd_mod(sizeof(alpha) - 1)];
+			break;
+		}
+		default:				/* arbitrary bytes */
+			len = rnd_mod(40);
+			for (i = 0; i < len; i++) {
+				unsigned char c;
+
+				do {
+					c = (unsigned char)(rnd() & 0xff);
+				} while (c == 0);
+				buf[i] = (char)c;
+			}
+			break;
+		}
+		buf[len] = '\0';
+		getoptbyname_case(buf, len);
 	}
 }
 
-/* ------------------------------------------------------------------------ */
-/* getoptbyvalue                                                             */
-/* ------------------------------------------------------------------------ */
+/* ---------------------------------------------------------------------- */
+/* getoptbyvalue                                                          */
+/* ---------------------------------------------------------------------- */
 
 static void
-getoptbyvalue_case(const char *tag, int optval)
+getoptbyvalue_case(int optval)
 {
 	P::u_32_t got = P::getoptbyvalue(optval);
 	P::u_32_t ref = ref_getoptbyvalue(optval);
 
 	st_getoptbyvalue.cases++;
-	if (got != ref) {
-		stat_fail(&st_getoptbyvalue, tag, "ret");
-		if (st_getoptbyvalue.reported <= MAX_REPORT) {
-			std::printf("      val=%d port=%u ref=%u\n", optval,
-			    (unsigned)got, (unsigned)ref);
+	if (got != ref)
+		fail(&st_getoptbyvalue, "optval=%d port=%#x ref=%#x", optval,
+		    (unsigned)got, (unsigned)ref);
+}
+
+static void
+test_getoptbyvalue(void)
+{
+	int i;
+
+	/*
+	 * Every on_value in the table plus both neighbours, so the ==
+	 * comparison is driven to true and to false from either side.
+	 */
+	for (i = 0; ref_ionames[i].on_name != nullptr; i++) {
+		getoptbyvalue_case(ref_ionames[i].on_value - 1);
+		getoptbyvalue_case(ref_ionames[i].on_value);
+		getoptbyvalue_case(ref_ionames[i].on_value + 1);
+	}
+
+	/* Exhaustive over the range the table lives in, and past both ends. */
+	for (i = -8; i <= 512; i++)
+		getoptbyvalue_case(i);
+
+	getoptbyvalue_case(INT_MIN);
+	getoptbyvalue_case(INT_MIN + 1);
+	getoptbyvalue_case(INT_MAX - 1);
+	getoptbyvalue_case(INT_MAX);
+	getoptbyvalue_case(0x1000000);
+
+	rng_seed(0x7092b3cdf6100160ULL);
+	for (long n = 0; n < SWEEP; n++) {
+		std::uint64_t r = rnd();
+		int v;
+
+		switch (r & 3) {
+		case 0:
+			v = ref_ionames[rnd_mod((std::size_t)ionames_n)]
+			    .on_value;
+			break;
+		case 1:
+			v = (int)rnd_mod(600) - 32;
+			break;
+		case 2:
+			v = ref_ionames[rnd_mod((std::size_t)ionames_n)]
+			    .on_value + (int)rnd_mod(3) - 1;
+			break;
+		default:
+			v = (int)(std::int32_t)rnd();
+			break;
 		}
+		getoptbyvalue_case(v);
 	}
 }
 
-static void
-test_getoptbyvalue_edges(void)
-{
-	static const int vals[] = {
-	    0, 1, 7, 10, 11, 12, 15, 68, 82, 130, 131, 133, 134, 136, 137,
-	    142, 144, 145, 147, 148, 149, 151, 152, 205, 256, 307, -1, 999,
-	    0x7fffffff, -0x7fffffff, 0x80, 0xff
-	};
-
-	for (std::size_t i = 0; i < sizeof(vals) / sizeof(vals[0]); i++) {
-		char tag[32];
-		std::snprintf(tag, sizeof(tag), "v%zu", i);
-		getoptbyvalue_case(tag, vals[i]);
-	}
-}
-
-static void
-test_getoptbyvalue_sweep(void)
-{
-	for (long i = 0; i < SWEEP; i++) {
-		int val = (int)(std::int32_t)rnd();
-		char tag[48];
-		std::snprintf(tag, sizeof(tag), "rnd%ld", i);
-		getoptbyvalue_case(tag, val);
-	}
-}
-
-/* ------------------------------------------------------------------------ */
+/* ---------------------------------------------------------------------- */
 
 int
 main(void)
 {
-	test_icmpcodes_edges();
-	test_icmpcodes_sweep();
-	test_dupmbt_edges();
-	test_dupmbt_sweep();
-	test_icmptypename_edges();
-	test_icmptypename_sweep();
-	test_getoptbyname_edges();
-	test_getoptbyname_sweep();
-	test_getoptbyvalue_edges();
-	test_getoptbyvalue_sweep();
+	std::size_t i;
+	long cases = 0;
+	long fails = 0;
 
-	std::printf("\n%-16s %8s %8s\n", "function", "cases", "fails");
-	std::printf("%-16s %8ld %8ld\n", st_icmpcodes.name, st_icmpcodes.cases,
-	    st_icmpcodes.fails);
-	std::printf("%-16s %8ld %8ld\n", st_dupmbt.name, st_dupmbt.cases,
-	    st_dupmbt.fails);
-	std::printf("%-16s %8ld %8ld\n", st_icmptypename.name,
-	    st_icmptypename.cases, st_icmptypename.fails);
-	std::printf("%-16s %8ld %8ld\n", st_getoptbyname.name,
-	    st_getoptbyname.cases, st_getoptbyname.fails);
-	std::printf("%-16s %8ld %8ld\n", st_getoptbyvalue.name,
-	    st_getoptbyvalue.cases, st_getoptbyvalue.fails);
+	test_icmpcodes();
+	test_icmptypelist();
+	test_ionames();
+	test_dupmbt();
+	test_icmptypename();
+	test_getoptbyname();
+	test_getoptbyvalue();
 
-	long total_fails = st_icmpcodes.fails + st_dupmbt.fails +
-	    st_icmptypename.fails + st_getoptbyname.fails +
-	    st_getoptbyvalue.fails;
-	return total_fails == 0 ? 0 : 1;
+	std::printf("\n%-16s %10s %10s  %s\n", "entity", "cases", "fails",
+	    "result");
+	for (i = 0; i < sizeof(all_stats) / sizeof(all_stats[0]); i++) {
+		Stat *s = all_stats[i];
+
+		cases += s->cases;
+		fails += s->fails;
+		std::printf("%-16s %10ld %10ld  %s\n", s->name, s->cases,
+		    s->fails, s->fails == 0 ? "ok" : "FAIL");
+	}
+	std::printf("%-16s %10ld %10ld  %s\n", "TOTAL", cases, fails,
+	    fails == 0 ? "PASS" : "FAIL");
+
+	return fails == 0 ? 0 : 1;
 }

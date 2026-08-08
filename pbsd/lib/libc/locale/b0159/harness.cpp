@@ -3,9 +3,6 @@
  */
 
 #include <cstdlib>
-
-import pbsd.lib.libc.locale.b0159;
-
 #include <cerrno>
 #include <climits>
 #include <cstddef>
@@ -13,6 +10,8 @@ import pbsd.lib.libc.locale.b0159;
 #include <cstdio>
 #include <cstring>
 #include <cwchar>
+
+import pbsd.lib.libc.locale.b0159;
 
 namespace P = pbsd::lib_libc_locale::b0159;
 
@@ -209,7 +208,7 @@ report(int f, const char *why)
 {
 	nfail[f]++;
 	if (nprinted[f]++ < 8)
-		::printf("  FAIL %-26s : %s\n", fname[f], why);
+		std::printf("  FAIL %-26s : %s\n", fname[f], why);
 }
 
 static void
@@ -949,6 +948,7 @@ main(void)
 
 	pbsd_oracle_init();
 	pbsd_reset_hooks();
+	__mb_cur_max = 4;
 
 	test_mbsinit(F_NONE_MBSINIT, P::_none_mbsinit, ref__none_mbsinit);
 	edge_none_mbr(F_NONE_MBRTOWC, P::_none_mbrtowc, ref__none_mbrtowc);
@@ -969,6 +969,8 @@ main(void)
 	test_set_thread();
 	test_ctype_load();
 
+	__mb_cur_max = 4;
+
 	sweep_mbr(F_NONE_MBRTOWC, P::_none_mbrtowc, ref__none_mbrtowc, false);
 	sweep_wct(F_NONE_WCRTOMB, P::_none_wcrtomb, ref__none_wcrtomb);
 	sweep_mbs(F_NONE_MBSNRTOWCS, P::_none_mbsnrtowcs, ref__none_mbsnrtowcs);
@@ -983,10 +985,10 @@ main(void)
 
 	sweep_nl();
 
-	::printf("b0159 differential harness\n");
-	::printf("%-28s %12s %12s\n", "function", "cases", "failures");
+	std::printf("b0159 differential harness\n");
+	std::printf("%-28s %12s %12s\n", "function", "cases", "failures");
 	for (int i = 0; i < F_COUNT; i++) {
-		::printf("%-28s %12lld %12lld\n", fname[i], ncase[i],
+		std::printf("%-28s %12lld %12lld\n", fname[i], ncase[i],
 		    nfail[i]);
 		total_fail += nfail[i];
 	}

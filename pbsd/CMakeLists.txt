@@ -13,6 +13,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/echo/b0171/port.cppm
   bin/ed/b0148/port.cppm
   bin/hostname/hostname_m/port.cppm
+  bin/kill/b0177/port.cppm
+  bin/mkdir/b0178/port.cppm
   bin/pax/b0108/port.cppm
   bin/pax/getoldopt_m/port.cppm
   bin/ps/nlist_m/port.cppm
@@ -118,7 +120,6 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0145/port.cppm
   lib/libc/locale/b0147/port.cppm
   lib/libc/locale/b0153/port.cppm
-  lib/libc/locale/b0156/port.cppm
   lib/libc/locale/b0159/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm

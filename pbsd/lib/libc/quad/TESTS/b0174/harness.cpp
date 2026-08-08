@@ -149,28 +149,41 @@ fail_msg(Stat &s, const char *detail)
 
 void
 check_pair(Stat &s, MainFn port_fn, MainFn ref_fn, const char *input,
-    std::size_t input_len)
+    std::size_t input_len, u64 case_count)
 {
 	RunOutcome port = run_in_child(port_fn, input, input_len);
 	RunOutcome ref = run_in_child(ref_fn, input, input_len);
 
-	s.cases++;
+	s.cases += case_count;
 	if (port.output != ref.output || !status_eq(port.wait_status, ref.wait_status))
 		fail_msg(s, "");
 }
 
 void
-check_mul(const char *input)
+check_mul_transcript(const char *input, std::size_t input_len, u64 case_count)
 {
 	check_pair(st_mul, [] { P::mul_main(); }, [] { ref_mul_main(); },
-	    input, std::strlen(input));
+	    input, input_len, case_count);
+}
+
+void
+check_divrem_transcript(const char *input, std::size_t input_len,
+    u64 case_count)
+{
+	check_pair(st_divrem, [] { P::divrem_main(); },
+	    [] { ref_divrem_main(); }, input, input_len, case_count);
+}
+
+void
+check_mul(const char *input)
+{
+	check_mul_transcript(input, std::strlen(input), 1);
 }
 
 void
 check_divrem(const char *input)
 {
-	check_pair(st_divrem, [] { P::divrem_main(); },
-	    [] { ref_divrem_main(); }, input, std::strlen(input));
+	check_divrem_transcript(input, std::strlen(input), 1);
 }
 
 const unsigned long kWords[] = {
@@ -238,7 +251,16 @@ run_hand_cases(void)
 void
 run_random_cases(void)
 {
-	for (long i = 0; i < kRandIters; i++) {
+	std::string mul_batch;
+	std::string div_batch;
+	constexpr int kBatchLines = 250;
+	int batch_lines = 0;
+	long generated = 0;
+
+	mul_batch.reserve(65536);
+	div_batch.reserve(65536);
+
+	while (generated < kRandIters) {
 		unsigned long a0 = kWords[(int)(nextrand() % kNWords)];
 		unsigned long a1 = kWords[(int)(nextrand() % kNWords)];
 		unsigned long b0 = kWords[(int)(nextrand() % kNWords)];
@@ -254,13 +276,24 @@ run_random_cases(void)
 		else
 			fmt_hex(a0, a1, b0, b1, line_buf, sizeof line_buf);
 
-		check_mul(line_buf);
-		check_divrem(line_buf);
+		mul_batch.append(line_buf);
+		div_batch.append(line_buf);
+		generated++;
+		batch_lines++;
 
 		if ((nextrand() & 0xffU) == 0U) {
-			std::strcat(line_buf, "garbage\n");
-			check_mul(line_buf);
-			check_divrem(line_buf);
+			mul_batch.append("garbage\n");
+			div_batch.append("garbage\n");
+		}
+
+		if (batch_lines >= kBatchLines || generated >= kRandIters) {
+			check_mul_transcript(mul_batch.data(), mul_batch.size(),
+			    (u64)batch_lines);
+			check_divrem_transcript(div_batch.data(), div_batch.size(),
+			    (u64)batch_lines);
+			mul_batch.clear();
+			div_batch.clear();
+			batch_lines = 0;
 		}
 	}
 }

@@ -3,6 +3,7 @@
  */
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -287,29 +288,57 @@ bool bufs_eq(const unsigned char *a, const unsigned char *b, size_t n)
 
 struct StderrCap {
 	int pipefd[2];
-	int saved;
+	int saved_stderr;
+	bool active;
 	char buf[65536];
 	size_t len;
 
+	StderrCap() : pipefd{-1, -1}, saved_stderr(-1), active(false), len(0)
+	{
+		buf[0] = '\0';
+	}
+
 	void start(void)
 	{
-		if (pipe(pipefd) != 0)
+		if (active)
+			stop();
+		if (pipe(pipefd) != 0) {
+			pipefd[0] = pipefd[1] = -1;
 			return;
-		saved = dup(STDERR_FILENO);
+		}
+		saved_stderr = dup(STDERR_FILENO);
+		if (saved_stderr < 0) {
+			close(pipefd[0]);
+			close(pipefd[1]);
+			pipefd[0] = pipefd[1] = -1;
+			return;
+		}
 		dup2(pipefd[1], STDERR_FILENO);
+		active = true;
 		len = 0;
 		buf[0] = '\0';
 	}
 
 	void stop(void)
 	{
+		if (!active) {
+			len = 0;
+			buf[0] = '\0';
+			return;
+		}
 		fflush(stderr);
-		dup2(saved, STDERR_FILENO);
-		close(saved);
+		dup2(saved_stderr, STDERR_FILENO);
+		close(saved_stderr);
 		close(pipefd[1]);
-		len = (size_t)read(pipefd[0], buf, sizeof(buf) - 1);
+		ssize_t n = read(pipefd[0], buf, sizeof(buf) - 1);
+		if (n < 0)
+			n = 0;
+		len = (size_t)n;
 		buf[len] = '\0';
 		close(pipefd[0]);
+		active = false;
+		pipefd[0] = pipefd[1] = -1;
+		saved_stderr = -1;
 	}
 };
 
@@ -737,11 +766,11 @@ void check_ovfl_get(pgno_t firstpg, size_t total, int force_null, int smallbuf)
 	size_t nb1 = total < plen ? total : plen;
 	size_t nb2 = total > plen ? total - plen : 0;
 	pgno_t pg2 = firstpg + 1;
-	u_char payload[128];
+	u_char *payload = (u_char *)std::malloc(total > 0 ? total : 1);
 	size_t i;
 
-	for (i = 0; i < total && i < sizeof(payload); i++)
-		payload[i] = (u_char)(0x80 + i);
+	for (i = 0; i < total; i++)
+		payload[i] = (u_char)(0x80 + (i & 0x7f));
 
 	test_mock_reset();
 	test_mock.get_force_null = force_null;
@@ -792,6 +821,7 @@ void check_ovfl_get(pgno_t firstpg, size_t total, int force_null, int smallbuf)
 	}
 	std::free(bp);
 	std::free(br);
+	std::free(payload);
 	std::free(h1p);
 	std::free(h1r);
 	if (nb2) {
@@ -1159,43 +1189,21 @@ void check_bt_search_sprev(int match_prev)
 
 void check_dpage(u_int32_t ptype, int nents)
 {
-	unsigned char pgbuf_p[PAGE_SZ];
-	unsigned char pgbuf_r[PAGE_SZ];
+	unsigned char pgbuf[PAGE_SZ];
 	StderrCap cp;
 	StderrCap cr;
 
-	guard_fill(pgbuf_p, PAGE_SZ);
-	guard_fill(pgbuf_r, PAGE_SZ);
-	((PAGE *)pgbuf_p)->pgno = 7;
-	((PAGE *)pgbuf_r)->pgno = 7;
-	((PAGE *)pgbuf_p)->prevpg = 3;
-	((PAGE *)pgbuf_r)->prevpg = 3;
-	((PAGE *)pgbuf_p)->nextpg = 9;
-	((PAGE *)pgbuf_r)->nextpg = 9;
-	((PAGE *)pgbuf_p)->flags = ptype;
-	((PAGE *)pgbuf_r)->flags = ptype;
+	guard_fill(pgbuf, PAGE_SZ);
 
 	if (ptype == P_BLEAF) {
 		u_int32_t ks[4] = { 3, 4, 5, 6 };
 		u_int32_t ds[4] = { 2, 3, 4, 5 };
 		u_char ef[4] = { 0, P_BIGKEY, 0, P_BIGDATA };
-		build_bleaf_page((PAGE *)pgbuf_p, PAGE_SZ, nents, ks, ds, ef,
+		build_bleaf_page((PAGE *)pgbuf, PAGE_SZ, nents, ks, ds, ef,
 		    nullptr, nullptr);
-		std::memcpy(pgbuf_r, pgbuf_p, PAGE_SZ);
 		for (int i = 0; i < nents; i++) {
-			PAGE *pg_p = (PAGE *)pgbuf_p;
-			PAGE *pg_r = (PAGE *)pgbuf_r;
-			BLEAF *bl = (BLEAF *)((char *)pg_p + pg_p->linp[i]);
-			if (bl->flags & P_BIGKEY) {
-				*(pgno_t *)bl->bytes = (pgno_t)(50 + i);
-				*(u_int32_t *)(bl->bytes + sizeof(pgno_t)) = 8;
-			}
-			if (bl->flags & P_BIGDATA) {
-				char *bd = bl->bytes + bl->ksize;
-				*(pgno_t *)bd = (pgno_t)(60 + i);
-				*(u_int32_t *)(bd + sizeof(pgno_t)) = 8;
-			}
-			bl = (BLEAF *)((char *)pg_r + pg_r->linp[i]);
+			PAGE *pg = (PAGE *)pgbuf;
+			BLEAF *bl = (BLEAF *)((char *)pg + pg->linp[i]);
 			if (bl->flags & P_BIGKEY) {
 				*(pgno_t *)bl->bytes = (pgno_t)(50 + i);
 				*(u_int32_t *)(bl->bytes + sizeof(pgno_t)) = 8;
@@ -1210,48 +1218,39 @@ void check_dpage(u_int32_t ptype, int nents)
 		u_int32_t ks[4] = { 4, 5, 6, 7 };
 		u_char ef[4] = { 0, P_BIGKEY, 0, 0 };
 		pgno_t pgs[4] = { 20, 21, 22, 23 };
-		build_binternal_page((PAGE *)pgbuf_p, PAGE_SZ, nents, ks, ef, pgs,
+		build_binternal_page((PAGE *)pgbuf, PAGE_SZ, nents, ks, ef, pgs,
 		    nullptr);
-		std::memcpy(pgbuf_r, pgbuf_p, PAGE_SZ);
 	} else if (ptype == P_RINTERNAL) {
 		recno_t nr[4] = { 10, 20, 30, 40 };
 		pgno_t pgs[4] = { 30, 31, 32, 33 };
-		build_rinternal_page((PAGE *)pgbuf_p, PAGE_SZ, nents, nr, pgs);
-		std::memcpy(pgbuf_r, pgbuf_p, PAGE_SZ);
+		build_rinternal_page((PAGE *)pgbuf, PAGE_SZ, nents, nr, pgs);
 	} else if (ptype == P_RLEAF) {
 		u_int32_t ds[4] = { 5, 6, 7, 8 };
 		u_char ef[4] = { 0, P_BIGDATA, 0, 0 };
-		build_rleaf_page((PAGE *)pgbuf_p, PAGE_SZ, nents, ds, ef);
-		std::memcpy(pgbuf_r, pgbuf_p, PAGE_SZ);
+		build_rleaf_page((PAGE *)pgbuf, PAGE_SZ, nents, ds, ef);
 		for (int i = 0; i < nents; i++) {
-			PAGE *pg_p = (PAGE *)pgbuf_p;
-			PAGE *pg_r = (PAGE *)pgbuf_r;
-			RLEAF *rl = (RLEAF *)((char *)pg_p + pg_p->linp[i]);
-			if (rl->flags & P_BIGDATA) {
-				*(pgno_t *)rl->bytes = (pgno_t)(70 + i);
-				*(u_int32_t *)(rl->bytes + sizeof(pgno_t)) = 8;
-			}
-			rl = (RLEAF *)((char *)pg_r + pg_r->linp[i]);
+			PAGE *pg = (PAGE *)pgbuf;
+			RLEAF *rl = (RLEAF *)((char *)pg + pg->linp[i]);
 			if (rl->flags & P_BIGDATA) {
 				*(pgno_t *)rl->bytes = (pgno_t)(70 + i);
 				*(u_int32_t *)(rl->bytes + sizeof(pgno_t)) = 8;
 			}
 		}
 	} else if (ptype == P_OVERFLOW) {
-		((PAGE *)pgbuf_p)->flags = P_OVERFLOW;
-		((PAGE *)pgbuf_r)->flags = P_OVERFLOW;
+		((PAGE *)pgbuf)->flags = P_OVERFLOW;
 	}
+	((PAGE *)pgbuf)->pgno = 7;
+	((PAGE *)pgbuf)->prevpg = 3;
+	((PAGE *)pgbuf)->nextpg = 9;
+	if (ptype != P_OVERFLOW)
+		((PAGE *)pgbuf)->flags = ptype;
 
 	cp.start();
-	P::__bt_dpage((P::PAGE *)pgbuf_p);
+	P::__bt_dpage((P::PAGE *)pgbuf);
 	cp.stop();
 	cr.start();
-	ref___bt_dpage((PAGE *)pgbuf_r);
+	ref___bt_dpage((PAGE *)pgbuf);
 	cr.stop();
-	if (std::strcmp(cp.buf, cr.buf) != 0) {
-		std::fprintf(stderr, "DPAGE DIFF ptype=0x%x nents=%d\nPORT(%zu):\n%s\nREF(%zu):\n%s\n",
-		    ptype, nents, cp.len, cp.buf, cr.len, cr.buf);
-	}
 	check_eq(F_BT_DPAGE, std::strcmp(cp.buf, cr.buf) == 0, "stderr output");
 }
 
@@ -1529,13 +1528,15 @@ void test_random_sweep(void)
 		case 1:
 			check_defpfx(abuf, asz, bbuf, bsz);
 			break;
-		case 2:
+		case 2: {
+			int nents = (int)(nextr() % 6u) + 2;
+			indx_t idx = (indx_t)(nextr() % (unsigned)nents);
 			for (size_t j = 0; j < sizeof(key); j++)
 				key[j] = rnd_byte();
-			check_bt_cmp_leaf((int)(nextr() % 6u) + 2,
-			    (indx_t)(nextr() % 6u), key,
+			check_bt_cmp_leaf(nents, idx, key,
 			    (size_t)(nextr() % 9u) + 1, 0);
 			break;
+		}
 		case 3:
 			check_bt_cmp_bigkey(abuf, asz > 0 ? asz : 1);
 			break;
