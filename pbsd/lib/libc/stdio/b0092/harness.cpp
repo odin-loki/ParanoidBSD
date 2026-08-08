@@ -397,12 +397,13 @@ run_setlinebuf_random(void)
 }
 
 int saved_stdin = -1;
+char stdin_tmp_path[] = "/tmp/pbsd_b0092_stdin_XXXXXX";
 
 bool
 push_stdin_wide(const wchar_t *ws, std::size_t n)
 {
-	int pfd[2];
-	if (pipe(pfd) != 0)
+	int fd = mkstemp(stdin_tmp_path);
+	if (fd < 0)
 		return false;
 
 	if (n > 0) {
@@ -411,21 +412,24 @@ push_stdin_wide(const wchar_t *ws, std::size_t n)
 		std::size_t nbytes = n * sizeof(wchar_t);
 		std::size_t off = 0;
 		while (off < nbytes) {
-			ssize_t w = write(pfd[1], bp + off, nbytes - off);
+			ssize_t w = write(fd, bp + off, nbytes - off);
 			if (w <= 0) {
-				close(pfd[0]);
-				close(pfd[1]);
+				close(fd);
+				unlink(stdin_tmp_path);
 				return false;
 			}
 			off += (std::size_t)w;
 		}
 	}
-	close(pfd[1]);
+	close(fd);
 
 	if (saved_stdin < 0)
 		saved_stdin = dup(STDIN_FILENO);
-	dup2(pfd[0], STDIN_FILENO);
-	close(pfd[0]);
+	if (freopen(stdin_tmp_path, "r", stdin) == nullptr) {
+		unlink(stdin_tmp_path);
+		return false;
+	}
+	unlink(stdin_tmp_path);
 	clearerr(stdin);
 	fwide(stdin, 1);
 	return true;

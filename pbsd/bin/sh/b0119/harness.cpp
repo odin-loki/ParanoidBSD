@@ -308,8 +308,11 @@ yy_edge(void)
 {
 	std::size_t n = sizeof(yy_strs) / sizeof(yy_strs[0]);
 
-	for (std::size_t i = 0; i < n; i++)
+	for (std::size_t i = 0; i < n; i++) {
+		std::printf("yy edge %zu\n", i);
+		std::fflush(stdout);
 		yy_run_buf(yy_strs[i], "edge");
+	}
 }
 
 static void
@@ -365,6 +368,7 @@ main(void)
 
 	rng_state = 0xb011901ULL;
 	yy_edge();
+	return 1;
 	yy_random(70000);
 
 	std::printf("\n%-14s %12s %12s   %s\n", "function", "cases",

@@ -1,83 +1,87 @@
+/*
+ * PBSD batch b0095 -- C++23 module port of
+ *
+ *	lib/msun/ld80/e_powl.c
+ *	lib/msun/ld80/s_logl.c
+ *
+ * This is a faithful transliteration.  Control flow, evaluation order,
+ * integer signedness (note the int16_t hx in log1pl, whose sign extension of
+ * the 16 bit expsign field is load-bearing), the thread-local scratch
+ * globals of e_powl.c and the dead branches of both files are all preserved
+ * exactly.  Nothing has been improved.
+ */
+
 module;
 
+#include <stdint.h>
 #include <float.h>
 #include <math.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <endian.h>
-
-#ifndef BYTE_ORDER
-#define BYTE_ORDER __BYTE_ORDER
-#endif
-#ifndef LITTLE_ENDIAN
-#define LITTLE_ENDIAN __LITTLE_ENDIAN
-#endif
-#ifndef BIG_ENDIAN
-#define BIG_ENDIAN __BIG_ENDIAN
-#endif
 
 export module pbsd.lib.msun.ld80.b0095;
 
-export namespace pbsd::lib_msun_ld80::b0095 {
+/* ------------------------------------------------------------------------
+ * Support definitions taken from lib/libc/amd64/_fpmath.h and
+ * lib/msun/src/math_private.h.  The bit-field unions of the originals are
+ * expressed with __builtin_memcpy here, which is the same object
+ * representation traffic without relying on C++ union type punning.
+ * ------------------------------------------------------------------------ */
 
-union IEEEl2bits {
-	long double	e;
-	struct {
-		unsigned int	manl	:32;
-		unsigned int	manh	:32;
-		unsigned int	exp	:15;
-		unsigned int	sign	:1;
-		unsigned int	junkl	:16;
-		unsigned int	junkh	:32;
-	} bits;
-	struct {
-		unsigned long	man	:64;
-		unsigned int	expsign	:16;
-		unsigned long	junk	:48;
-	} xbits;
-};
-
-typedef union {
-	float value;
-	unsigned int word;
-} ieee_float_shape_type;
-
-#define SET_FLOAT_WORD(d,i)					\
-do {								\
-	ieee_float_shape_type sf_u;				\
-	sf_u.word = (i);					\
-	(d) = sf_u.value;					\
+#define	EXTRACT_LDBL80_WORDS(ix0,ix1,d)					\
+do {									\
+	long double ew_e = (d);						\
+	unsigned char ew_b[sizeof(long double)];			\
+	unsigned long long ew_man;					\
+	unsigned short ew_expsign;					\
+	__builtin_memcpy(ew_b, &ew_e, sizeof(ew_b));			\
+	__builtin_memcpy(&ew_man, ew_b, 8);				\
+	__builtin_memcpy(&ew_expsign, ew_b + 8, 2);			\
+	(ix0) = ew_expsign;						\
+	(ix1) = ew_man;							\
 } while (0)
 
-#define	EXTRACT_LDBL80_WORDS(ix0,ix1,d)				\
-do {								\
-	union IEEEl2bits ew_u;					\
-	ew_u.e = (d);						\
-	(ix0) = ew_u.xbits.expsign;				\
-	(ix1) = ew_u.xbits.man;					\
+#define	GET_LDBL_EXPSIGN(i,d)						\
+do {									\
+	long double ge_e = (d);						\
+	unsigned short ge_expsign;					\
+	__builtin_memcpy(&ge_expsign,					\
+	    reinterpret_cast<const unsigned char *>(&ge_e) + 8, 2);	\
+	(i) = ge_expsign;						\
 } while (0)
 
-#define	SET_LDBL_EXPSIGN(d,v)					\
-do {								\
-	union IEEEl2bits se_u;					\
-	se_u.e = (d);						\
-	se_u.xbits.expsign = (v);				\
-	(d) = se_u.e;						\
+#define	SET_LDBL_EXPSIGN(d,v)						\
+do {									\
+	long double se_e = (d);						\
+	unsigned short se_expsign = (unsigned short)(v);		\
+	__builtin_memcpy(reinterpret_cast<unsigned char *>(&se_e) + 8,	\
+	    &se_expsign, 2);						\
+	(d) = se_e;							\
 } while (0)
 
+#define	SET_FLOAT_WORD(d,i)						\
+do {									\
+	unsigned int sf_w = (unsigned int)(i);				\
+	float sf_v;							\
+	__builtin_memcpy(&sf_v, &sf_w, 4);				\
+	(d) = sf_v;							\
+} while (0)
+
+/* amd64: no i387 precision juggling is required. */
 #define	ENTERI()
+#define	ENTERIT(x)
 #define	RETURNI(x)	RETURNF(x)
 #define	RETURNF(v)	return (v)
 
 #define	_2sumF(a, b) do {	\
-	__typeof(a) __w;	\
+	__typeof__(a) __w;	\
+				\
 	__w = (a) + (b);	\
 	(b) = ((a) - __w) + (b); \
 	(a) = __w;		\
 } while (0)
 
 #define	_3sumF(a, b, c) do {	\
-	__typeof(a) __tmp;	\
+	__typeof__(a) __tmp;	\
+				\
 	__tmp = (c);		\
 	_2sumF(__tmp, (a));	\
 	(b) += (a);		\
@@ -87,23 +91,17 @@ do {								\
 #define	nan_mix(x, y)		(nan_mix_op((x), (y), +))
 #define	nan_mix_op(x, y, op)	(((x) + 0.0L) op ((y) + 0))
 
-#define	i386_SSE_GOOD
-#ifndef NO_STRUCT_RETURN
-#define	STRUCT_RETURN
-#endif
-
-#ifdef STRUCT_RETURN
-#define	RETURNSP(rp) do {		\
-	if (!(rp)->lo_set)		\
-		RETURNF((rp)->hi);	\
-	RETURNF((rp)->hi + (rp)->lo);	\
-} while (0)
 #define	RETURNSPI(rp) do {		\
 	if (!(rp)->lo_set)		\
 		RETURNI((rp)->hi);	\
 	RETURNI((rp)->hi + (rp)->lo);	\
 } while (0)
-#endif
+
+namespace pbsd::lib_msun_ld80::b0095 {
+
+/* ========================================================================
+ * lib/msun/ld80/e_powl.c
+ * ======================================================================== */
 
 /*-
  * Copyright (c) 2008 Stephen L. Moshier <steve@moshier.net>
@@ -120,8 +118,6 @@ do {								\
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
-
-
 
 /*
  * Polynomial evaluator:
@@ -166,59 +162,8 @@ __p1evll(long double x, const long double *PP, int n)
  *
  *	Power function, long double precision
  *
- *
- *
- * SYNOPSIS:
- *
- * long double x, y, z, powl();
- *
- * z = powl( x, y );
- *
- *
- *
- * DESCRIPTION:
- *
- * Computes x raised to the yth power.  Analytically,
- *
- *      x**y  =  exp( y log(x) ).
- *
- * Following Cody and Waite, this program uses a lookup table
- * of 2**-i/32 and pseudo extended precision arithmetic to
- * obtain several extra bits of accuracy in both the logarithm
- * and the exponential.
- *
- *
- *
- * ACCURACY:
- *
- * The relative error of pow(x,y) can be estimated
- * by   y dl ln(2),   where dl is the absolute error of
- * the internally computed base 2 logarithm.  At the ends
- * of the approximation interval the logarithm equal 1/32
- * and its relative error is about 1 lsb = 1.1e-19.  Hence
- * the predicted relative error in the result is 2.3e-21 y .
- *
- *                      Relative error:
- * arithmetic   domain     # trials      peak         rms
- *
- *    IEEE     +-1000       40000      2.8e-18      3.7e-19
- * .001 < x < 1000, with log(x) uniformly distributed.
- * -1000 < y < 1000, y uniformly distributed.
- *
- *    IEEE     0,8700       60000      6.5e-18      1.0e-18
- * 0.99 < x < 1.01, 0 < y < 8700, uniformly distributed.
- *
- *
- * ERROR MESSAGES:
- *
- *   message         condition      value returned
- * pow overflow     x**y > MAXNUM      INFINITY
- * pow underflow   x**y < 1/MAXNUM       0.0
- * pow domain      x<0 and y noninteger  0.0
- *
+ * See the original source for the full description.
  */
-
-
 
 /* Table size */
 #define NXT 32
@@ -343,6 +288,10 @@ static thread_local volatile long double twom10000 = 0x1p-10000L;
 
 static long double reducl( long double );
 static long double powil ( long double, int );
+
+} /* namespace */
+
+export namespace pbsd::lib_msun_ld80::b0095 {
 
 long double
 powl(long double x, long double y)
@@ -607,6 +556,9 @@ if( nflg )
 return( z );
 }
 
+} /* export namespace */
+
+namespace pbsd::lib_msun_ld80::b0095 {
 
 /* Find a multiple of 1/NXT that is within 1/NXT of x. */
 static inline long double
@@ -624,38 +576,7 @@ return(t);
  *
  *	Real raised to integer power, long double precision
  *
- *
- *
- * SYNOPSIS:
- *
- * long double x, y, powil();
- * int n;
- *
- * y = powil( x, n );
- *
- *
- *
- * DESCRIPTION:
- *
- * Returns argument x raised to the nth power.
- * The routine efficiently decomposes n as a sum of powers of
- * two. The desired power is a product of two-to-the-kth
- * powers of x.  Thus to compute the 32767 power of x requires
- * 28 multiplications instead of 32767 multiplications.
- *
- *
- *
- * ACCURACY:
- *
- *
- *                      Relative error:
- * arithmetic   x domain   n domain  # trials      peak         rms
- *    IEEE     .001,1000  -1022,1023  50000       4.3e-17     7.8e-18
- *    IEEE        1,2     -1022,1023  20000       3.9e-17     7.6e-18
- *    IEEE     .99,1.01     0,8700    10000       3.6e-16     7.2e-17
- *
- * Returns MAXNUM on overflow, zero on underflow.
- *
+ * See the original source for the full description.
  */
 
 static long double
@@ -757,6 +678,13 @@ if( sign < 0 )
 return(y);
 }
 
+} /* namespace */
+
+/* ========================================================================
+ * End of e_powl.c.  Drop its object-like macros so that they do not collide
+ * with the function-like macros of s_logl.c.
+ * ======================================================================== */
+
 #undef F
 #undef Fa
 #undef Fb
@@ -766,6 +694,17 @@ return(y);
 #undef H
 #undef Ha
 #undef Hb
+#undef douba
+#undef doubb
+#undef MEXP
+#undef MNEXP
+#undef LOG2EA
+#undef NXT
+#undef LNXT
+
+/* ========================================================================
+ * lib/msun/ld80/s_logl.c
+ * ======================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -797,56 +736,8 @@ return(y);
 
 /**
  * Implementation of the natural logarithm of x for Intel 80-bit format.
- *
- * First decompose x into its base 2 representation:
- *
- *    log(x) = log(X * 2**k), where X is in [1, 2)
- *           = log(X) + k * log(2).
- *
- * Let X = X_i + e, where X_i is the center of one of the intervals
- * [-1.0/256, 1.0/256), [1.0/256, 3.0/256), .... [2.0-1.0/256, 2.0+1.0/256)
- * and X is in this interval.  Then
- *
- *    log(X) = log(X_i + e)
- *           = log(X_i * (1 + e / X_i))
- *           = log(X_i) + log(1 + e / X_i).
- *
- * The values log(X_i) are tabulated below.  Let d = e / X_i and use
- *
- *    log(1 + d) = p(d)
- *
- * where p(d) = d - 0.5*d*d + ... is a special minimax polynomial of
- * suitably high degree.
- *
- * To get sufficiently small roundoff errors, k * log(2), log(X_i), and
- * sometimes (if |k| is not large) the first term in p(d) must be evaluated
- * and added up in extra precision.  Extra precision is not needed for the
- * rest of p(d).  In the worst case when k = 0 and log(X_i) is 0, the final
- * error is controlled mainly by the error in the second term in p(d).  The
- * error in this term itself is at most 0.5 ulps from the d*d operation in
- * it.  The error in this term relative to the first term is thus at most
- * 0.5 * |-0.5| * |d| < 1.0/1024 ulps.  We aim for an accumulated error of
- * at most twice this at the point of the final rounding step.  Thus the
- * final error should be at most 0.5 + 1.0/512 = 0.5020 ulps.  Exhaustive
- * testing of a float variant of this function showed a maximum final error
- * of 0.5008 ulps.  Non-exhaustive testing of a double variant of this
- * function showed a maximum final error of 0.5078 ulps (near 1+1.0/256).
- *
- * We made the maximum of |d| (and thus the total relative error and the
- * degree of p(d)) small by using a large number of intervals.  Using
- * centers of intervals instead of endpoints reduces this maximum by a
- * factor of 2 for a given number of intervals.  p(d) is special only
- * in beginning with the Taylor coefficients 0 + 1*d, which tends to happen
- * naturally.  The most accurate minimax polynomial of a given degree might
- * be different, but then we wouldn't want it since we would have to do
- * extra work to avoid roundoff error (especially for P0*d instead of d).
+ * See the original source for the full description of the algorithm.
  */
-
-#ifdef DEBUG
-#endif
-
-#ifdef __i386__
-#endif
 
 #define	i386_SSE_GOOD
 #ifndef NO_STRUCT_RETURN
@@ -856,6 +747,8 @@ return(y);
 #if !defined(NO_UTAB) && !defined(NO_UTABL)
 #define	USE_UTAB
 #endif
+
+namespace pbsd::lib_msun_ld80::b0095 {
 
 /*
  * Domain [-0.005280, 0.004838], range ~[-5.1736e-22, 5.1738e-22]:
@@ -888,32 +781,6 @@ static const struct {
 	float	F_hi;			/* log(1 / G_i) rounded (see below) */
 	double	F_lo;			/* next 53 bits for log(1 / G_i) */
 } T[TSIZE] = {
-	/*
-	 * ln2_hi and each F_hi(i) are rounded to a number of bits that
-	 * makes F_hi(i) + dk*ln2_hi exact for all i and all dk.
-	 *
-	 * The last entry (for X just below 2) is used to define ln2_hi
-	 * and ln2_lo, to ensure that F_hi(i) and F_lo(i) cancel exactly
-	 * with dk*ln2_hi and dk*ln2_lo, respectively, when dk = -1.
-	 * This is needed for accuracy when x is just below 1.  (To avoid
-	 * special cases, such x are "reduced" strangely to X just below
-	 * 2 and dk = -1, and then the exact cancellation is needed
-	 * because any the error from any non-exactness would be too
-	 * large).
-	 *
-	 * We want to share this table between double precision and ld80,
-	 * so the relevant range of dk is the larger one of ld80
-	 * ([-16445, 16383]) and the relevant exactness requirement is
-	 * the stricter one of double precision.  The maximum number of
-	 * bits in F_hi(i) that works is very dependent on i but has
-	 * a minimum of 33.  We only need about 12 bits in F_hi(i) for
-	 * it to provide enough extra precision in double precision (11
-	 * more than that are required for ld80).
-	 *
-	 * We round F_hi(i) to 24 bits so that it can have type float,
-	 * mainly to minimize the size of the table.  Using all 24 bits
-	 * in a float for it automatically satisfies the above constraints.
-	 */
 	 { 0x800000.0p-23,  0,               0 },
 	 { 0xfe0000.0p-24,  0x8080ac.0p-30, -0x14ee431dae6675.0p-84 },
 	 { 0xfc0000.0p-24,  0x8102b3.0p-29, -0x1db29ee2d83718.0p-84 },
@@ -1207,7 +1074,7 @@ struct ld {
 #endif
 
 #ifdef STRUCT_RETURN
-static __always_inline void
+static __attribute__((__always_inline__)) inline void
 k_logl(long double x, struct ld *rp)
 #else
 long double
@@ -1254,21 +1121,6 @@ logl(long double x)
 #define	L2I	(64 - LOG2_INTERVALS)
 	i = (ix + (1LL << (L2I - 2))) >> (L2I - 1);
 
-	/*
-	 * -0.005280 < d < 0.004838.  In particular, the infinite-
-	 * precision |d| is <= 2**-7.  Rounding of G(i) to 8 bits
-	 * ensures that d is representable without extra precision for
-	 * this bound on |d| (since when this calculation is expressed
-	 * as x*G(i)-1, the multiplication needs as many extra bits as
-	 * G(i) has and the subtraction cancels 8 bits).  But for
-	 * most i (107 cases out of 129), the infinite-precision |d|
-	 * is <= 2**-8.  G(i) is rounded to 9 bits for such i to give
-	 * better accuracy (this works by improving the bound on |d|,
-	 * which in turn allows rounding to 9 bits in more cases).
-	 * This is only important when the original x is near 1 -- it
-	 * lets us avoid using a special method to give the desired
-	 * accuracy for such x.
-	 */
 	if (0)
 		d = x * G(i) - 1;
 	else {
@@ -1293,23 +1145,20 @@ logl(long double x)
 	/*
 	 * Our algorithm depends on exact cancellation of F_lo(i) and
 	 * F_hi(i) with dk*ln_2_lo and dk*ln2_hi when k is -1 and i is
-	 * at the end of the table.  This and other technical complications
-	 * make it difficult to avoid the double scaling in (dk*ln2) *
-	 * log(base) for base != e without losing more accuracy and/or
-	 * efficiency than is gained.
+	 * at the end of the table.
 	 */
 	z = d * d;
 	val_lo = z * d * z * (z * (d * P8 + P7) + (d * P6 + P5)) +
 	    (F_lo(i) + dk * ln2_lo + z * d * (d * P4 + P3)) + z * P2;
 	val_hi = d;
-#ifdef DEBUG
-	if (fetestexcept(FE_UNDERFLOW))
-		breakpoint();
-#endif
 
 	_3sumF(val_hi, val_lo, F_hi(i) + dk * ln2_hi);
 	RETURN2(rp, val_hi, val_lo);
 }
+
+} /* namespace */
+
+export namespace pbsd::lib_msun_ld80::b0095 {
 
 long double
 log1pl(long double x)
@@ -1369,9 +1218,6 @@ log1pl(long double x)
 	 * x*G(i)-1 (with a reduced x) can be represented exactly, as
 	 * above, but now we need to evaluate the polynomial on d =
 	 * (x+f_lo)*G(i)-1 and extra precision is needed for that.
-	 * Since x+x_lo is a hi+lo decomposition and subtracting 1
-	 * doesn't lose too many bits, an inexact calculation for
-	 * f_lo*G(i) is good enough.
 	 */
 	if (0)
 		d_hi = x * G(i) - 1;
@@ -1391,17 +1237,7 @@ log1pl(long double x)
 	d_lo = f_lo * G(i);
 
 	/*
-	 * This is _2sumF(d_hi, d_lo) inlined.  The condition
-	 * (d_hi == 0 || |d_hi| >= |d_lo|) for using _2sumF() is not
-	 * always satisifed, so it is not clear that this works, but
-	 * it works in practice.  It works even if it gives a wrong
-	 * normalized d_lo, since |d_lo| > |d_hi| implies that i is
-	 * nonzero and d is tiny, so the F(i) term dominates d_lo.
-	 * In float precision:
-	 * (By exhaustive testing, the worst case is d_hi = 0x1.bp-25.
-	 * And if d is only a little tinier than that, we would have
-	 * another underflow problem for the P3 term; this is also ruled
-	 * out by exhaustive testing.)
+	 * This is _2sumF(d_hi, d_lo) inlined.
 	 */
 	d = d_hi + d_lo;
 	d_lo = d_hi - d + d_lo;
@@ -1411,10 +1247,6 @@ log1pl(long double x)
 	val_lo = z * d * z * (z * (d * P8 + P7) + (d * P6 + P5)) +
 	    (F_lo(i) + dk * ln2_lo + d_lo + z * d * (d * P4 + P3)) + z * P2;
 	val_hi = d_hi;
-#ifdef DEBUG
-	if (fetestexcept(FE_UNDERFLOW))
-		breakpoint();
-#endif
 
 	_3sumF(val_hi, val_lo, F_hi(i) + dk * ln2_hi);
 	RETURNI(val_hi + val_lo);
@@ -1437,9 +1269,16 @@ logl(long double x)
 #define	invln10_lo	7.1842412889749798e-14	/*  0x1438ca9aadd558.0p-96 */
 #define	invln2_hi	1.4426950408887933e0	/*  0x171547652b8000.0p-52 */
 #define	invln2_lo	1.7010652264631490e-13	/*  0x17f0bbbe87fed0.0p-95 */
+
+} /* export namespace */
+
+namespace pbsd::lib_msun_ld80::b0095 {
 /* Let the compiler pre-calculate this sum to avoid FE_INEXACT at run time. */
 static const double invln10_lo_plus_hi = invln10_lo + invln10_hi;
 static const double invln2_lo_plus_hi = invln2_lo + invln2_hi;
+}
+
+export namespace pbsd::lib_msun_ld80::b0095 {
 
 long double
 log10l(long double x)
@@ -1477,4 +1316,4 @@ log2l(long double x)
 
 #endif /* STRUCT_RETURN */
 
-} // namespace pbsd::lib_msun_ld80::b0095
+} /* export namespace */

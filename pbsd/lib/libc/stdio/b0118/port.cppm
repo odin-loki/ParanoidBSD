@@ -118,9 +118,9 @@ extern "C" struct xlocale_ctype *b0118_get_ctype(void);
 #define	FUNLOCKFILE_CANCELSAFE()	do { } while (0)
 
 extern "C" {
-int		__srefill(::FILE *);
-int		__sfvwrite(::FILE *, struct __suio *);
-::FILE		*__sfp(void);
+int		__srefill(void *);
+int		__sfvwrite(void *, struct __suio *);
+void		*__sfp(void);
 int		__sflags(const char *, int *);
 int		_fcntl(int, int, ...);
 int		__sread(void *, char *, int);
@@ -128,6 +128,7 @@ int		__swrite(void *, const char *, int);
 long		__sseek(void *, long, int);
 int		__sclose(void *);
 void		*__get_locale(void);
+struct xlocale_ctype *b0118_get_ctype(void);
 }
 
 namespace detail {
@@ -199,7 +200,7 @@ fgets(char * __restrict buf, int n, FILE * __restrict fp)
 		 * If the buffer is empty, refill it.
 		 */
 		if ((len = fp->_r) <= 0) {
-			if (__srefill(reinterpret_cast<::FILE *>(fp))) {
+			if (__srefill(fp)) {
 				/* EOF/error: stop with partial or no line */
 				if (!__sfeof(fp) || s == buf) {
 					ret = NULL;
@@ -316,7 +317,7 @@ fwrite_unlocked(const void * __restrict buf, size_t size, size_t count,
 	 * skip the divide if this happens, since divides are
 	 * generally slow and since this occurs whenever size==0.
 	 */
-	if (__sfvwrite(reinterpret_cast<::FILE *>(fp), &uio) != 0)
+	if (__sfvwrite(fp, &uio) != 0)
 	    count = (n - uio.uio_resid) / size;
 	return (count);
 }
@@ -390,7 +391,7 @@ fgetws_l(wchar_t * __restrict ws, int n, FILE * __restrict fp, locale_t locale)
 	if (n == 1)
 		goto ok;
 
-	if (fp->_r <= 0 && __srefill(reinterpret_cast<::FILE *>(fp)))
+	if (fp->_r <= 0 && __srefill(fp))
 		/* EOF or ferror */
 		goto error;
 
@@ -422,7 +423,7 @@ fgetws_l(wchar_t * __restrict ws, int n, FILE * __restrict fp, locale_t locale)
 		n -= nconv;
 		wsp += nconv;
 	} while ((wsp == ws || wsp[-1] != L'\n') && n > 1 && (fp->_r > 0 ||
-	    (sret = __srefill(reinterpret_cast<::FILE *>(fp))) == 0));
+	    (sret = __srefill(fp)) == 0));
 	if (sret && !__sfeof(fp))
 		/* ferror */
 		goto error;
@@ -518,7 +519,7 @@ fdopen(int fd, const char *mode)
 		return (NULL);
 	}
 
-	if ((fp = reinterpret_cast<FILE *>(__sfp())) == NULL)
+	if ((fp = (FILE *)__sfp()) == NULL)
 		return (NULL);
 
 	if ((oflags & O_CLOEXEC) != 0) {

@@ -1,0 +1,12 @@
+{
+  "batch": "b0125",
+  "verified": "2026-08-08T11:40:44Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                        cases     failures  result\n--------------------------------------------------------------------\n__cpuset_alloc                 200041            0  ok\n__cpuset_free                  200007            0  ok\nclock_getcpuclockid            200017            0  ok\n--------------------------------------------------------------------\nTOTAL                          600065            0  ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/cpuset_free.c": "5650f5b0fa6458d8",
+    "hbsd/src/lib/libc/gen/cpuset_alloc.c": "afa38ecd179588f3",
+    "hbsd/src/lib/libc/gen/clock_getcpuclockid.c": "8cf8047145cd2b92"
+  }
+}

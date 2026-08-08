@@ -286,6 +286,58 @@ setup_write(WriteCoreR &r, WriteCoreP &p, std::size_t max_write, int fail)
 }
 
 bool
+read_core_eq(const ReadCoreR &r, const ReadCoreP &p)
+{
+	if (std::memcmp(&r.fp, &p.fp, sizeof(r.fp)) != 0)
+		return false;
+	if (r.stream.pos != p.stream.pos)
+		return false;
+	if (r.stream.len != p.stream.len)
+		return false;
+	if (r.stream.err_on_refill != p.stream.err_on_refill)
+		return false;
+	if (std::memcmp(r.pre, p.pre, sizeof(r.pre)) != 0)
+		return false;
+	if (std::memcmp(r.post, p.post, sizeof(p.post)) != 0)
+		return false;
+	if (std::memcmp(r.iobuf, p.iobuf, sizeof(r.iobuf)) != 0)
+		return false;
+	return true;
+}
+
+bool
+write_core_eq(const WriteCoreR &r, const WriteCoreP &p)
+{
+	if (std::memcmp(&r.fp, &p.fp, sizeof(r.fp)) != 0)
+		return false;
+	if (r.wctx.out_len != p.wctx.out_len)
+		return false;
+	if (r.wctx.max_write != p.wctx.max_write)
+		return false;
+	if (r.wctx.fail != p.wctx.fail)
+		return false;
+	if (std::memcmp(r.pre, p.pre, sizeof(r.pre)) != 0)
+		return false;
+	if (std::memcmp(r.post, p.post, sizeof(p.post)) != 0)
+		return false;
+	if (std::memcmp(r.outbuf, p.outbuf, sizeof(r.outbuf)) != 0)
+		return false;
+	return true;
+}
+
+bool
+fd_core_eq(const FdCoreR &r, const FdCoreP &p)
+{
+	if (std::memcmp(&r.fp, &p.fp, sizeof(r.fp)) != 0)
+		return false;
+	if (std::memcmp(r.pre, p.pre, sizeof(r.pre)) != 0)
+		return false;
+	if (std::memcmp(r.post, p.post, sizeof(p.post)) != 0)
+		return false;
+	return true;
+}
+
+bool
 test_fgets_one(StatId which, const char *label, const unsigned char *data,
     std::size_t len, std::size_t preload, int n, int err_on_refill)
 {
@@ -316,7 +368,7 @@ test_fgets_one(StatId which, const char *label, const unsigned char *data,
 
 	if (std::memcmp(&rb, &pb, sizeof(rb)) != 0)
 		ok = false;
-	if (std::memcmp(&rc, &pc, sizeof(rc)) != 0)
+	if (!read_core_eq(rc, pc))
 		ok = false;
 
 	if (!ok)
@@ -401,7 +453,7 @@ test_fgetws_one(StatId which, const char *label, const unsigned char *data,
 
 	if (std::memcmp(&rb, &pb, sizeof(rb)) != 0)
 		ok = false;
-	if (std::memcmp(&rc, &pc, sizeof(rc)) != 0)
+	if (!read_core_eq(rc, pc))
 		ok = false;
 
 	if (!ok)

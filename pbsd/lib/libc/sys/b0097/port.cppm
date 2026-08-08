@@ -139,16 +139,6 @@ module;
 #define	__weak_symbol	__attribute__((__weak__))
 #endif
 
-/*
- * struct __wrusage is supplied by FreeBSD's <sys/wait.h>; it is not declared by
- * the host libc, so it is declared here, in the global module fragment, where
- * the header would have declared it.  Only its size matters to wait6(), which
- * merely forwards the pointer.
- */
-struct __wrusage {
-	unsigned char	opaque[128];
-};
-
 export module pbsd.lib.libc.sys.b0097;
 
 namespace pbsd::lib_libc_sys::b0097 {
@@ -183,6 +173,14 @@ using interpos_sig_ppoll = int (*)(struct pollfd *, nfds_t,
 	    (__VA_ARGS__))
 
 export namespace pbsd::lib_libc_sys::b0097 {
+
+/*
+ * struct __wrusage comes from FreeBSD's <sys/wait.h>, which the host libc does
+ * not provide.  wait6() only forwards the pointer, so only the size matters.
+ */
+struct __wrusage {
+	unsigned char	opaque[128];
+};
 
 interpos_func_t __libc_interposing[INTERPOS_MAX];
 

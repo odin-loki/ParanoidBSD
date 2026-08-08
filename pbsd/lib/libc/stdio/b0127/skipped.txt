@@ -1,0 +1,3 @@
+vasprintf.c: depends on FreeBSD libc internals (FAKE_FILE, __vfprintf, FILE->_flags/_p/_bf)
+ungetwc.c: depends on FreeBSD libc internals (__ungetwc, __ungetc, xlocale_ctype->__wcrtomb, ORIENT)
+vsscanf.c: depends on FreeBSD libc internals (FAKE_FILE, __svfscanf with internal FILE layout)

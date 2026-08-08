@@ -1778,3 +1778,4 @@
 {"batch": "b0089", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:38:17Z"}
 {"batch": "b0115", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T11:39:03Z"}
 {"batch": "b0043", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 7/9: jdate, ndaysj, gdate, ndaysg)", "how": "agent", "ts": "2026-08-08T11:39:25Z"}
+{"batch": "b0125", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T11:40:44Z"}

@@ -8,8 +8,6 @@
  * is compared side by side.
  */
 
-#define _GNU_SOURCE
-
 import pbsd.lib.libc.gen.b0125;
 
 #include <cstddef>
@@ -19,7 +17,6 @@ import pbsd.lib.libc.gen.b0125;
 #include <cstring>
 
 #include <errno.h>
-#include <malloc.h>
 #include <sched.h>
 #include <sys/types.h>
 #include <time.h>
@@ -45,6 +42,7 @@ extern "C" {
 void ref___cpuset_free(cpuset_t *);
 cpuset_t *ref___cpuset_alloc(size_t);
 int ref_clock_getcpuclockid(pid_t, clockid_t *);
+void *__real_malloc(size_t);
 void __real_free(void *);
 }
 
@@ -95,6 +93,26 @@ fail_row(int row, const char *label, const char *detail)
 		r.printed++;
 		std::printf("  FAIL %-22s %-28s %s\n", r.name, label, detail);
 	}
+}
+
+/* --------------------------------------------------------- malloc tracking */
+
+static size_t g_malloc_size;
+static int g_malloc_calls;
+
+extern "C" void *
+__wrap_malloc(size_t size)
+{
+	g_malloc_size = size;
+	g_malloc_calls++;
+	return (__real_malloc(size));
+}
+
+static void
+malloc_track_reset(void)
+{
+	g_malloc_size = 0;
+	g_malloc_calls = 0;
 }
 
 /* ----------------------------------------------------------- free tracking */
@@ -238,16 +256,18 @@ case_alloc(const char *label, size_t ncpus)
 {
 	stat_row &r = rows[R_ALLOC];
 	cpuset_t *pa, *pb;
-	size_t need;
-	size_t ua, ub;
+	size_t need, ref_need, port_need;
 
 	r.cases++;
+	need = alloc_bytes(ncpus);
 
-	std::fprintf(stderr, "alloc %zu\n", ncpus);
+	malloc_track_reset();
 	pa = ref___cpuset_alloc(ncpus);
-	std::fprintf(stderr, "ref pa=%p\n", (void *)pa);
+	ref_need = g_malloc_size;
+
+	malloc_track_reset();
 	pb = port::__cpuset_alloc(ncpus);
-	std::fprintf(stderr, "port pb=%p\n", (void *)pb);
+	port_need = g_malloc_size;
 
 	if ((pa == NULL) != (pb == NULL)) {
 		fail_row(R_ALLOC, label, "null mismatch");
@@ -261,29 +281,24 @@ case_alloc(const char *label, size_t ncpus)
 	if (pa == NULL)
 		return;
 
-	need = alloc_bytes(ncpus);
-	std::fprintf(stderr, "need=%zu\n", need);
-	ua = malloc_usable_size(pa);
-	std::fprintf(stderr, "ua=%zu\n", ua);
-	ub = malloc_usable_size(pb);
-	std::fprintf(stderr, "ub=%zu\n", ub);
-	if (ua != ub) {
-		fail_row(R_ALLOC, label, "usable size mismatch");
-		std::free(pa);
-		std::free(pb);
-		return;
-	}
-	if (ua < need) {
-		fail_row(R_ALLOC, label, "usable size too small");
+	if (ref_need != port_need || ref_need != need) {
+		char detail[64];
+
+		std::snprintf(detail, sizeof(detail),
+		    "malloc %zu vs %zu need %zu", ref_need, port_need, need);
+		fail_row(R_ALLOC, label, detail);
 		std::free(pa);
 		std::free(pb);
 		return;
 	}
 
-	((unsigned char *)pa)[need - 1] = 0xa5;
-	((unsigned char *)pb)[need - 1] = 0xa5;
-	if (((unsigned char *)pa)[need - 1] != ((unsigned char *)pb)[need - 1]) {
-		fail_row(R_ALLOC, label, "tail byte mismatch");
+	if (need != 0) {
+		((unsigned char *)pa)[need - 1] = 0xa5;
+		((unsigned char *)pb)[need - 1] = 0xa5;
+		if (((unsigned char *)pa)[need - 1] !=
+		    ((unsigned char *)pb)[need - 1]) {
+			fail_row(R_ALLOC, label, "tail byte mismatch");
+		}
 	}
 
 	std::free(pa);
@@ -347,14 +362,6 @@ edge_alloc(void)
 {
 	static const size_t cases[] = {
 		0,
-	};
-
-	for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
-		case_alloc("edge ncpus", cases[i]);
-
-	return;
-
-	static const size_t cases_full[] = {
 		1,
 		2,
 		7,
@@ -395,8 +402,8 @@ edge_alloc(void)
 		1048575,
 	};
 
-	for (unsigned i = 0; i < sizeof(cases_full) / sizeof(cases_full[0]); i++)
-		case_alloc("edge ncpus", cases_full[i]);
+	for (unsigned i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+		case_alloc("edge ncpus", cases[i]);
 
 	case_alloc("edge SIZE_MAX/2", (size_t)-1 / 2);
 	case_alloc("edge SIZE_MAX", (size_t)-1);
@@ -550,17 +557,11 @@ sweep_clock(void)
 int
 main(void)
 {
-	std::fprintf(stderr, "edge_alloc\n");
 	edge_alloc();
-	std::fprintf(stderr, "edge_free\n");
 	edge_free();
-	std::fprintf(stderr, "edge_clock\n");
 	edge_clock();
-	std::fprintf(stderr, "sweep_alloc\n");
 	sweep_alloc();
-	std::fprintf(stderr, "sweep_free\n");
 	sweep_free();
-	std::fprintf(stderr, "sweep_clock\n");
 	sweep_clock();
 
 	long total_cases = 0;
