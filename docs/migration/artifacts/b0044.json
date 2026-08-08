@@ -1,0 +1,11 @@
+{
+  "batch": "b0044",
+  "verified": "2026-08-08T11:18:06Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "=== compiling oracle.c (cc -std=c11 -O2)\n=== compiling port.cppm (c++ -std=c++23 -O2 -fmodules-ts)\n=== compiling harness.cpp\n=== linking\n=== running\nb0044 differential test: 1012 edge quads, 200000 random iterations\n\n  function                    cases     failures   status\n  -------------------- ------------ ------------   ------\n  __muldi3                  1224174            0   ok\n  __qdivrem                 2230097            0   ok\n\n  total: 3454271 cases, 0 failures\n  RESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/quad/muldi3.c": "897c95f125f29599",
+    "hbsd/src/lib/libc/quad/qdivrem.c": "63e74edb17faf30c"
+  }
+}

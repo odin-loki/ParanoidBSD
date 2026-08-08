@@ -354,7 +354,7 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 	 * D1: choose multiplier 1 << d to ensure v[1] >= B/2.
 	 */
 	d = 0;
-	for (t = v[1]; t >= B / 2; t <<= 1)
+	for (t = v[1]; t < B / 2; t <<= 1)
 		d++;
 	if (d > 0) {
 		shl(&u[0], m + n, d);		/* u <<= d */
