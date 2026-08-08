@@ -8,18 +8,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
+#include <iterator>
 
 import pbsd.lib.libc.locale.b0078;
 
 namespace P = pbsd::lib_libc_locale::b0078;
-
-using P::locale_t;
-using P::mbstate_t;
-using P::_RuneEntry;
-using P::_RuneLocale;
-using P::xlocale;
-using P::xlocale_ctype;
-using P::wctype_t;
 
 extern "C" {
 typedef union {
@@ -27,27 +20,69 @@ typedef union {
 	long long	_mbstateL;
 } ref_mbstate_t;
 
-extern struct xlocale ref_global_locale;
-extern struct xlocale ref_alt_locale;
-extern struct xlocale_ctype ref_global_ctype;
-extern struct xlocale_ctype ref_alt_ctype;
+typedef struct {
+	int		__min;
+	int		__max;
+	int		__map;
+	unsigned long	*__types;
+} ref_rune_entry;
 
-unsigned long	ref____runetype_l(int, locale_t);
+typedef struct {
+	int		__nranges;
+	ref_rune_entry	*__ranges;
+} ref_rune_range;
+
+typedef struct {
+	char		__magic[8];
+	char		__encoding[32];
+	int		(*__sgetrune)(const char *, size_t, char const **);
+	int		(*__sputrune)(int, char *, size_t, char **);
+	int		__invalid_rune;
+	unsigned long	__runetype[256];
+	int		__maplower[256];
+	int		__mapupper[256];
+	ref_rune_range	__runetype_ext;
+	ref_rune_range	__maplower_ext;
+	ref_rune_range	__mapupper_ext;
+	void		*__variable;
+	int		__variable_len;
+} ref_rune_locale;
+
+struct ref_xlocale_ctype {
+	ref_rune_locale	*runes;
+	size_t		(*__mbsnrtowcs)(wchar_t *, const char **, size_t, size_t,
+		    ref_mbstate_t *);
+	int		__mb_cur_max;
+	ref_mbstate_t	mbsnrtowcs;
+};
+
+struct ref_xlocale {
+	void		*components[6];
+};
+
+typedef struct ref_xlocale *ref_locale_t;
+
+extern struct ref_xlocale ref_global_locale;
+extern struct ref_xlocale ref_alt_locale;
+extern struct ref_xlocale_ctype ref_global_ctype;
+extern struct ref_xlocale_ctype ref_alt_ctype;
+
+unsigned long	ref____runetype_l(int, ref_locale_t);
 unsigned long	ref____runetype(int);
 int		ref____mb_cur_max(void);
-int		ref____mb_cur_max_l(locale_t);
-wint_t		ref_nextwctype_l(wint_t, wctype_t, locale_t);
-wint_t		ref_nextwctype(wint_t, wctype_t);
+int		ref____mb_cur_max_l(ref_locale_t);
+wint_t		ref_nextwctype_l(wint_t, unsigned long, ref_locale_t);
+wint_t		ref_nextwctype(wint_t, unsigned long);
 size_t		ref_mbsnrtowcs_l(wchar_t *, const char **, size_t, size_t,
-		    ref_mbstate_t *, locale_t);
+		    ref_mbstate_t *, ref_locale_t);
 size_t		ref_mbsnrtowcs(wchar_t *, const char **, size_t, size_t,
 		    ref_mbstate_t *);
 size_t		ref___mbsnrtowcs_std(wchar_t *, const char **, size_t, size_t,
 		    ref_mbstate_t *, size_t (*)(wchar_t *, const char *, size_t,
 		    ref_mbstate_t *));
 size_t		test_mbrtowc(wchar_t *, const char *, size_t, ref_mbstate_t *);
-void		ref_locale_init(struct xlocale *, struct xlocale_ctype *,
-		    _RuneLocale *, int);
+void		ref_locale_init(struct ref_xlocale *, struct ref_xlocale_ctype *,
+		    ref_rune_locale *, int);
 }
 
 enum {
@@ -80,28 +115,28 @@ static constexpr unsigned char GUARD = 0x7f;
 static constexpr wchar_t WGUARD = (wchar_t)0x7f7f;
 static constexpr long long SWEEP = 200000;
 
-static constexpr wctype_t T_ALPHA = 0x0001;
-static constexpr wctype_t T_DIGIT = 0x0002;
-static constexpr wctype_t T_SPACE = 0x0004;
-static constexpr wctype_t T_UPPER = 0x0008;
-static constexpr wctype_t T_PUNCT = 0x0010;
+static constexpr P::wctype_t T_ALPHA = 0x0001;
+static constexpr P::wctype_t T_DIGIT = 0x0002;
+static constexpr P::wctype_t T_SPACE = 0x0004;
+static constexpr P::wctype_t T_UPPER = 0x0008;
+static constexpr P::wctype_t T_PUNCT = 0x0010;
 
 struct RuneTables {
-	unsigned long	cached[CACHED_RUNES];
-	_RuneEntry	ranges[8];
-	unsigned long	types[8][32];
-	int		nranges;
+	unsigned long		cached[CACHED_RUNES];
+	P::_RuneEntry		ranges[8];
+	unsigned long		types[8][32];
+	int			nranges;
 };
 
 struct Env {
-	RuneTables	rtab;
-	_RuneLocale	ref_runes;
-	_RuneLocale	port_runes;
-	xlocale_ctype	ref_ctype;
-	xlocale_ctype	port_ctype;
-	xlocale		ref_loc;
-	xlocale		port_loc;
-	int		mb_cur_max;
+	RuneTables		rtab;
+	ref_rune_locale		ref_runes;
+	P::_RuneLocale		port_runes;
+	ref_xlocale_ctype	ref_ctype;
+	P::xlocale_ctype	port_ctype;
+	ref_xlocale		ref_loc;
+	P::xlocale		port_loc;
+	int			mb_cur_max;
 };
 
 static Env genv;

@@ -330,11 +330,6 @@ enum {
     float_flag_invalid   = 16
 };
 
-typedef struct {
-    flag sign;
-    bits64 high, low;
-} commonNaNT;
-
 '''
 
 PORT_FOOTER = '\n} // namespace pbsd::lib_libc_softfloat_bits64::b0048\n'
