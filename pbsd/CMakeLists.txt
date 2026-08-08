@@ -211,7 +211,6 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/uuid/uuid_is_nil_m/port.cppm
   lib/libc/uuid/uuid_to_string_m/port.cppm
   lib/libc_nonshared/b0004/port.cppm
-  lib/libcalendar/b0043/port.cppm
   lib/libcompat/4.3/re_comp_m/port.cppm
   lib/libcrypt/misc_m/port.cppm
   lib/msun/ld128/b0084/port.cppm
@@ -223,7 +222,6 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0030/port.cppm
   lib/msun/src/b0038/port.cppm
   lib/msun/src/b0057/port.cppm
-  lib/msun/src/b0060/port.cppm
   lib/msun/src/b0070/port.cppm
   lib/msun/src/b0079/port.cppm
   lib/msun/src/b0080/port.cppm
@@ -283,7 +281,6 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/security/mac_none/b0005/port.cppm
   sys/security/mac_ntpd/b0007/port.cppm
   sys/security/mac_pimd/b0006/port.cppm
-  sys/security/mac_stub/b0046/port.cppm
   sys/security/mac_veriexec/b0029/port.cppm
   sys/x86/linux/b0037/port.cppm
   usr.bin/ar/util_m/port.cppm

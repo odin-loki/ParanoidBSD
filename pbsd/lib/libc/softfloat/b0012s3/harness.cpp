@@ -1,413 +1,547 @@
-/*
- * harness.cpp -- differential test for PBSD batch b0012s3.
- *
- * Compares the C++23 port in port.cppm against the unmodified C reference in
- * oracle.c for every function in the batch and the SoftFloat primitives it
- * is built out of:
- *
- *   negxf2      (== __negxf2 of negxf2.c)
- *   mulxf3      (== __mulxf3 / floatx80_mul)
- *   floatsixf   (== __floatsixf / int32_to_floatx80)
- *
- * Operands and results are materialised inside separate 0x7f-filled buffers
- * (one for the port, one for the oracle) so any write past a nominal window
- * is caught.  Return values and the softfloat exception-flag word are
- * compared on every case.
- */
-
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
+// PBSD batch b0012s3 -- differential test.
+//
+// Compares pbsd::lib_libc_softfloat::b0012s3::__negxf2() against the C oracle
+// ref___negxf2() from oracle.c.
+//
+// negxf2.c is a single expression built out of two softfloat routines that
+// belong to other batches (__mulxf3, __floatsixf).  This file provides the one
+// and only definition of each; the port and the oracle both call into it, so
+// every observable of the ported code is captured:
+//
+//   * the returned floatx80 (both fields, bit for bit),
+//   * the exact sequence of calls made into __mulxf3/__floatsixf together
+//     with every argument, so a mutated constant or a swapped operand shows
+//     up even when the arithmetic would hide it,
+//   * the softfloat exception flags raised,
+//   * the guarded buffer the argument was read out of.
 
 import pbsd.lib.libc.softfloat.b0012s3;
 
-namespace P = pbsd::lib_libc_softfloat::b0012s3;
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <new>
+#include <vector>
 
-extern "C" {
+// The port's floatx80 has the same layout as the one oracle.c declares, and
+// both __mulxf3/__floatsixf and ref___negxf2 have C language linkage, so one
+// definition of each serves the port and the oracle alike.
+using fx = pbsd::lib_libc_softfloat::b0012s3::floatx80;
 
-struct ref_floatx80 {
-	std::uint16_t high;
-	std::uint64_t low;
+extern "C" fx ref___negxf2(fx);
+
+// ---------------------------------------------------------------------------
+// Shared softfloat support: call recorder + reference floatx80 arithmetic.
+// ---------------------------------------------------------------------------
+
+namespace sf {
+
+enum : int { FN_NONE = 0, FN_MULXF3 = 1, FN_FLOATSIXF = 2 };
+
+enum : unsigned {
+	flag_inexact   = 1u,
+	flag_underflow = 2u,
+	flag_overflow  = 4u,
+	flag_invalid   = 16u
 };
 
-ref_floatx80 ref___negxf2(ref_floatx80 a);
-ref_floatx80 floatx80_mul(ref_floatx80 a, ref_floatx80 b);
-ref_floatx80 int32_to_floatx80(std::int32_t a);
-extern int float_exception_flags;
+struct Call {
+	int fn;
+	std::int32_t iarg;
+	std::uint16_t ah, bh;
+	std::uint64_t al, bl;
+};
 
-} /* extern "C" */
+constexpr int MAXCALL = 8;
+
+Call log[MAXCALL];
+int ncalls;
+unsigned flags;
+
+void
+reset()
+{
+	ncalls = 0;
+	flags = 0;
+	std::memset(log, 0, sizeof log);
+}
+
+void
+push(const Call &c)
+{
+	if (ncalls < MAXCALL)
+		log[ncalls] = c;
+	++ncalls;
+}
+
+inline int
+clz64(std::uint64_t a)
+{
+	return a ? __builtin_clzll(a) : 64;
+}
+
+inline int
+clz32(std::uint32_t a)
+{
+	return a ? __builtin_clz(a) : 32;
+}
+
+inline fx
+pack(int zSign, std::int32_t zExp, std::uint64_t zSig)
+{
+	fx z;
+	z.high = (std::uint16_t)(((unsigned)zSign << 15) +
+	    ((unsigned)zExp & 0x7FFFu));
+	z.low = zSig;
+	return z;
+}
+
+inline std::uint64_t	extractFrac(fx a) { return a.low; }
+inline std::int32_t	extractExp(fx a)  { return (std::int32_t)(a.high & 0x7FFF); }
+inline int		extractSign(fx a) { return a.high >> 15; }
+
+inline fx
+defaultNaN()
+{
+	fx z;
+	z.high = 0xFFFF;
+	z.low = 0xC000000000000000ULL;
+	return z;
+}
+
+inline void
+normalizeSubnormal(std::uint64_t aSig, std::int32_t *zExpPtr,
+    std::uint64_t *zSigPtr)
+{
+	int shiftCount = clz64(aSig);
+
+	*zSigPtr = aSig << shiftCount;
+	*zExpPtr = 1 - shiftCount;
+}
+
+inline void
+shift64ExtraRightJamming(std::uint64_t a0, std::uint64_t a1, int count,
+    std::uint64_t *z0Ptr, std::uint64_t *z1Ptr)
+{
+	std::uint64_t z0, z1;
+
+	if (count == 0) {
+		z1 = a1;
+		z0 = a0;
+	} else if (count < 64) {
+		z1 = (a0 << (64 - count)) | (a1 != 0);
+		z0 = a0 >> count;
+	} else {
+		if (count == 64)
+			z1 = a0 | (a1 != 0);
+		else
+			z1 = ((a0 | a1) != 0);
+		z0 = 0;
+	}
+	*z1Ptr = z1;
+	*z0Ptr = z0;
+}
+
+inline fx
+propagateNaN(fx a, fx b)
+{
+	bool aIsNaN = extractExp(a) == 0x7FFF && (std::uint64_t)(a.low << 1);
+	bool bIsNaN = extractExp(b) == 0x7FFF && (std::uint64_t)(b.low << 1);
+	bool aIsSignaling = aIsNaN && !(a.low & 0x4000000000000000ULL);
+	bool bIsSignaling = bIsNaN && !(b.low & 0x4000000000000000ULL);
+
+	a.low |= 0xC000000000000000ULL;
+	b.low |= 0xC000000000000000ULL;
+	if (aIsSignaling || bIsSignaling)
+		flags |= flag_invalid;
+	if (aIsNaN)
+		return a;
+	return b;
+}
+
+inline fx
+roundAndPack(int zSign, std::int32_t zExp, std::uint64_t zSig0,
+    std::uint64_t zSig1)
+{
+	if (0x7FFDu <= (std::uint32_t)(zExp - 1)) {
+		if (0x7FFE < zExp) {
+			flags |= flag_overflow | flag_inexact;
+			return pack(zSign, 0x7FFF, 0x8000000000000000ULL);
+		}
+		if (zExp <= 0) {
+			shift64ExtraRightJamming(zSig0, zSig1, 1 - zExp,
+			    &zSig0, &zSig1);
+			zExp = 0;
+			if (zSig1 != 0)
+				flags |= flag_underflow;
+		}
+	}
+	if (zSig1 != 0)
+		flags |= flag_inexact;
+	if ((std::int64_t)zSig1 < 0) {
+		++zSig0;
+		if (zSig0 == 0) {
+			zSig0 = 0x8000000000000000ULL;
+			++zExp;
+		} else if ((std::uint64_t)(zSig1 << 1) == 0) {
+			zSig0 &= ~(std::uint64_t)1;
+		}
+	}
+	if (zSig0 == 0)
+		zExp = 0;
+	if (zExp >= 0x7FFF) {
+		flags |= flag_overflow | flag_inexact;
+		return pack(zSign, 0x7FFF, 0x8000000000000000ULL);
+	}
+	return pack(zSign, zExp, zSig0);
+}
+
+inline fx
+int32_to_floatx80(std::int32_t a)
+{
+	if (a == 0)
+		return pack(0, 0, 0);
+
+	int zSign = a < 0;
+	std::uint32_t absA = zSign ? (std::uint32_t)(-(std::int64_t)a)
+	    : (std::uint32_t)a;
+	int shiftCount = clz32(absA) + 32;
+	std::uint64_t zSig = absA;
+
+	return pack(zSign, 0x403E - shiftCount, zSig << shiftCount);
+}
+
+inline fx
+floatx80_mul(fx a, fx b)
+{
+	int aSign = extractSign(a);
+	int bSign = extractSign(b);
+	int zSign = aSign ^ bSign;
+	std::int32_t aExp = extractExp(a);
+	std::int32_t bExp = extractExp(b);
+	std::uint64_t aSig = extractFrac(a);
+	std::uint64_t bSig = extractFrac(b);
+
+	if (aExp == 0x7FFF) {
+		if ((std::uint64_t)(aSig << 1) ||
+		    (bExp == 0x7FFF && (std::uint64_t)(bSig << 1)))
+			return propagateNaN(a, b);
+		if (((std::uint64_t)bExp | bSig) == 0) {
+			flags |= flag_invalid;
+			return defaultNaN();
+		}
+		return pack(zSign, 0x7FFF, 0x8000000000000000ULL);
+	}
+	if (bExp == 0x7FFF) {
+		if ((std::uint64_t)(bSig << 1))
+			return propagateNaN(a, b);
+		if (((std::uint64_t)aExp | aSig) == 0) {
+			flags |= flag_invalid;
+			return defaultNaN();
+		}
+		return pack(zSign, 0x7FFF, 0x8000000000000000ULL);
+	}
+	if (aExp == 0) {
+		if (aSig == 0)
+			return pack(zSign, 0, 0);
+		normalizeSubnormal(aSig, &aExp, &aSig);
+	}
+	if (bExp == 0) {
+		if (bSig == 0)
+			return pack(zSign, 0, 0);
+		normalizeSubnormal(bSig, &bExp, &bSig);
+	}
+
+	std::int32_t zExp = aExp + bExp - 0x3FFE;
+	unsigned __int128 prod = (unsigned __int128)aSig * bSig;
+	std::uint64_t zSig0 = (std::uint64_t)(prod >> 64);
+	std::uint64_t zSig1 = (std::uint64_t)prod;
+
+	if ((std::int64_t)zSig0 > 0) {
+		zSig0 = (zSig0 << 1) | (zSig1 >> 63);
+		zSig1 <<= 1;
+		--zExp;
+	}
+	return roundAndPack(zSign, zExp, zSig0, zSig1);
+}
+
+} // namespace sf
+
+extern "C" fx
+__floatsixf(std::int32_t a)
+{
+	sf::push(sf::Call{sf::FN_FLOATSIXF, a, 0, 0, 0, 0});
+	return sf::int32_to_floatx80(a);
+}
+
+extern "C" fx
+__mulxf3(fx a, fx b)
+{
+	sf::push(sf::Call{sf::FN_MULXF3, 0, a.high, b.high, a.low, b.low});
+	return sf::floatx80_mul(a, b);
+}
+
+// ---------------------------------------------------------------------------
+// Observation of one call.
+// ---------------------------------------------------------------------------
 
 namespace {
 
-enum { GUARD = 0x7f };
-enum { BUFSZ = 64 };
-enum { OFF_IN = 8 };
-enum { OFF_OUT = 32 };
-enum { OFF_A = OFF_IN };
-enum { OFF_B = OFF_IN + 16 };
+constexpr std::size_t BUFLEN = 80;
+constexpr std::size_t VALOFF = 24;
 
-static_assert(sizeof(P::floatx80) == sizeof(ref_floatx80), "floatx80 layout");
-static_assert(sizeof(P::floatx80) == 16, "floatx80 size");
-
-struct Val {
-	std::uint16_t high;
-	std::uint64_t low;
+struct Obs {
+	std::uint16_t rhigh;
+	std::uint64_t rlow;
+	unsigned flags;
+	int ncalls;
+	sf::Call log[sf::MAXCALL];
+	alignas(16) unsigned char buf[BUFLEN];
 };
 
-struct Stats {
-	const char *name;
-	unsigned long long cases;
-	unsigned long long failures;
-	unsigned long long printed;
-};
-
-Stats st_neg{ "negxf2 (__negxf2)", 0, 0, 0 };
-Stats st_mul{ "mulxf3 (__mulxf3)", 0, 0, 0 };
-Stats st_six{ "floatsixf", 0, 0, 0 };
-
-const unsigned long long kMaxPrint = 12;
-
-void
-report(Stats &s, const char *phase, const char *field,
-    std::uint16_t ah, std::uint64_t al, std::uint16_t bh, std::uint64_t bl,
-    std::int32_t si, std::uint16_t rh, std::uint64_t rl, int pf, int rf)
+Obs
+run(fx (*fn)(fx), fx v)
 {
-	if (s.printed >= kMaxPrint)
-		return;
-	++s.printed;
-	std::printf("FAIL %-16s [%s] %s a={0x%04X,0x%016llX} b={0x%04X,0x%016llX} "
-	    "si=%d port={0x%04X,0x%016llX,flags=%d} ref={0x%04X,0x%016llX,flags=%d}\n",
-	    s.name, phase, field, (unsigned)ah, (unsigned long long)al,
-	    (unsigned)bh, (unsigned long long)bl, (int)si,
-	    (unsigned)rh, (unsigned long long)rl, pf, (unsigned)rh,
-	    (unsigned long long)rl, rf);
-}
+	Obs o;
 
-void
-plant_x80(unsigned char *buf, std::size_t off, Val v)
-{
-	std::memcpy(buf + off, &v, sizeof v);
-}
+	std::memset(&o, 0, sizeof o);
+	std::memset(o.buf, 0x7f, sizeof o.buf);
 
-Val
-load_x80(const unsigned char *buf, std::size_t off)
-{
-	Val v;
-	std::memcpy(&v, buf + off, sizeof v);
-	return v;
+	fx *slot = ::new (static_cast<void *>(o.buf + VALOFF)) fx;
+	slot->high = v.high;
+	slot->low = v.low;
+
+	sf::reset();
+	fx r = fn(*slot);
+
+	o.rhigh = r.high;
+	o.rlow = r.low;
+	o.flags = sf::flags;
+	o.ncalls = sf::ncalls;
+	std::memcpy(o.log, sf::log, sizeof o.log);
+	return o;
 }
 
 bool
-bufs_equal(const unsigned char *a, const unsigned char *b)
+same(const Obs &p, const Obs &q)
 {
-	return std::memcmp(a, b, BUFSZ) == 0;
+	if (p.rhigh != q.rhigh || p.rlow != q.rlow)
+		return false;
+	if (p.flags != q.flags || p.ncalls != q.ncalls)
+		return false;
+	if (std::memcmp(p.log, q.log, sizeof p.log) != 0)
+		return false;
+	if (std::memcmp(p.buf, q.buf, BUFLEN) != 0)
+		return false;
+	return true;
+}
+
+int failures;
+long long cases;
+int reported;
+
+void
+report(fx v, const Obs &p, const Obs &q)
+{
+	++failures;
+	if (reported >= 10)
+		return;
+	++reported;
+	std::printf("  FAIL __negxf2 in=%04x:%016llx\n", v.high,
+	    (unsigned long long)v.low);
+	std::printf("    port ret=%04x:%016llx flags=%u ncalls=%d\n",
+	    p.rhigh, (unsigned long long)p.rlow, p.flags, p.ncalls);
+	std::printf("    ref  ret=%04x:%016llx flags=%u ncalls=%d\n",
+	    q.rhigh, (unsigned long long)q.rlow, q.flags, q.ncalls);
+	for (int i = 0; i < sf::MAXCALL; i++) {
+		if (std::memcmp(&p.log[i], &q.log[i], sizeof(sf::Call)) == 0)
+			continue;
+		std::printf("    call[%d] port fn=%d i=%d a=%04x:%016llx "
+		    "b=%04x:%016llx\n", i, p.log[i].fn, p.log[i].iarg,
+		    p.log[i].ah, (unsigned long long)p.log[i].al,
+		    p.log[i].bh, (unsigned long long)p.log[i].bl);
+		std::printf("    call[%d] ref  fn=%d i=%d a=%04x:%016llx "
+		    "b=%04x:%016llx\n", i, q.log[i].fn, q.log[i].iarg,
+		    q.log[i].ah, (unsigned long long)q.log[i].al,
+		    q.log[i].bh, (unsigned long long)q.log[i].bl);
+	}
+	if (std::memcmp(p.buf, q.buf, BUFLEN) != 0)
+		std::printf("    argument buffer diverged\n");
 }
 
 void
-check_neg(const char *phase, Val a)
+check(fx v)
 {
-	unsigned char bufRef[BUFSZ], bufPort[BUFSZ], pristine[BUFSZ];
+	++cases;
+	Obs p = run(pbsd::lib_libc_softfloat::b0012s3::__negxf2, v);
+	Obs q = run(ref___negxf2, v);
+	if (!same(p, q))
+		report(v, p, q);
+}
 
-	std::memset(bufRef, GUARD, BUFSZ);
-	std::memset(bufPort, GUARD, BUFSZ);
-	plant_x80(bufRef, OFF_IN, a);
-	plant_x80(bufPort, OFF_IN, a);
-	std::memcpy(pristine, bufRef, BUFSZ);
+inline fx
+mk(std::uint16_t high, std::uint64_t low)
+{
+	fx z;
+	z.high = high;
+	z.low = low;
+	return z;
+}
 
-	ref_floatx80 ra;
-	P::floatx80 pa;
-	std::memcpy(&ra, bufRef + OFF_IN, sizeof ra);
-	std::memcpy(&pa, bufPort + OFF_IN, sizeof pa);
+// ---------------------------------------------------------------------------
+// Case generation.
+// ---------------------------------------------------------------------------
 
-	float_exception_flags = 0;
-	ref_floatx80 rr = ref___negxf2(ra);
-	int rfl = float_exception_flags;
+const std::uint16_t kExps[] = {
+	0x0000, 0x0001, 0x0002, 0x0003, 0x000F,
+	0x3FFC, 0x3FFD, 0x3FFE, 0x3FFF, 0x4000, 0x4001,
+	0x403D, 0x403E, 0x403F, 0x5555,
+	0x7FFC, 0x7FFD, 0x7FFE, 0x7FFF
+};
 
-	P::float_exception_flags = 0;
-	P::floatx80 pr = P::negxf2(pa);
-	int pfl = P::float_exception_flags;
+const std::uint64_t kSigs[] = {
+	0x0000000000000000ULL, 0x0000000000000001ULL, 0x0000000000000002ULL,
+	0x0000000000000003ULL, 0x000000000000FFFFULL, 0x00000000FFFFFFFFULL,
+	0x0000000100000000ULL, 0x3FFFFFFFFFFFFFFFULL, 0x4000000000000000ULL,
+	0x4000000000000001ULL, 0x7FFFFFFFFFFFFFFFULL, 0x8000000000000000ULL,
+	0x8000000000000001ULL, 0xAAAAAAAAAAAAAAAAULL, 0xBFFFFFFFFFFFFFFFULL,
+	0xC000000000000000ULL, 0xC000000000000001ULL, 0xFFFFFFFFFFFFFFFEULL,
+	0xFFFFFFFFFFFFFFFFULL
+};
 
-	std::memcpy(bufRef + OFF_OUT, &rr, sizeof rr);
-	std::memcpy(bufPort + OFF_OUT, &pr, sizeof pr);
+void
+edgeCases()
+{
+	for (int sign = 0; sign < 2; sign++) {
+		for (std::uint16_t e : kExps) {
+			std::uint16_t high =
+			    (std::uint16_t)(e | (sign ? 0x8000u : 0u));
+			for (std::uint64_t s : kSigs)
+				check(mk(high, s));
+		}
+	}
 
-	++st_neg.cases;
-	Val rv{ rr.high, rr.low };
-	Val pv{ pr.high, pr.low };
-	bool bad = rv.high != pv.high || rv.low != pv.low || rfl != pfl ||
-	    !bufs_equal(bufRef, bufPort) ||
-	    std::memcmp(bufRef, pristine, OFF_OUT) != 0 ||
-	    std::memcmp(bufPort, pristine, OFF_OUT) != 0;
-	if (bad) {
-		report(st_neg, phase, "result", a.high, a.low, 0, 0, 0,
-		    pv.high, pv.low, pfl, rfl);
-		++st_neg.failures;
+	// Every byte value 0x00-0xFF smeared over all ten bytes of the value,
+	// which covers the NUL-heavy and high-bit (0x80-0xFF) patterns.
+	for (int b = 0; b < 256; b++) {
+		std::uint64_t low = 0x0101010101010101ULL * (std::uint64_t)b;
+		std::uint16_t high = (std::uint16_t)(b | (b << 8));
+		check(mk(high, low));
+		check(mk(high, 0));
+		check(mk(0, low));
+		check(mk((std::uint16_t)(0x7F00u | b), low));
+		check(mk((std::uint16_t)(0xFF00u | b), low));
+	}
+
+	// Single set bit walked through the whole 80-bit value.
+	for (int i = 0; i < 64; i++)
+		check(mk(0x0000, 1ULL << i));
+	for (int i = 0; i < 16; i++) {
+		check(mk((std::uint16_t)(1u << i), 0));
+		check(mk((std::uint16_t)(1u << i), 0x8000000000000000ULL));
+		check(mk((std::uint16_t)~(1u << i), 0xFFFFFFFFFFFFFFFFULL));
 	}
 }
 
-void
-check_mul(const char *phase, Val a, Val b)
-{
-	unsigned char bufRef[BUFSZ], bufPort[BUFSZ], pristine[BUFSZ];
-
-	std::memset(bufRef, GUARD, BUFSZ);
-	std::memset(bufPort, GUARD, BUFSZ);
-	plant_x80(bufRef, OFF_A, a);
-	plant_x80(bufRef, OFF_B, b);
-	plant_x80(bufPort, OFF_A, a);
-	plant_x80(bufPort, OFF_B, b);
-	std::memcpy(pristine, bufRef, BUFSZ);
-
-	ref_floatx80 ra, rb;
-	P::floatx80 pa, pb;
-	std::memcpy(&ra, bufRef + OFF_A, sizeof ra);
-	std::memcpy(&rb, bufRef + OFF_B, sizeof rb);
-	std::memcpy(&pa, bufPort + OFF_A, sizeof pa);
-	std::memcpy(&pb, bufPort + OFF_B, sizeof pb);
-
-	float_exception_flags = 0;
-	ref_floatx80 rr = floatx80_mul(ra, rb);
-	int rfl = float_exception_flags;
-
-	P::float_exception_flags = 0;
-	P::floatx80 pr = P::mulxf3(pa, pb);
-	int pfl = P::float_exception_flags;
-
-	std::memcpy(bufRef + OFF_B + 16, &rr, sizeof rr);
-	std::memcpy(bufPort + OFF_B + 16, &pr, sizeof pr);
-
-	++st_mul.cases;
-	Val rv{ rr.high, rr.low };
-	Val pv{ pr.high, pr.low };
-	if (rv.high != pv.high || rv.low != pv.low || rfl != pfl ||
-	    !bufs_equal(bufRef, bufPort) ||
-	    std::memcmp(bufRef, pristine, OFF_B + sizeof(ref_floatx80)) != 0 ||
-	    std::memcmp(bufPort, pristine, OFF_B + sizeof(ref_floatx80)) != 0)
-		++st_mul.failures;
-}
-
-void
-check_six(const char *phase, std::int32_t si)
-{
-	unsigned char bufRef[BUFSZ], bufPort[BUFSZ], pristine[BUFSZ];
-
-	std::memset(bufRef, GUARD, BUFSZ);
-	std::memset(bufPort, GUARD, BUFSZ);
-	std::memcpy(bufRef + OFF_IN, &si, sizeof si);
-	std::memcpy(bufPort + OFF_IN, &si, sizeof si);
-	std::memcpy(pristine, bufRef, BUFSZ);
-
-	float_exception_flags = 0;
-	ref_floatx80 rr = int32_to_floatx80(si);
-	int rfl = float_exception_flags;
-
-	P::float_exception_flags = 0;
-	P::floatx80 pr = P::floatsixf(si);
-	int pfl = P::float_exception_flags;
-
-	std::memcpy(bufRef + OFF_OUT, &rr, sizeof rr);
-	std::memcpy(bufPort + OFF_OUT, &pr, sizeof pr);
-
-	++st_six.cases;
-	Val rv{ rr.high, rr.low };
-	Val pv{ pr.high, pr.low };
-	if (rv.high != pv.high || rv.low != pv.low || rfl != pfl ||
-	    !bufs_equal(bufRef, bufPort) ||
-	    std::memcmp(bufRef, pristine, OFF_IN + sizeof si) != 0 ||
-	    std::memcmp(bufPort, pristine, OFF_IN + sizeof si) != 0)
-		++st_six.failures;
-}
-
-static const Val pool[] = {
-	{ 0x0000, 0x0000000000000000ULL },
-	{ 0x8000, 0x0000000000000000ULL },
-	{ 0x0000, 0x0000000000000001ULL },
-	{ 0x8000, 0x0000000000000001ULL },
-	{ 0x0000, 0x8000000000000000ULL },
-	{ 0x8000, 0x8000000000000000ULL },
-	{ 0x0001, 0x8000000000000000ULL },
-	{ 0x8001, 0x8000000000000000ULL },
-	{ 0x3FFE, 0x8000000000000000ULL },
-	{ 0x3FFF, 0x8000000000000000ULL },
-	{ 0x3FFF, 0x8000000000000001ULL },
-	{ 0xBFFF, 0x8000000000000000ULL },
-	{ 0xBFFF, 0x8000000000000001ULL },
-	{ 0x4000, 0x8000000000000000ULL },
-	{ 0xC000, 0x8000000000000000ULL },
-	{ 0x7FFE, 0xFFFFFFFFFFFFFFFFULL },
-	{ 0xFFFE, 0xFFFFFFFFFFFFFFFFULL },
-	{ 0x7FFF, 0x8000000000000000ULL },
-	{ 0xFFFF, 0x8000000000000000ULL },
-	{ 0x7FFF, 0xC000000000000000ULL },
-	{ 0xFFFF, 0xC000000000000000ULL },
-	{ 0x7FFF, 0x8000000000000001ULL },
-	{ 0x7FFF, 0x0000000000000000ULL },
-	{ 0x7FFF, 0xFFFFFFFFFFFFFFFFULL },
-	{ 0x7F7F, 0x7F7F7F7F7F7F7F7FULL },
-	{ 0x8080, 0x8080808080808080ULL },
-	{ 0xFFFF, 0xFFFFFFFFFFFFFFFFULL },
-};
-static const unsigned kPool = sizeof pool / sizeof pool[0];
-
-static const std::int32_t int_pool[] = {
-	0, 1, -1, 2, -2, 127, -127, 128, -128,
-	255, -255, 256, -256, 32767, -32767, 32768, -32768,
-	65535, -65535, 65536, -65536,
-	0x7fffffff, (std::int32_t)0x80000000u, (std::int32_t)0x80000001u,
-	(std::int32_t)0xffffff00u, (std::int32_t)0x00000080u,
-};
-static const unsigned kIntPool = sizeof int_pool / sizeof int_pool[0];
-
-std::uint64_t rng_state = 0xB0012A3C0FFEEULL;
+std::uint64_t rngState;
 
 std::uint64_t
-next_rand(void)
+next64()
 {
-	std::uint64_t z;
+	std::uint64_t z = (rngState += 0x9E3779B97F4A7C15ULL);
 
-	rng_state += 0x9E3779B97F4A7C15ULL;
-	z = rng_state;
 	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
 	z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
 	return z ^ (z >> 31);
 }
 
-Val
-rand_val(unsigned mode)
+void
+randomSweep(long long iters)
 {
-	Val v;
-	switch (mode % 10) {
-	case 0:
-		v = pool[next_rand() % kPool];
-		break;
-	case 1:
-		v.high = (std::uint16_t)(next_rand() & 0xFFFFULL);
-		v.low = next_rand();
-		break;
-	case 2:
-		v.high = (std::uint16_t)((next_rand() & 0x8000ULL) | 0x7FFFULL);
-		v.low = next_rand();
-		if ((next_rand() & 1) == 0)
-			v.low = 0x8000000000000000ULL;
-		break;
-	case 3:
-		v.high = (std::uint16_t)(next_rand() & 0x0003ULL);
-		v.low = next_rand() & 0x0000000000000FFFULL;
-		break;
-	case 4:
-		v.high = (std::uint16_t)((next_rand() & 1ULL) << 15);
-		v.low = 0;
-		break;
-	case 5: {
-		unsigned b = (unsigned)(next_rand() & 0xFFULL);
-		v.high = (std::uint16_t)((b << 8) | b);
-		std::uint64_t x = 0;
-		for (int i = 0; i < 8; ++i)
-			x = (x << 8) | b;
-		v.low = x;
-		break;
+	rngState = 0xB0012533C0FFEEULL;
+
+	for (long long i = 0; i < iters; i++) {
+		std::uint64_t r = next64();
+		std::uint64_t low;
+		std::uint16_t exp;
+
+		switch (r & 7) {
+		case 0:
+			exp = (std::uint16_t)(next64() & 0x7FFF);
+			break;
+		case 1:
+			exp = 0x0000;
+			break;
+		case 2:
+			exp = (std::uint16_t)(next64() & 0x3);
+			break;
+		case 3:
+			exp = 0x7FFF;
+			break;
+		case 4:
+			exp = (std::uint16_t)(0x7FFF - (next64() & 0x3));
+			break;
+		case 5:
+			exp = (std::uint16_t)(0x3FFF +
+			    (std::int64_t)(next64() & 0x7) - 4);
+			break;
+		case 6:
+			exp = (std::uint16_t)(next64() & 0x00FF);
+			break;
+		default:
+			exp = (std::uint16_t)(next64() & 0x7FFF);
+			break;
+		}
+
+		switch ((r >> 3) & 7) {
+		case 0:
+			low = next64();
+			break;
+		case 1:
+			low = 0;
+			break;
+		case 2:
+			low = next64() | 0x8000000000000000ULL;
+			break;
+		case 3:
+			low = next64() & 0x7FFFFFFFFFFFFFFFULL;
+			break;
+		case 4:
+			low = 1ULL << (next64() & 63);
+			break;
+		case 5:
+			low = ~(1ULL << (next64() & 63));
+			break;
+		case 6:
+			low = next64() >> (next64() & 63);
+			break;
+		default:
+			low = 0x8000000000000000ULL | (next64() & 0xFF);
+			break;
+		}
+
+		std::uint16_t high =
+		    (std::uint16_t)(exp | (((r >> 6) & 1) ? 0x8000u : 0u));
+		check(mk(high, low));
 	}
-	case 6:
-		v = pool[next_rand() % kPool];
-		v.low ^= 1ULL << (next_rand() % 64);
-		break;
-	case 7:
-		v = pool[next_rand() % kPool];
-		v.high ^= (std::uint16_t)(1U << (next_rand() % 16));
-		break;
-	case 8:
-		v.high = (std::uint16_t)(0x3FFF + (next_rand() % 3ULL) - 1ULL);
-		v.low = 0x8000000000000000ULL | (next_rand() & 0x7FFFFFFFFFFFFFFFULL);
-		break;
-	default:
-		v.high = (std::uint16_t)(next_rand() & 0xFFFFULL);
-		v.low = next_rand() | 0x8000000000000000ULL;
-		break;
-	}
-	return v;
 }
 
-} /* anonymous namespace */
+} // namespace
 
 int
-main(void)
+main()
 {
-	/* Named edge cases for negation / multiply-by-minus-one. */
-	check_neg("plus_one", { 0x3FFF, 0x8000000000000000ULL });
-	check_neg("minus_one", { 0xBFFF, 0x8000000000000000ULL });
-	check_neg("plus_zero", { 0x0000, 0x0000000000000000ULL });
-	check_neg("minus_zero", { 0x8000, 0x0000000000000000ULL });
-	check_neg("plus_inf", { 0x7FFF, 0x8000000000000000ULL });
-	check_neg("minus_inf", { 0xFFFF, 0x8000000000000000ULL });
-	check_neg("plus_nan", { 0x7FFF, 0xC000000000000000ULL });
-	check_neg("minus_nan", { 0xFFFF, 0xC000000000000000ULL });
-	check_neg("snan", { 0x7FFF, 0x8000000000000001ULL });
-	check_neg("denorm", { 0x0000, 0x0000000000000001ULL });
-	check_neg("neg_denorm", { 0x8000, 0x0000000000000001ULL });
-	check_neg("max_finite", { 0x7FFE, 0xFFFFFFFFFFFFFFFFULL });
+	edgeCases();
+	randomSweep(250000);
 
-	check_six("zero", 0);
-	check_six("one", 1);
-	check_six("minus_one", -1);
-	check_six("int_min", (std::int32_t)0x80000000u);
-	check_six("int_max", 0x7fffffff);
+	std::printf("\n%-16s %12s %12s\n", "function", "cases", "failures");
+	std::printf("%-16s %12lld %12d\n", "__negxf2", cases, failures);
+	std::printf("%-16s %12lld %12d\n", "TOTAL", cases, failures);
 
-	check_mul("one_times_minus_one",
-	    { 0x3FFF, 0x8000000000000000ULL },
-	    { 0xBFFF, 0x8000000000000000ULL });
-	check_mul("zero_times_one",
-	    { 0x0000, 0x0000000000000000ULL },
-	    { 0x3FFF, 0x8000000000000000ULL });
-	check_mul("inf_times_zero",
-	    { 0x7FFF, 0x8000000000000000ULL },
-	    { 0x0000, 0x0000000000000000ULL });
-	check_mul("inf_times_finite",
-	    { 0x7FFF, 0x8000000000000000ULL },
-	    { 0x3FFF, 0x8000000000000000ULL });
-	check_mul("nan_times_one",
-	    { 0x7FFF, 0xC000000000000000ULL },
-	    { 0x3FFF, 0x8000000000000000ULL });
-	check_mul("snan_times_inf",
-	    { 0x7FFF, 0x8000000000000001ULL },
-	    { 0x7FFF, 0x8000000000000000ULL });
-
-	for (unsigned i = 0; i < kPool; ++i)
-		check_neg("pool", pool[i]);
-
-	for (unsigned i = 0; i < kPool; ++i)
-		for (unsigned j = 0; j < kPool; ++j)
-			check_mul("pool", pool[i], pool[j]);
-
-	for (unsigned i = 0; i < kIntPool; ++i)
-		check_six("int_pool", int_pool[i]);
-
-	for (unsigned i = 0; i < kPool; ++i)
-		check_mul("neg_path", pool[i], { 0xBFFF, 0x8000000000000000ULL });
-
-	const unsigned long iterations = 220000UL;
-	for (unsigned long n = 0; n < iterations; ++n) {
-		Val a = rand_val((unsigned)(n % 10));
-		Val b = rand_val((unsigned)((n >> 4) % 10));
-		check_neg("random", a);
-		check_mul("random", a, b);
-		if ((n & 0x3f) == 0) {
-			std::int32_t si = (std::int32_t)next_rand();
-			check_six("random", si);
-		}
+	if (failures != 0) {
+		std::printf("\nRESULT: FAIL\n");
+		return 1;
 	}
-
-	Stats *all[] = { &st_neg, &st_mul, &st_six };
-	std::printf("\n%-20s %12s %12s\n", "function", "cases", "failures");
-	std::printf("%-20s %12s %12s\n", "--------------------",
-	    "------------", "------------");
-	unsigned long long total_cases = 0, total_failures = 0;
-	for (auto *s : all) {
-		std::printf("%-20s %12llu %12llu\n", s->name, s->cases,
-		    s->failures);
-		total_cases += s->cases;
-		total_failures += s->failures;
-	}
-	std::printf("\n%s: %llu failure(s)\n",
-	    total_failures == 0 ? "PASS" : "FAIL", total_failures);
-	return total_failures == 0 ? 0 : 1;
+	std::printf("\nRESULT: PASS\n");
+	return 0;
 }
