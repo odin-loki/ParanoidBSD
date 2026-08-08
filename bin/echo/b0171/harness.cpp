@@ -248,6 +248,14 @@ struct Env {
 
 struct Case {
 	std::vector<std::string> args;
+	/*
+	 * Bytes laid down immediately *before* every argument string.  The
+	 * port indexes argv[0][len - 2] and argv[0][len - 1], so an off-by-one
+	 * in the `len >= 2' guard reads underneath the string; seeding that
+	 * memory with '\\' and 'c' makes such a read observable instead of
+	 * silently landing on a byte that happens not to match.
+	 */
+	std::string pre;
 	int c1 = 0;
 	int c2 = 0;
 	long wfail = -1;
@@ -257,7 +265,7 @@ struct Case {
 static const size_t PAD = 32;
 
 static void
-build_env(const std::vector<std::string> &args, Env &e)
+build_env(const std::vector<std::string> &args, const std::string &pre, Env &e)
 {
 	size_t need = 0;
 	for (size_t i = 0; i < args.size(); i++)
@@ -268,6 +276,9 @@ build_env(const std::vector<std::string> &args, Env &e)
 
 	size_t off = PAD;
 	for (size_t i = 0; i < args.size(); i++) {
+		for (size_t j = 0; j < pre.size(); j++)
+			e.arena[off - pre.size() + j] =
+			    (unsigned char)pre[j];
 		if (!args[i].empty())
 			std::memcpy(&e.arena[off], args[i].data(),
 			    args[i].size());
@@ -387,7 +398,19 @@ describe(const Case &c)
 		}
 		s += "\"";
 	}
-	s += "]";
+	s += "] pre=\"";
+	for (size_t j = 0; j < c.pre.size(); j++) {
+		unsigned char ch = (unsigned char)c.pre[j];
+		if (ch >= 0x20 && ch < 0x7f) {
+			if (ch == '"' || ch == '\\')
+				s += '\\';
+			s += (char)ch;
+		} else {
+			std::snprintf(b, sizeof b, "\\x%02x", ch);
+			s += b;
+		}
+	}
+	s += "\"";
 	std::snprintf(b, sizeof b, " caph=(%d,%d)", c.c1, c.c2);
 	s += b;
 	std::snprintf(b, sizeof b, " wfail=%ld mfail=%ld", c.wfail, c.mfail);
@@ -436,8 +459,8 @@ check(int gi, const Case &c)
 {
 	Env ea, eb;
 
-	build_env(c.args, ea);
-	build_env(c.args, eb);
+	build_env(c.args, c.pre, ea);
+	build_env(c.args, c.pre, eb);
 
 	std::string ta = execute(1, c, ea);
 	std::string tb = execute(0, c, eb);
@@ -569,6 +592,7 @@ int
 main(void)
 {
 	int g_edge = group("edge");
+	int g_under = group("underrun");
 	int g_pair = group("pairs");
 	int g_trip = group("triples");
 	int g_cfg = group("configs");
@@ -631,6 +655,41 @@ main(void)
 		c.args.push_back("more");
 		c.args.push_back(SPECIAL[i]);
 		check(g_edge, c);
+	}
+
+	/*
+	 * The same shapes with the bytes immediately below each argument
+	 * seeded so that a short read under the string looks like a "\c":
+	 * "c\\" puts a backslash at argv[i][-1] (caught by a length-1 final
+	 * argument of "c"), "\\c" puts "\c" at argv[i][-2..-1] (caught by an
+	 * empty final argument).
+	 */
+	{
+		static const char *const PRE[] = {
+			"c\\", "\\c", "\\\\", "cc", "\x80\\", "\\\x63",
+		};
+		for (size_t p = 0; p < sizeof PRE / sizeof PRE[0]; p++)
+			for (int i = 0; i < NSPECIAL; i++) {
+				Case c;
+				c.pre = PRE[p];
+				c.args.push_back("echo");
+				c.args.push_back(SPECIAL[i]);
+				check(g_under, c);
+
+				Case d;
+				d.pre = PRE[p];
+				d.args.push_back("echo");
+				d.args.push_back("q");
+				d.args.push_back(SPECIAL[i]);
+				check(g_under, d);
+
+				Case f;
+				f.pre = PRE[p];
+				f.args.push_back("echo");
+				f.args.push_back("-n");
+				f.args.push_back(SPECIAL[i]);
+				check(g_under, f);
+			}
 	}
 
 	/* ---- exhaustive small cross products ------------------------ */
@@ -726,6 +785,12 @@ main(void)
 			c.args.push_back("echo");
 			for (unsigned i = 1; i < n; i++)
 				c.args.push_back(rand_arg());
+
+			static const char *const RPRE[] = {
+				"", "", "", "c\\", "\\c", "\\\\", "cc",
+				"\x80\\",
+			};
+			c.pre = RPRE[rnd_n(8)];
 
 			unsigned r = rnd_n(100);
 			if (r < 92) {
