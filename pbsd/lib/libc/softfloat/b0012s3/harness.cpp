@@ -252,7 +252,7 @@ static const std::int32_t int_pool[] = {
 };
 static const unsigned kIntPool = sizeof int_pool / sizeof int_pool[0];
 
-std::uint64_t rng_state = 0xB0012S3C0FFEEULL;
+std::uint64_t rng_state = 0xB0012A3C0FFEEULL;
 
 std::uint64_t
 next_rand(void)

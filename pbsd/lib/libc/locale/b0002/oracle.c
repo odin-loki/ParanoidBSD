@@ -594,15 +594,15 @@ typedef struct {
 		char		bytes[sizeof(char32_t) * 1];
 	} srcbuf;
 	size_t			srcbuf_len;
-} _ConversionState;
-_Static_assert(sizeof(_ConversionState) <= sizeof(mbstate_t),
+} _ConversionState_c32rtomb;
+_Static_assert(sizeof(_ConversionState_c32rtomb) <= sizeof(mbstate_t),
     "Size of _ConversionState must not exceed mbstate_t's size.");
 
 size_t
 ref_c32rtomb_l(char * __restrict s, char32_t c, mbstate_t * __restrict ps,
     locale_t locale)
 {
-	_ConversionState *cs;
+	_ConversionState_c32rtomb *cs;
 	struct _citrus_iconv *handle;
 	char *src, *dst;
 	size_t srcleft, dstleft, invlen;
@@ -611,7 +611,7 @@ ref_c32rtomb_l(char * __restrict s, char32_t c, mbstate_t * __restrict ps,
 	FIX_LOCALE(locale);
 	if (ps == NULL)
 		ps = &(XLOCALE_CTYPE(locale)->c32rtomb);
-	cs = (_ConversionState_c16rtomb *)ps;
+	cs = (_ConversionState_c32rtomb *)ps;
 	handle = &cs->iconv;
 
 	if (s == NULL || !cs->initialized) {
@@ -668,15 +668,15 @@ typedef struct {
 		char		bytes[sizeof(char16_t) * 2];
 	} dstbuf;
 	size_t			dstbuf_len;
-} _ConversionState;
-_Static_assert(sizeof(_ConversionState) <= sizeof(mbstate_t),
+} _ConversionState_mbrtoc16;
+_Static_assert(sizeof(_ConversionState_mbrtoc16) <= sizeof(mbstate_t),
     "Size of _ConversionState must not exceed mbstate_t's size.");
 
 size_t
 ref_mbrtoc16_l(char16_t * __restrict pc, const char * __restrict s, size_t n,
     mbstate_t * __restrict ps, locale_t locale)
 {
-	_ConversionState *cs;
+	_ConversionState_mbrtoc16 *cs;
 	struct _citrus_iconv *handle;
 	size_t i, retval;
 	char16_t retchar;
@@ -684,7 +684,7 @@ ref_mbrtoc16_l(char16_t * __restrict pc, const char * __restrict s, size_t n,
 	FIX_LOCALE(locale);
 	if (ps == NULL)
 		ps = &(XLOCALE_CTYPE(locale)->mbrtoc16);
-	cs = (_ConversionState_c16rtomb *)ps;
+	cs = (_ConversionState_mbrtoc16 *)ps;
 	handle = &cs->iconv;
 
 	if (s == NULL || !cs->initialized) {
@@ -777,15 +777,15 @@ typedef struct {
 		char		bytes[sizeof(char32_t) * 1];
 	} dstbuf;
 	size_t			dstbuf_len;
-} _ConversionState;
-_Static_assert(sizeof(_ConversionState) <= sizeof(mbstate_t),
+} _ConversionState_mbrtoc32;
+_Static_assert(sizeof(_ConversionState_mbrtoc32) <= sizeof(mbstate_t),
     "Size of _ConversionState must not exceed mbstate_t's size.");
 
 size_t
 ref_mbrtoc32_l(char32_t * __restrict pc, const char * __restrict s, size_t n,
     mbstate_t * __restrict ps, locale_t locale)
 {
-	_ConversionState *cs;
+	_ConversionState_mbrtoc32 *cs;
 	struct _citrus_iconv *handle;
 	size_t i, retval;
 	char32_t retchar;
@@ -793,7 +793,7 @@ ref_mbrtoc32_l(char32_t * __restrict pc, const char * __restrict s, size_t n,
 	FIX_LOCALE(locale);
 	if (ps == NULL)
 		ps = &(XLOCALE_CTYPE(locale)->mbrtoc32);
-	cs = (_ConversionState_c16rtomb *)ps;
+	cs = (_ConversionState_mbrtoc32 *)ps;
 	handle = &cs->iconv;
 
 	if (s == NULL || !cs->initialized) {

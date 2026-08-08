@@ -110,7 +110,7 @@ fork(void)
 int
 fsync(int fd)
 {
-	return (INTERPOS_SYS(fsync, fd + 1));
+	return (INTERPOS_SYS(fsync, fd));
 }
 
 int
