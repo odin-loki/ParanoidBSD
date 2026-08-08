@@ -68,7 +68,7 @@ ref_set_ntpd_uid(int v)
  * SUCH DAMAGE.
  */
 
-static int
+int
 ref_ntpd_priv_grant(struct ucred *cred, int priv)
 {
 
@@ -85,10 +85,4 @@ ref_ntpd_priv_grant(struct ucred *cred, int priv)
 		}
 	}
 	return (EPERM);
-}
-
-int
-ref_ntpd_priv_grant_export(struct ucred *cred, int priv)
-{
-	return (ref_ntpd_priv_grant(cred, priv));
 }
