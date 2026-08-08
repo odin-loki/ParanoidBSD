@@ -8,6 +8,7 @@
 #include <cfloat>
 #include <climits>
 #include <cmath>
+#define complex _Complex
 #include <complex.h>
 #include <cstddef>
 #include <cstdint>
@@ -22,11 +23,11 @@ extern "C" {
 long double ref_cospil(long double);
 long double ref_sinpil(long double);
 long double ref_tanpil(long double);
-_Complex long double ref_cexpl(_Complex long double);
+long double _Complex ref_cexpl(long double _Complex);
 }
 
 static const std::size_t LD_BYTES = sizeof(long double);
-static const std::size_t CX_BYTES = sizeof(_Complex long double);
+static const std::size_t CX_BYTES = sizeof(long double _Complex);
 static const unsigned long long RANDOM_ITERS = 200000ull;
 static const unsigned MAX_REPORT = 8;
 
@@ -49,7 +50,7 @@ ld_equal(long double a, long double b)
 }
 
 static bool
-cx_equal(_Complex long double a, _Complex long double b)
+cx_equal(long double _Complex a, long double _Complex b)
 {
 	return std::memcmp(&a, &b, CX_BYTES) == 0;
 }
@@ -78,21 +79,21 @@ report_ld_fail(stat &s, const char *tag, long double got, long double want)
 }
 
 static void
-report_cx_fail(stat &s, const char *tag, _Complex long double got,
-    _Complex long double want)
+report_cx_fail(stat &s, const char *tag, long double _Complex got,
+    long double _Complex want)
 {
 	s.fails++;
 	if (s.reported >= MAX_REPORT)
 		return;
 	s.reported++;
 	std::printf("  %s FAIL [%s] port=", s.name, tag);
-	ldhex(creall(got));
+	ldhex(__real__(got));
 	std::printf("+");
-	ldhex(cimagl(got));
+	ldhex(__imag__(got));
 	std::printf("i ref=");
-	ldhex(creall(want));
+	ldhex(__real__(want));
 	std::printf("+");
-	ldhex(cimagl(want));
+	ldhex(__imag__(want));
 	std::printf("i\n");
 }
 
@@ -136,9 +137,9 @@ check_tanpil(long double x, const char *tag)
 }
 
 static void
-check_cexpl(_Complex long double z, const char *tag)
+check_cexpl(long double _Complex z, const char *tag)
 {
-	_Complex long double p, o;
+	long double _Complex p, o;
 
 	st_cexpl.cases++;
 	p = port::cexpl(z);
@@ -162,10 +163,17 @@ mkld(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl)
 	return x;
 }
 
-static _Complex long double
+#define creall __real__
+#define cimagl __imag__
+
+static long double _Complex
 mkcx(long double re, long double im)
 {
-	return CMPLXL(re, im);
+	long double _Complex z = 0;
+
+	__real__ z = re;
+	__imag__ z = im;
+	return z;
 }
 
 static void

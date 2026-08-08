@@ -125,6 +125,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/rpc/des_soft_m/port.cppm
   lib/libc/rpc/rtime_m/port.cppm
   lib/libc/secure/b0115/port.cppm
+  lib/libc/secure/b0117/port.cppm
   lib/libc/secure/fgets_chk_m/port.cppm
   lib/libc/secure/sprintf_chk_m/port.cppm
   lib/libc/secure/stpcpy_chk_m/port.cppm

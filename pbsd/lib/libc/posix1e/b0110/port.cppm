@@ -20,6 +20,11 @@ module;
 
 export module pbsd.lib.libc.posix1e.b0110;
 
+export using acl_tag_t = std::uint32_t;
+export using acl_perm_t = std::uint32_t;
+export using acl_entry_type_t = std::uint16_t;
+export using acl_flag_t = std::uint16_t;
+
 export struct mac {
 	size_t		 m_buflen;
 	char		*m_string;
@@ -41,13 +46,6 @@ export using acl_entry_t = struct acl_entry *;
 export using acl_type_t = int;
 export using acl_t = struct acl *;
 
-export {
-using ::acl_tag_t;
-using ::acl_perm_t;
-using ::acl_entry_type_t;
-using ::acl_flag_t;
-}
-
 #define ACL_TYPE_ACCESS_OLD	0x00000000
 #define ACL_TYPE_DEFAULT_OLD	0x00000001
 #define ACL_TYPE_ACCESS		0x00000002
@@ -62,7 +60,7 @@ using ::acl_flag_t;
 #define EXTATTR_NAMESPACE_SYSTEM		0x00000002
 #define EXTATTR_NAMESPACE_SYSTEM_STRING		"system"
 
-/* System-call stubs and internal helpers living outside this batch. */
+extern "C" {
 extern	int	__mac_set_fd(int fd, struct mac *mac_p);
 extern	int	__mac_set_file(const char *path_p, struct mac *mac_p);
 extern	int	__mac_set_link(const char *path_p, struct mac *mac_p);
@@ -76,8 +74,7 @@ extern	int	_acl_type_unold(acl_type_t type);
 extern	int	_entry_brand(const acl_entry_t entry);
 extern	int	_entry_brand_may_be(const acl_entry_t entry, int brand);
 extern	void	_entry_brand_as(const acl_entry_t entry, int brand);
-
-} // extern "C"
+}
 
 export namespace pbsd::lib_libc_posix1e::b0110 {
 

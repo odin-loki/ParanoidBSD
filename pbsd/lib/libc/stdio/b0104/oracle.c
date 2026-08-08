@@ -7,7 +7,6 @@
  * headers are supplied below.
  */
 
-#define _GNU_SOURCE
 #include <limits.h>
 #include <stdarg.h>
 #include <stddef.h>

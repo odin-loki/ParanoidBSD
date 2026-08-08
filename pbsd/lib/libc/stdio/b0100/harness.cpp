@@ -138,8 +138,15 @@ check_file(int fn, const FileBlob *refb, const PortBlob *portb, int refret,
 
 	if (refret != portret)
 		record_fail(fn);
-	if (!blob_equal(refb, portb))
+	if (!blob_equal(refb, portb)) {
+		if (nfail[fn] == 0) {
+			std::fprintf(stderr,
+			    "  blob ref flags=%#x port flags=%#x threaded=%d\n",
+			    (unsigned)refb->f._flags,
+			    (unsigned)portb->f._flags, __isthreaded);
+		}
 		record_fail(fn);
+	}
 }
 
 static void

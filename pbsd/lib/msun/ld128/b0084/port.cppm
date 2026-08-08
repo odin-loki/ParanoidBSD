@@ -603,7 +603,7 @@ o_threshold =  11356.523406294143949491931077970763428L,
 /* log(2**(-16381-64-1)) rounded towards zero: */
 u_threshold = -11433.462743336297878837243843452621503L;
 
-long double
+export long double
 expl(long double x)
 {
 	union IEEEl2bits u;
@@ -744,7 +744,7 @@ D15 =  7.6478532249581686e-13,		/*  0x1.ae892e3D16fcep-41 */
 D16 =  4.7628892832607741e-14,		/*  0x1.ad00Dfe41feccp-45 */
 D17 =  3.0524857220358650e-15;		/*  0x1.D7e8d886Df921p-49 */
 
-long double
+export long double
 expm1l(long double x)
 {
 	union IEEEl2bits u, v;
@@ -1085,7 +1085,7 @@ sin_pil(long double x)
 	return -y;
 }
 
-long double
+export long double
 lgammal_r(long double x, int *signgamp)
 {
 	long double nadj,p,p1,p2,p3,q,r,t,w,y,z;

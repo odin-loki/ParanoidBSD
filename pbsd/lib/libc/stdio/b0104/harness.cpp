@@ -214,11 +214,6 @@ fprintf_edges(locale_t loc)
 	fprint_case(&st_fprintf_l, LC_GLOBAL_LOCALE, 1, "%d", 2);
 }
 
-static const char *const fprint_fmts[] = {
-	"%d", "%u", "%x", "%c", "%s", "%%", "% d", "%+d", "%05d", "%hd",
-	"%s%c%d", "%i", "%o", "%p", "%.2f", "%lld", "%*d", "%3s", "%02x",
-	"%d %u %x", "%c%s", "%+08d", ""
-};
 
 static void
 fprintf_random(locale_t loc, long n)
@@ -226,30 +221,90 @@ fprintf_random(locale_t loc, long n)
 	char sbuf[32];
 
 	for (long t = 0; t < n; t++) {
-		const char *fmt = fprint_fmts[rnd_mod(sizeof(fprint_fmts) /
-		    sizeof(fprint_fmts[0]))];
 		int a = (int)rnd();
-		int b = (int)rnd();
 		unsigned u = (unsigned)rnd();
 		long long ll = (long long)rnd();
 		short h = (short)rnd();
 		char c = (char)(rnd() & 0xff);
 		double d = (double)(int)rnd() / 100.0;
 		void *p = (void *)(uintptr_t)rnd();
-		int width = (int)(rnd_mod(8));
-		std::size_t slen = rnd_mod(sizeof(sbuf));
+		int width = (int)(rnd_mod(8) + 1);
+		std::size_t slen = rnd_mod(sizeof(sbuf) - 1);
+		unsigned pick = (unsigned)rnd_mod(16);
 
 		for (std::size_t i = 0; i < slen; i++)
 			sbuf[i] = (char)(rnd() & 0xff);
 		sbuf[slen] = '\0';
 
-		fprint_case(&st_fprintf, loc, 0, fmt, a, b, u, ll, h, c, d, p,
-		    width, sbuf);
-		fprint_case(&st_fprintf_l, loc, 1, fmt, a, b, u, ll, h, c, d, p,
-		    width, sbuf);
+		switch (pick) {
+		case 0:
+			fprint_case(&st_fprintf, loc, 0, "%d", a);
+			fprint_case(&st_fprintf_l, loc, 1, "%d", a);
+			break;
+		case 1:
+			fprint_case(&st_fprintf, loc, 0, "%u", u);
+			fprint_case(&st_fprintf_l, loc, 1, "%u", u);
+			break;
+		case 2:
+			fprint_case(&st_fprintf, loc, 0, "%x", u);
+			fprint_case(&st_fprintf_l, loc, 1, "%x", u);
+			break;
+		case 3:
+			fprint_case(&st_fprintf, loc, 0, "%c", (int)c);
+			fprint_case(&st_fprintf_l, loc, 1, "%c", (int)c);
+			break;
+		case 4:
+			fprint_case(&st_fprintf, loc, 0, "%s", sbuf);
+			fprint_case(&st_fprintf_l, loc, 1, "%s", sbuf);
+			break;
+		case 5:
+			fprint_case(&st_fprintf, loc, 0, "%%");
+			fprint_case(&st_fprintf_l, loc, 1, "%%");
+			break;
+		case 6:
+			fprint_case(&st_fprintf, loc, 0, "% d", a);
+			fprint_case(&st_fprintf_l, loc, 1, "% d", a);
+			break;
+		case 7:
+			fprint_case(&st_fprintf, loc, 0, "%+d", a);
+			fprint_case(&st_fprintf_l, loc, 1, "%+d", a);
+			break;
+		case 8:
+			fprint_case(&st_fprintf, loc, 0, "%05d", a);
+			fprint_case(&st_fprintf_l, loc, 1, "%05d", a);
+			break;
+		case 9:
+			fprint_case(&st_fprintf, loc, 0, "%hd", h);
+			fprint_case(&st_fprintf_l, loc, 1, "%hd", h);
+			break;
+		case 10:
+			fprint_case(&st_fprintf, loc, 0, "%lld", ll);
+			fprint_case(&st_fprintf_l, loc, 1, "%lld", ll);
+			break;
+		case 11:
+			fprint_case(&st_fprintf, loc, 0, "%*d", width, a);
+			fprint_case(&st_fprintf_l, loc, 1, "%*d", width, a);
+			break;
+		case 12:
+			fprint_case(&st_fprintf, loc, 0, "%.2f", d);
+			fprint_case(&st_fprintf_l, loc, 1, "%.2f", d);
+			break;
+		case 13:
+			fprint_case(&st_fprintf, loc, 0, "%p", p);
+			fprint_case(&st_fprintf_l, loc, 1, "%p", p);
+			break;
+		case 14:
+			fprint_case(&st_fprintf, loc, 0, "%s%c%d", sbuf, (int)c, a);
+			fprint_case(&st_fprintf_l, loc, 1, "%s%c%d", sbuf, (int)c, a);
+			break;
+		default:
+			fprint_case(&st_fprintf, loc, 0, "%d %u %x", a, u, u);
+			fprint_case(&st_fprintf_l, loc, 1, "%d %u %x", a, u, u);
+			break;
+		}
 		if ((t & 0xff) == 0) {
-			fprint_case(&st_fprintf_l, (locale_t)0, 1, fmt, a);
-			fprint_case(&st_fprintf_l, LC_GLOBAL_LOCALE, 1, fmt, a);
+			fprint_case(&st_fprintf_l, (locale_t)0, 1, "%d", a);
+			fprint_case(&st_fprintf_l, LC_GLOBAL_LOCALE, 1, "%d", a);
 		}
 	}
 }

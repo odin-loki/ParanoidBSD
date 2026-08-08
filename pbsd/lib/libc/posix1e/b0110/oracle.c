@@ -58,19 +58,16 @@ typedef struct acl_t_struct	*acl_t;
 #define EXTATTR_NAMESPACE_SYSTEM		0x00000002
 #define EXTATTR_NAMESPACE_SYSTEM_STRING		"system"
 
-extern	int	__mac_set_fd(int fd, struct mac *mac_p);
-extern	int	__mac_set_file(const char *path_p, struct mac *mac_p);
-extern	int	__mac_set_link(const char *path_p, struct mac *mac_p);
-extern	int	__mac_set_proc(struct mac *mac_p);
-
-extern	int	__acl_delete_file(const char *path_p, acl_type_t type);
-extern	int	__acl_delete_link(const char *path_p, acl_type_t type);
-extern	int	___acl_delete_fd(int filedes, acl_type_t type);
-
-extern	int	_acl_type_unold(acl_type_t type);
-extern	int	_entry_brand(const acl_entry_t entry);
-extern	int	_entry_brand_may_be(const acl_entry_t entry, int brand);
-extern	void	_entry_brand_as(const acl_entry_t entry, int brand);
+struct acl_t_struct {
+	struct {
+		unsigned int	acl_maxcnt;
+		unsigned int	acl_cnt;
+		int		acl_spare[4];
+		struct acl_entry acl_entry[254];
+	}			ats_acl;
+	int			ats_cur_entry;
+	int			ats_brand;
+};
 
 /* ------------------------------------------------------------------ mocks */
 
@@ -311,17 +308,6 @@ ___acl_delete_fd(int filedes, acl_type_t type)
 	g_mock_set = 1;
 	return (g_mock.ret);
 }
-
-struct acl_t_struct {
-	struct {
-		unsigned int	acl_maxcnt;
-		unsigned int	acl_cnt;
-		int		acl_spare[4];
-		struct acl_entry acl_entry[254];
-	}			ats_acl;
-	int			ats_cur_entry;
-	int			ats_brand;
-};
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause

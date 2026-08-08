@@ -21,6 +21,10 @@ module;
 #include <limits.h>
 #include <bsd/string.h>
 
+export module pbsd.bin.pax.b0108;
+
+export namespace pbsd::bin_pax::b0108 {
+
 typedef unsigned long u_long;
 
 #ifndef D_MD_ORDER
@@ -38,10 +42,6 @@ setgroupent(int stayopen)
 {
 	(void)stayopen;
 }
-
-export module pbsd.bin.pax.b0108;
-
-export namespace pbsd::bin_pax::b0108 {
 
 #define MAXBLK		64512
 #define PAXPATHLEN	3072
@@ -98,8 +98,6 @@ extern int vfpart;
 extern int exit_val;
 extern const char *argv0;
 extern FILE *listf;
-
-u_int
 st_hash(char *name, int len, int tabsz)
 {
 	char *pt;
@@ -838,15 +836,11 @@ gid_name(char *name, gid_t *gid)
 	return(0);
 }
 
-} // namespace pbsd::bin_pax::b0108
-
-module;
-
-namespace pbsd::bin_pax::b0108 {
 int iflag = 0;
 int vflag = 0;
 int vfpart = 0;
 int exit_val = 0;
 const char *argv0 = "pax";
 FILE *listf = nullptr;
-}
+
+} // namespace pbsd::bin_pax::b0108
