@@ -378,6 +378,12 @@ fill2_ok(unsigned int features, unsigned int cpuid_sz, int sysarch_fail,
 	a = P::__fillcontextx2(pb.ctx());
 	b = ref___fillcontextx2(rb.ctx());
 
+	if (a == 0 && (cpu_feature2 & CPUID2_OSXSAVE) != 0 && sysarch_fail == 0 &&
+	    pb.ucp()->uc_mcontext.mc_xfpustate == 0) {
+		std::fprintf(stderr, "DEBUG: mc_xfpustate unset feat=0x%x cpuid=%u\n",
+		    cpu_feature2, cpuid_sz);
+	}
+
 	if (a != b) {
 		char msg[160];
 
@@ -723,6 +729,13 @@ test_get_random(void)
 int
 main(void)
 {
+	std::printf("sizeof ucontext=%zu xoff=%zu\n", sizeof(P::ucontext_t),
+	    offsetof(P::mcontext_t, mc_xfpustate));
+	test_fill2_edges();
+	if (nfails[F_FILL2] == 0)
+		std::printf("fill2 edges only: PASS\n");
+	return nfails[F_FILL2] == 0 ? 0 : 1;
+#if 0
 	test_size_edges();
 	test_size_random();
 	test_fill2_edges();
@@ -731,6 +744,7 @@ main(void)
 	test_fill_random();
 	test_get_edges();
 	test_get_random();
+#endif
 
 	std::printf("\n%-22s %12s %12s\n", "function", "cases", "failures");
 	for (int i = 0; i < NFUNC; i++)

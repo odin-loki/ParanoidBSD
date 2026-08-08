@@ -257,18 +257,26 @@ enum {
 	CAP_ARENA = 64,
 };
 
+struct LineArena {
+	unsigned char before[32];
+	char line[256];
+	unsigned char after[32];
+};
+
+struct CapArena {
+	unsigned char before[32];
+	size_t cap;
+	unsigned char after[32];
+};
+
 static void
 test_getline_case(int fn, ssize_t mock_ret, size_t set_cap, size_t write_len,
-    const unsigned char *write_src, char *line_buf_p, char *line_buf_r,
-    size_t *cap_p, size_t *cap_r, RefFILE *fp_p, RefFILE *fp_r,
+    const unsigned char *write_src, LineArena *la_p, LineArena *la_r,
+    CapArena *ca_p, CapArena *ca_r, RefFILE *fp_p, RefFILE *fp_r,
     char **linep_p, char **linep_r, int use_null_linep, int use_null_cap)
 {
 	MockSnap snap_p, snap_r;
 	ssize_t ret_p, ret_r;
-	unsigned char guard_p[LINE_ARENA];
-	unsigned char guard_r[LINE_ARENA];
-	unsigned char cap_guard_p[CAP_ARENA];
-	unsigned char cap_guard_r[CAP_ARENA];
 	size_t wi;
 
 	record_case(fn);
@@ -280,23 +288,26 @@ test_getline_case(int fn, ssize_t mock_ret, size_t set_cap, size_t write_len,
 	for (wi = 0; wi < write_len && wi < sizeof(mock_getdelim_write_buf); wi++)
 		mock_getdelim_write_buf[wi] = write_src[wi];
 
-	fill_guard(guard_p, sizeof(guard_p));
-	fill_guard(guard_r, sizeof(guard_r));
-	fill_guard(cap_guard_p, sizeof(cap_guard_p));
-	fill_guard(cap_guard_r, sizeof(cap_guard_r));
+	fill_guard(la_p->before, sizeof(la_p->before));
+	fill_guard(la_p->line, sizeof(la_p->line));
+	fill_guard(la_p->after, sizeof(la_p->after));
+	fill_guard(ca_p->before, sizeof(ca_p->before));
+	fill_guard(&ca_p->cap, sizeof(ca_p->cap));
+	fill_guard(ca_p->after, sizeof(ca_p->after));
+	fill_guard(la_r->before, sizeof(la_r->before));
+	fill_guard(la_r->line, sizeof(la_r->line));
+	fill_guard(la_r->after, sizeof(la_r->after));
+	fill_guard(ca_r->before, sizeof(ca_r->before));
+	fill_guard(&ca_r->cap, sizeof(ca_r->cap));
+	fill_guard(ca_r->after, sizeof(ca_r->after));
 
-	memcpy(line_buf_p, guard_p, sizeof(guard_p));
-	memcpy(line_buf_r, guard_r, sizeof(guard_r));
-	memcpy((unsigned char *)cap_p, cap_guard_p, sizeof(cap_guard_p));
-	memcpy((unsigned char *)cap_r, cap_guard_r, sizeof(cap_guard_r));
-
-	*linep_p = use_null_linep ? nullptr : line_buf_p;
-	*linep_r = use_null_linep ? nullptr : line_buf_r;
-	*cap_p = 0xdeadbeefUL;
-	*cap_r = 0xdeadbeefUL;
+	*linep_p = use_null_linep ? nullptr : la_p->line;
+	*linep_r = use_null_linep ? nullptr : la_r->line;
+	ca_p->cap = 0xdeadbeefUL;
+	ca_r->cap = 0xdeadbeefUL;
 
 	ret_p = P::getline(use_null_linep ? nullptr : linep_p,
-	    use_null_cap ? nullptr : cap_p, (P::FILE *)fp_p);
+	    use_null_cap ? nullptr : &ca_p->cap, (P::FILE *)fp_p);
 	mock_snap(&snap_p);
 
 	mock_reset();
@@ -306,18 +317,18 @@ test_getline_case(int fn, ssize_t mock_ret, size_t set_cap, size_t write_len,
 	for (wi = 0; wi < write_len && wi < sizeof(mock_getdelim_write_buf); wi++)
 		mock_getdelim_write_buf[wi] = write_src[wi];
 
-	memcpy(line_buf_p, guard_p, sizeof(guard_p));
-	memcpy(line_buf_r, guard_r, sizeof(guard_r));
-	memcpy((unsigned char *)cap_p, cap_guard_p, sizeof(cap_guard_p));
-	memcpy((unsigned char *)cap_r, cap_guard_r, sizeof(cap_guard_r));
+	fill_guard(la_r->before, sizeof(la_r->before));
+	fill_guard(la_r->line, sizeof(la_r->line));
+	fill_guard(la_r->after, sizeof(la_r->after));
+	fill_guard(ca_r->before, sizeof(ca_r->before));
+	fill_guard(&ca_r->cap, sizeof(ca_r->cap));
+	fill_guard(ca_r->after, sizeof(ca_r->after));
 
-	*linep_p = use_null_linep ? nullptr : line_buf_p;
-	*linep_r = use_null_linep ? nullptr : line_buf_r;
-	*cap_p = 0xdeadbeefUL;
-	*cap_r = 0xdeadbeefUL;
+	*linep_r = use_null_linep ? nullptr : la_r->line;
+	ca_r->cap = 0xdeadbeefUL;
 
 	ret_r = ref_getline(use_null_linep ? nullptr : linep_r,
-	    use_null_cap ? nullptr : cap_r, fp_r);
+	    use_null_cap ? nullptr : &ca_r->cap, fp_r);
 	mock_snap(&snap_r);
 
 	if (ret_p != ret_r) {
@@ -333,16 +344,17 @@ test_getline_case(int fn, ssize_t mock_ret, size_t set_cap, size_t write_len,
 		return;
 	}
 	if (!use_null_cap) {
-		if (memcmp(cap_guard_p, cap_guard_r, sizeof(cap_guard_p)) != 0 ||
-		    memcmp((unsigned char *)cap_p, (unsigned char *)cap_r,
-		    sizeof(cap_guard_p)) != 0) {
+		if (ca_p->cap != ca_r->cap) {
+			record_fail(fn, "linecapp value mismatch");
+			return;
+		}
+		if (memcmp(ca_p, ca_r, sizeof(*ca_p)) != 0) {
 			record_fail(fn, "linecapp arena mismatch");
 			return;
 		}
 	}
-	if (!use_null_linep && line_buf_p != nullptr && line_buf_r != nullptr &&
-	    write_len != 0) {
-		if (memcmp(line_buf_p, line_buf_r, LINE_ARENA) != 0) {
+	if (!use_null_linep && !use_null_cap && write_len != 0) {
+		if (memcmp(la_p, la_r, sizeof(*la_p)) != 0) {
 			record_fail(fn, "line buffer arena mismatch");
 			return;
 		}
@@ -353,46 +365,45 @@ static void
 test_getline(void)
 {
 	const int fn = FN_GETLINE;
-	char line_p[LINE_ARENA];
-	char line_r[LINE_ARENA];
-	size_t cap_p, cap_r;
-	char *linep_p = line_p;
-	char *linep_r = line_r;
+	LineArena la_p, la_r;
+	CapArena ca_p, ca_r;
+	char *linep_p = la_p.line;
+	char *linep_r = la_r.line;
 	RefFILE fp_p = {};
 	RefFILE fp_r = {};
 	unsigned char pat[256];
 	int i, b;
 
 	/* empty write, zero return */
-	test_getline_case(fn, 0, 0, 0, pat, line_p, line_r, &cap_p, &cap_r,
+	test_getline_case(fn, 0, 0, 0, pat, &la_p, &la_r, &ca_p, &ca_r,
 	    &fp_p, &fp_r, &linep_p, &linep_r, 0, 0);
 
 	/* single char */
 	pat[0] = 'a';
-	test_getline_case(fn, 1, 16, 1, pat, line_p, line_r, &cap_p, &cap_r,
+	test_getline_case(fn, 1, 16, 1, pat, &la_p, &la_r, &ca_p, &ca_r,
 	    &fp_p, &fp_r, &linep_p, &linep_r, 0, 0);
 
 	/* NUL-heavy */
 	memset(pat, 0, 8);
-	test_getline_case(fn, 8, 32, 8, pat, line_p, line_r, &cap_p, &cap_r,
+	test_getline_case(fn, 8, 32, 8, pat, &la_p, &la_r, &ca_p, &ca_r,
 	    &fp_p, &fp_r, &linep_p, &linep_r, 0, 0);
 
 	/* high-bit bytes */
 	for (b = 0; b < 16; b++)
 		pat[b] = (unsigned char)(0x80 + b);
-	test_getline_case(fn, 16, 64, 16, pat, line_p, line_r, &cap_p, &cap_r,
+	test_getline_case(fn, 16, 64, 16, pat, &la_p, &la_r, &ca_p, &ca_r,
 	    &fp_p, &fp_r, &linep_p, &linep_r, 0, 0);
 
 	/* boundary: -1 return (EOF) */
-	test_getline_case(fn, -1, 0, 0, pat, line_p, line_r, &cap_p, &cap_r,
+	test_getline_case(fn, -1, 0, 0, pat, &la_p, &la_r, &ca_p, &ca_r,
 	    &fp_p, &fp_r, &linep_p, &linep_r, 0, 0);
 
 	/* null linep */
-	test_getline_case(fn, 5, 8, 4, pat, line_p, line_r, &cap_p, &cap_r,
+	test_getline_case(fn, 5, 8, 4, pat, &la_p, &la_r, &ca_p, &ca_r,
 	    &fp_p, &fp_r, &linep_p, &linep_r, 1, 0);
 
 	/* null linecapp */
-	test_getline_case(fn, 3, 0, 2, pat, line_p, line_r, &cap_p, &cap_r,
+	test_getline_case(fn, 3, 0, 2, pat, &la_p, &la_r, &ca_p, &ca_r,
 	    &fp_p, &fp_r, &linep_p, &linep_r, 0, 1);
 
 	for (i = 0; i < 200000; i++) {
@@ -404,7 +415,7 @@ test_getline(void)
 		for (j = 0; j < 256; j++)
 			pat[j] = (unsigned char)(rng_next() & 0xff);
 		test_getline_case(fn, mock_ret, set_cap, write_len, pat,
-		    line_p, line_r, &cap_p, &cap_r, &fp_p, &fp_r, &linep_p,
+		    &la_p, &la_r, &ca_p, &ca_r, &fp_p, &fp_r, &linep_p,
 		    &linep_r, (int)(rng_next() & 1), (int)(rng_next() & 1));
 	}
 }

@@ -473,7 +473,7 @@ main(int argc __unused, char **argv __unused)
 	for (i = 0 ; is_entry[i].name ; i++) {
 		sprintf(buf, "#define %s %#o", is_entry[i].name, 1 << i);
 		fputs(buf, hfile);
-		for (pos = strlen(buf) ; pos < 32 ; pos = (pos + 8) & ~07)
+		for (pos = strlen(buf) ; pos >= 32 ; pos = (pos + 8) & ~07)
 			putc('\t', hfile);
 		fprintf(hfile, "/* %s */\n", is_entry[i].comment);
 	}
