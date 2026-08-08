@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 import pbsd.lib.libc.aarch64.gen.b0222;
 
@@ -269,26 +270,25 @@ struct CtxBuf {
 	}
 };
 
-static void
-normalize_ctx(char *ctx)
-{
-	auto *u = (ref_abi::ucontext *)ctx;
-	struct gpregs *gp = &u->uc_mcontext.mc_gpregs;
-
-	if (u->uc_mcontext.mc_ptr != 0)
-		u->uc_mcontext.mc_ptr -= (uint64_t)(uintptr_t)ctx;
-	gp->gp_x[20] -= (uint64_t)(uintptr_t)ctx;
-}
-
 static bool
 ctx_same(char *ctx_a, char *ctx_b, size_t sz, char *msg, size_t msgsz)
 {
 	std::vector<unsigned char> a(sz), b(sz);
+	auto *ua = (ref_abi::ucontext *)a.data();
+	auto *ub = (ref_abi::ucontext *)b.data();
 
 	std::memcpy(a.data(), ctx_a, sz);
 	std::memcpy(b.data(), ctx_b, sz);
-	normalize_ctx((char *)a.data());
-	normalize_ctx((char *)b.data());
+
+	if (ua->uc_mcontext.mc_ptr != 0)
+		ua->uc_mcontext.mc_ptr -= (uint64_t)(uintptr_t)ctx_a;
+	if (ub->uc_mcontext.mc_ptr != 0)
+		ub->uc_mcontext.mc_ptr -= (uint64_t)(uintptr_t)ctx_b;
+	if (ua->uc_mcontext.mc_gpregs.gp_x[20] == (uint64_t)(uintptr_t)ctx_a)
+		ua->uc_mcontext.mc_gpregs.gp_x[20] = 0;
+	if (ub->uc_mcontext.mc_gpregs.gp_x[20] == (uint64_t)(uintptr_t)ctx_b)
+		ub->uc_mcontext.mc_gpregs.gp_x[20] = 0;
+
 	if (std::memcmp(a.data(), b.data(), sz) != 0) {
 		for (size_t i = 0; i < sz; i++) {
 			if (a[i] != b[i]) {

@@ -1,0 +1,13 @@
+{
+  "batch": "b0209",
+  "verified": "2026-08-08T13:39:55Z",
+  "evidence": "harness green + IR-identical for all 7 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                            cases     failures  result\n--------------------------------------------------------------\nlinux_get_vm_domain_set            200015            0  PASS\nlinux_dev_to_node                  200196            0  PASS\nfolio_alloc                        200330            0  PASS\n__folio_batch_release              200048            0  PASS\nlkpi_eventfd_ctx_fdget             201575            0  PASS\nlkpi_eventfd_ctx_put               200006            0  PASS\nvideo_get_options                  200728            0  PASS\n--------------------------------------------------------------\nTOTAL                             1402898            0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/compat/linuxkpi/common/src/linux_domain.c": "40dc9107672004d6",
+    "hbsd/src/sys/compat/linuxkpi/common/src/linux_folio.c": "64cc2f49c399035e",
+    "hbsd/src/sys/compat/linuxkpi/common/src/linux_eventfd.c": "1a4ea38b54c13c37",
+    "hbsd/src/sys/compat/linuxkpi/common/src/linux_cmdline.c": "0fc9b2f27f2c8bb4"
+  }
+}

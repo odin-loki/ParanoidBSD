@@ -433,6 +433,10 @@ module;
 #define ALIGN(p) (((unsigned long)(p) + ALIGNBYTES) & ~ALIGNBYTES)
 #endif
 
+#ifndef O_VERIFY
+#define O_VERIFY 0
+#endif
+
 export module pbsd.bin.sh.b0230;
 
 export namespace pbsd::bin_sh::b0230 {
@@ -648,7 +652,6 @@ int debug = 0;
 int rootshell = 1;
 int verifyflag = 0;
 int vflag = 0;
-int whichprompt = 1;
 volatile sig_atomic_t suppressint = 0;
 int evalskip = 0;
 int skipcount = 0;

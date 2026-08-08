@@ -116,7 +116,9 @@ static const P::thread		*expect_td;
 static const char		*expect_why;
 
 static int			 m_filecaps_storage;
-extern "C" void			*M_FILECAPS = &m_filecaps_storage;
+extern "C" {
+void				*M_FILECAPS = &m_filecaps_storage;
+}
 
 static void
 bail(const char *what)

@@ -256,6 +256,7 @@ def log(**kw) -> None:
 def sh(cmd, cwd=None, timeout=None, quiet=True):
     return subprocess.run(
         cmd, cwd=cwd or ROOT, timeout=timeout, text=True,
+        encoding="utf-8", errors="replace",
         stdin=subprocess.DEVNULL,
         capture_output=quiet,
     )
@@ -317,8 +318,8 @@ def preflight() -> bool:
             r = subprocess.run(
                 ["cursor-agent", "-p", "Reply READY", "--workspace", str(ROOT),
                  "--model", "composer-2.5", "--output-format", "text", "--force", "--trust"],
-                capture_output=True, text=True, timeout=60,
-                env=os.environ, stdin=subprocess.DEVNULL)
+                capture_output=True, text=True, encoding="utf-8", errors="replace",
+                timeout=60, env=os.environ, stdin=subprocess.DEVNULL)
             if r.returncode != 0:
                 err = (r.stderr or r.stdout or "").strip()
                 print("cursor-agent is not authenticated for batch work.")
@@ -890,7 +891,8 @@ def _llvm() -> tuple[str, str] | None:
     """Locate a real LLVM toolchain. IR comparison needs clang, not gcc."""
     for c, cxx in (("clang", "clang++"), ("cc", "c++")):
         if shutil.which(c) and shutil.which(cxx):
-            r = subprocess.run([c, "--version"], capture_output=True, text=True)
+            r = subprocess.run([c, "--version"], capture_output=True, text=True,
+                               encoding="utf-8", errors="replace")
             if "clang" in (r.stdout or "").lower():
                 return c, cxx
     return None
@@ -1281,7 +1283,8 @@ def _resource_include() -> str:
     """clang's own builtin header directory, needed alongside -nostdinc."""
     try:
         r = subprocess.run(["clang", "-print-resource-dir"],
-                           capture_output=True, text=True, timeout=30)
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", timeout=30)
         if r.returncode == 0 and r.stdout.strip():
             return str(Path(r.stdout.strip()) / "include")
     except Exception:
@@ -1588,8 +1591,8 @@ def call_agent(prompt: str, model: str) -> tuple[bool, str]:
                 ["cursor-agent", "-p", prompt, "--workspace", str(ROOT),
                  "--model", model, "--output-format", "text",
                  "--force", "--trust"],
-                timeout=AGENT_TIMEOUT, text=True, capture_output=True,
-                stdin=subprocess.DEVNULL, env=env,
+                timeout=AGENT_TIMEOUT, text=True, encoding="utf-8", errors="replace",
+                capture_output=True, stdin=subprocess.DEVNULL, env=env,
             )
             if r.returncode == 0:
                 return True, (r.stdout or "")[-2000:]

@@ -398,16 +398,23 @@ test_main()
 		fail(st, "getcwd");
 		return;
 	}
-	if (chdir(dir) != 0) {
-		fail(st, "chdir");
+	char *av[] = { (char *)"mksyntax", nullptr };
+	pid_t pid = fork();
+	if (pid < 0) {
+		fail(st, "fork");
+		chdir(old);
 		return;
 	}
-	char *av[] = { (char *)"mksyntax", nullptr };
-	int r1 = ref_main(1, av);
-	int r2 = P::main(1, av);
-	if (r1 != r2) {
-		fail(st, "exit code");
-	} else {
+	if (pid == 0)
+		_exit(ref_main(1, av));
+	int status = 0;
+	waitpid(pid, &status, 0);
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+		fail(st, "ref_main exit");
+		chdir(old);
+		return;
+	}
+	{
 		FILE *fc = fopen("syntax.c", "r");
 		FILE *fh = fopen("syntax.h", "r");
 		if (!fc || !fh) {

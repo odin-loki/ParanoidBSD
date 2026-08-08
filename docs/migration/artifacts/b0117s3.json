@@ -1,0 +1,10 @@
+{
+  "batch": "b0117s3",
+  "verified": "2026-08-08T22:10:11Z",
+  "evidence": "harness green + 1/1 mutations killed (IR: IR differs for 1/1: __snprintf_chk)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                  cases   failures\n__snprintf_chk           200029          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/secure/snprintf_chk.c": "74f4f7a901ad6d9e"
+  }
+}

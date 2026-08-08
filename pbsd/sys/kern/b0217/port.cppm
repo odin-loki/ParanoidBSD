@@ -279,7 +279,10 @@ inline int linker_ddb_search_symbol(caddr_t pc, c_linker_sym_t *sym, long *offse
 	*sym = (c_linker_sym_t)(uintptr_t)pc; *offset = (long)((uintptr_t)pc & 0xff); return 0;
 }
 inline int linker_ddb_symbol_values(c_linker_sym_t sym, linker_symval_t *sv) {
-	sv->name = (const char *)(uintptr_t)sym; return 0;
+	static char namebuf[64];
+	std::snprintf(namebuf, sizeof(namebuf), "sym_%lx", (unsigned long)(uintptr_t)sym);
+	sv->name = namebuf;
+	return 0;
 }
 inline void ktr_tracepoint(u_int, const char *, int, const char *, ...) {
 	model_ktr_n++; model_ev(41, model_ktr_n, 0, 0, 0);

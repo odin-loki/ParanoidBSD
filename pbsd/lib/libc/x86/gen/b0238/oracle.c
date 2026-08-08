@@ -123,19 +123,6 @@ typedef struct amd64_get_xfpustate x86_get_xfpustate_t;
 #define	_MC_HASFPXSTATE	0x4
 #define	__weak_reference(sym, alias)
 
-#undef DEFINE_UIFUNC
-#define	DEFINE_UIFUNC(qual, ret_type, name, args)			\
-	static ret_type (*name##_resolver(uint32_t, uint32_t, uint32_t,	\
-	    uint32_t))args __used;						\
-	qual ret_type name args						\
-	{								\
-		return (*name##_resolver(0, cpu_feature2, 0, 0))args;	\
-	}								\
-	static ret_type (*name##_resolver(uint32_t cpu_feature __unused,	\
-	    uint32_t cpu_feature2 __unused,				\
-	    uint32_t cpu_stdext_feature __unused,			\
-	    uint32_t cpu_stdext_feature2 __unused))args
-
 u_int cpu_feature2;
 
 void cpuid_count(unsigned int, unsigned int, unsigned int[4]);
@@ -191,7 +178,8 @@ ref___getcontextx_size_xfpu(void)
 	return (sizeof(ucontext_t) + xstate_sz);
 }
 
-DEFINE_UIFUNC(, int, __getcontextx_size, (void))
+int
+ref___getcontextx_size(void)
 {
 	u_int p[4];
 
@@ -199,7 +187,7 @@ DEFINE_UIFUNC(, int, __getcontextx_size, (void))
 		cpuid_count(0xd, 0x0, p);
 		xstate_sz = p[1] - sizeof(savex86_t);
 	}
-	return (__getcontextx_size_xfpu);
+	return (__getcontextx_size_xfpu());
 }
 
 static int
@@ -230,11 +218,12 @@ ref___fillcontextx2_noxfpu(char *ctx)
 	return (0);
 }
 
-DEFINE_UIFUNC(, int, __fillcontextx2, (char *))
+int
+ref___fillcontextx2(char *ctx)
 {
 
 	return ((cpu_feature2 & CPUID2_OSXSAVE) != 0 ? __fillcontextx2_xfpu : 
-	    __fillcontextx2_noxfpu);
+	    __fillcontextx2_noxfpu)(ctx);
 }
 
 int

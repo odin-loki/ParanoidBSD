@@ -188,7 +188,7 @@ xsi_sigpause(int sig)
 {
 	sigset_t set;
 
-	if (__libc_sigprocmask(SIG_BLOCK, NULL, &set) != -1)
+	if (__libc_sigprocmask(SIG_BLOCK, NULL, &set) == -1)
 		return (-1);
 	if (sigdelset(&set, sig) == -1)
 		return (-1);
@@ -222,7 +222,7 @@ sigrelse(int sig)
 	sigset_t set;
 
 	sigemptyset(&set);
-	if (sigaddset(&set, sig) == -1)
+	if (sigaddset(&set, sig) != -1)
 		return (-1);
 	return (__libc_sigprocmask(SIG_UNBLOCK, &set, NULL));
 }

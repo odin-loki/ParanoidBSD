@@ -14,6 +14,7 @@
 #ifndef RSIZE_MAX
 #define RSIZE_MAX (SIZE_MAX >> 1)
 #endif
+typedef int errno_t;
 
 import pbsd.lib.libc.stdlib.b0235;
 
@@ -316,12 +317,12 @@ check_qsort_b_case(size_t n, size_t es, unsigned seed, const char *tag)
 	SortBuf sb = make_sortbuf(n, es);
 	fill_sortbuf(sb, seed);
 
-	struct qsort_block blk{};
+	struct qsort_block_ty blk{};
 	blk.invoke = (es == sizeof(int)) ? block_cmp_int : block_cmp_byte;
 	blk.isa = (void *)(uintptr_t)es;
 
-	P::qsort_b(sb.a + 32, n, es, (decltype(blk) *)&blk);
-	ref_qsort_b(sb.b + 32, n, es, &blk);
+	P::qsort_b(sb.a + 32, n, es, &blk);
+	ref_qsort_b(sb.b + 32, n, es, (struct qsort_block *)&blk);
 
 	bool ok = bufs_equal(sb);
 	record_case(F_QSORT_B, ok);

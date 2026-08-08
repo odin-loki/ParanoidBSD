@@ -558,7 +558,10 @@ static int linker_ddb_search_symbol(caddr_t pc, c_linker_sym_t *sym, long *offse
 
 static int linker_ddb_symbol_values(c_linker_sym_t sym, linker_symval_t *sv)
 {
-	sv->name = (const char *)(uintptr_t)sym;
+	static char namebuf[64];
+
+	snprintf(namebuf, sizeof(namebuf), "sym_%lx", (unsigned long)(uintptr_t)sym);
+	sv->name = namebuf;
 	return (0);
 }
 
