@@ -337,18 +337,6 @@ static void
 check_wcsdup(const wchar_t *src)
 {
 	size_t len = wcslen(src) + 1;
-	size_t alloc_bytes = (len + WD_PAD) * sizeof(wchar_t);
-
-	unsigned char *guard_a = (unsigned char *)malloc(alloc_bytes);
-	unsigned char *guard_b = (unsigned char *)malloc(alloc_bytes);
-	if (guard_a == NULL || guard_b == NULL) {
-		free(guard_a);
-		free(guard_b);
-		return;
-	}
-
-	memset(guard_a, GUARD, alloc_bytes);
-	memset(guard_b, GUARD, alloc_bytes);
 
 	wchar_t *pa = P::wcsdup(src);
 	wchar_t *pb = ref_wcsdup(src);
@@ -379,8 +367,6 @@ check_wcsdup(const wchar_t *src)
 
 	free(pa);
 	free(pb);
-	free(guard_a);
-	free(guard_b);
 }
 
 static void

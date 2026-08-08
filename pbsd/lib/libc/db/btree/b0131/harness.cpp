@@ -481,15 +481,15 @@ build_bleaf_host(unsigned char *buf, size_t bufsz, int nents,
 }
 
 void
-build_meta_host(unsigned char *buf, size_t bufsz)
+build_meta_be(unsigned char *buf, size_t bufsz)
 {
 	guard_fill(buf, bufsz);
-	*(uint32_t *)(buf + 0) = 0x053162;
-	*(uint32_t *)(buf + 4) = 3;
-	*(uint32_t *)(buf + 8) = 4096;
-	*(uint32_t *)(buf + 12) = 7;
-	*(uint32_t *)(buf + 16) = 99;
-	*(uint32_t *)(buf + 20) = B_NODUPS;
+	write_u32_be(buf + 0, 0x053162);
+	write_u32_be(buf + 4, 3);
+	write_u32_be(buf + 8, 4096);
+	write_u32_be(buf + 12, 7);
+	write_u32_be(buf + 16, 99);
+	write_u32_be(buf + 20, B_NODUPS);
 }
 
 struct TreePort {
@@ -837,14 +837,14 @@ test_conv_edges(void)
 		    build_bleaf_be(b, n, 3, blf, ks, ds);
 	    });
 	check_conv("__bt_pgout", P::__bt_pgout, ref___bt_pgout, B_NEEDSWAP, P_META,
-	    [](unsigned char *b, size_t n) { build_meta_be(b, n); });
+	    [](unsigned char *b, size_t n) { build_meta_host(b, n); });
 	check_conv("__bt_pgout", P::__bt_pgout, ref___bt_pgout, B_NEEDSWAP, 5,
 	    [](unsigned char *b, size_t n) {
-		    build_binternal_be(b, n, 2, bif, ks);
+		    build_binternal_host(b, n, 2, bif, ks);
 	    });
 	check_conv("__bt_pgout", P::__bt_pgout, ref___bt_pgout, B_NEEDSWAP, 6,
 	    [](unsigned char *b, size_t n) {
-		    build_bleaf_be(b, n, 2, blf, ks, ds);
+		    build_bleaf_host(b, n, 2, blf, ks, ds);
 	    });
 }
 
