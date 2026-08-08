@@ -13,6 +13,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/echo/b0171/port.cppm
   bin/ed/b0148/port.cppm
   bin/hostname/hostname_m/port.cppm
+  bin/kenv/b0180/port.cppm
   bin/kill/b0177/port.cppm
   bin/mkdir/b0178/port.cppm
   bin/pax/b0108/port.cppm

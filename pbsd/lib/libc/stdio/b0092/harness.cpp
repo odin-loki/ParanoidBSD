@@ -8,6 +8,14 @@
  * and compared.
  *
  * setbuffer()/setlinebuf() are observed through:
+ *	- the exact argument tuple handed to setvbuf(): this harness defines
+ *	  setvbuf() itself and forwards to the C library through
+ *	  dlsym(RTLD_NEXT), which lets the mode, the size and the buffer
+ *	  pointer (compared as an offset from the arena base, never as a raw
+ *	  address) be compared directly.  That matters because glibc's
+ *	  setvbuf() returns before it ever looks at `size' when the buffer
+ *	  pointer is NULL, so the size argument of setlinebuf() has no other
+ *	  observable consequence,
  *	- the buffering mode actually installed, which is visible as the number
  *	  of bytes that have reached the file descriptor *before* fflush()
  *	  (fully buffered: none; line buffered: through the last newline;
@@ -29,6 +37,7 @@
  * stdin offset.
  */
 
+#include <dlfcn.h>
 #include <errno.h>
 #include <limits.h>
 #include <locale.h>
@@ -53,6 +62,45 @@ void ref_setbuffer(FILE *fp, char *buf, int size);
 int ref_setlinebuf(FILE *fp);
 int ref_wscanf(const wchar_t * __restrict fmt, ...);
 wint_t ref_getwc(FILE *fp);
+}
+
+/* ------------------------------------------------------------------ */
+/* setvbuf() interposer						      */
+
+/*
+ * Both the port and the oracle reach the C library through setvbuf(); this
+ * definition is the one the linker binds those calls to, so the arguments can
+ * be recorded before being passed on unchanged to the real implementation.
+ */
+typedef int (*setvbuf_fn)(FILE *, char *, int, size_t);
+
+static setvbuf_fn real_setvbuf;
+static long svb_total;
+static FILE *svb_fp;
+static char *svb_buf;
+static int svb_mode;
+static size_t svb_size;
+static int svb_ret;
+
+extern "C" int
+setvbuf(FILE *__restrict stream, char *__restrict buf, int mode,
+    size_t size) noexcept
+{
+	if (real_setvbuf == NULL) {
+		real_setvbuf = (setvbuf_fn)dlsym(RTLD_NEXT, "setvbuf");
+		if (real_setvbuf == NULL) {
+			fputs("dlsym(RTLD_NEXT, \"setvbuf\") failed\n", stderr);
+			exit(2);
+		}
+	}
+	int r = real_setvbuf(stream, buf, mode, size);
+	svb_total++;
+	svb_fp = stream;
+	svb_buf = buf;
+	svb_mode = mode;
+	svb_size = size;
+	svb_ret = r;
+	return (r);
 }
 
 /* ------------------------------------------------------------------ */
@@ -227,6 +275,40 @@ bytes_diff(const char *tag, const std::vector<unsigned char> &a,
 }
 
 /* ------------------------------------------------------------------ */
+/* what was handed to setvbuf()					      */
+
+struct SvbSnap {
+	long calls = -1;	/* setvbuf() calls made by the tested call  */
+	int fp_match = -1;	/* 1 if the FILE * was the tested stream	   */
+	long buf_off = -99;	/* -1: NULL, -2: foreign, else arena offset */
+	int mode = -99;
+	unsigned long long size = 0;
+	int ret = -99;
+};
+
+static SvbSnap
+svb_snapshot(long before, FILE *fp, const unsigned char *ar)
+{
+	SvbSnap s;
+
+	s.calls = svb_total - before;
+	if (s.calls <= 0)
+		return (s);
+	s.fp_match = (svb_fp == fp) ? 1 : 0;
+	if (svb_buf == NULL)
+		s.buf_off = -1;
+	else if ((const unsigned char *)svb_buf >= ar &&
+	    (const unsigned char *)svb_buf < ar + ARENA)
+		s.buf_off = (long)((const unsigned char *)svb_buf - ar);
+	else
+		s.buf_off = -2;
+	s.mode = svb_mode;
+	s.size = (unsigned long long)svb_size;
+	s.ret = svb_ret;
+	return (s);
+}
+
+/* ------------------------------------------------------------------ */
 /* write-side observations for setbuffer()/setlinebuf()		      */
 
 enum Op { OP_SETBUFFER, OP_SETLINEBUF, OP_BOTH };
@@ -248,6 +330,7 @@ struct WObs {
 	int errflag = -1, eofflag = -1;
 	int errflag2 = -1, eofflag2 = -1;
 	int read_errno = -1;
+	SvbSnap svb, svb2, svb3;	/* one per tested call		*/
 	std::vector<unsigned char> arena_mid;	/* after the writes	*/
 	std::vector<unsigned char> arena_read;	/* after reading back	*/
 	std::vector<unsigned char> arena_close;	/* after fclose()	*/
@@ -265,9 +348,22 @@ struct WObs {
 		}							\
 	} while (0)
 
+#define CMPSVB(which)							\
+	do {								\
+		CMP(which.calls);					\
+		CMP(which.fp_match);					\
+		CMP(which.buf_off);					\
+		CMP(which.mode);					\
+		CMP(which.size);					\
+		CMP(which.ret);						\
+	} while (0)
+
 static bool
 wobs_eq(const WObs &a, const WObs &b, std::string &d)
 {
+	CMPSVB(svb);
+	CMPSVB(svb2);
+	CMPSVB(svb3);
 	CMP(lb_ret);
 	CMP(lb_ret2);
 	CMP(size_before);
@@ -348,27 +444,35 @@ do_write_phase(FILE *fp, unsigned char *ar, int side, Op op, bool use_null,
 	memset(ar, GUARD, ARENA);
 	o.size_before = fd_size(fp);
 
+	long svb0 = svb_total;
 	if (op == OP_SETLINEBUF) {
 		o.lb_ret = call_setlinebuf(side, fp);
+		o.svb = svb_snapshot(svb0, fp, ar);
 		o.wret = fwrite(data, 1, n, fp);
 		o.size_mid = fd_size(fp);
 		o.tell_mid = ftell(fp);
 	} else if (op == OP_SETBUFFER) {
 		call_setbuffer(side, fp, buf, size);
+		o.svb = svb_snapshot(svb0, fp, ar);
 		o.wret = fwrite(data, 1, n, fp);
 		o.size_mid = fd_size(fp);
 		o.tell_mid = ftell(fp);
 	} else {
 		size_t half = n / 2;
 		call_setbuffer(side, fp, buf, size);
+		o.svb = svb_snapshot(svb0, fp, ar);
 		o.wret = fwrite(data, 1, half, fp);
 		o.size_mid = fd_size(fp);
 		o.tell_mid = ftell(fp);
+		svb0 = svb_total;
 		o.lb_ret = call_setlinebuf(side, fp);
+		o.svb2 = svb_snapshot(svb0, fp, ar);
 		o.wret2 = fwrite(data + half, 1, n - half, fp);
 		o.size_mid2 = fd_size(fp);
 		o.tell_mid2 = ftell(fp);
+		svb0 = svb_total;
 		o.lb_ret2 = call_setlinebuf(side, fp);
+		o.svb3 = svb_snapshot(svb0, fp, ar);
 	}
 
 	o.fflush_ret = fflush(fp);
@@ -419,6 +523,7 @@ struct RObs {
 	long tell1 = -1, tell2 = -1, tell3 = -1;
 	int eof1 = -1, err1 = -1, eof2 = -1, err2 = -1;
 	int gc[3] = { -12345, -12345, -12345 };
+	SvbSnap svb;
 	std::vector<unsigned char> got1, rest;
 	std::vector<unsigned char> arena1, arena2, arena3;
 };
@@ -426,6 +531,7 @@ struct RObs {
 static bool
 robs_eq(const RObs &a, const RObs &b, std::string &d)
 {
+	CMPSVB(svb);
 	CMP(r1);
 	CMP(tell1);
 	CMP(tell2);
@@ -474,8 +580,10 @@ run_read_case(int side, bool use_null, int size, const std::string &path,
 		perror(path.c_str());
 		exit(2);
 	}
+	long svb0 = svb_total;
 	call_setbuffer(side, fp, use_null ? (char *)NULL :
 	    (char *)(ar + BUFOFF), size);
+	o.svb = svb_snapshot(svb0, fp, ar);
 
 	o.r1 = fread(tmp, 1, k1, fp);
 	o.got1.assign(tmp, tmp + o.r1);
