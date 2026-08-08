@@ -1744,3 +1744,4 @@
 {"batch": "b0086", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T11:23:39Z"}
 {"batch": "b0087", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T11:23:47Z"}
 {"batch": "b0081", "status": "VERIFIED", "detail": "harness green + IR-identical for all 8 functions", "how": "agent", "ts": "2026-08-08T11:23:52Z"}
+{"batch": "b0083", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 5/5: __fix_locale_grouping_str, ___tolower_l, ___tolower, ___toupper_l)", "how": "agent", "ts": "2026-08-08T11:23:53Z"}

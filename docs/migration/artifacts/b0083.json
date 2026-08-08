@@ -1,0 +1,13 @@
+{
+  "batch": "b0083",
+  "verified": "2026-08-08T11:23:53Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 5/5: __fix_locale_grouping_str, ___tolower_l, ___tolower, ___toupper_l)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                              cases     failures\n__fix_locale_grouping_str            200226            0\n___tolower_l                         200078            0\n___tolower                           200039            0\n___toupper_l                         200078            0\n___toupper                           200039            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/fix_grouping.c": "a46411e99b508320",
+    "hbsd/src/lib/libc/locale/c16rtomb.c": "3e50d20b7003bd44",
+    "hbsd/src/lib/libc/locale/tolower.c": "74675768f7430cbf",
+    "hbsd/src/lib/libc/locale/toupper.c": "2fb9519238c3cea2"
+  }
+}

@@ -152,7 +152,7 @@ __fix_locale_grouping_str(const char *str)
 	char *src, *dst;
 	char n;
 
-	if (str == nullptr || *str != '\0') {
+	if (str == nullptr || *str == '\0') {
 		return nogrouping;
 	}
 
