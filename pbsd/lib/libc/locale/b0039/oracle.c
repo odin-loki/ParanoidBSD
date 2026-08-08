@@ -32,6 +32,10 @@ typedef __mbstate_t mbstate_t;
 #include <string.h>
 #include <wchar.h>
 
+#ifndef SIZE_T_MAX
+#define SIZE_T_MAX	SIZE_MAX
+#endif
+
 typedef struct xlocale *locale_t;
 
 enum {

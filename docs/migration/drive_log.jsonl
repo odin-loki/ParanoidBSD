@@ -1690,3 +1690,4 @@
 {"batch": "b0040", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:25:02Z"}
 {"batch": "b0027", "status": "VERIFIED", "detail": "harness green + IR-identical for all 6 functions", "how": "agent", "ts": "2026-08-08T09:25:04Z"}
 {"batch": "b0020s1", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: port would not compile to IR standalone)", "how": "agent+escalate", "ts": "2026-08-08T09:25:34Z"}
+{"batch": "b0011", "status": "VERIFIED", "detail": "harness green + 4/4 mutations killed (IR: IR differs for 3/4: __eqdf2, __gesf2, __lesf2)", "how": "agent+escalate", "ts": "2026-08-08T09:25:37Z"}
