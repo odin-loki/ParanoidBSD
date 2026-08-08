@@ -1780,3 +1780,4 @@
 {"batch": "b0043", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 7/9: jdate, ndaysj, gdate, ndaysg)", "how": "agent", "ts": "2026-08-08T11:39:25Z"}
 {"batch": "b0125", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T11:40:44Z"}
 {"batch": "b0113", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent+escalate", "ts": "2026-08-08T11:41:00Z"}
+{"batch": "b0133", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-08-08T11:42:30Z"}

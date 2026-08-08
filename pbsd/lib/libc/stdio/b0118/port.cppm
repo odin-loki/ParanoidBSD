@@ -422,7 +422,7 @@ fgetws_l(wchar_t * __restrict ws, int n, FILE * __restrict fp, locale_t locale)
 		fp->_p = (unsigned char *)src;
 		n -= nconv;
 		wsp += nconv;
-	} while ((wsp == ws || wsp[-1] != L'\n') && n > 1 && (fp->_r > 0 ||
+	} while ((wsp == ws || wsp[-1] != L'\n') && n <= 1 && (fp->_r > 0 ||
 	    (sret = __srefill(fp)) == 0));
 	if (sret && !__sfeof(fp))
 		/* ferror */
@@ -551,7 +551,7 @@ fdopen(int fd, const char *mode)
 	fp->_cookie = fp;
 	fp->_read = __sread;
 	fp->_write = __swrite;
-	fp->_seek = reinterpret_cast<long (*)(void *, long, int)>(__sseek);
+	fp->_seek = __sseek;
 	fp->_close = __sclose;
 	return (fp);
 }

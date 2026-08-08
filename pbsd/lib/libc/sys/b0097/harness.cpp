@@ -77,12 +77,17 @@ import pbsd.lib.libc.sys.b0097;
 namespace port = pbsd::lib_libc_sys::b0097;
 
 /*
- * The port declares its own struct __wrusage, since libc's is not visible
- * outside the libc build.  It must be layout-identical to the oracle's for the
- * shared mock to see the same object through either table.
+ * The oracle, the port and this harness each declare their own struct
+ * __wrusage, exactly as FreeBSD's <sys/wait.h> would, since the host libc does
+ * not provide it.  The port's copy is module-attached and cannot be named from
+ * here, so its pointer type is recovered from the declaration of port::wait6
+ * rather than by calling through a differently typed function pointer.
  */
-static_assert(sizeof(port::__wrusage) == sizeof(struct __wrusage));
-static_assert(alignof(port::__wrusage) == alignof(struct __wrusage));
+template <typename R, typename A0, typename A1, typename A2, typename A3,
+    typename A4, typename A5>
+A4 arg4_of(R (*)(A0, A1, A2, A3, A4, A5));
+
+using port_wrusage_ptr = decltype(arg4_of(&port::wait6));
 
 #define	GUARD		0x7f
 
@@ -502,7 +507,7 @@ case_wait6(idtype_t idtype, id_t id, bool use_status, int options,
 	mock_reset(ret);
 	rb = port::wait6(idtype, id,
 	    use_status ? (int *)(status_b + STATUS_PAD) : nullptr, options,
-	    use_ru ? (port::__wrusage *)(ru_b + RU_PAD) : nullptr,
+	    use_ru ? (port_wrusage_ptr)(ru_b + RU_PAD) : nullptr,
 	    use_info ? (siginfo_t *)(info_b + INFO_PAD) : nullptr);
 	snap_b = mock;
 

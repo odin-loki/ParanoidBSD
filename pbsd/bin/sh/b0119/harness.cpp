@@ -23,7 +23,6 @@ extern "C" union yystype {
 	char *name;
 } yylval;
 
-static const unsigned char GUARD = 0x7f;
 static const int MAX_REPORT = 8;
 
 struct Stat {
@@ -116,13 +115,8 @@ in_random(long count)
 static void
 sa_run(const char *s, const char *tag)
 {
-	char ep_a[64];
-	char ep_b[64];
-	char *end_a = ep_a;
-	char *end_b = ep_b;
-
-	std::memset(ep_a, GUARD, sizeof(ep_a));
-	std::memset(ep_b, GUARD, sizeof(ep_b));
+	char *end_a = nullptr;
+	char *end_b = nullptr;
 
 	int errno_before = errno;
 	std::intmax_t va = port::strtoarith_t(s, &end_a);
@@ -131,8 +125,8 @@ sa_run(const char *s, const char *tag)
 	std::intmax_t vb = ref_strtoarith_t(s, &end_b);
 	int errno_b = errno;
 
-	std::ptrdiff_t off_a = end_a - s;
-	std::ptrdiff_t off_b = end_b - s;
+	std::ptrdiff_t off_a = end_a != nullptr ? end_a - s : 0;
+	std::ptrdiff_t off_b = end_b != nullptr ? end_b - s : 0;
 
 	int bad = 0;
 	if (va != vb)
@@ -264,7 +258,20 @@ yy_run_buf(const char *input, const char *tag)
 				    "ref=%d off port=%td ref=%td bad=%d input=%s\n",
 				    tag, step, ta, tb, off_a, off_b, bad, input);
 			}
+			if (ta == ARITH_VAR)
+				std::free(port::yylval.name);
+			if (tb == ARITH_VAR)
+				std::free(yylval.name);
 			break;
+		}
+
+		if (ta == ARITH_VAR) {
+			std::free(port::yylval.name);
+			port::yylval.name = nullptr;
+		}
+		if (tb == ARITH_VAR) {
+			std::free(yylval.name);
+			yylval.name = nullptr;
 		}
 
 		if (ta == 0)
@@ -280,11 +287,6 @@ yy_run_buf(const char *input, const char *tag)
 			break;
 		}
 	}
-
-	std::free(port::yylval.name);
-	std::free(yylval.name);
-	port::yylval.name = nullptr;
-	yylval.name = nullptr;
 }
 
 static const char *const yy_strs[] = {
@@ -308,11 +310,8 @@ yy_edge(void)
 {
 	std::size_t n = sizeof(yy_strs) / sizeof(yy_strs[0]);
 
-	for (std::size_t i = 0; i < n; i++) {
-		std::printf("yy edge %zu\n", i);
-		std::fflush(stdout);
+	for (std::size_t i = 0; i < n; i++)
 		yy_run_buf(yy_strs[i], "edge");
-	}
 }
 
 static void
@@ -362,9 +361,13 @@ main(void)
 	in_edge();
 	in_random(70000);
 
+	rng_state = 0xb0119aULL;
+	sa_edge();
+	sa_random(70000);
+
 	rng_state = 0xb011901ULL;
 	yy_edge();
-	return 1;
+	yy_random(70000);
 
 	std::printf("\n%-14s %12s %12s   %s\n", "function", "cases",
 	    "failures", "result");

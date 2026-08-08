@@ -15,6 +15,7 @@
 #include <cwchar>
 #include <fcntl.h>
 #include <locale.h>
+#include <tuple>
 #include <unistd.h>
 
 import pbsd.lib.libc.stdio.b0109;
@@ -417,22 +418,32 @@ swprintf_cmp(StatId which, const char *label, GuardedWBuf &rb, GuardedWBuf &pb,
 template <typename... Args>
 void
 swprintf_do_case(StatId which, locale_t loc, int use_l, const char *label,
-    const wchar_t *fmt, Args... args)
+    const wchar_t *fmt, Args &&...args)
 {
 	GuardedWBuf rb, pb;
+	auto pack = std::forward_as_tuple(std::forward<Args>(args)...);
 	int rr, rp;
 
 	rb.fill_guard();
 	pb.fill_guard();
 	if (use_l) {
-		rr = ref_swprintf_l(rb.user(), GuardedWBuf::WUSER + 1, loc, fmt,
-		    args...);
-		rp = port::swprintf_l(pb.user(), GuardedWBuf::WUSER + 1, loc, fmt,
-		    args...);
+		rr = std::apply([&](auto &&...a) {
+			return ref_swprintf_l(rb.user(), GuardedWBuf::WUSER + 1, loc,
+			    fmt, a...);
+		}, pack);
+		rp = std::apply([&](auto &&...a) {
+			return port::swprintf_l(pb.user(), GuardedWBuf::WUSER + 1,
+			    loc, fmt, a...);
+		}, pack);
 	} else {
-		rr = ref_swprintf(rb.user(), GuardedWBuf::WUSER + 1, fmt, args...);
-		rp = port::swprintf(pb.user(), GuardedWBuf::WUSER + 1, fmt,
-		    args...);
+		rr = std::apply([&](auto &&...a) {
+			return ref_swprintf(rb.user(), GuardedWBuf::WUSER + 1, fmt,
+			    a...);
+		}, pack);
+		rp = std::apply([&](auto &&...a) {
+			return port::swprintf(pb.user(), GuardedWBuf::WUSER + 1,
+			    fmt, a...);
+		}, pack);
 	}
 	swprintf_cmp(which, label, rb, pb, rr, rp);
 }

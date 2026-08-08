@@ -322,13 +322,17 @@ fp_fields_eq(const ref_FILE &r, const P::FILE &p)
 		return false;
 	if (std::memcmp(r._nbuf, p._nbuf, sizeof(r._nbuf)) != 0)
 		return false;
-	if (r._read != p._read)
+	if (reinterpret_cast<std::uintptr_t>(r._read) !=
+	    reinterpret_cast<std::uintptr_t>(p._read))
 		return false;
-	if (r._write != p._write)
+	if (reinterpret_cast<std::uintptr_t>(r._write) !=
+	    reinterpret_cast<std::uintptr_t>(p._write))
 		return false;
-	if (r._seek != p._seek)
+	if (reinterpret_cast<std::uintptr_t>(r._seek) !=
+	    reinterpret_cast<std::uintptr_t>(p._seek))
 		return false;
-	if (r._close != p._close)
+	if (reinterpret_cast<std::uintptr_t>(r._close) !=
+	    reinterpret_cast<std::uintptr_t>(p._close))
 		return false;
 	return true;
 }
@@ -543,25 +547,31 @@ test_fdopen_one(const char *label, int fd, const char *mode, bool set_target)
 	pc.fp._flags = 0;
 
 	if (set_target) {
+		errno = 0;
 		b0118_set_sfp_target(&rc.fp);
 		rr = ref_fdopen(fd, mode);
+		re = errno;
 		b0118_set_sfp_target(nullptr);
 
+		errno = 0;
 		b0118_set_sfp_target(reinterpret_cast<ref_FILE *>(&pc.fp));
 		rp = P::fdopen(fd, mode);
+		pe = errno;
 		b0118_set_sfp_target(nullptr);
 	} else {
+		errno = 0;
 		rr = ref_fdopen(fd, mode);
+		re = errno;
+		errno = 0;
 		rp = P::fdopen(fd, mode);
+		pe = errno;
 	}
 
-	re = errno;
-	pe = errno;
 	case_inc(S_FDOPEN);
 
 	if ((rr == nullptr) != (rp == nullptr))
 		ok = false;
-	if (re != pe)
+	if (rr == nullptr && rp == nullptr && re != pe)
 		ok = false;
 
 	if (rr != nullptr && rp != nullptr) {
@@ -573,7 +583,7 @@ test_fdopen_one(const char *label, int fd, const char *mode, bool set_target)
 			ok = false;
 	}
 
-	if (std::memcmp(&rc, &pc, sizeof(rc)) != 0)
+	if (!fd_core_eq(rc, pc))
 		ok = false;
 
 	if (!ok)

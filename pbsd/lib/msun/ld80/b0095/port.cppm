@@ -19,6 +19,22 @@ module;
 
 export module pbsd.lib.msun.ld80.b0095;
 
+/*
+ * The public surface of the batch.  The definitions below are redeclarations
+ * of these and are therefore implicitly exported; everything else (the
+ * tables, the thread-local scratch globals, reducl(), powil(), k_logl(), ...)
+ * keeps the internal linkage it has in the originals.
+ */
+export namespace pbsd::lib_msun_ld80::b0095 {
+
+long double powl(long double x, long double y);
+long double logl(long double x);
+long double log1pl(long double x);
+long double log10l(long double x);
+long double log2l(long double x);
+
+}
+
 /* ------------------------------------------------------------------------
  * Support definitions taken from lib/libc/amd64/_fpmath.h and
  * lib/msun/src/math_private.h.  The bit-field unions of the originals are
@@ -289,10 +305,6 @@ static thread_local volatile long double twom10000 = 0x1p-10000L;
 static long double reducl( long double );
 static long double powil ( long double, int );
 
-} /* namespace */
-
-export namespace pbsd::lib_msun_ld80::b0095 {
-
 long double
 powl(long double x, long double y)
 {
@@ -556,9 +568,6 @@ if( nflg )
 return( z );
 }
 
-} /* export namespace */
-
-namespace pbsd::lib_msun_ld80::b0095 {
 
 /* Find a multiple of 1/NXT that is within 1/NXT of x. */
 static inline long double
@@ -1156,10 +1165,6 @@ logl(long double x)
 	RETURN2(rp, val_hi, val_lo);
 }
 
-} /* namespace */
-
-export namespace pbsd::lib_msun_ld80::b0095 {
-
 long double
 log1pl(long double x)
 {
@@ -1269,16 +1274,9 @@ logl(long double x)
 #define	invln10_lo	7.1842412889749798e-14	/*  0x1438ca9aadd558.0p-96 */
 #define	invln2_hi	1.4426950408887933e0	/*  0x171547652b8000.0p-52 */
 #define	invln2_lo	1.7010652264631490e-13	/*  0x17f0bbbe87fed0.0p-95 */
-
-} /* export namespace */
-
-namespace pbsd::lib_msun_ld80::b0095 {
 /* Let the compiler pre-calculate this sum to avoid FE_INEXACT at run time. */
 static const double invln10_lo_plus_hi = invln10_lo + invln10_hi;
 static const double invln2_lo_plus_hi = invln2_lo + invln2_hi;
-}
-
-export namespace pbsd::lib_msun_ld80::b0095 {
 
 long double
 log10l(long double x)
@@ -1316,4 +1314,4 @@ log2l(long double x)
 
 #endif /* STRUCT_RETURN */
 
-} /* export namespace */
+} /* namespace */

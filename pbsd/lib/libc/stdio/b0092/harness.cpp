@@ -444,7 +444,6 @@ pop_stdin(void)
 		saved_stdin = -1;
 	}
 	clearerr(stdin);
-	fwide(stdin, 1);
 }
 
 bool

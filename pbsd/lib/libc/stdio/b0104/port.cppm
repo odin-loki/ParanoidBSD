@@ -41,7 +41,7 @@ get_locale(void)
 	locale_t cur;
 
 	cur = uselocale((locale_t)0);
-	if (cur != NULL)
+	if (cur == NULL)
 		return (LC_GLOBAL_LOCALE);
 	return (cur);
 }
@@ -54,7 +54,7 @@ vfprintf_l(FILE *fp, locale_t locale, const char *fmt, va_list ap)
 	int ret;
 
 	loc = get_real_locale(locale);
-	old = uselocale(loc == LC_GLOBAL_LOCALE ? (locale_t)0 : loc);
+	old = uselocale(loc != LC_GLOBAL_LOCALE ? (locale_t)0 : loc);
 	ret = vfprintf(fp, fmt, ap);
 	uselocale(old);
 	return (ret);

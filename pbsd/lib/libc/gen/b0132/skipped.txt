@@ -1,0 +1,2 @@
+readdir.c — depends on DIR internals, _getdirentries, _fixtelldir, pthread locking, and telldir state not available in this batch harness.
+disklabel.c — depends on cgetent/cgetcap disktab parsing and full sys/disklabel.h layout not available in this batch harness.

@@ -40,7 +40,7 @@ void
 printifname(char *format, char *name, void *ifp)
 {
 	PRINTF("%s%s", format, name);
-	if ((ifp == NULL) || std::strcmp(name, "-") && std::strcmp(name, "*"))
+	if ((ifp == NULL) && std::strcmp(name, "-") && std::strcmp(name, "*"))
 		PRINTF("(!)");
 }
 

@@ -34,50 +34,148 @@
  * SUCH DAMAGE.
  */
 
+/*
+ * PBSD port of:
+ *   lib/libc/amd64/gen/fpgetprec.c
+ *   lib/libc/amd64/gen/fpgetround.c
+ *   lib/libc/amd64/gen/fpgetmask.c
+ *   lib/libc/amd64/gen/fpgetsticky.c
+ *
+ * Each of the four batch sources is a two-line out-of-line wrapper compiled
+ * with __IEEEFP_NOINLINES__ defined, so the substance of the port is the
+ * matching static __inline in sys/amd64/include/ieeefp.h together with the
+ * types, bit-field masks/offsets and asm macros from
+ * sys/x86/include/x86_ieeefp.h.  Behaviour is preserved exactly, including the
+ * asymmetry that the fpget*() side reads only x87 state except for
+ * fpgetsticky(), which merges the x87 and SSE sticky fields, and including the
+ * fact that fpgetmask() returns the ones' complement of the control word's
+ * mask field so a "1" bit means enabled rather than disabled.
+ */
+
 export module pbsd.lib.libc.amd64.gen.b0055;
 
 export namespace pbsd::lib_libc_amd64_gen::b0055 {
 
 /*
- * x86_ieeefp.h / machine/amd64/ieeefp.h types and constants used by the
- * four fpget*() wrappers in this batch.
+ * IEEE floating point type, constant and function definitions.
+ * XXX: {FP,SSE}*FLD and {FP,SSE}*OFF are undocumented pollution.
  */
-typedef enum {
-	FP_RN=0,	/* round to nearest */
+
+/*
+ * Rounding modes.
+ */
+enum fp_rnd_t {
+	FP_RN = 0,	/* round to nearest */
 	FP_RM,		/* round down towards minus infinity */
 	FP_RP,		/* round up towards plus infinity */
 	FP_RZ		/* truncate */
-} fp_rnd_t;
+};
 
-typedef enum {
-	FP_PS=0,	/* 24 bit (single-precision) */
+/*
+ * Precision (i.e., rounding precision) modes.
+ */
+enum fp_prec_t {
+	FP_PS = 0,	/* 24 bit (single-precision) */
 	FP_PRS,		/* reserved */
 	FP_PD,		/* 53 bit (double-precision) */
 	FP_PE		/* 64 bit (extended-precision) */
-} fp_prec_t;
+};
 
+/* #define fp_except_t	int */
 using fp_except_t = int;
 
-#define FP_MSKS_FLD	0x3f	/* exception masks field */
-#define FP_PRC_FLD	0x300	/* precision control field */
-#define	FP_RND_FLD	0xc00	/* rounding control field */
+/*
+ * Exception bit masks.
+ */
+inline constexpr int FP_X_INV	= 0x01;	/* invalid operation */
+inline constexpr int FP_X_DNML	= 0x02;	/* denormal */
+inline constexpr int FP_X_DZ	= 0x04;	/* zero divide */
+inline constexpr int FP_X_OFL	= 0x08;	/* overflow */
+inline constexpr int FP_X_UFL	= 0x10;	/* underflow */
+inline constexpr int FP_X_IMP	= 0x20;	/* (im)precision */
+inline constexpr int FP_X_STK	= 0x40;	/* stack fault */
 
-#define FP_STKY_FLD	0x3f	/* sticky flags field */
+/*
+ * FPU control word bit-field masks.
+ */
+inline constexpr int FP_MSKS_FLD = 0x3f;	/* exception masks field */
+inline constexpr int FP_PRC_FLD	 = 0x300;	/* precision control field */
+inline constexpr int FP_RND_FLD	 = 0xc00;	/* rounding control field */
 
-#define FP_MSKS_OFF	0	/* exception masks offset */
-#define FP_PRC_OFF	8	/* precision control offset */
-#define	FP_RND_OFF	10	/* rounding control offset */
+/*
+ * FPU status word bit-field masks.
+ */
+inline constexpr int FP_STKY_FLD = 0x3f;	/* sticky flags field */
 
-#define FP_STKY_OFF	0	/* sticky flags offset */
+/*
+ * FPU control word bit-field offsets (shift counts).
+ */
+inline constexpr int FP_MSKS_OFF = 0;		/* exception masks offset */
+inline constexpr int FP_PRC_OFF	 = 8;		/* precision control offset */
+inline constexpr int FP_RND_OFF	 = 10;		/* rounding control offset */
 
-#define	SSE_STKY_FLD	0x3f	/* exception flags */
-#define	SSE_STKY_OFF	0	/* exception flags offset */
+/*
+ * FPU status word bit-field offsets (shift counts).
+ */
+inline constexpr int FP_STKY_OFF = 0;		/* sticky flags offset */
 
-#define	__fnstcw(addr)	__asm __volatile("fnstcw %0" : "=m" (*(addr)))
-#define	__fnstsw(addr)	__asm __volatile("fnstsw %0" : "=m" (*(addr)))
-#define	__stmxcsr(addr)	__asm __volatile("stmxcsr %0" : "=m" (*(addr)))
+/*
+ * SSE mxcsr register bit-field masks.
+ */
+inline constexpr unsigned SSE_STKY_FLD	= 0x3f;		/* exception flags */
+inline constexpr unsigned SSE_DAZ_FLD	= 0x40;		/* Denormals are zero */
+inline constexpr unsigned SSE_MSKS_FLD	= 0x1f80;	/* exception masks */
+inline constexpr unsigned SSE_RND_FLD	= 0x6000;	/* rounding control */
+inline constexpr unsigned SSE_FZ_FLD	= 0x8000;	/* flush to zero */
 
-static inline fp_rnd_t
+/*
+ * SSE mxcsr register bit-field offsets (shift counts).
+ */
+inline constexpr int SSE_STKY_OFF = 0;		/* exception flags offset */
+inline constexpr int SSE_DAZ_OFF  = 6;		/* DAZ exception mask offset */
+inline constexpr int SSE_MSKS_OFF = 7;		/* other exception masks */
+inline constexpr int SSE_RND_OFF  = 13;		/* rounding control offset */
+inline constexpr int SSE_FZ_OFF	  = 15;		/* flush to zero offset */
+
+} /* namespace pbsd::lib_libc_amd64_gen::b0055 */
+
+namespace pbsd::lib_libc_amd64_gen::b0055 {
+
+/*
+ * #define	__fnstcw(addr)	__asm __volatile("fnstcw %0" : "=m" (*(addr)))
+ * #define	__fnstsw(addr)	__asm __volatile("fnstsw %0" : "=m" (*(addr)))
+ * #define	__stmxcsr(addr)	__asm __volatile("stmxcsr %0" : "=m" (*(addr)))
+ */
+inline void
+__fnstcw(unsigned short *addr)
+{
+	__asm__ __volatile__("fnstcw %0" : "=m" (*(addr)));
+}
+
+inline void
+__fnstsw(unsigned short *addr)
+{
+	__asm__ __volatile__("fnstsw %0" : "=m" (*(addr)));
+}
+
+inline void
+__stmxcsr(unsigned *addr)
+{
+	__asm__ __volatile__("stmxcsr %0" : "=m" (*(addr)));
+}
+
+/*
+ * General notes about conflicting SSE vs FP status bits.
+ * This code assumes that software will not fiddle with the control
+ * bits of the SSE and x87 in such a way to get them out of sync and
+ * still expect this to work.  Break this at your peril.
+ * Because I based this on the i386 port, the x87 state is used for
+ * the fpget*() functions, and is shadowed into the SSE state for
+ * the fpset*() functions.  For dual source fpget*() functions, I
+ * merge the two together.  I think.
+ */
+
+fp_rnd_t
 __fpgetround(void)
 {
 	unsigned short _cw;
@@ -86,7 +184,12 @@ __fpgetround(void)
 	return ((fp_rnd_t)((_cw & FP_RND_FLD) >> FP_RND_OFF));
 }
 
-static inline fp_prec_t
+/*
+ * Get or set the rounding precision for x87 arithmetic operations.
+ * There is no equivalent SSE mode or control.
+ */
+
+fp_prec_t
 __fpgetprec(void)
 {
 	unsigned short _cw;
@@ -95,7 +198,13 @@ __fpgetprec(void)
 	return ((fp_prec_t)((_cw & FP_PRC_FLD) >> FP_PRC_OFF));
 }
 
-static inline fp_except_t
+/*
+ * Get or set the exception mask.
+ * Note that the x87 mask bits are inverted by the API -- a mask bit of 1
+ * means disable for x87 and SSE, but for fp*mask() it means enable.
+ */
+
+fp_except_t
 __fpgetmask(void)
 {
 	unsigned short _cw;
@@ -104,7 +213,7 @@ __fpgetmask(void)
 	return ((~_cw & FP_MSKS_FLD) >> FP_MSKS_OFF);
 }
 
-static inline fp_except_t
+fp_except_t
 __fpgetsticky(void)
 {
 	unsigned _ex, _mxcsr;
@@ -117,26 +226,30 @@ __fpgetsticky(void)
 	return ((fp_except_t)_ex);
 }
 
-fp_prec_t
-fpgetprec(void)
+} /* namespace pbsd::lib_libc_amd64_gen::b0055 */
+
+export namespace pbsd::lib_libc_amd64_gen::b0055 {
+
+/* lib/libc/amd64/gen/fpgetprec.c */
+fp_prec_t fpgetprec(void)
 {
 	return __fpgetprec();
 }
 
-fp_rnd_t
-fpgetround(void)
+/* lib/libc/amd64/gen/fpgetround.c */
+fp_rnd_t fpgetround(void)
 {
 	return __fpgetround();
 }
 
-fp_except_t
-fpgetmask(void)
+/* lib/libc/amd64/gen/fpgetmask.c */
+fp_except_t fpgetmask(void)
 {
 	return __fpgetmask();
 }
 
-fp_except_t
-fpgetsticky(void)
+/* lib/libc/amd64/gen/fpgetsticky.c */
+fp_except_t fpgetsticky(void)
 {
 	return __fpgetsticky();
 }
