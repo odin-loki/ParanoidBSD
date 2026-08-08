@@ -115,7 +115,7 @@ fputs_unlocked(const char * __restrict s, shim_file * __restrict fp)
 	uio.uio_iovcnt = 1;
 	ORIENT(fp, -1);
 	retval = __sfvwrite(fp, &uio);
-	if (retval != 0)
+	if (retval == 1)
 		return (iov.iov_len > INT_MAX ? INT_MAX : iov.iov_len);
 	return (retval);
 }
