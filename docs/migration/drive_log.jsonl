@@ -1714,3 +1714,4 @@
 {"batch": "b0012s3", "status": "AUTH_FAILED", "detail": "agent failed: exit 1 after 1s: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.", "how": "agent", "ts": "2026-08-08T10:44:58Z"}
 {"batch": "b0012s3", "status": "VERIFIED", "detail": "harness green + 2/2 mutations killed (IR: no ref_ functions in oracle IR)", "how": "agent+escalate", "ts": "2026-08-08T11:16:37Z"}
 {"batch": "b0065", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T11:17:31Z"}
+{"batch": "b0057", "status": "VERIFIED", "detail": "harness green + 1/1 mutations killed (IR: IR differs for 1/3: creall)", "how": "agent", "ts": "2026-08-08T11:17:36Z"}

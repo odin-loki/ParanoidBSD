@@ -4,8 +4,6 @@ module;
 #include <climits>
 #include <cstddef>
 #include <cstdint>
-#include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
@@ -355,7 +353,7 @@ std::size_t
 wcstombs_l(char * __restrict s, const wchar_t * __restrict pwcs, std::size_t n,
     port_locale_t locale)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	mbstate_t mbs;
 	const wchar_t *pwcsp;
 	FIX_LOCALE(locale);
@@ -408,7 +406,7 @@ wcstombs(char * __restrict s, const wchar_t * __restrict pwcs, std::size_t n)
 int
 wctomb_l(char *s, wchar_t wchar, port_locale_t locale)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	std::size_t rval;
 	FIX_LOCALE(locale);
 
@@ -466,7 +464,7 @@ wctomb(char *s, wchar_t wchar)
 wint_t
 btowc_l(int c, port_locale_t l)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	mbstate_t mbs = initial;
 	char cc;
 	wchar_t wc;
@@ -528,7 +526,7 @@ btowc(int c)
 int
 mblen_l(const char *s, std::size_t n, port_locale_t locale)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	std::size_t rval;
 	FIX_LOCALE(locale);
 

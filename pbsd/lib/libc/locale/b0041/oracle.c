@@ -38,6 +38,7 @@ typedef __mbstate_t mbstate_t;
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 typedef unsigned int wint_t;
 
