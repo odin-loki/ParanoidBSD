@@ -30,3 +30,4 @@
 {"path": "hbsd/src/bin/date/vary.c", "batch": "b0190s1", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:54:54Z"}
 {"path": "hbsd/src/lib/libc/db/btree/bt_put.c", "batch": "b0155s1", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:55:06Z"}
 {"path": "hbsd/src/bin/ed/buf.c", "batch": "b0148s4", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:55:14Z"}
+{"path": "hbsd/src/bin/ed/undo.c", "batch": "b0148s2", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:57:35Z"}
