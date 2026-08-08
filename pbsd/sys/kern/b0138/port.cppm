@@ -11,7 +11,8 @@ module;
 
 export module pbsd.sys.kern.b0138;
 
-extern "C" int printf(const char *fmt, ...);
+extern "C" int test_printf(const char *fmt, ...);
+#define printf test_printf
 extern "C" void kdb_backtrace(void);
 
 export namespace pbsd::sys_kern::b0138 {
@@ -104,7 +105,7 @@ inline void *malloc_var(std::size_t size, malloc_type *type, int flags)
 	void *item;
 
 	if (__builtin_constant_p(size) && __builtin_constant_p(flags) &&
-	    ((flags) & M_ZERO) != 0) {
+	    ((flags) & M_ZERO) == 0) {
 		item = malloc_kern(size, type, flags & ~M_ZERO);
 		if (((flags) & M_WAITOK) != 0 || __predict_true(item != nullptr))
 			std::memset(item, 0, size);

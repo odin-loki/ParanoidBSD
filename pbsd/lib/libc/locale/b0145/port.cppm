@@ -8,6 +8,7 @@
 
 module;
 
+#include <cerrno>
 #include <climits>
 #include <cstddef>
 #include <cstdint>
@@ -53,7 +54,7 @@ struct port_xlocale {
 
 typedef struct port_xlocale *port_locale_t;
 
-#define LCNUMERIC_SIZE (sizeof(struct lc_numeric_T) / sizeof(char *))
+#define LCNUMERIC_SIZE (sizeof(::lc_numeric_T) / sizeof(char *))
 
 typedef struct {
 	int		ret;
@@ -103,18 +104,8 @@ port_get_locale()
 export namespace pbsd::lib_libc_locale::b0145 {
 
 using locale_t = port_locale_t;
-
-struct lc_numeric_T {
-	const char	*decimal_point;
-	const char	*thousands_sep;
-	const char	*grouping;
-};
-
-struct xlocale_numeric {
-	xlocale_component header;
-	char		*buffer;
-	lc_numeric_T	locale;
-};
+using lc_numeric_T = ::lc_numeric_T;
+using xlocale_numeric = ::xlocale_numeric;
 
 struct xlocale {
 	int		using_numeric_locale;
@@ -127,6 +118,18 @@ init_locale()
 {
 	std::memset(&port___xlocale_global_locale, 0,
 	    sizeof(port___xlocale_global_locale));
+}
+
+inline int
+numeric_locale_changed_flag()
+{
+	return (port___xlocale_global_locale.numeric_locale_changed);
+}
+
+inline void
+reset_numeric_locale_changed()
+{
+	port___xlocale_global_locale.numeric_locale_changed = 0;
 }
 
 /*-

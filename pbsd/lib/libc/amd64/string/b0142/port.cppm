@@ -16,13 +16,11 @@ module;
 #include <cstdint>
 #include <cstring>
 
-#ifndef dlfunc_t
-typedef void (*dlfunc_t)(void);
-#endif
-
 export module pbsd.lib.libc.amd64.string.b0142;
 
-namespace pbsd::lib_libc_amd64_string::b0142 {
+export namespace pbsd::lib_libc_amd64_string::b0142 {
+
+typedef void (*dlfunc_t)(void);
 
 using u_int = unsigned int;
 
@@ -85,9 +83,9 @@ atomic_load_int(volatile int *p)
 }
 
 static int
-atomic_cmpset_int(volatile u_int *dst, u_int expect, u_int src)
+atomic_cmpset_int(volatile int *dst, int expect, int src)
 {
-	u_int old = *dst;
+	int old = *dst;
 
 	if (old != expect)
 		return (0);
@@ -337,8 +335,7 @@ archlevel(u_int feat_edx, u_int feat_ecx, u_int ext_ebx, u_int ext_ecx)
 			wantlevel = hwlevel;
 	}
 
-	if (atomic_cmpset_int((volatile u_int *)&amd64_archlevel, (u_int)islevel,
-	    (u_int)wantlevel))
+	if (atomic_cmpset_int(&amd64_archlevel, islevel, wantlevel))
 		return (wantlevel);
 	else
 		return (atomic_load_int(&amd64_archlevel));
@@ -350,7 +347,7 @@ reset_archlevel_state() noexcept
 	amd64_archlevel = X86_64_UNDEFINED;
 }
 
-} /* namespace pbsd::lib_libc_amd64_string::b0142 */
+} /* export namespace pbsd::lib_libc_amd64_string::b0142 */
 
 export namespace pbsd::lib_libc_amd64_string::b0142 {
 
@@ -384,7 +381,7 @@ export namespace pbsd::lib_libc_amd64_string::b0142 {
 
 dlfunc_t
 __archlevel_resolve(u_int feat_edx, u_int feat_ecx, u_int ext_ebx,
-    u_int ext_ecx, int32_t funcs[static X86_64_MAX + 1])
+    u_int ext_ecx, int32_t funcs[X86_64_MAX + 1])
 {
 	int level;
 
@@ -395,4 +392,4 @@ __archlevel_resolve(u_int feat_edx, u_int feat_ecx, u_int ext_ebx,
 	__builtin_trap();
 }
 
-} /* namespace pbsd::lib_libc_amd64_string::b0142 */
+} /* export namespace pbsd::lib_libc_amd64_string::b0142 */

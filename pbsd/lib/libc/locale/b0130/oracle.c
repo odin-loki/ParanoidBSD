@@ -223,6 +223,12 @@ pbsd_wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 }
 
 size_t
+pbsd_harness_wcrtomb(char *s, wchar_t wc, void *ps)
+{
+	return (pbsd_wcrtomb(s, wc, (mbstate_t *)ps));
+}
+
+size_t
 wcsrtombs_l(char * __restrict dst, const wchar_t ** __restrict src,
     size_t len, mbstate_t * __restrict ps, locale_t locale)
 {
@@ -301,7 +307,7 @@ __part_load_locale(const char *name, int *using_locale, char **buffer,
 	return (_LDP_LOADED);
 }
 
-static size_t
+size_t
 ref___wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
     size_t nwc, size_t len, mbstate_t * __restrict ps,
     wcrtomb_pfn_t pwcrtomb);

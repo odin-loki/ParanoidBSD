@@ -8,6 +8,7 @@ module;
 #include <float.h>
 #include <math.h>
 #include <stdint.h>
+#include <cstring>
 
 export module pbsd.lib.msun.ld128.b0088;
 
@@ -1086,8 +1087,13 @@ cexpl(long double _Complex z)
 } // export namespace
 
 extern "C" void
-pbsd_b0088_cexpl_parts(long double x, long double y, long double *re,
-    long double *im)
+pbsd_b0088_cexpl_parts(const long double *xy, long double *out)
 {
-	pbsd::lib_msun_ld128::b0088::cexpl_parts_impl(x, y, re, im);
+	long double x, y, re, im;
+
+	std::memcpy(&x, &xy[0], sizeof(x));
+	std::memcpy(&y, &xy[1], sizeof(y));
+	pbsd::lib_msun_ld128::b0088::cexpl_parts_impl(x, y, &re, &im);
+	std::memcpy(&out[0], &re, sizeof(re));
+	std::memcpy(&out[1], &im, sizeof(im));
 }

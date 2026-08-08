@@ -89,9 +89,9 @@ atomic_load_int(volatile int *p)
 }
 
 static int
-atomic_cmpset_int(volatile u_int *dst, u_int expect, u_int src)
+atomic_cmpset_int(volatile int *dst, int expect, int src)
 {
-	u_int old = *dst;
+	int old = *dst;
 
 	if (old != expect)
 		return (0);

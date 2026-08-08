@@ -13,6 +13,8 @@
 #include <cstdio>
 #include <cstring>
 #include <random>
+#include <unistd.h>
+#include <sys/wait.h>
 
 import pbsd.lib.msun.ld128.b0084;
 
@@ -186,6 +188,8 @@ check_lgammal_r(long double x, const char *tag)
 	long double got, want;
 	unsigned char gbuf[sizeof(int) + 8];
 	unsigned char wbuf[sizeof(int) + 8];
+	int pipefd[2];
+	pid_t child;
 
 	st_lgammal_r.cases++;
 	std::memset(gbuf, 0x7f, sizeof(gbuf));
@@ -194,10 +198,52 @@ check_lgammal_r(long double x, const char *tag)
 	want_sg = SIGNGAM_GUARD;
 	std::memcpy(gbuf, &got_sg, sizeof(got_sg));
 	std::memcpy(wbuf, &want_sg, sizeof(want_sg));
+
+	/*
+	 * lgammal_r can return an indeterminate r on some paths in the
+	 * original C (stack residue).  Run the oracle in a fresh address
+	 * space so port and ref each see the same first-call stack.
+	 */
+	if (pipe(pipefd) != 0)
+		std::abort();
+	child = fork();
+	if (child < 0)
+		std::abort();
+	if (child == 0) {
+		struct child_out {
+			long double val;
+			int sign;
+			unsigned char buf[sizeof(int) + 8];
+		} out;
+		int sg = SIGNGAM_GUARD;
+
+		std::memset(out.buf, 0x7f, sizeof(out.buf));
+		std::memcpy(out.buf, &sg, sizeof(sg));
+		out.val = ref_lgammal_r(x, reinterpret_cast<int *>(out.buf));
+		out.sign = *reinterpret_cast<int *>(out.buf);
+		(void)write(pipefd[1], &out, sizeof(out));
+		close(pipefd[0]);
+		close(pipefd[1]);
+		_exit(0);
+	}
 	got = port::lgammal_r(x, reinterpret_cast<int *>(gbuf));
-	want = ref_lgammal_r(x, reinterpret_cast<int *>(wbuf));
 	got_sg = *reinterpret_cast<int *>(gbuf);
-	want_sg = *reinterpret_cast<int *>(wbuf);
+	{
+		struct child_out {
+			long double val;
+			int sign;
+			unsigned char buf[sizeof(int) + 8];
+		} out;
+
+		if (read(pipefd[0], &out, sizeof(out)) != (ssize_t)sizeof(out))
+			std::abort();
+		want = out.val;
+		want_sg = out.sign;
+		std::memcpy(wbuf, out.buf, sizeof(wbuf));
+	}
+	(void)close(pipefd[0]);
+	(void)close(pipefd[1]);
+	(void)waitpid(child, nullptr, 0);
 
 	if (!ld_equal(got, want) || got_sg != want_sg ||
 	    std::memcmp(gbuf, wbuf, sizeof(gbuf)) != 0) {

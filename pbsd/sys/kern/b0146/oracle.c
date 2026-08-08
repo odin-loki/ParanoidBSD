@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 /*
  * oracle.c -- reference implementation for PBSD batch b0146.
  *
@@ -8,13 +9,13 @@
  */
 
 #include <stdbool.h>
-#include <errno.h>
-#include <pthread.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <sys/types.h>
 #include <time.h>
 
 #ifndef LONG_BIT
@@ -154,10 +155,10 @@ efi_next_descriptor(struct efi_md *md, size_t size)
 #define MTX_QUIET 0
 
 #define KTR_LOCK 0
-#define CTR3(a, b, c, d)
-#define CTR4(a, b, c, d, e)
-#define CTR5(a, b, c, d, e)
-#define CTR6(a, b, c, d, e, f)
+#define CTR3(...) ((void)0)
+#define CTR4(...) ((void)0)
+#define CTR5(...) ((void)0)
+#define CTR6(...) ((void)0)
 
 struct mtx {
 	pthread_mutex_t lock;
@@ -399,6 +400,8 @@ physmem_exclude_region(uint64_t phys, uint64_t size, int exflag)
 }
 
 /* --- sys_getrandom.c --- */
+
+#define _SYS_SYSPROTO_H_
 
 #define GRND_VALIDFLAGS	(GRND_NONBLOCK | GRND_RANDOM | GRND_INSECURE)
 

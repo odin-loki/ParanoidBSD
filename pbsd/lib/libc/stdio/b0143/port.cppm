@@ -7,7 +7,7 @@ module;
 #include <cerrno>
 #include <climits>
 #include <cstdarg>
-#include <cstdio>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
@@ -16,11 +16,16 @@ module;
 #include <unistd.h>
 #include <locale.h>
 
+#ifndef EOF
+#define EOF (-1)
+#endif
+
 export module pbsd.lib.libc.stdio.b0143;
 
-namespace {
+export namespace pbsd::lib_libc_stdio::b0143 {
 
 typedef va_list __va_list;
+typedef long fpos_t;
 
 struct __sbuf {
 	unsigned char *_base;
@@ -82,6 +87,12 @@ struct FILE {
 #define DEFFILEMODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 #endif
 
+#ifndef SIZE_T_MAX
+#define SIZE_T_MAX SIZE_MAX
+#endif
+
+namespace detail {
+
 static locale_t
 b0143_get_C_locale(void)
 {
@@ -121,6 +132,10 @@ __get_locale(void)
 	return (loc);
 }
 
+} /* namespace detail */
+
+#define FIX_LOCALE(l) (l = detail::get_real_locale(l))
+
 extern "C" {
 size_t	wcsrtombs_l(char * __restrict, const wchar_t ** __restrict,
 	    size_t, mbstate_t * __restrict, locale_t);
@@ -139,10 +154,6 @@ int	__swrite(void *, const char *, int);
 fpos_t	__sseek(void *, fpos_t, int);
 int	__sclose(void *);
 }
-
-} /* namespace */
-
-export namespace pbsd::lib_libc_stdio::b0143 {
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -196,7 +207,7 @@ int
 vswscanf_l(const wchar_t * __restrict str, locale_t locale,
 		const wchar_t * __restrict fmt, va_list ap)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	mbstate_t mbs;
 	FILE f = FAKE_FILE;
 	char *mbstr;
@@ -213,7 +224,7 @@ vswscanf_l(const wchar_t * __restrict str, locale_t locale,
 		return (EOF);
 	mbs = initial;
 	strp = str;
-	if ((mlen = wcsrtombs_l(mbstr, &strp, SIZE_MAX, &mbs, locale)) == (size_t)-1) {
+	if ((mlen = wcsrtombs_l(mbstr, &strp, SIZE_T_MAX, &mbs, locale)) == (size_t)-1) {
 		free(mbstr);
 		return (EOF);
 	}
@@ -230,7 +241,7 @@ int
 vswscanf(const wchar_t * __restrict str, const wchar_t * __restrict fmt,
     va_list ap)
 {
-	return vswscanf_l(str, __get_locale(), fmt, ap);
+	return vswscanf_l(str, detail::__get_locale(), fmt, ap);
 }
 
 /*-
@@ -355,7 +366,7 @@ int
 vswprintf_l(wchar_t * __restrict s, size_t n, locale_t locale,
 		const wchar_t * __restrict fmt, __va_list ap)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	mbstate_t mbs;
 	FILE f = FAKE_FILE;
 	char *mbp;
@@ -415,7 +426,7 @@ int
 vswprintf(wchar_t * __restrict s, size_t n, const wchar_t * __restrict fmt,
     __va_list ap)
 {
-	return vswprintf_l(s, n, __get_locale(), fmt, ap);
+	return vswprintf_l(s, n, detail::__get_locale(), fmt, ap);
 }
 
 } /* namespace pbsd::lib_libc_stdio::b0143 */

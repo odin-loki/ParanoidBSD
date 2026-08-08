@@ -11,6 +11,7 @@
 #include <float.h>
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
 /* ld128 IEEEl2bits (binary128) */
 union IEEEl2bits {
@@ -1148,7 +1149,13 @@ ref_cexpl(long double complex z)
 }
 
 void
-ref_cexpl_parts(long double x, long double y, long double *re, long double *im)
+ref_cexpl_parts(const long double *xy, long double *out)
 {
-	ref_cexpl_parts_impl(x, y, re, im);
+	long double x, y, re, im;
+
+	memcpy(&x, &xy[0], sizeof(x));
+	memcpy(&y, &xy[1], sizeof(y));
+	ref_cexpl_parts_impl(x, y, &re, &im);
+	memcpy(&out[0], &re, sizeof(re));
+	memcpy(&out[1], &im, sizeof(im));
 }

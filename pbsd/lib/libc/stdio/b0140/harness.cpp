@@ -395,18 +395,7 @@ vdprintf_random(long n)
 	char str[128];
 
 	for (long t = 0; t < n; t++) {
-		unsigned pick = rnd_u32() % 10u;
-
-		if (pick < 8u) {
-			if (make_pipe_rw(nullptr, nullptr) != 0)
-				continue;
-			/* make_pipe_rw needs valid pointers - fix below */
-		}
-
-		int rfd, wfd;
-
-		if (make_pipe_rw(&rfd, &wfd) != 0)
-			continue;
+		unsigned pick = rnd_u32() % 8u;
 
 		switch (pick) {
 		case 0:
@@ -441,9 +430,6 @@ vdprintf_random(long n)
 			    (int)(rnd_u32() & 0xff));
 			break;
 		}
-
-		close(wfd);
-		close(rfd);
 
 		if (rnd_u32() & 1u) {
 			int fd = SHRT_MAX + (int)(rnd_u32() % 4u);
@@ -685,13 +671,13 @@ struct PrintfObs {
 	GuardArena out;
 };
 
+template <typename Fn>
 static PrintfObs
-capture_printf_ref(const char *fmt, va_list ap)
+capture_stdout_fn(Fn fn)
 {
 	PrintfObs obs{};
 	char path[] = "/tmp/pbsd_b0140_pr_XXXXXX";
 	int fd, saved_stdout;
-	va_list ap2;
 	FILE *cap;
 
 	obs.out.fill();
@@ -714,144 +700,7 @@ capture_printf_ref(const char *fmt, va_list ap)
 		obs.ret = -9998;
 		return obs;
 	}
-	va_copy(ap2, ap);
-	obs.ret = ref_printf(fmt, ap2);
-	va_end(ap2);
-	fflush(stdout);
-	dup2(saved_stdout, STDOUT_FILENO);
-	close(saved_stdout);
-
-	cap = fopen(path, "rb");
-	if (cap != nullptr) {
-		(void)fread(obs.out.bytes + PRE, 1, USER, cap);
-		fclose(cap);
-	}
-	unlink(path);
-	return obs;
-}
-
-static PrintfObs
-capture_printf_port(const char *fmt, va_list ap)
-{
-	PrintfObs obs{};
-	char path[] = "/tmp/pbsd_b0140_pr_XXXXXX";
-	int fd, saved_stdout;
-	va_list ap2;
-	FILE *cap;
-
-	obs.out.fill();
-	fd = mkstemp(path);
-	if (fd < 0) {
-		obs.ret = -9999;
-		return obs;
-	}
-	close(fd);
-
-	saved_stdout = dup(STDOUT_FILENO);
-	if (saved_stdout < 0) {
-		unlink(path);
-		obs.ret = -9998;
-		return obs;
-	}
-	if (freopen(path, "w", stdout) == nullptr) {
-		close(saved_stdout);
-		unlink(path);
-		obs.ret = -9998;
-		return obs;
-	}
-	va_copy(ap2, ap);
-	obs.ret = P::printf(fmt, ap2);
-	va_end(ap2);
-	fflush(stdout);
-	dup2(saved_stdout, STDOUT_FILENO);
-	close(saved_stdout);
-
-	cap = fopen(path, "rb");
-	if (cap != nullptr) {
-		(void)fread(obs.out.bytes + PRE, 1, USER, cap);
-		fclose(cap);
-	}
-	unlink(path);
-	return obs;
-}
-
-static PrintfObs
-capture_printf_l_ref(locale_t loc, const char *fmt, va_list ap)
-{
-	PrintfObs obs{};
-	char path[] = "/tmp/pbsd_b0140_pl_XXXXXX";
-	int fd, saved_stdout;
-	va_list ap2;
-	FILE *cap;
-
-	obs.out.fill();
-	fd = mkstemp(path);
-	if (fd < 0) {
-		obs.ret = -9999;
-		return obs;
-	}
-	close(fd);
-
-	saved_stdout = dup(STDOUT_FILENO);
-	if (saved_stdout < 0) {
-		unlink(path);
-		obs.ret = -9998;
-		return obs;
-	}
-	if (freopen(path, "w", stdout) == nullptr) {
-		close(saved_stdout);
-		unlink(path);
-		obs.ret = -9998;
-		return obs;
-	}
-	va_copy(ap2, ap);
-	obs.ret = ref_printf_l(loc, fmt, ap2);
-	va_end(ap2);
-	fflush(stdout);
-	dup2(saved_stdout, STDOUT_FILENO);
-	close(saved_stdout);
-
-	cap = fopen(path, "rb");
-	if (cap != nullptr) {
-		(void)fread(obs.out.bytes + PRE, 1, USER, cap);
-		fclose(cap);
-	}
-	unlink(path);
-	return obs;
-}
-
-static PrintfObs
-capture_printf_l_port(locale_t loc, const char *fmt, va_list ap)
-{
-	PrintfObs obs{};
-	char path[] = "/tmp/pbsd_b0140_pl_XXXXXX";
-	int fd, saved_stdout;
-	va_list ap2;
-	FILE *cap;
-
-	obs.out.fill();
-	fd = mkstemp(path);
-	if (fd < 0) {
-		obs.ret = -9999;
-		return obs;
-	}
-	close(fd);
-
-	saved_stdout = dup(STDOUT_FILENO);
-	if (saved_stdout < 0) {
-		unlink(path);
-		obs.ret = -9998;
-		return obs;
-	}
-	if (freopen(path, "w", stdout) == nullptr) {
-		close(saved_stdout);
-		unlink(path);
-		obs.ret = -9998;
-		return obs;
-	}
-	va_copy(ap2, ap);
-	obs.ret = P::printf_l(loc, fmt, ap2);
-	va_end(ap2);
+	obs.ret = fn();
 	fflush(stdout);
 	dup2(saved_stdout, STDOUT_FILENO);
 	close(saved_stdout);
@@ -880,38 +729,31 @@ printf_compare(int idx, PrintfObs a, PrintfObs b, const char *tag,
 		fail_msg(idx, tag, detail);
 }
 
+template <typename... Args>
 static void
-printf_case_va(int idx, locale_t loc, int use_l, const char *fmt, va_list ap,
-    const char *tag)
+printf_case(int idx, locale_t loc, int use_l, const char *tag,
+    const char *fmt, Args... args)
 {
-	va_list ap_a, ap_b;
 	PrintfObs a, b;
 	char detail[128];
 
-	va_copy(ap_a, ap);
-	va_copy(ap_b, ap);
 	if (use_l) {
-		a = capture_printf_l_ref(loc, fmt, ap_a);
-		b = capture_printf_l_port(loc, fmt, ap_b);
+		a = capture_stdout_fn([&]() -> int {
+			return ref_printf_l(loc, fmt, args...);
+		});
+		b = capture_stdout_fn([&]() -> int {
+			return P::printf_l(loc, fmt, args...);
+		});
 	} else {
-		a = capture_printf_ref(fmt, ap_a);
-		b = capture_printf_port(fmt, ap_b);
+		a = capture_stdout_fn([&]() -> int {
+			return ref_printf(fmt, args...);
+		});
+		b = capture_stdout_fn([&]() -> int {
+			return P::printf(fmt, args...);
+		});
 	}
-	va_end(ap_a);
-	va_end(ap_b);
 	std::snprintf(detail, sizeof(detail), "%s", tag);
 	printf_compare(idx, a, b, tag, detail);
-}
-
-static void
-printf_case(int idx, locale_t loc, int use_l, const char *tag,
-    const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	printf_case_va(idx, loc, use_l, fmt, ap, tag);
-	va_end(ap);
 }
 
 static void

@@ -12,7 +12,7 @@ MODULE_NAME=pbsd.sys.kern.b0138
 
 rm -rf gcm.cache b0138_run oracle.o port.o harness.o "$MODULE_NAME.pcm"
 
-$CC -std=c11 -O2 -c oracle.c -o oracle.o
+$CC -std=c11 -O2 -Dprintf=test_printf -c oracle.c -o oracle.o
 
 if $CXX --version 2>&1 | grep -qi clang; then
 	$CXX -std=c++23 -x c++-module --precompile port.cppm \

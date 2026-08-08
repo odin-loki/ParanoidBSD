@@ -47,6 +47,7 @@
 #endif
 
 typedef va_list __va_list;
+typedef long fpos_t;
 
 struct __sbuf {
 	unsigned char *_base;
@@ -81,8 +82,7 @@ struct __sFILE {
 	mbstate_t _mbstate;
 	int _flags2;
 };
-typedef long fpos_t;
-typedef struct __sFILE FILE;
+#define FILE struct __sFILE
 
 #define	__SLBF	0x0001
 #define	__SNBF	0x0002

@@ -89,7 +89,7 @@ static int g_printf_calls;
 static int g_backtrace_calls;
 
 extern "C" int
-printf(const char *fmt, ...)
+test_printf(const char *fmt, ...)
 {
 	(void)fmt;
 	g_printf_calls++;

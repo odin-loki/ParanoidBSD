@@ -7,11 +7,13 @@
 // function -- including the bytes past the nominal write window and the
 // nominally read-only inputs.
 
+#include <csignal>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <cwchar>
+#include <unistd.h>
 
 import pbsd.lib.libc.string.b0105;
 
@@ -675,9 +677,32 @@ sweep_wcslcpy(void)
 
 /* ------------------------------------------------------------------ */
 
+/*
+ * A broken port can scan off the end of a buffer, which either faults or never
+ * stops.  Both are failures, but a raw crash or a hang is a lousy way to report
+ * one, so turn them into a diagnosed exit(1).  Async-signal-safe calls only.
+ */
+extern "C" void
+bail(int sig)
+{
+	static const char msg[] =
+	    "\nFAIL b0105: harness aborted -- the port ran away "
+	    "(runaway loop or out-of-bounds access)\n";
+
+	(void)sig;
+	ssize_t n = ::write(2, msg, sizeof msg - 1);
+	(void)n;
+	::_exit(1);
+}
+
 int
 main(void)
 {
+	std::signal(SIGALRM, bail);
+	std::signal(SIGSEGV, bail);
+	std::signal(SIGBUS, bail);
+	alarm(60);			/* a clean run takes well under a second */
+
 	hand_span();
 	hand_strsep();
 	hand_wcslcpy();

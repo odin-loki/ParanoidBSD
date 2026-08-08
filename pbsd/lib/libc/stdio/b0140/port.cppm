@@ -25,9 +25,21 @@ module;
 #define NL_TEXTMAX 2048
 #endif
 
+#ifndef __unused
+#define __unused
+#endif
+
 export module pbsd.lib.libc.stdio.b0140;
 
 export namespace pbsd::lib_libc_stdio::b0140 {
+
+static int
+b0140_vfprintf_l(::FILE *fp, locale_t locale, const char *fmt, std::va_list ap)
+{
+	(void)locale;
+	return (vfprintf(fp, fmt, ap));
+}
+#define vfprintf_l b0140_vfprintf_l
 
 struct __sbuf {
 	unsigned char *_base;
@@ -101,11 +113,11 @@ b0140_fflush(B0140_FILE *fp)
 	return (0);
 }
 
-static void *
+static locale_t
 b0140_get_locale(void)
 {
 
-	return ((void *)0);
+	return ((locale_t)0);
 }
 
 static int

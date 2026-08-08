@@ -129,7 +129,7 @@ free_kern(void *addr, struct malloc_type *type)
 
 #define free(addr, type) free_kern((addr), (type))
 
-int printf(const char *fmt, ...);
+int test_printf(const char *fmt, ...);
 void kdb_backtrace(void);
 
 /* ------------------------------------------------------------------ */

@@ -110,6 +110,27 @@ u32(uint32_t m)
 	return ((uint32_t)(nxt() % m));
 }
 
+typedef union {
+	char		__mbstate8[128];
+	long long	_mbstateL;
+} harness_mbstate_t;
+
+extern "C" size_t pbsd_harness_wcrtomb(char *, wchar_t, void *);
+
+static void
+wcopy(wchar_t *dst, const wchar_t *src)
+{
+	while ((*dst++ = *src++) != L'\0')
+		;
+}
+
+static void
+wfill(wchar_t *dst, wchar_t val, size_t n)
+{
+	for (size_t i = 0; i < n; i++)
+		dst[i] = val;
+}
+
 static void
 report(int f, const char *why)
 {
@@ -171,23 +192,21 @@ mb_eq_cross(const ref_mbstate_t &a, const P::mbstate_t &b)
 static size_t
 harness_wcrtomb(char *s, wchar_t wc, P::mbstate_t *ps)
 {
-	ref_mbstate_t rps;
+	harness_mbstate_t rps;
 
 	if (ps != nullptr)
-		mb_copy(*ps, rps);
-	extern size_t pbsd_wcrtomb(char *, wchar_t, ref_mbstate_t *);
-	size_t nb = pbsd_wcrtomb(s, wc, ps != nullptr ? &rps : nullptr);
+		std::memcpy(&rps, ps, sizeof(rps));
+	size_t nb = pbsd_harness_wcrtomb(s, wc, ps != nullptr ? &rps : nullptr);
 
 	if (ps != nullptr)
-		mb_copy(rps, *ps);
+		std::memcpy(ps, &rps, sizeof(rps));
 	return (nb);
 }
 
 static size_t
 harness_wcrtomb_ref(char *s, wchar_t wc, ref_mbstate_t *ps)
 {
-	extern size_t pbsd_wcrtomb(char *, wchar_t, ref_mbstate_t *);
-	return (pbsd_wcrtomb(s, wc, ps));
+	return (pbsd_harness_wcrtomb(s, wc, ps));
 }
 
 extern "C" {

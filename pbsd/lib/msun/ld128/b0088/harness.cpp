@@ -24,8 +24,8 @@ long double ref_cospil(long double);
 long double ref_sinpil(long double);
 long double ref_tanpil(long double);
 long double _Complex ref_cexpl(long double _Complex);
-void pbsd_b0088_cexpl_parts(long double, long double, long double *, long double *);
-void ref_cexpl_parts(long double, long double, long double *, long double *);
+void pbsd_b0088_cexpl_parts(const long double *, long double *);
+void ref_cexpl_parts(const long double *, long double *);
 }
 
 static const std::size_t LD_BYTES = sizeof(long double);
@@ -142,14 +142,19 @@ check_cexpl(long double re, long double im, const char *tag) __attribute__((noin
 static void
 check_cexpl(long double re, long double im, const char *tag)
 {
-	long double pr, pi, orr, oi;
+	long double xy[2];
+	long double port_out[2];
+	long double ref_out[2];
 
+	xy[0] = re;
+	xy[1] = im;
 	st_cexpl.cases++;
-	pbsd_b0088_cexpl_parts(re, im, &pr, &pi);
-	ref_cexpl_parts(re, im, &orr, &oi);
-	if (ld_equal(pr, orr) && ld_equal(pi, oi))
+	pbsd_b0088_cexpl_parts(xy, port_out);
+	ref_cexpl_parts(xy, ref_out);
+	if (ld_equal(port_out[0], ref_out[0]) && ld_equal(port_out[1], ref_out[1]))
 		return;
-	report_cx_fail(st_cexpl, tag, mkcx(pr, pi), mkcx(orr, oi));
+	report_cx_fail(st_cexpl, tag, mkcx(port_out[0], port_out[1]),
+	    mkcx(ref_out[0], ref_out[1]));
 }
 
 static void

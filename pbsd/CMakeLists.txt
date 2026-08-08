@@ -105,6 +105,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0128/port.cppm
   lib/libc/locale/b0130/port.cppm
   lib/libc/locale/b0145/port.cppm
+  lib/libc/locale/b0147/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm
   lib/libc/locale/rpmatch_m/port.cppm
@@ -356,6 +357,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/fs/procfs/procfs_type_m/port.cppm
   sys/geom/uzip/b0144/port.cppm
   sys/kern/b0138/port.cppm
+  sys/kern/b0146/port.cppm
   sys/net/toeplitz_m/port.cppm
   sys/security/mac_none/b0005/port.cppm
   sys/security/mac_ntpd/b0007/port.cppm

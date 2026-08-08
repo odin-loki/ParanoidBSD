@@ -36,6 +36,7 @@
 #endif
 
 #include <stdio.h>
+#include <wchar.h>
 
 /* ------------------------------------------------------------------------ */
 /* vdprintf internals (custom FILE layout)                                   */
@@ -77,6 +78,8 @@ struct b0140_FILE {
 	int _flags2;
 };
 
+typedef struct b0140_FILE b0140_FILE;
+
 #define FILE b0140_FILE
 #define FAKE_FILE { ._file = -1 }
 
@@ -115,11 +118,11 @@ b0140_fflush(FILE *fp)
 	return (0);
 }
 
-static void *
+static locale_t
 b0140_get_locale(void)
 {
 
-	return ((void *)0);
+	return ((locale_t)0);
 }
 
 static int
@@ -242,7 +245,9 @@ ref_vdprintf(int fd, const char * __restrict fmt, va_list ap)
 /* xprintf_errno internals                                                   */
 /* ------------------------------------------------------------------------ */
 
-#include <wchar.h>
+#ifndef __unused
+#define __unused
+#endif
 
 struct printf_info {
 	int		prec;
@@ -505,6 +510,18 @@ ref_putchar_unlocked(int ch)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+#ifndef __unused
+#define __unused
+#endif
+
+static int
+b0140_vfprintf_l(FILE *fp, locale_t locale, const char *fmt, va_list ap)
+{
+	(void)locale;
+	return (vfprintf(fp, fmt, ap));
+}
+#define vfprintf_l b0140_vfprintf_l
 
 int
 ref_printf(char const * __restrict fmt, ...)

@@ -83,11 +83,10 @@ enum {
 		(offsetof(struct lc_messages_T, yesstr) / sizeof(char *))
 
 size_t	pbsd_wcrtomb(char * __restrict, wchar_t, mbstate_t * __restrict);
-size_t	pbsd_wcsrtombs_l(char * __restrict, const wchar_t ** __restrict,
+size_t	wcsrtombs_l(char * __restrict, const wchar_t ** __restrict,
 	    size_t, mbstate_t * __restrict, port_locale_t);
-int	pbsd_iswspace_l(wint_t, port_locale_t);
-double	pbsd_strtod_l(const char * __restrict, char ** __restrict,
-	    port_locale_t);
+int	iswspace_l(wint_t, port_locale_t);
+double	strtod_l(const char * __restrict, char ** __restrict, port_locale_t);
 int	__part_load_locale(const char *, int *, char **, const char *, int,
 	    int, const char **);
 

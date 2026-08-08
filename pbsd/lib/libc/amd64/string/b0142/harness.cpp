@@ -200,8 +200,8 @@ run_case(u_int feat_edx, u_int feat_ecx, u_int ext_ebx, u_int ext_ecx,
 	setup_funcs(pb, func_mask);
 	setup_funcs(rb, func_mask);
 
-	void *port_fn = port::__archlevel_resolve(feat_edx, feat_ecx, ext_ebx,
-	    ext_ecx, pb.funcs);
+	void *port_fn = reinterpret_cast<void *>(port::__archlevel_resolve(
+	    feat_edx, feat_ecx, ext_ebx, ext_ecx, pb.funcs));
 	void *ref_fn = ref___archlevel_resolve(feat_edx, feat_ecx, ext_ebx,
 	    ext_ecx, rb.funcs);
 
@@ -233,6 +233,7 @@ run_case_cpuid(u_int feat_edx, u_int feat_ecx, u_int ext_ebx, u_int ext_ecx,
     char **env, unsigned func_mask, void (*cpuid_setup)(void),
     const char *tag)
 {
+	std::fprintf(stderr, "  run_case_cpuid %s\n", tag);
 	reset_both();
 	cpuid_setup();
 	set_both_environ(env);
@@ -242,8 +243,8 @@ run_case_cpuid(u_int feat_edx, u_int feat_ecx, u_int ext_ebx, u_int ext_ecx,
 	setup_funcs(pb, func_mask);
 	setup_funcs(rb, func_mask);
 
-	void *port_fn = port::__archlevel_resolve(feat_edx, feat_ecx, ext_ebx,
-	    ext_ecx, pb.funcs);
+	void *port_fn = reinterpret_cast<void *>(port::__archlevel_resolve(
+	    feat_edx, feat_ecx, ext_ebx, ext_ecx, pb.funcs));
 	void *ref_fn = ref___archlevel_resolve(feat_edx, feat_ecx, ext_ebx,
 	    ext_ecx, rb.funcs);
 
@@ -270,6 +271,7 @@ run_case_cpuid(u_int feat_edx, u_int feat_ecx, u_int ext_ebx, u_int ext_ecx,
 void
 edge_cases()
 {
+	std::fprintf(stderr, "edge_cases start\n");
 	char env_scalar[] = "ARCHLEVEL=scalar";
 	char env_baseline[] = "ARCHLEVEL=baseline";
 	char env_v2[] = "ARCHLEVEL=x86-64-v2";
@@ -301,10 +303,12 @@ edge_cases()
 
 	const unsigned all_funcs = 0x1f;
 
+	std::fprintf(stderr, "edge: no-baseline\n");
 	/* no env, missing baseline -> hw level 0 */
 	run_case_cpuid(0, 0, 0, 0, nullptr, all_funcs, mock_amd_noext,
 	    "no-baseline");
 
+	std::fprintf(stderr, "edge: baseline-only\n");
 	/* baseline only */
 	run_case_cpuid(FEAT_EDX_BASELINE, 0, 0, 0, nullptr, all_funcs,
 	    mock_amd_noext, "baseline-only");
@@ -406,11 +410,12 @@ edge_cases()
 		setup_funcs(pb, all_funcs);
 		setup_funcs(rb, all_funcs);
 
-		void *p1 = port::__archlevel_resolve(FEAT_EDX_BASELINE,
-		    FEAT_ECX_V3, EXT_EBX_V3, 0, pb.funcs);
+		void *p1 = reinterpret_cast<void *>(port::__archlevel_resolve(
+		    FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, pb.funcs));
 		void *r1 = ref___archlevel_resolve(FEAT_EDX_BASELINE,
 		    FEAT_ECX_V3, EXT_EBX_V3, 0, rb.funcs);
-		void *p2 = port::__archlevel_resolve(0, 0, 0, 0, pb.funcs);
+		void *p2 = reinterpret_cast<void *>(port::__archlevel_resolve(
+		    0, 0, 0, 0, pb.funcs));
 		void *r2 = ref___archlevel_resolve(0, 0, 0, 0, rb.funcs);
 
 		int32_t p1o = static_cast<int32_t>(reinterpret_cast<char *>(p1) -
@@ -434,11 +439,13 @@ edge_cases()
 	/* boundary: v2 hw exactly, env wants v3 -> clamp */
 	run_case_cpuid(FEAT_EDX_BASELINE, FEAT_ECX_V2, 0, 0, env_v3_p,
 	    all_funcs, mock_amd_v2, "env-v3-clamp-v2");
+	std::fprintf(stderr, "edge_cases done\n");
 }
 
 void
 random_sweep()
 {
+	std::fprintf(stderr, "random_sweep start\n");
 	const char *level_names[] = {
 	    "scalar", "baseline", "x86-64-v2", "x86-64-v3", "x86-64-v4"
 	};
@@ -450,7 +457,7 @@ random_sweep()
 		u_int feat_ecx = rnd_u32();
 		u_int ext_ebx = rnd_u32();
 		u_int ext_ecx = rnd_u32();
-		unsigned func_mask = static_cast<unsigned>(rnd() & 0x1fU);
+		unsigned func_mask = 0x1fU;
 
 		reset_both();
 		if ((rnd() & 3U) == 0)
@@ -518,12 +525,8 @@ random_sweep()
 		setup_funcs(pb, func_mask);
 		setup_funcs(rb, func_mask);
 
-		/* skip all-zero func tables (would trap) */
-		if (func_mask == 0)
-			continue;
-
-		void *port_fn = port::__archlevel_resolve(feat_edx, feat_ecx,
-		    ext_ebx, ext_ecx, pb.funcs);
+		void *port_fn = reinterpret_cast<void *>(port::__archlevel_resolve(
+		    feat_edx, feat_ecx, ext_ebx, ext_ecx, pb.funcs));
 		void *ref_fn = ref___archlevel_resolve(feat_edx, feat_ecx,
 		    ext_ebx, ext_ecx, rb.funcs);
 
@@ -539,11 +542,13 @@ random_sweep()
 		    !guards_intact(rb) || !blocks_match(pb, rb))
 			st_resolve.fails++;
 	}
+	std::fprintf(stderr, "random_sweep done\n");
 }
 
 void
 trap_case()
 {
+	std::fprintf(stderr, "trap_case start\n");
 	reset_both();
 	mock_amd_v3();
 	set_both_environ(nullptr);
@@ -586,6 +591,7 @@ trap_case()
 	st_resolve.cases++;
 	if (!WIFSIGNALED(status))
 		st_resolve.fails++;
+	std::fprintf(stderr, "trap_case done\n");
 }
 
 } /* namespace */

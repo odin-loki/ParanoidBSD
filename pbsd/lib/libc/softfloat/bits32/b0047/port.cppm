@@ -902,7 +902,26 @@ void float_raise( int flags )
     float_exception_flags |= flags;
 
     if ( flags & float_exception_mask ) {
-	::raise( SIGFPE );
+#if 0
+	siginfo_t info;
+	memset(&info, 0, sizeof info);
+	info.si_signo = SIGFPE;
+	info.si_pid = getpid();
+	info.si_uid = geteuid();
+	if (flags & float_flag_underflow)
+	    info.si_code = FPE_FLTUND;
+	else if (flags & float_flag_overflow)
+	    info.si_code = FPE_FLTOVF;
+	else if (flags & float_flag_divbyzero)
+	    info.si_code = FPE_FLTDIV;
+	else if (flags & float_flag_invalid)
+	    info.si_code = FPE_FLTINV;
+	else if (flags & float_flag_inexact)
+	    info.si_code = FPE_FLTRES;
+	sigqueueinfo(getpid(), &info);
+#else
+	raise( SIGFPE );
+#endif
     }
 }
 
