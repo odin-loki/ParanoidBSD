@@ -232,7 +232,7 @@ integer part of the result is returned at the location pointed to by
 described above, and is returned at the location pointed to by `z1Ptr'.)
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  shift64ExtraRightJamming(
      bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -270,7 +270,7 @@ than 128, the result will be 0.  The result is broken into two 64-bit pieces
 which are stored at the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  shift128Right(
      bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -306,7 +306,7 @@ nonzero.  The result is broken into two 64-bit pieces which are stored at
 the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  shift128RightJamming(
      bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -358,7 +358,7 @@ corrupted as described above, and is returned at the location pointed to by
 `z2Ptr'.)
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  shift128ExtraRightJamming(
      bits64 a0,
      bits64 a1,
@@ -417,7 +417,7 @@ of `count' must be less than 64.  The result is broken into two 64-bit
 pieces which are stored at the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  shortShift128Left(
      bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -437,7 +437,7 @@ The value of `count' must be less than 64.  The result is broken into three
 `z1Ptr', and `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  shortShift192Left(
      bits64 a0,
      bits64 a1,
@@ -473,7 +473,7 @@ any carry out is lost.  The result is broken into two 64-bit pieces which
 are stored at the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  add128(
      bits64 a0, bits64 a1, bits64 b0, bits64 b1, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -494,7 +494,7 @@ modulo 2^192, so any carry out is lost.  The result is broken into three
 `z1Ptr', and `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  add192(
      bits64 a0,
      bits64 a1,
@@ -533,7 +533,7 @@ Subtracts the 128-bit value formed by concatenating `b0' and `b1' from the
 `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  sub128(
      bits64 a0, bits64 a1, bits64 b0, bits64 b1, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -552,7 +552,7 @@ result is broken into three 64-bit pieces which are stored at the locations
 pointed to by `z0Ptr', `z1Ptr', and `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  sub192(
      bits64 a0,
      bits64 a1,
@@ -620,7 +620,7 @@ pieces which are stored at the locations pointed to by `z0Ptr', `z1Ptr', and
 `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  mul128By64To192(
      bits64 a0,
      bits64 a1,
@@ -649,7 +649,7 @@ product.  The product is broken into four 64-bit pieces which are stored at
 the locations pointed to by `z0Ptr', `z1Ptr', `z2Ptr', and `z3Ptr'.
 -------------------------------------------------------------------------------
 */
-export  void
+ void
  mul128To256(
      bits64 a0,
      bits64 a1,
@@ -689,7 +689,7 @@ If the exact quotient q is larger than 64 bits, the maximum positive 64-bit
 unsigned integer is returned.
 -------------------------------------------------------------------------------
 */
-export bits64 estimateDiv128To64( bits64 a0, bits64 a1, bits64 b )
+bits64 estimateDiv128To64( bits64 a0, bits64 a1, bits64 b )
 {
     bits64 b0, b1;
     bits64 rem0, rem1, term0, term1;
@@ -722,7 +722,7 @@ case, the approximation returned lies strictly within +/-2 of the exact
 value.
 -------------------------------------------------------------------------------
 */
-export bits32 estimateSqrt32( int16 aExp, bits32 a )
+bits32 estimateSqrt32( int16 aExp, bits32 a )
 {
     static const bits16 sqrtOddAdjustments[] = {
         0x0004, 0x0022, 0x005D, 0x00B1, 0x011D, 0x019F, 0x0236, 0x02E0,
@@ -757,7 +757,7 @@ Returns the number of leading 0 bits before the most-significant 1 bit of
 `a'.  If `a' is zero, 32 is returned.
 -------------------------------------------------------------------------------
 */
-export int8 countLeadingZeros32( bits32 a )
+int8 countLeadingZeros32( bits32 a )
 {
     static const int8 countLeadingZerosHigh[] = {
         8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -799,7 +799,7 @@ Returns the number of leading 0 bits before the most-significant 1 bit of
 `a'.  If `a' is zero, 64 is returned.
 -------------------------------------------------------------------------------
 */
-export int8 countLeadingZeros64( bits64 a )
+int8 countLeadingZeros64( bits64 a )
 {
     int8 shiftCount;
 
@@ -919,7 +919,7 @@ substitute a result value.  If traps are not implemented, this routine
 should be simply `float_exception_flags |= flags;'.
 -------------------------------------------------------------------------------
 */
-export void float_raise( int flags )
+void float_raise( int flags )
 {
 
     float_exception_flags |= flags;
@@ -953,7 +953,7 @@ Returns 1 if the single-precision floating-point value `a' is a NaN;
 otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-export flag float32_is_nan( float32 a )
+flag float32_is_nan( float32 a )
 {
 
     return ( 0xFF000000 < (bits32) ( a<<1 ) );
@@ -966,7 +966,7 @@ Returns 1 if the single-precision floating-point value `a' is a signaling
 NaN; otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-export flag float32_is_signaling_nan( float32 a )
+flag float32_is_signaling_nan( float32 a )
 {
 
     return ( ( ( a>>22 ) & 0x1FF ) == 0x1FE ) && ( a & 0x003FFFFF );
@@ -980,7 +980,7 @@ Returns the result of converting the single-precision floating-point NaN
 exception is raised.
 -------------------------------------------------------------------------------
 */
-export commonNaNT float32ToCommonNaN( float32 a )
+commonNaNT float32ToCommonNaN( float32 a )
 {
     commonNaNT z;
 
@@ -998,7 +998,7 @@ Returns the result of converting the canonical NaN `a' to the single-
 precision floating-point format.
 -------------------------------------------------------------------------------
 */
-export float32 commonNaNToFloat32( commonNaNT a )
+float32 commonNaNToFloat32( commonNaNT a )
 {
 
     return ( ( (bits32) a.sign )<<31 ) | 0x7FC00000 | ( a.high>>41 );
@@ -1012,7 +1012,7 @@ is a NaN, and returns the appropriate NaN result.  If either `a' or `b' is a
 signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-export float32 propagateFloat32NaN( float32 a, float32 b )
+float32 propagateFloat32NaN( float32 a, float32 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -1045,7 +1045,7 @@ Returns 1 if the double-precision floating-point value `a' is a NaN;
 otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-export flag float64_is_nan( float64 a )
+flag float64_is_nan( float64 a )
 {
 
     return ( LIT64( 0xFFE0000000000000 ) <
@@ -1059,7 +1059,7 @@ Returns 1 if the double-precision floating-point value `a' is a signaling
 NaN; otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-export flag float64_is_signaling_nan( float64 a )
+flag float64_is_signaling_nan( float64 a )
 {
 
     return
@@ -1075,7 +1075,7 @@ Returns the result of converting the double-precision floating-point NaN
 exception is raised.
 -------------------------------------------------------------------------------
 */
-export commonNaNT float64ToCommonNaN( float64 a )
+commonNaNT float64ToCommonNaN( float64 a )
 {
     commonNaNT z;
 
@@ -1093,7 +1093,7 @@ Returns the result of converting the canonical NaN `a' to the double-
 precision floating-point format.
 -------------------------------------------------------------------------------
 */
-export float64 commonNaNToFloat64( commonNaNT a )
+float64 commonNaNToFloat64( commonNaNT a )
 {
 
     return FLOAT64_MANGLE(
@@ -1110,7 +1110,7 @@ is a NaN, and returns the appropriate NaN result.  If either `a' or `b' is a
 signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-export float64 propagateFloat64NaN( float64 a, float64 b )
+float64 propagateFloat64NaN( float64 a, float64 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -1147,7 +1147,7 @@ Returns 1 if the extended double-precision floating-point value `a' is a
 NaN; otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-export flag floatx80_is_nan( floatx80 a )
+flag floatx80_is_nan( floatx80 a )
 {
 
     return ( ( a.high & 0x7FFF ) == 0x7FFF ) && (bits64) ( a.low<<1 );
@@ -1160,7 +1160,7 @@ Returns 1 if the extended double-precision floating-point value `a' is a
 signaling NaN; otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-export flag floatx80_is_signaling_nan( floatx80 a )
+flag floatx80_is_signaling_nan( floatx80 a )
 {
     bits64 aLow;
 
@@ -1179,7 +1179,7 @@ point NaN `a' to the canonical NaN format.  If `a' is a signaling NaN, the
 invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-export commonNaNT floatx80ToCommonNaN( floatx80 a )
+commonNaNT floatx80ToCommonNaN( floatx80 a )
 {
     commonNaNT z;
 
@@ -1197,7 +1197,7 @@ Returns the result of converting the canonical NaN `a' to the extended
 double-precision floating-point format.
 -------------------------------------------------------------------------------
 */
-export floatx80 commonNaNToFloatx80( commonNaNT a )
+floatx80 commonNaNToFloatx80( commonNaNT a )
 {
     floatx80 z;
 
@@ -1214,7 +1214,7 @@ of which is a NaN, and returns the appropriate NaN result.  If either `a' or
 `b' is a signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-export floatx80 propagateFloatx80NaN( floatx80 a, floatx80 b )
+floatx80 propagateFloatx80NaN( floatx80 a, floatx80 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -1251,7 +1251,7 @@ Returns 1 if the quadruple-precision floating-point value `a' is a NaN;
 otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-export flag float128_is_nan( float128 a )
+flag float128_is_nan( float128 a )
 {
 
     return
@@ -1266,7 +1266,7 @@ Returns 1 if the quadruple-precision floating-point value `a' is a
 signaling NaN; otherwise returns 0.
 -------------------------------------------------------------------------------
 */
-export flag float128_is_signaling_nan( float128 a )
+flag float128_is_signaling_nan( float128 a )
 {
 
     return
@@ -1282,7 +1282,7 @@ Returns the result of converting the quadruple-precision floating-point NaN
 exception is raised.
 -------------------------------------------------------------------------------
 */
-export commonNaNT float128ToCommonNaN( float128 a )
+commonNaNT float128ToCommonNaN( float128 a )
 {
     commonNaNT z;
 
@@ -1299,7 +1299,7 @@ Returns the result of converting the canonical NaN `a' to the quadruple-
 precision floating-point format.
 -------------------------------------------------------------------------------
 */
-export float128 commonNaNToFloat128( commonNaNT a )
+float128 commonNaNToFloat128( commonNaNT a )
 {
     float128 z;
 
@@ -1316,7 +1316,7 @@ which is a NaN, and returns the appropriate NaN result.  If either `a' or
 `b' is a signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-export float128 propagateFloat128NaN( float128 a, float128 b )
+float128 propagateFloat128NaN( float128 a, float128 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -1428,7 +1428,7 @@ point input is too large, the invalid exception is raised and the largest
 positive or negative integer is returned.
 -------------------------------------------------------------------------------
 */
-export int32 roundAndPackInt32( flag zSign, bits64 absZ )
+int32 roundAndPackInt32( flag zSign, bits64 absZ )
 {
     int8 roundingMode;
     flag roundNearestEven;
@@ -1479,7 +1479,7 @@ exception is raised and the largest positive or negative integer is
 returned.
 -------------------------------------------------------------------------------
 */
-export int64 roundAndPackInt64( flag zSign, bits64 absZ0, bits64 absZ1 )
+int64 roundAndPackInt64( flag zSign, bits64 absZ0, bits64 absZ1 )
 {
     int8 roundingMode;
     flag roundNearestEven, increment;
@@ -1564,7 +1564,7 @@ significand are stored at the locations pointed to by `zExpPtr' and
 `zSigPtr', respectively.
 -------------------------------------------------------------------------------
 */
-export void
+void
  normalizeFloat32Subnormal( bits32 aSig, int16 *zExpPtr, bits32 *zSigPtr )
 {
     int8 shiftCount;
@@ -1617,7 +1617,7 @@ The handling of underflow and overflow follows the IEC/IEEE Standard for
 Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 roundAndPackFloat32( flag zSign, int16 zExp, bits32 zSig )
+float32 roundAndPackFloat32( flag zSign, int16 zExp, bits32 zSig )
 {
     int8 roundingMode;
     flag roundNearestEven;
@@ -1679,7 +1679,7 @@ Bit 31 of `zSig' must be zero, and `zExp' must be 1 less than the ``true''
 floating-point exponent.
 -------------------------------------------------------------------------------
 */
-export float32
+float32
  normalizeRoundAndPackFloat32( flag zSign, int16 zExp, bits32 zSig )
 {
     int8 shiftCount;
@@ -1733,7 +1733,7 @@ significand are stored at the locations pointed to by `zExpPtr' and
 `zSigPtr', respectively.
 -------------------------------------------------------------------------------
 */
-export void
+void
  normalizeFloat64Subnormal( bits64 aSig, int16 *zExpPtr, bits64 *zSigPtr )
 {
     int8 shiftCount;
@@ -1787,7 +1787,7 @@ The handling of underflow and overflow follows the IEC/IEEE Standard for
 Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 roundAndPackFloat64( flag zSign, int16 zExp, bits64 zSig )
+float64 roundAndPackFloat64( flag zSign, int16 zExp, bits64 zSig )
 {
     int8 roundingMode;
     flag roundNearestEven;
@@ -1851,7 +1851,7 @@ Bit 63 of `zSig' must be zero, and `zExp' must be 1 less than the ``true''
 floating-point exponent.
 -------------------------------------------------------------------------------
 */
-export float64
+float64
  normalizeRoundAndPackFloat64( flag zSign, int16 zExp, bits64 zSig )
 {
     int8 shiftCount;
@@ -1909,7 +1909,7 @@ and significand are stored at the locations pointed to by `zExpPtr' and
 `zSigPtr', respectively.
 -------------------------------------------------------------------------------
 */
-export void
+void
  normalizeFloatx80Subnormal( bits64 aSig, int32 *zExpPtr, bits64 *zSigPtr )
 {
     int8 shiftCount;
@@ -1961,7 +1961,7 @@ handling of underflow and overflow follows the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80
+floatx80
  roundAndPackFloatx80(
      int8 roundingPrecision, flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1
  )
@@ -2130,7 +2130,7 @@ corresponding to the abstract input.  This routine is just like
 normalized.
 -------------------------------------------------------------------------------
 */
-export floatx80
+floatx80
  normalizeRoundAndPackFloatx80(
      int8 roundingPrecision, flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1
  )
@@ -2214,7 +2214,7 @@ least significant 64 bits of the normalized significand are stored at the
 location pointed to by `zSig1Ptr'.
 -------------------------------------------------------------------------------
 */
-export void
+void
  normalizeFloat128Subnormal(
      bits64 aSig0,
      bits64 aSig1,
@@ -2259,7 +2259,7 @@ whenever `zSig0' and `zSig1' concatenated form a complete, normalized
 significand.
 -------------------------------------------------------------------------------
 */
-export  float128
+ float128
  packFloat128( flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1 )
 {
     float128 z;
@@ -2292,7 +2292,7 @@ than the ``true'' floating-point exponent.  The handling of underflow and
 overflow follows the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128
+float128
  roundAndPackFloat128(
      flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1, bits64 zSig2 )
 {
@@ -2393,7 +2393,7 @@ normalized.  In all cases, `zExp' must be 1 less than the ``true'' floating-
 point exponent.
 -------------------------------------------------------------------------------
 */
-export float128
+float128
  normalizeRoundAndPackFloat128(
      flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1 )
 {
@@ -2427,7 +2427,7 @@ to the single-precision floating-point format.  The conversion is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 int32_to_float32( int32 a )
+float32 int32_to_float32( int32 a )
 {
     flag zSign;
 
@@ -2438,7 +2438,7 @@ export float32 int32_to_float32( int32 a )
 
 }
 
-export float32 uint32_to_float32( uint32 a )
+float32 uint32_to_float32( uint32 a )
 {
     if ( a == 0 ) return 0;
     if ( a & (bits32) 0x80000000 )
@@ -2454,7 +2454,7 @@ to the double-precision floating-point format.  The conversion is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 int32_to_float64( int32 a )
+float64 int32_to_float64( int32 a )
 {
     flag zSign;
     uint32 absA;
@@ -2470,7 +2470,7 @@ export float64 int32_to_float64( int32 a )
 
 }
 
-export float64 uint32_to_float64( uint32 a )
+float64 uint32_to_float64( uint32 a )
 {
     int8 shiftCount;
     bits64 zSig = a;
@@ -2490,7 +2490,7 @@ is performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 int32_to_floatx80( int32 a )
+floatx80 int32_to_floatx80( int32 a )
 {
     flag zSign;
     uint32 absA;
@@ -2506,7 +2506,7 @@ export floatx80 int32_to_floatx80( int32 a )
 
 }
 
-export floatx80 uint32_to_floatx80( uint32 a )
+floatx80 uint32_to_floatx80( uint32 a )
 {
     int8 shiftCount;
     bits64 zSig = a;
@@ -2526,7 +2526,7 @@ the quadruple-precision floating-point format.  The conversion is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 int32_to_float128( int32 a )
+float128 int32_to_float128( int32 a )
 {
     flag zSign;
     uint32 absA;
@@ -2542,7 +2542,7 @@ export float128 int32_to_float128( int32 a )
 
 }
 
-export float128 uint32_to_float128( uint32 a )
+float128 uint32_to_float128( uint32 a )
 {
     int8 shiftCount;
     bits64 zSig0 = a;
@@ -2561,7 +2561,7 @@ to the single-precision floating-point format.  The conversion is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 int64_to_float32( int64 a )
+float32 int64_to_float32( int64 a )
 {
     flag zSign;
     uint64 absA;
@@ -2594,7 +2594,7 @@ to the double-precision floating-point format.  The conversion is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 int64_to_float64( int64 a )
+float64 int64_to_float64( int64 a )
 {
     flag zSign;
 
@@ -2616,7 +2616,7 @@ is performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 int64_to_floatx80( int64 a )
+floatx80 int64_to_floatx80( int64 a )
 {
     flag zSign;
     uint64 absA;
@@ -2640,7 +2640,7 @@ the quadruple-precision floating-point format.  The conversion is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 int64_to_float128( int64 a )
+float128 int64_to_float128( int64 a )
 {
     flag zSign;
     uint64 absA;
@@ -2679,7 +2679,7 @@ positive integer is returned.  Otherwise, if the conversion overflows, the
 largest integer with the same sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int32 float32_to_int32( float32 a )
+int32 float32_to_int32( float32 a )
 {
     flag aSign;
     int16 aExp, shiftCount;
@@ -2710,7 +2710,7 @@ the conversion overflows, the largest integer with the same sign as `a' is
 returned.
 -------------------------------------------------------------------------------
 */
-export int32 float32_to_int32_round_to_zero( float32 a )
+int32 float32_to_int32_round_to_zero( float32 a )
 {
     flag aSign;
     int16 aExp, shiftCount;
@@ -2753,7 +2753,7 @@ positive integer is returned.  Otherwise, if the conversion overflows, the
 largest integer with the same sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int64 float32_to_int64( float32 a )
+int64 float32_to_int64( float32 a )
 {
     flag aSign;
     int16 aExp, shiftCount;
@@ -2790,7 +2790,7 @@ conversion overflows, the largest integer with the same sign as `a' is
 returned.
 -------------------------------------------------------------------------------
 */
-export int64 float32_to_int64_round_to_zero( float32 a )
+int64 float32_to_int64_round_to_zero( float32 a )
 {
     flag aSign;
     int16 aExp, shiftCount;
@@ -2834,7 +2834,7 @@ performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 float32_to_float64( float32 a )
+float64 float32_to_float64( float32 a )
 {
     flag aSign;
     int16 aExp;
@@ -2865,7 +2865,7 @@ is performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 float32_to_floatx80( float32 a )
+floatx80 float32_to_floatx80( float32 a )
 {
     flag aSign;
     int16 aExp;
@@ -2897,7 +2897,7 @@ performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 float32_to_float128( float32 a )
+float128 float32_to_float128( float32 a )
 {
     flag aSign;
     int16 aExp;
@@ -2928,7 +2928,7 @@ operation is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 float32_round_to_int( float32 a )
+float32 float32_round_to_int( float32 a )
 {
     flag aSign;
     int16 aExp;
@@ -2991,7 +2991,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 addFloat32Sigs( float32 a, float32 b, flag zSign )
+float32 addFloat32Sigs( float32 a, float32 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits32 aSig, bSig, zSig;
@@ -3063,7 +3063,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 subFloat32Sigs( float32 a, float32 b, flag zSign )
+float32 subFloat32Sigs( float32 a, float32 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits32 aSig, bSig, zSig;
@@ -3137,7 +3137,7 @@ and `b'.  The operation is performed according to the IEC/IEEE Standard for
 Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 float32_add( float32 a, float32 b )
+float32 float32_add( float32 a, float32 b )
 {
     flag aSign, bSign;
 
@@ -3159,7 +3159,7 @@ Returns the result of subtracting the single-precision floating-point values
 for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 float32_sub( float32 a, float32 b )
+float32 float32_sub( float32 a, float32 b )
 {
     flag aSign, bSign;
 
@@ -3181,7 +3181,7 @@ Returns the result of multiplying the single-precision floating-point values
 for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 float32_mul( float32 a, float32 b )
+float32 float32_mul( float32 a, float32 b )
 {
     flag aSign, bSign, zSign;
     int16 aExp, bExp, zExp;
@@ -3242,7 +3242,7 @@ by the corresponding value `b'.  The operation is performed according to the
 IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 float32_div( float32 a, float32 b )
+float32 float32_div( float32 a, float32 b )
 {
     flag aSign, bSign, zSign;
     int16 aExp, bExp, zExp;
@@ -3305,7 +3305,7 @@ with respect to the corresponding value `b'.  The operation is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 float32_rem( float32 a, float32 b )
+float32 float32_rem( float32 a, float32 b )
 {
     flag aSign, bSign, zSign;
     int16 aExp, bExp, expDiff;
@@ -3406,7 +3406,7 @@ The operation is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 float32_sqrt( float32 a )
+float32 float32_sqrt( float32 a )
 {
     flag aSign;
     int16 aExp, zExp;
@@ -3461,7 +3461,7 @@ the corresponding value `b', and 0 otherwise.  The comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float32_eq( float32 a, float32 b )
+flag float32_eq( float32 a, float32 b )
 {
 
     if (    ( ( extractFloat32Exp( a ) == 0xFF ) && extractFloat32Frac( a ) )
@@ -3484,7 +3484,7 @@ is performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float32_le( float32 a, float32 b )
+flag float32_le( float32 a, float32 b )
 {
     flag aSign, bSign;
 
@@ -3508,7 +3508,7 @@ the corresponding value `b', and 0 otherwise.  The comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float32_lt( float32 a, float32 b )
+flag float32_lt( float32 a, float32 b )
 {
     flag aSign, bSign;
 
@@ -3533,7 +3533,7 @@ raised if either operand is a NaN.  Otherwise, the comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float32_eq_signaling( float32 a, float32 b )
+flag float32_eq_signaling( float32 a, float32 b )
 {
 
     if (    ( ( extractFloat32Exp( a ) == 0xFF ) && extractFloat32Frac( a ) )
@@ -3554,7 +3554,7 @@ cause an exception.  Otherwise, the comparison is performed according to the
 IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float32_le_quiet( float32 a, float32 b )
+flag float32_le_quiet( float32 a, float32 b )
 {
     flag aSign, bSign;
 
@@ -3581,7 +3581,7 @@ exception.  Otherwise, the comparison is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float32_lt_quiet( float32 a, float32 b )
+flag float32_lt_quiet( float32 a, float32 b )
 {
     flag aSign, bSign;
 
@@ -3611,7 +3611,7 @@ positive integer is returned.  Otherwise, if the conversion overflows, the
 largest integer with the same sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int32 float64_to_int32( float64 a )
+int32 float64_to_int32( float64 a )
 {
     flag aSign;
     int16 aExp, shiftCount;
@@ -3639,7 +3639,7 @@ the conversion overflows, the largest integer with the same sign as `a' is
 returned.
 -------------------------------------------------------------------------------
 */
-export int32 float64_to_int32_round_to_zero( float64 a )
+int32 float64_to_int32_round_to_zero( float64 a )
 {
     flag aSign;
     int16 aExp, shiftCount;
@@ -3686,7 +3686,7 @@ positive integer is returned.  Otherwise, if the conversion overflows, the
 largest integer with the same sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int64 float64_to_int64( float64 a )
+int64 float64_to_int64( float64 a )
 {
     flag aSign;
     int16 aExp, shiftCount;
@@ -3729,7 +3729,7 @@ the conversion overflows, the largest integer with the same sign as `a' is
 returned.
 -------------------------------------------------------------------------------
 */
-export int64 float64_to_int64_round_to_zero( float64 a )
+int64 float64_to_int64_round_to_zero( float64 a )
 {
     flag aSign;
     int16 aExp, shiftCount;
@@ -3779,7 +3779,7 @@ performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 float64_to_float32( float64 a )
+float32 float64_to_float32( float64 a )
 {
     flag aSign;
     int16 aExp;
@@ -3812,7 +3812,7 @@ is performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 float64_to_floatx80( float64 a )
+floatx80 float64_to_floatx80( float64 a )
 {
     flag aSign;
     int16 aExp;
@@ -3845,7 +3845,7 @@ performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 float64_to_float128( float64 a )
+float128 float64_to_float128( float64 a )
 {
     flag aSign;
     int16 aExp;
@@ -3877,7 +3877,7 @@ operation is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 float64_round_to_int( float64 a )
+float64 float64_round_to_int( float64 a )
 {
     flag aSign;
     int16 aExp;
@@ -3941,7 +3941,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 addFloat64Sigs( float64 a, float64 b, flag zSign )
+float64 addFloat64Sigs( float64 a, float64 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits64 aSig, bSig, zSig;
@@ -4013,7 +4013,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 subFloat64Sigs( float64 a, float64 b, flag zSign )
+float64 subFloat64Sigs( float64 a, float64 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits64 aSig, bSig, zSig;
@@ -4087,7 +4087,7 @@ and `b'.  The operation is performed according to the IEC/IEEE Standard for
 Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 float64_add( float64 a, float64 b )
+float64 float64_add( float64 a, float64 b )
 {
     flag aSign, bSign;
 
@@ -4109,7 +4109,7 @@ Returns the result of subtracting the double-precision floating-point values
 for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 float64_sub( float64 a, float64 b )
+float64 float64_sub( float64 a, float64 b )
 {
     flag aSign, bSign;
 
@@ -4131,7 +4131,7 @@ Returns the result of multiplying the double-precision floating-point values
 for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 float64_mul( float64 a, float64 b )
+float64 float64_mul( float64 a, float64 b )
 {
     flag aSign, bSign, zSign;
     int16 aExp, bExp, zExp;
@@ -4190,7 +4190,7 @@ by the corresponding value `b'.  The operation is performed according to
 the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 float64_div( float64 a, float64 b )
+float64 float64_div( float64 a, float64 b )
 {
     flag aSign, bSign, zSign;
     int16 aExp, bExp, zExp;
@@ -4261,7 +4261,7 @@ with respect to the corresponding value `b'.  The operation is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 float64_rem( float64 a, float64 b )
+float64 float64_rem( float64 a, float64 b )
 {
     flag aSign, bSign, zSign;
     int16 aExp, bExp, expDiff;
@@ -4347,7 +4347,7 @@ The operation is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 float64_sqrt( float64 a )
+float64 float64_sqrt( float64 a )
 {
     flag aSign;
     int16 aExp, zExp;
@@ -4399,7 +4399,7 @@ corresponding value `b', and 0 otherwise.  The comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float64_eq( float64 a, float64 b )
+flag float64_eq( float64 a, float64 b )
 {
 
     if (    ( ( extractFloat64Exp( a ) == 0x7FF ) && extractFloat64Frac( a ) )
@@ -4423,7 +4423,7 @@ performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float64_le( float64 a, float64 b )
+flag float64_le( float64 a, float64 b )
 {
     flag aSign, bSign;
 
@@ -4451,7 +4451,7 @@ the corresponding value `b', and 0 otherwise.  The comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float64_lt( float64 a, float64 b )
+flag float64_lt( float64 a, float64 b )
 {
     flag aSign, bSign;
 
@@ -4480,7 +4480,7 @@ if either operand is a NaN.  Otherwise, the comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float64_eq_signaling( float64 a, float64 b )
+flag float64_eq_signaling( float64 a, float64 b )
 {
 
     if (    ( ( extractFloat64Exp( a ) == 0x7FF ) && extractFloat64Frac( a ) )
@@ -4501,7 +4501,7 @@ cause an exception.  Otherwise, the comparison is performed according to the
 IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float64_le_quiet( float64 a, float64 b )
+flag float64_le_quiet( float64 a, float64 b )
 {
     flag aSign, bSign;
 
@@ -4528,7 +4528,7 @@ exception.  Otherwise, the comparison is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float64_lt_quiet( float64 a, float64 b )
+flag float64_lt_quiet( float64 a, float64 b )
 {
     flag aSign, bSign;
 
@@ -4559,7 +4559,7 @@ largest positive integer is returned.  Otherwise, if the conversion
 overflows, the largest integer with the same sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int32 floatx80_to_int32( floatx80 a )
+int32 floatx80_to_int32( floatx80 a )
 {
     flag aSign;
     int32 aExp, shiftCount;
@@ -4587,7 +4587,7 @@ Otherwise, if the conversion overflows, the largest integer with the same
 sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int32 floatx80_to_int32_round_to_zero( floatx80 a )
+int32 floatx80_to_int32_round_to_zero( floatx80 a )
 {
     flag aSign;
     int32 aExp, shiftCount;
@@ -4633,7 +4633,7 @@ the largest positive integer is returned.  Otherwise, if the conversion
 overflows, the largest integer with the same sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int64 floatx80_to_int64( floatx80 a )
+int64 floatx80_to_int64( floatx80 a )
 {
     flag aSign;
     int32 aExp, shiftCount;
@@ -4674,7 +4674,7 @@ Otherwise, if the conversion overflows, the largest integer with the same
 sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int64 floatx80_to_int64_round_to_zero( floatx80 a )
+int64 floatx80_to_int64_round_to_zero( floatx80 a )
 {
     flag aSign;
     int32 aExp, shiftCount;
@@ -4716,7 +4716,7 @@ conversion is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 floatx80_to_float32( floatx80 a )
+float32 floatx80_to_float32( floatx80 a )
 {
     flag aSign;
     int32 aExp;
@@ -4745,7 +4745,7 @@ conversion is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 floatx80_to_float64( floatx80 a )
+float64 floatx80_to_float64( floatx80 a )
 {
     flag aSign;
     int32 aExp;
@@ -4775,7 +4775,7 @@ conversion is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 floatx80_to_float128( floatx80 a )
+float128 floatx80_to_float128( floatx80 a )
 {
     flag aSign;
     int16 aExp;
@@ -4801,7 +4801,7 @@ value.  The operation is performed according to the IEC/IEEE Standard for
 Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 floatx80_round_to_int( floatx80 a )
+floatx80 floatx80_round_to_int( floatx80 a )
 {
     flag aSign;
     int32 aExp;
@@ -4878,7 +4878,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 addFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
+floatx80 addFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
 {
     int32 aExp, bExp, zExp;
     bits64 aSig, bSig, zSig0, zSig1;
@@ -4945,7 +4945,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 subFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
+floatx80 subFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
 {
     int32 aExp, bExp, zExp;
     bits64 aSig, bSig, zSig0, zSig1;
@@ -5012,7 +5012,7 @@ values `a' and `b'.  The operation is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 floatx80_add( floatx80 a, floatx80 b )
+floatx80 floatx80_add( floatx80 a, floatx80 b )
 {
     flag aSign, bSign;
 
@@ -5034,7 +5034,7 @@ point values `a' and `b'.  The operation is performed according to the
 IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 floatx80_sub( floatx80 a, floatx80 b )
+floatx80 floatx80_sub( floatx80 a, floatx80 b )
 {
     flag aSign, bSign;
 
@@ -5056,7 +5056,7 @@ point values `a' and `b'.  The operation is performed according to the
 IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 floatx80_mul( floatx80 a, floatx80 b )
+floatx80 floatx80_mul( floatx80 a, floatx80 b )
 {
     flag aSign, bSign, zSign;
     int32 aExp, bExp, zExp;
@@ -5116,7 +5116,7 @@ value `a' by the corresponding value `b'.  The operation is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 floatx80_div( floatx80 a, floatx80 b )
+floatx80 floatx80_div( floatx80 a, floatx80 b )
 {
     flag aSign, bSign, zSign;
     int32 aExp, bExp, zExp;
@@ -5197,7 +5197,7 @@ Returns the remainder of the extended double-precision floating-point value
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 floatx80_rem( floatx80 a, floatx80 b )
+floatx80 floatx80_rem( floatx80 a, floatx80 b )
 {
     flag aSign, bSign, zSign;
     int32 aExp, bExp, expDiff;
@@ -5295,7 +5295,7 @@ value `a'.  The operation is performed according to the IEC/IEEE Standard
 for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 floatx80_sqrt( floatx80 a )
+floatx80 floatx80_sqrt( floatx80 a )
 {
     flag aSign;
     int32 aExp, zExp;
@@ -5367,7 +5367,7 @@ performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag floatx80_eq( floatx80 a, floatx80 b )
+flag floatx80_eq( floatx80 a, floatx80 b )
 {
 
     if (    (    ( extractFloatx80Exp( a ) == 0x7FFF )
@@ -5398,7 +5398,7 @@ comparison is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag floatx80_le( floatx80 a, floatx80 b )
+flag floatx80_le( floatx80 a, floatx80 b )
 {
     flag aSign, bSign;
 
@@ -5432,7 +5432,7 @@ is performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag floatx80_lt( floatx80 a, floatx80 b )
+flag floatx80_lt( floatx80 a, floatx80 b )
 {
     flag aSign, bSign;
 
@@ -5466,7 +5466,7 @@ raised if either operand is a NaN.  Otherwise, the comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag floatx80_eq_signaling( floatx80 a, floatx80 b )
+flag floatx80_eq_signaling( floatx80 a, floatx80 b )
 {
 
     if (    (    ( extractFloatx80Exp( a ) == 0x7FFF )
@@ -5494,7 +5494,7 @@ do not cause an exception.  Otherwise, the comparison is performed according
 to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag floatx80_le_quiet( floatx80 a, floatx80 b )
+flag floatx80_le_quiet( floatx80 a, floatx80 b )
 {
     flag aSign, bSign;
 
@@ -5531,7 +5531,7 @@ an exception.  Otherwise, the comparison is performed according to the
 IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag floatx80_lt_quiet( floatx80 a, floatx80 b )
+flag floatx80_lt_quiet( floatx80 a, floatx80 b )
 {
     flag aSign, bSign;
 
@@ -5573,7 +5573,7 @@ positive integer is returned.  Otherwise, if the conversion overflows, the
 largest integer with the same sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int32 float128_to_int32( float128 a )
+int32 float128_to_int32( float128 a )
 {
     flag aSign;
     int32 aExp, shiftCount;
@@ -5603,7 +5603,7 @@ conversion overflows, the largest integer with the same sign as `a' is
 returned.
 -------------------------------------------------------------------------------
 */
-export int32 float128_to_int32_round_to_zero( float128 a )
+int32 float128_to_int32_round_to_zero( float128 a )
 {
     flag aSign;
     int32 aExp, shiftCount;
@@ -5652,7 +5652,7 @@ positive integer is returned.  Otherwise, if the conversion overflows, the
 largest integer with the same sign as `a' is returned.
 -------------------------------------------------------------------------------
 */
-export int64 float128_to_int64( float128 a )
+int64 float128_to_int64( float128 a )
 {
     flag aSign;
     int32 aExp, shiftCount;
@@ -5696,7 +5696,7 @@ the conversion overflows, the largest integer with the same sign as `a' is
 returned.
 -------------------------------------------------------------------------------
 */
-export int64 float128_to_int64_round_to_zero( float128 a )
+int64 float128_to_int64_round_to_zero( float128 a )
 {
     flag aSign;
     int32 aExp, shiftCount;
@@ -5756,7 +5756,7 @@ is performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float32 float128_to_float32( float128 a )
+float32 float128_to_float32( float128 a )
 {
     flag aSign;
     int32 aExp;
@@ -5792,7 +5792,7 @@ is performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float64 float128_to_float64( float128 a )
+float64 float128_to_float64( float128 a )
 {
     flag aSign;
     int32 aExp;
@@ -5827,7 +5827,7 @@ conversion is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export floatx80 float128_to_floatx80( float128 a )
+floatx80 float128_to_floatx80( float128 a )
 {
     flag aSign;
     int32 aExp;
@@ -5864,7 +5864,7 @@ operation is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 float128_round_to_int( float128 a )
+float128 float128_round_to_int( float128 a )
 {
     flag aSign;
     int32 aExp;
@@ -5971,7 +5971,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 addFloat128Sigs( float128 a, float128 b, flag zSign )
+float128 addFloat128Sigs( float128 a, float128 b, flag zSign )
 {
     int32 aExp, bExp, zExp;
     bits64 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1, zSig2;
@@ -6050,7 +6050,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 subFloat128Sigs( float128 a, float128 b, flag zSign )
+float128 subFloat128Sigs( float128 a, float128 b, flag zSign )
 {
     int32 aExp, bExp, zExp;
     bits64 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1;
@@ -6133,7 +6133,7 @@ Returns the result of adding the quadruple-precision floating-point values
 for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 float128_add( float128 a, float128 b )
+float128 float128_add( float128 a, float128 b )
 {
     flag aSign, bSign;
 
@@ -6155,7 +6155,7 @@ values `a' and `b'.  The operation is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 float128_sub( float128 a, float128 b )
+float128 float128_sub( float128 a, float128 b )
 {
     flag aSign, bSign;
 
@@ -6177,7 +6177,7 @@ values `a' and `b'.  The operation is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 float128_mul( float128 a, float128 b )
+float128 float128_mul( float128 a, float128 b )
 {
     flag aSign, bSign, zSign;
     int32 aExp, bExp, zExp;
@@ -6242,7 +6242,7 @@ Returns the result of dividing the quadruple-precision floating-point value
 the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 float128_div( float128 a, float128 b )
+float128 float128_div( float128 a, float128 b )
 {
     flag aSign, bSign, zSign;
     int32 aExp, bExp, zExp;
@@ -6327,7 +6327,7 @@ with respect to the corresponding value `b'.  The operation is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 float128_rem( float128 a, float128 b )
+float128 float128_rem( float128 a, float128 b )
 {
     flag aSign, bSign, zSign;
     int32 aExp, bExp, expDiff;
@@ -6438,7 +6438,7 @@ The operation is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export float128 float128_sqrt( float128 a )
+float128 float128_sqrt( float128 a )
 {
     flag aSign;
     int32 aExp, zExp;
@@ -6508,7 +6508,7 @@ the corresponding value `b', and 0 otherwise.  The comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float128_eq( float128 a, float128 b )
+flag float128_eq( float128 a, float128 b )
 {
 
     if (    (    ( extractFloat128Exp( a ) == 0x7FFF )
@@ -6539,7 +6539,7 @@ is performed according to the IEC/IEEE Standard for Binary Floating-Point
 Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float128_le( float128 a, float128 b )
+flag float128_le( float128 a, float128 b )
 {
     flag aSign, bSign;
 
@@ -6572,7 +6572,7 @@ the corresponding value `b', and 0 otherwise.  The comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float128_lt( float128 a, float128 b )
+flag float128_lt( float128 a, float128 b )
 {
     flag aSign, bSign;
 
@@ -6606,7 +6606,7 @@ raised if either operand is a NaN.  Otherwise, the comparison is performed
 according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float128_eq_signaling( float128 a, float128 b )
+flag float128_eq_signaling( float128 a, float128 b )
 {
 
     if (    (    ( extractFloat128Exp( a ) == 0x7FFF )
@@ -6634,7 +6634,7 @@ cause an exception.  Otherwise, the comparison is performed according to the
 IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float128_le_quiet( float128 a, float128 b )
+flag float128_le_quiet( float128 a, float128 b )
 {
     flag aSign, bSign;
 
@@ -6671,7 +6671,7 @@ exception.  Otherwise, the comparison is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-export flag float128_lt_quiet( float128 a, float128 b )
+flag float128_lt_quiet( float128 a, float128 b )
 {
     flag aSign, bSign;
 
@@ -6699,6 +6699,7 @@ export flag float128_lt_quiet( float128 a, float128 b )
         : lt128( a.high, a.low, b.high, b.low );
 
 }
+
 
 
 } // namespace pbsd::lib_libc_softfloat_bits64::b0048

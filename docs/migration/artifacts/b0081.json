@@ -1,0 +1,13 @@
+{
+  "batch": "b0081",
+  "verified": "2026-08-08T11:23:52Z",
+  "evidence": "harness green + IR-identical for all 8 functions",
+  "ir_equivalent": true,
+  "harness_output": "building batch b0081 with cc / c++ (gcc modules)\n\nfunction            cases     failures   result\n------------ ------------ ------------   ------\nstrcpy             200321            0   PASS\nstrnlen            201909            0   PASS\nstrpbrk            207739            0   PASS\nstrncpy            208016            0   PASS\n------------ ------------ ------------   ------\nTOTAL              817985            0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/amd64/string/strcpy.c": "ac7d3baf0f3d7c79",
+    "hbsd/src/lib/libc/amd64/string/strnlen.c": "97083f431b757867",
+    "hbsd/src/lib/libc/amd64/string/strpbrk.c": "59d537bc7d834a5c",
+    "hbsd/src/lib/libc/amd64/string/strncpy.c": "f644e2e8fbf39975"
+  }
+}
