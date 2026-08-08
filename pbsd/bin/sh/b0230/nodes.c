@@ -7,18 +7,22 @@
       new = state->block;
       state->block = (char *)state->block + nodesize[n->type];
       switch (n->type) {
-      case N858:
+      case N508:
 	    break;
-      case N759:
+      case N260:
+	    break;
+      case N55:
+	    new->t39.f1 = copynodelist(n->t39.f1, state);
 	    break;
       case N629:
+	    new->t825.f1 = n->t825.f1;
 	    break;
-      case N167:
+      case N910:
+	    new->t288.f2 = copynodelist(n->t288.f2, state);
 	    break;
-      case N892:
-	    new->t516.f1 = n->t516.f1;
+      case N46:
 	    break;
-      case N399:
+      case N972:
 	    break;
       };
       new->type = n->type;
