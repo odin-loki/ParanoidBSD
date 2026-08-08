@@ -44,7 +44,7 @@ struct acl_entry {
 typedef struct acl_entry	*acl_entry_t;
 
 struct acl;
-typedef struct acl		*acl_t;
+typedef struct acl_t_struct	*acl_t;
 
 #define ACL_TYPE_ACCESS_OLD	0x00000000
 #define ACL_TYPE_DEFAULT_OLD	0x00000001
@@ -312,7 +312,6 @@ ___acl_delete_fd(int filedes, acl_type_t type)
 	return (g_mock.ret);
 }
 
-struct acl;
 struct acl_t_struct {
 	struct {
 		unsigned int	acl_maxcnt;

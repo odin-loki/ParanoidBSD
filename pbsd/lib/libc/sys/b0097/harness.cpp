@@ -58,6 +58,20 @@ import pbsd.lib.libc.sys.b0097;
 
 namespace port = pbsd::lib_libc_sys::b0097;
 
+static pid_t
+call_port_wait6(idtype_t idtype, id_t id, int *status, int options,
+    void *ru, siginfo_t *infop)
+{
+	using fn_t = pid_t (*)(idtype_t, id_t, int *, int, void *, siginfo_t *);
+	union {
+		fn_t fn;
+		decltype(&port::wait6) real;
+	} u;
+
+	u.real = port::wait6;
+	return (u.fn(idtype, id, status, options, ru, infop));
+}
+
 #define	GUARD			0x7f
 #define	MSG_CAP			64
 #define	MSG_GUARD_PAD		16
@@ -471,7 +485,7 @@ case_wait6(idtype_t idtype, id_t id, int *status, int options,
 
 	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
-	rb = port::wait6_opaque(idtype, id, psb, options, rub, ib);
+	rb = call_port_wait6(idtype, id, psb, options, rub, ib);
 	snap_b = take_snap();
 
 	snprintf(ctx, sizeof(ctx),

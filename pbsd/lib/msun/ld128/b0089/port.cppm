@@ -292,7 +292,7 @@ static const long double
   cp_l = 5.0577616648125906047157785230014751039424E-17L;
 
 long double
-ref_powl(long double x, long double y)
+powl(long double x, long double y)
 {
   long double z, ax, z_h, z_l, p_h, p_l;
   long double yy1, t1, t2, r, s, t, u, v, w;
@@ -979,7 +979,7 @@ static const float eps[TBLSIZE] = {
  *	for the IEEE Floating Point Standard.  TOMS 17(1), 26-46 (1991).
  */
 long double
-ref_exp2l(long double x)
+exp2l(long double x)
 {
 	union IEEEl2bits u, v;
 	long double r, t, twopk, twopkp10000, z;
@@ -1392,7 +1392,7 @@ sc8  =  2.59909544563616121735963429710382149e6L,  /* 0x40143d45, 0xbb90a9b1, 0x
 sc9  =  2.80930665169282501639651995082335693e5L;  /* 0x40111258, 0xaa92222e, 0xa97e3216, 0xa237fa6c */
 
 long double
-ref_erfl(long double x)
+erfl(long double x)
 {
 	long double ax,R,S,P,Q,s,y,z,r;
 	uint64_t lx, llx;
@@ -1454,7 +1454,7 @@ ref_erfl(long double x)
 }
 
 long double
-ref_erfcl(long double x)
+erfcl(long double x)
 {
 	long double ax,R,S,P,Q,s,y,z,r;
 	uint64_t lx, llx;
@@ -2132,7 +2132,7 @@ static __always_inline void
 k_logl(long double x, struct ld *rp)
 #else
 long double
-ref_logl(long double x)
+logl(long double x)
 #endif
 {
 	long double d, val_hi, val_lo;
@@ -2240,7 +2240,7 @@ ref_logl(long double x)
 }
 
 long double
-ref_log1pl(long double x)
+log1pl(long double x)
 {
 	long double d, d_hi, f_lo, val_hi, val_lo;
 	long double f_hi, twopminusk;
@@ -2345,7 +2345,7 @@ ref_log1pl(long double x)
 #ifdef STRUCT_RETURN
 
 long double
-ref_logl(long double x)
+logl(long double x)
 {
 	struct ld r;
 
@@ -2371,7 +2371,7 @@ invln10_lo_plus_hi = invln10_lo + invln10_hi,
 invln2_lo_plus_hi = invln2_lo + invln2_hi;
 
 long double
-ref_log10l(long double x)
+log10l(long double x)
 {
 	struct ld r;
 	long double hi, lo;
@@ -2387,7 +2387,7 @@ ref_log10l(long double x)
 }
 
 long double
-ref_log2l(long double x)
+log2l(long double x)
 {
 	struct ld r;
 	long double hi, lo;

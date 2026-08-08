@@ -66,6 +66,9 @@ struct FileBlob {
 	unsigned char	post[32];
 };
 
+static_assert(sizeof(ref_FILE) == sizeof(P::FILE));
+static_assert(offsetof(ref_FILE, _flags) == offsetof(P::FILE, _flags));
+
 static uint64_t rng = 0xb0100ULL;
 
 static uint64_t

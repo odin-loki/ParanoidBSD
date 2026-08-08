@@ -1,6 +1,9 @@
 module;
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+#define complex _Complex
 #include <complex.h>
 #include <float.h>
 #include <math.h>
@@ -9,6 +12,21 @@ module;
 export module pbsd.lib.msun.ld128.b0088;
 
 namespace pbsd::lib_msun_ld128::b0088 {
+
+#ifndef CMPLXL
+static inline long double _Complex
+CMPLXL_impl(long double x, long double y)
+{
+	long double _Complex z = 0;
+
+	__real__ z = x;
+	__imag__ z = y;
+	return (z);
+}
+#define CMPLXL(x, y) CMPLXL_impl((long double)(x), (long double)(y))
+#endif
+#define creall __real__
+#define cimagl __imag__
 
 /* ld128 IEEEl2bits (binary128) */
 union IEEEl2bits {

@@ -135,18 +135,11 @@ module;
 #include <signal.h>
 #include <time.h>
 
-#ifdef ppoll
-#undef ppoll
-#endif
-
 #ifndef __weak_symbol
 #define	__weak_symbol	__attribute__((__weak__))
 #endif
 
 export module pbsd.lib.libc.sys.b0097;
-
-#define	__ssp_real_(fun)	fun
-#define	__ssp_real(fun)		__ssp_real_(fun)
 
 namespace pbsd::lib_libc_sys::b0097 {
 
@@ -194,14 +187,6 @@ wait6(idtype_t idtype, id_t id, int *status, int options,
 	return (INTERPOS_SYS(wait6, idtype, id, status, options, ru, infop));
 }
 
-pid_t
-wait6_opaque(idtype_t idtype, id_t id, int *status, int options,
-    void *ru, siginfo_t *infop)
-{
-	return (wait6(idtype, id, status, options,
-	    reinterpret_cast<__wrusage *>(ru), infop));
-}
-
 [[gnu::weak]] ssize_t
 sendto(int s, const void *msg, size_t len, int flags,
     const struct sockaddr *to, socklen_t tolen)
@@ -217,7 +202,7 @@ clock_nanosleep(clockid_t clock_id, int flags, const struct timespec *rqtp,
 }
 
 [[gnu::weak]] int __weak_symbol
-__ssp_real(ppoll)(struct pollfd pfd[], nfds_t nfds,
+ppoll(struct pollfd pfd[], nfds_t nfds,
     const struct timespec *__restrict timeout,
     const sigset_t *__restrict newsigmask)
 {

@@ -1,79 +1,28 @@
 module;
 
-#define _GNU_SOURCE
+#include <cfloat>
+#include <cmath>
+#include <cstdint>
 #include <float.h>
-#include <math.h>
-#include <stdint.h>
 
 export module pbsd.lib.msun.ld128.b0084;
 
-namespace pbsd::lib_msun_ld128::b0084 {
+export namespace pbsd::lib_msun_ld128::b0084 {
 
-/* ld128 IEEEl2bits (binary128) */
 union IEEEl2bits {
 	long double e;
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
-		unsigned int exp :15;
-		unsigned int sign :1;
+		unsigned long manl;
+		unsigned long manh;
+		unsigned int exp;
+		unsigned int sign;
 	} bits;
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
-		unsigned int expsign :16;
+		unsigned long manl;
+		unsigned long manh;
+		unsigned int expsign;
 	} xbits;
 };
-
-#define _2sumF(a, b) do {	\
-	__typeof(a) __w;	\
-	__w = (a) + (b);	\
-	(b) = ((a) - __w) + (b); \
-	(a) = __w;		\
-} while (0)
-
-#define SET_LDBL_EXPSIGN(d,v) do {		\
-	union IEEEl2bits se_u;			\
-	se_u.e = (d);				\
-	se_u.xbits.expsign = (v);		\
-	(d) = se_u.e;				\
-} while (0)
-
-typedef union {
-	float value;
-	unsigned int word;
-} ieee_float_shape_type;
-
-#define SET_FLOAT_WORD(d,i) do {		\
-	ieee_float_shape_type sf_u;		\
-	sf_u.word = (i);			\
-	(d) = sf_u.value;			\
-} while (0)
-
-#define FFLOORL128(x, ai, ar) do {			\
-	union IEEEl2bits u;				\
-	uint64_t m;					\
-	int e;						\
-	u.e = (x);					\
-	e = u.bits.exp - 16383;				\
-	if (e < 48) {					\
-		m = ((1llu << 49) - 1) >> (e + 1);	\
-		u.bits.manh &= ~m;			\
-		u.bits.manl = 0;			\
-	} else {					\
-		m = (uint64_t)-1 >> (e - 48);		\
-		u.bits.manl &= ~m;			\
-	}						\
-	(ai) = u.e;					\
-	(ar) = (x) - (ai);				\
-} while (0)
-
-static inline double rnint(double x)
-{
-	return ((double)(x + 0x1.8p52) - 0x1.8p52);
-}
-
-#define irint(x) ((int)(x))
 
 #define EXTRACT_LDBL128_WORDS(ix0, ix1, ix2, d) do { \
 	union IEEEl2bits ew_u; \
@@ -81,6 +30,25 @@ static inline double rnint(double x)
 	(ix0) = ew_u.xbits.expsign; \
 	(ix1) = ew_u.xbits.manh; \
 	(ix2) = ew_u.xbits.manl; \
+} while (0)
+
+#define SET_LDBL_EXPSIGN(d, v) do { \
+	union IEEEl2bits se_u; \
+	se_u.e = (d); \
+	se_u.xbits.expsign = (v); \
+	(d) = se_u.e; \
+} while (0)
+
+#define GET_FLOAT_WORD(i,d) do { \
+	union { float value; unsigned int word; } gf_u; \
+	gf_u.value = (d); \
+	(i) = gf_u.word; \
+} while (0)
+
+#define SET_FLOAT_WORD(d,i) do { \
+	union { float value; unsigned int word; } sf_u; \
+	sf_u.word = (i); \
+	(d) = sf_u.value; \
 } while (0)
 
 #define ENTERI()
@@ -93,38 +61,14 @@ static inline double rnint(double x)
 	return __x + __y; \
 }())
 
-
-
-#define _COMPLEX_H 1
-
-typedef _Complex long double ldouble_complex;
-
-static inline long double
-creall(ldouble_complex z)
+static inline double rnint(double x)
 {
-	return (__real__(z));
+	return ((double)(x + 0x1.8p52) - 0x1.8p52);
 }
 
-static inline long double
-cimagl(ldouble_complex z)
-{
-	return (__imag__(z));
-}
+#define irint(x) ((int)(x))
 
-static inline ldouble_complex
-CMPLXL(long double x, long double y)
-{
-	ldouble_complex z;
-
-	__real__(z) = x;
-	__imag__(z) = y;
-	return (z);
-}
-
-volatile static const double vzero = 0;
-
-
-/* k_cosl.c */
+namespace k_cosl_impl {
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -141,6 +85,7 @@ volatile static const double vzero = 0;
  * ld128 version of k_cos.c.  See ../src/k_cos.c for most comments.
  */
 
+
 /*
  * Domain [-0.7854, 0.7854], range ~[-1.17e-39, 1.19e-39]:
  * |cos(x) - c(x))| < 2**-129.3
@@ -151,20 +96,20 @@ volatile static const double vzero = 0;
  * ../ld80/k_cosl.c for more details.
  */
 static const double
-k_cosl_one = 1.0;
+one = 1.0;
 static const long double
-kcos_C1 =  4.16666666666666666666666666666666667e-02L,
-kcos_C2 = -1.38888888888888888888888888888888834e-03L,
-kcos_C3 =  2.48015873015873015873015873015446795e-05L,
-kcos_C4 = -2.75573192239858906525573190949988493e-07L,
-kcos_C5 =  2.08767569878680989792098886701451072e-09L,
-kcos_C6 = -1.14707455977297247136657111139971865e-11L,
-kcos_C7 =  4.77947733238738518870113294139830239e-14L,
-kcos_C8 = -1.56192069685858079920640872925306403e-16L,
-kcos_C9 =  4.11031762320473354032038893429515732e-19L,
-kcos_C10= -8.89679121027589608738005163931958096e-22L,
-kcos_C11=  1.61171797801314301767074036661901531e-24L,
-kcos_C12= -2.46748624357670948912574279501044295e-27L;
+C1 =  4.16666666666666666666666666666666667e-02L,
+C2 = -1.38888888888888888888888888888888834e-03L,
+C3 =  2.48015873015873015873015873015446795e-05L,
+C4 = -2.75573192239858906525573190949988493e-07L,
+C5 =  2.08767569878680989792098886701451072e-09L,
+C6 = -1.14707455977297247136657111139971865e-11L,
+C7 =  4.77947733238738518870113294139830239e-14L,
+C8 = -1.56192069685858079920640872925306403e-16L,
+C9 =  4.11031762320473354032038893429515732e-19L,
+C10= -8.89679121027589608738005163931958096e-22L,
+C11=  1.61171797801314301767074036661901531e-24L,
+C12= -2.46748624357670948912574279501044295e-27L;
 
 long double
 __kernel_cosl(long double x, long double y)
@@ -172,14 +117,15 @@ __kernel_cosl(long double x, long double y)
 	long double hz,z,r,w;
 
 	z  = x*x;
-	r  = z*(kcos_C1+z*(kcos_C2+z*(kcos_C3+z*(kcos_C4+z*(kcos_C5+z*(kcos_C6+z*(kcos_C7+
-	    z*(kcos_C8+z*(kcos_C9+z*(kcos_C10+z*(kcos_C11+z*kcos_C12)))))))))));
+	r  = z*(C1+z*(C2+z*(C3+z*(C4+z*(C5+z*(C6+z*(C7+
+	    z*(C8+z*(C9+z*(C10+z*(C11+z*C12)))))))))));
 	hz = 0.5*z;
-	w  = k_cosl_one-hz;
-	return w + (((k_cosl_one-w)-hz) + (z*r-x*y));
+	w  = one-hz;
+	return w + (((one-w)-hz) + (z*r-x*y));
 }
+} // namespace k_cosl_impl
 
-/* k_sinl.c */
+namespace k_sinl_impl {
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -195,6 +141,7 @@ __kernel_cosl(long double x, long double y)
 /*
  * ld128 version of k_sin.c.  See ../src/k_sin.c for most comments.
  */
+
 
 static const double
 half =  0.5;
@@ -233,8 +180,14 @@ __kernel_sinl(long double x, long double y, int iy)
 	if(iy==0) return x+v*(S1+z*r);
 	else      return x-((z*(half*y-v*r)-y)-v*S1);
 }
+} // namespace k_sinl_impl
 
-/* k_tanl.c */
+using k_cosl_impl::__kernel_cosl;
+using k_sinl_impl::__kernel_sinl;
+
+/* k_expl.h */
+
+/* from: FreeBSD: head/lib/msun/ld128/s_expl.c 251345 2013-06-03 20:09:22Z kargl */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -495,67 +448,6 @@ __k_expl(long double x, long double *hip, long double *lop, int *kp)
 	*lop = tbl[n2].lo + t * (q + r1);
 }
 
-/*
- * XXX: the rest of the functions are identical for ld80 and ld128.
- * However, we should use scalbnl() for ld128, since long double
- * multiplication was very slow on sparc64 and no new evaluation has
- * been made for aarch64 and/or riscv.
- */
-
-static inline void
-k_hexpl(long double x, long double *hip, long double *lop)
-{
-	float twopkm1;
-	int k;
-
-	__k_expl(x, hip, lop, &k);
-	SET_FLOAT_WORD(twopkm1, 0x3f800000 + ((k - 1) << 23));
-	*hip *= twopkm1;
-	*lop *= twopkm1;
-}
-
-static inline long double
-hexpl(long double x)
-{
-	long double hi, lo, twopkm2;
-	int k;
-
-	twopkm2 = 1;
-	__k_expl(x, &hi, &lo, &k);
-	SET_LDBL_EXPSIGN(twopkm2, BIAS + k - 2);
-	return (lo + hi) * 2 * twopkm2;
-}
-
-#ifdef _COMPLEX_H
-/*
- * See ../src/k_exp.c for details.
- */
-static inline ldouble_complex
-__ldexp_cexpl(ldouble_complex z, int expt)
-{
-	long double c, exp_x, hi, lo, s;
-	long double x, y, scale1, scale2;
-	int half_expt, k;
-
-	x = creall(z);
-	y = cimagl(z);
-	__k_expl(x, &hi, &lo, &k);
-
-	exp_x = (lo + hi) * 0x1p16382L;
-	expt += k - 16382;
-
-	scale1 = 1;
-	half_expt = expt / 2;
-	SET_LDBL_EXPSIGN(scale1, BIAS + half_expt);
-	scale2 = 1;
-	SET_LDBL_EXPSIGN(scale2, BIAS + expt - half_expt);
-
-	sincosl(y, &s, &c);
-	return (CMPLXL(c * exp_x * scale1 * scale2,
-	    s * exp_x * scale1 * scale2));
-}
-#endif /* _COMPLEX_H */
-
 
 /* invtrig.c */
 
@@ -657,7 +549,6 @@ const long double aT[] = {
 };
 
 const long double pi_lo = 8.67181013012378102479704402604335225e-35L;
-
 
 /* s_expl.c */
 
@@ -975,7 +866,6 @@ expm1l(long double x)
 		t = SUM2P(tbl[n2].hi - twomk, tbl[n2].lo + t * (q + r1));
 	RETURNI(t * twopk);
 }
-
 
 /* e_lgammal_r.c */
 
@@ -1303,9 +1193,4 @@ lgammal_r(long double x, int *signgamp)
 	return r;
 }
 
-
-} // namespace pbsd::lib_msun_ld128::b0084
-
-export namespace pbsd::lib_msun_ld128::b0084 {
-using namespace ::pbsd::lib_msun_ld128::b0084;
-} // export namespace
+} // export namespace pbsd::lib_msun_ld128::b0084

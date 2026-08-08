@@ -6,7 +6,6 @@
  * caller buffer (guard bytes included) are compared.
  */
 
-#define _GNU_SOURCE
 #include <cerrno>
 #include <climits>
 #include <cstdarg>
@@ -32,8 +31,8 @@ int	ref_fprintf_l(FILE * __restrict, locale_t, const char * __restrict, ...);
 int	ref_sscanf(const char * __restrict, char const * __restrict, ...);
 int	ref_sscanf_l(const char * __restrict, locale_t, char const * __restrict,
 	    ...);
-int	ref_vscanf(const char * __restrict, __va_list);
-int	ref_vscanf_l(locale_t, const char * __restrict, __va_list);
+int	ref_vscanf(const char * __restrict, va_list);
+int	ref_vscanf_l(locale_t, const char * __restrict, va_list);
 }
 
 /* ------------------------------------------------------------------------ */

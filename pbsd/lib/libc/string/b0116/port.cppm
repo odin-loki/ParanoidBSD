@@ -39,7 +39,7 @@ export module pbsd.lib.libc.string.b0116;
 
 export namespace pbsd::lib_libc_string::b0116 {
 
-export char *
+char *
 strdup(const char *str)
 {
 	std::size_t len;
@@ -82,7 +82,7 @@ strdup(const char *str)
  *	citrus Id: wcscat.c,v 1.1 1999/12/29 21:47:45 tshiozak Exp
  */
 
-export wchar_t *
+wchar_t *
 wcscat(wchar_t * __restrict s1, const wchar_t * __restrict s2)
 {
 	wchar_t *cp;
