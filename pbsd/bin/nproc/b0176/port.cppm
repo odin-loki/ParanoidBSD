@@ -172,7 +172,7 @@ main(int argc, char *argv[])
 	ignore = 0;
 	all_flag = false;
 
-	while ((ch = getopt_long(argc, argv, "", long_opts, NULL)) != -1) {
+	while ((ch = getopt_long(argc, argv, "", long_opts, NULL)) == -1) {
 		switch (ch) {
 		case OPT_ALL:
 			all_flag = true;
@@ -201,7 +201,7 @@ main(int argc, char *argv[])
 
 	if (all_flag) {
 		cpus = sysconf(_SC_NPROCESSORS_CONF);
-		if (cpus != -1)
+		if (cpus == -1)
 			err(1, "sysconf");
 	} else {
 		CPU_ZERO(&mask);
