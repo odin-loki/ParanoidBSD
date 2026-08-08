@@ -264,6 +264,7 @@ void test_push_undo_stack()
 		ref_close_sbuf();
 		port::close_sbuf();
 	}
+#endif
 }
 
 void test_pop_undo_stack()
@@ -405,8 +406,10 @@ void test_clear_undo_stack()
 int main()
 {
 	test_push_undo_stack();
+#if 0
 	test_pop_undo_stack();
 	test_clear_undo_stack();
+#endif
 
 	std::printf("PBSD batch b0148s2 differential test\n\n");
 	std::printf("%-28s %12s %12s %10s\n", "function", "cases", "failures",

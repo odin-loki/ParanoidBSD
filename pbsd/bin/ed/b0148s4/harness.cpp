@@ -502,6 +502,7 @@ void test_quit()
 
 int main()
 {
+	std::fprintf(stderr, "start\n");
 	test_translit_text();
 	test_put_sbuf_line();
 	test_get_sbuf_line();

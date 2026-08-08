@@ -146,6 +146,8 @@ void test_parse_char_class()
 		int n = (int)(rnd() % 100) + 1;
 		for (int j = 0; j < n; j++) {
 			b[j] = (char)rndb();
+			if (b[j] == '\0')
+				b[j] = 'a';
 			if (b[j] == '\n' || b[j] == ']')
 				b[j] = 'x';
 		}

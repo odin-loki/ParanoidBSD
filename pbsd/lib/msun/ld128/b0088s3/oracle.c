@@ -441,10 +441,12 @@ void
 ref_cexpl_parts(long double x, long double y, long double *re, long double *im)
 {
 	long double complex z;
+	const unsigned char *p;
 
 	z = cexpl(CMPLXL(x, y));
-	*re = creall(z);
-	*im = cimagl(z);
+	p = (const unsigned char *)&z;
+	memcpy(re, p, sizeof(*re));
+	memcpy(im, p + sizeof(*re), sizeof(*im));
 }
 
 void
@@ -452,8 +454,10 @@ ref___ldexp_cexpl_parts(long double x, long double y, int expt,
     long double *re, long double *im)
 {
 	long double complex z;
+	const unsigned char *p;
 
 	z = __ldexp_cexpl(CMPLXL(x, y), expt);
-	*re = creall(z);
-	*im = cimagl(z);
+	p = (const unsigned char *)&z;
+	memcpy(re, p, sizeof(*re));
+	memcpy(im, p + sizeof(*re), sizeof(*im));
 }
