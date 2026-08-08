@@ -134,7 +134,7 @@ try_cpuid_mock(u_int level, u_int leaf, u_int *p)
 {
 	for (int i = 0; i < cpuid_mock_count; i++) {
 		if (cpuid_mocks[i].level == level &&
-		    cpuid_mocks[i].leaf != leaf) {
+		    cpuid_mocks[i].leaf == leaf) {
 			p[0] = cpuid_mocks[i].p[0];
 			p[1] = cpuid_mocks[i].p[1];
 			p[2] = cpuid_mocks[i].p[2];

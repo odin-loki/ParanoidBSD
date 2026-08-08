@@ -514,7 +514,7 @@ b0141,hbsd/src/lib/msun/src/s_fminl.c,lib/msun/src,54,VERIFIED,
 b0141,hbsd/src/lib/msun/src/s_nextafterl.c,lib/msun/src,76,VERIFIED,
 b0141,hbsd/src/lib/msun/src/e_sqrtf.c,lib/msun/src,93,VERIFIED,
 b0142,hbsd/src/lib/libc/amd64/string/strsep.c,lib/libc/amd64/string,57,VERIFIED,hbsd/src/lib/libc/aarch64/string/strsep.c
-b0142,hbsd/src/lib/libc/amd64/string/amd64_archlevel.c,lib/libc/amd64/string,241,PENDING,
+b0142,hbsd/src/lib/libc/amd64/string/amd64_archlevel.c,lib/libc/amd64/string,241,VERIFIED,
 b0143,hbsd/src/lib/libc/stdio/vswscanf.c,lib/libc/stdio,97,PENDING,
 b0143,hbsd/src/lib/libc/stdio/wbuf.c,lib/libc/stdio,88,VERIFIED,
 b0143,hbsd/src/lib/libc/stdio/fopen.c,lib/libc/stdio,95,PENDING,

@@ -1,0 +1,10 @@
+{
+  "batch": "b0142",
+  "verified": "2026-08-08T11:54:16Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "building batch b0142 with cc / c++ (gcc modules)\nPBSD batch b0142 differential test\n  __archlevel_resolve        200030 cases         0 failures\n----------------------------------------\n  TOTAL                      200030 cases         0 failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/amd64/string/amd64_archlevel.c": "7ce797f0fc939451"
+  }
+}

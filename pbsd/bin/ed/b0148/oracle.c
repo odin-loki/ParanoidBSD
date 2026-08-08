@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <regex.h>
+#include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -279,6 +280,30 @@ oracle_quit_enter(void)
 		oracle_quit_called = 1; \
 		longjmp(oracle_quit_jmp, 1); \
 	} while (0)
+
+/* forward declarations for batch functions */
+pattern_t *ref_get_compiled_pattern(void);
+char *ref_extract_pattern(int delimiter);
+char *ref_parse_char_class(char *s);
+undo_t *ref_push_undo_stack(int type, long from, long to);
+int ref_pop_undo_stack(void);
+void ref_clear_undo_stack(void);
+int ref_build_active_list(int isgcmd);
+long ref_exec_global(int interact, int gflag);
+int ref_set_active_node(line_t *lp);
+void ref_unset_active_nodes(line_t *np, line_t *mp);
+line_t *ref_next_active_node(void);
+void ref_clear_active_list(void);
+char *ref_get_sbuf_line(line_t *lp);
+const char *ref_put_sbuf_line(const char *cs);
+void ref_add_line_node(line_t *lp);
+long ref_get_line_node_addr(line_t *lp);
+line_t *ref_get_addressed_line_node(long n);
+int ref_open_sbuf(void);
+int ref_close_sbuf(void);
+void ref_quit(int n);
+void ref_init_buffers(void);
+char *ref_translit_text(char *s, int len, int from, int to);
 
 /* ------------------------------------------------------------------ */
 /* batch function name mapping for unmodified call sites               */
