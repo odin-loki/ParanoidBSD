@@ -345,6 +345,36 @@ ref_idt2date(date *dt, date *idt)
 
 int
 ref_easterodn(int y)
+{
+	/*
+	 * Table for the easter limits in one metonic (19-year) cycle. 21
+	 * to 31 is in March, 1 through 18 in April. Easter is the first
+	 * sunday after the easter limit.
+	 */
+	int     mc[] = {5, 25, 13, 2, 22, 10, 30, 18, 7, 27, 15, 4,
+		    24, 12, 1, 21, 9, 29, 17};
+
+	/* Offset from a weekday to next sunday */
+	int     ns[] = {6, 5, 4, 3, 2, 1, 7};
+	date	dt;
+	int     dn;
+
+	/* Assign the easter limit of y to dt */
+	dt.d = mc[y % 19];
+
+	if (dt.d < 21)
+		dt.m = 4;
+	else
+		dt.m = 3;
+
+	dt.y = y;
+
+	/* Return the next sunday after the easter limit */
+	dn = ref_ndaysj(&dt);
+	return (dn + ns[ref_weekday(dn)]);
+}
+
+/* Compute Easter Sunday in Gregorian Calendar */
 date *
 ref_easterg(int y, date *dt)
 {
@@ -378,5 +408,3 @@ ref_easteroj(int y, date * dt)
 
 	return (ref_jdate(ref_easterodn(y), dt));
 }
-
-/* Compute Easter Sunday in Gregorian Calendar */

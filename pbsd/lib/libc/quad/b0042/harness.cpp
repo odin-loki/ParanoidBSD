@@ -83,7 +83,7 @@ static_assert(sizeof(FrameDbl) == 64, "FrameDbl must be padding-free");
 struct FrameFlt {
 	unsigned char lead[24];
 	f32 val;
-	unsigned char trail[32];
+	unsigned char trail[36];
 };
 static_assert(sizeof(FrameFlt) == 64, "FrameFlt must be padding-free");
 

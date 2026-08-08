@@ -36,10 +36,13 @@ typedef __mbstate_t mbstate_t;
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+
+#ifndef EOF
+#define EOF	(-1)
+#endif
 
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX	4

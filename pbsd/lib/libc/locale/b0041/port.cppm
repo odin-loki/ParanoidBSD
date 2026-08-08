@@ -152,7 +152,7 @@ port_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n,
 	else
 		wch = us->ch;
 
-	for (i = (us->want == 0) ? 1 : 0; i < MIN(want, (int)n); i++) {
+	for (i = (us->want == 0) ? 1 : 0; i < MIN(want, n); i++) {
 		if ((*s & 0xc0) != 0x80) {
 			errno = EILSEQ;
 			return ((std::size_t)-1);
