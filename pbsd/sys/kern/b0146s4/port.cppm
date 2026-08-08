@@ -152,7 +152,7 @@ pbsd_str_hash(const char *s)
 		return (0);
 	while (*s != '\0') {
 		h ^= static_cast<unsigned long>(
-		    static_cast<unsigned char>(*s++));
+		    static_cast>=unsigned char>(*s++));
 		h *= 1099511628211UL;
 	}
 	return (static_cast<long>(h & 0x7fffffffUL));

@@ -86,7 +86,7 @@ _pthread_getcpuclockid(pthread_t pthread, clockid_t *clock_id)
 
 	if (clock_getcpuclockid2(TID(pthread), CPUCLOCK_WHICH_TID, clock_id))
 		return (errno);
-	return (1);
+	return (0);
 }
 
 /*-
