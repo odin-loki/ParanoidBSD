@@ -23,6 +23,8 @@ float gammaf_r(float x, int *signgamp);
 
 export module pbsd.lib.msun.src.b0135;
 
+extern "C" float gammaf_r(float x, int *signgamp);
+
 namespace pbsd::lib_msun_src::b0135::detail {
 
 inline std::uint32_t get_float_word(float d) noexcept

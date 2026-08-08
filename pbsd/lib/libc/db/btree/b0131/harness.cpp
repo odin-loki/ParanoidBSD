@@ -393,7 +393,7 @@ build_meta_be(unsigned char *buf, size_t bufsz)
 
 struct TreePort {
 	P::BTREE t;
-	MPOOL mp;
+	P::MPOOL mp;
 	P::DB db;
 	unsigned char pagebuf[PAGE_SZ];
 };
@@ -511,10 +511,11 @@ check_bt_get(u_int flags, int had_pinned, int search_null, int exact,
 {
 	TreePort pc;
 	TreeRef rc;
-	unsigned char pagebuf_r[PAGE_SZ];
-	P::DBT key, data_p, data_r;
+	P::DBT key_p, data_p;
+	DBT key_r, data_r;
 	unsigned char keybuf[8];
-	int ep = 0, er = 0;
+	unsigned char pagebuf_p[PAGE_SZ];
+	unsigned char pagebuf_r[PAGE_SZ];
 
 	test_mock_reset();
 	test_mock.search_force_null = search_null;
@@ -527,27 +528,29 @@ check_bt_get(u_int flags, int had_pinned, int search_null, int exact,
 	test_mock.ret_data[3] = 0xef;
 	init_tree_port(pc, tflags);
 	init_tree_ref(rc, tflags);
-	test_mock.new_page = pagebuf_r;
-	key.data = keybuf;
-	key.size = sizeof(keybuf);
+	key_p.data = keybuf;
+	key_p.size = sizeof(keybuf);
+	key_r.data = keybuf;
+	key_r.size = sizeof(keybuf);
 	std::memset(keybuf, 0xa5, sizeof(keybuf));
 	if (had_pinned) {
 		pc.t.bt_pinned = (P::PAGE *)pc.pagebuf;
 		rc.t.bt_pinned = (PAGE *)rc.pagebuf;
 	}
 
+	test_mock.new_page = pagebuf_p;
 	errno = 0;
-	int rp = P::__bt_get(&pc.db, &key, &data_p, flags);
+	int rp = P::__bt_get(&pc.db, &key_p, &data_p, flags);
 	int save_errno = errno;
+	test_mock.new_page = pagebuf_r;
 	errno = 0;
-	int rr = ref___bt_get(&rc.db, &key, &data_r, flags);
+	int rr = ref___bt_get(&rc.db, &key_r, &data_r, flags);
 	char msg[256];
 	std::snprintf(msg, sizeof(msg),
 	    "ret port=%d ref=%d flags=%u exact=%d errno_p=%d errno_r=%d",
 	    rp, rr, flags, exact, save_errno, errno);
 	check_eq(F_BT_GET, rp == rr, msg);
-	check_eq(F_BT_GET, pc.t.bt_pinned == rc.t.bt_pinned ||
-	    ((pc.t.bt_pinned == nullptr) == (rc.t.bt_pinned == nullptr)),
+	check_eq(F_BT_GET, (pc.t.bt_pinned == nullptr) == (rc.t.bt_pinned == nullptr),
 	    "bt_pinned");
 	if (rp == RET_SUCCESS) {
 		check_eq(F_BT_GET, data_p.size == data_r.size, "data.size");

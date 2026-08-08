@@ -723,6 +723,15 @@ run_getwc_random(StatId which)
 }
 
 void
+reset_stdin_for_wscanf(void)
+{
+	if (saved_stdin < 0)
+		saved_stdin = dup(STDIN_FILENO);
+	(void)freopen("/dev/null", "r", stdin);
+	clearerr(stdin);
+}
+
+void
 report(void)
 {
 	long long cases = 0, fails = 0;
