@@ -162,20 +162,20 @@ static void
 mb_copy(const P::mbstate_t &s, ref_mbstate_t &d)
 {
 	std::memset(&d, 0, sizeof(d));
-	std::memcpy(&d, &s, sizeof(s));
+	std::memcpy(&d, &s, sizeof(ref_mbstate_t));
 }
 
 static void
 mb_copy(const ref_mbstate_t &s, P::mbstate_t &d)
 {
 	std::memset(&d, 0, sizeof(d));
-	std::memcpy(&d, &s, sizeof(s));
+	std::memcpy(&d, &s, sizeof(ref_mbstate_t));
 }
 
 static bool
 mb_eq(const P::mbstate_t &a, const ref_mbstate_t &b)
 {
-	return (std::memcmp(&a, &b, sizeof(a)) == 0);
+	return (std::memcmp(&a, &b, sizeof(ref_mbstate_t)) == 0);
 }
 
 static void
@@ -213,6 +213,18 @@ chk_int(int f, int pv, int rv)
 	return (true);
 }
 
+static void
+set_state_ch(P::mbstate_t &s, wchar_t ch)
+{
+	std::memcpy(&s, &ch, sizeof(ch));
+}
+
+static void
+set_state_ch(ref_mbstate_t &s, wchar_t ch)
+{
+	std::memcpy(&s, &ch, sizeof(ch));
+}
+
 template<typename InitFn, typename RefInitFn>
 static void
 test_init(int f, InitFn init, RefInitFn ref_init, int mbmax, int sblimit)
@@ -244,14 +256,14 @@ test_mbsinit(int f, MbsinitFn fn, RefMbsinitFn ref_fn)
 	ref_mbstate_t rs{};
 
 	chk_int(f, fn(nullptr), ref_fn(nullptr));
-	ps.ch = 0;
-	mb_copy(ps, rs);
+	set_state_ch(ps, 0);
+	set_state_ch(rs, 0);
 	chk_int(f, fn(&ps), ref_fn(&rs));
-	ps.ch = 1;
-	mb_copy(ps, rs);
+	set_state_ch(ps, 1);
+	set_state_ch(rs, 1);
 	chk_int(f, fn(&ps), ref_fn(&rs));
-	ps.ch = 0x123;
-	mb_copy(ps, rs);
+	set_state_ch(ps, 0x123);
+	set_state_ch(rs, 0x123);
 	chk_int(f, fn(&ps), ref_fn(&rs));
 }
 
@@ -326,8 +338,8 @@ edge_mbr(int f, MbrFn fn, RefMbrFn ref_fn)
 	run_mbr(f, fn, ref_fn, buf, 0, ps, rs, false);
 
 	/* bad state */
-	ps.ch = 0x100;
-	mb_copy(ps, rs);
+	set_state_ch(ps, 0x100);
+	set_state_ch(rs, 0x100);
 	buf[0] = 'a'; buf[1] = '\0';
 	run_mbr(f, fn, ref_fn, buf, 2, ps, rs, false);
 
@@ -351,14 +363,14 @@ edge_mbr(int f, MbrFn fn, RefMbrFn ref_fn)
 	run_mbr(f, fn, ref_fn, buf, 2, ps, rs, false);
 
 	/* continuation with NUL */
-	ps.ch = 0xa1;
-	mb_copy(ps, rs);
+	set_state_ch(ps, 0xa1);
+	set_state_ch(rs, 0xa1);
 	buf[0] = '\0';
 	run_mbr(f, fn, ref_fn, buf, 1, ps, rs, false);
 
 	/* continuation success */
-	ps.ch = 0xa1;
-	mb_copy(ps, rs);
+	set_state_ch(ps, 0xa1);
+	set_state_ch(rs, 0xa1);
 	buf[0] = (char)0xb2; buf[1] = 'x';
 	run_mbr(f, fn, ref_fn, buf, 2, ps, rs, false);
 
@@ -385,9 +397,10 @@ sweep_mbr(int f, MbrFn fn, RefMbrFn ref_fn)
 		if (u32(4) == 0)
 			std::memset(&ps, 0, sizeof(ps));
 		else if (u32(3) == 0) {
-			ps.ch = (wchar_t)(0x80 + u32(0x7f));
+			wchar_t ch = (wchar_t)(0x80 + u32(0x7f));
 			if (u32(2) == 0)
-				ps.ch |= 0x100;
+				ch = (wchar_t)(ch | 0x100);
+			set_state_ch(ps, ch);
 		} else
 			std::memset(&ps, 0x55, sizeof(ps));
 		mb_copy(ps, rs);
@@ -457,8 +470,8 @@ edge_wct(int f, WctFn fn, RefWctFn ref_fn)
 	run_wct(f, fn, ref_fn, scratch, 8, (wchar_t)0x8122, ps, rs, false);
 	run_wct(f, fn, ref_fn, scratch, 8, L'\0', ps, rs, false);
 
-	ps.ch = 1;
-	mb_copy(ps, rs);
+	set_state_ch(ps, 1);
+	set_state_ch(rs, 1);
 	run_wct(f, fn, ref_fn, scratch, 8, L'x', ps, rs, false);
 }
 
@@ -475,7 +488,7 @@ sweep_wct(int f, WctFn fn, RefWctFn ref_fn)
 		bool null_out = (u32(5) == 0);
 
 		if (u32(3) == 0)
-			ps.ch = (wchar_t)(u32(0x200));
+			set_state_ch(ps, (wchar_t)(u32(0x200)));
 		else
 			std::memset(&ps, 0, sizeof(ps));
 		mb_copy(ps, rs);
@@ -499,8 +512,8 @@ run_mbs(int f, MbsFn fn, RefMbsFn ref_fn, const char *bytes, size_t nms,
 	fill_guard((unsigned char *)in_r, sizeof(in_r));
 	std::memcpy(in_p + 8, bytes, std::strlen(bytes) + 1);
 	std::memcpy(in_r + 8, bytes, std::strlen(bytes) + 1);
-	fill_wguard(out_p, std::size(out_p));
-	fill_wguard(out_r, std::size(out_r));
+	fill_wguard(out_p, sizeof(out_p) / sizeof(out_p[0]));
+	fill_wguard(out_r, sizeof(out_r) / sizeof(out_r[0]));
 	sp = in_p + 8;
 	sr = in_r + 8;
 	errno = 0;
@@ -582,8 +595,8 @@ run_wcs(int f, WcsFn fn, RefWcsFn ref_fn, const wchar_t *wcs, size_t nwc,
 		wlen++;
 	fill_guard(out_p, sizeof(out_p));
 	fill_guard(out_r, sizeof(out_r));
-	fill_wguard(in_p, std::size(in_p));
-	fill_wguard(in_r, std::size(in_r));
+	fill_wguard(in_p, sizeof(in_p) / sizeof(in_p[0]));
+	fill_wguard(in_r, sizeof(in_r) / sizeof(in_r[0]));
 	std::memcpy(in_p + 4, wcs, (wlen + 1) * sizeof(wchar_t));
 	std::memcpy(in_r + 4, wcs, (wlen + 1) * sizeof(wchar_t));
 	sp = in_p + 4;

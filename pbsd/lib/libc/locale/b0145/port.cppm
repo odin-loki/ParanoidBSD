@@ -70,6 +70,13 @@ typedef struct {
 	unsigned int	call_count;
 } pbsd_fix_grouping_hook_t;
 
+extern "C" {
+int	__part_load_locale(const char *, int *, char **, const char *, int,
+	    int, const char **);
+const char	*__fix_locale_grouping_str(const char *);
+void	pbsd_reset_hooks(void);
+}
+
 extern pbsd_numeric_part_load_hook_t	pbsd_numeric_part_load_hook;
 extern pbsd_fix_grouping_hook_t		pbsd_fix_grouping_hook;
 
@@ -77,9 +84,6 @@ extern xlocale_numeric	port___xlocale_global_numeric;
 extern port_xlocale	port___xlocale_global_locale;
 
 int	pbsd_iswspace_l(wint_t, port_locale_t);
-const char	*pbsd_fix_locale_grouping_str(const char *);
-int	__part_load_locale(const char *, int *, char **, const char *, int,
-	    int, const char **);
 
 namespace pbsd::lib_libc_locale::b0145 {
 
@@ -464,7 +468,8 @@ xlocale_release(void *v)
 
 	if (c != nullptr && c->header.destructor != nullptr)
 		c->header.destructor(v);
-	free(v);
+	else
+		free(v);
 }
 
 static int
@@ -484,7 +489,7 @@ numeric_load_locale(::xlocale_numeric *loc, int *using_locale,
 			l->decimal_point =
 			    port__C_numeric_locale.decimal_point;
 		l->grouping =
-		    pbsd_fix_locale_grouping_str(l->grouping);
+		    __fix_locale_grouping_str(l->grouping);
 	}
 	if (ret != _LDP_ERROR)
 		atomic_store_rel_int(changed, 1);
@@ -533,57 +538,4 @@ pbsd_iswspace_l(wint_t wc, port_locale_t locale)
 {
 	(void)locale;
 	return (iswspace(wc));
-}
-
-const char *
-pbsd_fix_locale_grouping_str(const char *s)
-{
-	pbsd_fix_grouping_hook.call_count++;
-	if (pbsd_fix_grouping_hook.fn != NULL)
-		return (pbsd_fix_grouping_hook.fn(s));
-	return (s);
-}
-
-int
-__part_load_locale(const char *name, int *using_locale, char **buffer,
-    const char *category, int size_full, int size_min, const char **dst)
-{
-	const char **fields;
-	int i;
-
-	(void)name;
-	(void)category;
-	(void)size_full;
-	(void)size_min;
-	pbsd_numeric_part_load_hook.call_count++;
-	fields = (const char **)dst;
-	if (pbsd_numeric_part_load_hook.ret != _LDP_LOADED)
-		return (pbsd_numeric_part_load_hook.ret);
-	for (i = 0; i < LCNUMERIC_SIZE; i++)
-		fields[i] = NULL;
-	fields[0] = pbsd_numeric_part_load_hook.empty_decimal ? "" :
-	    pbsd_numeric_part_load_hook.decimal_point;
-	fields[1] = pbsd_numeric_part_load_hook.thousands_sep;
-	fields[2] = pbsd_numeric_part_load_hook.grouping;
-	if (using_locale != NULL)
-		*using_locale = 1;
-	if (buffer != NULL)
-		*buffer = NULL;
-	return (_LDP_LOADED);
-}
-
-pbsd_numeric_part_load_hook_t	pbsd_numeric_part_load_hook;
-pbsd_fix_grouping_hook_t	pbsd_fix_grouping_hook;
-
-void
-pbsd_reset_hooks(void)
-{
-	std::memset(&pbsd_numeric_part_load_hook, 0,
-	    sizeof(pbsd_numeric_part_load_hook));
-	std::memset(&pbsd_fix_grouping_hook, 0, sizeof(pbsd_fix_grouping_hook));
-	pbsd_numeric_part_load_hook.ret = _LDP_LOADED;
-	pbsd_numeric_part_load_hook.decimal_point = ".";
-	pbsd_numeric_part_load_hook.thousands_sep = "";
-	pbsd_numeric_part_load_hook.grouping = "\3";
-	pbsd_fix_grouping_hook.fn = NULL;
 }

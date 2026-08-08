@@ -7,6 +7,7 @@
 #endif
 
 #include <cerrno>
+#include <cstdarg>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
@@ -15,6 +16,10 @@
 #include <cwchar>
 #include <fcntl.h>
 #include <unistd.h>
+
+#ifndef LC_GLOBAL_LOCALE
+#define LC_GLOBAL_LOCALE ((locale_t)-1)
+#endif
 
 import pbsd.lib.libc.stdio.b0143;
 
@@ -72,6 +77,7 @@ int		ref_vswprintf(wchar_t * __restrict, size_t,
 
 void		b0143_set_sfp_target(ref_FILE *);
 void		b0143_set_open_hook(int, int);
+int		_close(int);
 }
 
 namespace {
@@ -177,46 +183,8 @@ guard_eq_w(const wchar_t *p, std::size_t n)
 	return true;
 }
 
-struct PortFILE {
-	unsigned char *_p;
-	int _r;
-	int _w;
-	short _flags;
-	short _file;
-	struct {
-		unsigned char *_base;
-		int _size;
-	} _bf;
-	int _lbfsize;
-	void *_cookie;
-	int (*_close)(void *);
-	int (*_read)(void *, char *, int);
-	fpos_t (*_seek)(void *, fpos_t, int);
-	int (*_write)(void *, const char *, int);
-	struct {
-		unsigned char *_base;
-		int _size;
-	} _ub;
-	unsigned char *_up;
-	int _ur;
-	unsigned char _ubuf[3];
-	unsigned char _nbuf[1];
-	struct {
-		unsigned char *_base;
-		int _size;
-	} _lb;
-	int _blksize;
-	fpos_t _offset;
-	void *_fl_mutex;
-	void *_fl_owner;
-	int _fl_count;
-	int _orientation;
-	mbstate_t _mbstate;
-	int _flags2;
-};
-
 bool
-fp_fields_eq(const PortFILE &p, const ref_FILE &r)
+fp_fields_eq(const P::FILE &p, const ref_FILE &r)
 {
 	if (p._flags != r._flags)
 		return false;
@@ -225,6 +193,78 @@ fp_fields_eq(const PortFILE &p, const ref_FILE &r)
 	if (p._file != r._file)
 		return false;
 	return true;
+}
+
+int
+port_vswscanf_l_va(const wchar_t *str, const wchar_t *fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = P::vswscanf_l(str, LC_GLOBAL_LOCALE, fmt, ap);
+	va_end(ap);
+	return r;
+}
+
+int
+ref_vswscanf_l_va(const wchar_t *str, const wchar_t *fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = ref_vswscanf_l(str, LC_GLOBAL_LOCALE, fmt, ap);
+	va_end(ap);
+	return r;
+}
+
+int
+port_vswscanf_va(const wchar_t *str, const wchar_t *fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = P::vswscanf(str, fmt, ap);
+	va_end(ap);
+	return r;
+}
+
+int
+ref_vswscanf_va(const wchar_t *str, const wchar_t *fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = ref_vswscanf(str, fmt, ap);
+	va_end(ap);
+	return r;
+}
+
+int
+port_vswprintf_l_va(wchar_t *s, size_t n, const wchar_t *fmt, va_list ap)
+{
+	return P::vswprintf_l(s, n, LC_GLOBAL_LOCALE, fmt, ap);
+}
+
+int
+ref_vswprintf_l_va(wchar_t *s, size_t n, const wchar_t *fmt, va_list ap)
+{
+	return ref_vswprintf_l(s, n, LC_GLOBAL_LOCALE, fmt, ap);
+}
+
+int
+port_vswprintf_va(wchar_t *s, size_t n, const wchar_t *fmt, va_list ap)
+{
+	return P::vswprintf(s, n, fmt, ap);
+}
+
+int
+ref_vswprintf_va(wchar_t *s, size_t n, const wchar_t *fmt, va_list ap)
+{
+	return ref_vswprintf(s, n, fmt, ap);
 }
 
 char *
@@ -237,55 +277,6 @@ make_temp_path(char *buf, std::size_t bufsz)
 }
 
 bool
-test_vswscanf_one(StatId which, const char *label, const wchar_t *str,
-    const wchar_t *fmt, int expect_ok)
-{
-	int ia = 0x55555555, ib = 0x66666666;
-	int ra = 0x77777777, rb = 0x88888888;
-	int rp, rr;
-	int pe, re;
-
-	case_inc(which);
-
-	errno = 0;
-	va_list ap;
-	va_start(ap, fmt);
-	if (which == S_VSWSCANF_L) {
-		rp = P::vswscanf_l(str, (void *)LC_GLOBAL_LOCALE, fmt, ap);
-	} else {
-		rp = P::vswscanf(str, fmt, ap);
-	}
-	pe = errno;
-	va_end(ap);
-
-	ia = 0x55555555;
-	ib = 0x66666666;
-	errno = 0;
-	va_start(ap, fmt);
-	if (which == S_VSWSCANF_L) {
-		rr = ref_vswscanf_l(str, (void *)LC_GLOBAL_LOCALE, fmt, ap);
-	} else {
-		rr = ref_vswscanf(str, fmt, ap);
-	}
-	re = errno;
-	va_end(ap);
-
-	bool ok = true;
-	if (rp != rr)
-		ok = false;
-	if (rp != EOF && rr != EOF) {
-		if (ra != ia || rb != ib)
-			ok = false;
-	}
-	if (!ok)
-		fail_msg(which, label, "return or assignment mismatch");
-	(void)expect_ok;
-	(void)pe;
-	(void)re;
-	return ok;
-}
-
-bool
 test_vswscanf_int(StatId which, const char *label, const wchar_t *str,
     const wchar_t *fmt)
 {
@@ -294,22 +285,13 @@ test_vswscanf_int(StatId which, const char *label, const wchar_t *str,
 
 	case_inc(which);
 
-	errno = 0;
-	va_list ap;
-	va_start(ap, fmt);
-	if (which == S_VSWSCANF_L)
-		rp = P::vswscanf_l(str, (void *)LC_GLOBAL_LOCALE, fmt, ap);
-	else
-		rp = P::vswscanf(str, fmt, ap);
-	va_end(ap);
-
-	errno = 0;
-	va_start(ap, fmt);
-	if (which == S_VSWSCANF_L)
-		rr = ref_vswscanf_l(str, (void *)LC_GLOBAL_LOCALE, fmt, ap);
-	else
-		rr = ref_vswscanf(str, fmt, ap);
-	va_end(ap);
+	if (which == S_VSWSCANF_L) {
+		rp = port_vswscanf_l_va(str, fmt, &pv);
+		rr = ref_vswscanf_l_va(str, fmt, &rv);
+	} else {
+		rp = port_vswscanf_va(str, fmt, &pv);
+		rr = ref_vswscanf_va(str, fmt, &rv);
+	}
 
 	bool ok = (rp == rr) && (pv == rv);
 	if (!ok)
@@ -319,13 +301,14 @@ test_vswscanf_int(StatId which, const char *label, const wchar_t *str,
 
 bool
 test_vswprintf_one(StatId which, const char *label, size_t n,
-    const wchar_t *fmt, int val)
+    const wchar_t *fmt, ...)
 {
 	const std::size_t cap = n + 32;
 	wchar_t *dp = (wchar_t *)std::malloc(cap * sizeof(wchar_t));
 	wchar_t *dr = (wchar_t *)std::malloc(cap * sizeof(wchar_t));
 	bool ok = true;
 	int rp, rr, pe, re;
+	va_list ap, ap2;
 
 	if (dp == nullptr || dr == nullptr) {
 		std::free(dp);
@@ -337,21 +320,24 @@ test_vswprintf_one(StatId which, const char *label, size_t n,
 	fill_guard_w(dr, cap);
 
 	errno = 0;
-	va_list ap;
 	va_start(ap, fmt);
+	va_copy(ap2, ap);
 	if (which == S_VSWPRINTF_L)
-		rp = P::vswprintf_l(dp, n, (void *)LC_GLOBAL_LOCALE, fmt, ap);
+		rp = port_vswprintf_l_va(dp, n, fmt, ap2);
 	else
-		rp = P::vswprintf(dp, n, fmt, ap);
+		rp = port_vswprintf_va(dp, n, fmt, ap2);
+	va_end(ap2);
 	pe = errno;
 	va_end(ap);
 
 	errno = 0;
 	va_start(ap, fmt);
+	va_copy(ap2, ap);
 	if (which == S_VSWPRINTF_L)
-		rr = ref_vswprintf_l(dr, n, (void *)LC_GLOBAL_LOCALE, fmt, ap);
+		rr = ref_vswprintf_l_va(dr, n, fmt, ap2);
 	else
-		rr = ref_vswprintf(dr, n, fmt, ap);
+		rr = ref_vswprintf_va(dr, n, fmt, ap2);
+	va_end(ap2);
 	re = errno;
 	va_end(ap);
 
@@ -370,7 +356,6 @@ test_vswprintf_one(StatId which, const char *label, size_t n,
 		fail_msg(which, label, "buffer or retval mismatch");
 	std::free(dp);
 	std::free(dr);
-	(void)val;
 	return ok;
 }
 
@@ -378,10 +363,10 @@ bool
 test_fopen_one(const char *label, const char *path, const char *mode,
     bool use_sfp_hook, bool use_open_hook, int open_val)
 {
-	PortFILE pc{};
+	P::FILE pc{};
 	ref_FILE rc{};
 	ref_FILE *rr;
-	FILE *rp;
+	P::FILE *rp;
 	int pe, re;
 	bool ok = true;
 
@@ -407,7 +392,7 @@ test_fopen_one(const char *label, const char *path, const char *mode,
 		b0143_set_sfp_target(nullptr);
 
 		if (rp != nullptr)
-			std::memcpy(&pc, rp, sizeof(pc));
+			pc = *rp;
 	} else {
 		errno = 0;
 		rp = P::fopen(path, mode);
@@ -416,7 +401,7 @@ test_fopen_one(const char *label, const char *path, const char *mode,
 		rr = ref_fopen(path, mode);
 		re = errno;
 		if (rp != nullptr)
-			std::memcpy(&pc, rp, sizeof(pc));
+			pc = *rp;
 	}
 
 	if ((rr == nullptr) != (rp == nullptr))
@@ -430,9 +415,8 @@ test_fopen_one(const char *label, const char *path, const char *mode,
 		_close(rr->_file);
 		rr->_flags = 0;
 	}
-	if (rp != nullptr) {
+	if (rp != nullptr)
 		_close(pc._file);
-	}
 
 	if (!ok)
 		fail_msg(S_FOPEN, label, "fopen mismatch");
@@ -453,7 +437,7 @@ run_vswscanf_edges(StatId which)
 	test_vswscanf_int(which, "percent", L"%", L"%%");
 	test_vswscanf_int(which, "spaces", L"   5", L"%d");
 	test_vswscanf_int(which, "width", L"12345", L"%2d");
-	test_vswscanf_one(which, "eof empty", L"", L"%d", 0);
+	test_vswscanf_int(which, "eof empty", L"", L"%d");
 }
 
 void
@@ -567,7 +551,7 @@ run_fopen_edges(void)
 	char buf[8];
 
 	make_temp_path(path, sizeof(path));
-	std::unlink(path);
+	unlink(path);
 
 	test_fopen_one("bad mode", path, "q", false, false, 0);
 	test_fopen_one("rx invalid", path, "rx", false, false, 0);
@@ -599,7 +583,7 @@ run_fopen_edges(void)
 	test_fopen_one("open fail", "/nonexistent_pbsd_b0143_xyz", "r",
 	    false, true, -1);
 
-	std::unlink(path);
+	unlink(path);
 }
 
 void
@@ -613,12 +597,12 @@ run_fopen_random(void)
 		const char *mode = modes[rnd_mod(9)];
 
 		if (mode[0] == 'w' || mode[0] == 'a' || std::strchr(mode, '+'))
-			std::unlink(path);
+	unlink(path);
 
 		char label[32];
 		std::snprintf(label, sizeof(label), "rnd%ld", i);
 		test_fopen_one(label, path, mode, false, false, 0);
-		std::unlink(path);
+	unlink(path);
 	}
 }
 

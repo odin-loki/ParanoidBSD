@@ -55,6 +55,7 @@ uintmax_t	ref_wcstoumax_l(const wchar_t *, wchar_t **, int, ref_xlocale *);
 int	ref___numeric_load_locale(const char *);
 void	*ref___numeric_load(const char *, ref_xlocale *);
 ref_lc_numeric_T *ref___get_current_numeric_locale(ref_xlocale *);
+void	ref_release_numeric(void *);
 }
 
 enum {
@@ -425,7 +426,15 @@ compare_num_load(const char *name, int expect_null, int hook_ret)
 		bump_fail(f);
 		return (false);
 	}
-	free(ph);
+	if (ph != nullptr) {
+		auto *c = static_cast<P::xlocale_numeric *>(ph);
+		if (c->header.header.destructor != nullptr)
+			c->header.header.destructor(ph);
+		else
+			free(ph);
+	}
+	if (rh != nullptr)
+		ref_release_numeric(rh);
 	return (true);
 }
 
@@ -440,15 +449,14 @@ compare_get_num_locale(int using_custom)
 
 	n_cases[f]++;
 	if (using_custom) {
-		static unsigned char blob[sizeof(void *) * 8];
+		static P::xlocale_numeric custom_slot{};
 		rloc.using_numeric_locale = 1;
-		rloc.components[2] = blob;
+		rloc.components[2] = &custom_slot;
 		ploc.using_numeric_locale = 1;
-		ploc.components[2] = blob;
-		auto *slot = reinterpret_cast<P::xlocale_numeric *>(blob);
-		slot->locale.decimal_point = ",";
-		slot->locale.thousands_sep = ".";
-		slot->locale.grouping = "\3\3\0";
+		ploc.components[2] = &custom_slot;
+		custom_slot.locale.decimal_point = ",";
+		custom_slot.locale.thousands_sep = ".";
+		custom_slot.locale.grouping = "\3\3\0";
 	} else {
 		rloc.using_numeric_locale = 0;
 		ploc.using_numeric_locale = 0;

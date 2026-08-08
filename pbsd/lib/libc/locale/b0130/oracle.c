@@ -222,6 +222,24 @@ pbsd_wcrtomb(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps)
 	return (nb);
 }
 
+void
+pbsd_free(void *p)
+{
+	free(p);
+}
+
+void *
+pbsd_malloc(size_t n)
+{
+	return (malloc(n));
+}
+
+void *
+pbsd_calloc(size_t n, size_t sz)
+{
+	return (calloc(n, sz));
+}
+
 size_t
 pbsd_harness_wcrtomb(char *s, wchar_t wc, void *ps)
 {
@@ -275,6 +293,26 @@ strtod_l(const char * __restrict nptr, char ** __restrict endptr,
 {
 	(void)locale;
 	return (strtod(nptr, endptr));
+}
+
+size_t
+pbsd_locale_wcsrtombs(char * __restrict dst, const wchar_t ** __restrict src,
+    size_t len, mbstate_t * __restrict ps, locale_t locale)
+{
+	return (wcsrtombs_l(dst, src, len, ps, locale));
+}
+
+int
+pbsd_locale_iswspace(wint_t wc, locale_t locale)
+{
+	return (iswspace_l(wc, locale));
+}
+
+double
+pbsd_locale_strtod(const char * __restrict nptr, char ** __restrict endptr,
+    locale_t locale)
+{
+	return (strtod_l(nptr, endptr, locale));
 }
 
 int

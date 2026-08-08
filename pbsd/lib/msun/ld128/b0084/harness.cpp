@@ -221,7 +221,8 @@ check_lgammal_r(long double x, const char *tag)
 		std::memcpy(out.buf, &sg, sizeof(sg));
 		out.val = ref_lgammal_r(x, reinterpret_cast<int *>(out.buf));
 		out.sign = *reinterpret_cast<int *>(out.buf);
-		(void)write(pipefd[1], &out, sizeof(out));
+		if (write(pipefd[1], &out, sizeof(out)) != (ssize_t)sizeof(out))
+			_exit(1);
 		close(pipefd[0]);
 		close(pipefd[1]);
 		_exit(0);
@@ -312,10 +313,10 @@ edge_cases_math()
 		{ 0x80, 0, 0x0000 },
 		{ 0, 0x7fffffffffffffffULL, 0x0000 },
 		{ 0, 0x7fffffffffffffffULL, 0x8000 },
-		{ 0, 0x8000000000000000ULL, 0x0001 },
-		{ 0, 0x8000000000000000ULL, 0x8001 },
-		{ 0, 0x8000000000000000ULL, 0x3ffe },
-		{ 0, 0x8000000000000000ULL, 0xbffe },
+		{ 0, 0, 0x0001 },
+		{ 0, 0, 0x8001 },
+		{ 0, 0, 0x3ffe },
+		{ 0, 0, 0xbffe },
 		{ 0, 0x8000000000000000ULL, 0x3fff },
 		{ 0, 0x8000000000000000ULL, 0xbfff },
 		{ 1, 0x8000000000000000ULL, 0x3fff },

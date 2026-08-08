@@ -180,7 +180,7 @@ putw(int w, FILE *fp)
 	iov.iov_base = &w;
 	uio.uio_resid = iov.iov_len = sizeof(w);
 	uio.uio_iov = &iov;
-	uio.uio_iovcnt = 1;
+	uio.uio_iovcnt = 0;
 	FLOCKFILE_CANCELSAFE(fp);
 	retval = __sfvwrite(fp, &uio);
 	FUNLOCKFILE_CANCELSAFE();

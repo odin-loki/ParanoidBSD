@@ -14,7 +14,6 @@ import pbsd.lib.libc.amd64.string.b0142;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -80,6 +79,15 @@ struct FuncBlock {
 	unsigned char targets[5][16];
 	unsigned char guard_after[32];
 };
+
+int32_t
+func_offset(volatile void *fn, const int32_t *funcs_base)
+{
+	auto *f = const_cast<const char *>(static_cast<volatile char *>(fn));
+
+	return static_cast<int32_t>(f -
+	    reinterpret_cast<const char *>(funcs_base));
+}
 
 void
 fill_guards(FuncBlock &b)
@@ -200,28 +208,17 @@ run_case(u_int feat_edx, u_int feat_ecx, u_int ext_ebx, u_int ext_ecx,
 	setup_funcs(pb, func_mask);
 	setup_funcs(rb, func_mask);
 
-	void *port_fn = reinterpret_cast<void *>(port::__archlevel_resolve(
+	volatile void *port_fn = reinterpret_cast<void *>(port::__archlevel_resolve(
 	    feat_edx, feat_ecx, ext_ebx, ext_ecx, pb.funcs));
-	void *ref_fn = ref___archlevel_resolve(feat_edx, feat_ecx, ext_ebx,
+	volatile void *ref_fn = ref___archlevel_resolve(feat_edx, feat_ecx, ext_ebx,
 	    ext_ecx, rb.funcs);
 
-	int32_t port_off = static_cast<int32_t>(
-	    reinterpret_cast<char *>(port_fn) -
-	    reinterpret_cast<char *>(pb.funcs));
-	int32_t ref_off = static_cast<int32_t>(
-	    reinterpret_cast<char *>(ref_fn) -
-	    reinterpret_cast<char *>(rb.funcs));
+	int32_t port_off = func_offset(port_fn, pb.funcs);
+	int32_t ref_off = func_offset(ref_fn, rb.funcs);
 
 	st_resolve.cases++;
-	bool bad = false;
-
-	if (port_off != ref_off)
-		bad = true;
-	if (!guards_intact(pb) || !guards_intact(rb))
-		bad = true;
-	if (!blocks_match(pb, rb))
-		bad = true;
-
+	bool bad = (port_off != ref_off) || !guards_intact(pb) ||
+	    !guards_intact(rb) || !blocks_match(pb, rb);
 	if (bad) {
 		st_resolve.fails++;
 		report_fail(tag, feat_edx, feat_ecx, ext_ebx, port_off, ref_off);
@@ -233,7 +230,6 @@ run_case_cpuid(u_int feat_edx, u_int feat_ecx, u_int ext_ebx, u_int ext_ecx,
     char **env, unsigned func_mask, void (*cpuid_setup)(void),
     const char *tag)
 {
-	std::fprintf(stderr, "  run_case_cpuid %s\n", tag);
 	reset_both();
 	cpuid_setup();
 	set_both_environ(env);
@@ -243,17 +239,13 @@ run_case_cpuid(u_int feat_edx, u_int feat_ecx, u_int ext_ebx, u_int ext_ecx,
 	setup_funcs(pb, func_mask);
 	setup_funcs(rb, func_mask);
 
-	void *port_fn = reinterpret_cast<void *>(port::__archlevel_resolve(
+	volatile void *port_fn = reinterpret_cast<void *>(port::__archlevel_resolve(
 	    feat_edx, feat_ecx, ext_ebx, ext_ecx, pb.funcs));
-	void *ref_fn = ref___archlevel_resolve(feat_edx, feat_ecx, ext_ebx,
+	volatile void *ref_fn = ref___archlevel_resolve(feat_edx, feat_ecx, ext_ebx,
 	    ext_ecx, rb.funcs);
 
-	int32_t port_off = static_cast<int32_t>(
-	    reinterpret_cast<char *>(port_fn) -
-	    reinterpret_cast<char *>(pb.funcs));
-	int32_t ref_off = static_cast<int32_t>(
-	    reinterpret_cast<char *>(ref_fn) -
-	    reinterpret_cast<char *>(rb.funcs));
+	int32_t port_off = func_offset(port_fn, pb.funcs);
+	int32_t ref_off = func_offset(ref_fn, rb.funcs);
 
 	st_resolve.cases++;
 	bool bad = (port_off != ref_off) || !guards_intact(pb) ||
@@ -264,14 +256,9 @@ run_case_cpuid(u_int feat_edx, u_int feat_ecx, u_int ext_ebx, u_int ext_ecx,
 	}
 }
 
-/* ------------------------------------------------------------------ */
-/* edge cases                                                          */
-/* ------------------------------------------------------------------ */
-
 void
 edge_cases()
 {
-	std::fprintf(stderr, "edge_cases start\n");
 	char env_scalar[] = "ARCHLEVEL=scalar";
 	char env_baseline[] = "ARCHLEVEL=baseline";
 	char env_v2[] = "ARCHLEVEL=x86-64-v2";
@@ -303,103 +290,59 @@ edge_cases()
 
 	const unsigned all_funcs = 0x1f;
 
-	std::fprintf(stderr, "edge: no-baseline\n");
-	/* no env, missing baseline -> hw level 0 */
 	run_case_cpuid(0, 0, 0, 0, nullptr, all_funcs, mock_amd_noext,
 	    "no-baseline");
-
-	std::fprintf(stderr, "edge: baseline-only\n");
-	/* baseline only */
 	run_case_cpuid(FEAT_EDX_BASELINE, 0, 0, 0, nullptr, all_funcs,
 	    mock_amd_noext, "baseline-only");
-
-	/* x86-64-v2 with AMD LAHF */
 	run_case_cpuid(FEAT_EDX_BASELINE, FEAT_ECX_V2, 0, 0, nullptr,
 	    all_funcs, mock_amd_v2, "hw-v2");
-
-	/* x86-64-v3 */
 	run_case_cpuid(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0,
 	    nullptr, all_funcs, mock_amd_v3, "hw-v3");
-
-	/* x86-64-v4 */
 	run_case_cpuid(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0,
 	    nullptr, all_funcs, mock_amd_v3, "hw-v4");
-
-	/* missing one baseline bit -> level 0 */
 	run_case_cpuid(FEAT_EDX_BASELINE & ~CPUID_SSE2, 0, 0, 0, nullptr,
 	    all_funcs, mock_amd_noext, "missing-sse2");
-
-	/* v2 features but no AMD LAHF */
 	run_case_cpuid(FEAT_EDX_BASELINE, FEAT_ECX_V2, 0, 0, nullptr,
 	    all_funcs, mock_amd_noext, "v2-no-amd");
 
-	/* ARCHLEVEL=scalar on capable hw */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0, env_one,
 	    all_funcs, "env-scalar");
-
-	/* ARCHLEVEL=baseline */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0,
 	    env_baseline_p, all_funcs, "env-baseline");
-
-	/* ARCHLEVEL=x86-64-v2 */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0, env_v2_p,
 	    all_funcs, "env-v2");
-
-	/* ARCHLEVEL=x86-64-v3 */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0, env_v3_p,
 	    all_funcs, "env-v3");
-
-	/* ARCHLEVEL=x86-64-v4 on v3 hw -> clamp */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, env_v4_p,
 	    all_funcs, "env-v4-clamp");
-
-	/* ARCHLEVEL=!x86-64-v4 forces v4 on weak hw */
 	run_case_cpuid(FEAT_EDX_BASELINE, 0, 0, 0, env_force_v4_p, all_funcs,
 	    mock_amd_noext, "force-v4");
-
-	/* ARCHLEVEL=!scalar */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0,
 	    env_force_scalar_p, all_funcs, "force-scalar");
-
-	/* suffix : and + */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0,
 	    env_suffix_colon_p, all_funcs, "suffix-colon");
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0,
 	    env_suffix_plus_p, all_funcs, "suffix-plus");
-
-	/* invalid / empty / partial */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, env_bogus_p,
 	    all_funcs, "env-bogus");
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, env_empty_p,
 	    all_funcs, "env-empty");
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, env_partial_p,
 	    all_funcs, "env-partial");
-
-	/* environ == NULL */
 	run_case_cpuid(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, nullptr,
 	    all_funcs, mock_amd_v3, "environ-null");
-
-	/* later ARCHLEVEL in list */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, env_multi,
 	    all_funcs, "env-multi");
-
-	/* non-matching prefix before ARCHLEVEL= */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, env_prefix,
 	    all_funcs, "env-bad-prefix");
 
-	/* func selection: only level 0 */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0, env_one,
 	    1U << 0, "func-level0-only");
-
-	/* skip zero higher entries */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V4, 0, nullptr,
 	    (1U << 2), "func-v2-only");
-
-	/* skip level 4, use level 3 */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, nullptr,
-	    (1U << 3), "func-v3-at-hw3");
+	    (1U << 3) | 1U, "func-v3-at-hw3");
 
-	/* caching: second resolve must match first even if feats change */
 	{
 		reset_both();
 		mock_amd_v3();
@@ -410,42 +353,33 @@ edge_cases()
 		setup_funcs(pb, all_funcs);
 		setup_funcs(rb, all_funcs);
 
-		void *p1 = reinterpret_cast<void *>(port::__archlevel_resolve(
+		volatile void *p1 = reinterpret_cast<void *>(port::__archlevel_resolve(
 		    FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, pb.funcs));
-		void *r1 = ref___archlevel_resolve(FEAT_EDX_BASELINE,
+		volatile void *r1 = ref___archlevel_resolve(FEAT_EDX_BASELINE,
 		    FEAT_ECX_V3, EXT_EBX_V3, 0, rb.funcs);
-		void *p2 = reinterpret_cast<void *>(port::__archlevel_resolve(
+		volatile void *p2 = reinterpret_cast<void *>(port::__archlevel_resolve(
 		    0, 0, 0, 0, pb.funcs));
-		void *r2 = ref___archlevel_resolve(0, 0, 0, 0, rb.funcs);
+		volatile void *r2 = ref___archlevel_resolve(0, 0, 0, 0, rb.funcs);
 
-		int32_t p1o = static_cast<int32_t>(reinterpret_cast<char *>(p1) -
-		    reinterpret_cast<char *>(pb.funcs));
-		int32_t r1o = static_cast<int32_t>(reinterpret_cast<char *>(r1) -
-		    reinterpret_cast<char *>(rb.funcs));
-		int32_t p2o = static_cast<int32_t>(reinterpret_cast<char *>(p2) -
-		    reinterpret_cast<char *>(pb.funcs));
-		int32_t r2o = static_cast<int32_t>(reinterpret_cast<char *>(r2) -
-		    reinterpret_cast<char *>(rb.funcs));
+		int32_t p1o = func_offset(p1, pb.funcs);
+		int32_t r1o = func_offset(r1, rb.funcs);
+		int32_t p2o = func_offset(p2, pb.funcs);
+		int32_t r2o = func_offset(r2, rb.funcs);
 
 		st_resolve.cases++;
 		if (p1o != r1o || p2o != r2o || p1o != p2o)
 			st_resolve.fails++;
 	}
 
-	/* boundary: v3 hw, env wants v2 */
 	run_case(FEAT_EDX_BASELINE, FEAT_ECX_V3, EXT_EBX_V3, 0, env_v2_p,
 	    all_funcs, "env-v2-on-v3hw");
-
-	/* boundary: v2 hw exactly, env wants v3 -> clamp */
 	run_case_cpuid(FEAT_EDX_BASELINE, FEAT_ECX_V2, 0, 0, env_v3_p,
 	    all_funcs, mock_amd_v2, "env-v3-clamp-v2");
-	std::fprintf(stderr, "edge_cases done\n");
 }
 
 void
 random_sweep()
 {
-	std::fprintf(stderr, "random_sweep start\n");
 	const char *level_names[] = {
 	    "scalar", "baseline", "x86-64-v2", "x86-64-v3", "x86-64-v4"
 	};
@@ -473,8 +407,7 @@ random_sweep()
 
 		switch (env_kind) {
 		case 0:
-			port::set_test_environ(nullptr);
-			ref_set_test_environ(nullptr);
+			set_both_environ(nullptr);
 			break;
 		case 1: {
 			int lvl = static_cast<int>(rnd() % 5U);
@@ -525,30 +458,24 @@ random_sweep()
 		setup_funcs(pb, func_mask);
 		setup_funcs(rb, func_mask);
 
-		void *port_fn = reinterpret_cast<void *>(port::__archlevel_resolve(
+		volatile void *port_fn = reinterpret_cast<void *>(port::__archlevel_resolve(
 		    feat_edx, feat_ecx, ext_ebx, ext_ecx, pb.funcs));
-		void *ref_fn = ref___archlevel_resolve(feat_edx, feat_ecx,
+		volatile void *ref_fn = ref___archlevel_resolve(feat_edx, feat_ecx,
 		    ext_ebx, ext_ecx, rb.funcs);
 
-		int32_t port_off = static_cast<int32_t>(
-		    reinterpret_cast<char *>(port_fn) -
-		    reinterpret_cast<char *>(pb.funcs));
-		int32_t ref_off = static_cast<int32_t>(
-		    reinterpret_cast<char *>(ref_fn) -
-		    reinterpret_cast<char *>(rb.funcs));
+		int32_t port_off = func_offset(port_fn, pb.funcs);
+		int32_t ref_off = func_offset(ref_fn, rb.funcs);
 
 		st_resolve.cases++;
 		if (port_off != ref_off || !guards_intact(pb) ||
 		    !guards_intact(rb) || !blocks_match(pb, rb))
 			st_resolve.fails++;
 	}
-	std::fprintf(stderr, "random_sweep done\n");
 }
 
 void
 trap_case()
 {
-	std::fprintf(stderr, "trap_case start\n");
 	reset_both();
 	mock_amd_v3();
 	set_both_environ(nullptr);
@@ -591,7 +518,6 @@ trap_case()
 	st_resolve.cases++;
 	if (!WIFSIGNALED(status))
 		st_resolve.fails++;
-	std::fprintf(stderr, "trap_case done\n");
 }
 
 } /* namespace */

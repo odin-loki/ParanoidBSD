@@ -447,6 +447,25 @@ struct PrintObs {
 	std::size_t out_len;
 };
 
+static int saved_stdout_fd = -1;
+
+static void
+save_stdout_once(void)
+{
+	if (saved_stdout_fd < 0)
+		saved_stdout_fd = dup(STDOUT_FILENO);
+}
+
+static void
+restore_stdout(void)
+{
+	if (saved_stdout_fd < 0)
+		return;
+	std::fflush(stdout);
+	dup2(saved_stdout_fd, STDOUT_FILENO);
+	(void)freopen(nullptr, "w", stdout);
+}
+
 static int
 read_output_file(const char *path, unsigned char *out, std::size_t cap,
     std::size_t *len)
@@ -503,6 +522,7 @@ print_case(Stat *st, locale_t loc, const wchar_t *fmt, const char *tag, ...)
 	    mk_output(path_b, sizeof(path_b)) != 0)
 		std::exit(2);
 
+	save_stdout_once();
 	fill_guard(a.out, sizeof(a.out));
 	fill_guard(b.out, sizeof(b.out));
 
@@ -538,6 +558,7 @@ print_case(Stat *st, locale_t loc, const wchar_t *fmt, const char *tag, ...)
 		stat_fail(st, tag, "print");
 	unlink(path_a);
 	unlink(path_b);
+	restore_stdout();
 }
 
 static void
@@ -551,6 +572,7 @@ print_case_d(Stat *st, locale_t loc, const wchar_t *fmt, int v, const char *tag)
 	    mk_output(path_b, sizeof(path_b)) != 0)
 		std::exit(2);
 
+	save_stdout_once();
 	fill_guard(a.out, sizeof(a.out));
 	fill_guard(b.out, sizeof(b.out));
 
@@ -573,6 +595,7 @@ print_case_d(Stat *st, locale_t loc, const wchar_t *fmt, int v, const char *tag)
 		stat_fail(st, tag, "print_d");
 	unlink(path_a);
 	unlink(path_b);
+	restore_stdout();
 }
 
 static void
@@ -586,6 +609,7 @@ print_case_d2(Stat *st, locale_t loc, int v1, int v2, const char *tag)
 	    mk_output(path_b, sizeof(path_b)) != 0)
 		std::exit(2);
 
+	save_stdout_once();
 	fill_guard(a.out, sizeof(a.out));
 	fill_guard(b.out, sizeof(b.out));
 
@@ -608,6 +632,7 @@ print_case_d2(Stat *st, locale_t loc, int v1, int v2, const char *tag)
 		stat_fail(st, tag, "print_d2");
 	unlink(path_a);
 	unlink(path_b);
+	restore_stdout();
 }
 
 static void
@@ -817,9 +842,8 @@ main(void)
 	locale_t loc;
 	long total_fails;
 	int rc = 0;
-	int saved_out = dup(STDOUT_FILENO);
-	int saved_in = dup(STDIN_FILENO);
 
+	save_stdout_once();
 	setlocale(LC_ALL, "C.UTF-8");
 	loc = newlocale(LC_ALL_MASK, "C.UTF-8", nullptr);
 	if (loc == nullptr)
@@ -841,13 +865,10 @@ main(void)
 	if (loc != nullptr && loc != LC_GLOBAL_LOCALE)
 		freelocale(loc);
 
-	if (saved_out >= 0) {
-		dup2(saved_out, STDOUT_FILENO);
-		close(saved_out);
-	}
-	if (saved_in >= 0) {
-		dup2(saved_in, STDIN_FILENO);
-		close(saved_in);
+	restore_stdout();
+	if (saved_stdout_fd >= 0) {
+		close(saved_stdout_fd);
+		saved_stdout_fd = -1;
 	}
 
 	total_fails = st_vwscanf.fails + st_vwscanf_l.fails + st_vwprintf.fails +

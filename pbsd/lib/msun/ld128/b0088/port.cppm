@@ -1013,7 +1013,7 @@ __ldexp_cexpl_parts(long double x, long double y, int expt, long double *re,
 	*im = s * exp_x * scale1 * scale2;
 }
 
-static void
+static void __attribute__((optimize("O0")))
 cexpl_parts_impl(long double x, long double y, long double *re, long double *im)
 {
 	long double c, exp_x, s;

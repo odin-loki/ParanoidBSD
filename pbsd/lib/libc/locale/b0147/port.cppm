@@ -218,7 +218,7 @@ struct _RuneLocale {
 	int		__variable_len;
 };
 
-struct mbstate_t {
+union mbstate_t {
 	char		__mbstate8[128];
 	long long	_mbstateL;
 };
@@ -389,11 +389,17 @@ BIG5_init(struct xlocale_ctype *l, _RuneLocale *rl)
 	return (0);
 }
 
-int
-BIG5_mbsinit(const mbstate_t *ps)
+static int
+_BIG5_mbsinit(const mbstate_t *ps)
 {
 
 	return (ps == NULL || ((const _BIG5State *)ps)->ch == 0);
+}
+
+int
+BIG5_mbsinit(const mbstate_t *ps)
+{
+	return (_BIG5_mbsinit(ps));
 }
 
 static __inline int
@@ -567,11 +573,17 @@ GBK_init(struct xlocale_ctype *l, _RuneLocale *rl)
 	return (0);
 }
 
-int
-GBK_mbsinit(const mbstate_t *ps)
+static int
+_GBK_mbsinit(const mbstate_t *ps)
 {
 
 	return (ps == NULL || ((const _GBKState *)ps)->ch == 0);
+}
+
+int
+GBK_mbsinit(const mbstate_t *ps)
+{
+	return (_GBK_mbsinit(ps));
 }
 
 static int
@@ -740,8 +752,8 @@ ascii_init(struct xlocale_ctype *l,_RuneLocale *rl)
 	return(0);
 }
 
-int
-ascii_mbsinit(const mbstate_t *ps)
+static int
+_ascii_mbsinit(const mbstate_t *ps)
 {
 
 	/*
@@ -750,6 +762,12 @@ ascii_mbsinit(const mbstate_t *ps)
 	 */
 	(void)ps;
 	return (1);
+}
+
+int
+ascii_mbsinit(const mbstate_t *ps)
+{
+	return (_ascii_mbsinit(ps));
 }
 
 static std::size_t
@@ -921,11 +939,17 @@ MSKanji_init(struct xlocale_ctype *l, _RuneLocale *rl)
 	return (0);
 }
 
-int
-MSKanji_mbsinit(const mbstate_t *ps)
+static int
+_MSKanji_mbsinit(const mbstate_t *ps)
 {
 
 	return (ps == NULL || ((const _MSKanjiState *)ps)->ch == 0);
+}
+
+int
+MSKanji_mbsinit(const mbstate_t *ps)
+{
+	return (_MSKanji_mbsinit(ps));
 }
 
 static std::size_t

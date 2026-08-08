@@ -10,7 +10,6 @@ module;
 
 #include <climits>
 #include <cstddef>
-#include <cstdlib>
 #include <cstring>
 
 export module pbsd.lib.libc.locale.b0130;
@@ -83,12 +82,17 @@ enum {
 		(offsetof(struct lc_messages_T, yesstr) / sizeof(char *))
 
 size_t	pbsd_wcrtomb(char * __restrict, wchar_t, mbstate_t * __restrict);
-size_t	wcsrtombs_l(char * __restrict, const wchar_t ** __restrict,
+size_t	pbsd_locale_wcsrtombs(char * __restrict, const wchar_t ** __restrict,
 	    size_t, mbstate_t * __restrict, port_locale_t);
-int	iswspace_l(wint_t, port_locale_t);
-double	strtod_l(const char * __restrict, char ** __restrict, port_locale_t);
+int	pbsd_locale_iswspace(wint_t, port_locale_t);
+double	pbsd_locale_strtod(const char * __restrict, char ** __restrict,
+	    port_locale_t);
 int	__part_load_locale(const char *, int *, char **, const char *, int,
 	    int, const char **);
+
+void	*pbsd_malloc(size_t);
+void	*pbsd_calloc(size_t, size_t);
+void	pbsd_free(void *);
 
 extern xlocale_messages	__xlocale_global_messages;
 extern port_xlocale		__xlocale_global_locale;
@@ -320,6 +324,12 @@ init_locale()
  * SUCH DAMAGE.
  */
 
+#define iswspace_l	pbsd_locale_iswspace
+#define wcsrtombs_l	pbsd_locale_wcsrtombs
+#define strtod_l	pbsd_locale_strtod
+#define malloc		pbsd_malloc
+#define free		pbsd_free
+
 double
 wcstod_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 		locale_t locale)
@@ -335,13 +345,13 @@ wcstod_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 
 	wcp = nptr;
 	spaces = 0;
-	while (pbsd_iswspace_l(*wcp, locale)) {
+	while (iswspace_l(*wcp, locale)) {
 		wcp++;
 		spaces++;
 	}
 
 	mbs = initial;
-	if ((len = pbsd_wcsrtombs_l(NULL, &wcp, 0, &mbs, locale)) == (std::size_t)-1) {
+	if ((len = wcsrtombs_l(NULL, &wcp, 0, &mbs, locale)) == (std::size_t)-1) {
 		if (endptr != NULL)
 			*endptr = (wchar_t *)nptr;
 		return (0.0);
@@ -352,9 +362,9 @@ wcstod_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 		return (0.0);
 	}
 	mbs = initial;
-	pbsd_wcsrtombs_l(buf, &wcp, len + 1, &mbs, locale);
+	wcsrtombs_l(buf, &wcp, len + 1, &mbs, locale);
 
-	val = pbsd_strtod_l(buf, &end, locale);
+	val = strtod_l(buf, &end, locale);
 
 	if (endptr != NULL) {
 		*endptr = (wchar_t *)nptr + (end - buf);
@@ -366,6 +376,11 @@ wcstod_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 
 	return (val);
 }
+#undef iswspace_l
+#undef wcsrtombs_l
+#undef strtod_l
+#undef malloc
+#undef free
 double
 wcstod(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr)
 {
@@ -419,8 +434,8 @@ destruct_messages(void *v)
 {
 	::xlocale_messages *l = static_cast<::xlocale_messages *>(v);
 	if (l->buffer)
-		free(l->buffer);
-	free(l);
+		pbsd_free(l->buffer);
+	pbsd_free(l);
 }
 
 static int
@@ -450,7 +465,7 @@ xlocale_release(void *v)
 
 	if (c != NULL && c->header.destructor != NULL)
 		c->header.destructor(v);
-	free(v);
+	pbsd_free(v);
 }
 
 int
@@ -464,7 +479,7 @@ void *
 __messages_load(const char *name, locale_t l)
 {
 	::xlocale_messages *newloc = static_cast<::xlocale_messages *>(
-	    calloc(sizeof(::xlocale_messages), 1));
+	    pbsd_calloc(sizeof(::xlocale_messages), 1));
 	if (newloc == NULL)
 		return (NULL);
 	newloc->header.header.destructor = destruct_messages;

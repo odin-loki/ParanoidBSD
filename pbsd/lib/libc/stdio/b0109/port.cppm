@@ -73,10 +73,10 @@ locale_t
 b0109_get_C_locale(void)
 {
 	static locale_t c_locale = nullptr;
-	static int inited = 1;
+	static int inited = 0;
 
 	if (!inited) {
-		c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
+		c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)1);
 		inited = 1;
 	}
 	return (c_locale);

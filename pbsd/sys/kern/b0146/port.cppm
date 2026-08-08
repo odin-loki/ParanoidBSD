@@ -2,8 +2,8 @@
 
 module;
 
-#include <cerrno>
-#include <climits>
+#define _POSIX_C_SOURCE 200809L
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -42,7 +42,9 @@ struct name {								\
 
 #define LIST_EMPTY(head) ((head)->lh_first == nullptr)
 
-LIST_HEAD(generic, generic);
+struct generic {
+	struct generic *lh_first;
+};
 
 struct malloc_type {
 	const char *ks_shortdesc;
@@ -58,9 +60,9 @@ struct malloc_type {
 #define UIO_USERSPACE 1
 #define UIO_READ      1
 
-constexpr int EINVAL = 22;
-constexpr int EWOULDBLOCK = 35;
-constexpr int EAGAIN = 35;
+#define EINVAL 22
+#define EWOULDBLOCK 35
+#define EAGAIN 35
 
 struct thread {
 	long td_retval[2];
@@ -87,35 +89,35 @@ struct getrandom_args {
 	unsigned int flags;
 };
 
-constexpr std::uint32_t EFI_PAGE_SIZE = 4096;
-constexpr int EXFLAG_NOALLOC = 1;
+#define EFI_PAGE_SIZE 4096
+#define EXFLAG_NOALLOC 1
 
-constexpr std::uint32_t EFI_MD_TYPE_RESERVED = 0;
-constexpr std::uint32_t EFI_MD_TYPE_LOADER_CODE = 1;
-constexpr std::uint32_t EFI_MD_TYPE_LOADER_DATA = 2;
-constexpr std::uint32_t EFI_MD_TYPE_BS_CODE = 3;
-constexpr std::uint32_t EFI_MD_TYPE_BS_DATA = 4;
-constexpr std::uint32_t EFI_MD_TYPE_RT_CODE = 5;
-constexpr std::uint32_t EFI_MD_TYPE_RT_DATA = 6;
-constexpr std::uint32_t EFI_MD_TYPE_FREE = 7;
-constexpr std::uint32_t EFI_MD_TYPE_UNUSABLE = 8;
-constexpr std::uint32_t EFI_MD_TYPE_RECLAIM = 9;
+#define EFI_MD_TYPE_RESERVED 0
+#define EFI_MD_TYPE_LOADER_CODE 1
+#define EFI_MD_TYPE_LOADER_DATA 2
+#define EFI_MD_TYPE_BS_CODE 3
+#define EFI_MD_TYPE_BS_DATA 4
+#define EFI_MD_TYPE_RT_CODE 5
+#define EFI_MD_TYPE_RT_DATA 6
+#define EFI_MD_TYPE_FREE 7
+#define EFI_MD_TYPE_UNUSABLE 8
+#define EFI_MD_TYPE_RECLAIM 9
 
-constexpr std::uint32_t EFI_MD_TYPE_CODE = EFI_MD_TYPE_LOADER_CODE;
-constexpr std::uint32_t EFI_MD_TYPE_DATA = EFI_MD_TYPE_LOADER_DATA;
+#define EFI_MD_TYPE_CODE EFI_MD_TYPE_LOADER_CODE
+#define EFI_MD_TYPE_DATA EFI_MD_TYPE_LOADER_DATA
 
-constexpr std::uint64_t EFI_MD_ATTR_UC = 0x1;
-constexpr std::uint64_t EFI_MD_ATTR_WC = 0x2;
-constexpr std::uint64_t EFI_MD_ATTR_WT = 0x4;
-constexpr std::uint64_t EFI_MD_ATTR_WB = 0x8;
-constexpr std::uint64_t EFI_MD_ATTR_UCE = 0x10;
-constexpr std::uint64_t EFI_MD_ATTR_WP = 0x20;
-constexpr std::uint64_t EFI_MD_ATTR_RP = 0x40;
-constexpr std::uint64_t EFI_MD_ATTR_XP = 0x80;
-constexpr std::uint64_t EFI_MD_ATTR_NV = 0x100;
-constexpr std::uint64_t EFI_MD_ATTR_MORE_RELIABLE = 0x200;
-constexpr std::uint64_t EFI_MD_ATTR_RO = 0x400;
-constexpr std::uint64_t EFI_MD_ATTR_RT = 0x800;
+#define EFI_MD_ATTR_UC 0x1
+#define EFI_MD_ATTR_WC 0x2
+#define EFI_MD_ATTR_WT 0x4
+#define EFI_MD_ATTR_WB 0x8
+#define EFI_MD_ATTR_UCE 0x10
+#define EFI_MD_ATTR_WP 0x20
+#define EFI_MD_ATTR_RP 0x40
+#define EFI_MD_ATTR_XP 0x80
+#define EFI_MD_ATTR_NV 0x100
+#define EFI_MD_ATTR_MORE_RELIABLE 0x200
+#define EFI_MD_ATTR_RO 0x400
+#define EFI_MD_ATTR_RT 0x800
 
 struct efi_map_header {
 	std::size_t memory_size;
@@ -144,7 +146,7 @@ constexpr int MTX_DEF = 0;
 constexpr int MTX_NOWITNESS = 0;
 constexpr int MTX_QUIET = 0;
 
-constexpr int KTR_LOCK = 0;
+#define KTR_LOCK 0
 #define CTR3(...) ((void)0)
 #define CTR4(...) ((void)0)
 #define CTR5(...) ((void)0)
@@ -333,14 +335,14 @@ read_random_uio(uio *auio, int nonblock)
 
 constexpr int PHYSMEM_LOG_MAX = 4096;
 
-struct physmem_log_entry {
+struct physmem_log_rec {
 	int exclude;
 	std::uint64_t phys;
 	std::uint64_t size;
 	int exflag;
 };
 
-inline physmem_log_entry g_physmem_log[PHYSMEM_LOG_MAX];
+inline physmem_log_rec g_physmem_log[PHYSMEM_LOG_MAX];
 inline int g_physmem_log_count;
 
 inline void physmem_reset() noexcept
@@ -353,8 +355,8 @@ inline int physmem_log_count() noexcept
 	return (g_physmem_log_count);
 }
 
-inline const physmem_log_entry *
-physmem_log_entry(int i) noexcept
+inline const physmem_log_rec *
+physmem_log_at(int i) noexcept
 {
 	return (&g_physmem_log[i]);
 }
@@ -387,54 +389,71 @@ physmem_exclude_region(std::uint64_t phys, std::uint64_t size, int exflag)
 
 export namespace pbsd::sys_kern::b0146 {
 
-#define __unused __attribute__((__unused__))
-
 using detail::cv;
+using detail::efi_map_entry_cb;
 using detail::efi_map_header;
 using detail::efi_md;
-using detail::efi_map_entry_cb;
 using detail::getrandom_args;
+using detail::iovec;
 using detail::malloc_type;
 using detail::mtx;
-using detail::physmem_log_entry;
 using detail::sema;
 using detail::thread;
 using detail::u_long;
+using detail::uio;
 
-inline void malloc_reset() noexcept
-{
-	detail::malloc_reset();
-}
+#define __unused __attribute__((__unused__))
+#define KASSERT(cond, msg) ((void)0)
+#define CTASSERT(x) typedef char __ctassert[(x) ? 1 : -1] __attribute__((__unused__))
+#define nitems(x) (sizeof((x)) / sizeof((x)[0]))
+#define LIST_INIT(head) do { (head)->lh_first = nullptr; } while (0)
+#define LIST_EMPTY(head) ((head)->lh_first == nullptr)
 
-inline void malloc_fail_at(int n) noexcept
-{
-	detail::malloc_fail_at(n);
-}
+#define M_NOWAIT 0x0001
+#define M_WAITOK 0x0002
+#define HASH_WAITOK 0x00000001
+#define HASH_NOWAIT 0x00000002
+#define GRND_NONBLOCK 0x0001
+#define GRND_RANDOM 0x0002
+#define GRND_INSECURE 0x0004
+#define GRND_VALIDFLAGS (GRND_NONBLOCK | GRND_RANDOM | GRND_INSECURE)
+#define IOSIZE_MAX 0x80000000UL
+#define UIO_USERSPACE 1
+#define UIO_READ 1
+#define EINVAL 22
+#define EWOULDBLOCK 35
+#define EAGAIN 35
+#define EFI_PAGE_SIZE 4096
+#define EXFLAG_NOALLOC 1
+#define EFI_MD_TYPE_RECLAIM 9
+#define EFI_MD_TYPE_RT_CODE 5
+#define EFI_MD_TYPE_RT_DATA 6
+#define EFI_MD_TYPE_CODE 1
+#define EFI_MD_TYPE_DATA 2
+#define EFI_MD_TYPE_BS_CODE 3
+#define EFI_MD_TYPE_BS_DATA 4
+#define EFI_MD_TYPE_FREE 7
+#define EFI_MD_ATTR_UC 0x1
+#define EFI_MD_ATTR_WC 0x2
+#define EFI_MD_ATTR_WT 0x4
+#define EFI_MD_ATTR_WB 0x8
+#define EFI_MD_ATTR_UCE 0x10
+#define EFI_MD_ATTR_WP 0x20
+#define EFI_MD_ATTR_RP 0x40
+#define EFI_MD_ATTR_XP 0x80
+#define EFI_MD_ATTR_NV 0x100
+#define EFI_MD_ATTR_MORE_RELIABLE 0x200
+#define EFI_MD_ATTR_RO 0x400
+#define EFI_MD_ATTR_RT 0x800
+#define KTR_LOCK 0
+#define CTR3(...)
+#define CTR4(...)
+#define CTR5(...)
+#define CTR6(...)
 
-inline void read_random_reset() noexcept
-{
-	detail::read_random_reset();
-}
-
-inline void read_random_configure(int error, int block, ssize_t transfer) noexcept
-{
-	detail::read_random_configure(error, block, transfer);
-}
-
-inline void physmem_reset() noexcept
-{
-	detail::physmem_reset();
-}
-
-inline int physmem_log_count() noexcept
-{
-	return (detail::physmem_log_count());
-}
-
-inline const physmem_log_entry *physmem_log_entry(int i) noexcept
-{
-	return (detail::physmem_log_entry(i));
-}
+struct generic_list_head {
+	struct generic *lh_first;
+};
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -464,27 +483,25 @@ inline const physmem_log_entry *physmem_log_entry(int i) noexcept
  * SUCH DAMAGE.
  */
 
-#define GRND_VALIDFLAGS	(detail::GRND_NONBLOCK | detail::GRND_RANDOM | detail::GRND_INSECURE)
+#define GRND_VALIDFLAGS	(GRND_NONBLOCK | GRND_RANDOM | GRND_INSECURE)
 
-#define CTASSERT(x) typedef char __ctassert[(x) ? 1 : -1] __attribute__((__unused__))
-
-CTASSERT(detail::EWOULDBLOCK == detail::EAGAIN);
+CTASSERT(EWOULDBLOCK == EAGAIN);
 
 static int
 kern_getrandom(thread *td, void *user_buf, std::size_t buflen,
     unsigned int flags)
 {
-	detail::uio auio;
-	detail::iovec aiov;
+uio auio;
+iovec aiov;
 	int error;
 
 	if ((flags & ~GRND_VALIDFLAGS) != 0)
-		return (detail::EINVAL);
-	if (buflen > detail::IOSIZE_MAX)
-		return (detail::EINVAL);
+		return (EINVAL);
+	if (buflen > IOSIZE_MAX)
+		return (EINVAL);
 
-	if ((flags & detail::GRND_INSECURE) != 0)
-		flags |= detail::GRND_NONBLOCK;
+	if ((flags & GRND_INSECURE) != 0)
+		flags |= GRND_NONBLOCK;
 
 	if (buflen == 0) {
 		td->td_retval[0] = 0;
@@ -497,11 +514,11 @@ kern_getrandom(thread *td, void *user_buf, std::size_t buflen,
 	auio.uio_iovcnt = 1;
 	auio.uio_offset = 0;
 	auio.uio_resid = buflen;
-	auio.uio_segflg = detail::UIO_USERSPACE;
-	auio.uio_rw = detail::UIO_READ;
+	auio.uio_segflg = UIO_USERSPACE;
+	auio.uio_rw = UIO_READ;
 	auio.uio_td = td;
 
-	error = detail::read_random_uio(&auio, (flags & detail::GRND_NONBLOCK) != 0);
+	error = detail::read_random_uio(&auio, (flags & GRND_NONBLOCK) != 0);
 	if (error == 0)
 		td->td_retval[0] = static_cast<long>(buflen - auio.uio_resid);
 	return (error);
@@ -547,23 +564,23 @@ handle_efi_map_entry(efi_md *p, void *argp)
 	bool exclude = *static_cast<bool *>(argp);
 
 	switch (p->md_type) {
-	case detail::EFI_MD_TYPE_RECLAIM:
-	case detail::EFI_MD_TYPE_RT_CODE:
-	case detail::EFI_MD_TYPE_RT_DATA:
+	case EFI_MD_TYPE_RECLAIM:
+	case EFI_MD_TYPE_RT_CODE:
+	case EFI_MD_TYPE_RT_DATA:
 		if (exclude) {
 			detail::physmem_exclude_region(p->md_phys,
-			    p->md_pages * detail::EFI_PAGE_SIZE, detail::EXFLAG_NOALLOC);
+			    p->md_pages * EFI_PAGE_SIZE, EXFLAG_NOALLOC);
 			break;
 		}
 		/* FALLTHROUGH */
-	case detail::EFI_MD_TYPE_CODE:
-	case detail::EFI_MD_TYPE_DATA:
-	case detail::EFI_MD_TYPE_BS_CODE:
-	case detail::EFI_MD_TYPE_BS_DATA:
-	case detail::EFI_MD_TYPE_FREE:
+	case EFI_MD_TYPE_CODE:
+	case EFI_MD_TYPE_DATA:
+	case EFI_MD_TYPE_BS_CODE:
+	case EFI_MD_TYPE_BS_DATA:
+	case EFI_MD_TYPE_FREE:
 		if (!exclude)
 			detail::physmem_hardware_region(p->md_phys,
-			    p->md_pages * detail::EFI_PAGE_SIZE);
+			    p->md_pages * EFI_PAGE_SIZE);
 		break;
 	default:
 		break;
@@ -606,7 +623,7 @@ print_efi_map_entry(efi_md *p, void *argp __unused)
 		"PersistentMemory"
 	};
 
-	if (p->md_type < detail::nitems(types))
+	if (p->md_type < nitems(types))
 		type = types[p->md_type];
 	else
 		type = "<INVALID>";
@@ -614,29 +631,29 @@ print_efi_map_entry(efi_md *p, void *argp __unused)
 	    static_cast<std::uintmax_t>(p->md_phys),
 	    static_cast<std::uintmax_t>(p->md_virt),
 	    static_cast<std::uintmax_t>(p->md_pages));
-	if (p->md_attr & detail::EFI_MD_ATTR_UC)
+	if (p->md_attr & EFI_MD_ATTR_UC)
 		std::printf("UC ");
-	if (p->md_attr & detail::EFI_MD_ATTR_WC)
+	if (p->md_attr & EFI_MD_ATTR_WC)
 		std::printf("WC ");
-	if (p->md_attr & detail::EFI_MD_ATTR_WT)
+	if (p->md_attr & EFI_MD_ATTR_WT)
 		std::printf("WT ");
-	if (p->md_attr & detail::EFI_MD_ATTR_WB)
+	if (p->md_attr & EFI_MD_ATTR_WB)
 		std::printf("WB ");
-	if (p->md_attr & detail::EFI_MD_ATTR_UCE)
+	if (p->md_attr & EFI_MD_ATTR_UCE)
 		std::printf("UCE ");
-	if (p->md_attr & detail::EFI_MD_ATTR_WP)
+	if (p->md_attr & EFI_MD_ATTR_WP)
 		std::printf("WP ");
-	if (p->md_attr & detail::EFI_MD_ATTR_RP)
+	if (p->md_attr & EFI_MD_ATTR_RP)
 		std::printf("RP ");
-	if (p->md_attr & detail::EFI_MD_ATTR_XP)
+	if (p->md_attr & EFI_MD_ATTR_XP)
 		std::printf("XP ");
-	if (p->md_attr & detail::EFI_MD_ATTR_NV)
+	if (p->md_attr & EFI_MD_ATTR_NV)
 		std::printf("NV ");
-	if (p->md_attr & detail::EFI_MD_ATTR_MORE_RELIABLE)
+	if (p->md_attr & EFI_MD_ATTR_MORE_RELIABLE)
 		std::printf("MORE_RELIABLE ");
-	if (p->md_attr & detail::EFI_MD_ATTR_RO)
+	if (p->md_attr & EFI_MD_ATTR_RO)
 		std::printf("RO ");
-	if (p->md_attr & detail::EFI_MD_ATTR_RT)
+	if (p->md_attr & EFI_MD_ATTR_RT)
 		std::printf("RUNTIME");
 	std::printf("\n");
 }
@@ -690,7 +707,7 @@ static __inline int
 hash_mflags(int flags)
 {
 
-	return ((flags & detail::HASH_NOWAIT) ? detail::M_NOWAIT : detail::M_WAITOK);
+	return ((flags & HASH_NOWAIT) ? M_NOWAIT : M_WAITOK);
 }
 
 void *
@@ -698,22 +715,22 @@ hashinit_flags(int elements, malloc_type *type, u_long *hashmask,
     int flags)
 {
 	long hashsize, i;
-	detail::LIST_HEAD(generic, generic) *hashtbl;
+	generic_list_head *hashtbl;
 
-	detail::KASSERT(elements > 0, ("%s: bad elements", __func__));
-	detail::KASSERT((flags & detail::HASH_WAITOK) ^ (flags & detail::HASH_NOWAIT),
+KASSERT(elements > 0, ("%s: bad elements", __func__));
+KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
 	    ("Bad flags (0x%x) passed to hashinit_flags", flags));
 
 	for (hashsize = 1; hashsize <= elements; hashsize <<= 1)
 		continue;
 	hashsize >>= 1;
 
-	hashtbl = static_cast<detail::LIST_HEAD(generic, generic) *>(
+	hashtbl = static_cast<generic_list_head *>(
 	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
 	    hash_mflags(flags)));
 	if (hashtbl != nullptr) {
 		for (i = 0; i < hashsize; i++)
-			detail::LIST_INIT(&hashtbl[i]);
+LIST_INIT(&hashtbl[i]);
 		*hashmask = hashsize - 1;
 	}
 	return (hashtbl);
@@ -723,34 +740,34 @@ void *
 hashinit(int elements, malloc_type *type, u_long *hashmask)
 {
 
-	return (hashinit_flags(elements, type, hashmask, detail::HASH_WAITOK));
+	return (hashinit_flags(elements, type, hashmask, HASH_WAITOK));
 }
 
 void
 hashdestroy(void *vhashtbl, malloc_type *type, u_long hashmask)
 {
-	detail::LIST_HEAD(generic, generic) *hashtbl, *hp;
+	generic_list_head *hashtbl, *hp;
 
-	hashtbl = static_cast<detail::LIST_HEAD(generic, generic) *>(vhashtbl);
+	hashtbl = static_cast<generic_list_head *>(vhashtbl);
 	for (hp = hashtbl; hp <= &hashtbl[hashmask]; hp++)
-		detail::KASSERT(detail::LIST_EMPTY(hp), ("%s: hashtbl %p not empty "
+KASSERT(LIST_EMPTY(hp), ("%s: hashtbl %p not empty "
 		    "(malloc type %s)", __func__, hashtbl, type->ks_shortdesc));
-	detail::kern_free(hashtbl, type);
+detail::kern_free(hashtbl, type);
 }
 
 static const int primes[] = { 1, 13, 31, 61, 127, 251, 509, 761, 1021, 1531,
 			2039, 2557, 3067, 3583, 4093, 4603, 5119, 5623, 6143,
 			6653, 7159, 7673, 8191, 12281, 16381, 24571, 32749 };
-#define	NPRIMES detail::nitems(primes)
+#define	NPRIMES nitems(primes)
 
 void *
 phashinit_flags(int elements, malloc_type *type, u_long *nentries, int flags)
 {
 	long hashsize, i;
-	detail::LIST_HEAD(generic, generic) *hashtbl;
+	generic_list_head *hashtbl;
 
-	detail::KASSERT(elements > 0, ("%s: bad elements", __func__));
-	detail::KASSERT((flags & detail::HASH_WAITOK) ^ (flags & detail::HASH_NOWAIT),
+KASSERT(elements > 0, ("%s: bad elements", __func__));
+KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
 	    ("Bad flags (0x%x) passed to phashinit_flags", flags));
 
 	for (i = 1, hashsize = primes[1]; hashsize <= elements;) {
@@ -761,14 +778,14 @@ phashinit_flags(int elements, malloc_type *type, u_long *nentries, int flags)
 	}
 	hashsize = primes[i - 1];
 
-	hashtbl = static_cast<detail::LIST_HEAD(generic, generic) *>(
+	hashtbl = static_cast<generic_list_head *>(
 	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
 	    hash_mflags(flags)));
 	if (hashtbl == nullptr)
 		return (nullptr);
 
 	for (i = 0; i < hashsize; i++)
-		detail::LIST_INIT(&hashtbl[i]);
+LIST_INIT(&hashtbl[i]);
 	*nentries = hashsize;
 	return (hashtbl);
 }
@@ -777,7 +794,7 @@ void *
 phashinit(int elements, malloc_type *type, u_long *nentries)
 {
 
-	return (phashinit_flags(elements, type, nentries, detail::HASH_WAITOK));
+	return (phashinit_flags(elements, type, nentries, HASH_WAITOK));
 }
 
 /*-
@@ -813,7 +830,7 @@ void
 sema_init(sema *sema, int value, const char *description)
 {
 
-	detail::KASSERT((value >= 0), ("%s(): negative value\n", __func__));
+KASSERT((value >= 0), ("%s(): negative value\n", __func__));
 
 	detail::bzero(sema, sizeof(*sema));
 	detail::mtx_init(&sema->sema_mtx, description, "sema backing lock",
@@ -821,14 +838,14 @@ sema_init(sema *sema, int value, const char *description)
 	detail::cv_init(&sema->sema_cv, description);
 	sema->sema_value = value;
 
-	CTR4(detail::KTR_LOCK, "%s(%p, %d, \"%s\")", __func__, sema, value, description);
+	CTR4(KTR_LOCK, "%s(%p, %d, \"%s\")", __func__, sema, value, description);
 }
 
 void
 sema_destroy(sema *sema)
 {
 
-	CTR3(detail::KTR_LOCK, "%s(%p) \"%s\"", __func__, sema,
+	CTR3(KTR_LOCK, "%s(%p) \"%s\"", __func__, sema,
 	    detail::cv_wmesg(&sema->sema_cv));
 
 	detail::KASSERT((sema->sema_waiters == 0), ("%s(): waiters\n", __func__));
@@ -846,7 +863,7 @@ _sema_post(sema *sema, const char *file, int line)
 	if (sema->sema_waiters && sema->sema_value > 0)
 		detail::cv_signal(&sema->sema_cv);
 
-	CTR6(detail::KTR_LOCK, "%s(%p) \"%s\" v = %d at %s:%d", __func__, sema,
+	CTR6(KTR_LOCK, "%s(%p) \"%s\" v = %d at %s:%d", __func__, sema,
 	    detail::cv_wmesg(&sema->sema_cv), sema->sema_value, file, line);
 
 	detail::mtx_unlock(&sema->sema_mtx);
@@ -864,7 +881,7 @@ _sema_wait(sema *sema, const char *file, int line)
 	}
 	sema->sema_value--;
 
-	CTR6(detail::KTR_LOCK, "%s(%p) \"%s\" v = %d at %s:%d", __func__, sema,
+	CTR6(KTR_LOCK, "%s(%p) \"%s\" v = %d at %s:%d", __func__, sema,
 	    detail::cv_wmesg(&sema->sema_cv), sema->sema_value, file, line);
 
 	detail::mtx_unlock(&sema->sema_mtx);
@@ -886,10 +903,10 @@ _sema_timedwait(sema *sema, int timo, const char *file, int line)
 		sema->sema_value--;
 		error = 0;
 
-		CTR6(detail::KTR_LOCK, "%s(%p) \"%s\" v = %d at %s:%d", __func__, sema,
+		CTR6(KTR_LOCK, "%s(%p) \"%s\" v = %d at %s:%d", __func__, sema,
 		    detail::cv_wmesg(&sema->sema_cv), sema->sema_value, file, line);
 	} else {
-		CTR5(detail::KTR_LOCK, "%s(%p) \"%s\" fail at %s:%d", __func__, sema,
+		CTR5(KTR_LOCK, "%s(%p) \"%s\" fail at %s:%d", __func__, sema,
 		    detail::cv_wmesg(&sema->sema_cv), file, line);
 	}
 
@@ -902,22 +919,22 @@ _sema_trywait(sema *sema, const char *file, int line)
 {
 	int ret;
 
-	detail::mtx_lock(&sema->sema_mtx);
+mtx_lock(&sema->sema_mtx);
 
 	if (sema->sema_value > 0) {
 		sema->sema_value--;
 		ret = 1;
 
-		CTR6(detail::KTR_LOCK, "%s(%p) \"%s\" v = %d at %s:%d", __func__, sema,
-		    detail::cv_wmesg(&sema->sema_cv), sema->sema_value, file, line);
+		CTR6(KTR_LOCK, "%s(%p) \"%s\" v = %d at %s:%d", __func__, sema,
+cv_wmesg(&sema->sema_cv), sema->sema_value, file, line);
 	} else {
 		ret = 0;
 
-		CTR5(detail::KTR_LOCK, "%s(%p) \"%s\" fail at %s:%d", __func__, sema,
-		    detail::cv_wmesg(&sema->sema_cv), file, line);
+		CTR5(KTR_LOCK, "%s(%p) \"%s\" fail at %s:%d", __func__, sema,
+cv_wmesg(&sema->sema_cv), file, line);
 	}
 
-	detail::mtx_unlock(&sema->sema_mtx);
+mtx_unlock(&sema->sema_mtx);
 	return (ret);
 }
 
@@ -926,10 +943,79 @@ sema_value(sema *sema)
 {
 	int ret;
 
-	detail::mtx_lock(&sema->sema_mtx);
+mtx_lock(&sema->sema_mtx);
 	ret = sema->sema_value;
-	detail::mtx_unlock(&sema->sema_mtx);
+mtx_unlock(&sema->sema_mtx);
 	return (ret);
+}
+
+} // namespace pbsd::sys_kern::b0146::detail
+
+export namespace pbsd::sys_kern::b0146 {
+
+using detail::cv;
+using detail::efi_map_entry_cb;
+using detail::efi_map_header;
+using detail::efi_md;
+using detail::getrandom_args;
+using detail::malloc_type;
+using detail::mtx;
+using detail::physmem_log_rec;
+using detail::sema;
+using detail::thread;
+using detail::u_long;
+
+using detail::hashdestroy;
+using detail::hashinit;
+using detail::hashinit_flags;
+using detail::phashinit;
+using detail::phashinit_flags;
+using detail::sys_getrandom;
+using detail::efi_map_add_entries;
+using detail::efi_map_exclude_entries;
+using detail::efi_map_foreach_entry;
+using detail::efi_map_print_entries;
+using detail::sema_destroy;
+using detail::sema_init;
+using detail::sema_value;
+using detail::_sema_post;
+using detail::_sema_timedwait;
+using detail::_sema_trywait;
+using detail::_sema_wait;
+
+inline void malloc_reset() noexcept
+{
+	detail::malloc_reset();
+}
+
+inline void malloc_fail_at(int n) noexcept
+{
+	detail::malloc_fail_at(n);
+}
+
+inline void read_random_reset() noexcept
+{
+	detail::read_random_reset();
+}
+
+inline void read_random_configure(int error, int block, ssize_t transfer) noexcept
+{
+	detail::read_random_configure(error, block, transfer);
+}
+
+inline void physmem_reset() noexcept
+{
+	detail::physmem_reset();
+}
+
+inline int physmem_log_count() noexcept
+{
+	return (detail::physmem_log_count());
+}
+
+inline const physmem_log_rec *physmem_log_entry(int i) noexcept
+{
+	return (detail::physmem_log_at(i));
 }
 
 } // namespace pbsd::sys_kern::b0146

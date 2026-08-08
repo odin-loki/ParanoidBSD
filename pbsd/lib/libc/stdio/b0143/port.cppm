@@ -119,8 +119,6 @@ get_real_locale(locale_t locale)
 	}
 }
 
-#define FIX_LOCALE(l) (l = get_real_locale(l))
-
 static inline locale_t
 __get_locale(void)
 {

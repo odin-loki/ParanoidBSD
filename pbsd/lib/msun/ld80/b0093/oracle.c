@@ -1,20 +1,50 @@
 /*
- * oracle.c -- batch b0093 reference implementation.
+ * PBSD batch b0093 -- reference oracle.
  *
- * The original HardenedBSD C sources concatenated verbatim (with ref_
- * prefixes on the four exported functions).  Support code required for
- * compilation is provided above the concatenated sources.
+ * The original HardenedBSD C sources
+ *
+ *	lib/msun/ld80/s_cexpl.c
+ *	lib/msun/ld80/s_cospil.c
+ *	lib/msun/ld80/s_sinpil.c
+ *	lib/msun/ld80/s_tanpil.c
+ *
+ * concatenated verbatim.  Every function is renamed with a "ref_" prefix.
+ * The renaming is done with the preprocessor so that no function body is
+ * modified in any way: only the token that names the function is
+ * substituted, the body text is untouched.
+ *
+ * s_cospil.c, s_sinpil.c and s_tanpil.c each define their own pi_hi/pi_lo
+ * with *different types* (double in s_cospil.c and s_tanpil.c, long double
+ * in s_sinpil.c) and each pulls in its own copy of the static inline
+ * kernels of ld80/k_cospil.h and ld80/k_sinpil.h.  That difference is load
+ * bearing, so each section below gets its own renamed copy of the constants
+ * and of the kernels it includes.
+ *
+ * Support code that these four files require but that does not live in them
+ * (union IEEEl2bits from lib/libc/amd64/_fpmath.h, macros from
+ * lib/msun/src/math_private.h, the kernels of lib/msun/ld80/k_sinl.c,
+ * k_cosl.c and k_tanl.c, and __k_expl()/__ldexp_cexpl() from
+ * lib/msun/ld80/k_expl.h) is reproduced verbatim first.  Only defines were
+ * added; no function body was changed.  The k_*l() kernels and
+ * __ldexp_cexpl() are given external linkage so that the C++ port resolves
+ * them against these very definitions, which is how msun itself resolves
+ * them (they are separate translation units of libm, not part of b0093).
  */
 
-#define _GNU_SOURCE
+#define	_GNU_SOURCE		/* sincosl() */
+
 #include <complex.h>
 #include <float.h>
 #include <math.h>
 #include <stdint.h>
 
 #ifndef LONG_BIT
-#define LONG_BIT (8 * sizeof(long))
+#define	LONG_BIT	(8 * (int)sizeof(long))
 #endif
+
+/* ------------------------------------------------------------------ */
+/* from lib/libc/amd64/_fpmath.h					    */
+/* ------------------------------------------------------------------ */
 
 union IEEEl2bits {
 	long double	e;
@@ -34,6 +64,26 @@ union IEEEl2bits {
 };
 
 #define	LDBL_NBIT	0x80000000
+#define	mask_nbit_l(u)	((u).bits.manh &= ~LDBL_NBIT)
+
+#define	LDBL_MANH_SIZE	32
+#define	LDBL_MANL_SIZE	32
+
+/* ------------------------------------------------------------------ */
+/* from lib/msun/src/math_private.h				    */
+/* ------------------------------------------------------------------ */
+
+typedef union {
+	float value;
+	uint32_t word;
+} ieee_float_shape_type;
+
+#define SET_FLOAT_WORD(d,i)					\
+do {								\
+  ieee_float_shape_type sf_u;					\
+  sf_u.word = (i);						\
+  (d) = sf_u.value;						\
+} while (0)
 
 #define	EXTRACT_LDBL80_WORDS(ix0,ix1,d)				\
 do {								\
@@ -59,22 +109,21 @@ do {								\
   (d) = se_u.e;							\
 } while (0)
 
-#define	GET_FLOAT_WORD(i,d)					\
-do {								\
-  union { float value; unsigned int word; } gf_u;			\
-  gf_u.value = (d);						\
-  (i) = gf_u.word;						\
-} while (0)
+/*
+ * The non-__i386__ spelling: "The above works on non-i386 too, but we use
+ * this to check v."
+ */
+#define	LD80C(m, ex, v)	{ .e = (v), }
 
-#define	SET_FLOAT_WORD(d,i)					\
-do {								\
-  union { float value; unsigned int word; } sf_u;			\
-  sf_u.word = (i);						\
-  (d) = sf_u.value;						\
-} while (0)
-
+/* Support switching the mode to FP_PE if necessary; not __i386__ here. */
 #define	ENTERI()
-#define	RETURNI(x)	return (x)
+#define	ENTERIT(x)
+#define	RETURNI(x)	RETURNF(x)
+#define	ENTERV()
+#define	RETURNV()	return
+
+/* Default return statement if hack*_t() is not used. */
+#define      RETURNF(v)      return (v)
 
 #define	_2sumF(a, b) do {	\
 	__typeof(a) __w;	\
@@ -97,48 +146,73 @@ do {								\
 	INSERT_LDBL80_WORDS((x), (ix), (lx));		\
 } while (0)
 
-#ifdef __i386__
-#define	LD80C(m, ex, v) {						\
-	.xbits.man = __CONCAT(m, ULL),					\
-	.xbits.expsign = (0x3fff + (ex)) | ((v) < 0 ? 0x8000 : 0),	\
-}
-#else
-#define	LD80C(m, ex, v)	{ .e = (v), }
-#endif
+/*
+ * FreeBSD's sys/cdefs.h spells __CONCAT with the two level expansion that
+ * rnintl() relies on to paste LDBL_MANT_DIG; glibc's __CONCAT is one level.
+ */
+#undef	__CONCAT
+#undef	__CONCAT1
+#define	__CONCAT1(x,y)	x ## y
+#define	__CONCAT(x,y)	__CONCAT1(x,y)
 
 static inline long double
 rnintl(long double x)
 {
-	return (x + 0x1.8p64L / 2 - 0x1.8p64L / 2);
+	return (x + __CONCAT(0x1.8p, LDBL_MANT_DIG) / 2 -
+	    __CONCAT(0x1.8p, LDBL_MANT_DIG) / 2);
 }
 
+/*
+ * math_private.h picks the fistl variant with
+ *	#if defined(amd64) || defined(__i386__)
+ * and the bare token "amd64" is predefined by no compiler, so amd64 builds
+ * of msun use the plain cast.  That is what is reproduced here.
+ */
 #define	irint(x)	((int)(x))
 
-/* === kernel support === */
+/* ------------------------------------------------------------------ */
+/* from lib/msun/ld80/k_sinl.c					    */
+/* ------------------------------------------------------------------ */
 
-/*
- * Domain [-0.7854, 0.7854], range ~[-2.43e-23, 2.425e-23]:
- * |cos(x) - c(x)| < 2**-75.1
- *
- * The coefficients of c(x) were generated by a pari-gp script using
- * a Remez algorithm that searches for the best higher coefficients
- * after rounding leading coefficients to a specified precision.
- *
- * Simpler methods like Chebyshev or basic Remez barely suffice for
- * cos() in 64-bit precision, because we want the coefficient of x^2
- * to be precisely -0.5 so that multiplying by it is exact, and plain
- * rounding of the coefficients of a good polynomial approximation only
- * gives this up to about 64-bit precision.  Plain rounding also gives
- * a mediocre approximation for the coefficient of x^4, but a rounding
- * error of 0.5 ulps for this coefficient would only contribute ~0.01
- * ulps to the final error, so this is unimportant.  Rounding errors in
- * higher coefficients are even less important.
- *
- * In fact, coefficients above the x^4 one only need to have 53-bit
- * precision, and this is more efficient.  We get this optimization
- * almost for free from the complications needed to search for the best
- * higher coefficients.
- */
+static const double
+half =  0.5;
+
+#if defined(__amd64__) || defined(__i386__)
+/* Long double constants are slow on these arches, and broken on i386. */
+static const volatile double
+S1hi = -0.16666666666666666,		/* -0x15555555555555.0p-55 */
+S1lo = -9.2563760475949941e-18;		/* -0x15580000000000.0p-109 */
+#define	S1	((long double)S1hi + S1lo)
+#else
+static const long double
+S1 = -0.166666666666666666671L;		/* -0xaaaaaaaaaaaaaaab.0p-66 */
+#endif
+
+static const double
+S2 =  0.0083333333333333332,		/*  0x11111111111111.0p-59 */
+S3 = -0.00019841269841269427,		/* -0x1a01a01a019f81.0p-65 */
+S4 =  0.0000027557319223597490,		/*  0x171de3a55560f7.0p-71 */
+S5 = -0.000000025052108218074604,	/* -0x1ae64564f16cad.0p-78 */
+S6 =  1.6059006598854211e-10,		/*  0x161242b90243b5.0p-85 */
+S7 = -7.6429779983024564e-13,		/* -0x1ae42ebd1b2e00.0p-93 */
+S8 =  2.6174587166648325e-15;		/*  0x179372ea0b3f64.0p-101 */
+
+long double
+__kernel_sinl(long double x, long double y, int iy)
+{
+	long double z,r,v;
+
+	z	=  x*x;
+	v	=  z*x;
+	r	=  S2+z*(S3+z*(S4+z*(S5+z*(S6+z*(S7+z*S8)))));
+	if(iy==0) return x+v*(S1+z*r);
+	else      return x-((z*(half*y-v*r)-y)-v*S1);
+}
+
+/* ------------------------------------------------------------------ */
+/* from lib/msun/ld80/k_cosl.c					    */
+/* ------------------------------------------------------------------ */
+
 static const double
 one = 1.0;
 
@@ -173,53 +247,10 @@ __kernel_cosl(long double x, long double y)
 	return w + (((one-w)-hz) + (z*r-x*y));
 }
 
-static const double
-half =  0.5;
+/* ------------------------------------------------------------------ */
+/* from lib/msun/ld80/k_tanl.c					    */
+/* ------------------------------------------------------------------ */
 
-/*
- * Domain [-0.7854, 0.7854], range ~[-1.89e-22, 1.915e-22]
- * |sin(x)/x - s(x)| < 2**-72.1
- *
- * See ../ld80/k_cosl.c for more details about the polynomial.
- */
-#if defined(__amd64__) || defined(__i386__)
-/* Long double constants are slow on these arches, and broken on i386. */
-static const volatile double
-S1hi = -0.16666666666666666,		/* -0x15555555555555.0p-55 */
-S1lo = -9.2563760475949941e-18;		/* -0x15580000000000.0p-109 */
-#define	S1	((long double)S1hi + S1lo)
-#else
-static const long double
-S1 = -0.166666666666666666671L;		/* -0xaaaaaaaaaaaaaaab.0p-66 */
-#endif
-
-static const double
-S2 =  0.0083333333333333332,		/*  0x11111111111111.0p-59 */
-S3 = -0.00019841269841269427,		/* -0x1a01a01a019f81.0p-65 */
-S4 =  0.0000027557319223597490,		/*  0x171de3a55560f7.0p-71 */
-S5 = -0.000000025052108218074604,	/* -0x1ae64564f16cad.0p-78 */
-S6 =  1.6059006598854211e-10,		/*  0x161242b90243b5.0p-85 */
-S7 = -7.6429779983024564e-13,		/* -0x1ae42ebd1b2e00.0p-93 */
-S8 =  2.6174587166648325e-15;		/*  0x179372ea0b3f64.0p-101 */
-
-long double
-__kernel_sinl(long double x, long double y, int iy)
-{
-	long double z,r,v;
-
-	z	=  x*x;
-	v	=  z*x;
-	r	=  S2+z*(S3+z*(S4+z*(S5+z*(S6+z*(S7+z*S8)))));
-	if(iy==0) return x+v*(S1+z*r);
-	else      return x-((z*(half*y-v*r)-y)-v*S1);
-}
-
-/*
- * Domain [-0.67434, 0.67434], range ~[-2.25e-22, 1.921e-22]
- * |tan(x)/x - t(x)| < 2**-71.9
- *
- * See k_cosl.c for more details about the polynomial.
- */
 #if defined(__amd64__) || defined(__i386__)
 /* Long double constants are slow on these arches, and broken on i386. */
 static const volatile double
@@ -316,84 +347,9 @@ __kernel_tanl(long double x, long double y, int iy) {
 	}
 }
 
-/* ================================================================== */
-/* lib/msun/ld80/s_cexpl.c */
-/* ================================================================== */
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2011 David Schultz <das@FreeBSD.ORG>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * src/s_cexp.c converted to long double complex by Steven G. Kargl
- */
-
-#include <complex.h>
-#include <float.h>
-#ifdef __i386__
-#endif
-
-/* inlined k_expl.h */
-/* from: FreeBSD: head/lib/msun/ld80/s_expl.c 251343 2013-06-03 19:51:32Z kargl */
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2009-2013 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Optimized by Bruce D. Evans.
- */
-
-/*
- * See s_expl.c for more comments about __k_expl().
- *
- * See ../src/e_exp.c and ../src/k_exp.h for precision-independent comments
- * about the secondary kernels.
- */
+/* ------------------------------------------------------------------ */
+/* from lib/msun/ld80/k_expl.h					    */
+/* ------------------------------------------------------------------ */
 
 #define	INTERVALS	128
 #define	LOG2_INTERVALS	7
@@ -422,23 +378,13 @@ A6 =  1.3888891738560272e-3;		/*  0x16c16c651633ae.0p-62 */
 /*
  * 2^(i/INTERVALS) for i in [0,INTERVALS] is represented by two values where
  * the first 53 bits of the significand are stored in hi and the next 53
- * bits are in lo.  Tang's paper states that the trailing 6 bits of hi must
- * be zero for his algorithm in both single and double precision, because
- * the table is re-used in the implementation of expm1() where a floating
- * point addition involving hi must be exact.  Here hi is double, so
- * converting it to long double gives 11 trailing zero bits.
+ * bits are in lo.
  */
 static const struct {
 	double	hi;
 	double	lo;
 } tbl[INTERVALS] = {
 	{ 0x1p+0, 0x0p+0 },
-	/*
-	 * XXX hi is rounded down, and the formatting is not quite normal.
-	 * But I rather like both.  The 0x1.*p format is good for 4N+1
-	 * mantissa bits.  Rounding down makes the lo terms positive,
-	 * so that the columnar formatting can be simpler.
-	 */
 	{ 0x1.0163da9fb3335p+0, 0x1.b61299ab8cdb7p-54 },
 	{ 0x1.02c9a3e778060p+0, 0x1.dcdef95949ef4p-53 },
 	{ 0x1.04315e86e7f84p+0, 0x1.7ae71f3441b49p-53 },
@@ -591,45 +537,19 @@ __k_expl(long double x, long double *hip, long double *lop, int *kp)
 
 	/* Evaluate expl(endpoint[n2] + r1 + r2) = tbl[n2] * expl(r1 + r2). */
 	z = r * r;
-#if 0
-	q = r2 + z * (A2 + r * A3) + z * z * (A4 + r * A5) + z * z * z * A6;
-#else
 	q = r2 + z * A2 + z * r * (A3 + r * A4 + z * (A5 + r * A6));
-#endif
 	t = (long double)tbl[n2].lo + tbl[n2].hi;
 	*hip = tbl[n2].hi;
 	*lop = tbl[n2].lo + t * (q + r1);
 }
 
-static inline void
-k_hexpl(long double x, long double *hip, long double *lop)
-{
-	float twopkm1;
-	int k;
-
-	__k_expl(x, hip, lop, &k);
-	SET_FLOAT_WORD(twopkm1, 0x3f800000 + ((k - 1) << 23));
-	*hip *= twopkm1;
-	*lop *= twopkm1;
-}
-
-static inline long double
-hexpl(long double x)
-{
-	long double hi, lo, twopkm2;
-	int k;
-
-	twopkm2 = 1;
-	__k_expl(x, &hi, &lo, &k);
-	SET_LDBL_EXPSIGN(twopkm2, BIAS + k - 2);
-	return (lo + hi) * 2 * twopkm2;
-}
-
-#ifdef _COMPLEX_H
 /*
  * See ../src/k_exp.c for details.
+ *
+ * The "static inline" of k_expl.h is dropped so that the C++ port resolves
+ * __ldexp_cexpl() against this definition.  The body is unmodified.
  */
-static inline long double complex
+long double complex
 __ldexp_cexpl(long double complex z, int expt)
 {
 	long double c, exp_x, hi, lo, s;
@@ -653,10 +573,45 @@ __ldexp_cexpl(long double complex z, int expt)
 	return (CMPLXL(c * exp_x * scale1 * scale2,
 	    s * exp_x * scale1 * scale2));
 }
-#endif /* _COMPLEX_H */
+
+/* ================================================================== */
+/* lib/msun/ld80/s_cexpl.c					      */
+/* ================================================================== */
+
+#define	cexpl	ref_cexpl
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2011 David Schultz <das@FreeBSD.ORG>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ * src/s_cexp.c converted to long double complex by Steven G. Kargl
+ */
 
 long double complex
-ref_cexpl (long double complex z)
+cexpl (long double complex z)
 {
 	long double c, exp_x, s, x, y;
 	uint64_t lx, ly;
@@ -719,15 +674,19 @@ ref_cexpl (long double complex z)
 	}
 }
 
+#undef cexpl
+
 /* ================================================================== */
-/* lib/msun/ld80/s_cospil.c */
+/* lib/msun/ld80/s_cospil.c					      */
 /* ================================================================== */
 
-#define __kernel_cospil __kernel_cospil_cospil
-#define __kernel_sinpil __kernel_sinpil_cospil
-#define vzero vzero_cospil
-#define pi_hi pi_hi_cospil
-#define pi_lo pi_lo_cospil
+#define	pi_hi			ref_cospil_pi_hi
+#define	pi_lo			ref_cospil_pi_lo
+#define	__kernel_cospil		ref_cospil_kernel_cospil
+#define	__kernel_sinpil		ref_cospil_kernel_sinpil
+#define	vzero			ref_cospil_vzero
+#define	cospil			ref_cospil
+
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -758,43 +717,11 @@ ref_cexpl (long double complex z)
  * See ../src/s_cospi.c for implementation details.
  */
 
-#ifdef __i386__
-#endif
-#include <stdint.h>
-
-
 static const double
 pi_hi = 3.1415926814079285e+00,	/* 0x400921fb 0x58000000 */
 pi_lo =-2.7818135228334233e-08;	/* 0xbe5dde97 0x3dcb3b3a */
 
-/* inlined k_cospil.h */
-/*-
- * Copyright (c) 2017 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-/*
+/* ---- lib/msun/ld80/k_cospil.h ----
  * See ../src/k_cospi.c for implementation details.
  */
 
@@ -810,34 +737,8 @@ __kernel_cospil(long double x)
 	_2sumF(hi, lo);
 	return (__kernel_cosl(hi, lo));
 }
-/* inlined k_sinpil.h */
-/*-
- * Copyright (c) 2017 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 
-/*
+/* ---- lib/msun/ld80/k_sinpil.h ----
  * See ../src/k_sinpi.c for implementation details.
  */
 
@@ -857,7 +758,7 @@ __kernel_sinpil(long double x)
 volatile static const double vzero = 0;
 
 long double
-ref_cospil(long double x)
+cospil(long double x)
 {
 	long double ax, c;
 	uint64_t lx, m;
@@ -929,19 +830,25 @@ ref_cospil(long double x)
 	 */
 	RETURNI(ix >= 0x403f ? 1 : ((lx & 1) ? -1 : 1));
 }
+
+#undef pi_hi
+#undef pi_lo
 #undef __kernel_cospil
 #undef __kernel_sinpil
 #undef vzero
-#undef pi_hi
-#undef pi_lo
+#undef cospil
 
 /* ================================================================== */
-/* lib/msun/ld80/s_sinpil.c */
+/* lib/msun/ld80/s_sinpil.c					      */
 /* ================================================================== */
 
-#define __kernel_cospil __kernel_cospil_sinpil
-#define __kernel_sinpil __kernel_sinpil_sinpil
-#define vzero vzero_sinpil
+#define	pi_hi_u			ref_sinpil_pi_hi_u
+#define	pi_lo_u			ref_sinpil_pi_lo_u
+#define	__kernel_cospil		ref_sinpil_kernel_cospil
+#define	__kernel_sinpil		ref_sinpil_kernel_sinpil
+#define	vzero			ref_sinpil_vzero
+#define	sinpil			ref_sinpil
+
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -972,45 +879,13 @@ ref_cospil(long double x)
  * See ../src/s_sinpi.c for implementation details.
  */
 
-#ifdef __i386__
-#endif
-#include <stdint.h>
-
-
 static const union IEEEl2bits
 pi_hi_u = LD80C(0xc90fdaa200000000,   1, 3.14159265346825122833e+00L),
 pi_lo_u = LD80C(0x85a308d313198a2e, -33, 1.21542010130123852029e-10L);
 #define	pi_hi	(pi_hi_u.e)
 #define	pi_lo	(pi_lo_u.e)
 
-/* inlined k_cospil.h */
-/*-
- * Copyright (c) 2017 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-/*
+/* ---- lib/msun/ld80/k_cospil.h ----
  * See ../src/k_cospi.c for implementation details.
  */
 
@@ -1026,34 +901,8 @@ __kernel_cospil(long double x)
 	_2sumF(hi, lo);
 	return (__kernel_cosl(hi, lo));
 }
-/* inlined k_sinpil.h */
-/*-
- * Copyright (c) 2017 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 
-/*
+/* ---- lib/msun/ld80/k_sinpil.h ----
  * See ../src/k_sinpi.c for implementation details.
  */
 
@@ -1073,7 +922,7 @@ __kernel_sinpil(long double x)
 volatile static const double vzero = 0;
 
 long double
-ref_sinpil(long double x)
+sinpil(long double x)
 {
 	long double ax, hi, lo, s;
 	uint64_t lx, m;
@@ -1152,21 +1001,26 @@ ref_sinpil(long double x)
 	 */
 	RETURNI(copysignl(0, x));
 }
+
+#undef pi_hi
+#undef pi_lo
+#undef pi_hi_u
+#undef pi_lo_u
 #undef __kernel_cospil
 #undef __kernel_sinpil
 #undef vzero
-#undef pi_hi
-#undef pi_lo
+#undef sinpil
 
 /* ================================================================== */
-/* lib/msun/ld80/s_tanpil.c */
+/* lib/msun/ld80/s_tanpil.c					      */
 /* ================================================================== */
 
-#define __kernel_cospil __kernel_cospil_tanpil
-#define __kernel_sinpil __kernel_sinpil_tanpil
-#define vzero vzero_tanpil
-#define pi_hi pi_hi_tanpil
-#define pi_lo pi_lo_tanpil
+#define	pi_hi			ref_tanpil_pi_hi
+#define	pi_lo			ref_tanpil_pi_lo
+#define	__kernel_tanpil		ref_tanpil_kernel_tanpil
+#define	vzero			ref_tanpil_vzero
+#define	tanpil			ref_tanpil
+
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -1196,11 +1050,6 @@ ref_sinpil(long double x)
 /*
  * See ../src/s_tanpi.c for implementation details.
  */
-
-#ifdef __i386__
-#endif
-#include <stdint.h>
-
 
 static const double
 pi_hi =  3.1415926814079285e+00,	/* 0x400921fb 0x58000000 */
@@ -1235,7 +1084,7 @@ __kernel_tanpil(long double x)
 volatile static const double vzero = 0;
 
 long double
-ref_tanpil(long double x)
+tanpil(long double x)
 {
 	long double ax, hi, lo, odd, t;
 	uint64_t lx, m;
@@ -1296,9 +1145,9 @@ ref_tanpil(long double x)
 	t = ix >= 0x403f ? 0 : (copysignl(0, (lx & 1) ? -1 : 1));
 	RETURNI((hx & 0x8000) ? -t : t);
 }
-#undef __kernel_cospil
-#undef __kernel_sinpil
-#undef vzero
+
 #undef pi_hi
 #undef pi_lo
-/* zz probe marker */
+#undef __kernel_tanpil
+#undef vzero
+#undef tanpil

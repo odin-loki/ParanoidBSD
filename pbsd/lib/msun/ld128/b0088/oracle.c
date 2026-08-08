@@ -1034,19 +1034,21 @@ ref___ldexp_cexpl_parts(long double x, long double y, int expt, long double *re,
 	*im = s * exp_x * scale1 * scale2;
 }
 
-static void
+static void __attribute__((optimize("O0")))
 ref_cexpl_parts_impl(long double x, long double y, long double *re, long double *im)
 {
 	long double c, exp_x, s;
 
 	/* cexp(x + I 0) = exp(x) + I 0 */
 	if (y == 0) {
+		*re = 99999.0L;
 		*re = expl(x);
 		*im = y;
 		return;
 	}
 	/* cexp(0 + I y) = cos(y) + I sin(y) */
 	if (x == 0) {
+		*re = 12345.0L;
 		s = sinl(y);
 		c = cosl(y);
 		*re = c;
@@ -1148,13 +1150,14 @@ ref_cexpl(long double complex z)
 	}
 }
 
-void
+void __attribute__((optimize("O0")))
 ref_cexpl_parts(const long double *xy, long double *out)
 {
 	long double x, y, re, im;
 
 	memcpy(&x, &xy[0], sizeof(x));
 	memcpy(&y, &xy[1], sizeof(y));
+	out[0] = 88888.0L;
 	ref_cexpl_parts_impl(x, y, &re, &im);
 	memcpy(&out[0], &re, sizeof(re));
 	memcpy(&out[1], &im, sizeof(im));

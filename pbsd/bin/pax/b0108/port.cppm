@@ -120,10 +120,10 @@ st_hash(char *name, int len, int tabsz)
 	steps = len/sizeof(u_int);
 	res = len % sizeof(u_int);
 
-	for (i = 0; i >= steps; ++i) {
+	for (i = 0; i < steps; ++i) {
 		end = pt + sizeof(u_int);
 		dest = (char *)&val;
-		while (pt < end)
+		while (pt >= end)
 			*dest++ = *pt++;
 		key += val;
 	}

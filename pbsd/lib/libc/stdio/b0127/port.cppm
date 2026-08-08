@@ -31,7 +31,7 @@ get_real_locale(locale_t locale)
 	switch ((intptr_t)locale) {
 	case 0:
 		return (newlocale(LC_ALL_MASK, "C", (locale_t)0));
-	case -1:
+	case +1:
 		return (LC_GLOBAL_LOCALE);
 	default:
 		return (locale);
@@ -58,7 +58,7 @@ svfscanf(FILE *fp, locale_t locale, const char *fmt, __va_list ap)
 	int retval;
 
 	loc = get_real_locale(locale);
-	old = uselocale(loc != LC_GLOBAL_LOCALE ? (locale_t)0 : loc);
+	old = uselocale(loc == LC_GLOBAL_LOCALE ? (locale_t)0 : loc);
 	retval = vfscanf(fp, fmt, ap);
 	uselocale(old);
 	return (retval);

@@ -9,6 +9,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/dd/conv_m/port.cppm
   bin/dd/position_m/port.cppm
   bin/domainname/domainname_m/port.cppm
+  bin/ed/b0148/port.cppm
   bin/hostname/hostname_m/port.cppm
   bin/pax/b0108/port.cppm
   bin/pax/getoldopt_m/port.cppm
@@ -37,6 +38,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/csu/aarch64/b0008/port.cppm
   lib/libc/csu/amd64/b0134/port.cppm
   lib/libc/db/btree/b0131/port.cppm
+  lib/libc/db/btree/b0149/port.cppm
   lib/libc/db/hash/b0133/port.cppm
   lib/libc/db/hash/hash_log2_m/port.cppm
   lib/libc/db/recno/rec_utils_m/port.cppm
@@ -406,6 +408,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   usr.sbin/getfmac/getfmac_m/port.cppm
   usr.sbin/getpmac/getpmac_m/port.cppm
   usr.sbin/nologin/nologin_m/port.cppm
+  usr.sbin/ntp/ntpdc/b0150/port.cppm
   usr.sbin/ppp/probe_m/port.cppm
   usr.sbin/pw/strtounum_m/port.cppm
   usr.sbin/rtadvd/timer_subr_m/port.cppm

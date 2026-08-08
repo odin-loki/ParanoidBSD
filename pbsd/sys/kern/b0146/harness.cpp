@@ -173,7 +173,20 @@ struct getrandom_args {
 struct efi_map_header;
 struct efi_md;
 struct malloc_type;
-struct sema;
+struct mtx {
+	pthread_mutex_t lock;
+	const char *name;
+};
+struct cv {
+	pthread_cond_t cond;
+	const char *name;
+};
+struct sema {
+	struct mtx sema_mtx;
+	struct cv sema_cv;
+	int sema_value;
+	int sema_waiters;
+};
 
 struct physmem_log_entry {
 	int exclude;
@@ -234,7 +247,7 @@ physmem_logs_match(void)
 	if (n != rn)
 		return (false);
 	for (int i = 0; i < n; i++) {
-		const port::physmem_log_entry *p = port::physmem_log_entry(i);
+		const port::physmem_log_rec *p = port::physmem_log_rec(i);
 		const physmem_log_entry *r = oracle_physmem_log_entry(i);
 
 		if (p->exclude != r->exclude || p->phys != r->phys ||
@@ -636,7 +649,7 @@ test_efi_physmem_one(int exclude_pass)
 	if (pn > 64)
 		pn = 64;
 	for (int i = 0; i < pn; i++) {
-		const port::physmem_log_entry *p = port::physmem_log_entry(i);
+		const port::physmem_log_rec *p = port::physmem_log_rec(i);
 		port_copy[i].exclude = p->exclude;
 		port_copy[i].phys = p->phys;
 		port_copy[i].size = p->size;

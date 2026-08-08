@@ -1,5 +1,0 @@
-oracle.c:142:1:__kernel_sinl	112	static
-oracle.c:224:1:__kernel_cosl	96	static
-oracle.c:768:1:ref_expl	128	static
-oracle.c:909:1:ref_expm1l	144	static
-oracle.c:1417:1:ref_lgammal_r	160	static

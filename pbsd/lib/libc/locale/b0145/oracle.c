@@ -164,7 +164,8 @@ xlocale_release(void *v)
 
 	if (c != NULL && c->header.destructor != NULL)
 		c->header.destructor(v);
-	free(v);
+	else
+		free(v);
 }
 
 static void __attribute__((constructor))
@@ -556,4 +557,10 @@ ref___get_current_numeric_locale(locale_t loc)
 	return (loc->using_numeric_locale ?
 	    &((struct xlocale_numeric *)loc->components[XLC_NUMERIC])->locale :
 	    (struct lc_numeric_T *)&ref__C_numeric_locale);
+}
+
+void
+ref_release_numeric(void *v)
+{
+	xlocale_release(v);
 }

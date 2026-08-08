@@ -39,6 +39,14 @@ typedef __mbstate_t mbstate_t;
 #include <sys/types.h>
 #include <wchar.h>
 
+#ifndef __unused
+#define __unused	__attribute__((__unused__))
+#endif
+
+#ifndef u_int
+typedef unsigned int u_int;
+#endif
+
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX	4
 #endif
@@ -221,15 +229,15 @@ typedef struct {
 	wchar_t	ch;
 } _BIG5State;
 
-static size_t	ref__BIG5_mbrtowc(wchar_t * __restrict, const char * __restrict,
+size_t	ref__BIG5_mbrtowc(wchar_t * __restrict, const char * __restrict,
 		    size_t, mbstate_t * __restrict);
-static int	ref__BIG5_mbsinit(const mbstate_t *);
-static size_t	ref__BIG5_wcrtomb(char * __restrict, wchar_t,
+int	ref__BIG5_mbsinit(const mbstate_t *);
+size_t	ref__BIG5_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
-static size_t	ref__BIG5_mbsnrtowcs(wchar_t * __restrict,
+size_t	ref__BIG5_mbsnrtowcs(wchar_t * __restrict,
 		    const char ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
-static size_t	ref__BIG5_wcsnrtombs(char * __restrict,
+size_t	ref__BIG5_wcsnrtombs(char * __restrict,
 		    const wchar_t ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
 
@@ -370,15 +378,15 @@ typedef struct {
 	wchar_t	ch;
 } _GBKState;
 
-static size_t	ref__GBK_mbrtowc(wchar_t * __restrict, const char * __restrict,
+size_t	ref__GBK_mbrtowc(wchar_t * __restrict, const char * __restrict,
 		    size_t, mbstate_t * __restrict);
-static int	ref__GBK_mbsinit(const mbstate_t *);
-static size_t	ref__GBK_wcrtomb(char * __restrict, wchar_t,
+int	ref__GBK_mbsinit(const mbstate_t *);
+size_t	ref__GBK_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
-static size_t	ref__GBK_mbsnrtowcs(wchar_t * __restrict,
+size_t	ref__GBK_mbsnrtowcs(wchar_t * __restrict,
 		    const char ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
-static size_t	ref__GBK_wcsnrtombs(char * __restrict,
+size_t	ref__GBK_wcsnrtombs(char * __restrict,
 		    const wchar_t ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
 
@@ -515,15 +523,15 @@ ref__GBK_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 /* hbsd/src/lib/libc/locale/ascii.c					*/
 /* ------------------------------------------------------------------ */
 
-static size_t	ref__ascii_mbrtowc(wchar_t * __restrict, const char * __restrict,
+size_t	ref__ascii_mbrtowc(wchar_t * __restrict, const char * __restrict,
 		    size_t, mbstate_t * __restrict);
-static int	ref__ascii_mbsinit(const mbstate_t *);
-static size_t	ref__ascii_mbsnrtowcs(wchar_t * __restrict dst,
+int	ref__ascii_mbsinit(const mbstate_t *);
+size_t	ref__ascii_mbsnrtowcs(wchar_t * __restrict dst,
 		    const char ** __restrict src, size_t nms, size_t len,
 		    mbstate_t * __restrict ps __unused);
-static size_t	ref__ascii_wcrtomb(char * __restrict, wchar_t,
+size_t	ref__ascii_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
-static size_t	ref__ascii_wcsnrtombs(char * __restrict, const wchar_t ** __restrict,
+size_t	ref__ascii_wcsnrtombs(char * __restrict, const wchar_t ** __restrict,
 		    size_t, size_t, mbstate_t * __restrict);
 
 int
@@ -666,15 +674,15 @@ typedef struct {
 	wchar_t	ch;
 } _MSKanjiState;
 
-static size_t	ref__MSKanji_mbrtowc(wchar_t * __restrict, const char * __restrict,
+size_t	ref__MSKanji_mbrtowc(wchar_t * __restrict, const char * __restrict,
 		    size_t, mbstate_t * __restrict);
-static int	ref__MSKanji_mbsinit(const mbstate_t *);
-static size_t	ref__MSKanji_wcrtomb(char * __restrict, wchar_t,
+int	ref__MSKanji_mbsinit(const mbstate_t *);
+size_t	ref__MSKanji_wcrtomb(char * __restrict, wchar_t,
 		    mbstate_t * __restrict);
-static size_t	ref__MSKanji_mbsnrtowcs(wchar_t * __restrict,
+size_t	ref__MSKanji_mbsnrtowcs(wchar_t * __restrict,
 		    const char ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
-static size_t	ref__MSKanji_wcsnrtombs(char * __restrict,
+size_t	ref__MSKanji_wcsnrtombs(char * __restrict,
 		    const wchar_t ** __restrict, size_t, size_t,
 		    mbstate_t * __restrict);
 
