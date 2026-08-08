@@ -394,7 +394,7 @@ hexpl(long double x)
 /*
  * See ../src/k_exp.c for details.
  */
-static inline long double _Complex
+long double _Complex
 __ldexp_cexpl(long double _Complex z, int expt)
 {
 	long double c, exp_x, hi, lo, s;

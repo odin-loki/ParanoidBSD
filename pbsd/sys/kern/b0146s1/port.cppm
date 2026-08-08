@@ -7,7 +7,7 @@ module;
 
 export module pbsd.sys.kern.b0146s1;
 
-namespace pbsd::sys_kern::b0146s1::detail {
+export namespace pbsd::sys_kern::b0146s1 {
 
 #define CTASSERT(x) typedef char __ctassert[(x) ? 1 : -1] __attribute__((__unused__))
 
@@ -29,6 +29,14 @@ struct thread {
 	long td_retval[2];
 };
 
+struct getrandom_args {
+	void *buf;
+	std::size_t buflen;
+	unsigned int flags;
+};
+
+namespace detail {
+
 struct iovec {
 	void *iov_base;
 	std::size_t iov_len;
@@ -42,12 +50,6 @@ struct uio {
 	int uio_segflg;
 	int uio_rw;
 	thread *uio_td;
-};
-
-struct getrandom_args {
-	void *buf;
-	std::size_t buflen;
-	unsigned int flags;
 };
 
 inline int g_read_random_error;
@@ -93,19 +95,7 @@ read_random_uio(uio *auio, int nonblock)
 	return (0);
 }
 
-} // namespace pbsd::sys_kern::b0146s1::detail
-
-export namespace pbsd::sys_kern::b0146s1 {
-
-using detail::getrandom_args;
-using detail::thread;
-
-#define GRND_NONBLOCK 0x0001
-#define GRND_RANDOM   0x0002
-#define GRND_INSECURE 0x0004
-#define GRND_VALIDFLAGS (GRND_NONBLOCK | GRND_RANDOM | GRND_INSECURE)
-#define IOSIZE_MAX INT_MAX
-#define CTASSERT(x) typedef char __ctassert[(x) ? 1 : -1] __attribute__((__unused__))
+} // namespace detail
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause

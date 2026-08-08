@@ -21,6 +21,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/domainname/domainname_m/port.cppm
   bin/echo/b0171/port.cppm
   bin/ed/b0148/port.cppm
+  bin/ed/b0148s4/port.cppm
   bin/ed/b0193/port.cppm
   bin/getfacl/b0182/port.cppm
   bin/hostname/hostname_m/port.cppm
@@ -107,6 +108,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/b0125/port.cppm
   lib/libc/gen/b0132/port.cppm
   lib/libc/gen/b0132s1/port.cppm
+  lib/libc/gen/b0132s2/port.cppm
   lib/libc/gen/b0132s3/port.cppm
   lib/libc/gen/b0233/port.cppm
   lib/libc/gen/check_utility_compat_m/port.cppm
@@ -483,6 +485,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/kern/b0146/port.cppm
   sys/kern/b0146s1/port.cppm
   sys/kern/b0146s2/port.cppm
+  sys/kern/b0146s3/port.cppm
   sys/kern/b0217/port.cppm
   sys/net/toeplitz_m/port.cppm
   sys/security/mac_none/b0005/port.cppm

@@ -3,6 +3,7 @@
 import pbsd.sys.kern.b0146s1;
 
 #include <cerrno>
+#include <climits>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -30,7 +31,7 @@ static stat_row rows[] = {
 
 enum { R_KERN = 0, R_SYS = 1 };
 
-static uint64_t rng_state = 0x00b0146s1faceULL;
+static uint64_t rng_state = 0x00b0146001faceULL;
 
 static inline uint64_t
 rnd64(void)
@@ -114,8 +115,9 @@ test_kern_getrandom_one(std::size_t buflen, unsigned int flags, int rr_err,
 	port::read_random_configure(rr_err, rr_block, rr_xfer);
 	oracle_read_random_configure(rr_err, rr_block, rr_xfer);
 
-	int pr = port::sys_getrandom(&ptd,
-	    &(port::getrandom_args){ pb + PAD, buflen, flags });
+	port::getrandom_args puap = { pb + PAD, buflen, flags };
+
+	int pr = port::sys_getrandom(&ptd, &puap);
 	int rr = ref_kern_getrandom(&rtd, rb + PAD, buflen, flags);
 
 	if (pr != rr)
@@ -233,12 +235,13 @@ test_hand(void)
 		unsigned char *pb = static_cast<unsigned char *>(std::malloc(total));
 		unsigned char *rb = static_cast<unsigned char *>(std::malloc(total));
 
-		for (int row : { R_KERN, R_SYS }) {
+		for (int ri = 0; ri < 2; ri++) {
+			int row = (ri == 0) ? R_KERN : R_SYS;
 			case_row(row);
 			std::memset(pb, GUARD, total);
 			std::memset(rb, GUARD, total);
-			pb[PAD] = 0x80;
-			rb[PAD] = 0x80;
+			*(pb + PAD) = 0x80;
+			*(rb + PAD) = 0x80;
 
 			port::thread ptd = {};
 			struct thread rtd = {};

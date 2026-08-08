@@ -33,6 +33,15 @@
 
 #define _PATH_DISKTAB	"/etc/disktab"
 
+struct partition {
+	uint32_t p_size;
+	uint32_t p_offset;
+	uint32_t p_fsize;
+	uint8_t  p_fstype;
+	uint8_t  p_frag;
+	uint16_t p_cpg;
+};
+
 struct disklabel {
 	uint32_t d_magic;
 	uint16_t d_type;
@@ -62,14 +71,7 @@ struct disklabel {
 	uint16_t d_npartitions;
 	uint32_t d_bbsize;
 	uint32_t d_sbsize;
-	struct partition {
-		uint32_t p_size;
-		uint32_t p_offset;
-		uint32_t p_fsize;
-		uint8_t  p_fstype;
-		uint8_t  p_frag;
-		uint16_t p_cpg;
-	} d_partitions[BSD_NPARTS_MIN];
+	struct partition d_partitions[BSD_NPARTS_MIN];
 };
 
 #ifdef __cplusplus

@@ -1,21 +1,3 @@
-// PBSD batch b0054s1 -- C++23 module port of usr.bin/cksum/crc32.c.
-//
-// Faithful, behaviour-preserving port.  Signedness, evaluation order,
-// integer promotions, pointer arithmetic and the file-static running
-// total are reproduced exactly as the C original had them.
-
-module;
-
-#include <sys/types.h>
-
-#include <stdio.h>
-#include <stdint.h>
-#include <unistd.h>
-
-export module pbsd.usr.bin.cksum.b0054s1;
-
-namespace pbsd::usr_bin_cksum::b0054s1 {
-
 /*
  * This code implements the AUTODIN II polynomial used by Ethernet,
  * and can be used to calculate multicast address hash indices.
@@ -29,7 +11,26 @@ namespace pbsd::usr_bin_cksum::b0054s1 {
  *			Spencer Garrett <srg@quick.com>
  */
 
+/*
+ * PBSD port of usr.bin/cksum/crc32.c to C++23.  Behaviour preserved
+ * exactly, including the `char' signedness in the CRC macro, the
+ * post-decrement loop control, and the fact that a read error leaves the
+ * file-static crc32_total accumulator in its complemented state.
+ */
+
+module;
+
+#include <sys/types.h>
+
+#include <stdio.h>
+#include <stdint.h>
+#include <unistd.h>
+
+export module pbsd.usr.bin.cksum.b0054s1;
+
 #define CRC(crc, ch)	 (crc = (crc >> 8) ^ crctab[(crc ^ (ch)) & 0xff])
+
+namespace pbsd::usr_bin_cksum::b0054s1 {
 
 /* generated using the AUTODIN II polynomial
  *	x^32 + x^26 + x^23 + x^22 + x^16 +
@@ -104,14 +105,18 @@ static const uint32_t crctab[256] = {
 
 static uint32_t crc32_total = 0;
 
-export int
+} /* namespace pbsd::usr_bin_cksum::b0054s1 */
+
+export namespace pbsd::usr_bin_cksum::b0054s1 {
+
+int
 crc32(int fd, uint32_t *cval, off_t *clen)
 {
     uint32_t lcrc = ~0;
     int nr ;
     off_t len ;
     char buf[BUFSIZ], *p ;
-
+	
     len = 0 ;
     crc32_total = ~crc32_total ;
     while ((nr = read(fd, buf, sizeof(buf))) > 0)
@@ -128,18 +133,17 @@ crc32(int fd, uint32_t *cval, off_t *clen)
     return 0 ;
 }
 
-#undef CRC
-
-export uint32_t
-crc32_total_get()
+/*
+ * Observation hook for the differential harness: crc32_total is file-static
+ * in the original and carries state across calls (including the complemented
+ * state left behind by the error return above), so it has to be readable to
+ * be compared against the reference implementation.  Not part of the ported
+ * interface.
+ */
+uint32_t
+crc32_total_peek(void)
 {
 	return crc32_total;
 }
 
-export void
-crc32_total_set(uint32_t v)
-{
-	crc32_total = v;
-}
-
-} // namespace pbsd::usr_bin_cksum::b0054s1
+} /* namespace pbsd::usr_bin_cksum::b0054s1 */

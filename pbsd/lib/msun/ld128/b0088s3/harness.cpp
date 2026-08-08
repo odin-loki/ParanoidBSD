@@ -4,25 +4,30 @@
 
 #include <cfloat>
 #include <cmath>
-#include <complex>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 
-#define complex _Complex
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 #include <complex.h>
 
 import pbsd.lib.msun.ld128.b0088s3;
 
 namespace port = pbsd::lib_msun_ld128::b0088s3;
 
+#ifndef CMPLXL
+#define CMPLXL(x, y) ((long double _Complex){(long double)(x), (long double)(y)})
+#endif
+#define creall __real__
+#define cimagl __imag__
+
 extern "C" {
 void ref___k_expl(long double, long double *, long double *, int *);
-long double complex ref___ldexp_cexpl(long double complex, int);
-long double complex ref_cexpl(long double complex);
+long double _Complex ref___ldexp_cexpl(long double _Complex, int);
+long double _Complex ref_cexpl(long double _Complex);
 }
-
-using cld = std::complex<long double>;
 
 static bool
 same_ld(long double a, long double b)
@@ -145,7 +150,7 @@ case_kexpl(long double x)
 static void
 case_ldcexpl(long double x, long double y, int expt)
 {
-	long double complex rz, pr, rr;
+	long double _Complex rz, pr, rr;
 
 	st_ldcexpl.cases++;
 	rz = CMPLXL(x, y);
@@ -166,7 +171,7 @@ case_ldcexpl(long double x, long double y, int expt)
 static void
 case_cexpl(long double x, long double y)
 {
-	long double complex rz, pr, rr;
+	long double _Complex rz, pr, rr;
 
 	st_cexpl.cases++;
 	rz = CMPLXL(x, y);

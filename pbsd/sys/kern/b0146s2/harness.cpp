@@ -2,6 +2,7 @@
 
 import pbsd.sys.kern.b0146s2;
 
+#include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -167,8 +168,21 @@ print_logs_equal(const kenv_state &a, const kenv_state &b)
 /* ------------------------------------------------------------------ */
 
 extern "C" {
-struct efi_map_header;
-struct efi_md;
+struct efi_map_header {
+	std::uint64_t memory_size;
+	std::uint64_t descriptor_size;
+	std::uint32_t descriptor_version;
+};
+
+struct efi_md {
+	std::uint32_t md_type;
+	std::uint32_t md_pad;
+	std::uint64_t md_phys;
+	std::uint64_t md_virt;
+	std::uint64_t md_pages;
+	std::uint64_t md_attr;
+};
+
 typedef void (*efi_map_entry_cb)(struct efi_md *p, void *argp);
 
 void ref_efi_map_foreach_entry(struct efi_map_header *, efi_map_entry_cb,
@@ -182,7 +196,7 @@ void ref_efi_map_print_entries(struct efi_map_header *);
 /* Harness helpers                                                    */
 /* ------------------------------------------------------------------ */
 
-static std::uint64_t rng_state = 0x00b0146s2faceULL;
+static std::uint64_t rng_state = 0x00b0146b2faceULL;
 
 static inline std::uint64_t
 rnd64(void)
@@ -274,6 +288,7 @@ fill_desc(port::efi_md *d, std::uint32_t type, std::uint64_t phys,
 }
 
 struct cb_log {
+	const std::uint8_t *blob_base;
 	int count;
 	std::uint32_t types[128];
 	std::uint64_t phys[128];
@@ -291,14 +306,13 @@ port_cb(port::efi_md *p, void *arg)
 		log->phys[log->count] = p->md_phys;
 		log->pages[log->count] = p->md_pages;
 		log->desc_off[log->count] =
-		    reinterpret_cast<std::uint8_t *>(p) -
-		    reinterpret_cast<std::uint8_t *>(log);
+		    reinterpret_cast<std::uint8_t *>(p) - log->blob_base;
 	}
 	log->count++;
 }
 
-extern "C" static void
-ref_cb(struct efi_md *p, void *arg)
+extern "C" void
+ref_cb_c(struct efi_md *p, void *arg)
 {
 	cb_log *log = static_cast<cb_log *>(arg);
 
@@ -307,8 +321,7 @@ ref_cb(struct efi_md *p, void *arg)
 		log->phys[log->count] = p->md_phys;
 		log->pages[log->count] = p->md_pages;
 		log->desc_off[log->count] =
-		    reinterpret_cast<std::uint8_t *>(p) -
-		    reinterpret_cast<std::uint8_t *>(log);
+		    reinterpret_cast<std::uint8_t *>(p) - log->blob_base;
 	}
 	log->count++;
 }
@@ -321,16 +334,6 @@ cb_logs_match(const cb_log &a, const cb_log &b)
 	for (int i = 0; i < a.count && i < 128; i++) {
 		if (a.types[i] != b.types[i] || a.phys[i] != b.phys[i] ||
 		    a.pages[i] != b.pages[i] || a.desc_off[i] != b.desc_off[i])
-			return (false);
-	}
-	return (true);
-}
-
-static bool
-blob_guard_ok(const std::uint8_t *blob, std::size_t blob_size)
-{
-	for (std::size_t i = 0; i < blob_size; i++) {
-		if (blob[i] != GUARD)
 			return (false);
 	}
 	return (true);
@@ -381,8 +384,8 @@ test_foreach_one(int ndesc, std::size_t desc_size, int zero_desc,
 	std::memcpy(rb_copy, rfx.blob, rfx.blob_size);
 
 	cb_log plog = {}, rlog = {};
-	plog.desc_off[0] = 0;
-	rlog.desc_off[0] = 0;
+	plog.blob_base = pfx.blob;
+	rlog.blob_base = rfx.blob;
 
 	pbsd_env_reset();
 	port::efi_map_foreach_entry(pfx.hdr, port_cb, &plog);
@@ -391,7 +394,7 @@ test_foreach_one(int ndesc, std::size_t desc_size, int zero_desc,
 
 	pbsd_env_reset();
 	ref_efi_map_foreach_entry(reinterpret_cast<struct efi_map_header *>(rfx.hdr),
-	    ref_cb, &rlog);
+	    ref_cb_c, &rlog);
 	kenv_state rsnap;
 	kenv_snapshot(&rsnap);
 
