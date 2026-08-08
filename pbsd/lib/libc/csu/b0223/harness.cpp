@@ -622,7 +622,7 @@ void run_finalizer_tests()
 	test_finalizer_case(st_finalizer, 3,
 	    reinterpret_cast<std::uintptr_t>(ref_fini_array_hook), 0);
 
-	prng_seed(0xF1NAL1ZER);
+	prng_seed(0xF1BA11EULL);
 	for (long i = 0; i < RANDOM_ITERATIONS; i++) {
 		int n = static_cast<int>(prng_u32() % 6);
 		std::uintptr_t f0 = (prng_u32() & 3) == 0 ?

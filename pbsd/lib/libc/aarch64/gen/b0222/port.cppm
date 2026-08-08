@@ -6,6 +6,7 @@
 
 module;
 
+#include <cerrno>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
@@ -75,7 +76,6 @@ struct arm64_reg_context {
 #define	STACKALIGN(p)	((std::uint64_t)(p) & ~STACKALIGNBYTES)
 
 extern "C" {
-extern int errno;
 int getcontext(ucontext_t *);
 void exit(int);
 int setcontext(const ucontext_t *);
@@ -119,7 +119,7 @@ __getcontextx_size(void)
 	size = sizeof(ucontext_t);
 	size += sizeof(struct arm64_reg_context); /* Space for ARM64_CTX_END */
 
-	return ((int)size);
+	return (size);
 }
 
 int

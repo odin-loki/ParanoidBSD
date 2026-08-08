@@ -89,7 +89,7 @@ void (*__fini_array_start[64])(void);
 #define __fini_array_end \
 	((void (**)(void))(__fini_array_start + mock_fini_n))
 
-__attribute__((weak)) int _DYNAMIC;
+extern __attribute__((weak)) int _DYNAMIC;
 
 int mock_crt1_handle_rela_calls;
 const Elf_Rela *mock_crt1_handle_rela_args[256];
@@ -217,13 +217,13 @@ _init_tls(void)
 }
 
 void
-_init(void)
+mock__init(void)
 {
 	mock_init_calls++;
 }
 
 void
-_fini(void)
+mock__fini(void)
 {
 	mock_fini_calls++;
 }
@@ -267,6 +267,8 @@ exit(int status)
 #define handle_static_init ref_handle_static_init
 #define process_irelocs ref_process_irelocs
 #define finalizer ref_finalizer
+#define _init mock__init
+#define _fini mock__fini
 
 /* ------------------------------------------------------------------ */
 /* libc_start1.c bodies (UNMODIFIED)                                  */
@@ -460,3 +462,5 @@ ref_test_handle_irelocs(char *env[])
 #undef handle_static_init
 #undef process_irelocs
 #undef finalizer
+#undef _init
+#undef _fini

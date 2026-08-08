@@ -152,15 +152,19 @@ int __libc_sigprocmask(int how, const sigset_t *set, sigset_t *oset)
 		mock_mask = *set;
 		break;
 	case SIG_BLOCK: {
-		sigset_t tmp;
-		sigorset(&tmp, &mock_mask, set);
-		mock_mask = tmp;
+		size_t words = sizeof(mock_mask) / sizeof(mock_mask.__bits[0]);
+		size_t i;
+
+		for (i = 0; i < words; i++)
+			mock_mask.__bits[i] |= set->__bits[i];
 		break;
 	}
 	case SIG_UNBLOCK: {
-		sigset_t tmp;
-		sigandnset(&tmp, &mock_mask, set);
-		mock_mask = tmp;
+		size_t words = sizeof(mock_mask) / sizeof(mock_mask.__bits[0]);
+		size_t i;
+
+		for (i = 0; i < words; i++)
+			mock_mask.__bits[i] &= ~set->__bits[i];
 		break;
 	}
 	default:

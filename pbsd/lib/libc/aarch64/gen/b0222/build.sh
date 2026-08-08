@@ -21,7 +21,7 @@ cd "$builddir"
 
 CFLAGS="-std=c11 -O2"
 CXXFLAGS="-std=c++23 -O2"
-LDFLAGS="-Wl,--wrap=malloc"
+LDFLAGS="-Wl,--wrap=malloc -Wl,--wrap=exit -Wl,--wrap=abort"
 
 modname=pbsd.lib.libc.aarch64.gen.b0222
 

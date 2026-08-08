@@ -78,8 +78,8 @@ void crt1_handle_rela(const Elf_Rela *r);
 void crt1_handle_rel(const Elf_Rel *r);
 void ifunc_init(const Elf_Auxinfo *aux);
 void _init_tls();
-void _init();
-void _fini();
+void mock__init();
+void mock__fini();
 void _mcleanup();
 void monstartup(void *eprolp, void *etextp);
 int atexit(void (*fn)(void));
@@ -105,6 +105,9 @@ namespace {
 
 #define __fini_array_end \
 	((void (**)(void))(__fini_array_start + mock_fini_n))
+
+#define _init mock__init
+#define _fini mock__fini
 
 #if defined(CRT_IRELOC_RELA)
 

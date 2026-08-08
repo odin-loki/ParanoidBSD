@@ -1,0 +1,10 @@
+{
+  "batch": "b0211",
+  "verified": "2026-08-08T13:34:17Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\nmntfs_reclaim               52035            0\nmntfs_allocvp               52085            0\nmntfs_freevp                52182            0\nmntfs lifecycle             51378            0\nmntfs_vnodeops                  6            0\n-------------------- ------------ ------------\nTOTAL                      207686            0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/fs/mntfs/mntfs_vnops.c": "5a33425d5d434f20"
+  }
+}

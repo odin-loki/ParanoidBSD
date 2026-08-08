@@ -1108,6 +1108,8 @@ for key in ["vfs_hash", "kern_tslog", "subr_clockcalib", "subr_stack"]:
 port_sources = port_sources.replace(
     "vfs_hash_tbl = hashinit(", "vfs_hash_tbl = (vfs_hash_head *)hashinit(")
 port_sources = port_sources.replace(
+    "vfs_hash_newtbl = hashinit(", "vfs_hash_newtbl = (vfs_hash_head *)hashinit(")
+port_sources = port_sources.replace(
     "atomic_load_ptr(&timecounter)", "atomic_load_ptr(&g_timecounter)")
 
 port_sources = port_sources.replace(
@@ -1175,20 +1177,13 @@ using sysctl_req = detail::sysctl_req;
 using sysinit_tslog = detail::sysinit_tslog;
 using timecounter = detail::timecounter;
 
-inline constexpr int M_WAITOK = detail::M_WAITOK;
-inline constexpr int TS_ENTER = detail::TS_ENTER;
-inline constexpr int TS_EXIT = detail::TS_EXIT;
-inline constexpr int TS_THREAD = detail::TS_THREAD;
-inline constexpr int TS_EVENT = detail::TS_EVENT;
-inline constexpr int STACK_SBUF_FMT_LONG = detail::STACK_SBUF_FMT_LONG;
-
 inline void malloc_fail_at(int n) {{ detail::model_malloc_fail = n; }}
 inline void set_vget_enoent(int v) {{ detail::model_vget_enoent = v; }}
 inline void set_vget_error(int v) {{ detail::model_vget_error = v; }}
 inline void set_linker_fail(int v) {{ detail::model_linker_fail = v; }}
 inline void set_linker_block(int v) {{ detail::model_linker_block = v; }}
 inline void set_bootverbose(int v) {{ detail::bootverbose = v; }}
-inline void set_timecounter(timecounter *tc) {{ detail::timecounter = tc; }}
+inline void set_timecounter(timecounter *tc) {{ detail::g_timecounter = tc; }}
 inline void set_sbuf_fail(int v) {{ detail::model_sbuf_fail = v; }}
 inline int ktr_count() {{ return detail::model_ktr_n; }}
 inline const char *out_text() {{ return detail::model_out; }}
@@ -1629,10 +1624,10 @@ static void test_stack_sbuf(void) {{
 	rsb->s_buf = (char *)(rblob + PAD + 64);
 	rsb->s_size = 256; rsb->s_len = 0; rsb->s_error = 0;
 	std::memset(rsb->s_buf, GUARD, rsb->s_size);
-	struct stack rst = st;
+	struct stack rst{{}}; std::memcpy(&rst, &st, sizeof(rst));
 	case_row(R_STACK_SBUF_PRINT_FLAGS);
 	reset_port();
-	int pe = port::stack_sbuf_print_flags(sb, &st, 2, (port::stack_sbuf_fmt)1);
+	int pe = port::stack_sbuf_print_flags(sb, &st, 2, 1);
 	reset_ref();
 	int re = ref_stack_sbuf_print_flags(rsb, &rst, 2, 1);
 	if (pe != re) fail_row(R_STACK_SBUF_PRINT_FLAGS, "ret", "mismatch");
@@ -1671,8 +1666,8 @@ static void test_vfs_hand(void) {{
 }}
 
 static void test_tslog_hand(void) {{
-	test_tslog_one(nullptr, port::TS_ENTER, "fn", "arg");
-	test_tslog_one(&port::thread0, port::TS_EXIT, "x", nullptr);
+	test_tslog_one(nullptr, 0, "fn", "arg");
+	test_tslog_one(nullptr, 1, "x", nullptr);
 	test_tslog_user(1, 2, nullptr, nullptr);
 	test_tslog_user(1, -1, "exec", nullptr);
 	test_tslog_user(1, -1, nullptr, "/path");
@@ -1692,26 +1687,20 @@ static void test_stack_hand(void) {{
 
 static void sweep_vfs(void) {{
 	for (long i = 0; i < SWEEP; i++) {{
-		reset_env();
 		test_vfs_hash_index();
-		reset_env();
 		test_vfs_hash_insert_get_one((unsigned int)(rnd32() % 500), (int)(rnd32() & 1));
-		if ((rnd32() % 50) == 0) {{
-			reset_env();
+		if ((rnd32() % 50) == 0)
 			test_vfs_hash_changesize((unsigned long)(rnd32() % 512 + 1));
-		}}
 	}}
 }}
 
 static void sweep_tslog(void) {{
 	for (long i = 0; i < SWEEP; i++) {{
-		reset_env();
 		test_tslog_one(nullptr, (int)(rnd32() % 4), "f", (rnd32() & 1) ? "s" : nullptr);
-		if ((rnd32() % 10) == 0) {{
-			reset_env();
-			test_tslog_user((int)(rnd32() % 100), (int)(rnd32() % 2 ? -1 : (int)(rnd32() % 50)),
+		if ((rnd32() % 10) == 0)
+			test_tslog_user((int)(rnd32() % 100),
+			    (int)(rnd32() % 2 ? -1 : (int)(rnd32() % 50)),
 			    (rnd32() & 1) ? "e" : nullptr, (rnd32() & 2) ? "/n" : nullptr);
-		}}
 	}}
 }}
 
@@ -1719,19 +1708,15 @@ static void sweep_clockcalib(void) {{
 	for (long i = 0; i < SWEEP; i++) {{
 		g_clk_mul = (uint64_t)(rnd32() % 10000 + 1);
 		g_tc_step = (uint64_t)(rnd32() % 7 + 1);
-		reset_env();
 		test_clockcalib();
 	}}
 }}
 
 static void sweep_stack(void) {{
 	for (long i = 0; i < SWEEP; i++) {{
-		reset_env();
 		test_stack_lifecycle();
-		if ((rnd32() % 20) == 0) {{
-			reset_env();
+		if ((rnd32() % 20) == 0)
 			test_stack_prints();
-		}}
 	}}
 }}
 

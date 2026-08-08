@@ -116,7 +116,7 @@ inline u_long desiredvnodes = 64;
 inline int bootverbose = 0;
 inline thread thread0{};
 inline thread *curthread = &thread0;
-inline timecounter *timecounter = nullptr;
+inline timecounter *g_timecounter = nullptr;
 
 #ifndef TSLOGSIZE
 #define TSLOGSIZE 4096
@@ -822,7 +822,7 @@ tslog_reset(void)
 uint64_t
 clockcalib(uint64_t (*clk)(void), const char *clkname)
 {
-	struct timecounter *tc = atomic_load_ptr(&timecounter);
+	struct timecounter *tc = atomic_load_ptr(&g_timecounter);
 	uint64_t clk0, clk1, clk_delay, n, passes = 0;
 	uint64_t t0, t1, tadj, tlast;
 	double mu_clk = 0;
@@ -1254,20 +1254,13 @@ using sysctl_req = detail::sysctl_req;
 using sysinit_tslog = detail::sysinit_tslog;
 using timecounter = detail::timecounter;
 
-inline constexpr int M_WAITOK = detail::M_WAITOK;
-inline constexpr int TS_ENTER = detail::TS_ENTER;
-inline constexpr int TS_EXIT = detail::TS_EXIT;
-inline constexpr int TS_THREAD = detail::TS_THREAD;
-inline constexpr int TS_EVENT = detail::TS_EVENT;
-inline constexpr int STACK_SBUF_FMT_LONG = detail::STACK_SBUF_FMT_LONG;
-
 inline void malloc_fail_at(int n) { detail::model_malloc_fail = n; }
 inline void set_vget_enoent(int v) { detail::model_vget_enoent = v; }
 inline void set_vget_error(int v) { detail::model_vget_error = v; }
 inline void set_linker_fail(int v) { detail::model_linker_fail = v; }
 inline void set_linker_block(int v) { detail::model_linker_block = v; }
 inline void set_bootverbose(int v) { detail::bootverbose = v; }
-inline void set_timecounter(timecounter *tc) { detail::timecounter = tc; }
+inline void set_timecounter(timecounter *tc) { detail::g_timecounter = tc; }
 inline void set_sbuf_fail(int v) { detail::model_sbuf_fail = v; }
 inline int ktr_count() { return detail::model_ktr_n; }
 inline const char *out_text() { return detail::model_out; }

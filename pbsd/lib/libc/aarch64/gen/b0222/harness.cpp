@@ -1,19 +1,16 @@
 /*
  * Differential harness for batch b0222: pbsd.lib.libc.aarch64.gen.b0222 against
  * the unmodified C oracle in oracle.c.
- *
- * getcontext, exit, setcontext, abort and malloc are deterministic test doubles
- * so both sides observe the same environment on x86_64.
  */
 
 #include <cerrno>
 #include <climits>
+#include <cinttypes>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cinttypes>
 
 import pbsd.lib.libc.aarch64.gen.b0222;
 
@@ -82,8 +79,6 @@ void ref_ctx_done(ref_abi::ucontext *ucp);
 void ref___makecontext(ref_abi::ucontext *ucp, void (*func)(void), int argc, ...);
 }
 
-/* ------------------------------------------------------------------------ */
-
 enum {
 	F_GETCONTEXTX_SIZE,
 	F_FILLCONTEXTX2,
@@ -121,10 +116,6 @@ report(int f, const char *ctx, const char *detail)
 	}
 }
 
-/* ------------------------------------------------------------------------ */
-/* Test doubles                                                           */
-/* ------------------------------------------------------------------------ */
-
 static int g_getcontext_fail;
 static int g_getcontext_errno = EINTR;
 static unsigned g_getcontext_seq;
@@ -145,34 +136,36 @@ _ctx_start(void)
 }
 
 extern "C" int
-getcontext(ucontext_t *ucp)
+getcontext(void *ucp)
 {
+	auto *u = (ref_abi::ucontext *)ucp;
+
 	if (g_getcontext_fail) {
 		errno = g_getcontext_errno;
 		return (-1);
 	}
-	std::memset(ucp, 0xa5, sizeof(*ucp));
-	ucp->uc_flags = (int)(0xbe000000u | (++g_getcontext_seq));
-	ucp->uc_mcontext.mc_gpregs.gp_x[0] = (__register_t)g_getcontext_seq;
+	std::memset(u, 0xa5, sizeof(*u));
+	u->uc_flags = (int)(0xbe000000u | (++g_getcontext_seq));
+	u->uc_mcontext.mc_gpregs.gp_x[0] = (ref_abi::__register_t)g_getcontext_seq;
 	return (0);
 }
 
 extern "C" void
-exit(int status)
+__wrap_exit(int status)
 {
 	g_done_log.exit_called = 1;
 	g_done_log.exit_status = status;
 }
 
 extern "C" int
-setcontext(const ucontext_t *ucp)
+setcontext(const ref_abi::ucontext *ucp)
 {
-	g_done_log.setcontext_arg = (ucontext_t *)ucp;
+	g_done_log.setcontext_arg = (ref_abi::ucontext *)ucp;
 	return (0);
 }
 
 extern "C" void
-abort(void)
+__wrap_abort(void)
 {
 	g_done_log.abort_called = 1;
 }
@@ -198,10 +191,6 @@ mock_reset(void)
 	std::memset(&g_done_log, 0, sizeof g_done_log);
 }
 
-/* ------------------------------------------------------------------------ */
-/* PRNG                                                                     */
-/* ------------------------------------------------------------------------ */
-
 static uint64_t rng_state = 0x243f6a8885a308d3ULL;
 
 static uint64_t
@@ -225,13 +214,8 @@ rand_u64(void)
 static int
 rand_argc(void)
 {
-	long long v = (long long)(nextr() % 13) - 2;
-	return ((int)v);
+	return ((int)((long long)(nextr() % 13) - 2));
 }
-
-/* ------------------------------------------------------------------------ */
-/* Guarded context buffer                                                   */
-/* ------------------------------------------------------------------------ */
 
 static const unsigned char GUARD_BYTE = 0x7f;
 static const size_t GUARD = 64;
@@ -301,60 +285,58 @@ buf_same(const CtxBuf &a, const CtxBuf &b, char *msg, size_t msgsz)
 	return (true);
 }
 
-static void
-dummy_func0(void)
-{
-}
-
-static void
-dummy_func1(void)
-{
-}
+static void dummy_func0(void) {}
+static void dummy_func1(void) {}
 
 static void (*const dummy_funcs[])(void) = {
 	dummy_func0, dummy_func1, dummy_func0, dummy_func1
 };
 
 static void
-invoke_makecontext(void (*fn)(ucontext_t *, void (*)(void), int, ...),
-    ucontext_t *ucp, void (*func)(void), int argc, const uint64_t args[8])
+invoke_makecontext_ref(ref_abi::ucontext *ucp, void (*func)(void), int argc,
+    const uint64_t args[8])
 {
+	if (argc < 0 || argc > 8) {
+		ref___makecontext(ucp, func, argc);
+		return;
+	}
 	switch (argc) {
-	case 0:
-		fn(ucp, func, 0);
-		break;
-	case 1:
-		fn(ucp, func, 1, args[0]);
-		break;
-	case 2:
-		fn(ucp, func, 2, args[0], args[1]);
-		break;
-	case 3:
-		fn(ucp, func, 3, args[0], args[1], args[2]);
-		break;
-	case 4:
-		fn(ucp, func, 4, args[0], args[1], args[2], args[3]);
-		break;
-	case 5:
-		fn(ucp, func, 5, args[0], args[1], args[2], args[3], args[4]);
-		break;
-	case 6:
-		fn(ucp, func, 6, args[0], args[1], args[2], args[3], args[4],
-		    args[5]);
-		break;
-	case 7:
-		fn(ucp, func, 7, args[0], args[1], args[2], args[3], args[4],
-		    args[5], args[6]);
-		break;
-	default:
-		fn(ucp, func, 8, args[0], args[1], args[2], args[3], args[4],
-		    args[5], args[6], args[7]);
-		break;
+	case 0: ref___makecontext(ucp, func, 0); break;
+	case 1: ref___makecontext(ucp, func, 1, args[0]); break;
+	case 2: ref___makecontext(ucp, func, 2, args[0], args[1]); break;
+	case 3: ref___makecontext(ucp, func, 3, args[0], args[1], args[2]); break;
+	case 4: ref___makecontext(ucp, func, 4, args[0], args[1], args[2], args[3]); break;
+	case 5: ref___makecontext(ucp, func, 5, args[0], args[1], args[2], args[3], args[4]); break;
+	case 6: ref___makecontext(ucp, func, 6, args[0], args[1], args[2], args[3], args[4], args[5]); break;
+	case 7: ref___makecontext(ucp, func, 7, args[0], args[1], args[2], args[3], args[4], args[5], args[6]); break;
+	default: ref___makecontext(ucp, func, 8, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]); break;
 	}
 }
 
 static void
-setup_ucp(ucontext_t *ucp, uintptr_t sp_base, size_t ss_size, int ss_flags)
+invoke_makecontext_port(port::ucontext_t *ucp, void (*func)(void), int argc,
+    const uint64_t args[8])
+{
+	if (argc < 0 || argc > 8) {
+		port::__makecontext(ucp, func, argc);
+		return;
+	}
+	switch (argc) {
+	case 0: port::__makecontext(ucp, func, 0); break;
+	case 1: port::__makecontext(ucp, func, 1, args[0]); break;
+	case 2: port::__makecontext(ucp, func, 2, args[0], args[1]); break;
+	case 3: port::__makecontext(ucp, func, 3, args[0], args[1], args[2]); break;
+	case 4: port::__makecontext(ucp, func, 4, args[0], args[1], args[2], args[3]); break;
+	case 5: port::__makecontext(ucp, func, 5, args[0], args[1], args[2], args[3], args[4]); break;
+	case 6: port::__makecontext(ucp, func, 6, args[0], args[1], args[2], args[3], args[4], args[5]); break;
+	case 7: port::__makecontext(ucp, func, 7, args[0], args[1], args[2], args[3], args[4], args[5], args[6]); break;
+	default: port::__makecontext(ucp, func, 8, args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7]); break;
+	}
+}
+
+static void
+setup_ucp_port(port::ucontext_t *ucp, uintptr_t sp_base, size_t ss_size,
+    int ss_flags)
 {
 	std::memset(ucp, 0, sizeof(*ucp));
 	ucp->uc_stack.ss_sp = (void *)sp_base;
@@ -362,9 +344,15 @@ setup_ucp(ucontext_t *ucp, uintptr_t sp_base, size_t ss_size, int ss_flags)
 	ucp->uc_stack.ss_flags = ss_flags;
 }
 
-/* ------------------------------------------------------------------------ */
-/* Per-function testers                                                     */
-/* ------------------------------------------------------------------------ */
+static void
+setup_ucp_ref(ref_abi::ucontext *ucp, uintptr_t sp_base, size_t ss_size,
+    int ss_flags)
+{
+	std::memset(ucp, 0, sizeof(*ucp));
+	ucp->uc_stack.ss_sp = (void *)sp_base;
+	ucp->uc_stack.ss_size = ss_size;
+	ucp->uc_stack.ss_flags = ss_flags;
+}
 
 static void
 op_getcontextx_size(const char *ctx)
@@ -478,7 +466,7 @@ op_getcontextx(int malloc_fail, int gc_fail, int gc_errno, const char *ctx)
 	g_getcontext_fail = gc_fail;
 	g_getcontext_errno = gc_errno;
 	errno = save_errno;
-	ucontext_t *pa = port::__getcontextx();
+	port::ucontext_t *pa = port::__getcontextx();
 	int err_a = errno;
 	size_t sz = (size_t)port::__getcontextx_size();
 
@@ -487,7 +475,7 @@ op_getcontextx(int malloc_fail, int gc_fail, int gc_errno, const char *ctx)
 	g_getcontext_fail = gc_fail;
 	g_getcontext_errno = gc_errno;
 	errno = save_errno;
-	ucontext_t *pb = ref___getcontextx();
+	ref_abi::ucontext *pb = ref___getcontextx();
 	int err_b = errno;
 
 	if ((pa == nullptr) != (pb == nullptr)) {
@@ -497,17 +485,12 @@ op_getcontextx(int malloc_fail, int gc_fail, int gc_errno, const char *ctx)
 		goto cleanup;
 	}
 	if (err_a != err_b) {
-		std::snprintf(msg, sizeof msg, "errno port=%d ref=%d", err_a,
-		    err_b);
+		std::snprintf(msg, sizeof msg, "errno port=%d ref=%d", err_a, err_b);
 		report(F_GETCONTEXTX, ctx, msg);
 		goto cleanup;
 	}
-	if (pa != nullptr) {
-		if (std::memcmp(pa, pb, sz) != 0) {
-			std::snprintf(msg, sizeof msg, "ctx content mismatch");
-			report(F_GETCONTEXTX, ctx, msg);
-		}
-	}
+	if (pa != nullptr && std::memcmp(pa, pb, sz) != 0)
+		report(F_GETCONTEXTX, ctx, "ctx content mismatch");
 
 cleanup:
 	std::free(pa);
@@ -515,33 +498,39 @@ cleanup:
 }
 
 static void
-op_makecontext(ucontext_t *ucp_port, ucontext_t *ucp_ref, void (*func)(void),
-    int argc, const uint64_t args[8], const char *ctx)
+op_makecontext(port::ucontext_t *ucp_port, ref_abi::ucontext *ucp_ref,
+    void (*func)(void), int argc, const uint64_t args[8], const char *ctx)
 {
 	char msg[256];
-	ucontext_t snap_port = *ucp_port;
-	ucontext_t snap_ref = *ucp_ref;
 
 	ncases[F_MAKECONTEXT]++;
 
-	mock_reset();
-	invoke_makecontext(
-	    (void (*)(ucontext_t *, void (*)(void), int, ...))port::__makecontext,
-	    ucp_port, func, argc, args);
-
-	mock_reset();
-	invoke_makecontext(ref___makecontext, ucp_ref, func, argc, args);
-
-	if (std::memcmp(&snap_port, &snap_ref, sizeof(ucontext_t)) != 0) {
-		report(F_MAKECONTEXT, ctx, "input ucontext mutated");
+	if (ucp_port == nullptr && ucp_ref == nullptr) {
+		mock_reset();
+		invoke_makecontext_port(nullptr, func, argc, args);
+		mock_reset();
+		invoke_makecontext_ref(nullptr, func, argc, args);
 		return;
 	}
-	if (std::memcmp(ucp_port, ucp_ref, sizeof(ucontext_t)) != 0) {
-		for (size_t off = 0; off < sizeof(ucontext_t); off++) {
-			const unsigned char *ap =
-			    (const unsigned char *)ucp_port;
-			const unsigned char *bp =
-			    (const unsigned char *)ucp_ref;
+	if (ucp_port == nullptr || ucp_ref == nullptr)
+		return;
+
+	port::ucontext_t snap_port = *ucp_port;
+	ref_abi::ucontext snap_ref = *ucp_ref;
+
+	mock_reset();
+	invoke_makecontext_port(ucp_port, func, argc, args);
+	mock_reset();
+	invoke_makecontext_ref(ucp_ref, func, argc, args);
+
+	if (std::memcmp(&snap_port, &snap_ref, sizeof(snap_port)) != 0) {
+		report(F_MAKECONTEXT, ctx, "input ucontext mismatch before call");
+		return;
+	}
+	if (std::memcmp(ucp_port, ucp_ref, sizeof(snap_port)) != 0) {
+		for (size_t off = 0; off < sizeof(snap_port); off++) {
+			const unsigned char *ap = (const unsigned char *)ucp_port;
+			const unsigned char *bp = (const unsigned char *)ucp_ref;
 			if (ap[off] != bp[off]) {
 				std::snprintf(msg, sizeof msg,
 				    "uc mismatch at %zu port=%02x ref=%02x",
@@ -554,7 +543,8 @@ op_makecontext(ucontext_t *ucp_port, ucontext_t *ucp_ref, void (*func)(void),
 }
 
 static void
-op_ctx_done(ucontext_t *ucp_port, ucontext_t *ucp_ref, const char *ctx)
+op_ctx_done(port::ucontext_t *ucp_port, ref_abi::ucontext *ucp_ref,
+    const char *ctx)
 {
 	char msg[256];
 	DoneLog la, lb;
@@ -588,92 +578,49 @@ op_ctx_done(ucontext_t *ucp_port, ucontext_t *ucp_ref, const char *ctx)
 		return;
 	}
 	if ((la.setcontext_arg == nullptr) != (lb.setcontext_arg == nullptr)) {
-		std::snprintf(msg, sizeof msg, "setcontext null mismatch");
-		report(F_CTX_DONE, ctx, msg);
+		report(F_CTX_DONE, ctx, "setcontext null mismatch");
 		return;
 	}
 	if (la.setcontext_arg != nullptr &&
-	    la.setcontext_arg != ucp_port->uc_link) {
-		std::snprintf(msg, sizeof msg, "port setcontext arg mismatch");
-		report(F_CTX_DONE, ctx, msg);
+	    (void *)la.setcontext_arg != (void *)ucp_port->uc_link) {
+		report(F_CTX_DONE, ctx, "port setcontext arg mismatch");
 		return;
 	}
 	if (lb.setcontext_arg != nullptr &&
 	    lb.setcontext_arg != ucp_ref->uc_link) {
-		std::snprintf(msg, sizeof msg, "ref setcontext arg mismatch");
-		report(F_CTX_DONE, ctx, msg);
+		report(F_CTX_DONE, ctx, "ref setcontext arg mismatch");
 		return;
 	}
 }
 
-/* ------------------------------------------------------------------------ */
-/* Edge cases                                                               */
-/* ------------------------------------------------------------------------ */
+static void edge_getcontextx_size(void) { op_getcontextx_size("edge/size"); }
 
-static void
-edge_getcontextx_size(void)
-{
-	op_getcontextx_size("edge/size");
-}
-
-static void
-edge_fillcontextx2(void)
+static void edge_fillcontextx2(void)
 {
 	size_t sz = (size_t)port::__getcontextx_size();
-	CtxBuf b;
-	char ctx[64];
-
-	b.init(sz);
-	b.fill_pattern(0x00);
-	std::snprintf(ctx, sizeof ctx, "edge/fill2/zero");
-	op_fillcontextx2(b, ctx);
-	b.freebuf();
-
-	b.init(sz);
-	b.fill_pattern(0xff);
-	std::snprintf(ctx, sizeof ctx, "edge/fill2/ff");
-	op_fillcontextx2(b, ctx);
-	b.freebuf();
-
-	b.init(sz);
-	b.fill_random();
-	std::snprintf(ctx, sizeof ctx, "edge/fill2/random");
-	op_fillcontextx2(b, ctx);
-	b.freebuf();
+	op_fillcontextx2(sz, 0, "edge/fill2/zero");
+	op_fillcontextx2(sz, 1, "edge/fill2/ff");
+	op_fillcontextx2(sz, 3, "edge/fill2/random");
 }
 
-static void
-edge_fillcontextx(void)
+static void edge_fillcontextx(void)
 {
 	size_t sz = (size_t)port::__getcontextx_size();
-	CtxBuf b;
-	char ctx[64];
-
-	b.init(sz);
-	b.fill_pattern(0x80);
-	std::snprintf(ctx, sizeof ctx, "edge/fill/ok");
-	op_fillcontextx(b, 0, 0, ctx);
-	b.freebuf();
-
-	b.init(sz);
-	b.fill_pattern(0x7f);
-	std::snprintf(ctx, sizeof ctx, "edge/fill/fail");
-	op_fillcontextx(b, 1, EAGAIN, ctx);
-	b.freebuf();
+	op_fillcontextx(sz, 0, 0, 0, "edge/fill/ok");
+	op_fillcontextx(sz, 0, 1, EAGAIN, "edge/fill/fail");
 }
 
-static void
-edge_getcontextx(void)
+static void edge_getcontextx(void)
 {
 	op_getcontextx(1, 0, 0, "edge/getx/malloc-fail");
 	op_getcontextx(0, 1, ENOMEM, "edge/getx/gc-fail");
 	op_getcontextx(0, 0, 0, "edge/getx/ok");
 }
 
-static void
-edge_makecontext(void)
+static void edge_makecontext(void)
 {
-	ucontext_t up, ur, linkp, linkr;
+	port::ucontext_t up;
+	ref_abi::ucontext ur;
 	unsigned char stackp[256], stackr[256];
 	uint64_t args[8];
 	char ctx[96];
@@ -683,132 +630,94 @@ edge_makecontext(void)
 	for (int ai = 0; ai < (int)(sizeof argcs / sizeof argcs[0]); ai++) {
 		int argc = argcs[ai];
 		for (size_t si = 0; si < sizeof sizes / sizeof sizes[0]; si++) {
-			for (int fi = 0; fi < (int)(sizeof dummy_funcs /
-			    sizeof dummy_funcs[0]); fi++) {
+			for (int fi = 0; fi < (int)(sizeof dummy_funcs / sizeof dummy_funcs[0]); fi++) {
 				std::memset(&up, 0, sizeof up);
 				std::memset(&ur, 0, sizeof ur);
 				std::memset(stackp, 0xa5, sizeof stackp);
 				std::memset(stackr, 0xa5, sizeof stackr);
-				setup_ucp(&up, (uintptr_t)stackp, sizes[si],
-				    0);
-				setup_ucp(&ur, (uintptr_t)stackr, sizes[si],
-				    0);
+				setup_ucp_port(&up, (uintptr_t)stackp, sizes[si], 0);
+				setup_ucp_ref(&ur, (uintptr_t)stackr, sizes[si], 0);
 				for (int k = 0; k < 8; k++)
-					args[k] = (uint64_t)(0x80 + k) |
-					    ((uint64_t)k << 32);
+					args[k] = (uint64_t)(0x80 + k) | ((uint64_t)k << 32);
 				std::snprintf(ctx, sizeof ctx,
-				    "edge/make/argc=%d/size=%zu/f=%d", argc,
-				    sizes[si], fi);
-				op_makecontext(&up, &ur, dummy_funcs[fi], argc,
-				    args, ctx);
+				    "edge/make/argc=%d/size=%zu/f=%d", argc, sizes[si], fi);
+				op_makecontext(&up, &ur, dummy_funcs[fi], argc, args, ctx);
 			}
 		}
 	}
-
-	/* NULL ucp */
 	std::snprintf(ctx, sizeof ctx, "edge/make/null");
 	op_makecontext(nullptr, nullptr, dummy_func0, 3, args, ctx);
-
-	/* unaligned stack end exercises STACKALIGN */
 	for (uintptr_t base = 1; base <= 32; base++) {
 		std::memset(&up, 0, sizeof up);
 		std::memset(&ur, 0, sizeof ur);
-		setup_ucp(&up, base, 32, 0);
-		setup_ucp(&ur, base + 4096, 32, 0);
+		setup_ucp_port(&up, base, 32, 0);
+		setup_ucp_ref(&ur, base + 4096, 32, 0);
 		for (int k = 0; k < 8; k++)
 			args[k] = rand_u64();
-		std::snprintf(ctx, sizeof ctx, "edge/make/align/base=%ju",
-		    (uintmax_t)base);
+		std::snprintf(ctx, sizeof ctx, "edge/make/align/base=%ju", (uintmax_t)base);
 		op_makecontext(&up, &ur, dummy_func1, 8, args, ctx);
 	}
 }
 
-static void
-edge_ctx_done(void)
+static void edge_ctx_done(void)
 {
-	ucontext_t up, ur, lp, lr;
+	port::ucontext_t up, lp_port;
+	ref_abi::ucontext ur, lr_ref;
 	char ctx[64];
 
 	std::memset(&up, 0, sizeof up);
 	std::memset(&ur, 0, sizeof ur);
 	up.uc_link = nullptr;
 	ur.uc_link = nullptr;
-	std::snprintf(ctx, sizeof ctx, "edge/done/no-link");
-	op_ctx_done(&up, &ur, ctx);
+	op_ctx_done(&up, &ur, "edge/done/no-link");
 
-	std::memset(&lp, 0xcc, sizeof lp);
-	std::memset(&lr, 0xcc, sizeof lr);
+	std::memset(&lp_port, 0xcc, sizeof lp_port);
+	std::memset(&lr_ref, 0xcc, sizeof lr_ref);
 	std::memset(&up, 0, sizeof up);
 	std::memset(&ur, 0, sizeof ur);
-	up.uc_link = &lp;
-	ur.uc_link = &lr;
-	std::snprintf(ctx, sizeof ctx, "edge/done/with-link");
-	op_ctx_done(&up, &ur, ctx);
+	up.uc_link = &lp_port;
+	ur.uc_link = &lr_ref;
+	op_ctx_done(&up, &ur, "edge/done/with-link");
 }
-
-/* ------------------------------------------------------------------------ */
-/* Random sweeps                                                            */
-/* ------------------------------------------------------------------------ */
 
 static const long SWEEP = 200000;
 
-static void
-sweep_getcontextx_size(void)
+static void sweep_getcontextx_size(void)
 {
 	char ctx[64];
-
 	for (long i = 0; i < SWEEP; i++) {
 		std::snprintf(ctx, sizeof ctx, "sweep/size[%ld]", i);
 		op_getcontextx_size(ctx);
 	}
 }
 
-static void
-sweep_fillcontextx2(void)
+static void sweep_fillcontextx2(void)
 {
 	size_t sz = (size_t)port::__getcontextx_size();
 	char ctx[64];
-
 	for (long i = 0; i < SWEEP; i++) {
-		CtxBuf b;
-		b.init(sz);
-		if (i % 3 == 0)
-			b.fill_pattern((unsigned char)(rand_u64() & 0xff));
-		else if (i % 3 == 1)
-			b.fill_pattern(0x00);
-		else
-			b.fill_random();
 		std::snprintf(ctx, sizeof ctx, "sweep/fill2[%ld]", i);
-		op_fillcontextx2(b, ctx);
-		b.freebuf();
+		op_fillcontextx2(sz, (int)(i % 4), ctx);
 	}
 }
 
-static void
-sweep_fillcontextx(void)
+static void sweep_fillcontextx(void)
 {
 	size_t sz = (size_t)port::__getcontextx_size();
 	char ctx[64];
-
 	for (long i = 0; i < SWEEP; i++) {
-		CtxBuf b;
-		b.init(sz);
-		b.fill_random();
 		int fail = (int)(nextr() % 5 == 0);
 		int err = (int)(nextr() & 0x7fffffff);
 		if (err == 0)
 			err = EIO;
 		std::snprintf(ctx, sizeof ctx, "sweep/fill[%ld]", i);
-		op_fillcontextx(b, fail, err, ctx);
-		b.freebuf();
+		op_fillcontextx(sz, (int)(i & 1), fail, err, ctx);
 	}
 }
 
-static void
-sweep_getcontextx(void)
+static void sweep_getcontextx(void)
 {
 	char ctx[64];
-
 	for (long i = 0; i < SWEEP; i++) {
 		int mf = (int)(nextr() % 17 == 0);
 		int gf = mf ? 0 : (int)(nextr() % 11 == 0);
@@ -820,10 +729,10 @@ sweep_getcontextx(void)
 	}
 }
 
-static void
-sweep_makecontext(void)
+static void sweep_makecontext(void)
 {
-	ucontext_t up, ur;
+	port::ucontext_t up;
+	ref_abi::ucontext ur;
 	unsigned char stackp[512], stackr[512];
 	uint64_t args[8];
 	char ctx[64];
@@ -847,8 +756,8 @@ sweep_makecontext(void)
 		std::memset(stackr, (int)(0x80 | (rand_u64() & 0x7f)), sizeof stackr);
 		size_t ss = (size_t)(nextr() % 400);
 		uintptr_t off = (uintptr_t)(nextr() % 32);
-		setup_ucp(&up, (uintptr_t)(stackp + off), ss, (int)(nextr() & 3));
-		setup_ucp(&ur, (uintptr_t)(stackr + off), ss, up.uc_stack.ss_flags);
+		setup_ucp_port(&up, (uintptr_t)(stackp + off), ss, (int)(nextr() & 3));
+		setup_ucp_ref(&ur, (uintptr_t)(stackr + off), ss, up.uc_stack.ss_flags);
 		for (int k = 0; k < 8; k++)
 			args[k] = rand_u64();
 		void (*fn)(void) = dummy_funcs[(int)(nextr() % 4)];
@@ -859,30 +768,28 @@ sweep_makecontext(void)
 	}
 }
 
-static void
-sweep_ctx_done(void)
+static void sweep_ctx_done(void)
 {
-	ucontext_t up, ur, lp, lr;
+	port::ucontext_t up, lp_port;
+	ref_abi::ucontext ur, lr_ref;
 	char ctx[64];
 
 	for (long i = 0; i < SWEEP; i++) {
 		std::memset(&up, 0, sizeof up);
 		std::memset(&ur, 0, sizeof ur);
-		std::memset(&lp, (int)(rand_u64() & 0xff), sizeof lp);
-		std::memset(&lr, (int)(rand_u64() & 0xff), sizeof lr);
+		std::memset(&lp_port, (int)(rand_u64() & 0xff), sizeof lp_port);
+		std::memset(&lr_ref, (int)(rand_u64() & 0xff), sizeof lr_ref);
 		if (nextr() & 1) {
 			up.uc_link = nullptr;
 			ur.uc_link = nullptr;
 		} else {
-			up.uc_link = &lp;
-			ur.uc_link = &lr;
+			up.uc_link = &lp_port;
+			ur.uc_link = &lr_ref;
 		}
 		std::snprintf(ctx, sizeof ctx, "sweep/done[%ld]", i);
 		op_ctx_done(&up, &ur, ctx);
 	}
 }
-
-/* ------------------------------------------------------------------------ */
 
 int
 main(void)
@@ -907,14 +814,12 @@ main(void)
 	std::printf("%-20s %10s %10s\n", "function", "cases", "failures");
 	std::printf("--------------------------------------------------\n");
 	for (int f = 0; f < NFUNC; f++) {
-		std::printf("%-20s %10lld %10lld\n", fname[f], ncases[f],
-		    nfails[f]);
+		std::printf("%-20s %10lld %10lld\n", fname[f], ncases[f], nfails[f]);
 		total_cases += ncases[f];
 		total_fails += nfails[f];
 	}
 	std::printf("--------------------------------------------------\n");
-	std::printf("%-20s %10lld %10lld\n", "TOTAL", total_cases,
-	    total_fails);
+	std::printf("%-20s %10lld %10lld\n", "TOTAL", total_cases, total_fails);
 
 	return (total_fails == 0 ? 0 : 1);
 }
