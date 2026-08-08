@@ -38,6 +38,8 @@ module;
 
 #include <sys/types.h>
 
+export module pbsd.lib.libc.iconv.b0062;
+
 /*
  * <iconv.h> and "iconv-internal.h" are not part of this batch; iconv_t is
  * void * and the __bsd_* entry points are declared here verbatim.
@@ -48,8 +50,6 @@ int __bsd_iconvctl(void *, int, void *);
 void __bsd___iconv_free_list(char **, size_t);
 void *__bsd_iconv_open(const char *, const char *);
 }
-
-export module pbsd.lib.libc.iconv.b0062;
 
 export namespace pbsd::lib_libc_iconv::b0062 {
 

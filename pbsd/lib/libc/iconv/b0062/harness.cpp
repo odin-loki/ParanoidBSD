@@ -660,9 +660,12 @@ run_free_case(ListSetup &port_ls, ListSetup &ref_ls, size_t count,
 		report_fail(fn, n, "count argument");
 		bad = 1;
 	}
-	if (ptr_off(rec_port.arg_a, port_ls.list_guard) !=
-	    ptr_off(rec_ref.arg_a, ref_ls.list_guard)) {
-		report_fail(fn, n, "list pointer offset");
+	if (rec_port.arg_a != reinterpret_cast<const char **>(port_ls.slots)) {
+		report_fail(fn, n, "port list pointer");
+		bad = 1;
+	}
+	if (rec_ref.arg_a != reinterpret_cast<const char **>(ref_ls.slots)) {
+		report_fail(fn, n, "ref list pointer");
 		bad = 1;
 	}
 	for (int i = 0; i < LIST_CAP; i++) {
@@ -806,9 +809,6 @@ run_open_case(const char *from, const char *to, uint32_t tag)
 	if (rec_port.calls != rec_ref.calls || rec_port.calls != 1) {
 		report_fail(fn, n, "dispatch count");
 		bad = 1;
-	}
-	if (ptr_off(rec_port.arg_from, from) != ptr_off(rec_ref.arg_from, to)) {
-		/* from pointers must match relative to their own bases */
 	}
 	if (ptr_off(rec_port.arg_from, from) != ptr_off(rec_ref.arg_from, from)) {
 		report_fail(fn, n, "from pointer offset");

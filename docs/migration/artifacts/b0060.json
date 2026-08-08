@@ -1,0 +1,13 @@
+{
+  "batch": "b0060",
+  "verified": "2026-08-08T11:18:57Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd batch b0060 differential test\nLDBL_MANT_DIG=64, comparing 10 significant bytes of long double\n\n\n  function          cases   failures   result\n  --------------------------------------------------\n  llround          205868          0   PASS\n  llroundf         205740          0   PASS\n  llroundl         203780          0   PASS\n  drem             201732          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_llround.c": "115414792f623e11",
+    "hbsd/src/lib/msun/src/s_llroundf.c": "e2df9f25f2680dd1",
+    "hbsd/src/lib/msun/src/s_llroundl.c": "ea87fe8cbc6694ff",
+    "hbsd/src/lib/msun/src/w_drem.c": "83705abcc9d5070f"
+  }
+}

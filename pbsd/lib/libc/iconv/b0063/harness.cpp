@@ -295,18 +295,23 @@ rand_byte(void)
 static int
 user_cb(unsigned int count, const char *const *names, void *arg)
 {
-	unsigned long *hits = (unsigned long *)arg;
+	unsigned long hits = 1;
 
-	*hits = *hits * 131u + count;
+	if (arg != nullptr)
+		hits = *(unsigned long *)arg;
+
+	hits = hits * 131u + count;
 	for (unsigned int i = 0; i < count; i++) {
 		const char *s = names[i];
 
 		if (s != nullptr) {
 			while (*s != '\0')
-				*hits = *hits * 33u + (unsigned char)*s++;
+				hits = hits * 33u + (unsigned char)*s++;
 		}
 	}
-	return ((int)(*hits & 0x7fffffffu));
+	if (arg != nullptr)
+		*(unsigned long *)arg = hits;
+	return ((int)(hits & 0x7fffffffu));
 }
 
 static void
@@ -482,11 +487,11 @@ check_iconvlist(void *userdata)
 	ncase[F_LIST]++;
 
 	snap_reset();
-	ref_iconvlist(user_cb, userdata);
+	ref_iconvlist(user_cb, &ref_hits);
 	snap_capture(&ref_s);
 
 	snap_reset();
-	port::iconvlist(user_cb, userdata);
+	port::iconvlist(user_cb, &port_hits);
 	snap_capture(&port_s);
 
 	if (!snaps_equal(ref_s, port_s)) {

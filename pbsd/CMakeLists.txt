@@ -77,6 +77,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/ulimit_m/port.cppm
   lib/libc/gen/utime_m/port.cppm
   lib/libc/gen/valloc_m/port.cppm
+  lib/libc/iconv/b0059/port.cppm
   lib/libc/iconv/b0062/port.cppm
   lib/libc/iconv/b0063/port.cppm
   lib/libc/locale/b0002/port.cppm
@@ -84,6 +85,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0041/port.cppm
   lib/libc/locale/b0045/port.cppm
   lib/libc/locale/b0058/port.cppm
+  lib/libc/locale/b0064/port.cppm
   lib/libc/locale/b0075/port.cppm
   lib/libc/locale/b0083/port.cppm
   lib/libc/locale/isctype_m/port.cppm
@@ -290,6 +292,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/security/mac_none/b0005/port.cppm
   sys/security/mac_ntpd/b0007/port.cppm
   sys/security/mac_pimd/b0006/port.cppm
+  sys/security/mac_stub/b0046/port.cppm
   sys/security/mac_veriexec/b0029/port.cppm
   sys/x86/linux/b0037/port.cppm
   usr.bin/ar/util_m/port.cppm
