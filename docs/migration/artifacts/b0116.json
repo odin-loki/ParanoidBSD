@@ -1,0 +1,11 @@
+{
+  "batch": "b0116",
+  "verified": "2026-08-08T11:32:54Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures   result\n------------ ------------ ------------   ------\nstrdup             110359            0   PASS\nwcscat             112467            0   PASS\n------------ ------------ ------------   ------\nTOTAL              222826            0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/strdup.c": "d3a2fdcab4b791cb",
+    "hbsd/src/lib/libc/string/wcscat.c": "ace4f051138affd0"
+  }
+}

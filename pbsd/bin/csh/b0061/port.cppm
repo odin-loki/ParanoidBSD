@@ -69,12 +69,12 @@ iconv_t
 dl_iconv_open(const char *tocode, const char *fromcode)
 {
 	if (initialized) {
-		if (iconvlib != NULL)
+		if (iconvlib == NULL)
 			return (iconv_t)-1;
 	} else {
 		initialized = 1;
 		iconvlib = dlopen(ICONVLIB, RTLD_LAZY | RTLD_GLOBAL);
-		if (iconvlib == NULL)
+		if (iconvlib != NULL)
 			return (iconv_t)-1;
 		iconv_open = (iconv_open_t *)dlfunc(iconvlib, ICONV_OPEN);
 		if (iconv_open == NULL)

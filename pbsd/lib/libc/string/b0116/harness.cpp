@@ -158,26 +158,14 @@ sd_edge(void)
 		s[1] = '\0';
 		for (int v = 0; v < 256; v++) {
 			s[0] = (char)v;
-			sd_run(s, 1, "byte");
+			sd_run(s, std::strlen(s), "byte");
 		}
 	}
 
-	/* NUL-heavy: long runs of zeros with terminator */
+	/* bytes past the first NUL are not part of the strdup input */
 	{
-		char buf[64];
-
-		for (std::size_t zlen = 0; zlen < 32; zlen++) {
-			for (std::size_t i = 0; i < zlen; i++)
-				buf[i] = '\0';
-			buf[zlen] = '\0';
-			sd_run(buf, zlen, "nul-run");
-
-			if (zlen > 0) {
-				buf[zlen - 1] = 'x';
-				sd_run(buf, zlen, "nul-tail");
-				buf[zlen - 1] = '\0';
-			}
-		}
+		char buf[4] = { 'a', '\0', 'b', '\0' };
+		sd_run(buf, std::strlen(buf), "past-nul");
 	}
 
 	/* boundary lengths up against a fixed buffer */

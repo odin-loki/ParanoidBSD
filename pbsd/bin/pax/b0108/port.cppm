@@ -21,11 +21,23 @@ module;
 #include <limits.h>
 #include <bsd/string.h>
 
-#ifndef u_quad_t
-typedef unsigned long long u_quad_t;
+typedef unsigned long u_long;
+
+#ifndef D_MD_ORDER
+#define D_MD_ORDER ((nl_item)0x2000c)
 #endif
 
-typedef unsigned long u_long;
+static void
+setpassent(int stayopen)
+{
+	(void)stayopen;
+}
+
+static void
+setgroupent(int stayopen)
+{
+	(void)stayopen;
+}
 
 export module pbsd.bin.pax.b0108;
 

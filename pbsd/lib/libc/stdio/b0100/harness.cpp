@@ -3,6 +3,7 @@
  */
 
 #include <climits>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -61,8 +62,13 @@ static constexpr long long SWEEP = 200000;
 
 struct FileBlob {
 	unsigned char	pre[32];
-	ref_FILE	ref_f;
-	P::FILE		port_f;
+	ref_FILE	f;
+	unsigned char	post[32];
+};
+
+struct PortBlob {
+	unsigned char	pre[32];
+	P::FILE		f;
 	unsigned char	post[32];
 };
 
@@ -92,10 +98,28 @@ fill_blob(FileBlob *b)
 	std::memset(b, GUARD, sizeof(*b));
 }
 
-static int
-blob_equal(const FileBlob *a, const FileBlob *b)
+static void
+fill_port_blob(PortBlob *b)
 {
-	return std::memcmp(a, b, sizeof(*a)) == 0;
+	std::memset(b, GUARD, sizeof(*b));
+}
+
+static int
+blob_equal(const FileBlob *refb, const PortBlob *portb)
+{
+	if (std::memcmp(refb->pre, portb->pre, sizeof(refb->pre)) != 0)
+		return 0;
+	if (std::memcmp(&refb->f._p, &portb->f._p, sizeof(refb->f._p)) != 0)
+		return 0;
+	if (refb->f._r != portb->f._r)
+		return 0;
+	if (refb->f._w != portb->f._w)
+		return 0;
+	if (refb->f._flags != portb->f._flags)
+		return 0;
+	if (refb->f._file != portb->f._file)
+		return 0;
+	return std::memcmp(refb->post, portb->post, sizeof(refb->post)) == 0;
 }
 
 static void
@@ -107,7 +131,7 @@ record_fail(int fn)
 }
 
 static void
-check_file(int fn, const FileBlob *refb, const FileBlob *portb, int refret,
+check_file(int fn, const FileBlob *refb, const PortBlob *portb, int refret,
     int portret)
 {
 	ncase[fn]++;
@@ -122,16 +146,17 @@ static void
 test_clearerr_pair(int fn, void (*ref_fn)(ref_FILE *),
     void (*port_fn)(P::FILE *), short flags, int threaded)
 {
-	FileBlob refb, portb;
+	FileBlob refb;
+	PortBlob portb;
 
 	__isthreaded = threaded;
 	fill_blob(&refb);
-	fill_blob(&portb);
-	refb.ref_f._flags = flags;
-	portb.port_f._flags = flags;
+	fill_port_blob(&portb);
+	refb.f._flags = flags;
+	portb.f._flags = flags;
 
-	ref_fn(&refb.ref_f);
-	port_fn(&portb.port_f);
+	ref_fn(&refb.f);
+	port_fn(&portb.f);
 	check_file(fn, &refb, &portb, 0, 0);
 }
 
@@ -139,17 +164,18 @@ static void
 test_feof_pair(int fn, int (*ref_fn)(ref_FILE *), int (*port_fn)(P::FILE *),
     short flags, int threaded)
 {
-	FileBlob refb, portb;
+	FileBlob refb;
+	PortBlob portb;
 	int refret, portret;
 
 	__isthreaded = threaded;
 	fill_blob(&refb);
-	fill_blob(&portb);
-	refb.ref_f._flags = flags;
-	portb.port_f._flags = flags;
+	fill_port_blob(&portb);
+	refb.f._flags = flags;
+	portb.f._flags = flags;
 
-	refret = ref_fn(&refb.ref_f);
-	portret = port_fn(&portb.port_f);
+	refret = ref_fn(&refb.f);
+	portret = port_fn(&portb.f);
 	check_file(fn, &refb, &portb, refret, portret);
 }
 

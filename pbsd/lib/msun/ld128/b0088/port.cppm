@@ -676,8 +676,8 @@ hexpl(long double x)
 /*
  * See ../src/k_exp.c for details.
  */
-static inline _Complex long double
-__ldexp_cexpl(_Complex long double z, int expt)
+static inline long double _Complex
+__ldexp_cexpl(long double _Complex z, int expt)
 {
 	long double c, exp_x, hi, lo, s;
 	long double x, y, scale1, scale2;
@@ -994,8 +994,8 @@ static const long double
 cexp_ovfl = 2.27892930024498818830197576893019292e+04L,
 exp_ovfl = 1.13565234062941439494919310779707649e+04L;
 
-_Complex long double
-cexpl(_Complex long double z)
+long double _Complex
+cexpl(long double _Complex z)
 {
 	long double c, exp_x, s, x, y;
 

@@ -29,11 +29,23 @@
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
 #endif
 
-#ifndef u_quad_t
-typedef unsigned long long u_quad_t;
+typedef unsigned long u_long;
+
+#ifndef D_MD_ORDER
+#define D_MD_ORDER ((nl_item)0x2000c)
 #endif
 
-typedef unsigned long u_long;
+static void
+setpassent(int stayopen)
+{
+	(void)stayopen;
+}
+
+static void
+setgroupent(int stayopen)
+{
+	(void)stayopen;
+}
 
 #define MAXBLK		64512
 #define PAXPATHLEN	3072

@@ -20,41 +20,33 @@ module;
 
 export module pbsd.lib.libc.posix1e.b0110;
 
-// ---------------------------------------------------------------------------
-// Declarations that the original translation units obtained from FreeBSD
-// headers (<sys/mac.h>, <sys/acl.h>, <sys/extattr.h>, "acl_support.h").
-//
-// They live inside a linkage-specification so that they are attached to the
-// global module rather than to this named module: the resulting types and
-// external functions are then the very same entities that the C oracle and the
-// test harness declare, which is what makes differential linking possible.
-// ---------------------------------------------------------------------------
-extern "C" {
-
-/* <sys/mac.h> */
-struct mac {
+export struct mac {
 	size_t		 m_buflen;
 	char		*m_string;
 };
 
-/* <sys/acl.h> */
-typedef std::uint32_t	acl_tag_t;
-typedef std::uint32_t	acl_perm_t;
-typedef std::uint16_t	acl_entry_type_t;
-typedef std::uint16_t	acl_flag_t;
-typedef int		acl_type_t;
-
-struct acl_entry {
+export struct acl_entry {
 	acl_tag_t		ae_tag;
-	std::uint32_t		ae_id;		/* uid_t */
+	std::uint32_t		ae_id;
 	acl_perm_t		ae_perm;
 	acl_entry_type_t	ae_entry_type;
 	acl_flag_t		ae_flags;
 };
-typedef struct acl_entry	*acl_entry_t;
 
-struct acl;
-typedef struct acl		*acl_t;
+export struct acl {
+	unsigned char	_opaque;
+};
+
+export using acl_entry_t = struct acl_entry *;
+export using acl_type_t = int;
+export using acl_t = struct acl *;
+
+export {
+using ::acl_tag_t;
+using ::acl_perm_t;
+using ::acl_entry_type_t;
+using ::acl_flag_t;
+}
 
 #define ACL_TYPE_ACCESS_OLD	0x00000000
 #define ACL_TYPE_DEFAULT_OLD	0x00000001
