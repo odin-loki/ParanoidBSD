@@ -160,7 +160,7 @@ poff(const void *p, const unsigned char *base)
 		return -1000001;
 	const unsigned char *q = (const unsigned char *)p;
 	long d = (long)(q - base);
-	if (d < -(long)PRE - 4096 || d > (long)(WIN + POST) + 4096)
+	if (d < -(1L << 20) || d > (1L << 20))
 		return -1000002;
 	return d;
 }
@@ -995,7 +995,7 @@ gen_msg(unsigned char *b)
 	gput16(b, o, rnd32() & 0xffffu);		/* flags */
 	int counts[4];
 	for (int i = 0; i < 4; i++)
-		counts[i] = (int)rndn(3);
+		counts[i] = (int)rndn(5);
 	for (int i = 0; i < 4; i++)
 		gput16(b, o, (unsigned)counts[i]);
 

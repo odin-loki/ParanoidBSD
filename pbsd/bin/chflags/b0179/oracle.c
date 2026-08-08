@@ -33,6 +33,7 @@
 #define _DEFAULT_SOURCE
 
 #include <sys/types.h>
+#include <fcntl.h>
 
 #if defined(__linux__)
 #define _SYS_STAT_H
@@ -83,7 +84,6 @@ struct pbsd_filestat {
 
 #include <err.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <fts.h>
 #include <signal.h>
 #include <stdio.h>
