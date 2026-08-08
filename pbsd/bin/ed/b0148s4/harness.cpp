@@ -157,7 +157,7 @@ void test_translit_text()
 			b[j] = (char)rndb();
 		int from = rndb();
 		int to = rndb();
-		run(b, n, from, to);
+		run(b, n, from, to, "rand");
 	}
 }
 
@@ -502,7 +502,6 @@ void test_quit()
 
 int main()
 {
-	std::fprintf(stderr, "start\n");
 	test_translit_text();
 	test_put_sbuf_line();
 	test_get_sbuf_line();

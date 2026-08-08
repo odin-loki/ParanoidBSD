@@ -59,7 +59,11 @@ void reset_both()
 
 void setup_ibuf(const char *s)
 {
+	std::memset(ibuf, 0, 65536);
 	std::strcpy(ibuf, s);
+	std::size_t len = std::strlen(ibuf);
+	if (len == 0 || ibuf[len - 1] != '\n')
+		ibuf[len] = '\n';
 	ibufp = ibuf;
 	port::isbinary = isbinary;
 	port::patlock = patlock;

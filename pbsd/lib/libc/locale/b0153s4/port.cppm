@@ -22,10 +22,6 @@ export module pbsd.lib.libc.locale.b0153s4;
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 
-#ifndef u_char
-typedef unsigned char u_char;
-#endif
-
 export namespace pbsd::lib_libc_locale::b0153s4 {
 
 typedef int __ct_rune_t;

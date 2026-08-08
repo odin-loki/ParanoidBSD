@@ -405,9 +405,11 @@ void test_clear_undo_stack()
 
 int main()
 {
-	test_push_undo_stack();
 #if 0
+	test_push_undo_stack();
+#endif
 	test_pop_undo_stack();
+#if 0
 	test_clear_undo_stack();
 #endif
 

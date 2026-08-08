@@ -1,11 +1,6 @@
 #!/bin/sh
-# PBSD batch b0054s2 -- build and run the differential harness.
-#
+# Build and run the b0054s2 differential test.
 # Usage: sh build.sh   (from pbsd/usr.bin/cksum/b0054s2/)
-#
-# Compiles the C oracle, the C++23 module port and the harness, links them
-# together and execs the harness, so the harness exit status is this script's
-# exit status.
 
 set -e
 
@@ -13,28 +8,37 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
+
 CFLAGS="-std=c11 -O2"
 CXXFLAGS="-std=c++23 -O2"
 
-OBJDIR=./build
-rm -rf "$OBJDIR" gcm.cache
-mkdir -p "$OBJDIR"
-
-"$CC" $CFLAGS -c oracle.c -o "$OBJDIR/oracle.o"
-
-if "$CXX" --version 2>&1 | grep -qi clang; then
-	# Clang: explicit two-step module build.
-	"$CXX" $CXXFLAGS --precompile -x c++-module port.cppm -o "$OBJDIR/port.pcm"
-	"$CXX" $CXXFLAGS -c "$OBJDIR/port.pcm" -o "$OBJDIR/port.o"
-	"$CXX" $CXXFLAGS -fmodule-file=pbsd.usr.bin.cksum.b0054s2="$OBJDIR/port.pcm" \
-		-c harness.cpp -o "$OBJDIR/harness.o"
+# Pick the module flags this toolchain needs.
+if $CXX --version 2>/dev/null | head -n 1 | grep -qi clang; then
+	MODFLAGS="-fmodules"
+	PRECOMPILE_ONLY=yes
 else
-	# GCC: -fmodules-ts, module interface first so the CMI exists.
-	"$CXX" $CXXFLAGS -fmodules-ts -c -x c++ port.cppm -o "$OBJDIR/port.o"
-	"$CXX" $CXXFLAGS -fmodules-ts -c harness.cpp -o "$OBJDIR/harness.o"
+	MODFLAGS="-fmodules-ts"
+	PRECOMPILE_ONLY=no
 fi
 
-"$CXX" $CXXFLAGS -o "$OBJDIR/harness" "$OBJDIR/harness.o" "$OBJDIR/port.o" \
-	"$OBJDIR/oracle.o"
+rm -rf gcm.cache pcm.cache oracle.o port.o harness.o harness
 
-exec "$OBJDIR/harness"
+$CC $CFLAGS -c oracle.c -o oracle.o
+
+if [ "$PRECOMPILE_ONLY" = yes ]; then
+	mkdir -p pcm.cache
+	$CXX $CXXFLAGS $MODFLAGS -x c++-module --precompile port.cppm \
+	    -o pcm.cache/pbsd.usr.bin.cksum.b0054s2.pcm
+	$CXX $CXXFLAGS $MODFLAGS -c \
+	    pcm.cache/pbsd.usr.bin.cksum.b0054s2.pcm -o port.o
+	$CXX $CXXFLAGS $MODFLAGS \
+	    -fmodule-file=pbsd.usr.bin.cksum.b0054s2=pcm.cache/pbsd.usr.bin.cksum.b0054s2.pcm \
+	    -c harness.cpp -o harness.o
+else
+	$CXX $CXXFLAGS $MODFLAGS -x c++ -c port.cppm -o port.o
+	$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o harness.o
+fi
+
+$CXX $CXXFLAGS $MODFLAGS -o harness harness.o port.o oracle.o
+
+exec ./harness

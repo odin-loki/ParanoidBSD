@@ -307,6 +307,16 @@ clear_undo_stack(void)
 	u_addr_last = addr_last;
 }
 
+void discard_undo_stack(void)
+{
+	free(ustack);
+	ustack = NULL;
+	usize = 0;
+	u_p = 0;
+	u_current_addr = -1;
+	u_addr_last = -1;
+}
+
 static line_t **active_list;
 static long active_last;
 static long active_size;
@@ -495,8 +505,8 @@ close_sbuf(void)
 
 void reset_batch(void)
 {
+	discard_undo_stack();
 	clear_active_list();
-	clear_undo_stack();
 	close_sbuf();
 	reset_globals();
 	REQUE(&buffer_head, &buffer_head);

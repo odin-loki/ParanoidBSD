@@ -15,30 +15,31 @@ CXXFLAGS="-std=c++23 -O2"
 
 MOD="pbsd.lib.msun.ld80.b0093s3"
 
-MODFLAG=""
-for f in -fmodules-ts -fmodules ""; do
-	if $CXX $CXXFLAGS $f -x c++ -fsyntax-only /dev/null >/dev/null 2>&1; then
-		MODFLAG=$f
-		break
-	fi
-done
-
 rm -rf gcm.cache pcm.cache
-mkdir -p pcm.cache
+rm -f oracle.o port.o harness.o harness
 
 $CC $CFLAGS -c oracle.c -o oracle.o
 
-if $CXX --version 2>&1 | grep -qi clang; then
+if $CXX --version 2>&1 | head -n 1 | grep -qi clang; then
+	# clang: precompile the interface, then reuse the BMI.
+	mkdir -p pcm.cache
 	$CXX $CXXFLAGS -x c++-module --precompile port.cppm \
 	    -o "pcm.cache/$MOD.pcm"
 	$CXX $CXXFLAGS -c "pcm.cache/$MOD.pcm" -o port.o
 	$CXX $CXXFLAGS -fmodule-file="$MOD=pcm.cache/$MOD.pcm" \
 	    -c harness.cpp -o harness.o
 else
+	# gcc: -fmodules-ts (<=14) or -fmodules (>=15); the CMI lands in
+	# ./gcm.cache and is picked up automatically by the importer.
+	MODFLAG=-fmodules-ts
+	if ! $CXX $CXXFLAGS $MODFLAG -x c++ -fsyntax-only /dev/null \
+	    >/dev/null 2>&1; then
+		MODFLAG=-fmodules
+	fi
 	$CXX $CXXFLAGS $MODFLAG -x c++ -c port.cppm -o port.o
 	$CXX $CXXFLAGS $MODFLAG -c harness.cpp -o harness.o
 fi
 
-$CXX $CXXFLAGS $MODFLAG -o harness harness.o port.o oracle.o -lm
+$CXX $CXXFLAGS -o harness harness.o port.o oracle.o -lm
 
 exec ./harness

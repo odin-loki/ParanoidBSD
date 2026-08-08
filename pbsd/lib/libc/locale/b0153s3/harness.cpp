@@ -226,7 +226,10 @@ run_part_load(const char *name, const char *category, int maxl, int minl,
 	if (!chk_int(f, pr, rr))
 		return (false);
 	if (pr != expect) {
-		report(f, "code");
+		if (nprinted[f]++ < 8)
+			std::printf("  FAIL %-22s : code pr=%d rr=%d expect=%d pe=%d re=%d\n",
+			    fname[f], pr, rr, expect, pe, re);
+		nfail[f]++;
 		return (false);
 	}
 	if (pe != re) {
