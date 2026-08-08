@@ -1671,3 +1671,5 @@
 {"batch": "b0016s1", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T09:17:17Z"}
 {"batch": "b0007", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T09:17:19Z"}
 {"batch": "b0008", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 2/2: ifunc_init, crt1_handle_rela)", "how": "agent", "ts": "2026-08-08T09:17:28Z"}
+{"batch": "b0013", "status": "VERIFIED", "detail": "harness green + 4/4 mutations killed (IR: no ref_ functions in oracle IR)", "how": "agent", "ts": "2026-08-08T09:17:32Z"}
+{"batch": "b0020s3", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-08-08T09:17:48Z"}

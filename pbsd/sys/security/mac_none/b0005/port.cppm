@@ -337,20 +337,27 @@ struct moduledata_t {
  * on, try mac_stub.
  */
 
-static mac_policy_ops none_ops{};
+static int mac_policy_modevent(module_t mod, int type, void *data)
+{
+
+	(void)mod;
+	(void)type;
+	(void)data;
+	return (0);
+}
 
 #define DECLARE_MODULE(name, data, sub, order)
 #define MODULE_DEPEND(mod, what, ver, pref, max)
 
 #define MAC_POLICY_SET(mpops, mpname, mpfullname, mpflags, privdata_wanted) \
-	static mac_policy_conf mpname##_mac_policy_conf = { \
+	mac_policy_conf mpname##_mac_policy_conf = { \
 		.mpc_name = const_cast<char *>(#mpname), \
 		.mpc_fullname = const_cast<char *>(mpfullname), \
 		.mpc_ops = mpops, \
 		.mpc_loadtime_flags = mpflags, \
 		.mpc_field_off = privdata_wanted, \
 	}; \
-	static moduledata_t mpname##_mod = { \
+	moduledata_t mpname##_mod = { \
 		#mpname, \
 		mac_policy_modevent, \
 		&mpname##_mac_policy_conf \
@@ -360,14 +367,7 @@ static mac_policy_ops none_ops{};
 	DECLARE_MODULE(mpname, mpname##_mod, SI_SUB_MAC_POLICY, \
 	    SI_ORDER_MIDDLE)
 
-static int mac_policy_modevent(module_t mod, int type, void *data)
-{
-
-	(void)mod;
-	(void)type;
-	(void)data;
-	return (0);
-}
+mac_policy_ops none_ops{};
 
 MAC_POLICY_SET(&none_ops, mac_none, "TrustedBSD MAC/None",
     MPC_LOADTIME_FLAG_UNLOADOK, nullptr);
