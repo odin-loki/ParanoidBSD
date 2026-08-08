@@ -1,31 +1,62 @@
+/*
+ * port.cppm -- PBSD batch b0143: C++23 module port of
+ *
+ *	lib/libc/stdio/vswscanf.c
+ *	lib/libc/stdio/fopen.c
+ *	lib/libc/stdio/vswprintf.c
+ *
+ * The bodies are a line-for-line transliteration of the HardenedBSD
+ * originals; only the casts C++ requires on void pointer and
+ * unsigned char pointer conversions, and the `{}' on the
+ * `static const mbstate_t initial' definitions, differ.
+ * The FreeBSD stdio internals these functions call
+ * (__vfwscanf, __vfwprintf, __sfp, __sflags, _open, _close, _sseek,
+ * __sread, __swrite, __sseek, __sclose, wcsrtombs_l, mbsrtowcs_l,
+ * __get_locale, __get_locale_r) are declared here with C linkage and
+ * resolved at link time against the single shared definition in
+ * oracle.c, so the port and the reference run against an identical
+ * environment.
+ */
+
 module;
 
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE
+#define _GNU_SOURCE 1
 #endif
 
 #include <cerrno>
 #include <climits>
 #include <cstdarg>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <locale.h>
-
-#ifndef EOF
-#define EOF (-1)
-#endif
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 export module pbsd.lib.libc.stdio.b0143;
 
 export namespace pbsd::lib_libc_stdio::b0143 {
 
-typedef va_list __va_list;
 typedef long fpos_t;
+typedef va_list __va_list;
+
+#ifndef EOF
+#define EOF (-1)
+#endif
+#ifndef SEEK_END
+#define SEEK_END 2
+#endif
+#ifndef SIZE_T_MAX
+#define SIZE_T_MAX SIZE_MAX
+#endif
+#ifndef DEFFILEMODE
+#define DEFFILEMODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+#endif
 
 struct __sbuf {
 	unsigned char *_base;
@@ -77,81 +108,43 @@ struct FILE {
 #define	__SMOD	0x2000
 #define	__SALC	0x4000
 #define	__SIGN	0x8000
+
 #define	__S2OAP	0x0001
 
 #define	FAKE_FILE {				\
 	._file = -1,				\
 }
 
-#ifndef DEFFILEMODE
-#define DEFFILEMODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
-#endif
-
-#ifndef SIZE_T_MAX
-#define SIZE_T_MAX SIZE_MAX
-#endif
-
-namespace detail {
-
-static locale_t
-b0143_get_C_locale(void)
-{
-	static locale_t c_locale = nullptr;
-	static int inited = 0;
-
-	if (!inited) {
-		c_locale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
-		inited = 1;
-	}
-	return (c_locale);
-}
-
-static inline locale_t
-get_real_locale(locale_t locale)
-{
-	switch ((intptr_t)locale) {
-	case 0:
-		return (b0143_get_C_locale());
-	case -1:
-		return (LC_GLOBAL_LOCALE);
-	default:
-		return (locale);
-	}
-}
-
-static inline locale_t
-__get_locale(void)
-{
-	locale_t loc;
-
-	loc = uselocale((locale_t)0);
-	if (loc == (locale_t)0)
-		return (LC_GLOBAL_LOCALE);
-	return (loc);
-}
-
-} /* namespace detail */
-
-#define FIX_LOCALE(l) (l = detail::get_real_locale(l))
+#define	FIX_LOCALE(l)	((l) = __get_locale_r(l))
 
 extern "C" {
-size_t	wcsrtombs_l(char * __restrict, const wchar_t ** __restrict,
-	    size_t, mbstate_t * __restrict, locale_t);
-size_t	mbsrtowcs_l(wchar_t * __restrict, const char ** __restrict,
-	    size_t, mbstate_t * __restrict, locale_t);
-int	__vfwscanf(FILE * __restrict, locale_t, const wchar_t * __restrict,
-	    __va_list);
-int	__vfwprintf(FILE *, locale_t, const wchar_t *, __va_list);
-FILE	*__sfp(void);
-int	__sflags(const char *, int *);
-int	_open(const char *, int, ...);
-int	_close(int);
-fpos_t	_sseek(FILE *, fpos_t, int);
-int	__sread(void *, char *, int);
-int	__swrite(void *, const char *, int);
-fpos_t	__sseek(void *, fpos_t, int);
-int	__sclose(void *);
+locale_t	__get_locale(void);
+locale_t	__get_locale_r(locale_t);
+size_t		wcsrtombs_l(char * __restrict, const wchar_t ** __restrict,
+		    size_t, mbstate_t * __restrict, locale_t);
+size_t		mbsrtowcs_l(wchar_t * __restrict, const char ** __restrict,
+		    size_t, mbstate_t * __restrict, locale_t);
+int		__sread(void *, char *, int);
+int		__swrite(void *, const char *, int);
+fpos_t		__sseek(void *, fpos_t, int);
+int		__sclose(void *);
+fpos_t		_sseek(FILE *, fpos_t, int);
+FILE		*__sfp(void);
+int		__sflags(const char *, int *);
+int		_open(const char *, int, ...);
+int		_close(int);
+int		__vfwscanf(FILE * __restrict, locale_t,
+		    const wchar_t * __restrict, va_list);
+int		__vfwprintf(FILE *, locale_t, const wchar_t *, __va_list);
 }
+
+} /* namespace pbsd::lib_libc_stdio::b0143 */
+
+/*
+ * eofread() is static in the original and so cannot be exported; it
+ * lives in the same namespace but outside the export block.
+ */
+namespace pbsd::lib_libc_stdio::b0143 {
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -201,6 +194,10 @@ eofread(void *cookie, char *buf, int len)
 	return (0);
 }
 
+} /* namespace pbsd::lib_libc_stdio::b0143 */
+
+export namespace pbsd::lib_libc_stdio::b0143 {
+
 int
 vswscanf_l(const wchar_t * __restrict str, locale_t locale,
 		const wchar_t * __restrict fmt, va_list ap)
@@ -239,7 +236,7 @@ int
 vswscanf(const wchar_t * __restrict str, const wchar_t * __restrict fmt,
     va_list ap)
 {
-	return vswscanf_l(str, detail::__get_locale(), fmt, ap);
+	return vswscanf_l(str, __get_locale(), fmt, ap);
 }
 
 /*-
@@ -326,6 +323,8 @@ fopen(const char * __restrict file, const char * __restrict mode)
 	return (fp);
 }
 
+/*	$OpenBSD: vasprintf.c,v 1.4 1998/06/21 22:13:47 millert Exp $	*/
+
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -353,9 +352,9 @@ fopen(const char * __restrict file, const char * __restrict mode)
  * AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL
  * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
  * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
  * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY OR TORT (INCLUDING NEGLIGENCE OR
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
@@ -376,7 +375,7 @@ vswprintf_l(wchar_t * __restrict s, size_t n, locale_t locale,
 		errno = EINVAL;
 		return (-1);
 	}
-	if (n - 1 <= INT_MAX) {
+	if (n - 1 > INT_MAX) {
 		errno = EOVERFLOW;
 		*s = L'\0';
 		return (-1);
@@ -424,7 +423,7 @@ int
 vswprintf(wchar_t * __restrict s, size_t n, const wchar_t * __restrict fmt,
     __va_list ap)
 {
-	return vswprintf_l(s, n, detail::__get_locale(), fmt, ap);
+	return vswprintf_l(s, n, __get_locale(), fmt, ap);
 }
 
 } /* namespace pbsd::lib_libc_stdio::b0143 */

@@ -16,6 +16,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/kenv/b0180/port.cppm
   bin/kill/b0177/port.cppm
   bin/mkdir/b0178/port.cppm
+  bin/nproc/b0176/port.cppm
   bin/pax/b0108/port.cppm
   bin/pax/getoldopt_m/port.cppm
   bin/ps/nlist_m/port.cppm
