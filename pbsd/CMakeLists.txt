@@ -246,6 +246,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdlib/b0065/port.cppm
   lib/libc/stdlib/b0069/port.cppm
   lib/libc/stdlib/b0126/port.cppm
+  lib/libc/stdlib/b0212/port.cppm
   lib/libc/stdlib/getsubopt_m/port.cppm
   lib/libc/stdlib/hcreate_m/port.cppm
   lib/libc/stdlib/reallocarray_m/port.cppm
@@ -399,6 +400,9 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/nvmecontrol/nc_util_m/port.cppm
   sbin/ping/utils_m/port.cppm
   sbin/rcorder/ealloc_m/port.cppm
+  sys/compat/linuxkpi/common/src/b0209/port.cppm
+  sys/fs/deadfs/b0213/port.cppm
+  sys/fs/mntfs/b0211/port.cppm
   sys/fs/procfs/b0161/port.cppm
   sys/fs/procfs/procfs_type_m/port.cppm
   sys/geom/uzip/b0144/port.cppm

@@ -27,12 +27,10 @@ if $CXX --version 2>&1 | grep -qi clang; then
 	$CXX -std=c++23 $CXXFLAGS -fmodule-file=$MODNAME=port.pcm \
 	    -c harness.cpp -o harness.o
 else
-	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c -x c++ port.cppm -o port.o
+	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -x c++ -c port.cppm -o port.o
 	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c harness.cpp -o harness.o
 fi
 
-$CXX -std=c++23 $CXXFLAGS \
-    -Wl,--wrap=nanosleep -Wl,--wrap=exit \
-    -o harness harness.o port.o oracle.o
+$CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o
 
 exec ./harness

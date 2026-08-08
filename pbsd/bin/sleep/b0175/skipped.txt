@@ -1,0 +1,6 @@
+hbsd/src/bin/sleep/sleep.c: main() only — depends on <capsicum_helpers.h>
+(caph_limit_stdio/caph_enter, not present off FreeBSD and unfaithful if
+shimmed), plus getopt() global state, signal()/nanosleep() and process exit;
+it has no observable value a differential harness can compare without
+replacing libc calls with stubs.  Every other function in the file
+(report_request, usage, parse_interval) is ported and tested.

@@ -1,25 +1,31 @@
+/*
+ * b0175: C++23 module port of hbsd/src/bin/sleep/sleep.c.
+ *
+ * The port is faithful: control flow, integer/char signedness, evaluation
+ * order and floating point operation order are those of the C original.
+ * main() is not carried over; see skipped.txt.
+ *
+ * report_requested is file-static in the original.  It is exported here so the
+ * differential harness can observe the only effect report_request() has.
+ */
+
 module;
 
+#include <sys/cdefs.h>
+
 #ifndef __unused
-#define __unused	__attribute__((__unused__))
+#define	__unused	__attribute__((__unused__))
 #endif
 
 #ifndef __dead2
-#define __dead2	__attribute__((__noreturn__))
+#define	__dead2		__attribute__((__noreturn__))
 #endif
 
-#ifndef SIGINFO
-#define SIGINFO SIGUSR1
-#endif
-
-#define _POSIX_C_SOURCE 200809L
-
+#include <err.h>
 #include <errno.h>
 #include <limits.h>
 #include <math.h>
-#include <setjmp.h>
 #include <signal.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -28,66 +34,6 @@ module;
 export module pbsd.bin.sleep.b0175;
 
 export namespace pbsd::bin_sleep::b0175 {
-
-inline jmp_buf port_err_jmp;
-inline int port_err_armed;
-inline int port_err_called;
-inline int port_err_status;
-inline int port_warnx_called;
-
-inline void
-port_err_arm()
-{
-	port_err_armed = 1;
-}
-
-inline void
-port_err_disarm()
-{
-	port_err_armed = 0;
-}
-
-inline void
-err(int eval, const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fputc('\n', stderr);
-	port_err_called = 1;
-	port_err_status = eval;
-	if (port_err_armed)
-		longjmp(port_err_jmp, 1);
-	exit(eval);
-}
-
-inline void
-warnx(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fputc('\n', stderr);
-	port_warnx_called++;
-}
-
-inline int
-caph_limit_stdio(void)
-{
-	return (0);
-}
-
-inline int
-caph_enter(void)
-{
-	return (0);
-}
-
-volatile sig_atomic_t report_requested;
 
 /*-
  * Copyright (c) 1988, 1993, 1994
@@ -117,6 +63,8 @@ volatile sig_atomic_t report_requested;
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+volatile sig_atomic_t report_requested;
 
 void
 report_request(int signo __unused)
@@ -162,49 +110,6 @@ parse_interval(const char *arg)
 	}
 	warnx("invalid time interval: %s", arg);
 	return (INFINITY);
-}
-
-int
-main(int argc, char *argv[])
-{
-	struct timespec time_to_sleep;
-	double seconds;
-	time_t original;
-
-	if (caph_limit_stdio() < 0 || caph_enter() < 0)
-		err(1, "capsicum");
-
-	while (getopt(argc, argv, "") != -1)
-		usage();
-	argc -= optind;
-	argv += optind;
-	if (argc < 1)
-		usage();
-
-	seconds = 0;
-	while (argc--)
-		seconds += parse_interval(*argv++);
-	if (seconds > INT_MAX)
-		usage();
-	if (seconds < 1e-9)
-		exit(0);
-	original = time_to_sleep.tv_sec = (time_t)seconds;
-	time_to_sleep.tv_nsec = 1e9 * (seconds - time_to_sleep.tv_sec);
-
-	signal(SIGINFO, report_request);
-
-	while (nanosleep(&time_to_sleep, &time_to_sleep) != 0) {
-		if (errno != EINTR)
-			err(1, "nanosleep");
-		if (report_requested) {
-			/* Reporting does not bother with nanoseconds. */
-			warnx("about %ld second(s) left out of the original %ld",
-			    (long)time_to_sleep.tv_sec, (long)original);
-			report_requested = 0;
-		}
-	}
-
-	exit(0);
 }
 
 } // namespace pbsd::bin_sleep::b0175

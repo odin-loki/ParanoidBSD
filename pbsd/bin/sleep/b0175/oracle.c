@@ -1,3 +1,20 @@
+/*
+ * b0175 oracle: the original HardenedBSD C sources for this batch, concatenated
+ * and renamed with a `ref_' prefix.  Function bodies are unmodified; this file
+ * is the specification the C++23 port is differentially tested against.
+ *
+ * Sources:
+ *	hbsd/src/bin/sleep/sleep.c
+ *
+ * Mechanical adjustments only (no function body is touched):
+ *	- functions renamed with a `ref_' prefix;
+ *	- `static' dropped from the renamed functions and from the file-scope
+ *	  variable `report_requested' so the harness can link against them;
+ *	- <capsicum_helpers.h> not included and main() not carried over (see
+ *	  skipped.txt);
+ *	- __unused / __dead2 defined when the host <sys/cdefs.h> lacks them.
+ */
+
 /*-
  * Copyright (c) 1988, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
@@ -27,92 +44,25 @@
  * SUCH DAMAGE.
  */
 
+#include <sys/cdefs.h>
+
 #ifndef __unused
-#define __unused	__attribute__((__unused__))
+#define	__unused	__attribute__((__unused__))
 #endif
 
 #ifndef __dead2
-#define __dead2	__attribute__((__noreturn__))
+#define	__dead2		__attribute__((__noreturn__))
 #endif
 
-#ifndef SIGINFO
-#define SIGINFO SIGUSR1
-#endif
-
-#define _POSIX_C_SOURCE 200809L
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
-
+#include <err.h>
 #include <errno.h>
 #include <limits.h>
 #include <math.h>
-#include <setjmp.h>
 #include <signal.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-
-jmp_buf oracle_err_jmp;
-static int oracle_err_armed;
-int oracle_err_called;
-int oracle_err_status;
-int oracle_warnx_called;
-
-void
-oracle_err_arm(void)
-{
-	oracle_err_armed = 1;
-}
-
-void
-oracle_err_disarm(void)
-{
-	oracle_err_armed = 0;
-}
-
-static void
-err(int eval, const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fputc('\n', stderr);
-	oracle_err_called = 1;
-	oracle_err_status = eval;
-	if (oracle_err_armed)
-		longjmp(oracle_err_jmp, 1);
-	exit(eval);
-}
-
-static void
-warnx(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fputc('\n', stderr);
-	oracle_warnx_called++;
-}
-
-static int
-caph_limit_stdio(void)
-{
-	return (0);
-}
-
-static int
-caph_enter(void)
-{
-	return (0);
-}
 
 volatile sig_atomic_t report_requested;
 
@@ -160,47 +110,4 @@ ref_parse_interval(const char *arg)
 	}
 	warnx("invalid time interval: %s", arg);
 	return (INFINITY);
-}
-
-int
-ref_main(int argc, char *argv[])
-{
-	struct timespec time_to_sleep;
-	double seconds;
-	time_t original;
-
-	if (caph_limit_stdio() < 0 || caph_enter() < 0)
-		err(1, "capsicum");
-
-	while (getopt(argc, argv, "") != -1)
-		ref_usage();
-	argc -= optind;
-	argv += optind;
-	if (argc < 1)
-		ref_usage();
-
-	seconds = 0;
-	while (argc--)
-		seconds += ref_parse_interval(*argv++);
-	if (seconds > INT_MAX)
-		ref_usage();
-	if (seconds < 1e-9)
-		exit(0);
-	original = time_to_sleep.tv_sec = (time_t)seconds;
-	time_to_sleep.tv_nsec = 1e9 * (seconds - time_to_sleep.tv_sec);
-
-	signal(SIGINFO, ref_report_request);
-
-	while (nanosleep(&time_to_sleep, &time_to_sleep) != 0) {
-		if (errno != EINTR)
-			err(1, "nanosleep");
-		if (report_requested) {
-			/* Reporting does not bother with nanoseconds. */
-			warnx("about %ld second(s) left out of the original %ld",
-			    (long)time_to_sleep.tv_sec, (long)original);
-			report_requested = 0;
-		}
-	}
-
-	exit(0);
 }
