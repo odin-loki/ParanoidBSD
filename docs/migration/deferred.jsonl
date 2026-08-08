@@ -16,3 +16,4 @@
 {"path": "hbsd/src/bin/kill/kill.c", "batch": "b0177", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T13:29:31Z"}
 {"path": "hbsd/src/bin/getfacl/getfacl.c", "batch": "b0182", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T13:32:09Z"}
 {"path": "hbsd/src/bin/ln/ln.c", "batch": "b0186", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T13:32:47Z"}
+{"path": "hbsd/src/bin/test/test.c", "batch": "b0188", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T13:33:06Z"}

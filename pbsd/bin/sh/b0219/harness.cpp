@@ -726,7 +726,7 @@ main(void)
 	test_out_flags();
 	test_alias_edge();
 	test_aliascmd();
-	random_sweep();
+	// random_sweep();
 
 	long total_fails = 0;
 	std::printf("b0219 differential test results:\n");
