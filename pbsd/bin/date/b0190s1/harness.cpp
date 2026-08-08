@@ -349,7 +349,7 @@ test_daysinmonth()
 			one_daysinmonth(s);
 		}
 
-	rng_seed(0x0da415m0d1eULL);
+	rng_seed(0x0da451c0ffeeULL);
 	for (int i = 0; i < RITER; i++)
 		one_daysinmonth(rnd_spec());
 }
@@ -757,7 +757,7 @@ test_adjwday()
 						    base_specs[i], types[ty],
 						    vals[v], it, mk);
 
-	rng_seed(0xadd102dayfeedULL);
+	rng_seed(0xadd102da0feedULL);
 	for (int i = 0; i < RITER; i++)
 		one_adj5(S_ADJWDAY, P::adjwday, ref_adjwday, rnd_spec(),
 		    rnd_type(), rnd_val(280), (int)(rnd() & 1),
@@ -841,7 +841,7 @@ test_adjmin()
 					    ref_adjmin, base_specs[i],
 					    types[ty], sixty_vals[v], mk);
 
-	rng_seed(0xadd117e5m1nULL & 0xffffffffffffULL);
+	rng_seed(0xadd117e5b0a7ULL);
 	for (int i = 0; i < RITER; i++)
 		one_adj4(S_ADJMIN, P::adjmin, ref_adjmin, rnd_spec(),
 		    rnd_type(), rnd_val(180000), (int)(rnd() & 1));

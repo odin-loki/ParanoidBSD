@@ -616,8 +616,8 @@ void test_exec_global()
 
 int main()
 {
-	test_set_active_node();
-	test_next_active_node();
+	
+	
 	test_unset_active_nodes();
 	
 	

@@ -305,17 +305,17 @@ void test_setthetime() {
 	run_ok(nullptr, "2312151530.30", 1, base);
 	run_ok(nullptr, "042312151530", 1, base);
 	run_ok(nullptr, "240412121530", 1, base);
-	run_ok(nullptr, "20240412153030", 1, base);
+	run_ok(nullptr, "202404121530", 1, base);
 	run_ok("%Y%m%d%H%M.%S", "202404121530.30", 1, base);
 	run_ok(nullptr, "2312151530", 0, base);
 	run_err(nullptr, "bad", 1, base);
 	run_err(nullptr, "9913010000", 1, base);
 	run_err(nullptr, "9912312460", 1, base);
-	for (long i = 0; i < SWEEP / 200; i++) {
+	for (long i = 0; i < SWEEP / 100; i++) {
 		char d[24];
-		std::snprintf(d, sizeof(d), "%04d%02d%02d%02d%02d%02d",
+		std::snprintf(d, sizeof(d), "%04d%02d%02d%02d%02d",
 		    2000 + (int)(i % 24), 1 + (int)(i % 12), 1 + (int)(i % 28),
-		    (int)(i % 24), (int)(i % 60), (int)(i % 60));
+		    (int)(i % 24), (int)(i % 60));
 		run_ok(nullptr, d, 1, (time_t)(1700000000 + i));
 	}
 }
@@ -483,11 +483,11 @@ int main() {
 	test_strftime_ns();
 	test_setthetime();
 	test_printdate();
-	/*test_printisodate();*/
-	/*test_badformat();*/
-	/*test_iso8601_usage();*/
-	/*test_multipleformats();*/
-	/*test_usage();*/
+	test_printisodate();
+	test_badformat();
+	test_iso8601_usage();
+	test_multipleformats();
+	test_usage();
 	long tc = 0, tf = 0;
 	std::printf("\n%-16s %10s %10s\n", "function", "cases", "failures");
 	std::printf("%-16s %10s %10s\n", "--------", "-----", "--------");

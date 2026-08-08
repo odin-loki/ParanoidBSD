@@ -251,7 +251,6 @@ bool core_equal()
 	if (mutex != port::mutex) return false;
 	if (sigflags != port::sigflags) return false;
 	if (addr_last != port::addr_last) return false;
-	if (addr_last != port::addr_last) return false;
 	if (current_addr != port::current_addr) return false;
 	if (first_addr != port::first_addr) return false;
 	if (second_addr != port::second_addr) return false;
@@ -274,30 +273,20 @@ bool sbuf_equal()
 {
 	if (addr_last != port::addr_last)
 		return false;
-	std::vector<std::string> ref_lines;
-	std::vector<std::string> port_lines;
-	ref_lines.reserve(static_cast<size_t>(addr_last));
-	port_lines.reserve(static_cast<size_t>(port::addr_last));
 	for (long i = 1; i <= addr_last; ++i) {
 		line_t *rlp = ref_get_addressed_line_node(i);
-		if (!rlp)
+		port::line_t *plp = port::get_addressed_line_node(i);
+		if (!rlp || !plp)
+			return false;
+		if (rlp->len == 0 && plp->len == 0)
+			continue;
+		if (rlp->len != plp->len)
 			return false;
 		char *rs = ref_get_sbuf_line(rlp);
-		if (!rs)
-			return false;
-		ref_lines.emplace_back(rs, static_cast<size_t>(rlp->len));
-	}
-	for (long i = 1; i <= port::addr_last; ++i) {
-		port::line_t *plp = port::get_addressed_line_node(i);
-		if (!plp)
-			return false;
 		char *ps = port::get_sbuf_line(plp);
-		if (!ps)
+		if (!rs || !ps)
 			return false;
-		port_lines.emplace_back(ps, static_cast<size_t>(plp->len));
-	}
-	for (long i = 0; i < addr_last; ++i) {
-		if (ref_lines[static_cast<size_t>(i)] != port_lines[static_cast<size_t>(i)])
+		if (std::memcmp(rs, ps, static_cast<size_t>(rlp->len)) != 0)
 			return false;
 	}
 	return true;
@@ -765,25 +754,7 @@ void test_move_lines()
 		mirror_globals_to_port();
 		int rr = ref_move_lines(d);
 		int pr = port::move_lines(d);
-		bool ce = core_equal();
-		bool se = sbuf_equal();
-		if (rr != pr || !ce || !se) {
-			static int dbg = 0;
-			if (dbg++ < 3) {
-				std::fprintf(stderr, "move fail f=%ld s=%ld d=%ld rr=%d pr=%d ce=%d se=%d al=%ld\n",
-				    f, s, d, rr, pr, ce, se, addr_last);
-				for (long i = 1; i <= addr_last; ++i) {
-					line_t *rlp = ref_get_addressed_line_node(i);
-					port::line_t *plp = port::get_addressed_line_node(i);
-					char *rs = ref_get_sbuf_line(rlp);
-					char *ps = port::get_sbuf_line(plp);
-					std::fprintf(stderr, "  %ld r seek=%lld len=%d p seek=%lld len=%d eq=%d\n", i,
-					    (long long)rlp->seek, rlp->len, (long long)plp->seek, plp->len,
-					    (rlp->len == plp->len && rs && ps && !std::memcmp(rs, ps, rlp->len)));
-				}
-			}
-		}
-		note_case(st, rr == pr && ce && se);
+		note_case(st, rr == pr && core_equal() && sbuf_equal());
 		close_scratch_both();
 	};
 

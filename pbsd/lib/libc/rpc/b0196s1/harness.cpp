@@ -100,26 +100,25 @@ check_rpc_createerr(const char *origin)
 		ok = (pgot == nullptr && rwant == nullptr);
 	} else {
 		const bool pg_global = pgot == &port::port_rpc_createerr;
-		const bool rw_global =
-		    rwant == reinterpret_cast<port::rpc_createerr *>(
-			&port::port_rpc_createerr);
+		const bool rw_global = rwant ==
+		    reinterpret_cast<port::rpc_createerr *>(&ref_rpc_createerr);
 		ok = pg_global == rw_global;
 
 		if (!pg_global && !rw_global) {
 			ok = ok && pgot->cf_stat ==
-			    static_cast<enum clnt_stat>(0) &&
+			    static_cast<port::clnt_stat>(0) &&
 			    rwant->cf_stat ==
-			    static_cast<enum clnt_stat>(0) &&
+			    static_cast<port::clnt_stat>(0) &&
 			    pgot->cf_error.re_status == 0 &&
 			    rwant->cf_error.re_status == 0;
 		}
 
-		enum clnt_stat ps = pgot->cf_stat;
-		enum clnt_stat rs = rwant->cf_stat;
-		pgot->cf_stat = static_cast<enum clnt_stat>(42);
-		rwant->cf_stat = static_cast<enum clnt_stat>(43);
-		ok = ok && pgot->cf_stat == static_cast<enum clnt_stat>(42) &&
-		    rwant->cf_stat == static_cast<enum clnt_stat>(43);
+		port::clnt_stat ps = pgot->cf_stat;
+		port::clnt_stat rs = rwant->cf_stat;
+		pgot->cf_stat = static_cast<port::clnt_stat>(42);
+		rwant->cf_stat = static_cast<port::clnt_stat>(43);
+		ok = ok && pgot->cf_stat == static_cast<port::clnt_stat>(42) &&
+		    rwant->cf_stat == static_cast<port::clnt_stat>(43);
 		pgot->cf_stat = ps;
 		rwant->cf_stat = rs;
 	}
@@ -159,11 +158,14 @@ edge_cases()
 				mock_thr_getspecific_null = 1;
 
 				port::rpc_createerr *pgot = port::__rpc_createerr();
-				struct rpc_createerr *rwant = ref___rpc_createerr();
+				port::rpc_createerr *rwant =
+				    reinterpret_cast<port::rpc_createerr *>(
+					ref___rpc_createerr());
 				const bool pg_global =
 				    pgot == &port::port_rpc_createerr;
-				const bool rw_global =
-				    rwant == &ref_rpc_createerr;
+				const bool rw_global = rwant ==
+				    reinterpret_cast<port::rpc_createerr *>(
+					&ref_rpc_createerr);
 				bool ok = pg_global == rw_global;
 				if (!ok)
 					tbl[0].failures++;
