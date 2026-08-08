@@ -10,7 +10,7 @@ module;
 
 export module pbsd.usr.sbin.cxgbetool.b0085;
 
-namespace pbsd::usr_sbin_cxgbetool::b0085::detail {
+export namespace pbsd::usr_sbin_cxgbetool::b0085 {
 
 struct reg_info {
 	const char *name;
@@ -180,20 +180,5 @@ const reg_info t4vf_mbdata_regs[] = {
 
 	{ nullptr, 0, 0 }
 };
-
-} // namespace pbsd::usr_sbin_cxgbetool::b0085::detail
-
-export namespace pbsd::usr_sbin_cxgbetool::b0085 {
-
-using reg_info = detail::reg_info;
-
-inline const reg_info *const t4vf_sge_regs = detail::t4vf_sge_regs;
-inline const reg_info *const t5vf_sge_regs = detail::t5vf_sge_regs;
-inline const reg_info *const t4vf_mps_regs = detail::t4vf_mps_regs;
-inline const reg_info *const t4vf_pl_regs = detail::t4vf_pl_regs;
-inline const reg_info *const t5vf_pl_regs = detail::t5vf_pl_regs;
-inline const reg_info *const t6vf_pl_regs = detail::t6vf_pl_regs;
-inline const reg_info *const t4vf_cim_regs = detail::t4vf_cim_regs;
-inline const reg_info *const t4vf_mbdata_regs = detail::t4vf_mbdata_regs;
 
 } // namespace pbsd::usr_sbin_cxgbetool::b0085

@@ -10,9 +10,9 @@ import pbsd.lib.libc.softfloat.bits32.b0047;
 
 namespace port = pbsd::lib_libc_softfloat_bits32::b0047;
 
-using u32 = std::uint32_t;
-using u64 = std::uint64_t;
-using i32 = std::int32_t;
+using u32 = unsigned int;
+using u64 = unsigned long long;
+using i32 = int;
 
 extern "C" {
 	u32 ref_int32_to_float32(i32);

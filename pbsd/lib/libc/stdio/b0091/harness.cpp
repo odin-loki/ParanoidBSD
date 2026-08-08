@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <wchar.h>
-#include <xlocale.h>
+#include <locale.h>
 
 import pbsd.lib.libc.stdio.b0091;
 
@@ -25,6 +25,17 @@ extern "C" {
 int ref_fsetpos(FILE *iop, const fpos_t *pos);
 wint_t ref_getwchar(void);
 wint_t ref_getwchar_l(locale_t locale);
+wint_t fgetwc_l(FILE *fp, locale_t loc);
+}
+
+extern "C" wint_t
+fgetwc_l(FILE *fp, locale_t loc)
+{
+	locale_t old = uselocale(loc);
+	wint_t w = fgetwc(fp);
+
+	uselocale(old);
+	return w;
 }
 
 /* ------------------------------------------------------------------------ */

@@ -1,7 +1,7 @@
 #!/bin/sh
-# Build and run the PBSD batch b0094 differential test.
+# Build and run the PBSD batch b0093 differential test.
 #
-# Usage: sh build.sh   (from pbsd/lib/msun/ld80/b0094/)
+# Usage: sh build.sh   (from pbsd/lib/msun/ld80/b0093/)
 
 set -e
 
@@ -28,10 +28,10 @@ $CC $CFLAGS -c oracle.c -o oracle.o
 
 if $CXX --version 2>&1 | grep -qi clang; then
 	$CXX $CXXFLAGS -x c++-module --precompile port.cppm \
-	    -o pcm.cache/pbsd.lib.msun.ld80.b0094.pcm
-	$CXX $CXXFLAGS -c pcm.cache/pbsd.lib.msun.ld80.b0094.pcm -o port.o
+	    -o pcm.cache/pbsd.lib.msun.ld80.b0093.pcm
+	$CXX $CXXFLAGS -c pcm.cache/pbsd.lib.msun.ld80.b0093.pcm -o port.o
 	$CXX $CXXFLAGS \
-	    -fmodule-file=pbsd.lib.msun.ld80.b0094=pcm.cache/pbsd.lib.msun.ld80.b0094.pcm \
+	    -fmodule-file=pbsd.lib.msun.ld80.b0093=pcm.cache/pbsd.lib.msun.ld80.b0093.pcm \
 	    -c harness.cpp -o harness.o
 else
 	$CXX $CXXFLAGS $MODFLAG -x c++ -c port.cppm -o port.o

@@ -38,10 +38,13 @@ def remove_skipped_functions(text):
         m = re.match(r'^[\w\s\*]+\s+(\w+)\s*\(', lines[i])
         if m and m.group(1) in SKIP_FUNCS:
             depth = 0
+            started = False
             while i < len(lines):
+                if '{' in lines[i]:
+                    started = True
                 depth += lines[i].count('{') - lines[i].count('}')
                 i += 1
-                if depth <= 0 and '{' in ''.join(out[-5:] + lines[i-3:i]):
+                if started and depth <= 0:
                     break
             continue
         out.append(lines[i])

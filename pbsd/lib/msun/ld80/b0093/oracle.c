@@ -702,7 +702,7 @@ __ldexp_cexpl(long double complex z, int expt)
 #endif /* _COMPLEX_H */
 
 long double complex
-cexpl (long double complex z)
+ref_cexpl (long double complex z)
 {
 	long double c, exp_x, s, x, y;
 	uint64_t lx, ly;

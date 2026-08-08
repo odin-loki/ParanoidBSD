@@ -1,12 +1,10 @@
 /*
- * b0098 oracle -- the specification.
+ * Reference oracle for batch b0098.
  *
- * hbsd/src/lib/libc/stdio/vwscanf.c, vwprintf.c, and setbuf.c concatenated,
- * with every function renamed with a `ref_' prefix.  Function bodies are
- * UNMODIFIED.
+ * The original HardenedBSD sources are concatenated below with every function
+ * renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.
  */
 
-#include <stddef.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -17,7 +15,12 @@
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
 #endif
 
-/* ======================= vwscanf.c ======================= */
+#ifndef _IOFBF
+#define _IOFBF 0
+#endif
+#ifndef _IONBF
+#define _IONBF 2
+#endif
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -63,8 +66,6 @@ ref_vwscanf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
 	return (vfwscanf_l(stdin, locale, fmt, ap));
 }
 
-/* ======================= vwprintf.c ======================= */
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -108,8 +109,6 @@ ref_vwprintf_l(locale_t locale, const wchar_t * __restrict fmt, va_list ap)
 {
 	return (vfwprintf_l(stdout, locale, fmt, ap));
 }
-
-/* ======================= setbuf.c ======================= */
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause

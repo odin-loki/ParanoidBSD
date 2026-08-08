@@ -2522,3 +2522,687 @@ operation is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
+
+/*
+-------------------------------------------------------------------------------
+Returns the result of adding the absolute values of the double-precision
+floating-point values `a' and `b'.  If `zSign' is 1, the sum is negated
+before being returned.  `zSign' is ignored if the result is a NaN.
+The addition is performed according to the IEC/IEEE Standard for Binary
+Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+static float64 addFloat64Sigs( float64 a, float64 b, flag zSign )
+{
+    int16 aExp, bExp, zExp;
+    bits32 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1, zSig2;
+    int16 expDiff;
+
+    aSig1 = extractFloat64Frac1( a );
+    aSig0 = extractFloat64Frac0( a );
+    aExp = extractFloat64Exp( a );
+    bSig1 = extractFloat64Frac1( b );
+    bSig0 = extractFloat64Frac0( b );
+    bExp = extractFloat64Exp( b );
+    expDiff = aExp - bExp;
+    if ( 0 < expDiff ) {
+        if ( aExp == 0x7FF ) {
+            if ( aSig0 | aSig1 ) return propagateFloat64NaN( a, b );
+            return a;
+        }
+        if ( bExp == 0 ) {
+            --expDiff;
+        }
+        else {
+            bSig0 |= 0x00100000;
+        }
+        shift64ExtraRightJamming(
+            bSig0, bSig1, 0, expDiff, &bSig0, &bSig1, &zSig2 );
+        zExp = aExp;
+    }
+    else if ( expDiff < 0 ) {
+        if ( bExp == 0x7FF ) {
+            if ( bSig0 | bSig1 ) return propagateFloat64NaN( a, b );
+            return packFloat64( zSign, 0x7FF, 0, 0 );
+        }
+        if ( aExp == 0 ) {
+            ++expDiff;
+        }
+        else {
+            aSig0 |= 0x00100000;
+        }
+        shift64ExtraRightJamming(
+            aSig0, aSig1, 0, - expDiff, &aSig0, &aSig1, &zSig2 );
+        zExp = bExp;
+    }
+    else {
+        if ( aExp == 0x7FF ) {
+            if ( aSig0 | aSig1 | bSig0 | bSig1 ) {
+                return propagateFloat64NaN( a, b );
+            }
+            return a;
+        }
+        add64( aSig0, aSig1, bSig0, bSig1, &zSig0, &zSig1 );
+        if ( aExp == 0 ) return packFloat64( zSign, 0, zSig0, zSig1 );
+        zSig2 = 0;
+        zSig0 |= 0x00200000;
+        zExp = aExp;
+        goto shiftRight1;
+    }
+    aSig0 |= 0x00100000;
+    add64( aSig0, aSig1, bSig0, bSig1, &zSig0, &zSig1 );
+    --zExp;
+    if ( zSig0 < 0x00200000 ) goto roundAndPack;
+    ++zExp;
+ shiftRight1:
+    shift64ExtraRightJamming( zSig0, zSig1, zSig2, 1, &zSig0, &zSig1, &zSig2 );
+ roundAndPack:
+    return roundAndPackFloat64( zSign, zExp, zSig0, zSig1, zSig2 );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns the result of subtracting the absolute values of the double-
+precision floating-point values `a' and `b'.  If `zSign' is 1, the
+difference is negated before being returned.  `zSign' is ignored if the
+result is a NaN.  The subtraction is performed according to the IEC/IEEE
+Standard for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+static float64 subFloat64Sigs( float64 a, float64 b, flag zSign )
+{
+    int16 aExp, bExp, zExp;
+    bits32 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1;
+    int16 expDiff;
+
+    aSig1 = extractFloat64Frac1( a );
+    aSig0 = extractFloat64Frac0( a );
+    aExp = extractFloat64Exp( a );
+    bSig1 = extractFloat64Frac1( b );
+    bSig0 = extractFloat64Frac0( b );
+    bExp = extractFloat64Exp( b );
+    expDiff = aExp - bExp;
+    shortShift64Left( aSig0, aSig1, 10, &aSig0, &aSig1 );
+    shortShift64Left( bSig0, bSig1, 10, &bSig0, &bSig1 );
+    if ( 0 < expDiff ) goto aExpBigger;
+    if ( expDiff < 0 ) goto bExpBigger;
+    if ( aExp == 0x7FF ) {
+        if ( aSig0 | aSig1 | bSig0 | bSig1 ) {
+            return propagateFloat64NaN( a, b );
+        }
+        float_raise( float_flag_invalid );
+        return float64_default_nan;
+    }
+    if ( aExp == 0 ) {
+        aExp = 1;
+        bExp = 1;
+    }
+    if ( bSig0 < aSig0 ) goto aBigger;
+    if ( aSig0 < bSig0 ) goto bBigger;
+    if ( bSig1 < aSig1 ) goto aBigger;
+    if ( aSig1 < bSig1 ) goto bBigger;
+    return packFloat64( float_rounding_mode == float_round_down, 0, 0, 0 );
+ bExpBigger:
+    if ( bExp == 0x7FF ) {
+        if ( bSig0 | bSig1 ) return propagateFloat64NaN( a, b );
+        return packFloat64( zSign ^ 1, 0x7FF, 0, 0 );
+    }
+    if ( aExp == 0 ) {
+        ++expDiff;
+    }
+    else {
+        aSig0 |= 0x40000000;
+    }
+    shift64RightJamming( aSig0, aSig1, - expDiff, &aSig0, &aSig1 );
+    bSig0 |= 0x40000000;
+ bBigger:
+    sub64( bSig0, bSig1, aSig0, aSig1, &zSig0, &zSig1 );
+    zExp = bExp;
+    zSign ^= 1;
+    goto normalizeRoundAndPack;
+ aExpBigger:
+    if ( aExp == 0x7FF ) {
+        if ( aSig0 | aSig1 ) return propagateFloat64NaN( a, b );
+        return a;
+    }
+    if ( bExp == 0 ) {
+        --expDiff;
+    }
+    else {
+        bSig0 |= 0x40000000;
+    }
+    shift64RightJamming( bSig0, bSig1, expDiff, &bSig0, &bSig1 );
+    aSig0 |= 0x40000000;
+ aBigger:
+    sub64( aSig0, aSig1, bSig0, bSig1, &zSig0, &zSig1 );
+    zExp = aExp;
+ normalizeRoundAndPack:
+    --zExp;
+    return normalizeRoundAndPackFloat64( zSign, zExp - 10, zSig0, zSig1 );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns the result of adding the double-precision floating-point values `a'
+and `b'.  The operation is performed according to the IEC/IEEE Standard for
+Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+float64 float64_add( float64 a, float64 b )
+{
+    flag aSign, bSign;
+
+    aSign = extractFloat64Sign( a );
+    bSign = extractFloat64Sign( b );
+    if ( aSign == bSign ) {
+        return addFloat64Sigs( a, b, aSign );
+    }
+    else {
+        return subFloat64Sigs( a, b, aSign );
+    }
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns the result of subtracting the double-precision floating-point values
+`a' and `b'.  The operation is performed according to the IEC/IEEE Standard
+for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+float64 float64_sub( float64 a, float64 b )
+{
+    flag aSign, bSign;
+
+    aSign = extractFloat64Sign( a );
+    bSign = extractFloat64Sign( b );
+    if ( aSign == bSign ) {
+        return subFloat64Sigs( a, b, aSign );
+    }
+    else {
+        return addFloat64Sigs( a, b, aSign );
+    }
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns the result of multiplying the double-precision floating-point values
+`a' and `b'.  The operation is performed according to the IEC/IEEE Standard
+for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+float64 float64_mul( float64 a, float64 b )
+{
+    flag aSign, bSign, zSign;
+    int16 aExp, bExp, zExp;
+    bits32 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1, zSig2, zSig3;
+
+    aSig1 = extractFloat64Frac1( a );
+    aSig0 = extractFloat64Frac0( a );
+    aExp = extractFloat64Exp( a );
+    aSign = extractFloat64Sign( a );
+    bSig1 = extractFloat64Frac1( b );
+    bSig0 = extractFloat64Frac0( b );
+    bExp = extractFloat64Exp( b );
+    bSign = extractFloat64Sign( b );
+    zSign = aSign ^ bSign;
+    if ( aExp == 0x7FF ) {
+        if (    ( aSig0 | aSig1 )
+             || ( ( bExp == 0x7FF ) && ( bSig0 | bSig1 ) ) ) {
+            return propagateFloat64NaN( a, b );
+        }
+        if ( ( bExp | bSig0 | bSig1 ) == 0 ) goto invalid;
+        return packFloat64( zSign, 0x7FF, 0, 0 );
+    }
+    if ( bExp == 0x7FF ) {
+        if ( bSig0 | bSig1 ) return propagateFloat64NaN( a, b );
+        if ( ( aExp | aSig0 | aSig1 ) == 0 ) {
+ invalid:
+            float_raise( float_flag_invalid );
+            return float64_default_nan;
+        }
+        return packFloat64( zSign, 0x7FF, 0, 0 );
+    }
+    if ( aExp == 0 ) {
+        if ( ( aSig0 | aSig1 ) == 0 ) return packFloat64( zSign, 0, 0, 0 );
+        normalizeFloat64Subnormal( aSig0, aSig1, &aExp, &aSig0, &aSig1 );
+    }
+    if ( bExp == 0 ) {
+        if ( ( bSig0 | bSig1 ) == 0 ) return packFloat64( zSign, 0, 0, 0 );
+        normalizeFloat64Subnormal( bSig0, bSig1, &bExp, &bSig0, &bSig1 );
+    }
+    zExp = aExp + bExp - 0x400;
+    aSig0 |= 0x00100000;
+    shortShift64Left( bSig0, bSig1, 12, &bSig0, &bSig1 );
+    mul64To128( aSig0, aSig1, bSig0, bSig1, &zSig0, &zSig1, &zSig2, &zSig3 );
+    add64( zSig0, zSig1, aSig0, aSig1, &zSig0, &zSig1 );
+    zSig2 |= ( zSig3 != 0 );
+    if ( 0x00200000 <= zSig0 ) {
+        shift64ExtraRightJamming(
+            zSig0, zSig1, zSig2, 1, &zSig0, &zSig1, &zSig2 );
+        ++zExp;
+    }
+    return roundAndPackFloat64( zSign, zExp, zSig0, zSig1, zSig2 );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns the result of dividing the double-precision floating-point value `a'
+by the corresponding value `b'.  The operation is performed according to the
+IEC/IEEE Standard for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+float64 float64_div( float64 a, float64 b )
+{
+    flag aSign, bSign, zSign;
+    int16 aExp, bExp, zExp;
+    bits32 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1, zSig2;
+    bits32 rem0, rem1, rem2, rem3, term0, term1, term2, term3;
+
+    aSig1 = extractFloat64Frac1( a );
+    aSig0 = extractFloat64Frac0( a );
+    aExp = extractFloat64Exp( a );
+    aSign = extractFloat64Sign( a );
+    bSig1 = extractFloat64Frac1( b );
+    bSig0 = extractFloat64Frac0( b );
+    bExp = extractFloat64Exp( b );
+    bSign = extractFloat64Sign( b );
+    zSign = aSign ^ bSign;
+    if ( aExp == 0x7FF ) {
+        if ( aSig0 | aSig1 ) return propagateFloat64NaN( a, b );
+        if ( bExp == 0x7FF ) {
+            if ( bSig0 | bSig1 ) return propagateFloat64NaN( a, b );
+            goto invalid;
+        }
+        return packFloat64( zSign, 0x7FF, 0, 0 );
+    }
+    if ( bExp == 0x7FF ) {
+        if ( bSig0 | bSig1 ) return propagateFloat64NaN( a, b );
+        return packFloat64( zSign, 0, 0, 0 );
+    }
+    if ( bExp == 0 ) {
+        if ( ( bSig0 | bSig1 ) == 0 ) {
+            if ( ( aExp | aSig0 | aSig1 ) == 0 ) {
+ invalid:
+                float_raise( float_flag_invalid );
+                return float64_default_nan;
+            }
+            float_raise( float_flag_divbyzero );
+            return packFloat64( zSign, 0x7FF, 0, 0 );
+        }
+        normalizeFloat64Subnormal( bSig0, bSig1, &bExp, &bSig0, &bSig1 );
+    }
+    if ( aExp == 0 ) {
+        if ( ( aSig0 | aSig1 ) == 0 ) return packFloat64( zSign, 0, 0, 0 );
+        normalizeFloat64Subnormal( aSig0, aSig1, &aExp, &aSig0, &aSig1 );
+    }
+    zExp = aExp - bExp + 0x3FD;
+    shortShift64Left( aSig0 | 0x00100000, aSig1, 11, &aSig0, &aSig1 );
+    shortShift64Left( bSig0 | 0x00100000, bSig1, 11, &bSig0, &bSig1 );
+    if ( le64( bSig0, bSig1, aSig0, aSig1 ) ) {
+        shift64Right( aSig0, aSig1, 1, &aSig0, &aSig1 );
+        ++zExp;
+    }
+    zSig0 = estimateDiv64To32( aSig0, aSig1, bSig0 );
+    mul64By32To96( bSig0, bSig1, zSig0, &term0, &term1, &term2 );
+    sub96( aSig0, aSig1, 0, term0, term1, term2, &rem0, &rem1, &rem2 );
+    while ( (sbits32) rem0 < 0 ) {
+        --zSig0;
+        add96( rem0, rem1, rem2, 0, bSig0, bSig1, &rem0, &rem1, &rem2 );
+    }
+    zSig1 = estimateDiv64To32( rem1, rem2, bSig0 );
+    if ( ( zSig1 & 0x3FF ) <= 4 ) {
+        mul64By32To96( bSig0, bSig1, zSig1, &term1, &term2, &term3 );
+        sub96( rem1, rem2, 0, term1, term2, term3, &rem1, &rem2, &rem3 );
+        while ( (sbits32) rem1 < 0 ) {
+            --zSig1;
+            add96( rem1, rem2, rem3, 0, bSig0, bSig1, &rem1, &rem2, &rem3 );
+        }
+        zSig1 |= ( ( rem1 | rem2 | rem3 ) != 0 );
+    }
+    shift64ExtraRightJamming( zSig0, zSig1, 0, 11, &zSig0, &zSig1, &zSig2 );
+    return roundAndPackFloat64( zSign, zExp, zSig0, zSig1, zSig2 );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns the remainder of the double-precision floating-point value `a'
+with respect to the corresponding value `b'.  The operation is performed
+according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+float64 float64_rem( float64 a, float64 b )
+{
+    flag aSign, bSign, zSign;
+    int16 aExp, bExp, expDiff;
+    bits32 aSig0, aSig1, bSig0, bSig1, q, term0, term1, term2;
+    bits32 allZero, alternateASig0, alternateASig1, sigMean1;
+    sbits32 sigMean0;
+    float64 z;
+
+    aSig1 = extractFloat64Frac1( a );
+    aSig0 = extractFloat64Frac0( a );
+    aExp = extractFloat64Exp( a );
+    aSign = extractFloat64Sign( a );
+    bSig1 = extractFloat64Frac1( b );
+    bSig0 = extractFloat64Frac0( b );
+    bExp = extractFloat64Exp( b );
+    bSign = extractFloat64Sign( b );
+    if ( aExp == 0x7FF ) {
+        if (    ( aSig0 | aSig1 )
+             || ( ( bExp == 0x7FF ) && ( bSig0 | bSig1 ) ) ) {
+            return propagateFloat64NaN( a, b );
+        }
+        goto invalid;
+    }
+    if ( bExp == 0x7FF ) {
+        if ( bSig0 | bSig1 ) return propagateFloat64NaN( a, b );
+        return a;
+    }
+    if ( bExp == 0 ) {
+        if ( ( bSig0 | bSig1 ) == 0 ) {
+ invalid:
+            float_raise( float_flag_invalid );
+            return float64_default_nan;
+        }
+        normalizeFloat64Subnormal( bSig0, bSig1, &bExp, &bSig0, &bSig1 );
+    }
+    if ( aExp == 0 ) {
+        if ( ( aSig0 | aSig1 ) == 0 ) return a;
+        normalizeFloat64Subnormal( aSig0, aSig1, &aExp, &aSig0, &aSig1 );
+    }
+    expDiff = aExp - bExp;
+    if ( expDiff < -1 ) return a;
+    shortShift64Left(
+        aSig0 | 0x00100000, aSig1, 11 - ( expDiff < 0 ), &aSig0, &aSig1 );
+    shortShift64Left( bSig0 | 0x00100000, bSig1, 11, &bSig0, &bSig1 );
+    q = le64( bSig0, bSig1, aSig0, aSig1 );
+    if ( q ) sub64( aSig0, aSig1, bSig0, bSig1, &aSig0, &aSig1 );
+    expDiff -= 32;
+    while ( 0 < expDiff ) {
+        q = estimateDiv64To32( aSig0, aSig1, bSig0 );
+        q = ( 4 < q ) ? q - 4 : 0;
+        mul64By32To96( bSig0, bSig1, q, &term0, &term1, &term2 );
+        shortShift96Left( term0, term1, term2, 29, &term1, &term2, &allZero );
+        shortShift64Left( aSig0, aSig1, 29, &aSig0, &allZero );
+        sub64( aSig0, 0, term1, term2, &aSig0, &aSig1 );
+        expDiff -= 29;
+    }
+    if ( -32 < expDiff ) {
+        q = estimateDiv64To32( aSig0, aSig1, bSig0 );
+        q = ( 4 < q ) ? q - 4 : 0;
+        q >>= - expDiff;
+        shift64Right( bSig0, bSig1, 8, &bSig0, &bSig1 );
+        expDiff += 24;
+        if ( expDiff < 0 ) {
+            shift64Right( aSig0, aSig1, - expDiff, &aSig0, &aSig1 );
+        }
+        else {
+            shortShift64Left( aSig0, aSig1, expDiff, &aSig0, &aSig1 );
+        }
+        mul64By32To96( bSig0, bSig1, q, &term0, &term1, &term2 );
+        sub64( aSig0, aSig1, term1, term2, &aSig0, &aSig1 );
+    }
+    else {
+        shift64Right( aSig0, aSig1, 8, &aSig0, &aSig1 );
+        shift64Right( bSig0, bSig1, 8, &bSig0, &bSig1 );
+    }
+    do {
+        alternateASig0 = aSig0;
+        alternateASig1 = aSig1;
+        ++q;
+        sub64( aSig0, aSig1, bSig0, bSig1, &aSig0, &aSig1 );
+    } while ( 0 <= (sbits32) aSig0 );
+    add64(
+        aSig0, aSig1, alternateASig0, alternateASig1, &sigMean0, &sigMean1 );
+    if (    ( sigMean0 < 0 )
+         || ( ( ( sigMean0 | sigMean1 ) == 0 ) && ( q & 1 ) ) ) {
+        aSig0 = alternateASig0;
+        aSig1 = alternateASig1;
+    }
+    zSign = ( (sbits32) aSig0 < 0 );
+    if ( zSign ) sub64( 0, 0, aSig0, aSig1, &aSig0, &aSig1 );
+    return
+        normalizeRoundAndPackFloat64( aSign ^ zSign, bExp - 4, aSig0, aSig1 );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns the square root of the double-precision floating-point value `a'.
+The operation is performed according to the IEC/IEEE Standard for Binary
+Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+float64 float64_sqrt( float64 a )
+{
+    flag aSign;
+    int16 aExp, zExp;
+    bits32 aSig0, aSig1, zSig0, zSig1, zSig2, doubleZSig0;
+    bits32 rem0, rem1, rem2, rem3, term0, term1, term2, term3;
+    float64 z;
+
+    aSig1 = extractFloat64Frac1( a );
+    aSig0 = extractFloat64Frac0( a );
+    aExp = extractFloat64Exp( a );
+    aSign = extractFloat64Sign( a );
+    if ( aExp == 0x7FF ) {
+        if ( aSig0 | aSig1 ) return propagateFloat64NaN( a, a );
+        if ( ! aSign ) return a;
+        goto invalid;
+    }
+    if ( aSign ) {
+        if ( ( aExp | aSig0 | aSig1 ) == 0 ) return a;
+ invalid:
+        float_raise( float_flag_invalid );
+        return float64_default_nan;
+    }
+    if ( aExp == 0 ) {
+        if ( ( aSig0 | aSig1 ) == 0 ) return packFloat64( 0, 0, 0, 0 );
+        normalizeFloat64Subnormal( aSig0, aSig1, &aExp, &aSig0, &aSig1 );
+    }
+    zExp = ( ( aExp - 0x3FF )>>1 ) + 0x3FE;
+    aSig0 |= 0x00100000;
+    shortShift64Left( aSig0, aSig1, 11, &term0, &term1 );
+    zSig0 = ( estimateSqrt32( aExp, term0 )>>1 ) + 1;
+    if ( zSig0 == 0 ) zSig0 = 0x7FFFFFFF;
+    doubleZSig0 = zSig0 + zSig0;
+    shortShift64Left( aSig0, aSig1, 9 - ( aExp & 1 ), &aSig0, &aSig1 );
+    mul32To64( zSig0, zSig0, &term0, &term1 );
+    sub64( aSig0, aSig1, term0, term1, &rem0, &rem1 );
+    while ( (sbits32) rem0 < 0 ) {
+        --zSig0;
+        doubleZSig0 -= 2;
+        add64( rem0, rem1, 0, doubleZSig0 | 1, &rem0, &rem1 );
+    }
+    zSig1 = estimateDiv64To32( rem1, 0, doubleZSig0 );
+    if ( ( zSig1 & 0x1FF ) <= 5 ) {
+        if ( zSig1 == 0 ) zSig1 = 1;
+        mul32To64( doubleZSig0, zSig1, &term1, &term2 );
+        sub64( rem1, 0, term1, term2, &rem1, &rem2 );
+        mul32To64( zSig1, zSig1, &term2, &term3 );
+        sub96( rem1, rem2, 0, 0, term2, term3, &rem1, &rem2, &rem3 );
+        while ( (sbits32) rem1 < 0 ) {
+            --zSig1;
+            shortShift64Left( 0, zSig1, 1, &term2, &term3 );
+            term3 |= 1;
+            term2 |= doubleZSig0;
+            add96( rem1, rem2, rem3, 0, term2, term3, &rem1, &rem2, &rem3 );
+        }
+        zSig1 |= ( ( rem1 | rem2 | rem3 ) != 0 );
+    }
+    shift64ExtraRightJamming( zSig0, zSig1, 0, 10, &zSig0, &zSig1, &zSig2 );
+    return roundAndPackFloat64( 0, zExp, zSig0, zSig1, zSig2 );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns 1 if the double-precision floating-point value `a' is equal to
+the corresponding value `b', and 0 otherwise.  The comparison is performed
+according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+flag float64_eq( float64 a, float64 b )
+{
+
+    if (    (    ( extractFloat64Exp( a ) == 0x7FF )
+              && ( extractFloat64Frac0( a ) | extractFloat64Frac1( a ) ) )
+         || (    ( extractFloat64Exp( b ) == 0x7FF )
+              && ( extractFloat64Frac0( b ) | extractFloat64Frac1( b ) ) )
+       ) {
+        if ( float64_is_signaling_nan( a ) || float64_is_signaling_nan( b ) ) {
+            float_raise( float_flag_invalid );
+        }
+        return 0;
+    }
+    return ( a == b ) ||
+	( (bits64) ( ( FLOAT64_DEMANGLE(a) | FLOAT64_DEMANGLE(b) )<<1 ) == 0 );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns 1 if the double-precision floating-point value `a' is less than
+or equal to the corresponding value `b', and 0 otherwise.  The comparison
+is performed according to the IEC/IEEE Standard for Binary Floating-Point
+Arithmetic.
+-------------------------------------------------------------------------------
+*/
+flag float64_le( float64 a, float64 b )
+{
+    flag aSign, bSign;
+
+    if (    (    ( extractFloat64Exp( a ) == 0x7FF )
+              && ( extractFloat64Frac0( a ) | extractFloat64Frac1( a ) ) )
+         || (    ( extractFloat64Exp( b ) == 0x7FF )
+              && ( extractFloat64Frac0( b ) | extractFloat64Frac1( b ) ) )
+       ) {
+        float_raise( float_flag_invalid );
+        return 0;
+    }
+    aSign = extractFloat64Sign( a );
+    bSign = extractFloat64Sign( b );
+    if ( aSign != bSign )
+	return aSign ||
+	    ( (bits64) ( ( FLOAT64_DEMANGLE(a) | FLOAT64_DEMANGLE(b) )<<1 ) ==
+	      0 );
+    return ( a == b ) ||
+	( aSign ^ ( FLOAT64_DEMANGLE(a) < FLOAT64_DEMANGLE(b) ) );
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns 1 if the double-precision floating-point value `a' is less than
+the corresponding value `b', and 0 otherwise.  The comparison is performed
+according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+flag float64_lt( float64 a, float64 b )
+{
+    flag aSign, bSign;
+
+    if (    (    ( extractFloat64Exp( a ) == 0x7FF )
+              && ( extractFloat64Frac0( a ) | extractFloat64Frac1( a ) ) )
+         || (    ( extractFloat64Exp( b ) == 0x7FF )
+              && ( extractFloat64Frac0( b ) | extractFloat64Frac1( b ) ) )
+       ) {
+        float_raise( float_flag_invalid );
+        return 0;
+    }
+    aSign = extractFloat64Sign( a );
+    bSign = extractFloat64Sign( b );
+    if ( aSign != bSign )
+	return aSign &&
+	    ( (bits64) ( ( FLOAT64_DEMANGLE(a) | FLOAT64_DEMANGLE(b) )<<1 ) !=
+	      0 );
+    return ( a != b ) &&
+	( aSign ^ ( FLOAT64_DEMANGLE(a) < FLOAT64_DEMANGLE(b) ) );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns 1 if the double-precision floating-point value `a' is equal to
+the corresponding value `b', and 0 otherwise.  The invalid exception is
+raised if either operand is a NaN.  Otherwise, the comparison is performed
+according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+flag float64_eq_signaling( float64 a, float64 b )
+{
+
+    if (    (    ( extractFloat64Exp( a ) == 0x7FF )
+              && ( extractFloat64Frac0( a ) | extractFloat64Frac1( a ) ) )
+         || (    ( extractFloat64Exp( b ) == 0x7FF )
+              && ( extractFloat64Frac0( b ) | extractFloat64Frac1( b ) ) )
+       ) {
+        float_raise( float_flag_invalid );
+        return 0;
+    }
+    return ( a == b ) || ( (bits64) ( ( a | b )<<1 ) == 0 );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns 1 if the double-precision floating-point value `a' is less than or
+equal to the corresponding value `b', and 0 otherwise.  Quiet NaNs do not
+cause an exception.  Otherwise, the comparison is performed according to the
+IEC/IEEE Standard for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+flag float64_le_quiet( float64 a, float64 b )
+{
+    flag aSign, bSign;
+
+    if (    (    ( extractFloat64Exp( a ) == 0x7FF )
+              && ( extractFloat64Frac0( a ) | extractFloat64Frac1( a ) ) )
+         || (    ( extractFloat64Exp( b ) == 0x7FF )
+              && ( extractFloat64Frac0( b ) | extractFloat64Frac1( b ) ) )
+       ) {
+        if ( float64_is_signaling_nan( a ) || float64_is_signaling_nan( b ) ) {
+            float_raise( float_flag_invalid );
+        }
+        return 0;
+    }
+    aSign = extractFloat64Sign( a );
+    bSign = extractFloat64Sign( b );
+    if ( aSign != bSign ) return aSign || ( (bits64) ( ( a | b )<<1 ) == 0 );
+    return ( a == b ) || ( aSign ^ ( a < b ) );
+
+}
+
+/*
+-------------------------------------------------------------------------------
+Returns 1 if the double-precision floating-point value `a' is less than
+the corresponding value `b', and 0 otherwise.  Quiet NaNs do not cause an
+exception.  Otherwise, the comparison is performed according to the IEC/IEEE
+Standard for Binary Floating-Point Arithmetic.
+-------------------------------------------------------------------------------
+*/
+flag float64_lt_quiet( float64 a, float64 b )
+{
+    flag aSign, bSign;
+
+    if (    (    ( extractFloat64Exp( a ) == 0x7FF )
+              && ( extractFloat64Frac0( a ) | extractFloat64Frac1( a ) ) )
+         || (    ( extractFloat64Exp( b ) == 0x7FF )
+              && ( extractFloat64Frac0( b ) | extractFloat64Frac1( b ) ) )
+       ) {
+        if ( float64_is_signaling_nan( a ) || float64_is_signaling_nan( b ) ) {
+            float_raise( float_flag_invalid );
+        }
+        return 0;
+    }
+    aSign = extractFloat64Sign( a );
+    bSign = extractFloat64Sign( b );
+    if ( aSign != bSign ) return aSign && ( (bits64) ( ( a | b )<<1 ) != 0 );
+    return ( a != b ) && ( aSign ^ ( a < b ) );
+
+}

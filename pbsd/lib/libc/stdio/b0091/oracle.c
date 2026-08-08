@@ -5,12 +5,18 @@
  * renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stddef.h>
 #include <limits.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <wchar.h>
-#include <xlocale.h>
+#include <locale.h>
+
+extern wint_t fgetwc_l(FILE *fp, locale_t loc);
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)

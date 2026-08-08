@@ -327,7 +327,7 @@ dump_gid_diff(const gid_t *a, const gid_t *b, int n)
 }
 
 static ggm_capture
-snap_ggm(int rv, const unsigned char *base)
+snap_ggm(int rv, const unsigned char *base, const gid_t *groups_base)
 {
 	ggm_capture c;
 
@@ -338,7 +338,7 @@ snap_ggm(int rv, const unsigned char *base)
 	    (long)(g.ggm_uname - (const char *)base);
 	c.agroup = g.ggm_agroup;
 	c.groups_off = g.ggm_groups == nullptr ? OFF_NULL :
-	    (long)(g.ggm_groups - (const gid_t *)groups_a);
+	    (long)(g.ggm_groups - groups_base);
 	c.grpcnt_in = g.ggm_grpcnt_in;
 	if (g.ggm_grpcnt_ptr != nullptr)
 		c.grpcnt_out = *g.ggm_grpcnt_ptr;
@@ -458,11 +458,11 @@ do_grouplist(const char *uname, gid_t agroup, size_t uname_off,
 
 	mock_reset();
 	int rva = port::getgrouplist(pa, agroup, ga, &grpcnt_a);
-	ggm_capture ca = snap_ggm(rva, bufa);
+	ggm_capture ca = snap_ggm(rva, bufa, groups_a);
 
 	mock_reset();
 	int rvb = ref_getgrouplist(pb, agroup, gb, &grpcnt_b);
-	ggm_capture cb = snap_ggm(rvb, bufb);
+	ggm_capture cb = snap_ggm(rvb, bufb, groups_b);
 
 	bool same_buf = memcmp(bufa, bufb, BUFSZ) == 0;
 	bool same_gid = true;
@@ -690,7 +690,7 @@ edge_domainname(void)
 		do_domainname(lens[i], false);
 	g.force_fail = 0;
 
-	do_domainname(64, 0, true);
+	do_domainname(64, true);
 }
 
 /* ------------------------------------------------------------------- random */

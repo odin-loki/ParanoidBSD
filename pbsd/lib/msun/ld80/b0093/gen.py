@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Generate oracle.c and port.cppm for batch b0093."""
+"""Generate oracle.c and port.cppm for batch b0093 (temporary)."""
 
 from pathlib import Path
 
 ROOT = Path("/home/odin/pbsd/hbsd/src/lib/msun")
 OUT = Path("/home/odin/pbsd/pbsd/lib/msun/ld80/b0093")
 
-SOURCES = [
-    ("s_cexpl.c", "cexpl", "ref_cexpl"),
-    ("s_cospil.c", "cospil", "ref_cospil"),
-    ("s_sinpil.c", "sinpil", "ref_sinpil"),
-    ("s_tanpil.c", "tanpil", "ref_tanpil"),
+SECTIONS = [
+    ("s_cexpl.c", "cexpl", "ref_cexpl", None),
+    ("s_cospil.c", "cospil", "ref_cospil", "cospil"),
+    ("s_sinpil.c", "sinpil", "ref_sinpil", "sinpil"),
+    ("s_tanpil.c", "tanpil", "ref_tanpil", "tanpil"),
 ]
 
 HEADER_INLINE = {
@@ -34,6 +34,7 @@ SUPPORT_C = r'''/*
  * compilation is provided above the concatenated sources.
  */
 
+#define _GNU_SOURCE
 #include <complex.h>
 #include <float.h>
 #include <math.h>
@@ -143,24 +144,22 @@ rnintl(long double x)
 
 '''
 
-KERNEL_COS = (ROOT / "ld80/k_cosl.c").read_text().split("#include", 1)[0] + \
-    (ROOT / "ld80/k_cosl.c").read_text().split('"math_private.h"\n', 1)[1]
-
-KERNEL_SIN = (ROOT / "ld80/k_sinl.c").read_text().split("#include", 1)[0] + \
-    (ROOT / "ld80/k_sinl.c").read_text().split('"math_private.h"\n', 1)[1]
-
-KERNEL_TAN = (ROOT / "ld80/k_tanl.c").read_text().split("#include", 1)[0] + \
-    (ROOT / "ld80/k_tanl.c").read_text().split('"math_private.h"\n', 1)[1]
+def read_kernel(path: str) -> str:
+    text = (ROOT / path).read_text()
+    return text.split('"math_private.h"\n', 1)[1]
 
 
-def transform_source(text: str, ref_name: str | None) -> str:
+KERNEL_COS = read_kernel("ld80/k_cosl.c")
+KERNEL_SIN = read_kernel("ld80/k_sinl.c")
+KERNEL_TAN = read_kernel("ld80/k_tanl.c")
+
+
+def transform_source(text: str, ref_name: str | None, section: str | None) -> str:
     out = []
     for line in text.splitlines(keepends=True):
         stripped = line.strip()
         if stripped.startswith("#include"):
             if any(h in line for h in SKIP_INCLUDES):
-                continue
-            if stripped.startswith("#include <ieeefp.h>"):
                 continue
             for hdr, body in HEADER_INLINE.items():
                 if f'"{hdr}"' in line:
@@ -172,26 +171,49 @@ def transform_source(text: str, ref_name: str | None) -> str:
             else:
                 out.append(line)
             continue
-        if ref_name and stripped.startswith("long double") and f"\n{ref_name.split('_',1)[1]}(" in text:
-            pass
         out.append(line)
 
     joined = "".join(out)
     if ref_name:
         orig = ref_name.replace("ref_", "")
+        joined = joined.replace(f"\n{orig} (", f"\n{ref_name} (")
         joined = joined.replace(f"\n{orig}(", f"\n{ref_name}(")
-        joined = joined.replace(f" {orig}(", f" {ref_name}(")
     return joined
+
+
+def section_preamble(section: str | None) -> str:
+    if section is None:
+        return ""
+    s = section
+    return (
+        f"#define __kernel_cospil __kernel_cospil_{s}\n"
+        f"#define __kernel_sinpil __kernel_sinpil_{s}\n"
+        f"#define vzero vzero_{s}\n"
+    )
+
+
+def section_epilogue(section: str | None) -> str:
+    if section is None:
+        return ""
+    return (
+        f"#undef __kernel_cospil\n"
+        f"#undef __kernel_sinpil\n"
+        f"#undef vzero\n"
+        f"#undef pi_hi\n"
+        f"#undef pi_lo\n"
+    )
 
 
 def build_oracle() -> None:
     parts = [SUPPORT_C, "/* === kernel support === */\n", KERNEL_COS, KERNEL_SIN, KERNEL_TAN]
-    for fname, _, ref in SOURCES:
+    for fname, _, ref, section in SECTIONS:
         src = (ROOT / "ld80" / fname).read_text()
         parts.append(f"\n/* ================================================================== */\n")
         parts.append(f"/* lib/msun/ld80/{fname} */\n")
         parts.append(f"/* ================================================================== */\n\n")
-        parts.append(transform_source(src, ref))
+        parts.append(section_preamble(section))
+        parts.append(transform_source(src, ref, section))
+        parts.append(section_epilogue(section))
     (OUT / "oracle.c").write_text("".join(parts))
 
 
@@ -205,6 +227,7 @@ PORT_PREFIX = r'''// PBSD port of HardenedBSD lib/msun/ld80 -- batch b0093.
 
 module;
 
+#define _GNU_SOURCE
 #include <complex.h>
 #include <cstdint>
 #include <math.h>
@@ -219,30 +242,33 @@ namespace pbsd::lib_msun_ld80::b0093 {
 
 '''
 
-PORT_SUPPORT = SUPPORT_C.replace("oracle.c -- batch b0093 reference implementation.",
-                                 "port support for batch b0093.")
-
 PORT_SUFFIX = r'''
 } /* namespace pbsd::lib_msun_ld80::b0093 */
 
 export namespace pbsd::lib_msun_ld80::b0093 {
+
+long double complex cexpl(long double complex z);
+long double cospil(long double x);
+long double sinpil(long double x);
+long double tanpil(long double x);
+
+} /* export namespace */
 '''
 
 
 def build_port() -> None:
-    parts = [PORT_PREFIX, PORT_SUPPORT, "/* === kernel support === */\n", KERNEL_COS, KERNEL_SIN, KERNEL_TAN]
-    for fname, _, _ in SOURCES:
+    parts = [PORT_PREFIX, SUPPORT_C.replace("oracle.c", "port.cppm"), "/* === kernel support === */\n",
+             KERNEL_COS, KERNEL_SIN, KERNEL_TAN]
+    for fname, _, _, section in SECTIONS:
         src = (ROOT / "ld80" / fname).read_text()
         parts.append(f"\n/* lib/msun/ld80/{fname} */\n\n")
-        parts.append(transform_source(src, None))
+        parts.append(section_preamble(section))
+        parts.append(transform_source(src, None, section))
+        parts.append(section_epilogue(section))
     parts.append(PORT_SUFFIX)
-    for _, orig, _ in SOURCES:
-        parts.append(f"using ::pbsd::lib_msun_ld80::b0093::{orig};\n")
-    parts.append("} /* export namespace */\n")
     (OUT / "port.cppm").write_text("".join(parts))
 
 
 if __name__ == "__main__":
     build_oracle()
     build_port()
-    print("generated oracle.c and port.cppm")

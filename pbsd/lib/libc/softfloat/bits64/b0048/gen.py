@@ -1425,6 +1425,7 @@ def gen_nan_internal_test(f):
     }}
 '''
     ty = sig_float_type(f)
+    cmp = cmp_expr(ty, 'rp', 'rr')
     return f'''
     for (unsigned i = 0; i < 200000u; ++i) {{
         commonNaNT a;
@@ -1435,7 +1436,7 @@ def gen_nan_internal_test(f):
         {ty} rp = port::{f}(a);
         {ty} rr = ref_{f}(a);
         cases++;
-        if (rp != rr) failures++;
+        if ({cmp}) failures++;
         sync_globals_to_port();
     }}
 '''

@@ -73,6 +73,12 @@ ld_equal(long double a, long double b)
 	return std::memcmp(&a, &b, sizeof(long double)) == 0;
 }
 
+static long double
+load_ld(const volatile long double &x)
+{
+	return x;
+}
+
 static void
 report_ld_fail(stat &s, const char *tag, long double got, long double want)
 {
@@ -122,14 +128,14 @@ check_size(stat &s, const char *tag, std::size_t got, std::size_t want)
 }
 
 static void
-check_scalar(stat &s, long double got, long double want)
+check_scalar(stat &s, const volatile long double &got, const volatile long double &want)
 {
-	check_ld(s, "scalar", got, want);
+	check_ld(s, "scalar", load_ld(got), load_ld(want));
 }
 
 static void
-check_table(stat &s, const char *name, const long double *ptbl,
-    const long double *rtbl, std::size_t pn, std::size_t rn)
+check_table(stat &s, const char *name, const volatile long double *ptbl,
+    const volatile long double *rtbl, std::size_t pn, std::size_t rn)
 {
 	char tag[64];
 	std::size_t i;
@@ -137,7 +143,7 @@ check_table(stat &s, const char *name, const long double *ptbl,
 	check_size(s, "n_elem", pn, rn);
 	for (i = 0; i < pn && i < rn; ++i) {
 		std::snprintf(tag, sizeof(tag), "%s[%zu]", name, i);
-		check_ld(s, tag, ptbl[i], rtbl[i]);
+		check_ld(s, tag, load_ld(ptbl[i]), load_ld(rtbl[i]));
 	}
 	if (pn > 0) {
 		check_ld(s, "first", ptbl[0], rtbl[0]);

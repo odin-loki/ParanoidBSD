@@ -234,6 +234,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libcrypt/misc_m/port.cppm
   lib/msun/ld128/b0073/port.cppm
   lib/msun/ld128/b0084/port.cppm
+  lib/msun/ld128/b0089/port.cppm
   lib/msun/ld128/k_cosl_m/port.cppm
   lib/msun/ld128/k_tanl_m/port.cppm
   lib/msun/ld80/b0082/port.cppm

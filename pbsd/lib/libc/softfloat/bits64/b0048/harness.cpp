@@ -443,7 +443,7 @@ static void test_commonNaNToFloat128()
         float128 rp = port::commonNaNToFloat128(a);
         float128 rr = ref_commonNaNToFloat128(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -464,7 +464,7 @@ static void test_commonNaNToFloat32()
         float32 rp = port::commonNaNToFloat32(a);
         float32 rr = ref_commonNaNToFloat32(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -485,7 +485,7 @@ static void test_commonNaNToFloat64()
         float64 rp = port::commonNaNToFloat64(a);
         float64 rr = ref_commonNaNToFloat64(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -506,7 +506,7 @@ static void test_commonNaNToFloatx80()
         floatx80 rp = port::commonNaNToFloatx80(a);
         floatx80 rr = ref_commonNaNToFloatx80(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -851,15 +851,15 @@ static void test_float128_add()
         float128 rp = port::float128_add(a, b);
         float128 rr = ref_float128_add(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const float128 z = 0;
+    static const float128 z = {{0, 0}};
     sync_globals_from_port();
     float128 rp0 = port::float128_add(z, z);
     float128 rr0 = ref_float128_add(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -876,15 +876,15 @@ static void test_float128_div()
         float128 rp = port::float128_div(a, b);
         float128 rr = ref_float128_div(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const float128 z = 0;
+    static const float128 z = {{0, 0}};
     sync_globals_from_port();
     float128 rp0 = port::float128_div(z, z);
     float128 rr0 = ref_float128_div(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -1219,15 +1219,15 @@ static void test_float128_mul()
         float128 rp = port::float128_mul(a, b);
         float128 rr = ref_float128_mul(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const float128 z = 0;
+    static const float128 z = {{0, 0}};
     sync_globals_from_port();
     float128 rp0 = port::float128_mul(z, z);
     float128 rr0 = ref_float128_mul(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -1244,15 +1244,15 @@ static void test_float128_rem()
         float128 rp = port::float128_rem(a, b);
         float128 rr = ref_float128_rem(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const float128 z = 0;
+    static const float128 z = {{0, 0}};
     sync_globals_from_port();
     float128 rp0 = port::float128_rem(z, z);
     float128 rr0 = ref_float128_rem(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -1286,7 +1286,7 @@ static void test_float128_sqrt()
         float128 rp = port::float128_sqrt(a);
         float128 rr = ref_float128_sqrt(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -1305,15 +1305,15 @@ static void test_float128_sub()
         float128 rp = port::float128_sub(a, b);
         float128 rr = ref_float128_sub(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const float128 z = 0;
+    static const float128 z = {{0, 0}};
     sync_globals_from_port();
     float128 rp0 = port::float128_sub(z, z);
     float128 rr0 = ref_float128_sub(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -1474,7 +1474,7 @@ static void test_float32_add()
         float32 rp = port::float32_add(a, b);
         float32 rr = ref_float32_add(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float32 z = 0;
@@ -1482,7 +1482,7 @@ static void test_float32_add()
     float32 rp0 = port::float32_add(z, z);
     float32 rr0 = ref_float32_add(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -1499,7 +1499,7 @@ static void test_float32_div()
         float32 rp = port::float32_div(a, b);
         float32 rr = ref_float32_div(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float32 z = 0;
@@ -1507,7 +1507,7 @@ static void test_float32_div()
     float32 rp0 = port::float32_div(z, z);
     float32 rr0 = ref_float32_div(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -1842,7 +1842,7 @@ static void test_float32_mul()
         float32 rp = port::float32_mul(a, b);
         float32 rr = ref_float32_mul(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float32 z = 0;
@@ -1850,7 +1850,7 @@ static void test_float32_mul()
     float32 rp0 = port::float32_mul(z, z);
     float32 rr0 = ref_float32_mul(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -1867,7 +1867,7 @@ static void test_float32_rem()
         float32 rp = port::float32_rem(a, b);
         float32 rr = ref_float32_rem(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float32 z = 0;
@@ -1875,7 +1875,7 @@ static void test_float32_rem()
     float32 rp0 = port::float32_rem(z, z);
     float32 rr0 = ref_float32_rem(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -1909,7 +1909,7 @@ static void test_float32_sqrt()
         float32 rp = port::float32_sqrt(a);
         float32 rr = ref_float32_sqrt(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -1928,7 +1928,7 @@ static void test_float32_sub()
         float32 rp = port::float32_sub(a, b);
         float32 rr = ref_float32_sub(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float32 z = 0;
@@ -1936,7 +1936,7 @@ static void test_float32_sub()
     float32 rp0 = port::float32_sub(z, z);
     float32 rr0 = ref_float32_sub(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -2097,7 +2097,7 @@ static void test_float64_add()
         float64 rp = port::float64_add(a, b);
         float64 rr = ref_float64_add(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float64 z = 0;
@@ -2105,7 +2105,7 @@ static void test_float64_add()
     float64 rp0 = port::float64_add(z, z);
     float64 rr0 = ref_float64_add(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -2122,7 +2122,7 @@ static void test_float64_div()
         float64 rp = port::float64_div(a, b);
         float64 rr = ref_float64_div(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float64 z = 0;
@@ -2130,7 +2130,7 @@ static void test_float64_div()
     float64 rp0 = port::float64_div(z, z);
     float64 rr0 = ref_float64_div(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -2465,7 +2465,7 @@ static void test_float64_mul()
         float64 rp = port::float64_mul(a, b);
         float64 rr = ref_float64_mul(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float64 z = 0;
@@ -2473,7 +2473,7 @@ static void test_float64_mul()
     float64 rp0 = port::float64_mul(z, z);
     float64 rr0 = ref_float64_mul(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -2490,7 +2490,7 @@ static void test_float64_rem()
         float64 rp = port::float64_rem(a, b);
         float64 rr = ref_float64_rem(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float64 z = 0;
@@ -2498,7 +2498,7 @@ static void test_float64_rem()
     float64 rp0 = port::float64_rem(z, z);
     float64 rr0 = ref_float64_rem(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -2532,7 +2532,7 @@ static void test_float64_sqrt()
         float64 rp = port::float64_sqrt(a);
         float64 rr = ref_float64_sqrt(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -2551,7 +2551,7 @@ static void test_float64_sub()
         float64 rp = port::float64_sub(a, b);
         float64 rr = ref_float64_sub(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp != rr)) failures++;
         sync_globals_to_port();
     }
     static const float64 z = 0;
@@ -2559,7 +2559,7 @@ static void test_float64_sub()
     float64 rp0 = port::float64_sub(z, z);
     float64 rr0 = ref_float64_sub(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp != rr)) failures++;
     record(name, cases, failures);
 }
 
@@ -2738,15 +2738,15 @@ static void test_floatx80_add()
         floatx80 rp = port::floatx80_add(a, b);
         floatx80 rr = ref_floatx80_add(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const floatx80 z = 0;
+    static const floatx80 z = {{0, 0}};
     sync_globals_from_port();
     floatx80 rp0 = port::floatx80_add(z, z);
     floatx80 rr0 = ref_floatx80_add(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -2763,15 +2763,15 @@ static void test_floatx80_div()
         floatx80 rp = port::floatx80_div(a, b);
         floatx80 rr = ref_floatx80_div(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const floatx80 z = 0;
+    static const floatx80 z = {{0, 0}};
     sync_globals_from_port();
     floatx80 rp0 = port::floatx80_div(z, z);
     floatx80 rr0 = ref_floatx80_div(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -3106,15 +3106,15 @@ static void test_floatx80_mul()
         floatx80 rp = port::floatx80_mul(a, b);
         floatx80 rr = ref_floatx80_mul(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const floatx80 z = 0;
+    static const floatx80 z = {{0, 0}};
     sync_globals_from_port();
     floatx80 rp0 = port::floatx80_mul(z, z);
     floatx80 rr0 = ref_floatx80_mul(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -3131,15 +3131,15 @@ static void test_floatx80_rem()
         floatx80 rp = port::floatx80_rem(a, b);
         floatx80 rr = ref_floatx80_rem(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const floatx80 z = 0;
+    static const floatx80 z = {{0, 0}};
     sync_globals_from_port();
     floatx80 rp0 = port::floatx80_rem(z, z);
     floatx80 rr0 = ref_floatx80_rem(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
@@ -3173,7 +3173,7 @@ static void test_floatx80_sqrt()
         floatx80 rp = port::floatx80_sqrt(a);
         floatx80 rr = ref_floatx80_sqrt(a);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
     record(name, cases, failures);
@@ -3192,15 +3192,15 @@ static void test_floatx80_sub()
         floatx80 rp = port::floatx80_sub(a, b);
         floatx80 rr = ref_floatx80_sub(a, b);
         cases++;
-        if (rp != rr) failures++;
+        if ((rp.high != rr.high || rp.low != rr.low)) failures++;
         sync_globals_to_port();
     }
-    static const floatx80 z = 0;
+    static const floatx80 z = {{0, 0}};
     sync_globals_from_port();
     floatx80 rp0 = port::floatx80_sub(z, z);
     floatx80 rr0 = ref_floatx80_sub(z, z);
     cases++;
-    if (rp0 != rr0) failures++;
+    if ((rp.high != rr.high || rp.low != rr.low)) failures++;
     record(name, cases, failures);
 }
 
