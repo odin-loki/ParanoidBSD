@@ -57,7 +57,13 @@ int asprintf(char **, const char *, ...);
 size_t strlcat(char *, const char *, size_t);
 wchar_t *wcsdup(const wchar_t *);
 
-#define COLL_WEIGHTS_MAX	COLLATE_WEIGHTS_MAX
+#ifndef O_CLOEXEC
+#define O_CLOEXEC	0
+#endif
+
+#ifndef isascii
+#define isascii(c)	((unsigned)(c) <= 0x7f)
+#endif
 
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX	4
@@ -269,6 +275,7 @@ __wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
 #define _LDP_ERROR			(-1)
 #define _LDP_CACHE			2
 #define COLLATE_WEIGHTS_MAX		10
+#define COLL_WEIGHTS_MAX		COLLATE_WEIGHTS_MAX
 #define COLLATE_STR_LEN			32
 #define DIRECTIVE_FORWARD		0x01
 #define DIRECTIVE_BACKWARD		0x02

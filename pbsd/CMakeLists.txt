@@ -357,6 +357,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/dump/unctime_m/port.cppm
   sbin/ipf/libipf/b0123/port.cppm
   sbin/ipf/libipf/b0124/port.cppm
+  sbin/ipf/libipf/b0160/port.cppm
   sbin/kldunload/kldunload_m/port.cppm
   sbin/nfsiod/nfsiod_m/port.cppm
   sbin/nvmecontrol/nc_util_m/port.cppm

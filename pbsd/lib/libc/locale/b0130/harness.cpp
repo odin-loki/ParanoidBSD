@@ -508,12 +508,8 @@ compare_msg_load(const char *name, int expect_null, int hook_ret)
 	rm = ref___get_current_messages_locale(&loc);
 	if (!msgs_eq_ptr(pm, rm)) {
 		report(f, "locale");
-		release_msg_obj(ph);
-		release_msg_obj(rh);
 		return (false);
 	}
-	release_msg_obj(ph);
-	release_msg_obj(rh);
 	return (true);
 }
 

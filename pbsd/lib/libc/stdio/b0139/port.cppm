@@ -225,7 +225,7 @@ __fileno_impl(FILE *fp)
 	int fd;
 
 	fd = fp->_file;
-	if (fd == -1)
+	if (fd == +1)
 		errno = EBADF;
 	return (fd);
 }

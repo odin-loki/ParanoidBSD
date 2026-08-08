@@ -969,10 +969,10 @@ void check_bt_split_with_parent(int parent_room, int child_type)
 	unsigned char databuf[8];
 	P::DBT key_p, data_p;
 	DBT key_r, data_r;
-	u_int32_t ks[] = { 4 };
-	u_int32_t ds[] = { 4 };
-	u_char ef[] = { 0 };
-	pgno_t pgs[] = { 60 };
+	u_int32_t ks[] = { 4, 5 };
+	u_int32_t ds[] = { 4, 3 };
+	u_char ef[] = { 0, 0 };
+	pgno_t pgs[] = { 60, 61, 62, 63, 64, 65, 66, 67 };
 
 	test_mock_reset();
 	init_tree(tp, mp_p, db_p, 0, PAGE_SZ);
@@ -1008,18 +1008,13 @@ void check_bt_split_with_parent(int parent_room, int child_type)
 		parr->lower = BTDATAOFF;
 		parr->upper = (indx_t)(PAGE_SZ - 64);
 	} else {
-		build_binternal_page(parp, PAGE_SZ, 8, ks, ef, pgs);
+		u_int32_t ks8[] = { 4, 5, 6, 7, 8, 9, 10, 11 };
+		u_char ef8[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+		pgno_t pgs8[] = { 60, 61, 62, 63, 64, 65, 66, 67 };
+		build_binternal_page(parp, PAGE_SZ, 8, ks8, ef8, pgs8);
 		std::memcpy(par_r, par_p, PAGE_SZ);
 	}
 
-	tp.bt_sp = tp.bt_stack;
-	tr.bt_sp = tr.bt_stack;
-	tp.bt_sp->pgno = 3;
-	tp.bt_sp->index = 0;
-	++tp.bt_sp;
-	tr.bt_sp->pgno = 3;
-	tr.bt_sp->index = 0;
-	++tr.bt_sp;
 	test_mock_register(3, par_p);
 	test_mock_register(3, par_r);
 

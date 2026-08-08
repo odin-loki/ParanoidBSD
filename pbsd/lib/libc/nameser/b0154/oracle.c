@@ -11,12 +11,17 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
+#undef _ns_flagdata
 #include <ctype.h>
 #include <errno.h>
 #include <resolv.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+
+typedef unsigned char u_char;
+typedef unsigned int u_int;
+typedef unsigned long u_long;
 
 #ifndef NS_MAXNNAME
 #define NS_MAXNNAME	256
@@ -52,6 +57,8 @@ typedef struct __ns_rr2 {
 #define ns_makecanon		ref_ns_makecanon
 #define ns_samename		ref_ns_samename
 #define ns_samedomain		ref_ns_samedomain
+
+int	ref_ns_samename(const char *, const char *);
 
 static int
 labellen(const u_char *lp)
@@ -478,7 +485,9 @@ static void	ref_setsection(ns_msg *msg, ns_sect sect);
 
 #define RETERR(err) do { errno = (err); return (-1); } while (0)
 
-struct _ns_flagdata _ns_flagdata[16] = {
+#define _ns_flagdata	oracle_ns_flagdata
+
+struct _ns_flagdata oracle_ns_flagdata[16] = {
 	{ 0x8000, 15 },
 	{ 0x7800, 11 },
 	{ 0x0400, 10 },

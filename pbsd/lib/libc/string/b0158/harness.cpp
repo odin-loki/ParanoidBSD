@@ -47,7 +47,7 @@ begin_fail(Stat &st, const char *what)
 }
 
 static void
-dump_wide(const wchar_t *label, const wchar_t *p, size_t n)
+dump_wide(const char *label, const wchar_t *p, size_t n)
 {
 	std::printf("    %s[%zu] =", label, n);
 	for (size_t i = 0; i < n; i++)
@@ -242,20 +242,22 @@ t_wcstok_resume_null_last(const wchar_t *body, size_t blen,
 	}
 }
 
-#define WCS(...) (const wchar_t[]){ __VA_ARGS__, 0 }
+#define WCS(...) (const wchar_t[]){ __VA_ARGS__, L'\0' }
+
+static const wchar_t W_EMPTY[] = { L'\0' };
 
 static void
 hand_wcstok(void)
 {
-	t_wcstok_null(WCS(), 0);
+	t_wcstok_null(W_EMPTY, 0);
 	t_wcstok_null(WCS(L','), 1);
 	t_wcstok_null(WCS(L'a', L'b'), 2);
 
 	t_wcstok_resume_null_last(WCS(L'x'), 1, WCS(L','), 1);
 
-	t_wcstok(WCS(), 0, WCS(), 0);
-	t_wcstok(WCS(), 0, WCS(L','), 1);
-	t_wcstok(WCS(L'a'), 1, WCS(), 0);
+	t_wcstok(W_EMPTY, 0, W_EMPTY, 0);
+	t_wcstok(W_EMPTY, 0, WCS(L','), 1);
+	t_wcstok(WCS(L'a'), 1, W_EMPTY, 0);
 	t_wcstok(WCS(L'a'), 1, WCS(L','), 1);
 
 	t_wcstok(WCS(L'a', L'b'), 2, WCS(L','), 1);

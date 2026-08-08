@@ -233,8 +233,29 @@ pbsd_localeconv_hook_t	pbsd_localeconv_hook;
 pbsd_ldpart_hook_t	pbsd_ldpart_hook;
 pbsd_wcsftime_hook_t	pbsd_wcsftime_hook;
 
+struct port_xlocale {
+	long		retain_count;
+	void		(*destructor)(void *);
+	struct xlocale_component *components[6];
+	int		monetary_locale_changed;
+	int		using_monetary_locale;
+	int		numeric_locale_changed;
+	int		using_numeric_locale;
+	int		using_time_locale;
+	int		using_messages_locale;
+	struct lconv	lconv;
+	char		*csym;
+};
+
 struct _xlocale	ref_test_locale;
+struct port_xlocale	port_test_locale;
 char			*_PathLocale = "/locale";
+
+static void __attribute__((constructor))
+ref_oracle_init(void)
+{
+	pbsd_reset_hooks();
+}
 
 void
 pbsd_reset_hooks(void)
@@ -275,6 +296,7 @@ pbsd_reset_hooks(void)
 	memset(&pbsd_ldpart_hook, 0, sizeof(pbsd_ldpart_hook));
 	memset(&pbsd_wcsftime_hook, 0, sizeof(pbsd_wcsftime_hook));
 	memset(&ref_test_locale, 0, sizeof(ref_test_locale));
+	memset(&port_test_locale, 0, sizeof(port_test_locale));
 }
 
 locale_t
