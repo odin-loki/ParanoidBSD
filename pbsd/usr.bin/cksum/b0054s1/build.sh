@@ -3,9 +3,9 @@
 #
 # Usage: sh build.sh   (from pbsd/usr.bin/cksum/b0054s1/)
 #
-# Compiles the C oracle, the C++23 module port and the harness, links them
-# together and execs the harness, so the harness exit status is this script's
-# exit status.
+# Compiles the C oracle, the C++23 module port and the harness, links the
+# three together and execs the harness, so the harness exit status becomes
+# this script's exit status.
 
 set -e
 
@@ -23,7 +23,7 @@ mkdir -p "$OBJDIR"
 "$CC" $CFLAGS -c oracle.c -o "$OBJDIR/oracle.o"
 
 if "$CXX" --version 2>&1 | grep -qi clang; then
-	# Clang: explicit two-step module build.
+	# Clang: precompile the module interface, then reference the BMI.
 	"$CXX" $CXXFLAGS --precompile -x c++-module port.cppm -o "$OBJDIR/port.pcm"
 	"$CXX" $CXXFLAGS -c "$OBJDIR/port.pcm" -o "$OBJDIR/port.o"
 	"$CXX" $CXXFLAGS -fmodule-file=pbsd.usr.bin.cksum.b0054s1="$OBJDIR/port.pcm" \

@@ -86,8 +86,11 @@ kern_free(void *addr, malloc_type *type)
 
 export namespace pbsd::sys_kern::b0146s3 {
 
-using detail::malloc_type;
-using detail::u_long;
+struct malloc_type {
+	const char *ks_shortdesc;
+};
+
+using u_long = unsigned long;
 
 #define KASSERT(cond, msg) ((void)0)
 #define nitems(x) (sizeof((x)) / sizeof((x)[0]))
@@ -100,7 +103,7 @@ using detail::u_long;
 #define HASH_NOWAIT 0x00000002
 
 struct generic_list_head {
-	struct generic *lh_first;
+	struct detail::generic *lh_first;
 };
 
 /*-
@@ -162,7 +165,8 @@ KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
 	hashsize >>= 1;
 
 	hashtbl = static_cast<generic_list_head *>(
-	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
+	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl),
+	    reinterpret_cast<detail::malloc_type *>(type),
 	    hash_mflags(flags)));
 	if (hashtbl != nullptr) {
 		for (i = 0; i < hashsize; i++)
@@ -188,7 +192,7 @@ hashdestroy(void *vhashtbl, malloc_type *type, u_long hashmask)
 	for (hp = hashtbl; hp <= &hashtbl[hashmask]; hp++)
 KASSERT(LIST_EMPTY(hp), ("%s: hashtbl %p not empty "
 		    "(malloc type %s)", __func__, hashtbl, type->ks_shortdesc));
-detail::kern_free(hashtbl, type);
+detail::kern_free(hashtbl, reinterpret_cast<detail::malloc_type *>(type));
 }
 
 static const int primes[] = { 1, 13, 31, 61, 127, 251, 509, 761, 1021, 1531,
@@ -215,7 +219,8 @@ KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
 	hashsize = primes[i - 1];
 
 	hashtbl = static_cast<generic_list_head *>(
-	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl), type,
+	    detail::kern_malloc(static_cast<u_long>(hashsize) * sizeof(*hashtbl),
+	    reinterpret_cast<detail::malloc_type *>(type),
 	    hash_mflags(flags)));
 	if (hashtbl == nullptr)
 		return (nullptr);

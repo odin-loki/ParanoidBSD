@@ -43,7 +43,7 @@
 
 /* Forward. */
 
-static void	ref_setsection(ns_msg *msg, ns_sect sect);
+void	ref_setsection(ns_msg *msg, ns_sect sect);
 
 /* Macros. */
 
@@ -205,7 +205,7 @@ ref_ns_parserr(ns_msg *handle, ns_sect section, int rrnum, ns_rr *rr) {
 
 /* Private. */
 
-static void
+void
 ref_setsection(ns_msg *msg, ns_sect sect) {
 	msg->_sect = sect;
 	if (sect == ns_s_max) {

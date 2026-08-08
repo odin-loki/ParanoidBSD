@@ -2,13 +2,13 @@
  * harness.cpp -- differential test for PBSD batch b0148s1.
  */
 
-import pbsd.bin.ed.b0148s1;
-
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <regex.h>
+
+import pbsd.bin.ed.b0148s1;
 
 namespace port = pbsd::bin_ed::b0148s1;
 
@@ -112,31 +112,31 @@ void test_parse_char_class()
 	};
 
 	const char *edge[] = {
-	    "",
-	    "]",
-	    "a]",
-	    "[a]",
-	    "[]",
-	    "[^]",
-	    "[^a]",
-	    "[[:alpha:]]",
+	    "\n",
+	    "]\n",
+	    "a]\n",
+	    "[a]\n",
+	    "[]\n",
+	    "[^]\n",
+	    "[^a]\n",
+	    "[[:alpha:]]\n",
 	    "[\n",
 	    "[a\n",
-	    "[.[.]]",
-	    "[:.:]",
-	    "[=.=]",
-	    "[^]]]",
-	    "[\xff]",
-	    "[\x80]",
-	    "x",
-	    "[[",
-	    "[[:",
+	    "[.[.]]\n",
+	    "[:.:]\n",
+	    "[=.=]\n",
+	    "[^]]]\n",
+	    "[\xff]\n",
+	    "[\x80]\n",
+	    "x\n",
+	    "[[\n",
+	    "[[: \n",
 	    "[=x\n",
 	    "[.x\n",
 	    "[::\n",
-	    "[a-z]",
-	    "[\\]]",
-	    "[^].]",
+	    "[a-z]\n",
+	    "[\\]]\n",
+	    "[^].]\n",
 	};
 	for (auto s : edge)
 		run(s);
@@ -146,9 +146,10 @@ void test_parse_char_class()
 		int n = (int)(rnd() % 100) + 1;
 		for (int j = 0; j < n; j++) {
 			b[j] = (char)rndb();
-			if (b[j] == '\0')
-				b[j] = 'a';
+			if (b[j] == '\n' || b[j] == ']')
+				b[j] = 'x';
 		}
+		b[n++] = '\n';
 		b[n] = '\0';
 		run(b);
 	}
@@ -162,6 +163,7 @@ void test_extract_pattern()
 		reset_both();
 		isbinary = binary;
 		setup_ibuf(cmd);
+		ibufp++;
 		const char *re_before = errmsg;
 		char *r = ref_extract_pattern(delim);
 		long ri = ibufp - ibuf;
@@ -170,6 +172,7 @@ void test_extract_pattern()
 		reset_both();
 		port::isbinary = binary;
 		setup_ibuf(cmd);
+		port::ibufp++;
 		const char *pe_before = port::errmsg;
 		char *p = port::extract_pattern(delim);
 		long pi = port::ibufp - port::ibuf;
@@ -213,6 +216,8 @@ void test_extract_pattern()
 	    "/\\/x",
 	    "/[a-z]/x",
 	    "/[^]]/x",
+	    "/a/b/x",
+	    "/\\t/x",
 	};
 	for (auto s : edge)
 		run(s, s[0], 0);

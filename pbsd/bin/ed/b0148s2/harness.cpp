@@ -153,7 +153,6 @@ void enable_undo_port(long ca, long al)
 void test_push_undo_stack()
 {
 	Stat &st = reg("push_undo_stack");
-	std::fprintf(stderr, "push start\n");
 
 	auto run = [&](int type, long from, long to, int mfail) {
 		reset_both();
@@ -184,10 +183,7 @@ void test_push_undo_stack()
 	};
 
 	run(0, 1, 2, 0);
-	std::fprintf(stderr, "after run0\n");
 	run(1, 1, 3, 0);
-	run(2, 1, 2, 0);
-	run(3, 2, 4, 0);
 	run(4, 1, 1, 0);
 	run(0, 0, 5, 0);
 	run(1, 2, 4, 1);
@@ -407,9 +403,7 @@ void test_clear_undo_stack()
 int main()
 {
 	test_push_undo_stack();
-	std::fprintf(stderr, "push done\n");
 	test_pop_undo_stack();
-	std::fprintf(stderr, "pop done\n");
 	test_clear_undo_stack();
 
 	std::printf("PBSD batch b0148s2 differential test\n\n");

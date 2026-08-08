@@ -263,7 +263,8 @@ run_ref_hashinit_flags(int elements, int flags, int fail_at)
 	kenv_snapshot(pre);
 
 	obs.mask_or_n = 0xdeadbeefUL;
-	obs.tbl = ref_hashinit_flags(elements, &g_mtype, &obs.mask_or_n, flags);
+	obs.tbl = ref_hashinit_flags(elements,
+	    reinterpret_cast<malloc_type *>(&g_mtype), &obs.mask_or_n, flags);
 
 	obs.alloc_calls = g_env.alloc_calls;
 	obs.alloc_size = g_env.alloc_size;
@@ -314,7 +315,8 @@ cleanup:
 	if (p.tbl != nullptr)
 		port::hashdestroy(p.tbl, &g_mtype, p.mask_or_n);
 	if (r.tbl != nullptr)
-		ref_hashdestroy(r.tbl, &g_mtype, r.mask_or_n);
+		ref_hashdestroy(r.tbl, reinterpret_cast<malloc_type *>(&g_mtype),
+		    r.mask_or_n);
 }
 
 static run_obs

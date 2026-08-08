@@ -25,8 +25,9 @@ namespace port = pbsd::lib_msun_ld128::b0088s3;
 
 extern "C" {
 void ref___k_expl(long double, long double *, long double *, int *);
-long double _Complex ref___ldexp_cexpl(long double _Complex, int);
-long double _Complex ref_cexpl(long double _Complex);
+void ref_cexpl_parts(long double, long double, long double *, long double *);
+void ref___ldexp_cexpl_parts(long double, long double, int, long double *,
+    long double *);
 }
 
 static bool
