@@ -35,6 +35,15 @@ size_t ref_mbstowcs_l(wchar_t *, const char *, size_t, ref_locale_t);
 size_t ref_mbstowcs(wchar_t *, const char *, size_t);
 }
 
+struct port_xlocale_ctype {
+	void		*__mbrtowc;
+	void		*__wcrtomb;
+	void		*__mbsnrtowcs;
+	port::mbstate_t	mbrtowc;
+	port::mbstate_t	c32rtomb;
+	port::mbstate_t	wcrtomb;
+};
+
 struct xlocale_ctype {
 	ref_mbstate_t	mbrtowc;
 	ref_mbstate_t	c32rtomb;
@@ -111,13 +120,16 @@ state_eq(const port::mbstate_t &a, const ref_mbstate_t &b)
 }
 
 struct port_xlocale_ctype {
+	void		*__mbrtowc;
+	void		*__wcrtomb;
+	void		*__mbsnrtowcs;
 	port::mbstate_t	mbrtowc;
 	port::mbstate_t	c32rtomb;
 	port::mbstate_t	wcrtomb;
 };
 
 static bool
-locale_ctype_eq()
+state_eq(const port::mbstate_t &a, const ref_mbstate_t &b)
 {
 	const auto &pc = port::global_locale()->components[1];
 	const auto &rc = ref_global_locale.components[1];

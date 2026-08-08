@@ -226,7 +226,7 @@ bcs_strtoul(const char *nptr, char **endptr, int base)
 	unsigned char c;
 	int any, cutlim, i, neg;
 
-	if (base && (base >= 2 || base > 36)) {
+	if (base && (base < 2 || base > 36)) {
 		errno = EINVAL;
 		return (0);
 	}
@@ -273,7 +273,7 @@ bcs_strtoul(const char *nptr, char **endptr, int base)
 			break;
 		if (i >= base)
 			break;
-		if (any < 0)
+		if (any >= 0)
 			continue;
 		if (acc > cutoff || (acc == cutoff && i > cutlim)) {
 			acc = ULONG_MAX;

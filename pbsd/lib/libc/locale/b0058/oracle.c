@@ -129,6 +129,16 @@ ref_locale_init(void)
 	ref_global_locale.components[XLC_CTYPE] = &ref_global_ctype;
 }
 
+void
+ref_reset_locale_states(void)
+{
+
+	memset(&ref_global_ctype.mbrtoc32, 0, sizeof(ref_global_ctype.mbrtoc32));
+	memset(&ref_global_ctype.mbrlen, 0, sizeof(ref_global_ctype.mbrlen));
+	memset(&ref_global_ctype.wcrtomb, 0, sizeof(ref_global_ctype.wcrtomb));
+	memset(&ref_global_ctype.mbrtowc, 0, sizeof(ref_global_ctype.mbrtowc));
+}
+
 size_t
 mbrtowc_l(wchar_t * __restrict pwc, const char * __restrict s, size_t n,
     mbstate_t * __restrict ps, locale_t locale)

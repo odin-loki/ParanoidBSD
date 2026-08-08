@@ -375,28 +375,7 @@ def port_body_from_source(body: str) -> str:
     body = re.sub(r'\bINLINE\b', '', body)
     body = re.sub(r'^static\s+', '', body, flags=re.MULTILINE)
     body = re.sub(r'^inline\s+', '', body, flags=re.MULTILINE)
-    lines = body.splitlines()
-    out: list[str] = []
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        if line.strip().startswith('export'):
-            out.append(line)
-            i += 1
-            continue
-        m = re.match(r'^(' + RET_TYPES + r')\s+(\w+)\s*\(', line)
-        if m:
-            out.append('export ' + line)
-            i += 1
-            continue
-        if re.match(r'^(' + RET_TYPES + r')\s*$', line.strip()):
-            if i + 1 < len(lines) and re.match(r'^\s*(\w+)\s*\(', lines[i + 1]):
-                out.append('export ' + line)
-                i += 1
-                continue
-        out.append(line)
-        i += 1
-    return '\n'.join(out)
+    return body
 
 
 def classify_functions(funcs: set[str]) -> dict[str, str]:

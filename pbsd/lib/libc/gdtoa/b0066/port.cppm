@@ -24,9 +24,9 @@ module;
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "gdtoa_shim.h"
-
 export module pbsd.lib.libc.gdtoa.b0066;
+
+#include "gdtoa_shim.h"
 
 export namespace pbsd::lib_libc_gdtoa::b0066 {
 

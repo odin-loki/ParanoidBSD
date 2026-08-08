@@ -109,7 +109,6 @@ module;
 #include <cstddef>
 #include <cstdio>
 #include <cstdint>
-#include <cstdio>
 #include <cstring>
 #include <cwchar>
 
@@ -121,7 +120,7 @@ module;
 
 export module pbsd.lib.libc.locale.b0078;
 
-namespace pbsd::lib_libc_locale::b0078 {
+export namespace pbsd::lib_libc_locale::b0078 {
 
 using __ct_rune_t = int;
 using __rune_t = __ct_rune_t;
@@ -277,10 +276,6 @@ pbsd_test_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 		return (0);
 	return (consumed);
 }
-
-} /* namespace pbsd::lib_libc_locale::b0078 */
-
-export namespace pbsd::lib_libc_locale::b0078 {
 
 unsigned long
 ___runetype_l(__ct_rune_t c, locale_t locale)
