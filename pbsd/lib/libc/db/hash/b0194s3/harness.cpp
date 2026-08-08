@@ -1022,10 +1022,11 @@ static void test_init_hash()
 	th.fp = -1;
 	HTAB *tp = reinterpret_cast<HTAB *>(P::init_hash(ph(&th), nullptr, phi(&info)));
 	check(F_INIT_HASH, (tr != nullptr) == (tp != nullptr), "init null file");
-	if (tr)
-		ref_hdestroy(tr);
-	if (tp)
-		P::hdestroy(ph(tp));
+	if (tr && tp) {
+		check(F_INIT_HASH, tr->hdr.bsize == tp->hdr.bsize, "bsize");
+		free_htab_dir(&hr);
+		free_htab_dir(reinterpret_cast<HTAB *>(tp));
+	}
 
 	hash_mock_reset();
 	info.lorder = 9999;
@@ -1044,9 +1045,9 @@ static void test_init_hash()
 	tp = reinterpret_cast<HTAB *>(P::init_hash(ph(&th), tmpl, phi(&info)));
 	check(F_INIT_HASH, (tr != nullptr) == (tp != nullptr), "file stat");
 	if (tr)
-		ref_hdestroy(tr);
+		free_htab_dir(&hr);
 	if (tp)
-		P::hdestroy(ph(tp));
+		free_htab_dir(reinterpret_cast<HTAB *>(tp));
 	unlink(tmpl);
 }
 

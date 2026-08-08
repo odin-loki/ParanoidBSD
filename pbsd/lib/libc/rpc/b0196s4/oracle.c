@@ -41,6 +41,8 @@ struct desparams {
 #define DESERR_HWERROR 2
 #define DESERR_BADPARAM 3
 
+extern int (*__des_crypt_LOCAL)(char *, unsigned, struct desparams *);
+
 #define NC_LOOPBACK "loopback"
 #define CRYPT_PROG 600100029U
 #define CRYPT_VERS 1U
