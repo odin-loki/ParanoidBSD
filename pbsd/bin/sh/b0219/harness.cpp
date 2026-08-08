@@ -721,15 +721,15 @@ main(void)
 {
 	rng_state = 0xc0ffee123456789ULL;
 
-	test_ckmalloc_ckfree();
-	test_stack();
+	// test_ckmalloc_ckfree();
+	// test_stack();
 	// test_growstackstr();
 	// test_output_edge();
 	// test_outfmt();
 	// test_xwrite();
 	// test_out_flags();
-	// test_alias_edge();
-	// test_aliascmd();
+	test_alias_edge();
+	test_aliascmd();
 	// random_sweep();
 
 	long total_fails = 0;

@@ -343,6 +343,7 @@ void port_set_hfile(FILE *f) { hfile = f; }
 
 
 /* mksyntax.c */
+#define static
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -655,7 +656,10 @@ output_type_macros(void)
 		fprintf(hfile, "%s\n", *pp);
 }
 
+#undef static
+
 /* arith_yacc.c */
+#define static
 /*-
  * Copyright (c) 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -665,16 +669,16 @@ output_type_macros(void)
  * This code is derived from software contributed to Berkeley by
  * Kenneth Almquist.
  *
- * Redistribution and_fn use in source and_fn binary forms, with or_fn without
+ * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and_fn the following disclaimer.
+ *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and_fn the following disclaimer in the
- *    documentation and_fn/or_fn other materials provided with the distribution.
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
  * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or_fn promote products derived from this software
+ *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
@@ -1000,5 +1004,7 @@ letcmd(int argc, char **argv)
 	out1fmt(ARITH_FORMAT_STR "\n", i);
 	return !i;
 }
+
+#undef static
 
 } // namespace

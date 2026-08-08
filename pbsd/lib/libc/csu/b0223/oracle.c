@@ -89,7 +89,12 @@ void (*__fini_array_start[64])(void);
 #define __fini_array_end \
 	((void (**)(void))(__fini_array_start + mock_fini_n))
 
-extern __attribute__((weak)) int _DYNAMIC;
+/*
+ * Scrt1.o always defines _DYNAMIC for C++ links, which would force the
+ * dynamic startup path.  Redirect the token while keeping bodies verbatim.
+ */
+static int pbsd_dynamic_storage;
+int *pbsd_dynamic_ptr;
 
 int mock_crt1_handle_rela_calls;
 const Elf_Rela *mock_crt1_handle_rela_args[256];
@@ -151,6 +156,7 @@ ref_reset_mocks(void)
 	mock_fini_array_calls = 0;
 	environ = NULL;
 	__progname = NULL;
+	pbsd_dynamic_ptr = NULL;
 	memset(__rela_iplt_start, 0, sizeof(__rela_iplt_start));
 	memset(__rel_iplt_start, 0, sizeof(__rel_iplt_start));
 	memset(__preinit_array_start, 0, sizeof(__preinit_array_start));
@@ -269,6 +275,7 @@ exit(int status)
 #define finalizer ref_finalizer
 #define _init mock__init
 #define _fini mock__fini
+#define _DYNAMIC (*pbsd_dynamic_ptr)
 
 /* ------------------------------------------------------------------ */
 /* libc_start1.c bodies (UNMODIFIED)                                  */
@@ -464,3 +471,4 @@ ref_test_handle_irelocs(char *env[])
 #undef finalizer
 #undef _init
 #undef _fini
+#undef _DYNAMIC

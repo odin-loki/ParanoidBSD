@@ -11,9 +11,6 @@
 #include <limits.h>
 #include <err.h>
 
-extern int ioctl(int, unsigned long, ...);
-void usage(void) __dead2;
-
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
 #endif
@@ -21,6 +18,9 @@ void usage(void) __dead2;
 #ifndef __dead2
 #define __dead2 __attribute__((__noreturn__))
 #endif
+
+extern int ioctl(int, unsigned long, ...);
+void usage(void) __dead2;
 
 /* BSD termios (do not use host termios.h) */
 #define VEOF		0

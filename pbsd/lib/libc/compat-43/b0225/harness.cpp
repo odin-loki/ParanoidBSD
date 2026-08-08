@@ -244,40 +244,18 @@ static void test_getwd_all(Stat &st)
 /* sigvec                                                            */
 /* ------------------------------------------------------------------ */
 
-struct SigvecOut {
-	int ret;
-	struct sigvec osv;
-	bool osv_valid;
-};
-
-static SigvecOut call_sigvec(bool use_port, int signo, struct sigvec *sv,
-    struct sigvec *osv_in)
+static void mock_sigvec_setup(int signo, int mock_ret)
 {
-	struct sigvec osv_buf;
-	struct sigvec *osv = osv_in;
-	if (osv != nullptr)
-		osv_buf = *osv_in;
-
-	SigvecOut out{};
-	errno = 0;
-	out.ret = use_port ? port::sigvec(signo, sv, osv) :
-	    ref_sigvec(signo, sv, osv);
-	if (osv != nullptr) {
-		out.osv = *osv;
-		out.osv_valid = true;
-	}
-	(void)out.osv_valid;
-	return out;
+	pbsd_mock_reset();
+	if (mock_ret != 0)
+		pbsd_mock_set_sigaction_ret(mock_ret);
+	if (signo > 0 && signo < _NSIG)
+		pbsd_mock_set_handler(signo, h2);
 }
 
 static void test_sigvec_one(Stat &st, int signo, struct sigvec *sv,
     bool with_osv, int mock_ret)
 {
-	pbsd_mock_reset();
-	if (mock_ret != 0)
-		pbsd_mock_set_sigaction_ret(mock_ret);
-	pbsd_mock_set_handler(signo > 0 ? signo : SIGUSR1, h2);
-
 	struct sigvec osv_pre{};
 	if (with_osv) {
 		osv_pre.sv_handler = h1;
@@ -285,15 +263,25 @@ static void test_sigvec_one(Stat &st, int signo, struct sigvec *sv,
 		osv_pre.sv_flags = SV_INTERRUPT;
 	}
 
-	SigvecOut p = call_sigvec(true, signo, sv, with_osv ? &osv_pre : nullptr);
-	SigvecOut r = call_sigvec(false, signo, sv, with_osv ? &osv_pre : nullptr);
+	struct sigvec osv_p = osv_pre;
+	struct sigvec osv_r = osv_pre;
+
+	mock_sigvec_setup(signo, mock_ret);
+	errno = 0;
+	int pret = port::sigvec(signo, sv, with_osv ? &osv_p : nullptr);
+	int perr = errno;
+
+	mock_sigvec_setup(signo, mock_ret);
+	errno = 0;
+	int rret = ref_sigvec(signo, sv, with_osv ? &osv_r : nullptr);
+	int rerr = errno;
 	bump_case(st);
 
-	bool ok = (p.ret == r.ret);
-	if (with_osv && p.ret == 0 && r.ret == 0) {
-		if (p.osv.sv_handler != r.osv.sv_handler ||
-		    p.osv.sv_mask != r.osv.sv_mask ||
-		    p.osv.sv_flags != r.osv.sv_flags)
+	bool ok = (pret == rret) && (perr == rerr);
+	if (with_osv && pret == 0 && rret == 0) {
+		if (osv_p.sv_handler != osv_r.sv_handler ||
+		    osv_p.sv_mask != osv_r.sv_mask ||
+		    osv_p.sv_flags != osv_r.sv_flags)
 			ok = false;
 	}
 	if (!ok) {
@@ -343,17 +331,23 @@ static void test_sigvec_all(Stat &st)
 /* sigsetmask / sigblock / sigpause                                  */
 /* ------------------------------------------------------------------ */
 
-static void test_sigsetmask_one(Stat &st, int mask, int mock_ret,
-    int initial_mask)
+static void mock_mask_setup(int initial_mask, int mock_ret)
 {
 	pbsd_mock_reset();
 	pbsd_mock_set_mask_bits(initial_mask);
 	if (mock_ret != 0)
 		pbsd_mock_set_sigprocmask_ret(mock_ret);
+}
 
+static void test_sigsetmask_one(Stat &st, int mask, int mock_ret,
+    int initial_mask)
+{
+	mock_mask_setup(initial_mask, mock_ret);
 	errno = 0;
 	int pr = port::sigsetmask(mask);
 	int pe = errno;
+
+	mock_mask_setup(initial_mask, mock_ret);
 	errno = 0;
 	int rr = ref_sigsetmask(mask);
 	int re = errno;
@@ -385,14 +379,12 @@ static void test_sigsetmask_all(Stat &st)
 static void test_sigblock_one(Stat &st, int mask, int mock_ret,
     int initial_mask)
 {
-	pbsd_mock_reset();
-	pbsd_mock_set_mask_bits(initial_mask);
-	if (mock_ret != 0)
-		pbsd_mock_set_sigprocmask_ret(mock_ret);
-
+	mock_mask_setup(initial_mask, mock_ret);
 	errno = 0;
 	int pr = port::sigblock(mask);
 	int pe = errno;
+
+	mock_mask_setup(initial_mask, mock_ret);
 	errno = 0;
 	int rr = ref_sigblock(mask);
 	int re = errno;
@@ -419,14 +411,20 @@ static void test_sigblock_all(Stat &st)
 	}
 }
 
-static void test_sigpause_one(Stat &st, int mask, int suspend_ret)
+static void mock_sigsuspend_setup(int suspend_ret)
 {
 	pbsd_mock_reset();
 	pbsd_mock_set_sigsuspend_ret(suspend_ret);
+}
 
+static void test_sigpause_one(Stat &st, int mask, int suspend_ret)
+{
+	mock_sigsuspend_setup(suspend_ret);
 	errno = 0;
 	int pr = port::sigpause(mask);
 	int pe = errno;
+
+	mock_sigsuspend_setup(suspend_ret);
 	errno = 0;
 	int rr = ref_sigpause(mask);
 	int re = errno;
@@ -456,18 +454,24 @@ static void test_sigpause_all(Stat &st)
 /* xsi_sigpause, sighold, sigignore, sigrelse                        */
 /* ------------------------------------------------------------------ */
 
-static void test_xsi_sigpause_one(Stat &st, int sig, int procmask_ret,
-    int suspend_ret)
+static void mock_xsi_setup(int procmask_ret, int suspend_ret)
 {
 	pbsd_mock_reset();
 	pbsd_mock_set_mask_bits(0);
 	if (procmask_ret != 0)
 		pbsd_mock_set_sigprocmask_ret(procmask_ret);
 	pbsd_mock_set_sigsuspend_ret(suspend_ret);
+}
 
+static void test_xsi_sigpause_one(Stat &st, int sig, int procmask_ret,
+    int suspend_ret)
+{
+	mock_xsi_setup(procmask_ret, suspend_ret);
 	errno = 0;
 	int pr = port::xsi_sigpause(sig);
 	int pe = errno;
+
+	mock_xsi_setup(procmask_ret, suspend_ret);
 	errno = 0;
 	int rr = ref_xsi_sigpause(sig);
 	int re = errno;
@@ -496,15 +500,21 @@ static void test_xsi_sigpause_all(Stat &st)
 	}
 }
 
-static void test_sighold_one(Stat &st, int sig, int procmask_ret)
+static void mock_sighold_setup(int procmask_ret)
 {
 	pbsd_mock_reset();
 	if (procmask_ret != 0)
 		pbsd_mock_set_sigprocmask_ret(procmask_ret);
+}
 
+static void test_sighold_one(Stat &st, int sig, int procmask_ret)
+{
+	mock_sighold_setup(procmask_ret);
 	errno = 0;
 	int pr = port::sighold(sig);
 	int pe = errno;
+
+	mock_sighold_setup(procmask_ret);
 	errno = 0;
 	int rr = ref_sighold(sig);
 	int re = errno;
@@ -530,15 +540,21 @@ static void test_sighold_all(Stat &st)
 	}
 }
 
-static void test_sigignore_one(Stat &st, int sig, int action_ret)
+static void mock_sigignore_setup(int action_ret)
 {
 	pbsd_mock_reset();
 	if (action_ret != 0)
 		pbsd_mock_set_sigaction_ret(action_ret);
+}
 
+static void test_sigignore_one(Stat &st, int sig, int action_ret)
+{
+	mock_sigignore_setup(action_ret);
 	errno = 0;
 	int pr = port::sigignore(sig);
 	int pe = errno;
+
+	mock_sigignore_setup(action_ret);
 	errno = 0;
 	int rr = ref_sigignore(sig);
 	int re = errno;
@@ -566,13 +582,12 @@ static void test_sigignore_all(Stat &st)
 
 static void test_sigrelse_one(Stat &st, int sig, int procmask_ret)
 {
-	pbsd_mock_reset();
-	if (procmask_ret != 0)
-		pbsd_mock_set_sigprocmask_ret(procmask_ret);
-
+	mock_sighold_setup(procmask_ret);
 	errno = 0;
 	int pr = port::sigrelse(sig);
 	int pe = errno;
+
+	mock_sighold_setup(procmask_ret);
 	errno = 0;
 	int rr = ref_sigrelse(sig);
 	int re = errno;
@@ -607,8 +622,8 @@ static uintptr_t handler_tag(void (*h)(int))
 	return (uintptr_t)(void *)h;
 }
 
-static void test_sigset_one(Stat &st, int sig, void (*disp)(int),
-    int initial_mask, int procmask_ret, int action_ret)
+static void mock_sigset_setup(int sig, int initial_mask, int procmask_ret,
+    int action_ret)
 {
 	pbsd_mock_reset();
 	pbsd_mock_set_mask_bits(initial_mask);
@@ -618,10 +633,17 @@ static void test_sigset_one(Stat &st, int sig, void (*disp)(int),
 		pbsd_mock_set_sigaction_ret(action_ret);
 	if (sig > 0 && sig < _NSIG)
 		pbsd_mock_set_handler(sig, h3);
+}
 
+static void test_sigset_one(Stat &st, int sig, void (*disp)(int),
+    int initial_mask, int procmask_ret, int action_ret)
+{
+	mock_sigset_setup(sig, initial_mask, procmask_ret, action_ret);
 	errno = 0;
 	void (*pr)(int) = port::sigset(sig, disp);
 	int pe = errno;
+
+	mock_sigset_setup(sig, initial_mask, procmask_ret, action_ret);
 	errno = 0;
 	void (*rr)(int) = ref_sigset(sig, disp);
 	int re = errno;

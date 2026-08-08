@@ -19,7 +19,7 @@ builddir="$srcdir/.build"
 mkdir -p "$builddir"
 cd "$builddir"
 
-CFLAGS="-std=c11 -O2 -DCRT_IRELOC_RELA"
+CFLAGS="-std=c11 -O2 -fno-common -DCRT_IRELOC_RELA"
 CXXFLAGS="-std=c++23 -O2 -DCRT_IRELOC_RELA"
 
 modname=pbsd.lib.libc.csu.b0223
@@ -34,18 +34,21 @@ echo "building batch b0223 with $CC / $CXX ($compiler modules)"
 
 $CC $CFLAGS -c "$srcdir/oracle.c" -o oracle.o
 
+LDFLAGS=""
+
 if [ "$compiler" = clang ]; then
 	$CXX $CXXFLAGS -x c++-module --precompile "$srcdir/port.cppm" \
 	    -o port.pcm
 	$CXX $CXXFLAGS -c port.pcm -o port.o
 	$CXX $CXXFLAGS -fmodule-file="$modname=port.pcm" \
 	    -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS -o harness harness.o port.o oracle.o
+	$CXX $CXXFLAGS $LDFLAGS -o harness harness.o port.o oracle.o -lgcc
 else
 	rm -rf gcm.cache
 	$CXX $CXXFLAGS -fmodules-ts -x c++ -c "$srcdir/port.cppm" -o port.o
 	$CXX $CXXFLAGS -fmodules-ts -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS -fmodules-ts -o harness harness.o port.o oracle.o
+	$CXX $CXXFLAGS -fmodules-ts $LDFLAGS -o harness harness.o port.o oracle.o \
+	    -lgcc
 fi
 
 exec ./harness

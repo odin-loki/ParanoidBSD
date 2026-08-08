@@ -63,6 +63,9 @@ export namespace pbsd::lib_libc_iconv::b0229 {
 #endif
 
 static int __isthreaded = 0;
+#ifndef EFTYPE
+#define EFTYPE 79
+#endif
 #define WLOCK(lock) if (__isthreaded) pthread_rwlock_wrlock(lock);
 #define UNLOCK(lock) if (__isthreaded) pthread_rwlock_unlock(lock);
 
@@ -243,16 +246,16 @@ struct _citrus_mapper {
 struct b0229_mod { char name[64]; _citrus_mapper_getops_t getops; };
 static struct b0229_mod b0229_mods[B0229_MAX_MOD];
 static int b0229_nmod;
-static _citrus_module_t b0229_mod_id = (_citrus_module_t)(uintptr_t)0x1000;
+static uintptr_t b0229_mod_serial = 0x1000;
 
-void b0229_mock_reset(void) { b0229_nmod = 0; b0229_mod_id = (_citrus_module_t)(uintptr_t)0x1000; }
+void b0229_mock_reset(void) { b0229_nmod = 0; b0229_mod_serial = 0x1000; }
 void b0229_mock_set_module(const char *name, _citrus_mapper_getops_t getops)
 { if (b0229_nmod < B0229_MAX_MOD) { strlcpy(b0229_mods[b0229_nmod].name, name, 64);
   b0229_mods[b0229_nmod].getops = getops; b0229_nmod++; } }
 
 int _citrus_load_module(_citrus_module_t *mod, const char *name)
 { int i; for (i = 0; i < b0229_nmod; i++) if (!strcmp(b0229_mods[i].name, name)) {
-  *mod = b0229_mod_id++; return 0; } return ENOENT; }
+  *mod = (_citrus_module_t)(uintptr_t)(b0229_mod_serial++); return 0; } return ENOENT; }
 void _citrus_unload_module(_citrus_module_t mod) { (void)mod; }
 void *_citrus_find_getops(_citrus_module_t mod, const char *name, const char *kind)
 { int i; (void)mod; (void)kind; for (i = 0; i < b0229_nmod; i++)

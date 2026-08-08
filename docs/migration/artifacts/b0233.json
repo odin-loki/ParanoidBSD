@@ -1,0 +1,13 @@
+{
+  "batch": "b0233",
+  "verified": "2026-08-08T13:35:45Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction              cases     failures\nldexp                200308            0\n_getprogname         200016            0\nsetprogname          200016            0\nfreadlink            200010            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/ldexp.c": "ae99e51fab770ad7",
+    "hbsd/src/lib/libc/gen/getprogname.c": "d71813a1eb857cae",
+    "hbsd/src/lib/libc/gen/setprogname.c": "4dc28464f953630b",
+    "hbsd/src/lib/libc/gen/freadlink.c": "cf1a583d8b5eba1d"
+  }
+}

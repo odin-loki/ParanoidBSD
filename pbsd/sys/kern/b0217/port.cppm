@@ -1253,6 +1253,7 @@ using sbuf = detail::sbuf;
 using sysctl_req = detail::sysctl_req;
 using sysinit_tslog = detail::sysinit_tslog;
 using timecounter = detail::timecounter;
+using stack_sbuf_fmt = detail::stack_sbuf_fmt;
 
 inline void malloc_fail_at(int n) { detail::model_malloc_fail = n; }
 inline void set_vget_enoent(int v) { detail::model_vget_enoent = v; }

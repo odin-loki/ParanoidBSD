@@ -4,6 +4,8 @@
  * Every function renamed with ref_ prefix; bodies otherwise unmodified.
  */
 
+#include <stddef.h>
+
 struct pthread {
 	int error;
 };

@@ -7,6 +7,7 @@ import pbsd.sys.kern.b0217;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cstdarg>
 
 namespace port = pbsd::sys_kern::b0217;
 
@@ -103,6 +104,17 @@ static void fail_row(int row, const char *label, const char *detail) {
 }
 
 static void case_row(int row) { rows[row].cases++; }
+
+extern "C" int __wrap_printf(const char *fmt, ...)
+{
+	va_list ap;
+	int n;
+
+	va_start(ap, fmt);
+	n = std::vprintf(fmt, ap);
+	va_end(ap);
+	return (n);
+}
 
 extern "C" {
 struct thread { char td_pad; };
@@ -472,7 +484,7 @@ static void test_stack_sbuf(void) {
 	struct stack rst{}; std::memcpy(&rst, &st, sizeof(rst));
 	case_row(R_STACK_SBUF_PRINT_FLAGS);
 	reset_port();
-	int pe = port::stack_sbuf_print_flags(sb, &st, 2, port::STACK_SBUF_FMT_LONG);
+	int pe = port::stack_sbuf_print_flags(sb, &st, 2, static_cast<port::stack_sbuf_fmt>(1));
 	reset_ref();
 	int re = ref_stack_sbuf_print_flags(rsb, &rst, 2, 1);
 	if (pe != re) fail_row(R_STACK_SBUF_PRINT_FLAGS, "ret", "mismatch");

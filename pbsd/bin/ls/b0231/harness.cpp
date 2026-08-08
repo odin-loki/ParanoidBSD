@@ -15,6 +15,16 @@
 #include <unistd.h>
 #include <vector>
 
+#include <fts.h>
+
+#ifndef st_birthtim
+#define st_birthtim st_mtim
+#endif
+
+#ifndef S_IFWHT
+#define S_IFWHT 0
+#endif
+
 import pbsd.bin.ls.b0231;
 
 namespace P = pbsd::bin_ls::b0231;
@@ -168,17 +178,26 @@ sync_master_flags(int listdir, int groupdir)
 }
 
 struct FtsNode {
-	std::string name;
+	std::vector<char> blob;
+	FTSENT *ent;
 	struct stat st {};
-	FTSENT ent {};
+
+	void set_name(const char *n)
+	{
+		std::string name = n ? n : "";
+		size_t nlen = name.size();
+		blob.resize(sizeof(FTSENT) + nlen + 1);
+		ent = reinterpret_cast<FTSENT *>(blob.data());
+		std::memset(ent, 0, sizeof(FTSENT));
+		ent->fts_statp = &st;
+		std::memcpy(ent->fts_name, name.c_str(), nlen + 1);
+		ent->fts_namelen = (unsigned short)nlen;
+	}
 
 	explicit FtsNode(const char *n)
 	{
-		name = n ? n : "";
-		std::memset(&ent, 0, sizeof(ent));
 		std::memset(&st, 0, sizeof(st));
-		ent.fts_name = name.data();
-		ent.fts_statp = &st;
+		set_name(n);
 	}
 
 	void set_mtim(long sec, long nsec)
@@ -212,12 +231,12 @@ struct FtsNode {
 
 	void set_info(int info)
 	{
-		ent.fts_info = (short)info;
+		ent->fts_info = (short)info;
 	}
 
 	void set_level(int level)
 	{
-		ent.fts_level = (short)level;
+		ent->fts_level = (short)level;
 	}
 };
 
@@ -273,8 +292,8 @@ test_cmp_pair(Stat &st, RefFn ref_fn, PortFn port_fn,
 {
 	st.cases++;
 	sync_cmp_flags(samesort);
-	int r1 = ref_fn(&a.ent, &b.ent);
-	int r2 = port_fn(&a.ent, &b.ent);
+	int r1 = ref_fn(a.ent, b.ent);
+	int r2 = port_fn(a.ent, b.ent);
 	if (r1 != r2) {
 		fail(st, tag);
 		return false;
@@ -311,17 +330,13 @@ edge_cmps(Stat &st, CmpFn ref_fn, CmpFn port_fn,
 
 	(b.*set_ts)(5, 100);
 	(a.*set_ts)(5, 100);
-	a.name = "apple";
-	b.name = "banana";
-	a.ent.fts_name = a.name.data();
-	b.ent.fts_name = b.name.data();
+	a.set_name("apple");
+	b.set_name("banana");
 	test_cmp_pair(st, ref_fn, port_fn, a, b, 0, "tie name");
 	test_cmp_pair(st, ref_fn, port_fn, a, b, 1, "tie name samesort");
 
-	a.name = "banana";
-	b.name = "apple";
-	a.ent.fts_name = a.name.data();
-	b.ent.fts_name = b.name.data();
+	a.set_name("banana");
+	b.set_name("apple");
 	test_cmp_pair(st, ref_fn, port_fn, a, b, 1, "tie name rev samesort");
 }
 

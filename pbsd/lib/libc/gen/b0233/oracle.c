@@ -11,7 +11,9 @@
  *   hbsd/src/lib/libc/gen/freadlink.c
  */
 
+#define _GNU_SOURCE
 #include <errno.h>
+#include <fcntl.h>
 #include <float.h>
 #include <math.h>
 #include <stddef.h>

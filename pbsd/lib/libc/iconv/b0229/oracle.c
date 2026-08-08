@@ -41,6 +41,9 @@
 #endif
 
 int __isthreaded = 0;
+#ifndef EFTYPE
+#define EFTYPE 79
+#endif
 #define WLOCK(lock) if (__isthreaded) pthread_rwlock_wrlock(lock);
 #define UNLOCK(lock) if (__isthreaded) pthread_rwlock_unlock(lock);
 
@@ -51,7 +54,7 @@ static __inline void _citrus_region_init(struct _citrus_region *r, void *h, size
 { r->r_head = h; r->r_size = sz; }
 static __inline void *_citrus_region_head(const struct _citrus_region *r) { return r->r_head; }
 static __inline size_t _citrus_region_size(const struct _citrus_region *r) { return r->r_size; }
-static __inline void *_citrus_region_offset(const _citrus_region *r, size_t pos)
+static __inline void *_citrus_region_offset(const struct _citrus_region *r, size_t pos)
 { return (void *)((uint8_t *)r->r_head + pos); }
 static __inline uint8_t _citrus_region_peek8(const struct _citrus_region *r, size_t pos)
 { return *(uint8_t *)_citrus_region_offset(r, pos); }
@@ -221,16 +224,16 @@ struct _citrus_mapper {
 struct b0229_mod { char name[64]; _citrus_mapper_getops_t getops; };
 static struct b0229_mod b0229_mods[B0229_MAX_MOD];
 static int b0229_nmod;
-static _citrus_module_t b0229_mod_id = (_citrus_module_t)(uintptr_t)0x1000;
+static uintptr_t b0229_mod_serial = 0x1000;
 
-void b0229_mock_reset(void) { b0229_nmod = 0; b0229_mod_id = (_citrus_module_t)(uintptr_t)0x1000; }
+void b0229_mock_reset(void) { b0229_nmod = 0; b0229_mod_serial = 0x1000; }
 void b0229_mock_set_module(const char *name, _citrus_mapper_getops_t getops)
 { if (b0229_nmod < B0229_MAX_MOD) { strlcpy(b0229_mods[b0229_nmod].name, name, 64);
   b0229_mods[b0229_nmod].getops = getops; b0229_nmod++; } }
 
 int _citrus_load_module(_citrus_module_t *mod, const char *name)
 { int i; for (i = 0; i < b0229_nmod; i++) if (!strcmp(b0229_mods[i].name, name)) {
-  *mod = b0229_mod_id++; return 0; } return ENOENT; }
+  *mod = (_citrus_module_t)(uintptr_t)(b0229_mod_serial++); return 0; } return ENOENT; }
 void _citrus_unload_module(_citrus_module_t mod) { (void)mod; }
 void *_citrus_find_getops(_citrus_module_t mod, const char *name, const char *kind)
 { int i; (void)mod; (void)kind; for (i = 0; i < b0229_nmod; i++)
@@ -243,6 +246,17 @@ int _citrus_string_hash_func(const char *key, int hashsize)
 
 
 /* ===== citrus_db_factory.c ===== */
+#define _citrus_db_factory_create ref__citrus_db_factory_create
+#define _citrus_db_factory_free ref__citrus_db_factory_free
+#define _citrus_db_factory_add ref__citrus_db_factory_add
+#define _citrus_db_factory_add_by_string ref__citrus_db_factory_add_by_string
+#define _citrus_db_factory_add8_by_string ref__citrus_db_factory_add8_by_string
+#define _citrus_db_factory_add16_by_string ref__citrus_db_factory_add16_by_string
+#define _citrus_db_factory_add32_by_string ref__citrus_db_factory_add32_by_string
+#define _citrus_db_factory_add_string_by_string ref__citrus_db_factory_add_string_by_string
+#define _citrus_db_factory_calc_size ref__citrus_db_factory_calc_size
+#define _citrus_db_factory_serialize ref__citrus_db_factory_serialize
+
 /*	$NetBSD: citrus_db_factory.c,v 1.10 2013/09/14 13:05:51 joerg Exp $	*/
 
 /*-
@@ -568,18 +582,19 @@ ref__citrus_db_factory_serialize(struct _citrus_db_factory *df, const char *magi
 
 	return (0);
 }
-#define _citrus_db_factory_create ref__citrus_db_factory_create
-#define _citrus_db_factory_free ref__citrus_db_factory_free
-#define _citrus_db_factory_add ref__citrus_db_factory_add
-#define _citrus_db_factory_add_by_string ref__citrus_db_factory_add_by_string
-#define _citrus_db_factory_add8_by_string ref__citrus_db_factory_add8_by_string
-#define _citrus_db_factory_add16_by_string ref__citrus_db_factory_add16_by_string
-#define _citrus_db_factory_add32_by_string ref__citrus_db_factory_add32_by_string
-#define _citrus_db_factory_add_string_by_string ref__citrus_db_factory_add_string_by_string
-#define _citrus_db_factory_calc_size ref__citrus_db_factory_calc_size
-#define _citrus_db_factory_serialize ref__citrus_db_factory_serialize
 
 /* ===== citrus_db.c ===== */
+#define _citrus_db_open ref__citrus_db_open
+#define _citrus_db_close ref__citrus_db_close
+#define _citrus_db_lookup ref__citrus_db_lookup
+#define _citrus_db_lookup_by_string ref__citrus_db_lookup_by_string
+#define _citrus_db_lookup8_by_string ref__citrus_db_lookup8_by_string
+#define _citrus_db_lookup16_by_string ref__citrus_db_lookup16_by_string
+#define _citrus_db_lookup32_by_string ref__citrus_db_lookup32_by_string
+#define _citrus_db_lookup_string_by_string ref__citrus_db_lookup_string_by_string
+#define _citrus_db_get_number_of_entries ref__citrus_db_get_number_of_entries
+#define _citrus_db_get_entry ref__citrus_db_get_entry
+
 /* $NetBSD: citrus_db.c,v 1.5 2008/02/09 14:56:20 junyoung Exp $ */
 
 /*-
@@ -895,6 +910,18 @@ ref__citrus_db_get_entry(struct _citrus_db *db, int idx, struct _region *key,
 
 	return (0);
 }
+
+/* ===== citrus_lookup.c ===== */
+#define _citrus_db_factory_create ref__citrus_db_factory_create
+#define _citrus_db_factory_free ref__citrus_db_factory_free
+#define _citrus_db_factory_add ref__citrus_db_factory_add
+#define _citrus_db_factory_add_by_string ref__citrus_db_factory_add_by_string
+#define _citrus_db_factory_add8_by_string ref__citrus_db_factory_add8_by_string
+#define _citrus_db_factory_add16_by_string ref__citrus_db_factory_add16_by_string
+#define _citrus_db_factory_add32_by_string ref__citrus_db_factory_add32_by_string
+#define _citrus_db_factory_add_string_by_string ref__citrus_db_factory_add_string_by_string
+#define _citrus_db_factory_calc_size ref__citrus_db_factory_calc_size
+#define _citrus_db_factory_serialize ref__citrus_db_factory_serialize
 #define _citrus_db_open ref__citrus_db_open
 #define _citrus_db_close ref__citrus_db_close
 #define _citrus_db_lookup ref__citrus_db_lookup
@@ -905,8 +932,14 @@ ref__citrus_db_get_entry(struct _citrus_db *db, int idx, struct _region *key,
 #define _citrus_db_lookup_string_by_string ref__citrus_db_lookup_string_by_string
 #define _citrus_db_get_number_of_entries ref__citrus_db_get_number_of_entries
 #define _citrus_db_get_entry ref__citrus_db_get_entry
+#define _citrus_lookup_seq_open ref__citrus_lookup_seq_open
+#define _citrus_lookup_seq_rewind ref__citrus_lookup_seq_rewind
+#define _citrus_lookup_seq_next ref__citrus_lookup_seq_next
+#define _citrus_lookup_seq_lookup ref__citrus_lookup_seq_lookup
+#define _citrus_lookup_get_number_of_entries ref__citrus_lookup_get_number_of_entries
+#define _citrus_lookup_seq_close ref__citrus_lookup_seq_close
+#define _citrus_lookup_simple ref__citrus_lookup_simple
 
-/* ===== citrus_lookup.c ===== */
 /*	$NetBSD: citrus_lookup.c,v 1.7 2012/05/04 16:45:05 joerg Exp $	*/
 
 /*-
@@ -1249,6 +1282,28 @@ ref__citrus_lookup_simple(const char *name, const char *key,
 
 	return (linebuf);
 }
+
+/* ===== citrus_mapper.c ===== */
+#define _citrus_db_factory_create ref__citrus_db_factory_create
+#define _citrus_db_factory_free ref__citrus_db_factory_free
+#define _citrus_db_factory_add ref__citrus_db_factory_add
+#define _citrus_db_factory_add_by_string ref__citrus_db_factory_add_by_string
+#define _citrus_db_factory_add8_by_string ref__citrus_db_factory_add8_by_string
+#define _citrus_db_factory_add16_by_string ref__citrus_db_factory_add16_by_string
+#define _citrus_db_factory_add32_by_string ref__citrus_db_factory_add32_by_string
+#define _citrus_db_factory_add_string_by_string ref__citrus_db_factory_add_string_by_string
+#define _citrus_db_factory_calc_size ref__citrus_db_factory_calc_size
+#define _citrus_db_factory_serialize ref__citrus_db_factory_serialize
+#define _citrus_db_open ref__citrus_db_open
+#define _citrus_db_close ref__citrus_db_close
+#define _citrus_db_lookup ref__citrus_db_lookup
+#define _citrus_db_lookup_by_string ref__citrus_db_lookup_by_string
+#define _citrus_db_lookup8_by_string ref__citrus_db_lookup8_by_string
+#define _citrus_db_lookup16_by_string ref__citrus_db_lookup16_by_string
+#define _citrus_db_lookup32_by_string ref__citrus_db_lookup32_by_string
+#define _citrus_db_lookup_string_by_string ref__citrus_db_lookup_string_by_string
+#define _citrus_db_get_number_of_entries ref__citrus_db_get_number_of_entries
+#define _citrus_db_get_entry ref__citrus_db_get_entry
 #define _citrus_lookup_seq_open ref__citrus_lookup_seq_open
 #define _citrus_lookup_seq_rewind ref__citrus_lookup_seq_rewind
 #define _citrus_lookup_seq_next ref__citrus_lookup_seq_next
@@ -1256,8 +1311,14 @@ ref__citrus_lookup_simple(const char *name, const char *key,
 #define _citrus_lookup_get_number_of_entries ref__citrus_lookup_get_number_of_entries
 #define _citrus_lookup_seq_close ref__citrus_lookup_seq_close
 #define _citrus_lookup_simple ref__citrus_lookup_simple
+#define _citrus_mapper_create_area ref__citrus_mapper_create_area
+#define _citrus_mapper_open_direct ref__citrus_mapper_open_direct
+#define _citrus_mapper_open ref__citrus_mapper_open
+#define _citrus_mapper_close ref__citrus_mapper_close
+#define _citrus_mapper_set_persistent ref__citrus_mapper_set_persistent
 
-/* ===== citrus_mapper.c ===== */
+void ref__citrus_mapper_close(struct _citrus_mapper *);
+
 /*	$NetBSD: citrus_mapper.c,v 1.10 2012/06/08 07:49:42 martin Exp $	*/
 
 /*-
@@ -1644,8 +1705,3 @@ ref__citrus_mapper_set_persistent(struct _citrus_mapper * __restrict cm)
 	cm->cm_refcount = REFCOUNT_PERSISTENT;
 	UNLOCK(&cm_lock);
 }
-#define _citrus_mapper_create_area ref__citrus_mapper_create_area
-#define _citrus_mapper_open_direct ref__citrus_mapper_open_direct
-#define _citrus_mapper_open ref__citrus_mapper_open
-#define _citrus_mapper_close ref__citrus_mapper_close
-#define _citrus_mapper_set_persistent ref__citrus_mapper_set_persistent

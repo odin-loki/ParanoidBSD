@@ -72,7 +72,8 @@ extern void (*__init_array_start[64])(int, char **, char **);
 extern int mock_fini_n;
 extern void (*__fini_array_start[64])(void);
 
-extern int _DYNAMIC;
+extern int pbsd_dynamic_storage;
+extern int *pbsd_dynamic_ptr;
 
 void crt1_handle_rela(const Elf_Rela *r);
 void crt1_handle_rel(const Elf_Rel *r);
@@ -108,6 +109,7 @@ namespace {
 
 #define _init mock__init
 #define _fini mock__fini
+#define _DYNAMIC (*pbsd_dynamic_ptr)
 
 #if defined(CRT_IRELOC_RELA)
 

@@ -128,7 +128,15 @@ bool want_report(Stat &s) { return s.reported++ < MAX_REPORT; }
 
 void note_fail(Stat &s) { s.fails++; }
 
-bool dynamic_linked() { return &_DYNAMIC != nullptr; }
+bool dynamic_linked() { return pbsd_dynamic_ptr != nullptr; }
+
+void set_link_mode(bool dynamic)
+{
+	if (dynamic)
+		pbsd_dynamic_ptr = &pbsd_dynamic_storage;
+	else
+		pbsd_dynamic_ptr = nullptr;
+}
 
 struct Snapshot {
 	char **environ;
@@ -397,9 +405,6 @@ bool test_finalizer_case(Stat &st, int fini_n, std::uintptr_t fn0,
 bool test_handle_static_init_case(Stat &st, int argc, char **argv, char **env,
     int pre, int init)
 {
-	if (dynamic_linked())
-		return true;
-
 	st.cases++;
 	reset_all();
 	setup_arrays(pre, init, 0);

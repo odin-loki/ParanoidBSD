@@ -7,13 +7,13 @@
 
 module;
 
+#include <unistd.h>
+
 #include <cfloat>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-
-extern "C" ssize_t readlinkat(int, const char *, char *, size_t);
 
 export module pbsd.lib.libc.gen.b0233;
 

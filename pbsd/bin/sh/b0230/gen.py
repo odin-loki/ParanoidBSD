@@ -370,83 +370,6 @@ void setjobctl(int on) { (void)on; }
 void histsave(void) {}
 void forcealias(void) {}
 
-void hashcd(void) {}
-
-struct varpair { char *name; char *val; int flags; };
-static struct varpair oracle_vars[128];
-static int oracle_var_n = 0;
-
-char *lookupvar(const char *name)
-{
-	int i;
-	for (i = 0; i < oracle_var_n; i++)
-		if (strcmp(oracle_vars[i].name, name) == 0)
-			return oracle_vars[i].val;
-	return NULL;
-}
-
-void setvar(const char *name, const char *val, int flags)
-{
-	int i;
-	for (i = 0; i < oracle_var_n; i++) {
-		if (strcmp(oracle_vars[i].name, name) == 0) {
-			if (oracle_vars[i].val)
-				free(oracle_vars[i].val);
-			oracle_vars[i].val = val ? strdup(val) : NULL;
-			oracle_vars[i].flags = flags;
-			return;
-		}
-	}
-	if (oracle_var_n < 128) {
-		oracle_vars[oracle_var_n].name = strdup(name);
-		oracle_vars[oracle_var_n].val = val ? strdup(val) : NULL;
-		oracle_vars[oracle_var_n].flags = flags;
-		oracle_var_n++;
-	}
-}
-
-char *bltinlookup(const char *name, int remove)
-{
-	char *v = lookupvar(name);
-	(void)remove;
-	return v;
-}
-
-char *padvance(char **path, const char *dot, const char *dest)
-{
-	char *p, *q, *r;
-	static char padbuf[PATH_MAX];
-
-	(void)dot;
-	p = *path;
-	if (p == NULL)
-		return NULL;
-	if (*p == '\0') {
-		*path = NULL;
-		return stsavestr(dest);
-	}
-	q = padbuf;
-	while (*p != '\0' && *p != ':') {
-		if (q < padbuf + PATH_MAX - 1)
-			*q++ = *p;
-		p++;
-	}
-	if (*p == ':')
-		p++;
-	*path = p;
-	if (q == padbuf) {
-		r = stsavestr(dest);
-		return r;
-	}
-	if (q[-1] != '/')
-		*q++ = '/';
-	r = dest;
-	while (*r != '\0' && q < padbuf + PATH_MAX - 1)
-		*q++ = *r++;
-	*q = '\0';
-	return stsavestr(padbuf);
-}
-
 #ifndef NSIG
 #define NSIG 64
 #endif
@@ -466,62 +389,6 @@ static int is_number(const char *p)
 	}
 	return 1;
 }
-
-void oracle_reset_state(void)
-{
-	int i;
-	oracle_suppressint = 1;
-	oracle_intpending = 0;
-	oracle_error_flag = 0;
-	oracle_argptr = NULL;
-	oracle_nextopt_optptr = NULL;
-	oracle_shoptarg = NULL;
-	out1 = &output;
-	out2 = &errout;
-	if (output.buf) { free(output.buf); output.buf = NULL; }
-	output.nextc = NULL;
-	output.bufend = NULL;
-	output.flags = 0;
-	if (errout.buf) { free(errout.buf); errout.buf = NULL; }
-	errout.nextc = NULL;
-	errout.bufend = NULL;
-	errout.flags = 0;
-	if (memout.buf) { free(memout.buf); memout.buf = NULL; }
-	memout.nextc = NULL;
-	memout.bufend = NULL;
-	memout.bufsize = 64;
-	memout.flags = 0;
-	while (stackp) {
-		struct stack_block *sp = stackp;
-		stackp = sp->prev;
-		free(sp);
-	}
-	stacknxt = NULL;
-	stacknleft = 0;
-	sstrend = NULL;
-	for (i = 0; i < oracle_var_n; i++) {
-		free(oracle_vars[i].name);
-		free(oracle_vars[i].val);
-	}
-	oracle_var_n = 0;
-	Pflag = 0;
-	iflag = 0;
-	mflag = 0;
-	debug = 0;
-	rootshell = 1;
-	verifyflag = 0;
-	vflag = 0;
-	whichprompt = 1;
-	suppressint = 0;
-	evalskip = 0;
-	skipcount = 0;
-	exitstatus = 0;
-	oexitstatus = 0;
-}
-
-struct output *oracle_get_memout(void) { return &memout; }
-void oracle_set_out1_memout(void) { out1 = &memout; }
-void oracle_restore_out1(void) { out1 = &output; }
 
 '''
 
@@ -791,83 +658,6 @@ void setjobctl(int on) { (void)on; }
 void histsave(void) {}
 void forcealias(void) {}
 
-void hashcd(void) {}
-
-struct varpair { char *name; char *val; int flags; };
-static struct varpair port_vars[128];
-static int port_var_n = 0;
-
-char *lookupvar(const char *name)
-{
-	int i;
-	for (i = 0; i < port_var_n; i++)
-		if (std::strcmp(port_vars[i].name, name) == 0)
-			return port_vars[i].val;
-	return NULL;
-}
-
-void setvar(const char *name, const char *val, int flags)
-{
-	int i;
-	for (i = 0; i < port_var_n; i++) {
-		if (std::strcmp(port_vars[i].name, name) == 0) {
-			if (port_vars[i].val)
-				std::free(port_vars[i].val);
-			port_vars[i].val = val ? strdup(val) : NULL;
-			port_vars[i].flags = flags;
-			return;
-		}
-	}
-	if (port_var_n < 128) {
-		port_vars[port_var_n].name = strdup(name);
-		port_vars[port_var_n].val = val ? strdup(val) : NULL;
-		port_vars[port_var_n].flags = flags;
-		port_var_n++;
-	}
-}
-
-char *bltinlookup(const char *name, int remove)
-{
-	char *v = lookupvar(name);
-	(void)remove;
-	return v;
-}
-
-char *padvance(char **path, const char *dot, const char *dest)
-{
-	char *p, *q, *r;
-	static char padbuf[PATH_MAX];
-
-	(void)dot;
-	p = *path;
-	if (p == NULL)
-		return NULL;
-	if (*p == '\0') {
-		*path = NULL;
-		return stsavestr(dest);
-	}
-	q = padbuf;
-	while (*p != '\0' && *p != ':') {
-		if (q < padbuf + PATH_MAX - 1)
-			*q++ = *p;
-		p++;
-	}
-	if (*p == ':')
-		p++;
-	*path = p;
-	if (q == padbuf) {
-		r = stsavestr(dest);
-		return r;
-	}
-	if (q[-1] != '/')
-		*q++ = '/';
-	r = dest;
-	while (*r != '\0' && q < padbuf + PATH_MAX - 1)
-		*q++ = *r++;
-	*q = '\0';
-	return stsavestr(padbuf);
-}
-
 #ifndef NSIG
 #define NSIG 64
 #endif
@@ -948,6 +738,222 @@ struct output *port_get_memout(void) { return &memout; }
 
 PORT_FOOTER = "\n} // namespace pbsd::bin_sh::b0230\n"
 
+ORACLE_SHELL_STUBS = r'''
+void hashcd(void) {}
+
+struct varpair { char *name; char *val; int flags; };
+static struct varpair oracle_vars[128];
+static int oracle_var_n = 0;
+
+char *lookupvar(const char *name)
+{
+	int i;
+	for (i = 0; i < oracle_var_n; i++)
+		if (strcmp(oracle_vars[i].name, name) == 0)
+			return oracle_vars[i].val;
+	return NULL;
+}
+
+void setvar(const char *name, const char *val, int flags)
+{
+	int i;
+	for (i = 0; i < oracle_var_n; i++) {
+		if (strcmp(oracle_vars[i].name, name) == 0) {
+			if (oracle_vars[i].val)
+				free(oracle_vars[i].val);
+			oracle_vars[i].val = val ? strdup(val) : NULL;
+			oracle_vars[i].flags = flags;
+			return;
+		}
+	}
+	if (oracle_var_n < 128) {
+		oracle_vars[oracle_var_n].name = strdup(name);
+		oracle_vars[oracle_var_n].val = val ? strdup(val) : NULL;
+		oracle_vars[oracle_var_n].flags = flags;
+		oracle_var_n++;
+	}
+}
+
+char *bltinlookup(const char *name, int remove)
+{
+	char *v = lookupvar(name);
+	(void)remove;
+	return v;
+}
+
+char *padvance(char **path, const char *dot, const char *dest)
+{
+	char *p, *q, *r;
+	static char padbuf[PATH_MAX];
+
+	(void)dot;
+	p = *path;
+	if (p == NULL)
+		return NULL;
+	if (*p == '\0') {
+		*path = NULL;
+		return stsavestr(dest);
+	}
+	q = padbuf;
+	while (*p != '\0' && *p != ':') {
+		if (q < padbuf + PATH_MAX - 1)
+			*q++ = *p;
+		p++;
+	}
+	if (*p == ':')
+		p++;
+	*path = p;
+	if (q == padbuf) {
+		r = stsavestr(dest);
+		return r;
+	}
+	if (q[-1] != '/')
+		*q++ = '/';
+	r = dest;
+	while (*r != '\0' && q < padbuf + PATH_MAX - 1)
+		*q++ = *r++;
+	*q = '\0';
+	return stsavestr(padbuf);
+}
+
+void oracle_reset_state(void)
+{
+	int i;
+	oracle_suppressint = 1;
+	oracle_intpending = 0;
+	oracle_error_flag = 0;
+	oracle_argptr = NULL;
+	oracle_nextopt_optptr = NULL;
+	oracle_shoptarg = NULL;
+	out1 = &output;
+	out2 = &errout;
+	if (output.buf) { free(output.buf); output.buf = NULL; }
+	output.nextc = NULL;
+	output.bufend = NULL;
+	output.flags = 0;
+	if (errout.buf) { free(errout.buf); errout.buf = NULL; }
+	errout.nextc = NULL;
+	errout.bufend = NULL;
+	errout.flags = 0;
+	if (memout.buf) { free(memout.buf); memout.buf = NULL; }
+	memout.nextc = NULL;
+	memout.bufend = NULL;
+	memout.bufsize = 64;
+	memout.flags = 0;
+	while (stackp) {
+		struct stack_block *sp = stackp;
+		stackp = sp->prev;
+		free(sp);
+	}
+	stacknxt = NULL;
+	stacknleft = 0;
+	sstrend = NULL;
+	for (i = 0; i < oracle_var_n; i++) {
+		free(oracle_vars[i].name);
+		free(oracle_vars[i].val);
+	}
+	oracle_var_n = 0;
+	Pflag = 0;
+	iflag = 0;
+	mflag = 0;
+	debug = 0;
+	rootshell = 1;
+	verifyflag = 0;
+	vflag = 0;
+	whichprompt = 1;
+	suppressint = 0;
+	evalskip = 0;
+	skipcount = 0;
+	exitstatus = 0;
+	oexitstatus = 0;
+}
+
+struct output *oracle_get_memout(void) { return &memout; }
+void oracle_set_out1_memout(void) { out1 = &memout; }
+void oracle_restore_out1(void) { out1 = &output; }
+
+'''
+
+PORT_SHELL_STUBS = r'''
+void hashcd(void) {}
+
+struct varpair { char *name; char *val; int flags; };
+static struct varpair port_vars[128];
+static int port_var_n = 0;
+
+char *lookupvar(const char *name)
+{
+	int i;
+	for (i = 0; i < port_var_n; i++)
+		if (strcmp(port_vars[i].name, name) == 0)
+			return port_vars[i].val;
+	return NULL;
+}
+
+void setvar(const char *name, const char *val, int flags)
+{
+	int i;
+	for (i = 0; i < port_var_n; i++) {
+		if (strcmp(port_vars[i].name, name) == 0) {
+			if (port_vars[i].val)
+				free(port_vars[i].val);
+			port_vars[i].val = val ? strdup(val) : NULL;
+			port_vars[i].flags = flags;
+			return;
+		}
+	}
+	if (port_var_n < 128) {
+		port_vars[port_var_n].name = strdup(name);
+		port_vars[port_var_n].val = val ? strdup(val) : NULL;
+		port_vars[port_var_n].flags = flags;
+		port_var_n++;
+	}
+}
+
+char *bltinlookup(const char *name, int remove)
+{
+	char *v = lookupvar(name);
+	(void)remove;
+	return v;
+}
+
+char *padvance(char **path, const char *dot, const char *dest)
+{
+	char *p, *q, *r;
+	static char padbuf[PATH_MAX];
+
+	(void)dot;
+	p = *path;
+	if (p == NULL)
+		return NULL;
+	if (*p == '\0') {
+		*path = NULL;
+		return stsavestr(dest);
+	}
+	q = padbuf;
+	while (*p != '\0' && *p != ':') {
+		if (q < padbuf + PATH_MAX - 1)
+			*q++ = *p;
+		p++;
+	}
+	if (*p == ':')
+		p++;
+	*path = p;
+	if (q == padbuf) {
+		r = stsavestr(dest);
+		return r;
+	}
+	if (q[-1] != '/')
+		*q++ = '/';
+	r = dest;
+	while (*r != '\0' && q < padbuf + PATH_MAX - 1)
+		*q++ = *r++;
+	*q = '\0';
+	return stsavestr(padbuf);
+}
+
+'''
+
 def cppify(text):
     text = text.replace('malloc(', 'std::malloc(')
     text = text.replace('free(', 'std::free(')
@@ -1016,6 +1022,7 @@ def oracleify_source(text, mapping):
 def main():
     oracle = ORACLE_HEADER
     oracle += read_b0219_section(MEMALLOC_START, MEMALLOC_END)
+    oracle += ORACLE_SHELL_STUBS
     oracle += read_b0219_section(OUTPUT_START, OUTPUT_END)
 
     port = PORT_HEADER
@@ -1025,6 +1032,7 @@ def main():
     m2 = re.search(r'/\* --- alias\.c --- \*/', port_b0219)
     if m and m2:
         port += port_b0219[m.start():m2.start()]
+    port += PORT_SHELL_STUBS
 
     for fname, mapping in SOURCES:
         src = (HBSD / fname).read_text()

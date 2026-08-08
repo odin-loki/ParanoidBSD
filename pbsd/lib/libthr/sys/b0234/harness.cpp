@@ -88,7 +88,7 @@ record_case(int fn, bool ok, const char *fmt, ...)
 }
 
 static void
-setup_state(P::pthread **initial, P::pthread **cur, int lib_errno,
+setup_state(P::pthread *initial, P::pthread *cur, int lib_errno,
     int initial_err, int worker_err, int alt_err)
 {
 	g_initial.error = initial_err;
@@ -97,7 +97,7 @@ setup_state(P::pthread **initial, P::pthread **cur, int lib_errno,
 	__libsys_errno = lib_errno;
 
 	_thr_initial = (struct pthread *)initial;
-	g_curthread = (P::pthread *)cur;
+	g_curthread = cur;
 }
 
 static int
@@ -115,7 +115,7 @@ target_kind(int *p)
 }
 
 static void
-check_error_threaded(const char *label, P::pthread **initial, P::pthread **cur,
+check_error_threaded(const char *label, P::pthread *initial, P::pthread *cur,
     int lib_errno, int initial_err, int worker_err, int alt_err)
 {
 	int *pp, *pr;
@@ -191,8 +191,8 @@ test_random(unsigned iters)
 
 	for (i = 0; i < iters; i++) {
 		unsigned scenario = rnd_below(8u);
-		P::pthread **initial;
-		P::pthread **cur;
+		P::pthread *initial;
+		P::pthread *cur;
 		int lib_errno, initial_err, worker_err, alt_err;
 		char label[64];
 
