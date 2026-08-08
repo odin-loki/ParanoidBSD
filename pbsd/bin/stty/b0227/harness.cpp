@@ -644,8 +644,7 @@ run_f_ospeed(const char *arg)
 	std::snprintf(ab_p, sizeof(ab_p), "%s", arg);
 	P::info ip_r{};
 	P::info ip_p{};
-	fill_info(ip_r, rng, true);
-	fill_info(ip_p, rng, true);
+	dup_info(ip_r, ip_p, rng, true);
 	ip_r.arg = ab_r;
 	ip_p.arg = ab_p;
 	ip_r.set = 0;
@@ -720,7 +719,7 @@ main()
 	for (long i = 0; i < SWEEP; i++) {
 		int ki = (int)(rng.u32() % (unsigned)NKEYS);
 		const char *arg = nullptr;
-		if (rng.bit()) {
+		if (key_needs_arg(key_names[ki]) || rng.bit()) {
 			std::snprintf(argbuf[2], sizeof(argbuf[2]), "%d", rng.i32());
 			arg = argbuf[2];
 		}
