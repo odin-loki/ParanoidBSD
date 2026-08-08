@@ -13,6 +13,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/cpuset/b0183/port.cppm
   bin/csh/b0061/port.cppm
   bin/date/b0190/port.cppm
+  bin/date/b0190s1/port.cppm
   bin/dd/b0215/port.cppm
   bin/dd/b0220/port.cppm
   bin/dd/conv_m/port.cppm
@@ -58,6 +59,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/stty/b0187/port.cppm
   bin/stty/b0187s1/port.cppm
   bin/stty/b0187s2/port.cppm
+  bin/stty/b0187s3/port.cppm
   bin/stty/b0227/port.cppm
   bin/stty/gfmt_m/port.cppm
   bin/sync/b0166/port.cppm
@@ -183,6 +185,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0156s1/port.cppm
   lib/libc/locale/b0156s2/port.cppm
   lib/libc/locale/b0156s3/port.cppm
+  lib/libc/locale/b0156s4/port.cppm
   lib/libc/locale/b0159/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm
@@ -506,6 +509,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/kern/b0146s1/port.cppm
   sys/kern/b0146s2/port.cppm
   sys/kern/b0146s3/port.cppm
+  sys/kern/b0146s4/port.cppm
   sys/kern/b0217/port.cppm
   sys/net/toeplitz_m/port.cppm
   sys/security/mac_none/b0005/port.cppm

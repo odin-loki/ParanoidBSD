@@ -1,25 +1,82 @@
-/*
- * PBSD batch b0153s1 -- reference oracle.
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
  *
- * Original HardenedBSD source concatenated, every function renamed with
- * a ref_ prefix.  Function bodies are UNMODIFIED except for internal static
- * call targets renamed to match.
+ * Copyright (c) 2001 Alexey Zelkin <phantom@FreeBSD.org>
+ * Copyright (c) 1991, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
- * Source:
- *   hbsd/src/lib/libc/locale/localeconv.c
+ * Copyright (c) 2011 The FreeBSD Foundation
+ *
+ * Portions of this software were developed by David Chisnall
+ * under sponsorship from the FreeBSD Foundation.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
-#ifndef LONG_BIT
-#define LONG_BIT	(sizeof(long) * CHAR_BIT)
-#endif
+/*
+ * ORACLE: lib/libc/locale/localeconv.c with every function renamed with a
+ * ref_ prefix.  Function bodies are byte-for-byte the originals.
+ *
+ * <locale.h> is deliberately NOT included: the host <locale.h> would collide
+ * with the FreeBSD declarations of struct lconv and locale_t that the original
+ * translation unit compiled against.  Those declarations, along with the ones
+ * from "lmonetary.h", "lnumeric.h" and "xlocale_private.h", are supplied
+ * below exactly as FreeBSD spells them.
+ */
 
-#include <limits.h>
-#include <locale.h>
 #include <stddef.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
+/* <locale.h> */
+struct lconv {
+	char	*decimal_point;
+	char	*thousands_sep;
+	char	*grouping;
+	char	*int_curr_symbol;
+	char	*currency_symbol;
+	char	*mon_decimal_point;
+	char	*mon_thousands_sep;
+	char	*mon_grouping;
+	char	*positive_sign;
+	char	*negative_sign;
+	char	int_frac_digits;
+	char	frac_digits;
+	char	p_cs_precedes;
+	char	p_sep_by_space;
+	char	n_cs_precedes;
+	char	n_sep_by_space;
+	char	p_sign_posn;
+	char	n_sign_posn;
+	char	int_p_cs_precedes;
+	char	int_n_cs_precedes;
+	char	int_p_sep_by_space;
+	char	int_n_sep_by_space;
+	char	int_p_sign_posn;
+	char	int_n_sign_posn;
+};
+
+/* "lmonetary.h" */
 struct lc_monetary_T {
 	const char	*int_curr_symbol;
 	const char	*currency_symbol;
@@ -37,251 +94,71 @@ struct lc_monetary_T {
 	const char	*p_sign_posn;
 	const char	*n_sign_posn;
 	const char	*int_p_cs_precedes;
-	const char	*int_n_cs_precedes;
 	const char	*int_p_sep_by_space;
+	const char	*int_n_cs_precedes;
 	const char	*int_n_sep_by_space;
 	const char	*int_p_sign_posn;
 	const char	*int_n_sign_posn;
 };
 
+/* "lnumeric.h" */
 struct lc_numeric_T {
 	const char	*decimal_point;
 	const char	*thousands_sep;
 	const char	*grouping;
 };
 
-struct xlocale_component {
-	long		retain_count;
-	void		(*destructor)(void *);
-	char		locale[32];
-	char		version[12];
-};
-
+/* "xlocale_private.h" */
 struct _xlocale {
-	long		retain_count;
-	void		(*destructor)(void *);
-	struct xlocale_component *components[6];
-	int		monetary_locale_changed;
-	int		using_monetary_locale;
-	int		numeric_locale_changed;
-	int		using_numeric_locale;
-	int		using_time_locale;
-	int		using_messages_locale;
-	struct lconv	lconv;
-	char		*csym;
+	struct lconv		 lconv;
+	int			 monetary_locale_changed;
+	int			 numeric_locale_changed;
+	struct lc_monetary_T	*__mon;
+	struct lc_numeric_T	*__num;
 };
 
 typedef struct _xlocale *locale_t;
 
-#define FIX_LOCALE(loc)		if ((loc) == NULL) (loc) = ref___get_locale()
-#define __get_locale()		ref___get_locale()
+/* Test-visible stand-in for the process/thread locale. */
+struct _xlocale *__ref_current_locale = NULL;
 
-static inline int
-atomic_load_acq_int(volatile int *p)
+static locale_t
+__get_locale(void)
 {
-	return (*p);
+	return __ref_current_locale;
 }
 
-static inline void
-atomic_store_rel_int(volatile int *p, int v)
-{
-	*p = v;
-}
-
-typedef struct {
-	char		m_int_curr_symbol[16];
-	char		m_currency_symbol[16];
-	char		m_mon_decimal_point[16];
-	char		m_mon_thousands_sep[16];
-	char		m_mon_grouping[16];
-	char		m_positive_sign[16];
-	char		m_negative_sign[16];
-	char		m_int_frac_digits[2];
-	char		m_frac_digits[2];
-	char		m_p_cs_precedes[2];
-	char		m_p_sep_by_space[2];
-	char		m_n_cs_precedes[2];
-	char		m_n_sep_by_space[2];
-	char		m_p_sign_posn[2];
-	char		m_n_sign_posn[2];
-	char		m_int_p_cs_precedes[2];
-	char		m_int_n_cs_precedes[2];
-	char		m_int_p_sep_by_space[2];
-	char		m_int_n_sep_by_space[2];
-	char		m_int_p_sign_posn[2];
-	char		m_int_n_sign_posn[2];
-	char		n_decimal_point[16];
-	char		n_thousands_sep[16];
-	char		n_grouping[16];
-	struct lc_monetary_T	monetary;
-	struct lc_numeric_T	numeric;
-} pbsd_localeconv_data_t;
-
-typedef struct {
-	pbsd_localeconv_data_t	data;
-} pbsd_localeconv_hook_t;
-
-pbsd_localeconv_hook_t	pbsd_localeconv_hook;
-
-struct _xlocale	ref_test_locale;
-
-static void
-pbsd_localeconv_wire_pointers(pbsd_localeconv_data_t *d)
-{
-	d->monetary.int_curr_symbol = d->m_int_curr_symbol;
-	d->monetary.currency_symbol = d->m_currency_symbol;
-	d->monetary.mon_decimal_point = d->m_mon_decimal_point;
-	d->monetary.mon_thousands_sep = d->m_mon_thousands_sep;
-	d->monetary.mon_grouping = d->m_mon_grouping;
-	d->monetary.positive_sign = d->m_positive_sign;
-	d->monetary.negative_sign = d->m_negative_sign;
-	d->monetary.int_frac_digits = d->m_int_frac_digits;
-	d->monetary.frac_digits = d->m_frac_digits;
-	d->monetary.p_cs_precedes = d->m_p_cs_precedes;
-	d->monetary.p_sep_by_space = d->m_p_sep_by_space;
-	d->monetary.n_cs_precedes = d->m_n_cs_precedes;
-	d->monetary.n_sep_by_space = d->m_n_sep_by_space;
-	d->monetary.p_sign_posn = d->m_p_sign_posn;
-	d->monetary.n_sign_posn = d->m_n_sign_posn;
-	d->monetary.int_p_cs_precedes = d->m_int_p_cs_precedes;
-	d->monetary.int_n_cs_precedes = d->m_int_n_cs_precedes;
-	d->monetary.int_p_sep_by_space = d->m_int_p_sep_by_space;
-	d->monetary.int_n_sep_by_space = d->m_int_n_sep_by_space;
-	d->monetary.int_p_sign_posn = d->m_int_p_sign_posn;
-	d->monetary.int_n_sign_posn = d->m_int_n_sign_posn;
-	d->numeric.decimal_point = d->n_decimal_point;
-	d->numeric.thousands_sep = d->n_thousands_sep;
-	d->numeric.grouping = d->n_grouping;
-}
-
-void
-pbsd_reset_hooks(void)
-{
-	pbsd_localeconv_data_t *d = &pbsd_localeconv_hook.data;
-
-	memset(d, 0, sizeof(*d));
-	strcpy(d->m_int_curr_symbol, "USD ");
-	strcpy(d->m_currency_symbol, "$");
-	strcpy(d->m_mon_decimal_point, ".");
-	strcpy(d->m_mon_thousands_sep, ",");
-	strcpy(d->m_mon_grouping, "\3");
-	strcpy(d->m_positive_sign, "");
-	strcpy(d->m_negative_sign, "-");
-	d->m_int_frac_digits[0] = '2';
-	d->m_int_frac_digits[1] = '\0';
-	d->m_frac_digits[0] = '2';
-	d->m_frac_digits[1] = '\0';
-	d->m_p_cs_precedes[0] = '\1';
-	d->m_p_cs_precedes[1] = '\0';
-	d->m_p_sep_by_space[0] = '\0';
-	d->m_p_sep_by_space[1] = '\0';
-	d->m_n_cs_precedes[0] = '\1';
-	d->m_n_cs_precedes[1] = '\0';
-	d->m_n_sep_by_space[0] = '\0';
-	d->m_n_sep_by_space[1] = '\0';
-	d->m_p_sign_posn[0] = '\1';
-	d->m_p_sign_posn[1] = '\0';
-	d->m_n_sign_posn[0] = '\1';
-	d->m_n_sign_posn[1] = '\0';
-	d->m_int_p_cs_precedes[0] = '\1';
-	d->m_int_p_cs_precedes[1] = '\0';
-	d->m_int_n_cs_precedes[0] = '\1';
-	d->m_int_n_cs_precedes[1] = '\0';
-	d->m_int_p_sep_by_space[0] = '\0';
-	d->m_int_p_sep_by_space[1] = '\0';
-	d->m_int_n_sep_by_space[0] = '\0';
-	d->m_int_n_sep_by_space[1] = '\0';
-	d->m_int_p_sign_posn[0] = '\1';
-	d->m_int_p_sign_posn[1] = '\0';
-	d->m_int_n_sign_posn[0] = '\1';
-	d->m_int_n_sign_posn[1] = '\0';
-	strcpy(d->n_decimal_point, ".");
-	strcpy(d->n_thousands_sep, "");
-	strcpy(d->n_grouping, "");
-	pbsd_localeconv_wire_pointers(d);
-	memset(&ref_test_locale, 0, sizeof(ref_test_locale));
-}
-
-pbsd_localeconv_data_t *
-pbsd_get_localeconv_data(void)
-{
-	return (&pbsd_localeconv_hook.data);
-}
-
-static void __attribute__((constructor))
-ref_oracle_init(void)
-{
-	pbsd_reset_hooks();
-}
-
-void
-ref_set_localeconv_flags(int mon, int num)
-{
-	ref_test_locale.monetary_locale_changed = mon;
-	ref_test_locale.numeric_locale_changed = num;
-}
-
-struct _xlocale *
-ref_get_test_locale(void)
-{
-	return (&ref_test_locale);
-}
-
-void
-ref_get_localeconv_flags(int *mon, int *num)
-{
-	*mon = ref_test_locale.monetary_locale_changed;
-	*num = ref_test_locale.numeric_locale_changed;
-}
-
-locale_t
-ref___get_locale(void)
-{
-	return (&ref_test_locale);
-}
-
-struct lc_monetary_T *
+static struct lc_monetary_T *
 __get_current_monetary_locale(locale_t loc)
 {
-	(void)loc;
-	return ((struct lc_monetary_T *)&pbsd_localeconv_hook.data.monetary);
+	return loc->__mon;
 }
 
-struct lc_numeric_T *
+static struct lc_numeric_T *
 __get_current_numeric_locale(locale_t loc)
 {
-	(void)loc;
-	return ((struct lc_numeric_T *)&pbsd_localeconv_hook.data.numeric);
+	return loc->__num;
 }
 
-int
-ref_lconv_equal(const struct lconv *a, const struct lconv *b)
-{
-#define CMPF(F) (a->F == b->F || (a->F != NULL && b->F != NULL && \
-    strcmp(a->F, b->F) == 0))
-	if (!CMPF(decimal_point) || !CMPF(thousands_sep) || !CMPF(grouping) ||
-	    !CMPF(int_curr_symbol) || !CMPF(currency_symbol) ||
-	    !CMPF(mon_decimal_point) || !CMPF(mon_thousands_sep) ||
-	    !CMPF(mon_grouping) || !CMPF(positive_sign) || !CMPF(negative_sign))
-		return (0);
-#undef CMPF
-	return (a->int_frac_digits == b->int_frac_digits &&
-	    a->frac_digits == b->frac_digits &&
-	    a->p_cs_precedes == b->p_cs_precedes &&
-	    a->p_sep_by_space == b->p_sep_by_space &&
-	    a->n_cs_precedes == b->n_cs_precedes &&
-	    a->n_sep_by_space == b->n_sep_by_space &&
-	    a->p_sign_posn == b->p_sign_posn &&
-	    a->n_sign_posn == b->n_sign_posn &&
-	    a->int_p_cs_precedes == b->int_p_cs_precedes &&
-	    a->int_n_cs_precedes == b->int_n_cs_precedes &&
-	    a->int_p_sep_by_space == b->int_p_sep_by_space &&
-	    a->int_n_sep_by_space == b->int_n_sep_by_space &&
-	    a->int_p_sign_posn == b->int_p_sign_posn &&
-	    a->int_n_sign_posn == b->int_n_sign_posn);
-}
+/* <machine/atomic.h> */
+#define atomic_load_acq_int(p)		__atomic_load_n((p), __ATOMIC_ACQUIRE)
+#define atomic_store_rel_int(p, v)	__atomic_store_n((p), (v), __ATOMIC_RELEASE)
 
-/* localeconv.c */
+#define FIX_LOCALE(l)	do { if (NULL == l) l = __get_locale(); } while (0)
+
+/* 
+ * The localeconv() function constructs a struct lconv from the current
+ * monetary and numeric locales.
+ *
+ * Because localeconv() may be called many times (especially by library
+ * routines like printf() & strtod()), the appropriate members of the
+ * lconv structure are computed only when the monetary or numeric 
+ * locale has been changed.
+ */
+
+/*
+ * Return the current locale conversion.
+ */
 struct lconv *
 ref_localeconv_l(locale_t loc)
 {

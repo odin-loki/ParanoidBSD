@@ -67,7 +67,7 @@ export namespace pbsd::lib_libc_locale::b0156s1 {
 #define	_CTYPE_Q	0x00200000L
 #define	_CTYPE_N	0x00400000L
 
-#define	_RUNE_MAGIC_1	"RuneMagi"
+#define	_RUNE_MAGIC_1	{ 'R', 'u', 'n', 'e', 'M', 'a', 'g', 'i' }
 
 using __ct_rune_t = int;
 using __rune_t = __ct_rune_t;
@@ -150,7 +150,7 @@ get_real_locale(locale_t locale)
 
 #define	FIX_LOCALE(l)	(l = get_real_locale(l))
 
-const _RuneLocale _DefaultRuneLocale = {
+extern const _RuneLocale _DefaultRuneLocale = {
     _RUNE_MAGIC_1,
     "NONE",
     NULL,
@@ -355,7 +355,7 @@ const _RuneLocale _DefaultRuneLocale = {
 };
 
 #undef _CurrentRuneLocale
-const _RuneLocale *_CurrentRuneLocale = &_DefaultRuneLocale;
+extern const _RuneLocale *_CurrentRuneLocale = &_DefaultRuneLocale;
 
 _RuneLocale *
 __runes_for_locale(locale_t locale, int *mb_sb_limit)

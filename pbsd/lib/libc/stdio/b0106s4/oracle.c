@@ -1,11 +1,18 @@
 /*
  * Reference oracle for batch b0106s4 (lib/libc/stdio/scanf.c).
  *
- * The original HardenedBSD source is below with every function renamed with a
- * "ref_" prefix.  The function bodies are UNMODIFIED: the renaming is done
- * with #define, and the FreeBSD libc internals the bodies reach for are
- * supplied by the shared test substrate below.  Only #include lines of
- * FreeBSD-private headers were dropped.
+ * The original HardenedBSD source is reproduced below with every function
+ * renamed with a "ref_" prefix.  The function bodies are UNMODIFIED: the
+ * renaming is done with #define, and the FreeBSD libc internals the bodies
+ * reach for (__svfscanf, __get_locale, FIX_LOCALE, FLOCKFILE_CANCELSAFE,
+ * FUNLOCKFILE_CANCELSAFE) are supplied by the shared substrate below.  Only
+ * the #include lines naming FreeBSD-private headers were dropped.
+ *
+ * The substrate is shared with the port: both ref_scanf/ref_scanf_l and the
+ * C++23 port call the very same scanf back end, exactly as the originals both
+ * call libc's single __svfscanf.  The back end records the FILE, the locale
+ * and a call counter so that the harness can observe *what the wrapper handed
+ * to the engine*, not merely what the engine returned.
  */
 
 #ifndef _GNU_SOURCE
@@ -21,8 +28,10 @@
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
 #endif
 
-/* Last locale handed to the scanf back end, so the plumbing is observable. */
+/* Observable plumbing state, inspected by harness.cpp. */
 locale_t pbsd_shim_svfscanf_locale;
+FILE *pbsd_shim_svfscanf_file;
+long pbsd_shim_svfscanf_calls;
 
 locale_t
 pbsd_shim_get_locale(void)
@@ -37,6 +46,8 @@ pbsd_shim_svfscanf(FILE *fp, locale_t locale, const char *fmt, va_list ap)
 	int r;
 
 	pbsd_shim_svfscanf_locale = locale;
+	pbsd_shim_svfscanf_file = fp;
+	pbsd_shim_svfscanf_calls++;
 	oldloc = uselocale(locale);
 	r = vfscanf(fp, fmt, ap);
 	uselocale(oldloc);

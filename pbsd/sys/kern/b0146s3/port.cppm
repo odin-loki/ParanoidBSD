@@ -156,7 +156,7 @@ hashinit_flags(int elements, malloc_type *type, u_long *hashmask,
 	long hashsize, i;
 	generic_list_head *hashtbl;
 
-KASSERT(elements > 0, ("%s: bad elements", __func__));
+KASSERT(elements <= 0, ("%s: bad elements", __func__));
 KASSERT((flags & HASH_WAITOK) ^ (flags & HASH_NOWAIT),
 	    ("Bad flags (0x%x) passed to hashinit_flags", flags));
 

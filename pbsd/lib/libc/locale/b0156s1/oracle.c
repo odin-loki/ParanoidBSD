@@ -119,17 +119,6 @@ get_real_locale(locale_t locale)
 
 #define	FIX_LOCALE(l)	(l = get_real_locale(l))
 
-void
-pbsd_table_init_locales(void)
-{
-	__xlocale_C_locale.components[XLC_CTYPE] = &__xlocale_C_ctype;
-	__xlocale_global_locale.components[XLC_CTYPE] = &__xlocale_global_ctype;
-	__xlocale_C_ctype.runes = (_RuneLocale *)&_DefaultRuneLocale;
-	__xlocale_C_ctype.__mb_sb_limit = 1;
-	__xlocale_global_ctype.runes = (_RuneLocale *)&_DefaultRuneLocale;
-	__xlocale_global_ctype.__mb_sb_limit = 127;
-}
-
 const _RuneLocale _DefaultRuneLocale = {
     _RUNE_MAGIC_1,
     "NONE",
@@ -337,14 +326,17 @@ const _RuneLocale _DefaultRuneLocale = {
 #undef _CurrentRuneLocale
 const _RuneLocale *_CurrentRuneLocale = &_DefaultRuneLocale;
 
-_RuneLocale *
-__runes_for_locale(locale_t locale, int *mb_sb_limit)
+void
+pbsd_table_init_locales(void)
 {
-	FIX_LOCALE(locale);
-	struct xlocale_ctype *c = XLOCALE_CTYPE(locale);
-	*mb_sb_limit = c->__mb_sb_limit;
-	return c->runes;
+	__xlocale_C_locale.components[XLC_CTYPE] = &__xlocale_C_ctype;
+	__xlocale_global_locale.components[XLC_CTYPE] = &__xlocale_global_ctype;
+	__xlocale_C_ctype.runes = (_RuneLocale *)&_DefaultRuneLocale;
+	__xlocale_C_ctype.__mb_sb_limit = 1;
+	__xlocale_global_ctype.runes = (_RuneLocale *)&_DefaultRuneLocale;
+	__xlocale_global_ctype.__mb_sb_limit = 127;
 }
+
 _RuneLocale *
 ref___runes_for_locale(locale_t locale, int *mb_sb_limit)
 {

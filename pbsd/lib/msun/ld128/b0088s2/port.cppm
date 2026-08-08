@@ -1,39 +1,81 @@
+/*
+ * PBSD batch b0088s2 -- C++23 port of the HardenedBSD ld128 sinpil() family.
+ *
+ * Sources, in order:
+ *	lib/msun/ld128/k_cosl.c
+ *	lib/msun/ld128/k_sinl.c
+ *	lib/msun/ld128/k_cospil.h
+ *	lib/msun/ld128/k_sinpil.h
+ *	lib/msun/ld128/s_sinpil.c		(the batch)
+ *
+ * Supporting definitions reproduced verbatim from headers outside the batch:
+ *	union IEEEl2bits	lib/libc/aarch64/_fpmath.h
+ *	_2sumF			lib/msun/src/math_private.h  (!DEBUG variant)
+ *	FFLOORL128		lib/msun/src/math_private.h
+ *
+ * These are the ld128 sources: `long double' must be IEEE 754 binary128,
+ * which is what union IEEEl2bits describes.  On x86-64 the default long
+ * double is x87 80-bit, so this file must be compiled with
+ * -mlong-double-128; the check below enforces it.
+ *
+ * The port is behaviour-preserving down to the last bit: expression shape,
+ * operand order, the double/long double mixing, the (double) narrowing casts
+ * and the exact branch structure are all unchanged.
+ */
+
 module;
 
+#include <cfloat>
 #include <cmath>
 #include <cstdint>
 #include <math.h>
+#include <quadmath.h>
+
+#if LDBL_MANT_DIG != 113
+#error "b0088s2 is ld128 code: compile with -mlong-double-128"
+#endif
+
+/*
+ * With -mlong-double-128 the compiler still emits a call to the host libm's
+ * fmodl(), which on this platform is the x87 80-bit entry point.  fmodq() is
+ * the binary128 entry point, i.e. what fmodl() is on a real ld128 platform.
+ */
+#define	fmodl	fmodq
 
 export module pbsd.lib.msun.ld128.b0088s2;
 
-export namespace pbsd::lib_msun_ld128::b0088s2 {
+namespace pbsd::lib_msun_ld128::b0088s2 {
 
-/* ld128 IEEEl2bits (binary128) */
+/* lib/libc/aarch64/_fpmath.h */
 union IEEEl2bits {
-	long double e;
+	long double	e;
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
-		unsigned int exp :15;
-		unsigned int sign :1;
+		unsigned long	manl	:64;
+		unsigned long	manh	:48;
+		unsigned int	exp	:15;
+		unsigned int	sign	:1;
 	} bits;
+	/* TODO andrew: Check the packing here */
 	struct {
-		unsigned long manl :64;
-		unsigned long manh :48;
-		unsigned int expsign :16;
+		unsigned long	manl	:64;
+		unsigned long	manh	:48;
+		unsigned int	expsign	:16;
 	} xbits;
 };
 
-#define _2sumF(a, b) do {	\
-	__typeof(a) __w;	\
+/* lib/msun/src/math_private.h */
+#define	_2sumF(a, b) do {	\
+	__typeof__(a) __w;	\
+				\
 	__w = (a) + (b);	\
 	(b) = ((a) - __w) + (b); \
 	(a) = __w;		\
 } while (0)
 
+/* lib/msun/src/math_private.h */
 #define FFLOORL128(x, ai, ar) do {			\
 	union IEEEl2bits u;				\
-	uint64_t m;					\
+	std::uint64_t m;				\
 	int e;						\
 	u.e = (x);					\
 	e = u.bits.exp - 16383;				\
@@ -42,14 +84,16 @@ union IEEEl2bits {
 		u.bits.manh &= ~m;			\
 		u.bits.manl = 0;			\
 	} else {					\
-		m = (uint64_t)-1 >> (e - 48);		\
+		m = (std::uint64_t)-1 >> (e - 48);	\
 		u.bits.manl &= ~m;			\
 	}						\
 	(ai) = u.e;					\
 	(ar) = (x) - (ai);				\
 } while (0)
 
-/* k_cosl.c */
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/k_cosl.c						*/
+/* ------------------------------------------------------------------ */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -91,7 +135,7 @@ C10= -8.89679121027589608738005163931958096e-22L,
 C11=  1.61171797801314301767074036661901531e-24L,
 C12= -2.46748624357670948912574279501044295e-27L;
 
-static long double
+export long double
 __kernel_cosl(long double x, long double y)
 {
 	long double hz,z,r,w;
@@ -104,7 +148,9 @@ __kernel_cosl(long double x, long double y)
 	return w + (((one-w)-hz) + (z*r-x*y));
 }
 
-/* k_sinl.c */
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/k_sinl.c						*/
+/* ------------------------------------------------------------------ */
 /*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
@@ -146,7 +192,7 @@ S10 =  0.19572940011906109418080609928334380560135358385256e-19,
 S11 = -0.38680813379701966970673724299207480965452616911420e-22,
 S12 =  0.64038150078671872796678569586315881020659912139412e-25;
 
-static long double
+export long double
 __kernel_sinl(long double x, long double y, int iy)
 {
 	long double z,r,v;
@@ -161,12 +207,16 @@ __kernel_sinl(long double x, long double y, int iy)
 
 /*
  * pi_hi contains the leading 56 bits of a 169 bit approximation for pi.
+ * (from lib/msun/ld128/s_sinpil.c, hoisted here because k_cospil.h and
+ * k_sinpil.h are included by s_sinpil.c after it defines these.)
  */
 static const long double
 pi_hi = 3.14159265358979322702026593105983920e+00L,
 pi_lo = 1.14423774522196636802434264184180742e-17L;
 
-/* k_cospil.h */
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/k_cospil.h						*/
+/* ------------------------------------------------------------------ */
 /*-
  * Copyright (c) 2017 Steven G. Kargl
  * All rights reserved.
@@ -197,7 +247,8 @@ pi_lo = 1.14423774522196636802434264184180742e-17L;
  * See ../src/k_cospi.c for implementation details.
  */
 
-static inline long double
+/* `static inline' dropped so the harness can call this directly. */
+export long double
 __kernel_cospil(long double x)
 {
 	long double hi, lo;
@@ -210,7 +261,9 @@ __kernel_cospil(long double x)
 	return (__kernel_cosl(hi, lo));
 }
 
-/* k_sinpil.h */
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/k_sinpil.h						*/
+/* ------------------------------------------------------------------ */
 /*-
  * Copyright (c) 2017 Steven G. Kargl
  * All rights reserved.
@@ -241,7 +294,8 @@ __kernel_cospil(long double x)
  * See ../src/k_sinpi.c for implementation details.
  */
 
-static inline long double
+/* `static inline' dropped so the harness can call this directly. */
+export long double
 __kernel_sinpil(long double x)
 {
 	long double hi, lo;
@@ -254,9 +308,9 @@ __kernel_sinpil(long double x)
 	return (__kernel_sinl(hi, lo, 1));
 }
 
-volatile static const double vzero = 0;
-
-/* s_sinpil.c */
+/* ------------------------------------------------------------------ */
+/* lib/msun/ld128/s_sinpil.c						*/
+/* ------------------------------------------------------------------ */
 /*-
  * Copyright (c) 2017-2023 Steven G. Kargl
  * All rights reserved.
@@ -287,7 +341,9 @@ volatile static const double vzero = 0;
  * See ../src/s_sinpi.c for implementation details.
  */
 
-long double
+volatile static const double vzero = 0;
+
+export long double
 sinpil(long double x)
 {
 	long double ai, ar, ax, hi, lo, s, xhi, xlo;
@@ -353,4 +409,4 @@ sinpil(long double x)
 	return (copysignl(0, x));
 }
 
-} // export namespace
+} // namespace pbsd::lib_msun_ld128::b0088s2
