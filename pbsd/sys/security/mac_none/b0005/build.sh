@@ -1,51 +1,36 @@
 #!/bin/sh
-#
-# build.sh -- build and run the PBSD batch b0005 differential test.
-#
-# Run as:  sh build.sh
-#
-# Compiles oracle.c as C11, port.cppm and harness.cpp as C++23 modules,
-# links the three together and execs the harness, so the exit status of
-# this script is the exit status of the harness.
+# Build and run the PBSD batch b0005 differential test.
+# Usage: sh build.sh   (from pbsd/sys/security/mac_none/b0005/)
 
 set -e
 
-srcdir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+CC=${CC:-cc}
+CXX=${CXX:-c++}
+BUILD=.build
 
-: "${CC:=cc}"
-: "${CXX:=c++}"
-
-builddir="$srcdir/.build"
-mkdir -p "$builddir"
-cd "$builddir"
+rm -rf "$BUILD" gcm.cache
+mkdir -p "$BUILD"
 
 CFLAGS="-std=c11 -O2"
 CXXFLAGS="-std=c++23 -O2"
 
-modname=pbsd.sys.security.mac.none.b0005
-
-if "$CXX" --version 2>&1 | grep -i -q clang; then
-	compiler=clang
-else
-	compiler=gcc
+# Module flags differ between toolchains: GCC wants -fmodules-ts and keeps its
+# compiled module interfaces in gcm.cache; Clang wants -fmodules and an
+# explicit .pcm for each interface unit.
+MODFLAGS=""
+if $CXX -std=c++23 -fmodules-ts -E -x c++ /dev/null >/dev/null 2>&1; then
+	MODFLAGS="-fmodules-ts"
+elif $CXX -std=c++23 -fmodules -E -x c++ /dev/null >/dev/null 2>&1; then
+	MODFLAGS="-fmodules"
 fi
 
-echo "building batch b0005 with $CC / $CXX ($compiler modules)"
+$CC $CFLAGS -c oracle.c -o "$BUILD/oracle.o"
 
-$CC $CFLAGS -c "$srcdir/oracle.c" -o oracle.o
+# -x c++ because neither driver recognises the .cppm suffix by default.
+$CXX $CXXFLAGS $MODFLAGS -c -x c++ port.cppm -o "$BUILD/port.o"
+$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o "$BUILD/harness.o"
 
-if [ "$compiler" = clang ]; then
-	$CXX $CXXFLAGS -x c++-module --precompile "$srcdir/port.cppm" \
-	    -o port.pcm
-	$CXX $CXXFLAGS -c port.pcm -o port.o
-	$CXX $CXXFLAGS -fmodule-file="$modname=port.pcm" \
-	    -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS -o harness harness.o port.o oracle.o
-else
-	rm -rf gcm.cache
-	$CXX $CXXFLAGS -fmodules-ts -x c++ -c "$srcdir/port.cppm" -o port.o
-	$CXX $CXXFLAGS -fmodules-ts -c "$srcdir/harness.cpp" -o harness.o
-	$CXX $CXXFLAGS -fmodules-ts -o harness harness.o port.o oracle.o
-fi
+$CXX $CXXFLAGS $MODFLAGS -o "$BUILD/harness" \
+	"$BUILD/harness.o" "$BUILD/port.o" "$BUILD/oracle.o"
 
-exec ./harness
+exec "$BUILD/harness"

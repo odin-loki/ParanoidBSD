@@ -1,5 +1,16 @@
 module;
 
+#include <cassert>
+#include <cerrno>
+#include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <langinfo.h>
+
+export module pbsd.lib.libc.locale.b0002;
+
+extern "C" {
 #define __mbstate_t_defined 1
 typedef union {
 	char		__mbstate8[128];
@@ -7,41 +18,25 @@ typedef union {
 } __mbstate_t;
 typedef __mbstate_t mbstate_t;
 
-#include <cassert>
-#include <cerrno>
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <langinfo.h>
 #include <uchar.h>
-
-export module pbsd.lib.libc.locale.b0002;
-
-namespace pbsd::lib_libc_locale::b0002 {
 
 #define _CITRUS_ICONV_F_HIDE_INVALID	0x0001
 
-struct _citrus_iconv_ops;
 struct _citrus_iconv_shared;
-struct _citrus_iconv;
-
-}
-
-extern "C" {
-struct _citrus_iconv;
+struct _citrus_iconv {
+	struct _citrus_iconv_shared	*cv_shared;
+	void				*cv_closure;
+};
 
 int _citrus_iconv_open(struct _citrus_iconv * __restrict * __restrict,
     const char * __restrict, const char * __restrict);
 int _citrus_iconv_convert(struct _citrus_iconv * __restrict,
-    char * __restrict * __restrict, std::size_t * __restrict,
-    char * __restrict * __restrict, std::size_t * __restrict, std::uint32_t,
-    std::size_t * __restrict);
+    char * __restrict * __restrict, size_t * __restrict,
+    char * __restrict * __restrict, size_t * __restrict, uint32_t,
+    size_t * __restrict);
 
 enum {
-	XLC_CTYPE = 1,
+	PORT_XLC_CTYPE = 1,
 };
 
 struct port_xlocale_ctype {
@@ -55,19 +50,19 @@ struct port_xlocale {
 	void		*components[6];
 };
 
-using locale_t = port_xlocale *;
+using port_locale_t = port_xlocale *;
 
 port_xlocale_ctype	port_global_ctype;
 port_xlocale		port_global_locale;
 
-locale_t
+port_locale_t
 port_get_locale()
 {
 	return (&port_global_locale);
 }
 
-static inline locale_t
-port_fix_locale(locale_t l)
+static inline port_locale_t
+port_fix_locale(port_locale_t l)
 {
 	if (l == nullptr)
 		return (&port_global_locale);
@@ -76,10 +71,10 @@ port_fix_locale(locale_t l)
 
 #define FIX_LOCALE(l)	((l) = port_fix_locale(l))
 
-#define MB_CUR_MAX_L(x)	((std::size_t)4)
+#define MB_CUR_MAX_L(x)	((size_t)4)
 
-char *
-port_nl_langinfo_l(int item, locale_t locale)
+const char *
+port_nl_langinfo_l(nl_item item, port_locale_t locale)
 {
 	(void)locale;
 	if (item == CODESET)
@@ -87,24 +82,32 @@ port_nl_langinfo_l(int item, locale_t locale)
 	return ("");
 }
 
-struct _citrus_iconv {
-	struct _citrus_iconv_shared	*cv_shared;
-	void				*cv_closure;
-};
-
-}
-
-namespace pbsd::lib_libc_locale::b0002 {
-
 static port_xlocale_ctype *
-XLOCALE_CTYPE(locale_t l)
+XLOCALE_CTYPE(port_locale_t l)
 {
-	return (static_cast<port_xlocale_ctype *>(l->components[XLC_CTYPE]));
+	return (static_cast<port_xlocale_ctype *>(l->components[PORT_XLC_CTYPE]));
 }
 
 }
 
 export namespace pbsd::lib_libc_locale::b0002 {
+
+using ::mbstate_t;
+using ::char16_t;
+using ::char32_t;
+using port_locale_t = ::port_locale_t;
+
+inline void
+init_locale()
+{
+	port_global_locale.components[PORT_XLC_CTYPE] = &port_global_ctype;
+}
+
+inline port_locale_t
+global_locale()
+{
+	return (&port_global_locale);
+}
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -148,7 +151,7 @@ static_assert(sizeof(_ConversionState_c16rtomb) <= sizeof(mbstate_t),
 
 std::size_t
 c16rtomb_l(char * __restrict s, char16_t c, mbstate_t * __restrict ps,
-    locale_t locale)
+    port_locale_t locale)
 {
 	_ConversionState_c16rtomb *cs;
 	_citrus_iconv *handle;
@@ -249,7 +252,7 @@ static_assert(sizeof(_ConversionState_c32rtomb) <= sizeof(mbstate_t),
 
 std::size_t
 c32rtomb_l(char * __restrict s, char32_t c, mbstate_t * __restrict ps,
-    locale_t locale)
+    port_locale_t locale)
 {
 	_ConversionState_c32rtomb *cs;
 	_citrus_iconv *handle;
@@ -352,7 +355,7 @@ static_assert(sizeof(_ConversionState_mbrtoc16) <= sizeof(mbstate_t),
 
 std::size_t
 mbrtoc16_l(char16_t * __restrict pc, const char * __restrict s, std::size_t n,
-    mbstate_t * __restrict ps, locale_t locale)
+    mbstate_t * __restrict ps, port_locale_t locale)
 {
 	_ConversionState_mbrtoc16 *cs;
 	_citrus_iconv *handle;
@@ -494,7 +497,7 @@ static_assert(sizeof(_ConversionState_mbrtoc32) <= sizeof(mbstate_t),
 
 std::size_t
 mbrtoc32_l(char32_t * __restrict pc, const char * __restrict s, std::size_t n,
-    mbstate_t * __restrict ps, locale_t locale)
+    mbstate_t * __restrict ps, port_locale_t locale)
 {
 	_ConversionState_mbrtoc32 *cs;
 	_citrus_iconv *handle;

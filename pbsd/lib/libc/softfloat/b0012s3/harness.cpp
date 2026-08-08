@@ -44,6 +44,8 @@ enum { GUARD = 0x7f };
 enum { BUFSZ = 64 };
 enum { OFF_IN = 8 };
 enum { OFF_OUT = 32 };
+enum { OFF_A = OFF_IN };
+enum { OFF_B = OFF_IN + 16 };
 
 static_assert(sizeof(P::floatx80) == sizeof(ref_floatx80), "floatx80 layout");
 static_assert(sizeof(P::floatx80) == 16, "floatx80 size");
@@ -150,18 +152,18 @@ check_mul(const char *phase, Val a, Val b)
 
 	std::memset(bufRef, GUARD, BUFSZ);
 	std::memset(bufPort, GUARD, BUFSZ);
-	plant_x80(bufRef, OFF_IN, a);
-	plant_x80(bufRef, OFF_IN + 16, b);
-	plant_x80(bufPort, OFF_IN, a);
-	plant_x80(bufPort, OFF_IN + 16, b);
+	plant_x80(bufRef, OFF_A, a);
+	plant_x80(bufRef, OFF_B, b);
+	plant_x80(bufPort, OFF_A, a);
+	plant_x80(bufPort, OFF_B, b);
 	std::memcpy(pristine, bufRef, BUFSZ);
 
 	ref_floatx80 ra, rb;
 	P::floatx80 pa, pb;
-	std::memcpy(&ra, bufRef + OFF_IN, sizeof ra);
-	std::memcpy(&rb, bufRef + OFF_IN + 16, sizeof rb);
-	std::memcpy(&pa, bufPort + OFF_IN, sizeof pa);
-	std::memcpy(&pb, bufPort + OFF_IN + 16, sizeof pb);
+	std::memcpy(&ra, bufRef + OFF_A, sizeof ra);
+	std::memcpy(&rb, bufRef + OFF_B, sizeof rb);
+	std::memcpy(&pa, bufPort + OFF_A, sizeof pa);
+	std::memcpy(&pb, bufPort + OFF_B, sizeof pb);
 
 	float_exception_flags = 0;
 	ref_floatx80 rr = floatx80_mul(ra, rb);
@@ -179,8 +181,8 @@ check_mul(const char *phase, Val a, Val b)
 	Val pv{ pr.high, pr.low };
 	if (rv.high != pv.high || rv.low != pv.low || rfl != pfl ||
 	    !bufs_equal(bufRef, bufPort) ||
-	    std::memcmp(bufRef, pristine, OFF_OUT + 16) != 0 ||
-	    std::memcmp(bufPort, pristine, OFF_OUT + 16) != 0)
+	    std::memcmp(bufRef, pristine, OFF_B + sizeof(ref_floatx80)) != 0 ||
+	    std::memcmp(bufPort, pristine, OFF_B + sizeof(ref_floatx80)) != 0)
 		++st_mul.failures;
 }
 

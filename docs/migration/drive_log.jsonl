@@ -1679,3 +1679,4 @@
 {"batch": "b0016s4", "status": "VERIFIED", "detail": "harness green + IR-identical for all 3 functions", "how": "agent", "ts": "2026-08-08T09:20:43Z"}
 {"batch": "b0024", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:20:47Z"}
 {"batch": "b0025", "status": "VERIFIED", "detail": "harness green + IR-identical for all 4 functions", "how": "agent", "ts": "2026-08-08T09:21:14Z"}
+{"batch": "b0018", "status": "VERIFIED", "detail": "harness green + 4/4 mutations killed (IR: IR differs for 1/1: memset_resolver)", "how": "agent", "ts": "2026-08-08T09:22:07Z"}

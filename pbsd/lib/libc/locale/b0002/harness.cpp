@@ -5,6 +5,7 @@
 import pbsd.lib.libc.locale.b0002;
 
 #include <cerrno>
+#include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -21,20 +22,20 @@ typedef union {
 typedef __mbstate_t mbstate_t;
 
 extern "C" {
-typedef struct xlocale *locale_t;
+typedef struct xlocale *ref_locale_t;
 
 extern struct port_xlocale port_global_locale;
 extern struct port_xlocale_ctype port_global_ctype;
 extern struct xlocale ref_global_locale;
 extern struct xlocale_ctype ref_global_ctype;
 
-size_t ref_c16rtomb_l(char *, char16_t, mbstate_t *, locale_t);
+size_t ref_c16rtomb_l(char *, char16_t, mbstate_t *, ref_locale_t);
 size_t ref_c16rtomb(char *, char16_t, mbstate_t *);
-size_t ref_c32rtomb_l(char *, char32_t, mbstate_t *, locale_t);
+size_t ref_c32rtomb_l(char *, char32_t, mbstate_t *, ref_locale_t);
 size_t ref_c32rtomb(char *, char32_t, mbstate_t *);
-size_t ref_mbrtoc16_l(char16_t *, const char *, size_t, mbstate_t *, locale_t);
+size_t ref_mbrtoc16_l(char16_t *, const char *, size_t, mbstate_t *, ref_locale_t);
 size_t ref_mbrtoc16(char16_t *, const char *, size_t, mbstate_t *);
-size_t ref_mbrtoc32_l(char32_t *, const char *, size_t, mbstate_t *, locale_t);
+size_t ref_mbrtoc32_l(char32_t *, const char *, size_t, mbstate_t *, ref_locale_t);
 size_t ref_mbrtoc32(char32_t *, const char *, size_t, mbstate_t *);
 extern int ref_iconv_open_fail;
 }

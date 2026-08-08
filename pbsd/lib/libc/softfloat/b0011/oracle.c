@@ -1,46 +1,42 @@
 /*
- * oracle.c -- reference implementation for PBSD batch b0011.
+ * PBSD migration batch b0011 -- reference oracle.
  *
- * The original HardenedBSD/NetBSD C sources for
+ * The four batch sources below are reproduced verbatim from HardenedBSD
+ * (lib/libc/softfloat), with every function renamed with a "ref_" prefix.
+ * Function bodies are UNMODIFIED.
  *
- *	lib/libc/softfloat/eqdf2.c
- *	lib/libc/softfloat/negdf2.c
- *	lib/libc/softfloat/gesf2.c
- *	lib/libc/softfloat/lesf2.c
- *
- * concatenated, with each ported function renamed with a ref_ prefix.
- * The function bodies are UNMODIFIED.  This file is the specification.
- *
- * The #include lines of the originals name private softfloat headers
- * (softfloat-for-gcc.h, milieu.h, softfloat.h).  The declarations those
- * headers supply -- the softfloat integer typedefs and the comparison
- * primitives the batch calls -- are reproduced below so that the bodies
- * compile verbatim, keeping the primitives under their original names.
+ * Everything above the "batch sources" banner is the softfloat runtime that
+ * those sources depend on (types from milieu.h/softfloat.h, and the two
+ * comparison primitives float64_eq()/float32_le() from bits64/softfloat.c).
+ * It is not part of the batch; it is the library the batch links against,
+ * and port.cppm links against these same definitions.
  */
 
 #include <stdint.h>
 
 /* ------------------------------------------------------------------ */
-/* milieu.h / softfloat.h scaffolding                                 */
+/* softfloat types (milieu.h / softfloat.h, bits64 configuration)      */
 /* ------------------------------------------------------------------ */
 
 typedef char flag;
-
+typedef uint8_t uint8;
+typedef int8_t int8;
 typedef uint32_t bits32;
+typedef int32_t sbits32;
 typedef uint64_t bits64;
+typedef int64_t sbits64;
 
-typedef uint32_t float32;
-typedef uint64_t float64;
+typedef bits32 float32;
+typedef bits64 float64;
 
-#ifndef LONG_BIT
-#define LONG_BIT	(sizeof(long) * 8)
-#endif
+#define LIT64(a) a##ULL
 
-#ifndef FLOAT64_MANGLE
+/*
+ * In the bits64 configuration float64 already is a 64-bit integer, so
+ * mangling between bit pattern and float64 is the identity.
+ */
 #define FLOAT64_MANGLE(a)	(a)
-#endif
-
-#define LIT64( a )	a##ULL
+#define FLOAT64_DEMANGLE(a)	(a)
 
 enum {
 	float_flag_inexact   =  1,
@@ -50,69 +46,75 @@ enum {
 	float_flag_invalid   = 16
 };
 
-int ref_float_exception_flags = 0;
+int8 float_exception_flags = 0;
 
-static void
-float_raise(int flags)
+void
+float_raise(int8 flags)
 {
 
-	ref_float_exception_flags |= flags;
+	float_exception_flags |= flags;
 }
 
-#define extractFloat32Frac( a )	( ( a ) & 0x007FFFFF )
-#define extractFloat32Exp( a )	( ( ( a )>>23 ) & 0xFF )
-#define extractFloat32Sign( a )	( ( a )>>31 )
+/* ------------------------------------------------------------------ */
+/* softfloat primitives (bits64/softfloat.c, softfloat-specialize)     */
+/* ------------------------------------------------------------------ */
 
-#define extractFloat64Frac( a )	( ( a ) & LIT64( 0x000FFFFFFFFFFFFF ) )
-#define extractFloat64Exp( a )	( ( ( a )>>52 ) & 0x7FF )
-#define extractFloat64Sign( a )	( ( a )>>63 )
+#define extractFloat32Frac(a)	((a) & 0x007FFFFF)
+#define extractFloat32Exp(a)	(((a) >> 23) & 0xFF)
+#define extractFloat32Sign(a)	((a) >> 31)
 
-#define float32_is_signaling_nan( a )					\
-	( ( ( ( ( a )>>22 ) & 0x1FF ) == 0x1FE ) && ( ( a ) & 0x003FFFFF ) )
+#define extractFloat64Frac(a)	((a) & LIT64(0x000FFFFFFFFFFFFF))
+#define extractFloat64Exp(a)	(((a) >> 52) & 0x7FF)
+#define extractFloat64Sign(a)	((a) >> 63)
 
-#define float64_is_signaling_nan( a )					\
-	( ( ( ( ( a )>>51 ) & 0xFFF ) == 0xFFE )			\
-	  && ( ( a ) & LIT64( 0x0007FFFFFFFFFFFF ) ) )
+flag
+float32_is_signaling_nan(float32 a)
+{
 
-static flag
+	return (((a >> 22) & 0x1FF) == 0x1FE) && (a & 0x003FFFFF);
+}
+
+flag
+float64_is_signaling_nan(float64 a)
+{
+
+	return ((((bits32)(a >> 51)) & 0xFFF) == 0xFFE)
+	    && (a & LIT64(0x0007FFFFFFFFFFFF));
+}
+
+flag
+float64_eq(float64 a, float64 b)
+{
+
+	if (((extractFloat64Exp(a) == 0x7FF) && extractFloat64Frac(a))
+	    || ((extractFloat64Exp(b) == 0x7FF) && extractFloat64Frac(b))) {
+		if (float64_is_signaling_nan(a) || float64_is_signaling_nan(b))
+			float_raise(float_flag_invalid);
+		return 0;
+	}
+	return (a == b) || ((bits64)((a | b) << 1) == 0);
+}
+
+flag
 float32_le(float32 a, float32 b)
 {
 	flag aSign, bSign;
 
-	if (    ( ( extractFloat32Exp( a ) == 0xFF ) && extractFloat32Frac( a ) )
-	     || ( ( extractFloat32Exp( b ) == 0xFF ) && extractFloat32Frac( b ) )
-	   ) {
-		float_raise( float_flag_invalid );
+	if (((extractFloat32Exp(a) == 0xFF) && extractFloat32Frac(a))
+	    || ((extractFloat32Exp(b) == 0xFF) && extractFloat32Frac(b))) {
+		float_raise(float_flag_invalid);
 		return 0;
 	}
-	aSign = extractFloat32Sign( a );
-	bSign = extractFloat32Sign( b );
-	if ( aSign != bSign )
-		return aSign || ( (bits32) ( ( a | b )<<1 ) == 0 );
-	return ( a == b ) || ( aSign ^ ( a < b ) );
-
+	aSign = extractFloat32Sign(a);
+	bSign = extractFloat32Sign(b);
+	if (aSign != bSign)
+		return aSign || ((bits32)((a | b) << 1) == 0);
+	return (a == b) || (aSign ^ (a < b));
 }
 
-static flag
-float64_eq(float64 a, float64 b)
-{
-
-	if (    ( ( extractFloat64Exp( a ) == 0x7FF ) && extractFloat64Frac( a ) )
-	     || ( ( extractFloat64Exp( b ) == 0x7FF ) && extractFloat64Frac( b ) )
-	   ) {
-		if ( float64_is_signaling_nan( a )
-		     || float64_is_signaling_nan( b ) ) {
-			float_raise( float_flag_invalid );
-		}
-		return 0;
-	}
-	return ( a == b ) || ( (bits64) ( ( a | b )<<1 ) == 0 );
-
-}
-
-/* ------------------------------------------------------------------ */
-/* eqdf2.c                                                            */
-/* ------------------------------------------------------------------ */
+/* ================================================================== */
+/* batch sources                                                      */
+/* ================================================================== */
 
 /* $NetBSD: eqdf2.c,v 1.1 2000/06/06 08:15:02 bjh21 Exp $ */
 
@@ -120,19 +122,15 @@ float64_eq(float64 a, float64 b)
  * Written by Ben Harris, 2000.  This file is in the Public Domain.
  */
 
-flag ref_eqdf2(float64, float64);
+flag ref___eqdf2(float64, float64);
 
 flag
-ref_eqdf2(float64 a, float64 b)
+ref___eqdf2(float64 a, float64 b)
 {
 
 	/* libgcc1.c says !(a == b) */
 	return !float64_eq(a, b);
 }
-
-/* ------------------------------------------------------------------ */
-/* negdf2.c                                                           */
-/* ------------------------------------------------------------------ */
 
 /* $NetBSD: negdf2.c,v 1.1 2000/06/06 08:15:07 bjh21 Exp $ */
 
@@ -140,19 +138,15 @@ ref_eqdf2(float64 a, float64 b)
  * Written by Ben Harris, 2000.  This file is in the Public Domain.
  */
 
-float64 ref_negdf2(float64);
+float64 ref___negdf2(float64);
 
 float64
-ref_negdf2(float64 a)
+ref___negdf2(float64 a)
 {
 
 	/* libgcc1.c says -a */
 	return a ^ FLOAT64_MANGLE(0x8000000000000000ULL);
 }
-
-/* ------------------------------------------------------------------ */
-/* gesf2.c                                                            */
-/* ------------------------------------------------------------------ */
 
 /* $NetBSD: gesf2.c,v 1.1 2000/06/06 08:15:05 bjh21 Exp $ */
 
@@ -160,19 +154,15 @@ ref_negdf2(float64 a)
  * Written by Ben Harris, 2000.  This file is in the Public Domain.
  */
 
-flag ref_gesf2(float32, float32);
+flag ref___gesf2(float32, float32);
 
 flag
-ref_gesf2(float32 a, float32 b)
+ref___gesf2(float32 a, float32 b)
 {
 
 	/* libgcc1.c says (a >= b) - 1 */
 	return float32_le(b, a) - 1;
 }
-
-/* ------------------------------------------------------------------ */
-/* lesf2.c                                                            */
-/* ------------------------------------------------------------------ */
 
 /* $NetBSD: lesf2.c,v 1.1 2000/06/06 08:15:06 bjh21 Exp $ */
 
@@ -180,10 +170,10 @@ ref_gesf2(float32 a, float32 b)
  * Written by Ben Harris, 2000.  This file is in the Public Domain.
  */
 
-flag ref_lesf2(float32, float32);
+flag ref___lesf2(float32, float32);
 
 flag
-ref_lesf2(float32 a, float32 b)
+ref___lesf2(float32 a, float32 b)
 {
 
 	/* libgcc1.c says 1 - (a <= b) */

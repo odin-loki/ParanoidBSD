@@ -92,28 +92,28 @@ using interpos_sig_wait4 = pid_t (*)(pid_t, int *, int, ::rusage *);
 export namespace pbsd::lib_libc_sys::b0027 {
 
 /* hbsd/src/lib/libc/sys/read.c */
-ssize_t
+[[gnu::weak]] ssize_t
 read(int fd, void *buf, size_t nbytes)
 {
 	return (INTERPOS_SYS(read, fd, buf, nbytes));
 }
 
 /* hbsd/src/lib/libc/sys/msync.c */
-int
+[[gnu::weak]] int
 msync(void *addr, size_t len, int flags)
 {
 	return (INTERPOS_SYS(msync, addr, len, flags));
 }
 
 /* hbsd/src/lib/libc/sys/write.c */
-ssize_t
+[[gnu::weak]] ssize_t
 write(int fd, const void *buf, size_t nbytes)
 {
 	return (INTERPOS_SYS(write, fd, buf, nbytes));
 }
 
 /* hbsd/src/lib/libc/sys/wait4.c */
-pid_t
+[[gnu::weak]] pid_t
 wait4(pid_t pid, int *status, int options, ::rusage *ru)
 {
 	return (INTERPOS_SYS(wait4, pid, status, options, ru));
