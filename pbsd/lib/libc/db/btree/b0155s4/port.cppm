@@ -291,31 +291,11 @@ typedef struct _btree {
 extern "C" {
 void *mpool_get(MPOOL *, pgno_t, unsigned int);
 int mpool_put(MPOOL *, void *, unsigned int);
-void *mpool_new(MPOOL *, pgno_t *, unsigned int);
-int mpool_delete(MPOOL *, void *);
-MPOOL *mpool_open(void *, int, u_int32_t, pgno_t);
-void mpool_filter(MPOOL *, void (*)(void *, pgno_t, void *), void (*)(void *, pgno_t, void *), void *);
 EPG *__bt_search(BTREE *, const DBT *, int *);
 int __bt_cmp(BTREE *, const DBT *, EPG *);
-int __bt_split(BTREE *, PAGE *, const DBT *, const DBT *, int, u_int32_t, indx_t);
-int __ovfl_put(BTREE *, const DBT *, pgno_t *);
 int __ovfl_delete(BTREE *, void *);
 int __bt_ret(BTREE *, EPG *, DBT *, DBT *, DBT *, DBT *, int);
 int __bt_free(BTREE *, PAGE *);
-int __bt_close(DB *);
-int __bt_get(const DB *, const DBT *, DBT *, u_int);
-int __bt_sync(const DB *, u_int);
-int __bt_defcmp(const DBT *, const DBT *);
-size_t __bt_defpfx(const DBT *, const DBT *);
-void __bt_pgin(void *, pgno_t, void *);
-void __bt_pgout(void *, pgno_t, void *);
-int _open(const char *, int, ...);
-int _fstat(int, struct stat *);
-ssize_t _read(int, void *, size_t);
-int _close(int);
-char *secure_getenv(const char *);
-int __libc_sigprocmask(int, const sigset_t *, sigset_t *);
-int mkostemp(char *, int);
 }
 
 export namespace pbsd::lib_libc_db_btree::b0155s4 {
