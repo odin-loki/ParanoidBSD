@@ -171,7 +171,7 @@ report(int f, const char *why)
 }
 
 static void
-mb_copy(const mbstate_t &s, ref_mbstate_t &d)
+mb_copy(const P::mbstate_t &s, ref_mbstate_t &d)
 {
 
 	std::memset(&d, 0, sizeof(d));
@@ -179,7 +179,7 @@ mb_copy(const mbstate_t &s, ref_mbstate_t &d)
 }
 
 static void
-mb_copy(const ref_mbstate_t &s, mbstate_t &d)
+mb_copy(const ref_mbstate_t &s, P::mbstate_t &d)
 {
 
 	std::memset(&d, 0, sizeof(d));
@@ -195,12 +195,16 @@ apply_rune_tables(Env &e, const RuneTables &t)
 	std::memcpy(e.port_runes.__runetype, t.cached, sizeof(t.cached));
 	e.rtab = t;
 	for (i = 0; i < t.nranges; i++) {
-		e.ref_runes.__runetype_ext.__ranges[i] = t.ranges[i];
+		e.ref_runes.__runetype_ext.__ranges[i].__min = t.ranges[i].__min;
+		e.ref_runes.__runetype_ext.__ranges[i].__max = t.ranges[i].__max;
+		e.ref_runes.__runetype_ext.__ranges[i].__map = t.ranges[i].__map;
+		e.ref_runes.__runetype_ext.__ranges[i].__types = t.ranges[i].__types;
 		e.port_runes.__runetype_ext.__ranges[i] = t.ranges[i];
 	}
 	e.ref_runes.__runetype_ext.__nranges = t.nranges;
 	e.port_runes.__runetype_ext.__nranges = t.nranges;
-	e.ref_runes.__runetype_ext.__ranges = e.rtab.ranges;
+	e.ref_runes.__runetype_ext.__ranges =
+	    (ref_rune_entry *)e.rtab.ranges;
 	e.port_runes.__runetype_ext.__ranges = e.rtab.ranges;
 }
 
@@ -255,6 +259,15 @@ setup_default_locale(void)
 	altenv.ref_ctype.__mb_cur_max = 1;
 	altenv.port_ctype.__mb_cur_max = 1;
 	use_env(genv);
+}
+
+static void
+use_env(Env &e)
+{
+
+	ref_global_locale = e.ref_loc;
+	ref_global_ctype = e.ref_ctype;
+	P::pbsd_set_active_locale(&e.port_loc);
 }
 
 static bool

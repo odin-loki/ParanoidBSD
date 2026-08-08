@@ -117,11 +117,6 @@ enum {
     float_flag_invalid   = 16
 };
 
-typedef struct {
-    flag sign;
-    bits64 high, low;
-} commonNaNT;
-
 int float_rounding_mode = float_round_nearest_even;
 int float_exception_flags = 0;
 int8 floatx80_rounding_precision = 80;

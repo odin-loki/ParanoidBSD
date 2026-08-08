@@ -48,18 +48,45 @@ def remove_skipped_functions(text):
         i += 1
     return "\n".join(out)
 
+def unwrap_ifndef_blocks(text, macro):
+    out, i, lines = [], 0, text.splitlines()
+    while i < len(lines):
+        line = lines[i]
+        if re.match(rf'^\s*#ifndef\s+{re.escape(macro)}\s*$', line):
+            depth, i, inner = 1, i + 1, []
+            while i < len(lines) and depth:
+                if re.match(r'^\s*#ifndef\b', lines[i]):
+                    depth += 1
+                    inner.append(lines[i])
+                elif re.match(r'^\s*#endif\b', lines[i]):
+                    depth -= 1
+                    if depth:
+                        inner.append(lines[i])
+                else:
+                    inner.append(lines[i])
+                i += 1
+            out.extend(inner)
+            continue
+        out.append(line)
+        i += 1
+    return "\n".join(out)
+
 def strip_softfloat_c(text):
+    text = unwrap_ifndef_blocks(text, "SOFTFLOAT_FOR_GCC")
     text = remove_ifdef_blocks(text, "SOFTFLOAT_FOR_GCC")
     text = remove_skipped_functions(text)
-    # drop includes and #include lines
     lines = [ln for ln in text.splitlines()
              if not re.match(r'^\s*#include\s', ln)]
     text = "\n".join(lines)
-    # drop preamble through globals and macro/specialize includes
     marker = '#include "softfloat-specialize"'
     idx = text.find(marker)
     if idx != -1:
         text = text[idx + len(marker):]
+    text = re.sub(
+        r'/\*[\s\S]*?Floating-point rounding mode and exception flags\.[\s\S]*?\*/\s*'
+        r'int\s+float_rounding_mode\s*=\s*float_round_nearest_even\s*;\s*'
+        r'int\s+float_exception_flags\s*=\s*0\s*;\s*',
+        '', text, count=1)
     return text.lstrip("\n")
 
 def strip_specialize(text):
@@ -204,14 +231,15 @@ def gen_port():
     body = strip_softfloat_c(read("bits32/softfloat.c"))
 
     header = '''/* $NetBSD: softfloat.c,v 1.1 2002/05/21 23:51:07 bjh21 Exp $ */
+module;
+
+#include <csignal>
+#include <cstring>
+#include <unistd.h>
+
 export module pbsd.lib.libc.softfloat.bits32.b0047;
 
 export namespace pbsd::lib_libc_softfloat_bits32::b0047 {
-
-#include <csignal>
-#include <cstdint>
-#include <cstring>
-#include <unistd.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)

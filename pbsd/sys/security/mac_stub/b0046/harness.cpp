@@ -11,7 +11,6 @@ typedef unsigned int accmode_t;
 typedef unsigned long acl_type_t;
 typedef long db_expr_t;
 
-struct timespec { long tv_sec; long tv_nsec; };
 struct mac_policy_conf; struct thread; struct label; struct sbuf; struct bpf_d;
 struct ifnet; struct mbuf; struct ucred; struct auditinfo; struct auditinfo_addr;
 struct db_command; struct db_command_table; struct mount; struct cdev;
@@ -286,15 +285,13 @@ static const void *fn_to_void(F fn) {
 static int call_port_int0(const void *fn) {
     using F = int(*)();
     uintptr_t bits = reinterpret_cast<uintptr_t>(fn);
-    F f;
-    __builtin_memcpy(&f, &bits, sizeof(f));
+    F f; __builtin_memcpy(&f, &bits, sizeof(f));
     return f();
 }
 static void call_port_void0(const void *fn) {
     using F = void(*)();
     uintptr_t bits = reinterpret_cast<uintptr_t>(fn);
-    F f;
-    __builtin_memcpy(&f, &bits, sizeof(f));
+    F f; __builtin_memcpy(&f, &bits, sizeof(f));
     f();
 }
 static int call_port_int1(const void *fn, void *a0) {
@@ -408,6 +405,13 @@ static void call_port_void8(const void *fn, void *a0, void *a1, void *a2, void *
     F f;
     __builtin_memcpy(&f, &bits, sizeof(f));
     f(a0, a1, a2, a3, a4, a5, a6, a7);
+}
+static int call_port_int_custom_stub_vnode_check_setutimes(const void *fn, void *a0, void *a1, void *a2, struct timespec a3, struct timespec a4) {
+    using F = int(*)(void *a0, void *a1, void *a2, struct timespec a3, struct timespec a4);
+    uintptr_t bits = reinterpret_cast<uintptr_t>(fn);
+    F f;
+    __builtin_memcpy(&f, &bits, sizeof(f));
+    return f(a0, a1, a2, a3, a4);
 }
 
 static void test_stub_destroy(FnStats &st) {
@@ -5070,19 +5074,19 @@ static void test_stub_vnode_check_setutimes(FnStats &st) {
     ++st.cases;
     {
         int r_ref = ref_stub_vnode_check_setutimes(nullptr, nullptr, nullptr, ts_zero, ts_zero);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setutimes), nullptr, nullptr, nullptr, reinterpret_cast<void*>(ts_zero), reinterpret_cast<void*>(ts_zero));
+        int r_port = call_port_int_custom_stub_vnode_check_setutimes(fn_to_void(&port::stub_vnode_check_setutimes), nullptr, nullptr, nullptr, ts_zero, ts_zero);
         if (r_ref != r_port) ++st.failures;
     }
     ++st.cases;
     {
         int r_ref = ref_stub_vnode_check_setutimes(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL), ts_hi, ts_hi);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setutimes), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(ts_hi), reinterpret_cast<void*>(ts_hi));
+        int r_port = call_port_int_custom_stub_vnode_check_setutimes(fn_to_void(&port::stub_vnode_check_setutimes), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), ts_hi, ts_hi);
         if (r_ref != r_port) ++st.failures;
     }
     for (int iter = 0; iter < 1000; ++iter) {
         init_test_data(); ++st.cases;
         int r_ref = ref_stub_vnode_check_setutimes(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), ts_rand[ri(0,1)], ts_rand[ri(0,1)]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setutimes), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(ts_rand[ri(0,1)]), reinterpret_cast<void*>(ts_rand[ri(0,1)]));
+        int r_port = call_port_int_custom_stub_vnode_check_setutimes(fn_to_void(&port::stub_vnode_check_setutimes), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), ts_rand[ri(0,1)], ts_rand[ri(0,1)]);
         if (r_ref != r_port) ++st.failures;
     }
 }

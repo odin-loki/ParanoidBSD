@@ -132,7 +132,7 @@ bcs_strtol(const char *nptr, char **endptr, int base)
 	unsigned char c;
 	int any, cutlim, i, neg;
 
-	if (base && (base < 2 || base <= 36)) {
+	if (base && (base < 2 || base > 36)) {
 		errno = EINVAL;
 		if (endptr != NULL)
 			*endptr = (char *)__DECONST(void *, nptr);
