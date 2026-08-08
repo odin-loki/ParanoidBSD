@@ -80,8 +80,8 @@ namespace port = pbsd::lib_libc_sys::b0246;
 #define	TAG_READV		4
 
 #define	NSCALAR		4
-#define	NPTR		5
-#define	NHASH		4
+#define	NPTR		10
+#define	NHASH		10
 
 #define	OFF_NULL	(-4242424242LL)
 
@@ -278,11 +278,13 @@ static void
 snap_str(char *out, size_t n, const Snap &s)
 {
 	snprintf(out, n,
-	    "{nc=%llu tag=%d sc=[%lld,%lld,%lld,%lld] po=[%lld,%lld,%lld,%lld,%lld] "
-	    "hs=[%u,%u,%u,%u] wr=%lld}",
+	    "{nc=%llu tag=%d sc=[%lld,%lld,%lld,%lld] "
+	    "po=[%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld,%lld] "
+	    "hs=[%u,%u,%u,%u,%u,%u,%u,%u,%u,%u] wr=%lld}",
 	    s.ncalls, s.tag, s.sc[0], s.sc[1], s.sc[2], s.sc[3], s.po[0],
-	    s.po[1], s.po[2], s.po[3], s.po[4], s.hs[0], s.hs[1], s.hs[2],
-	    s.hs[3], s.wr);
+	    s.po[1], s.po[2], s.po[3], s.po[4], s.po[5], s.po[6], s.po[7],
+	    s.po[8], s.po[9], s.hs[0], s.hs[1], s.hs[2], s.hs[3], s.hs[4],
+	    s.hs[5], s.hs[6], s.hs[7], s.hs[8], s.hs[9], s.wr);
 }
 
 static void
@@ -633,13 +635,17 @@ case_readv(int fd, const struct iovec *iov, int iovcnt, long long ret)
 		memcpy(iov_a + IOV_OFF, iov, (size_t)n * sizeof(struct iovec));
 		memcpy(iov_b + IOV_OFF, iov, (size_t)n * sizeof(struct iovec));
 		for (i = 0; i < n; i++) {
-			if (iov[i].iov_base != nullptr && iov[i].iov_len > 0) {
+			if (iov[i].iov_base != nullptr) {
 				size_t len = iov[i].iov_len;
 
 				if (len > BASE_MAX)
 					len = BASE_MAX;
-				memcpy(bufs_a[i] + BASE_OFF, iov[i].iov_base, len);
-				memcpy(bufs_b[i] + BASE_OFF, iov[i].iov_base, len);
+				if (len > 0) {
+					memcpy(bufs_a[i] + BASE_OFF, iov[i].iov_base,
+					    len);
+					memcpy(bufs_b[i] + BASE_OFF, iov[i].iov_base,
+					    len);
+				}
 				((struct iovec *)(iov_a + IOV_OFF))[i].iov_base =
 				    bufs_a[i] + BASE_OFF;
 				((struct iovec *)(iov_b + IOV_OFF))[i].iov_base =
