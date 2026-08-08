@@ -53,8 +53,10 @@ char *ref_strip_escapes(char *s);
 int ref_is_legal_filename(char *s);
 }
 
-/* filesz that strip_escapes() settles on: max(PATH_MAX, MINBUFSZ). */
-static const int FILESZ = (PATH_MAX > 512) ? PATH_MAX : 512;
+/* filesz that strip_escapes() settles on: max(PATH_MAX, MINBUFSZ), taken
+   from the port so that the harness cannot drift away from the code. */
+static const int FILESZ = (P::kPathMax > P::kMinBufSz) ? P::kPathMax
+    : P::kMinBufSz;
 
 static const char SENT[] = "<no-errmsg-set>";
 

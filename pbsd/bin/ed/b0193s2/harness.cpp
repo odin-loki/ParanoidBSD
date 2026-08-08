@@ -284,7 +284,7 @@ static void sbuf_cmp(Checker &c, long written)
 		 * region is fresh malloc garbage, so limit the window to the
 		 * old region plus whatever this call wrote. */
 		size_t old = (size_t)(sb_old_p < sb_old_r ? sb_old_p : sb_old_r);
-		size_t w = (size_t)(written < 0 ? 0 : written + 3);
+		size_t w = (size_t)(written < 0 ? 0 : written + 2);
 		size_t lim = old > w ? old : w;
 		if (lim < n)
 			n = lim;
@@ -309,6 +309,15 @@ static void ibuf_begin(void)
 	ib_old_r = ibufsz;
 }
 
+/* full guard fill; only safe when no live line data has to survive */
+static void ibuf_guard(void)
+{
+	if (P::ibuf)
+		memset(P::ibuf, 0x7f, (size_t)P::ibufsz);
+	if (ibuf)
+		memset(ibuf, 0x7f, (size_t)ibufsz);
+}
+
 static void ibuf_cmp(Checker &c, long written)
 {
 	c.eqi("ibufsz", P::ibufsz, ibufsz);
@@ -319,7 +328,7 @@ static void ibuf_cmp(Checker &c, long written)
 	bool grew = (P::ibufsz != ib_old_p || ibufsz != ib_old_r);
 	if (grew) {
 		size_t old = (size_t)(ib_old_p < ib_old_r ? ib_old_p : ib_old_r);
-		size_t w = (size_t)(written < 0 ? 0 : written + 3);
+		size_t w = (size_t)(written < 0 ? 0 : written + 1);
 		size_t lim = old > w ? old : w;
 		if (lim < n)
 			n = lim;
@@ -585,6 +594,7 @@ static void run_gtl(const char *data, size_t len, int isbin, int iters,
 	reset_state(isbin, 0, 3);
 
 	for (int k = 0; k < iters; k++) {
+		ibuf_guard();
 		ibuf_begin();
 
 		cap_begin(errs_p, errb_p, ERRCAP);

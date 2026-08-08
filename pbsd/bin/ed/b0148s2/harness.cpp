@@ -261,6 +261,17 @@ struct Stat { const char *name; long cases, fails; };
 Stat stats[3];
 int nstats;
 
+const char *trace_phase = "";
+long trace_iter = -1;
+
+void trace(const char *ph, long i)
+{
+	trace_phase = ph;
+	trace_iter = i;
+	if (std::getenv("PBSD_TRACE") != nullptr)
+		std::fprintf(stderr, "[%s %ld]\n", ph, i);
+}
+
 Stat &reg(const char *n)
 {
 	stats[nstats++] = {n, 0, 0};
@@ -504,7 +515,9 @@ void test_push_undo_stack()
 		teardown();
 	}
 
+	trace("push-random", 0);
 	for (long i = 0; i < PUSH_ITERS; i++) {
+		trace("push-random", i);
 		deep_text = (i % 64) == 0;
 		PushCase c;
 		c.nlines = (int)(rnd() % 7);
@@ -610,7 +623,9 @@ void test_pop_undo_stack()
 	for (int sf = 0; sf < 4; sf++)
 		run_pop(st, {5, 3, 2, 5, -1, -1, sf & 1, sf, 0, 1});
 
+	trace("pop-random", 0);
 	for (long i = 0; i < POP_ITERS; i++) {
+		trace("pop-random", i);
 		deep_text = (i % 64) == 0;
 		PopCase c;
 		c.nlines = (int)(rnd() % 7);
@@ -729,7 +744,9 @@ void test_clear_undo_stack()
 		teardown();
 	}
 
+	trace("clear-random", 0);
 	for (long i = 0; i < CLEAR_ITERS; i++) {
+		trace("clear-random", i);
 		deep_text = (i % 64) == 0;
 		ClearCase c;
 		c.nlines = (int)(rnd() % 7);
@@ -745,14 +762,23 @@ void test_clear_undo_stack()
 	}
 }
 
+void report_phase()
+{
+	std::fprintf(stderr, "LAST PHASE: %s %ld\n", trace_phase, trace_iter);
+}
+
 } /* namespace */
 
 int main()
 {
 	init_ops();
 
+	std::atexit(report_phase);
+	trace("push-edge", 0);
 	test_push_undo_stack();
+	trace("pop-edge", 0);
 	test_pop_undo_stack();
+	trace("clear-edge", 0);
 	test_clear_undo_stack();
 
 	oracle_reset_batch();

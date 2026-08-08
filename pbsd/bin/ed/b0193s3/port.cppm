@@ -56,9 +56,10 @@ module;
 #include <cstdlib>
 #include <cstring>
 
-#ifndef PATH_MAX
+/* HardenedBSD's <sys/syslimits.h> value; pinned so that the C and C++ sides
+   agree regardless of what the host <limits.h> chooses to expose. */
+#undef PATH_MAX
 #define PATH_MAX 1024
-#endif
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)

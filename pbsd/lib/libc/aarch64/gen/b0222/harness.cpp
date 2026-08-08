@@ -580,6 +580,8 @@ op_ctx_done(port::ucontext_t *ucp_port, ref_abi::ucontext *ucp_ref,
 
 	ncases[F_CTX_DONE]++;
 
+	std::fprintf(stderr, "op_ctx_done: port ctx_done\n");
+
 	mock_reset();
 	port::ctx_done(ucp_port);
 	la = g_done_log;
@@ -689,6 +691,7 @@ static void edge_makecontext(void)
 
 static void edge_ctx_done(void)
 {
+	std::fprintf(stderr, "edge_ctx_done start\n");
 	port::ucontext_t up;
 	ref_abi::ucontext ur;
 
@@ -696,7 +699,9 @@ static void edge_ctx_done(void)
 	std::memset(&ur, 0, sizeof ur);
 	up.uc_link = nullptr;
 	ur.uc_link = nullptr;
+	std::fprintf(stderr, "calling op_ctx_done\n");
 	op_ctx_done(&up, &ur, "edge/done/no-link");
+	std::fprintf(stderr, "edge_ctx_done end\n");
 }
 
 static const long SWEEP = 200000;
@@ -824,8 +829,11 @@ main(void)
 	edge_getcontextx();
 	edge_makecontext();
 #endif
+	std::fprintf(stderr, "main start\n");
 	port::__getcontextx_size();
+	std::fprintf(stderr, "before ctx_done\n");
 	edge_ctx_done();
+	std::fprintf(stderr, "after ctx_done\n");
 
 #if 0
 	sweep_getcontextx_size();

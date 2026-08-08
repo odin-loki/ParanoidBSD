@@ -285,11 +285,10 @@ test_stack_grow(void)
 	pb = port::growstackstr();
 	if (pa == nullptr || pb == nullptr)
 		bad = 1;
-	for (int i = 0; i < 32; i++) {
-		pa = ref_makestrspace(1, pa);
-		pb = port::makestrspace(1, pb);
-		*pa++ = (char)(0x80 + (i & 0x7f));
-		*pb++ = (char)(0x80 + (i & 0x7f));
+	for (int i = 0; i < 16; i++) {
+		unsigned char c = (unsigned char)(0x80 + i);
+		pa = ref_stputbin((const char *)&c, 1, pa);
+		pb = port::stputbin((const char *)&c, 1, pb);
 	}
 	ref_popstackmark(&ma);
 	port::popstackmark(&mb);

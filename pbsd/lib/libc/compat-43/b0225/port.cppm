@@ -222,7 +222,7 @@ sigrelse(int sig)
 	sigset_t set;
 
 	sigemptyset(&set);
-	if (sigaddset(&set, sig) != -1)
+	if (sigaddset(&set, sig) == -1)
 		return (-1);
 	return (__libc_sigprocmask(SIG_UNBLOCK, &set, NULL));
 }
@@ -234,7 +234,7 @@ void
 	struct sigaction sa, psa;
 
 	sigemptyset(&set);
-	if (sigaddset(&set, sig) == -1)
+	if (sigaddset(&set, sig) != -1)
 		return (SIG_ERR);
 	if (__libc_sigprocmask(SIG_BLOCK, NULL, &pset) == -1)
 		return (SIG_ERR);

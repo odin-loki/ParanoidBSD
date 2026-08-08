@@ -822,7 +822,6 @@ static void
 check_before_after(int use_before, long seen_v, const char *tag)
 {
 	long io_a = -1, io_b = -1;
-	int ra, rb;
 	const char *why = NULL;
 
 	if (use_before)
@@ -830,20 +829,37 @@ check_before_after(int use_before, long seen_v, const char *tag)
 	else
 		S_after.cases++;
 
-	ra = run_before_after_child(1, use_before, seen_v, &io_a);
-	rb = run_before_after_child(0, use_before, seen_v, &io_b);
+	if (seen_v) {
+		int ra, rb;
 
-	if (ra < 0 || rb < 0)
-		why = "fork/wait failed";
-	else if (seen_v) {
-		if (ra != 1 || rb != 1)
+		ra = run_before_after_child(1, use_before, seen_v, &io_a);
+		rb = run_before_after_child(0, use_before, seen_v, &io_b);
+		if (ra < 0 || rb < 0)
+			why = "fork/wait failed";
+		else if (ra != 1 || rb != 1)
 			why = "expected SIGINT termination";
-	} else if (io_a != io_b)
-		why = "in_io after call";
-	else if (use_before && io_a != 1)
-		why = "before_io did not set in_io";
-	else if (!use_before && io_a != 0)
-		why = "after_io did not clear in_io";
+	} else {
+		STAT z = zero_stat;
+
+		set_both_state(z, 0, 0, 0, 0, 0);
+		if (use_before)
+			P::before_io();
+		else
+			P::after_io();
+		io_a = (long)P::in_io;
+		set_both_state(z, 0, 0, 0, 0, 0);
+		if (use_before)
+			ref_before_io();
+		else
+			ref_after_io();
+		io_b = (long)in_io;
+		if (io_a != io_b)
+			why = "in_io after call";
+		else if (use_before && io_a != 1)
+			why = "before_io did not set in_io";
+		else if (!use_before && io_a != 0)
+			why = "after_io did not clear in_io";
+	}
 
 	if (why == NULL)
 		return;
@@ -951,13 +967,38 @@ check_prepare(const char *tag)
 {
 	PrepareOut a, b;
 	const char *why = NULL;
+	struct sigaction sa;
+	STAT z = zero_stat;
 
 	S_prepare.cases++;
-	if (run_prepare_child(1, &a) != 0 || run_prepare_child(0, &b) != 0)
-		why = "fork failed";
-	else if (a.flags != b.flags)
+
+	set_both_state(z, 0, 0, 0, 0, 0);
+	P::prepare_io();
+	if (sigaction(SIGINT, NULL, &sa) != 0)
+		why = "sigaction query failed";
+	else {
+		a.flags = sa.sa_flags;
+		P::in_io = 0;
+		P::sigint_seen = 0;
+		sa.sa_handler(SIGINT);
+		a.seen_after = (long)P::sigint_seen;
+	}
+
+	set_both_state(z, 0, 0, 0, 0, 0);
+	ref_prepare_io();
+	if (why == NULL && sigaction(SIGINT, NULL, &sa) != 0)
+		why = "sigaction query failed";
+	else if (why == NULL) {
+		b.flags = sa.sa_flags;
+		in_io = 0;
+		sigint_seen = 0;
+		sa.sa_handler(SIGINT);
+		b.seen_after = (long)sigint_seen;
+	}
+
+	if (why == NULL && a.flags != b.flags)
 		why = "sigaction flags";
-	else if (a.seen_after != b.seen_after)
+	else if (why == NULL && a.seen_after != b.seen_after)
 		why = "installed handler behaviour";
 
 	if (why == NULL)
