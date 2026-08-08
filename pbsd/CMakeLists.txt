@@ -253,6 +253,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdio/b0109/port.cppm
   lib/libc/stdio/b0118/port.cppm
   lib/libc/stdio/b0118s1/port.cppm
+  lib/libc/stdio/b0118s2/port.cppm
   lib/libc/stdio/b0127/port.cppm
   lib/libc/stdio/b0139/port.cppm
   lib/libc/stdio/b0140/port.cppm
@@ -359,6 +360,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/ld128/b0073/port.cppm
   lib/msun/ld128/b0084/port.cppm
   lib/msun/ld128/b0088/port.cppm
+  lib/msun/ld128/b0088s1/port.cppm
   lib/msun/ld128/b0089/port.cppm
   lib/msun/ld128/k_cosl_m/port.cppm
   lib/msun/ld128/k_tanl_m/port.cppm
