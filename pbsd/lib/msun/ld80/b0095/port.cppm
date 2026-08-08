@@ -16,6 +16,10 @@ module;
 #define BIG_ENDIAN __BIG_ENDIAN
 #endif
 
+export module pbsd.lib.msun.ld80.b0095;
+
+export namespace pbsd::lib_msun_ld80::b0095 {
+
 union IEEEl2bits {
 	long double	e;
 	struct {
@@ -100,10 +104,6 @@ do {								\
 	RETURNI((rp)->hi + (rp)->lo);	\
 } while (0)
 #endif
-
-export module pbsd.lib.msun.ld80.b0095;
-
-export namespace pbsd::lib_msun_ld80::b0095 {
 
 /*-
  * Copyright (c) 2008 Stephen L. Moshier <steve@moshier.net>
@@ -332,13 +332,13 @@ static const long double R[] = {
 static const long double MAXLOGL = 1.1356523406294143949492E4L;
 static const long double MINLOGL = -1.13994985314888605586758E4L;
 static const long double LOGE2L = 6.9314718055994530941723E-1L;
-static _Thread_local volatile long double z;
-static _Thread_local long double w, W, Wa, Wb, ya, yb, u;
+static thread_local volatile long double z;
+static thread_local long double w, W, Wa, Wb, ya, yb, u;
 static const long double huge = 0x1p10000L;
 #if 0 /* XXX Prevent gcc from erroneously constant folding this. */
 static const long double twom10000 = 0x1p-10000L;
 #else
-static _Thread_local volatile long double twom10000 = 0x1p-10000L;
+static thread_local volatile long double twom10000 = 0x1p-10000L;
 #endif
 
 static long double reducl( long double );
@@ -756,6 +756,16 @@ if( sign < 0 )
 	y = 1.0L/y;
 return(y);
 }
+
+#undef F
+#undef Fa
+#undef Fb
+#undef G
+#undef Ga
+#undef Gb
+#undef H
+#undef Ha
+#undef Hb
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause

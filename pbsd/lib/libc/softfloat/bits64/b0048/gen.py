@@ -976,9 +976,15 @@ def gen_int_to_float_test(f):
     else:
         ity = 'uint32_t'
         rand_loop = 'urand32()'
-    cmp = cmp_expr(rt)
+    if f.startswith('int32'):
+        vals = '{0, 1, 2, 0x7FFFFFFF, (int32_t)0x80000000, 0x7F, (int8_t)0x80, (int8_t)0xFF}'
+    elif f.startswith('int64'):
+        vals = '{0, 1, -1, (int64_t)0x7FFFFFFFFFFFFFFFLL, (int64_t)0x8000000000000000ULL}'
+    else:
+        vals = '{0u, 1u, 2u, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu}'
+    cmp = cmp_expr(rt, 'rp', 'rr')
     return f'''
-    static const {ity} vals[] = {{0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0xFFu, 0x80u, 0x7Fu}};
+    static const {ity} vals[] = {vals};
     for ({ity} v : vals) {{
         sync_globals_from_port();
         {rt} rp = port::{f}(v);

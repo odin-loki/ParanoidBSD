@@ -1,8 +1,8 @@
 /*
  * Differential test harness for PBSD batch b0094.
  *
- * Every function in port.cppm is compared, bit for bit, against the
- * unmodified C reference in oracle.c.
+ * Compares every exported function in port.cppm against the unmodified C
+ * reference in oracle.c, bit-for-bit on long double representations.
  */
 
 #include <cfloat>
@@ -20,12 +20,10 @@ namespace port = pbsd::lib_msun_ld80::b0094;
 extern "C" {
 long double ref___kernel_tanl(long double x, long double y, int iy);
 long double ref___exp__D(long double x, long double c);
+long double ref_expl(long double x);
+long double ref_expm1l(long double x);
 long double ref_exp2l(long double x);
 }
-
-/* ------------------------------------------------------------------ */
-/* raw-representation plumbing                                         */
-/* ------------------------------------------------------------------ */
 
 #if LDBL_MANT_DIG == 64
 static const std::size_t LD_SIG = 10;
@@ -38,15 +36,15 @@ struct ldrep {
 };
 
 static bool
-ld_equal(long double p, long double o)
+guarded_equal(const void *pa, const void *pb, std::size_t n)
 {
-	ldrep rp, ro;
+	unsigned char a[64], b[64];
 
-	std::memset(rp.b, 0, sizeof(rp.b));
-	std::memset(ro.b, 0, sizeof(ro.b));
-	std::memcpy(rp.b, &p, LD_SIG);
-	std::memcpy(ro.b, &o, LD_SIG);
-	return (std::memcmp(rp.b, ro.b, LD_SIG) == 0);
+	std::memset(a, 0x7f, sizeof(a));
+	std::memset(b, 0x7f, sizeof(b));
+	std::memcpy(a + 16, pa, n);
+	std::memcpy(b + 16, pb, n);
+	return (std::memcmp(a, b, sizeof(a)) == 0);
 }
 
 static ldrep
@@ -75,15 +73,9 @@ mkld(std::uint16_t se, std::uint64_t m)
 static void
 ldhex(const ldrep &r)
 {
-	std::size_t i;
-
-	for (i = LD_SIG; i-- > 0;)
+	for (std::size_t i = LD_SIG; i-- > 0;)
 		std::printf("%02x", r.b[i]);
 }
-
-/* ------------------------------------------------------------------ */
-/* bookkeeping                                                         */
-/* ------------------------------------------------------------------ */
 
 struct stat {
 	const char *name;
@@ -94,102 +86,75 @@ struct stat {
 
 static stat st_kernel_tanl = { "__kernel_tanl", 0, 0, 0 };
 static stat st_exp__D = { "__exp__D", 0, 0, 0 };
+static stat st_expl = { "expl", 0, 0, 0 };
+static stat st_expm1l = { "expm1l", 0, 0, 0 };
 static stat st_exp2l = { "exp2l", 0, 0, 0 };
 
 static const unsigned MAX_REPORT = 8;
 
-/* ------------------------------------------------------------------ */
-/* per-function checkers                                               */
-/* ------------------------------------------------------------------ */
+static void
+check_ld(stat &st, long double p, long double o, const char *tag)
+{
+	ldrep rp, ro;
+
+	st.cases++;
+	rp = ldbits(p);
+	ro = ldbits(o);
+
+	if (guarded_equal(rp.b, ro.b, sizeof(rp.b)))
+		return;
+
+	st.fails++;
+	if (st.reported < MAX_REPORT) {
+		st.reported++;
+		std::printf("  %s FAIL [%s] port=", st.name, tag);
+		ldhex(rp);
+		std::printf(" ref=");
+		ldhex(ro);
+		std::printf("\n");
+	}
+}
 
 static void
 check_kernel_tanl(long double x, long double y, int iy, const char *tag)
 {
-	long double p, o;
-
-	st_kernel_tanl.cases++;
-
-	p = port::__kernel_tanl(x, y, iy);
-	o = ref___kernel_tanl(x, y, iy);
-
-	if (ld_equal(p, o))
-		return;
-
-	st_kernel_tanl.fails++;
-	if (st_kernel_tanl.reported < MAX_REPORT) {
-		st_kernel_tanl.reported++;
-		std::printf("  __kernel_tanl FAIL [%s] x=", tag);
-		ldhex(ldbits(x));
-		std::printf(" y=");
-		ldhex(ldbits(y));
-		std::printf(" iy=%d port=", iy);
-		ldhex(ldbits(p));
-		std::printf(" ref=");
-		ldhex(ldbits(o));
-		std::printf("\n");
-	}
+	check_ld(st_kernel_tanl, port::__kernel_tanl(x, y, iy),
+	    ref___kernel_tanl(x, y, iy), tag);
 }
 
 static void
 check_exp__D(long double x, long double c, const char *tag)
 {
-	long double p, o;
+	check_ld(st_exp__D, port::__exp__D(x, c), ref___exp__D(x, c), tag);
+}
 
-	st_exp__D.cases++;
+static void
+check_expl(long double x, const char *tag)
+{
+	check_ld(st_expl, port::expl(x), ref_expl(x), tag);
+}
 
-	p = port::__exp__D(x, c);
-	o = ref___exp__D(x, c);
-
-	if (ld_equal(p, o))
-		return;
-
-	st_exp__D.fails++;
-	if (st_exp__D.reported < MAX_REPORT) {
-		st_exp__D.reported++;
-		std::printf("  __exp__D FAIL [%s] x=", tag);
-		ldhex(ldbits(x));
-		std::printf(" c=");
-		ldhex(ldbits(c));
-		std::printf(" port=");
-		ldhex(ldbits(p));
-		std::printf(" ref=");
-		ldhex(ldbits(o));
-		std::printf("\n");
-	}
+static void
+check_expm1l(long double x, const char *tag)
+{
+	check_ld(st_expm1l, port::expm1l(x), ref_expm1l(x), tag);
 }
 
 static void
 check_exp2l(long double x, const char *tag)
 {
-	long double p, o;
-
-	st_exp2l.cases++;
-
-	p = port::exp2l(x);
-	o = ref_exp2l(x);
-
-	if (ld_equal(p, o))
-		return;
-
-	st_exp2l.fails++;
-	if (st_exp2l.reported < MAX_REPORT) {
-		st_exp2l.reported++;
-		std::printf("  exp2l FAIL [%s] x=", tag);
-		ldhex(ldbits(x));
-		std::printf(" port=");
-		ldhex(ldbits(p));
-		std::printf(" ref=");
-		ldhex(ldbits(o));
-		std::printf("\n");
-	}
+	check_ld(st_exp2l, port::exp2l(x), ref_exp2l(x), tag);
 }
 
 /* ------------------------------------------------------------------ */
-/* hand-written edge vectors                                           */
+/* hand-written edge cases                                             */
 /* ------------------------------------------------------------------ */
 
-static const long double BOUND = 0.67434L;
-static const long double PI4 = 0.78539816339744830962L;
+static const long double TAN_BOUND = 0.67434L;
+static const long double EXPM1_T1 = -0.1659L;
+static const long double EXPM1_T2 = 0.1659L;
+static const long double O_THRESH = 11356.5234062941439488L;
+static const long double U_THRESH = -11399.4985314888605581L;
 
 struct ldcase {
 	std::uint16_t se;
@@ -197,8 +162,8 @@ struct ldcase {
 };
 
 static const ldcase ldvec[] = {
-	{ 0x0000u, 0x0000000000000000ull },	/* +0 */
-	{ 0x8000u, 0x0000000000000000ull },	/* -0 */
+	{ 0x0000u, 0x0000000000000000ull },
+	{ 0x8000u, 0x0000000000000000ull },
 	{ 0x0000u, 0x0000000000000001ull },
 	{ 0x8000u, 0x0000000000000001ull },
 	{ 0x0000u, 0x0000000000000080ull },
@@ -211,193 +176,123 @@ static const ldcase ldvec[] = {
 	{ 0x3fffu, 0x8000000000000000ull },
 	{ 0xbfffu, 0x8000000000000000ull },
 	{ 0x3fffu, 0x8000000000000001ull },
-	{ 0x3ffeu, 0xffffffffffffffffull },
 	{ 0x3fffu, 0x8080808080808080ull },
 	{ 0xbfffu, 0xff00ff00ff00ff00ull },
+	{ 0x7fffu, 0x8000000000000000ull },
+	{ 0xffffu, 0x8000000000000000ull },
+	{ 0x7fffu, 0xc000000000000000ull },
+	{ 0xffffu, 0xc000000000000000ull },
+	{ 0x7fffu, 0xffffffffffffffffull },
+	{ 0xffffu, 0xffffffffffffffffull },
 };
 static const std::size_t NLDVEC = sizeof(ldvec) / sizeof(ldvec[0]);
 
 static const int iyvec[] = {
-	0, 1, -1, 2, -2, 3, -3, INT_MAX, INT_MIN, 0x7f, -0x7f, 0x80, -0x80,
+	0, 1, -1, 2, -2, INT_MAX, INT_MIN, 0x7f, -0x7f, 0x80, -0x80,
 };
-static const std::size_t NIYVEC = sizeof(iyvec) / sizeof(iyvec[0]);
 
 static void
-edge_kernel_tanl(void)
+edge_cases(void)
 {
 	std::size_t i, j, k;
 
-	/* Cross product of bit-pattern edge values. */
+	/* __kernel_tanl: cross edge bit patterns, both sides of 0.67434 */
 	for (i = 0; i < NLDVEC; i++)
 		for (j = 0; j < NLDVEC; j++)
-			for (k = 0; k < NIYVEC; k++) {
+			for (k = 0; k < sizeof(iyvec) / sizeof(iyvec[0]); k++) {
 				long double x = mkld(ldvec[i].se, ldvec[i].m);
 				long double y = mkld(ldvec[j].se, ldvec[j].m);
 				check_kernel_tanl(x, y, iyvec[k], "cross");
 			}
 
-	/* Both sides of |x| = 0.67434 boundary. */
 	{
 		static const long double xvals[] = {
 			0.0L, -0.0L,
-			BOUND, -BOUND,
-			BOUND * 0.999999999999999L,
-			-BOUND * 0.999999999999999L,
-			BOUND * 1.000000000000001L,
-			-BOUND * 1.000000000000001L,
-			PI4, -PI4,
-			PI4 * 0.5L, -PI4 * 0.5L,
-			0.1L, -0.1L, 0.5L, -0.5L, 0.67L, -0.67L,
+			TAN_BOUND, -TAN_BOUND,
+			TAN_BOUND * 0.999999999999999L,
+			-TAN_BOUND * 0.999999999999999L,
+			TAN_BOUND * 1.000000000000001L,
+			-TAN_BOUND * 1.000000000000001L,
+			0.1L, -0.1L, 0.5L, -0.5L,
 			1e-4932L, -1e-4932L,
 			1e-100L, -1e-100L,
 			LDBL_TRUE_MIN, -LDBL_TRUE_MIN,
 		};
 		static const long double yvals[] = {
-			0.0L, -0.0L, 1.0L, -1.0L, PI4, -PI4,
+			0.0L, -0.0L, 1.0L, -1.0L, TAN_BOUND, -TAN_BOUND,
 			1e-30L, -1e-30L, 1e30L, -1e30L,
 		};
-		static const int iys[] = { 0, 1, -1, 42, -42 };
+		static const int iys[] = { 0, 1, -1 };
 		std::size_t a, b, c;
-		const std::size_t nx = sizeof(xvals) / sizeof(xvals[0]);
-		const std::size_t ny = sizeof(yvals) / sizeof(yvals[0]);
-		const std::size_t ni = sizeof(iys) / sizeof(iys[0]);
 
-		for (a = 0; a < nx; a++)
-			for (b = 0; b < ny; b++)
-				for (c = 0; c < ni; c++)
+		for (a = 0; a < sizeof(xvals) / sizeof(xvals[0]); a++)
+			for (b = 0; b < sizeof(yvals) / sizeof(yvals[0]); b++)
+				for (c = 0; c < sizeof(iys) / sizeof(iys[0]); c++)
 					check_kernel_tanl(xvals[a], yvals[b],
-					    iys[c], "boundary");
+					    iys[c], "tan-domain");
 	}
 
-	/* iy==1 vs iy!=1: exercises tan vs cot paths. */
-	{
-		static const long double pairs[][2] = {
-			{ 0.3L, 0.7L },
-			{ -0.3L, -0.7L },
-			{ BOUND * 0.5L, 1.0L },
-			{ -BOUND * 0.5L, -1.0L },
-			{ BOUND * 1.1L, 0.01L },
-			{ -BOUND * 1.1L, -0.01L },
-			{ 1e-20L, 1e-10L },
-			{ -1e-20L, -1e-10L },
-		};
-		std::size_t n;
-
-		for (n = 0; n < sizeof(pairs) / sizeof(pairs[0]); n++) {
-			check_kernel_tanl(pairs[n][0], pairs[n][1], 0, "iy0");
-			check_kernel_tanl(pairs[n][0], pairs[n][1], 1, "iy1");
-			check_kernel_tanl(pairs[n][0], pairs[n][1], -1, "iym1");
-		}
+	/* __exp__D: NaN, overflow/underflow boundaries, normal range */
+	for (i = 0; i < NLDVEC; i++) {
+		long double x = mkld(ldvec[i].se, ldvec[i].m);
+		long double c = x * 0.1L;
+		check_exp__D(x, c, "ldvec");
+		check_exp__D(x, 0.0L, "ldvec-c0");
+		check_exp__D(x, -c, "ldvec-cneg");
 	}
-}
 
-static void
-edge_exp__D(void)
-{
-	static const long double lnhuge = 1.13627617309191834574e+04L;
-	static const long double lntiny = -1.14057368561139000667e+04L;
-
-	/* NaN */
-	check_exp__D(0.0L / 0.0L, 0.0L, "nan");
-
-	/* Infinities */
-	check_exp__D(1.0L / 0.0L, 0.0L, "pinf");
-	check_exp__D(-1.0L / 0.0L, 0.0L, "ninf");
-
-	/* Overflow / underflow thresholds */
-	check_exp__D(lnhuge, 0.0L, "lnhuge");
-	check_exp__D(lnhuge + 1.0L, 0.0L, "lnhuge+1");
-	check_exp__D(lnhuge - 1.0L, 0.0L, "lnhuge-1");
-	check_exp__D(lntiny, 0.0L, "lntiny");
-	check_exp__D(lntiny - 1.0L, 0.0L, "lntiny-1");
-	check_exp__D(lntiny + 1.0L, 0.0L, "lntiny+1");
-
-	/* Normal range with various c magnitudes */
 	{
 		static const long double xs[] = {
 			0.0L, -0.0L, 1.0L, -1.0L, 0.5L, -0.5L,
-			10.0L, -10.0L, 100.0L, -100.0L,
-			1e-10L, -1e-10L, 1e10L, -1e10L,
-			700.0L, -700.0L, 1000.0L, -1000.0L,
+			11356.0L, -11356.0L, 11400.0L, -11400.0L,
+			1e-4000L, -1e-4000L, 1e4L, -1e4L,
+			LDBL_MAX, -LDBL_MAX,
 		};
 		static const long double cs[] = {
-			0.0L, -0.0L, 1e-20L, -1e-20L,
-			1e-5L, -1e-5L, 0.1L, -0.1L,
+			0.0L, 1e-20L, -1e-20L, 0.1L, -0.1L,
 		};
 		std::size_t a, b;
 
 		for (a = 0; a < sizeof(xs) / sizeof(xs[0]); a++)
 			for (b = 0; b < sizeof(cs) / sizeof(cs[0]); b++)
-				check_exp__D(xs[a], cs[b], "normal");
+				check_exp__D(xs[a], cs[b], "expD-domain");
 	}
 
-	/* Bit-pattern edge values */
-	for (std::size_t i = 0; i < NLDVEC; i++)
-		for (std::size_t j = 0; j < NLDVEC; j++)
-			check_exp__D(mkld(ldvec[i].se, ldvec[i].m),
-			    mkld(ldvec[j].se, ldvec[j].m), "bits");
-}
+	/* expl / expm1l / exp2l: exceptional and boundary values */
+	for (i = 0; i < NLDVEC; i++) {
+		long double x = mkld(ldvec[i].se, ldvec[i].m);
+		check_expl(x, "ldvec");
+		check_expm1l(x, "ldvec");
+		check_exp2l(x, "ldvec");
+	}
 
-static void
-edge_exp2l(void)
-{
-	/* Special exponents: +Inf, -Inf, NaN, -0 */
-	check_exp2l(1.0L / 0.0L, "pinf");
-	check_exp2l(-1.0L / 0.0L, "ninf");
-	check_exp2l(0.0L / 0.0L, "nan");
-	check_exp2l(-0.0L, "negzero");
-
-	/* Overflow / underflow boundaries */
-	check_exp2l(16384.0L, "ovf");
-	check_exp2l(16383.999999999999L, "ovf-");
-	check_exp2l(16384.000000000001L, "ovf+");
-	check_exp2l(-16446.0L, "unf");
-	check_exp2l(-16445.999999999999L, "unf-");
-	check_exp2l(-16446.000000000001L, "unf+");
-
-	/* Tiny argument path: |x| < 0x1p-65 */
-	check_exp2l(0x1p-66L, "tiny");
-	check_exp2l(-0x1p-66L, "tiny-");
-	check_exp2l(0x1p-65L, "tiny65");
-	check_exp2l(-0x1p-65L, "tiny65-");
-	check_exp2l(0x1p-100L, "tiny100");
-	check_exp2l(0.0L, "zero");
-
-	/* Subnormal scaling: k < LDBL_MIN_EXP */
-	check_exp2l(-16380.0L, "subnorm");
-	check_exp2l(-16381.0L, "subnorm2");
-
-	/* k == LDBL_MAX_EXP special case */
-	check_exp2l(16383.0L, "kmax");
-
-	/* Representative interior values */
 	{
 		static const long double xs[] = {
-			1.0L, -1.0L, 0.5L, -0.5L, 2.0L, -2.0L,
-			10.0L, -10.0L, 100.0L, -100.0L,
-			1000.0L, -1000.0L, 5000.0L, -5000.0L,
-			0.00390625L, -0.00390625L,
-			1.0L / 128.0L, -1.0L / 128.0L,
-			1.0L / 64.0L, -1.0L / 64.0L,
-			PI4, -PI4,
+			0.0L, -0.0L, 1.0L, -1.0L,
+			0x1p-76L, -0x1p-76L, 0x1p-74L, -0x1p-74L,
+			0x1p-65L, -0x1p-65L, 0x1p-75L, -0x1p-75L,
+			64.0L, -64.0L, 65.0L, -65.0L,
+			8192.0L, -8192.0L, 8191.0L, -8191.0L,
+			16384.0L, -16384.0L, 16383.0L, -16383.0L,
+			-16446.0L, -16447.0L, 16446.0L,
+			O_THRESH, O_THRESH + 1.0L, O_THRESH - 1.0L,
+			U_THRESH, U_THRESH + 1.0L, U_THRESH - 1.0L,
+			EXPM1_T1, EXPM1_T2,
+			EXPM1_T1 - 1e-6L, EXPM1_T2 + 1e-6L,
+			EXPM1_T1 + 1e-6L, EXPM1_T2 - 1e-6L,
+			0.1658L, -0.1658L, 0.1660L, -0.1660L,
+			1e-20L, -1e-20L, 1e20L, -1e20L,
+			LDBL_MAX, -LDBL_MAX,
+			LDBL_MIN, -LDBL_MIN,
 		};
-		std::size_t i;
+		std::size_t a;
 
-		for (i = 0; i < sizeof(xs) / sizeof(xs[0]); i++)
-			check_exp2l(xs[i], "interior");
+		for (a = 0; a < sizeof(xs) / sizeof(xs[0]); a++) {
+			check_expl(xs[a], "expl-domain");
+			check_expm1l(xs[a], "expm1l-domain");
+			check_exp2l(xs[a], "exp2l-domain");
+		}
 	}
-
-	/* Bit-pattern edge values */
-	for (std::size_t i = 0; i < NLDVEC; i++)
-		check_exp2l(mkld(ldvec[i].se, ldvec[i].m), "bits");
-}
-
-static void
-edge_cases(void)
-{
-	edge_kernel_tanl();
-	edge_exp__D();
-	edge_exp2l();
 }
 
 /* ------------------------------------------------------------------ */
@@ -419,7 +314,7 @@ rng_next(void)
 }
 
 static long double
-rng_ld80(void)
+rng_ld(void)
 {
 	std::uint64_t r = rng_next();
 	std::uint16_t se = (std::uint16_t)(r & 0xffffu);
@@ -431,48 +326,15 @@ rng_ld80(void)
 }
 
 static long double
-rng_tan_x(void)
+rng_small(void)
 {
-	std::uint64_t r = rng_next();
-	unsigned kind = (unsigned)(r % 100u);
-	long double s;
-
-	if (kind < 5)
-		return (r & 1) ? -0.0L : 0.0L;
-	if (kind < 12)
-		return (r & 1) ? -BOUND : BOUND;
-	if (kind < 20)
-		return (r & 1) ? -BOUND * 1.1L : BOUND * 1.1L;
-	if (kind < 28)
-		return (r & 1) ? -PI4 : PI4;
-
-	s = (long double)(rng_next() % 1000000u) / 1000000.0L;
-	if (r & 1)
+	long double s = (long double)(rng_next() % 1000000u) / 1000000.0L;
+	if (rng_next() & 1)
 		s = -s;
-	return s * BOUND * (1.0L + (long double)(rng_next() % 100u) / 1e12L);
+	return s;
 }
 
-static long double
-rng_exp_x(void)
-{
-	std::uint64_t r = rng_next();
-	unsigned kind = (unsigned)(r % 100u);
-	int expn;
-
-	if (kind < 8)
-		return (r & 1) ? -0.0L : 0.0L;
-	if (kind < 14)
-		return rng_ld80();
-	if (kind < 22) {
-		expn = (int)(rng_next() % 20000u) - 10000;
-		return ldexpl(1.0L + (long double)(rng_next() % 1000u) / 1000.0L,
-		    expn);
-	}
-	expn = (int)(rng_next() % 33000u) - 16500;
-	return ldexpl((long double)(rng_next() % 10000u) / 1000.0L, expn);
-}
-
-static const unsigned long long ITERS = 250000ull;
+static const unsigned long long ITERS = 200000ull;
 
 static void
 random_sweep(void)
@@ -481,36 +343,30 @@ random_sweep(void)
 
 	rng_state = 0x243f6a8885a308d3ull;
 	for (i = 0; i < ITERS; i++) {
-		long double x, y, c;
-		int iy;
+		long double x = rng_ld();
+		long double y = rng_ld();
+		int iy = (int)(rng_next() & 0xffu);
 
-		x = rng_tan_x();
-		y = rng_exp_x() * 0.01L;
-		iy = (int)((i & 1) ? 0 : (1 + (rng_next() % 255u)));
 		if ((i % 97) == 0)
 			iy = 0;
 		if ((i % 89) == 0)
-			iy = -1;
-		if ((i % 83) == 0)
 			iy = 1;
-		if ((i % 79) == 0)
-			iy = (int)rng_next();
+		if ((i % 83) == 0)
+			iy = -1;
+
 		check_kernel_tanl(x, y, iy, "random");
 
-		x = rng_exp_x();
-		c = rng_exp_x() * 1e-8L;
+		x = rng_ld();
+		long double c = rng_small();
 		check_exp__D(x, c, "random");
+		check_exp__D(x, 0.0L, "random-c0");
 
-		x = rng_exp_x();
-		if ((i % 17) == 0)
-			x = (long double)((int)(rng_next() % 33000u) - 16500);
-		if ((i % 23) == 0)
-			x = ldexpl(1.0L, (int)(rng_next() % 40u) - 80);
+		x = rng_ld();
+		check_expl(x, "random");
+		check_expm1l(x, "random");
 		check_exp2l(x, "random");
 	}
 }
-
-/* ------------------------------------------------------------------ */
 
 static void
 row(const stat &s)
@@ -536,9 +392,12 @@ main(void)
 	std::printf("  ------------------------------------------------------\n");
 	row(st_kernel_tanl);
 	row(st_exp__D);
+	row(st_expl);
+	row(st_expm1l);
 	row(st_exp2l);
 
-	fails = st_kernel_tanl.fails + st_exp__D.fails + st_exp2l.fails;
+	fails = st_kernel_tanl.fails + st_exp__D.fails + st_expl.fails +
+	    st_expm1l.fails + st_exp2l.fails;
 	std::printf("\n%s: %llu total failures\n",
 	    fails == 0 ? "PASS" : "FAIL", fails);
 

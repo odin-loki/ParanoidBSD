@@ -2,32 +2,45 @@
  * PBSD batch b0039 -- differential test: port vs. ref_ oracle.
  */
 
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
 #include <cerrno>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
 
 import pbsd.lib.libc.locale.b0039;
 
 namespace P = pbsd::lib_libc_locale::b0039;
 
-using P::pbsd_locale;
-using P::pbsd_locale_t;
-using P::pbsd_mbstate_t;
-
+extern "C" {
 typedef union {
 	char		__mbstate8[128];
 	long long	_mbstateL;
 } ref_mbstate_t;
 
-extern "C" {
-typedef struct xlocale *ref_locale_t;
+struct ref_xlocale_ctype {
+	ref_mbstate_t	mbsrtowcs;
+	ref_mbstate_t	wcsrtombs;
+	ref_mbstate_t	mbtowc;
+	size_t		(*__mbsnrtowcs)(wchar_t *, const char **, size_t, size_t,
+		    ref_mbstate_t *);
+	size_t		(*__wcsnrtombs)(char *, const wchar_t **, size_t, size_t,
+		    ref_mbstate_t *);
+	size_t		(*__mbrtowc)(wchar_t *, const char *, size_t,
+		    ref_mbstate_t *);
+};
 
-extern struct xlocale ref_global_locale;
-extern struct xlocale ref_alt_locale;
-extern struct xlocale_ctype ref_global_ctype;
-extern struct xlocale_ctype ref_alt_ctype;
+struct ref_xlocale {
+	void		*components[6];
+};
+
+typedef struct ref_xlocale *ref_locale_t;
+
+extern struct ref_xlocale ref_global_locale;
+extern struct ref_xlocale ref_alt_locale;
+extern struct ref_xlocale_ctype ref_global_ctype;
+extern struct ref_xlocale_ctype ref_alt_ctype;
 
 size_t	ref_mbsrtowcs_l(wchar_t *, const char **, size_t, ref_mbstate_t *,
 	    ref_locale_t);
@@ -40,16 +53,6 @@ int	ref_mbtowc(wchar_t *, const char *, size_t);
 int	ref_wcwidth(wchar_t);
 int	ref_wcwidth_l(wchar_t, ref_locale_t);
 }
-
-struct xlocale_ctype {
-	ref_mbstate_t	mbsrtowcs;
-	ref_mbstate_t	wcsrtombs;
-	ref_mbstate_t	mbtowc;
-};
-
-struct xlocale {
-	void		*components[6];
-};
 
 enum {
 	F_MBSRTOWCS_L, F_MBSRTOWCS,
@@ -70,14 +73,8 @@ static long long ncase[F_COUNT];
 static long long nfail[F_COUNT];
 static int nprinted[F_COUNT];
 
-static void
-report(int f, const char *why)
-{
-
-	nfail[f]++;
-	if (nprinted[f]++ < 6)
-		std::printf("  FAIL %-12s : %s\n", fname[f], why);
-}
+static constexpr unsigned char GUARD = 0x7f;
+static constexpr long long SWEEP = 200000;
 
 static uint64_t rstate = 0x9e3779b97f4a7c15ULL;
 
@@ -99,7 +96,16 @@ u32(uint32_t m)
 }
 
 static void
-port_mb_to_ref(const pbsd_mbstate_t &s, ref_mbstate_t &d)
+report(int f, const char *why)
+{
+
+	nfail[f]++;
+	if (nprinted[f]++ < 6)
+		std::printf("  FAIL %-12s : %s\n", fname[f], why);
+}
+
+static void
+mb_copy(const P::mbstate_t &s, ref_mbstate_t &d)
 {
 
 	std::memset(&d, 0, sizeof(d));
@@ -107,106 +113,110 @@ port_mb_to_ref(const pbsd_mbstate_t &s, ref_mbstate_t &d)
 }
 
 static void
-ref_ctype_from_port(const pbsd_locale &pl, struct xlocale_ctype &rc)
+mb_copy(const ref_mbstate_t &s, P::mbstate_t &d)
 {
 
-	port_mb_to_ref(pl.ctype.mbsrtowcs, rc.mbsrtowcs);
-	port_mb_to_ref(pl.ctype.wcsrtombs, rc.wcsrtombs);
-	port_mb_to_ref(pl.ctype.mbtowc, rc.mbtowc);
+	std::memset(&d, 0, sizeof(d));
+	std::memcpy(&d, &s, sizeof(s));
 }
 
 static bool
-port_st_eq(const pbsd_mbstate_t &a, const pbsd_mbstate_t &b)
-{
-
-	return (a.want == b.want && a.have == b.have && a.wch == b.wch &&
-	    a.lbound == b.lbound);
-}
-
-static bool
-ref_st_eq(const ref_mbstate_t &a, const ref_mbstate_t &b)
+mb_eq(const P::mbstate_t &a, const P::mbstate_t &b)
 {
 
 	return (std::memcmp(&a, &b, sizeof(a)) == 0);
 }
 
 static bool
-port_loc_eq(const pbsd_locale &a, const pbsd_locale &b)
+mb_eq(const ref_mbstate_t &a, const ref_mbstate_t &b)
 {
 
-	return (port_st_eq(a.ctype.mbsrtowcs, b.ctype.mbsrtowcs) &&
-	    port_st_eq(a.ctype.wcsrtombs, b.ctype.wcsrtombs) &&
-	    port_st_eq(a.ctype.mbtowc, b.ctype.mbtowc) &&
-	    a.ctype.wcwidth_mode == b.ctype.wcwidth_mode &&
-	    a.ctype.__mbsnrtowcs == b.ctype.__mbsnrtowcs &&
-	    a.ctype.__wcsnrtombs == b.ctype.__wcsnrtombs &&
-	    a.ctype.__mbrtowc == b.ctype.__mbrtowc);
-}
-
-static bool
-ref_loc_eq(const struct xlocale_ctype &a, const struct xlocale_ctype &b)
-{
-
-	return (ref_st_eq(a.mbsrtowcs, b.mbsrtowcs) &&
-	    ref_st_eq(a.wcsrtombs, b.wcsrtombs) &&
-	    ref_st_eq(a.mbtowc, b.mbtowc));
-}
-
-static pbsd_mbstate_t
-rand_state()
-{
-	pbsd_mbstate_t st;
-	unsigned want, have, bits;
-
-	st.want = 0;
-	st.have = 0;
-	st.wch = 0;
-	st.lbound = 0;
-	if (u32(5) < 2)
-		return (st);
-	want = 2 + u32(3);
-	have = 1 + u32(want - 1);
-	bits = (want == 2 ? 5u : (want == 3 ? 4u : 3u)) + 6u * (have - 1);
-	st.want = want;
-	st.have = have;
-	st.wch = (unsigned)(nxt() & ((1u << bits) - 1u));
-	st.lbound = (want == 2 ? 0x80u : (want == 3 ? 0x800u : 0x10000u));
-	return (st);
+	return (std::memcmp(&a, &b, sizeof(a)) == 0);
 }
 
 struct Env {
-	pbsd_locale	act_p, act_r;
-	pbsd_locale	exp_p, exp_r;
+	P::xlocale_ctype	port_ctype;
+	P::xlocale		port_loc;
+	ref_xlocale_ctype	ref_ctype;
 };
 
+static Env genv;
+static Env altenv;
+
 static void
-env_build(Env &e)
+env_init(Env &e)
 {
-	pbsd_mbstate_t sa[3], se[3];
-	int ma, me;
-	int i;
 
-	for (i = 0; i < 3; i++) {
-		sa[i] = rand_state();
-		se[i] = rand_state();
+	P::pbsd_locale_init(&e.port_loc, &e.port_ctype);
+	std::memset(&e.ref_ctype, 0, sizeof(e.ref_ctype));
+	e.ref_ctype.__mbsnrtowcs = ref_global_ctype.__mbsnrtowcs;
+	e.ref_ctype.__wcsnrtombs = ref_global_ctype.__wcsnrtombs;
+	e.ref_ctype.__mbrtowc = ref_global_ctype.__mbrtowc;
+}
+
+static void
+use_env(Env &e)
+{
+
+	P::pbsd_set_active_locale(&e.port_loc);
+	ref_global_locale.components[1] = &e.ref_ctype;
+}
+
+static void
+use_alt_env(Env &e)
+{
+
+	ref_alt_locale.components[1] = &e.ref_ctype;
+}
+
+static P::mbstate_t
+rand_state()
+{
+	P::mbstate_t st;
+	size_t i, n;
+
+	std::memset(&st, 0, sizeof(st));
+	n = 4 + u32(20);
+	for (i = 0; i < n && i < sizeof(st.__mbstate8); i++)
+		st.__mbstate8[i] = (char)(0x80 + u32(0x60));
+	st._mbstateL = (long long)nxt();
+	return (st);
+}
+
+static P::mbstate_t
+fixed_state(int k)
+{
+	P::mbstate_t st;
+
+	std::memset(&st, 0, sizeof(st));
+	switch (k) {
+	case 1:
+		st.__mbstate8[0] = (char)0xc2;
+		st.__mbstate8[1] = (char)0x02;
+		break;
+	case 2:
+		st.__mbstate8[0] = (char)0xe0;
+		st.__mbstate8[1] = (char)0x04;
+		break;
+	case 3:
+		st.__mbstate8[0] = (char)0xe0;
+		st.__mbstate8[1] = (char)0xa0;
+		st.__mbstate8[2] = (char)0x20;
+		break;
+	case 4:
+		st.__mbstate8[0] = (char)0xf0;
+		break;
+	case 5:
+		st.__mbstate8[0] = (char)0xf0;
+		st.__mbstate8[1] = (char)0x90;
+		st.__mbstate8[2] = (char)0x80;
+		st.__mbstate8[3] = (char)0x10;
+		break;
+	default:
+		break;
 	}
-	ma = (int)u32(2);
-	me = (int)u32(2);
-
-	P::pbsd_locale_init(&e.act_p, ma);
-	P::pbsd_locale_init(&e.act_r, ma);
-	P::pbsd_locale_init(&e.exp_p, me);
-	P::pbsd_locale_init(&e.exp_r, me);
-
-	e.act_p.ctype.mbsrtowcs = e.act_r.ctype.mbsrtowcs = sa[0];
-	e.act_p.ctype.wcsrtombs = e.act_r.ctype.wcsrtombs = sa[1];
-	e.act_p.ctype.mbtowc = e.act_r.ctype.mbtowc = sa[2];
-	e.exp_p.ctype.mbsrtowcs = e.exp_r.ctype.mbsrtowcs = se[0];
-	e.exp_p.ctype.wcsrtombs = e.exp_r.ctype.wcsrtombs = se[1];
-	e.exp_p.ctype.mbtowc = e.exp_r.ctype.mbtowc = se[2];
-
-	ref_ctype_from_port(e.act_r, ref_global_ctype);
-	ref_ctype_from_port(e.exp_r, ref_alt_ctype);
+	st._mbstateL = (long long)k;
+	return (st);
 }
 
 static inline long
@@ -321,13 +331,14 @@ gen_wides(wchar_t *buf, size_t maxlen)
 
 static void
 do_mbsrtowcs(const char *in, size_t inlen, size_t len, bool dst_null,
-    bool ps_null, int lmode, pbsd_mbstate_t seed)
+    bool ps_null, int lmode, const P::mbstate_t &loc_seed,
+    const P::mbstate_t &ps_seed)
 {
-	Env e;
+	Env *e;
 	char sp[MBS_SRC + 8], sr[MBS_SRC + 8];
 	wchar_t dp[MBS_DCAP], dr[MBS_DCAP];
-	pbsd_mbstate_t psp;
-	ref_mbstate_t rsr;
+	P::mbstate_t ps_p, loc_p;
+	ref_mbstate_t ps_ref, loc_ref;
 	const char *cp, *cr;
 	ref_locale_t rloc;
 	size_t rp, rr;
@@ -337,40 +348,53 @@ do_mbsrtowcs(const char *in, size_t inlen, size_t len, bool dst_null,
 	f = (lmode == 2) ? F_MBSRTOWCS : F_MBSRTOWCS_L;
 	ncase[f]++;
 
-	env_build(e);
+	e = (lmode == 0) ? &altenv : &genv;
+	env_init(*e);
+	e->port_ctype.mbsrtowcs = loc_seed;
+	mb_copy(loc_seed, loc_ref);
+	e->ref_ctype.mbsrtowcs = loc_ref;
 
 	std::memset(sp, 0, sizeof(sp));
 	std::memset(sr, 0, sizeof(sr));
 	std::memcpy(sp, in, inlen);
 	std::memcpy(sr, in, inlen);
 
-	std::memset(dp, 0x7f, sizeof(dp));
-	std::memset(dr, 0x7f, sizeof(dr));
+	std::memset(dp, GUARD, sizeof(dp));
+	std::memset(dr, GUARD, sizeof(dr));
 
-	psp = seed;
-	port_mb_to_ref(seed, rsr);
+	ps_p = ps_seed;
+	mb_copy(ps_seed, ps_ref);
 	cp = sp;
 	cr = sr;
 	rloc = (lmode == 0) ? &ref_alt_locale : &ref_global_locale;
 
 	errno = 0;
-	P::pbsd_set_active_locale(&e.act_p);
+	if (lmode == 2)
+		use_env(genv);
+	else if (lmode == 0)
+		use_alt_env(*e);
+	else
+		use_env(genv);
+
 	if (lmode == 2)
 		rp = P::mbsrtowcs(dst_null ? NULL : dp, &cp, len,
-		    ps_null ? NULL : &psp);
+		    ps_null ? NULL : &ps_p);
 	else
 		rp = P::mbsrtowcs_l(dst_null ? NULL : dp, &cp, len,
-		    ps_null ? NULL : &psp,
-		    lmode == 0 ? &e.exp_p : NULL);
+		    ps_null ? NULL : &ps_p, &e->port_loc);
 	ep = errno;
 
 	errno = 0;
+	if (lmode == 0)
+		use_alt_env(*e);
+	else
+		use_env(genv);
 	if (lmode == 2)
 		rr = ref_mbsrtowcs(dst_null ? NULL : dr, &cr, len,
-		    ps_null ? NULL : &rsr);
+		    ps_null ? NULL : &ps_ref);
 	else
 		rr = ref_mbsrtowcs_l(dst_null ? NULL : dr, &cr, len,
-		    ps_null ? NULL : &rsr, rloc);
+		    ps_null ? NULL : &ps_ref, rloc);
 	er = errno;
 
 	if (rp != rr)
@@ -383,29 +407,25 @@ do_mbsrtowcs(const char *in, size_t inlen, size_t len, bool dst_null,
 		report(f, "destination buffer (incl. guard bytes)");
 	else if (std::memcmp(sp, sr, sizeof(sp)) != 0)
 		report(f, "source buffer clobbered");
-	else if (!port_st_eq(psp, seed) || !ref_st_eq(rsr, *(ref_mbstate_t *)&seed))
+	else if (ps_null) {
+		mb_copy(e->port_ctype.mbsrtowcs, loc_ref);
+		if (!mb_eq(e->ref_ctype.mbsrtowcs, loc_ref))
+			report(f, "locale mbstate_t");
+	} else if (!mb_eq(ps_p, ps_seed) || !mb_eq(ps_ref, ps_seed)) {
 		report(f, "caller mbstate_t");
-	else if (!port_loc_eq(e.act_p, e.act_r))
-		report(f, "current locale state");
-	else if (lmode == 0 && !port_loc_eq(e.exp_p, e.exp_r))
-		report(f, "explicit locale state");
-	else if (!ref_loc_eq(ref_global_ctype,
-	    *(struct xlocale_ctype *)ref_global_locale.components[1]))
-		report(f, "ref current locale state");
-	else if (lmode == 0 && !ref_loc_eq(ref_alt_ctype,
-	    *(struct xlocale_ctype *)ref_alt_locale.components[1]))
-		report(f, "ref explicit locale state");
+	}
 }
 
 static void
 do_wcsrtombs(const wchar_t *in, size_t inlen, size_t len, bool dst_null,
-    bool ps_null, int lmode, pbsd_mbstate_t seed)
+    bool ps_null, int lmode, const P::mbstate_t &loc_seed,
+    const P::mbstate_t &ps_seed)
 {
-	Env e;
+	Env *e;
 	wchar_t sp[WCS_SRC + 8], sr[WCS_SRC + 8];
 	char dp[WCS_DCAP], dr[WCS_DCAP];
-	pbsd_mbstate_t psp;
-	ref_mbstate_t rsr;
+	P::mbstate_t ps_p;
+	ref_mbstate_t ps_ref, loc_ref;
 	const wchar_t *cp, *cr;
 	ref_locale_t rloc;
 	size_t rp, rr;
@@ -415,40 +435,53 @@ do_wcsrtombs(const wchar_t *in, size_t inlen, size_t len, bool dst_null,
 	f = (lmode == 2) ? F_WCSRTOMBS : F_WCSRTOMBS_L;
 	ncase[f]++;
 
-	env_build(e);
+	e = (lmode == 0) ? &altenv : &genv;
+	env_init(*e);
+	e->port_ctype.wcsrtombs = loc_seed;
+	mb_copy(loc_seed, loc_ref);
+	e->ref_ctype.wcsrtombs = loc_ref;
 
 	std::memset(sp, 0, sizeof(sp));
 	std::memset(sr, 0, sizeof(sr));
 	std::memcpy(sp, in, inlen * sizeof(wchar_t));
 	std::memcpy(sr, in, inlen * sizeof(wchar_t));
 
-	std::memset(dp, 0x7f, sizeof(dp));
-	std::memset(dr, 0x7f, sizeof(dr));
+	std::memset(dp, GUARD, sizeof(dp));
+	std::memset(dr, GUARD, sizeof(dr));
 
-	psp = seed;
-	port_mb_to_ref(seed, rsr);
+	ps_p = ps_seed;
+	mb_copy(ps_seed, ps_ref);
 	cp = sp;
 	cr = sr;
 	rloc = (lmode == 0) ? &ref_alt_locale : &ref_global_locale;
 
 	errno = 0;
-	P::pbsd_set_active_locale(&e.act_p);
+	if (lmode == 2)
+		use_env(genv);
+	else if (lmode == 0)
+		use_alt_env(*e);
+	else
+		use_env(genv);
+
 	if (lmode == 2)
 		rp = P::wcsrtombs(dst_null ? NULL : dp, &cp, len,
-		    ps_null ? NULL : &psp);
+		    ps_null ? NULL : &ps_p);
 	else
 		rp = P::wcsrtombs_l(dst_null ? NULL : dp, &cp, len,
-		    ps_null ? NULL : &psp,
-		    lmode == 0 ? &e.exp_p : NULL);
+		    ps_null ? NULL : &ps_p, &e->port_loc);
 	ep = errno;
 
 	errno = 0;
+	if (lmode == 0)
+		use_alt_env(*e);
+	else
+		use_env(genv);
 	if (lmode == 2)
 		rr = ref_wcsrtombs(dst_null ? NULL : dr, &cr, len,
-		    ps_null ? NULL : &rsr);
+		    ps_null ? NULL : &ps_ref);
 	else
 		rr = ref_wcsrtombs_l(dst_null ? NULL : dr, &cr, len,
-		    ps_null ? NULL : &rsr, rloc);
+		    ps_null ? NULL : &ps_ref, rloc);
 	er = errno;
 
 	if (rp != rr)
@@ -461,27 +494,23 @@ do_wcsrtombs(const wchar_t *in, size_t inlen, size_t len, bool dst_null,
 		report(f, "destination buffer (incl. guard bytes)");
 	else if (std::memcmp(sp, sr, sizeof(sp)) != 0)
 		report(f, "source buffer clobbered");
-	else if (!port_st_eq(psp, seed) || !ref_st_eq(rsr, *(ref_mbstate_t *)&seed))
+	else if (ps_null) {
+		mb_copy(e->port_ctype.wcsrtombs, loc_ref);
+		if (!mb_eq(e->ref_ctype.wcsrtombs, loc_ref))
+			report(f, "locale mbstate_t");
+	} else if (!mb_eq(ps_p, ps_seed) || !mb_eq(ps_ref, ps_seed)) {
 		report(f, "caller mbstate_t");
-	else if (!port_loc_eq(e.act_p, e.act_r))
-		report(f, "current locale state");
-	else if (lmode == 0 && !port_loc_eq(e.exp_p, e.exp_r))
-		report(f, "explicit locale state");
-	else if (!ref_loc_eq(ref_global_ctype,
-	    *(struct xlocale_ctype *)ref_global_locale.components[1]))
-		report(f, "ref current locale state");
-	else if (lmode == 0 && !ref_loc_eq(ref_alt_ctype,
-	    *(struct xlocale_ctype *)ref_alt_locale.components[1]))
-		report(f, "ref explicit locale state");
+	}
 }
 
 static void
 do_mbtowc(const char *in, size_t inlen, size_t n, bool s_null, bool pwc_null,
     int lmode)
 {
-	Env e;
+	Env *e;
 	char sp[MBT_SRC + 8], sr[MBT_SRC + 8];
 	wchar_t wp[4], wr[4];
+	ref_mbstate_t loc_ref;
 	ref_locale_t rloc;
 	int rp, rr, ep, er;
 	int f;
@@ -489,7 +518,12 @@ do_mbtowc(const char *in, size_t inlen, size_t n, bool s_null, bool pwc_null,
 	f = (lmode == 2) ? F_MBTOWC : F_MBTOWC_L;
 	ncase[f]++;
 
-	env_build(e);
+	e = (lmode == 0) ? &altenv : &genv;
+	env_init(*e);
+	e->port_ctype.mbtowc = fixed_state(3);
+	mb_copy(e->port_ctype.mbtowc, loc_ref);
+	e->ref_ctype.mbtowc = loc_ref;
+
 	rloc = (lmode == 0) ? &ref_alt_locale : &ref_global_locale;
 
 	std::memset(sp, 0, sizeof(sp));
@@ -497,19 +531,29 @@ do_mbtowc(const char *in, size_t inlen, size_t n, bool s_null, bool pwc_null,
 	std::memcpy(sp, in, inlen);
 	std::memcpy(sr, in, inlen);
 
-	std::memset(wp, 0x7f, sizeof(wp));
-	std::memset(wr, 0x7f, sizeof(wr));
+	std::memset(wp, GUARD, sizeof(wp));
+	std::memset(wr, GUARD, sizeof(wr));
 
 	errno = 0;
-	P::pbsd_set_active_locale(&e.act_p);
+	if (lmode == 2)
+		use_env(genv);
+	else if (lmode == 0)
+		use_alt_env(*e);
+	else
+		use_env(genv);
+
 	if (lmode == 2)
 		rp = P::mbtowc(pwc_null ? NULL : wp, s_null ? NULL : sp, n);
 	else
 		rp = P::mbtowc_l(pwc_null ? NULL : wp, s_null ? NULL : sp, n,
-		    lmode == 0 ? &e.exp_p : NULL);
+		    &e->port_loc);
 	ep = errno;
 
 	errno = 0;
+	if (lmode == 0)
+		use_alt_env(*e);
+	else
+		use_env(genv);
 	if (lmode == 2)
 		rr = ref_mbtowc(pwc_null ? NULL : wr, s_null ? NULL : sr, n);
 	else
@@ -525,24 +569,20 @@ do_mbtowc(const char *in, size_t inlen, size_t n, bool s_null, bool pwc_null,
 		report(f, "pwc buffer (incl. guard bytes)");
 	else if (std::memcmp(sp, sr, sizeof(sp)) != 0)
 		report(f, "source buffer clobbered");
-	else if (!port_loc_eq(e.act_p, e.act_r))
-		report(f, "current locale state");
-	else if (lmode == 0 && !port_loc_eq(e.exp_p, e.exp_r))
-		report(f, "explicit locale state");
-	else if (!ref_loc_eq(ref_global_ctype,
-	    *(struct xlocale_ctype *)ref_global_locale.components[1]))
-		report(f, "ref current locale state");
-	else if (lmode == 0 && !ref_loc_eq(ref_alt_ctype,
-	    *(struct xlocale_ctype *)ref_alt_locale.components[1]))
-		report(f, "ref explicit locale state");
+	else {
+		mb_copy(e->port_ctype.mbtowc, loc_ref);
+		if (!mb_eq(e->ref_ctype.mbtowc, loc_ref))
+			report(f, "locale mbtowc state");
+	}
 }
 
 static void
 do_mbtowc_stream(const char *in, size_t inlen, int lmode, bool reset_midway)
 {
-	Env e;
+	Env *e;
 	char sp[MBT_SRC + 8], sr[MBT_SRC + 8];
 	wchar_t wp[4], wr[4];
+	ref_mbstate_t loc_ref;
 	ref_locale_t rloc;
 	size_t i;
 	int rp, rr, ep, er;
@@ -551,7 +591,12 @@ do_mbtowc_stream(const char *in, size_t inlen, int lmode, bool reset_midway)
 	f = (lmode == 2) ? F_MBTOWC : F_MBTOWC_L;
 	rloc = (lmode == 0) ? &ref_alt_locale : &ref_global_locale;
 
-	env_build(e);
+	e = (lmode == 0) ? &altenv : &genv;
+	env_init(*e);
+	e->port_ctype.mbtowc = fixed_state(2);
+	mb_copy(e->port_ctype.mbtowc, loc_ref);
+	e->ref_ctype.mbtowc = loc_ref;
+
 	std::memset(sp, 0, sizeof(sp));
 	std::memset(sr, 0, sizeof(sr));
 	std::memcpy(sp, in, inlen);
@@ -559,21 +604,31 @@ do_mbtowc_stream(const char *in, size_t inlen, int lmode, bool reset_midway)
 
 	for (i = 0; i <= inlen; i++) {
 		ncase[f]++;
-		std::memset(wp, 0x7f, sizeof(wp));
-		std::memset(wr, 0x7f, sizeof(wr));
+		std::memset(wp, GUARD, sizeof(wp));
+		std::memset(wr, GUARD, sizeof(wr));
 
 		bool snull = (reset_midway && i == inlen / 2);
 
 		errno = 0;
-		P::pbsd_set_active_locale(&e.act_p);
+		if (lmode == 2)
+			use_env(genv);
+		else if (lmode == 0)
+			use_alt_env(*e);
+		else
+			use_env(genv);
+
 		if (lmode == 2)
 			rp = P::mbtowc(wp, snull ? NULL : sp + i, 1);
 		else
 			rp = P::mbtowc_l(wp, snull ? NULL : sp + i, 1,
-			    lmode == 0 ? &e.exp_p : NULL);
+			    &e->port_loc);
 		ep = errno;
 
 		errno = 0;
+		if (lmode == 0)
+			use_alt_env(*e);
+		else
+			use_env(genv);
 		if (lmode == 2)
 			rr = ref_mbtowc(wr, snull ? NULL : sr + i, 1);
 		else
@@ -586,23 +641,18 @@ do_mbtowc_stream(const char *in, size_t inlen, int lmode, bool reset_midway)
 			report(f, "stream: errno");
 		else if (std::memcmp(wp, wr, sizeof(wp)) != 0)
 			report(f, "stream: pwc buffer (incl. guard bytes)");
-		else if (!port_loc_eq(e.act_p, e.act_r))
-			report(f, "stream: current locale state");
-		else if (lmode == 0 && !port_loc_eq(e.exp_p, e.exp_r))
-			report(f, "stream: explicit locale state");
-		else if (!ref_loc_eq(ref_global_ctype,
-		    *(struct xlocale_ctype *)ref_global_locale.components[1]))
-			report(f, "stream: ref current locale state");
-		else if (lmode == 0 && !ref_loc_eq(ref_alt_ctype,
-		    *(struct xlocale_ctype *)ref_alt_locale.components[1]))
-			report(f, "stream: ref explicit locale state");
+		else {
+			mb_copy(e->port_ctype.mbtowc, loc_ref);
+			if (!mb_eq(e->ref_ctype.mbtowc, loc_ref))
+				report(f, "stream: locale mbtowc state");
+		}
 	}
 }
 
 static void
 do_wcwidth(wchar_t wc, int lmode)
 {
-	Env e;
+	Env *e;
 	ref_locale_t rloc;
 	int rp, rr;
 	int f;
@@ -610,22 +660,30 @@ do_wcwidth(wchar_t wc, int lmode)
 	f = (lmode == 2) ? F_WCWIDTH : F_WCWIDTH_L;
 	ncase[f]++;
 
-	env_build(e);
+	e = (lmode == 0) ? &altenv : &genv;
+	env_init(*e);
 	rloc = (lmode == 0) ? &ref_alt_locale : &ref_global_locale;
 
-	P::pbsd_set_active_locale(&e.act_p);
+	if (lmode == 2)
+		use_env(genv);
+	else if (lmode == 0)
+		use_alt_env(*e);
+	else
+		use_env(genv);
+
 	rp = (lmode == 2) ? P::wcwidth(wc)
-			  : P::wcwidth_l(wc, lmode == 0 ? &e.exp_p : NULL);
+			  : P::wcwidth_l(wc, &e->port_loc);
+
+	if (lmode == 0)
+		use_alt_env(*e);
+	else
+		use_env(genv);
 
 	rr = (lmode == 2) ? ref_wcwidth(wc)
 			  : ref_wcwidth_l(wc, rloc);
 
 	if (rp != rr)
 		report(f, "return value");
-	else if (!port_loc_eq(e.act_p, e.act_r))
-		report(f, "current locale state");
-	else if (lmode == 0 && !port_loc_eq(e.exp_p, e.exp_r))
-		report(f, "explicit locale state");
 }
 
 struct Bytes { const char *d; size_t n; };
@@ -718,31 +776,15 @@ static const size_t n_edge_wides = sizeof(edge_wides) / sizeof(edge_wides[0]);
 static const size_t edge_lens[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 40 };
 static const size_t n_edge_lens = sizeof(edge_lens) / sizeof(edge_lens[0]);
 
-static pbsd_mbstate_t
-fixed_state(int k)
-{
-	pbsd_mbstate_t st;
-
-	st.want = 0;
-	st.have = 0;
-	st.wch = 0;
-	st.lbound = 0;
-	switch (k) {
-	case 1:	st.want = 2; st.have = 1; st.wch = 0x02; st.lbound = 0x80; break;
-	case 2:	st.want = 3; st.have = 1; st.wch = 0x04; st.lbound = 0x800; break;
-	case 3:	st.want = 3; st.have = 2; st.wch = 0x120; st.lbound = 0x800; break;
-	case 4:	st.want = 4; st.have = 1; st.wch = 0x00; st.lbound = 0x10000; break;
-	case 5:	st.want = 4; st.have = 3; st.wch = 0x0410; st.lbound = 0x10000; break;
-	default: break;
-	}
-	return (st);
-}
-
 static void
 edge_pass()
 {
 	size_t i, j;
 	int lm, dn, pn, sk;
+
+	P::pbsd_locale_init(&P::global_locale, &P::global_ctype);
+	P::pbsd_locale_init(&P::alt_locale, &P::alt_ctype);
+	P::pbsd_set_active_locale(&P::global_locale);
 
 	for (i = 0; i < n_edge_bytes; i++)
 		for (j = 0; j < n_edge_lens; j++)
@@ -756,7 +798,9 @@ edge_pass()
 							    edge_lens[j],
 							    dn != 0, pn != 0,
 							    lm,
-							    fixed_state(sk));
+							    fixed_state(sk),
+							    fixed_state(
+							        (sk + 2) % 6));
 
 	for (i = 0; i < n_edge_wides; i++)
 		for (j = 0; j < n_edge_lens; j++)
@@ -770,13 +814,16 @@ edge_pass()
 							    edge_lens[j],
 							    dn != 0, pn != 0,
 							    lm,
-							    fixed_state(sk));
+							    fixed_state(sk),
+							    fixed_state(
+							        (sk + 2) % 6));
 
 	for (i = 0; i < n_edge_wides; i++)
 		for (j = 0; j <= 24; j++)
 			for (lm = 0; lm < 3; lm++)
 				do_wcsrtombs(edge_wides[i].d, edge_wides[i].n,
-				    j, false, false, lm, fixed_state(0));
+				    j, false, false, lm, fixed_state(0),
+				    fixed_state(1));
 
 	for (i = 0; i < n_edge_bytes; i++)
 		for (j = 0; j <= 8; j++)
@@ -822,8 +869,6 @@ edge_pass()
 	}
 }
 
-#define	SWEEP	200000
-
 static void
 random_pass()
 {
@@ -832,21 +877,26 @@ random_pass()
 	size_t n, len;
 	long i;
 	int lm;
+	P::mbstate_t loc_st, ps_st;
 
 	for (i = 0; i < SWEEP; i++) {
 		n = gen_bytes(bbuf, MBS_SRC);
 		len = u32(MBS_MAXLEN + 1);
 		lm = (int)u32(3);
+		loc_st = rand_state();
+		ps_st = rand_state();
 		do_mbsrtowcs(bbuf, n, len, u32(4) == 0, u32(2) == 0, lm,
-		    rand_state());
+		    loc_st, ps_st);
 	}
 
 	for (i = 0; i < SWEEP; i++) {
 		n = gen_wides(wbuf, WCS_SRC);
 		len = (u32(2) == 0) ? u32(10) : u32(WCS_MAXLEN + 1);
 		lm = (int)u32(3);
+		loc_st = rand_state();
+		ps_st = rand_state();
 		do_wcsrtombs(wbuf, n, len, u32(4) == 0, u32(2) == 0, lm,
-		    rand_state());
+		    loc_st, ps_st);
 	}
 
 	for (i = 0; i < SWEEP; i++) {

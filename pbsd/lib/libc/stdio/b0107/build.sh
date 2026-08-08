@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# Build and run the b0092 differential test.  Run as `sh build.sh' from
-# pbsd/lib/libc/stdio/b0092/.  The harness's exit status is this script's exit
+# Build and run the b0107 differential test.  Run as `sh build.sh' from
+# pbsd/lib/libc/stdio/b0107/.  The harness's exit status is this script's exit
 # status.
 
 set -e
@@ -10,10 +10,10 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS=${CFLAGS:--O2 -D_GNU_SOURCE}
-CXXFLAGS=${CXXFLAGS:--O2 -D_GNU_SOURCE}
+CFLAGS=${CFLAGS:--O2}
+CXXFLAGS=${CXXFLAGS:--O2}
 
-MODNAME=pbsd.lib.libc.stdio.b0092
+MODNAME=pbsd.lib.libc.stdio.b0107
 
 rm -rf gcm.cache
 rm -f oracle.o port.o harness.o port.pcm harness

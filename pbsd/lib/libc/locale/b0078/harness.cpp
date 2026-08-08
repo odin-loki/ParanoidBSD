@@ -646,8 +646,8 @@ run_mbs_wrap_case(int f, bool use_l, const MbsCase &tc)
 	wchar_t out_p[48], out_r[48];
 	const char *sp, *sr;
 	size_t pv, rv;
-	P::mbstate_t ps_p, ps_r, loc_p, loc_r;
-	ref_mbstate_t ps_ref_p, ps_ref_r, loc_ref_p, loc_ref_r;
+	P::mbstate_t ps_p, ps_r, loc_p;
+	ref_mbstate_t ps_ref_p, ps_ref_r, loc_ref_p;
 
 	ncase[f]++;
 	fill_guard(in_p, sizeof(in_p));

@@ -437,7 +437,7 @@ test_fwprintf_case(StatId which, locale_t loc, const wchar_t *fmt,
 		if (two_args)
 			rr = ref_fwprintf_l(rf, loc, fmt, arg1, arg2);
 		else
-			rr = ref_fwprintf_l(rf, loc, fmt, arg1, arg2);
+			rr = ref_fwprintf_l(rf, loc, fmt, arg1);
 	}
 
 	if (which == S_FWPRINTF) {
@@ -686,10 +686,10 @@ run_swscanf_edges(StatId which, locale_t loc)
 	static const wchar_t w12[] = L"1 2";
 	static const wchar_t wempty[] = L"";
 	static const wchar_t wx[] = L"x";
-	static const wchar_t whi[] = L"\x80\xfffe";
+	static const wchar_t whi[] = { (wchar_t)0x80, (wchar_t)0xfffe, L'\0' };
 	static const wchar_t wnone[] = L"z";
 	static const wchar_t w0[] = L"0";
-	static const wchar_t wnul[] = L"\07";
+	static const wchar_t wnul[] = { L'\0', L'7', L'\0' };
 
 	test_swscanf_int(which, loc, w42, L"%d", "d 42");
 	test_swscanf_two_int(which, loc, w12, L"%d %d", "d d 1 2");

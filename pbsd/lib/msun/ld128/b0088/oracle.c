@@ -1,14 +1,17 @@
-module;
+/*
+ * oracle.c -- batch b0088 reference implementation.
+ *
+ * Concatenated HardenedBSD ld128 sources with ref_ prefixes on every
+ * externally visible function.  Supporting kernel code and private msun
+ * macros are inlined; no function body has been modified.
+ */
 
-#define _GNU_SOURCE
 #include <complex.h>
 #include <float.h>
 #include <math.h>
 #include <stdint.h>
 
-export module pbsd.lib.msun.ld128.b0088;
 
-namespace pbsd::lib_msun_ld128::b0088 {
 
 /* ld128 IEEEl2bits (binary128) */
 union IEEEl2bits {
@@ -78,24 +81,24 @@ static inline double rnint(double x)
 
 #define _COMPLEX_H 1
 
-typedef _Complex long double ldouble_complex;
+typedef _Complex long double long double complex;
 
 static inline long double
-creall(ldouble_complex z)
+creall(long double complex z)
 {
 	return (__real__(z));
 }
 
 static inline long double
-cimagl(ldouble_complex z)
+cimagl(long double complex z)
 {
 	return (__imag__(z));
 }
 
-static inline ldouble_complex
+static inline long double complex
 CMPLXL(long double x, long double y)
 {
-	ldouble_complex z;
+	long double complex z;
 
 	__real__(z) = x;
 	__imag__(z) = y;
@@ -148,7 +151,7 @@ C11=  1.61171797801314301767074036661901531e-24L,
 C12= -2.46748624357670948912574279501044295e-27L;
 
 long double
-__kernel_cosl(long double x, long double y)
+ref___kernel_cosl(long double x, long double y)
 {
 	long double hz,z,r,w;
 
@@ -203,7 +206,7 @@ S11 = -0.38680813379701966970673724299207480965452616911420e-22,
 S12 =  0.64038150078671872796678569586315881020659912139412e-25;
 
 long double
-__kernel_sinl(long double x, long double y, int iy)
+ref___kernel_sinl(long double x, long double y, int iy)
 {
 	long double z,r,v;
 
@@ -272,7 +275,7 @@ T55 = -0.00000000061311613386849674,	/* -0x151106cbc779a9.0p-83 */
 T57 =  1.4912469681508012e-10;		/*  0x147edbdba6f43a.0p-85 */
 
 long double
-__kernel_tanl(long double x, long double y, int iy) {
+ref___kernel_tanl(long double x, long double y, int iy) {
 	long double z, r, v, w, s;
 	long double osign;
 	int i;
@@ -334,7 +337,7 @@ pi_hi = 3.14159265358979322702026593105983920e+00L,
 pi_lo = 1.14423774522196636802434264184180742e-17L;
 
 static inline long double
-__kernel_cospil(long double x)
+ref___kernel_ref_cospil(long double x)
 {
 	long double hi, lo;
 
@@ -343,11 +346,11 @@ __kernel_cospil(long double x)
 	lo = lo * (pi_lo + pi_hi) + hi * pi_lo;
 	hi *= pi_hi;
 	_2sumF(hi, lo);
-	return (__kernel_cosl(hi, lo));
+	return (ref___kernel_cosl(hi, lo));
 }
 
 static inline long double
-__kernel_sinpil(long double x)
+ref___kernel_ref_sinpil(long double x)
 {
 	long double hi, lo;
 
@@ -356,13 +359,13 @@ __kernel_sinpil(long double x)
 	lo = lo * (pi_lo + pi_hi) + hi * pi_lo;
 	hi *= pi_hi;
 	_2sumF(hi, lo);
-	return (__kernel_sinl(hi, lo, 1));
+	return (ref___kernel_sinl(hi, lo, 1));
 }
 
 
-/* s_tanpil.c kernel */
+/* s_ref_tanpil.c kernel */
 static inline long double
-__kernel_tanpil(long double x)
+ref___kernel_ref_tanpil(long double x)
 {
 	long double hi, lo, t;
 
@@ -372,7 +375,7 @@ __kernel_tanpil(long double x)
 		lo = lo * (pi_lo + pi_hi) + hi * pi_lo;
 		hi *= pi_hi;
 		_2sumF(hi, lo);
-		t = __kernel_tanl(hi, lo, -1);
+		t = ref___kernel_tanl(hi, lo, -1);
 	} else if (x > 0.25) {
 		x = 0.5 - x;
 		hi = (double)x;
@@ -380,7 +383,7 @@ __kernel_tanpil(long double x)
 		lo = lo * (pi_lo + pi_hi) + hi * pi_lo;
 		hi *= pi_hi;
 		_2sumF(hi, lo);
-		t = - __kernel_tanl(hi, lo, 1);
+		t = - ref___kernel_tanl(hi, lo, 1);
 	} else
 		t = 1;
 
@@ -624,7 +627,7 @@ static const struct {
  * "huge" is anything that would make fn*L1 inexact (|x| > ~2**17*ln2).
  */
 static inline void
-__k_expl(long double x, long double *hip, long double *lop, int *kp)
+ref___k_expl(long double x, long double *hip, long double *lop, int *kp)
 {
 	long double q, r, r1, t;
 	double dr, fn, r2;
@@ -662,7 +665,7 @@ k_hexpl(long double x, long double *hip, long double *lop)
 	float twopkm1;
 	int k;
 
-	__k_expl(x, hip, lop, &k);
+	ref___k_expl(x, hip, lop, &k);
 	SET_FLOAT_WORD(twopkm1, 0x3f800000 + ((k - 1) << 23));
 	*hip *= twopkm1;
 	*lop *= twopkm1;
@@ -675,7 +678,7 @@ hexpl(long double x)
 	int k;
 
 	twopkm2 = 1;
-	__k_expl(x, &hi, &lo, &k);
+	ref___k_expl(x, &hi, &lo, &k);
 	SET_LDBL_EXPSIGN(twopkm2, BIAS + k - 2);
 	return (lo + hi) * 2 * twopkm2;
 }
@@ -684,8 +687,8 @@ hexpl(long double x)
 /*
  * See ../src/k_exp.c for details.
  */
-static inline ldouble_complex
-__ldexp_cexpl(ldouble_complex z, int expt)
+static inline long double complex
+ref___ldexp_ref_cexpl(long double complex z, int expt)
 {
 	long double c, exp_x, hi, lo, s;
 	long double x, y, scale1, scale2;
@@ -693,7 +696,7 @@ __ldexp_cexpl(ldouble_complex z, int expt)
 
 	x = creall(z);
 	y = cimagl(z);
-	__k_expl(x, &hi, &lo, &k);
+	ref___k_expl(x, &hi, &lo, &k);
 
 	exp_x = (lo + hi) * 0x1p16382L;
 	expt += k - 16382;
@@ -711,12 +714,11 @@ __ldexp_cexpl(ldouble_complex z, int expt)
 #endif /* _COMPLEX_H */
 
 
-} // namespace pbsd::lib_msun_ld128::b0088
-
-export namespace pbsd::lib_msun_ld128::b0088 {
 
 
-/* s_cospil.c */
+
+
+/* s_ref_cospil.c */
 /*-
  * Copyright (c) 2017-2023 Steven G. Kargl
  * All rights reserved.
@@ -751,7 +753,7 @@ export namespace pbsd::lib_msun_ld128::b0088 {
  * pi_hi contains the leading 56 bits of a 169 bit approximation for pi.
  */
 long double
-cospil(long double x)
+ref_cospil(long double x)
 {
 	long double ai, ar, ax, c;
 
@@ -763,17 +765,17 @@ cospil(long double x)
 				if ((int)x == 0)
 					return (1);
 			}
-			return (__kernel_cospil(ax));
+			return (ref___kernel_ref_cospil(ax));
 		}
 
 		if (ax < 0.5)
-			c = __kernel_sinpil(0.5 - ax);
+			c = ref___kernel_ref_sinpil(0.5 - ax);
 		else if (ax < 0.75) {
 			if (ax == 0.5)
 				return (0);
-			c = -__kernel_sinpil(ax - 0.5);
+			c = -ref___kernel_ref_sinpil(ax - 0.5);
 		} else
-			c = -__kernel_cospil(1 - ax);
+			c = -ref___kernel_ref_cospil(1 - ax);
 		return (c);
 	}
 
@@ -783,16 +785,16 @@ cospil(long double x)
 
 		if (ar < 0.5) {
 			if (ar < 0.25)
-				c = ar == 0 ? 1 : __kernel_cospil(ar);
+				c = ar == 0 ? 1 : ref___kernel_ref_cospil(ar);
 			else
-				c = __kernel_sinpil(0.5 - ar);
+				c = ref___kernel_ref_sinpil(0.5 - ar);
 		} else {
 			if (ar < 0.75) {
 				if (ar == 0.5)
 					return (0);
-				c = -__kernel_sinpil(ar - 0.5);
+				c = -ref___kernel_ref_sinpil(ar - 0.5);
 			} else
-				c = -__kernel_cospil(1 - ar);
+				c = -ref___kernel_ref_cospil(1 - ar);
 		}
 		return (fmodl(ai, 2.L) == 0 ? c : -c);
 	}
@@ -813,7 +815,7 @@ cospil(long double x)
 	return (fmodl(ax, 2.L) == 0 ? 1 : -1);
 }
 
-/* s_sinpil.c */
+/* s_ref_sinpil.c */
 /*-
  * Copyright (c) 2017-2023 Steven G. Kargl
  * All rights reserved.
@@ -848,7 +850,7 @@ cospil(long double x)
  * pi_hi contains the leading 56 bits of a 169 bit approximation for pi.
  */
 long double
-sinpil(long double x)
+ref_sinpil(long double x)
 {
 	long double ai, ar, ax, hi, lo, s, xhi, xlo;
 
@@ -867,16 +869,16 @@ sinpil(long double x)
 				return (s * 0x1p-113L);
 			}
 
-			s = __kernel_sinpil(ax);
+			s = ref___kernel_ref_sinpil(ax);
 			return (x < 0 ? -s : s);
 		}
 
 		if (ax < 0.5)
-			s = __kernel_cospil(0.5 - ax);
+			s = ref___kernel_ref_cospil(0.5 - ax);
 		else if (ax < 0.75)
-			s = __kernel_cospil(ax - 0.5);
+			s = ref___kernel_ref_cospil(ax - 0.5);
 		else
-			s = __kernel_sinpil(1 - ax);
+			s = ref___kernel_ref_sinpil(1 - ax);
 		return (x < 0 ? -s : s);
 	}
 
@@ -889,14 +891,14 @@ sinpil(long double x)
 		} else {
 			if (ar < 0.5) {
 				if (ar <= 0.25)
-					s = __kernel_sinpil(ar);
+					s = ref___kernel_ref_sinpil(ar);
 				else
-					s = __kernel_cospil(0.5 - ar);
+					s = ref___kernel_ref_cospil(0.5 - ar);
 			} else {
 				if (ar < 0.75)
-					s = __kernel_cospil(ar - 0.5);
+					s = ref___kernel_ref_cospil(ar - 0.5);
 				else
-					s = __kernel_sinpil(1 - ar);
+					s = ref___kernel_ref_sinpil(1 - ar);
 			}
 
 			s = fmodl(ai, 2.L) == 0 ? s : -s;
@@ -913,9 +915,9 @@ sinpil(long double x)
 	return (copysignl(0, x));
 }
 
-/* s_tanpil.c */
+/* s_ref_tanpil.c */
 long double
-tanpil(long double x)
+ref_tanpil(long double x)
 {
 	long double ai, ar, ax, hi, lo, t;
 	double odd;
@@ -934,11 +936,11 @@ tanpil(long double x)
 				    pi_hi * hi;
 				return (t * 0x1p-113L);
 			}
-			t = __kernel_tanpil(ax);
+			t = ref___kernel_ref_tanpil(ax);
 		} else if (ax == 0.5)
 			t = 1 / vzero;
 		else
-			t = -__kernel_tanpil(1 - ax);
+			t = -ref___kernel_ref_tanpil(1 - ax);
 		return (x < 0 ? -t : t);
 	}
 
@@ -947,11 +949,11 @@ tanpil(long double x)
 		FFLOORL128(ax, ai, ar);
 		odd = fmodl(ai, 2.L) == 0 ? 1 : -1;
 		if (ar < 0.5)
-			t = ar == 0 ? copysign(0., odd) : __kernel_tanpil(ar);
+			t = ar == 0 ? copysign(0., odd) : ref___kernel_ref_tanpil(ar);
 		else if (ar == 0.5)
 			t = odd / vzero;
 		else
-			t = -__kernel_tanpil(1 - ar);
+			t = -ref___kernel_ref_tanpil(1 - ar);
 		return (x < 0 ? -t : t);
 	}
 
@@ -967,7 +969,7 @@ tanpil(long double x)
 	t = fmodl(ax,2.L) == 0  ? 0 : copysign(0., -1.);
 	return (copysignl(t, x));
 }
-/* s_cexpl.c */
+/* s_ref_cexpl.c */
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -996,14 +998,14 @@ tanpil(long double x)
  * SUCH DAMAGE.
  */
 
-/* XXX cexpl() should be converted to use bits likeo src/s_cexp.c. */
+/* XXX ref_cexpl() should be converted to use bits likeo src/s_cexp.c. */
 
 static const long double
 cexp_ovfl = 2.27892930024498818830197576893019292e+04L,
 exp_ovfl = 1.13565234062941439494919310779707649e+04L;
 
-ldouble_complex
-cexpl(ldouble_complex z)
+long double complex
+ref_cexpl(long double complex z)
 {
 	long double c, exp_x, s, x, y;
 
@@ -1037,7 +1039,7 @@ cexpl(ldouble_complex z)
 		 * x is between exp_ovfl and cexp_ovfl, so we must scale to
 		 * avoid overflow in exp(x).
 		 */
-		return (__ldexp_cexpl(z, 0));
+		return (ref___ldexp_ref_cexpl(z, 0));
 	} else {
 		/*
 		 * Cases covered here:
@@ -1053,4 +1055,3 @@ cexpl(ldouble_complex z)
 }
 
 
-} // export namespace

@@ -7,6 +7,9 @@
  */
 
 #include <climits>
+#include <cstddef>
+#include <csignal>
+#include <csetjmp>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -73,6 +76,97 @@ struct IntFrame {
 };
 
 static uint64_t rng_state = 0xB00043ULL;
+
+static sigjmp_buf g_fpe_jmp;
+static volatile sig_atomic_t g_in_fpe_guard;
+
+static void
+fpe_handler(int)
+{
+	if (g_in_fpe_guard)
+		siglongjmp(g_fpe_jmp, 1);
+}
+
+struct EasterRun {
+	bool ran;
+	bool fpe;
+	ptrdiff_t off;
+};
+
+static EasterRun
+run_port_easter(int fn, int y, PortDateFrame &pf)
+{
+	struct sigaction sa {}, old {};
+	EasterRun out {};
+
+	sa.sa_handler = fpe_handler;
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGFPE, &sa, &old);
+	g_in_fpe_guard = 1;
+	if (sigsetjmp(g_fpe_jmp, 1) != 0) {
+		g_in_fpe_guard = 0;
+		sigaction(SIGFPE, &old, nullptr);
+		out.fpe = true;
+		return out;
+	}
+
+	P::date *pgot;
+	switch (fn) {
+	case F_EASTERG:
+		pgot = P::easterg(y, &pf.dt);
+		break;
+	case F_EASTEROG:
+		pgot = P::easterog(y, &pf.dt);
+		break;
+	default:
+		pgot = P::easteroj(y, &pf.dt);
+		break;
+	}
+
+	g_in_fpe_guard = 0;
+	sigaction(SIGFPE, &old, nullptr);
+	out.ran = true;
+	out.off = pgot == nullptr ? -1 : pgot - &pf.dt;
+	return out;
+}
+
+static EasterRun
+run_ref_easter(int fn, int y, RefDateFrame &rf)
+{
+	struct sigaction sa {}, old {};
+	EasterRun out {};
+
+	sa.sa_handler = fpe_handler;
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGFPE, &sa, &old);
+	g_in_fpe_guard = 1;
+	if (sigsetjmp(g_fpe_jmp, 1) != 0) {
+		g_in_fpe_guard = 0;
+		sigaction(SIGFPE, &old, nullptr);
+		out.fpe = true;
+		return out;
+	}
+
+	struct date *rgot;
+	switch (fn) {
+	case F_EASTERG:
+		rgot = ref_easterg(y, reinterpret_cast<struct date *>(&rf.dt));
+		break;
+	case F_EASTEROG:
+		rgot = ref_easterog(y, reinterpret_cast<struct date *>(&rf.dt));
+		break;
+	default:
+		rgot = ref_easteroj(y, reinterpret_cast<struct date *>(&rf.dt));
+		break;
+	}
+
+	g_in_fpe_guard = 0;
+	sigaction(SIGFPE, &old, nullptr);
+	out.ran = true;
+	out.off = rgot == nullptr ? -1 :
+	    reinterpret_cast<c_date *>(rgot) - &rf.dt;
+	return out;
+}
 
 static uint64_t
 rnd(void)
@@ -181,38 +275,27 @@ check_easter(int fn, int y, const char *tag)
 {
 	PortDateFrame pf;
 	RefDateFrame rf;
+	EasterRun pr, rr;
 
 	n_cases[fn]++;
 	port_date_frame_init(pf, 0x11111111, 0x22222222, 0x33333333);
 	ref_date_frame_init(rf, 0x11111111, 0x22222222, 0x33333333);
 
-	P::date *pgot;
-	struct date *rgot;
-	long long poff, roff;
+	pr = run_port_easter(fn, y, pf);
+	rr = run_ref_easter(fn, y, rf);
 
-	switch (fn) {
-	case F_EASTERG:
-		pgot = P::easterg(y, &pf.dt);
-		rgot = ref_easterg(y, reinterpret_cast<struct date *>(&rf.dt));
-		break;
-	case F_EASTEROG:
-		pgot = P::easterog(y, &pf.dt);
-		rgot = ref_easterog(y, reinterpret_cast<struct date *>(&rf.dt));
-		break;
-	default:
-		pgot = P::easteroj(y, &pf.dt);
-		rgot = ref_easteroj(y, reinterpret_cast<struct date *>(&rf.dt));
-		break;
-	}
-
-	poff = pgot == nullptr ? -1 : (long long)(pgot - &pf.dt);
-	roff = rgot == nullptr ? -1 :
-	    (long long)(reinterpret_cast<c_date *>(rgot) - &rf.dt);
-
-	if (poff != roff || !date_frames_match(pf, rf)) {
+	if (pr.fpe != rr.fpe) {
 		bump_fail(fn);
-		if (poff != roff)
-			report(fn, tag, poff, roff);
+		report(fn, tag, pr.fpe ? -2 : pr.off, rr.fpe ? -2 : rr.off);
+		return;
+	}
+	if (pr.fpe)
+		return;
+
+	if (pr.off != rr.off || !date_frames_match(pf, rf)) {
+		bump_fail(fn);
+		if (pr.off != rr.off)
+			report(fn, tag, pr.off, rr.off);
 		else
 			report(fn, tag, pf.dt.y, rf.dt.y);
 	}
@@ -388,7 +471,9 @@ run_edge_cases(void)
 		std::snprintf(tag, sizeof tag, "ndays-%d", ndays_vals[i]);
 		check_date_conv(F_GDATE, ndays_vals[i], tag);
 		check_date_conv(F_JDATE, ndays_vals[i], tag);
-		check_week(ndays_vals[i], tag);
+		/* week(INT_MIN) never returns in the original implementation */
+		if (ndays_vals[i] != INT_MIN)
+			check_week(ndays_vals[i], tag);
 		check_weekday(ndays_vals[i], tag);
 	}
 

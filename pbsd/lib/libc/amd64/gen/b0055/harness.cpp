@@ -196,10 +196,15 @@ test_fpgetround(const SavedFp *base, unsigned rnd, unsigned prc,
 	unsigned short cw;
 	int refv, portv;
 
+	std::fprintf(stderr, "test_fpgetround rnd=%u prc=%u mask=%u\n", rnd, prc,
+	    mask_en);
 	cw = build_cw(rnd, prc, mask_en);
 	apply_fp_state(base, cw, 0, base->mxcsr);
+	std::fprintf(stderr, "test_fpgetround applied\n");
 	refv = ref_fpgetround();
+	std::fprintf(stderr, "test_fpgetround ref=%d\n", refv);
 	portv = port::fpgetround();
+	std::fprintf(stderr, "test_fpgetround port=%d\n", portv);
 	compare_int("fpgetround", refv, portv, &stats_fpgetround);
 }
 

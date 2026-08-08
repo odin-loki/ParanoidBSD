@@ -10,13 +10,8 @@ cd "$(dirname "$0")"
 CC=${CC:-cc}
 CXX=${CXX:-c++}
 
-LD128FLAG=""
-if $CC -mlong-double-128 -x c -c /dev/null -o /dev/null 2>/dev/null; then
-	LD128FLAG=-mlong-double-128
-fi
-
-CFLAGS="-std=c11 -O2 $LD128FLAG"
-CXXFLAGS="-std=c++23 -O2 $LD128FLAG"
+CFLAGS="-std=c11 -O2 -mlong-double-128"
+CXXFLAGS="-std=c++23 -O2 -mlong-double-128"
 
 MODFLAG=""
 for f in -fmodules-ts -fmodules ""; do

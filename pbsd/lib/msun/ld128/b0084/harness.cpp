@@ -67,23 +67,11 @@ static stat st_atanhi = { "atanhi[]", 0, 0, 0 };
 static stat st_atanlo = { "atanlo[]", 0, 0, 0 };
 static stat st_aT = { "aT[]", 0, 0, 0 };
 
-static bool
-ld_equal(long double a, long double b)
-{
-	return std::memcmp(&a, &b, sizeof(long double)) == 0;
-}
-
-static long double
-load_ld(const volatile long double &x)
-{
-	return x;
-}
-
 static void
-report_ld_fail(stat &s, const char *tag, long double got, long double want)
+report_mem_fail(stat &s, const char *tag, const void *got, const void *want)
 {
-	const auto *pg = reinterpret_cast<const unsigned char *>(&got);
-	const auto *pw = reinterpret_cast<const unsigned char *>(&want);
+	const auto *pg = static_cast<const unsigned char *>(got);
+	const auto *pw = static_cast<const unsigned char *>(want);
 	std::size_t i;
 
 	if (s.reported >= MAX_REPORT)
@@ -108,12 +96,12 @@ report_size_fail(stat &s, const char *tag, std::size_t got, std::size_t want)
 }
 
 static void
-check_ld(stat &s, const char *tag, long double got, long double want)
+check_ld_mem(stat &s, const char *tag, const void *got, const void *want)
 {
 	++s.cases;
-	if (!ld_equal(got, want)) {
+	if (std::memcmp(got, want, sizeof(long double)) != 0) {
 		++s.fails;
-		report_ld_fail(s, tag, got, want);
+		report_mem_fail(s, tag, got, want);
 	}
 }
 
@@ -128,52 +116,56 @@ check_size(stat &s, const char *tag, std::size_t got, std::size_t want)
 }
 
 static void
-check_scalar(stat &s, const volatile long double &got, const volatile long double &want)
+check_scalar(stat &s, const void *got, const void *want)
 {
-	check_ld(s, "scalar", load_ld(got), load_ld(want));
+	check_ld_mem(s, "scalar", got, want);
 }
 
 static void
-check_table(stat &s, const char *name, const volatile long double *ptbl,
-    const volatile long double *rtbl, std::size_t pn, std::size_t rn)
+check_table(stat &s, const char *name, const void *ptbl, const void *rtbl,
+    std::size_t pn, std::size_t rn)
 {
 	char tag[64];
 	std::size_t i;
+	const auto *p = static_cast<const unsigned char *>(ptbl);
+	const auto *r = static_cast<const unsigned char *>(rtbl);
 
 	check_size(s, "n_elem", pn, rn);
 	for (i = 0; i < pn && i < rn; ++i) {
 		std::snprintf(tag, sizeof(tag), "%s[%zu]", name, i);
-		check_ld(s, tag, load_ld(ptbl[i]), load_ld(rtbl[i]));
+		check_ld_mem(s, tag, p + i * sizeof(long double),
+		    r + i * sizeof(long double));
 	}
 	if (pn > 0) {
-		check_ld(s, "first", ptbl[0], rtbl[0]);
-		check_ld(s, "last", ptbl[pn - 1], rtbl[pn - 1]);
+		check_ld_mem(s, "first", p, r);
+		check_ld_mem(s, "last", p + (pn - 1) * sizeof(long double),
+		    r + (rn - 1) * sizeof(long double));
 	}
 }
 
 static void
 check_all_scalars()
 {
-	check_scalar(st_pS0, port::pS0, ref_pS0);
-	check_scalar(st_pS1, port::pS1, ref_pS1);
-	check_scalar(st_pS2, port::pS2, ref_pS2);
-	check_scalar(st_pS3, port::pS3, ref_pS3);
-	check_scalar(st_pS4, port::pS4, ref_pS4);
-	check_scalar(st_pS5, port::pS5, ref_pS5);
-	check_scalar(st_pS6, port::pS6, ref_pS6);
-	check_scalar(st_pS7, port::pS7, ref_pS7);
-	check_scalar(st_pS8, port::pS8, ref_pS8);
-	check_scalar(st_pS9, port::pS9, ref_pS9);
-	check_scalar(st_qS1, port::qS1, ref_qS1);
-	check_scalar(st_qS2, port::qS2, ref_qS2);
-	check_scalar(st_qS3, port::qS3, ref_qS3);
-	check_scalar(st_qS4, port::qS4, ref_qS4);
-	check_scalar(st_qS5, port::qS5, ref_qS5);
-	check_scalar(st_qS6, port::qS6, ref_qS6);
-	check_scalar(st_qS7, port::qS7, ref_qS7);
-	check_scalar(st_qS8, port::qS8, ref_qS8);
-	check_scalar(st_qS9, port::qS9, ref_qS9);
-	check_scalar(st_pi_lo, port::pi_lo, ref_pi_lo);
+	check_scalar(st_pS0, &port::pS0, &ref_pS0);
+	check_scalar(st_pS1, &port::pS1, &ref_pS1);
+	check_scalar(st_pS2, &port::pS2, &ref_pS2);
+	check_scalar(st_pS3, &port::pS3, &ref_pS3);
+	check_scalar(st_pS4, &port::pS4, &ref_pS4);
+	check_scalar(st_pS5, &port::pS5, &ref_pS5);
+	check_scalar(st_pS6, &port::pS6, &ref_pS6);
+	check_scalar(st_pS7, &port::pS7, &ref_pS7);
+	check_scalar(st_pS8, &port::pS8, &ref_pS8);
+	check_scalar(st_pS9, &port::pS9, &ref_pS9);
+	check_scalar(st_qS1, &port::qS1, &ref_qS1);
+	check_scalar(st_qS2, &port::qS2, &ref_qS2);
+	check_scalar(st_qS3, &port::qS3, &ref_qS3);
+	check_scalar(st_qS4, &port::qS4, &ref_qS4);
+	check_scalar(st_qS5, &port::qS5, &ref_qS5);
+	check_scalar(st_qS6, &port::qS6, &ref_qS6);
+	check_scalar(st_qS7, &port::qS7, &ref_qS7);
+	check_scalar(st_qS8, &port::qS8, &ref_qS8);
+	check_scalar(st_qS9, &port::qS9, &ref_qS9);
+	check_scalar(st_pi_lo, &port::pi_lo, &ref_pi_lo);
 }
 
 static void
@@ -188,10 +180,10 @@ check_all_tables()
 
 struct probe {
 	stat *s;
-	const long double *port_val;
-	const long double *ref_val;
-	const long double *port_tbl;
-	const long double *ref_tbl;
+	const void *port_val;
+	const void *ref_val;
+	const void *port_tbl;
+	const void *ref_tbl;
 	std::size_t tbl_n;
 };
 
@@ -235,14 +227,17 @@ run_random_sweep()
 		char tag[32];
 
 		if (p.port_val != nullptr) {
-			check_scalar(*p.s, *p.port_val, *p.ref_val);
+			check_scalar(*p.s, p.port_val, p.ref_val);
 			continue;
 		}
 
 		std::uniform_int_distribution<std::size_t> idx(0, p.tbl_n - 1);
 		const std::size_t j = idx(rng);
+		const auto *pb = static_cast<const unsigned char *>(p.port_tbl);
+		const auto *rb = static_cast<const unsigned char *>(p.ref_tbl);
 		std::snprintf(tag, sizeof(tag), "rand[%zu]", j);
-		check_ld(*p.s, tag, p.port_tbl[j], p.ref_tbl[j]);
+		check_ld_mem(*p.s, tag, pb + j * sizeof(long double),
+		    rb + j * sizeof(long double));
 	}
 }
 

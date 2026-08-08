@@ -1,582 +1,806 @@
 /*
- * PBSD batch b0100 -- differential test: port vs. ref_ oracle.
+ * harness.cpp -- differential test for PBSD batch b0100.
  */
 
-#include <cerrno>
+#define _GNU_SOURCE
 #include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
+#include <fcntl.h>
 #include <unistd.h>
 #include <xlocale.h>
 
 import pbsd.lib.libc.stdio.b0100;
 
-namespace P = pbsd::lib_libc_stdio::b0100;
+namespace port = pbsd::lib_libc_stdio::b0100;
 
 extern "C" {
-typedef struct {
-	unsigned char	*_p;
-	int		_r;
-	int		_w;
-	short		_flags;
-	short		_file;
-} ref_FILE;
-
-int		ref_wprintf(const wchar_t * __restrict, ...);
-int		ref_wprintf_l(locale_t, const wchar_t * __restrict, ...);
-void		ref_clearerr(ref_FILE *);
-void		ref_clearerr_unlocked(ref_FILE *);
-int		ref_feof(ref_FILE *);
-int		ref_feof_unlocked(ref_FILE *);
-extern int	__isthreaded;
+int ref_wprintf(const wchar_t *__restrict, ...);
+int ref_wprintf_l(locale_t, const wchar_t *__restrict, ...);
+void ref_clearerr(FILE *);
+void ref_clearerr_unlocked(FILE *);
+int ref_feof(FILE *);
+int ref_feof_unlocked(FILE *);
+extern int __isthreaded;
 }
 
-enum {
-	F_WPRINTF,
-	F_WPRINTF_L,
-	F_CLEARERR,
-	F_CLEARERR_UNLOCKED,
-	F_FEOF,
-	F_FEOF_UNLOCKED,
-	F_COUNT
+namespace {
+
+constexpr unsigned char GUARD = 0x7f;
+constexpr int MAX_REPORT = 8;
+constexpr unsigned RAND_ITERS = 200000u;
+constexpr std::size_t OUT_PRE = 16;
+constexpr std::size_t OUT_CAP = 512;
+constexpr std::size_t OUT_POST = 16;
+constexpr std::size_t OUT_TOTAL = OUT_PRE + OUT_CAP + OUT_POST;
+constexpr std::size_t FILEBUF = 4096;
+
+enum StatId {
+	S_WPRINTF,
+	S_WPRINTF_L,
+	S_CLEARERR,
+	S_CLEARERR_UNLOCKED,
+	S_FEOF,
+	S_FEOF_UNLOCKED,
+	NSTAT
 };
 
-static const char *const fname[F_COUNT] = {
-	"wprintf",
-	"wprintf_l",
-	"clearerr",
-	"clearerr_unlocked",
-	"feof",
-	"feof_unlocked"
+struct Stats {
+	const char *name;
+	long long cases;
+	long long fails;
+	int reported;
 };
 
-static long long ncase[F_COUNT];
-static long long nfail[F_COUNT];
-
-static constexpr unsigned char GUARD = 0x7f;
-static constexpr long long SWEEP = 200000;
-
-struct FileBlob {
-	unsigned char	pre[32];
-	ref_FILE	ref_f;
-	P::FILE		port_f;
-	unsigned char	post[32];
+Stats g_stat[NSTAT] = {
+	{ "wprintf",            0, 0, 0 },
+	{ "wprintf_l",          0, 0, 0 },
+	{ "clearerr",           0, 0, 0 },
+	{ "clearerr_unlocked",  0, 0, 0 },
+	{ "feof",               0, 0, 0 },
+	{ "feof_unlocked",      0, 0, 0 },
 };
 
-static uint64_t rng = 0xb0100ULL;
+std::uint64_t rng_state = 0xb0100facefeedULL;
 
-static uint64_t
-rnd(void)
+std::uint64_t
+rnd_u64(void)
 {
-	rng ^= rng << 13;
-	rng ^= rng >> 7;
-	rng ^= rng << 17;
-	return rng;
+	std::uint64_t z;
+
+	rng_state += 0x9e3779b97f4a7c15ULL;
+	z = rng_state;
+	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
+	z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
+	return z ^ (z >> 31);
 }
 
-static int
-rnd16(void)
+unsigned
+rnd_u32(void)
 {
-	return (int)(rnd() & 0xffffu);
+	return (unsigned)(rnd_u64() & 0xffffffffu);
 }
 
-static void
-fill_blob(FileBlob *b)
+int
+rnd_i32(void)
 {
-	std::memset(b, GUARD, sizeof(*b));
+	return (int)rnd_u32();
 }
 
-static int
-blob_equal(const FileBlob *a, const FileBlob *b)
+void
+fail_msg(StatId which, const char *label, const char *detail)
 {
-	return std::memcmp(a, b, sizeof(*a)) == 0;
+	g_stat[which].fails++;
+	if (g_stat[which].reported++ < MAX_REPORT)
+		std::printf("  FAIL %-18s %-20s %s\n", g_stat[which].name,
+		    label, detail);
 }
 
-static void
-record_fail(int fn)
+void
+case_inc(StatId which)
 {
-	if (nfail[fn] == 0)
-		std::fprintf(stderr, "  FAIL %s\n", fname[fn]);
-	nfail[fn]++;
+	g_stat[which].cases++;
 }
 
-static void
-check_file(int fn, const FileBlob *refb, const FileBlob *portb, int refret,
-    int portret)
-{
-	ncase[fn]++;
+struct GuardedOut {
+	unsigned char data[OUT_TOTAL];
+};
 
-	if (refret != portret)
-		record_fail(fn);
-	if (!blob_equal(refb, portb))
-		record_fail(fn);
+void
+guard_fill(GuardedOut *g)
+{
+	std::memset(g->data, GUARD, sizeof(g->data));
 }
 
-static void
-test_clearerr_pair(int fn, void (*ref_fn)(ref_FILE *),
-    void (*port_fn)(P::FILE *), short flags, int threaded)
+bool
+guard_eq(const GuardedOut *a, const GuardedOut *b)
 {
-	FileBlob refb, portb;
-
-	__isthreaded = threaded;
-	fill_blob(&refb);
-	fill_blob(&portb);
-	refb.ref_f._flags = flags;
-	portb.port_f._flags = flags;
-
-	ref_fn(&refb.ref_f);
-	port_fn(&portb.port_f);
-	check_file(fn, &refb, &portb, 0, 0);
+	return std::memcmp(a->data, b->data, sizeof(a->data)) == 0;
 }
 
-static void
-test_feof_pair(int fn, int (*ref_fn)(ref_FILE *), int (*port_fn)(P::FILE *),
-    short flags, int threaded)
+unsigned char *
+out_user(GuardedOut *g)
 {
-	FileBlob refb, portb;
-	int refret, portret;
-
-	__isthreaded = threaded;
-	fill_blob(&refb);
-	fill_blob(&portb);
-	refb.ref_f._flags = flags;
-	portb.port_f._flags = flags;
-
-	refret = ref_fn(&refb.ref_f);
-	portret = port_fn(&portb.port_f);
-	check_file(fn, &refb, &portb, refret, portret);
+	return g->data + OUT_PRE;
 }
 
-static int saved_stdout = -1;
+int saved_stdout = -1;
 
-static int
-stdout_capture_open(void)
+bool
+push_stdout_pipe(int pfd[2])
 {
-	int pipefd[2];
-
+	if (pipe(pfd) != 0)
+		return false;
 	if (saved_stdout < 0)
-		saved_stdout = ::dup(STDOUT_FILENO);
-	if (pipe(pipefd) != 0)
-		std::abort();
-	if (::dup2(pipefd[1], STDOUT_FILENO) != STDOUT_FILENO)
-		std::abort();
-	::close(pipefd[1]);
-	return pipefd[0];
+		saved_stdout = dup(STDOUT_FILENO);
+	if (dup2(pfd[1], STDOUT_FILENO) < 0)
+		return false;
+	close(pfd[1]);
+	std::setvbuf(stdout, nullptr, _IONBF, 0);
+	fwide(stdout, 1);
+	return true;
 }
 
-static void
-stdout_restore(void)
-{
-	if (saved_stdout >= 0)
-		::dup2(saved_stdout, STDOUT_FILENO);
-	std::fflush(stdout);
-}
-
-static int
-stdout_capture_close(int readfd, unsigned char *out, size_t outcap)
+void
+pop_stdout(int pfd_read)
 {
 	std::fflush(stdout);
-	stdout_restore();
-	ssize_t n = ::read(readfd, out, outcap);
-	::close(readfd);
-	if (n < 0)
-		return -1;
-	return (int)n;
+	if (saved_stdout >= 0) {
+		dup2(saved_stdout, STDOUT_FILENO);
+		close(saved_stdout);
+		saved_stdout = -1;
+	}
+	if (pfd_read >= 0)
+		close(pfd_read);
+	clearerr(stdout);
+	fwide(stdout, 1);
 }
 
-static int
-call_ref_wprintf(const wchar_t *fmt, ...)
+struct WprintfObs {
+	int ret;
+	GuardedOut out;
+};
+
+WprintfObs
+run_ref_wprintf(const wchar_t *fmt, ...)
 {
-	int fd, n;
-	unsigned char buf[4096];
+	WprintfObs obs{};
+	int pfd[2];
+	ssize_t n;
 	va_list ap;
 
-	fd = stdout_capture_open();
+	guard_fill(&obs.out);
+	if (!push_stdout_pipe(pfd))
+		return obs;
+
 	va_start(ap, fmt);
-	n = ref_wprintf(fmt, ap);
+	obs.ret = ref_wprintf(fmt, ap);
 	va_end(ap);
-	n = stdout_capture_close(fd, buf, sizeof(buf));
-	if (n < 0)
-		return -1;
-	std::memcpy(buf + n, "\0", 1);
-	return n;
+
+	std::fflush(stdout);
+	n = read(pfd[0], out_user(&obs.out), OUT_CAP);
+	if (n > 0)
+		(void)n;
+	pop_stdout(pfd[0]);
+	return obs;
 }
 
-static int
-call_port_wprintf(const wchar_t *fmt, ...)
+WprintfObs
+run_port_wprintf(const wchar_t *fmt, ...)
 {
-	int fd, n;
-	unsigned char buf[4096];
+	WprintfObs obs{};
+	int pfd[2];
+	ssize_t n;
 	va_list ap;
 
-	fd = stdout_capture_open();
+	guard_fill(&obs.out);
+	if (!push_stdout_pipe(pfd))
+		return obs;
+
 	va_start(ap, fmt);
-	n = P::wprintf(fmt, ap);
+	obs.ret = port::wprintf(fmt, ap);
 	va_end(ap);
-	n = stdout_capture_close(fd, buf, sizeof(buf));
-	if (n < 0)
-		return -1;
-	std::memcpy(buf + n, "\0", 1);
-	return n;
+
+	std::fflush(stdout);
+	n = read(pfd[0], out_user(&obs.out), OUT_CAP);
+	if (n > 0)
+		(void)n;
+	pop_stdout(pfd[0]);
+	return obs;
 }
 
-static void
-test_wprintf_case(int fn, const wchar_t *fmt, ...)
+WprintfObs
+run_ref_wprintf_l(locale_t loc, const wchar_t *fmt, ...)
 {
-	int refret, portret;
-	unsigned char refbuf[4096], portbuf[4096];
-	int reffd, portfd;
+	WprintfObs obs{};
+	int pfd[2];
+	ssize_t n;
 	va_list ap;
 
-	ncase[fn]++;
+	guard_fill(&obs.out);
+	if (!push_stdout_pipe(pfd))
+		return obs;
 
-	reffd = stdout_capture_open();
 	va_start(ap, fmt);
-	refret = ref_wprintf(fmt, ap);
+	obs.ret = ref_wprintf_l(loc, fmt, ap);
 	va_end(ap);
-	refret = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
 
-	portfd = stdout_capture_open();
-	va_start(ap, fmt);
-	portret = P::wprintf(fmt, ap);
-	va_end(ap);
-	portret = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
-
-	if (refret != portret || std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
-		record_fail(fn);
+	std::fflush(stdout);
+	n = read(pfd[0], out_user(&obs.out), OUT_CAP);
+	if (n > 0)
+		(void)n;
+	pop_stdout(pfd[0]);
+	return obs;
 }
 
-static void
-test_wprintf_l_case(int fn, locale_t loc, const wchar_t *fmt, ...)
+WprintfObs
+run_port_wprintf_l(locale_t loc, const wchar_t *fmt, ...)
 {
-	int refret, portret;
-	unsigned char refbuf[4096], portbuf[4096];
-	int reffd, portfd;
+	WprintfObs obs{};
+	int pfd[2];
+	ssize_t n;
 	va_list ap;
 
-	ncase[fn]++;
+	guard_fill(&obs.out);
+	if (!push_stdout_pipe(pfd))
+		return obs;
 
-	reffd = stdout_capture_open();
 	va_start(ap, fmt);
-	refret = ref_wprintf_l(loc, fmt, ap);
+	obs.ret = port::wprintf_l(loc, fmt, ap);
 	va_end(ap);
-	refret = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
 
-	portfd = stdout_capture_open();
-	va_start(ap, fmt);
-	portret = P::wprintf_l(loc, fmt, ap);
-	va_end(ap);
-	portret = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
-
-	if (refret != portret || std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
-		record_fail(fn);
+	std::fflush(stdout);
+	n = read(pfd[0], out_user(&obs.out), OUT_CAP);
+	if (n > 0)
+		(void)n;
+	pop_stdout(pfd[0]);
+	return obs;
 }
 
-static void
-edge_clearerr(int fn, void (*ref_fn)(ref_FILE *), void (*port_fn)(P::FILE *))
+bool
+test_wprintf_pair(StatId which, const char *label, locale_t loc, int use_l,
+    const wchar_t *fmt, ...)
 {
-	static const short edge_flags[] = {
-		0,
-		0x0001, 0x0002, 0x0004, 0x0008, 0x0010,
-		(short)0x0020, (short)0x0040, (short)0x0060,
-		(short)0x001f, (short)0x0021, (short)0x003f, (short)0x0041,
-		(short)0x0080, (short)0x00ff, (short)0x7f00, (short)-1,
-		(short)0x8000, (short)0xfffe, (short)0xffff
-	};
+	WprintfObs r, p;
+	va_list ap1, ap2;
+	bool ok = true;
 
-	for (short f : edge_flags)
-		test_clearerr_pair(fn, ref_fn, port_fn, f, 0);
-	for (short f : edge_flags)
-		test_clearerr_pair(fn, ref_fn, port_fn, f, 1);
+	guard_fill(&r.out);
+	guard_fill(&p.out);
+
+	if (use_l) {
+		va_start(ap1, fmt);
+		r = run_ref_wprintf_l(loc, fmt, ap1);
+		va_end(ap1);
+		va_start(ap2, fmt);
+		p = run_port_wprintf_l(loc, fmt, ap2);
+		va_end(ap2);
+	} else {
+		va_start(ap1, fmt);
+		r = run_ref_wprintf(fmt, ap1);
+		va_end(ap1);
+		va_start(ap2, fmt);
+		p = run_port_wprintf(fmt, ap2);
+		va_end(ap2);
+	}
+
+	case_inc(which);
+	if (r.ret != p.ret) {
+		fail_msg(which, label, "return mismatch");
+		ok = false;
+	}
+	if (!guard_eq(&r.out, &p.out)) {
+		fail_msg(which, label, "output/guard mismatch");
+		ok = false;
+	}
+	return ok;
 }
 
-static void
-edge_feof(int fn, int (*ref_fn)(ref_FILE *), int (*port_fn)(P::FILE *))
+void
+run_wprintf_edges(StatId which, locale_t loc, int use_l)
 {
-	static const short edge_flags[] = {
-		0,
-		0x0001, 0x0002, 0x0004, 0x0008, 0x0010,
-		(short)0x0020, (short)0x0040, (short)0x0060,
-		(short)0x001f, (short)0x0021, (short)0x003f, (short)0x0041,
-		(short)0x0080, (short)0x00ff, (short)0x7f00, (short)-1,
-		(short)0x8000, (short)0xfffe, (short)0xffff
-	};
+	static const wchar_t ws[] = { L'h', L'i', 0 };
+	static const wchar_t wempty[] = { 0 };
+	static const wchar_t whi[] = { (wchar_t)0x80, (wchar_t)0xff, 0 };
+	static const wchar_t wnul[] = { L'a', L'\0', L'b', 0 };
 
-	for (short f : edge_flags)
-		test_feof_pair(fn, ref_fn, port_fn, f, 0);
-	for (short f : edge_flags)
-		test_feof_pair(fn, ref_fn, port_fn, f, 1);
+	test_wprintf_pair(which, "empty", loc, use_l, L"");
+	test_wprintf_pair(which, "pct", loc, use_l, L"%%");
+	test_wprintf_pair(which, "int0", loc, use_l, L"%d", 0);
+	test_wprintf_pair(which, "int-1", loc, use_l, L"%d", -1);
+	test_wprintf_pair(which, "intmax", loc, use_l, L"%d", INT_MAX);
+	test_wprintf_pair(which, "intmin", loc, use_l, L"%d", INT_MIN);
+	test_wprintf_pair(which, "char", loc, use_l, L"%c", L'Z');
+	test_wprintf_pair(which, "charhi", loc, use_l, L"%c", (wchar_t)0xff);
+	test_wprintf_pair(which, "str", loc, use_l, L"%ls", ws);
+	test_wprintf_pair(which, "strempty", loc, use_l, L"%ls", wempty);
+	test_wprintf_pair(which, "strhi", loc, use_l, L"%ls", whi);
+	test_wprintf_pair(which, "strnul", loc, use_l, L"%ls", wnul);
+	test_wprintf_pair(which, "width", loc, use_l, L"%5d", 42);
+	test_wprintf_pair(which, "hex", loc, use_l, L"%x", 0xdead);
+	test_wprintf_pair(which, "mix", loc, use_l, L"%d %ls %c", 7, ws, L'!');
 }
 
-static void
-sweep_clearerr(int fn, void (*ref_fn)(ref_FILE *), void (*port_fn)(P::FILE *))
+void
+run_wprintf_random(StatId which, locale_t loc, int use_l)
 {
-	for (long long i = 0; i < SWEEP; i++)
-		test_clearerr_pair(fn, ref_fn, port_fn, rnd16(), (int)(rnd() & 1u));
-}
+	wchar_t fmt[32];
+	wchar_t str[64];
+	int val;
 
-static void
-sweep_feof(int fn, int (*ref_fn)(ref_FILE *), int (*port_fn)(P::FILE *))
-{
-	for (long long i = 0; i < SWEEP; i++)
-		test_feof_pair(fn, ref_fn, port_fn, rnd16(), (int)(rnd() & 1u));
-}
+	for (unsigned i = 0; i < RAND_ITERS; i++) {
+		unsigned kind = rnd_u32() % 8;
+		char label[32];
 
-static wchar_t wbuf[256];
-
-static void
-edge_wprintf(int fn)
-{
-	static const wchar_t empty[] = { 0 };
-	static const wchar_t one[] = { 'A', 0 };
-	static const wchar_t hi[] = { (wchar_t)0x80, (wchar_t)0xff,
-	    (wchar_t)0x100, (wchar_t)0xffff, 0 };
-	static const wchar_t nuls[] = { 'x', 0, 'y', 0 };
-
-	test_wprintf_case(fn, empty);
-	test_wprintf_case(fn, L"");
-	test_wprintf_case(fn, L"%d", 0);
-	test_wprintf_case(fn, L"%d", -1);
-	test_wprintf_case(fn, L"%d", INT_MAX);
-	test_wprintf_case(fn, L"%d", INT_MIN);
-	test_wprintf_case(fn, L"%u", 0u);
-	test_wprintf_case(fn, L"%u", UINT_MAX);
-	test_wprintf_case(fn, L"%x", 0);
-	test_wprintf_case(fn, L"%x", 0xffffffffu);
-	test_wprintf_case(fn, L"%c", L'Z');
-	test_wprintf_case(fn, L"%c", (wchar_t)0x80);
-	test_wprintf_case(fn, L"%c", (wchar_t)0xffff);
-	test_wprintf_case(fn, L"%%");
-	test_wprintf_case(fn, L"%s", empty);
-	test_wprintf_case(fn, L"%s", one);
-	test_wprintf_case(fn, L"%s", hi);
-	test_wprintf_case(fn, L"%5d", 42);
-	test_wprintf_case(fn, L"%05d", -7);
-	test_wprintf_case(fn, L"%d %u %x %c", 1, 2u, 3u, L'Q');
-	test_wprintf_case(fn, L"%ls", one);
-	test_wprintf_case(fn, L"%ls", hi);
-	test_wprintf_case(fn, L"plain text");
-	test_wprintf_case(fn, L"%lc", (wchar_t)0x7f);
-	test_wprintf_case(fn, L"%lc", (wchar_t)0x80);
-	test_wprintf_case(fn, nuls);
-}
-
-static void
-edge_wprintf_l(int fn, locale_t loc)
-{
-	static const wchar_t empty[] = { 0 };
-	static const wchar_t one[] = { 'B', 0 };
-	static const wchar_t hi[] = { (wchar_t)0xfe, (wchar_t)0xabcd, 0 };
-
-	test_wprintf_l_case(fn, loc, empty);
-	test_wprintf_l_case(fn, loc, L"");
-	test_wprintf_l_case(fn, loc, L"%d", 0);
-	test_wprintf_l_case(fn, loc, L"%d", -12345);
-	test_wprintf_l_case(fn, loc, L"%d", INT_MAX);
-	test_wprintf_l_case(fn, loc, L"%d", INT_MIN);
-	test_wprintf_l_case(fn, loc, L"%u", UINT_MAX);
-	test_wprintf_l_case(fn, loc, L"%x", 0xdeadbeefu);
-	test_wprintf_l_case(fn, loc, L"%c", L'!');
-	test_wprintf_l_case(fn, loc, L"%c", (wchar_t)0xff);
-	test_wprintf_l_case(fn, loc, L"%%");
-	test_wprintf_l_case(fn, loc, L"%s", one);
-	test_wprintf_l_case(fn, loc, L"%s", hi);
-	test_wprintf_l_case(fn, loc, L"%5d", 99);
-	test_wprintf_l_case(fn, loc, L"%d %u %x", 7, 8u, 9u);
-	test_wprintf_l_case(fn, loc, L"locale line");
-}
-
-static void
-sweep_wprintf(int fn)
-{
-	static const wchar_t *fmts[] = {
-		L"%d", L"%u", L"%x", L"%c", L"%s", L"%%", L"%5d", L"%05d",
-		L"%d %u", L"%x %c"
-	};
-	const int nfmts = (int)(sizeof(fmts) / sizeof(fmts[0]));
-
-	for (long long i = 0; i < SWEEP; i++) {
-		const wchar_t *fmt = fmts[(int)(rnd() % nfmts)];
-		int a = (int)(rnd() & 0x7fffffffu);
-		unsigned b = (unsigned)(rnd() & 0xffffffffu);
-		wchar_t c = (wchar_t)rnd16();
-		int len = (int)(rnd() % 16u);
-
-		for (int j = 0; j < len; j++)
-			wbuf[j] = (wchar_t)rnd16();
-		wbuf[len] = 0;
-
-		ncase[fn]++;
-
-		unsigned char refbuf[4096], portbuf[4096];
-		int refret, portret;
-		int reffd, portfd;
-
-		reffd = stdout_capture_open();
-		if (std::wcscmp(fmt, L"%d") == 0)
-			refret = ref_wprintf(fmt, a);
-		else if (std::wcscmp(fmt, L"%u") == 0)
-			refret = ref_wprintf(fmt, b);
-		else if (std::wcscmp(fmt, L"%x") == 0)
-			refret = ref_wprintf(fmt, b);
-		else if (std::wcscmp(fmt, L"%c") == 0)
-			refret = ref_wprintf(fmt, c);
-		else if (std::wcscmp(fmt, L"%s") == 0)
-			refret = ref_wprintf(fmt, wbuf);
-		else if (std::wcscmp(fmt, L"%%") == 0)
-			refret = ref_wprintf(fmt);
-		else if (std::wcscmp(fmt, L"%5d") == 0)
-			refret = ref_wprintf(fmt, a);
-		else if (std::wcscmp(fmt, L"%05d") == 0)
-			refret = ref_wprintf(fmt, a);
-		else if (std::wcscmp(fmt, L"%d %u") == 0)
-			refret = ref_wprintf(fmt, a, b);
-		else
-			refret = ref_wprintf(fmt, a, b, c);
-		refret = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
-
-		portfd = stdout_capture_open();
-		if (std::wcscmp(fmt, L"%d") == 0)
-			portret = P::wprintf(fmt, a);
-		else if (std::wcscmp(fmt, L"%u") == 0)
-			portret = P::wprintf(fmt, b);
-		else if (std::wcscmp(fmt, L"%x") == 0)
-			portret = P::wprintf(fmt, b);
-		else if (std::wcscmp(fmt, L"%c") == 0)
-			portret = P::wprintf(fmt, c);
-		else if (std::wcscmp(fmt, L"%s") == 0)
-			portret = P::wprintf(fmt, wbuf);
-		else if (std::wcscmp(fmt, L"%%") == 0)
-			portret = P::wprintf(fmt);
-		else if (std::wcscmp(fmt, L"%5d") == 0)
-			portret = P::wprintf(fmt, a);
-		else if (std::wcscmp(fmt, L"%05d") == 0)
-			portret = P::wprintf(fmt, a);
-		else if (std::wcscmp(fmt, L"%d %u") == 0)
-			portret = P::wprintf(fmt, a, b);
-		else
-			portret = P::wprintf(fmt, a, b, c);
-		portret = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
-
-		if (refret != portret ||
-		    std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
-			record_fail(fn);
+		std::snprintf(label, sizeof(label), "rnd%u", i);
+		switch (kind) {
+		case 0:
+			test_wprintf_pair(which, label, loc, use_l, L"%d",
+			    rnd_i32());
+			break;
+		case 1:
+			test_wprintf_pair(which, label, loc, use_l, L"%c",
+			    (wchar_t)(rnd_u32() & 0xffff));
+			break;
+		case 2:
+			for (std::size_t j = 0; j < 8; j++)
+				str[j] = (wchar_t)(rnd_u32() & 0xff);
+			str[8] = 0;
+			test_wprintf_pair(which, label, loc, use_l, L"%ls", str);
+			break;
+		case 3:
+			test_wprintf_pair(which, label, loc, use_l, L"%%");
+			break;
+		case 4:
+			test_wprintf_pair(which, label, loc, use_l, L"");
+			break;
+		case 5:
+			val = rnd_i32();
+			test_wprintf_pair(which, label, loc, use_l, L"%#x", val);
+			break;
+		case 6:
+			test_wprintf_pair(which, label, loc, use_l, L"%d %d",
+			    rnd_i32(), rnd_i32());
+			break;
+		default:
+			std::swprintf(fmt, 32, L"%%%du", (int)(rnd_u32() % 20));
+			test_wprintf_pair(which, label, loc, use_l, fmt,
+			    rnd_i32());
+			break;
+		}
 	}
 }
 
-static void
-sweep_wprintf_l(int fn, locale_t loc)
+FILE *
+make_temp_copy(const unsigned char *data, std::size_t len, const char *tag)
 {
-	static const wchar_t *fmts[] = {
-		L"%d", L"%u", L"%x", L"%c", L"%s", L"%%", L"%5d", L"%d %u"
-	};
-	const int nfmts = (int)(sizeof(fmts) / sizeof(fmts[0]));
+	char path[] = "/tmp/pbsd_b0100_XXXXXX";
+	int fd;
+	FILE *fp;
 
-	for (long long i = 0; i < SWEEP; i++) {
-		const wchar_t *fmt = fmts[(int)(rnd() % nfmts)];
-		int a = (int)(rnd() & 0x7fffffffu);
-		unsigned b = (unsigned)(rnd() & 0xffffffffu);
-		wchar_t c = (wchar_t)rnd16();
-		int len = (int)(rnd() % 16u);
+	(void)tag;
+	fd = mkstemp(path);
+	if (fd < 0)
+		return nullptr;
+	if (len > 0 && write(fd, data, len) != (ssize_t)len) {
+		close(fd);
+		unlink(path);
+		return nullptr;
+	}
+	close(fd);
+	fp = fopen(path, "r+b");
+	unlink(path);
+	return fp;
+}
 
-		for (int j = 0; j < len; j++)
-			wbuf[j] = (wchar_t)rnd16();
-		wbuf[len] = 0;
+struct StreamObs {
+	int ret;
+	int feof_u;
+	int ferror_u;
+	long pos;
+	unsigned char tail[64];
+};
 
-		ncase[fn]++;
+void
+guard_tail(unsigned char *t)
+{
+	std::memset(t, GUARD, 64);
+}
 
-		unsigned char refbuf[4096], portbuf[4096];
-		int refret, portret;
-		int reffd, portfd;
+StreamObs
+observe_stream(FILE *fp)
+{
+	StreamObs o{};
 
-		reffd = stdout_capture_open();
-		if (std::wcscmp(fmt, L"%d") == 0)
-			refret = ref_wprintf_l(loc, fmt, a);
-		else if (std::wcscmp(fmt, L"%u") == 0)
-			refret = ref_wprintf_l(loc, fmt, b);
-		else if (std::wcscmp(fmt, L"%x") == 0)
-			refret = ref_wprintf_l(loc, fmt, b);
-		else if (std::wcscmp(fmt, L"%c") == 0)
-			refret = ref_wprintf_l(loc, fmt, c);
-		else if (std::wcscmp(fmt, L"%s") == 0)
-			refret = ref_wprintf_l(loc, fmt, wbuf);
-		else if (std::wcscmp(fmt, L"%%") == 0)
-			refret = ref_wprintf_l(loc, fmt);
-		else if (std::wcscmp(fmt, L"%5d") == 0)
-			refret = ref_wprintf_l(loc, fmt, a);
-		else
-			refret = ref_wprintf_l(loc, fmt, a, b);
-		refret = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
+	guard_tail(o.tail);
+	o.feof_u = feof_unlocked(fp);
+	o.ferror_u = ferror_unlocked(fp);
+	o.pos = ftell(fp);
+	if (o.pos >= 0)
+		(void)fread(o.tail, 1, sizeof(o.tail), fp);
+	return o;
+}
 
-		portfd = stdout_capture_open();
-		if (std::wcscmp(fmt, L"%d") == 0)
-			portret = P::wprintf_l(loc, fmt, a);
-		else if (std::wcscmp(fmt, L"%u") == 0)
-			portret = P::wprintf_l(loc, fmt, b);
-		else if (std::wcscmp(fmt, L"%x") == 0)
-			portret = P::wprintf_l(loc, fmt, b);
-		else if (std::wcscmp(fmt, L"%c") == 0)
-			portret = P::wprintf_l(loc, fmt, c);
-		else if (std::wcscmp(fmt, L"%s") == 0)
-			portret = P::wprintf_l(loc, fmt, wbuf);
-		else if (std::wcscmp(fmt, L"%%") == 0)
-			portret = P::wprintf_l(loc, fmt);
-		else if (std::wcscmp(fmt, L"%5d") == 0)
-			portret = P::wprintf_l(loc, fmt, a);
-		else
-			portret = P::wprintf_l(loc, fmt, a, b);
-		portret = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
+void
+prep_stream(FILE *fp, const unsigned char *data, std::size_t len,
+    std::size_t read_count, int set_error, int at_eof)
+{
+	std::size_t i;
+	int c;
 
-		if (refret != portret ||
-		    std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
-			record_fail(fn);
+	std::rewind(fp);
+	if (len > 0) {
+		if (fwrite(data, 1, len, fp) != len)
+			(void)0;
+		std::fflush(fp);
+		std::rewind(fp);
+	}
+	for (i = 0; i < read_count; i++) {
+		c = fgetc(fp);
+		if (c == EOF)
+			break;
+	}
+	if (at_eof) {
+		while (fgetc(fp) != EOF)
+			(void)0;
+	}
+	if (set_error) {
+		(void)fputc('x', fp);
+		clearerr_unlocked(fp);
+		if (at_eof) {
+			while (fgetc(fp) != EOF)
+				(void)0;
+		}
+		(void)fputc('y', fp);
 	}
 }
+
+StreamObs
+call_ref_feof(FILE *fp)
+{
+	StreamObs o{};
+
+	o.ret = ref_feof(fp);
+	o = observe_stream(fp);
+	o.ret = ref_feof(fp);
+	return o;
+}
+
+StreamObs
+call_port_feof(FILE *fp)
+{
+	StreamObs o{};
+
+	o.ret = port::feof(fp);
+	o = observe_stream(fp);
+	o.ret = port::feof(fp);
+	return o;
+}
+
+StreamObs
+call_ref_feof_unlocked(FILE *fp)
+{
+	StreamObs o{};
+
+	o.ret = ref_feof_unlocked(fp);
+	o.feof_u = feof_unlocked(fp);
+	o.ferror_u = ferror_unlocked(fp);
+	o.pos = ftell(fp);
+	guard_tail(o.tail);
+	if (o.pos >= 0)
+		(void)fread(o.tail, 1, sizeof(o.tail), fp);
+	return o;
+}
+
+StreamObs
+call_port_feof_unlocked(FILE *fp)
+{
+	StreamObs o{};
+
+	o.ret = port::feof_unlocked(fp);
+	o.feof_u = feof_unlocked(fp);
+	o.ferror_u = ferror_unlocked(fp);
+	o.pos = ftell(fp);
+	guard_tail(o.tail);
+	if (o.pos >= 0)
+		(void)fread(o.tail, 1, sizeof(o.tail), fp);
+	return o;
+}
+
+void
+call_ref_clearerr(FILE *fp)
+{
+	ref_clearerr(fp);
+}
+
+void
+call_port_clearerr(FILE *fp)
+{
+	port::clearerr(fp);
+}
+
+void
+call_ref_clearerr_unlocked(FILE *fp)
+{
+	ref_clearerr_unlocked(fp);
+}
+
+void
+call_port_clearerr_unlocked(FILE *fp)
+{
+	port::clearerr_unlocked(fp);
+}
+
+bool
+stream_obs_eq(const StreamObs *a, const StreamObs *b)
+{
+	if (a->ret != b->ret)
+		return false;
+	if (a->feof_u != b->feof_u)
+		return false;
+	if (a->ferror_u != b->ferror_u)
+		return false;
+	if (a->pos != b->pos)
+		return false;
+	if (std::memcmp(a->tail, b->tail, sizeof(a->tail)) != 0)
+		return false;
+	return true;
+}
+
+bool
+test_feof_case(StatId which, const char *label, const unsigned char *data,
+    std::size_t len, std::size_t read_count, int at_eof, int use_unlocked)
+{
+	FILE *ra = make_temp_copy(data, len, label);
+	FILE *pa = make_temp_copy(data, len, label);
+	StreamObs r, p;
+	bool ok = true;
+
+	if (ra == nullptr || pa == nullptr) {
+		std::fprintf(stderr, "harness bug: temp file for feof\n");
+		std::exit(2);
+	}
+
+	prep_stream(ra, data, len, read_count, 0, at_eof);
+	prep_stream(pa, data, len, read_count, 0, at_eof);
+
+	if (use_unlocked) {
+		r = call_ref_feof_unlocked(ra);
+		p = call_port_feof_unlocked(pa);
+	} else {
+		r.ret = ref_feof(ra);
+		p.ret = port::feof(pa);
+		r.feof_u = feof_unlocked(ra);
+		p.feof_u = feof_unlocked(pa);
+		r.ferror_u = ferror_unlocked(ra);
+		p.ferror_u = ferror_unlocked(pa);
+		r.pos = ftell(ra);
+		p.pos = ftell(pa);
+		guard_tail(r.tail);
+		guard_tail(p.tail);
+		if (r.pos >= 0)
+			(void)fread(r.tail, 1, sizeof(r.tail), ra);
+		if (p.pos >= 0)
+			(void)fread(p.tail, 1, sizeof(p.tail), pa);
+	}
+
+	case_inc(which);
+	if (!stream_obs_eq(&r, &p)) {
+		char detail[128];
+		std::snprintf(detail, sizeof(detail),
+		    "len=%zu rd=%zu eof=%d ret %d/%d feof %d/%d",
+		    len, read_count, at_eof, r.ret, p.ret, r.feof_u, p.feof_u);
+		fail_msg(which, label, detail);
+		ok = false;
+	}
+
+	fclose(ra);
+	fclose(pa);
+	return ok;
+}
+
+bool
+test_clearerr_case(StatId which, const char *label, const unsigned char *data,
+    std::size_t len, std::size_t read_count, int set_error, int at_eof,
+    int use_unlocked)
+{
+	FILE *ra = make_temp_copy(data, len, label);
+	FILE *pa = make_temp_copy(data, len, label);
+	StreamObs r, p;
+	bool ok = true;
+
+	if (ra == nullptr || pa == nullptr) {
+		std::fprintf(stderr, "harness bug: temp file for clearerr\n");
+		std::exit(2);
+	}
+
+	prep_stream(ra, data, len, read_count, set_error, at_eof);
+	prep_stream(pa, data, len, read_count, set_error, at_eof);
+
+	if (use_unlocked) {
+		call_ref_clearerr_unlocked(ra);
+		call_port_clearerr_unlocked(pa);
+	} else {
+		call_ref_clearerr(ra);
+		call_port_clearerr(pa);
+	}
+
+	r.feof_u = feof_unlocked(ra);
+	p.feof_u = feof_unlocked(pa);
+	r.ferror_u = ferror_unlocked(ra);
+	p.ferror_u = ferror_unlocked(pa);
+	r.pos = ftell(ra);
+	p.pos = ftell(pa);
+	guard_tail(r.tail);
+	guard_tail(p.tail);
+	if (r.pos >= 0)
+		(void)fread(r.tail, 1, sizeof(r.tail), ra);
+	if (p.pos >= 0)
+		(void)fread(p.tail, 1, sizeof(p.tail), pa);
+
+	case_inc(which);
+	if (!stream_obs_eq(&r, &p)) {
+		char detail[160];
+		std::snprintf(detail, sizeof(detail),
+		    "len=%zu rd=%zu err=%d eof=%d feof %d/%d errf %d/%d",
+		    len, read_count, set_error, at_eof, r.feof_u, p.feof_u,
+		    r.ferror_u, p.ferror_u);
+		fail_msg(which, label, detail);
+		ok = false;
+	}
+
+	fclose(ra);
+	fclose(pa);
+	return ok;
+}
+
+void
+run_feof_edges(StatId which, int use_unlocked)
+{
+	static const unsigned char empty[] = { "" };
+	static const unsigned char one[] = { 'x' };
+	static const unsigned char hi[] = { 0x00, 0x7f, 0x80, 0xff };
+	unsigned char buf[FILEBUF];
+	std::size_t i;
+
+	for (i = 0; i < sizeof(buf); i++)
+		buf[i] = (unsigned char)(0x80 + (i & 0x7f));
+
+	test_feof_case(which, "empty@0", empty, 0, 0, 0, use_unlocked);
+	test_feof_case(which, "empty@eof", empty, 0, 0, 1, use_unlocked);
+	test_feof_case(which, "one@0", one, 1, 0, 0, use_unlocked);
+	test_feof_case(which, "one@1", one, 1, 1, 0, use_unlocked);
+	test_feof_case(which, "one@eof", one, 1, 0, 1, use_unlocked);
+	test_feof_case(which, "hi@0", hi, sizeof(hi), 0, 0, use_unlocked);
+	test_feof_case(which, "hi@2", hi, sizeof(hi), 2, 0, use_unlocked);
+	test_feof_case(which, "hi@eof", hi, sizeof(hi), 0, 1, use_unlocked);
+	test_feof_case(which, "big@0", buf, sizeof(buf), 0, 0, use_unlocked);
+	test_feof_case(which, "big@mid", buf, sizeof(buf), 127, 0, use_unlocked);
+	test_feof_case(which, "big@eof", buf, sizeof(buf), 0, 1, use_unlocked);
+}
+
+void
+run_feof_random(StatId which, int use_unlocked)
+{
+	unsigned char data[FILEBUF];
+
+	for (unsigned i = 0; i < RAND_ITERS; i++) {
+		std::size_t len = rnd_u32() % (sizeof(data) + 1);
+		std::size_t read_count = rnd_u32() % (len + 5);
+		int at_eof = (int)(rnd_u32() & 1);
+		char label[32];
+
+		for (std::size_t j = 0; j < len; j++)
+			data[j] = (unsigned char)rnd_u32();
+		std::snprintf(label, sizeof(label), "rnd%u", i);
+		test_feof_case(which, label, data, len, read_count, at_eof,
+		    use_unlocked);
+	}
+}
+
+void
+run_clearerr_edges(StatId which, int use_unlocked)
+{
+	static const unsigned char empty[] = { "" };
+	static const unsigned char one[] = { 'x' };
+	static const unsigned char hi[] = { 0x80, 0xff, 0x00, 0xfe };
+	unsigned char buf[FILEBUF];
+	std::size_t i;
+
+	for (i = 0; i < sizeof(buf); i++)
+		buf[i] = (unsigned char)(0x80 + (i & 0x7f));
+
+	test_clearerr_case(which, "empty", empty, 0, 0, 0, 0, use_unlocked);
+	test_clearerr_case(which, "empty+eof", empty, 0, 0, 0, 1, use_unlocked);
+	test_clearerr_case(which, "one@0", one, 1, 0, 0, 0, use_unlocked);
+	test_clearerr_case(which, "one@eof", one, 1, 0, 0, 1, use_unlocked);
+	test_clearerr_case(which, "one@err", one, 1, 0, 1, 0, use_unlocked);
+	test_clearerr_case(which, "one@both", one, 1, 0, 1, 1, use_unlocked);
+	test_clearerr_case(which, "hi@eof", hi, sizeof(hi), 0, 0, 1,
+	    use_unlocked);
+	test_clearerr_case(which, "hi@err", hi, sizeof(hi), 2, 1, 0,
+	    use_unlocked);
+	test_clearerr_case(which, "big@eof", buf, sizeof(buf), 0, 0, 1,
+	    use_unlocked);
+	test_clearerr_case(which, "big@err", buf, sizeof(buf), 255, 1, 0,
+	    use_unlocked);
+}
+
+void
+run_clearerr_random(StatId which, int use_unlocked)
+{
+	unsigned char data[FILEBUF];
+
+	for (unsigned i = 0; i < RAND_ITERS; i++) {
+		std::size_t len = rnd_u32() % (sizeof(data) + 1);
+		std::size_t read_count = rnd_u32() % (len + 5);
+		int set_error = (int)(rnd_u32() & 1);
+		int at_eof = (int)(rnd_u32() & 1);
+		char label[32];
+
+		for (std::size_t j = 0; j < len; j++)
+			data[j] = (unsigned char)rnd_u32();
+		std::snprintf(label, sizeof(label), "rnd%u", i);
+		test_clearerr_case(which, label, data, len, read_count,
+		    set_error, at_eof, use_unlocked);
+	}
+}
+
+} /* namespace */
 
 int
 main(void)
 {
-	locale_t loc = newlocale(LC_ALL_MASK, "C", NULL);
-	if (loc == NULL)
-		loc = LC_GLOBAL_LOCALE;
+	locale_t loc;
+	long long total_fails = 0;
+	int rc = 0;
+	int saved_isthreaded = __isthreaded;
+
+	setlocale(LC_ALL, "C.UTF-8");
+	loc = newlocale(LC_ALL_MASK, "C.UTF-8", nullptr);
+	if (loc == nullptr)
+		loc = duplocale(LC_GLOBAL_LOCALE);
+
+	run_wprintf_edges(S_WPRINTF, loc, 0);
+	run_wprintf_random(S_WPRINTF, loc, 0);
+	run_wprintf_edges(S_WPRINTF_L, loc, 1);
+	run_wprintf_random(S_WPRINTF_L, loc, 1);
 
 	__isthreaded = 0;
+	run_feof_edges(S_FEOF, 0);
+	run_feof_random(S_FEOF, 0);
+	run_feof_edges(S_FEOF_UNLOCKED, 1);
+	run_feof_random(S_FEOF_UNLOCKED, 1);
 
-	edge_wprintf(F_WPRINTF);
-	sweep_wprintf(F_WPRINTF);
+	run_clearerr_edges(S_CLEARERR, 0);
+	run_clearerr_random(S_CLEARERR, 0);
+	run_clearerr_edges(S_CLEARERR_UNLOCKED, 1);
+	run_clearerr_random(S_CLEARERR_UNLOCKED, 1);
 
-	edge_wprintf_l(F_WPRINTF_L, loc);
-	sweep_wprintf_l(F_WPRINTF_L, loc);
+	__isthreaded = 1;
+	run_feof_edges(S_FEOF, 0);
+	run_clearerr_edges(S_CLEARERR, 0);
 
-	edge_clearerr(F_CLEARERR, ref_clearerr, P::clearerr);
-	sweep_clearerr(F_CLEARERR, ref_clearerr, P::clearerr);
+	__isthreaded = saved_isthreaded;
 
-	edge_clearerr(F_CLEARERR_UNLOCKED, ref_clearerr_unlocked,
-	    P::clearerr_unlocked);
-	sweep_clearerr(F_CLEARERR_UNLOCKED, ref_clearerr_unlocked,
-	    P::clearerr_unlocked);
-
-	edge_feof(F_FEOF, ref_feof, P::feof);
-	sweep_feof(F_FEOF, ref_feof, P::feof);
-
-	edge_feof(F_FEOF_UNLOCKED, ref_feof_unlocked, P::feof_unlocked);
-	sweep_feof(F_FEOF_UNLOCKED, ref_feof_unlocked, P::feof_unlocked);
-
-	stdout_restore();
-	if (loc != LC_GLOBAL_LOCALE)
+	if (loc != nullptr && loc != LC_GLOBAL_LOCALE)
 		freelocale(loc);
 
-	std::printf("\n%-22s %12s %12s\n", "function", "cases", "failures");
-	for (int i = 0; i < F_COUNT; i++)
-		std::printf("%-22s %12lld %12lld\n", fname[i], ncase[i],
-		    nfail[i]);
+	std::printf("\n");
+	std::printf("+----------------------+----------+----------+\n");
+	std::printf("| function             |     cases|    fails |\n");
+	std::printf("+----------------------+----------+----------+\n");
+	for (int i = 0; i < NSTAT; i++) {
+		std::printf("| %-20s | %9lld| %9lld|\n", g_stat[i].name,
+		    g_stat[i].cases, g_stat[i].fails);
+		total_fails += g_stat[i].fails;
+	}
+	std::printf("+----------------------+----------+----------+\n");
 
-	long long total_fail = 0;
-	for (int i = 0; i < F_COUNT; i++)
-		total_fail += nfail[i];
-
-	return total_fail == 0 ? 0 : 1;
+	if (total_fails != 0)
+		rc = 1;
+	return rc;
 }

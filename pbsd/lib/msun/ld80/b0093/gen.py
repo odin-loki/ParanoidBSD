@@ -254,10 +254,10 @@ PORT_SUFFIX = r'''
 def build_port() -> None:
     parts = [PORT_PREFIX, SUPPORT_C.replace("oracle.c", "port.cppm"), "/* === kernel support === */\n",
              KERNEL_COS, KERNEL_SIN, KERNEL_TAN]
-    for fname, _, _, section in SECTIONS:
+    for fname, _, _, section, rename_pi in SECTIONS:
         src = (ROOT / "ld80" / fname).read_text()
         parts.append(f"\n/* lib/msun/ld80/{fname} */\n\n")
-        parts.append(section_preamble(section))
+        parts.append(section_preamble(section, rename_pi))
         parts.append(transform_source(src, None, section))
         parts.append(section_epilogue(section))
     parts.append(PORT_SUFFIX)
