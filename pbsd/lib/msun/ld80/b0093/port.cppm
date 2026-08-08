@@ -1,32 +1,61 @@
-// PBSD port of HardenedBSD lib/msun/ld80 -- batch b0093.
-//
-// Sources ported here (faithfully, bug-for-bug):
-//   lib/msun/ld80/s_cexpl.c
-//   lib/msun/ld80/s_cospil.c
-//   lib/msun/ld80/s_sinpil.c
-//   lib/msun/ld80/s_tanpil.c
+/*
+ * PBSD batch b0093 -- C++23 port of
+ *
+ *	lib/msun/ld80/s_cexpl.c
+ *	lib/msun/ld80/s_cospil.c
+ *	lib/msun/ld80/s_sinpil.c
+ *	lib/msun/ld80/s_tanpil.c
+ *
+ * The bodies are transcribed unchanged, down to the evaluation order, the
+ * mixed double/long double arithmetic and the integer types and signedness.
+ *
+ * s_cospil.c, s_sinpil.c and s_tanpil.c each define their own pi_hi/pi_lo,
+ * and s_sinpil.c's are long double while the other two are double; each also
+ * gets its own copy of the static inline kernels of ld80/k_cospil.h and
+ * ld80/k_sinpil.h, which therefore compute in a different precision per
+ * file.  That is load bearing, so every file gets a private namespace here
+ * holding its own constants, its own kernels and its own vzero.
+ *
+ * __kernel_sinl(), __kernel_cosl() and __kernel_tanl() are separate
+ * translation units of libm (ld80/k_sinl.c, k_cosl.c, k_tanl.c) which
+ * math_private.h merely declares, and __ldexp_cexpl() comes from
+ * ld80/k_expl.h; none of them belongs to this batch, so they are declared
+ * here exactly as msun declares them and resolved at link time.
+ */
 
 module;
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-#define complex _Complex
-#include <complex.h>
-#include <math.h>
 #include <cstdint>
-
-#ifndef LONG_BIT
-#define LONG_BIT (8 * sizeof(long))
-#endif
 
 export module pbsd.lib.msun.ld80.b0093;
 
-export namespace pbsd::lib_msun_ld80::b0093 {
+namespace pbsd::lib_msun_ld80::b0093 {
 
-#ifndef _COMPLEX_H
-#define _COMPLEX_H 1
-#endif
+using std::uint16_t;
+using std::uint32_t;
+using std::uint64_t;
+
+/* <complex.h> spells the C imaginary types this way. */
+#define	complex		_Complex
+
+extern "C" {
+long double expl(long double);
+long double fabsl(long double);
+long double copysignl(long double, long double);
+void sincosl(long double, long double *, long double *);
+
+/* lib/msun/src/math_private.h */
+long double __kernel_sinl(long double, long double, int);
+long double __kernel_cosl(long double, long double);
+long double __kernel_tanl(long double, long double, int);
+
+/* lib/msun/ld80/k_expl.h */
+long double complex __ldexp_cexpl(long double complex, int);
+}
+
+/* ------------------------------------------------------------------ */
+/* from lib/libc/amd64/_fpmath.h					    */
+/* ------------------------------------------------------------------ */
 
 union IEEEl2bits {
 	long double	e;
@@ -47,6 +76,10 @@ union IEEEl2bits {
 
 #define	LDBL_NBIT	0x80000000
 
+/* ------------------------------------------------------------------ */
+/* from lib/msun/src/math_private.h				    */
+/* ------------------------------------------------------------------ */
+
 #define	EXTRACT_LDBL80_WORDS(ix0,ix1,d)				\
 do {								\
   union IEEEl2bits ew_u;					\
@@ -63,45 +96,18 @@ do {								\
   (d) = iw_u.e;							\
 } while (0)
 
-#define	SET_LDBL_EXPSIGN(d,v)					\
-do {								\
-  union IEEEl2bits se_u;					\
-  se_u.e = (d);							\
-  se_u.xbits.expsign = (v);					\
-  (d) = se_u.e;							\
-} while (0)
+/*
+ * The non-__i386__ spelling: "The above works on non-i386 too, but we use
+ * this to check v."
+ */
+#define	LD80C(m, ex, v)	{ .e = (v), }
 
-#define	GET_FLOAT_WORD(i,d)					\
-do {								\
-  union { float value; unsigned int word; } gf_u;			\
-  gf_u.value = (d);						\
-  (i) = gf_u.word;						\
-} while (0)
-
-#define	SET_FLOAT_WORD(d,i)					\
-do {								\
-  union { float value; unsigned int word; } sf_u;			\
-  sf_u.word = (i);						\
-  (d) = sf_u.value;						\
-} while (0)
-
+/* Support switching the mode to FP_PE if necessary; not __i386__ here. */
 #define	ENTERI()
-#define	RETURNI(x)	return (x)
+#define	RETURNI(x)	RETURNF(x)
 
-#ifndef CMPLXL
-static inline long double _Complex
-CMPLXL_impl(long double x, long double y)
-{
-	long double _Complex z = 0;
-
-	__real__ z = x;
-	__imag__ z = y;
-	return (z);
-}
-#define CMPLXL(x, y) CMPLXL_impl((long double)(x), (long double)(y))
-#endif
-#define creall __real__
-#define cimagl __imag__
+/* Default return statement if hack*_t() is not used. */
+#define      RETURNF(v)      return (v)
 
 #define	_2sumF(a, b) do {	\
 	__typeof(a) __w;	\
@@ -124,226 +130,28 @@ CMPLXL_impl(long double x, long double y)
 	INSERT_LDBL80_WORDS((x), (ix), (lx));		\
 } while (0)
 
-#ifdef __i386__
-#define	LD80C(m, ex, v) {						\
-	.xbits.man = __CONCAT(m, ULL),					\
-	.xbits.expsign = (0x3fff + (ex)) | ((v) < 0 ? 0x8000 : 0),	\
-}
-#else
-#define	LD80C(m, ex, v)	{ .e = (v), }
-#endif
-
-static inline long double
-rnintl(long double x)
-{
-	return (x + 0x1.8p64L / 2 - 0x1.8p64L / 2);
-}
-
-#define	irint(x)	((int)(x))
-
-/* === kernel support === */
-
 /*
- * Domain [-0.7854, 0.7854], range ~[-2.43e-23, 2.425e-23]:
- * |cos(x) - c(x)| < 2**-75.1
- *
- * The coefficients of c(x) were generated by a pari-gp script using
- * a Remez algorithm that searches for the best higher coefficients
- * after rounding leading coefficients to a specified precision.
- *
- * Simpler methods like Chebyshev or basic Remez barely suffice for
- * cos() in 64-bit precision, because we want the coefficient of x^2
- * to be precisely -0.5 so that multiplying by it is exact, and plain
- * rounding of the coefficients of a good polynomial approximation only
- * gives this up to about 64-bit precision.  Plain rounding also gives
- * a mediocre approximation for the coefficient of x^4, but a rounding
- * error of 0.5 ulps for this coefficient would only contribute ~0.01
- * ulps to the final error, so this is unimportant.  Rounding errors in
- * higher coefficients are even less important.
- *
- * In fact, coefficients above the x^4 one only need to have 53-bit
- * precision, and this is more efficient.  We get this optimization
- * almost for free from the complications needed to search for the best
- * higher coefficients.
+ * math_private.h builds a long double complex out of its two parts through
+ * a union; __real__/__imag__ is the same store.
  */
-static const double
-one = 1.0;
-
-#if defined(__amd64__) || defined(__i386__)
-/* Long double constants are slow on these arches, and broken on i386. */
-static const volatile double
-C1hi = 0.041666666666666664,		/*  0x15555555555555.0p-57 */
-C1lo = 2.2598839032744733e-18;		/*  0x14d80000000000.0p-111 */
-#define	C1	((long double)C1hi + C1lo)
-#else
-static const long double
-C1 =  0.0416666666666666666136L;	/*  0xaaaaaaaaaaaaaa9b.0p-68 */
-#endif
-
-static const double
-C2 = -0.0013888888888888874,		/* -0x16c16c16c16c10.0p-62 */
-C3 =  0.000024801587301571716,		/*  0x1a01a01a018e22.0p-68 */
-C4 = -0.00000027557319215507120,	/* -0x127e4fb7602f22.0p-74 */
-C5 =  0.0000000020876754400407278,	/*  0x11eed8caaeccf1.0p-81 */
-C6 = -1.1470297442401303e-11,		/* -0x19393412bd1529.0p-89 */
-C7 =  4.7383039476436467e-14;		/*  0x1aac9d9af5c43e.0p-97 */
-
-long double
-__kernel_cosl(long double x, long double y)
+static inline long double complex
+CMPLXL(long double x, long double y)
 {
-	long double hz,z,r,w;
+	long double complex z;
 
-	z  = x*x;
-	r  = z*(C1+z*(C2+z*(C3+z*(C4+z*(C5+z*(C6+z*C7))))));
-	hz = 0.5*z;
-	w  = one-hz;
-	return w + (((one-w)-hz) + (z*r-x*y));
+	__real__ z = x;
+	__imag__ z = y;
+	return (z);
 }
 
-static const double
-half =  0.5;
+#define	creall(z)	(__real__ (z))
+#define	cimagl(z)	(__imag__ (z))
 
-/*
- * Domain [-0.7854, 0.7854], range ~[-1.89e-22, 1.915e-22]
- * |sin(x)/x - s(x)| < 2**-72.1
- *
- * See ../ld80/k_cosl.c for more details about the polynomial.
- */
-#if defined(__amd64__) || defined(__i386__)
-/* Long double constants are slow on these arches, and broken on i386. */
-static const volatile double
-S1hi = -0.16666666666666666,		/* -0x15555555555555.0p-55 */
-S1lo = -9.2563760475949941e-18;		/* -0x15580000000000.0p-109 */
-#define	S1	((long double)S1hi + S1lo)
-#else
-static const long double
-S1 = -0.166666666666666666671L;		/* -0xaaaaaaaaaaaaaaab.0p-66 */
-#endif
+/* ================================================================== */
+/* lib/msun/ld80/s_cexpl.c					      */
+/* ================================================================== */
 
-static const double
-S2 =  0.0083333333333333332,		/*  0x11111111111111.0p-59 */
-S3 = -0.00019841269841269427,		/* -0x1a01a01a019f81.0p-65 */
-S4 =  0.0000027557319223597490,		/*  0x171de3a55560f7.0p-71 */
-S5 = -0.000000025052108218074604,	/* -0x1ae64564f16cad.0p-78 */
-S6 =  1.6059006598854211e-10,		/*  0x161242b90243b5.0p-85 */
-S7 = -7.6429779983024564e-13,		/* -0x1ae42ebd1b2e00.0p-93 */
-S8 =  2.6174587166648325e-15;		/*  0x179372ea0b3f64.0p-101 */
-
-long double
-__kernel_sinl(long double x, long double y, int iy)
-{
-	long double z,r,v;
-
-	z	=  x*x;
-	v	=  z*x;
-	r	=  S2+z*(S3+z*(S4+z*(S5+z*(S6+z*(S7+z*S8)))));
-	if(iy==0) return x+v*(S1+z*r);
-	else      return x-((z*(half*y-v*r)-y)-v*S1);
-}
-
-/*
- * Domain [-0.67434, 0.67434], range ~[-2.25e-22, 1.921e-22]
- * |tan(x)/x - t(x)| < 2**-71.9
- *
- * See k_cosl.c for more details about the polynomial.
- */
-#if defined(__amd64__) || defined(__i386__)
-/* Long double constants are slow on these arches, and broken on i386. */
-static const volatile double
-T3hi =  0.33333333333333331,		/*  0x15555555555555.0p-54 */
-T3lo =  1.8350121769317163e-17,		/*  0x15280000000000.0p-108 */
-T5hi =  0.13333333333333336,		/*  0x11111111111112.0p-55 */
-T5lo =  1.3051083651294260e-17,		/*  0x1e180000000000.0p-109 */
-T7hi =  0.053968253968250494,		/*  0x1ba1ba1ba1b827.0p-57 */
-T7lo =  3.1509625637859973e-18,		/*  0x1d100000000000.0p-111 */
-pio4_hi =  0.78539816339744828,		/*  0x1921fb54442d18.0p-53 */
-pio4_lo =  3.0628711372715500e-17,	/*  0x11a80000000000.0p-107 */
-pio4lo_hi = -1.2541394031670831e-20,	/* -0x1d9cceba3f91f2.0p-119 */
-pio4lo_lo =  6.1493048227390915e-37;	/*  0x1a280000000000.0p-173 */
-#define	T3	((long double)T3hi + T3lo)
-#define	T5	((long double)T5hi + T5lo)
-#define	T7	((long double)T7hi + T7lo)
-#define	pio4	((long double)pio4_hi + pio4_lo)
-#define	pio4lo	((long double)pio4lo_hi + pio4lo_lo)
-#else
-static const long double
-T3 =   0.333333333333333333180L,	/*  0xaaaaaaaaaaaaaaa5.0p-65 */
-T5 =   0.133333333333333372290L,	/*  0x88888888888893c3.0p-66 */
-T7 =   0.0539682539682504975744L,	/*  0xdd0dd0dd0dc13ba2.0p-68 */
-pio4 = 0.785398163397448309628L,	/*  0xc90fdaa22168c235.0p-64 */
-pio4lo = -1.25413940316708300586e-20L;	/* -0xece675d1fc8f8cbb.0p-130 */
-#endif
-
-static const double
-T9  =  0.021869488536312216,		/*  0x1664f4882cc1c2.0p-58 */
-T11 =  0.0088632355256619590,		/*  0x1226e355c17612.0p-59 */
-T13 =  0.0035921281113786528,		/*  0x1d6d3d185d7ff8.0p-61 */
-T15 =  0.0014558334756312418,		/*  0x17da354aa3f96b.0p-62 */
-T17 =  0.00059003538700862256,		/*  0x13559358685b83.0p-63 */
-T19 =  0.00023907843576635544,		/*  0x1f56242026b5be.0p-65 */
-T21 =  0.000097154625656538905,		/*  0x1977efc26806f4.0p-66 */
-T23 =  0.000038440165747303162,		/*  0x14275a09b3ceac.0p-67 */
-T25 =  0.000018082171885432524,		/*  0x12f5e563e5487e.0p-68 */
-T27 =  0.0000024196006108814377,	/*  0x144c0d80cc6896.0p-71 */
-T29 =  0.0000078293456938132840,	/*  0x106b59141a6cb3.0p-69 */
-T31 = -0.0000032609076735050182,	/* -0x1b5abef3ba4b59.0p-71 */
-T33 =  0.0000023261313142559411;	/*  0x13835436c0c87f.0p-71 */
-
-long double
-__kernel_tanl(long double x, long double y, int iy) {
-	long double z, r, v, w, s;
-	long double osign;
-	int i;
-
-	iy = (iy == 1 ? -1 : 1);	/* XXX recover original interface */
-	osign = (x >= 0 ? 1.0 : -1.0);	/* XXX slow, probably wrong for -0 */
-	if (fabsl(x) >= 0.67434) {
-		if (x < 0) {
-			x = -x;
-			y = -y;
-		}
-		z = pio4 - x;
-		w = pio4lo - y;
-		x = z + w;
-		y = 0.0;
-		i = 1;
-	} else
-		i = 0;
-	z = x * x;
-	w = z * z;
-	r = T5 + w * (T9 + w * (T13 + w * (T17 + w * (T21 +
-	    w * (T25 + w * (T29 + w * T33))))));
-	v = z * (T7 + w * (T11 + w * (T15 + w * (T19 + w * (T23 +
-	    w * (T27 + w * T31))))));
-	s = z * x;
-	r = y + z * (s * (r + v) + y);
-	r += T3 * s;
-	w = x + r;
-	if (i == 1) {
-		v = (long double) iy;
-		return osign *
-			(v - 2.0 * (x - (w * w / (w + v) - r)));
-	}
-	if (iy == 1)
-		return w;
-	else {
-		/*
-		 * if allow error up to 2 ulp, simply return
-		 * -1.0 / (x+r) here
-		 */
-		/* compute -1.0 / (x+r) accurately */
-		long double a, t;
-		z = w;
-		z = z + 0x1p32 - 0x1p32;
-		v = r - (z - x);	/* z+v = r+x */
-		t = a = -1.0 / w;	/* a = -1.0/w */
-		t = t + 0x1p32 - 0x1p32;
-		s = 1.0 + t * z;
-		return t + a * (s + t * v);
-	}
-}
-
-/* lib/msun/ld80/s_cexpl.c */
+namespace s_cexpl {
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -372,316 +180,11 @@ __kernel_tanl(long double x, long double y, int iy) {
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * src/s_cexp.c converted to long double _Complex by Steven G. Kargl
+ * src/s_cexp.c converted to long double complex by Steven G. Kargl
  */
 
-#include <complex.h>
-#include <float.h>
-#ifdef __i386__
-#endif
-
-/* inlined k_expl.h */
-/* from: FreeBSD: head/lib/msun/ld80/s_expl.c 251343 2013-06-03 19:51:32Z kargl */
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2009-2013 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Optimized by Bruce D. Evans.
- */
-
-/*
- * See s_expl.c for more comments about __k_expl().
- *
- * See ../src/e_exp.c and ../src/k_exp.h for precision-independent comments
- * about the secondary kernels.
- */
-
-#define	INTERVALS	128
-#define	LOG2_INTERVALS	7
-#define	BIAS	(LDBL_MAX_EXP - 1)
-
-static const double
-/*
- * ln2/INTERVALS = L1+L2 (hi+lo decomposition for multiplication).  L1 must
- * have at least 22 (= log2(|LDBL_MIN_EXP-extras|) + log2(INTERVALS)) lowest
- * bits zero so that multiplication of it by n is exact.
- */
-INV_L = 1.8466496523378731e+2,		/*  0x171547652b82fe.0p-45 */
-L1 =  5.4152123484527692e-3,		/*  0x162e42ff000000.0p-60 */
-L2 = -3.2819649005320973e-13,		/* -0x1718432a1b0e26.0p-94 */
-/*
- * Domain [-0.002708, 0.002708], range ~[-5.7136e-24, 5.7110e-24]:
- * |exp(x) - p(x)| < 2**-77.2
- * (0.002708 is ln2/(2*INTERVALS) rounded up a little).
- */
-A2 =  0.5,
-A3 =  1.6666666666666119e-1,		/*  0x15555555555490.0p-55 */
-A4 =  4.1666666666665887e-2,		/*  0x155555555554e5.0p-57 */
-A5 =  8.3333354987869413e-3,		/*  0x1111115b789919.0p-59 */
-A6 =  1.3888891738560272e-3;		/*  0x16c16c651633ae.0p-62 */
-
-/*
- * 2^(i/INTERVALS) for i in [0,INTERVALS] is represented by two values where
- * the first 53 bits of the significand are stored in hi and the next 53
- * bits are in lo.  Tang's paper states that the trailing 6 bits of hi must
- * be zero for his algorithm in both single and double precision, because
- * the table is re-used in the implementation of expm1() where a floating
- * point addition involving hi must be exact.  Here hi is double, so
- * converting it to long double gives 11 trailing zero bits.
- */
-static const struct {
-	double	hi;
-	double	lo;
-} tbl[INTERVALS] = {
-	{ 0x1p+0, 0x0p+0 },
-	/*
-	 * XXX hi is rounded down, and the formatting is not quite normal.
-	 * But I rather like both.  The 0x1.*p format is good for 4N+1
-	 * mantissa bits.  Rounding down makes the lo terms positive,
-	 * so that the columnar formatting can be simpler.
-	 */
-	{ 0x1.0163da9fb3335p+0, 0x1.b61299ab8cdb7p-54 },
-	{ 0x1.02c9a3e778060p+0, 0x1.dcdef95949ef4p-53 },
-	{ 0x1.04315e86e7f84p+0, 0x1.7ae71f3441b49p-53 },
-	{ 0x1.059b0d3158574p+0, 0x1.d73e2a475b465p-55 },
-	{ 0x1.0706b29ddf6ddp+0, 0x1.8db880753b0f6p-53 },
-	{ 0x1.0874518759bc8p+0, 0x1.186be4bb284ffp-57 },
-	{ 0x1.09e3ecac6f383p+0, 0x1.1487818316136p-54 },
-	{ 0x1.0b5586cf9890fp+0, 0x1.8a62e4adc610bp-54 },
-	{ 0x1.0cc922b7247f7p+0, 0x1.01edc16e24f71p-54 },
-	{ 0x1.0e3ec32d3d1a2p+0, 0x1.03a1727c57b53p-59 },
-	{ 0x1.0fb66affed31ap+0, 0x1.e464123bb1428p-53 },
-	{ 0x1.11301d0125b50p+0, 0x1.49d77e35db263p-53 },
-	{ 0x1.12abdc06c31cbp+0, 0x1.f72575a649ad2p-53 },
-	{ 0x1.1429aaea92ddfp+0, 0x1.66820328764b1p-53 },
-	{ 0x1.15a98c8a58e51p+0, 0x1.2406ab9eeab0ap-55 },
-	{ 0x1.172b83c7d517ap+0, 0x1.b9bef918a1d63p-53 },
-	{ 0x1.18af9388c8de9p+0, 0x1.777ee1734784ap-53 },
-	{ 0x1.1a35beb6fcb75p+0, 0x1.e5b4c7b4968e4p-55 },
-	{ 0x1.1bbe084045cd3p+0, 0x1.3563ce56884fcp-53 },
-	{ 0x1.1d4873168b9aap+0, 0x1.e016e00a2643cp-54 },
-	{ 0x1.1ed5022fcd91cp+0, 0x1.71033fec2243ap-53 },
-	{ 0x1.2063b88628cd6p+0, 0x1.dc775814a8495p-55 },
-	{ 0x1.21f49917ddc96p+0, 0x1.2a97e9494a5eep-55 },
-	{ 0x1.2387a6e756238p+0, 0x1.9b07eb6c70573p-54 },
-	{ 0x1.251ce4fb2a63fp+0, 0x1.ac155bef4f4a4p-55 },
-	{ 0x1.26b4565e27cddp+0, 0x1.2bd339940e9d9p-55 },
-	{ 0x1.284dfe1f56380p+0, 0x1.2d9e2b9e07941p-53 },
-	{ 0x1.29e9df51fdee1p+0, 0x1.612e8afad1255p-55 },
-	{ 0x1.2b87fd0dad98fp+0, 0x1.fbbd48ca71f95p-53 },
-	{ 0x1.2d285a6e4030bp+0, 0x1.0024754db41d5p-54 },
-	{ 0x1.2ecafa93e2f56p+0, 0x1.1ca0f45d52383p-56 },
-	{ 0x1.306fe0a31b715p+0, 0x1.6f46ad23182e4p-55 },
-	{ 0x1.32170fc4cd831p+0, 0x1.a9ce78e18047cp-55 },
-	{ 0x1.33c08b26416ffp+0, 0x1.32721843659a6p-54 },
-	{ 0x1.356c55f929ff0p+0, 0x1.928c468ec6e76p-53 },
-	{ 0x1.371a7373aa9cap+0, 0x1.4e28aa05e8a8fp-53 },
-	{ 0x1.38cae6d05d865p+0, 0x1.0b53961b37da2p-53 },
-	{ 0x1.3a7db34e59ff6p+0, 0x1.d43792533c144p-53 },
-	{ 0x1.3c32dc313a8e4p+0, 0x1.08003e4516b1ep-53 },
-	{ 0x1.3dea64c123422p+0, 0x1.ada0911f09ebcp-55 },
-	{ 0x1.3fa4504ac801bp+0, 0x1.417ee03548306p-53 },
-	{ 0x1.4160a21f72e29p+0, 0x1.f0864b71e7b6cp-53 },
-	{ 0x1.431f5d950a896p+0, 0x1.b8e088728219ap-53 },
-	{ 0x1.44e086061892dp+0, 0x1.89b7a04ef80d0p-59 },
-	{ 0x1.46a41ed1d0057p+0, 0x1.c944bd1648a76p-54 },
-	{ 0x1.486a2b5c13cd0p+0, 0x1.3c1a3b69062f0p-56 },
-	{ 0x1.4a32af0d7d3dep+0, 0x1.9cb62f3d1be56p-54 },
-	{ 0x1.4bfdad5362a27p+0, 0x1.d4397afec42e2p-56 },
-	{ 0x1.4dcb299fddd0dp+0, 0x1.8ecdbbc6a7833p-54 },
-	{ 0x1.4f9b2769d2ca6p+0, 0x1.5a67b16d3540ep-53 },
-	{ 0x1.516daa2cf6641p+0, 0x1.8225ea5909b04p-53 },
-	{ 0x1.5342b569d4f81p+0, 0x1.be1507893b0d5p-53 },
-	{ 0x1.551a4ca5d920ep+0, 0x1.8a5d8c4048699p-53 },
-	{ 0x1.56f4736b527dap+0, 0x1.9bb2c011d93adp-54 },
-	{ 0x1.58d12d497c7fdp+0, 0x1.295e15b9a1de8p-55 },
-	{ 0x1.5ab07dd485429p+0, 0x1.6324c054647adp-54 },
-	{ 0x1.5c9268a5946b7p+0, 0x1.c4b1b816986a2p-60 },
-	{ 0x1.5e76f15ad2148p+0, 0x1.ba6f93080e65ep-54 },
-	{ 0x1.605e1b976dc08p+0, 0x1.60edeb25490dcp-53 },
-	{ 0x1.6247eb03a5584p+0, 0x1.63e1f40dfa5b5p-53 },
-	{ 0x1.6434634ccc31fp+0, 0x1.8edf0e2989db3p-53 },
-	{ 0x1.6623882552224p+0, 0x1.224fb3c5371e6p-53 },
-	{ 0x1.68155d44ca973p+0, 0x1.038ae44f73e65p-57 },
-	{ 0x1.6a09e667f3bccp+0, 0x1.21165f626cdd5p-53 },
-	{ 0x1.6c012750bdabep+0, 0x1.daed533001e9ep-53 },
-	{ 0x1.6dfb23c651a2ep+0, 0x1.e441c597c3775p-53 },
-	{ 0x1.6ff7df9519483p+0, 0x1.9f0fc369e7c42p-53 },
-	{ 0x1.71f75e8ec5f73p+0, 0x1.ba46e1e5de15ap-53 },
-	{ 0x1.73f9a48a58173p+0, 0x1.7ab9349cd1562p-53 },
-	{ 0x1.75feb564267c8p+0, 0x1.7edd354674916p-53 },
-	{ 0x1.780694fde5d3fp+0, 0x1.866b80a02162dp-54 },
-	{ 0x1.7a11473eb0186p+0, 0x1.afaa2047ed9b4p-53 },
-	{ 0x1.7c1ed0130c132p+0, 0x1.f124cd1164dd6p-54 },
-	{ 0x1.7e2f336cf4e62p+0, 0x1.05d02ba15797ep-56 },
-	{ 0x1.80427543e1a11p+0, 0x1.6c1bccec9346bp-53 },
-	{ 0x1.82589994cce12p+0, 0x1.159f115f56694p-53 },
-	{ 0x1.8471a4623c7acp+0, 0x1.9ca5ed72f8c81p-53 },
-	{ 0x1.868d99b4492ecp+0, 0x1.01c83b21584a3p-53 },
-	{ 0x1.88ac7d98a6699p+0, 0x1.994c2f37cb53ap-54 },
-	{ 0x1.8ace5422aa0dbp+0, 0x1.6e9f156864b27p-54 },
-	{ 0x1.8cf3216b5448bp+0, 0x1.de55439a2c38bp-53 },
-	{ 0x1.8f1ae99157736p+0, 0x1.5cc13a2e3976cp-55 },
-	{ 0x1.9145b0b91ffc5p+0, 0x1.114c368d3ed6ep-53 },
-	{ 0x1.93737b0cdc5e4p+0, 0x1.e8a0387e4a814p-53 },
-	{ 0x1.95a44cbc8520ep+0, 0x1.d36906d2b41f9p-53 },
-	{ 0x1.97d829fde4e4fp+0, 0x1.173d241f23d18p-53 },
-	{ 0x1.9a0f170ca07b9p+0, 0x1.7462137188ce7p-53 },
-	{ 0x1.9c49182a3f090p+0, 0x1.c7c46b071f2bep-56 },
-	{ 0x1.9e86319e32323p+0, 0x1.824ca78e64c6ep-56 },
-	{ 0x1.a0c667b5de564p+0, 0x1.6535b51719567p-53 },
-	{ 0x1.a309bec4a2d33p+0, 0x1.6305c7ddc36abp-54 },
-	{ 0x1.a5503b23e255cp+0, 0x1.1684892395f0fp-53 },
-	{ 0x1.a799e1330b358p+0, 0x1.bcb7ecac563c7p-54 },
-	{ 0x1.a9e6b5579fdbfp+0, 0x1.0fac90ef7fd31p-54 },
-	{ 0x1.ac36bbfd3f379p+0, 0x1.81b72cd4624ccp-53 },
-	{ 0x1.ae89f995ad3adp+0, 0x1.7a1cd345dcc81p-54 },
-	{ 0x1.b0e07298db665p+0, 0x1.2108559bf8deep-53 },
-	{ 0x1.b33a2b84f15fap+0, 0x1.ed7fa1cf7b290p-53 },
-	{ 0x1.b59728de55939p+0, 0x1.1c7102222c90ep-53 },
-	{ 0x1.b7f76f2fb5e46p+0, 0x1.d54f610356a79p-53 },
-	{ 0x1.ba5b030a10649p+0, 0x1.0819678d5eb69p-53 },
-	{ 0x1.bcc1e904bc1d2p+0, 0x1.23dd07a2d9e84p-55 },
-	{ 0x1.bf2c25bd71e08p+0, 0x1.0811ae04a31c7p-53 },
-	{ 0x1.c199bdd85529cp+0, 0x1.11065895048ddp-55 },
-	{ 0x1.c40ab5fffd07ap+0, 0x1.b4537e083c60ap-54 },
-	{ 0x1.c67f12e57d14bp+0, 0x1.2884dff483cadp-54 },
-	{ 0x1.c8f6d9406e7b5p+0, 0x1.1acbc48805c44p-56 },
-	{ 0x1.cb720dcef9069p+0, 0x1.503cbd1e949dbp-56 },
-	{ 0x1.cdf0b555dc3f9p+0, 0x1.889f12b1f58a3p-53 },
-	{ 0x1.d072d4a07897bp+0, 0x1.1a1e45e4342b2p-53 },
-	{ 0x1.d2f87080d89f1p+0, 0x1.15bc247313d44p-53 },
-	{ 0x1.d5818dcfba487p+0, 0x1.2ed02d75b3707p-55 },
-	{ 0x1.d80e316c98397p+0, 0x1.7709f3a09100cp-53 },
-	{ 0x1.da9e603db3285p+0, 0x1.c2300696db532p-54 },
-	{ 0x1.dd321f301b460p+0, 0x1.2da5778f018c3p-54 },
-	{ 0x1.dfc97337b9b5ep+0, 0x1.72d195873da52p-53 },
-	{ 0x1.e264614f5a128p+0, 0x1.424ec3f42f5b5p-53 },
-	{ 0x1.e502ee78b3ff6p+0, 0x1.39e8980a9cc8fp-55 },
-	{ 0x1.e7a51fbc74c83p+0, 0x1.2d522ca0c8de2p-54 },
-	{ 0x1.ea4afa2a490d9p+0, 0x1.0b1ee7431ebb6p-53 },
-	{ 0x1.ecf482d8e67f0p+0, 0x1.1b60625f7293ap-53 },
-	{ 0x1.efa1bee615a27p+0, 0x1.dc7f486a4b6b0p-54 },
-	{ 0x1.f252b376bba97p+0, 0x1.3a1a5bf0d8e43p-54 },
-	{ 0x1.f50765b6e4540p+0, 0x1.9d3e12dd8a18bp-54 },
-	{ 0x1.f7bfdad9cbe13p+0, 0x1.1227697fce57bp-53 },
-	{ 0x1.fa7c1819e90d8p+0, 0x1.74853f3a5931ep-55 },
-	{ 0x1.fd3c22b8f71f1p+0, 0x1.2eb74966579e7p-57 }
-};
-
-/*
- * Kernel for expl(x).  x must be finite and not tiny or huge.
- * "tiny" is anything that would make us underflow (|A6*x^6| < ~LDBL_MIN).
- * "huge" is anything that would make fn*L1 inexact (|x| > ~2**17*ln2).
- */
-static inline void
-__k_expl(long double x, long double *hip, long double *lop, int *kp)
-{
-	long double fn, q, r, r1, r2, t, z;
-	int n, n2;
-
-	/* Reduce x to (k*ln2 + endpoint[n2] + r1 + r2). */
-	fn = rnintl(x * INV_L);
-	r = x - fn * L1 - fn * L2;	/* r = r1 + r2 done independently. */
-	n = irint(fn);
-	n2 = (unsigned)n % INTERVALS;
-	/* Depend on the sign bit being propagated: */
-	*kp = n >> LOG2_INTERVALS;
-	r1 = x - fn * L1;
-	r2 = fn * -L2;
-
-	/* Evaluate expl(endpoint[n2] + r1 + r2) = tbl[n2] * expl(r1 + r2). */
-	z = r * r;
-#if 0
-	q = r2 + z * (A2 + r * A3) + z * z * (A4 + r * A5) + z * z * z * A6;
-#else
-	q = r2 + z * A2 + z * r * (A3 + r * A4 + z * (A5 + r * A6));
-#endif
-	t = (long double)tbl[n2].lo + tbl[n2].hi;
-	*hip = tbl[n2].hi;
-	*lop = tbl[n2].lo + t * (q + r1);
-}
-
-static inline void
-k_hexpl(long double x, long double *hip, long double *lop)
-{
-	float twopkm1;
-	int k;
-
-	__k_expl(x, hip, lop, &k);
-	SET_FLOAT_WORD(twopkm1, 0x3f800000 + ((k - 1) << 23));
-	*hip *= twopkm1;
-	*lop *= twopkm1;
-}
-
-static inline long double
-hexpl(long double x)
-{
-	long double hi, lo, twopkm2;
-	int k;
-
-	twopkm2 = 1;
-	__k_expl(x, &hi, &lo, &k);
-	SET_LDBL_EXPSIGN(twopkm2, BIAS + k - 2);
-	return (lo + hi) * 2 * twopkm2;
-}
-
-#ifdef _COMPLEX_H
-/*
- * See ../src/k_exp.c for details.
- */
-static inline long double _Complex
-__ldexp_cexpl(long double _Complex z, int expt)
-{
-	long double c, exp_x, hi, lo, s;
-	long double x, y, scale1, scale2;
-	int half_expt, k;
-
-	x = creall(z);
-	y = cimagl(z);
-	__k_expl(x, &hi, &lo, &k);
-
-	exp_x = (lo + hi) * 0x1p16382L;
-	expt += k - 16382;
-
-	scale1 = 1;
-	half_expt = expt / 2;
-	SET_LDBL_EXPSIGN(scale1, BIAS + half_expt);
-	scale2 = 1;
-	SET_LDBL_EXPSIGN(scale2, BIAS + expt - half_expt);
-
-	sincosl(y, &s, &c);
-	return (CMPLXL(c * exp_x * scale1 * scale2,
-	    s * exp_x * scale1 * scale2));
-}
-#endif /* _COMPLEX_H */
-
-long double _Complex
-cexpl (long double _Complex z)
+export long double complex
+cexpl (long double complex z)
 {
 	long double c, exp_x, s, x, y;
 	uint64_t lx, ly;
@@ -744,13 +247,14 @@ cexpl (long double _Complex z)
 	}
 }
 
-/* lib/msun/ld80/s_cospil.c */
+} /* namespace s_cexpl */
 
-#define __kernel_cospil __kernel_cospil_cospil
-#define __kernel_sinpil __kernel_sinpil_cospil
-#define vzero vzero_cospil
-#define pi_hi pi_hi_cospil
-#define pi_lo pi_lo_cospil
+/* ================================================================== */
+/* lib/msun/ld80/s_cospil.c					      */
+/* ================================================================== */
+
+namespace s_cospil {
+
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -781,43 +285,11 @@ cexpl (long double _Complex z)
  * See ../src/s_cospi.c for implementation details.
  */
 
-#ifdef __i386__
-#endif
-#include <stdint.h>
-
-
 static const double
 pi_hi = 3.1415926814079285e+00,	/* 0x400921fb 0x58000000 */
 pi_lo =-2.7818135228334233e-08;	/* 0xbe5dde97 0x3dcb3b3a */
 
-/* inlined k_cospil.h */
-/*-
- * Copyright (c) 2017 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-/*
+/* ---- lib/msun/ld80/k_cospil.h ----
  * See ../src/k_cospi.c for implementation details.
  */
 
@@ -833,34 +305,8 @@ __kernel_cospil(long double x)
 	_2sumF(hi, lo);
 	return (__kernel_cosl(hi, lo));
 }
-/* inlined k_sinpil.h */
-/*-
- * Copyright (c) 2017 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 
-/*
+/* ---- lib/msun/ld80/k_sinpil.h ----
  * See ../src/k_sinpi.c for implementation details.
  */
 
@@ -879,7 +325,7 @@ __kernel_sinpil(long double x)
 
 volatile static const double vzero = 0;
 
-long double
+export long double
 cospil(long double x)
 {
 	long double ax, c;
@@ -952,17 +398,15 @@ cospil(long double x)
 	 */
 	RETURNI(ix >= 0x403f ? 1 : ((lx & 1) ? -1 : 1));
 }
-#undef __kernel_cospil
-#undef __kernel_sinpil
-#undef vzero
-#undef pi_hi
-#undef pi_lo
 
-/* lib/msun/ld80/s_sinpil.c */
+} /* namespace s_cospil */
 
-#define __kernel_cospil __kernel_cospil_sinpil
-#define __kernel_sinpil __kernel_sinpil_sinpil
-#define vzero vzero_sinpil
+/* ================================================================== */
+/* lib/msun/ld80/s_sinpil.c					      */
+/* ================================================================== */
+
+namespace s_sinpil {
+
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -993,45 +437,13 @@ cospil(long double x)
  * See ../src/s_sinpi.c for implementation details.
  */
 
-#ifdef __i386__
-#endif
-#include <stdint.h>
-
-
 static const union IEEEl2bits
 pi_hi_u = LD80C(0xc90fdaa200000000,   1, 3.14159265346825122833e+00L),
 pi_lo_u = LD80C(0x85a308d313198a2e, -33, 1.21542010130123852029e-10L);
 #define	pi_hi	(pi_hi_u.e)
 #define	pi_lo	(pi_lo_u.e)
 
-/* inlined k_cospil.h */
-/*-
- * Copyright (c) 2017 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-/*
+/* ---- lib/msun/ld80/k_cospil.h ----
  * See ../src/k_cospi.c for implementation details.
  */
 
@@ -1047,34 +459,8 @@ __kernel_cospil(long double x)
 	_2sumF(hi, lo);
 	return (__kernel_cosl(hi, lo));
 }
-/* inlined k_sinpil.h */
-/*-
- * Copyright (c) 2017 Steven G. Kargl
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice unmodified, this list of conditions, and the following
- *    disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 
-/*
+/* ---- lib/msun/ld80/k_sinpil.h ----
  * See ../src/k_sinpi.c for implementation details.
  */
 
@@ -1093,7 +479,7 @@ __kernel_sinpil(long double x)
 
 volatile static const double vzero = 0;
 
-long double
+export long double
 sinpil(long double x)
 {
 	long double ax, hi, lo, s;
@@ -1173,19 +559,18 @@ sinpil(long double x)
 	 */
 	RETURNI(copysignl(0, x));
 }
-#undef __kernel_cospil
-#undef __kernel_sinpil
-#undef vzero
+
 #undef pi_hi
 #undef pi_lo
 
-/* lib/msun/ld80/s_tanpil.c */
+} /* namespace s_sinpil */
 
-#define __kernel_cospil __kernel_cospil_tanpil
-#define __kernel_sinpil __kernel_sinpil_tanpil
-#define vzero vzero_tanpil
-#define pi_hi pi_hi_tanpil
-#define pi_lo pi_lo_tanpil
+/* ================================================================== */
+/* lib/msun/ld80/s_tanpil.c					      */
+/* ================================================================== */
+
+namespace s_tanpil {
+
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
  * All rights reserved.
@@ -1215,11 +600,6 @@ sinpil(long double x)
 /*
  * See ../src/s_tanpi.c for implementation details.
  */
-
-#ifdef __i386__
-#endif
-#include <stdint.h>
-
 
 static const double
 pi_hi =  3.1415926814079285e+00,	/* 0x400921fb 0x58000000 */
@@ -1253,7 +633,7 @@ __kernel_tanpil(long double x)
 
 volatile static const double vzero = 0;
 
-long double
+export long double
 tanpil(long double x)
 {
 	long double ax, hi, lo, odd, t;
@@ -1315,10 +695,16 @@ tanpil(long double x)
 	t = ix >= 0x403f ? 0 : (copysignl(0, (lx & 1) ? -1 : 1));
 	RETURNI((hx & 0x8000) ? -t : t);
 }
-#undef __kernel_cospil
-#undef __kernel_sinpil
-#undef vzero
-#undef pi_hi
-#undef pi_lo
 
-} /* export namespace pbsd::lib_msun_ld80::b0093 */
+} /* namespace s_tanpil */
+
+} /* namespace pbsd::lib_msun_ld80::b0093 */
+
+export namespace pbsd::lib_msun_ld80::b0093 {
+
+using s_cexpl::cexpl;
+using s_cospil::cospil;
+using s_sinpil::sinpil;
+using s_tanpil::tanpil;
+
+}

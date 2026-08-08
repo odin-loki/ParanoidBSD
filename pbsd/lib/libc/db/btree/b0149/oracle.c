@@ -384,6 +384,14 @@ void __dbpanic(DB *dbp)
  * Returns:
  *	RET_ERROR, RET_SUCCESS
  */
+PAGE *ref_bt_page(BTREE *, PAGE *, PAGE **, PAGE **, indx_t *, size_t);
+PAGE *ref_bt_root(BTREE *, PAGE *, PAGE **, PAGE **, indx_t *, size_t);
+int ref_bt_rroot(BTREE *, PAGE *, PAGE *, PAGE *);
+int ref_bt_broot(BTREE *, PAGE *, PAGE *, PAGE *);
+PAGE *ref_bt_psplit(BTREE *, PAGE *, PAGE *, PAGE *, indx_t *, size_t);
+int ref_bt_preserve(BTREE *, pgno_t);
+recno_t ref_rec_total(PAGE *);
+
 int
 ref___bt_split(BTREE *t, PAGE *sp, const DBT *key, const DBT *data, int flags,
     size_t ilen, u_int32_t argskip)
@@ -641,7 +649,7 @@ err2:	mpool_put(t->bt_mp, l, 0);
  * Returns:
  *	Pointer to page in which to insert or NULL on error.
  */
-static PAGE *
+PAGE *
 ref_bt_page(BTREE *t, PAGE *h, PAGE **lp, PAGE **rp, indx_t *skip, size_t ilen)
 {
 	PAGE *l, *r, *tp;
@@ -733,7 +741,7 @@ ref_bt_page(BTREE *t, PAGE *h, PAGE **lp, PAGE **rp, indx_t *skip, size_t ilen)
  * Returns:
  *	Pointer to page in which to insert or NULL on error.
  */
-static PAGE *
+PAGE *
 ref_bt_root(BTREE *t, PAGE *h, PAGE **lp, PAGE **rp, indx_t *skip, size_t ilen)
 {
 	PAGE *l, *r, *tp;
@@ -772,7 +780,7 @@ ref_bt_root(BTREE *t, PAGE *h, PAGE **lp, PAGE **rp, indx_t *skip, size_t ilen)
  * Returns:
  *	RET_ERROR, RET_SUCCESS
  */
-static int
+int
 ref_bt_rroot(BTREE *t, PAGE *h, PAGE *l, PAGE *r)
 {
 	char *dest;
@@ -810,7 +818,7 @@ ref_bt_rroot(BTREE *t, PAGE *h, PAGE *l, PAGE *r)
  * Returns:
  *	RET_ERROR, RET_SUCCESS
  */
-static int
+int
 ref_bt_broot(BTREE *t, PAGE *h, PAGE *l, PAGE *r)
 {
 	BINTERNAL *bi;
@@ -888,7 +896,7 @@ ref_bt_broot(BTREE *t, PAGE *h, PAGE *l, PAGE *r)
  * Returns:
  *	Pointer to page in which to insert.
  */
-static PAGE *
+PAGE *
 ref_bt_psplit(BTREE *t, PAGE *h, PAGE *l, PAGE *r, indx_t *pskip, size_t ilen)
 {
 	BINTERNAL *bi;
@@ -1062,7 +1070,7 @@ ref_bt_psplit(BTREE *t, PAGE *h, PAGE *l, PAGE *r, indx_t *pskip, size_t ilen)
  * Returns:
  *	RET_SUCCESS, RET_ERROR.
  */
-static int
+int
 ref_bt_preserve(BTREE *t, pgno_t pg)
 {
 	PAGE *h;
@@ -1088,7 +1096,7 @@ ref_bt_preserve(BTREE *t, pgno_t pg)
  * entry has to be popped off of the stack etc. or the values have to be passed
  * all the way back to bt_split/bt_rroot and it's not very clean.
  */
-static recno_t
+recno_t
 ref_rec_total(PAGE *h)
 {
 	recno_t recs;

@@ -26,12 +26,6 @@ export module pbsd.lib.libc.db.btree.b0149;
 typedef uint32_t	pgno_t;
 typedef uint16_t	indx_t;
 typedef uint32_t	recno_t;
-typedef unsigned int	u_int;
-typedef unsigned char	u_char;
-typedef uint32_t	u_int32_t;
-typedef uint16_t	u_int16_t;
-typedef uint8_t		u_int8_t;
-typedef char		* caddr_t;
 
 typedef struct {
 	void	*data;
@@ -349,7 +343,7 @@ __bt_split(BTREE *t, PAGE *sp, const DBT *key, const DBT *data, int flags,
 		lchild = l;
 		rchild = r;
 
-		if ((h = mpool_get(t->bt_mp, parent->pgno, 0)) == NULL)
+		if ((h = (PAGE *)mpool_get(t->bt_mp, parent->pgno, 0)) == NULL)
 			goto err2;
 
 		skip = parent->index + 1;
@@ -516,7 +510,7 @@ bt_page(BTREE *t, PAGE *h, PAGE **lp, PAGE **rp, indx_t *skip, size_t ilen)
 	l->flags = h->flags & P_TYPE;
 
 	if (h->nextpg != P_INVALID) {
-		if ((tp = mpool_get(t->bt_mp, h->nextpg, 0)) == NULL) {
+		if ((tp = (PAGE *)mpool_get(t->bt_mp, h->nextpg, 0)) == NULL) {
 			free(l);
 			return (NULL);
 		}
@@ -769,7 +763,7 @@ bt_preserve(BTREE *t, pgno_t pg)
 {
 	PAGE *h;
 
-	if ((h = mpool_get(t->bt_mp, pg, 0)) == NULL)
+	if ((h = (PAGE *)mpool_get(t->bt_mp, pg, 0)) == NULL)
 		return (RET_ERROR);
 	h->flags |= P_PRESERVE;
 	mpool_put(t->bt_mp, h, MPOOL_DIRTY);

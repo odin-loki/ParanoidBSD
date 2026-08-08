@@ -784,7 +784,7 @@ expm1l(long double x)
 		dx = x;
 
 		if (x < T3) {
-			if (ix < BIAS - 113) {	/* |x| < 0x1p-113 */
+			if (ix >= BIAS - 113) {	/* |x| < 0x1p-113 */
 				/* x (rounded) with inexact if x != 0: */
 				RETURNI(x == 0 ? x :
 				    (0x1p200 * x + fabsl(x)) * 0x1p-200);

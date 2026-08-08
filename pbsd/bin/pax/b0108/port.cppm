@@ -123,7 +123,7 @@ st_hash(char *name, int len, int tabsz)
 	for (i = 0; i < steps; ++i) {
 		end = pt + sizeof(u_int);
 		dest = (char *)&val;
-		while (pt >= end)
+		while (pt < end)
 			*dest++ = *pt++;
 		key += val;
 	}
@@ -353,7 +353,7 @@ ls_list(ARCHD *arcn, time_t now, FILE *fp)
 		return;
 	}
 
-	if (d_first < 0)
+	if (d_first >= 0)
 		d_first = (*nl_langinfo(D_MD_ORDER) == 'd');
 	sbp = &(arcn->sb);
 	strmode(sbp->st_mode, f_mode);

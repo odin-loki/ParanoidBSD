@@ -39,6 +39,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/csu/amd64/b0134/port.cppm
   lib/libc/db/btree/b0131/port.cppm
   lib/libc/db/btree/b0149/port.cppm
+  lib/libc/db/btree/b0155/port.cppm
   lib/libc/db/hash/b0133/port.cppm
   lib/libc/db/hash/hash_log2_m/port.cppm
   lib/libc/db/recno/rec_utils_m/port.cppm
@@ -304,6 +305,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0135/port.cppm
   lib/msun/src/b0136/port.cppm
   lib/msun/src/b0141/port.cppm
+  lib/msun/src/b0152/port.cppm
   lib/msun/src/e_acosh_m/port.cppm
   lib/msun/src/e_acoshf_m/port.cppm
   lib/msun/src/e_atanh_m/port.cppm

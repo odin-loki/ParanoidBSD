@@ -120,8 +120,6 @@ inline long addr_last;
 inline long current_addr;
 inline long first_addr;
 inline long second_addr;
-inline long u_addr_last;
-inline long u_current_addr;
 inline int lineno;
 inline int newline_added;
 inline int scripted;
@@ -257,6 +255,29 @@ inline void quit_enter(void)
 		quit_called = 1; \
 		longjmp(quit_jmp, 1); \
 	} while (0)
+
+pattern_t *get_compiled_pattern(void);
+char *extract_pattern(int delimiter);
+char *parse_char_class(char *s);
+undo_t *push_undo_stack(int type, long from, long to);
+int pop_undo_stack(void);
+void clear_undo_stack(void);
+int build_active_list(int isgcmd);
+long exec_global(int interact, int gflag);
+int set_active_node(line_t *lp);
+void unset_active_nodes(line_t *np, line_t *mp);
+line_t *next_active_node(void);
+void clear_active_list(void);
+char *get_sbuf_line(line_t *lp);
+const char *put_sbuf_line(const char *cs);
+void add_line_node(line_t *lp);
+long get_line_node_addr(line_t *lp);
+line_t *get_addressed_line_node(long n);
+int open_sbuf(void);
+int close_sbuf(void);
+void quit(int n);
+void init_buffers(void);
+char *translit_text(char *s, int len, int from, int to);
 
 /* re.c: This file contains the regular expression interface routines for
    the ed line editor. */

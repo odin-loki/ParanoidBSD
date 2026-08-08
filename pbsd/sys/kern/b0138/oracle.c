@@ -1,140 +1,112 @@
 /*
- * oracle.c -- reference implementation for PBSD batch b0138.
+ * PBSD batch b0138 -- reference oracle.
  *
- * The original HardenedBSD kernel sources are concatenated below with every
- * function renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.
- * Supporting types, macros, and allocator shims are added only where the
- * original files obtained them from kernel headers.
+ * The original HardenedBSD C sources concatenated:
+ *
+ *	sys/kern/subr_dummy_vdso_tc.c
+ *	sys/kern/subr_early.c
+ *	sys/kern/subr_bufring.c
+ *	sys/kern/kern_sdt.c
+ *
+ * Every function is renamed with a "ref_" prefix.  Function bodies are
+ * otherwise UNMODIFIED.  The only additions are the kernel environment
+ * declarations and defines that the in-tree headers would have supplied
+ * (malloc/free/printf/KASSERT/powerof2/struct buf_ring/...); those live in
+ * the "kernel environment" block below and are shared, identically, with the
+ * C++ port under test.  This file is the specification: do not edit it to
+ * make a test pass.
  */
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
+#include <limits.h>
 
 #ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
+#define	LONG_BIT	(sizeof(long) * CHAR_BIT)
 #endif
 
-#ifndef CACHE_LINE_SIZE
-#define CACHE_LINE_SIZE 64
-#endif
+/*
+ * ------------------------------------------------------------------
+ * Kernel environment (would come from sys/param.h, sys/systm.h,
+ * sys/malloc.h, sys/buf_ring.h, sys/sdt.h, sys/kdb.h, sys/vdso.h).
+ * ------------------------------------------------------------------
+ */
 
-#define __predict_true(x) (__builtin_expect(!!(x), 1))
-#define __read_frequently
-#define __unused __attribute__((__unused__))
+#define	__unused		__attribute__((__unused__))
+#define	__aligned(x)		__attribute__((__aligned__(x)))
+#define	__read_frequently
+#define	CACHE_LINE_SIZE		64
 
-#define M_NOWAIT 0x0001
-#define M_WAITOK 0x0002
-#define M_ZERO   0x0100
+typedef	char *caddr_t;
 
-#define powerof2(x) ((((x) - 1) & (x)) == 0)
+/* Built without INVARIANTS: KASSERT does not evaluate its arguments. */
+#define	KASSERT(exp, msg)	((void)0)
+#define	powerof2(x)		((((x) - 1) & (x)) == 0)
 
-#define KASSERT(cond, msg) ((void)0)
+#define	M_NOWAIT	0x0001
+#define	M_WAITOK	0x0002
+#define	M_ZERO		0x0100
 
-typedef char *caddr_t;
+struct malloc_type;
+struct mtx;
 
-struct malloc_type {
-	const char *ks_shortdesc;
-};
-
-struct mtx {
-	int dummy;
-};
-
-struct vdso_timehands {
-	uint64_t pad[4];
-};
-
-struct vdso_timehands32 {
-	uint32_t pad[4];
-};
-
-struct timecounter {
-	void *tc_priv;
-};
-
-struct buf_ring {
-	uint32_t br_prod_head;
-	uint32_t br_prod_tail;
-	int br_prod_size;
-	int br_prod_mask;
-	uint64_t br_drops;
-	uint32_t br_cons_head __attribute__((aligned(CACHE_LINE_SIZE)));
-	uint32_t br_cons_tail;
-	int br_cons_size;
-	int br_cons_mask;
-	void *br_ring[0] __attribute__((aligned(CACHE_LINE_SIZE)));
-};
-
-#define SDT_PROVIDER_DEFINE(prov)
-
-typedef void (*sdt_probe_func_t)(uint32_t, uintptr_t arg0, uintptr_t arg1,
-    uintptr_t arg2, uintptr_t arg3, uintptr_t arg4, uintptr_t arg5);
-
-static int g_malloc_calls;
-static int g_malloc_fail_at;
-
-void
-oracle_malloc_reset(void)
-{
-	g_malloc_calls = 0;
-	g_malloc_fail_at = 0;
-}
-
-void
-oracle_malloc_fail_at(int n)
-{
-	g_malloc_fail_at = n;
-}
-
-static void *
-malloc_kern(size_t size, struct malloc_type *type, int flags)
-{
-	void *p;
-
-	(void)type;
-
-	g_malloc_calls++;
-	if (g_malloc_fail_at != 0 && g_malloc_calls >= g_malloc_fail_at)
-		return (NULL);
-	p = malloc(size);
-	if (p != NULL && (flags & M_ZERO) != 0)
-		memset(p, 0, size);
-	return (p);
-}
-
-#define malloc(size, type, flags) ({					\
-	void *_malloc_item;						\
-	size_t _size = (size);						\
-	if (__builtin_constant_p(size) && __builtin_constant_p(flags) &&\
-	    ((flags) & M_ZERO) != 0) {					\
-		_malloc_item = malloc_kern(_size, type, (flags) & ~M_ZERO); \
-		if (((flags) & M_WAITOK) != 0 ||				\
-		    __predict_true(_malloc_item != NULL))			\
-			memset(_malloc_item, 0, _size);			\
-	} else {							\
-		_malloc_item = malloc_kern(_size, type, flags);		\
-	}								\
-	_malloc_item;							\
-})
-
-static void
-free_kern(void *addr, struct malloc_type *type)
-{
-	(void)type;
-	free(addr);
-}
-
-#define free(addr, type) free_kern((addr), (type))
-
-int test_printf(const char *fmt, ...);
+/* Kernel services, provided by the test harness. */
+void *pbsd_kern_malloc(size_t size, struct malloc_type *type, int flags);
+void pbsd_kern_free(void *addr, struct malloc_type *type);
+int pbsd_kern_printf(const char *fmt, ...);
 void kdb_backtrace(void);
 
-/* ------------------------------------------------------------------ */
-/* subr_dummy_vdso_tc.c */
-/* ------------------------------------------------------------------ */
+#define	malloc(size, type, flags)	pbsd_kern_malloc((size), (type), (flags))
+#define	free(addr, type)		pbsd_kern_free((addr), (type))
+#define	printf				pbsd_kern_printf
+
+/* sys/vdso.h: only ever used through pointers here. */
+struct vdso_timehands;
+struct vdso_timehands32;
+struct timecounter;
+
+/* sys/buf_ring.h */
+struct buf_ring {
+	volatile uint32_t	br_prod_head;
+	volatile uint32_t	br_prod_tail;
+	int			br_prod_size;
+	int			br_prod_mask;
+	uint64_t		br_drops;
+	volatile uint32_t	br_cons_head __aligned(CACHE_LINE_SIZE);
+	volatile uint32_t	br_cons_tail;
+	int			br_cons_size;
+	int			br_cons_mask;
+#ifdef DEBUG_BUFRING
+	struct mtx		*br_lock;
+#endif
+	void			*br_ring[0] __aligned(CACHE_LINE_SIZE);
+};
+
+/* sys/sdt.h */
+struct sdt_provider {
+	const char	*name;
+	void		*prov;
+	uintptr_t	 sdt_id;
+};
+#define	SDT_PROVIDER_DEFINE(prov)					\
+	struct sdt_provider sdt_provider_##prov = { #prov, NULL, 0 }
+
+typedef void (*sdt_probe_func_t)(uint32_t, uintptr_t, uintptr_t, uintptr_t,
+    uintptr_t, uintptr_t, uintptr_t);
+
+void ref_sdt_probe_stub(uint32_t id, uintptr_t arg0, uintptr_t arg1,
+    uintptr_t arg2, uintptr_t arg3, uintptr_t arg4, uintptr_t arg5);
+
+/* Exercise the COMPAT_FREEBSD32 half of subr_dummy_vdso_tc.c as well. */
+#define	COMPAT_FREEBSD32	1
+
+/*
+ * ==================================================================
+ * sys/kern/subr_dummy_vdso_tc.c
+ * ==================================================================
+ */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -171,8 +143,6 @@ ref_cpu_fill_vdso_timehands(struct vdso_timehands *vdso_th, struct timecounter *
 	return (0);
 }
 
-#define COMPAT_FREEBSD32
-
 #ifdef COMPAT_FREEBSD32
 uint32_t
 ref_cpu_fill_vdso_timehands32(struct vdso_timehands32 *vdso_th32,
@@ -183,9 +153,11 @@ ref_cpu_fill_vdso_timehands32(struct vdso_timehands32 *vdso_th32,
 }
 #endif
 
-/* ------------------------------------------------------------------ */
-/* subr_early.c */
-/* ------------------------------------------------------------------ */
+/*
+ * ==================================================================
+ * sys/kern/subr_early.c
+ * ==================================================================
+ */
 
 /*-
  * Copyright (c) 2018 The FreeBSD Foundation
@@ -215,8 +187,8 @@ ref_cpu_fill_vdso_timehands32(struct vdso_timehands32 *vdso_th32,
  * SUCH DAMAGE.
  */
 
-#ifndef MEMSET_EARLY_FUNC
-#define MEMSET_EARLY_FUNC memset
+#ifndef	MEMSET_EARLY_FUNC
+#define	MEMSET_EARLY_FUNC	memset
 #else
 void *MEMSET_EARLY_FUNC(void *, int, size_t);
 #endif
@@ -228,8 +200,8 @@ ref_memset_early(void *buf, int c, size_t len)
 	return (MEMSET_EARLY_FUNC(buf, c, len));
 }
 
-#ifndef MEMCPY_EARLY_FUNC
-#define MEMCPY_EARLY_FUNC memcpy
+#ifndef	MEMCPY_EARLY_FUNC
+#define	MEMCPY_EARLY_FUNC	memcpy
 #else
 void *MEMCPY_EARLY_FUNC(void *, const void *, size_t);
 #endif
@@ -241,8 +213,8 @@ ref_memcpy_early(void *to, const void *from, size_t len)
 	return (MEMCPY_EARLY_FUNC(to, from, len));
 }
 
-#ifndef MEMMOVE_EARLY_FUNC
-#define MEMMOVE_EARLY_FUNC memmove
+#ifndef	MEMMOVE_EARLY_FUNC
+#define	MEMMOVE_EARLY_FUNC	memmove
 #else
 void *MEMMOVE_EARLY_FUNC(void *, const void *, size_t);
 #endif
@@ -254,9 +226,11 @@ ref_memmove_early(void *to, const void *from, size_t len)
 	return (MEMMOVE_EARLY_FUNC(to, from, len));
 }
 
-/* ------------------------------------------------------------------ */
-/* subr_bufring.c */
-/* ------------------------------------------------------------------ */
+/*
+ * ==================================================================
+ * sys/kern/subr_bufring.c
+ * ==================================================================
+ */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -314,9 +288,11 @@ ref_buf_ring_free(struct buf_ring *br, struct malloc_type *type)
 	free(br, type);
 }
 
-/* ------------------------------------------------------------------ */
-/* kern_sdt.c */
-/* ------------------------------------------------------------------ */
+/*
+ * ==================================================================
+ * sys/kern/kern_sdt.c
+ * ==================================================================
+ */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -346,9 +322,6 @@ ref_buf_ring_free(struct buf_ring *br, struct malloc_type *type)
  */
 
 SDT_PROVIDER_DEFINE(sdt);
-
-void ref_sdt_probe_stub(uint32_t id, uintptr_t arg0, uintptr_t arg1,
-    uintptr_t arg2, uintptr_t arg3, uintptr_t arg4, uintptr_t arg5);
 
 /*
  * Hook for the DTrace probe function. The SDT provider will set this to

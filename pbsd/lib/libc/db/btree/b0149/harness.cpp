@@ -2,6 +2,7 @@
  * Differential harness for batch b0149: btree split routines.
  */
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -147,6 +148,8 @@ constexpr unsigned SWEEP_ITERS = 200000;
 #define RET_SUCCESS 0
 #define MPOOL_DIRTY 0x01
 
+#define NEXTINDEX(p) (((p)->lower - BTDATAOFF) / sizeof(indx_t))
+
 #define BTDATAOFF \
 	(sizeof(pgno_t) + sizeof(pgno_t) + sizeof(pgno_t) + \
 	    sizeof(u_int32_t) + sizeof(indx_t) + sizeof(indx_t))
@@ -229,10 +232,15 @@ bool bufs_eq(const unsigned char *a, const unsigned char *b, size_t n)
 	return std::memcmp(a, b, n) == 0;
 }
 
-size_t harness_pfx(const DBT *a, const DBT *b)
+extern "C" size_t harness_pfx(const DBT *a, const DBT *b)
 {
 	size_t m = a->size < b->size ? a->size : b->size;
 	return m > 1 ? m / 2 : m;
+}
+
+static size_t port_pfx(const P::DBT *a, const P::DBT *b)
+{
+	return harness_pfx((const DBT *)a, (const DBT *)b);
 }
 
 void init_tree(P::BTREE &tp, P::MPOOL &mp, P::DB &db, u_int32_t flags,
@@ -481,7 +489,7 @@ void check_bt_psplit(u_int32_t ptype, int nents, indx_t skip, size_t ilen,
 		c.tr.bt_cursor.pg.index = curs_idx;
 	}
 
-	P::PAGE *ret_p = P::bt_psplit(&c.tp, sp, lp_p, rp_p, &skip_p, ilen);
+	P::PAGE *ret_p = P::bt_psplit(&c.tp, (P::PAGE *)sp, (P::PAGE *)lp_p, (P::PAGE *)rp_p, &skip_p, ilen);
 	PAGE *ret_r = ref_bt_psplit(&c.tr, sr, lp_r, rp_r, &skip_r, ilen);
 
 	char msg[256];
@@ -489,8 +497,8 @@ void check_bt_psplit(u_int32_t ptype, int nents, indx_t skip, size_t ilen,
 		check_eq(F_BT_PSPLIT, false, "null ret mismatch");
 		return;
 	}
-	ptrdiff_t off_p = ret_p ? (char *)ret_p - (char *)c.lp_p : -1;
-	ptrdiff_t off_r = ret_r ? (char *)ret_r - (char *)c.lp_r : -1;
+	std::ptrdiff_t off_p = ret_p ? (char *)ret_p - (char *)c.lp_p : -1;
+	std::ptrdiff_t off_r = ret_r ? (char *)ret_r - (char *)c.lp_r : -1;
 	std::snprintf(msg, sizeof(msg),
 	    "ret off port=%td ref=%td type=0x%x skip=%u ilen=%zu",
 	    off_p, off_r, ptype, (unsigned)skip, ilen);
@@ -564,7 +572,7 @@ void check_bt_rroot(int l_is_rleaf, int r_is_rleaf, int nents_l, int nents_r)
 	std::memcpy(lp_r, lp_p, PAGE_SZ);
 	std::memcpy(rp_r, rp_p, PAGE_SZ);
 
-	int ret_p = P::bt_rroot(&tp, hp, lp, rp);
+	int ret_p = P::bt_rroot(&tp, (P::PAGE *)hp, (P::PAGE *)lp, (P::PAGE *)rp);
 	int ret_r = ref_bt_rroot(&tr, hr, lr, rr);
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d", ret_p, ret_r);
@@ -632,8 +640,8 @@ void check_bt_broot(u_int32_t root_type, int bigkey)
 		if (bigkey) {
 			ef[0] = P_BIGKEY;
 			build_bleaf_page(rp, PAGE_SZ, 1, ks, ds, ef);
-			BLEAF *bl = (BLEAF *)((char *)rp + rp->linp[0]);
-			std::memcpy(bl->bytes, &ovpg, sizeof(ovpg));
+			unsigned char *blb = (unsigned char *)rp + rp->linp[0];
+			std::memcpy(blb + 9, &ovpg, sizeof(ovpg));
 		} else {
 			build_bleaf_page(rp, PAGE_SZ, 1, ks, ds, ef);
 		}
@@ -643,7 +651,7 @@ void check_bt_broot(u_int32_t root_type, int bigkey)
 		std::memcpy(rr, rp_p, PAGE_SZ);
 	}
 
-	int ret_p = P::bt_broot(&tp, hp, lp, rp);
+	int ret_p = P::bt_broot(&tp, (P::PAGE *)hp, (P::PAGE *)lp, (P::PAGE *)rp);
 	int ret_r = ref_bt_broot(&tr, hr, lr, rr);
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d type=0x%x big=%d",
@@ -708,11 +716,11 @@ void check_bt_page(int sortsplit, int nextpg_fail, int nents, indx_t skip,
 	P::PAGE *lp_p = nullptr;
 	P::PAGE *rp_p = nullptr;
 	P::BTREE *t_p = &tp;
-	P::PAGE *h_p = sp;
+	P::PAGE *h_p = (P::PAGE *)sp;
 	indx_t skip_p = skip;
 	P::PAGE *lout_p = nullptr;
 	P::PAGE *rout_p = nullptr;
-	P::PAGE *ret_p = P::bt_page(t_p, h_p, &lout_p, &rout_p, &skip_p, ilen);
+	P::PAGE *ret_p = P::bt_page(t_p, h_p, (P::PAGE **)&lout_p, (P::PAGE **)&rout_p, &skip_p, ilen);
 
 	PAGE *lout_r = nullptr;
 	PAGE *rout_r = nullptr;
@@ -726,8 +734,8 @@ void check_bt_page(int sortsplit, int nextpg_fail, int nents, indx_t skip,
 	}
 	check_eq(F_BT_PAGE, skip_p == skip_r, "skip");
 	if (ret_p) {
-		ptrdiff_t ro_p = (char *)ret_p - (char *)src_p;
-		ptrdiff_t ro_r = (char *)ret_r - (char *)sr;
+		std::ptrdiff_t ro_p = (char *)ret_p - (char *)src_p;
+		std::ptrdiff_t ro_r = (char *)ret_r - (char *)sr;
 		std::snprintf(msg, sizeof(msg), "ret off port=%td ref=%td", ro_p,
 		    ro_r);
 		check_eq(F_BT_PAGE, ro_p == ro_r, msg);
@@ -766,7 +774,7 @@ void check_bt_root(int nents, indx_t skip, size_t ilen, int fail_second)
 	P::PAGE *lp_p = nullptr;
 	P::PAGE *rp_p = nullptr;
 	indx_t skip_p = skip;
-	P::PAGE *ret_p = P::bt_root(&tp, sp, &lp_p, &rp_p, &skip_p, ilen);
+	P::PAGE *ret_p = P::bt_root(&tp, (P::PAGE *)sp, (P::PAGE **)&lp_p, (P::PAGE **)&rp_p, &skip_p, ilen);
 
 	PAGE *lp_r = nullptr;
 	PAGE *rp_r = nullptr;
@@ -806,8 +814,8 @@ void check_bt_split_leaf_root(int nents, u_int32_t argskip, int use_recno,
 	init_tree(tp, mp_p, db_p, use_recno ? R_RECNO : 0, PAGE_SZ);
 	init_tree(tr, mp_r, db_r, use_recno ? R_RECNO : 0, PAGE_SZ);
 	if (with_pfx) {
-		tp.bt_pfx = harness_pfx;
-		tr.bt_pfx = ref_pfx_half;
+		tp.bt_pfx = port_pfx;
+		tr.bt_pfx = harness_pfx;
 	}
 	alloc_page_buf(sp_p, PAGE_SZ);
 	alloc_page_buf(sp_r, PAGE_SZ);
@@ -837,7 +845,7 @@ void check_bt_split_leaf_root(int nents, u_int32_t argskip, int use_recno,
 	    align_pg(sizeof(u_int32_t) + sizeof(u_int32_t) + sizeof(u_char) +
 		key_p.size + data_p.size);
 
-	int rp = P::__bt_split(&tp, spp, &key_p, &data_p, 0, ilen, argskip);
+	int rp = P::__bt_split(&tp, (P::PAGE *)spp, (P::DBT *)&key_p, (P::DBT *)&data_p, 0, ilen, argskip);
 	int rr = ref___bt_split(&tr, spr, &key_r, &data_r, 0, ilen, argskip);
 	char msg[256];
 	std::snprintf(msg, sizeof(msg),
@@ -875,8 +883,8 @@ void check_bt_split_with_parent(int parent_room, int child_type)
 	test_mock_reset();
 	init_tree(tp, mp_p, db_p, 0, PAGE_SZ);
 	init_tree(tr, mp_r, db_r, 0, PAGE_SZ);
-	tp.bt_pfx = harness_pfx;
-	tr.bt_pfx = ref_pfx_half;
+	tp.bt_pfx = port_pfx;
+	tr.bt_pfx = harness_pfx;
 
 	alloc_page_buf(sp_p, PAGE_SZ);
 	alloc_page_buf(sp_r, PAGE_SZ);
@@ -935,7 +943,7 @@ void check_bt_split_with_parent(int parent_room, int child_type)
 	size_t ilen = align_pg(sizeof(u_int32_t) + sizeof(u_int32_t) +
 	    sizeof(u_char) + key_p.size + data_p.size);
 
-	int rp = P::__bt_split(&tp, spp, &key_p, &data_p, 0, ilen, 1);
+	int rp = P::__bt_split(&tp, (P::PAGE *)spp, (P::DBT *)&key_p, (P::DBT *)&data_p, 0, ilen, 1);
 	int rr = ref___bt_split(&tr, spr, &key_r, &data_r, 0, ilen, 1);
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d room=%d", rp, rr,

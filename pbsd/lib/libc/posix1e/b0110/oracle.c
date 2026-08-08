@@ -1,31 +1,34 @@
 /*
- * oracle.c -- reference implementations for batch b0110.
+ * oracle.c -- reference implementation for PBSD batch b0110.
  *
- * The original HardenedBSD sources are concatenated below with every function
- * renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.  Only the
- * includes, macro definitions and external declarations that the host
- * environment does not provide have been added.
+ * The original HardenedBSD C sources, concatenated, with every function
+ * renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.  The only
+ * additions are the type/macro definitions that the original translation
+ * units obtained from <sys/mac.h>, <sys/acl.h>, <sys/extattr.h> and the
+ * private acl_support.h header, plus the feature-test macro required to get
+ * strdup() declared under -std=c11.
  */
 
-#define _DEFAULT_SOURCE 1
+#define _POSIX_C_SOURCE 200809L
+
+#include <sys/types.h>
 
 #include <errno.h>
-#include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 
 #ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * CHAR_BIT)
+#define	LONG_BIT	(sizeof(long) * 8)
 #endif
 
 /* <sys/mac.h> */
 struct mac {
-	size_t		 m_buflen;
-	char		*m_string;
+	size_t	 m_buflen;
+	char	*m_string;
 };
+typedef struct mac *mac_t;
 
 /* <sys/acl.h> */
 typedef uint32_t	acl_tag_t;
@@ -36,310 +39,62 @@ typedef int		acl_type_t;
 
 struct acl_entry {
 	acl_tag_t		ae_tag;
-	uint32_t		ae_id;
+	uid_t			ae_id;
 	acl_perm_t		ae_perm;
+	/* NFSv4 entry fields */
 	acl_entry_type_t	ae_entry_type;
 	acl_flag_t		ae_flags;
 };
-typedef struct acl_entry	*acl_entry_t;
+typedef struct acl_entry *acl_entry_t;
 
-struct acl;
-typedef struct acl_t_struct	*acl_t;
+struct acl_t_struct;
+typedef struct acl_t_struct *acl_t;
 
-#define ACL_TYPE_ACCESS_OLD	0x00000000
-#define ACL_TYPE_DEFAULT_OLD	0x00000001
-#define ACL_TYPE_ACCESS		0x00000002
-#define ACL_TYPE_DEFAULT	0x00000003
-#define ACL_TYPE_NFS4		0x00000004
+#define	ACL_TYPE_ACCESS_OLD	0x00000000
+#define	ACL_TYPE_DEFAULT_OLD	0x00000001
+#define	ACL_TYPE_ACCESS		0x00000002
+#define	ACL_TYPE_DEFAULT	0x00000003
+#define	ACL_TYPE_NFS4		0x00000004
+
+#define	ACL_BRAND_UNKNOWN	0
+#define	ACL_BRAND_POSIX		1
+#define	ACL_BRAND_NFS4		2
 
 /* <sys/extattr.h> */
-#define EXTATTR_NAMESPACE_USER			0x00000001
-#define EXTATTR_NAMESPACE_USER_STRING		"user"
-#define EXTATTR_NAMESPACE_SYSTEM		0x00000002
-#define EXTATTR_NAMESPACE_SYSTEM_STRING		"system"
+#define	EXTATTR_NAMESPACE_EMPTY		0x00000000
+#define	EXTATTR_NAMESPACE_EMPTY_STRING	"empty"
+#define	EXTATTR_NAMESPACE_USER		0x00000001
+#define	EXTATTR_NAMESPACE_USER_STRING	"user"
+#define	EXTATTR_NAMESPACE_SYSTEM	0x00000002
+#define	EXTATTR_NAMESPACE_SYSTEM_STRING	"system"
 
-struct acl_t_struct {
-	struct {
-		unsigned int	acl_maxcnt;
-		unsigned int	acl_cnt;
-		int		acl_spare[4];
-		struct acl_entry acl_entry[254];
-	}			ats_acl;
-	int			ats_cur_entry;
-	int			ats_brand;
-};
+/* syscall stubs and acl_support.h / acl_branding.c helpers */
+extern	int	__mac_set_fd(int fd, struct mac *mac_p);
+extern	int	__mac_set_file(const char *path_p, struct mac *mac_p);
+extern	int	__mac_set_link(const char *path_p, struct mac *mac_p);
+extern	int	__mac_set_proc(struct mac *mac_p);
 
-/* ------------------------------------------------------------------ mocks */
+extern	int	__acl_delete_file(const char *path_p, acl_type_t type);
+extern	int	__acl_delete_link(const char *path_p, acl_type_t type);
+extern	int	___acl_delete_fd(int filedes, acl_type_t type);
 
-enum mock_kind {
-	MOCK_MAC_FD = 1,
-	MOCK_MAC_FILE,
-	MOCK_MAC_LINK,
-	MOCK_MAC_PROC,
-	MOCK_ACL_FILE,
-	MOCK_ACL_LINK,
-	MOCK_ACL_FD,
-};
+extern	acl_type_t	_acl_type_unold(acl_type_t type);
 
-struct mock_rec {
-	int		kind;
-	int		fd;
-	const char	*path;
-	struct mac	*label;
-	acl_type_t	type;
-	int		ret;
-};
+extern	int	_entry_brand(acl_entry_t entry);
+extern	int	_entry_brand_may_be(acl_entry_t entry, int brand);
+extern	void	_entry_brand_as(acl_entry_t entry, int brand);
 
-static struct mock_rec g_mock;
-static int g_mock_set;
-
-void
-mock_reset(void)
-{
-
-	memset(&g_mock, 0, sizeof(g_mock));
-	g_mock_set = 0;
-}
-
-struct mock_snap {
-	int		set;
-	int		kind;
-	int		fd;
-	const char	*path;
-	struct mac	*label;
-	acl_type_t	type;
-	int		ret;
-};
-
-struct mock_snap
-mock_capture(void)
-{
-	struct mock_snap s;
-
-	s.set = g_mock_set;
-	s.kind = g_mock.kind;
-	s.fd = g_mock.fd;
-	s.path = g_mock.path;
-	s.label = g_mock.label;
-	s.type = g_mock.type;
-	s.ret = g_mock.ret;
-	return (s);
-}
-
-#define	_ACL_T_ALIGNMENT_BITS	13
-#define	ACL_BRAND_UNKNOWN	0
-
-static acl_t
-entry2acl(acl_entry_t entry)
-{
-
-	return ((acl_t)(((long)entry >> _ACL_T_ALIGNMENT_BITS)
-	    << _ACL_T_ALIGNMENT_BITS));
-}
-
-int
-_acl_type_unold(acl_type_t type)
-{
-
-	switch (type) {
-	case ACL_TYPE_ACCESS_OLD:
-		return (ACL_TYPE_ACCESS);
-	case ACL_TYPE_DEFAULT_OLD:
-		return (ACL_TYPE_DEFAULT);
-	default:
-		return (type);
-	}
-}
-
-static int
-acl_brand(const acl_t acl)
-{
-
-	return (((struct acl_t_struct *)acl)->ats_brand);
-}
-
-int
-_entry_brand(const acl_entry_t entry)
-{
-
-	return (acl_brand(entry2acl(entry)));
-}
-
-static int
-acl_brand_may_be(const acl_t acl, int brand)
-{
-
-	if (acl_brand(acl) == ACL_BRAND_UNKNOWN)
-		return (1);
-
-	if (acl_brand(acl) == brand)
-		return (1);
-
-	return (0);
-}
-
-int
-_entry_brand_may_be(const acl_entry_t entry, int brand)
-{
-
-	return (acl_brand_may_be(entry2acl(entry), brand));
-}
-
-static void
-acl_brand_as(acl_t acl, int brand)
-{
-
-	((struct acl_t_struct *)acl)->ats_brand = brand;
-}
-
-void
-_entry_brand_as(const acl_entry_t entry, int brand)
-{
-
-	acl_brand_as(entry2acl(entry), brand);
-}
-
-static int
-mac_ret(int fd, struct mac *label)
-{
-	int v = fd * 31;
-
-	if (label != NULL)
-		v ^= (int)label->m_buflen ^ (int)(uintptr_t)label->m_string;
-	return (v ^ 0x5a5a);
-}
-
-static int
-acl_ret(const char *path, acl_type_t type)
-{
-	int v = (int)type * 17;
-
-	if (path != NULL)
-		v ^= (int)strlen(path);
-	return (v ^ 0x1234);
-}
-
-static int
-acl_fd_ret(int fd, acl_type_t type)
-{
-
-	return ((fd * 23) ^ ((int)type * 41) ^ 0xbeef);
-}
-
-int
-__mac_set_fd(int fd, struct mac *mac_p)
-{
-
-	g_mock.kind = MOCK_MAC_FD;
-	g_mock.fd = fd;
-	g_mock.label = mac_p;
-	g_mock.ret = mac_ret(fd, mac_p);
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-int
-__mac_set_file(const char *path_p, struct mac *mac_p)
-{
-
-	g_mock.kind = MOCK_MAC_FILE;
-	g_mock.path = path_p;
-	g_mock.label = mac_p;
-	g_mock.ret = mac_ret(1, mac_p) ^ (int)(uintptr_t)path_p;
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-int
-__mac_set_link(const char *path_p, struct mac *mac_p)
-{
-
-	g_mock.kind = MOCK_MAC_LINK;
-	g_mock.path = path_p;
-	g_mock.label = mac_p;
-	g_mock.ret = mac_ret(2, mac_p) ^ (int)(uintptr_t)path_p;
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-int
-__mac_set_proc(struct mac *mac_p)
-{
-
-	g_mock.kind = MOCK_MAC_PROC;
-	g_mock.label = mac_p;
-	g_mock.ret = mac_ret(3, mac_p);
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-int
-__acl_delete_file(const char *path_p, acl_type_t type)
-{
-
-	g_mock.kind = MOCK_ACL_FILE;
-	g_mock.path = path_p;
-	g_mock.type = type;
-	g_mock.ret = acl_ret(path_p, type);
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-int
-__acl_delete_link(const char *path_p, acl_type_t type)
-{
-
-	g_mock.kind = MOCK_ACL_LINK;
-	g_mock.path = path_p;
-	g_mock.type = type;
-	g_mock.ret = acl_ret(path_p, type) ^ 0x100;
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-int
-___acl_delete_fd(int filedes, acl_type_t type)
-{
-
-	g_mock.kind = MOCK_ACL_FD;
-	g_mock.fd = filedes;
-	g_mock.type = type;
-	g_mock.ret = acl_fd_ret(filedes, type);
-	g_mock_set = 1;
-	return (g_mock.ret);
-}
-
-/*-
+/*
+ * ==========================================================================
+ * lib/libc/posix1e/mac_set.c
+ *
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * Copyright (c) 1999, 2000, 2001, 2002 Robert N. M. Watson
  * All rights reserved.
  *
  * This software was developed by Robert Watson for the TrustedBSD Project.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. The names of the authors may not be used to endorse or promote
- *    products derived from this software without specific prior written
- *    permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * ==========================================================================
  */
 
 int
@@ -370,37 +125,17 @@ ref_mac_set_proc(struct mac *label)
 	return (__mac_set_proc(label));
 }
 
-/*-
+/*
+ * ==========================================================================
+ * lib/libc/posix1e/acl_delete.c
+ *
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 1999, 2000, 2001, 2002 Robert N. M. Watson
  * All rights reserved.
  *
- * This software was developed by Robert Watson for the TrustedBSD Project.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-/*
  * acl_delete_def_file -- remove a default acl from a file
+ * ==========================================================================
  */
 
 int
@@ -441,35 +176,17 @@ ref_acl_delete_fd_np(int filedes, acl_type_t type)
 	return (___acl_delete_fd(filedes, type));
 }
 
-/*-
+/*
+ * ==========================================================================
+ * lib/libc/posix1e/extattr.c
+ *
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 2001 Robert N. M. Watson
  * All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-/*
  * TrustedBSD: Utility functions for extended attributes.
+ * ==========================================================================
  */
 
 int
@@ -511,32 +228,15 @@ ref_extattr_string_to_namespace(const char *string, int *attrnamespace)
 	}
 }
 
-/*-
+/*
+ * ==========================================================================
+ * lib/libc/posix1e/acl_copy.c
+ *
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 2001-2002 Chris D. Faulhaber
  * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * ==========================================================================
  */
 
 /*

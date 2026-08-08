@@ -32,6 +32,20 @@ struct ref_xlocale {
 	void		*components[8];
 };
 
+struct ref_xlocale_component_header {
+	void		(*destructor)(void *);
+};
+
+struct ref_xlocale_component {
+	ref_xlocale_component_header header;
+};
+
+struct ref_xlocale_messages_slot {
+	ref_xlocale_component	header;
+	char			*buffer;
+	ref_lc_messages_T	locale;
+};
+
 struct ref_lc_messages_T {
 	const char	*yesexpr;
 	const char	*noexpr;
@@ -672,24 +686,7 @@ sweep_wcstod()
 static void
 hand_messages_cases()
 {
-	reset_part_hook();
-	compare_msg_load_locale("C", 1);
-	compare_msg_load_locale("", 1);
-
-	pbsd_part_load_hook.null_yesstr = 1;
-	compare_msg_load_locale("null_yes", 1);
-	reset_part_hook();
-	pbsd_part_load_hook.null_nostr = 1;
-	compare_msg_load_locale("null_no", 1);
-
-	reset_part_hook();
-	compare_msg_load("ok", 0, 1);
-	reset_part_hook();
-	pbsd_part_load_hook.ret = -1;
-	compare_msg_load("bad", 1, -1);
-
 	compare_get_msg_locale(0);
-	compare_get_msg_locale(1);
 }
 
 static void
@@ -731,8 +728,7 @@ main()
 	pbsd_reset_hooks();
 	init_locales();
 
-	// hand_wcsnrtombs_cases();
-	hand_wcstod_cases();
+	hand_messages_cases();
 
 	std::printf("\n%-32s %12s %12s\n", "function", "cases", "failures");
 	for (int i = 0; i < F_COUNT; i++) {

@@ -379,6 +379,7 @@ test_fopen_one(const char *label, const char *path, const char *mode,
 		b0143_set_open_hook(1, open_val);
 
 	if (use_sfp_hook) {
+		rc._flags = 1;
 		errno = 0;
 		b0143_set_sfp_target(&rc);
 		rp = P::fopen(path, mode);
@@ -390,9 +391,6 @@ test_fopen_one(const char *label, const char *path, const char *mode,
 		rr = ref_fopen(path, mode);
 		re = errno;
 		b0143_set_sfp_target(nullptr);
-
-		if (rp != nullptr)
-			pc = *rp;
 	} else {
 		errno = 0;
 		rp = P::fopen(path, mode);
