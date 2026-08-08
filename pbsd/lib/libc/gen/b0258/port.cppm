@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 module;
 
 #include <cerrno>
@@ -22,11 +20,11 @@ module;
 #define FD_CLOFORK 4
 #endif
 
-extern "C" int _fcntl(int, int, int);
-
 export module pbsd.lib.libc.gen.b0258;
 
 export namespace pbsd::lib_libc_gen::b0258 {
+
+extern "C" int _fcntl(int, int, int);
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
