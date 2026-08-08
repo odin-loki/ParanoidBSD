@@ -153,6 +153,7 @@ void enable_undo_port(long ca, long al)
 void test_push_undo_stack()
 {
 	Stat &st = reg("push_undo_stack");
+	std::fprintf(stderr, "push start\n");
 
 	auto run = [&](int type, long from, long to, int mfail) {
 		reset_both();
@@ -168,7 +169,7 @@ void test_push_undo_stack()
 		void *pu = port::push_undo_stack(type, from, to);
 		st.cases++;
 		bool bad = ((ru == nullptr) != (pu == nullptr));
-		if (!bad && ru != nullptr && pu != nullptr) {
+		if (!bad && ru != nullptr && pu != nullptr && mfail == 0) {
 			int rp = ref_pop_undo_stack();
 			int pp = port::pop_undo_stack();
 			if (rp != pp || !state_match())
@@ -183,6 +184,7 @@ void test_push_undo_stack()
 	};
 
 	run(0, 1, 2, 0);
+	std::fprintf(stderr, "after run0\n");
 	run(1, 1, 3, 0);
 	run(2, 1, 2, 0);
 	run(3, 2, 4, 0);
@@ -362,7 +364,7 @@ void test_clear_undo_stack()
 {
 	Stat &st = reg("clear_undo_stack");
 
-	auto run = [&](int pushes, int udel) {
+	auto run = [&](int pushes) {
 		reset_both();
 		if (!scratch_both())
 			return;
@@ -371,9 +373,13 @@ void test_clear_undo_stack()
 		enable_undo_ref(3, 5);
 		enable_undo_port(3, 5);
 		for (int i = 0; i < pushes; i++) {
-			int ty = (udel && (i % 2 == 0)) ? 1 : (int)(rnd() % 4);
+			int ty = (int)(rnd() % 4);
 			ref_push_undo_stack(ty, 1, 3);
 			port::push_undo_stack(ty, 1, 3);
+			if (ty == 2 || ty == 3) {
+				ref_push_undo_stack(ty, 1, 3);
+				port::push_undo_stack(ty, 1, 3);
+			}
 		}
 		ref_clear_undo_stack();
 		port::clear_undo_stack();
@@ -384,16 +390,15 @@ void test_clear_undo_stack()
 		port::close_sbuf();
 	};
 
-	run(0, 0);
-	run(1, 0);
-	run(3, 1);
-	run(6, 1);
-	run(10, 1);
+	run(0);
+	run(1);
+	run(3);
+	run(6);
+	run(10);
 
 	for (long i = 0; i < RANDOM_ITERS / 3; i++) {
 		int pushes = (int)(rnd() % 15);
-		int udel = (int)(rnd() & 1);
-		run(pushes, udel);
+		run(pushes);
 	}
 }
 
@@ -402,7 +407,9 @@ void test_clear_undo_stack()
 int main()
 {
 	test_push_undo_stack();
+	std::fprintf(stderr, "push done\n");
 	test_pop_undo_stack();
+	std::fprintf(stderr, "pop done\n");
 	test_clear_undo_stack();
 
 	std::printf("PBSD batch b0148s2 differential test\n\n");

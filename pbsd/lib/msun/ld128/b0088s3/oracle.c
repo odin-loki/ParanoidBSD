@@ -436,3 +436,24 @@ cexpl(long double complex z)
 		return (CMPLXL(exp_x * c, exp_x * s));
 	}
 }
+
+void
+ref_cexpl_parts(long double x, long double y, long double *re, long double *im)
+{
+	long double complex z;
+
+	z = cexpl(CMPLXL(x, y));
+	*re = creall(z);
+	*im = cimagl(z);
+}
+
+void
+ref___ldexp_cexpl_parts(long double x, long double y, int expt,
+    long double *re, long double *im)
+{
+	long double complex z;
+
+	z = __ldexp_cexpl(CMPLXL(x, y), expt);
+	*re = creall(z);
+	*im = cimagl(z);
+}

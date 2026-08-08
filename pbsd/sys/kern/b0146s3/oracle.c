@@ -47,26 +47,26 @@ struct malloc_type {
 #define	HASH_NOWAIT	0x00000001
 #define	HASH_WAITOK	0x00000002
 
-static int	oracle_malloc_calls;
-static int	oracle_malloc_fail_at;
-static size_t	oracle_malloc_last_size;
-static int	oracle_malloc_last_flags;
+static int		oracle_malloc_calls;
+static int		oracle_fail_at;
+static size_t		oracle_last_malloc_size;
+static int		oracle_last_malloc_flags;
 
 void
 oracle_malloc_reset(void)
 {
 
 	oracle_malloc_calls = 0;
-	oracle_malloc_fail_at = 0;
-	oracle_malloc_last_size = 0;
-	oracle_malloc_last_flags = 0;
+	oracle_fail_at = 0;
+	oracle_last_malloc_size = 0;
+	oracle_last_malloc_flags = 0;
 }
 
 void
 oracle_malloc_fail_at(int n)
 {
 
-	oracle_malloc_fail_at = n;
+	oracle_fail_at = n;
 }
 
 int
@@ -80,14 +80,14 @@ size_t
 oracle_malloc_last_size(void)
 {
 
-	return (oracle_malloc_last_size);
+	return (oracle_last_malloc_size);
 }
 
 int
 oracle_malloc_last_flags(void)
 {
 
-	return (oracle_malloc_last_flags);
+	return (oracle_last_malloc_flags);
 }
 
 static void *
@@ -98,10 +98,10 @@ oracle_kmalloc(u_long size, struct malloc_type *type, int flags)
 	(void)type;
 
 	oracle_malloc_calls++;
-	oracle_malloc_last_size = size;
-	oracle_malloc_last_flags = flags;
-	if (oracle_malloc_fail_at != 0 &&
-	    oracle_malloc_calls >= oracle_malloc_fail_at)
+	oracle_last_malloc_size = size;
+	oracle_last_malloc_flags = flags;
+	if (oracle_fail_at != 0 &&
+	    oracle_malloc_calls >= oracle_fail_at)
 		return (NULL);
 	p = malloc(size);
 	return (p);

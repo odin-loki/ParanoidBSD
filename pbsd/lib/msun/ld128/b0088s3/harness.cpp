@@ -171,19 +171,17 @@ case_ldcexpl(long double x, long double y, int expt)
 static void
 case_cexpl(long double x, long double y)
 {
-	long double _Complex rz, pr, rr;
+	long double pre, pim, rre, rim;
 
 	st_cexpl.cases++;
-	rz = CMPLXL(x, y);
-	pr = port::cexpl(rz);
-	rr = ref_cexpl(rz);
-	if ((!same_ld(creall(pr), creall(rr)) ||
-	    !same_ld(cimagl(pr), cimagl(rr))) && fail_head(st_cexpl)) {
+	port::cexpl_parts_impl(x, y, &pre, &pim);
+	ref_cexpl_parts(x, y, &rre, &rim);
+	if ((!same_ld(pre, rre) || !same_ld(pim, rim)) && fail_head(st_cexpl)) {
 		show_ld("x=", x); show_ld(" y=", y);
-		show_ld(" port.re=", creall(pr));
-		show_ld(" ref.re=", creall(rr));
-		show_ld(" port.im=", cimagl(pr));
-		show_ld(" ref.im=", cimagl(rr));
+		show_ld(" port.re=", pre);
+		show_ld(" ref.re=", rre);
+		show_ld(" port.im=", pim);
+		show_ld(" ref.im=", rim);
 		std::printf("\n");
 	}
 }

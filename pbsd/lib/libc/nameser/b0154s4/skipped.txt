@@ -1,0 +1,1 @@
+lib/libc/nameser/ns_parse.c: ns_parserr2() omitted - it needs ns_name_unpack2(), ns_rr2 and NS_MAXNNAME, none of which exist in this batch or in the host libc, so it cannot be built or differentially tested faithfully. Every other function in the file (ns_msg_getflag, ns_skiprr, ns_initparse, ns_parserr, setsection, _ns_flagdata) is ported.

@@ -1,8 +1,7 @@
 #!/bin/sh
-#
-# build.sh -- build and run the PBSD b0124s1 differential test.
-#
-# Usage: sh build.sh            (from pbsd/sbin/ipf/libipf/b0124s1/)
+# Build and run the b0124s1 differential test.
+#   sh build.sh
+# Exit code is the harness exit code.
 
 set -e
 
@@ -10,31 +9,30 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS=${CFLAGS:-"-std=c11 -O2"}
-CXXFLAGS=${CXXFLAGS:-"-std=c++23 -O2"}
+CFLAGS_C="-std=c11 -O2"
+CFLAGS_CXX="-std=c++23 -O2"
 
-BUILD=build
-MODNAME=pbsd.sbin.ipf.libipf.b0124s1
+rm -f oracle.o port.o harness.o port.pcm harness
+rm -rf gcm.cache
 
-rm -rf "$BUILD" gcm.cache
-mkdir -p "$BUILD"
+# The C oracle.
+$CC $CFLAGS_C -c oracle.c -o oracle.o
 
-$CC $CFLAGS -c oracle.c -o "$BUILD/oracle.o"
-
-MODFLAGS=""
-if $CXX --version 2>&1 | grep -qi 'clang'; then
-	$CXX $CXXFLAGS --precompile -x c++-module port.cppm \
-	    -o "$BUILD/port.pcm"
-	$CXX $CXXFLAGS -c "$BUILD/port.pcm" -o "$BUILD/port.o"
-	$CXX $CXXFLAGS -fmodule-file="$MODNAME=$BUILD/port.pcm" \
-	    -c harness.cpp -o "$BUILD/harness.o"
+# Which C++ front end are we dealing with?  The module flags differ.
+if $CXX --version 2>&1 | grep -qi clang; then
+	MODFLAGS=""
+	$CXX $CFLAGS_CXX -x c++-module port.cppm --precompile -o port.pcm
+	$CXX $CFLAGS_CXX -c port.pcm -o port.o
+	$CXX $CFLAGS_CXX \
+	    -fmodule-file=pbsd.sbin.ipf.libipf.b0124s1=port.pcm \
+	    -c harness.cpp -o harness.o
 else
 	MODFLAGS="-fmodules-ts"
-	$CXX $CXXFLAGS $MODFLAGS -x c++ -c port.cppm -o "$BUILD/port.o"
-	$CXX $CXXFLAGS $MODFLAGS -c harness.cpp -o "$BUILD/harness.o"
+	mkdir -p gcm.cache
+	$CXX $CFLAGS_CXX $MODFLAGS -x c++ -c port.cppm -o port.o
+	$CXX $CFLAGS_CXX $MODFLAGS -c harness.cpp -o harness.o
 fi
 
-$CXX $CXXFLAGS $MODFLAGS "$BUILD/port.o" "$BUILD/harness.o" \
-    "$BUILD/oracle.o" -o "$BUILD/b0124s1_test"
+$CXX $CFLAGS_CXX $MODFLAGS -o harness harness.o port.o oracle.o
 
-exec "$BUILD/b0124s1_test"
+exec ./harness

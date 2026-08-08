@@ -1,0 +1,10 @@
+{
+  "batch": "b0154s1",
+  "verified": "2026-08-08T22:15:29Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "== oracle.c   (cc -std=c11 -O2)\n== port.cppm  (clang++ -std=c++23 -O2, clang named modules)\n== harness.cpp\n== link\n== run\n=== b0154s1 nameser differential test ===\n\nfunction                        cases     failures\n--------------------------------------------------\nns_get16                       200013            0\nns_get32                       200013            0\nns_put16                       200014            0\nns_put32                       200014            0\n--------------------------------------------------\nTOTAL                          800054            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/nameser/ns_netint.c": "906fd06d20f05390"
+  }
+}

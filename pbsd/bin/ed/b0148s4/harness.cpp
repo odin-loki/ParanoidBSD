@@ -38,7 +38,7 @@ char *ref_translit_text(char *, int, int, int);
 namespace {
 
 constexpr unsigned char GUARD = 0x7f;
-constexpr long RANDOM_ITERS = 210000;
+constexpr long RANDOM_ITERS = 300000;
 
 struct Stat { const char *name; long cases, fails; };
 Stat stats[16];
