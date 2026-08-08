@@ -111,6 +111,12 @@ fnstcw(std::uint16_t *addr)
 }
 
 inline void
+fldcw(std::uint16_t *addr)
+{
+	sim_x87_control = *addr;
+}
+
+inline void
 fldcw(std::uint32_t *addr)
 {
 	sim_x87_control = *addr;

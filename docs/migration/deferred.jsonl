@@ -32,3 +32,4 @@
 {"path": "hbsd/src/bin/ed/buf.c", "batch": "b0148s4", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:55:14Z"}
 {"path": "hbsd/src/bin/ed/undo.c", "batch": "b0148s2", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T22:57:35Z"}
 {"path": "hbsd/src/bin/ed/glbl.c", "batch": "b0148s3", "reasons": ["AUTO_FAILED"], "detail": "mutation check: harness failed to detect: equality\n(mechanical path first said: not attempted (mechanical phase runs separately))", "attempts": 0, "queued": "2026-08-08T23:01:52Z"}
+{"path": "hbsd/src/bin/ed/io.c", "batch": "b0193s2", "reasons": ["AUTO_FAILED"], "detail": "agent failed: timed out after 1800s", "attempts": 0, "queued": "2026-08-08T23:06:28Z"}
