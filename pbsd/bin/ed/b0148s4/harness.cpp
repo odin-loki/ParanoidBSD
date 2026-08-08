@@ -171,8 +171,20 @@ void test_put_sbuf_line()
 		pl.fill();
 		std::memcpy(rl.user(), payload, plen);
 		std::memcpy(pl.user(), payload, plen);
+		reset_both();
+		if (!scratch_both()) {
+			st.cases++;
+			st.fails++;
+			return;
+		}
 		const char *rr = ref_put_sbuf_line(rl.user());
 		long ro = rr ? (rr - rl.user()) : -1;
+		reset_both();
+		if (!scratch_both()) {
+			st.cases++;
+			st.fails++;
+			return;
+		}
 		const char *pr = port::put_sbuf_line(pl.user());
 		long po = pr ? (pr - pl.user()) : -1;
 		st.cases++;
@@ -180,6 +192,8 @@ void test_put_sbuf_line()
 		    ((rr == nullptr) != (pr == nullptr)) ||
 		    std::strcmp(errmsg, port::errmsg) != 0)
 			st.fails++;
+		ref_close_sbuf();
+		port::close_sbuf();
 		(void)expect_ok;
 	};
 

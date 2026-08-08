@@ -39,6 +39,8 @@ module;
 
 export module pbsd.lib.libc.gen.b0132s1;
 
+extern "C" int __isthreaded;
+
 export namespace pbsd::lib_libc_gen::b0132s1 {
 
 #define	MAXNAMLEN	255
@@ -87,7 +89,6 @@ struct _dirdesc {
 
 using DIR = struct _dirdesc;
 
-extern int __isthreaded;
 extern "C" int _pthread_mutex_lock(struct pthread_mutex **);
 extern "C" int _pthread_mutex_unlock(struct pthread_mutex **);
 extern "C" ssize_t _getdirentries(int, char *, std::size_t, off_t *);

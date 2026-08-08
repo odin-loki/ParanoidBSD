@@ -28,11 +28,7 @@ export module pbsd.lib.libc.locale.b0153s2;
 #define SIZE_T_MAX SIZE_MAX
 #endif
 
-namespace pbsd::lib_libc_locale::b0153s2 {
-
-struct xlocale {
-	long	dummy;
-};
+export namespace pbsd::lib_libc_locale::b0153s2 {
 
 locale_t
 test_locale()
@@ -44,7 +40,9 @@ test_locale()
 	return (cached);
 }
 
-} /* namespace pbsd::lib_libc_locale::b0153s2 */
+} /* export namespace - helpers only */
+
+export namespace pbsd::lib_libc_locale::b0153s2 {
 
 extern "C" {
 size_t	wcsrtombs_l(char * __restrict, const wchar_t ** __restrict, size_t,

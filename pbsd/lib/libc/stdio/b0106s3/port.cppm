@@ -46,7 +46,7 @@ struct FILE {
 	do {								\
 		if ((loc) == NULL)					\
 			(loc) = __get_locale();				\
-	} while (1)
+	} while (0)
 
 typedef va_list __va_list;
 

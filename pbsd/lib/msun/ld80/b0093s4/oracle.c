@@ -1,33 +1,65 @@
 /*
  * PBSD batch b0093s4 -- reference oracle.
  *
- * The original HardenedBSD C source
+ * This file is the SPECIFICATION for the port in port.cppm.  It contains the
+ * original HardenedBSD C source of
  *
  *	lib/msun/ld80/s_tanpil.c
  *
- * concatenated verbatim.  Every function is renamed with a "ref_" prefix.
- * The renaming is done with the preprocessor so that no function body is
- * modified in any way: only the token that names the function is
- * substituted, the body text is untouched.
+ * with every function of the batch renamed with a "ref_" prefix.  Function
+ * bodies are UNMODIFIED.
  *
- * Support code that s_tanpil.c requires but that does not live in it
- * (union IEEEl2bits from lib/libc/amd64/_fpmath.h, macros from
- * lib/msun/src/math_private.h, and the kernel of lib/msun/ld80/k_tanl.c)
- * is reproduced verbatim first.  Only defines were added; no function body
- * was changed.  __kernel_tanl() is given external linkage so that the C++
- * port resolves it against this very definition.
+ * In addition it carries the support material that the batch source pulls in
+ * from headers and from other translation units of libm, because neither is
+ * available when this file is compiled standalone:
+ *
+ *	- union IEEEl2bits			(lib/libc/amd64/_fpmath.h)
+ *	- EXTRACT_LDBL80_WORDS, INSERT_LDBL80_WORDS,
+ *	  ENTERI, RETURNI, RETURNF, _2sumF, FFLOORL80
+ *						(lib/msun/src/math_private.h)
+ *	- __kernel_tanl				(lib/msun/ld80/k_tanl.c)
+ *
+ * __kernel_tanl is deliberately NOT renamed: it is not part of this batch, it
+ * is a shared dependency, and both the oracle and the port must call the very
+ * same object code for the differential test to isolate the ported code.
  */
 
-#include <math.h>
 #include <stdint.h>
+#include <math.h>
 
-#ifndef LONG_BIT
-#define	LONG_BIT	(8 * (int)sizeof(long))
-#endif
+/*
+ * ---------------------------------------------------------------------------
+ * lib/libc/amd64/_fpmath.h
+ * ---------------------------------------------------------------------------
+ */
 
-/* ------------------------------------------------------------------ */
-/* from lib/libc/amd64/_fpmath.h					    */
-/* ------------------------------------------------------------------ */
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2002, 2003 David Schultz <das@FreeBSD.ORG>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
 union IEEEl2bits {
 	long double	e;
@@ -46,9 +78,11 @@ union IEEEl2bits {
 	} xbits;
 };
 
-/* ------------------------------------------------------------------ */
-/* from lib/msun/src/math_private.h				    */
-/* ------------------------------------------------------------------ */
+/*
+ * ---------------------------------------------------------------------------
+ * lib/msun/src/math_private.h  (the !__i386__ variants)
+ * ---------------------------------------------------------------------------
+ */
 
 #define	EXTRACT_LDBL80_WORDS(ix0,ix1,d)				\
 do {								\
@@ -67,8 +101,13 @@ do {								\
 } while (0)
 
 #define	ENTERI()
+#define	ENTERIT(x)
 #define	RETURNI(x)	RETURNF(x)
-#define	RETURNF(v)	return (v)
+#define	ENTERV()
+#define	RETURNV()	return
+
+/* Default return statement if hack*_t() is not used. */
+#define      RETURNF(v)      return (v)
 
 #define	_2sumF(a, b) do {	\
 	__typeof(a) __w;	\
@@ -91,10 +130,33 @@ do {								\
 	INSERT_LDBL80_WORDS((x), (ix), (lx));		\
 } while (0)
 
-/* ------------------------------------------------------------------ */
-/* from lib/msun/ld80/k_tanl.c					    */
-/* ------------------------------------------------------------------ */
+/*
+ * ---------------------------------------------------------------------------
+ * lib/msun/ld80/k_tanl.c  -- shared dependency, NOT part of this batch.
+ * ---------------------------------------------------------------------------
+ */
 
+/*
+ * ====================================================
+ * Copyright 2004 Sun Microsystems, Inc.  All Rights Reserved.
+ * Copyright (c) 2008 Steven G. Kargl, David Schultz, Bruce D. Evans.
+ *
+ * Permission to use, copy, modify, and distribute this
+ * software is freely granted, provided that this notice
+ * is preserved.
+ * ====================================================
+ */
+
+/*
+ * ld80 version of k_tan.c.  See ../src/k_tan.c for most comments.
+ */
+
+/*
+ * Domain [-0.67434, 0.67434], range ~[-2.25e-22, 1.921e-22]
+ * |tan(x)/x - t(x)| < 2**-71.9
+ *
+ * See k_cosl.c for more details about the polynomial.
+ */
 #if defined(__amd64__) || defined(__i386__)
 /* Long double constants are slow on these arches, and broken on i386. */
 static const volatile double
@@ -191,15 +253,11 @@ __kernel_tanl(long double x, long double y, int iy) {
 	}
 }
 
-/* ================================================================== */
-/* lib/msun/ld80/s_tanpil.c					      */
-/* ================================================================== */
-
-#define	pi_hi			ref_tanpil_pi_hi
-#define	pi_lo			ref_tanpil_pi_lo
-#define	__kernel_tanpil		ref_tanpil_kernel_tanpil
-#define	vzero			ref_tanpil_vzero
-#define	tanpil			ref_tanpil
+/*
+ * ---------------------------------------------------------------------------
+ * lib/msun/ld80/s_tanpil.c  -- the batch.
+ * ---------------------------------------------------------------------------
+ */
 
 /*-
  * Copyright (c) 2017, 2023 Steven G. Kargl
@@ -235,8 +293,12 @@ static const double
 pi_hi =  3.1415926814079285e+00,	/* 0x400921fb 0x58000000 */
 pi_lo = -2.7818135228334233e-08;	/* 0xbe5dde97 0x3dcb3b3a */
 
-static inline long double
-__kernel_tanpil(long double x)
+/*
+ * "static inline" dropped so that the differential harness can reach this
+ * function directly.  The body is unmodified.
+ */
+long double
+ref___kernel_tanpil(long double x)
 {
 	long double hi, lo, t;
 
@@ -264,7 +326,7 @@ __kernel_tanpil(long double x)
 volatile static const double vzero = 0;
 
 long double
-tanpil(long double x)
+ref_tanpil(long double x)
 {
 	long double ax, hi, lo, odd, t;
 	uint64_t lx, m;
@@ -290,11 +352,11 @@ tanpil(long double x)
 				    pi_hi * hi;
 				RETURNI(t * 0x1p-63L);
 			}
-			t = __kernel_tanpil(ax);
+			t = ref___kernel_tanpil(ax);
 		} else if (ax == 0.5)
 			t = 1 / vzero;
 		else
-			t = -__kernel_tanpil(1 - ax);
+			t = -ref___kernel_tanpil(1 - ax);
 		RETURNI((hx & 0x8000) ? -t : t);
 	}
 
@@ -305,11 +367,11 @@ tanpil(long double x)
 		EXTRACT_LDBL80_WORDS(ix, lx, ax);
 
 		if (ix < 0x3ffe)		/* |x| < 0.5 */
-			t = ix == 0 ? copysignl(0, odd) : __kernel_tanpil(ax);
+			t = ix == 0 ? copysignl(0, odd) : ref___kernel_tanpil(ax);
 		else if (ax == 0.5L)
 			t = odd / vzero;
 		else
-			t = -__kernel_tanpil(1 - ax);
+			t = -ref___kernel_tanpil(1 - ax);
 		RETURNI((hx & 0x8000) ? -t : t);
 	}
 
@@ -325,9 +387,3 @@ tanpil(long double x)
 	t = ix >= 0x403f ? 0 : (copysignl(0, (lx & 1) ? -1 : 1));
 	RETURNI((hx & 0x8000) ? -t : t);
 }
-
-#undef pi_hi
-#undef pi_lo
-#undef __kernel_tanpil
-#undef vzero
-#undef tanpil
