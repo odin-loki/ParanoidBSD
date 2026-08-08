@@ -418,7 +418,7 @@ op_fillcontextx2(size_t sz, int fill_mode, const char *ctx)
 		report(F_FILLCONTEXTX2, ctx, "guard corruption");
 		goto done;
 	}
-	if (!buf_same(pa, pb, msg, sizeof msg))
+	if (!ctx_same(pa.ctx, pb.ctx, pa.ctxsz, msg, sizeof msg))
 		report(F_FILLCONTEXTX2, ctx, msg);
 
 done:
@@ -461,7 +461,7 @@ op_fillcontextx(size_t sz, int fill_mode, int gc_fail, int gc_errno,
 		report(F_FILLCONTEXTX, ctx, "guard corruption");
 		goto done;
 	}
-	if (!buf_same(pa, pb, msg, sizeof msg))
+	if (!ctx_same(pa.ctx, pb.ctx, pa.ctxsz, msg, sizeof msg))
 		report(F_FILLCONTEXTX, ctx, msg);
 
 done:
