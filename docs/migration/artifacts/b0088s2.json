@@ -1,0 +1,10 @@
+{
+  "batch": "b0088s2",
+  "verified": "2026-08-08T22:41:48Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases   failures   result\n-------------------------------------------------------\nsinpil                     214327          0   ok\n__kernel_sinpil            200283          0   ok\n__kernel_cospil            200283          0   ok\n__kernel_sinl              204788          0   ok\n__kernel_cosl              200800          0   ok\n-------------------------------------------------------\nTOTAL                     1020481          0   ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld128/s_sinpil.c": "7349a024988708d1"
+  }
+}

@@ -367,7 +367,7 @@ sinpil(long double x)
 			return (x < 0 ? -s : s);
 		}
 
-		if (ax >= 0.5)
+		if (ax < 0.5)
 			s = __kernel_cospil(0.5 - ax);
 		else if (ax < 0.75)
 			s = __kernel_cospil(ax - 0.5);
