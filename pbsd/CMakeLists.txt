@@ -247,6 +247,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdlib/b0069/port.cppm
   lib/libc/stdlib/b0126/port.cppm
   lib/libc/stdlib/b0212/port.cppm
+  lib/libc/stdlib/b0214/port.cppm
   lib/libc/stdlib/getsubopt_m/port.cppm
   lib/libc/stdlib/hcreate_m/port.cppm
   lib/libc/stdlib/reallocarray_m/port.cppm
