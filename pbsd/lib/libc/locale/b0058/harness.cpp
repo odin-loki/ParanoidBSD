@@ -37,9 +37,12 @@ int ref_wctob_l(unsigned int, ref_locale_t);
 int ref_wctob(unsigned int);
 size_t ref_mbrlen_l(const char *, size_t, ref_mbstate_t *, ref_locale_t);
 size_t ref_mbrlen(const char *, size_t, ref_mbstate_t *);
+void ref_reset_locale_states(void);
 }
 
 struct xlocale_ctype {
+	void		*__mbrtowc;
+	void		*__wcrtomb;
 	ref_mbstate_t	mbrtoc32;
 	ref_mbstate_t	mbrlen;
 	ref_mbstate_t	wcrtomb;
@@ -87,14 +90,14 @@ static void
 reset_both_locales()
 {
 	port::init_locale();
-	memset(&ref_global_ctype, 0, sizeof(ref_global_ctype));
-	ref_global_locale.components[1] = &ref_global_ctype;
+	ref_reset_locale_states();
 }
 
 static void
 init_locales()
 {
-	reset_both_locales();
+	port::init_locale();
+	ref_global_locale.components[1] = &ref_global_ctype;
 }
 
 static void
@@ -199,6 +202,8 @@ compare_mbrtoc32_l(Stats &st, const unsigned char *in, size_t n, bool use_l,
 	int perrno, rerrno;
 
 	st.cases++;
+	if (null_ps)
+		reset_both_locales();
 	zero_state(&pstate);
 	zero_state(&rstate);
 	fill_guard(pin, sizeof(pin));
@@ -274,6 +279,8 @@ compare_wcrtomb_l(Stats &st, wchar_t wc, bool use_l, bool null_ps,
 	int perrno, rerrno;
 
 	st.cases++;
+	if (null_ps)
+		reset_both_locales();
 	zero_state(&pstate);
 	zero_state(&rstate);
 	if (!null_s) {
@@ -356,6 +363,8 @@ compare_mbrlen_l(Stats &st, const unsigned char *in, size_t n, bool use_l,
 	int perrno, rerrno;
 
 	st.cases++;
+	if (null_ps)
+		reset_both_locales();
 	zero_state(&pstate);
 	zero_state(&rstate);
 	fill_guard(pin, sizeof(pin));

@@ -170,7 +170,7 @@ result will be either 0 or 1, depending on whether `a' is zero or nonzero.
 The result is stored in the location pointed to by `zPtr'.
 -------------------------------------------------------------------------------
 */
-export inline void shift32RightJamming( bits32 a, int16 count, bits32 *zPtr )
+ void shift32RightJamming( bits32 a, int16 count, bits32 *zPtr )
 {
     bits32 z;
 
@@ -197,7 +197,7 @@ result will be either 0 or 1, depending on whether `a' is zero or nonzero.
 The result is stored in the location pointed to by `zPtr'.
 -------------------------------------------------------------------------------
 */
-export inline void shift64RightJamming( bits64 a, int16 count, bits64 *zPtr )
+ void shift64RightJamming( bits64 a, int16 count, bits64 *zPtr )
 {
     bits64 z;
 
@@ -232,7 +232,7 @@ integer part of the result is returned at the location pointed to by
 described above, and is returned at the location pointed to by `z1Ptr'.)
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  shift64ExtraRightJamming(
      bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -270,7 +270,7 @@ than 128, the result will be 0.  The result is broken into two 64-bit pieces
 which are stored at the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  shift128Right(
      bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -306,7 +306,7 @@ nonzero.  The result is broken into two 64-bit pieces which are stored at
 the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  shift128RightJamming(
      bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -358,7 +358,7 @@ corrupted as described above, and is returned at the location pointed to by
 `z2Ptr'.)
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  shift128ExtraRightJamming(
      bits64 a0,
      bits64 a1,
@@ -417,7 +417,7 @@ of `count' must be less than 64.  The result is broken into two 64-bit
 pieces which are stored at the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  shortShift128Left(
      bits64 a0, bits64 a1, int16 count, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -437,7 +437,7 @@ The value of `count' must be less than 64.  The result is broken into three
 `z1Ptr', and `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  shortShift192Left(
      bits64 a0,
      bits64 a1,
@@ -473,7 +473,7 @@ any carry out is lost.  The result is broken into two 64-bit pieces which
 are stored at the locations pointed to by `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  add128(
      bits64 a0, bits64 a1, bits64 b0, bits64 b1, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -494,7 +494,7 @@ modulo 2^192, so any carry out is lost.  The result is broken into three
 `z1Ptr', and `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  add192(
      bits64 a0,
      bits64 a1,
@@ -533,7 +533,7 @@ Subtracts the 128-bit value formed by concatenating `b0' and `b1' from the
 `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  sub128(
      bits64 a0, bits64 a1, bits64 b0, bits64 b1, bits64 *z0Ptr, bits64 *z1Ptr )
 {
@@ -552,7 +552,7 @@ result is broken into three 64-bit pieces which are stored at the locations
 pointed to by `z0Ptr', `z1Ptr', and `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  sub192(
      bits64 a0,
      bits64 a1,
@@ -589,7 +589,7 @@ into two 64-bit pieces which are stored at the locations pointed to by
 `z0Ptr' and `z1Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void mul64To128( bits64 a, bits64 b, bits64 *z0Ptr, bits64 *z1Ptr )
+ void mul64To128( bits64 a, bits64 b, bits64 *z0Ptr, bits64 *z1Ptr )
 {
     bits32 aHigh, aLow, bHigh, bLow;
     bits64 z0, zMiddleA, zMiddleB, z1;
@@ -620,7 +620,7 @@ pieces which are stored at the locations pointed to by `z0Ptr', `z1Ptr', and
 `z2Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  mul128By64To192(
      bits64 a0,
      bits64 a1,
@@ -649,7 +649,7 @@ product.  The product is broken into four 64-bit pieces which are stored at
 the locations pointed to by `z0Ptr', `z1Ptr', `z2Ptr', and `z3Ptr'.
 -------------------------------------------------------------------------------
 */
-export inline void
+export  void
  mul128To256(
      bits64 a0,
      bits64 a1,
@@ -689,7 +689,7 @@ If the exact quotient q is larger than 64 bits, the maximum positive 64-bit
 unsigned integer is returned.
 -------------------------------------------------------------------------------
 */
-static bits64 estimateDiv128To64( bits64 a0, bits64 a1, bits64 b )
+export bits64 estimateDiv128To64( bits64 a0, bits64 a1, bits64 b )
 {
     bits64 b0, b1;
     bits64 rem0, rem1, term0, term1;
@@ -722,7 +722,7 @@ case, the approximation returned lies strictly within +/-2 of the exact
 value.
 -------------------------------------------------------------------------------
 */
-static bits32 estimateSqrt32( int16 aExp, bits32 a )
+export bits32 estimateSqrt32( int16 aExp, bits32 a )
 {
     static const bits16 sqrtOddAdjustments[] = {
         0x0004, 0x0022, 0x005D, 0x00B1, 0x011D, 0x019F, 0x0236, 0x02E0,
@@ -757,7 +757,7 @@ Returns the number of leading 0 bits before the most-significant 1 bit of
 `a'.  If `a' is zero, 32 is returned.
 -------------------------------------------------------------------------------
 */
-static int8 countLeadingZeros32( bits32 a )
+export int8 countLeadingZeros32( bits32 a )
 {
     static const int8 countLeadingZerosHigh[] = {
         8, 7, 6, 6, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
@@ -799,7 +799,7 @@ Returns the number of leading 0 bits before the most-significant 1 bit of
 `a'.  If `a' is zero, 64 is returned.
 -------------------------------------------------------------------------------
 */
-static int8 countLeadingZeros64( bits64 a )
+export int8 countLeadingZeros64( bits64 a )
 {
     int8 shiftCount;
 
@@ -822,7 +822,7 @@ is equal to the 128-bit value formed by concatenating `b0' and `b1'.
 Otherwise, returns 0.
 -------------------------------------------------------------------------------
 */
-export inline flag eq128( bits64 a0, bits64 a1, bits64 b0, bits64 b1 )
+ flag eq128( bits64 a0, bits64 a1, bits64 b0, bits64 b1 )
 {
 
     return ( a0 == b0 ) && ( a1 == b1 );
@@ -836,7 +836,7 @@ than or equal to the 128-bit value formed by concatenating `b0' and `b1'.
 Otherwise, returns 0.
 -------------------------------------------------------------------------------
 */
-export inline flag le128( bits64 a0, bits64 a1, bits64 b0, bits64 b1 )
+ flag le128( bits64 a0, bits64 a1, bits64 b0, bits64 b1 )
 {
 
     return ( a0 < b0 ) || ( ( a0 == b0 ) && ( a1 <= b1 ) );
@@ -850,7 +850,7 @@ than the 128-bit value formed by concatenating `b0' and `b1'.  Otherwise,
 returns 0.
 -------------------------------------------------------------------------------
 */
-export inline flag lt128( bits64 a0, bits64 a1, bits64 b0, bits64 b1 )
+ flag lt128( bits64 a0, bits64 a1, bits64 b0, bits64 b1 )
 {
 
     return ( a0 < b0 ) || ( ( a0 == b0 ) && ( a1 < b1 ) );
@@ -864,7 +864,7 @@ not equal to the 128-bit value formed by concatenating `b0' and `b1'.
 Otherwise, returns 0.
 -------------------------------------------------------------------------------
 */
-export inline flag ne128( bits64 a0, bits64 a1, bits64 b0, bits64 b1 )
+ flag ne128( bits64 a0, bits64 a1, bits64 b0, bits64 b1 )
 {
 
     return ( a0 != b0 ) || ( a1 != b1 );
@@ -980,7 +980,7 @@ Returns the result of converting the single-precision floating-point NaN
 exception is raised.
 -------------------------------------------------------------------------------
 */
-static commonNaNT float32ToCommonNaN( float32 a )
+export commonNaNT float32ToCommonNaN( float32 a )
 {
     commonNaNT z;
 
@@ -998,7 +998,7 @@ Returns the result of converting the canonical NaN `a' to the single-
 precision floating-point format.
 -------------------------------------------------------------------------------
 */
-static float32 commonNaNToFloat32( commonNaNT a )
+export float32 commonNaNToFloat32( commonNaNT a )
 {
 
     return ( ( (bits32) a.sign )<<31 ) | 0x7FC00000 | ( a.high>>41 );
@@ -1012,7 +1012,7 @@ is a NaN, and returns the appropriate NaN result.  If either `a' or `b' is a
 signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-static float32 propagateFloat32NaN( float32 a, float32 b )
+export float32 propagateFloat32NaN( float32 a, float32 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -1075,7 +1075,7 @@ Returns the result of converting the double-precision floating-point NaN
 exception is raised.
 -------------------------------------------------------------------------------
 */
-static commonNaNT float64ToCommonNaN( float64 a )
+export commonNaNT float64ToCommonNaN( float64 a )
 {
     commonNaNT z;
 
@@ -1093,7 +1093,7 @@ Returns the result of converting the canonical NaN `a' to the double-
 precision floating-point format.
 -------------------------------------------------------------------------------
 */
-static float64 commonNaNToFloat64( commonNaNT a )
+export float64 commonNaNToFloat64( commonNaNT a )
 {
 
     return FLOAT64_MANGLE(
@@ -1110,7 +1110,7 @@ is a NaN, and returns the appropriate NaN result.  If either `a' or `b' is a
 signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-static float64 propagateFloat64NaN( float64 a, float64 b )
+export float64 propagateFloat64NaN( float64 a, float64 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -1179,7 +1179,7 @@ point NaN `a' to the canonical NaN format.  If `a' is a signaling NaN, the
 invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-static commonNaNT floatx80ToCommonNaN( floatx80 a )
+export commonNaNT floatx80ToCommonNaN( floatx80 a )
 {
     commonNaNT z;
 
@@ -1197,7 +1197,7 @@ Returns the result of converting the canonical NaN `a' to the extended
 double-precision floating-point format.
 -------------------------------------------------------------------------------
 */
-static floatx80 commonNaNToFloatx80( commonNaNT a )
+export floatx80 commonNaNToFloatx80( commonNaNT a )
 {
     floatx80 z;
 
@@ -1214,7 +1214,7 @@ of which is a NaN, and returns the appropriate NaN result.  If either `a' or
 `b' is a signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-static floatx80 propagateFloatx80NaN( floatx80 a, floatx80 b )
+export floatx80 propagateFloatx80NaN( floatx80 a, floatx80 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -1282,7 +1282,7 @@ Returns the result of converting the quadruple-precision floating-point NaN
 exception is raised.
 -------------------------------------------------------------------------------
 */
-static commonNaNT float128ToCommonNaN( float128 a )
+export commonNaNT float128ToCommonNaN( float128 a )
 {
     commonNaNT z;
 
@@ -1299,7 +1299,7 @@ Returns the result of converting the canonical NaN `a' to the quadruple-
 precision floating-point format.
 -------------------------------------------------------------------------------
 */
-static float128 commonNaNToFloat128( commonNaNT a )
+export float128 commonNaNToFloat128( commonNaNT a )
 {
     float128 z;
 
@@ -1316,7 +1316,7 @@ which is a NaN, and returns the appropriate NaN result.  If either `a' or
 `b' is a signaling NaN, the invalid exception is raised.
 -------------------------------------------------------------------------------
 */
-static float128 propagateFloat128NaN( float128 a, float128 b )
+export float128 propagateFloat128NaN( float128 a, float128 b )
 {
     flag aIsNaN, aIsSignalingNaN, bIsNaN, bIsSignalingNaN;
 
@@ -1428,7 +1428,7 @@ point input is too large, the invalid exception is raised and the largest
 positive or negative integer is returned.
 -------------------------------------------------------------------------------
 */
-static int32 roundAndPackInt32( flag zSign, bits64 absZ )
+export int32 roundAndPackInt32( flag zSign, bits64 absZ )
 {
     int8 roundingMode;
     flag roundNearestEven;
@@ -1479,7 +1479,7 @@ exception is raised and the largest positive or negative integer is
 returned.
 -------------------------------------------------------------------------------
 */
-static int64 roundAndPackInt64( flag zSign, bits64 absZ0, bits64 absZ1 )
+export int64 roundAndPackInt64( flag zSign, bits64 absZ0, bits64 absZ1 )
 {
     int8 roundingMode;
     flag roundNearestEven, increment;
@@ -1525,7 +1525,7 @@ static int64 roundAndPackInt64( flag zSign, bits64 absZ0, bits64 absZ1 )
 Returns the fraction bits of the single-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-export inline bits32 extractFloat32Frac( float32 a )
+ bits32 extractFloat32Frac( float32 a )
 {
 
     return a & 0x007FFFFF;
@@ -1537,7 +1537,7 @@ export inline bits32 extractFloat32Frac( float32 a )
 Returns the exponent bits of the single-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-export inline int16 extractFloat32Exp( float32 a )
+ int16 extractFloat32Exp( float32 a )
 {
 
     return ( a>>23 ) & 0xFF;
@@ -1549,7 +1549,7 @@ export inline int16 extractFloat32Exp( float32 a )
 Returns the sign bit of the single-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-export inline flag extractFloat32Sign( float32 a )
+ flag extractFloat32Sign( float32 a )
 {
 
     return a>>31;
@@ -1564,7 +1564,7 @@ significand are stored at the locations pointed to by `zExpPtr' and
 `zSigPtr', respectively.
 -------------------------------------------------------------------------------
 */
-static void
+export void
  normalizeFloat32Subnormal( bits32 aSig, int16 *zExpPtr, bits32 *zSigPtr )
 {
     int8 shiftCount;
@@ -1587,7 +1587,7 @@ than the desired result exponent whenever `zSig' is a complete, normalized
 significand.
 -------------------------------------------------------------------------------
 */
-export inline float32 packFloat32( flag zSign, int16 zExp, bits32 zSig )
+ float32 packFloat32( flag zSign, int16 zExp, bits32 zSig )
 {
 
     return ( ( (bits32) zSign )<<31 ) + ( ( (bits32) zExp )<<23 ) + zSig;
@@ -1617,7 +1617,7 @@ The handling of underflow and overflow follows the IEC/IEEE Standard for
 Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float32 roundAndPackFloat32( flag zSign, int16 zExp, bits32 zSig )
+export float32 roundAndPackFloat32( flag zSign, int16 zExp, bits32 zSig )
 {
     int8 roundingMode;
     flag roundNearestEven;
@@ -1679,7 +1679,7 @@ Bit 31 of `zSig' must be zero, and `zExp' must be 1 less than the ``true''
 floating-point exponent.
 -------------------------------------------------------------------------------
 */
-static float32
+export float32
  normalizeRoundAndPackFloat32( flag zSign, int16 zExp, bits32 zSig )
 {
     int8 shiftCount;
@@ -1694,7 +1694,7 @@ static float32
 Returns the fraction bits of the double-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-export inline bits64 extractFloat64Frac( float64 a )
+ bits64 extractFloat64Frac( float64 a )
 {
 
     return FLOAT64_DEMANGLE(a) & LIT64( 0x000FFFFFFFFFFFFF );
@@ -1706,7 +1706,7 @@ export inline bits64 extractFloat64Frac( float64 a )
 Returns the exponent bits of the double-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-export inline int16 extractFloat64Exp( float64 a )
+ int16 extractFloat64Exp( float64 a )
 {
 
     return ( FLOAT64_DEMANGLE(a)>>52 ) & 0x7FF;
@@ -1718,7 +1718,7 @@ export inline int16 extractFloat64Exp( float64 a )
 Returns the sign bit of the double-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-export inline flag extractFloat64Sign( float64 a )
+ flag extractFloat64Sign( float64 a )
 {
 
     return FLOAT64_DEMANGLE(a)>>63;
@@ -1733,7 +1733,7 @@ significand are stored at the locations pointed to by `zExpPtr' and
 `zSigPtr', respectively.
 -------------------------------------------------------------------------------
 */
-static void
+export void
  normalizeFloat64Subnormal( bits64 aSig, int16 *zExpPtr, bits64 *zSigPtr )
 {
     int8 shiftCount;
@@ -1756,7 +1756,7 @@ than the desired result exponent whenever `zSig' is a complete, normalized
 significand.
 -------------------------------------------------------------------------------
 */
-export inline float64 packFloat64( flag zSign, int16 zExp, bits64 zSig )
+ float64 packFloat64( flag zSign, int16 zExp, bits64 zSig )
 {
 
     return FLOAT64_MANGLE( ( ( (bits64) zSign )<<63 ) +
@@ -1787,7 +1787,7 @@ The handling of underflow and overflow follows the IEC/IEEE Standard for
 Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float64 roundAndPackFloat64( flag zSign, int16 zExp, bits64 zSig )
+export float64 roundAndPackFloat64( flag zSign, int16 zExp, bits64 zSig )
 {
     int8 roundingMode;
     flag roundNearestEven;
@@ -1851,7 +1851,7 @@ Bit 63 of `zSig' must be zero, and `zExp' must be 1 less than the ``true''
 floating-point exponent.
 -------------------------------------------------------------------------------
 */
-static float64
+export float64
  normalizeRoundAndPackFloat64( flag zSign, int16 zExp, bits64 zSig )
 {
     int8 shiftCount;
@@ -1868,7 +1868,7 @@ Returns the fraction bits of the extended double-precision floating-point
 value `a'.
 -------------------------------------------------------------------------------
 */
-export inline bits64 extractFloatx80Frac( floatx80 a )
+ bits64 extractFloatx80Frac( floatx80 a )
 {
 
     return a.low;
@@ -1881,7 +1881,7 @@ Returns the exponent bits of the extended double-precision floating-point
 value `a'.
 -------------------------------------------------------------------------------
 */
-export inline int32 extractFloatx80Exp( floatx80 a )
+ int32 extractFloatx80Exp( floatx80 a )
 {
 
     return a.high & 0x7FFF;
@@ -1894,7 +1894,7 @@ Returns the sign bit of the extended double-precision floating-point value
 `a'.
 -------------------------------------------------------------------------------
 */
-export inline flag extractFloatx80Sign( floatx80 a )
+ flag extractFloatx80Sign( floatx80 a )
 {
 
     return a.high>>15;
@@ -1909,7 +1909,7 @@ and significand are stored at the locations pointed to by `zExpPtr' and
 `zSigPtr', respectively.
 -------------------------------------------------------------------------------
 */
-static void
+export void
  normalizeFloatx80Subnormal( bits64 aSig, int32 *zExpPtr, bits64 *zSigPtr )
 {
     int8 shiftCount;
@@ -1926,7 +1926,7 @@ Packs the sign `zSign', exponent `zExp', and significand `zSig' into an
 extended double-precision floating-point value, returning the result.
 -------------------------------------------------------------------------------
 */
-export inline floatx80 packFloatx80( flag zSign, int32 zExp, bits64 zSig )
+ floatx80 packFloatx80( flag zSign, int32 zExp, bits64 zSig )
 {
     floatx80 z;
 
@@ -1961,7 +1961,7 @@ handling of underflow and overflow follows the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static floatx80
+export floatx80
  roundAndPackFloatx80(
      int8 roundingPrecision, flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1
  )
@@ -2130,7 +2130,7 @@ corresponding to the abstract input.  This routine is just like
 normalized.
 -------------------------------------------------------------------------------
 */
-static floatx80
+export floatx80
  normalizeRoundAndPackFloatx80(
      int8 roundingPrecision, flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1
  )
@@ -2158,7 +2158,7 @@ Returns the least-significant 64 fraction bits of the quadruple-precision
 floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-export inline bits64 extractFloat128Frac1( float128 a )
+ bits64 extractFloat128Frac1( float128 a )
 {
 
     return a.low;
@@ -2171,7 +2171,7 @@ Returns the most-significant 48 fraction bits of the quadruple-precision
 floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-export inline bits64 extractFloat128Frac0( float128 a )
+ bits64 extractFloat128Frac0( float128 a )
 {
 
     return a.high & LIT64( 0x0000FFFFFFFFFFFF );
@@ -2184,7 +2184,7 @@ Returns the exponent bits of the quadruple-precision floating-point value
 `a'.
 -------------------------------------------------------------------------------
 */
-export inline int32 extractFloat128Exp( float128 a )
+ int32 extractFloat128Exp( float128 a )
 {
 
     return ( a.high>>48 ) & 0x7FFF;
@@ -2196,7 +2196,7 @@ export inline int32 extractFloat128Exp( float128 a )
 Returns the sign bit of the quadruple-precision floating-point value `a'.
 -------------------------------------------------------------------------------
 */
-export inline flag extractFloat128Sign( float128 a )
+ flag extractFloat128Sign( float128 a )
 {
 
     return a.high>>63;
@@ -2214,7 +2214,7 @@ least significant 64 bits of the normalized significand are stored at the
 location pointed to by `zSig1Ptr'.
 -------------------------------------------------------------------------------
 */
-static void
+export void
  normalizeFloat128Subnormal(
      bits64 aSig0,
      bits64 aSig1,
@@ -2259,7 +2259,7 @@ whenever `zSig0' and `zSig1' concatenated form a complete, normalized
 significand.
 -------------------------------------------------------------------------------
 */
-export inline float128
+export  float128
  packFloat128( flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1 )
 {
     float128 z;
@@ -2292,7 +2292,7 @@ than the ``true'' floating-point exponent.  The handling of underflow and
 overflow follows the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float128
+export float128
  roundAndPackFloat128(
      flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1, bits64 zSig2 )
 {
@@ -2393,7 +2393,7 @@ normalized.  In all cases, `zExp' must be 1 less than the ``true'' floating-
 point exponent.
 -------------------------------------------------------------------------------
 */
-static float128
+export float128
  normalizeRoundAndPackFloat128(
      flag zSign, int32 zExp, bits64 zSig0, bits64 zSig1 )
 {
@@ -2991,7 +2991,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float32 addFloat32Sigs( float32 a, float32 b, flag zSign )
+export float32 addFloat32Sigs( float32 a, float32 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits32 aSig, bSig, zSig;
@@ -3063,7 +3063,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float32 subFloat32Sigs( float32 a, float32 b, flag zSign )
+export float32 subFloat32Sigs( float32 a, float32 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits32 aSig, bSig, zSig;
@@ -3941,7 +3941,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float64 addFloat64Sigs( float64 a, float64 b, flag zSign )
+export float64 addFloat64Sigs( float64 a, float64 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits64 aSig, bSig, zSig;
@@ -4013,7 +4013,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float64 subFloat64Sigs( float64 a, float64 b, flag zSign )
+export float64 subFloat64Sigs( float64 a, float64 b, flag zSign )
 {
     int16 aExp, bExp, zExp;
     bits64 aSig, bSig, zSig;
@@ -4878,7 +4878,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static floatx80 addFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
+export floatx80 addFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
 {
     int32 aExp, bExp, zExp;
     bits64 aSig, bSig, zSig0, zSig1;
@@ -4945,7 +4945,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static floatx80 subFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
+export floatx80 subFloatx80Sigs( floatx80 a, floatx80 b, flag zSign )
 {
     int32 aExp, bExp, zExp;
     bits64 aSig, bSig, zSig0, zSig1;
@@ -5971,7 +5971,7 @@ The addition is performed according to the IEC/IEEE Standard for Binary
 Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float128 addFloat128Sigs( float128 a, float128 b, flag zSign )
+export float128 addFloat128Sigs( float128 a, float128 b, flag zSign )
 {
     int32 aExp, bExp, zExp;
     bits64 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1, zSig2;
@@ -6050,7 +6050,7 @@ result is a NaN.  The subtraction is performed according to the IEC/IEEE
 Standard for Binary Floating-Point Arithmetic.
 -------------------------------------------------------------------------------
 */
-static float128 subFloat128Sigs( float128 a, float128 b, flag zSign )
+export float128 subFloat128Sigs( float128 a, float128 b, flag zSign )
 {
     int32 aExp, bExp, zExp;
     bits64 aSig0, aSig1, bSig0, bSig1, zSig0, zSig1;

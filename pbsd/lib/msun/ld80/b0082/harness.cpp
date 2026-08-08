@@ -5,6 +5,7 @@
  * against the unmodified C reference in oracle.c.
  */
 
+#include <cfloat>
 #include <climits>
 #include <cmath>
 #include <cstddef>

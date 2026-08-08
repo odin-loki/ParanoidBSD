@@ -9,6 +9,8 @@ module;
 #include <stddef.h>
 #include <stdint.h>
 
+export module pbsd.lib.libc.gen.b0087;
+
 /*
  * The FreeBSD/HardenedBSD headers that the original translation unit pulled in
  * ("namespace.h", <sys/fcntl.h>, <sys/inotify.h>, <sys/specialfd.h>,
@@ -44,8 +46,6 @@ int __sys___specialfd(int type, const void *arg, size_t argsize);
  */
 #define	IN_NONBLOCK_OLD	0x80000
 #define	IN_CLOEXEC_OLD	0x00800
-
-export module pbsd.lib.libc.gen.b0087;
 
 export namespace pbsd::lib_libc_gen::b0087 {
 

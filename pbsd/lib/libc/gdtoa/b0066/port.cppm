@@ -24,6 +24,12 @@ module;
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "gdtoa_shim.h"
+
+export module pbsd.lib.libc.gdtoa.b0066;
+
+export namespace pbsd::lib_libc_gdtoa::b0066 {
+
 #define DBL_MANH_SIZE 20
 #define DBL_MANL_SIZE 32
 
@@ -74,12 +80,6 @@ union IEEEl2bits {
 	(a)[0] = (uint32_t)(u).bits.manl;		\
 	(a)[1] = (uint32_t)(u).bits.manh;		\
 } while (0)
-
-#include "gdtoa_shim.h"
-
-export module pbsd.lib.libc.gdtoa.b0066;
-
-export namespace pbsd::lib_libc_gdtoa::b0066 {
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause

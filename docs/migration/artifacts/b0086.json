@@ -1,0 +1,13 @@
+{
+  "batch": "b0086",
+  "verified": "2026-08-08T11:23:39Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures  result\n---------------------------------------------------\nfabs               433277            0  PASS\nfinite             433277            0  PASS\nlgammal            250422            0  PASS\n---------------------------------------------------\nTOTAL             1116976            0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/e_lgammal.c": "3c71d0529150b8f2",
+    "hbsd/src/lib/msun/src/s_fabs.c": "fd59c9a8d5ea9951",
+    "hbsd/src/lib/msun/src/e_gamma.c": "edb0a5975ea72c53",
+    "hbsd/src/lib/msun/src/s_finite.c": "58a24d87be866b25"
+  }
+}

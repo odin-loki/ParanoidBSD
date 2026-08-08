@@ -110,24 +110,27 @@ state_eq(const port::mbstate_t &a, const ref_mbstate_t &b)
 	return (memcmp(&a, &b, sizeof(a)) == 0);
 }
 
+struct port_xlocale_ctype {
+	port::mbstate_t	mbrtowc;
+	port::mbstate_t	c32rtomb;
+	port::mbstate_t	wcrtomb;
+};
+
 static bool
 locale_ctype_eq()
 {
 	const auto &pc = port::global_locale()->components[1];
 	const auto &rc = ref_global_locale.components[1];
-	const port::mbstate_t *pm;
-	const ref_mbstate_t *rm;
+	const port_xlocale_ctype *pct;
+	const struct xlocale_ctype *rct;
 
 	if (pc == nullptr || rc == nullptr)
 		return (pc == rc);
-	pm = &reinterpret_cast<const struct {
-		port::mbstate_t mbrtowc;
-		port::mbstate_t c32rtomb;
-		port::mbstate_t wcrtomb;
-	} *>(pc)->mbrtowc;
-	rm = &reinterpret_cast<const struct xlocale_ctype *>(rc)->mbrtowc;
-	if (!state_eq(pm[0], rm[0]) || !state_eq(pm[1], rm[1]) ||
-	    !state_eq(pm[2], rm[2]))
+	pct = reinterpret_cast<const port_xlocale_ctype *>(pc);
+	rct = reinterpret_cast<const struct xlocale_ctype *>(rc);
+	if (!state_eq(pct->mbrtowc, rct->mbrtowc) ||
+	    !state_eq(pct->c32rtomb, rct->c32rtomb) ||
+	    !state_eq(pct->wcrtomb, rct->wcrtomb))
 		return (false);
 	return (true);
 }

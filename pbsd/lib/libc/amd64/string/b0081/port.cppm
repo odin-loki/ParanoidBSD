@@ -203,7 +203,7 @@ strpbrk(const char *s, const char *charset)
  */
 
 char *
-strncpy(char *restrict dst, const char *restrict src, size_t len)
+strncpy(char * __restrict dst, const char * __restrict src, size_t len)
 {
 
 	__stpncpy(dst, src, len);

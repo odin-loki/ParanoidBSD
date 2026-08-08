@@ -372,36 +372,28 @@ def strip_duplicate_globals(text: str) -> str:
 
 
 def port_body_from_source(body: str) -> str:
-    """C++ module body: export public API functions."""
-    # Keep body as-is; add export before non-static function definitions at file scope.
+    body = re.sub(r'\bINLINE\b', '', body)
+    body = re.sub(r'^static\s+', '', body, flags=re.MULTILINE)
+    body = re.sub(r'^inline\s+', '', body, flags=re.MULTILINE)
     lines = body.splitlines()
     out: list[str] = []
     i = 0
     while i < len(lines):
         line = lines[i]
-        if re.match(r'\s*static\b', line):
+        if line.strip().startswith('export'):
             out.append(line)
             i += 1
             continue
-        m = re.match(
-            r'^(' + RET_TYPES + r')\s+(\w+)\s*\(',
-            line,
-        )
+        m = re.match(r'^(' + RET_TYPES + r')\s+(\w+)\s*\(', line)
         if m:
             out.append('export ' + line)
             i += 1
             continue
-        m2 = re.match(r'^(' + RET_TYPES + r')\s*$', line.strip())
-        if m2 and i + 1 < len(lines):
-            m3 = re.match(r'^\s*(\w+)\s*\(', lines[i + 1])
-            if m3:
+        if re.match(r'^(' + RET_TYPES + r')\s*$', line.strip()):
+            if i + 1 < len(lines) and re.match(r'^\s*(\w+)\s*\(', lines[i + 1]):
                 out.append('export ' + line)
                 i += 1
                 continue
-        if re.match(r'^INLINE\s+' + RET_TYPES, line):
-            out.append('export ' + line.replace('INLINE', 'inline', 1))
-            i += 1
-            continue
         out.append(line)
         i += 1
     return '\n'.join(out)

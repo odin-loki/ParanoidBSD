@@ -247,20 +247,15 @@ $CC -std=c11 $CFLAGS -include gdtoa_shim.h -I$GDTOA \
     -c oracle.c -o oracle.o
 
 if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX -std=c++23 $CXXFLAGS -include gdtoa_shim.h -I$GDTOA \
-	    -I$HBSD/lib/libc/include -I$HBSD/lib/libc/amd64 \
+	$CXX -std=c++23 $CXXFLAGS -I$GDTOA \
 	    -x c++-module port.cppm --precompile -o port.pcm
 	$CXX -std=c++23 $CXXFLAGS -c port.pcm -o port.o
 	$CXX -std=c++23 $CXXFLAGS -fmodule-file=$MODNAME=port.pcm \
-	    -include gdtoa_shim.h -I$GDTOA \
-	    -I$HBSD/lib/libc/include -I$HBSD/lib/libc/amd64 \
-	    -c harness.cpp -o harness.o
+	    -I$GDTOA -c harness.cpp -o harness.o
 else
-	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -include gdtoa_shim.h -I$GDTOA \
-	    -I$HBSD/lib/libc/include -I$HBSD/lib/libc/amd64 \
+	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -I$GDTOA \
 	    -c -x c++ port.cppm -o port.o
-	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -include gdtoa_shim.h -I$GDTOA \
-	    -I$HBSD/lib/libc/include -I$HBSD/lib/libc/amd64 \
+	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -I$GDTOA \
 	    -c harness.cpp -o harness.o
 fi
 

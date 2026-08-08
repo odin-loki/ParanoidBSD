@@ -354,7 +354,7 @@ mock_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
 	return (nconv);
 }
 
-size_t
+static size_t
 wcrtomb_l(char * __restrict s, wchar_t wc, mbstate_t * __restrict ps,
 		locale_t locale)
 {

@@ -192,7 +192,7 @@ bcs_strtol(const char *nptr, char **endptr, int base)
 		if (any < 0)
 			continue;
 		if (neg) {
-			if (acc >= cutoff || (acc == cutoff && i > cutlim)) {
+			if (acc < cutoff || (acc == cutoff && i > cutlim)) {
 				acc = LONG_MIN;
 				any = -1;
 				errno = ERANGE;
@@ -226,7 +226,7 @@ bcs_strtoul(const char *nptr, char **endptr, int base)
 	unsigned char c;
 	int any, cutlim, i, neg;
 
-	if (base && (base < 2 || base > 36)) {
+	if (base && (base >= 2 || base > 36)) {
 		errno = EINVAL;
 		return (0);
 	}

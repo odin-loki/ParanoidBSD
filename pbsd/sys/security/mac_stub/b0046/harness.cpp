@@ -3,6 +3,23 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sys/types.h>
+
+typedef unsigned int u_int;
+typedef unsigned long u_long;
+typedef unsigned int accmode_t;
+typedef unsigned long acl_type_t;
+typedef long db_expr_t;
+
+struct timespec { long tv_sec; long tv_nsec; };
+struct mac_policy_conf; struct thread; struct label; struct sbuf; struct bpf_d;
+struct ifnet; struct mbuf; struct ucred; struct auditinfo; struct auditinfo_addr;
+struct db_command; struct db_command_table; struct mount; struct cdev;
+struct devfs_dirent; struct vnode; struct inpcb; struct socket; struct ip6q;
+struct ipq; struct kdb_dbbe; struct pipepair; struct ksem; struct shmfd;
+struct proc; struct sockaddr; struct sysctl_oid; struct sysctl_req;
+struct msqid_kernel; struct msg; struct semid_kernel; struct shmid_kernel;
+struct componentname; struct vattr; struct image_params; struct acl;
 
 import pbsd.sys.security.mac.stub.b0046;
 namespace port = pbsd::sys_security_mac_stub::b0046;
@@ -234,6 +251,9 @@ static char *strs[8];
 static int prot_bufs[8];
 static int claimed_bufs[8];
 static gid_t gidset[8];
+static struct timespec ts_zero = {0, 0};
+static struct timespec ts_hi = {-1, -1};
+static struct timespec ts_rand[2] = {{1, 2}, {3, 4}};
 
 static void init_test_data() {
     static const char *edge_strs[] = {
@@ -854,14 +874,14 @@ static void test_stub_cred_check_setcred(FnStats &st) {
     }
     ++st.cases;
     {
-        int r_ref = ref_stub_cred_check_setcred(-1, reinterpret_cast<const struct ucred *>((uintptr_t)0xdeadbeefUL), reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL));
-        int r_port = call_port_int3(fn_to_void(&port::stub_cred_check_setcred), reinterpret_cast<void*>(static_cast<uintptr_t>(-1)), reinterpret_cast<void*>(reinterpret_cast<const struct ucred *>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)));
+        int r_ref = ref_stub_cred_check_setcred(-1, reinterpret_cast<const ucred*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL));
+        int r_port = call_port_int3(fn_to_void(&port::stub_cred_check_setcred), reinterpret_cast<void*>(static_cast<uintptr_t>(-1)), const_cast<void*>(reinterpret_cast<const void*>(reinterpret_cast<const ucred*>((uintptr_t)0xdeadbeefUL))), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)));
         if (r_ref != r_port) ++st.failures;
     }
     for (int iter = 0; iter < 1000; ++iter) {
         init_test_data(); ++st.cases;
-        int r_ref = ref_stub_cred_check_setcred(ri(-0x7fffffff, 0x7fffffff), reinterpret_cast<const struct ucred *>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))));
-        int r_port = call_port_int3(fn_to_void(&port::stub_cred_check_setcred), reinterpret_cast<void*>(static_cast<uintptr_t>(ri(-0x7fffffff, 0x7fffffff))), reinterpret_cast<void*>(reinterpret_cast<const struct ucred *>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))));
+        int r_ref = ref_stub_cred_check_setcred(ri(-0x7fffffff, 0x7fffffff), reinterpret_cast<const ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))));
+        int r_port = call_port_int3(fn_to_void(&port::stub_cred_check_setcred), reinterpret_cast<void*>(static_cast<uintptr_t>(ri(-0x7fffffff, 0x7fffffff))), const_cast<void*>(reinterpret_cast<const void*>(reinterpret_cast<const ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))))), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))));
         if (r_ref != r_port) ++st.failures;
     }
 }
@@ -2597,19 +2617,19 @@ static void test_stub_posixshm_check_create(FnStats &st) {
     ++st.cases;
     {
         int r_ref = ref_stub_posixshm_check_create(nullptr, strs[0]);
-        int r_port = call_port_int2(fn_to_void(&port::stub_posixshm_check_create), nullptr, reinterpret_cast<void*>(strs[0]));
+        int r_port = call_port_int2(fn_to_void(&port::stub_posixshm_check_create), nullptr, const_cast<void*>(reinterpret_cast<const void*>(strs[0])));
         if (r_ref != r_port) ++st.failures;
     }
     ++st.cases;
     {
         int r_ref = ref_stub_posixshm_check_create(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL), strs[3]);
-        int r_port = call_port_int2(fn_to_void(&port::stub_posixshm_check_create), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(strs[3]));
+        int r_port = call_port_int2(fn_to_void(&port::stub_posixshm_check_create), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), const_cast<void*>(reinterpret_cast<const void*>(strs[3])));
         if (r_ref != r_port) ++st.failures;
     }
     for (int iter = 0; iter < 1000; ++iter) {
         init_test_data(); ++st.cases;
         int r_ref = ref_stub_posixshm_check_create(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), strs[ri(0,7)]);
-        int r_port = call_port_int2(fn_to_void(&port::stub_posixshm_check_create), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(strs[ri(0,7)]));
+        int r_port = call_port_int2(fn_to_void(&port::stub_posixshm_check_create), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), const_cast<void*>(reinterpret_cast<const void*>(strs[ri(0,7)])));
         if (r_ref != r_port) ++st.failures;
     }
 }
@@ -4440,19 +4460,19 @@ static void test_stub_vnode_check_deleteextattr(FnStats &st) {
     ++st.cases;
     {
         int r_ref = ref_stub_vnode_check_deleteextattr(nullptr, nullptr, nullptr, 0, strs[0]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_deleteextattr), nullptr, nullptr, nullptr, reinterpret_cast<void*>(static_cast<uintptr_t>(0)), reinterpret_cast<void*>(strs[0]));
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_deleteextattr), nullptr, nullptr, nullptr, reinterpret_cast<void*>(static_cast<uintptr_t>(0)), const_cast<void*>(reinterpret_cast<const void*>(strs[0])));
         if (r_ref != r_port) ++st.failures;
     }
     ++st.cases;
     {
         int r_ref = ref_stub_vnode_check_deleteextattr(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL), -1, strs[3]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_deleteextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(static_cast<uintptr_t>(-1)), reinterpret_cast<void*>(strs[3]));
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_deleteextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(static_cast<uintptr_t>(-1)), const_cast<void*>(reinterpret_cast<const void*>(strs[3])));
         if (r_ref != r_port) ++st.failures;
     }
     for (int iter = 0; iter < 1000; ++iter) {
         init_test_data(); ++st.cases;
         int r_ref = ref_stub_vnode_check_deleteextattr(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), ri(-0x7fffffff, 0x7fffffff), strs[ri(0,7)]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_deleteextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(static_cast<uintptr_t>(ri(-0x7fffffff, 0x7fffffff))), reinterpret_cast<void*>(strs[ri(0,7)]));
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_deleteextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(static_cast<uintptr_t>(ri(-0x7fffffff, 0x7fffffff))), const_cast<void*>(reinterpret_cast<const void*>(strs[ri(0,7)])));
         if (r_ref != r_port) ++st.failures;
     }
 }
@@ -4515,19 +4535,19 @@ static void test_stub_vnode_check_getextattr(FnStats &st) {
     ++st.cases;
     {
         int r_ref = ref_stub_vnode_check_getextattr(nullptr, nullptr, nullptr, 0, strs[0]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_getextattr), nullptr, nullptr, nullptr, reinterpret_cast<void*>(static_cast<uintptr_t>(0)), reinterpret_cast<void*>(strs[0]));
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_getextattr), nullptr, nullptr, nullptr, reinterpret_cast<void*>(static_cast<uintptr_t>(0)), const_cast<void*>(reinterpret_cast<const void*>(strs[0])));
         if (r_ref != r_port) ++st.failures;
     }
     ++st.cases;
     {
         int r_ref = ref_stub_vnode_check_getextattr(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL), -1, strs[3]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_getextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(static_cast<uintptr_t>(-1)), reinterpret_cast<void*>(strs[3]));
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_getextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(static_cast<uintptr_t>(-1)), const_cast<void*>(reinterpret_cast<const void*>(strs[3])));
         if (r_ref != r_port) ++st.failures;
     }
     for (int iter = 0; iter < 1000; ++iter) {
         init_test_data(); ++st.cases;
         int r_ref = ref_stub_vnode_check_getextattr(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), ri(-0x7fffffff, 0x7fffffff), strs[ri(0,7)]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_getextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(static_cast<uintptr_t>(ri(-0x7fffffff, 0x7fffffff))), reinterpret_cast<void*>(strs[ri(0,7)]));
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_getextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(static_cast<uintptr_t>(ri(-0x7fffffff, 0x7fffffff))), const_cast<void*>(reinterpret_cast<const void*>(strs[ri(0,7)])));
         if (r_ref != r_port) ++st.failures;
     }
 }
@@ -4950,19 +4970,19 @@ static void test_stub_vnode_check_setextattr(FnStats &st) {
     ++st.cases;
     {
         int r_ref = ref_stub_vnode_check_setextattr(nullptr, nullptr, nullptr, 0, strs[0]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setextattr), nullptr, nullptr, nullptr, reinterpret_cast<void*>(static_cast<uintptr_t>(0)), reinterpret_cast<void*>(strs[0]));
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setextattr), nullptr, nullptr, nullptr, reinterpret_cast<void*>(static_cast<uintptr_t>(0)), const_cast<void*>(reinterpret_cast<const void*>(strs[0])));
         if (r_ref != r_port) ++st.failures;
     }
     ++st.cases;
     {
         int r_ref = ref_stub_vnode_check_setextattr(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL), -1, strs[3]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(static_cast<uintptr_t>(-1)), reinterpret_cast<void*>(strs[3]));
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(static_cast<uintptr_t>(-1)), const_cast<void*>(reinterpret_cast<const void*>(strs[3])));
         if (r_ref != r_port) ++st.failures;
     }
     for (int iter = 0; iter < 1000; ++iter) {
         init_test_data(); ++st.cases;
         int r_ref = ref_stub_vnode_check_setextattr(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), ri(-0x7fffffff, 0x7fffffff), strs[ri(0,7)]);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(static_cast<uintptr_t>(ri(-0x7fffffff, 0x7fffffff))), reinterpret_cast<void*>(strs[ri(0,7)]));
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setextattr), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(static_cast<uintptr_t>(ri(-0x7fffffff, 0x7fffffff))), const_cast<void*>(reinterpret_cast<const void*>(strs[ri(0,7)])));
         if (r_ref != r_port) ++st.failures;
     }
 }
@@ -5049,20 +5069,20 @@ static void test_stub_vnode_check_setutimes(FnStats &st) {
     init_test_data();
     ++st.cases;
     {
-        int r_ref = ref_stub_vnode_check_setutimes(nullptr, nullptr, nullptr, 0, 0);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setutimes), nullptr, nullptr, nullptr, reinterpret_cast<void*>(static_cast<uintptr_t>(0)), reinterpret_cast<void*>(static_cast<uintptr_t>(0)));
+        int r_ref = ref_stub_vnode_check_setutimes(nullptr, nullptr, nullptr, ts_zero, ts_zero);
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setutimes), nullptr, nullptr, nullptr, reinterpret_cast<void*>(ts_zero), reinterpret_cast<void*>(ts_zero));
         if (r_ref != r_port) ++st.failures;
     }
     ++st.cases;
     {
-        int r_ref = ref_stub_vnode_check_setutimes(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL), 0, 0);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setutimes), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(static_cast<uintptr_t>(0)), reinterpret_cast<void*>(static_cast<uintptr_t>(0)));
+        int r_ref = ref_stub_vnode_check_setutimes(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL), reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL), ts_hi, ts_hi);
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setutimes), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)0xdeadbeefUL)), reinterpret_cast<void*>(ts_hi), reinterpret_cast<void*>(ts_hi));
         if (r_ref != r_port) ++st.failures;
     }
     for (int iter = 0; iter < 1000; ++iter) {
         init_test_data(); ++st.cases;
-        int r_ref = ref_stub_vnode_check_setutimes(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), 0, 0);
-        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setutimes), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(static_cast<uintptr_t>(0)), reinterpret_cast<void*>(static_cast<uintptr_t>(0)));
+        int r_ref = ref_stub_vnode_check_setutimes(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu)))), ts_rand[ri(0,1)], ts_rand[ri(0,1)]);
+        int r_port = call_port_int5(fn_to_void(&port::stub_vnode_check_setutimes), reinterpret_cast<void*>(reinterpret_cast<ucred*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<vnode*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(reinterpret_cast<label*>((uintptr_t)(0x1000u * (1u + (xorshift32() & 0xffu))))), reinterpret_cast<void*>(ts_rand[ri(0,1)]), reinterpret_cast<void*>(ts_rand[ri(0,1)]));
         if (r_ref != r_port) ++st.failures;
     }
 }

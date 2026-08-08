@@ -278,10 +278,6 @@ pbsd_test_mbrtowc(wchar_t * __restrict pwc, const char * __restrict s,
 	return (consumed);
 }
 
-std::size_t
-pbsd_backend_mbsnrtowcs(wchar_t * __restrict dst, const char ** __restrict src,
-    std::size_t nms, std::size_t len, mbstate_t * __restrict ps);
-
 } /* namespace pbsd::lib_libc_locale::b0078 */
 
 export namespace pbsd::lib_libc_locale::b0078 {
