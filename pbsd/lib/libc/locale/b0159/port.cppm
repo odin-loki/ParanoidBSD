@@ -610,31 +610,7 @@ _none_wcsnrtombs(char * __restrict dst, const wchar_t ** __restrict src,
 	return (nchr);
 }
 
-/* setup defaults */
-
-struct xlocale_ctype __xlocale_global_ctype = {
-	{{0}, "C"},
-	(_RuneLocale*)&_DefaultRuneLocale,
-	_none_mbrtowc,
-	_none_mbsinit,
-	_none_mbsnrtowcs,
-	_none_wcrtomb,
-	_none_wcsnrtombs,
-	1, /* __mb_cur_max, */
-	256 /* __mb_sb_limit */
-};
-
-struct xlocale_ctype __xlocale_C_ctype = {
-	{{0}, "C"},
-	(_RuneLocale*)&_DefaultRuneLocale,
-	_none_mbrtowc,
-	_none_mbsinit,
-	_none_mbsnrtowcs,
-	_none_wcrtomb,
-	_none_wcsnrtombs,
-	1, /* __mb_cur_max, */
-	256 /* __mb_sb_limit */
-};
+/* setup defaults - globals in oracle.c */
 
 /* nl_langinfo.c */
 /*-

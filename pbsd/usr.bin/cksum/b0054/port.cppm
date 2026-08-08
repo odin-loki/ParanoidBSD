@@ -1,3 +1,11 @@
+// PBSD batch b0054 -- C++23 module port of usr.bin/cksum/{crc32.c,crc.c}.
+//
+// This is a faithful, behaviour-preserving port.  Signedness, evaluation
+// order, integer promotions, pointer arithmetic and the file-static running
+// totals are reproduced exactly as the C originals had them.  Nothing is
+// "improved".  Each original translation unit keeps its own nested namespace
+// so that its `crctab` keeps its original name.
+
 module;
 
 #include <sys/types.h>
@@ -8,7 +16,11 @@ module;
 
 export module pbsd.usr.bin.cksum.b0054;
 
-export namespace pbsd::usr_bin_cksum::b0054 {
+namespace pbsd::usr_bin_cksum::b0054 {
+
+/* ------------------------------------------------------------------ */
+/* usr.bin/cksum/crc32.c                                              */
+/* ------------------------------------------------------------------ */
 
 /*
  * This code implements the AUTODIN II polynomial used by Ethernet,
@@ -23,13 +35,15 @@ export namespace pbsd::usr_bin_cksum::b0054 {
  *			Spencer Garrett <srg@quick.com>
  */
 
-#define CRC(crc, ch)	 (crc = (crc >> 8) ^ crctab32[(crc ^ (ch)) & 0xff])
+namespace crc32_impl {
+
+#define CRC(crc, ch)	 (crc = (crc >> 8) ^ crctab[(crc ^ (ch)) & 0xff])
 
 /* generated using the AUTODIN II polynomial
  *	x^32 + x^26 + x^23 + x^22 + x^16 +
  *	x^12 + x^11 + x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x^1 + 1
  */
-static const uint32_t crctab32[256] = {
+static const uint32_t crctab[256] = {
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
 	0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
 	0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
@@ -99,13 +113,13 @@ static const uint32_t crctab32[256] = {
 static uint32_t crc32_total = 0;
 
 int
-crc32(int fd, uint32_t *cval, off_t *clen)
+do_crc32(int fd, uint32_t *cval, off_t *clen)
 {
     uint32_t lcrc = ~0;
     int nr ;
     off_t len ;
     char buf[BUFSIZ], *p ;
-	
+
     len = 0 ;
     crc32_total = ~crc32_total ;
     while ((nr = read(fd, buf, sizeof(buf))) > 0)
@@ -122,11 +136,13 @@ crc32(int fd, uint32_t *cval, off_t *clen)
     return 0 ;
 }
 
-uint32_t
-crc32_total_value(void)
-{
-	return (crc32_total);
-}
+#undef CRC
+
+} // namespace crc32_impl
+
+/* ------------------------------------------------------------------ */
+/* usr.bin/cksum/crc.c                                                */
+/* ------------------------------------------------------------------ */
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -161,6 +177,8 @@ crc32_total_value(void)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+namespace crc_impl {
 
 static const uint32_t crctab[] = {
 	0x0,
@@ -226,7 +244,7 @@ static const uint32_t crctab[] = {
 static uint32_t crc_total = ~0;		/* The crc over a number of files. */
 
 int
-crc(int fd, uint32_t *cval, off_t *clen)
+do_crc(int fd, uint32_t *cval, off_t *clen)
 {
 	uint32_t lcrc;
 	int nr;
@@ -259,10 +277,54 @@ crc(int fd, uint32_t *cval, off_t *clen)
 	return (0);
 }
 
-uint32_t
-crc_total_value(void)
+#undef COMPUTE
+
+} // namespace crc_impl
+
+/* ------------------------------------------------------------------ */
+/* Exported interface                                                 */
+/* ------------------------------------------------------------------ */
+
+export int
+crc32(int fd, uint32_t *cval, off_t *clen)
 {
-	return (crc_total);
+	return crc32_impl::do_crc32(fd, cval, clen);
+}
+
+export int
+crc(int fd, uint32_t *cval, off_t *clen)
+{
+	return crc_impl::do_crc(fd, cval, clen);
+}
+
+/*
+ * The running totals are file-static in the C originals; cksum(1) only ever
+ * observes them through its own total-printing path.  They are part of the
+ * observable behaviour of these routines, so the port makes them inspectable
+ * and presettable, which is what the differential harness compares.
+ */
+export uint32_t
+crc32_total_get()
+{
+	return crc32_impl::crc32_total;
+}
+
+export void
+crc32_total_set(uint32_t v)
+{
+	crc32_impl::crc32_total = v;
+}
+
+export uint32_t
+crc_total_get()
+{
+	return crc_impl::crc_total;
+}
+
+export void
+crc_total_set(uint32_t v)
+{
+	crc_impl::crc_total = v;
 }
 
 } // namespace pbsd::usr_bin_cksum::b0054

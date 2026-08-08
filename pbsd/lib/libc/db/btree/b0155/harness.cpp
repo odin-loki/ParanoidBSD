@@ -754,18 +754,21 @@ void check_bt_relink(pgno_t pgno, pgno_t prevpg, pgno_t nextpg, int null_neighbo
 	((PAGE *)hr)->nextpg = nextpg;
 	if (prevpg != P_INVALID) {
 		((PAGE *)pp)->pgno = prevpg;
-		((PAGE *)pr)->pgno = prevpg;
 		test_mock_register(prevpg, pp);
-		test_mock_register(prevpg, pr);
 	}
 	if (nextpg != P_INVALID) {
 		((PAGE *)np)->pgno = nextpg;
-		((PAGE *)nr)->pgno = nextpg;
 		test_mock_register(nextpg, np);
-		test_mock_register(nextpg, nr);
 	}
 	if (null_neighbor)
 		test_mock.get_force_null = 1;
+
+	unsigned char init_pp[PAGE_SZ];
+	unsigned char init_np[PAGE_SZ];
+	if (prevpg != P_INVALID)
+		std::memcpy(init_pp, pp, PAGE_SZ);
+	if (nextpg != P_INVALID)
+		std::memcpy(init_np, np, PAGE_SZ);
 
 	MockSnap snap = snap_mock();
 	int rp = P::__bt_relink(&tp, (P::PAGE *)hp);
@@ -776,6 +779,10 @@ void check_bt_relink(pgno_t pgno, pgno_t prevpg, pgno_t nextpg, int null_neighbo
 		std::memcpy(res_pp, pp, PAGE_SZ);
 	if (nextpg != P_INVALID)
 		std::memcpy(res_np, np, PAGE_SZ);
+	if (prevpg != P_INVALID)
+		std::memcpy(pp, init_pp, PAGE_SZ);
+	if (nextpg != P_INVALID)
+		std::memcpy(np, init_np, PAGE_SZ);
 	restore_mock(snap);
 	int rr = ref___bt_relink(&tr, (PAGE *)hr);
 	MockDelta dr = mock_delta(snap.mock, test_mock);
@@ -785,9 +792,9 @@ void check_bt_relink(pgno_t pgno, pgno_t prevpg, pgno_t nextpg, int null_neighbo
 	check_eq(F_BT_RELINK, rp == rr, msg);
 	check_eq(F_BT_RELINK, mock_delta_eq(dp, dr), "mock delta");
 	if (rp == rr && rp == RET_SUCCESS && prevpg != P_INVALID && !null_neighbor)
-		check_eq(F_BT_RELINK, bufs_eq(res_pp, pr, PAGE_SZ), "prev page");
+		check_eq(F_BT_RELINK, bufs_eq(res_pp, pp, PAGE_SZ), "prev page");
 	if (rp == rr && rp == RET_SUCCESS && nextpg != P_INVALID && !null_neighbor)
-		check_eq(F_BT_RELINK, bufs_eq(res_np, nr, PAGE_SZ), "next page");
+		check_eq(F_BT_RELINK, bufs_eq(res_np, np, PAGE_SZ), "next page");
 }
 
 void check_bt_fast(int order, int nents, indx_t last_idx, pgno_t last_pg,
@@ -1159,12 +1166,11 @@ void check_bt_stkacq(int target_pg, int search_null)
 	std::memcpy(srch_r, srch_p, PAGE_SZ);
 	((PAGE *)leaf_p)->pgno = (pgno_t)target_pg;
 	((PAGE *)leaf_r)->pgno = (pgno_t)target_pg;
-	((PAGE *)srch_p)->pgno = 50;
-	((PAGE *)srch_r)->pgno = 50;
+	((PAGE *)srch_p)->pgno = (pgno_t)target_pg;
+	((PAGE *)srch_r)->pgno = (pgno_t)target_pg;
 	test_mock.search_epg.page = (PAGE *)srch_p;
 	test_mock.search_epg.index = 0;
 	test_mock_register((pgno_t)target_pg, leaf_p);
-	test_mock_register((pgno_t)target_pg, leaf_r);
 	tp.bt_cursor.flags = CURS_INIT;
 	tp.bt_cursor.pg.pgno = (pgno_t)target_pg;
 	tp.bt_cursor.pg.index = 0;
@@ -1462,13 +1468,13 @@ void check_bt_seqadv(int advflags, int curs_acquire, int curs_after,
 	    (curs_after ? CURS_AFTER : 0) | (curs_before ? CURS_BEFORE : 0);
 	tp.bt_cursor.pg.pgno = cpg;
 	tp.bt_cursor.pg.index = cidx;
-	tr.bt_cursor = tp.bt_cursor;
+	copy_cursor_ref(tr, tp);
 
 	MockSnap snap = snap_mock();
 	int rp = P::__bt_seqadv(&tp, &ep_p, advflags);
 	MockDelta dp = mock_delta(snap.mock, test_mock);
 	restore_mock(snap);
-	tr.bt_cursor = tp.bt_cursor;
+	copy_cursor_ref(tr, tp);
 	int rr = ref___bt_seqadv(&tr, &ep_r, advflags);
 	MockDelta dr = mock_delta(snap.mock, test_mock);
 	char msg[160];
@@ -1498,6 +1504,9 @@ void check_bt_first(int exact, u_int32_t tflags, int search_null, int nodups)
 	DBT key;
 	unsigned char keybuf[8];
 	int exact_p = 0, exact_r = 0;
+
+	if (exact && !nodups)
+		nodups = 1;
 
 	test_mock_reset();
 	test_mock.search_force_null = search_null;

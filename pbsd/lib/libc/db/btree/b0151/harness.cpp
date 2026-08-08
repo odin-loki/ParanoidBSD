@@ -810,23 +810,22 @@ void check_ovfl_put(size_t dlen, int new_null, int fail_after)
 	test_mock.new_force_null = new_null;
 	test_mock.new_fail_after = fail_after;
 	init_tree(tp, mp_p, db_p, 0, PAGE_SZ);
-	init_tree_ref(tr, mp_r, db_r, 0, PAGE_SZ);
-	for (size_t i = 0; i < dlen; i++) {
+	for (size_t i = 0; i < dlen; i++)
 		data_p[i] = (u_char)(0x80 + (i & 0x7f));
-		data_r[i] = data_p[i];
-	}
 	dbt_p.data = data_p;
 	dbt_p.size = dlen;
+	int rp = P::__ovfl_put(&tp, &dbt_p, &pg_p);
+
+	test_mock_reset();
+	test_mock.new_force_null = new_null;
+	test_mock.new_fail_after = fail_after;
+	init_tree_ref(tr, mp_r, db_r, 0, PAGE_SZ);
+	for (size_t i = 0; i < dlen; i++)
+		data_r[i] = data_p[i];
 	dbt_r.data = data_r;
 	dbt_r.size = dlen;
-
-	unsigned new_before_p = test_mock.new_calls;
-	unsigned new_before_r = test_mock.new_calls;
-
-	int rp = P::__ovfl_put(&tp, &dbt_p, &pg_p);
 	int rr = ref___ovfl_put(&tr, &dbt_r, &pg_r);
-	(void)new_before_p;
-	(void)new_before_r;
+
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d dlen=%zu", rp, rr,
 	    dlen);
@@ -854,46 +853,41 @@ void check_ovfl_delete(pgno_t firstpg, size_t total, int preserve, int nullget)
 	test_mock_reset();
 	test_mock.get_force_null = nullget;
 	init_tree(tp, mp_p, db_p, 0, PAGE_SZ);
-	init_tree_ref(tr, mp_r, db_r, 0, PAGE_SZ);
 	*(pgno_t *)desc_p = firstpg;
 	*(u_int32_t *)(desc_p + sizeof(pgno_t)) = (u_int32_t)total;
-	std::memcpy(desc_r, desc_p, sizeof(desc_p));
-
 	pgbuf_p = (PAGE *)std::calloc(1, PAGE_SZ);
-	pgbuf_r = (PAGE *)std::calloc(1, PAGE_SZ);
-	guard_fill(pgbuf_p, PAGE_SZ);
-	guard_fill(pgbuf_r, PAGE_SZ);
 	pgbuf_p->pgno = firstpg;
-	pgbuf_r->pgno = firstpg;
-	if (preserve) {
-		pgbuf_p->flags = P_OVERFLOW | P_PRESERVE;
-		pgbuf_r->flags = P_OVERFLOW | P_PRESERVE;
-	} else {
-		pgbuf_p->flags = P_OVERFLOW;
-		pgbuf_r->flags = P_OVERFLOW;
-	}
-	if (total > plen) {
+	pgbuf_p->flags = preserve ? (P_OVERFLOW | P_PRESERVE) : P_OVERFLOW;
+	if (total > plen)
 		pgbuf_p->nextpg = firstpg + 1;
-		pgbuf_r->nextpg = firstpg + 1;
-	}
 	test_mock_register(firstpg, pgbuf_p);
-	test_mock_register(firstpg, pgbuf_r);
 	if (total > plen) {
 		pg2_p = (PAGE *)std::calloc(1, PAGE_SZ);
-		pg2_r = (PAGE *)std::calloc(1, PAGE_SZ);
-		guard_fill(pg2_p, PAGE_SZ);
-		guard_fill(pg2_r, PAGE_SZ);
 		pg2_p->pgno = firstpg + 1;
-		pg2_r->pgno = firstpg + 1;
 		pg2_p->flags = P_OVERFLOW;
-		pg2_r->flags = P_OVERFLOW;
 		test_mock_register(firstpg + 1, pg2_p);
-		test_mock_register(firstpg + 1, pg2_r);
 	}
-
 	unsigned free_before = test_mock.free_calls;
 	int rp = P::__ovfl_delete(&tp, desc_p);
+
+	test_mock_reset();
+	test_mock.get_force_null = nullget;
+	init_tree_ref(tr, mp_r, db_r, 0, PAGE_SZ);
+	std::memcpy(desc_r, desc_p, sizeof(desc_r));
+	pgbuf_r = (PAGE *)std::calloc(1, PAGE_SZ);
+	pgbuf_r->pgno = firstpg;
+	pgbuf_r->flags = preserve ? (P_OVERFLOW | P_PRESERVE) : P_OVERFLOW;
+	if (total > plen)
+		pgbuf_r->nextpg = firstpg + 1;
+	test_mock_register(firstpg, pgbuf_r);
+	if (total > plen) {
+		pg2_r = (PAGE *)std::calloc(1, PAGE_SZ);
+		pg2_r->pgno = firstpg + 1;
+		pg2_r->flags = P_OVERFLOW;
+		test_mock_register(firstpg + 1, pg2_r);
+	}
 	int rr = ref___ovfl_delete(&tr, desc_r);
+
 	char msg[160];
 	std::snprintf(msg, sizeof(msg),
 	    "ret port=%d ref=%d total=%zu preserve=%d null=%d free_delta=%u",
@@ -904,10 +898,8 @@ void check_ovfl_delete(pgno_t firstpg, size_t total, int preserve, int nullget)
 	if (preserve) {
 		std::free(pgbuf_p);
 		std::free(pgbuf_r);
-		if (pg2_p)
-			std::free(pg2_p);
-		if (pg2_r)
-			std::free(pg2_r);
+		std::free(pg2_p);
+		std::free(pg2_r);
 	}
 }
 

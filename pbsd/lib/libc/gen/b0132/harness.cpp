@@ -779,7 +779,7 @@ hand_ftou(void)
 static void
 sweep_utx(long long iters)
 {
-	Rng rng(0xB0132U7Fu ^ 0);
+	Rng rng(0xB0132A7Fu);
 	unsigned char id[8], user[32], line[16], host[128];
 
 	for (long long it = 0; it < iters; it++) {
@@ -1297,7 +1297,7 @@ build_random(unsigned char *dst, int bufoff, int dd_len, Rng &rng)
 }
 
 static void
-gen_script(int dd_len, Rng &rng, int perturb)
+gen_script(int dd_len, Rng &rng, int perturb, int allow_random)
 {
 	static unsigned char scratch[ALLOC];
 
@@ -1312,7 +1312,7 @@ gen_script(int dd_len, Rng &rng, int perturb)
 		default: r.ret = (ssize_t)(1 + rng.below((uint32_t)dd_len));
 			break;
 		}
-		if (rng.below(2))
+		if (!allow_random || rng.below(2))
 			build_chain(scratch, 0, dd_len, rng, perturb, NULL);
 		else
 			build_random(scratch, 0, dd_len, rng);

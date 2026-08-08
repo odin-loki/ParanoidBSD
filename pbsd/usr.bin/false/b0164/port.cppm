@@ -1,4 +1,4 @@
-export module pbsd.usr.bin.false.b0164;
+export module pbsd.usr.bin.FALSE_MODSEG.b0164;
 
 export namespace pbsd::usr_bin_false::b0164 {
 

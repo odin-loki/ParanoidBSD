@@ -16,6 +16,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/pax/getoldopt_m/port.cppm
   bin/ps/nlist_m/port.cppm
   bin/pwd/pwd_m/port.cppm
+  bin/realpath/b0169/port.cppm
   bin/setfacl/b0162/port.cppm
   bin/setfacl/mask_m/port.cppm
   bin/setfacl/util_m/port.cppm
@@ -427,6 +428,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   usr.sbin/ntp/ntpdc/b0150/port.cppm
   usr.sbin/ppp/probe_m/port.cppm
   usr.sbin/pw/strtounum_m/port.cppm
+  usr.sbin/route6d/misc/b0167/port.cppm
   usr.sbin/rtadvd/timer_subr_m/port.cppm
   usr.sbin/ypldap/log_m/port.cppm
 )

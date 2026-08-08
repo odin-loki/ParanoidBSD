@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <cstdio>
 
-import pbsd.usr.bin.false.b0164;
+import pbsd.usr.bin.FALSE_MODSEG.b0164;
 
 namespace P = pbsd::usr_bin_false::b0164;
 

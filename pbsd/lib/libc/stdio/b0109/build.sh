@@ -1,8 +1,8 @@
 #!/bin/sh
 #
 # Build and run the b0109 differential test.  Run as `sh build.sh' from
-# pbsd/lib/libc/stdio/b0109/.  The harness's exit status is this script's exit
-# status.
+# pbsd/lib/libc/stdio/b0109/.  The harness's exit status is this script's
+# exit status.
 
 set -e
 
@@ -10,8 +10,8 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS=${CFLAGS:--O2 -D_GNU_SOURCE}
-CXXFLAGS=${CXXFLAGS:--O2 -D_GNU_SOURCE}
+CFLAGS=${CFLAGS:--O2}
+CXXFLAGS=${CXXFLAGS:--O2}
 
 MODNAME=pbsd.lib.libc.stdio.b0109
 
