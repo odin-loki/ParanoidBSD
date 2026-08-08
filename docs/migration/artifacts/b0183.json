@@ -1,0 +1,10 @@
+{
+  "batch": "b0183",
+  "verified": "2026-08-08T13:26:19Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures  result\n------------------------------------------------------\nprintset           205181            0  PASS\nusage                   4            0  PASS\n------------------------------------------------------\nTOTAL              205185            0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/bin/cpuset/cpuset.c": "20c542d0db85a6c7"
+  }
+}

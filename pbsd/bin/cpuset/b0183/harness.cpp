@@ -1,1193 +1,646 @@
 /*
- * harness.cpp -- differential test for PBSD batch b0183 (cpuset.c).
+ * PBSD batch b0183 differential harness.
+ *
+ * Compares the C++23 port in port.cppm against the unmodified C oracle in
+ * oracle.c for every function that was ported:
+ *
+ *	printset(struct bitset *, int)	- reads the mask, writes to stdout
+ *	usage(void)			- writes to stderr, exits
+ *
+ * printset() gets hand written edge cases plus a fixed seed randomised sweep.
+ * Both implementations run against their own copy of the input buffer, which
+ * is surrounded by 0x7f guard bytes, and the ENTIRE buffer (guards included)
+ * is compared after every call, so a port that scribbles anywhere is caught
+ * even when its stdout output happens to match.
+ *
+ * usage() cannot return, so each side runs in a forked child with stderr on a
+ * pipe; the captured text, the exit status and the terminating signal are all
+ * compared.
  */
 
-#define _GNU_SOURCE
-
-#include <cerrno>
-#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fcntl.h>
+#include <cstdint>
+#include <cstddef>
 #include <string>
-#include <sys/types.h>
-#include <sys/wait.h>
+
+#include <fcntl.h>
 #include <unistd.h>
-#include <vector>
+#include <sys/resource.h>
+#include <sys/wait.h>
 
 import pbsd.bin.cpuset.b0183;
 
 namespace P = pbsd::bin_cpuset::b0183;
 
-extern int optind;
+struct ref_bitset {
+	long	__bits[1];
+};
 
-extern "C" {
-void ref_printset(struct bitset *mask, int size);
-void ref_printaffinity(void);
-void ref_printsetid(void);
-int ref_main(int argc, char **argv);
-void ref_usage(void);
-void ref_reset_globals(void);
+extern "C" void ref_printset(struct ref_bitset *mask, int size);
+extern "C" [[noreturn]] void ref_usage(void);
 
-extern int ref_Cflag;
-extern int ref_cflag;
-extern int ref_dflag;
-extern int ref_gflag;
-extern int ref_iflag;
-extern int ref_jflag;
-extern int ref_lflag;
-extern int ref_nflag;
-extern int ref_pflag;
-extern int ref_rflag;
-extern int ref_sflag;
-extern int ref_tflag;
-extern int ref_xflag;
-extern id_t ref_id;
-extern int ref_level;
-extern int ref_which;
+/* ------------------------------------------------------------------ */
+/* stdout capture: fd 1 sits on a scratch file for the whole run.      */
+/* ------------------------------------------------------------------ */
 
-extern char jail_errmsg[];
+static int cap_fd = -1;
+static int real_stdout = -1;
+static char cap_iobuf[1 << 16];
 
-#define _BITSET_BITS (sizeof(unsigned long) * 8)
-#define __howmany(x, y) (((x) + ((y) - 1)) / (y))
-#define __bitset_words(_s) (__howmany(_s, _BITSET_BITS))
-#define __BITSET_DEFINE(_t, _s)                                        \
-	struct _t {                                                    \
-		unsigned long __bits[__bitset_words((_s))];            \
+static void
+cap_setup(void)
+{
+	char tmpl[] = "/tmp/pbsd_b0183_XXXXXX";
+
+	real_stdout = ::dup(1);
+	if (real_stdout < 0) {
+		std::perror("dup");
+		std::exit(2);
 	}
-#define __bitset_mask(_s, n)                                           \
-	(1UL << (__builtin_constant_p(__bitset_words((_s)) == 1) ?     \
-		    (size_t)(n)                                          \
-					       : ((n) % _BITSET_BITS)))
-#define __bitset_word(_s, n)                                           \
-	(__builtin_constant_p(__bitset_words((_s)) == 1) ? 0           \
-							    : ((n) / _BITSET_BITS))
-#define __BIT_SET(_s, n, p)                                            \
-	((p)->__bits[__bitset_word(_s, n)] |= __bitset_mask((_s), (n)))
-#define __BIT_ZERO(_s, p)                                              \
-	do {                                                           \
-		size_t __i;                                            \
-		for (__i = 0; __i < __bitset_words((_s)); __i++)       \
-			(p)->__bits[__i] = 0L;                         \
-	} while (0)
-#define __BIT_ISSET(_s, n, p)                                          \
-	((((p)->__bits[__bitset_word(_s, n)] &                          \
-	   __bitset_mask((_s), (n))) != 0))
-
-__BITSET_DEFINE(bitset, 1);
-
-#define CPU_SETSIZE 1024
-__BITSET_DEFINE(_cpuset, CPU_SETSIZE);
-typedef struct _cpuset cpuset_t;
-#define CPU_SET(n, p) __BIT_SET(CPU_SETSIZE, n, p)
-#define CPU_ZERO(p) __BIT_ZERO(CPU_SETSIZE, p)
-
-#define DOMAINSET_SETSIZE 256
-__BITSET_DEFINE(_domainset, DOMAINSET_SETSIZE);
-typedef struct _domainset domainset_t;
-#define DOMAINSET_SET(n, p) __BIT_SET(DOMAINSET_SETSIZE, n, p)
-#define DOMAINSET_ZERO(p) __BIT_ZERO(DOMAINSET_SETSIZE, p)
-
-#define CPU_LEVEL_ROOT 1
-#define CPU_LEVEL_CPUSET 2
-#define CPU_LEVEL_WHICH 3
-#define CPU_WHICH_TID 1
-#define CPU_WHICH_PID 2
-#define CPU_WHICH_CPUSET 3
-#define CPU_WHICH_IRQ 4
-#define CPU_WHICH_JAIL 5
-#define CPU_WHICH_DOMAIN 6
-
-typedef int cpulevel_t;
-typedef int cpuwhich_t;
-typedef int cpusetid_t;
-#ifndef _LWPID_T_DECLARED
-typedef int lwpid_t;
-#define _LWPID_T_DECLARED
-#endif
-
-int cpuset(cpusetid_t *);
-int cpuset_setid(cpuwhich_t, id_t, cpusetid_t);
-int cpuset_getid(cpulevel_t, cpuwhich_t, id_t, cpusetid_t *);
-int cpuset_getaffinity(cpulevel_t, cpuwhich_t, id_t, size_t, cpuset_t *);
-int cpuset_setaffinity(cpulevel_t, cpuwhich_t, id_t, size_t,
-    const cpuset_t *);
-int cpuset_getdomain(cpulevel_t, cpuwhich_t, id_t, size_t, domainset_t *,
-    int *);
-int cpuset_setdomain(cpulevel_t, cpuwhich_t, id_t, size_t,
-    const domainset_t *, int);
-int jail_getid(const char *name);
-int execvp(const char *, char *const *);
+	cap_fd = ::mkstemp(tmpl);
+	if (cap_fd < 0) {
+		std::perror("mkstemp");
+		std::exit(2);
+	}
+	::unlink(tmpl);
+	std::fflush(stdout);
+	if (::dup2(cap_fd, 1) < 0) {
+		std::perror("dup2");
+		std::exit(2);
+	}
+	std::setvbuf(stdout, cap_iobuf, _IOFBF, sizeof(cap_iobuf));
 }
 
-constexpr std::size_t JAIL_ERRMSG_SZ = 1024;
+static void
+cap_restore(void)
+{
 
-namespace {
+	std::fflush(stdout);
+	::dup2(real_stdout, 1);
+	std::setvbuf(stdout, nullptr, _IOLBF, 0);
+}
 
-constexpr long SWEEP = 200000L;
-constexpr int MAX_SHOW = 8;
+static void
+cap_begin(void)
+{
 
-struct Stat {
-	const char *name;
-	long cases;
-	long fails;
-	int shown;
-};
-
-struct Rng {
-	std::uint64_t s;
-
-	explicit Rng(std::uint64_t seed) : s(seed) {}
-
-	std::uint64_t next()
-	{
-		s += 0x9E3779B97F4A7C15ull;
-		std::uint64_t z = s;
-		z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
-		z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
-		return z ^ (z >> 31);
+	std::fflush(stdout);
+	if (::lseek(1, 0, SEEK_SET) < 0) {
+		std::perror("lseek");
+		std::exit(2);
 	}
+}
 
-	int bits(int lo, int hi)
-	{
-		if (hi <= lo)
-			return lo;
-		return lo + (int)(next() % (std::uint64_t)(hi - lo + 1));
+static void
+cap_end(std::string &out)
+{
+	off_t n, got;
+
+	std::fflush(stdout);
+	n = ::lseek(1, 0, SEEK_CUR);
+	if (n < 0) {
+		std::perror("lseek");
+		std::exit(2);
 	}
-
-	bool coin()
-	{
-		return (next() & 1u) != 0;
-	}
-};
-
-Rng rng(0xb0183faceULL);
-
-Stat st_printset = { "printset", 0, 0, 0 };
-Stat st_printaffinity = { "printaffinity", 0, 0, 0 };
-Stat st_printsetid = { "printsetid", 0, 0, 0 };
-Stat st_main = { "main", 0, 0, 0 };
-Stat st_usage = { "usage", 0, 0, 0 };
-
-struct MockCtl {
-	int getaffinity_fail;
-	int getdomain_fail;
-	int getid_fail;
-	int getid_ret;
-	int cpuset_fail;
-	int setid_fail;
-	int setaffinity_fail;
-	int setdomain_fail;
-	int jail_fail;
-	int jail_ret;
-	int exec_fail;
-	int exec_errno;
-	int root_policy;
-};
-
-MockCtl mock{};
-
-struct IoCapture {
-	int saved;
-	int pipefd[2];
-	std::vector<unsigned char> bytes;
-
-	bool begin(int fd)
-	{
-		saved = dup(fd);
-		if (saved < 0)
-			return false;
-		if (pipe(pipefd) != 0) {
-			close(saved);
-			return false;
+	out.assign(static_cast<std::size_t>(n), '\0');
+	for (got = 0; got < n; ) {
+		ssize_t r = ::pread(cap_fd, out.data() + got,
+		    static_cast<std::size_t>(n - got), got);
+		if (r <= 0) {
+			std::perror("pread");
+			std::exit(2);
 		}
-		if (dup2(pipefd[1], fd) < 0) {
-			close(pipefd[0]);
-			close(pipefd[1]);
-			close(saved);
-			return false;
-		}
-		close(pipefd[1]);
-		pipefd[1] = -1;
-		return true;
+		got += r;
 	}
+}
 
-	std::vector<unsigned char>
-	end(int fd)
-	{
-		unsigned char buf[4096];
-		ssize_t nr;
+/* ------------------------------------------------------------------ */
+/* deterministic RNG (splitmix64)                                      */
+/* ------------------------------------------------------------------ */
 
-		std::fflush(fd == STDOUT_FILENO ? stdout : stderr);
-		if (pipefd[1] >= 0)
-			close(pipefd[1]);
-		while ((nr = read(pipefd[0], buf, sizeof(buf))) > 0)
-			bytes.insert(bytes.end(), buf, buf + nr);
-		close(pipefd[0]);
-		dup2(saved, fd);
-		close(saved);
-		return bytes;
+static std::uint64_t rng_state = 0x0000000000000183ULL;
+
+static std::uint64_t
+nextrand(void)
+{
+	std::uint64_t z = (rng_state += 0x9E3779B97F4A7C15ULL);
+
+	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+	z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+	return (z ^ (z >> 31));
+}
+
+/* ------------------------------------------------------------------ */
+/* printset                                                            */
+/* ------------------------------------------------------------------ */
+
+static const std::size_t GUARD = 64;			/* guard bytes/side */
+static const std::size_t NWORDS = 16;
+static const std::size_t DATA = NWORDS * sizeof(long);	/* 1024 bits */
+static const std::size_t TOTAL = GUARD + DATA + GUARD;
+static const int MAXBIT = static_cast<int>(DATA * 8);	/* 1024 */
+
+alignas(16) static unsigned char bufA[TOTAL];
+alignas(16) static unsigned char bufB[TOTAL];
+alignas(16) static unsigned char pristine[TOTAL];
+static unsigned char payload[DATA];
+
+static long cases_printset = 0;
+static long fails_printset = 0;
+static int shown_printset = 0;
+
+static void
+dumpstr(const char *what, const std::string &s)
+{
+	std::size_t n = s.size() < 160 ? s.size() : 160;
+
+	std::fprintf(stderr, "    %s (%zu bytes): \"", what, s.size());
+	for (std::size_t i = 0; i < n; i++) {
+		unsigned char c = static_cast<unsigned char>(s[i]);
+
+		if (c == '\n')
+			std::fprintf(stderr, "\\n");
+		else if (c >= 0x20 && c < 0x7f)
+			std::fputc(c, stderr);
+		else
+			std::fprintf(stderr, "\\x%02x", c);
 	}
+	std::fprintf(stderr, "%s\"\n", s.size() > n ? "..." : "");
+}
+
+static void
+printset_case(const unsigned char *in, int size, const char *tag)
+{
+	std::string outp, outr;
+	bool ok;
+
+	std::memset(bufA, 0x7f, TOTAL);
+	std::memset(bufB, 0x7f, TOTAL);
+	std::memcpy(bufA + GUARD, in, DATA);
+	std::memcpy(bufB + GUARD, in, DATA);
+	std::memcpy(pristine, bufA, TOTAL);
+
+	cap_begin();
+	P::printset(reinterpret_cast<P::bitset *>(bufA + GUARD), size);
+	cap_end(outp);
+
+	cap_begin();
+	ref_printset(reinterpret_cast<struct ref_bitset *>(bufB + GUARD), size);
+	cap_end(outr);
+
+	cases_printset++;
+	ok = true;
+	if (outp != outr)
+		ok = false;
+	if (std::memcmp(bufA, bufB, TOTAL) != 0)
+		ok = false;
+	if (std::memcmp(bufA, pristine, TOTAL) != 0)
+		ok = false;
+	if (std::memcmp(bufB, pristine, TOTAL) != 0)
+		ok = false;
+	if (ok)
+		return;
+
+	fails_printset++;
+	if (shown_printset++ < 12) {
+		std::fprintf(stderr, "printset MISMATCH [%s] size=%d\n", tag,
+		    size);
+		dumpstr("port", outp);
+		dumpstr("ref ", outr);
+		for (std::size_t i = 0; i < TOTAL; i++)
+			if (bufA[i] != bufB[i]) {
+				std::fprintf(stderr, "    buffer differs at "
+				    "byte %zu: port=%02x ref=%02x\n", i,
+				    bufA[i], bufB[i]);
+				break;
+			}
+		if (std::memcmp(bufA, pristine, TOTAL) != 0)
+			std::fprintf(stderr, "    port wrote to its input\n");
+		if (std::memcmp(bufB, pristine, TOTAL) != 0)
+			std::fprintf(stderr, "    ref wrote to its input\n");
+	}
+}
+
+static void
+setbit(unsigned char *p, int bit)
+{
+
+	if (bit < 0 || bit >= MAXBIT)
+		return;
+	p[bit / 8] = static_cast<unsigned char>(p[bit / 8] | (1u << (bit % 8)));
+}
+
+static void
+clrbit(unsigned char *p, int bit)
+{
+
+	if (bit < 0 || bit >= MAXBIT)
+		return;
+	p[bit / 8] = static_cast<unsigned char>(p[bit / 8] &
+	    ~(1u << (bit % 8)));
+}
+
+/*
+ * size is a plain int and the loop counts up from zero, so a negative size is
+ * a real part of the input domain: the original prints nothing but the
+ * newline.  These are the cases that separate "bit < size" from "bit != size".
+ */
+static const int negative_sizes[] = {
+	-1, -2, -3, -7, -63, -64, -65, -128, -1000, -1000000,
+	-2147483647 - 1
 };
+static const int NNEG = static_cast<int>(sizeof(negative_sizes) /
+    sizeof(negative_sizes[0]));
 
-struct ExitRun {
-	int status;
-	std::vector<unsigned char> stdout_bytes;
-	std::vector<unsigned char> stderr_bytes;
+static const int boundary_sizes[] = {
+	0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33,
+	62, 63, 64, 65, 66, 67, 95, 96, 97, 126, 127, 128, 129, 130, 131,
+	191, 192, 193, 254, 255, 256, 257, 258, 319, 320, 383, 384,
+	447, 448, 511, 512, 513, 575, 576, 639, 640, 703, 704, 767, 768,
+	831, 832, 895, 896, 959, 960, 1022, 1023, 1024
 };
+static const int NBOUND = static_cast<int>(sizeof(boundary_sizes) /
+    sizeof(boundary_sizes[0]));
 
-void
-mock_reset()
+static void
+printset_handwritten(void)
 {
-	mock = MockCtl{};
-	mock.getid_ret = 42;
-	mock.jail_ret = 7;
-	mock.root_policy = 1;
-	mock.exec_errno = ENOENT;
-}
+	static const int small[] = { 0, 1, 2, 3, 4, 63, 64, 65, 66, 127, 128,
+	    129, 255, 256, 257, 1023, 1024 };
+	const int nsmall = static_cast<int>(sizeof(small) / sizeof(small[0]));
 
-bool
-fail(Stat &st, const char *what)
-{
-	st.fails++;
-	if (st.shown < MAX_SHOW) {
-		st.shown++;
-		std::printf("  FAIL %s: %s\n", st.name, what);
+	/*
+	 * Large sizes first.  Once size exceeds _BITSET_BITS the word index is
+	 * bit / _BITSET_BITS, so a port that walks the counter the wrong way
+	 * faults on the first step instead of spinning silently.
+	 */
+	static const int canary[] = { 1024, 513, 256, 129, 65 };
+
+	for (int i = 0; i < static_cast<int>(sizeof(canary) / sizeof(canary[0]));
+	    i++) {
+		std::memset(payload, 0xff, DATA);
+		printset_case(payload, canary[i], "canary-full");
+
+		std::memset(payload, 0x00, DATA);
+		setbit(payload, canary[i] - 1);
+		printset_case(payload, canary[i], "canary-last");
 	}
-	return false;
-}
 
-bool
-same_bytes(const std::vector<unsigned char> &a,
-    const std::vector<unsigned char> &b)
-{
-	return a == b;
-}
-
-void
-fill_mask(cpuset_t *mask, cpulevel_t level, cpuwhich_t which, id_t id)
-{
-	int seed = (int)(level + which + id + 17);
-	CPU_ZERO(mask);
-	for (int i = 0; i < 8; i++) {
-		int bit = (seed + i * 3) & 0x3f;
-		if (bit >= 0 && bit < CPU_SETSIZE)
-			CPU_SET(bit, mask);
+	/* nothing set, at every boundary size */
+	for (int i = 0; i < NBOUND; i++) {
+		std::memset(payload, 0x00, DATA);
+		printset_case(payload, boundary_sizes[i], "clear");
 	}
-}
 
-void
-fill_domain(domainset_t *dom, cpulevel_t level, cpuwhich_t which, id_t id)
-{
-	int seed = (int)(level * 3 + which + id);
-	DOMAINSET_ZERO(dom);
-	for (int i = 0; i < 4; i++) {
-		int bit = (seed + i * 5) & 0x1f;
-		if (bit >= 0 && bit < DOMAINSET_SETSIZE)
-			DOMAINSET_SET(bit, dom);
+	/* everything set, at every boundary size */
+	for (int i = 0; i < NBOUND; i++) {
+		std::memset(payload, 0xff, DATA);
+		printset_case(payload, boundary_sizes[i], "full");
 	}
-}
 
-} // namespace
-
-extern "C" int
-__wrap_cpuset_getaffinity(cpulevel_t level, cpuwhich_t which, id_t id,
-    size_t size, cpuset_t *mask)
-{
-	if (mock.getaffinity_fail) {
-		errno = EIO;
-		return (-1);
-	}
-	if (mask == nullptr || size < sizeof(cpuset_t)) {
-		errno = EINVAL;
-		return (-1);
-	}
-	fill_mask(mask, level, which, id);
-	return (0);
-}
-
-extern "C" int
-__wrap_cpuset_getdomain(cpulevel_t level, cpuwhich_t which, id_t id,
-    size_t size, domainset_t *domain, int *policy)
-{
-	if (mock.getdomain_fail) {
-		errno = EIO;
-		return (-1);
-	}
-	if (domain == nullptr || policy == nullptr ||
-	    size < sizeof(domainset_t)) {
-		errno = EINVAL;
-		return (-1);
-	}
-	fill_domain(domain, level, which, id);
-	*policy = mock.root_policy;
-	return (0);
-}
-
-extern "C" int
-__wrap_cpuset_getid(cpulevel_t level, cpuwhich_t which, id_t id,
-    cpusetid_t *setid)
-{
-	(void)level;
-	(void)which;
-	(void)id;
-	if (mock.getid_fail) {
-		errno = ESRCH;
-		return (-1);
-	}
-	if (setid == nullptr) {
-		errno = EINVAL;
-		return (-1);
-	}
-	*setid = (cpusetid_t)mock.getid_ret;
-	return (0);
-}
-
-extern "C" int
-__wrap_cpuset(cpusetid_t *setid)
-{
-	if (mock.cpuset_fail) {
-		errno = ENOMEM;
-		return (-1);
-	}
-	if (setid == nullptr) {
-		errno = EINVAL;
-		return (-1);
-	}
-	*setid = 99;
-	return (0);
-}
-
-extern "C" int
-__wrap_cpuset_setid(cpuwhich_t which, id_t id, cpusetid_t setid)
-{
-	(void)which;
-	(void)id;
-	(void)setid;
-	if (mock.setid_fail) {
-		errno = EPERM;
-		return (-1);
-	}
-	return (0);
-}
-
-extern "C" int
-__wrap_cpuset_setaffinity(cpulevel_t level, cpuwhich_t which, id_t id,
-    size_t size, const cpuset_t *mask)
-{
-	(void)level;
-	(void)which;
-	(void)id;
-	(void)size;
-	(void)mask;
-	if (mock.setaffinity_fail) {
-		errno = EPERM;
-		return (-1);
-	}
-	return (0);
-}
-
-extern "C" int
-__wrap_cpuset_setdomain(cpulevel_t level, cpuwhich_t which, id_t id,
-    size_t size, const domainset_t *domains, int policy)
-{
-	(void)level;
-	(void)which;
-	(void)id;
-	(void)size;
-	(void)domains;
-	(void)policy;
-	if (mock.setdomain_fail) {
-		errno = EPERM;
-		return (-1);
-	}
-	return (0);
-}
-
-extern "C" int
-__wrap_jail_getid(const char *name)
-{
-	if (mock.jail_fail || name == nullptr || name[0] == '\0') {
-		std::snprintf(jail_errmsg, JAIL_ERRMSG_SZ, "bad jail");
-		return (-1);
-	}
-	std::snprintf(jail_errmsg, JAIL_ERRMSG_SZ, "%s", name);
-	return (mock.jail_ret);
-}
-
-extern "C" int
-__wrap_execvp(const char *file, char *const argv[])
-{
-	(void)file;
-	(void)argv;
-	if (mock.exec_fail) {
-		errno = mock.exec_errno;
-		return (-1);
-	}
-	errno = 0;
-	return (0);
-}
-
-namespace {
-
-std::vector<unsigned char>
-capture_ref_printset(cpuset_t *mask, int size)
-{
-	IoCapture cap;
-	if (!cap.begin(STDOUT_FILENO))
-		return {};
-	ref_printset((struct bitset *)mask, size);
-	return cap.end(STDOUT_FILENO);
-}
-
-std::vector<unsigned char>
-capture_port_printset(cpuset_t *mask, int size)
-{
-	IoCapture cap;
-	if (!cap.begin(STDOUT_FILENO))
-		return {};
-	P::printset(reinterpret_cast<P::bitset_view *>(mask), size);
-	return cap.end(STDOUT_FILENO);
-}
-
-bool
-check_printset(const char *label, cpuset_t *mask, int size)
-{
-	st_printset.cases++;
-	auto r = capture_ref_printset(mask, size);
-	auto p = capture_port_printset(mask, size);
-	if (!same_bytes(r, p))
-		return fail(st_printset, label);
-	return true;
-}
-
-void
-set_ref_globals(cpulevel_t lv, cpuwhich_t wh, id_t ident, int df, int xf,
-    int sf)
-{
-	ref_reset_globals();
-	ref_level = lv;
-	ref_which = wh;
-	ref_id = ident;
-	ref_dflag = df;
-	ref_xflag = xf;
-	ref_sflag = sf;
-}
-
-void
-set_port_globals(cpulevel_t lv, cpuwhich_t wh, id_t ident, int df, int xf,
-    int sf)
-{
-	P::reset_globals();
-	P::level = lv;
-	P::which = wh;
-	P::id = ident;
-	P::dflag = df;
-	P::xflag = xf;
-	P::sflag = sf;
-}
-
-ExitRun
-run_ref_printaffinity(cpulevel_t lv, cpuwhich_t wh, id_t ident, int df,
-    int xf)
-{
-	ExitRun res{};
-	int pipe_out[2];
-	int pipe_err[2];
-	if (pipe(pipe_out) != 0 || pipe(pipe_err) != 0)
-		return res;
-	pid_t pid = fork();
-	if (pid < 0)
-		return res;
-	if (pid == 0) {
-		mock_reset();
-		set_ref_globals(lv, wh, ident, df, xf, 0);
-		dup2(pipe_out[1], STDOUT_FILENO);
-		dup2(pipe_err[1], STDERR_FILENO);
-		close(pipe_out[0]);
-		close(pipe_out[1]);
-		close(pipe_err[0]);
-		close(pipe_err[1]);
-		ref_printaffinity();
-		_exit(99);
-	}
-	close(pipe_out[1]);
-	close(pipe_err[1]);
-	unsigned char buf[4096];
-	ssize_t nr;
-	while ((nr = read(pipe_out[0], buf, sizeof(buf))) > 0)
-		res.stdout_bytes.insert(res.stdout_bytes.end(), buf, buf + nr);
-	while ((nr = read(pipe_err[0], buf, sizeof(buf))) > 0)
-		res.stderr_bytes.insert(res.stderr_bytes.end(), buf, buf + nr);
-	close(pipe_out[0]);
-	close(pipe_err[0]);
-	int st = 0;
-	if (waitpid(pid, &st, 0) >= 0 && WIFEXITED(st))
-		res.status = WEXITSTATUS(st);
-	return res;
-}
-
-ExitRun
-run_port_printaffinity(cpulevel_t lv, cpuwhich_t wh, id_t ident, int df,
-    int xf)
-{
-	ExitRun res{};
-	int pipe_out[2];
-	int pipe_err[2];
-	if (pipe(pipe_out) != 0 || pipe(pipe_err) != 0)
-		return res;
-	pid_t pid = fork();
-	if (pid < 0)
-		return res;
-	if (pid == 0) {
-		mock_reset();
-		set_port_globals(lv, wh, ident, df, xf, 0);
-		dup2(pipe_out[1], STDOUT_FILENO);
-		dup2(pipe_err[1], STDERR_FILENO);
-		close(pipe_out[0]);
-		close(pipe_out[1]);
-		close(pipe_err[0]);
-		close(pipe_err[1]);
-		P::printaffinity();
-		_exit(99);
-	}
-	close(pipe_out[1]);
-	close(pipe_err[1]);
-	unsigned char buf[4096];
-	ssize_t nr;
-	while ((nr = read(pipe_out[0], buf, sizeof(buf))) > 0)
-		res.stdout_bytes.insert(res.stdout_bytes.end(), buf, buf + nr);
-	while ((nr = read(pipe_err[0], buf, sizeof(buf))) > 0)
-		res.stderr_bytes.insert(res.stderr_bytes.end(), buf, buf + nr);
-	close(pipe_out[0]);
-	close(pipe_err[0]);
-	int st = 0;
-	if (waitpid(pid, &st, 0) >= 0 && WIFEXITED(st))
-		res.status = WEXITSTATUS(st);
-	return res;
-}
-
-bool
-check_printaffinity(const char *label, cpulevel_t lv, cpuwhich_t wh, id_t ident,
-    int df, int xf)
-{
-	st_printaffinity.cases++;
-	ExitRun r = run_ref_printaffinity(lv, wh, ident, df, xf);
-	ExitRun p = run_port_printaffinity(lv, wh, ident, df, xf);
-	if (r.status != p.status)
-		return fail(st_printaffinity, label);
-	if (!same_bytes(r.stdout_bytes, p.stdout_bytes))
-		return fail(st_printaffinity, label);
-	if (!same_bytes(r.stderr_bytes, p.stderr_bytes))
-		return fail(st_printaffinity, label);
-	return true;
-}
-
-ExitRun
-run_ref_printsetid(cpulevel_t lv, cpuwhich_t wh, id_t ident, int sf)
-{
-	ExitRun res{};
-	IoCapture out;
-	IoCapture err;
-	mock_reset();
-	set_ref_globals(lv, wh, ident, 0, 0, sf);
-	if (!out.begin(STDOUT_FILENO) || !err.begin(STDERR_FILENO))
-		return res;
-	ref_printsetid();
-	res.stdout_bytes = out.end(STDOUT_FILENO);
-	res.stderr_bytes = err.end(STDERR_FILENO);
-	res.status = 0;
-	return res;
-}
-
-ExitRun
-run_port_printsetid(cpulevel_t lv, cpuwhich_t wh, id_t ident, int sf)
-{
-	ExitRun res{};
-	IoCapture out;
-	IoCapture err;
-	mock_reset();
-	set_port_globals(lv, wh, ident, 0, 0, sf);
-	if (!out.begin(STDOUT_FILENO) || !err.begin(STDERR_FILENO))
-		return res;
-	P::printsetid();
-	res.stdout_bytes = out.end(STDOUT_FILENO);
-	res.stderr_bytes = err.end(STDERR_FILENO);
-	res.status = 0;
-	return res;
-}
-
-bool
-check_printsetid(const char *label, cpulevel_t lv, cpuwhich_t wh, id_t ident,
-    int sf)
-{
-	st_printsetid.cases++;
-	ExitRun r = run_ref_printsetid(lv, wh, ident, sf);
-	ExitRun p = run_port_printsetid(lv, wh, ident, sf);
-	if (r.status != p.status)
-		return fail(st_printsetid, label);
-	if (!same_bytes(r.stdout_bytes, p.stdout_bytes))
-		return fail(st_printsetid, label);
-	if (!same_bytes(r.stderr_bytes, p.stderr_bytes))
-		return fail(st_printsetid, label);
-	return true;
-}
-
-ExitRun
-run_ref_main(int argc, char **argv)
-{
-	ExitRun res{};
-	int pipe_out[2];
-	int pipe_err[2];
-	if (pipe(pipe_out) != 0 || pipe(pipe_err) != 0)
-		return res;
-	pid_t pid = fork();
-	if (pid < 0)
-		return res;
-	if (pid == 0) {
-		mock_reset();
-		ref_reset_globals();
-		optind = 1;
-		opterr = 0;
-		dup2(pipe_out[1], STDOUT_FILENO);
-		dup2(pipe_err[1], STDERR_FILENO);
-		close(pipe_out[0]);
-		close(pipe_out[1]);
-		close(pipe_err[0]);
-		close(pipe_err[1]);
-		int ret = ref_main(argc, argv);
-		_exit(ret);
-	}
-	close(pipe_out[1]);
-	close(pipe_err[1]);
-	unsigned char buf[4096];
-	ssize_t nr;
-	while ((nr = read(pipe_out[0], buf, sizeof(buf))) > 0)
-		res.stdout_bytes.insert(res.stdout_bytes.end(), buf, buf + nr);
-	while ((nr = read(pipe_err[0], buf, sizeof(buf))) > 0)
-		res.stderr_bytes.insert(res.stderr_bytes.end(), buf, buf + nr);
-	close(pipe_out[0]);
-	close(pipe_err[0]);
-	int st = 0;
-	if (waitpid(pid, &st, 0) >= 0 && WIFEXITED(st))
-		res.status = WEXITSTATUS(st);
-	return res;
-}
-
-ExitRun
-run_port_main(int argc, char **argv)
-{
-	ExitRun res{};
-	int pipe_out[2];
-	int pipe_err[2];
-	if (pipe(pipe_out) != 0 || pipe(pipe_err) != 0)
-		return res;
-	pid_t pid = fork();
-	if (pid < 0)
-		return res;
-	if (pid == 0) {
-		mock_reset();
-		P::reset_globals();
-		optind = 1;
-		opterr = 0;
-		dup2(pipe_out[1], STDOUT_FILENO);
-		dup2(pipe_err[1], STDERR_FILENO);
-		close(pipe_out[0]);
-		close(pipe_out[1]);
-		close(pipe_err[0]);
-		close(pipe_err[1]);
-		int ret = P::main(argc, argv);
-		_exit(ret);
-	}
-	close(pipe_out[1]);
-	close(pipe_err[1]);
-	unsigned char buf[4096];
-	ssize_t nr;
-	while ((nr = read(pipe_out[0], buf, sizeof(buf))) > 0)
-		res.stdout_bytes.insert(res.stdout_bytes.end(), buf, buf + nr);
-	while ((nr = read(pipe_err[0], buf, sizeof(buf))) > 0)
-		res.stderr_bytes.insert(res.stderr_bytes.end(), buf, buf + nr);
-	close(pipe_out[0]);
-	close(pipe_err[0]);
-	int st = 0;
-	if (waitpid(pid, &st, 0) >= 0 && WIFEXITED(st))
-		res.status = WEXITSTATUS(st);
-	return res;
-}
-
-bool
-check_main(const char *label, int argc, char **argv)
-{
-	st_main.cases++;
-	ExitRun r = run_ref_main(argc, argv);
-	ExitRun p = run_port_main(argc, argv);
-	if (r.status != p.status)
-		return fail(st_main, label);
-	if (!same_bytes(r.stdout_bytes, p.stdout_bytes))
-		return fail(st_main, label);
-	if (!same_bytes(r.stderr_bytes, p.stderr_bytes))
-		return fail(st_main, label);
-	return true;
-}
-
-ExitRun
-run_ref_usage()
-{
-	ExitRun res{};
-	int pipe_out[2];
-	int pipe_err[2];
-	if (pipe(pipe_out) != 0 || pipe(pipe_err) != 0)
-		return res;
-	pid_t pid = fork();
-	if (pid < 0)
-		return res;
-	if (pid == 0) {
-		dup2(pipe_out[1], STDOUT_FILENO);
-		dup2(pipe_err[1], STDERR_FILENO);
-		close(pipe_out[0]);
-		close(pipe_out[1]);
-		close(pipe_err[0]);
-		close(pipe_err[1]);
-		ref_usage();
-		_exit(99);
-	}
-	close(pipe_out[1]);
-	close(pipe_err[1]);
-	unsigned char buf[4096];
-	ssize_t nr;
-	while ((nr = read(pipe_out[0], buf, sizeof(buf))) > 0)
-		res.stdout_bytes.insert(res.stdout_bytes.end(), buf, buf + nr);
-	while ((nr = read(pipe_err[0], buf, sizeof(buf))) > 0)
-		res.stderr_bytes.insert(res.stderr_bytes.end(), buf, buf + nr);
-	close(pipe_out[0]);
-	close(pipe_err[0]);
-	int st = 0;
-	if (waitpid(pid, &st, 0) >= 0 && WIFEXITED(st))
-		res.status = WEXITSTATUS(st);
-	return res;
-}
-
-ExitRun
-run_port_usage()
-{
-	ExitRun res{};
-	int pipe_out[2];
-	int pipe_err[2];
-	if (pipe(pipe_out) != 0 || pipe(pipe_err) != 0)
-		return res;
-	pid_t pid = fork();
-	if (pid < 0)
-		return res;
-	if (pid == 0) {
-		dup2(pipe_out[1], STDOUT_FILENO);
-		dup2(pipe_err[1], STDERR_FILENO);
-		close(pipe_out[0]);
-		close(pipe_out[1]);
-		close(pipe_err[0]);
-		close(pipe_err[1]);
-		P::usage();
-		_exit(99);
-	}
-	close(pipe_out[1]);
-	close(pipe_err[1]);
-	unsigned char buf[4096];
-	ssize_t nr;
-	while ((nr = read(pipe_out[0], buf, sizeof(buf))) > 0)
-		res.stdout_bytes.insert(res.stdout_bytes.end(), buf, buf + nr);
-	while ((nr = read(pipe_err[0], buf, sizeof(buf))) > 0)
-		res.stderr_bytes.insert(res.stderr_bytes.end(), buf, buf + nr);
-	close(pipe_out[0]);
-	close(pipe_err[0]);
-	int st = 0;
-	if (waitpid(pid, &st, 0) >= 0 && WIFEXITED(st))
-		res.status = WEXITSTATUS(st);
-	return res;
-}
-
-bool
-check_usage(const char *label)
-{
-	st_usage.cases++;
-	ExitRun r = run_ref_usage();
-	ExitRun p = run_port_usage();
-	if (r.status != p.status)
-		return fail(st_usage, label);
-	if (!same_bytes(r.stdout_bytes, p.stdout_bytes))
-		return fail(st_usage, label);
-	if (!same_bytes(r.stderr_bytes, p.stderr_bytes))
-		return fail(st_usage, label);
-	return true;
-}
-
-void
-test_printset_edge()
-{
-	cpuset_t mask;
-
-	CPU_ZERO(&mask);
-	check_printset("empty", &mask, 0);
-	check_printset("empty_size8", &mask, 8);
-
-	CPU_ZERO(&mask);
-	CPU_SET(0, &mask);
-	check_printset("single0", &mask, 16);
-
-	CPU_ZERO(&mask);
-	CPU_SET(7, &mask);
-	check_printset("single7", &mask, 8);
-
-	CPU_ZERO(&mask);
-	CPU_SET(0, &mask);
-	CPU_SET(2, &mask);
-	CPU_SET(5, &mask);
-	check_printset("sparse", &mask, 8);
-
-	CPU_ZERO(&mask);
-	for (int i = 0; i < 4; i++)
-		CPU_SET(i, &mask);
-	check_printset("dense4", &mask, 4);
-
-	CPU_ZERO(&mask);
-	CPU_SET(63, &mask);
-	check_printset("bit63", &mask, 64);
-}
-
-void
-test_printaffinity_edge()
-{
-	check_printaffinity("pid_which", CPU_LEVEL_WHICH, CPU_WHICH_PID, 42, 0, 0);
-	check_printaffinity("tid", CPU_LEVEL_CPUSET, CPU_WHICH_TID, 3, 0, 0);
-	check_printaffinity("dflag_skip_domain", CPU_LEVEL_ROOT, CPU_WHICH_DOMAIN,
-	    1, 1, 0);
-	check_printaffinity("xflag_skip_domain", CPU_LEVEL_WHICH, CPU_WHICH_IRQ,
-	    9, 0, 1);
-	check_printaffinity("jail", CPU_LEVEL_CPUSET, CPU_WHICH_JAIL, 5, 0, 0);
-	check_printaffinity("cpuset", CPU_LEVEL_ROOT, CPU_WHICH_CPUSET, 2, 0, 0);
-}
-
-void
-test_printsetid_edge()
-{
-	check_printsetid("which_pid", CPU_LEVEL_WHICH, CPU_WHICH_PID, 10, 0);
-	check_printsetid("which_cpuset_nosflag", CPU_LEVEL_WHICH,
-	    CPU_WHICH_CPUSET, 4, 0);
-	check_printsetid("which_cpuset_sflag", CPU_LEVEL_WHICH, CPU_WHICH_CPUSET,
-	    4, 1);
-	check_printsetid("root_tid", CPU_LEVEL_ROOT, CPU_WHICH_TID, 8, 0);
-	check_printsetid("cpuset_level", CPU_LEVEL_CPUSET, CPU_WHICH_PID, 1, 0);
-}
-
-void
-test_main_edge()
-{
-	static char prog[] = "cpuset";
-	static char dash_g[] = "-g";
-	static char dash_i[] = "-i";
-	static char dash_p[] = "-p";
-	static char dash_t[] = "-t";
-	static char dash_s[] = "-s";
-	static char dash_l[] = "-l";
-	static char dash_n[] = "-n";
-	static char dash_C[] = "-C";
-	static char dash_c[] = "-c";
-	static char dash_d[] = "-d";
-	static char dash_r[] = "-r";
-	static char dash_j[] = "-j";
-	static char dash_x[] = "-x";
-	static char pid5[] = "5";
-	static char tid3[] = "3";
-	static char set2[] = "2";
-	static char dom1[] = "1";
-	static char irq7[] = "7";
-	static char list01[] = "0,1";
-	static char list_range[] = "0-2,5";
-	static char policy[] = "round-robin:0-1";
-	static char jailnm[] = "myjail";
-	static char cmd[] = "/bin/true";
-	static char badopt[] = "-Z";
-	static char extra[] = "x";
-
-	char *av_usage[] = { prog, nullptr };
-	check_main("no_args_usage", 1, av_usage);
-
-	char *av_g[] = { prog, dash_g, nullptr };
-	check_main("g_affinity", 2, av_g);
-
-	char *av_gi[] = { prog, dash_g, dash_i, dash_p, pid5, nullptr };
-	check_main("g_i_pid", 5, av_gi);
-
-	char *av_g_conflict[] = { prog, dash_g, dash_p, pid5, dash_t, tid3,
-	    nullptr };
-	check_main("g_two_id", 6, av_g_conflict);
-
-	char *av_g_C[] = { prog, dash_g, dash_C, nullptr };
-	check_main("g_C_usage", 3, av_g_C);
-
-	char *av_d[] = { prog, dash_d, dom1, nullptr };
-	check_main("d_no_g", 3, av_d);
-
-	char *av_r[] = { prog, dash_r, nullptr };
-	check_main("r_usage", 2, av_r);
-
-	char *av_ls[] = { prog, dash_l, list01, dash_s, set2, nullptr };
-	check_main("l_s_modify", 5, av_ls);
-
-	char *av_lp[] = { prog, dash_l, list01, dash_p, pid5, nullptr };
-	check_main("l_p_modify", 5, av_lp);
-
-	char *av_Clp[] = { prog, dash_C, dash_l, list01, dash_p, pid5, nullptr };
-	check_main("C_l_p", 6, av_Clp);
-
-	char *av_cmd[] = { prog, dash_l, list01, cmd, nullptr };
-	check_main("exec_cmd", 4, av_cmd);
-
-	char *av_scmd[] = { prog, dash_s, set2, dash_l, list_range, cmd,
-	    nullptr };
-	check_main("s_l_cmd", 6, av_scmd);
-
-	char *av_t[] = { prog, dash_t, tid3, dash_l, list01, nullptr };
-	check_main("t_l", 5, av_t);
-
-	char *av_x[] = { prog, dash_x, irq7, dash_l, list01, nullptr };
-	check_main("x_l", 5, av_x);
-
-	char *av_tp[] = { prog, dash_t, tid3, dash_p, pid5, nullptr };
-	check_main("t_p_usage", 5, av_tp);
-
-	char *av_xp[] = { prog, dash_x, irq7, dash_p, pid5, nullptr };
-	check_main("x_p_usage", 5, av_xp);
-
-	char *av_j[] = { prog, dash_j, jailnm, dash_l, list01, nullptr };
-	check_main("j_l", 5, av_j);
-
-	char *av_n[] = { prog, dash_n, policy, dash_p, pid5, nullptr };
-	check_main("n_p", 5, av_n);
-
-	char *av_c_only[] = { prog, dash_c, nullptr };
-	check_main("c_only_usage", 2, av_c_only);
-
-	char *av_l_only[] = { prog, dash_l, list01, nullptr };
-	check_main("l_only_usage", 3, av_l_only);
-
-	char *av_bad[] = { prog, badopt, nullptr };
-	check_main("bad_opt", 2, av_bad);
-
-	char *av_g_extra[] = { prog, dash_g, extra, nullptr };
-	check_main("g_extra_arg", 3, av_g_extra);
-
-	char *av_g_l[] = { prog, dash_g, dash_l, list01, nullptr };
-	check_main("g_l_usage", 4, av_g_l);
-
-	char *av_g_n[] = { prog, dash_g, dash_n, policy, nullptr };
-	check_main("g_n_usage", 4, av_g_n);
-
-	char *av_C_j[] = { prog, dash_C, dash_j, jailnm, nullptr };
-	check_main("C_j_usage", 4, av_C_j);
-}
-
-void
-sweep_printset()
-{
-	for (long i = 0; i < SWEEP; i++) {
-		cpuset_t mask;
-		int size = rng.bits(0, 128);
-		CPU_ZERO(&mask);
-		int nbits = rng.bits(0, size > 0 ? size : 1);
-		for (int b = 0; b < nbits; b++) {
-			int bit = rng.bits(0, size > 0 ? size - 1 : 0);
-			if (size > 0)
-				CPU_SET(bit, &mask);
+	/*
+	 * One bit set, walked across the window edge.  A mask bit sitting at
+	 * exactly `size` is what separates "bit < size" from "bit <= size";
+	 * a bit at size-1 separates it from "bit < size - 1".
+	 */
+	for (int i = 0; i < NBOUND; i++) {
+		int size = boundary_sizes[i];
+
+		for (int d = -3; d <= 3; d++) {
+			int bit = size + d;
+
+			if (bit < 0)
+				continue;
+			std::memset(payload, 0x00, DATA);
+			setbit(payload, bit);
+			printset_case(payload, size, "one-at-boundary");
 		}
-		char label[64];
-		std::snprintf(label, sizeof(label), "rand_%ld", i);
-		check_printset(label, &mask, size);
+
+		std::memset(payload, 0x00, DATA);
+		setbit(payload, 0);
+		printset_case(payload, size, "first-only");
+
+		std::memset(payload, 0x00, DATA);
+		setbit(payload, size - 1);
+		printset_case(payload, size, "last-only");
+
+		std::memset(payload, 0x00, DATA);
+		setbit(payload, 0);
+		setbit(payload, size - 1);
+		printset_case(payload, size, "first+last");
+
+		std::memset(payload, 0xff, DATA);
+		clrbit(payload, 0);
+		printset_case(payload, size, "full-but-first");
+
+		std::memset(payload, 0xff, DATA);
+		clrbit(payload, size - 1);
+		printset_case(payload, size, "full-but-last");
+
+		std::memset(payload, 0xff, DATA);
+		clrbit(payload, size);
+		printset_case(payload, size, "full-but-past-end");
+	}
+
+	/* adjacent pairs: drives the once == 0 -> once = 1 transition */
+	for (int i = 0; i < NBOUND; i++) {
+		int size = boundary_sizes[i];
+
+		for (int b = 0; b + 1 < size && b < 4; b++) {
+			std::memset(payload, 0x00, DATA);
+			setbit(payload, b);
+			setbit(payload, b + 1);
+			printset_case(payload, size, "adjacent-pair");
+		}
+	}
+
+	/* every single bit position, for the small sizes */
+	for (int i = 0; i < nsmall; i++) {
+		int size = small[i];
+
+		for (int bit = 0; bit <= size && bit < MAXBIT; bit++) {
+			std::memset(payload, 0x00, DATA);
+			setbit(payload, bit);
+			printset_case(payload, size, "walk-one");
+		}
+	}
+
+	/* word crossing and regular patterns */
+	for (int i = 0; i < NBOUND; i++) {
+		int size = boundary_sizes[i];
+
+		std::memset(payload, 0x00, DATA);
+		for (int b = 60; b < 70; b++)
+			setbit(payload, b);
+		printset_case(payload, size, "word-cross");
+
+		std::memset(payload, 0x00, DATA);
+		for (int b = 0; b < MAXBIT; b += 64)
+			setbit(payload, b);
+		printset_case(payload, size, "word-firsts");
+
+		std::memset(payload, 0x00, DATA);
+		for (int b = 63; b < MAXBIT; b += 64)
+			setbit(payload, b);
+		printset_case(payload, size, "word-lasts");
+
+		std::memset(payload, 0x55, DATA);
+		printset_case(payload, size, "0x55");
+
+		std::memset(payload, 0xaa, DATA);
+		printset_case(payload, size, "0xaa");
+
+		std::memset(payload, 0x80, DATA);
+		printset_case(payload, size, "0x80");
+
+		std::memset(payload, 0x01, DATA);
+		printset_case(payload, size, "0x01");
+	}
+
+	/* negative sizes */
+	for (int i = 0; i < NNEG; i++) {
+		std::memset(payload, 0x00, DATA);
+		printset_case(payload, negative_sizes[i], "negative-clear");
+
+		std::memset(payload, 0xff, DATA);
+		printset_case(payload, negative_sizes[i], "negative-full");
+
+		std::memset(payload, 0x55, DATA);
+		printset_case(payload, negative_sizes[i], "negative-0x55");
+
+		std::memset(payload, 0x00, DATA);
+		setbit(payload, 0);
+		printset_case(payload, negative_sizes[i], "negative-bit0");
 	}
 }
 
-void
-sweep_printaffinity()
+static void
+gen_payload(unsigned char *p, int size)
 {
-	for (long i = 0; i < SWEEP / 5; i++) {
-		cpulevel_t lv = (cpulevel_t)rng.bits(1, 3);
-		cpuwhich_t wh = (cpuwhich_t)rng.bits(1, 6);
-		id_t ident = (id_t)rng.bits(-20, 200);
-		int df = rng.coin() ? 1 : 0;
-		int xf = rng.coin() ? 1 : 0;
-		if (df)
-			xf = 0;
-		char label[64];
-		std::snprintf(label, sizeof(label), "rand_%ld", i);
-		check_printaffinity(label, lv, wh, ident, df, xf);
+	unsigned mode = static_cast<unsigned>(nextrand() % 8);
+	std::size_t i;
+
+	switch (mode) {
+	case 0:					/* empty mask */
+		std::memset(p, 0x00, DATA);
+		break;
+	case 1:					/* every bit set */
+		std::memset(p, 0xff, DATA);
+		break;
+	case 2:					/* exactly one bit */
+		std::memset(p, 0x00, DATA);
+		setbit(p, static_cast<int>(nextrand() % MAXBIT));
+		break;
+	case 3:					/* sparse */
+		for (i = 0; i < DATA; i++)
+			p[i] = (nextrand() % 8) == 0 ?
+			    static_cast<unsigned char>(1u << (nextrand() % 8)) :
+			    static_cast<unsigned char>(0);
+		break;
+	case 4:					/* uniform noise */
+		for (i = 0; i < DATA; i++)
+			p[i] = static_cast<unsigned char>(nextrand());
+		break;
+	case 5: {				/* regular patterns */
+		static const unsigned char pat[] = {
+			0x55, 0xaa, 0x0f, 0xf0, 0x01, 0x80, 0xfe, 0x7f
+		};
+
+		std::memset(p, pat[nextrand() % sizeof(pat)], DATA);
+		break;
+	}
+	case 6:					/* exactly two bits */
+		std::memset(p, 0x00, DATA);
+		setbit(p, static_cast<int>(nextrand() % MAXBIT));
+		setbit(p, static_cast<int>(nextrand() % MAXBIT));
+		break;
+	default:				/* bits astride the boundary */
+		std::memset(p, 0x00, DATA);
+		for (int d = -3; d <= 3; d++)
+			if ((nextrand() & 1) != 0)
+				setbit(p, size + d);
+		if ((nextrand() & 1) != 0)
+			setbit(p, 0);
+		break;
 	}
 }
 
-void
-sweep_printsetid()
+static void
+printset_sweep(long iters)
 {
-	for (long i = 0; i < SWEEP / 5; i++) {
-		cpulevel_t lv = (cpulevel_t)rng.bits(1, 3);
-		cpuwhich_t wh = (cpuwhich_t)rng.bits(1, 6);
-		id_t ident = (id_t)rng.bits(-5, 100);
-		int sf = rng.coin() ? 1 : 0;
-		char label[64];
-		std::snprintf(label, sizeof(label), "rand_%ld", i);
-		check_printsetid(label, lv, wh, ident, sf);
-	}
-}
 
-void
-sweep_main()
-{
-	static char prog[] = "cpuset";
-	static char dash_g[] = "-g";
-	static char dash_i[] = "-i";
-	static char dash_p[] = "-p";
-	static char dash_l[] = "-l";
-	static char dash_s[] = "-s";
-	static char dash_t[] = "-t";
-	static char dash_x[] = "-x";
-	static char dash_C[] = "-C";
-	static char dash_n[] = "-n";
-	static char cmd[] = "/bin/false";
-	static char pidbuf[16];
-	static char setbuf[16];
-	static char listbuf[32];
-	static char polbuf[48];
+	for (long it = 0; it < iters; it++) {
+		std::uint64_t r = nextrand();
+		int size;
 
-	for (long i = 0; i < SWEEP; i++) {
-		int mode = rng.bits(0, 12);
-		std::snprintf(pidbuf, sizeof(pidbuf), "%d", rng.bits(1, 500));
-		std::snprintf(setbuf, sizeof(setbuf), "%d", rng.bits(0, 50));
-		std::snprintf(listbuf, sizeof(listbuf), "%d,%d",
-		    rng.bits(0, 7), rng.bits(0, 7));
-		std::snprintf(polbuf, sizeof(polbuf), "rr:%d-%d",
-		    rng.bits(0, 3), rng.bits(2, 5));
-
-		char *argv[12];
-		int argc = 0;
-		argv[argc++] = prog;
-
-		switch (mode) {
+		switch (r % 4) {
 		case 0:
-			argv[argc++] = dash_g;
+			size = boundary_sizes[nextrand() % NBOUND];
 			break;
 		case 1:
-			argv[argc++] = dash_g;
-			argv[argc++] = dash_i;
-			argv[argc++] = dash_p;
-			argv[argc++] = pidbuf;
+			size = static_cast<int>(nextrand() % 129);
 			break;
 		case 2:
-			argv[argc++] = dash_l;
-			argv[argc++] = listbuf;
-			argv[argc++] = dash_s;
-			argv[argc++] = setbuf;
-			break;
-		case 3:
-			argv[argc++] = dash_l;
-			argv[argc++] = listbuf;
-			argv[argc++] = dash_p;
-			argv[argc++] = pidbuf;
-			break;
-		case 4:
-			argv[argc++] = dash_C;
-			argv[argc++] = dash_l;
-			argv[argc++] = listbuf;
-			argv[argc++] = dash_p;
-			argv[argc++] = pidbuf;
-			break;
-		case 5:
-			argv[argc++] = dash_l;
-			argv[argc++] = listbuf;
-			argv[argc++] = cmd;
-			break;
-		case 6:
-			argv[argc++] = dash_s;
-			argv[argc++] = setbuf;
-			argv[argc++] = dash_l;
-			argv[argc++] = listbuf;
-			argv[argc++] = cmd;
-			break;
-		case 7:
-			argv[argc++] = dash_t;
-			argv[argc++] = pidbuf;
-			argv[argc++] = dash_l;
-			argv[argc++] = listbuf;
-			break;
-		case 8:
-			argv[argc++] = dash_x;
-			argv[argc++] = pidbuf;
-			argv[argc++] = dash_l;
-			argv[argc++] = listbuf;
-			break;
-		case 9:
-			argv[argc++] = dash_n;
-			argv[argc++] = polbuf;
-			argv[argc++] = dash_p;
-			argv[argc++] = pidbuf;
-			break;
-		case 10:
-			argv[argc++] = dash_g;
-			argv[argc++] = dash_p;
-			argv[argc++] = pidbuf;
+			size = static_cast<int>(nextrand() % (MAXBIT + 1));
 			break;
 		default:
+			size = static_cast<int>(nextrand() % 66);
 			break;
 		}
-		argv[argc] = nullptr;
-		char label[64];
-		std::snprintf(label, sizeof(label), "rand_%ld", i);
-		check_main(label, argc, argv);
+		if (nextrand() % 64 == 0)
+			size = negative_sizes[nextrand() % NNEG];
+		gen_payload(payload, size);
+		printset_case(payload, size, "sweep");
 	}
 }
 
-void
-sweep_usage()
+/* ------------------------------------------------------------------ */
+/* usage                                                               */
+/* ------------------------------------------------------------------ */
+
+static long cases_usage = 0;
+static long fails_usage = 0;
+
+struct child_result {
+	std::string	err;
+	int		exited;
+	int		status;
+	int		signal;
+};
+
+static child_result
+run_usage(bool use_port)
 {
-	for (long i = 0; i < 1000; i++) {
-		char label[64];
-		std::snprintf(label, sizeof(label), "rand_%ld", i);
-		check_usage(label);
+	child_result cr;
+	int pfd[2];
+	pid_t pid;
+	int st = 0;
+
+	cr.exited = 0;
+	cr.status = -1;
+	cr.signal = 0;
+	if (::pipe(pfd) != 0) {
+		std::perror("pipe");
+		std::exit(2);
 	}
+	std::fflush(stdout);
+	std::fflush(stderr);
+	pid = ::fork();
+	if (pid < 0) {
+		std::perror("fork");
+		std::exit(2);
+	}
+	if (pid == 0) {
+		::close(pfd[0]);
+		if (::dup2(pfd[1], 2) < 0)
+			::_exit(120);
+		::close(pfd[1]);
+		if (use_port)
+			P::usage();
+		else
+			ref_usage();
+	}
+	::close(pfd[1]);
+	for (;;) {
+		char b[4096];
+		ssize_t n = ::read(pfd[0], b, sizeof(b));
+
+		if (n > 0)
+			cr.err.append(b, static_cast<std::size_t>(n));
+		else
+			break;
+	}
+	::close(pfd[0]);
+	if (::waitpid(pid, &st, 0) < 0) {
+		std::perror("waitpid");
+		std::exit(2);
+	}
+	if (WIFEXITED(st)) {
+		cr.exited = 1;
+		cr.status = WEXITSTATUS(st);
+	}
+	if (WIFSIGNALED(st))
+		cr.signal = WTERMSIG(st);
+	return cr;
 }
 
-void
-print_table()
+static void
+usage_cases(int iters)
 {
-	Stat *all[] = { &st_printset, &st_printaffinity, &st_printsetid,
-		&st_main, &st_usage };
-	std::printf("\n%-16s %8s %8s\n", "function", "cases", "failures");
-	std::printf("%-16s %8s %8s\n", "--------", "-----", "--------");
-	long total_cases = 0;
-	long total_fails = 0;
-	for (Stat *st : all) {
-		std::printf("%-16s %8ld %8ld\n", st->name, st->cases,
-		    st->fails);
-		total_cases += st->cases;
-		total_fails += st->fails;
+
+	for (int i = 0; i < iters; i++) {
+		child_result p = run_usage(true);
+		child_result r = run_usage(false);
+		bool ok = true;
+
+		cases_usage++;
+		if (p.err != r.err)
+			ok = false;
+		if (p.exited != r.exited || p.status != r.status ||
+		    p.signal != r.signal)
+			ok = false;
+		if (ok)
+			continue;
+		fails_usage++;
+		std::fprintf(stderr, "usage MISMATCH (iteration %d)\n", i);
+		std::fprintf(stderr,
+		    "    port: exited=%d status=%d signal=%d\n",
+		    p.exited, p.status, p.signal);
+		std::fprintf(stderr,
+		    "    ref : exited=%d status=%d signal=%d\n",
+		    r.exited, r.status, r.signal);
+		dumpstr("port stderr", p.err);
+		dumpstr("ref  stderr", r.err);
 	}
-	std::printf("%-16s %8ld %8ld\n", "TOTAL", total_cases, total_fails);
 }
 
-} // namespace
+/* ------------------------------------------------------------------ */
 
 int
-main()
+main(void)
 {
-	mock_reset();
-	test_printset_edge();
-	test_printaffinity_edge();
-	test_printsetid_edge();
-	test_main_edge();
-	check_usage("once");
-	sweep_printset();
-	sweep_printaffinity();
-	sweep_printsetid();
-	sweep_main();
-	sweep_usage();
-	print_table();
-	long total_fails = st_printset.fails + st_printaffinity.fails +
-	    st_printsetid.fails + st_main.fails + st_usage.fails;
-	return total_fails == 0 ? 0 : 1;
+	struct rlimit rl;
+	long total_cases, total_fails;
+
+	/*
+	 * A mutated loop condition can turn printset into an endless printf
+	 * loop; cap CPU time and scratch file size so the run still dies
+	 * (non-zero exit) instead of wedging the machine.  A clean run needs
+	 * a few seconds and a few kilobytes.
+	 */
+	rl.rlim_cur = 90;
+	rl.rlim_max = 90;
+	(void)::setrlimit(RLIMIT_CPU, &rl);
+	rl.rlim_cur = 256UL * 1024UL * 1024UL;
+	rl.rlim_max = 256UL * 1024UL * 1024UL;
+	(void)::setrlimit(RLIMIT_FSIZE, &rl);
+
+	cap_setup();
+	printset_handwritten();
+	printset_sweep(200000);
+	cap_restore();
+
+	usage_cases(4);
+
+	total_cases = cases_printset + cases_usage;
+	total_fails = fails_printset + fails_usage;
+
+	std::printf("\n");
+	std::printf("%-12s %12s %12s  %s\n", "function", "cases", "failures",
+	    "result");
+	std::printf("--------------------------------------------------"
+	    "----\n");
+	std::printf("%-12s %12ld %12ld  %s\n", "printset", cases_printset,
+	    fails_printset, fails_printset == 0 ? "PASS" : "FAIL");
+	std::printf("%-12s %12ld %12ld  %s\n", "usage", cases_usage,
+	    fails_usage, fails_usage == 0 ? "PASS" : "FAIL");
+	std::printf("--------------------------------------------------"
+	    "----\n");
+	std::printf("%-12s %12ld %12ld  %s\n", "TOTAL", total_cases,
+	    total_fails, total_fails == 0 ? "PASS" : "FAIL");
+	std::fflush(stdout);
+
+	return (total_fails == 0 ? 0 : 1);
 }

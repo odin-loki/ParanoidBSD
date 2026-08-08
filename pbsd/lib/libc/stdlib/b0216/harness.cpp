@@ -22,9 +22,7 @@ namespace P = pbsd::lib_libc_stdlib::b0216;
 
 extern "C" {
 struct xlocale;
-typedef struct xlocale *locale_t;
-
-long long ref_strtoll_l(const char *, char **, int, locale_t);
+long long ref_strtoll_l(const char *, char **, int, struct xlocale *);
 long long ref_strtoll(const char *, char **, int);
 P::posix_tnode *ref_tsearch(const void *, P::posix_tnode **,
     int (*)(const void *, const void *));
@@ -236,7 +234,8 @@ check_strto(unsigned fn_l, unsigned fn, bool use_l, const char *in, int base,
 		rllp = P::strtoll_l(a, use_endptr ? &ea : nullptr, base, loc);
 		e1 = errno;
 		errno = pre;
-		rllr = ref_strtoll_l(b, use_endptr ? &eb : nullptr, base, loc);
+		rllr = ref_strtoll_l(b, use_endptr ? &eb : nullptr, base,
+		    (struct xlocale *)loc);
 		e2 = errno;
 		bool ok = rllp == rllr && e1 == e2 &&
 		    std::memcmp(a, b, sizeof(a)) == 0 &&

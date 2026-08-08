@@ -31,7 +31,6 @@ else
 	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c harness.cpp -o harness.o
 fi
 
-$CXX -std=c++23 $CXXFLAGS -Wl,--wrap=kenv -Wl,--wrap=calloc \
-    -o harness harness.o port.o oracle.o
+$CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o
 
 exec ./harness

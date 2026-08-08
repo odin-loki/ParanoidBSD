@@ -21,7 +21,7 @@
 #define __noinline __attribute__((__noinline__))
 #endif
 
-#include <ctype.h>
+#define locale_t __glibc_locale_t
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -34,6 +34,7 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#undef locale_t
 
 struct xlocale {
 	int __unused;
@@ -57,8 +58,10 @@ __get_locale(void)
 static int
 isspace_l(int c, locale_t locale)
 {
+	unsigned char uc = (unsigned char)c;
 	(void)locale;
-	return (isspace((unsigned char)c));
+	return (uc == ' ' || uc == '\f' || uc == '\n' || uc == '\r' ||
+	    uc == '\t' || uc == '\v');
 }
 
 int
@@ -71,9 +74,6 @@ __sys___realpathat(int fd, const char *path, char *buf, size_t size, int flags)
 	(void)flags;
 	return (-1);
 }
-
-#define	_SEARCH_PRIVATE
-#include <search.h>
 
 typedef struct __posix_tnode {
 	void			*key;

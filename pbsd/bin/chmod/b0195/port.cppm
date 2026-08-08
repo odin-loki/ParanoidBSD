@@ -1,54 +1,3 @@
-module;
-
-#ifndef __dead2
-#define __dead2	__attribute__((__noreturn__))
-#endif
-
-#ifndef __unused
-#define __unused	__attribute__((__unused__))
-#endif
-
-#define _GNU_SOURCE
-#define _DEFAULT_SOURCE
-
-#include <sys/param.h>
-#include <sys/stat.h>
-
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-#include <err.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <fts.h>
-#include <limits.h>
-#include <signal.h>
-#include <unistd.h>
-
-#if defined(__linux__)
-#include <bsd/string.h>
-#include <bsd/unistd.h>
-#endif
-
-#ifndef SIGINFO
-#define SIGINFO SIGUSR1
-#endif
-
-#ifndef _PC_ACL_NFS4
-#define _PC_ACL_NFS4 64
-#endif
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * 8)
-#endif
-
-export module pbsd.bin.chmod.b0195;
-
-extern "C" long lpathconf(const char *, int);
-
-export namespace pbsd::bin_chmod::b0195 {
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -80,179 +29,26 @@ export namespace pbsd::bin_chmod::b0195 {
  * SUCH DAMAGE.
  */
 
-volatile sig_atomic_t siginfo;
+module;
 
-void usage(void) __dead2;
-int may_have_nfs4acl(const FTSENT *ent, int hflag);
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-void
-siginfo_handler(int sig __unused)
+export module pbsd.bin.chmod.b0195;
+
+namespace pbsd::bin_chmod::b0195 {
+
+static volatile sig_atomic_t siginfo;
+
+export void
+siginfo_handler(int sig [[maybe_unused]])
 {
 
 	siginfo = 1;
 }
 
-int
-main(int argc, char *argv[])
-{
-	FTS *ftsp;
-	FTSENT *p;
-	mode_t *set;
-	int Hflag, Lflag, Rflag, ch, fflag, fts_options, hflag, rval;
-	int vflag;
-	char *mode;
-	mode_t newmode;
-
-	set = NULL;
-	Hflag = Lflag = Rflag = fflag = hflag = vflag = 0;
-	while ((ch = getopt(argc, argv, "HLPRXfghorstuvwx")) != -1)
-		switch (ch) {
-		case 'H':
-			Hflag = 1;
-			Lflag = 0;
-			break;
-		case 'L':
-			Lflag = 1;
-			Hflag = 0;
-			break;
-		case 'P':
-			Hflag = Lflag = 0;
-			break;
-		case 'R':
-			Rflag = 1;
-			break;
-		case 'f':
-			fflag = 1;
-			break;
-		case 'h':
-			/*
-			 * In System V the -h option causes chmod to change
-			 * the mode of the symbolic link. 4.4BSD's symbolic
-			 * links didn't have modes, so it was an undocumented
-			 * noop.  In FreeBSD 3.0, lchmod(2) is introduced and
-			 * this option does real work.
-			 */
-			hflag = 1;
-			break;
-		/*
-		 * XXX
-		 * "-[rwx]" are valid mode commands.  If they are the entire
-		 * argument, getopt has moved past them, so decrement optind.
-		 * Regardless, we're done argument processing.
-		 */
-		case 'g': case 'o': case 'r': case 's':
-		case 't': case 'u': case 'w': case 'X': case 'x':
-			if (argv[optind - 1][0] == '-' &&
-			    argv[optind - 1][1] == ch &&
-			    argv[optind - 1][2] == '\0')
-				--optind;
-			goto done;
-		case 'v':
-			vflag++;
-			break;
-		case '?':
-		default:
-			usage();
-		}
-done:	argv += optind;
-	argc -= optind;
-
-	if (argc < 2)
-		usage();
-
-	(void)signal(SIGINFO, siginfo_handler);
-
-	if (Rflag) {
-		if (hflag)
-			errx(1, "the -R and -h options may not be "
-			    "specified together.");
-		if (Lflag) {
-			fts_options = FTS_LOGICAL;
-		} else {
-			fts_options = FTS_PHYSICAL;
-
-			if (Hflag) {
-				fts_options |= FTS_COMFOLLOW;
-			}
-		}
-	} else if (hflag) {
-		fts_options = FTS_PHYSICAL;
-	} else {
-		fts_options = FTS_LOGICAL;
-	}
-
-	mode = *argv;
-	if ((set = (mode_t *)setmode(mode)) == NULL)
-		errx(1, "invalid file mode: %s", mode);
-
-	if ((ftsp = fts_open(++argv, fts_options, 0)) == NULL)
-		err(1, "fts_open");
-	for (rval = 0; errno = 0, (p = fts_read(ftsp)) != NULL;) {
-		int atflag;
-
-		if ((fts_options & FTS_LOGICAL) ||
-		    ((fts_options & FTS_COMFOLLOW) &&
-		    p->fts_level == FTS_ROOTLEVEL))
-			atflag = 0;
-		else
-			atflag = AT_SYMLINK_NOFOLLOW;
-
-		switch (p->fts_info) {
-		case FTS_D:
-			if (!Rflag)
-				fts_set(ftsp, p, FTS_SKIP);
-			break;
-		case FTS_DNR:			/* Warn, chmod. */
-			warnx("%s: %s", p->fts_path, strerror(p->fts_errno));
-			rval = 1;
-			break;
-		case FTS_DP:			/* Already changed at FTS_D. */
-			continue;
-		case FTS_ERR:			/* Warn, continue. */
-		case FTS_NS:
-			warnx("%s: %s", p->fts_path, strerror(p->fts_errno));
-			rval = 1;
-			continue;
-		default:
-			break;
-		}
-		newmode = getmode(set, p->fts_statp->st_mode);
-		/*
-		 * With NFSv4 ACLs, it is possible that applying a mode
-		 * identical to the one computed from an ACL will change
-		 * that ACL.
-		 */
-		if (may_have_nfs4acl(p, hflag) == 0 &&
-		    (newmode & ALLPERMS) == (p->fts_statp->st_mode & ALLPERMS))
-				continue;
-		if (fchmodat(AT_FDCWD, p->fts_accpath, newmode, atflag) == -1
-		    && !fflag) {
-			warn("%s", p->fts_path);
-			rval = 1;
-		} else if (vflag || siginfo) {
-			(void)printf("%s", p->fts_path);
-
-			if (vflag > 1 || siginfo) {
-				char m1[12], m2[12];
-
-				strmode(p->fts_statp->st_mode, m1);
-				strmode((p->fts_statp->st_mode &
-				    S_IFMT) | newmode, m2);
-				(void)printf(": 0%o [%s] -> 0%o [%s]",
-				    p->fts_statp->st_mode, m1,
-				    (p->fts_statp->st_mode & S_IFMT) |
-				    newmode, m2);
-			}
-			(void)printf("\n");
-			siginfo = 0;
-		}
-	}
-	if (errno)
-		err(1, "fts_read");
-	exit(rval);
-}
-
-void
+export [[noreturn]] void
 usage(void)
 {
 	(void)fprintf(stderr,
@@ -260,28 +56,23 @@ usage(void)
 	exit(1);
 }
 
-int
-may_have_nfs4acl(const FTSENT *ent, int hflag)
+/*
+ * Accessors for the file-scope `siginfo' flag.  The flag has internal
+ * linkage in the original, so the differential harness has no other way
+ * to observe it; the ported behaviour above is unaffected.
+ */
+export sig_atomic_t
+siginfo_get(void)
 {
-	int ret;
-	static dev_t previous_dev = NODEV;
-	static int supports_acls = -1;
 
-	if (previous_dev != ent->fts_statp->st_dev) {
-		previous_dev = ent->fts_statp->st_dev;
-		supports_acls = 0;
-
-		if (hflag)
-			ret = lpathconf(ent->fts_accpath, _PC_ACL_NFS4);
-		else
-			ret = pathconf(ent->fts_accpath, _PC_ACL_NFS4);
-		if (ret > 0)
-			supports_acls = 1;
-		else if (ret < 0 && errno != EINVAL)
-			warn("%s", ent->fts_path);
-	}
-
-	return (supports_acls);
+	return (siginfo);
 }
 
-} // namespace pbsd::bin_chmod::b0195
+export void
+siginfo_set(sig_atomic_t v)
+{
+
+	siginfo = v;
+}
+
+} /* namespace pbsd::bin_chmod::b0195 */

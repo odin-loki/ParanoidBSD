@@ -14,6 +14,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/csh/b0061/port.cppm
   bin/date/b0190/port.cppm
   bin/dd/b0215/port.cppm
+  bin/dd/b0220/port.cppm
   bin/dd/conv_m/port.cppm
   bin/dd/position_m/port.cppm
   bin/df/b0189/port.cppm
@@ -35,12 +36,14 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/pwait/b0181/port.cppm
   bin/pwd/pwd_m/port.cppm
   bin/realpath/b0169/port.cppm
+  bin/rm/b0198/port.cppm
   bin/rmdir/b0172/port.cppm
   bin/setfacl/b0162/port.cppm
   bin/setfacl/b0199/port.cppm
   bin/setfacl/mask_m/port.cppm
   bin/setfacl/util_m/port.cppm
   bin/sh/b0119/port.cppm
+  bin/sh/b0219/port.cppm
   bin/sleep/b0175/port.cppm
   bin/stty/b0187/port.cppm
   bin/stty/gfmt_m/port.cppm
@@ -249,6 +252,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdlib/b0126/port.cppm
   lib/libc/stdlib/b0212/port.cppm
   lib/libc/stdlib/b0214/port.cppm
+  lib/libc/stdlib/b0216/port.cppm
   lib/libc/stdlib/b0221/port.cppm
   lib/libc/stdlib/getsubopt_m/port.cppm
   lib/libc/stdlib/hcreate_m/port.cppm
@@ -411,6 +415,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/geom/uzip/b0144/port.cppm
   sys/kern/b0138/port.cppm
   sys/kern/b0146/port.cppm
+  sys/kern/b0217/port.cppm
   sys/net/toeplitz_m/port.cppm
   sys/security/mac_none/b0005/port.cppm
   sys/security/mac_ntpd/b0007/port.cppm
