@@ -203,6 +203,7 @@ static ssize_t
 mock_readv(int fd, const struct iovec *iov, int iovcnt)
 {
 	int n, i;
+	unsigned h;
 
 	mock_enter(TAG_READV);
 	mock.sc[0] = (long long)fd;
@@ -211,8 +212,10 @@ mock_readv(int fd, const struct iovec *iov, int iovcnt)
 
 	if (iov != nullptr && iovcnt > 0) {
 		n = iovcnt < IOV_TEST_MAX ? iovcnt : IOV_TEST_MAX;
-		mock.hs[0] = hash_bytes(iov, (size_t)n * sizeof(struct iovec));
+		h = 2166136261u;
 		for (i = 0; i < n; i++) {
+			h ^= (unsigned)iov[i].iov_len;
+			h *= 16777619u;
 			mock.po[i + 1] = poff(iov[i].iov_base, base_bufs[i]);
 			if (iov[i].iov_base != nullptr && iov[i].iov_len > 0) {
 				size_t len = iov[i].iov_len;
@@ -222,6 +225,7 @@ mock_readv(int fd, const struct iovec *iov, int iovcnt)
 				mock.hs[i + 1] = hash_bytes(iov[i].iov_base, len);
 			}
 		}
+		mock.hs[0] = h;
 	}
 	return ((ssize_t)mock_ret);
 }
@@ -578,12 +582,37 @@ case_sigtimedwait(const sigset_t *set, bool use_info, const struct timespec *ts,
 }
 
 static void
+cmp_iov_bufs(int fn, const unsigned char *iov_a, const unsigned char *iov_b,
+    const char *ctx)
+{
+	size_t i;
+
+	cmp_buf(fn, "iov_pre", iov_a, iov_b, IOV_OFF, ctx);
+	cmp_buf(fn, "iov_post", iov_a + IOV_OFF + IOV_TEST_MAX * sizeof(struct iovec),
+	    iov_b + IOV_OFF + IOV_TEST_MAX * sizeof(struct iovec),
+	    IOV_TOTAL - IOV_OFF - IOV_TEST_MAX * sizeof(struct iovec), ctx);
+
+	for (i = 0; i < IOV_TEST_MAX; i++) {
+		const struct iovec *va = (const struct iovec *)(iov_a + IOV_OFF);
+		const struct iovec *vb = (const struct iovec *)(iov_b + IOV_OFF);
+
+		if (va[i].iov_len != vb[i].iov_len) {
+			char msg[1024];
+
+			snprintf(msg, sizeof(msg),
+			    "%s iov[%zu].iov_len ref=%zu port=%zu", ctx, i,
+			    va[i].iov_len, vb[i].iov_len);
+			fail(fn, "iov_len", msg);
+		}
+	}
+}
+
+static void
 case_readv(int fd, const struct iovec *iov, int iovcnt, long long ret)
 {
 	unsigned char iov_a[IOV_TOTAL], iov_b[IOV_TOTAL];
 	unsigned char bufs_a[IOV_TEST_MAX][BASE_TOTAL];
 	unsigned char bufs_b[IOV_TEST_MAX][BASE_TOTAL];
-	struct iovec iova[IOV_TEST_MAX], iovb[IOV_TEST_MAX];
 	Snap snap_a, snap_b;
 	ssize_t ra, rb;
 	char ctx[256];
@@ -641,7 +670,7 @@ case_readv(int fd, const struct iovec *iov, int iovcnt, long long ret)
 	snap_b = mock;
 
 	cmp_snap(FN_READV, snap_a, snap_b, ctx);
-	cmp_buf(FN_READV, "iov", iov_a, iov_b, sizeof(iov_a), ctx);
+	cmp_iov_bufs(FN_READV, iov_a, iov_b, ctx);
 	for (i = 0; i < IOV_TEST_MAX; i++)
 		cmp_buf(FN_READV, "base", bufs_a[i], bufs_b[i],
 		    sizeof(bufs_a[i]), ctx);
@@ -819,12 +848,10 @@ test_readv(void)
 
 	for (unsigned b = 0x00; b <= 0xff; b++) {
 		for (int i = 0; i < IOV_TEST_MAX; i++) {
-			iov[i].iov_base = (void *)(uintptr_t)(0x1000 + b + i);
+			iov[i].iov_base = data + (i % BASE_MAX);
 			iov[i].iov_len = (size_t)((b + i) % (BASE_MAX + 1));
 		}
 		memset(data, (int)(char)b, sizeof(data));
-		iov[0].iov_base = data;
-		iov[0].iov_len = (size_t)(b % (BASE_MAX + 1));
 		case_readv((int)(int8_t)b, iov, (int)(b % (IOV_TEST_MAX + 2u)),
 		    (long long)(int8_t)b);
 	}

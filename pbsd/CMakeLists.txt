@@ -395,6 +395,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/sys/b0243/port.cppm
   lib/libc/sys/b0245/port.cppm
   lib/libc/sys/b0246/port.cppm
+  lib/libc/sys/b0249/port.cppm
   lib/libc/uuid/b0019/port.cppm
   lib/libc/uuid/b0122/port.cppm
   lib/libc/uuid/uuid_compare_m/port.cppm

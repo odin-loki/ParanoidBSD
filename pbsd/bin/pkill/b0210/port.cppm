@@ -236,8 +236,18 @@ killact(const struct kinfo_proc *kp)
 			return (1);
 	}
 	if (kill(kp->ki_pid, signum) == -1) {
+		/* 
+		 * Check for ESRCH, which indicates that the process
+		 * disappeared between us matching it and us
+		 * signalling it; don't issue a warning about it.
+		 */
 		if (errno != ESRCH)
 			warn("signalling pid %d", (int)kp->ki_pid);
+		/*
+		 * Return 0 to indicate that the process should not be
+		 * considered a match, since we didn't actually get to
+		 * signal it.
+		 */
 		return (0);
 	}
 	return (1);
@@ -297,8 +307,9 @@ makelist(struct listhead *head, enum listtype type, char *src)
 				if (li->li_number < 0)
 					errx(STATUS_BADUSAGE,
 					     "Negative jail ID `%s'", sp);
+				/* For compatibility with old -j */
 				if (li->li_number == 0)
-					li->li_number = -1;
+					li->li_number = -1;	/* any jail */
 				break;
 			case LT_TTY:
 				if (li->li_number < 0)

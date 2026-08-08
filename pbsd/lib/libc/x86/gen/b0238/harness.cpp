@@ -703,8 +703,15 @@ get_ok(unsigned int features, unsigned int cpuid_sz, int gc_fail,
 		ok = false;
 	}
 	if (pa != nullptr && pb != nullptr) {
-		if (!ucontext_payload_match(pa, pb, expect_sz,
-		    xfpu_path_active(features, sysarch_fail), label))
+		bool xo = xfpu_path_active(features, sysarch_fail);
+		size_t cmpsz = expect_sz;
+
+		if (!xo)
+			cmpsz = sizeof(P::ucontext_t);
+		else if (cmpsz > sizeof(P::ucontext_t) + XSTATE_BUF_CAP)
+			cmpsz = sizeof(P::ucontext_t) + XSTATE_BUF_CAP;
+
+		if (!ucontext_payload_match(pa, pb, cmpsz, xo, label))
 			ok = false;
 	}
 	if (pa != nullptr)
