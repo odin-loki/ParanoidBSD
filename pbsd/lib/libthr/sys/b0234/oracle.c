@@ -6,13 +6,42 @@
 
 #include <stddef.h>
 
+#ifdef PBSD_B0234_PORT_INCLUDE
+#ifdef __cplusplus
+extern "C" {
+#endif
+struct pthread {
+	int error;
+};
+extern struct pthread *_thr_initial;
+extern struct pthread *_get_curthread(void);
+extern int __libsys_errno;
+extern void b0234_set_curthread(struct pthread *cur);
+#ifdef __cplusplus
+}
+#endif
+#else /* PBSD_B0234_PORT_INCLUDE */
+
 struct pthread {
 	int error;
 };
 
-extern struct pthread *_thr_initial;
-extern struct pthread *_get_curthread(void);
-extern int __libsys_errno;
+struct pthread *_thr_initial;
+int __libsys_errno;
+
+static struct pthread *b0234_curthread;
+
+struct pthread *
+_get_curthread(void)
+{
+	return (b0234_curthread);
+}
+
+void
+b0234_set_curthread(struct pthread *cur)
+{
+	b0234_curthread = cur;
+}
 
 /*-
  * SPDX-License-Identifier: BSD-4-Clause
@@ -62,3 +91,5 @@ ref___error_threaded(void)
 	}
 	return (&__libsys_errno);
 }
+
+#endif /* PBSD_B0234_PORT_INCLUDE */

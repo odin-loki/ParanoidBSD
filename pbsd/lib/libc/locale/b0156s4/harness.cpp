@@ -1,9 +1,12 @@
 /*
- * Differential harness for batch b0156s4 (collate.c).
+ * Differential test for batch b0156s4 (lib/libc/locale/collate.c).
+ *
+ * Every ported function is run side by side with the ref_ oracle on the
+ * very same collate table; return values, out-parameters, guard-filled
+ * output buffers and mbstate_t are all compared byte for byte.
  */
 
-import pbsd.lib.libc.locale.b0156s4;
-
+#include <cstdarg>
 #include <cerrno>
 #include <climits>
 #include <clocale>
@@ -12,889 +15,1258 @@ import pbsd.lib.libc.locale.b0156s4;
 #include <cstdlib>
 #include <cstring>
 #include <cwchar>
-#include <sys/stat.h>
+
+#include <algorithm>
 #include <memory>
-#include <initializer_list>
-#include <unistd.h>
+#include <vector>
+
+#undef COLL_WEIGHTS_MAX
+
+import pbsd.lib.libc.locale.b0156s4;
 
 namespace P = pbsd::lib_libc_locale::b0156s4;
 
+static const int NWEIGHT = P::COLL_WEIGHTS_MAX;
+
 extern "C" {
-typedef struct collate_info {
-	uint8_t directive_count;
-	uint8_t directive[10];
-	uint8_t chain_max_len;
-	int32_t pri_count[10];
-	int32_t flags;
-	int32_t chain_count;
-	int32_t large_count;
-	int32_t subst_count[10];
-	int32_t undef_pri[10];
-} collate_info_t;
-
-typedef struct collate_char {
-	int32_t pri[10];
-} collate_char_t;
-
-typedef struct collate_chain {
-	wchar_t str[24];
-	int32_t pri[10];
-} collate_chain_t;
-
-typedef struct collate_large {
-	int32_t val;
-	collate_char_t pri;
-} collate_large_t;
-
-typedef struct collate_subst {
-	int32_t key;
-	int32_t pri[24];
-} collate_subst_t;
-
-struct xlocale_refcounted {
-	long retain_count;
-	void (*destructor)(void *);
-};
-
-struct xlocale_component {
-	struct xlocale_refcounted header;
-	char locale[32];
-	char version[12];
-};
-
-struct xlocale_collate {
-	struct xlocale_component header;
-	int __collate_load_error;
-	char *map;
-	size_t maplen;
-	collate_info_t *info;
-	collate_char_t *char_pri_table;
-	collate_large_t *large_pri_table;
-	collate_chain_t *chain_pri_table;
-	collate_subst_t *subst_table[10];
-};
-
-struct _xlocale {
-	struct xlocale_refcounted header;
-	struct xlocale_component *components[6];
-	int monetary_locale_changed;
-	int using_monetary_locale;
-	int numeric_locale_changed;
-	int using_numeric_locale;
-	int using_time_locale;
-	int using_messages_locale;
-	struct lconv lconv;
-	char *csym;
-};
-
-typedef struct _xlocale *pbsd_locale_t;
-
-extern char *_PathLocale;
-extern struct _xlocale ref_global_locale;
-extern struct _xlocale ref_C_locale;
-extern struct xlocale_collate *ref_xlocale_global_collate_ptr(void);
-
-void *ref___collate_load(const char *, pbsd_locale_t);
-int ref___collate_load_tables(const char *);
-void ref__collate_lookup(struct xlocale_collate *, const wchar_t *, int *, int *,
+const int32_t *ref_substsearch(P::xlocale_collate *, wchar_t, int);
+P::collate_chain_t *ref_chainsearch(P::xlocale_collate *, const wchar_t *,
+    int *);
+P::collate_large_t *ref_largesearch(P::xlocale_collate *, wchar_t);
+void ref__collate_lookup(P::xlocale_collate *, const wchar_t *, int *, int *,
     int, const int **);
-size_t ref__collate_wxfrm(struct xlocale_collate *, const wchar_t *, wchar_t *,
+int ref_xfrm(P::xlocale_collate *, unsigned char *, int, int);
+size_t ref__collate_wxfrm(P::xlocale_collate *, const wchar_t *, wchar_t *,
     size_t);
-size_t ref__collate_sxfrm(struct xlocale_collate *, const wchar_t *, char *,
+size_t ref__collate_sxfrm(P::xlocale_collate *, const wchar_t *, char *,
     size_t);
-int ref___collate_equiv_value(pbsd_locale_t, const wchar_t *, size_t);
-size_t ref___collate_collating_symbol(wchar_t *, size_t, const char *, size_t,
+int ref__collate_equiv_value(P::_xlocale *, const wchar_t *, size_t);
+size_t ref__collate_collating_symbol(wchar_t *, size_t, const char *, size_t,
     mbstate_t *);
-int ref___collate_equiv_class(const char *, size_t, mbstate_t *);
-size_t ref___collate_equiv_match(int, wchar_t *, size_t, wchar_t, const char *,
+int ref__collate_equiv_class(const char *, size_t, mbstate_t *);
+size_t ref__collate_equiv_match(int, wchar_t *, size_t, wchar_t, const char *,
     size_t, mbstate_t *, size_t *);
+void ref_set_collate(P::xlocale_collate *);
 }
+
+/* ------------------------------------------------------------------ */
+/* bookkeeping							      */
+/* ------------------------------------------------------------------ */
+
+struct Stat {
+	const char *name;
+	unsigned long long cases;
+	unsigned long long fails;
+};
+
+static Stat stats[] = {
+	{ "substsearch", 0, 0 },
+	{ "chainsearch", 0, 0 },
+	{ "largesearch", 0, 0 },
+	{ "xfrm", 0, 0 },
+	{ "_collate_lookup", 0, 0 },
+	{ "_collate_wxfrm", 0, 0 },
+	{ "_collate_sxfrm", 0, 0 },
+	{ "__collate_equiv_value", 0, 0 },
+	{ "__collate_collating_symbol", 0, 0 },
+	{ "__collate_equiv_class", 0, 0 },
+	{ "__collate_equiv_match", 0, 0 },
+};
 
 enum {
-	F_LOAD, F_LOAD_TABLES, F_LOOKUP, F_WXFRM, F_SXFRM,
-	F_EQUIV_VALUE, F_COLL_SYM, F_EQUIV_CLASS, F_EQUIV_MATCH, F_COUNT
+	S_SUBST = 0, S_CHAIN, S_LARGE, S_XFRM, S_LOOKUP, S_WXFRM, S_SXFRM,
+	S_EQVAL, S_CSYM, S_EQCLASS, S_EQMATCH, S_COUNT
 };
 
-static const char *const fnames[F_COUNT] = {
-	"__collate_load", "__collate_load_tables", "_collate_lookup",
-	"_collate_wxfrm", "_collate_sxfrm", "__collate_equiv_value",
-	"__collate_collating_symbol", "__collate_equiv_class", "__collate_equiv_match"
+static void
+note(int which, bool ok, const char *fmt, ...)
+{
+	Stat &s = stats[which];
+
+	s.cases++;
+	if (ok)
+		return;
+	s.fails++;
+	if (s.fails <= 8) {
+		va_list ap;
+		fprintf(stdout, "  MISMATCH %s: ", s.name);
+		va_start(ap, fmt);
+		vfprintf(stdout, fmt, ap);
+		va_end(ap);
+		fputc('\n', stdout);
+		fflush(stdout);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* deterministic PRNG						      */
+/* ------------------------------------------------------------------ */
+
+struct Rng {
+	uint64_t s;
+
+	explicit Rng(uint64_t seed) : s(seed ^ 0x9e3779b97f4a7c15ull) {}
+
+	uint32_t u32()
+	{
+		s = s * 6364136223846793005ull + 1442695040888963407ull;
+		uint64_t x = s;
+		x ^= x >> 31;
+		x *= 0xd6e8feb86659fd93ull;
+		x ^= x >> 32;
+		return (uint32_t)x;
+	}
+	uint32_t below(uint32_t n) { return n == 0 ? 0 : u32() % n; }
+	int range(int lo, int hi) { return lo + (int)below((uint32_t)(hi - lo + 1)); }
+	bool chance(int pct) { return (int)below(100) < pct; }
 };
 
-static long long ncase[F_COUNT];
-static long long nfail[F_COUNT];
-static int nprint[F_COUNT];
-
-static constexpr unsigned char GUARD = 0x7f;
-static constexpr wchar_t WGUARD = (wchar_t)0x7f7f;
-static constexpr long long SWEEP = 200000;
-static constexpr int PBSD_COLL_WEIGHTS_MAX = 10;
-static constexpr int COLLATE_STR_LEN = 24;
-static constexpr int COLLATE_FMT_VERSION_LEN = 12;
-static constexpr int XLOCALE_DEF_VERSION_LEN = 12;
-static constexpr int XLC_COLLATE = 0;
-
-static constexpr int DIRECTIVE_FORWARD = 0x01;
-static constexpr int DIRECTIVE_BACKWARD = 0x02;
-static constexpr int DIRECTIVE_POSITION = 0x04;
-static constexpr int DIRECTIVE_UNDEFINED = 0x08;
-static constexpr int COLLATE_MAX_PRIORITY = 0x7fffffff;
-static constexpr int COLLATE_SUBST_PRIORITY = 0x40000000;
-static constexpr int IGNORE_EQUIV_CLASS = 1;
-static constexpr int _LDP_LOADED = 0;
-static constexpr int _LDP_ERROR = -1;
-static constexpr int _LDP_CACHE = 1;
-
-static uint64_t rng = 0xB01564001ULL;
-
-static uint64_t rnd()
-{
-	rng ^= rng << 13;
-	rng ^= rng >> 7;
-	rng ^= rng << 17;
-	return (rng);
-}
-
-static uint32_t ru32(uint32_t m)
-{
-	return ((uint32_t)(rnd() % (m ? m : 1)));
-}
-
-static void report(int f, const char *why)
-{
-	nfail[f]++;
-	if (nprint[f]++ < 8)
-		std::printf("  FAIL %-28s : %s\n", fnames[f], why);
-}
-
-static void bump(int f)
-{
-	ncase[f]++;
-}
-
-static void fail(int f, const char *why)
-{
-	bump(f);
-	report(f, why);
-}
-
-static void ok(int f)
-{
-	bump(f);
-}
-
-struct PortBacking {
-	P::collate_info_t info{};
-	P::collate_char_t chars[256]{};
-	P::collate_chain_t chains[8]{};
-	P::collate_large_t larges[8]{};
-	P::collate_subst_t subst0[4]{};
-	P::collate_subst_t subst1[2]{};
-};
-
-struct RefBacking {
-	collate_info_t info{};
-	collate_char_t chars[256]{};
-	collate_chain_t chains[8]{};
-	collate_large_t larges[8]{};
-	collate_subst_t subst0[4]{};
-	collate_subst_t subst1[2]{};
-};
+/* ------------------------------------------------------------------ */
+/* collate table fixtures					      */
+/* ------------------------------------------------------------------ */
 
 struct Fixture {
-	PortBacking pback;
-	P::xlocale_collate ptab{};
-	RefBacking rback;
-	xlocale_collate rtab{};
+	P::collate_info_t info;
+	P::collate_char_t charpri[256];
+	std::vector<P::collate_large_t> large;
+	std::vector<P::collate_chain_t> chain;
+	std::vector<P::collate_subst_t> subst[P::COLL_WEIGHTS_MAX];
+	P::xlocale_collate table;
+	P::_xlocale loc;
+	std::vector<wchar_t> alpha;	/* interesting input characters */
+	std::vector<int32_t> pris;	/* priorities that occur in the table */
+	int ndir;
+	const char *tag;
+
+	Fixture()
+	{
+		memset(&info, 0, sizeof(info));
+		memset(charpri, 0, sizeof(charpri));
+		memset(&table, 0, sizeof(table));
+		memset(&loc, 0, sizeof(loc));
+		ndir = 1;
+		tag = "";
+	}
+
+	void wire()
+	{
+		info.chain_count = (int32_t)chain.size();
+		info.large_count = (int32_t)large.size();
+		for (int z = 0; z < NWEIGHT; z++)
+			info.subst_count[z] = (int32_t)subst[z].size();
+		table.info = &info;
+		table.char_pri_table = charpri;
+		table.large_pri_table = large.empty() ? nullptr : large.data();
+		table.chain_pri_table = chain.empty() ? nullptr : chain.data();
+		for (int z = 0; z < NWEIGHT; z++)
+			table.subst_table[z] =
+			    subst[z].empty() ? nullptr : subst[z].data();
+		table.map = nullptr;
+		table.maplen = 0;
+		loc.components[P::XLC_COLLATE] =
+		    (P::xlocale_component *)&table;
+	}
+
+	void activate()
+	{
+		P::set_collate(&table);
+		ref_set_collate(&table);
+	}
 };
 
-static char tmp_root[256];
+static std::vector<std::unique_ptr<Fixture>> fixtures;
 
-static void wset(wchar_t *d, const wchar_t *s)
+static int32_t
+genpri(Rng &r, Fixture &f, int w)
 {
-	std::wcsncpy(d, s, COLLATE_STR_LEN - 1);
-	d[COLLATE_STR_LEN - 1] = 0;
+	switch (r.below(20)) {
+	case 0:
+	case 1:
+		return (0);
+	case 2:
+		return (-r.range(1, 60));
+	case 3:
+	case 4:
+	case 5:
+		if (!f.subst[w].empty())
+			return (P::COLLATE_SUBST_PRIORITY |
+			    (int32_t)r.below((uint32_t)f.subst[w].size()));
+		return (r.range(1, 4000));
+	case 6:
+		return (P::COLLATE_MAX_PRIORITY);
+	case 7:
+		return (1);
+	default:
+		return (r.range(1, 4000));
+	}
 }
 
-static void init_loaded(Fixture &fx, unsigned variant)
+static void
+buildSubst(Rng &r, Fixture &f, int flavor)
 {
-	std::memset(&fx, 0, sizeof(fx));
-	fx.ptab.__collate_load_error = 0;
-	fx.rtab.__collate_load_error = 0;
-	fx.ptab.info = &fx.pback.info;
-	fx.rtab.info = &fx.rback.info;
-	fx.ptab.char_pri_table = fx.pback.chars;
-	fx.rtab.char_pri_table = fx.rback.chars;
-	fx.ptab.chain_pri_table = fx.pback.chains;
-	fx.rtab.chain_pri_table = fx.rback.chains;
-	fx.ptab.large_pri_table = fx.pback.larges;
-	fx.rtab.large_pri_table = fx.rback.larges;
-	fx.ptab.subst_table[0] = fx.pback.subst0;
-	fx.rtab.subst_table[0] = fx.rback.subst0;
-	fx.ptab.subst_table[1] = fx.pback.subst1;
-	fx.rtab.subst_table[1] = fx.rback.subst1;
-
-	auto &pi = fx.pback.info;
-	auto &ri = fx.rback.info;
-	pi.directive_count = 3;
-	ri.directive_count = 3;
-	pi.directive[0] = DIRECTIVE_FORWARD;
-	ri.directive[0] = DIRECTIVE_FORWARD;
-	pi.directive[1] = (variant & 1) ? (DIRECTIVE_BACKWARD | DIRECTIVE_POSITION)
-	    : (DIRECTIVE_FORWARD | DIRECTIVE_POSITION);
-	ri.directive[1] = pi.directive[1];
-	pi.directive[2] = DIRECTIVE_FORWARD;
-	ri.directive[2] = DIRECTIVE_FORWARD;
-	pi.pri_count[0] = 64;
-	pi.pri_count[1] = 64;
-	pi.pri_count[2] = 8;
-	ri.pri_count[0] = pi.pri_count[0];
-	ri.pri_count[1] = pi.pri_count[1];
-	ri.pri_count[2] = pi.pri_count[2];
-	pi.chain_count = 3;
-	ri.chain_count = 3;
-	pi.large_count = 2;
-	ri.large_count = 2;
-	pi.subst_count[0] = 1;
-	pi.subst_count[1] = 1;
-	ri.subst_count[0] = 1;
-	ri.subst_count[1] = 1;
-	pi.chain_max_len = 4;
-	ri.chain_max_len = 4;
-	pi.undef_pri[0] = 99;
-	pi.undef_pri[1] = 88;
-	pi.undef_pri[2] = 77;
-	ri.undef_pri[0] = 99;
-	ri.undef_pri[1] = 88;
-	ri.undef_pri[2] = 77;
-
-	for (int i = 0; i < 256; i++) {
-		for (int p = 0; p < PBSD_COLL_WEIGHTS_MAX; p++) {
-			int v = (i * 3 + p * 7 + (int)variant + 1) & 0x3fff;
-			v &= ~COLLATE_SUBST_PRIORITY;
-			if (i == 5 && p == 1)
-				v = (int32_t)0x80000000;
-			if (i == 7 && p == 0)
-				v = 0;
-			fx.pback.chars[i].pri[p] = v;
+	for (int z = 0; z < NWEIGHT; z++) {
+		int n;
+		if (flavor == 0)
+			n = 0;
+		else if (flavor == 2)
+			n = 4;
+		else
+			n = r.chance(70) ? r.range(1, 4) : 0;
+		f.subst[z].resize((size_t)n);
+		for (int i = 0; i < n; i++) {
+			P::collate_subst_t &e = f.subst[z][(size_t)i];
+			memset(&e, 0, sizeof(e));
+			e.key = P::COLLATE_SUBST_PRIORITY | i;
+			int k = r.range(1, 4);
+			for (int j = 0; j < k; j++)
+				e.pri[j] = r.range(1, 3000);
+			if (r.chance(15))
+				e.pri[0] = 0;
+			else if (r.chance(10))
+				e.pri[0] = -r.range(1, 40);
+			else if (k > 1 && r.chance(15))
+				e.pri[r.range(1, k - 1)] = -r.range(1, 40);
+			/* e.pri[k] is still 0: the list terminator. */
 		}
 	}
-	fx.pback.chars['a'].pri[0] = COLLATE_SUBST_PRIORITY;
-	fx.pback.subst0[0].key = COLLATE_SUBST_PRIORITY;
-	fx.pback.subst0[0].pri[0] = 10;
-	fx.pback.subst0[0].pri[1] = 20;
-	fx.pback.subst0[0].pri[2] = 0;
-
-	wset(fx.pback.chains[0].str, L"ab");
-	wset(fx.pback.chains[1].str, L"cd");
-	wset(fx.pback.chains[2].str, L"xy");
-	for (int c = 0; c < 3; c++) {
-		for (int p = 0; p < PBSD_COLL_WEIGHTS_MAX; p++) {
-			int v = 100 + c * 10 + p;
-			fx.pback.chains[c].pri[p] = v;
-		}
-	}
-	fx.pback.chains[1].pri[0] = -5;
-
-	fx.pback.larges[0].val = 300;
-	fx.pback.larges[1].val = 500;
-	for (int p = 0; p < PBSD_COLL_WEIGHTS_MAX; p++) {
-		fx.pback.larges[0].pri.pri[p] = 400 + p;
-		fx.pback.larges[1].pri.pri[p] = 600 + p;
-	}
-
-	fx.pback.subst1[0].key = COLLATE_SUBST_PRIORITY;
-	fx.pback.chars['b'].pri[1] = fx.pback.subst1[0].key;
-	fx.pback.subst1[0].pri[0] = 30;
-	fx.pback.subst1[0].pri[1] = 0;
-
-	std::memcpy(&fx.rback.info, &fx.pback.info, sizeof(fx.rback.info));
-	std::memcpy(fx.rback.chars, fx.pback.chars, sizeof(fx.rback.chars));
-	std::memcpy(fx.rback.chains, fx.pback.chains, sizeof(fx.rback.chains));
-	std::memcpy(fx.rback.larges, fx.pback.larges, sizeof(fx.rback.larges));
-	std::memcpy(fx.rback.subst0, fx.pback.subst0, sizeof(fx.rback.subst0));
-	std::memcpy(fx.rback.subst1, fx.pback.subst1, sizeof(fx.rback.subst1));
 }
 
-static void bind_locales(Fixture &fx)
+static void
+buildLarge(Rng &r, Fixture &f, int flavor)
 {
-	P::global_locale.components[XLC_COLLATE] =
-	    (P::xlocale_component *)&fx.ptab;
-	ref_global_locale.components[XLC_COLLATE] =
-	    (xlocale_component *)&fx.rtab;
-}
-
-static void bind_posix()
-{
-	P::__xlocale_global_collate.__collate_load_error = 1;
-	ref_xlocale_global_collate_ptr()->__collate_load_error = 1;
-	P::global_locale.components[XLC_COLLATE] =
-	    (P::xlocale_component *)&P::__xlocale_global_collate;
-	ref_global_locale.components[XLC_COLLATE] =
-	    (xlocale_component *)ref_xlocale_global_collate_ptr();
-}
-
-static bool write_collate_file(const char *locname, const RefBacking &b)
-{
-	char path[512];
-	std::snprintf(path, sizeof(path), "%s/%s", tmp_root, locname);
-	if (mkdir(path, 0755) != 0 && errno != EEXIST)
-		return (false);
-	std::snprintf(path, sizeof(path), "%s/%s/LC_COLLATE", tmp_root, locname);
-
-	int chains = b.info.chain_count;
-	int subsz = b.info.subst_count[0] + b.info.subst_count[1];
-	size_t payload = sizeof(collate_info_t) +
-	    sizeof(collate_char_t) * 256 +
-	    sizeof(collate_subst_t) * subsz +
-	    sizeof(collate_chain_t) * chains +
-	    sizeof(collate_large_t) * b.info.large_count;
-	size_t total = COLLATE_FMT_VERSION_LEN + XLOCALE_DEF_VERSION_LEN + payload;
-
-	FILE *fp = std::fopen(path, "wb");
-	if (!fp)
-		return (false);
-	std::fwrite("BSD 1.0\n", 1, COLLATE_FMT_VERSION_LEN, fp);
-	char ver[XLOCALE_DEF_VERSION_LEN]{};
-	std::fwrite(ver, 1, XLOCALE_DEF_VERSION_LEN, fp);
-	std::fwrite(&b.info, 1, sizeof(b.info), fp);
-	std::fwrite(b.chars, 1, sizeof(b.chars), fp);
-	if (b.info.subst_count[0])
-		std::fwrite(b.subst0, 1,
-		    sizeof(collate_subst_t) * b.info.subst_count[0], fp);
-	if (b.info.subst_count[1])
-		std::fwrite(b.subst1, 1,
-		    sizeof(collate_subst_t) * b.info.subst_count[1], fp);
-	if (chains)
-		std::fwrite(b.chains, 1, sizeof(collate_chain_t) * chains, fp);
-	if (b.info.large_count)
-		std::fwrite(b.larges, 1,
-		    sizeof(collate_large_t) * b.info.large_count, fp);
-	std::fclose(fp);
-	(void)total;
-	return (true);
-}
-
-static void setup_paths()
-{
-	std::strcpy(tmp_root, "/tmp/pbsdcltXXXXXX");
-	if (!mkdtemp(tmp_root))
-		std::strcpy(tmp_root, "/tmp");
-	std::strncpy(P::_PathLocale, tmp_root, 255);
-	P::_PathLocale[255] = 0;
-	std::strncpy(_PathLocale, tmp_root, 255);
-	_PathLocale[255] = 0;
-}
-
-static void test_load_hand()
-{
-	struct {
-		const char *enc;
-		bool stat;
-	} cases[] = {
-		{"C", true}, {"POSIX", true}, {"C.UTF-8", true},
-		{"C.", false}, {"bogus-no-such-locale-xyz", false},
+	static const int32_t cand[] = {
+		0x41, 0xfe, 0xff, 0x100, 0x101, 0x102, 0x1ff, 0x200, 0x2ff,
+		0x300, 0x1000, 0x1234, 0x2000, 0x10000
 	};
-	for (auto &c : cases) {
-		void *pv = P::__collate_load(c.enc, (P::pbsd_locale_t)0);
-		void *rv = ref___collate_load(c.enc, (pbsd_locale_t)0);
-		bump(F_LOAD);
-		if (c.stat) {
-			if (!pv || !rv) {
-				report(F_LOAD, "static null");
-				continue;
-			}
-		} else if (pv != nullptr || rv != nullptr) {
-			report(F_LOAD, "expected null");
-			continue;
-		}
+	int n = (flavor == 0) ? 0 : r.range(0, 9);
+	std::vector<int32_t> vals;
+	for (int i = 0; i < n; i++) {
+		int32_t v = cand[r.below((uint32_t)(sizeof(cand) /
+		    sizeof(cand[0])))];
+		if (std::find(vals.begin(), vals.end(), v) == vals.end())
+			vals.push_back(v);
 	}
-	RefBacking b{};
-	b.info.directive_count = 1;
-	b.info.directive[0] = DIRECTIVE_FORWARD;
-	b.info.pri_count[0] = 8;
-	b.info.chain_count = 0;
-	b.info.large_count = 0;
-	for (int i = 0; i < 256; i++)
-		b.chars[i].pri[0] = i + 1;
-	if (write_collate_file("tstLC1", b)) {
-		void *pv = P::__collate_load("tstLC1", (P::pbsd_locale_t)0);
-		void *rv = ref___collate_load("tstLC1", (pbsd_locale_t)0);
-		bump(F_LOAD);
-		if (!pv || !rv)
-			report(F_LOAD, "file load null");
-		else {
-			auto *pt = (P::xlocale_collate *)pv;
-			auto *rt = (xlocale_collate *)rv;
-			if (pt->__collate_load_error != rt->__collate_load_error)
-				report(F_LOAD, "load_error");
-		}
-		if (pv)
-			P::xlocale_release(pv);
-		if (rv) {
-			struct xlocale_refcounted *obj = (struct xlocale_refcounted *)rv;
-			long count = __sync_sub_and_fetch(&(obj->retain_count), 1);
-			if (count < 0 && obj->destructor != NULL)
-				obj->destructor(obj);
-		}
+	std::sort(vals.begin(), vals.end());
+	f.large.resize(vals.size());
+	for (size_t i = 0; i < vals.size(); i++) {
+		memset(&f.large[i], 0, sizeof(f.large[i]));
+		f.large[i].val = vals[i];
+		for (int w = 0; w < NWEIGHT; w++)
+			f.large[i].pri.pri[w] = genpri(r, f, w);
 	}
 }
 
-static void test_load_tables_hand()
+static void
+buildChains(Rng &r, Fixture &f, int flavor)
 {
-	const char *encs[] = {"C", "POSIX", "C.foo", "nope-locale"};
-	for (auto enc : encs) {
-		int pv = P::__collate_load_tables(enc);
-		int rv = ref___collate_load_tables(enc);
-		bump(F_LOAD_TABLES);
-		if (pv != rv)
-			report(F_LOAD_TABLES, "cache enc");
+	static const wchar_t pool[] = { L'a', L'b', L'c', L'd', L'e', 0x100,
+	    0x101 };
+	int n = (flavor == 0) ? 0 : r.range(0, 12);
+	std::vector<std::vector<wchar_t>> strs;
+	for (int i = 0; i < n; i++) {
+		int l = r.range(1, r.chance(20) ? 5 : 3);
+		std::vector<wchar_t> sv;
+		for (int j = 0; j < l; j++)
+			sv.push_back(pool[r.below((uint32_t)(sizeof(pool) /
+			    sizeof(pool[0])))]);
+		bool dup = false;
+		for (size_t k = 0; k < strs.size(); k++)
+			if (strs[k] == sv)
+				dup = true;
+		if (!dup)
+			strs.push_back(sv);
+	}
+	std::sort(strs.begin(), strs.end());
+	f.chain.resize(strs.size());
+	for (size_t i = 0; i < strs.size(); i++) {
+		memset(&f.chain[i], 0, sizeof(f.chain[i]));
+		for (size_t j = 0; j < strs[i].size(); j++)
+			f.chain[i].str[j] = strs[i][j];
+		for (int w = 0; w < NWEIGHT; w++)
+			f.chain[i].pri[w] = genpri(r, f, w);
 	}
 }
 
-static void test_lookup_one(Fixture &fx, const wchar_t *ws, int which, int f)
+static std::unique_ptr<Fixture>
+genFixture(Rng &r, int flavor)
 {
-	const int *pstate = nullptr;
-	const int *rstate = nullptr;
-	int plen = -1, rlen = -1, ppri = -1, rpri = -1;
-	const wchar_t *pt = ws;
-	const wchar_t *rt = ws;
-	for (int step = 0; step < 32 && (pt[0] || pstate); step++) {
-		plen = rlen = -1;
-		ppri = rpri = -1;
-		P::_collate_lookup(&fx.ptab, pt, &plen, &ppri, which, &pstate);
-		ref__collate_lookup(&fx.rtab, rt, &rlen, &rpri, which, &rstate);
-		bump(f);
-		if (plen != rlen || ppri != rpri)
-			report(f, "lookup out");
-		pt += plen > 0 ? plen : 0;
-		rt += rlen > 0 ? rlen : 0;
-		if (pstate == nullptr && rstate == nullptr && !pt[0])
+	static const int32_t pcs[] = { 0, 1, 5, 63, 64, 65, 4095, 4096,
+	    1000000, 0x7fffffff, -1 };
+	auto fp = std::make_unique<Fixture>();
+	Fixture &f = *fp;
+
+	f.ndir = (flavor == 0) ? 1 : r.range(1, 4);
+	f.info.directive_count = (uint8_t)f.ndir;
+	for (int z = 0; z < NWEIGHT; z++) {
+		int d;
+		if (flavor == 0) {
+			d = P::DIRECTIVE_FORWARD;
+		} else {
+			d = r.chance(30) ? P::DIRECTIVE_BACKWARD :
+			    P::DIRECTIVE_FORWARD;
+			if (r.chance(50))
+				d |= P::DIRECTIVE_POSITION;
+			if (r.chance(45))
+				d |= P::DIRECTIVE_UNDEFINED;
+		}
+		f.info.directive[z] = (uint8_t)d;
+		f.info.pri_count[z] = (flavor == 0) ? 64 :
+		    pcs[r.below((uint32_t)(sizeof(pcs) / sizeof(pcs[0])))];
+		switch (r.below(5)) {
+		case 0:
+			f.info.undef_pri[z] = 0;
 			break;
+		case 1:
+			f.info.undef_pri[z] = -r.range(1, 50);
+			break;
+		default:
+			f.info.undef_pri[z] = r.range(1, 3000);
+			break;
+		}
+	}
+	f.info.chain_max_len = (uint8_t)((flavor == 0) ? 1 : r.range(0, 6));
+	f.info.flags = 0;
+
+	buildSubst(r, f, flavor);
+	buildLarge(r, f, flavor);
+	buildChains(r, f, flavor);
+
+	for (int c = 0; c < 256; c++)
+		for (int w = 0; w < NWEIGHT; w++)
+			f.charpri[c].pri[w] = genpri(r, f, w);
+
+	f.table.__collate_load_error = (flavor == 1) ? 1 : 0;
+	f.wire();
+
+	/* Characters worth feeding to the collation routines. */
+	static const wchar_t base[] = { 1, L'a', L'b', L'c', L'd', L'e', L'f',
+	    L'A', L'0', 0x20, 0x7e, 0x7f, 0x80, 0x81, 0xfd, 0xfe, 0xff, 0x100,
+	    0x101, 0x102, 0x2ff, 0x300, 0x1234, 0x9999, 0x10ffff };
+	for (size_t i = 0; i < sizeof(base) / sizeof(base[0]); i++)
+		f.alpha.push_back(base[i]);
+	for (size_t i = 0; i < f.large.size(); i++)
+		f.alpha.push_back((wchar_t)f.large[i].val);
+	for (size_t i = 0; i < f.chain.size(); i++)
+		f.alpha.push_back(f.chain[i].str[0]);
+
+	/* Priorities that a caller might legitimately search for. */
+	f.pris.push_back(0);
+	f.pris.push_back(1);
+	f.pris.push_back(-1);
+	f.pris.push_back(P::COLLATE_MAX_PRIORITY);
+	for (int c = 0; c < 256; c += 7)
+		f.pris.push_back(f.charpri[c].pri[0]);
+	for (size_t i = 0; i < f.chain.size(); i++) {
+		f.pris.push_back(f.chain[i].pri[0]);
+		f.pris.push_back(-f.chain[i].pri[0]);
+	}
+	for (size_t i = 0; i < f.large.size(); i++)
+		f.pris.push_back(f.large[i].pri.pri[0]);
+	return (fp);
+}
+
+static void
+buildFixtures()
+{
+	Rng r(0xC0FFEEull);
+	static const char *tags[] = { "empty", "load-error", "all-subst" };
+
+	for (int i = 0; i < 3; i++) {
+		auto f = genFixture(r, i);
+		f->tag = tags[i];
+		fixtures.push_back(std::move(f));
+	}
+	for (int i = 0; i < 29; i++) {
+		auto f = genFixture(r, 3 + i);
+		f->tag = "random";
+		fixtures.push_back(std::move(f));
 	}
 }
 
-static void test_lookup_hand()
+static Fixture &
+pickFixture(Rng &r, bool allowLoadError)
 {
-	Fixture fx;
-	for (unsigned v = 0; v < 4; v++) {
-		init_loaded(fx, v);
-		const wchar_t *ss[] = {L"", L"a", L"ab", L"cd", L"zz",
-		    L"\x500", L"a\xb", L"xyq", L"\xff"};
-		for (auto ws : ss)
-			test_lookup_one(fx, ws, (int)(v % 4), F_LOOKUP);
-		for (int w = 0; w <= 4; w++)
-			test_lookup_one(fx, L"abc", w, F_LOOKUP);
+	for (;;) {
+		Fixture &f = *fixtures[r.below((uint32_t)fixtures.size())];
+		if (!allowLoadError && f.table.__collate_load_error)
+			continue;
+		return (f);
 	}
 }
 
-static bool buf_same_w(const wchar_t *p, const wchar_t *r, size_t cap)
+/* random NUL-terminated wide string built from the fixture alphabet */
+static void
+genWide(Rng &r, Fixture &f, wchar_t *out, int maxlen)
 {
-	for (size_t i = 0; i < cap; i++)
-		if (p[i] != r[i])
-			return (false);
-	return (true);
+	int l = r.range(0, maxlen);
+	for (int i = 0; i < l; i++) {
+		if (r.chance(25) && !f.chain.empty()) {
+			/* splice in a whole chain so chainsearch hits */
+			const wchar_t *cs =
+			    f.chain[r.below((uint32_t)f.chain.size())].str;
+			for (int j = 0; j < P::COLLATE_STR_LEN && cs[j] &&
+			    i < maxlen; j++)
+				out[i++] = cs[j];
+			i--;
+		} else {
+			out[i] = f.alpha[r.below((uint32_t)f.alpha.size())];
+		}
+	}
+	out[l < maxlen ? l : maxlen] = 0;
+	out[maxlen] = 0;
 }
 
-static bool buf_same_c(const unsigned char *p, const unsigned char *r, size_t cap)
+static const int MBMAX = 48;
+
+static void
+genBytes(Rng &r, char *out, size_t *slen, int maxlen, bool utf8)
 {
-	for (size_t i = 0; i < cap; i++)
-		if (p[i] != r[i])
-			return (false);
-	return (true);
+	static const unsigned char pool8[] = { 'a', 'b', 'c', 'd', 'e', 'A',
+	    'z', '0', 0x00, 0x01, 0x7f, 0x80, 0xa9, 0xc3, 0xe2, 0xfe, 0xff };
+	int l = r.range(0, maxlen);
+	int i = 0;
+	while (i < l) {
+		if (utf8 && r.chance(20) && i + 2 <= l) {
+			out[i++] = (char)0xc3;
+			out[i++] = (char)0xa9;
+		} else if (utf8 && r.chance(10) && i + 3 <= l) {
+			out[i++] = (char)0xe2;
+			out[i++] = (char)0x82;
+			out[i++] = (char)0xac;
+		} else {
+			out[i++] = (char)pool8[r.below((uint32_t)(
+			    sizeof(pool8) / sizeof(pool8[0])))];
+		}
+	}
+	*slen = (size_t)l;
+	for (int k = l; k < MBMAX; k++)
+		out[k] = (char)0x7f;
 }
 
-static void test_wxfrm_hand()
+/* ------------------------------------------------------------------ */
+/* substsearch							      */
+/* ------------------------------------------------------------------ */
+
+static void
+oneSubst(Fixture &f, wchar_t key, int pass)
 {
-	Fixture fx;
-	init_loaded(fx, 1);
-	const wchar_t *ss[] = {L"", L"a", L"ab", L"bac", L"\xff", L"a\xbcd"};
-	for (auto ws : ss) {
-	for (auto room : {size_t(0), size_t(1), size_t(8), size_t(256)}) {
-			wchar_t pbuf[512], rbuf[512];
-			for (size_t i = 0; i < 512; i++) {
-				pbuf[i] = WGUARD;
-				rbuf[i] = WGUARD;
+	f.activate();
+	const int32_t *a = P::substsearch(&f.table, key, pass);
+	const int32_t *b = ref_substsearch(&f.table, key, pass);
+	note(S_SUBST, a == b, "key=%#x pass=%d port=%p ref=%p", (unsigned)key,
+	    pass, (const void *)a, (const void *)b);
+}
+
+static void
+phaseSubst(unsigned long iters)
+{
+	/* hand written */
+	for (size_t fi = 0; fi < fixtures.size(); fi++) {
+		Fixture &f = *fixtures[fi];
+		for (int pass = 0; pass < NWEIGHT; pass++) {
+			int n = f.info.subst_count[pass];
+			oneSubst(f, 0, pass);
+			if (n > 0) {
+				oneSubst(f, (wchar_t)(n - 1), pass);
+				oneSubst(f, (wchar_t)(P::COLLATE_SUBST_PRIORITY |
+				    0), pass);
+				oneSubst(f, (wchar_t)(P::COLLATE_SUBST_PRIORITY |
+				    (n - 1)), pass);
+			} else {
+				oneSubst(f, (wchar_t)P::COLLATE_SUBST_PRIORITY,
+				    pass);
+				oneSubst(f, 12345, pass);
 			}
-			errno = 0;
-			size_t pv = P::_collate_wxfrm(&fx.ptab, ws, pbuf, room);
-			int pe = errno;
-			errno = 0;
-			size_t rv = ref__collate_wxfrm(&fx.rtab, ws, rbuf, room);
-			int re = errno;
-			bump(F_WXFRM);
-			if (pv != rv || pe != re || !buf_same_w(pbuf, rbuf, 512))
-				report(F_WXFRM, "wxfrm");
 		}
 	}
-}
 
-static void test_sxfrm_hand()
-{
-	Fixture fx;
-	init_loaded(fx, 2);
-	const wchar_t *ss[] = {L"", L"z", L"cd", L"bac", L"\x300"};
-	for (auto ws : ss) {
-	for (auto room : {size_t(0), size_t(2), size_t(16), size_t(512)}) {
-			unsigned char pbuf[1024], rbuf[1024];
-			std::memset(pbuf, GUARD, sizeof(pbuf));
-			std::memset(rbuf, GUARD, sizeof(rbuf));
-			errno = 0;
-			size_t pv = P::_collate_sxfrm(&fx.ptab, ws,
-			    (char *)pbuf, room);
-			int pe = errno;
-			errno = 0;
-			size_t rv = ref__collate_sxfrm(&fx.rtab, ws,
-			    (char *)rbuf, room);
-			int re = errno;
-			bump(F_SXFRM);
-			if (pv != rv || pe != re || !buf_same_c(pbuf, rbuf, 1024))
-				report(F_SXFRM, "sxfrm");
-		}
+	Rng r(0x51B57ull);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, true);
+		int pass = r.range(0, NWEIGHT - 1);
+		int n = f.info.subst_count[pass];
+		wchar_t key;
+		if (n > 0)
+			key = (wchar_t)((r.chance(60) ?
+			    P::COLLATE_SUBST_PRIORITY : 0) |
+			    (int)r.below((uint32_t)n));
+		else
+			key = (wchar_t)(r.chance(50) ?
+			    P::COLLATE_SUBST_PRIORITY : 0);
+		oneSubst(f, key, pass);
 	}
 }
 
-static void test_equiv_value_hand()
+/* ------------------------------------------------------------------ */
+/* chainsearch							      */
+/* ------------------------------------------------------------------ */
+
+static void
+oneChain(Fixture &f, const wchar_t *key)
 {
-	Fixture fx;
-	init_loaded(fx, 0);
-	bind_locales(fx);
-	const wchar_t one[] = {L'a', L'b', L'\x500', 0};
-	for (size_t len = 0; len <= 30; len++) {
-		int pv = P::__collate_equiv_value((P::pbsd_locale_t)(intptr_t)-1,
-		    one, len);
-		int rv = ref___collate_equiv_value((pbsd_locale_t)(intptr_t)-1,
-		    one, len);
-		bump(F_EQUIV_VALUE);
-		if (pv != rv)
-			report(F_EQUIV_VALUE, "value");
-	}
-	bind_posix();
-	for (wchar_t ch = 0; ch < 512; ch += 17) {
-		wchar_t w[2] = {ch, 0};
-		int pv = P::__collate_equiv_value((P::pbsd_locale_t)-1, w, 1);
-		int rv = ref___collate_equiv_value((pbsd_locale_t)-1, w, 1);
-		bump(F_EQUIV_VALUE);
-		if (pv != rv)
-			report(F_EQUIV_VALUE, "posix");
-	}
+	f.activate();
+	int la = -12345, lb = -12345;
+	P::collate_chain_t *a = P::chainsearch(&f.table, key, &la);
+	P::collate_chain_t *b = ref_chainsearch(&f.table, key, &lb);
+	long ia = a ? (a - f.chain.data()) : -1;
+	long ib = b ? (b - f.chain.data()) : -1;
+	note(S_CHAIN, a == b && la == lb, "first=%#x port=(%ld,%d) ref=(%ld,%d)",
+	    (unsigned)key[0], ia, la, ib, lb);
 }
 
-static void test_coll_sym_hand()
+static void
+phaseChain(unsigned long iters)
 {
-	Fixture fx;
-	init_loaded(fx, 0);
-	bind_locales(fx);
-	const char *ss[] = {"", "a", "ab", "cd", "\x80", "\xff", "xy"};
-	for (auto s : ss) {
-		for (size_t dlen = 0; dlen < 8; dlen++) {
-			wchar_t pd[16], rd[16];
-			for (int i = 0; i < 16; i++) {
-				pd[i] = WGUARD;
-				rd[i] = WGUARD;
+	wchar_t buf[40];
+
+	for (size_t fi = 0; fi < fixtures.size(); fi++) {
+		Fixture &f = *fixtures[fi];
+		buf[0] = 0;
+		oneChain(f, buf);
+		for (size_t i = 0; i < f.chain.size(); i++) {
+			/* exact */
+			oneChain(f, f.chain[i].str);
+			/* exact plus a trailing character */
+			size_t l = wcslen(f.chain[i].str);
+			memcpy(buf, f.chain[i].str, l * sizeof(wchar_t));
+			buf[l] = L'z';
+			buf[l + 1] = 0;
+			oneChain(f, buf);
+			/* one character short */
+			if (l > 1) {
+				memcpy(buf, f.chain[i].str,
+				    (l - 1) * sizeof(wchar_t));
+				buf[l - 1] = 0;
+				oneChain(f, buf);
 			}
-			mbstate_t ps{}, rs{};
-			size_t pv = P::__collate_collating_symbol(pd, dlen, s,
-			    std::strlen(s), &ps);
-			size_t rv = ref___collate_collating_symbol(rd, dlen, s,
-			    std::strlen(s), &rs);
-			bump(F_COLL_SYM);
-			if (pv != rv || !buf_same_w(pd, rd, 16))
-				report(F_COLL_SYM, "sym");
+			/* first char bumped up and down */
+			memcpy(buf, f.chain[i].str, (l + 1) * sizeof(wchar_t));
+			buf[0] = (wchar_t)(f.chain[i].str[0] + 1);
+			oneChain(f, buf);
+			buf[0] = (wchar_t)(f.chain[i].str[0] - 1);
+			oneChain(f, buf);
+		}
+		static const wchar_t misc[][3] = { { 1, 0, 0 }, { 0xff, 0, 0 },
+		    { 0x100, 0, 0 }, { L'a', 0, 0 }, { L'z', L'z', 0 } };
+		for (size_t i = 0; i < 5; i++)
+			oneChain(f, misc[i]);
+	}
+
+	Rng r(0xC4A1Full);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, true);
+		genWide(r, f, buf, 8);
+		oneChain(f, buf);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* largesearch							      */
+/* ------------------------------------------------------------------ */
+
+static void
+oneLarge(Fixture &f, wchar_t key)
+{
+	f.activate();
+	P::collate_large_t *a = P::largesearch(&f.table, key);
+	P::collate_large_t *b = ref_largesearch(&f.table, key);
+	note(S_LARGE, a == b, "key=%#x port=%p ref=%p", (unsigned)key,
+	    (const void *)a, (const void *)b);
+}
+
+static void
+phaseLarge(unsigned long iters)
+{
+	for (size_t fi = 0; fi < fixtures.size(); fi++) {
+		Fixture &f = *fixtures[fi];
+		oneLarge(f, 0);
+		oneLarge(f, 1);
+		oneLarge(f, 0xff);
+		oneLarge(f, 0x7fffffff);
+		for (size_t i = 0; i < f.large.size(); i++) {
+			oneLarge(f, (wchar_t)f.large[i].val);
+			oneLarge(f, (wchar_t)(f.large[i].val - 1));
+			oneLarge(f, (wchar_t)(f.large[i].val + 1));
 		}
 	}
-	bind_posix();
-}
 
-static void test_equiv_class_hand()
-{
-	Fixture fx;
-	init_loaded(fx, 0);
-	bind_locales(fx);
-	const char *ss[] = {"a", "ab", "cd", "\xc3\xa9", ""};
-	for (auto s : ss) {
-		mbstate_t ps{}, rs{};
-		int pv = P::__collate_equiv_class(s, std::strlen(s), &ps);
-		int rv = ref___collate_equiv_class(s, std::strlen(s), &rs);
-		bump(F_EQUIV_CLASS);
-		if (pv != rv)
-			report(F_EQUIV_CLASS, "class");
+	Rng r(0x1A26Eull);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, true);
+		wchar_t key;
+		if (!f.large.empty() && r.chance(50))
+			key = (wchar_t)(f.large[r.below((uint32_t)
+			    f.large.size())].val + r.range(-1, 1));
+		else
+			key = f.alpha[r.below((uint32_t)f.alpha.size())];
+		oneLarge(f, key);
 	}
 }
 
-static void test_equiv_match_hand()
+/* ------------------------------------------------------------------ */
+/* xfrm								      */
+/* ------------------------------------------------------------------ */
+
+static void
+oneXfrm(Fixture &f, int pri, int pass)
 {
-	Fixture fx;
-	init_loaded(fx, 0);
-	bind_locales(fx);
-	const char *ss[] = {"a", "ab", "cd", "zz", "abx"};
-	for (int eq = -2; eq < 120; eq += 7) {
-		for (auto s : ss) {
-			for (wchar_t st = 0; st < 3; st++) {
-				for (size_t dlen = 0; dlen < 6; dlen++) {
-					wchar_t pd[16], rd[16];
-					for (int i = 0; i < 16; i++) {
-						pd[i] = WGUARD;
-						rd[i] = WGUARD;
+	unsigned char ba[64], bb[64];
+
+	f.activate();
+	memset(ba, 0x7f, sizeof(ba));
+	memset(bb, 0x7f, sizeof(bb));
+	int ra = P::xfrm(&f.table, ba + 8, pri, pass);
+	int rb = ref_xfrm(&f.table, bb + 8, pri, pass);
+	bool ok = (ra == rb) && memcmp(ba, bb, sizeof(ba)) == 0;
+	note(S_XFRM, ok, "pri=%d pass=%d port=%d ref=%d buf%s", pri, pass, ra,
+	    rb, memcmp(ba, bb, sizeof(ba)) ? " differs" : " equal");
+}
+
+static void
+phaseXfrm(unsigned long iters)
+{
+	static const int pris[] = { 0, 1, 2, 63, 64, 65, -1, -64, 0x7fffffff,
+	    (-0x7fffffff - 1), 12345, 0x3f, 0x40 };
+
+	for (size_t fi = 0; fi < fixtures.size(); fi++) {
+		Fixture &f = *fixtures[fi];
+		for (int pass = 0; pass < NWEIGHT; pass++)
+			for (size_t i = 0; i < sizeof(pris) / sizeof(pris[0]);
+			    i++)
+				oneXfrm(f, pris[i], pass);
+	}
+
+	Rng r(0x7F2Mull & 0xffffffffu);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, true);
+		int pass = r.range(0, NWEIGHT - 1);
+		int pri = r.chance(30) ?
+		    pris[r.below((uint32_t)(sizeof(pris) / sizeof(pris[0])))] :
+		    (int)r.u32();
+		oneXfrm(f, pri, pass);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* _collate_lookup						      */
+/* ------------------------------------------------------------------ */
+
+static void
+oneLookup(Fixture &f, const wchar_t *t, int which, const int *state0)
+{
+	f.activate();
+	int lena = -777, prja = -777;
+	int lenb = -777, prjb = -777;
+	const int *sa = state0;
+	const int *sb = state0;
+	P::_collate_lookup(&f.table, t, &lena, &prja, which, &sa);
+	ref__collate_lookup(&f.table, t, &lenb, &prjb, which, &sb);
+	note(S_LOOKUP, lena == lenb && prja == prjb && sa == sb,
+	    "t=%#x which=%d st0=%p port=(%d,%d,%p) ref=(%d,%d,%p)",
+	    (unsigned)t[0], which, (const void *)state0, lena, prja,
+	    (const void *)sa, lenb, prjb, (const void *)sb);
+}
+
+static const int *
+pickState(Rng &r, Fixture &f)
+{
+	if (r.chance(45))
+		return (nullptr);
+	std::vector<int> avail;
+	for (int z = 0; z < NWEIGHT; z++)
+		if (!f.subst[z].empty())
+			avail.push_back(z);
+	if (avail.empty())
+		return (nullptr);
+	int z = avail[r.below((uint32_t)avail.size())];
+	size_t i = r.below((uint32_t)f.subst[z].size());
+	int j = r.range(0, 5);
+	return ((const int *)&f.subst[z][i].pri[j]);
+}
+
+static void
+phaseLookup(unsigned long iters)
+{
+	wchar_t buf[40];
+
+	for (size_t fi = 0; fi < fixtures.size(); fi++) {
+		Fixture &f = *fixtures[fi];
+		for (int which = 0; which <= f.ndir + 1; which++) {
+			for (size_t i = 0; i < f.alpha.size(); i++) {
+				buf[0] = f.alpha[i];
+				buf[1] = L'a';
+				buf[2] = 0;
+				oneLookup(f, buf, which, nullptr);
+			}
+			for (size_t i = 0; i < f.chain.size(); i++)
+				oneLookup(f, f.chain[i].str, which, nullptr);
+			for (int z = 0; z < NWEIGHT; z++) {
+				if (f.subst[z].empty())
+					continue;
+				buf[0] = L'a';
+				buf[1] = 0;
+				for (int j = 0; j < 5; j++)
+					oneLookup(f, buf, which,
+					    (const int *)&f.subst[z][0].pri[j]);
+			}
+		}
+	}
+
+	Rng r(0x10C0Aull);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, true);
+		genWide(r, f, buf, 6);
+		if (buf[0] == 0) {
+			buf[0] = f.alpha[r.below((uint32_t)f.alpha.size())];
+			buf[1] = 0;
+		}
+		int which = r.range(0, f.ndir + 1);
+		oneLookup(f, buf, which, pickState(r, f));
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* _collate_wxfrm						      */
+/* ------------------------------------------------------------------ */
+
+static const int WBUF = 96;
+
+static void
+oneWxfrm(Fixture &f, const wchar_t *src, size_t room)
+{
+	wchar_t ba[WBUF], bb[WBUF];
+
+	f.activate();
+	memset(ba, 0x7f, sizeof(ba));
+	memset(bb, 0x7f, sizeof(bb));
+	errno = 0;
+	size_t ra = P::_collate_wxfrm(&f.table, src, ba, room);
+	int ea = errno;
+	errno = 0;
+	size_t rb = ref__collate_wxfrm(&f.table, src, bb, room);
+	int eb = errno;
+	bool bufok = memcmp(ba, bb, sizeof(ba)) == 0;
+	note(S_WXFRM, ra == rb && ea == eb && bufok,
+	    "src[0]=%#x room=%zu port=(%zu,e%d) ref=(%zu,e%d)%s",
+	    (unsigned)src[0], room, ra, ea, rb, eb,
+	    bufok ? "" : " BUFFER DIFFERS");
+}
+
+static void
+phaseWxfrm(unsigned long iters)
+{
+	wchar_t src[40];
+
+	for (size_t fi = 0; fi < fixtures.size(); fi++) {
+		Fixture &f = *fixtures[fi];
+		if (f.table.__collate_load_error)
+			continue;
+		static const size_t rooms[] = { 0, 1, 2, 3, 7, 32, WBUF };
+		for (size_t ri = 0; ri < sizeof(rooms) / sizeof(rooms[0]);
+		    ri++) {
+			src[0] = 0;
+			oneWxfrm(f, src, rooms[ri]);
+			for (size_t i = 0; i < f.alpha.size(); i++) {
+				src[0] = f.alpha[i];
+				src[1] = 0;
+				oneWxfrm(f, src, rooms[ri]);
+				src[1] = f.alpha[(i + 1) % f.alpha.size()];
+				src[2] = 0;
+				oneWxfrm(f, src, rooms[ri]);
+			}
+			for (size_t i = 0; i < f.chain.size(); i++)
+				oneWxfrm(f, f.chain[i].str, rooms[ri]);
+		}
+	}
+
+	Rng r(0x3B71Aull);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, false);
+		genWide(r, f, src, r.chance(30) ? 2 : 10);
+		size_t room;
+		switch (r.below(5)) {
+		case 0:
+			room = 0;
+			break;
+		case 1:
+			room = (size_t)r.range(1, 4);
+			break;
+		case 2:
+			room = WBUF;
+			break;
+		default:
+			room = (size_t)r.range(0, WBUF);
+			break;
+		}
+		oneWxfrm(f, src, room);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* _collate_sxfrm						      */
+/* ------------------------------------------------------------------ */
+
+static const int CBUF = 320;
+
+static void
+oneSxfrm(Fixture &f, const wchar_t *src, size_t room)
+{
+	char ba[CBUF], bb[CBUF];
+
+	f.activate();
+	memset(ba, 0x7f, sizeof(ba));
+	memset(bb, 0x7f, sizeof(bb));
+	errno = 0;
+	size_t ra = P::_collate_sxfrm(&f.table, src, ba, room);
+	int ea = errno;
+	errno = 0;
+	size_t rb = ref__collate_sxfrm(&f.table, src, bb, room);
+	int eb = errno;
+	bool bufok = memcmp(ba, bb, sizeof(ba)) == 0;
+	note(S_SXFRM, ra == rb && ea == eb && bufok,
+	    "src[0]=%#x room=%zu port=(%zu,e%d) ref=(%zu,e%d)%s",
+	    (unsigned)src[0], room, ra, ea, rb, eb,
+	    bufok ? "" : " BUFFER DIFFERS");
+}
+
+static void
+phaseSxfrm(unsigned long iters)
+{
+	wchar_t src[40];
+
+	for (size_t fi = 0; fi < fixtures.size(); fi++) {
+		Fixture &f = *fixtures[fi];
+		if (f.table.__collate_load_error)
+			continue;
+		static const size_t rooms[] = { 0, 1, 2, 5, 6, 7, 64, CBUF };
+		for (size_t ri = 0; ri < sizeof(rooms) / sizeof(rooms[0]);
+		    ri++) {
+			src[0] = 0;
+			oneSxfrm(f, src, rooms[ri]);
+			for (size_t i = 0; i < f.alpha.size(); i++) {
+				src[0] = f.alpha[i];
+				src[1] = 0;
+				oneSxfrm(f, src, rooms[ri]);
+				src[1] = f.alpha[(i + 1) % f.alpha.size()];
+				src[2] = 0;
+				oneSxfrm(f, src, rooms[ri]);
+			}
+			for (size_t i = 0; i < f.chain.size(); i++)
+				oneSxfrm(f, f.chain[i].str, rooms[ri]);
+		}
+	}
+
+	Rng r(0x5F71Aull);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, false);
+		genWide(r, f, src, r.chance(30) ? 2 : 8);
+		size_t room;
+		switch (r.below(5)) {
+		case 0:
+			room = 0;
+			break;
+		case 1:
+			room = (size_t)r.range(1, 8);
+			break;
+		case 2:
+			room = CBUF;
+			break;
+		default:
+			room = (size_t)r.range(0, CBUF);
+			break;
+		}
+		oneSxfrm(f, src, room);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* __collate_equiv_value					      */
+/* ------------------------------------------------------------------ */
+
+static void
+oneEqval(Fixture &f, const wchar_t *str, size_t len, bool nullLocale)
+{
+	f.activate();
+	P::_xlocale *lp = nullLocale ? nullptr : &f.loc;
+	int a = P::__collate_equiv_value(lp, str, len);
+	int b = ref__collate_equiv_value(lp, str, len);
+	note(S_EQVAL, a == b, "str[0]=%#x len=%zu nl=%d port=%d ref=%d",
+	    (unsigned)str[0], len, (int)nullLocale, a, b);
+}
+
+static void
+phaseEqval(unsigned long iters)
+{
+	wchar_t src[64];
+
+	for (size_t fi = 0; fi < fixtures.size(); fi++) {
+		Fixture &f = *fixtures[fi];
+		for (int i = 0; i < 40; i++)
+			src[i] = L'a';
+		src[40] = 0;
+		static const size_t lens[] = { 0, 1, 2, 22, 23, 24, 25, 40 };
+		for (size_t li = 0; li < sizeof(lens) / sizeof(lens[0]); li++) {
+			oneEqval(f, src, lens[li], false);
+			oneEqval(f, src, lens[li], true);
+		}
+		for (size_t i = 0; i < f.alpha.size(); i++) {
+			src[0] = f.alpha[i];
+			src[1] = 0;
+			oneEqval(f, src, 1, false);
+			oneEqval(f, src, 2, false);
+		}
+		for (size_t i = 0; i < f.chain.size(); i++) {
+			size_t l = wcslen(f.chain[i].str);
+			memcpy(src, f.chain[i].str, (l + 1) * sizeof(wchar_t));
+			oneEqval(f, src, l, false);
+			oneEqval(f, src, l + 1, false);
+			if (l > 1)
+				oneEqval(f, src, l - 1, false);
+		}
+	}
+
+	Rng r(0x6E9A1ull);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, true);
+		genWide(r, f, src, 30);
+		/* make sure there are always >= 26 readable wchars */
+		size_t have = wcslen(src);
+		for (size_t i = have; i < 32; i++)
+			src[i] = f.alpha[r.below((uint32_t)f.alpha.size())];
+		src[32] = 0;
+		if (r.chance(20))
+			src[r.below(26)] = 0;
+		size_t len;
+		switch (r.below(6)) {
+		case 0:
+			len = 0;
+			break;
+		case 1:
+			len = 1;
+			break;
+		case 2:
+			len = 23;
+			break;
+		case 3:
+			len = 24;
+			break;
+		case 4:
+			len = 25;
+			break;
+		default:
+			len = (size_t)r.range(1, 23);
+			break;
+		}
+		oneEqval(f, src, len, r.chance(30));
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* __collate_collating_symbol					      */
+/* ------------------------------------------------------------------ */
+
+static const int DBUF = 24;
+
+static void
+oneCsym(Fixture &f, const char *src, size_t slen, size_t dlen, bool useps)
+{
+	wchar_t da[DBUF], db[DBUF];
+	mbstate_t sa, sb;
+
+	f.activate();
+	memset(da, 0x7f, sizeof(da));
+	memset(db, 0x7f, sizeof(db));
+	memset(&sa, 0, sizeof(sa));
+	memset(&sb, 0, sizeof(sb));
+	size_t ra = P::__collate_collating_symbol(da, dlen, src, slen,
+	    useps ? &sa : nullptr);
+	size_t rb = ref__collate_collating_symbol(db, dlen, src, slen,
+	    useps ? &sb : nullptr);
+	bool bufok = memcmp(da, db, sizeof(da)) == 0;
+	bool stok = memcmp(&sa, &sb, sizeof(sa)) == 0;
+	note(S_CSYM, ra == rb && bufok && stok,
+	    "slen=%zu dlen=%zu port=%zd ref=%zd%s%s", slen, dlen, (ssize_t)ra,
+	    (ssize_t)rb, bufok ? "" : " BUFFER DIFFERS",
+	    stok ? "" : " MBSTATE DIFFERS");
+}
+
+static void
+phaseCsym(unsigned long iters, bool utf8)
+{
+	char src[MBMAX + 8];
+
+	if (!utf8) {
+		for (size_t fi = 0; fi < fixtures.size(); fi++) {
+			Fixture &f = *fixtures[fi];
+			static const char *lits[] = { "", "a", "ab", "abc",
+			    "abcd", "\x80", "\xff", "a\x00" "b", "\x00" "ab",
+			    "abcdefghijklmnopqrstuvwxyzabcdef" };
+			static const size_t lens[] = { 0, 1, 2, 3, 4, 1, 1, 3,
+			    3, 32 };
+			for (size_t i = 0; i < 10; i++)
+				for (size_t dlen = 0; dlen <= 6; dlen++) {
+					oneCsym(f, lits[i], lens[i], dlen,
+					    true);
+					oneCsym(f, lits[i], lens[i], dlen,
+					    false);
+				}
+			for (size_t i = 0; i < f.chain.size(); i++) {
+				char b[32];
+				size_t l = 0;
+				bool ascii = true;
+				for (size_t j = 0; f.chain[i].str[j]; j++) {
+					if (f.chain[i].str[j] > 0x7f)
+						ascii = false;
+					b[l++] = (char)f.chain[i].str[j];
+				}
+				if (!ascii)
+					continue;
+				for (size_t dlen = 0; dlen <= 6; dlen++)
+					oneCsym(f, b, l, dlen, true);
+			}
+		}
+	}
+
+	Rng r(utf8 ? 0xB0B0Bull : 0xA1A1Aull);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, true);
+		size_t slen;
+		genBytes(r, src, &slen, 12, utf8);
+		size_t dlen = (size_t)r.range(0, 8);
+		oneCsym(f, src, slen, dlen, utf8 ? true : r.chance(70));
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* __collate_equiv_class					      */
+/* ------------------------------------------------------------------ */
+
+static void
+oneEqclass(Fixture &f, const char *src, size_t slen, bool useps)
+{
+	mbstate_t sa, sb;
+
+	f.activate();
+	memset(&sa, 0, sizeof(sa));
+	memset(&sb, 0, sizeof(sb));
+	int a = P::__collate_equiv_class(src, slen, useps ? &sa : nullptr);
+	int b = ref__collate_equiv_class(src, slen, useps ? &sb : nullptr);
+	bool stok = memcmp(&sa, &sb, sizeof(sa)) == 0;
+	note(S_EQCLASS, a == b && stok, "slen=%zu port=%d ref=%d%s", slen, a, b,
+	    stok ? "" : " MBSTATE DIFFERS");
+}
+
+static void
+phaseEqclass(unsigned long iters, bool utf8)
+{
+	char src[MBMAX + 8];
+
+	if (!utf8) {
+		for (size_t fi = 0; fi < fixtures.size(); fi++) {
+			Fixture &f = *fixtures[fi];
+			static const char *lits[] = { "", "a", "ab", "abc",
+			    "abcd", "\x80", "\xff", "a\x00" "b",
+			    "abcdefghijklmnopqrstuvwxyzabcdef" };
+			static const size_t lens[] = { 0, 1, 2, 3, 4, 1, 1, 3,
+			    32 };
+			for (size_t i = 0; i < 9; i++) {
+				oneEqclass(f, lits[i], lens[i], true);
+				oneEqclass(f, lits[i], lens[i], false);
+			}
+			for (size_t i = 0; i < f.chain.size(); i++) {
+				char b[32];
+				size_t l = 0;
+				bool ascii = true;
+				for (size_t j = 0; f.chain[i].str[j]; j++) {
+					if (f.chain[i].str[j] > 0x7f)
+						ascii = false;
+					b[l++] = (char)f.chain[i].str[j];
+				}
+				if (ascii)
+					oneEqclass(f, b, l, true);
+			}
+			for (int c = 0; c < 256; c++) {
+				char b = (char)c;
+				oneEqclass(f, &b, 1, true);
+			}
+		}
+	}
+
+	Rng r(utf8 ? 0xD0D0Dull : 0xC1C1Cull);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, true);
+		size_t slen;
+		genBytes(r, src, &slen, 12, utf8);
+		oneEqclass(f, src, slen, utf8 ? true : r.chance(70));
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* __collate_equiv_match					      */
+/* ------------------------------------------------------------------ */
+
+static void
+oneEqmatch(Fixture &f, int eq, size_t dlen, wchar_t start, const char *src,
+    size_t slen, bool useps, bool usedst, bool userlen)
+{
+	wchar_t da[DBUF], db[DBUF];
+	mbstate_t sa, sb;
+	size_t rla = 0x5a5a5a, rlb = 0x5a5a5a;
+
+	f.activate();
+	memset(da, 0x7f, sizeof(da));
+	memset(db, 0x7f, sizeof(db));
+	memset(&sa, 0, sizeof(sa));
+	memset(&sb, 0, sizeof(sb));
+	size_t ra = P::__collate_equiv_match(eq, usedst ? da : nullptr, dlen,
+	    start, src, slen, useps ? &sa : nullptr, userlen ? &rla : nullptr);
+	size_t rb = ref__collate_equiv_match(eq, usedst ? db : nullptr, dlen,
+	    start, src, slen, useps ? &sb : nullptr, userlen ? &rlb : nullptr);
+	bool bufok = memcmp(da, db, sizeof(da)) == 0;
+	bool stok = memcmp(&sa, &sb, sizeof(sa)) == 0;
+	note(S_EQMATCH, ra == rb && rla == rlb && bufok && stok,
+	    "eq=%d dlen=%zu start=%#x slen=%zu port=(%zd,%zu) ref=(%zd,%zu)%s%s",
+	    eq, dlen, (unsigned)start, slen, (ssize_t)ra, rla, (ssize_t)rb, rlb,
+	    bufok ? "" : " BUFFER DIFFERS", stok ? "" : " MBSTATE DIFFERS");
+}
+
+static void
+phaseEqmatch(unsigned long iters, bool utf8)
+{
+	char src[MBMAX + 8];
+
+	if (!utf8) {
+		for (size_t fi = 0; fi < fixtures.size(); fi++) {
+			Fixture &f = *fixtures[fi];
+			static const char *lits[] = { "", "a", "ab", "abc",
+			    "abcde", "\x80", "\xff", "a\x00" "b" };
+			static const size_t lens[] = { 0, 1, 2, 3, 5, 1, 1, 3 };
+			static const int eqs[] = { 0, 1, -1, 2 };
+			for (size_t i = 0; i < 8; i++)
+				for (size_t e = 0; e < 4; e++)
+					for (size_t dlen = 0; dlen <= 6;
+					    dlen += 2) {
+						oneEqmatch(f, eqs[e], dlen, 0,
+						    lits[i], lens[i], true,
+						    true, true);
+						oneEqmatch(f, eqs[e], dlen,
+						    L'a', lits[i], lens[i],
+						    true, true, true);
 					}
-					mbstate_t ps{}, rs{};
-					size_t prl = 99, rrl = 99;
-					size_t pv = P::__collate_equiv_match(eq, pd,
-					    dlen, st, s, std::strlen(s), &ps, &prl);
-					size_t rv = ref___collate_equiv_match(eq, rd,
-					    dlen, st, s, std::strlen(s), &rs, &rrl);
-					bump(F_EQUIV_MATCH);
-					if (pv != rv || prl != rrl ||
-					    !buf_same_w(pd, rd, 16))
-						report(F_EQUIV_MATCH, "match");
+			for (size_t i = 0; i < f.chain.size(); i++) {
+				char b[32];
+				size_t l = 0;
+				bool ascii = true;
+				for (size_t j = 0; f.chain[i].str[j]; j++) {
+					if (f.chain[i].str[j] > 0x7f)
+						ascii = false;
+					b[l++] = (char)f.chain[i].str[j];
+				}
+				if (!ascii)
+					continue;
+				int e = f.chain[i].pri[0];
+				if (e < 0)
+					e = -e;
+				for (size_t dlen = 0; dlen <= 8; dlen++) {
+					oneEqmatch(f, e, dlen, 0, b, l, true,
+					    true, true);
+					oneEqmatch(f, e, dlen, b[0], b + 1,
+					    l - 1, true, true, true);
 				}
 			}
 		}
 	}
-}
 
-static void rand_wcs(wchar_t *buf, int n)
-{
-	int len = (int)(ru32((uint32_t)n + 1));
-	for (int i = 0; i < len; i++)
-		buf[i] = (wchar_t)(ru32(0x600) + (ru32(3) == 0 ? 0x80 : 0));
-	buf[len] = 0;
-}
-
-static void rand_mbs(char *buf, int n)
-{
-	int len = (int)(ru32((uint32_t)n + 1));
-	for (int i = 0; i < len; i++)
-		buf[i] = (char)(ru32(256));
-	buf[len] = 0;
-}
-
-static void sweep_load()
-{
-	const char *encs[] = {"C", "POSIX", "C.UTF-8"};
-	for (long long i = 0; i < SWEEP; i++) {
-		uint32_t ei = ru32(3);
-		uint32_t gl = ru32(2);
-		const char *enc = encs[ei];
-		auto loc = (intptr_t)(gl ? -1 : 0);
-		void *pv = P::__collate_load(enc, (P::pbsd_locale_t)loc);
-		void *rv = ref___collate_load(enc, (pbsd_locale_t)loc);
-		bump(F_LOAD);
-		if ((pv == nullptr) != (rv == nullptr))
-			report(F_LOAD, "sweep ptr");
+	Rng r(utf8 ? 0xE0E0Eull : 0xF1F1Full);
+	for (unsigned long it = 0; it < iters; it++) {
+		Fixture &f = pickFixture(r, true);
+		size_t slen;
+		genBytes(r, src, &slen, 10, utf8);
+		int eq;
+		if (r.chance(60) && !f.pris.empty())
+			eq = f.pris[r.below((uint32_t)f.pris.size())];
+		else
+			eq = r.range(-3, 3);
+		wchar_t start = 0;
+		if (r.chance(40))
+			start = f.alpha[r.below((uint32_t)f.alpha.size())];
+		oneEqmatch(f, eq, (size_t)r.range(0, 8), start, src, slen,
+		    utf8 ? true : r.chance(70), r.chance(80), r.chance(80));
 	}
 }
 
-static void sweep_load_tables()
+/* ------------------------------------------------------------------ */
+
+int
+main(void)
 {
-	const char *encs[] = {"C", "POSIX", "C.foo"};
-	for (long long i = 0; i < SWEEP; i++) {
-		uint32_t ei = ru32(3);
-		int pv = P::__collate_load_tables(encs[ei]);
-		int rv = ref___collate_load_tables(encs[ei]);
-		bump(F_LOAD_TABLES);
-		if (pv != rv)
-			report(F_LOAD_TABLES, "sweep");
+	const unsigned long ITERS = 200000;
+
+	setvbuf(stdout, nullptr, _IOLBF, 0);
+	buildFixtures();
+
+	printf("b0156s4: collate.c differential test\n");
+	printf("fixtures: %zu\n", fixtures.size());
+
+	printf("phase: substsearch\n");
+	phaseSubst(ITERS);
+	printf("phase: chainsearch\n");
+	phaseChain(ITERS);
+	printf("phase: largesearch\n");
+	phaseLarge(ITERS);
+	printf("phase: xfrm\n");
+	phaseXfrm(ITERS);
+	printf("phase: _collate_lookup\n");
+	phaseLookup(ITERS);
+	printf("phase: _collate_wxfrm\n");
+	phaseWxfrm(ITERS);
+	printf("phase: _collate_sxfrm\n");
+	phaseSxfrm(ITERS);
+	printf("phase: __collate_equiv_value\n");
+	phaseEqval(ITERS);
+
+	/* multibyte routines: single byte locale first */
+	if (setlocale(LC_CTYPE, "C") == nullptr) {
+		fprintf(stderr, "cannot select the C locale\n");
+		return (1);
 	}
-}
+	printf("phase: multibyte routines in the C locale\n");
+	phaseCsym(ITERS / 2, false);
+	phaseEqclass(ITERS / 2, false);
+	phaseEqmatch(ITERS / 2, false);
 
-static void sweep_lookup()
-{
-	auto fx = std::make_unique<Fixture>();
-	const wchar_t *ss[] = {L"", L"a", L"ab", L"cd", L"\x500", L"\xff"};
-	for (long long i = 0; i < SWEEP; i++) {
-		if ((i & 0xff) == 0)
-			init_loaded(*fx, (unsigned)((i >> 8) & 3));
-		test_lookup_one(*fx, ss[i % 6], (int)(i % 3), F_LOOKUP);
+	const char *utf8 = nullptr;
+	static const char *cands[] = { "C.UTF-8", "en_US.UTF-8", "C.utf8" };
+	for (size_t i = 0; i < 3 && utf8 == nullptr; i++)
+		if (setlocale(LC_CTYPE, cands[i]) != nullptr)
+			utf8 = cands[i];
+	if (utf8 != nullptr) {
+		printf("phase: multibyte routines in %s\n", utf8);
+		phaseCsym(ITERS / 2, true);
+		phaseEqclass(ITERS / 2, true);
+		phaseEqmatch(ITERS / 2, true);
+	} else {
+		printf("phase: no UTF-8 locale available; "
+		    "running the C locale sweep again\n");
+		setlocale(LC_CTYPE, "C");
+		phaseCsym(ITERS / 2, false);
+		phaseEqclass(ITERS / 2, false);
+		phaseEqmatch(ITERS / 2, false);
 	}
-}
 
-static void sweep_wxfrm()
-{
-	Fixture fx;
-	wchar_t ws[32];
-	for (long long i = 0; i < SWEEP; i++) {
-		uint32_t variant = ru32(4);
-		init_loaded(fx, variant);
-		rand_wcs(ws, 16);
-		size_t room = ru32(300);
-		wchar_t pbuf[512], rbuf[512];
-		for (size_t j = 0; j < 512; j++) {
-			pbuf[j] = WGUARD;
-			rbuf[j] = WGUARD;
-		}
-		errno = 0;
-		size_t pv = P::_collate_wxfrm(&fx.ptab, ws, pbuf, room);
-		int pe = errno;
-		errno = 0;
-		size_t rv = ref__collate_wxfrm(&fx.rtab, ws, rbuf, room);
-		int re = errno;
-		bump(F_WXFRM);
-		if (pv != rv || pe != re || !buf_same_w(pbuf, rbuf, 512))
-			report(F_WXFRM, "sweep");
+	unsigned long long totc = 0, totf = 0;
+	printf("\n%-30s %12s %12s\n", "function", "cases", "failures");
+	printf("%-30s %12s %12s\n", "------------------------------",
+	    "------------", "------------");
+	for (int i = 0; i < S_COUNT; i++) {
+		printf("%-30s %12llu %12llu\n", stats[i].name, stats[i].cases,
+		    stats[i].fails);
+		totc += stats[i].cases;
+		totf += stats[i].fails;
 	}
+	printf("%-30s %12s %12s\n", "------------------------------",
+	    "------------", "------------");
+	printf("%-30s %12llu %12llu\n", "TOTAL", totc, totf);
+	printf("\n%s\n", totf == 0 ? "PASS" : "FAIL");
+	return (totf == 0 ? 0 : 1);
 }
-
-static void sweep_sxfrm()
-{
-	Fixture fx;
-	wchar_t ws[32];
-	for (long long i = 0; i < SWEEP; i++) {
-		uint32_t variant = ru32(4);
-		init_loaded(fx, variant);
-		rand_wcs(ws, 16);
-		size_t room = ru32(600);
-		unsigned char pbuf[1024], rbuf[1024];
-		std::memset(pbuf, GUARD, sizeof(pbuf));
-		std::memset(rbuf, GUARD, sizeof(rbuf));
-		errno = 0;
-		size_t pv = P::_collate_sxfrm(&fx.ptab, ws, (char *)pbuf, room);
-		int pe = errno;
-		errno = 0;
-		size_t rv = ref__collate_sxfrm(&fx.rtab, ws, (char *)rbuf, room);
-		int re = errno;
-		bump(F_SXFRM);
-		if (pv != rv || pe != re || !buf_same_c(pbuf, rbuf, 1024))
-			report(F_SXFRM, "sweep");
-	}
-}
-
-static void sweep_equiv_value()
-{
-	Fixture fx;
-	wchar_t ws[32];
-	for (long long i = 0; i < SWEEP; i++) {
-		uint32_t mode = ru32(4);
-		if (mode == 0)
-			bind_posix();
-		else {
-			init_loaded(fx, mode);
-			bind_locales(fx);
-		}
-		rand_wcs(ws, 10);
-		size_t len = ru32(30);
-		int pv = P::__collate_equiv_value((P::pbsd_locale_t)(intptr_t)-1,
-		    ws, len);
-		int rv = ref___collate_equiv_value((pbsd_locale_t)(intptr_t)-1,
-		    ws, len);
-		bump(F_EQUIV_VALUE);
-		if (pv != rv)
-			report(F_EQUIV_VALUE, "sweep");
-	}
-}
-
-static void sweep_coll_sym()
-{
-	Fixture fx;
-	char mb[32];
-	for (long long i = 0; i < SWEEP; i++) {
-		uint32_t mode = ru32(4);
-		if (mode == 0)
-			bind_posix();
-		else {
-			init_loaded(fx, mode);
-			bind_locales(fx);
-		}
-		rand_mbs(mb, 12);
-		size_t sl = ru32(20);
-		size_t dlen = ru32(10);
-		wchar_t pd[16], rd[16];
-		for (int j = 0; j < 16; j++) {
-			pd[j] = WGUARD;
-			rd[j] = WGUARD;
-		}
-		mbstate_t ps{}, rs{};
-		size_t pv = P::__collate_collating_symbol(pd, dlen, mb, sl, &ps);
-		size_t rv = ref___collate_collating_symbol(rd, dlen, mb, sl, &rs);
-		bump(F_COLL_SYM);
-		if (pv != rv || !buf_same_w(pd, rd, 16))
-			report(F_COLL_SYM, "sweep");
-	}
-}
-
-static void sweep_equiv_class()
-{
-	Fixture fx;
-	char mb[32];
-	for (long long i = 0; i < SWEEP; i++) {
-		uint32_t mode = ru32(4);
-		if (mode == 0)
-			bind_posix();
-		else {
-			init_loaded(fx, mode);
-			bind_locales(fx);
-		}
-		rand_mbs(mb, 12);
-		size_t slen = ru32(20);
-		mbstate_t ps{}, rs{};
-		int pv = P::__collate_equiv_class(mb, slen, &ps);
-		int rv = ref___collate_equiv_class(mb, slen, &rs);
-		bump(F_EQUIV_CLASS);
-		if (pv != rv)
-			report(F_EQUIV_CLASS, "sweep");
-	}
-}
-
-static void sweep_equiv_match()
-{
-	Fixture fx;
-	char mb[32];
-	for (long long i = 0; i < SWEEP; i++) {
-		uint32_t variant = ru32(4);
-		init_loaded(fx, variant);
-		bind_locales(fx);
-		rand_mbs(mb, 12);
-		wchar_t pd[16], rd[16];
-		for (int j = 0; j < 16; j++) {
-			pd[j] = WGUARD;
-			rd[j] = WGUARD;
-		}
-		mbstate_t ps{}, rs{};
-		size_t prl = 0, rrl = 0;
-		int eq = (int)ru32(200) - 5;
-		size_t dlen = ru32(8);
-		wchar_t st = (wchar_t)ru32(256);
-		size_t slen = ru32(20);
-		size_t pv = P::__collate_equiv_match(eq, pd, dlen, st, mb, slen,
-		    &ps, &prl);
-		size_t rv = ref___collate_equiv_match(eq, rd, dlen, st, mb, slen,
-		    &rs, &rrl);
-		bump(F_EQUIV_MATCH);
-		if (pv != rv || prl != rrl || !buf_same_w(pd, rd, 16))
-			report(F_EQUIV_MATCH, "sweep");
-	}
-}
-
-int main()
-{
-	setup_paths();
-	test_load_hand();
-	test_load_tables_hand();
-	test_lookup_hand();
-	test_wxfrm_hand();
-	test_sxfrm_hand();
-	test_equiv_value_hand();
-	test_coll_sym_hand();
-	test_equiv_class_hand();
-	test_equiv_match_hand();
-	sweep_load();
-	sweep_load_tables();
-	sweep_lookup();
-	sweep_wxfrm();
-	sweep_sxfrm();
-	sweep_equiv_value();
-	sweep_coll_sym();
-	sweep_equiv_class();
-	sweep_equiv_match();
-
-	std::printf("\n%-32s %12s %12s\n", "function", "cases", "failures");
-	long long tc = 0, tf = 0;
-	for (int i = 0; i < F_COUNT; i++) {
-		std::printf("%-32s %12lld %12lld\n", fnames[i], ncase[i], nfail[i]);
-		tc += ncase[i];
-		tf += nfail[i];
-	}
-	std::printf("%-32s %12lld %12lld\n", "TOTAL", tc, tf);
-	return (tf ? 1 : 0);
-}
-

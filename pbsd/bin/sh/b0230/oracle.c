@@ -39,6 +39,8 @@
 #define NO_HISTORY 1
 #define JOBS 1
 #define DEBUG 1
+#define __printf0like(...)
+#define __dead2
 
 typedef void *pointer;
 typedef void (*sig_t)(int);

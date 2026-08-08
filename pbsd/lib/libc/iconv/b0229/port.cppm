@@ -72,13 +72,13 @@ static int __isthreaded = 0;
 typedef uint32_t _citrus_index_t;
 
 struct _citrus_region { void *r_head; size_t r_size; };
-static __inline void _citrus_region_init(struct _citrus_region *r, void *h, size_t sz)
+inline void _citrus_region_init(struct _citrus_region *r, void *h, size_t sz)
 { r->r_head = h; r->r_size = sz; }
-static __inline void *_citrus_region_head(const struct _citrus_region *r) { return r->r_head; }
-static __inline size_t _citrus_region_size(const struct _citrus_region *r) { return r->r_size; }
-static __inline void *_citrus_region_offset(const _citrus_region *r, size_t pos)
+inline void *_citrus_region_head(const struct _citrus_region *r) { return r->r_head; }
+inline size_t _citrus_region_size(const struct _citrus_region *r) { return r->r_size; }
+inline void *_citrus_region_offset(const _citrus_region *r, size_t pos)
 { return (void *)((uint8_t *)r->r_head + pos); }
-static __inline uint8_t _citrus_region_peek8(const struct _citrus_region *r, size_t pos)
+inline uint8_t _citrus_region_peek8(const struct _citrus_region *r, size_t pos)
 { return *(uint8_t *)_citrus_region_offset(r, pos); }
 
 #define _region _citrus_region
@@ -190,7 +190,7 @@ struct _citrus_db_entry_x { uint32_t dex_hash_value, dex_next_offset, dex_key_of
 typedef uint32_t (*_citrus_db_hash_func_t)(struct _citrus_region *);
 struct _citrus_db_locator { uint32_t dl_hashval; size_t dl_offset; };
 #define _db_locator _citrus_db_locator
-static __inline void _citrus_db_locator_init(struct _citrus_db_locator *dl)
+inline void _citrus_db_locator_init(struct _citrus_db_locator *dl)
 { dl->dl_hashval = 0; dl->dl_offset = 0; }
 #define _db_locator_init _citrus_db_locator_init
 #define _CITRUS_LOOKUP_MAGIC "LOOKUP\0\0"
@@ -243,24 +243,10 @@ struct _citrus_mapper {
 void _citrus_mapper_close(struct _citrus_mapper *);
 #define _mapper_close _citrus_mapper_close
 
-#define B0229_MAX_MOD 16
-struct b0229_mod { char name[64]; _citrus_mapper_getops_t getops; };
-static struct b0229_mod b0229_mods[B0229_MAX_MOD];
-static int b0229_nmod;
-static uintptr_t b0229_mod_serial = 0x1000;
-
-void b0229_mock_reset(void) { b0229_nmod = 0; b0229_mod_serial = 0x1000; }
-void b0229_mock_set_module(const char *name, _citrus_mapper_getops_t getops)
-{ if (b0229_nmod < B0229_MAX_MOD) { strlcpy(b0229_mods[b0229_nmod].name, name, 64);
-  b0229_mods[b0229_nmod].getops = getops; b0229_nmod++; } }
-
-int _citrus_load_module(_citrus_module_t *mod, const char *name)
-{ int i; for (i = 0; i < b0229_nmod; i++) if (!strcmp(b0229_mods[i].name, name)) {
-  *mod = (_citrus_module_t)(uintptr_t)(b0229_mod_serial++); return 0; } return ENOENT; }
-void _citrus_unload_module(_citrus_module_t mod) { (void)mod; }
-void *_citrus_find_getops(_citrus_module_t mod, const char *name, const char *kind)
-{ int i; (void)mod; (void)kind; for (i = 0; i < b0229_nmod; i++)
-  if (!strcmp(b0229_mods[i].name, name)) return (void *)b0229_mods[i].getops; return NULL; }
+extern "C" int _citrus_load_module(_citrus_module_t *mod, const char *name);
+extern "C" void _citrus_unload_module(_citrus_module_t mod);
+extern "C" void *_citrus_find_getops(_citrus_module_t mod, const char *name,
+    const char *kind);
 
 int _citrus_string_hash_func(const char *key, int hashsize)
 { struct _citrus_region r; _region_init(&r, __DECONST(void *, key), strlen(key));

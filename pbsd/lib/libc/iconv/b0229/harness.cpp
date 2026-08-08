@@ -225,7 +225,7 @@ build_db(P::_citrus_db_factory **pdf, unsigned char *blob, size_t blobsz,
 		return (ret);
 
 	for (const auto &e : ents) {
-		P::_region_init(&data, (void *)e.second.data(), e.second.size());
+		P::_citrus_region_init(&data, (void *)e.second.data(), e.second.size());
 		if (use_port)
 			ret = P::_citrus_db_factory_add_by_string(df, e.first.c_str(), &data, 0);
 		else
@@ -240,7 +240,7 @@ build_db(P::_citrus_db_factory **pdf, unsigned char *blob, size_t blobsz,
 	}
 
 	guard_fill(blob, blobsz);
-	P::_region_init(&r, blob + 64, blobsz - 128);
+	P::_citrus_region_init(&r, blob + 64, blobsz - 128);
 	if (use_port)
 		ret = P::_citrus_db_factory_serialize(df, "LOOKUP\0\0", &r);
 	else
@@ -276,12 +276,12 @@ test_factory_roundtrip(void)
 
 	P::_citrus_region data;
 	std::vector<unsigned char> d1 = {0x41};
-	P::_region_init(&data, d1.data(), 1);
+	P::_citrus_region_init(&data, d1.data(), 1);
 	P::_citrus_db_factory_add_by_string(dfa, "alpha", &data, 0);
 	ref__citrus_db_factory_add_by_string(dfb, "alpha", &data, 0);
 
 	std::vector<unsigned char> d2 = {0x80, 0xff};
-	P::_region_init(&data, d2.data(), 2);
+	P::_citrus_region_init(&data, d2.data(), 2);
 	P::_citrus_db_factory_add_by_string(dfa, "beta", &data, 0);
 	ref__citrus_db_factory_add_by_string(dfb, "beta", &data, 0);
 
@@ -295,8 +295,8 @@ test_factory_roundtrip(void)
 	guard_fill(pa, BIGBUF);
 	guard_fill(pb, BIGBUF);
 	P::_citrus_region ra_r, rb_r;
-	P::_region_init(&ra_r, pa + 32, BIGBUF - 64);
-	P::_region_init(&rb_r, pb + 32, BIGBUF - 64);
+	P::_citrus_region_init(&ra_r, pa + 32, BIGBUF - 64);
+	P::_citrus_region_init(&rb_r, pb + 32, BIGBUF - 64);
 	ra = P::_citrus_db_factory_serialize(dfa, "LOOKUP\0\0", &ra_r);
 	rbv = ref__citrus_db_factory_serialize(dfb, "LOOKUP\0\0", &rb_r);
 	if (ra != rbv || !bufs_eq(pa, pb, BIGBUF)) {
@@ -372,7 +372,7 @@ test_db_ops(const unsigned char *blob, size_t blobsz)
 	bump(F_DB_ENTRY);
 	bump(F_DB_CLOSE);
 
-	P::_region_init(&reg, (void *)blob, blobsz);
+	P::_citrus_region_init(&reg, (void *)blob, blobsz);
 	ra = P::_citrus_db_open(&da, &reg, "LOOKUP\0\0", hash_std, nullptr);
 	rbv = ref__citrus_db_open(&db, &reg, "LOOKUP\0\0", hash_std, nullptr);
 	if (ra != rbv) {
@@ -385,11 +385,11 @@ test_db_ops(const unsigned char *blob, size_t blobsz)
 	if (na != nb)
 		fail(F_DB_NUM, "num entries");
 
-	P::_db_locator_init(&la);
-	P::_db_locator_init(&lb);
+	P::_citrus_db_locator_init(&la);
+	P::_citrus_db_locator_init(&lb);
 	ra = P::_citrus_db_lookup_by_string(da, "alpha", &ka, &la);
 	rbv = ref__citrus_db_lookup_by_string(db, "alpha", &kb, &lb);
-	if (ra != rbv || P::_region_size(&ka) != P::_region_size(&kb))
+	if (ra != rbv || P::_citrus_region_size(&ka) != P::_citrus_region_size(&kb))
 		fail(F_DB_LOOKUP_S, "lookup alpha");
 
 	ra = P::_citrus_db_lookup8_by_string(da, "k8", &u8a, nullptr);
@@ -409,18 +409,20 @@ test_db_ops(const unsigned char *blob, size_t blobsz)
 
 	ra = P::_citrus_db_lookup_string_by_string(da, "ks", &stra, nullptr);
 	rbv = ref__citrus_db_lookup_string_by_string(db, "ks", &strb, nullptr);
-	if (ra != rbv || std::strcmp(stra, strb) != 0)
-		fail(F_DB_LOOKUPSTR, "lookupstr");
+	if (ra != rbv)
+		fail(F_DB_LOOKUPSTR, "lookupstr ret");
+	else if (ra == 0 && std::strcmp(stra, strb) != 0)
+		fail(F_DB_LOOKUPSTR, "lookupstr data");
 
 	for (int i = 0; i < na; i++) {
 		ra = P::_citrus_db_get_entry(da, i, &ka, &da_r);
 		rbv = ref__citrus_db_get_entry(db, i, &kb, &db_r);
-		if (ra != rbv || P::_region_size(&ka) != P::_region_size(&kb) ||
-		    P::_region_size(&da_r) != P::_region_size(&db_r) ||
-		    std::memcmp(P::_region_head(&ka), P::_region_head(&kb),
-		    P::_region_size(&ka)) != 0 ||
-		    std::memcmp(P::_region_head(&da_r), P::_region_head(&db_r),
-		    P::_region_size(&da_r)) != 0)
+		if (ra != rbv || P::_citrus_region_size(&ka) != P::_citrus_region_size(&kb) ||
+		    P::_citrus_region_size(&da_r) != P::_citrus_region_size(&db_r) ||
+		    std::memcmp(P::_citrus_region_head(&ka), P::_citrus_region_head(&kb),
+		    P::_citrus_region_size(&ka)) != 0 ||
+		    std::memcmp(P::_citrus_region_head(&da_r), P::_citrus_region_head(&db_r),
+		    P::_citrus_region_size(&da_r)) != 0)
 			fail(F_DB_ENTRY, "get_entry");
 	}
 
@@ -463,12 +465,12 @@ test_lookup_plain(const std::string &path, int ignore_case)
 			fail(F_LOOKUP_NEXT, "next ret");
 		if (ra != 0)
 			break;
-		if (P::_region_size(&ka) != P::_region_size(&kb) ||
-		    std::memcmp(P::_region_head(&ka), P::_region_head(&kb),
-		    P::_region_size(&ka)) != 0 ||
-		    P::_region_size(&da) != P::_region_size(&db) ||
-		    std::memcmp(P::_region_head(&da), P::_region_head(&db),
-		    P::_region_size(&da)) != 0)
+		if (P::_citrus_region_size(&ka) != P::_citrus_region_size(&kb) ||
+		    std::memcmp(P::_citrus_region_head(&ka), P::_citrus_region_head(&kb),
+		    P::_citrus_region_size(&ka)) != 0 ||
+		    P::_citrus_region_size(&da) != P::_citrus_region_size(&db) ||
+		    std::memcmp(P::_citrus_region_head(&da), P::_citrus_region_head(&db),
+		    P::_citrus_region_size(&da)) != 0)
 			fail(F_LOOKUP_NEXT, "next data");
 	}
 
@@ -544,7 +546,7 @@ test_mapper(const std::string &dir)
 	g_mock_ops.mo_uninit = mock_uninit;
 	g_mock_ops.mo_convert = mock_convert;
 	g_mock_ops.mo_init_state = mock_init_state;
-	b0229_mock_set_module("testmod", mock_getops);
+	::b0229_mock_set_module("testmod", mock_getops);
 
 	bump(F_MAP_CREATE);
 	ra = P::_citrus_mapper_create_area(&ma_a, dir.c_str());
@@ -557,14 +559,23 @@ test_mapper(const std::string &dir)
 	bump(F_MAP_OPEN_DIR);
 	g_init_calls = 0;
 	ra = P::_citrus_mapper_open(ma_a, &cm_a, "mymap");
+	int port_init = g_init_calls;
+	g_init_calls = 0;
 	rbv = ref__citrus_mapper_open(ma_b, &cm_b, "mymap");
-	if (ra != rbv || g_init_calls != 1)
+	int ref_init = g_init_calls;
+	if (ra != rbv || port_init != 1 || ref_init != 1)
 		fail(F_MAP_OPEN_DIR, "open");
+	if (ra != 0)
+		return;
 
 	bump(F_MAP_OPEN_DIR);
+	g_init_calls = 0;
 	ra = P::_citrus_mapper_open(ma_a, &cm_a, "mymap");
+	port_init = g_init_calls;
+	g_init_calls = 0;
 	rbv = ref__citrus_mapper_open(ma_b, &cm_b, "mymap");
-	if (ra != rbv || g_init_calls != 1)
+	ref_init = g_init_calls;
+	if (ra != rbv || port_init != 0 || ref_init != 0)
 		fail(F_MAP_OPEN_DIR, "cache hit");
 
 	bump(F_MAP_OPEN_DIRECT);
@@ -619,16 +630,16 @@ random_sweep(unsigned n)
 		ref__citrus_db_factory_free(dummy);
 
 		P::_citrus_region reg;
-		P::_region_init(&reg, blob + 128, BIGBUF - 256);
+		P::_citrus_region_init(&reg, blob + 128, BIGBUF - 256);
 		P::_citrus_db_factory *df = nullptr;
 		P::_citrus_db_factory_create(&df, hash_std, nullptr);
 		for (const auto &e : ents) {
 			P::_citrus_region data;
-			P::_region_init(&data, (void *)e.second.data(), e.second.size());
+			P::_citrus_region_init(&data, (void *)e.second.data(), e.second.size());
 			P::_citrus_db_factory_add_by_string(df, e.first.c_str(), &data, 0);
 		}
 		P::_citrus_db_factory_serialize(df, "LOOKUP\0\0", &reg);
-		size_t used = P::_region_size(&reg);
+		size_t used = P::_citrus_region_size(&reg);
 		P::_citrus_db_factory_free(df);
 
 		test_db_ops(blob + 128, used);
@@ -660,6 +671,7 @@ main(void)
 		{"k8", {0xab}},
 		{"k16", {0x12, 0x34}},
 		{"k32", {0xde, 0xad, 0xbe, 0xef}},
+		{"ks", {'d', 'a', 't', 'a', '\0'}},
 	};
 
 	guard_fill(blob, BIGBUF);

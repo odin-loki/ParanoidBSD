@@ -233,7 +233,7 @@ fail(Stat &st, const char *msg)
 {
 	st.fails++;
 	if (st.fails <= 8)
-		std::printf("  FAIL %s: %s\n", st.name, msg);
+		std::fprintf(stderr, "  FAIL %s: %s\n", st.name, msg);
 }
 
 static void
@@ -303,9 +303,20 @@ capture_stdout(void (*fn)(void *), void *ctx, char *buf, std::size_t cap)
 	if (pipe(pipefd) < 0)
 		return 0;
 	int saved = dup(STDOUT_FILENO);
-	dup2(pipefd[1], STDOUT_FILENO);
-	std::fflush(stdout);
+	if (saved < 0) {
+		close(pipefd[0]);
+		close(pipefd[1]);
+		return 0;
+	}
+	if (dup2(pipefd[1], STDOUT_FILENO) < 0) {
+		close(saved);
+		close(pipefd[0]);
+		close(pipefd[1]);
+		return 0;
+	}
 	close(pipefd[1]);
+	std::setvbuf(stdout, nullptr, _IONBF, 0);
+	std::fflush(stdout);
 	fn(ctx);
 	std::fflush(stdout);
 	dup2(saved, STDOUT_FILENO);

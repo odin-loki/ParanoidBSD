@@ -37,6 +37,10 @@ module;
 #define ALIGN(p) (((unsigned long)(p) + ALIGNBYTES) & ~ALIGNBYTES)
 #endif
 
+#ifndef O_VERIFY
+#define O_VERIFY 0
+#endif
+
 export module pbsd.bin.sh.b0230;
 
 export namespace pbsd::bin_sh::b0230 {
@@ -45,6 +49,8 @@ export namespace pbsd::bin_sh::b0230 {
 #define NO_HISTORY 1
 #define JOBS 1
 #define DEBUG 1
+#define __printf0like(...)
+#define __dead2
 
 typedef void *pointer;
 typedef void (*sig_t)(int);
@@ -226,6 +232,15 @@ port_fwopen(void *cookie, int (*writefn)(void *, const char *, int))
 
 #define fwopen port_fwopen
 
+void emptyoutbuf(struct output *dest);
+void outstr(const char *p, struct output *file);
+void outqstr(const char *p, struct output *file);
+void outbin(const void *data, size_t len, struct output *file);
+void outcslow(int c, struct output *file);
+void flushout(struct output *dest);
+int xwrite(int fd, const char *buf, int nbytes);
+void doformat(struct output *dest, const char *f, va_list ap);
+
 #define outc(c, file) \
 	((file)->nextc == (file)->bufend ? (emptyoutbuf(file), *(file)->nextc++ = (c)) : (*(file)->nextc++ = (c)))
 
@@ -241,7 +256,6 @@ int debug = 0;
 int rootshell = 1;
 int verifyflag = 0;
 int vflag = 0;
-int whichprompt = 1;
 volatile sig_atomic_t suppressint = 0;
 int evalskip = 0;
 int skipcount = 0;
@@ -1108,6 +1122,9 @@ struct output *port_get_memout(void) { return &memout; }
 
 /* --- mknodes.c --- */
 #define output mknodes_output
+#define main mknodes_main
+#define error mknodes_error
+#define savestr mknodes_savestr
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -1551,9 +1568,13 @@ savestr(const char *s)
 	return p;
 }
 #undef output
+#undef main
+#undef error
+#undef savestr
 
 
 /* --- cd.c --- */
+#define new cd_new_var
 /*-
  * Copyright (c) 1991, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -1956,6 +1977,9 @@ pwd_init(int warn)
 		out2fmt_flush("sh: cannot determine working directory\n");
 	setvar("PWD", curdir, VEXPORT);
 }
+#undef new
+
+
 /* --- trap.c --- */
 /*-
  * SPDX-License-Identifier: BSD-3-Clause

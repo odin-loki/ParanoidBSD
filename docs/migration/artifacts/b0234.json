@@ -1,0 +1,10 @@
+{
+  "batch": "b0234",
+  "verified": "2026-08-08T22:57:32Z",
+  "evidence": "harness green + 4/4 mutations killed (IR: IR differs for 1/1: __error_threaded)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0234 differential results\nfunction                  cases   failures status\n__error_threaded         200013          0 ok\nTOTAL                    200013          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libthr/sys/thr_error.c": "8e5af4e2d33b71cb"
+  }
+}

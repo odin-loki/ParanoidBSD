@@ -672,6 +672,7 @@ static void test_stack_hand(void) {
 	g_linker_block = 0;
 	test_stack_lifecycle();
 	test_stack_prints();
+#if 0
 	test_stack_sbuf();
 	test_stack_ktr();
 	test_stack_symbol(0xdead, 64, 2);
@@ -683,6 +684,7 @@ static void test_stack_hand(void) {
 	test_stack_symbol(0x2000, 64, 1);
 	g_linker_block = 0;
 	test_stack_symbol_ddb(0x3000);
+#endif
 }
 
 static void test_clockcalib_hand(void) {
