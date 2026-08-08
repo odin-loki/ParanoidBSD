@@ -13,6 +13,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/cpuset/b0183/port.cppm
   bin/csh/b0061/port.cppm
   bin/date/b0190/port.cppm
+  bin/dd/b0215/port.cppm
   bin/dd/conv_m/port.cppm
   bin/dd/position_m/port.cppm
   bin/df/b0189/port.cppm
@@ -248,6 +249,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdlib/b0126/port.cppm
   lib/libc/stdlib/b0212/port.cppm
   lib/libc/stdlib/b0214/port.cppm
+  lib/libc/stdlib/b0221/port.cppm
   lib/libc/stdlib/getsubopt_m/port.cppm
   lib/libc/stdlib/hcreate_m/port.cppm
   lib/libc/stdlib/reallocarray_m/port.cppm

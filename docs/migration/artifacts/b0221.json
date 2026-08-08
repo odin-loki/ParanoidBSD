@@ -1,0 +1,13 @@
+{
+  "batch": "b0221",
+  "verified": "2026-08-08T13:24:48Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0221 differential results\nfunction              cases   failures status\nlldiv                200365          0 ok\nimaxdiv              200365          0 ok\nTOTAL                400730          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/cxa_thread_atexit.c": "99c64f60aa479476",
+    "hbsd/src/lib/libc/stdlib/lldiv.c": "d48e180feeba2cd7",
+    "hbsd/src/lib/libc/stdlib/imaxdiv.c": "b5b6c34986275bc4",
+    "hbsd/src/lib/libc/stdlib/strtold.c": "4b1ec11b14dbab56"
+  }
+}
