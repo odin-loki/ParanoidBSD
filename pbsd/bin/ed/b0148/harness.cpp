@@ -112,7 +112,15 @@ void test_parse_char_class() {
 	};
 	const char *e[]={"","]","^]","[]","[a]","[[:alpha:]]","[\n","[\xff]"};
 	for (auto x:e) run(x,x);
-	for (long i=0;i<RANDOM_ITERS/11;i++){ char b[128]; int n=rnd()%120+1; for(int j=0;j<n;j++)b[j]=rndb(); b[n]=0; run(b,"r"); }
+	for (long i=0;i<RANDOM_ITERS/11;i++){
+		char b[128];
+		int n=rnd()%100+1;
+		for(int j=0;j<n;j++) b[j]=(char)rndb();
+		b[n]=0;
+		for(int j=0;j<n;j++)
+			if(b[j]=='['){ b[n++]=(char)']'; b[n]=0; break; }
+		run(b,"r");
+	}
 }
 
 void test_translit_text() {

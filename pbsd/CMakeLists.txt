@@ -40,6 +40,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/db/btree/b0131/port.cppm
   lib/libc/db/btree/b0149/port.cppm
   lib/libc/db/btree/b0155/port.cppm
+  lib/libc/db/db/b0157/port.cppm
   lib/libc/db/hash/b0133/port.cppm
   lib/libc/db/hash/hash_log2_m/port.cppm
   lib/libc/db/recno/rec_utils_m/port.cppm
@@ -109,10 +110,12 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0130/port.cppm
   lib/libc/locale/b0145/port.cppm
   lib/libc/locale/b0147/port.cppm
+  lib/libc/locale/b0153/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm
   lib/libc/locale/rpmatch_m/port.cppm
   lib/libc/locale/wctype_m/port.cppm
+  lib/libc/nameser/b0154/port.cppm
   lib/libc/net/b0076/port.cppm
   lib/libc/net/b0129/port.cppm
   lib/libc/net/if_indextoname_m/port.cppm
@@ -221,6 +224,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/b0116/port.cppm
   lib/libc/string/b0121/port.cppm
   lib/libc/string/b0137/port.cppm
+  lib/libc/string/b0158/port.cppm
   lib/libc/string/bcmp_m/port.cppm
   lib/libc/string/ffs_m/port.cppm
   lib/libc/string/ffsl_m/port.cppm

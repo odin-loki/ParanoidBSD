@@ -32,6 +32,13 @@ struct ref_xlocale {
 	void		*components[8];
 };
 
+struct ref_lc_messages_T {
+	const char	*yesexpr;
+	const char	*noexpr;
+	const char	*yesstr;
+	const char	*nostr;
+};
+
 struct ref_xlocale_component_header {
 	void		(*destructor)(void *);
 };
@@ -44,13 +51,6 @@ struct ref_xlocale_messages_slot {
 	ref_xlocale_component	header;
 	char			*buffer;
 	ref_lc_messages_T	locale;
-};
-
-struct ref_lc_messages_T {
-	const char	*yesexpr;
-	const char	*noexpr;
-	const char	*yesstr;
-	const char	*nostr;
 };
 
 typedef struct {
@@ -454,6 +454,18 @@ msgs_eq_ptr(const void *p, const void *r)
 	    std::strcmp(pp->nostr, rp->nostr) == 0);
 }
 
+static void
+release_msg_obj(void *obj)
+{
+	ref_xlocale_component *comp;
+
+	if (obj == nullptr)
+		return;
+	comp = static_cast<ref_xlocale_component *>(obj);
+	if (comp->header.destructor != nullptr)
+		comp->header.destructor(obj);
+}
+
 static bool
 compare_msg_load_locale(const char *name, int expect_ret)
 {
@@ -496,10 +508,12 @@ compare_msg_load(const char *name, int expect_null, int hook_ret)
 	rm = ref___get_current_messages_locale(&loc);
 	if (!msgs_eq_ptr(pm, rm)) {
 		report(f, "locale");
+		release_msg_obj(ph);
+		release_msg_obj(rh);
 		return (false);
 	}
-	(void)ph;
-	(void)rh;
+	release_msg_obj(ph);
+	release_msg_obj(rh);
 	return (true);
 }
 
@@ -685,6 +699,22 @@ sweep_wcstod()
 static void
 hand_messages_cases()
 {
+	reset_part_hook();
+	compare_msg_load_locale("C", 1);
+	compare_msg_load_locale("", 1);
+
+	pbsd_part_load_hook.null_yesstr = 1;
+	compare_msg_load_locale("null_yes", 1);
+	reset_part_hook();
+	pbsd_part_load_hook.null_nostr = 1;
+	compare_msg_load_locale("null_no", 1);
+
+	reset_part_hook();
+	compare_msg_load("ok", 0, 1);
+	reset_part_hook();
+	pbsd_part_load_hook.ret = -1;
+	compare_msg_load("bad", 1, -1);
+
 	compare_get_msg_locale(0);
 	compare_get_msg_locale(1);
 }
@@ -728,6 +758,8 @@ main()
 	pbsd_reset_hooks();
 	init_locales();
 
+	// hand_wcsnrtombs_cases();
+	// hand_wcstod_cases();
 	hand_messages_cases();
 
 	std::printf("\n%-32s %12s %12s\n", "function", "cases", "failures");

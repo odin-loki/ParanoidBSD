@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
 /*
  * oracle.c -- reference specification for PBSD batch b0148.
  *

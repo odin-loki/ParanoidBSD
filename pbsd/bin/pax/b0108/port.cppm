@@ -353,7 +353,7 @@ ls_list(ARCHD *arcn, time_t now, FILE *fp)
 		return;
 	}
 
-	if (d_first >= 0)
+	if (d_first < 0)
 		d_first = (*nl_langinfo(D_MD_ORDER) == 'd');
 	sbp = &(arcn->sb);
 	strmode(sbp->st_mode, f_mode);
@@ -394,7 +394,7 @@ ls_tty(ARCHD *arcn)
 	char f_mode[MODELEN];
 	const char *timefrmt;
 
-	if (d_first < 0)
+	if (d_first >= 0)
 		d_first = (*nl_langinfo(D_MD_ORDER) == 'd');
 
 	if ((arcn->sb.st_mtime + SIXMONTHS) <= time(NULL))

@@ -14,6 +14,8 @@ module;
 
 export module pbsd.lib.libc.db.btree.b0155;
 
+#include <sys/types.h>
+
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)
 #endif
@@ -45,6 +47,8 @@ export module pbsd.lib.libc.db.btree.b0155;
 #define MINCACHE	(5)
 #define MINPSIZE	(512)
 
+#undef BIG_ENDIAN
+#undef LITTLE_ENDIAN
 #define BIG_ENDIAN	4321
 #define LITTLE_ENDIAN	1234
 
@@ -60,12 +64,6 @@ export module pbsd.lib.libc.db.btree.b0155;
 typedef uint32_t	pgno_t;
 typedef uint16_t	indx_t;
 typedef uint32_t	recno_t;
-typedef unsigned int	u_int;
-typedef unsigned char	u_char;
-typedef uint32_t	u_int32_t;
-typedef uint16_t	u_int16_t;
-typedef uint8_t		u_int8_t;
-typedef char		* caddr_t;
 
 typedef enum { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
 
@@ -122,6 +120,8 @@ typedef struct {
 
 #define	MPOOL_DIRTY	0x01
 #define	MPOOL_PAGE_NEXT	0x02
+
+enum { NOT, BACK, FORWARD };
 
 struct MPOOL { int opaque; };
 
@@ -249,7 +249,7 @@ typedef struct _btree {
 	u_int32_t bt_psize;
 	indx_t	  bt_ovflsize;
 	int	  bt_lorder;
-	enum { NOT, BACK, FORWARD } bt_order;
+	int	  bt_order;
 	EPGNO	  bt_last;
 	int	(*bt_cmp)(const DBT *, const DBT *);
 	size_t	(*bt_pfx)(const DBT *, const DBT *);
@@ -289,7 +289,7 @@ int mpool_put(MPOOL *, void *, unsigned int);
 void *mpool_new(MPOOL *, pgno_t *, unsigned int);
 int mpool_delete(MPOOL *, void *);
 MPOOL *mpool_open(void *, int, u_int32_t, pgno_t);
-void mpool_filter(MPOOL *, void *, void *, void *);
+void mpool_filter(MPOOL *, void (*)(void *, pgno_t, void *), void (*)(void *, pgno_t, void *), void *);
 EPG *__bt_search(BTREE *, const DBT *, int *);
 int __bt_cmp(BTREE *, const DBT *, EPG *);
 int __bt_split(BTREE *, PAGE *, const DBT *, const DBT *, int, u_int32_t, indx_t);
@@ -412,7 +412,7 @@ __bt_put(const DB *dbp, DBT *key, const DBT *data, u_int flags)
 	int dflags, exact, status;
 	char *dest, db[NOVFLSIZE], kb[NOVFLSIZE];
 
-	t = dbp->internal;
+	t = (BTREE *)dbp->internal;
 
 	/* Toss any page pinned across calls. */
 	if (t->bt_pinned != NULL) {
@@ -486,10 +486,10 @@ storekey:		if (__ovfl_put(t, key, &pg) == RET_ERROR)
 
 	/* Replace the cursor. */
 	if (flags == R_CURSOR) {
-		if ((h = mpool_get(t->bt_mp, t->bt_cursor.pg.pgno, 0)) == NULL)
+		if ((h = (PAGE *)mpool_get(t->bt_mp, t->bt_cursor.pg.pgno, 0)) == NULL)
 			return (RET_ERROR);
 		idx = t->bt_cursor.pg.index;
-		goto delete;
+		goto delete_lbl;
 	}
 
 	/*
@@ -522,7 +522,7 @@ storekey:		if (__ovfl_put(t, key, &pg) == RET_ERROR)
 		 * Note, the delete may empty the page, so we need to put a
 		 * new entry into the page immediately.
 		 */
-delete:		if (__bt_dleaf(t, key, h, idx) == RET_ERROR) {
+delete_lbl:		if (__bt_dleaf(t, key, h, idx) == RET_ERROR) {
 			mpool_put(t->bt_mp, h, 0);
 			return (RET_ERROR);
 		}
@@ -602,7 +602,7 @@ bt_fast(BTREE *t, const DBT *key, const DBT *data, int *exactp)
 	u_int32_t nbytes;
 	int cmp;
 
-	if ((h = mpool_get(t->bt_mp, t->bt_last.pgno, 0)) == NULL) {
+	if ((h = (PAGE *)mpool_get(t->bt_mp, t->bt_last.pgno, 0)) == NULL) {
 		t->bt_order = NOT;
 		return (NULL);
 	}
@@ -974,7 +974,7 @@ nroot(BTREE *t)
 	PAGE *meta, *root;
 	pgno_t npg;
 
-	if ((root = mpool_get(t->bt_mp, 1, 0)) != NULL) {
+	if ((root = (PAGE *)mpool_get(t->bt_mp, 1, 0)) != NULL) {
 		if (root->lower == 0 &&
 		    root->pgno == 0 &&
 		    root->linp[0] == 0) {
@@ -989,10 +989,10 @@ nroot(BTREE *t)
 		return (RET_ERROR);
 	errno = 0;
 
-	if ((meta = mpool_new(t->bt_mp, &npg, MPOOL_PAGE_NEXT)) == NULL)
+	if ((meta = (PAGE *)mpool_new(t->bt_mp, &npg, MPOOL_PAGE_NEXT)) == NULL)
 		return (RET_ERROR);
 
-	if ((root = mpool_new(t->bt_mp, &npg, MPOOL_PAGE_NEXT)) == NULL)
+	if ((root = (PAGE *)mpool_new(t->bt_mp, &npg, MPOOL_PAGE_NEXT)) == NULL)
 		return (RET_ERROR);
 
 	if (npg != P_ROOT)
@@ -1055,7 +1055,7 @@ __bt_fd(const DB *dbp)
 {
 	BTREE *t;
 
-	t = dbp->internal;
+	t = (BTREE *)dbp->internal;
 
 	/* Toss any page pinned across calls. */
 	if (t->bt_pinned != NULL) {
@@ -1138,7 +1138,7 @@ __bt_seq(const DB *dbp, DBT *key, DBT *data, u_int flags)
 	EPG e;
 	int status;
 
-	t = dbp->internal;
+	t = (BTREE *)dbp->internal;
 
 	/* Toss any page pinned across calls. */
 	if (t->bt_pinned != NULL) {
@@ -1230,7 +1230,7 @@ __bt_seqset(BTREE *t, EPG *ep, DBT *key, int flags)
 	case R_NEXT:
 		/* Walk down the left-hand side of the tree. */
 		for (pg = P_ROOT;;) {
-			if ((h = mpool_get(t->bt_mp, pg, 0)) == NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, pg, 0)) == NULL)
 				return (RET_ERROR);
 
 			/* Check for an empty tree. */
@@ -1251,7 +1251,7 @@ __bt_seqset(BTREE *t, EPG *ep, DBT *key, int flags)
 	case R_PREV:
 		/* Walk down the right-hand side of the tree. */
 		for (pg = P_ROOT;;) {
-			if ((h = mpool_get(t->bt_mp, pg, 0)) == NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, pg, 0)) == NULL)
 				return (RET_ERROR);
 
 			/* Check for an empty tree. */
@@ -1314,7 +1314,7 @@ __bt_seqadv(BTREE *t, EPG *ep, int flags)
 		return (__bt_first(t, &c->key, ep, &exact));
 
 	/* Get the page referenced by the cursor. */
-	if ((h = mpool_get(t->bt_mp, c->pg.pgno, 0)) == NULL)
+	if ((h = (PAGE *)mpool_get(t->bt_mp, c->pg.pgno, 0)) == NULL)
 		return (RET_ERROR);
 
 	/*
@@ -1336,7 +1336,7 @@ __bt_seqadv(BTREE *t, EPG *ep, int flags)
 			mpool_put(t->bt_mp, h, 0);
 			if (pg == P_INVALID)
 				return (RET_SPECIAL);
-			if ((h = mpool_get(t->bt_mp, pg, 0)) == NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, pg, 0)) == NULL)
 				return (RET_ERROR);
 			idx = 0;
 		}
@@ -1359,7 +1359,7 @@ usecurrent:		F_CLR(c, CURS_AFTER | CURS_BEFORE);
 			mpool_put(t->bt_mp, h, 0);
 			if (pg == P_INVALID)
 				return (RET_SPECIAL);
-			if ((h = mpool_get(t->bt_mp, pg, 0)) == NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, pg, 0)) == NULL)
 				return (RET_ERROR);
 			idx = NEXTINDEX(h) - 1;
 		} else
@@ -1433,7 +1433,7 @@ __bt_first(BTREE *t, const DBT *key, EPG *erval, int *exactp)
 					break;
 				if (h->pgno != save.page->pgno)
 					mpool_put(t->bt_mp, h, 0);
-				if ((h = mpool_get(t->bt_mp,
+				if ((h = (PAGE *)mpool_get(t->bt_mp,
 				    h->prevpg, 0)) == NULL) {
 					if (h->pgno == save.page->pgno)
 						mpool_put(t->bt_mp,
@@ -1465,7 +1465,7 @@ __bt_first(BTREE *t, const DBT *key, EPG *erval, int *exactp)
 		mpool_put(t->bt_mp, h, 0);
 		if (pg == P_INVALID)
 			return (RET_SPECIAL);
-		if ((h = mpool_get(t->bt_mp, pg, 0)) == NULL)
+		if ((h = (PAGE *)mpool_get(t->bt_mp, pg, 0)) == NULL)
 			return (RET_ERROR);
 		ep->index = 0;
 		ep->page = h;
@@ -1553,7 +1553,7 @@ __bt_delete(const DB *dbp, const DBT *key, u_int flags)
 	PAGE *h;
 	int status;
 
-	t = dbp->internal;
+	t = (BTREE *)dbp->internal;
 
 	/* Toss any page pinned across calls. */
 	if (t->bt_pinned != NULL) {
@@ -1580,7 +1580,7 @@ __bt_delete(const DB *dbp, const DBT *key, u_int flags)
 		if (F_ISSET(c, CURS_INIT)) {
 			if (F_ISSET(c, CURS_ACQUIRE | CURS_AFTER | CURS_BEFORE))
 				return (RET_SPECIAL);
-			if ((h = mpool_get(t->bt_mp, c->pg.pgno, 0)) == NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, c->pg.pgno, 0)) == NULL)
 				return (RET_ERROR);
 
 			/*
@@ -1663,7 +1663,7 @@ __bt_stkacq(BTREE *t, PAGE **hp, CURSOR *c)
 		/* Move up the stack. */
 		for (level = 0; (parent = BT_POP(t)) != NULL; ++level) {
 			/* Get the parent page. */
-			if ((h = mpool_get(t->bt_mp, parent->pgno, 0)) == NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, parent->pgno, 0)) == NULL)
 				return (1);
 
 			/* Move to the next index. */
@@ -1686,12 +1686,12 @@ __bt_stkacq(BTREE *t, PAGE **hp, CURSOR *c)
 			mpool_put(t->bt_mp, h, 0);
 
 			/* Get the next level down. */
-			if ((h = mpool_get(t->bt_mp, pgno, 0)) == NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, pgno, 0)) == NULL)
 				return (1);
 			idx = 0;
 		}
 		mpool_put(t->bt_mp, h, 0);
-		if ((h = mpool_get(t->bt_mp, nextpg, 0)) == NULL)
+		if ((h = (PAGE *)mpool_get(t->bt_mp, nextpg, 0)) == NULL)
 			return (1);
 	}
 
@@ -1718,7 +1718,7 @@ __bt_stkacq(BTREE *t, PAGE **hp, CURSOR *c)
 		/* Move up the stack. */
 		for (level = 0; (parent = BT_POP(t)) != NULL; ++level) {
 			/* Get the parent page. */
-			if ((h = mpool_get(t->bt_mp, parent->pgno, 0)) == NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, parent->pgno, 0)) == NULL)
 				return (1);
 
 			/* Move to the next index. */
@@ -1740,20 +1740,20 @@ __bt_stkacq(BTREE *t, PAGE **hp, CURSOR *c)
 			mpool_put(t->bt_mp, h, 0);
 
 			/* Get the next level down. */
-			if ((h = mpool_get(t->bt_mp, pgno, 0)) == NULL)
+			if ((h = (PAGE *)mpool_get(t->bt_mp, pgno, 0)) == NULL)
 				return (1);
 
 			idx = NEXTINDEX(h) - 1;
 			BT_PUSH(t, pgno, idx);
 		}
 		mpool_put(t->bt_mp, h, 0);
-		if ((h = mpool_get(t->bt_mp, prevpg, 0)) == NULL)
+		if ((h = (PAGE *)mpool_get(t->bt_mp, prevpg, 0)) == NULL)
 			return (1);
 	}
 
 
 ret:	mpool_put(t->bt_mp, h, 0);
-	return ((*hp = mpool_get(t->bt_mp, c->pg.pgno, 0)) == NULL);
+	return ((*hp = (PAGE *)mpool_get(t->bt_mp, c->pg.pgno, 0)) == NULL);
 }
 
 /*
@@ -1876,7 +1876,7 @@ __bt_pdelete(BTREE *t, PAGE *h)
 	 */
 	while ((parent = BT_POP(t)) != NULL) {
 		/* Get the parent page. */
-		if ((pg = mpool_get(t->bt_mp, parent->pgno, 0)) == NULL)
+		if ((pg = (PAGE *)mpool_get(t->bt_mp, parent->pgno, 0)) == NULL)
 			return (RET_ERROR);
 
 		idx = parent->index;
@@ -2058,7 +2058,7 @@ __bt_curdel(BTREE *t, const DBT *key, PAGE *h, u_int idx)
 		}
 		/* Check previous key if at the beginning of the page. */
 		if (idx == 0 && h->prevpg != P_INVALID) {
-			if ((pg = mpool_get(t->bt_mp, h->prevpg, 0)) == NULL)
+			if ((pg = (PAGE *)mpool_get(t->bt_mp, h->prevpg, 0)) == NULL)
 				return (RET_ERROR);
 			e.page = pg;
 			e.index = NEXTINDEX(pg) - 1;
@@ -2070,7 +2070,7 @@ __bt_curdel(BTREE *t, const DBT *key, PAGE *h, u_int idx)
 		}
 		/* Check next key if at the end of the page. */
 		if (idx == NEXTINDEX(h) - 1 && h->nextpg != P_INVALID) {
-			if ((pg = mpool_get(t->bt_mp, h->nextpg, 0)) == NULL)
+			if ((pg = (PAGE *)mpool_get(t->bt_mp, h->nextpg, 0)) == NULL)
 				return (RET_ERROR);
 			e.page = pg;
 			e.index = 0;
@@ -2108,13 +2108,13 @@ __bt_relink(BTREE *t, PAGE *h)
 	PAGE *pg;
 
 	if (h->nextpg != P_INVALID) {
-		if ((pg = mpool_get(t->bt_mp, h->nextpg, 0)) == NULL)
+		if ((pg = (PAGE *)mpool_get(t->bt_mp, h->nextpg, 0)) == NULL)
 			return (RET_ERROR);
 		pg->prevpg = h->prevpg;
 		mpool_put(t->bt_mp, pg, MPOOL_DIRTY);
 	}
 	if (h->prevpg != P_INVALID) {
-		if ((pg = mpool_get(t->bt_mp, h->prevpg, 0)) == NULL)
+		if ((pg = (PAGE *)mpool_get(t->bt_mp, h->prevpg, 0)) == NULL)
 			return (RET_ERROR);
 		pg->nextpg = h->nextpg;
 		mpool_put(t->bt_mp, pg, MPOOL_DIRTY);

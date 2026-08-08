@@ -658,6 +658,8 @@ export module pbsd.lib.libc.db.btree.b0155;
 #define MINCACHE	(5)
 #define MINPSIZE	(512)
 
+#undef BIG_ENDIAN
+#undef LITTLE_ENDIAN
 #define BIG_ENDIAN	4321
 #define LITTLE_ENDIAN	1234
 
@@ -673,12 +675,6 @@ export module pbsd.lib.libc.db.btree.b0155;
 typedef uint32_t	pgno_t;
 typedef uint16_t	indx_t;
 typedef uint32_t	recno_t;
-typedef unsigned int	u_int;
-typedef unsigned char	u_char;
-typedef uint32_t	u_int32_t;
-typedef uint16_t	u_int16_t;
-typedef uint8_t		u_int8_t;
-typedef char		* caddr_t;
 
 typedef enum { DB_BTREE, DB_HASH, DB_RECNO } DBTYPE;
 
@@ -904,7 +900,7 @@ int mpool_put(MPOOL *, void *, unsigned int);
 void *mpool_new(MPOOL *, pgno_t *, unsigned int);
 int mpool_delete(MPOOL *, void *);
 MPOOL *mpool_open(void *, int, u_int32_t, pgno_t);
-void mpool_filter(MPOOL *, void *, void *, void *);
+void mpool_filter(MPOOL *, void (*)(void *, pgno_t, void *), void (*)(void *, pgno_t, void *), void *);
 EPG *__bt_search(BTREE *, const DBT *, int *);
 int __bt_cmp(BTREE *, const DBT *, EPG *);
 int __bt_split(BTREE *, PAGE *, const DBT *, const DBT *, int, u_int32_t, indx_t);
@@ -1018,11 +1014,27 @@ def rename_functions(text, for_oracle=True):
 
     return result
 
+def port_cpp_fixup(text):
+    text = re.sub(r'\bt = dbp->internal;', 't = (BTREE *)dbp->internal;', text)
+    text = re.sub(r'= mpool_get\(', '= (PAGE *)mpool_get(', text)
+    text = re.sub(r'= mpool_new\(', '= (PAGE *)mpool_new(', text)
+    text = re.sub(r'\(h = mpool_get\(', '(h = (PAGE *)mpool_get(', text)
+    text = re.sub(r'\(pg = mpool_get\(', '(pg = (PAGE *)mpool_get(', text)
+    text = re.sub(r'\(root = mpool_get\(', '(root = (PAGE *)mpool_get(', text)
+    text = re.sub(r'\(meta = mpool_get\(', '(meta = (PAGE *)mpool_get(', text)
+    text = re.sub(r'\(meta = mpool_new\(', '(meta = (PAGE *)mpool_new(', text)
+    text = re.sub(r'\(root = mpool_new\(', '(root = (PAGE *)mpool_new(', text)
+    text = re.sub(r'\(\*hp = mpool_get\(', '(*hp = (PAGE *)mpool_get(', text)
+    text = re.sub(r'\bgoto delete\b', 'goto delete_lbl', text)
+    text = re.sub(r'\bdelete:', 'delete_lbl:', text)
+    return text
+
 def port_transform(text):
     text = extract_functions(text)
     text = rename_functions(text, for_oracle=False)
     text = re.sub(r'\bstatic\s+(?=EPG \*?\n)', '', text)
     text = re.sub(r'\bstatic\s+(?=int\n)', '', text)
+    text = port_cpp_fixup(text)
     return text
 
 def oracle_transform(text):

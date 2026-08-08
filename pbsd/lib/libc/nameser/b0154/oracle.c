@@ -18,6 +18,20 @@
 #include <string.h>
 #include <strings.h>
 
+#ifndef NS_MAXNNAME
+#define NS_MAXNNAME	256
+typedef u_char ns_nname[NS_MAXNNAME];
+typedef struct __ns_rr2 {
+	ns_nname	nname;
+	size_t		nnamel;
+	int		type;
+	int		rr_class;
+	u_int		ttl;
+	int		rdlength;
+	const u_char *	rdata;
+} ns_rr2;
+#endif
+
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)
 #endif

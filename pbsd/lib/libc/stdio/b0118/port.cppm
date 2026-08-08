@@ -1,146 +1,186 @@
+// PBSD batch b0118 -- C++23 port of HardenedBSD lib/libc/stdio
+//   fgets.c, fwrite.c, fgetws.c, fdopen.c
+//
+// The ports below are behaviour-faithful transliterations of the C sources.
+// Only what C++ strictly requires has been changed: the void * results of
+// memchr() are explicitly cast.  Signedness, evaluation order, pointer
+// arithmetic and every conditional are preserved exactly as written.
+//
+// The private stdio internals these functions are built on (the FILE layout,
+// __srefill(), __sfvwrite(), __sflags(), __sfp(), the xlocale conversion
+// vector) are not part of this batch; they are declared here and supplied by
+// the batch runtime with C linkage.
+
 module;
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-#ifndef O_EXEC
-#define O_EXEC 0
-#endif
-
-#include <cerrno>
-#include <cstdint>
-#include <cstdio>
-#include <cstring>
-#include <cwchar>
-#include <fcntl.h>
+#include <errno.h>
 #include <limits.h>
-#include <unistd.h>
-
-#if __has_include(<xlocale.h>)
-#include <xlocale.h>
-#else
-#include <locale.h>
-#endif
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
 
 export module pbsd.lib.libc.stdio.b0118;
 
-export namespace pbsd::lib_libc_stdio::b0118 {
+// ---------------------------------------------------------------------
+// Private stdio flags (FreeBSD sys/_stdio.h values).
+// ---------------------------------------------------------------------
 
-struct __sbuf {
-	unsigned char *_base;
-	int _size;
-};
+export inline constexpr int PB_SRD = 0x0004;
+export inline constexpr int PB_SWR = 0x0008;
+export inline constexpr int PB_SRW = 0x0010;
+export inline constexpr int PB_SEOF = 0x0020;
+export inline constexpr int PB_SERR = 0x0040;
+export inline constexpr int PB_SAPP = 0x0100;
+export inline constexpr int PB_S2OAP = 0x00000001;
 
-struct FILE {
-	unsigned char *_p;
-	int _r;
-	int _w;
-	short _flags;
-	short _file;
-	struct __sbuf _bf;
-	int _lbfsize;
-	void *_cookie;
-	int (*_close)(void *);
-	int (*_read)(void *, char *, int);
-	long (*_seek)(void *, long, int);
-	int (*_write)(void *, const char *, int);
-	struct __sbuf _ub;
-	unsigned char *_up;
-	int _ur;
-	unsigned char _ubuf[3];
-	unsigned char _nbuf[1];
-	struct __sbuf _lb;
-	int _blksize;
-	long _offset;
-	void *_fl_mutex;
-	void *_fl_owner;
-	int _fl_count;
-	int _orientation;
-	mbstate_t _mbstate;
-	int _flags2;
-};
-
-struct __siov {
-	void *iov_base;
-	size_t iov_len;
-};
-
-struct __suio {
-	struct __siov *uio_iov;
-	int uio_iovcnt;
-	int uio_resid;
-};
-
-struct xlocale_ctype {
-	size_t (*__mbsnrtowcs)(wchar_t * __restrict, const char ** __restrict,
-	    size_t, size_t, mbstate_t * __restrict);
-	int (*__mbsinit)(const mbstate_t *);
-};
-
-struct __locale_struct {
-	void *components[6];
-};
-
-typedef void *locale_t;
-
-#define FIX_LOCALE(l)	((void)(l))
-
-extern "C" struct xlocale_ctype *b0118_get_ctype(void);
-
-#define XLOCALE_CTYPE(x) (b0118_get_ctype())
-
-#define	__SLBF	0x0001
-#define	__SNBF	0x0002
 #define	__SRD	0x0004
 #define	__SWR	0x0008
 #define	__SRW	0x0010
 #define	__SEOF	0x0020
 #define	__SERR	0x0040
-#define	__SMBF	0x0080
 #define	__SAPP	0x0100
-#define	__SSTR	0x0200
-#define	__SOPT	0x0400
-#define	__SNPT	0x0800
-#define	__SOFF	0x1000
-#define	__SMOD	0x2000
-#define	__SALC	0x4000
-#define	__SIGN	0x8000
-#define	__S2OAP	0x0001
+#define	__S2OAP	0x00000001
 
-#define	__sfeof(p)	(((p)->_flags & __SEOF) != 0)
-#define	ORIENT(fp, o)	do {					\
-	if ((fp)->_orientation == 0)				\
-		(fp)->_orientation = (o);			\
-} while (0)
+#define	O_RDONLY	0x0000
+#define	O_WRONLY	0x0001
+#define	O_RDWR		0x0002
+#define	O_ACCMODE	0x0003
+#define	O_APPEND	0x0008
+#define	O_CREAT		0x0200
+#define	O_TRUNC		0x0400
+#define	O_EXCL		0x0800
+#define	O_EXEC		0x00040000
+#define	O_CLOEXEC	0x00100000
 
-#define	FLOCKFILE_CANCELSAFE(fp)	do { (void)(fp); } while (0)
-#define	FUNLOCKFILE_CANCELSAFE()	do { } while (0)
+#define	FD_CLOEXEC	1
+#define	F_GETFD		1
+#define	F_SETFD		2
+#define	F_GETFL		3
+
+export inline constexpr int PB_O_RDONLY = 0x0000;
+export inline constexpr int PB_O_WRONLY = 0x0001;
+export inline constexpr int PB_O_RDWR = 0x0002;
+export inline constexpr int PB_O_ACCMODE = 0x0003;
+export inline constexpr int PB_O_APPEND = 0x0008;
+export inline constexpr int PB_O_CREAT = 0x0200;
+export inline constexpr int PB_O_TRUNC = 0x0400;
+export inline constexpr int PB_O_EXCL = 0x0800;
+export inline constexpr int PB_O_EXEC = 0x00040000;
+export inline constexpr int PB_O_CLOEXEC = 0x00100000;
+export inline constexpr int PB_FD_CLOEXEC = 1;
+export inline constexpr int PB_F_GETFD = 1;
+export inline constexpr int PB_F_SETFD = 2;
+export inline constexpr int PB_F_GETFL = 3;
+
+export inline constexpr int PB_BUFSZ = 256;
+export inline constexpr int PB_FCNTL_LOG = 8;
+
+// ---------------------------------------------------------------------
+// FILE layout and friends.  Must stay layout-identical to oracle.c.
+// ---------------------------------------------------------------------
+
+export struct pb_mbstate {
+	int		__want;
+	unsigned int	__ch;
+	unsigned int	__lbound;
+};
+
+export using pb_mbstate_t = pb_mbstate;
+
+export using pb_readfn = int (*)(void *, char *, int);
+export using pb_writefn = int (*)(void *, const char *, int);
+export using pb_seekfn = long (*)(void *, long, int);
+export using pb_closefn = int (*)(void *);
+
+export struct pb_file {
+	unsigned char	*_p;
+	int		 _r;
+	int		 _w;
+	short		 _flags;
+	short		 _file;
+	short		 _orientation;
+	int		 _flags2;
+	pb_mbstate_t	 _mbstate;
+	pb_readfn	 _read;
+	pb_writefn	 _write;
+	pb_seekfn	 _seek;
+	pb_closefn	 _close;
+	void		*_cookie;
+	/* mock plumbing */
+	unsigned char	 _buf[PB_BUFSZ];
+	const unsigned char *in_data;
+	size_t		 in_len;
+	size_t		 in_pos;
+	size_t		 chunk;
+	int		 fail_refill_at;
+	int		 refill_calls;
+	unsigned char	*sink;
+	size_t		 sink_size;
+	size_t		 sink_cap;
+	size_t		 sink_len;
+	int		 sfvwrite_calls;
+};
+
+export using pb_file_t = pb_file;
+
+export struct __siov {
+	void	*iov_base;
+	size_t	 iov_len;
+};
+
+export struct __suio {
+	__siov	*uio_iov;
+	int	 uio_iovcnt;
+	int	 uio_resid;
+};
+
+export struct xlocale_ctype {
+	size_t	(*__mbsnrtowcs)(wchar_t * __restrict, const char ** __restrict,
+		    size_t, size_t, pb_mbstate_t * __restrict);
+	int	(*__mbsinit)(const pb_mbstate_t *);
+};
+
+export using pb_locale_t = xlocale_ctype *;
 
 extern "C" {
-int		__srefill(void *);
-int		__sfvwrite(void *, struct __suio *);
-void		*__sfp(void);
-int		__sflags(const char *, int *);
-int		_fcntl(int, int, ...);
-int		__sread(void *, char *, int);
-int		__swrite(void *, const char *, int);
-long		__sseek(void *, long, int);
-int		__sclose(void *);
-void		*__get_locale(void);
-struct xlocale_ctype *b0118_get_ctype(void);
+int pb_srefill(pb_file_t *);
+int pb_sfvwrite(pb_file_t *, __suio *);
+int pb_sflags(const char *, int *);
+pb_file_t *pb_sfp(void);
+int pb_fcntl(int, int, int);
+int pb_sread(void *, char *, int);
+int pb_swrite(void *, const char *, int);
+long pb_sseek(void *, long, int);
+int pb_sclose(void *);
+pb_locale_t pb_get_locale(void);
 }
 
-namespace detail {
+#define	FILE			pb_file_t
+#define	locale_t		pb_locale_t
+#define	FLOCKFILE_CANCELSAFE(fp)	{ {
+#define	FUNLOCKFILE_CANCELSAFE()	} }
+#define	ORIENT(fp, o)		do {					\
+					if ((fp)->_orientation == 0)	\
+						(fp)->_orientation = (o); \
+				} while (0)
+#define	__sfeof(fp)		(((fp)->_flags & __SEOF) != 0)
+#define	__srefill		pb_srefill
+#define	__sfvwrite		pb_sfvwrite
+#define	__sflags		pb_sflags
+#define	__sfp			pb_sfp
+#define	_fcntl			pb_fcntl
+#define	__sread			pb_sread
+#define	__swrite		pb_swrite
+#define	__sseek			pb_sseek
+#define	__sclose		pb_sclose
+#define	__get_locale()		pb_get_locale()
+#define	FIX_LOCALE(l)		do {					\
+					if ((l) == nullptr)		\
+						(l) = __get_locale();	\
+				} while (0)
+#define	XLOCALE_CTYPE(l)	(l)
 
-static locale_t
-get_real_locale(locale_t locale)
-{
-	(void)locale;
-	return (locale);
-}
-
-} /* namespace detail */
+export namespace pbsd::lib_libc_stdio::b0118 {
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -176,6 +216,13 @@ get_real_locale(locale_t locale)
  * SUCH DAMAGE.
  */
 
+/* lib/libc/stdio/fgets.c */
+
+/*
+ * Read at most n-1 characters from the given file.
+ * Stop when a newline has been read, or the count runs out.
+ * Return first argument, or NULL if no characters were read.
+ */
 char *
 fgets(char * __restrict buf, int n, FILE * __restrict fp)
 {
@@ -252,31 +299,15 @@ end:
  * This code is derived from software contributed to Berkeley by
  * Chris Torek.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * [BSD-3-Clause licence text as above]
  */
 
+/* lib/libc/stdio/fwrite.c */
+
+/*
+ * Write `count' objects (each size `size') from memory to the given file.
+ * Return the number of whole objects written.
+ */
 size_t
 fwrite_unlocked(const void * __restrict buf, size_t size, size_t count,
     FILE * __restrict fp)
@@ -367,6 +398,8 @@ fwrite(const void * __restrict buf, size_t size, size_t count,
  * SUCH DAMAGE.
  */
 
+/* lib/libc/stdio/fgetws.c */
+
 wchar_t *
 fgetws_l(wchar_t * __restrict ws, int n, FILE * __restrict fp, locale_t locale)
 {
@@ -422,7 +455,7 @@ fgetws_l(wchar_t * __restrict ws, int n, FILE * __restrict fp, locale_t locale)
 		fp->_p = (unsigned char *)src;
 		n -= nconv;
 		wsp += nconv;
-	} while ((wsp == ws || wsp[-1] != L'\n') && n > 1 && (fp->_r <= 0 ||
+	} while ((wsp == ws || wsp[-1] != L'\n') && n > 1 && (fp->_r > 0 ||
 	    (sret = __srefill(fp)) == 0));
 	if (sret && !__sfeof(fp))
 		/* ferror */
@@ -463,30 +496,10 @@ fgetws(wchar_t * __restrict ws, int n, FILE * __restrict fp)
  * This code is derived from software contributed to Berkeley by
  * Chris Torek.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * [BSD-3-Clause licence text as above]
  */
+
+/* lib/libc/stdio/fdopen.c */
 
 FILE *
 fdopen(int fd, const char *mode)
@@ -519,7 +532,7 @@ fdopen(int fd, const char *mode)
 		return (NULL);
 	}
 
-	if ((fp = (FILE *)__sfp()) == NULL)
+	if ((fp = __sfp()) == NULL)
 		return (NULL);
 
 	if ((oflags & O_CLOEXEC) != 0) {
@@ -556,4 +569,4 @@ fdopen(int fd, const char *mode)
 	return (fp);
 }
 
-} /* namespace pbsd::lib_libc_stdio::b0118 */
+} // namespace pbsd::lib_libc_stdio::b0118

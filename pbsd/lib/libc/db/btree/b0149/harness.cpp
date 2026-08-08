@@ -115,6 +115,22 @@ extern test_mock_state test_mock;
 void test_mock_reset(void);
 void test_mock_register(pgno_t pgno, void *page);
 
+struct MockSnap {
+	test_mock_state mock;
+};
+
+MockSnap snap_mock(void)
+{
+	MockSnap s;
+	s.mock = test_mock;
+	return s;
+}
+
+void restore_mock(const MockSnap &s)
+{
+	test_mock = s.mock;
+}
+
 int ref___bt_split(BTREE *, PAGE *, const DBT *, const DBT *, int, size_t,
     u_int32_t);
 PAGE *ref_bt_page(BTREE *, PAGE *, PAGE **, PAGE **, indx_t *, size_t);
@@ -489,8 +505,39 @@ void check_bt_psplit(u_int32_t ptype, int nents, indx_t skip, size_t ilen,
 		c.tr.bt_cursor.pg.index = curs_idx;
 	}
 
-	P::PAGE *ret_p = P::bt_psplit(&c.tp, (P::PAGE *)sp, (P::PAGE *)lp_p, (P::PAGE *)rp_p, &skip_p, ilen);
+	unsigned char init_src[PAGE_SZ];
+	std::memcpy(init_src, c.src_p, PAGE_SZ);
+	MockSnap snap = snap_mock();
+	P::PAGE *ret_p = P::bt_psplit(&c.tp, (P::PAGE *)sp, (P::PAGE *)lp_p,
+	    (P::PAGE *)rp_p, &skip_p, ilen);
+	unsigned char res_src_p[PAGE_SZ];
+	unsigned char res_lp_p[PAGE_SZ];
+	unsigned char res_rp_p[PAGE_SZ];
+	P::CURSOR res_cur_p = c.tp.bt_cursor;
+	indx_t res_skip_p = skip_p;
+	std::memcpy(res_src_p, c.src_p, PAGE_SZ);
+	std::memcpy(res_lp_p, c.lp_p, PAGE_SZ);
+	std::memcpy(res_rp_p, c.rp_p, PAGE_SZ);
+
+	std::memcpy(c.src_r, init_src, PAGE_SZ);
+	guard_fill(c.lp_r, PAGE_SZ);
+	guard_fill(c.rp_r, PAGE_SZ);
+	lp_r = (PAGE *)c.lp_r;
+	rp_r = (PAGE *)c.rp_r;
+	lp_r->lower = lp_r->upper = BTDATAOFF;
+	rp_r->lower = rp_r->upper = BTDATAOFF;
+	lp_r->flags = rp_r->flags = ptype;
+	c.tr.bt_cursor = c.tp.bt_cursor;
+	skip_r = skip;
+	restore_mock(snap);
+
 	PAGE *ret_r = ref_bt_psplit(&c.tr, sr, lp_r, rp_r, &skip_r, ilen);
+
+	std::memcpy(c.src_p, res_src_p, PAGE_SZ);
+	std::memcpy(c.lp_p, res_lp_p, PAGE_SZ);
+	std::memcpy(c.rp_p, res_rp_p, PAGE_SZ);
+	c.tp.bt_cursor = res_cur_p;
+	skip_p = res_skip_p;
 
 	char msg[256];
 	if ((ret_p == nullptr) != (ret_r == nullptr)) {
@@ -713,19 +760,36 @@ void check_bt_page(int sortsplit, int nextpg_fail, int nents, indx_t skip,
 	if (nextpg_fail)
 		test_mock.get_force_null = 1;
 
-	P::PAGE *lp_p = nullptr;
-	P::PAGE *rp_p = nullptr;
-	P::BTREE *t_p = &tp;
-	P::PAGE *h_p = (P::PAGE *)sp;
-	indx_t skip_p = skip;
+	unsigned char init_src[PAGE_SZ];
+	std::memcpy(init_src, src_p, PAGE_SZ);
 	P::PAGE *lout_p = nullptr;
 	P::PAGE *rout_p = nullptr;
-	P::PAGE *ret_p = P::bt_page(t_p, h_p, (P::PAGE **)&lout_p, (P::PAGE **)&rout_p, &skip_p, ilen);
+	indx_t skip_p = skip;
+	indx_t skip_r = skip;
+	MockSnap snap = snap_mock();
+	P::PAGE *ret_p = P::bt_page(&tp, (P::PAGE *)sp, &lout_p, &rout_p, &skip_p,
+	    ilen);
+	unsigned char res_src_p[PAGE_SZ];
+	std::memcpy(res_src_p, src_p, PAGE_SZ);
+	bool ret_is_l_p = (ret_p == lout_p);
+	indx_t res_skip_p = skip_p;
+
+	std::memcpy(src_r, init_src, PAGE_SZ);
+	if (sortsplit) {
+		sr->nextpg = P_INVALID;
+		skip_r = (indx_t)NEXTINDEX(sr);
+	} else {
+		sr->nextpg = nextpg;
+	}
+	skip_r = skip;
+	restore_mock(snap);
 
 	PAGE *lout_r = nullptr;
 	PAGE *rout_r = nullptr;
-	indx_t skip_r = skip;
 	PAGE *ret_r = ref_bt_page(&tr, sr, &lout_r, &rout_r, &skip_r, ilen);
+
+	std::memcpy(src_p, res_src_p, PAGE_SZ);
+	skip_p = res_skip_p;
 
 	char msg[256];
 	if ((ret_p == nullptr) != (ret_r == nullptr)) {
@@ -734,11 +798,11 @@ void check_bt_page(int sortsplit, int nextpg_fail, int nents, indx_t skip,
 	}
 	check_eq(F_BT_PAGE, skip_p == skip_r, "skip");
 	if (ret_p) {
-		std::ptrdiff_t ro_p = (char *)ret_p - (char *)src_p;
-		std::ptrdiff_t ro_r = (char *)ret_r - (char *)sr;
-		std::snprintf(msg, sizeof(msg), "ret off port=%td ref=%td", ro_p,
-		    ro_r);
-		check_eq(F_BT_PAGE, ro_p == ro_r, msg);
+		bool rp_is_l = ret_is_l_p;
+		bool rr_is_l = (ret_r == lout_r);
+		std::snprintf(msg, sizeof(msg), "ret side port=%d ref=%d", rp_is_l,
+		    rr_is_l);
+		check_eq(F_BT_PAGE, rp_is_l == rr_is_l, msg);
 		check_eq(F_BT_PAGE, bufs_eq(src_p, src_r, PAGE_SZ), "src page");
 	}
 }
@@ -771,18 +835,33 @@ void check_bt_root(int nents, indx_t skip, size_t ilen, int fail_second)
 	build_bleaf_page(sp, PAGE_SZ, nents, ks, ds, ef);
 	std::memcpy(src_r, src_p, PAGE_SZ);
 
+	unsigned char init_src[PAGE_SZ];
+	std::memcpy(init_src, src_p, PAGE_SZ);
 	P::PAGE *lp_p = nullptr;
 	P::PAGE *rp_p = nullptr;
 	indx_t skip_p = skip;
-	P::PAGE *ret_p = P::bt_root(&tp, (P::PAGE *)sp, (P::PAGE **)&lp_p, (P::PAGE **)&rp_p, &skip_p, ilen);
+	indx_t skip_r = skip;
+	MockSnap snap = snap_mock();
+	P::PAGE *ret_p = P::bt_root(&tp, (P::PAGE *)sp, &lp_p, &rp_p, &skip_p,
+	    ilen);
+	unsigned char res_src_p[PAGE_SZ];
+	std::memcpy(res_src_p, src_p, PAGE_SZ);
+	indx_t res_skip_p = skip_p;
+	int had_null_p = (ret_p == nullptr);
+
+	std::memcpy(src_r, init_src, PAGE_SZ);
+	skip_r = skip;
+	restore_mock(snap);
 
 	PAGE *lp_r = nullptr;
 	PAGE *rp_r = nullptr;
-	indx_t skip_r = skip;
 	PAGE *ret_r = ref_bt_root(&tr, sr, &lp_r, &rp_r, &skip_r, ilen);
 
+	std::memcpy(src_p, res_src_p, PAGE_SZ);
+	skip_p = res_skip_p;
+
 	char msg[128];
-	if ((ret_p == nullptr) != (ret_r == nullptr)) {
+	if (had_null_p != (ret_r == nullptr)) {
 		check_eq(F_BT_ROOT, false, "null ret");
 		return;
 	}
@@ -845,8 +924,23 @@ void check_bt_split_leaf_root(int nents, u_int32_t argskip, int use_recno,
 	    align_pg(sizeof(u_int32_t) + sizeof(u_int32_t) + sizeof(u_char) +
 		key_p.size + data_p.size);
 
-	int rp = P::__bt_split(&tp, (P::PAGE *)spp, (P::DBT *)&key_p, (P::DBT *)&data_p, 0, ilen, argskip);
+	unsigned char init_sp[PAGE_SZ];
+	std::memcpy(init_sp, sp_p, PAGE_SZ);
+	tp.bt_sp = tp.bt_stack;
+	tr.bt_sp = tr.bt_stack;
+	MockSnap snap = snap_mock();
+	int rp = P::__bt_split(&tp, (P::PAGE *)spp, (P::DBT *)&key_p,
+	    (P::DBT *)&data_p, 0, ilen, argskip);
+	unsigned char res_sp_p[PAGE_SZ];
+	std::memcpy(res_sp_p, sp_p, PAGE_SZ);
+
+	std::memcpy(sp_r, init_sp, PAGE_SZ);
+	tp.bt_sp = tp.bt_stack;
+	tr.bt_sp = tr.bt_stack;
+	restore_mock(snap);
 	int rr = ref___bt_split(&tr, spr, &key_r, &data_r, 0, ilen, argskip);
+	std::memcpy(sp_p, res_sp_p, PAGE_SZ);
+
 	char msg[256];
 	std::snprintf(msg, sizeof(msg),
 	    "ret port=%d ref=%d recno=%d skip=%u panic_p=%u panic_r=%u",
@@ -943,8 +1037,35 @@ void check_bt_split_with_parent(int parent_room, int child_type)
 	size_t ilen = align_pg(sizeof(u_int32_t) + sizeof(u_int32_t) +
 	    sizeof(u_char) + key_p.size + data_p.size);
 
-	int rp = P::__bt_split(&tp, (P::PAGE *)spp, (P::DBT *)&key_p, (P::DBT *)&data_p, 0, ilen, 1);
+	unsigned char init_sp[PAGE_SZ];
+	std::memcpy(init_sp, sp_p, PAGE_SZ);
+	tp.bt_sp = tp.bt_stack;
+	tr.bt_sp = tr.bt_stack;
+	tp.bt_sp->pgno = 3;
+	tp.bt_sp->index = 0;
+	++tp.bt_sp;
+	tr.bt_sp->pgno = 3;
+	tr.bt_sp->index = 0;
+	++tr.bt_sp;
+	MockSnap snap = snap_mock();
+	int rp = P::__bt_split(&tp, (P::PAGE *)spp, (P::DBT *)&key_p,
+	    (P::DBT *)&data_p, 0, ilen, 1);
+	unsigned char res_sp_p[PAGE_SZ];
+	std::memcpy(res_sp_p, sp_p, PAGE_SZ);
+
+	std::memcpy(sp_r, init_sp, PAGE_SZ);
+	tp.bt_sp = tp.bt_stack;
+	tr.bt_sp = tr.bt_stack;
+	tp.bt_sp->pgno = 3;
+	tp.bt_sp->index = 0;
+	++tp.bt_sp;
+	tr.bt_sp->pgno = 3;
+	tr.bt_sp->index = 0;
+	++tr.bt_sp;
+	restore_mock(snap);
 	int rr = ref___bt_split(&tr, spr, &key_r, &data_r, 0, ilen, 1);
+	std::memcpy(sp_p, res_sp_p, PAGE_SZ);
+
 	char msg[128];
 	std::snprintf(msg, sizeof(msg), "ret port=%d ref=%d room=%d", rp, rr,
 	    parent_room);
