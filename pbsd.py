@@ -302,6 +302,22 @@ def preflight() -> bool:
             say("git identity was unset — configured a local one so commits land")
     if ok and not os.environ.get("CURSOR_API_KEY"):
         say("note: CURSOR_API_KEY unset — relying on cached `cursor-agent login`")
+        try:
+            r = subprocess.run(
+                ["cursor-agent", "-p", "Reply READY", "--workspace", str(ROOT),
+                 "--model", "composer-2.5", "--output-format", "text", "--force", "--trust"],
+                capture_output=True, text=True, timeout=60,
+                env=os.environ, stdin=subprocess.DEVNULL)
+            if r.returncode != 0:
+                err = (r.stderr or r.stdout or "").strip()
+                print("cursor-agent is not authenticated for batch work.")
+                print(f"  {err[:200]}")
+                print("  Fix: wsl -d Ubuntu, then: cursor-agent login")
+                print("  Or set a valid CURSOR_API_KEY in ~/pbsd_driver.sh")
+                ok = False
+        except Exception as e:
+            print(f"cursor-agent probe failed: {e}")
+            ok = False
     return ok
 
 
