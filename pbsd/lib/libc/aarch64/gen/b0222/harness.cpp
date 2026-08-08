@@ -571,7 +571,7 @@ op_makecontext(port::ucontext_t *ucp_port, ref_abi::ucontext *ucp_ref,
 	}
 }
 
-static void
+[[gnu::noinline]] static void
 op_ctx_done(port::ucontext_t *ucp_port, ref_abi::ucontext *ucp_ref,
     const char *ctx)
 {

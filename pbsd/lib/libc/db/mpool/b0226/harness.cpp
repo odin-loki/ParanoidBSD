@@ -720,7 +720,8 @@ test_overflow_abort(Stat &st)
 	bool a2 = (st2 != 0) && (WIFSIGNALED(st2) && WTERMSIG(st2) == SIGABRT);
 	if (!a1 || !a2)
 		fail(st, "overflow abort");
-	/* parent pools leaked in children only; re-open for cleanup */
+	ref_mpool_close(rmp);
+	P::mpool_close(pmp);
 	close(fd);
 }
 
@@ -776,6 +777,10 @@ run_sweep(Stat &st)
 		if (!rmp || !pmp) {
 			if (rmp != nullptr || pmp != nullptr)
 				fail(st, "sweep open mismatch");
+			if (rmp)
+				ref_mpool_close(rmp);
+			if (pmp)
+				P::mpool_close(pmp);
 			close(fd);
 			close(fd2);
 			continue;
@@ -787,6 +792,8 @@ run_sweep(Stat &st)
 		for (unsigned op = 0; op < ops; op++) {
 			unsigned kind = (unsigned)(nextrand() % 7);
 			pgno_t pg = (pgno_t)(nextrand() % (rmp->npages + 2));
+			unsigned put_dirty = (unsigned)(nextrand() & 3);
+			unsigned new_flags = (unsigned)(nextrand() & 1);
 			switch (kind) {
 			case 0: {
 				void *rp = ref_mpool_get(rmp, pg, 0);
@@ -796,20 +803,17 @@ run_sweep(Stat &st)
 				else if (rp && !same_page_bytes(rp, pp, pagesize))
 					fail(st, "sweep get bytes");
 				if (rp) {
-					ref_mpool_put(rmp, rp, (nextrand() & 3) ? H_DIRTY : 0);
-					P::mpool_put(pmp, pp,
-					    (nextrand() & 3) ? H_DIRTY : 0);
+					u_int pf = put_dirty ? H_DIRTY : 0;
+					ref_mpool_put(rmp, rp, pf);
+					P::mpool_put(pmp, pp, pf);
 				}
 				break;
 			}
 			case 1: {
 				pgno_t rpg = pg, ppg = pg;
-				void *rn = ref_mpool_new(rmp, &rpg,
-				    (nextrand() & 1) ? H_PAGE_REQUEST :
-						       H_PAGE_NEXT);
-				void *pn = P::mpool_new(pmp, &ppg,
-				    (nextrand() & 1) ? H_PAGE_REQUEST :
-						       H_PAGE_NEXT);
+				u_int nf = new_flags ? H_PAGE_REQUEST : H_PAGE_NEXT;
+				void *rn = ref_mpool_new(rmp, &rpg, nf);
+				void *pn = P::mpool_new(pmp, &ppg, nf);
 				if ((rn == nullptr) != (pn == nullptr))
 					fail(st, "sweep new null");
 				else if (rn && (rpg != ppg ||
@@ -827,8 +831,9 @@ run_sweep(Stat &st)
 				break;
 			}
 			case 3: {
-				void *rp = ref___mpool_new__44bsd(rmp, &pg);
-				void *pp = P::__mpool_new__44bsd(pmp, &pg);
+				pgno_t rpgc = pg, ppgc = pg;
+				void *rp = ref___mpool_new__44bsd(rmp, &rpgc);
+				void *pp = P::__mpool_new__44bsd(pmp, &ppgc);
 				if ((rp == nullptr) != (pp == nullptr))
 					fail(st, "sweep compat null");
 				if (rp) {

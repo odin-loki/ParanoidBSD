@@ -469,119 +469,41 @@ test_summary(void)
 	}
 }
 
-/* ------------------------------------------------------- progress (fork)  */
-
-struct PipeOut {
-	int ok;
-	long cap_len;
-	size_t got;
-	char buf[16384];
-	long need_progress;
-};
-
-static int
-run_progress_child(int use_port, const STAT &s, PipeOut *out)
-{
-	int pfd[2];
-	pid_t pid;
-	int st = 0;
-
-	out->ok = 0;
-	out->cap_len = -1;
-	out->got = 0;
-	out->buf[0] = '\0';
-	out->need_progress = -1;
-
-	if (pipe(pfd) != 0)
-		return (-1);
-	pid = fork();
-	if (pid < 0) {
-		close(pfd[0]);
-		close(pfd[1]);
-		return (-1);
-	}
-	if (pid == 0) {
-		char tmpl[] = "/tmp/pbsd-b0215-p-stderr-XXXXXX";
-		int fd;
-		long len;
-		size_t got;
-		char local[16384];
-		struct timespec end = { 50, 250000000L };
-		struct timespec res = { 0, 1 };
-
-		close(pfd[0]);
-		fd = mkstemp(tmpl);
-		if (fd < 0)
-			_exit(90);
-		if (dup2(fd, STDERR_FILENO) < 0)
-			_exit(91);
-		unlink(tmpl);
-		close(fd);
-
-		clock_set(&end, &res);
-		if (use_port) {
-			set_port_state(s, 0, 0, 1, 0, 0);
-			P::progress();
-			out->need_progress = (long)P::need_progress;
-		} else {
-			set_ref_state(s, 0, 0, 1, 0, 0);
-			ref_progress();
-			out->need_progress = (long)need_progress;
-		}
-		fflush(stderr);
-		len = (long)lseek(STDERR_FILENO, 0, SEEK_END);
-		got = 0;
-		if (len > 0) {
-			lseek(STDERR_FILENO, 0, SEEK_SET);
-			if ((size_t)len >= sizeof(local))
-				len = (long)sizeof(local) - 1;
-			got = (size_t)read(STDERR_FILENO, local, (size_t)len);
-		}
-		local[got] = '\0';
-		if (write(pfd[1], &len, sizeof(len)) != (ssize_t)sizeof(len) ||
-		    write(pfd[1], &got, sizeof(got)) != (ssize_t)sizeof(got) ||
-		    write(pfd[1], local, got) != (ssize_t)got ||
-		    write(pfd[1], &out->need_progress,
-		    sizeof(out->need_progress)) !=
-		    (ssize_t)sizeof(out->need_progress))
-			_exit(92);
-		close(pfd[1]);
-		_exit(0);
-	}
-	close(pfd[1]);
-	if (read(pfd[0], &out->cap_len, sizeof(out->cap_len)) !=
-	    (ssize_t)sizeof(out->cap_len) ||
-	    read(pfd[0], &out->got, sizeof(out->got)) !=
-	    (ssize_t)sizeof(out->got) ||
-	    read(pfd[0], out->buf, out->got) != (ssize_t)out->got ||
-	    read(pfd[0], &out->need_progress, sizeof(out->need_progress)) !=
-	    (ssize_t)sizeof(out->need_progress)) {
-		close(pfd[0]);
-		kill(pid, SIGKILL);
-		waitpid(pid, &st, 0);
-		return (-1);
-	}
-	close(pfd[0]);
-	if (waitpid(pid, &st, 0) < 0 || !WIFEXITED(st) || WEXITSTATUS(st) != 0)
-		return (-1);
-	out->ok = 1;
-	return (0);
-}
+/* ------------------------------------------------------- progress         */
 
 static void
 check_progress(const STAT &s, const char *tag)
 {
-	PipeOut a, b;
+	long la, lb;
+	size_t ga, gb;
+	long va, vb;
 	const char *why = NULL;
+	struct timespec end = { 50, 250000000L };
+	struct timespec res = { 0, 1 };
 
+	clock_set(&end, &res);
+	set_both_state(s, 0, 0, 1, 0, 0);
 	S_progress.cases++;
-	if (run_progress_child(1, s, &a) != 0 || run_progress_child(0, s, &b) != 0)
-		why = "fork/pipe failed";
-	else if (a.cap_len != b.cap_len)
+
+	cap_begin();
+	P::progress();
+	la = cap_end(capA, sizeof(capA), &ga);
+	va = (long)P::need_progress;
+
+	clock_set(&end, &res);
+	set_both_state(s, 0, 0, 1, 0, 0);
+	cap_begin();
+	ref_progress();
+	lb = cap_end(capB, sizeof(capB), &gb);
+	vb = (long)need_progress;
+
+	if (la < 0 || lb < 0)
+		why = "stderr capture failed";
+	else if (la != lb)
 		why = "stderr byte count";
-	else if (a.got != b.got || memcmp(a.buf, b.buf, a.got) != 0)
+	else if (ga != gb || memcmp(capA, capB, ga) != 0)
 		why = "stderr text";
-	else if (a.need_progress != b.need_progress)
+	else if (va != vb)
 		why = "need_progress after call";
 
 	if (why == NULL)
@@ -590,8 +512,8 @@ check_progress(const STAT &s, const char *tag)
 	if (S_progress.fails > MAX_REPORTED)
 		return;
 	printf("  FAIL progress (%s): %s\n", tag, why);
-	printf("    port err = [%s]\n", a.buf);
-	printf("    ref  err = [%s]\n", b.buf);
+	printf("    port err = [%s]\n", capA);
+	printf("    ref  err = [%s]\n", capB);
 }
 
 static void
@@ -791,20 +713,36 @@ run_sigint_child(int use_port, long in_io_v, long seen_v, SigintOut *out)
 static void
 check_sigint(long in_io_v, long seen_v, const char *tag)
 {
-	SigintOut a, b;
 	const char *why = NULL;
+	STAT z = zero_stat;
 
 	S_sigint.cases++;
-	if (run_sigint_child(1, in_io_v, seen_v, &a) != 0 ||
-	    run_sigint_child(0, in_io_v, seen_v, &b) != 0)
-		why = "fork failed";
-	else if (a.terminated != b.terminated)
-		why = "terminated mismatch";
-	else if (a.terminated) {
-		if (a.term_signo != b.term_signo)
-			why = "terminating signal";
-	} else if (a.sigint_seen != b.sigint_seen)
-		why = "sigint_seen";
+
+	if (in_io_v) {
+		SigintOut a, b;
+
+		if (run_sigint_child(1, in_io_v, seen_v, &a) != 0 ||
+		    run_sigint_child(0, in_io_v, seen_v, &b) != 0)
+			why = "fork failed";
+		else if (a.terminated != b.terminated)
+			why = "terminated mismatch";
+		else if (a.terminated) {
+			if (a.term_signo != b.term_signo)
+				why = "terminating signal";
+		} else if (a.sigint_seen != b.sigint_seen)
+			why = "sigint_seen";
+	} else {
+		long a_seen, b_seen;
+
+		set_both_state(z, 0, 0, 0, 0, seen_v);
+		P::sigint_handler(SIGINT);
+		a_seen = (long)P::sigint_seen;
+		set_both_state(z, 0, 0, 0, 0, seen_v);
+		ref_sigint_handler(SIGINT);
+		b_seen = (long)sigint_seen;
+		if (a_seen != b_seen)
+			why = "sigint_seen";
+	}
 
 	if (why == NULL)
 		return;

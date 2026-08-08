@@ -1,0 +1,10 @@
+{
+  "batch": "b0196s1",
+  "verified": "2026-08-08T22:52:43Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction / group                                    cases   failures\n---------------------------------------------- ---------- ----------\n__rpc_createerr  main-thread edge cases                65          0\n__rpc_createerr  worker-thread edge cases             664          0\nrce_key_init     tsd key reuse / churn                768          0\n__rpc_createerr  randomised sweep                  200000          0\nrce_key_init     key-create failure (forked)            1          0\nmt_misc          lock object definitions               32          0\n---------------------------------------------- ---------- ----------\nTOTAL                                              201530          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/rpc/mt_misc.c": "e2660ad73f71430f"
+  }
+}

@@ -513,6 +513,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/compat/linux/b0208s1/port.cppm
   sys/compat/linux/b0208s2/port.cppm
   sys/compat/linux/b0208s3/port.cppm
+  sys/compat/linux/b0208s4/port.cppm
   sys/compat/linuxkpi/common/src/b0209/port.cppm
   sys/fs/deadfs/b0213/port.cppm
   sys/fs/fifofs/b0205/port.cppm
