@@ -13,6 +13,8 @@ module;
 #include <stdint.h>
 #include <stdlib.h>
 
+export module pbsd.lib.libc.gdtoa.b0066s1;
+
 // HardenedBSD's <float.h> defines FLT_ROUNDS as __flt_rounds(), which tracks
 // fesetround(3).  GCC's <float.h> hardcodes it to 1.  Restore the target
 // definition so that __ldtoa() sees the rounding mode the program is running
@@ -40,8 +42,6 @@ char *gdtoa(FPI *fpi, int be, ULong *bits, int *kindp, int mode, int ndigits,
     int *decpt, char **rve);
 
 }
-
-export module pbsd.lib.libc.gdtoa.b0066s1;
 
 namespace pbsd::lib_libc_gdtoa::b0066s1 {
 

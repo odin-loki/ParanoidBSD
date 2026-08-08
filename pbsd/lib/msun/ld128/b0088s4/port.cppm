@@ -1,6 +1,6 @@
 module;
 
-#include <cmath>
+#include <math.h>
 #include <cstdint>
 #include <cfloat>
 

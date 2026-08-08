@@ -347,11 +347,11 @@ edge_pow(void)
 		int k, e, m;
 
 		base[0] = Atab[i];
-		base[1] = std::nextafterl(Atab[i], 0.0L);
-		base[2] = std::nextafterl(Atab[i], 2.0L);
+		base[1] = nextafterl(Atab[i], 0.0L);
+		base[2] = nextafterl(Atab[i], 2.0L);
 		for (k = 0; k < 3; k++) {
 			for (e = -12; e <= 12; e += 4) {
-				long double x = std::ldexpl(base[k], e);
+				long double x = ldexpl(base[k], e);
 
 				for (m = 0; m < (int)(sizeof(yy) /
 				    sizeof(yy[0])); m++) {

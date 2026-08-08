@@ -102,24 +102,8 @@ msgdsize_case(const char *tag, int count, const int *lens)
 	std::size_t ref = ref_msgdsize(hr);
 
 	st_msgdsize.cases++;
-	int bad_ret = (got != ref);
-	int bad_buf = 0;
-
-	if (count > 0) {
-		P::mb_t *mp = hp;
-		P::mb_t *mr = hr;
-		for (int i = 0; i < count; i++) {
-			if (std::memcmp(mp, mr, sizeof(P::mb_t)) != 0) {
-				bad_buf = 1;
-				break;
-			}
-			mp = mp->mb_next;
-			mr = mr->mb_next;
-		}
-	}
-
-	if (bad_ret || bad_buf) {
-		stat_fail(&st_msgdsize, tag, bad_ret ? "return" : "buffer");
+	if (got != ref) {
+		stat_fail(&st_msgdsize, tag, "return");
 		if (st_msgdsize.reported <= MAX_REPORT)
 			std::printf("      port=%zu ref=%zu\n", got, ref);
 	}

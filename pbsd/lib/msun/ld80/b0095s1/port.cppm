@@ -2,30 +2,29 @@
  * PBSD batch b0095s1 -- C++23 module port of
  *
  *	lib/msun/ld80/e_powl.c
- *	lib/msun/ld80/s_logl.c
  *
- * This is a faithful transliteration.  Control flow, evaluation order,
- * integer signedness (note the int16_t hx in log1pl, whose sign extension of
- * the 16 bit expsign field is load-bearing), the thread-local scratch
- * globals of e_powl.c and the dead branches of both files are all preserved
- * exactly.  Nothing has been improved.
+ * Faithful transliteration.  Control flow, evaluation order, integer
+ * signedness, the thread-local scratch globals, and dead branches are all
+ * preserved exactly.  Nothing has been improved.
  */
+
+module;
+
+#include <float.h>
+#include <math.h>
+
+export module pbsd.lib.msun.ld80.b0095s1;
+
+export namespace pbsd::lib_msun_ld80::b0095s1 {
+
+long double powl(long double x, long double y);
+
+}
 
 #define	nan_mix(x, y)		(nan_mix_op((x), (y), +))
 #define	nan_mix_op(x, y, op)	(((x) + 0.0L) op ((y) + 0))
 
-#define	RETURNSPI(rp) do {		\
-	if (!(rp)->lo_set)		\
-		RETURNI((rp)->hi);	\
-	RETURNI((rp)->hi + (rp)->lo);	\
-} while (0)
-
-namespace pbsd::lib_msun_ld80::b0095 {
-
-/* ========================================================================
- * lib/msun/ld80/e_powl.c
- * ======================================================================== */
-
+namespace pbsd::lib_msun_ld80::b0095s1 {
 /*-
  * Copyright (c) 2008 Stephen L. Moshier <steve@moshier.net>
  *
@@ -593,5 +592,4 @@ if( sign < 0 )
 	y = 1.0L/y;
 return(y);
 }
-
 } /* namespace */

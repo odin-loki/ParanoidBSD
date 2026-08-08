@@ -116,7 +116,7 @@ fgets(char * __restrict buf, int n, FILE * __restrict fp)
 
 	s = buf;
 	n--;			/* leave space for NUL */
-	while (n == 0) {
+	while (n != 0) {
 		/*
 		 * If the buffer is empty, refill it.
 		 */

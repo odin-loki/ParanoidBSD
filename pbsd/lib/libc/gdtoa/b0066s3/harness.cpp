@@ -266,7 +266,9 @@ test_hdtoa_edges(void)
 	};
 	for (unsigned i = 0; i < sizeof(patterns) / sizeof(patterns[0]); i++) {
 		double d = bits_to_double(patterns[i]);
-		for (int nd : { -1, 0, 1, DBL_SIGFIGS }) {
+		static const int nds[] = { -1, 0, 1, DBL_SIGFIGS };
+		for (unsigned j = 0; j < sizeof(nds) / sizeof(nds[0]); j++) {
+			int nd = nds[j];
 			char label[64];
 			std::snprintf(label, sizeof(label), "pat-%u-%d", i, nd);
 			chk_hdtoa(FN_HDTOA, label, d, XDIGS_UP, nd, (i & 1) != 0);

@@ -1,0 +1,10 @@
+{
+  "batch": "b0118s1",
+  "verified": "2026-08-08T22:12:24Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: fgets)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\nfgets                      206549            0\nTOTAL                                        0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fgets.c": "9ba15074a705bc28"
+  }
+}

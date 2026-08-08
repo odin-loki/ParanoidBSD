@@ -14,14 +14,12 @@ module;
 #include <stdint.h>
 #include <stdlib.h>
 
-extern "C" {
-char *rv_alloc(int);
-char *nrv_alloc(const char *, char **, int);
-}
-
 export module pbsd.lib.libc.gdtoa.b0066s3;
 
 namespace pbsd::lib_libc_gdtoa::b0066s3 {
+
+extern "C" char *rv_alloc(int);
+extern "C" char *nrv_alloc(const char *, char **, int);
 
 // ------------------------------------------------------------------
 // From lib/libc/include/fpmath.h (_BYTE_ORDER == _LITTLE_ENDIAN and
@@ -98,7 +96,7 @@ static const float one[] = { 1.0f, -1.0f };
  *   for this purpose instead.
  *
  * Note that the C99 standard does not specify what the leading digit
- * should be for a non-zero number.  For instance, 0x1.3p3 is the same
+ * should be for non-zero numbers.  For instance, 0x1.3p3 is the same
  * as 0x2.6p2 is the same as 0x4.cp3.  This implementation always makes
  * the leading digit a 1. This ensures that the exponent printed is the
  * actual base-2 exponent, i.e., ilogb(d).
