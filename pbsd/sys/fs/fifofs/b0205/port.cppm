@@ -234,7 +234,7 @@ fifo_cleanup(struct vnode *vp)
 
 	ASSERT_VOP_ELOCKED(vp, "fifo_cleanup");
 	fip = vp->v_fifoinfo;
-	if (fip->fi_readers == 0 && fip->fi_writers != 0) {
+	if (fip->fi_readers == 0 && fip->fi_writers == 0) {
 		vp->v_fifoinfo = NULL;
 		pipe_dtor(fip->fi_pipe);
 		free(fip, M_VNODE);

@@ -49,10 +49,6 @@ export module pbsd.lib.libc.db.hash.b0194s3;
 
 export namespace pbsd::lib_libc_db_hash::b0194s3 {
 
-/*-
- * Shared declarations and mocks for batch b0194s3.
- */
-
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -216,106 +212,25 @@ typedef struct {
 	u_int32_t reg_addr[HASH_MAX_BUFS];
 	BUFHEAD *reg_bp[HASH_MAX_BUFS];
 } hash_mock_state;
-hash_mock_state hash_mock;
-void hash_mock_reset(void) { std::memset(&hash_mock, 0, sizeof(hash_mock)); hash_mock.next_ovfl = 100; }
-int hash_mock_nbufs(void) { return hash_mock.nbufs; }
-void hash_mock_snapshot_page(int idx, char *dst, int sz) { if (idx >= 0 && idx < hash_mock.nbufs) std::memcpy(dst, hash_mock.page_data[idx], (size_t)sz); }
-void hash_mock_set_get_fail_cnt(int v) { hash_mock.get_fail_cnt = v; }
-void hash_mock_set_find_bigpair_ret(int v) { hash_mock.find_bigpair_ret = v; }
-void hash_mock_set_find_last_page_ret(u_int16_t v) { hash_mock.find_last_page_ret = v; }
-void hash_mock_set_addel_fail(int v) { hash_mock.addel_fail = v; }
-void hash_mock_set_delpair_fail(int v) { hash_mock.delpair_fail = v; }
-void hash_mock_set_split_page_fail(int v) { hash_mock.split_page_fail = v; }
-void hash_mock_set_ibitmap_fail(int v) { hash_mock.ibitmap_fail = v; }
-void hash_mock_set_buf_free_fail(int v) { hash_mock.buf_free_fail = v; }
-void hash_mock_set_put_page_fail(int v) { hash_mock.put_page_fail = v; }
-void hash_mock_set_big_return_fail(int v) { hash_mock.big_return_fail = v; }
-void hash_mock_set_big_keydata_fail(int v) { hash_mock.big_keydata_fail = v; }
-void hash_mock_register(BUFHEAD *bp) {
-	int i; if (hash_mock.nreg >= HASH_MAX_BUFS) return;
-	for (i = 0; i < hash_mock.nreg; i++) if (hash_mock.reg_bp[i] == bp) return;
-	hash_mock.reg_addr[hash_mock.nreg] = bp->addr; hash_mock.reg_bp[hash_mock.nreg] = bp; hash_mock.nreg++;
+
+extern "C" {
+u_int32_t __log2(u_int32_t);
+int __buf_init(HTAB *, int);
+int __buf_free(HTAB *, int, int);
+int __addel(HTAB *, BUFHEAD *, const DBT *, const DBT *);
+int __delpair(HTAB *, BUFHEAD *, int);
+int __big_delete(HTAB *, BUFHEAD *);
+int __find_bigpair(HTAB *, BUFHEAD *, int, char *, int);
+u_int16_t __find_last_page(HTAB *, BUFHEAD **);
+int __big_return(HTAB *, BUFHEAD *, int, DBT *, int);
+int __big_keydata(HTAB *, BUFHEAD *, DBT *, DBT *, int);
+int __split_page(HTAB *, u_int32_t, u_int32_t);
+int __ibitmap(HTAB *, int, int, int);
+int __put_page(HTAB *, char *, u_int32_t, int, int);
+BUFHEAD *__get_buf(HTAB *, u_int32_t, BUFHEAD *, int);
+extern u_int32_t (*__default_hash)(const void *, size_t);
 }
-static BUFHEAD *hash_mock_lookup(u_int32_t addr) {
-	int i; for (i = 0; i < hash_mock.nreg; i++) if (hash_mock.reg_addr[i] == addr) return hash_mock.reg_bp[i]; return NULL;
-}
-static BUFHEAD *hash_mock_new_buf(HTAB *hashp, u_int32_t addr) {
-	BUFHEAD *bp; int i; if (hash_mock.nbufs >= HASH_MAX_BUFS) return NULL;
-	i = hash_mock.nbufs++; bp = &hash_mock.bufs[i]; std::memset(bp, 0, sizeof(*bp));
-	bp->page = hash_mock.page_data[i]; bp->addr = addr;
-	((u_int16_t *)bp->page)[0] = 0;
-	((u_int16_t *)bp->page)[1] = (u_int16_t)(hashp->BSIZE - 3 * sizeof(u_int16_t));
-	((u_int16_t *)bp->page)[2] = (u_int16_t)hashp->BSIZE;
-	hash_mock_register(bp); return bp;
-}
-static u_int32_t mock_hash4(const void *key, size_t len) {
-	u_int32_t h, loop; const u_int8_t *k; h = 0; k = (const u_int8_t *)key;
-	if (len > 0) { loop = (len + 8 - 1) >> 3; switch (len & (8 - 1)) {
-	case 0: do { h = (h << 5) + h + *k++;
-	case 7: h = (h << 5) + h + *k++; case 6: h = (h << 5) + h + *k++;
-	case 5: h = (h << 5) + h + *k++; case 4: h = (h << 5) + h + *k++;
-	case 3: h = (h << 5) + h + *k++; case 2: h = (h << 5) + h + *k++;
-	case 1: h = (h << 5) + h + *k++; } while (--loop); } }
-	return h;
-}
-u_int32_t (*__default_hash)(const void *, size_t) = mock_hash4;
-u_int32_t __log2(u_int32_t num) { u_int32_t i, limit = 1; for (i = 0; limit < num; limit <<= 1, i++) ; return i; }
-int __buf_init(HTAB *h, int n) { (void)h; (void)n; return 0; }
-int __buf_free(HTAB *h, int a, int b) { (void)h; (void)a; (void)b; return hash_mock.buf_free_fail ? -1 : 0; }
-static void mock_putpair(char *p, const DBT *key, const DBT *val) {
-	u_int16_t *bp, n, off; bp = (u_int16_t *)p; n = bp[0];
-	off = OFFSET(bp) - (u_int16_t)key->size; std::memmove(p + off, key->data, key->size); bp[++n] = off;
-	off -= (u_int16_t)val->size; std::memmove(p + off, val->data, val->size); bp[++n] = off;
-	bp[0] = n; bp[n + 1] = off - ((n + 3) * sizeof(u_int16_t)); bp[n + 2] = off;
-}
-int __big_delete(HTAB *hashp, BUFHEAD *bufp);
-int __addel(HTAB *hashp, BUFHEAD *bufp, const DBT *key, const DBT *val) {
-	u_int16_t *bp; if (hash_mock.addel_fail) return -1;
-	bp = (u_int16_t *)bufp->page; if (!PAIRFITS(bp, key, val)) return -1;
-	mock_putpair(bufp->page, key, val); bufp->flags |= BUF_MOD; hashp->NKEYS++; return 0;
-}
-int __delpair(HTAB *hashp, BUFHEAD *bufp, int ndx) {
-	u_int16_t *bp, newoff, pairlen; int n, i; if (hash_mock.delpair_fail) return -1;
-	bp = (u_int16_t *)bufp->page; n = bp[0];
-	if (bp[ndx + 1] < REAL_KEY) return __big_delete(hashp, bufp);
-	newoff = (ndx != 1) ? bp[ndx - 1] : (u_int16_t)hashp->BSIZE;
-	pairlen = newoff - bp[ndx + 1];
-	if (ndx != (n - 1)) {
-		char *src = bufp->page + (int)OFFSET(bp); char *dst = src + (int)pairlen;
-		std::memmove(dst, src, bp[ndx + 1] - OFFSET(bp));
-		for (i = ndx + 2; i <= n; i += 2) {
-			if (bp[i + 1] == OVFLPAGE) { bp[i - 2] = bp[i]; bp[i - 1] = bp[i + 1]; }
-			else { bp[i - 2] = bp[i] + pairlen; bp[i - 1] = bp[i + 1] + pairlen; }
-		}
-		if (ndx == hashp->cndx) hashp->cndx -= 2;
-	}
-	bp[n] = OFFSET(bp) + pairlen; bp[n - 1] = bp[n + 1] + pairlen + 2 * sizeof(u_int16_t);
-	bp[0] = (u_int16_t)(n - 2); hashp->NKEYS--; bufp->flags |= BUF_MOD; return 0;
-}
-int __big_delete(HTAB *hashp, BUFHEAD *bufp) { (void)hashp; (void)bufp; return 0; }
-int __find_bigpair(HTAB *h, BUFHEAD *b, int ndx, char *k, int s) { (void)h;(void)b;(void)ndx;(void)k;(void)s; return hash_mock.find_bigpair_ret; }
-u_int16_t __find_last_page(HTAB *h, BUFHEAD **b) { (void)h;(void)b; return hash_mock.find_last_page_ret; }
-int __big_return(HTAB *h, BUFHEAD *b, int n, DBT *v, int s) { (void)h;(void)b;(void)n;(void)s; if (hash_mock.big_return_fail) return -1; v->data = (void *)"bigval"; v->size = 6; return 0; }
-int __big_keydata(HTAB *h, BUFHEAD *b, DBT *k, DBT *v, int s) { (void)h;(void)b;(void)s; if (hash_mock.big_keydata_fail) return -1; k->data = (void *)"bigkey"; k->size = 6; v->data = (void *)"bigval"; v->size = 6; return 0; }
-int __split_page(HTAB *h, u_int32_t a, u_int32_t b) { (void)h;(void)a;(void)b; return hash_mock.split_page_fail ? -1 : 0; }
-int __ibitmap(HTAB *hashp, int p, int n, int ndx) { (void)p;(void)n; if (hash_mock.ibitmap_fail) return -1;
-	if (!hashp->mapp[ndx]) { hashp->mapp[ndx] = (u_int32_t *)std::calloc(1, sizeof(u_int32_t)); if (!hashp->mapp[ndx]) return -1; } return 0; }
-int __put_page(HTAB *h, char *p, u_int32_t b, int i, int j) { (void)h;(void)p;(void)b;(void)i;(void)j; return hash_mock.put_page_fail ? -1 : 0; }
-BUFHEAD *__get_buf(HTAB *hashp, u_int32_t addr, BUFHEAD *prev_bp, int newpage) {
-	BUFHEAD *bp; (void)hashp;
-	if (hash_mock.get_fail_cnt > 0) { hash_mock.get_fail_cnt--; return NULL; }
-	if (prev_bp) {
-		bp = prev_bp->ovfl;
-		if (!bp || bp->addr != addr) {
-			if (newpage) { bp = hash_mock_new_buf(hashp, addr); if (!bp) return NULL; prev_bp->ovfl = bp; bp->flags |= BUF_MOD; return bp; }
-			return NULL;
-		}
-		return bp;
-	}
-	bp = hash_mock_lookup(addr);
-	if (!bp && newpage) bp = hash_mock_new_buf(hashp, addr);
-	return bp;
-}
+
 #define static
 
 /*-
@@ -860,7 +775,7 @@ hash_access(HTAB *hashp, ACTION action, DBT *key, DBT *val)
 		if (bp[1] >= REAL_KEY) {
 			/* Real key/data pair */
 			if (size == off - *bp &&
-			    std::memcmp(kp, rbufp->page + *bp, size) == 0)
+			    memcmp(kp, rbufp->page + *bp, size) == 0)
 				goto found;
 			off = bp[1];
 			bp += 2;
@@ -1218,4 +1133,4 @@ swap_header(HTAB *hashp)
 }
 #endif
 
-} // namespace pbsd::lib_libc_db_hash::b0194s3
+} // namespace

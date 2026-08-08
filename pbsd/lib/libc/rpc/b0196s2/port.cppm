@@ -142,7 +142,7 @@ _des_crypt_call(char *buf, int len, struct ::desparams *dparms)
 	localhandle = setnetconfig();
 	while ((nconf = getnetconfig(localhandle)) != NULL) {
 		if (nconf->nc_protofmly != NULL &&
-		     strcmp(nconf->nc_protofmly, NC_LOOPBACK) != 0)
+		     strcmp(nconf->nc_protofmly, NC_LOOPBACK) == 0)
 			break;
 	}
 	if (nconf == NULL) {
