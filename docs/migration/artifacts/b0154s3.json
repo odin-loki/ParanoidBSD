@@ -1,0 +1,10 @@
+{
+  "batch": "b0154s3",
+  "verified": "2026-08-08T22:16:31Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "== oracle.c   (cc -std=c11 -O2)\n== port.cppm  (clang++ -std=c++23 -O2, clang named modules)\n== harness.cpp\n== link\n== run\n=== b0154s3 nameser differential test ===\n\nfunction                        cases     failures\n--------------------------------------------------\nns_samedomain                  203249            0\nns_subdomain                   203249            0\nns_samename                    203418            0\nns_makecanon                   238246            0\n--------------------------------------------------\nTOTAL                          848162            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/nameser/ns_samedomain.c": "d0d870149da0c08b"
+  }
+}
