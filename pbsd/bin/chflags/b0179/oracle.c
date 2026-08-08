@@ -29,11 +29,13 @@
  * SUCH DAMAGE.
  */
 
+#define _GNU_SOURCE
 #define _DEFAULT_SOURCE
 
 #include <sys/types.h>
 
 #if defined(__linux__)
+#define _SYS_STAT_H
 struct pbsd_filestat {
 	unsigned long st_flags;
 };
