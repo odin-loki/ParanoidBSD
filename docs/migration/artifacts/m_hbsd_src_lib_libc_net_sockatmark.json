@@ -1,6 +1,6 @@
 {
   "batch": "m_hbsd_src_lib_libc_net_sockatmark",
-  "verified": "2026-07-30T09:26:22Z",
+  "verified": "2026-08-08T08:37:35Z",
   "evidence": "mechanical port of sockatmark.c, IR-identical for all 1 functions, 5 planted bugs all rejected",
   "ir_equivalent": true,
   "harness_output": "",

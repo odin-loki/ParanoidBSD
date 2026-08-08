@@ -37,8 +37,12 @@ from pathlib import Path
 
 # ─────────────────────────────── config ──────────────────────────────────────
 
-MODEL = "claude-opus-5-thinking-high"   # Opus 5 1M Thinking
+MODEL = "composer-2.5"                    # cheap bulk model; escalate on gate failure
+ESCALATE_MODEL = "claude-opus-5-thinking-high"
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
+DEFAULT_JOBS = 12       # agent concurrency; raise if quota allows, lower on rate limits
+RATE_LIMIT_PAUSE = 120  # seconds to sleep when the API keeps rate-limiting us
+RATE_LIMIT_STREAK = 8   # consecutive rate limits before we pause and halve concurrency
 AGENT_TIMEOUT = 1800          # cursor-agent -p can hang; always bound it
 AGENT_RETRIES = 3             # transient API failures must not defer a file
 AGENT_BACKOFF = 30            # seconds before the first retry, doubled after
@@ -1483,14 +1487,20 @@ def mutation_check(d: Path) -> tuple[bool, str]:
     return True, f"{applied}/{applied} mutations killed"
 
 
+def is_rate_limited(detail: str) -> bool:
+    """True when the Cursor API refused the call for quota, not because the port failed."""
+    d = detail.lower()
+    return (
+        "actionrequirederror" in d and ("rate limit" in d or "increase limits" in d)
+    ) or "rate limit exceeded" in d
+
+
 def call_agent(prompt: str, model: str) -> tuple[bool, str]:
     """One agent call, retrying transient failures with backoff.
 
-    Firing several calls back to back gets the API to rate-limit us, and the
-    resulting fast non-zero exit used to defer the file permanently. Retry
-    those. A timeout is not transient, so it is not retried -- three more
-    half-hour waits would buy nothing. stderr is kept because the CLI reports
-    its actual reason there and the log used to record only an empty stdout.
+    Rate limits are not transient: retrying them in a tight loop just burns the
+    queue. A timeout is not transient either. stderr is kept because the CLI
+    reports its actual reason there and the log used to record only an empty stdout.
     """
     last = ""
     for attempt in range(1, AGENT_RETRIES + 1):
@@ -1507,6 +1517,8 @@ def call_agent(prompt: str, model: str) -> tuple[bool, str]:
                 return True, (r.stdout or "")[-2000:]
             detail = (r.stderr or r.stdout or "").strip() or "(no output)"
             last = f"exit {r.returncode} after {time.monotonic() - t0:.0f}s: {detail[-800:]}"
+            if is_rate_limited(last):
+                return False, last
         except subprocess.TimeoutExpired:
             return False, f"timed out after {AGENT_TIMEOUT}s"
         if attempt < AGENT_RETRIES:
@@ -1543,13 +1555,13 @@ def gate(batch_id: str, d: Path, mine: list[dict]) -> tuple[bool, str]:
     return True, detail
 
 
-def attempt_batch(batch_id: str, mine: list[dict], model: str) -> tuple[bool, str, str]:
+def attempt_batch(batch_id: str, mine: list[dict], model: str,
+                  escalate_model: str | None = None) -> tuple[bool, str, str]:
     """Everything needed to decide one batch. Safe to run in a child process.
 
     Touches only its own output directory and its own artifact file, so N of
     these can run at once. Returns (verified, detail, how) where `how` is
-    "mechanical" or "agent" -- the agent is only paid for when the free
-    deterministic path could not prove the port.
+    mechanical, agent, agent+escalate, or rate_limit.
     """
     outdir = WORK / mine[0]["dir"] / batch_id
     outdir.mkdir(parents=True, exist_ok=True)
@@ -1557,6 +1569,7 @@ def attempt_batch(batch_id: str, mine: list[dict], model: str) -> tuple[bool, st
     module = f"{ns}.{batch_id}".replace("_", ".")
     namespace = f"{ns}::{batch_id}"
     mech_detail = "not attempted (mechanical phase runs separately)"
+    escalate = escalate_model or model
 
     prompt = PROMPT.format(
         batch_id=batch_id,
@@ -1565,13 +1578,27 @@ def attempt_batch(batch_id: str, mine: list[dict], model: str) -> tuple[bool, st
         module=module,
         ns=namespace,
     )
-    agent_ok, agent_out = call_agent(prompt, model)
-    if not agent_ok:
-        return False, f"agent failed: {agent_out}", "agent"
-    ok, detail = gate(batch_id, outdir, mine)
-    if not ok:
-        detail = f"{detail}\n(mechanical path first said: {mech_detail})"
-    return ok, detail, "agent"
+
+    def run_with(m: str) -> tuple[bool, str, str]:
+        agent_ok, agent_out = call_agent(prompt, m)
+        if not agent_ok:
+            if is_rate_limited(agent_out):
+                return False, f"agent rate limited: {agent_out}", "rate_limit"
+            return False, f"agent failed: {agent_out}", "agent"
+        ok, detail = gate(batch_id, outdir, mine)
+        if not ok:
+            detail = f"{detail}\n(mechanical path first said: {mech_detail})"
+        how = "agent+escalate" if m != model else "agent"
+        return ok, detail, how
+
+    ok, detail, how = run_with(model)
+    if ok or how == "rate_limit" or escalate == model:
+        return ok, detail, how
+    # Gate failed on the cheap model; one Opus attempt before we split or defer.
+    clean_batch(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    ok, detail, how2 = run_with(escalate)
+    return ok, detail, how2
 
 
 # ──────────────────────────────── loop ───────────────────────────────────────
@@ -1667,6 +1694,11 @@ def apply_result(batch_id: str, rows: list[dict], ok: bool, detail: str,
         return []
     outdir = WORK / mine[0]["dir"] / batch_id
 
+    if how == "rate_limit" or is_rate_limited(detail):
+        say(f"  ~ {batch_id} rate limited — leaving PENDING for retry")
+        log(batch=batch_id, status="RATE_LIMITED", detail=detail, how=how)
+        return [batch_id]
+
     for r in mine:
         r["status"] = "VERIFIED" if ok else "REJECTED"
 
@@ -1714,24 +1746,41 @@ def apply_result(batch_id: str, rows: list[dict], ok: bool, detail: str,
     return []
 
 
-def do_batch(batch_id: str, rows: list[dict], model: str, split_ok: bool = True) -> bool:
+def reset_jammed_queue(rows: list[dict]) -> int:
+    """Put NEEDS_HUMAN files back on PENDING and clear a rate-limit poisoned queue."""
+    n = 0
+    for r in rows:
+        if r["status"] == "NEEDS_HUMAN":
+            r["status"] = "PENDING"
+            n += 1
+    if n:
+        save_rows(rows)
+    if DEFERRED.is_file():
+        DEFERRED.unlink()
+    if NEEDS_HUMAN.is_file():
+        NEEDS_HUMAN.unlink()
+    return n
+
+
+def do_batch(batch_id: str, rows: list[dict], model: str,
+             escalate_model: str | None = None, split_ok: bool = True) -> bool:
     mine = [r for r in rows if r["batch_id"] == batch_id
             and r["status"] != "VERIFIED"]
     if not mine:
         return True
     say(f"{batch_id}: {len(mine)} files, {sum(int(r['lines']) for r in mine)} lines "
         f"[{mine[0]['dir']}]")
-    ok, detail, how = attempt_batch(batch_id, mine, model)
+    ok, detail, how = attempt_batch(batch_id, mine, model, escalate_model)
     for sub in apply_result(batch_id, rows, ok, detail, how, split_ok):
-        do_batch(sub, rows, model, split_ok=False)
+        do_batch(sub, rows, model, escalate_model, split_ok=False)
     return ok
 
 
 def _worker(payload):
     """Child-process entry point. Returns a verdict, writes no shared state."""
-    batch_id, mine, model = payload
+    batch_id, mine, model, escalate = payload
     try:
-        ok, detail, how = attempt_batch(batch_id, mine, model)
+        ok, detail, how = attempt_batch(batch_id, mine, model, escalate)
     except Exception as e:                       # never kill the pool
         ok, detail, how = False, f"worker crashed: {e!r}", "error"
     return batch_id, ok, detail, how
@@ -1815,7 +1864,7 @@ def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
 
 
 def run_parallel(queue: list[str], rows: list[dict], model: str,
-                 jobs: int) -> tuple[int, int]:
+                 jobs: int, escalate_model: str) -> tuple[int, int]:
     """Work the batch queue with `jobs` batches in flight.
 
     Each batch is independent -- its own output directory, its own compiler
@@ -1824,46 +1873,64 @@ def run_parallel(queue: list[str], rows: list[dict], model: str,
     what keeps this safe; a pool of workers all running `git commit` would
     fight over index.lock and interleave commits.
     """
-    ver = rej = mech = 0
+    ver = rej = 0
     total = len(queue)
     pending = list(queue)
     done = 0
     t0 = time.monotonic()
+    current_jobs = jobs
+    rate_streak = 0
+    success_streak = 0
 
     with cf.ProcessPoolExecutor(max_workers=jobs) as ex:
         live = {}
         try:
             while pending or live:
-                while pending and len(live) < jobs:
+                while pending and len(live) < current_jobs:
                     b = pending.pop(0)
-                    # Skip anything the mechanical phase already proved, or the
-                    # agent would redo proven work and its verdict would
-                    # overwrite a verdict that is already backed by evidence.
                     mine = [r for r in rows if r["batch_id"] == b
                             and r["status"] != "VERIFIED"]
                     if not mine:
                         continue
-                    live[ex.submit(_worker, (b, mine, model))] = b
+                    live[ex.submit(_worker, (b, mine, model, escalate_model))] = b
 
                 if not live:
                     break
                 for fut in cf.as_completed(list(live), timeout=None):
                     b = live.pop(fut)
                     batch_id, ok, detail, how = fut.result()
-                    done += 1
-                    if ok:
-                        ver += 1
-                        mech += how == "mechanical"
-                    else:
-                        rej += 1
                     subs = apply_result(batch_id, rows, ok, detail, how,
                                         split_ok=True)
-                    pending.extend(subs)
-                    total += len(subs)
+                    if how == "rate_limit" or is_rate_limited(detail):
+                        rate_streak += 1
+                        success_streak = 0
+                        pending.extend(subs)
+                        if rate_streak >= RATE_LIMIT_STREAK:
+                            pause = min(600, RATE_LIMIT_PAUSE * rate_streak // 2)
+                            new_jobs = max(1, current_jobs // 2)
+                            say(f"rate limit streak {rate_streak}: "
+                                f"sleep {pause}s, jobs {current_jobs}->{new_jobs}")
+                            time.sleep(pause)
+                            current_jobs = new_jobs
+                            rate_streak = 0
+                    else:
+                        rate_streak = 0
+                        done += 1
+                        if ok:
+                            ver += 1
+                            success_streak += 1
+                            if success_streak >= 15 and current_jobs < jobs:
+                                current_jobs = min(jobs, current_jobs + 2)
+                                success_streak = 0
+                        else:
+                            rej += 1
+                        pending.extend(subs)
+                        total += len(subs)
                     rate = done / max(time.monotonic() - t0, 1) * 3600
                     left = (total - done) / rate if rate else 0
-                    print(f"[{done}/{total}] {ver} verified ({mech} free), "
-                          f"{rej} deferred, {rate:.0f}/h, ~{left:.1f}h left",
+                    print(f"[{done}/{total}] {ver} verified, "
+                          f"{rej} deferred, jobs={current_jobs}, "
+                          f"{rate:.0f}/h, ~{left:.1f}h left",
                           flush=True)
                     break                        # refill the pool, then re-wait
         except KeyboardInterrupt:
@@ -1877,7 +1944,7 @@ def run_parallel(queue: list[str], rows: list[dict], model: str,
 
 def _deferred_worker(payload):
     """One deferred file, all its attempts. Child process; writes no shared state."""
-    it, row, model = payload
+    it, row, model, escalate = payload
     path = ROOT / it["path"]
     outdir = WORK / (row["dir"] if row else "deferred") / (path.stem + "_d")
     bid = f"d_{re.sub(r'[^A-Za-z0-9]+', '_', it['path'].rsplit('.', 1)[0]).strip('_')}"
@@ -1885,7 +1952,6 @@ def _deferred_worker(payload):
     try:
         outdir.mkdir(parents=True, exist_ok=True)
         while it["attempts"] < DEFERRED_ATTEMPTS and not ok:
-            it["attempts"] += 1
             prompt = DEFERRED_PROMPT.format(
                 path=it["path"], lines=row["lines"] if row else "?",
                 reasons=", ".join(it["reasons"]) or "unclassified",
@@ -1897,13 +1963,31 @@ def _deferred_worker(payload):
                 it["last_error"] = (outdir / "IMPOSSIBLE.txt").read_text(
                     errors="ignore")[:400]
                 detail = "agent declared it impossible"
+                it["attempts"] += 1
                 break
             if not agent_ok:
+                if is_rate_limited(agent_out):
+                    detail = f"agent rate limited: {agent_out}"
+                    return it, False, detail
+                it["attempts"] += 1
                 it["detail"] = it["last_error"] = f"agent failed: {agent_out}"
                 detail = it["detail"]
                 continue
+
             ok, detail = gate(bid, outdir, [row] if row else [])
             it["detail"] = it["last_error"] = detail
+            it["attempts"] += 1
+            if not ok and escalate != model:
+                clean_batch(outdir)
+                outdir.mkdir(parents=True, exist_ok=True)
+                agent_ok, agent_out = call_agent(prompt, escalate)
+                if not agent_ok:
+                    if is_rate_limited(agent_out):
+                        detail = f"agent rate limited: {agent_out}"
+                        return it, False, detail
+                    continue
+                ok, detail = gate(bid, outdir, [row] if row else [])
+                it["detail"] = it["last_error"] = detail
     except Exception as e:                          # never kill the pool
         detail = f"worker crashed: {e!r}"
     if not ok:
@@ -1912,7 +1996,7 @@ def _deferred_worker(payload):
 
 
 def run_deferred_phase(rows: list[dict], model: str,
-                       jobs: int = 1) -> tuple[int, int]:
+                       jobs: int = 1, escalate_model: str | None = None) -> tuple[int, int]:
     """Work the deferred queue LAST, feeding each failure back into the next
     attempt for the same file. Survivors get written up for a human.
 
@@ -1927,8 +2011,9 @@ def run_deferred_phase(rows: list[dict], model: str,
     banner(f"Deferred queue — {len(items)} hard files, {DEFERRED_ATTEMPTS} attempts "
            f"each, {jobs} in flight")
 
+    escalate = escalate_model or model
     by_path = {r["path"]: r for r in rows}
-    payloads = [(it, by_path.get(it["path"]), model) for it in items]
+    payloads = [(it, by_path.get(it["path"]), model, escalate) for it in items]
     done = {i["path"]: i for i in items}
     fixed = stuck = n = 0
     t0 = time.monotonic()
@@ -1943,6 +2028,10 @@ def run_deferred_phase(rows: list[dict], model: str,
                 if row:
                     row["status"] = "VERIFIED"
                 say(f"✓ {it['path']} — {detail.splitlines()[0][:80]}")
+            elif is_rate_limited(detail):
+                if row:
+                    row["status"] = "PENDING"
+                say(f"~ {it['path']} — rate limited, will retry later")
             else:
                 stuck += 1
                 if row:
@@ -1971,13 +2060,16 @@ def run_deferred_phase(rows: list[dict], model: str,
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default=MODEL)
+    ap.add_argument("--escalate-model", default=ESCALATE_MODEL)
     ap.add_argument("--batches", type=int, default=0, help="0 = run until done")
     ap.add_argument("--jobs", "-j", type=int, default=JOBS,
-                    help="batches in flight; 0 = auto from cpu_count()")
+                    help="batches in flight; 0 = DEFAULT_JOBS")
     ap.add_argument("--no-mechanical", action="store_true",
                     help="always use the agent, skip the free deterministic port")
     ap.add_argument("--mechanical-only", action="store_true",
                     help="run only the free deterministic port, then stop")
+    ap.add_argument("--reset-queue", action="store_true",
+                    help="move NEEDS_HUMAN back to PENDING and clear deferred.jsonl")
     ap.add_argument("--status", action="store_true")
     ap.add_argument("--reset-setup", action="store_true")
     ap.add_argument("--deferred", action="store_true",
@@ -1999,9 +2091,15 @@ def main() -> int:
         setup()
 
     rows = load_rows()
+    if a.reset_queue:
+        n = reset_jammed_queue(rows)
+        banner(f"Reset {n} NEEDS_HUMAN rows to PENDING; cleared deferred queue")
+        status()
+        return 0
     if a.deferred:
+        jobs = a.jobs or DEFAULT_JOBS
         fixed, stuck = run_deferred_phase(
-            rows, a.model, a.jobs or max(1, min(24, (os.cpu_count() or 4) // 2)))
+            rows, a.model, jobs, a.escalate_model)
         banner(f"Deferred pass: {fixed} recovered, {stuck} need you")
         status()
         return 0
@@ -2023,17 +2121,18 @@ def main() -> int:
     if a.batches:
         queue = queue[: a.batches]
 
-    jobs = a.jobs or max(1, min(24, (os.cpu_count() or 4) // 2))
-    banner(f"Converting {len(queue)} batches   model={a.model}   jobs={jobs}"
+    jobs = a.jobs or DEFAULT_JOBS
+    banner(f"Converting {len(queue)} batches   model={a.model}   "
+           f"escalate={a.escalate_model}   jobs={jobs}"
            + ("" if MECHANICAL else "   (mechanical path off)"))
     ver = rej = 0
     try:
         if jobs > 1:
-            ver, rej = run_parallel(queue, rows, a.model, jobs)
+            ver, rej = run_parallel(queue, rows, a.model, jobs, a.escalate_model)
         else:
             for i, b in enumerate(queue, 1):
                 print(f"\n[{i}/{len(queue)}]", flush=True)
-                if do_batch(b, rows, a.model):
+                if do_batch(b, rows, a.model, a.escalate_model):
                     ver += 1
                 else:
                     rej += 1
@@ -2047,7 +2146,7 @@ def main() -> int:
         status()
         return 0
     try:
-        fixed, stuck = run_deferred_phase(rows, a.model, jobs)
+        fixed, stuck = run_deferred_phase(rows, a.model, jobs, a.escalate_model)
         if fixed or stuck:
             banner(f"Deferred pass: {fixed} recovered, {stuck} need you")
             if stuck:
