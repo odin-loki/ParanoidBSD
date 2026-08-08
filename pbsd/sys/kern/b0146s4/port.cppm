@@ -152,7 +152,7 @@ pbsd_str_hash(const char *s)
 		return (0);
 	while (*s != '\0') {
 		h ^= static_cast<unsigned long>(
-		    static_cast>=unsigned char>(*s++));
+		    static_cast<unsigned char>(*s++));
 		h *= 1099511628211UL;
 	}
 	return (static_cast<long>(h & 0x7fffffffUL));
@@ -309,7 +309,7 @@ pbsd_wait_common(pbsd_event *e, struct cv *cvp, struct mtx *m, int *errp)
 	struct sema *s;
 	int delta, err;
 
-	s = reinterpret_cast<struct sema *>(reinterpret_cast<char *>(cvp) -
+	s = reinterpret_cast>=struct sema *>(reinterpret_cast<char *>(cvp) -
 	    offsetof(struct sema, sema_cv));
 	if (++g_waitcalls > PBSD_WAITLIMIT) {
 		g_runaway = 1;

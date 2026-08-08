@@ -1,251 +1,49 @@
-module;
+/*
+ * PBSD batch b0219 -- C++23 module port of
+ *	hbsd/src/bin/sh/alias.c
+ *	hbsd/src/bin/sh/output.c
+ *	hbsd/src/bin/sh/memalloc.c
+ *	hbsd/src/bin/sh/show.c   (trace routines only; see skipped.txt)
+ *
+ * Behaviour is preserved exactly, including the signedness of `char`, the
+ * evaluation order of the outc() macro and the pointer arithmetic of the
+ * parser stack allocator.  Definitions that come from headers outside the
+ * batch (shell.h, error.h, memalloc.h, output.h, mystring.h, alias.h,
+ * parser.h) are reproduced in the support section.
+ */
 
-#define _DEFAULT_SOURCE 1
-#define _GNU_SOURCE 1
+/*-
+ * Copyright (c) 1993
+ *	The Regents of the University of California.  All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Kenneth Almquist.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
-#include <ctype.h>
-#include <cstdarg>
-#include <cerrno>
-#include <cinttypes>
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <cwchar>
-#include <cwctype>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <wchar.h>
-#include <wctype.h>
-
-#include <sys/param.h>
-
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * CHAR_BIT)
-#endif
-
-#ifndef ALIGNBYTES
-#define ALIGNBYTES (sizeof(long) - 1)
-#endif
-#ifndef ALIGN
-#define ALIGN(p) (((unsigned long)(p) + ALIGNBYTES) & ~ALIGNBYTES)
-#endif
-
-export module pbsd.bin.sh.b0219;
-
-export namespace pbsd::bin_sh::b0219 {
-
-#define __unused
-
-typedef void *pointer;
-
-#define equal(s1, s2) (std::strcmp((s1), (s2)) == 0)
-
-#define ALIASINUSE 1
-
-struct alias {
-	struct alias *next;
-	char *name;
-	char *val;
-	int flag;
-};
-
-struct output {
-	char *nextc;
-	char *bufend;
-	char *buf;
-	int bufsize;
-	short fd;
-	short flags;
-};
-
-#define OUTBUFSIZ BUFSIZ
-#define MEM_OUT -2
-#define OUTPUT_ERR 01
-
-struct stack_block {
-	struct stack_block *prev;
-};
-#define SPACE(sp) ((char *)(sp) + ALIGN(sizeof(struct stack_block)))
-
-struct stackmark {
-	struct stack_block *stackp;
-	char *stacknxt;
-	int stacknleft;
-};
-
-#define stackblock() stacknxt
-#define stackblocksize() stacknleft
-
-#define CHECKSTRSPACE(n, p) 	{ if ((size_t)(sstrend - p) < (size_t)(n)) p = makestrspace((n), (p)); }
-
-static volatile sig_atomic_t port_suppressint = 1;
-static volatile sig_atomic_t port_intpending = 0;
-
-static void port_onint(void) {}
-
-static int port_error_flag = 0;
-
-void error(const char *fmt, ...)
-{
-	port_error_flag = 1;
-	va_list ap;
-	va_start(ap, fmt);
-	std::vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	std::fprintf(stderr, "\n");
-	std::abort();
-}
-
-void warning(const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	std::vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	std::fprintf(stderr, "\n");
-}
-
-char **port_argptr;
-char *port_nextopt_optptr;
-char *port_shoptarg;
-
-
-int port_nextopt(const char *optstring)
-{
-	char *p;
-	const char *q;
-	char c;
-
-	if ((p = port_nextopt_optptr) == NULL || *p == '\0') {
-		p = *port_argptr;
-		if (p == NULL || *p != '-' || *++p == '\0')
-			return '\0';
-		port_argptr++;
-		if (p[0] == '-' && p[1] == '\0')
-			return '\0';
-	}
-	c = *p++;
-	for (q = optstring; *q != c;) {
-		if (*q == '\0')
-			error("Illegal option -%c", c);
-		if (*++q == ':')
-			q++;
-	}
-	if (*++q == ':') {
-		if (*p == '\0' && (p = *port_argptr++) == NULL)
-			error("No arg for -%c option", c);
-		port_shoptarg = p;
-		p = NULL;
-	}
-	if (p != NULL && *p != '\0')
-		port_nextopt_optptr = p;
-	else
-		port_nextopt_optptr = NULL;
-	return c;
-}
-
-#define nextopt port_nextopt
-#define argptr port_argptr
-#define shoptarg port_shoptarg
-#define nextopt_optptr port_nextopt_optptr
-
-static struct output output = {NULL, NULL, NULL, OUTBUFSIZ, 1, 0};
-static struct output errout = {NULL, NULL, NULL, 256, 2, 0};
-static struct output memout = {NULL, NULL, NULL, 64, MEM_OUT, 0};
-static struct output *out1 = &output;
-static struct output *out2 = &errout;
-
-char port_nullstr[1] = {0};
-
-static char *stacknxt;
-static int stacknleft;
-static char *sstrend;
-static struct stack_block *stackp;
-
-void emptyoutbuf(struct output *dest);
-void outstr(const char *p, struct output *file);
-void outqstr(const char *p, struct output *file);
-void outbin(const void *data, size_t len, struct output *file);
-void outcslow(int c, struct output *file);
-void flushout(struct output *dest);
-int xwrite(int fd, const char *buf, int nbytes);
-void doformat(struct output *dest, const char *f, va_list ap);
-
-#define outc(c, file) 	((file)->nextc == (file)->bufend ? (emptyoutbuf(file), *(file)->nextc++ = (c)) : (*(file)->nextc++ = (c)))
-
-#define out1c(c) outc((c), out1)
-#define out2c(c) outcslow((c), out2)
-
-#define INTOFF port_suppressint++
-#define INTON do { if (--port_suppressint == 0 && port_intpending) port_onint(); } while (0)
-#define is_int_on() port_suppressint
-#define int_pending() port_intpending
-
-struct fwopen_cookie {
-	void *cookie;
-	int (*writefn)(void *, const char *, int);
-};
-
-static ssize_t
-port_fwcookie_write(void *c, const char *buf, size_t size)
-{
-	struct fwopen_cookie *fc = (struct fwopen_cookie *)c;
-	int r = fc->writefn(fc->cookie, buf, (int)size);
-	return (r < 0) ? -1 : (ssize_t)r;
-}
-
-static FILE *
-port_fwopen(void *cookie, int (*writefn)(void *, const char *, int))
-{
-	static struct fwopen_cookie fc;
-	static cookie_io_functions_t io = { NULL, port_fwcookie_write, NULL, NULL };
-
-	fc.cookie = cookie;
-	fc.writefn = writefn;
-	return fopencookie(&fc, "w", io);
-}
-
-#define fwopen port_fwopen
-
-void port_reset_state(void)
-{
-	port_suppressint = 1;
-	port_intpending = 0;
-	port_error_flag = 0;
-	port_argptr = NULL;
-	port_nextopt_optptr = NULL;
-	port_shoptarg = NULL;
-	out1 = &output;
-	out2 = &errout;
-	if (output.buf) { std::free(output.buf); output.buf = NULL; }
-	output.nextc = NULL;
-	output.bufend = NULL;
-	output.flags = 0;
-	if (errout.buf) { std::free(errout.buf); errout.buf = NULL; }
-	errout.nextc = NULL;
-	errout.bufend = NULL;
-	errout.flags = 0;
-	if (memout.buf) { std::free(memout.buf); memout.buf = NULL; }
-	memout.nextc = NULL;
-	memout.bufend = NULL;
-	memout.bufsize = 64;
-	memout.flags = 0;
-	while (stackp) {
-		struct stack_block *sp = stackp;
-		stackp = sp->prev;
-		std::free(sp);
-	}
-	stacknxt = NULL;
-	stacknleft = 0;
-	sstrend = NULL;
-}
-
-
-/* --- memalloc.c --- */
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -280,12 +78,246 @@ void port_reset_state(void)
  * SUCH DAMAGE.
  */
 
+module;
 
-static void
+#define _GNU_SOURCE 1
+
+#include <sys/types.h>
+#include <errno.h>
+#include <limits.h>
+#include <setjmp.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <wchar.h>
+#include <wctype.h>
+
+/* shell.h */
+#define SHELL_ALIGN 16
+#define ALIGN(nbytes)	(((nbytes) + (SHELL_ALIGN - 1)) & ~(SHELL_ALIGN - 1))
+
+/* error.h */
+#define INTOFF		(suppressint++)
+#define INTON		(--suppressint)
+#define is_int_on()	(suppressint)
+
+/* mystring.h */
+#define equal(s1, s2)	(strcmp(s1, s2) == 0)
+
+/* alias.h */
+#define ALIASINUSE	1
+
+/* output.h */
+#define outc(c, file)	((file)->nextc == (file)->bufend ? \
+			    (emptyoutbuf(file), *(file)->nextc++ = (c)) : \
+			    (*(file)->nextc++ = (c)))
+#define out1c(c)	outc(c, out1)
+#define out2c(c)	outcslow(c, out2)
+
+/* memalloc.h */
+#define stackblock()		stacknxt
+#define stackblocksize()	stacknleft
+#define CHECKSTRSPACE(n, p)	{ if (sstrend - p < n) p = makestrspace(n, p); }
+
+/* parser.h */
+#define CTLESC		'\301'
+#define CTLVAR		'\302'
+#define CTLENDVAR	'\303'
+#define CTLBACKQ	'\304'
+#define CTLQUOTE	01
+
+/* output.c */
+#define OUTBUFSIZ BUFSIZ
+#define MEM_OUT -2		/* output to dynamically allocated memory */
+#define OUTPUT_ERR 01		/* error occurred on output */
+
+/* memalloc.c */
+#define MINSIZE 496		/* minimum size of a block. */
+#define SPACE(sp)	((char*)(sp) + ALIGN(sizeof(struct stack_block)))
+
+/* alias.c */
+#define ATABSIZE 39
+
+export module pbsd.bin.sh.b0219;
+
+export namespace pbsd::bin_sh::b0219 {
+
+/* ===================================================================== *
+ * Support section: types and helpers supplied by headers outside the
+ * batch, plus the glibc shim for the BSD fwopen().
+ * ===================================================================== */
+
+typedef void *pointer;
+
+struct stack_block;
+
+int suppressint = 0;
+int intpending = 0;
+jmp_buf sh_errjmp;
+int sh_errjmp_set = 0;
+int sh_err_thrown = 0;
+char sh_err_msg[256];
+
+int
+int_pending(void)
+{
+	return (intpending);
+}
+
+[[noreturn]] void
+error(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsnprintf(sh_err_msg, sizeof(sh_err_msg), fmt, ap);
+	va_end(ap);
+	sh_err_thrown++;
+	if (sh_errjmp_set)
+		longjmp(sh_errjmp, 1);
+	fprintf(stderr, "port: unhandled error(): %s\n", sh_err_msg);
+	fflush(stderr);
+	_exit(97);
+}
+
+struct alias {
+	struct alias *next;
+	char *name;
+	char *val;
+	int flag;
+};
+
+struct output {
+	char *nextc;
+	char *bufend;
+	char *buf;
+	int bufsize;
+	short fd;
+	short flags;
+};
+
+struct stackmark {
+	struct stack_block *stackp;
+	char *stacknxt;
+	int stacknleft;
+};
+
+struct fwopen_cookie {
+	void *cookie;
+	int (*writefn)(void *, const char *, int);
+};
+
+ssize_t
+fwopen_write(void *c, const char *buf, size_t n)
+{
+	struct fwopen_cookie *fc = (struct fwopen_cookie *)c;
+
+	return (fc->writefn(fc->cookie, buf, (int)n));
+}
+
+int
+fwopen_close(void *c)
+{
+	free(c);
+	return (0);
+}
+
+FILE *
+fwopen(void *cookie, int (*writefn)(void *, const char *, int))
+{
+	cookie_io_functions_t io;
+	struct fwopen_cookie *fc;
+	FILE *fp;
+
+	io.read = nullptr;
+	io.write = fwopen_write;
+	io.seek = nullptr;
+	io.close = fwopen_close;
+	fc = (struct fwopen_cookie *)malloc(sizeof(*fc));
+	if (fc == nullptr)
+		return (nullptr);
+	fc->cookie = cookie;
+	fc->writefn = writefn;
+	fp = fopencookie(fc, "w", io);
+	if (fp == nullptr) {
+		free(fc);
+		return (nullptr);
+	}
+	return (fp);
+}
+
+/* Forward declarations. */
+pointer ckmalloc(size_t);
+pointer ckrealloc(pointer, int);
+void ckfree(pointer);
+char *savestr(const char *);
+pointer stalloc(int);
+void stunalloc(pointer);
+char *stsavestr(const char *);
+void setstackmark(struct stackmark *);
+void popstackmark(struct stackmark *);
+char *growstackstr(void);
+char *makestrspace(int, char *);
+char *stputbin(const char *, size_t, char *);
+char *stputs(const char *, char *);
+void badalloc(const char *);
+void stnewblock(int);
+void growstackblock(int);
+char *growstrstackblock(int, int);
+
+void outcslow(int, struct output *);
+void out1str(const char *);
+void out1qstr(const char *);
+void out2str(const char *);
+void out2qstr(const char *);
+void outstr(const char *, struct output *);
+void outqstr(const char *, struct output *);
+void outbin(const void *, size_t, struct output *);
+void emptyoutbuf(struct output *);
+void flushall(void);
+void flushout(struct output *);
+void freestdout(void);
+int outiserror(struct output *);
+void outclearerror(struct output *);
+void outfmt(struct output *, const char *, ...);
+void out1fmt(const char *, ...);
+void out2fmt_flush(const char *, ...);
+void fmtstr(char *, int, const char *, ...);
+void doformat(struct output *, const char *, va_list);
+FILE *out1fp(void);
+int xwrite(int, const char *, int);
+void byteseq(int, struct output *);
+void outdqstr(const char *, struct output *);
+int doformat_wr(void *, const char *, int);
+
+struct alias *lookupalias(const char *, int);
+const struct alias *iteralias(const struct alias *);
+void setalias(const char *, const char *);
+void freealias(struct alias *);
+int unalias(const char *);
+void rmaliases(void);
+int comparealiases(const void *, const void *);
+void printalias(const struct alias *);
+void printaliases(void);
+size_t hashalias(const char *);
+
+void trputc(int);
+void sh_trace(const char *, ...);
+void trputs(const char *);
+void trstring(char *);
+void trargs(char **);
+
+/* ===================================================================== *
+ * memalloc.c
+ * ===================================================================== */
+
+void
 badalloc(const char *message)
 {
-	::write(2, message, std::strlen(message));
-	std::abort();
+	write(2, message, strlen(message));
+	abort();
 }
 
 /*
@@ -299,7 +331,7 @@ ckmalloc(size_t nbytes)
 
 	if (!is_int_on())
 		badalloc("Unsafe ckmalloc() call\n");
-	p = std::malloc(nbytes);
+	p = malloc(nbytes);
 	if (p == NULL)
 		error("Out of space");
 	return p;
@@ -315,7 +347,7 @@ ckrealloc(pointer p, int nbytes)
 {
 	if (!is_int_on())
 		badalloc("Unsafe ckrealloc() call\n");
-	p = std::realloc(p, nbytes);
+	p = realloc(p, nbytes);
 	if (p == NULL)
 		error("Out of space");
 	return p;
@@ -326,7 +358,7 @@ ckfree(pointer p)
 {
 	if (!is_int_on())
 		badalloc("Unsafe ckfree() call\n");
-	std::free(p);
+	free(p);
 }
 
 
@@ -340,9 +372,9 @@ savestr(const char *s)
 	char *p;
 	size_t len;
 
-	len = std::strlen(s);
-	p = ckmalloc(len + 1);
-	std::memcpy(p, s, len + 1);
+	len = strlen(s);
+	p = (char *)ckmalloc(len + 1);
+	memcpy(p, s, len + 1);
 	return p;
 }
 
@@ -356,13 +388,18 @@ savestr(const char *s)
  * for the allocated block is 512.
  */
 
-#define MINSIZE 496		/* minimum size of a block. */
+struct stack_block {
+	struct stack_block *prev;
+	/* Data follows */
+};
+
+struct stack_block *stackp;
+char *stacknxt;
+int stacknleft;
+char *sstrend;
 
 
-
-
-
-static void
+void
 stnewblock(int nbytes)
 {
 	struct stack_block *sp;
@@ -374,7 +411,7 @@ stnewblock(int nbytes)
 	allocsize = ALIGN(sizeof(struct stack_block)) + ALIGN(nbytes);
 
 	INTOFF;
-	sp = ckmalloc(allocsize);
+	sp = (struct stack_block *)ckmalloc(allocsize);
 	sp->prev = stackp;
 	stacknxt = SPACE(sp);
 	stacknleft = allocsize - (stacknxt - (char*)sp);
@@ -403,11 +440,11 @@ void
 stunalloc(pointer p)
 {
 	if (p == NULL) {		/*DEBUG */
-		::write(STDERR_FILENO, "stunalloc\n", 10);
-		std::abort();
+		write(STDERR_FILENO, "stunalloc\n", 10);
+		abort();
 	}
 	stacknleft += stacknxt - (char *)p;
-	stacknxt = p;
+	stacknxt = (char *)p;
 }
 
 
@@ -417,9 +454,9 @@ stsavestr(const char *s)
 	char *p;
 	size_t len;
 
-	len = std::strlen(s);
-	p = stalloc(len + 1);
-	std::memcpy(p, s, len + 1);
+	len = strlen(s);
+	p = (char *)stalloc(len + 1);
+	memcpy(p, s, len + 1);
 	return p;
 }
 
@@ -467,7 +504,7 @@ popstackmark(struct stackmark *mark)
  * part of the block that has been used.
  */
 
-static void
+void
 growstackblock(int min)
 {
 	char *p;
@@ -494,7 +531,7 @@ growstackblock(int min)
 		INTOFF;
 		oldstackp = stackp;
 		stackp = oldstackp->prev;
-		sp = ckrealloc((pointer)oldstackp, newlen);
+		sp = (struct stack_block *)ckrealloc((pointer)oldstackp, newlen);
 		sp->prev = stackp;
 		stackp = sp;
 		stacknxt = SPACE(sp);
@@ -503,9 +540,9 @@ growstackblock(int min)
 		INTON;
 	} else {
 		newlen -= ALIGN(sizeof(struct stack_block));
-		p = stalloc(newlen);
+		p = (char *)stalloc(newlen);
 		if (oldlen != 0)
-			std::memcpy(p, oldspace, oldlen);
+			memcpy(p, oldspace, oldlen);
 		stunalloc(p);
 	}
 }
@@ -530,7 +567,7 @@ growstackblock(int min)
  * is space for at least one character.
  */
 
-static char *
+char *
 growstrstackblock(int n, int min)
 {
 	growstackblock(min);
@@ -565,71 +602,25 @@ char *
 stputbin(const char *data, size_t len, char *p)
 {
 	CHECKSTRSPACE(len, p);
-	std::memcpy(p, data, len);
+	memcpy(p, data, len);
 	return (p + len);
 }
 
 char *
 stputs(const char *data, char *p)
 {
-	return (stputbin(data, std::strlen(data), p));
+	return (stputbin(data, strlen(data), p));
 }
 
+/* ===================================================================== *
+ * output.c
+ * ===================================================================== */
 
-/* --- output.c --- */
-/*-
- * SPDX-License-Identifier: BSD-3-Clause
- *
- * Copyright (c) 1991, 1993
- *	The Regents of the University of California.  All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Kenneth Almquist.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-/*
- * Shell output routines.  We use our own output routines because:
- *	When a builtin command is interrupted we have to discard
- *		any pending output.
- *	When a builtin command appears in back quotes, we want to
- *		save the output of the command in a region obtained
- *		via malloc, rather than doing a fork and reading the
- *		output of the command via a pipe.
- */
-
-
-
-
-#define OUTBUFSIZ BUFSIZ
-#define MEM_OUT -2		/* output to dynamically allocated memory */
-#define OUTPUT_ERR 01		/* error occurred on output */
-
-static int doformat_wr(void *, const char *, int);
-
+struct output output = {NULL, NULL, NULL, OUTBUFSIZ, 1, 0};
+struct output errout = {NULL, NULL, NULL, 256, 2, 0};
+struct output memout = {NULL, NULL, NULL, 64, MEM_OUT, 0};
+struct output *out1 = &output;
+struct output *out2 = &errout;
 
 void
 outcslow(int c, struct output *file)
@@ -664,10 +655,10 @@ out2qstr(const char *p)
 void
 outstr(const char *p, struct output *file)
 {
-	outbin(p, std::strlen(p), file);
+	outbin(p, strlen(p), file);
 }
 
-static void
+void
 byteseq(int ch, struct output *file)
 {
 	char seq[4];
@@ -679,7 +670,7 @@ byteseq(int ch, struct output *file)
 	outbin(seq, 4, file);
 }
 
-static void
+void
 outdqstr(const char *p, struct output *file)
 {
 	const char *end;
@@ -687,17 +678,17 @@ outdqstr(const char *p, struct output *file)
 	size_t clen;
 	wchar_t wc;
 
-	std::memset(&mbs, '\0', sizeof(mbs));
-	end = p + std::strlen(p);
+	memset(&mbs, '\0', sizeof(mbs));
+	end = p + strlen(p);
 	outstr("$'", file);
-	while ((clen = std::mbrtowc(&wc, p, end - p + 1, &mbs)) != 0) {
+	while ((clen = mbrtowc(&wc, p, end - p + 1, &mbs)) != 0) {
 		if (clen == (size_t)-2) {
 			while (p < end)
 				byteseq(*p++, file);
 			break;
 		}
 		if (clen == (size_t)-1) {
-			std::memset(&mbs, '\0', sizeof(mbs));
+			memset(&mbs, '\0', sizeof(mbs));
 			byteseq(*p++, file);
 			continue;
 		}
@@ -707,7 +698,7 @@ outdqstr(const char *p, struct output *file)
 			outstr("\\r", file), p++;
 		else if (wc == L'\t')
 			outstr("\\t", file), p++;
-		else if (!std::iswprint(wc)) {
+		else if (!iswprint(wc)) {
 			for (; clen > 0; clen--)
 				byteseq(*p++, file);
 		} else {
@@ -738,8 +729,8 @@ outqstr(const char *p, struct output *file)
 		}
 	}
 
-	if (p[std::strcspn(p, "|&;<>()$`\\\" \n*?[~#=")] == '\0' ||
-			std::strcmp(p, "[") == 0) {
+	if (p[strcspn(p, "|&;<>()$`\\\" \n*?[~#=")] == '\0' ||
+			strcmp(p, "[") == 0) {
 		outstr(p, file);
 		return;
 	}
@@ -754,7 +745,7 @@ outbin(const void *data, size_t len, struct output *file)
 {
 	const char *p;
 
-	p = data;
+	p = (const char *)data;
 	while (len-- > 0)
 		outc(*p++, file);
 }
@@ -766,7 +757,7 @@ emptyoutbuf(struct output *dest)
 
 	if (dest->buf == NULL) {
 		INTOFF;
-		dest->buf = ckmalloc(dest->bufsize);
+		dest->buf = (char *)ckmalloc(dest->bufsize);
 		dest->nextc = dest->buf;
 		dest->bufend = dest->buf + dest->bufsize;
 		INTON;
@@ -774,7 +765,7 @@ emptyoutbuf(struct output *dest)
 		offset = dest->nextc - dest->buf;
 		newsize = dest->bufsize << 1;
 		INTOFF;
-		dest->buf = ckrealloc(dest->buf, newsize);
+		dest->buf = (char *)ckrealloc(dest->buf, newsize);
 		dest->bufsize = newsize;
 		dest->bufend = dest->buf + newsize;
 		dest->nextc = dest->buf + offset;
@@ -865,12 +856,12 @@ fmtstr(char *outbuf, int length, const char *fmt, ...)
 
 	INTOFF;
 	va_start(ap, fmt);
-	std::vsnprintf(outbuf, length, fmt, ap);
+	vsnprintf(outbuf, length, fmt, ap);
 	va_end(ap);
 	INTON;
 }
 
-static int
+int
 doformat_wr(void *cookie, const char *buf, int len)
 {
 	struct output *o;
@@ -887,8 +878,8 @@ doformat(struct output *dest, const char *f, va_list ap)
 	FILE *fp;
 
 	if ((fp = fwopen(dest, doformat_wr)) != NULL) {
-		std::vfprintf(fp, f, ap);
-		std::fclose(fp);
+		vfprintf(fp, f, ap);
+		fclose(fp);
 	}
 }
 
@@ -912,7 +903,7 @@ xwrite(int fd, const char *buf, int nbytes)
 	n = nbytes;
 	ntry = 0;
 	for (;;) {
-		i = ::write(fd, buf, n);
+		i = write(fd, buf, n);
 		if (i > 0) {
 			if ((n -= i) <= 0)
 				return nbytes;
@@ -927,51 +918,13 @@ xwrite(int fd, const char *buf, int nbytes)
 	}
 }
 
+/* ===================================================================== *
+ * alias.c
+ * ===================================================================== */
 
-/* --- alias.c --- */
-/*-
- * Copyright (c) 1993
- *	The Regents of the University of California.  All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Kenneth Almquist.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+struct alias *atab[ATABSIZE];
+int aliases;
 
-
-#define ATABSIZE 39
-
-static struct alias *atab[ATABSIZE];
-static int aliases;
-
-static void setalias(const char *, const char *);
-static int unalias(const char *);
-static size_t hashalias(const char *);
-
-static
 void
 setalias(const char *name, const char *val)
 {
@@ -980,7 +933,7 @@ setalias(const char *name, const char *val)
 	unalias(name);
 	app = &atab[hashalias(name)];
 	INTOFF;
-	ap = ckmalloc(sizeof (struct alias));
+	ap = (struct alias *)ckmalloc(sizeof (struct alias));
 	ap->name = savestr(name);
 	ap->val = savestr(val);
 	ap->flag = 0;
@@ -990,7 +943,7 @@ setalias(const char *name, const char *val)
 	INTON;
 }
 
-static void
+void
 freealias(struct alias *ap)
 {
 	ckfree(ap->name);
@@ -998,7 +951,7 @@ freealias(struct alias *ap)
 	ckfree(ap);
 }
 
-static int
+int
 unalias(const char *name)
 {
 	struct alias *ap, **app;
@@ -1030,7 +983,7 @@ unalias(const char *name)
 	return (1);
 }
 
-static void
+void
 rmaliases(void)
 {
 	struct alias *ap, **app;
@@ -1072,16 +1025,16 @@ lookupalias(const char *name, int check)
 	return (NULL);
 }
 
-static int
+int
 comparealiases(const void *p1, const void *p2)
 {
-	const struct alias *const *a1 = p1;
-	const struct alias *const *a2 = p2;
+	const struct alias *const *a1 = (const struct alias *const *)p1;
+	const struct alias *const *a2 = (const struct alias *const *)p2;
 
-	return std::strcmp((*a1)->name, (*a2)->name);
+	return strcmp((*a1)->name, (*a2)->name);
 }
 
-static void
+void
 printalias(const struct alias *a)
 {
 	out1fmt("%s=", a->name);
@@ -1089,20 +1042,20 @@ printalias(const struct alias *a)
 	out1c('\n');
 }
 
-static void
+void
 printaliases(void)
 {
 	int i, j;
 	struct alias **sorted, *ap;
 
 	INTOFF;
-	sorted = ckmalloc(aliases * sizeof(*sorted));
+	sorted = (struct alias **)ckmalloc(aliases * sizeof(*sorted));
 	j = 0;
 	for (i = 0; i < ATABSIZE; i++)
 		for (ap = atab[i]; ap; ap = ap->next)
 			if (*ap->name != '\0')
 				sorted[j++] = ap;
-	std::qsort(sorted, aliases, sizeof(*sorted), comparealiases);
+	qsort(sorted, aliases, sizeof(*sorted), comparealiases);
 	for (i = 0; i < aliases; i++) {
 		printalias(sorted[i]);
 		if (int_pending())
@@ -1112,58 +1065,7 @@ printaliases(void)
 	INTON;
 }
 
-int
-aliascmd(int argc __unused, char **argv __unused)
-{
-	char *n, *v;
-	int ret = 0;
-	struct alias *ap;
-
-	nextopt("");
-
-	if (*argptr == NULL) {
-		printaliases();
-		return (0);
-	}
-	while ((n = *argptr++) != NULL) {
-		if (n[0] == '\0') {
-			warning("'': not found");
-			ret = 1;
-			continue;
-		}
-		if ((v = std::strchr(n+1, '=')) == NULL) /* n+1: funny ksh stuff */
-			if ((ap = lookupalias(n, 0)) == NULL) {
-				warning("%s: not found", n);
-				ret = 1;
-			} else
-				printalias(ap);
-		else {
-			*v++ = '\0';
-			setalias(n, v);
-		}
-	}
-
-	return (ret);
-}
-
-int
-unaliascmd(int argc __unused, char **argv __unused)
-{
-	int i;
-
-	while ((i = nextopt("a")) != '\0') {
-		if (i == 'a') {
-			rmaliases();
-			return (0);
-		}
-	}
-	for (i = 0; *argptr; argptr++)
-		i |= unalias(*argptr);
-
-	return (i);
-}
-
-static size_t
+size_t
 hashalias(const char *p)
 {
 	unsigned int hashval;
@@ -1191,19 +1093,130 @@ iteralias(const struct alias *index)
 	return (NULL);
 }
 
-struct output *port_get_memout(void)
+/* ===================================================================== *
+ * show.c (the trace routines; see skipped.txt for the rest)
+ * ===================================================================== */
+
+FILE *tracefile;
+int debug = 0;
+
+void
+trputc(int c)
 {
-	return &memout;
+	if (tracefile == NULL)
+		return;
+	putc(c, tracefile);
+	if (c == '\n')
+		fflush(tracefile);
 }
 
-void port_set_out1_memout(void)
+
+void
+sh_trace(const char *fmt, ...)
 {
-	out1 = &memout;
+	va_list va;
+	va_start(va, fmt);
+	if (tracefile != NULL) {
+		(void) vfprintf(tracefile, fmt, va);
+		if (strchr(fmt, '\n'))
+			(void) fflush(tracefile);
+	}
+	va_end(va);
 }
 
-void port_restore_out1(void)
+
+void
+trputs(const char *s)
 {
-	out1 = &output;
+	if (tracefile == NULL)
+		return;
+	fputs(s, tracefile);
+	if (strchr(s, '\n'))
+		fflush(tracefile);
 }
 
-} // namespace
+
+void
+trstring(char *s)
+{
+	char *p;
+	char c;
+
+	if (tracefile == NULL)
+		return;
+	putc('"', tracefile);
+	for (p = s ; *p ; p++) {
+		switch (*p) {
+		case '\n':  c = 'n';  goto backslash;
+		case '\t':  c = 't';  goto backslash;
+		case '\r':  c = 'r';  goto backslash;
+		case '"':  c = '"';  goto backslash;
+		case '\\':  c = '\\';  goto backslash;
+		case CTLESC:  c = 'e';  goto backslash;
+		case CTLVAR:  c = 'v';  goto backslash;
+		case CTLVAR+CTLQUOTE:  c = 'V';  goto backslash;
+		case CTLBACKQ:  c = 'q';  goto backslash;
+		case CTLBACKQ+CTLQUOTE:  c = 'Q';  goto backslash;
+backslash:	  putc('\\', tracefile);
+			putc(c, tracefile);
+			break;
+		default:
+			if (*p >= ' ' && *p <= '~')
+				putc(*p, tracefile);
+			else {
+				putc('\\', tracefile);
+				putc(*p >> 6 & 03, tracefile);
+				putc(*p >> 3 & 07, tracefile);
+				putc(*p & 07, tracefile);
+			}
+			break;
+		}
+	}
+	putc('"', tracefile);
+}
+
+
+void
+trargs(char **ap)
+{
+	if (tracefile == NULL)
+		return;
+	while (*ap) {
+		trstring(*ap++);
+		if (*ap)
+			putc(' ', tracefile);
+		else
+			putc('\n', tracefile);
+	}
+	fflush(tracefile);
+}
+
+/* ===================================================================== *
+ * Accessors that let the differential harness observe internal state.
+ * ===================================================================== */
+
+struct stack_block *
+get_stackp(void)
+{
+	return (stackp);
+}
+
+struct stack_block *
+stack_prev(struct stack_block *sp)
+{
+	return (sp->prev);
+}
+
+char *
+stack_space(struct stack_block *sp)
+{
+	return (SPACE(sp));
+}
+
+int
+atabsize(void)
+{
+	return (ATABSIZE);
+}
+
+} /* namespace pbsd::bin_sh::b0219 */

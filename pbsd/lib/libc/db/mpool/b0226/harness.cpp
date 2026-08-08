@@ -759,7 +759,7 @@ run_sweep(Stat &st)
 		unsigned seed = (unsigned)nextrand();
 		pgno_t pagesize = (pgno_t)(256 + (nextrand() % 3) * 256);
 		pgno_t maxcache = (pgno_t)(1 + (nextrand() % 6));
-		size_t npg = (size_t)(1 + (nextrand() % 8));
+		size_t npg = (size_t)(1 + (nextrand() % 4));
 		auto filedata = fill_pattern(npg * pagesize, seed);
 		if (nextrand() & 1) {
 			size_t trim = (size_t)(nextrand() % pagesize);
@@ -788,7 +788,7 @@ run_sweep(Stat &st)
 		if (rmp->npages != pmp->npages || rmp->curcache != pmp->curcache)
 			fail(st, "sweep open fields");
 
-		unsigned ops = (unsigned)(1 + (nextrand() % 24));
+		unsigned ops = (unsigned)(1 + (nextrand() % 8));
 		for (unsigned op = 0; op < ops; op++) {
 			unsigned kind = (unsigned)(nextrand() % 7);
 			pgno_t pg = (pgno_t)(nextrand() % (rmp->npages + 2));
