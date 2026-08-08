@@ -2,7 +2,7 @@
 
 import pbsd.sys.kern.b0146s1;
 
-#include <climits>
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>

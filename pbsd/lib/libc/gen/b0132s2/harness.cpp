@@ -480,7 +480,7 @@ sweep_utx(long long iters)
 static void
 sweep_ftou(long long iters)
 {
-	Rng rng(0x5EED0132s2u);
+	Rng rng(0x5EED0132u);
 	unsigned char id[8], user[32], line[16], host[128];
 
 	for (long long it = 0; it < iters; it++) {

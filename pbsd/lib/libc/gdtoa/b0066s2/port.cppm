@@ -166,7 +166,7 @@ __hldtoa(long double e, const char *xdigs, int ndigits, int *decpt, int *sign,
 	 * If ndigits < 0, we are expected to auto-size, so we allocate
 	 * enough space for all the digits.
 	 */
-	bufsize = (ndigits > 0) ? ndigits : SIGFIGS;
+	bufsize = (ndigits <= 0) ? ndigits : SIGFIGS;
 	s0 = rv_alloc(bufsize);
 
 	/* Round to the desired number of digits. */
