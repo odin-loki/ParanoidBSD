@@ -21,6 +21,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/aarch64/string/b0071/port.cppm
   lib/libc/aarch64/string/strsep_m/port.cppm
   lib/libc/amd64/gen/b0055/port.cppm
+  lib/libc/amd64/gen/b0056/port.cppm
   lib/libc/amd64/string/b0081/port.cppm
   lib/libc/compat-43/b0067/port.cppm
   lib/libc/compat-43/gethostid_m/port.cppm

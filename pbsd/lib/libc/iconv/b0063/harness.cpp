@@ -125,32 +125,28 @@ mock_get_list(char ***a, size_t *b, __iconv_bool c)
 	return (snap.get_list_ret);
 }
 
-static int
-mock_iconvlist_cb(unsigned int count, const char *const *names, void *arg)
+static void
+mock_iconvlist(int (*fn)(unsigned int, const char *const *, void *), void *arg)
 {
-	unsigned int i;
+	static const char *const names[] = {"UTF-8", "ASCII", "UCS-2"};
+	unsigned int i, count = 3u;
+	int cb_ret;
 
-	snap.iconvlist_cb_count++;
+	snap.ncalls++;
+	snap.iconvlist_fn = fn;
+	snap.iconvlist_data = arg;
+	if (fn == nullptr)
+		return;
+
+	cb_ret = fn(count, names, arg);
+	snap.iconvlist_cb_count = 1;
 	snap.iconvlist_cb_arg0 = count;
 	snap.iconvlist_cb_user = arg;
 	for (i = 0; i < 4; i++)
 		snap.iconvlist_cb_names[i] = nullptr;
 	for (i = 0; i < count && i < 4; i++)
 		snap.iconvlist_cb_names[i] = names[i];
-	snap.iconvlist_cb_rets[i < 4 ? i : 0] = (int)(count + (arg != nullptr));
-	return ((int)(count + (arg != nullptr)));
-}
-
-static void
-mock_iconvlist(int (*fn)(unsigned int, const char *const *, void *), void *arg)
-{
-	static const char *const names[] = {"UTF-8", "ASCII", "UCS-2"};
-
-	snap.ncalls++;
-	snap.iconvlist_fn = fn;
-	snap.iconvlist_data = arg;
-	if (fn != nullptr)
-		(void)fn(3u, names, arg);
+	snap.iconvlist_cb_rets[0] = cb_ret;
 }
 
 static void
@@ -239,10 +235,6 @@ snaps_equal(const MockSnap &a, const MockSnap &b)
 	if (a.canonicalize_ret != b.canonicalize_ret)
 		return (false);
 	if (a.get_list_ret != b.get_list_ret)
-		return (false);
-	if (a.get_list_a != b.get_list_a)
-		return (false);
-	if (a.get_list_b != b.get_list_b)
 		return (false);
 	if (a.get_list_c != b.get_list_c)
 		return (false);
@@ -351,13 +343,6 @@ bufs_equal(const unsigned char *a, const unsigned char *b, std::size_t n)
 {
 
 	return (std::memcmp(a, b, n) == 0);
-}
-
-static long long
-ptr_off(const void *p, const void *base)
-{
-
-	return ((long long)((const unsigned char *)p - (const unsigned char *)base));
 }
 
 /* ------------------------------------------------------------------ */

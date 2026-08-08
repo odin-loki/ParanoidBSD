@@ -234,7 +234,7 @@ crc(int fd, uint32_t *cval, off_t *clen)
 	u_char *p;
 	u_char buf[16 * 1024];
 
-#define	COMPUTE(var, ch)	(var) = (var) << 8 ^ crctab_posix[(var) >> 24 ^ (ch)]
+#define	COMPUTE(var, ch)	(var) = (var) << 8 ^ crctab[(var) >> 24 ^ (ch)]
 
 	lcrc = len = 0;
 	crc_total = ~crc_total;
@@ -258,8 +258,6 @@ crc(int fd, uint32_t *cval, off_t *clen)
 	crc_total = ~crc_total;
 	return (0);
 }
-
-#undef COMPUTE
 
 uint32_t
 crc_total_value(void)
