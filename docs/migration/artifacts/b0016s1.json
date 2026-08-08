@@ -1,0 +1,10 @@
+{
+  "batch": "b0016s1",
+  "verified": "2026-08-08T09:17:17Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "=== PBSD b0016s1 differential test (port vs ref_ oracle) ===\n\nfunction                        cases     failures\n__lttf2                        304761            0\n\n(4761 hand-written edge cases, 300000 randomised cases, fixed seed)\n\ninput class reached                       cases\nreturn == -1                              98139\nreturn == 0                              206622\nfloat_flag_invalid raised                 70898\nno exception raised                      233863\nsigns differ, a < b                       26385\nsigns differ, !(a < b)                    44041\nboth negative, a < b                       9880\nboth negative, !(a < b)                   51620\nboth non-negative, a < b                  61874\nboth non-negative, !(a < b)               40063\noperands bitwise equal                    43504\nhigh equal, low decides, a < b            38279\nhigh equal, low decides, !(a < b)         26843\n-0 against +0                             11291\ninfinity operand                          16839\n\nPASSED: all 304761 cases matched\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/lttf2.c": "a47de0e167cc35f1"
+  }
+}

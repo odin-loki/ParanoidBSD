@@ -115,7 +115,9 @@ check_grant(int enabled, int uid, uint32_t cr_uid, int priv)
 	ref_snap = ref_buf;
 
 	int got = P::ntpd_priv_grant(
-	    reinterpret_cast<P::ucred *>(&port_buf.cred), priv);
+	    reinterpret_cast<pbsd::sys_security_mac_ntpd::b0007::ucred *>(
+	    &port_buf.cred),
+	    priv);
 	int want = ref_ntpd_priv_grant(
 	    reinterpret_cast<struct ucred *>(&ref_buf.cred), priv);
 

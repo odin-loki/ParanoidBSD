@@ -459,6 +459,8 @@ void run_crt1_handle_rela_edges()
 	check_crt1_handle_rela(r, true);
 
 	r.r_info = R_AARCH64_IRELATIVE | (0xDEADBEEFULL << 32);
+	r.r_addend = static_cast<long>(
+	    reinterpret_cast<std::uintptr_t>(resolver_return_zero));
 	check_crt1_handle_rela(r, true);
 
 	for (resolver_fn fn : resolver_table) {

@@ -15,6 +15,8 @@ module;
 
 #include <cstdint>
 
+using uint48 = std::uint64_t;
+
 export module pbsd.lib.libc.gen.b0013;
 
 #define	RAND48_SEED_0	(0x330e)

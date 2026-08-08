@@ -23,7 +23,7 @@ static int ntpd_uid = 123;
 export namespace pbsd::sys_security_mac_ntpd::b0007 {
 
 struct ucred {
-	uid_t	cr_uid;			/* effective user id */
+	unsigned int	cr_uid;			/* effective user id */
 };
 
 void

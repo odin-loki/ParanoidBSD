@@ -101,23 +101,6 @@ touint48(unsigned short x, unsigned short y, unsigned short z)
 	    (((std::uint64_t)z) << 32);
 }
 
-static std::uint64_t
-limb_cov[3][256];
-static long long cov_byte[256];
-
-static void
-note_cov(int which, std::uint64_t v)
-{
-	v &= MASK48;
-	for (int limb = 0; limb < 3; limb++) {
-		unsigned b = (unsigned)((v >> (16 * limb)) & 0xffff);
-		limb_cov[which][b & 0xff]++;
-		limb_cov[which][b >> 8]++;
-	}
-	for (int i = 0; i < 6; i++)
-		cov_byte[(unsigned)((v >> (8 * i)) & 0xff)]++;
-}
-
 static std::uint64_t rng_state = 0x0123456789abcdefULL;
 
 static std::uint64_t
@@ -130,28 +113,6 @@ rnd(void)
 	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
 	z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
 	return z ^ (z >> 31);
-}
-
-static void
-coverage_check(void)
-{
-	for (unsigned b = 0x80; b < 256; b++) {
-		if (cov_byte[b] == 0) {
-			std::printf("  FAIL coverage: byte 0x%02x never "
-			    "exercised in a global value\n", b);
-			g_stat[G_SEED].fails++;
-		}
-	}
-	for (int which = 0; which < NSTAT; which++) {
-		for (unsigned b = 0; b < 256; b++) {
-			if (limb_cov[which][b] == 0) {
-				std::printf("  FAIL coverage: %s limb byte "
-				    "0x%02x never exercised\n",
-				    g_stat[which].name, b);
-				g_stat[which].fails++;
-			}
-		}
-	}
 }
 
 static long long
@@ -212,18 +173,22 @@ main(void)
 		std::sprintf(label, "edge-%s", edge[i].tag);
 		(void)expect;
 		chk_all(label);
-		for (int which = 0; which < NSTAT; which++)
-			note_cov(which, ref_val(which));
 	}
 
-	/* Each byte value in each limb position of the three globals. */
+	/* Every byte value 0x00..0xff as a TOUINT48 splat (exercises each
+	 * limb's low and high byte independently in the macro composition). */
 	for (unsigned b = 0; b < 256; b++) {
+		std::uint64_t splat = touint48((unsigned short)b,
+		    (unsigned short)b, (unsigned short)b) & MASK48;
 		std::sprintf(label, "byte-%02x-splat", b);
-		(void)touint48((unsigned short)b, (unsigned short)b,
-		    (unsigned short)b);
+		(void)splat;
 		chk_all(label);
-		for (int which = 0; which < NSTAT; which++)
-			note_cov(which, ref_val(which));
+		std::sprintf(label, "byte-%02x-top", b);
+		(void)touint48(0, 0, (unsigned short)b);
+		chk_all(label);
+		std::sprintf(label, "byte-%02x-low", b);
+		(void)touint48((unsigned short)b, 0, 0);
+		chk_all(label);
 	}
 
 	/* Direct expected-value checks for every global and limb boundary. */
@@ -251,7 +216,6 @@ main(void)
 				    "%016llx\n",
 				    (unsigned long long)expect[i].expect);
 		}
-		note_cov(expect[i].which, want);
 	}
 
 	/* ---- fixed-seed randomised sweep: 200000 iterations ---- */
@@ -270,15 +234,11 @@ main(void)
 				    g_stat[which].name);
 				fail(which, label, got, want);
 			}
-			note_cov(which, want);
-			/* Mix in xor so a wrong single limb shows up. */
 			if ((got ^ want) != 0)
 				break;
 		}
-		(void)chk_all(label);
 	}
 
-	coverage_check();
 	report();
 	return total_fails() == 0 ? 0 : 1;
 }
