@@ -26,14 +26,6 @@
  * SUCH DAMAGE.
  */
 
-/*
- * PBSD port of lib/msun/ld128/invtrig.c.
- *
- * The translation unit defines no functions; it is the shared coefficient
- * data for the ld128 asinl()/acosl()/atanl() implementations.  The values
- * are reproduced digit for digit from the original source.
- */
-
 export module pbsd.lib.msun.ld128.b0084;
 
 export namespace pbsd::lib_msun_ld128::b0084 {
@@ -41,7 +33,7 @@ export namespace pbsd::lib_msun_ld128::b0084 {
 /*
  * asinl() and acosl()
  */
-inline constexpr long double
+inline const long double
 pS0 =  1.66666666666666666666666666666700314e-01L,
 pS1 = -7.32816946414566252574527475428622708e-01L,
 pS2 =  1.34215708714992334609030036562143589e+00L,
@@ -65,21 +57,21 @@ qS9 = -1.99407384882605586705979504567947007e-04L;
 /*
  * atanl()
  */
-inline constexpr long double atanhi[] = {
+inline const long double atanhi[] = {
 	 4.63647609000806116214256231461214397e-01L,
 	 7.85398163397448309615660845819875699e-01L,
 	 9.82793723247329067985710611014666038e-01L,
 	 1.57079632679489661923132169163975140e+00L,
 };
 
-inline constexpr long double atanlo[] = {
+inline const long double atanlo[] = {
 	 4.89509642257333492668618435220297706e-36L,
 	 2.16795253253094525619926100651083806e-35L,
 	-2.31288434538183565909319952098066272e-35L,
 	 4.33590506506189051239852201302167613e-35L,
 };
 
-inline constexpr long double aT[] = {
+inline const long double aT[] = {
 	 3.33333333333333333333333333333333125e-01L,
 	-1.99999999999999999999999999999180430e-01L,
 	 1.42857142857142857142857142125269827e-01L,
@@ -106,6 +98,6 @@ inline constexpr long double aT[] = {
 	-2.58521121597609872727919154569765469e-03L,
 };
 
-inline constexpr long double pi_lo = 8.67181013012378102479704402604335225e-35L;
+inline const long double pi_lo = 8.67181013012378102479704402604335225e-35L;
 
 } // namespace pbsd::lib_msun_ld128::b0084

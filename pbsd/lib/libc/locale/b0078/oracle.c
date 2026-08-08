@@ -76,7 +76,7 @@ enum {
 	XLC_CTYPE = 1,
 };
 
-struct xlocale_ctype {
+struct ref_xlocale_ctype {
 	_RuneLocale	*runes;
 	size_t		(*__mbsnrtowcs)(wchar_t * __restrict, const char ** __restrict,
 		    size_t, size_t, mbstate_t * __restrict);
@@ -84,26 +84,26 @@ struct xlocale_ctype {
 	mbstate_t	mbsnrtowcs;
 };
 
-struct xlocale {
+struct ref_xlocale {
 	void		*components[6];
 };
 
-typedef struct xlocale *locale_t;
+typedef struct ref_xlocale *ref_locale_t;
 
-struct xlocale_ctype	ref_global_ctype;
-struct xlocale		ref_global_locale;
-struct xlocale_ctype	ref_alt_ctype;
-struct xlocale		ref_alt_locale;
+struct ref_xlocale_ctype	ref_global_ctype;
+struct ref_xlocale		ref_global_locale;
+struct ref_xlocale_ctype	ref_alt_ctype;
+struct ref_xlocale		ref_alt_locale;
 
-locale_t
+ref_locale_t
 ref_get_locale(void)
 {
 
 	return (&ref_global_locale);
 }
 
-static inline locale_t
-ref_fix_locale(locale_t l)
+static inline ref_locale_t
+ref_fix_locale(ref_locale_t l)
 {
 
 	if (l == NULL)
@@ -112,7 +112,7 @@ ref_fix_locale(locale_t l)
 }
 
 #define FIX_LOCALE(l)	((l) = ref_fix_locale(l))
-#define XLOCALE_CTYPE(x)	((struct xlocale_ctype *)(x)->components[XLC_CTYPE])
+#define XLOCALE_CTYPE(x)	((struct ref_xlocale_ctype *)(x)->components[XLC_CTYPE])
 #define __get_locale()		(ref_get_locale())
 
 typedef size_t (*mbrtowc_pfn_t)(wchar_t * __restrict,
@@ -202,7 +202,7 @@ utf8_decode(const unsigned char *p, size_t n, wchar_t *wc, size_t *consumed)
 }
 
 void
-ref_locale_init(struct xlocale *loc, struct xlocale_ctype *ctype,
+ref_locale_init(struct ref_xlocale *loc, struct ref_xlocale_ctype *ctype,
     _RuneLocale *runes, int mb_cur_max)
 {
 
@@ -219,7 +219,7 @@ ref_locale_init(struct xlocale *loc, struct xlocale_ctype *ctype,
 /* ------------------------------------------------------------------ */
 
 unsigned long
-ref____runetype_l(__ct_rune_t c, locale_t locale)
+ref____runetype_l(__ct_rune_t c, ref_locale_t locale)
 {
 	size_t lim;
 	FIX_LOCALE(locale);

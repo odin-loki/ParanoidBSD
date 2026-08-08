@@ -1,12 +1,13 @@
 /* $NetBSD: softfloat.c,v 1.1 2002/05/21 23:51:07 bjh21 Exp $ */
+module;
+
+#include <csignal>
+#include <cstring>
+#include <unistd.h>
+
 export module pbsd.lib.libc.softfloat.bits32.b0047;
 
 export namespace pbsd::lib_libc_softfloat_bits32::b0047 {
-
-#include <csignal>
-#include <cstdint>
-#include <cstring>
-#include <unistd.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)
@@ -972,80 +973,6 @@ static float64 propagateFloat64NaN( float64 a, float64 b )
 }
 
 
-/* $NetBSD: softfloat.c,v 1.1 2002/05/21 23:51:07 bjh21 Exp $ */
-
-/*
- * This version hacked for use with gcc -msoft-float by bjh21.
- * (Mostly a case of #ifdefing out things GCC doesn't need or provides
- *  itself).
- */
-
-/*
- * Things you may want to define:
- *
- * SOFTFLOAT_FOR_GCC - build only those functions necessary for GCC (with
- *   -msoft-float) to work.  Include "softfloat-for-gcc.h" to get them
- *   properly renamed.
- */
-
-/*
- * This differs from the standard bits32/softfloat.c in that float64
- * is defined to be a 64-bit integer rather than a structure.  The
- * structure is float64s, with translation between the two going via
- * float64u.
- */
-
-/*
-===============================================================================
-
-This C source file is part of the SoftFloat IEC/IEEE Floating-Point
-Arithmetic Package, Release 2a.
-
-Written by John R. Hauser.  This work was made possible in part by the
-International Computer Science Institute, located at Suite 600, 1947 Center
-Street, Berkeley, California 94704.  Funding was partially provided by the
-National Science Foundation under grant MIP-9311980.  The original version
-of this code was written as part of a project to build a fixed-point vector
-processor in collaboration with the University of California at Berkeley,
-overseen by Profs. Nelson Morgan and John Wawrzynek.  More information
-is available through the Web page `http://HTTP.CS.Berkeley.EDU/~jhauser/
-arithmetic/SoftFloat.html'.
-
-THIS SOFTWARE IS DISTRIBUTED AS IS, FOR FREE.  Although reasonable effort
-has been made to avoid it, THIS SOFTWARE MAY CONTAIN FAULTS THAT WILL AT
-TIMES RESULT IN INCORRECT BEHAVIOR.  USE OF THIS SOFTWARE IS RESTRICTED TO
-PERSONS AND ORGANIZATIONS WHO CAN AND WILL TAKE FULL RESPONSIBILITY FOR ANY
-AND ALL LOSSES, COSTS, OR OTHER PROBLEMS ARISING FROM ITS USE.
-
-Derivative works are acceptable, even for commercial purposes, so long as
-(1) they include prominent notice that the work is derivative, and (2) they
-include prominent notice akin to these four paragraphs for those parts of
-this code that are retained.
-
-===============================================================================
-*/
-
-
-
-/*
- * Conversions between floats as stored in memory and floats as
- * SoftFloat uses them
- */
-#ifndef FLOAT64_DEMANGLE
-#define FLOAT64_DEMANGLE(a)	(a)
-#endif
-#ifndef FLOAT64_MANGLE
-#define FLOAT64_MANGLE(a)	(a)
-#endif
-
-/*
--------------------------------------------------------------------------------
-Floating-point rounding mode and exception flags.
--------------------------------------------------------------------------------
-*/
-int float_rounding_mode = float_round_nearest_even;
-int float_exception_flags = 0;
-
 /*
 -------------------------------------------------------------------------------
 Primitive arithmetic functions, including multi-word arithmetic, and
@@ -1530,7 +1457,6 @@ float64 int32_to_float64( int32 a )
 
 }
 
-#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Returns the result of converting the single-precision floating-point value
@@ -1600,7 +1526,6 @@ int32 float32_to_int32( float32 a )
     return z;
 
 }
-#endif
 
 /*
 -------------------------------------------------------------------------------
@@ -1676,7 +1601,6 @@ float64 float32_to_float64( float32 a )
 
 }
 
-#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Rounds the single-precision floating-point value `a' to an integer,
@@ -1738,7 +1662,6 @@ float32 float32_round_to_int( float32 a )
     return z;
 
 }
-#endif
 
 /*
 -------------------------------------------------------------------------------
@@ -2060,7 +1983,6 @@ float32 float32_div( float32 a, float32 b )
 
 }
 
-#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Returns the remainder of the single-precision floating-point value `a'
@@ -2145,9 +2067,7 @@ float32 float32_rem( float32 a, float32 b )
     return normalizeRoundAndPackFloat32( aSign ^ zSign, bExp, aSig );
 
 }
-#endif
 
-#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Returns the square root of the single-precision floating-point value `a'.
@@ -2205,7 +2125,6 @@ float32 float32_sqrt( float32 a )
     return roundAndPackFloat32( 0, zExp, zSig );
 
 }
-#endif
 
 /*
 -------------------------------------------------------------------------------
@@ -2515,7 +2434,6 @@ float32 float64_to_float32( float64 a )
 
 }
 
-#ifndef SOFTFLOAT_FOR_GCC
 /*
 -------------------------------------------------------------------------------
 Rounds the double-precision floating-point value `a' to an integer,

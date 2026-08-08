@@ -339,6 +339,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   usr.sbin/bhyve/usb_emul_m/port.cppm
   usr.sbin/boottrace/boottrace_m/port.cppm
   usr.sbin/bsdinstall/runconsoles/common_m/port.cppm
+  usr.sbin/cxgbetool/b0085/port.cppm
   usr.sbin/cxgbetool/tcbshowt4_m/port.cppm
   usr.sbin/cxgbetool/tcbshowt5_m/port.cppm
   usr.sbin/cxgbetool/tcbshowt6_m/port.cppm

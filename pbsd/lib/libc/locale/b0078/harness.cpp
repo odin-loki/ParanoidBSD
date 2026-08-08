@@ -261,15 +261,6 @@ setup_default_locale(void)
 	use_env(genv);
 }
 
-static void
-use_env(Env &e)
-{
-
-	ref_global_locale = e.ref_loc;
-	ref_global_ctype = e.ref_ctype;
-	P::pbsd_set_active_locale(&e.port_loc);
-}
-
 static bool
 chk_runetype(int f, int c, unsigned long pv, unsigned long rv)
 {

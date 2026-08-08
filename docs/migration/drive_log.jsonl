@@ -1747,3 +1747,4 @@
 {"batch": "b0083", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 5/5: __fix_locale_grouping_str, ___tolower_l, ___tolower, ___toupper_l)", "how": "agent", "ts": "2026-08-08T11:23:53Z"}
 {"batch": "b0058", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/10: reset_locale_states)", "how": "agent", "ts": "2026-08-08T11:24:01Z"}
 {"batch": "b0059", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:24:11Z"}
+{"batch": "b0075", "status": "VERIFIED", "detail": "harness green + IR-identical for all 9 functions", "how": "agent", "ts": "2026-08-08T11:24:25Z"}

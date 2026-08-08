@@ -11,7 +11,6 @@
 
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <random>
@@ -43,6 +42,30 @@ struct stat {
 	unsigned long long fails;
 	unsigned reported;
 };
+
+static stat st_pS0 = { "pS0", 0, 0, 0 };
+static stat st_pS1 = { "pS1", 0, 0, 0 };
+static stat st_pS2 = { "pS2", 0, 0, 0 };
+static stat st_pS3 = { "pS3", 0, 0, 0 };
+static stat st_pS4 = { "pS4", 0, 0, 0 };
+static stat st_pS5 = { "pS5", 0, 0, 0 };
+static stat st_pS6 = { "pS6", 0, 0, 0 };
+static stat st_pS7 = { "pS7", 0, 0, 0 };
+static stat st_pS8 = { "pS8", 0, 0, 0 };
+static stat st_pS9 = { "pS9", 0, 0, 0 };
+static stat st_qS1 = { "qS1", 0, 0, 0 };
+static stat st_qS2 = { "qS2", 0, 0, 0 };
+static stat st_qS3 = { "qS3", 0, 0, 0 };
+static stat st_qS4 = { "qS4", 0, 0, 0 };
+static stat st_qS5 = { "qS5", 0, 0, 0 };
+static stat st_qS6 = { "qS6", 0, 0, 0 };
+static stat st_qS7 = { "qS7", 0, 0, 0 };
+static stat st_qS8 = { "qS8", 0, 0, 0 };
+static stat st_qS9 = { "qS9", 0, 0, 0 };
+static stat st_pi_lo = { "pi_lo", 0, 0, 0 };
+static stat st_atanhi = { "atanhi[]", 0, 0, 0 };
+static stat st_atanlo = { "atanlo[]", 0, 0, 0 };
+static stat st_aT = { "aT[]", 0, 0, 0 };
 
 static bool
 ld_equal(long double a, long double b)
@@ -105,48 +128,26 @@ check_scalar(stat &s, long double got, long double want)
 }
 
 static void
-check_array_elem(stat &s, const char *tag, long double got, long double want)
+check_table(stat &s, const char *name, const long double *ptbl,
+    const long double *rtbl, std::size_t pn, std::size_t rn)
 {
-	check_ld(s, tag, got, want);
-}
+	char tag[64];
+	std::size_t i;
 
-struct table_entry {
-	stat *s;
-	const long double *port_tbl;
-	const long double *ref_tbl;
-	std::size_t n;
-};
-
-static void
-check_table_lengths(table_entry &t)
-{
-	check_size(*t.s, "length", t.n, t.s == nullptr ? 0 : t.n);
+	check_size(s, "n_elem", pn, rn);
+	for (i = 0; i < pn && i < rn; ++i) {
+		std::snprintf(tag, sizeof(tag), "%s[%zu]", name, i);
+		check_ld(s, tag, ptbl[i], rtbl[i]);
+	}
+	if (pn > 0) {
+		check_ld(s, "first", ptbl[0], rtbl[0]);
+		check_ld(s, "last", ptbl[pn - 1], rtbl[pn - 1]);
+	}
 }
 
 static void
 check_all_scalars()
 {
-	static stat st_pS0 = { "pS0", 0, 0, 0 };
-	static stat st_pS1 = { "pS1", 0, 0, 0 };
-	static stat st_pS2 = { "pS2", 0, 0, 0 };
-	static stat st_pS3 = { "pS3", 0, 0, 0 };
-	static stat st_pS4 = { "pS4", 0, 0, 0 };
-	static stat st_pS5 = { "pS5", 0, 0, 0 };
-	static stat st_pS6 = { "pS6", 0, 0, 0 };
-	static stat st_pS7 = { "pS7", 0, 0, 0 };
-	static stat st_pS8 = { "pS8", 0, 0, 0 };
-	static stat st_pS9 = { "pS9", 0, 0, 0 };
-	static stat st_qS1 = { "qS1", 0, 0, 0 };
-	static stat st_qS2 = { "qS2", 0, 0, 0 };
-	static stat st_qS3 = { "qS3", 0, 0, 0 };
-	static stat st_qS4 = { "qS4", 0, 0, 0 };
-	static stat st_qS5 = { "qS5", 0, 0, 0 };
-	static stat st_qS6 = { "qS6", 0, 0, 0 };
-	static stat st_qS7 = { "qS7", 0, 0, 0 };
-	static stat st_qS8 = { "qS8", 0, 0, 0 };
-	static stat st_qS9 = { "qS9", 0, 0, 0 };
-	static stat st_pi_lo = { "pi_lo", 0, 0, 0 };
-
 	check_scalar(st_pS0, port::pS0, ref_pS0);
 	check_scalar(st_pS1, port::pS1, ref_pS1);
 	check_scalar(st_pS2, port::pS2, ref_pS2);
@@ -170,39 +171,13 @@ check_all_scalars()
 }
 
 static void
-check_table(stat &s, const char *name, const long double *ptbl,
-    const long double *rtbl, std::size_t pn, std::size_t rn)
-{
-	char tag[64];
-	std::size_t i;
-
-	check_size(s, "n_elem", pn, rn);
-	for (i = 0; i < pn && i < rn; ++i) {
-		std::snprintf(tag, sizeof(tag), "%s[%zu]", name, i);
-		check_array_elem(s, tag, ptbl[i], rtbl[i]);
-	}
-	if (pn > 0) {
-		check_array_elem(s, "first", ptbl[0], rtbl[0]);
-		check_array_elem(s, "last", ptbl[pn - 1], rtbl[pn - 1]);
-	}
-}
-
-static void
 check_all_tables()
 {
-	static stat st_atanhi = { "atanhi[]", 0, 0, 0 };
-	static stat st_atanlo = { "atanlo[]", 0, 0, 0 };
-	static stat st_aT = { "aT[]", 0, 0, 0 };
-
-	const std::size_t atanhi_n = std::size(port::atanhi);
-	const std::size_t atanlo_n = std::size(port::atanlo);
-	const std::size_t aT_n = std::size(port::aT);
-
-	check_table(st_atanhi, "atanhi", port::atanhi, ref_atanhi, atanhi_n,
-	    ref_atanhi_n);
-	check_table(st_atanlo, "atanlo", port::atanlo, ref_atanlo, atanlo_n,
-	    ref_atanlo_n);
-	check_table(st_aT, "aT", port::aT, ref_aT, aT_n, ref_aT_n);
+	check_table(st_atanhi, "atanhi", port::atanhi, ref_atanhi,
+	    std::size(port::atanhi), ref_atanhi_n);
+	check_table(st_atanlo, "atanlo", port::atanlo, ref_atanlo,
+	    std::size(port::atanlo), ref_atanlo_n);
+	check_table(st_aT, "aT", port::aT, ref_aT, std::size(port::aT), ref_aT_n);
 }
 
 struct probe {
@@ -217,30 +192,6 @@ struct probe {
 static void
 run_random_sweep()
 {
-	static stat st_pS0 = { "pS0", 0, 0, 0 };
-	static stat st_pS1 = { "pS1", 0, 0, 0 };
-	static stat st_pS2 = { "pS2", 0, 0, 0 };
-	static stat st_pS3 = { "pS3", 0, 0, 0 };
-	static stat st_pS4 = { "pS4", 0, 0, 0 };
-	static stat st_pS5 = { "pS5", 0, 0, 0 };
-	static stat st_pS6 = { "pS6", 0, 0, 0 };
-	static stat st_pS7 = { "pS7", 0, 0, 0 };
-	static stat st_pS8 = { "pS8", 0, 0, 0 };
-	static stat st_pS9 = { "pS9", 0, 0, 0 };
-	static stat st_qS1 = { "qS1", 0, 0, 0 };
-	static stat st_qS2 = { "qS2", 0, 0, 0 };
-	static stat st_qS3 = { "qS3", 0, 0, 0 };
-	static stat st_qS4 = { "qS4", 0, 0, 0 };
-	static stat st_qS5 = { "qS5", 0, 0, 0 };
-	static stat st_qS6 = { "qS6", 0, 0, 0 };
-	static stat st_qS7 = { "qS7", 0, 0, 0 };
-	static stat st_qS8 = { "qS8", 0, 0, 0 };
-	static stat st_qS9 = { "qS9", 0, 0, 0 };
-	static stat st_pi_lo = { "pi_lo", 0, 0, 0 };
-	static stat st_atanhi = { "atanhi[]", 0, 0, 0 };
-	static stat st_atanlo = { "atanlo[]", 0, 0, 0 };
-	static stat st_aT = { "aT[]", 0, 0, 0 };
-
 	const std::array<probe, 23> probes = { {
 	    { &st_pS0, &port::pS0, &ref_pS0, nullptr, nullptr, 0 },
 	    { &st_pS1, &port::pS1, &ref_pS1, nullptr, nullptr, 0 },
@@ -282,12 +233,10 @@ run_random_sweep()
 			continue;
 		}
 
-		if (p.tbl_n == 0)
-			continue;
 		std::uniform_int_distribution<std::size_t> idx(0, p.tbl_n - 1);
 		const std::size_t j = idx(rng);
 		std::snprintf(tag, sizeof(tag), "rand[%zu]", j);
-		check_array_elem(*p.s, tag, p.port_tbl[j], p.ref_tbl[j]);
+		check_ld(*p.s, tag, p.port_tbl[j], p.ref_tbl[j]);
 	}
 }
 
@@ -297,35 +246,20 @@ print_row(const stat &s)
 	std::printf("%-12s %10llu %10llu\n", s.name, s.cases, s.fails);
 }
 
+static unsigned long long
+total_fails()
+{
+	return st_pS0.fails + st_pS1.fails + st_pS2.fails + st_pS3.fails +
+	    st_pS4.fails + st_pS5.fails + st_pS6.fails + st_pS7.fails +
+	    st_pS8.fails + st_pS9.fails + st_qS1.fails + st_qS2.fails +
+	    st_qS3.fails + st_qS4.fails + st_qS5.fails + st_qS6.fails +
+	    st_qS7.fails + st_qS8.fails + st_qS9.fails + st_pi_lo.fails +
+	    st_atanhi.fails + st_atanlo.fails + st_aT.fails;
+}
+
 int
 main()
 {
-	static stat st_pS0 = { "pS0", 0, 0, 0 };
-	static stat st_pS1 = { "pS1", 0, 0, 0 };
-	static stat st_pS2 = { "pS2", 0, 0, 0 };
-	static stat st_pS3 = { "pS3", 0, 0, 0 };
-	static stat st_pS4 = { "pS4", 0, 0, 0 };
-	static stat st_pS5 = { "pS5", 0, 0, 0 };
-	static stat st_pS6 = { "pS6", 0, 0, 0 };
-	static stat st_pS7 = { "pS7", 0, 0, 0 };
-	static stat st_pS8 = { "pS8", 0, 0, 0 };
-	static stat st_pS9 = { "pS9", 0, 0, 0 };
-	static stat st_qS1 = { "qS1", 0, 0, 0 };
-	static stat st_qS2 = { "qS2", 0, 0, 0 };
-	static stat st_qS3 = { "qS3", 0, 0, 0 };
-	static stat st_qS4 = { "qS4", 0, 0, 0 };
-	static stat st_qS5 = { "qS5", 0, 0, 0 };
-	static stat st_qS6 = { "qS6", 0, 0, 0 };
-	static stat st_qS7 = { "qS7", 0, 0, 0 };
-	static stat st_qS8 = { "qS8", 0, 0, 0 };
-	static stat st_qS9 = { "qS9", 0, 0, 0 };
-	static stat st_pi_lo = { "pi_lo", 0, 0, 0 };
-	static stat st_atanhi = { "atanhi[]", 0, 0, 0 };
-	static stat st_atanlo = { "atanlo[]", 0, 0, 0 };
-	static stat st_aT = { "aT[]", 0, 0, 0 };
-
-	unsigned long long total_fails = 0;
-
 	check_all_scalars();
 	check_all_tables();
 	run_random_sweep();
@@ -356,12 +290,5 @@ main()
 	print_row(st_atanlo);
 	print_row(st_aT);
 
-	total_fails = st_pS0.fails + st_pS1.fails + st_pS2.fails + st_pS3.fails +
-	    st_pS4.fails + st_pS5.fails + st_pS6.fails + st_pS7.fails +
-	    st_pS8.fails + st_pS9.fails + st_qS1.fails + st_qS2.fails +
-	    st_qS3.fails + st_qS4.fails + st_qS5.fails + st_qS6.fails +
-	    st_qS7.fails + st_qS8.fails + st_qS9.fails + st_pi_lo.fails +
-	    st_atanhi.fails + st_atanlo.fails + st_aT.fails;
-
-	return total_fails == 0 ? 0 : 1;
+	return total_fails() == 0 ? 0 : 1;
 }

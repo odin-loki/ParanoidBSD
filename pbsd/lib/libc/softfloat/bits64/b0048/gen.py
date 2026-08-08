@@ -525,15 +525,24 @@ def gen_extern_decls(funcs: set[str], classes: dict[str, str]) -> str:
 
 
 def sig_float_type(f: str) -> str:
-    if 'float32' in f and 'float128' not in f and 'floatx80' not in f and 'float64' not in f:
-        return 'float32'
-    if 'float64' in f:
-        return 'float64'
-    if 'floatx80' in f:
-        return 'floatx80'
-    if 'float128' in f:
+    fl = f.lower()
+    if 'float128' in fl:
         return 'float128'
+    if 'floatx80' in fl:
+        return 'floatx80'
+    if 'float64' in fl:
+        return 'float64'
+    if 'float32' in fl:
+        return 'float32'
     return 'float64'
+
+
+def cmp_expr(ty: str, a: str, b: str) -> str:
+    if ty == 'float128':
+        return f'(rp.high != rr.high || rp.low != rr.low)'
+    if ty == 'floatx80':
+        return f'(rp.high != rr.high || rp.low != rr.low)'
+    return f'(rp != rr)'
 
 
 def proto_extract_pack(f: str) -> str:

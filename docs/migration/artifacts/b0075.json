@@ -1,0 +1,13 @@
+{
+  "batch": "b0075",
+  "verified": "2026-08-08T11:24:25Z",
+  "evidence": "harness green + IR-identical for all 9 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                        cases     failures\n--------                        -----     --------\n__collate_range_cmp            200010            0\n__wcollate_range_cmp           200008            0\nmbrtowc_l                      200018            0\nmbrtowc                        200018            0\nc32rtomb_l                     200019            0\nc32rtomb                       200019            0\nmbstowcs_l                     200016            0\nmbstowcs                       200016            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/collcmp.c": "33f99922ee00b17d",
+    "hbsd/src/lib/libc/locale/mbrtowc.c": "99e352777b48dbc1",
+    "hbsd/src/lib/libc/locale/c32rtomb.c": "514cff850f2ccbb8",
+    "hbsd/src/lib/libc/locale/mbstowcs.c": "12522e4bd4ce43f4"
+  }
+}

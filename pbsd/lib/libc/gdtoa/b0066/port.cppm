@@ -26,7 +26,31 @@ module;
 
 export module pbsd.lib.libc.gdtoa.b0066;
 
-#include "gdtoa_shim.h"
+extern "C" {
+enum {
+	STRTOG_Zero = 0,
+	STRTOG_Normal = 1,
+	STRTOG_Denormal = 2,
+	STRTOG_Infinite = 3,
+	STRTOG_NaN = 4,
+};
+typedef struct {
+	int nbits;
+	int emin;
+	int emax;
+	int rounding;
+	int sudden_underflow;
+} FPI;
+char *__gdtoa(FPI *fpi, int be, unsigned int *bits, int *kindp, int mode,
+    int ndigits, int *decpt, char **rve);
+char *__rv_alloc_D2A(int i);
+char *__nrv_alloc_D2A(char *s, char **rve, int n);
+void __freedtoa(char *s);
+}
+
+#define gdtoa __gdtoa
+#define rv_alloc __rv_alloc_D2A
+#define nrv_alloc __nrv_alloc_D2A
 
 export namespace pbsd::lib_libc_gdtoa::b0066 {
 
@@ -174,7 +198,7 @@ __ldtoa(long double *ld, int mode, int ndigits, int *decpt, int *sign,
 		abort();
 	}
 
-	ret = gdtoa(&fpi, be, (ULong *)vbits, &kind, mode, ndigits, decpt, rve);
+	ret = gdtoa(&fpi, be, (unsigned int *)vbits, &kind, mode, ndigits, decpt, rve);
 	if (*decpt == -32768)
 		*decpt = INT_MAX;
 	return ret;

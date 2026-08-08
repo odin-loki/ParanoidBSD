@@ -24,7 +24,7 @@ char *ref___hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sig
     char **rve);
 char *ref___hldtoa(long double e, const char *xdigs, int ndigits, int *decpt,
     int *sign, char **rve);
-void freedtoa(char *);
+void __freedtoa(char *);
 }
 
 enum { FN_LDTOA, FN_HDTOA, FN_HLDTOA, NFUNC };
@@ -132,9 +132,9 @@ chk_ldtoa(int fn, const char *label, long double *ldp, int mode, int ndigits,
 		fail(fn, label);
 
 	if (a_ret != nullptr)
-		freedtoa(a_ret);
+		__freedtoa(a_ret);
 	if (b_ret != nullptr)
-		freedtoa(b_ret);
+		__freedtoa(b_ret);
 }
 
 static void
@@ -183,9 +183,9 @@ chk_hextoa(int fn, const char *label, double d, long double ld,
 		fail(fn, label);
 
 	if (a_ret != nullptr)
-		freedtoa(a_ret);
+		__freedtoa(a_ret);
 	if (b_ret != nullptr)
-		freedtoa(b_ret);
+		__freedtoa(b_ret);
 }
 
 static void
@@ -408,7 +408,8 @@ rnd_long_double(void)
 		break;
 	}
 	long double ld;
-	std::memcpy(&ld, b, sizeof(ld));
+	std::memset(&ld, 0, sizeof(ld));
+	std::memcpy(&ld, b, 10);
 	return ld;
 }
 
