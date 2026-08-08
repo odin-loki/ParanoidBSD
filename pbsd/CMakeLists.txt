@@ -97,6 +97,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/posix1e/acl_perm_m/port.cppm
   lib/libc/posix1e/b0110/port.cppm
   lib/libc/quad/b0033/port.cppm
+  lib/libc/quad/b0034/port.cppm
   lib/libc/quad/b0040/port.cppm
   lib/libc/quad/divdi3_m/port.cppm
   lib/libc/quad/fixdfdi_m/port.cppm
@@ -278,6 +279,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/security/mac_none/b0005/port.cppm
   sys/security/mac_ntpd/b0007/port.cppm
   sys/security/mac_pimd/b0006/port.cppm
+  sys/security/mac_veriexec/b0029/port.cppm
   sys/x86/linux/b0037/port.cppm
   usr.bin/ar/util_m/port.cppm
   usr.bin/calendar/ostern_m/port.cppm

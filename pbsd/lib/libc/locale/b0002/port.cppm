@@ -92,7 +92,7 @@ XLOCALE_CTYPE(port_locale_t l)
 
 export namespace pbsd::lib_libc_locale::b0002 {
 
-using ::mbstate_t;
+using mbstate_t = ::mbstate_t;
 using port_locale_t = ::port_locale_t;
 
 inline void

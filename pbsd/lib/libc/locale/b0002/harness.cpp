@@ -13,14 +13,10 @@ import pbsd.lib.libc.locale.b0002;
 
 namespace port = pbsd::lib_libc_locale::b0002;
 
-#define __mbstate_t_defined 1
 typedef union {
-	char		__mbstate8[128];
-	long long	_mbstateL;
-} __mbstate_t;
-typedef __mbstate_t ref_mbstate_t;
-
-#include <uchar.h>
+	char		__bytes[128];
+	long long	__align;
+} ref_mbstate_t;
 
 extern "C" {
 typedef struct xlocale *ref_locale_t;

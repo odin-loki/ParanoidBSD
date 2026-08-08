@@ -1,585 +1,393 @@
 /*
- * harness.cpp -- differential test for PBSD batch b0011.
+ * PBSD migration batch b0011 -- differential test.
  *
- * Every ported entry point is driven against the ref_ oracle in oracle.c
- * with hand-written edge cases and a fixed-seed randomised sweep.  Both
- * the return value and the softfloat exception-flag word raised by the
- * call are compared.  Flag-returning functions store the raw char result
- * into a guard buffer so width and truncation are observable.
+ * Every case is run through both the C++23 port and the ref_ oracle in
+ * oracle.c and the results are compared bit for bit.  None of the batch
+ * functions writes through a pointer or returns a pointer, so the whole
+ * observable result of a call is (return value, softfloat exception flags);
+ * both are captured and compared for every case.
  *
- * Operand staging uses two separate buffers pre-filled with the guard byte
- * 0x7f -- one fed to the oracle, one fed to the port -- and both buffers
- * are compared in their entirety after each pair of calls.
+ * The "edge case" analogue of NUL-heavy / high-bit-byte strings for these
+ * floating point entry points is the set of IEEE-754 special encodings:
+ * both zeroes, both infinities, the smallest and largest subnormals, the
+ * smallest and largest normals, the values adjacent to 1.0, and quiet and
+ * signalling NaNs of both signs at both ends of their payload ranges.
+ * Every pair of those is tried for the two-argument functions.
  */
 
-#include <cinttypes>
+import pbsd.lib.libc.softfloat.b0011;
+
 #include <cstdint>
 #include <cstdio>
-#include <cstring>
-#include <vector>
-
-import pbsd.lib.libc.softfloat.b0011;
 
 namespace port = pbsd::lib_libc_softfloat::b0011;
 
 extern "C" {
-extern int ref_float_exception_flags;
-char ref_eqdf2(std::uint64_t, std::uint64_t);
-std::uint64_t ref_negdf2(std::uint64_t);
-char ref_gesf2(std::uint32_t, std::uint32_t);
-char ref_lesf2(std::uint32_t, std::uint32_t);
+char ref___eqdf2(std::uint64_t, std::uint64_t);
+std::uint64_t ref___negdf2(std::uint64_t);
+char ref___gesf2(std::uint32_t, std::uint32_t);
+char ref___lesf2(std::uint32_t, std::uint32_t);
+extern signed char float_exception_flags;
 }
 
 namespace {
 
-constexpr int MAX_REPORT = 10;
-constexpr long RANDOM_ITERATIONS = 250000;
-
-struct Stat {
+struct Stats {
 	const char *name;
-	long cases;
-	long fails;
-	int reported;
+	unsigned long long cases = 0;
+	unsigned long long failures = 0;
+	unsigned long long reported = 0;
+	bool seen[256] = {};
+
+	explicit Stats(const char *n) : name(n) {}
+
+	void note(unsigned long long r) { seen[r & 0xFFu] = true; }
+
+	unsigned distinct() const
+	{
+		unsigned n = 0;
+		for (bool b : seen)
+			if (b)
+				n++;
+		return n;
+	}
 };
 
-Stat st_eqdf2{"__eqdf2", 0, 0, 0};
-Stat st_negdf2{"__negdf2", 0, 0, 0};
-Stat st_gesf2{"__gesf2", 0, 0, 0};
-Stat st_lesf2{"__lesf2", 0, 0, 0};
-
-/* ------------------------------------------------------------------ */
-/* guard buffers						      */
-/* ------------------------------------------------------------------ */
-
-constexpr std::size_t GUARD_SIZE = 64;
-constexpr std::size_t GUARD_OFF = 16;
-constexpr std::size_t RET_OFF = GUARD_OFF + 32;
-
-struct GuardBuf {
-	unsigned char b[GUARD_SIZE];
-
-	template <typename T>
-	void store(const T &v, std::size_t slot)
-	{
-		std::memcpy(b + GUARD_OFF + slot * sizeof(T), &v, sizeof(T));
-	}
-
-	template <typename T>
-	T load(std::size_t slot) const
-	{
-		T v;
-		std::memcpy(&v, b + GUARD_OFF + slot * sizeof(T), sizeof(T));
-		return v;
-	}
-
-	void fill() { std::memset(b, 0x7f, GUARD_SIZE); }
+const std::uint32_t f32_edges[] = {
+	0x00000000u, 0x80000000u,	/* +0, -0 */
+	0x00000001u, 0x80000001u,	/* smallest subnormal */
+	0x004C0000u, 0x804C0000u,	/* mid subnormal */
+	0x007FFFFFu, 0x807FFFFFu,	/* largest subnormal */
+	0x00800000u, 0x80800000u,	/* smallest normal */
+	0x00800001u, 0x80800001u,
+	0x3F7FFFFFu, 0xBF7FFFFFu,	/* just below 1.0 */
+	0x3F800000u, 0xBF800000u,	/* 1.0 */
+	0x3F800001u, 0xBF800001u,	/* just above 1.0 */
+	0x40000000u, 0xC0000000u,	/* 2.0 */
+	0x7F7FFFFFu, 0xFF7FFFFFu,	/* largest finite */
+	0x7F800000u, 0xFF800000u,	/* infinities */
+	0x7F800001u, 0xFF800001u,	/* smallest signalling NaN */
+	0x7FBFFFFFu, 0xFFBFFFFFu,	/* largest signalling NaN */
+	0x7FC00000u, 0xFFC00000u,	/* smallest quiet NaN */
+	0x7FFFFFFFu, 0xFFFFFFFFu	/* largest quiet NaN */
 };
 
-/* ------------------------------------------------------------------ */
-/* fixed-seed PRNG (splitmix64)					      */
-/* ------------------------------------------------------------------ */
+const std::uint64_t f64_edges[] = {
+	0x0000000000000000ull, 0x8000000000000000ull,
+	0x0000000000000001ull, 0x8000000000000001ull,
+	0x0008000000000000ull, 0x8008000000000000ull,
+	0x000FFFFFFFFFFFFFull, 0x800FFFFFFFFFFFFFull,
+	0x0010000000000000ull, 0x8010000000000000ull,
+	0x0010000000000001ull, 0x8010000000000001ull,
+	0x3FEFFFFFFFFFFFFFull, 0xBFEFFFFFFFFFFFFFull,
+	0x3FF0000000000000ull, 0xBFF0000000000000ull,
+	0x3FF0000000000001ull, 0xBFF0000000000001ull,
+	0x4000000000000000ull, 0xC000000000000000ull,
+	0x7FEFFFFFFFFFFFFFull, 0xFFEFFFFFFFFFFFFFull,
+	0x7FF0000000000000ull, 0xFFF0000000000000ull,
+	0x7FF0000000000001ull, 0xFFF0000000000001ull,
+	0x7FF7FFFFFFFFFFFFull, 0xFFF7FFFFFFFFFFFFull,
+	0x7FF8000000000000ull, 0xFFF8000000000000ull,
+	0x7FFFFFFFFFFFFFFFull, 0xFFFFFFFFFFFFFFFFull
+};
 
-std::uint64_t prng_state;
+std::uint64_t rng_state;
 
-void prng_seed(std::uint64_t seed) { prng_state = seed; }
-
-std::uint64_t prng_next()
+void
+rng_seed(std::uint64_t s)
 {
-	std::uint64_t z = (prng_state += 0x9E3779B97F4A7C15ULL);
-	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
-	z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+
+	rng_state = s;
+}
+
+std::uint64_t
+rng_next()
+{
+	std::uint64_t z = (rng_state += 0x9E3779B97F4A7C15ull);
+
+	z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+	z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
 	return z ^ (z >> 31);
 }
 
-std::uint32_t rand_f32()
+/*
+ * Draw a float32 pattern biased towards the encodings where the softfloat
+ * comparison changes behaviour: zeroes, subnormals, both infinities and both
+ * NaN classes, as well as plain uniform bit patterns.
+ */
+std::uint32_t
+gen32()
 {
-	std::uint64_t r = prng_next();
+	std::uint64_t r = rng_next();
+	std::uint32_t sign = static_cast<std::uint32_t>(r & 1) << 31;
+	std::uint32_t frac = static_cast<std::uint32_t>(r >> 32) & 0x007FFFFFu;
 
-	switch (r & 7) {
+	switch ((r >> 1) & 7) {
 	case 0:
+		return static_cast<std::uint32_t>(rng_next());
 	case 1:
+		return sign;				/* signed zero */
 	case 2:
-		return static_cast<std::uint32_t>(r >> 32);
-	case 3: {
-		std::uint32_t sign = static_cast<std::uint32_t>((r >> 8) & 1) << 31;
-		std::uint32_t frac = static_cast<std::uint32_t>(prng_next()) & 0x7FFFFF;
-		if (((r >> 9) & 3) == 0)
-			frac &= 0xF;
-		return sign | 0x7F800000u | frac;
-	}
-	case 4: {
-		std::uint32_t sign = static_cast<std::uint32_t>((r >> 8) & 1) << 31;
-		std::uint32_t frac = static_cast<std::uint32_t>(prng_next()) & 0x7FFFFF;
-		if (((r >> 9) & 3) == 0)
-			frac = 0;
-		else if (((r >> 9) & 3) == 1)
-			frac &= 0xFF;
-		return sign | frac;
-	}
-	case 5: {
-		static const std::uint32_t exps[] = {0, 1, 2, 0x7D, 0x7E, 0x7F,
-		    0x80, 0x81, 0xFD, 0xFE, 0xFF};
-		std::uint64_t q = prng_next();
-		std::uint32_t sign = static_cast<std::uint32_t>((r >> 8) & 1) << 31;
-		std::uint32_t exp = exps[q % (sizeof(exps) / sizeof(exps[0]))];
-		std::uint32_t frac = static_cast<std::uint32_t>(q >> 32) & 0x7FFFFF;
-		return sign | (exp << 23) | frac;
-	}
-	case 6: {
-		std::uint32_t v = 0;
-		std::uint64_t q = prng_next();
-		for (int i = 0; i < 4; i++) {
-			std::uint32_t byte = 0x80u | ((q >> (i * 8)) & 0x7F);
-			v |= byte << (i * 8);
-		}
-		return v;
-	}
-	default: {
-		std::uint64_t q = prng_next();
-		std::uint32_t sign = static_cast<std::uint32_t>((r >> 8) & 1) << 31;
-		std::uint32_t exp = 0x7Fu + static_cast<std::uint32_t>(q % 5) - 2;
-		return sign | (exp << 23);
-	}
+		return sign | frac;			/* subnormal */
+	case 3:
+		return sign | 0x00800000u | frac;	/* smallest normals */
+	case 4:
+		return sign | 0x7F000000u | frac;	/* huge normals */
+	case 5:
+		return sign | 0x7F800000u;		/* infinity */
+	case 6:
+		return sign | 0x7F800000u | (frac | 1u);	/* NaN */
+	default:
+		return sign | (static_cast<std::uint32_t>(r >> 8) &
+		    0x7FFFFFFFu);
 	}
 }
 
-std::uint64_t rand_f64()
+std::uint64_t
+gen64()
 {
-	std::uint64_t r = prng_next();
+	std::uint64_t r = rng_next();
+	std::uint64_t sign = (r & 1) << 63;
+	std::uint64_t frac = rng_next() & 0x000FFFFFFFFFFFFFull;
 
-	switch (r & 7) {
+	switch ((r >> 1) & 7) {
 	case 0:
+		return rng_next();
 	case 1:
+		return sign;
 	case 2:
-		return prng_next();
-	case 3: {
-		std::uint64_t sign = ((r >> 8) & 1) << 63;
-		std::uint64_t frac = prng_next() & 0x000FFFFFFFFFFFFFULL;
-		if (((r >> 9) & 3) == 0)
-			frac &= 0xF;
-		return sign | 0x7FF0000000000000ULL | frac;
-	}
-	case 4: {
-		std::uint64_t sign = ((r >> 8) & 1) << 63;
-		std::uint64_t frac = prng_next() & 0x000FFFFFFFFFFFFFULL;
-		if (((r >> 9) & 3) == 0)
-			frac = 0;
-		else if (((r >> 9) & 3) == 1)
-			frac &= 0xFF;
 		return sign | frac;
-	}
-	case 5: {
-		static const std::uint64_t exps[] = {0, 1, 2, 0x3FD, 0x3FE,
-		    0x3FF, 0x400, 0x401, 0x7FD, 0x7FE, 0x7FF};
-		std::uint64_t q = prng_next();
-		std::uint64_t sign = ((r >> 8) & 1) << 63;
-		std::uint64_t exp = exps[q % (sizeof(exps) / sizeof(exps[0]))];
-		std::uint64_t frac = prng_next() & 0x000FFFFFFFFFFFFFULL;
-		return sign | (exp << 52) | frac;
-	}
-	case 6: {
-		std::uint64_t v = 0;
-		std::uint64_t q = prng_next();
-		for (int i = 0; i < 8; i++) {
-			std::uint64_t byte = 0x80ULL | ((q >> (i * 8)) & 0x7F);
-			v |= byte << (i * 8);
-		}
-		return v;
-	}
-	default: {
-		std::uint64_t q = prng_next();
-		std::uint64_t sign = ((r >> 8) & 1) << 63;
-		std::uint64_t exp = 0x3FFULL + (q % 5) - 2;
-		return sign | (exp << 52);
-	}
+	case 3:
+		return sign | 0x0010000000000000ull | frac;
+	case 4:
+		return sign | 0x7FE0000000000000ull | frac;
+	case 5:
+		return sign | 0x7FF0000000000000ull;
+	case 6:
+		return sign | 0x7FF0000000000000ull | (frac | 1ull);
+	default:
+		return sign | (rng_next() & 0x7FFFFFFFFFFFFFFFull);
 	}
 }
 
-/* ------------------------------------------------------------------ */
-/* edge-case operand pools					      */
-/* ------------------------------------------------------------------ */
-
-std::vector<std::uint32_t> edge_f32()
+/* Relate the second operand to the first so the equal / adjacent / opposite
+ * sign branches of the comparisons are hit often, not just by chance. */
+std::uint32_t
+mate32(std::uint32_t a)
 {
-	std::vector<std::uint32_t> v = {
-	    0x00000000u, 0x80000000u,
-	    0x00000001u, 0x80000001u,
-	    0x007FFFFFu, 0x807FFFFFu,
-	    0x00800000u, 0x80800000u,
-	    0x00800001u, 0x80800001u,
-	    0x3F800000u, 0xBF800000u,
-	    0x40000000u, 0xC0000000u,
-	    0x3F7FFFFFu, 0xBF7FFFFFu,
-	    0x7F7FFFFFu, 0xFF7FFFFFu,
-	    0x7F800000u, 0xFF800000u,
-	    0x7F800001u, 0xFF800001u,
-	    0x7FA00000u, 0xFFA00000u,
-	    0x7FBFFFFFu, 0xFFBFFFFFu,
-	    0x7FC00000u, 0xFFC00000u,
-	    0x7FFFFFFFu, 0xFFFFFFFFu,
-	    0x7FFFFFFEu, 0xFFFFFFFEu,
-	    0x00000080u, 0x000000FFu,
-	    0x0000FF00u, 0x00FF0000u, 0xFF000000u,
-	    0x7F7F7F7Fu,
-	    0x80000080u, 0x008000FFu,
-	};
-	for (unsigned b = 0x80u; b <= 0xFFu; b++)
-		v.push_back(b * 0x01010101u);
-	return v;
-}
 
-std::vector<std::uint64_t> edge_f64()
-{
-	std::vector<std::uint64_t> v = {
-	    0x0000000000000000ULL, 0x8000000000000000ULL,
-	    0x0000000000000001ULL, 0x8000000000000001ULL,
-	    0x000FFFFFFFFFFFFFULL, 0x800FFFFFFFFFFFFFULL,
-	    0x0010000000000000ULL, 0x8010000000000000ULL,
-	    0x0010000000000001ULL, 0x8010000000000001ULL,
-	    0x3FF0000000000000ULL, 0xBFF0000000000000ULL,
-	    0x4000000000000000ULL, 0xC000000000000000ULL,
-	    0x3FEFFFFFFFFFFFFFULL, 0xBFEFFFFFFFFFFFFFULL,
-	    0x7FEFFFFFFFFFFFFFULL, 0xFFEFFFFFFFFFFFFFULL,
-	    0x7FF0000000000000ULL, 0xFFF0000000000000ULL,
-	    0x7FF0000000000001ULL, 0xFFF0000000000001ULL,
-	    0x7FF4000000000000ULL, 0xFFF4000000000000ULL,
-	    0x7FF7FFFFFFFFFFFFULL, 0xFFF7FFFFFFFFFFFFULL,
-	    0x7FF8000000000000ULL, 0xFFF8000000000000ULL,
-	    0x7FFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL,
-	    0x7FFFFFFFFFFFFFFEULL, 0xFFFFFFFFFFFFFFFEULL,
-	    0x0000000000000080ULL, 0x00000000000000FFULL,
-	    0x00000000FF000000ULL, 0xFF00000000000000ULL,
-	    0x7F7F7F7F7F7F7F7FULL,
-	    0x8000000000000080ULL,
-	};
-	for (unsigned b = 0x80u; b <= 0xFFu; b++)
-		v.push_back(b * 0x0101010101010101ULL);
-	return v;
-}
-
-/* ------------------------------------------------------------------ */
-/* per-function checks						      */
-/* ------------------------------------------------------------------ */
-
-void note_fail(Stat &s) { s.fails++; }
-
-bool want_report(Stat &s) { return s.reported++ < MAX_REPORT; }
-
-void check_negdf2(std::uint64_t a, bool guarded)
-{
-	Stat &s = st_negdf2;
-	s.cases++;
-
-	GuardBuf ba, bb;
-	std::uint64_t ra = a, rb = a;
-
-	if (guarded) {
-		ba.fill();
-		bb.fill();
-		ba.store(a, 0);
-		bb.store(a, 0);
-		ra = ba.load<std::uint64_t>(0);
-		rb = bb.load<std::uint64_t>(0);
-	}
-
-	ref_float_exception_flags = 0;
-	std::uint64_t rref = ref_negdf2(ra);
-	int fref = ref_float_exception_flags;
-
-	port::float_exception_flags = 0;
-	std::uint64_t rprt = port::negdf2(rb);
-	int fprt = port::float_exception_flags;
-
-	bool bad = (rref != rprt) || (fref != fprt);
-	if (guarded && std::memcmp(ba.b, bb.b, GUARD_SIZE) != 0)
-		bad = true;
-
-	if (bad) {
-		note_fail(s);
-		if (want_report(s))
-			std::printf("  FAIL __negdf2(0x%016" PRIx64 "): "
-				    "ref=0x%016" PRIx64 "/flags=%d "
-				    "port=0x%016" PRIx64 "/flags=%d buf=%s\n",
-			    a, rref, fref, rprt, fprt,
-			    guarded ? (std::memcmp(ba.b, bb.b, GUARD_SIZE) == 0
-				    ? "ok" : "DIFF") : "n/a");
+	switch (rng_next() & 7) {
+	case 0:
+		return a;
+	case 1:
+		return a ^ 0x80000000u;
+	case 2:
+		return a + 1;
+	case 3:
+		return a - 1;
+	case 4:
+		return a ^ 1u;
+	default:
+		return gen32();
 	}
 }
 
-void check_flag64(Stat &s, const char *name,
-    char (*fref_fn)(std::uint64_t, std::uint64_t),
-    port::flag (*fprt_fn)(std::uint64_t, std::uint64_t),
-    std::uint64_t a, std::uint64_t b, bool guarded)
+std::uint64_t
+mate64(std::uint64_t a)
 {
-	s.cases++;
 
-	GuardBuf ba, bb;
-	std::uint64_t a1 = a, b1 = b, a2 = a, b2 = b;
-	char rref_buf[1], rprt_buf[1];
-
-	if (guarded) {
-		ba.fill();
-		bb.fill();
-		ba.store(a, 0);
-		ba.store(b, 1);
-		bb.store(a, 0);
-		bb.store(b, 1);
-		a1 = ba.load<std::uint64_t>(0);
-		b1 = ba.load<std::uint64_t>(1);
-		a2 = bb.load<std::uint64_t>(0);
-		b2 = bb.load<std::uint64_t>(1);
-	}
-
-	ref_float_exception_flags = 0;
-	char rref = fref_fn(a1, b1);
-	int fref = ref_float_exception_flags;
-	std::memcpy(rref_buf, &rref, 1);
-
-	port::float_exception_flags = 0;
-	port::flag rprt = fprt_fn(a2, b2);
-	int fprt = port::float_exception_flags;
-	std::memcpy(rprt_buf, &rprt, 1);
-
-	bool bufdiff = guarded && std::memcmp(ba.b, bb.b, GUARD_SIZE) != 0;
-	if (rref != rprt || std::memcmp(rref_buf, rprt_buf, 1) != 0
-	    || fref != fprt || bufdiff) {
-		note_fail(s);
-		if (want_report(s))
-			std::printf("  FAIL %s(0x%016" PRIx64 ", 0x%016" PRIx64
-				    "): ref=%d/flags=%d port=%d/flags=%d%s\n",
-			    name, a, b, static_cast<int>(rref), fref,
-			    static_cast<int>(rprt), fprt,
-			    bufdiff ? " GUARD BUFFER DIFF" : "");
+	switch (rng_next() & 7) {
+	case 0:
+		return a;
+	case 1:
+		return a ^ 0x8000000000000000ull;
+	case 2:
+		return a + 1;
+	case 3:
+		return a - 1;
+	case 4:
+		return a ^ 1ull;
+	default:
+		return gen64();
 	}
 }
 
-void check_flag32(Stat &s, const char *name,
-    char (*fref_fn)(std::uint32_t, std::uint32_t),
-    port::flag (*fprt_fn)(std::uint32_t, std::uint32_t),
-    std::uint32_t a, std::uint32_t b, bool guarded)
+void
+check_eqdf2(Stats &st, std::uint64_t a, std::uint64_t b)
 {
-	s.cases++;
+	float_exception_flags = 0;
+	char got = port::__eqdf2(a, b);
+	int got_flags = float_exception_flags;
 
-	GuardBuf ba, bb;
-	std::uint32_t a1 = a, b1 = b, a2 = a, b2 = b;
-	char rref_buf[1], rprt_buf[1];
+	float_exception_flags = 0;
+	char want = ref___eqdf2(a, b);
+	int want_flags = float_exception_flags;
 
-	if (guarded) {
-		ba.fill();
-		bb.fill();
-		ba.store(a, 0);
-		ba.store(b, 1);
-		bb.store(a, 0);
-		bb.store(b, 1);
-		a1 = ba.load<std::uint32_t>(0);
-		b1 = ba.load<std::uint32_t>(1);
-		a2 = bb.load<std::uint32_t>(0);
-		b2 = bb.load<std::uint32_t>(1);
-	}
-
-	ref_float_exception_flags = 0;
-	char rref = fref_fn(a1, b1);
-	int fref = ref_float_exception_flags;
-	std::memcpy(rref_buf, &rref, 1);
-
-	port::float_exception_flags = 0;
-	port::flag rprt = fprt_fn(a2, b2);
-	int fprt = port::float_exception_flags;
-	std::memcpy(rprt_buf, &rprt, 1);
-
-	bool bufdiff = guarded && std::memcmp(ba.b, bb.b, GUARD_SIZE) != 0;
-	if (rref != rprt || std::memcmp(rref_buf, rprt_buf, 1) != 0
-	    || fref != fprt || bufdiff) {
-		note_fail(s);
-		if (want_report(s))
-			std::printf("  FAIL %s(0x%08" PRIx32 ", 0x%08" PRIx32
-				    "): ref=%d/flags=%d port=%d/flags=%d%s\n",
-			    name, a, b, static_cast<int>(rref), fref,
-			    static_cast<int>(rprt), fprt,
-			    bufdiff ? " GUARD BUFFER DIFF" : "");
+	st.cases++;
+	st.note(static_cast<unsigned long long>(static_cast<unsigned char>(want)));
+	if (got != want || got_flags != want_flags) {
+		st.failures++;
+		if (st.reported++ < 8)
+			std::printf("  __eqdf2(0x%016llx, 0x%016llx): port %d "
+			    "flags %d, oracle %d flags %d\n",
+			    static_cast<unsigned long long>(a),
+			    static_cast<unsigned long long>(b),
+			    got, got_flags, want, want_flags);
 	}
 }
 
-port::flag port_eqdf2(std::uint64_t a, std::uint64_t b)
+void
+check_negdf2(Stats &st, std::uint64_t a)
 {
-	return port::eqdf2(a, b);
-}
+	std::uint64_t got = port::__negdf2(a);
+	std::uint64_t want = ref___negdf2(a);
 
-port::flag port_gesf2(std::uint32_t a, std::uint32_t b)
-{
-	return port::gesf2(a, b);
-}
-
-port::flag port_lesf2(std::uint32_t a, std::uint32_t b)
-{
-	return port::lesf2(a, b);
-}
-
-void run_eqdf2()
-{
-	std::vector<std::uint64_t> e = edge_f64();
-
-	for (std::uint64_t a : e)
-		for (std::uint64_t b : e)
-			check_flag64(st_eqdf2, "__eqdf2", ref_eqdf2, port_eqdf2,
-			    a, b, true);
-
-	prng_seed(0x0011000100000001ULL);
-	for (long i = 0; i < RANDOM_ITERATIONS; i++) {
-		std::uint64_t a = rand_f64();
-		std::uint64_t b;
-		switch (prng_next() & 3) {
-		case 0:
-			b = a;
-			break;
-		case 1:
-			b = a ^ 0x8000000000000000ULL;
-			break;
-		case 2:
-			b = a + 1;
-			break;
-		default:
-			b = rand_f64();
-			break;
-		}
-		check_flag64(st_eqdf2, "__eqdf2", ref_eqdf2, port_eqdf2, a, b,
-		    false);
+	st.cases++;
+	st.note(want ^ (want >> 56));
+	if (got != want) {
+		st.failures++;
+		if (st.reported++ < 8)
+			std::printf("  __negdf2(0x%016llx): port 0x%016llx, "
+			    "oracle 0x%016llx\n",
+			    static_cast<unsigned long long>(a),
+			    static_cast<unsigned long long>(got),
+			    static_cast<unsigned long long>(want));
 	}
 }
 
-void run_negdf2()
+void
+check_gesf2(Stats &st, std::uint32_t a, std::uint32_t b)
 {
-	std::vector<std::uint64_t> e = edge_f64();
+	float_exception_flags = 0;
+	char got = port::__gesf2(a, b);
+	int got_flags = float_exception_flags;
 
-	for (std::uint64_t a : e)
-		check_negdf2(a, true);
-	for (unsigned i = 0; i < 256; i++) {
-		check_negdf2(static_cast<std::uint64_t>(i), true);
-		check_negdf2(static_cast<std::uint64_t>(i) << 8, true);
-		check_negdf2(static_cast<std::uint64_t>(i) << 16, true);
-		check_negdf2(static_cast<std::uint64_t>(i) << 24, true);
-		check_negdf2(static_cast<std::uint64_t>(i) << 32, true);
-		check_negdf2(static_cast<std::uint64_t>(i) << 40, true);
-		check_negdf2(static_cast<std::uint64_t>(i) << 48, true);
-		check_negdf2(static_cast<std::uint64_t>(i) << 56, true);
-	}
-	for (int i = 0; i < 64; i++) {
-		check_negdf2(1ULL << i, true);
-		check_negdf2(~(1ULL << i), true);
-	}
+	float_exception_flags = 0;
+	char want = ref___gesf2(a, b);
+	int want_flags = float_exception_flags;
 
-	prng_seed(0x0011000200000002ULL);
-	for (long i = 0; i < RANDOM_ITERATIONS; i++)
-		check_negdf2(rand_f64(), false);
-}
-
-void run_gesf2()
-{
-	std::vector<std::uint32_t> e = edge_f32();
-
-	for (std::uint32_t a : e)
-		for (std::uint32_t b : e)
-			check_flag32(st_gesf2, "__gesf2", ref_gesf2, port_gesf2,
-			    a, b, true);
-
-	prng_seed(0x0011000300000003ULL);
-	for (long i = 0; i < RANDOM_ITERATIONS; i++) {
-		std::uint32_t a = rand_f32();
-		std::uint32_t b;
-		switch (prng_next() & 7) {
-		case 0:
-			b = a;
-			break;
-		case 1:
-			b = a ^ 0x80000000u;
-			break;
-		case 2:
-			b = a + 1;
-			break;
-		case 3:
-			b = a - 1;
-			break;
-		case 4:
-			b = a ^ 1u;
-			break;
-		default:
-			b = rand_f32();
-			break;
-		}
-		check_flag32(st_gesf2, "__gesf2", ref_gesf2, port_gesf2, a, b,
-		    false);
+	st.cases++;
+	st.note(static_cast<unsigned long long>(static_cast<unsigned char>(want)));
+	if (got != want || got_flags != want_flags) {
+		st.failures++;
+		if (st.reported++ < 8)
+			std::printf("  __gesf2(0x%08lx, 0x%08lx): port %d "
+			    "flags %d, oracle %d flags %d\n",
+			    static_cast<unsigned long>(a),
+			    static_cast<unsigned long>(b),
+			    got, got_flags, want, want_flags);
 	}
 }
 
-void run_lesf2()
+void
+check_lesf2(Stats &st, std::uint32_t a, std::uint32_t b)
 {
-	std::vector<std::uint32_t> e = edge_f32();
+	float_exception_flags = 0;
+	char got = port::__lesf2(a, b);
+	int got_flags = float_exception_flags;
 
-	for (std::uint32_t a : e)
-		for (std::uint32_t b : e)
-			check_flag32(st_lesf2, "__lesf2", ref_lesf2, port_lesf2,
-			    a, b, true);
+	float_exception_flags = 0;
+	char want = ref___lesf2(a, b);
+	int want_flags = float_exception_flags;
 
-	prng_seed(0x0011000400000004ULL);
-	for (long i = 0; i < RANDOM_ITERATIONS; i++) {
-		std::uint32_t a = rand_f32();
-		std::uint32_t b;
-		switch (prng_next() & 7) {
-		case 0:
-			b = a;
-			break;
-		case 1:
-			b = a ^ 0x80000000u;
-			break;
-		case 2:
-			b = a + 1;
-			break;
-		case 3:
-			b = a - 1;
-			break;
-		case 4:
-			b = a ^ 1u;
-			break;
-		default:
-			b = rand_f32();
-			break;
-		}
-		check_flag32(st_lesf2, "__lesf2", ref_lesf2, port_lesf2, a, b,
-		    false);
+	st.cases++;
+	st.note(static_cast<unsigned long long>(static_cast<unsigned char>(want)));
+	if (got != want || got_flags != want_flags) {
+		st.failures++;
+		if (st.reported++ < 8)
+			std::printf("  __lesf2(0x%08lx, 0x%08lx): port %d "
+			    "flags %d, oracle %d flags %d\n",
+			    static_cast<unsigned long>(a),
+			    static_cast<unsigned long>(b),
+			    got, got_flags, want, want_flags);
 	}
 }
+
+const unsigned long long SWEEP = 250000;
 
 } /* namespace */
 
-int main()
+int
+main()
 {
-	std::printf("PBSD batch b0011 differential test\n");
-	std::printf("(oracle.c is the specification; guard byte 0x7f)\n\n");
+	Stats eq("__eqdf2"), neg("__negdf2"), ge("__gesf2"), le("__lesf2");
 
-	run_eqdf2();
-	run_negdf2();
-	run_gesf2();
-	run_lesf2();
-
-	const Stat *all[] = {&st_eqdf2, &st_negdf2, &st_gesf2, &st_lesf2};
-
-	std::printf("\n%-16s %12s %12s %10s\n", "function", "cases",
-	    "failures", "result");
-	std::printf("%-16s %12s %12s %10s\n", "----------------",
-	    "------------", "------------", "----------");
-
-	long total_cases = 0;
-	long total_fails = 0;
-	for (const Stat *s : all) {
-		total_cases += s->cases;
-		total_fails += s->fails;
-		std::printf("%-16s %12ld %12ld %10s\n", s->name, s->cases,
-		    s->fails, s->fails == 0 ? "PASS" : "FAIL");
+	/* Hand written edge cases: every pair of special encodings. */
+	for (std::uint64_t a : f64_edges) {
+		check_negdf2(neg, a);
+		for (std::uint64_t b : f64_edges)
+			check_eqdf2(eq, a, b);
 	}
-	std::printf("%-16s %12s %12s %10s\n", "----------------",
-	    "------------", "------------", "----------");
-	std::printf("%-16s %12ld %12ld %10s\n", "TOTAL", total_cases,
-	    total_fails, total_fails == 0 ? "PASS" : "FAIL");
+	for (std::uint32_t a : f32_edges)
+		for (std::uint32_t b : f32_edges) {
+			check_gesf2(ge, a, b);
+			check_lesf2(le, a, b);
+		}
 
-	return total_fails == 0 ? 0 : 1;
+	/* Walk the exponent field with a fixed fraction, both signs, so the
+	 * ordering comparisons are exercised on every exponent boundary. */
+	for (unsigned e = 0; e <= 0xFF; e++)
+		for (unsigned s = 0; s < 2; s++) {
+			std::uint32_t a = (static_cast<std::uint32_t>(s) << 31)
+			    | (static_cast<std::uint32_t>(e) << 23) | 0x12345u;
+			for (std::uint32_t b : f32_edges) {
+				check_gesf2(ge, a, b);
+				check_gesf2(ge, b, a);
+				check_lesf2(le, a, b);
+				check_lesf2(le, b, a);
+			}
+		}
+	for (unsigned e = 0; e <= 0x7FF; e++)
+		for (unsigned s = 0; s < 2; s++) {
+			std::uint64_t a =
+			    (static_cast<std::uint64_t>(s) << 63)
+			    | (static_cast<std::uint64_t>(e) << 52)
+			    | 0x123456789ABull;
+			check_negdf2(neg, a);
+			for (std::uint64_t b : f64_edges) {
+				check_eqdf2(eq, a, b);
+				check_eqdf2(eq, b, a);
+			}
+			check_eqdf2(eq, a, a);
+			check_eqdf2(eq, a, a ^ 0x8000000000000000ull);
+		}
+
+	/* Fixed seed randomised sweeps. */
+	rng_seed(0xB0011ull);
+	for (unsigned long long i = 0; i < SWEEP; i++) {
+		std::uint64_t a = gen64();
+		check_eqdf2(eq, a, mate64(a));
+	}
+	rng_seed(0xB0012ull);
+	for (unsigned long long i = 0; i < SWEEP; i++)
+		check_negdf2(neg, gen64());
+	rng_seed(0xB0013ull);
+	for (unsigned long long i = 0; i < SWEEP; i++) {
+		std::uint32_t a = gen32();
+		check_gesf2(ge, a, mate32(a));
+	}
+	rng_seed(0xB0014ull);
+	for (unsigned long long i = 0; i < SWEEP; i++) {
+		std::uint32_t a = gen32();
+		check_lesf2(le, a, mate32(a));
+	}
+
+	const Stats *all[] = { &eq, &neg, &ge, &le };
+	unsigned long long total_failures = 0;
+
+	std::printf("\n%-12s %12s %12s %10s %8s\n", "function", "cases",
+	    "failures", "distinct", "result");
+	for (const Stats *s : all) {
+		bool ok = s->failures == 0 && s->distinct() >= 2;
+
+		if (!ok)
+			total_failures += s->failures ? s->failures : 1;
+		std::printf("%-12s %12llu %12llu %10u %8s\n", s->name,
+		    s->cases, s->failures, s->distinct(),
+		    ok ? "PASS" : "FAIL");
+	}
+	std::printf("\n%s\n", total_failures == 0 ?
+	    "b0011: all cases matched the oracle" :
+	    "b0011: DIVERGENCE from oracle");
+	return total_failures == 0 ? 0 : 1;
 }

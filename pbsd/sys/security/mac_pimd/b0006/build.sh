@@ -31,15 +31,15 @@ flavour_of() {
 build_cxx_clang() {
 	cxx="$1"
 	"$cxx" $CXXFLAGS --precompile -x c++-module port.cppm \
-	    -o "$MODNAME.pcm"
-	"$cxx" $CXXFLAGS -c "$MODNAME.pcm" -o port.o
+	    -o "$MODNAME.pcm" &&
+	"$cxx" $CXXFLAGS -c "$MODNAME.pcm" -o port.o &&
 	"$cxx" $CXXFLAGS -fmodule-file="$MODNAME=$MODNAME.pcm" \
 	    -c harness.cpp -o harness.o
 }
 
 build_cxx_gcc() {
 	cxx="$1"
-	"$cxx" $CXXFLAGS -fmodules-ts -c -x c++ port.cppm -o port.o
+	"$cxx" $CXXFLAGS -fmodules-ts -c -x c++ port.cppm -o port.o &&
 	"$cxx" $CXXFLAGS -fmodules-ts -c harness.cpp -o harness.o
 }
 
@@ -48,8 +48,9 @@ build_with() {
 	case "$(flavour_of "$cxx")" in
 	clang)	build_cxx_clang "$cxx" ;;
 	*)	build_cxx_gcc "$cxx" ;;
-	esac
-	"$cxx" $CXXFLAGS port.o harness.o oracle.o -o "$OUT"
+	esac || return 1
+	"$cxx" $CXXFLAGS port.o harness.o oracle.o -o "$OUT" || return 1
+	return 0
 }
 
 # Preferred toolchain is whatever "c++" is; if its module support cannot cope,
