@@ -23,6 +23,41 @@
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
 #endif
 
+static wint_t
+oracle_fputwc_l(wchar_t wc, FILE *fp, locale_t loc)
+{
+	locale_t old = uselocale(loc);
+	wint_t w = fputwc(wc, fp);
+
+	uselocale(old);
+	return (w);
+}
+
+static wint_t
+oracle_putwc_l(wchar_t wc, FILE *fp, locale_t loc)
+{
+	locale_t old = uselocale(loc);
+	wint_t w = fputwc(wc, fp);
+
+	uselocale(old);
+	return (w);
+}
+
+static int
+oracle_vswprintf_l(wchar_t *s, size_t n, locale_t loc, const wchar_t *fmt,
+    va_list ap)
+{
+	locale_t old = uselocale(loc);
+	int r = vswprintf(s, n, fmt, ap);
+
+	uselocale(old);
+	return (r);
+}
+
+#define fputwc_l oracle_fputwc_l
+#define putwc_l oracle_putwc_l
+#define vswprintf_l oracle_vswprintf_l
+
 #define	FLOCKFILE_CANCELSAFE(fp)	do { (void)(fp); } while (0)
 #define	FUNLOCKFILE_CANCELSAFE()	do { } while (0)
 #define	FLOCKFILE(fp)			do { (void)(fp); } while (0)

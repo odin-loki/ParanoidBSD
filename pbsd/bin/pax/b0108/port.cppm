@@ -1,10 +1,15 @@
 module;
 
+#define _GNU_SOURCE
+#define _DEFAULT_SOURCE
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/sysmacros.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
@@ -19,6 +24,8 @@ module;
 #ifndef u_quad_t
 typedef unsigned long long u_quad_t;
 #endif
+
+typedef unsigned long u_long;
 
 export module pbsd.bin.pax.b0108;
 
@@ -161,6 +168,27 @@ st_hash(char *name, int len, int tabsz)
 /*
  * routines that deal with I/O to and from the user
  */
+
+int tty_init(void);
+void tty_prnt(const char *, ...);
+int tty_read(char *, int);
+void paxwarn(int, const char *, ...);
+void syswarn(int, int, const char *, ...);
+void ls_list(ARCHD *, time_t, FILE *);
+void ls_tty(ARCHD *);
+int l_strncpy(char *, const char *, int);
+u_long asc_ul(char *, int, int);
+int ul_asc(u_long, char *, int, int);
+u_quad_t asc_uqd(char *, int, int);
+int uqd_asc(u_quad_t, char *, int, int);
+int uidtb_start(void);
+int gidtb_start(void);
+int usrtb_start(void);
+int grptb_start(void);
+const char *name_uid(uid_t, int);
+const char *name_gid(gid_t, int);
+int uid_name(char *, uid_t *);
+int gid_name(char *, gid_t *);
 
 #define DEVTTY	  "/dev/tty"      /* device for interactive i/o */
 static FILE *ttyoutf = NULL;		/* output pointing at control tty */

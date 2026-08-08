@@ -58,23 +58,6 @@ import pbsd.lib.libc.sys.b0097;
 
 namespace port = pbsd::lib_libc_sys::b0097;
 
-using port_wait6_fn = pid_t (*)(idtype_t, id_t, int *, int,
-    struct __wrusage *, siginfo_t *);
-
-static port_wait6_fn
-port_wait6_ptr(void)
-{
-	return (reinterpret_cast<port_wait6_fn>(
-	    reinterpret_cast<void *>(port::wait6)));
-}
-
-static pid_t
-call_port_wait6(idtype_t idtype, id_t id, int *status, int options,
-    struct __wrusage *ru, siginfo_t *infop)
-{
-	return (port_wait6_ptr()(idtype, id, status, options, ru, infop));
-}
-
 #define	GUARD			0x7f
 #define	MSG_CAP			64
 #define	MSG_GUARD_PAD		16
@@ -184,10 +167,20 @@ mock_sendto(int s, const void *msg, size_t len, int flags,
 	mock.len = len;
 	mock.flags = flags;
 	mock.tolen = tolen;
-	if (msg != nullptr && len > 0)
-		mock.msg_hash = (unsigned char)hash_bytes(msg, len);
-	if (to != nullptr && tolen > 0)
-		mock.addr_hash = (unsigned char)hash_bytes(to, tolen);
+	if (msg != nullptr && len > 0) {
+		size_t n = len;
+
+		if (n > MSG_CAP)
+			n = MSG_CAP;
+		mock.msg_hash = (unsigned char)hash_bytes(msg, n);
+	}
+	if (to != nullptr && tolen > 0) {
+		size_t n = tolen;
+
+		if (n > ADDR_CAP)
+			n = ADDR_CAP;
+		mock.addr_hash = (unsigned char)hash_bytes(to, n);
+	}
 	return ((ssize_t)mock.prog_ret);
 }
 
@@ -478,7 +471,7 @@ case_wait6(idtype_t idtype, id_t id, int *status, int options,
 
 	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
-	rb = call_port_wait6(idtype, id, psb, options, rub, ib);
+	rb = port::wait6_opaque(idtype, id, psb, options, rub, ib);
 	snap_b = take_snap();
 
 	snprintf(ctx, sizeof(ctx),

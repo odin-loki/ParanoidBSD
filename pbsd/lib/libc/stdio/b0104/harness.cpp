@@ -417,9 +417,56 @@ write_stdin_file(const char *path, const unsigned char *data, std::size_t len)
 }
 
 static int
+port_vscanf_wrap(const char *fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = P::vscanf(fmt, ap);
+	va_end(ap);
+	return (r);
+}
+
+static int
+ref_vscanf_wrap(const char *fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = ref_vscanf(fmt, ap);
+	va_end(ap);
+	return (r);
+}
+
+static int
+port_vscanf_l_wrap(locale_t loc, const char *fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = P::vscanf_l(loc, fmt, ap);
+	va_end(ap);
+	return (r);
+}
+
+static int
+ref_vscanf_l_wrap(locale_t loc, const char *fmt, ...)
+{
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = ref_vscanf_l(loc, fmt, ap);
+	va_end(ap);
+	return (r);
+}
+
+static int
 call_port_vscanf(const char *path, const char *fmt, ScanSlots *sl)
 {
-	std::va_list ap;
 	int r;
 
 	if (freopen(path, "r", stdin) == nullptr)
@@ -427,16 +474,13 @@ call_port_vscanf(const char *path, const char *fmt, ScanSlots *sl)
 	setbuf(stdin, nullptr);
 	clearerr(stdin);
 	scan_slots_init(sl);
-	std::va_start(ap, fmt);
-	r = P::vscanf(fmt, ap);
-	std::va_end(ap);
+	r = port_vscanf_wrap(fmt, &sl->i, &sl->u, &sl->l, sl->s, &sl->c);
 	return r;
 }
 
 static int
 call_ref_vscanf(const char *path, const char *fmt, ScanSlots *sl)
 {
-	std::va_list ap;
 	int r;
 
 	if (freopen(path, "r", stdin) == nullptr)
@@ -444,9 +488,7 @@ call_ref_vscanf(const char *path, const char *fmt, ScanSlots *sl)
 	setbuf(stdin, nullptr);
 	clearerr(stdin);
 	scan_slots_init(sl);
-	std::va_start(ap, fmt);
-	r = ref_vscanf(fmt, ap);
-	std::va_end(ap);
+	r = ref_vscanf_wrap(fmt, &sl->i, &sl->u, &sl->l, sl->s, &sl->c);
 	return r;
 }
 
@@ -454,7 +496,6 @@ static int
 call_port_vscanf_l(const char *path, locale_t loc, const char *fmt,
     ScanSlots *sl)
 {
-	std::va_list ap;
 	int r;
 
 	if (freopen(path, "r", stdin) == nullptr)
@@ -462,9 +503,7 @@ call_port_vscanf_l(const char *path, locale_t loc, const char *fmt,
 	setbuf(stdin, nullptr);
 	clearerr(stdin);
 	scan_slots_init(sl);
-	std::va_start(ap, fmt);
-	r = P::vscanf_l(loc, fmt, ap);
-	std::va_end(ap);
+	r = port_vscanf_l_wrap(loc, fmt, &sl->i, &sl->u, &sl->l, sl->s, &sl->c);
 	return r;
 }
 
@@ -472,7 +511,6 @@ static int
 call_ref_vscanf_l(const char *path, locale_t loc, const char *fmt,
     ScanSlots *sl)
 {
-	std::va_list ap;
 	int r;
 
 	if (freopen(path, "r", stdin) == nullptr)
@@ -480,9 +518,7 @@ call_ref_vscanf_l(const char *path, locale_t loc, const char *fmt,
 	setbuf(stdin, nullptr);
 	clearerr(stdin);
 	scan_slots_init(sl);
-	std::va_start(ap, fmt);
-	r = ref_vscanf_l(loc, fmt, ap);
-	std::va_end(ap);
+	r = ref_vscanf_l_wrap(loc, fmt, &sl->i, &sl->u, &sl->l, sl->s, &sl->c);
 	return r;
 }
 

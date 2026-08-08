@@ -1,13 +1,23 @@
+/*
+ * oracle.c -- reference implementations for batch b0114.
+ *
+ * The original HardenedBSD/FreeBSD sources, concatenated verbatim.  Every
+ * function has been renamed with a "ref_" prefix; the bodies are unmodified.
+ * Only includes / feature-test macros / missing defines were adjusted so the
+ * code builds with `cc -std=c11 -O2` on a hosted glibc toolchain.
+ */
+
+#define _DEFAULT_SOURCE 1
+
+#include <stddef.h>
+#include <string.h>
+#include <wchar.h>
+
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2002 Tim J. Robbins
+ * Copyright (c)1999 Citrus Project,
  * All rights reserved.
- *
- * Copyright (c) 2011 The FreeBSD Foundation
- *
- * Portions of this software were developed by David Chisnall
- * under sponsorship from the FreeBSD Foundation.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,15 +39,23 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ *	citrus Id: wmemcpy.c,v 1.2 2000/12/20 14:08:31 itojun Exp
  */
+
+wchar_t *
+ref_wmemcpy(wchar_t * __restrict d, const wchar_t * __restrict s, size_t n)
+{
+	return (wchar_t *)memcpy(d, s, n * sizeof(wchar_t));
+}
+
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 1990, 1993
+ * Copyright (c) 1999
+ *	David E. O'Brien
+ * Copyright (c) 1988, 1993
  *	The Regents of the University of California.  All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Chris Torek.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -64,102 +82,10 @@
  * SUCH DAMAGE.
  */
 
-module;
-
-#include <cwchar>
-#include <stdarg.h>
-
-export module pbsd.lib.libc.stdio.b0100;
-
-export namespace pbsd::lib_libc_stdio::b0100 {
-
-struct FILE {
-	unsigned char	*_p;
-	int		_r;
-	int		_w;
-	short		_flags;
-	short		_file;
-};
-
-#define	__SEOF	0x0020
-#define	__SERR	0x0040
-#define	__sfeof(p)	(((p)->_flags & __SEOF) != 0)
-#define	__sclearerr(p)	((void)((p)->_flags &= ~(__SERR|__SEOF)))
-
-extern "C" {
-extern int __isthreaded;
-void _flockfile(void *fp);
-void _funlockfile(void *fp);
-struct _IO_FILE;
-extern struct _IO_FILE *stdout;
-int vfwprintf(struct _IO_FILE * __restrict, const wchar_t * __restrict,
-    va_list);
-int vfwprintf_l(struct _IO_FILE * __restrict, void *locale,
-    const wchar_t * __restrict, va_list);
-}
-
-#define	FLOCKFILE(fp)		if (__isthreaded) _flockfile(fp)
-#define	FUNLOCKFILE(fp)		if (__isthreaded) _funlockfile(fp)
-
-typedef void *locale_t;
-
-int
-wprintf(const wchar_t * __restrict fmt, ...)
-{
-	int ret;
-	va_list ap;
-
-	va_start(ap, fmt);
-	ret = vfwprintf(stdout, fmt, ap);
-	va_end(ap);
-
-	return (ret);
-}
-
-int
-wprintf_l(locale_t locale, const wchar_t * __restrict fmt, ...)
-{
-	int ret;
-	va_list ap;
-
-	va_start(ap, fmt);
-	ret = vfwprintf_l(stdout, locale, fmt, ap);
-	va_end(ap);
-
-	return (ret);
-}
-
-void
-clearerr(FILE *fp)
-{
-	FLOCKFILE(fp);
-	__sclearerr(fp);
-	FUNLOCKFILE(fp);
-}
-
-void
-clearerr_unlocked(FILE *fp)
+wchar_t *
+ref_wcpcpy(wchar_t * __restrict to, const wchar_t * __restrict from)
 {
 
-	__sclearerr(fp);
+	for (; (*to = *from); ++from, ++to);
+	return(to);
 }
-
-int
-feof(FILE *fp)
-{
-	int	ret;
-
-	FLOCKFILE(fp);
-	ret= __sfeof(fp);
-	FUNLOCKFILE(fp);
-	return (ret);
-}
-
-int
-feof_unlocked(FILE *fp)
-{
-
-	return (__sfeof(fp));
-}
-
-} // namespace pbsd::lib_libc_stdio::b0100

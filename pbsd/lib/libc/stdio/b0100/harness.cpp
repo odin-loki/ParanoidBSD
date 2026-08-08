@@ -178,6 +178,7 @@ stdout_restore(void)
 static int
 stdout_capture_close(int readfd, unsigned char *out, size_t outcap)
 {
+	std::memset(out, GUARD, outcap);
 	std::fflush(stdout);
 	stdout_restore();
 	ssize_t n = ::read(readfd, out, outcap);
@@ -187,67 +188,33 @@ stdout_capture_close(int readfd, unsigned char *out, size_t outcap)
 	return (int)n;
 }
 
-static void
-test_wprintf_case(int fn, const wchar_t *fmt, ...)
-{
-	int refret, portret;
-	int refbytes, portbytes;
-	unsigned char refbuf[4096], portbuf[4096];
-	int reffd, portfd;
-	va_list ap;
+#define DO_WPRINTF_TEST(fn, refcall, portcall)                           \
+	do {                                                                 \
+		int refret, portret;                                         \
+		int refbytes, portbytes;                                     \
+		unsigned char refbuf[4096], portbuf[4096];                   \
+		int reffd, portfd;                                           \
+		std::memset(refbuf, GUARD, sizeof(refbuf));                  \
+		std::memset(portbuf, GUARD, sizeof(portbuf));                \
+		ncase[fn]++;                                                 \
+		reffd = stdout_capture_open();                               \
+		refret = (refcall);                                          \
+		refbytes = stdout_capture_close(reffd, refbuf, sizeof(refbuf)); \
+		portfd = stdout_capture_open();                              \
+		portret = (portcall);                                        \
+		portbytes = stdout_capture_close(portfd, portbuf, sizeof(portbuf)); \
+		if (refret != portret || refbytes != portbytes ||            \
+		    std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)       \
+			record_fail(fn);                                     \
+	} while (0)
 
-	std::memset(refbuf, GUARD, sizeof(refbuf));
-	std::memset(portbuf, GUARD, sizeof(portbuf));
+#define TEST_WPRINTF_CASE(fn, fmt, ...)                                \
+	DO_WPRINTF_TEST(fn, ref_wprintf(fmt, ##__VA_ARGS__),             \
+	    P::wprintf(fmt, ##__VA_ARGS__))
 
-	ncase[fn]++;
-
-	reffd = stdout_capture_open();
-	va_start(ap, fmt);
-	refret = ref_wprintf(fmt, ap);
-	va_end(ap);
-	refbytes = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
-
-	portfd = stdout_capture_open();
-	va_start(ap, fmt);
-	portret = P::wprintf(fmt, ap);
-	va_end(ap);
-	portbytes = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
-
-	if (refret != portret || refbytes != portbytes ||
-	    std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
-		record_fail(fn);
-}
-
-static void
-test_wprintf_l_case(int fn, locale_t loc, const wchar_t *fmt, ...)
-{
-	int refret, portret;
-	int refbytes, portbytes;
-	unsigned char refbuf[4096], portbuf[4096];
-	int reffd, portfd;
-	va_list ap;
-
-	std::memset(refbuf, GUARD, sizeof(refbuf));
-	std::memset(portbuf, GUARD, sizeof(portbuf));
-
-	ncase[fn]++;
-
-	reffd = stdout_capture_open();
-	va_start(ap, fmt);
-	refret = ref_wprintf_l(loc, fmt, ap);
-	va_end(ap);
-	refbytes = stdout_capture_close(reffd, refbuf, sizeof(refbuf));
-
-	portfd = stdout_capture_open();
-	va_start(ap, fmt);
-	portret = P::wprintf_l(loc, fmt, ap);
-	va_end(ap);
-	portbytes = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
-
-	if (refret != portret || refbytes != portbytes ||
-	    std::memcmp(refbuf, portbuf, sizeof(refbuf)) != 0)
-		record_fail(fn);
-}
+#define TEST_WPRINTF_L_CASE(fn, loc, fmt, ...)                         \
+	DO_WPRINTF_TEST(fn, ref_wprintf_l(loc, fmt, ##__VA_ARGS__),        \
+	    P::wprintf_l(reinterpret_cast<P::locale_t>(loc), fmt, ##__VA_ARGS__))
 
 static void
 edge_clearerr(int fn, void (*ref_fn)(ref_FILE *), void (*port_fn)(P::FILE *))
@@ -310,32 +277,32 @@ edge_wprintf(int fn)
 	    (wchar_t)0x100, (wchar_t)0xffff, 0 };
 	static const wchar_t nuls[] = { 'x', 0, 'y', 0 };
 
-	test_wprintf_case(fn, empty);
-	test_wprintf_case(fn, L"");
-	test_wprintf_case(fn, L"%d", 0);
-	test_wprintf_case(fn, L"%d", -1);
-	test_wprintf_case(fn, L"%d", INT_MAX);
-	test_wprintf_case(fn, L"%d", INT_MIN);
-	test_wprintf_case(fn, L"%u", 0u);
-	test_wprintf_case(fn, L"%u", UINT_MAX);
-	test_wprintf_case(fn, L"%x", 0);
-	test_wprintf_case(fn, L"%x", 0xffffffffu);
-	test_wprintf_case(fn, L"%c", L'Z');
-	test_wprintf_case(fn, L"%c", (wchar_t)0x80);
-	test_wprintf_case(fn, L"%c", (wchar_t)0xffff);
-	test_wprintf_case(fn, L"%%");
-	test_wprintf_case(fn, L"%s", empty);
-	test_wprintf_case(fn, L"%s", one);
-	test_wprintf_case(fn, L"%s", hi);
-	test_wprintf_case(fn, L"%5d", 42);
-	test_wprintf_case(fn, L"%05d", -7);
-	test_wprintf_case(fn, L"%d %u %x %c", 1, 2u, 3u, L'Q');
-	test_wprintf_case(fn, L"%ls", one);
-	test_wprintf_case(fn, L"%ls", hi);
-	test_wprintf_case(fn, L"plain text");
-	test_wprintf_case(fn, L"%lc", (wchar_t)0x7f);
-	test_wprintf_case(fn, L"%lc", (wchar_t)0x80);
-	test_wprintf_case(fn, nuls);
+	TEST_WPRINTF_CASE(fn, empty);
+	TEST_WPRINTF_CASE(fn, L"");
+	TEST_WPRINTF_CASE(fn, L"%d", 0);
+	TEST_WPRINTF_CASE(fn, L"%d", -1);
+	TEST_WPRINTF_CASE(fn, L"%d", INT_MAX);
+	TEST_WPRINTF_CASE(fn, L"%d", INT_MIN);
+	TEST_WPRINTF_CASE(fn, L"%u", 0u);
+	TEST_WPRINTF_CASE(fn, L"%u", UINT_MAX);
+	TEST_WPRINTF_CASE(fn, L"%x", 0);
+	TEST_WPRINTF_CASE(fn, L"%x", 0xffffffffu);
+	TEST_WPRINTF_CASE(fn, L"%c", L'Z');
+	TEST_WPRINTF_CASE(fn, L"%c", (wchar_t)0x80);
+	TEST_WPRINTF_CASE(fn, L"%c", (wchar_t)0xffff);
+	TEST_WPRINTF_CASE(fn, L"%%");
+	TEST_WPRINTF_CASE(fn, L"%s", empty);
+	TEST_WPRINTF_CASE(fn, L"%s", one);
+	TEST_WPRINTF_CASE(fn, L"%s", hi);
+	TEST_WPRINTF_CASE(fn, L"%5d", 42);
+	TEST_WPRINTF_CASE(fn, L"%05d", -7);
+	TEST_WPRINTF_CASE(fn, L"%d %u %x %c", 1, 2u, 3u, L'Q');
+	TEST_WPRINTF_CASE(fn, L"%ls", one);
+	TEST_WPRINTF_CASE(fn, L"%ls", hi);
+	TEST_WPRINTF_CASE(fn, L"plain text");
+	TEST_WPRINTF_CASE(fn, L"%lc", (wchar_t)0x7f);
+	TEST_WPRINTF_CASE(fn, L"%lc", (wchar_t)0x80);
+	TEST_WPRINTF_CASE(fn, nuls);
 }
 
 static void
@@ -345,22 +312,22 @@ edge_wprintf_l(int fn, locale_t loc)
 	static const wchar_t one[] = { 'B', 0 };
 	static const wchar_t hi[] = { (wchar_t)0xfe, (wchar_t)0xabcd, 0 };
 
-	test_wprintf_l_case(fn, loc, empty);
-	test_wprintf_l_case(fn, loc, L"");
-	test_wprintf_l_case(fn, loc, L"%d", 0);
-	test_wprintf_l_case(fn, loc, L"%d", -12345);
-	test_wprintf_l_case(fn, loc, L"%d", INT_MAX);
-	test_wprintf_l_case(fn, loc, L"%d", INT_MIN);
-	test_wprintf_l_case(fn, loc, L"%u", UINT_MAX);
-	test_wprintf_l_case(fn, loc, L"%x", 0xdeadbeefu);
-	test_wprintf_l_case(fn, loc, L"%c", L'!');
-	test_wprintf_l_case(fn, loc, L"%c", (wchar_t)0xff);
-	test_wprintf_l_case(fn, loc, L"%%");
-	test_wprintf_l_case(fn, loc, L"%s", one);
-	test_wprintf_l_case(fn, loc, L"%s", hi);
-	test_wprintf_l_case(fn, loc, L"%5d", 99);
-	test_wprintf_l_case(fn, loc, L"%d %u %x", 7, 8u, 9u);
-	test_wprintf_l_case(fn, loc, L"locale line");
+	TEST_WPRINTF_L_CASE(fn, loc, empty);
+	TEST_WPRINTF_L_CASE(fn, loc, L"");
+	TEST_WPRINTF_L_CASE(fn, loc, L"%d", 0);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%d", -12345);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%d", INT_MAX);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%d", INT_MIN);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%u", UINT_MAX);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%x", 0xdeadbeefu);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%c", L'!');
+	TEST_WPRINTF_L_CASE(fn, loc, L"%c", (wchar_t)0xff);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%%");
+	TEST_WPRINTF_L_CASE(fn, loc, L"%s", one);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%s", hi);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%5d", 99);
+	TEST_WPRINTF_L_CASE(fn, loc, L"%d %u %x", 7, 8u, 9u);
+	TEST_WPRINTF_L_CASE(fn, loc, L"locale line");
 }
 
 static void
@@ -495,21 +462,21 @@ sweep_wprintf_l(int fn, locale_t loc)
 
 		portfd = stdout_capture_open();
 		if (std::wcscmp(fmt, L"%d") == 0)
-			portret = P::wprintf_l(loc, fmt, a);
+			portret = P::wprintf_l(reinterpret_cast<P::locale_t>(loc), fmt, a);
 		else if (std::wcscmp(fmt, L"%u") == 0)
-			portret = P::wprintf_l(loc, fmt, b);
+			portret = P::wprintf_l(reinterpret_cast<P::locale_t>(loc), fmt, b);
 		else if (std::wcscmp(fmt, L"%x") == 0)
-			portret = P::wprintf_l(loc, fmt, b);
+			portret = P::wprintf_l(reinterpret_cast<P::locale_t>(loc), fmt, b);
 		else if (std::wcscmp(fmt, L"%c") == 0)
-			portret = P::wprintf_l(loc, fmt, c);
+			portret = P::wprintf_l(reinterpret_cast<P::locale_t>(loc), fmt, c);
 		else if (std::wcscmp(fmt, L"%s") == 0)
-			portret = P::wprintf_l(loc, fmt, wbuf);
+			portret = P::wprintf_l(reinterpret_cast<P::locale_t>(loc), fmt, wbuf);
 		else if (std::wcscmp(fmt, L"%%") == 0)
-			portret = P::wprintf_l(loc, fmt);
+			portret = P::wprintf_l(reinterpret_cast<P::locale_t>(loc), fmt);
 		else if (std::wcscmp(fmt, L"%5d") == 0)
-			portret = P::wprintf_l(loc, fmt, a);
+			portret = P::wprintf_l(reinterpret_cast<P::locale_t>(loc), fmt, a);
 		else
-			portret = P::wprintf_l(loc, fmt, a, b);
+			portret = P::wprintf_l(reinterpret_cast<P::locale_t>(loc), fmt, a, b);
 		portbytes = stdout_capture_close(portfd, portbuf, sizeof(portbuf));
 
 		if (refret != portret || refbytes != portbytes ||
@@ -548,6 +515,10 @@ main(void)
 	sweep_feof(F_FEOF_UNLOCKED, ref_feof_unlocked, P::feof_unlocked);
 
 	stdout_restore();
+	if (saved_stdout >= 0) {
+		::close(saved_stdout);
+		saved_stdout = -1;
+	}
 	if (loc != LC_GLOBAL_LOCALE)
 		freelocale(loc);
 

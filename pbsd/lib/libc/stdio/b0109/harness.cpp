@@ -246,7 +246,10 @@ run_fgetc_edges(void)
 	static const unsigned char mix[] = {
 		0x7f, 0x80, 0x00, 0xff, 'x', '\n', 0x00, 'y'
 	};
-	static const unsigned char boundary[256];
+	unsigned char boundary[256];
+
+	for (int i = 0; i < 256; i++)
+		boundary[i] = (unsigned char)i;
 
 	test_fgetc_stream(empty, 0, "empty");
 	test_fgetc_stream(one_a, 1, "one");
@@ -419,14 +422,14 @@ swprintf_cmp(StatId which, const char *label, GuardedWBuf &rb, GuardedWBuf &pb,
 		int rr, rp;                                                            \
 		if (use_l) {                                                           \
 			rr = ref_swprintf_l(rb.user(), GuardedWBuf::WUSER + 1, loc,     \
-			    fmt, __VA_ARGS__);                                       \
+			    fmt, ##__VA_ARGS__);                                     \
 			rp = port::swprintf_l(pb.user(), GuardedWBuf::WUSER + 1, loc,  \
-			    fmt, __VA_ARGS__);                                       \
+			    fmt, ##__VA_ARGS__);                                     \
 		} else {                                                               \
 			rr = ref_swprintf(rb.user(), GuardedWBuf::WUSER + 1, fmt,      \
-			    __VA_ARGS__);                                            \
+			    ##__VA_ARGS__);                                          \
 			rp = port::swprintf(pb.user(), GuardedWBuf::WUSER + 1, fmt,    \
-			    __VA_ARGS__);                                            \
+			    ##__VA_ARGS__);                                          \
 		}                                                                      \
 		swprintf_cmp(which, label, rb, pb, rr, rp);                           \
 	} while (0)

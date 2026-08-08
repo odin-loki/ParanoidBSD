@@ -1,0 +1,13 @@
+{
+  "batch": "b0112",
+  "verified": "2026-08-08T11:32:14Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/4: strcat)",
+  "ir_equivalent": false,
+  "harness_output": "building batch b0112 with cc / c++ (gcc modules)\n\nfunction            cases     failures   result\n------------ ------------ ------------   ------\nbzero              200007            0   PASS\nbcopy              200010            0   PASS\nstrcat             200009            0   PASS\nstrncat            200018            0   PASS\n------------ ------------ ------------   ------\nTOTAL              800044            0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/aarch64/string/bzero.c": "7009745f8abfd08b",
+    "hbsd/src/lib/libc/aarch64/string/bcopy.c": "047852ca60af141e",
+    "hbsd/src/lib/libc/aarch64/string/strcat.c": "3de1d537cdc8e2e1",
+    "hbsd/src/lib/libc/aarch64/string/strncat.c": "def9ba8d9b159164"
+  }
+}

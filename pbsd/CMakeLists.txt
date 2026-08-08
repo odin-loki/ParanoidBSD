@@ -124,6 +124,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/rpc/bindresvport_m/port.cppm
   lib/libc/rpc/des_soft_m/port.cppm
   lib/libc/rpc/rtime_m/port.cppm
+  lib/libc/secure/b0115/port.cppm
   lib/libc/secure/fgets_chk_m/port.cppm
   lib/libc/secure/sprintf_chk_m/port.cppm
   lib/libc/secure/stpcpy_chk_m/port.cppm
@@ -193,6 +194,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/b0099/port.cppm
   lib/libc/string/b0105/port.cppm
   lib/libc/string/b0113/port.cppm
+  lib/libc/string/b0114/port.cppm
+  lib/libc/string/b0116/port.cppm
   lib/libc/string/bcmp_m/port.cppm
   lib/libc/string/ffs_m/port.cppm
   lib/libc/string/ffsl_m/port.cppm

@@ -76,32 +76,6 @@ static inline double rnint(double x)
 
 #define irint(x) ((int)(x))
 
-#define _COMPLEX_H 1
-
-typedef _Complex long double ldouble_complex;
-
-static inline long double
-creall(ldouble_complex z)
-{
-	return (__real__(z));
-}
-
-static inline long double
-cimagl(ldouble_complex z)
-{
-	return (__imag__(z));
-}
-
-static inline ldouble_complex
-CMPLXL(long double x, long double y)
-{
-	ldouble_complex z;
-
-	__real__(z) = x;
-	__imag__(z) = y;
-	return (z);
-}
-
 volatile static const double vzero = 0;
 
 
@@ -684,8 +658,8 @@ hexpl(long double x)
 /*
  * See ../src/k_exp.c for details.
  */
-static inline ldouble_complex
-__ldexp_cexpl(ldouble_complex z, int expt)
+static inline _Complex long double
+__ldexp_cexpl(_Complex long double z, int expt)
 {
 	long double c, exp_x, hi, lo, s;
 	long double x, y, scale1, scale2;
@@ -1002,8 +976,8 @@ static const long double
 cexp_ovfl = 2.27892930024498818830197576893019292e+04L,
 exp_ovfl = 1.13565234062941439494919310779707649e+04L;
 
-ldouble_complex
-cexpl(ldouble_complex z)
+_Complex long double
+cexpl(_Complex long double z)
 {
 	long double c, exp_x, s, x, y;
 

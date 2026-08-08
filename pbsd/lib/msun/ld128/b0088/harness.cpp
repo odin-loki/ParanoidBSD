@@ -18,17 +18,15 @@ import pbsd.lib.msun.ld128.b0088;
 
 namespace port = pbsd::lib_msun_ld128::b0088;
 
-typedef _Complex long double ldouble_complex;
-
 extern "C" {
 long double ref_cospil(long double);
 long double ref_sinpil(long double);
 long double ref_tanpil(long double);
-ldouble_complex ref_cexpl(ldouble_complex);
+_Complex long double ref_cexpl(_Complex long double);
 }
 
 static const std::size_t LD_BYTES = sizeof(long double);
-static const std::size_t CX_BYTES = sizeof(ldouble_complex);
+static const std::size_t CX_BYTES = sizeof(_Complex long double);
 static const unsigned long long RANDOM_ITERS = 200000ull;
 static const unsigned MAX_REPORT = 8;
 
@@ -51,7 +49,7 @@ ld_equal(long double a, long double b)
 }
 
 static bool
-cx_equal(ldouble_complex a, ldouble_complex b)
+cx_equal(_Complex long double a, _Complex long double b)
 {
 	return std::memcmp(&a, &b, CX_BYTES) == 0;
 }
@@ -80,21 +78,21 @@ report_ld_fail(stat &s, const char *tag, long double got, long double want)
 }
 
 static void
-report_cx_fail(stat &s, const char *tag, ldouble_complex got,
-    ldouble_complex want)
+report_cx_fail(stat &s, const char *tag, _Complex long double got,
+    _Complex long double want)
 {
 	s.fails++;
 	if (s.reported >= MAX_REPORT)
 		return;
 	s.reported++;
 	std::printf("  %s FAIL [%s] port=", s.name, tag);
-	ldhex(__real__(got));
+	ldhex(creall(got));
 	std::printf("+");
-	ldhex(__imag__(got));
+	ldhex(cimagl(got));
 	std::printf("i ref=");
-	ldhex(__real__(want));
+	ldhex(creall(want));
 	std::printf("+");
-	ldhex(__imag__(want));
+	ldhex(cimagl(want));
 	std::printf("i\n");
 }
 
@@ -138,9 +136,9 @@ check_tanpil(long double x, const char *tag)
 }
 
 static void
-check_cexpl(ldouble_complex z, const char *tag)
+check_cexpl(_Complex long double z, const char *tag)
 {
-	ldouble_complex p, o;
+	_Complex long double p, o;
 
 	st_cexpl.cases++;
 	p = port::cexpl(z);
@@ -164,14 +162,10 @@ mkld(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl)
 	return x;
 }
 
-static ldouble_complex
+static _Complex long double
 mkcx(long double re, long double im)
 {
-	ldouble_complex z;
-
-	__real__(z) = re;
-	__imag__(z) = im;
-	return z;
+	return CMPLXL(re, im);
 }
 
 static void

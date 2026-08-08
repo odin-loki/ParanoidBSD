@@ -194,6 +194,14 @@ wait6(idtype_t idtype, id_t id, int *status, int options,
 	return (INTERPOS_SYS(wait6, idtype, id, status, options, ru, infop));
 }
 
+pid_t
+wait6_opaque(idtype_t idtype, id_t id, int *status, int options,
+    void *ru, siginfo_t *infop)
+{
+	return (wait6(idtype, id, status, options,
+	    reinterpret_cast<__wrusage *>(ru), infop));
+}
+
 [[gnu::weak]] ssize_t
 sendto(int s, const void *msg, size_t len, int flags,
     const struct sockaddr *to, socklen_t tolen)

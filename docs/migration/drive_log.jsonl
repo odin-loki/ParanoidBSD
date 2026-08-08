@@ -1763,3 +1763,5 @@
 {"batch": "b0085", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: no ref_ functions in oracle IR)", "how": "agent", "ts": "2026-08-08T11:30:17Z"}
 {"batch": "b0094", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:30:45Z"}
 {"batch": "b0111", "status": "VERIFIED", "detail": "harness green + IR-identical for all 1 functions", "how": "agent", "ts": "2026-08-08T11:30:50Z"}
+{"batch": "b0103", "status": "VERIFIED", "detail": "harness green + harness green; port has no mutable operator to plant a bug in (IR: port would not compile to IR standalone)", "how": "agent", "ts": "2026-08-08T11:31:27Z"}
+{"batch": "b0112", "status": "VERIFIED", "detail": "harness green + 6/6 mutations killed (IR: IR differs for 1/4: strcat)", "how": "agent", "ts": "2026-08-08T11:32:14Z"}

@@ -7,6 +7,8 @@
  * environment does not provide have been added.
  */
 
+#define _DEFAULT_SOURCE 1
+
 #include <errno.h>
 #include <limits.h>
 #include <stddef.h>
@@ -69,6 +71,258 @@ extern	int	_acl_type_unold(acl_type_t type);
 extern	int	_entry_brand(const acl_entry_t entry);
 extern	int	_entry_brand_may_be(const acl_entry_t entry, int brand);
 extern	void	_entry_brand_as(const acl_entry_t entry, int brand);
+
+/* ------------------------------------------------------------------ mocks */
+
+enum mock_kind {
+	MOCK_MAC_FD = 1,
+	MOCK_MAC_FILE,
+	MOCK_MAC_LINK,
+	MOCK_MAC_PROC,
+	MOCK_ACL_FILE,
+	MOCK_ACL_LINK,
+	MOCK_ACL_FD,
+};
+
+struct mock_rec {
+	int		kind;
+	int		fd;
+	const char	*path;
+	struct mac	*label;
+	acl_type_t	type;
+	int		ret;
+};
+
+static struct mock_rec g_mock;
+static int g_mock_set;
+
+void
+mock_reset(void)
+{
+
+	memset(&g_mock, 0, sizeof(g_mock));
+	g_mock_set = 0;
+}
+
+struct mock_snap {
+	int		set;
+	int		kind;
+	int		fd;
+	const char	*path;
+	struct mac	*label;
+	acl_type_t	type;
+	int		ret;
+};
+
+struct mock_snap
+mock_capture(void)
+{
+	struct mock_snap s;
+
+	s.set = g_mock_set;
+	s.kind = g_mock.kind;
+	s.fd = g_mock.fd;
+	s.path = g_mock.path;
+	s.label = g_mock.label;
+	s.type = g_mock.type;
+	s.ret = g_mock.ret;
+	return (s);
+}
+
+#define	_ACL_T_ALIGNMENT_BITS	13
+#define	ACL_BRAND_UNKNOWN	0
+
+static acl_t
+entry2acl(acl_entry_t entry)
+{
+
+	return ((acl_t)(((long)entry >> _ACL_T_ALIGNMENT_BITS)
+	    << _ACL_T_ALIGNMENT_BITS));
+}
+
+int
+_acl_type_unold(acl_type_t type)
+{
+
+	switch (type) {
+	case ACL_TYPE_ACCESS_OLD:
+		return (ACL_TYPE_ACCESS);
+	case ACL_TYPE_DEFAULT_OLD:
+		return (ACL_TYPE_DEFAULT);
+	default:
+		return (type);
+	}
+}
+
+static int
+acl_brand(const acl_t acl)
+{
+
+	return (((struct acl_t_struct *)acl)->ats_brand);
+}
+
+int
+_entry_brand(const acl_entry_t entry)
+{
+
+	return (acl_brand(entry2acl(entry)));
+}
+
+static int
+acl_brand_may_be(const acl_t acl, int brand)
+{
+
+	if (acl_brand(acl) == ACL_BRAND_UNKNOWN)
+		return (1);
+
+	if (acl_brand(acl) == brand)
+		return (1);
+
+	return (0);
+}
+
+int
+_entry_brand_may_be(const acl_entry_t entry, int brand)
+{
+
+	return (acl_brand_may_be(entry2acl(entry), brand));
+}
+
+static void
+acl_brand_as(acl_t acl, int brand)
+{
+
+	((struct acl_t_struct *)acl)->ats_brand = brand;
+}
+
+void
+_entry_brand_as(const acl_entry_t entry, int brand)
+{
+
+	acl_brand_as(entry2acl(entry), brand);
+}
+
+static int
+mac_ret(int fd, struct mac *label)
+{
+	int v = fd * 31;
+
+	if (label != NULL)
+		v ^= (int)label->m_buflen ^ (int)(uintptr_t)label->m_string;
+	return (v ^ 0x5a5a);
+}
+
+static int
+acl_ret(const char *path, acl_type_t type)
+{
+	int v = (int)type * 17;
+
+	if (path != NULL)
+		v ^= (int)strlen(path);
+	return (v ^ 0x1234);
+}
+
+static int
+acl_fd_ret(int fd, acl_type_t type)
+{
+
+	return ((fd * 23) ^ ((int)type * 41) ^ 0xbeef);
+}
+
+int
+__mac_set_fd(int fd, struct mac *mac_p)
+{
+
+	g_mock.kind = MOCK_MAC_FD;
+	g_mock.fd = fd;
+	g_mock.label = mac_p;
+	g_mock.ret = mac_ret(fd, mac_p);
+	g_mock_set = 1;
+	return (g_mock.ret);
+}
+
+int
+__mac_set_file(const char *path_p, struct mac *mac_p)
+{
+
+	g_mock.kind = MOCK_MAC_FILE;
+	g_mock.path = path_p;
+	g_mock.label = mac_p;
+	g_mock.ret = mac_ret(1, mac_p) ^ (int)(uintptr_t)path_p;
+	g_mock_set = 1;
+	return (g_mock.ret);
+}
+
+int
+__mac_set_link(const char *path_p, struct mac *mac_p)
+{
+
+	g_mock.kind = MOCK_MAC_LINK;
+	g_mock.path = path_p;
+	g_mock.label = mac_p;
+	g_mock.ret = mac_ret(2, mac_p) ^ (int)(uintptr_t)path_p;
+	g_mock_set = 1;
+	return (g_mock.ret);
+}
+
+int
+__mac_set_proc(struct mac *mac_p)
+{
+
+	g_mock.kind = MOCK_MAC_PROC;
+	g_mock.label = mac_p;
+	g_mock.ret = mac_ret(3, mac_p);
+	g_mock_set = 1;
+	return (g_mock.ret);
+}
+
+int
+__acl_delete_file(const char *path_p, acl_type_t type)
+{
+
+	g_mock.kind = MOCK_ACL_FILE;
+	g_mock.path = path_p;
+	g_mock.type = type;
+	g_mock.ret = acl_ret(path_p, type);
+	g_mock_set = 1;
+	return (g_mock.ret);
+}
+
+int
+__acl_delete_link(const char *path_p, acl_type_t type)
+{
+
+	g_mock.kind = MOCK_ACL_LINK;
+	g_mock.path = path_p;
+	g_mock.type = type;
+	g_mock.ret = acl_ret(path_p, type) ^ 0x100;
+	g_mock_set = 1;
+	return (g_mock.ret);
+}
+
+int
+___acl_delete_fd(int filedes, acl_type_t type)
+{
+
+	g_mock.kind = MOCK_ACL_FD;
+	g_mock.fd = filedes;
+	g_mock.type = type;
+	g_mock.ret = acl_fd_ret(filedes, type);
+	g_mock_set = 1;
+	return (g_mock.ret);
+}
+
+struct acl;
+struct acl_t_struct {
+	struct {
+		unsigned int	acl_maxcnt;
+		unsigned int	acl_cnt;
+		int		acl_spare[4];
+		struct acl_entry acl_entry[254];
+	}			ats_acl;
+	int			ats_cur_entry;
+	int			ats_brand;
+};
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause

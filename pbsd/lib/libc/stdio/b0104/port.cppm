@@ -1,6 +1,5 @@
 module;
 
-#define _GNU_SOURCE
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -9,7 +8,6 @@ module;
 #if __has_include(<xlocale.h>)
 #include <xlocale.h>
 #else
-#include <clocale>
 #include <locale.h>
 #endif
 
@@ -17,8 +15,14 @@ module;
 #define __va_list	va_list
 #endif
 
+export module pbsd.lib.libc.stdio.b0104;
+
+export namespace pbsd::lib_libc_stdio::b0104 {
+
+namespace detail {
+
 static locale_t
-b0104_get_real_locale(locale_t locale)
+get_real_locale(locale_t locale)
 {
 
 	switch ((intptr_t)locale) {
@@ -31,10 +35,8 @@ b0104_get_real_locale(locale_t locale)
 	}
 }
 
-#define FIX_LOCALE(l)	((l) = b0104_get_real_locale(l))
-
 static inline locale_t
-__get_locale(void)
+get_locale(void)
 {
 	locale_t cur;
 
@@ -46,12 +48,12 @@ __get_locale(void)
 
 #if !__has_include(<xlocale.h>)
 static int
-vfprintf_l(FILE *fp, locale_t locale, const char *fmt, std::va_list ap)
+vfprintf_l(FILE *fp, locale_t locale, const char *fmt, va_list ap)
 {
 	locale_t loc, old;
 	int ret;
 
-	loc = b0104_get_real_locale(locale);
+	loc = get_real_locale(locale);
 	old = uselocale(loc == LC_GLOBAL_LOCALE ? (locale_t)0 : loc);
 	ret = vfprintf(fp, fmt, ap);
 	uselocale(old);
@@ -59,12 +61,12 @@ vfprintf_l(FILE *fp, locale_t locale, const char *fmt, std::va_list ap)
 }
 
 static int
-vsscanf_l(const char *str, locale_t locale, const char *fmt, std::va_list ap)
+vsscanf_l(const char *str, locale_t locale, const char *fmt, va_list ap)
 {
 	locale_t loc, old;
 	int ret;
 
-	loc = b0104_get_real_locale(locale);
+	loc = get_real_locale(locale);
 	old = uselocale(loc == LC_GLOBAL_LOCALE ? (locale_t)0 : loc);
 	ret = vsscanf(str, fmt, ap);
 	uselocale(old);
@@ -72,30 +74,31 @@ vsscanf_l(const char *str, locale_t locale, const char *fmt, std::va_list ap)
 }
 #endif
 
-static thread_local FILE *b0104_flock_fp;
-
-#define	FLOCKFILE_CANCELSAFE(fp)					\
-	flockfile(b0104_flock_fp = (fp));				\
-	for (int _b0104_done = 0; !_b0104_done;			\
-	    funlockfile(b0104_flock_fp), _b0104_done = 1)
-#define	FUNLOCKFILE_CANCELSAFE()	((void)0)
+static thread_local FILE *flock_fp;
 
 static int
-__svfscanf(FILE *fp, locale_t locale, const char *fmt, __va_list ap)
+svfscanf(FILE *fp, locale_t locale, const char *fmt, __va_list ap)
 {
 	locale_t loc, old;
 	int retval;
 
-	loc = b0104_get_real_locale(locale);
+	loc = get_real_locale(locale);
 	old = uselocale(loc == LC_GLOBAL_LOCALE ? (locale_t)0 : loc);
 	retval = vfscanf(fp, fmt, ap);
 	uselocale(old);
 	return (retval);
 }
 
-export module pbsd.lib.libc.stdio.b0104;
+} /* namespace detail */
 
-export namespace pbsd::lib_libc_stdio::b0104 {
+#define FIX_LOCALE(l)	((l) = detail::get_real_locale(l))
+
+#define	FLOCKFILE_CANCELSAFE(fp)					\
+	flockfile(pbsd::lib_libc_stdio::b0104::detail::flock_fp = (fp)); \
+	for (int _b0104_done = 0; !_b0104_done;				\
+	    funlockfile(pbsd::lib_libc_stdio::b0104::detail::flock_fp), \
+	    _b0104_done = 1)
+#define	FUNLOCKFILE_CANCELSAFE()	((void)0)
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -140,23 +143,23 @@ int
 fprintf(FILE * __restrict fp, const char * __restrict fmt, ...)
 {
 	int ret;
-	std::va_list ap;
+	va_list ap;
 
-	std::va_start(ap, fmt);
-	ret = vfprintf_l(fp, __get_locale(), fmt, ap);
-	std::va_end(ap);
+	va_start(ap, fmt);
+	ret = detail::vfprintf_l(fp, detail::get_locale(), fmt, ap);
+	va_end(ap);
 	return (ret);
 }
 int
 fprintf_l(FILE * __restrict fp, locale_t locale, const char * __restrict fmt, ...)
 {
 	int ret;
-	std::va_list ap;
-	FIX_LOCALE(locale);
+	va_list ap;
 
-	std::va_start(ap, fmt);
-	ret = vfprintf_l(fp, locale, fmt, ap);
-	std::va_end(ap);
+	FIX_LOCALE(locale);
+	va_start(ap, fmt);
+	ret = detail::vfprintf_l(fp, locale, fmt, ap);
+	va_end(ap);
 	return (ret);
 }
 
@@ -203,11 +206,11 @@ int
 sscanf(const char * __restrict str, char const * __restrict fmt, ...)
 {
 	int ret;
-	std::va_list ap;
+	va_list ap;
 
-	std::va_start(ap, fmt);
+	va_start(ap, fmt);
 	ret = vsscanf(str, fmt, ap);
-	std::va_end(ap);
+	va_end(ap);
 	return (ret);
 }
 int
@@ -215,11 +218,11 @@ sscanf_l(const char * __restrict str, locale_t locale,
 		char const * __restrict fmt, ...)
 {
 	int ret;
-	std::va_list ap;
+	va_list ap;
 
-	std::va_start(ap, fmt);
-	ret = vsscanf_l(str, locale, fmt, ap);
-	std::va_end(ap);
+	va_start(ap, fmt);
+	ret = detail::vsscanf_l(str, locale, fmt, ap);
+	va_end(ap);
 	return (ret);
 }
 
@@ -266,17 +269,17 @@ int
 vscanf_l(locale_t locale, const char * __restrict fmt, __va_list ap)
 {
 	int retval;
-	FIX_LOCALE(locale);
 
+	FIX_LOCALE(locale);
 	FLOCKFILE_CANCELSAFE(stdin);
-	retval = __svfscanf(stdin, locale, fmt, ap);
+	retval = detail::svfscanf(stdin, locale, fmt, ap);
 	FUNLOCKFILE_CANCELSAFE();
 	return (retval);
 }
 int
 vscanf(const char * __restrict fmt, __va_list ap)
 {
-	return vscanf_l(__get_locale(), fmt, ap);
+	return vscanf_l(detail::get_locale(), fmt, ap);
 }
 
 } /* namespace pbsd::lib_libc_stdio::b0104 */
