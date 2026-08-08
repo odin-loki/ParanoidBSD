@@ -19,6 +19,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/aarch64/string/b0018/port.cppm
   lib/libc/aarch64/string/b0071/port.cppm
   lib/libc/aarch64/string/strsep_m/port.cppm
+  lib/libc/amd64/gen/b0055/port.cppm
   lib/libc/amd64/string/b0081/port.cppm
   lib/libc/compat-43/b0067/port.cppm
   lib/libc/compat-43/gethostid_m/port.cppm
@@ -80,6 +81,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0039/port.cppm
   lib/libc/locale/b0041/port.cppm
   lib/libc/locale/b0045/port.cppm
+  lib/libc/locale/b0058/port.cppm
   lib/libc/locale/b0075/port.cppm
   lib/libc/locale/b0083/port.cppm
   lib/libc/locale/isctype_m/port.cppm
@@ -104,6 +106,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/quad/b0042/port.cppm
   lib/libc/quad/b0044/port.cppm
   lib/libc/quad/b0051/port.cppm
+  lib/libc/quad/b0053/port.cppm
   lib/libc/quad/divdi3_m/port.cppm
   lib/libc/quad/fixdfdi_m/port.cppm
   lib/libc/quad/fixsfdi_m/port.cppm
@@ -290,6 +293,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   usr.bin/ar/util_m/port.cppm
   usr.bin/calendar/ostern_m/port.cppm
   usr.bin/calendar/paskha_m/port.cppm
+  usr.bin/cksum/b0054/port.cppm
   usr.bin/cksum/print_m/port.cppm
   usr.bin/cksum/sum1_m/port.cppm
   usr.bin/cksum/sum2_m/port.cppm

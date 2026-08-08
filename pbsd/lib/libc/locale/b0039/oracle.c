@@ -62,6 +62,8 @@ struct xlocale {
 
 struct xlocale_ctype	ref_global_ctype;
 struct xlocale		ref_global_locale;
+struct xlocale_ctype	ref_alt_ctype;
+struct xlocale		ref_alt_locale;
 
 locale_t
 ref_get_locale(void)
@@ -334,6 +336,10 @@ ref_locale_init(void)
 	ref_global_ctype.__mbsnrtowcs = mock_mbsnrtowcs;
 	ref_global_ctype.__wcsnrtombs = mock_wcsnrtombs;
 	ref_global_ctype.__mbrtowc = mock_mbrtowc;
+	ref_alt_locale.components[XLC_CTYPE] = &ref_alt_ctype;
+	ref_alt_ctype.__mbsnrtowcs = mock_mbsnrtowcs;
+	ref_alt_ctype.__wcsnrtombs = mock_wcsnrtombs;
+	ref_alt_ctype.__mbrtowc = mock_mbrtowc;
 }
 
 /* mbsrtowcs.c */

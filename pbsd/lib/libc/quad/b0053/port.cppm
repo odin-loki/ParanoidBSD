@@ -35,11 +35,8 @@
 
 /*
  * Port of:
- *	lib/libc/quad/udivdi3.c
- *	lib/libc/quad/umoddi3.c
- *	lib/libc/quad/anddi3.c
- *	lib/libc/quad/xordi3.c
- * plus lib/libc/quad/qdivrem.c (support for udivdi3/umoddi3).
+ *	lib/libc/quad/moddi3.c
+ *	lib/libc/quad/lshrdi3.c
  */
 
 module;
@@ -47,23 +44,26 @@ module;
 #include <climits>
 #include <cstdint>
 
-export module pbsd.lib.libc.quad.b0051;
+export module pbsd.lib.libc.quad.b0053;
 
-export namespace pbsd::lib_libc_quad::b0051 {
+export namespace pbsd::lib_libc_quad::b0053 {
 
 typedef long long quad_t;
 typedef unsigned long long u_quad_t;
 
-} // namespace pbsd::lib_libc_quad::b0051
+} // namespace pbsd::lib_libc_quad::b0053
 
-namespace pbsd::lib_libc_quad::b0051 {
+namespace pbsd::lib_libc_quad::b0053 {
 
-typedef std::uint32_t u_long;
+typedef std::int32_t quad_long;
+typedef std::uint32_t quad_u_long;
+typedef unsigned long u_long;
 
 union uu {
 	quad_t	q;
 	quad_t	uq;
-	u_long	ul[2];
+	quad_long	sl[2];
+	quad_u_long	ul[2];
 };
 
 #if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
@@ -75,19 +75,21 @@ inline constexpr int H = 1;
 inline constexpr int L = 0;
 #endif
 
-inline constexpr int HALF_BITS = sizeof(u_long) * CHAR_BIT / 2;
+inline constexpr int QUAD_BITS = sizeof(quad_t) * CHAR_BIT;
+inline constexpr int LONG_BITS = sizeof(quad_u_long) * CHAR_BIT;
+inline constexpr int HALF_BITS = sizeof(quad_u_long) * CHAR_BIT / 2;
 
 #define	HHALF(x)	((x) >> HALF_BITS)
 #define	LHALF(x)	((x) & ((1L << HALF_BITS) - 1))
-#define	LHUP(x)		((x) << HALF_BITS)
 
 #ifndef __predict_false
 #define	__predict_false(exp)	__builtin_expect((exp) != 0, 0)
 #endif
 
-#define	B	(1L << HALF_BITS)	/* digit base */
+typedef unsigned int qshift_t;
 
-/* Combine two `digits' to make a single two-digit number. */
+#define	B	(1L << HALF_BITS)
+
 #define	COMBINE(a, b) (((u_long)(a) << HALF_BITS) | (b))
 
 #if ULONG_MAX == 0xffffffff && USHRT_MAX >= 0xffff
@@ -96,11 +98,6 @@ typedef unsigned short digit;
 typedef u_long digit;
 #endif
 
-/*
- * Shift p[0]..p[len] left `sh' bits, ignoring any bits that
- * `fall out' the left (there never will be any such anyway).
- * We may assume len >= 0.  NOTE THAT THIS WRITES len+1 DIGITS.
- */
 static void
 shl(digit *p, int len, int sh)
 {
@@ -111,15 +108,7 @@ shl(digit *p, int len, int sh)
 	p[i] = LHALF(p[i] << sh);
 }
 
-/*
- * __qdivrem(u, v, rem) returns u/v and, optionally, sets *rem to u%v.
- *
- * We do this in base 2-sup-HALF_BITS, so that all intermediate products
- * fit within u_long.  As a consequence, the maximum length dividend and
- * divisor are 4 `digits' in this base (they are shorter if they have
- * leading zeros).
- */
-static u_quad_t
+u_quad_t
 __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 {
 	union uu tmp;
@@ -129,11 +118,7 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 	int m, n, d, j, i;
 	digit uspace[5], vspace[5], qspace[5];
 
-	/*
-	 * Take care of special cases: divide by zero, and u < v.
-	 */
 	if (__predict_false(vq == 0)) {
-		/* divide by zero. */
 		static volatile const unsigned int zero = 0;
 
 		tmp.ul[H] = tmp.ul[L] = 1 / zero;
@@ -150,19 +135,6 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 	v = &vspace[0];
 	q = &qspace[0];
 
-	/*
-	 * Break dividend and divisor into digits in base B, then
-	 * count leading zeros to determine m and n.  When done, we
-	 * will have:
-	 *	u = (u[1]u[2]...u[m+n]) sub B
-	 *	v = (v[1]v[2]...v[n]) sub B
-	 *	v[1] != 0
-	 *	1 < n <= 4 (if n = 1, we use a different division algorithm)
-	 *	m >= 0 (otherwise u < v, which we already checked)
-	 *	m + n = 4
-	 * and thus
-	 *	m = 4 - n <= 2
-	 */
 	tmp.uq = uq;
 	u[0] = 0;
 	u[1] = HHALF(tmp.ul[H]);
@@ -176,18 +148,10 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 	v[4] = LHALF(tmp.ul[L]);
 	for (n = 4; v[1] == 0; v++) {
 		if (--n == 1) {
-			u_long rbj;	/* r*B+u[j] (not root boy jim) */
+			u_long rbj;
 			digit q1, q2, q3, q4;
 
-			/*
-			 * Change of plan, per exercise 16.
-			 *	r = 0;
-			 *	for j = 1..4:
-			 *		q[j] = floor((r*B + u[j]) / v),
-			 *		r = (r*B + u[j]) % v;
-			 * We unroll this completely here.
-			 */
-			t = v[2];	/* nonzero, by definition */
+			t = v[2];
 			q1 = u[1] / t;
 			rbj = COMBINE(u[1] % t, u[2]);
 			q2 = rbj / t;
@@ -203,50 +167,28 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 		}
 	}
 
-	/*
-	 * By adjusting q once we determine m, we can guarantee that
-	 * there is a complete four-digit quotient at &qspace[1] when
-	 * we finally stop.
-	 */
 	for (m = 4 - n; u[1] == 0; u++)
 		m--;
 	for (i = 4 - m; --i >= 0;)
 		q[i] = 0;
 	q += 4 - m;
 
-	/*
-	 * Here we run Program D, translated from MIX to C and acquiring
-	 * a few minor changes.
-	 *
-	 * D1: choose multiplier 1 << d to ensure v[1] >= B/2.
-	 */
 	d = 0;
 	for (t = v[1]; t < B / 2; t <<= 1)
 		d++;
-	if (d <= 0) {
-		shl(&u[0], m + n, d);		/* u <<= d */
-		shl(&v[1], n - 1, d);		/* v <<= d */
+	if (d > 0) {
+		shl(&u[0], m + n, d);
+		shl(&v[1], n - 1, d);
 	}
-	/*
-	 * D2: j = 0.
-	 */
 	j = 0;
-	v1 = v[1];	/* for D3 -- note that v[1..n] are constant */
-	v2 = v[2];	/* for D3 */
+	v1 = v[1];
+	v2 = v[2];
 	do {
 		digit uj0, uj1, uj2;
 
-		/*
-		 * D3: Calculate qhat (\^q, in TeX notation).
-		 * Let qhat = min((u[j]*B + u[j+1])/v[1], B-1), and
-		 * let rhat = (u[j]*B + u[j+1]) mod v[1].
-		 * While rhat < B and v[2]*qhat > rhat*B+u[j+2],
-		 * decrement qhat and increase rhat correspondingly.
-		 * Note that if rhat >= B, v[2]*qhat < rhat*B.
-		 */
-		uj0 = u[j + 0];	/* for D3 only -- note that u[j+...] change */
-		uj1 = u[j + 1];	/* for D3 only */
-		uj2 = u[j + 2];	/* for D3 only */
+		uj0 = u[j + 0];
+		uj1 = u[j + 1];
+		uj2 = u[j + 2];
 		if (uj0 == v1) {
 			qhat = B;
 			rhat = uj1;
@@ -262,12 +204,6 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 			if ((rhat += v1) >= B)
 				break;
 		}
-		/*
-		 * D4: Multiply and subtract.
-		 * The variable `t' holds any borrows across the loop.
-		 * We split this up so that we do not require v[0] = 0,
-		 * and to eliminate a final special case.
-		 */
 		for (t = 0, i = n; i > 0; i--) {
 			t = u[i + j] - v[i] * qhat - t;
 			u[i + j] = LHALF(t);
@@ -275,15 +211,9 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 		}
 		t = u[j] - t;
 		u[j] = LHALF(t);
-		/*
-		 * D5: test remainder.
-		 * There is a borrow if and only if HHALF(t) is nonzero;
-		 * in that (rare) case, qhat was too large (by exactly 1).
-		 * Fix it by adding v[1..n] to u[j..j+n].
-		 */
 		if (HHALF(t)) {
 			qhat--;
-			for (t = 0, i = n; i > 0; i--) { /* D6: add back. */
+			for (t = 0, i = n; i > 0; i--) {
 				t += u[i + j] + v[i];
 				u[i + j] = LHALF(t);
 				t = HHALF(t);
@@ -291,13 +221,8 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 			u[j] = LHALF(u[j] + t);
 		}
 		q[j] = qhat;
-	} while (++j <= m);		/* D7: loop on j. */
+	} while (++j <= m);
 
-	/*
-	 * If caller wants the remainder, we have to calculate it as
-	 * u[m..m+n] >> d (this is at most n digits and thus fits in
-	 * u[m+1..m+n], but we may need more source digits).
-	 */
 	if (arq) {
 		if (d) {
 			for (i = m + n; i > m; --i)
@@ -315,60 +240,53 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 	return (tmp.q);
 }
 
-} // namespace pbsd::lib_libc_quad::b0051
+} // namespace pbsd::lib_libc_quad::b0053
 
-export namespace pbsd::lib_libc_quad::b0051 {
-
-/*
- * Divide two unsigned quads.
- */
-u_quad_t
-__udivdi3(u_quad_t a, u_quad_t b)
-{
-
-	return (__qdivrem(a, b, (u_quad_t *)0));
-}
+export namespace pbsd::lib_libc_quad::b0053 {
 
 /*
- * Return remainder after dividing two unsigned quads.
- */
-u_quad_t
-__umoddi3(u_quad_t a, u_quad_t b)
-{
-	u_quad_t r;
-
-	(void)__qdivrem(a, b, &r);
-	return (r);
-}
-
-/*
- * Return a & b, in quad.
+ * Return remainder after dividing two signed quads.
+ *
+ * XXX
+ * If -1/2 should produce -1 on this machine, this code is wrong.
  */
 quad_t
-__anddi3(quad_t a, quad_t b)
+__moddi3(quad_t a, quad_t b)
 {
-	union uu aa, bb;
+	u_quad_t ua, ub, ur;
+	int neg;
+
+	if (a < 0)
+		ua = -(u_quad_t)a, neg = 1;
+	else
+		ua = a, neg = 0;
+	if (b < 0)
+		ub = -(u_quad_t)b;
+	else
+		ub = b;
+	(void)__qdivrem(ua, ub, &ur);
+	return (neg ? -ur : ur);
+}
+
+/*
+ * Shift an (unsigned) quad value right (logical shift right).
+ */
+quad_t
+__lshrdi3(quad_t a, qshift_t shift)
+{
+	union uu aa;
 
 	aa.q = a;
-	bb.q = b;
-	aa.ul[0] &= bb.ul[0];
-	aa.ul[1] &= bb.ul[1];
+	if (shift >= LONG_BITS) {
+		aa.ul[L] = shift >= QUAD_BITS ? 0 :
+		    aa.ul[H] >> (shift - LONG_BITS);
+		aa.ul[H] = 0;
+	} else if (shift > 0) {
+		aa.ul[L] = (aa.ul[L] >> shift) |
+		    (aa.ul[H] << (LONG_BITS - shift));
+		aa.ul[H] >>= shift;
+	}
 	return (aa.q);
 }
 
-/*
- * Return a ^ b, in quad.
- */
-quad_t
-__xordi3(quad_t a, quad_t b)
-{
-	union uu aa, bb;
-
-	aa.q = a;
-	bb.q = b;
-	aa.ul[0] ^= bb.ul[0];
-	aa.ul[1] ^= bb.ul[1];
-	return (aa.q);
-}
-
-} // namespace pbsd::lib_libc_quad::b0051
+} // namespace pbsd::lib_libc_quad::b0053

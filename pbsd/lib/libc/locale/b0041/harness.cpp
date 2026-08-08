@@ -9,9 +9,14 @@ import pbsd.lib.libc.locale.b0041;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cwchar>
 
 namespace port = pbsd::lib_libc_locale::b0041;
+
+#ifndef EOF
+#define EOF	(-1)
+#endif
+
+using wint_t = decltype(port::btowc(0));
 
 typedef union {
 	char		__bytes[128];
