@@ -298,6 +298,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/b0032/port.cppm
   lib/libc/string/b0099/port.cppm
   lib/libc/string/b0105/port.cppm
+  lib/libc/string/b0105s1/port.cppm
   lib/libc/string/b0105s2/port.cppm
   lib/libc/string/b0105s3/port.cppm
   lib/libc/string/b0105s4/port.cppm
@@ -371,6 +372,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/ld128/b0088/port.cppm
   lib/msun/ld128/b0088s1/port.cppm
   lib/msun/ld128/b0088s2/port.cppm
+  lib/msun/ld128/b0088s3/port.cppm
   lib/msun/ld128/b0088s4/port.cppm
   lib/msun/ld128/b0089/port.cppm
   lib/msun/ld128/k_cosl_m/port.cppm
@@ -479,6 +481,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sys/kern/b0138/port.cppm
   sys/kern/b0146/port.cppm
   sys/kern/b0146s1/port.cppm
+  sys/kern/b0146s2/port.cppm
   sys/kern/b0217/port.cppm
   sys/net/toeplitz_m/port.cppm
   sys/security/mac_none/b0005/port.cppm

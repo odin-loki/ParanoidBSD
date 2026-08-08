@@ -6,6 +6,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <cerrno>
 #include <climits>
 #include <cstdarg>
 #include <cstdint>
@@ -20,24 +21,24 @@ namespace port = pbsd::lib_libc_stdio::b0106s3;
 
 extern "C" {
 int ref_vsprintf_l(char *__restrict, locale_t, const char *__restrict,
-    __va_list);
-int ref_vsprintf(char *__restrict, const char *__restrict, __va_list);
+    va_list);
+int ref_vsprintf(char *__restrict, const char *__restrict, va_list);
 locale_t pbsd_shim_get_locale(void);
-locale_t pbsd_shim_locale_c;
-locale_t pbsd_shim_locale_utf8;
+extern locale_t pbsd_shim_locale_c;
+extern locale_t pbsd_shim_locale_utf8;
 int pbsd_shim_init(void);
-locale_t pbsd_shim_vfprintf_locale;
-int pbsd_shim_vfprintf_serrno;
-unsigned long long pbsd_shim_vfprintf_calls;
-short pbsd_shim_vfprintf_entry_flags;
-short pbsd_shim_vfprintf_entry_file;
-int pbsd_shim_vfprintf_entry_r;
-int pbsd_shim_vfprintf_entry_w;
-int pbsd_shim_vfprintf_entry_size;
-int pbsd_shim_vfprintf_entry_lbfsize;
-int pbsd_shim_vfprintf_entry_orientation;
-unsigned char *pbsd_shim_vfprintf_entry_base;
-unsigned char *pbsd_shim_vfprintf_entry_p;
+extern locale_t pbsd_shim_vfprintf_locale;
+extern int pbsd_shim_vfprintf_serrno;
+extern unsigned long long pbsd_shim_vfprintf_calls;
+extern short pbsd_shim_vfprintf_entry_flags;
+extern short pbsd_shim_vfprintf_entry_file;
+extern int pbsd_shim_vfprintf_entry_r;
+extern int pbsd_shim_vfprintf_entry_w;
+extern int pbsd_shim_vfprintf_entry_size;
+extern int pbsd_shim_vfprintf_entry_lbfsize;
+extern int pbsd_shim_vfprintf_entry_orientation;
+extern unsigned char *pbsd_shim_vfprintf_entry_base;
+extern unsigned char *pbsd_shim_vfprintf_entry_p;
 }
 
 namespace {
@@ -67,7 +68,7 @@ Stats g_stat[NSTAT] = {
 	{ "vsprintf",   0, 0, 0 },
 };
 
-std::uint64_t rng_state = 0xb0106s3feedfaceULL;
+std::uint64_t rng_state = 0xb0106a3feedfaceULL;
 
 std::uint64_t
 rnd_u64(void)
@@ -227,54 +228,6 @@ shim_eq(const ShimSnap &a, const ShimSnap &b, const char *label, StatId which)
 		return (false);
 	}
 	return (true);
-}
-
-int
-call_ref_vsprintf_l(char *str, locale_t locale, const char *fmt, ...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = ref_vsprintf_l(str, locale, fmt, ap);
-	va_end(ap);
-	return (ret);
-}
-
-int
-call_port_vsprintf_l(char *str, locale_t locale, const char *fmt, ...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = port::vsprintf_l(str, locale, fmt, ap);
-	va_end(ap);
-	return (ret);
-}
-
-int
-call_ref_vsprintf(char *str, const char *fmt, ...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = ref_vsprintf(str, fmt, ap);
-	va_end(ap);
-	return (ret);
-}
-
-int
-call_port_vsprintf(char *str, const char *fmt, ...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = port::vsprintf(str, fmt, ap);
-	va_end(ap);
-	return (ret);
 }
 
 bool
@@ -497,103 +450,62 @@ fill_random_string(char *dst, std::size_t cap, unsigned seed)
 void
 random_vsprintf_l(void)
 {
-	char fmt[64];
 	char argstr[32];
 	char label[48];
 
 	for (unsigned i = 0; i < RAND_ITERS; i++) {
 		locale_t loc;
 		int set_errno;
-		unsigned nf, f;
-		int pos;
+		unsigned kind;
 
 		loc = (rnd_u32() & 7u) == 0u ? NULL :
 		    ((rnd_u32() & 1u) ? pbsd_shim_locale_c :
 		    pbsd_shim_locale_utf8);
 		set_errno = (int)(rnd_u32() & 0x7fu);
-		nf = 1u + (rnd_u32() % 5u);
-		pos = 0;
-		fmt[pos++] = '%';
-		for (f = 0; f < nf && pos < (int)sizeof(fmt) - 8; f++) {
-			switch (rnd_u32() % 6u) {
-			case 0:
-				fmt[pos++] = 'd';
-				break;
-			case 1:
-				fmt[pos++] = 'u';
-				break;
-			case 2:
-				fmt[pos++] = 'x';
-				break;
-			case 3:
-				fmt[pos++] = 'c';
-				break;
-			case 4:
-				fmt[pos++] = 's';
-				break;
-			default:
-				fmt[pos++] = '%';
-				break;
-			}
-			if (f + 1 < nf)
-				fmt[pos++] = ' ';
-		}
-		fmt[pos] = '\0';
-
+		kind = rnd_u32() % 9u;
 		std::snprintf(label, sizeof(label), "rand_%u", i);
 
-		switch (nf) {
+		switch (kind) {
+		case 0:
+			(void)test_vsprintf_l_one(S_VSPRINTF_L, label, loc,
+			    set_errno, "%d",
+			    (int)(rnd_u32() ^ (rnd_u32() >> 1)));
+			break;
 		case 1:
-			switch (fmt[1]) {
-			case 'd':
-				(void)test_vsprintf_l_one(S_VSPRINTF_L, label,
-				    loc, set_errno, fmt,
-				    (int)(rnd_u32() ^ (rnd_u32() >> 1)));
-				break;
-			case 'u':
-				(void)test_vsprintf_l_one(S_VSPRINTF_L, label,
-				    loc, set_errno, fmt, rnd_u32());
-				break;
-			case 'x':
-				(void)test_vsprintf_l_one(S_VSPRINTF_L, label,
-				    loc, set_errno, fmt, rnd_u32());
-				break;
-			case 'c':
-				(void)test_vsprintf_l_one(S_VSPRINTF_L, label,
-				    loc, set_errno, fmt,
-				    (int)(rnd_u32() & 0xffu));
-				break;
-			case 's':
-				fill_random_string(argstr, sizeof(argstr),
-				    rnd_u32());
-				(void)test_vsprintf_l_one(S_VSPRINTF_L, label,
-				    loc, set_errno, fmt, argstr);
-				break;
-			default:
-				(void)test_vsprintf_l_one(S_VSPRINTF_L, label,
-				    loc, set_errno, fmt);
-				break;
-			}
+			(void)test_vsprintf_l_one(S_VSPRINTF_L, label, loc,
+			    set_errno, "%u", rnd_u32());
 			break;
 		case 2:
-			if (std::strchr(fmt, 's') != NULL) {
-				fill_random_string(argstr, sizeof(argstr),
-				    rnd_u32());
-				(void)test_vsprintf_l_one(S_VSPRINTF_L, label,
-				    loc, set_errno, fmt,
-				    (int)rnd_u32(), argstr);
-			} else {
-				(void)test_vsprintf_l_one(S_VSPRINTF_L, label,
-				    loc, set_errno, fmt, (int)rnd_u32(),
-				    (int)rnd_u32());
-			}
+			(void)test_vsprintf_l_one(S_VSPRINTF_L, label, loc,
+			    set_errno, "%x", rnd_u32());
 			break;
-		default:
+		case 3:
+			(void)test_vsprintf_l_one(S_VSPRINTF_L, label, loc,
+			    set_errno, "%c", (int)(rnd_u32() & 0xffu));
+			break;
+		case 4:
 			fill_random_string(argstr, sizeof(argstr), rnd_u32());
 			(void)test_vsprintf_l_one(S_VSPRINTF_L, label, loc,
-			    set_errno, fmt, (int)rnd_u32(),
-			    (int)(rnd_u32() & 0xffu), argstr,
-			    (unsigned)rnd_u32());
+			    set_errno, "%s", argstr);
+			break;
+		case 5:
+			(void)test_vsprintf_l_one(S_VSPRINTF_L, label, loc,
+			    set_errno, "%%");
+			break;
+		case 6:
+			(void)test_vsprintf_l_one(S_VSPRINTF_L, label, loc,
+			    set_errno, "%m");
+			break;
+		case 7:
+			fill_random_string(argstr, sizeof(argstr), rnd_u32());
+			(void)test_vsprintf_l_one(S_VSPRINTF_L, label, loc,
+			    set_errno, "%d %c %s", (int)rnd_u32(),
+			    (int)(rnd_u32() & 0xffu), argstr);
+			break;
+		default:
+			(void)test_vsprintf_l_one(S_VSPRINTF_L, label, loc,
+			    set_errno, "%u|%x|%d", rnd_u32(), rnd_u32(),
+			    (int)rnd_u32());
 			break;
 		}
 	}
@@ -602,7 +514,6 @@ random_vsprintf_l(void)
 void
 random_vsprintf(void)
 {
-	char fmt[48];
 	char argstr[24];
 	char label[48];
 
@@ -611,7 +522,7 @@ random_vsprintf(void)
 		unsigned kind;
 
 		set_errno = (int)(rnd_u32() & 0xffu);
-		kind = rnd_u32() % 8u;
+		kind = rnd_u32() % 9u;
 		std::snprintf(label, sizeof(label), "rand_%u", i);
 
 		switch (kind) {
@@ -644,20 +555,15 @@ random_vsprintf(void)
 			(void)test_vsprintf_one(S_VSPRINTF, label, set_errno,
 			    "%m");
 			break;
+		case 7:
+			fill_random_string(argstr, sizeof(argstr), rnd_u32());
+			(void)test_vsprintf_one(S_VSPRINTF, label, set_errno,
+			    "%x %d %s", rnd_u32(), (int)rnd_u32(), argstr);
+			break;
 		default:
-			std::snprintf(fmt, sizeof(fmt), "%%%c %%%c",
-			    (rnd_u32() & 1u) ? 'd' : 'x',
-			    (rnd_u32() & 1u) ? 'u' : 'c');
-			if (fmt[1] == 'd')
-				(void)test_vsprintf_one(S_VSPRINTF, label,
-				    set_errno, fmt, (int)rnd_u32(),
-				    (rnd_u32() & 1u) ? rnd_u32() :
-				    (unsigned)(rnd_u32() & 0xffu));
-			else
-				(void)test_vsprintf_one(S_VSPRINTF, label,
-				    set_errno, fmt, rnd_u32(),
-				    (rnd_u32() & 1u) ? rnd_u32() :
-				    (unsigned)(rnd_u32() & 0xffu));
+			(void)test_vsprintf_one(S_VSPRINTF, label, set_errno,
+			    "%d %c", (int)rnd_u32(),
+			    (int)(rnd_u32() & 0xffu));
 			break;
 		}
 	}

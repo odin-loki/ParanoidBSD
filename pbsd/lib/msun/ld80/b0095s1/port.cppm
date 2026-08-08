@@ -241,7 +241,7 @@ if( y >= LDBL_MAX )
 		return( INFINITY );
 	if( x > 0.0L && x < 1.0L )
 		return( 0.0L );
-	if( x >= -1.0L )
+	if( x < -1.0L )
 		return( INFINITY );
 	if( x > -1.0L && x < 0.0L )
 		return( 0.0L );

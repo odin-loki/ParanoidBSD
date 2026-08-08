@@ -1,28 +1,3 @@
-// PBSD port of HardenedBSD lib/libc/string, batch b0105s2.
-//
-// Sources ported in this module:
-//   hbsd/src/lib/libc/string/strcspn.c
-//
-// The port is byte-for-byte faithful in behaviour to the C original,
-// including signedness, evaluation order and pointer arithmetic.
-
-module;
-
-#include <climits>
-#include <cstddef>
-
-#ifndef LONG_BIT
-#if defined(__LP64__) || defined(_LP64)
-#define LONG_BIT 64
-#else
-#define LONG_BIT 32
-#endif
-#endif
-
-export module pbsd.lib.libc.string.b0105s2;
-
-export namespace pbsd::lib_libc_string::b0105s2 {
-
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -51,10 +26,28 @@ export namespace pbsd::lib_libc_string::b0105s2 {
  * SUCH DAMAGE.
  */
 
-#define	IDX(c)	((unsigned char)(c) / LONG_BIT)
-#define	BIT(c)	((unsigned long)1 << ((unsigned char)(c) % LONG_BIT))
+module;
 
-std::size_t
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE 1
+#endif
+
+#include <sys/types.h>
+#include <limits.h>
+#include <string.h>
+
+#ifndef LONG_BIT
+#define	LONG_BIT	(__SIZEOF_LONG__ * CHAR_BIT)
+#endif
+
+export module pbsd.lib.libc.string.b0105s2;
+
+#define	IDX(c)	((u_char)(c) / LONG_BIT)
+#define	BIT(c)	((u_long)1 << ((u_char)(c) % LONG_BIT))
+
+export namespace pbsd::lib_libc_string::b0105s2 {
+
+size_t
 strcspn(const char *s, const char *charset)
 {
 	/*
@@ -62,8 +55,8 @@ strcspn(const char *s, const char *charset)
 	 * generate better code.  Without them, gcc gets a little confused.
 	 */
 	const char *s1;
-	unsigned long bit;
-	unsigned long tbl[(UCHAR_MAX + 1) / LONG_BIT];
+	u_long bit;
+	u_long tbl[(UCHAR_MAX + 1) / LONG_BIT];
 	int idx;
 
 	if(*s == '\0')
@@ -73,7 +66,7 @@ strcspn(const char *s, const char *charset)
 	tbl[0] = 1;
 	tbl[3] = tbl[2] = tbl[1] = 0;
 #else
-	for (tbl[0] = idx = 1; idx < sizeof(tbl) / sizeof(tbl[0]); idx++)
+	for (tbl[0] = idx = 1; idx < (int)(sizeof(tbl) / sizeof(tbl[0])); idx++)
 		tbl[idx] = 0;
 #endif
 	for (; *charset != '\0'; charset++) {
@@ -91,7 +84,4 @@ strcspn(const char *s, const char *charset)
 	return (s1 - s);
 }
 
-#undef IDX
-#undef BIT
-
-} // namespace pbsd::lib_libc_string::b0105s2
+} /* namespace pbsd::lib_libc_string::b0105s2 */
