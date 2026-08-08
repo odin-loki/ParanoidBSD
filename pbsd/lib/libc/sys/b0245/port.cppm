@@ -131,8 +131,6 @@ module;
 #include <sys/errno.h>
 #include <time.h>
 
-extern "C" int __sys_pipe2(int fildes[2], int flags);
-
 #ifndef __unused
 #define	__unused	__attribute__((__unused__))
 #endif
@@ -210,6 +208,8 @@ using interpos_sig_nanosleep = int (*)(const struct timespec *,
 export namespace pbsd::lib_libc_sys::b0245 {
 
 interpos_func_t __libc_interposing[INTERPOS_MAX];
+
+extern "C" int __sys_pipe2(int fildes[2], int flags);
 
 int
 vadvise(int arg __unused)

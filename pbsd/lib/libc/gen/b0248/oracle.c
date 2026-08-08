@@ -20,6 +20,9 @@
 
 #define __sym_compat(sym, impl, ver)
 
+char *devname(dev_t dev, mode_t type);
+char *devname_r(dev_t dev, mode_t type, char *buf, int len);
+
 /* ------------------------------------------------------------------ */
 /* ttyslot.c                                                          */
 /* ------------------------------------------------------------------ */

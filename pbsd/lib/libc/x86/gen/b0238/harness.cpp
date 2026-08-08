@@ -224,10 +224,12 @@ xfpustate_offset(P::__register_t v, const char *base)
 }
 
 static void
-normalize_ctxbuf(CtxBuf &buf)
+normalize_ctxbuf(CtxBuf &buf, bool use_xfpu_offsets)
 {
 	P::ucontext_t *ucp = buf.ucp();
 
+	if (!use_xfpu_offsets)
+		return;
 	if (ucp->uc_mcontext.mc_xfpustate != 0)
 		ucp->uc_mcontext.mc_xfpustate =
 		    (P::__register_t)sizeof(P::ucontext_t);
@@ -411,9 +413,10 @@ fill2_ok(unsigned int features, unsigned int cpuid_sz, int sysarch_fail,
 		return (false);
 	{
 		CtxBuf pc = pb, rc = rb;
+		bool xo = xfpu_path_active(features, sysarch_fail);
 
-		normalize_ctxbuf(pc);
-		normalize_ctxbuf(rc);
+		normalize_ctxbuf(pc, xo);
+		normalize_ctxbuf(rc, xo);
 		if (!pc.identical(rc)) {
 			report(F_FILL2, ctx, "full guard buffer mismatch");
 			return (false);
@@ -477,8 +480,8 @@ test_fill2_edges(void)
 		} else {
 			CtxBuf pc = pb, rc = rb;
 
-			normalize_ctxbuf(pc);
-			normalize_ctxbuf(rc);
+			normalize_ctxbuf(pc, true);
+			normalize_ctxbuf(rc, true);
 			if (!pc.identical(rc))
 				report(F_FILL2, "flags-or", "preset mc_flags case");
 		}
@@ -545,9 +548,10 @@ fill_ok(unsigned int features, unsigned int cpuid_sz, int gc_fail,
 	}
 	if (!pb.identical(rb)) {
 		CtxBuf pc = pb, rc = rb;
+		bool xo = xfpu_path_active(features, sysarch_fail);
 
-		normalize_ctxbuf(pc);
-		normalize_ctxbuf(rc);
+		normalize_ctxbuf(pc, xo);
+		normalize_ctxbuf(rc, xo);
 		if (!pc.identical(rc)) {
 			report(F_FILL, ctx, "full guard buffer mismatch");
 			return (false);
@@ -555,7 +559,8 @@ fill_ok(unsigned int features, unsigned int cpuid_sz, int gc_fail,
 	}
 	if (a == 0 &&
 	    !mcontext_fields_match(pb.ucp()->uc_mcontext,
-	    rb.ucp()->uc_mcontext, pb.ctx(), rb.ctx(), ctx, F_FILL))
+	    rb.ucp()->uc_mcontext, pb.ctx(), rb.ctx(), ctx, F_FILL,
+	    xfpu_path_active(features, sysarch_fail)))
 		return (false);
 	return (true);
 }
@@ -616,24 +621,47 @@ test_fill_random(void)
 
 static bool
 ucontext_payload_match(const P::ucontext_t *pa, const P::ucontext_t *pb,
-    size_t nbytes, const char *ctx)
+    size_t nbytes, bool use_xfpu_offsets, const char *ctx)
 {
-	P::ucontext_t ca = *pa;
-	P::ucontext_t cb = *pb;
+	size_t ucsz = sizeof(P::ucontext_t);
+	unsigned char *ba, *bb;
 
-	if (ca.uc_mcontext.mc_xfpustate != 0)
-		ca.uc_mcontext.mc_xfpustate = (P::__register_t)sizeof(P::ucontext_t);
-	else
-		ca.uc_mcontext.mc_xfpustate = 0;
-	if (cb.uc_mcontext.mc_xfpustate != 0)
-		cb.uc_mcontext.mc_xfpustate = (P::__register_t)sizeof(P::ucontext_t);
-	else
-		cb.uc_mcontext.mc_xfpustate = 0;
+	if (nbytes < ucsz)
+		ucsz = nbytes;
+	ba = (unsigned char *)std::malloc(nbytes);
+	bb = (unsigned char *)std::malloc(nbytes);
+	if (ba == nullptr || bb == nullptr) {
+		std::free(ba);
+		std::free(bb);
+		report(F_GET, ctx, "payload compare alloc failed");
+		return (false);
+	}
+	std::memcpy(ba, pa, nbytes);
+	std::memcpy(bb, pb, nbytes);
+	if (use_xfpu_offsets) {
+		size_t mcoff = offsetof(P::ucontext_t, uc_mcontext) +
+		    offsetof(P::mcontext_t, mc_xfpustate);
+		P::__register_t *ma, *mb;
 
-	if (std::memcmp(&ca, &cb, nbytes) != 0) {
+		ma = (P::__register_t *)(ba + mcoff);
+		mb = (P::__register_t *)(bb + mcoff);
+		if (*ma != 0)
+			*ma = (P::__register_t)sizeof(P::ucontext_t);
+		else
+			*ma = 0;
+		if (*mb != 0)
+			*mb = (P::__register_t)sizeof(P::ucontext_t);
+		else
+			*mb = 0;
+	}
+	if (std::memcmp(ba, bb, nbytes) != 0) {
+		std::free(ba);
+		std::free(bb);
 		report(F_GET, ctx, "allocated ucontext payload mismatch");
 		return (false);
 	}
+	std::free(ba);
+	std::free(bb);
 	return (true);
 }
 
@@ -675,7 +703,8 @@ get_ok(unsigned int features, unsigned int cpuid_sz, int gc_fail,
 		ok = false;
 	}
 	if (pa != nullptr && pb != nullptr) {
-		if (!ucontext_payload_match(pa, pb, expect_sz, label))
+		if (!ucontext_payload_match(pa, pb, expect_sz,
+		    xfpu_path_active(features, sysarch_fail), label))
 			ok = false;
 	}
 	if (pa != nullptr)

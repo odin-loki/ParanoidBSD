@@ -4,12 +4,12 @@ module;
 #include <cerrno>
 #include <cstddef>
 
+export module pbsd.lib.libc.gen.b0247;
+
 extern "C" {
 typedef unsigned int u_int;
 int cap_getmode(u_int *modep);
 }
-
-export module pbsd.lib.libc.gen.b0247;
 
 export namespace pbsd::lib_libc_gen::b0247 {
 

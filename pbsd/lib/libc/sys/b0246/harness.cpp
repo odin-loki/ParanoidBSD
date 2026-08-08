@@ -62,9 +62,9 @@ namespace port = pbsd::lib_libc_sys::b0246;
 #define	TS_PAD		64
 #define	TS_TOTAL	(sizeof(struct timespec) + 2 * TS_PAD)
 
-#define	IOV_MAX		8
+#define	IOV_TEST_MAX	8
 #define	IOV_PAD		8
-#define	IOV_ELEMS	(IOV_MAX + 2 * IOV_PAD)
+#define	IOV_ELEMS	(IOV_TEST_MAX + 2 * IOV_PAD)
 #define	IOV_TOTAL	(IOV_ELEMS * sizeof(struct iovec))
 #define	IOV_OFF		(IOV_PAD * sizeof(struct iovec))
 
@@ -105,7 +105,7 @@ static const unsigned char *base_mask;
 static const unsigned char *base_info;
 static const unsigned char *base_ts;
 static const unsigned char *base_iov;
-static const unsigned char *base_bufs[IOV_MAX];
+static const unsigned char *base_bufs[IOV_TEST_MAX];
 
 static void
 mock_reset(long long ret)
@@ -210,7 +210,7 @@ mock_readv(int fd, const struct iovec *iov, int iovcnt)
 	mock.po[0] = poff(iov, base_iov);
 
 	if (iov != nullptr && iovcnt > 0) {
-		n = iovcnt < IOV_MAX ? iovcnt : IOV_MAX;
+		n = iovcnt < IOV_TEST_MAX ? iovcnt : IOV_TEST_MAX;
 		mock.hs[0] = hash_bytes(iov, (size_t)n * sizeof(struct iovec));
 		for (i = 0; i < n; i++) {
 			mock.po[i + 1] = poff(iov[i].iov_base, base_bufs[i]);
@@ -581,9 +581,9 @@ static void
 case_readv(int fd, const struct iovec *iov, int iovcnt, long long ret)
 {
 	unsigned char iov_a[IOV_TOTAL], iov_b[IOV_TOTAL];
-	unsigned char bufs_a[IOV_MAX][BASE_TOTAL];
-	unsigned char bufs_b[IOV_MAX][BASE_TOTAL];
-	struct iovec iova[IOV_MAX], iovb[IOV_MAX];
+	unsigned char bufs_a[IOV_TEST_MAX][BASE_TOTAL];
+	unsigned char bufs_b[IOV_TEST_MAX][BASE_TOTAL];
+	struct iovec iova[IOV_TEST_MAX], iovb[IOV_TEST_MAX];
 	Snap snap_a, snap_b;
 	ssize_t ra, rb;
 	char ctx[256];
@@ -593,13 +593,13 @@ case_readv(int fd, const struct iovec *iov, int iovcnt, long long ret)
 
 	memset(iov_a, GUARD, sizeof(iov_a));
 	memset(iov_b, GUARD, sizeof(iov_b));
-	for (i = 0; i < IOV_MAX; i++) {
+	for (i = 0; i < IOV_TEST_MAX; i++) {
 		memset(bufs_a[i], GUARD, sizeof(bufs_a[i]));
 		memset(bufs_b[i], GUARD, sizeof(bufs_b[i]));
 	}
 
 	if (iov != nullptr && iovcnt > 0) {
-		int n = iovcnt < IOV_MAX ? iovcnt : IOV_MAX;
+		int n = iovcnt < IOV_TEST_MAX ? iovcnt : IOV_TEST_MAX;
 
 		memcpy(iov_a + IOV_OFF, iov, (size_t)n * sizeof(struct iovec));
 		memcpy(iov_b + IOV_OFF, iov, (size_t)n * sizeof(struct iovec));
@@ -623,7 +623,7 @@ case_readv(int fd, const struct iovec *iov, int iovcnt, long long ret)
 	    iov != nullptr, iovcnt, ret);
 
 	base_iov = iov_a;
-	for (i = 0; i < IOV_MAX; i++)
+	for (i = 0; i < IOV_TEST_MAX; i++)
 		base_bufs[i] = bufs_a[i];
 	install_mocks(ref___libc_interposing);
 	mock_reset(ret);
@@ -632,7 +632,7 @@ case_readv(int fd, const struct iovec *iov, int iovcnt, long long ret)
 	snap_a = mock;
 
 	base_iov = iov_b;
-	for (i = 0; i < IOV_MAX; i++)
+	for (i = 0; i < IOV_TEST_MAX; i++)
 		base_bufs[i] = bufs_b[i];
 	install_mocks(port::__libc_interposing);
 	mock_reset(ret);
@@ -642,7 +642,7 @@ case_readv(int fd, const struct iovec *iov, int iovcnt, long long ret)
 
 	cmp_snap(FN_READV, snap_a, snap_b, ctx);
 	cmp_buf(FN_READV, "iov", iov_a, iov_b, sizeof(iov_a), ctx);
-	for (i = 0; i < IOV_MAX; i++)
+	for (i = 0; i < IOV_TEST_MAX; i++)
 		cmp_buf(FN_READV, "base", bufs_a[i], bufs_b[i],
 		    sizeof(bufs_a[i]), ctx);
 	cmp_ret(FN_READV, (long long)ra, (long long)rb, ctx);
@@ -788,18 +788,18 @@ test_sigtimedwait(void)
 static void
 test_readv(void)
 {
-	struct iovec iov[IOV_MAX];
+	struct iovec iov[IOV_TEST_MAX];
 	unsigned char data[BASE_MAX];
 	static const int fds[] = {
 		INT_MIN, -1, 0, 1, 2, 0x7e, 0x7f, 0x80, INT_MAX,
 	};
 	static const int iovcnts[] = {
-		INT_MIN, -1, 0, 1, 2, IOV_MAX - 1, IOV_MAX, IOV_MAX + 1,
-		IOV_MAX + 4, INT_MAX,
+		INT_MIN, -1, 0, 1, 2, IOV_TEST_MAX - 1, IOV_TEST_MAX,
+		IOV_TEST_MAX + 1, IOV_TEST_MAX + 4, INT_MAX,
 	};
 	static const long long rets[] = {
 		0, 1, -1, 0x7f, 0x80, INT_MIN, INT_MAX,
-		(SSIZE_MAX), (long long)SSIZE_MIN,
+		(long long)SSIZE_MAX, (long long)-SSIZE_MAX - 1,
 	};
 
 	for (int i = 0; i < BASE_MAX; i++)
@@ -809,7 +809,7 @@ test_readv(void)
 		for (size_t c = 0; c < sizeof(iovcnts) / sizeof(iovcnts[0]); c++)
 			for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++)
 				for (int m = 0; m < 2; m++) {
-					for (int i = 0; i < IOV_MAX; i++) {
+					for (int i = 0; i < IOV_TEST_MAX; i++) {
 						iov[i].iov_base = data + (i % BASE_MAX);
 						iov[i].iov_len = (size_t)(i + 1);
 					}
@@ -818,14 +818,14 @@ test_readv(void)
 				}
 
 	for (unsigned b = 0x00; b <= 0xff; b++) {
-		for (int i = 0; i < IOV_MAX; i++) {
+		for (int i = 0; i < IOV_TEST_MAX; i++) {
 			iov[i].iov_base = (void *)(uintptr_t)(0x1000 + b + i);
 			iov[i].iov_len = (size_t)((b + i) % (BASE_MAX + 1));
 		}
 		memset(data, (int)(char)b, sizeof(data));
 		iov[0].iov_base = data;
 		iov[0].iov_len = (size_t)(b % (BASE_MAX + 1));
-		case_readv((int)(int8_t)b, iov, (int)(b % (IOV_MAX + 2u)),
+		case_readv((int)(int8_t)b, iov, (int)(b % (IOV_TEST_MAX + 2u)),
 		    (long long)(int8_t)b);
 	}
 
@@ -844,7 +844,7 @@ test_readv(void)
 		uint64_t wide = rnd_wide();
 		int m = (int)(rng_u32() & 1u);
 
-		for (int i = 0; i < IOV_MAX; i++) {
+		for (int i = 0; i < IOV_TEST_MAX; i++) {
 			size_t len = rnd_size(BASE_MAX);
 
 			for (size_t j = 0; j < len; j++)
