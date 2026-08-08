@@ -307,6 +307,35 @@ clear_undo_stack(void)
 	u_addr_last = addr_last;
 }
 
+#undef realloc
+
+long port_u_p()
+{
+	return u_p;
+}
+
+long port_usize()
+{
+	return usize;
+}
+
+long port_ustack_off(void *e)
+{
+	if (e == nullptr || ustack == nullptr)
+		return (-1);
+	return ((undo_t *)e - ustack);
+}
+
+int port_stack_entry(long i, int *type, void **h, void **t)
+{
+	if (i < 0 || i >= u_p || ustack == nullptr)
+		return (0);
+	*type = ustack[i].type;
+	*h = ustack[i].h;
+	*t = ustack[i].t;
+	return (1);
+}
+
 void discard_undo_stack(void)
 {
 	free(ustack);
