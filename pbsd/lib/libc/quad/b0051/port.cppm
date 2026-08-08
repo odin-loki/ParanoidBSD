@@ -35,8 +35,11 @@
 
 /*
  * Port of:
- *	lib/libc/quad/muldi3.c
- *	lib/libc/quad/qdivrem.c
+ *	lib/libc/quad/udivdi3.c
+ *	lib/libc/quad/umoddi3.c
+ *	lib/libc/quad/anddi3.c
+ *	lib/libc/quad/xordi3.c
+ * plus lib/libc/quad/qdivrem.c (support for udivdi3/umoddi3).
  */
 
 module;
@@ -44,26 +47,23 @@ module;
 #include <climits>
 #include <cstdint>
 
-export module pbsd.lib.libc.quad.b0044;
+export module pbsd.lib.libc.quad.b0051;
 
-export namespace pbsd::lib_libc_quad::b0044 {
+export namespace pbsd::lib_libc_quad::b0051 {
 
 typedef long long quad_t;
 typedef unsigned long long u_quad_t;
 
-} // namespace pbsd::lib_libc_quad::b0044
+} // namespace pbsd::lib_libc_quad::b0051
 
-namespace pbsd::lib_libc_quad::b0044 {
+namespace pbsd::lib_libc_quad::b0051 {
 
-typedef std::int32_t quad_long;
-typedef std::uint32_t quad_u_long;
-typedef quad_u_long u_long;
+typedef std::uint32_t u_long;
 
 union uu {
 	quad_t	q;
 	quad_t	uq;
-	quad_long	sl[2];
-	quad_u_long	ul[2];
+	u_long	ul[2];
 };
 
 #if defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && \
@@ -75,9 +75,7 @@ inline constexpr int H = 1;
 inline constexpr int L = 0;
 #endif
 
-inline constexpr int QUAD_BITS = sizeof(quad_t) * CHAR_BIT;
-inline constexpr int LONG_BITS = sizeof(quad_long) * CHAR_BIT;
-inline constexpr int HALF_BITS = sizeof(quad_long) * CHAR_BIT / 2;
+inline constexpr int HALF_BITS = sizeof(u_long) * CHAR_BIT / 2;
 
 #define	HHALF(x)	((x) >> HALF_BITS)
 #define	LHALF(x)	((x) & ((1L << HALF_BITS) - 1))
@@ -87,142 +85,11 @@ inline constexpr int HALF_BITS = sizeof(quad_long) * CHAR_BIT / 2;
 #define	__predict_false(exp)	__builtin_expect((exp) != 0, 0)
 #endif
 
-static quad_t __lmulq(u_long, u_long);
-
-} // namespace pbsd::lib_libc_quad::b0044
-
-export namespace pbsd::lib_libc_quad::b0044 {
-
-/*
- * Multiply two quads.
- *
- * Our algorithm is based on the following.  Split incoming quad values
- * u and v (where u,v >= 0) into
- *
- *	u = 2^n u1  *  u0	(n = number of bits in `u_long', usu. 32)
- *
- * and
- *
- *	v = 2^n v1  *  v0
- *
- * Then
- *
- *	uv = 2^2n u1 v1  +  2^n u1 v0  +  2^n v1 u0  +  u0 v0
- *	   = 2^2n u1 v1  +     2^n (u1 v0 + v1 u0)   +  u0 v0
- *
- * Now add 2^n u1 v1 to the first term and subtract it from the middle,
- * and add 2^n u0 v0 to the last term and subtract it from the middle.
- * This gives:
- *
- *	uv = (2^2n + 2^n) (u1 v1)  +
- *	         (2^n)    (u1 v0 - u1 v1 + u0 v1 - u0 v0)  +
- *	       (2^n + 1)  (u0 v0)
- *
- * Factoring the middle a bit gives us:
- *
- *	uv = (2^2n + 2^n) (u1 v1)  +			[u1v1 = high]
- *		 (2^n)    (u1 - u0) (v0 - v1)  +	[(u1-u0)... = mid]
- *	       (2^n + 1)  (u0 v0)			[u0v0 = low]
- *
- * The terms (u1 v1), (u1 - u0) (v0 - v1), and (u0 v0) can all be done
- * in just half the precision of the original.  (Note that either or both
- * of (u1 - u0) or (v0 - v1) may be negative.)
- *
- * This algorithm is from Knuth vol. 2 (2nd ed), section 4.3.3, p. 278.
- *
- * Since C does not give us a `long * long = quad' operator, we split
- * our input quads into two longs, then split the two longs into two
- * shorts.  We can then calculate `short * short = long' in native
- * arithmetic.
- *
- * Our product should, strictly speaking, be a `long quad', with 128
- * bits, but we are going to discard the upper 64.  In other words,
- * we are not interested in uv, but rather in (uv mod 2^2n).  This
- * makes some of the terms above vanish, and we get:
- *
- *	(2^n)(high) + (2^n)(mid) + (2^n + 1)(low)
- *
- * or
- *
- *	(2^n)(high + mid + low) + low
- *
- * Furthermore, `high' and `mid' can be computed mod 2^n, as any factor
- * of 2^n in either one will also vanish.  Only `low' need be computed
- * mod 2^2n, and only because of the final term above.
- */
-quad_t
-__muldi3(quad_t a, quad_t b)
-{
-	union uu u, v, low, prod;
-	u_long high, mid, udiff, vdiff;
-	int negall, negmid;
-#define	u1	u.ul[H]
-#define	u0	u.ul[L]
-#define	v1	v.ul[H]
-#define	v0	v.ul[L]
-
-	/*
-	 * Get u and v such that u, v >= 0.  When this is finished,
-	 * u1, u0, v1, and v0 will be directly accessible through the
-	 * longword fields.
-	 */
-	if (a >= 0)
-		u.q = a, negall = 0;
-	else
-		u.q = -a, negall = 1;
-	if (b >= 0)
-		v.q = b;
-	else
-		v.q = -b, negall ^= 1;
-
-	if (u1 == 0 && v1 == 0) {
-		/*
-		 * An (I hope) important optimization occurs when u1 and v1
-		 * are both 0.  This should be common since most numbers
-		 * are small.  Here the product is just u0*v0.
-		 */
-		prod.q = __lmulq(u0, v0);
-	} else {
-		/*
-		 * Compute the three intermediate products, remembering
-		 * whether the middle term is negative.  We can discard
-		 * any upper bits in high and mid, so we can use native
-		 * u_long * u_long => u_long arithmetic.
-		 */
-		low.q = __lmulq(u0, v0);
-
-		if (u1 >= u0)
-			negmid = 0, udiff = u1 - u0;
-		else
-			negmid = 1, udiff = u0 - u1;
-		if (v0 >= v1)
-			vdiff = v0 - v1;
-		else
-			vdiff = v1 - v0, negmid ^= 1;
-		mid = udiff * vdiff;
-
-		high = u1 * v1;
-
-		/*
-		 * Assemble the final product.
-		 */
-		prod.ul[H] = high + (negmid ? -mid : mid) + low.ul[L] +
-		    low.ul[H];
-		prod.ul[L] = low.ul[L];
-	}
-	return (negall ? -prod.q : prod.q);
-#undef u1
-#undef u0
-#undef v1
-#undef v0
-}
-
 #define	B	(1L << HALF_BITS)	/* digit base */
 
 /* Combine two `digits' to make a single two-digit number. */
 #define	COMBINE(a, b) (((u_long)(a) << HALF_BITS) | (b))
 
-/* select a type for digits in base B: use unsigned short if they fit */
 #if ULONG_MAX == 0xffffffff && USHRT_MAX >= 0xffff
 typedef unsigned short digit;
 #else
@@ -252,7 +119,7 @@ shl(digit *p, int len, int sh)
  * divisor are 4 `digits' in this base (they are shorter if they have
  * leading zeros).
  */
-u_quad_t
+static u_quad_t
 __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 {
 	union uu tmp;
@@ -354,7 +221,7 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 	 * D1: choose multiplier 1 << d to ensure v[1] >= B/2.
 	 */
 	d = 0;
-	for (t = v[1]; t >= B / 2; t <<= 1)
+	for (t = v[1]; t < B / 2; t <<= 1)
 		d++;
 	if (d > 0) {
 		shl(&u[0], m + n, d);		/* u <<= d */
@@ -448,85 +315,60 @@ __qdivrem(u_quad_t uq, u_quad_t vq, u_quad_t *arq)
 	return (tmp.q);
 }
 
-} // namespace pbsd::lib_libc_quad::b0044
+} // namespace pbsd::lib_libc_quad::b0051
 
-namespace pbsd::lib_libc_quad::b0044 {
+export namespace pbsd::lib_libc_quad::b0051 {
 
 /*
- * Multiply two 2N-bit longs to produce a 4N-bit quad, where N is half
- * the number of bits in a long (whatever that is---the code below
- * does not care as long as quad.h does its part of the bargain---but
- * typically N==16).
- *
- * We use the same algorithm from Knuth, but this time the modulo refinement
- * does not apply.  On the other hand, since N is half the size of a long,
- * we can get away with native multiplication---none of our input terms
- * exceeds (ULONG_MAX >> 1).
- *
- * Note that, for u_long l, the quad-precision result
- *
- *	l << N
- *
- * splits into high and low longs as HHALF(l) and LHUP(l) respectively.
+ * Divide two unsigned quads.
  */
-static quad_t
-__lmulq(u_long u, u_long v)
+u_quad_t
+__udivdi3(u_quad_t a, u_quad_t b)
 {
-	u_long u1, u0, v1, v0, udiff, vdiff, high, mid, low;
-	u_long prodh, prodl, was;
-	union uu prod;
-	int neg;
 
-	u1 = HHALF(u);
-	u0 = LHALF(u);
-	v1 = HHALF(v);
-	v0 = LHALF(v);
-
-	low = u0 * v0;
-
-	/* This is the same small-number optimization as before. */
-	if (u1 == 0 && v1 == 0)
-		return (low);
-
-	if (u1 >= u0)
-		udiff = u1 - u0, neg = 0;
-	else
-		udiff = u0 - u1, neg = 1;
-	if (v0 >= v1)
-		vdiff = v0 - v1;
-	else
-		vdiff = v1 - v0, neg ^= 1;
-	mid = udiff * vdiff;
-
-	high = u1 * v1;
-
-	/* prod = (high << 2N) + (high << N); */
-	prodh = high + HHALF(high);
-	prodl = LHUP(high);
-
-	/* if (neg) prod -= mid << N; else prod += mid << N; */
-	if (neg) {
-		was = prodl;
-		prodl -= LHUP(mid);
-		prodh -= HHALF(mid) + (prodl > was);
-	} else {
-		was = prodl;
-		prodl += LHUP(mid);
-		prodh += HHALF(mid) + (prodl < was);
-	}
-
-	/* prod += low << N */
-	was = prodl;
-	prodl += LHUP(low);
-	prodh += HHALF(low) + (prodl < was);
-	/* ... + low; */
-	if ((prodl += low) < low)
-		prodh++;
-
-	/* return 4N-bit product */
-	prod.ul[H] = prodh;
-	prod.ul[L] = prodl;
-	return (prod.q);
+	return (__qdivrem(a, b, (u_quad_t *)0));
 }
 
-} // namespace pbsd::lib_libc_quad::b0044
+/*
+ * Return remainder after dividing two unsigned quads.
+ */
+u_quad_t
+__umoddi3(u_quad_t a, u_quad_t b)
+{
+	u_quad_t r;
+
+	(void)__qdivrem(a, b, &r);
+	return (r);
+}
+
+/*
+ * Return a & b, in quad.
+ */
+quad_t
+__anddi3(quad_t a, quad_t b)
+{
+	union uu aa, bb;
+
+	aa.q = a;
+	bb.q = b;
+	aa.ul[0] &= bb.ul[0];
+	aa.ul[1] &= bb.ul[1];
+	return (aa.q);
+}
+
+/*
+ * Return a ^ b, in quad.
+ */
+quad_t
+__xordi3(quad_t a, quad_t b)
+{
+	union uu aa, bb;
+
+	aa.q = a;
+	bb.q = b;
+	aa.ul[0] ^= bb.ul[0];
+	aa.ul[1] ^= bb.ul[1];
+	return (aa.q);
+}
+
+} // namespace pbsd::lib_libc_quad::b0051

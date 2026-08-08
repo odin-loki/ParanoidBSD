@@ -1,0 +1,10 @@
+{
+  "batch": "b0067",
+  "verified": "2026-08-08T11:18:03Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "b0067 differential test: setpgrp(pid_t, pid_t)\n  self=66460 parent=54398 pid_max_limit=4194304\n  buffer-guard / pointer-offset checks: not applicable (no buffer or pointer results in this batch)\n\nfunction       edge cases   edge fails   rand cases   rand fails     result\nsetpgrp              1230            0       250000            0       PASS\n\nfunction            cases     failures\nsetpgrp            251230            0\nTOTAL              251230            0\n\nALL CASES MATCHED\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/compat-43/setpgrp.c": "5a16a840dd522222"
+  }
+}

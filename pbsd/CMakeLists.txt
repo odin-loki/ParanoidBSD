@@ -103,6 +103,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/quad/b0040/port.cppm
   lib/libc/quad/b0042/port.cppm
   lib/libc/quad/b0044/port.cppm
+  lib/libc/quad/b0051/port.cppm
   lib/libc/quad/divdi3_m/port.cppm
   lib/libc/quad/fixdfdi_m/port.cppm
   lib/libc/quad/fixsfdi_m/port.cppm
@@ -222,6 +223,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0030/port.cppm
   lib/msun/src/b0038/port.cppm
   lib/msun/src/b0057/port.cppm
+  lib/msun/src/b0060/port.cppm
   lib/msun/src/b0070/port.cppm
   lib/msun/src/b0079/port.cppm
   lib/msun/src/b0080/port.cppm
