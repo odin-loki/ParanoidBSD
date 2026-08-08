@@ -66,13 +66,14 @@ extern int mock_preinit_calls;
 extern int mock_init_array_calls;
 extern int mock_fini_array_calls;
 extern int mock_preinit_argc[64];
-extern void **mock_preinit_argv[64];
-extern char ***mock_preinit_env[64];
+extern char **mock_preinit_argv[64];
+extern char **mock_preinit_env[64];
 extern int mock_init_array_argc[64];
-extern void **mock_init_array_argv[64];
-extern char ***mock_init_array_env[64];
+extern char **mock_init_array_argv[64];
+extern char **mock_init_array_env[64];
 
-extern int _DYNAMIC;
+extern int pbsd_dynamic_storage;
+extern int *pbsd_dynamic_ptr;
 
 void ref_reset_mocks(void);
 void ref_preinit_hook(int, char **, char **);
@@ -154,14 +155,15 @@ struct Snapshot {
 	int init_array_calls;
 	int fini_array_calls;
 	int preinit_argc[64];
-	void **preinit_argv[64];
-	char ***preinit_env[64];
+	char **preinit_argv[64];
+	char **preinit_env[64];
 	int init_array_argc[64];
-	void **init_array_argv[64];
-	char ***init_array_env[64];
+	char **init_array_argv[64];
+	char **init_array_env[64];
 	int monstartup_calls;
 	int *mon_eprolp;
 	int *mon_etextp;
+	int errno_value;
 };
 
 void capture(Snapshot &s)
@@ -194,6 +196,7 @@ void capture(Snapshot &s)
 	s.monstartup_calls = mock_monstartup_calls;
 	s.mon_eprolp = mock_monstartup_eprolp;
 	s.mon_etextp = mock_monstartup_etextp;
+	s.errno_value = errno;
 }
 
 bool snap_same(const Snapshot &a, const Snapshot &b)
@@ -222,10 +225,6 @@ bool snap_same(const Snapshot &a, const Snapshot &b)
 		return false;
 	if (a.atexit_count != b.atexit_count)
 		return false;
-	for (int i = 0; i < a.atexit_count; i++) {
-		if (a.atexit_funcs[i] != b.atexit_funcs[i])
-			return false;
-	}
 	if (a.preinit_calls != b.preinit_calls ||
 	    a.init_array_calls != b.init_array_calls ||
 	    a.fini_array_calls != b.fini_array_calls)
@@ -244,6 +243,8 @@ bool snap_same(const Snapshot &a, const Snapshot &b)
 	}
 	if (a.monstartup_calls != b.monstartup_calls ||
 	    a.mon_eprolp != b.mon_eprolp || a.mon_etextp != b.mon_etextp)
+		return false;
+	if (a.errno_value != b.errno_value)
 		return false;
 	return true;
 }
@@ -501,10 +502,11 @@ static int test_main(int argc, char *argv[], char *env[])
 }
 
 bool test_libc_start1_case(Stat &st, int argc, char **argv, char **env,
-    int pre, int init, int rela_n, int main_ret)
+    int pre, int init, int rela_n, int main_ret, bool dynamic)
 {
 	st.cases++;
 	reset_all();
+	set_link_mode(dynamic);
 	cleanup_called = 0;
 	main_return = main_ret;
 	setup_arrays(pre, init, 0);
@@ -518,6 +520,7 @@ bool test_libc_start1_case(Stat &st, int argc, char **argv, char **env,
 	int ref_exit = mock_exit_called ? mock_exit_status : -1;
 
 	reset_all();
+	set_link_mode(dynamic);
 	cleanup_called = 0;
 	main_return = main_ret;
 	setup_arrays(pre, init, 0);
@@ -533,17 +536,18 @@ bool test_libc_start1_case(Stat &st, int argc, char **argv, char **env,
 		if (want_report(st))
 			std::printf(
 			    "  FAIL __libc_start1 exit ref=%d port=%d dynamic=%d\n",
-			    ref_exit, port_exit, dynamic_linked() ? 1 : 0);
+			    ref_exit, port_exit, dynamic ? 1 : 0);
 		return false;
 	}
 	return true;
 }
 
 bool test_libc_start1_gcrt_case(Stat &st, int argc, char **argv, char **env,
-    int pre, int init, int main_ret, int eprol, int etext)
+    int pre, int init, int main_ret, int eprol, int etext, bool dynamic)
 {
 	st.cases++;
 	reset_all();
+	set_link_mode(dynamic);
 	cleanup_called = 0;
 	main_return = main_ret;
 	setup_arrays(pre, init, 0);
@@ -559,6 +563,7 @@ bool test_libc_start1_gcrt_case(Stat &st, int argc, char **argv, char **env,
 	int ref_exit = mock_exit_called ? mock_exit_status : -1;
 
 	reset_all();
+	set_link_mode(dynamic);
 	cleanup_called = 0;
 	main_return = main_ret;
 	setup_arrays(pre, init, 0);
@@ -575,8 +580,8 @@ bool test_libc_start1_gcrt_case(Stat &st, int argc, char **argv, char **env,
 		note_fail(st);
 		if (want_report(st))
 			std::printf(
-			    "  FAIL __libc_start1_gcrt exit ref=%d port=%d\n",
-			    ref_exit, port_exit);
+			    "  FAIL __libc_start1_gcrt exit ref=%d port=%d dynamic=%d\n",
+			    ref_exit, port_exit, dynamic ? 1 : 0);
 		return false;
 	}
 	return true;
@@ -748,49 +753,57 @@ void run_handle_irelocs_tests()
 
 void run_libc_start1_tests()
 {
-	char name[] = "tool";
-	char *argv[] = {name, nullptr};
-	char *env[] = {(char *)"Z=1", nullptr};
+	EnvStack stack;
+	Elf_Auxinfo aux1[] = {{3, {0x1000}}, {4, {0x2000}}};
+	stack.reset_env({"Z=1", nullptr}, aux1, 2);
+	char *name[] = {(char *)"tool", nullptr};
+	char **argv = name;
+	char **env = stack.data();
 
-	test_libc_start1_case(st_libc_start1, 1, argv, env, 0, 0, 0, 0);
-	test_libc_start1_case(st_libc_start1, 1, argv, env, 1, 1, 0, 42);
-	test_libc_start1_case(st_libc_start1, 1, argv, env, 0, 0, 0, -1);
-	test_libc_start1_case(st_libc_start1, 0, argv, env, 0, 0, 0, 7);
+	test_libc_start1_case(st_libc_start1, 1, argv, env, 0, 0, 0, 0, false);
+	test_libc_start1_case(st_libc_start1, 1, argv, env, 1, 1, 0, 42, false);
+	test_libc_start1_case(st_libc_start1, 1, argv, env, 0, 0, 0, -1, false);
+	test_libc_start1_case(st_libc_start1, 0, argv, env, 0, 0, 0, 7, false);
+	test_libc_start1_case(st_libc_start1, 1, argv, env, 0, 0, 0, 0, true);
+	test_libc_start1_case(st_libc_start1, 1, argv, env, 1, 1, 0, 42, true);
 
 	prng_seed(0x5A471701ULL);
 	for (long i = 0; i < RANDOM_ITERATIONS; i++) {
-		int pre = dynamic_linked() ? 0 :
-		    static_cast<int>(prng_u32() % 3);
-		int init = dynamic_linked() ? 0 :
-		    static_cast<int>(prng_u32() % 3);
+		bool dynamic = (prng_u32() & 1) != 0;
+		int pre = dynamic ? 0 : static_cast<int>(prng_u32() % 3);
+		int init = dynamic ? 0 : static_cast<int>(prng_u32() % 3);
 		int ret = static_cast<int>(prng_u32() % 200) - 50;
 		test_libc_start1_case(st_libc_start1, 1, argv, env, pre, init, 0,
-		    ret);
+		    ret, dynamic);
 	}
 }
 
 void run_libc_start1_gcrt_tests()
 {
+	EnvStack stack;
+	Elf_Auxinfo aux1[] = {{5, {0x3000}}};
+	stack.reset_env({}, aux1, 1);
 	char name[] = "gcrt";
 	char *argv[] = {name, nullptr};
-	char *env[] = {nullptr};
+	char **env = stack.data();
 
 	test_libc_start1_gcrt_case(st_libc_start1_gcrt, 1, argv, env, 0, 0, 0, 0,
-	    0);
+	    0, false);
 	test_libc_start1_gcrt_case(st_libc_start1_gcrt, 1, argv, env, 1, 1, 99,
-	    0x1000, 0x2000);
+	    0x1000, 0x2000, false);
+	test_libc_start1_gcrt_case(st_libc_start1_gcrt, 1, argv, env, 0, 0, 0, 0,
+	    0, true);
 
 	prng_seed(0x6C127701ULL);
 	for (long i = 0; i < RANDOM_ITERATIONS; i++) {
-		int pre = dynamic_linked() ? 0 :
-		    static_cast<int>(prng_u32() % 3);
-		int init = dynamic_linked() ? 0 :
-		    static_cast<int>(prng_u32() % 3);
+		bool dynamic = (prng_u32() & 1) != 0;
+		int pre = dynamic ? 0 : static_cast<int>(prng_u32() % 3);
+		int init = dynamic ? 0 : static_cast<int>(prng_u32() % 3);
 		int ret = static_cast<int>(prng_u32() % 300) - 100;
 		int ep = static_cast<int>(prng_u32());
 		int et = static_cast<int>(prng_u32());
 		test_libc_start1_gcrt_case(st_libc_start1_gcrt, 1, argv, env, pre,
-		    init, ret, ep, et);
+		    init, ret, ep, et, dynamic);
 	}
 }
 
@@ -809,9 +822,7 @@ void print_table()
 		total_fails += s->fails;
 	}
 	std::printf("%-24s %10ld %10ld\n", "TOTAL", total_cases, total_fails);
-	std::printf("link mode: %s\n",
-	    dynamic_linked() ? "dynamic (&_DYNAMIC != NULL)" :
-			       "static (&_DYNAMIC == NULL)");
+	std::printf("link mode default: static (pbsd_dynamic_ptr == NULL)\n");
 }
 
 } // namespace

@@ -20,6 +20,11 @@ int __libsys_errno;
 int *ref___error_threaded(void);
 }
 
+static struct pthread g_initial;
+static struct pthread g_worker;
+static struct pthread g_alt;
+static struct pthread *g_curthread;
+
 namespace {
 
 enum Fn {
@@ -37,11 +42,6 @@ static unsigned long long reported[F_COUNT];
 
 static const unsigned SWEEP_ITERS = 200000u;
 
-static P::pthread g_initial;
-static P::pthread g_worker;
-static P::pthread g_alt;
-static P::pthread *g_curthread;
-
 static uint64_t rng_state = 0xb0234decafbad01ULL;
 
 static uint64_t
@@ -57,12 +57,6 @@ static unsigned
 rnd_below(unsigned n)
 {
 	return (unsigned)(nextr() % (uint64_t)n);
-}
-
-extern "C" struct pthread *
-_get_curthread(void)
-{
-	return (struct pthread *)g_curthread;
 }
 
 static void
@@ -88,7 +82,7 @@ record_case(int fn, bool ok, const char *fmt, ...)
 }
 
 static void
-setup_state(P::pthread *initial, P::pthread *cur, int lib_errno,
+setup_state(struct pthread *initial, struct pthread *cur, int lib_errno,
     int initial_err, int worker_err, int alt_err)
 {
 	g_initial.error = initial_err;
@@ -96,7 +90,7 @@ setup_state(P::pthread *initial, P::pthread *cur, int lib_errno,
 	g_alt.error = alt_err;
 	__libsys_errno = lib_errno;
 
-	_thr_initial = (struct pthread *)initial;
+	_thr_initial = initial;
 	g_curthread = cur;
 }
 
@@ -115,8 +109,9 @@ target_kind(int *p)
 }
 
 static void
-check_error_threaded(const char *label, P::pthread *initial, P::pthread *cur,
-    int lib_errno, int initial_err, int worker_err, int alt_err)
+check_error_threaded(const char *label, struct pthread *initial,
+    struct pthread *cur, int lib_errno, int initial_err, int worker_err,
+    int alt_err)
 {
 	int *pp, *pr;
 	int kind_p, kind_r;
@@ -149,27 +144,18 @@ check_error_threaded(const char *label, P::pthread *initial, P::pthread *cur,
 static void
 test_edges(void)
 {
-	/* _thr_initial == NULL */
 	check_error_threaded("thr_initial_null", nullptr, nullptr,
 	    11, 22, 33, 44);
 	check_error_threaded("thr_initial_null_cur_worker", nullptr, &g_worker,
 	    12, 22, 33, 44);
-
-	/* _thr_initial != NULL, curthread == NULL */
 	check_error_threaded("curthread_null", &g_initial, nullptr,
 	    13, 22, 33, 44);
-
-	/* _thr_initial != NULL, curthread == _thr_initial */
 	check_error_threaded("curthread_is_initial", &g_initial, &g_initial,
 	    14, 22, 33, 44);
-
-	/* _thr_initial != NULL, curthread != NULL && != initial */
 	check_error_threaded("curthread_worker", &g_initial, &g_worker,
 	    15, 22, 33, 44);
 	check_error_threaded("curthread_alt", &g_initial, &g_alt,
 	    16, 22, 33, 44);
-
-	/* boundary errno values */
 	check_error_threaded("lib_errno_zero", &g_initial, nullptr, 0, 0, 0, 0);
 	check_error_threaded("worker_errno_zero", &g_initial, &g_worker,
 	    0, 0, 0, 0);
@@ -191,8 +177,8 @@ test_random(unsigned iters)
 
 	for (i = 0; i < iters; i++) {
 		unsigned scenario = rnd_below(8u);
-		P::pthread *initial;
-		P::pthread *cur;
+		struct pthread *initial;
+		struct pthread *cur;
 		int lib_errno, initial_err, worker_err, alt_err;
 		char label[64];
 
@@ -245,6 +231,12 @@ test_random(unsigned iters)
 }
 
 } /* namespace */
+
+extern "C" struct pthread *
+_get_curthread(void)
+{
+	return g_curthread;
+}
 
 int
 main(void)

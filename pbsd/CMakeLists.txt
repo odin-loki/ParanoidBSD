@@ -32,6 +32,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/nproc/b0176/port.cppm
   bin/pax/b0108/port.cppm
   bin/pax/b0200/port.cppm
+  bin/pax/b0204/port.cppm
   bin/pax/b0207/port.cppm
   bin/pax/getoldopt_m/port.cppm
   bin/ps/nlist_m/port.cppm
@@ -196,6 +197,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/rpc/rtime_m/port.cppm
   lib/libc/secure/b0115/port.cppm
   lib/libc/secure/b0117/port.cppm
+  lib/libc/secure/b0240/port.cppm
   lib/libc/secure/fgets_chk_m/port.cppm
   lib/libc/secure/sprintf_chk_m/port.cppm
   lib/libc/secure/stpcpy_chk_m/port.cppm
@@ -283,6 +285,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/b0121/port.cppm
   lib/libc/string/b0137/port.cppm
   lib/libc/string/b0158/port.cppm
+  lib/libc/string/b0241/port.cppm
   lib/libc/string/bcmp_m/port.cppm
   lib/libc/string/ffs_m/port.cppm
   lib/libc/string/ffsl_m/port.cppm
@@ -370,6 +373,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0136/port.cppm
   lib/msun/src/b0141/port.cppm
   lib/msun/src/b0152/port.cppm
+  lib/msun/src/b0236/port.cppm
   lib/msun/src/b0237/port.cppm
   lib/msun/src/e_acosh_m/port.cppm
   lib/msun/src/e_acoshf_m/port.cppm

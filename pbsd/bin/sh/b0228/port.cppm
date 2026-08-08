@@ -343,7 +343,6 @@ void port_set_hfile(FILE *f) { hfile = f; }
 
 
 /* mksyntax.c */
-#define static
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -432,11 +431,11 @@ static const char writer[] = "\
 \n";
 
 
-static void add_default(void);
-static void finish(void);
-static void init(const char *);
-static void add(const char *, const char *);
-static void output_type_macros(void);
+void add_default(void);
+void finish(void);
+void init(const char *);
+void add(const char *, const char *);
+void output_type_macros(void);
 
 int
 main(int argc __unused, char **argv __unused)
@@ -561,7 +560,7 @@ main(int argc __unused, char **argv __unused)
  * Output the header and declaration of a syntax table.
  */
 
-static void
+void
 init(const char *name)
 {
 	fprintf(hfile, "extern const char %s[];\n", name);
@@ -569,7 +568,7 @@ init(const char *name)
 }
 
 
-static void
+void
 add_one(const char *key, const char *type)
 {
 	fprintf(cfile, "\t[SYNBASE + %s] = %s,\n", key, type);
@@ -580,7 +579,7 @@ add_one(const char *key, const char *type)
  * Add default values to the syntax table.
  */
 
-static void
+void
 add_default(void)
 {
 	add_one("PEOF",                "CEOF");
@@ -600,7 +599,7 @@ add_default(void)
  * Output the footer of a syntax table.
  */
 
-static void
+void
 finish(void)
 {
 	fputs("};\n", cfile);
@@ -611,7 +610,7 @@ finish(void)
  * Add entries to the syntax table.
  */
 
-static void
+void
 add(const char *p, const char *type)
 {
 	for (; *p; ++p) {
@@ -647,7 +646,7 @@ static const char *macro[] = {
 	NULL
 };
 
-static void
+void
 output_type_macros(void)
 {
 	const char **pp;
@@ -656,10 +655,7 @@ output_type_macros(void)
 		fprintf(hfile, "%s\n", *pp);
 }
 
-#undef static
-
 /* arith_yacc.c */
-#define static
 /*-
  * Copyright (c) 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -703,7 +699,7 @@ static const char *arith_startbuf;
 
 static int last_token;
 
-static const char prec[ARITH_BINOP_MAX - ARITH_BINOP_MIN] = {
+const char prec[ARITH_BINOP_MAX - ARITH_BINOP_MIN] = {
 	3, 3, 3, 3, 4, 0, 5, 2, 2, 0, 1, 7, 1, 6, 0, 4,
 };
 
@@ -711,13 +707,13 @@ static const char prec[ARITH_BINOP_MAX - ARITH_BINOP_MIN] = {
 
 int letcmd(int, char **);
 
-static __dead2 void yyerror(const char *s)
+__dead2 void yyerror(const char *s)
 {
 	error("arithmetic expression: %s: \"%s\"", s, arith_startbuf);
 	/* NOTREACHED */
 }
 
-static arith_t arith_lookupvarint(char *varname)
+arith_t arith_lookupvarint(char *varname)
 {
 	const char *str;
 	char *p;
@@ -745,7 +741,7 @@ static inline int higher_prec(int op1, int op2)
 	return arith_prec(op1) < arith_prec(op2);
 }
 
-static arith_t do_binop(int op, arith_t a, arith_t b)
+arith_t do_binop(int op, arith_t a, arith_t b)
 {
 
 	switch (op) {
@@ -788,9 +784,9 @@ static arith_t do_binop(int op, arith_t a, arith_t b)
 	}
 }
 
-static arith_t assignment(int var, int noeval);
+arith_t assignment(int var, int noeval);
 
-static arith_t primary(int token, union yystype *val, int op, int noeval)
+arith_t primary(int token, union yystype *val, int op, int noeval)
 {
 	arith_t result;
 
@@ -827,7 +823,7 @@ again:
 	}
 }
 
-static arith_t binop2(arith_t a, int op, int precedence, int noeval)
+arith_t binop2(arith_t a, int op, int precedence, int noeval)
 {
 	for (;;) {
 		union yystype val;
@@ -857,7 +853,7 @@ static arith_t binop2(arith_t a, int op, int precedence, int noeval)
 	}
 }
 
-static arith_t binop(int token, union yystype *val, int op, int noeval)
+arith_t binop(int token, union yystype *val, int op, int noeval)
 {
 	arith_t a = primary(token, val, op, noeval);
 
@@ -868,7 +864,7 @@ static arith_t binop(int token, union yystype *val, int op, int noeval)
 	return binop2(a, op, ARITH_MAX_PREC, noeval);
 }
 
-static arith_t and_fn(int token, union yystype *val, int op, int noeval)
+arith_t and_fn(int token, union yystype *val, int op, int noeval)
 {
 	arith_t a = binop(token, val, op, noeval);
 	arith_t b;
@@ -885,7 +881,7 @@ static arith_t and_fn(int token, union yystype *val, int op, int noeval)
 	return a && b;
 }
 
-static arith_t or_fn(int token, union yystype *val, int op, int noeval)
+arith_t or_fn(int token, union yystype *val, int op, int noeval)
 {
 	arith_t a = and_fn(token, val, op, noeval);
 	arith_t b;
@@ -902,7 +898,7 @@ static arith_t or_fn(int token, union yystype *val, int op, int noeval)
 	return a || b;
 }
 
-static arith_t cond(int token, union yystype *val, int op, int noeval)
+arith_t cond(int token, union yystype *val, int op, int noeval)
 {
 	arith_t a = or_fn(token, val, op, noeval);
 	arith_t b;
@@ -924,7 +920,7 @@ static arith_t cond(int token, union yystype *val, int op, int noeval)
 	return a ? b : c;
 }
 
-static arith_t assignment(int var, int noeval)
+arith_t assignment(int var, int noeval)
 {
 	union yystype val = yylval;
 	int op = yylex();
@@ -1004,7 +1000,5 @@ letcmd(int argc, char **argv)
 	out1fmt(ARITH_FORMAT_STR "\n", i);
 	return !i;
 }
-
-#undef static
 
 } // namespace

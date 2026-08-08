@@ -19,6 +19,12 @@
 typedef size_t rsize_t;
 typedef int errno_t;
 
+struct qsort_block_desc {
+	void *isa;
+	int flags;
+	int reserved;
+	void (*invoke)(void *, ...);
+};
 #define DECLARE_BLOCK(retTy, name, argTys, ...)\
 	struct {\
 		void *isa;\
@@ -27,15 +33,10 @@ typedef int errno_t;
 		retTy (*invoke)(void *, ...);\
 	} *name
 #define GET_BLOCK_FUNCTION(x) \
-	(((struct {\
-		void *isa;\
-		int flags;\
-		int reserved;\
-		void (*invoke)(void *, ...);\
-	}*)(void*)x)->invoke)
+	(((struct qsort_block_desc *)(void *)(x))->invoke)
 
 static void
-__throw_constraint_handler_s(const char * restrict msg, errno_t error)
+__throw_constraint_handler_s(const char *msg, errno_t error)
 {
 	(void)msg;
 	(void)error;
@@ -77,6 +78,10 @@ ref_memalignment(const void *p)
 #define I_AM_QSORT_R
 #define med3 med3_r
 #define swapfunc swapfunc_r
+#define cmp_t cmp_t_r
+#define local_qsort local_qsort_r
+#define CMP_r(t, x, y) (cmp((x), (y), (t)))
+#define CMP CMP_r
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -141,15 +146,6 @@ swapfunc(char *a, char *b, size_t es)
 #define	vecswap(a, b, n)				\
 	if ((n) > 0) swapfunc(a, b, n)
 
-#if defined(I_AM_QSORT_R)
-#define	CMP(t, x, y) (cmp((x), (y), (t)))
-#elif defined(I_AM_QSORT_R_COMPAT)
-#define	CMP(t, x, y) (cmp((t), (x), (y)))
-#elif defined(I_AM_QSORT_S)
-#define	CMP(t, x, y) (cmp((x), (y), (t)))
-#else
-#define	CMP(t, x, y) (cmp((x), (y)))
-#endif
 
 static inline char *
 med3(char *a, char *b, char *c, cmp_t *cmp, void *thunk
@@ -167,13 +163,6 @@ __unused
  * The actual qsort() implementation is static to avoid preemptible calls when
  * recursing. Also give them different names for improved debugging.
  */
-#if defined(I_AM_QSORT_R)
-#define local_qsort local_qsort_r
-#elif defined(I_AM_QSORT_R_COMPAT)
-#define local_qsort local_qsort_r_compat
-#elif defined(I_AM_QSORT_S)
-#define local_qsort local_qsort_s
-#endif
 static void
 local_qsort(void *a, size_t n, size_t es, cmp_t *cmp, void *thunk)
 {
@@ -273,7 +262,7 @@ loop:
 
 #if defined(I_AM_QSORT_R)
 void
-ref_qsort_r(void *a, size_t n, size_t es, cmp_t *cmp, void *thunk)
+ref_qsort_r(void *a, size_t n, size_t es, cmp_t_r *cmp, void *thunk)
 {
 	local_qsort_r(a, n, es, cmp, thunk);
 }
@@ -322,12 +311,20 @@ qsort(void *a, size_t n, size_t es, cmp_t *cmp)
 #endif
 #undef med3
 #undef swapfunc
+#undef cmp_t
+#undef local_qsort
+#undef CMP
+#undef CMP_r
 #undef I_AM_QSORT_R
 
 /* qsort_r_compat.c (qsort.c portion) */
 #define I_AM_QSORT_R_COMPAT
 #define med3 med3_compat
 #define swapfunc swapfunc_compat
+#define cmp_t cmp_t_compat
+#define local_qsort local_qsort_r_compat
+#define CMP_compat(t, x, y) (cmp((t), (x), (y)))
+#define CMP CMP_compat
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -392,15 +389,6 @@ swapfunc(char *a, char *b, size_t es)
 #define	vecswap(a, b, n)				\
 	if ((n) > 0) swapfunc(a, b, n)
 
-#if defined(I_AM_QSORT_R)
-#define	CMP(t, x, y) (cmp((x), (y), (t)))
-#elif defined(I_AM_QSORT_R_COMPAT)
-#define	CMP(t, x, y) (cmp((t), (x), (y)))
-#elif defined(I_AM_QSORT_S)
-#define	CMP(t, x, y) (cmp((x), (y), (t)))
-#else
-#define	CMP(t, x, y) (cmp((x), (y)))
-#endif
 
 static inline char *
 med3(char *a, char *b, char *c, cmp_t *cmp, void *thunk
@@ -418,13 +406,6 @@ __unused
  * The actual qsort() implementation is static to avoid preemptible calls when
  * recursing. Also give them different names for improved debugging.
  */
-#if defined(I_AM_QSORT_R)
-#define local_qsort local_qsort_r
-#elif defined(I_AM_QSORT_R_COMPAT)
-#define local_qsort local_qsort_r_compat
-#elif defined(I_AM_QSORT_S)
-#define local_qsort local_qsort_s
-#endif
 static void
 local_qsort(void *a, size_t n, size_t es, cmp_t *cmp, void *thunk)
 {
@@ -530,7 +511,7 @@ void
 }
 #elif defined(I_AM_QSORT_R_COMPAT)
 void
-ref___qsort_r_compat(void *a, size_t n, size_t es, void *thunk, cmp_t *cmp)
+ref___qsort_r_compat(void *a, size_t n, size_t es, void *thunk, cmp_t_compat *cmp)
 {
 	local_qsort_r_compat(a, n, es, cmp, thunk);
 }
@@ -573,6 +554,10 @@ qsort(void *a, size_t n, size_t es, cmp_t *cmp)
 #endif
 #undef med3
 #undef swapfunc
+#undef cmp_t
+#undef local_qsort
+#undef CMP
+#undef CMP_compat
 #undef I_AM_QSORT_R_COMPAT
 /*
  * This file is in the public domain.  Originally written by Garrett
@@ -602,6 +587,10 @@ ref_qsort_b(void *base, size_t nel, size_t width, qsort_block compar)
 #define I_AM_QSORT_S
 #define med3 med3_s
 #define swapfunc swapfunc_s
+#define cmp_t cmp_t_s
+#define local_qsort local_qsort_s
+#define CMP_s(t, x, y) (cmp((x), (y), (t)))
+#define CMP CMP_s
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -666,15 +655,6 @@ swapfunc(char *a, char *b, size_t es)
 #define	vecswap(a, b, n)				\
 	if ((n) > 0) swapfunc(a, b, n)
 
-#if defined(I_AM_QSORT_R)
-#define	CMP(t, x, y) (cmp((x), (y), (t)))
-#elif defined(I_AM_QSORT_R_COMPAT)
-#define	CMP(t, x, y) (cmp((t), (x), (y)))
-#elif defined(I_AM_QSORT_S)
-#define	CMP(t, x, y) (cmp((x), (y), (t)))
-#else
-#define	CMP(t, x, y) (cmp((x), (y)))
-#endif
 
 static inline char *
 med3(char *a, char *b, char *c, cmp_t *cmp, void *thunk
@@ -692,13 +672,6 @@ __unused
  * The actual qsort() implementation is static to avoid preemptible calls when
  * recursing. Also give them different names for improved debugging.
  */
-#if defined(I_AM_QSORT_R)
-#define local_qsort local_qsort_r
-#elif defined(I_AM_QSORT_R_COMPAT)
-#define local_qsort local_qsort_r_compat
-#elif defined(I_AM_QSORT_S)
-#define local_qsort local_qsort_s
-#endif
 static void
 local_qsort(void *a, size_t n, size_t es, cmp_t *cmp, void *thunk)
 {
@@ -810,7 +783,7 @@ __qsort_r_compat(void *a, size_t n, size_t es, void *thunk, cmp_t *cmp)
 }
 #elif defined(I_AM_QSORT_S)
 errno_t
-ref_qsort_s(void *a, rsize_t n, rsize_t es, cmp_t *cmp, void *thunk)
+ref_qsort_s(void *a, rsize_t n, rsize_t es, cmp_t_s *cmp, void *thunk)
 {
 	if (n > RSIZE_MAX) {
 		__throw_constraint_handler_s("qsort_s : n > RSIZE_MAX", EINVAL);
@@ -847,4 +820,8 @@ qsort(void *a, size_t n, size_t es, cmp_t *cmp)
 #endif
 #undef med3
 #undef swapfunc
+#undef cmp_t
+#undef local_qsort
+#undef CMP
+#undef CMP_s
 #undef I_AM_QSORT_S

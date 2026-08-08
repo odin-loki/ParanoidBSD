@@ -1,670 +1,1043 @@
-// Differential test harness for PBSD batch b0209.
+/*
+ * PBSD batch b0209 -- differential test.
+ *
+ * Every ported function is driven against the ref_ oracle in oracle.c with
+ * hand written edge cases and a fixed seed randomised sweep.  Both sides run
+ * against the same modelled kernel environment; every call the bodies make
+ * into that environment is recorded in a per-side log, so argument values,
+ * call order and short circuit behaviour are compared, not just the return
+ * value.
+ */
 
-import pbsd.sys.compat.linuxkpi.common.src.b0209;
+#include <stdio.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <limits.h>
+#include <errno.h>
 
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-
-namespace P = pbsd::sys_compat_linuxkpi_common_src::b0209;
-
-#define SWEEP 200000L
-#define MAX_SHOW 8
-#define MOCK_RELEASE_LOG 32
-
-struct Stat {
-	const char *name;
-	unsigned long long cases;
-	unsigned long long fails;
-	int shown;
-};
-
-static Stat st_domain = { "linux_get_vm_domain_set", 0, 0, 0 };
-static Stat st_devnode = { "linux_dev_to_node", 0, 0, 0 };
-static Stat st_folio_alloc = { "folio_alloc", 0, 0, 0 };
-static Stat st_folio_rel = { "__folio_batch_release", 0, 0, 0 };
-static Stat st_fdget = { "lkpi_eventfd_ctx_fdget", 0, 0, 0 };
-static Stat st_fdput = { "lkpi_eventfd_ctx_put", 0, 0, 0 };
-static Stat st_video = { "video_get_options", 0, 0, 0 };
+/* ------------------------------------------------------------------ */
+/* Modelled kernel environment; must match oracle.c and port.cppm.     */
+/* ------------------------------------------------------------------ */
 
 extern "C" {
+
+#define	MAXMEMDOM	8
 struct domainset {
-	int ds_kind;
-	int ds_node;
-};
-struct device;
-typedef struct device *device_t;
-struct device {
-	device_t bsddev;
-};
-struct page {
-	unsigned long pg_cookie;
-};
-struct folio;
-struct folio_batch {
-	std::uint8_t nr;
-	struct folio *folios[15];
-};
-struct file {
-	int f_id;
-};
-struct eventfd_ctx {
-	int efd_id;
+	int	ds_id;
 };
 
+struct pbsd_bsddev;
+typedef struct pbsd_bsddev *device_t;
+struct device {
+	device_t	bsddev;
+};
+
+typedef unsigned int gfp_t;
+struct page;
+struct folio;
+
+#define	PAGEVEC_SIZE	15
+struct folio_batch {
+	uint8_t		nr;
+	struct folio	*folios[PAGEVEC_SIZE];
+};
+
+struct thread;
+struct file;
+struct eventfd_ctx;
+struct cap_rights {
+	int	cr_dummy;
+};
+
+/* The oracle. */
 struct domainset *ref_linux_get_vm_domain_set(int node);
 int ref_linux_dev_to_node(struct device *dev);
-struct folio *ref_folio_alloc(unsigned long gfp, unsigned int order);
+struct folio *ref_folio_alloc(gfp_t gfp, unsigned int order);
 void ref___folio_batch_release(struct folio_batch *fbatch);
 struct eventfd_ctx *ref_lkpi_eventfd_ctx_fdget(int fd);
 void ref_lkpi_eventfd_ctx_put(struct eventfd_ctx *ctx);
 const char *ref_video_get_options(const char *connector_name);
-void mock_reset_b0209(void);
-void mock_set_env(const char *name, const char *value);
 
-extern int bootverbose;
-extern int mock_bus_get_domain_ret;
-extern int mock_bus_get_domain_val;
-extern struct page *mock_alloc_pages_ret;
-extern unsigned long mock_alloc_pages_last_gfp;
-extern unsigned int mock_alloc_pages_last_order;
-extern int mock_alloc_pages_calls;
-extern int mock_release_log_n;
-extern int mock_release_counts[MOCK_RELEASE_LOG];
-extern struct folio *mock_release_folios[MOCK_RELEASE_LOG][15];
-extern int mock_fget_ret;
-extern struct file *mock_fget_fp;
-extern int mock_fget_last_fd;
-extern int mock_fget_calls;
-extern struct eventfd_ctx *mock_eventfd_get_ret;
-extern int mock_eventfd_get_last_fp;
-extern int mock_eventfd_get_calls;
-extern int mock_fdrop_calls;
-extern struct file *mock_fdrop_last_fp;
-extern int mock_eventfd_put_calls;
-extern struct eventfd_ctx *mock_eventfd_put_last_ctx;
-extern int mock_kern_getenv_calls;
-extern char mock_kern_getenv_last[80];
 }
 
-struct Obs {
-	int ds_kind;
-	int ds_node;
-	int ret;
-	unsigned long pg_cookie;
-	unsigned long gfp;
-	unsigned int order;
-	int alloc_calls;
-	int release_log_n;
-	int release_count;
-	unsigned long release_cookie[15];
-	std::uint8_t batch_nr;
-	bool is_err;
-	long err;
-	int efd_id;
-	int fget_calls;
-	int fget_fd;
-	int eventfd_get_calls;
-	int eventfd_get_fp;
-	int fdrop_calls;
-	int eventfd_put_calls;
-	int kern_getenv_calls;
-	char kern_getenv_last[80];
-	const char *opt;
-	int printf_calls;
+import pbsd.sys.compat.linuxkpi.common.src.b0209;
+
+namespace P = pbsd::sys_compat_linuxkpi_common_src::b0209;
+
+#define	GFP_COMP_BIT	0x4000u		/* __GFP_COMP, as modelled */
+
+/* ------------------------------------------------------------------ */
+/* Fake objects.  None of them is ever dereferenced by the model.      */
+/* ------------------------------------------------------------------ */
+
+static unsigned char page_backing[8][32];
+static unsigned char folio_backing[8][32];
+static unsigned char file_backing[4][32];
+static unsigned char ctx_backing[4][32];
+static unsigned char bsddev_backing[4][32];
+static unsigned char thread_backing[32];
+
+static struct page *page_pool[8];
+static struct folio *folio_pool[8];
+static struct file *file_pool[4];
+static struct eventfd_ctx *ctx_pool[4];
+static device_t bsddev_pool[4];
+
+struct Reg {
+	const void	*p;
+	long		 id;
 };
-
-static int g_wrap_printf_calls;
-static int g_wrap_track; /* 0=off, 1=port, -1=ref */
-
-extern "C" int __wrap_printf(const char *fmt, ...)
-{
-	(void)fmt;
-	if (g_wrap_track == 0)
-		return (0);
-	g_wrap_printf_calls++;
-	return (0);
-}
-
-struct Rng {
-	std::uint64_t s;
-	explicit Rng(std::uint64_t seed) : s(seed) {}
-	std::uint64_t next()
-	{
-		s += 0x9E3779B97F4A7C15ull;
-		std::uint64_t z = s;
-		z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
-		z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
-		return z ^ (z >> 31);
-	}
-	std::uint32_t below(std::uint32_t n) { return (std::uint32_t)(next() % n); }
-	bool coin() { return (next() & 1) != 0; }
-};
-
-static Rng rng(0x00b0209faceULL);
-
-static bool
-fail(Stat &st, const char *what)
-{
-	st.fails++;
-	if (st.shown < MAX_SHOW) {
-		st.shown++;
-		std::fprintf(stderr, "  FAIL %s: %s\n", st.name, what);
-	}
-	return false;
-}
+static Reg g_reg[64];
+static int g_nreg;
 
 static void
-reset_both()
+reg_add(const void *p, long id)
 {
-	mock_reset_b0209();
-	P::stub_reset();
-	P::bootverbose = 0;
-	bootverbose = 0;
-}
-
-static void
-sync_mocks_from_port()
-{
-	mock_bus_get_domain_ret = 0;
-	mock_bus_get_domain_val = 0;
-	mock_alloc_pages_ret = nullptr;
-	mock_fget_ret = 0;
-	mock_fget_fp = nullptr;
-	mock_eventfd_get_ret = nullptr;
-	bootverbose = P::bootverbose;
-}
-
-static void
-apply_bus(int ret, int val)
-{
-	mock_bus_get_domain_ret = ret;
-	mock_bus_get_domain_val = val;
-	P::stub_bus_get_domain(ret, val);
-}
-
-static void
-apply_alloc(P::page *p)
-{
-	mock_alloc_pages_ret = reinterpret_cast<struct page *>(p);
-	P::stub_alloc_pages_ret(p);
-}
-
-static void
-apply_fget(int ret, P::file *fp)
-{
-	mock_fget_ret = ret;
-	mock_fget_fp = reinterpret_cast<struct file *>(fp);
-	P::stub_fget(ret, fp);
-}
-
-static void
-apply_eventfd_get(P::eventfd_ctx *ctx)
-{
-	mock_eventfd_get_ret = reinterpret_cast<struct eventfd_ctx *>(ctx);
-	P::stub_eventfd_get_ret(ctx);
-}
-
-static void
-apply_env(const char *name, const char *value)
-{
-	mock_set_env(name, value);
-	P::stub_set_env(name, value);
-}
-
-static void
-apply_bootverbose(int v)
-{
-	bootverbose = v;
-	P::stub_bootverbose(v);
-}
-
-static int
-ds_kind(const P::domainset *ds)
-{
-	return ds != nullptr ? ds->ds_kind : -1;
-}
-
-static int
-ds_node(const P::domainset *ds)
-{
-	return ds != nullptr ? ds->ds_node : -999;
-}
-
-static bool
-is_err_ptr(const void *p)
-{
-	return (reinterpret_cast<std::uintptr_t>(p) >=
-	    static_cast<std::uintptr_t>(-4095));
+	g_reg[g_nreg].p = p;
+	g_reg[g_nreg].id = id;
+	g_nreg++;
 }
 
 static long
-ptr_err(const void *p)
+ptr_id(const void *p)
 {
-	return (static_cast<long>(reinterpret_cast<intptr_t>(p)));
+	if (p == NULL)
+		return (0);
+	for (int i = 0; i < g_nreg; i++)
+		if (g_reg[i].p == p)
+			return (g_reg[i].id);
+	return ((long)(intptr_t)p);
 }
 
-static Obs
-capture_domain_ref(int node, P::domainset *ds)
-{
-	Obs o{};
-	o.ds_kind = ds != nullptr ? ds->ds_kind : -1;
-	o.ds_node = ds != nullptr ? ds->ds_node : -999;
-	(void)node;
-	return o;
-}
+/* ------------------------------------------------------------------ */
+/* Call log.                                                           */
+/* ------------------------------------------------------------------ */
 
-static Obs
-capture_domain_port(int node, P::domainset *ds)
-{
-	Obs o{};
-	o.ds_kind = ds_kind(ds);
-	o.ds_node = ds_node(ds);
-	(void)node;
-	return o;
-}
-
-static bool
-cmp_domain(Stat &st, const Obs &a, const Obs &b)
-{
-	if (a.ds_kind != b.ds_kind || a.ds_node != b.ds_node)
-		return fail(st, "domainset kind/node");
-	return true;
-}
-
-static bool
-run_domain_case(int node)
-{
-	st_domain.cases++;
-	reset_both();
-	P::domainset *pr = reinterpret_cast<P::domainset *>(ref_linux_get_vm_domain_set(node));
-	P::domainset *pp = P::linux_get_vm_domain_set(node);
-	Obs orc = capture_domain_ref(node, reinterpret_cast<P::domainset *>(pr));
-	Obs opc = capture_domain_port(node, pp);
-	return cmp_domain(st_domain, orc, opc);
-}
-
-static bool
-run_devnode_case(bool null_dev, bool null_bsd, int bus_ret, int bus_val)
-{
-	st_devnode.cases++;
-	reset_both();
-	apply_bus(bus_ret, bus_val);
-
-	struct device dev_r{};
-	P::device dev_p{};
-	device_t bsd_r = reinterpret_cast<device_t>(&dev_r);
-	device_t bsd_p = reinterpret_cast<device_t>(&dev_p);
-
-	dev_r.bsddev = null_bsd ? nullptr : bsd_r;
-	dev_p.bsddev = null_bsd ? nullptr : reinterpret_cast<P::device_t>(bsd_p);
-
-	int rr = ref_linux_dev_to_node(null_dev ? nullptr : &dev_r);
-	int rp = P::linux_dev_to_node(null_dev ? nullptr : &dev_p);
-	if (rr != rp)
-		return fail(st_devnode, "return value");
-	return true;
-}
-
-static bool
-run_folio_alloc_case(unsigned long gfp, unsigned int order, unsigned long cookie)
-{
-	st_folio_alloc.cases++;
-	reset_both();
-
-	static P::page pg{};
-	pg.pg_cookie = cookie;
-	apply_alloc(&pg);
-
-	struct folio *fr = ref_folio_alloc(gfp, order);
-	P::folio *fp = P::folio_alloc(static_cast<P::gfp_t>(gfp), order);
-
-	unsigned long cr = fr != nullptr ?
-	    reinterpret_cast<P::page *>(fr)->pg_cookie : 0;
-	unsigned long cp = fp != nullptr ?
-	    reinterpret_cast<P::page *>(fp)->pg_cookie : 0;
-	if (cr != cp)
-		return fail(st_folio_alloc, "folio pointer/value");
-	if (mock_alloc_pages_calls != P::alloc_pages_calls())
-		return fail(st_folio_alloc, "alloc_pages calls");
-	if (mock_alloc_pages_last_gfp != P::alloc_pages_last_gfp())
-		return fail(st_folio_alloc, "alloc_pages gfp");
-	if (mock_alloc_pages_last_order != P::alloc_pages_last_order())
-		return fail(st_folio_alloc, "alloc_pages order");
-	return true;
-}
-
-static bool
-run_folio_release_case(std::uint8_t nr)
-{
-	st_folio_rel.cases++;
-	reset_both();
-
-	static P::page pages[15];
-	static P::folio_batch br{};
-	static struct folio_batch bp{};
-	P::folio_batch bp2{};
-
-	for (int i = 0; i < 15; i++) {
-		pages[i].pg_cookie = 0xB0209000u + (unsigned long)i;
-		br.folios[i] = reinterpret_cast<P::folio *>(&pages[i]);
-		bp.folios[i] = reinterpret_cast<struct folio *>(&pages[i]);
-	}
-	br.nr = nr;
-	bp.nr = nr;
-	bp2.nr = nr;
-	for (int i = 0; i < (int)nr; i++)
-		bp2.folios[i] = reinterpret_cast<P::folio *>(&pages[i]);
-
-	ref___folio_batch_release(reinterpret_cast<struct folio_batch *>(&br));
-	P::__folio_batch_release(&bp2);
-
-	if (br.nr != bp2.nr)
-		return fail(st_folio_rel, "batch nr after release");
-	if (mock_release_log_n != P::release_log_n())
-		return fail(st_folio_rel, "release log count");
-	if (mock_release_log_n > 0) {
-		if (mock_release_counts[0] != P::release_count(0))
-			return fail(st_folio_rel, "release count");
-		for (int i = 0; i < (int)nr && i < 15; i++) {
-			unsigned long cr = mock_release_folios[0][i] != nullptr ?
-			    reinterpret_cast<P::page *>(mock_release_folios[0][i])->pg_cookie : 0;
-			unsigned long cp = P::release_folio(0, i) != nullptr ?
-			    reinterpret_cast<P::page *>(P::release_folio(0, i))->pg_cookie : 0;
-			if (cr != cp)
-				return fail(st_folio_rel, "released folio");
-		}
-	}
-	return true;
-}
-
-static bool
-run_fdget_case(int fd, int fget_ret, int fp_id, bool ctx_null)
-{
-	st_fdget.cases++;
-	reset_both();
-
-	static P::file fp{};
-	static P::eventfd_ctx ctx{};
-	fp.f_id = fp_id;
-	ctx.efd_id = 42;
-	apply_fget(fget_ret, fget_ret == 0 ? &fp : nullptr);
-	apply_eventfd_get(ctx_null ? nullptr : &ctx);
-
-	struct eventfd_ctx *cr = ref_lkpi_eventfd_ctx_fdget(fd);
-	P::eventfd_ctx *cp = P::lkpi_eventfd_ctx_fdget(fd);
-
-	bool er = is_err_ptr(cr);
-	bool ep = is_err_ptr(cp);
-	if (er != ep)
-		return fail(st_fdget, "IS_ERR mismatch");
-	if (er) {
-		if (ptr_err(cr) != ptr_err(cp))
-			return fail(st_fdget, "ERR value");
-	} else {
-		if (cr == nullptr || cp == nullptr ||
-		    reinterpret_cast<P::eventfd_ctx *>(cr)->efd_id != cp->efd_id)
-			return fail(st_fdget, "ctx id");
-	}
-	if (mock_fget_calls != P::fget_calls() || mock_fget_last_fd != P::fget_last_fd())
-		return fail(st_fdget, "fget");
-	if (mock_eventfd_get_calls != P::eventfd_get_calls())
-		return fail(st_fdget, "eventfd_get calls");
-	if (fget_ret == 0 && mock_eventfd_get_last_fp != P::eventfd_get_last_fp())
-		return fail(st_fdget, "eventfd_get fp");
-	if (fget_ret == 0 && mock_fdrop_calls != P::fdrop_calls())
-		return fail(st_fdget, "fdrop");
-	return true;
-}
-
-static bool
-run_fdput_case(int ctx_id)
-{
-	st_fdput.cases++;
-	reset_both();
-
-	static P::eventfd_ctx ctx_r{};
-	static P::eventfd_ctx ctx_p{};
-	ctx_r.efd_id = ctx_id;
-	ctx_p.efd_id = ctx_id;
-
-	ref_lkpi_eventfd_ctx_put(reinterpret_cast<struct eventfd_ctx *>(&ctx_r));
-	P::lkpi_eventfd_ctx_put(&ctx_p);
-
-	if (mock_eventfd_put_calls != P::eventfd_put_calls())
-		return fail(st_fdput, "eventfd_put calls");
-	if (mock_eventfd_put_last_ctx != nullptr && P::eventfd_put_calls() > 0) {
-		if (reinterpret_cast<P::eventfd_ctx *>(mock_eventfd_put_last_ctx)->efd_id != ctx_id)
-			return fail(st_fdput, "eventfd_put ctx");
-	}
-	return true;
-}
-
-static bool
-run_video_case(const char *name, int verbose, const char *mode_env,
-    const char *default_env)
-{
-	st_video.cases++;
-	reset_both();
-	apply_bootverbose(verbose);
-
-	char tun[80];
-	std::snprintf(tun, sizeof(tun), "kern.vt.fb.modes.%s", name);
-	if (mode_env != nullptr)
-		apply_env(tun, mode_env);
-	if (default_env != nullptr)
-		apply_env("kern.vt.fb.default_mode", default_env);
-
-	g_wrap_track = -1;
-	g_wrap_printf_calls = 0;
-	const char *ref_opt = ref_video_get_options(name);
-	int ref_printf = g_wrap_printf_calls;
-
-	g_wrap_track = 1;
-	g_wrap_printf_calls = 0;
-	const char *port_opt = P::video_get_options(name);
-	int port_printf = g_wrap_printf_calls;
-	g_wrap_track = 0;
-
-	const char *er = ref_opt;
-	const char *pr = port_opt;
-	if (er == nullptr) er = "";
-	if (pr == nullptr) pr = "";
-	if (std::strcmp(er, pr) != 0)
-		return fail(st_video, "options string");
-	if (ref_printf != port_printf)
-		return fail(st_video, "printf calls");
-	if (mock_kern_getenv_calls != P::kern_getenv_calls())
-		return fail(st_video, "kern_getenv calls");
-	if (std::strcmp(mock_kern_getenv_last, P::kern_getenv_last()) != 0)
-		return fail(st_video, "kern_getenv last");
-	return true;
-}
-
-static void
-test_domain_hand()
-{
-	run_domain_case(-1);
-	run_domain_case(0);
-	run_domain_case(3);
-	run_domain_case(15);
-}
-
-static void
-test_domain_sweep()
-{
-	for (long i = 0; i < SWEEP; i++) {
-		int node = (int)(rng.next() % 32) - 8;
-		run_domain_case(node);
-	}
-}
-
-static void
-test_devnode_hand()
-{
-	run_devnode_case(true, false, 0, 0);
-	run_devnode_case(false, true, 0, 0);
-	run_devnode_case(false, false, -1, 0);
-	run_devnode_case(false, false, 0, 7);
-}
-
-static void
-test_devnode_sweep()
-{
-	for (long i = 0; i < SWEEP; i++) {
-		bool null_dev = rng.coin() && (rng.below(8) == 0);
-		bool null_bsd = !null_dev && rng.coin();
-		int ret = rng.coin() ? (int)(rng.next() & 1) : 0;
-		int val = (int)(rng.next() % 32);
-		run_devnode_case(null_dev, null_bsd, ret, val);
-	}
-}
-
-static void
-test_folio_alloc_hand()
-{
-	run_folio_alloc_case(0, 0, 0);
-	run_folio_alloc_case(0x10, 3, 0xdead);
-	run_folio_alloc_case(0xff, 0, 0);
-}
-
-static void
-test_folio_alloc_sweep()
-{
-	for (long i = 0; i < SWEEP; i++) {
-		unsigned long gfp = rng.next() & 0xffff;
-		unsigned int order = (unsigned int)(rng.next() % 8);
-		unsigned long cookie = rng.next();
-		run_folio_alloc_case(gfp, order, cookie);
-	}
-}
-
-static void
-test_folio_release_hand()
-{
-	run_folio_release_case(0);
-	run_folio_release_case(1);
-	run_folio_release_case(15);
-}
-
-static void
-test_folio_release_sweep()
-{
-	for (long i = 0; i < SWEEP; i++) {
-		std::uint8_t nr = (std::uint8_t)(rng.next() % 16);
-		run_folio_release_case(nr);
-	}
-}
-
-static void
-test_fdget_hand()
-{
-	run_fdget_case(3, -1, 0, false);
-	run_fdget_case(4, 0, 9, true);
-	run_fdget_case(5, 0, 2, false);
-}
-
-static void
-test_fdget_sweep()
-{
-	for (long i = 0; i < SWEEP; i++) {
-		int fd = (int)(rng.next() % 64);
-		int fget_ret = rng.coin() ? -1 : 0;
-		int fp_id = (int)(rng.next() % 1000);
-		bool ctx_null = rng.coin();
-		run_fdget_case(fd, fget_ret, fp_id, ctx_null);
-	}
-}
-
-static void
-test_fdput_hand()
-{
-	run_fdput_case(1);
-	run_fdput_case(99);
-}
-
-static void
-test_fdput_sweep()
-{
-	for (long i = 0; i < SWEEP; i++)
-		run_fdput_case((int)(rng.next() % 500));
-}
-
-static const char *names[] = {
-	"LVDS", "HDMI-A", "DP-1", "", "X", "connector_7"
+enum EvKind {
+	EV_NONE = 0,
+	EV_PRINTF,
+	EV_GETENV,
+	EV_BUSDOM,
+	EV_ALLOC,
+	EV_RELEASE,
+	EV_FGET,
+	EV_EFD_GET,
+	EV_EFD_PUT,
+	EV_FDROP
 };
 
+struct Ev {
+	int	kind;
+	long	a, b, c;
+	char	s[1024];
+};
+
+struct Log {
+	int	n;
+	int	overflow;
+	Ev	ev[8];
+};
+
+static Log g_log_port, g_log_ref;
+static Log *g_cur = &g_log_port;
+
 static void
-test_video_hand()
+cap_begin(Log *l)
 {
-	run_video_case("LVDS", 0, "1024x768", nullptr);
-	run_video_case("HDMI-A", 1, nullptr, "640x480");
-	run_video_case("DP-1", 1, "1920x1080", "640x480");
-	run_video_case("", 0, nullptr, nullptr);
+	l->n = 0;
+	l->overflow = 0;
+	g_cur = l;
+}
+
+static Ev *
+log_push(int kind)
+{
+	static Ev sink;
+	Ev *e;
+
+	if (g_cur->n >= (int)(sizeof(g_cur->ev) / sizeof(g_cur->ev[0]))) {
+		g_cur->overflow++;
+		e = &sink;
+	} else {
+		e = &g_cur->ev[g_cur->n++];
+	}
+	e->kind = kind;
+	e->a = e->b = e->c = 0;
+	e->s[0] = '\0';
+	return (e);
+}
+
+static const char *
+ev_name(int kind)
+{
+	switch (kind) {
+	case EV_PRINTF:		return ("printf");
+	case EV_GETENV:		return ("kern_getenv");
+	case EV_BUSDOM:		return ("bus_get_domain");
+	case EV_ALLOC:		return ("alloc_pages");
+	case EV_RELEASE:	return ("release_pages");
+	case EV_FGET:		return ("fget_unlocked");
+	case EV_EFD_GET:	return ("eventfd_get");
+	case EV_EFD_PUT:	return ("eventfd_put");
+	case EV_FDROP:		return ("fdrop");
+	default:		return ("?");
+	}
+}
+
+static bool
+logs_equal(const Log *a, const Log *b)
+{
+	if (a->n != b->n || a->overflow != b->overflow)
+		return (false);
+	for (int i = 0; i < a->n; i++) {
+		const Ev *x = &a->ev[i], *y = &b->ev[i];
+
+		if (x->kind != y->kind || x->a != y->a || x->b != y->b ||
+		    x->c != y->c)
+			return (false);
+		if (strcmp(x->s, y->s) != 0)
+			return (false);
+	}
+	return (true);
 }
 
 static void
-test_video_sweep()
+log_dump(const char *tag, const Log *l)
 {
-	char buf[32];
-	for (long i = 0; i < SWEEP; i++) {
-		unsigned pick = rng.below(6);
-		const char *name = names[pick];
-		if (pick == 4) {
-			std::snprintf(buf, sizeof(buf), "C%lu", (unsigned long)i % 1000);
-			name = buf;
-		}
-		int verbose = (int)(rng.next() & 1);
-		const char *mode = nullptr;
-		const char *def = nullptr;
-		char mode_buf[24];
-		char def_buf[24];
-		if (rng.coin()) {
-			std::snprintf(mode_buf, sizeof(mode_buf), "%ux%u",
-			    (unsigned)(rng.next() % 4096), (unsigned)(rng.next() % 4096));
-			mode = mode_buf;
-		}
-		if (rng.coin()) {
-			std::snprintf(def_buf, sizeof(def_buf), "%ux%u",
-			    (unsigned)(rng.next() % 2048), (unsigned)(rng.next() % 2048));
-			def = def_buf;
-		}
-		run_video_case(name, verbose, mode, def);
+	printf("      %s: %d call(s)%s\n", tag, l->n,
+	    l->overflow ? " (OVERFLOW)" : "");
+	for (int i = 0; i < l->n; i++) {
+		const Ev *e = &l->ev[i];
+
+		printf("        %d: %-14s a=%ld b=%ld c=%ld s=\"%s\"\n", i,
+		    ev_name(e->kind), e->a, e->b, e->c, e->s);
 	}
+}
+
+/* ------------------------------------------------------------------ */
+/* Scripted environment behaviour.                                     */
+/* ------------------------------------------------------------------ */
+
+extern "C" {
+
+struct domainset domainset_roundrobin = { 0x5252 };
+struct domainset domainset_prefer[MAXMEMDOM];
+struct cap_rights cap_no_rights = { 0 };
+struct thread *lkpi_curthread = (struct thread *)thread_backing;
+int bootverbose = 0;
+
+}
+
+static int g_bus_ret;
+static int g_bus_domain_out;
+static struct page *g_alloc_result;
+static const void *g_fbatch_base;
+static int g_fget_ret;
+static struct file *g_fget_fp;
+static struct eventfd_ctx *g_efd_get_result;
+
+static int g_env_specific_present;
+static char g_env_specific_key[64];
+static int g_env_default_present;
+static char g_env_specific_val[] = "1024x768";
+static char g_env_default_val[] = "640x480";
+
+extern "C" int
+lkpi_printf(const char *fmt, ...)
+{
+	Ev *e = log_push(EV_PRINTF);
+	va_list ap;
+	int r;
+
+	va_start(ap, fmt);
+	r = vsnprintf(e->s, sizeof(e->s), fmt, ap);
+	va_end(ap);
+	e->a = r;
+	return (r);
+}
+
+extern "C" char *
+kern_getenv(const char *name)
+{
+	Ev *e = log_push(EV_GETENV);
+	size_t n = strlen(name);
+
+	e->a = (long)n;
+	if (n >= sizeof(e->s))
+		n = sizeof(e->s) - 1;
+	memcpy(e->s, name, n);
+	e->s[n] = '\0';
+
+	if (g_env_specific_present && strcmp(name, g_env_specific_key) == 0) {
+		e->b = 1;
+		return (g_env_specific_val);
+	}
+	if (g_env_default_present &&
+	    strcmp(name, "kern.vt.fb.default_mode") == 0) {
+		e->b = 2;
+		return (g_env_default_val);
+	}
+	e->b = 0;
+	return (NULL);
+}
+
+extern "C" int
+bus_get_domain(device_t dev, int *domain)
+{
+	Ev *e = log_push(EV_BUSDOM);
+
+	e->a = ptr_id(dev);
+	e->b = g_bus_domain_out;
+	e->c = g_bus_ret;
+	*domain = g_bus_domain_out;
+	return (g_bus_ret);
+}
+
+extern "C" struct page *
+alloc_pages(gfp_t gfp, unsigned int order)
+{
+	Ev *e = log_push(EV_ALLOC);
+
+	e->a = (long)(unsigned long)gfp;
+	e->b = (long)(unsigned long)order;
+	return (g_alloc_result);
+}
+
+extern "C" void
+release_pages(struct folio **folios, int nr)
+{
+	Ev *e = log_push(EV_RELEASE);
+
+	e->a = (long)((const char *)folios - (const char *)g_fbatch_base);
+	e->b = nr;
+}
+
+extern "C" int
+fget_unlocked(struct thread *td, int fd, const struct cap_rights *rights,
+    struct file **fpp)
+{
+	Ev *e = log_push(EV_FGET);
+
+	e->a = fd;
+	e->b = (td == lkpi_curthread) ? 1 : ptr_id(td);
+	e->c = (rights == &cap_no_rights) ? 1 : ptr_id(rights);
+	*fpp = g_fget_fp;
+	return (g_fget_ret);
+}
+
+extern "C" void
+fdrop(struct file *fp, struct thread *td)
+{
+	Ev *e = log_push(EV_FDROP);
+
+	e->a = ptr_id(fp);
+	e->b = (td == lkpi_curthread) ? 1 : ptr_id(td);
+}
+
+extern "C" struct eventfd_ctx *
+eventfd_get(struct file *fp)
+{
+	Ev *e = log_push(EV_EFD_GET);
+
+	e->a = ptr_id(fp);
+	return (g_efd_get_result);
+}
+
+extern "C" void
+eventfd_put(struct eventfd_ctx *ctx)
+{
+	Ev *e = log_push(EV_EFD_PUT);
+
+	e->a = ptr_id(ctx);
+}
+
+/* ------------------------------------------------------------------ */
+/* Bookkeeping.                                                        */
+/* ------------------------------------------------------------------ */
+
+struct Stats {
+	const char	*name;
+	long		 cases;
+	long		 fails;
+};
+
+static Stats st_domain_set = { "linux_get_vm_domain_set", 0, 0 };
+static Stats st_dev_to_node = { "linux_dev_to_node", 0, 0 };
+static Stats st_folio_alloc = { "folio_alloc", 0, 0 };
+static Stats st_batch_rel = { "__folio_batch_release", 0, 0 };
+static Stats st_efd_fdget = { "lkpi_eventfd_ctx_fdget", 0, 0 };
+static Stats st_efd_put = { "lkpi_eventfd_ctx_put", 0, 0 };
+static Stats st_video = { "video_get_options", 0, 0 };
+
+#define	MAX_REPORTED	4
+
+static bool
+record(Stats *st, bool ok, const char *fmt, ...)
+{
+	va_list ap;
+
+	st->cases++;
+	if (ok)
+		return (true);
+	st->fails++;
+	if (st->fails <= MAX_REPORTED) {
+		printf("  [FAIL] %s: ", st->name);
+		va_start(ap, fmt);
+		vprintf(fmt, ap);
+		va_end(ap);
+		printf("\n");
+		log_dump("port", &g_log_port);
+		log_dump("ref ", &g_log_ref);
+	}
+	return (false);
+}
+
+/* Printable rendering of a byte string, for failure reports. */
+static void
+show(char *out, size_t outsz, const unsigned char *s, size_t n)
+{
+	size_t o = 0;
+
+	for (size_t i = 0; i < n && o + 5 < outsz; i++) {
+		unsigned char c = s[i];
+
+		if (c >= 0x20 && c < 0x7f)
+			out[o++] = (char)c;
+		else
+			o += (size_t)snprintf(out + o, outsz - o, "\\x%02x", c);
+	}
+	out[o < outsz ? o : outsz - 1] = '\0';
+}
+
+/* ------------------------------------------------------------------ */
+/* Fixed seed PRNG.                                                    */
+/* ------------------------------------------------------------------ */
+
+static uint64_t g_rs;
+
+static void
+rnd_seed(uint64_t s)
+{
+	g_rs = s;
+}
+
+static uint64_t
+rnd64(void)
+{
+	g_rs ^= g_rs << 13;
+	g_rs ^= g_rs >> 7;
+	g_rs ^= g_rs << 17;
+	return (g_rs);
+}
+
+static uint32_t
+rnd32(void)
+{
+	return ((uint32_t)(rnd64() >> 32));
+}
+
+#define	SEED	0x0209DEADBEEF0209ULL
+#define	ITERS	200000
+
+/* ------------------------------------------------------------------ */
+/* linux_get_vm_domain_set                                             */
+/* ------------------------------------------------------------------ */
+
+static long
+ds_id(const struct domainset *p)
+{
+	if (p == &domainset_roundrobin)
+		return (-1000000);
+	return ((long)((const char *)p - (const char *)&domainset_prefer[0]) /
+	    (long)sizeof(struct domainset));
+}
+
+static void
+case_domain_set(int node)
+{
+	cap_begin(&g_log_port);
+	struct domainset *a = P::linux_get_vm_domain_set(node);
+	cap_begin(&g_log_ref);
+	struct domainset *b = ref_linux_get_vm_domain_set(node);
+
+	record(&st_domain_set, a == b && logs_equal(&g_log_port, &g_log_ref),
+	    "node=%d port=%ld ref=%ld", node, ds_id(a), ds_id(b));
+}
+
+static void
+test_domain_set(void)
+{
+	static const int edges[] = {
+		INT_MIN, INT_MIN + 1, -1000000, -65536, -3, -2, -1,
+		0, 1, 2, 3, 4, 5, 6, MAXMEMDOM - 1
+	};
+
+	for (size_t i = 0; i < sizeof(edges) / sizeof(edges[0]); i++)
+		case_domain_set(edges[i]);
+
+	rnd_seed(SEED);
+	for (long i = 0; i < ITERS; i++) {
+		uint32_t r = rnd32();
+		int node;
+
+		switch (r & 3) {
+		case 0:
+			/* Dense around the sign boundary. */
+			node = (int)((r >> 8) & 15) - 8;
+			break;
+		case 1:
+			node = (int)((r >> 8) & 7);
+			break;
+		case 2:
+			node = INT_MIN + (int)((r >> 8) & 0xffff);
+			break;
+		default:
+			node = -(int)(rnd32() & 0x7fffffff);
+			break;
+		}
+		if (node >= MAXMEMDOM)
+			node = MAXMEMDOM - 1;	/* KASSERT precondition */
+		case_domain_set(node);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* linux_dev_to_node                                                   */
+/* ------------------------------------------------------------------ */
+
+static void
+case_dev_to_node(int dev_null, device_t bsddev, int bus_ret, int bus_domain)
+{
+	enum { BUFSZ = 64 };
+	unsigned char ba[BUFSZ], bb[BUFSZ], pristine[BUFSZ];
+
+	memset(ba, 0x7f, BUFSZ);
+	memset(bb, 0x7f, BUFSZ);
+
+	struct device *da = (struct device *)(ba + 16);
+	struct device *db = (struct device *)(bb + 16);
+
+	da->bsddev = bsddev;
+	db->bsddev = bsddev;
+	memcpy(pristine, ba, BUFSZ);
+
+	g_bus_ret = bus_ret;
+	g_bus_domain_out = bus_domain;
+
+	cap_begin(&g_log_port);
+	int a = P::linux_dev_to_node(dev_null ? NULL : da);
+	cap_begin(&g_log_ref);
+	int b = ref_linux_dev_to_node(dev_null ? NULL : db);
+
+	bool ok = a == b && logs_equal(&g_log_port, &g_log_ref) &&
+	    memcmp(ba, bb, BUFSZ) == 0 && memcmp(ba, pristine, BUFSZ) == 0 &&
+	    memcmp(bb, pristine, BUFSZ) == 0;
+
+	record(&st_dev_to_node, ok,
+	    "dev=%s bsddev=%ld bus_ret=%d bus_domain=%d port=%d ref=%d",
+	    dev_null ? "NULL" : "obj", ptr_id(bsddev), bus_ret, bus_domain,
+	    a, b);
+}
+
+static void
+test_dev_to_node(void)
+{
+	static const int rets[] = { 0, 1, -1, 6, INT_MIN, INT_MAX };
+	static const int doms[] = { 0, 1, -1, -2, 7, 42, INT_MIN, INT_MAX };
+
+	case_dev_to_node(1, NULL, 0, 5);
+	case_dev_to_node(1, bsddev_pool[0], 0, 5);
+	case_dev_to_node(0, NULL, 0, 5);
+	case_dev_to_node(0, NULL, 3, 5);
+	for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++)
+		for (size_t d = 0; d < sizeof(doms) / sizeof(doms[0]); d++)
+			for (int p = 0; p < 4; p++)
+				case_dev_to_node(0, bsddev_pool[p], rets[r],
+				    doms[d]);
+
+	rnd_seed(SEED ^ 0x11);
+	for (long i = 0; i < ITERS; i++) {
+		uint32_t r = rnd32();
+		int dev_null = (r & 7) == 0;
+		device_t bsddev = ((r >> 3) & 7) == 0 ? NULL :
+		    bsddev_pool[(r >> 6) & 3];
+		int bus_ret = ((r >> 8) & 1) ? 0 : (int)rnd32();
+		int bus_domain = ((r >> 9) & 1) ? (int)(rnd32() & 15) - 4 :
+		    (int)rnd32();
+
+		case_dev_to_node(dev_null, bsddev, bus_ret, bus_domain);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* folio_alloc                                                         */
+/* ------------------------------------------------------------------ */
+
+static void
+case_folio_alloc(gfp_t gfp, unsigned int order, struct page *result)
+{
+	g_alloc_result = result;
+
+	cap_begin(&g_log_port);
+	struct folio *a = P::folio_alloc(gfp, order);
+	cap_begin(&g_log_ref);
+	struct folio *b = ref_folio_alloc(gfp, order);
+
+	record(&st_folio_alloc, a == b && logs_equal(&g_log_port, &g_log_ref),
+	    "gfp=0x%08x order=%u result=%ld port=%ld ref=%ld", gfp, order,
+	    ptr_id(result), ptr_id(a), ptr_id(b));
+}
+
+static void
+test_folio_alloc(void)
+{
+	static const gfp_t gfps[] = {
+		0u, 1u, GFP_COMP_BIT, ~GFP_COMP_BIT, GFP_COMP_BIT - 1u,
+		GFP_COMP_BIT + 1u, 0xffffffffu, 0x80000000u, 0x3fffu, 0x8000u,
+		0xdeadbeefu
+	};
+	static const unsigned int orders[] = {
+		0u, 1u, 2u, 3u, 9u, 15u, 255u, 65535u, 0xfffffffeu, 0xffffffffu
+	};
+
+	for (size_t g = 0; g < sizeof(gfps) / sizeof(gfps[0]); g++)
+		for (size_t o = 0; o < sizeof(orders) / sizeof(orders[0]); o++) {
+			case_folio_alloc(gfps[g], orders[o], NULL);
+			case_folio_alloc(gfps[g], orders[o], page_pool[0]);
+			case_folio_alloc(gfps[g], orders[o], page_pool[7]);
+		}
+
+	rnd_seed(SEED ^ 0x22);
+	for (long i = 0; i < ITERS; i++) {
+		uint32_t r = rnd32();
+		gfp_t gfp;
+		unsigned int order;
+
+		switch (r & 3) {
+		case 0:
+			gfp = (gfp_t)rnd32();
+			break;
+		case 1:
+			gfp = (gfp_t)(rnd32() & 0xffffu);
+			break;
+		case 2:
+			gfp = (gfp_t)(GFP_COMP_BIT | (rnd32() & 7u));
+			break;
+		default:
+			gfp = (gfp_t)(rnd32() & ~GFP_COMP_BIT);
+			break;
+		}
+		order = ((r >> 2) & 1) ? (unsigned int)(rnd32() & 31u) :
+		    (unsigned int)rnd32();
+
+		struct page *res = ((r >> 3) & 3) == 0 ? NULL :
+		    page_pool[(r >> 5) & 7];
+
+		case_folio_alloc(gfp, order, res);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* __folio_batch_release                                               */
+/* ------------------------------------------------------------------ */
+
+static void
+case_batch_release(unsigned int nr, struct folio *const *folios)
+{
+	enum { BUFSZ = sizeof(struct folio_batch) + 32 };
+	alignas(16) unsigned char ba[BUFSZ], bb[BUFSZ];
+
+	memset(ba, 0x7f, BUFSZ);
+	memset(bb, 0x7f, BUFSZ);
+
+	struct folio_batch *fa = (struct folio_batch *)(ba + 16);
+	struct folio_batch *fb = (struct folio_batch *)(bb + 16);
+
+	fa->nr = (uint8_t)nr;
+	fb->nr = (uint8_t)nr;
+	for (int i = 0; i < PAGEVEC_SIZE; i++) {
+		fa->folios[i] = folios[i];
+		fb->folios[i] = folios[i];
+	}
+
+	g_fbatch_base = fa;
+	cap_begin(&g_log_port);
+	P::__folio_batch_release(fa);
+	g_fbatch_base = fb;
+	cap_begin(&g_log_ref);
+	ref___folio_batch_release(fb);
+
+	bool ok = logs_equal(&g_log_port, &g_log_ref) &&
+	    memcmp(ba, bb, BUFSZ) == 0;
+
+	if (!record(&st_batch_rel, ok, "nr=%u port_nr=%u ref_nr=%u", nr,
+	    (unsigned)fa->nr, (unsigned)fb->nr) &&
+	    st_batch_rel.fails <= MAX_REPORTED) {
+		printf("      port buf:");
+		for (int i = 0; i < (int)BUFSZ; i++)
+			printf(" %02x", ba[i]);
+		printf("\n      ref  buf:");
+		for (int i = 0; i < (int)BUFSZ; i++)
+			printf(" %02x", bb[i]);
+		printf("\n");
+	}
+}
+
+static void
+test_batch_release(void)
+{
+	struct folio *f[PAGEVEC_SIZE];
+	static const unsigned int nrs[] = {
+		0, 1, 2, 3, 13, 14, 15, 16, 17, 126, 127, 128, 129, 253, 254,
+		255
+	};
+
+	for (size_t n = 0; n < sizeof(nrs) / sizeof(nrs[0]); n++) {
+		for (int i = 0; i < PAGEVEC_SIZE; i++)
+			f[i] = NULL;
+		case_batch_release(nrs[n], f);
+		for (int i = 0; i < PAGEVEC_SIZE; i++)
+			f[i] = folio_pool[i & 7];
+		case_batch_release(nrs[n], f);
+		for (int i = 0; i < PAGEVEC_SIZE; i++)
+			f[i] = (i & 1) ? NULL : folio_pool[0];
+		case_batch_release(nrs[n], f);
+	}
+
+	rnd_seed(SEED ^ 0x33);
+	for (long i = 0; i < ITERS; i++) {
+		uint32_t r = rnd32();
+		unsigned int nr;
+
+		switch (r & 3) {
+		case 0:
+			nr = (unsigned int)(rnd32() & 3u);
+			break;
+		case 1:
+			nr = 13u + (unsigned int)(rnd32() % 5u);
+			break;
+		case 2:
+			nr = 252u + (unsigned int)(rnd32() & 3u);
+			break;
+		default:
+			nr = (unsigned int)(rnd32() & 255u);
+			break;
+		}
+		for (int j = 0; j < PAGEVEC_SIZE; j++) {
+			uint32_t q = rnd32();
+
+			f[j] = (q & 7) == 0 ? NULL : folio_pool[(q >> 3) & 7];
+		}
+		case_batch_release(nr, f);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* lkpi_eventfd_ctx_fdget / lkpi_eventfd_ctx_put                       */
+/* ------------------------------------------------------------------ */
+
+static void
+case_efd_fdget(int fd, int fget_ret, struct file *fp, struct eventfd_ctx *ctx)
+{
+	g_fget_ret = fget_ret;
+	g_fget_fp = fp;
+	g_efd_get_result = ctx;
+
+	cap_begin(&g_log_port);
+	struct eventfd_ctx *a = P::lkpi_eventfd_ctx_fdget(fd);
+	cap_begin(&g_log_ref);
+	struct eventfd_ctx *b = ref_lkpi_eventfd_ctx_fdget(fd);
+
+	record(&st_efd_fdget, a == b && logs_equal(&g_log_port, &g_log_ref),
+	    "fd=%d fget_ret=%d fp=%ld ctx=%ld port=%ld ref=%ld", fd, fget_ret,
+	    ptr_id(fp), ptr_id(ctx), ptr_id(a), ptr_id(b));
+}
+
+static void
+test_efd_fdget(void)
+{
+	static const int fds[] = {
+		INT_MIN, -2, -1, 0, 1, 2, 3, 1024, INT_MAX
+	};
+	static const int rets[] = { 0, 1, -1, 9, -9, INT_MIN, INT_MAX };
+
+	for (size_t i = 0; i < sizeof(fds) / sizeof(fds[0]); i++)
+		for (size_t r = 0; r < sizeof(rets) / sizeof(rets[0]); r++)
+			for (int fpi = -1; fpi < 4; fpi++)
+				for (int ci = -1; ci < 4; ci++)
+					case_efd_fdget(fds[i], rets[r],
+					    fpi < 0 ? NULL : file_pool[fpi],
+					    ci < 0 ? NULL : ctx_pool[ci]);
+
+	rnd_seed(SEED ^ 0x44);
+	for (long i = 0; i < ITERS; i++) {
+		uint32_t r = rnd32();
+		int fd = ((r & 3) == 0) ? (int)rnd32() :
+		    (int)(rnd32() & 7u) - 2;
+		int fget_ret = ((r >> 2) & 1) ? 0 : (int)rnd32();
+		struct file *fp = ((r >> 3) & 3) == 0 ? NULL :
+		    file_pool[(r >> 5) & 3];
+		struct eventfd_ctx *ctx = ((r >> 7) & 1) ? NULL :
+		    ctx_pool[(r >> 8) & 3];
+
+		case_efd_fdget(fd, fget_ret, fp, ctx);
+	}
+}
+
+static void
+case_efd_put(struct eventfd_ctx *ctx)
+{
+	cap_begin(&g_log_port);
+	P::lkpi_eventfd_ctx_put(ctx);
+	cap_begin(&g_log_ref);
+	ref_lkpi_eventfd_ctx_put(ctx);
+
+	record(&st_efd_put, logs_equal(&g_log_port, &g_log_ref), "ctx=%ld",
+	    ptr_id(ctx));
+}
+
+static void
+test_efd_put(void)
+{
+	case_efd_put(NULL);
+	for (int i = 0; i < 4; i++)
+		case_efd_put(ctx_pool[i]);
+	case_efd_put((struct eventfd_ctx *)(intptr_t)-EBADF);
+
+	rnd_seed(SEED ^ 0x55);
+	for (long i = 0; i < ITERS; i++) {
+		uint32_t r = rnd32();
+		struct eventfd_ctx *ctx = (r & 3) == 0 ? NULL :
+		    ctx_pool[(r >> 2) & 3];
+
+		case_efd_put(ctx);
+	}
+}
+
+/* ------------------------------------------------------------------ */
+/* video_get_options                                                   */
+/* ------------------------------------------------------------------ */
+
+enum { VBUFSZ = 512 };
+
+static long
+env_id(const char *p)
+{
+	if (p == NULL)
+		return (0);
+	if (p == g_env_specific_val)
+		return (1);
+	if (p == g_env_default_val)
+		return (2);
+	return ((long)(intptr_t)p);
+}
+
+static void
+case_video(const unsigned char *name, size_t namelen, int bv, int spec,
+    int def)
+{
+	unsigned char ba[VBUFSZ], bb[VBUFSZ], pristine[VBUFSZ];
+	char expect[64];
+
+	memset(ba, 0x7f, VBUFSZ);
+	memset(bb, 0x7f, VBUFSZ);
+	memcpy(ba + 16, name, namelen);
+	ba[16 + namelen] = '\0';
+	memcpy(bb + 16, name, namelen);
+	bb[16 + namelen] = '\0';
+	memcpy(pristine, ba, VBUFSZ);
+
+	/*
+	 * The key the environment answers to is derived independently of the
+	 * code under test, so a port that builds a different tunable string
+	 * misses the lookup and takes the fallback.
+	 */
+	snprintf(expect, sizeof(expect), "kern.vt.fb.modes.%s",
+	    (const char *)(ba + 16));
+	memcpy(g_env_specific_key, expect, sizeof(expect));
+	g_env_specific_present = spec;
+	g_env_default_present = def;
+	bootverbose = bv;
+
+	cap_begin(&g_log_port);
+	const char *a = P::video_get_options((const char *)(ba + 16));
+	cap_begin(&g_log_ref);
+	const char *b = ref_video_get_options((const char *)(bb + 16));
+
+	bool ok = a == b && logs_equal(&g_log_port, &g_log_ref) &&
+	    memcmp(ba, bb, VBUFSZ) == 0 && memcmp(ba, pristine, VBUFSZ) == 0 &&
+	    memcmp(bb, pristine, VBUFSZ) == 0;
+
+	if (ok) {
+		record(&st_video, true, "-");
+	} else {
+		char pretty[1024];
+
+		show(pretty, sizeof(pretty), name, namelen);
+		record(&st_video, false,
+		    "name(len=%zu)=\"%s\" bv=%d spec=%d def=%d port=%ld ref=%ld",
+		    namelen, pretty, bv, spec, def, env_id(a), env_id(b));
+	}
+}
+
+static void
+video_all_modes(const unsigned char *name, size_t namelen)
+{
+	for (int bv = 0; bv < 2; bv++)
+		for (int spec = 0; spec < 2; spec++)
+			for (int def = 0; def < 2; def++)
+				case_video(name, namelen, bv, spec, def);
+}
+
+static void
+test_video(void)
+{
+	unsigned char buf[VBUFSZ];
+
+	/* Empty, single character, plain names. */
+	video_all_modes((const unsigned char *)"", 0);
+	video_all_modes((const unsigned char *)"a", 1);
+	video_all_modes((const unsigned char *)"LVDS", 4);
+	video_all_modes((const unsigned char *)"kern.vt.fb.default_mode", 23);
+	video_all_modes((const unsigned char *)"%s%d%n", 6);
+
+	/*
+	 * "kern.vt.fb.modes." is 17 bytes, so a 46 byte name is the longest
+	 * one that survives a 64 byte buffer intact.  Walk both sides of that
+	 * boundary one byte at a time.
+	 */
+	for (size_t len = 40; len <= 56; len++) {
+		for (size_t i = 0; i < len; i++)
+			buf[i] = (unsigned char)('A' + (i % 26));
+		video_all_modes(buf, len);
+	}
+
+	/* High bit bytes, NUL heavy, long. */
+	for (size_t len = 1; len <= 64; len++) {
+		for (size_t i = 0; i < len; i++)
+			buf[i] = (unsigned char)(0x80 + (i % 0x80));
+		video_all_modes(buf, len);
+	}
+	for (size_t i = 0; i < 64; i++)
+		buf[i] = (unsigned char)(i == 0 ? 'x' : 0x00);
+	video_all_modes(buf, 64);
+	for (size_t i = 0; i < 64; i++)
+		buf[i] = 0x00;
+	video_all_modes(buf, 64);
+	for (size_t i = 0; i < 50; i++)
+		buf[i] = (unsigned char)(i == 46 ? 0x00 : 0xff);
+	video_all_modes(buf, 50);
+	for (size_t i = 0; i < 300; i++)
+		buf[i] = (unsigned char)('a' + (i % 26));
+	video_all_modes(buf, 300);
+	for (size_t i = 0; i < 300; i++)
+		buf[i] = 0xa5;
+	video_all_modes(buf, 300);
+
+	rnd_seed(SEED ^ 0x66);
+	for (long i = 0; i < ITERS; i++) {
+		uint32_t r = rnd32();
+		size_t len;
+
+		switch (r & 3) {
+		case 0:
+			len = (size_t)(rnd32() % 8u);
+			break;
+		case 1:
+			len = 40u + (size_t)(rnd32() % 17u);
+			break;
+		case 2:
+			len = (size_t)(rnd32() % 70u);
+			break;
+		default:
+			len = (size_t)(rnd32() % 200u);
+			break;
+		}
+		for (size_t j = 0; j < len; j++) {
+			uint32_t q = rnd32();
+
+			switch ((q >> 8) & 7) {
+			case 0:
+			case 1:
+				buf[j] = (unsigned char)(0x80 + (q & 0x7f));
+				break;
+			case 2:
+				buf[j] = (unsigned char)(q & 0xff);
+				break;
+			case 3:
+				buf[j] = (unsigned char)((q & 1) ? 0x00 : 0xff);
+				break;
+			default:
+				buf[j] = (unsigned char)(0x20 + (q % 0x5f));
+				break;
+			}
+		}
+		case_video(buf, len, (int)((r >> 4) & 1), (int)((r >> 5) & 1),
+		    (int)((r >> 6) & 1));
+	}
+}
+
+/* ------------------------------------------------------------------ */
+
+static void
+pools_init(void)
+{
+	for (int i = 0; i < 8; i++) {
+		page_pool[i] = (struct page *)page_backing[i];
+		folio_pool[i] = (struct folio *)folio_backing[i];
+		reg_add(page_backing[i], 100 + i);
+		reg_add(folio_backing[i], 200 + i);
+	}
+	for (int i = 0; i < 4; i++) {
+		file_pool[i] = (struct file *)file_backing[i];
+		ctx_pool[i] = (struct eventfd_ctx *)ctx_backing[i];
+		bsddev_pool[i] = (device_t)bsddev_backing[i];
+		reg_add(file_backing[i], 300 + i);
+		reg_add(ctx_backing[i], 400 + i);
+		reg_add(bsddev_backing[i], 500 + i);
+	}
+	reg_add(thread_backing, 600);
+	reg_add(&cap_no_rights, 700);
+	for (int i = 0; i < MAXMEMDOM; i++)
+		domainset_prefer[i].ds_id = 0x1000 + i;
 }
 
 int
-main()
+main(void)
 {
-	reset_both();
+	pools_init();
 
-	test_domain_hand();
-	test_domain_sweep();
-	test_devnode_hand();
-	test_devnode_sweep();
-	test_folio_alloc_hand();
-	test_folio_alloc_sweep();
-	test_folio_release_hand();
-	test_folio_release_sweep();
-	test_fdget_hand();
-	test_fdget_sweep();
-	test_fdput_hand();
-	test_fdput_sweep();
-	test_video_hand();
-	test_video_sweep();
+	test_domain_set();
+	test_dev_to_node();
+	test_folio_alloc();
+	test_batch_release();
+	test_efd_fdget();
+	test_efd_put();
+	test_video();
 
-	std::fprintf(stderr, "\n%-28s %12s %12s\n", "function", "cases", "failures");
-	std::fprintf(stderr, "%-28s %12llu %12llu\n", st_domain.name, st_domain.cases, st_domain.fails);
-	std::fprintf(stderr, "%-28s %12llu %12llu\n", st_devnode.name, st_devnode.cases, st_devnode.fails);
-	std::fprintf(stderr, "%-28s %12llu %12llu\n", st_folio_alloc.name, st_folio_alloc.cases, st_folio_alloc.fails);
-	std::fprintf(stderr, "%-28s %12llu %12llu\n", st_folio_rel.name, st_folio_rel.cases, st_folio_rel.fails);
-	std::fprintf(stderr, "%-28s %12llu %12llu\n", st_fdget.name, st_fdget.cases, st_fdget.fails);
-	std::fprintf(stderr, "%-28s %12llu %12llu\n", st_fdput.name, st_fdput.cases, st_fdput.fails);
-	std::fprintf(stderr, "%-28s %12llu %12llu\n", st_video.name, st_video.cases, st_video.fails);
+	Stats *all[] = {
+		&st_domain_set, &st_dev_to_node, &st_folio_alloc,
+		&st_batch_rel, &st_efd_fdget, &st_efd_put, &st_video
+	};
+	long total_cases = 0, total_fails = 0;
 
-	unsigned long long total_fails = st_domain.fails + st_devnode.fails +
-	    st_folio_alloc.fails + st_folio_rel.fails + st_fdget.fails +
-	    st_fdput.fails + st_video.fails;
-	return (total_fails == 0) ? 0 : 1;
+	printf("\n%-28s %12s %12s  %s\n", "function", "cases", "failures",
+	    "result");
+	printf("--------------------------------------------------------------"
+	    "\n");
+	for (size_t i = 0; i < sizeof(all) / sizeof(all[0]); i++) {
+		printf("%-28s %12ld %12ld  %s\n", all[i]->name, all[i]->cases,
+		    all[i]->fails, all[i]->fails == 0 ? "PASS" : "FAIL");
+		total_cases += all[i]->cases;
+		total_fails += all[i]->fails;
+	}
+	printf("--------------------------------------------------------------"
+	    "\n");
+	printf("%-28s %12ld %12ld  %s\n", "TOTAL", total_cases, total_fails,
+	    total_fails == 0 ? "PASS" : "FAIL");
+
+	return (total_fails == 0 ? 0 : 1);
 }

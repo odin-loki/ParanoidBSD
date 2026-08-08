@@ -19,6 +19,10 @@
 #define __dead2 __attribute__((__noreturn__))
 #endif
 
+#ifndef __dead2
+#define __dead2 __attribute__((__noreturn__))
+#endif
+
 extern int ioctl(int, unsigned long, ...);
 void usage(void) __dead2;
 
@@ -253,6 +257,7 @@ static void cfmakesane(struct termios *t)
 }
 
 #define	LKEEP	(ECHOKE|ECHOE|ECHOK|ECHOPRT|ECHOCTL|ALTWERASE|TOSTOP|NOFLSH)
+
 
 void ref_f_all(struct info *);
 void ref_f_cbreak(struct info *);

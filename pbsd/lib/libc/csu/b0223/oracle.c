@@ -93,7 +93,7 @@ void (*__fini_array_start[64])(void);
  * Scrt1.o always defines _DYNAMIC for C++ links, which would force the
  * dynamic startup path.  Redirect the token while keeping bodies verbatim.
  */
-static int pbsd_dynamic_storage;
+int pbsd_dynamic_storage;
 int *pbsd_dynamic_ptr;
 
 int mock_crt1_handle_rela_calls;

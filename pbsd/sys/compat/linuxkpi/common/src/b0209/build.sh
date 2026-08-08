@@ -1,19 +1,32 @@
 #!/bin/sh
+#
+# PBSD batch b0209 -- build and run the differential test.
+#
+# Usage: sh build.sh
+
 set -e
+
 cd "$(dirname "$0")"
+
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-MODULE_NAME=pbsd.sys.compat.linuxkpi.common.src.b0209
-rm -rf gcm.cache b0209_run oracle.o port.o harness.o "$MODULE_NAME.pcm"
-$CC -std=c11 -O2 -D_POSIX_C_SOURCE=200809L -c oracle.c -o oracle.o
-if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX -std=c++23 -D_POSIX_C_SOURCE=200809L -x c++-module --precompile port.cppm -o "$MODULE_NAME.pcm"
-	$CXX -std=c++23 -D_POSIX_C_SOURCE=200809L -c "$MODULE_NAME.pcm" -o port.o
-	$CXX -std=c++23 -D_POSIX_C_SOURCE=200809L -fmodule-file="$MODULE_NAME=$MODULE_NAME.pcm" -c harness.cpp -o harness.o
-	$CXX -std=c++23 oracle.o port.o harness.o -Wl,--wrap=printf -o b0209_run
-else
-	$CXX -std=c++23 -D_POSIX_C_SOURCE=200809L -fmodules-ts -x c++ -c port.cppm -o port.o
-	$CXX -std=c++23 -D_POSIX_C_SOURCE=200809L -fmodules-ts -c harness.cpp -o harness.o
-	$CXX -std=c++23 -fmodules-ts oracle.o port.o harness.o -Wl,--wrap=printf -o b0209_run
-fi
-exec ./b0209_run
+OBJ=".b0209.obj"
+BIN="./b0209_harness"
+
+# GCC's named module support needs -fmodules-ts, and it only treats .cppm as
+# C++ source when told explicitly.  Compiled module interfaces land in
+# gcm.cache/ next to the sources.
+CXXMODFLAGS="-fmodules-ts"
+
+rm -rf gcm.cache "$OBJ" "$BIN"
+mkdir -p "$OBJ"
+
+$CC -std=c11 -O2 -c oracle.c -o "$OBJ/oracle.o"
+$CXX -std=c++23 $CXXMODFLAGS -O2 -x c++ -c port.cppm -o "$OBJ/port.o"
+$CXX -std=c++23 $CXXMODFLAGS -O2 -c harness.cpp -o "$OBJ/harness.o"
+$CXX -std=c++23 $CXXMODFLAGS -O2 -o "$BIN" \
+    "$OBJ/oracle.o" "$OBJ/port.o" "$OBJ/harness.o"
+
+rm -rf gcm.cache "$OBJ"
+
+exec "$BIN"

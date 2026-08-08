@@ -49,7 +49,7 @@ export namespace pbsd::bin_sh::b0230 {
 typedef void *pointer;
 typedef void (*sig_t)(int);
 
-#define equal(s1, s2) (std::std::strcmp((s1), (s2)) == 0)
+#define equal(s1, s2) (std::strcmp((s1), (s2)) == 0)
 
 struct alias {
 	struct alias *next;
@@ -118,19 +118,19 @@ void error(const char *fmt, ...)
 	port_error_flag = 1;
 	va_list ap;
 	va_start(ap, fmt);
-	std::vstd::fprintf(stderr, fmt, ap);
+	std::vfprintf(stderr, fmt, ap);
 	va_end(ap);
-	std::std::fprintf(stderr, "\n");
-	std::std::abort();
+	std::fprintf(stderr, "\n");
+	std::abort();
 }
 
 void warning(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	std::vstd::fprintf(stderr, fmt, ap);
+	std::vfprintf(stderr, fmt, ap);
 	va_end(ap);
-	std::std::fprintf(stderr, "\n");
+	std::fprintf(stderr, "\n");
 }
 
 void errorwithstatus(int status, const char *fmt, ...)
@@ -138,10 +138,10 @@ void errorwithstatus(int status, const char *fmt, ...)
 	(void)status;
 	va_list ap;
 	va_start(ap, fmt);
-	std::vstd::fprintf(stderr, fmt, ap);
+	std::vfprintf(stderr, fmt, ap);
 	va_end(ap);
-	std::std::fprintf(stderr, "\n");
-	std::std::abort();
+	std::fprintf(stderr, "\n");
+	std::abort();
 }
 
 char **port_argptr;
@@ -206,7 +206,7 @@ struct fwopen_cookie {
 };
 
 static ssize_t
-port_fwcookie_::write(void *c, const char *buf, size_t size)
+port_fwcookie_write(void *c, const char *buf, size_t size)
 {
 	struct fwopen_cookie *fc = (struct fwopen_cookie *)c;
 	int r = fc->writefn(fc->cookie, buf, (int)size);
@@ -214,7 +214,7 @@ port_fwcookie_::write(void *c, const char *buf, size_t size)
 }
 
 static FILE *
-port_fw::open(void *cookie, int (*writefn)(void *, const char *, int))
+port_fwopen(void *cookie, int (*writefn)(void *, const char *, int))
 {
 	static struct fwopen_cookie fc;
 	static cookie_io_functions_t io = { NULL, port_fwcookie_write, NULL, NULL };
@@ -264,83 +264,6 @@ void setjobctl(int on) { (void)on; }
 void histsave(void) {}
 void forcealias(void) {}
 
-void hashcd(void) {}
-
-struct varpair { char *name; char *val; int flags; };
-static struct varpair port_vars[128];
-static int port_var_n = 0;
-
-char *lookupvar(const char *name)
-{
-	int i;
-	for (i = 0; i < port_var_n; i++)
-		if (std::std::strcmp(port_vars[i].name, name) == 0)
-			return port_vars[i].val;
-	return NULL;
-}
-
-void setvar(const char *name, const char *val, int flags)
-{
-	int i;
-	for (i = 0; i < port_var_n; i++) {
-		if (std::std::strcmp(port_vars[i].name, name) == 0) {
-			if (port_vars[i].val)
-				std::std::free(port_vars[i].val);
-			port_vars[i].val = val ? strdup(val) : NULL;
-			port_vars[i].flags = flags;
-			return;
-		}
-	}
-	if (port_var_n < 128) {
-		port_vars[port_var_n].name = strdup(name);
-		port_vars[port_var_n].val = val ? strdup(val) : NULL;
-		port_vars[port_var_n].flags = flags;
-		port_var_n++;
-	}
-}
-
-char *bltinlookup(const char *name, int remove)
-{
-	char *v = lookupvar(name);
-	(void)remove;
-	return v;
-}
-
-char *padvance(char **path, const char *dot, const char *dest)
-{
-	char *p, *q, *r;
-	static char padbuf[PATH_MAX];
-
-	(void)dot;
-	p = *path;
-	if (p == NULL)
-		return NULL;
-	if (*p == '\0') {
-		*path = NULL;
-		return stsavestr(dest);
-	}
-	q = padbuf;
-	while (*p != '\0' && *p != ':') {
-		if (q < padbuf + PATH_MAX - 1)
-			*q++ = *p;
-		p++;
-	}
-	if (*p == ':')
-		p++;
-	*path = p;
-	if (q == padbuf) {
-		r = stsavestr(dest);
-		return r;
-	}
-	if (q[-1] != '/')
-		*q++ = '/';
-	r = dest;
-	while (*r != '\0' && q < padbuf + PATH_MAX - 1)
-		*q++ = *r++;
-	*q = '\0';
-	return stsavestr(padbuf);
-}
-
 #ifndef NSIG
 #define NSIG 64
 #endif
@@ -349,7 +272,7 @@ static const char *port_sys_signame[NSIG];
 #define sys_signame port_sys_signame
 int sys_nsig = NSIG;
 
-static int ::is_number(const char *p)
+static int is_number(const char *p)
 {
 	if (*p == '\0')
 		return 0;
@@ -361,61 +284,9 @@ static int ::is_number(const char *p)
 	return 1;
 }
 
-void port_reset_state(void)
-{
-	int i;
-	port_suppressint = 1;
-	port_intpending = 0;
-	port_error_flag = 0;
-	port_argptr = NULL;
-	port_nextopt_optptr = NULL;
-	port_shoptarg = NULL;
-	out1 = &output;
-	out2 = &errout;
-	if (output.buf) { std::std::free(output.buf); output.buf = NULL; }
-	output.nextc = NULL;
-	output.bufend = NULL;
-	output.flags = 0;
-	if (errout.buf) { std::std::free(errout.buf); errout.buf = NULL; }
-	errout.nextc = NULL;
-	errout.bufend = NULL;
-	errout.flags = 0;
-	if (memout.buf) { std::std::free(memout.buf); memout.buf = NULL; }
-	memout.nextc = NULL;
-	memout.bufend = NULL;
-	memout.bufsize = 64;
-	memout.flags = 0;
-	while (stackp) {
-		struct stack_block *sp = stackp;
-		stackp = sp->prev;
-		std::std::free(sp);
-	}
-	stacknxt = NULL;
-	stacknleft = 0;
-	sstrend = NULL;
-	for (i = 0; i < port_var_n; i++) {
-		std::std::free(port_vars[i].name);
-		std::std::free(port_vars[i].val);
-	}
-	port_var_n = 0;
-	Pflag = 0;
-	iflag = 0;
-	mflag = 0;
-	debug = 0;
-	rootshell = 1;
-	verifyflag = 0;
-	vflag = 0;
-	whichprompt = 1;
-	suppressint = 0;
-	evalskip = 0;
-	skipcount = 0;
-	exitstatus = 0;
-	oexitstatus = 0;
-}
-
-void port_set_out1_memout(void) { out1 = &memout; }
-void port_restore_out1(void) { out1 = &output; }
-struct output *port_get_memout(void) { return &memout; }
+void port_set_out1_memout(void);
+void port_restore_out1(void);
+struct output *port_get_memout(void);
 
 /* --- memalloc.c --- */
 /*-
@@ -456,8 +327,8 @@ struct output *port_get_memout(void) { return &memout; }
 static void
 badalloc(const char *message)
 {
-	::::write(2, message, std::std::strlen(message));
-	std::std::abort();
+	::write(2, message, std::strlen(message));
+	std::abort();
 }
 
 /*
@@ -465,13 +336,13 @@ badalloc(const char *message)
  */
 
 pointer
-ckstd::malloc(size_t nbytes)
+ckmalloc(size_t nbytes)
 {
 	pointer p;
 
 	if (!is_int_on())
-		badalloc("Unsafe ckstd::malloc() call\n");
-	p = std::std::malloc(nbytes);
+		badalloc("Unsafe ckmalloc() call\n");
+	p = std::malloc(nbytes);
 	if (p == NULL)
 		error("Out of space");
 	return p;
@@ -483,22 +354,22 @@ ckstd::malloc(size_t nbytes)
  */
 
 pointer
-ckstd::realloc(pointer p, int nbytes)
+ckrealloc(pointer p, int nbytes)
 {
 	if (!is_int_on())
-		badalloc("Unsafe ckstd::realloc() call\n");
-	p = std::std::realloc(p, nbytes);
+		badalloc("Unsafe ckrealloc() call\n");
+	p = std::realloc(p, nbytes);
 	if (p == NULL)
 		error("Out of space");
 	return p;
 }
 
 void
-ckstd::free(pointer p)
+ckfree(pointer p)
 {
 	if (!is_int_on())
-		badalloc("Unsafe ckstd::free() call\n");
-	std::std::free(p);
+		badalloc("Unsafe ckfree() call\n");
+	std::free(p);
 }
 
 
@@ -512,9 +383,9 @@ savestr(const char *s)
 	char *p;
 	size_t len;
 
-	len = std::std::strlen(s);
-	p = ckstd::malloc(len + 1);
-	std::std::memcpy(p, s, len + 1);
+	len = std::strlen(s);
+	p = ckmalloc(len + 1);
+	std::memcpy(p, s, len + 1);
 	return p;
 }
 
@@ -546,7 +417,7 @@ stnewblock(int nbytes)
 	allocsize = ALIGN(sizeof(struct stack_block)) + ALIGN(nbytes);
 
 	INTOFF;
-	sp = ckstd::malloc(allocsize);
+	sp = ckmalloc(allocsize);
 	sp->prev = stackp;
 	stacknxt = SPACE(sp);
 	stacknleft = allocsize - (stacknxt - (char*)sp);
@@ -575,8 +446,8 @@ void
 stunalloc(pointer p)
 {
 	if (p == NULL) {		/*DEBUG */
-		::::write(STDERR_FILENO, "stunalloc\n", 10);
-		std::std::abort();
+		::write(STDERR_FILENO, "stunalloc\n", 10);
+		std::abort();
 	}
 	stacknleft += stacknxt - (char *)p;
 	stacknxt = p;
@@ -589,9 +460,9 @@ stsavestr(const char *s)
 	char *p;
 	size_t len;
 
-	len = std::std::strlen(s);
+	len = std::strlen(s);
 	p = stalloc(len + 1);
-	std::std::memcpy(p, s, len + 1);
+	std::memcpy(p, s, len + 1);
 	return p;
 }
 
@@ -617,7 +488,7 @@ popstackmark(struct stackmark *mark)
 	while (stackp != mark->stackp) {
 		sp = stackp;
 		stackp = sp->prev;
-		ckstd::free(sp);
+		ckfree(sp);
 	}
 	stacknxt = mark->stacknxt;
 	stacknleft = mark->stacknleft;
@@ -666,7 +537,7 @@ growstackblock(int min)
 		INTOFF;
 		oldstackp = stackp;
 		stackp = oldstackp->prev;
-		sp = ckstd::realloc((pointer)oldstackp, newlen);
+		sp = ckrealloc((pointer)oldstackp, newlen);
 		sp->prev = stackp;
 		stackp = sp;
 		stacknxt = SPACE(sp);
@@ -677,7 +548,7 @@ growstackblock(int min)
 		newlen -= ALIGN(sizeof(struct stack_block));
 		p = stalloc(newlen);
 		if (oldlen != 0)
-			std::std::memcpy(p, oldspace, oldlen);
+			std::memcpy(p, oldspace, oldlen);
 		stunalloc(p);
 	}
 }
@@ -737,14 +608,14 @@ char *
 stputbin(const char *data, size_t len, char *p)
 {
 	CHECKSTRSPACE(len, p);
-	std::std::memcpy(p, data, len);
+	std::memcpy(p, data, len);
 	return (p + len);
 }
 
 char *
 stputs(const char *data, char *p)
 {
-	return (stputbin(data, std::std::strlen(data), p));
+	return (stputbin(data, std::strlen(data), p));
 }
 
 
@@ -836,7 +707,7 @@ out2qstr(const char *p)
 void
 outstr(const char *p, struct output *file)
 {
-	outbin(p, std::std::strlen(p), file);
+	outbin(p, std::strlen(p), file);
 }
 
 static void
@@ -859,8 +730,8 @@ outdqstr(const char *p, struct output *file)
 	size_t clen;
 	wchar_t wc;
 
-	std::std::memset(&mbs, '\0', sizeof(mbs));
-	end = p + std::std::strlen(p);
+	std::memset(&mbs, '\0', sizeof(mbs));
+	end = p + std::strlen(p);
 	outstr("$'", file);
 	while ((clen = std::mbrtowc(&wc, p, end - p + 1, &mbs)) != 0) {
 		if (clen == (size_t)-2) {
@@ -869,7 +740,7 @@ outdqstr(const char *p, struct output *file)
 			break;
 		}
 		if (clen == (size_t)-1) {
-			std::std::memset(&mbs, '\0', sizeof(mbs));
+			std::memset(&mbs, '\0', sizeof(mbs));
 			byteseq(*p++, file);
 			continue;
 		}
@@ -911,7 +782,7 @@ outqstr(const char *p, struct output *file)
 	}
 
 	if (p[std::strcspn(p, "|&;<>()$`\\\" \n*?[~#=")] == '\0' ||
-			std::std::strcmp(p, "[") == 0) {
+			std::strcmp(p, "[") == 0) {
 		outstr(p, file);
 		return;
 	}
@@ -938,7 +809,7 @@ emptyoutbuf(struct output *dest)
 
 	if (dest->buf == NULL) {
 		INTOFF;
-		dest->buf = ckstd::malloc(dest->bufsize);
+		dest->buf = ckmalloc(dest->bufsize);
 		dest->nextc = dest->buf;
 		dest->bufend = dest->buf + dest->bufsize;
 		INTON;
@@ -946,7 +817,7 @@ emptyoutbuf(struct output *dest)
 		offset = dest->nextc - dest->buf;
 		newsize = dest->bufsize << 1;
 		INTOFF;
-		dest->buf = ckstd::realloc(dest->buf, newsize);
+		dest->buf = ckrealloc(dest->buf, newsize);
 		dest->bufsize = newsize;
 		dest->bufend = dest->buf + newsize;
 		dest->nextc = dest->buf + offset;
@@ -971,7 +842,7 @@ flushout(struct output *dest)
 
 	if (dest->buf == NULL || dest->nextc == dest->buf || dest->fd < 0)
 		return;
-	if (x::write(dest->fd, dest->buf, dest->nextc - dest->buf) < 0)
+	if (xwrite(dest->fd, dest->buf, dest->nextc - dest->buf) < 0)
 		dest->flags |= OUTPUT_ERR;
 	dest->nextc = dest->buf;
 }
@@ -1037,7 +908,7 @@ fmtstr(char *outbuf, int length, const char *fmt, ...)
 
 	INTOFF;
 	va_start(ap, fmt);
-	std::std::vsnprintf(outbuf, length, fmt, ap);
+	std::vsnprintf(outbuf, length, fmt, ap);
 	va_end(ap);
 	INTON;
 }
@@ -1058,16 +929,16 @@ doformat(struct output *dest, const char *f, va_list ap)
 {
 	FILE *fp;
 
-	if ((fp = fw::open(dest, doformat_wr)) != NULL) {
-		std::vstd::fprintf(fp, f, ap);
-		std::std::f::close(fp);
+	if ((fp = fwopen(dest, doformat_wr)) != NULL) {
+		std::vfprintf(fp, f, ap);
+		std::fclose(fp);
 	}
 }
 
 FILE *
 out1fp(void)
 {
-	return fw::open(out1, doformat_wr);
+	return fwopen(out1, doformat_wr);
 }
 
 /*
@@ -1075,7 +946,7 @@ out1fp(void)
  */
 
 int
-x::write(int fd, const char *buf, int nbytes)
+xwrite(int fd, const char *buf, int nbytes)
 {
 	int ntry;
 	int i;
@@ -1084,7 +955,7 @@ x::write(int fd, const char *buf, int nbytes)
 	n = nbytes;
 	ntry = 0;
 	for (;;) {
-		i = ::::write(fd, buf, n);
+		i = ::write(fd, buf, n);
 		if (i > 0) {
 			if ((n -= i) <= 0)
 				return nbytes;
@@ -1099,6 +970,140 @@ x::write(int fd, const char *buf, int nbytes)
 	}
 }
 
+
+
+void hashcd(void) {}
+
+struct varpair { char *name; char *val; int flags; };
+static struct varpair port_vars[128];
+static int port_var_n = 0;
+
+char *lookupvar(const char *name)
+{
+	int i;
+	for (i = 0; i < port_var_n; i++)
+		if (std::strcmp(port_vars[i].name, name) == 0)
+			return port_vars[i].val;
+	return NULL;
+}
+
+void setvar(const char *name, const char *val, int flags)
+{
+	int i;
+	for (i = 0; i < port_var_n; i++) {
+		if (std::strcmp(port_vars[i].name, name) == 0) {
+			if (port_vars[i].val)
+				std::free(port_vars[i].val);
+			port_vars[i].val = val ? strdup(val) : NULL;
+			port_vars[i].flags = flags;
+			return;
+		}
+	}
+	if (port_var_n < 128) {
+		port_vars[port_var_n].name = strdup(name);
+		port_vars[port_var_n].val = val ? strdup(val) : NULL;
+		port_vars[port_var_n].flags = flags;
+		port_var_n++;
+	}
+}
+
+char *bltinlookup(const char *name, int remove)
+{
+	char *v = lookupvar(name);
+	(void)remove;
+	return v;
+}
+
+char *padvance(char **path, const char *dot, const char *dest)
+{
+	char *p, *q, *r;
+	static char padbuf[PATH_MAX];
+
+	(void)dot;
+	p = *path;
+	if (p == NULL)
+		return NULL;
+	if (*p == '\0') {
+		*path = NULL;
+		return stsavestr(dest);
+	}
+	q = padbuf;
+	while (*p != '\0' && *p != ':') {
+		if (q < padbuf + PATH_MAX - 1)
+			*q++ = *p;
+		p++;
+	}
+	if (*p == ':')
+		p++;
+	*path = p;
+	if (q == padbuf) {
+		r = stsavestr(dest);
+		return r;
+	}
+	if (q[-1] != '/')
+		*q++ = '/';
+	r = dest;
+	while (*r != '\0' && q < padbuf + PATH_MAX - 1)
+		*q++ = *r++;
+	*q = '\0';
+	return stsavestr(padbuf);
+}
+
+void port_reset_state(void)
+{
+	int i;
+	port_suppressint = 1;
+	port_intpending = 0;
+	port_error_flag = 0;
+	port_argptr = NULL;
+	port_nextopt_optptr = NULL;
+	port_shoptarg = NULL;
+	out1 = &output;
+	out2 = &errout;
+	if (output.buf) { std::free(output.buf); output.buf = NULL; }
+	output.nextc = NULL;
+	output.bufend = NULL;
+	output.flags = 0;
+	if (errout.buf) { std::free(errout.buf); errout.buf = NULL; }
+	errout.nextc = NULL;
+	errout.bufend = NULL;
+	errout.flags = 0;
+	if (memout.buf) { std::free(memout.buf); memout.buf = NULL; }
+	memout.nextc = NULL;
+	memout.bufend = NULL;
+	memout.bufsize = 64;
+	memout.flags = 0;
+	while (stackp) {
+		struct stack_block *sp = stackp;
+		stackp = sp->prev;
+		std::free(sp);
+	}
+	stacknxt = NULL;
+	stacknleft = 0;
+	sstrend = NULL;
+	for (i = 0; i < port_var_n; i++) {
+		std::free(port_vars[i].name);
+		std::free(port_vars[i].val);
+	}
+	port_var_n = 0;
+	Pflag = 0;
+	iflag = 0;
+	mflag = 0;
+	debug = 0;
+	rootshell = 1;
+	verifyflag = 0;
+	vflag = 0;
+	whichprompt = 1;
+	suppressint = 0;
+	evalskip = 0;
+	skipcount = 0;
+	exitstatus = 0;
+	oexitstatus = 0;
+}
+
+void port_set_out1_memout(void) { out1 = &memout; }
+void port_restore_out1(void) { out1 = &output; }
+struct output *port_get_memout(void) { return &memout; }
 
 
 /* --- mknodes.c --- */
@@ -1201,7 +1206,7 @@ main(int argc, char *argv[])
 
 	if (argc != 3)
 		error("usage: mknodes file");
-	if ((infp = std::f::open(argv[1], "r")) == NULL)
+	if ((infp = std::fopen(argv[1], "r")) == NULL)
 		error("Can't open %s: %s", argv[1], strerror(errno));
 	while (readline(infp)) {
 		if (line[0] == ' ' || line[0] == '\t')
@@ -1209,7 +1214,7 @@ main(int argc, char *argv[])
 		else if (line[0] != '\0')
 			parsenode();
 	}
-	std::f::close(infp);
+	std::fclose(infp);
 	output(argv[2]);
 	std::exit(0);
 }
@@ -1310,11 +1315,11 @@ output(char *file)
 	struct field *fp;
 	char *p;
 
-	if ((patfile = std::f::open(file, "r")) == NULL)
+	if ((patfile = std::fopen(file, "r")) == NULL)
 		error("Can't open %s: %s", file, strerror(errno));
-	if ((hfile = std::f::open("nodes.h", "w")) == NULL)
+	if ((hfile = std::fopen("nodes.h", "w")) == NULL)
 		error("Can't create nodes.h: %s", strerror(errno));
-	if ((cfile = std::f::open("nodes.c", "w")) == NULL)
+	if ((cfile = std::fopen("nodes.c", "w")) == NULL)
 		error("Can't create nodes.c");
 	std::fputs(writer, hfile);
 	for (i = 0 ; i < ntypes ; i++)
@@ -1344,7 +1349,7 @@ output(char *file)
 	std::fputs("void unreffunc(struct funcdef *);\n", hfile);
 	if (std::ferror(hfile))
 		error("Can't write to nodes.h");
-	if (std::f::close(hfile))
+	if (std::fclose(hfile))
 		error("Can't close nodes.h");
 
 	std::fputs(writer, cfile);
@@ -1359,10 +1364,10 @@ output(char *file)
 		else
 			std::fputs(line, cfile);
 	}
-	std::f::close(patfile);
+	std::fclose(patfile);
 	if (std::ferror(cfile))
 		error("Can't write to nodes.c");
-	if (std::f::close(cfile))
+	if (std::fclose(cfile))
 		error("Can't close nodes.c");
 }
 
@@ -1525,7 +1530,7 @@ error(const char *msg, ...)
 	va_start(va, msg);
 
 	(void) std::fprintf(stderr, "line %d: ", linno);
-	(void) vstd::fprintf(stderr, msg, va);
+	(void) std::vfprintf(stderr, msg, va);
 	(void) std::fputc('\n', stderr);
 
 	va_end(va);
@@ -1544,7 +1549,9 @@ savestr(const char *s)
 		error("Out of space");
 	(void) std::strcpy(p, s);
 	return p;
-}#undef output
+}
+#undef output
+
 
 /* --- cd.c --- */
 /*-
@@ -1732,7 +1739,7 @@ cdlogical(char *dest)
 		if (equal(component, ".."))
 			continue;
 		STACKSTRNUL(p);
-		if (::l::stat(stackblock(), &statb) < 0) {
+		if (::lstat(stackblock(), &statb) < 0) {
 			badstat = 1;
 			break;
 		}
@@ -1845,7 +1852,7 @@ updatepwd(char *dir)
 	setvar("OLDPWD", curdir, VEXPORT);
 	prevdir = curdir;
 	curdir = dir ? savestr(dir) : NULL;
-	ckstd::free(prevdir);
+	ckfree(prevdir);
 }
 
 int
@@ -1942,7 +1949,7 @@ pwd_init(int warn)
 	    stdot.st_dev == stpwd.st_dev &&
 	    stdot.st_ino == stpwd.st_ino) {
 		if (curdir)
-			ckstd::free(curdir);
+			ckfree(curdir);
 		curdir = savestr(pwd);
 	}
 	if (getpwd() == NULL && warn)
@@ -2015,7 +2022,7 @@ static int last_trapsig;
 int exiting;		/* exitshell() has been called */
 int exiting_exitstatus;	/* value passed to exitshell() */
 
-int get::sigaction(int, sig_t *);
+int getsigaction(int, sig_t *);
 
 
 /*
@@ -2027,7 +2034,7 @@ static int
 sigstring_to_signum(char *sig)
 {
 
-	if (::is_number(sig)) {
+	if (is_number(sig)) {
 		int signo;
 
 		signo = std::atoi(sig);
@@ -2113,7 +2120,7 @@ trapcmd(int argc __unused, char **argv)
 		return 0;
 	}
 	action = NULL;
-	if (*argv && !::is_number(*argv)) {
+	if (*argv && !is_number(*argv)) {
 		if (std::strcmp(*argv, "-") == 0)
 			argv++;
 		else {
@@ -2131,10 +2138,10 @@ trapcmd(int argc __unused, char **argv)
 		if (action)
 			action = savestr(action);
 		if (trap[signo])
-			ckstd::free(trap[signo]);
+			ckfree(trap[signo]);
 		trap[signo] = action;
 		if (signo != 0)
-			set::signal(signo);
+			setsignal(signo);
 		INTON;
 	}
 	return errors;
@@ -2152,10 +2159,10 @@ clear_traps(void)
 	for (tp = trap ; tp <= &trap[NSIG - 1] ; tp++) {
 		if (*tp && **tp) {	/* trap not NULL or SIG_IGN */
 			INTOFF;
-			ckstd::free(*tp);
+			ckfree(*tp);
 			*tp = NULL;
 			if (tp != &trap[0])
-				set::signal(tp - trap);
+				setsignal(tp - trap);
 			INTON;
 		}
 	}
@@ -2182,7 +2189,7 @@ have_traps(void)
  * out what it should be set to.
  */
 void
-set::signal(int signo)
+setsignal(int signo)
 {
 	int action;
 	sig_t sigact = SIG_DFL;
@@ -2226,7 +2233,7 @@ set::signal(int signo)
 		/*
 		 * current setting unknown
 		 */
-		if (!get::sigaction(signo, &sigact)) {
+		if (!getsigaction(signo, &sigact)) {
 			/*
 			 * Pretend it worked; maybe we should give a warning
 			 * here, but other shells don't. We don't alter
@@ -2263,7 +2270,7 @@ set::signal(int signo)
  * Return the current setting for sig w/o changing it.
  */
 static int
-get::sigaction(int signo, sig_t *sigact)
+getsigaction(int signo, sig_t *sigact)
 {
 	struct sigaction sa;
 
@@ -2282,7 +2289,7 @@ ignoresig(int signo)
 {
 
 	if (sigmode[signo] == 0)
-		set::signal(signo);
+		setsignal(signo);
 	if (sigmode[signo] != S_IGN && sigmode[signo] != S_HARD_IGN) {
 		::signal(signo, SIG_IGN);
 		sigmode[signo] = S_IGN;
@@ -2401,8 +2408,8 @@ dotrap(void)
 void
 trap_init(void)
 {
-	set::signal(SIGINT);
-	set::signal(SIGQUIT);
+	setsignal(SIGINT);
+	setsignal(SIGQUIT);
 }
 
 
@@ -2412,7 +2419,7 @@ trap_init(void)
 void
 setinteractive(void)
 {
-	set::signal(SIGTERM);
+	setsignal(SIGTERM);
 }
 
 
@@ -2475,9 +2482,9 @@ exitshell_savedstatus(void)
 		::sigaddset(&sigs, sig);
 		::sigprocmask(SIG_UNBLOCK, &sigs, NULL);
 		::kill(::getpid(), sig);
-		/* If the default action is to ignore, fall back to _std::exit(). */
+		/* If the default action is to ignore, fall back to ::_exit(). */
 	}
-	_std::exit(exiting_exitstatus);
+	::_exit(exiting_exitstatus);
 }
 /* --- input.c --- */
 #define pgetc_macro preadbuffer
@@ -2770,7 +2777,7 @@ pushstring(const char *s, int len, struct alias *ap)
 	INTOFF;
 /*out2fmt_flush("*** calling pushstring: %s, %d\n", s, len);*/
 	if (parsefile->strpush) {
-		sp = ckstd::malloc(sizeof (struct strpush));
+		sp = ckmalloc(sizeof (struct strpush));
 		sp->prev = parsefile->strpush;
 		parsefile->strpush = sp;
 	} else
@@ -2804,7 +2811,7 @@ popstring(void)
 /*out2fmt_flush("*** calling popstring: restoring to '%s'\n", parsenextc);*/
 	parsefile->strpush = sp->prev;
 	if (sp != &(parsefile->basestrpush))
-		ckstd::free(sp);
+		ckfree(sp);
 	INTON;
 }
 
@@ -2856,13 +2863,13 @@ setinputfd(int fd, int push)
 {
 	if (push) {
 		pushfile();
-		parsefile->buf = ckstd::malloc(BUFSIZ + 1);
+		parsefile->buf = ckmalloc(BUFSIZ + 1);
 	}
 	if (parsefile->fd > 0)
 		::close(parsefile->fd);
 	parsefile->fd = fd;
 	if (parsefile->buf == NULL)
-		parsefile->buf = ckstd::malloc(BUFSIZ + 1);
+		parsefile->buf = ckmalloc(BUFSIZ + 1);
 	parselleft = parsenleft = 0;
 	plinno = 1;
 }
@@ -2901,7 +2908,7 @@ pushfile(void)
 	parsefile->lleft = parselleft;
 	parsefile->nextc = parsenextc;
 	parsefile->linno = plinno;
-	pf = (struct parsefile *)ckstd::malloc(sizeof (struct parsefile));
+	pf = (struct parsefile *)ckmalloc(sizeof (struct parsefile));
 	pf->prev = parsefile;
 	pf->fd = -1;
 	pf->strpush = NULL;
@@ -2919,11 +2926,11 @@ popfile(void)
 	if (pf->fd >= 0)
 		::close(pf->fd);
 	if (pf->buf)
-		ckstd::free(pf->buf);
+		ckfree(pf->buf);
 	while (pf->strpush)
 		popstring();
 	parsefile = pf->prev;
-	ckstd::free(pf);
+	ckfree(pf);
 	parsenleft = parsefile->nleft;
 	parselleft = parsefile->lleft;
 	parsenextc = parsefile->nextc;

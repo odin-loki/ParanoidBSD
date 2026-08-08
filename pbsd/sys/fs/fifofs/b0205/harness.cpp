@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <climits>
 
@@ -219,7 +220,12 @@ static const char *const ev_name[E_OP_MAX] = {
 	"finit", "printf", "vop_stdadvlock"
 };
 
-constexpr int MAXEV = 128;
+/*
+ * fifo_open() emits at most 30 primitive calls, so 48 slots can never be
+ * reached; if it ever were, ev_overflow is treated as a failure rather than
+ * silently truncating the compared trace.
+ */
+constexpr int MAXEV = 48;
 constexpr int POOL = 768;
 constexpr int OUTMAX = 512;
 constexpr unsigned char GUARD = 0x7f;
@@ -678,8 +684,8 @@ collect(World &w, Result &r, void *vpv, void *fpv)
 	r.out_overflow = w.out_overflow;
 	r.guard_ok = guards_ok(w);
 	r.outlen = w.outlen;
-	std::memcpy(r.out, w.out, sizeof(r.out));
-	std::memcpy(r.ev, w.ev, sizeof(r.ev));
+	std::memcpy(r.out, w.out, static_cast<size_t>(w.outlen) + 1);
+	std::memcpy(r.ev, w.ev, sizeof(Ev) * static_cast<size_t>(w.nev));
 }
 
 /* ------------------------------------------------------------------ */
@@ -1209,30 +1215,36 @@ edges_open(Stat &st)
 		K_FWRITE | 0x10000,
 		K_FREAD | K_FWRITE | 0x10000
 	};
+	static const unsigned int open_states[] = {
+		0u,
+		K_PIPE_EOF,
+		K_PIPE_WANTW,
+		K_PIPE_WANTR,
+		static_cast<unsigned int>(K_PIPE_EOF | K_PIPE_WANTR | K_PIPE_WANTW)
+	};
 	static const int ctor_errs[] = { 0, K_ENXIO };
 	static const int sleep_errs[] = { 0, K_EINTR };
 	Scenario s;
 
 	for (int mi = 0; mi < (int)(sizeof(modes) / sizeof(modes[0])); mi++) {
-	for (int fpn = 0; fpn < 2; fpn++) {
 	for (int hf = 0; hf < 2; hf++) {
 	for (long r : edge_counts) {
 	for (long wr : edge_counts) {
-	for (int si = 0; si < 3; si++) {
+	for (unsigned int ps : open_states) {
 	for (int ce = 0; ce < 2; ce++) {
 	for (int se = 0; se < 2; se++) {
 	for (int prof = 0; prof < 8; prof++) {
 		base_scenario(s);
 		s.mode = modes[mi];
-		s.fp_null = fpn;
 		s.have_fip = hf;
 		s.readers = r;
 		s.writers = wr;
-		s.pipe_state = edge_states[si];
+		s.pipe_state = ps;
 		s.scr.ctor_err = ctor_errs[ce];
+		apply_profile(s.scr, prof);
+
 		s.scr.msleep_err[0] = sleep_errs[se];
 		s.scr.msleep_err[1] = sleep_errs[se];
-		apply_profile(s.scr, prof);
 		case_open(s, st);
 
 		/* Same case with the second sleep failing only. */
@@ -1252,6 +1264,19 @@ edges_open(Stat &st)
 	}
 	}
 	}
+
+	/* a_fp == NULL, on both sides of the FEXEC test. */
+	for (int mi = 0; mi < (int)(sizeof(modes) / sizeof(modes[0])); mi++) {
+		for (int hf = 0; hf < 2; hf++) {
+			base_scenario(s);
+			s.mode = modes[mi];
+			s.have_fip = hf;
+			s.fp_null = 1;
+			s.readers = 1;
+			s.writers = 1;
+			s.pipe_state = K_PIPE_EOF;
+			case_open(s, st);
+		}
 	}
 
 	/* u_int generation wraparound around the gen == fi_wgen test. */

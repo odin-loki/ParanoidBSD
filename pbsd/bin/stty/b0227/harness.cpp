@@ -46,9 +46,26 @@ as_cinfo(const P::info *ip)
 	return reinterpret_cast<const CInfo *>(ip);
 }
 
+struct OTermios {
+	unsigned c_iflag;
+	unsigned c_oflag;
+	unsigned c_lflag;
+	unsigned c_cflag;
+	unsigned char c_cc[20];
+	unsigned c_ispeed;
+	unsigned c_ospeed;
+};
+
+struct OWin {
+	unsigned short ws_row;
+	unsigned short ws_col;
+	unsigned short ws_xpixel;
+	unsigned short ws_ypixel;
+};
+
 extern "C" {
 int ref_msearch(char ***, CInfo *);
-void ref_print(CInfo::termios_type *, CInfo::winsize_type *, int, int);
+void ref_print(OTermios *, OWin *, int, int);
 int ref_ksearch(char ***, CInfo *);
 void ref_f_all(CInfo *);
 void ref_f_cbreak(CInfo *);
@@ -312,7 +329,9 @@ run_print(void *vp)
 {
 	print_ctx *c = (print_ctx *)vp;
 	if (c->ref)
-		ref_print(c->tp, c->wp, c->ldisc, c->fmt);
+		ref_print(reinterpret_cast<OTermios *>(c->tp),
+		    reinterpret_cast<OWin *>(c->wp), c->ldisc,
+		    static_cast<int>(c->fmt));
 	else
 		P::print(c->tp, c->wp, c->ldisc, c->fmt);
 }

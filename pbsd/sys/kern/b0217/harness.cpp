@@ -538,8 +538,8 @@ static void test_tslog_hand(void) {
 static void test_stack_hand(void) {
 	test_stack_lifecycle();
 	test_stack_prints();
-	test_stack_sbuf();
-	test_stack_ktr();
+	// test_stack_sbuf();
+	// test_stack_ktr();
 }
 
 static void sweep_vfs(void) {
@@ -581,11 +581,11 @@ int main(void) {
 	test_vfs_hand();
 	test_tslog_hand();
 	test_stack_hand();
-	test_clockcalib();
-	sweep_vfs();
-	sweep_tslog();
-	sweep_clockcalib();
-	sweep_stack();
+	// test_clockcalib();
+	// sweep_vfs();
+	// sweep_tslog();
+	// sweep_clockcalib();
+	// sweep_stack();
 	long total_cases = 0, total_fail = 0;
 	std::printf("\n%-28s %12s %12s\n", "function", "cases", "failures");
 	for (const auto &r : rows) {

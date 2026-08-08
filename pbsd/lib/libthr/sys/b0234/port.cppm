@@ -2,23 +2,12 @@ module;
 
 #include <cstddef>
 
-extern "C" {
-struct pthread {
-	int error;
-};
-extern struct pthread *_thr_initial;
-extern struct pthread *_get_curthread(void);
-extern int __libsys_errno;
-}
-
 export module pbsd.lib.libthr.sys.b0234;
 
 export namespace pbsd::lib_libthr_sys::b0234 {
 
 #undef NULL
 #define NULL 0
-
-using pthread = ::pthread;
 
 /*-
  * SPDX-License-Identifier: BSD-4-Clause
@@ -59,14 +48,20 @@ using pthread = ::pthread;
 int *
 __error_threaded(void)
 {
+	extern "C" struct pthread {
+		int error;
+	};
+	extern "C" struct pthread *_thr_initial;
+	extern "C" struct pthread *_get_curthread(void);
+	extern "C" int __libsys_errno;
 	struct pthread *curthread;
 
-	if (::_thr_initial != NULL) {
-		curthread = ::_get_curthread();
-		if (curthread != NULL && curthread != ::_thr_initial)
+	if (_thr_initial != NULL) {
+		curthread = _get_curthread();
+		if (curthread != NULL && curthread != _thr_initial)
 			return (&curthread->error);
 	}
-	return (&::__libsys_errno);
+	return (&__libsys_errno);
 }
 
 } /* namespace pbsd::lib_libthr_sys::b0234 */

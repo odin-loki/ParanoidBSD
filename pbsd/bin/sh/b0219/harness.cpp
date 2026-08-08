@@ -547,13 +547,15 @@ test_alias_lookup(const char *tag, const char *name, int check)
 static void
 test_alias_set(const char *name, const char *val)
 {
-	char buf[128];
-	std::snprintf(buf, sizeof(buf), "%s=%s", name, val);
-	char *av[] = {buf, nullptr};
-	oracle_argptr = av;
+	char obuf[128], pbuf[128];
+	std::snprintf(obuf, sizeof(obuf), "%s=%s", name, val);
+	std::snprintf(pbuf, sizeof(pbuf), "%s=%s", name, val);
+	char *oav[] = {obuf, nullptr};
+	char *pav[] = {pbuf, nullptr};
+	oracle_argptr = oav;
 	oracle_nextopt_optptr = nullptr;
 	ref_aliascmd(0, nullptr);
-	port::port_argptr = av;
+	port::port_argptr = pav;
 	port::port_nextopt_optptr = nullptr;
 	port::aliascmd(0, nullptr);
 }
@@ -721,16 +723,16 @@ main(void)
 {
 	rng_state = 0xc0ffee123456789ULL;
 
-	// test_ckmalloc_ckfree();
-	// test_stack();
-	// test_growstackstr();
-	// test_output_edge();
-	// test_outfmt();
-	// test_xwrite();
-	// test_out_flags();
+	test_ckmalloc_ckfree();
+	test_stack();
+	test_growstackstr();
+	test_output_edge();
+	test_outfmt();
+	test_xwrite();
+	test_out_flags();
 	test_alias_edge();
 	test_aliascmd();
-	// random_sweep();
+	random_sweep();
 
 	long total_fails = 0;
 	std::printf("b0219 differential test results:\n");

@@ -17,6 +17,9 @@ module;
 
 export module pbsd.bin.stty.b0227;
 
+extern "C" int ioctl(int, unsigned long, ...);
+extern "C" void usage(void) __dead2;
+
 export namespace pbsd::bin_stty::b0227 {
 
 /* Oracle / port preamble: BSD termios layout for faithful stty batch */
@@ -34,6 +37,10 @@ export namespace pbsd::bin_stty::b0227 {
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
+#endif
+
+#ifndef __dead2
+#define __dead2 __attribute__((__noreturn__))
 #endif
 
 #ifndef __dead2
@@ -274,26 +281,6 @@ void cfmakesane(struct termios *t)
 }
 
 #define	LKEEP	(ECHOKE|ECHOE|ECHOK|ECHOPRT|ECHOCTL|ALTWERASE|TOSTOP|NOFLSH)
-
-void ref_f_all(struct info *);
-void ref_f_cbreak(struct info *);
-void ref_f_columns(struct info *);
-void ref_f_dec(struct info *);
-void ref_f_ek(struct info *);
-void ref_f_everything(struct info *);
-void ref_f_extproc(struct info *);
-void ref_f_ispeed(struct info *);
-void ref_f_nl(struct info *);
-void ref_f_ospeed(struct info *);
-void ref_f_raw(struct info *);
-void ref_f_rows(struct info *);
-void ref_f_sane(struct info *);
-void ref_f_size(struct info *);
-void ref_f_speed(struct info *);
-void ref_f_tty(struct info *);
-int ref_ksearch(char ***, struct info *);
-int ref_msearch(char ***, struct info *);
-void ref_print(struct termios *, struct winsize *, int, enum FMT);
 
 
 void f_all(struct info *);

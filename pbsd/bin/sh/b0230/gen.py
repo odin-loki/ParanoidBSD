@@ -4,9 +4,9 @@ import re
 import textwrap
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[4]
 HBSD = ROOT / "hbsd/src/bin/sh"
-B0219 = ROOT / "bin/sh/b0219"
+B0219 = ROOT / "pbsd/bin/sh/b0219"
 OUT = Path(__file__).resolve().parent
 
 SOURCES = [
@@ -900,56 +900,81 @@ char *padvance(char **path, const char *dot, const char *dest)
 	return stsavestr(padbuf);
 }
 
+void port_reset_state(void)
+{
+	int i;
+	port_suppressint = 1;
+	port_intpending = 0;
+	port_error_flag = 0;
+	port_argptr = NULL;
+	port_nextopt_optptr = NULL;
+	port_shoptarg = NULL;
+	out1 = &output;
+	out2 = &errout;
+	if (output.buf) { free(output.buf); output.buf = NULL; }
+	output.nextc = NULL;
+	output.bufend = NULL;
+	output.flags = 0;
+	if (errout.buf) { free(errout.buf); errout.buf = NULL; }
+	errout.nextc = NULL;
+	errout.bufend = NULL;
+	errout.flags = 0;
+	if (memout.buf) { free(memout.buf); memout.buf = NULL; }
+	memout.nextc = NULL;
+	memout.bufend = NULL;
+	memout.bufsize = 64;
+	memout.flags = 0;
+	while (stackp) {
+		struct stack_block *sp = stackp;
+		stackp = sp->prev;
+		free(sp);
+	}
+	stacknxt = NULL;
+	stacknleft = 0;
+	sstrend = NULL;
+	for (i = 0; i < port_var_n; i++) {
+		free(port_vars[i].name);
+		free(port_vars[i].val);
+	}
+	port_var_n = 0;
+	Pflag = 0;
+	iflag = 0;
+	mflag = 0;
+	debug = 0;
+	rootshell = 1;
+	verifyflag = 0;
+	vflag = 0;
+	whichprompt = 1;
+	suppressint = 0;
+	evalskip = 0;
+	skipcount = 0;
+	exitstatus = 0;
+	oexitstatus = 0;
+}
+
+void port_set_out1_memout(void) { out1 = &memout; }
+void port_restore_out1(void) { out1 = &output; }
+struct output *port_get_memout(void) { return &memout; }
+
 '''
 
 def cppify(text):
-    text = text.replace('malloc(', 'std::malloc(')
-    text = text.replace('free(', 'std::free(')
-    text = text.replace('realloc(', 'std::realloc(')
-    text = text.replace('memcpy(', 'std::memcpy(')
-    text = text.replace('memset(', 'std::memset(')
-    text = text.replace('strlen(', 'std::strlen(')
-    text = text.replace('strcmp(', 'std::strcmp(')
-    text = text.replace('strcpy(', 'std::strcpy(')
-    text = text.replace('strncpy(', 'std::strncpy(')
-    text = text.replace('strchr(', 'std::strchr(')
-    text = text.replace('strchrnul(', '::strchrnul(')
-    text = text.replace('strspn(', 'std::strspn(')
-    text = text.replace('strncasecmp(', '::strncasecmp(')
-    text = text.replace('strcasecmp(', '::strcasecmp(')
-    text = text.replace('fprintf(', 'std::fprintf(')
-    text = text.replace('vfprintf(', 'std::vfprintf(')
-    text = text.replace('fputc(', 'std::fputc(')
-    text = text.replace('fputs(', 'std::fputs(')
-    text = text.replace('fgets(', 'std::fgets(')
-    text = text.replace('fclose(', 'std::fclose(')
-    text = text.replace('fopen(', 'std::fopen(')
-    text = text.replace('ferror(', 'std::ferror(')
-    text = text.replace('vfprintf(stderr', 'std::vfprintf(stderr')
-    text = text.replace('write(', '::write(')
-    text = text.replace('read(', '::read(')
-    text = text.replace('close(', '::close(')
-    text = text.replace('open(', '::open(')
-    text = text.replace('chdir(', '::chdir(')
-    text = text.replace('getcwd(', '::getcwd(')
-    text = text.replace('lstat(', '::lstat(')
-    text = text.replace('stat(', '::stat(')
-    text = text.replace('fcntl(', '::fcntl(')
-    text = text.replace('abort()', 'std::abort()')
-    text = text.replace('exit(', 'std::exit(')
-    text = text.replace('atoi(', 'std::atoi(')
-    text = text.replace('is_number(', '::is_number(')
-    text = text.replace('sprintf(', 'std::sprintf(')
-    text = text.replace('vsnprintf(', 'std::vsnprintf(')
-    text = text.replace('memmove(', 'std::memmove(')
-    text = text.replace('kill(', '::kill(')
-    text = text.replace('getpid(', '::getpid(')
-    text = text.replace('_exit(', '::_exit(')
-    text = text.replace('signal(', '::signal(')
-    text = text.replace('sigaction(', '::sigaction(')
-    text = text.replace('sigemptyset(', '::sigemptyset(')
-    text = text.replace('sigaddset(', '::sigaddset(')
-    text = text.replace('sigprocmask(', '::sigprocmask(')
+    std_funcs = [
+        'vfprintf', 'vsnprintf', 'fprintf', 'fputc', 'fputs', 'fgets',
+        'fclose', 'fopen', 'ferror', 'memmove', 'memcpy', 'memset',
+        'strlen', 'strcmp', 'strcpy', 'strncpy', 'strchr', 'strspn',
+        'malloc', 'free', 'realloc', 'abort', 'exit', 'atoi', 'sprintf',
+    ]
+    posix_funcs = [
+        'write', 'read', 'close', 'open', 'chdir', 'getcwd', 'lstat',
+        'stat', 'fcntl', 'kill', 'getpid', '_exit', 'signal', 'sigaction',
+        'sigemptyset', 'sigaddset', 'sigprocmask', 'strchrnul',
+        'strncasecmp', 'strcasecmp',
+    ]
+    for f in std_funcs:
+        text = re.sub(r'(?<![:\w])' + f + r'\(', 'std::' + f + '(', text)
+    for f in posix_funcs:
+        text = re.sub(r'(?<![:\w])' + f + r'\(', '::' + f + '(', text)
     return text
 
 
@@ -993,7 +1018,7 @@ def main():
             port += "#define pgetc_macro preadbuffer\n"
         port += portify_source(src, mapping)
         if fname == "mknodes.c":
-            port += "#undef output\n"
+            port += "\n#undef output\n\n"
 
     oracle += "\n"
     port += PORT_FOOTER
