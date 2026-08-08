@@ -1,2 +1,0 @@
-nomacros.c - contains no functions at all; it is only the _EXTERNALIZE_CTYPE_INLINES_/__RUNETYPE_INTERNAL feature switches plus #include <ctype.h>, whose sole effect is to emit extern copies of libc-internal ctype inlines. There is nothing to port and nothing to differentially test.
-ctype.c - contains no functions at all; it is only #define _XLOCALE_INLINE plus <ctype.h>/<wctype.h>/<xlocale.h>, whose sole effect is to emit extern copies of the FreeBSD xlocale ctype inlines. There is nothing to port and nothing to differentially test.

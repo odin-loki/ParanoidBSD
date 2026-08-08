@@ -1698,3 +1698,4 @@
 {"batch": "b0044", "status": "AUTH_FAILED", "detail": "agent failed: exit 1 after 1s: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.", "how": "agent", "ts": "2026-08-08T09:36:54Z"}
 {"batch": "b0043", "status": "AUTH_FAILED", "detail": "agent failed: exit 1 after 1s: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.", "how": "agent", "ts": "2026-08-08T09:40:41Z"}
 {"batch": "b0043", "status": "AUTH_FAILED", "detail": "agent failed: exit 1 after 1s: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.", "how": "agent", "ts": "2026-08-08T09:44:31Z"}
+{"batch": "b0012s3", "status": "AUTH_FAILED", "detail": "agent failed: exit 1 after 1s: Error: Authentication required. Please run 'agent login' first, or set CURSOR_API_KEY environment variable.", "how": "agent", "ts": "2026-08-08T09:56:55Z"}
