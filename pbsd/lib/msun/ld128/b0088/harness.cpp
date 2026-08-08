@@ -57,53 +57,18 @@ ld_equal(long double a, long double b)
 	return std::memcmp(&a, &b, LD_BYTES) == 0;
 }
 
-static long double
-port_cexpl_re(long double _Complex z) __attribute__((noinline));
+static void
+ldhex(long double x);
+
+static void
+report_ld_fail(stat &s, const char *tag, long double got, long double want);
+
+static void
+report_cx_fail(stat &s, const char *tag, long double _Complex got,
+    long double _Complex want);
 
 static long double
-port_cexpl_im(long double _Complex z) __attribute__((noinline));
-
-static long double
-ref_cexpl_re(long double _Complex z) __attribute__((noinline));
-
-static long double
-ref_cexpl_im(long double _Complex z) __attribute__((noinline));
-
-static long double
-port_cexpl_re(long double _Complex z)
-{
-	long double re, im;
-
-	pbsd_b0088_cexpl_parts(z, &re, &im);
-	return re;
-}
-
-static long double
-port_cexpl_im(long double _Complex z)
-{
-	long double re, im;
-
-	pbsd_b0088_cexpl_parts(z, &re, &im);
-	return im;
-}
-
-static long double
-ref_cexpl_re(long double _Complex z)
-{
-	long double re, im;
-
-	ref_cexpl_parts(z, &re, &im);
-	return re;
-}
-
-static long double
-ref_cexpl_im(long double _Complex z)
-{
-	long double re, im;
-
-	ref_cexpl_parts(z, &re, &im);
-	return im;
-}
+mkld(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl);
 
 static void
 ldhex(long double x)
@@ -147,6 +112,46 @@ report_cx_fail(stat &s, const char *tag, long double _Complex got,
 	std::printf("i\n");
 }
 
+static long double _Complex
+mkcx(long double re, long double im)
+{
+	long double _Complex z = 0;
+
+	__real__ z = re;
+	__imag__ z = im;
+	return z;
+}
+
+static long double
+mkld(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl)
+{
+	unsigned char b[16];
+	long double x;
+
+	std::memset(b, 0, sizeof(b));
+	std::memcpy(b, &manl, sizeof(manl));
+	std::memcpy(b + 8, &manh, 6);
+	std::memcpy(b + 14, &expsign, sizeof(expsign));
+	std::memcpy(&x, b, sizeof(x));
+	return x;
+}
+
+static void
+check_cexpl(long double _Complex z, const char *tag) __attribute__((noinline));
+
+static void
+check_cexpl(long double _Complex z, const char *tag)
+{
+	long double pr, pi, orr, oi;
+
+	st_cexpl.cases++;
+	pbsd_b0088_cexpl_parts(z, &pr, &pi);
+	ref_cexpl_parts(z, &orr, &oi);
+	if (ld_equal(pr, orr) && ld_equal(pi, oi))
+		return;
+	report_cx_fail(st_cexpl, tag, mkcx(pr, pi), mkcx(orr, oi));
+}
+
 static void
 check_cospil(long double x, const char *tag)
 {
@@ -184,45 +189,6 @@ check_tanpil(long double x, const char *tag)
 	if (ld_equal(p, o))
 		return;
 	report_ld_fail(st_tanpil, tag, p, o);
-}
-
-static void
-check_cexpl(long double _Complex z, const char *tag)
-{
-	long double pr, pi, orr, oi;
-
-	st_cexpl.cases++;
-	pr = port_cexpl_re(z);
-	pi = port_cexpl_im(z);
-	orr = ref_cexpl_re(z);
-	oi = ref_cexpl_im(z);
-	if (ld_equal(pr, orr) && ld_equal(pi, oi))
-		return;
-	report_cx_fail(st_cexpl, tag, mkcx(pr, pi), mkcx(orr, oi));
-}
-
-static long double
-mkld(std::uint16_t expsign, std::uint64_t manh, std::uint64_t manl)
-{
-	unsigned char b[16];
-	long double x;
-
-	std::memset(b, 0, sizeof(b));
-	std::memcpy(b, &manl, sizeof(manl));
-	std::memcpy(b + 8, &manh, 6);
-	std::memcpy(b + 14, &expsign, sizeof(expsign));
-	std::memcpy(&x, b, sizeof(x));
-	return x;
-}
-
-static long double _Complex
-mkcx(long double re, long double im)
-{
-	long double _Complex z = 0;
-
-	__real__ z = re;
-	__imag__ z = im;
-	return z;
 }
 
 static void

@@ -25,6 +25,8 @@ typedef uint16_t	indx_t;
 typedef uint32_t	recno_t;
 typedef unsigned int	u_int;
 typedef unsigned char	u_char;
+typedef uint32_t	u_int32_t;
+typedef uint8_t		u_int8_t;
 typedef char		* caddr_t;
 
 typedef struct {
@@ -532,6 +534,7 @@ ref___bt_get(const DB *dbp, const DBT *key, DBT *data, u_int flags)
  */
 
 static int ref_bt_meta(BTREE *);
+int ref___bt_sync(const DB *dbp, u_int flags);
 
 int
 ref___bt_close(DB *dbp)

@@ -66,7 +66,8 @@ struct xlocale_struct {
 	void		*components[8];
 };
 
-using locale_t = xlocale_struct *;
+typedef struct xlocale_struct xlocale;
+using locale_t = xlocale *;
 
 enum {
 	XLC_CTYPE = 1,
@@ -106,8 +107,11 @@ struct lc_messages_T {
 	const char	*nostr;
 };
 
+struct xlocale_component {
+	::xlocale_component_header	header;
+};
+
 struct xlocale_messages {
-	xlocale_component	header;
 	char			*buffer;
 	lc_messages_T		locale;
 };
@@ -414,7 +418,7 @@ wcstod(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr)
 
 static char empty[] = "";
 
-static const lc_messages_T _C_messages_locale = {
+static const ::lc_messages_T _C_messages_locale = {
 	"^[yY]" ,	/* yesexpr */
 	"^[nN]" ,	/* noexpr */
 	"yes" , 	/* yesstr */
@@ -424,18 +428,18 @@ static const lc_messages_T _C_messages_locale = {
 static void
 destruct_messages(void *v)
 {
-	xlocale_messages *l = static_cast<xlocale_messages *>(v);
+	::xlocale_messages *l = static_cast<::xlocale_messages *>(v);
 	if (l->buffer)
 		free(l->buffer);
 	free(l);
 }
 
 static int
-messages_load_locale(xlocale_messages *loc, int *using_locale,
+messages_load_locale(::xlocale_messages *loc, int *using_locale,
     const char *name)
 {
 	int ret;
-	lc_messages_T *l = &loc->locale;
+	::lc_messages_T *l = &loc->locale;
 
 	ret = __part_load_locale(name, using_locale,
 		  &loc->buffer, "LC_MESSAGES",
@@ -453,7 +457,7 @@ messages_load_locale(xlocale_messages *loc, int *using_locale,
 static void
 xlocale_release(void *v)
 {
-	xlocale_component *c = static_cast<xlocale_component *>(v);
+	::xlocale_component *c = static_cast<::xlocale_component *>(v);
 
 	if (c != NULL && c->header.destructor != NULL)
 		c->header.destructor(v);
@@ -463,15 +467,15 @@ xlocale_release(void *v)
 int
 __messages_load_locale(const char *name)
 {
-	return (messages_load_locale(&__xlocale_global_messages,
+	return (messages_load_locale(&::__xlocale_global_messages,
 	    &__xlocale_global_locale.using_messages_locale, name));
 }
 
 void *
 __messages_load(const char *name, locale_t l)
 {
-	xlocale_messages *newloc = static_cast<xlocale_messages *>(
-	    calloc(sizeof(xlocale_messages), 1));
+	::xlocale_messages *newloc = static_cast<::xlocale_messages *>(
+	    calloc(sizeof(::xlocale_messages), 1));
 	if (newloc == NULL)
 		return (NULL);
 	newloc->header.header.destructor = destruct_messages;
@@ -483,12 +487,12 @@ __messages_load(const char *name, locale_t l)
 	return (newloc);
 }
 
-lc_messages_T *
+::lc_messages_T *
 __get_current_messages_locale(locale_t loc)
 {
-	return (loc->using_messages_locale ? &(static_cast<xlocale_messages *>(
+	return (loc->using_messages_locale ? &(static_cast<::xlocale_messages *>(
 	    loc->components[XLC_MESSAGES])->locale) :
-	    (lc_messages_T *)&_C_messages_locale);
+	    (::lc_messages_T *)&_C_messages_locale);
 }
 
 } /* namespace pbsd::lib_libc_locale::b0130 */

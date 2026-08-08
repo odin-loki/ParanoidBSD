@@ -28,11 +28,14 @@
 
 module;
 
+#define _DEFAULT_SOURCE
 #include <cstdlib>
 #include <cstring>
 #include <endian.h>
 #include <stdint.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #ifndef MIN
 #define	MIN(a, b)	(((a) < (b)) ? (a) : (b))
@@ -48,7 +51,11 @@ module;
 #define	DEAD_PROCESS	7
 #define	SHUTDOWN_TIME	8
 
-struct utmpx {
+export module pbsd.lib.libc.gen.b0132;
+
+export namespace pbsd::lib_libc_gen::b0132 {
+
+export struct utmpx {
 	short		ut_type;
 	struct timeval	ut_tv;
 	char		ut_id[8];
@@ -59,7 +66,7 @@ struct utmpx {
 	char		__ut_spare[64];
 };
 
-struct futx {
+export struct futx {
 	uint8_t		fu_type;
 	uint64_t	fu_tv;
 	char		fu_id[8];
@@ -68,10 +75,6 @@ struct futx {
 	char		fu_line[16];
 	char		fu_host[128];
 } __attribute__((__packed__));
-
-export module pbsd.lib.libc.gen.b0132;
-
-export namespace pbsd::lib_libc_gen::b0132 {
 
 #define	UTOF_STRING(ut, fu, field) do { \
 	strncpy((fu)->fu_ ## field, (ut)->ut_ ## field,		\

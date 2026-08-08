@@ -1,8 +1,14 @@
 /*
- * Batch b0129 oracle: the original HardenedBSD C sources concatenated.
+ * Batch b0129 oracle: the original HardenedBSD C sources, concatenated.
  *
  * The only mechanical change is that each function gained a "ref_" prefix.
  * No function body is altered.
+ *
+ * lib/libc/net/getproto.c is absent on purpose; see skipped.txt.
+ *
+ * Added defines: the EAI_* values, normally supplied by FreeBSD's <netdb.h>.
+ * <netdb.h> is not included here because the host libc uses different EAI_*
+ * numbering, which would silently change the table indices.
  */
 
 /* ===== lib/libc/net/gai_strerror.c ===== */
@@ -38,20 +44,20 @@
  * SUCH DAMAGE.
  */
 
-#define	EAI_ADDRFAMILY	 1
-#define	EAI_AGAIN	 2
-#define	EAI_BADFLAGS	 3
-#define	EAI_FAIL	 4
-#define	EAI_FAMILY	 5
-#define	EAI_MEMORY	 6
-#define	EAI_NODATA	 7
-#define	EAI_NONAME	 8
-#define	EAI_SERVICE	 9
-#define	EAI_SOCKTYPE	10
-#define	EAI_SYSTEM	11
-#define	EAI_BADHINTS	12
-#define	EAI_PROTOCOL	13
-#define	EAI_OVERFLOW	14
+#define	EAI_ADDRFAMILY	 1	/* address family for hostname not supported */
+#define	EAI_AGAIN	 2	/* temporary failure in name resolution */
+#define	EAI_BADFLAGS	 3	/* invalid value for ai_flags */
+#define	EAI_FAIL	 4	/* non-recoverable failure in name resolution */
+#define	EAI_FAMILY	 5	/* ai_family not supported */
+#define	EAI_MEMORY	 6	/* memory allocation failure */
+#define	EAI_NODATA	 7	/* no address associated with hostname */
+#define	EAI_NONAME	 8	/* hostname nor servname provided, or not known */
+#define	EAI_SERVICE	 9	/* servname not supported for ai_socktype */
+#define	EAI_SOCKTYPE	10	/* ai_socktype not supported */
+#define	EAI_SYSTEM	11	/* system error returned in errno */
+#define	EAI_BADHINTS	12	/* invalid value for hints */
+#define	EAI_PROTOCOL	13	/* resolved protocol is unknown */
+#define	EAI_OVERFLOW	14	/* argument buffer overflow */
 #define	EAI_MAX		15
 
 /*
@@ -64,7 +70,7 @@ static const char *const ai_errlist[] = {
 	[EAI_AGAIN] =		"Name could not be resolved at this time",
 	[EAI_BADFLAGS] =	"Flags parameter had an invalid value",
 	[EAI_FAIL] =		"Non-recoverable failure in name resolution",
-	[EAI_FAMILY] =	"Address family not recognized",
+	[EAI_FAMILY] =		"Address family not recognized",
 	[EAI_MEMORY] =		"Memory allocation failure",
 	[EAI_NODATA] =		"No address associated with hostname",
 	[EAI_NONAME] =		"Name does not resolve",

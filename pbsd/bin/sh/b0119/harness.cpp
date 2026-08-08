@@ -197,6 +197,7 @@ sa_random(long count)
 	}
 }
 
+static const int ARITH_BAD = 4;
 static const int ARITH_NUM = 5;
 static const int ARITH_VAR = 6;
 
@@ -264,6 +265,9 @@ yy_run_buf(const char *input, const char *tag)
 				std::free(yylval.name);
 			break;
 		}
+
+		if (ta == ARITH_BAD && tb == ARITH_BAD && !bad)
+			break;
 
 		if (ta == ARITH_VAR) {
 			std::free(port::yylval.name);

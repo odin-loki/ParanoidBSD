@@ -65,6 +65,8 @@ static Stat st_getwchar_l = { "getwchar_l", 0, 0, 0 };
 static Stat st_putwchar = { "putwchar", 0, 0, 0 };
 static Stat st_putwchar_l = { "putwchar_l", 0, 0, 0 };
 
+static int g_stdout_fd = -1;
+
 static std::uint64_t rng_state = 0x91b0091cafebabeULL;
 
 static inline std::uint64_t
@@ -255,19 +257,37 @@ struct PutObs {
 	std::size_t outlen;
 };
 
+static void
+stdout_init(void)
+{
+	if (g_stdout_fd < 0)
+		g_stdout_fd = dup(STDOUT_FILENO);
+}
+
+static void
+stdout_restore(void)
+{
+	stdout_init();
+	fflush(stdout);
+	dup2(g_stdout_fd, STDOUT_FILENO);
+	fflush(stdout);
+}
+
 static PutObs
 call_putwchar_on(const char *path, wchar_t wc)
 {
 	PutObs obs{};
 
+	stdout_init();
 	std::memset(obs.out, GUARD, sizeof(obs.out));
 	if (freopen(path, "w", stdout) == nullptr) {
 		obs.ret = (wint_t)0xdead;
+		stdout_restore();
 		return obs;
 	}
 	obs.ret = port::putwchar(wc);
 	fflush(stdout);
-	freopen("/dev/null", "w", stdout);
+	stdout_restore();
 	(void)read_file_bytes(path, obs.out, sizeof(obs.out), &obs.outlen);
 	return obs;
 }
@@ -277,14 +297,16 @@ call_ref_putwchar_on(const char *path, wchar_t wc)
 {
 	PutObs obs{};
 
+	stdout_init();
 	std::memset(obs.out, GUARD, sizeof(obs.out));
 	if (freopen(path, "w", stdout) == nullptr) {
 		obs.ret = (wint_t)0xdead;
+		stdout_restore();
 		return obs;
 	}
 	obs.ret = ref_putwchar(wc);
 	fflush(stdout);
-	freopen("/dev/null", "w", stdout);
+	stdout_restore();
 	(void)read_file_bytes(path, obs.out, sizeof(obs.out), &obs.outlen);
 	return obs;
 }
@@ -294,14 +316,16 @@ call_putwchar_l_on(const char *path, wchar_t wc, locale_t loc)
 {
 	PutObs obs{};
 
+	stdout_init();
 	std::memset(obs.out, GUARD, sizeof(obs.out));
 	if (freopen(path, "w", stdout) == nullptr) {
 		obs.ret = (wint_t)0xdead;
+		stdout_restore();
 		return obs;
 	}
 	obs.ret = port::putwchar_l(wc, loc);
 	fflush(stdout);
-	freopen("/dev/null", "w", stdout);
+	stdout_restore();
 	(void)read_file_bytes(path, obs.out, sizeof(obs.out), &obs.outlen);
 	return obs;
 }
@@ -311,14 +335,16 @@ call_ref_putwchar_l_on(const char *path, wchar_t wc, locale_t loc)
 {
 	PutObs obs{};
 
+	stdout_init();
 	std::memset(obs.out, GUARD, sizeof(obs.out));
 	if (freopen(path, "w", stdout) == nullptr) {
 		obs.ret = (wint_t)0xdead;
+		stdout_restore();
 		return obs;
 	}
 	obs.ret = ref_putwchar_l(wc, loc);
 	fflush(stdout);
-	freopen("/dev/null", "w", stdout);
+	stdout_restore();
 	(void)read_file_bytes(path, obs.out, sizeof(obs.out), &obs.outlen);
 	return obs;
 }

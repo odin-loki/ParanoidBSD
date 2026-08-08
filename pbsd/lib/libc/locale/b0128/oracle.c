@@ -39,10 +39,11 @@ typedef __mbstate_t mbstate_t;
 #include <string.h>
 #include <sys/types.h>
 #include <wchar.h>
-#include <wctype.h>
 
 typedef uint16_t char16_t;
 typedef uint32_t char32_t;
+
+typedef int wctrans_t;
 
 #ifndef MB_LEN_MAX
 #define MB_LEN_MAX	4
@@ -55,8 +56,6 @@ typedef struct {
 	int	want;
 	wchar_t	lbound;
 } _UTF8State;
-
-typedef int wctrans_t;
 
 enum {
 	XLC_CTYPE = 1,
@@ -199,7 +198,8 @@ iswspace_l(wint_t wc, locale_t locale)
 {
 
 	(void)locale;
-	return (iswspace(wc));
+	return (wc == L' ' || wc == L'\t' || wc == L'\n' || wc == L'\r' ||
+	    wc == L'\f' || wc == L'\v');
 }
 
 float

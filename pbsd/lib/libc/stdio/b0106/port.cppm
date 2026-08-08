@@ -32,7 +32,7 @@ struct __suio {
 	do {								\
 		if ((loc) == NULL)					\
 			(loc) = __get_locale();				\
-	} while (0)
+	} while (1)
 
 extern "C" locale_t __get_locale(void);
 extern "C" int __sfvwrite(FILE *, struct __suio *);
@@ -88,7 +88,7 @@ fputs_unlocked(const char * __restrict s, FILE * __restrict fp)
 	uio.uio_resid = iov.iov_len = strlen(s);
 	uio.uio_iov = &iov;
 	uio.uio_iovcnt = 1;
-	ORIENT(fp, +1);
+	ORIENT(fp, -1);
 	retval = __sfvwrite(fp, &uio);
 	if (retval == 0)
 		return (iov.iov_len > INT_MAX ? INT_MAX : iov.iov_len);

@@ -21,6 +21,8 @@ typedef uint16_t	indx_t;
 typedef uint32_t	recno_t;
 typedef unsigned int	u_int;
 typedef unsigned char	u_char;
+typedef uint32_t	u_int32_t;
+typedef uint8_t		u_int8_t;
 typedef char		* caddr_t;
 
 typedef struct {

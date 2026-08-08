@@ -37,30 +37,33 @@
 /*
  * b0055 reference oracle.
  *
- * Contents:
+ * Contents (concatenated, in batch order):
  *   lib/libc/amd64/gen/fpgetprec.c
  *   lib/libc/amd64/gen/fpgetround.c
  *   lib/libc/amd64/gen/fpgetmask.c
  *   lib/libc/amd64/gen/fpgetsticky.c
  *
- * Each of the four batch sources is just
+ * Each of those four files is exactly
  *
  *	#define __IEEEFP_NOINLINES__ 1
  *	#include <ieeefp.h>
  *	<type> <name>(void) { return __<name>(); }
  *
  * <ieeefp.h> does not exist on this build host, so the declarations it would
- * have supplied are reproduced below verbatim from
+ * have pulled in are supplied below, copied verbatim out of
  *   sys/x86/include/x86_ieeefp.h  (types, bit-field masks/offsets, asm macros)
- *   sys/amd64/include/ieeefp.h    (the static __inline __fpget*() bodies)
- * of the same source tree.  Only the four public wrapper names carry the ref_
- * prefix; no function body anywhere in this file has been altered.
+ *   sys/amd64/include/ieeefp.h    (SSE field definitions, __fpget*() inlines)
+ * of the same source tree.  The single-underscore GCC keyword spellings
+ * __asm/__volatile used by the original macros are not available under
+ * -std=c11, so the double-underscore spellings __asm__/__volatile__ are used
+ * instead; they generate identical code.  Only the four public wrapper names
+ * carry the ref_ prefix.  No function body in this file has been altered.
  */
 
 #define __IEEEFP_NOINLINES__ 1
 
 /* ------------------------------------------------------------------ */
-/* Missing declarations: sys/x86/include/x86_ieeefp.h                 */
+/* Supplied for <ieeefp.h>: sys/x86/include/x86_ieeefp.h              */
 /* ------------------------------------------------------------------ */
 
 /*
@@ -130,7 +133,7 @@ typedef enum {
 #define	__stmxcsr(addr)	__asm__ __volatile__("stmxcsr %0" : "=m" (*(addr)))
 
 /* ------------------------------------------------------------------ */
-/* Missing declarations: sys/amd64/include/ieeefp.h                   */
+/* Supplied for <ieeefp.h>: sys/amd64/include/ieeefp.h                */
 /* ------------------------------------------------------------------ */
 
 /*

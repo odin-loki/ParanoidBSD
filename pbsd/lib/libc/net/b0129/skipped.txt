@@ -1,1 +1,1 @@
-getproto.c: requires netdb_private.h, nsswitch/nsdispatch, __protoent_data_init, and the full NSS protocols backend unavailable in this harness.
+lib/libc/net/getproto.c: whole file is nsswitch glue (nsdispatch, ns_dtab/ns_src, __protoent_data_init, __setprotoent_p, __getprotoent_p, __endprotoent_p, __copy_protoent, __protodata_init from netdb_private.h); none of it exists outside the FreeBSD libc build, so it cannot be ported or differentially tested without stubbing.

@@ -376,7 +376,7 @@ compare_mbrtoc16_l(Stats &st, const unsigned char *in, size_t n, bool use_l,
 
 	errno = 0;
 	if (use_l) {
-		pr = port::mbrtoc16_l(null_pc ? nullptr : (port::char16_t *)(pwcbuf + 4),
+		pr = port::mbrtoc16_l(null_pc ? nullptr : (std::uint16_t *)(pwcbuf + 4),
 		    in != nullptr ? (const char *)(pin + 8) : nullptr, n,
 		    null_ps ? nullptr : &pstate,
 		    null_locale ? nullptr : port::global_locale());
@@ -388,7 +388,7 @@ compare_mbrtoc16_l(Stats &st, const unsigned char *in, size_t n, bool use_l,
 		    null_locale ? nullptr : &ref_global_locale);
 		rerrno = errno;
 	} else {
-		pr = port::mbrtoc16(null_pc ? nullptr : (port::char16_t *)(pwcbuf + 4),
+		pr = port::mbrtoc16(null_pc ? nullptr : (std::uint16_t *)(pwcbuf + 4),
 		    in != nullptr ? (const char *)(pin + 8) : nullptr, n,
 		    null_ps ? nullptr : &pstate);
 		perrno = errno;

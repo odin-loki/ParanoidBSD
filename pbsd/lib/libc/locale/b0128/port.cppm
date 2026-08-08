@@ -6,8 +6,6 @@ module;
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <cwchar>
-#include <cwctype>
 #include <sys/types.h>
 
 #ifndef SIZE_T_MAX
@@ -30,8 +28,8 @@ typedef union {
 } __mbstate_t;
 typedef __mbstate_t mbstate_t;
 
-typedef uint16_t char16_t;
-typedef uint32_t char32_t;
+#include <wchar.h>
+
 typedef int wctrans_t;
 
 typedef struct {
@@ -108,7 +106,7 @@ mbrtowc_l(wchar_t * __restrict pwc, const char * __restrict s, std::size_t n,
 }
 
 static std::size_t
-mbrtoc32_l(char32_t * __restrict pc32, const char * __restrict s, std::size_t n,
+mbrtoc32_l(std::uint32_t * __restrict pc32, const char * __restrict s, std::size_t n,
     mbstate_t * __restrict ps, port_locale_t locale)
 {
 
@@ -133,11 +131,12 @@ iswspace_l(wint_t wc, port_locale_t locale)
 {
 
 	(void)locale;
-	return (iswspace(wc));
+	return (wc == L' ' || wc == L'\t' || wc == L'\n' || wc == L'\r' ||
+	    wc == L'\f' || wc == L'\v');
 }
 
 static float
-strtof_l(const char * __restrict nptr, char ** __restrict endptr,
+batch_strtof_l(const char * __restrict nptr, char ** __restrict endptr,
     port_locale_t locale)
 {
 
@@ -146,7 +145,7 @@ strtof_l(const char * __restrict nptr, char ** __restrict endptr,
 }
 
 static long double
-strtold_l(const char * __restrict nptr, char ** __restrict endptr,
+batch_strtold_l(const char * __restrict nptr, char ** __restrict endptr,
     port_locale_t locale)
 {
 
@@ -390,8 +389,6 @@ export namespace pbsd::lib_libc_locale::b0128 {
 
 using mbstate_t = ::mbstate_t;
 using port_locale_t = ::port_locale_t;
-using char16_t = ::char16_t;
-using char32_t = ::char32_t;
 using wctrans_t = ::wctrans_t;
 
 enum {
@@ -443,7 +440,7 @@ reset_locale_states()
 	memset(&port_global_ctype.wcsrtombs, 0, sizeof(port_global_ctype.wcsrtombs));
 }
 
-#define malloc port_libc_malloc
+#define malloc(sz)	(reinterpret_cast<char *>(port_libc_malloc(sz)))
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -482,7 +479,7 @@ float
 wcstof_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 		port_locale_t locale)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	mbstate_t mbs;
 	float val;
 	char *buf, *end;
@@ -512,7 +509,7 @@ wcstof_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 	mbs = initial;
 	wcsrtombs_l(buf, &wcp, len + 1, &mbs, locale);
 
-	val = strtof_l(buf, &end, locale);
+	val = batch_strtof_l(buf, &end, locale);
 
 	if (endptr != NULL) {
 		*endptr = (wchar_t *)nptr + (end - buf);
@@ -567,7 +564,7 @@ long double
 wcstold_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 		port_locale_t locale)
 {
-	static const mbstate_t initial;
+	static const mbstate_t initial{};
 	mbstate_t mbs;
 	long double val;
 	char *buf, *end;
@@ -597,7 +594,7 @@ wcstold_l(const wchar_t * __restrict nptr, wchar_t ** __restrict endptr,
 	mbs = initial;
 	wcsrtombs_l(buf, &wcp, len + 1, &mbs, locale);
 
-	val = strtold_l(buf, &end, locale);
+	val = batch_strtold_l(buf, &end, locale);
 
 	if (endptr != NULL) {
 		*endptr = (wchar_t *)nptr + (end - buf);
@@ -737,16 +734,16 @@ wctrans(const char *charclass)
  */
 
 typedef struct {
-	char16_t	trail_surrogate;
+	std::uint16_t	trail_surrogate;
 	mbstate_t	c32_mbstate;
 } _Char16State;
 
 std::size_t
-mbrtoc16_l(char16_t * __restrict pc16, const char * __restrict s, std::size_t n,
+mbrtoc16_l(std::uint16_t * __restrict pc16, const char * __restrict s, std::size_t n,
     mbstate_t * __restrict ps, port_locale_t locale)
 {
 	_Char16State *cs;
-	char32_t c32;
+	std::uint32_t c32;
 	ssize_t len;
 
 	FIX_LOCALE(locale);
@@ -787,7 +784,7 @@ mbrtoc16_l(char16_t * __restrict pc16, const char * __restrict s, std::size_t n,
 }
 
 std::size_t
-mbrtoc16(char16_t * __restrict pc16, const char * __restrict s, std::size_t n,
+mbrtoc16(std::uint16_t * __restrict pc16, const char * __restrict s, std::size_t n,
     mbstate_t * __restrict ps)
 {
 
