@@ -1,8 +1,8 @@
 batch_id,path,dir,lines,status,clone_of
-b0001,hbsd/src/lib/msun/src/s_signgam.c,lib/msun/src,3,PENDING,
-b0001,hbsd/src/lib/msun/src/s_lrintf.c,lib/msun/src,6,PENDING,
-b0001,hbsd/src/lib/msun/src/s_llrint.c,lib/msun/src,6,PENDING,
-b0001,hbsd/src/lib/msun/src/s_llrintf.c,lib/msun/src,6,PENDING,
+b0001,hbsd/src/lib/msun/src/s_signgam.c,lib/msun/src,3,DEFERRED,
+b0001,hbsd/src/lib/msun/src/s_lrintf.c,lib/msun/src,6,DEFERRED,
+b0001,hbsd/src/lib/msun/src/s_llrint.c,lib/msun/src,6,DEFERRED,
+b0001,hbsd/src/lib/msun/src/s_llrintf.c,lib/msun/src,6,DEFERRED,
 b0002,hbsd/src/lib/libc/locale/c16rtomb_iconv.c,lib/libc/locale,7,PENDING,
 b0002,hbsd/src/lib/libc/locale/c32rtomb_iconv.c,lib/libc/locale,7,PENDING,
 b0002,hbsd/src/lib/libc/locale/mbrtoc16_iconv.c,lib/libc/locale,7,PENDING,
