@@ -358,6 +358,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdlib/b0216/port.cppm
   lib/libc/stdlib/b0221/port.cppm
   lib/libc/stdlib/b0235/port.cppm
+  lib/libc/stdlib/b0298/port.cppm
   lib/libc/stdlib/getsubopt_m/port.cppm
   lib/libc/stdlib/hcreate_m/port.cppm
   lib/libc/stdlib/malloc/b0232/port.cppm
@@ -553,6 +554,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/ipf/libipf/b0160/port.cppm
   sbin/ipf/libipf/b0294/port.cppm
   sbin/ipf/libipf/b0295/port.cppm
+  sbin/ipf/libipf/b0297/port.cppm
   sbin/kldunload/kldunload_m/port.cppm
   sbin/nfsiod/nfsiod_m/port.cppm
   sbin/nvmecontrol/nc_util_m/port.cppm

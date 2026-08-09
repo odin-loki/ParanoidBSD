@@ -651,7 +651,7 @@ static void test_hash_access()
 
 	hash_mock_reset();
 	hash_mock_set_addel_fail(1);
-	setup_access_env(er, kb, 2, vb, 2, false);
+	setup_access_env(er, kb, 2, vb, 2, false, false);
 	setup_access_env(ep, kb, 2, vb, 2, false, false);
 	rr = ref_hash_access(&er.htab, HASH_PUT, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_PUT, pd(&keyp),
@@ -669,7 +669,7 @@ static void test_hash_access()
 
 	hash_mock_reset();
 	hash_mock_set_delpair_fail(1);
-	setup_access_env(er, kb, 4, vb, 2, true);
+	setup_access_env(er, kb, 4, vb, 2, true, false);
 	setup_access_env(ep, kb, 4, vb, 2, true, false);
 	rr = ref_hash_access(&er.htab, HASH_DELETE, &keyr, nullptr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_DELETE, pd(&keyp),
@@ -936,10 +936,10 @@ static void test_hash_seq()
 
 	hash_mock_reset();
 	hash_mock_set_big_keydata_fail(1);
-	setup_access_env(er, kb, 1, vb, 1, true);
+	setup_access_env(er, kb, 1, vb, 1, true, false);
 	setup_access_env(ep, kb, 1, vb, 1, true, false);
 	auto *sp = (u_int16_t *)er.page;
-	sp[3] = PARTIAL_KEY;
+	sp[2] = PARTIAL_KEY;
 	std::memcpy(ep.page, er.page, PAGE_BSIZE);
 	dbr->internal = &er.htab;
 	dbp->internal = &ep.htab;

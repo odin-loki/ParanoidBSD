@@ -8,8 +8,8 @@ OUT = Path("/home/odin/pbsd/pbsd/bin/ps/b0291")
 HBSD_PS = Path("/home/odin/pbsd/hbsd/src/bin/ps")
 SOURCES = [
     ("fmt.c", HBSD_PS / "fmt.c"),
-    ("keyword.c", HBSD_PS / "keyword.c"),
     ("print.c", HBSD_PS / "print.c"),
+    ("keyword.c", HBSD_PS / "keyword.c"),
 ]
 
 PUBLIC_FUNCS = [

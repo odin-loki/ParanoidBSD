@@ -383,10 +383,14 @@ run_keydata_case(int rno, const char *k, size_t ksz, const char *d, size_t dsz)
 	if (ksz > 0) {
 		std::memcpy(kbuf_r + 4, k, ksz);
 		std::memcpy(kbuf_p + 4, k, ksz);
+		kbuf_r[4 + ksz] = '\0';
+		kbuf_p[4 + ksz] = '\0';
 	}
 	if (dsz > 0) {
 		std::memcpy(dbuf_r + 4, d, dsz);
 		std::memcpy(dbuf_p + 4, d, dsz);
+		dbuf_r[4 + dsz] = '\0';
+		dbuf_p[4 + dsz] = '\0';
 	}
 	rk.data = kbuf_r + 4;
 	rk.size = ksz;
@@ -529,7 +533,7 @@ run_put_op(Stat &st, void (*ref_fn)(DB *, char **),
 
 static void
 run_put_sweep(Stat &st, void (*ref_fn)(DB *, char **),
-    void (*port_fn)(DB *, char **))
+    void (*port_fn)(DB *, char **), bool recno_only = false)
 {
 	for (long i = 0; i < SWEEP / 5; i++) {
 		int rno = (int)(nextrand() & 1);
@@ -540,7 +544,8 @@ run_put_sweep(Stat &st, void (*ref_fn)(DB *, char **),
 			a2[j] = (char)(nextrand() & 0xff);
 		}
 		a1[8] = a2[8] = '\0';
-		run_put_op(st, ref_fn, port_fn, rno, pret, a1, a2);
+		run_put_op(st, ref_fn, port_fn, rno, pret, a1, a2,
+		    recno_only && !rno);
 	}
 }
 
@@ -551,15 +556,15 @@ run_put_tests(void)
 	run_put_op(st_append, ref_append, P::append, 0, RET_SUCCESS, "k", "d", true);
 	run_put_op(st_append, ref_append, P::append, 1, RET_SPECIAL, "2", "dup", false);
 	run_put_op(st_append, ref_append, P::append, 1, RET_ERROR, "3", "err", false);
-	run_put_sweep(st_append, ref_append, P::append);
+	run_put_sweep(st_append, ref_append, P::append, true);
 
 	run_put_op(st_iafter, ref_iafter, P::iafter, 1, RET_SUCCESS, "1", "x", false);
 	run_put_op(st_iafter, ref_iafter, P::iafter, 0, RET_SUCCESS, "k", "d", true);
-	run_put_sweep(st_iafter, ref_iafter, P::iafter);
+	run_put_sweep(st_iafter, ref_iafter, P::iafter, true);
 
 	run_put_op(st_ibefore, ref_ibefore, P::ibefore, 1, RET_SUCCESS, "1", "x", false);
 	run_put_op(st_ibefore, ref_ibefore, P::ibefore, 0, RET_SUCCESS, "k", "d", true);
-	run_put_sweep(st_ibefore, ref_ibefore, P::ibefore);
+	run_put_sweep(st_ibefore, ref_ibefore, P::ibefore, true);
 
 	run_put_op(st_icursor, ref_icursor, P::icursor, 0, RET_SUCCESS, "key", "val");
 	run_put_op(st_icursor, ref_icursor, P::icursor, 1, RET_SPECIAL, "1", "dup");

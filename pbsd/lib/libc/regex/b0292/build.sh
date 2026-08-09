@@ -12,27 +12,113 @@ CC=${CC:-cc}
 CXX=${CXX:-c++}
 
 MODNAME=pbsd.lib.libc.regex.b0292
-HBSD=../../../../../hbsd
-HBSD_INC="-I${HBSD}/src/include -I${HBSD}/src/sys -I${HBSD}/src/lib/libc/regex -I${HBSD}/src/lib/libc/locale"
-CFLAGS_COMMON="-std=c11 -O2 ${HBSD_INC} -D__unused= -include ${HBSD}/src/lib/libc/include/nostdinc.h 2>/dev/null || true"
+ROOT=$(cd ../../../../.. && pwd)
+HBSD=$ROOT/hbsd
+REGEXDIR=$HBSD/src/lib/libc/regex
+LOCALEDIR=$HBSD/src/lib/libc/locale
+
+PREREQ=$(mktemp)
+trap 'rm -f "$PREREQ"' EXIT
+
+cat > "$PREREQ" <<'EOF'
+#ifndef B0292_PREREQ_H
+#define B0292_PREREQ_H
+
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
+#include <limits.h>
+
+#ifndef __unused
+#define __unused
+#endif
+
+#ifndef LONG_BIT
+#ifdef __LP64__
+#define LONG_BIT 64
+#else
+#define LONG_BIT 32
+#endif
+#endif
+
+typedef off_t regoff_t;
+
+struct re_guts;
+
+typedef struct {
+	int re_magic;
+	size_t re_nsub;
+	const char *re_endp;
+	struct re_guts *re_g;
+} regex_t;
+
+typedef struct {
+	regoff_t rm_so;
+	regoff_t rm_eo;
+} regmatch_t;
+
+#define REG_BASIC     0000
+#define REG_EXTENDED  0001
+#define REG_ICASE     0002
+#define REG_NOSUB     0004
+#define REG_NEWLINE   0010
+#define REG_NOSPEC    0020
+#define REG_PEND      0040
+#define REG_DUMP      0200
+#define REG_POSIX     0400
+
+#define REG_ENOSYS    (-1)
+#define REG_NOMATCH   1
+#define REG_BADPAT    2
+#define REG_ECOLLATE  3
+#define REG_ECTYPE    4
+#define REG_EESCAPE   5
+#define REG_ESUBREG   6
+#define REG_EBRACK    7
+#define REG_EPAREN    8
+#define REG_EBRACE    9
+#define REG_BADBR     10
+#define REG_ERANGE    11
+#define REG_ESPACE    12
+#define REG_BADRPT    13
+#define REG_EMPTY     14
+#define REG_ASSERT    15
+#define REG_INVARG    16
+#define REG_ILLSEQ    17
+#define REG_ATOI      255
+#define REG_ITOA      0400
+
+#define REG_NOTBOL    00001
+#define REG_NOTEOL    00002
+#define REG_STARTEND  00004
+#define REG_TRACE     00400
+#define REG_LARGE     01000
+#define REG_BACKR     02000
+
+#define _REGEX_H_
+
+#endif /* B0292_PREREQ_H */
+EOF
+
+CFLAGS="-std=c11 -O2 -include $PREREQ -I$REGEXDIR -I$LOCALEDIR"
+CXXFLAGS="-std=c++23 -O2 -include $PREREQ -I$REGEXDIR -I$LOCALEDIR"
 
 rm -rf gcm.cache
 rm -f oracle.o port.o harness.o regcomp.o regfree.o port.pcm harness
 
-$CC -std=c11 -O2 ${HBSD_INC} -D__unused= -c oracle.c -o oracle.o
-$CC -std=c11 -O2 ${HBSD_INC} -D__unused= -c ${HBSD}/src/lib/libc/regex/regcomp.c -o regcomp.o
-$CC -std=c11 -O2 ${HBSD_INC} -D__unused= -c ${HBSD}/src/lib/libc/regex/regfree.c -o regfree.o
+$CC $CFLAGS -c oracle.c -o oracle.o
+$CC $CFLAGS -c $REGEXDIR/regcomp.c -o regcomp.o
+$CC $CFLAGS -c $REGEXDIR/regfree.c -o regfree.o
 
 if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX -std=c++23 -O2 ${HBSD_INC} -D__unused= -x c++-module port.cppm --precompile -o port.pcm
-	$CXX -std=c++23 -O2 -c port.pcm -o port.o
-	$CXX -std=c++23 -O2 ${HBSD_INC} -D__unused= -fmodule-file="$MODNAME"=port.pcm -c harness.cpp \
-	    -o harness.o
+	$CXX $CXXFLAGS -x c++-module port.cppm --precompile -o port.pcm
+	$CXX $CXXFLAGS -c port.pcm -o port.o
+	$CXX $CXXFLAGS -fmodule-file="$MODNAME"=port.pcm -c harness.cpp -o harness.o
 else
-	$CXX -std=c++23 -O2 ${HBSD_INC} -D__unused= -fmodules-ts -c -x c++ port.cppm -o port.o
-	$CXX -std=c++23 -O2 ${HBSD_INC} -D__unused= -fmodules-ts -c harness.cpp -o harness.o
+	$CXX $CXXFLAGS -fmodules-ts -c -x c++ port.cppm -o port.o
+	$CXX $CXXFLAGS -fmodules-ts -c harness.cpp -o harness.o
 fi
 
-$CXX -std=c++23 -O2 -o harness harness.o port.o oracle.o regcomp.o regfree.o
+$CXX $CXXFLAGS -o harness harness.o port.o oracle.o regcomp.o regfree.o
 
 exec ./harness
