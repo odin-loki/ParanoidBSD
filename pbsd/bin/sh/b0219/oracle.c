@@ -238,6 +238,51 @@ fwopen(void *cookie, int (*writefn)(void *, const char *, int))
 	return (fp);
 }
 
+#define __unused __attribute__((__unused__))
+
+char **oracle_argptr;
+char *oracle_nextopt_optptr;
+#define argptr oracle_argptr
+
+static int
+nextopt(const char *optstring)
+{
+	char *p;
+	int c;
+
+	if (oracle_nextopt_optptr == NULL || *oracle_nextopt_optptr == '\0') {
+		p = oracle_argptr != NULL ? *oracle_argptr : NULL;
+		if (p == NULL || *p != '-' || *++p == '\0' ||
+		    (*p == '-' && *++p == '\0')) {
+			return '\0';
+		}
+		oracle_argptr++;
+		oracle_nextopt_optptr = p;
+	}
+	c = (unsigned char)*oracle_nextopt_optptr++;
+	p = strchr(optstring, c);
+	if (p == NULL)
+		error("illegal option -%c", c);
+	if (p[1] == ':') {
+		if (*oracle_nextopt_optptr == '\0')
+			oracle_nextopt_optptr = *oracle_argptr++;
+		else
+			oracle_nextopt_optptr = "";
+	}
+	return c;
+}
+
+static void
+warning(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fputc('\n', stderr);
+}
+
 /* ===================================================================== *
  * ref_ renaming.  These come after every system header so that nothing in
  * libc gets rewritten.
@@ -299,6 +344,8 @@ fwopen(void *cookie, int (*writefn)(void *, const char *, int))
 #define printaliases		ref_printaliases
 #define hashalias		ref_hashalias
 #define iteralias		ref_iteralias
+#define aliascmd		ref_aliascmd
+#define unaliascmd		ref_unaliascmd
 
 /* show.c */
 #define trputc			ref_trputc
@@ -362,6 +409,8 @@ int comparealiases(const void *, const void *);
 void printalias(const struct alias *);
 void printaliases(void);
 size_t hashalias(const char *);
+int aliascmd(int, char **);
+int unaliascmd(int, char **);
 
 void trputc(int);
 void sh_trace(const char *, ...);
@@ -1165,6 +1214,57 @@ iteralias(const struct alias *index)
 	return (NULL);
 }
 
+int
+aliascmd(int argc __unused, char **argv __unused)
+{
+	char *n, *v;
+	int ret = 0;
+	struct alias *ap;
+
+	nextopt("");
+
+	if (*argptr == NULL) {
+		printaliases();
+		return (0);
+	}
+	while ((n = *argptr++) != NULL) {
+		if (n[0] == '\0') {
+			warning("'': not found");
+			ret = 1;
+			continue;
+		}
+		if ((v = strchr(n+1, '=')) == NULL) /* n+1: funny ksh stuff */
+			if ((ap = lookupalias(n, 0)) == NULL) {
+				warning("%s: not found", n);
+				ret = 1;
+			} else
+				printalias(ap);
+		else {
+			*v++ = '\0';
+			setalias(n, v);
+		}
+	}
+
+	return (ret);
+}
+
+int
+unaliascmd(int argc __unused, char **argv __unused)
+{
+	int i;
+
+	while ((i = nextopt("a")) != '\0') {
+		if (i == 'a') {
+			rmaliases();
+			return (0);
+		}
+	}
+	for (i = 0; *argptr; argptr++)
+		i |= unalias(*argptr);
+
+	return (i);
+}
+
 /* ===================================================================== *
  * show.c (the trace routines; see skipped.txt for the rest)
  * ===================================================================== */
@@ -1264,9 +1364,118 @@ trargs(char **ap)
 }
 
 /* ===================================================================== *
- * Accessors for state that is file-static in the originals.  These add no
- * behaviour; they only let the harness observe the oracle.
+ * Harness support and accessors for state that is file-static in the
+ * originals.  These add no behaviour; they only let the harness observe
+ * the oracle.
  * ===================================================================== */
+
+static struct output *saved_out1;
+
+void
+oracle_reset_state(void)
+{
+	struct stack_block *sp;
+	int i;
+
+	while (stackp != NULL) {
+		sp = stackp;
+		stackp = sp->prev;
+		free(sp);
+	}
+	stackp = NULL;
+	stacknxt = NULL;
+	stacknleft = 0;
+	sstrend = NULL;
+	suppressint = 0;
+	intpending = 0;
+	sh_err_thrown = 0;
+	sh_errjmp_set = 0;
+
+	if (output.buf != NULL) {
+		free(output.buf);
+		output.buf = NULL;
+	}
+	output.nextc = NULL;
+	output.bufend = NULL;
+	output.bufsize = OUTBUFSIZ;
+	output.fd = 1;
+	output.flags = 0;
+
+	if (errout.buf != NULL) {
+		free(errout.buf);
+		errout.buf = NULL;
+	}
+	errout.nextc = NULL;
+	errout.bufend = NULL;
+	errout.bufsize = 256;
+	errout.fd = 2;
+	errout.flags = 0;
+
+	if (memout.buf != NULL) {
+		free(memout.buf);
+		memout.buf = NULL;
+	}
+	memout.nextc = NULL;
+	memout.bufend = NULL;
+	memout.bufsize = 64;
+	memout.fd = MEM_OUT;
+	memout.flags = 0;
+
+	out1 = &output;
+	out2 = &errout;
+	saved_out1 = NULL;
+
+	INTOFF;
+	for (i = 0; i < ATABSIZE; i++) {
+		struct alias *ap;
+
+		while ((ap = atab[i]) != NULL) {
+			atab[i] = ap->next;
+			freealias(ap);
+		}
+	}
+	aliases = 0;
+	INTON;
+
+	oracle_nextopt_optptr = NULL;
+	oracle_argptr = NULL;
+	tracefile = NULL;
+}
+
+void
+oracle_set_out1_memout(void)
+{
+	if (memout.buf != NULL) {
+		free(memout.buf);
+		memout.buf = NULL;
+	}
+	memout.nextc = NULL;
+	memout.bufend = NULL;
+	memout.bufsize = 64;
+	memout.fd = MEM_OUT;
+	memout.flags = 0;
+	saved_out1 = out1;
+	out1 = &memout;
+}
+
+void
+oracle_restore_out1(void)
+{
+	if (saved_out1 != NULL)
+		out1 = saved_out1;
+	else
+		out1 = &output;
+	saved_out1 = NULL;
+	if (memout.buf != NULL) {
+		free(memout.buf);
+		memout.buf = NULL;
+	}
+	memout.nextc = NULL;
+	memout.bufend = NULL;
+	memout.bufsize = 64;
+	memout.fd = MEM_OUT;
+	memout.flags = 0;
+}
 
 struct stack_block *
 ref_get_stackp(void)

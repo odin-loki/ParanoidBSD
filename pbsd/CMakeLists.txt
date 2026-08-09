@@ -30,6 +30,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/ed/b0148s3/port.cppm
   bin/ed/b0148s4/port.cppm
   bin/ed/b0193/port.cppm
+  bin/ed/b0193s1/port.cppm
   bin/ed/b0193s2/port.cppm
   bin/ed/b0193s3/port.cppm
   bin/getfacl/b0182/port.cppm
@@ -133,8 +134,11 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/b0233/port.cppm
   lib/libc/gen/b0247/port.cppm
   lib/libc/gen/b0248/port.cppm
+  lib/libc/gen/b0255/port.cppm
   lib/libc/gen/b0256/port.cppm
   lib/libc/gen/b0258/port.cppm
+  lib/libc/gen/b0261/port.cppm
+  lib/libc/gen/b0266/port.cppm
   lib/libc/gen/check_utility_compat_m/port.cppm
   lib/libc/gen/clock_m/port.cppm
   lib/libc/gen/devname_m/port.cppm

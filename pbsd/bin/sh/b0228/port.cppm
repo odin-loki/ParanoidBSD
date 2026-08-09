@@ -181,7 +181,7 @@ arith_t strtoarith_t(const char *nptr, char **endptr)
 			val = (arith_t)std::strtoumax(nptr, endptr, 0);
 			if (val >= 0)
 				return val;
-			else if (val == ARITH_MIN) {
+			else if (val != ARITH_MIN) {
 				errno = ERANGE;
 				return ARITH_MIN;
 			} else {

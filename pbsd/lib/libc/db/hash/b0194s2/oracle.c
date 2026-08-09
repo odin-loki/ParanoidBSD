@@ -97,9 +97,6 @@
 #define	rounddown2(x, y)	((x)&(~((y)-1)))
 #endif
 
-#define	_write			write
-#define	__libc_sigprocmask	sigprocmask
-
 /* ------------------------------------------------------------------ */
 /* From <db.h>, __DBINTERFACE_PRIVATE section.                        */
 /* ------------------------------------------------------------------ */
@@ -308,10 +305,16 @@ typedef struct {
 
 extern u_int32_t __log2(u_int32_t);
 extern int	 __big_delete(HTAB *, BUFHEAD *);
+extern int	 __big_split(HTAB *, BUFHEAD *, BUFHEAD *, BUFHEAD *, int,
+	    u_int32_t, SPLIT_RETURN *);
 extern int	 __big_insert(HTAB *, BUFHEAD *, const DBT *, const DBT *);
 extern int	 __expand_table(HTAB *);
 extern BUFHEAD	*__get_buf(HTAB *, u_int32_t, BUFHEAD *, int);
+extern u_int32_t __call_hash(HTAB *, char *, int);
 extern void	 __reclaim_buf(HTAB *, BUFHEAD *);
+extern ssize_t	 _write(int, const void *, size_t);
+extern int	 __libc_sigprocmask(int, const sigset_t *, sigset_t *);
+extern char	*secure_getenv(const char *);
 
 /* ------------------------------------------------------------------ */
 /* The reference implementations.                                     */
@@ -323,10 +326,12 @@ int	   ref_open_temp(HTAB *);
 u_int16_t  ref_overflow_page(HTAB *);
 void	   ref_putpair(char *, const DBT *, const DBT *);
 void	   ref_squeeze_key(u_int16_t *, const DBT *, const DBT *);
+int	   ref_ugly_split(HTAB *, u_int32_t, BUFHEAD *, BUFHEAD *, int, int);
 int	   ref___ibitmap(HTAB *, int, int, int);
 int	   ref___get_page(HTAB *, char *, u_int32_t, int, int, int);
 int	   ref___put_page(HTAB *, char *, u_int32_t, int, int);
 int	   ref___delpair(HTAB *, BUFHEAD *, int);
+int	   ref___split_page(HTAB *, u_int32_t, u_int32_t);
 int	   ref___addel(HTAB *, BUFHEAD *, const DBT *, const DBT *);
 BUFHEAD	  *ref___add_ovflpage(HTAB *, BUFHEAD *);
 void	   ref___free_ovflpage(HTAB *, BUFHEAD *);
@@ -422,6 +427,218 @@ ref___delpair(HTAB *hashp, BUFHEAD *bufp, int ndx)
 	hashp->NKEYS--;
 
 	bufp->flags |= BUF_MOD;
+	return (0);
+}
+/*
+ * Returns:
+ *	 0 ==> OK
+ *	-1 ==> Error
+ */
+int
+ref___split_page(HTAB *hashp, u_int32_t obucket, u_int32_t nbucket)
+{
+	BUFHEAD *new_bufp, *old_bufp;
+	u_int16_t *ino;
+	char *np;
+	DBT key, val;
+	int n, ndx, retval;
+	u_int16_t copyto, diff, off, moved;
+	char *op;
+
+	copyto = (u_int16_t)hashp->BSIZE;
+	off = (u_int16_t)hashp->BSIZE;
+	old_bufp = __get_buf(hashp, obucket, NULL, 0);
+	if (old_bufp == NULL)
+		return (-1);
+	new_bufp = __get_buf(hashp, nbucket, NULL, 0);
+	if (new_bufp == NULL)
+		return (-1);
+
+	old_bufp->flags |= (BUF_MOD | BUF_PIN);
+	new_bufp->flags |= (BUF_MOD | BUF_PIN);
+
+	ino = (u_int16_t *)(op = old_bufp->page);
+	np = new_bufp->page;
+
+	moved = 0;
+
+	for (n = 1, ndx = 1; n < ino[0]; n += 2) {
+		if (ino[n + 1] < REAL_KEY) {
+			retval = ref_ugly_split(hashp, obucket, old_bufp, new_bufp,
+			    (int)copyto, (int)moved);
+			old_bufp->flags &= ~BUF_PIN;
+			new_bufp->flags &= ~BUF_PIN;
+			return (retval);
+
+		}
+		key.data = (u_char *)op + ino[n];
+		key.size = off - ino[n];
+
+		if (__call_hash(hashp, key.data, key.size) == obucket) {
+			/* Don't switch page */
+			diff = copyto - off;
+			if (diff) {
+				copyto = ino[n + 1] + diff;
+				memmove(op + copyto, op + ino[n + 1],
+				    off - ino[n + 1]);
+				ino[ndx] = copyto + ino[n] - ino[n + 1];
+				ino[ndx + 1] = copyto;
+			} else
+				copyto = ino[n + 1];
+			ndx += 2;
+		} else {
+			/* Switch page */
+			val.data = (u_char *)op + ino[n + 1];
+			val.size = ino[n] - ino[n + 1];
+			ref_putpair(np, &key, &val);
+			moved += 2;
+		}
+
+		off = ino[n + 1];
+	}
+
+	/* Now clean up the page */
+	ino[0] -= moved;
+	FREESPACE(ino) = copyto - sizeof(u_int16_t) * (ino[0] + 3);
+	OFFSET(ino) = copyto;
+
+#ifdef DEBUG3
+	(void)fprintf(stderr, "split %d/%d\n",
+	    ((u_int16_t *)np)[0] / 2,
+	    ((u_int16_t *)op)[0] / 2);
+#endif
+	/* unpin both pages */
+	old_bufp->flags &= ~BUF_PIN;
+	new_bufp->flags &= ~BUF_PIN;
+	return (0);
+}
+
+/*
+ * Called when we encounter an overflow or big key/data page during split
+ * handling.  This is special cased since we have to begin checking whether
+ * the key/data pairs fit on their respective pages and because we may need
+ * overflow pages for both the old and new pages.
+ *
+ * The first page might be a page with regular key/data pairs in which case
+ * we have a regular overflow condition and just need to go on to the next
+ * page or it might be a big key/data pair in which case we need to fix the
+ * big key/data pair.
+ *
+ * Returns:
+ *	 0 ==> success
+ *	-1 ==> failure
+ */
+int
+ref_ugly_split(HTAB *hashp,
+    u_int32_t obucket,	/* Same as __split_page. */
+    BUFHEAD *old_bufp,
+    BUFHEAD *new_bufp,
+    int copyto,		/* First byte on page which contains key/data values. */
+    int moved)		/* Number of pairs moved to new page. */
+{
+	BUFHEAD *bufp;	/* Buffer header for ino */
+	u_int16_t *ino;	/* Page keys come off of */
+	u_int16_t *np;	/* New page */
+	u_int16_t *op;	/* Page keys go on to if they aren't moving */
+
+	BUFHEAD *last_bfp;	/* Last buf header OVFL needing to be freed */
+	DBT key, val;
+	SPLIT_RETURN ret;
+	u_int16_t n, off, ov_addr, scopyto;
+	char *cino;		/* Character value of ino */
+
+	bufp = old_bufp;
+	ino = (u_int16_t *)old_bufp->page;
+	np = (u_int16_t *)new_bufp->page;
+	op = (u_int16_t *)old_bufp->page;
+	last_bfp = NULL;
+	scopyto = (u_int16_t)copyto;	/* ANSI */
+
+	n = ino[0] - 1;
+	while (n < ino[0]) {
+		if (ino[2] < REAL_KEY && ino[2] != OVFLPAGE) {
+			if (__big_split(hashp, old_bufp,
+			    new_bufp, bufp, bufp->addr, obucket, &ret))
+				return (-1);
+			old_bufp = ret.oldp;
+			if (!old_bufp)
+				return (-1);
+			op = (u_int16_t *)old_bufp->page;
+			new_bufp = ret.newp;
+			if (!new_bufp)
+				return (-1);
+			np = (u_int16_t *)new_bufp->page;
+			bufp = ret.nextp;
+			if (!bufp)
+				return (0);
+			cino = (char *)bufp->page;
+			ino = (u_int16_t *)cino;
+			last_bfp = ret.nextp;
+		} else if (ino[n + 1] == OVFLPAGE) {
+			ov_addr = ino[n];
+			/*
+			 * Fix up the old page -- the extra 2 are the fields
+			 * which contained the overflow information.
+			 */
+			ino[0] -= (moved + 2);
+			FREESPACE(ino) =
+			    scopyto - sizeof(u_int16_t) * (ino[0] + 3);
+			OFFSET(ino) = scopyto;
+
+			bufp = __get_buf(hashp, ov_addr, bufp, 0);
+			if (!bufp)
+				return (-1);
+
+			ino = (u_int16_t *)bufp->page;
+			n = 1;
+			scopyto = hashp->BSIZE;
+			moved = 0;
+
+			if (last_bfp)
+				ref___free_ovflpage(hashp, last_bfp);
+			last_bfp = bufp;
+		}
+		/* Move regular sized pairs of there are any */
+		off = hashp->BSIZE;
+		for (n = 1; (n < ino[0]) && (ino[n + 1] >= REAL_KEY); n += 2) {
+			cino = (char *)ino;
+			key.data = (u_char *)cino + ino[n];
+			key.size = off - ino[n];
+			val.data = (u_char *)cino + ino[n + 1];
+			val.size = ino[n] - ino[n + 1];
+			off = ino[n + 1];
+
+			if (__call_hash(hashp, key.data, key.size) == obucket) {
+				/* Keep on old page */
+				if (PAIRFITS(op, (&key), (&val)))
+					ref_putpair((char *)op, &key, &val);
+				else {
+					old_bufp =
+					    ref___add_ovflpage(hashp, old_bufp);
+					if (!old_bufp)
+						return (-1);
+					op = (u_int16_t *)old_bufp->page;
+					ref_putpair((char *)op, &key, &val);
+				}
+				old_bufp->flags |= BUF_MOD;
+			} else {
+				/* Move to new page */
+				if (PAIRFITS(np, (&key), (&val)))
+					ref_putpair((char *)np, &key, &val);
+				else {
+					new_bufp =
+					    ref___add_ovflpage(hashp, new_bufp);
+					if (!new_bufp)
+						return (-1);
+					np = (u_int16_t *)new_bufp->page;
+					ref_putpair((char *)np, &key, &val);
+				}
+				new_bufp->flags |= BUF_MOD;
+			}
+		}
+	}
+	if (last_bfp)
+		ref___free_ovflpage(hashp, last_bfp);
 	return (0);
 }
 
