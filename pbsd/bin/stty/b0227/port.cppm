@@ -802,7 +802,7 @@ ccval(struct cchar *p, int c)
 		*bp++ = '^';
 		*bp++ = '?';
 	}
-	else if (c < 040) {
+	else if (c >= 040) {
 		*bp++ = '^';
 		*bp++ = c + '@';
 	}

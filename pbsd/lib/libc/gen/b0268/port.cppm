@@ -173,16 +173,26 @@ interpos_func_t *__libsys_interposing_slot(int interposno);
 
 #define	SLOT(a, b) \
 	[INTERPOS_##a] = (interpos_func_t)b
-interpos_func_t __libc_interposing[INTERPOS_MAX] = {
-	SLOT(system, __libc_system),
-	SLOT(tcdrain, __libc_tcdrain),
-	SLOT(_pthread_mutex_init_calloc_cb, _pthread_mutex_init_calloc_cb_stub),
-	SLOT(spinlock, __libc_spinlock_stub),
-	SLOT(spinunlock, __libc_spinunlock_stub),
-	SLOT(map_stacks_exec, __libc_map_stacks_exec),
-	SLOT(uexterr_gettext, __libc_uexterr_gettext),
-};
+interpos_func_t __libc_interposing[INTERPOS_MAX];
 #undef SLOT
+
+struct __libc_interposing_init {
+	__libc_interposing_init()
+	{
+#define	SLOT(a, b) \
+		__libc_interposing[INTERPOS_##a] = (interpos_func_t)(b)
+		SLOT(system, __libc_system);
+		SLOT(tcdrain, __libc_tcdrain);
+		SLOT(_pthread_mutex_init_calloc_cb, _pthread_mutex_init_calloc_cb_stub);
+		SLOT(spinlock, __libc_spinlock_stub);
+		SLOT(spinunlock, __libc_spinunlock_stub);
+		SLOT(map_stacks_exec, __libc_map_stacks_exec);
+		SLOT(uexterr_gettext, __libc_uexterr_gettext);
+#undef SLOT
+	}
+};
+
+static __libc_interposing_init __libc_interposing_initializer;
 
 interpos_func_t *
 __libc_interposing_slot(int interposno)

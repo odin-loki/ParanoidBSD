@@ -88,7 +88,7 @@ ref_copysignl(long double x, long double y)
 /* k_sincos.h (kernel only; rem_pio2 objects linked separately)             */
 /* ======================================================================== */
 
-#include "../../../../../../hbsd/src/lib/msun/src/k_sincos.h"
+#include "../../../../../hbsd/src/lib/msun/src/k_sincos.h"
 
 /* ======================================================================== */
 /* s_sincos.c                                                               */

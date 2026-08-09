@@ -302,8 +302,13 @@ ref___libc_interposing_slot(int interposno)
 #include <sys/types.h>
 #include <syslog.h>
 
-void ref___arc4random_stir_fbsd11(void);
-void ref___arc4random_addrandom_fbsd11(u_char *, int);
+#ifndef __unused
+#define	__unused	__attribute__((__unused__))
+#endif
+
+#ifndef u_char
+typedef unsigned char u_char;
+#endif
 
 void
 ref___arc4random_stir_fbsd11(void)

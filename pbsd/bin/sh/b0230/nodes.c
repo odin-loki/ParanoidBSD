@@ -3,18 +3,18 @@
  */
 
       if (n == NULL)
-	    return NULL;
-      new = state->block;
-      state->block = (char *)state->block + nodesize[n->type];
+	    return;
+      result->blocksize += nodesize[n->type];
       switch (n->type) {
-      case N116:
+      case N776:
+	    result->stringsize += strlen(n->t420.f2) + 1;
 	    break;
-      case N581:
+      case N308:
 	    break;
-      case N868:
-	    new->t737.f1 = nodesavestr(n->t737.f1, state);
+      case N79:
+	    calcsize(n->t535.f2, result);
+	    calcsize(n->t535.f1, result);
 	    break;
-      case N44:
+      case N494:
 	    break;
       };
-      new->type = n->type;

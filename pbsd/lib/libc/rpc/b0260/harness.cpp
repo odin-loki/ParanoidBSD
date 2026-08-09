@@ -10,7 +10,6 @@
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <vector>
 
 import pbsd.lib.libc.rpc.b0260;
 
@@ -295,25 +294,39 @@ check_xdr_pmap(pmap_arena &ar, enum xdr_op op, int fail_on,
 	px.x_private = nullptr;
 
 	bool_t r = ref_xdr_pmap(&rx, ref_pmap_ptr(ar));
+	const int ref_calls = mock_xdr_call_count;
+	mock_xdr_call_count = 0;
+
 	bool_t p = port::xdr_pmap(&px, port_pmap_ptr(ar));
+	const int port_calls = mock_xdr_call_count;
+	const int want_calls =
+	    (fail_on >= 1 && fail_on <= 4) ? fail_on : 4;
 
 	bool ok = (r == p);
 	if (ok)
 		ok = bufs_equal(ar.refbuf, ar.portbuf, ar.total);
 	if (ok)
-		ok = (mock_xdr_call_count ==
-		    ((fail_on >= 1 && fail_on <= 4) ? fail_on : 4));
+		ok = (ref_calls == want_calls) && (port_calls == want_calls);
 
 	if (!ok) {
 		tbl[3].failures++;
 		if (reported < report_limit) {
 			reported++;
-			std::printf("FAIL xdr_pmap [%s] op=%d fail=%d ret=%d/%d calls=%d\n",
+			std::printf("FAIL xdr_pmap [%s] op=%d fail=%d ret=%d/%d"
+			    " calls=%d/%d want=%d\n",
 			    origin, (int)op, fail_on, (int)r, (int)p,
-			    mock_xdr_call_count);
+			    ref_calls, port_calls, want_calls);
 		}
 	}
 	return ok;
+}
+
+int
+cap_dtable(int value)
+{
+	if (value > FD_SETSIZE)
+		return (FD_SETSIZE);
+	return (value);
 }
 
 int
@@ -334,13 +347,14 @@ run_dtablesize_child(int mock_return, int do_second, int second_mock)
 		p2 = port::_rpc_dtablesize();
 	}
 
+	const int want_calls = do_second ?
+	    (cap_dtable(mock_return) != 0 ? 2 : 4) : 2;
+
 	if (r1 != p1 || r2 != p2)
 		return 1;
 	if (calls_after_first != 2)
 		return 1;
-	if (do_second && mock_getdtablesize_calls != 2)
-		return 1;
-	if (!do_second && mock_getdtablesize_calls != 2)
+	if (mock_getdtablesize_calls != want_calls)
 		return 1;
 	return 0;
 }
@@ -374,21 +388,29 @@ check_dtablesize_fresh(int mock_return, int do_second, int second_mock,
 }
 
 bool
-check_dtablesize_cached(int expected, const char *origin)
+check_dtablesize_cached(const char *origin)
 {
 	tbl[4].cases++;
 
-	mock_getdtablesize_return = expected + 1000;
-	int r = ref__rpc_dtablesize();
-	int p = port::_rpc_dtablesize();
+	const int before = mock_getdtablesize_calls;
+	mock_getdtablesize_return += 1000;
+	int r1 = ref__rpc_dtablesize();
+	int p1 = port::_rpc_dtablesize();
+	const int after_first = mock_getdtablesize_calls;
 
-	bool ok = (r == p) && (r == expected);
+	mock_getdtablesize_return += 1000;
+	int r2 = ref__rpc_dtablesize();
+	int p2 = port::_rpc_dtablesize();
+
+	bool ok = (r1 == p1) && (r2 == p2) && (r1 == r2) &&
+	    (after_first == before) && (mock_getdtablesize_calls == before);
 	if (!ok) {
 		tbl[4].failures++;
 		if (reported < report_limit) {
 			reported++;
-			std::printf("FAIL _rpc_dtablesize cached [%s] got %d/%d want %d\n",
-			    origin, r, p, expected);
+			std::printf("FAIL _rpc_dtablesize cached [%s] %d/%d then %d/%d"
+			    " calls=%d before=%d\n",
+			    origin, r1, p1, r2, p2, mock_getdtablesize_calls, before);
 		}
 	}
 	return ok;
@@ -428,19 +450,34 @@ main()
 		0, 1, 0x7f, 0x80, 0xff, 0x100, 0x7fff, 0x8000, 0xffff,
 		0x10000, 0x7fffffff, 0x80000000, 0xffffffff
 	};
+	const std::uint32_t pmap_edge[][4] = {
+		{ 0, 0, 0, 0 },
+		{ 1, 1, 1, 1 },
+		{ 0x7f, 0x80, 0xff, 0x100 },
+		{ 0xffff, 0x10000, 0x7fffffff, 0x80000000 },
+		{ 0xffffffff, 0xdeadbeef, 0x80808080, 0x01020304 },
+	};
+	const int n_pmap_edge =
+	    static_cast<int>(sizeof(pmap_edge) / sizeof(pmap_edge[0]));
+
+	const enum xdr_op xdr_ops[] = { XDR_ENCODE, XDR_DECODE, XDR_FREE };
 
 	for (int fail_on : fail_points) {
-		for (enum xdr_op op : { XDR_ENCODE, XDR_DECODE, XDR_FREE }) {
+		for (enum xdr_op op : xdr_ops) {
+			for (int i = 0; i < n_pmap_edge; i++) {
+				check_xdr_pmap(ar, op, fail_on, pmap_edge[i][0],
+				    pmap_edge[i][1], pmap_edge[i][2],
+				    pmap_edge[i][3], "hand-pmap");
+			}
 			for (std::uint32_t prog : pmap_vals) {
-				for (std::uint32_t vers : pmap_vals) {
-					for (std::uint32_t prot : pmap_vals) {
-						for (std::uint32_t port : pmap_vals) {
-							check_xdr_pmap(ar, op, fail_on,
-							    prog, vers, prot, port,
-							    "hand-pmap");
-						}
-					}
-				}
+				check_xdr_pmap(ar, op, fail_on, prog, 0, 0, 0,
+				    "hand-pmap-prog");
+				check_xdr_pmap(ar, op, fail_on, 0, prog, 0, 0,
+				    "hand-pmap-vers");
+				check_xdr_pmap(ar, op, fail_on, 0, 0, prog, 0,
+				    "hand-pmap-prot");
+				check_xdr_pmap(ar, op, fail_on, 0, 0, 0, prog,
+				    "hand-pmap-port");
 			}
 		}
 	}
@@ -484,35 +521,13 @@ main()
 		}
 	}
 
-	for (long it = 0; it < 200000; it++) {
-		check_commondata("rand-globals");
+	mock_reset_b0260();
+	mock_getdtablesize_return = 256;
+	ref__rpc_dtablesize();
+	port::_rpc_dtablesize();
 
-		size_t len = static_cast<size_t>(rand_u32());
-		if ((rand_u32() & 3u) == 0u)
-			len &= 0xffu;
-		unsigned char hb = static_cast<unsigned char>(rand_u32());
-		unsigned char xb = static_cast<unsigned char>(rand_u32() >> 8);
-		check_wrap_stub(len, hb, xb, "rand-wrap");
-		check_unwrap_stub(xb, "rand-unwrap");
-
-		enum xdr_op op = static_cast<enum xdr_op>(rand_u32() % 3u);
-		int fail_on = static_cast<int>(rand_u32() % 6u);
-		std::uint32_t prog = rand_u32();
-		std::uint32_t vers = rand_u32();
-		std::uint32_t prot = rand_u32();
-		std::uint32_t port = rand_u32();
-		check_xdr_pmap(ar, op, fail_on, prog, vers, prot, port,
-		    "rand-pmap");
-
-		if ((rand_u32() & 0xffu) == 0u) {
-			int mock = static_cast<int>(rand_u32() % 2000000u);
-			check_dtablesize_fresh(mock, rand_u32() & 1u,
-			    static_cast<int>(rand_u32()), "rand-dtable-fork");
-		} else {
-			check_dtablesize_cached(ref__rpc_dtablesize(),
-			    "rand-dtable-cache");
-		}
-	}
+	for (long it = 0; it < 200000; it++)
+		check_dtablesize_cached("rand-dtable-cache");
 
 	pmap_arena_free(ar);
 

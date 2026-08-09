@@ -1245,6 +1245,16 @@ __log2(u_int32_t num)
 	return (i);
 }
 
+static void
+mock_page_init(HTAB *hashp, char *p)
+{
+	u_int16_t *bp = (u_int16_t *)p;
+
+	bp[0] = 0;
+	bp[1] = hashp->BSIZE - 3 * sizeof(u_int16_t);
+	bp[2] = hashp->BSIZE;
+}
+
 BUFHEAD *
 __get_buf(HTAB *hashp, u_int32_t addr, BUFHEAD *prev, int newpage)
 {
@@ -1252,7 +1262,6 @@ __get_buf(HTAB *hashp, u_int32_t addr, BUFHEAD *prev, int newpage)
 	void *pg;
 
 	(void)prev;
-	(void)newpage;
 	hash_mock.get_buf_calls++;
 	if (hash_mock.get_buf_force_null)
 		return (NULL);
@@ -1270,12 +1279,13 @@ __get_buf(HTAB *hashp, u_int32_t addr, BUFHEAD *prev, int newpage)
 		bp->page = (char *)pg;
 	else {
 		bp->page = mock_pages[mock_nbufs - 1];
-		memset(bp->page, 0, (size_t)hashp->BSIZE);
+		mock_page_init(hashp, bp->page);
 	}
 	bp->addr = addr;
 	bp->ovfl = NULL;
 	bp->flags = 0;
 	bp->prev = bp->next = NULL;
+	(void)newpage;
 	return (bp);
 }
 

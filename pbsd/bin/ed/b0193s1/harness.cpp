@@ -355,6 +355,36 @@ snap_equal(const EnvSnap &a, const EnvSnap &b)
 	return true;
 }
 
+static const char *
+snap_why(const EnvSnap &a, const EnvSnap &b)
+{
+	if (a.mutex != b.mutex)
+		return "mutex";
+	if (a.rhbufi != b.rhbufi)
+		return "rhbufi";
+	if (a.ibufp_off != b.ibufp_off)
+		return "ibufp_off";
+	if (a.isbinary != b.isbinary)
+		return "isbinary";
+	if (a.script_pos != b.script_pos)
+		return "script_pos";
+	if (a.rhbufsz != b.rhbufsz)
+		return "rhbufsz";
+	if (a.rbufsz != b.rbufsz)
+		return "rbufsz";
+	if (strcmp_null(a.errmsg, b.errmsg) != 0)
+		return "errmsg";
+	if (memcmp(a.ibuf, b.ibuf, IBUF_TOTAL) != 0)
+		return "ibuf";
+	if (a.rhbufsz > 0 && memcmp(a.rhbuf, b.rhbuf, (size_t)a.rhbufsz) != 0)
+		return "rhbuf";
+	if (a.rbufsz > 0 && memcmp(a.rbuf, b.rbuf, (size_t)a.rbufsz) != 0)
+		return "rbuf";
+	if (memcmp(a.sfbuf, b.sfbuf, SFBUF_SZ) != 0)
+		return "sfbuf";
+	return nullptr;
+}
+
 static void
 setup_tail(const char *cmd, int n, int isg)
 {
@@ -448,8 +478,9 @@ tail_case(const char *cmd, int n, int isg)
 
 	if (rr != pr || rf != pf || rn != pn || !snap_equal(sr, sp))
 		fail(st_tail,
-		    "cmd=%.*s isg=%d -> ref(r=%d f=%d n=%ld) port(r=%d f=%d n=%ld)",
-		    n, cmd, isg, rr, rf, rn, pr, pf, pn);
+		    "cmd=%.*s isg=%d why=%s -> ref(r=%d f=%d n=%ld) port(r=%d f=%d n=%ld)",
+		    n, cmd, isg, snap_why(sr, sp) ? snap_why(sr, sp) : "?",
+		    rr, rf, rn, pr, pf, pn);
 }
 
 static void
@@ -692,8 +723,10 @@ sub_case(const char *line, int llen, const char *tmpl, int tlen, int gflag,
 
 	if (rr != pr || !snap_equal(sr, sp))
 		fail(st_sub,
-		    "line_len=%d g=%d k=%d bin=%d fail=%d -> ref=%d port=%d",
-		    llen, gflag, kth, isbin, line_fail, rr, pr);
+		    "line_len=%d g=%d k=%d bin=%d fail=%d why=%s -> ref=%d port=%d",
+		    llen, gflag, kth, isbin, line_fail,
+		    snap_why(sr, sp) ? snap_why(sr, sp) : "?",
+		    rr, pr);
 }
 
 static void
@@ -784,10 +817,26 @@ apply_case(const char *tmpl, int tn, const char *boln, int so, int eo,
 	pr = P::apply_subst_template(boln, prm, off, nsub);
 	snap_port(sp);
 
-	if (rr != pr || !snap_equal(sr, sp))
+	if (rr != pr || !snap_equal(sr, sp)) {
+		size_t di = 0;
+
+		if (snap_why(sr, sp) != nullptr && strcmp(snap_why(sr, sp), "rhbuf") == 0) {
+			for (di = 0; di < (size_t)sr.rhbufsz; di++)
+				if (sr.rhbuf[di] != sp.rhbuf[di]) {
+					fprintf(stderr,
+					    "  rhbuf[%zu]=ref:%02x port:%02x "
+					    "rhbufi ref:%d port:%d\n",
+					    di, sr.rhbuf[di], sp.rhbuf[di],
+					    sr.rhbufi, sp.rhbufi);
+					break;
+				}
+		}
 		fail(st_apply,
-		    "tmpl=%.*s so=%d eo=%d off=%d nsub=%d -> ref=%d port=%d",
-		    tn, tmpl, so, eo, off, nsub, rr, pr);
+		    "tmpl=%.*s so=%d eo=%d off=%d nsub=%d why=%s -> ref=%d port=%d",
+		    tn, tmpl, so, eo, off, nsub,
+		    snap_why(sr, sp) ? snap_why(sr, sp) : "?",
+		    rr, pr);
+	}
 }
 
 static void

@@ -175,6 +175,35 @@ guards_intact(const GuardedPthread *g)
 }
 
 static bool
+guarded_equal(const GuardedPthread *a, const GuardedPthread *b)
+{
+	return std::memcmp(a, b, sizeof(*a)) == 0;
+}
+
+static bool
+report_creation_bufs_equal(const GuardedPthread *a, const GuardedPthread *b,
+    struct pthread *newthread)
+{
+	if (std::memcmp(a->pre, b->pre, sizeof(a->pre)) != 0)
+		return (false);
+	if (std::memcmp(a->post, b->post, sizeof(a->post)) != 0)
+		return (false);
+	if (a->thr.flags != b->thr.flags)
+		return (false);
+	if (a->thr.joiner != b->thr.joiner)
+		return (false);
+	if (a->thr.event_buf.event != b->thr.event_buf.event)
+		return (false);
+	if (a->thr.event_buf.data != b->thr.event_buf.data)
+		return (false);
+	if (a->thr.event_buf.th_p != (uintptr_t)newthread)
+		return (false);
+	if (b->thr.event_buf.th_p != (uintptr_t)newthread)
+		return (false);
+	return (true);
+}
+
+static bool
 report_death_bufs_equal(const GuardedPthread *a, const GuardedPthread *b)
 {
 	if (std::memcmp(a->pre, b->pre, sizeof(a->pre)) != 0)
@@ -250,11 +279,13 @@ struct GetprioResult {
 };
 
 static GetprioResult
-run_getprio_port(pthread_t pthread)
+run_getprio_port(pthread_t pthread, int gs_ret, int gs_err, int gs_policy,
+    int gs_prio)
 {
 	GetprioResult r;
 
 	b0265_reset_mocks();
+	b0265_set_getschedparam(gs_ret, gs_err, gs_policy, gs_prio);
 	r.ret = P::_pthread_getprio(pthread);
 	r.errno_after = errno;
 	r.last_pthread = b0265_get_getschedparam_last_pthread();
@@ -262,11 +293,13 @@ run_getprio_port(pthread_t pthread)
 }
 
 static GetprioResult
-run_getprio_ref(pthread_t pthread)
+run_getprio_ref(pthread_t pthread, int gs_ret, int gs_err, int gs_policy,
+    int gs_prio)
 {
 	GetprioResult r;
 
 	b0265_reset_mocks();
+	b0265_set_getschedparam(gs_ret, gs_err, gs_policy, gs_prio);
 	r.ret = ref__pthread_getprio(pthread);
 	r.errno_after = errno;
 	r.last_pthread = b0265_get_getschedparam_last_pthread();
@@ -280,7 +313,6 @@ check_getprio(const char *label, pthread_t pthread, int gs_ret, int gs_err,
 	GetprioResult port, ref;
 	bool ok;
 
-	b0265_set_getschedparam(gs_ret, gs_err, gs_policy, gs_prio);
 	port = run_getprio_port(pthread, gs_ret, gs_err, gs_policy, gs_prio);
 	ref = run_getprio_ref(pthread, gs_ret, gs_err, gs_policy, gs_prio);
 
@@ -415,7 +447,7 @@ check_report_creation(const char *label, struct pthread *newthread,
 	port = run_report_creation_port(newthread, in);
 	ref = run_report_creation_ref(newthread, in);
 
-	ok = guarded_equal(&port.cur, &ref.cur) &&
+	ok = report_creation_bufs_equal(&port.cur, &ref.cur, newthread) &&
 	    guards_intact(&port.cur) && guards_intact(&ref.cur) &&
 	    (port.lock_delta == ref.lock_delta) &&
 	    (port.unlock_delta == ref.unlock_delta) &&
@@ -427,7 +459,6 @@ check_report_creation(const char *label, struct pthread *newthread,
 	    (port.unlock_last_thread == ref.unlock_last_thread) &&
 	    (port.unlock_last_lock == ref.unlock_last_lock) &&
 	    (port.cur.thr.event_buf.event == TD_CREATE) &&
-	    (port.cur.thr.event_buf.th_p == (uintptr_t)newthread) &&
 	    (port.cur.thr.event_buf.data == 0);
 
 	record_case(F_REPORT_CREATION, ok,
@@ -487,7 +518,7 @@ check_report_death(const char *label, const GuardedPthread *in)
 	port = run_report_death_port(in);
 	ref = run_report_death_ref(in);
 
-	ok = guarded_equal(&port.cur, &ref.cur) &&
+	ok = report_death_bufs_equal(&port.cur, &ref.cur) &&
 	    guards_intact(&port.cur) && guards_intact(&ref.cur) &&
 	    (port.lock_delta == ref.lock_delta) &&
 	    (port.unlock_delta == ref.unlock_delta) &&
@@ -499,7 +530,6 @@ check_report_death(const char *label, const GuardedPthread *in)
 	    (port.unlock_last_thread == ref.unlock_last_thread) &&
 	    (port.unlock_last_lock == ref.unlock_last_lock) &&
 	    (port.cur.thr.event_buf.event == TD_DEATH) &&
-	    (port.cur.thr.event_buf.th_p == (uintptr_t)&port.cur.thr) &&
 	    (port.cur.thr.event_buf.data == 0);
 
 	record_case(F_REPORT_DEATH, ok,
@@ -523,7 +553,8 @@ struct DetachResult {
 };
 
 static DetachResult
-run_detach_port(struct pthread *cur, int find_ret, GuardedPthread in_copy)
+run_detach_port(struct pthread *cur, int find_ret, GuardedPthread in_copy,
+    bool null_target)
 {
 	DetachResult r;
 	unsigned unlock_before, gc_before;
@@ -534,7 +565,10 @@ run_detach_port(struct pthread *cur, int find_ret, GuardedPthread in_copy)
 	r.target = in_copy;
 	unlock_before = b0265_get_thread_unlock_count();
 	gc_before = b0265_get_try_gc_count();
-	r.ret = P::_thr_detach(&r.target.thr);
+	if (null_target)
+		r.ret = P::_thr_detach(nullptr);
+	else
+		r.ret = P::_thr_detach(&r.target.thr);
 	r.thread_unlock_delta = b0265_get_thread_unlock_count() - unlock_before;
 	r.try_gc_delta = b0265_get_try_gc_count() - gc_before;
 	r.find_include_dead = b0265_get_find_last_include_dead();
@@ -548,7 +582,8 @@ run_detach_port(struct pthread *cur, int find_ret, GuardedPthread in_copy)
 }
 
 static DetachResult
-run_detach_ref(struct pthread *cur, int find_ret, GuardedPthread in_copy)
+run_detach_ref(struct pthread *cur, int find_ret, GuardedPthread in_copy,
+    bool null_target)
 {
 	DetachResult r;
 	unsigned unlock_before, gc_before;
@@ -559,7 +594,10 @@ run_detach_ref(struct pthread *cur, int find_ret, GuardedPthread in_copy)
 	r.target = in_copy;
 	unlock_before = b0265_get_thread_unlock_count();
 	gc_before = b0265_get_try_gc_count();
-	r.ret = ref__thr_detach(&r.target.thr);
+	if (null_target)
+		r.ret = ref__thr_detach(nullptr);
+	else
+		r.ret = ref__thr_detach(&r.target.thr);
 	r.thread_unlock_delta = b0265_get_thread_unlock_count() - unlock_before;
 	r.try_gc_delta = b0265_get_try_gc_count() - gc_before;
 	r.find_include_dead = b0265_get_find_last_include_dead();
@@ -591,8 +629,8 @@ check_detach(const char *label, struct pthread *cur, pthread_t target,
 	    (detached_before || joiner_before);
 	expect_gc = expect_success;
 
-	port = run_detach_port(cur, find_ret, *in);
-	ref = run_detach_ref(cur, find_ret, *in);
+	port = run_detach_port(cur, find_ret, *in, target == nullptr);
+	ref = run_detach_ref(cur, find_ret, *in, target == nullptr);
 
 	ok = (port.ret == ref.ret) &&
 	    guarded_equal(&port.target, &ref.target) &&
@@ -614,7 +652,8 @@ check_detach(const char *label, struct pthread *cur, pthread_t target,
 	} else if (find_ret != 0) {
 		ok = ok && (port.ret == find_ret) && (ref.ret == find_ret) &&
 		    (port.find_include_dead == 1) &&
-		    (port.find_cur == cur) && (port.find_target == target) &&
+		    (port.find_cur == cur) &&
+		    (port.find_target == target) &&
 		    (port.thread_unlock_delta == 0u) &&
 		    (port.try_gc_delta == 0u);
 	} else if (detached_before || joiner_before) {
