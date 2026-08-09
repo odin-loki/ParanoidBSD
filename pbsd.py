@@ -2064,7 +2064,10 @@ def run_mechanical_phase(rows: list[dict], jobs: int, *, force: bool = False) ->
             and r["path"] not in tried]
     if not todo:
         if tried:
+            say(f"mechanical phase done — {len(tried)} files tried, none left to scan")
             MECH_STAMP.write_text(time.strftime("%Y-%m-%d %H:%M:%S"), encoding="utf-8")
+        else:
+            say("mechanical phase — nothing pending to scan")
         return 0
 
     MECH_STAMP.write_text("in_progress", encoding="utf-8")
@@ -2402,7 +2405,7 @@ def main() -> int:
     jobs = a.jobs or DEFAULT_JOBS
     banner(f"Converting {len(queue)} batches   model={a.model}   "
            f"escalate={a.escalate_model}   jobs={jobs}"
-           + ("" if MECHANICAL else "   (mechanical path off)"))
+           + ("" if MECHANICAL else "   (agent pass only)"))
     ver = rej = 0
     try:
         if jobs > 1:
