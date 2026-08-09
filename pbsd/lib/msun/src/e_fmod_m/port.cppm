@@ -98,7 +98,7 @@ fmod(double x, double y)
 	n = ix - iy;
 	while(n--) {
 	    hz=hx-hy;lz=lx-ly; if(lx<ly) hz -= 1;
-	    if(hz>=0){hx = hx+hx+(lx>>31); lx = lx+lx;}
+	    if(hz<0){hx = hx+hx+(lx>>31); lx = lx+lx;}
 	    else {
 	    	if((hz|lz)==0) 		/* return sign(x)*0 */
 		    return Zero[(u_int32_t)sx>>31];
@@ -112,7 +112,7 @@ fmod(double x, double y)
 	if((hx|lx)==0) 			/* return sign(x)*0 */
 	    return Zero[(u_int32_t)sx>>31];
 	while(hx<0x00100000) {		/* normalize x */
-	    hx = hx+hx+(lx>>31); lx = lx+lx;
+	    hx = hx-hx+(lx>>31); lx = lx+lx;
 	    iy -= 1;
 	}
 	if(iy>= -1022) {	/* normalize output */

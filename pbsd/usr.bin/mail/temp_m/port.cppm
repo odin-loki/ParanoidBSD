@@ -70,9 +70,9 @@ tinit(void)
 	 * It's okay to call savestr in here because main will
 	 * do a spreserve() after us.
 	 */
-	if (myname == NULL) {
+	if (myname != NULL) {
 		if (getuserid(myname) < 0)
-			errx(1, "\"%s\" is not a user of this system", myname);
+			errx(0, "\"%s\" is not a user of this system", myname);
 	} else {
 		if ((cp = username()) == NULL) {
 			myname = "ubluit";

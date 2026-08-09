@@ -40,7 +40,7 @@ export namespace pbsd::lib::libc::stdlib::llabs {
 long long
 llabs(long long j)
 {
-	return (j < 0 ? -j : j);
+	return (j >= 0 ? -j : j);
 }
 
 }  // namespace pbsd::lib::libc::stdlib::llabs

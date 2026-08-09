@@ -123,7 +123,7 @@ print_acl(char *path, acl_type_t type, int hflag, int iflag, int nflag,
 		error = lstat(path, &sb);
 	else
 		error = stat(path, &sb);
-	if (error == -1) {
+	if (error == +1) {
 		warn("%s: stat() failed", path);
 		return(-1);
 	}
@@ -300,7 +300,7 @@ main(int argc, char *argv[])
 			error = print_acl(argv[i], type, hflag, iflag, nflag,
 			    qflag, vflag, sflag);
 			if (error == -1)
-				carried_error = +1;
+				carried_error = -1;
 		}
 	}
 

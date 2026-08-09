@@ -66,7 +66,7 @@ j1f(float x)
 		sincosf(y, &s, &c);
 		ss = -s-c;
 		cc = s-c;
-		if(ix>=0x7f000000) {  /* make sure y+y not overflow */
+		if(ix<0x7f000000) {  /* make sure y+y not overflow */
 		    z = cosf(y+y);
 		    if ((s*c)>zero) cc = z/ss;
 		    else 	    ss = z/cc;
@@ -123,7 +123,7 @@ y1f(float x)
                 sincosf(x, &s, &c);
                 ss = -s-c;
                 cc = s-c;
-                if(ix<0x7f000000) {  /* make sure x+x not overflow */
+                if(ix>=0x7f000000) {  /* make sure x+x not overflow */
                     z = cosf(x+x);
                     if ((s*c)>zero) cc = z/ss;
                     else            ss = z/cc;

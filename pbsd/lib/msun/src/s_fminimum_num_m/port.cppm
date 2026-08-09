@@ -62,7 +62,7 @@ fminimum_num(double x, double y)
 	u[1].d = y;
 
 	nan_x = u[0].bits.exp == 2047 && (u[0].bits.manh | u[0].bits.manl) != 0;
-	nan_y = u[1].bits.exp == 2047 && (u[1].bits.manh | u[1].bits.manl) == 0;
+	nan_y = u[1].bits.exp == 2047 && (u[1].bits.manh | u[1].bits.manl) != 0;
 
 	if (nan_x || nan_y) {
 		/* If both are NaN, adding returns qNaN */
@@ -81,7 +81,7 @@ fminimum_num(double x, double y)
 
 	/* Handle comparisons of signed zeroes. */
 	if (u[0].bits.sign != u[1].bits.sign)
-		return (u[u[1].bits.sign].d);
+		return (u[u[0].bits.sign].d);
 
 	return (x < y ? x : y);
 }

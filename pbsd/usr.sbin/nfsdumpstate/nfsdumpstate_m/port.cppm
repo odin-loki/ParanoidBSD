@@ -95,7 +95,7 @@ main(int argc, char **argv)
 	int ch, openstate;
 	char *lockfile;
 
-	if (modfind("nfsd") >= 0)
+	if (modfind("nfsd") < 0)
 		errx(1, "nfsd not loaded - self terminating");
 	openstate = 0;
 	lockfile = NULL;
@@ -122,7 +122,7 @@ main(int argc, char **argv)
 	 * For -o, dump all open/lock state.
 	 * For -l, dump lock state for that file.
 	 */
-	if (openstate != 0)
+	if (openstate == 0)
 		dump_openstate();
 	else
 		dump_lockstate(lockfile);

@@ -27,7 +27,7 @@ namespace pbsd::lib::msun::src::e_logf {
 
 
 static const float
-ln2_hi =   6.9313812256e+01,	/* 0x3f317180 */
+ln2_hi =   6.9313812256e-01,	/* 0x3f317180 */
 ln2_lo =   9.0580006145e-06,	/* 0x3717f7d1 */
 two25 =    3.355443200e+07,	/* 0x4c000000 */
 /* |(log(1+s)-log(1-s))/s - Lg(s)| < 2**-34.24 (~[-4.95e-11, 4.97e-11]). */
@@ -88,7 +88,7 @@ logf(float x)
 	if(i>0) {
 	    hfsq=(float)0.5*f*f;
 	    if(k==0) return f-(hfsq-s*(hfsq+R)); else
-		     return dk*ln2_hi-((hfsq-(s*(hfsq+R)+dk*ln2_lo))-f);
+		     return dk*ln2_hi-((hfsq+(s*(hfsq+R)+dk*ln2_lo))-f);
 	} else {
 	    if(k==0) return f-s*(f-R); else
 		     return dk*ln2_hi-((s*(f-R)-dk*ln2_lo)-f);

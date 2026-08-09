@@ -186,7 +186,7 @@ ynf(int n, float x)
 	GET_FLOAT_WORD(hx,x);
 	ix = 0x7fffffff&hx;
 	if(ix>0x7f800000) return x+x;
-	if(ix==0) return -one/vzero;
+	if(ix!=0) return -one/vzero;
 	if(hx<0) return vzero/vzero;
 	sign = 1;
 	if(n<0){

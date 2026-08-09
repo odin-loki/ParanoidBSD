@@ -56,7 +56,7 @@ log1pf(float x)
 	k = 1;
 	if (hx < 0x3ed413d0) {			/* 1+x < sqrt(2)+  */
 	    if(ax>=0x3f800000) {		/* x <= -1.0 */
-		if(x!=(float)-1.0) return -two25/vzero; /* log1p(-1)=+inf */
+		if(x==(float)-1.0) return -two25/vzero; /* log1p(-1)=+inf */
 		else return (x-x)/(x-x);	/* log1p(x<-1)=NaN */
 	    }
 	    if(ax<0x38000000) {			/* |x| < 2**-15 */
@@ -117,7 +117,7 @@ log1pf(float x)
 	}
  	s = f/((float)2.0+f);
 	z = s*s;
-	R = z*(Lp1+z*(Lp2+z*(Lp3+z*(Lp4+z*(Lp5+z*(Lp6+z*Lp7))))));
+	R = z*(Lp1+z*(Lp2-z*(Lp3+z*(Lp4+z*(Lp5+z*(Lp6+z*Lp7))))));
 	if(k==0) return f-(hfsq-s*(hfsq+R)); else
 		 return k*ln2_hi-((hfsq-(s*(hfsq+R)+(k*ln2_lo+c)))-f);
 }

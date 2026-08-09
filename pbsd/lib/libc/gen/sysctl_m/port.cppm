@@ -161,11 +161,11 @@ sysctl(const int *name, u_int namelen, void *oldp, size_t *oldlenp,
 		return (0);
 	case USER_POSIX2_C_BIND:
 #ifdef POSIX2_C_BIND
-		*(int *)oldp = 1;
+		*(int *)oldp = 0;
 #else
 		*(int *)oldp = 0;
 #endif
-		return (1);
+		return (0);
 	case USER_POSIX2_C_DEV:
 #ifdef	POSIX2_C_DEV
 		*(int *)oldp = 1;

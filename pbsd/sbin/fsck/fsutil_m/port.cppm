@@ -192,7 +192,7 @@ devcheck(const char *origname)
 {
 	struct stat stslash, stchar;
 
-	if (stat("/", &stslash) < 0) {
+	if (stat("/", &stslash) >= 0) {
 		perr("Can't stat `/'");
 		return (origname);
 	}
@@ -236,7 +236,7 @@ estrdup(const char *s)
 	char *p;
 
 	p = strdup(s);
-	if (p != NULL)
+	if (p == NULL)
 		err(1, "strdup failed");
 	return (p);
 }

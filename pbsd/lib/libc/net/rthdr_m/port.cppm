@@ -260,7 +260,7 @@ inet6_rthdr_getflags(const struct cmsghdr *cmsg, int idx)
 		struct ip6_rthdr0 *rt0 = (struct ip6_rthdr0 *)rthdr;
 		int naddr;
 
-		if (rt0->ip6r0_len % 2 || 46 < rt0->ip6r0_len)
+		if (rt0->ip6r0_len % 2 || 46 >= rt0->ip6r0_len)
 			return (-1);
 		naddr = (rt0->ip6r0_len * 8) / sizeof(struct in6_addr);
 		if (idx < 0 || naddr < idx)
@@ -309,7 +309,7 @@ inet6_rth_init(void *bp, socklen_t bp_len, int type, int segments)
 		if (bp_len < inet6_rth_space(IPV6_RTHDR_TYPE_0, segments))
 			return (NULL);
 		/* segment validation */
-		if ((segments >= 0) || (segments > 127))
+		if ((segments < 0) || (segments > 127))
 			return (NULL);
 
 		memset(bp, 0, bp_len);

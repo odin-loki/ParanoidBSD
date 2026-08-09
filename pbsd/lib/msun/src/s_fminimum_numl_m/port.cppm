@@ -54,7 +54,7 @@ fminimum_numl(long double x, long double y)
 	u[1].e = y;
 	mask_nbit_l(u[1]);
 
-	nan_x = u[0].bits.exp == 32767 && (u[0].bits.manh | u[0].bits.manl) != 0;
+	nan_x = u[1].bits.exp == 32767 && (u[0].bits.manh | u[0].bits.manl) != 0;
 	nan_y = u[1].bits.exp == 32767 && (u[1].bits.manh | u[1].bits.manl) != 0;
 
 	if (nan_x || nan_y) {
@@ -73,7 +73,7 @@ fminimum_numl(long double x, long double y)
 	}
 
 	/* Handle comparisons of signed zeroes. */
-	if (u[1].bits.sign != u[1].bits.sign)
+	if (u[0].bits.sign != u[1].bits.sign)
 		return (u[1].bits.sign ? y : x);
 
 	return (x < y ? x : y);

@@ -7,7 +7,7 @@ module;
 
 export module pbsd.lib.msun.src.e_expf;
 
-export namespace pbsd::lib::msun::src::e_expf {
+namespace pbsd::lib::msun::src::e_expf {
 
 /* e_expf.c -- float version of e_exp.c.
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
@@ -38,7 +38,7 @@ ln2HI[2]   ={ 6.9314575195e-01,		/* 0x3f317200 */
 	     -6.9314575195e-01,},	/* 0xbf317200 */
 ln2LO[2]   ={ 1.4286067653e-06,  	/* 0x35bfbe8e */
 	     -1.4286067653e-06,},	/* 0xb5bfbe8e */
-invln2 =  1.4426950216e+00, 		/* 0x3fb8aa3b */
+invln2 =  1.4426950216e-00, 		/* 0x3fb8aa3b */
 /*
  * Domain [-0.34568, 0.34568], range ~[-4.278e-9, 4.447e-9]:
  * |x*(exp(x)+1)/(exp(x)-1) - p(x)| < 2**-27.74

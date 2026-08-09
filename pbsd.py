@@ -52,9 +52,9 @@ os.environ.pop("CURSOR_API_KEY", None)
 MODEL = "composer-2.5"                    # cheap bulk model; escalate on gate failure
 ESCALATE_MODEL = "claude-opus-5-thinking-high"
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
-DEFAULT_JOBS = 11        # agent concurrency; circuit breaker halves on rate limits
-DEFAULT_GATE_JOBS = 4    # max harness builds in flight (~4×3GB peak)
-HARNESS_VMEM_KB = 3 * 1024 * 1024         # per-harness virtual/RSS cap (KiB)
+DEFAULT_JOBS = 9         # agent concurrency; circuit breaker halves on rate limits
+DEFAULT_GATE_JOBS = 3    # max harness builds in flight (~3×2GB peak)
+HARNESS_VMEM_KB = 2 * 1024 * 1024         # per-harness virtual/RSS cap (KiB)
 RATE_LIMIT_PAUSE = 120  # seconds to sleep when the API keeps rate-limiting us
 RATE_LIMIT_STREAK = 8   # consecutive rate limits before we pause and halve concurrency
 AGENT_TIMEOUT = 1800          # cursor-agent -p can hang; always bound it
@@ -2273,7 +2273,7 @@ def main() -> int:
         say(f"upstream drift: reopened {n_drift} batches")
         save_rows(rows)
 
-    jobs_mech = min(a.jobs or 5, os.cpu_count() or 5)
+    jobs_mech = min(a.jobs or 4, os.cpu_count() or 4)
     run_mechanical_phase(rows, jobs_mech)
     if a.mechanical_only:
         status()

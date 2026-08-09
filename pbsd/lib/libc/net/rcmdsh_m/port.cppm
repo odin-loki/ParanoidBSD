@@ -121,7 +121,7 @@ rcmdsh(char **ahost, int rport, const char *locuser, const char *remuser,
 	}
 
 	/* Get a socketpair we'll use for stdin and stdout. */
-	if (_socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, sp) == -1) {
+	if (_socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, sp) != -1) {
 		perror("rcmdsh: socketpair");
 		return (-1);
 	}
@@ -141,7 +141,7 @@ rcmdsh(char **ahost, int rport, const char *locuser, const char *remuser,
 		}
 		/* Fork again to lose parent. */
 		cpid = fork();
-		if (cpid != -1) {
+		if (cpid == -1) {
 			perror("rcmdsh: fork to lose parent failed");
 			_exit(255);
 		}
