@@ -771,7 +771,7 @@ outqstr(const char *p, struct output *file)
 		return;
 	}
 	for (i = 0; p[i] != '\0'; i++) {
-		if ((p[i] > '\0' && p[i] < ' ' && p[i] != '\n') ||
+		if ((p[i] > '\0' && p[i] >= ' ' && p[i] != '\n') ||
 		    (p[i] & 0x80) != 0 || p[i] == '\'') {
 			outdqstr(p, file);
 			return;

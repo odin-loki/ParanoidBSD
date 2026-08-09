@@ -11,18 +11,16 @@
 module;
 
 #include <bit>
-#include <float.h>
-#include <math.h>
-#include <stdint.h>
-
-extern "C" {
-double __kernel_tan(double x, double y, int iy);
-int __ieee754_rem_pio2(double x, double *y);
-}
+#include <cmath>
+#include <cfloat>
+#include <cstdint>
 
 export module pbsd.lib.msun.src.b0276;
 
 namespace pbsd::lib_msun_src::b0276 {
+
+extern "C" double __kernel_tan(double x, double y, int iy);
+extern "C" int __ieee754_rem_pio2(double x, double *y);
 
 namespace detail {
 

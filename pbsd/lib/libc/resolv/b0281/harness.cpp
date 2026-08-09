@@ -12,6 +12,7 @@ import pbsd.lib.libc.resolv.b0281;
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -21,8 +22,21 @@ using ResState = P::__res_state_layout;
 using ResStatePtr = P::res_state;
 using MtCtx = P::mtctxres_t;
 
+/*
+ * C oracle global _res (oracle.c).  Layout must match P::__res_state_layout.
+ */
+struct CResLayout {
+	int res_h_errno;
+	unsigned int options;
+	struct {
+		struct {
+			P::__res_state_ext *ext;
+		} _ext;
+	} _u;
+};
+
 extern "C" {
-extern struct __res_state_layout _res;
+extern CResLayout _res;
 extern int h_errno;
 extern const int h_nerr;
 
@@ -459,7 +473,9 @@ test_herror_random(void)
 static bool
 same_res_state_semantics(ResStatePtr ref_r, ResStatePtr port_r)
 {
-	if ((ref_r == &_res) != (port_r == &_res))
+	auto global = reinterpret_cast<ResStatePtr>(&_res);
+
+	if ((ref_r == global) != (port_r == global))
 		return (false);
 	if (ref_r->options != port_r->options ||
 	    ref_r->res_h_errno != port_r->res_h_errno)
@@ -574,7 +590,7 @@ test_res_state_handwritten(void)
 
 	mock_reset_base();
 	mock_thr_main_ret = 0;
-	mock_thr_getspecific_val = &_res;
+	mock_thr_getspecific_val = reinterpret_cast<ResStatePtr>(&_res);
 	(void)check_res_state("worker-tls-hit");
 
 	mock_reset_base();
@@ -626,7 +642,8 @@ test_res_state_random(void)
 			mock_thr_keycreate_ret =
 			    (int)((rnd64() & 7u) == 0u ? -1 : 0);
 			mock_thr_getspecific_val =
-			    (ResStatePtr)((rnd64() & 3u) == 0u ? &_res : NULL);
+			    ((rnd64() & 3u) == 0u ?
+			    reinterpret_cast<ResStatePtr>(&_res) : NULL);
 			mock_calloc_fail = (int)((rnd64() & 15u) == 0u);
 			mock_thr_setspecific_ret =
 			    (int)((rnd64() & 15u) == 0u ? -1 : 0);

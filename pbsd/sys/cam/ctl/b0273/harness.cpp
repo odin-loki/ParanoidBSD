@@ -379,14 +379,60 @@ static void test_backend_find(const char *reg, const char *query, bool expect_hi
 		fail_row(FN_FIND, "unexpected hit");
 }
 
+static void test_backend_register_duplicate()
+{
+	BePool pool{};
+	reset_backends();
+	std::snprintf(pool.port[0].name, sizeof(pool.port[0].name), "ramdisk");
+	std::snprintf(pool.refb[0].name, sizeof(pool.refb[0].name), "ramdisk");
+	pool.port[0].init = stub_init_ok;
+	pool.refb[0].init = stub_init_ok;
+	P::ctl_backend_register(&pool.port[0]);
+	ref_ctl_backend_register(&pool.refb[0]);
+	++g_cases[FN_REG];
+	const int pr = P::ctl_backend_register(&pool.port[0]);
+	const int rr = ref_ctl_backend_register(&pool.refb[0]);
+	if (pr != rr)
+		fail_row(FN_REG, "dup return mismatch");
+	if (pr != -1)
+		fail_row(FN_REG, "dup unexpected return");
+	if (P::num_backends() != 1 || ref_num_backends() != 1)
+		fail_row(FN_REG, "dup count mismatch");
+}
+
+static void test_backend_deregister_middle()
+{
+	BePool pool{};
+	reset_backends();
+	for (int i = 0; i < 3; ++i) {
+		std::snprintf(pool.port[i].name, sizeof(pool.port[i].name), "mid%d", i);
+		std::snprintf(pool.refb[i].name, sizeof(pool.refb[i].name), "mid%d", i);
+		P::ctl_backend_register(&pool.port[i]);
+		ref_ctl_backend_register(&pool.refb[i]);
+	}
+	++g_cases[FN_DEREG];
+	const int pr = P::ctl_backend_deregister(&pool.port[1]);
+	const int rr = ref_ctl_backend_deregister(&pool.refb[1]);
+	if (pr != rr || pr != 0)
+		fail_row(FN_DEREG, "middle dereg return");
+	++g_cases[FN_FIND];
+	P::ctl_backend_driver *pf = P::ctl_backend_find("mid2");
+	ref_ctl_backend_driver *rf = ref_ctl_backend_find("mid2");
+	if ((pf == nullptr) != (rf == nullptr))
+		fail_row(FN_FIND, "middle find null");
+	if (pf && (pf - &pool.port[2] != rf - &pool.refb[2]))
+		fail_row(FN_FIND, "middle find offset");
+}
+
 static void test_backends_hand()
 {
 	test_backend_register("ramdisk", nullptr, 0);
-	test_backend_register("ramdisk", stub_init_ok, -1);
+	test_backend_register_duplicate();
 	test_backend_register("block", stub_init_ok, 0);
 	test_backend_register("failbe", stub_init_fail, 42);
 	test_backend_register("shutdownfail", stub_init_ok, 0);
 	test_backend_deregister("shutdownfail", stub_shutdown_fail, 17);
+	test_backend_deregister_middle();
 	test_backend_find("alpha", "alpha", true);
 	test_backend_find("alpha", "beta", false);
 	test_backend_find("alpha", "", false);
@@ -430,6 +476,13 @@ static void test_backends_random(unsigned long n)
 				fail_row(FN_FIND, "rand find null");
 			if (pf && (pf - &pool.port[which] != rf - &pool.refb[which]))
 				fail_row(FN_FIND, "rand find offset");
+			if ((rng_next() & 7u) == 0u) {
+				++g_cases[FN_REG];
+				const int pdup = P::ctl_backend_register(&pool.port[which]);
+				const int rdup = ref_ctl_backend_register(&pool.refb[which]);
+				if (pdup != rdup || pdup != -1)
+					fail_row(FN_REG, "rand dup");
+			}
 			++g_cases[FN_DEREG];
 			const int pd = P::ctl_backend_deregister(&pool.port[which]);
 			const int rd = ref_ctl_backend_deregister(&pool.refb[which]);

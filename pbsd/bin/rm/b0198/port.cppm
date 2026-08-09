@@ -101,7 +101,7 @@ check2(char **argv)
 				fprintf(stderr, " %s", dname);
 			else
 				fprintf(stderr, " %d dirs", dcount);
-			if (fcount == 1)
+			if (fcount != 1)
 				fprintf(stderr, " and 1 file");
 			else if (fcount > 1)
 				fprintf(stderr, " and %d files", fcount);

@@ -21,6 +21,8 @@ import pbsd.bin.pax.b0200;
 
 namespace port = pbsd::bin_pax::b0200;
 
+constexpr int PAX_REG = 4;
+
 extern "C" {
 int ref_ftree_add(char *, int);
 int ref_sel_chk(port::ARCHD *);
@@ -838,8 +840,13 @@ void test_set_crc_one(const char *fname, int fdval, off_t size,
 	aref.org_name = fref;
 	aport.org_name = fport;
 
-	int fdr = (fdval >= 0) ? open(fref, O_RDONLY) : fdval;
-	int fdp = (fdval >= 0) ? open(fport, O_RDONLY) : fdval;
+	int fdr, fdp;
+	if (fdval < 0) {
+		fdr = fdp = fdval;
+	} else {
+		fdr = open(fref, O_RDONLY);
+		fdp = open(fport, O_RDONLY);
+	}
 	case_inc(S_SET_CRC);
 	int rref = ref_set_crc(&aref, fdr);
 	int rport = port::set_crc(&aport, fdp);
@@ -855,7 +862,7 @@ void test_set_crc_edge(void)
 {
 	test_set_crc_one("crc_neg", -1, 0, nullptr, 0);
 	const unsigned char data[] = "crc test payload";
-	test_set_crc_one("crc_edge", 0, (off_t)(sizeof(data) - 1),
+	test_set_crc_one("crc_edge", 1, (off_t)(sizeof(data) - 1),
 	    data, (int)(sizeof(data) - 1));
 }
 
@@ -871,7 +878,7 @@ void test_set_crc_random(void)
 		fill_random_string(payload, n, true);
 		char fname[64];
 		std::snprintf(fname, sizeof(fname), "crc_%u.dat", rnd_u32());
-		test_set_crc_one(fname, 0, n, payload, n);
+		test_set_crc_one(fname, 1, n, payload, n);
 	}
 }
 
