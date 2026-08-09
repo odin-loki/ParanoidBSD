@@ -852,7 +852,7 @@ run_get_case(int ret, int out_is_stdout, u_long ln, const char *payload,
 			fail(st_get, "err");
 		return;
 	}
-	if (out_is_stdout) {
+	if (ret == 0 && out_is_stdout) {
 		rout = capture_stdout_ref([&] { ref_get(&db, &key); });
 		pout = capture_stdout_port([&] { P::get(&db, &key); });
 	} else if (ret == 0) {
@@ -861,6 +861,12 @@ run_get_case(int ret, int out_is_stdout, u_long ln, const char *payload,
 		sync_ref(ln, 0, wfd2);
 		sync_port(ln, 0, wfd2);
 		pout = capture_ofd_port(wfd2, [&] { P::get(&db, &key); });
+	} else if (ret == 1 && out_is_stdout) {
+		ExitObs r = run_child([&] { ref_get(&db, &key); });
+		ExitObs p = run_child([&] { P::get(&db, &key); });
+		if (!exit_same(r, p))
+			fail(st_get, "stderr");
+		return;
 	} else if (ret == 1) {
 		rout = capture_ofd_ref(wfd, [&] { ref_get(&db, &key); });
 		int wfd2 = make_pipe_out();
@@ -1071,6 +1077,11 @@ run_rem_tests(void)
 			});
 			if (rs != ps)
 				fail(st_rem, "pipe");
+			return;
+		}
+		if (ret == 0) {
+			ref_rem(&db, &k);
+			P::rem(&db, &k);
 			return;
 		}
 		ExitObs r = run_child([&] { ref_rem(&db, &k); });

@@ -25,6 +25,38 @@ module;
 #include <bsd/vis.h>
 
 export module pbsd.bin.ps.b0291;
+
+typedef int fixpt_t;
+struct velisthead;
+
+extern "C" {
+extern fixpt_t ccpu;
+extern int cflag, eval, fscale, nlistread, rawcpu;
+extern unsigned long mempages;
+extern time_t now;
+extern int showthreads, sumrusage, termwidth;
+extern jmp_buf b0291_err_jmp;
+extern int b0291_err_jmp_set, b0291_errx_code;
+extern char *user_from_uid(uid_t, int);
+extern char *group_from_gid(gid_t, int);
+extern char *devname(dev_t, mode_t);
+extern char *jail_getname(int);
+extern int donlist(void);
+typedef void *mac_t;
+extern int mac_prepare_process_label(mac_t *);
+extern int mac_get_pid(pid_t, mac_t);
+extern int mac_to_text(mac_t, char **);
+extern void mac_free(mac_t);
+extern void xo_warnx(const char *, ...);
+extern void xo_warn(const char *, ...);
+extern void xo_err(int, const char *, ...);
+extern void xo_errx(int, const char *, ...);
+extern void xo_open_list(const char *);
+extern int xo_emit(const char *, ...);
+extern void xo_close_list(const char *);
+extern int xo_finish(void);
+}
+
 export namespace pbsd::bin_ps::b0291 {
 
 #ifndef __unused
@@ -137,12 +169,52 @@ struct kinfo_proc {
 #define COMMAND_WIDTH 16
 #define ARGUMENTS_WIDTH 16
 #define ps_pgtok(a) (((a)*getpagesize())/1024)
-extern fixpt_t ccpu; extern int cflag,eval,fscale,nlistread,rawcpu; extern unsigned long mempages; extern time_t now; extern int showthreads,sumrusage,termwidth; extern struct velisthead varlist; extern const size_t known_keywords_nb;
-extern char *user_from_uid(uid_t,int); extern char *group_from_gid(gid_t,int); extern char *devname(dev_t,mode_t); extern char *jail_getname(int); extern int donlist(void);
-typedef void *mac_t; extern int mac_prepare_process_label(mac_t*); extern int mac_get_pid(pid_t,mac_t); extern int mac_to_text(mac_t,char**); extern void mac_free(mac_t);
-extern void xo_warnx(const char*,...); extern void xo_warn(const char*,...); extern void xo_err(int,const char*,...); extern void xo_errx(int,const char*,...); extern void xo_open_list(const char*); extern int xo_emit(const char*,...); extern void xo_close_list(const char*); extern int xo_finish(void);
-extern jmp_buf b0291_err_jmp; extern int b0291_err_jmp_set,b0291_errx_code;
-static inline void b0291_errx(int eval,const char *fmt,...){va_list ap;va_start(ap,fmt);if(b0291_err_jmp_set)longjmp(b0291_err_jmp,eval);vfprintf(stderr,fmt,ap);va_end(ap);exit(eval);} 
+using ::ccpu;
+using ::cflag;
+using ::eval;
+using ::fscale;
+using ::nlistread;
+using ::rawcpu;
+using ::mempages;
+using ::now;
+using ::showthreads;
+using ::sumrusage;
+using ::termwidth;
+using ::user_from_uid;
+using ::group_from_gid;
+using ::devname;
+using ::jail_getname;
+using ::donlist;
+using ::mac_prepare_process_label;
+using ::mac_get_pid;
+using ::mac_to_text;
+using ::mac_free;
+using ::xo_warnx;
+using ::xo_warn;
+using ::xo_err;
+using ::xo_errx;
+using ::xo_open_list;
+using ::xo_emit;
+using ::xo_close_list;
+using ::xo_finish;
+using ::b0291_err_jmp;
+using ::b0291_err_jmp_set;
+using ::b0291_errx_code;
+extern "C" struct velisthead *b0291_get_varlist(void);
+inline velisthead &varlist_ref()
+{
+	return *reinterpret_cast<velisthead *>(b0291_get_varlist());
+}
+static inline void b0291_errx(int eval, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	if (b0291_err_jmp_set)
+		longjmp(b0291_err_jmp, eval);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	exit(eval);
+}
 #undef errx
 #define errx b0291_errx
 
@@ -313,13 +385,13 @@ printheader(void)
 	const VAR *v;
 	struct varent *vent;
 
-	STAILQ_FOREACH(vent, &varlist, next_ve)
+	STAILQ_FOREACH(vent, &varlist_ref(), next_ve)
 		if (*vent->header != '\0')
 			break;
 	if (!vent)
 		return;
 
-	STAILQ_FOREACH(vent, &varlist, next_ve) {
+	STAILQ_FOREACH(vent, &varlist_ref(), next_ve) {
 		v = vent->var;
 		if (v->flag & LJUST) {
 			if (STAILQ_NEXT(vent, next_ve) == NULL)	/* last one */

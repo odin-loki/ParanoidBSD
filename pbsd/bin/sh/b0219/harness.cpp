@@ -1866,21 +1866,31 @@ tr_stack_walk(const std::vector<StackStep> &steps)
 		}
 		}
 
-		size_t used = (size_t)(strp - A::get_stacknxt());
+		/*
+		 * Hash the free region BEFORE re-arming it: the guard bytes
+		 * planted on the previous step are what catches a write past
+		 * the nominal window.  After an op that moves the free region
+		 * nothing above stackblock() is deterministic yet, so such a
+		 * step contributes no content and the guard is re-armed for
+		 * the next one.
+		 */
+		char *cur = A::get_stacknxt();
+		char *se = A::get_sstrend();
+		size_t used = 0;
+		if (!reset && strp != NULL && cur != NULL && strp >= cur)
+			used = (size_t)(strp - cur);
+		size_t win = reset ? 0 : std::max(fill, used);
 		t.push_back(std::make_pair(std::string(fn), d + " " +
-		    stackState<A>() + " " +
-		    blockWindow<A>(std::max(fill, used))));
+		    stackState<A>() + " " + blockWindow<A>(win)));
 
-		if (reset) {
-			/* the free region moved: re-arm the guard bytes */
-			strp = A::get_stacknxt();
-			fill = 0;
-			if (A::get_stacknleft() > 0) {
-				memset(A::get_stacknxt(), 0x7f,
-				    (size_t)A::get_stacknleft());
-				fill = (size_t)A::get_stacknleft();
-			}
-		}
+		if (reset)
+			strp = cur;
+		fill = 0;
+		if (strp != NULL && se != NULL && strp < se)
+			memset(strp, 0x7f, (size_t)(se - strp));
+		if (cur != NULL && se != NULL && se > cur)
+			fill = (size_t)(se - cur);
+
 		/* keep the doubling in growstackblock() bounded */
 		if (A::get_stacknleft() > (1 << 18)) {
 			while (!marks.empty()) {

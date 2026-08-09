@@ -1,0 +1,4 @@
+histedit.c — requires libedit/history APIs, evalstring, and full interactive shell runtime
+options.c — procargs, optschanged, shiftcmd, setcmd, getoptscmd require shell globals, jobs, traps, and builtins
+miscbltin.c — readcmd, umaskcmd, ulimitcmd require stack allocator, variable store, poll, and resource limits
+exec.c — shellexec, padvance, find_command, hashcmd, and related cmdtable functions require exec, stat, and shell memory stack

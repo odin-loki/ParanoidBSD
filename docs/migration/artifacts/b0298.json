@@ -1,0 +1,12 @@
+{
+  "batch": "b0298",
+  "verified": "2026-08-09T02:24:17Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 3/4: insque, tfind, trecurse)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0298: port vs. oracle\n  function          cases     failures\n  ---------- ------------ ------------\n  insque           200650            0  ok\n  tfind            200132            0  ok\n  twalk            200108            0  ok\n  ---------- ------------ ------------\n  TOTAL            600890            0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/insque.c": "c1dc20459645e328",
+    "hbsd/src/lib/libc/stdlib/tfind.c": "0f15210833e6d6fd",
+    "hbsd/src/lib/libc/stdlib/twalk.c": "253d5f4782f99d0d"
+  }
+}

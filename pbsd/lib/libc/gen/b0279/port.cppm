@@ -153,6 +153,11 @@ int issetugid(void);
 char *getenv(const char *);
 int _getlogin(char *, int);
 int __semctl(int, int, int, union semun *);
+int b0279_c_snprintf(char *, size_t, const char *, std::uintmax_t,
+    std::uintmax_t);
+int b0279_c_snprintf_brief(char *, const char *, unsigned);
+int b0279_c_snprintf_full(char *, int, unsigned, const char *, unsigned,
+    std::uintmax_t, std::uintmax_t);
 }
 
 /*-
@@ -452,7 +457,7 @@ __uexterr_format(const struct uexterror *ue, char *buf, size_t bufsz)
 	has_msg = ue->msg[0] != '\0';
 
 	if (has_msg) {
-		snprintf(buf, bufsz, ue->msg, (uintmax_t)ue->p1,
+		b0279_c_snprintf(buf, bufsz, ue->msg, (uintmax_t)ue->p1,
 		    (uintmax_t)ue->p2);
 	} else {
 		strlcpy(buf, "", bufsz);
@@ -461,18 +466,15 @@ __uexterr_format(const struct uexterror *ue, char *buf, size_t bufsz)
 	if (exterror_verbose > EXTERR_VERBOSE_DEFAULT || !has_msg) {
 		char lbuf[128];
 
-#define	SRC_FMT "(src sys/%s:%u)"
 		if (exterror_verbose == EXTERR_VERBOSE_ALLOW_BRIEF) {
-			snprintf(lbuf, sizeof(lbuf), SRC_FMT,
-                            cat_to_filename(ue->cat), ue->src_line);
+			b0279_c_snprintf_brief(lbuf, cat_to_filename(ue->cat),
+			    ue->src_line);
 		} else if (!has_msg ||
 		    exterror_verbose == EXTERR_VERBOSE_ALLOW_FULL) {
-			snprintf(lbuf, sizeof(lbuf),
-			    "errno %d category %u " SRC_FMT " p1 %#jx p2 %#jx",
-			    ue->error, ue->cat, cat_to_filename(ue->cat),
-			    ue->src_line, (uintmax_t)ue->p1, (uintmax_t)ue->p2);
+			b0279_c_snprintf_full(lbuf, (int)ue->error, ue->cat,
+			    cat_to_filename(ue->cat), ue->src_line,
+			    (uintmax_t)ue->p1, (uintmax_t)ue->p2);
 		}
-#undef SRC_FMT
 		if (has_msg)
 			strlcat(buf, " ", bufsz);
 		strlcat(buf, lbuf, bufsz);

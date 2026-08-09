@@ -50,7 +50,7 @@ int suppressint = 0;
 #define INTON		(--suppressint)
 
 static int port_exraised = 0;
-static int port_error_thrown = 0;
+static int port_error_flag = 0;
 static char port_error_msg[256];
 
 static char port_optarg_buf[64];
@@ -72,8 +72,8 @@ error(const char *fmt, ...)
 	va_start(ap, fmt);
 	vsnprintf(port_error_msg, sizeof(port_error_msg), fmt, ap);
 	va_end(ap);
-	port_error_thrown = 1;
-	abort();
+	port_error_flag = 1;
+	
 }
 
 static void
@@ -158,7 +158,7 @@ port_reset_all()
 {
 	suppressint = 0;
 	port_exraised = 0;
-	port_error_thrown = 0;
+	port_error_flag = 0;
 	std::memset(port_error_msg, 0, sizeof(port_error_msg));
 	port_optarg_set = 0;
 	port_unset_optarg = 0;
@@ -211,6 +211,12 @@ int
 port_get_shellparam_reset()
 {
 	return shellparam.reset;
+}
+
+int
+port_error_thrown()
+{
+	return port_error_flag;
 }
 
 /* ===================================================================== *
