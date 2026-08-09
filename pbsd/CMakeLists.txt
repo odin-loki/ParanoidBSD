@@ -160,6 +160,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/b0311/port.cppm
   lib/libc/gen/b0314/port.cppm
   lib/libc/gen/b0321/port.cppm
+  lib/libc/gen/b0333/port.cppm
   lib/libc/gen/check_utility_compat_m/port.cppm
   lib/libc/gen/clock_m/port.cppm
   lib/libc/gen/devname_m/port.cppm
@@ -232,6 +233,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/locale/b0156s3/port.cppm
   lib/libc/locale/b0156s4/port.cppm
   lib/libc/locale/b0159/port.cppm
+  lib/libc/locale/b0332/port.cppm
   lib/libc/locale/isctype_m/port.cppm
   lib/libc/locale/iswctype_m/port.cppm
   lib/libc/locale/rpmatch_m/port.cppm
@@ -268,6 +270,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/quad/fixdfdi_m/port.cppm
   lib/libc/quad/fixsfdi_m/port.cppm
   lib/libc/regex/b0292/port.cppm
+  lib/libc/regex/b0336/port.cppm
   lib/libc/regex/regfree_m/port.cppm
   lib/libc/resolv/b0281/port.cppm
   lib/libc/rpc/b0196/port.cppm

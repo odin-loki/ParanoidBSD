@@ -16,14 +16,14 @@ typedef union {
 
 #define GET_FLOAT_WORD(i, d)					\
 	do {							\
-		ieee_float_shape_type gf_u;			\
+		::pbsd::lib_msun_src::b0327::detail::ieee_float_shape_type gf_u; \
 		gf_u.value = (d);				\
 		(i) = gf_u.word;				\
 	} while (0)
 
 #define SET_FLOAT_WORD(d, i)					\
 	do {							\
-		ieee_float_shape_type sf_u;			\
+		::pbsd::lib_msun_src::b0327::detail::ieee_float_shape_type sf_u; \
 		sf_u.word = (i);				\
 		(d) = sf_u.value;				\
 	} while (0)
@@ -40,21 +40,21 @@ typedef union {
 
 #define GET_HIGH_WORD(i, d)					\
 	do {							\
-		ieee_double_shape_type gh_u;			\
+		::pbsd::lib_msun_src::b0327::detail::ieee_double_shape_type gh_u; \
 		gh_u.value = (d);				\
 		(i) = static_cast<std::int32_t>(gh_u.parts.msw); \
 	} while (0)
 
 #define GET_LOW_WORD(i, d)					\
 	do {							\
-		ieee_double_shape_type gl_u;			\
+		::pbsd::lib_msun_src::b0327::detail::ieee_double_shape_type gl_u; \
 		gl_u.value = (d);				\
 		(i) = gl_u.parts.lsw;				\
 	} while (0)
 
 #define INSERT_WORDS(d, ix0, ix1)				\
 	do {							\
-		ieee_double_shape_type iw_u;			\
+		::pbsd::lib_msun_src::b0327::detail::ieee_double_shape_type iw_u; \
 		iw_u.parts.msw = (ix0);				\
 		iw_u.parts.lsw = (ix1);				\
 		(d) = iw_u.value;				\
@@ -100,14 +100,14 @@ union IEEEl2bits {
 
 #define	GET_LDBL_EXPSIGN(i,d)					\
 do {								\
-	IEEEl2bits ge_u;					\
+	::pbsd::lib_msun_src::b0327::detail::IEEEl2bits ge_u;	\
 	ge_u.e = (d);						\
 	(i) = ge_u.xbits.expsign;				\
 } while (0)
 
 #define	SET_LDBL_EXPSIGN(d,v)					\
 do {								\
-	IEEEl2bits se_u;					\
+	::pbsd::lib_msun_src::b0327::detail::IEEEl2bits se_u;	\
 	se_u.e = (d);						\
 	se_u.xbits.expsign = (v);				\
 	(d) = se_u.e;						\
@@ -730,7 +730,7 @@ dec(long double x)
 
 } // namespace pbsd::lib_msun_src::b0327::detail
 
-export namespace pbsd::lib_msun_src::b0327 {
+namespace pbsd::lib_msun_src::b0327 {
 
 #define one atan_one
 #define huge atan_huge

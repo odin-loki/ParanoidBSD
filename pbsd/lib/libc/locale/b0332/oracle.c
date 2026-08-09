@@ -222,9 +222,8 @@ struct _xlocale {
 typedef struct _xlocale *pbsd_locale_t;
 
 #include <pthread.h>
-#undef pbsd_locale_t
-typedef struct _xlocale *pbsd_locale_t;
 
+#define locale_t pbsd_locale_t
 #define LC_GLOBAL_LOCALE	((pbsd_locale_t)-1)
 
 struct xlocale_monetary {
@@ -254,48 +253,6 @@ static inline void
 atomic_add_long(volatile long *p, long v)
 {
 	__atomic_fetch_add(p, v, __ATOMIC_SEQ_CST);
-}
-
-static inline pbsd_locale_t
-get_real_locale(pbsd_locale_t locale)
-{
-	switch ((intptr_t)locale) {
-	case 0:
-		return (&__xlocale_C_locale);
-	case -1:
-		return (&__xlocale_global_locale);
-	default:
-		return (locale);
-	}
-}
-
-#define FIX_LOCALE(l)	((l) = get_real_locale(l))
-
-static inline void *
-xlocale_retain(void *val)
-{
-	struct xlocale_refcounted *obj = val;
-	atomic_add_long(&(obj->retain_count), 1);
-	return (val);
-}
-
-static inline void
-xlocale_release(void *val)
-{
-	struct xlocale_refcounted *obj = val;
-	long count;
-
-	count = atomic_fetchadd_long(&(obj->retain_count), -1) - 1;
-	if (count < 0 && obj->destructor != NULL)
-		obj->destructor(obj);
-}
-
-static pbsd_locale_t
-__get_locale(void)
-{
-	if (!__has_thread_locale || __thread_locale == NULL)
-		return (&__xlocale_global_locale);
-	return (__thread_locale);
 }
 
 /* harness-controllable hooks */
@@ -404,6 +361,54 @@ struct xlocale_component __xlocale_global_time = {{0, NULL}, "C", "BSD 1.0\n"};
 struct xlocale_component __xlocale_global_messages = {{0, NULL}, "C", "BSD 1.0\n"};
 struct xlocale_component __xlocale_C_collate = {{0, NULL}, "C", ""};
 struct xlocale_component __xlocale_C_ctype = {{0, NULL}, "C", ""};
+
+static inline pbsd_locale_t
+get_real_locale(pbsd_locale_t locale)
+{
+	switch ((intptr_t)locale) {
+	case 0:
+		return (&__xlocale_C_locale);
+	case -1:
+		return (&__xlocale_global_locale);
+	default:
+		return (locale);
+	}
+}
+
+#define FIX_LOCALE(l)	((l) = get_real_locale(l))
+
+static inline void *
+xlocale_retain(void *val)
+{
+	struct xlocale_refcounted *obj = val;
+	atomic_add_long(&(obj->retain_count), 1);
+	return (val);
+}
+
+static inline void
+xlocale_release(void *val)
+{
+	struct xlocale_refcounted *obj = val;
+	long count;
+
+	count = atomic_fetchadd_long(&(obj->retain_count), -1) - 1;
+	if (count < 0 && obj->destructor != NULL)
+		obj->destructor(obj);
+}
+
+static pbsd_locale_t
+__get_locale(void)
+{
+	if (!__has_thread_locale || __thread_locale == NULL)
+		return (&__xlocale_global_locale);
+	return (__thread_locale);
+}
+
+char *
+secure_getenv(const char *name)
+{
+	return (getenv(name));
+}
 
 void
 pbsd_reset_hooks(void)
@@ -1401,18 +1406,10 @@ __detect_path_locale(void)
  * Each locale loader declares a global component.  This is used by setlocale()
  * and also by xlocale with LC_GLOBAL_LOCALE..
  */
-extern struct xlocale_component __xlocale_global_collate;
-extern struct xlocale_component __xlocale_global_ctype;
-extern struct xlocale_component __xlocale_global_monetary;
-extern struct xlocale_component __xlocale_global_numeric;
-extern struct xlocale_component __xlocale_global_time;
-extern struct xlocale_component __xlocale_global_messages;
 /*
  * And another version for the statically-allocated C locale.  We only have
  * components for the parts that are expected to be sensible.
  */
-extern struct xlocale_component __xlocale_C_collate;
-extern struct xlocale_component __xlocale_C_ctype;
 
 /*
  * The locale for this thread.

@@ -323,6 +323,7 @@ static inline void b0334_trap_errx(int code, const char *fmt, ...) {
 #define getopt b0334_getopt
 #define jail_getid b0334_jail_getid
 
+
 struct group *getgrgid(gid_t gid) {
     static struct group g;
     if (b0334_getgrgid(gid, &g)) return &g;
@@ -343,7 +344,7 @@ struct passwd *getpwuid(uid_t uid) {
     if (b0334_getpwuid(uid, &p)) return &p;
     return NULL;
 }
-int stat(const char *path, struct stat *sb) { return b0334_stat(path, sb); }
+
 char *ttyname(int fd) { return b0334_ttyname(fd); }
 char *getenv(const char *name) { return b0334_getenv(name); }
 uid_t geteuid(void) { return b0334_geteuid(); }
@@ -372,6 +373,7 @@ int b0334_optind = 0;
 char *b0334_optarg = NULL;
 #define optind b0334_optind
 #define optarg b0334_optarg
+#define stat(p, s) b0334_stat((p), (s))
 VARENT *find_varentry(const char *);
 
 /*-
@@ -534,7 +536,7 @@ main(int argc, char *argv[])
 	int fwidthmin, fwidthmax;
 	char errbuf[_POSIX2_LINE_MAX];
 	char fmtbuf[_POSIX2_LINE_MAX];
-	enum { NONE = 0, UP = 1, DOWN = 2, BOTH = 1 | 2 } directions = NONE;
+	enum { NONE = 0, UP = 1, DOWN = 2, BOTH = 1 | 2 }; int directions = NONE;
 	struct { int traversed; int initial; } pid_count;
 	struct keyword_info *keywords_info;
 
@@ -857,7 +859,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	keywords_info = calloc(known_keywords_nb, sizeof(struct keyword_info));
+	keywords_info = (struct keyword_info *)calloc(known_keywords_nb, sizeof(struct keyword_info));
 	if (keywords_info == NULL)
 		xo_errx(1, "malloc failed");
 	/*
@@ -971,7 +973,7 @@ main(int argc, char *argv[])
 			}
 		}
 	if (nentries > 0) {
-		if ((kinfo = malloc(nentries * sizeof(*kinfo))) == NULL)
+		if ((kinfo = (KINFO *)malloc(nentries * sizeof(*kinfo))) == NULL)
 			xo_errx(1, "malloc failed");
 		for (i = nentries; --i >= 0; ++kp) {
 			/*
@@ -1519,13 +1521,13 @@ descendant_sort(KINFO *ki, int items)
 	 * Now populate ki_d.prefix (instead of ki_d.level) with the command
 	 * prefix used to show descendancies.
 	 */
-	path = calloc((maxlvl + 7) / 8, sizeof(unsigned char));
+	path = (unsigned char *)calloc((maxlvl + 7) / 8, sizeof(unsigned char));
 	for (src = 0; src < items; src++) {
 		if ((lvl = ki[src].ki_d.level) == 0) {
 			ki[src].ki_d.prefix = NULL;
 			continue;
 		}
-		if ((ki[src].ki_d.prefix = malloc(lvl * 2 + 1)) == NULL)
+		if ((ki[src].ki_d.prefix = (char *)malloc(lvl * 2 + 1)) == NULL)
 			xo_errx(1, "malloc failed");
 		for (n = 0; n < lvl - 2; n++) {
 			ki[src].ki_d.prefix[n * 2] =
@@ -1561,7 +1563,7 @@ expand_list(struct listinfo *inf)
 	int newmax;
 
 	newmax = (inf->maxcount + 1) << 1;
-	newlist = realloc(inf->l.ptr, newmax * inf->elemsize);
+	newlist = (void *)realloc(inf->l.ptr, newmax * inf->elemsize);
 	if (newlist == NULL) {
 		free(inf->l.ptr);
 		xo_errx(1, "realloc to %d %ss failed", newmax, inf->lname);
@@ -1677,7 +1679,7 @@ format_output(KINFO *ki)
 	STAILQ_FOREACH(vent, &varlist, next_ve) {
 		v = vent->var;
 		str = (v->oproc)(ki, vent);
-		ks = malloc(sizeof(*ks));
+		ks = (KINFO_STR *)malloc(sizeof(*ks));
 		if (ks == NULL)
 			xo_errx(1, "malloc failed");
 		ks->ks_str = str;
@@ -1747,8 +1749,8 @@ pscomp(const void *a, const void *b)
 {
 	const KINFO *ka, *kb;
 
-	ka = a;
-	kb = b;
+	ka = (const KINFO *)a;
+	kb = (const KINFO *)b;
 	/* SORTCPU and SORTMEM are sorted in descending order. */
 	if (sortby == SORTCPU)
 		DIFF_RETURN(kb, ka, ki_pcpu);
@@ -1797,7 +1799,7 @@ kludge_oldps_options(const char *optlist, char *origval, const char *nextarg)
 	argp = NULL;
 	if (optlist != NULL) {
 		for (cp = origval; *cp != '\0'; cp++) {
-			optp = strchr(optlist, *cp);
+			optp = (char *)strchr(optlist, *cp);
 			if ((optp != NULL) && *(optp + 1) == ':') {
 				argp = cp;
 				break;
@@ -1850,7 +1852,7 @@ kludge_oldps_options(const char *optlist, char *origval, const char *nextarg)
 	 * Create a copy of the string to add '-' and/or 'p' to the
 	 * original value.
 	 */
-	if ((newopts = ns = malloc(len + 3)) == NULL)
+	if ((newopts = ns = (char *)malloc(len + 3)) == NULL)
 		xo_errx(1, "malloc failed");
 
 	if (*origval != '-')

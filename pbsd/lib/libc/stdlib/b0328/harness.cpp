@@ -693,36 +693,44 @@ struct HTab {
 	P::hsearch_data port_htab;
 	char keys[MAX_KEYS][KEYLEN];
 	void *datas[MAX_KEYS];
-	unsigned char ref_blob[sizeof(ref_ENTRY) * MAX_SLOTS + STRPAD * 2];
-	unsigned char port_blob[sizeof(P::ENTRY) * MAX_SLOTS + STRPAD * 2];
 };
+
+static void
+htab_free(HTab &t)
+{
+	std::free(t.ref_hs.entries);
+	std::free(t.port_hs.entries);
+	t.ref_hs.entries = nullptr;
+	t.port_hs.entries = nullptr;
+}
 
 static void
 htab_init(HTab &t, size_t offset_basis)
 {
 	std::memset(&t, 0, sizeof(t));
-	t.ref_hs.entries = reinterpret_cast<ref_ENTRY *>(t.ref_blob + STRPAD);
-	t.port_hs.entries = reinterpret_cast<P::ENTRY *>(t.port_blob + STRPAD);
+	t.ref_hs.entries = static_cast<ref_ENTRY *>(
+	    std::calloc(16, sizeof(ref_ENTRY)));
+	t.port_hs.entries = static_cast<P::ENTRY *>(
+	    std::calloc(16, sizeof(P::ENTRY)));
 	t.ref_hs.offset_basis = offset_basis;
 	t.port_hs.offset_basis = offset_basis;
 	t.ref_hs.index_mask = 0xf;
 	t.port_hs.index_mask = 0xf;
 	t.ref_htab.__hsearch = &t.ref_hs;
 	t.port_htab.__hsearch = &t.port_hs;
-	std::memset(t.ref_blob, GUARD, sizeof(t.ref_blob));
-	std::memset(t.port_blob, GUARD, sizeof(t.port_blob));
 }
 
 static long
-hent_off(const unsigned char *base, const void *p, size_t slots)
+hent_off(const ref_ENTRY *base, size_t count, const void *p)
 {
 	if (p == nullptr)
 		return (-1);
 	const unsigned char *q = reinterpret_cast<const unsigned char *>(p);
-	const unsigned char *end = base + STRPAD + slots * sizeof(ref_ENTRY);
-	if (q < base || q >= end)
+	const unsigned char *b = reinterpret_cast<const unsigned char *>(base);
+	const unsigned char *end = b + count * sizeof(ref_ENTRY);
+	if (q < b || q >= end)
 		return (-2);
-	return (q - base);
+	return (q - b);
 }
 
 static bool
@@ -746,8 +754,6 @@ htab_equal(const HTab &t)
 		if (re->data != pe->data)
 			return (false);
 	}
-	if (std::memcmp(t.ref_blob, t.port_blob, sizeof(t.ref_blob)) != 0)
-		return (false);
 	return (true);
 }
 
@@ -784,8 +790,9 @@ case_hsearch(HTab &t, const char *key, void *data, bool enter, unsigned idx)
 	check(st_hsearch_r, err_p == err_r, "key=%s errno %d != %d", key, err_p,
 	    err_r);
 	check(st_hsearch_r,
-	    hent_off(t.ref_blob, rret, MAX_SLOTS) ==
-	    hent_off(t.port_blob, pret, MAX_SLOTS),
+	    hent_off(t.ref_hs.entries, t.ref_hs.index_mask + 1, rret) ==
+	    hent_off(reinterpret_cast<const ref_ENTRY *>(t.port_hs.entries),
+	    t.port_hs.index_mask + 1, pret),
 	    "key=%s retval off", key);
 	check(st_hsearch_r, htab_equal(t), "key=%s table state", key);
 }
@@ -802,6 +809,8 @@ test_hsearch_edges(void)
 	case_hsearch(t, "beta", nullptr, false, 0);
 	case_hsearch(t, "beta", (void *)0x3, true, 1);
 
+	htab_free(t);
+
 	htab_init(t, 0x01000193u);
 	for (int i = 0; i < 20; ++i) {
 		char key[16];
@@ -810,11 +819,13 @@ test_hsearch_edges(void)
 		case_hsearch(t, key, (void *)(intptr_t)(i + 1), true,
 		    (unsigned)i);
 	}
+	htab_free(t);
 
 	htab_init(t, 0xdeadbeefu);
 	case_hsearch(t, "collision", (void *)0x10, true, 0);
 	case_hsearch(t, "collision2", (void *)0x11, true, 1);
 	case_hsearch(t, "collision", (void *)0x12, false, 0);
+	htab_free(t);
 }
 
 static void
@@ -835,10 +846,11 @@ test_hsearch_sweep(void)
 			for (unsigned c = 0; c < len; ++c)
 				key[c] = (char)('a' + (rng_byte() % 26));
 			key[len] = '\0';
-			case_hsearch(t, key, (void *)(intptr_t)rng_next(),
-			    enter, ki % MAX_KEYS);
+		case_hsearch(t, key, (void *)(intptr_t)rng_next(),
+		    enter, ki % MAX_KEYS);
 			ki++;
 		}
+		htab_free(t);
 	}
 }
 

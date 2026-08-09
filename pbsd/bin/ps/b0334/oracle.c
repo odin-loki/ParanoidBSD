@@ -320,6 +320,7 @@ static inline void b0334_trap_errx(int code, const char *fmt, ...) {
 #define getopt b0334_getopt
 #define jail_getid b0334_jail_getid
 
+
 struct group *getgrgid(gid_t gid) {
     static struct group g;
     if (b0334_getgrgid(gid, &g)) return &g;

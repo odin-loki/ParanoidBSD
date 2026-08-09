@@ -207,6 +207,8 @@ int mock_cleanup_set;
 unsigned char mock_malloc_arena[262144];
 size_t mock_malloc_arena_off;
 
+int mock_fstat_calls;
+
 void b0326_reset(void);
 void *__real_malloc(size_t);
 
@@ -247,6 +249,7 @@ b0326_reset(void)
 	mock_printf_out_last_buf = NULL;
 	mock_printf_out_last_len = 0;
 	mock_printf_flush_calls = 0;
+	mock_fstat_calls = 0;
 	__cleanup = NULL;
 	mock_cleanup_set = 0;
 }
@@ -274,12 +277,15 @@ int
 _fstat(int fd, struct stat *st)
 {
 
+	mock_fstat_calls++;
 	mock_fstat_fd = fd;
 	if (mock_fstat_ret < 0) {
 		errno = EINVAL;
 		return (-1);
 	}
-	*st = mock_fstat_st;
+	memset(st, 0, sizeof(*st));
+	st->st_mode = mock_fstat_st.st_mode;
+	st->st_blksize = mock_fstat_st.st_blksize;
 	return (0);
 }
 

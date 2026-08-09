@@ -69,6 +69,16 @@ ORACLE_SUPPORT = r'''
 #include <string.h>
 #include <wchar.h>
 
+typedef struct {
+	void	*spaceholder[64];
+} iconv_allocation_t;
+
+struct iconv_hooks {
+	void (*uc_hook)(unsigned int, void *);
+	void (*wc_hook)(wchar_t, void *);
+	void *data;
+};
+
 #ifndef EFTYPE
 #define	EFTYPE		79
 #endif
@@ -114,6 +124,9 @@ typedef uint32_t _citrus_csid_t;
 #define _index_t		_citrus_index_t
 #define _wc_t			_citrus_wc_t
 #define _stdenc			_citrus_stdenc
+#define _stdenc_state_desc	_citrus_stdenc_state_desc
+#define _STDENC_SDID_GENERIC	_CITRUS_STDENC_SDID_GENERIC
+#define _STDENC_SDGEN_INITIAL	1
 
 #define _bcs_isblank		_citrus_bcs_isblank
 #define _bcs_iseol		_citrus_bcs_iseol
@@ -134,6 +147,7 @@ typedef uint32_t _citrus_csid_t;
 #define _region_size		_citrus_region_size
 #define _region_offset		_citrus_region_offset
 
+#define _db_factory		_citrus_db_factory
 #define _db_factory_create	_citrus_db_factory_create
 #define _db_factory_free	_citrus_db_factory_free
 #define _db_factory_add_by_s	_citrus_db_factory_add_by_string
@@ -592,6 +606,10 @@ struct _citrus_stdenc_ops _citrus_##_e_##_stdenc_ops = { \
 	&_citrus_##_e_##_stdenc_get_state_desc \
 }
 
+int _citrus_stdenc_open(struct _citrus_stdenc * __restrict * __restrict,
+    char const * __restrict, const void * __restrict, size_t);
+void _citrus_stdenc_close(struct _citrus_stdenc *);
+
 struct _citrus_iconv_ops {
 	int (*io_init_shared)(struct _citrus_iconv_shared * __restrict,
 	    const char * __restrict, const char * __restrict);
@@ -839,8 +857,15 @@ def strip_static_defs(text: str) -> str:
     return text
 
 
+def move_none_def_ops(text: str) -> str:
+    if '_CITRUS_STDENC_DEF_OPS(NONE);' not in text:
+        return text
+    text = text.replace('_CITRUS_STDENC_DEF_OPS(NONE);\n', '')
+    return text.rstrip() + '\n\n_CITRUS_STDENC_DEF_OPS(NONE);\n'
+
+
 def process_oracle_source(text: str) -> str:
-    text = strip_static_defs(prepare_source(text))
+    text = move_none_def_ops(strip_static_defs(prepare_source(text)))
     for fn in sorted(BATCH_FUNCS, key=len, reverse=True):
         text = re.sub(
             rf'(?<!ref_)\b{re.escape(fn)}\s*\(',
@@ -851,11 +876,7 @@ def process_oracle_source(text: str) -> str:
 
 
 def process_port_source(text: str) -> str:
-    text = strip_static_defs(prepare_source(text))
-    if '_CITRUS_STDENC_DEF_OPS(NONE);' in text:
-        text = text.replace('_CITRUS_STDENC_DEF_OPS(NONE);\n', '')
-        text = text.rstrip() + '\n\n_CITRUS_STDENC_DEF_OPS(NONE);\n'
-    return text
+    return move_none_def_ops(strip_static_defs(prepare_source(text)))
 
 
 def cpp_fixup(text: str) -> str:
@@ -872,8 +893,17 @@ def cpp_fixup(text: str) -> str:
         (r'\bnames = malloc\b', 'names = (char **)malloc'),
         (r'\bcurkey = strndup\b', 'curkey = (char *)strndup'),
         (r'\bcuritem = strdup\b', 'curitem = (char *)strdup'),
+        (r'\bce->ce_traits = malloc\b', 'ce->ce_traits = (struct _citrus_stdenc_traits *)malloc'),
         (r'\bce->ce_ops = \(struct _citrus_stdenc_ops \*\)malloc',
          'ce->ce_ops = (struct _citrus_stdenc_ops *)malloc'),
+        (r'snprintf\(key1, sizeof\(key1\), "%\.\*s", \(int\)\(p - line\), line\)',
+         'snprintf(key1, sizeof(key1), "%.*s", (int)(p - line), (const char *)line)'),
+        (r'\bp = memchr\(line, T_COMM, len\);',
+         'p = (const char *)memchr(line, T_COMM, len);'),
+        (r'\bs1 = first;', 's1 = (const char * const *)first;'),
+        (r'\bs2 = second;', 's2 = (const char * const *)second;'),
+        (r'\bdst = strchr\(convname, \'/\'\);',
+         'dst = (char *)strchr(convname, \'/\');'),
         (r'\bsh = calloc\b', 'sh = (struct _citrus_iconv_shared *)calloc'),
         (r'\bcv = calloc\b', 'cv = (struct _citrus_iconv *)calloc'),
         (r'\bcn = malloc\b', 'cn = (char *)malloc'),
@@ -911,6 +941,21 @@ PORT_PREFIX = r'''module;
 export module pbsd.lib.libc.iconv.b0329;
 
 export namespace pbsd::lib_libc_iconv::b0329 {
+
+#ifndef __unused
+#define __unused __attribute__((__unused__))
+#endif
+#ifndef ICONV_TRIVIALP
+#define ICONV_TRIVIALP 0
+#define ICONV_GET_TRANSLITERATE 1
+#define ICONV_SET_TRANSLITERATE 2
+#define ICONV_GET_DISCARD_ILSEQ 3
+#define ICONV_SET_DISCARD_ILSEQ 4
+#define ICONV_SET_HOOKS 5
+#define ICONV_SET_FALLBACKS 6
+#define ICONV_GET_ILSEQ_INVALID 128
+#define ICONV_SET_ILSEQ_INVALID 129
+#endif
 
 #ifndef EFTYPE
 #define EFTYPE 79
@@ -971,7 +1016,7 @@ def port_support_text() -> str:
     end = ORACLE_SUPPORT.index(
         "/*\n * ------------------------------------------------------------------------\n * Macro redirects")
     text = ORACLE_SUPPORT[:end]
-    cut = text.index("typedef struct {")
+    cut = text.index("typedef struct {\n\tchar\t\t\tmock_modname[64];")
     return text[:cut] + PORT_MOCK_EXTERN
 
 

@@ -117,6 +117,7 @@ struct Rng {
 };
 
 static int g_irec_call;
+static bool g_port_run;
 
 struct Env {
 	uint32_t flags;
@@ -254,6 +255,9 @@ static void build_leaf_page(unsigned char *pg, int nent,
 	pg[19] = (unsigned char)(upper >> 8);
 }
 
+static unsigned char *g_rdataA;
+static unsigned char *g_rdataB;
+
 static void setup_tree(BTREE &t, DB &db, unsigned char *buf, bool port)
 {
 	memset(&t, 0, sizeof t);
@@ -271,7 +275,13 @@ static void setup_tree(BTREE &t, DB &db, unsigned char *buf, bool port)
 	t.bt_rfd = g_env->open_rfd;
 	if (g_env->pinned >= 0)
 		t.bt_pinned = (PAGE *)(buf + (size_t)g_env->pinned * PGSZ);
-	t.bt_rdata.data = buf + CMPZONE + MAP_SZ + PIPE_SZ;
+	unsigned char **rd = port ? &g_rdataA : &g_rdataB;
+	if (*rd == nullptr) {
+		*rd = (unsigned char *)malloc(16);
+		if (*rd == nullptr)
+			return;
+	}
+	t.bt_rdata.data = *rd;
 	t.bt_rdata.size = 16;
 	t.bt_cmap = (char *)(buf + CMPZONE);
 	t.bt_smap = (char *)(buf + CMPZONE);
@@ -279,7 +289,6 @@ static void setup_tree(BTREE &t, DB &db, unsigned char *buf, bool port)
 	t.bt_msize = g_env->map_len;
 	memcpy(buf + CMPZONE, g_env->map_data, g_env->map_len > MAP_SZ ? MAP_SZ : g_env->map_len);
 	db.internal = &t;
-	(void)port;
 }
 
 extern "C" void *reallocf(void *p, size_t n)
@@ -396,9 +405,12 @@ extern "C" DB *__bt_open(const char *, int, int, const void *, int)
 	ls("bo");
 	if (!fuel() || g_env->bt_open_null)
 		return nullptr;
-	g_pdb.internal = &g_ptree;
+	if (g_port_run) {
+		g_pdb.internal = &g_ptree;
+		return &g_pdb;
+	}
 	g_odb.internal = &g_otree;
-	return &g_pdb;
+	return &g_odb;
 }
 
 extern "C" int __bt_close(DB *)
@@ -511,6 +523,7 @@ static int run_one(int fn, bool port, Snap &S)
 	g_logn = 0;
 	g_iput_calls = 0;
 	g_irec_call = 0;
+	g_port_run = port;
 	errno = 0;
 
 	unsigned char *buf = port ? g_bufA : g_bufB;
@@ -521,17 +534,14 @@ static int run_one(int fn, bool port, Snap &S)
 	memcpy(data, g_env->payload, g_env->data_size < 64 ? g_env->data_size : 64);
 
 	if (fn == FN_FPIPE || fn == FN_VPIPE) {
-		if (g_pipeA) fclose(g_pipeA);
-		if (g_pipeB) fclose(g_pipeB);
-		g_pipeA = fmemopen(port ? g_bufB + CMPZONE + MAP_SZ : g_bufA + CMPZONE + MAP_SZ,
-		    g_env->pipe_len, "r");
-		g_pipeB = g_pipeA;
-		memcpy(port ? g_bufB + CMPZONE + MAP_SZ : g_bufA + CMPZONE + MAP_SZ,
-		    g_env->pipe_data, g_env->pipe_len);
+		FILE **slot = port ? &g_pipeA : &g_pipeB;
+		if (*slot)
+			fclose(*slot);
+		*slot = fmemopen(buf + CMPZONE + MAP_SZ, g_env->pipe_len, "r");
+		memcpy(buf + CMPZONE + MAP_SZ, g_env->pipe_data, g_env->pipe_len);
 	}
 
 	g_mem = buf;
-	build_leaf_page(buf, 3, nullptr, nullptr, nullptr);
 	{
 		uint32_t ds[3] = { 4, 8, 2 };
 		uint8_t df[3] = { 0, (uint8_t)(g_env->ovfl_del_status == RET_ERROR ? 0 : P_BIGDATA), 0 };
@@ -546,7 +556,7 @@ static int run_one(int fn, bool port, Snap &S)
 	setup_tree(tree, db, buf, port);
 	tree.bt_irec = mock_irec;
 	if (fn == FN_FPIPE || fn == FN_VPIPE)
-		tree.bt_rfp = g_pipeA;
+		tree.bt_rfp = port ? g_pipeA : g_pipeB;
 
 	DBT key, data_dbt;
 	uint32_t krec = g_env->keyrec;
@@ -627,6 +637,10 @@ static int run_one(int fn, bool port, Snap &S)
 		break;
 	}
 	snapshot(S, rc, tree, buf);
+	if (port)
+		g_rdataA = (unsigned char *)tree.bt_rdata.data;
+	else
+		g_rdataB = (unsigned char *)tree.bt_rdata.data;
 	return rc;
 }
 
@@ -654,6 +668,50 @@ static void check_env(const Env &E, int fn, const char *tag, long id)
 			    (unsigned long long)g_sa.loghash,
 			    (unsigned long long)g_sb.loghash);
 		}
+	}
+}
+
+static void fixup(Env &E, int fn)
+{
+	if (E.fuel < 16)
+		E.fuel = 16;
+	if (E.dleaf_idx > 2)
+		E.dleaf_idx = 2;
+	if (E.search_index > 2)
+		E.search_index = 2;
+	if (E.pipe_len < 1)
+		E.pipe_len = 1;
+	if (E.map_len < 1)
+		E.map_len = 1;
+	if (E.reclen < 1)
+		E.reclen = 1;
+	if (E.data_size < 1 && fn != FN_PUT)
+		E.data_size = 1;
+	if (fn == FN_DELETE || fn == FN_GET || fn == FN_PUT)
+		E.key_zero = 0;
+	if (fn == FN_PUT && (E.put_flags == R_CURSOR) && !(E.cflags & CURS_INIT))
+		E.put_flags = 0;
+	if (fn == FN_PUT && E.put_flags == R_NOOVERWRITE && E.keyrec == 0)
+		E.keyrec = 1;
+	if (fn == FN_OPEN) {
+		if (E.oi_flags & R_FIXEDLEN && E.oi_reclen == 0)
+			E.oi_reclen = 4;
+		if (E.oi_flags & 0x10u)
+			E.oi_flags &= ~(R_FIXEDLEN | R_NOKEY | R_SNAPSHOT);
+	}
+	if (fn == FN_IPUT) {
+		if (E.iput_dsz < 1)
+			E.iput_dsz = 1;
+		E.data_size = E.iput_dsz;
+		if (E.ovflsize < 4)
+			E.ovflsize = 64;
+	}
+	if (fn == FN_FPIPE || fn == FN_VPIPE || fn == FN_FMAP || fn == FN_VMAP) {
+		E.search_fail = 0;
+		E.split_status = RET_SUCCESS;
+		E.ovfl_put_status = RET_SUCCESS;
+		if (E.flags & R_FIXLEN && E.reclen < 1)
+			E.reclen = 4;
 	}
 }
 
@@ -727,7 +785,7 @@ static void gen_env(Env &E, Rng &r, int fn)
 			E.data_size = E.reclen;
 	}
 	E.data_size = E.iput_dsz;
-	(void)fn;
+	fixup(E, fn);
 }
 
 static void edge_delete(void)
@@ -747,6 +805,7 @@ static void edge_delete(void)
 		E.pinned = pin;
 		E.search_fail = 0;
 		E.ret_status = RET_SUCCESS;
+		fixup(E, FN_DELETE);
 		check_env(E, FN_DELETE, "edge", c++);
 	}
 }

@@ -23,6 +23,21 @@ export module pbsd.lib.libc.iconv.b0329;
 
 export namespace pbsd::lib_libc_iconv::b0329 {
 
+#ifndef __unused
+#define __unused __attribute__((__unused__))
+#endif
+#ifndef ICONV_TRIVIALP
+#define ICONV_TRIVIALP 0
+#define ICONV_GET_TRANSLITERATE 1
+#define ICONV_SET_TRANSLITERATE 2
+#define ICONV_GET_DISCARD_ILSEQ 3
+#define ICONV_SET_DISCARD_ILSEQ 4
+#define ICONV_SET_HOOKS 5
+#define ICONV_SET_FALLBACKS 6
+#define ICONV_GET_ILSEQ_INVALID 128
+#define ICONV_SET_ILSEQ_INVALID 129
+#endif
+
 #ifndef EFTYPE
 #define EFTYPE 79
 #endif
@@ -72,6 +87,16 @@ export namespace pbsd::lib_libc_iconv::b0329 {
 #include <string.h>
 #include <wchar.h>
 
+typedef struct {
+	void	*spaceholder[64];
+} iconv_allocation_t;
+
+struct iconv_hooks {
+	void (*uc_hook)(unsigned int, void *);
+	void (*wc_hook)(wchar_t, void *);
+	void *data;
+};
+
 #ifndef EFTYPE
 #define	EFTYPE		79
 #endif
@@ -117,6 +142,9 @@ typedef uint32_t _citrus_csid_t;
 #define _index_t		_citrus_index_t
 #define _wc_t			_citrus_wc_t
 #define _stdenc			_citrus_stdenc
+#define _stdenc_state_desc	_citrus_stdenc_state_desc
+#define _STDENC_SDID_GENERIC	_CITRUS_STDENC_SDID_GENERIC
+#define _STDENC_SDGEN_INITIAL	1
 
 #define _bcs_isblank		_citrus_bcs_isblank
 #define _bcs_iseol		_citrus_bcs_iseol
@@ -137,6 +165,7 @@ typedef uint32_t _citrus_csid_t;
 #define _region_size		_citrus_region_size
 #define _region_offset		_citrus_region_offset
 
+#define _db_factory		_citrus_db_factory
 #define _db_factory_create	_citrus_db_factory_create
 #define _db_factory_free	_citrus_db_factory_free
 #define _db_factory_add_by_s	_citrus_db_factory_add_by_string
@@ -595,6 +624,10 @@ struct _citrus_stdenc_ops _citrus_##_e_##_stdenc_ops = { \
 	&_citrus_##_e_##_stdenc_get_state_desc \
 }
 
+int _citrus_stdenc_open(struct _citrus_stdenc * __restrict * __restrict,
+    char const * __restrict, const void * __restrict, size_t);
+void _citrus_stdenc_close(struct _citrus_stdenc *);
+
 struct _citrus_iconv_ops {
 	int (*io_init_shared)(struct _citrus_iconv_shared * __restrict,
 	    const char * __restrict, const char * __restrict);
@@ -712,6 +745,7 @@ struct _citrus_stdenc_traits _citrus_NONE_stdenc_traits = {
 	1,	/* mb_cur_max */
 };
 
+int
 _citrus_NONE_stdenc_init(struct _citrus_stdenc * __restrict ce,
     const void *var __unused, size_t lenvar __unused,
     struct _citrus_stdenc_traits * __restrict et)
@@ -725,11 +759,13 @@ _citrus_NONE_stdenc_init(struct _citrus_stdenc * __restrict ce,
 	return (0);
 }
 
+void
 _citrus_NONE_stdenc_uninit(struct _citrus_stdenc *ce __unused)
 {
 
 }
 
+int
 _citrus_NONE_stdenc_init_state(struct _citrus_stdenc * __restrict ce __unused,
     void * __restrict ps __unused)
 {
@@ -737,6 +773,7 @@ _citrus_NONE_stdenc_init_state(struct _citrus_stdenc * __restrict ce __unused,
 	return (0);
 }
 
+int
 _citrus_NONE_stdenc_mbtocs(struct _citrus_stdenc * __restrict ce __unused,
     _csid_t *csid, _index_t *idx, char **s, size_t n,
     void *ps __unused, size_t *nresult, struct iconv_hooks *hooks)
@@ -757,6 +794,7 @@ _citrus_NONE_stdenc_mbtocs(struct _citrus_stdenc * __restrict ce __unused,
 	return (0);
 }
 
+int
 _citrus_NONE_stdenc_cstomb(struct _citrus_stdenc * __restrict ce __unused,
     char *s, size_t n, _csid_t csid, _index_t idx, void *ps __unused,
     size_t *nresult, struct iconv_hooks *hooks __unused)
@@ -811,6 +849,7 @@ _citrus_NONE_stdenc_cstomb(struct _citrus_stdenc * __restrict ce __unused,
 	return (0);
 }
 
+int
 _citrus_NONE_stdenc_mbtowc(struct _citrus_stdenc * __restrict ce __unused,
     _wc_t * __restrict pwc, char ** __restrict s, size_t n,
     void * __restrict pspriv __unused, size_t * __restrict nresult,
@@ -837,6 +876,7 @@ _citrus_NONE_stdenc_mbtowc(struct _citrus_stdenc * __restrict ce __unused,
 	return (0);
 }
 
+int
 _citrus_NONE_stdenc_wctomb(struct _citrus_stdenc * __restrict ce __unused,
     char * __restrict s, size_t n, _wc_t wc,
     void * __restrict pspriv __unused, size_t * __restrict nresult,
@@ -859,6 +899,7 @@ _citrus_NONE_stdenc_wctomb(struct _citrus_stdenc * __restrict ce __unused,
 	return (0);
 }
 
+int
 _citrus_NONE_stdenc_put_state_reset(struct _citrus_stdenc * __restrict ce __unused,
     char * __restrict s __unused, size_t n __unused,
     void * __restrict pspriv __unused, size_t * __restrict nresult)
@@ -869,6 +910,7 @@ _citrus_NONE_stdenc_put_state_reset(struct _citrus_stdenc * __restrict ce __unus
 	return (0);
 }
 
+int
 _citrus_NONE_stdenc_get_state_desc(struct _stdenc * __restrict ce __unused,
     void * __restrict ps __unused, int id,
     struct _stdenc_state_desc * __restrict d)
@@ -993,7 +1035,7 @@ _citrus_stdenc_open(struct _citrus_stdenc * __restrict * __restrict rce,
 	}
 
 	/* allocate traits */
-	ce->ce_traits = malloc(sizeof(*ce->ce_traits));
+	ce->ce_traits = (struct _citrus_stdenc_traits *)malloc(sizeof(*ce->ce_traits));
 	if (ce->ce_traits == NULL) {
 		ret = errno;
 		goto bad;
@@ -1079,6 +1121,7 @@ struct src_entry {
 };
 STAILQ_HEAD(src_head, src_entry);
 
+int
 find_src(struct src_head *sh, struct src_entry **rse, const char *name)
 {
 	int ret;
@@ -1111,6 +1154,7 @@ find_src(struct src_head *sh, struct src_entry **rse, const char *name)
 	return (0);
 }
 
+void
 free_src(struct src_head *sh)
 {
 	struct src_entry *se;
@@ -1125,6 +1169,7 @@ free_src(struct src_head *sh)
 
 
 #define T_COMM '#'
+int
 convert_line(struct src_head *sh, const char *line, size_t len)
 {
 	struct src_entry *se;
@@ -1137,7 +1182,7 @@ convert_line(struct src_head *sh, const char *line, size_t len)
 	se = NULL;
 
 	/* cut off trailing comment */
-	p = memchr(line, T_COMM, len);
+	p = (const char *)memchr(line, T_COMM, len);
 	if (p)
 		len = p - line;
 
@@ -1148,7 +1193,7 @@ convert_line(struct src_head *sh, const char *line, size_t len)
 	p = _bcs_skip_nonws_len(line, &len);
 	if (p == line)
 		return (0);
-	snprintf(key1, sizeof(key1), "%.*s", (int)(p - line), line);
+	snprintf(key1, sizeof(key1), "%.*s", (int)(p - line), (const char *)line);
 
 	/* key2 */
 	line = _bcs_skip_ws_len(p, &len);
@@ -1175,6 +1220,7 @@ convert_line(struct src_head *sh, const char *line, size_t len)
 	return (_db_factory_add32_by_s(se->se_df, key2, val));
 }
 
+int
 dump_db(struct src_head *sh, struct _region *r)
 {
 	struct _db_factory *df;
@@ -1292,6 +1338,7 @@ _citrus_pivot_factory_convert(FILE *out, FILE *in)
 
 #define ISBADF(_h_)	(!(_h_) || (_h_) == (iconv_t)-1)
 
+iconv_t
 __bsd___iconv_open(const char *out, const char *in, struct _citrus_iconv *handle)
 {
 	int ret;
@@ -1412,13 +1459,14 @@ __bsd___iconv_free_list(char **list, size_t sz)
 /*
  * GNU-compatibile non-standard interfaces.
  */
+int
 qsort_helper(const void *first, const void *second)
 {
 	const char * const *s1;
 	const char * const *s2;
 
-	s1 = first;
-	s2 = second;
+	s1 = (const char * const *)first;
+	s2 = (const char * const *)second;
 	return (strcmp(*s1, *s2));
 }
 
@@ -1506,7 +1554,7 @@ __bsd_iconvctl(iconv_t cd, int request, void *argument)
 	switch (request) {
 	case ICONV_TRIVIALP:
 		convname = cv->cv_shared->ci_convname;
-		dst = strchr(convname, '/');
+		dst = (char *)strchr(convname, '/');
 		srclen = dst - convname;
 		dst++;
 		*i = (srclen == strlen(dst)) && !memcmp(convname, dst, srclen);

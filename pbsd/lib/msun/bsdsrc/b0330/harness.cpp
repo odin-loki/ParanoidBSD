@@ -367,9 +367,6 @@ static const std::uint64_t dvec[] = {
 	0x4057c00000000000ull,
 	0x4057d00000000000ull,
 	0x4057b00000000000ull,
-	0x3ff10c6f7a0b5ed8dULL,
-	0x3ff10c6f7a0b5ed8fULL,
-	0x3ff10c6f7a0b5ed8bULL,
 	0x3fb1111111111111ull,
 	0x3f81111111111111ull,
 	0xbfd1111111111111ull,
@@ -394,7 +391,6 @@ static void edge_cases(void)
 {
 	std::size_t i, j;
 
-	std::printf("edge:log/tgamma/neg dvec\n"); std::fflush(stdout);
 	for (i = 0; i < NDVEC; i++) {
 		double x = fromdbits(dvec[i]);
 
@@ -403,8 +399,8 @@ static void edge_cases(void)
 		check_neg(x, "dvec");
 	}
 
-	std::printf("edge:exp cross\n"); std::fflush(stdout);
 	for (i = 0; i < NDVEC; i++) {
+		for (j = 0; j < NDVEC; j++) {
 			double x = fromdbits(dvec[i]);
 			double c = fromdbits(dvec[j]);
 
@@ -412,14 +408,13 @@ static void edge_cases(void)
 		}
 	}
 
-	std::printf("edge:ratfun dvec\n"); std::fflush(stdout);
 	for (i = 0; i < NDVEC; i++) {
+		double z = fromdbits(dvec[i]);
 		double c = fromdbits(dvec[(i * 7 + 3) % NDVEC]);
 
 		check_ratfun(z, c, "dvec");
 	}
 
-	std::printf("edge:exp bounds\n"); std::fflush(stdout);
 	check_exp(LNHUGE, 0., "lnhuge0");
 	check_exp(LNHUGE, 1e-20, "lnhuge1");
 	check_exp(LNHUGE + 1e-10, 0., "lnhuge+");
@@ -435,7 +430,6 @@ static void edge_cases(void)
 	check_exp(-1., 0.1, "negone");
 	check_exp(0.6931471805599453, -1e-18, "ln2");
 
-	std::printf("edge:log bounds\n"); std::fflush(stdout);
 	check_log(1., "one");
 	check_log(2., "two");
 	check_log(0.5, "half");
@@ -446,7 +440,6 @@ static void edge_cases(void)
 	check_log(0x1p-1022, "subnorm");
 	check_log(0x1.1p-1022, "subnorm2");
 
-	std::printf("edge:tgamma bounds\n"); std::fflush(stdout);
 	check_tgamma(6., "six");
 	check_tgamma(6. - 1e-15, "six-");
 	check_tgamma(6. + 1e-15, "six+");
@@ -476,8 +469,10 @@ static void edge_cases(void)
 	check_tgamma(-0.25, "negq");
 	check_tgamma(-0.75, "neg3q");
 
-	std::printf("edge:helpers dvec\n"); std::fflush(stdout);
 	for (i = 0; i < NDVEC; i++) {
+		double x = fromdbits(dvec[i]);
+
+		if (x >= 6. && x <= XMAX)
 			check_large(x, "dvec");
 		if (x >= XLEFT && x < 6.)
 			check_small(x, "dvec");
@@ -487,7 +482,6 @@ static void edge_cases(void)
 			check_neg(x, "dvec");
 	}
 
-	std::printf("edge:helpers fixed\n"); std::fflush(stdout);
 	check_large(6., "six");
 	check_large(10., "ten");
 	check_large(100., "hundred");
@@ -581,6 +575,7 @@ static void print_table(void)
 
 int main()
 {
+	std::printf("start\n"); std::fflush(stdout);
 	edge_cases();
 	random_sweep();
 	print_table();

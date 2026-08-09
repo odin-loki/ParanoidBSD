@@ -283,7 +283,7 @@ static void
 test_fputws(void)
 {
 	const int fn = FN_FPUTWS;
-	wchar_t buf[64];
+	wchar_t buf[128];
 	int i, j;
 
 	test_fputws_l_case(fn, L"", 0, 0, -1, b0318_global_locale);
@@ -818,6 +818,9 @@ main(void)
 	test_fputws();
 	test_tmpfile();
 	test_arginfo_hexdump();
+	test_render_hexdump();
+	test_fgetwln_l();
+	test_fgetwln();
 
 	harness_dprintf("\n%-28s %10s %10s\n", "function", "cases", "failures");
 	for (i = 0; i < FN_COUNT; i++) {
