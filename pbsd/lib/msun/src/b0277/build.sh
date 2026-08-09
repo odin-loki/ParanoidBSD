@@ -60,6 +60,7 @@ typedef union {
 
 #define GET_HIGH_WORD(i,d) do { ieee_double_shape_type gh_u; gh_u.value = (d); (i) = (int32_t)gh_u.parts.msw; } while(0)
 #define GET_LOW_WORD(i,d) do { ieee_double_shape_type gl_u; gl_u.value = (d); (i) = (int32_t)gl_u.parts.lsw; } while(0)
+#define INSERT_WORDS(d,ix0,ix1) do { ieee_double_shape_type iw_u; iw_u.parts.msw = (uint32_t)(ix0); iw_u.parts.lsw = (uint32_t)(ix1); (d) = iw_u.value; } while(0)
 
 typedef float __float_t;
 typedef double __double_t;
@@ -74,7 +75,13 @@ static inline double rnint(double x) { return rint(x); }
 extern double __kernel_sin(double, double, int);
 extern double __kernel_cos(double, double);
 extern int __ieee754_rem_pio2(double, double *);
+extern int __kernel_rem_pio2(double *, double *, int, int, int);
 EOF
+
+mkdir -p "$TMPDIR/sys"
+cat > "$TMPDIR/sys/endian.h" << 'EOF2'
+#include <endian.h>
+EOF2
 
 sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
     "$MSUN/k_rem_pio2.c" > "$TMPDIR/k_rem_pio2.c"
@@ -89,7 +96,7 @@ echo '#define _MATH_PRIVATE_H_' > "$TMPDIR/math_private_skip.h"
 rm -rf gcm.cache b0277_run oracle.o port.o harness.o k_rem_pio2.o e_rem_pio2.o \
     k_sin.o k_cos.o invtrig.o "$MODULE_NAME.pcm"
 
-CFLAGS="-std=c11 -O2 -include $PREREQ -I$LD80 -I$LIBC_INC -I$AMD64_INC"
+CFLAGS="-std=c11 -O2 -include $PREREQ -I$TMPDIR -I$LD80 -I$LIBC_INC -I$AMD64_INC"
 CXXFLAGS="-std=c++23 -O2 -include $PREREQ"
 
 $CC $CFLAGS -c oracle.c -o oracle.o

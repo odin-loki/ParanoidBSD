@@ -14,6 +14,14 @@
 
 #define _POSIX_C_SOURCE 200809L
 
+#ifndef EOF
+#define EOF (-1)
+#endif
+
+#ifndef STDERR_FILENO
+#define STDERR_FILENO 2
+#endif
+
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -22,14 +30,6 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#ifndef EOF
-#define EOF (-1)
-#endif
-
-#ifndef STDERR_FILENO
-#define STDERR_FILENO 2
-#endif
 
 typedef void *locale_t;
 

@@ -14,7 +14,8 @@ ROOT=$(cd ../../../../.. && pwd)
 MSUN=$ROOT/hbsd/src/lib/msun/src
 
 PREREQ=$(mktemp)
-trap 'rm -f "$PREREQ"' EXIT
+TMPDIR=$(mktemp -d)
+trap 'rm -f "$PREREQ"; rm -rf "$TMPDIR"' EXIT
 
 cat > "$PREREQ" << 'EOF'
 #include <float.h>
@@ -23,7 +24,6 @@ cat > "$PREREQ" << 'EOF'
 #include <sys/types.h>
 #include <endian.h>
 
-#define _MATH_H_
 #define _MATH_PRIVATE_H_
 
 #ifndef LONG_BIT
@@ -64,22 +64,27 @@ typedef double __double_t;
 
 static inline int irint(double x) { return (int)x; }
 static inline double rnint(double x) { return rint(x); }
-
-#define INLINE_REM_PIO2
 EOF
+
+sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
+    "$MSUN/k_rem_pio2.c" > "$TMPDIR/k_rem_pio2.c"
+sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
+    "$MSUN/e_rem_pio2.c" > "$TMPDIR/e_rem_pio2.c"
+sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
+    "$MSUN/k_tan.c" > "$TMPDIR/k_tan.c"
+echo '#define _MATH_PRIVATE_H_' > "$TMPDIR/math_private_skip.h"
 
 rm -rf gcm.cache b0276_run oracle.o port.o harness.o k_rem_pio2.o e_rem_pio2.o \
     k_tan.o "$MODULE_NAME.pcm"
 
-CFLAGS_MSUN="-std=c11 -O2 -I$MSUN -include $PREREQ"
-CFLAGS_ORACLE="-std=c11 -O2 -include $PREREQ"
-CXXFLAGS="-std=c++23 -O2 -include $PREREQ"
+CFLAGS="-std=c11 -O2 -include $PREREQ"
+CXXFLAGS="-std=c++23 -O2"
 
-$CC $CFLAGS_ORACLE -c oracle.c -o oracle.o
-$CC $CFLAGS_MSUN -c "$MSUN/k_rem_pio2.c" -o k_rem_pio2.o
-$CC $CFLAGS_MSUN -Dzero=e_rem_zero -Dtwo24=e_rem_two24 -c "$MSUN/e_rem_pio2.c" \
+$CC $CFLAGS -c oracle.c -o oracle.o
+$CC $CFLAGS -c "$TMPDIR/k_rem_pio2.c" -o k_rem_pio2.o
+$CC $CFLAGS -Dzero=e_rem_zero -Dtwo24=e_rem_two24 -c "$TMPDIR/e_rem_pio2.c" \
     -o e_rem_pio2.o
-$CC $CFLAGS_MSUN -c "$MSUN/k_tan.c" -o k_tan.o
+$CC $CFLAGS -c "$TMPDIR/k_tan.c" -o k_tan.o
 
 if $CXX --version 2>&1 | grep -qi clang; then
 	$CXX $CXXFLAGS -x c++-module --precompile port.cppm \

@@ -1,6 +1,7 @@
 module;
 
 #include <cstdarg>
+#include <cstdbool>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
@@ -11,13 +12,17 @@ export module pbsd.sys.cam.ctl.b0273;
 
 namespace pbsd::sys_cam_ctl::b0273::detail {
 
+#ifndef LONG_BIT
+#define LONG_BIT (8 * (int)sizeof(long))
+#endif
+
 #define le16toh(x) (x)
 #define CTL_TIME_IO
 #define CTL_NUM_PRIV 6
 #define CTL_BE_NAME_LEN 32
 
 #define QMD_STAILQ_CHECK_TAIL(head) do {} while (0)
-#define QMD_SAVELINK(name, link) auto name = (link)
+#define QMD_SAVELINK(name, link) __typeof__(link) name = (link)
 #define TRASHIT(x) do {(void)(x);} while (0)
 #define QUEUE_TYPEOF(type) struct type
 
@@ -25,18 +30,36 @@ namespace pbsd::sys_cam_ctl::b0273::detail {
 #define STAILQ_ENTRY(type) struct { struct type *stqe_next; }
 #define STAILQ_FIRST(head) ((head)->stqh_first)
 #define STAILQ_NEXT(elm, field) ((elm)->field.stqe_next)
-#define STAILQ_EMPTY(head) (STAILQ_FIRST(head) == NULL)
+#define STAILQ_EMPTY(head) (STAILQ_FIRST(head) == nullptr)
 #define STAILQ_INIT(head) do { STAILQ_FIRST((head)) = nullptr; (head)->stqh_last = &STAILQ_FIRST((head)); } while (0)
 #define STAILQ_FOREACH(var, head, field) for ((var) = STAILQ_FIRST((head)); (var); (var) = STAILQ_NEXT((var), field))
-#define STAILQ_INSERT_TAIL(head, elm, field) do { 	auto prevlast = (head)->stqh_last; 	STAILQ_NEXT((elm), field) = nullptr; 	(head)->stqh_last = &STAILQ_NEXT((elm), field); 	*prevlast = (elm); } while (0)
-#define STAILQ_REMOVE(head, elm, type, field) do { 	QMD_SAVELINK(_Oldnext, (elm)->field.stqe_next); 	if (STAILQ_FIRST((head)) == (elm)) { 		if ((STAILQ_FIRST((head)) = STAILQ_NEXT(STAILQ_FIRST((head)), field)) == nullptr) 			(head)->stqh_last = &STAILQ_FIRST((head)); 	} else { 		QUEUE_TYPEOF(type) *_Curelm = STAILQ_FIRST(head); 		while (STAILQ_NEXT(_Curelm, field) != (elm)) 			_Curelm = STAILQ_NEXT(_Curelm, field); 		if ((STAILQ_NEXT(_Curelm, field) = STAILQ_NEXT(STAILQ_NEXT(_Curelm, field), field)) == nullptr) 			(head)->stqh_last = &STAILQ_NEXT((_Curelm), field); 	} 	TRASHIT(*_Oldnext); } while (0)
+#define STAILQ_INSERT_TAIL(head, elm, field) do { \
+	__typeof__((head)->stqh_last) prevlast = (head)->stqh_last; \
+	STAILQ_NEXT((elm), field) = nullptr; \
+	(head)->stqh_last = &STAILQ_NEXT((elm), field); \
+	*prevlast = (elm); \
+} while (0)
+#define STAILQ_REMOVE(head, elm, type, field) do { \
+	QMD_SAVELINK(_Oldnext, (elm)->field.stqe_next); \
+	if (STAILQ_FIRST((head)) == (elm)) { \
+		if ((STAILQ_FIRST((head)) = STAILQ_NEXT(STAILQ_FIRST((head)), field)) == nullptr) \
+			(head)->stqh_last = &STAILQ_FIRST((head)); \
+	} else { \
+		QUEUE_TYPEOF(type) *_Curelm = STAILQ_FIRST(head); \
+		while (STAILQ_NEXT(_Curelm, field) != (elm)) \
+			_Curelm = STAILQ_NEXT(_Curelm, field); \
+		if ((STAILQ_NEXT(_Curelm, field) = STAILQ_NEXT(STAILQ_NEXT(_Curelm, field), field)) == nullptr) \
+			(head)->stqh_last = &STAILQ_NEXT((_Curelm), field); \
+	} \
+	TRASHIT(*_Oldnext); \
+} while (0)
 
 using u_int = unsigned int;
 using u_long = unsigned long;
 using caddr_t = char *;
 using ctl_io_flags = int;
 
-enum class ctl_io_type : int {
+enum ctl_io_type {
 	CTL_IO_NONE,
 	CTL_IO_SCSI,
 	CTL_IO_TASK,
@@ -44,7 +67,7 @@ enum class ctl_io_type : int {
 	CTL_IO_NVME_ADMIN,
 };
 
-enum class ctl_serialize_action : int {
+enum ctl_serialize_action {
 	CTL_SER_SEQ,
 	CTL_SER_PASS,
 	CTL_SER_EXTENTOPT,
@@ -53,7 +76,7 @@ enum class ctl_serialize_action : int {
 	CTL_SER_BLOCK,
 };
 
-enum class ctl_seridx_t : int {
+enum ctl_seridx_t {
 	CTL_SERIDX_TUR = 0,
 	CTL_SERIDX_READ,
 	CTL_SERIDX_WRITE,
@@ -71,10 +94,10 @@ enum class ctl_seridx_t : int {
 	CTL_SERIDX_COUNT,
 };
 
-inline constexpr int CTL_FLAG_DATA_IN = 0x00000001;
-inline constexpr int CTL_FLAG_DATA_OUT = 0x00000002;
-inline constexpr int CTL_FLAG_DATA_NONE = 0x00000003;
-inline constexpr int CTL_CMD_FLAG_OK_ON_NO_LUN = 0x0800;
+#define CTL_FLAG_DATA_IN 0x00000001
+#define CTL_FLAG_DATA_OUT 0x00000002
+#define CTL_FLAG_DATA_NONE 0x00000003
+#define CTL_CMD_FLAG_OK_ON_NO_LUN 0x0800
 
 #define NVME_STATUS_P_SHIFT 0
 #define NVME_STATUS_P_MASK 0x1
@@ -94,7 +117,7 @@ inline constexpr int CTL_CMD_FLAG_OK_ON_NO_LUN = 0x0800;
 #define NVME_STATUS_GET_M(st) NVMEV(NVME_STATUS_M, st)
 #define NVME_STATUS_GET_DNR(st) NVMEV(NVME_STATUS_DNR, st)
 
-enum nvme_status_code_type : int {
+enum nvme_status_code_type {
 	NVME_SCT_GENERIC = 0x0,
 	NVME_SCT_COMMAND_SPECIFIC = 0x1,
 	NVME_SCT_MEDIA_ERROR = 0x2,
@@ -102,8 +125,7 @@ enum nvme_status_code_type : int {
 	NVME_SCT_VENDOR_SPECIFIC = 0x7,
 };
 
-
-
+enum nvme_generic_command_status_code {
 	NVME_SC_SUCCESS = 0x00,
 	NVME_SC_INVALID_OPCODE = 0x01,
 	NVME_SC_INVALID_FIELD = 0x02,
@@ -285,7 +307,7 @@ struct nvme_completion {
 	uint16_t cid, status;
 } __attribute__((aligned(8)));
 
-typedef enum { CTL_MSG_SERIALIZE } ctl_msg_type;
+enum ctl_msg_type { CTL_MSG_SERIALIZE };
 struct ctl_nexus { uint32_t initid, targ_port, targ_lun, targ_mapped_lun; };
 union ctl_io;
 union ctl_priv { uint8_t bytes[16]; uint64_t integer; uint64_t integers[2]; void *ptr; void *ptrs[2]; };
@@ -307,9 +329,9 @@ struct ctl_io_hdr {
 	struct { struct ctl_io_hdr *le_next, **le_prev; } ooa_links;
 	struct { struct ctl_io_hdr *tqe_next, **tqe_prev; } blocked_links;
 };
-typedef void (*ctl_ref)(void *, int);
-typedef int (*ctl_be_move_done_t)(union ctl_io *, bool);
-typedef int (*ctl_io_cont)(union ctl_io *);
+using ctl_ref = void (*)(void *, int);
+using ctl_be_move_done_t = int (*)(union ctl_io *, bool);
+using ctl_io_cont = int (*)(union ctl_io *);
 struct ctl_nvmeio {
 	struct ctl_io_hdr io_hdr;
 	uint32_t ext_sg_entries;
@@ -332,8 +354,8 @@ struct ctl_nvme_cmd_entry {
 	ctl_io_flags flags;
 };
 
-typedef int (*be_init_t)(void);
-typedef int (*be_shutdown_t)(void);
+using be_init_t = int (*)();
+using be_shutdown_t = int (*)();
 struct ctl_backend_driver {
 	char name[CTL_BE_NAME_LEN];
 	int flags;
@@ -355,11 +377,27 @@ struct ctl_softc {
 	STAILQ_HEAD(, ctl_backend_driver) be_list;
 };
 
-
 struct ctl_softc port_ctl_softc_storage;
 ctl_softc *control_softc = &port_ctl_softc_storage;
-static void mtx_lock(mtx *m) { (void)m; }
-static void mtx_unlock(mtx *m) { (void)m; }
+
+void mtx_lock(struct mtx *m) { (void)m; }
+void mtx_unlock(struct mtx *m) { (void)m; }
+
+int sbuf_printf(struct sbuf *sb, const char *fmt, ...)
+{
+	va_list ap;
+	int n;
+	va_start(ap, fmt);
+	n = vsnprintf(sb->s_buf + sb->s_len, (size_t)(sb->s_size - sb->s_len), fmt, ap);
+	va_end(ap);
+	if (n < 0)
+		return n;
+	if (sb->s_len + n >= sb->s_size)
+		n = (int)(sb->s_size - sb->s_len - 1);
+	sb->s_len += n;
+	return n;
+}
+
 #define OPC_ENTRY(x)		[NVME_OPC_ ## x] = #x
 
 const char *admin_opcode[256] = {
@@ -521,11 +559,11 @@ const char *path_related_status[256] = {
 };
 
 void
-nvme_opcode_sbuf(bool admin_, uint8_t opc, struct sbuf *sb)
+nvme_opcode_sbuf(bool admin, uint8_t opc, struct sbuf *sb)
 {
 	const char *s, *type;
 
-	if (admin_arg) {
+	if (admin) {
 		s = admin_opcode[opc];
 		type = "ADMIN";
 	} else {
@@ -595,7 +633,6 @@ nvme_cpl_sbuf(const struct nvme_completion *cpl, struct sbuf *sb)
 		sbuf_printf(sb, " DNR");
 }
 
-
 #define	pS	CTL_SER_PASS		/* Pass */
 #define	bK	CTL_SER_BLOCK		/* Blocked */
 #define	bO	CTL_SER_BLOCKOPT	/* Optional block */
@@ -603,8 +640,8 @@ nvme_cpl_sbuf(const struct nvme_completion *cpl, struct sbuf *sb)
 #define	xO	CTL_SER_EXTENTOPT	/* Optional extent check */
 #define	xS	CTL_SER_SEQ		/* Sequential check */
 
-inline const uint8_t
-ctl_serialize_table_storage[CTL_SERIDX_COUNT][CTL_SERIDX_COUNT] = {
+const uint8_t
+ctl_serialize_table[CTL_SERIDX_COUNT][CTL_SERIDX_COUNT] = {
 /**>IDX_ :: 2nd:TUR RD  WRT UNM SYN MDSN MDSL RQSN INQ RDCP RES LSNS FMT STR*/
 /*TUR     */{   pS, pS, pS, pS, pS, bK,  bK,  pS,  pS, pS,  bK, pS,  pS, bK},
 /*READ    */{   pS, xS, xT, xO, pS, bK,  bK,  pS,  pS, pS,  bK, pS,  bK, bK},
@@ -621,7 +658,6 @@ ctl_serialize_table_storage[CTL_SERIDX_COUNT][CTL_SERIDX_COUNT] = {
 /*FORMAT  */{   bK, bK, bK, bK, bK, bK,  bK,  bK,  bK, bK,  bK, bK,  bK, bK},
 /*START   */{   bK, bK, bK, bK, bK, bK,  bK,  bK,  bK, pS,  bK, bK,  bK, bK},
 };
-
 
 /* Administrative Command Set (CTL_IO_NVME_ADMIN). */
 const struct ctl_nvme_cmd_entry nvme_admin_cmd_table[256] =
@@ -644,7 +680,14 @@ const struct ctl_nvme_cmd_entry nvme_nvm_cmd_table[256] =
 					  CTL_FLAG_DATA_OUT },
 	[NVME_OPC_VERIFY] = { ctl_nvme_verify, CTL_FLAG_DATA_NONE },
 };
-
+int ctl_nvme_identify(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
+int ctl_nvme_flush(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
+int ctl_nvme_read_write(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
+int ctl_nvme_write_uncorrectable(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
+int ctl_nvme_compare(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
+int ctl_nvme_write_zeroes(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
+int ctl_nvme_dataset_management(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
+int ctl_nvme_verify(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
  *
@@ -787,7 +830,6 @@ ctl_backend_find(char *backend_name)
 
 	return (NULL);
 }
-
 void reset_backend_state()
 {
 	std::memset(&port_ctl_softc_storage, 0, sizeof(port_ctl_softc_storage));
@@ -803,8 +845,7 @@ using detail::ctl_backend_register;
 using detail::ctl_backend_deregister;
 using detail::ctl_backend_find;
 using detail::reset_backend_state;
-using detail::ctl_serialize_table_storage;
-inline constexpr auto &ctl_serialize_table = detail::ctl_serialize_table_storage;
+using detail::ctl_serialize_table;
 using detail::nvme_admin_cmd_table;
 using detail::nvme_nvm_cmd_table;
 using detail::ctl_nvme_identify;
@@ -819,6 +860,6 @@ using detail::ctl_softc;
 using detail::ctl_backend_driver;
 using detail::ctl_nvmeio;
 using detail::sbuf;
+using detail::ctl_nvme_cmd_entry;
 using detail::CTL_SERIDX_COUNT;
 } // namespace
-

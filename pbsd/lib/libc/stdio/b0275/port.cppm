@@ -11,6 +11,10 @@
 
 module;
 
+#ifndef EOF
+#define EOF (-1)
+#endif
+
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
@@ -47,8 +51,6 @@ export struct __printf_io {
 #define VIS_WHITE	0x04
 #define VIS_HTTPSTYLE	0x40
 
-using locale_t = void *;
-
 extern "C" {
 extern int __isthreaded;
 extern int mock_flock_calls;
@@ -58,8 +60,8 @@ extern struct __pbsd_sFILE *pbsd_stdin;
 extern int __sgetc(struct __pbsd_sFILE *);
 extern ssize_t _write(int, const void *, size_t);
 extern int vsprintf(char *, const char *, va_list);
-extern int vsprintf_l(char *, locale_t, const char *, va_list);
-extern locale_t __get_locale(void);
+extern int vsprintf_l(char *, void *, const char *, va_list);
+extern void *__get_locale(void);
 extern int strvisx(char *, const char *, size_t, int);
 extern int __printf_out(struct __printf_io *, const struct printf_info *,
     const char *, int);
@@ -99,6 +101,7 @@ extern void __printf_flush(struct __printf_io *);
 export namespace pbsd::lib_libc_stdio::b0275 {
 
 using FILE = __pbsd_sFILE;
+using locale_t = void *;
 
 /* ====================================================================== */
 /* lib/libc/stdio/gets.c                                                  */
@@ -294,7 +297,7 @@ __printf_render_vis(struct __printf_io *io, const struct printf_info *pi, const 
 		l = pi->prec;
 	else
 		l = strlen(p);
-	buf = malloc(l * 4 + 1);
+	buf = (char *)malloc(l * 4 + 1);
 	if (buf == NULL)
 		return (-1);
 	if (pi->showsign)
