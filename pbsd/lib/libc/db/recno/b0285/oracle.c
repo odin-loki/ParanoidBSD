@@ -371,6 +371,8 @@ einval:		errno = EINVAL;
 
 /* --- rec_close.c --- */
 
+int	ref___rec_sync(const DB *, u_int);
+
 int
 ref___rec_close(DB *dbp)
 {

@@ -164,6 +164,8 @@ static void fail(int f, const char *fmt, ...)
 	fputc('\n', stderr);
 }
 
+static const unsigned long SWEEP_ITERS = 200000UL;
+
 static uint64_t rng;
 
 static void rng_seed(uint64_t s) { rng = s ? s : 0xb0210ULL; }
@@ -322,7 +324,7 @@ static void test_usage(void)
 	check_usage(0, "pkill");
 	check_usage(1, "pgrep");
 	rng_seed(0xb02100001ULL);
-	for (i = 0; i < 20000; i++)
+	for (i = 0; i < SWEEP_ITERS; i++)
 		check_usage((int)(rng_u32() & 1), (rng_u32() & 1) ? "pgrep" : "pkill");
 }
 
@@ -413,7 +415,7 @@ static void test_show_process(void)
 	check_show(0, 0, 0, 1, 100, "foo", 1);
 	check_show(1, 0, 0, 0, 200, "\x80\xff", 0);
 	rng_seed(0xb02100002ULL);
-	for (i = 0; i < 40000; i++) {
+	for (i = 0; i < SWEEP_ITERS; i++) {
 		char comm[20];
 		size_t j, len = (rng_u32() % 18) + 1;
 		int q = (int)(rng_u32() & 1);
@@ -429,24 +431,39 @@ static void test_show_process(void)
 
 static int run_kill(const P::kinfo_proc *kp, const char *in, int port)
 {
-	int st, rv = -1, fds[2];
+	int st, rv = -1, fds[2], nullfd;
 	pid_t pid;
 
-	if (in) pipe(fds);
+	if (!in) {
+		if (port)
+			return (P::killact(kp));
+		return (ref_killact_call((const struct kinfo_proc *)kp));
+	}
+
+	if (pipe(fds) == -1)
+		return (-1);
+	nullfd = open("/dev/null", O_WRONLY);
 	pid = fork();
 	if (pid == 0) {
-		if (in) {
-			write(fds[0], in, strlen(in));
-			close(fds[0]);
-			dup2(fds[1], STDIN_FILENO);
-			close(fds[1]);
+		(void)write(fds[0], in, strlen(in));
+		close(fds[0]);
+		dup2(fds[1], STDIN_FILENO);
+		close(fds[1]);
+		if (nullfd != -1) {
+			dup2(nullfd, STDOUT_FILENO);
+			dup2(nullfd, STDERR_FILENO);
+			close(nullfd);
 		}
 		_exit(port ? P::killact(kp) : ref_killact_call(
 		    (const struct kinfo_proc *)kp));
 	}
-	if (in) { close(fds[0]); close(fds[1]); }
+	close(fds[0]);
+	close(fds[1]);
+	if (nullfd != -1)
+		close(nullfd);
 	waitpid(pid, &st, 0);
-	if (WIFEXITED(st)) rv = WEXITSTATUS(st);
+	if (WIFEXITED(st))
+		rv = WEXITSTATUS(st);
 	return (rv);
 }
 
@@ -475,7 +492,7 @@ static void test_killact(void)
 	check_kill(1, "N\n", 0, 0, 129);
 	check_kill(1, "", 0, 0, 130);
 	rng_seed(0xb02100003ULL);
-	for (i = 0; i < 40000; i++) {
+	for (i = 0; i < SWEEP_ITERS; i++) {
 		static const char *ans[] = { "y\n", "Y\n", "n\n", "N\n", "x\n", "" };
 		int intr = (int)(rng_u32() & 1);
 		int kf = (int)(rng_u32() % 3);
@@ -544,7 +561,7 @@ static void test_grepact(void)
 	check_grep(1, 1, "\n", 13, "d", 2);
 	check_grep(1, 0, "", 14, "e", 2);
 	rng_seed(0xb02100004ULL);
-	for (i = 0; i < 40000; i++) {
+	for (i = 0; i < SWEEP_ITERS; i++) {
 		char comm[12], dl[3];
 		int q = (int)(rng_u32() & 1);
 		int pg = (int)(rng_u32() & 1);
@@ -637,7 +654,7 @@ static void test_makelist(void)
 	check_makelist_die(LT_USER, "nosuchuser_x");
 	check_makelist_die(LT_JAIL, "-5");
 	rng_seed(0xb02100005ULL);
-	for (i = 0; i < 40000; i++) {
+	for (i = 0; i < SWEEP_ITERS; i++) {
 		char src[64];
 		switch (rng_u32() % 5) {
 		case 0:
@@ -721,7 +738,7 @@ static void test_takepid(void)
 	check_takepid_die("abc\n");
 	check_takepid_die("");
 	rng_seed(0xb02100006ULL);
-	for (i = 0; i < 40000; i++) {
+	for (i = 0; i < SWEEP_ITERS; i++) {
 		long v = (long)(rng_u32() % 200000);
 		int k = (int)(rng_u32() % 4);
 		if (k == 0 && v >= 5 && v <= 99999)

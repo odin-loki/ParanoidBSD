@@ -18,6 +18,36 @@ import pbsd.lib.libc.gen.b0280;
 
 namespace P = pbsd::lib_libc_gen::b0280;
 
+typedef struct _stringlist {
+	char	**sl_str;
+	size_t	  sl_max;
+	size_t	  sl_cur;
+} StringList;
+
+static inline P::StringList *
+to_port(StringList *sl)
+{
+	return (reinterpret_cast<P::StringList *>(sl));
+}
+
+static inline StringList *
+from_port(P::StringList *sl)
+{
+	return (reinterpret_cast<StringList *>(sl));
+}
+
+static StringList *
+port_sl_init(void)
+{
+	return (from_port(P::sl_init()));
+}
+
+static void
+port_sl_free(StringList *sl, int all)
+{
+	P::sl_free(to_port(sl), all);
+}
+
 extern "C" {
 StringList *ref_sl_init(void);
 int ref_sl_add(StringList *, char *);
@@ -26,8 +56,7 @@ char *ref_sl_find(StringList *, const char *);
 }
 
 extern "C" void * __real_malloc(size_t);
-extern "C" void * __real_reallocf(void *, size_t);
-extern "C" void __real_free(void *);
+extern "C" void * __real_realloc(void *, size_t);
 
 enum {
 	F_SL_INIT,
@@ -103,14 +132,14 @@ randint(int lo, int hi)
 
 static int malloc_fail_nth;
 static int malloc_call_count;
-static int reallocf_fail;
+static int realloc_fail;
 
 static void
 alloc_hook_reset(void)
 {
 	malloc_fail_nth = 0;
 	malloc_call_count = 0;
-	reallocf_fail = 0;
+	realloc_fail = 0;
 }
 
 extern "C" void *
@@ -122,14 +151,14 @@ __wrap_malloc(size_t sz)
 	return __real_malloc(sz);
 }
 
+extern "C" void * __real_realloc(void *, size_t);
+
 extern "C" void *
-__wrap_reallocf(void *ptr, size_t sz)
+__wrap_realloc(void *ptr, size_t sz)
 {
-	if (reallocf_fail != 0) {
-		__real_free(ptr);
+	if (realloc_fail != 0)
 		return (NULL);
-	}
-	return __real_reallocf(ptr, sz);
+	return __real_realloc(ptr, sz);
 }
 
 /* ------------------------------------------------------------------ */
@@ -312,11 +341,11 @@ static void
 test_sl_init_edges(void)
 {
 	check_sl_init(F_SL_INIT, "basic", ref_sl_init);
-	check_sl_init(F_SL_INIT, "basic port", P::sl_init);
+	check_sl_init(F_SL_INIT, "basic port", port_sl_init);
 	test_sl_init_err_exit("malloc fail 1 ref", 1, ref_sl_init);
 	test_sl_init_err_exit("malloc fail 2 ref", 2, ref_sl_init);
-	test_sl_init_err_exit("malloc fail 1 port", 1, P::sl_init);
-	test_sl_init_err_exit("malloc fail 2 port", 2, P::sl_init);
+	test_sl_init_err_exit("malloc fail 1 port", 1, port_sl_init);
+	test_sl_init_err_exit("malloc fail 2 port", 2, port_sl_init);
 }
 
 /* ------------------------------------------------------------------ */
@@ -336,7 +365,7 @@ check_sl_add_pair(int f, const char *ctx, StringList *sl_r, StringList *sl_p,
 
 	ncases[f]++;
 	rv_r = ref_sl_add(sl_r, name_r);
-	rv_p = P::sl_add(sl_p, name_p);
+	rv_p = P::sl_add(to_port(sl_p), name_p);
 	if (rv_r != expect_rv || rv_p != expect_rv) {
 		report(f, ctx, "unexpected return value");
 		goto out;
@@ -383,7 +412,7 @@ run_add_sequence(int f, const char *ctx, int nadd, int trigger_realloc_fail)
 	int i;
 
 	sl_r = ref_sl_init();
-	sl_p = P::sl_init();
+	sl_p = port_sl_init();
 	pool_r.reset();
 	pool_p.reset();
 
@@ -403,7 +432,7 @@ run_add_sequence(int f, const char *ctx, int nadd, int trigger_realloc_fail)
 
 		if (trigger_realloc_fail != 0 && i == nadd - 1) {
 			alloc_hook_reset();
-			reallocf_fail = 1;
+			realloc_fail = 1;
 			expect = -1;
 		}
 
@@ -419,7 +448,7 @@ run_add_sequence(int f, const char *ctx, int nadd, int trigger_realloc_fail)
 	}
 
 	ref_sl_free(sl_r, 1);
-	P::sl_free(sl_p, 1);
+	P::sl_free(to_port(sl_p), 1);
 }
 
 static void
@@ -442,7 +471,7 @@ test_sl_add_edges(void)
 		char *s_r, *s_p;
 
 		sl_r = ref_sl_init();
-		sl_p = P::sl_init();
+		sl_p = port_sl_init();
 		pool_r.reset();
 		pool_p.reset();
 		s_r = pool_r.dup_bytes(hb, 3);
@@ -450,7 +479,7 @@ test_sl_add_edges(void)
 		check_sl_add_pair(F_SL_ADD, "high-bit bytes", sl_r, sl_p, s_r, s_p,
 		    &pool_r, &pool_p, 0, NULL, NULL);
 		ref_sl_free(sl_r, 1);
-		P::sl_free(sl_p, 1);
+		P::sl_free(to_port(sl_p), 1);
 	}
 }
 
@@ -465,7 +494,7 @@ test_sl_add_random(void)
 
 		std::snprintf(ctx, sizeof ctx, "rand %d", i);
 		sl_r = ref_sl_init();
-		sl_p = P::sl_init();
+		sl_p = port_sl_init();
 		pool_r.reset();
 		pool_p.reset();
 
@@ -495,7 +524,7 @@ test_sl_add_random(void)
 		}
 
 		ref_sl_free(sl_r, 1);
-		P::sl_free(sl_p, 1);
+		P::sl_free(to_port(sl_p), 1);
 	}
 }
 
@@ -519,7 +548,7 @@ check_sl_free_pair(int f, const char *ctx, int all, int nitems)
 	int i;
 
 	sl_r = ref_sl_init();
-	sl_p = P::sl_init();
+	sl_p = port_sl_init();
 	pool_r.reset();
 	pool_p.reset();
 	for (i = 0; i < nitems; i++) {
@@ -531,12 +560,12 @@ check_sl_free_pair(int f, const char *ctx, int all, int nitems)
 		s_r = pool_r.dup(buf);
 		s_p = pool_p.dup(buf);
 		(void)ref_sl_add(sl_r, s_r);
-		(void)P::sl_add(sl_p, s_p);
+		(void)P::sl_add(to_port(sl_p), s_p);
 	}
 
 	ncases[f]++;
 	ref_sl_free(sl_r, all);
-	P::sl_free(sl_p, all);
+	port_sl_free(sl_p, all);
 }
 
 static void
@@ -544,8 +573,8 @@ test_sl_free_edges(void)
 {
 	check_sl_free_null(F_SL_FREE, "null all=0 ref", ref_sl_free);
 	check_sl_free_null(F_SL_FREE, "null all=1 ref", ref_sl_free);
-	check_sl_free_null(F_SL_FREE, "null all=0 port", P::sl_free);
-	check_sl_free_null(F_SL_FREE, "null all=1 port", P::sl_free);
+	check_sl_free_null(F_SL_FREE, "null all=0 port", port_sl_free);
+	check_sl_free_null(F_SL_FREE, "null all=1 port", port_sl_free);
 	check_sl_free_pair(F_SL_FREE, "empty all=0", 0, 0);
 	check_sl_free_pair(F_SL_FREE, "empty all=1", 1, 0);
 	check_sl_free_pair(F_SL_FREE, "items all=0", 0, 5);
@@ -565,7 +594,7 @@ test_sl_free_random(void)
 
 		std::snprintf(ctx, sizeof ctx, "rand %d", i);
 		sl_r = ref_sl_init();
-		sl_p = P::sl_init();
+		sl_p = port_sl_init();
 		pool_r.reset();
 		pool_p.reset();
 		for (int j = 0; j < n; j++) {
@@ -577,11 +606,11 @@ test_sl_free_random(void)
 			s_r = pool_r.dup(buf);
 			s_p = pool_p.dup(buf);
 			(void)ref_sl_add(sl_r, s_r);
-			(void)P::sl_add(sl_p, s_p);
+			(void)P::sl_add(to_port(sl_p), s_p);
 		}
 		ncases[F_SL_FREE]++;
 		ref_sl_free(sl_r, all);
-		P::sl_free(sl_p, all);
+		port_sl_free(sl_p, all);
 	}
 }
 
@@ -599,7 +628,7 @@ check_sl_find_pair(int f, const char *ctx, StringList *sl_r, StringList *sl_p,
 
 	ncases[f]++;
 	got_r = ref_sl_find(sl_r, needle_r);
-	got_p = P::sl_find(sl_p, needle_p);
+	got_p = P::sl_find(to_port(sl_p), needle_p);
 	off_r = pool_r->offset(got_r);
 	off_p = pool_p->offset(got_p);
 
@@ -628,7 +657,7 @@ build_list(StringList **sl_r, StringList **sl_p, StrPool *pool_r,
 	int i;
 
 	*sl_r = ref_sl_init();
-	*sl_p = P::sl_init();
+	*sl_p = port_sl_init();
 	pool_r->reset();
 	pool_p->reset();
 	for (i = 0; i < n; i++) {
@@ -636,7 +665,7 @@ build_list(StringList **sl_r, StringList **sl_p, StrPool *pool_r,
 		char *s_p = pool_p->dup(items[i]);
 
 		(void)ref_sl_add(*sl_r, s_r);
-		(void)P::sl_add(*sl_p, s_p);
+		(void)P::sl_add(to_port(*sl_p), s_p);
 	}
 }
 
@@ -650,13 +679,13 @@ test_sl_find_edges(void)
 	char hb_buf[8];
 
 	sl_r = ref_sl_init();
-	sl_p = P::sl_init();
+	sl_p = port_sl_init();
 	pool_r.reset();
 	pool_p.reset();
 	check_sl_find_pair(F_SL_FIND, "empty list", sl_r, sl_p, "x", "x",
 	    &pool_r, &pool_p, 0);
 	ref_sl_free(sl_r, 0);
-	P::sl_free(sl_p, 0);
+	P::sl_free(to_port(sl_p), 0);
 
 	build_list(&sl_r, &sl_p, &pool_r, &pool_p,
 	    (const char *const[]){ "alpha", "beta", "gamma" }, 3);
@@ -671,29 +700,32 @@ test_sl_find_edges(void)
 	check_sl_find_pair(F_SL_FIND, "empty needle", sl_r, sl_p, "", "",
 	    &pool_r, &pool_p, 0);
 	ref_sl_free(sl_r, 1);
-	P::sl_free(sl_p, 1);
+	P::sl_free(to_port(sl_p), 1);
 
 	build_list(&sl_r, &sl_p, &pool_r, &pool_p,
 	    (const char *const[]){ "dup", "dup", "other" }, 3);
 	check_sl_find_pair(F_SL_FIND, "duplicate first", sl_r, sl_p, "dup",
 	    "dup", &pool_r, &pool_p, 1);
 	ref_sl_free(sl_r, 1);
-	P::sl_free(sl_p, 1);
+	P::sl_free(to_port(sl_p), 1);
 
-	build_list(&sl_r, &sl_p, &pool_r, &pool_p,
-	    (const char *const[]){ (const char *)hb_item }, 1);
-	std::memcpy(hb_buf, hb_needle, sizeof hb_needle);
-	check_sl_find_pair(F_SL_FIND, "high-bit", sl_r, sl_p, hb_buf, hb_buf,
-	    &pool_r, &pool_p, 1);
-	ref_sl_free(sl_r, 1);
-	P::sl_free(sl_p, 1);
+	{
+		const char *hb_items[] = { (const char *)hb_item };
+
+		build_list(&sl_r, &sl_p, &pool_r, &pool_p, hb_items, 1);
+		std::memcpy(hb_buf, hb_needle, sizeof hb_needle);
+		check_sl_find_pair(F_SL_FIND, "high-bit", sl_r, sl_p, hb_buf, hb_buf,
+		    &pool_r, &pool_p, 1);
+		ref_sl_free(sl_r, 1);
+		port_sl_free(sl_p, 1);
+	}
 
 	build_list(&sl_r, &sl_p, &pool_r, &pool_p,
 	    (const char *const[]){ "a" }, 1);
 	check_sl_find_pair(F_SL_FIND, "prefix miss", sl_r, sl_p, "ab", "ab",
 	    &pool_r, &pool_p, 0);
 	ref_sl_free(sl_r, 1);
-	P::sl_free(sl_p, 1);
+	P::sl_free(to_port(sl_p), 1);
 }
 
 static void
@@ -709,7 +741,7 @@ test_sl_find_random(void)
 
 		std::snprintf(ctx, sizeof ctx, "rand %d", i);
 		sl_r = ref_sl_init();
-		sl_p = P::sl_init();
+		sl_p = port_sl_init();
 		pool_r.reset();
 		pool_p.reset();
 
@@ -724,7 +756,7 @@ test_sl_find_random(void)
 			char *s_p = pool_p.dup(items[j]);
 
 			(void)ref_sl_add(sl_r, s_r);
-			(void)P::sl_add(sl_p, s_p);
+			(void)P::sl_add(to_port(sl_p), s_p);
 		}
 
 		q = randint(0, n + 3);
@@ -741,7 +773,7 @@ test_sl_find_random(void)
 		}
 
 		ref_sl_free(sl_r, 1);
-		P::sl_free(sl_p, 1);
+		P::sl_free(to_port(sl_p), 1);
 	}
 }
 

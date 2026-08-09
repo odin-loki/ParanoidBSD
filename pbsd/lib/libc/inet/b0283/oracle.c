@@ -3,6 +3,8 @@
  * Each function renamed with ref_ prefix; bodies otherwise unmodified.
  */
 
+#define _DEFAULT_SOURCE
+
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/socket.h>
@@ -23,6 +25,7 @@
 #define __weak_reference(sym, alias)
 
 typedef unsigned char u_char;
+typedef unsigned int u_int;
 
 char inet_nsap_ntoa_tmpbuf[255 * 3];
 

@@ -250,6 +250,8 @@ int	 ftruncate(int, off_t);
 
 export namespace pbsd::lib_libc_db_recno::b0285 {
 
+int __rec_sync(const DB *dbp, u_int flags);
+
 EPG *
 __rec_search(BTREE *t, recno_t recno, enum SRCHOP op)
 {

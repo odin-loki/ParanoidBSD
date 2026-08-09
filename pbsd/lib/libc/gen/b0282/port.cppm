@@ -5,15 +5,15 @@ module;
 #include <sys/types.h>
 #include <unistd.h>
 
+export module pbsd.lib.libc.gen.b0282;
+
+export namespace pbsd::lib_libc_gen::b0282 {
+
 extern "C" {
 int getgrouplist(const char *, gid_t, gid_t *, int *);
 int setgroups(int, const gid_t *);
 int freebsd14_setgroups(int, const gid_t *);
 }
-
-export module pbsd.lib.libc.gen.b0282;
-
-export namespace pbsd::lib_libc_gen::b0282 {
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -50,8 +50,6 @@ export namespace pbsd::lib_libc_gen::b0282 {
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-extern "C" int freebsd14_setgroups(int gidsize, const gid_t *gidset);
 
 static int
 initgroups_impl(const char *uname, gid_t agroup,

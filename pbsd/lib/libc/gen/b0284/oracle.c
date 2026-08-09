@@ -384,7 +384,10 @@ sysctl(int *name, unsigned int namelen, void *oldp, size_t *oldlenp,
 
 	if (oldp == NULL || oldlenp == NULL)
 		return (0);
-	(void)mock_copy_out(src, srclen, oldp, oldlenp);
+	if (mock_copy_out(src, srclen, oldp, oldlenp) == 0) {
+		errno = ENOMEM;
+		return (-1);
+	}
 	return (0);
 }
 

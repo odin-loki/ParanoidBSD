@@ -6,8 +6,6 @@
  * Only missing platform defines and the private header material that the
  * original translation unit pulled in (db.h private section, hash.h, page.h)
  * have been added so that this file compiles standalone.
- *
- * __split_page() and ugly_split() are absent; see skipped.txt.
  */
 
 /*-

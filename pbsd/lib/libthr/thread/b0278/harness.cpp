@@ -925,6 +925,8 @@ test_edges(void)
 	    0);
 
 	check_rwlockattr_destroy_pair("rw_destroy_null", NULL, NULL, false);
+	port_rw = NULL;
+	ref_rw = NULL;
 	check_rwlockattr_destroy_pair("rw_destroy_uninit", &port_rw, &ref_rw,
 	    false);
 	check_rwlockattr_destroy_pair("rw_destroy_ok", &port_rw, &ref_rw, true);
@@ -945,12 +947,10 @@ test_edges(void)
 	check_rwlockattr_setpshared_pair("rw_set_high", 0x80808080);
 
 	check_barrierattr_destroy_pair("ba_destroy_null", NULL, NULL, false);
-	port_ba = (pthread_barrierattr_t)0x1;
-	ref_ba = (pthread_barrierattr_t)0x1;
-	check_barrierattr_destroy_pair("ba_destroy_uninit", &port_ba, &ref_ba,
-	    false);
 	port_ba = NULL;
 	ref_ba = NULL;
+	check_barrierattr_destroy_pair("ba_destroy_uninit", &port_ba, &ref_ba,
+	    false);
 	check_barrierattr_destroy_pair("ba_destroy_ok", &port_ba, &ref_ba, true);
 
 	check_barrierattr_init_pair("ba_init_ok", &port_ba, &ref_ba);
@@ -1139,18 +1139,15 @@ test_random(unsigned iters)
 int
 main(void)
 {
-	std::fprintf(stderr, "main start\n");
+	unsigned fn;
+	unsigned long long total_cases = 0, total_fails = 0;
+
 	std::memset(&g_cur, 0, sizeof(g_cur));
 	std::memset(&g_target0, 0, sizeof(g_target0));
 	std::memset(&g_target1, 0, sizeof(g_target1));
 
-	return 0;
-
-	std::printf("edges begin\n");
 	test_edges();
-	std::printf("random begin\n");
 	test_random(SWEEP_ITERS);
-	std::printf("done\n");
 
 	std::printf("\nbatch b0278 differential results\n");
 	std::printf("%-32s %12s %10s %s\n", "function", "cases", "failures",

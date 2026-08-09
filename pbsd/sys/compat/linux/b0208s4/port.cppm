@@ -14,6 +14,13 @@ module;
 #include <stddef.h>
 #include <errno.h>
 
+export module pbsd.sys.compat.linux.b0208s4;
+
+/*
+ * The kernel primitives the body calls.  They carry C language linkage, so
+ * they stay attached to the global module and resolve to the definitions the
+ * differential-test environment provides.
+ */
 extern "C" {
 
 /* sys/malloc.h */
@@ -31,8 +38,6 @@ int vn_getcwd(char *buf, char **retbuf, size_t *buflen);
 int copyout(const void *kaddr, void *udaddr, size_t len);
 
 } /* extern "C" */
-
-export module pbsd.sys.compat.linux.b0208s4;
 
 #define LINUX_PATH_MAX	4096		/* compat/linux/linux.h */
 

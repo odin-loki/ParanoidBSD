@@ -32,6 +32,6 @@ else
 fi
 
 $CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o \
-    -Wl,--wrap=malloc -Wl,--wrap=reallocf
+    -Wl,--wrap=malloc -Wl,--wrap=realloc
 
 exec ./harness

@@ -697,6 +697,7 @@ static void test_hash_access()
 	rr = ref_hash_access(&er.htab, HASH_GET, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_GET, pd(&keyp),
 	    pd(&valp));
+	std::fprintf(stderr, "bigpair found rr=%d rp=%d\n", rr, rp);
 	check(F_HASH_ACCESS, rr == rp && rr == 0, "bigpair found");
 
 	hash_mock_reset();
@@ -713,6 +714,7 @@ static void test_hash_access()
 	rr = ref_hash_access(&er.htab, HASH_GET, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_GET, pd(&keyp),
 	    pd(&valp));
+	std::fprintf(stderr, "bigpair -2 rr=%d rp=%d\n", rr, rp);
 	check(F_HASH_ACCESS, rr == rp && rr == 1, "bigpair -2 no page");
 
 	hash_mock_reset();
@@ -725,6 +727,7 @@ static void test_hash_access()
 	rr = ref_hash_access(&er.htab, HASH_GET, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_GET, pd(&keyp),
 	    pd(&valp));
+	std::fprintf(stderr, "big_return rr=%d rp=%d\n", rr, rp);
 	check(F_HASH_ACCESS, rr == rp && rr == -1, "big_return fail");
 
 	hash_mock_reset();
@@ -918,6 +921,7 @@ static void test_hash_seq()
 
 	rr = ref_hash_seq(dbr, &keyr, &valr, R_NEXT);
 	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_NEXT);
+	std::fprintf(stderr, "next end rr=%d rp=%d\n", rr, rp);
 	check(F_HASH_SEQ, rr == rp && rr == 1, "next end");
 
 	er.htab.cbucket = -1;

@@ -79,7 +79,14 @@
 #define	_bcs_convert_to_lower	_citrus_bcs_convert_to_lower
 
 /* citrus_db */
+#define	_db_open		_citrus_db_open
+#define	_db_close		_citrus_db_close
+#define	_db_lookup_by_s		_citrus_db_lookup_by_string
+#define	_db_hash_std		_citrus_db_hash_std
+#define	_db_get_num_entries	_citrus_db_get_number_of_entries
+#define	_db_get_entry		_citrus_db_get_entry
 #define	_db_locator		_citrus_db_locator
+#define	_db_locator_init	_citrus_db_locator_init
 
 /* citrus_db_factory */
 #define	_db_factory		_citrus_db_factory
@@ -500,6 +507,71 @@ _citrus_db_hash_std(struct _region *r)
 }
 
 /*
+ * ------------------------------------------------------------------------
+ * Every function of the batch is defined below under its original name with
+ * a "ref_" prefix.  Calls between batch functions are redirected to the
+ * prefixed definitions by the macros below, so that the function bodies
+ * themselves are byte-for-byte the originals.
+ * ------------------------------------------------------------------------
+ */
+
+/* citrus_db.c */
+#define	_citrus_db_open			ref__citrus_db_open
+#define	_citrus_db_close		ref__citrus_db_close
+#define	_citrus_db_lookup		ref__citrus_db_lookup
+#define	_citrus_db_lookup_by_string	ref__citrus_db_lookup_by_string
+#define	_citrus_db_lookup8_by_string	ref__citrus_db_lookup8_by_string
+#define	_citrus_db_lookup16_by_string	ref__citrus_db_lookup16_by_string
+#define	_citrus_db_lookup32_by_string	ref__citrus_db_lookup32_by_string
+#define	_citrus_db_lookup_string_by_string \
+					ref__citrus_db_lookup_string_by_string
+#define	_citrus_db_get_number_of_entries \
+					ref__citrus_db_get_number_of_entries
+#define	_citrus_db_get_entry		ref__citrus_db_get_entry
+
+/* citrus_db_factory.c */
+#define	ceilto				ref_ceilto
+#define	put8				ref_put8
+#define	put32				ref_put32
+#define	putpad				ref_putpad
+#define	dump_header			ref_dump_header
+#define	_citrus_db_factory_create	ref__citrus_db_factory_create
+#define	_citrus_db_factory_free		ref__citrus_db_factory_free
+#define	_citrus_db_factory_add		ref__citrus_db_factory_add
+#define	_citrus_db_factory_add_by_string \
+					ref__citrus_db_factory_add_by_string
+#define	_citrus_db_factory_add8_by_string \
+					ref__citrus_db_factory_add8_by_string
+#define	_citrus_db_factory_add16_by_string \
+					ref__citrus_db_factory_add16_by_string
+#define	_citrus_db_factory_add32_by_string \
+					ref__citrus_db_factory_add32_by_string
+#define	_citrus_db_factory_add_string_by_string \
+				ref__citrus_db_factory_add_string_by_string
+#define	_citrus_db_factory_calc_size	ref__citrus_db_factory_calc_size
+#define	_citrus_db_factory_serialize	ref__citrus_db_factory_serialize
+
+/* citrus_lookup.c */
+#define	seq_get_num_entries_db		ref_seq_get_num_entries_db
+#define	seq_next_db			ref_seq_next_db
+#define	seq_lookup_db			ref_seq_lookup_db
+#define	seq_close_db			ref_seq_close_db
+#define	seq_open_db			ref_seq_open_db
+#define	seq_next_plain			ref_seq_next_plain
+#define	seq_get_num_entries_plain	ref_seq_get_num_entries_plain
+#define	seq_lookup_plain		ref_seq_lookup_plain
+#define	seq_close_plain			ref_seq_close_plain
+#define	seq_open_plain			ref_seq_open_plain
+#define	_citrus_lookup_seq_open		ref__citrus_lookup_seq_open
+#define	_citrus_lookup_seq_rewind	ref__citrus_lookup_seq_rewind
+#define	_citrus_lookup_seq_next		ref__citrus_lookup_seq_next
+#define	_citrus_lookup_seq_lookup	ref__citrus_lookup_seq_lookup
+#define	_citrus_lookup_get_number_of_entries \
+				ref__citrus_lookup_get_number_of_entries
+#define	_citrus_lookup_seq_close	ref__citrus_lookup_seq_close
+#define	_citrus_lookup_simple		ref__citrus_lookup_simple
+
+/*
  * ========================================================================
  * lib/libc/iconv/citrus_db.c
  * ========================================================================
@@ -673,7 +745,7 @@ ref__citrus_db_lookup_by_string(struct _citrus_db *db, const char *key,
 
 	_region_init(&r, __DECONST(void *, key), strlen(key));
 
-	return (ref__citrus_db_lookup(db, &r, data, dl));
+	return (_citrus_db_lookup(db, &r, data, dl));
 }
 
 int
@@ -683,7 +755,7 @@ ref__citrus_db_lookup8_by_string(struct _citrus_db *db, const char *key,
 	struct _region r;
 	int ret;
 
-	ret = ref__citrus_db_lookup_by_string(db, key, &r, dl);
+	ret = _citrus_db_lookup_by_string(db, key, &r, dl);
 	if (ret)
 		return (ret);
 
@@ -704,7 +776,7 @@ ref__citrus_db_lookup16_by_string(struct _citrus_db *db, const char *key,
 	int ret;
 	uint16_t val;
 
-	ret = ref__citrus_db_lookup_by_string(db, key, &r, dl);
+	ret = _citrus_db_lookup_by_string(db, key, &r, dl);
 	if (ret)
 		return (ret);
 
@@ -727,7 +799,7 @@ ref__citrus_db_lookup32_by_string(struct _citrus_db *db, const char *key,
 	uint32_t val;
 	int ret;
 
-	ret = ref__citrus_db_lookup_by_string(db, key, &r, dl);
+	ret = _citrus_db_lookup_by_string(db, key, &r, dl);
 	if (ret)
 		return (ret);
 
@@ -749,7 +821,7 @@ ref__citrus_db_lookup_string_by_string(struct _citrus_db *db, const char *key,
 	struct _region r;
 	int ret;
 
-	ret = ref__citrus_db_lookup_by_string(db, key, &r, dl);
+	ret = _citrus_db_lookup_by_string(db, key, &r, dl);
 	if (ret)
 		return (ret);
 
@@ -937,7 +1009,7 @@ ref__citrus_db_factory_add(struct _citrus_db_factory *df, struct _region *key,
 
 	STAILQ_INSERT_TAIL(&df->df_entries, de, de_entry);
 	df->df_total_key_size += _region_size(key);
-	df->df_total_data_size += ref_ceilto(_region_size(data));
+	df->df_total_data_size += ceilto(_region_size(data));
 	df->df_num_entries++;
 
 	return (0);

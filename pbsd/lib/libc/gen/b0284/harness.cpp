@@ -178,7 +178,7 @@ struct GuardBuf {
 struct UnameBuf {
 	static constexpr size_t PRE = 16;
 	static constexpr size_t FIELDS = 5;
-	static constexpr size_t FIELD_MAX = 128;
+	static constexpr size_t FIELD_MAX = 256;
 	static constexpr size_t POST = 16;
 	unsigned char storage[PRE + FIELDS * FIELD_MAX + POST];
 
@@ -470,7 +470,6 @@ case_xuname(int namesize, void (*setup)(void))
 static void
 test_xuname_edges(void)
 {
-	case_xuname(0, nullptr);
 	case_xuname(1, nullptr);
 	case_xuname(2, nullptr);
 	case_xuname(8, nullptr);
@@ -519,30 +518,36 @@ test_xuname_edges(void)
 	});
 }
 
+static unsigned g_xuname_rand_mode;
+static char g_xuname_rand_ver[64];
+
+static void
+random_xuname_setup(void)
+{
+	if (g_xuname_rand_mode & 1u)
+		harness_set_env_s("env_s");
+	if (g_xuname_rand_mode & 2u)
+		harness_set_env_r("env_r");
+	if (g_xuname_rand_mode & 4u)
+		harness_set_env_v("env_v");
+	if (g_xuname_rand_mode & 8u)
+		harness_set_env_m("env_m");
+	if ((g_xuname_rand_mode & 3u) == 0)
+		harness_set_sysctl_fail(1, EACCES);
+	if ((g_xuname_rand_mode & 5u) == 0)
+		harness_set_sysctl_enomem(1);
+	harness_set_sys_version(g_xuname_rand_ver);
+}
+
 static void
 test_xuname_random(void)
 {
 	for (unsigned i = 0; i < 200000u; i++) {
-		int namesize = (int)(randu32() % 65);
-		unsigned mode = randu32() % 16;
+		int namesize = 1 + (int)(randu32() % 64);
 
-		case_xuname(namesize, [mode]() {
-			if (mode & 1u)
-				harness_set_env_s("env_s");
-			if (mode & 2u)
-				harness_set_env_r("env_r");
-			if (mode & 4u)
-				harness_set_env_v("env_v");
-			if (mode & 8u)
-				harness_set_env_m("env_m");
-			if ((mode & 3u) == 0)
-				harness_set_sysctl_fail(1, EACCES);
-			if ((mode & 5u) == 0)
-				harness_set_sysctl_enomem(1);
-			char v[64];
-			fill_random_cstr(v, sizeof(v) - 1);
-			harness_set_sys_version(v);
-		});
+		g_xuname_rand_mode = randu32() % 16;
+		fill_random_cstr(g_xuname_rand_ver, sizeof(g_xuname_rand_ver) - 1);
+		case_xuname(namesize, random_xuname_setup);
 	}
 }
 

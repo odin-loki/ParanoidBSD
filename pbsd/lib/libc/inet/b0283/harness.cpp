@@ -472,7 +472,7 @@ hand_nsap_ntoa_edges()
 	for (unsigned char b : nibbles) {
 		unsigned char one[] = { b };
 		check_nsap_ntoa_buf(1, one, "edge-nibble");
-		check_nsap_ntoa(1, one, nullptr, true, "edge-nibble-tmp");
+		check_nsap_ntoa_tmp(1, one, "edge-nibble-tmp");
 	}
 }
 
@@ -644,8 +644,8 @@ random_sweep()
 			bin[j] = static_cast<unsigned char>(rand_u32() & 0xff);
 		check_nsap_ntoa_buf(static_cast<int>(blen), bin, "random");
 		if ((rand_u32() & 3) == 0)
-			check_nsap_ntoa(static_cast<int>(blen), bin, nullptr,
-			    true, "random");
+			check_nsap_ntoa_tmp(static_cast<int>(blen), bin,
+			    "random");
 
 		std::string netstr = random_network_string();
 		check_network(netstr.c_str(), "random");

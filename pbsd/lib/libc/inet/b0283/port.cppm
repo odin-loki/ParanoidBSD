@@ -1,5 +1,7 @@
 module;
 
+#define _DEFAULT_SOURCE
+
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/socket.h>
@@ -17,6 +19,7 @@ export module pbsd.lib.libc.inet.b0283;
 export namespace pbsd::lib_libc_inet::b0283 {
 
 typedef unsigned char u_char;
+typedef unsigned int u_int;
 
 char inet_nsap_ntoa_tmpbuf[255 * 3];
 
@@ -293,9 +296,9 @@ inet_net_ntop(int af, const void *src, int bits, char *dst, size_t size)
 {
 	switch (af) {
 	case AF_INET:
-		return (inet_net_ntop_ipv4(src, bits, dst, size));
+		return (inet_net_ntop_ipv4((const u_char *)src, bits, dst, size));
 	case AF_INET6:
-		return (inet_net_ntop_ipv6(src, bits, dst, size));
+		return (inet_net_ntop_ipv6((const u_char *)src, bits, dst, size));
 	default:
 		errno = EAFNOSUPPORT;
 		return (NULL);

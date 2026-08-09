@@ -385,8 +385,8 @@ static void test_backends_hand()
 	test_backend_register("ramdisk", stub_init_ok, -1);
 	test_backend_register("block", stub_init_ok, 0);
 	test_backend_register("failbe", stub_init_fail, 42);
-	test_backend_deregister("block", nullptr, 0);
-	test_backend_deregister("block", stub_shutdown_fail, 17);
+	test_backend_register("shutdownfail", stub_init_ok, 0);
+	test_backend_deregister("shutdownfail", stub_shutdown_fail, 17);
 	test_backend_find("alpha", "alpha", true);
 	test_backend_find("alpha", "beta", false);
 	test_backend_find("alpha", "", false);

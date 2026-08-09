@@ -409,7 +409,7 @@ ugly_split(HTAB *hashp,
 
 	n = ino[0] - 1;
 	while (n < ino[0]) {
-		if (ino[2] < REAL_KEY && ino[2] != OVFLPAGE) {
+		if (ino[2] >= REAL_KEY && ino[2] != OVFLPAGE) {
 			if (__big_split(hashp, old_bufp,
 			    new_bufp, bufp, bufp->addr, obucket, &ret))
 				return (-1);
