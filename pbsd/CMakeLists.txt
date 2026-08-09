@@ -428,7 +428,9 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libthr/sys/b0234/port.cppm
   lib/libthr/thread/b0252/port.cppm
   lib/libthr/thread/b0254/port.cppm
+  lib/libthr/thread/b0265/port.cppm
   lib/libthr/thread/b0271/port.cppm
+  lib/libthr/thread/b0278/port.cppm
   lib/msun/aarch64/b0201/port.cppm
   lib/msun/amd64/b0250/port.cppm
   lib/msun/ld128/b0073/port.cppm
@@ -480,6 +482,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0262/port.cppm
   lib/msun/src/b0267/port.cppm
   lib/msun/src/b0269/port.cppm
+  lib/msun/src/b0276/port.cppm
+  lib/msun/src/b0277/port.cppm
   lib/msun/src/e_acosh_m/port.cppm
   lib/msun/src/e_acoshf_m/port.cppm
   lib/msun/src/e_atanh_m/port.cppm

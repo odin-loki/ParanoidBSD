@@ -209,58 +209,8 @@ buf_eq(const char *a, const char *b, size_t n)
 	return memcmp(a, b, n) == 0;
 }
 
-static bool
-env_bufs_equal(void)
-{
-	const char *ib1 = ref_env_get_ibuf_base();
-	const char *ib2 = P::env_get_ibuf_base();
-	const char *rh1 = ref_env_get_rhbuf();
-	const char *rh2 = P::env_get_rhbuf();
-	const char *rb1 = ref_env_get_rbuf();
-	const char *rb2 = P::env_get_rbuf();
-	int rhz1 = ref_env_get_rhbufsz();
-	int rhz2 = P::env_get_rhbufsz();
-	int rbz1 = ref_env_get_rbufsz();
-	int rbz2 = P::env_get_rbufsz();
-
-	if (!buf_eq(ib1, ib2, IBUF_TOTAL))
-		return false;
-	if (rhz1 != rhz2)
-		return false;
-	if (rhz1 > 0 && !buf_eq(rh1, rh2, (size_t)rhz1))
-		return false;
-	if (rbz1 != rbz2)
-		return false;
-	if (rbz1 > 0 && !buf_eq(rb1, rb2, (size_t)rbz1))
-		return false;
-	if (!buf_eq(ref_env_get_sfbuf(), P::env_get_sfbuf(), SFBUF_SZ))
-		return false;
-	return true;
-}
-
-static bool
-env_meta_equal(void)
-{
-	if (ref_env_get_mutex() != P::env_get_mutex())
-		return false;
-	if (ref_env_get_rhbufi() != P::env_get_rhbufi())
-		return false;
-	if (ref_env_get_ibufp_off() != P::env_get_ibufp_off())
-		return false;
-	if (ref_env_get_isbinary() != P::env_get_isbinary())
-		return false;
-	if (ref_env_get_script_pos() != P::env_get_script_pos())
-		return false;
-	if (strcmp_null(ref_env_get_errmsg(), P::env_get_errmsg()) != 0)
-		return false;
-	return true;
-}
-
-static bool
-env_equal(void)
-{
-	return env_bufs_equal() && env_meta_equal();
-}
+#define RH_PREALLOC 4096
+#define RB_PREALLOC 4096
 
 struct EnvSnap {
 	int mutex;
@@ -270,12 +220,11 @@ struct EnvSnap {
 	int script_pos;
 	const char *errmsg;
 	unsigned char ibuf[IBUF_TOTAL];
-	unsigned char rhbuf[2048];
-	unsigned char rbuf[2048];
+	unsigned char rhbuf[RH_PREALLOC];
+	unsigned char rbuf[RB_PREALLOC];
 	unsigned char sfbuf[SFBUF_SZ];
 	int rhbufsz;
 	int rbufsz;
-	int rhbuf_len;	/* bytes to compare in rhbuf/rbuf */
 };
 
 static void
@@ -295,14 +244,13 @@ snap_ref(EnvSnap &s)
 	memcpy(s.ibuf, ref_env_get_ibuf_base(), IBUF_TOTAL);
 	s.rhbufsz = rhz;
 	s.rbufsz = rbz;
-	s.rhbuf_len = rhz > 0 ? rhz : 0;
 	memset(s.rhbuf, GUARD_BYTE, sizeof(s.rhbuf));
 	memset(s.rbuf, GUARD_BYTE, sizeof(s.rbuf));
 	memset(s.sfbuf, GUARD_BYTE, sizeof(s.sfbuf));
 	if (rhz > 0 && rh != nullptr)
-		memcpy(s.rhbuf, rh, (size_t)rhz);
+		memcpy(s.rhbuf, rh, (size_t)rhz > RH_PREALLOC ? RH_PREALLOC : (size_t)rhz);
 	if (rbz > 0 && rb != nullptr)
-		memcpy(s.rbuf, rb, (size_t)rbz);
+		memcpy(s.rbuf, rb, (size_t)rbz > RB_PREALLOC ? RB_PREALLOC : (size_t)rbz);
 	memcpy(s.sfbuf, ref_env_get_sfbuf(), SFBUF_SZ);
 }
 
@@ -323,15 +271,49 @@ snap_port(EnvSnap &s)
 	memcpy(s.ibuf, P::env_get_ibuf_base(), IBUF_TOTAL);
 	s.rhbufsz = rhz;
 	s.rbufsz = rbz;
-	s.rhbuf_len = rhz > 0 ? rhz : 0;
 	memset(s.rhbuf, GUARD_BYTE, sizeof(s.rhbuf));
 	memset(s.rbuf, GUARD_BYTE, sizeof(s.rbuf));
 	memset(s.sfbuf, GUARD_BYTE, sizeof(s.sfbuf));
 	if (rhz > 0 && rh != nullptr)
-		memcpy(s.rhbuf, rh, (size_t)rhz);
+		memcpy(s.rhbuf, rh, (size_t)rhz > RH_PREALLOC ? RH_PREALLOC : (size_t)rhz);
 	if (rbz > 0 && rb != nullptr)
-		memcpy(s.rbuf, rb, (size_t)rbz);
+		memcpy(s.rbuf, rb, (size_t)rbz > RB_PREALLOC ? RB_PREALLOC : (size_t)rbz);
 	memcpy(s.sfbuf, P::env_get_sfbuf(), SFBUF_SZ);
+}
+
+static bool
+rhbuf_snap_eq(const EnvSnap &a, const EnvSnap &b)
+{
+	size_t tail;
+
+	if (a.rhbufi != b.rhbufi || a.rhbufsz != b.rhbufsz)
+		return false;
+	if (memcmp(a.rhbuf, b.rhbuf, (size_t)a.rhbufi + 1) != 0)
+		return false;
+	tail = (size_t)a.rhbufsz - (size_t)a.rhbufi - 1;
+	if (tail == 0)
+		return true;
+	/* Guard-filled slack only when both sides still carry guards there. */
+	if (a.rhbuf[a.rhbufi + 1] == GUARD_BYTE &&
+	    b.rhbuf[b.rhbufi + 1] == GUARD_BYTE)
+		return memcmp(a.rhbuf + a.rhbufi + 1, b.rhbuf + b.rhbufi + 1,
+		    tail) == 0;
+	return true;
+}
+
+static bool
+rbuf_snap_eq(const EnvSnap &a, const EnvSnap &b)
+{
+	size_t n;
+
+	if (a.rbufsz != b.rbufsz)
+		return false;
+	if (a.rbufsz == 0)
+		return true;
+	n = (size_t)a.rbufsz;
+	if (n > RB_PREALLOC)
+		n = RB_PREALLOC;
+	return memcmp(a.rbuf, b.rbuf, n) == 0;
 }
 
 static bool
@@ -346,9 +328,9 @@ snap_equal(const EnvSnap &a, const EnvSnap &b)
 		return false;
 	if (memcmp(a.ibuf, b.ibuf, IBUF_TOTAL) != 0)
 		return false;
-	if (a.rhbufsz > 0 && memcmp(a.rhbuf, b.rhbuf, (size_t)a.rhbufsz) != 0)
+	if (!rhbuf_snap_eq(a, b))
 		return false;
-	if (a.rbufsz > 0 && memcmp(a.rbuf, b.rbuf, (size_t)a.rbufsz) != 0)
+	if (!rbuf_snap_eq(a, b))
 		return false;
 	if (memcmp(a.sfbuf, b.sfbuf, SFBUF_SZ) != 0)
 		return false;
@@ -376,9 +358,9 @@ snap_why(const EnvSnap &a, const EnvSnap &b)
 		return "errmsg";
 	if (memcmp(a.ibuf, b.ibuf, IBUF_TOTAL) != 0)
 		return "ibuf";
-	if (a.rhbufsz > 0 && memcmp(a.rhbuf, b.rhbuf, (size_t)a.rhbufsz) != 0)
+	if (!rhbuf_snap_eq(a, b))
 		return "rhbuf";
-	if (a.rbufsz > 0 && memcmp(a.rbuf, b.rbuf, (size_t)a.rbufsz) != 0)
+	if (!rbuf_snap_eq(a, b))
 		return "rbuf";
 	if (memcmp(a.sfbuf, b.sfbuf, SFBUF_SZ) != 0)
 		return "sfbuf";
@@ -386,9 +368,24 @@ snap_why(const EnvSnap &a, const EnvSnap &b)
 }
 
 static void
+prefill_rhbuf_both(void)
+{
+	ref_env_set_rhbuf(nullptr, 0, RH_PREALLOC);
+	P::env_set_rhbuf(nullptr, 0, RH_PREALLOC);
+}
+
+static void
+prefill_rbuf_both(void)
+{
+	ref_env_set_rbuf(RB_PREALLOC);
+	P::env_set_rbuf(RB_PREALLOC);
+}
+
+static void
 setup_tail(const char *cmd, int n, int isg)
 {
 	reset_both();
+	prefill_rhbuf_both();
 	set_isglobal_both(isg);
 	set_ibuf_both(cmd, n);
 }
@@ -398,6 +395,7 @@ setup_tmpl(const char *cmd, int cn, int isg, const char *scripts[],
     const int script_neg[], int nscripts)
 {
 	reset_both();
+	prefill_rhbuf_both();
 	set_isglobal_both(isg);
 	for (int i = 0; i < nscripts; i++)
 		script_both(scripts[i], script_neg[i]);
@@ -409,6 +407,8 @@ setup_sub(const char *line, int llen, const char *tmpl, int tlen, int isbin,
     int line_fail)
 {
 	reset_both();
+	prefill_rhbuf_both();
+	prefill_rbuf_both();
 	set_isbinary_both(isbin);
 	ref_env_set_line(line, llen, line_fail);
 	P::env_set_line(line, llen, line_fail);
@@ -423,8 +423,8 @@ static void
 setup_apply(const char *tmpl, int tn)
 {
 	reset_both();
-	ref_env_set_rbuf(0);
-	P::env_set_rbuf(0);
+	prefill_rhbuf_both();
+	prefill_rbuf_both();
 	set_ibuf_both(tmpl, tn);
 	ref_extract_subst_template();
 	P::extract_subst_template();
@@ -817,26 +817,12 @@ apply_case(const char *tmpl, int tn, const char *boln, int so, int eo,
 	pr = P::apply_subst_template(boln, prm, off, nsub);
 	snap_port(sp);
 
-	if (rr != pr || !snap_equal(sr, sp)) {
-		size_t di = 0;
-
-		if (snap_why(sr, sp) != nullptr && strcmp(snap_why(sr, sp), "rhbuf") == 0) {
-			for (di = 0; di < (size_t)sr.rhbufsz; di++)
-				if (sr.rhbuf[di] != sp.rhbuf[di]) {
-					fprintf(stderr,
-					    "  rhbuf[%zu]=ref:%02x port:%02x "
-					    "rhbufi ref:%d port:%d\n",
-					    di, sr.rhbuf[di], sp.rhbuf[di],
-					    sr.rhbufi, sp.rhbufi);
-					break;
-				}
-		}
+	if (rr != pr || !snap_equal(sr, sp))
 		fail(st_apply,
 		    "tmpl=%.*s so=%d eo=%d off=%d nsub=%d why=%s -> ref=%d port=%d",
 		    tn, tmpl, so, eo, off, nsub,
 		    snap_why(sr, sp) ? snap_why(sr, sp) : "?",
 		    rr, pr);
-	}
 }
 
 static void

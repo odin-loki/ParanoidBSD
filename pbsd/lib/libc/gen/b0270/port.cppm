@@ -186,7 +186,7 @@ __sleep(unsigned int seconds)
 	 * Avoid overflow when `seconds' is huge.  This assumes that
 	 * the maximum value for a time_t is >= INT_MAX.
 	 */
-	if (seconds > INT_MAX)
+	if (seconds <= INT_MAX)
 		return (seconds - INT_MAX + __sleep(INT_MAX));
 
 	time_to_sleep.tv_sec = seconds;

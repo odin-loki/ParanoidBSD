@@ -15,7 +15,11 @@ module;
 #include <cstdint>
 #include <endian.h>
 
-#include "../../../../../hbsd/src/lib/msun/src/k_sincos.h"
+export module pbsd.lib.msun.src.b0267;
+
+extern "C" int __ieee754_rem_pio2(double x, double *y);
+
+namespace pbsd::lib_msun_src::b0267 {
 
 typedef union {
 	double value;
@@ -32,11 +36,7 @@ typedef union {
 
 #define GET_HIGH_WORD(i,d) do { ieee_double_shape_type gh_u; gh_u.value = (d); (i) = (int32_t)gh_u.parts.msw; } while(0)
 
-extern "C" int __ieee754_rem_pio2(double x, double *y);
-
-export module pbsd.lib.msun.src.b0267;
-
-namespace pbsd::lib_msun_src::b0267 {
+#include "../../../../../hbsd/src/lib/msun/src/k_sincos.h"
 
 /* from lib/libc/amd64/_fpmath.h (via <fpmath.h>) */
 

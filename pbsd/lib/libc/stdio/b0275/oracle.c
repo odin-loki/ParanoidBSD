@@ -19,16 +19,27 @@
 #include <limits.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <wchar.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
 #endif
+
+typedef void *locale_t;
+
+static size_t
+pbsd_strlen(const char *s)
+{
+	const char *p;
+
+	for (p = s; *p != '\0'; p++)
+		;
+	return ((size_t)(p - s));
+}
+
+#define strlen pbsd_strlen
 
 /* ------------------------------------------------------------------ */
 /* Minimal libc internals modelled for this batch.                     */
@@ -45,7 +56,9 @@ struct __pbsd_sFILE {
 typedef struct __pbsd_sFILE b0275_FILE;
 #define FILE b0275_FILE
 
-typedef void *locale_t;
+b0275_FILE mock_stdin_storage;
+FILE *pbsd_stdin = &mock_stdin_storage;
+#define stdin pbsd_stdin
 
 struct printf_info {
 	int prec;
@@ -67,9 +80,6 @@ struct __printf_io {
 #define VIS_HTTPSTYLE	0x40
 
 int __isthreaded = 0;
-
-b0275_FILE mock_stdin_storage;
-FILE *stdin = &mock_stdin_storage;
 
 int mock_flock_calls = 0;
 int mock_funlock_calls = 0;

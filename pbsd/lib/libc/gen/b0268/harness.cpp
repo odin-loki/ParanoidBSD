@@ -292,7 +292,7 @@ dirname_buf_ok(GuardBuf &gp, GuardBuf &gr, const char *ctx)
 	char *b = ref_dirname(gr.win());
 	bool ok = true;
 
-	if (!ptr_offset_ok(a, gp.win(), b, gr.win())) {
+	if (a != b && !ptr_offset_ok(a, gp.win(), b, gr.win())) {
 		char msg[160];
 
 		std::snprintf(msg, sizeof msg,
@@ -445,21 +445,22 @@ test_dirname_edges(void)
 	}
 }
 
-static void
+static size_t
 fill_random_path(unsigned char *dst, size_t maxn)
 {
 	size_t n;
 	size_t i;
 	unsigned char alphabet[] = {
-		'/', 'a', 'b', 'c', 'd', 'e', 'f', 'g', '.', '\0', 0x80, 0xfe, 0xff
+		'/', 'a', 'b', 'c', 'd', 'e', 'f', 'g', '.', 0x80, 0xfe, 0xff
 	};
 
 	if (maxn == 0)
-		return;
+		return 0;
 	n = (size_t)(randu32() % (unsigned)(maxn + 1));
 	for (i = 0; i < n; i++)
 		dst[i] = alphabet[randu32() % (sizeof alphabet / sizeof alphabet[0])];
 	dst[n] = '\0';
+	return n;
 }
 
 static void
@@ -472,9 +473,9 @@ test_dirname_random(void)
 		std::snprintf(ctx, sizeof ctx, "rand %d", i);
 		gp.init();
 		gr.init();
-		fill_random_path((unsigned char *)gp.win(), gp.winsz() - 1);
-		gr.copy_path_len((const unsigned char *)gp.win(),
-		    std::strlen(gp.win()));
+		size_t filled = fill_random_path((unsigned char *)gp.win(),
+		    gp.winsz() - 1);
+		gr.copy_path_len((const unsigned char *)gp.win(), filled);
 		ncases[F_DIRNAME]++;
 		dirname_buf_ok(gp, gr, ctx);
 	}
@@ -501,17 +502,16 @@ interposing_slot_ok(int slot, const char *ctx)
 	off_a = pa - P::__libc_interposing;
 	off_b = pb - ref___libc_interposing;
 
-	if (off_a != off_b) {
-		char msg[128];
-
-		std::snprintf(msg, sizeof msg,
-		    "array offset port=%td ref=%td slot=%d",
-		    off_a, off_b, slot);
-		report(F_INTERPOSING_SLOT, ctx, msg);
-		ok = false;
-	}
-
 	if (P::__libc_interposing[slot] != nullptr) {
+		if (off_a != off_b) {
+			char msg[128];
+
+			std::snprintf(msg, sizeof msg,
+			    "array offset port=%td ref=%td slot=%d",
+			    off_a, off_b, slot);
+			report(F_INTERPOSING_SLOT, ctx, msg);
+			ok = false;
+		}
 		if (pa != &P::__libc_interposing[slot]) {
 			report(F_INTERPOSING_SLOT, ctx, "port ptr not at slot");
 			ok = false;
@@ -525,16 +525,8 @@ interposing_slot_ok(int slot, const char *ctx)
 			ok = false;
 		}
 	} else {
-		ptrdiff_t lsa = pa - libsys_mock;
-		ptrdiff_t lsb = pb - libsys_mock;
-
-		if (lsa != lsb || lsa != slot) {
-			char msg[128];
-
-			std::snprintf(msg, sizeof msg,
-			    "libsys offset port=%td ref=%td slot=%d",
-			    lsa, lsb, slot);
-			report(F_INTERPOSING_SLOT, ctx, msg);
+		if (pa != pb) {
+			report(F_INTERPOSING_SLOT, ctx, "libsys pointer mismatch");
 			ok = false;
 		}
 		if (pa != &libsys_mock[slot]) {

@@ -1,7 +1,9 @@
 module;
 
 #include <cstring>
+#include <stdbool.h>
 #include <sys/types.h>
+#include <syslog.h>
 
 export module pbsd.lib.libc.gen.b0268;
 
@@ -173,26 +175,24 @@ interpos_func_t *__libsys_interposing_slot(int interposno);
 
 #define	SLOT(a, b) \
 	[INTERPOS_##a] = (interpos_func_t)b
-interpos_func_t __libc_interposing[INTERPOS_MAX];
-#undef SLOT
-
-struct __libc_interposing_init {
-	__libc_interposing_init()
-	{
-#define	SLOT(a, b) \
-		__libc_interposing[INTERPOS_##a] = (interpos_func_t)(b)
-		SLOT(system, __libc_system);
-		SLOT(tcdrain, __libc_tcdrain);
-		SLOT(_pthread_mutex_init_calloc_cb, _pthread_mutex_init_calloc_cb_stub);
-		SLOT(spinlock, __libc_spinlock_stub);
-		SLOT(spinunlock, __libc_spinunlock_stub);
-		SLOT(map_stacks_exec, __libc_map_stacks_exec);
-		SLOT(uexterr_gettext, __libc_uexterr_gettext);
-#undef SLOT
-	}
+interpos_func_t __libc_interposing[INTERPOS_MAX] = {
+	nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+	nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+	nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+	nullptr, nullptr,
+	(interpos_func_t)__libc_system,
+	(interpos_func_t)__libc_tcdrain,
+	nullptr, nullptr, nullptr, nullptr, nullptr,
+	(interpos_func_t)_pthread_mutex_init_calloc_cb_stub,
+	(interpos_func_t)__libc_spinlock_stub,
+	(interpos_func_t)__libc_spinunlock_stub,
+	nullptr, nullptr, nullptr,
+	(interpos_func_t)__libc_map_stacks_exec,
+	nullptr, nullptr, nullptr, nullptr,
+	(interpos_func_t)__libc_uexterr_gettext,
+	nullptr,
 };
-
-static __libc_interposing_init __libc_interposing_initializer;
+#undef SLOT
 
 interpos_func_t *
 __libc_interposing_slot(int interposno)
@@ -229,9 +229,6 @@ __libc_interposing_slot(int interposno)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-#include <stdbool.h>
-#include <syslog.h>
 
 void
 __arc4random_stir_fbsd11(void)

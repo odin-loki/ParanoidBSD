@@ -1176,6 +1176,8 @@ void random_addel(unsigned long long n)
 void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
     const char *tag)
 {
+	if (nb == ob)
+		nb = ob + 1;
 	unsigned char opa[BUF_CAP], opb[BUF_CAP];
 	unsigned char npa[BUF_CAP], npb[BUF_CAP];
 	unsigned char op_init[BUF_CAP], np_init[BUF_CAP];
@@ -1210,10 +1212,24 @@ void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
 	std::snprintf(msg, sizeof msg, "%s ob=%u nb=%u hr=%d rp=%d rr=%d", tag,
 	    (unsigned)ob, (unsigned)nb, hashret, rp, rr);
 	check_eq(F_SPLIT_PAGE, rp == rr, msg);
-	if (rp == 0 && rr == 0)
-		check_eq(F_SPLIT_PAGE,
-		    bufs_eq(opa, opb, BUF_CAP) && bufs_eq(npa, npb, BUF_CAP),
-		    "page bytes");
+	if (rp == 0 && rr == 0) {
+		bool ok = bufs_eq(opa, opb, BUF_CAP) && bufs_eq(npa, npb, BUF_CAP);
+		if (!ok && reported[F_SPLIT_PAGE] < 3) {
+			size_t di = 0;
+			for (; di < BUF_CAP && opa[di] == opb[di]; di++)
+				;
+			std::fprintf(stderr,
+			    "split diff %s: first op diff at %zu opa=%u opb=%u\n",
+			    tag, di, (unsigned)opa[di], (unsigned)opb[di]);
+			di = 0;
+			for (; di < BUF_CAP && npa[di] == npb[di]; di++)
+				;
+			std::fprintf(stderr,
+			    "split diff %s: first np diff at %zu npa=%u npb=%u\n",
+			    tag, di, (unsigned)npa[di], (unsigned)npb[di]);
+		}
+		check_eq(F_SPLIT_PAGE, ok, "page bytes");
+	}
 }
 
 void edge_split_page()

@@ -24,43 +24,8 @@
 #endif
 #endif
 
-/* ---- lib/msun/src/math_private.h ---------------------------------------- */
-
-typedef union {
-	double value;
-	struct {
-#if __BYTE_ORDER == __BIG_ENDIAN
-		uint32_t msw;
-		uint32_t lsw;
-#else
-		uint32_t lsw;
-		uint32_t msw;
-#endif
-	} parts;
-} ieee_double_shape_type;
-
-#define GET_HIGH_WORD(i,d)				\
-do {							\
-	ieee_double_shape_type gh_u;			\
-	gh_u.value = (d);				\
-	(i) = gh_u.parts.msw;				\
-} while (0)
-
-#define EXTRACT_WORDS(ix0,ix1,d)				\
-do {								\
-	ieee_double_shape_type ew_u;				\
-	ew_u.value = (d);					\
-	(ix0) = ew_u.parts.msw;					\
-	(ix1) = ew_u.parts.lsw;					\
-} while (0)
-
-#define INSERT_WORDS(d,ix0,ix1)				\
-do {							\
-	ieee_double_shape_type iw_u;			\
-	iw_u.parts.msw = (ix0);				\
-	iw_u.parts.lsw = (ix1);				\
-	(d) = iw_u.value;				\
-} while (0)
+double __kernel_tan(double x, double y, int iy);
+int __ieee754_rem_pio2(double x, double *y);
 
 /* ======================================================================== */
 /* lib/msun/src/s_tan.c                                                     */

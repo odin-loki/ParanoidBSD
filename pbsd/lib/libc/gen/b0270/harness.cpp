@@ -313,13 +313,13 @@ struct once_obs {
 };
 
 static once_obs
-snap_once(int rv, const ref_once_control *oc)
+snap_once(int rv, int state, void *mutex)
 {
 	once_obs o;
 
 	o.rv = rv;
-	o.state = oc->state;
-	o.mutex = oc->mutex;
+	o.state = state;
+	o.mutex = mutex;
 	o.init_count = g_init_count;
 	o.pthread_calls = g_pthread_once_calls;
 	return (o);
@@ -355,7 +355,7 @@ check_once_case(int f, const char *ctx, int threaded, int start_state,
 	g_pthread_once_init = nullptr;
 
 	ref_rv = ref__once(&ref_oc, test_init);
-	ref_o = snap_once(ref_rv, &ref_oc);
+	ref_o = snap_once(ref_rv, ref_oc.state, ref_oc.mutex);
 
 	__isthreaded = threaded;
 	g_init_count = 0;
@@ -365,7 +365,7 @@ check_once_case(int f, const char *ctx, int threaded, int start_state,
 	g_pthread_once_init = nullptr;
 
 	port_rv = port::_once(&port_oc, test_init);
-	port_o = snap_once(port_rv, &port_oc);
+	port_o = snap_once(port_rv, port_oc.state, port_oc.mutex);
 
 	ncases[f]++;
 	if (!once_obs_eq(ref_o, port_o)) {
@@ -407,7 +407,7 @@ test_once_handwritten(void)
 		(void)ref__once(&ref_oc, test_init);
 		(void)ref__once(&ref_oc, test_init);
 		ref_rv = 0;
-		ref_o = snap_once(ref_rv, &ref_oc);
+		ref_o = snap_once(ref_rv, ref_oc.state, ref_oc.mutex);
 
 		__isthreaded = 0;
 		g_init_count = 0;
@@ -415,7 +415,7 @@ test_once_handwritten(void)
 		(void)port::_once(&port_oc, test_init);
 		(void)port::_once(&port_oc, test_init);
 		port_rv = 0;
-		port_o = snap_once(port_rv, &port_oc);
+		port_o = snap_once(port_rv, port_oc.state, port_oc.mutex);
 
 		ncases[f]++;
 		if (!once_obs_eq(ref_o, port_o))

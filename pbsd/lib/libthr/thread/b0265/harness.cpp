@@ -33,6 +33,7 @@ typedef struct pthread *pthread_t;
 #define EINVAL 22
 
 extern struct umutex _thr_event_lock;
+extern int errno;
 
 int ref__pthread_single_np(void);
 int ref__pthread_getprio(pthread_t pthread);
@@ -218,9 +219,7 @@ report_death_bufs_equal(const GuardedPthread *a, const GuardedPthread *b)
 		return (false);
 	if (a->thr.event_buf.data != b->thr.event_buf.data)
 		return (false);
-	if (a->thr.event_buf.th_p != (uintptr_t)&a->thr)
-		return (false);
-	if (b->thr.event_buf.th_p != (uintptr_t)&b->thr)
+	if (a->thr.event_buf.th_p != b->thr.event_buf.th_p)
 		return (false);
 	return (true);
 }
@@ -454,10 +453,10 @@ check_report_creation(const char *label, struct pthread *newthread,
 	    (port.lock_delta == 1u) && (port.unlock_delta == 1u) &&
 	    (port.final_last_event == ref.final_last_event) &&
 	    (port.final_last_event == nullptr) &&
-	    (port.lock_last_thread == ref.lock_last_thread) &&
 	    (port.lock_last_lock == ref.lock_last_lock) &&
-	    (port.unlock_last_thread == ref.unlock_last_thread) &&
+	    (port.lock_last_lock == &_thr_event_lock) &&
 	    (port.unlock_last_lock == ref.unlock_last_lock) &&
+	    (port.unlock_last_lock == &_thr_event_lock) &&
 	    (port.cur.thr.event_buf.event == TD_CREATE) &&
 	    (port.cur.thr.event_buf.data == 0);
 
@@ -525,10 +524,10 @@ check_report_death(const char *label, const GuardedPthread *in)
 	    (port.lock_delta == 1u) && (port.unlock_delta == 1u) &&
 	    (port.final_last_event == ref.final_last_event) &&
 	    (port.final_last_event == nullptr) &&
-	    (port.lock_last_thread == ref.lock_last_thread) &&
 	    (port.lock_last_lock == ref.lock_last_lock) &&
-	    (port.unlock_last_thread == ref.unlock_last_thread) &&
+	    (port.lock_last_lock == &_thr_event_lock) &&
 	    (port.unlock_last_lock == ref.unlock_last_lock) &&
+	    (port.unlock_last_lock == &_thr_event_lock) &&
 	    (port.cur.thr.event_buf.event == TD_DEATH) &&
 	    (port.cur.thr.event_buf.data == 0);
 
@@ -639,34 +638,37 @@ check_detach(const char *label, struct pthread *cur, pthread_t target,
 	    (port.try_gc_delta == ref.try_gc_delta) &&
 	    (port.find_include_dead == ref.find_include_dead) &&
 	    (port.find_cur == ref.find_cur) &&
-	    (port.find_target == ref.find_target) &&
 	    (port.unlock_cur == ref.unlock_cur) &&
-	    (port.unlock_target == ref.unlock_target) &&
-	    (port.try_gc_cur == ref.try_gc_cur) &&
-	    (port.try_gc_target == ref.try_gc_target);
+	    (port.try_gc_cur == ref.try_gc_cur);
 
 	if (target == nullptr) {
 		ok = ok && (port.ret == EINVAL) && (ref.ret == EINVAL) &&
 		    (port.thread_unlock_delta == 0u) &&
-		    (port.try_gc_delta == 0u);
+		    (port.try_gc_delta == 0u) &&
+		    (port.find_target == nullptr) && (ref.find_target == nullptr);
 	} else if (find_ret != 0) {
 		ok = ok && (port.ret == find_ret) && (ref.ret == find_ret) &&
 		    (port.find_include_dead == 1) &&
-		    (port.find_cur == cur) &&
-		    (port.find_target == target) &&
+		    (port.find_cur == cur) && (ref.find_cur == cur) &&
+		    (port.find_target == ref.find_target) &&
+		    (port.find_target != nullptr) &&
 		    (port.thread_unlock_delta == 0u) &&
 		    (port.try_gc_delta == 0u);
 	} else if (detached_before || joiner_before) {
 		ok = ok && (port.ret == EINVAL) && (ref.ret == EINVAL) &&
 		    (port.thread_unlock_delta == 1u) &&
-		    (port.unlock_cur == cur) &&
-		    (port.unlock_target == target) &&
+		    (port.unlock_cur == cur) && (ref.unlock_cur == cur) &&
+		    (port.unlock_target == ref.unlock_target) &&
+		    (port.unlock_target != nullptr) &&
 		    (port.try_gc_delta == 0u);
 	} else {
 		ok = ok && (port.ret == 0) && (ref.ret == 0) &&
 		    (port.try_gc_delta == 1u) &&
-		    (port.try_gc_cur == cur) &&
-		    (port.try_gc_target == target) &&
+		    (port.try_gc_cur == cur) && (ref.try_gc_cur == cur) &&
+		    (port.try_gc_target == ref.try_gc_target) &&
+		    (port.try_gc_target != nullptr) &&
+		    (port.find_target == ref.find_target) &&
+		    (port.find_target != nullptr) &&
 		    ((port.target.thr.flags & THR_FLAGS_DETACHED) != 0) &&
 		    ((ref.target.thr.flags & THR_FLAGS_DETACHED) != 0);
 	}

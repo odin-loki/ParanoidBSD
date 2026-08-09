@@ -56,13 +56,19 @@ pthread_t b0271_get_send_sig_last_pthread(void);
 int b0271_get_send_sig_last_sig(void);
 }
 
-static GuardedPthread g_cur_g;
-static GuardedPthread g_target0_g;
-static GuardedPthread g_target1_g;
-
 static void dummy_switch(pthread_t, pthread_t) {}
 
 namespace {
+
+struct GuardedPthread {
+	unsigned char pre[16];
+	struct pthread thr;
+	unsigned char post[16];
+};
+
+static GuardedPthread g_cur_g;
+static GuardedPthread g_target0_g;
+static GuardedPthread g_target1_g;
 
 enum Fn {
 	F_GETCONCURRENCY,
@@ -128,12 +134,6 @@ record_case(int fn, bool ok, const char *fmt, ...)
 		    fn_name[fn]);
 	}
 }
-
-struct GuardedPthread {
-	unsigned char pre[16];
-	struct pthread thr;
-	unsigned char post[16];
-};
 
 static void
 init_guarded_pthread(GuardedPthread *g, int policy, int prio, long tid)
@@ -356,6 +356,7 @@ check_setprio(const char *label, struct pthread *cur, GuardedPthread *in,
 	bool self, find_ok, sched_other, same_prio, expect_sched;
 	unsigned expect_lock, expect_unlock;
 	GuardedPthread in_port, in_ref;
+	struct pthread *cur_port, *cur_ref;
 	int initial_prio;
 	int initial_policy;
 	long initial_tid;
@@ -373,9 +374,11 @@ check_setprio(const char *label, struct pthread *cur, GuardedPthread *in,
 
 	in_port = *in;
 	in_ref = *in;
-	port = run_setprio_port(cur, &in_port, find_ret, sched_ret, sched_err,
-	    prio);
-	ref = run_setprio_ref(cur, &in_ref, find_ret, sched_ret, sched_err,
+	cur_port = self ? &in_port.thr : cur;
+	cur_ref = self ? &in_ref.thr : cur;
+	port = run_setprio_port(cur_port, &in_port, find_ret, sched_ret,
+	    sched_err, prio);
+	ref = run_setprio_ref(cur_ref, &in_ref, find_ret, sched_ret, sched_err,
 	    prio);
 
 	ok = (port.ret == ref.ret) &&
@@ -383,12 +386,23 @@ check_setprio(const char *label, struct pthread *cur, GuardedPthread *in,
 	    guards_intact(&port.target) && guards_intact(&ref.target) &&
 	    (port.lock_delta == ref.lock_delta) &&
 	    (port.unlock_delta == ref.unlock_delta) &&
-	    (port.lock_last == ref.lock_last) &&
-	    (port.unlock_cur == ref.unlock_cur) &&
-	    (port.unlock_target == ref.unlock_target) &&
 	    (port.sched_tid == ref.sched_tid) &&
 	    (port.sched_policy == ref.sched_policy) &&
 	    (port.sched_prio == ref.sched_prio);
+
+	if (expect_lock) {
+		ok = ok && (port.lock_last == cur_port) &&
+		    (ref.lock_last == cur_ref);
+	} else {
+		ok = ok && (port.lock_delta == 0u) && (ref.lock_delta == 0u);
+	}
+
+	if (expect_unlock) {
+		ok = ok && (port.unlock_cur == cur_port) &&
+		    (ref.unlock_cur == cur_ref) &&
+		    (port.unlock_target == &in_port.thr) &&
+		    (ref.unlock_target == &in_ref.thr);
+	}
 
 	if (!find_ok) {
 		ok = ok && (port.ret == find_ret) && (ref.ret == find_ret) &&
@@ -397,24 +411,30 @@ check_setprio(const char *label, struct pthread *cur, GuardedPthread *in,
 	} else {
 		ok = ok && (port.lock_delta == expect_lock) &&
 		    (port.unlock_delta == expect_unlock) &&
-		    (port.unlock_cur == cur) &&
-		    (port.unlock_target == &in_port.thr) &&
-		    (port.target.thr.attr.prio == prio) &&
-		    (ref.target.thr.attr.prio == prio);
+		    (port.unlock_cur == cur_port) &&
+		    (port.unlock_target == &in_port.thr);
 
 		if (expect_sched) {
 			if (sched_ret == -1) {
 				ok = ok && (port.ret == sched_err) &&
 				    (ref.ret == sched_err) &&
-				    (port.target.thr.attr.prio == initial_prio);
+				    (port.target.thr.attr.prio == initial_prio) &&
+				    (ref.target.thr.attr.prio == initial_prio) &&
+				    (port.sched_tid == initial_tid) &&
+				    (port.sched_policy == initial_policy) &&
+				    (port.sched_prio == prio);
 			} else {
 				ok = ok && (port.ret == 0) && (ref.ret == 0) &&
+				    (port.target.thr.attr.prio == prio) &&
+				    (ref.target.thr.attr.prio == prio) &&
 				    (port.sched_tid == initial_tid) &&
 				    (port.sched_policy == initial_policy) &&
 				    (port.sched_prio == prio);
 			}
 		} else {
 			ok = ok && (port.ret == 0) && (ref.ret == 0) &&
+			    (port.target.thr.attr.prio == prio) &&
+			    (ref.target.thr.attr.prio == prio) &&
 			    (port.sched_tid == 0) && (port.sched_prio == 0);
 		}
 	}
@@ -620,8 +640,6 @@ check_kill(const char *label, struct pthread *cur, pthread_t target,
 static void
 test_edges(void)
 {
-	GuardedPthread gtarget;
-
 	check_setconcurrency("set_neg_one", -1);
 	check_setconcurrency("set_zero", 0);
 	check_setconcurrency("set_one", 1);
@@ -634,50 +652,50 @@ test_edges(void)
 	check_getconcurrency("get_after_large", 12345);
 	check_getconcurrency("get_after_max", 0x7fffffff);
 
-	init_guarded_pthread(&gtarget, SCHED_OTHER, 0, 1);
-	check_setprio("prio_self_other", &g_cur, &g_cur, 0, 0, 0, &gtarget, 5);
+	init_guarded_pthread(&g_cur_g, SCHED_OTHER, 0, 1);
+	check_setprio("prio_self_other", &g_cur_g.thr, &g_cur_g, 0, 0, 0, 5);
 
-	init_guarded_pthread(&gtarget, SCHED_OTHER, 10, 2);
-	check_setprio("prio_other_policy", &g_cur, &gtarget.thr, 0, 0, 0,
-	    &gtarget, 20);
+	init_guarded_pthread(&g_target0_g, SCHED_OTHER, 10, 2);
+	check_setprio("prio_other_policy", &g_cur_g.thr, &g_target0_g, 0, 0, 0,
+	    20);
 
-	init_guarded_pthread(&gtarget, 1, 10, 3);
-	check_setprio("prio_same", &g_cur, &gtarget.thr, 0, 0, 0, &gtarget, 10);
+	init_guarded_pthread(&g_target1_g, 1, 10, 3);
+	check_setprio("prio_same", &g_cur_g.thr, &g_target1_g, 0, 0, 0, 10);
 
-	init_guarded_pthread(&gtarget, 2, 5, 4);
-	check_setprio("prio_sched_ok", &g_cur, &gtarget.thr, 0, 0, 0, &gtarget,
-	    15);
+	init_guarded_pthread(&g_target0_g, 2, 5, 4);
+	check_setprio("prio_sched_ok", &g_cur_g.thr, &g_target0_g, 0, 0, 0, 15);
 
-	init_guarded_pthread(&gtarget, 3, 5, 5);
-	check_setprio("prio_sched_fail", &g_cur, &gtarget.thr, 0, -1, EINVAL,
-	    &gtarget, 25);
+	init_guarded_pthread(&g_target1_g, 3, 5, 5);
+	check_setprio("prio_sched_fail", &g_cur_g.thr, &g_target1_g, 0, -1,
+	    EINVAL, 25);
 
-	init_guarded_pthread(&gtarget, 4, 0, 6);
-	check_setprio("prio_find_fail", &g_cur, &gtarget.thr, EINVAL, 0, 0,
-	    &gtarget, 7);
+	init_guarded_pthread(&g_target0_g, 4, 0, 6);
+	check_setprio("prio_find_fail", &g_cur_g.thr, &g_target0_g, EINVAL, 0, 0,
+	    7);
 
-	init_guarded_pthread(&gtarget, 5, 0x7f, 7);
-	check_setprio("prio_high", &g_cur, &gtarget.thr, 0, 0, 0, &gtarget,
+	init_guarded_pthread(&g_target1_g, 5, 0x7f, 7);
+	check_setprio("prio_high", &g_cur_g.thr, &g_target1_g, 0, 0, 0,
 	    0x7f7f7f7f);
 
-	init_guarded_pthread(&gtarget, 6, (int)0x80808080, 8);
-	check_setprio("prio_neg", &g_cur, &gtarget.thr, 0, -1, 123, &gtarget,
-	    -1);
+	init_guarded_pthread(&g_target0_g, 6, (int)0x80808080, 8);
+	check_setprio("prio_neg", &g_cur_g.thr, &g_target0_g, 0, -1, 123, -1);
 
 	check_switch_add("switch_add_null", nullptr);
 	check_switch_add("switch_add_fn", dummy_switch);
 	check_switch_delete("switch_del_null", nullptr);
 	check_switch_delete("switch_del_fn", dummy_switch);
 
-	check_kill("kill_sig_neg", &g_cur, &g_target0, 0, -1);
-	check_kill("kill_sig_over", &g_cur, &g_target0, 0, _SIG_MAXSIG + 1);
-	check_kill("kill_sig_max", &g_cur, &g_target0, 0, _SIG_MAXSIG);
-	check_kill("kill_sig_zero_self", &g_cur, &g_cur, 0, 0);
-	check_kill("kill_sig_zero_other", &g_cur, &g_target0, 0, 0);
-	check_kill("kill_self_sig", &g_cur, &g_cur, 0, 9);
-	check_kill("kill_other_ok", &g_cur, &g_target1, 0, 15);
-	check_kill("kill_find_fail", &g_cur, &g_target1, EINVAL, 10);
-	check_kill("kill_sig_one", &g_cur, &g_target0, 0, 1);
+	check_kill("kill_sig_neg", &g_cur_g.thr, &g_target0_g.thr, 0, -1);
+	check_kill("kill_sig_over", &g_cur_g.thr, &g_target0_g.thr, 0,
+	    _SIG_MAXSIG + 1);
+	check_kill("kill_sig_max", &g_cur_g.thr, &g_target0_g.thr, 0,
+	    _SIG_MAXSIG);
+	check_kill("kill_sig_zero_self", &g_cur_g.thr, &g_cur_g.thr, 0, 0);
+	check_kill("kill_sig_zero_other", &g_cur_g.thr, &g_target0_g.thr, 0, 0);
+	check_kill("kill_self_sig", &g_cur_g.thr, &g_cur_g.thr, 0, 9);
+	check_kill("kill_other_ok", &g_cur_g.thr, &g_target1_g.thr, 0, 15);
+	check_kill("kill_find_fail", &g_cur_g.thr, &g_target1_g.thr, EINVAL, 10);
+	check_kill("kill_sig_one", &g_cur_g.thr, &g_target0_g.thr, 0, 1);
 }
 
 static void
@@ -708,7 +726,7 @@ test_random(unsigned iters)
 		case 2: {
 			GuardedPthread gtarget;
 			struct pthread *cur;
-			pthread_t target;
+			GuardedPthread *target_g;
 			int find_ret, sched_ret, sched_err, prio, policy, old_prio;
 			long tid;
 
@@ -717,20 +735,31 @@ test_random(unsigned iters)
 				policy = SCHED_OTHER;
 			old_prio = (int)(nextr() & 0xffffffffu);
 			tid = (long)(nextr() & 0xffffffffu);
-			init_guarded_pthread(&gtarget, policy, old_prio, tid);
-			cur = (rnd_below(2u) == 0u) ? &g_cur : &g_target1;
-			if ((i % 13u) == 0u)
-				target = cur;
+			if ((i % 3u) == 0u)
+				target_g = &g_target0_g;
+			else if ((i % 3u) == 1u)
+				target_g = &g_target1_g;
 			else
-				target = &gtarget.thr;
+				target_g = &g_cur_g;
+			init_guarded_pthread(&gtarget, policy, old_prio, tid);
+			if ((i % 13u) == 0u) {
+				init_guarded_pthread(&g_cur_g, policy, old_prio,
+				    tid);
+				cur = &g_cur_g.thr;
+				target_g = &g_cur_g;
+			} else {
+				cur = (rnd_below(2u) == 0u) ? &g_cur_g.thr :
+				    &g_target1_g.thr;
+				target_g = &gtarget;
+			}
 			find_ret = (int)(nextr() & 0xffu);
 			if ((i % 7u) == 0u)
 				find_ret = 0;
 			sched_ret = ((i % 3u) == 0u) ? -1 : 0;
 			sched_err = (int)(nextr() & 0x7ffu);
 			prio = (int)(nextr() & 0xffffffffu);
-			check_setprio(label, cur, target, find_ret, sched_ret,
-			    sched_err, &gtarget, prio);
+			check_setprio(label, cur, target_g, find_ret, sched_ret,
+			    sched_err, prio);
 			break;
 		}
 		case 3:
@@ -746,12 +775,13 @@ test_random(unsigned iters)
 			pthread_t target;
 			int find_ret, sig;
 
-			cur = (rnd_below(2u) == 0u) ? &g_cur : &g_target1;
+			cur = (rnd_below(2u) == 0u) ? &g_cur_g.thr :
+			    &g_target1_g.thr;
 			if ((i % 17u) == 0u)
 				target = cur;
 			else
-				target = (rnd_below(2u) == 0u) ? &g_target0 :
-				    &g_target1;
+				target = (rnd_below(2u) == 0u) ?
+				    &g_target0_g.thr : &g_target1_g.thr;
 			find_ret = (int)(nextr() & 0xffu);
 			if ((i % 9u) == 0u)
 				find_ret = 0;
@@ -777,9 +807,9 @@ main(void)
 	unsigned fn;
 	unsigned long long total_cases = 0, total_fails = 0;
 
-	std::memset(&g_cur, 0, sizeof(g_cur));
-	std::memset(&g_target0, 0, sizeof(g_target0));
-	std::memset(&g_target1, 0, sizeof(g_target1));
+	std::memset(&g_cur_g, 0, sizeof(g_cur_g));
+	std::memset(&g_target0_g, 0, sizeof(g_target0_g));
+	std::memset(&g_target1_g, 0, sizeof(g_target1_g));
 
 	test_edges();
 	test_random(SWEEP_ITERS);

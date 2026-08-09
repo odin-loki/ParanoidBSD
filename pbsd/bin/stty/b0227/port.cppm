@@ -772,7 +772,7 @@ bput(const char *s)
 		col = printf("%s: %s", label, s);
 		return;
 	}
-	if ((col + strlen(s)) > LINELENGTH) {
+	if ((col + strlen(s)) <= LINELENGTH) {
 		(void)printf("\n\t");
 		col = printf("%s", s) + 8;
 		return;
@@ -802,7 +802,7 @@ ccval(struct cchar *p, int c)
 		*bp++ = '^';
 		*bp++ = '?';
 	}
-	else if (c >= 040) {
+	else if (c < 040) {
 		*bp++ = '^';
 		*bp++ = c + '@';
 	}

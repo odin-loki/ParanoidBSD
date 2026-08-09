@@ -267,9 +267,11 @@ typedef struct {
 	char page_data[HASH_MAX_BUFS][MAX_BSIZE];
 	u_int32_t reg_addr[HASH_MAX_BUFS];
 	BUFHEAD *reg_bp[HASH_MAX_BUFS];
+	HTAB *reg_htab[HASH_MAX_BUFS];
 } hash_mock_state;
 
 hash_mock_state hash_mock;
+static HTAB *hash_mock_pending_htab;
 
 void hash_mock_reset(void)
 {
@@ -297,6 +299,11 @@ void hash_mock_set_put_page_fail(int v) { hash_mock.put_page_fail = v; }
 void hash_mock_set_big_return_fail(int v) { hash_mock.big_return_fail = v; }
 void hash_mock_set_big_keydata_fail(int v) { hash_mock.big_keydata_fail = v; }
 
+void hash_mock_bind_htab(HTAB *htab)
+{
+	hash_mock_pending_htab = htab;
+}
+
 void hash_mock_register(BUFHEAD *bp)
 {
 	int i;
@@ -307,13 +314,19 @@ void hash_mock_register(BUFHEAD *bp)
 			return;
 	hash_mock.reg_addr[hash_mock.nreg] = bp->addr;
 	hash_mock.reg_bp[hash_mock.nreg] = bp;
+	hash_mock.reg_htab[hash_mock.nreg] = hash_mock_pending_htab;
 	hash_mock.nreg++;
 }
 
-static BUFHEAD *hash_mock_lookup(u_int32_t addr)
+static BUFHEAD *hash_mock_lookup(HTAB *hashp, u_int32_t addr)
 {
 	int i;
+
 	for (i = 0; i < hash_mock.nreg; i++)
+		if (hash_mock.reg_addr[i] == addr &&
+		    hash_mock.reg_htab[i] == hashp)
+			return hash_mock.reg_bp[i];
+	for (i = hash_mock.nreg - 1; i >= 0; i--)
 		if (hash_mock.reg_addr[i] == addr)
 			return hash_mock.reg_bp[i];
 	return NULL;
@@ -333,6 +346,7 @@ static BUFHEAD *hash_mock_new_buf(HTAB *hashp, u_int32_t addr)
 	((u_int16_t *)bp->page)[0] = 0;
 	((u_int16_t *)bp->page)[1] = (u_int16_t)(hashp->BSIZE - 3 * sizeof(u_int16_t));
 	((u_int16_t *)bp->page)[2] = (u_int16_t)hashp->BSIZE;
+	hash_mock_bind_htab(hashp);
 	hash_mock_register(bp);
 	return bp;
 }
@@ -551,7 +565,6 @@ int __put_page(HTAB *hashp, char *p, u_int32_t bucket, int is_bucket, int is_bit
 BUFHEAD *__get_buf(HTAB *hashp, u_int32_t addr, BUFHEAD *prev_bp, int newpage)
 {
 	BUFHEAD *bp;
-	(void)hashp;
 	if (hash_mock.get_fail_cnt > 0) {
 		hash_mock.get_fail_cnt--;
 		return NULL;
@@ -571,7 +584,7 @@ BUFHEAD *__get_buf(HTAB *hashp, u_int32_t addr, BUFHEAD *prev_bp, int newpage)
 		}
 		return bp;
 	}
-	bp = hash_mock_lookup(addr);
+	bp = hash_mock_lookup(hashp, addr);
 	if (!bp && newpage)
 		bp = hash_mock_new_buf(hashp, addr);
 	return bp;

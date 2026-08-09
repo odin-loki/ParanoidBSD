@@ -3,16 +3,22 @@
  */
 
       if (n == NULL)
-	    return;
-      result->blocksize += nodesize[n->type];
+	    return NULL;
+      new = state->block;
+      state->block = (char *)state->block + nodesize[n->type];
       switch (n->type) {
-      case N224:
+      case N285:
 	    break;
-      case N120:
+      case N429:
+	    new->t816.f1 = copynode(n->t816.f1, state);
 	    break;
-      case N420:
+      case N508:
 	    break;
-      case N782:
-	    sizenodelist(n->t482.f1, result);
+      case N650:
+	    new->t835.f2 = nodesavestr(n->t835.f2, state);
+	    new->t835.f1 = n->t835.f1;
+	    break;
+      case N136:
 	    break;
       };
+      new->type = n->type;

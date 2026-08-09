@@ -161,6 +161,7 @@ HTAB *ref_init_hash(HTAB *, const char *, const HASHINFO *);
 DB *ref___hash_open(const char *, int, int, const HASHINFO *, int);
 
 void hash_mock_reset(void);
+void hash_mock_bind_htab(HTAB *);
 void hash_mock_register(BUFHEAD *);
 int hash_mock_nbufs(void);
 void hash_mock_snapshot_page(int idx, char *dst, int sz);
@@ -358,7 +359,7 @@ struct AccessEnv {
 };
 
 static void setup_access_env(AccessEnv &e, const unsigned char *kb, size_t klen,
-    const unsigned char *vb, size_t vlen, bool insert)
+    const unsigned char *vb, size_t vlen, bool insert, bool reset_mock = true)
 {
 	init_htab_base(&e.htab);
 	guard_fill(e.keybuf, MAX_KV);
@@ -369,7 +370,9 @@ static void setup_access_env(AccessEnv &e, const unsigned char *kb, size_t klen,
 		e.valbuf[i] = (char)vb[i];
 	u_int32_t bkt = bucket_for(&e.htab, e.keybuf, klen);
 	init_buf(&e.buf, e.page, bkt, PAGE_BSIZE);
-	hash_mock_reset();
+	if (reset_mock)
+		hash_mock_reset();
+	hash_mock_bind_htab(&e.htab);
 	hash_mock_register(&e.buf);
 	if (insert) {
 		DBT key, val;
@@ -593,7 +596,7 @@ static void test_hash_access()
 	DBT keyr, valr, keyp, valp;
 
 	setup_access_env(er, kb, 4, vb, 2, true);
-	setup_access_env(ep, kb, 4, vb, 2, true);
+	setup_access_env(ep, kb, 4, vb, 2, true, false);
 	keyr.data = er.keybuf;
 	keyr.size = 4;
 	keyp.data = ep.keybuf;
@@ -616,7 +619,7 @@ static void test_hash_access()
 	check(F_HASH_ACCESS, buf_eq(er.outbuf_r, ep.outbuf_p, MAX_KV), "get guard");
 
 	setup_access_env(er, kb, 4, vb, 2, false);
-	setup_access_env(ep, kb, 4, vb, 2, false);
+	setup_access_env(ep, kb, 4, vb, 2, false, false);
 	rr = ref_hash_access(&er.htab, HASH_GET, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_GET, pd(&keyp),
 	    pd(&valp));
@@ -625,7 +628,7 @@ static void test_hash_access()
 	hash_mock_reset();
 	hash_mock_set_get_fail_cnt(1);
 	setup_access_env(er, kb, 1, vb, 1, true);
-	setup_access_env(ep, kb, 1, vb, 1, true);
+	setup_access_env(ep, kb, 1, vb, 1, true, false);
 	rr = ref_hash_access(&er.htab, HASH_GET, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_GET, pd(&keyp),
 	    pd(&valp));
@@ -633,7 +636,7 @@ static void test_hash_access()
 
 	hash_mock_reset();
 	setup_access_env(er, kb, 2, vb, 2, false);
-	setup_access_env(ep, kb, 2, vb, 2, false);
+	setup_access_env(ep, kb, 2, vb, 2, false, false);
 	valr.data = er.valbuf;
 	valr.size = 2;
 	valp.data = ep.valbuf;
@@ -649,7 +652,7 @@ static void test_hash_access()
 	hash_mock_reset();
 	hash_mock_set_addel_fail(1);
 	setup_access_env(er, kb, 2, vb, 2, false);
-	setup_access_env(ep, kb, 2, vb, 2, false);
+	setup_access_env(ep, kb, 2, vb, 2, false, false);
 	rr = ref_hash_access(&er.htab, HASH_PUT, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_PUT, pd(&keyp),
 	    pd(&valp));
@@ -657,7 +660,7 @@ static void test_hash_access()
 
 	hash_mock_reset();
 	setup_access_env(er, kb, 4, vb, 2, true);
-	setup_access_env(ep, kb, 4, vb, 2, true);
+	setup_access_env(ep, kb, 4, vb, 2, true, false);
 	rr = ref_hash_access(&er.htab, HASH_DELETE, &keyr, nullptr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_DELETE, pd(&keyp),
 	    nullptr);
@@ -667,7 +670,7 @@ static void test_hash_access()
 	hash_mock_reset();
 	hash_mock_set_delpair_fail(1);
 	setup_access_env(er, kb, 4, vb, 2, true);
-	setup_access_env(ep, kb, 4, vb, 2, true);
+	setup_access_env(ep, kb, 4, vb, 2, true, false);
 	rr = ref_hash_access(&er.htab, HASH_DELETE, &keyr, nullptr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_DELETE, pd(&keyp),
 	    nullptr);
@@ -675,7 +678,7 @@ static void test_hash_access()
 
 	hash_mock_reset();
 	setup_access_env(er, kb, 4, vb, 2, true);
-	setup_access_env(ep, kb, 4, vb, 2, true);
+	setup_access_env(ep, kb, 4, vb, 2, true, false);
 	rr = ref_hash_access(&er.htab, HASH_PUTNEW, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_PUTNEW, pd(&keyp),
 	    pd(&valp));
@@ -683,7 +686,7 @@ static void test_hash_access()
 
 	hash_mock_reset();
 	setup_access_env(er, kb, 1, vb, 1, false);
-	setup_access_env(ep, kb, 1, vb, 1, false);
+	setup_access_env(ep, kb, 1, vb, 1, false, false);
 	auto *sp = (u_int16_t *)er.page;
 	sp[0] = 2;
 	sp[1] = PARTIAL_KEY;
@@ -698,7 +701,7 @@ static void test_hash_access()
 
 	hash_mock_reset();
 	setup_access_env(er, kb, 1, vb, 1, false);
-	setup_access_env(ep, kb, 1, vb, 1, false);
+	setup_access_env(ep, kb, 1, vb, 1, false, false);
 	sp = (u_int16_t *)er.page;
 	sp[0] = 2;
 	sp[1] = PARTIAL_KEY;
@@ -715,7 +718,7 @@ static void test_hash_access()
 	hash_mock_reset();
 	hash_mock_set_big_return_fail(1);
 	setup_access_env(er, kb, 4, vb, 2, true);
-	setup_access_env(ep, kb, 4, vb, 2, true);
+	setup_access_env(ep, kb, 4, vb, 2, true, false);
 	sp = (u_int16_t *)er.page;
 	sp[3] = PARTIAL_KEY;
 	std::memcpy(ep.page, er.page, PAGE_BSIZE);
@@ -726,7 +729,7 @@ static void test_hash_access()
 
 	hash_mock_reset();
 	setup_access_env(er, kb, 2, vb, 2, true);
-	setup_access_env(ep, kb, 2, vb, 2, true);
+	setup_access_env(ep, kb, 2, vb, 2, true, false);
 	u_int32_t bkt = bucket_for(&er.htab, er.keybuf, 2);
 	BUFHEAD ovfl_r, ovfl_p;
 	char ovfl_page_r[PAGE_BSIZE];
@@ -777,7 +780,7 @@ static void test_db_wrappers()
 	DBT keyr, valr, keyp, valp;
 
 	setup_access_env(er, kb, 3, vb, 3, true);
-	setup_access_env(ep, kb, 3, vb, 3, true);
+	setup_access_env(ep, kb, 3, vb, 3, true, false);
 	er.htab.flags = O_RDWR;
 	ep.htab.flags = O_RDWR;
 	DB *dbr = make_db(&er.htab, true);
@@ -894,7 +897,7 @@ static void test_hash_seq()
 	DBT keyr, valr, keyp, valp;
 
 	setup_access_env(er, kb, 1, vb, 1, true);
-	setup_access_env(ep, kb, 1, vb, 1, true);
+	setup_access_env(ep, kb, 1, vb, 1, true, false);
 	DB *dbr = make_db(&er.htab, true);
 	DB *dbp = make_db(&ep.htab, false);
 	guard_fill(er.keybuf, MAX_KV);
@@ -930,7 +933,7 @@ static void test_hash_seq()
 	hash_mock_reset();
 	hash_mock_set_big_keydata_fail(1);
 	setup_access_env(er, kb, 1, vb, 1, true);
-	setup_access_env(ep, kb, 1, vb, 1, true);
+	setup_access_env(ep, kb, 1, vb, 1, true, false);
 	auto *sp = (u_int16_t *)er.page;
 	sp[3] = PARTIAL_KEY;
 	std::memcpy(ep.page, er.page, PAGE_BSIZE);
@@ -1119,7 +1122,7 @@ static void test_access_sweep(Rng &rng)
 			vb[j] = (unsigned char)(rng.next() & 0xff);
 		bool ins = (rng.next() & 1) != 0;
 		setup_access_env(er, kb, klen, vb, vlen, ins);
-		setup_access_env(ep, kb, klen, vb, vlen, ins);
+		setup_access_env(ep, kb, klen, vb, vlen, ins, false);
 		er.htab.hdr.high_mask = rng.below(8) | 1;
 		er.htab.hdr.low_mask = rng.below(er.htab.hdr.high_mask + 1);
 		er.htab.hdr.max_bucket = rng.below(er.htab.hdr.high_mask + 1);
@@ -1128,7 +1131,9 @@ static void test_access_sweep(Rng &rng)
 		er.buf.addr = bkt;
 		ep.buf.addr = bkt;
 		hash_mock_reset();
+		hash_mock_bind_htab(&er.htab);
 		hash_mock_register(&er.buf);
+		hash_mock_bind_htab(&ep.htab);
 		hash_mock_register(&ep.buf);
 		DBT keyr, valr, keyp, valp;
 		keyr.data = er.keybuf;

@@ -39,43 +39,46 @@ union IEEEl2bits {
 
 #define	LDBL_NBIT	0x80000000
 
-#define	EXTRACT_WORDS(ix0,ix1,d)				\
-do {								\
-	union {							\
-		double value;					\
-		struct {					\
-#if __BYTE_ORDER == __BIG_ENDIAN				\
-			u_int32_t msw;				\
-			u_int32_t lsw;				\
-#else							\
-			u_int32_t lsw;				\
-			u_int32_t msw;				\
-#endif							\
-		} parts;					\
-	} ew_u;							\
-	ew_u.value = (d);					\
-	(ix0) = ew_u.parts.msw;					\
-	(ix1) = ew_u.parts.lsw;					\
-} while (0)
+static inline void extract_words(int32_t &ix0, u_int32_t &ix1, double val)
+{
+	union {
+		double value;
+		struct {
+#if __BYTE_ORDER == __BIG_ENDIAN
+			u_int32_t msw;
+			u_int32_t lsw;
+#else
+			u_int32_t lsw;
+			u_int32_t msw;
+#endif
+		} parts;
+	} ew_u;
+	ew_u.value = val;
+	ix0 = ew_u.parts.msw;
+	ix1 = ew_u.parts.lsw;
+}
 
-#define	INSERT_WORDS(d,ix0,ix1)					\
-do {								\
-	union {							\
-		double value;					\
-		struct {					\
-#if __BYTE_ORDER == __BIG_ENDIAN				\
-			u_int32_t msw;				\
-			u_int32_t lsw;				\
-#else							\
-			u_int32_t lsw;				\
-			u_int32_t msw;				\
-#endif							\
-		} parts;					\
-	} iw_u;							\
-	iw_u.parts.msw = (ix0);					\
-	iw_u.parts.lsw = (ix1);					\
-	(d) = iw_u.value;					\
-} while (0)
+static inline void insert_words(double &val, int32_t ix0, u_int32_t ix1)
+{
+	union {
+		double value;
+		struct {
+#if __BYTE_ORDER == __BIG_ENDIAN
+			u_int32_t msw;
+			u_int32_t lsw;
+#else
+			u_int32_t lsw;
+			u_int32_t msw;
+#endif
+		} parts;
+	} iw_u;
+	iw_u.parts.msw = ix0;
+	iw_u.parts.lsw = ix1;
+	val = iw_u.value;
+}
+
+#define	EXTRACT_WORDS(ix0,ix1,d)	extract_words((ix0),(ix1),(d))
+#define	INSERT_WORDS(d,ix0,ix1)		insert_words((d),(ix0),(ix1))
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause

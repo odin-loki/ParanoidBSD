@@ -62,8 +62,6 @@ typedef double __double_t;
 
 static inline int irint(double x) { return (int)x; }
 static inline double rnint(double x) { return rint(x); }
-
-#define INLINE_REM_PIO2
 EOF
 
 sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
@@ -76,7 +74,7 @@ rm -rf gcm.cache b0267_run oracle.o port.o harness.o k_rem_pio2.o e_rem_pio2.o \
     "$MODULE_NAME.pcm"
 
 CFLAGS="-std=c11 -O2 -include $PREREQ"
-CXXFLAGS="-std=c++23 -O2 -include $PREREQ"
+CXXFLAGS="-std=c++23 -O2"
 
 $CC $CFLAGS -c oracle.c -o oracle.o
 $CC $CFLAGS -c "$TMPDIR/k_rem_pio2.c" -o k_rem_pio2.o

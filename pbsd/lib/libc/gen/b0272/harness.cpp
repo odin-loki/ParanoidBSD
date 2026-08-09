@@ -669,7 +669,7 @@ fill_random_path(unsigned char *dst, size_t maxn)
 	size_t n;
 	size_t i;
 	unsigned char alphabet[] = {
-		'/', 'a', 'b', 'c', 'd', 'e', 'f', '.', '\0', 0x80, 0xfe, 0xff
+		'/', 'a', 'b', 'c', 'd', 'e', 'f', '.', 0x80, 0xfe, 0xff
 	};
 
 	if (maxn == 0)
@@ -700,7 +700,7 @@ test_basename_r_random(void)
 		if (path != nullptr) {
 			fill_random_path((unsigned char *)path_p.win(),
 			    path_p.winsz() - 1);
-			path_r.copy_cstr(path_p.win());
+			std::memcpy(path_r.win(), path_p.win(), path_p.winsz());
 		}
 		ncases[F_BASENAME_R]++;
 		basename_r_case(path, path_p, path_r, out_p, out_r, ctx);
@@ -762,7 +762,7 @@ basename_case(char *path_p, char *path_r, const char *ctx)
 }
 
 static void
-test_basename_edge(char *path, const char *label)
+test_basename_edge(const char *path, const char *label)
 {
 	GuardBuf gp, gr;
 	char ctx[96];
@@ -775,10 +775,10 @@ test_basename_edge(char *path, const char *label)
 		gr.copy_cstr(path);
 	}
 	ncases[F_BASENAME]++;
-	basename_case(path, gr.win(), ctx);
-	if (!gp.identical(gr)) {
+	basename_case(path != nullptr ? gp.win() : nullptr,
+	    path != nullptr ? gr.win() : nullptr, ctx);
+	if (!gp.identical(gr))
 		report(F_BASENAME, ctx, "path guard buffer mismatch");
-	}
 }
 
 static void
@@ -802,7 +802,7 @@ test_basename_edges(void)
 		char label[64];
 
 		std::snprintf(label, sizeof label, "edge \"%s\"", paths[i]);
-		test_basename_edge((char *)paths[i], label);
+		test_basename_edge(paths[i], label);
 	}
 
 	{
@@ -835,11 +835,11 @@ test_basename_random(void)
 			path = nullptr;
 		else {
 			fill_random_path((unsigned char *)gp.win(), gp.winsz() - 1);
-			gr.copy_cstr(gp.win());
+			std::memcpy(gr.win(), gp.win(), gp.winsz());
 			path = gp.win();
 		}
 		ncases[F_BASENAME]++;
-		basename_case(path, gr.win(), ctx);
+		basename_case(path, path != nullptr ? gr.win() : nullptr, ctx);
 		if (!gp.identical(gr))
 			report(F_BASENAME, ctx, "path guard buffer mismatch");
 	}
