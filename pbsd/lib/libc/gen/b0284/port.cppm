@@ -12,6 +12,10 @@ module;
 
 export module pbsd.lib.libc.gen.b0284;
 
+#ifndef restrict
+#define	restrict	__restrict__
+#endif
+
 export namespace pbsd::lib_libc_gen::b0284 {
 
 #ifndef SIG2STR_MAX

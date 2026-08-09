@@ -2,9 +2,14 @@ module;
 
 #include <cstdlib>
 #include <errno.h>
-#include <grp.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+extern "C" {
+int getgrouplist(const char *, gid_t, gid_t *, int *);
+int setgroups(int, const gid_t *);
+int freebsd14_setgroups(int, const gid_t *);
+}
 
 export module pbsd.lib.libc.gen.b0282;
 

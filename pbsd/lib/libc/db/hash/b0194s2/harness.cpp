@@ -1183,10 +1183,10 @@ void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
 	unsigned char op_init[BUF_CAP], np_init[BUF_CAP];
 	static unsigned char k[] = { 1, 2, 3 };
 	static unsigned char v[] = { 4, 5 };
-	setup_pair_page(op_init, 512, k, 3, v, 2, 0);
 	guard_fill(op_init, BUF_CAP);
-	page_init_raw(512, np_init);
 	guard_fill(np_init, BUF_CAP);
+	setup_pair_page(op_init, 512, k, 3, v, 2, 0);
+	page_init_raw(512, np_init);
 	guard_fill(opa, BUF_CAP);
 	guard_fill(opb, BUF_CAP);
 	guard_fill(npa, BUF_CAP);

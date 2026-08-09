@@ -71,21 +71,27 @@ struct ref_ctl_io_hdr {
 };
 
 struct ref_ctl_nvmeio {
-	ref_ctl_io_hdr io_hdr;
-	uint32_t ext_sg_entries;
-	uint8_t *ext_data_ptr;
-	uint32_t ext_data_len, ext_data_filled;
-	uint32_t kern_sg_entries;
-	uint8_t *kern_data_ptr;
-	uint32_t kern_data_len, kern_total_len, kern_data_resid, kern_rel_offset;
-	ref_nvme_command cmd;
-	ref_nvme_completion cpl;
-	bool success_sent;
-	void *be_move_done;
-	void *io_cont;
-	void *kern_data_ref;
-	void *kern_data_arg;
+	uint8_t bytes[472];
 };
+
+static constexpr std::size_t REF_IO_TYPE_OFF = 4;
+static constexpr std::size_t REF_CMD_OPC_OFF = 352;
+static constexpr std::size_t REF_CPL_STATUS_OFF = 430;
+
+static void ref_set_io_type(ref_ctl_nvmeio &io, ref_ctl_io_type t)
+{
+	*reinterpret_cast<ref_ctl_io_type *>(io.bytes + REF_IO_TYPE_OFF) = t;
+}
+
+static void ref_set_opc(ref_ctl_nvmeio &io, uint8_t opc)
+{
+	io.bytes[REF_CMD_OPC_OFF] = opc;
+}
+
+static void ref_set_status(ref_ctl_nvmeio &io, uint16_t status)
+{
+	*reinterpret_cast<uint16_t *>(io.bytes + REF_CPL_STATUS_OFF) = status;
+}
 
 struct ref_ctl_backend_driver {
 	char name[32];
@@ -249,11 +255,11 @@ static void run_nvme_string_case(int fn, bool admin, uint8_t opc, uint16_t statu
 	rsb.s_len = 0;
 
 	pio.io_hdr.io_type = admin ? P::CTL_IO_NVME_ADMIN : P::CTL_IO_NVME;
-	rio.io_hdr.io_type = admin ? REF_CTL_IO_NVME_ADMIN : REF_CTL_IO_NVME;
+	ref_set_io_type(rio, admin ? REF_CTL_IO_NVME_ADMIN : REF_CTL_IO_NVME);
 	pio.cmd.opc = opc;
-	rio.cmd.opc = opc;
+	ref_set_opc(rio, opc);
 	pio.cpl.status = status;
-	rio.cpl.status = status;
+	ref_set_status(rio, status);
 
 	++g_cases[fn];
 	if (fn == FN_CMD_STR) {
@@ -378,7 +384,7 @@ static void test_backends_hand()
 	test_backend_register("ramdisk", nullptr, 0);
 	test_backend_register("ramdisk", stub_init_ok, -1);
 	test_backend_register("block", stub_init_ok, 0);
-	test_backend_register("block", stub_init_fail, 42);
+	test_backend_register("failbe", stub_init_fail, 42);
 	test_backend_deregister("block", nullptr, 0);
 	test_backend_deregister("block", stub_shutdown_fail, 17);
 	test_backend_find("alpha", "alpha", true);
