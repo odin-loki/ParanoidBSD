@@ -13,7 +13,6 @@
 
 #define _GNU_SOURCE 1
 
-#define locale_t pbsd_blocked_locale_t
 
 #ifndef SIZE_T_MAX
 #define SIZE_T_MAX	((size_t)-1)
@@ -220,14 +219,13 @@ struct _xlocale {
 	char		*csym;
 };
 
-typedef struct _xlocale *locale_t;
+typedef struct _xlocale *pbsd_locale_t;
 
-#define locale_t pbsd_blocked_locale_t
 #include <pthread.h>
-#undef locale_t
-typedef struct _xlocale *locale_t;
+#undef pbsd_locale_t
+typedef struct _xlocale *pbsd_locale_t;
 
-#define LC_GLOBAL_LOCALE	((locale_t)-1)
+#define LC_GLOBAL_LOCALE	((pbsd_locale_t)-1)
 
 struct xlocale_monetary {
 	struct xlocale_component header;
@@ -258,8 +256,8 @@ atomic_add_long(volatile long *p, long v)
 	__atomic_fetch_add(p, v, __ATOMIC_SEQ_CST);
 }
 
-static inline locale_t
-get_real_locale(locale_t locale)
+static inline pbsd_locale_t
+get_real_locale(pbsd_locale_t locale)
 {
 	switch ((intptr_t)locale) {
 	case 0:
@@ -292,7 +290,7 @@ xlocale_release(void *val)
 		obj->destructor(obj);
 }
 
-static locale_t
+static pbsd_locale_t
 __get_locale(void)
 {
 	if (!__has_thread_locale || __thread_locale == NULL)
@@ -354,7 +352,7 @@ pbsd_ctor_hook_t	pbsd_ctor_hook;
 
 char			*_PathLocale = NULL;
 int			__has_thread_locale = 0;
-_Thread_local locale_t	__thread_locale = NULL;
+_Thread_local pbsd_locale_t	__thread_locale = NULL;
 
 extern struct xlocale_component __xlocale_global_collate;
 extern struct xlocale_component __xlocale_global_ctype;
@@ -469,7 +467,7 @@ __part_load_locale(const char *name, int *using_locale, char **locale_buf,
 }
 
 void
-__set_thread_rune_locale(locale_t loc)
+__set_thread_rune_locale(pbsd_locale_t loc)
 {
 	(void)loc;
 }
@@ -525,7 +523,7 @@ pbsd_make_component(const char *name, int fail)
 }
 
 void *
-__collate_load(const char *name, locale_t l)
+__collate_load(const char *name, pbsd_locale_t l)
 {
 	(void)l;
 	pbsd_ctor_hook.call_idx++;
@@ -533,7 +531,7 @@ __collate_load(const char *name, locale_t l)
 }
 
 void *
-__ctype_load(const char *name, locale_t l)
+__ctype_load(const char *name, pbsd_locale_t l)
 {
 	(void)l;
 	pbsd_ctor_hook.call_idx++;
@@ -541,7 +539,7 @@ __ctype_load(const char *name, locale_t l)
 }
 
 void *
-__numeric_load(const char *name, locale_t l)
+__numeric_load(const char *name, pbsd_locale_t l)
 {
 	(void)l;
 	pbsd_ctor_hook.call_idx++;
@@ -549,7 +547,7 @@ __numeric_load(const char *name, locale_t l)
 }
 
 void *
-__time_load(const char *name, locale_t l)
+__time_load(const char *name, pbsd_locale_t l)
 {
 	(void)l;
 	pbsd_ctor_hook.call_idx++;
@@ -557,7 +555,7 @@ __time_load(const char *name, locale_t l)
 }
 
 void *
-__messages_load(const char *name, locale_t l)
+__messages_load(const char *name, pbsd_locale_t l)
 {
 	(void)l;
 	pbsd_ctor_hook.call_idx++;

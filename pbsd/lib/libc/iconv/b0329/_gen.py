@@ -87,6 +87,18 @@ ORACLE_SUPPORT = r'''
 #ifndef __unused
 #define	__unused	__attribute__((__unused__))
 #endif
+
+#ifndef ICONV_TRIVIALP
+#define ICONV_TRIVIALP		0
+#define ICONV_GET_TRANSLITERATE	1
+#define ICONV_SET_TRANSLITERATE	2
+#define ICONV_GET_DISCARD_ILSEQ	3
+#define ICONV_SET_DISCARD_ILSEQ	4
+#define ICONV_SET_HOOKS		5
+#define ICONV_SET_FALLBACKS	6
+#define ICONV_GET_ILSEQ_INVALID	128
+#define ICONV_SET_ILSEQ_INVALID	129
+#endif
 #ifndef __BEGIN_DECLS
 #define	__BEGIN_DECLS
 #define	__END_DECLS
@@ -812,13 +824,17 @@ def prepare_source(text: str) -> str:
 
 
 def strip_static_defs(text: str) -> str:
+    rtypes = r'(?:int|void|size_t|iconv_t|const\s+char\s*\*)'
     for fn in sorted(BATCH_FUNCS, key=len, reverse=True):
         text = re.sub(
-            rf'\bstatic\s+(?=(?:__inline\s+)?)'
-            rf'(?:int|void|size_t|iconv_t|const\s+char\s*\*)\s+{re.escape(fn)}\s*\(',
-            '',
+            rf'\bstatic\s+(?:__inline\s+)?({rtypes})\s*\n\s*{re.escape(fn)}\s*\(',
+            rf'\1\n{fn}(',
             text,
-            flags=re.MULTILINE,
+        )
+        text = re.sub(
+            rf'\bstatic\s+(?:__inline\s+)?({rtypes})\s+{re.escape(fn)}\s*\(',
+            rf'\1 {fn}(',
+            text,
         )
     return text
 

@@ -116,6 +116,8 @@ struct Rng {
 	uint32_t n(uint32_t m) { return m ? (uint32_t)(next() % m) : 0u; }
 };
 
+static int g_irec_call;
+
 struct Env {
 	uint32_t flags;
 	uint32_t bt_nrecs;
@@ -158,7 +160,6 @@ struct Env {
 	int close_on_err;
 	int realloc_fail;
 	int malloc_fail;
-	int irec_call;
 	uint32_t reclen;
 	uint8_t bval;
 	size_t data_size;
@@ -326,7 +327,7 @@ extern "C" int mpool_put(P::MPOOL *, void *p, unsigned int fl)
 	return 0;
 }
 
-extern "C" EPG *mock_search(BTREE *t, uint32_t nrec, int op)
+extern "C" EPG *__rec_search(BTREE *t, uint32_t nrec, int op)
 {
 	static EPG e;
 	ls("sr");
@@ -340,7 +341,7 @@ extern "C" EPG *mock_search(BTREE *t, uint32_t nrec, int op)
 	return &e;
 }
 
-extern "C" int mock_ret(BTREE *, EPG *, uint32_t nrec, DBT *key, DBT *data)
+extern "C" int __rec_ret(BTREE *, EPG *, uint32_t nrec, DBT *key, DBT *data)
 {
 	ls("rt");
 	if (!fuel())
@@ -357,13 +358,13 @@ extern "C" int mock_ret(BTREE *, EPG *, uint32_t nrec, DBT *key, DBT *data)
 	return g_env->ret_status;
 }
 
-extern "C" int mock_ovfl_delete(BTREE *, char *)
+extern "C" int __ovfl_delete(BTREE *, char *)
 {
 	ls("od");
 	return g_env->ovfl_del_status;
 }
 
-extern "C" int mock_ovfl_put(BTREE *, const DBT *, uint32_t *pg)
+extern "C" int __ovfl_put(BTREE *, const DBT *, uint32_t *pg)
 {
 	ls("op");
 	if (!fuel() || g_env->ovfl_put_status != RET_SUCCESS)
@@ -372,7 +373,7 @@ extern "C" int mock_ovfl_put(BTREE *, const DBT *, uint32_t *pg)
 	return RET_SUCCESS;
 }
 
-extern "C" int mock_split(BTREE *, PAGE *, const DBT *, const DBT *, unsigned int,
+extern "C" int __bt_split(BTREE *, PAGE *, const DBT *, const DBT *, unsigned int,
     uint32_t, P::indx_t)
 {
 	ls("sp");
@@ -382,7 +383,7 @@ extern "C" int mock_split(BTREE *, PAGE *, const DBT *, const DBT *, unsigned in
 extern "C" int mock_irec(BTREE *t, uint32_t top)
 {
 	ls("ir");
-	++g_env->irec_call;
+	++g_irec_call;
 	if (!fuel())
 		return RET_ERROR;
 	if (g_env->irec_status == RET_SUCCESS)
@@ -390,7 +391,7 @@ extern "C" int mock_irec(BTREE *t, uint32_t top)
 	return g_env->irec_status;
 }
 
-extern "C" DB *mock_bt_open(const char *, int, int, const void *, int)
+extern "C" DB *__bt_open(const char *, int, int, const void *, int)
 {
 	ls("bo");
 	if (!fuel() || g_env->bt_open_null)
@@ -400,15 +401,15 @@ extern "C" DB *mock_bt_open(const char *, int, int, const void *, int)
 	return &g_pdb;
 }
 
-extern "C" int mock_bt_close(DB *)
+extern "C" int __bt_close(DB *)
 {
 	ls("bc");
 	return 0;
 }
 
-extern "C" int mock_rec_close(DB *) { return 0; }
-extern "C" int mock_rec_seq(const DB *, DBT *, DBT *, unsigned int) { return 0; }
-extern "C" int mock_rec_sync(const DB *, unsigned int) { return 0; }
+extern "C" int __rec_close(DB *) { return 0; }
+extern "C" int __rec_seq(const DB *, DBT *, DBT *, unsigned int) { return 0; }
+extern "C" int __rec_sync(const DB *, unsigned int) { return 0; }
 extern "C" int ref___rec_close(DB *) { return 0; }
 extern "C" int ref___rec_seq(const DB *, DBT *, DBT *, unsigned int) { return 0; }
 extern "C" int ref___rec_sync(const DB *, unsigned int) { return 0; }
@@ -509,7 +510,7 @@ static int run_one(int fn, bool port, Snap &S)
 	g_loghash = 1469598103934665603ULL;
 	g_logn = 0;
 	g_iput_calls = 0;
-	g_env->irec_call = 0;
+	g_irec_call = 0;
 	errno = 0;
 
 	unsigned char *buf = port ? g_bufA : g_bufB;
@@ -572,8 +573,9 @@ static int run_one(int fn, bool port, Snap &S)
 		RECNOINFO oi, *poi = nullptr;
 		const char *fname = nullptr;
 		if (g_env->use_fname) {
-			memcpy(g_env->fname_buf, "/tmp/x", 7);
-			fname = g_env->fname_buf;
+			char fname_local[16];
+			memcpy(fname_local, "/tmp/x", 7);
+			fname = fname_local;
 		}
 		if (g_env->use_openinfo) {
 			memset(&oi, 0, sizeof oi);

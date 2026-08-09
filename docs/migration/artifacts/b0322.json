@@ -1,0 +1,13 @@
+{
+  "batch": "b0322",
+  "verified": "2026-08-09T03:04:47Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases     failures\n-------------- ------------ ------------\nexpm1f                53866            0\nmodfl                 52413            0\nasin                  57436            0\n__ldexp_exp           53278            0\n__ldexp_cexp          52250            0\n-------------- ------------ ------------\nTOTAL                269243            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_expm1f.c": "af2fc39dc06fbf00",
+    "hbsd/src/lib/msun/src/s_modfl.c": "b83919b286f7a541",
+    "hbsd/src/lib/msun/src/e_asin.c": "a602c822af86934e",
+    "hbsd/src/lib/msun/src/k_exp.c": "4d31eae51c1a179b"
+  }
+}

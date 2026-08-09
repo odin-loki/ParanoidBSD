@@ -684,7 +684,7 @@ test_getopt_sweep(void)
 	}
 }
 
-enum { MAX_KEYS = 64, KEYLEN = 32, MAX_SLOTS = 2048 };
+enum { MAX_KEYS = 64, KEYLEN = 32, MAX_SLOTS = 128 };
 
 struct HTab {
 	ref___hsearch ref_hs;
@@ -821,7 +821,8 @@ static void
 test_hsearch_sweep(void)
 {
 	for (unsigned i = 0; i < SWEEP_ITERS; ++i) {
-		HTab t;
+		HTab stack_tab;
+		HTab &t = stack_tab;
 		unsigned nk = 1u + (unsigned)(rng_next() % 24u);
 		unsigned ki = 0;
 
@@ -853,24 +854,16 @@ int
 main(void)
 {
 	test_strtoull_l_edges(st_strtoull_l);
-	std::fprintf(stderr, "done strtoull_l edges\n");
 	test_strtoull_l_sweep(st_strtoull_l);
-	std::fprintf(stderr, "done strtoull_l sweep\n");
 
 	test_strtoull_edges(P::strtoull, ref_strtoull, st_strtoull);
-	std::fprintf(stderr, "done strtoull edges\n");
 	test_strtoull_sweep(P::strtoull, ref_strtoull, st_strtoull);
-	std::fprintf(stderr, "done strtoull sweep\n");
 
 	test_getopt_edges();
-	std::fprintf(stderr, "done getopt edges\n");
 	test_getopt_sweep();
-	std::fprintf(stderr, "done getopt sweep\n");
 
 	test_hsearch_edges();
-	std::fprintf(stderr, "done hsearch edges\n");
 	test_hsearch_sweep();
-	std::fprintf(stderr, "done hsearch sweep\n");
 
 	std::printf("\n%-14s %8s %8s\n", "function", "cases", "failures");
 	print_stat(st_strtoull_l);

@@ -312,6 +312,10 @@ void	*reallocf(void *, size_t);
 
 static int rec_rdelete(BTREE *, recno_t);
 
+} /* namespace */
+
+export namespace pbsd::lib_libc_db_recno::b0331 {
+
 int __rec_fd(const DB *);
 int __rec_get(const DB *, const DBT *, DBT *, u_int);
 int __rec_fpipe(BTREE *, recno_t);
@@ -320,10 +324,6 @@ int __rec_fmap(BTREE *, recno_t);
 int __rec_vmap(BTREE *, recno_t);
 int __rec_put(const DB *, DBT *, const DBT *, u_int);
 int __rec_iput(BTREE *, recno_t, const DBT *, u_int);
-
-} /* namespace */
-
-export namespace pbsd::lib_libc_db_recno::b0331 {
 
 int
 __rec_delete(const DB *dbp, const DBT *key, u_int flags)

@@ -814,6 +814,9 @@ main(void)
 	rng_seed(0xb0318ULL);
 	b0318_global_locale = &b0318_ctype;
 
+	test_fputws_l();
+	test_fputws();
+	test_tmpfile();
 	test_arginfo_hexdump();
 
 	harness_dprintf("\n%-28s %10s %10s\n", "function", "cases", "failures");
