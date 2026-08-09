@@ -1,4 +1,4 @@
 @echo off
-title PBSD Migration Monitor
+title PBSD Migration
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\watch-migration.ps1"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\run-pbsd-console.ps1" %*
