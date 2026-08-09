@@ -297,7 +297,7 @@ __printf_render_vis(struct __printf_io *io, const struct printf_info *pi, const 
 		l = pi->prec;
 	else
 		l = strlen(p);
-	buf = (char *)malloc(l * 4 + 1);
+	buf = static_cast<char *>(std::malloc(l * 4 + 1));
 	if (buf == NULL)
 		return (-1);
 	if (pi->showsign)

@@ -1200,6 +1200,10 @@ void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
 
 	int rp = P::__split_page(&hp, ob, nb);
 
+	if (std::strcmp(tag, "stay") == 0)
+		std::fprintf(stderr, "pre-ref npa[512]=%u calls=%u ret=%u\n",
+		    (unsigned)npa[512], hash_mock.call_hash_calls, (unsigned)rp);
+
 	std::memcpy(opb, op_init, 512);
 	std::memcpy(npb, np_init, 512);
 	hash_mock_reset();

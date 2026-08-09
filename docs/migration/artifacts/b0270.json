@@ -1,0 +1,12 @@
+{
+  "batch": "b0270",
+  "verified": "2026-08-09T00:13:08Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction          cases     failures\n--------          -----     --------\n__isnan          200012            0\n__isnanf         200009            0\n_once            200009            0\n__sleep          200012            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/isnan.c": "728486d1ac93e1bd",
+    "hbsd/src/lib/libc/gen/_once_stub.c": "05d4116a836aa003",
+    "hbsd/src/lib/libc/gen/sleep.c": "55096653baa89f2f"
+  }
+}
