@@ -12,9 +12,8 @@ FUNCS = sorted(set([
     "getpcpu","pcpu","pmem","pagein","maxrss","priorityr","kvar","rvar","emulname","label",
     "loginclass","jailname","shquote","cmdpart","vcmp","alias_errx","merge_alias","resolve_alias",
     "printtime","getpmem","printval"]), key=len, reverse=True)
-PREAMBLE = r'''
-#ifndef B0291_PS_BATCH
-#define B0291_PS_BATCH
+
+MODULE_INCLUDES = r'''
 #define _DEFAULT_SOURCE 1
 #include <sys/types.h>
 #include <sys/time.h>
@@ -38,6 +37,9 @@ PREAMBLE = r'''
 #include <signal.h>
 #include <time.h>
 #include <bsd/vis.h>
+'''
+
+TYPES = r'''
 #ifndef __unused
 #define __unused
 #endif
@@ -156,6 +158,13 @@ extern jmp_buf b0291_err_jmp; extern int b0291_err_jmp_set,b0291_errx_code;
 static inline void b0291_errx(int eval,const char *fmt,...){va_list ap;va_start(ap,fmt);if(b0291_err_jmp_set)longjmp(b0291_err_jmp,eval);vfprintf(stderr,fmt,ap);va_end(ap);exit(eval);} 
 #undef errx
 #define errx b0291_errx
+'''
+
+ORACLE_PREAMBLE = f'''
+#ifndef B0291_PS_BATCH
+#define B0291_PS_BATCH
+{MODULE_INCLUDES}
+{TYPES}
 #endif
 '''
 
@@ -202,6 +211,17 @@ def ren(t,p):
         if not m: o.append(c); i+=1
     return ''.join(o)
 
+def fix_port_cpp(t):
+    t = t.replace('unsigned class, level;', 'unsigned pri_class, level;')
+    t = re.sub(r'\bclass =', 'pri_class =', t)
+    t = re.sub(r'switch \(class\)', 'switch (pri_class)', t)
+    t = re.sub(r', class, level\)', ', pri_class, level)', t)
+    t = re.sub(r'=\s*malloc\(sizeof\(struct varent\)\)',
+               '= (struct varent *)malloc(sizeof(struct varent))', t)
+    t = re.sub(r'=\s*malloc\(', '= (char *)malloc(', t)
+    t = re.sub(r'=\s*bsearch\(', '= (VAR *)bsearch(', t)
+    return t
+
 def body(pref=''):
     parts=[]
     for n,p in SOURCES:
@@ -210,8 +230,12 @@ def body(pref=''):
         parts.append(f'/* ---- {n} ---- */\n'+b)
     return '\n'.join(parts)
 
-OUT.joinpath('oracle.c').write_text('/* oracle.c */\n'+PREAMBLE+body('ref_'))
-OUT.joinpath('port.cppm').write_text('module;\n'+PREAMBLE+'\nexport module pbsd.bin.ps.b0291;\nexport namespace pbsd::bin_ps::b0291 {\n'+body('')+'\n}\n')
+OUT.joinpath('oracle.c').write_text('/* oracle.c */\n'+ORACLE_PREAMBLE+body('ref_'))
+port_src = fix_port_cpp(body(''))
+OUT.joinpath('port.cppm').write_text(
+    'module;\n'+MODULE_INCLUDES+
+    '\nexport module pbsd.bin.ps.b0291;\nexport namespace pbsd::bin_ps::b0291 {\n'+
+    TYPES+'\n'+port_src+'\n}\n')
 OUT.joinpath('build.sh').write_text(textwrap.dedent('''\
 #!/bin/sh
 set -e
@@ -225,7 +249,7 @@ if $CXX --version 2>&1|grep -qi clang; then
  $CXX -std=c++23 -O2 -fmodule-file=$MOD=port.pcm -c harness.cpp -o harness.o
 else
  $CXX -std=c++23 -fmodules-ts -O2 -c -x c++ port.cppm -o port.o
- $CXX -std=c++23 -fmodules-ts -O2 -c harness.cpp -o harness.o
+ $CXX -std=c++23 -fmodules-ts -O2 -fmodule-file=$MOD=gcm.cache/$MOD.gcm -c harness.cpp -o harness.o
 fi
 $CXX -std=c++23 -O2 -o harness harness.o port.o oracle.o -lm -lbsd -Wl,--wrap=malloc -Wl,--wrap=exit
 exec ./harness

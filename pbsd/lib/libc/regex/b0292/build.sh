@@ -24,6 +24,8 @@ cat > "$PREREQ" <<'EOF'
 #ifndef B0292_PREREQ_H
 #define B0292_PREREQ_H
 
+#define LIBREGEX 1
+
 #include <stddef.h>
 #include <stdint.h>
 #include <sys/types.h>
@@ -39,6 +41,10 @@ cat > "$PREREQ" <<'EOF'
 #else
 #define LONG_BIT 32
 #endif
+#endif
+
+#ifndef _POSIX2_RE_DUP_MAX
+#define _POSIX2_RE_DUP_MAX 255
 #endif
 
 typedef off_t regoff_t;
@@ -98,55 +104,54 @@ typedef struct {
 #define _REGEX_H_
 #define _REGEX_H
 
+struct _RuneLocale {
+	const char *__encoding;
+};
+extern struct _RuneLocale *_CurrentRuneLocale;
+
+void *reallocarray(void *optr, size_t nmemb, size_t size);
+int regcomp(regex_t *preg, const char *pattern, int cflags);
+void regfree(regex_t *preg);
+
 #endif /* B0292_PREREQ_H */
 EOF
 
-mkdir -p "$TMPDIR/locale"
-cat > "$TMPDIR/locale/collate.h" <<'EOF'
-#ifndef _COLLATE_H_
-#define _COLLATE_H_
-#include <wchar.h>
-#include <limits.h>
-#ifndef COLL_WEIGHTS_MAX
-#define COLL_WEIGHTS_MAX 10
-#endif
-struct xlocale_collate { int __collate_load_error; };
-struct xlocale { void *components[8]; };
-struct xlocale * __get_locale(void);
-int __wcollate_range_cmp(wint_t, wint_t);
-#endif
-EOF
-
-cat > "$TMPDIR/locale/xlocale_private.h" <<'EOF'
-#ifndef _XLOCALE_PRIVATE__H_
-#define _XLOCALE_PRIVATE__H_
-#include "collate.h"
-enum { XLC_COLLATE = 0, XLC_CTYPE, XLC_MONETARY, XLC_NUMERIC, XLC_TIME,
-    XLC_MESSAGES, XLC_LAST };
-#endif
-EOF
-
 cat > "$TMPDIR/glue.c" <<'EOF'
-#include <wchar.h>
-#include "collate.h"
-static struct xlocale the_locale;
-struct xlocale * __get_locale(void) { return &the_locale; }
-int __wcollate_range_cmp(wint_t a, wint_t b)
+#include <errno.h>
+#include <stddef.h>
+#include <stdlib.h>
+
+void *
+reallocarray(void *optr, size_t nmemb, size_t size)
 {
-	return (a > b) - (a < b);
+	if (nmemb != 0 && size > SIZE_MAX / nmemb) {
+		errno = ENOMEM;
+		return (NULL);
+	}
+	return (realloc(optr, nmemb * size));
+}
+
+struct _RuneLocale *_CurrentRuneLocale;
+static struct _RuneLocale utf8_rune_locale = { "UTF-8" };
+
+__attribute__((constructor))
+static void
+init_rune_locale(void)
+{
+	_CurrentRuneLocale = &utf8_rune_locale;
 }
 EOF
 
-CFLAGS="-std=c11 -O2 -include $PREREQ -I$TMPDIR/locale -I$REGEXDIR"
-CXXFLAGS="-std=c++23 -O2 -include $PREREQ -I$REGEXDIR"
+CFLAGS="-std=c11 -O2 -DLIBREGEX -include $PREREQ -I$REGEXDIR"
+CXXFLAGS="-std=c++23 -O2 -I$REGEXDIR"
 
 rm -rf gcm.cache
 rm -f oracle.o port.o harness.o regcomp.o regfree.o glue.o port.pcm harness
 
 $CC $CFLAGS -c oracle.c -o oracle.o
 $CC $CFLAGS -c "$TMPDIR/glue.c" -o glue.o
-$CC $CFLAGS -c $REGEXDIR/regcomp.c -o regcomp.o
-$CC $CFLAGS -c $REGEXDIR/regfree.c -o regfree.o
+$CC $CFLAGS -c "$REGEXDIR/regcomp.c" -o regcomp.o
+$CC $CFLAGS -c "$REGEXDIR/regfree.c" -o regfree.o
 
 if $CXX --version 2>&1 | grep -qi clang; then
 	$CXX $CXXFLAGS -x c++-module port.cppm --precompile -o port.pcm

@@ -242,7 +242,7 @@ ipf_perror_fd( int fd, ioctlfunc_t iocfunc, char *string)
 	int realerr;
 
 	save = errno;
-	if ((*iocfunc)(fd, SIOCIPFINTERROR, &realerr) == -1)
+	if ((*iocfunc)(fd, SIOCIPFINTERROR, &realerr) != -1)
 		realerr = 0;
 
 	errno = save;

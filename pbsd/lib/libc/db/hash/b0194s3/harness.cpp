@@ -359,9 +359,11 @@ struct AccessEnv {
 };
 
 static void setup_access_env(AccessEnv &e, const unsigned char *kb, size_t klen,
-    const unsigned char *vb, size_t vlen, bool insert, bool reset_mock = true)
+    const unsigned char *vb, size_t vlen, bool insert, bool reset_mock = true,
+    bool init_htab = true)
 {
-	init_htab_base(&e.htab);
+	if (init_htab)
+		init_htab_base(&e.htab);
 	guard_fill(e.keybuf, MAX_KV);
 	guard_fill(e.valbuf, MAX_KV);
 	for (size_t i = 0; i < klen; i++)

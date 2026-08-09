@@ -10,7 +10,7 @@ if $CXX --version 2>&1|grep -qi clang; then
  $CXX -std=c++23 -O2 -fmodule-file=$MOD=port.pcm -c harness.cpp -o harness.o
 else
  $CXX -std=c++23 -fmodules-ts -O2 -c -x c++ port.cppm -o port.o
- $CXX -std=c++23 -fmodules-ts -O2 -c harness.cpp -o harness.o
+ $CXX -std=c++23 -fmodules-ts -O2 -fmodule-file=$MOD=gcm.cache/$MOD.gcm -c harness.cpp -o harness.o
 fi
 $CXX -std=c++23 -O2 -o harness harness.o port.o oracle.o -lm -lbsd -Wl,--wrap=malloc -Wl,--wrap=exit
 exec ./harness

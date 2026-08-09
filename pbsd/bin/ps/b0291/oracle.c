@@ -2,6 +2,7 @@
 
 #ifndef B0291_PS_BATCH
 #define B0291_PS_BATCH
+
 #define _DEFAULT_SOURCE 1
 #include <sys/types.h>
 #include <sys/time.h>
@@ -25,6 +26,8 @@
 #include <signal.h>
 #include <time.h>
 #include <bsd/vis.h>
+
+
 #ifndef __unused
 #define __unused
 #endif
@@ -143,6 +146,7 @@ extern jmp_buf b0291_err_jmp; extern int b0291_err_jmp_set,b0291_errx_code;
 static inline void b0291_errx(int eval,const char *fmt,...){va_list ap;va_start(ap,fmt);if(b0291_err_jmp_set)longjmp(b0291_err_jmp,eval);vfprintf(stderr,fmt,ap);va_end(ap);exit(eval);} 
 #undef errx
 #define errx b0291_errx
+
 #endif
 /* ---- fmt.c ---- */
 /*-

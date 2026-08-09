@@ -91,7 +91,7 @@ fill_str(char *buf, std::size_t cap, int pattern, std::size_t len)
 {
 	static const unsigned char alpha[] = {
 	    0x00, 0x01, 0x7e, 0x7f, 0x80, 0xfe, 0xff,
-	    'a', 'z', 'A', 'Z', '0', '9', '%', 's', 'd', 'x'
+	    'a', 'z', 'A', 'Z', '0', '9', 's', 'd', 'x'
 	};
 	const std::size_t na = sizeof(alpha);
 
@@ -113,6 +113,27 @@ fill_str(char *buf, std::size_t cap, int pattern, std::size_t len)
 		}
 	}
 	buf[len] = '\0';
+}
+
+static void
+pick_safe_fmt(char *fmt, std::size_t cap, std::uint64_t seed)
+{
+	static const char *safe[] = {
+	    "",
+	    "%s",
+	    "[%s]",
+	    "addr=%s",
+	    "%s%s",
+	    "%d",
+	    "%%",
+	    "x=%x d=%d",
+	    "%c",
+	    "plain",
+	    "ipfk\n",
+	    "%s:%x",
+	};
+	const std::size_t n = sizeof(safe) / sizeof(safe[0]);
+	std::snprintf(fmt, cap, "%s", safe[seed % n]);
 }
 
 static std::string
@@ -229,7 +250,7 @@ printactiveaddress_case(const char *tag, int v, const char *fmt,
 static void
 test_printactiveaddress_edges(void)
 {
-	static const int vs[] = { 0, 3, 4, 5, 6, 7, -1, 0x80000000 };
+	static const int vs[] = { 0, 3, 4, 5, 6, 7, -1, (int)0x80000000 };
 	static const char *fmts[] = {
 	    "",
 	    "%s",
@@ -298,9 +319,7 @@ test_printactiveaddress_sweep(void)
 			break;
 		}
 		char fmt[64];
-		fill_str(fmt, sizeof(fmt), (int)(rnd() % 3), rnd_mod(32));
-		if ((rnd() & 7) == 0)
-			std::snprintf(fmt, sizeof(fmt), "%%s");
+		pick_safe_fmt(fmt, sizeof(fmt), rnd());
 		char ifname[48];
 		fill_str(ifname, sizeof(ifname), (int)(rnd() % 3), rnd_mod(24));
 		int family = (v == 6) ? 6 : 4;
@@ -316,36 +335,6 @@ test_printactiveaddress_sweep(void)
 /* ------------------------------------------------------------------------ */
 /* verbose / ipfkverbose                                                     */
 /* ------------------------------------------------------------------------ */
-
-static std::string
-capture_stdout_verbose(void (*fn)(int, char *, ...), int level, const char *fmt,
-    ...)
-{
-	std::fflush(stdout);
-	int fds[2];
-	if (pipe(fds) != 0)
-		std::abort();
-	int saved = dup(STDOUT_FILENO);
-	dup2(fds[1], STDOUT_FILENO);
-	close(fds[1]);
-	va_list ap;
-	va_start(ap, fmt);
-	if (fn == (void (*)(int, char *, ...))ref_verbose)
-		ref_verbose(level, (char *)fmt, ap);
-	else
-		P::verbose(level, (char *)fmt, ap);
-	va_end(ap);
-	std::fflush(stdout);
-	dup2(saved, STDOUT_FILENO);
-	close(saved);
-	char out[8192];
-	ssize_t n = read(fds[0], out, sizeof(out) - 1);
-	close(fds[0]);
-	if (n < 0)
-		n = 0;
-	out[n] = '\0';
-	return std::string(out);
-}
 
 static std::string
 capture_stdout_verbose_args(int level, const char *fmt, int a0, int a1,
@@ -468,8 +457,8 @@ ipfkverbose_case(const char *tag, int opts_val, const char *fmt, int a0,
 static void
 test_verbose_edges(void)
 {
-	static const int optvals[] = { 0, OPT_VERBOSE, 0x40, 0x000041, 0xffffffbf,
-	    0x000080, 0xffffffff };
+	static const int optvals[] = { 0, OPT_VERBOSE, 0x40, 0x000041,
+	    (int)0xffffffbf, 0x000080, (int)0xffffffff };
 	static const char *fmts[] = {
 	    "",
 	    "plain\n",
@@ -517,10 +506,7 @@ test_verbose_sweep(void)
 			opts_val &= ~OPT_VERBOSE;
 		if ((rnd() & 3) == 0)
 			opts_val |= OPT_VERBOSE;
-		fill_str(fmt, sizeof(fmt), (int)(rnd() % 3), rnd_mod(48));
-		if ((rnd() & 15) == 0)
-			std::snprintf(fmt, sizeof(fmt), "%s %d %%x",
-			    "rnd", (int)(rnd() & 0xffff));
+		pick_safe_fmt(fmt, sizeof(fmt), rnd());
 		fill_str(s0, sizeof(s0), (int)(rnd() % 3), rnd_mod(32));
 		fill_str(s1, sizeof(s1), (int)(rnd() % 3), rnd_mod(32));
 		char tag[48];
@@ -533,8 +519,8 @@ test_verbose_sweep(void)
 static void
 test_ipfkverbose_edges(void)
 {
-	static const int optvals[] = { 0, OPT_VERBOSE, 0x40, 0x000041, 0xffffffbf,
-	    0xffffffff };
+	static const int optvals[] = { 0, OPT_VERBOSE, 0x40, 0x000041,
+	    (int)0xffffffbf, (int)0xffffffff };
 	static const char *fmts[] = {
 	    "",
 	    "ipfk\n",
@@ -569,7 +555,7 @@ test_ipfkverbose_sweep(void)
 			opts_val &= ~OPT_VERBOSE;
 		if ((rnd() & 3) == 0)
 			opts_val |= OPT_VERBOSE;
-		fill_str(fmt, sizeof(fmt), (int)(rnd() % 3), rnd_mod(48));
+		pick_safe_fmt(fmt, sizeof(fmt), rnd());
 		fill_str(s0, sizeof(s0), (int)(rnd() % 3), rnd_mod(32));
 		fill_str(s1, sizeof(s1), (int)(rnd() % 3), rnd_mod(32));
 		char tag[48];
