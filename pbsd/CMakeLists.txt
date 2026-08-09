@@ -249,6 +249,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/posix1e/acl_perm_m/port.cppm
   lib/libc/posix1e/b0110/port.cppm
   lib/libc/posix1e/b0259/port.cppm
+  lib/libc/posix1e/b0320/port.cppm
   lib/libc/quad/TESTS/b0174/port.cppm
   lib/libc/quad/b0033/port.cppm
   lib/libc/quad/b0034/port.cppm
@@ -344,6 +345,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdio/b0202/port.cppm
   lib/libc/stdio/b0244/port.cppm
   lib/libc/stdio/b0275/port.cppm
+  lib/libc/stdio/b0317/port.cppm
   lib/libc/stdio/fgetpos_m/port.cppm
   lib/libc/stdio/flags_m/port.cppm
   lib/libc/stdio/funopen_m/port.cppm
@@ -516,6 +518,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0306/port.cppm
   lib/msun/src/b0307/port.cppm
   lib/msun/src/b0308/port.cppm
+  lib/msun/src/b0309/port.cppm
   lib/msun/src/b0312/port.cppm
   lib/msun/src/e_acosh_m/port.cppm
   lib/msun/src/e_acoshf_m/port.cppm

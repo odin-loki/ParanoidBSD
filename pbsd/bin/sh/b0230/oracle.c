@@ -824,3 +824,170 @@ ref_pungetc(void)
 	parsenleft++;
 	parsenextc--;
 }
+
+/*
+ * Harness helpers (not in the original sources).
+ */
+void
+oracle_mknodes_reset(void)
+{
+	int i, j;
+
+	for (i = 0; i < ntypes; i++)
+		free(nodename[i]);
+	for (i = 0; i < nstr; i++) {
+		free(str[i].tag);
+		for (j = 0; j < str[i].nfields; j++) {
+			free(str[i].field[j].name);
+			free(str[i].field[j].decl);
+		}
+	}
+	ntypes = 0;
+	nstr = 0;
+	curstr = NULL;
+	linno = 0;
+	line[0] = '\0';
+	linep = line;
+}
+
+void
+oracle_mknodes_set_line(const char *s)
+{
+	(void)strncpy(line, s, sizeof(line) - 1);
+	line[sizeof(line) - 1] = '\0';
+	linep = line;
+}
+
+int
+oracle_mknodes_get_linno(void)
+{
+	return linno;
+}
+
+char *
+ref_mknodes_savestr(const char *s)
+{
+	return ref_savestr(s);
+}
+
+void
+ref_mknodes_output(char *file)
+{
+	ref_output(file);
+}
+
+void
+ref_mknodes_read_input(FILE *infp)
+{
+	while (ref_readline(infp)) {
+		if (line[0] == ' ' || line[0] == '\t')
+			ref_parsefield();
+		else if (line[0] != '\0')
+			ref_parsenode();
+	}
+}
+
+int
+ref_mknodes_main(int argc, char **argv)
+{
+	FILE *infp;
+
+	if (argc != 3)
+		ref_error("usage: mknodes file");
+	if ((infp = fopen(argv[1], "r")) == NULL)
+		ref_error("Can't open %s: %s", argv[1], strerror(errno));
+	ref_mknodes_read_input(infp);
+	fclose(infp);
+	ref_output(argv[2]);
+	exit(0);
+}
+
+void
+oracle_out1_reset(void)
+{
+	shim_out1len = 0;
+	shim_out1[0] = '\0';
+}
+
+const char *
+oracle_out1_get(void)
+{
+	return shim_out1;
+}
+
+size_t
+oracle_out1_len(void)
+{
+	return shim_out1len;
+}
+
+void
+oracle_input_reset(void)
+{
+	parsefile = &basepf;
+	parsenleft = 0;
+	parselleft = 0;
+	parsenextc = basebuf;
+	plinno = 1;
+	basepf.prev = NULL;
+	basepf.linno = 1;
+	basepf.fd = 0;
+	basepf.nleft = 0;
+	basepf.lleft = 0;
+	basepf.nextc = basebuf;
+	basepf.buf = basebuf;
+	basepf.strpush = NULL;
+	basepf.basestrpush.prev = NULL;
+	basepf.basestrpush.ap = NULL;
+}
+
+void
+oracle_input_set_parsenleft(int n)
+{
+	parsenleft = n;
+}
+
+void
+oracle_input_set_parselleft(int n)
+{
+	parselleft = n;
+}
+
+void
+oracle_input_set_nextc(const char *s)
+{
+	parsenextc = s;
+}
+
+void
+oracle_input_set_buf_null(int null)
+{
+	parsefile->buf = null ? NULL : basebuf;
+}
+
+void
+oracle_input_set_strpush(int on)
+{
+	if (on)
+		parsefile->strpush = &basepf.basestrpush;
+	else
+		parsefile->strpush = NULL;
+}
+
+void
+oracle_trap_reset(void)
+{
+	int i;
+
+	for (i = 0; i < NSIG; i++) {
+		free(trap[i]);
+		trap[i] = NULL;
+	}
+}
+
+void
+oracle_trap_set(int signo, const char *cmd)
+{
+	free(trap[signo]);
+	trap[signo] = cmd ? ref_savestr(cmd) : NULL;
+}

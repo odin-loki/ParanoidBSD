@@ -33,18 +33,7 @@ namespace port = pbsd::lib_libc_gen::b0279;
 #define	SWEEP_ITERS	200000L
 #define	MAX_PRINT	12
 
-struct ref_uexterror {
-	std::uint32_t ver;
-	std::uint32_t error;
-	std::uint32_t cat;
-	std::uint32_t src_line;
-	std::uint32_t flags;
-	std::uint32_t rsrv0;
-	std::uint64_t p1;
-	std::uint64_t p2;
-	std::uint64_t rsrv1[4];
-	char msg[128];
-};
+using ref_uexterror = port::uexterror;
 
 extern "C" {
 void harness_set_issetugid(int);
@@ -163,16 +152,7 @@ struct GuardBuf {
 static void
 copy_ue(const port::uexterror *src, ref_uexterror *dst)
 {
-	dst->ver = src->ver;
-	dst->error = src->error;
-	dst->cat = src->cat;
-	dst->src_line = src->src_line;
-	dst->flags = src->flags;
-	dst->rsrv0 = src->rsrv0;
-	dst->p1 = src->p1;
-	dst->p2 = src->p2;
-	std::memcpy(dst->rsrv1, src->rsrv1, sizeof(dst->rsrv1));
-	std::memcpy(dst->msg, src->msg, sizeof(dst->msg));
+	*dst = *src;
 }
 
 /* ------------------------------------------------------------------ float */

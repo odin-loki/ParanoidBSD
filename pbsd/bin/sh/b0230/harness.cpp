@@ -1,4 +1,4 @@
-// Differential harness for PBSD batch b0230 (mknodes.c).
+// Differential harness for PBSD batch b0230.
 
 import pbsd.bin.sh.b0230;
 
@@ -18,6 +18,18 @@ extern "C" {
 void oracle_mknodes_reset(void);
 void oracle_mknodes_set_line(const char *s);
 int oracle_mknodes_get_linno(void);
+void oracle_out1_reset(void);
+const char *oracle_out1_get(void);
+size_t oracle_out1_len(void);
+void oracle_input_reset(void);
+void oracle_input_set_parsenleft(int n);
+void oracle_input_set_parselleft(int n);
+void oracle_input_set_nextc(const char *s);
+void oracle_input_set_buf_null(int null);
+void oracle_input_set_strpush(int on);
+void oracle_trap_reset(void);
+void oracle_trap_set(int signo, const char *cmd);
+extern int sys_nsig;
 
 int ref_mknodes_main(int argc, char **argv);
 void ref_mknodes_read_input(FILE *);
@@ -31,6 +43,12 @@ int ref_nextfield(char *);
 void ref_skipbl(void);
 int ref_readline(FILE *);
 char *ref_mknodes_savestr(const char *);
+char *ref_getcomponent(char **);
+int ref_sigstring_to_signum(char *);
+void ref_printsignals(void);
+int ref_have_traps(void);
+int ref_preadateof(void);
+void ref_pungetc(void);
 }
 
 struct Stat {
@@ -40,6 +58,7 @@ struct Stat {
 };
 
 static Stat stats[] = {
+	{ "getcomponent", 0, 0 },
 	{ "mknodes_savestr", 0, 0 },
 	{ "nextfield", 0, 0 },
 	{ "skipbl", 0, 0 },
@@ -51,6 +70,11 @@ static Stat stats[] = {
 	{ "outfunc", 0, 0 },
 	{ "mknodes_output", 0, 0 },
 	{ "mknodes_main", 0, 0 },
+	{ "sigstring_to_signum", 0, 0 },
+	{ "printsignals", 0, 0 },
+	{ "have_traps", 0, 0 },
+	{ "preadateof", 0, 0 },
+	{ "pungetc", 0, 0 },
 };
 static const int NSTAT = (int)(sizeof(stats) / sizeof(stats[0]));
 
@@ -99,6 +123,390 @@ reset_both()
 {
 	oracle_mknodes_reset();
 	P::port_mknodes_reset();
+}
+
+static void
+test_getcomponent_one(Stat &st, char *rpath, char *ppath, const char *tag)
+{
+	char *rstart = rpath;
+	char *pstart = ppath;
+	char *rret = ref_getcomponent(&rstart);
+	char *pret = P::getcomponent(&pstart);
+	ptrdiff_t roff = rret ? rret - rpath : -1;
+	ptrdiff_t poff = pret ? pret - ppath : -1;
+	if (roff != poff || (rret == NULL) != (pret == NULL) ||
+	    (rstart == NULL) != (pstart == NULL) ||
+	    (rstart && pstart && std::strcmp(rstart, pstart) != 0)) {
+		fail(st, tag);
+		return;
+	}
+	ok(st);
+}
+
+static void
+test_getcomponent_hand()
+{
+	Stat &st = S("getcomponent");
+	char rbuf[256], pbuf[256];
+	const char *inputs[] = {
+		"", "a", "a/b", "/a/b", "a//b", "..", ".", "foo/bar/baz",
+		"/\x80\xff", "a/\x80", nullptr,
+	};
+	for (int i = 0; inputs[i]; i++) {
+		fill_guard((unsigned char *)rbuf, sizeof(rbuf));
+		fill_guard((unsigned char *)pbuf, sizeof(pbuf));
+		std::strncpy(rbuf + 1, inputs[i], sizeof(rbuf) - 3);
+		std::strncpy(pbuf + 1, inputs[i], sizeof(pbuf) - 3);
+		rbuf[sizeof(rbuf) - 2] = '\0';
+		pbuf[sizeof(pbuf) - 2] = '\0';
+		char *rpath = rbuf + 1;
+		char *ppath = pbuf + 1;
+		while (rpath && ppath) {
+			test_getcomponent_one(st, rpath, ppath, inputs[i]);
+			if (st.fails > 8)
+				break;
+		}
+	}
+	{
+		char *rnull = nullptr;
+		char *pnull = nullptr;
+		if (ref_getcomponent(&rnull) != nullptr ||
+		    P::getcomponent(&pnull) != nullptr)
+			fail(st, "null");
+		else
+			ok(st);
+	}
+}
+
+static void
+test_getcomponent_sweep()
+{
+	Stat &st = S("getcomponent");
+	char rbuf[128], pbuf[128];
+	for (long i = 0; i < SWEEP; i++) {
+		size_t n = (size_t)(rng.u32() % 60) + 1;
+		fill_guard((unsigned char *)rbuf, sizeof(rbuf));
+		fill_guard((unsigned char *)pbuf, sizeof(pbuf));
+		for (size_t j = 0; j < n; j++) {
+			unsigned v = rng.u32() % 8;
+			char c = (char)(v == 0 ? '/' : v == 1 ? '\0' : (rng.u32() % 26) + 'a');
+			rbuf[j + 1] = c;
+			pbuf[j + 1] = c;
+			if (c == '\0')
+				break;
+		}
+		rbuf[n + 1] = '\0';
+		pbuf[n + 1] = '\0';
+		char *rpath = rbuf + 1;
+		char *ppath = pbuf + 1;
+		while (rpath && ppath) {
+			char *rs = rpath;
+			char *ps = ppath;
+			char *rret = ref_getcomponent(&rs);
+			char *pret = P::getcomponent(&ps);
+			if ((rret == NULL) != (pret == NULL) ||
+			    (rret && pret && (rret - rbuf) != (pret - pbuf)) ||
+			    (rs == NULL) != (ps == NULL) ||
+			    (rs && ps && std::strcmp(rs, ps) != 0) ||
+			    rbuf[0] != GUARD || pbuf[0] != GUARD) {
+				fail(st, "sweep");
+				break;
+			}
+			rpath = rs;
+			ppath = ps;
+		}
+		if (rpath == nullptr && ppath == nullptr)
+			ok(st);
+	}
+}
+
+static void
+setup_signames()
+{
+	static const char *names[] = {
+		nullptr, "HUP", "INT", "QUIT", "ILL", "TRAP", "ABRT", "BUS",
+		"FPE", "KILL", "USR1", "SEGV", "USR2", "PIPE", "ALRM", "TERM",
+	};
+	sys_nsig = 16;
+	for (int i = 0; i < 16; i++)
+		dep_signame[i] = names[i];
+}
+
+extern "C" const char *dep_signame[128];
+
+static void
+test_sigstring_hand()
+{
+	Stat &st = S("sigstring_to_signum");
+	setup_signames();
+	struct {
+		const char *in;
+		int expect;
+	} cases[] = {
+		{ "0", 0 }, { "15", 15 }, { "16", -1 }, { "-1", -1 },
+		{ "EXIT", 0 }, { "exit", 0 }, { "INT", 2 }, { "SIGINT", 2 },
+		{ "sigquit", 3 }, { "TERM", 15 }, { "bogus", -1 }, { "999", -1 },
+		{ "", -1 }, { "1", 1 }, { "14", 14 },
+	};
+	char buf[64];
+	for (auto &c : cases) {
+		std::strncpy(buf, c.in, sizeof(buf) - 1);
+		buf[sizeof(buf) - 1] = '\0';
+		int r = ref_sigstring_to_signum(buf);
+		int p = P::sigstring_to_signum(buf);
+		if (r != p || r != c.expect)
+			fail(st, c.in);
+		else
+			ok(st);
+	}
+}
+
+static void
+test_sigstring_sweep()
+{
+	Stat &st = S("sigstring_to_signum");
+	setup_signames();
+	char buf[32];
+	for (long i = 0; i < SWEEP; i++) {
+		size_t n = (size_t)(rng.u32() % 20);
+		for (size_t j = 0; j < n; j++)
+			buf[j] = (char)((rng.u32() % 75) + ' ');
+		buf[n] = '\0';
+		int r = ref_sigstring_to_signum(buf);
+		int p = P::sigstring_to_signum(buf);
+		if (r != p)
+			fail(st, "sweep");
+		else
+			ok(st);
+	}
+}
+
+static void
+test_printsignals_hand()
+{
+	Stat &st = S("printsignals");
+	setup_signames();
+	oracle_out1_reset();
+	ref_printsignals();
+	size_t rl = oracle_out1_len();
+	char *rout = (char *)std::malloc(rl + 1);
+	std::memcpy(rout, oracle_out1_get(), rl);
+	rout[rl] = '\0';
+	oracle_out1_reset();
+	P::printsignals();
+	size_t pl = oracle_out1_len();
+	if (rl != pl || std::memcmp(rout, oracle_out1_get(), rl) != 0)
+		fail(st, "hand");
+	else
+		ok(st);
+	std::free(rout);
+}
+
+static void
+test_printsignals_sweep()
+{
+	Stat &st = S("printsignals");
+	for (long i = 0; i < SWEEP; i++) {
+		int n = (int)(rng.u32() % 20) + 2;
+		sys_nsig = n;
+		for (int j = 0; j < n; j++)
+			dep_signame[j] = (rng.u32() & 1) ?
+			    (const char *)"SIG" : nullptr;
+		oracle_out1_reset();
+		ref_printsignals();
+		size_t rl = oracle_out1_len();
+		char *rout = (char *)std::malloc(rl + 1);
+		std::memcpy(rout, oracle_out1_get(), rl);
+		rout[rl] = '\0';
+		oracle_out1_reset();
+		P::printsignals();
+		size_t pl = oracle_out1_len();
+		if (rl != pl || std::memcmp(rout, oracle_out1_get(), rl) != 0)
+			fail(st, "sweep");
+		else
+			ok(st);
+		std::free(rout);
+	}
+}
+
+static void
+test_have_traps_hand()
+{
+	Stat &st = S("have_traps");
+	struct {
+		const char *cmds[4];
+		int expect;
+	} cases[] = {
+		{ { nullptr, nullptr, nullptr, nullptr }, 0 },
+		{ { "", nullptr, nullptr, nullptr }, 0 },
+		{ { "echo", nullptr, nullptr, nullptr }, 1 },
+		{ { "", "trap", nullptr, nullptr }, 1 },
+		{ { nullptr, "", nullptr, nullptr }, 0 },
+	};
+	for (auto &c : cases) {
+		oracle_trap_reset();
+		P::port_trap_reset();
+		for (int i = 0; i < 4; i++) {
+			oracle_trap_set(i, c.cmds[i]);
+			P::port_trap_set(i, c.cmds[i]);
+		}
+		int r = ref_have_traps();
+		int p = P::have_traps();
+		if (r != p || r != c.expect)
+			fail(st, "hand");
+		else
+			ok(st);
+	}
+}
+
+static void
+test_have_traps_sweep()
+{
+	Stat &st = S("have_traps");
+	for (long i = 0; i < SWEEP; i++) {
+		oracle_trap_reset();
+		P::port_trap_reset();
+		int expect = 0;
+		for (int s = 0; s < NSIG && s < 32; s++) {
+			int kind = (int)(rng.u32() % 3);
+			const char *cmd = nullptr;
+			if (kind == 1)
+				cmd = "";
+			else if (kind == 2) {
+				cmd = "x";
+				expect = 1;
+			}
+			oracle_trap_set(s, cmd);
+			P::port_trap_set(s, cmd);
+		}
+		if (ref_have_traps() != P::have_traps() ||
+		    ref_have_traps() != expect)
+			fail(st, "sweep");
+		else
+			ok(st);
+	}
+}
+
+static void
+test_preadateof_one(int pnleft, int bufnull, int strpush, int expect)
+{
+	Stat &st = S("preadateof");
+	oracle_input_reset();
+	P::port_input_reset();
+	oracle_input_set_parsenleft(pnleft);
+	P::port_input_set_parsenleft(pnleft);
+	oracle_input_set_buf_null(bufnull);
+	P::port_input_set_buf_null(bufnull);
+	oracle_input_set_strpush(strpush);
+	P::port_input_set_strpush(strpush);
+	int r = ref_preadateof();
+	int p = P::preadateof();
+	if (r != p || r != expect)
+		fail(st, "case");
+	else
+		ok(st);
+}
+
+static void
+test_preadateof_hand()
+{
+	test_preadateof_one(1, 0, 0, 0);
+	test_preadateof_one(0, 0, 1, 0);
+	test_preadateof_one(0, 1, 0, 1);
+	test_preadateof_one(-99, 0, 0, 1);
+	test_preadateof_one(0, 0, 0, 0);
+	test_preadateof_one(-1, 0, 0, 0);
+}
+
+static void
+test_preadateof_sweep()
+{
+	Stat &st = S("preadateof");
+	for (long i = 0; i < SWEEP; i++) {
+		int pnleft = (int)rng.u32() % 5 - 2;
+		if (rng.u32() & 8)
+			pnleft = -99;
+		int bufnull = (int)(rng.u32() & 1);
+		int strpush = (int)(rng.u32() & 1);
+		oracle_input_reset();
+		P::port_input_reset();
+		oracle_input_set_parsenleft(pnleft);
+		P::port_input_set_parsenleft(pnleft);
+		oracle_input_set_buf_null(bufnull);
+		P::port_input_set_buf_null(bufnull);
+		oracle_input_set_strpush(strpush);
+		P::port_input_set_strpush(strpush);
+		if (ref_preadateof() != P::preadateof())
+			fail(st, "sweep");
+		else
+			ok(st);
+	}
+}
+
+static void
+test_pungetc_one(int pnleft, const char *nextc)
+{
+	Stat &st = S("pungetc");
+	static char rbuf[64], pbuf[64];
+	oracle_input_reset();
+	P::port_input_reset();
+	std::strcpy(rbuf, nextc);
+	std::strcpy(pbuf, nextc);
+	oracle_input_set_parsenleft(pnleft);
+	P::port_input_set_parsenleft(pnleft);
+	oracle_input_set_nextc(rbuf + 1);
+	P::port_input_set_nextc(pbuf + 1);
+	ref_pungetc();
+	P::pungetc();
+	if (parsenleft != P::parsenleft || std::strcmp(rbuf, pbuf) != 0)
+		fail(st, "state");
+	else
+		ok(st);
+}
+
+static void
+test_pungetc_hand()
+{
+	test_pungetc_one(0, "x");
+	test_pungetc_one(5, "hello");
+	test_pungetc_one(1, "\x80\xff");
+	test_pungetc_one(0, "a");
+}
+
+static void
+test_pungetc_sweep()
+{
+	Stat &st = S("pungetc");
+	char rbuf[64], pbuf[64];
+	for (long i = 0; i < SWEEP; i++) {
+		size_t n = (size_t)(rng.u32() % 40) + 2;
+		fill_guard((unsigned char *)rbuf, sizeof(rbuf));
+		fill_guard((unsigned char *)pbuf, sizeof(pbuf));
+		for (size_t j = 0; j < n; j++) {
+			char c = (char)(rng.u32() & 0xff);
+			rbuf[j + 1] = c;
+			pbuf[j + 1] = c;
+		}
+		rbuf[n + 1] = '\0';
+		pbuf[n + 1] = '\0';
+		int pnleft = (int)(rng.u32() % 20);
+		oracle_input_reset();
+		P::port_input_reset();
+		oracle_input_set_parsenleft(pnleft);
+		P::port_input_set_parsenleft(pnleft);
+		size_t off = (size_t)(rng.u32() % (n > 0 ? n : 1)) + 1;
+		oracle_input_set_nextc(rbuf + off);
+		P::port_input_set_nextc(pbuf + off);
+		ref_pungetc();
+		P::pungetc();
+		extern int parsenleft;
+		if (parsenleft != P::parsenleft)
+			fail(st, "nleft");
+		else if (rbuf[0] != GUARD || pbuf[0] != GUARD)
+			fail(st, "guard");
+		else
+			ok(st);
+	}
 }
 
 static int

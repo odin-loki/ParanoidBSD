@@ -1,15 +1,3 @@
-/*
- * b0279 — C++23 port of:
- *	lib/libc/gen/uexterr_format.c
- *	lib/libc/gen/getlogin.c
- *	lib/libc/gen/semctl.c
- *	lib/libc/gen/fpclassify.c
- *
- * Behaviour is preserved exactly, including the mixed int/size_t comparisons,
- * the plain-`char' tests, the pointer-to-static return of getlogin(), the
- * varargs union copy in semctl() and the x87 normalization-bit masking.
- */
-
 module;
 
 #include <cerrno>
@@ -23,25 +11,8 @@ module;
 #include <cstdlib>
 #include <cstring>
 
-/*
- * Hooks provided by harness.cpp so that the port and the oracle observe the
- * same libc / system-call environment.  getenv() is the real one.
- */
-extern "C" {
-std::size_t	pbsd_b0279_strlcpy(char *, const char *, std::size_t);
-std::size_t	pbsd_b0279_strlcat(char *, const char *, std::size_t);
-int		pbsd_b0279_issetugid(void);
-int		pbsd_b0279_getlogin(char *, int);
-int		pbsd_b0279_semctl_syscall(int, int, int, void *);
-int		pbsd_b0279_semctl7_syscall(int, int, int, void *);
-}
-
-#define	strlcpy			pbsd_b0279_strlcpy
-#define	strlcat			pbsd_b0279_strlcat
-#define	issetugid		pbsd_b0279_issetugid
-#define	_getlogin		pbsd_b0279_getlogin
-#define	__semctl		pbsd_b0279_semctl_syscall
-#define	freebsd7___semctl	pbsd_b0279_semctl7_syscall
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 #ifndef nitems
 #define	nitems(x)	(sizeof((x)) / sizeof((x)[0]))
@@ -51,6 +22,30 @@ int		pbsd_b0279_semctl7_syscall(int, int, int, void *);
 #endif
 
 export module pbsd.lib.libc.gen.b0279;
+
+extern "C" {
+int		issetugid(void);
+char		*getenv(const char *);
+int		_getlogin(char *, int);
+int		__semctl(int, int, int, union semun *);
+int		freebsd7___semctl(int, int, int, union semun_old *);
+}
+
+#if !defined(__FreeBSD__)
+union semun {
+	int		 val;
+	struct semid_ds	*buf;
+	unsigned short	*array;
+};
+#endif
+
+struct semid_ds_old;
+
+union semun_old {
+	int			 val;
+	struct semid_ds_old	*buf;
+	unsigned short		*array;
+};
 
 export namespace pbsd::lib_libc_gen::b0279 {
 
@@ -75,33 +70,94 @@ using std::uintmax_t;
  * under sponsorship from the FreeBSD Foundation.
  */
 
+#define	EXTERR_CAT_MMAP		1
+#define	EXTERR_CAT_FILEDESC	2
+#define	EXTERR_KTRACE		3
+#define	EXTERR_CAT_FUSE_VNOPS	4
+#define	EXTERR_CAT_INOTIFY	5
+#define	EXTERR_CAT_GENIO	6
+#define	EXTERR_CAT_BRIDGE	7
+#define	EXTERR_CAT_SWAP		8
+#define	EXTERR_CAT_VFSSYSCALL	9
+#define	EXTERR_CAT_VFSBIO	10
+#define	EXTERR_CAT_GEOMVFS	11
+#define	EXTERR_CAT_GEOM		12
+#define	EXTERR_CAT_FUSE_VFS	13
+#define	EXTERR_CAT_FUSE_DEVICE	14
+#define	EXTERR_CAT_FORK		15
+#define	EXTERR_CAT_PROCEXIT	16
+
 inline constexpr size_t UEXTERROR_MAXLEN = 256;
 
 struct uexterror {
 	uint32_t	ver;
-	int		error;
+	uint32_t	error;
 	uint32_t	cat;
 	uint32_t	src_line;
+	uint32_t	flags;
+	uint32_t	rsrv0;
 	uint64_t	p1;
 	uint64_t	p2;
+	uint64_t	rsrv1[4];
 	char		msg[128];
 };
 
+static size_t
+strlcpy(char *dst, const char *src, size_t len)
+{
+	size_t srclen;
+
+	srclen = std::strlen(src);
+	if (len != 0) {
+		if (srclen >= len) {
+			std::memcpy(dst, src, len - 1);
+			dst[len - 1] = '\0';
+		} else
+			std::memcpy(dst, src, srclen + 1);
+	}
+	return (srclen);
+}
+
+static size_t
+strlcat(char *dst, const char *src, size_t len)
+{
+	size_t dstlen, srclen;
+
+	dstlen = std::strlen(dst);
+	srclen = std::strlen(src);
+	if (dstlen == len)
+		return (dstlen + srclen);
+	if (srclen < len - dstlen) {
+		std::memcpy(dst + dstlen, src, srclen + 1);
+	} else {
+		std::memcpy(dst + dstlen, src, len - dstlen - 1);
+		dst[len - 1] = '\0';
+	}
+	return (dstlen + srclen);
+}
+
 } /* namespace */
 
-/* Internal to the module: declared but not exported. */
 namespace pbsd::lib_libc_gen::b0279 {
 
 const char * const cat_to_filenames[] = {
-	/* stand-in for the generated "exterr_cat_filenames.h" */
-	nullptr,
-	"kern/kern_exterr.c",
-	"kern/kern_sysctl.c",
-	nullptr,
-	"vm/vm_map.c",
-	"kern/kern_prot.c",
-	"kern/vfs_syscalls.c",
-	"net/if.c",
+	nullptr,						/* 0 */
+	"vm/vm_mmap.c",						/* EXTERR_CAT_MMAP */
+	"kern/kern_descrip.c",					/* EXTERR_CAT_FILEDESC */
+	nullptr,						/* EXTERR_KTRACE */
+	"fs/fuse/fuse_vnops.c",					/* EXTERR_CAT_FUSE_VNOPS */
+	"kern/vfs_inotify.c",					/* EXTERR_CAT_INOTIFY */
+	"kern/sys_generic.c",					/* EXTERR_CAT_GENIO */
+	"net/if_bridge.c",					/* EXTERR_CAT_BRIDGE */
+	"vm/swap_pager.c",					/* EXTERR_CAT_SWAP */
+	"kern/vfs_syscalls.c",					/* EXTERR_CAT_VFSSYSCALL */
+	"kern/vfs_bio.c",					/* EXTERR_CAT_VFSBIO */
+	"geom/geom_vfs.c",					/* EXTERR_CAT_GEOMVFS */
+	"geom/geom_subr.c",					/* EXTERR_CAT_GEOM */
+	"fs/fuse/fuse_vfsops.c",				/* EXTERR_CAT_FUSE_VFS */
+	"fs/fuse/fuse_device.c",				/* EXTERR_CAT_FUSE_DEVICE */
+	"kern/kern_fork.c",					/* EXTERR_CAT_FORK */
+	"kern/kern_exit.c",					/* EXTERR_CAT_PROCEXIT */
 };
 
 const char *
@@ -135,7 +191,7 @@ exterr_verbose_init(void)
 		return;
 	if (issetugid()) {
 		exterror_verbose = EXTERR_VERBOSE_DEFAULT;
-	} else if ((v = std::getenv(exterror_verbose_name)) != nullptr) {
+	} else if ((v = getenv(exterror_verbose_name)) != nullptr) {
 		exterror_verbose = std::strcmp(v, "brief") == 0 ?
 		    EXTERR_VERBOSE_ALLOW_BRIEF : EXTERR_VERBOSE_ALLOW_FULL;
 	} else {
@@ -190,13 +246,6 @@ __uexterr_format(const struct uexterror *ue, char *buf, size_t bufsz)
 	return (0);
 }
 
-/* Test hook: not part of the original source. */
-void
-uexterr_verbose_reset(void)
-{
-	exterror_verbose = EXTERR_VERBOSE_UNKNOWN;
-}
-
 /*
  * ===========================================================================
  * lib/libc/gen/getlogin.c
@@ -234,7 +283,9 @@ uexterr_verbose_reset(void)
  * SUCH DAMAGE.
  */
 
-inline constexpr int MAXLOGNAME = 33;
+#ifndef MAXLOGNAME
+#define	MAXLOGNAME	32
+#endif
 
 char *
 getlogin(void)
@@ -309,27 +360,8 @@ __getlogin_r_fbsd12(char *logname, int namelen)
  *
  */
 
-inline constexpr int IPC_RMID	= 0;
-inline constexpr int IPC_SET	= 1;
-inline constexpr int IPC_STAT	= 2;
-inline constexpr int GETNCNT	= 3;
-inline constexpr int GETPID	= 4;
-inline constexpr int GETVAL	= 5;
-inline constexpr int GETALL	= 6;
-inline constexpr int GETZCNT	= 7;
-inline constexpr int SETVAL	= 8;
-inline constexpr int SETALL	= 9;
-inline constexpr int SEM_STAT	= 10;
-inline constexpr int SEM_INFO	= 11;
-
 struct semid_ds;
 struct semid_ds_old;
-
-union semun {
-	int		 val;
-	struct semid_ds	*buf;
-	unsigned short	*array;
-};
 
 union semun_old {
 	int			 val;
@@ -412,23 +444,35 @@ freebsd7_semctl(int semid, int semnum, int cmd, ...)
  * SUCH DAMAGE.
  */
 
-/* x86 <machine/fpmath.h> */
 union IEEEf2bits {
 	float	f;
 	struct {
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 		unsigned int	man	:23;
 		unsigned int	exp	:8;
 		unsigned int	sign	:1;
+#else
+		unsigned int	sign	:1;
+		unsigned int	exp	:8;
+		unsigned int	man	:23;
+#endif
 	} bits;
 };
 
 union IEEEd2bits {
 	double	d;
 	struct {
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 		unsigned int	manl	:32;
 		unsigned int	manh	:20;
 		unsigned int	exp	:11;
 		unsigned int	sign	:1;
+#else
+		unsigned int	sign	:1;
+		unsigned int	exp	:11;
+		unsigned int	manh	:20;
+		unsigned int	manl	:32;
+#endif
 	} bits;
 };
 
@@ -444,7 +488,8 @@ union IEEEl2bits {
 	} bits;
 };
 
-#define	mask_nbit_l(u)	((u).bits.manh &= 0x7fffffff)
+#define	LDBL_NBIT	0x80000000
+#define	mask_nbit_l(u)	((u).bits.manh &= ~LDBL_NBIT)
 
 int
 __fpclassifyf(float f)

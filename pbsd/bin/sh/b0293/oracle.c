@@ -174,6 +174,10 @@ char ref_varlog[16384];
 size_t ref_varlogn = 0;
 int ref_setvar_calls = 0;
 int ref_setvar_failat = 0;
+char ref_last_optarg[256];
+char ref_last_optind[32];
+char ref_last_optvar[32];
+int ref_optarg_state = -1;	/* -1 never, 0 unset, 1 set */
 
 void
 ref_varlog_reset(void)
@@ -181,6 +185,10 @@ ref_varlog_reset(void)
 	ref_varlogn = 0;
 	ref_varlog[0] = '\0';
 	ref_setvar_calls = 0;
+	ref_optarg_state = -1;
+	ref_last_optarg[0] = '\0';
+	ref_last_optind[0] = '\0';
+	ref_last_optvar[0] = '\0';
 }
 
 static void
@@ -204,6 +212,19 @@ setvarsafe(const char *name, const char *val, int flags)
 	snprintf(b, sizeof(b), "set(%s=%s,%d);", name ? name : "(null)",
 	    val ? val : "(null)", flags);
 	varlog_add(b);
+	if (name != NULL) {
+		if (strcmp(name, "OPTARG") == 0) {
+			ref_optarg_state = 1;
+			snprintf(ref_last_optarg, sizeof(ref_last_optarg), "%s",
+			    val ? val : "");
+		} else if (strcmp(name, "OPTIND") == 0) {
+			snprintf(ref_last_optind, sizeof(ref_last_optind), "%s",
+			    val ? val : "");
+		} else {
+			snprintf(ref_last_optvar, sizeof(ref_last_optvar), "%s",
+			    val ? val : "");
+		}
+	}
 	return (ref_setvar_failat != 0 && ref_setvar_calls == ref_setvar_failat)
 	    ? 1 : 0;
 }
@@ -225,6 +246,8 @@ unsetvar(const char *s)
 
 	snprintf(b, sizeof(b), "unset(%s);", s ? s : "(null)");
 	varlog_add(b);
+	if (s != NULL && strcmp(s, "OPTARG") == 0)
+		ref_optarg_state = 0;
 	return (0);
 }
 
@@ -1728,7 +1751,7 @@ ref_defun_w(const char *name, long value)
 }
 
 int
-ref_iter_step(const void **state, char *nameout, size_t n, int *typeout)
+	ref_iter_step(const void **state, char *nameout, size_t n, int *typeout)
 {
 	struct cmdentry result;
 	const void *r;
@@ -1743,4 +1766,84 @@ ref_iter_step(const void **state, char *nameout, size_t n, int *typeout)
 	snprintf(nameout, n, "%s", result.cmdname);
 	*typeout = result.cmdtype;
 	return (1);
+}
+
+/* --- harness hooks (not part of the specification) --- */
+
+void
+oracle_reset_all(void)
+{
+	ref_error_reset();
+	ref_outlog_reset();
+	ref_varlog_reset();
+	ref_free_reset(0);
+	ref_stack_fill(0x7f, REF_STACKSIZE);
+	ref_funclog_reset();
+	memset(&shellparam, 0, sizeof(shellparam));
+	argptr = NULL;
+	shoptarg = NULL;
+	nextopt_optptr = NULL;
+	arg0 = NULL;
+	minusc = NULL;
+	ref_intlevel = 0;
+}
+
+const char *
+oracle_get_optarg(void)
+{
+	return (ref_last_optarg);
+}
+
+int
+oracle_optarg_was_set(void)
+{
+	return (ref_optarg_state == 1);
+}
+
+int
+oracle_optarg_was_unset(void)
+{
+	return (ref_optarg_state == 0);
+}
+
+const char *
+oracle_get_optind(void)
+{
+	return (ref_last_optind);
+}
+
+const char *
+oracle_get_optvar(void)
+{
+	return (ref_last_optvar);
+}
+
+int
+oracle_get_shellparam_reset(void)
+{
+	return ((int)shellparam.reset);
+}
+
+int
+oracle_get_error_thrown(void)
+{
+	return (ref_error_raised != 0);
+}
+
+void
+oracle_set_argptr(char **ap)
+{
+	argptr = ap;
+}
+
+char *
+oracle_get_shoptarg(void)
+{
+	return (shoptarg);
+}
+
+void
+oracle_set_nextopt_optptr(char *p)
+{
+	nextopt_optptr = p;
 }
