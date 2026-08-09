@@ -573,17 +573,6 @@ qsort(void *a, size_t n, size_t es, cmp_t *cmp)
  * A. Wollman.
  */
 
-typedef DECLARE_BLOCK(int, qsort_block, const void *, const void *);
-
-void
-qsort_b(void *base, size_t nel, size_t width, qsort_block compar)
-{
-	__qsort_r_compat(base, nel, width, compar,
-		(int (*)(void *, const void *, const void *))
-		GET_BLOCK_FUNCTION(compar));
-}
-
-
 /* qsort_s.c */
 /*
  * This file is in the public domain.  Originally written by Garrett
@@ -830,5 +819,15 @@ qsort(void *a, size_t n, size_t es, cmp_t *cmp)
 #undef CMP
 #undef CMP_s
 #undef I_AM_QSORT_S
+
+typedef qsort_block_desc *qsort_block;
+
+__attribute__((__used__)) void
+qsort_b(void *base, size_t nel, size_t width, qsort_block compar)
+{
+	__qsort_r_compat(base, nel, width, compar,
+		(int (*)(void *, const void *, const void *))
+		GET_BLOCK_FUNCTION(compar));
+}
 
 } // namespace

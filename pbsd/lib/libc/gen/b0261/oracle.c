@@ -11,10 +11,16 @@
  *   hbsd/src/lib/libc/gen/aio_read2.c
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include <errno.h>
 #include <stddef.h>
 #include <time.h>
 #include <unistd.h>
+
+#ifndef useconds_t
+typedef unsigned int useconds_t;
+#endif
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)

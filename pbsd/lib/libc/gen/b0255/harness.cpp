@@ -165,17 +165,30 @@ basename_null_ok(const char *ctx)
 static bool
 basename_buf_ok(GuardBuf &gp, GuardBuf &gr, const char *ctx)
 {
-	char *a = P::basename(gp.win());
-	char *b = ref_basename(gr.win());
+	char *path_p = gp.win();
+	char *path_r = gr.win();
+	char *a = P::basename(path_p);
+	char *b = ref_basename(path_r);
 	bool ok = true;
 
-	if (!ptr_offset_ok(a, gp.win(), b, gr.win())) {
+	if (*path_p == '\0') {
+		if (a == nullptr || b == nullptr) {
+			report(F_BASENAME, ctx, "null return pointer");
+			ok = false;
+		} else if (std::strcmp(a, b) != 0) {
+			char msg[96];
+
+			std::snprintf(msg, sizeof msg, "port=\"%s\" ref=\"%s\"", a, b);
+			report(F_BASENAME, ctx, msg);
+			ok = false;
+		}
+	} else if (!ptr_offset_ok(a, path_p, b, path_r)) {
 		char msg[160];
 
 		std::snprintf(msg, sizeof msg,
 		    "offset port=%td ref=%td",
-		    a != nullptr ? a - gp.win() : (ptrdiff_t)-1,
-		    b != nullptr ? b - gr.win() : (ptrdiff_t)-1);
+		    a != nullptr ? a - path_p : (ptrdiff_t)-1,
+		    b != nullptr ? b - path_r : (ptrdiff_t)-1);
 		report(F_BASENAME, ctx, msg);
 		ok = false;
 	}

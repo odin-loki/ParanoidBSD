@@ -1171,3 +1171,199 @@ ref_fetch_bitmap(HTAB *hashp, int ndx)
 	}
 	return (hashp->mapp[ndx]);
 }
+
+/* ------------------------------------------------------------------ */
+/* Harness mock layer for out-of-batch dependencies.                  */
+/* ------------------------------------------------------------------ */
+
+typedef struct {
+	unsigned get_buf_calls, call_hash_calls, big_delete_calls, big_split_calls,
+	    big_insert_calls, expand_calls, reclaim_calls;
+	unsigned mkostemp_calls, getenv_calls, sigmask_calls, write_calls;
+	int get_buf_force_null, get_buf_fail_after, call_hash_ret, big_delete_ret,
+	    big_split_ret, big_insert_ret, expand_ret;
+	int mkostemp_ret;
+	char *getenv_val;
+	int write_ret;
+	u_int32_t next_buf_addr;
+	int nbufs;
+} hash_mock_state;
+
+hash_mock_state hash_mock;
+
+#define MOCK_MAX_BUFS 64
+#define MOCK_MAX_REG 16
+
+static BUFHEAD mock_bufs[MOCK_MAX_BUFS];
+static char mock_pages[MOCK_MAX_BUFS][576];
+static int mock_nbufs;
+
+static struct {
+	u_int32_t addr;
+	void *page;
+} mock_registered[MOCK_MAX_REG];
+static int mock_nreg;
+
+void
+hash_mock_reset(void)
+{
+	memset(&hash_mock, 0, sizeof(hash_mock));
+	mock_nbufs = 0;
+	mock_nreg = 0;
+	memset(mock_bufs, 0, sizeof(mock_bufs));
+}
+
+void
+hash_mock_register_page(u_int32_t addr, void *page)
+{
+	if (mock_nreg < MOCK_MAX_REG) {
+		mock_registered[mock_nreg].addr = addr;
+		mock_registered[mock_nreg].page = page;
+		mock_nreg++;
+	}
+}
+
+static void *
+mock_lookup_page(u_int32_t addr)
+{
+	int i;
+
+	for (i = 0; i < mock_nreg; i++)
+		if (mock_registered[i].addr == addr)
+			return (mock_registered[i].page);
+	return (NULL);
+}
+
+u_int32_t
+__log2(u_int32_t num)
+{
+	u_int32_t i, limit;
+
+	limit = 1;
+	for (i = 0; limit < num; limit = limit << 1, i++)
+		;
+	return (i);
+}
+
+BUFHEAD *
+__get_buf(HTAB *hashp, u_int32_t addr, BUFHEAD *prev, int newpage)
+{
+	BUFHEAD *bp;
+	void *pg;
+
+	(void)prev;
+	(void)newpage;
+	hash_mock.get_buf_calls++;
+	if (hash_mock.get_buf_force_null)
+		return (NULL);
+	if (hash_mock.get_buf_fail_after > 0) {
+		hash_mock.get_buf_fail_after--;
+		if (hash_mock.get_buf_fail_after == 0)
+			return (NULL);
+	}
+	if (mock_nbufs >= MOCK_MAX_BUFS)
+		return (NULL);
+
+	bp = &mock_bufs[mock_nbufs++];
+	pg = mock_lookup_page(addr);
+	if (pg != NULL)
+		bp->page = (char *)pg;
+	else {
+		bp->page = mock_pages[mock_nbufs - 1];
+		memset(bp->page, 0, (size_t)hashp->BSIZE);
+	}
+	bp->addr = addr;
+	bp->ovfl = NULL;
+	bp->flags = 0;
+	bp->prev = bp->next = NULL;
+	return (bp);
+}
+
+u_int32_t
+__call_hash(HTAB *hashp, char *key, int size)
+{
+	(void)hashp;
+	(void)key;
+	(void)size;
+	hash_mock.call_hash_calls++;
+	return ((u_int32_t)hash_mock.call_hash_ret);
+}
+
+int
+__big_delete(HTAB *hashp, BUFHEAD *bufp)
+{
+	(void)hashp;
+	(void)bufp;
+	hash_mock.big_delete_calls++;
+	return (hash_mock.big_delete_ret);
+}
+
+int
+__big_split(HTAB *hashp, BUFHEAD *old_bufp, BUFHEAD *new_bufp, BUFHEAD *bufp,
+    int addr, u_int32_t obucket, SPLIT_RETURN *ret)
+{
+	(void)addr;
+	(void)obucket;
+	hash_mock.big_split_calls++;
+	if (hash_mock.big_split_ret != 0)
+		return (hash_mock.big_split_ret);
+	ret->oldp = old_bufp;
+	ret->newp = new_bufp;
+	ret->nextp = NULL;
+	(void)bufp;
+	(void)hashp;
+	return (0);
+}
+
+int
+__big_insert(HTAB *hashp, BUFHEAD *bufp, const DBT *key, const DBT *val)
+{
+	(void)hashp;
+	(void)bufp;
+	(void)key;
+	(void)val;
+	hash_mock.big_insert_calls++;
+	return (hash_mock.big_insert_ret);
+}
+
+int
+__expand_table(HTAB *hashp)
+{
+	(void)hashp;
+	hash_mock.expand_calls++;
+	return (hash_mock.expand_ret);
+}
+
+void
+__reclaim_buf(HTAB *hashp, BUFHEAD *obufp)
+{
+	(void)hashp;
+	(void)obufp;
+	hash_mock.reclaim_calls++;
+}
+
+int
+__libc_sigprocmask(int how, const sigset_t *set, sigset_t *oset)
+{
+	hash_mock.sigmask_calls++;
+	return (sigprocmask(how, set, oset));
+}
+
+ssize_t
+_write(int fd, const void *buf, size_t nbyte)
+{
+	hash_mock.write_calls++;
+	if (hash_mock.write_ret != 0)
+		return (hash_mock.write_ret);
+	return (write(fd, buf, nbyte));
+}
+
+char *
+secure_getenv(const char *name)
+{
+	(void)name;
+	hash_mock.getenv_calls++;
+	if (hash_mock.getenv_val != NULL)
+		return (hash_mock.getenv_val);
+	return (getenv("TMPDIR"));
+}

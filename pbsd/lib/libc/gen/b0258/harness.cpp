@@ -34,6 +34,7 @@ extern "C" {
 int ref___dup3(int oldfd, int newfd, int flags);
 void ref___assert(const char *func, const char *file, int line,
     const char *failedexpr);
+void harness_abort_hook(void);
 }
 
 enum { F_DUP3, F_ASSERT, NFUNC };
@@ -99,7 +100,7 @@ randint(void)
 static int g_abort_called;
 
 extern "C" void
-__wrap_abort(void)
+harness_abort_hook(void)
 {
 	g_abort_called++;
 }

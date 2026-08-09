@@ -157,7 +157,7 @@ struct MockSnap {
 	int getdelim_delim;
 	char **getdelim_linep;
 	size_t *getdelim_linecapp;
-	P::__pbsd_sFILE *getdelim_fp;
+	RefFILE *getdelim_fp;
 	int vdprintf_fd;
 	const char *vdprintf_fmt;
 	int vdprintf_arg;
@@ -198,7 +198,7 @@ mock_eq(const MockSnap *a, const MockSnap *b)
 }
 
 static void
-fill_guard(unsigned char *buf, size_t n)
+fill_guard(void *buf, size_t n)
 {
 	memset(buf, 0x7f, n);
 }
@@ -265,7 +265,7 @@ struct CapArena {
 static void
 test_getline_case(int fn, ssize_t mock_ret, size_t set_cap, size_t write_len,
     const unsigned char *write_src, LineArena *la_p, LineArena *la_r,
-    CapArena *ca_p, CapArena *ca_r, P::__pbsd_sFILE *fp_p, P::__pbsd_sFILE *fp_r,
+    CapArena *ca_p, CapArena *ca_r, P::FILE *fp_p, RefFILE *fp_r,
     char **linep_p, char **linep_r, int use_null_linep, int use_null_cap)
 {
 	MockSnap snap_p, snap_r;
@@ -362,8 +362,8 @@ test_getline(void)
 	CapArena ca_p, ca_r;
 	char *linep_p = la_p.line;
 	char *linep_r = la_r.line;
-	P::__pbsd_sFILE fp_p = {};
-	P::__pbsd_sFILE fp_r = {};
+	P::FILE fp_p = {};
+	RefFILE fp_r = {};
 	unsigned char pat[256];
 	int i, b;
 
@@ -486,8 +486,8 @@ test_dprintf(void)
 static void
 test_fwide_case(int fn, int init_orient, int mode, int threaded)
 {
-	P::__pbsd_sFILE fp_p = {};
-	P::__pbsd_sFILE fp_r = {};
+	P::FILE fp_p = {};
+	RefFILE fp_r = {};
 	MockSnap snap_p, snap_r;
 	int ret_p, ret_r;
 

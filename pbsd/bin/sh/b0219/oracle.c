@@ -1440,6 +1440,7 @@ oracle_reset_state(void)
 	oracle_nextopt_optptr = NULL;
 	oracle_argptr = NULL;
 	tracefile = NULL;
+	suppressint = 1;
 }
 
 void

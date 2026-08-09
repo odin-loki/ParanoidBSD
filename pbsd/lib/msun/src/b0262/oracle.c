@@ -134,8 +134,10 @@ ref_cimagl(long double complex z)
  * ====================================================
  */
 
-static const long double huge = 1.0e300;
+static const long double truncl_huge = 1.0e300;
 static const float zero[] = { 0.0, -0.0 };
+
+#define huge truncl_huge
 
 long double
 ref_truncl(long double x)
@@ -165,6 +167,8 @@ ref_truncl(long double x)
 	}
 	return (u.e);
 }
+
+#undef huge
 
 /* ======================================================================== */
 /* lib/msun/src/s_asinh.c                                                   */

@@ -544,6 +544,15 @@ setup_mac_exec(Region &r1, Region &r2, uint32_t seed, int null_fname,
 
 	case_bump(F_MAC_EXECVE);
 
+	if (seed == 0 && null_fname == 0 && null_argv == 0 && null_envv == 0 &&
+	    null_label == 0) {
+		std::fprintf(stderr,
+		    "DBG rp=%d rr=%d fo %lld/%lld ao %lld/%lld eo %lld/%lld lo %lld/%lld ret %d/%d\n",
+		    rp, rr, sp.fname_off, sr.fname_off, sp.argv_off, sr.argv_off,
+		    sp.envv_off, sr.envv_off, sp.label_off, sr.label_off,
+		    sp.ret, sr.ret);
+	}
+
 	if (rp != rr)
 		fail(F_MAC_EXECVE, "ret", "return mismatch");
 	if (ep != er)

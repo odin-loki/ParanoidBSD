@@ -1367,6 +1367,7 @@ port_reset_state(void)
 	port_nextopt_optptr = nullptr;
 	port_argptr = nullptr;
 	tracefile = nullptr;
+	suppressint = 1;
 }
 
 void

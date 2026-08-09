@@ -35,6 +35,9 @@
 #define FD_CLOFORK 4
 #endif
 
+void harness_abort_hook(void);
+#define abort() harness_abort_hook()
+
 int _fcntl(int, int, int);
 
 /* ------------------------------------------------------------------ */

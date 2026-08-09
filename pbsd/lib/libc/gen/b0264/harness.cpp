@@ -530,7 +530,7 @@ run_ref_fillcontextx(char *ctx, int gc_f, int gc_e, int gc_r,
 	obs.gc_calls = gc_calls;
 	obs.gc_last = gc_last;
 	if (gc_last != NULL)
-		obs.gc_last_byte = (unsigned char)gc_last[0];
+		obs.gc_last_byte = ((unsigned char *)gc_last)[0];
 	std::memcpy(obs.buf, ctx - 32, sizeof(ucontext_t) + 64);
 	return (obs);
 }
@@ -549,7 +549,7 @@ run_port_fillcontextx(char *ctx, int gc_f, int gc_e, int gc_r,
 	obs.gc_calls = gc_calls;
 	obs.gc_last = gc_last;
 	if (gc_last != NULL)
-		obs.gc_last_byte = (unsigned char)gc_last[0];
+		obs.gc_last_byte = ((unsigned char *)gc_last)[0];
 	std::memcpy(obs.buf, ctx - 32, sizeof(ucontext_t) + 64);
 	return (obs);
 }
@@ -616,7 +616,7 @@ run_ref_getcontextx(int mal_f, int mal_e, int gc_f, int gc_e, int gc_r,
 	obs.gc_calls = gc_calls;
 	obs.ptr_off = ptr_offset(obs.ptr, malloc_pool);
 	if (obs.ptr != NULL)
-		obs.first_byte = (unsigned char)obs.ptr[0];
+		obs.first_byte = ((unsigned char *)obs.ptr)[0];
 	return (obs);
 }
 
@@ -638,7 +638,7 @@ run_port_getcontextx(int mal_f, int mal_e, int gc_f, int gc_e, int gc_r,
 	obs.gc_calls = gc_calls;
 	obs.ptr_off = ptr_offset(obs.ptr, malloc_pool);
 	if (obs.ptr != NULL)
-		obs.first_byte = (unsigned char)obs.ptr[0];
+		obs.first_byte = ((unsigned char *)obs.ptr)[0];
 	return (obs);
 }
 

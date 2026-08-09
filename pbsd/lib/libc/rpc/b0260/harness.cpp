@@ -18,7 +18,6 @@ namespace port = pbsd::lib_libc_rpc::b0260;
 
 extern "C" {
 typedef int bool_t;
-typedef uint32_t u_long;
 
 struct opaque_auth {
 	int oa_flavor;
@@ -27,10 +26,10 @@ struct opaque_auth {
 };
 
 struct pmap {
-	u_long pm_prog;
-	u_long pm_vers;
-	u_long pm_prot;
-	u_long pm_port;
+	std::uint32_t pm_prog;
+	std::uint32_t pm_vers;
+	std::uint32_t pm_prot;
+	std::uint32_t pm_port;
 };
 
 enum xdr_op { XDR_ENCODE = 0, XDR_DECODE = 1, XDR_FREE = 2 };
@@ -60,7 +59,7 @@ extern int mock_getdtablesize_return;
 extern int mock_getdtablesize_calls;
 extern int mock_xdr_fail_on_call;
 extern int mock_xdr_call_count;
-extern u_long mock_xdr_slot[4];
+extern std::uint32_t mock_xdr_slot[4];
 }
 
 namespace {
@@ -156,8 +155,8 @@ port_pmap_ptr(pmap_arena &ar)
 }
 
 void
-pmap_arena_prepare(pmap_arena &ar, u_long prog, u_long vers, u_long prot,
-    u_long port)
+pmap_arena_prepare(pmap_arena &ar, std::uint32_t prog, std::uint32_t vers,
+    std::uint32_t prot, std::uint32_t port)
 {
 	fill_guard(ar.refbuf, ar.total);
 	fill_guard(ar.portbuf, ar.total);
@@ -211,16 +210,17 @@ check_wrap_stub(size_t headerlen, unsigned char header_byte,
 		args[i] = static_cast<unsigned char>(0xa0 + i);
 	}
 
-	AUTH auth_storage{};
+	alignas(16) unsigned char auth_storage[64]{};
 	XDR xdr{};
 	xdr.x_op = XDR_ENCODE;
 	xdr.x_private = &xdr_byte;
 
-	bool_t r = ref___rpc_gss_wrap_stub(&auth_storage,
+	bool_t r = ref___rpc_gss_wrap_stub(
+	    reinterpret_cast<AUTH *>(auth_storage),
 	    headerlen == 0 ? nullptr : header, headerlen, &xdr,
 	    reinterpret_cast<xdrproc_t>(1), args);
 	bool_t p = port::__rpc_gss_wrap_stub(
-	    reinterpret_cast<port::AUTH *>(&auth_storage),
+	    reinterpret_cast<port::AUTH *>(auth_storage),
 	    headerlen == 0 ? nullptr : header, headerlen,
 	    reinterpret_cast<port::XDR *>(&xdr),
 	    reinterpret_cast<port::xdrproc_t>(1), args);
@@ -246,15 +246,16 @@ check_unwrap_stub(unsigned char xdr_byte, const char *origin)
 	for (int i = 0; i < 16; i++)
 		args[i] = static_cast<unsigned char>(0xb0 + i);
 
-	AUTH auth_storage{};
+	alignas(16) unsigned char auth_storage[64]{};
 	XDR xdr{};
 	xdr.x_op = XDR_DECODE;
 	xdr.x_private = &xdr_byte;
 
-	bool_t r = ref___rpc_gss_unwrap_stub(&auth_storage, &xdr,
+	bool_t r = ref___rpc_gss_unwrap_stub(
+	    reinterpret_cast<AUTH *>(auth_storage), &xdr,
 	    reinterpret_cast<xdrproc_t>(2), args);
 	bool_t p = port::__rpc_gss_unwrap_stub(
-	    reinterpret_cast<port::AUTH *>(&auth_storage),
+	    reinterpret_cast<port::AUTH *>(auth_storage),
 	    reinterpret_cast<port::XDR *>(&xdr),
 	    reinterpret_cast<port::xdrproc_t>(2), args);
 
@@ -271,8 +272,9 @@ check_unwrap_stub(unsigned char xdr_byte, const char *origin)
 }
 
 bool
-check_xdr_pmap(pmap_arena &ar, enum xdr_op op, int fail_on, u_long prog,
-    u_long vers, u_long prot, u_long port, const char *origin)
+check_xdr_pmap(pmap_arena &ar, enum xdr_op op, int fail_on,
+    std::uint32_t prog, std::uint32_t vers, std::uint32_t prot,
+    std::uint32_t port, const char *origin)
 {
 	tbl[3].cases++;
 
@@ -286,23 +288,21 @@ check_xdr_pmap(pmap_arena &ar, enum xdr_op op, int fail_on, u_long prog,
 	mock_xdr_slot[3] = port;
 
 	XDR rx{};
-	XDR px{};
+	port::XDR px{};
 	rx.x_op = op;
-	px.x_op = static_cast<port::xdr_op>(op);
+	px.x_op = static_cast<port::xdr_op>(static_cast<int>(op));
 	rx.x_private = nullptr;
 	px.x_private = nullptr;
 
 	bool_t r = ref_xdr_pmap(&rx, ref_pmap_ptr(ar));
-	bool_t p = port::xdr_pmap(reinterpret_cast<port::XDR *>(&px),
-	    port_pmap_ptr(ar));
+	bool_t p = port::xdr_pmap(&px, port_pmap_ptr(ar));
 
 	bool ok = (r == p);
 	if (ok)
 		ok = bufs_equal(ar.refbuf, ar.portbuf, ar.total);
 	if (ok)
 		ok = (mock_xdr_call_count ==
-		    ((fail_on == 0) ? 4 :
-			(fail_on > 0 && fail_on <= 4) ? fail_on : 0));
+		    ((fail_on >= 1 && fail_on <= 4) ? fail_on : 4));
 
 	if (!ok) {
 		tbl[3].failures++;
@@ -424,17 +424,17 @@ main()
 	}
 
 	const int fail_points[] = { 0, 1, 2, 3, 4, 5 };
-	const u_long pmap_vals[] = {
+	const std::uint32_t pmap_vals[] = {
 		0, 1, 0x7f, 0x80, 0xff, 0x100, 0x7fff, 0x8000, 0xffff,
 		0x10000, 0x7fffffff, 0x80000000, 0xffffffff
 	};
 
 	for (int fail_on : fail_points) {
 		for (enum xdr_op op : { XDR_ENCODE, XDR_DECODE, XDR_FREE }) {
-			for (u_long prog : pmap_vals) {
-				for (u_long vers : pmap_vals) {
-					for (u_long prot : pmap_vals) {
-						for (u_long port : pmap_vals) {
+			for (std::uint32_t prog : pmap_vals) {
+				for (std::uint32_t vers : pmap_vals) {
+					for (std::uint32_t prot : pmap_vals) {
+						for (std::uint32_t port : pmap_vals) {
 							check_xdr_pmap(ar, op, fail_on,
 							    prog, vers, prot, port,
 							    "hand-pmap");
@@ -470,10 +470,10 @@ main()
 
 		enum xdr_op op = static_cast<enum xdr_op>(rand_u32() % 3u);
 		int fail_on = static_cast<int>(rand_u32() % 6u);
-		u_long prog = rand_u32();
-		u_long vers = rand_u32();
-		u_long prot = rand_u32();
-		u_long port = rand_u32();
+		std::uint32_t prog = rand_u32();
+		std::uint32_t vers = rand_u32();
+		std::uint32_t prot = rand_u32();
+		std::uint32_t port = rand_u32();
 		check_xdr_pmap(ar, op, fail_on, prog, vers, prot, port,
 		    "rand-pmap");
 
