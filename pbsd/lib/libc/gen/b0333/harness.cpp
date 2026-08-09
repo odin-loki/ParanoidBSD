@@ -520,9 +520,7 @@ test_dl_phdr_hand(void)
 	setup_aux_vector(2, true, false, false);
 	pa.count = pb.count = 0;
 	int ra = P::_dl_iterate_phdr_locked(phdr_cb, &pa);
-	int rb = ref__dl_iterate_phdr_locked(phdr_cb, &rb);
-	(void)rb;
-	rb = ref__dl_iterate_phdr_locked(phdr_cb, &pb);
+	int rb = ref__dl_iterate_phdr_locked(phdr_cb, &pb);
 	record(fn, ra == rb);
 
 	setup_aux_vector(0, false, false, false);

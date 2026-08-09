@@ -1,5 +1,18 @@
 module;
 
+#define _GNU_SOURCE
+#define _DEFAULT_SOURCE
+
+#include <sys/socket.h>
+#if defined(__linux__)
+#define _SYS_UN_H 1
+struct sockaddr_un {
+	unsigned char sun_len;
+	sa_family_t sun_family;
+	char sun_path[108];
+};
+#endif
+
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/syslog.h>
@@ -29,6 +42,7 @@ module;
     __asm__(".equ " #alias ", " #sym)
 #define __CONCAT(x,y) x ## y
 #define __unused __attribute__((__unused__))
+#define __used __attribute__((__used__))
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN 256
@@ -57,8 +71,7 @@ struct xlocale_collate {
 };
 
 typedef void *(*pthread_func_t)(void);
-typedef struct { pthread_func_t func[2]; } pthread_func_entry_t;
-#define PJT_DUAL_ENTRY(entry) { (pthread_func_t)(entry), (pthread_func_t)(entry) }
+typedef pthread_func_t pthread_func_entry_t[2];
 
 enum {
     PJT_ATFORK,

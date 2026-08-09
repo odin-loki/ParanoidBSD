@@ -52,9 +52,9 @@ os.environ.pop("CURSOR_API_KEY", None)
 MODEL = "composer-2.5"                    # cheap bulk model; escalate on gate failure
 ESCALATE_MODEL = "claude-opus-5-thinking-high"
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
-DEFAULT_JOBS = 18        # agent concurrency; circuit breaker halves on rate limits
-DEFAULT_GATE_JOBS = 6    # max harness builds in flight (~6×5GB peak)
-HARNESS_VMEM_KB = 5 * 1024 * 1024         # virtual memory cap per harness (KiB)
+DEFAULT_JOBS = 14        # agent concurrency; circuit breaker halves on rate limits
+DEFAULT_GATE_JOBS = 5    # max harness builds in flight (~5×4GB peak)
+HARNESS_VMEM_KB = 4 * 1024 * 1024         # per-harness virtual/RSS cap (KiB)
 RATE_LIMIT_PAUSE = 120  # seconds to sleep when the API keeps rate-limiting us
 RATE_LIMIT_STREAK = 8   # consecutive rate limits before we pause and halve concurrency
 AGENT_TIMEOUT = 1800          # cursor-agent -p can hang; always bound it
@@ -1502,7 +1502,8 @@ def release_gate_lock(fd: int) -> None:
 
 def run_build(d: Path, timeout: int = GATE_TIMEOUT) -> tuple[bool, str]:
     # Harness differential tests on large batches can allocate tens of GB.
-    cmd = f"ulimit -v {HARNESS_VMEM_KB} 2>/dev/null || true; exec sh build.sh"
+    cmd = (f"ulimit -v {HARNESS_VMEM_KB} && ulimit -m {HARNESS_VMEM_KB} "
+           f"&& exec sh build.sh")
     try:
         r = sh(["sh", "-c", cmd], cwd=d, timeout=timeout)
         return r.returncode == 0, (r.stdout or "") + (r.stderr or "")
@@ -2272,7 +2273,7 @@ def main() -> int:
         say(f"upstream drift: reopened {n_drift} batches")
         save_rows(rows)
 
-    jobs_mech = min(a.jobs or 8, os.cpu_count() or 8)
+    jobs_mech = min(a.jobs or 6, os.cpu_count() or 6)
     run_mechanical_phase(rows, jobs_mech)
     if a.mechanical_only:
         status()

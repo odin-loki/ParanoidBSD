@@ -468,10 +468,10 @@ dl_init_phdr_info(void)
 	phdr_info.dlpi_adds = 1;
 }
 
-int __dl_iterate_phdr_locked(int (*callback)(struct dl_phdr_info *,
+int _dl_iterate_phdr_locked(int (*callback)(struct dl_phdr_info *,
     size_t, void *), void *data);
 int
-__dl_iterate_phdr_locked(
+_dl_iterate_phdr_locked(
     int (*callback)(struct dl_phdr_info *, size_t, void *) __unused,
     void *data __unused)
 {

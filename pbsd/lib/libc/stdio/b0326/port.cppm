@@ -18,6 +18,11 @@ module;
 #ifndef _DEFAULT_SOURCE
 #define _DEFAULT_SOURCE 1
 #endif
+#ifndef BUFSIZ
+#define BUFSIZ 1024
+#endif
+#undef BUFSIZ
+#define BUFSIZ 1024
 
 #include <cassert>
 #include <cerrno>
@@ -677,17 +682,6 @@ _ftello(FILE *fp, fpos_t *offset)
 	}
 	*offset = pos;
 	return (0);
-}
-
-int
-b0326_test_fstat_blksize(void)
-{
-	struct stat st;
-
-	memset(&st, 0, sizeof(st));
-	if (_fstat(3, &st) < 0)
-		return (-1);
-	return ((int)st.st_blksize);
 }
 
 } /* namespace pbsd::lib_libc_stdio::b0326 */

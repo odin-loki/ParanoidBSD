@@ -614,12 +614,13 @@ setup_close_fp(PortFILE *pf, RefFILE *rf, short flags, short file,
 {
 	fp_basic_init(pf, rf, flags, file);
 	if (smb_malloc) {
-		unsigned char *bf = (unsigned char *)malloc(64);
+		unsigned char *bf_p = (unsigned char *)malloc(64);
+		unsigned char *bf_r = (unsigned char *)malloc(64);
 
 		pf->_flags |= __SMBF;
 		rf->_flags |= __SMBF;
-		pf->_bf._base = pf->_p = bf;
-		rf->_bf._base = rf->_p = bf;
+		pf->_bf._base = pf->_p = bf_p;
+		rf->_bf._base = rf->_p = bf_r;
 		pf->_bf._size = rf->_bf._size = 64;
 		(void)bf_heap;
 	} else {
@@ -628,15 +629,13 @@ setup_close_fp(PortFILE *pf, RefFILE *rf, short flags, short file,
 		(void)bf_heap;
 	}
 	if (has_ub_heap) {
-		unsigned char *ub = (unsigned char *)malloc(16);
-
-		pf->_ub._base = rf->_ub._base = ub;
+		pf->_ub._base = (unsigned char *)malloc(16);
+		rf->_ub._base = (unsigned char *)malloc(16);
 		(void)ub_heap;
 	}
 	if (has_lb_heap) {
-		unsigned char *lb = (unsigned char *)malloc(16);
-
-		pf->_lb._base = rf->_lb._base = lb;
+		pf->_lb._base = (unsigned char *)malloc(16);
+		rf->_lb._base = (unsigned char *)malloc(16);
 		(void)lb_heap;
 	}
 	if (close_fn == 0) {

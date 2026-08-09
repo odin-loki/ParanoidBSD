@@ -575,7 +575,6 @@ static void print_table(void)
 
 int main()
 {
-	std::printf("start\n"); std::fflush(stdout);
 	edge_cases();
 	random_sweep();
 	print_table();

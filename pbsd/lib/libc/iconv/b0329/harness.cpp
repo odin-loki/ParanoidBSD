@@ -13,9 +13,31 @@
 #include <cstring>
 #include <vector>
 
-#include <iconv.h>
+#ifndef ICONV_TRIVIALP
+#define ICONV_TRIVIALP 0
+#define ICONV_GET_DISCARD_ILSEQ 3
+#define ICONV_SET_DISCARD_ILSEQ 4
+#endif
 
-import pbsd.lib.libc.iconv.b0329;
+typedef struct {
+	void *spaceholder[64];
+} iconv_allocation_t;
+
+static inline void region_init(P::_citrus_region *r, void *h, size_t sz)
+{
+	r->r_head = h;
+	r->r_size = sz;
+}
+
+static inline size_t region_size(const P::_citrus_region *r)
+{
+	return (r->r_size);
+}
+
+static inline void *region_head(const P::_citrus_region *r)
+{
+	return (r->r_head);
+}
 
 namespace P = pbsd::lib_libc_iconv::b0329;
 
@@ -203,12 +225,12 @@ static void free_mock_iconv(P::_citrus_iconv *cv)
 	std::free(cv);
 }
 
-static void setup_fgetln(const std::vector<std::string> &lines)
+static void setup_fgetln(const std::vector<std::string> &linev)
 {
 	static std::vector<std::string> storage;
 	static std::vector<char *> ptrs;
 	static std::vector<size_t> lens;
-	storage = lines;
+	storage = linev;
 	ptrs.clear();
 	lens.clear();
 	for (auto &s : storage) {
@@ -381,15 +403,15 @@ void test_pivot_statics(void)
 	unsigned char ba[BIGBUF], bb[BIGBUF];
 	std::memset(ba, GUARD, sizeof(ba));
 	std::memset(bb, GUARD, sizeof(bb));
-	P::_citrus_region_init(&ra_r, ba + 64, sizeof(ba) - 128);
-	P::_citrus_region_init(&rb_r, bb + 64, sizeof(bb) - 128);
+	region_init(&ra_r, ba + 64, sizeof(ba) - 128);
+	region_init(&rb_r, bb + 64, sizeof(bb) - 128);
 
 	bump(F_DUMP_DB);
 	ra = P::dump_db(&sha, &ra_r);
 	rbv = ref_dump_db(&shb, &rb_r);
-	if (ra != rbv || P::_citrus_region_size(&ra_r) != P::_citrus_region_size(&rb_r) ||
-	    std::memcmp(P::_citrus_region_head(&ra_r), P::_citrus_region_head(&rb_r),
-	    P::_citrus_region_size(&ra_r)) != 0)
+	if (ra != rbv || region_size(&ra_r) != region_size(&rb_r) ||
+	    std::memcmp(region_head(&ra_r), region_head(&rb_r),
+	    region_size(&ra_r)) != 0)
 		fail(F_DUMP_DB, "dump_db");
 
 	bump(F_FREE_SRC);
@@ -399,7 +421,7 @@ void test_pivot_statics(void)
 
 void test_pivot_convert(void)
 {
-	setup_fgetln({
+	setup_fgetln(std::vector<std::string>{
 	    "UTF8\tA\t65\n",
 	    "# comment\n",
 	    "LATIN1\tB\t0x42\n",
@@ -416,14 +438,14 @@ void test_pivot_convert(void)
 		return;
 	}
 	bump(F_PIVOT_CONVERT);
-	setup_fgetln({
+	setup_fgetln(std::vector<std::string>{
 	    "UTF8\tA\t65\n",
 	    "# comment\n",
 	    "LATIN1\tB\t0x42\n",
 	});
 	int ra = P::_citrus_pivot_factory_convert(fa, ia);
 	b0329_mock_state.fgetln_idx = 0;
-	setup_fgetln({
+	setup_fgetln(std::vector<std::string>{
 	    "UTF8\tA\t65\n",
 	    "# comment\n",
 	    "LATIN1\tB\t0x42\n",

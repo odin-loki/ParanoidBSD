@@ -2,7 +2,6 @@
 module;
 
 #include <math.h>
-#include <cmath>
 #include <cfloat>
 
 #ifndef M_PI
@@ -15,12 +14,12 @@ export namespace pbsd::lib_msun_bsdsrc::b0330 {
 
 inline double sinpi(double x)
 {
-	return sin(M_PI * x);
+	return ::sin(M_PI * x);
 }
 
 inline double cospi(double x)
 {
-	return cos(M_PI * x);
+	return ::cos(M_PI * x);
 }
 
 double tgamma(double);
@@ -398,13 +397,13 @@ __log__D(double x)
 	 * Argument reduction: 1 <= g < 2; x/2^m = g;
 	 * y = F*(1 + f/F) for |f| <= 2^-8
 	 */
-	g = frexp(x, &m);
+	g = ::frexp(x, &m);
 	g *= 2;
 	m--;
 	if (m == -1022) {
-		j = ilogb(g);
+		j = ::ilogb(g);
 		m += j;
-		g = ldexp(g, -j);
+		g = ::ldexp(g, -j);
 	}
 	j = N * (g - 1) + 0.5;
 	F = (1. / N) * j + 1;
@@ -470,9 +469,9 @@ __log__D(double x)
  * REVISED BY K.C. NG on 2/6/85, 2/15/85, 3/7/85, 3/24/85, 4/16/85, 6/14/86.
  *
  * Required system supported functions:
- *	ldexp(x,n)
- *	copysign(x,y)
- *	isfinite(x)
+ *	::ldexp(x,n)
+ *	::copysign(x,y)
+ *	::isfinite(x)
  *
  * Method:
  *	1. Argument Reduction: given the input x, find r and integer k such
@@ -529,7 +528,7 @@ __exp__D(double x, double c)
 		if (x >= lntiny) {
 			/* argument reduction: x --> x - k*ln2 */
 			z = invln2 * x;
-			k = z + copysign(0.5, x);
+			k = z + ::copysign(0.5, x);
 
 		    	/*
 			 * Express (x + c) - k * ln2 as hi - lo.
@@ -545,14 +544,14 @@ __exp__D(double x, double c)
 			    z * p5))));
 			c = (x * c) / (2 - c);
 
-			return (ldexp(1 + (hi - (lo - c)), k));
+			return (::ldexp(1 + (hi - (lo - c)), k));
 		} else {
 			/* exp(-INF) is 0. exp(-big) underflows to 0.  */
-			return (isfinite(x) ? ldexp(1., -5000) : 0);
+			return (::isfinite(x) ? ::ldexp(1., -5000) : 0);
 		}
 	} else
 	/* exp(INF) is INF, exp(+big#) overflows to INF */
-		return (isfinite(x) ? ldexp(1., 5000) : x);
+		return (::isfinite(x) ? ::ldexp(1., 5000) : x);
 }
 
 /*-
@@ -850,7 +849,7 @@ neg_gam(double x)
 	struct Double lg, lsine;
 	double y, z;
 
-	y = ceil(x);
+	y = ::ceil(x);
 	if (y == x)		/* Negative integer. */
 		return ((x - x) / zero);
 
@@ -859,7 +858,7 @@ neg_gam(double x)
 		z = 1 - z;
 
 	y = y / 2;
-	if (y == ceil(y))
+	if (y == ::ceil(y))
 		sgn = -1;
 
 	if (z < 0.25)
@@ -930,7 +929,7 @@ tgamma(double x)
 		return (1 / x);
 	}
 
-	if (!isfinite(x))
+	if (!::isfinite(x))
 		return (x - x);		/* x is NaN or -Inf */
 
 	return (neg_gam(x));

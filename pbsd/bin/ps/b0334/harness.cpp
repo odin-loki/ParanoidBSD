@@ -22,6 +22,19 @@ import pbsd.bin.ps.b0334;
 
 namespace P = pbsd::bin_ps::b0334;
 
+#ifndef P_CONTROLT
+#define P_CONTROLT 0x2
+#endif
+#ifndef NODEV
+#define NODEV ((dev_t)-1)
+#endif
+typedef long segsz_t;
+
+struct velisthead {
+	P::VARENT *stqh_first;
+	P::VARENT **stqh_last;
+};
+
 #define STAILQ_INIT(h) do { \
 	(h)->stqh_first = nullptr; (h)->stqh_last = &(h)->stqh_first; } while (0)
 #define STAILQ_INSERT_TAIL(h, e, f) do { \
@@ -356,7 +369,7 @@ static char *mock_oproc(P::KINFO *, P::VARENT *)
 	return buf;
 }
 
-void parsefmt(const char *fmt, P::velisthead *vl, int keep)
+void harness_parsefmt(const char *fmt, P::velisthead *vl, int keep)
 {
 	(void)keep;
 	STAILQ_INIT(vl);
@@ -881,8 +894,8 @@ static void run_descendant_tests(void)
 
 static void setup_varlist_both(const char *fmt)
 {
-	parsefmt(fmt, &::varlist, 0);
-	parsefmt(fmt, &P::varlist, 0);
+	harness_parsefmt(fmt, reinterpret_cast<P::velisthead *>(&::varlist), 0);
+	harness_parsefmt(fmt, &P::varlist, 0);
 }
 
 static void run_var_tests(void)

@@ -127,7 +127,7 @@ strlcat(char *dst, const char *src, size_t len)
 	srclen = std::strlen(src);
 	if (dstlen == len)
 		return (dstlen + srclen);
-	if (srclen < len - dstlen) {
+	if (srclen >= len - dstlen) {
 		std::memcpy(dst + dstlen, src, srclen + 1);
 	} else {
 		std::memcpy(dst + dstlen, src, len - dstlen - 1);

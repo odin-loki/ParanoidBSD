@@ -285,8 +285,8 @@ struct xlocale_component port_global_messages = {{0, NULL}, "C", "BSD 1.0\n"};
 struct xlocale_component port_C_collate = {{0, NULL}, "C", ""};
 struct xlocale_component port_C_ctype = {{0, NULL}, "C", ""};
 struct xlocale_monetary port_global_monetary;
-struct _xlocale port_global_locale;
-struct _xlocale port_C_locale;
+extern struct _xlocale port_global_locale;
+extern struct _xlocale port_C_locale;
 char *port_PathLocale = NULL;
 int port_has_thread_locale = 0;
 thread_local pbsd_locale_t port_thread_locale = NULL;
@@ -719,7 +719,7 @@ _Read_RuneMagi(const char *fname)
 			types = (uint32_t *)variable;
 			variable = types + len;
 			rr[x].__types = (unsigned long *)rl->__variable;
-			rl->__variable = rr[x].__types + len;
+			rl->__variable = (void *)(rr[x].__types + len);
 			while (len-- > 0)
 				rr[x].__types[len] = types[len];
 		} else
@@ -978,6 +978,10 @@ currentlocale(void)
 	return (current_locale_string);
 }
 
+static char *loadlocale(int);
+const char *__get_locale_env(int);
+int __detect_path_locale(void);
+
 static char *
 loadlocale(int category)
 {
@@ -1035,6 +1039,9 @@ loadlocale(int category)
 	return (NULL);
 #undef new
 }
+
+const char *
+__get_locale_env(int category)
 {
 	const char *env;
 
@@ -1126,7 +1133,7 @@ __detect_path_locale(void)
 /*
  * The locale for this thread.
  */
-_Thread_local locale_t ::port_thread_locale;
+thread_local locale_t port_thread_locale_ns;
 
 /*
  * Flag indicating that one or more per-thread locales exist.

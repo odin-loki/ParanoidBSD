@@ -28,6 +28,44 @@ module;
 #include <stdlib.h>
 #include <limits.h>
 
+
+#ifndef NS_MAXNNAME
+#define NS_MAXNNAME	256
+#endif
+#ifndef NS_MAXCDNAME
+#define NS_MAXCDNAME	255
+#endif
+#ifndef MAXCDNAME
+#define MAXCDNAME	NS_MAXCDNAME
+#endif
+#ifndef NS_MD5RSA_MIN_BITS
+#define	NS_MD5RSA_MIN_BITS	 512
+#define	NS_MD5RSA_MAX_BITS	4096
+#define	NS_MD5RSA_MAX_BYTES	((NS_MD5RSA_MAX_BITS+7/8)*2+3)
+#define	NS_MD5RSA_MAX_BASE64	(((NS_MD5RSA_MAX_BYTES+2)/3)*4)
+#define NS_MD5RSA_MIN_SIZE	((NS_MD5RSA_MIN_BITS+7)/8)
+#define NS_MD5RSA_MAX_SIZE	((NS_MD5RSA_MAX_BITS+7)/8)
+#endif
+#ifndef NS_NXT_BITS
+#define	NS_NXT_BITS 8
+#define	NS_NXT_BIT_SET(  n,p) (p[(n)/NS_NXT_BITS] |=  (0x80>>((n)%NS_NXT_BITS)))
+#define	NS_NXT_BIT_CLEAR(n,p) (p[(n)/NS_NXT_BITS] &= ~(0x80>>((n)%NS_NXT_BITS)))
+#define	NS_NXT_BIT_ISSET(n,p) (p[(n)/NS_NXT_BITS] &   (0x80>>((n)%NS_NXT_BITS)))
+#define NS_NXT_MAX 127
+#endif
+
+#ifndef ns_nname_ct
+typedef u_char ns_nname[NS_MAXNNAME];
+typedef const u_char *ns_nname_ct;
+typedef u_char *ns_nname_t;
+struct ns_namemap { ns_nname_ct base; int len; };
+typedef struct ns_namemap *ns_namemap_t;
+typedef const struct ns_namemap *ns_namemap_ct;
+#endif
+
+char *p_secstodate(u_long);
+
+
 #ifndef MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #endif

@@ -5,8 +5,21 @@
  * Bodies are otherwise unmodified.
  */
 
+#define _GNU_SOURCE
+#define _DEFAULT_SOURCE
+
 #ifndef LONG_BIT
 #define LONG_BIT (8 * (int)sizeof(long))
+#endif
+
+#include <sys/socket.h>
+#if defined(__linux__)
+#define _SYS_UN_H 1
+struct sockaddr_un {
+	unsigned char sun_len;
+	sa_family_t sun_family;
+	char sun_path[108];
+};
 #endif
 
 #include <sys/param.h>
@@ -38,6 +51,7 @@
     __asm__(".equ " #alias ", " #sym)
 #define __CONCAT(x,y) x ## y
 #define __unused __attribute__((__unused__))
+#define __used __attribute__((__used__))
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN 256
@@ -69,8 +83,7 @@ int __wcollate_range_cmp(wchar_t, wchar_t);
 
 /* libc_private.h minimal for pthread stubs */
 typedef void *(*pthread_func_t)(void);
-typedef struct { pthread_func_t func[2]; } pthread_func_entry_t;
-#define PJT_DUAL_ENTRY(entry) { (pthread_func_t)(entry), (pthread_func_t)(entry) }
+typedef pthread_func_t pthread_func_entry_t[2];
 
 enum {
     PJT_ATFORK,

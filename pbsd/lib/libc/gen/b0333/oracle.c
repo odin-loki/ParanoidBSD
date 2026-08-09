@@ -35,6 +35,28 @@
 #include <dlfcn.h>
 #include <link.h>
 
+#ifndef AT_EXECPATH
+#define AT_EXECPATH 15
+#endif
+
+#ifndef Elf_Addr
+#define Elf_Addr Elf64_Addr
+#endif
+#ifndef Elf_Phdr
+#define Elf_Phdr Elf64_Phdr
+#endif
+#ifndef Elf_Half
+#define Elf_Half Elf64_Half
+#endif
+#ifndef Elf_Word
+#define Elf_Word Elf64_Word
+#endif
+
+struct __dlfunc_arg {
+	int	__dlfunc_dummy;
+};
+typedef void (*dlfunc_t)(struct __dlfunc_arg);
+
 #include <paths.h>
 #include <sys/param.h>
 #include <sys/stat.h>

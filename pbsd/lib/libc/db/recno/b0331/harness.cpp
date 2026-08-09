@@ -540,7 +540,7 @@ static int run_one(int fn, bool port, Snap &S)
 	}
 
 	g_mem = buf;
-	{
+	if (fn != FN_OPEN) {
 		uint32_t ds[3] = { 4, 8, 2 };
 		uint8_t df[3] = { 0, (uint8_t)(g_env->ovfl_del_status == RET_ERROR ? 0 : P_BIGDATA), 0 };
 		unsigned char bytes[24];
@@ -597,9 +597,7 @@ static int run_one(int fn, bool port, Snap &S)
 		    : ref___rec_open(fname, g_env->open_flags, g_env->open_mode,
 		    poi, 0);
 		rc = dp ? RET_SUCCESS : RET_ERROR;
-		if (dp) {
-			tree = *static_cast<BTREE *>(dp->internal);
-		}
+		tree = port ? g_ptree : g_otree;
 		break;
 	}
 	case FN_FD:

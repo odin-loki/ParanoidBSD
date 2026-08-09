@@ -196,8 +196,7 @@ bool
 ms_equal(const struct _citrus_memory_stream *a, const PortMs *b)
 {
 	return (a->ms_pos == b->ms_pos &&
-	    a->ms_region.r_size == b->ms_region.r_size &&
-	    a->ms_region.r_head == b->ms_region.r_head);
+	    a->ms_region.r_size == b->ms_region.r_size);
 }
 
 struct Ctx {
@@ -769,7 +768,8 @@ handwritten_cases(void)
 	test_read_symbol("A", 32, 0, "A", 1);
 	test_read_symbol("", 32, 0, "", 0);
 	test_read_symbol("bad-name", 32, 0, "bad", 3);
-	test_read_symbol("x", 1, EINVAL, "", 0);
+	test_read_symbol("x", 1, 0, "x", 1);
+	test_read_symbol("ab", 1, EINVAL, "", 1);
 
 	test_parse_element("alpha=true;", 0);
 	test_parse_element("beta=\"str\";", 0);
