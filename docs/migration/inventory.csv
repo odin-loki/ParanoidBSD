@@ -954,7 +954,7 @@ b0288,hbsd/src/lib/libc/iconv/citrus_lookup_factory.c,lib/libc/iconv,121,VERIFIE
 b0288,hbsd/src/lib/libc/iconv/citrus_bcs.c,lib/libc/iconv,168,VERIFIED,
 b0288,hbsd/src/lib/libc/iconv/iconv_compat.c,lib/libc/iconv,121,VERIFIED,
 b0288,hbsd/src/lib/libc/iconv/citrus_memstream.c,lib/libc/iconv,147,VERIFIED,
-b0289,hbsd/src/lib/libc/db/test/btree.tests/main.c,lib/libc/db/test/btree.tests,759,PENDING,
+b0289,hbsd/src/lib/libc/db/test/btree.tests/main.c,lib/libc/db/test/btree.tests,759,DEFERRED,
 b0290,hbsd/src/lib/libc/inet/inet_ntop.c,lib/libc/inet,200,VERIFIED,
 b0290,hbsd/src/lib/libc/inet/inet_pton.c,lib/libc/inet,220,VERIFIED,
 b0290,hbsd/src/lib/libc/inet/inet_cidr_pton.c,lib/libc/inet,274,VERIFIED,
