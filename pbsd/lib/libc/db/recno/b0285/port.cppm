@@ -302,7 +302,7 @@ __rec_search(BTREE *t, recno_t recno, enum SRCHOP op)
 err:	sverrno = errno;
 	if (op != SEARCH)
 		while  ((parent = BT_POP(t)) != NULL) {
-			if ((h = static_cast<PAGE *>(mpool_get(t->bt_mp, parent->pgno, 0))) != NULL)
+			if ((h = static_cast<PAGE *>(mpool_get(t->bt_mp, parent->pgno, 0))) == NULL)
 				break;
 			if (op == SINSERT)
 				--GETRINTERNAL(h, parent->index)->nrecs;

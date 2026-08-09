@@ -61,6 +61,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/sh/b0219/port.cppm
   bin/sh/b0228/port.cppm
   bin/sh/b0230/port.cppm
+  bin/sh/b0293/port.cppm
   bin/sh/bltin/b0218/port.cppm
   bin/sleep/b0175/port.cppm
   bin/stty/b0187/port.cppm
