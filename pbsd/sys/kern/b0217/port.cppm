@@ -141,6 +141,7 @@ inline unsigned long model_malloc_max = MODEL_ARENA;
 inline std::uint64_t model_cycle;
 inline int model_vget_error;
 inline int model_vget_enoent;
+inline int model_vget_enoent_once;
 inline int model_linker_fail;
 inline int model_linker_block;
 inline int model_sbuf_fail;
@@ -214,6 +215,11 @@ inline void rw_wlock(rwlock *rw) { rw->lk = -1; model_ev(13, 0, 0, 0, 0); }
 inline void rw_wunlock(rwlock *rw) { rw->lk = 0; model_ev(14, 0, 0, 0, 0); }
 inline vgetstate vget_prep(vnode *) { model_ev(20,0,0,0,0); return VGET_NONE; }
 inline int vget_finish(vnode *, int, vgetstate) {
+	if (model_vget_enoent_once > 0) {
+		model_vget_enoent_once--;
+		model_ev(21, ENOENT, 0, 0, 0);
+		return ENOENT;
+	}
 	if (model_vget_enoent) { model_ev(21, ENOENT, 0, 0, 0); return ENOENT; }
 	if (model_vget_error) { model_ev(21, model_vget_error, 0, 0, 0); return model_vget_error; }
 	model_ev(21, 0, 0, 0, 0); return 0;
@@ -298,6 +304,7 @@ inline void env_reset() {
 	model_log_n = 0; model_out_n = 0; model_out[0] = 0;
 	model_arena_off = 0; std::memset(model_arena, MODEL_GUARD, MODEL_ARENA);
 	model_malloc_fail = 0; model_vget_error = 0; model_vget_enoent = 0;
+	model_vget_enoent_once = 0;
 	model_linker_fail = 0; model_linker_block = 0; model_sbuf_fail = 0;
 	model_ktr_n = 0; model_cycle = 0;
 }
@@ -1260,6 +1267,7 @@ using stack_sbuf_fmt = detail::stack_sbuf_fmt;
 
 inline void malloc_fail_at(int n) { detail::model_malloc_fail = n; }
 inline void set_vget_enoent(int v) { detail::model_vget_enoent = v; }
+inline void set_vget_enoent_once(int v) { detail::model_vget_enoent_once = v; }
 inline void set_vget_error(int v) { detail::model_vget_error = v; }
 inline void set_linker_fail(int v) { detail::model_linker_fail = v; }
 inline void set_linker_block(int v) { detail::model_linker_block = v; }

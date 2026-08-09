@@ -294,7 +294,7 @@ unsigned int setflags(char *s)
 {
 	char *p;
 
-	for (; isspace((unsigned char)*s); ++s);
+	for (; isspace(*s); ++s);
 	if (*s == '\n' || *s == '\0')
 		return (0);
 	if ((p = strchr(s, '\n')) != NULL)
@@ -350,7 +350,7 @@ void *setinfo(DBTYPE dbtype_arg, char *s)
 	if ((eq = strchr(s, '=')) == NULL)
 		err("%s: illegal structure set statement", s);
 	*eq++ = '\0';
-	if (!isdigit((unsigned char)*eq))
+	if (!isdigit(*eq))
 		err("%s: structure set statement must be a number", s);
 
 	switch (dbtype_arg) {
@@ -439,7 +439,7 @@ void *rfile(char *name, size_t *lenp)
 	int fd;
 	char *np;
 
-	for (; isspace((unsigned char)*name); ++name);
+	for (; isspace(*name); ++name);
 	if ((np = strchr(name, '\n')) != NULL)
 		*np = '\0';
 	if ((fd = open(name, O_RDONLY, 0)) < 0 ||

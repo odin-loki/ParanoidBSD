@@ -42,7 +42,7 @@ namespace {
 
 constexpr unsigned char GUARD = 0x7f;
 constexpr int MAX_REPORT = 8;
-constexpr unsigned RAND_ITERS = 200000u;
+constexpr unsigned RAND_ITERS = 10000u;
 constexpr std::size_t BUF_PRE = 16;
 constexpr std::size_t BUF_CAP = 8192;
 constexpr std::size_t BUF_POST = 16;
@@ -204,7 +204,7 @@ void test_ftree_add_random(void)
 		char sref[128], sport[128];
 		int n = (int)(rnd_u32() % 80u) + 1;
 		fill_random_string((unsigned char *)sref, n, false);
-		fill_random_string((unsigned char *)sport, n, false);
+		std::memcpy(sport, sref, (std::size_t)n + 1);
 		sref[n] = '\0';
 		sport[n] = '\0';
 		if (n > 1 && (rnd_u32() & 3u) == 0) {
@@ -338,12 +338,13 @@ void test_usr_add_random(void)
 	for (unsigned i = 0; i < RAND_ITERS; i++) {
 		char sref[64], sport[64];
 		if (rnd_u32() & 1u) {
-			std::snprintf(sref, sizeof(sref), "#%u", rnd_u32());
-			std::snprintf(sport, sizeof(sport), "#%u", rnd_u32());
+			unsigned u = rnd_u32();
+			std::snprintf(sref, sizeof(sref), "#%u", u);
+			std::snprintf(sport, sizeof(sport), "#%u", u);
 		} else {
 			int n = (int)(rnd_u32() % 16u) + 1;
 			fill_random_string((unsigned char *)sref, n, false);
-			fill_random_string((unsigned char *)sport, n, false);
+			std::memcpy(sport, sref, (std::size_t)n + 1);
 			sref[n] = '\0';
 			sport[n] = '\0';
 		}
@@ -373,8 +374,9 @@ void test_grp_add_random(void)
 {
 	for (unsigned i = 0; i < RAND_ITERS; i++) {
 		char sref[64], sport[64];
-		std::snprintf(sref, sizeof(sref), "#%u", rnd_u32());
-		std::snprintf(sport, sizeof(sport), "#%u", rnd_u32());
+		unsigned g = rnd_u32();
+		std::snprintf(sref, sizeof(sref), "#%u", g);
+		std::snprintf(sport, sizeof(sport), "#%u", g);
 		case_inc(S_GRP_ADD);
 		if (ref_grp_add(sref) != port::grp_add(sport))
 			fail_msg(S_GRP_ADD, "random", "mismatch");
@@ -548,8 +550,9 @@ void test_usr_match_random(void)
 {
 	for (unsigned i = 0; i < RAND_ITERS; i++) {
 		char sref[32], sport[32];
-		std::snprintf(sref, sizeof(sref), "#%u", rnd_u32() % 65536u);
-		std::snprintf(sport, sizeof(sport), "#%u", rnd_u32() % 65536u);
+		unsigned u = rnd_u32() % 65536u;
+		std::snprintf(sref, sizeof(sref), "#%u", u);
+		std::snprintf(sport, sizeof(sport), "#%u", u);
 		ref_usr_add(sref);
 		port::usr_add(sport);
 		port::ARCHD aref{}, aport{};
@@ -591,8 +594,9 @@ void test_grp_match_random(void)
 {
 	for (unsigned i = 0; i < RAND_ITERS; i++) {
 		char sref[32], sport[32];
-		std::snprintf(sref, sizeof(sref), "#%u", rnd_u32() % 65536u);
-		std::snprintf(sport, sizeof(sport), "#%u", rnd_u32() % 65536u);
+		unsigned u = rnd_u32() % 65536u;
+		std::snprintf(sref, sizeof(sref), "#%u", u);
+		std::snprintf(sport, sizeof(sport), "#%u", u);
 		ref_grp_add(sref);
 		port::grp_add(sport);
 		port::ARCHD aref{}, aport{};

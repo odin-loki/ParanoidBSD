@@ -12,7 +12,7 @@ cd "$(dirname "$0")"
 CC=${CC:-cc}
 CXX=${CXX:-c++}
 CFLAGS=${CFLAGS:-"-std=c11 -O2"}
-CXXFLAGS=${CXXFLAGS:-"-std=c++23 -O2 -fpermissive"}
+CXXFLAGS=${CXXFLAGS:-"-std=c++23 -O2"}
 
 BUILD=build
 MODNAME=pbsd.bin.sh.b0219

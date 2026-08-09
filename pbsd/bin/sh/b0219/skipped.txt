@@ -1,1 +1,6 @@
-show.c — entire implementation is guarded by #ifdef DEBUG and requires parser node types
+hbsd/src/bin/sh/show.c: whole file is inside #ifdef DEBUG and every routine walks union node / struct nodelist from nodes.h, parser.h and syntax.h, none of which are in this batch.
+hbsd/src/bin/sh/output.c xwrite(): the partial-write / EINTR retry loop cannot be driven to its second iteration deterministically from a single-process harness, so it cannot be differentially tested.
+hbsd/src/bin/sh/output.c flushout(), flushall(), emptyoutbuf(): they call xwrite() (see above), so they are omitted with it.
+hbsd/src/bin/sh/output.c doformat(), doformat_wr(), outfmt(), out1fmt(), out2fmt_flush(), out1fp(): they need fwopen(3), a BSD-only stdio hook that does not exist on this host.
+hbsd/src/bin/sh/alias.c printalias(), printaliases(): they call out1fmt(), which needs fwopen(3) (see above).
+hbsd/src/bin/sh/alias.c aliascmd(), unaliascmd(): they need nextopt(), argptr and warning() from options.c and error.c, which are not in this batch.

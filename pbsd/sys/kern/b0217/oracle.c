@@ -189,6 +189,7 @@ static unsigned long model_malloc_max = MODEL_ARENA;
 static uint64_t model_cycle;
 static int model_vget_error;
 static int model_vget_enoent;
+static int model_vget_enoent_once;
 static int model_linker_fail;
 static int model_linker_block;
 static int model_sbuf_fail;
@@ -347,6 +348,11 @@ static int vget_finish(struct vnode *vp, int flags, enum vgetstate vs)
 	(void)vp;
 	(void)flags;
 	(void)vs;
+	if (model_vget_enoent_once > 0) {
+		model_vget_enoent_once--;
+		model_ev(21, ENOENT, 0, 0, 0);
+		return (ENOENT);
+	}
 	if (model_vget_enoent != 0) {
 		model_ev(21, ENOENT, 0, 0, 0);
 		return (ENOENT);
@@ -586,6 +592,7 @@ void model_reset(void)
 	model_malloc_fail = 0;
 	model_vget_error = 0;
 	model_vget_enoent = 0;
+	model_vget_enoent_once = 0;
 	model_linker_fail = 0;
 	model_linker_block = 0;
 	model_sbuf_fail = 0;
@@ -639,6 +646,7 @@ void oracle_reset(void)
 
 void oracle_malloc_fail_at(int n) { model_malloc_fail = n; }
 void oracle_set_vget_enoent(int v) { model_vget_enoent = v; }
+void oracle_set_vget_enoent_once(int v) { model_vget_enoent_once = v; }
 void oracle_set_vget_error(int v) { model_vget_error = v; }
 void oracle_set_linker_fail(int v) { model_linker_fail = v; }
 void oracle_set_linker_block(int v) { model_linker_block = v; }

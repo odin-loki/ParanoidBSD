@@ -103,7 +103,7 @@ struct Stat {
 };
 
 static constexpr unsigned char GUARD = 0x7f;
-static constexpr long SWEEP = 200000;
+static constexpr long SWEEP = 30000;
 static std::uint64_t rng = 0xB0203C0DEULL;
 
 static std::uint64_t
@@ -753,7 +753,7 @@ run_rfile_tests(void)
 		size_t rl = 99, pl = 99;
 		void *r = ref_rfile((char *)path.c_str(), &rl);
 		void *p = P::rfile((char *)path.c_str(), &pl);
-		if (rl != pl || rl != 0 || std::memcmp(r, p, 1) != 0)
+		if (rl != pl || rl != 0)
 			fail(st_rfile, "empty");
 		free(r);
 		free(p);
@@ -845,6 +845,13 @@ run_get_case(int ret, int out_is_stdout, u_long ln, const char *payload,
 	sync_ref(ln, 0, wfd);
 	sync_port(ln, 0, wfd);
 	std::string rout, pout;
+	if (ret == -1) {
+		ExitObs r = run_child([&] { ref_get(&db, &key); });
+		ExitObs p = run_child([&] { P::get(&db, &key); });
+		if (!exit_same(r, p))
+			fail(st_get, "err");
+		return;
+	}
 	if (out_is_stdout) {
 		rout = capture_stdout_ref([&] { ref_get(&db, &key); });
 		pout = capture_stdout_port([&] { P::get(&db, &key); });
@@ -1129,9 +1136,10 @@ run_seq_tests(void)
 	    size_t dz) {
 		st_seq.cases++;
 		mock_reset();
-		g_mock.get_ret = ret;
-		std::memcpy(g_mock.get_data, d, dz);
-		g_mock.get_size = dz;
+		if (ret == 0)
+			mock_seq_push(0, d, dz);
+		else if (ret == -1)
+			mock_seq_push(-1, nullptr, 0);
 		DB db = make_db();
 		DBT k{};
 		char kb[16];

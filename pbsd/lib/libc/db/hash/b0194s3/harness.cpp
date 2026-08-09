@@ -360,7 +360,7 @@ struct AccessEnv {
 
 static void setup_access_env(AccessEnv &e, const unsigned char *kb, size_t klen,
     const unsigned char *vb, size_t vlen, bool insert, bool reset_mock = true,
-    bool init_htab = true)
+    bool init_htab = true, u_int32_t force_bkt = UINT32_MAX)
 {
 	if (init_htab)
 		init_htab_base(&e.htab);
@@ -370,7 +370,8 @@ static void setup_access_env(AccessEnv &e, const unsigned char *kb, size_t klen,
 		e.keybuf[i] = (char)kb[i];
 	for (size_t i = 0; i < vlen; i++)
 		e.valbuf[i] = (char)vb[i];
-	u_int32_t bkt = bucket_for(&e.htab, e.keybuf, klen);
+	u_int32_t bkt = force_bkt == UINT32_MAX ?
+	    bucket_for(&e.htab, e.keybuf, klen) : force_bkt;
 	init_buf(&e.buf, e.page, bkt, PAGE_BSIZE);
 	if (reset_mock)
 		hash_mock_reset();
@@ -628,9 +629,9 @@ static void test_hash_access()
 	check(F_HASH_ACCESS, rr == rp && rr == 1, "not found");
 
 	hash_mock_reset();
-	hash_mock_set_get_fail_cnt(1);
 	setup_access_env(er, kb, 1, vb, 1, true);
 	setup_access_env(ep, kb, 1, vb, 1, true, false);
+	hash_mock_set_get_fail_cnt(2);
 	rr = ref_hash_access(&er.htab, HASH_GET, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_GET, pd(&keyp),
 	    pd(&valp));
@@ -652,9 +653,9 @@ static void test_hash_access()
 	check(F_HASH_ACCESS, buf_eq(er.page, ep.page, PAGE_BSIZE), "put page");
 
 	hash_mock_reset();
-	hash_mock_set_addel_fail(1);
-	setup_access_env(er, kb, 2, vb, 2, false, false);
+	setup_access_env(er, kb, 2, vb, 2, false);
 	setup_access_env(ep, kb, 2, vb, 2, false, false);
+	hash_mock_set_addel_fail(1);
 	rr = ref_hash_access(&er.htab, HASH_PUT, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_PUT, pd(&keyp),
 	    pd(&valp));
@@ -901,16 +902,14 @@ static void test_hash_seq()
 	unsigned char vb[] = {'b'};
 	DBT keyr, valr, keyp, valp;
 
-	setup_access_env(er, kb, 1, vb, 1, true);
-	setup_access_env(ep, kb, 1, vb, 1, true, false);
+	setup_access_env(er, kb, 1, vb, 1, true, true, true, 0);
+	setup_access_env(ep, kb, 1, vb, 1, true, false, true, 0);
 	er.htab.hdr.max_bucket = 0;
 	er.htab.hdr.high_mask = 0;
 	er.htab.hdr.low_mask = 0;
 	ep.htab.hdr.max_bucket = 0;
 	ep.htab.hdr.high_mask = 0;
 	ep.htab.hdr.low_mask = 0;
-	er.buf.addr = 0;
-	ep.buf.addr = 0;
 	DB *dbr = make_db(&er.htab, true);
 	DB *dbp = make_db(&ep.htab, false);
 	guard_fill(er.keybuf, MAX_KV);
@@ -924,8 +923,6 @@ static void test_hash_seq()
 
 	int rr = ref_hash_seq(dbr, &keyr, &valr, R_FIRST);
 	int rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_FIRST);
-	std::fprintf(stderr, "DBG first: rr=%d rp=%d bp0=%u addr=%u\n", rr, rp,
-	    ((u_int16_t *)er.page)[0], er.buf.addr);
 	check(F_HASH_SEQ, rr == rp, "first");
 	check(F_HASH_SEQ, rr == 0, "first ok");
 	if (rr == 0 && rp == 0) {
@@ -937,8 +934,6 @@ static void test_hash_seq()
 
 	rr = ref_hash_seq(dbr, &keyr, &valr, R_NEXT);
 	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_NEXT);
-	std::fprintf(stderr, "DBG next: rr=%d rp=%d cb=%d cndx=%d\n", rr, rp,
-	    er.htab.cbucket, er.htab.cndx);
 	check(F_HASH_SEQ, rr == rp, "next end");
 	check(F_HASH_SEQ, rr == 1, "next end abnormal");
 
@@ -953,29 +948,25 @@ static void test_hash_seq()
 	check(F_HASH_SEQ, rr == rp && rr == -1, "seq bad flag");
 
 	hash_mock_reset();
-	hash_mock_set_get_fail_cnt(1);
-	setup_access_env(er, kb, 1, vb, 1, true, false);
-	setup_access_env(ep, kb, 1, vb, 1, true, false, false);
+	setup_access_env(er, kb, 1, vb, 1, true, false, true, 0);
+	setup_access_env(ep, kb, 1, vb, 1, true, false, true, 0);
 	er.htab.hdr.max_bucket = 0;
 	er.htab.hdr.high_mask = 0;
 	ep.htab.hdr = er.htab.hdr;
-	er.buf.addr = 0;
-	ep.buf.addr = 0;
 	dbr->internal = &er.htab;
 	dbp->internal = &ep.htab;
+	hash_mock_set_get_fail_cnt(2);
 	rr = ref_hash_seq(dbr, &keyr, &valr, R_FIRST);
 	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_FIRST);
 	check(F_HASH_SEQ, rr == rp && rr == -1, "get_buf fail");
 
 	hash_mock_reset();
-	setup_access_env(er, kb, 1, vb, 1, true, false);
-	setup_access_env(ep, kb, 1, vb, 1, true, false, false);
+	setup_access_env(er, kb, 1, vb, 1, true, false, true, 0);
+	setup_access_env(ep, kb, 1, vb, 1, true, false, true, 0);
 	er.htab.hdr.max_bucket = 1;
 	er.htab.hdr.high_mask = 1;
 	er.htab.hdr.low_mask = 0;
 	ep.htab.hdr = er.htab.hdr;
-	er.buf.addr = 0;
-	ep.buf.addr = 0;
 	BUFHEAD buf1_r, buf1_p;
 	char page1_r[PAGE_BSIZE];
 	char page1_p[PAGE_BSIZE];
@@ -1006,16 +997,14 @@ static void test_hash_seq()
 
 	hash_mock_reset();
 	hash_mock_set_big_keydata_fail(1);
-	setup_access_env(er, kb, 1, vb, 1, true, false);
-	setup_access_env(ep, kb, 1, vb, 1, true, false, false);
+	setup_access_env(er, kb, 1, vb, 1, true, false, true, 0);
+	setup_access_env(ep, kb, 1, vb, 1, true, false, true, 0);
 	auto *sp = (u_int16_t *)er.page;
 	sp[2] = PARTIAL_KEY;
 	std::memcpy(ep.page, er.page, PAGE_BSIZE);
 	er.htab.hdr.max_bucket = 0;
 	er.htab.hdr.high_mask = 0;
 	ep.htab.hdr = er.htab.hdr;
-	er.buf.addr = 0;
-	ep.buf.addr = 0;
 	dbr->internal = &er.htab;
 	dbp->internal = &ep.htab;
 	rr = ref_hash_seq(dbr, &keyr, &valr, R_FIRST);
@@ -1023,13 +1012,11 @@ static void test_hash_seq()
 	check(F_HASH_SEQ, rr == rp && rr == -1, "big_keydata fail");
 
 	hash_mock_reset();
-	setup_access_env(er, kb, 1, vb, 1, true, false);
-	setup_access_env(ep, kb, 1, vb, 1, true, false, false);
+	setup_access_env(er, kb, 1, vb, 1, false, false, true, 0);
+	setup_access_env(ep, kb, 1, vb, 1, false, false, true, 0);
 	er.htab.hdr.max_bucket = 0;
 	er.htab.hdr.high_mask = 0;
 	ep.htab.hdr = er.htab.hdr;
-	er.buf.addr = 0;
-	ep.buf.addr = 0;
 	sp = (u_int16_t *)er.page;
 	sp[0] = 2;
 	sp[1] = OVFLPAGE;
@@ -1304,14 +1291,12 @@ static void test_hash_seq_sweep(Rng &rng)
 			kb[j] = (unsigned char)(rng.next() & 0xff);
 		for (size_t j = 0; j < vlen; j++)
 			vb[j] = (unsigned char)(rng.next() & 0xff);
-		setup_access_env(er, kb, klen, vb, vlen, true);
-		setup_access_env(ep, kb, klen, vb, vlen, true, false);
+		setup_access_env(er, kb, klen, vb, vlen, true, true, true, 0);
+		setup_access_env(ep, kb, klen, vb, vlen, true, false, true, 0);
 		er.htab.hdr.max_bucket = rng.below(4);
 		er.htab.hdr.high_mask = er.htab.hdr.max_bucket;
 		er.htab.hdr.low_mask = rng.below(er.htab.hdr.high_mask + 1);
 		ep.htab.hdr = er.htab.hdr;
-		er.buf.addr = 0;
-		ep.buf.addr = 0;
 		DB *dbr = make_db(&er.htab, true);
 		DB *dbp = make_db(&ep.htab, false);
 		DBT keyr, valr, keyp, valp;

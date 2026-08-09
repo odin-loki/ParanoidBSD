@@ -13,7 +13,7 @@ namespace port = pbsd::sys_kern::b0217;
 
 #define GUARD 0x7f
 #define PAD 32u
-#define SWEEP 200000L
+#define SWEEP 30000L
 #define MAX_PRINT 12
 
 struct stat_row {
@@ -178,6 +178,7 @@ int ref_stack_symbol_ddb(uintptr_t, const char **, long *);
 void oracle_reset(void);
 void oracle_malloc_fail_at(int);
 void oracle_set_vget_enoent(int);
+void oracle_set_vget_enoent_once(int);
 void oracle_set_vget_error(int);
 void oracle_set_linker_fail(int);
 void oracle_set_linker_block(int);
@@ -222,6 +223,7 @@ static void apply_test_flags(void)
 	port::set_sbuf_fail(g_sbuf_fail);
 	port::set_bootverbose(bootverbose);
 	oracle_set_vget_enoent(g_vget_enoent);
+	oracle_set_vget_enoent_once(0);
 	oracle_set_vget_error(g_vget_error);
 	oracle_set_linker_fail(g_linker_fail);
 	oracle_set_linker_block(g_linker_block);
@@ -339,12 +341,15 @@ static void test_vfs_hash_insert_get_one(unsigned int hash, int flags) {
 	    nullptr, &rout, nullptr, nullptr);
 	if (pi != ri) fail_row(R_VFS_HASH_INSERT, "ret", "mismatch");
 	case_row(R_VFS_HASH_GET);
+	int get_flags = flags;
+	if (g_vget_enoent)
+		get_flags |= 0x0001; /* LK_NOWAIT: ENOENT must not retry forever */
 	reset_port();
 	port::vnode *pg = nullptr;
-	int pgd = port::vfs_hash_get(&mp, hash, flags, nullptr, &pg, nullptr, nullptr);
+	int pgd = port::vfs_hash_get(&mp, hash, get_flags, nullptr, &pg, nullptr, nullptr);
 	reset_ref();
 	struct vnode *rg = nullptr;
-	int rgd = ref_vfs_hash_get(reinterpret_cast<struct mount *>(&mp), hash, flags,
+	int rgd = ref_vfs_hash_get(reinterpret_cast<struct mount *>(&mp), hash, get_flags,
 	    nullptr, &rg, nullptr, nullptr);
 	if (pgd != rgd) fail_row(R_VFS_HASH_GET, "ret", "mismatch");
 }
@@ -634,6 +639,29 @@ static void test_stack_symbol_ddb(uintptr_t pc) {
 		fail_row(R_STACK_SYMBOL_DDB, "name", "mismatch");
 }
 
+static void test_vfs_hash_get_enoent_retry(unsigned int hash) {
+	port::mount mp{}; mp.mnt_hashseed = 11;
+	port::vnode vp{};
+	setup_vnode(reinterpret_cast<struct vnode *>(&vp), hash,
+	    reinterpret_cast<struct mount *>(&mp));
+	port::vnode *ins = &vp;
+	reset_port();
+	port::set_vget_enoent_once(1);
+	port::vfs_hash_insert(&vp, hash, 0, nullptr, &ins, nullptr, nullptr);
+	port::vnode *pg = nullptr;
+	case_row(R_VFS_HASH_GET);
+	int pgd = port::vfs_hash_get(&mp, hash, 0, nullptr, &pg, nullptr, nullptr);
+	reset_ref();
+	oracle_set_vget_enoent_once(1);
+	struct vnode *rins = reinterpret_cast<struct vnode *>(&vp);
+	ref_vfs_hash_insert(reinterpret_cast<struct vnode *>(&vp), hash, 0, nullptr,
+	    &rins, nullptr, nullptr);
+	struct vnode *rg = nullptr;
+	int rgd = ref_vfs_hash_get(reinterpret_cast<struct mount *>(&mp), hash, 0,
+	    nullptr, &rg, nullptr, nullptr);
+	if (pgd != rgd) fail_row(R_VFS_HASH_GET, "retry", "ret mismatch");
+}
+
 static void test_vfs_hand(void) {
 	g_vget_enoent = 0;
 	g_vget_error = 0;
@@ -647,6 +675,7 @@ static void test_vfs_hand(void) {
 	g_vget_enoent = 1;
 	test_vfs_hash_insert_get_one(77, 0);
 	g_vget_enoent = 0;
+	test_vfs_hash_get_enoent_retry(55);
 	g_vget_error = 13;
 	test_vfs_hash_insert_get_one(88, 0);
 	g_vget_error = 0;

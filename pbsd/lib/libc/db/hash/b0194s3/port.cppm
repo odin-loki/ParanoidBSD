@@ -925,7 +925,7 @@ found:
 			if (__big_return(hashp, rbufp, ndx, val, 0))
 				return (ERROR);
 		} else {
-			val->data = (void *)(rbufp->page + (int)bp[ndx + 1]);
+			val->data = (u_char *)rbufp->page + (int)bp[ndx + 1];
 			val->size = bp[ndx] - bp[ndx + 1];
 		}
 		break;
@@ -1019,9 +1019,9 @@ next_bucket:
 	} else {
 		if (hashp->cpage == NULL)
 			return (ERROR);
-		key->data = (void *)(hashp->cpage->page + bp[ndx]);
+		key->data = (u_char *)hashp->cpage->page + bp[ndx];
 		key->size = (ndx > 1 ? bp[ndx - 1] : hashp->BSIZE) - bp[ndx];
-		data->data = (void *)(hashp->cpage->page + bp[ndx + 1]);
+		data->data = (u_char *)hashp->cpage->page + bp[ndx + 1];
 		data->size = bp[ndx] - bp[ndx + 1];
 	}
 	return (SUCCESS);
