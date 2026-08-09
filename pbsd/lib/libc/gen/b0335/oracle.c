@@ -70,12 +70,11 @@ struct xlocale_component {
 };
 enum { XLC_COLLATE = 0, XLC_CTYPE, XLC_MONETARY, XLC_NUMERIC, XLC_TIME, XLC_MESSAGES, XLC_LAST };
 struct _xlocale { struct xlocale_refcounted header; struct xlocale_component *components[XLC_LAST]; };
-typedef struct _xlocale *locale_t;
 struct xlocale_collate {
     struct xlocale_component header;
     int __collate_load_error;
 };
-locale_t __get_locale(void);
+struct _xlocale *__get_locale(void);
 size_t __collate_collating_symbol(wchar_t *, size_t, const char *, size_t, mbstate_t *);
 int __collate_equiv_class(const char *, size_t, mbstate_t *);
 ssize_t __collate_equiv_match(int, const wchar_t *, size_t, wchar_t, const char *, size_t, mbstate_t *, size_t *);
@@ -282,6 +281,9 @@ ref_writehook(void *cookie, const char *buf, int len)
 	return len;
 }
 
+static void ref_vsyslog1(int pri, const char *fmt, va_list ap);
+void ref_vsyslog(int pri, const char *fmt, va_list ap);
+
 /*
  * ref_syslog, ref_vsyslog --
  *	print message on log file; output is intended for syslogd(8).
@@ -314,7 +316,7 @@ ref_vsyslog1(int pri, const char *fmt, va_list ap)
 	/* Check for invalid bits. */
 	if (pri & ~(LOG_PRIMASK|LOG_FACMASK)) {
 		ref_syslog(INTERNALLOG,
-		    "ref_syslog: unknown facility/priority: %x", pri);
+		    "syslog: unknown facility/priority: %x", pri);
 		pri &= LOG_PRIMASK|LOG_FACMASK;
 	}
 
@@ -509,9 +511,9 @@ ref_vsyslog(int pri, const char *fmt, va_list ap)
 {
 
 	THREAD_LOCK();
-	ref_pthread_cleanup_push(ref_syslog_cancel_cleanup, NULL);
+	pthread_cleanup_push(ref_syslog_cancel_cleanup, NULL);
 	ref_vsyslog1(pri, fmt, ap);
-	ref_pthread_cleanup_pop(1);
+	pthread_cleanup_pop(1);
 }
 
 /* Should be called with mutex acquired */
@@ -590,9 +592,9 @@ ref_openlog(const char *ident, int logstat, int logfac)
 {
 
 	THREAD_LOCK();
-	ref_pthread_cleanup_push(ref_syslog_cancel_cleanup, NULL);
+	pthread_cleanup_push(ref_syslog_cancel_cleanup, NULL);
 	ref_openlog_unlocked(ident, logstat, logfac);
-	ref_pthread_cleanup_pop(1);
+	pthread_cleanup_pop(1);
 }
 
 

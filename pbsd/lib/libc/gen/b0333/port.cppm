@@ -147,9 +147,9 @@ export namespace pbsd::lib_libc_gen::b0333 {
  * SUCH DAMAGE.
  */
 
-const char __uprefix[] = "Unknown error";
+inline const char __uprefix[] = "Unknown error";
 
-const char *const sys_errlist[] = {
+inline const char *const sys_errlist[] = {
 	"No error: 0",
 	"Operation not permitted",
 	"No such file or directory",
@@ -306,7 +306,7 @@ const char *const sys_errlist[] = {
 	__uprefix,
 	__uprefix,
 };
-const int sys_nerr = ELAST + 1;
+inline const int sys_nerr = ELAST + 1;
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -496,7 +496,7 @@ dl_iterate_phdr(int (*callback)(struct dl_phdr_info *, size_t, void *) __unused,
 	int error;
 
 	mutex_lock(&dl_phdr_info_lock);
-	error = __dl_iterate_phdr_locked(callback, data);
+	error = _dl_iterate_phdr_locked(callback, data);
 	mutex_unlock(&dl_phdr_info_lock);
 	return (error);
 }
@@ -546,7 +546,7 @@ _rtld_addr_phdr_cb(struct dl_phdr_info *dli, size_t sz, void *arg)
 }
 
 int
-__rtld_addr_phdr(const void *addr __unused,
+_rtld_addr_phdr(const void *addr __unused,
     struct dl_phdr_info *phdr_info_a __unused)
 {
 	struct _rtld_addr_phdr_cb_data rd;
@@ -558,7 +558,7 @@ __rtld_addr_phdr(const void *addr __unused,
 }
 
 int
-__rtld_get_stack_prot(void)
+_rtld_get_stack_prot(void)
 {
 	unsigned i;
 	int r;
@@ -583,14 +583,14 @@ __rtld_get_stack_prot(void)
 }
 
 Elf_Word
-__rtld_get_pax_flags(void)
+_rtld_get_pax_flags(void)
 {
 
 	return (0);
 }
 
 int
-__rtld_is_dlopened(void *arg __unused)
+_rtld_is_dlopened(void *arg __unused)
 {
 
 	return (0);

@@ -3,12 +3,15 @@
  */
 
 #include <clocale>
+#include <climits>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cwchar>
+#include <cwctype>
 
 #include <sys/types.h>
 
@@ -492,7 +495,7 @@ handcrafted(void)
 
 	/* REG_PEND cases */
 	{
-		const char data[] = "abc\x00def\xff";
+		const char data[] = { 'a', 'b', 'c', '\0', 'd', 'e', 'f', (char)0xff };
 		check_one(data, REG_EXTENDED | REG_PEND, data + 3, "pend1");
 		check_one(data, REG_EXTENDED | REG_PEND, data + 1, "pend2");
 		check_one(data, REG_NOSPEC | REG_PEND, data + 7, "pend3");

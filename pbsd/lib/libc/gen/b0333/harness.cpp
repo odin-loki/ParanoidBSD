@@ -17,6 +17,14 @@
 #include <link.h>
 #include <pthread.h>
 
+#ifndef AT_EXECPATH
+#define AT_EXECPATH 15
+#endif
+
+#ifndef Elf_Phdr
+#define Elf_Phdr Elf64_Phdr
+#endif
+
 import pbsd.lib.libc.gen.b0333;
 
 namespace P = pbsd::lib_libc_gen::b0333;
@@ -124,21 +132,8 @@ rnd_range(int lo, int hi)
 /* harness libc environment                                            */
 /* ------------------------------------------------------------------ */
 
-typedef struct {
-	int	a_type;
-	union {
-		int	a_val;
-		void	*a_ptr;
-	} a_un;
-} Elf_Auxinfo;
-
-typedef struct {
-	unsigned long	ti_module;
-	unsigned long	ti_offset;
-} tls_index;
-
-static Elf_Auxinfo g_aux_store[32];
-Elf_Auxinfo *__elf_aux_vector = nullptr;
+static P::Elf_Auxinfo g_aux_store[32];
+P::Elf_Auxinfo *__elf_aux_vector = nullptr;
 static int g_aux_reset_generation;
 
 static Elf_Phdr g_phdrs[8];
@@ -183,7 +178,7 @@ _once(pthread_once_t *o, void (*fn)(void))
 }
 
 void *
-__tls_get_addr(tls_index *ti)
+__tls_get_addr(P::tls_index *ti)
 {
 	(void)ti;
 	return (g_tls_addr);
@@ -594,11 +589,11 @@ run_execvpe_pair(const char *name, const char *path, char *const *argv,
     char *const *envp, int *errno_out)
 {
 	reset_exec_mocks();
-	environ = envp;
+	environ = const_cast<char **>(envp);
 	int ra = P::execvP(name, path, argv);
 	int ea = errno;
 	reset_exec_mocks();
-	environ = envp;
+	environ = const_cast<char **>(envp);
 	int rb = ref_execvP(name, path, argv);
 	int eb = errno;
 	if (errno_out)

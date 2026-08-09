@@ -65,7 +65,6 @@ struct xlocale_refcounted { long retain_count; void (*destructor)(void *); };
 struct xlocale_component { struct xlocale_refcounted base; char locale[32]; };
 enum { XLC_COLLATE = 0, XLC_LAST = 6 };
 struct _xlocale { struct xlocale_refcounted header; struct xlocale_component *components[XLC_LAST]; };
-typedef struct _xlocale *locale_t;
 struct xlocale_collate { struct xlocale_component header; int __collate_load_error; };
 static struct _xlocale g_locale = {};
 static struct xlocale_collate g_collate = { {}, 1 };
@@ -75,7 +74,7 @@ static void init_locale(void) {
 	g_locale.components[XLC_COLLATE] = (struct xlocale_component *)&g_collate;
 }
 
-extern "C" locale_t __get_locale(void) { return &g_locale; }
+extern "C" struct _xlocale *__get_locale(void) { return &g_locale; }
 extern "C" size_t __collate_collating_symbol(wchar_t *, size_t, const char *, size_t, mbstate_t *) { return (size_t)-1; }
 extern "C" int __collate_equiv_class(const char *, size_t, mbstate_t *) { return -1; }
 extern "C" ssize_t __collate_equiv_match(int, const wchar_t *, size_t, wchar_t, const char *, size_t, mbstate_t *, size_t *) { return 0; }

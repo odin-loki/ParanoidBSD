@@ -57,6 +57,14 @@ inline constexpr int COLLATE_STR_LEN = 24;
 inline constexpr int CHARCLASS_NAME_MAX = 14;
 #endif
 
+#ifndef strlcpy
+static inline size_t strlcpy(char *dst, const char *src, size_t siz) {
+    size_t n = strlen(src);
+    if (siz) { size_t c = n < siz - 1 ? n : siz - 1; memcpy(dst, src, c); dst[c] = 0; }
+    return n;
+}
+#endif
+
 struct xlocale_refcounted { long retain_count; void (*destructor)(void *); };
 struct xlocale_component {
     struct xlocale_refcounted base;
@@ -64,7 +72,6 @@ struct xlocale_component {
 };
 enum { XLC_COLLATE = 0, XLC_CTYPE, XLC_MONETARY, XLC_NUMERIC, XLC_TIME, XLC_MESSAGES, XLC_LAST };
 struct _xlocale { struct xlocale_refcounted header; struct xlocale_component *components[XLC_LAST]; };
-typedef struct _xlocale *locale_t;
 struct xlocale_collate {
     struct xlocale_component header;
     int __collate_load_error;
@@ -171,9 +178,8 @@ extern ssize_t send(int, const void *, size_t, int);
 extern FILE *fwopen(void *, int (*)(void *, const char *, int));
 
 struct _xlocale;
-typedef struct _xlocale *locale_t;
 struct xlocale_collate;
-locale_t __get_locale(void);
+struct _xlocale *__get_locale(void);
 size_t __collate_collating_symbol(wchar_t *, size_t, const char *, size_t, mbstate_t *);
 int __collate_equiv_class(const char *, size_t, mbstate_t *);
 ssize_t __collate_equiv_match(int, const wchar_t *, size_t, wchar_t, const char *, size_t, mbstate_t *, size_t *);

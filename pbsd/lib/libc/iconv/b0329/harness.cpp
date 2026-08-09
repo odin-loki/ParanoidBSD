@@ -2,8 +2,6 @@
  * Differential harness for PBSD batch b0329.
  */
 
-#define _GNU_SOURCE
-
 #include <sys/queue.h>
 
 #include <cerrno>
@@ -11,12 +9,23 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iconv.h>
 #include <vector>
+
+import pbsd.lib.libc.iconv.b0329;
+
+namespace P = pbsd::lib_libc_iconv::b0329;
 
 #ifndef ICONV_TRIVIALP
 #define ICONV_TRIVIALP 0
+#define ICONV_GET_TRANSLITERATE 1
+#define ICONV_SET_TRANSLITERATE 2
 #define ICONV_GET_DISCARD_ILSEQ 3
 #define ICONV_SET_DISCARD_ILSEQ 4
+#define ICONV_SET_HOOKS 5
+#define ICONV_SET_FALLBACKS 6
+#define ICONV_GET_ILSEQ_INVALID 128
+#define ICONV_SET_ILSEQ_INVALID 129
 #endif
 
 typedef struct {
@@ -38,8 +47,6 @@ static inline void *region_head(const P::_citrus_region *r)
 {
 	return (r->r_head);
 }
-
-namespace P = pbsd::lib_libc_iconv::b0329;
 
 extern "C" {
 
@@ -64,6 +71,7 @@ typedef struct {
 void b0329_mock_reset(void);
 void b0329_mock_snap(B0329MockState *);
 void b0329_mock_set_stdenc_module(const char *, int (*)(P::_citrus_stdenc_ops *, size_t));
+extern B0329MockState b0329_mock_state;
 extern B0329MockState b0329_mock_state;
 
 int ref__citrus_NONE_stdenc_init(P::_citrus_stdenc *, const void *, size_t,
