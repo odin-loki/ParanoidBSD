@@ -1,5 +1,6 @@
-# PBSD migration console — progress bar, metrics, starts watchdog, stays open.
+# PBSD migration console — progress bars and metrics (no Write-Progress overlap).
 $ErrorActionPreference = "Continue"
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 $Host.UI.RawUI.WindowTitle = "PBSD Migration"
 $Repo = Split-Path $PSScriptRoot -Parent
 $RefreshSec = 10
@@ -7,15 +8,14 @@ $TotalFiles = 4497
 $TotalLines = 2875339
 
 function Invoke-WslBash([string]$Script, [int]$TimeoutSec = 120) {
-    # Must use wsl.exe — a function named Wsl shadows the wsl command and overflows the stack.
     $out = & wsl.exe -d Ubuntu -- timeout $TimeoutSec bash -c $Script 2>&1
     if ($out -is [System.Array]) { return ($out | Out-String).Trim() }
     return [string]$out
 }
 
 function Stop-PbsdServices {
-    Write-Host "Stopping any running PBSD processes..." -ForegroundColor Yellow
-    $r = Invoke-WslBash 'pkill -9 -f pbsd_watchdog 2>/dev/null; pkill -9 -f pbsd_driver 2>/dev/null; pkill -9 -f "python3.*pbsd.py" 2>/dev/null; pkill -9 -f cursor-agent 2>/dev/null; echo stopped' 25
+    Write-Host "Stopping PBSD processes..." -ForegroundColor Yellow
+    $r = Invoke-WslBash 'pkill -9 -f pbsd_watchdog 2>/dev/null; pkill -9 -f pbsd_driver 2>/dev/null; pkill -9 -f "python3.*pbsd.py" 2>/dev/null; pkill -9 -f cursor-agent 2>/dev/null; rm -f /home/odin/pbsd_watchdog.lock; echo stopped' 30
     Write-Host "  $r" -ForegroundColor DarkGray
 }
 
@@ -28,18 +28,16 @@ function Deploy-WslScripts {
         'chmod +x /home/odin/pbsd_watchdog.sh /home/odin/pbsd_driver.sh /home/odin/push_github.sh'
     )
     foreach ($c in $cmds) { Invoke-WslBash $c 30 }
-    return 'deployed'
 }
 
 function Start-PbsdWatchdog {
-    $running = Invoke-WslBash 'pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null 2>&1 && echo yes || echo no' 15
-    if ($running -match 'yes') { return }
-    Write-Host "Starting migration watchdog..." -ForegroundColor Green
-    Invoke-WslBash 'setsid bash /home/odin/pbsd_watchdog.sh >>/home/odin/pbsd_watchdog.log 2>&1 & sleep 2; pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo started || echo failed' 30
+    Write-Host "Starting watchdog + refreshing auth..." -ForegroundColor Green
+    $r = Invoke-WslBash 'bash ~/sync_cursor_auth.sh 2>/dev/null; rm -f /home/odin/pbsd_watchdog.lock; setsid bash /home/odin/pbsd_watchdog.sh >>/home/odin/pbsd_watchdog.log 2>&1 & sleep 3; pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo started || echo failed' 45
+    Write-Host "  $r" -ForegroundColor DarkGray
 }
 
 function Get-PbsdStatus {
-    $raw = Invoke-WslBash 'cd ~/pbsd && python3 pbsd.py --status 2>/dev/null | head -14' 60
+    $raw = Invoke-WslBash 'cd ~/pbsd && python3 pbsd.py --status 2>/dev/null | head -14' 90
     $s = @{
         Verified = 0; TotalFiles = $TotalFiles
         Lines = 0; TotalLines = $TotalLines
@@ -61,78 +59,76 @@ function Get-PbsdStatus {
 }
 
 function Get-ProcessInfo {
-    $raw = Invoke-WslBash 'printf "watchdog=%s driver=%s agents=%s mem=%s\n" "$(pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo on || echo off)" "$(pgrep -f /home/odin/pbsd_driver.sh >/dev/null && echo on || echo off)" "$(pgrep -cf cursor-agent 2>/dev/null || echo 0)" "$(free -h | awk "/^Mem:/ {print \$3\"/\"\$2}")"' 15
-    $info = @{ Watchdog = '?'; Driver = '?'; Agents = 0; Mem = '?' }
-    if ($raw -match 'watchdog=(\w+)') { $info.Watchdog = $Matches[1] }
-    if ($raw -match 'driver=(\w+)') { $info.Driver = $Matches[1] }
-    if ($raw -match 'agents=(\d+)') { $info.Agents = [int]$Matches[1] }
-    if ($raw -match 'mem=([^\s]+)') { $info.Mem = $Matches[1] }
-    return $info
+    $wd = (Invoke-WslBash 'pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo on || echo off' 10).Trim()
+    $dr = (Invoke-WslBash 'pgrep -f /home/odin/pbsd_driver.sh >/dev/null && echo on || echo off' 10).Trim()
+    $ag = (Invoke-WslBash 'pgrep -cf cursor-agent 2>/dev/null || echo 0' 10).Trim() -replace '\D', ''
+    $mem = (Invoke-WslBash 'free -m | awk "NR==2{print \$3\"/\"\$2\" MB\"}"' 10).Trim()
+    return @{
+        Watchdog = if ($wd) { $wd } else { 'off' }
+        Driver   = if ($dr) { $dr } else { 'off' }
+        Agents   = [int]$ag
+        Mem      = if ($mem) { $mem } else { '?' }
+    }
 }
 
-function Get-LogTail([int]$n = 12) {
+function Get-LogTail([int]$n = 10) {
     return Invoke-WslBash "tail -$n /home/odin/pbsd_run.log 2>/dev/null" 15
 }
 
 function Get-BatchProgress {
     $line = Invoke-WslBash 'grep -E "\[[0-9]+/[0-9]+\]" /home/odin/pbsd_run.log 2>/dev/null | tail -1' 15
-    if ($line -match '\[(\d+)/(\d+)\].*?~([\d.]+)h left') {
-        return @{ Done = [int]$Matches[1]; Total = [int]$Matches[2]; EtaHours = [double]$Matches[3]; Line = $line.Trim() }
-    }
+    $done = 0; $total = 0; $eta = 0.0
     if ($line -match '\[(\d+)/(\d+)\]') {
-        return @{ Done = [int]$Matches[1]; Total = [int]$Matches[2]; EtaHours = 0; Line = $line.Trim() }
+        $done = [int]$Matches[1]
+        $total = [int]$Matches[2]
     }
-    return @{ Done = 0; Total = 0; EtaHours = 0; Line = '' }
+    if ($line -match '~([\d.]+)h left') { $eta = [double]$Matches[1] }
+    return @{ Done = $done; Total = $total; EtaHours = $eta }
 }
 
-function Draw-Bar([int]$pct, [int]$width = 40) {
+function Draw-Bar([double]$pct, [int]$width = 44) {
     $pct = [Math]::Max(0, [Math]::Min(100, $pct))
     $filled = [Math]::Round($width * $pct / 100)
     $empty = $width - $filled
-    return ('[' + ('#' * $filled) + ('-' * $empty) + "] $pct%")
+    return '[' + ('#' * $filled) + ('-' * $empty) + "] $([math]::Round($pct,1))%"
 }
 
-function Show-Console($s, $proc, $batch, $log) {
+function Show-Console($s, $proc, $batch, $logLines) {
     Clear-Host
-    $filePct = if ($s.TotalFiles -gt 0) { [math]::Round(100 * $s.Verified / $s.TotalFiles, 2) } else { 0 }
-    $linePct = if ($s.TotalLines -gt 0) { [math]::Round(100 * $s.Lines / $s.TotalLines, 2) } else { 0 }
+    $filePct = if ($s.TotalFiles -gt 0) { 100.0 * $s.Verified / $s.TotalFiles } else { 0 }
+    $linePct = if ($s.TotalLines -gt 0) { 100.0 * $s.Lines / $s.TotalLines } else { 0 }
 
-    Write-Host "  PBSD C++23 Migration" -ForegroundColor Cyan
-    Write-Host "  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  |  refresh every ${RefreshSec}s  |  Ctrl+C closes viewer (driver keeps running)" -ForegroundColor DarkGray
     Write-Host ""
-
-    Write-Host "  Files   $($s.Verified) / $($s.TotalFiles)" -ForegroundColor White
+    Write-Host "  PBSD C++23 Migration" -ForegroundColor Cyan
+    Write-Host "  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')  |  refresh ${RefreshSec}s  |  Ctrl+C closes viewer only" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "  Files  $($s.Verified) / $($s.TotalFiles)" -ForegroundColor White
     Write-Host "  $(Draw-Bar $filePct)" -ForegroundColor Green
     Write-Host ""
-    Write-Host "  Lines   $($s.Lines.ToString('N0')) / $($s.TotalLines.ToString('N0'))  ($linePct%)" -ForegroundColor White
+    Write-Host "  Lines  $($s.Lines.ToString('N0')) / $($s.TotalLines.ToString('N0'))  ($([math]::Round($linePct,1))%)" -ForegroundColor White
     Write-Host "  $(Draw-Bar $linePct)" -ForegroundColor DarkGreen
     Write-Host ""
-
     Write-Host "  Metrics" -ForegroundColor Cyan
-    Write-Host "    pending      $($s.Pending)"
-    Write-Host "    deferred     $($s.Deferred)"
-    Write-Host "    need you     $($s.NeedYou)"
-    Write-Host "    skipped      $($s.Skipped)"
-    Write-Host "    pass rate    $($s.PassRate)%"
+    Write-Host "    pending    $($s.Pending)    deferred $($s.Deferred)    need-you $($s.NeedYou)    skipped $($s.Skipped)"
+    Write-Host "    pass rate  $($s.PassRate)%"
     Write-Host ""
     Write-Host "  Processes" -ForegroundColor Cyan
-    Write-Host "    watchdog     $($proc.Watchdog)    driver $($proc.Driver)    agents $($proc.Agents)    RAM $($proc.Mem)"
+    Write-Host "    watchdog $($proc.Watchdog)   driver $($proc.Driver)   agents $($proc.Agents)   RAM $($proc.Mem)"
     if ($batch.Total -gt 0) {
-        $batchPct = [math]::Round(100 * $batch.Done / $batch.Total, 1)
-        Write-Host "    this round   [$batch.Done/$batch.Total]  ~$($batch.EtaHours)h left  ($batchPct%)" -ForegroundColor DarkCyan
+        $bp = [math]::Round(100.0 * $batch.Done / $batch.Total, 1)
+        Write-Host "    round      [$($batch.Done)/$($batch.Total)]  ~$($batch.EtaHours)h left  ($bp%)" -ForegroundColor DarkCyan
     }
     Write-Host ""
     Write-Host "  Recent log" -ForegroundColor Cyan
-    foreach ($ln in ($log -split "`n")) {
-        if ($ln -match 'VERIFIED') { Write-Host "    $ln" -ForegroundColor Green }
-        elseif ($ln -match 'WARNING|failed|error') { Write-Host "    $ln" -ForegroundColor Yellow }
-        else { Write-Host "    $ln" -ForegroundColor Gray }
+    foreach ($ln in $logLines) {
+        if (-not $ln) { continue }
+        $t = $ln -replace '[^\x09\x0A\x0D\x20-\x7E]', '?'
+        if ($t -match 'VERIFIED') { Write-Host "    $t" -ForegroundColor Green }
+        elseif ($t -match 'WARNING|failed|error|auth') { Write-Host "    $t" -ForegroundColor Yellow }
+        else { Write-Host "    $t" -ForegroundColor Gray }
     }
+    Write-Host ""
 }
-
-Clear-Host
-Write-Host "PBSD Migration Console" -ForegroundColor Cyan
-Write-Host ""
 
 $arg = $args | Select-Object -First 1
 if ($arg -eq 'stop') {
@@ -140,16 +136,18 @@ if ($arg -eq 'stop') {
     exit 0
 }
 
+Clear-Host
+Write-Host "PBSD Migration Console" -ForegroundColor Cyan
+Write-Host ""
+
 if ($arg -eq 'attach') {
-    Write-Host "Attached to running migration (no restart)." -ForegroundColor Cyan
-    Start-Sleep -Seconds 1
+    Write-Host "Attached (no restart)." -ForegroundColor Cyan
 } else {
     Stop-PbsdServices
     Deploy-WslScripts
     Start-PbsdWatchdog
-    Write-Host ""
-    Write-Host "Migration started. This window stays open with live metrics." -ForegroundColor Green
-    Start-Sleep -Seconds 3
+    Write-Host "Migration running. Metrics below." -ForegroundColor Green
+    Start-Sleep -Seconds 4
 }
 
 try {
@@ -157,26 +155,19 @@ try {
         $s = Get-PbsdStatus
         $proc = Get-ProcessInfo
         $batch = Get-BatchProgress
-        $log = Get-LogTail
+        $logLines = @(Get-LogTail | Out-String).Trim() -split "`n"
 
-        $filePct = if ($s.TotalFiles -gt 0) { 100 * $s.Verified / $s.TotalFiles } else { 0 }
-        Write-Progress -Activity "PBSD files" -Status "$($s.Verified) / $($s.TotalFiles) verified" -PercentComplete $filePct
-        $linePct = if ($s.TotalLines -gt 0) { 100 * $s.Lines / $s.TotalLines } else { 0 }
-        Write-Progress -Activity "PBSD lines" -Status "$($s.Lines.ToString('N0')) / $($s.TotalLines.ToString('N0'))" -PercentComplete $linePct -Id 2
-
-        Show-Console $s $proc $batch $log
+        Show-Console $s $proc $batch $logLines
 
         if ($s.Pending -eq 0 -and $s.Deferred -eq 0 -and $proc.Driver -eq 'off') {
-            Write-Host ""
-            Write-Host "  Migration queue empty." -ForegroundColor Green
+            Write-Host "  Queue empty." -ForegroundColor Green
             break
         }
 
         Start-Sleep -Seconds $RefreshSec
     }
-} finally {
-    Write-Progress -Activity "PBSD files" -Completed
-    Write-Progress -Activity "PBSD lines" -Completed -Id 2
+} catch {
+    Write-Host "Monitor error: $_" -ForegroundColor Red
 }
 
 Write-Host ""
