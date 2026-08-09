@@ -23,14 +23,12 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures as cf
-import contextlib
 import csv
 import fcntl
 import hashlib
 import json
 import os
 import re
-import shlex
 import shutil
 import subprocess
 import sys
@@ -56,9 +54,8 @@ ESCALATE_MODEL = "claude-opus-5-thinking-high"
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
 DEFAULT_JOBS = 18        # agent concurrency; circuit breaker halves on rate limits
 DEFAULT_GATE_JOBS = 4    # max harness builds in flight (~4×5GB peak)
-DEFAULT_MECH_JOBS = 2    # thread workers; clang slots cap real parallelism
-MECH_CLANG_SLOTS = 2     # max concurrent clang IR compiles during mechanical
-MECH_IR_VMEM_KB = 2 * 1024 * 1024         # per-clang memory cap during mechanical (KiB)
+DEFAULT_MECH_JOBS = 8    # IR sweep parallelism; driver must use --mech-jobs not --jobs
+MECH_JOB_CAP = 8         # hard cap — --jobs 64 on a 64-core box OOMs WSL
 MECH_SAVE_EVERY = 50     # checkpoint inventory every N files during mechanical
 HARNESS_VMEM_KB = 5 * 1024 * 1024         # virtual memory cap per harness (KiB)
 RATE_LIMIT_PAUSE = 120  # seconds to sleep when the API keeps rate-limiting us
@@ -148,8 +145,6 @@ SETUP_STAMP = MIG / ".setup_done"
 MECH_STAMP = MIG / ".mech_pass_done"
 MECH_CHECKPOINT = MIG / ".mech_checkpoint.jsonl"
 WORK = ROOT / "pbsd"
-
-_mech_phase = False
 
 # ─────────────────────────────── the prompt ──────────────────────────────────
 
@@ -921,43 +916,6 @@ def _llvm() -> tuple[str, str] | None:
     return None
 
 
-def _clang_slot_dir() -> Path:
-    d = ROOT / ".pbsd_clang_slots"
-    d.mkdir(exist_ok=True)
-    return d
-
-
-@contextlib.contextmanager
-def _clang_slot():
-    """Cap concurrent clang invocations during the mechanical IR sweep."""
-    if not _mech_phase:
-        yield
-        return
-    slots = max(1, int(os.environ.get("PBSD_MECH_CLANG_SLOTS", MECH_CLANG_SLOTS)))
-    deadline = time.monotonic() + 600
-    fd = None
-    try:
-        while time.monotonic() < deadline:
-            for i in range(slots):
-                lock_path = _clang_slot_dir() / f"slot{i}.lock"
-                fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o666)
-                try:
-                    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    yield
-                    return
-                except BlockingIOError:
-                    os.close(fd)
-                    fd = None
-            time.sleep(0.1)
-        raise TimeoutError("clang slot wait timed out")
-    finally:
-        if fd is not None:
-            try:
-                fcntl.flock(fd, fcntl.LOCK_UN)
-            finally:
-                os.close(fd)
-
-
 def emit_ir(src: Path, lang: str, extra: list[str], workdir: Path) -> str | None:
     """Compile one file to LLVM IR text, or None if that isn't possible here."""
     tc = _llvm()
@@ -969,23 +927,10 @@ def emit_ir(src: Path, lang: str, extra: list[str], workdir: Path) -> str | None
     cmd = [cc, std, "-O2", "-S", "-emit-llvm", "-g0",
            "-fno-discard-value-names", str(src), "-o", str(out), *extra]
     try:
-        with _clang_slot():
-            if _mech_phase:
-                inner = " ".join(shlex.quote(x) for x in cmd)
-                wrap = (f"ulimit -v {MECH_IR_VMEM_KB} 2>/dev/null; "
-                        f"ulimit -m {MECH_IR_VMEM_KB} 2>/dev/null; exec {inner}")
-                r = sh(["sh", "-c", wrap], cwd=workdir, timeout=180)
-            else:
-                r = sh(cmd, cwd=workdir, timeout=180)
-            if r.returncode != 0:      # retry without the value-names flag
-                cmd2 = [x for x in cmd if x != "-fno-discard-value-names"]
-                if _mech_phase:
-                    inner = " ".join(shlex.quote(x) for x in cmd2)
-                    wrap = (f"ulimit -v {MECH_IR_VMEM_KB} 2>/dev/null; "
-                            f"ulimit -m {MECH_IR_VMEM_KB} 2>/dev/null; exec {inner}")
-                    r = sh(["sh", "-c", wrap], cwd=workdir, timeout=180)
-                else:
-                    r = sh(cmd2, cwd=workdir, timeout=180)
+        r = sh(cmd, cwd=workdir, timeout=180)
+        if r.returncode != 0:      # retry without the value-names flag
+            cmd = [x for x in cmd if x != "-fno-discard-value-names"]
+            r = sh(cmd, cwd=workdir, timeout=180)
     except subprocess.TimeoutExpired:
         return None
     if r.returncode != 0 or not out.is_file():
@@ -2045,12 +1990,13 @@ def append_mech_checkpoint(path: str) -> None:
 def run_mechanical_phase(rows: list[dict], jobs: int, *, force: bool = False) -> int:
     """Prove as much of the tree as possible with no model calls at all.
 
-    Uses threads (not processes) with a global clang slot cap so WSL does not
-    fork-bomb or OOM. Progress is checkpointed per file so a crash resumes.
+    ProcessPoolExecutor.map streams work (unlike submit-all-futures) and
+    checkpoints per file so a WSL crash can resume. Parallelism is capped —
+    the driver used to pass --jobs 64 on a 64-core host which killed WSL.
     """
-    global _mech_phase
     if not MECHANICAL:
         return 0
+    jobs = min(max(1, jobs), MECH_JOB_CAP)
     stamp = MECH_STAMP.read_text(encoding="utf-8").strip() if MECH_STAMP.is_file() else ""
     if not force and stamp and stamp != "in_progress":
         say("mechanical phase already complete — skipping (use --force-mech to rerun)")
@@ -2073,42 +2019,36 @@ def run_mechanical_phase(rows: list[dict], jobs: int, *, force: bool = False) ->
     MECH_STAMP.write_text("in_progress", encoding="utf-8")
     if tried:
         say(f"resuming mechanical — {len(tried)} already tried, {len(todo)} left")
-    banner(f"Mechanical phase — {len(todo)} files, {jobs} threads, "
-           f"{MECH_CLANG_SLOTS} clang slots, no agent")
+    banner(f"Mechanical phase — {len(todo)} files, {jobs} parallel, no agent")
 
     proven = 0
     done = 0
     reasons: dict[str, int] = {}
     t0 = time.monotonic()
     by_path = {r["path"]: r for r in rows}
-    _mech_phase = True
-    try:
-        with cf.ThreadPoolExecutor(max_workers=max(1, jobs)) as ex:
-            futures = [ex.submit(_mech_worker, row) for row in todo]
-            for fut in cf.as_completed(futures):
-                path, ok, detail = fut.result()
-                append_mech_checkpoint(path)
-                done += 1
-                if ok:
-                    proven += 1
-                    row = by_path[path]
-                    row["status"] = "VERIFIED"
-                    bid = mech_id(path)
-                    record_artifact(bid, detail, True, "", [row])
-                    log(batch=bid, status="VERIFIED", detail=detail, how="mechanical")
-                else:
-                    key = detail.split(":")[0][:60]
-                    reasons[key] = reasons.get(key, 0) + 1
-                if proven and done % MECH_SAVE_EVERY == 0:
-                    save_rows(rows)
-                if done % 100 == 0 or done == len(todo):
-                    el = time.monotonic() - t0
-                    print(f"  [{done}/{len(todo)}] {proven} proven free "
-                          f"({100*proven/max(done,1):.0f}%), "
-                          f"{done/max(el,1):.1f} files/s",
-                          flush=True)
-    finally:
-        _mech_phase = False
+
+    with cf.ProcessPoolExecutor(max_workers=jobs) as ex:
+        for path, ok, detail in ex.map(_mech_worker, todo, chunksize=4):
+            append_mech_checkpoint(path)
+            done += 1
+            if ok:
+                proven += 1
+                row = by_path[path]
+                row["status"] = "VERIFIED"
+                bid = mech_id(path)
+                record_artifact(bid, detail, True, "", [row])
+                log(batch=bid, status="VERIFIED", detail=detail, how="mechanical")
+            else:
+                key = detail.split(":")[0][:60]
+                reasons[key] = reasons.get(key, 0) + 1
+            if proven and done % MECH_SAVE_EVERY == 0:
+                save_rows(rows)
+            if done % 100 == 0 or done == len(todo):
+                el = time.monotonic() - t0
+                print(f"  [{done}/{len(todo)}] {proven} proven free "
+                      f"({100*proven/max(done,1):.0f}%), "
+                      f"{done/max(el,1):.1f} files/s",
+                      flush=True)
 
     say(f"mechanical phase proved {proven}/{len(todo)} files with no agent call")
     if reasons:
