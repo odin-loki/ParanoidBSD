@@ -1,0 +1,13 @@
+{
+  "batch": "b0307",
+  "verified": "2026-08-09T02:35:03Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                        cases     failures\n--------                        -----     --------\ncpowl                           50020            0\nlog10f                          50024            0\n__kernel_tandf                  50080            0\n__ieee754_rem_pio2f             50030            0\nTOTAL                          200154            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_cpowl.c": "774cfe2246acb869",
+    "hbsd/src/lib/msun/src/e_log10f.c": "6996b832a827ef5e",
+    "hbsd/src/lib/msun/src/k_tanf.c": "9f0cfb7a8bf63f1a",
+    "hbsd/src/lib/msun/src/e_rem_pio2f.c": "411c61e0cdec6bac"
+  }
+}
