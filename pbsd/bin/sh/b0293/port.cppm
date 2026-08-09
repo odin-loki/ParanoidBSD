@@ -195,6 +195,10 @@ char varlog[16384];
 size_t varlogn = 0;
 int setvar_calls = 0;
 int setvar_failat = 0;
+char last_optarg[256];
+char last_optind[32];
+char last_optvar[32];
+int optarg_state = -1;	/* -1 never, 0 unset, 1 set */
 
 void
 varlog_reset(void)
@@ -202,6 +206,10 @@ varlog_reset(void)
 	varlogn = 0;
 	varlog[0] = '\0';
 	setvar_calls = 0;
+	optarg_state = -1;
+	last_optarg[0] = '\0';
+	last_optind[0] = '\0';
+	last_optvar[0] = '\0';
 }
 
 void
@@ -225,6 +233,19 @@ setvarsafe(const char *name, const char *val, int flags)
 	snprintf(b, sizeof(b), "set(%s=%s,%d);", name ? name : "(null)",
 	    val ? val : "(null)", flags);
 	varlog_add(b);
+	if (name != NULL) {
+		if (strcmp(name, "OPTARG") == 0) {
+			optarg_state = 1;
+			snprintf(last_optarg, sizeof(last_optarg), "%s",
+			    val ? val : "");
+		} else if (strcmp(name, "OPTIND") == 0) {
+			snprintf(last_optind, sizeof(last_optind), "%s",
+			    val ? val : "");
+		} else {
+			snprintf(last_optvar, sizeof(last_optvar), "%s",
+			    val ? val : "");
+		}
+	}
 	return (setvar_failat != 0 && setvar_calls == setvar_failat) ? 1 : 0;
 }
 
@@ -245,6 +266,8 @@ unsetvar(const char *s)
 
 	snprintf(b, sizeof(b), "unset(%s);", s ? s : "(null)");
 	varlog_add(b);
+	if (s != NULL && strcmp(s, "OPTARG") == 0)
+		optarg_state = 0;
 	return (0);
 }
 
@@ -423,7 +446,7 @@ copyfunc(union node *n)
 const unsigned char builtincmd[] = {
 	1, 1,			'a',
 	2, 5,			'c', 'd',
-	2, 6 | BUILTIN_SPECIAL,	'\200', '\377',
+	2, 6 | BUILTIN_SPECIAL,	(unsigned char)'\200', (unsigned char)'\377',
 	4, 7,			'e', 'c', 'h', 'o',
 	4, 9 | BUILTIN_SPECIAL,	'e', 'x', 'i', 't',
 	4, 11,			'r', 'e', 'a', 'd',
@@ -1481,6 +1504,66 @@ isfunc(const char *name)
  * Test hooks.  Not part of the port; they only expose file-scope state
  * and provide setjmp landing pads for error()/exraise().
  *====================================================================*/
+
+void
+port_reset_all(void)
+{
+	error_reset();
+	outlog_reset();
+	varlog_reset();
+	free_reset(0);
+	stack_fill(0x7f, REF_STACKSIZE);
+	funclog_reset();
+	memset(&shellparam, 0, sizeof(shellparam));
+	argptr = NULL;
+	shoptarg = NULL;
+	nextopt_optptr = NULL;
+	arg0 = NULL;
+	minusc = NULL;
+	intlevel = 0;
+}
+
+const char *
+port_get_optarg(void)
+{
+	return (last_optarg);
+}
+
+int
+port_optarg_was_set(void)
+{
+	return (optarg_state == 1);
+}
+
+int
+port_optarg_was_unset(void)
+{
+	return (optarg_state == 0);
+}
+
+const char *
+port_get_optind(void)
+{
+	return (last_optind);
+}
+
+const char *
+port_get_optvar(void)
+{
+	return (last_optvar);
+}
+
+int
+port_get_shellparam_reset(void)
+{
+	return ((int)shellparam.reset);
+}
+
+int
+port_error_thrown(void)
+{
+	return (error_raised != 0);
+}
 
 int
 try_nextopt(const char *optstring, int *res)

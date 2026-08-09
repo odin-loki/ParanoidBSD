@@ -37,21 +37,14 @@ module;
 #define NSIG		65
 #endif
 
-/*
- * Symbols supplied by other translation units of bin/sh (mystring.c,
- * output.c) or by libc on FreeBSD.  The oracle and this port bind to the
- * same objects so they cannot diverge here.
- */
-extern "C" {
-int is_number(const char *);
-extern const char **sys_signame;
-extern int sys_nsig;
-void out1str(const char *);
-void out1c(int);
-void out1fmt(const char *, ...);
-}
-
 export module pbsd.bin.sh.b0230;
+
+extern "C" int is_number(const char *);
+extern "C" const char **sys_signame;
+extern "C" int sys_nsig;
+extern "C" void out1str(const char *);
+extern "C" void out1c(int);
+extern "C" void out1fmt(const char *, ...);
 
 #define MAXTYPES 50		/* max number of node types */
 #define MAXFIELDS 20		/* max fields in a structure */
@@ -769,6 +762,154 @@ pungetc(void)
 {
 	parsenleft++;
 	parsenextc--;
+}
+
+/*
+ * Harness helpers (not in the original sources).
+ */
+void
+port_mknodes_reset(void)
+{
+	int i, j;
+
+	for (i = 0; i < ntypes; i++)
+		free(nodename[i]);
+	for (i = 0; i < nstr; i++) {
+		free(str[i].tag);
+		for (j = 0; j < str[i].nfields; j++) {
+			free(str[i].field[j].name);
+			free(str[i].field[j].decl);
+		}
+	}
+	ntypes = 0;
+	nstr = 0;
+	curstr = NULL;
+	linno = 0;
+	line[0] = '\0';
+	linep = line;
+}
+
+void
+port_mknodes_set_line(const char *s)
+{
+	(void)strncpy(line, s, sizeof(line) - 1);
+	line[sizeof(line) - 1] = '\0';
+	linep = line;
+}
+
+int
+port_mknodes_get_linno(void)
+{
+	return linno;
+}
+
+char *
+mknodes_savestr(const char *s)
+{
+	return savestr(s);
+}
+
+void
+mknodes_output(char *file)
+{
+	output(file);
+}
+
+void
+mknodes_read_input(FILE *infp)
+{
+	while (readline(infp)) {
+		if (line[0] == ' ' || line[0] == '\t')
+			parsefield();
+		else if (line[0] != '\0')
+			parsenode();
+	}
+}
+
+int
+mknodes_main(int argc, char **argv)
+{
+	FILE *infp;
+
+	if (argc != 3)
+		error("usage: mknodes file");
+	if ((infp = fopen(argv[1], "r")) == NULL)
+		error("Can't open %s: %s", argv[1], strerror(errno));
+	mknodes_read_input(infp);
+	fclose(infp);
+	output(argv[2]);
+	exit(0);
+}
+
+void
+port_input_reset(void)
+{
+	parsefile = &basepf;
+	parsenleft = 0;
+	parselleft = 0;
+	parsenextc = basebuf;
+	plinno = 1;
+	basepf.prev = NULL;
+	basepf.linno = 1;
+	basepf.fd = 0;
+	basepf.nleft = 0;
+	basepf.lleft = 0;
+	basepf.nextc = basebuf;
+	basepf.buf = basebuf;
+	basepf.strpush = NULL;
+	basepf.basestrpush.prev = NULL;
+	basepf.basestrpush.ap = NULL;
+}
+
+void
+port_input_set_parsenleft(int n)
+{
+	parsenleft = n;
+}
+
+void
+port_input_set_parselleft(int n)
+{
+	parselleft = n;
+}
+
+void
+port_input_set_nextc(const char *s)
+{
+	parsenextc = s;
+}
+
+void
+port_input_set_buf_null(int null)
+{
+	parsefile->buf = null ? NULL : basebuf;
+}
+
+void
+port_input_set_strpush(int on)
+{
+	if (on)
+		parsefile->strpush = &basepf.basestrpush;
+	else
+		parsefile->strpush = NULL;
+}
+
+void
+port_trap_reset(void)
+{
+	int i;
+
+	for (i = 0; i < NSIG; i++) {
+		free(trap[i]);
+		trap[i] = NULL;
+	}
+}
+
+void
+port_trap_set(int signo, const char *cmd)
+{
+	free(trap[signo]);
+	trap[signo] = cmd ? savestr(cmd) : NULL;
 }
 
 } /* namespace pbsd::bin_sh::b0230 */
