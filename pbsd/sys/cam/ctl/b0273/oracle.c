@@ -20,7 +20,7 @@
 #define CTL_BE_NAME_LEN 32
 
 #define QMD_STAILQ_CHECK_TAIL(head) do {} while (0)
-#define QMD_SAVELINK(name, link) uintptr_t name = (uintptr_t)(link)
+#define QMD_SAVELINK(name, link) __typeof__(link) name = (link)
 #define TRASHIT(x) do {(void)(x);} while (0)
 #define QUEUE_TYPEOF(type) struct type
 

@@ -55,11 +55,20 @@ extern int mock_flock_calls;
 extern int mock_funlock_calls;
 extern struct __pbsd_sFILE mock_stdin_storage;
 extern struct __pbsd_sFILE *pbsd_stdin;
+extern int __sgetc(struct __pbsd_sFILE *);
+extern ssize_t _write(int, const void *, size_t);
+extern int vsprintf(char *, const char *, va_list);
+extern int vsprintf_l(char *, locale_t, const char *, va_list);
+extern locale_t __get_locale(void);
+extern int strvisx(char *, const char *, size_t, int);
+extern int __printf_out(struct __printf_io *, const struct printf_info *,
+    const char *, int);
+extern void __printf_flush(struct __printf_io *);
 }
 
 #define stdin pbsd_stdin
 
-export namespace pbsd::lib_libc_stdio::b0275 {
+#define	FLOCKFILE(fp)	do {						\
 		if (__isthreaded) {						\
 			mock_flock_calls++;					\
 			(fp)->_pbsd_lockdepth++;				\

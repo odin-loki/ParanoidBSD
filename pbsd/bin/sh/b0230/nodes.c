@@ -6,13 +6,11 @@
 	    return;
       result->blocksize += nodesize[n->type];
       switch (n->type) {
-      case N582:
+      case N285:
+	    sizenodelist(n->t98.f2, result);
+	    calcsize(n->t98.f1, result);
 	    break;
-      case N518:
-	    sizenodelist(n->t887.f1, result);
-	    break;
-      case N108:
-	    break;
-      case N9:
+      case N423:
+	    sizenodelist(n->t376.f1, result);
 	    break;
       };

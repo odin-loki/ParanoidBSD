@@ -541,6 +541,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/nvmecontrol/nc_util_m/port.cppm
   sbin/ping/utils_m/port.cppm
   sbin/rcorder/ealloc_m/port.cppm
+  sys/cam/ctl/b0273/port.cppm
   sys/compat/freebsd32/b0206/port.cppm
   sys/compat/linux/b0208/port.cppm
   sys/compat/linux/b0208s1/port.cppm

@@ -176,7 +176,7 @@ get_tty_line(void)
 
 	if (script_pos >= script_n)
 		return -1;
-	if (script_ret[script_pos] < 0) {
+	if (script_ret[script_pos] >= 0) {
 		script_pos++;
 		return -1;
 	}

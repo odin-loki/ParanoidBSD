@@ -23,8 +23,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifndef LONG_BIT
-#define LONG_BIT (sizeof(long) * CHAR_BIT)
+#ifndef EOF
+#define EOF (-1)
+#endif
+
+#ifndef STDERR_FILENO
+#define STDERR_FILENO 2
 #endif
 
 typedef void *locale_t;
