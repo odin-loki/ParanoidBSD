@@ -1,0 +1,13 @@
+{
+  "batch": "b0235",
+  "verified": "2026-08-09T00:44:38Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 4/7: local_qsort_r, local_qsort_r_compat, qsort_s, local_qsort_s)",
+  "ir_equivalent": false,
+  "harness_output": "\n  function                cases   failures   result\n  ------------------ ---------- ----------   ------\n  memalignment           250454          0   ok\n  qsort_r                216290          0   ok\n  __qsort_r_compat       216290          0   ok\n  qsort_s                216360          0   ok\n\n  b0235: PASS (0 failures)\n\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/qsort_r.c": "852882beb0c250f2",
+    "hbsd/src/lib/libc/stdlib/qsort_s.c": "3225cde134ac0d41",
+    "hbsd/src/lib/libc/stdlib/memalignment.c": "a7b0aa0ca756b239",
+    "hbsd/src/lib/libc/stdlib/qsort_r_compat.c": "e9b8c942d718b823"
+  }
+}

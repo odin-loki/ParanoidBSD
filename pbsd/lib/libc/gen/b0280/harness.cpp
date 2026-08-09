@@ -258,6 +258,11 @@ snap_capture(SlSnap *s, StringList *sl, const char *pool_base)
 	s->sl_cur = sl->sl_cur;
 	s->sl_max = sl->sl_max;
 	s->sl_str = sl->sl_str;
+	s->entry_offs = NULL;
+	if (sl->sl_cur == 0)
+		return (0);
+	if (sl->sl_str == NULL)
+		return (0);
 	s->entry_offs = (long *)std::calloc(sl->sl_cur, sizeof(long));
 	if (s->entry_offs == NULL)
 		return (-1);
@@ -275,6 +280,8 @@ snap_equal(const SlSnap *a, const SlSnap *b)
 		return (0);
 	if ((a->sl_str == NULL) != (b->sl_str == NULL))
 		return (0);
+	if (a->sl_str == NULL)
+		return (1);
 	for (i = 0; i < a->sl_cur; i++) {
 		if (a->entry_offs[i] != b->entry_offs[i])
 			return (0);

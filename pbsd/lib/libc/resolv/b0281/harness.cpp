@@ -305,21 +305,47 @@ test_h_errno_random(void)
 }
 
 static bool
-check_h_errno_set(ResStatePtr ref_s, ResStatePtr port_s, int err,
-    const unsigned char *ref_guard, const unsigned char *port_guard,
-    size_t guard_n, const char *ctx)
+buffer_guards_intact(const unsigned char *before, const unsigned char *after,
+    size_t buf_n, size_t herr_off)
 {
+	if (memcmp(before, after, herr_off) != 0)
+		return (false);
+	if (herr_off + sizeof(int) < buf_n &&
+	    memcmp(before + herr_off + sizeof(int),
+	    after + herr_off + sizeof(int),
+	    buf_n - herr_off - sizeof(int)) != 0)
+		return (false);
+	return (true);
+}
+
+static bool
+check_h_errno_set(ResStatePtr ref_s, ResStatePtr port_s, int err,
+    unsigned char *ref_buf, unsigned char *port_buf, size_t buf_n,
+    const char *ctx)
+{
+	unsigned char ref_saved[512];
+	unsigned char port_saved[512];
+	size_t ref_herr_off, port_herr_off;
 	int ref_h, port_h;
 
+	if (buf_n > sizeof(ref_saved))
+		buf_n = sizeof(ref_saved);
+
 	record_case(FN_H_ERRNO_SET);
+	memcpy(ref_saved, ref_buf, buf_n);
+	memcpy(port_saved, port_buf, buf_n);
+	ref_herr_off = (size_t)((unsigned char *)&ref_s->res_h_errno - ref_buf);
+	port_herr_off = (size_t)((unsigned char *)&port_s->res_h_errno - port_buf);
+
 	ref___h_errno_set(ref_s, err);
-	P::__h_errno_set(port_s, err);
 	ref_h = h_errno;
+	P::__h_errno_set(port_s, err);
 	port_h = h_errno;
+
 	if (ref_s->res_h_errno != err || port_s->res_h_errno != err ||
 	    ref_h != err || port_h != err ||
-	    !bufs_equal(ref_guard, ref_s, guard_n) ||
-	    !bufs_equal(port_guard, port_s, guard_n)) {
+	    !buffer_guards_intact(ref_saved, ref_buf, buf_n, ref_herr_off) ||
+	    !buffer_guards_intact(port_saved, port_buf, buf_n, port_herr_off)) {
 		record_fail(FN_H_ERRNO_SET, ctx);
 		return (false);
 	}
@@ -329,25 +355,25 @@ check_h_errno_set(ResStatePtr ref_s, ResStatePtr port_s, int err,
 static void
 test_h_errno_set_handwritten(void)
 {
-	ResState ref_s, port_s;
-	unsigned char ref_guard[sizeof(ResState) + 32];
-	unsigned char port_guard[sizeof(ResState) + 32];
+	unsigned char ref_buf[sizeof(ResState) + 64];
+	unsigned char port_buf[sizeof(ResState) + 64];
+	ResStatePtr ref_s, port_s;
 
 	mock_reset_base();
-	fill_guard(ref_guard, sizeof(ref_guard));
-	fill_guard(port_guard, sizeof(port_guard));
-	memcpy(ref_guard + 16, &ref_s, sizeof(ref_s));
-	memcpy(port_guard + 16, &port_s, sizeof(port_s));
-	(void)check_h_errno_set(&ref_s, &port_s, 0, ref_guard, port_guard,
-	    sizeof(ref_guard), "zero");
-	(void)check_h_errno_set(&ref_s, &port_s, 4, ref_guard, port_guard,
-	    sizeof(ref_guard), "four");
-	(void)check_h_errno_set(&ref_s, &port_s, -1, ref_guard, port_guard,
-	    sizeof(ref_guard), "neg");
-	(void)check_h_errno_set(&ref_s, &port_s, 0x7f, ref_guard, port_guard,
-	    sizeof(ref_guard), "0x7f");
-	(void)check_h_errno_set(&ref_s, &port_s, 0x80, ref_guard, port_guard,
-	    sizeof(ref_guard), "0x80");
+	fill_guard(ref_buf, sizeof(ref_buf));
+	fill_guard(port_buf, sizeof(port_buf));
+	ref_s = reinterpret_cast<ResStatePtr>(ref_buf + 32);
+	port_s = reinterpret_cast<ResStatePtr>(port_buf + 32);
+	(void)check_h_errno_set(ref_s, port_s, 0, ref_buf, port_buf,
+	    sizeof(ref_buf), "zero");
+	(void)check_h_errno_set(ref_s, port_s, 4, ref_buf, port_buf,
+	    sizeof(ref_buf), "four");
+	(void)check_h_errno_set(ref_s, port_s, -1, ref_buf, port_buf,
+	    sizeof(ref_buf), "neg");
+	(void)check_h_errno_set(ref_s, port_s, 0x7f, ref_buf, port_buf,
+	    sizeof(ref_buf), "0x7f");
+	(void)check_h_errno_set(ref_s, port_s, 0x80, ref_buf, port_buf,
+	    sizeof(ref_buf), "0x80");
 }
 
 static void
@@ -356,21 +382,21 @@ test_h_errno_set_random(void)
 	unsigned long i;
 
 	for (i = 0; i < SWEEP_ITERS; i++) {
-		ResState ref_s, port_s;
-		unsigned char ref_guard[sizeof(ResState) + 32];
-		unsigned char port_guard[sizeof(ResState) + 32];
+		unsigned char ref_buf[sizeof(ResState) + 64];
+		unsigned char port_buf[sizeof(ResState) + 64];
+		ResStatePtr ref_s, port_s;
 		char ctx[48];
 		int err;
 
 		mock_reset_base();
-		fill_guard(ref_guard, sizeof(ref_guard));
-		fill_guard(port_guard, sizeof(port_guard));
-		memcpy(ref_guard + 16, &ref_s, sizeof(ref_s));
-		memcpy(port_guard + 16, &port_s, sizeof(port_s));
+		fill_guard(ref_buf, sizeof(ref_buf));
+		fill_guard(port_buf, sizeof(port_buf));
+		ref_s = reinterpret_cast<ResStatePtr>(ref_buf + 32);
+		port_s = reinterpret_cast<ResStatePtr>(port_buf + 32);
 		err = rnd_i32();
 		snprintf(ctx, sizeof(ctx), "rand#%lu", i);
-		(void)check_h_errno_set(&ref_s, &port_s, err, ref_guard, port_guard,
-		    sizeof(ref_guard), ctx);
+		(void)check_h_errno_set(ref_s, port_s, err, ref_buf, port_buf,
+		    sizeof(ref_buf), ctx);
 	}
 }
 

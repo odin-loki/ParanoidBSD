@@ -39,7 +39,7 @@ P::arith_t ref_do_binop(int op, P::arith_t a, P::arith_t b);
 P::arith_t ref_arith_lookupvarint(char *varname);
 P::arith_t ref_arith(const char *s);
 int ref_letcmd(int argc, char **argv);
-extern "C" int port_letcmd(int argc, char **argv);
+extern "C" int ref_letcmd(int argc, char **argv);
 }
 
 struct Stat {
@@ -449,7 +449,7 @@ test_main()
 			if (pid2 < 0) {
 				fail(st, "fork port");
 			} else if (pid2 == 0) {
-				P::main(1, av);
+				P::mksyntax_main(1, av);
 				_exit(1);
 			} else {
 				int status2 = 0;
@@ -734,7 +734,7 @@ run_port_letcmd(int argc, char **argv, int *out)
 	P::port_reset_state();
 	if (setjmp(P::b0228_jmp) != 0)
 		return -1;
-	*out = port_letcmd(argc, argv);
+	*out = P::letcmd(argc, argv);
 	return 0;
 }
 
