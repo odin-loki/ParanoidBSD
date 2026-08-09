@@ -166,6 +166,19 @@ def ren(t,p):
     o,i,n=[],0,len(t)
     while i<n:
         c=t[i]
+        if c=='/' and i+1<n:
+            if t[i+1]=='/':
+                o.append(t[i:i+2]); i+=2
+                while i<n and t[i]!='\n':
+                    o.append(t[i]); i+=1
+                continue
+            if t[i+1]=='*':
+                o.append(t[i:i+2]); i+=2
+                while i+1<n and not (t[i]=='*' and t[i+1]=='/'):
+                    o.append(t[i]); i+=1
+                if i+1<n:
+                    o.append(t[i:i+2]); i+=2
+                continue
         if c=='"':
             o.append(c); i+=1
             while i<n:

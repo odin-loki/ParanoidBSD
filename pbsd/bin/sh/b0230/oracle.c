@@ -102,6 +102,7 @@ static char *linep;
 #define nextfield ref_nextfield
 #define skipbl ref_skipbl
 #define readline ref_readline
+#define mknodes_read_input ref_mknodes_read_input
 
 void ref_parsenode(void);
 void ref_parsefield(void);
@@ -115,6 +116,17 @@ int ref_readline(FILE *);
 void ref_mknodes_error(const char *, ...) __printf0like(1, 2) __dead2;
 char *ref_mknodes_savestr(const char *);
 
+void
+ref_mknodes_read_input(FILE *infp)
+{
+	while (readline(infp)) {
+		if (line[0] == ' ' || line[0] == '\t')
+			parsefield();
+		else if (line[0] != '\0')
+			parsenode();
+	}
+}
+
 int
 ref_mknodes_main(int argc, char *argv[])
 {
@@ -124,12 +136,7 @@ ref_mknodes_main(int argc, char *argv[])
 		error("usage: mknodes file");
 	if ((infp = fopen(argv[1], "r")) == NULL)
 		error("Can't open %s: %s", argv[1], strerror(errno));
-	while (readline(infp)) {
-		if (line[0] == ' ' || line[0] == '\t')
-			parsefield();
-		else if (line[0] != '\0')
-			parsenode();
-	}
+	mknodes_read_input(infp);
 	fclose(infp);
 	output(argv[2]);
 	exit(0);

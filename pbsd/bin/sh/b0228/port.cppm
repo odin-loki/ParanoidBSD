@@ -777,7 +777,7 @@ letcmd(int argc, char **argv)
 
 	if (argc > 1) {
 		p = argv[1];
-		if (argc > 2) {
+		if (argc <= 2) {
 			/*
 			 * Concatenate arguments.
 			 */

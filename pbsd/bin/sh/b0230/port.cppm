@@ -1,5 +1,6 @@
 module;
 
+#include <climits>
 #include <cerrno>
 #include <cstdarg>
 #include <cstdio>
@@ -108,6 +109,17 @@ char *mknodes_savestr(const char *);
 #define error mknodes_error
 #define output mknodes_output
 
+void
+mknodes_read_input(FILE *infp)
+{
+	while (readline(infp)) {
+		if (line[0] == ' ' || line[0] == '\t')
+			parsefield();
+		else if (line[0] != '\0')
+			parsenode();
+	}
+}
+
 int
 mknodes_main(int argc, char *argv[])
 {
@@ -117,12 +129,7 @@ mknodes_main(int argc, char *argv[])
 		error("usage: mknodes file");
 	if ((infp = std::fopen(argv[1], "r")) == NULL)
 		error("Can't open %s: %s", argv[1], strerror(errno));
-	while (readline(infp)) {
-		if (line[0] == ' ' || line[0] == '\t')
-			parsefield();
-		else if (line[0] != '\0')
-			parsenode();
-	}
+	mknodes_read_input(infp);
 	std::fclose(infp);
 	output(argv[2]);
 	std::exit(0);

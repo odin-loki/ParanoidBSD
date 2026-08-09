@@ -1,0 +1,10 @@
+{
+  "batch": "b0198",
+  "verified": "2026-08-09T00:46:16Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "pbsd batch b0198 -- differential test vs oracle\n\n\nfunction                cases     failures  result\n--------------------------------------------------------\ncheckslash             206489            0  PASS\ncheckdot               206489            0  PASS\ncheck2                 214920            0  PASS\nsiginfo                200054            0  PASS\n--------------------------------------------------------\nTOTAL                  827952            0  PASS\nharness.cpp: In function \u2018void {anonymous}::c2_fixture()\u2019:\nharness.cpp:449:18: warning: ignoring return value of \u2018int symlink(const char*, const char*)\u2019 declared with attribute \u2018warn_unused_result\u2019 [-Wunused-result]\n  449 |         ::symlink((c2_dir + \"/f0\").c_str(), l0.c_str());\n      |         ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\nharness.cpp:452:18: warning: ignoring return value of \u2018int symlink(const char*, const char*)\u2019 declared with attribute \u2018warn_unused_result\u2019 [-Wunused-result]\n  452 |         ::symlink((c2_dir + \"/d0\").c_str(), ld.c_str());\n      |         ~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n",
+  "input_hashes": {
+    "hbsd/src/bin/rm/rm.c": "6be36e4366f78f2c"
+  }
+}
