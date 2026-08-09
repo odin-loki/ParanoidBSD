@@ -1027,7 +1027,7 @@ ref__citrus_db_factory_add_by_string(struct _citrus_db_factory *df,
 	if (tmp == NULL)
 		return (errno);
 	_region_init(&r, tmp, strlen(key));
-	return ref__citrus_db_factory_add(df, &r, 1, data, datafree);
+	return _citrus_db_factory_add(df, &r, 1, data, datafree);
 }
 
 int
@@ -1042,7 +1042,7 @@ ref__citrus_db_factory_add8_by_string(struct _citrus_db_factory *df,
 		return (errno);
 	*p = val;
 	_region_init(&r, p, 1);
-	return (ref__citrus_db_factory_add_by_string(df, key, &r, 1));
+	return (_citrus_db_factory_add_by_string(df, key, &r, 1));
 }
 
 int
@@ -1057,7 +1057,7 @@ ref__citrus_db_factory_add16_by_string(struct _citrus_db_factory *df,
 		return (errno);
 	*p = htons(val);
 	_region_init(&r, p, 2);
-	return (ref__citrus_db_factory_add_by_string(df, key, &r, 1));
+	return (_citrus_db_factory_add_by_string(df, key, &r, 1));
 }
 
 int
@@ -1072,7 +1072,7 @@ ref__citrus_db_factory_add32_by_string(struct _citrus_db_factory *df,
 		return (errno);
 	*p = htonl(val);
 	_region_init(&r, p, 4);
-	return (ref__citrus_db_factory_add_by_string(df, key, &r, 1));
+	return (_citrus_db_factory_add_by_string(df, key, &r, 1));
 }
 
 int

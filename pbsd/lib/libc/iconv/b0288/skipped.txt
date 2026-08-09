@@ -1,0 +1,2 @@
+citrus_lookup_factory.c — depends on citrus_db_factory, fgetln, FILE I/O, and citrus_db_hash not available in isolation
+iconv_compat.c — depends on __bsd_* iconv internals and __sym_compat ELF linker macros

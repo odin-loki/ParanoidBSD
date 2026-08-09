@@ -106,20 +106,20 @@ struct Env {
 	uint32_t getfail;
 	uint32_t tflags;
 	int pinned;
-	recno_t recno;
+	uint32_t recno;
 	int op;
-	recno_t bt_nrecs;
+	uint32_t bt_nrecs;
 	uint8_t cflags;
-	recno_t rcursor;
+	uint32_t rcursor;
 	uint32_t seqflags;
-	recno_t keyrec;
+	uint32_t keyrec;
 	int key_zero;
 	int irec_status;
 	int ret_status;
 	int sync_flags;
 	int fuel;
 	int irec_set_nrecs;
-	recno_t irec_nrecs;
+	uint32_t irec_nrecs;
 	int btsync_status;
 	int btclose_status;
 	int munmap_fail;
@@ -149,7 +149,7 @@ static int g_irec_call;
 static long g_mpool_cookie;
 static FILE g_mock_file;
 static unsigned char g_databuf[64];
-static recno_t g_keyrec;
+static uint32_t g_keyrec;
 static BTREE g_tree;
 static DB g_db;
 
@@ -661,7 +661,7 @@ run(const Env &E, int fn, unsigned char *buf, Snap &S, int useport)
 	memset(g_pin, 0, sizeof g_pin);
 	build(E, buf);
 
-	recno_t krec = E.keyrec;
+		uint32_t krec = E.keyrec;
 	key.data = E.key_zero ? nullptr : &krec;
 	key.size = sizeof(krec);
 	memset(&data, 0, sizeof data);
@@ -719,7 +719,8 @@ fixup(Env &E, int fn)
 					E.pg[p].ri[s].pgno = LEAF[s % 4];
 			}
 		}
-		layout_ri(E.pg[p], Rng(0xabc + p));
+		Rng lr(0xabcu + (unsigned)p);
+		layout_ri(E.pg[p], lr);
 	}
 	if (E.pinned >= NPAGE)
 		E.pinned = NPAGE - 1;

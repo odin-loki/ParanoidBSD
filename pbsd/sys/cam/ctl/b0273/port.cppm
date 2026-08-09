@@ -837,4 +837,9 @@ const uint8_t (&ctl_serialize_table_ref())[CTL_SERIDX_COUNT][CTL_SERIDX_COUNT]
 	return ctl_serialize_table;
 }
 
+uint32_t num_backends()
+{
+	return control_softc->num_backends;
+}
+
 } // namespace

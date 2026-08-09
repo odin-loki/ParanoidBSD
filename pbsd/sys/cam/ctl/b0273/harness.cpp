@@ -324,10 +324,10 @@ static void test_backend_register(const char *name, int (*init)(), int expect)
 	const int rr = ref_ctl_backend_register(&pool.refb[0]);
 	if (pr != rr)
 		fail_row(FN_REG, "return mismatch");
+	if (pr == 0 && (ref_num_backends() != 1 || P::num_backends() != 1))
+		fail_row(FN_REG, "count mismatch");
 	if (pr != expect)
 		fail_row(FN_REG, "unexpected return");
-	if (pr == 0 && ref_num_backends() != 1)
-		fail_row(FN_REG, "count mismatch");
 }
 
 static void test_backend_deregister(const char *name, int (*shutdown)(), int expect)
@@ -457,8 +457,8 @@ int main()
 	test_cmd_table(FN_NVM_TBL, P::nvme_nvm_cmd_table, nvme_nvm_cmd_table);
 	test_nvme_strings();
 	test_backends_hand();
-	test_nvme_strings_random(100000);
-	test_backends_random(100000);
+	test_nvme_strings_random(200000);
+	test_backends_random(200000);
 
 	std::printf("%-28s %10s %10s\n", "function", "cases", "failures");
 	unsigned long tc = 0, tf = 0;

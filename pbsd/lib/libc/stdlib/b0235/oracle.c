@@ -288,9 +288,11 @@ ref_swapfunc_rc(char *a, char *b, size_t es)
 	} while (--es > 0);
 }
 
+#undef	vecswap
 #define	vecswap(a, b, n)				\
 	if ((n) > 0) ref_swapfunc_rc(a, b, n)
 
+#undef	CMP
 #define	CMP(t, x, y) (cmp((t), (x), (y)))
 
 static inline char *
@@ -428,9 +430,11 @@ ref_swapfunc_s(char *a, char *b, size_t es)
 	} while (--es > 0);
 }
 
+#undef	vecswap
 #define	vecswap(a, b, n)				\
 	if ((n) > 0) ref_swapfunc_s(a, b, n)
 
+#undef	CMP
 #define	CMP(t, x, y) (cmp((x), (y), (t)))
 
 static inline char *

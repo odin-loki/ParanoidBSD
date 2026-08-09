@@ -830,10 +830,10 @@ check_setschedparam(const char *label, struct pthread *cur, GuardedPthread *in,
 
 	in_port = *in;
 	in_ref = *in;
-	port = run_setschedparam_port(cur, &in_port, find_ret, sched_ret,
-	    sched_err, policy, prio);
-	ref = run_setschedparam_ref(cur, &in_ref, find_ret, sched_ret, sched_err,
-	    policy, prio);
+	port = run_setschedparam_port(self ? &in_port.thr : cur, &in_port, find_ret,
+	    sched_ret, sched_err, policy, prio);
+	ref = run_setschedparam_ref(self ? &in_ref.thr : cur, &in_ref, find_ret,
+	    sched_ret, sched_err, policy, prio);
 
 	ok = (port.ret == ref.ret) &&
 	    (std::memcmp(&port.target, &ref.target, sizeof(port.target)) == 0) &&

@@ -151,8 +151,6 @@ __wrap_malloc(size_t sz)
 	return __real_malloc(sz);
 }
 
-extern "C" void * __real_realloc(void *, size_t);
-
 extern "C" void *
 __wrap_realloc(void *ptr, size_t sz)
 {
@@ -462,7 +460,7 @@ test_sl_add_edges(void)
 	run_add_sequence(F_SL_ADD, "boundary 21 grow", 21, 0);
 	run_add_sequence(F_SL_ADD, "boundary 39", 39, 0);
 	run_add_sequence(F_SL_ADD, "boundary 40 grow2", 40, 0);
-	run_add_sequence(F_SL_ADD, "reallocf fail at 19", 19, 1);
+	run_add_sequence(F_SL_ADD, "reallocf fail at 20", 20, 1);
 
 	{
 		StringList *sl_r, *sl_p;

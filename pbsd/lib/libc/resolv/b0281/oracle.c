@@ -18,7 +18,6 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include <sys/uio.h>
 #include <time.h>
 #include <unistd.h>
@@ -87,11 +86,14 @@ typedef struct {
 
 typedef struct {
 	int id;
-} pthread_key_t;
+} pbsd_b0281_pthread_key_t;
 
 typedef struct {
 	int locked;
-} pthread_mutex_t;
+} pbsd_b0281_pthread_mutex_t;
+
+#define pthread_key_t pbsd_b0281_pthread_key_t
+#define pthread_mutex_t pbsd_b0281_pthread_mutex_t
 
 #define PTHREAD_MUTEX_INITIALIZER {0}
 
@@ -252,8 +254,6 @@ int *ref___h_errno(void);
 const char *ref_hstrerror(int err);
 
 #define __res_state ref___res_state
-#define __h_errno ref___h_errno
-#define hstrerror ref_hstrerror
 
 /* ------------------------------------------------------------------ */
 /* h_errno.c                                                          */
@@ -303,6 +303,8 @@ ref___h_errno_set(res_state res, int err)
 {
 	h_errno = res->res_h_errno = err;
 }
+
+#undef __res_state
 
 /* ------------------------------------------------------------------ */
 /* mtctxres.c                                                         */
@@ -585,6 +587,9 @@ const int h_nerr = { nitems(h_errlist) };
 
 #undef	h_errno
 int	h_errno;
+
+#define __h_errno ref___h_errno
+#define hstrerror ref_hstrerror
 
 void
 ref_herror(const char *s) {
