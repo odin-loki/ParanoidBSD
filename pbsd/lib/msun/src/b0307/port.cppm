@@ -548,9 +548,7 @@ recompute:
 
 namespace pbsd::lib_msun_src::b0307 {
 
-export 
-
-long double _Complex
+export long double _Complex
 cpowl(long double _Complex a, long double _Complex z)
 {
 	long double _Complex w;
@@ -576,7 +574,7 @@ cpowl(long double _Complex a, long double _Complex z)
 	return (w);
 }
 
-export /*
+/*
  * ====================================================
  * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
  *
@@ -591,7 +589,6 @@ export /*
  * Float version of e_log10.c.  See the latter for most comments.
  */
 
-
 static const float
 two25      =  3.3554432000e+07, /* 0x4c000000 */
 ivln10hi   =  4.3432617188e-01, /* 0x3ede6000 */
@@ -602,7 +599,7 @@ log10_2lo  =  7.9034151668e-07; /* 0x355427db */
 static const float zero   =  0.0;
 static volatile float vzero = 0.0;
 
-float
+export float
 log10f(float x)
 {
 	float f,hfsq,hi,lo,r,y;
@@ -643,7 +640,7 @@ log10f(float x)
 	    y*log10_2hi;
 }
 
-export /* k_tanf.c -- float version of k_tan.c
+/* k_tanf.c -- float version of k_tan.c
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
  * Optimized by Bruce D. Evans.
  */
@@ -670,7 +667,7 @@ T[] =  {
   0x1362b9bf971bcd.0p-59,	/* 0.00946564784943673166728 */
 };
 
-float
+export float
 __kernel_tandf(double x, int iy)
 {
 	double z,r,w,s,t,u;
@@ -700,7 +697,7 @@ __kernel_tandf(double x, int iy)
 	else return -1.0/r;
 }
 
-export /* e_rem_pio2f.c -- float version of e_rem_pio2.c
+/* e_rem_pio2f.c -- float version of e_rem_pio2.c
  * Conversion to float by Ian Lance Taylor, Cygnus Support, ian@cygnus.com.
  * Debugged and optimized by Bruce D. Evans.
  */
@@ -736,7 +733,7 @@ invpio2 =  6.36619772367581382433e-01, /* 0x3FE45F30, 0x6DC9C883 */
 pio2_1  =  1.57079631090164184570e+00, /* 0x3FF921FB, 0x50000000 */
 pio2_1t =  1.58932547735281966916e-08; /* 0x3E5110b4, 0x611A6263 */
 
-int
+export int
 __ieee754_rem_pio2f(float x, double *y)
 {
 	double w,r,fn;
