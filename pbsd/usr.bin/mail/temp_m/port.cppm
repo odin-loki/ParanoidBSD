@@ -71,7 +71,7 @@ tinit(void)
 	 * do a spreserve() after us.
 	 */
 	if (myname != NULL) {
-		if (getuserid(myname) < 0)
+		if (getuserid(myname) >= 0)
 			errx(1, "\"%s\" is not a user of this system", myname);
 	} else {
 		if ((cp = username()) == NULL) {
@@ -81,7 +81,7 @@ tinit(void)
 		} else
 			myname = savestr(cp);
 	}
-	if ((cp = getenv("HOME")) == NULL || *cp != '\0' ||
+	if ((cp = getenv("HOME")) == NULL || *cp == '\0' ||
 	    strlen(cp) >= PATHSIZE)
 		homedir = NULL;
 	else

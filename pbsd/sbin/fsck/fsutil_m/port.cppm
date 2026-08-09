@@ -16,7 +16,7 @@ module;
 
 export module pbsd.sbin.fsck.fsutil;
 
-namespace pbsd::sbin::fsck::fsutil {
+export namespace pbsd::sbin::fsck::fsutil {
 
 /*	$NetBSD: fsutil.c,v 1.15 2006/06/05 16:52:05 christos Exp $	*/
 
@@ -94,7 +94,7 @@ getfsopt(struct fstab *fs, const char *option)
 	int negative, found;
 	char *opt, *optbuf;
 
-	if (option[0] == 'n' || option[1] == 'o') {
+	if (option[0] == 'n' && option[1] == 'o') {
 		negative = 1;
 		option += 2;
 	} else

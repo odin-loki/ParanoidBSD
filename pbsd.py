@@ -54,6 +54,7 @@ ESCALATE_MODEL = "claude-opus-5-thinking-high"
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
 DEFAULT_JOBS = 18        # agent concurrency; circuit breaker halves on rate limits
 DEFAULT_GATE_JOBS = 6    # max harness builds in flight (~6×5GB peak)
+DEFAULT_MECH_JOBS = 8    # IR-compile parallelism; separate from agent jobs (64 OOMs WSL)
 HARNESS_VMEM_KB = 5 * 1024 * 1024         # virtual memory cap per harness (KiB)
 RATE_LIMIT_PAUSE = 120  # seconds to sleep when the API keeps rate-limiting us
 RATE_LIMIT_STREAK = 8   # consecutive rate limits before we pause and halve concurrency
@@ -2220,7 +2221,9 @@ def main() -> int:
     ap.add_argument("--escalate-model", default=ESCALATE_MODEL)
     ap.add_argument("--batches", type=int, default=0, help="0 = run until done")
     ap.add_argument("--jobs", "-j", type=int, default=JOBS,
-                    help="batches in flight; 0 = DEFAULT_JOBS")
+                    help="agent batches in flight; 0 = DEFAULT_JOBS")
+    ap.add_argument("--mech-jobs", type=int, default=0,
+                    help="mechanical IR-compile parallelism; 0 = DEFAULT_MECH_JOBS")
     ap.add_argument("--gate-jobs", type=int, default=0,
                     help="max harness builds in flight; 0 = DEFAULT_GATE_JOBS")
     ap.add_argument("--no-mechanical", action="store_true",
@@ -2272,7 +2275,7 @@ def main() -> int:
         say(f"upstream drift: reopened {n_drift} batches")
         save_rows(rows)
 
-    jobs_mech = min(a.jobs or 8, os.cpu_count() or 8)
+    jobs_mech = a.mech_jobs or DEFAULT_MECH_JOBS
     run_mechanical_phase(rows, jobs_mech)
     if a.mechanical_only:
         status()

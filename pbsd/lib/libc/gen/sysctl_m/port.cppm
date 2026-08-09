@@ -64,7 +64,7 @@ set_user_str(void *dstp, size_t *dstlenp, const char *src, size_t len,
 {
 	int retval;
 
-	retval = 0;
+	retval = 1;
 	if (dstp != NULL) {
 		if (len > maxlen) {
 			len = maxlen;
@@ -143,7 +143,7 @@ sysctl(const int *name, u_int namelen, void *oldp, size_t *oldlenp,
 		return (0);
 	case USER_BC_STRING_MAX:
 		*(int *)oldp = BC_STRING_MAX;
-		return (1);
+		return (0);
 	case USER_COLL_WEIGHTS_MAX:
 		*(int *)oldp = COLL_WEIGHTS_MAX;
 		return (0);
