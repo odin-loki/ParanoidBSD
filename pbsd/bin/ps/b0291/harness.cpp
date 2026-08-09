@@ -42,9 +42,7 @@ typedef int fixpt_t;
 
 STAILQ_HEAD(velisthead, varent);
 
-/* ------------------------------------------------------------------ */
-/* Harness globals (shared by oracle + port)                          */
-/* ------------------------------------------------------------------ */
+extern "C" {
 
 fixpt_t ccpu = 0;
 int cflag = 0;
@@ -63,6 +61,14 @@ struct velisthead varlist;
 jmp_buf b0291_err_jmp;
 int b0291_err_jmp_set = 0;
 int b0291_errx_code = 0;
+
+struct velisthead *
+b0291_get_varlist(void)
+{
+	return &varlist;
+}
+
+} // extern "C"
 
 static jmp_buf exit_jmp;
 static int exit_jmp_set = 0;
@@ -386,7 +392,7 @@ devname(dev_t dev, mode_t type)
 		return nullptr;
 	snprintf(devname_buf, sizeof(devname_buf), "tty%llu",
 	    (unsigned long long)dev);
-	return devname_buf;
+	return strdup(devname_buf);
 }
 
 char *
@@ -396,7 +402,7 @@ jail_getname(int jid)
 	if (jail_getname_fail)
 		return nullptr;
 	snprintf(jailname_buf, sizeof(jailname_buf), "jail%d", jid);
-	return jailname_buf;
+	return strdup(jailname_buf);
 }
 
 int
@@ -442,7 +448,7 @@ mac_to_text(mac_t label, char **text)
 		*text = nullptr;
 		return -1;
 	}
-	*text = mac_text_buf;
+	*text = strdup(mac_text_buf);
 	snprintf(mac_text_buf, sizeof(mac_text_buf), "labeltext");
 	return 0;
 }
@@ -788,6 +794,14 @@ test_print_pair(FnIdx idx, PrintFn ref_fn, PrintFn port_fn, Fixture &fx)
 /* fmt_argv tests                                                     */
 /* ------------------------------------------------------------------ */
 
+static bool
+fmt_result_owned(char **argv, char *cmd)
+{
+	if (argv == nullptr || argv[0] == nullptr)
+		return cmd != nullptr;
+	return true;
+}
+
 static void
 test_fmt_argv_case(char **argv, char *cmd, char *thread, size_t maxlen)
 {
@@ -796,8 +810,10 @@ test_fmt_argv_case(char **argv, char *cmd, char *thread, size_t maxlen)
 	const char *ps = P::fmt_argv(argv, cmd, thread, maxlen);
 	if (!streq(rs, ps))
 		fail(FN_FMT_ARGV, "result mismatch");
-	std::free((void *)rs);
-	std::free((void *)ps);
+	if (fmt_result_owned(argv, cmd)) {
+		std::free((void *)rs);
+		std::free((void *)ps);
+	}
 }
 
 static void
@@ -830,22 +846,31 @@ run_fmt_argv_tests(void)
 		fill_random_bytes((unsigned char *)pool, sizeof(pool));
 		pool[sizeof(pool) - 1] = '\0';
 		char *argbuf = pool;
+		char *pool_end = pool + sizeof(pool) - 1;
 		char *argv_local[4];
 		int argc = randint(0, 3);
+		int actual = 0;
 		for (int j = 0; j < argc; j++) {
-			argv_local[j] = argbuf;
-			argbuf += 1 + (randu32() % 40);
-			if (argbuf >= pool + sizeof(pool) - 2)
+			if (argbuf >= pool_end)
 				break;
+			argv_local[actual++] = argbuf;
+			size_t room = (size_t)(pool_end - argbuf);
+			size_t len = (size_t)(1 + (randu32() % 40));
+			if (len >= room)
+				len = room > 0 ? room - 1 : 0;
+			argbuf[len] = '\0';
+			argbuf += len + 1;
 		}
-		argv_local[argc] = nullptr;
+		argv_local[actual] = nullptr;
 		char cbuf[48], tbuf[48];
 		fill_random_cstr(cbuf, sizeof(cbuf) - 1);
 		fill_random_cstr(tbuf, sizeof(tbuf) - 1);
 		size_t ml = (size_t)randint(0, 40);
 		char *cmdp = (randu32() & 3) == 0 ? nullptr : cbuf;
 		char *thrp = (randu32() & 3) == 0 ? nullptr : tbuf;
-		char **avp = argc == 0 ? nullptr : argv_local;
+		char **avp = actual == 0 ? nullptr : argv_local;
+		if (avp != nullptr && cmdp == nullptr)
+			cmdp = cbuf;
 		test_fmt_argv_case(avp, cmdp, thrp, ml);
 	}
 }
@@ -863,8 +888,7 @@ run_keyword_tests(void)
 	for (size_t i = 0; i < known_keywords_nb; i++) {
 		casebump(FN_ALIASED_KW_IDX);
 		size_t ri = ref_aliased_keyword_index(&keywords[i]);
-		size_t pi = P::aliased_keyword_index(
-		    reinterpret_cast<const P::VAR *>(&keywords[i]));
+		size_t pi = P::aliased_keyword_index(&P::keywords[i]);
 		if (ri != pi)
 			fail(FN_ALIASED_KW_IDX, "index mismatch");
 	}
@@ -918,13 +942,15 @@ run_keyword_tests(void)
 		while (rl.stqh_first) {
 			auto *v = rl.stqh_first;
 			rl.stqh_first = v->next_ve.stqe_next;
-			std::free((void *)v->header);
+			if (v->header != v->var->header)
+				std::free((void *)v->header);
 			std::free(v);
 		}
 		while (pl.stqh_first) {
 			auto *v = pl.stqh_first;
 			pl.stqh_first = v->next_ve.stqe_next;
-			std::free((void *)v->header);
+			if (v->header != reinterpret_cast<const P::VAR *>(v->var)->header)
+				std::free((void *)v->header);
 			std::free(v);
 		}
 	}
@@ -933,8 +959,7 @@ run_keyword_tests(void)
 		casebump(FN_ALIASED_KW_IDX);
 		size_t idx = (size_t)randint(0, (int)known_keywords_nb - 1);
 		size_t ri = ref_aliased_keyword_index(&keywords[idx]);
-		size_t pi = P::aliased_keyword_index(
-		    reinterpret_cast<const P::VAR *>(&keywords[idx]));
+		size_t pi = P::aliased_keyword_index(&P::keywords[idx]);
 		if (ri != pi)
 			fail(FN_ALIASED_KW_IDX, "random index mismatch");
 	}

@@ -226,7 +226,7 @@ remquo(double x, double y, int *quo)
 	}
 
     /* determine ix = ilogb(x) */
-	if(hx>=0x00100000)
+	if(hx<0x00100000)
 	    ix = subnormal_ilogb(hx, lx);
 	else
 	    ix = (hx>>20)-1023;
