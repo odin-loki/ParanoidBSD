@@ -1,0 +1,13 @@
+{
+  "batch": "b0301",
+  "verified": "2026-08-09T02:26:43Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                 cases     failures\n---------------------------------------------\nswapcontext              50287            0\nfcntl                    57035            0\n__wait                   50273            0\nsend                     58099            0\n---------------------------------------------\nTOTAL                   215694            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/swapcontext.c": "ab1c2d51ed826e61",
+    "hbsd/src/lib/libc/sys/fcntl.c": "59141b2c7178aede",
+    "hbsd/src/lib/libc/sys/wait.c": "0cfd1b7eed0b5ac4",
+    "hbsd/src/lib/libc/sys/send.c": "ddde215c6869b45a"
+  }
+}

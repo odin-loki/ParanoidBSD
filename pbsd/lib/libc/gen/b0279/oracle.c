@@ -215,6 +215,21 @@ b0279_c_snprintf(char *buf, size_t bufsz, const char *fmt, uintmax_t p1,
 	return snprintf(buf, bufsz, fmt, p1, p2);
 }
 
+int
+b0279_c_snprintf_brief(char *lbuf, const char *file, unsigned line)
+{
+	return snprintf(lbuf, 128, "(src sys/%s:%u)", file, line);
+}
+
+int
+b0279_c_snprintf_full(char *lbuf, int error, unsigned cat, const char *file,
+    unsigned line, uintmax_t p1, uintmax_t p2)
+{
+	return snprintf(lbuf, 128,
+	    "errno %d category %u (src sys/%s:%u) p1 %#jx p2 %#jx",
+	    error, cat, file, line, p1, p2);
+}
+
 /* ------------------------------------------------------------------ */
 /* fpclassify.c                                                       */
 /* ------------------------------------------------------------------ */
