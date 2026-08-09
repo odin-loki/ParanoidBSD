@@ -8,9 +8,13 @@ $TotalFiles = 4497
 $TotalLines = 2875339
 
 function Invoke-WslBash([string]$Script, [int]$TimeoutSec = 120) {
-    $out = & wsl.exe -d Ubuntu -- timeout $TimeoutSec bash -c $Script 2>&1
-    if ($out -is [System.Array]) { return ($out | Out-String).Trim() }
-    return [string]$out
+    $raw = & wsl.exe -d Ubuntu -- timeout $TimeoutSec bash -c $Script 2>&1
+    $lines = @()
+    foreach ($item in $raw) {
+        if ($item -is [System.Management.Automation.ErrorRecord]) { continue }
+        $lines += [string]$item
+    }
+    return ($lines -join "`n").Trim()
 }
 
 function Stop-PbsdServices {
@@ -33,7 +37,13 @@ function Deploy-WslScripts {
 function Start-PbsdWatchdog {
     Write-Host "Starting watchdog + refreshing auth..." -ForegroundColor Green
     $r = Invoke-WslBash 'bash ~/sync_cursor_auth.sh 2>/dev/null; rm -f /home/odin/pbsd_watchdog.lock; setsid bash /home/odin/pbsd_watchdog.sh >>/home/odin/pbsd_watchdog.log 2>&1 & sleep 3; pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo started || echo failed' 45
-    Write-Host "  $r" -ForegroundColor DarkGray
+    $auth = Invoke-WslBash 'unset CURSOR_API_KEY; timeout 45 cursor-agent -p "Reply READY" --model composer-2.5 --output-format text 2>&1 | tail -1' 60
+    Write-Host "  watchdog: $r" -ForegroundColor DarkGray
+    if ($auth -notmatch 'READY') {
+        Write-Host "  WARNING: cursor-agent auth check failed — run: wsl -d Ubuntu, then cursor-agent login" -ForegroundColor Yellow
+    } else {
+        Write-Host "  cursor-agent auth: OK" -ForegroundColor DarkGray
+    }
 }
 
 function Get-PbsdStatus {
@@ -62,12 +72,16 @@ function Get-ProcessInfo {
     $wd = (Invoke-WslBash 'pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo on || echo off' 10).Trim()
     $dr = (Invoke-WslBash 'pgrep -f /home/odin/pbsd_driver.sh >/dev/null && echo on || echo off' 10).Trim()
     $ag = (Invoke-WslBash 'pgrep -cf cursor-agent 2>/dev/null || echo 0' 10).Trim() -replace '\D', ''
-    $mem = (Invoke-WslBash 'free -m | awk "NR==2{print \$3\"/\"\$2\" MB\"}"' 10).Trim()
+    $memLine = (Invoke-WslBash 'free -m | sed -n 2p' 10).Trim()
+    $mem = '?'
+    if ($memLine -match 'Mem:\s+(\d+)\s+(\d+)') {
+        $mem = "$($Matches[2])/$($Matches[1]) MB"
+    }
     return @{
         Watchdog = if ($wd) { $wd } else { 'off' }
         Driver   = if ($dr) { $dr } else { 'off' }
         Agents   = [int]$ag
-        Mem      = if ($mem) { $mem } else { '?' }
+        Mem      = $mem
     }
 }
 
