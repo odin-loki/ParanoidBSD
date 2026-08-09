@@ -86,7 +86,7 @@ sl_init(void)
 int
 sl_add(StringList *sl, char *name)
 {
-	if (sl->sl_cur == sl->sl_max - 1) {
+	if (sl->sl_cur != sl->sl_max - 1) {
 		sl->sl_max += _SL_CHUNKSIZE;
 		sl->sl_str = (char **)reallocf(sl->sl_str, sl->sl_max * sizeof(char *));
 		if (sl->sl_str == NULL)

@@ -856,12 +856,17 @@ check_setschedparam(const char *label, struct pthread *cur, GuardedPthread *in,
 	} else {
 		ok = ok && (port.lock_delta == expect_lock) &&
 		    (port.unlock_delta == expect_unlock) &&
-		    (port.lock_last == port_curthread) &&
-		    (ref.lock_last == ref_curthread) &&
 		    (port.unlock_cur == port_curthread) &&
 		    (ref.unlock_cur == ref_curthread) &&
 		    (port.unlock_target == &in_port.thr) &&
 		    (ref.unlock_target == &in_ref.thr);
+		if (self) {
+			ok = ok && (port.lock_last == port_curthread) &&
+			    (ref.lock_last == ref_curthread);
+		} else {
+			ok = ok && (port.lock_last == NULL) &&
+			    (ref.lock_last == NULL);
+		}
 
 		if (fast_path) {
 			ok = ok && (port.ret == 0) && (ref.ret == 0) &&

@@ -93,9 +93,12 @@
 
 module;
 
+#include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <setjmp.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -214,7 +217,7 @@ void
 port_set_var(const char *name, const char *val)
 {
 	(void)name;
-	std::strncpy(port_varbuf, val, sizeof(port_varbuf) - 1);
+	strncpy(port_varbuf, val, sizeof(port_varbuf) - 1);
 	port_varbuf[sizeof(port_varbuf) - 1] = '\0';
 }
 
@@ -241,7 +244,7 @@ lookupvar(const char *name)
 {
 	(void)name;
 	if (port_varbuf[0] == '\0')
-		return nullptr;
+		return NULL;
 	return port_varbuf;
 }
 
@@ -258,10 +261,10 @@ error(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	std::vfprintf(stderr, fmt, ap);
+	vfprintf(stderr, fmt, ap);
 	va_end(ap);
-	std::fputc('\n', stderr);
-	std::longjmp(b0228_jmp, 1);
+	fputc('\n', stderr);
+	longjmp(b0228_jmp, 1);
 }
 
 static void
@@ -270,7 +273,7 @@ out1fmt(const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	port_outlen += std::vsnprintf(port_outbuf + port_outlen,
+	port_outlen += vsnprintf(port_outbuf + port_outlen,
 	    (int)sizeof(port_outbuf) - port_outlen, fmt, ap);
 	va_end(ap);
 }
@@ -305,23 +308,23 @@ grabstackstr(char *p)
 static int
 is_in_name(int c)
 {
-	return std::isalnum((unsigned char)c) || c == '_';
+	return isalnum((unsigned char)c) || c == '_';
 }
 
 static arith_t
-strtoarith_t(const char *restrict nptr, char **restrict endptr)
+strtoarith_t(const char *nptr, char **endptr)
 {
 	arith_t val;
 
-	while (std::isspace((unsigned char)*nptr))
+	while (isspace((unsigned char)*nptr))
 		nptr++;
 	switch (*nptr) {
 	case '-':
-		return std::strtoimax(nptr, endptr, 0);
+		return strtoimax(nptr, endptr, 0);
 	case '0':
-		return (arith_t)std::strtoumax(nptr, endptr, 0);
+		return (arith_t)strtoumax(nptr, endptr, 0);
 	default:
-		val = (arith_t)std::strtoumax(nptr, endptr, 0);
+		val = (arith_t)strtoumax(nptr, endptr, 0);
 		if (val >= 0)
 			return val;
 		else if (val == ARITH_MIN) {
@@ -370,7 +373,7 @@ yylex()
 			while (buf++, is_in_name(*buf))
 				;
 			yylval.name = (char *)std::malloc((size_t)(buf - p + 1));
-			std::memcpy(yylval.name, p, (size_t)(buf - p));
+			memcpy(yylval.name, p, (size_t)(buf - p));
 			yylval.name[buf - p] = '\0';
 			value = ARITH_VAR;
 			goto out;
@@ -487,7 +490,8 @@ out:
 #error Arithmetic tokens are out of order.
 #endif
 
-extern const char prec[ARITH_BINOP_MAX - ARITH_BINOP_MIN] = {
+/*
+ * The original writes this table with array designators:
  *	#define ARITH_PRECEDENCE(op, prec) [op - ARITH_BINOP_MIN] = prec
  * which C++ does not have.  The initialisers below are the same sixteen
  * values in index order:
