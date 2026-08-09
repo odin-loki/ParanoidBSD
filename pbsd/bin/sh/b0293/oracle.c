@@ -53,7 +53,12 @@ error(const char *fmt, ...)
 	vsnprintf(oracle_error_msg, sizeof(oracle_error_msg), fmt, ap);
 	va_end(ap);
 	oracle_error_thrown = 1;
-	abort();
+}
+
+int
+oracle_get_error_thrown(void)
+{
+	return oracle_error_thrown;
 }
 
 static void

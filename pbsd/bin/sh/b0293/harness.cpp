@@ -26,6 +26,7 @@ const char *oracle_get_optind(void);
 const char *oracle_get_optvar(void);
 int oracle_get_exraised(void);
 int oracle_get_shellparam_reset(void);
+int oracle_get_error_thrown(void);
 void oracle_set_argptr(char **ap);
 char *oracle_get_shoptarg(void);
 void oracle_set_nextopt_optptr(char *p);
@@ -266,18 +267,15 @@ test_fdctx_read(const unsigned char *data, size_t len, const char *tag)
 	Stat &st_dest = S("fdctx_destroy");
 
 	int fd = make_temp_file(data, len);
-	P::fdctx pf, rf;
-	unsigned char pg[sizeof(P::fdctx)];
-	unsigned char rg[sizeof(P::fdctx)];
-	fill_guard(pg, sizeof(pg));
-	fill_guard(rg, sizeof(rg));
-	std::memcpy(pg, &pf, sizeof(pf));
-	std::memcpy(rg, &rf, sizeof(rf));
+	int fd2 = dup(fd);
+	if (fd2 < 0)
+		std::exit(3);
+	P::fdctx pf{}, rf{};
 
 	ref_fdctx_init(fd, &rf);
-	P::fdctx_init(fd, &pf);
-	if (rf.fd != pf.fd || rf.buflen != pf.buflen || rf.off != pf.off ||
-	    (rf.ep - rf.buf) != (pf.ep - pf.buf))
+	P::fdctx_init(fd2, &pf);
+	if (rf.fd != fd || pf.fd != fd2 || rf.buflen != pf.buflen ||
+	    rf.off != pf.off || (rf.ep - rf.buf) != (pf.ep - pf.buf))
 		fail(st_init, tag);
 	else
 		ok(st_init);
@@ -295,7 +293,6 @@ test_fdctx_read(const unsigned char *data, size_t len, const char *tag)
 			break;
 		pos++;
 	}
-	/* EOF */
 	char rc = 0, pc = 0;
 	ssize_t rn = ref_fdgetc(&rf, &rc);
 	ssize_t pn = P::fdgetc(&pf, &pc);
@@ -307,13 +304,14 @@ test_fdctx_read(const unsigned char *data, size_t len, const char *tag)
 	off_t rpos = lseek(fd, 0, SEEK_CUR);
 	ref_fdctx_destroy(&rf);
 	P::fdctx_destroy(&pf);
-	off_t ppos = lseek(fd, 0, SEEK_CUR);
+	off_t ppos = lseek(fd2, 0, SEEK_CUR);
 	if (rpos != ppos)
 		fail(st_dest, tag);
 	else
 		ok(st_dest);
 
 	close(fd);
+	close(fd2);
 }
 
 static void
@@ -331,27 +329,33 @@ test_fdctx_hand()
 	/* pipe (non-seekable): buflen should be 1 */
 	int pv[2];
 	if (pipe(pv) == 0) {
-		write(pv[1], "xy", 2);
-		close(pv[1]);
-		P::fdctx pf, rf;
-		ref_fdctx_init(pv[0], &rf);
-		P::fdctx_init(pv[0], &pf);
-		Stat &st = S("fdctx_init");
-		if (rf.buflen != 1 || pf.buflen != 1)
-			fail(st, "pipe_buflen");
-		else
-			ok(st);
-		char rc, pc;
-		ref_fdgetc(&rf, &rc);
-		P::fdgetc(&pf, &pc);
-		Stat &stg = S("fdgetc");
-		if (rc != pc)
-			fail(stg, "pipe");
-		else
-			ok(stg);
-		ref_fdctx_destroy(&rf);
-		P::fdctx_destroy(&pf);
-		close(pv[0]);
+		int pv2[2];
+		if (pipe(pv2) == 0) {
+			(void)write(pv[1], "xy", 2);
+			(void)write(pv2[1], "xy", 2);
+			close(pv[1]);
+			close(pv2[1]);
+			P::fdctx pf{}, rf{};
+			ref_fdctx_init(pv[0], &rf);
+			P::fdctx_init(pv2[0], &pf);
+			Stat &st = S("fdctx_init");
+			if (rf.buflen != 1 || pf.buflen != 1)
+				fail(st, "pipe_buflen");
+			else
+				ok(st);
+			char rc, pc;
+			ref_fdgetc(&rf, &rc);
+			P::fdgetc(&pf, &pc);
+			Stat &stg = S("fdgetc");
+			if (rc != pc)
+				fail(stg, "pipe");
+			else
+				ok(stg);
+			ref_fdctx_destroy(&rf);
+			P::fdctx_destroy(&pf);
+			close(pv[0]);
+			close(pv2[0]);
+		}
 	}
 }
 
@@ -370,7 +374,8 @@ test_fdctx_sweep()
 /* --- nextopt --- */
 
 static int
-run_nextopt_ref(char **argv, const char *optstring, int *c_out, char **shopt_out)
+run_nextopt_ref(char **argv, const char *optstring, int *c_out, char **shopt_out,
+    int *err_out)
 {
 	oracle_reset_all();
 	oracle_set_argptr(argv);
@@ -378,11 +383,13 @@ run_nextopt_ref(char **argv, const char *optstring, int *c_out, char **shopt_out
 	int c = ref_nextopt(optstring);
 	*c_out = c;
 	*shopt_out = oracle_get_shoptarg();
+	*err_out = oracle_get_error_thrown();
 	return 0;
 }
 
 static int
-run_nextopt_port(char **argv, const char *optstring, int *c_out, char **shopt_out)
+run_nextopt_port(char **argv, const char *optstring, int *c_out, char **shopt_out,
+    int *err_out)
 {
 	P::port_reset_all();
 	P::argptr = argv;
@@ -391,6 +398,7 @@ run_nextopt_port(char **argv, const char *optstring, int *c_out, char **shopt_ou
 	int c = P::nextopt(optstring);
 	*c_out = c;
 	*shopt_out = P::shoptarg;
+	*err_out = P::port_error_thrown();
 	return 0;
 }
 
@@ -399,9 +407,16 @@ test_nextopt_case(char **argv, const char *optstring, const char *tag)
 {
 	Stat &st = S("nextopt");
 	int rc = 0, pc = 0;
+	int re = 0, pe = 0;
 	char *rsh = NULL, *psh = NULL;
-	run_nextopt_ref(argv, optstring, &rc, &rsh);
-	run_nextopt_port(argv, optstring, &pc, &psh);
+	run_nextopt_ref(argv, optstring, &rc, &rsh, &re);
+	run_nextopt_port(argv, optstring, &pc, &psh, &pe);
+	if (re != pe) {
+		fail(st, tag);
+		return;
+	}
+	if (re)
+		return ok(st);
 	if (rc != pc) {
 		fail(st, tag);
 		return;
@@ -424,17 +439,23 @@ test_nextopt_hand()
 	char a2[] = "-a";
 	char a3[] = "arg";
 	char a4[] = "--";
+	char a5[] = "-z";
+	char a6[] = "-a";
 	char *av0[] = { a0, NULL };
 	char *av1[] = { a1, NULL };
 	char *av2[] = { a2, a3, NULL };
 	char *av3[] = { a4, NULL };
 	char *av4[] = { NULL };
+	char *av5[] = { a5, NULL };
+	char *av6[] = { a6, NULL };
 
 	test_nextopt_case(av0, "ab", "a");
 	test_nextopt_case(av1, "ab", "ab");
 	test_nextopt_case(av2, "a:", "a_arg");
 	test_nextopt_case(av3, "ab", "dashdash");
 	test_nextopt_case(av4, "ab", "nullargv");
+	test_nextopt_case(av5, "ab", "illegal");
+	test_nextopt_case(av6, "a:", "missing_arg");
 }
 
 static void
@@ -445,25 +466,57 @@ test_nextopt_sweep()
 	char argbuf[8][64];
 	char *argv[9];
 	for (long i = 0; i < SWEEP; i++) {
-		int nargs = (int)(rng.u32() % 6);
-		for (int j = 0; j < nargs; j++) {
-			size_t n = (size_t)(rng.u32() % 20);
-			argbuf[j][0] = '-';
-			for (size_t k = 1; k <= n; k++)
-				argbuf[j][k] = (char)('a' + (rng.u32() % 6));
-			argbuf[j][n + 1] = '\0';
-			argv[j] = argbuf[j];
-		}
-		argv[nargs] = NULL;
-		size_t on = (size_t)(rng.u32() % 8) + 1;
+		size_t on = (size_t)(rng.u32() % 6) + 1;
 		for (size_t k = 0; k < on; k++)
 			optstring[k] = (char)('a' + (rng.u32() % 6));
 		optstring[on] = '\0';
-		int rc, pc;
+
+		int argidx = 0;
+		int opt_args = (int)(rng.u32() % 4);
+		for (int j = 0; j < opt_args && argidx < 7; j++) {
+			size_t n = (size_t)(rng.u32() % 4) + 1;
+			argbuf[argidx][0] = '-';
+			for (size_t k = 1; k <= n; k++) {
+				size_t pick = (size_t)(rng.u32() % on);
+				argbuf[argidx][k] = optstring[pick];
+			}
+			argbuf[argidx][n + 1] = '\0';
+			argv[argidx++] = argbuf[argidx - 1];
+			for (size_t k = 1; argbuf[argidx - 1][k] != '\0'; k++) {
+				const char *q = optstring;
+				while (*q && *q != argbuf[argidx - 1][k])
+					q++;
+				if (*q != '\0' && q[1] == ':' && argidx < 7) {
+					size_t an = (size_t)(rng.u32() % 8);
+					for (size_t a = 0; a < an; a++)
+						argbuf[argidx][a] = (char)(rng.u32() & 0xff);
+					argbuf[argidx][an] = '\0';
+					argv[argidx++] = argbuf[argidx - 1];
+					break;
+				}
+			}
+		}
+		int plain = (int)(rng.u32() % 3);
+		for (int j = 0; j < plain && argidx < 7; j++) {
+			size_t n = (size_t)(rng.u32() % 12);
+			for (size_t k = 0; k < n; k++)
+				argbuf[argidx][k] = (char)(rng.u32() & 0xff);
+			argbuf[argidx][n] = '\0';
+			argv[argidx++] = argbuf[argidx - 1];
+		}
+		argv[argidx] = NULL;
+
+		int rc, pc, re, pe;
 		char *rsh, *psh;
-		run_nextopt_ref(argv, optstring, &rc, &rsh);
-		run_nextopt_port(argv, optstring, &pc, &psh);
-		if (rc != pc || (rsh != psh && (rsh == NULL || psh == NULL ||
+		run_nextopt_ref(argv, optstring, &rc, &rsh, &re);
+		run_nextopt_port(argv, optstring, &pc, &psh, &pe);
+		if (re != pe) {
+			fail(st, "sweep");
+			continue;
+		}
+		if (re)
+			ok(st);
+		else if (rc != pc || (rsh != psh && (rsh == NULL || psh == NULL ||
 		    std::strcmp(rsh, psh) != 0)))
 			fail(st, "sweep");
 		else
@@ -471,7 +524,7 @@ test_nextopt_sweep()
 	}
 }
 
-/* --- getoptsreset --- */
+/* --- getoptsreset --- *//* --- getoptsreset --- */
 
 static void
 test_getoptsreset_one(const char *v, int expect, const char *tag)

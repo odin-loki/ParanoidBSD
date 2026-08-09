@@ -1,6 +1,5 @@
 module;
 
-#include <cmath>
 #include <complex>
 
 export module pbsd.lib.msun.src.b0302;

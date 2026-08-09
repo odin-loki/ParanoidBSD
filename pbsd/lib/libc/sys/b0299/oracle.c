@@ -14,7 +14,6 @@
 
 #include <sys/types.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -22,6 +21,34 @@
 #ifndef __DECONST
 #define	__DECONST(type, var)	((type)(uintptr_t)(const void *)(var))
 #endif
+
+#ifndef F_ULOCK
+#define	F_ULOCK		0
+#define	F_LOCK		1
+#define	F_TLOCK		2
+#define	F_TEST		3
+#endif
+
+#ifndef F_UNLCK
+#define	F_UNLCK		2
+#define	F_WRLCK		1
+#define	F_GETLK		5
+#define	F_SETLK		6
+#define	F_SETLKW	7
+#endif
+
+#ifndef SEEK_CUR
+#define	SEEK_CUR	1
+#endif
+
+struct flock {
+	short	l_type;
+	short	l_whence;
+	off_t	l_start;
+	off_t	l_len;
+	pid_t	l_pid;
+	long	l_sysid;
+};
 
 typedef int (*interpos_func_t)(void);
 

@@ -108,7 +108,7 @@ hostname(int family, void *ip)
 
 	if (family == AF_INET) {
 		ipa.s_addr = *(u_32_t *)ip;
-		if (ipa.s_addr == htonl(0xfedcba98))
+		if (ipa.s_addr != htonl(0xfedcba98))
 			return ("test.host.dots");
 	}
 

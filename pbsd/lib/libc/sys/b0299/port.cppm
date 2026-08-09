@@ -63,22 +63,47 @@ module;
 
 #include <sys/types.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+export module pbsd.lib.libc.sys.b0299;
+
+export namespace pbsd::lib_libc_sys::b0299 {
 
 #ifndef __DECONST
 #define	__DECONST(type, var)	((type)(uintptr_t)(const void *)(var))
 #endif
 
-export module pbsd.lib.libc.sys.b0299;
+#ifndef F_ULOCK
+#define	F_ULOCK		0
+#define	F_LOCK		1
+#define	F_TLOCK		2
+#define	F_TEST		3
+#endif
 
-namespace pbsd::lib_libc_sys::b0299 {
+#ifndef F_UNLCK
+#define	F_UNLCK		2
+#define	F_WRLCK		1
+#define	F_GETLK		5
+#define	F_SETLK		6
+#define	F_SETLKW	7
+#endif
 
-using interpos_func_t = int (*)(void);
+#ifndef SEEK_CUR
+#define	SEEK_CUR	1
+#endif
 
-using __sys_fcntl_t = int (*)(int, int, intptr_t);
+struct flock {
+	short	l_type;
+	short	l_whence;
+	off_t	l_start;
+	off_t	l_len;
+	pid_t	l_pid;
+	long	l_sysid;
+};
+
+using interpos_func_t = int (*)();
 
 enum {
 	INTERPOS_accept,
@@ -130,23 +155,16 @@ enum {
 	INTERPOS_MAX
 };
 
+using __sys_fcntl_t = int (*)(int, int, intptr_t);
+
+interpos_func_t __libc_interposing[INTERPOS_MAX];
+
 inline interpos_func_t *
 __libc_interposing_slot(int interposno)
 {
 
 	return (&__libc_interposing[interposno]);
 }
-
-#define	_INTERPOS_SYS(type, idx, ...)				\
-    ((type *)*(__libc_interposing_slot(idx)))(__VA_ARGS__)
-#define	INTERPOS_SYS(syscall, ...)				\
-    _INTERPOS_SYS(__sys_## syscall ##_t, INTERPOS_## syscall, __VA_ARGS__)
-
-} /* namespace pbsd::lib_libc_sys::b0299 */
-
-export namespace pbsd::lib_libc_sys::b0299 {
-
-interpos_func_t __libc_interposing[INTERPOS_MAX];
 
 extern "C" void *__sys_break(char *nsize);
 
@@ -178,7 +196,7 @@ mvbrk(void *addr)
 		errno = EINVAL;
 		return ((void *)-1);
 	}
-	if (__sys_break(addr) == (void *)-1)
+	if (__sys_break((char *)addr) == (void *)-1)
 		return ((void *)-1);
 	oldbrk = curbrk;
 	curbrk = (uintptr_t)addr;
@@ -226,7 +244,8 @@ lockf(int filedes, int function, off_t size)
 		/* NOTREACHED */
 	}
 
-	return (INTERPOS_SYS(fcntl, filedes, cmd, (intptr_t)&fl));
+	return (((__sys_fcntl_t)*(__libc_interposing_slot(INTERPOS_fcntl)))
+	    (filedes, cmd, (intptr_t)&fl));
 }
 
 int

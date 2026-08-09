@@ -11,7 +11,6 @@
  */
 
 #include <errno.h>
-#include <fcntl.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -19,6 +18,34 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#ifndef F_ULOCK
+#define	F_ULOCK		0
+#define	F_LOCK		1
+#define	F_TLOCK		2
+#define	F_TEST		3
+#endif
+
+#ifndef F_UNLCK
+#define	F_UNLCK		2
+#define	F_WRLCK		1
+#define	F_GETLK		5
+#define	F_SETLK		6
+#define	F_SETLKW	7
+#endif
+
+#ifndef SEEK_CUR
+#define	SEEK_CUR	1
+#endif
+
+struct flock {
+	short	l_type;
+	short	l_whence;
+	off_t	l_start;
+	off_t	l_len;
+	pid_t	l_pid;
+	long	l_sysid;
+};
 
 extern "C" {
 
@@ -171,6 +198,10 @@ mock_fcntl(int fd, int cmd, intptr_t arg)
 		fl = (struct flock *)(intptr_t)arg;
 		if (fl != nullptr) {
 			mock.hs[0] = hash_bytes(fl, sizeof(struct flock));
+			mock.sc[3] = (long long)fl->l_start;
+			mock.sc[4] = (long long)fl->l_len;
+			mock.sc[5] = (long long)fl->l_whence;
+			mock.sc[6] = (long long)fl->l_type;
 			if (cmd == F_GETLK) {
 				fl->l_type = mock_getlk_type;
 				fl->l_sysid = mock_getlk_sysid;
@@ -362,7 +393,7 @@ case_lockf(int fd, int function, off_t size, int fcntl_ret,
 	memset(fl_a, GUARD, sizeof(fl_a));
 	memset(fl_b, GUARD, sizeof(fl_b));
 
-	base_fl = fl_a;
+	base_fl = nullptr;
 	install_fcntl_mock(ref___libc_interposing);
 	mock_reset();
 	errno = 0;
@@ -370,7 +401,7 @@ case_lockf(int fd, int function, off_t size, int fcntl_ret,
 	ea = errno;
 	snap_a = mock;
 
-	base_fl = fl_b;
+	base_fl = nullptr;
 	install_fcntl_mock(port::__libc_interposing);
 	mock_reset();
 	errno = 0;
