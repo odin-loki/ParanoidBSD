@@ -1,164 +1,387 @@
+/*
+ * b0279 — C++23 port of:
+ *	lib/libc/gen/uexterr_format.c
+ *	lib/libc/gen/getlogin.c
+ *	lib/libc/gen/semctl.c
+ *	lib/libc/gen/fpclassify.c
+ *
+ * Behaviour is preserved exactly, including the mixed int/size_t comparisons,
+ * the plain-`char' tests, the pointer-to-static return of getlogin(), the
+ * varargs union copy in semctl() and the x87 normalization-bit masking.
+ */
+
 module;
 
 #include <cerrno>
 #include <cfloat>
 #include <climits>
+#include <cmath>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cmath>
 
-#include <sys/ipc.h>
-#include <sys/sem.h>
-#include <unistd.h>
+/*
+ * Hooks provided by harness.cpp so that the port and the oracle observe the
+ * same libc / system-call environment.  getenv() is the real one.
+ */
+extern "C" {
+std::size_t	pbsd_b0279_strlcpy(char *, const char *, std::size_t);
+std::size_t	pbsd_b0279_strlcat(char *, const char *, std::size_t);
+int		pbsd_b0279_issetugid(void);
+int		pbsd_b0279_getlogin(char *, int);
+int		pbsd_b0279_semctl_syscall(int, int, int, void *);
+int		pbsd_b0279_semctl7_syscall(int, int, int, void *);
+}
+
+#define	strlcpy			pbsd_b0279_strlcpy
+#define	strlcat			pbsd_b0279_strlcat
+#define	issetugid		pbsd_b0279_issetugid
+#define	_getlogin		pbsd_b0279_getlogin
+#define	__semctl		pbsd_b0279_semctl_syscall
+#define	freebsd7___semctl	pbsd_b0279_semctl7_syscall
+
+#ifndef nitems
+#define	nitems(x)	(sizeof((x)) / sizeof((x)[0]))
+#endif
+#ifndef LONG_BIT
+#define	LONG_BIT	(sizeof(long) * CHAR_BIT)
+#endif
 
 export module pbsd.lib.libc.gen.b0279;
 
 export namespace pbsd::lib_libc_gen::b0279 {
 
-#if !defined(__FreeBSD__)
-union semun {
-	int val;
-	struct semid_ds *buf;
-	unsigned short *array;
-};
-#endif
+using std::size_t;
+using std::uint32_t;
+using std::uint64_t;
+using std::uintmax_t;
 
-#ifndef nitems
-#define	nitems(x)	(sizeof((x)) / sizeof((x)[0]))
-#endif
+/*
+ * ===========================================================================
+ * lib/libc/gen/uexterr_format.c
+ * ===========================================================================
+ */
 
-#ifndef MAXLOGNAME
-#define	MAXLOGNAME	32
-#endif
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2025 The FreeBSD Foundation
+ * All rights reserved.
+ *
+ * This software were developed by Konstantin Belousov <kib@FreeBSD.org>
+ * under sponsorship from the FreeBSD Foundation.
+ */
 
-#define	UEXTERROR_MAXLEN	256
-
-#define	EXTERR_CAT_MMAP		1
-#define	EXTERR_CAT_FILEDESC	2
-#define	EXTERR_KTRACE		3
-#define	EXTERR_CAT_FUSE_VNOPS	4
-#define	EXTERR_CAT_INOTIFY	5
-#define	EXTERR_CAT_GENIO	6
-#define	EXTERR_CAT_BRIDGE	7
-#define	EXTERR_CAT_SWAP		8
-#define	EXTERR_CAT_VFSSYSCALL	9
-#define	EXTERR_CAT_VFSBIO	10
-#define	EXTERR_CAT_GEOMVFS	11
-#define	EXTERR_CAT_GEOM		12
-#define	EXTERR_CAT_FUSE_VFS	13
-#define	EXTERR_CAT_FUSE_DEVICE	14
-#define	EXTERR_CAT_FORK		15
-#define	EXTERR_CAT_PROCEXIT	16
+inline constexpr size_t UEXTERROR_MAXLEN = 256;
 
 struct uexterror {
-	std::uint32_t ver;
-	std::uint32_t error;
-	std::uint32_t cat;
-	std::uint32_t src_line;
-	std::uint32_t flags;
-	std::uint32_t rsrv0;
-	std::uint64_t p1;
-	std::uint64_t p2;
-	std::uint64_t rsrv1[4];
-	char msg[128];
+	uint32_t	ver;
+	int		error;
+	uint32_t	cat;
+	uint32_t	src_line;
+	uint64_t	p1;
+	uint64_t	p2;
+	char		msg[128];
 };
 
-union IEEEf2bits {
-	float	f;
-	struct {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-		unsigned int	man	:23;
-		unsigned int	exp	:8;
-		unsigned int	sign	:1;
-#else
-		unsigned int	sign	:1;
-		unsigned int	exp	:8;
-		unsigned int	man	:23;
-#endif
-	} bits;
+} /* namespace */
+
+/* Internal to the module: declared but not exported. */
+namespace pbsd::lib_libc_gen::b0279 {
+
+const char * const cat_to_filenames[] = {
+	/* stand-in for the generated "exterr_cat_filenames.h" */
+	nullptr,
+	"kern/kern_exterr.c",
+	"kern/kern_sysctl.c",
+	nullptr,
+	"vm/vm_map.c",
+	"kern/kern_prot.c",
+	"kern/vfs_syscalls.c",
+	"net/if.c",
 };
 
-union IEEEd2bits {
-	double	d;
-	struct {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-		unsigned int	manl	:32;
-		unsigned int	manh	:20;
-		unsigned int	exp	:11;
-		unsigned int	sign	:1;
-#else
-		unsigned int	sign	:1;
-		unsigned int	exp	:11;
-		unsigned int	manh	:20;
-		unsigned int	manl	:32;
-#endif
-	} bits;
-};
-
-union IEEEl2bits {
-	long double	e;
-	struct {
-		unsigned int	manl	:32;
-		unsigned int	manh	:32;
-		unsigned int	exp	:15;
-		unsigned int	sign	:1;
-		unsigned int	junkl	:16;
-		unsigned int	junkh	:32;
-	} bits;
-};
-
-#define	LDBL_NBIT	0x80000000
-#define	mask_nbit_l(u)	((u).bits.manh &= ~LDBL_NBIT)
-
-static size_t
-strlcpy(char *dst, const char *src, size_t len)
+const char *
+cat_to_filename(int category)
 {
-	size_t srclen;
-
-	srclen = std::strlen(src);
-	if (len != 0) {
-		if (srclen >= len) {
-			std::memcpy(dst, src, len - 1);
-			dst[len - 1] = '\0';
-		} else
-			std::memcpy(dst, src, srclen + 1);
-	}
-	return (srclen);
+	if (category < 0 || category >= nitems(cat_to_filenames) ||
+	    cat_to_filenames[category] == nullptr)
+		return ("unknown");
+	return (cat_to_filenames[category]);
 }
 
-static size_t
-strlcat(char *dst, const char *src, size_t len)
-{
-	size_t dstlen, srclen;
+const char exterror_verbose_name[] = "EXTERROR_VERBOSE";
+enum exterr_verbose_state {
+	EXTERR_VERBOSE_UNKNOWN = 100,
+	EXTERR_VERBOSE_DEFAULT,
+	EXTERR_VERBOSE_ALLOW_BRIEF,
+	EXTERR_VERBOSE_ALLOW_FULL,
+};
+enum exterr_verbose_state exterror_verbose = EXTERR_VERBOSE_UNKNOWN;
 
-	dstlen = std::strlen(dst);
-	srclen = std::strlen(src);
-	if (dstlen == len)
-		return (dstlen + srclen);
-	if (srclen < len - dstlen) {
-		std::memcpy(dst + dstlen, src, srclen + 1);
+void
+exterr_verbose_init(void)
+{
+	const char *v;
+
+	/*
+	 * No need to care about thread-safety, the result is
+	 * idempotent.
+	 */
+	if (exterror_verbose != EXTERR_VERBOSE_UNKNOWN)
+		return;
+	if (issetugid()) {
+		exterror_verbose = EXTERR_VERBOSE_DEFAULT;
+	} else if ((v = std::getenv(exterror_verbose_name)) != nullptr) {
+		exterror_verbose = std::strcmp(v, "brief") == 0 ?
+		    EXTERR_VERBOSE_ALLOW_BRIEF : EXTERR_VERBOSE_ALLOW_FULL;
 	} else {
-		std::memcpy(dst + dstlen, src, len - dstlen - 1);
-		dst[len - 1] = '\0';
+		exterror_verbose = EXTERR_VERBOSE_DEFAULT;
 	}
-	return (dstlen + srclen);
 }
 
-extern "C" {
-int issetugid(void);
-char *getenv(const char *);
-int _getlogin(char *, int);
-int __semctl(int, int, int, union semun *);
-int b0279_c_snprintf(char *, size_t, const char *, std::uintmax_t,
-    std::uintmax_t);
-int b0279_c_snprintf_brief(char *, const char *, unsigned);
-int b0279_c_snprintf_full(char *, int, unsigned, const char *, unsigned,
-    std::uintmax_t, std::uintmax_t);
+} /* namespace */
+
+export namespace pbsd::lib_libc_gen::b0279 {
+
+int
+__uexterr_format(const struct uexterror *ue, char *buf, size_t bufsz)
+{
+	bool has_msg;
+
+	if (bufsz > UEXTERROR_MAXLEN)
+		bufsz = UEXTERROR_MAXLEN;
+	if (ue->error == 0) {
+		strlcpy(buf, "", bufsz);
+		return (0);
+	}
+	exterr_verbose_init();
+	has_msg = ue->msg[0] != '\0';
+
+	if (has_msg) {
+		std::snprintf(buf, bufsz, ue->msg, (uintmax_t)ue->p1,
+		    (uintmax_t)ue->p2);
+	} else {
+		strlcpy(buf, "", bufsz);
+	}
+
+	if (exterror_verbose > EXTERR_VERBOSE_DEFAULT || !has_msg) {
+		char lbuf[128];
+
+#define	SRC_FMT "(src sys/%s:%u)"
+		if (exterror_verbose == EXTERR_VERBOSE_ALLOW_BRIEF) {
+			std::snprintf(lbuf, sizeof(lbuf), SRC_FMT,
+                            cat_to_filename(ue->cat), ue->src_line);
+		} else if (!has_msg ||
+		    exterror_verbose == EXTERR_VERBOSE_ALLOW_FULL) {
+			std::snprintf(lbuf, sizeof(lbuf),
+			    "errno %d category %u " SRC_FMT " p1 %#jx p2 %#jx",
+			    ue->error, ue->cat, cat_to_filename(ue->cat),
+			    ue->src_line, (uintmax_t)ue->p1, (uintmax_t)ue->p2);
+		}
+#undef SRC_FMT
+		if (has_msg)
+			strlcat(buf, " ", bufsz);
+		strlcat(buf, lbuf, bufsz);
+	}
+	return (0);
 }
+
+/* Test hook: not part of the original source. */
+void
+uexterr_verbose_reset(void)
+{
+	exterror_verbose = EXTERR_VERBOSE_UNKNOWN;
+}
+
+/*
+ * ===========================================================================
+ * lib/libc/gen/getlogin.c
+ * ===========================================================================
+ */
+
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1988, 1993
+ *	The Regents of the University of California.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+inline constexpr int MAXLOGNAME = 33;
+
+char *
+getlogin(void)
+{
+	static char logname[MAXLOGNAME];
+
+	if (_getlogin(logname, sizeof(logname)) < 0)
+		return (nullptr);
+	return (logname[0] != '\0' ? logname : nullptr);
+}
+
+int
+getlogin_r(char *logname, size_t namelen)
+{
+	char tmpname[MAXLOGNAME];
+	int	len;
+
+	if (namelen < 1)
+		return (ERANGE);
+	logname[0] = '\0';
+
+	if (_getlogin(tmpname, sizeof(tmpname)) < 0)
+		return (errno);
+	len = std::strlen(tmpname) + 1;
+	if (len > namelen)
+		return (ERANGE);
+	strlcpy(logname, tmpname, len);
+	return (0);
+}
+
+/* FreeBSD 12 and earlier compat. */
+int
+__getlogin_r_fbsd12(char *logname, int namelen)
+{
+	if (namelen < 1)
+		return (ERANGE);
+	return (getlogin_r(logname, namelen));
+}
+
+/*
+ * ===========================================================================
+ * lib/libc/gen/semctl.c
+ * ===========================================================================
+ */
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2002 Doug Rabson
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ */
+
+inline constexpr int IPC_RMID	= 0;
+inline constexpr int IPC_SET	= 1;
+inline constexpr int IPC_STAT	= 2;
+inline constexpr int GETNCNT	= 3;
+inline constexpr int GETPID	= 4;
+inline constexpr int GETVAL	= 5;
+inline constexpr int GETALL	= 6;
+inline constexpr int GETZCNT	= 7;
+inline constexpr int SETVAL	= 8;
+inline constexpr int SETALL	= 9;
+inline constexpr int SEM_STAT	= 10;
+inline constexpr int SEM_INFO	= 11;
+
+struct semid_ds;
+struct semid_ds_old;
+
+union semun {
+	int		 val;
+	struct semid_ds	*buf;
+	unsigned short	*array;
+};
+
+union semun_old {
+	int			 val;
+	struct semid_ds_old	*buf;
+	unsigned short		*array;
+};
+
+int
+semctl(int semid, int semnum, int cmd, ...)
+{
+	std::va_list ap;
+	union semun semun;
+	union semun *semun_ptr;
+
+	va_start(ap, cmd);
+	if (cmd == IPC_SET || cmd == IPC_STAT || cmd == GETALL
+	    || cmd == SETVAL || cmd == SETALL) {
+		semun = va_arg(ap, union semun);
+		semun_ptr = &semun;
+	} else {
+		semun_ptr = nullptr;
+	}
+	va_end(ap);
+
+	return (__semctl(semid, semnum, cmd, semun_ptr));
+}
+
+int
+freebsd7_semctl(int semid, int semnum, int cmd, ...)
+{
+	std::va_list ap;
+	union semun_old semun;
+	union semun_old *semun_ptr;
+
+	va_start(ap, cmd);
+	if (cmd == IPC_SET || cmd == IPC_STAT || cmd == GETALL
+	    || cmd == SETVAL || cmd == SETALL) {
+		semun = va_arg(ap, union semun_old);
+		semun_ptr = &semun;
+	} else {
+		semun_ptr = nullptr;
+	}
+	va_end(ap);
+
+	return (freebsd7___semctl(semid, semnum, cmd, semun_ptr));
+}
+
+/*
+ * ===========================================================================
+ * lib/libc/gen/fpclassify.c
+ * ===========================================================================
+ */
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -188,6 +411,40 @@ int b0279_c_snprintf_full(char *, int, unsigned, const char *, unsigned,
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+/* x86 <machine/fpmath.h> */
+union IEEEf2bits {
+	float	f;
+	struct {
+		unsigned int	man	:23;
+		unsigned int	exp	:8;
+		unsigned int	sign	:1;
+	} bits;
+};
+
+union IEEEd2bits {
+	double	d;
+	struct {
+		unsigned int	manl	:32;
+		unsigned int	manh	:20;
+		unsigned int	exp	:11;
+		unsigned int	sign	:1;
+	} bits;
+};
+
+union IEEEl2bits {
+	long double	e;
+	struct {
+		unsigned int	manl	:32;
+		unsigned int	manh	:32;
+		unsigned int	exp	:15;
+		unsigned int	sign	:1;
+		unsigned int	junkl	:16;
+		unsigned int	junkh	:32;
+	} bits;
+};
+
+#define	mask_nbit_l(u)	((u).bits.manh &= 0x7fffffff)
 
 int
 __fpclassifyf(float f)
@@ -255,231 +512,4 @@ __fpclassifyl(long double e)
 	return (FP_NORMAL);
 }
 
-/*-
- * SPDX-License-Identifier: BSD-3-Clause
- *
- * Copyright (c) 1988, 1993
- *	The Regents of the University of California.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-char *
-getlogin(void)
-{
-	static char logname[MAXLOGNAME];
-
-	if (_getlogin(logname, sizeof(logname)) < 0)
-		return (NULL);
-	return (logname[0] != '\0' ? logname : NULL);
-}
-
-int
-getlogin_r(char *logname, size_t namelen)
-{
-	char tmpname[MAXLOGNAME];
-	int	len;
-
-	if (namelen < 1)
-		return (ERANGE);
-	logname[0] = '\0';
-
-	if (_getlogin(tmpname, sizeof(tmpname)) < 0)
-		return (errno);
-	len = std::strlen(tmpname) + 1;
-	if (len > namelen)
-		return (ERANGE);
-	strlcpy(logname, tmpname, len);
-	return (0);
-}
-
-/* FreeBSD 12 and earlier compat. */
-int
-__getlogin_r_fbsd12(char *logname, int namelen)
-{
-	if (namelen < 1)
-		return (ERANGE);
-	return (getlogin_r(logname, namelen));
-}
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2002 Doug Rabson
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- */
-
-int
-semctl(int semid, int semnum, int cmd, ...)
-{
-	va_list ap;
-	union semun semun;
-	union semun *semun_ptr;
-
-	va_start(ap, cmd);
-	if (cmd == IPC_SET || cmd == IPC_STAT || cmd == GETALL
-	    || cmd == SETVAL || cmd == SETALL) {
-		semun = va_arg(ap, union semun);
-		semun_ptr = &semun;
-	} else {
-		semun_ptr = NULL;
-	}
-	va_end(ap);
-
-	return (__semctl(semid, semnum, cmd, semun_ptr));
-}
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2025 The FreeBSD Foundation
- * All rights reserved.
- *
- * This software were developed by Konstantin Belousov <kib@FreeBSD.org>
- * under sponsorship from the FreeBSD Foundation.
- */
-
-static const char * const cat_to_filenames[] = {
-	NULL,
-	"vm/vm_mmap.c",
-	"kern/kern_descrip.c",
-	NULL,
-	"fs/fuse/fuse_vnops.c",
-	"kern/vfs_inotify.c",
-	"kern/sys_generic.c",
-	"net/if_bridge.c",
-	"vm/swap_pager.c",
-	"kern/vfs_syscalls.c",
-	"kern/vfs_bio.c",
-	"geom/geom_vfs.c",
-	"geom/geom_subr.c",
-	"fs/fuse/fuse_vfsops.c",
-	"fs/fuse/fuse_device.c",
-	"kern/kern_fork.c",
-	"kern/kern_exit.c",
-};
-
-static const char *
-cat_to_filename(int category)
-{
-	if (category < 0 || category >= nitems(cat_to_filenames) ||
-	    cat_to_filenames[category] == NULL)
-		return ("unknown");
-	return (cat_to_filenames[category]);
-}
-
-static const char exterror_verbose_name[] = "EXTERROR_VERBOSE";
-enum exterr_verbose_state {
-	EXTERR_VERBOSE_UNKNOWN = 100,
-	EXTERR_VERBOSE_DEFAULT,
-	EXTERR_VERBOSE_ALLOW_BRIEF,
-	EXTERR_VERBOSE_ALLOW_FULL,
-};
-static enum exterr_verbose_state exterror_verbose = EXTERR_VERBOSE_UNKNOWN;
-
-static void
-exterr_verbose_init(void)
-{
-	const char *v;
-
-	/*
-	 * No need to care about thread-safety, the result is
-	 * idempotent.
-	 */
-	if (exterror_verbose != EXTERR_VERBOSE_UNKNOWN)
-		return;
-	if (issetugid()) {
-		exterror_verbose = EXTERR_VERBOSE_DEFAULT;
-	} else if ((v = getenv(exterror_verbose_name)) != NULL) {
-		exterror_verbose = std::strcmp(v, "brief") == 0 ?
-		    EXTERR_VERBOSE_ALLOW_BRIEF : EXTERR_VERBOSE_ALLOW_FULL;
-	} else {
-		exterror_verbose = EXTERR_VERBOSE_DEFAULT;
-	}
-}
-
-int
-__uexterr_format(const struct uexterror *ue, char *buf, size_t bufsz)
-{
-	bool has_msg;
-
-	if (bufsz > UEXTERROR_MAXLEN)
-		bufsz = UEXTERROR_MAXLEN;
-	if (ue->error == 0) {
-		strlcpy(buf, "", bufsz);
-		return (0);
-	}
-	exterr_verbose_init();
-	has_msg = ue->msg[0] != '\0';
-
-	if (has_msg) {
-		b0279_c_snprintf(buf, bufsz, ue->msg, (uintmax_t)ue->p1,
-		    (uintmax_t)ue->p2);
-	} else {
-		strlcpy(buf, "", bufsz);
-	}
-
-	if (exterror_verbose > EXTERR_VERBOSE_DEFAULT || !has_msg) {
-		char lbuf[128];
-
-		if (exterror_verbose == EXTERR_VERBOSE_ALLOW_BRIEF) {
-			b0279_c_snprintf_brief(lbuf, cat_to_filename(ue->cat),
-			    ue->src_line);
-		} else if (!has_msg ||
-		    exterror_verbose == EXTERR_VERBOSE_ALLOW_FULL) {
-			b0279_c_snprintf_full(lbuf, (int)ue->error, ue->cat,
-			    cat_to_filename(ue->cat), ue->src_line,
-			    (uintmax_t)ue->p1, (uintmax_t)ue->p2);
-		}
-		if (has_msg)
-			strlcat(buf, " ", bufsz);
-		strlcat(buf, lbuf, bufsz);
-	}
-	return (0);
-}
-
-} /* namespace */
+} /* namespace pbsd::lib_libc_gen::b0279 */

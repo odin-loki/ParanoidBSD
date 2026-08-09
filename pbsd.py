@@ -346,6 +346,14 @@ def in_scope(rel: str) -> bool:
 
 
 def setup() -> None:
+    if INVENTORY.is_file() and SETUP_STAMP.is_file():
+        rows = load_rows()
+        if rows:
+            n = sum(1 for r in rows if r["status"] == "VERIFIED")
+            say(f"setup already done — resuming ({n} verified, "
+                f"{sum(1 for r in rows if r['status'] == 'PENDING')} pending)")
+            return
+
     banner("First-run setup")
 
     # 1. Remove the stub tree. It carries no information and reports false state.
