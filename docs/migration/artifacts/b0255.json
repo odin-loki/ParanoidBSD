@@ -1,0 +1,11 @@
+{
+  "batch": "b0255",
+  "verified": "2026-08-09T00:08:06Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nFunction                  Cases   Failures\nbasename                 200040          0\nTOTAL                    200040          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/raise.c": "9353807a661bcfcc",
+    "hbsd/src/lib/libc/gen/basename.c": "11c8b48188aaaf1c"
+  }
+}

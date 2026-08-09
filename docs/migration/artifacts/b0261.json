@@ -1,0 +1,11 @@
+{
+  "batch": "b0261",
+  "verified": "2026-08-09T00:07:49Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n--------------------------------------------\n__usleep           100021            0\naio_read2          101577            0\n--------------------------------------------\nTOTAL              201598            0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/usleep.c": "9ddcac67ef2b602e",
+    "hbsd/src/lib/libc/gen/aio_read2.c": "085eb9b0dcc7b746"
+  }
+}

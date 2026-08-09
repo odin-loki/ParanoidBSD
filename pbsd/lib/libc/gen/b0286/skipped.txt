@@ -1,0 +1,1 @@
+memfd_create.c: depends on libc-internal __sys_shm_open2 and libc_private.h unavailable for isolated linking on this platform.

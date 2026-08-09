@@ -1,0 +1,14 @@
+lib/libc/db/test/btree.tests/main.c:main() - program entry point; drives getopt(3) and
+dbopen(3) from libdb, which is not available for differential testing on this host.
+lib/libc/db/test/btree.tests/main.c:user() - interactive command loop on /dev/tty; not
+testable without a controlling terminal and full dbopen(3) stack.
+lib/libc/db/test/btree.tests/main.c:dump() - calls __bt_dump(3), an internal btree debug
+routine not linked on this host.
+lib/libc/db/test/btree.tests/main.c:show() - calls mpool_get(3) and __bt_dpage(3) on BTREE
+internals not available on this host.
+lib/libc/db/test/btree.tests/main.c:bstat() - calls __bt_stat(3), an internal btree
+statistics routine not linked on this host.
+lib/libc/db/test/btree.tests/main.c:mstat() - calls mpool_stat(3) on BTREE internals not
+available on this host.
+lib/libc/db/test/btree.tests/main.c:load() - calls fgetline(3), which is not defined or
+implemented anywhere in the source tree.

@@ -1,0 +1,1 @@
+v6ionames.c — no functions; only a static data table guarded by USE_INET6

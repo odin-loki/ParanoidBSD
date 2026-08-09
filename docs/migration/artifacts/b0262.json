@@ -1,0 +1,12 @@
+{
+  "batch": "b0262",
+  "verified": "2026-08-09T00:07:54Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\ncimagl             211764            0\ntruncl             212446            0\nasinh              215832            0\n------------ ------------ ------------\nTOTAL              640042            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_cimagl.c": "079b542de45f71d2",
+    "hbsd/src/lib/msun/src/s_truncl.c": "22e303aa9b587e27",
+    "hbsd/src/lib/msun/src/s_asinh.c": "de70f0970ab4a36a"
+  }
+}

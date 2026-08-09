@@ -2,7 +2,6 @@ module;
 
 #include <cerrno>
 #include <cstdio>
-#include <cstdlib>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -21,6 +20,8 @@ module;
 #endif
 
 export module pbsd.lib.libc.gen.b0258;
+
+extern "C" void harness_abort_hook(void);
 
 export namespace pbsd::lib_libc_gen::b0258 {
 

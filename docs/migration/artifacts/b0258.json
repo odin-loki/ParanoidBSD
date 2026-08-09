@@ -1,0 +1,11 @@
+{
+  "batch": "b0258",
+  "verified": "2026-08-09T00:09:37Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n__dup3             200018            0\n__assert           200014            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/dup3.c": "bc45b81622b25823",
+    "hbsd/src/lib/libc/gen/assert.c": "212e697927ff9d2a"
+  }
+}

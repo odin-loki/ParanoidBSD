@@ -1,0 +1,13 @@
+{
+  "batch": "b0283",
+  "verified": "2026-08-09T00:16:02Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\n=== b0283 differential test results ===\nfunction                cases     failures\ninet_makeaddr          200124            0\ninet_nsap_addr         200262            0\ninet_nsap_ntoa         250268            0\ninet_network           200041            0\ninet_net_ntop          425668            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/inet/inet_makeaddr.c": "e13d2a5ffe90fdba",
+    "hbsd/src/lib/libc/inet/nsap_addr.c": "13ee9ff001f750f8",
+    "hbsd/src/lib/libc/inet/inet_network.c": "cf65f0948d482cc9",
+    "hbsd/src/lib/libc/inet/inet_net_ntop.c": "b21880f3491cacd9"
+  }
+}

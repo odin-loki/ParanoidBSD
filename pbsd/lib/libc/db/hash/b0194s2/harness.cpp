@@ -1176,14 +1176,23 @@ void random_addel(unsigned long long n)
 void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
     const char *tag)
 {
+	if (nb == ob)
+		nb = ob + 1;
 	unsigned char opa[BUF_CAP], opb[BUF_CAP];
 	unsigned char npa[BUF_CAP], npb[BUF_CAP];
+	unsigned char op_init[BUF_CAP], np_init[BUF_CAP];
 	static unsigned char k[] = { 1, 2, 3 };
 	static unsigned char v[] = { 4, 5 };
-	setup_pair_page(opa, 512, k, 3, v, 2, 0);
-	std::memcpy(opb, opa, 512);
-	page_init_raw(512, npa);
-	page_init_raw(512, npb);
+	guard_fill(op_init, BUF_CAP);
+	guard_fill(np_init, BUF_CAP);
+	setup_pair_page(op_init, 512, k, 3, v, 2, 0);
+	page_init_raw(512, np_init);
+	guard_fill(opa, BUF_CAP);
+	guard_fill(opb, BUF_CAP);
+	guard_fill(npa, BUF_CAP);
+	guard_fill(npb, BUF_CAP);
+	std::memcpy(opa, op_init, 512);
+	std::memcpy(npa, np_init, 512);
 
 	P::HTAB hp{};
 	HTAB hr{};
@@ -1196,6 +1205,13 @@ void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
 	hash_mock_register_page(nb, npa);
 
 	int rp = P::__split_page(&hp, ob, nb);
+
+	std::memcpy(opb, op_init, 512);
+	std::memcpy(npb, np_init, 512);
+	hash_mock_reset();
+	hash_mock.call_hash_ret = hashret;
+	hash_mock_register_page(ob, opb);
+	hash_mock_register_page(nb, npb);
 	int rr = ref___split_page(&hr, ob, nb);
 
 	char msg[96];
@@ -1210,22 +1226,35 @@ void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
 
 void edge_split_page()
 {
-	test_split_page_once(1, 2, 0, "stay");
-	test_split_page_once(1, 2, 1, "move");
+	test_split_page_once(1, 2, 1, "stay");
+	test_split_page_once(1, 2, 0, "move");
 	unsigned char opa[BUF_CAP], opb[BUF_CAP];
-	setup_pair_page(opa, 512, (unsigned char *)"x", 1, (unsigned char *)"y",
+	unsigned char npa[BUF_CAP], npb[BUF_CAP];
+	unsigned char op_init[BUF_CAP], np_init[BUF_CAP];
+	setup_pair_page(op_init, 512, (unsigned char *)"x", 1, (unsigned char *)"y",
 	    1, 0);
-	std::memcpy(opb, opa, 512);
+	page_init_raw(512, np_init);
+	std::memcpy(opa, op_init, 512);
+	std::memcpy(npa, np_init, 512);
 	auto *bp = (u_int16_t *)opa;
 	bp[2] = 1;
-	std::memcpy(opb, opa, 512);
 	hash_mock_reset();
 	hash_mock.big_split_ret = -1;
+	hash_mock_register_page(1, opa);
+	hash_mock_register_page(2, npa);
 	P::HTAB hp{};
 	HTAB hr{};
 	init_htab_port(hp, 512);
 	init_htab_ref(hr, 512);
 	int rp = P::__split_page(&hp, 1, 2);
+	std::memcpy(opb, op_init, 512);
+	bp = (u_int16_t *)opb;
+	bp[2] = 1;
+	std::memcpy(npb, np_init, 512);
+	hash_mock_reset();
+	hash_mock.big_split_ret = -1;
+	hash_mock_register_page(1, opb);
+	hash_mock_register_page(2, npb);
 	int rr = ref___split_page(&hr, 1, 2);
 	char msg[64];
 	std::snprintf(msg, sizeof msg, "ugly rp=%d rr=%d", rp, rr);
@@ -1250,6 +1279,10 @@ void test_ugly_split_once(int hashret, const char *tag)
 	static unsigned char v[] = { 6, 5 };
 	setup_pair_page(op_init, 512, k, 3, v, 2, 0);
 	page_init_raw(512, np_init);
+	guard_fill(opa, BUF_CAP);
+	guard_fill(opb, BUF_CAP);
+	guard_fill(npa, BUF_CAP);
+	guard_fill(npb, BUF_CAP);
 	std::memcpy(opa, op_init, 512);
 	std::memcpy(npa, np_init, 512);
 
@@ -1269,9 +1302,9 @@ void test_ugly_split_once(int hashret, const char *tag)
 
 	int rp = P::ugly_split(&hp, 0, &oba, &nba, 512, 0);
 
-	P::BUFHEAD obb{}, nbb{};
 	std::memcpy(opb, op_init, 512);
 	std::memcpy(npb, np_init, 512);
+	P::BUFHEAD obb{}, nbb{};
 	obb.page = (char *)opb;
 	nbb.page = (char *)npb;
 	obb.addr = 1;
@@ -1285,6 +1318,10 @@ void test_ugly_split_once(int hashret, const char *tag)
 	std::snprintf(msg, sizeof msg, "%s hr=%d rp=%d rr=%d", tag, hashret,
 	    rp, rr);
 	check_eq(F_UGLY_SPLIT, rp == rr, msg);
+	if (rp == 0 && rr == 0)
+		check_eq(F_UGLY_SPLIT,
+		    bufs_eq(opa, opb, BUF_CAP) && bufs_eq(npa, npb, BUF_CAP),
+		    "page bytes");
 }
 
 void edge_ugly_split()

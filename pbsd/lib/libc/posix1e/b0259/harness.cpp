@@ -135,13 +135,17 @@ struct AclCall {
 	int		err;
 };
 
+static uint32_t g_perm_storage;
+static uint32_t *g_perm_base = &g_perm_storage;
+
 static AclCall g_acl_last;
 static int g_acl_calls;
 
 static int
 acl_mix(uint32_t *permset, mode_t perm, int tag)
 {
-	uint64_t h = (uint64_t)(uintptr_t)permset;
+	uint64_t h = (uint64_t)(permset == NULL ? 0 :
+	    (long long)(permset - g_perm_base));
 
 	h ^= (uint64_t)perm * 0x9e3779b97f4a7c15ULL;
 	h ^= (uint64_t)tag * 0xd6e8feb86659fd93ULL;
@@ -163,9 +167,6 @@ acl_record(int which, uint32_t *permset, mode_t perm, int ret, int err)
 	g_acl_last.ret = ret;
 	g_acl_last.err = err;
 }
-
-static uint32_t g_perm_storage;
-static uint32_t *g_perm_base = &g_perm_storage;
 
 extern "C" int
 acl_get_perm_np(uint32_t *permset_d, uint32_t perm)
@@ -222,7 +223,7 @@ struct MacExecSnap {
 	long long	argv_off;
 	char		**envv;
 	long long	envv_off;
-	struct mac	*label;
+	MAC		*label;
 	long long	label_off;
 	int		ret;
 	int		err;
@@ -254,7 +255,7 @@ mac_off(const void *p)
 }
 
 static int
-mac_mix(char *fname, char **argv, char **envv, struct mac *label)
+mac_mix(char *fname, char **argv, char **envv, MAC *label)
 {
 	uint64_t h = 0;
 
@@ -266,14 +267,17 @@ mac_mix(char *fname, char **argv, char **envv, struct mac *label)
 		h ^= (unsigned char)envv[0][0] << 16;
 	if (label != NULL)
 		h ^= (uint64_t)label->m_buflen;
-	h ^= (uint64_t)(uintptr_t)fname;
+	h ^= (uint64_t)mac_off(fname);
+	h ^= (uint64_t)mac_off(argv) << 16;
+	h ^= (uint64_t)mac_off(envv) << 32;
+	h ^= (uint64_t)mac_off(label) << 48;
 	h ^= h >> 17;
 	h *= 0xed5ad4bbULL;
 	return ((int)(h % 7) - 3);
 }
 
 extern "C" int
-__mac_execve(char *fname, char **argv, char **envv, struct mac *mac_p)
+__mac_execve(char *fname, char **argv, char **envv, MAC *mac_p)
 {
 	int ret;
 
@@ -356,6 +360,12 @@ static bool
 reg_eq(const Region &a, const Region &b)
 {
 	return (std::memcmp(a.b, b.b, REG) == 0);
+}
+
+static bool
+reg_unchanged(const Region &after, const Region &before)
+{
+	return (std::memcmp(after.b, before.b, REG) == 0);
 }
 
 /* ------------------------------------------------------------- acl_free */
@@ -466,9 +476,10 @@ setup_mac_exec(Region &r1, Region &r2, uint32_t seed, int null_fname,
 	char *fname_p, *fname_r;
 	char **argv_p, **argv_r;
 	char **envv_p, **envv_r;
-	struct mac *lab_p, *lab_r;
+	MAC *lab_p, *lab_r;
 	unsigned char *s1, *s2;
 	size_t base;
+	Region snap1, snap2;
 
 	reg_init(r1);
 	reg_init(r2);
@@ -509,8 +520,8 @@ setup_mac_exec(Region &r1, Region &r2, uint32_t seed, int null_fname,
 		envv_r[1] = NULL;
 	}
 
-	lab_p = null_label ? NULL : (struct mac *)(r1.b + base + 192);
-	lab_r = null_label ? NULL : (struct mac *)(r2.b + base + 192);
+	lab_p = null_label ? NULL : (MAC *)(r1.b + base + 192);
+	lab_r = null_label ? NULL : (MAC *)(r2.b + base + 192);
 	if (!null_label) {
 		lab_p->m_buflen = (size_t)(seed & 0xffffu);
 		lab_p->m_string = (char *)(r1.b + base + 72);
@@ -518,12 +529,15 @@ setup_mac_exec(Region &r1, Region &r2, uint32_t seed, int null_fname,
 		lab_r->m_string = (char *)(r2.b + base + 72);
 	}
 
-	mac_regions(r1.b, r2.b);
+	snap1 = r1;
+	snap2 = r2;
+	mac_regions(r1.b, r1.b);
 	mac_track_reset();
 	int rp = P::mac_execve(fname_p, argv_p, envv_p, lab_p);
 	MacExecSnap sp = g_mac_last;
 	int ep = errno;
 
+	mac_regions(r2.b, r2.b);
 	mac_track_reset();
 	int rr = ref_mac_execve(fname_r, argv_r, envv_r, lab_r);
 	MacExecSnap sr = g_mac_last;
@@ -537,8 +551,8 @@ setup_mac_exec(Region &r1, Region &r2, uint32_t seed, int null_fname,
 		fail(F_MAC_EXECVE, "errno", "errno mismatch");
 	if (!mac_snap_eq(sp, sr))
 		fail(F_MAC_EXECVE, "mock", "helper call mismatch");
-	if (!reg_eq(r1, r2))
-		fail(F_MAC_EXECVE, "buffer", "region mismatch");
+	if (!reg_unchanged(r1, snap1) || !reg_unchanged(r2, snap2))
+		fail(F_MAC_EXECVE, "buffer", "region mutated");
 }
 
 static void

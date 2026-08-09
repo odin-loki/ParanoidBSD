@@ -190,7 +190,7 @@ init_memout_oracle(struct oracle_output *o)
 }
 
 static void
-init_memout_port(port::output *o)
+init_memout_port(struct port::output *o)
 {
 	std::memset(o, 0, sizeof(*o));
 	o->bufsize = 64;
@@ -206,7 +206,7 @@ memout_len_oracle(struct oracle_output *o)
 }
 
 static std::size_t
-memout_len_port(port::output *o)
+memout_len_port(struct port::output *o)
 {
 	if (o->buf == nullptr || o->nextc == nullptr || o->nextc < o->buf)
 		return 0;
@@ -302,7 +302,7 @@ test_memout_grow(void)
 {
 	Stat *st = get_stat("outbin/emptyoutbuf");
 	struct oracle_output oa;
-	port::output ob;
+	struct port::output ob;
 	unsigned char data[256];
 	int bad = 0;
 
@@ -462,7 +462,7 @@ test_outbin_guard(const char *tag, const void *data, std::size_t len)
 {
 	Stat *st = get_stat("outbin/emptyoutbuf");
 	struct oracle_output oa;
-	port::output ob;
+	struct port::output ob;
 	int bad = 0;
 
 	reset_oracle();
@@ -491,7 +491,7 @@ test_outqstr(const char *tag, const char *s)
 {
 	Stat *st = get_stat("outqstr/outdqstr/byteseq");
 	struct oracle_output oa;
-	port::output ob;
+	struct port::output ob;
 	int bad = 0;
 
 	reset_oracle();
@@ -539,7 +539,7 @@ test_outfmt(void)
 {
 	Stat *st = get_stat("outfmt/doformat/out1fmt");
 	struct oracle_output oa;
-	port::output ob;
+	struct port::output ob;
 	char fa[64], fb[64];
 	int bad = 0;
 
@@ -620,7 +620,7 @@ test_out_flags(void)
 {
 	Stat *st = get_stat("outiserror/outclearerror/flushout");
 	struct oracle_output oa;
-	port::output ob;
+	struct port::output ob;
 	int bad = 0;
 
 	reset_oracle();

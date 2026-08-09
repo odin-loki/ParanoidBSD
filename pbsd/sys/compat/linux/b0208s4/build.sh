@@ -4,8 +4,9 @@
 #
 # Usage: sh build.sh   (from pbsd/sys/compat/linux/b0208s4/)
 #
-# Compiles the C oracle, the C++23 module port and the harness, links the three
-# together and execs the harness so its exit status is this script's status.
+# Compiles the C oracle, the C++23 module port and the harness, links the
+# three together and execs the harness so its exit status is this script's
+# exit status.
 set -e
 
 cd "$(dirname "$0")"

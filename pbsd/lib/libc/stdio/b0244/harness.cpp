@@ -27,7 +27,11 @@ namespace P = pbsd::lib_libc_stdio::b0244;
 /* ------------------------------------------------------------------ */
 
 struct RefFILE {
+	unsigned char _pbsd_guard_lo[8];
 	int _orientation;
+	int _pbsd_lockdepth;
+	int _pbsd_lockseq;
+	unsigned char _pbsd_guard_hi[8];
 };
 
 extern "C" {
@@ -194,7 +198,7 @@ mock_eq(const MockSnap *a, const MockSnap *b)
 }
 
 static void
-fill_guard(unsigned char *buf, size_t n)
+fill_guard(void *buf, size_t n)
 {
 	memset(buf, 0x7f, n);
 }
@@ -207,7 +211,6 @@ static void
 test_fcloseall_once(int fn)
 {
 	MockSnap snap_p, snap_r;
-	int ok = 1;
 
 	record_case(fn);
 
@@ -221,21 +224,16 @@ test_fcloseall_once(int fn)
 
 	if (snap_p.fwalk_calls != 1) {
 		record_fail(fn, "port: fwalk not called once");
-		ok = 0;
 	}
 	if (snap_r.fwalk_calls != 1) {
 		record_fail(fn, "ref: fwalk not called once");
-		ok = 0;
 	}
 	if (snap_p.fwalk_fn != snap_r.fwalk_fn) {
 		record_fail(fn, "fwalk fn pointer mismatch");
-		ok = 0;
 	}
 	if (!mock_eq(&snap_p, &snap_r)) {
 		record_fail(fn, "mock state mismatch");
-		ok = 0;
 	}
-	(void)ok;
 }
 
 static void
@@ -252,11 +250,6 @@ test_fcloseall(void)
 /* getline                                                             */
 /* ------------------------------------------------------------------ */
 
-enum {
-	LINE_ARENA = 512,
-	CAP_ARENA = 64,
-};
-
 struct LineArena {
 	unsigned char before[32];
 	char line[256];
@@ -272,7 +265,7 @@ struct CapArena {
 static void
 test_getline_case(int fn, ssize_t mock_ret, size_t set_cap, size_t write_len,
     const unsigned char *write_src, LineArena *la_p, LineArena *la_r,
-    CapArena *ca_p, CapArena *ca_r, RefFILE *fp_p, RefFILE *fp_r,
+    CapArena *ca_p, CapArena *ca_r, P::FILE *fp_p, RefFILE *fp_r,
     char **linep_p, char **linep_r, int use_null_linep, int use_null_cap)
 {
 	MockSnap snap_p, snap_r;
@@ -307,7 +300,7 @@ test_getline_case(int fn, ssize_t mock_ret, size_t set_cap, size_t write_len,
 	ca_r->cap = 0xdeadbeefUL;
 
 	ret_p = P::getline(use_null_linep ? nullptr : linep_p,
-	    use_null_cap ? nullptr : &ca_p->cap, (P::FILE *)fp_p);
+	    use_null_cap ? nullptr : &ca_p->cap, fp_p);
 	mock_snap(&snap_p);
 
 	mock_reset();
@@ -339,8 +332,8 @@ test_getline_case(int fn, ssize_t mock_ret, size_t set_cap, size_t write_len,
 		record_fail(fn, "delim is not newline");
 		return;
 	}
-	if (snap_p.getdelim_delim != snap_r.getdelim_delim) {
-		record_fail(fn, "delim mismatch");
+	if (!mock_eq(&snap_p, &snap_r)) {
+		record_fail(fn, "mock state mismatch");
 		return;
 	}
 	if (!use_null_cap) {
@@ -353,7 +346,7 @@ test_getline_case(int fn, ssize_t mock_ret, size_t set_cap, size_t write_len,
 			return;
 		}
 	}
-	if (!use_null_linep && !use_null_cap && write_len != 0) {
+	if (!use_null_linep) {
 		if (memcmp(la_p, la_r, sizeof(*la_p)) != 0) {
 			record_fail(fn, "line buffer arena mismatch");
 			return;
@@ -369,7 +362,7 @@ test_getline(void)
 	CapArena ca_p, ca_r;
 	char *linep_p = la_p.line;
 	char *linep_r = la_r.line;
-	RefFILE fp_p = {};
+	P::FILE fp_p = {};
 	RefFILE fp_r = {};
 	unsigned char pat[256];
 	int i, b;
@@ -405,6 +398,10 @@ test_getline(void)
 	/* null linecapp */
 	test_getline_case(fn, 3, 0, 2, pat, &la_p, &la_r, &ca_p, &ca_r,
 	    &fp_p, &fp_r, &linep_p, &linep_r, 0, 1);
+
+	/* both null */
+	test_getline_case(fn, 2, 0, 0, pat, &la_p, &la_r, &ca_p, &ca_r,
+	    &fp_p, &fp_r, &linep_p, &linep_r, 1, 1);
 
 	for (i = 0; i < 200000; i++) {
 		ssize_t mock_ret = (ssize_t)(rng_i32() % 257) - 1;
@@ -470,6 +467,8 @@ test_dprintf(void)
 	test_dprintf_case(fn, -1, fmt_one, -1);
 	test_dprintf_case(fn, 255, fmt_hi, 0x7f);
 	test_dprintf_case(fn, INT_MAX, fmt_one, INT_MIN);
+	test_dprintf_case(fn, 0, fmt_one, 0);
+	test_dprintf_case(fn, 0, fmt_one, 1);
 
 	for (i = 0; i < 200000; i++) {
 		int fd = rng_i32();
@@ -487,19 +486,28 @@ test_dprintf(void)
 static void
 test_fwide_case(int fn, int init_orient, int mode, int threaded)
 {
-	RefFILE fp_p = {};
+	P::FILE fp_p = {};
 	RefFILE fp_r = {};
 	MockSnap snap_p, snap_r;
 	int ret_p, ret_r;
 
 	record_case(fn);
 
+	fill_guard(fp_p._pbsd_guard_lo, sizeof(fp_p._pbsd_guard_lo));
+	fill_guard(fp_p._pbsd_guard_hi, sizeof(fp_p._pbsd_guard_hi));
+	fill_guard(fp_r._pbsd_guard_lo, sizeof(fp_r._pbsd_guard_lo));
+	fill_guard(fp_r._pbsd_guard_hi, sizeof(fp_r._pbsd_guard_hi));
+
 	fp_p._orientation = init_orient;
+	fp_p._pbsd_lockdepth = 0;
+	fp_p._pbsd_lockseq = 0;
 	fp_r._orientation = init_orient;
+	fp_r._pbsd_lockdepth = 0;
+	fp_r._pbsd_lockseq = 0;
 
 	mock_reset();
 	__isthreaded = threaded;
-	ret_p = P::fwide((P::FILE *)&fp_p, mode);
+	ret_p = P::fwide(&fp_p, mode);
 	mock_snap(&snap_p);
 
 	mock_reset();
@@ -511,8 +519,8 @@ test_fwide_case(int fn, int init_orient, int mode, int threaded)
 		record_fail(fn, "return mismatch");
 		return;
 	}
-	if (fp_p._orientation != fp_r._orientation) {
-		record_fail(fn, "orientation state mismatch");
+	if (memcmp(&fp_p, &fp_r, sizeof(fp_p)) != 0) {
+		record_fail(fn, "FILE state mismatch");
 		return;
 	}
 	if (!mock_eq(&snap_p, &snap_r)) {
@@ -533,7 +541,7 @@ test_fwide(void)
 	const int fn = FN_FWIDE;
 	static const int inits[] = { 0, 1, -1, 2, -2 };
 	static const int modes[] = { 0, 1, -1, 2, -2, INT_MAX, INT_MIN };
-	int i, a, b, c;
+	int i, a, b;
 
 	for (a = 0; a < 5; a++) {
 		for (b = 0; b < 7; b++) {
@@ -547,11 +555,6 @@ test_fwide(void)
 		int mode = (int)(rng_i32() % 7) - 3;
 		int threaded = (int)(rng_next() & 1);
 		test_fwide_case(fn, init, mode, threaded);
-	}
-	for (c = 0; c < 200000; c++) {
-		int init = rng_i32() % 3 - 1;
-		int mode = rng_i32();
-		test_fwide_case(fn, init, mode, (int)(rng_next() & 1));
 	}
 }
 

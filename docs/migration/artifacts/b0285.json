@@ -1,0 +1,12 @@
+{
+  "batch": "b0285",
+  "verified": "2026-08-09T00:18:11Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 4/4: __rec_search, __rec_seq, __rec_close, __rec_sync)",
+  "ir_equivalent": false,
+  "harness_output": "b0285 differential harness\nfunction            cases   failures\n__rec_search        51440          0\n__rec_seq         1226000          0\n__rec_close         50384          0\n__rec_sync          52048          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/recno/rec_search.c": "eb4537b3b0abd60a",
+    "hbsd/src/lib/libc/db/recno/rec_seq.c": "896b3844d67e3645",
+    "hbsd/src/lib/libc/db/recno/rec_close.c": "1791eb5c2d4a785b"
+  }
+}

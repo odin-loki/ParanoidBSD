@@ -18,25 +18,23 @@
 #include <errno.h>
 #include <limits.h>
 #include <stdarg.h>
-#include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <wchar.h>
 
-/*
- * Missing defines / declarations that the private libc headers provide.
- */
-
-/* From <stdio.h>'s private companion "local.h" (libc internal). */
-extern int _fwalk(int (*)(FILE *));
+#ifndef LONG_BIT
+#define LONG_BIT (sizeof(long) * CHAR_BIT)
+#endif
 
 /*
  * FreeBSD's struct __sFILE carries the wide-orientation flag that fwide()
  * manipulates; glibc's FILE has no such member, so the single field the
  * function touches is modelled here.  The guard arrays and the lock counters
- * exist purely so that the differential harness can observe out-of-object
- * writes and the FLOCKFILE/FUNLOCKFILE pairing.  The identical declaration is
- * used by the port.
+ * let the differential harness observe out-of-object writes and the
+ * FLOCKFILE/FUNLOCKFILE pairing.  The identical declaration is used by the
+ * port.
  */
 struct __pbsd_sFILE {
 	unsigned char _pbsd_guard_lo[8];
@@ -46,14 +44,100 @@ struct __pbsd_sFILE {
 	unsigned char _pbsd_guard_hi[8];
 };
 
-/* From "libc_private.h": no-ops when the process is single threaded. */
+typedef struct __pbsd_sFILE b0244_FILE;
+#define FILE b0244_FILE
+
+/*
+ * Shared mock substrate: both the oracle and the port link against these
+ * definitions so differential tests compare only the batch function bodies.
+ */
+
+int __isthreaded = 0;
+
+int mock_fwalk_calls = 0;
+void *mock_fwalk_fn = NULL;
+int mock_fclose_calls = 0;
+
+ssize_t mock_getdelim_ret = 0;
+int mock_getdelim_last_delim = 0;
+char **mock_getdelim_last_linep = NULL;
+size_t *mock_getdelim_last_linecapp = NULL;
+FILE *mock_getdelim_last_fp = NULL;
+size_t mock_getdelim_set_cap = 0;
+size_t mock_getdelim_write_len = 0;
+unsigned char mock_getdelim_write_buf[256];
+
+int mock_vdprintf_ret = 0;
+int mock_vdprintf_last_fd = -1;
+const char *mock_vdprintf_last_fmt = NULL;
+int mock_vdprintf_last_arg = 0;
+
+int mock_flock_calls = 0;
+int mock_funlock_calls = 0;
+
+int
+fclose(FILE *fp)
+{
+	(void)fp;
+	mock_fclose_calls++;
+	return (0);
+}
+
+int
+_fwalk(int (*fn)(FILE *))
+{
+	mock_fwalk_calls++;
+	mock_fwalk_fn = (void *)fn;
+	return (0);
+}
+
+ssize_t
+getdelim(char **linep, size_t *linecapp, int delim, FILE *fp)
+{
+	size_t wi, n;
+
+	mock_getdelim_last_delim = delim;
+	mock_getdelim_last_linep = linep;
+	mock_getdelim_last_linecapp = linecapp;
+	mock_getdelim_last_fp = fp;
+
+	if (linecapp != NULL)
+		*linecapp = mock_getdelim_set_cap;
+
+	if (linep != NULL && *linep != NULL && mock_getdelim_write_len != 0) {
+		n = mock_getdelim_write_len;
+		if (n > sizeof(mock_getdelim_write_buf))
+			n = sizeof(mock_getdelim_write_buf);
+		for (wi = 0; wi < n; wi++)
+			(*linep)[wi] = (char)mock_getdelim_write_buf[wi];
+	}
+
+	return (mock_getdelim_ret);
+}
+
+int
+vdprintf(int fd, const char *fmt, va_list ap)
+{
+	mock_vdprintf_last_fd = fd;
+	mock_vdprintf_last_fmt = fmt;
+	mock_vdprintf_last_arg = va_arg(ap, int);
+	return (mock_vdprintf_ret);
+}
+
+/* From "libc_private.h": lock only when the process is multi-threaded. */
 #define	FLOCKFILE(fp)	do {						\
-		(fp)->_pbsd_lockdepth++;				\
-		(fp)->_pbsd_lockseq++;					\
+		if (__isthreaded) {						\
+			mock_flock_calls++;					\
+			(fp)->_pbsd_lockdepth++;				\
+			(fp)->_pbsd_lockseq++;					\
+		}								\
 	} while (0)
 #define	FUNLOCKFILE(fp)	do {						\
-		(fp)->_pbsd_lockdepth--;				\
-		(fp)->_pbsd_lockseq++;					\
+		if (__isthreaded) {						\
+			mock_funlock_calls++;					\
+			(fp)->_pbsd_lockdepth--;				\
+			(fp)->_pbsd_lockseq++;					\
+		}								\
 	} while (0)
 
 /* ====================================================================== */
@@ -213,7 +297,7 @@ ref_dprintf(int fd, const char * __restrict fmt, ...)
  */
 
 int
-ref_fwide(struct __pbsd_sFILE *fp, int mode)
+ref_fwide(FILE *fp, int mode)
 {
 	int m;
 

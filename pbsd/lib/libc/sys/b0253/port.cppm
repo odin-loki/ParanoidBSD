@@ -72,6 +72,10 @@ module;
 #include <fcntl.h>
 #include <stddef.h>
 
+#ifndef WAIT_ANY
+#define	WAIT_ANY	(-1)
+#endif
+
 #ifndef __weak_symbol
 #define	__weak_symbol	__attribute__((__weak__))
 #endif

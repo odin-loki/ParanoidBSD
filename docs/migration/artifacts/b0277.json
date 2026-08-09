@@ -1,0 +1,12 @@
+{
+  "batch": "b0277",
+  "verified": "2026-08-09T00:15:08Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD batch b0277 differential test\n  function              cases     fails   status\n  fmaximum_magf          201476          0   PASS\n  acosl                  200032          0   PASS\n  sin                    200047          0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_fmaximum_magf.c": "7c62358cb9cfc97d",
+    "hbsd/src/lib/msun/src/e_acosl.c": "b5545e33646a5bdb",
+    "hbsd/src/lib/msun/src/s_sin.c": "a5c0110c7a204bed"
+  }
+}

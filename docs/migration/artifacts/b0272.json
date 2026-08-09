@@ -1,0 +1,12 @@
+{
+  "batch": "b0272",
+  "verified": "2026-08-09T00:11:45Z",
+  "evidence": "harness green + IR-identical for all 5 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nFunction                          Cases   Failures\n__isinf                          200027          0\n__isinff                         200018          0\n__isinfl                         200019          0\n__freebsd11_basename_r           200028          0\n__freebsd11_basename             200011          0\nTOTAL                           1000103          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/isinf.c": "ded166996cf8afbc",
+    "hbsd/src/lib/libc/gen/basename_compat.c": "90c466041e50ab3d",
+    "hbsd/src/lib/libc/gen/fdopendir.c": "8369455f6087da7a"
+  }
+}

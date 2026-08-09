@@ -204,6 +204,53 @@ struct stackmark {
 	int stacknleft;
 };
 
+#define __unused [[maybe_unused]]
+
+char **port_argptr;
+char *port_nextopt_optptr;
+#define argptr port_argptr
+
+static int
+nextopt(const char *optstring)
+{
+	char *p;
+	int c;
+
+	if (port_nextopt_optptr == nullptr || *port_nextopt_optptr == '\0') {
+		p = port_argptr != nullptr ? *port_argptr : nullptr;
+		if (p == nullptr || *p != '-' || *++p == '\0' ||
+		    (*p == '-' && *++p == '\0')) {
+			return '\0';
+		}
+		port_argptr++;
+		port_nextopt_optptr = p;
+	}
+	c = (unsigned char)*port_nextopt_optptr++;
+	p = const_cast<char *>(strchr(optstring, c));
+	if (p == nullptr)
+		error("illegal option -%c", c);
+	if (p[1] == ':') {
+		if (*port_nextopt_optptr == '\0')
+			port_nextopt_optptr = *port_argptr++;
+		else {
+			static char empty_opt[] = "";
+			port_nextopt_optptr = empty_opt;
+		}
+	}
+	return c;
+}
+
+static void
+warning(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fputc('\n', stderr);
+}
+
 struct fwopen_cookie {
 	void *cookie;
 	int (*writefn)(void *, const char *, int);
@@ -302,6 +349,8 @@ int comparealiases(const void *, const void *);
 void printalias(const struct alias *);
 void printaliases(void);
 size_t hashalias(const char *);
+int aliascmd(int, char **);
+int unaliascmd(int, char **);
 
 void trputc(int);
 void sh_trace(const char *, ...);
@@ -683,7 +732,7 @@ outdqstr(const char *p, struct output *file)
 	outstr("$'", file);
 	while ((clen = mbrtowc(&wc, p, end - p + 1, &mbs)) != 0) {
 		if (clen == (size_t)-2) {
-			while (p < end)
+			while (p >= end)
 				byteseq(*p++, file);
 			break;
 		}
@@ -1093,6 +1142,57 @@ iteralias(const struct alias *index)
 	return (NULL);
 }
 
+int
+aliascmd(int argc __unused, char **argv __unused)
+{
+	char *n, *v;
+	int ret = 0;
+	struct alias *ap;
+
+	nextopt("");
+
+	if (*argptr == NULL) {
+		printaliases();
+		return (0);
+	}
+	while ((n = *argptr++) != NULL) {
+		if (n[0] == '\0') {
+			warning("'': not found");
+			ret = 1;
+			continue;
+		}
+		if ((v = strchr(n+1, '=')) == NULL) /* n+1: funny ksh stuff */
+			if ((ap = lookupalias(n, 0)) == NULL) {
+				warning("%s: not found", n);
+				ret = 1;
+			} else
+				printalias(ap);
+		else {
+			*v++ = '\0';
+			setalias(n, v);
+		}
+	}
+
+	return (ret);
+}
+
+int
+unaliascmd(int argc __unused, char **argv __unused)
+{
+	int i;
+
+	while ((i = nextopt("a")) != '\0') {
+		if (i == 'a') {
+			rmaliases();
+			return (0);
+		}
+	}
+	for (i = 0; *argptr; argptr++)
+		i |= unalias(*argptr);
+
+	return (i);
+}
+
 /* ===================================================================== *
  * show.c (the trace routines; see skipped.txt for the rest)
  * ===================================================================== */
@@ -1192,8 +1292,118 @@ trargs(char **ap)
 }
 
 /* ===================================================================== *
- * Accessors that let the differential harness observe internal state.
+ * Harness support and accessors that let the differential harness observe
+ * internal state.
  * ===================================================================== */
+
+static struct output *saved_out1;
+
+void
+port_reset_state(void)
+{
+	struct stack_block *sp;
+	int i;
+
+	while (stackp != nullptr) {
+		sp = stackp;
+		stackp = sp->prev;
+		free(sp);
+	}
+	stackp = nullptr;
+	stacknxt = nullptr;
+	stacknleft = 0;
+	sstrend = nullptr;
+	suppressint = 0;
+	intpending = 0;
+	sh_err_thrown = 0;
+	sh_errjmp_set = 0;
+
+	if (output.buf != nullptr) {
+		free(output.buf);
+		output.buf = nullptr;
+	}
+	output.nextc = nullptr;
+	output.bufend = nullptr;
+	output.bufsize = OUTBUFSIZ;
+	output.fd = 1;
+	output.flags = 0;
+
+	if (errout.buf != nullptr) {
+		free(errout.buf);
+		errout.buf = nullptr;
+	}
+	errout.nextc = nullptr;
+	errout.bufend = nullptr;
+	errout.bufsize = 256;
+	errout.fd = 2;
+	errout.flags = 0;
+
+	if (memout.buf != nullptr) {
+		free(memout.buf);
+		memout.buf = nullptr;
+	}
+	memout.nextc = nullptr;
+	memout.bufend = nullptr;
+	memout.bufsize = 64;
+	memout.fd = MEM_OUT;
+	memout.flags = 0;
+
+	out1 = &output;
+	out2 = &errout;
+	saved_out1 = nullptr;
+
+	INTOFF;
+	for (i = 0; i < ATABSIZE; i++) {
+		struct alias *ap;
+
+		while ((ap = atab[i]) != nullptr) {
+			atab[i] = ap->next;
+			freealias(ap);
+		}
+	}
+	aliases = 0;
+	INTON;
+
+	port_nextopt_optptr = nullptr;
+	port_argptr = nullptr;
+	tracefile = nullptr;
+	suppressint = 1;
+}
+
+void
+port_set_out1_memout(void)
+{
+	if (memout.buf != nullptr) {
+		free(memout.buf);
+		memout.buf = nullptr;
+	}
+	memout.nextc = nullptr;
+	memout.bufend = nullptr;
+	memout.bufsize = 64;
+	memout.fd = MEM_OUT;
+	memout.flags = 0;
+	saved_out1 = out1;
+	out1 = &memout;
+}
+
+void
+port_restore_out1(void)
+{
+	if (saved_out1 != nullptr)
+		out1 = saved_out1;
+	else
+		out1 = &output;
+	saved_out1 = nullptr;
+	if (memout.buf != nullptr) {
+		free(memout.buf);
+		memout.buf = nullptr;
+	}
+	memout.nextc = nullptr;
+	memout.bufend = nullptr;
+	memout.bufsize = 64;
+	memout.fd = MEM_OUT;
+	memout.flags = 0;
+}
 
 struct stack_block *
 get_stackp(void)

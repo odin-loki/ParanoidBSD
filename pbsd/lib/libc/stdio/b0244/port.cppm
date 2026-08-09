@@ -14,27 +14,12 @@ module;
 
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <sys/types.h>
 #include <wchar.h>
 
-/*
- * Declared by the libc-internal "local.h" in the original tree.
- */
-extern "C" int _fwalk(int (*)(FILE *));
-
 export module pbsd.lib.libc.stdio.b0244;
 
-export namespace pbsd::lib_libc_stdio::b0244 {
-
-/*
- * FreeBSD's struct __sFILE carries the wide-orientation flag that fwide()
- * manipulates; glibc's FILE has no such member, so the single field the
- * function touches is modelled here with the layout the oracle uses.  The
- * guard arrays and the lock counters let the differential harness observe
- * out-of-object writes and the FLOCKFILE/FUNLOCKFILE pairing.
- */
-struct __pbsd_sFILE {
+export struct __pbsd_sFILE {
 	unsigned char _pbsd_guard_lo[8];
 	int _orientation;
 	int _pbsd_lockdepth;
@@ -42,19 +27,34 @@ struct __pbsd_sFILE {
 	unsigned char _pbsd_guard_hi[8];
 };
 
-} /* namespace pbsd::lib_libc_stdio::b0244 */
+extern "C" {
+extern int __isthreaded;
+extern int mock_flock_calls;
+extern int mock_funlock_calls;
+extern int _fwalk(int (*)(struct __pbsd_sFILE *));
+extern int fclose(struct __pbsd_sFILE *);
+extern ssize_t getdelim(char **, size_t *, int, struct __pbsd_sFILE *);
+extern int vdprintf(int, const char *, va_list);
+}
 
-/* From "libc_private.h": no-ops when the process is single threaded. */
 #define	FLOCKFILE(fp)	do {						\
-		(fp)->_pbsd_lockdepth++;				\
-		(fp)->_pbsd_lockseq++;					\
+		if (__isthreaded) {						\
+			mock_flock_calls++;					\
+			(fp)->_pbsd_lockdepth++;				\
+			(fp)->_pbsd_lockseq++;					\
+		}								\
 	} while (0)
 #define	FUNLOCKFILE(fp)	do {						\
-		(fp)->_pbsd_lockdepth--;				\
-		(fp)->_pbsd_lockseq++;					\
+		if (__isthreaded) {						\
+			mock_funlock_calls++;					\
+			(fp)->_pbsd_lockdepth--;				\
+			(fp)->_pbsd_lockseq++;					\
+		}								\
 	} while (0)
 
 export namespace pbsd::lib_libc_stdio::b0244 {
+
+using FILE = __pbsd_sFILE;
 
 /* ====================================================================== */
 /* lib/libc/stdio/fcloseall.c                                             */
@@ -96,7 +96,7 @@ void
 __fcloseall(void)
 {
 
-	(void)::_fwalk(::fclose);
+	(void)_fwalk(fclose);
 }
 
 /* ====================================================================== */
@@ -131,12 +131,12 @@ __fcloseall(void)
  * SUCH DAMAGE.
  */
 
-::ssize_t
-getline(char ** __restrict linep, ::size_t * __restrict linecapp,
-	::FILE * __restrict fp)
+ssize_t
+getline(char ** __restrict linep, size_t * __restrict linecapp,
+	FILE * __restrict fp)
 {
 
-	return (::getdelim(linep, linecapp, '\n', fp));
+	return (getdelim(linep, linecapp, '\n', fp));
 }
 
 /* ====================================================================== */
@@ -174,11 +174,11 @@ getline(char ** __restrict linep, ::size_t * __restrict linecapp,
 int
 dprintf(int fd, const char * __restrict fmt, ...)
 {
-	::va_list ap;
+	va_list ap;
 	int ret;
 
 	va_start(ap, fmt);
-	ret = ::vdprintf(fd, fmt, ap);
+	ret = vdprintf(fd, fmt, ap);
 	va_end(ap);
 	return (ret);
 }
@@ -216,7 +216,7 @@ dprintf(int fd, const char * __restrict fmt, ...)
  */
 
 int
-fwide(struct __pbsd_sFILE *fp, int mode)
+fwide(FILE *fp, int mode)
 {
 	int m;
 

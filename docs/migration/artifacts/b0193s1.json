@@ -1,0 +1,10 @@
+{
+  "batch": "b0193s1",
+  "verified": "2026-08-09T00:13:06Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/25: substitute_matching_text)",
+  "ir_equivalent": false,
+  "harness_output": "\nPBSD b0193s1 -- bin/ed/sub.c differential test\n  function                          cases   failures  status\n  ----------------------------------------------------------------\n  extract_subst_tail               200055          0  ok\n  extract_subst_template           200016          0  ok\n  substitute_matching_text         200013          0  ok\n  apply_subst_template             200012          0  ok\n  ----------------------------------------------------------------\n  TOTAL                            800096          0  ok\n",
+  "input_hashes": {
+    "hbsd/src/bin/ed/sub.c": "9dca8452f22721ef"
+  }
+}

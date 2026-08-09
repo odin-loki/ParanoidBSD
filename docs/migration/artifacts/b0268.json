@@ -1,0 +1,12 @@
+{
+  "batch": "b0268",
+  "verified": "2026-08-09T00:12:16Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nFunction                          Cases   Failures\ndirname                          200042          0\n__libc_interposing_slot          200012          0\n__arc4random_stir_fbsd11         200003          0\n__arc4random_addrandom_fbsd11     200005          0\nTOTAL                            800062          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/dirname.c": "9ce85d932a9680cf",
+    "hbsd/src/lib/libc/gen/libc_interposing_table.c": "7581a439b07e582b",
+    "hbsd/src/lib/libc/gen/arc4random-compat.c": "0001e65505c06505"
+  }
+}

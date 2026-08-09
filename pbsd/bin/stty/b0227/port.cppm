@@ -719,7 +719,7 @@ print(struct termios *tp, struct winsize *wp, int ldisc, enum FMT fmt)
 
 	/* special control characters */
 	cc = tp->c_cc;
-	if (fmt != POSIX) {
+	if (fmt == POSIX) {
 		binit("cchars");
 		for (p = cchars1; p->name; ++p) {
 			(void)snprintf(buf1, sizeof(buf1), "%s = %s;",

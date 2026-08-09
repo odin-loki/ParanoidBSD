@@ -1,0 +1,13 @@
+{
+  "batch": "b0284",
+  "verified": "2026-08-09T00:16:21Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "function          cases   failures\nsig2str          200026          0\nstr2sig          200038          0\n__xuname         200018          0\nTOTAL            600082          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/sig2str.c": "3d3b2a92465c345d",
+    "hbsd/src/lib/libc/gen/siglist.c": "f96bb7835e25c89a",
+    "hbsd/src/lib/libc/gen/__xuname.c": "2cc3f27074faba8e",
+    "hbsd/src/lib/libc/gen/readdir-compat11.c": "0f8558721d90df8f"
+  }
+}
