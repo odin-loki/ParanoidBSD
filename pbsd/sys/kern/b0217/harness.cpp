@@ -15,7 +15,6 @@ namespace port = pbsd::sys_kern::b0217;
 #define GUARD 0x7f
 #define PAD 32u
 #define SWEEP 30000L
-#define EWOULDBLOCK 35
 #define MAX_PRINT 12
 
 struct stat_row {
@@ -657,7 +656,7 @@ static void test_stack_symbol(uintptr_t pc, unsigned int buflen, int flags) {
 	int re = ref_stack_symbol(pc, rname, buflen, &roff, flags);
 	if (pe != re || poff != roff)
 		fail_row(R_STACK_SYMBOL, "ret", "mismatch");
-	if (pe == EWOULDBLOCK) {
+	if (pe == 35) {
 		if (std::memcmp(pname, rname, 128) != 0)
 			fail_row(R_STACK_SYMBOL, "buf", "ewouldblock");
 	} else if (std::strncmp(pname, rname, buflen) != 0)

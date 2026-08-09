@@ -491,14 +491,12 @@ out:
 #endif
 
 /*
- * The original writes this table with array designators:
- *	#define ARITH_PRECEDENCE(op, prec) [op - ARITH_BINOP_MIN] = prec
- * which C++ does not have.  The initialisers below are the same sixteen
- * values in index order:
- *	 0 ARITH_LE 3	 1 ARITH_GE 3	 2 ARITH_LT 3	 3 ARITH_GT 3
- *	 4 ARITH_EQ 4	 5 ARITH_REM 0	 6 ARITH_BAND 5	 7 ARITH_LSHIFT 2
- *	 8 ARITH_RSHIFT 2  9 ARITH_MUL 0  10 ARITH_ADD 1  11 ARITH_BOR 7
- *	12 ARITH_SUB 1	13 ARITH_BXOR 6	14 ARITH_DIV 0	15 ARITH_NE 4
+ * The original uses designated initialisers [op - ARITH_BINOP_MIN] = prec.
+ * GCC C++ modules do not support those for this array, so the sixteen values
+ * are written in index order (op = ARITH_BINOP_MIN + index):
+ *	 0 LE 3   1 GE 3   2 LT 3   3 GT 3   4 EQ 4   5 REM 0   6 BAND 5
+ *	 7 LSHIFT 2   8 RSHIFT 2   9 MUL 0  10 ADD 1  11 BOR 7  12 SUB 1
+ *	13 BXOR 6  14 DIV 0  15 NE 4
  */
 extern const char prec[ARITH_BINOP_MAX - ARITH_BINOP_MIN] = {
 	3, 3, 3, 3, 4, 0, 5, 2, 2, 0, 1, 7, 1, 6, 0, 4,
@@ -777,7 +775,7 @@ letcmd(int argc, char **argv)
 
 	if (argc > 1) {
 		p = argv[1];
-		if (argc <= 2) {
+		if (argc > 2) {
 			/*
 			 * Concatenate arguments.
 			 */
@@ -891,7 +889,7 @@ mksyntax_main(int argc __unused, char **argv __unused)
 	for (i = 0 ; synclass[i].name ; i++) {
 		sprintf(buf, "#define %s %d", synclass[i].name, i);
 		fputs(buf, hfile);
-		for (pos = strlen(buf) ; pos < 32 ; pos = (pos + 8) & ~07)
+		for (pos = strlen(buf) ; pos >= 32 ; pos = (pos + 8) & ~07)
 			putc('\t', hfile);
 		fprintf(hfile, "/* %s */\n", synclass[i].comment);
 	}

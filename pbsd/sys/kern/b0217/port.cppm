@@ -26,9 +26,7 @@ namespace pbsd::sys_kern::b0217::detail {
 #define HASH_NOWAIT 0x00000002
 #define EINVAL 22
 #define ENOENT 2
-#ifndef EWOULDBLOCK
-#define EWOULDBLOCK EAGAIN
-#endif
+#define EWOULDBLOCK 35
 #define LK_NOWAIT 0x0001
 #define PID_MAX 4095
 #define STACK_MAX 18

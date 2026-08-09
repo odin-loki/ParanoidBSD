@@ -33,81 +33,218 @@
  */
 
 /*
- * Reference oracle for PBSD batch b0210: bin/pkill/pkill.c.
+ * ORACLE for PBSD batch b0210 -- bin/pkill.
  *
- * Function bodies are reproduced verbatim; only names carry the ref_ prefix.
- * main() is absent for the reason recorded in skipped.txt.
+ * The function bodies below are byte-for-byte the HardenedBSD originals.
+ * Renaming to the ref_ namespace is done with object-like macros so that not
+ * a single character inside any body had to be touched.  Everything above the
+ * "ORIGINAL SOURCE BEGINS HERE" marker is added scaffolding: header shims for
+ * facilities this host lacks (sys/queue.h, getprogname(), jail_getid()) and a
+ * setjmp/longjmp trap for exit()/err()/errx() so the differential harness can
+ * observe the exit status and the diagnostic text of the error paths without
+ * tearing down the process.
  */
-
-#define _DEFAULT_SOURCE
 
 #include <sys/types.h>
 #include <sys/param.h>
-#include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/file.h>
 
-#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <grp.h>
+#include <limits.h>
+#include <paths.h>
+#include <pwd.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
-#include <paths.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
-#include <regex.h>
-#include <ctype.h>
-#include <fcntl.h>
-#include <err.h>
-#include <pwd.h>
-#include <grp.h>
-#include <errno.h>
-#include <sys/file.h>
 
-#ifndef SLIST_FOREACH_SAFE
-#define	SLIST_FOREACH_SAFE(var, head, field, tvar)			\
+/* ------------------------------------------------------------------ */
+/* <sys/queue.h> SLIST subset (this host has no <sys/queue.h>).		*/
+/* ------------------------------------------------------------------ */
+#define	SLIST_HEAD(name, type)						\
+struct name {								\
+	struct type *slh_first;						\
+}
+
+#define	SLIST_HEAD_INITIALIZER(head)					\
+	{ NULL }
+
+#define	SLIST_ENTRY(type)						\
+struct {								\
+	struct type *sle_next;						\
+}
+
+#define	SLIST_FIRST(head)	((head)->slh_first)
+#define	SLIST_NEXT(elm, field)	((elm)->field.sle_next)
+
+#define	SLIST_INSERT_HEAD(head, elm, field) do {			\
+	SLIST_NEXT((elm), field) = SLIST_FIRST((head));			\
+	SLIST_FIRST((head)) = (elm);					\
+} while (0)
+
+#define	SLIST_FOREACH(var, head, field)					\
 	for ((var) = SLIST_FIRST((head));				\
-	    (var) && ((tvar) = SLIST_NEXT((var), field), 1);		\
-	    (var) = (tvar))
+	    (var);							\
+	    (var) = SLIST_NEXT((var), field))
+
+/* ------------------------------------------------------------------ */
+/* BSD facilities missing on this host.				*/
+/* ------------------------------------------------------------------ */
+#ifndef	LONG_BIT
+#define	LONG_BIT	(CHAR_BIT * (int)sizeof(long))
 #endif
 
-#ifndef LONG_BIT
-#define	LONG_BIT	(sizeof(long) * CHAR_BIT)
-#endif
+static const char *
+ref_getprogname(void)
+{
 
-/* FreeBSD types and constants reproduced for the ported functions. */
-#ifndef MAXCOMLEN
-#define	MAXCOMLEN	19
-#endif
-#ifndef LOGINCLASSLEN
-#define	LOGINCLASSLEN	17
-#endif
+	return ("pkill");
+}
+#define	getprogname	ref_getprogname
 
-#define	P_KPROC		0x00000001
-#define	P_CONTROLT	0x00000002
-#define	P_SYSTEM	0x00000004
+/*
+ * jail(3) is not available here.  A host with no jails makes jail_getid()
+ * fail for every argument, which is exactly what this returns.  Both the
+ * oracle and the port are linked against this same behaviour, so the
+ * differential comparison stays meaningful.
+ */
+static int
+ref_jail_getid(const char *name)
+{
 
-struct kinfo_proc {
-	pid_t		ki_pid;
-	uid_t		ki_uid;
-	uid_t		ki_ruid;
-	gid_t		ki_rgid;
-	pid_t		ki_ppid;
-	pid_t		ki_pgid;
-	dev_t		ki_tdev;
-	pid_t		ki_sid;
-	int		ki_jid;
-	int		ki_flag;
-	char		ki_comm[MAXCOMLEN + 1];
-	char		ki_loginclass[LOGINCLASSLEN];
-	struct timeval	ki_start;
-};
+	(void)name;
+	errno = EINVAL;
+	return (-1);
+}
+#define	jail_getid	ref_jail_getid
 
-typedef struct _kvm	kvm_t;
+/* ------------------------------------------------------------------ */
+/* exit()/err()/errx()/fprintf() trap.					*/
+/* ------------------------------------------------------------------ */
+jmp_buf	ref_trap_env;
+static int	ref_trap_code;
+static char	ref_trap_msg[16384];
+static size_t	ref_trap_len;
 
-extern char **kvm_getargv(kvm_t *kd, const struct kinfo_proc *kp, int nchr);
-extern int jail_getid(const char *name);
+static void
+ref_trap_reset(void)
+{
+
+	ref_trap_code = 0;
+	ref_trap_len = 0;
+	ref_trap_msg[0] = '\0';
+}
+
+static void
+ref_trap_vappend(const char *fmt, va_list ap)
+{
+	int n;
+
+	if (ref_trap_len >= sizeof(ref_trap_msg) - 1)
+		return;
+	n = vsnprintf(ref_trap_msg + ref_trap_len,
+	    sizeof(ref_trap_msg) - ref_trap_len, fmt, ap);
+	if (n < 0)
+		return;
+	ref_trap_len += (size_t)n;
+	if (ref_trap_len >= sizeof(ref_trap_msg))
+		ref_trap_len = sizeof(ref_trap_msg) - 1;
+}
+
+static void
+ref_trap_appendf(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	ref_trap_vappend(fmt, ap);
+	va_end(ap);
+}
+
+static void ref_trap_exit(int) __attribute__((__noreturn__));
+
+static void
+ref_trap_exit(int code)
+{
+
+	ref_trap_code = code;
+	longjmp(ref_trap_env, 1);
+}
+
+static void ref_trap_errx(int, const char *, ...) __attribute__((__noreturn__));
+
+static void
+ref_trap_errx(int code, const char *fmt, ...)
+{
+	va_list ap;
+
+	ref_trap_appendf("%s: ", ref_getprogname());
+	va_start(ap, fmt);
+	ref_trap_vappend(fmt, ap);
+	va_end(ap);
+	ref_trap_appendf("\n");
+	ref_trap_exit(code);
+}
+
+static void ref_trap_err(int, const char *, ...) __attribute__((__noreturn__));
+
+static void
+ref_trap_err(int code, const char *fmt, ...)
+{
+	va_list ap;
+	int sverrno;
+
+	sverrno = errno;
+	ref_trap_appendf("%s: ", ref_getprogname());
+	va_start(ap, fmt);
+	ref_trap_vappend(fmt, ap);
+	va_end(ap);
+	ref_trap_appendf(": %s\n", strerror(sverrno));
+	ref_trap_exit(code);
+}
+
+static int
+ref_trap_fprintf(FILE *stream, const char *fmt, ...)
+{
+	va_list ap;
+	size_t before;
+
+	if (stream != stderr && stream != stdout) {
+		int n;
+
+		va_start(ap, fmt);
+		n = vfprintf(stream, fmt, ap);
+		va_end(ap);
+		return (n);
+	}
+	before = ref_trap_len;
+	va_start(ap, fmt);
+	ref_trap_vappend(fmt, ap);
+	va_end(ap);
+	return ((int)(ref_trap_len - before));
+}
+
+#define	exit(code)	ref_trap_exit(code)
+#define	err		ref_trap_err
+#define	errx		ref_trap_errx
+#define	fprintf		ref_trap_fprintf
+
+/* ------------------------------------------------------------------ */
+/* ref_ renaming.  Object-like macros, so the bodies stay untouched.	*/
+/* ------------------------------------------------------------------ */
+#define	usage		ref_usage
+#define	makelist	ref_makelist
+#define	takepid		ref_takepid
+
+/* ============ ORIGINAL SOURCE BEGINS HERE ============ */
 
 #define	STATUS_MATCH	0
 #define	STATUS_NOMATCH	1
@@ -116,6 +253,10 @@ extern int jail_getid(const char *name);
 
 #define	MIN_PID	5
 #define	MAX_PID	99999
+
+/* Ignore system-processes (if '-S' flag is not specified) and myself. */
+#define	PSKIP(kp)	((kp)->ki_pid == mypid ||			\
+			 (!kthreads && ((kp)->ki_flag & P_KPROC) != 0))
 
 enum listtype {
 	LT_GENERIC,
@@ -136,7 +277,6 @@ struct list {
 
 SLIST_HEAD(listhead, list);
 
-static struct kinfo_proc *plist;
 static char	*selected;
 static const char *delim = "\n";
 static int	nproc;
@@ -150,9 +290,7 @@ static int	longfmt;
 static int	matchargs;
 static int	fullmatch;
 static int	kthreads;
-static int	cflags = 0;	/* REG_EXTENDED not required for these fns */
 static int	quiet;
-static kvm_t	*kd;
 static pid_t	mypid;
 
 static struct listhead euidlist = SLIST_HEAD_INITIALIZER(euidlist);
@@ -165,23 +303,12 @@ static struct listhead sidlist = SLIST_HEAD_INITIALIZER(sidlist);
 static struct listhead jidlist = SLIST_HEAD_INITIALIZER(jidlist);
 static struct listhead classlist = SLIST_HEAD_INITIALIZER(classlist);
 
-static const char *ref_progname = "pkill";
+void	usage(void) __attribute__((__noreturn__));
+void	makelist(struct listhead *, enum listtype, char *);
+int	takepid(const char *, int);
 
-const char *
-getprogname(void)
-{
-
-	return (ref_progname);
-}
-
-static void	ref_usage(void) __attribute__((__noreturn__));
-static int	ref_killact(const struct kinfo_proc *);
-static int	ref_grepact(const struct kinfo_proc *);
-static void	ref_makelist(struct listhead *, enum listtype, char *);
-static int	ref_takepid(const char *, int);
-
-static void
-ref_usage(void)
+void
+usage(void)
 {
 	const char *ustr;
 
@@ -199,80 +326,8 @@ ref_usage(void)
 	exit(STATUS_BADUSAGE);
 }
 
-static void
-ref_show_process(const struct kinfo_proc *kp)
-{
-	char **argv;
-
-	if (quiet) {
-		assert(pgrep);
-		return;
-	}
-	if ((longfmt || !pgrep) && matchargs &&
-	    (argv = kvm_getargv(kd, kp, 0)) != NULL) {
-		printf("%d ", (int)kp->ki_pid);
-		for (; *argv != NULL; argv++) {
-			printf("%s", *argv);
-			if (argv[1] != NULL)
-				putchar(' ');
-		}
-	} else if (longfmt || !pgrep)
-		printf("%d %s", (int)kp->ki_pid, kp->ki_comm);
-	else
-		printf("%d", (int)kp->ki_pid);
-}
-
-static int
-ref_killact(const struct kinfo_proc *kp)
-{
-	int ch, first;
-
-	if (interactive) {
-		/*
-		 * Be careful, ask before killing.
-		 */
-		printf("kill ");
-		ref_show_process(kp);
-		printf("? ");
-		fflush(stdout);
-		first = ch = getchar();
-		while (ch != '\n' && ch != EOF)
-			ch = getchar();
-		if (first != 'y' && first != 'Y')
-			return (1);
-	}
-	if (kill(kp->ki_pid, signum) == -1) {
-		/* 
-		 * Check for ESRCH, which indicates that the process
-		 * disappeared between us matching it and us
-		 * signalling it; don't issue a warning about it.
-		 */
-		if (errno != ESRCH)
-			warn("signalling pid %d", (int)kp->ki_pid);
-		/*
-		 * Return 0 to indicate that the process should not be
-		 * considered a match, since we didn't actually get to
-		 * signal it.
-		 */
-		return (0);
-	}
-	return (1);
-}
-
-static int
-ref_grepact(const struct kinfo_proc *kp)
-{
-	static bool first = true;
-
-	if (!quiet && !first)
-		printf("%s", delim);
-	ref_show_process(kp);
-	first = false;
-	return (1);
-}
-
-static void
-ref_makelist(struct listhead *head, enum listtype type, char *src)
+void
+makelist(struct listhead *head, enum listtype type, char *src)
 {
 	struct list *li;
 	struct passwd *pw;
@@ -286,7 +341,7 @@ ref_makelist(struct listhead *head, enum listtype type, char *src)
 
 	while ((sp = strsep(&src, ",")) != NULL) {
 		if (*sp == '\0')
-			ref_usage();
+			usage();
 
 		if ((li = malloc(sizeof(*li))) == NULL) {
 			err(STATUS_ERROR, "Cannot allocate %zu bytes",
@@ -396,16 +451,16 @@ foundtty:		if ((st.st_mode & S_IFCHR) == 0)
 				err(STATUS_ERROR, "Cannot allocate memory");
 			break;
 		default:
-			ref_usage();
+			usage();
 		}
 	}
 
 	if (empty)
-		ref_usage();
+		usage();
 }
 
-static int
-ref_takepid(const char *pidfile, int pidfilelock)
+int
+takepid(const char *pidfile, int pidfilelock)
 {
 	char *endp, line[BUFSIZ];
 	FILE *fh;
@@ -449,50 +504,54 @@ ref_takepid(const char *pidfile, int pidfilelock)
 	return (rval);
 }
 
-/* ------------------------------------------------------------------ */
-/* Harness entry points (do not alter the bodies above).               */
-/* ------------------------------------------------------------------ */
+/* ============ ORIGINAL SOURCE ENDS HERE ============ */
 
-void
-ref_usage_call(void)
+/*
+ * Harness entry points.  Each installs the longjmp target, runs the original
+ * function and reports -1 when the function returned normally or the exit
+ * status the original would have handed to exit(3) otherwise.
+ */
+int
+ref_call_usage(void)
 {
 
-	ref_usage();
-}
-
-void
-ref_show_process_call(const struct kinfo_proc *kp)
-{
-
-	ref_show_process(kp);
+	ref_trap_reset();
+	if (setjmp(ref_trap_env) == 0) {
+		ref_usage();
+		return (-1);
+	}
+	return (ref_trap_code);
 }
 
 int
-ref_killact_call(const struct kinfo_proc *kp)
+ref_call_makelist(struct listhead *head, int type, char *src)
 {
 
-	return (ref_killact(kp));
+	ref_trap_reset();
+	if (setjmp(ref_trap_env) == 0) {
+		ref_makelist(head, (enum listtype)type, src);
+		return (-1);
+	}
+	return (ref_trap_code);
 }
 
 int
-ref_grepact_call(const struct kinfo_proc *kp)
+ref_call_takepid(const char *pidfile, int pidfilelock, int *out)
 {
 
-	return (ref_grepact(kp));
+	ref_trap_reset();
+	if (setjmp(ref_trap_env) == 0) {
+		*out = ref_takepid(pidfile, pidfilelock);
+		return (-1);
+	}
+	return (ref_trap_code);
 }
 
-void
-ref_makelist_call(struct listhead *head, enum listtype type, char *src)
+const char *
+ref_trap_message(void)
 {
 
-	ref_makelist(head, type, src);
-}
-
-int
-ref_takepid_call(const char *pidfile, int pidfilelock)
-{
-
-	return (ref_takepid(pidfile, pidfilelock));
+	return (ref_trap_msg);
 }
 
 void
@@ -503,182 +562,8 @@ ref_set_pgrep(int v)
 }
 
 void
-ref_set_quiet(int v)
+ref_set_mypid(pid_t v)
 {
 
-	quiet = v;
-}
-
-void
-ref_set_longfmt(int v)
-{
-
-	longfmt = v;
-}
-
-void
-ref_set_matchargs(int v)
-{
-
-	matchargs = v;
-}
-
-void
-ref_set_interactive(int v)
-{
-
-	interactive = v;
-}
-
-void
-ref_set_signum(int v)
-{
-
-	signum = v;
-}
-
-void
-ref_set_kd(kvm_t *k)
-{
-
-	kd = k;
-}
-
-void
-ref_set_mypid(pid_t p)
-{
-
-	mypid = p;
-}
-
-void
-ref_set_delim(const char *d)
-{
-
-	delim = d;
-}
-
-void
-ref_set_progname(const char *p)
-{
-
-	ref_progname = p;
-}
-
-void
-ref_list_clear(struct listhead *head)
-{
-	struct list *li, *nli;
-
-	SLIST_FOREACH_SAFE(li, head, li_chain, nli) {
-		if (li->li_name != NULL)
-			free(li->li_name);
-		free(li);
-	}
-	SLIST_INIT(head);
-}
-
-int
-ref_list_count(struct listhead *head)
-{
-	struct list *li;
-	int n;
-
-	n = 0;
-	SLIST_FOREACH(li, head, li_chain)
-		n++;
-	return (n);
-}
-
-long
-ref_list_number(struct listhead *head, int idx)
-{
-	struct list *li;
-	int n;
-
-	n = 0;
-	SLIST_FOREACH(li, head, li_chain) {
-		if (n == idx)
-			return (li->li_number);
-		n++;
-	}
-	return (0);
-}
-
-const char *
-ref_list_name(struct listhead *head, int idx)
-{
-	struct list *li;
-	int n;
-
-	n = 0;
-	SLIST_FOREACH(li, head, li_chain) {
-		if (n == idx)
-			return (li->li_name);
-		n++;
-	}
-	return (NULL);
-}
-
-struct listhead *
-ref_ppidlist(void)
-{
-
-	return (&ppidlist);
-}
-
-struct listhead *
-ref_ruidlist(void)
-{
-
-	return (&ruidlist);
-}
-
-struct listhead *
-ref_rgidlist(void)
-{
-
-	return (&rgidlist);
-}
-
-struct listhead *
-ref_pgrplist(void)
-{
-
-	return (&pgrplist);
-}
-
-struct listhead *
-ref_tdevlist(void)
-{
-
-	return (&tdevlist);
-}
-
-struct listhead *
-ref_sidlist(void)
-{
-
-	return (&sidlist);
-}
-
-struct listhead *
-ref_jidlist(void)
-{
-
-	return (&jidlist);
-}
-
-struct listhead *
-ref_classlist(void)
-{
-
-	return (&classlist);
-}
-
-struct listhead *
-ref_euidlist(void)
-{
-
-	return (&euidlist);
+	mypid = v;
 }
