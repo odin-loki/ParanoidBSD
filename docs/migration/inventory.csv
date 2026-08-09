@@ -673,7 +673,7 @@ b0209,hbsd/src/sys/compat/linuxkpi/common/src/linux_domain.c,sys/compat/linuxkpi
 b0209,hbsd/src/sys/compat/linuxkpi/common/src/linux_folio.c,sys/compat/linuxkpi/common/src,58,VERIFIED,
 b0209,hbsd/src/sys/compat/linuxkpi/common/src/linux_eventfd.c,sys/compat/linuxkpi/common/src,63,VERIFIED,
 b0209,hbsd/src/sys/compat/linuxkpi/common/src/linux_cmdline.c,sys/compat/linuxkpi/common/src,63,VERIFIED,
-b0210,hbsd/src/bin/pkill/pkill.c,bin/pkill,874,PENDING,
+b0210,hbsd/src/bin/pkill/pkill.c,bin/pkill,874,DEFERRED,
 b0211,hbsd/src/sys/fs/mntfs/mntfs_vnops.c,sys/fs/mntfs,96,VERIFIED,
 b0212,hbsd/src/lib/libc/stdlib/mergesort_b.c,lib/libc/stdlib,27,VERIFIED,
 b0212,hbsd/src/lib/libc/stdlib/bsearch_b.c,lib/libc/stdlib,27,VERIFIED,
