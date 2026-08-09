@@ -16,11 +16,11 @@ module;
 # define SPRINTF(x) ((size_t)sprintf x)
 #endif
 
-typedef unsigned char u_char;
-
 export module pbsd.lib.libc.inet.b0274;
 
 export namespace pbsd::lib_libc_inet::b0274 {
+
+typedef unsigned char u_char;
 
 /*-
  * SPDX-License-Identifier: ISC

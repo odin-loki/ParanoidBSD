@@ -12,7 +12,6 @@ import pbsd.lib.libc.gen.b0270;
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <cstdlib>
 #include <cstring>
 
 #include <errno.h>
@@ -25,15 +24,15 @@ namespace port = pbsd::lib_libc_gen::b0270;
 #define	SWEEP_ITERS		200000L
 #define	MAX_PRINT		12
 
-typedef struct pthread_once {
+struct ref_once_control {
 	int	state;
 	void	*mutex;
-} pthread_once_t;
+};
 
 extern "C" {
 int ref___isnan(double);
 int ref___isnanf(float);
-int ref__once(pthread_once_t *, void (*)(void));
+int ref__once(ref_once_control *, void (*)(void));
 unsigned int ref___sleep(unsigned int);
 }
 
@@ -287,7 +286,7 @@ int __isthreaded;
 static int g_init_count;
 static int g_pthread_once_calls;
 static int g_pthread_once_rv;
-static pthread_once_t *g_pthread_once_arg;
+static ref_once_control *g_pthread_once_arg;
 static void (*g_pthread_once_init)(void);
 
 static void
@@ -297,10 +296,10 @@ test_init(void)
 }
 
 extern "C" int
-_pthread_once(pthread_once_t *once_control, void (*init_routine)(void))
+_pthread_once(void *once_control, void (*init_routine)(void))
 {
 	g_pthread_once_calls++;
-	g_pthread_once_arg = once_control;
+	g_pthread_once_arg = (ref_once_control *)once_control;
 	g_pthread_once_init = init_routine;
 	return (g_pthread_once_rv);
 }
@@ -314,7 +313,7 @@ struct once_obs {
 };
 
 static once_obs
-snap_once(int rv, const pthread_once_t *oc)
+snap_once(int rv, const ref_once_control *oc)
 {
 	once_obs o;
 
@@ -337,7 +336,8 @@ static bool
 check_once_case(int f, const char *ctx, int threaded, int start_state,
     int pthread_rv)
 {
-	pthread_once_t ref_oc, port_oc;
+	ref_once_control ref_oc;
+	port::pthread_once_t port_oc;
 	int ref_rv, port_rv;
 	once_obs ref_o, port_o;
 	void *marker = (void *)0xdeadbeef;
@@ -391,7 +391,8 @@ test_once_handwritten(void)
 
 	/* second call after init must not re-run routine */
 	{
-		pthread_once_t ref_oc, port_oc;
+		ref_once_control ref_oc;
+	port::pthread_once_t port_oc;
 		int ref_rv, port_rv;
 		once_obs ref_o, port_o;
 

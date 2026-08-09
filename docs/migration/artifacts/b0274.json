@@ -1,0 +1,13 @@
+{
+  "batch": "b0274",
+  "verified": "2026-08-09T00:10:43Z",
+  "evidence": "harness green + IR-identical for all 5 functions",
+  "ir_equivalent": true,
+  "harness_output": "\n=== b0274 differential test results ===\nfunction                cases     failures\ninet_neta              200901            0\ninet_lnaof             200021            0\ninet_netof             200021            0\ninet_ntoa              200011            0\ninet_ntoa_r            200796            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/inet/inet_neta.c": "1562dd279f42fe65",
+    "hbsd/src/lib/libc/inet/inet_lnaof.c": "939c8543b8745197",
+    "hbsd/src/lib/libc/inet/inet_netof.c": "d9d4623bbf6d4b62",
+    "hbsd/src/lib/libc/inet/inet_ntoa.c": "c4683b63577ce265"
+  }
+}

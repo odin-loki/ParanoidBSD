@@ -13,6 +13,26 @@ module;
 
 #include <cmath>
 #include <cstdint>
+#include <endian.h>
+
+#include "../../../../../hbsd/src/lib/msun/src/k_sincos.h"
+
+typedef union {
+	double value;
+	struct {
+#if __BYTE_ORDER == __BIG_ENDIAN
+		uint32_t msw;
+		uint32_t lsw;
+#else
+		uint32_t lsw;
+		uint32_t msw;
+#endif
+	} parts;
+} ieee_double_shape_type;
+
+#define GET_HIGH_WORD(i,d) do { ieee_double_shape_type gh_u; gh_u.value = (d); (i) = (int32_t)gh_u.parts.msw; } while(0)
+
+extern "C" int __ieee754_rem_pio2(double x, double *y);
 
 export module pbsd.lib.msun.src.b0267;
 
@@ -36,8 +56,6 @@ union IEEEl2bits {
 		unsigned long long	junk	:48;
 	} xbits;
 };
-
-#include "../../../../../hbsd/src/lib/msun/src/k_sincos.h"
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause

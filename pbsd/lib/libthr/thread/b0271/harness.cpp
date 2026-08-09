@@ -296,8 +296,8 @@ struct SetprioResult {
 };
 
 static SetprioResult
-run_setprio_port(struct pthread *cur, pthread_t target, int find_ret,
-    int sched_ret, int sched_err, const GuardedPthread *in, int prio)
+run_setprio_port(struct pthread *cur, GuardedPthread *in, int find_ret,
+    int sched_ret, int sched_err, int prio)
 {
 	SetprioResult r;
 	unsigned lock_before, unlock_before;
@@ -306,10 +306,10 @@ run_setprio_port(struct pthread *cur, pthread_t target, int find_ret,
 	b0271_set_curthread(cur);
 	b0271_set_find_thread_ret(find_ret);
 	b0271_set_setscheduler(sched_ret, sched_err);
-	r.target = *in;
 	lock_before = b0271_get_thr_lock_count();
 	unlock_before = b0271_get_thread_unlock_count();
-	r.ret = P::_pthread_setprio(target, prio);
+	r.ret = P::_pthread_setprio(&in->thr, prio);
+	r.target = *in;
 	r.lock_delta = b0271_get_thr_lock_count() - lock_before;
 	r.unlock_delta = b0271_get_thread_unlock_count() - unlock_before;
 	r.lock_last = b0271_get_thr_lock_last_thread();
@@ -322,8 +322,8 @@ run_setprio_port(struct pthread *cur, pthread_t target, int find_ret,
 }
 
 static SetprioResult
-run_setprio_ref(struct pthread *cur, pthread_t target, int find_ret,
-    int sched_ret, int sched_err, const GuardedPthread *in, int prio)
+run_setprio_ref(struct pthread *cur, GuardedPthread *in, int find_ret,
+    int sched_ret, int sched_err, int prio)
 {
 	SetprioResult r;
 	unsigned lock_before, unlock_before;
@@ -332,10 +332,10 @@ run_setprio_ref(struct pthread *cur, pthread_t target, int find_ret,
 	b0271_set_curthread(cur);
 	b0271_set_find_thread_ret(find_ret);
 	b0271_set_setscheduler(sched_ret, sched_err);
-	r.target = *in;
 	lock_before = b0271_get_thr_lock_count();
 	unlock_before = b0271_get_thread_unlock_count();
-	r.ret = ref__pthread_setprio(target, prio);
+	r.ret = ref__pthread_setprio(&in->thr, prio);
+	r.target = *in;
 	r.lock_delta = b0271_get_thr_lock_count() - lock_before;
 	r.unlock_delta = b0271_get_thread_unlock_count() - unlock_before;
 	r.lock_last = b0271_get_thr_lock_last_thread();
@@ -348,27 +348,35 @@ run_setprio_ref(struct pthread *cur, pthread_t target, int find_ret,
 }
 
 static void
-check_setprio(const char *label, struct pthread *cur, pthread_t target,
-    int find_ret, int sched_ret, int sched_err, const GuardedPthread *in,
-    int prio)
+check_setprio(const char *label, struct pthread *cur, GuardedPthread *in,
+    int find_ret, int sched_ret, int sched_err, int prio)
 {
 	SetprioResult port, ref;
 	bool ok;
 	bool self, find_ok, sched_other, same_prio, expect_sched;
 	unsigned expect_lock, expect_unlock;
+	GuardedPthread in_port, in_ref;
+	int initial_prio;
+	int initial_policy;
+	long initial_tid;
 
-	self = (cur == target);
+	self = (cur == &in->thr);
 	find_ok = (self || find_ret == 0);
-	sched_other = (in->thr.attr.sched_policy == SCHED_OTHER);
-	same_prio = (in->thr.attr.prio == prio);
+	initial_policy = in->thr.attr.sched_policy;
+	initial_prio = in->thr.attr.prio;
+	initial_tid = in->thr.tid;
+	sched_other = (initial_policy == SCHED_OTHER);
+	same_prio = (initial_prio == prio);
 	expect_sched = find_ok && !sched_other && !same_prio;
 	expect_lock = self ? 1u : 0u;
 	expect_unlock = find_ok ? 1u : 0u;
 
-	port = run_setprio_port(cur, target, find_ret, sched_ret, sched_err,
-	    in, prio);
-	ref = run_setprio_ref(cur, target, find_ret, sched_ret, sched_err,
-	    in, prio);
+	in_port = *in;
+	in_ref = *in;
+	port = run_setprio_port(cur, &in_port, find_ret, sched_ret, sched_err,
+	    prio);
+	ref = run_setprio_ref(cur, &in_ref, find_ret, sched_ret, sched_err,
+	    prio);
 
 	ok = (port.ret == ref.ret) &&
 	    guarded_equal(&port.target, &ref.target) &&
@@ -385,12 +393,12 @@ check_setprio(const char *label, struct pthread *cur, pthread_t target,
 	if (!find_ok) {
 		ok = ok && (port.ret == find_ret) && (ref.ret == find_ret) &&
 		    (port.lock_delta == 0u) && (port.unlock_delta == 0u) &&
-		    (port.target.thr.attr.prio == in->thr.attr.prio);
+		    (port.target.thr.attr.prio == initial_prio);
 	} else {
 		ok = ok && (port.lock_delta == expect_lock) &&
 		    (port.unlock_delta == expect_unlock) &&
 		    (port.unlock_cur == cur) &&
-		    (port.unlock_target == target) &&
+		    (port.unlock_target == &in_port.thr) &&
 		    (port.target.thr.attr.prio == prio) &&
 		    (ref.target.thr.attr.prio == prio);
 
@@ -398,13 +406,11 @@ check_setprio(const char *label, struct pthread *cur, pthread_t target,
 			if (sched_ret == -1) {
 				ok = ok && (port.ret == sched_err) &&
 				    (ref.ret == sched_err) &&
-				    (port.target.thr.attr.prio ==
-					in->thr.attr.prio);
+				    (port.target.thr.attr.prio == initial_prio);
 			} else {
 				ok = ok && (port.ret == 0) && (ref.ret == 0) &&
-				    (port.sched_tid == in->thr.tid) &&
-				    (port.sched_policy ==
-					in->thr.attr.sched_policy) &&
+				    (port.sched_tid == initial_tid) &&
+				    (port.sched_policy == initial_policy) &&
 				    (port.sched_prio == prio);
 			}
 		} else {
@@ -416,7 +422,7 @@ check_setprio(const char *label, struct pthread *cur, pthread_t target,
 	record_case(F_SETPRIO, ok,
 	    "%s cur=%p tgt=%p find=%d prio=%d ret_p=%d ret_r=%d "
 	    "lock_p=%u lock_r=%u unlock_p=%u unlock_r=%u attr_p=%d attr_r=%d",
-	    label, (void *)cur, (void *)target, find_ret, prio, port.ret,
+	    label, (void *)cur, (void *)&in_port.thr, find_ret, prio, port.ret,
 	    ref.ret, port.lock_delta, ref.lock_delta, port.unlock_delta,
 	    ref.unlock_delta, port.target.thr.attr.prio,
 	    ref.target.thr.attr.prio);

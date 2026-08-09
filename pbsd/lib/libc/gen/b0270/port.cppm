@@ -191,7 +191,7 @@ __sleep(unsigned int seconds)
 
 	time_to_sleep.tv_sec = seconds;
 	time_to_sleep.tv_nsec = 0;
-	if (nanosleep(&time_to_sleep, &time_remaining) != -1)
+	if (::nanosleep(&time_to_sleep, &time_remaining) != -1)
 		return (0);
 	if (errno != EINTR)
 		return (seconds);		/* best guess */
