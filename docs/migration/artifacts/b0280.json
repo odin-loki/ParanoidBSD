@@ -1,0 +1,12 @@
+{
+  "batch": "b0280",
+  "verified": "2026-08-09T00:45:09Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nFunction                      Cases   Failures\nsl_init                           6          0\nsl_add                      8002623          0\nsl_free                      200009          0\nsl_find                      200009          0\nTOTAL                       8402647          0\nharness: stringlist: Success: Success\nharness: stringlist: Success: Success\nharness: stringlist: Success: Success\nharness: stringlist: Success: Success\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/stringlist.c": "185764e927033ec7",
+    "hbsd/src/lib/libc/gen/elf_utils.c": "5fffa67ecc0e2b32",
+    "hbsd/src/lib/libc/gen/nftw-compat11.c": "9a7ff21a6e9f416f"
+  }
+}
