@@ -27,6 +27,7 @@ import csv
 import fcntl
 import hashlib
 import json
+import multiprocessing as mp
 import os
 import re
 import shutil
@@ -54,7 +55,7 @@ ESCALATE_MODEL = "claude-opus-5-thinking-high"
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
 DEFAULT_JOBS = 18        # agent concurrency; circuit breaker halves on rate limits
 DEFAULT_GATE_JOBS = 6    # max harness builds in flight (~6×5GB peak)
-DEFAULT_MECH_JOBS = 8    # IR-compile parallelism; separate from agent jobs (64 OOMs WSL)
+DEFAULT_MECH_JOBS = 4    # IR-compile parallelism; 64-core WSL OOMs above ~8
 HARNESS_VMEM_KB = 5 * 1024 * 1024         # virtual memory cap per harness (KiB)
 RATE_LIMIT_PAUSE = 120  # seconds to sleep when the API keeps rate-limiting us
 RATE_LIMIT_STREAK = 8   # consecutive rate limits before we pause and halve concurrency
@@ -140,6 +141,7 @@ LOG = MIG / "drive_log.jsonl"
 DEFERRED = MIG / "deferred.jsonl"
 NEEDS_HUMAN = MIG / "NEEDS_HUMAN.md"
 SETUP_STAMP = MIG / ".setup_done"
+MECH_STAMP = MIG / ".mech_pass_done"
 WORK = ROOT / "pbsd"
 
 # ─────────────────────────────── the prompt ──────────────────────────────────
@@ -432,6 +434,7 @@ def setup() -> None:
         say(f"collapsed {n_clone} clone files onto {len(rows)-n_clone} unique ports")
 
     MIG.mkdir(parents=True, exist_ok=True)
+    MECH_STAMP.unlink(missing_ok=True)
     (ROOT / ".gitignore").touch()
     gi = (ROOT / ".gitignore").read_text(errors="ignore")
     if "docs/migration/inventory.csv" not in gi:
@@ -1960,7 +1963,7 @@ def _mech_worker(row):
     return row["path"], ok, detail
 
 
-def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
+def run_mechanical_phase(rows: list[dict], jobs: int, *, force: bool = False) -> int:
     """Prove as much of the tree as possible with no model calls at all.
 
     This is pure CPU -- two compiler invocations and an IR comparison per file --
@@ -1970,9 +1973,13 @@ def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
     """
     if not MECHANICAL:
         return 0
+    if not force and MECH_STAMP.is_file():
+        say("mechanical phase already done or in progress — skipping")
+        return 0
     todo = [r for r in rows if r["status"] in ("PENDING", "DEFERRED")]
     if not todo:
         return 0
+    MECH_STAMP.write_text("in_progress", encoding="utf-8")
     banner(f"Mechanical phase — {len(todo)} files, {jobs} parallel, no agent")
 
     proven = 0
@@ -1981,8 +1988,9 @@ def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
     t0 = time.monotonic()
     by_path = {r["path"]: r for r in rows}
 
-    with cf.ProcessPoolExecutor(max_workers=jobs) as ex:
-        for path, ok, detail in ex.map(_mech_worker, todo, chunksize=4):
+    with cf.ProcessPoolExecutor(max_workers=jobs,
+                                mp_context=mp.get_context("spawn")) as ex:
+        for path, ok, detail in ex.map(_mech_worker, todo, chunksize=1):
             done += 1
             if ok:
                 proven += 1
@@ -2015,6 +2023,7 @@ def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
         git("add", "-A")
         git("commit", "-q", "-m",
             f"pbsd: {proven} files ported mechanically, proven by IR equivalence")
+    MECH_STAMP.write_text(time.strftime("%Y-%m-%d %H:%M:%S"), encoding="utf-8")
     return proven
 
 
@@ -2230,6 +2239,8 @@ def main() -> int:
                     help="always use the agent, skip the free deterministic port")
     ap.add_argument("--mechanical-only", action="store_true",
                     help="run only the free deterministic port, then stop")
+    ap.add_argument("--force-mech", action="store_true",
+                    help="rerun the mechanical phase even if already done")
     ap.add_argument("--reset-queue", action="store_true",
                     help="move NEEDS_HUMAN back to PENDING and clear deferred.jsonl")
     ap.add_argument("--status", action="store_true")
@@ -2276,7 +2287,7 @@ def main() -> int:
         save_rows(rows)
 
     jobs_mech = a.mech_jobs or DEFAULT_MECH_JOBS
-    run_mechanical_phase(rows, jobs_mech)
+    run_mechanical_phase(rows, jobs_mech, force=a.force_mech)
     if a.mechanical_only:
         status()
         return 0

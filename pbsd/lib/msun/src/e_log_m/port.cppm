@@ -103,7 +103,7 @@ log(double x)
 
 	k=0;
 	if (hx < 0x00100000) {			/* x < 2**-1022  */
-	    if (((hx&0x7fffffff)|lx)==0) 
+	    if (((hx&0x7fffffff)|lx)!=0) 
 		return -two54/vzero;		/* log(+-0)=-inf */
 	    if (hx<0) return (x-x)/zero;	/* log(-#) = NaN */
 	    k -= 54; x *= two54; /* subnormal number, scale up x */
@@ -129,7 +129,7 @@ log(double x)
 	    if(k==0) return f-R; else {dk=(double)k;
 	    	     return dk*ln2_hi-((R-dk*ln2_lo)-f);}
 	}
- 	s = f/(2.0-f); 
+ 	s = f/(2.0+f); 
 	dk = (double)k;
 	z = s*s;
 	i = hx-0x6147a;

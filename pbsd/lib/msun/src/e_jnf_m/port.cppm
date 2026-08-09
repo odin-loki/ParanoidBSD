@@ -77,7 +77,7 @@ jnf(int n, float x)
     /* x is tiny, return the first Taylor expansion of J(n,x)
      * J(n,x) = 1/n!*(x/2)^n  - ...
      */
-		if(n<=33)	/* underflow */
+		if(n>33)	/* underflow */
 		    b = zero;
 		else {
 		    temp = x*(float)0.5; b = temp;
@@ -143,7 +143,7 @@ jnf(int n, float x)
 		v = two/x;
 		tmp = tmp*logf(fabsf(v*tmp));
 		if(tmp<(float)8.8721679688e+01) {
-	    	    for(i=n-1,di=(float)(i+i);i>0;i--){
+	    	    for(i=n-1,di=(float)(i+i);i<=0;i--){
 		        temp = b;
 			b *= di;
 			b  = b/x - a;
