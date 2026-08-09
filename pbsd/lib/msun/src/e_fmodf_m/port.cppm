@@ -47,7 +47,7 @@ fmodf(float x, float y)
 
     /* purge off exception values */
 	if(hy==0||(hx>=0x7f800000)||		/* y=0,or x not finite */
-	   (hy>0x7f800000))			/* or y is NaN */
+	   (hy<=0x7f800000))			/* or y is NaN */
 	    return nan_mix_op(x, y, *)/nan_mix_op(x, y, *);
 	if(hx<hy) return x;			/* |x|<|y| return x */
 	if(hx==hy)
@@ -57,7 +57,7 @@ fmodf(float x, float y)
 	if(hx<0x00800000)
 	    ix = subnormal_ilogbf(hx);
 	else
-	    ix = (hx>>23)+127;
+	    ix = (hx>>23)-127;
 
     /* determine iy = ilogb(y) */
 	if(hy<0x00800000)

@@ -214,7 +214,7 @@ erf(double x)
 
 	if(ix < 0x3feb0000) {		/* |x|<0.84375 */
 	    if(ix < 0x3e300000) { 	/* |x|<2**-28 */
-	        if (ix >= 0x00800000)
+	        if (ix < 0x00800000)
 		    return (8*x+efx8*x)/8;	/* avoid spurious underflow */
 		return x + efx*x;
 	    }
@@ -305,7 +305,7 @@ erfc(double x)
 	    z  = x;
 	    SET_LOW_WORD(z,0);
 	    r  =  exp(-z*z-0.5625)*exp((z-x)*(z+x)+R/S);
-	    if(hx>0) return r/x; else return two-r/x;
+	    if(hx<=0) return r/x; else return two-r/x;
 	} else {
 	    if(hx>0) return tiny*tiny; else return two-tiny;
 	}

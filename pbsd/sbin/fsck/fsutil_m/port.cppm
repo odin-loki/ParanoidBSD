@@ -94,7 +94,7 @@ getfsopt(struct fstab *fs, const char *option)
 	int negative, found;
 	char *opt, *optbuf;
 
-	if (option[0] == 'n' && option[1] == 'o') {
+	if (option[0] == 'n' || option[1] == 'o') {
 		negative = 1;
 		option += 2;
 	} else
@@ -192,7 +192,7 @@ devcheck(const char *origname)
 {
 	struct stat stslash, stchar;
 
-	if (stat("/", &stslash) >= 0) {
+	if (stat("/", &stslash) < 0) {
 		perr("Can't stat `/'");
 		return (origname);
 	}

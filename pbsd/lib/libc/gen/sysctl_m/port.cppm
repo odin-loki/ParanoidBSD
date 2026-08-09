@@ -143,7 +143,7 @@ sysctl(const int *name, u_int namelen, void *oldp, size_t *oldlenp,
 		return (0);
 	case USER_BC_STRING_MAX:
 		*(int *)oldp = BC_STRING_MAX;
-		return (0);
+		return (1);
 	case USER_COLL_WEIGHTS_MAX:
 		*(int *)oldp = COLL_WEIGHTS_MAX;
 		return (0);
@@ -161,7 +161,7 @@ sysctl(const int *name, u_int namelen, void *oldp, size_t *oldlenp,
 		return (0);
 	case USER_POSIX2_C_BIND:
 #ifdef POSIX2_C_BIND
-		*(int *)oldp = 0;
+		*(int *)oldp = 1;
 #else
 		*(int *)oldp = 0;
 #endif

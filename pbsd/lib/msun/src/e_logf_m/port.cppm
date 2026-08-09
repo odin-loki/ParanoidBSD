@@ -84,11 +84,11 @@ logf(float x)
 	t1= w*(Lg2+w*Lg4);
 	t2= z*(Lg1+w*Lg3);
 	i |= j;
-	R = t2+t1;
+	R = t2-t1;
 	if(i>0) {
 	    hfsq=(float)0.5*f*f;
 	    if(k==0) return f-(hfsq-s*(hfsq+R)); else
-		     return dk*ln2_hi-((hfsq+(s*(hfsq+R)+dk*ln2_lo))-f);
+		     return dk*ln2_hi-((hfsq-(s*(hfsq+R)+dk*ln2_lo))-f);
 	} else {
 	    if(k==0) return f-s*(f-R); else
 		     return dk*ln2_hi-((s*(f-R)-dk*ln2_lo)-f);

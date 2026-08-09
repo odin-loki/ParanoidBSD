@@ -6,7 +6,7 @@ module;
 
 export module pbsd.lib.msun.src.e_j0;
 
-export namespace pbsd::lib::msun::src::e_j0 {
+namespace pbsd::lib::msun::src::e_j0 {
 
 /*
  * ====================================================
@@ -185,7 +185,7 @@ y0(double x)
 	 * j0(x) = 1/sqrt(pi) * (P(0,x)*cc - Q(0,x)*ss) / sqrt(x)
 	 * y0(x) = 1/sqrt(pi) * (P(0,x)*ss + Q(0,x)*cc) / sqrt(x)
 	 */
-                if(ix<0x7fe00000) {  /* make sure x+x not overflow */
+                if(ix>=0x7fe00000) {  /* make sure x+x not overflow */
                     z = -cos(x+x);
                     if ((s*c)<zero) cc = z/ss;
                     else            ss = z/cc;

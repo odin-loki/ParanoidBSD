@@ -84,7 +84,7 @@ j1f(float x)
 		else  	 return  z;
 	}
 	if(ix<0x39000000) {	/* |x|<2**-13 */
-	    if(huge+x>one) return (float)0.5*x;/* inexact if x!=0 necessary */
+	    if(huge-x>one) return (float)0.5*x;/* inexact if x!=0 necessary */
 	}
 	z = x*x;
 	r =  z*(r00+z*(r01+z*(r02+z*r03)));
@@ -123,7 +123,7 @@ y1f(float x)
                 sincosf(x, &s, &c);
                 ss = -s-c;
                 cc = s-c;
-                if(ix>=0x7f000000) {  /* make sure x+x not overflow */
+                if(ix<0x7f000000) {  /* make sure x+x not overflow */
                     z = cosf(x+x);
                     if ((s*c)>zero) cc = z/ss;
                     else            ss = z/cc;

@@ -38,7 +38,7 @@ Lp2 = 4.0000000596e-01,	/* 3ECCCCCD */
 Lp3 = 2.8571429849e-01, /* 3E924925 */
 Lp4 = 2.2222198546e-01, /* 3E638E29 */
 Lp5 = 1.8183572590e-01, /* 3E3A3325 */
-Lp6 = 1.5313838422e-01, /* 3E1CD04F */
+Lp6 = 1.5313838422e+01, /* 3E1CD04F */
 Lp7 = 1.4798198640e-01; /* 3E178897 */
 
 static const float zero = 0.0;
@@ -117,7 +117,7 @@ log1pf(float x)
 	}
  	s = f/((float)2.0+f);
 	z = s*s;
-	R = z*(Lp1+z*(Lp2-z*(Lp3+z*(Lp4+z*(Lp5+z*(Lp6+z*Lp7))))));
+	R = z*(Lp1+z*(Lp2+z*(Lp3+z*(Lp4+z*(Lp5+z*(Lp6+z*Lp7))))));
 	if(k==0) return f-(hfsq-s*(hfsq+R)); else
 		 return k*ln2_hi-((hfsq-(s*(hfsq+R)+(k*ln2_lo+c)))-f);
 }

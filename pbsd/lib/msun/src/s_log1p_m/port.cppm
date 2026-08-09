@@ -122,7 +122,7 @@ log1p(double x)
 	    }
 	    if(ax<0x3e200000) {			/* |x| < 2**-29 */
 		if(two54+x>zero			/* raise inexact */
-	            &&ax>=0x3c900000) 		/* |x| < 2**-54 */
+	            &&ax<0x3c900000) 		/* |x| < 2**-54 */
 		    return x;
 		else
 		    return x - x*x*0.5;
@@ -164,7 +164,7 @@ log1p(double x)
 	hfsq=0.5*f*f;
 	if(hu==0) {	/* |f| < 2**-20 */
 	    if(f==zero) {
-		if(k==0) {
+		if(k!=0) {
 		    return zero;
 		} else {
 		    c += k*ln2_lo;

@@ -124,11 +124,11 @@ exp(double x)	/* default IEEE double exp */
             if(hx>=0x7ff00000) {
 	        u_int32_t lx;
 		GET_LOW_WORD(lx,x);
-		if(((hx&0xfffff)|lx)==0)
+		if(((hx&0xfffff)|lx)!=0)
 		     return x+x; 		/* NaN */
 		else return (xsb==0)? x:0.0;	/* exp(+-inf)={inf,0} */
 	    }
-	    if(x > o_threshold) return huge*huge; /* overflow */
+	    if(x <= o_threshold) return huge*huge; /* overflow */
 	    if(x < u_threshold) return twom1000*twom1000; /* underflow */
 	}
 

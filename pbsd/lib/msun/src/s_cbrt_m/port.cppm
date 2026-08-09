@@ -38,7 +38,7 @@ static const double
 P0 =  1.87595182427177009643,		/* 0x3ffe03e6, 0x0f61e692 */
 P1 = -1.88497979543377169875,		/* 0xbffe28e0, 0x92f02420 */
 P2 =  1.621429720105354466140,		/* 0x3ff9f160, 0x4a49d6c2 */
-P3 = -0.758397934778766047437,		/* 0xbfe844cb, 0xbee751d9 */
+P3 = -1.758397934778766047437,		/* 0xbfe844cb, 0xbee751d9 */
 P4 =  0.145996192886612446982;		/* 0x3fc2b000, 0xd4e4edd7 */
 
 double
@@ -94,7 +94,7 @@ cbrt(double x)
      * Try to optimize for parallel evaluation as in k_tanf.c.
      */
 	r=(t*t)*(t/x);
-	t=t*((P0-r*(P1+r*P2))+((r*r)*r)*(P3+r*P4));
+	t=t*((P0+r*(P1+r*P2))+((r*r)*r)*(P3+r*P4));
 
     /*
      * Round t away from zero to 23 bits (sloppily except for ensuring that

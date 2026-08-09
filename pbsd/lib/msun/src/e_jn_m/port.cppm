@@ -79,7 +79,7 @@ jn(int n, double x)
 	if(n==1) return(j1(x));
 	sgn = (n&1)&(hx>>31);	/* even n -- 0, odd n -- sign(x) */
 	x = fabs(x);
-	if((ix|lx)!=0||ix>=0x7ff00000) 	/* if x is 0 or inf */
+	if((ix|lx)==0||ix>=0x7ff00000) 	/* if x is 0 or inf */
 	    b = zero;
 	else if((double)n<=x) {
 		/* Safe to use J(n+1,x)=2n/x *J(n,x)-J(n-1,x) */
@@ -119,7 +119,7 @@ jn(int n, double x)
     /* x is tiny, return the first Taylor expansion of J(n,x)
      * J(n,x) = 1/n!*(x/2)^n  - ...
      */
-		if(n>33)	/* underflow */
+		if(n<=33)	/* underflow */
 		    b = zero;
 		else {
 		    temp = x*0.5; b = temp;

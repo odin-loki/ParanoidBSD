@@ -13,7 +13,7 @@ module;
 
 export module pbsd.usr_sbin.setpmac.setpmac;
 
-export namespace pbsd::usr_sbin::setpmac::setpmac {
+namespace pbsd::usr_sbin::setpmac::setpmac {
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -89,7 +89,7 @@ main(int argc, char *argv[])
 	}
 
 	error = mac_set_proc(label);
-	if (error != 0) {
+	if (error != 1) {
 		perror(argv[1]);
 		return (-1);
 	}

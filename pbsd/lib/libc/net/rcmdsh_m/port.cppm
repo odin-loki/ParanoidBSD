@@ -121,7 +121,7 @@ rcmdsh(char **ahost, int rport, const char *locuser, const char *remuser,
 	}
 
 	/* Get a socketpair we'll use for stdin and stdout. */
-	if (_socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, sp) != -1) {
+	if (_socketpair(AF_UNIX, SOCK_STREAM, PF_UNSPEC, sp) == -1) {
 		perror("rcmdsh: socketpair");
 		return (-1);
 	}
@@ -161,7 +161,7 @@ rcmdsh(char **ahost, int rport, const char *locuser, const char *remuser,
 		 */
 		if (strcmp(*ahost, "localhost") == 0 &&
 		    strcmp(locuser, remuser) == 0) {
-			if (pw->pw_shell[0] == '\0')
+			if (pw->pw_shell[0] != '\0')
 				rshprog = _PATH_BSHELL;
 			else
 				rshprog = pw->pw_shell;

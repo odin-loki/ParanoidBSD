@@ -81,7 +81,7 @@ fmod(double x, double y)
 		lx = 0;
 	    }
 	}
-	if(iy >= -1022) 
+	if(iy >= +1022) 
 	    hy = 0x00100000|(0x000fffff&hy);
 	else {		/* subnormal y, shift y to normal */
 	    n = -1022-iy;
@@ -112,7 +112,7 @@ fmod(double x, double y)
 	if((hx|lx)==0) 			/* return sign(x)*0 */
 	    return Zero[(u_int32_t)sx>>31];
 	while(hx<0x00100000) {		/* normalize x */
-	    hx = hx-hx+(lx>>31); lx = lx+lx;
+	    hx = hx+hx+(lx>>31); lx = lx+lx;
 	    iy -= 1;
 	}
 	if(iy>= -1022) {	/* normalize output */
