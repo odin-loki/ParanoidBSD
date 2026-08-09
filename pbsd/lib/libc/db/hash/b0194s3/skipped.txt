@@ -1,0 +1,25 @@
+Batch b0194s3 - functions of hbsd/src/lib/libc/db/hash/hash.c left out of
+port.cppm and oracle.c, with the reason for each.  Only hash_realloc is
+expressible from the batch's source file alone; everything else needs the
+private db/hash headers (db.h, hash.h, page.h, extern.h), which are not part of
+this batch, so their layouts, macro definitions and field signedness - all of
+which are load-bearing - cannot be reproduced faithfully.
+
+hbsd/src/lib/libc/db/hash/hash.c: __hash_open - needs DB/HTAB/HASHHDR layouts, HASHMAGIC/HASHVERSION/CHARKEY macros and __buf_init/init_hash/alloc_segs.
+hbsd/src/lib/libc/db/hash/hash.c: hash_close - needs DB and HTAB layouts and hdestroy.
+hbsd/src/lib/libc/db/hash/hash.c: hash_fd - needs DB and HTAB layouts.
+hbsd/src/lib/libc/db/hash/hash.c: init_hash - needs HTAB/HASHINFO layouts, the DEF_* macros and __default_hash/__log2/init_htab.
+hbsd/src/lib/libc/db/hash/hash.c: init_htab - needs HTAB layout, OADDR_OF/MINHDRSIZE macros and __log2/__ibitmap/alloc_segs.
+hbsd/src/lib/libc/db/hash/hash.c: hdestroy - needs HTAB layout and __buf_free/flush_meta.
+hbsd/src/lib/libc/db/hash/hash.c: hash_sync - needs DB and HTAB layouts and __buf_free/flush_meta/_fsync.
+hbsd/src/lib/libc/db/hash/hash.c: flush_meta - needs HASHHDR layout, swap_header_copy and __put_page.
+hbsd/src/lib/libc/db/hash/hash.c: hash_get - needs DB/HTAB/DBT layouts and hash_access.
+hbsd/src/lib/libc/db/hash/hash.c: hash_put - needs DB/HTAB/DBT layouts, R_NOOVERWRITE and hash_access.
+hbsd/src/lib/libc/db/hash/hash.c: hash_delete - needs DB/HTAB/DBT layouts, R_CURSOR and hash_access.
+hbsd/src/lib/libc/db/hash/hash.c: hash_access - needs HTAB/BUFHEAD/DBT layouts, REAL_KEY/OVFLPAGE/BUF_PIN and __get_buf/__call_hash/__find_bigpair/__find_last_page/__addel/__delpair/__big_return.
+hbsd/src/lib/libc/db/hash/hash.c: hash_seq - needs HTAB/BUFHEAD/DBT layouts, R_FIRST/R_NEXT/REAL_KEY/OVFLPAGE and __get_buf/__big_keydata.
+hbsd/src/lib/libc/db/hash/hash.c: __expand_table - needs HTAB layout with the exact signedness of MAX_BUCKET/HIGH_MASK/LOW_MASK/DSIZE and __log2/__split_page/hash_realloc.
+hbsd/src/lib/libc/db/hash/hash.c: __call_hash - needs HTAB layout; the result of "bucket > hashp->MAX_BUCKET" depends on whether hash.h declares MAX_BUCKET signed or unsigned, which cannot be determined from this file.
+hbsd/src/lib/libc/db/hash/hash.c: alloc_segs - needs HTAB and SEGMENT layouts and hdestroy.
+hbsd/src/lib/libc/db/hash/hash.c: swap_header_copy - needs the HASHHDR layout and page.h's P_32_COPY/P_16_COPY macros.
+hbsd/src/lib/libc/db/hash/hash.c: swap_header - needs the HASHHDR layout and page.h's M_32_SWAP/M_16_SWAP macros.

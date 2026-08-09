@@ -1,37 +1,33 @@
 #!/bin/sh
 #
-# Build and run the b0194s3 differential test.
-#
-#   sh build.sh
-#
+# Build and run the batch b0194s3 differential test.
+# Usage: sh build.sh   (from pbsd/lib/libc/db/hash/b0194s3/)
+
 set -e
+
+cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-CFLAGS="-std=c11 -O2"
-CXXFLAGS="-std=c++23 -O2"
 
-MODNAME=pbsd.lib.libc.db.hash.b0194s3
-
-src=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-
-build=${TMPDIR:-/tmp}/pbsd-b0194s3-build.$$
-rm -rf "$build"
-mkdir -p "$build"
-cd "$build"
-
-$CC $CFLAGS -c "$src/oracle.c" -o oracle.o
-
-if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX $CXXFLAGS -x c++-module --precompile "$src/port.cppm" -o port.pcm
-	$CXX $CXXFLAGS -c port.pcm -o port.o
-	$CXX $CXXFLAGS -fmodule-file="$MODNAME=port.pcm" \
-	    -c "$src/harness.cpp" -o harness.o
+# Module flags differ between the two toolchains that ship a C++23 front end.
+if "$CXX" --version 2>&1 | grep -i clang >/dev/null 2>&1; then
+	MODFLAGS="-fmodule-output=pbsd.lib.libc.db.hash.b0194s3.pcm"
+	IMPFLAGS="-fprebuilt-module-path=."
 else
-	$CXX $CXXFLAGS -fmodules-ts -x c++ -c "$src/port.cppm" -o port.o
-	$CXX $CXXFLAGS -fmodules-ts -c "$src/harness.cpp" -o harness.o
+	MODFLAGS="-fmodules-ts"
+	IMPFLAGS="-fmodules-ts"
+	rm -rf gcm.cache
 fi
 
-$CXX $CXXFLAGS -o harness harness.o port.o oracle.o
+rm -f oracle.o port.o harness.o harness
+
+"$CC" -std=c11 -O2 -c oracle.c -o oracle.o
+
+"$CXX" -std=c++23 -O2 $MODFLAGS -c -x c++ port.cppm -o port.o
+
+"$CXX" -std=c++23 -O2 $IMPFLAGS -c harness.cpp -o harness.o
+
+"$CXX" -std=c++23 -O2 $IMPFLAGS oracle.o port.o harness.o -o harness
 
 exec ./harness

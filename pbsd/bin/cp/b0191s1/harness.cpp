@@ -249,6 +249,7 @@ struct MockCtrl {
 	bool sysconf_fail = false;
 	int getchar_val = 'n';
 	int getchar_errno = 0;
+	int getchar_calls = 0;
 	bool copy_file_range_fail = false;
 	int copy_file_range_errno = EINVAL;
 	std::map<std::string, struct stat> fstatat_results;
@@ -1085,6 +1086,8 @@ __wrap_getchar(void)
 		errno = g_mock.getchar_errno;
 		return EOF;
 	}
+	if (g_mock.getchar_calls++ > 0)
+		return '\n';
 	return g_mock.getchar_val;
 }
 
@@ -1257,7 +1260,7 @@ make_ent_node(const char *name, const char *path, mode_t mode, off_t size)
 	return make_fts_node(FTS_F, FTS_ROOTLEVEL, 0, path, path, name, &st);
 }
 
-static void setup_copy_file_mock(bool dne,int variant,const std::vector<unsigned char>&payload){const char*src="/mock/srcfile";setup_reg_file(src,payload,0644);if(!dne)setup_reg_file("/mock/dstfile",{'x'},0644);ref_to.dir=AT_FDCWD;strlcpy(ref_to.path,"dstfile",sizeof(ref_to.path));ref_to.end=ref_to.path+strlen(ref_to.path);ref_to.base[0]='\0';copy_path_t(&P::to,&ref_to);ref_nflag=P::nflag=ref_vflag=P::vflag=ref_fflag=P::fflag=ref_iflag=P::iflag=ref_lflag=P::lflag=ref_sflag=P::sflag=ref_pflag=P::pflag=false;ref_info=P::info=0;g_mock.copy_file_range_fail=false;g_mock.getchar_val='n';switch(variant%12){case 1:ref_lflag=P::lflag=true;break;case 2:ref_sflag=P::sflag=true;break;case 3:ref_iflag=P::iflag=!dne;g_mock.getchar_val=(variant&1)?'y':'n';break;case 4:ref_pflag=P::pflag=true;break;case 5:path_mock(src).open_errno=ENOENT;break;case 7:ref_info=P::info=1;break;case 8:g_mock.copy_file_range_fail=true;g_mock.copy_file_range_errno=EINVAL;break;case 9:if(!dne){ref_nflag=P::nflag=true;ref_vflag=P::vflag=true;}break;case 10:if(!dne)ref_fflag=P::fflag=true;break;case 11:g_mock.ioq.push_back({-1,3,-1,EINTR,0});break;default:ref_nflag=P::nflag=rng.coin()&&!dne;ref_vflag=P::vflag=rng.coin();ref_fflag=P::fflag=rng.coin()&&!dne;if(rng.coin())g_mock.copy_file_range_fail=true;}}
+static void setup_copy_file_mock(bool dne,int variant,const std::vector<unsigned char>&payload){const char*src="/mock/srcfile";setup_reg_file(src,payload,0644);if(!dne)setup_reg_file("/mock/dstfile",{'x'},0644);ref_to.dir=AT_FDCWD;strlcpy(ref_to.path,"dstfile",sizeof(ref_to.path));ref_to.end=ref_to.path+strlen(ref_to.path);ref_to.base[0]='\0';copy_path_t(&P::to,&ref_to);ref_nflag=P::nflag=ref_vflag=P::vflag=ref_fflag=P::fflag=ref_iflag=P::iflag=ref_lflag=P::lflag=ref_sflag=P::sflag=ref_pflag=P::pflag=false;ref_info=P::info=0;g_mock.copy_file_range_fail=false;g_mock.getchar_val='n';switch(variant%12){case 1:ref_lflag=P::lflag=true;break;case 2:ref_sflag=P::sflag=true;break;case 3:ref_iflag=P::iflag=!dne;g_mock.getchar_val=(variant&1)?'y':'n';break;case 4:ref_pflag=P::pflag=true;break;case 5:path_mock(src).open_errno=ENOENT;break;case 7:ref_info=P::info=1;break;case 8:g_mock.copy_file_range_fail=true;g_mock.copy_file_range_errno=EINVAL;break;case 9:if(!dne){ref_nflag=P::nflag=true;ref_vflag=P::vflag=true;}break;case 10:if(!dne)ref_fflag=P::fflag=true;break;case 11:path_mock("/mock/dstfile").open_errno=EACCES;break;default:ref_nflag=P::nflag=rng.coin()&&!dne;ref_vflag=P::vflag=rng.coin();ref_fflag=P::fflag=rng.coin()&&!dne;if(rng.coin())g_mock.copy_file_range_fail=true;}}
 static bool run_copy_file_case(const char*label,bool dne,bool beneath,int variant){st_copy_file.cases++;mock_reset();reset_globals();g_test_active=true;std::vector<unsigned char>payload={'a','b','c',(unsigned char)GUARD};setup_copy_file_mock(dne,variant,payload);struct stat st{};st.st_mode=S_IFREG|0644;st.st_size=(off_t)payload.size();if(variant==6){int fd=alloc_fd("/mock/srcfile",false);g_mock.fds[fd].st.st_mode=S_IFIFO|0600;}FtsNode*node=make_fts_node(FTS_F,FTS_ROOTLEVEL,0,"/mock/srcfile","/mock/srcfile","srcfile",&st);int saved=silence_stderr();int rr=ref_copy_file(node->ent,dne,beneath);mock_reset();reset_globals();g_test_active=true;setup_copy_file_mock(dne,variant,payload);if(variant==6){int fd=alloc_fd("/mock/srcfile",false);g_mock.fds[fd].st.st_mode=S_IFIFO|0600;}node=make_fts_node(FTS_F,FTS_ROOTLEVEL,0,"/mock/srcfile","/mock/srcfile","srcfile",&st);int rp=P::copy_file(node->ent,dne,beneath);restore_stderr(saved);delete node;g_test_active=false;if(rr!=rp)return fail(st_copy_file,label);return true;}
 
 static bool

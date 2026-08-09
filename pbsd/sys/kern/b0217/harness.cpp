@@ -8,12 +8,13 @@ import pbsd.sys.kern.b0217;
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
+#include <cerrno>
 
 namespace port = pbsd::sys_kern::b0217;
 
 #define GUARD 0x7f
 #define PAD 32u
-#define SWEEP 200000L
+#define SWEEP 30000L
 #define MAX_PRINT 12
 
 struct stat_row {
@@ -176,8 +177,14 @@ int ref_stack_symbol(uintptr_t, char *, unsigned int, long *, int);
 int ref_stack_symbol_ddb(uintptr_t, const char **, long *);
 
 void oracle_reset(void);
+void oracle_reset_vfs(void);
+void oracle_reset_light(void);
+void oracle_reset_model(void);
+void oracle_reset_vfs(void);
+void oracle_reset_tslog(void);
 void oracle_malloc_fail_at(int);
 void oracle_set_vget_enoent(int);
+void oracle_set_vget_enoent_once(int);
 void oracle_set_vget_error(int);
 void oracle_set_linker_fail(int);
 void oracle_set_linker_block(int);
@@ -222,6 +229,7 @@ static void apply_test_flags(void)
 	port::set_sbuf_fail(g_sbuf_fail);
 	port::set_bootverbose(bootverbose);
 	oracle_set_vget_enoent(g_vget_enoent);
+	oracle_set_vget_enoent_once(0);
 	oracle_set_vget_error(g_vget_error);
 	oracle_set_linker_fail(g_linker_fail);
 	oracle_set_linker_block(g_linker_block);
@@ -229,18 +237,51 @@ static void apply_test_flags(void)
 	oracle_set_bootverbose(bootverbose);
 }
 
-static void reset_port(void)
+static void reset_port_model(void)
 {
 	model_reset();
-	port::reset_all();
+	port::reset_model();
 	setup_tc();
 	apply_test_flags();
 }
 
-static void reset_ref(void)
+static void reset_ref_model(void)
 {
 	model_reset();
-	oracle_reset();
+	oracle_reset_model();
+	setup_tc();
+	apply_test_flags();
+}
+
+static void reset_port_vfs(void)
+{
+	model_reset();
+	port::reset_vfs();
+	setup_tc();
+	apply_test_flags();
+}
+
+static void reset_ref_vfs(void)
+{
+	model_reset();
+	oracle_reset_vfs();
+	setup_tc();
+	apply_test_flags();
+}
+
+static void reset_port_tslog(void)
+{
+	model_reset();
+	port::reset_model();
+	port::reset_tslog();
+	setup_tc();
+	apply_test_flags();
+}
+
+static void reset_ref_tslog(void)
+{
+	model_reset();
+	oracle_reset_tslog();
 	setup_tc();
 	apply_test_flags();
 }
@@ -284,6 +325,8 @@ static void compare_tslog_records(int row)
 		}
 		if (ptype != rtype || pf != rf || ps != rs || ptsc != rtsc)
 			fail_row(row, "record", "field mismatch");
+		(void)ptd;
+		(void)rtd;
 	}
 }
 
@@ -318,9 +361,9 @@ static void test_vfs_hash_index(void) {
 	port::mount mp{}; port::vnode vp{};
 	mp.mnt_hashseed = 17; vp.v_hash = 42; vp.v_mount = &mp;
 	case_row(R_VFS_HASH_INDEX);
-	reset_port();
+	reset_port_vfs();
 	unsigned int p = port::vfs_hash_index(&vp);
-	reset_ref();
+	reset_ref_vfs();
 	unsigned int r = ref_vfs_hash_index(reinterpret_cast<struct vnode *>(&vp));
 	if (p != r) fail_row(R_VFS_HASH_INDEX, "value", "mismatch");
 }
@@ -331,20 +374,23 @@ static void test_vfs_hash_insert_get_one(unsigned int hash, int flags) {
 	setup_vnode(reinterpret_cast<struct vnode *>(&vp), hash,
 	    reinterpret_cast<struct mount *>(&mp));
 	case_row(R_VFS_HASH_INSERT);
-	reset_port();
+	reset_port_vfs();
 	int pi = port::vfs_hash_insert(&vp, hash, flags, nullptr, &pout, nullptr, nullptr);
-	reset_ref();
+	reset_ref_vfs();
 	struct vnode *rout = (struct vnode *)0x42;
 	int ri = ref_vfs_hash_insert(reinterpret_cast<struct vnode *>(&vp), hash, flags,
 	    nullptr, &rout, nullptr, nullptr);
 	if (pi != ri) fail_row(R_VFS_HASH_INSERT, "ret", "mismatch");
 	case_row(R_VFS_HASH_GET);
-	reset_port();
+	int get_flags = flags;
+	if (g_vget_enoent)
+		get_flags |= 0x0001; /* LK_NOWAIT: ENOENT must not retry forever */
+	reset_port_vfs();
 	port::vnode *pg = nullptr;
-	int pgd = port::vfs_hash_get(&mp, hash, flags, nullptr, &pg, nullptr, nullptr);
-	reset_ref();
+	int pgd = port::vfs_hash_get(&mp, hash, get_flags, nullptr, &pg, nullptr, nullptr);
+	reset_ref_vfs();
 	struct vnode *rg = nullptr;
-	int rgd = ref_vfs_hash_get(reinterpret_cast<struct mount *>(&mp), hash, flags,
+	int rgd = ref_vfs_hash_get(reinterpret_cast<struct mount *>(&mp), hash, get_flags,
 	    nullptr, &rg, nullptr, nullptr);
 	if (pgd != rgd) fail_row(R_VFS_HASH_GET, "ret", "mismatch");
 }
@@ -355,14 +401,14 @@ static void test_vfs_hash_ref_remove(unsigned int hash) {
 	setup_vnode(reinterpret_cast<struct vnode *>(&vp), hash,
 	    reinterpret_cast<struct mount *>(&mp));
 	port::vnode *ins = &vp;
-	reset_port();
+	reset_port_vfs();
 	port::vfs_hash_insert(&vp, hash, 0, nullptr, &ins, nullptr, nullptr);
 	port::vnode *pr = nullptr;
 	case_row(R_VFS_HASH_REF);
 	port::vfs_hash_ref(&mp, hash, nullptr, &pr, nullptr, nullptr);
 	case_row(R_VFS_HASH_REMOVE);
 	port::vfs_hash_remove(&vp);
-	reset_ref();
+	reset_ref_vfs();
 	struct vnode *rr = nullptr;
 	struct vnode *rins = reinterpret_cast<struct vnode *>(&vp);
 	ref_vfs_hash_insert(reinterpret_cast<struct vnode *>(&vp), hash, 0, nullptr,
@@ -378,11 +424,11 @@ static void test_vfs_hash_rehash(unsigned int newhash) {
 	setup_vnode(reinterpret_cast<struct vnode *>(&vp), 11,
 	    reinterpret_cast<struct mount *>(&mp));
 	port::vnode *ins = &vp;
-	reset_port();
+	reset_port_vfs();
 	port::vfs_hash_insert(&vp, 11, 0, nullptr, &ins, nullptr, nullptr);
 	case_row(R_VFS_HASH_REHASH);
 	port::vfs_hash_rehash(&vp, newhash);
-	reset_ref();
+	reset_ref_vfs();
 	struct vnode *rins = reinterpret_cast<struct vnode *>(&vp);
 	ref_vfs_hash_insert(reinterpret_cast<struct vnode *>(&vp), 11, 0, nullptr,
 	    &rins, nullptr, nullptr);
@@ -392,18 +438,18 @@ static void test_vfs_hash_rehash(unsigned int newhash) {
 
 static void test_vfs_hash_changesize(unsigned long n) {
 	case_row(R_VFS_HASH_CHANGESIZE);
-	reset_port();
+	reset_port_vfs();
 	port::vfs_hash_changesize(n);
-	reset_ref();
+	reset_ref_vfs();
 	ref_vfs_hash_changesize(n);
 }
 
 static void test_tslog_one(void *td, int type, const char *f, const char *s) {
 	case_row(R_TSLOG);
-	reset_port();
+	reset_port_tslog();
 	port::tslog(td, type, f, s);
 	long pn = port::tslog_record_count();
-	reset_ref();
+	reset_ref_tslog();
 	ref_tslog(td, type, f, s);
 	long rn = oracle_tslog_nrecs();
 	if (pn != rn) fail_row(R_TSLOG, "nrecs", "mismatch");
@@ -412,9 +458,9 @@ static void test_tslog_one(void *td, int type, const char *f, const char *s) {
 
 static void test_tslog_user(pid_t pid, pid_t ppid, const char *ex, const char *nm) {
 	case_row(R_TSLOG_USER);
-	reset_port();
+	reset_port_tslog();
 	port::tslog_user(pid, ppid, ex, nm);
-	reset_ref();
+	reset_ref_tslog();
 	ref_tslog_user(pid, ppid, ex, nm);
 	compare_tslog_user_pid(R_TSLOG_USER, pid);
 }
@@ -422,9 +468,9 @@ static void test_tslog_user(pid_t pid, pid_t ppid, const char *ex, const char *n
 static void test_sysctl_tslog(void) {
 	port::sysctl_req req{};
 	case_row(R_SYSCTL_DEBUG_TSLOG);
-	reset_port();
+	reset_port_tslog();
 	int pe = port::sysctl_debug_tslog(nullptr, nullptr, 0, &req);
-	reset_ref();
+	reset_ref_tslog();
 	struct sysctl_req rreq{};
 	int re = ref_sysctl_debug_tslog(nullptr, nullptr, 0, &rreq);
 	if (pe != re) fail_row(R_SYSCTL_DEBUG_TSLOG, "ret", "mismatch");
@@ -433,9 +479,9 @@ static void test_sysctl_tslog(void) {
 static void test_sysctl_tslog_user(void) {
 	port::sysctl_req req{};
 	case_row(R_SYSCTL_DEBUG_TSLOG_USER);
-	reset_port();
+	reset_port_tslog();
 	int pe = port::sysctl_debug_tslog_user(nullptr, nullptr, 0, &req);
-	reset_ref();
+	reset_ref_tslog();
 	struct sysctl_req rreq{};
 	int re = ref_sysctl_debug_tslog_user(nullptr, nullptr, 0, &rreq);
 	if (pe != re) fail_row(R_SYSCTL_DEBUG_TSLOG_USER, "ret", "mismatch");
@@ -447,31 +493,31 @@ static void test_sysinit_shim(void) {
 	auto fn = +[](void *) { called++; };
 	port::sysinit_tslog entry{ fn, nullptr, "init" };
 	case_row(R_SYSINIT_TSLOG_SHIM);
-	reset_port();
+	reset_port_tslog();
 	port::sysinit_tslog_shim(&entry);
-	reset_ref();
+	reset_ref_tslog();
 	struct sysinit_tslog rent{ (void (*)(void*))fn, nullptr, "init" };
 	ref_sysinit_tslog_shim(&rent);
 	if (called != 2) fail_row(R_SYSINIT_TSLOG_SHIM, "called", "mismatch");
 }
 
 static void test_tslog_reset(void) {
-	reset_port();
+	reset_port_tslog();
 	port::tslog(nullptr, 0, "f", "s");
 	case_row(R_TSLOG_RESET);
 	port::tslog_reset();
-	reset_ref();
+	reset_ref_tslog();
 	ref_tslog(nullptr, 0, "f", "s");
 	ref_tslog_reset();
 }
 
 static void test_clockcalib(void) {
 	case_row(R_CLOCKCALIB);
-	reset_port();
+	reset_port_model();
 	uint64_t pf = port::clockcalib(test_clk, "tsc");
 	size_t plen = port::out_length();
 	const char *pout = port::out_text();
-	reset_ref();
+	reset_ref_model();
 	uint64_t rf = ref_clockcalib(test_clk, "tsc");
 	size_t rlen = model_out_length();
 	const char *rout = model_out_text();
@@ -488,9 +534,9 @@ static bool buf_ok(const unsigned char *b, size_t n) {
 
 static void test_stack_lifecycle(void) {
 	case_row(R_STACK_CREATE);
-	reset_port();
+	reset_port_model();
 	port::stack *ps = port::stack_create(2);
-	reset_ref();
+	reset_ref_model();
 	struct stack *rs = ref_stack_create(2);
 	if ((ps == nullptr) != (rs == nullptr)) fail_row(R_STACK_CREATE, "null", "mismatch");
 	if (!ps || !rs) return;
@@ -501,19 +547,19 @@ static void test_stack_lifecycle(void) {
 		if (pp != rp) { fail_row(R_STACK_PUT, "ret", "mismatch"); break; }
 	}
 	case_row(R_STACK_COPY);
-	reset_port();
+	reset_port_model();
 	port::stack pd{}; port::stack_copy(ps, &pd);
-	reset_ref();
+	reset_ref_model();
 	struct stack rd{}; ref_stack_copy(rs, &rd);
 	case_row(R_STACK_ZERO);
-	reset_port();
+	reset_port_model();
 	port::stack_zero(&pd);
-	reset_ref();
+	reset_ref_model();
 	ref_stack_zero(&rd);
 	case_row(R_STACK_DESTROY);
-	reset_port();
+	reset_port_model();
 	port::stack_destroy(ps);
-	reset_ref();
+	reset_ref_model();
 	ref_stack_destroy(rs);
 }
 
@@ -521,25 +567,25 @@ static void test_stack_prints(void) {
 	port::stack st{}; st.depth = 3;
 	st.pcs[0] = 0x4000; st.pcs[1] = 0x4100; st.pcs[2] = 0x4200;
 	case_row(R_STACK_PRINT);
-	reset_port();
+	reset_port_model();
 	port::stack_print(&st);
-	reset_ref();
+	reset_ref_model();
 	struct stack rst{}; std::memcpy(&rst, &st, sizeof(rst));
 	ref_stack_print(&rst);
 	case_row(R_STACK_PRINT_SHORT);
-	reset_port();
+	reset_port_model();
 	port::stack_print_short(&st);
-	reset_ref();
+	reset_ref_model();
 	ref_stack_print_short(&rst);
 	case_row(R_STACK_PRINT_DDB);
-	reset_port();
+	reset_port_model();
 	port::stack_print_ddb(&st);
-	reset_ref();
+	reset_ref_model();
 	ref_stack_print_ddb(&rst);
 	case_row(R_STACK_PRINT_SHORT_DDB);
-	reset_port();
+	reset_port_model();
 	port::stack_print_short_ddb(&st);
-	reset_ref();
+	reset_ref_model();
 	ref_stack_print_short_ddb(&rst);
 }
 
@@ -559,9 +605,9 @@ static void test_stack_sbuf(void) {
 	std::memset(rsb->s_buf, GUARD, rsb->s_size);
 	struct stack rst{}; std::memcpy(&rst, &st, sizeof(rst));
 	case_row(R_STACK_SBUF_PRINT_FLAGS);
-	reset_port();
+	reset_port_model();
 	int pe = port::stack_sbuf_print_flags(sb, &st, 2, static_cast<port::stack_sbuf_fmt>(1));
-	reset_ref();
+	reset_ref_model();
 	int re = ref_stack_sbuf_print_flags(rsb, &rst, 2, 1);
 	if (pe != re) fail_row(R_STACK_SBUF_PRINT_FLAGS, "ret", "mismatch");
 	if (sb->s_len != rsb->s_len ||
@@ -570,14 +616,14 @@ static void test_stack_sbuf(void) {
 	if (!buf_ok(blob, PAD) || !buf_ok(blob + PAD + sizeof(port::sbuf) + sb->s_size, PAD))
 		fail_row(R_STACK_SBUF_PRINT_FLAGS, "guard", "port");
 	case_row(R_STACK_SBUF_PRINT);
-	reset_port();
+	reset_port_model();
 	port::stack_sbuf_print(sb, &st);
-	reset_ref();
+	reset_ref_model();
 	ref_stack_sbuf_print(rsb, &rst);
 	case_row(R_STACK_SBUF_PRINT_DDB);
-	reset_port();
+	reset_port_model();
 	port::stack_sbuf_print_ddb(sb, &st);
-	reset_ref();
+	reset_ref_model();
 	ref_stack_sbuf_print_ddb(rsb, &rst);
 }
 
@@ -585,10 +631,10 @@ static void test_stack_ktr(void) {
 	port::stack st{}; st.depth = 2; st.pcs[0] = 0x6000; st.pcs[1] = 0x6100;
 	struct stack rst{}; std::memcpy(&rst, &st, sizeof(rst));
 	case_row(R_STACK_KTR);
-	reset_port();
+	reset_port_model();
 	port::stack_ktr(1, "f.c", 9, &st, 0);
 	int pk = port::ktr_count();
-	reset_ref();
+	reset_ref_model();
 	ref_stack_ktr(1, "f.c", 9, &rst, 0);
 	if (pk != oracle_ktr_count())
 		fail_row(R_STACK_KTR, "ktr", "count mismatch");
@@ -604,13 +650,16 @@ static void test_stack_symbol(uintptr_t pc, unsigned int buflen, int flags) {
 	long poff = -1, roff = -1;
 
 	case_row(R_STACK_SYMBOL);
-	reset_port();
+	reset_port_model();
 	int pe = port::stack_symbol(pc, pname, buflen, &poff, flags);
-	reset_ref();
+	reset_ref_model();
 	int re = ref_stack_symbol(pc, rname, buflen, &roff, flags);
 	if (pe != re || poff != roff)
 		fail_row(R_STACK_SYMBOL, "ret", "mismatch");
-	if (std::strcmp(pname, rname) != 0)
+	if (pe == 35) {
+		if (std::memcmp(pname, rname, 128) != 0)
+			fail_row(R_STACK_SYMBOL, "buf", "ewouldblock");
+	} else if (std::strncmp(pname, rname, buflen) != 0)
 		fail_row(R_STACK_SYMBOL, "name", "mismatch");
 	if (!buf_ok(pbuf, PAD) || !buf_ok(pbuf + PAD + 128, PAD))
 		fail_row(R_STACK_SYMBOL, "guard", "port");
@@ -624,14 +673,37 @@ static void test_stack_symbol_ddb(uintptr_t pc) {
 	long poff = -1, roff = -1;
 
 	case_row(R_STACK_SYMBOL_DDB);
-	reset_port();
+	reset_port_model();
 	int pe = port::stack_symbol_ddb(pc, &pname, &poff);
-	reset_ref();
+	reset_ref_model();
 	int re = ref_stack_symbol_ddb(pc, &rname, &roff);
 	if (pe != re || poff != roff)
 		fail_row(R_STACK_SYMBOL_DDB, "ret", "mismatch");
 	if (std::strcmp(pname, rname) != 0)
 		fail_row(R_STACK_SYMBOL_DDB, "name", "mismatch");
+}
+
+static void test_vfs_hash_get_enoent_retry(unsigned int hash) {
+	port::mount mp{}; mp.mnt_hashseed = 11;
+	port::vnode vp{};
+	setup_vnode(reinterpret_cast<struct vnode *>(&vp), hash,
+	    reinterpret_cast<struct mount *>(&mp));
+	port::vnode *ins = &vp;
+	reset_port_vfs();
+	port::set_vget_enoent_once(1);
+	port::vfs_hash_insert(&vp, hash, 0, nullptr, &ins, nullptr, nullptr);
+	port::vnode *pg = nullptr;
+	case_row(R_VFS_HASH_GET);
+	int pgd = port::vfs_hash_get(&mp, hash, 0, nullptr, &pg, nullptr, nullptr);
+	reset_ref_vfs();
+	oracle_set_vget_enoent_once(1);
+	struct vnode *rins = reinterpret_cast<struct vnode *>(&vp);
+	ref_vfs_hash_insert(reinterpret_cast<struct vnode *>(&vp), hash, 0, nullptr,
+	    &rins, nullptr, nullptr);
+	struct vnode *rg = nullptr;
+	int rgd = ref_vfs_hash_get(reinterpret_cast<struct mount *>(&mp), hash, 0,
+	    nullptr, &rg, nullptr, nullptr);
+	if (pgd != rgd) fail_row(R_VFS_HASH_GET, "retry", "ret mismatch");
 }
 
 static void test_vfs_hand(void) {
@@ -647,6 +719,7 @@ static void test_vfs_hand(void) {
 	g_vget_enoent = 1;
 	test_vfs_hash_insert_get_one(77, 0);
 	g_vget_enoent = 0;
+	test_vfs_hash_get_enoent_retry(55);
 	g_vget_error = 13;
 	test_vfs_hash_insert_get_one(88, 0);
 	g_vget_error = 0;

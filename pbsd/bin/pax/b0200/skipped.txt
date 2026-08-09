@@ -1,0 +1,3 @@
+hbsd/src/bin/pax/ftree.c — ftree_start, ftree_sel, ftree_notsel, ftree_chk, ftree_arg, next_file depend on fts(3), global pax flags, cwd tracking, and atdir helpers.
+hbsd/src/bin/pax/pax.c — main, sig_cleanup, setup_sig, gen_init depend on the full pax runtime (options, extract/archive/copy modes, signal and archive state).
+hbsd/src/bin/pax/file_subs.c — file_creat, file_close, lnk_creat, cross_lnk, chk_same, mk_link, node_creat, unlnk_exist, chk_path, set_ftime, set_ids, set_pmode, rdfile_close depend on filesystem globals and helper routines not present in this batch.

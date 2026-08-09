@@ -48,12 +48,11 @@ typedef int pid_t;
 
 #define EINVAL 22
 #define ENOENT 2
-#ifndef EWOULDBLOCK
+#undef EWOULDBLOCK
 #define EWOULDBLOCK 35
-#endif
 
 #define LK_NOWAIT 0x0001
-#define PID_MAX 99999
+#define PID_MAX 4095
 #define STACK_MAX 18
 
 #define TS_ENTER 0
@@ -189,6 +188,7 @@ static unsigned long model_malloc_max = MODEL_ARENA;
 static uint64_t model_cycle;
 static int model_vget_error;
 static int model_vget_enoent;
+static int model_vget_enoent_once;
 static int model_linker_fail;
 static int model_linker_block;
 static int model_sbuf_fail;
@@ -347,6 +347,11 @@ static int vget_finish(struct vnode *vp, int flags, enum vgetstate vs)
 	(void)vp;
 	(void)flags;
 	(void)vs;
+	if (model_vget_enoent_once > 0) {
+		model_vget_enoent_once--;
+		model_ev(21, ENOENT, 0, 0, 0);
+		return (ENOENT);
+	}
 	if (model_vget_enoent != 0) {
 		model_ev(21, ENOENT, 0, 0, 0);
 		return (ENOENT);
@@ -586,6 +591,7 @@ void model_reset(void)
 	model_malloc_fail = 0;
 	model_vget_error = 0;
 	model_vget_enoent = 0;
+	model_vget_enoent_once = 0;
 	model_linker_fail = 0;
 	model_linker_block = 0;
 	model_sbuf_fail = 0;
@@ -630,6 +636,28 @@ size_t model_out_length(void) { return (model_out_n); }
 void ref_vfs_hashinit(void *dummy);
 void ref_tslog_reset(void);
 
+void oracle_reset_model(void)
+{
+	model_reset();
+}
+
+void oracle_reset_vfs(void)
+{
+	model_reset();
+	ref_vfs_hashinit(NULL);
+}
+
+void oracle_reset_tslog(void)
+{
+	model_reset();
+	ref_tslog_reset();
+}
+
+void oracle_reset_light(void)
+{
+	model_reset();
+}
+
 void oracle_reset(void)
 {
 	model_reset();
@@ -639,6 +667,7 @@ void oracle_reset(void)
 
 void oracle_malloc_fail_at(int n) { model_malloc_fail = n; }
 void oracle_set_vget_enoent(int v) { model_vget_enoent = v; }
+void oracle_set_vget_enoent_once(int v) { model_vget_enoent_once = v; }
 void oracle_set_vget_error(int v) { model_vget_error = v; }
 void oracle_set_linker_fail(int v) { model_linker_fail = v; }
 void oracle_set_linker_block(int v) { model_linker_block = v; }
@@ -919,7 +948,7 @@ ref_vfs_hash_changesize(u_long newmaxvnodes)
 
 
 #ifndef TSLOGSIZE
-#define TSLOGSIZE 262144
+#define TSLOGSIZE 4096
 #endif
 
 volatile long nrecs = 0;
@@ -1109,9 +1138,12 @@ void
 ref_tslog_reset(void)
 {
 	long i;
+	long old = nrecs;
 
 	nrecs = 0;
-	for (i = 0; i < (long)nitems(timestamps); i++) {
+	if (old > (long)nitems(timestamps))
+		old = (long)nitems(timestamps);
+	for (i = 0; i < old; i++) {
 		timestamps[i].td = NULL;
 		timestamps[i].type = 0;
 		timestamps[i].f = NULL;

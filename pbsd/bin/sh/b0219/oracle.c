@@ -1,49 +1,204 @@
 /*
  * PBSD batch b0219 -- reference oracle.
  *
- * The original C sources of
- *	hbsd/src/bin/sh/alias.c
- *	hbsd/src/bin/sh/output.c
+ * This file is the SPECIFICATION for pbsd/bin/sh/b0219/port.cppm.  It is the
+ * original HardenedBSD C source of
+ *
  *	hbsd/src/bin/sh/memalloc.c
- *	hbsd/src/bin/sh/show.c
- * concatenated.  Every ported function is renamed with a "ref_" prefix (done
- * with object-like macros below so that the function bodies themselves are
- * byte-for-byte the originals).  Definitions that live in headers which are
- * not part of this batch (shell.h, error.h, memalloc.h, output.h, mystring.h,
- * alias.h, parser.h) are supplied in the support section.
+ *	hbsd/src/bin/sh/output.c
+ *	hbsd/src/bin/sh/alias.c
+ *
+ * concatenated, with every function renamed with a "ref_" prefix (call sites
+ * inside the bodies are renamed to match, otherwise nothing would link) and
+ * with the "static" storage class dropped so that the differential harness can
+ * reach the file-local helpers.  No function body has been modified.
+ *
+ * Everything above the "===" banner is support scaffolding: the handful of
+ * declarations that live in headers which are not part of this batch
+ * (shell.h, error.h, output.h, memalloc.h, mystring.h, alias.h).  The exact
+ * same scaffolding is reproduced in port.cppm so that the two sides are
+ * compared on equal footing.
+ *
+ * hbsd/src/bin/sh/show.c is not present; see skipped.txt.
  */
 
-/*-
- * Copyright (c) 1993
- *	The Regents of the University of California.  All rights reserved.
- *
- * This code is derived from software contributed to Berkeley by
- * Kenneth Almquist.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+#include <errno.h>
+#include <limits.h>
+#include <setjmp.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <wchar.h>
+#include <wctype.h>
+
+/* ------------------------------------------------------------------ */
+/* shell.h                                                            */
+/* ------------------------------------------------------------------ */
+
+typedef void *pointer;
+
+/*
+ * ALIGN() comes from <sys/param.h> on FreeBSD; it is not available on this
+ * host, so it is spelled out here with the amd64 alignment (sizeof(register_t)
+ * == 8).  port.cppm uses the identical definition.
  */
+#ifndef ALIGNBYTES
+#define	ALIGNBYTES	(sizeof(long) - 1)
+#endif
+#ifndef ALIGN
+#define	ALIGN(p)	(((uintptr_t)(p) + ALIGNBYTES) & ~ALIGNBYTES)
+#endif
+
+/* ------------------------------------------------------------------ */
+/* error.h                                                            */
+/* ------------------------------------------------------------------ */
+
+static volatile int suppressint = 1;
+static volatile int intpending = 0;
+
+void ref_onint(void);
+
+#define	INTOFF		suppressint++
+#define	INTON		{ if (--suppressint == 0 && intpending) ref_onint(); }
+#define	is_int_on()	suppressint
+
+void
+ref_onint(void)
+{
+	abort();
+}
+
+static jmp_buf err_jmp;
+static int err_armed;
+
+static void error(const char *, ...) __attribute__((__noreturn__));
+
+static void
+error(const char *msg, ...)
+{
+	(void)msg;
+	if (err_armed)
+		longjmp(err_jmp, 1);
+	abort();
+}
+
+/* ------------------------------------------------------------------ */
+/* output.h                                                           */
+/* ------------------------------------------------------------------ */
+
+struct output {
+	char *nextc;
+	char *bufend;
+	char *buf;
+	int bufsize;
+	short fd;
+	short flags;
+};
+
+/*
+ * emptyoutbuf() is not part of this batch (it calls flushout(), which calls
+ * xwrite(); see skipped.txt), so the outc() macro of output.h is wired to a
+ * scaffolding routine that simply refuses to continue.  The harness always
+ * hands these routines a buffer that is large enough, so it is never reached.
+ */
+void outbuf_overflow(struct output *) __attribute__((__noreturn__));
+
+void
+outbuf_overflow(struct output *dest)
+{
+	(void)dest;
+	write(2, "b0219: output buffer overflow\n", 30);
+	abort();
+}
+
+#define	outc(c, file)	((file)->nextc == (file)->bufend ? \
+			    (outbuf_overflow(file), *(file)->nextc++ = (c)) : \
+			    (*(file)->nextc++ = (c)))
+#define	out1c(c)	outc(c, out1);
+
+/* ------------------------------------------------------------------ */
+/* memalloc.h                                                         */
+/* ------------------------------------------------------------------ */
+
+struct stackmark {
+	struct stack_block *stackp;
+	char *stacknxt;
+	int stacknleft;
+};
+
+char *ref_makestrspace(int, char *);
+
+#define	stackblock()		stacknxt
+#define	stackblocksize()	stacknleft
+#define	CHECKSTRSPACE(n, p)	{ if (sstrend - (p) < (n)) \
+				    (p) = ref_makestrspace((n), (p)); }
+
+/* ------------------------------------------------------------------ */
+/* mystring.h                                                         */
+/* ------------------------------------------------------------------ */
+
+#define	equal(s1, s2)	(strcmp(s1, s2) == 0)
+
+/* ------------------------------------------------------------------ */
+/* alias.h                                                            */
+/* ------------------------------------------------------------------ */
+
+struct alias {
+	struct alias *next;
+	char *name;
+	char *val;
+	int flag;
+};
+
+#define	ALIASINUSE	1
+
+/* forward declarations of the ported routines */
+pointer ref_ckmalloc(size_t);
+pointer ref_ckrealloc(pointer, int);
+void ref_ckfree(pointer);
+char *ref_savestr(const char *);
+void ref_stnewblock(int);
+pointer ref_stalloc(int);
+void ref_stunalloc(pointer);
+char *ref_stsavestr(const char *);
+void ref_setstackmark(struct stackmark *);
+void ref_popstackmark(struct stackmark *);
+void ref_growstackblock(int);
+char *ref_growstrstackblock(int, int);
+char *ref_growstackstr(void);
+char *ref_stputbin(const char *, size_t, char *);
+char *ref_stputs(const char *, char *);
+
+void ref_outcslow(int, struct output *);
+void ref_out1str(const char *);
+void ref_out1qstr(const char *);
+void ref_out2str(const char *);
+void ref_out2qstr(const char *);
+void ref_outstr(const char *, struct output *);
+void ref_byteseq(int, struct output *);
+void ref_outdqstr(const char *, struct output *);
+void ref_outqstr(const char *, struct output *);
+void ref_outbin(const void *, size_t, struct output *);
+void ref_freestdout(void);
+int ref_outiserror(struct output *);
+void ref_outclearerror(struct output *);
+void ref_fmtstr(char *, int, const char *, ...);
+
+void ref_setalias(const char *, const char *);
+void ref_freealias(struct alias *);
+int ref_unalias(const char *);
+void ref_rmaliases(void);
+struct alias *ref_lookupalias(const char *, int);
+int ref_comparealiases(const void *, const void *);
+size_t ref_hashalias(const char *);
+const struct alias *ref_iteralias(const struct alias *);
+
+/* ================================================================== */
+/* hbsd/src/bin/sh/memalloc.c                                         */
+/* ================================================================== */
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -79,351 +234,8 @@
  * SUCH DAMAGE.
  */
 
-#define _GNU_SOURCE 1
-
-#include <sys/types.h>
-#include <errno.h>
-#include <limits.h>
-#include <setjmp.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <wchar.h>
-#include <wctype.h>
-
-/* ===================================================================== *
- * Support section: declarations that come from headers outside the batch.
- * ===================================================================== */
-
-typedef void *pointer;
-
-/* shell.h: everything on the parser stack is 16-byte aligned (see the
- * MINSIZE comment in memalloc.c: 496 + ALIGN(sizeof(struct stack_block))
- * == 512). */
-#define SHELL_ALIGN 16
-#define ALIGN(nbytes)	(((nbytes) + (SHELL_ALIGN - 1)) & ~(SHELL_ALIGN - 1))
-
-/* error.h */
-int suppressint = 0;
-int intpending = 0;
-jmp_buf sh_errjmp;
-int sh_errjmp_set = 0;
-int sh_err_thrown = 0;
-char sh_err_msg[256];
-
-#define INTOFF		(suppressint++)
-#define INTON		(--suppressint)
-#define is_int_on()	(suppressint)
-
-static int
-int_pending(void)
-{
-	return (intpending);
-}
-
-static void error(const char *, ...) __attribute__((__noreturn__));
-
-static void
-error(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vsnprintf(sh_err_msg, sizeof(sh_err_msg), fmt, ap);
-	va_end(ap);
-	sh_err_thrown++;
-	if (sh_errjmp_set)
-		longjmp(sh_errjmp, 1);
-	fprintf(stderr, "oracle: unhandled error(): %s\n", sh_err_msg);
-	fflush(stderr);
-	_exit(97);
-}
-
-/* mystring.h */
-#define equal(s1, s2)	(strcmp(s1, s2) == 0)
-
-/* alias.h */
-struct alias {
-	struct alias *next;
-	char *name;
-	char *val;
-	int flag;
-};
-#define ALIASINUSE	1
-
-/* output.h */
-struct output {
-	char *nextc;
-	char *bufend;
-	char *buf;
-	int bufsize;
-	short fd;
-	short flags;
-};
-
-#define outc(c, file)	((file)->nextc == (file)->bufend ? \
-			    (ref_emptyoutbuf(file), *(file)->nextc++ = (c)) : \
-			    (*(file)->nextc++ = (c)))
-#define out1c(c)	outc(c, out1)
-#define out2c(c)	ref_outcslow(c, out2)
-
-/* memalloc.h */
-struct stack_block;
-
-struct stackmark {
-	struct stack_block *stackp;
-	char *stacknxt;
-	int stacknleft;
-};
-
-#define stackblock()		stacknxt
-#define stackblocksize()	stacknleft
-#define CHECKSTRSPACE(n, p)	{ if (sstrend - p < n) p = makestrspace(n, p); }
-
-/* parser.h */
-#define CTLESC		'\301'
-#define CTLVAR		'\302'
-#define CTLENDVAR	'\303'
-#define CTLBACKQ	'\304'
-#define CTLQUOTE	01
-
-/*
- * <stdio.h> on this host is glibc, which has fopencookie() rather than the
- * BSD fwopen()/funopen().  This shim provides fwopen() with BSD semantics;
- * no function body of the batch is touched by it.
- */
-struct fwopen_cookie {
-	void *cookie;
-	int (*writefn)(void *, const char *, int);
-};
-
-static ssize_t
-fwopen_write(void *c, const char *buf, size_t n)
-{
-	struct fwopen_cookie *fc = c;
-
-	return (fc->writefn(fc->cookie, buf, (int)n));
-}
-
-static int
-fwopen_close(void *c)
-{
-	free(c);
-	return (0);
-}
-
-static FILE *
-fwopen(void *cookie, int (*writefn)(void *, const char *, int))
-{
-	cookie_io_functions_t io;
-	struct fwopen_cookie *fc;
-	FILE *fp;
-
-	io.read = NULL;
-	io.write = fwopen_write;
-	io.seek = NULL;
-	io.close = fwopen_close;
-	fc = malloc(sizeof(*fc));
-	if (fc == NULL)
-		return (NULL);
-	fc->cookie = cookie;
-	fc->writefn = writefn;
-	fp = fopencookie(fc, "w", io);
-	if (fp == NULL) {
-		free(fc);
-		return (NULL);
-	}
-	return (fp);
-}
-
-#define __unused __attribute__((__unused__))
-
-char **oracle_argptr;
-char *oracle_nextopt_optptr;
-#define argptr oracle_argptr
-
-static int
-nextopt(const char *optstring)
-{
-	char *p;
-	int c;
-
-	if (oracle_nextopt_optptr == NULL || *oracle_nextopt_optptr == '\0') {
-		p = oracle_argptr != NULL ? *oracle_argptr : NULL;
-		if (p == NULL || *p != '-' || *++p == '\0' ||
-		    (*p == '-' && *++p == '\0')) {
-			return '\0';
-		}
-		oracle_argptr++;
-		oracle_nextopt_optptr = p;
-	}
-	c = (unsigned char)*oracle_nextopt_optptr++;
-	p = strchr(optstring, c);
-	if (p == NULL)
-		error("illegal option -%c", c);
-	if (p[1] == ':') {
-		if (*oracle_nextopt_optptr == '\0')
-			oracle_nextopt_optptr = *oracle_argptr++;
-		else
-			oracle_nextopt_optptr = "";
-	}
-	return c;
-}
-
-static void
-warning(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	fputc('\n', stderr);
-}
-
-/* ===================================================================== *
- * ref_ renaming.  These come after every system header so that nothing in
- * libc gets rewritten.
- * ===================================================================== */
-
-/* memalloc.c */
-#define badalloc		ref_badalloc
-#define ckmalloc		ref_ckmalloc
-#define ckrealloc		ref_ckrealloc
-#define ckfree			ref_ckfree
-#define savestr			ref_savestr
-#define stnewblock		ref_stnewblock
-#define stalloc			ref_stalloc
-#define stunalloc		ref_stunalloc
-#define stsavestr		ref_stsavestr
-#define setstackmark		ref_setstackmark
-#define popstackmark		ref_popstackmark
-#define growstackblock		ref_growstackblock
-#define growstrstackblock	ref_growstrstackblock
-#define growstackstr		ref_growstackstr
-#define makestrspace		ref_makestrspace
-#define stputbin		ref_stputbin
-#define stputs			ref_stputs
-
-/* output.c */
-#define doformat_wr		ref_doformat_wr
-#define outcslow		ref_outcslow
-#define out1str			ref_out1str
-#define out1qstr		ref_out1qstr
-#define out2str			ref_out2str
-#define out2qstr		ref_out2qstr
-#define outstr			ref_outstr
-#define byteseq			ref_byteseq
-#define outdqstr		ref_outdqstr
-#define outqstr			ref_outqstr
-#define outbin			ref_outbin
-#define emptyoutbuf		ref_emptyoutbuf
-#define flushall		ref_flushall
-#define flushout		ref_flushout
-#define freestdout		ref_freestdout
-#define outiserror		ref_outiserror
-#define outclearerror		ref_outclearerror
-#define outfmt			ref_outfmt
-#define out1fmt			ref_out1fmt
-#define out2fmt_flush		ref_out2fmt_flush
-#define fmtstr			ref_fmtstr
-#define doformat		ref_doformat
-#define out1fp			ref_out1fp
-#define xwrite			ref_xwrite
-
-/* alias.c */
-#define setalias		ref_setalias
-#define freealias		ref_freealias
-#define unalias			ref_unalias
-#define rmaliases		ref_rmaliases
-#define lookupalias		ref_lookupalias
-#define comparealiases		ref_comparealiases
-#define printalias		ref_printalias
-#define printaliases		ref_printaliases
-#define hashalias		ref_hashalias
-#define iteralias		ref_iteralias
-#define aliascmd		ref_aliascmd
-#define unaliascmd		ref_unaliascmd
-
-/* show.c */
-#define trputc			ref_trputc
-#define sh_trace		ref_sh_trace
-#define trputs			ref_trputs
-#define trstring		ref_trstring
-#define trargs			ref_trargs
-
-/* Prototypes (the ref_ renaming above applies to these as well).  Functions
- * that are static in the originals are given external linkage here so that
- * the differential harness can reach them. */
-pointer ckmalloc(size_t);
-pointer ckrealloc(pointer, int);
-void ckfree(pointer);
-char *savestr(const char *);
-pointer stalloc(int);
-void stunalloc(pointer);
-char *stsavestr(const char *);
-void setstackmark(struct stackmark *);
-void popstackmark(struct stackmark *);
-char *growstackstr(void);
-char *makestrspace(int, char *);
-char *stputbin(const char *, size_t, char *);
-char *stputs(const char *, char *);
-void badalloc(const char *);
-void stnewblock(int);
-void growstackblock(int);
-char *growstrstackblock(int, int);
-
-void outcslow(int, struct output *);
-void out1str(const char *);
-void out1qstr(const char *);
-void out2str(const char *);
-void out2qstr(const char *);
-void outstr(const char *, struct output *);
-void outqstr(const char *, struct output *);
-void outbin(const void *, size_t, struct output *);
-void emptyoutbuf(struct output *);
-void flushall(void);
-void flushout(struct output *);
-void freestdout(void);
-int outiserror(struct output *);
-void outclearerror(struct output *);
-void outfmt(struct output *, const char *, ...);
-void out1fmt(const char *, ...);
-void out2fmt_flush(const char *, ...);
-void fmtstr(char *, int, const char *, ...);
-void doformat(struct output *, const char *, va_list);
-FILE *out1fp(void);
-int xwrite(int, const char *, int);
-void byteseq(int, struct output *);
-void outdqstr(const char *, struct output *);
-
-struct alias *lookupalias(const char *, int);
-const struct alias *iteralias(const struct alias *);
-void setalias(const char *, const char *);
-void freealias(struct alias *);
-int unalias(const char *);
-void rmaliases(void);
-int comparealiases(const void *, const void *);
-void printalias(const struct alias *);
-void printaliases(void);
-size_t hashalias(const char *);
-int aliascmd(int, char **);
-int unaliascmd(int, char **);
-
-void trputc(int);
-void sh_trace(const char *, ...);
-void trputs(const char *);
-void trstring(char *);
-void trargs(char **);
-
-/* ===================================================================== *
- * memalloc.c
- * ===================================================================== */
-
 void
-badalloc(const char *message)
+ref_badalloc(const char *message)
 {
 	write(2, message, strlen(message));
 	abort();
@@ -434,12 +246,12 @@ badalloc(const char *message)
  */
 
 pointer
-ckmalloc(size_t nbytes)
+ref_ckmalloc(size_t nbytes)
 {
 	pointer p;
 
 	if (!is_int_on())
-		badalloc("Unsafe ckmalloc() call\n");
+		ref_badalloc("Unsafe ckmalloc() call\n");
 	p = malloc(nbytes);
 	if (p == NULL)
 		error("Out of space");
@@ -452,10 +264,10 @@ ckmalloc(size_t nbytes)
  */
 
 pointer
-ckrealloc(pointer p, int nbytes)
+ref_ckrealloc(pointer p, int nbytes)
 {
 	if (!is_int_on())
-		badalloc("Unsafe ckrealloc() call\n");
+		ref_badalloc("Unsafe ckrealloc() call\n");
 	p = realloc(p, nbytes);
 	if (p == NULL)
 		error("Out of space");
@@ -463,10 +275,10 @@ ckrealloc(pointer p, int nbytes)
 }
 
 void
-ckfree(pointer p)
+ref_ckfree(pointer p)
 {
 	if (!is_int_on())
-		badalloc("Unsafe ckfree() call\n");
+		ref_badalloc("Unsafe ckfree() call\n");
 	free(p);
 }
 
@@ -476,13 +288,13 @@ ckfree(pointer p)
  */
 
 char *
-savestr(const char *s)
+ref_savestr(const char *s)
 {
 	char *p;
 	size_t len;
 
 	len = strlen(s);
-	p = ckmalloc(len + 1);
+	p = ref_ckmalloc(len + 1);
 	memcpy(p, s, len + 1);
 	return p;
 }
@@ -506,14 +318,14 @@ struct stack_block {
 };
 #define SPACE(sp)	((char*)(sp) + ALIGN(sizeof(struct stack_block)))
 
-struct stack_block *stackp;
-char *stacknxt;
-int stacknleft;
-char *sstrend;
+static struct stack_block *stackp;
+static char *stacknxt;
+static int stacknleft;
+static char *sstrend;
 
 
 void
-stnewblock(int nbytes)
+ref_stnewblock(int nbytes)
 {
 	struct stack_block *sp;
 	int allocsize;
@@ -524,7 +336,7 @@ stnewblock(int nbytes)
 	allocsize = ALIGN(sizeof(struct stack_block)) + ALIGN(nbytes);
 
 	INTOFF;
-	sp = ckmalloc(allocsize);
+	sp = ref_ckmalloc(allocsize);
 	sp->prev = stackp;
 	stacknxt = SPACE(sp);
 	stacknleft = allocsize - (stacknxt - (char*)sp);
@@ -535,13 +347,13 @@ stnewblock(int nbytes)
 
 
 pointer
-stalloc(int nbytes)
+ref_stalloc(int nbytes)
 {
 	char *p;
 
 	nbytes = ALIGN(nbytes);
 	if (nbytes > stacknleft)
-		stnewblock(nbytes);
+		ref_stnewblock(nbytes);
 	p = stacknxt;
 	stacknxt += nbytes;
 	stacknleft -= nbytes;
@@ -550,7 +362,7 @@ stalloc(int nbytes)
 
 
 void
-stunalloc(pointer p)
+ref_stunalloc(pointer p)
 {
 	if (p == NULL) {		/*DEBUG */
 		write(STDERR_FILENO, "stunalloc\n", 10);
@@ -562,32 +374,32 @@ stunalloc(pointer p)
 
 
 char *
-stsavestr(const char *s)
+ref_stsavestr(const char *s)
 {
 	char *p;
 	size_t len;
 
 	len = strlen(s);
-	p = stalloc(len + 1);
+	p = ref_stalloc(len + 1);
 	memcpy(p, s, len + 1);
 	return p;
 }
 
 
 void
-setstackmark(struct stackmark *mark)
+ref_setstackmark(struct stackmark *mark)
 {
 	mark->stackp = stackp;
 	mark->stacknxt = stacknxt;
 	mark->stacknleft = stacknleft;
 	/* Ensure this block stays in place. */
 	if (stackp != NULL && stacknxt == SPACE(stackp))
-		stalloc(1);
+		ref_stalloc(1);
 }
 
 
 void
-popstackmark(struct stackmark *mark)
+ref_popstackmark(struct stackmark *mark)
 {
 	struct stack_block *sp;
 
@@ -595,7 +407,7 @@ popstackmark(struct stackmark *mark)
 	while (stackp != mark->stackp) {
 		sp = stackp;
 		stackp = sp->prev;
-		ckfree(sp);
+		ref_ckfree(sp);
 	}
 	stacknxt = mark->stacknxt;
 	stacknleft = mark->stacknleft;
@@ -618,7 +430,7 @@ popstackmark(struct stackmark *mark)
  */
 
 void
-growstackblock(int min)
+ref_growstackblock(int min)
 {
 	char *p;
 	int newlen;
@@ -644,7 +456,7 @@ growstackblock(int min)
 		INTOFF;
 		oldstackp = stackp;
 		stackp = oldstackp->prev;
-		sp = ckrealloc((pointer)oldstackp, newlen);
+		sp = ref_ckrealloc((pointer)oldstackp, newlen);
 		sp->prev = stackp;
 		stackp = sp;
 		stacknxt = SPACE(sp);
@@ -653,10 +465,10 @@ growstackblock(int min)
 		INTON;
 	} else {
 		newlen -= ALIGN(sizeof(struct stack_block));
-		p = stalloc(newlen);
+		p = ref_stalloc(newlen);
 		if (oldlen != 0)
 			memcpy(p, oldspace, oldlen);
-		stunalloc(p);
+		ref_stunalloc(p);
 	}
 }
 
@@ -681,19 +493,19 @@ growstackblock(int min)
  */
 
 char *
-growstrstackblock(int n, int min)
+ref_growstrstackblock(int n, int min)
 {
-	growstackblock(min);
+	ref_growstackblock(min);
 	return stackblock() + n;
 }
 
 char *
-growstackstr(void)
+ref_growstackstr(void)
 {
 	int len;
 
 	len = stackblocksize();
-	return (growstrstackblock(len, 0));
+	return (ref_growstrstackblock(len, 0));
 }
 
 
@@ -702,17 +514,17 @@ growstackstr(void)
  */
 
 char *
-makestrspace(int min, char *p)
+ref_makestrspace(int min, char *p)
 {
 	int len;
 
 	len = p - stackblock();
-	return (growstrstackblock(len, min));
+	return (ref_growstrstackblock(len, min));
 }
 
 
 char *
-stputbin(const char *data, size_t len, char *p)
+ref_stputbin(const char *data, size_t len, char *p)
 {
 	CHECKSTRSPACE(len, p);
 	memcpy(p, data, len);
@@ -720,65 +532,107 @@ stputbin(const char *data, size_t len, char *p)
 }
 
 char *
-stputs(const char *data, char *p)
+ref_stputs(const char *data, char *p)
 {
-	return (stputbin(data, strlen(data), p));
+	return (ref_stputbin(data, strlen(data), p));
 }
 
-/* ===================================================================== *
- * output.c
- * ===================================================================== */
+/* ================================================================== */
+/* hbsd/src/bin/sh/output.c                                           */
+/* ================================================================== */
+
+/*-
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Copyright (c) 1991, 1993
+ *	The Regents of the University of California.  All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Kenneth Almquist.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * Shell output routines.  We use our own output routines because:
+ *	When a builtin command is interrupted we have to discard
+ *		any pending output.
+ *	When a builtin command appears in back quotes, we want to
+ *		save the output of the command in a region obtained
+ *		via malloc, rather than doing a fork and reading the
+ *		output of the command via a pipe.
+ */
 
 #define OUTBUFSIZ BUFSIZ
 #define MEM_OUT -2		/* output to dynamically allocated memory */
 #define OUTPUT_ERR 01		/* error occurred on output */
 
-int doformat_wr(void *, const char *, int);
-
-struct output output = {NULL, NULL, NULL, OUTBUFSIZ, 1, 0};
-struct output errout = {NULL, NULL, NULL, 256, 2, 0};
-struct output memout = {NULL, NULL, NULL, 64, MEM_OUT, 0};
-struct output *out1 = &output;
-struct output *out2 = &errout;
+static struct output output = {NULL, NULL, NULL, OUTBUFSIZ, 1, 0};
+static struct output errout = {NULL, NULL, NULL, 256, 2, 0};
+static struct output memout = {NULL, NULL, NULL, 64, MEM_OUT, 0};
+static struct output *out1 = &output;
+static struct output *out2 = &errout;
 
 void
-outcslow(int c, struct output *file)
+ref_outcslow(int c, struct output *file)
 {
 	outc(c, file);
 }
 
 void
-out1str(const char *p)
+ref_out1str(const char *p)
 {
-	outstr(p, out1);
+	ref_outstr(p, out1);
 }
 
 void
-out1qstr(const char *p)
+ref_out1qstr(const char *p)
 {
-	outqstr(p, out1);
+	ref_outqstr(p, out1);
 }
 
 void
-out2str(const char *p)
+ref_out2str(const char *p)
 {
-	outstr(p, out2);
+	ref_outstr(p, out2);
 }
 
 void
-out2qstr(const char *p)
+ref_out2qstr(const char *p)
 {
-	outqstr(p, out2);
+	ref_outqstr(p, out2);
 }
 
 void
-outstr(const char *p, struct output *file)
+ref_outstr(const char *p, struct output *file)
 {
-	outbin(p, strlen(p), file);
+	ref_outbin(p, strlen(p), file);
 }
 
 void
-byteseq(int ch, struct output *file)
+ref_byteseq(int ch, struct output *file)
 {
 	char seq[4];
 
@@ -786,11 +640,11 @@ byteseq(int ch, struct output *file)
 	seq[1] = (ch >> 6 & 0x3) + '0';
 	seq[2] = (ch >> 3 & 0x7) + '0';
 	seq[3] = (ch & 0x7) + '0';
-	outbin(seq, 4, file);
+	ref_outbin(seq, 4, file);
 }
 
 void
-outdqstr(const char *p, struct output *file)
+ref_outdqstr(const char *p, struct output *file)
 {
 	const char *end;
 	mbstate_t mbs;
@@ -799,68 +653,68 @@ outdqstr(const char *p, struct output *file)
 
 	memset(&mbs, '\0', sizeof(mbs));
 	end = p + strlen(p);
-	outstr("$'", file);
+	ref_outstr("$'", file);
 	while ((clen = mbrtowc(&wc, p, end - p + 1, &mbs)) != 0) {
 		if (clen == (size_t)-2) {
 			while (p < end)
-				byteseq(*p++, file);
+				ref_byteseq(*p++, file);
 			break;
 		}
 		if (clen == (size_t)-1) {
 			memset(&mbs, '\0', sizeof(mbs));
-			byteseq(*p++, file);
+			ref_byteseq(*p++, file);
 			continue;
 		}
 		if (wc == L'\n')
-			outcslow('\n', file), p++;
+			ref_outcslow('\n', file), p++;
 		else if (wc == L'\r')
-			outstr("\\r", file), p++;
+			ref_outstr("\\r", file), p++;
 		else if (wc == L'\t')
-			outstr("\\t", file), p++;
+			ref_outstr("\\t", file), p++;
 		else if (!iswprint(wc)) {
 			for (; clen > 0; clen--)
-				byteseq(*p++, file);
+				ref_byteseq(*p++, file);
 		} else {
 			if (wc == L'\'' || wc == L'\\')
-				outcslow('\\', file);
-			outbin(p, clen, file);
+				ref_outcslow('\\', file);
+			ref_outbin(p, clen, file);
 			p += clen;
 		}
 	}
-	outcslow('\'', file);
+	ref_outcslow('\'', file);
 }
 
 /* Like outstr(), but quote for re-input into the shell. */
 void
-outqstr(const char *p, struct output *file)
+ref_outqstr(const char *p, struct output *file)
 {
 	int i;
 
 	if (p[0] == '\0') {
-		outstr("''", file);
+		ref_outstr("''", file);
 		return;
 	}
 	for (i = 0; p[i] != '\0'; i++) {
 		if ((p[i] > '\0' && p[i] < ' ' && p[i] != '\n') ||
 		    (p[i] & 0x80) != 0 || p[i] == '\'') {
-			outdqstr(p, file);
+			ref_outdqstr(p, file);
 			return;
 		}
 	}
 
 	if (p[strcspn(p, "|&;<>()$`\\\" \n*?[~#=")] == '\0' ||
 			strcmp(p, "[") == 0) {
-		outstr(p, file);
+		ref_outstr(p, file);
 		return;
 	}
 
-	outcslow('\'', file);
-	outstr(p, file);
-	outcslow('\'', file);
+	ref_outcslow('\'', file);
+	ref_outstr(p, file);
+	ref_outcslow('\'', file);
 }
 
 void
-outbin(const void *data, size_t len, struct output *file)
+ref_outbin(const void *data, size_t len, struct output *file)
 {
 	const char *p;
 
@@ -869,107 +723,30 @@ outbin(const void *data, size_t len, struct output *file)
 		outc(*p++, file);
 }
 
-void
-emptyoutbuf(struct output *dest)
-{
-	int offset, newsize;
-
-	if (dest->buf == NULL) {
-		INTOFF;
-		dest->buf = ckmalloc(dest->bufsize);
-		dest->nextc = dest->buf;
-		dest->bufend = dest->buf + dest->bufsize;
-		INTON;
-	} else if (dest->fd == MEM_OUT) {
-		offset = dest->nextc - dest->buf;
-		newsize = dest->bufsize << 1;
-		INTOFF;
-		dest->buf = ckrealloc(dest->buf, newsize);
-		dest->bufsize = newsize;
-		dest->bufend = dest->buf + newsize;
-		dest->nextc = dest->buf + offset;
-		INTON;
-	} else {
-		flushout(dest);
-	}
-}
-
 
 void
-flushall(void)
-{
-	flushout(&output);
-	flushout(&errout);
-}
-
-
-void
-flushout(struct output *dest)
-{
-
-	if (dest->buf == NULL || dest->nextc == dest->buf || dest->fd < 0)
-		return;
-	if (xwrite(dest->fd, dest->buf, dest->nextc - dest->buf) < 0)
-		dest->flags |= OUTPUT_ERR;
-	dest->nextc = dest->buf;
-}
-
-
-void
-freestdout(void)
+ref_freestdout(void)
 {
 	output.nextc = output.buf;
 }
 
 
 int
-outiserror(struct output *file)
+ref_outiserror(struct output *file)
 {
 	return (file->flags & OUTPUT_ERR);
 }
 
 
 void
-outclearerror(struct output *file)
+ref_outclearerror(struct output *file)
 {
 	file->flags &= ~OUTPUT_ERR;
 }
 
 
 void
-outfmt(struct output *file, const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	doformat(file, fmt, ap);
-	va_end(ap);
-}
-
-
-void
-out1fmt(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	doformat(out1, fmt, ap);
-	va_end(ap);
-}
-
-void
-out2fmt_flush(const char *fmt, ...)
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	doformat(out2, fmt, ap);
-	va_end(ap);
-	flushout(out2);
-}
-
-void
-fmtstr(char *outbuf, int length, const char *fmt, ...)
+ref_fmtstr(char *outbuf, int length, const char *fmt, ...)
 {
 	va_list ap;
 
@@ -980,83 +757,58 @@ fmtstr(char *outbuf, int length, const char *fmt, ...)
 	INTON;
 }
 
-int
-doformat_wr(void *cookie, const char *buf, int len)
-{
-	struct output *o;
+/* ================================================================== */
+/* hbsd/src/bin/sh/alias.c                                            */
+/* ================================================================== */
 
-	o = (struct output *)cookie;
-	outbin(buf, len, o);
-
-	return (len);
-}
-
-void
-doformat(struct output *dest, const char *f, va_list ap)
-{
-	FILE *fp;
-
-	if ((fp = fwopen(dest, doformat_wr)) != NULL) {
-		vfprintf(fp, f, ap);
-		fclose(fp);
-	}
-}
-
-FILE *
-out1fp(void)
-{
-	return fwopen(out1, doformat_wr);
-}
-
-/*
- * Version of write which resumes after a signal is caught.
+/*-
+ * Copyright (c) 1993
+ *	The Regents of the University of California.  All rights reserved.
+ *
+ * This code is derived from software contributed to Berkeley by
+ * Kenneth Almquist.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
-
-int
-xwrite(int fd, const char *buf, int nbytes)
-{
-	int ntry;
-	int i;
-	int n;
-
-	n = nbytes;
-	ntry = 0;
-	for (;;) {
-		i = write(fd, buf, n);
-		if (i > 0) {
-			if ((n -= i) <= 0)
-				return nbytes;
-			buf += i;
-			ntry = 0;
-		} else if (i == 0) {
-			if (++ntry > 10)
-				return nbytes - n;
-		} else if (errno != EINTR) {
-			return -1;
-		}
-	}
-}
-
-/* ===================================================================== *
- * alias.c
- * ===================================================================== */
 
 #define ATABSIZE 39
 
-struct alias *atab[ATABSIZE];
-int aliases;
+static struct alias *atab[ATABSIZE];
+static int aliases;
 
 void
-setalias(const char *name, const char *val)
+ref_setalias(const char *name, const char *val)
 {
 	struct alias *ap, **app;
 
-	unalias(name);
-	app = &atab[hashalias(name)];
+	ref_unalias(name);
+	app = &atab[ref_hashalias(name)];
 	INTOFF;
-	ap = ckmalloc(sizeof (struct alias));
-	ap->name = savestr(name);
-	ap->val = savestr(val);
+	ap = ref_ckmalloc(sizeof (struct alias));
+	ap->name = ref_savestr(name);
+	ap->val = ref_savestr(val);
 	ap->flag = 0;
 	ap->next = *app;
 	*app = ap;
@@ -1065,19 +817,19 @@ setalias(const char *name, const char *val)
 }
 
 void
-freealias(struct alias *ap)
+ref_freealias(struct alias *ap)
 {
-	ckfree(ap->name);
-	ckfree(ap->val);
-	ckfree(ap);
+	ref_ckfree(ap->name);
+	ref_ckfree(ap->val);
+	ref_ckfree(ap);
 }
 
 int
-unalias(const char *name)
+ref_unalias(const char *name)
 {
 	struct alias *ap, **app;
 
-	app = &atab[hashalias(name)];
+	app = &atab[ref_hashalias(name)];
 
 	for (ap = *app; ap; app = &(ap->next), ap = ap->next) {
 		if (equal(name, ap->name)) {
@@ -1093,7 +845,7 @@ unalias(const char *name)
 			else {
 				INTOFF;
 				*app = ap->next;
-				freealias(ap);
+				ref_freealias(ap);
 				INTON;
 			}
 			aliases--;
@@ -1105,7 +857,7 @@ unalias(const char *name)
 }
 
 void
-rmaliases(void)
+ref_rmaliases(void)
 {
 	struct alias *ap, **app;
 	int i;
@@ -1120,7 +872,7 @@ rmaliases(void)
 				app = &(*app)->next;
 			} else {
 				*app = ap->next;
-				freealias(ap);
+				ref_freealias(ap);
 			}
 		}
 	}
@@ -1129,13 +881,13 @@ rmaliases(void)
 }
 
 struct alias *
-lookupalias(const char *name, int check)
+ref_lookupalias(const char *name, int check)
 {
 	struct alias *ap;
 
 	if (aliases == 0)
 		return (NULL);
-	for (ap = atab[hashalias(name)]; ap; ap = ap->next) {
+	for (ap = atab[ref_hashalias(name)]; ap; ap = ap->next) {
 		if (equal(name, ap->name)) {
 			if (check && (ap->flag & ALIASINUSE))
 				return (NULL);
@@ -1147,7 +899,7 @@ lookupalias(const char *name, int check)
 }
 
 int
-comparealiases(const void *p1, const void *p2)
+ref_comparealiases(const void *p1, const void *p2)
 {
 	const struct alias *const *a1 = p1;
 	const struct alias *const *a2 = p2;
@@ -1155,39 +907,8 @@ comparealiases(const void *p1, const void *p2)
 	return strcmp((*a1)->name, (*a2)->name);
 }
 
-void
-printalias(const struct alias *a)
-{
-	out1fmt("%s=", a->name);
-	out1qstr(a->val);
-	out1c('\n');
-}
-
-void
-printaliases(void)
-{
-	int i, j;
-	struct alias **sorted, *ap;
-
-	INTOFF;
-	sorted = ckmalloc(aliases * sizeof(*sorted));
-	j = 0;
-	for (i = 0; i < ATABSIZE; i++)
-		for (ap = atab[i]; ap; ap = ap->next)
-			if (*ap->name != '\0')
-				sorted[j++] = ap;
-	qsort(sorted, aliases, sizeof(*sorted), comparealiases);
-	for (i = 0; i < aliases; i++) {
-		printalias(sorted[i]);
-		if (int_pending())
-			break;
-	}
-	ckfree(sorted);
-	INTON;
-}
-
 size_t
-hashalias(const char *p)
+ref_hashalias(const char *p)
 {
 	unsigned int hashval;
 
@@ -1198,14 +919,14 @@ hashalias(const char *p)
 }
 
 const struct alias *
-iteralias(const struct alias *index)
+ref_iteralias(const struct alias *index)
 {
 	size_t i = 0;
 
 	if (index != NULL) {
 		if (index->next != NULL)
 			return (index->next);
-		i = hashalias(index->name) + 1;
+		i = ref_hashalias(index->name) + 1;
 	}
 	for (; i < ATABSIZE; i++)
 		if (atab[i] != NULL)
@@ -1214,290 +935,124 @@ iteralias(const struct alias *index)
 	return (NULL);
 }
 
-int
-aliascmd(int argc __unused, char **argv __unused)
+/* ================================================================== */
+/* Harness support probes.  These are not ports of anything; they only  */
+/* expose file-scope state so that the differential harness can compare */
+/* it.  No behaviour of the routines above depends on them.             */
+/* ================================================================== */
+
+void
+ref_set_suppressint(int v)
 {
-	char *n, *v;
-	int ret = 0;
-	struct alias *ap;
-
-	nextopt("");
-
-	if (*argptr == NULL) {
-		printaliases();
-		return (0);
-	}
-	while ((n = *argptr++) != NULL) {
-		if (n[0] == '\0') {
-			warning("'': not found");
-			ret = 1;
-			continue;
-		}
-		if ((v = strchr(n+1, '=')) == NULL) /* n+1: funny ksh stuff */
-			if ((ap = lookupalias(n, 0)) == NULL) {
-				warning("%s: not found", n);
-				ret = 1;
-			} else
-				printalias(ap);
-		else {
-			*v++ = '\0';
-			setalias(n, v);
-		}
-	}
-
-	return (ret);
+	suppressint = v;
 }
 
 int
-unaliascmd(int argc __unused, char **argv __unused)
+ref_get_suppressint(void)
 {
-	int i;
-
-	while ((i = nextopt("a")) != '\0') {
-		if (i == 'a') {
-			rmaliases();
-			return (0);
-		}
-	}
-	for (i = 0; *argptr; argptr++)
-		i |= unalias(*argptr);
-
-	return (i);
+	return suppressint;
 }
 
-/* ===================================================================== *
- * show.c (the trace routines; see skipped.txt for the rest)
- * ===================================================================== */
-
-FILE *tracefile;
-int debug = 0;
-
 void
-trputc(int c)
+ref_err_arm(int v)
 {
-	if (tracefile == NULL)
-		return;
-	putc(c, tracefile);
-	if (c == '\n')
-		fflush(tracefile);
+	err_armed = v;
 }
 
-
-void
-sh_trace(const char *fmt, ...)
+jmp_buf *
+ref_err_jmp(void)
 {
-	va_list va;
-	va_start(va, fmt);
-	if (tracefile != NULL) {
-		(void) vfprintf(tracefile, fmt, va);
-		if (strchr(fmt, '\n'))
-			(void) fflush(tracefile);
-	}
-	va_end(va);
+	return &err_jmp;
 }
 
-
 void
-trputs(const char *s)
-{
-	if (tracefile == NULL)
-		return;
-	fputs(s, tracefile);
-	if (strchr(s, '\n'))
-		fflush(tracefile);
-}
-
-
-void
-trstring(char *s)
-{
-	char *p;
-	char c;
-
-	if (tracefile == NULL)
-		return;
-	putc('"', tracefile);
-	for (p = s ; *p ; p++) {
-		switch (*p) {
-		case '\n':  c = 'n';  goto backslash;
-		case '\t':  c = 't';  goto backslash;
-		case '\r':  c = 'r';  goto backslash;
-		case '"':  c = '"';  goto backslash;
-		case '\\':  c = '\\';  goto backslash;
-		case CTLESC:  c = 'e';  goto backslash;
-		case CTLVAR:  c = 'v';  goto backslash;
-		case CTLVAR+CTLQUOTE:  c = 'V';  goto backslash;
-		case CTLBACKQ:  c = 'q';  goto backslash;
-		case CTLBACKQ+CTLQUOTE:  c = 'Q';  goto backslash;
-backslash:	  putc('\\', tracefile);
-			putc(c, tracefile);
-			break;
-		default:
-			if (*p >= ' ' && *p <= '~')
-				putc(*p, tracefile);
-			else {
-				putc('\\', tracefile);
-				putc(*p >> 6 & 03, tracefile);
-				putc(*p >> 3 & 07, tracefile);
-				putc(*p & 07, tracefile);
-			}
-			break;
-		}
-	}
-	putc('"', tracefile);
-}
-
-
-void
-trargs(char **ap)
-{
-	if (tracefile == NULL)
-		return;
-	while (*ap) {
-		trstring(*ap++);
-		if (*ap)
-			putc(' ', tracefile);
-		else
-			putc('\n', tracefile);
-	}
-	fflush(tracefile);
-}
-
-/* ===================================================================== *
- * Harness support and accessors for state that is file-static in the
- * originals.  These add no behaviour; they only let the harness observe
- * the oracle.
- * ===================================================================== */
-
-static struct output *saved_out1;
-
-void
-oracle_reset_state(void)
+ref_stack_probe(int *nleft, long *nxtoff, long *ssoff, int *depth)
 {
 	struct stack_block *sp;
-	int i;
+	int d = 0;
 
-	while (stackp != NULL) {
-		sp = stackp;
-		stackp = sp->prev;
-		free(sp);
-	}
-	stackp = NULL;
-	stacknxt = NULL;
-	stacknleft = 0;
-	sstrend = NULL;
-	suppressint = 0;
-	intpending = 0;
-	sh_err_thrown = 0;
-	sh_errjmp_set = 0;
-
-	if (output.buf != NULL) {
-		free(output.buf);
-		output.buf = NULL;
-	}
-	output.nextc = NULL;
-	output.bufend = NULL;
-	output.bufsize = OUTBUFSIZ;
-	output.fd = 1;
-	output.flags = 0;
-
-	if (errout.buf != NULL) {
-		free(errout.buf);
-		errout.buf = NULL;
-	}
-	errout.nextc = NULL;
-	errout.bufend = NULL;
-	errout.bufsize = 256;
-	errout.fd = 2;
-	errout.flags = 0;
-
-	if (memout.buf != NULL) {
-		free(memout.buf);
-		memout.buf = NULL;
-	}
-	memout.nextc = NULL;
-	memout.bufend = NULL;
-	memout.bufsize = 64;
-	memout.fd = MEM_OUT;
-	memout.flags = 0;
-
-	out1 = &output;
-	out2 = &errout;
-	saved_out1 = NULL;
-
-	INTOFF;
-	for (i = 0; i < ATABSIZE; i++) {
-		struct alias *ap;
-
-		while ((ap = atab[i]) != NULL) {
-			atab[i] = ap->next;
-			freealias(ap);
-		}
-	}
-	aliases = 0;
-	INTON;
-
-	oracle_nextopt_optptr = NULL;
-	oracle_argptr = NULL;
-	tracefile = NULL;
-	suppressint = 1;
-}
-
-void
-oracle_set_out1_memout(void)
-{
-	if (memout.buf != NULL) {
-		free(memout.buf);
-		memout.buf = NULL;
-	}
-	memout.nextc = NULL;
-	memout.bufend = NULL;
-	memout.bufsize = 64;
-	memout.fd = MEM_OUT;
-	memout.flags = 0;
-	saved_out1 = out1;
-	out1 = &memout;
-}
-
-void
-oracle_restore_out1(void)
-{
-	if (saved_out1 != NULL)
-		out1 = saved_out1;
-	else
-		out1 = &output;
-	saved_out1 = NULL;
-	if (memout.buf != NULL) {
-		free(memout.buf);
-		memout.buf = NULL;
-	}
-	memout.nextc = NULL;
-	memout.bufend = NULL;
-	memout.bufsize = 64;
-	memout.fd = MEM_OUT;
-	memout.flags = 0;
-}
-
-struct stack_block *
-ref_get_stackp(void)
-{
-	return (stackp);
-}
-
-struct stack_block *
-ref_stack_prev(struct stack_block *sp)
-{
-	return (sp->prev);
+	*nleft = stacknleft;
+	*nxtoff = stackp != NULL ? (long)(stacknxt - (char *)stackp) : -1L;
+	*ssoff = (long)(sstrend - stacknxt);
+	for (sp = stackp; sp != NULL; sp = sp->prev)
+		d++;
+	*depth = d;
 }
 
 char *
-ref_stack_space(struct stack_block *sp)
+ref_get_stacknxt(void)
 {
-	return (SPACE(sp));
+	return stacknxt;
+}
+
+char *
+ref_get_stackp(void)
+{
+	return (char *)stackp;
+}
+
+char *
+ref_get_sstrend(void)
+{
+	return sstrend;
 }
 
 int
-ref_atabsize(void)
+ref_get_stacknleft(void)
 {
-	return (ATABSIZE);
+	return stacknleft;
+}
+
+size_t
+ref_sizeof_stackmark(void)
+{
+	return sizeof(struct stackmark);
+}
+
+size_t
+ref_sizeof_alias(void)
+{
+	return sizeof(struct alias);
+}
+
+int
+ref_alias_count(void)
+{
+	return aliases;
+}
+
+struct alias *
+ref_atab_get(int i)
+{
+	return atab[i];
+}
+
+struct output *
+ref_var_output(void)
+{
+	return &output;
+}
+
+struct output *
+ref_var_errout(void)
+{
+	return &errout;
+}
+
+struct output *
+ref_var_memout(void)
+{
+	return &memout;
+}
+
+struct output **
+ref_var_out1(void)
+{
+	return &out1;
+}
+
+struct output **
+ref_var_out2(void)
+{
+	return &out2;
 }

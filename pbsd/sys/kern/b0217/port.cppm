@@ -8,6 +8,7 @@ module;
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
+#include <cerrno>
 
 export module pbsd.sys.kern.b0217;
 
@@ -27,7 +28,7 @@ namespace pbsd::sys_kern::b0217::detail {
 #define ENOENT 2
 #define EWOULDBLOCK 35
 #define LK_NOWAIT 0x0001
-#define PID_MAX 99999
+#define PID_MAX 4095
 #define STACK_MAX 18
 #define TS_ENTER 0
 #define TS_EXIT 1
@@ -141,6 +142,7 @@ inline unsigned long model_malloc_max = MODEL_ARENA;
 inline std::uint64_t model_cycle;
 inline int model_vget_error;
 inline int model_vget_enoent;
+inline int model_vget_enoent_once;
 inline int model_linker_fail;
 inline int model_linker_block;
 inline int model_sbuf_fail;
@@ -214,6 +216,11 @@ inline void rw_wlock(rwlock *rw) { rw->lk = -1; model_ev(13, 0, 0, 0, 0); }
 inline void rw_wunlock(rwlock *rw) { rw->lk = 0; model_ev(14, 0, 0, 0, 0); }
 inline vgetstate vget_prep(vnode *) { model_ev(20,0,0,0,0); return VGET_NONE; }
 inline int vget_finish(vnode *, int, vgetstate) {
+	if (model_vget_enoent_once > 0) {
+		model_vget_enoent_once--;
+		model_ev(21, ENOENT, 0, 0, 0);
+		return ENOENT;
+	}
 	if (model_vget_enoent) { model_ev(21, ENOENT, 0, 0, 0); return ENOENT; }
 	if (model_vget_error) { model_ev(21, model_vget_error, 0, 0, 0); return model_vget_error; }
 	model_ev(21, 0, 0, 0, 0); return 0;
@@ -298,6 +305,7 @@ inline void env_reset() {
 	model_log_n = 0; model_out_n = 0; model_out[0] = 0;
 	model_arena_off = 0; std::memset(model_arena, MODEL_GUARD, MODEL_ARENA);
 	model_malloc_fail = 0; model_vget_error = 0; model_vget_enoent = 0;
+	model_vget_enoent_once = 0;
 	model_linker_fail = 0; model_linker_block = 0; model_sbuf_fail = 0;
 	model_ktr_n = 0; model_cycle = 0;
 }
@@ -773,9 +781,12 @@ void
 tslog_reset(void)
 {
 	long i;
+	long old = nrecs;
 
 	nrecs = 0;
-	for (i = 0; i < (long)nitems(timestamps); i++) {
+	if (old > (long)nitems(timestamps))
+		old = (long)nitems(timestamps);
+	for (i = 0; i < old; i++) {
 		timestamps[i].td = NULL;
 		timestamps[i].type = 0;
 		timestamps[i].f = NULL;
@@ -1242,10 +1253,27 @@ stack_symbol_ddb(vm_offset_t pc, const char **name, long *offset)
 
 
 
+inline void reset_model() {
+	detail::env_reset();
+}
+
+inline void reset_vfs() {
+	detail::env_reset();
+	vfs_hashinit(nullptr);
+}
+
+inline void reset_tslog() {
+	tslog_reset();
+}
+
 inline void reset_all() {
 	detail::env_reset();
 	vfs_hashinit(nullptr);
 	tslog_reset();
+}
+
+inline void reset_light() {
+	detail::env_reset();
 }
 
 using mount = detail::mount;
@@ -1260,6 +1288,7 @@ using stack_sbuf_fmt = detail::stack_sbuf_fmt;
 
 inline void malloc_fail_at(int n) { detail::model_malloc_fail = n; }
 inline void set_vget_enoent(int v) { detail::model_vget_enoent = v; }
+inline void set_vget_enoent_once(int v) { detail::model_vget_enoent_once = v; }
 inline void set_vget_error(int v) { detail::model_vget_error = v; }
 inline void set_linker_fail(int v) { detail::model_linker_fail = v; }
 inline void set_linker_block(int v) { detail::model_linker_block = v; }
