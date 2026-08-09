@@ -14,7 +14,7 @@ function Wsl([string]$Script) {
 
 function Stop-PbsdServices {
     Write-Host "Stopping any running PBSD processes..." -ForegroundColor Yellow
-    Wsl 'pkill -9 -f pbsd_watchdog.sh 2>/dev/null; pkill -9 -f pbsd_driver.sh 2>/dev/null; pkill -9 -f "cursor-agent.*index.js" 2>/dev/null; sleep 1; echo stopped'
+    Wsl 'pkill -9 -f pbsd_watchdog.sh 2>/dev/null; pkill -9 -f pbsd_driver.sh 2>/dev/null; pkill -9 -f "python3 -u pbsd.py" 2>/dev/null; pkill -9 -f "cursor-agent.*index.js" 2>/dev/null; sleep 1; echo stopped'
 }
 
 function Deploy-WslScripts {
