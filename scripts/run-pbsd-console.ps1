@@ -24,14 +24,13 @@ function Stop-PbsdServices {
 }
 
 function Deploy-WslScripts {
-    $cmds = @(
-        'tr -d "\r" < /mnt/c/Users/odinl/AppData/Local/Temp/pbsd_run/pbsd_watchdog.sh > /home/odin/pbsd_watchdog.sh'
-        'tr -d "\r" < /mnt/c/Users/odinl/AppData/Local/Temp/pbsd_run/pbsd_driver.sh > /home/odin/pbsd_driver.sh'
-        'tr -d "\r" < /mnt/c/Users/odinl/AppData/Local/Temp/pbsd_run/push_github.sh > /home/odin/push_github.sh'
-        'tr -d "\r" < "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/pbsd.py" > /home/odin/pbsd/pbsd.py'
-        'chmod +x /home/odin/pbsd_watchdog.sh /home/odin/pbsd_driver.sh /home/odin/push_github.sh'
-    )
-    foreach ($c in $cmds) { Invoke-WslBash $c 30 }
+    $wsl = '\\wsl$\Ubuntu\home\odin'
+    $src = Join-Path $Repo 'scripts\wsl'
+    foreach ($f in @('pbsd_watchdog.sh', 'pbsd_driver.sh', 'push_github.sh', 'sync_cursor_auth.sh')) {
+        Copy-Item -Force (Join-Path $src $f) (Join-Path $wsl $f)
+    }
+    Copy-Item -Force (Join-Path $Repo 'pbsd.py') '\\wsl$\Ubuntu\home\odin\pbsd\pbsd.py'
+    Invoke-WslBash 'sed -i "s/\r$//" ~/pbsd_watchdog.sh ~/pbsd_driver.sh ~/push_github.sh ~/sync_cursor_auth.sh ~/pbsd/pbsd.py; chmod +x ~/pbsd_watchdog.sh ~/pbsd_driver.sh ~/push_github.sh ~/sync_cursor_auth.sh' 30
 }
 
 function Start-PbsdWatchdog {
@@ -40,7 +39,7 @@ function Start-PbsdWatchdog {
     $auth = Invoke-WslBash 'unset CURSOR_API_KEY; timeout 45 cursor-agent -p "Reply READY" --model composer-2.5 --output-format text 2>&1 | tail -1' 60
     Write-Host "  watchdog: $r" -ForegroundColor DarkGray
     if ($auth -notmatch 'READY') {
-        Write-Host "  WARNING: cursor-agent auth check failed — run: wsl -d Ubuntu, then cursor-agent login" -ForegroundColor Yellow
+        Write-Host "  WARNING: cursor-agent auth check failed - run: wsl -d Ubuntu, then cursor-agent login" -ForegroundColor Yellow
     } else {
         Write-Host "  cursor-agent auth: OK" -ForegroundColor DarkGray
     }
@@ -104,7 +103,7 @@ function Draw-Bar([double]$pct, [int]$width = 44) {
     $pct = [Math]::Max(0, [Math]::Min(100, $pct))
     $filled = [Math]::Round($width * $pct / 100)
     $empty = $width - $filled
-    return '[' + ('#' * $filled) + ('-' * $empty) + "] $([math]::Round($pct,1))%"
+    return '[' + ('#' * $filled) + ('-' * $empty) + (' ] {0:N1}%%' -f $pct)
 }
 
 function Show-Console($s, $proc, $batch, $logLines) {
@@ -119,18 +118,18 @@ function Show-Console($s, $proc, $batch, $logLines) {
     Write-Host "  Files  $($s.Verified) / $($s.TotalFiles)" -ForegroundColor White
     Write-Host "  $(Draw-Bar $filePct)" -ForegroundColor Green
     Write-Host ""
-    Write-Host "  Lines  $($s.Lines.ToString('N0')) / $($s.TotalLines.ToString('N0'))  ($([math]::Round($linePct,1))%)" -ForegroundColor White
+    Write-Host ("  Lines  {0:N0} / {1:N0}  ({2:N1}%%)" -f $s.Lines, $s.TotalLines, $linePct) -ForegroundColor White
     Write-Host "  $(Draw-Bar $linePct)" -ForegroundColor DarkGreen
     Write-Host ""
     Write-Host "  Metrics" -ForegroundColor Cyan
     Write-Host "    pending    $($s.Pending)    deferred $($s.Deferred)    need-you $($s.NeedYou)    skipped $($s.Skipped)"
-    Write-Host "    pass rate  $($s.PassRate)%"
+    Write-Host ("    pass rate  {0:N1}%%" -f $s.PassRate)
     Write-Host ""
     Write-Host "  Processes" -ForegroundColor Cyan
     Write-Host "    watchdog $($proc.Watchdog)   driver $($proc.Driver)   agents $($proc.Agents)   RAM $($proc.Mem)"
     if ($batch.Total -gt 0) {
         $bp = [math]::Round(100.0 * $batch.Done / $batch.Total, 1)
-        Write-Host "    round      [$($batch.Done)/$($batch.Total)]  ~$($batch.EtaHours)h left  ($bp%)" -ForegroundColor DarkCyan
+        Write-Host ("    round      [{0}/{1}]  ~{2}h left  ({3:N1}%%)" -f $batch.Done, $batch.Total, $batch.EtaHours, $bp) -ForegroundColor DarkCyan
     }
     Write-Host ""
     Write-Host "  Recent log" -ForegroundColor Cyan
