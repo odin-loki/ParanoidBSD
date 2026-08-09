@@ -1,8 +1,8 @@
 module;
 
 #include <cfenv>
-#include <cmath>
 #include <cfloat>
+#include <math.h>
 
 export module pbsd.lib.msun.src.b0305;
 

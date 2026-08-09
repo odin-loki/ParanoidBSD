@@ -571,43 +571,80 @@ test_semctl_random(void)
 
 /* ------------------------------------------------------------------ uexterr */
 
+struct UexterrRunOut {
+	int rv;
+	unsigned char bytes[GuardBuf::PRE + GuardBuf::WIN + GuardBuf::POST];
+};
+
+static int
+run_uexterr_isolated(int use_port, const ref_uexterror *rue,
+    const port::uexterror *ue, size_t bufsz, int issetugid,
+    const char *getenv_val, UexterrRunOut *out)
+{
+	GuardBuf g;
+	int fd[2];
+	pid_t pid;
+	int status;
+	ssize_t n;
+
+	if (pipe(fd) != 0)
+		return (-1);
+	pid = fork();
+	if (pid < 0) {
+		close(fd[0]);
+		close(fd[1]);
+		return (-1);
+	}
+	if (pid == 0) {
+		UexterrRunOut result;
+
+		close(fd[0]);
+		harness_set_issetugid(issetugid);
+		harness_set_getenv_value(getenv_val);
+		g.init();
+		g.win()[0] = '\0';
+		if (use_port)
+			result.rv = port::__uexterr_format(ue, g.win(), bufsz);
+		else
+			result.rv = ref___uexterr_format(rue, g.win(), bufsz);
+		std::memcpy(result.bytes, g.bytes, sizeof(result.bytes));
+		(void)write(fd[1], &result, sizeof(result));
+		close(fd[1]);
+		_exit(0);
+	}
+	close(fd[1]);
+	n = read(fd[0], out, sizeof(*out));
+	close(fd[0]);
+	waitpid(pid, &status, 0);
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0 ||
+	    n != (ssize_t)sizeof(*out))
+		return (-1);
+	return (0);
+}
+
 static void
 run_uexterr_case(const port::uexterror *ue, size_t bufsz, int issetugid,
     const char *getenv_val, const char *ctx)
 {
-	GuardBuf refg, portg;
 	ref_uexterror rue;
-	int ref_rv, port_rv;
-	pid_t pid;
-	int status;
+	UexterrRunOut ref_out, port_out;
 
+	ncases[F_UEXTERR_FORMAT]++;
 	copy_ue(ue, &rue);
-	refg.init();
-	portg.init();
-	refg.win()[0] = '\0';
-	portg.win()[0] = '\0';
 
-	pid = fork();
-	if (pid < 0) {
-		report(F_UEXTERR_FORMAT, ctx, "fork failed");
+	if (run_uexterr_isolated(0, &rue, ue, bufsz, issetugid, getenv_val,
+	    &ref_out) != 0) {
+		report(F_UEXTERR_FORMAT, ctx, "ref child failed");
 		return;
 	}
-	if (pid == 0) {
-		harness_set_issetugid(issetugid);
-		harness_set_getenv_value(getenv_val);
-		ref_rv = ref___uexterr_format(&rue, refg.win(), bufsz);
-		port_rv = port::__uexterr_format(ue, portg.win(), bufsz);
-		if (ref_rv != port_rv || !refg.identical(portg)) {
-			std::fprintf(stderr, "CTX %s rv %d/%d\nref=%s\nport=%s\n",
-			    ctx, ref_rv, port_rv, refg.win(), portg.win());
-			_exit(1);
-		}
-		_exit(0);
+	if (run_uexterr_isolated(1, &rue, ue, bufsz, issetugid, getenv_val,
+	    &port_out) != 0) {
+		report(F_UEXTERR_FORMAT, ctx, "port child failed");
+		return;
 	}
-	waitpid(pid, &status, 0);
-	ncases[F_UEXTERR_FORMAT]++;
-	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
-		report(F_UEXTERR_FORMAT, ctx, "child mismatch");
+	if (ref_out.rv != port_out.rv ||
+	    std::memcmp(ref_out.bytes, port_out.bytes, sizeof(ref_out.bytes)) != 0)
+		report(F_UEXTERR_FORMAT, ctx, "mismatch");
 }
 
 static void

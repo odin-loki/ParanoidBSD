@@ -1,8 +1,6 @@
 module;
 
-#include <cfloat>
 #include <complex>
-#include <cstdint>
 
 export module pbsd.lib.msun.src.b0303;
 
@@ -27,7 +25,7 @@ union IEEEd2bits {
 	} bits;
 };
 
-#if LDBL_MANT_DIG == 64
+#if defined(__LDBL_MANT_DIG__) && __LDBL_MANT_DIG__ == 64
 union IEEEl2bits {
 	long double	e;
 	struct {
@@ -44,7 +42,7 @@ union IEEEl2bits {
 		unsigned long	junk	:48;
 	} xbits;
 };
-#elif LDBL_MANT_DIG == 113
+#elif defined(__LDBL_MANT_DIG__) && __LDBL_MANT_DIG__ == 113
 union IEEEl2bits {
 	long double	e;
 	struct {
@@ -85,7 +83,7 @@ do {								\
 
 namespace pbsd::lib_msun_src::b0303 {
 
-using std::uint16_t;
+typedef unsigned short uint16_t;
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause
@@ -161,19 +159,19 @@ __signbitl(long double e)
  * Bruce D. Evans.
  */
 
-#if LDBL_MANT_DIG == 64
+#if defined(__LDBL_MANT_DIG__) && __LDBL_MANT_DIG__ == 64
 #define	EXP_TINY	-34
-#elif LDBL_MANT_DIG == 113
+#elif defined(__LDBL_MANT_DIG__) && __LDBL_MANT_DIG__ == 113
 #define	EXP_TINY	-58
 #else
 #error "Unsupported long double format"
 #endif
 
-#if LDBL_MAX_EXP != 0x4000
+#if !defined(__LDBL_MAX_EXP__) || __LDBL_MAX_EXP__ != 0x4000
 #error "Unsupported long double format"
 #endif
 
-#define	BIAS	(LDBL_MAX_EXP - 1)
+#define	BIAS	(__LDBL_MAX_EXP__ - 1)
 
 namespace {
 

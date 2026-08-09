@@ -344,7 +344,7 @@ fdgetc(struct fdctx *fdc, char *c)
 
 	if (&fdc->buf[fdc->off] == fdc->ep) {
 		nread = read(fdc->fd, fdc->buf, fdc->buflen);
-		if (nread > 0) {
+		if (nread <= 0) {
 			fdc->off = 0;
 			fdc->ep = fdc->buf + nread;
 		} else

@@ -11,6 +11,7 @@
 
 #include <errno.h>
 #include <limits.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -29,7 +30,6 @@
 #define __DTF_READALL	0x0008
 #define __DTF_SKIPREAD	0x0010
 
-struct pthread_mutex;
 struct _telldir;
 
 struct _dirdesc {
@@ -40,7 +40,7 @@ struct _dirdesc {
 	int		dd_len;
 	off_t		dd_seek;
 	int		dd_flags;
-	struct pthread_mutex *dd_lock;
+	pthread_mutex_t	dd_lock;
 	struct _telldir *dd_td;
 	void		*dd_compat_de;
 };
@@ -49,8 +49,8 @@ typedef struct _dirdesc DIR;
 
 extern int __isthreaded;
 extern int __libc_sigaction(int, const struct sigaction *, struct sigaction *);
-extern void _pthread_mutex_lock(struct pthread_mutex **);
-extern void _pthread_mutex_unlock(struct pthread_mutex **);
+extern void _pthread_mutex_lock(pthread_mutex_t *);
+extern void _pthread_mutex_unlock(pthread_mutex_t *);
 extern bool _filldir(DIR *, bool);
 extern void _reclaim_telldir(DIR *);
 extern off_t test_lseek(int, off_t, int);

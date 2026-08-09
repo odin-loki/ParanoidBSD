@@ -157,15 +157,15 @@ static void check_lrint(std::uint64_t xbits, int mode, int preset,
 	p = run<double, long>(port::lrint, x, mode, preset);
 	r = run<double, long>(ref_lrint, x, mode, preset);
 	if (p != r) {
-
-	st_lrint.fails++;
-	if (should_print(st_lrint)) {
-		std::printf("lrint FAIL [%s] x=%#018llx round=%d preset=0x%x\n",
-		    tag, (unsigned long long)xbits, mode, (unsigned)preset);
-		std::printf("  port: ret=%lld raised=0x%x round_after=%d\n",
-		    p.ret, (unsigned)p.raised, p.round_after);
-		std::printf("  ref : ret=%lld raised=0x%x round_after=%d\n",
-		    r.ret, (unsigned)r.raised, r.round_after);
+		st_lrint.fails++;
+		if (should_print(st_lrint)) {
+			std::printf("lrint FAIL [%s] x=%#018llx round=%d preset=0x%x\n",
+			    tag, (unsigned long long)xbits, mode, (unsigned)preset);
+			std::printf("  port: ret=%lld raised=0x%x round_after=%d\n",
+			    p.ret, (unsigned)p.raised, p.round_after);
+			std::printf("  ref : ret=%lld raised=0x%x round_after=%d\n",
+			    r.ret, (unsigned)r.raised, r.round_after);
+		}
 	}
 }
 

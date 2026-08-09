@@ -1067,10 +1067,15 @@ run_rem_tests(void)
 		std::snprintf(kb, sizeof(kb), "key%lu", (unsigned long)ln);
 		k.data = kb;
 		k.size = std::strlen(kb);
-		int wfd = stdout_fd ? STDOUT_FILENO : make_pipe_out();
-		sync_ref(ln, fl, wfd);
-		sync_port(ln, fl, wfd);
+		PipeEnds rpe = make_pipe();
+		PipeEnds ppe = make_pipe();
+		sync_ref(ln, fl, stdout_fd ? STDOUT_FILENO : rpe.wr);
+		sync_port(ln, fl, stdout_fd ? STDOUT_FILENO : ppe.wr);
 		if (ret == -1) {
+			close(rpe.rd);
+			close(rpe.wr);
+			close(ppe.rd);
+			close(ppe.wr);
 			ExitObs r = run_child([&] { ref_rem(&db, &k); });
 			ExitObs p = run_child([&] { P::rem(&db, &k); });
 			if (!exit_same(r, p))
@@ -1078,18 +1083,21 @@ run_rem_tests(void)
 			return;
 		}
 		if (!stdout_fd && ret == 1) {
-			std::string rs = capture_ofd_ref(wfd, [&] {
+			std::string rs = capture_pipe_ref(rpe, [&] {
 				ref_rem(&db, &k);
 			});
-			int wfd2 = make_pipe_out();
-			sync_ref(ln, fl, wfd2);
-			sync_port(ln, fl, wfd2);
-			std::string ps = capture_ofd_port(wfd2, [&] {
+			std::string ps = capture_pipe_port(ppe, [&] {
 				P::rem(&db, &k);
 			});
 			if (rs != ps)
 				fail(st_rem, "pipe");
 			return;
+		}
+		if (stdout_fd) {
+			close(rpe.rd);
+			close(rpe.wr);
+			close(ppe.rd);
+			close(ppe.wr);
 		}
 		if (ret == 0) {
 			ref_rem(&db, &k);
@@ -1169,10 +1177,15 @@ run_seq_tests(void)
 		std::snprintf(kb, sizeof(kb), "k%lu", (unsigned long)ln);
 		k.data = kb;
 		k.size = std::strlen(kb);
-		int wfd = stdout_fd ? STDOUT_FILENO : make_pipe_out();
-		sync_ref(ln, fl, wfd);
-		sync_port(ln, fl, wfd);
+		PipeEnds rpe = make_pipe();
+		PipeEnds ppe = make_pipe();
+		sync_ref(ln, fl, stdout_fd ? STDOUT_FILENO : rpe.wr);
+		sync_port(ln, fl, stdout_fd ? STDOUT_FILENO : ppe.wr);
 		if (ret == -1) {
+			close(rpe.rd);
+			close(rpe.wr);
+			close(ppe.rd);
+			close(ppe.wr);
 			ExitObs r = run_child([&] { ref_seq(&db, &k); });
 			ExitObs p = run_child([&] { P::seq(&db, &k); });
 			if (!exit_same(r, p))
@@ -1183,19 +1196,21 @@ run_seq_tests(void)
 		if (stdout_fd && ret == 0) {
 			rs = capture_stdout_ref([&] { ref_seq(&db, &k); });
 			ps = capture_stdout_port([&] { P::seq(&db, &k); });
+			close(rpe.rd);
+			close(rpe.wr);
+			close(ppe.rd);
+			close(ppe.wr);
 		} else if (ret == 0) {
-			rs = capture_ofd_ref(wfd, [&] { ref_seq(&db, &k); });
-			int w2 = make_pipe_out();
-			sync_ref(ln, fl, w2);
-			sync_port(ln, fl, w2);
-			ps = capture_ofd_port(w2, [&] { P::seq(&db, &k); });
+			rs = capture_pipe_ref(rpe, [&] { ref_seq(&db, &k); });
+			ps = capture_pipe_port(ppe, [&] { P::seq(&db, &k); });
 		} else if (!stdout_fd) {
-			rs = capture_ofd_ref(wfd, [&] { ref_seq(&db, &k); });
-			int w2 = make_pipe_out();
-			sync_ref(ln, fl, w2);
-			sync_port(ln, fl, w2);
-			ps = capture_ofd_port(w2, [&] { P::seq(&db, &k); });
+			rs = capture_pipe_ref(rpe, [&] { ref_seq(&db, &k); });
+			ps = capture_pipe_port(ppe, [&] { P::seq(&db, &k); });
 		} else {
+			close(rpe.rd);
+			close(rpe.wr);
+			close(ppe.rd);
+			close(ppe.wr);
 			ExitObs r = run_child([&] { ref_seq(&db, &k); });
 			ExitObs p = run_child([&] { P::seq(&db, &k); });
 			if (!exit_same(r, p))
@@ -1233,19 +1248,21 @@ run_dump_tests(void)
 		mock_seq_push(0, "bb", 2);
 		mock_seq_push(1, nullptr, 0);
 		DB db = make_db();
-		int wfd = stdout_fd ? STDOUT_FILENO : make_pipe_out();
-		sync_ref(8, 0, wfd);
-		sync_port(8, 0, wfd);
+		PipeEnds rpe = make_pipe();
+		PipeEnds ppe = make_pipe();
+		sync_ref(8, 0, stdout_fd ? STDOUT_FILENO : rpe.wr);
+		sync_port(8, 0, stdout_fd ? STDOUT_FILENO : ppe.wr);
 		std::string rs, ps;
 		if (stdout_fd) {
 			rs = capture_stdout_ref([&] { ref_dump(&db, rev); });
 			ps = capture_stdout_port([&] { P::dump(&db, rev); });
+			close(rpe.rd);
+			close(rpe.wr);
+			close(ppe.rd);
+			close(ppe.wr);
 		} else {
-			rs = capture_ofd_ref(wfd, [&] { ref_dump(&db, rev); });
-			int w2 = make_pipe_out();
-			sync_ref(8, 0, w2);
-			sync_port(8, 0, w2);
-			ps = capture_ofd_port(w2, [&] { P::dump(&db, rev); });
+			rs = capture_pipe_ref(rpe, [&] { ref_dump(&db, rev); });
+			ps = capture_pipe_port(ppe, [&] { P::dump(&db, rev); });
 		}
 		if (rs != ps)
 			fail(st_dump, "forward");
@@ -1275,19 +1292,21 @@ run_dump_tests(void)
 		DB db2 = make_db();
 		int rev = (int)(nextrand() & 1);
 		int sout = (int)(nextrand() & 1);
-		int wfd = sout ? STDOUT_FILENO : make_pipe_out();
-		sync_ref((u_long)i, 0, wfd);
-		sync_port((u_long)i, 0, wfd);
+		PipeEnds rpe = make_pipe();
+		PipeEnds ppe = make_pipe();
+		sync_ref((u_long)i, 0, sout ? STDOUT_FILENO : rpe.wr);
+		sync_port((u_long)i, 0, sout ? STDOUT_FILENO : ppe.wr);
 		std::string r, p;
 		if (sout) {
 			r = capture_stdout_ref([&] { ref_dump(&db2, rev); });
 			p = capture_stdout_port([&] { P::dump(&db2, rev); });
+			close(rpe.rd);
+			close(rpe.wr);
+			close(ppe.rd);
+			close(ppe.wr);
 		} else {
-			r = capture_ofd_ref(wfd, [&] { ref_dump(&db2, rev); });
-			int w2 = make_pipe_out();
-			sync_ref((u_long)i, 0, w2);
-			sync_port((u_long)i, 0, w2);
-			p = capture_ofd_port(w2, [&] { P::dump(&db2, rev); });
+			r = capture_pipe_ref(rpe, [&] { ref_dump(&db2, rev); });
+			p = capture_pipe_port(ppe, [&] { P::dump(&db2, rev); });
 		}
 		if (r != p)
 			fail(st_dump, "sweep");

@@ -1,9 +1,6 @@
 // Differential test for PBSD batch b0303 (__signbit, __signbitf, __signbitl,
 // atanhl, cproj).
 
-import pbsd.lib.msun.src.b0303;
-
-#include <bit>
 #include <cfloat>
 #include <climits>
 #include <complex>
@@ -11,6 +8,8 @@ import pbsd.lib.msun.src.b0303;
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+
+import pbsd.lib.msun.src.b0303;
 
 namespace port = pbsd::lib_msun_src::b0303;
 
@@ -70,22 +69,30 @@ static bool guarded_equal(const void *pa, const void *pb, std::size_t n)
 
 static std::uint32_t fbits(float f)
 {
-	return std::bit_cast<std::uint32_t>(f);
+	std::uint32_t u;
+	std::memcpy(&u, &f, sizeof(u));
+	return u;
 }
 
 static float fromfbits(std::uint32_t u)
 {
-	return std::bit_cast<float>(u);
+	float f;
+	std::memcpy(&f, &u, sizeof(f));
+	return f;
 }
 
 static std::uint64_t dbits(double d)
 {
-	return std::bit_cast<std::uint64_t>(d);
+	std::uint64_t u;
+	std::memcpy(&u, &d, sizeof(u));
+	return u;
 }
 
 static double fromdbits(std::uint64_t u)
 {
-	return std::bit_cast<double>(u);
+	double d;
+	std::memcpy(&d, &u, sizeof(d));
+	return d;
 }
 
 struct ldrep {

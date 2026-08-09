@@ -2,15 +2,16 @@
 
 import pbsd.lib.libc.gen.b0304;
 
+#include <cerrno>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
+#include <errno.h>
+#include <pthread.h>
 #include <signal.h>
 #include <unistd.h>
-
-struct pthread_mutex;
 
 namespace P = pbsd::lib_libc_gen::b0304;
 
@@ -86,14 +87,14 @@ static long g_lock_calls;
 static long g_unlock_calls;
 
 extern "C" void
-_pthread_mutex_lock(struct pthread_mutex **m)
+_pthread_mutex_lock(pthread_mutex_t *m)
 {
 	(void)m;
 	g_lock_calls++;
 }
 
 extern "C" void
-_pthread_mutex_unlock(struct pthread_mutex **m)
+_pthread_mutex_unlock(pthread_mutex_t *m)
 {
 	(void)m;
 	g_unlock_calls++;
@@ -122,7 +123,7 @@ static long g_filldir_calls;
 static int g_filldir_arg;
 
 extern "C" bool
-_filldir(P::DIR *dirp, bool use_current_pos)
+_filldir(void *dirp, bool use_current_pos)
 {
 	(void)dirp;
 	g_filldir_calls++;
@@ -133,7 +134,7 @@ _filldir(P::DIR *dirp, bool use_current_pos)
 static long g_reclaim_calls;
 
 extern "C" void
-_reclaim_telldir(P::DIR *dirp)
+_reclaim_telldir(void *dirp)
 {
 	(void)dirp;
 	g_reclaim_calls++;
@@ -399,7 +400,7 @@ init_test_dir(test_dir &td, int fd, std::size_t loc, off_t seek, int flags)
 	td.dir.dd_loc = loc;
 	td.dir.dd_seek = seek;
 	td.dir.dd_flags = flags;
-	td.dir.dd_lock = nullptr;
+	pthread_mutex_init(&td.dir.dd_lock, nullptr);
 }
 
 static void
