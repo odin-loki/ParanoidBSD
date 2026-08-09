@@ -1174,7 +1174,7 @@ test_parse_output_hand()
 	const char *basic[] = {
 		"NCMD cmdnode",
 		" NCMDargv nodeptr",
-		" NPIPE pipenode",
+		"NPIPE pipenode",
 		" NPPIPE nodelist",
 		nullptr,
 	};

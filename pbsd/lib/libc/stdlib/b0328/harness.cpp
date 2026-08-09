@@ -684,7 +684,7 @@ test_getopt_sweep(void)
 	}
 }
 
-enum { MAX_KEYS = 64, KEYLEN = 32, MAX_SLOTS = 128 };
+enum { MAX_KEYS = 64, KEYLEN = 32 };
 
 struct HTab {
 	ref___hsearch ref_hs;

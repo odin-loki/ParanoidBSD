@@ -1,0 +1,1 @@
+tls.c: depends on rtld.h, ELF aux vectors, jemalloc bootstrap allocators, and architecture-specific TLS variant code not isolatable for differential testing on this host.

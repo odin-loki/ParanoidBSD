@@ -1,6 +1,8 @@
 module;
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 
 #include <cerrno>
 #include <climits>
@@ -26,6 +28,23 @@ module;
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * CHAR_BIT)
+#endif
+
+#ifndef AT_EXECPATH
+#define AT_EXECPATH 15
+#endif
+
+#ifndef Elf_Addr
+#define Elf_Addr Elf64_Addr
+#endif
+#ifndef Elf_Phdr
+#define Elf_Phdr Elf64_Phdr
+#endif
+#ifndef Elf_Half
+#define Elf_Half Elf64_Half
+#endif
+#ifndef Elf_Word
+#define Elf_Word Elf64_Word
 #endif
 
 export module pbsd.lib.libc.gen.b0333;
@@ -73,6 +92,12 @@ typedef struct {
 		void	*a_ptr;
 	} a_un;
 } Elf_Auxinfo;
+
+struct __dlfunc_arg {
+	int	__dlfunc_dummy;
+};
+
+typedef void (*dlfunc_t)(struct __dlfunc_arg);
 
 } // namespace pbsd::lib_libc_gen::b0333
 
@@ -478,7 +503,7 @@ _rtld_addr_phdr_cb(struct dl_phdr_info *dli, size_t sz, void *arg)
 	const Elf_Phdr *ph;
 	unsigned i;
 
-	rd = arg;
+	rd = (struct _rtld_addr_phdr_cb_data *)arg;
 	for (i = 0; i < dli->dlpi_phnum; i++) {
 		ph = &dli->dlpi_phdr[i];
 		if (ph->p_type == PT_LOAD &&
@@ -500,7 +525,8 @@ __rtld_addr_phdr(const void *addr __unused,
 
 	rd.addr = addr;
 	rd.dli = phdr_info_a;
-	return (dl_iterate_phdr(_rtld_addr_phdr_cb, &rd));
+	return (pbsd::lib_libc_gen::b0333::dl_iterate_phdr(_rtld_addr_phdr_cb,
+	    &rd));
 }
 
 int
@@ -574,7 +600,7 @@ execl(const char *name, const char *arg, ...)
 	while (va_arg(ap, char *) != NULL)
 		n++;
 	va_end(ap);
-	argv = alloca((n + 1) * sizeof(*argv));
+	argv = (const char **)alloca((n + 1) * sizeof(*argv));
 	if (argv == NULL) {
 		errno = ENOMEM;
 		return (-1);
@@ -601,7 +627,7 @@ execle(const char *name, const char *arg, ...)
 	while (va_arg(ap, char *) != NULL)
 		n++;
 	va_end(ap);
-	argv = alloca((n + 1) * sizeof(*argv));
+	argv = (const char **)alloca((n + 1) * sizeof(*argv));
 	if (argv == NULL) {
 		errno = ENOMEM;
 		return (-1);
@@ -628,7 +654,7 @@ execlp(const char *name, const char *arg, ...)
 	while (va_arg(ap, char *) != NULL)
 		n++;
 	va_end(ap);
-	argv = alloca((n + 1) * sizeof(*argv));
+	argv = (const char **)alloca((n + 1) * sizeof(*argv));
 	if (argv == NULL) {
 		errno = ENOMEM;
 		return (-1);
@@ -674,7 +700,7 @@ execvPe_prog(const char *path, char * const *argv, char * const *envp)
 		for (cnt = 0; argv[cnt] != NULL; ++cnt)
 			;
 
-		memp = alloca(MAX(3, cnt + 2) * sizeof(char *));
+		memp = (const char **)alloca(MAX(3, cnt + 2) * sizeof(char *));
 		assert(memp != NULL);
 		if (cnt > 0) {
 			memp[0] = argv[0];

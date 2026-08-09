@@ -458,11 +458,11 @@ struct velisthead varlist = STAILQ_HEAD_INITIALIZER(varlist);
 static struct velisthead Ovarlist = STAILQ_HEAD_INITIALIZER(Ovarlist);
 
 static kvm_t	*kd;
-static int	 needcomm;	/* -o "command" */
-static int	 needenv;	/* -e */
-static int	 needuser;	/* -o "user" */
-static int	 optfatal;	/* Fatal error parsing some list-option. */
-static int	 pid_max;	/* kern.pid_max */
+int	 needcomm;	/* -o "command" */
+int	 needenv;	/* -e */
+int	 needuser;	/* -o "user" */
+int	 optfatal;	/* Fatal error parsing some list-option. */
+int	 pid_max;	/* kern.pid_max */
 
 enum sortby_e { DEFAULT, SORTMEM, SORTCPU }; static sortby_e sortby = DEFAULT;
 
@@ -485,27 +485,27 @@ struct listinfo {
 	} l;
 };
 
-static int	 addelem_gid(struct listinfo *, const char *);
-static int	 addelem_jid(struct listinfo *, const char *);
-static int	 addelem_pid(struct listinfo *, const char *);
-static int	 addelem_tty(struct listinfo *, const char *);
-static int	 addelem_uid(struct listinfo *, const char *);
-static void	 add_list(struct listinfo *, const char *);
-static void	 descendant_sort(KINFO *, int);
-static void	 format_output(KINFO *);
-static void	*expand_list(struct listinfo *);
-static const char *
+int	 addelem_gid(struct listinfo *, const char *);
+int	 addelem_jid(struct listinfo *, const char *);
+int	 addelem_pid(struct listinfo *, const char *);
+int	 addelem_tty(struct listinfo *, const char *);
+int	 addelem_uid(struct listinfo *, const char *);
+void	 add_list(struct listinfo *, const char *);
+void	 descendant_sort(KINFO *, int);
+void	 format_output(KINFO *);
+void	*expand_list(struct listinfo *);
+const char *
 		 fmt(char **(*)(kvm_t *, const struct kinfo_proc *, int),
 		    KINFO *, char *, char *, int);
-static void	 free_list(struct listinfo *);
-static void	 init_list(struct listinfo *, addelem_rtn, int, const char *);
+void	 free_list(struct listinfo *);
+void	 init_list(struct listinfo *, addelem_rtn, int, const char *);
 static char	*kludge_oldps_options(const char *, char *, const char *);
-static int	 pscomp(const void *, const void *);
-static void	 saveuser(KINFO *);
-static void	 scan_vars(struct keyword_info *);
-static void	 remove_redundant_columns(struct keyword_info *);
-static void	 pidmax_init(void);
-static void	 usage(void);
+int	 pscomp(const void *, const void *);
+void	 saveuser(KINFO *);
+void	 scan_vars(struct keyword_info *);
+void	 remove_redundant_columns(struct keyword_info *);
+void	 pidmax_init(void);
+void	 usage(void);
 
 static const char dfmt[] = "pid,tt,state,time,command";
 static const char jfmt[] = "user,pid,ppid,pgid,sid,jobc,state,tt,time,command";
@@ -1162,7 +1162,7 @@ main(int argc, char *argv[])
 	exit(eval);
 }
 
-static int
+int
 addelem_gid(struct listinfo *inf, const char *elem)
 {
 	struct group *grp;
@@ -1209,7 +1209,7 @@ addelem_gid(struct listinfo *inf, const char *elem)
 	return (1);
 }
 
-static int
+int
 addelem_jid(struct listinfo *inf, const char *elem)
 {
 	int tempid;
@@ -1233,7 +1233,7 @@ addelem_jid(struct listinfo *inf, const char *elem)
 	return (1);
 }
 
-static int
+int
 addelem_pid(struct listinfo *inf, const char *elem)
 {
 	char *endp;
@@ -1271,7 +1271,7 @@ addelem_pid(struct listinfo *inf, const char *elem)
  *     3) two-letters, e.g.:         p0         co		0
  *        (matching letters that would be seen in the "TT" column)
  */
-static int
+int
 addelem_tty(struct listinfo *inf, const char *elem)
 {
 	const char *ttypath;
@@ -1345,7 +1345,7 @@ addelem_tty(struct listinfo *inf, const char *elem)
 	return (1);
 }
 
-static int
+int
 addelem_uid(struct listinfo *inf, const char *elem)
 {
 	struct passwd *pwd;
@@ -1390,7 +1390,7 @@ addelem_uid(struct listinfo *inf, const char *elem)
 	return (1);
 }
 
-static void
+void
 add_list(struct listinfo *inf, const char *argp)
 {
 	const char *savep;
@@ -1448,7 +1448,7 @@ add_list(struct listinfo *inf, const char *argp)
 	}
 }
 
-static void
+void
 descendant_sort(KINFO *ki, int items)
 {
 	int dst, lvl, maxlvl, n, ndst, nsrc, siblings, src;
@@ -1556,7 +1556,7 @@ descendant_sort(KINFO *ki, int items)
 	free(path);
 }
 
-static void *
+void *
 expand_list(struct listinfo *inf)
 {
 	void *newlist;
@@ -1574,7 +1574,7 @@ expand_list(struct listinfo *inf)
 	return (newlist);
 }
 
-static void
+void
 free_list(struct listinfo *inf)
 {
 
@@ -1586,7 +1586,7 @@ free_list(struct listinfo *inf)
 	inf->l.ptr = NULL;
 }
 
-static void
+void
 init_list(struct listinfo *inf, addelem_rtn artn, int elemsize,
     const char *lname)
 {
@@ -1610,7 +1610,7 @@ find_varentry(const char *name)
 	return NULL;
 }
 
-static void
+void
 scan_vars(struct keyword_info *const keywords_info)
 {
 	struct varent *vent;
@@ -1635,7 +1635,7 @@ scan_vars(struct keyword_info *const keywords_info)
  * only (with the reasoning that columns requested first are the most
  * important as their positions catch the eye more).
  */
-static void
+void
 remove_redundant_columns(struct keyword_info *const keywords_info)
 {
 	struct varent *prev_vent, *vent, *next_vent;
@@ -1666,7 +1666,7 @@ remove_redundant_columns(struct keyword_info *const keywords_info)
 	}
 }
 
-static void
+void
 format_output(KINFO *ki)
 {
 	struct varent *vent;
@@ -1693,7 +1693,7 @@ format_output(KINFO *ki)
 	}
 }
 
-static const char *
+const char *
 fmt(char **(*fn)(kvm_t *, const struct kinfo_proc *, int), KINFO *ki,
     char *comm, char *thread, int maxlen)
 {
@@ -1704,7 +1704,7 @@ fmt(char **(*fn)(kvm_t *, const struct kinfo_proc *, int), KINFO *ki,
 	return (s);
 }
 
-static void
+void
 saveuser(KINFO *ki)
 {
 	char tdname[COMMLEN + 1];
@@ -1744,7 +1744,7 @@ saveuser(KINFO *ki)
 		return (((a)->field < (b)->field) ? -1 : 1);	\
 } while (0)
 
-static int
+int
 pscomp(const void *a, const void *b)
 {
 	const KINFO *ka, *kb;
@@ -1786,7 +1786,7 @@ pscomp(const void *a, const void *b)
  * tty, is only supported if argv[1] doesn't begin with a '-'.  This same
  * feature is available with the option 'T', which takes no argument.
  */
-static char *
+char *
 kludge_oldps_options(const char *optlist, char *origval, const char *nextarg)
 {
 	size_t len;
@@ -1875,7 +1875,7 @@ kludge_oldps_options(const char *optlist, char *origval, const char *nextarg)
 	return (newopts);
 }
 
-static void
+void
 pidmax_init(void)
 {
 	size_t intsize;
@@ -1887,7 +1887,7 @@ pidmax_init(void)
 	}
 }
 
-static void __dead2
+void __dead2
 usage(void)
 {
 #define	SINGLE_OPTS	"[-aCcdeHhjlmrSTuvwXxZ]"

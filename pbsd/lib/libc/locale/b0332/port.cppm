@@ -17,6 +17,36 @@ module;
 export module pbsd.lib.libc.locale.b0332;
 
 
+#define _CACHED_RUNES (1 << 8)
+#define _RUNE_MAGIC_1 "RuneMagi"
+#define _FILE_RUNE_MAGIC_1 "RuneMag1"
+#define ENCODING_LEN 31
+#define CATEGORY_LEN 11
+#define XLOCALE_DEF_VERSION_LEN 12
+#define _LDP_LOADED 0
+#define _LDP_ERROR (-1)
+#define _LDP_CACHE 1
+#define LC_ALL 0
+#define LC_COLLATE 1
+#define LC_CTYPE 2
+#define LC_MONETARY 3
+#define LC_NUMERIC 4
+#define LC_TIME 5
+#define LC_MESSAGES 6
+#define _LC_LAST 7
+#define LC_COLLATE_MASK (1<<0)
+#define LC_CTYPE_MASK (1<<1)
+#define LC_MONETARY_MASK (1<<2)
+#define LC_NUMERIC_MASK (1<<3)
+#define LC_TIME_MASK (1<<4)
+#define LC_MESSAGES_MASK (1<<5)
+#define LC_ALL_MASK (LC_COLLATE_MASK|LC_CTYPE_MASK|LC_MESSAGES_MASK|LC_MONETARY_MASK|LC_NUMERIC_MASK|LC_TIME_MASK)
+#define LC_VERSION_MASK (1<<6)
+#define LC_GLOBAL_LOCALE ((pbsd_locale_t)-1)
+#define _PATH_LOCALE "/usr/share/locale"
+#define locale_t pbsd_locale_t
+
+
 extern "C" {
 typedef int32_t __rune_t;
 typedef __rune_t __ct_rune_t;
@@ -172,11 +202,51 @@ struct xlocale_monetary {
 		(offsetof(struct lc_monetary_T, int_p_cs_precedes) / \
 		    sizeof(char *))
 
-static inline void
-__atomic_store_n(volatile int *p, int v, __ATOMIC_RELEASE)
-{
-	__atomic_store_n(p, v, __ATOMIC_RELEASE, __ATOMIC_RELEASE);
-}
+typedef struct {
+	int		ret;
+	int		using_locale;
+	int		fail_malloc;
+	int		line_count;
+	const char	**lines;
+	const char	*grouping_out;
+} pbsd_part_load_hook_t;
+
+typedef struct {
+	int		open_fail;
+	int		open_errno;
+	int		fstat_fail;
+	int		fstat_errno;
+	off_t		file_size;
+	const void	*file_data;
+	int		mmap_fail;
+	void		*mmap_addr;
+	int		malloc_fail;
+	int		close_count;
+} pbsd_rune_hook_t;
+
+typedef struct {
+	int		ctype_ret;
+	int		collate_ret;
+	int		time_ret;
+	int		numeric_ret;
+	int		monetary_ret;
+	int		messages_ret;
+	int		detect_ret;
+	int		detect_errno;
+	char		*path_locale_dup;
+	int		dup_fail;
+	int		path_too_long;
+} pbsd_setlocale_hook_t;
+
+typedef struct {
+	int		collate_fail;
+	int		ctype_fail;
+	int		monetary_fail;
+	int		numeric_fail;
+	int		time_fail;
+	int		messages_fail;
+	unsigned int	call_idx;
+} pbsd_ctor_hook_t;
 
 static inline long
 port_atomic_fetchadd_long(volatile long *p, long v)
@@ -218,21 +288,6 @@ void *__time_load(const char *, pbsd_locale_t);
 void *__messages_load(const char *, pbsd_locale_t);
 int _once(pthread_once_t *, void (*)(void));
 char *secure_getenv(const char *);
-
-/* port-side globals */
-extern struct xlocale_component port_global_collate;
-extern struct xlocale_component port_global_ctype;
-extern struct xlocale_component port_global_numeric;
-extern struct xlocale_component port_global_time;
-extern struct xlocale_component port_global_messages;
-extern struct xlocale_component port_C_collate;
-extern struct xlocale_component port_C_ctype;
-extern struct xlocale_monetary port_global_monetary;
-extern struct _xlocale port_global_locale;
-extern struct _xlocale port_C_locale;
-extern char *port_PathLocale;
-extern int port_has_thread_locale;
-extern _Thread_local pbsd_locale_t port_thread_locale;
 }
 
 struct xlocale_component port_global_collate = {{0, NULL}, "C", "BSD 1.0\n"};
@@ -243,12 +298,14 @@ struct xlocale_component port_global_messages = {{0, NULL}, "C", "BSD 1.0\n"};
 struct xlocale_component port_C_collate = {{0, NULL}, "C", ""};
 struct xlocale_component port_C_ctype = {{0, NULL}, "C", ""};
 struct xlocale_monetary port_global_monetary;
+struct _xlocale port_global_locale;
+struct _xlocale port_C_locale;
 char *port_PathLocale = NULL;
 int port_has_thread_locale = 0;
-_Thread_local pbsd_locale_t port_thread_locale = NULL;
+thread_local pbsd_locale_t port_thread_locale = NULL;
 
 static inline void
-port_atomic_add_long(volatile long *p, long v)
+port_atomic_add_long_once(volatile long *p, long v)
 {
 	__atomic_fetch_add(p, v, __ATOMIC_SEQ_CST);
 }
@@ -404,39 +461,41 @@ monetary_load_locale_l(struct xlocale_monetary *loc, int *using_locale,
 		l->mon_grouping =
 		     __fix_locale_grouping_str(l->mon_grouping);
 
-			     cnv(l->NAME))
-
-		M_ASSIGN_CHAR(int_frac_digits);
-		M_ASSIGN_CHAR(frac_digits);
-		M_ASSIGN_CHAR(p_cs_precedes);
-		M_ASSIGN_CHAR(p_sep_by_space);
-		M_ASSIGN_CHAR(n_cs_precedes);
-		M_ASSIGN_CHAR(n_sep_by_space);
-		M_ASSIGN_CHAR(p_sign_posn);
-		M_ASSIGN_CHAR(n_sign_posn);
-
-		/*
-		 * The six additional C99 international monetary formatting
-		 * parameters default to the national parameters when
-		 * reading FreeBSD LC_MONETARY data files.
-		 */
-		do {							\
-			if (l->int_##NAME == NULL)	\
-				l->int_##NAME =		\
-				    l->NAME;		\
-			else						\
-				M_ASSIGN_CHAR(int_##NAME);		\
-		} while (0)
-
-		M_ASSIGN_ICHAR(p_cs_precedes);
-		M_ASSIGN_ICHAR(n_cs_precedes);
-		M_ASSIGN_ICHAR(p_sep_by_space);
-		M_ASSIGN_ICHAR(n_sep_by_space);
-		M_ASSIGN_ICHAR(p_sign_posn);
-		M_ASSIGN_ICHAR(n_sign_posn);
+		((char *)l->int_frac_digits)[0] = cnv(l->int_frac_digits);
+		((char *)l->frac_digits)[0] = cnv(l->frac_digits);
+		((char *)l->p_cs_precedes)[0] = cnv(l->p_cs_precedes);
+		((char *)l->p_sep_by_space)[0] = cnv(l->p_sep_by_space);
+		((char *)l->n_cs_precedes)[0] = cnv(l->n_cs_precedes);
+		((char *)l->n_sep_by_space)[0] = cnv(l->n_sep_by_space);
+		((char *)l->p_sign_posn)[0] = cnv(l->p_sign_posn);
+		((char *)l->n_sign_posn)[0] = cnv(l->n_sign_posn);
+		if (l->int_p_cs_precedes == NULL)
+			l->int_p_cs_precedes = l->p_cs_precedes;
+		else
+			((char *)l->int_p_cs_precedes)[0] = cnv(l->int_p_cs_precedes);
+		if (l->int_n_cs_precedes == NULL)
+			l->int_n_cs_precedes = l->n_cs_precedes;
+		else
+			((char *)l->int_n_cs_precedes)[0] = cnv(l->int_n_cs_precedes);
+		if (l->int_p_sep_by_space == NULL)
+			l->int_p_sep_by_space = l->p_sep_by_space;
+		else
+			((char *)l->int_p_sep_by_space)[0] = cnv(l->int_p_sep_by_space);
+		if (l->int_n_sep_by_space == NULL)
+			l->int_n_sep_by_space = l->n_sep_by_space;
+		else
+			((char *)l->int_n_sep_by_space)[0] = cnv(l->int_n_sep_by_space);
+		if (l->int_p_sign_posn == NULL)
+			l->int_p_sign_posn = l->p_sign_posn;
+		else
+			((char *)l->int_p_sign_posn)[0] = cnv(l->int_p_sign_posn);
+		if (l->int_n_sign_posn == NULL)
+			l->int_n_sign_posn = l->n_sign_posn;
+		else
+			((char *)l->int_n_sign_posn)[0] = cnv(l->int_n_sign_posn);
 	}
 	if (ret != _LDP_ERROR)
-		__atomic_store_n(changed, 1, __ATOMIC_RELEASE, __ATOMIC_RELEASE);
+		__atomic_store_n(changed, 1, __ATOMIC_RELEASE);
 	return (ret);
 }
 
@@ -476,6 +535,9 @@ __get_current_monetary_locale(locale_t loc)
 
 
 /* from rune.c */
+#define mmap pbsd_mmap
+#define munmap pbsd_munmap
+
 
 
 /*-

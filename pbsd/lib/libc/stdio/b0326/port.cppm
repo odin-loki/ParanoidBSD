@@ -25,7 +25,7 @@ module;
 #include <cinttypes>
 #include <cstdbool>
 #include <cstddef>
-#include <cstdint>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -315,7 +315,7 @@ __smakebuf(FILE *fp)
 int
 __swhatbuf(FILE *fp, size_t *bufsize, int *couldbetty)
 {
-	struct stat st;
+	alignas(16) struct stat st;
 
 	if (fp->_file < 0 || _fstat(fp->_file, &st) < 0) {
 		*couldbetty = 0;
@@ -677,6 +677,17 @@ _ftello(FILE *fp, fpos_t *offset)
 	}
 	*offset = pos;
 	return (0);
+}
+
+int
+b0326_test_fstat_blksize(void)
+{
+	struct stat st;
+
+	memset(&st, 0, sizeof(st));
+	if (_fstat(3, &st) < 0)
+		return (-1);
+	return ((int)st.st_blksize);
 }
 
 } /* namespace pbsd::lib_libc_stdio::b0326 */

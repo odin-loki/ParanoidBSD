@@ -1,0 +1,13 @@
+{
+  "batch": "b0328",
+  "verified": "2026-08-09T03:06:49Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 6/6: strtoull_l, strtoull, _getprogname, getopt)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction          cases failures\nstrtoull_l       186603        0\nstrtoull         175096        0\ngetopt           701143        0\nhsearch_r       2505340        0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/strtoull.c": "a408bec5f8a7e092",
+    "hbsd/src/lib/libc/stdlib/getopt.c": "af9d1aff05b9a9f3",
+    "hbsd/src/lib/libc/stdlib/system.c": "32234b5fb38d8c2a",
+    "hbsd/src/lib/libc/stdlib/hsearch_r.c": "82c34eafde2977be"
+  }
+}
