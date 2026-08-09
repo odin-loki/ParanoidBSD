@@ -45,6 +45,14 @@
  * tearing down the process.
  */
 
+/*
+ * -std=c11 hides strsep(3), strdup(3), getsid(2), fileno(3) and S_IFCHR
+ * behind the feature-test macros; the BSD original compiles with them all
+ * visible.  The C++ front end enables _GNU_SOURCE by default, so this keeps
+ * the two translation units on identical declarations.
+ */
+#define	_GNU_SOURCE	1
+
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/stat.h>
