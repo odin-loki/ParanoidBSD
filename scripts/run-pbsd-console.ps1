@@ -30,6 +30,10 @@ function Deploy-WslScripts {
         Copy-Item -Force (Join-Path $src $f) (Join-Path $wsl $f)
     }
     Copy-Item -Force (Join-Path $Repo 'pbsd.py') '\\wsl$\Ubuntu\home\odin\pbsd\pbsd.py'
+    $ok = Invoke-WslBash 'python3 -m py_compile ~/pbsd/pbsd.py && echo ok' 30
+    if ($ok -ne 'ok') {
+        Write-Host '  WARNING: pbsd.py failed syntax check after deploy' -ForegroundColor Yellow
+    }
     Invoke-WslBash 'sed -i "s/\r$//" ~/pbsd_watchdog.sh ~/pbsd_driver.sh ~/push_github.sh ~/sync_cursor_auth.sh ~/pbsd/pbsd.py; chmod +x ~/pbsd_watchdog.sh ~/pbsd_driver.sh ~/push_github.sh ~/sync_cursor_auth.sh' 30
 }
 
@@ -149,12 +153,30 @@ if ($arg -eq 'stop') {
     exit 0
 }
 
+$mutex = New-Object System.Threading.Mutex($false, 'Global\PbsdMigrationConsole')
+if (-not $mutex.WaitOne(0, $false)) {
+    Write-Host 'PBSD console is already open.' -ForegroundColor Yellow
+    exit 0
+}
+
 Clear-Host
 Write-Host "PBSD Migration Console" -ForegroundColor Cyan
 Write-Host ""
 
-if ($arg -eq 'attach') {
-    Write-Host "Attached (no restart)." -ForegroundColor Cyan
+$alreadyRunning = @(
+    (Invoke-WslBash 'pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo on || echo off' 10).Trim()
+    (Invoke-WslBash 'pgrep -f /home/odin/pbsd_driver.sh >/dev/null && echo on || echo off' 10).Trim()
+) -contains 'on'
+
+if ($arg -eq 'attach' -or ($arg -ne 'restart' -and $alreadyRunning)) {
+    if ($alreadyRunning) {
+        Write-Host "Attached to running driver (no restart)." -ForegroundColor Cyan
+    } else {
+        Write-Host "Nothing running — starting driver..." -ForegroundColor Yellow
+        Deploy-WslScripts
+        Start-PbsdWatchdog
+        Start-Sleep -Seconds 4
+    }
 } else {
     Stop-PbsdServices
     Deploy-WslScripts

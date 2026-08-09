@@ -19,8 +19,18 @@ push_if_needed() {
 
 start_driver() {
   bash "$HOME/sync_cursor_auth.sh" 2>/dev/null || true
-  cp -f "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/pbsd.py" ~/pbsd/pbsd.py 2>/dev/null
-  sed -i 's/\r$//' ~/pbsd/pbsd.py 2>/dev/null
+  src="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/pbsd.py"
+  tmp="$(mktemp)"
+  if [ -f "$src" ]; then
+    cp -f "$src" "$tmp"
+    sed -i 's/\r$//' "$tmp"
+    if python3 -m py_compile "$tmp" 2>/dev/null; then
+      mv "$tmp" ~/pbsd/pbsd.py
+    else
+      log "pbsd.py from Windows failed py_compile — keeping existing ~/pbsd/pbsd.py"
+      rm -f "$tmp"
+    fi
+  fi
   if [ -n "${RESTART_FORCE:-}" ]; then
     pkill -f 'cursor-agent.*index.js -p' 2>/dev/null || true
   fi
