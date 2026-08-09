@@ -1,0 +1,11 @@
+{
+  "batch": "b0306",
+  "verified": "2026-08-09T02:32:39Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\nasinl               51463            0\nasinf               53767            0\n------------ ------------ ------------\nTOTAL              105230            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/e_asinl.c": "ce24d2e21bc719fa",
+    "hbsd/src/lib/msun/src/e_asinf.c": "09b2975cea91001d"
+  }
+}

@@ -36,7 +36,7 @@ unsigned int ref_hashname(const char *p);
 void ref_fdctx_init(int fd, P::fdctx *fdc);
 ssize_t ref_fdgetc(P::fdctx *fdc, char *c);
 void ref_fdctx_destroy(P::fdctx *fdc);
-int ref_nextopt(const char *optstring);
+int ref_try_nextopt(const char *optstring, int *res);
 void ref_getoptsreset(const char *value);
 void ref_freeparam(P::shparam *param);
 int ref_getopts(char *optstr, char *optvar, char **optfirst,
@@ -267,9 +267,7 @@ test_fdctx_read(const unsigned char *data, size_t len, const char *tag)
 	Stat &st_dest = S("fdctx_destroy");
 
 	int fd = make_temp_file(data, len);
-	int fd2 = dup(fd);
-	if (fd2 < 0)
-		std::exit(3);
+	int fd2 = make_temp_file(data, len);
 	P::fdctx pf{}, rf{};
 
 	ref_fdctx_init(fd, &rf);

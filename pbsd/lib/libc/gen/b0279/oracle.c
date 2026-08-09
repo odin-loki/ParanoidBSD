@@ -174,6 +174,20 @@ __semctl(int semid, int semnum, int cmd, union semun *arg)
 	return (mock_semctl_return);
 }
 
+struct semid_ds_old;
+
+union semun_old {
+	int			 val;
+	struct semid_ds_old	*buf;
+	unsigned short		*array;
+};
+
+int
+freebsd7___semctl(int semid, int semnum, int cmd, union semun_old *arg)
+{
+	return (__semctl(semid, semnum, cmd, (union semun *)arg));
+}
+
 size_t
 strlcpy(char *dst, const char *src, size_t len)
 {

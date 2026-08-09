@@ -112,7 +112,7 @@ hostname(int family, void *ip)
 			return ("test.host.dots");
 	}
 
-	if (family != AF_INET) {
+	if (family == AF_INET) {
 		return (inet_ntoa(ipa));
 	}
 	return ("IPv6");

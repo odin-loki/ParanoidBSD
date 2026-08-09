@@ -1,0 +1,13 @@
+{
+  "batch": "b0297",
+  "verified": "2026-08-09T02:29:43Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/6: printfraginfo, kvatoname)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases    fails\nprintfraginfo      200013        0\nkvatoname          200011        0\nprintunit          200021        0\nipf_perror         200040        0\nipf_perror_fd      200128        0\nipferror           200006        0\nport.cppm: In function \u2018char* pbsd::sbin_ipf_libipf::b0297::hostname(int, void*)\u2019:\nport.cppm:112:33: warning: ISO C++ forbids converting a string constant to \u2018char*\u2019 [-Wwrite-strings]\n  112 |                         return (\"test.host.dots\");\n      |                                ~^~~~~~~~~~~~~~~~~\nport.cppm:118:17: warning: ISO C++ forbids converting a string constant to \u2018char*\u2019 [-Wwrite-strings]\n  118 |         return (\"IPv6\");\n      |                ~^~~~~~~\nharness.cpp: In function \u2018void test_printfraginfo_edges()\u2019:\nharness.cpp:500:13: warning: hex escape sequence out of range\n  500 |             \"a\\xffb\",\n      |             ^~~~~~~~\nharness.cpp: In function \u2018void test_ipf_perror_edges()\u2019:\nharness.cpp:704:69: warning: hex escape sequence out of range\n  704 |         static const char *msgs[] = { \"\", \"ok\", \"fail\", \"\\x80\\xff\", \"a\\xffb\" };\n      |                                                                     ^~~~~~~~\n",
+  "input_hashes": {
+    "hbsd/src/sbin/ipf/libipf/printfraginfo.c": "fca71979158a0233",
+    "hbsd/src/sbin/ipf/libipf/kvatoname.c": "03be9a9d5437d638",
+    "hbsd/src/sbin/ipf/libipf/printunit.c": "4564e70eb7db2ece",
+    "hbsd/src/sbin/ipf/libipf/ipf_perror.c": "5d1e3bd590b93b0f"
+  }
+}

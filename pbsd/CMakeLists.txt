@@ -40,6 +40,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/ln/b0186/port.cppm
   bin/ls/b0231/port.cppm
   bin/mkdir/b0178/port.cppm
+  bin/mv/b0325/port.cppm
   bin/nproc/b0176/port.cppm
   bin/pax/b0108/port.cppm
   bin/pax/b0200/port.cppm
@@ -152,6 +153,11 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/b0282/port.cppm
   lib/libc/gen/b0284/port.cppm
   lib/libc/gen/b0286/port.cppm
+  lib/libc/gen/b0304/port.cppm
+  lib/libc/gen/b0310/port.cppm
+  lib/libc/gen/b0311/port.cppm
+  lib/libc/gen/b0314/port.cppm
+  lib/libc/gen/b0321/port.cppm
   lib/libc/gen/check_utility_compat_m/port.cppm
   lib/libc/gen/clock_m/port.cppm
   lib/libc/gen/devname_m/port.cppm
@@ -194,9 +200,11 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/iconv/b0072/port.cppm
   lib/libc/iconv/b0229/port.cppm
   lib/libc/iconv/b0288/port.cppm
+  lib/libc/iconv/b0323/port.cppm
   lib/libc/inet/b0274/port.cppm
   lib/libc/inet/b0283/port.cppm
   lib/libc/inet/b0290/port.cppm
+  lib/libc/inet/b0324/port.cppm
   lib/libc/locale/b0002/port.cppm
   lib/libc/locale/b0039/port.cppm
   lib/libc/locale/b0041/port.cppm
@@ -244,6 +252,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/posix1e/acl_perm_m/port.cppm
   lib/libc/posix1e/b0110/port.cppm
   lib/libc/posix1e/b0259/port.cppm
+  lib/libc/posix1e/b0320/port.cppm
   lib/libc/quad/TESTS/b0174/port.cppm
   lib/libc/quad/b0033/port.cppm
   lib/libc/quad/b0034/port.cppm
@@ -339,6 +348,9 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdio/b0202/port.cppm
   lib/libc/stdio/b0244/port.cppm
   lib/libc/stdio/b0275/port.cppm
+  lib/libc/stdio/b0317/port.cppm
+  lib/libc/stdio/b0318/port.cppm
+  lib/libc/stdio/b0326/port.cppm
   lib/libc/stdio/fgetpos_m/port.cppm
   lib/libc/stdio/flags_m/port.cppm
   lib/libc/stdio/funopen_m/port.cppm
@@ -359,6 +371,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/stdlib/b0221/port.cppm
   lib/libc/stdlib/b0235/port.cppm
   lib/libc/stdlib/b0298/port.cppm
+  lib/libc/stdlib/b0316/port.cppm
   lib/libc/stdlib/getsubopt_m/port.cppm
   lib/libc/stdlib/hcreate_m/port.cppm
   lib/libc/stdlib/malloc/b0232/port.cppm
@@ -381,6 +394,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/string/b0239/port.cppm
   lib/libc/string/b0241/port.cppm
   lib/libc/string/b0257/port.cppm
+  lib/libc/string/b0313/port.cppm
   lib/libc/string/bcmp_m/port.cppm
   lib/libc/string/ffs_m/port.cppm
   lib/libc/string/ffsl_m/port.cppm
@@ -450,6 +464,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libthr/thread/b0278/port.cppm
   lib/msun/aarch64/b0201/port.cppm
   lib/msun/amd64/b0250/port.cppm
+  lib/msun/i387/b0315/port.cppm
   lib/msun/ld128/b0073/port.cppm
   lib/msun/ld128/b0084/port.cppm
   lib/msun/ld128/b0088/port.cppm
@@ -505,6 +520,13 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0300/port.cppm
   lib/msun/src/b0302/port.cppm
   lib/msun/src/b0303/port.cppm
+  lib/msun/src/b0305/port.cppm
+  lib/msun/src/b0306/port.cppm
+  lib/msun/src/b0307/port.cppm
+  lib/msun/src/b0308/port.cppm
+  lib/msun/src/b0309/port.cppm
+  lib/msun/src/b0312/port.cppm
+  lib/msun/src/b0322/port.cppm
   lib/msun/src/e_acosh_m/port.cppm
   lib/msun/src/e_acoshf_m/port.cppm
   lib/msun/src/e_atanh_m/port.cppm
@@ -549,6 +571,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/s_sinf_m/port.cppm
   lib/msun/src/s_trunc_m/port.cppm
   lib/msun/src/s_truncf_m/port.cppm
+  sbin/dhclient/b0319/port.cppm
   sbin/dump/unctime_m/port.cppm
   sbin/ipf/libipf/b0123/port.cppm
   sbin/ipf/libipf/b0124/port.cppm
