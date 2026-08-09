@@ -1751,6 +1751,12 @@ tr_stack_walk(const std::vector<StackStep> &steps)
 			typename A::Mark m;
 			A::setstackmark(&m);
 			marks.push_back(m);
+			/*
+			 * Allocations made before the mark may no longer be
+			 * unwound: stunalloc()ing below a live mark would let
+			 * growstackblock() realloc the marked block.
+			 */
+			live.clear();
 			d = "depth=" + num((long long)marks.size());
 			reset = true;
 			break;

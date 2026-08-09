@@ -554,6 +554,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/ipf/libipf/b0160/port.cppm
   sbin/ipf/libipf/b0294/port.cppm
   sbin/ipf/libipf/b0295/port.cppm
+  sbin/ipf/libipf/b0296/port.cppm
   sbin/ipf/libipf/b0297/port.cppm
   sbin/kldunload/kldunload_m/port.cppm
   sbin/nfsiod/nfsiod_m/port.cppm
