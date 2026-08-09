@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_find_find",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of find.c, IR-identical for all 3 functions, 33 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/find/find.c": "5a3c41bd616611b9"
+  }
+}

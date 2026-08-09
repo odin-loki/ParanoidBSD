@@ -1,0 +1,10 @@
+{
+  "batch": "b0238",
+  "verified": "2026-08-08T23:04:10Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                      cases     failures\n__getcontextx_size           200040            0\n__fillcontextx2              200061            0\n__fillcontextx               200010            0\n__getcontextx                200009            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/x86/gen/getcontextx.c": "33fd35b4362b7470"
+  }
+}

@@ -1,0 +1,2 @@
+hbsd/src/bin/pax/ar_subs.c — requires pax.h, extern.h, archive format drivers, and the full pax runtime (list/extract/archive/copy modes).
+hbsd/src/bin/pax/ar_io.c — requires pax.h, options.h, extern.h, and live archive device I/O (open/read/write/tape/gzip).

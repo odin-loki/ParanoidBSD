@@ -1,0 +1,12 @@
+{
+  "batch": "b0133",
+  "verified": "2026-08-08T11:42:30Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction     cases      failures\n--------------------------------\nhash4        200094     0         \n--------------------------------\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/hash/hash_func.c": "3e2f2d053ee7200f",
+    "hbsd/src/lib/libc/db/hash/ndbm.c": "2c990ebd05991973",
+    "hbsd/src/lib/libc/db/hash/hash_buf.c": "356f58a8efefe88d"
+  }
+}

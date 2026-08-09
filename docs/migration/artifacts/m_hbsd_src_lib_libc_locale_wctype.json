@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_locale_wctype",
+  "verified": "2026-07-30T09:26:22Z",
+  "evidence": "mechanical port of wctype.c, IR-identical for all 4 functions, 9 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/wctype.c": "d6d932ed59ffbc55"
+  }
+}

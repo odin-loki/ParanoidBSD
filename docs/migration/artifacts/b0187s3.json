@@ -1,0 +1,10 @@
+{
+  "batch": "b0187s3",
+  "verified": "2026-08-08T22:29:51Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/3: usage, csearch)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases   failures\n----------             ----   --------\nc_cchar              224937          0\ncsearch              200082          0\n",
+  "input_hashes": {
+    "hbsd/src/bin/stty/cchar.c": "df588ca0a0820ee1"
+  }
+}

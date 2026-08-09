@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_aarch64_string_strsep",
+  "verified": "2026-07-30T09:24:40Z",
+  "evidence": "mechanical port of strsep.c, IR-identical for all 1 functions, 5 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/aarch64/string/strsep.c": "cf0fe13bd0fbf8a9"
+  }
+}

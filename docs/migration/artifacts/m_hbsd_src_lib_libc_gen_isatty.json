@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_isatty",
+  "verified": "2026-07-30T09:26:22Z",
+  "evidence": "mechanical port of isatty.c, IR-identical for all 1 functions, 3 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/isatty.c": "8baa699e90a92257"
+  }
+}

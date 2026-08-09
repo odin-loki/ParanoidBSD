@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_bin_domainname_domainname",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of domainname.c, IR-identical for all 2 functions, 9 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/bin/domainname/domainname.c": "02c4bee1aa2142f2"
+  }
+}

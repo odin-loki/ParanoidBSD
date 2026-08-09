@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_string_stpcpy",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of stpcpy.c, IR-identical for all 1 functions, 2 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/stpcpy.c": "9b59c3e2f48c632f"
+  }
+}

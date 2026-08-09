@@ -1,0 +1,3 @@
+fpgetmask.c: body is aarch64 "mrs %0, fpcr" inline asm; the instruction cannot be assembled or executed on this x86_64 host, so no faithful, differentially testable port exists.
+fpsetmask.c: body is aarch64 "mrs"/"msr fpcr" inline asm; the instructions cannot be assembled or executed on this x86_64 host, so no faithful, differentially testable port exists.
+flt_rounds.c: body reads the aarch64 FPCR rounding field via "mrs %0, fpcr" inline asm; the instruction cannot be assembled or executed on this x86_64 host, so no faithful, differentially testable port exists.

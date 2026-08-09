@@ -1,0 +1,10 @@
+{
+  "batch": "b0118s2",
+  "verified": "2026-08-08T22:10:44Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/2: fwrite_unlocked, fwrite)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\nfwrite_unlocked            101207            0\nfwrite                     101489            0\nTOTAL                                        0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fwrite.c": "e8b9634c628a71f7"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "b0251",
+  "verified": "2026-08-08T23:06:04Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\nilogbl             638100            0\n------------ ------------ ------------\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_ilogbl.c": "6da0699fd3c6859c"
+  }
+}

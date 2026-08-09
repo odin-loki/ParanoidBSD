@@ -1,0 +1,2 @@
+hbsd/src/bin/ed/glbl.c:build_active_list - depends on the whole ed editor state (ibufp, first_addr/second_addr, isbinary, get_compiled_pattern, get_addressed_line_node, get_sbuf_line, NUL_TO_NEWLINE), none of which is in this batch; cannot be ported faithfully in isolation.
+hbsd/src/bin/ed/glbl.c:exec_global - depends on the whole ed editor state (get_extended_line, clear_undo_stack, get_line_node_addr, display_lines, get_tty_line, extract_addr_range, exec_command, ibuf/ibufp, REALLOC), none of which is in this batch; cannot be ported faithfully in isolation.

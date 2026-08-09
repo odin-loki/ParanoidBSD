@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_locale_iswctype",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of iswctype.c, IR-identical for all 21 functions, 2 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/iswctype.c": "e2063297d2486223"
+  }
+}

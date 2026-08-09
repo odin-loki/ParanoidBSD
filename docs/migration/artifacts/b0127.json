@@ -1,0 +1,13 @@
+{
+  "batch": "b0127",
+  "verified": "2026-08-08T11:58:36Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\n+----------------+----------+----------+\n| function       |     cases|    fails |\n+----------------+----------+----------+\n| fscanf         |    200021|         0|\n| fscanf_l       |    201587|         0|\n+----------------+----------+----------+\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/vasprintf.c": "8fd722f2e8070cc7",
+    "hbsd/src/lib/libc/stdio/ungetwc.c": "45c2120d141bd49b",
+    "hbsd/src/lib/libc/stdio/fscanf.c": "2422c98fd8920282",
+    "hbsd/src/lib/libc/stdio/vsscanf.c": "6ff1f6ad5df2d529"
+  }
+}

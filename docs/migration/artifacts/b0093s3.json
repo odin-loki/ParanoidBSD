@@ -1,0 +1,10 @@
+{
+  "batch": "b0093s3",
+  "verified": "2026-08-08T22:20:56Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: sinpil)",
+  "ir_equivalent": false,
+  "harness_output": "\ncase group                                cases     failures\n---------------------------------- ------------ ------------\nsinpil / zero+subnormal                      36            0\nsinpil / |x| < 0x1p-34                      624            0\nsinpil / 0x1p-34 <= |x| < 1                 874            0\nsinpil / 1 <= |x| < 0x1p63                 5908            0\nsinpil / |x| >= 0x1p63 finite               468            0\nsinpil / inf and nan                         52            0\nsinpil / raw byte patterns                  819            0\nsinpil / randomised sweep                250000            0\n---------------------------------- ------------ ------------\nsinpil TOTAL                             258781            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld80/s_sinpil.c": "577bddae554f8a6c"
+  }
+}

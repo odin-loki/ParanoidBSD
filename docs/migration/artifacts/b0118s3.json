@@ -1,0 +1,10 @@
+{
+  "batch": "b0118s3",
+  "verified": "2026-08-08T22:16:04Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/2: fgetws_l, fgetws)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\nfgetws_l                   109717            0\nfgetws                     110011            0\nTOTAL                                        0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fgetws.c": "a8a8a30d3b9c661a"
+  }
+}

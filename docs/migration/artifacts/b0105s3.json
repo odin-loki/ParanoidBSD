@@ -1,0 +1,10 @@
+{
+  "batch": "b0105s3",
+  "verified": "2026-08-08T22:10:11Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: strsep)",
+  "ir_equivalent": false,
+  "harness_output": "\n+-----------+--------------+--------------+--------+\n| function  |        cases |     failures | result |\n+-----------+--------------+--------------+--------+\n| strsep    |      1231405 |            0 | PASS   |\n+-----------+--------------+--------------+--------+\n| TOTAL     |      1231405 |            0 | PASS   |\n+-----------+--------------+--------------+--------+\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/strsep.c": "c9206c68da91253f"
+  }
+}

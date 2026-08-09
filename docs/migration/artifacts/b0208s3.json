@@ -1,0 +1,10 @@
+{
+  "batch": "b0208s3",
+  "verified": "2026-08-08T22:44:47Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "PBSD batch b0208s3 differential test\n(oracle.c is the specification)\n\nfunction                                cases     failures     result\n-------------------------------- ------------ ------------ ----------\n(no functions in batch)                     -            -          -\n-------------------------------- ------------ ------------ ----------\nTOTAL                                       0            0       PASS\n\n0 function(s) ported, 0 case(s) run, 0 failure(s).\nlinux_elf64.c defines no functions; see skipped.txt.\n",
+  "input_hashes": {
+    "hbsd/src/sys/compat/linux/linux_elf64.c": "91ac74c0cda2b43e"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "b0093s4",
+  "verified": "2026-08-08T22:23:21Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "PBSD b0093s4 differential test (port vs. oracle, full 80-bit compare)\n\n\nfunction                    cases     failures\n-------------------- ------------ ------------\ntanpil                     505220            0\n__kernel_tanpil            559222            0\nTOTAL                     1064442            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld80/s_tanpil.c": "a69a3c584a248d18"
+  }
+}

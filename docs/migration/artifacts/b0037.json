@@ -1,0 +1,12 @@
+{
+  "batch": "b0037",
+  "verified": "2026-08-08T09:25:37Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                                cases   failures result\n--------------------------------------------------------------------\nlinux_vdso_tsc_selector_idx            251350          0 PASS\nlinux_vdso_cpu_selector_idx            251350          0 PASS\nlinux_translate_traps                  254395          0 PASS\nbsd_to_linux_trapcode                  250209          0 PASS\nlinux_x86_elf_hwcap2                     1778          0 PASS\n--------------------------------------------------------------------\nTOTAL                                 1009082          0 PASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/x86/linux/linux_dummy_x86.c": "e5f919a3aaeb6d43",
+    "hbsd/src/sys/x86/linux/linux_vdso_selector_x86.c": "e0dde4982c78d41f",
+    "hbsd/src/sys/x86/linux/linux_x86.c": "e1d036ed1fbefcae"
+  }
+}

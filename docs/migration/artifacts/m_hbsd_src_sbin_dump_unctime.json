@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_sbin_dump_unctime",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of unctime.c, IR-identical for all 1 functions, 9 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/sbin/dump/unctime.c": "e9e346a4176d05a5"
+  }
+}

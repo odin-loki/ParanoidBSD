@@ -1,0 +1,11 @@
+{
+  "batch": "b0050",
+  "verified": "2026-07-30T10:29:02Z",
+  "evidence": "harness green + IR-identical for all 10 functions",
+  "ir_equivalent": true,
+  "harness_output": "function                          cases   failures status\nstdc_leading_zeros_uc            250690          0 PASS\nstdc_leading_zeros_us            315970          0 PASS\nstdc_leading_zeros_ui            250434          0 PASS\nstdc_leading_zeros_ul            250434          0 PASS\nstdc_leading_zeros_ull           250434          0 PASS\nstdc_bit_ceil_uc                 250690          0 PASS\nstdc_bit_ceil_us                 315970          0 PASS\nstdc_bit_ceil_ui                 250434          0 PASS\nstdc_bit_ceil_ul                 250434          0 PASS\nstdc_bit_ceil_ull                250434          0 PASS\nTOTAL                           2635924          0 PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdbit/stdc_leading_zeros.c": "e86fcc4cad453ef0",
+    "hbsd/src/lib/libc/stdbit/stdc_bit_ceil.c": "dd0b41424abe533e"
+  }
+}

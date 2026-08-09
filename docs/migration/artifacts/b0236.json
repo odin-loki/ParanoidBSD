@@ -1,0 +1,13 @@
+{
+  "batch": "b0236",
+  "verified": "2026-08-08T13:37:40Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd batch b0236 differential test\n\n\n  function              cases   failures   result\n  ----------------------------------------------------\n  dremf                203531          0   PASS\n  cabsf                202493          0   PASS\n  cabs                 201216          0   PASS\n  cabsl                200287          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/w_dremf.c": "9811e2669e57baf9",
+    "hbsd/src/lib/msun/src/w_cabsf.c": "525063344b4e71ae",
+    "hbsd/src/lib/msun/src/w_cabsl.c": "d9ab025481998599",
+    "hbsd/src/lib/msun/src/w_cabs.c": "a4102b2711adc370"
+  }
+}

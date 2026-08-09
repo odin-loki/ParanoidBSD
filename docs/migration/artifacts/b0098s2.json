@@ -1,0 +1,10 @@
+{
+  "batch": "b0098s2",
+  "verified": "2026-08-08T22:11:38Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures  result\n------------------------------------------------------\nvwprintf           200747            0  ok\n------------------------------------------------------\nTOTAL              200747            0  ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/vwprintf.c": "3b0966174122620a"
+  }
+}

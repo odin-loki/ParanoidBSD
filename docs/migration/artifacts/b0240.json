@@ -1,0 +1,13 @@
+{
+  "batch": "b0240",
+  "verified": "2026-08-08T22:59:54Z",
+  "evidence": "harness green + 3/3 mutations killed (IR: IR differs for 4/4: __stack_chk_fail_local_hidden, __strlcpy_chk, __mempcpy_chk, __memset_chk)",
+  "ir_equivalent": false,
+  "harness_output": "function                      cases     failures\n---------------------------------------------\n__strlcpy_chk                  200021          0\n__mempcpy_chk                  200076          0\n__memset_chk                   200012          0\n__stack_chk_fail_local_hidden       16          0\n---------------------------------------------\nTOTAL                           600125          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/secure/stack_protector_compat.c": "05c618e323164265",
+    "hbsd/src/lib/libc/secure/strlcpy_chk.c": "a0831c0dd55a0c57",
+    "hbsd/src/lib/libc/secure/mempcpy_chk.c": "f8fbed02e4d3d1f4",
+    "hbsd/src/lib/libc/secure/memset_chk.c": "aff99e9584f9bd35"
+  }
+}

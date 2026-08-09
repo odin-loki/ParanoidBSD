@@ -1,0 +1,10 @@
+{
+  "batch": "b0013",
+  "verified": "2026-08-08T09:17:32Z",
+  "evidence": "harness green + 4/4 mutations killed (IR: no ref_ functions in oracle IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nglobal                    cases     failures\n--------------------------------------------\n_rand48_seed             200782            0\n_rand48_mult             200782            0\n_rand48_add              200782            0\n--------------------------------------------\nTOTAL                    602346            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/_rand48.c": "421361ecce91bdd4"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_bin_stty_gfmt",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of gfmt.c, IR-identical for all 3 functions, 14 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/bin/stty/gfmt.c": "10a33046d4969581"
+  }
+}

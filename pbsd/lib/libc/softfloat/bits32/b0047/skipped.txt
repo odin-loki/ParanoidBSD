@@ -1,0 +1,1 @@
+softfloat.c:float64_round_to_int - reads a.high/a.low/z.high/z.low, but this variant of the file typedefs float64 as a 64-bit integer, so the function does not compile and has no faithful behaviour to preserve.

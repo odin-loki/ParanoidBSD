@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_stdio_flags",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of flags.c, IR-identical for all 1 functions, 11 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/flags.c": "aa95b731c6bff118"
+  }
+}

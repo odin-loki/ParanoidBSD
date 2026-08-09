@@ -1,0 +1,13 @@
+{
+  "batch": "b0160",
+  "verified": "2026-08-08T12:29:52Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 4/4: dupmbt, icmptypename, getoptbyname, getoptbyvalue)",
+  "ir_equivalent": false,
+  "harness_output": "\nentity                cases      fails  result\nicmpcodes[]          200019          0  ok\nicmptypelist[]       200068          0  ok\nionames[]            200054          0  ok\ndupmbt               200119          0  ok\nicmptypename         203756          0  ok\ngetoptbyname         200362          0  ok\ngetoptbyvalue        200604          0  ok\nTOTAL               1404982          0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/sbin/ipf/libipf/icmpcode.c": "b1f872d9e1c3b62f",
+    "hbsd/src/sbin/ipf/libipf/dupmbt.c": "f2b3f9073b4e30ff",
+    "hbsd/src/sbin/ipf/libipf/icmptypename.c": "cb01177f28416553",
+    "hbsd/src/sbin/ipf/libipf/optvalue.c": "e80ef9eacbd3dd5d"
+  }
+}

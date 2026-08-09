@@ -1,0 +1,10 @@
+{
+  "batch": "b0148s1",
+  "verified": "2026-08-08T22:17:28Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "function                 cases     fails\n----------------------------------------\nparse_char_class           70025       0\nextract_pattern            70040       0\nget_compiled_pattern       70014       0\n----------------------------------------\nTOTAL                     210079       0\n",
+  "input_hashes": {
+    "hbsd/src/bin/ed/re.c": "4a2cb422345e0261"
+  }
+}

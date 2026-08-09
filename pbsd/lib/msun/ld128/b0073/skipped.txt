@@ -1,0 +1,2 @@
+b_tgammal.c: contains no code of its own -- it only "#define tgamma128 tgammal" and "#include \"tgamma128.c\"" (contrib/arm-optimized-routines/math/tgamma128.c), which is not part of this batch, so there is no function body here to port.
+s_nanl.c: nanl() is built entirely out of _scan_nan() (lib/msun/src/s_nan.c) and union IEEEl2bits (fpmath.h); neither is part of this batch, so a faithful port cannot be written from the listed sources.

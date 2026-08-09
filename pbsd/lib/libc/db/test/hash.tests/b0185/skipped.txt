@@ -1,0 +1,4 @@
+tseq.c — contains only main(); requires <db.h>, dbopen(), and an existing on-disk "hashtest" hash table; no standalone functions to port.
+tcreat3.c — contains only main(); requires <db.h>, dbopen(), stdin, and live hash-table creation; no standalone functions to port.
+tread2.c — contains only main(); requires <db.h>, dbopen(), stdin, and a populated "hashtest" hash table; no standalone functions to port.
+tverify.c — contains only main(); requires <db.h>, dbopen(), stdin, and hash-table retrieval via dbp->get(); no standalone functions to port.

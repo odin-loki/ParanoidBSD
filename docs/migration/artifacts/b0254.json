@@ -1,0 +1,13 @@
+{
+  "batch": "b0254",
+  "verified": "2026-08-08T23:07:47Z",
+  "evidence": "harness green + 2/2 mutations killed (IR: IR differs for 5/5: _pthread_yield, _pthread_getcpuclockid, _thr_getthreadid_np, _tcb_ctor)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0254 differential results\nfunction                        cases   failures status\n_pthread_yield                  39934          0 ok\n_pthread_getcpuclockid          40326          0 ok\n_thr_getthreadid_np             39933          0 ok\n_tcb_ctor                       39821          0 ok\n_tcb_dtor                       40011          0 ok\nTOTAL                          200025          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libthr/thread/thr_yield.c": "30e2009401636969",
+    "hbsd/src/lib/libthr/thread/thr_getcpuclockid.c": "bc7fe5476f64154b",
+    "hbsd/src/lib/libthr/thread/thr_getthreadid_np.c": "06a6d3f3fe6371f2",
+    "hbsd/src/lib/libthr/thread/thr_ctrdtr.c": "8630d91596efccd1"
+  }
+}

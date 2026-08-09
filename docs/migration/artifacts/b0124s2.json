@@ -1,0 +1,10 @@
+{
+  "batch": "b0124s2",
+  "verified": "2026-08-08T22:11:35Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction          cases    fails\nresetlexer       200018        0\n",
+  "input_hashes": {
+    "hbsd/src/sbin/ipf/libipf/resetlexer.c": "149d8bdc71aa14e7"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_posix1e_acl_from_mode_np",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of acl_from_mode_np.c, IR-identical for all 1 functions, 10 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/posix1e/acl_from_mode_np.c": "39e3ccf1e31f95ca"
+  }
+}

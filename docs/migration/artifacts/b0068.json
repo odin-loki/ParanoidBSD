@@ -1,0 +1,12 @@
+{
+  "batch": "b0068",
+  "verified": "2026-08-08T11:19:27Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                                    cases     failures\n--------------------------------------------------------\nuname                                       66421            0\nopendir                                     66899            0\nlibc_dlopen                                 66702            0\n__FreeBSD_libc_enter_restricted_mode            2            0\n--------------------------------------------------------\nTOTAL                                      200024            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/libc_dlopen.c": "c452e0159a924038",
+    "hbsd/src/lib/libc/gen/uname.c": "8540f86ffd54ce62",
+    "hbsd/src/lib/libc/gen/opendir.c": "93283995663e3916"
+  }
+}

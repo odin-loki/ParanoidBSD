@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_ktrace_subr",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of subr.c, IR-identical for all 4 functions, 7 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/ktrace/subr.c": "a776395311221da6"
+  }
+}

@@ -1,0 +1,12 @@
+lib/libc/locale/euc.c: _EUC_CN_init, _EUC_KR_init, _EUC_JP_init, _EUC_TW_init
+	-- assign into struct xlocale_ctype (lib/libc/locale/xlocale_private.h)
+	and store a _RuneLocale * (include/runetype.h); neither type is in this
+	batch, so their layout cannot be reproduced faithfully.
+
+lib/libc/locale/euc.c: _EUC_CN_mbsnrtowcs, _EUC_KR_mbsnrtowcs,
+	_EUC_JP_mbsnrtowcs, _EUC_TW_mbsnrtowcs, _EUC_CN_wcsnrtombs,
+	_EUC_KR_wcsnrtombs, _EUC_JP_wcsnrtombs, _EUC_TW_wcsnrtombs
+	-- one-line forwarders to __mbsnrtowcs_std()/__wcsnrtombs_std(), which
+	are defined in lib/libc/locale/mbsnrtowcs.c and
+	lib/libc/locale/wcsnrtombs.c, outside this batch; porting the
+	forwarders would mean inventing their callees.

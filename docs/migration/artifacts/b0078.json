@@ -1,0 +1,12 @@
+{
+  "batch": "b0078",
+  "verified": "2026-08-08T11:27:43Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                      cases     failures\n___runetype_l                200010            0\n___runetype                  200001            0\n___mb_cur_max                200001            0\n___mb_cur_max_l              200003            0\nnextwctype_l                 200008            0\nnextwctype                   200001            0\nmbsnrtowcs_l                 200014            0\nmbsnrtowcs                   200014            0\n__mbsnrtowcs_std             200014            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/runetype.c": "c95d60d4e04a11a8",
+    "hbsd/src/lib/libc/locale/nextwctype.c": "75b961c2ee5196cc",
+    "hbsd/src/lib/libc/locale/mbsnrtowcs.c": "0c176d446b4fa745"
+  }
+}

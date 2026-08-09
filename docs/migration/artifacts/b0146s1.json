@@ -1,0 +1,10 @@
+{
+  "batch": "b0146s1",
+  "verified": "2026-08-08T22:53:18Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/2: kern_getrandom, sys_getrandom)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\nkern_getrandom             315840            0\nsys_getrandom              315840            0\n-------------------- ------------ ------------\nTOTAL                      631680            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/kern/sys_getrandom.c": "1e98d172d1f7a60a"
+  }
+}

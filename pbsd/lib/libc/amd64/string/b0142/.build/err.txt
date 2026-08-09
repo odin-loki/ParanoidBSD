@@ -1,0 +1,55 @@
+edge_cases start
+edge: no-baseline
+  run_case_cpuid no-baseline
+edge: baseline-only
+  run_case_cpuid baseline-only
+  run_case_cpuid hw-v2
+  run_case_cpuid hw-v3
+  run_case_cpuid hw-v4
+  run_case_cpuid missing-sse2
+  run_case_cpuid v2-no-amd
+  run_case env-scalar
+    resolve env-scalar
+  run_case env-baseline
+    resolve env-baseline
+  run_case env-v2
+    resolve env-v2
+  run_case env-v3
+    resolve env-v3
+  run_case env-v4-clamp
+    resolve env-v4-clamp
+  run_case_cpuid force-v4
+  run_case force-scalar
+    resolve force-scalar
+  run_case suffix-colon
+    resolve suffix-colon
+  run_case suffix-plus
+    resolve suffix-plus
+  run_case env-bogus
+    resolve env-bogus
+  run_case env-empty
+    resolve env-empty
+  run_case env-partial
+    resolve env-partial
+  run_case_cpuid environ-null
+  run_case env-multi
+    resolve env-multi
+  run_case env-bad-prefix
+    resolve env-bad-prefix
+  run_case func-level0-only
+    resolve func-level0-only
+  run_case func-v2-only
+    resolve func-v2-only
+  run_case func-v3-at-hw3
+    resolve func-v3-at-hw3
+  caching test
+    caching p1
+    caching p2
+  run_case env-v2-on-v3hw
+    resolve env-v2-on-v3hw
+  run_case_cpuid env-v3-clamp-v2
+edge_cases done
+trap_case start
+trap_case done
+random_sweep start
+random_sweep done

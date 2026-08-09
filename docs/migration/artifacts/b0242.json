@@ -1,0 +1,11 @@
+{
+  "batch": "b0242",
+  "verified": "2026-08-08T23:04:32Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/2: ilogbf, ilogb)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures\n------------ ------------ ------------\nilogbf             261978            0\nilogb              269300            0\n------------ ------------ ------------\nTOTAL              531278            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_ilogbf.c": "7614491dcc65749e",
+    "hbsd/src/lib/msun/src/s_ilogb.c": "e759b7f24c28d517"
+  }
+}

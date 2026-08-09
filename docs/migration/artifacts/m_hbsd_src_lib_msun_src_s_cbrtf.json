@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_s_cbrtf",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of s_cbrtf.c, IR-identical for all 1 functions, 14 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_cbrtf.c": "a042fcd1455dedd7"
+  }
+}

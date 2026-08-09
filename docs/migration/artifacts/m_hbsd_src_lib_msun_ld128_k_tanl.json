@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_ld128_k_tanl",
+  "verified": "2026-07-30T09:26:25Z",
+  "evidence": "mechanical port of k_tanl.c, IR-identical for all 1 functions, 109 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld128/k_tanl.c": "ba9fdce7bac33e15"
+  }
+}

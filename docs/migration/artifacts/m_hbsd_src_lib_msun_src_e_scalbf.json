@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_e_scalbf",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of e_scalbf.c, IR-identical for all 1 functions, 14 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/e_scalbf.c": "980c3e0ae9c542f6"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_s_cprojf",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of s_cprojf.c, IR-identical for all 1 functions, 3 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_cprojf.c": "9c40df4c14d493e7"
+  }
+}

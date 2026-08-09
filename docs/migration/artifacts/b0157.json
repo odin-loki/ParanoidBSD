@@ -1,0 +1,10 @@
+{
+  "batch": "b0157",
+  "verified": "2026-08-08T12:06:55Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction     cases      failures\n--------------------------------\ndbopen       100025     0         \ndbclose      100003     0         \ndbdel        100003     0         \ndbget        100003     0         \ndbput        100003     0         \ndbseq        100003     0         \ndbsync       100003     0         \ndbfd         100003     0         \n__dbpanic    12374      0         \n--------------------------------\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/db/db.c": "eeb2553197b6ecdc"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "b0016s4",
+  "verified": "2026-08-08T09:20:43Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "=== PBSD b0016s4 differential test (port vs ref_ oracle) ===\n\nfunction                cases     failures\n---------------- ------------ ------------\nfloat128_le            254761            0\n__letf2                254761            0\nTOTAL                                    0\n\n(4761 hand-written edge pairs, 250000 randomised pairs, fixed seed)\n\ninput class reached                       cases\nfloat128_le == 1                         127975\nfloat128_le == 0                         126786\n__letf2 == 0                             127975\n__letf2 == 1                             126786\nfloat_flag_invalid raised                 47462\nno exception raised                      207299\nsigns differ, negative a                  18725\nsigns differ, +a, combined==0              2762\nsigns differ, +a, combined!=0             19385\nboth negative, a <= b                     26343\nboth negative, a > b                      41420\nboth non-negative, a <= b                 80145\nboth non-negative, a > b                  18519\noperands bitwise equal                    36483\nhigh equal, low <                         58216\nhigh equal, low ==                        31532\nhigh equal, low >                         18636\nhigh word a < b                           44775\nhigh word a > b                           13268\n-0 against +0                              5601\ninfinity operand                          11805\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/letf2.c": "5c372013d35d6c84"
+  }
+}

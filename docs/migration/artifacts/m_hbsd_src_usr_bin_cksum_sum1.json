@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_cksum_sum1",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of sum1.c, IR-identical for all 1 functions, 12 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/cksum/sum1.c": "ea061fed6e94299c"
+  }
+}

@@ -1,0 +1,3 @@
+cd.c — requires live chdir/getcwd/lstat, shell variable table, and stack allocator integration
+trap.c — requires signal delivery, evalstring, jobs, and setjmp-based shell exit path
+input.c — requires parsefile stack, alias expansion, memalloc, and readline/history hooks

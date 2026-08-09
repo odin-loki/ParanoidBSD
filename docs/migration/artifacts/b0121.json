@@ -1,0 +1,12 @@
+{
+  "batch": "b0121",
+  "verified": "2026-08-08T11:34:57Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures   result\n------------ ------------ ------------   ------\nwmemmove           200108            0   PASS\nwcscpy             200370            0   PASS\nwmemset            200167            0   PASS\n------------ ------------ ------------   ------\nTOTAL              600645            0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/wmemmove.c": "2b40f762cc3d47f1",
+    "hbsd/src/lib/libc/string/wcscpy.c": "da03bfee6b9e8bdc",
+    "hbsd/src/lib/libc/string/wmemset.c": "fc42d426343b0fb8"
+  }
+}

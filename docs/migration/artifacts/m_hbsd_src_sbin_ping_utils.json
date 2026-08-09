@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_sbin_ping_utils",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of utils.c, IR-identical for all 1 functions, 11 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/sbin/ping/utils.c": "dd2e0c01e01e537b"
+  }
+}

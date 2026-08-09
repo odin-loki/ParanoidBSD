@@ -1,0 +1,122 @@
+// PBSD port of HardenedBSD lib/libc/string batch b0239.
+//
+// Sources:
+//   hbsd/src/lib/libc/string/swab.c
+//   hbsd/src/lib/libc/string/strndup.c
+//   hbsd/src/lib/libc/string/timingsafe_bcmp.c
+
+module;
+
+#define _DEFAULT_SOURCE 1
+
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <unistd.h>
+#if defined(__linux__)
+#include <byteswap.h>
+#ifndef bswap16
+#define bswap16(x) bswap_16(x)
+#endif
+#else
+#include <sys/endian.h>
+#endif
+
+export module pbsd.lib.libc.string.b0239;
+
+export namespace pbsd::lib_libc_string::b0239 {
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright (c) 2024 rilysh <nightquick@proton.me>
+ */
+
+void
+swab(const void * __restrict from, void * __restrict to, ssize_t len)
+{
+	const char *f = (const char *)from;
+	char *t = (char *)to;
+	uint16_t tmp;
+
+	/*
+	 * POSIX says overlapping copy behavior is undefined, however many
+	 * applications assume the old FreeBSD and current GNU libc behavior
+	 * that will swap the bytes correctly when from == to. Reading both bytes
+	 * and swapping them before writing them back accomplishes this.
+	 */
+	while (len > 1) {
+		memcpy(&tmp, f, 2);
+		tmp = bswap16(tmp);
+		memcpy(t, &tmp, 2);
+
+		f += 2;
+		t += 2;
+		len -= 2;
+	}
+}
+
+/*	$OpenBSD: strndup.c,v 1.1 2010/05/18 22:24:55 tedu Exp $	*/
+
+/*
+ * Copyright (c) 2010 Todd C. Miller <Todd.Miller@courtesan.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+char *
+strndup(const char *str, size_t maxlen)
+{
+	char *copy;
+	size_t len;
+
+	len = strnlen(str, maxlen);
+	copy = (char *)malloc(len + 1);
+	if (copy != NULL) {
+		(void)memcpy(copy, str, len);
+		copy[len] = '\0';
+	}
+
+	return copy;
+}
+
+/*	$OpenBSD: timingsafe_bcmp.c,v 1.3 2015/08/31 02:53:57 guenther Exp $	*/
+/*
+ * Copyright (c) 2010 Damien Miller.  All rights reserved.
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+int
+__timingsafe_bcmp(const void *b1, const void *b2, size_t n)
+{
+	const unsigned char *p1 = (const unsigned char *)b1,
+	    *p2 = (const unsigned char *)b2;
+	int ret = 0;
+
+	for (; n > 0; n--)
+		ret |= *p1++ ^ *p2++;
+	return (ret != 0);
+}
+
+} // namespace pbsd::lib_libc_string::b0239

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_stdio_remove",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of remove.c, IR-identical for all 1 functions, 4 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/remove.c": "8bed5619601a5264"
+  }
+}

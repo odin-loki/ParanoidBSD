@@ -1,0 +1,5 @@
+hbsd/src/lib/msun/ld80/s_nanl.c: nanl() is a thin wrapper whose behaviour is
+entirely defined by _scan_nan() (lib/msun/src/s_nan.c) and by the bit-field
+layout of union IEEEl2bits (lib/msun/ld80/../<arch>/fpmath.h); neither is part
+of this batch, so a faithful port is not possible from the given input alone
+and any reimplementation would be a guess rather than a port.

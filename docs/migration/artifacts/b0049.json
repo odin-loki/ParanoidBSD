@@ -1,0 +1,13 @@
+{
+  "batch": "b0049",
+  "verified": "2026-08-08T11:18:39Z",
+  "evidence": "harness green + 2/2 mutations killed (IR: IR differs for 2/3: __unorddf2, __unordsf2)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures   distinct   result\n__negtf2           202382            0        256     PASS\n__unorddf2         467456            0          2     PASS\n__unordsf2         234496            0          2     PASS\nfpgetmask          200016            0        256     PASS\n\nb0049: all cases matched the oracle\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/softfloat/negtf2.c": "ae1540a44d285109",
+    "hbsd/src/lib/libc/softfloat/unorddf2.c": "5b426b6216eee712",
+    "hbsd/src/lib/libc/softfloat/unordsf2.c": "45437ce1547c66e6",
+    "hbsd/src/lib/libc/softfloat/fpgetmask.c": "860fdf6ac5f9e8dc"
+  }
+}

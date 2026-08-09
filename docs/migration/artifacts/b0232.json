@@ -1,0 +1,11 @@
+{
+  "batch": "b0232",
+  "verified": "2026-08-08T13:34:09Z",
+  "evidence": "harness green + harness green; port has no mutable operator to plant a bug in (IR: IR differs for 2/2: __free_sized, __free_aligned_sized)",
+  "ir_equivalent": false,
+  "harness_output": "function                 cases     fails\n----------------------------------------\n__free_sized              200008       0\n__free_aligned_sized      200010       0\n----------------------------------------\nTOTAL                     400018       0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/malloc/free_sized.c": "bb68c922f3180e07",
+    "hbsd/src/lib/libc/stdlib/malloc/free_aligned_sized.c": "8f37acd4eba1080b"
+  }
+}

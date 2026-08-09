@@ -1,0 +1,10 @@
+{
+  "batch": "b0006",
+  "verified": "2026-08-08T09:26:10Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: pimd_priv_grant)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                        cases     failures      granted       denied\npimd_priv_grant                209984            0         7177       202807\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/security/mac_pimd/mac_pimd.c": "824835798518319f"
+  }
+}

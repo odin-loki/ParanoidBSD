@@ -1,0 +1,2 @@
+vdprintf.c: builds a FAKE_FILE on the stack and drives it through __vfprintf()/__fflush()/__swrite() using the FreeBSD struct __sFILE internals (_p, _w, _flags, _bf, _cookie); none of that exists off-FreeBSD, so the body cannot be compiled or differentially tested without inventing a private stdio implementation.
+printf.c: printf_l() calls vfprintf_l(), the FreeBSD locale-taking vfprintf variant; the host libc has no such function, so only printf() from this file is ported.

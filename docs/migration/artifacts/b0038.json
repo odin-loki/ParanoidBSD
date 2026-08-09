@@ -1,0 +1,13 @@
+{
+  "batch": "b0038",
+  "verified": "2026-08-08T09:24:49Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/4: fminimumf, fmaximumf)",
+  "ir_equivalent": false,
+  "harness_output": "pbsd batch b0038 differential test\nLDBL_MANT_DIG=64, comparing 10 significant bytes of long double\n\n\n  function            cases   failures   result\n  ----------------------------------------------------\n  fminimuml          397988          0   PASS\n  fmaximuml          397988          0   PASS\n  fminimumf          204913          0   PASS\n  fmaximumf          204913          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_fminimuml.c": "eedb442a22fb384d",
+    "hbsd/src/lib/msun/src/s_fmaximuml.c": "76149f92e11b5d83",
+    "hbsd/src/lib/msun/src/s_fminimumf.c": "5f7cd49b9862f2dd",
+    "hbsd/src/lib/msun/src/s_fmaximumf.c": "e28cd85f34a7b043"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_sbin_bhyve_console",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of console.c, IR-identical for all 9 functions, 2 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.sbin/bhyve/console.c": "d1c0479f7c8a1088"
+  }
+}

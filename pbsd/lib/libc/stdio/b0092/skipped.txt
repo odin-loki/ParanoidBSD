@@ -1,0 +1,2 @@
+wscanf.c: wscanf_l() omitted - it forwards to vfwscanf_l(), a FreeBSD xlocale extension that does not exist in this toolchain's libc, so it can be neither compiled nor differentially tested.
+getwc.c: getwc_l() omitted - it forwards to fgetwc_l(), a FreeBSD xlocale extension that does not exist in this toolchain's libc, so it can be neither compiled nor differentially tested.

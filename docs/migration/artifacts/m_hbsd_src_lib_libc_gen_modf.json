@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_gen_modf",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of modf.c, IR-identical for all 1 functions, 28 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/modf.c": "3819620c56dabfc6"
+  }
+}

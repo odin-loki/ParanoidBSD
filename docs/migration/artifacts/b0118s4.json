@@ -1,0 +1,10 @@
+{
+  "batch": "b0118s4",
+  "verified": "2026-08-08T22:12:38Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: fdopen)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases     failures\n-------------------- ------------ ------------\nfdopen                     227720            0\nTOTAL                                        0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fdopen.c": "2c8b3ce1e69693a3"
+  }
+}

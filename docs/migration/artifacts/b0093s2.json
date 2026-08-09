@@ -1,0 +1,10 @@
+{
+  "batch": "b0093s2",
+  "verified": "2026-08-08T22:11:18Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: cospil)",
+  "ir_equivalent": false,
+  "harness_output": "b0093s2 differential test: 5462 hand written values\n\nfunction          cases     failures        value        flags\n--------          -----     --------        -----        -----\ncospil           205462            0            0            0\nTOTAL            205462            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld80/s_cospil.c": "43c85f5bfa845535"
+  }
+}

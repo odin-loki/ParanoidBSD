@@ -1,0 +1,10 @@
+{
+  "batch": "b0088s3",
+  "verified": "2026-08-08T22:44:22Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: oracle would not compile to IR)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                cases     failures\ncexpl                  253744            0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld128/s_cexpl.c": "1ae9c068c22dea3b"
+  }
+}

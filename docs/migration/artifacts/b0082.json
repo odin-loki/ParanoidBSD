@@ -1,0 +1,13 @@
+{
+  "batch": "b0082",
+  "verified": "2026-08-08T11:23:29Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd batch b0082 differential test\nLDBL_MANT_DIG=64, comparing 10 significant bytes of long double\n\n\n  function                  cases   failures   result\n  ------------------------------------------------------\n  invtrig_const                34          0   PASS\n  __kernel_sinl            257677          0   PASS\n  __kernel_cosl            256165          0   PASS\n\nPASS: 0 total failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld80/s_nanl.c": "04303f41e1ec1a3a",
+    "hbsd/src/lib/msun/ld80/k_sinl.c": "5f2afda1bfb858e3",
+    "hbsd/src/lib/msun/ld80/invtrig.c": "6e37ae8769e7843d",
+    "hbsd/src/lib/msun/ld80/k_cosl.c": "e4c85705e6ad75b2"
+  }
+}

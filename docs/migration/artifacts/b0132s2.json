@@ -1,0 +1,10 @@
+{
+  "batch": "b0132s2",
+  "verified": "2026-08-08T22:13:46Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                      cases   failures  result\n---------------------- ------------ ----------  ------\nutx_to_futx                  237068          0  PASS\nfutx_to_utx                  205629          0  PASS\n\nALL PASS: 0 failures\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/utxdb.c": "5d606b5649dc2a04"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "b0018",
+  "verified": "2026-08-08T09:22:07Z",
+  "evidence": "harness green + 4/4 mutations killed (IR: IR differs for 1/1: memset_resolver)",
+  "ir_equivalent": false,
+  "harness_output": "building batch b0018 with cc / c++ (gcc modules)\n\nfunction                      cases     failures status\n---------------------- ------------ ------------ --------\nmemset_resolver              200026            0 PASS\n\nOVERALL: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/aarch64/string/memset_resolver.c": "44e752f8d4241074"
+  }
+}

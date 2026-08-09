@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_login_login_fbtab",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of login_fbtab.c, IR-identical for all 1 functions, 40 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/login/login_fbtab.c": "6471a81131648fd8"
+  }
+}

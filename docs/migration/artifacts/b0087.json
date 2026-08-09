@@ -1,0 +1,12 @@
+{
+  "batch": "b0087",
+  "verified": "2026-08-08T11:23:47Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                      cases   failures\n--------------------------------------------------\ninotify_add_watch            301283          0\ninotify_init1                301384          0\ninotify_init                    309          0\n--------------------------------------------------\nTOTAL                        602976          0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/uexterr_gettext.c": "6d2a5c7f81b60755",
+    "hbsd/src/lib/libc/gen/inotify.c": "e843e0608b0352c3",
+    "hbsd/src/lib/libc/gen/scandir_b.c": "7344f658ccc9ff17"
+  }
+}

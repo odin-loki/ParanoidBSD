@@ -1,0 +1,12 @@
+{
+  "batch": "b0090",
+  "verified": "2026-08-08T11:28:08Z",
+  "evidence": "harness green + IR-identical for all 3 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                      cases   failures\n--------------------------------------------------\ngetgrouplist                 266388          0\ngetbootfile                  250135          0\ngetdomainname                250089          0\n--------------------------------------------------\nTOTAL                        766612          0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/getgrouplist.c": "57105df938a10aaa",
+    "hbsd/src/lib/libc/gen/getbootfile.c": "42c9e67733be41db",
+    "hbsd/src/lib/libc/gen/getdomainname.c": "212469178e167dcf"
+  }
+}

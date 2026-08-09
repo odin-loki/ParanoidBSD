@@ -1,0 +1,10 @@
+{
+  "batch": "b0008",
+  "verified": "2026-08-08T09:17:28Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 2/2: ifunc_init, crt1_handle_rela)",
+  "ir_equivalent": false,
+  "harness_output": "building batch b0008 with cc / c++ (gcc modules)\nPBSD batch b0008 differential test\n(oracle.c is the specification; guard byte 0x7f)\n\n\nfunction                    cases     failures     result\n-------------------- ------------ ------------ ----------\nifunc_init                 200400            0       PASS\ncrt1_handle_rela           200013            0       PASS\n-------------------- ------------ ------------ ----------\nTOTAL                      400413            0       PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/csu/aarch64/reloc.c": "dac53500150a0d61"
+  }
+}

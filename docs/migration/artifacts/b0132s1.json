@@ -1,0 +1,10 @@
+{
+  "batch": "b0132s1",
+  "verified": "2026-08-08T22:21:58Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases   failures\n_readdir_unlocked          200017          0\nreaddir                    200002          0\n__readdir_r                200005          0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gen/readdir.c": "d2c18894c1208b1f"
+  }
+}

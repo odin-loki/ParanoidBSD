@@ -1,0 +1,10 @@
+{
+  "batch": "b0088s4",
+  "verified": "2026-08-08T22:12:35Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                    cases   failures   result\n-------------------------------------------------------\n__kernel_tanpil            200482          0   ok\ntanpil                     200994          0   ok\n-------------------------------------------------------\nTOTAL                      401476          0   ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/ld128/s_tanpil.c": "557bdbc8b49f43bc"
+  }
+}

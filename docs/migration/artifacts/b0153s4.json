@@ -1,0 +1,10 @@
+{
+  "batch": "b0153s4",
+  "verified": "2026-08-08T22:22:10Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                      cases     failures\nGB2312_init                       1            0\nGB2312_mbsinit                    3            0\nGB2312_check                 200031            0\nGB2312_mbrtowc               200011            0\nGB2312_wcrtomb               200006            0\nGB2312_mbsnrtowcs            200040            0\nGB2312_wcsnrtombs            200040            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/gb2312.c": "fc33ca4ffdd5c72b"
+  }
+}

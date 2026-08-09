@@ -1,0 +1,13 @@
+{
+  "batch": "b0246",
+  "verified": "2026-08-08T23:04:50Z",
+  "evidence": "harness green + IR-identical for all 4 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction                 cases     failures\n---------------------------------------------\nsigprocmask             200594            0\nsigaction               200566            0\nsigtimedwait            200314            0\nreadv                   201879            0\n---------------------------------------------\nTOTAL                   803353            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/sigprocmask.c": "bac3bf2a47435895",
+    "hbsd/src/lib/libc/sys/sigaction.c": "7c9b8bd41ea87f2a",
+    "hbsd/src/lib/libc/sys/sigtimedwait.c": "7bfaf64d23ae417f",
+    "hbsd/src/lib/libc/sys/readv.c": "fcaf23742e890e48"
+  }
+}

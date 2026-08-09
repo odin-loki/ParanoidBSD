@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_msun_src_s_modff",
+  "verified": "2026-07-30T09:29:13Z",
+  "evidence": "mechanical port of s_modff.c, IR-identical for all 1 functions, 12 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_modff.c": "ebe436675cc17b5e"
+  }
+}

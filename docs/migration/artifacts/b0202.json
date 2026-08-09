@@ -1,0 +1,12 @@
+{
+  "batch": "b0202",
+  "verified": "2026-08-08T12:54:50Z",
+  "evidence": "harness green + 5/5 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction              cases     failures\n----------------------------------------------\nasprintf             200014            0\nasprintf_l           200008            0\nfpurge               200008            0\nputs                 200008            0\n----------------------------------------------\nTOTAL                800038            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdio/fpurge.c": "b82d0007a283c26f",
+    "hbsd/src/lib/libc/stdio/asprintf.c": "b36c12964e40137c",
+    "hbsd/src/lib/libc/stdio/puts.c": "d740d5c818ec1e9a"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "batch": "b0156s2",
+  "verified": "2026-08-08T22:20:31Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 6/6: _UTF8_init, _UTF8_mbrtowc, _UTF8_wcrtomb, _UTF8_mbsinit)",
+  "ir_equivalent": false,
+  "harness_output": "b0156s2 differential harness\nfunction                        cases     failures\n_UTF8_init                          4            0\n_UTF8_mbsinit                       5            0\n_UTF8_mbrtowc                   50050            0\n_UTF8_wcrtomb                   50015            0\n_UTF8_mbsnrtowcs                50077            0\n_UTF8_wcsnrtombs                50067            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/utf8.c": "c4058cf20a0455b4"
+  }
+}

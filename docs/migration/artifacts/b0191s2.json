@@ -1,0 +1,10 @@
+{
+  "batch": "b0191s2",
+  "verified": "2026-08-08T23:01:35Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "pbsd b0191s2 differential harness (hbsd/src/bin/cp/cp.c)\n\n  function            cases     failures\n  ------------------------------------------------\n  ftscmp             328672            0   ok\n  siginfo            220294            0   ok\n  ------------------------------------------------\n  TOTAL              548966            0   ok\n",
+  "input_hashes": {
+    "hbsd/src/bin/cp/cp.c": "b69a27c945acada2"
+  }
+}

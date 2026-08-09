@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_rpcgen_rpc_sample",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of rpc_sample.c, IR-identical for all 4 functions, 32 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/rpcgen/rpc_sample.c": "c68c2c0525b19d48"
+  }
+}

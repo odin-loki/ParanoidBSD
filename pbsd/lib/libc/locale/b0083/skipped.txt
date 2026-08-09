@@ -1,0 +1,1 @@
+c16rtomb.c: depends on mblocal.h, FIX_LOCALE, c32rtomb_l, and per-locale mbstate not present in this batch

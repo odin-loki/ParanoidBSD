@@ -1,0 +1,2 @@
+cxa_thread_atexit.c: depends on libc_private.h and __cxa_thread_atexit_hidden not present in this batch
+strtold.c: depends on xlocale_private.h, strtold_l, and __get_locale not present in this batch

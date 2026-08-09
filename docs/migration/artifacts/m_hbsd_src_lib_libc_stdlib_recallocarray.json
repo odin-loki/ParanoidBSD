@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_stdlib_recallocarray",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of recallocarray.c, IR-identical for all 1 functions, 24 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/stdlib/recallocarray.c": "0396343744e62f7a"
+  }
+}

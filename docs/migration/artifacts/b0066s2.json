@@ -1,0 +1,10 @@
+{
+  "batch": "b0066s2",
+  "verified": "2026-08-08T22:15:07Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: __hldtoa)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                  cases     failures\n--------------------------------------------\n__hldtoa                 200727            0\n--------------------------------------------\nTOTAL                    200727            0\n\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/gdtoa/_hldtoa.c": "7522f43b91e4a9bf"
+  }
+}

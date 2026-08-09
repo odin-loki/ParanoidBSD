@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libc_db_recno_rec_utils",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of rec_utils.c, IR-identical for all 1 functions, 12 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libc/db/recno/rec_utils.c": "09a29609bf216c60"
+  }
+}

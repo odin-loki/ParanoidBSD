@@ -1,0 +1,12 @@
+{
+  "batch": "b0064",
+  "verified": "2026-08-08T11:22:21Z",
+  "evidence": "harness green + 5/5 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction            cases     failures  result\n-------------------------------------------------------\nmbsinit            200248            0  PASS\nmbsinit_l          201038            0  PASS\n-------------------------------------------------------\nTOTAL              401286            0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/locale/nomacros.c": "e40ad17ce33572e9",
+    "hbsd/src/lib/libc/locale/ctype.c": "99cf03cefd09938f",
+    "hbsd/src/lib/libc/locale/mbsinit.c": "0a66bc1ca53274c0"
+  }
+}

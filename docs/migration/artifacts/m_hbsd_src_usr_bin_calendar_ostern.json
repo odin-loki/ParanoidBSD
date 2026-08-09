@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_usr_bin_calendar_ostern",
+  "verified": "2026-07-30T09:30:03Z",
+  "evidence": "mechanical port of ostern.c, IR-identical for all 1 functions, 25 planted bugs all rejected",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/usr.bin/calendar/ostern.c": "6dc5a885ffd02de5"
+  }
+}

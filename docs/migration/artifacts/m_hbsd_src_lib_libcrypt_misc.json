@@ -1,0 +1,10 @@
+{
+  "batch": "m_hbsd_src_lib_libcrypt_misc",
+  "verified": "2026-07-30T09:29:43Z",
+  "evidence": "mechanical port of misc.c, IR-identical for all 2 functions, 8 planted bugs all rejected (helpers kept module-local)",
+  "ir_equivalent": true,
+  "harness_output": "",
+  "input_hashes": {
+    "hbsd/src/lib/libcrypt/misc.c": "5d0808e184bdecf1"
+  }
+}

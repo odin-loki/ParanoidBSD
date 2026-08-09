@@ -1,0 +1,10 @@
+{
+  "batch": "b0146s2",
+  "verified": "2026-08-08T22:42:36Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 6/6: efi_map_foreach_entry, handle_efi_map_entry, efi_map_add_entries, efi_map_exclude_entries)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                          cases     failures  result\n-------------------------- ------------ ------------  ------\nefi_map_foreach_entry            200058            0  PASS\nhandle_efi_map_entry             203840            0  PASS\nefi_map_add_entries              200058            0  PASS\nefi_map_exclude_entries          200058            0  PASS\nprint_efi_map_entry              201632            0  PASS\nefi_map_print_entries            200058            0  PASS\nefi_next_descriptor              200128            0  PASS\nTOTAL                           1405832            0  PASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/kern/subr_efi_map.c": "c02e93a972dc1a89"
+  }
+}

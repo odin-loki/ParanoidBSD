@@ -1,0 +1,11 @@
+{
+  "batch": "b0099",
+  "verified": "2026-07-30T10:29:37Z",
+  "evidence": "harness green + IR-identical for all 2 functions",
+  "ir_equivalent": true,
+  "harness_output": "\nfunction            cases     failures   result\n------------ ------------ ------------   ------\nwcsncat            222022            0   PASS\nstrpbrk            227800            0   PASS\n------------ ------------ ------------   ------\nTOTAL              449822            0   PASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/string/wcsncat.c": "871f0abd8c02123b",
+    "hbsd/src/lib/libc/string/strpbrk.c": "5cfb557ba5d3af33"
+  }
+}

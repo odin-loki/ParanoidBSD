@@ -1,0 +1,10 @@
+{
+  "batch": "b0124s1",
+  "verified": "2026-08-08T22:17:24Z",
+  "evidence": "harness green + IR-identical for all 1 functions",
+  "ir_equivalent": true,
+  "harness_output": "\n+----------------------+------------+------------+\n| function             |      cases |   failures |\n+----------------------+------------+------------+\n| printifname          |     253399 |          0 |\n+----------------------+------------+------------+\n| TOTAL                |     253399 |          0 |\n+----------------------+------------+------------+\n\nPASS: port matches oracle\n",
+  "input_hashes": {
+    "hbsd/src/sbin/ipf/libipf/printifname.c": "06ad42c0cc1d46b4"
+  }
+}

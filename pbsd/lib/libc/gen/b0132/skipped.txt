@@ -1,0 +1,1 @@
+disklabel.c: getdiskbyname() needs the BSD capability database (cgetent/cgetcap/cgetstr/cgetnum), _PATH_DISKTAB and struct disklabel/MAXPARTITIONS/NDDATA, none of which exist here; only the file's static gettype() helper is ported.
