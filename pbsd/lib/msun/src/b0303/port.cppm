@@ -1,6 +1,5 @@
 module;
 
-#include <cmath>
 #include <cfloat>
 #include <complex>
 #include <cstdint>
@@ -84,7 +83,7 @@ do {								\
 
 } // namespace pbsd::lib_msun_src::b0303::detail
 
-export namespace pbsd::lib_msun_src::b0303 {
+namespace pbsd::lib_msun_src::b0303 {
 
 using std::uint16_t;
 

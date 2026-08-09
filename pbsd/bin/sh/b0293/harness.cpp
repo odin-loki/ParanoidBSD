@@ -267,9 +267,7 @@ test_fdctx_read(const unsigned char *data, size_t len, const char *tag)
 	Stat &st_dest = S("fdctx_destroy");
 
 	int fd = make_temp_file(data, len);
-	int fd2 = dup(fd);
-	if (fd2 < 0)
-		std::exit(3);
+	int fd2 = make_temp_file(data, len);
 	P::fdctx pf{}, rf{};
 
 	ref_fdctx_init(fd, &rf);

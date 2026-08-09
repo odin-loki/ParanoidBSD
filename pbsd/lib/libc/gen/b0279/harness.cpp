@@ -597,8 +597,11 @@ run_uexterr_case(const port::uexterror *ue, size_t bufsz, int issetugid,
 		harness_set_getenv_value(getenv_val);
 		ref_rv = ref___uexterr_format(&rue, refg.win(), bufsz);
 		port_rv = port::__uexterr_format(ue, portg.win(), bufsz);
-		if (ref_rv != port_rv || !refg.identical(portg))
+		if (ref_rv != port_rv || !refg.identical(portg)) {
+			std::fprintf(stderr, "CTX %s rv %d/%d\nref=%s\nport=%s\n",
+			    ctx, ref_rv, port_rv, refg.win(), portg.win());
 			_exit(1);
+		}
 		_exit(0);
 	}
 	waitpid(pid, &status, 0);
