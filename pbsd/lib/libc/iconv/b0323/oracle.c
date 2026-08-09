@@ -120,6 +120,18 @@ _citrus_bcs_tolower(uint8_t c)
 	return (_citrus_bcs_isupper(c) ? (c - 'A' + 'a') : c);
 }
 
+#define _bcs_isalnum		_citrus_bcs_isalnum
+#define _bcs_isalpha		_citrus_bcs_isalpha
+#define _bcs_isblank		_citrus_bcs_isblank
+#define _bcs_isdigit		_citrus_bcs_isdigit
+#define _bcs_islower		_citrus_bcs_islower
+#define _bcs_iseol		_citrus_bcs_iseol
+#define _bcs_isspace		_citrus_bcs_isspace
+#define _bcs_isupper		_citrus_bcs_isupper
+#define _bcs_isxdigit		_citrus_bcs_isxdigit
+#define _bcs_tolower		_citrus_bcs_tolower
+#define _bcs_toupper		_citrus_bcs_toupper
+
 int
 _citrus_bcs_strcasecmp(const char * __restrict str1,
     const char * __restrict str2)
@@ -136,18 +148,7 @@ _citrus_bcs_strcasecmp(const char * __restrict str1,
 	return ((c1 == c2) ? 0 : ((c1 > c2) ? 1 : -1));
 }
 
-#define _bcs_isalnum		_citrus_bcs_isalnum
-#define _bcs_isalpha		_citrus_bcs_isalpha
-#define _bcs_isblank		_citrus_bcs_isblank
-#define _bcs_isdigit		_citrus_bcs_isdigit
-#define _bcs_islower		_citrus_bcs_islower
-#define _bcs_iseol		_citrus_bcs_iseol
-#define _bcs_isspace		_citrus_bcs_isspace
-#define _bcs_isupper		_citrus_bcs_isupper
-#define _bcs_isxdigit		_citrus_bcs_isxdigit
 #define _bcs_strcasecmp		_citrus_bcs_strcasecmp
-#define _bcs_tolower		_citrus_bcs_tolower
-#define _bcs_toupper		_citrus_bcs_toupper
 
 /* citrus_memstream.h */
 struct _citrus_memory_stream {
@@ -199,6 +200,12 @@ _citrus_memory_stream_peek(struct _citrus_memory_stream *ms)
 	return (_citrus_region_peek8(&ms->ms_region, ms->ms_pos));
 }
 
+#define _memstream		_citrus_memory_stream
+#define _memstream_bind_ptr	_citrus_memory_stream_bind_ptr
+#define _memstream_getc		_citrus_memory_stream_getc
+#define _memstream_ungetc	_citrus_memory_stream_ungetc
+#define _memstream_peek		_citrus_memory_stream_peek
+
 void
 _citrus_memory_stream_skip_ws(struct _citrus_memory_stream *ms)
 {
@@ -211,12 +218,7 @@ _citrus_memory_stream_skip_ws(struct _citrus_memory_stream *ms)
 	}
 }
 
-#define _memstream		_citrus_memory_stream
-#define _memstream_bind_ptr	_citrus_memory_stream_bind_ptr
 #define _memstream_skip_ws	_citrus_memory_stream_skip_ws
-#define _memstream_getc		_citrus_memory_stream_getc
-#define _memstream_ungetc	_citrus_memory_stream_ungetc
-#define _memstream_peek		_citrus_memory_stream_peek
 
 /* citrus_prop.h */
 typedef enum {

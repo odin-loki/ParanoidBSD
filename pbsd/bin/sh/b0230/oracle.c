@@ -974,6 +974,12 @@ oracle_input_set_strpush(int on)
 		parsefile->strpush = NULL;
 }
 
+int
+oracle_input_get_parsenleft(void)
+{
+	return parsenleft;
+}
+
 void
 oracle_trap_reset(void)
 {

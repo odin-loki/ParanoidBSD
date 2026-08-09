@@ -11,6 +11,7 @@ module;
 #include <cstdlib>
 #include <cstring>
 
+#define _SEM_SEMUN_UNDEFINED
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
@@ -23,21 +24,11 @@ module;
 
 export module pbsd.lib.libc.gen.b0279;
 
-extern "C" {
-int		issetugid(void);
-char		*getenv(const char *);
-int		_getlogin(char *, int);
-int		__semctl(int, int, int, union semun *);
-int		freebsd7___semctl(int, int, int, union semun_old *);
-}
-
-#if !defined(__FreeBSD__)
 union semun {
 	int		 val;
 	struct semid_ds	*buf;
 	unsigned short	*array;
 };
-#endif
 
 struct semid_ds_old;
 
@@ -46,6 +37,14 @@ union semun_old {
 	struct semid_ds_old	*buf;
 	unsigned short		*array;
 };
+
+extern "C" {
+int		issetugid(void);
+char		*getenv(const char *);
+int		_getlogin(char *, int);
+int		__semctl(int, int, int, union semun *);
+int		freebsd7___semctl(int, int, int, union semun_old *);
+}
 
 export namespace pbsd::lib_libc_gen::b0279 {
 
@@ -359,15 +358,6 @@ __getlogin_r_fbsd12(char *logname, int namelen)
  * SUCH DAMAGE.
  *
  */
-
-struct semid_ds;
-struct semid_ds_old;
-
-union semun_old {
-	int			 val;
-	struct semid_ds_old	*buf;
-	unsigned short		*array;
-};
 
 int
 semctl(int semid, int semnum, int cmd, ...)

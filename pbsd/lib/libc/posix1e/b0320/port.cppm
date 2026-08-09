@@ -9,10 +9,8 @@ module;
 #include <cstring>
 
 #include <strings.h>
+#include <sys/socket.h>
 
-#ifndef SOL_SOCKET
-#define SOL_SOCKET	1
-#endif
 #ifndef SO_PEERLABEL
 #define SO_PEERLABEL	0x1010
 #endif
@@ -198,7 +196,8 @@ acl_init(int count)
 		return (NULL);
 	}
 
-	error = posix_memalign((void *)&acl, 1 << _ACL_T_ALIGNMENT_BITS,
+	error = posix_memalign(reinterpret_cast<void **>((void *)&acl),
+	    1 << _ACL_T_ALIGNMENT_BITS,
 	    sizeof(struct acl_t_struct));
 	if (error) {
 		errno = error;

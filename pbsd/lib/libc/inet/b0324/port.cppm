@@ -15,6 +15,7 @@ module;
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <bsd/stdlib.h>
 
 export module pbsd.lib.libc.inet.b0324;
 
@@ -255,9 +256,9 @@ inet_net_pton(int af, const char *src, void *dst, size_t size)
 {
 	switch (af) {
 	case AF_INET:
-		return (inet_net_pton_ipv4(src, dst, size));
+		return (inet_net_pton_ipv4(src, (u_char *)dst, size));
 	case AF_INET6:
-		return (inet_net_pton_ipv6(src, dst, size));
+		return (inet_net_pton_ipv6(src, (u_char *)dst, size));
 	default:
 		errno = EAFNOSUPPORT;
 		return (-1);

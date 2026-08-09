@@ -9,6 +9,9 @@
  *   hbsd/src/lib/libc/posix1e/acl_init.c
  */
 
+#define _DEFAULT_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
 #include <sys/types.h>
 
 #include <errno.h>
@@ -16,9 +19,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)
+#endif
+
+#ifndef socklen_t
+typedef unsigned int socklen_t;
 #endif
 
 #ifndef SOL_SOCKET

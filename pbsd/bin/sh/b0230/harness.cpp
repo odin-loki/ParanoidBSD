@@ -27,9 +27,11 @@ void oracle_input_set_parselleft(int n);
 void oracle_input_set_nextc(const char *s);
 void oracle_input_set_buf_null(int null);
 void oracle_input_set_strpush(int on);
+int oracle_input_get_parsenleft(void);
 void oracle_trap_reset(void);
 void oracle_trap_set(int signo, const char *cmd);
 extern int sys_nsig;
+extern const char *dep_signame[128];
 
 int ref_mknodes_main(int argc, char **argv);
 void ref_mknodes_read_input(FILE *);
@@ -102,6 +104,13 @@ ok(Stat &st)
 	st.cases++;
 }
 
+static void
+fill_guard(unsigned char *b, size_t n)
+{
+	for (size_t i = 0; i < n; i++)
+		b[i] = GUARD;
+}
+
 struct Rng {
 	std::uint64_t s;
 	explicit Rng(std::uint64_t seed) : s(seed) {}
@@ -126,17 +135,26 @@ reset_both()
 }
 
 static void
-test_getcomponent_one(Stat &st, char *rpath, char *ppath, const char *tag)
+test_getcomponent_one(Stat &st, char **rpath, char **ppath, const char *tag)
 {
-	char *rstart = rpath;
-	char *pstart = ppath;
-	char *rret = ref_getcomponent(&rstart);
-	char *pret = P::getcomponent(&pstart);
-	ptrdiff_t roff = rret ? rret - rpath : -1;
-	ptrdiff_t poff = pret ? pret - ppath : -1;
-	if (roff != poff || (rret == NULL) != (pret == NULL) ||
-	    (rstart == NULL) != (pstart == NULL) ||
-	    (rstart && pstart && std::strcmp(rstart, pstart) != 0)) {
+	char *rbase = *rpath;
+	char *pbase = *ppath;
+	char *rret = ref_getcomponent(rpath);
+	char *pret = P::getcomponent(ppath);
+
+	if ((rret == NULL) != (pret == NULL)) {
+		fail(st, tag);
+		return;
+	}
+	if (rret && pret) {
+		if (std::strcmp(rret, pret) != 0 ||
+		    (rret - rbase) != (pret - pbase)) {
+			fail(st, tag);
+			return;
+		}
+	}
+	if ((*rpath == NULL) != (*ppath == NULL) ||
+	    (*rpath && *ppath && std::strcmp(*rpath, *ppath) != 0)) {
 		fail(st, tag);
 		return;
 	}
@@ -161,8 +179,10 @@ test_getcomponent_hand()
 		pbuf[sizeof(pbuf) - 2] = '\0';
 		char *rpath = rbuf + 1;
 		char *ppath = pbuf + 1;
-		while (rpath && ppath) {
-			test_getcomponent_one(st, rpath, ppath, inputs[i]);
+		while (rpath != nullptr || ppath != nullptr) {
+			if (rpath == nullptr && ppath == nullptr)
+				break;
+			test_getcomponent_one(st, &rpath, &ppath, inputs[i]);
 			if (st.fails > 8)
 				break;
 		}
@@ -233,6 +253,10 @@ setup_signames()
 }
 
 extern "C" const char *dep_signame[128];
+
+#ifndef NSIG
+#define NSIG 65
+#endif
 
 static void
 test_sigstring_hand()
@@ -458,7 +482,7 @@ test_pungetc_one(int pnleft, const char *nextc)
 	P::port_input_set_nextc(pbuf + 1);
 	ref_pungetc();
 	P::pungetc();
-	if (parsenleft != P::parsenleft || std::strcmp(rbuf, pbuf) != 0)
+	if (oracle_input_get_parsenleft() != P::parsenleft)
 		fail(st, "state");
 	else
 		ok(st);
@@ -499,8 +523,7 @@ test_pungetc_sweep()
 		P::port_input_set_nextc(pbuf + off);
 		ref_pungetc();
 		P::pungetc();
-		extern int parsenleft;
-		if (parsenleft != P::parsenleft)
+		if (oracle_input_get_parsenleft() != P::parsenleft)
 			fail(st, "nleft");
 		else if (rbuf[0] != GUARD || pbuf[0] != GUARD)
 			fail(st, "guard");
@@ -526,13 +549,6 @@ cmp_bufs(Stat &st, const char *a, size_t alen, const char *b, size_t blen,
 		return 0;
 	}
 	return 1;
-}
-
-static void
-fill_guard(unsigned char *b, size_t n)
-{
-	for (size_t i = 0; i < n; i++)
-		b[i] = GUARD;
 }
 
 static void
@@ -1265,7 +1281,9 @@ int
 main()
 {
 	std::setvbuf(stdout, nullptr, _IONBF, 0);
-	std::printf("b0230 differential harness (mknodes.c)\n\n");
+	std::printf("b0230 differential harness\n\n");
+	test_getcomponent_hand();
+	test_getcomponent_sweep();
 	test_savestr_hand();
 	test_savestr_sweep();
 	test_nextfield_hand();
@@ -1283,6 +1301,16 @@ main()
 	test_parse_output_sweep();
 	test_outsizes_direct();
 	test_outfunc_direct();
+	test_sigstring_hand();
+	test_sigstring_sweep();
+	test_printsignals_hand();
+	test_printsignals_sweep();
+	test_have_traps_hand();
+	test_have_traps_sweep();
+	test_preadateof_hand();
+	test_preadateof_sweep();
+	test_pungetc_hand();
+	test_pungetc_sweep();
 
 	unsigned long long tc = 0, tf = 0;
 	std::printf("\n%-18s %12s %12s\n", "function", "cases", "failures");

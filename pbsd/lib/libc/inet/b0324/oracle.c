@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <bsd/stdlib.h>
 
 #ifndef LONG_BIT
 #define LONG_BIT (8 * (int)sizeof(long))
@@ -93,6 +94,8 @@ typedef unsigned char u_char;
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+
+int ref_inet_aton(const char *cp, struct in_addr *addr);
 
 /*%
  * Ascii internet address interpretation routine.

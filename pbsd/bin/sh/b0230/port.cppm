@@ -894,6 +894,12 @@ port_input_set_strpush(int on)
 		parsefile->strpush = NULL;
 }
 
+int
+port_input_get_parsenleft(void)
+{
+	return parsenleft;
+}
+
 void
 port_trap_reset(void)
 {

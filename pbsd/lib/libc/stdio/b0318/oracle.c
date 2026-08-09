@@ -105,8 +105,8 @@ struct xlocale_ctype {
 
 typedef struct xlocale_ctype *locale_t;
 
-locale_t b0318_default_locale;
-locale_t b0318_global_locale;
+locale_t b0318_default_locale = &b0318_ctype;
+locale_t b0318_global_locale = &b0318_ctype;
 
 int b0318_prepwrite_ret = 0;
 int b0318_sfvwrite_ret = 0;

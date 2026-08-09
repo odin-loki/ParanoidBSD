@@ -1,0 +1,13 @@
+{
+  "batch": "b0309",
+  "verified": "2026-08-09T02:59:10Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/6: fminimum_magf)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                cases     failures\n---------------- ------------ ------------\nfmaximum_magl          181752            0\nhypotf                  53591            0\nfminimum_magf           54196            0\nisnan                   60398            0\n__isnanf                51398            0\n__isnanl               181096            0\n---------------- ------------ ------------\nTOTAL                  582431            0\nPASS\n",
+  "input_hashes": {
+    "hbsd/src/lib/msun/src/s_fmaximum_magl.c": "c71a7a674e27ae9e",
+    "hbsd/src/lib/msun/src/e_hypotf.c": "a8647bdf406369b2",
+    "hbsd/src/lib/msun/src/s_fminimum_magf.c": "05ad66d03c807f9b",
+    "hbsd/src/lib/msun/src/s_isnan.c": "43091d48ab183bc7"
+  }
+}
