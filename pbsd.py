@@ -52,8 +52,8 @@ os.environ.pop("CURSOR_API_KEY", None)
 MODEL = "composer-2.5"                    # cheap bulk model; escalate on gate failure
 ESCALATE_MODEL = "claude-opus-5-thinking-high"
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
-DEFAULT_JOBS = 14        # agent concurrency; circuit breaker halves on rate limits
-DEFAULT_GATE_JOBS = 4    # max harness builds in flight (OOM guard)
+DEFAULT_JOBS = 18        # agent concurrency; circuit breaker halves on rate limits
+DEFAULT_GATE_JOBS = 6    # max harness builds in flight (~6×5GB peak)
 HARNESS_VMEM_KB = 5 * 1024 * 1024         # virtual memory cap per harness (KiB)
 RATE_LIMIT_PAUSE = 120  # seconds to sleep when the API keeps rate-limiting us
 RATE_LIMIT_STREAK = 8   # consecutive rate limits before we pause and halve concurrency

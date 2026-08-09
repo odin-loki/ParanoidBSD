@@ -25,7 +25,7 @@ start_driver() {
     pkill -f 'cursor-agent.*index.js -p' 2>/dev/null || true
   fi
   rm -f ~/pbsd/.git/index.lock
-  setsid nohup env SKIP_MECH=1 JOBS="${JOBS:-14}" GATE_JOBS="${GATE_JOBS:-4}" bash "$HOME/pbsd_driver.sh" >>~/pbsd_run.log 2>&1 &
+  setsid nohup env JOBS="${JOBS:-18}" GATE_JOBS="${GATE_JOBS:-6}" bash "$HOME/pbsd_driver.sh" >>~/pbsd_run.log 2>&1 &
   log "started pbsd_driver pid=$!"
 }
 

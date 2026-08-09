@@ -4,8 +4,8 @@ export PATH="$HOME/.local/bin:$PATH"
 unset CURSOR_API_KEY
 cd "$HOME/pbsd" || exit 1
 
-JOBS="${JOBS:-14}"
-GATE_JOBS="${GATE_JOBS:-4}"
+JOBS="${JOBS:-18}"
+GATE_JOBS="${GATE_JOBS:-6}"
 LOG="$HOME/pbsd_run.log"
 MAX_ROUNDS=50
 
@@ -40,7 +40,7 @@ for round in $(seq 1 "$MAX_ROUNDS"); do
   echo "round $round exited rc=$rc" >>"$LOG"
   git add -A >/dev/null 2>&1
   git commit -q -m "pbsd: round $round checkpoint" >/dev/null 2>&1 || true
-  sleep 30
+  sleep 15
 done
 
 {
