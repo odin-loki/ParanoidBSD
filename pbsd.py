@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures as cf
 import csv
+import fcntl
 import hashlib
 import json
 import os
@@ -51,7 +52,9 @@ os.environ.pop("CURSOR_API_KEY", None)
 MODEL = "composer-2.5"                    # cheap bulk model; escalate on gate failure
 ESCALATE_MODEL = "claude-opus-5-thinking-high"
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
-DEFAULT_JOBS = 24       # agent concurrency; circuit breaker halves on rate limits
+DEFAULT_JOBS = 8        # agent concurrency; circuit breaker halves on rate limits
+DEFAULT_GATE_JOBS = 2   # max harness builds in flight (OOM guard)
+HARNESS_VMEM_KB = 6 * 1024 * 1024         # virtual memory cap per harness (KiB)
 RATE_LIMIT_PAUSE = 120  # seconds to sleep when the API keeps rate-limiting us
 RATE_LIMIT_STREAK = 8   # consecutive rate limits before we pause and halve concurrency
 AGENT_TIMEOUT = 1800          # cursor-agent -p can hang; always bound it
@@ -162,7 +165,7 @@ Produce EXACTLY these four files in {outdir}/ and nothing else:
 3. harness.cpp — a differential test with `int main()`. For every function:
    - hand-written edge cases (empty, single char, NUL-heavy, high-bit bytes
      0x80-0xFF, boundary lengths), AND
-   - a fixed-seed randomised sweep, at least 200000 iterations.
+   - a fixed-seed randomised sweep, at least {sweep_iters} iterations.
    For each case call BOTH the port and the ref_ oracle and compare:
    - return values;
    - for functions that write to a buffer: allocate TWO buffers, fill both with
@@ -1445,9 +1448,55 @@ def banned_hits(d: Path) -> list[str]:
     return hits
 
 
-def run_build(d: Path, timeout: int = GATE_TIMEOUT) -> tuple[bool, str]:
+def gate_jobs() -> int:
+    return max(1, int(os.environ.get("PBSD_GATE_JOBS", DEFAULT_GATE_JOBS)))
+
+
+def sweep_iterations(mine: list[dict]) -> int:
+    """Scale random sweep down on large batches — huge harnesses OOM WSL."""
+    total = sum(int(r.get("lines", 0) or 0) for r in mine)
+    if total > 1500:
+        return 10000
+    if total > 600:
+        return 30000
+    return 50000
+
+
+def _gate_lock_dir() -> Path:
+    d = ROOT / ".pbsd_gate_slots"
+    d.mkdir(exist_ok=True)
+    return d
+
+
+def acquire_gate_lock(timeout: int = 3600) -> int:
+    """Hold one of N flock slots so only a few harnesses run at once."""
+    slots = gate_jobs()
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        for i in range(slots):
+            lock_path = _gate_lock_dir() / f"slot{i}.lock"
+            fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o666)
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return fd
+            except BlockingIOError:
+                os.close(fd)
+        time.sleep(2)
+    raise TimeoutError(f"gate lock wait timed out after {timeout}s")
+
+
+def release_gate_lock(fd: int) -> None:
     try:
-        r = sh(["sh", "build.sh"], cwd=d, timeout=timeout)
+        fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
+
+
+def run_build(d: Path, timeout: int = GATE_TIMEOUT) -> tuple[bool, str]:
+    # Harness differential tests on large batches can allocate tens of GB.
+    cmd = f"ulimit -v {HARNESS_VMEM_KB} 2>/dev/null || true; exec sh build.sh"
+    try:
+        r = sh(["sh", "-c", cmd], cwd=d, timeout=timeout)
         return r.returncode == 0, (r.stdout or "") + (r.stderr or "")
     except subprocess.TimeoutExpired:
         # A hung run is a failed run. For a mutant that means the bug WAS
@@ -1619,23 +1668,29 @@ def gate(batch_id: str, d: Path, mine: list[dict]) -> tuple[bool, str]:
     if hits:
         return False, "banned token: " + hits[0]
 
-    ok, out = run_build(d)
-    if not ok:
-        return False, "differential run failed:\n" + out[-1500:]
-
-    # Free proof first. If the compiler produces identical IR from the C and the
-    # C++, the port is behaviour-preserving and no harness argument is needed.
-    ir_ok, ir_detail = ir_equivalence(d)
-    if ir_ok:
-        detail = f"harness green + {ir_detail}"
-    else:
-        ok, mdetail = mutation_check(d)
+    gate_fd = None
+    try:
+        gate_fd = acquire_gate_lock()
+        ok, out = run_build(d)
         if not ok:
-            return False, "mutation check: " + mdetail
-        detail = f"harness green + {mdetail} (IR: {ir_detail})"
+            return False, "differential run failed:\n" + out[-1500:]
 
-    record_artifact(batch_id, detail, ir_ok, out, mine)
-    return True, detail
+        # Free proof first. If the compiler produces identical IR from the C and the
+        # C++, the port is behaviour-preserving and no harness argument is needed.
+        ir_ok, ir_detail = ir_equivalence(d)
+        if ir_ok:
+            detail = f"harness green + {ir_detail}"
+        else:
+            ok, mdetail = mutation_check(d)
+            if not ok:
+                return False, "mutation check: " + mdetail
+            detail = f"harness green + {mdetail} (IR: {ir_detail})"
+
+        record_artifact(batch_id, detail, ir_ok, out, mine)
+        return True, detail
+    finally:
+        if gate_fd is not None:
+            release_gate_lock(gate_fd)
 
 
 def attempt_batch(batch_id: str, mine: list[dict], model: str,
@@ -1660,6 +1715,7 @@ def attempt_batch(batch_id: str, mine: list[dict], model: str,
         outdir=str(outdir.relative_to(ROOT)),
         module=module,
         ns=namespace,
+        sweep_iters=sweep_iterations(mine),
     )
 
     def run_with(m: str) -> tuple[bool, str, str]:
@@ -2157,6 +2213,8 @@ def main() -> int:
     ap.add_argument("--batches", type=int, default=0, help="0 = run until done")
     ap.add_argument("--jobs", "-j", type=int, default=JOBS,
                     help="batches in flight; 0 = DEFAULT_JOBS")
+    ap.add_argument("--gate-jobs", type=int, default=0,
+                    help="max harness builds in flight; 0 = DEFAULT_GATE_JOBS")
     ap.add_argument("--no-mechanical", action="store_true",
                     help="always use the agent, skip the free deterministic port")
     ap.add_argument("--mechanical-only", action="store_true",
@@ -2168,6 +2226,11 @@ def main() -> int:
     ap.add_argument("--deferred", action="store_true",
                     help="work only the deferred queue (e.g. once you have credits)")
     a = ap.parse_args()
+
+    if a.gate_jobs:
+        os.environ["PBSD_GATE_JOBS"] = str(a.gate_jobs)
+    elif "PBSD_GATE_JOBS" not in os.environ:
+        os.environ["PBSD_GATE_JOBS"] = str(DEFAULT_GATE_JOBS)
 
     global MECHANICAL
     if a.no_mechanical:
@@ -2201,7 +2264,7 @@ def main() -> int:
         say(f"upstream drift: reopened {n_drift} batches")
         save_rows(rows)
 
-    jobs_mech = a.jobs or (os.cpu_count() or 8)
+    jobs_mech = min(a.jobs or 8, os.cpu_count() or 8)
     run_mechanical_phase(rows, jobs_mech)
     if a.mechanical_only:
         status()
