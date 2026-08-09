@@ -18,24 +18,15 @@ function Stop-PbsdServices {
 }
 
 function Deploy-WslScripts {
-    $repoWsl = (wsl -d Ubuntu -- wslpath -a $Repo 2>$null).Trim()
-    if (-not $repoWsl) { $repoWsl = "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System" }
-  Wsl "python3 -c \"
-from pathlib import Path
-repo = Path('$repoWsl')
-home = Path('/home/odin')
-tmp = Path('/mnt/c/Users/odinl/AppData/Local/Temp/pbsd_run')
-for name in ('pbsd_watchdog.sh', 'pbsd_driver.sh', 'push_github.sh'):
-    src = tmp / name
-    if src.is_file():
-        dst = home / name
-        dst.write_text(src.read_text().replace(chr(13), ''))
-        dst.chmod(0o755)
-p = repo / 'pbsd.py'
-if p.is_file():
-    (home / 'pbsd' / 'pbsd.py').write_text(p.read_text().replace(chr(13), ''))
-print('deployed')
-\""
+    $cmds = @(
+        'tr -d "\r" < /mnt/c/Users/odinl/AppData/Local/Temp/pbsd_run/pbsd_watchdog.sh > /home/odin/pbsd_watchdog.sh'
+        'tr -d "\r" < /mnt/c/Users/odinl/AppData/Local/Temp/pbsd_run/pbsd_driver.sh > /home/odin/pbsd_driver.sh'
+        'tr -d "\r" < /mnt/c/Users/odinl/AppData/Local/Temp/pbsd_run/push_github.sh > /home/odin/push_github.sh'
+        'tr -d "\r" < "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/pbsd.py" > /home/odin/pbsd/pbsd.py'
+        'chmod +x /home/odin/pbsd_watchdog.sh /home/odin/pbsd_driver.sh /home/odin/push_github.sh'
+    )
+    foreach ($c in $cmds) { Wsl $c }
+    return 'deployed'
 }
 
 function Start-PbsdWatchdog {
