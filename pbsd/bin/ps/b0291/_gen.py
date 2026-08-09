@@ -1,19 +1,10 @@
 #!/usr/bin/env python3
-"""Generate b0291 batch files (oracle.c, port.cppm, harness.cpp, build.sh)."""
+"""One-shot generator for b0291 oracle.c, port.cppm, build.sh."""
 import re
 import textwrap
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
-HBSD = ROOT.parent.parent.parent.parent / "hbsd" / "src" / "bin" / "ps"
-
-SOURCES = [
-    ("fmt.c", ROOT.parent.parent.parent.parent / "hbsd/src/bin/ps/fmt.c"),
-    ("keyword.c", ROOT.parent.parent.parent.parent / "hbsd/src/bin/ps/keyword.c"),
-    ("print.c", ROOT.parent.parent.parent.parent / "hbsd/src/bin/ps/print.c"),
-]
-
-# Fix path
+OUT = Path("/home/odin/pbsd/pbsd/bin/ps/b0291")
 HBSD_PS = Path("/home/odin/pbsd/hbsd/src/bin/ps")
 SOURCES = [
     ("fmt.c", HBSD_PS / "fmt.c"),
@@ -31,15 +22,11 @@ PUBLIC_FUNCS = [
     "getpcpu", "pcpu", "pmem", "pagein", "maxrss", "priorityr", "kvar", "rvar",
     "emulname", "label", "loginclass", "jailname",
 ]
-
 STATIC_FUNCS = [
-    "shquote", "cmdpart",
-    "vcmp", "alias_errx", "merge_alias", "resolve_alias",
+    "shquote", "cmdpart", "vcmp", "alias_errx", "merge_alias", "resolve_alias",
     "printtime", "getpmem", "printval",
 ]
-
 ALL_RENAME = PUBLIC_FUNCS + STATIC_FUNCS
-
 FPTR_NAMES = [
     "arguments", "pcpu", "pmem", "kvar", "loginclass", "ucomm", "command",
     "emulname", "elapsed", "elapseds", "egroupname", "cpunum", "maxrss",
@@ -84,6 +71,7 @@ PREAMBLE = r'''
 #endif
 
 typedef int fixpt_t;
+typedef unsigned long vm_size_t;
 typedef long segsz_t;
 typedef unsigned int u_int;
 typedef unsigned long u_long;
@@ -326,7 +314,6 @@ struct kinfo_proc {
 #define ARGUMENTS_WIDTH 16
 #define ps_pgtok(a) (((a) * getpagesize()) / 1024)
 
-/* Harness-provided globals and stubs */
 extern fixpt_t ccpu;
 extern int cflag, eval, fscale, nlistread, rawcpu;
 extern unsigned long mempages;
@@ -376,61 +363,57 @@ static inline void b0291_errx(int eval, const char *fmt, ...)
 #endif /* B0291_PS_BATCH */
 '''
 
+
 def strip_includes(text: str) -> str:
-    lines = []
+    out = []
     for line in text.splitlines():
         if re.match(r'^\s*#\s*include\b', line):
             continue
-        lines.append(line)
-    return '\n'.join(lines) + '\n'
+        out.append(line)
+    return '\n'.join(out) + '\n'
+
 
 def rename_funcs(text: str) -> str:
     for fn in sorted(ALL_RENAME, key=len, reverse=True):
-        # function definitions and calls
         text = re.sub(rf'\b{fn}\b', f'ref_{fn}', text)
     return text
 
-def fptr_defines() -> str:
-    lines = ['/* Map keyword table function pointers to ref_ symbols */']
-    for fn in FPTR_NAMES:
-        lines.append(f'#define {fn} ref_{fn}')
-    return '\n'.join(lines) + '\n'
 
-def process_sources() -> str:
-    parts = [PREAMBLE, fptr_defines()]
+def sources_only(prefix: str = "") -> str:
+    parts = []
     for name, path in SOURCES:
-        raw = path.read_text()
-        body = strip_includes(raw)
-        body = rename_funcs(body)
+        body = strip_includes(path.read_text())
+        # Expose keyword table for harness differential tests (not a function body).
+        body = body.replace('static VAR keywords[]', 'VAR keywords[]')
+        if prefix:
+            for fn in sorted(ALL_RENAME, key=len, reverse=True):
+                body = re.sub(rf'\b{fn}\b', f'{prefix}{fn}', body)
         parts.append(f'/* ---- {name} ---- */\n')
         parts.append(body)
     return '\n'.join(parts)
 
-def gen_oracle():
-    return '/* oracle.c - reference for PBSD batch b0291 */\n' + process_sources()
 
-def gen_port():
-    body = process_sources()
-    # undo ref_ prefix for port (use original names)
-    for fn in ALL_RENAME:
-        body = body.replace(f'ref_{fn}', fn)
-    # Remove errx macro hack for port - use harness errx
-    body = body.replace('#undef errx\n#define errx b0291_errx\n', '')
-    port = f'''module;
+def gen_oracle() -> str:
+    fptr = '\n'.join(f'#define {fn} ref_{fn}' for fn in FPTR_NAMES)
+    return (
+        '/* oracle.c - reference for PBSD batch b0291 */\n'
+        + PREAMBLE + '\n/* keyword table function pointer aliases */\n' + fptr + '\n'
+        + sources_only('ref_')
+    )
 
-{PREAMBLE}
 
-export module pbsd.bin.ps.b0291;
+def gen_port() -> str:
+    return (
+        'module;\n'
+        + PREAMBLE
+        + '\nexport module pbsd.bin.ps.b0291;\n\n'
+        + 'export namespace pbsd::bin_ps::b0291 {\n\n'
+        + sources_only('')
+        + '\n} // namespace pbsd::bin_ps::b0291\n'
+    )
 
-export namespace pbsd::bin_ps::b0291 {{
 
-{body}
-
-}} // namespace pbsd::bin_ps::b0291
-'''
-    return port
-
-def gen_build_sh():
+def gen_build_sh() -> str:
     return textwrap.dedent('''\
         #!/bin/sh
         set -e
@@ -449,9 +432,14 @@ def gen_build_sh():
             $CXX -std=c++23 -fmodules-ts -O2 -c -x c++ port.cppm -o port.o
             $CXX -std=c++23 -fmodules-ts -O2 -c harness.cpp -o harness.o
         fi
-        $CXX -std=c++23 -O2 -o harness harness.o port.o oracle.o -ldl -lm
+        $CXX -std=c++23 -O2 -o harness harness.o port.o oracle.o -lm \\
+            -Wl,--wrap=malloc -Wl,--wrap=exit
         exec ./harness
     ''')
 
-# harness is written separately in a file due to size
-print("gen script ready")
+
+if __name__ == '__main__':
+    OUT.joinpath('oracle.c').write_text(gen_oracle())
+    OUT.joinpath('port.cppm').write_text(gen_port())
+    OUT.joinpath('build.sh').write_text(gen_build_sh())
+    print('wrote oracle.c port.cppm build.sh')

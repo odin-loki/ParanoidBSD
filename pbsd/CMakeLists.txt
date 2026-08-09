@@ -112,6 +112,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/db/recno/b0285/port.cppm
   lib/libc/db/recno/rec_utils_m/port.cppm
   lib/libc/db/test/b0203/port.cppm
+  lib/libc/db/test/btree.tests/b0289/port.cppm
   lib/libc/db/test/hash.tests/b0184/port.cppm
   lib/libc/db/test/hash.tests/b0185/port.cppm
   lib/libc/gdtoa/b0023/port.cppm
@@ -194,6 +195,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/iconv/b0288/port.cppm
   lib/libc/inet/b0274/port.cppm
   lib/libc/inet/b0283/port.cppm
+  lib/libc/inet/b0290/port.cppm
   lib/libc/locale/b0002/port.cppm
   lib/libc/locale/b0039/port.cppm
   lib/libc/locale/b0041/port.cppm
@@ -494,6 +496,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/msun/src/b0269/port.cppm
   lib/msun/src/b0276/port.cppm
   lib/msun/src/b0277/port.cppm
+  lib/msun/src/b0287/port.cppm
   lib/msun/src/e_acosh_m/port.cppm
   lib/msun/src/e_acoshf_m/port.cppm
   lib/msun/src/e_atanh_m/port.cppm

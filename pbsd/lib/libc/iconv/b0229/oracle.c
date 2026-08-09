@@ -22,6 +22,14 @@
  * without it.
  */
 
+/*
+ * strict -std=c11 hides the POSIX/BSD interfaces (open(2), mmap(2), strdup(3),
+ * be32toh(3), ...) that the batch sources use.
+ */
+#ifndef _GNU_SOURCE
+#define	_GNU_SOURCE
+#endif
+
 #include <sys/types.h>
 #include <sys/queue.h>
 #include <sys/stat.h>

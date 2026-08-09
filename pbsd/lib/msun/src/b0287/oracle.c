@@ -484,7 +484,7 @@ ref_atan2(double y, double x)
 	    switch(m) {
 		case 0: 
 		case 1: return y; 	/* atan(+-0,+anything)=+-0 */
-		case 2: return  pi_atan2_atan2+tiny_atan2;/* atan(+0,-anything) = pi */
+		case 2: return  pi_atan2+tiny_atan2;/* atan(+0,-anything) = pi */
 		case 3: return -pi_atan2-tiny_atan2;/* atan(-0,-anything) =-pi */
 	    }
 	}
@@ -495,8 +495,8 @@ ref_atan2(double y, double x)
 	if(ix==0x7ff00000) {
 	    if(iy==0x7ff00000) {
 		switch(m) {
-		    case 0: return  pi_atan2_o_4+tiny_atan2;/* atan(+INF,+INF) */
-		    case 1: return -pi_atan2_o_4-tiny_atan2;/* atan(-INF,+INF) */
+		    case 0: return  pi_o_4+tiny_atan2;/* atan(+INF,+INF) */
+		    case 1: return -pi_o_4-tiny_atan2;/* atan(-INF,+INF) */
 		    case 2: return  3.0*pi_o_4+tiny_atan2;/*atan(+INF,-INF)*/
 		    case 3: return -3.0*pi_o_4-tiny_atan2;/*atan(-INF,-INF)*/
 		}
@@ -504,7 +504,7 @@ ref_atan2(double y, double x)
 		switch(m) {
 		    case 0: return  zero_atan2  ;	/* atan(+...,+INF) */
 		    case 1: return -zero_atan2  ;	/* atan(-...,+INF) */
-		    case 2: return  pi_atan2_atan2+tiny_atan2  ;	/* atan(+...,-INF) */
+		    case 2: return  pi_atan2+tiny_atan2  ;	/* atan(+...,-INF) */
 		    case 3: return -pi_atan2-tiny_atan2  ;	/* atan(-...,-INF) */
 		}
 	    }
@@ -523,7 +523,7 @@ ref_atan2(double y, double x)
 	switch (m) {
 	    case 0: return       z  ;	/* atan(+,+) */
 	    case 1: return      -z  ;	/* atan(-,+) */
-	    case 2: return  pi_atan2_atan2-(z-pi_lo_atan2);/* atan(+,-) */
+	    case 2: return  pi_atan2-(z-pi_lo_atan2);/* atan(+,-) */
 	    default: /* case 3 */
 	    	    return  (z-pi_lo_atan2)-pi_atan2;/* atan(-,-) */
 	}
@@ -670,6 +670,6 @@ ref_fmodl(long double x, long double y)
 	} else {
 	    ux.bits.exp = iy + BIAS;
 	}
-	x = ux.e * one_fmodl_fmodl;		/* create necessary signal */
+	x = ux.e * one_fmodl;		/* create necessary signal */
 	return x;		/* exact output */
 }

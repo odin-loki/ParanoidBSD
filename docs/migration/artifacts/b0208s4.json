@@ -1,0 +1,10 @@
+{
+  "batch": "b0208s4",
+  "verified": "2026-08-09T00:18:53Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 1/1: linux_getcwd)",
+  "ir_equivalent": false,
+  "harness_output": "b0208s4 differential test: linux_getcwd\n----------------------------------------------------------\n\nfunction                        cases     failures\nlinux_getcwd [edge]             97216            0\nlinux_getcwd [random]          220000            0\n----------------------------------------------------------\nTOTAL                          317216            0\n\nRESULT: PASS\n",
+  "input_hashes": {
+    "hbsd/src/sys/compat/linux/linux_getcwd.c": "600a2a5e5e2bd371"
+  }
+}

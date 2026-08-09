@@ -1,43 +1,80 @@
 /*
- * oracle.c -- reference implementation for PBSD batch b0269.
+ * PBSD batch b0269 - reference oracle.
  *
- * The original HardenedBSD sources from lib/msun/src are concatenated below.
- * Every function has been renamed with a ref_ prefix; function bodies are
- * otherwise byte-for-byte unmodified.  Supporting definitions from math_private.h
- * and fpmath.h that the originals obtained through those headers are reproduced
- * verbatim.
- *
- * This file is the specification.  Do not modify any function body.
+ * The original HardenedBSD C sources, concatenated verbatim, with every
+ * function renamed with a `ref_` prefix.  Function bodies are UNMODIFIED.
+ * Only the supporting definitions that would normally come from the private
+ * headers <fpmath.h>, <machine/_fpmath.h> and "math_private.h" have been
+ * inlined here so that the file is self contained.
  */
 
 #include <float.h>
-#include <limits.h>
-#include <math.h>
 #include <stdint.h>
-#include <sys/types.h>
+#include <math.h>
 
-#ifndef LONG_BIT
-#ifdef __LP64__
-#define LONG_BIT 64
-#else
-#define LONG_BIT 32
-#endif
-#endif
+typedef uint32_t u_int32_t_pbsd;
+#define u_int32_t u_int32_t_pbsd
 
-/* ---- lib/msun/src/math_private.h ---------------------------------------- */
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2002, 2003 David Schultz <das@FreeBSD.ORG>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
+/* lib/libc/amd64/_fpmath.h */
+union IEEEl2bits {
+	long double	e;
+	struct {
+		unsigned int	manl	:32;
+		unsigned int	manh	:32;
+		unsigned int	exp	:15;
+		unsigned int	sign	:1;
+		unsigned int	junkl	:16;
+		unsigned int	junkh	:32;
+	} bits;
+	struct {
+		unsigned long	man	:64;
+		unsigned int	expsign	:16;
+		unsigned long	junk	:48;
+	} xbits;
+};
+
+#define	LDBL_NBIT	0x80000000
+#define	mask_nbit_l(u)	((u).bits.manh &= ~LDBL_NBIT)
+
+#define	LDBL_MANH_SIZE	32
+#define	LDBL_MANL_SIZE	32
+
+/* lib/msun/src/math_private.h -- little endian word access */
 typedef union
 {
   double value;
   struct
   {
-#if __BYTE_ORDER == __BIG_ENDIAN
-    u_int32_t msw;
-    u_int32_t lsw;
-#else
     u_int32_t lsw;
     u_int32_t msw;
-#endif
   } parts;
 } ieee_double_shape_type;
 
@@ -57,30 +94,9 @@ do {								\
   (d) = iw_u.value;						\
 } while (0)
 
-/* ---- lib/libc/amd64/_fpmath.h ------------------------------------------- */
-
-union IEEEl2bits {
-	long double	e;
-	struct {
-		unsigned int	manl	:32;
-		unsigned int	manh	:32;
-		unsigned int	exp	:15;
-		unsigned int	sign	:1;
-		unsigned int	junkl	:16;
-		unsigned int	junkh	:32;
-	} bits;
-	struct {
-		unsigned long long	man	:64;
-		unsigned int		expsign	:16;
-		unsigned long long	junk	:48;
-	} xbits;
-};
-
-#define	LDBL_NBIT	0x80000000
-
-/* ======================================================================== */
-/* lib/msun/src/s_fabsl.c                                                   */
-/* ======================================================================== */
+/* ------------------------------------------------------------------ */
+/* lib/msun/src/s_fabsl.c                                             */
+/* ------------------------------------------------------------------ */
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -122,9 +138,9 @@ ref_fabsl(long double x)
 	return (u.e);
 }
 
-/* ======================================================================== */
-/* lib/msun/src/s_nexttoward.c                                              */
-/* ======================================================================== */
+/* ------------------------------------------------------------------ */
+/* lib/msun/src/s_nexttoward.c                                        */
+/* ------------------------------------------------------------------ */
 
 /*
  * ====================================================

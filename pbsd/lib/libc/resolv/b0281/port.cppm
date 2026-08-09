@@ -11,6 +11,8 @@
 
 module;
 
+export module pbsd.lib.libc.resolv.b0281;
+
 #define DO_PTHREADS 1
 
 typedef struct {
@@ -24,17 +26,20 @@ typedef struct {
 #define pthread_key_t pbsd_b0281_pthread_key_t
 #define pthread_mutex_t pbsd_b0281_pthread_mutex_t
 
-#include <cerrno>
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
+#include <errno.h>
+#include <limits.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/uio.h>
-#include <unistd.h>
+
+extern "C" void *malloc(size_t);
+extern "C" void free(void *);
+extern "C" void *calloc(size_t, size_t);
 
 #ifndef CLOCK_MONOTONIC_FAST
 #define CLOCK_MONOTONIC_FAST CLOCK_MONOTONIC
@@ -53,8 +58,6 @@ typedef struct {
 #define nitems(x) (sizeof(x) / sizeof((x)[0]))
 
 #define DE_CONST(x, t) ((t) = (char *)(uintptr_t)(const void *)(x))
-
-export module pbsd.lib.libc.resolv.b0281;
 
 export struct __res_state_ext {
 	time_t conf_stat;

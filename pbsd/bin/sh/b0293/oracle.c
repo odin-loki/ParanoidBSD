@@ -221,6 +221,37 @@ oracle_get_exraised(void)
 	return oracle_exraised;
 }
 
+int
+oracle_get_shellparam_reset(void)
+{
+	return shellparam.reset;
+}
+
+/* globals for harness nextopt driving */
+char **
+oracle_argptr_ptr(void)
+{
+	return argptr;
+}
+
+void
+oracle_set_argptr(char **ap)
+{
+	argptr = ap;
+}
+
+char *
+oracle_get_shoptarg(void)
+{
+	return shoptarg;
+}
+
+void
+oracle_set_nextopt_optptr(char *p)
+{
+	nextopt_optptr = p;
+}
+
 /* ===================================================================== *
  * ref_ renaming
  * ===================================================================== */

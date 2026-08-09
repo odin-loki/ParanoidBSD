@@ -1,5 +1,6 @@
 module;
 
+#include <cstdbool>
 #include <cerrno>
 #include <cstdarg>
 #include <cstdio>
@@ -204,6 +205,12 @@ int
 port_get_exraised()
 {
 	return port_exraised;
+}
+
+int
+port_get_shellparam_reset()
+{
+	return shellparam.reset;
 }
 
 /* ===================================================================== *
