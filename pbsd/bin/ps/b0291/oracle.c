@@ -1,13 +1,12 @@
-/* oracle.c - reference for PBSD batch b0291 */
+/* oracle.c */
 
 #ifndef B0291_PS_BATCH
 #define B0291_PS_BATCH
-
+#define _DEFAULT_SOURCE 1
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
-
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -23,84 +22,36 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <vis.h>
-
+#include <signal.h>
+#include <time.h>
+#include <bsd/vis.h>
+#ifndef __unused
+#define __unused
+#endif
 #ifndef LONG_BIT
-#define LONG_BIT (8 * (int)sizeof(long))
+#define LONG_BIT (8*(int)sizeof(long))
 #endif
-
 #ifndef nitems
-#define nitems(x) (sizeof(x) / sizeof((x)[0]))
+#define nitems(x) (sizeof(x)/sizeof((x)[0]))
 #endif
-
-typedef int fixpt_t;
-typedef unsigned long vm_size_t;
-typedef long segsz_t;
-typedef unsigned int u_int;
-typedef unsigned long u_long;
-typedef unsigned char u_char;
-typedef unsigned short u_short;
-
-#define STAILQ_HEAD(name, type) \
-struct name { struct type *stqh_first; struct type **stqh_last; }
-#define STAILQ_ENTRY(type) \
-struct { struct type *stqe_next; }
-#define STAILQ_FIRST(head) ((head)->stqh_first)
-#define STAILQ_NEXT(elm, field) ((elm)->field.stqe_next)
-#define STAILQ_EMPTY(head) (STAILQ_FIRST(head) == NULL)
-#define STAILQ_INIT(head) do { \
-	STAILQ_FIRST((head)) = NULL; (head)->stqh_last = &STAILQ_FIRST((head)); \
-} while (0)
-#define STAILQ_INSERT_TAIL(head, elm, field) do { \
-	STAILQ_NEXT((elm), field) = NULL; \
-	*(head)->stqh_last = (elm); \
-	(head)->stqh_last = &STAILQ_NEXT((elm), field); \
-} while (0)
-#define STAILQ_FOREACH(var, head, field) \
-	for ((var) = STAILQ_FIRST((head)); (var); (var) = STAILQ_NEXT((var), field))
-
+typedef int fixpt_t; typedef unsigned long vm_size_t; typedef long segsz_t;
+typedef unsigned int u_int; typedef unsigned long u_long;
+typedef unsigned char u_char; typedef unsigned short u_short; typedef uint32_t lwpid_t;
+#define STAILQ_HEAD(name,type) struct name { struct type *stqh_first; struct type **stqh_last; }
+#define STAILQ_ENTRY(type) struct { struct type *stqe_next; }
+#define STAILQ_FIRST(h) ((h)->stqh_first)
+#define STAILQ_NEXT(e,f) ((e)->f.stqe_next)
+#define STAILQ_EMPTY(h) (STAILQ_FIRST(h)==NULL)
+#define STAILQ_INIT(h) do{STAILQ_FIRST(h)=NULL;(h)->stqh_last=&STAILQ_FIRST(h);}while(0)
+#define STAILQ_INSERT_TAIL(h,e,f) do{STAILQ_NEXT(e,f)=NULL;*(h)->stqh_last=(e);(h)->stqh_last=&STAILQ_NEXT(e,f);}while(0)
+#define STAILQ_FOREACH(v,h,f) for((v)=STAILQ_FIRST(h);(v);(v)=STAILQ_NEXT(v,f))
 #define UNLIMITED 0
-enum type { UNSPEC, CHAR, SCHAR, UCHAR, SHORT, USHORT, INT, UINT, LONG, ULONG, KPTR, PGTOK };
-
-typedef struct kinfo_str {
-	STAILQ_ENTRY(kinfo_str) ks_next;
-	char *ks_str;
-} KINFO_STR;
-
-typedef struct kinfo {
-	struct kinfo_proc *ki_p;
-	const char *ki_args;
-	const char *ki_env;
-	int ki_valid;
-	double ki_pcpu;
-	segsz_t ki_memsize;
-	union {
-		int level;
-		char *prefix;
-	} ki_d;
-	STAILQ_HEAD(, kinfo_str) ki_ks;
-} KINFO;
-
-typedef struct varent {
-	STAILQ_ENTRY(varent) next_ve;
-	const char *header;
-	const struct var *var;
-	u_int width;
-#define VE_KEEP (1 << 0)
-	uint16_t flags;
-} VARENT;
-
-struct var;
-typedef struct var VAR;
-
-struct var {
-	const char *name;
-	union {
-		const char *aliased;
-		const VAR *final_kw;
-	};
-	const char *header;
-	const char *field;
+enum type { UNSPEC,CHAR,SCHAR,UCHAR,SHORT,USHORT,INT,UINT,LONG,ULONG,KPTR,PGTOK };
+typedef struct kinfo_str { STAILQ_ENTRY(kinfo_str) ks_next; char *ks_str; } KINFO_STR;
+typedef struct kinfo { struct kinfo_proc *ki_p; const char *ki_args; const char *ki_env; int ki_valid; double ki_pcpu; segsz_t ki_memsize; union { int level; char *prefix; } ki_d; STAILQ_HEAD(,kinfo_str) ki_ks; } KINFO;
+typedef struct varent { STAILQ_ENTRY(varent) next_ve; const char *header; const struct var *var; u_int width; uint16_t flags; } VARENT;
+struct var; typedef struct var VAR;
+struct var { const char *name; union { const char *aliased; const VAR *final_kw; }; const char *header; const char *field; u_int flag; char *(*oproc)(struct kinfo *,struct varent *); size_t off; enum type type; const char *fmt; };
 #define COMM 0x01
 #define LJUST 0x02
 #define USER 0x04
@@ -108,15 +59,8 @@ struct var {
 #define NOINHERIT 0x1000
 #define RESOLVING_ALIAS 0x10000
 #define RESOLVED_ALIAS 0x20000
-	u_int flag;
-	char *(*oproc)(struct kinfo *, struct varent *);
-	size_t off;
-	enum type type;
-	const char *fmt;
-};
-
-STAILQ_HEAD(velisthead, varent);
-
+#define VE_KEEP (1<<0)
+STAILQ_HEAD(velisthead,varent);
 #define SIDL 1
 #define SRUN 2
 #define SSLEEP 3
@@ -124,22 +68,18 @@ STAILQ_HEAD(velisthead, varent);
 #define SZOMB 5
 #define SWAIT 6
 #define SLOCK 7
-
-#define TDF_SINTR 0x00000008
+#define TDF_SINTR 0x8
 #define MAXSLP 20
-
-#define P_CONTROLT 0x00000002
-#define P_PPWAIT 0x00000010
-#define P_SYSTEM 0x00000200
-#define P_TRACED 0x00000800
-#define P_WEXIT 0x00002000
-#define P_JAILED 0x01000000
-
-#define KI_CTTY 0x00000001
-#define KI_SLEADER 0x00000002
-#define KI_LOCKBLOCK 0x00000004
-#define KI_CRF_CAPABILITY_MODE 0x00000001
-
+#define P_CONTROLT 0x2
+#define P_PPWAIT 0x10
+#define P_SYSTEM 0x200
+#define P_TRACED 0x800
+#define P_WEXIT 0x2000
+#define P_JAILED 0x1000000
+#define KI_CTTY 1
+#define KI_SLEADER 2
+#define KI_LOCKBLOCK 4
+#define KI_CRF_CAPABILITY_MODE 1
 #define PRI_ITHD 1
 #define PRI_REALTIME 2
 #define PRI_TIMESHARE 3
@@ -151,18 +91,15 @@ STAILQ_HEAD(velisthead, varent);
 #define PRI_MIN_ITHD 0
 #define PUSER PRI_MIN_TIMESHARE
 #define NZERO 20
-
 #define RTP_PRIO_REALTIME PRI_REALTIME
 #define RTP_PRIO_NORMAL PRI_TIMESHARE
 #define RTP_PRIO_IDLE PRI_IDLE
 #define RTP_PRIO_ITHD PRI_ITHD
-
 #define NOCPU (-1)
 #define NODEV ((dev_t)-1)
 #ifndef S_IFCHR
 #define S_IFCHR 0020000
 #endif
-
 #define WMESGLEN 8
 #define LOCKNAMELEN 8
 #define TDNAMLEN 16
@@ -172,200 +109,42 @@ STAILQ_HEAD(velisthead, varent);
 #define LOGNAMELEN 17
 #define LOGINCLASSLEN 17
 #define MAXCOMLEN 32
-
-struct priority {
-	u_char pri_class;
-	u_char pri_level;
-	u_char pri_native;
-	u_char pri_user;
-};
-
+#define KI_NSPARE_INT 2
+#define KI_NSPARE_PTR 4
+#define KI_NSPARE_LONG 12
+struct priority { u_char pri_class,pri_level,pri_native,pri_user; };
 struct kinfo_proc {
-	int ki_structsize;
-	int ki_layout;
-	void *ki_args;
-	void *ki_paddr;
-	void *ki_addr;
-	void *ki_tracep;
-	void *ki_textvp;
-	void *ki_fd;
-	void *ki_vmspace;
-	const void *ki_wchan;
-	pid_t ki_pid;
-	pid_t ki_ppid;
-	pid_t ki_pgid;
-	pid_t ki_tpgid;
-	pid_t ki_sid;
-	pid_t ki_tsid;
-	short ki_jobc;
-	short ki_spare_short1;
-	uint32_t ki_tdev_freebsd11;
-	uint32_t ki_siglist[4];
-	uint32_t ki_sigmask[4];
-	uint32_t ki_sigignore[4];
-	uint32_t ki_sigcatch[4];
-	uid_t ki_uid;
-	uid_t ki_ruid;
-	uid_t ki_svuid;
-	gid_t ki_rgid;
-	gid_t ki_svgid;
-	short ki_ngroups;
-	short ki_spare_short2;
-	gid_t ki_groups[KI_NGROUPS];
-	vm_size_t ki_size;
-	segsz_t ki_rssize;
-	segsz_t ki_swrss;
-	segsz_t ki_tsize;
-	segsz_t ki_dsize;
-	segsz_t ki_ssize;
-	u_short ki_xstat;
-	u_short ki_acflag;
-	fixpt_t ki_pctcpu;
-	u_int ki_estcpu;
-	u_int ki_slptime;
-	u_int ki_swtime;
-	u_int ki_cow;
-	uint64_t ki_runtime;
-	struct timeval ki_start;
-	struct timeval ki_childtime;
-	long ki_flag;
-	long ki_kiflag;
-	int ki_traceflag;
-	char ki_stat;
-	signed char ki_nice;
-	char ki_lock;
-	char ki_rqindex;
-	u_char ki_oncpu_old;
-	u_char ki_lastcpu_old;
-	char ki_tdname[TDNAMLEN + 1];
-	char ki_wmesg[WMESGLEN + 1];
-	char ki_login[LOGNAMELEN + 1];
-	char ki_lockname[LOCKNAMELEN + 1];
-	char ki_comm[COMMLEN + 1];
-	char ki_emul[KI_EMULNAMELEN + 1];
-	char ki_loginclass[LOGINCLASSLEN + 1];
-	char ki_moretdname[MAXCOMLEN - TDNAMLEN + 1];
-	char ki_sparestrings[38];
-	int ki_spareints[2];
-	pid_t ki_reaper;
-	pid_t ki_reapsubtree;
-	uint64_t ki_tdev;
-	int ki_oncpu;
-	int ki_lastcpu;
-	int ki_tracer;
-	int ki_flag2;
-	int ki_fibnum;
-	u_int ki_cr_flags;
-	int ki_jid;
-	int ki_numthreads;
-	long ki_tdflags;
-	struct priority ki_pri;
-	struct rusage ki_rusage;
-	struct timeval ki_childutime;
-	struct timeval ki_childstime;
+ int ki_structsize,ki_layout; void *ki_args,*ki_paddr,*ki_addr,*ki_tracep,*ki_textvp,*ki_fd,*ki_vmspace; const void *ki_wchan;
+ pid_t ki_pid,ki_ppid,ki_pgid,ki_tpgid,ki_sid,ki_tsid; short ki_jobc,ki_spare_short1; uint32_t ki_tdev_freebsd11;
+ sigset_t ki_siglist,ki_sigmask,ki_sigignore,ki_sigcatch; uid_t ki_uid,ki_ruid,ki_svuid; gid_t ki_rgid,ki_svgid;
+ short ki_ngroups,ki_spare_short2; gid_t ki_groups[KI_NGROUPS]; vm_size_t ki_size; segsz_t ki_rssize,ki_swrss,ki_tsize,ki_dsize,ki_ssize;
+ u_short ki_xstat,ki_acflag; fixpt_t ki_pctcpu; u_int ki_estcpu,ki_slptime,ki_swtime,ki_cow; uint64_t ki_runtime;
+ struct timeval ki_start,ki_childtime; long ki_flag,ki_kiflag; int ki_traceflag; char ki_stat; signed char ki_nice; char ki_lock,ki_rqindex;
+ u_char ki_oncpu_old,ki_lastcpu_old; char ki_tdname[TDNAMLEN+1],ki_wmesg[WMESGLEN+1],ki_login[LOGNAMELEN+1],ki_lockname[LOCKNAMELEN+1],ki_comm[COMMLEN+1],ki_emul[KI_EMULNAMELEN+1],ki_loginclass[LOGINCLASSLEN+1],ki_moretdname[MAXCOMLEN-TDNAMLEN+1],ki_sparestrings[38];
+ int ki_spareints[KI_NSPARE_INT]; pid_t ki_reaper,ki_reapsubtree; uint64_t ki_tdev; int ki_oncpu,ki_lastcpu,ki_tracer,ki_flag2,ki_fibnum; u_int ki_cr_flags; int ki_jid,ki_numthreads; lwpid_t ki_tid;
+ struct priority ki_pri; struct rusage ki_rusage,ki_rusage_ch; void *ki_pcb,*ki_kstack,*ki_udata,*ki_tdaddr,*ki_pd,*ki_uerrmsg,*ki_spareptrs[KI_NSPARE_PTR]; long ki_sparelongs[KI_NSPARE_LONG],ki_sflag,ki_tdflags;
 };
-
-#define KOFF(x) offsetof(struct kinfo_proc, x)
-#define ROFF(x) offsetof(struct rusage, x)
-
+#define ki_childstime ki_rusage_ch.ru_stime
+#define ki_childutime ki_rusage_ch.ru_utime
+#define KOFF(x) offsetof(struct kinfo_proc,x)
+#define ROFF(x) offsetof(struct rusage,x)
 #define LWPFMT "d"
 #define NLWPFMT "d"
 #define UIDFMT "u"
 #define PIDFMT "d"
-
 #define COMMAND_WIDTH 16
 #define ARGUMENTS_WIDTH 16
-#define ps_pgtok(a) (((a) * getpagesize()) / 1024)
-
-extern fixpt_t ccpu;
-extern int cflag, eval, fscale, nlistread, rawcpu;
-extern unsigned long mempages;
-extern time_t now;
-extern int showthreads, sumrusage, termwidth;
-extern struct velisthead varlist;
-extern const size_t known_keywords_nb;
-
-extern char *user_from_uid(uid_t uid, int nogroup);
-extern char *group_from_gid(gid_t gid, int nogroup);
-extern char *devname(dev_t dev, mode_t type);
-extern char *jail_getname(int jid);
-extern int donlist(void);
-
-typedef void *mac_t;
-extern int mac_prepare_process_label(mac_t *);
-extern int mac_get_pid(pid_t, mac_t);
-extern int mac_to_text(mac_t, char **);
-extern void mac_free(mac_t);
-
-extern void xo_warnx(const char *fmt, ...);
-extern void xo_warn(const char *fmt, ...);
-extern void xo_err(int eval, const char *fmt, ...);
-extern void xo_errx(int eval, const char *fmt, ...);
-extern void xo_open_list(const char *name);
-extern int xo_emit(const char *fmt, ...);
-extern void xo_close_list(const char *name);
-extern int xo_finish(void);
-
-extern jmp_buf b0291_err_jmp;
-extern int b0291_err_jmp_set;
-extern int b0291_errx_code;
-
-static inline void b0291_errx(int eval, const char *fmt, ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	if (b0291_err_jmp_set)
-		longjmp(b0291_err_jmp, eval);
-	vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	exit(eval);
-}
+#define ps_pgtok(a) (((a)*getpagesize())/1024)
+extern fixpt_t ccpu; extern int cflag,eval,fscale,nlistread,rawcpu; extern unsigned long mempages; extern time_t now; extern int showthreads,sumrusage,termwidth; extern struct velisthead varlist; extern const size_t known_keywords_nb;
+extern char *user_from_uid(uid_t,int); extern char *group_from_gid(gid_t,int); extern char *devname(dev_t,mode_t); extern char *jail_getname(int); extern int donlist(void);
+typedef void *mac_t; extern int mac_prepare_process_label(mac_t*); extern int mac_get_pid(pid_t,mac_t); extern int mac_to_text(mac_t,char**); extern void mac_free(mac_t);
+extern void xo_warnx(const char*,...); extern void xo_warn(const char*,...); extern void xo_err(int,const char*,...); extern void xo_errx(int,const char*,...); extern void xo_open_list(const char*); extern int xo_emit(const char*,...); extern void xo_close_list(const char*); extern int xo_finish(void);
+extern jmp_buf b0291_err_jmp; extern int b0291_err_jmp_set,b0291_errx_code;
+static inline void b0291_errx(int eval,const char *fmt,...){va_list ap;va_start(ap,fmt);if(b0291_err_jmp_set)longjmp(b0291_err_jmp,eval);vfprintf(stderr,fmt,ap);va_end(ap);exit(eval);} 
 #undef errx
 #define errx b0291_errx
-
-#endif /* B0291_PS_BATCH */
-
-/* keyword table function pointer aliases */
-#define arguments ref_arguments
-#define pcpu ref_pcpu
-#define pmem ref_pmem
-#define kvar ref_kvar
-#define loginclass ref_loginclass
-#define ucomm ref_ucomm
-#define command ref_command
-#define emulname ref_emulname
-#define elapsed ref_elapsed
-#define elapseds ref_elapseds
-#define egroupname ref_egroupname
-#define cpunum ref_cpunum
-#define maxrss ref_maxrss
-#define label ref_label
-#define lockname ref_lockname
-#define logname ref_logname
-#define lstarted ref_lstarted
-#define mwchan ref_mwchan
-#define nwchan ref_nwchan
-#define pagein ref_pagein
-#define pri ref_pri
-#define priorityr ref_priorityr
-#define rgroupname ref_rgroupname
-#define runame ref_runame
-#define started ref_started
-#define state ref_state
-#define systime ref_systime
-#define tdev ref_tdev
-#define tdnam ref_tdnam
-#define tname ref_tname
-#define longtname ref_longtname
-#define upr ref_upr
-#define usertime ref_usertime
-#define username ref_username
-#define vsize ref_vsize
-#define wchan ref_wchan
-#define cputime ref_cputime
-#define rvar ref_rvar
+#endif
 /* ---- fmt.c ---- */
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -486,7 +265,6 @@ ref_fmt_argv(char **argv, char *cmd, char *thread, size_t maxlen)
 }
 
 /* ---- print.c ---- */
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -647,7 +425,7 @@ ref_ucomm(KINFO *k, VARENT *ve)
 }
 
 char *
-ref_tdnam(KINFO *k, VARENT *ve __unused)
+tdnam(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -661,7 +439,7 @@ ref_tdnam(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_logname(KINFO *k, VARENT *ve __unused)
+logname(KINFO *k, VARENT *ve __unused)
 {
 
 	if (*k->ki_p->ki_login == '\0')
@@ -670,7 +448,7 @@ ref_logname(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_state(KINFO *k, VARENT *ve __unused)
+state(KINFO *k, VARENT *ve __unused)
 {
 	long flag, tdflags;
 	char *cp, *buf;
@@ -744,7 +522,7 @@ ref_state(KINFO *k, VARENT *ve __unused)
 #define	scalepri(x)	((x) - PUSER)
 
 char *
-ref_pri(KINFO *k, VARENT *ve __unused)
+pri(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -753,7 +531,7 @@ ref_pri(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_upr(KINFO *k, VARENT *ve __unused)
+upr(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -763,35 +541,35 @@ ref_upr(KINFO *k, VARENT *ve __unused)
 #undef scalepri
 
 char *
-ref_username(KINFO *k, VARENT *ve __unused)
+username(KINFO *k, VARENT *ve __unused)
 {
 
 	return (strdup(user_from_uid(k->ki_p->ki_uid, 0)));
 }
 
 char *
-ref_egroupname(KINFO *k, VARENT *ve __unused)
+egroupname(KINFO *k, VARENT *ve __unused)
 {
 
 	return (strdup(group_from_gid(k->ki_p->ki_groups[0], 0)));
 }
 
 char *
-ref_rgroupname(KINFO *k, VARENT *ve __unused)
+rgroupname(KINFO *k, VARENT *ve __unused)
 {
 
 	return (strdup(group_from_gid(k->ki_p->ki_rgid, 0)));
 }
 
 char *
-ref_runame(KINFO *k, VARENT *ve __unused)
+runame(KINFO *k, VARENT *ve __unused)
 {
 
 	return (strdup(user_from_uid(k->ki_p->ki_ruid, 0)));
 }
 
 char *
-ref_tdev(KINFO *k, VARENT *ve __unused)
+tdev(KINFO *k, VARENT *ve __unused)
 {
 	dev_t dev;
 	char *str;
@@ -806,7 +584,7 @@ ref_tdev(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_tname(KINFO *k, VARENT *ve __unused)
+tname(KINFO *k, VARENT *ve __unused)
 {
 	dev_t dev;
 	char *ttname, *str;
@@ -828,7 +606,7 @@ ref_tname(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_longtname(KINFO *k, VARENT *ve __unused)
+longtname(KINFO *k, VARENT *ve __unused)
 {
 	dev_t dev;
 	const char *ttname;
@@ -841,7 +619,7 @@ ref_longtname(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_started(KINFO *k, VARENT *ve __unused)
+started(KINFO *k, VARENT *ve __unused)
 {
 	time_t then;
 	struct tm *tp;
@@ -867,7 +645,7 @@ ref_started(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_lstarted(KINFO *k, VARENT *ve __unused)
+lstarted(KINFO *k, VARENT *ve __unused)
 {
 	time_t then;
 	char *buf;
@@ -886,7 +664,7 @@ ref_lstarted(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_lockname(KINFO *k, VARENT *ve __unused)
+lockname(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -902,7 +680,7 @@ ref_lockname(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_wchan(KINFO *k, VARENT *ve __unused)
+wchan(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -918,7 +696,7 @@ ref_wchan(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_nwchan(KINFO *k, VARENT *ve __unused)
+nwchan(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -931,7 +709,7 @@ ref_nwchan(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_mwchan(KINFO *k, VARENT *ve __unused)
+mwchan(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -952,7 +730,7 @@ ref_mwchan(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-ref_vsize(KINFO *k, VARENT *ve __unused)
+vsize(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -961,7 +739,7 @@ ref_vsize(KINFO *k, VARENT *ve __unused)
 }
 
 static char *
-ref_printtime(KINFO *k, VARENT *ve __unused, long secs, long psecs)
+printtime(KINFO *k, VARENT *ve __unused, long secs, long psecs)
 /* psecs is "parts" of a second. first micro, then centi */
 {
 	static char decimal_point;
@@ -1104,16 +882,16 @@ ref_getpcpu(const KINFO *k)
 }
 
 char *
-ref_pcpu(KINFO *k, VARENT *ve __unused)
+pcpu(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
-	asprintf(&str, "%.1f", ref_getpcpu(k));
+	asprintf(&str, "%.1f", getpcpu(k));
 	return (str);
 }
 
 static double
-ref_getpmem(KINFO *k)
+getpmem(KINFO *k)
 {
 	static int failure;
 	double fracmem;
@@ -1334,7 +1112,6 @@ ref_jailname(KINFO *k, VARENT *ve __unused)
 }
 
 /* ---- keyword.c ---- */
-
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
@@ -1393,28 +1170,28 @@ VAR keywords[] = {
 	{"acflag", {NULL}, "ACFLG", "accounting-flag", 0, ref_kvar, KOFF(ki_acflag),
 	 USHORT, "x"},
 	{"acflg", {"acflag"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
-	{"args", {NULL}, "COMMAND", "ref_arguments", COMM|LJUST|USER, ref_arguments, 0,
+	{"args", {NULL}, "COMMAND", "arguments", COMM|LJUST|USER, ref_arguments, 0,
 	 UNSPEC, NULL},
 	{"blocked", {"sigmask"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"caught", {"sigcatch"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"class", {NULL}, "CLASS", "login-class", LJUST, ref_loginclass, 0,
 	 UNSPEC, NULL},
-	{"comm", {NULL}, "COMMAND", "ref_command", LJUST, ref_ucomm, 0, UNSPEC, NULL},
-	{"ref_command", {NULL}, "COMMAND", "ref_command", COMM|LJUST|USER, ref_command, 0,
+	{"comm", {NULL}, "COMMAND", "command", LJUST, ref_ucomm, 0, UNSPEC, NULL},
+	{"command", {NULL}, "COMMAND", "command", COMM|LJUST|USER, ref_command, 0,
 	 UNSPEC, NULL},
 	{"cow", {NULL}, "COW", "copy-on-write-faults", 0, ref_kvar, KOFF(ki_cow),
 	 UINT, "u"},
 	{"cpu", {NULL}, "C", "on-cpu", 0, ref_cpunum, 0, UNSPEC, NULL},
-	{"ref_cputime", {"time"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
+	{"cputime", {"time"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"dsiz", {NULL}, "DSIZ", "data-size", 0, ref_kvar, KOFF(ki_dsize),
 	 PGTOK, "ld"},
 	{"egid", {"gid"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"egroup", {"group"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"emul", {NULL}, "EMUL", "emulation-envirnment", LJUST, ref_emulname, 0,
 	 UNSPEC, NULL},
-	{"etime", {NULL}, "ELAPSED", "ref_elapsed-time", USER, ref_elapsed, 0,
+	{"etime", {NULL}, "ELAPSED", "elapsed-time", USER, ref_elapsed, 0,
 	 UNSPEC, NULL},
-	{"etimes", {NULL}, "ELAPSED", "ref_elapsed-times", USER, ref_elapseds, 0,
+	{"etimes", {NULL}, "ELAPSED", "elapsed-times", USER, ref_elapseds, 0,
 	 UNSPEC, NULL},
 	{"euid", {"uid"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"f", {NULL}, "F", "flags", 0, ref_kvar, KOFF(ki_flag), LONG, "lx"},
@@ -1434,13 +1211,13 @@ VAR keywords[] = {
 	 SHORT, "d"},
 	{"ktrace", {NULL}, "KTRACE", "ktrace", 0, ref_kvar, KOFF(ki_traceflag),
 	 INT, "x"},
-	{"ref_label", {NULL}, "LABEL", "ref_label", LJUST, ref_label, 0, UNSPEC, NULL},
+	{"label", {NULL}, "LABEL", "label", LJUST, ref_label, 0, UNSPEC, NULL},
 	{"lim", {NULL}, "LIM", "memory-limit", 0, ref_maxrss, 0, UNSPEC, NULL},
-	{"ref_lockname", {NULL}, "LOCK", "lock-name", LJUST, ref_lockname, 0,
+	{"lockname", {NULL}, "LOCK", "lock-name", LJUST, ref_lockname, 0,
 	 UNSPEC, NULL},
 	{"login", {NULL}, "LOGIN", "login-name", LJUST, ref_logname, 0,
 	 UNSPEC, NULL},
-	{"ref_logname", {"login"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
+	{"logname", {"login"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"lstart", {NULL}, "STARTED", "start-time", LJUST|USER, ref_lstarted, 0,
 	 UNSPEC, NULL},
 	{"lwp", {NULL}, "LWP", "thread-id", 0, ref_kvar, KOFF(ki_tid),
@@ -1453,7 +1230,7 @@ VAR keywords[] = {
 	 ROFF(ru_msgrcv), LONG, "ld"},
 	{"msgsnd", {NULL}, "MSGSND", "sent-messages", USER, ref_rvar,
 	 ROFF(ru_msgsnd), LONG, "ld"},
-	{"ref_mwchan", {NULL}, "MWCHAN", "wait-channel", LJUST, ref_mwchan, 0,
+	{"mwchan", {NULL}, "MWCHAN", "wait-channel", LJUST, ref_mwchan, 0,
 	 UNSPEC, NULL},
 	{"ni", {"nice"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"nice", {NULL}, "NI", "nice", 0, ref_kvar, KOFF(ki_nice), SCHAR, "d"},
@@ -1468,22 +1245,22 @@ VAR keywords[] = {
 	 LONG, "ld"},
 	{"nvcsw", {NULL}, "NVCSW", "voluntary-context-switches", USER, ref_rvar,
 	 ROFF(ru_nvcsw), LONG, "ld"},
-	{"ref_nwchan", {NULL}, "NWCHAN", "wait-channel-address", LJUST, ref_nwchan, 0,
+	{"nwchan", {NULL}, "NWCHAN", "wait-channel-address", LJUST, ref_nwchan, 0,
 	 UNSPEC, NULL},
 	{"oublk", {NULL}, "OUBLK", "written-blocks", USER, ref_rvar,
 	 ROFF(ru_oublock), LONG, "ld"},
 	{"oublock", {"oublk"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"paddr", {NULL}, "PADDR", "process-address", 0, ref_kvar, KOFF(ki_paddr),
 	 KPTR, "lx"},
-	{"ref_pagein", {NULL}, "PAGEIN", "pageins", USER, ref_pagein, 0, UNSPEC, NULL},
-	{"ref_pcpu", {"%cpu"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
+	{"pagein", {NULL}, "PAGEIN", "pageins", USER, ref_pagein, 0, UNSPEC, NULL},
+	{"pcpu", {"%cpu"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"pending", {"sig"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"pgid", {NULL}, "PGID", "process-group", 0, ref_kvar, KOFF(ki_pgid),
 	 UINT, PIDFMT},
 	{"pid", {NULL}, "PID", "pid", 0, ref_kvar, KOFF(ki_pid), UINT, PIDFMT},
-	{"ref_pmem", {"%mem"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
+	{"pmem", {"%mem"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"ppid", {NULL}, "PPID", "ppid", 0, ref_kvar, KOFF(ki_ppid), UINT, PIDFMT},
-	{"ref_pri", {NULL}, "PRI", "priority", 0, ref_pri, 0, UNSPEC, NULL},
+	{"pri", {NULL}, "PRI", "priority", 0, ref_pri, 0, UNSPEC, NULL},
 	{"re", {NULL}, "RE", "residency-time", INF127, ref_kvar, KOFF(ki_swtime),
 	 UINT, "d"},
 	{"rgid", {NULL}, "RGID", "real-gid", 0, ref_kvar, KOFF(ki_rgid),
@@ -1511,18 +1288,18 @@ VAR keywords[] = {
 	 PGTOK, "ld"},
 	{"start", {NULL}, "STARTED", "start-time", LJUST|USER, ref_started, 0,
 	 UNSPEC, NULL},
-	{"stat", {"ref_state"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
-	{"ref_state", {NULL}, "STAT", "ref_state", LJUST, ref_state, 0, UNSPEC, NULL},
+	{"stat", {"state"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
+	{"state", {NULL}, "STAT", "state", LJUST, ref_state, 0, UNSPEC, NULL},
 	{"svgid", {NULL}, "SVGID", "saved-gid", 0, ref_kvar, KOFF(ki_svgid),
 	 UINT, UIDFMT},
 	{"svuid", {NULL}, "SVUID", "saved-uid", 0, ref_kvar, KOFF(ki_svuid),
 	 UINT, UIDFMT},
-	{"ref_systime", {NULL}, "SYSTIME", "system-time", USER, ref_systime, 0,
+	{"systime", {NULL}, "SYSTIME", "system-time", USER, ref_systime, 0,
 	 UNSPEC, NULL},
 	{"tdaddr", {NULL}, "TDADDR", "thread-address", 0, ref_kvar, KOFF(ki_tdaddr),
 	 KPTR, "lx"},
-	{"ref_tdev", {NULL}, "TDEV", "terminal-device", 0, ref_tdev, 0, UNSPEC, NULL},
-	{"ref_tdnam", {"tdname"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
+	{"tdev", {NULL}, "TDEV", "terminal-device", 0, ref_tdev, 0, UNSPEC, NULL},
+	{"tdnam", {"tdname"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"tdname", {NULL}, "TDNAME", "thread-name", LJUST, ref_tdnam, 0,
 	 UNSPEC, NULL},
 	{"tid", {"lwp"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
@@ -1537,21 +1314,21 @@ VAR keywords[] = {
 	 PGTOK, "ld"},
 	{"tt", {NULL}, "TT ", "terminal-name", 0, ref_tname, 0, UNSPEC, NULL},
 	{"tty", {NULL}, "TTY", "tty", LJUST, ref_longtname, 0, UNSPEC, NULL},
-	{"ref_ucomm", {NULL}, "UCOMM", "accounting-name", LJUST, ref_ucomm, 0,
+	{"ucomm", {NULL}, "UCOMM", "accounting-name", LJUST, ref_ucomm, 0,
 	 UNSPEC, NULL},
 	{"uid", {NULL}, "UID", "uid", 0, ref_kvar, KOFF(ki_uid), UINT, UIDFMT},
-	{"ref_upr", {NULL}, "UPR", "user-priority", 0, ref_upr, 0, UNSPEC, NULL},
+	{"upr", {NULL}, "UPR", "user-priority", 0, ref_upr, 0, UNSPEC, NULL},
 	{"uprocp", {NULL}, "UPROCP", "process-address", 0, ref_kvar, KOFF(ki_paddr),
 	 KPTR, "lx"},
 	{"user", {NULL}, "USER", "user", LJUST, ref_username, 0, UNSPEC, NULL},
-	{"ref_usertime", {NULL}, "USERTIME", "user-time", USER, ref_usertime, 0,
+	{"usertime", {NULL}, "USERTIME", "user-time", USER, ref_usertime, 0,
 	 UNSPEC, NULL},
-	{"usrpri", {"ref_upr"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
+	{"usrpri", {"upr"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"vmaddr", {NULL}, "VMADDR", "vmspace-address", 0, ref_kvar,
 	 KOFF(ki_vmspace), KPTR, "lx"},
-	{"ref_vsize", {"vsz"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
+	{"vsize", {"vsz"}, NULL, NULL, 0, NULL, 0, UNSPEC, NULL},
 	{"vsz", {NULL}, "VSZ", "virtual-size", 0, ref_vsize, 0, UNSPEC, NULL},
-	{"ref_wchan", {NULL}, "WCHAN", "wait-channel", LJUST, ref_wchan, 0,
+	{"wchan", {NULL}, "WCHAN", "wait-channel", LJUST, ref_wchan, 0,
 	 UNSPEC, NULL},
 	{"xstat", {NULL}, "XSTAT", "exit-status", 0, ref_kvar, KOFF(ki_xstat),
 	 USHORT, "x"},
@@ -1635,7 +1412,7 @@ ref_merge_alias(VAR *const k, VAR *const tgt)
 	/* We also check that aliases don't specify things they should not. */
 #define MERGE_CHECK_SENTINEL(field, sentinel, field_descr) do {		\
 	if (k->field != sentinel)					\
-		ref_alias_errx(k->name, field_descr);			\
+		alias_errx(k->name, field_descr);			\
 	k->field = tgt->field;						\
 } while (0);
 
@@ -1648,7 +1425,7 @@ ref_merge_alias(VAR *const k, VAR *const tgt)
 }
 
 static void
-ref_resolve_alias(VAR *const k)
+resolve_alias(VAR *const k)
 {
 	VAR *t, key;
 
@@ -1660,13 +1437,13 @@ ref_resolve_alias(VAR *const k)
 	k->flag |= RESOLVING_ALIAS;
 
 	key.name = k->aliased;
-	t = bsearch(&key, keywords, known_keywords_nb, sizeof(VAR), ref_vcmp);
+	t = bsearch(&key, keywords, known_keywords_nb, sizeof(VAR), vcmp);
 	if (t == NULL)
 		xo_errx(2, "unknown target '%s' for keyword alias '%s'",
 		    k->aliased, k->name);
 
-	ref_resolve_alias(t);
-	ref_merge_alias(k, t);
+	resolve_alias(t);
+	merge_alias(k, t);
 
 	k->flag &= ~RESOLVING_ALIAS;
 	k->flag |= RESOLVED_ALIAS;
@@ -1678,14 +1455,14 @@ ref_resolve_alias(VAR *const k)
  * Called from main() on PS_CHECK_KEYWORDS, else available when debugging.
  */
 void
-ref_resolve_aliases(void)
+resolve_aliases(void)
 {
 	for (size_t i = 0; i < known_keywords_nb; ++i)
-		ref_resolve_alias(&keywords[i]);
+		resolve_alias(&keywords[i]);
 }
 
 void
-ref_showkey(void)
+showkey(void)
 {
 	const VAR *v;
 	const VAR *const end = keywords + known_keywords_nb;
@@ -1713,7 +1490,7 @@ ref_showkey(void)
 }
 
 void
-ref_parsefmt(const char *p, struct velisthead *const var_list,
+parsefmt(const char *p, struct velisthead *const var_list,
     const int user)
 {
 	char *copy, *cp;

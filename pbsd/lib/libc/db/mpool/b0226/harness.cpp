@@ -621,7 +621,15 @@ test_mpool_sync(Stat &st)
 	int wro = mkostemp(ropath, 0);
 	if (wro >= 0) {
 		unsigned char z[512] = {0};
-		write(wro, z, 512);
+		if (write(wro, z, 512) != 512) {
+			close(wro);
+			unlink(ropath);
+			ref_mpool_close(rmp);
+			P::mpool_close(pmp);
+			close(fd);
+			close(fd2);
+			return;
+		}
 		int wdup = dup(wro);
 		int wdup2 = dup(wro);
 		MPOOL *rmp2 = ref_mpool_open(nullptr, wdup, 512, 2);
@@ -751,131 +759,167 @@ test_hashkey_edges(Stat &st)
 	close(fd2);
 }
 
+struct SweepPool {
+	int fd;
+	int fd2;
+	MPOOL *rmp;
+	P::MPOOL *pmp;
+	pgno_t pagesize;
+};
+
+static void
+close_sweep_pool(SweepPool &sp)
+{
+	if (sp.rmp)
+		ref_mpool_close(sp.rmp);
+	if (sp.pmp)
+		P::mpool_close(sp.pmp);
+	if (sp.fd >= 0)
+		close(sp.fd);
+	if (sp.fd2 >= 0)
+		close(sp.fd2);
+	sp = {-1, -1, nullptr, nullptr, 0};
+}
+
+static bool
+open_sweep_pool(SweepPool &sp, unsigned seed)
+{
+	close_sweep_pool(sp);
+	pgno_t pagesize = (pgno_t)(256 + (seed % 3) * 256);
+	pgno_t maxcache = (pgno_t)(1 + (seed % 6));
+	size_t npg = (size_t)(1 + (seed % 4));
+	auto filedata = fill_pattern(npg * pagesize, seed);
+	if (seed & 1) {
+		size_t trim = (size_t)(seed % pagesize);
+		if (trim < filedata.size())
+			filedata.resize(filedata.size() - trim);
+	}
+	sp.fd = mk_temp_file(filedata.data(), filedata.size());
+	if (sp.fd < 0)
+		return false;
+	sp.fd2 = dup(sp.fd);
+	if (sp.fd2 < 0) {
+		close(sp.fd);
+		sp.fd = -1;
+		return false;
+	}
+	sp.pagesize = pagesize;
+	sp.rmp = ref_mpool_open(nullptr, sp.fd, pagesize, maxcache);
+	sp.pmp = P::mpool_open(nullptr, sp.fd2, pagesize, maxcache);
+	if (!sp.rmp || !sp.pmp) {
+		close_sweep_pool(sp);
+		return false;
+	}
+	if (sp.rmp->npages != sp.pmp->npages ||
+	    sp.rmp->curcache != sp.pmp->curcache)
+		return false;
+	return true;
+}
+
 static void
 run_sweep(Stat &st)
 {
+	SweepPool sp = {-1, -1, nullptr, nullptr, 0};
+	unsigned batch_seed = 0;
+
 	for (long i = 0; i < SWEEP_ITERS; i++) {
 		st.cases++;
-		unsigned seed = (unsigned)nextrand();
-		pgno_t pagesize = (pgno_t)(256 + (nextrand() % 3) * 256);
-		pgno_t maxcache = (pgno_t)(1 + (nextrand() % 6));
-		size_t npg = (size_t)(1 + (nextrand() % 4));
-		auto filedata = fill_pattern(npg * pagesize, seed);
-		if (nextrand() & 1) {
-			size_t trim = (size_t)(nextrand() % pagesize);
-			if (trim < filedata.size())
-				filedata.resize(filedata.size() - trim);
+		if (i % 64 == 0) {
+			batch_seed = (unsigned)nextrand();
+			if (!open_sweep_pool(sp, batch_seed)) {
+				fail(st, "sweep open pool");
+				continue;
+			}
 		}
-		int fd = mk_temp_file(filedata.data(), filedata.size());
-		int fd2 = dup(fd);
-		if (fd < 0) {
-			fail(st, "sweep mk_temp");
+		if (!sp.rmp || !sp.pmp)
 			continue;
-		}
-		MPOOL *rmp = ref_mpool_open(nullptr, fd, pagesize, maxcache);
-		P::MPOOL *pmp = P::mpool_open(nullptr, fd2, pagesize, maxcache);
-		if (!rmp || !pmp) {
-			if (rmp != nullptr || pmp != nullptr)
-				fail(st, "sweep open mismatch");
-			if (rmp)
-				ref_mpool_close(rmp);
-			if (pmp)
-				P::mpool_close(pmp);
-			close(fd);
-			close(fd2);
-			continue;
-		}
-		if (rmp->npages != pmp->npages || rmp->curcache != pmp->curcache)
-			fail(st, "sweep open fields");
 
-		unsigned ops = (unsigned)(1 + (nextrand() % 8));
-		for (unsigned op = 0; op < ops; op++) {
-			unsigned kind = (unsigned)(nextrand() % 7);
-			pgno_t pg = (pgno_t)(nextrand() % (rmp->npages + 2));
-			unsigned put_dirty = (unsigned)(nextrand() & 3);
-			unsigned new_flags = (unsigned)(nextrand() & 1);
-			switch (kind) {
-			case 0: {
-				void *rp = ref_mpool_get(rmp, pg, 0);
-				void *pp = P::mpool_get(pmp, pg, 0);
-				if ((rp == nullptr) != (pp == nullptr))
-					fail(st, "sweep get null mismatch");
-				else if (rp && !same_page_bytes(rp, pp, pagesize))
-					fail(st, "sweep get bytes");
-				if (rp) {
-					u_int pf = put_dirty ? H_DIRTY : 0;
-					ref_mpool_put(rmp, rp, pf);
-					P::mpool_put(pmp, pp, pf);
-				}
-				break;
+		const pgno_t pagesize = sp.pagesize;
+		unsigned kind = (unsigned)(nextrand() % 7);
+		pgno_t pg = (pgno_t)(nextrand() % (sp.rmp->npages + 2));
+		unsigned put_dirty = (unsigned)(nextrand() & 3);
+		unsigned new_flags = (unsigned)(nextrand() & 1);
+		unsigned mix = (unsigned)(batch_seed ^ (unsigned)i);
+
+		switch (kind) {
+		case 0: {
+			void *rp = ref_mpool_get(sp.rmp, pg, 0);
+			void *pp = P::mpool_get(sp.pmp, pg, 0);
+			if ((rp == nullptr) != (pp == nullptr))
+				fail(st, "sweep get null mismatch");
+			else if (rp && !same_page_bytes(rp, pp, pagesize))
+				fail(st, "sweep get bytes");
+			if (rp) {
+				u_int pf = put_dirty ? H_DIRTY : 0;
+				ref_mpool_put(sp.rmp, rp, pf);
+				P::mpool_put(sp.pmp, pp, pf);
 			}
-			case 1: {
-				pgno_t rpg = pg, ppg = pg;
-				u_int nf = new_flags ? H_PAGE_REQUEST : H_PAGE_NEXT;
-				void *rn = ref_mpool_new(rmp, &rpg, nf);
-				void *pn = P::mpool_new(pmp, &ppg, nf);
-				if ((rn == nullptr) != (pn == nullptr))
-					fail(st, "sweep new null");
-				else if (rn && (rpg != ppg ||
-						 rmp->npages != pmp->npages))
-					fail(st, "sweep new pgno");
-				if (rn) {
-					ref_mpool_put(rmp, rn, 0);
-					P::mpool_put(pmp, pn, 0);
-				}
-				break;
-			}
-			case 2: {
-				if (ref_mpool_sync(rmp) != P::mpool_sync(pmp))
-					fail(st, "sweep sync");
-				break;
-			}
-			case 3: {
-				pgno_t rpgc = pg, ppgc = pg;
-				void *rp = ref___mpool_new__44bsd(rmp, &rpgc);
-				void *pp = P::__mpool_new__44bsd(pmp, &ppgc);
-				if ((rp == nullptr) != (pp == nullptr))
-					fail(st, "sweep compat null");
-				if (rp) {
-					ref_mpool_put(rmp, rp, 0);
-					P::mpool_put(pmp, pp, 0);
-				}
-				break;
-			}
-			case 4: {
-				FilterCtx rc{0, 0, (unsigned char)(seed & 0xff)};
-				FilterCtx pc{0, 0, (unsigned char)(seed & 0xff)};
-				ref_mpool_filter(rmp, ref_pgin_cb, ref_pgout_cb, &rc);
-				P::mpool_filter(pmp, port_pgin_cb, port_pgout_cb, &pc);
-				break;
-			}
-			case 5: {
-				void *rp = ref_mpool_get(rmp, pg, H_IGNOREPIN);
-				void *pp = P::mpool_get(pmp, pg, H_IGNOREPIN);
-				if ((rp == nullptr) != (pp == nullptr))
-					fail(st, "sweep ignorepin null");
-				else if (rp && !same_page_bytes(rp, pp, pagesize))
-					fail(st, "sweep ignorepin bytes");
-				if (rp) {
-					ref_mpool_put(rmp, rp, H_DIRTY);
-					P::mpool_put(pmp, pp, H_DIRTY);
-				}
-				break;
-			}
-			default:
-				break;
-			}
-			if (rmp->npages != pmp->npages ||
-			    rmp->curcache != pmp->curcache)
-				fail(st, "sweep state");
+			break;
 		}
-		if (ref_mpool_sync(rmp) != P::mpool_sync(pmp))
-			fail(st, "sweep final sync");
-		ref_mpool_close(rmp);
-		P::mpool_close(pmp);
-		close(fd);
-		close(fd2);
+		case 1: {
+			pgno_t rpg = pg, ppg = pg;
+			u_int nf = new_flags ? H_PAGE_REQUEST : H_PAGE_NEXT;
+			void *rn = ref_mpool_new(sp.rmp, &rpg, nf);
+			void *pn = P::mpool_new(sp.pmp, &ppg, nf);
+			if ((rn == nullptr) != (pn == nullptr))
+				fail(st, "sweep new null");
+			else if (rn && (rpg != ppg ||
+					 sp.rmp->npages != sp.pmp->npages))
+				fail(st, "sweep new pgno");
+			if (rn) {
+				ref_mpool_put(sp.rmp, rn, 0);
+				P::mpool_put(sp.pmp, pn, 0);
+			}
+			break;
+		}
+		case 2: {
+			if (ref_mpool_sync(sp.rmp) != P::mpool_sync(sp.pmp))
+				fail(st, "sweep sync");
+			break;
+		}
+		case 3: {
+			pgno_t rpgc = pg, ppgc = pg;
+			void *rp = ref___mpool_new__44bsd(sp.rmp, &rpgc);
+			void *pp = P::__mpool_new__44bsd(sp.pmp, &ppgc);
+			if ((rp == nullptr) != (pp == nullptr))
+				fail(st, "sweep compat null");
+			if (rp) {
+				ref_mpool_put(sp.rmp, rp, 0);
+				P::mpool_put(sp.pmp, pp, 0);
+			}
+			break;
+		}
+		case 4: {
+			FilterCtx rc{0, 0, (unsigned char)(mix & 0xff)};
+			FilterCtx pc{0, 0, (unsigned char)(mix & 0xff)};
+			ref_mpool_filter(sp.rmp, ref_pgin_cb, ref_pgout_cb, &rc);
+			P::mpool_filter(sp.pmp, port_pgin_cb, port_pgout_cb, &pc);
+			break;
+		}
+		case 5: {
+			void *rp = ref_mpool_get(sp.rmp, pg, H_IGNOREPIN);
+			void *pp = P::mpool_get(sp.pmp, pg, H_IGNOREPIN);
+			if ((rp == nullptr) != (pp == nullptr))
+				fail(st, "sweep ignorepin null");
+			else if (rp && !same_page_bytes(rp, pp, pagesize))
+				fail(st, "sweep ignorepin bytes");
+			if (rp) {
+				ref_mpool_put(sp.rmp, rp, H_DIRTY);
+				P::mpool_put(sp.pmp, pp, H_DIRTY);
+			}
+			break;
+		}
+		default:
+			break;
+		}
+		if (sp.rmp->npages != sp.pmp->npages ||
+		    sp.rmp->curcache != sp.pmp->curcache)
+			fail(st, "sweep state");
 	}
+	if (sp.rmp && sp.pmp &&
+	    ref_mpool_sync(sp.rmp) != P::mpool_sync(sp.pmp))
+		fail(st, "sweep final sync");
+	close_sweep_pool(sp);
 }
 
 static void

@@ -1,6 +1,6 @@
 #!/bin/sh
-# Build and run the differential test for PBSD batch b0276.
-# Usage: sh build.sh   (from pbsd/lib/msun/src/b0276/)
+# Build and run the PBSD b0276 differential test.
+# Usage:  sh build.sh    (from pbsd/lib/msun/src/b0276/)
 
 set -e
 
@@ -8,23 +8,31 @@ cd "$(dirname "$0")"
 
 CC=${CC:-cc}
 CXX=${CXX:-c++}
-MODULE_NAME=pbsd.lib.msun.src.b0276
+MODULE=pbsd.lib.msun.src.b0276
+BIN=b0276_run
 
 ROOT=$(cd ../../../../.. && pwd)
 MSUN=$ROOT/hbsd/src/lib/msun/src
 
-PREREQ=$(mktemp)
-TMPDIR=$(mktemp -d)
-trap 'rm -f "$PREREQ"; rm -rf "$TMPDIR"' EXIT
+WORK=$(mktemp -d)
+trap 'rm -rf "$WORK"' EXIT INT HUP TERM
 
-cat > "$PREREQ" << 'EOF'
-#include <float.h>
+# s_tan.c is a wrapper around the msun argument-reduction and tangent kernels.
+# Those kernels are not part of this batch, so they are compiled verbatim from
+# the untouched HardenedBSD sources and linked into both sides of the test.
+# The two private headers they include are supplied here; a quoted #include is
+# resolved relative to the including file, so dropping shims next to the copied
+# sources is enough.
+cat > "$WORK/math.h" << 'EOF'
+#include <math.h>
+EOF
+
+cat > "$WORK/math_private.h" << 'EOF'
+#ifndef _PBSD_B0276_MATH_PRIVATE_H_
+#define _PBSD_B0276_MATH_PRIVATE_H_
+
 #include <math.h>
 #include <stdint.h>
-#include <sys/types.h>
-#include <endian.h>
-
-#define _MATH_PRIVATE_H_
 
 #ifndef LONG_BIT
 #ifdef __LP64__
@@ -34,78 +42,114 @@ cat > "$PREREQ" << 'EOF'
 #endif
 #endif
 
-#define IEEE_WORD_ORDER __BYTE_ORDER
-
-typedef union {
-  double value;
-  struct {
-#if __BYTE_ORDER == __BIG_ENDIAN
-    uint32_t msw;
-    uint32_t lsw;
-#else
-    uint32_t lsw;
-    uint32_t msw;
-#endif
-  } parts;
-} ieee_double_shape_type;
-
-#define GET_HIGH_WORD(i,d) do { ieee_double_shape_type gh_u; gh_u.value = (d); (i) = (int32_t)gh_u.parts.msw; } while(0)
-#define GET_LOW_WORD(i,d) do { ieee_double_shape_type gl_u; gl_u.value = (d); (i) = (int32_t)gl_u.parts.lsw; } while(0)
-#define SET_LOW_WORD(d,v) do { ieee_double_shape_type sl_u; sl_u.value = (d); sl_u.parts.lsw = (uint32_t)(v); (d) = sl_u.value; } while(0)
-#define EXTRACT_WORDS(ix0,ix1,d) do { ieee_double_shape_type ew_u; ew_u.value = (d); (ix0) = (int32_t)ew_u.parts.msw; (ix1) = ew_u.parts.lsw; } while(0)
-#define INSERT_WORDS(d,ix0,ix1) do { ieee_double_shape_type iw_u; iw_u.parts.msw = (uint32_t)(ix0); iw_u.parts.lsw = (uint32_t)(ix1); (d) = iw_u.value; } while(0)
-
+typedef unsigned int u_int32_t;
+typedef unsigned long long u_int64_t;
 typedef float __float_t;
 typedef double __double_t;
 
+typedef union {
+	double value;
+	struct {
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+		uint32_t msw;
+		uint32_t lsw;
+#else
+		uint32_t lsw;
+		uint32_t msw;
+#endif
+	} parts;
+	struct {
+		uint64_t w;
+	} xparts;
+} ieee_double_shape_type;
+
+typedef union {
+	float value;
+	uint32_t word;
+} ieee_float_shape_type;
+
+#define EXTRACT_WORDS(ix0,ix1,d)					\
+do { ieee_double_shape_type ew_u; ew_u.value = (d);			\
+     (ix0) = ew_u.parts.msw; (ix1) = ew_u.parts.lsw; } while (0)
+#define EXTRACT_WORD64(ix,d)						\
+do { ieee_double_shape_type ew_u; ew_u.value = (d);			\
+     (ix) = ew_u.xparts.w; } while (0)
+#define GET_HIGH_WORD(i,d)						\
+do { ieee_double_shape_type gh_u; gh_u.value = (d);			\
+     (i) = gh_u.parts.msw; } while (0)
+#define GET_LOW_WORD(i,d)						\
+do { ieee_double_shape_type gl_u; gl_u.value = (d);			\
+     (i) = gl_u.parts.lsw; } while (0)
+#define INSERT_WORDS(d,ix0,ix1)						\
+do { ieee_double_shape_type iw_u; iw_u.parts.msw = (ix0);		\
+     iw_u.parts.lsw = (ix1); (d) = iw_u.value; } while (0)
+#define INSERT_WORD64(d,ix)						\
+do { ieee_double_shape_type iw_u; iw_u.xparts.w = (ix);			\
+     (d) = iw_u.value; } while (0)
+#define SET_HIGH_WORD(d,v)						\
+do { ieee_double_shape_type sh_u; sh_u.value = (d);			\
+     sh_u.parts.msw = (v); (d) = sh_u.value; } while (0)
+#define SET_LOW_WORD(d,v)						\
+do { ieee_double_shape_type sl_u; sl_u.value = (d);			\
+     sl_u.parts.lsw = (v); (d) = sl_u.value; } while (0)
+#define GET_FLOAT_WORD(i,d)						\
+do { ieee_float_shape_type gf_u; gf_u.value = (d);			\
+     (i) = gf_u.word; } while (0)
+#define SET_FLOAT_WORD(d,i)						\
+do { ieee_float_shape_type sf_u; sf_u.word = (i);			\
+     (d) = sf_u.value; } while (0)
+
 #ifndef STRICT_ASSIGN
-#define STRICT_ASSIGN(type, lval, rval) ((lval) = (rval))
+#define STRICT_ASSIGN(type, lval, rval)	((lval) = (rval))
 #endif
 
-static inline int irint(double x) { return (int)x; }
-static inline double rnint(double x) { return rint(x); }
+static __inline double
+rnint(__double_t x)
+{
+	return (rint((double)x));
+}
+
+static __inline int
+irint(double x)
+{
+	return ((int)lrint(x));
+}
+
+int	__kernel_rem_pio2(double *, double *, int, int, int);
+int	__ieee754_rem_pio2(double, double *);
+double	__kernel_tan(double, double, int);
+
+#endif /* _PBSD_B0276_MATH_PRIVATE_H_ */
 EOF
 
-sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
-    "$MSUN/k_rem_pio2.c" > "$TMPDIR/k_rem_pio2.c"
-sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
-    "$MSUN/e_rem_pio2.c" > "$TMPDIR/e_rem_pio2.c"
-sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
-    "$MSUN/k_tan.c" > "$TMPDIR/k_tan.c"
-echo '#define _MATH_PRIVATE_H_' > "$TMPDIR/math_private_skip.h"
+for f in k_rem_pio2.c e_rem_pio2.c k_tan.c; do
+	cp "$MSUN/$f" "$WORK/$f"
+done
 
-rm -rf gcm.cache b0276_run oracle.o port.o harness.o k_rem_pio2.o e_rem_pio2.o \
-    k_tan.o "$MODULE_NAME.pcm"
+rm -rf gcm.cache "$BIN" oracle.o port.o harness.o k_rem_pio2.o e_rem_pio2.o \
+    k_tan.o "$MODULE.pcm"
 
-CFLAGS="-std=c11 -O2 -include $PREREQ"
+CFLAGS="-std=c11 -O2"
 CXXFLAGS="-std=c++23 -O2"
 
 $CC $CFLAGS -c oracle.c -o oracle.o
-$CC $CFLAGS -c "$TMPDIR/k_rem_pio2.c" -o k_rem_pio2.o
-$CC $CFLAGS -Dzero=e_rem_zero -Dtwo24=e_rem_two24 -c "$TMPDIR/e_rem_pio2.c" \
-    -o e_rem_pio2.o
-$CC $CFLAGS -c "$TMPDIR/k_tan.c" -o k_tan.o
+$CC $CFLAGS -c "$WORK/k_rem_pio2.c" -o k_rem_pio2.o
+$CC $CFLAGS -c "$WORK/e_rem_pio2.c" -o e_rem_pio2.o
+$CC $CFLAGS -c "$WORK/k_tan.c" -o k_tan.o
 
 if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX $CXXFLAGS -x c++-module --precompile port.cppm \
-	    -o "$MODULE_NAME.pcm"
-	$CXX $CXXFLAGS -c "$MODULE_NAME.pcm" -o port.o
-	$CXX $CXXFLAGS -fmodule-file="$MODULE_NAME=$MODULE_NAME.pcm" \
-	    -c harness.cpp -o harness.o
-	$CXX $CXXFLAGS oracle.o k_rem_pio2.o e_rem_pio2.o k_tan.o port.o harness.o \
-	    -o b0276_run -lm
+	$CXX $CXXFLAGS -x c++-module --precompile port.cppm -o "$MODULE.pcm"
+	$CXX $CXXFLAGS -c "$MODULE.pcm" -o port.o
+	$CXX $CXXFLAGS -fmodule-file="$MODULE=$MODULE.pcm" -c harness.cpp \
+	    -o harness.o
+	MODFLAG=
 else
-	MODFLAG=""
-	for f in -fmodules-ts -fmodules ""; do
-		if $CXX $CXXFLAGS $f -x c++ -fsyntax-only /dev/null >/dev/null 2>&1; then
-			MODFLAG=$f
-			break
-		fi
-	done
+	MODFLAG=-fmodules-ts
 	$CXX $CXXFLAGS $MODFLAG -x c++ -c port.cppm -o port.o
 	$CXX $CXXFLAGS $MODFLAG -c harness.cpp -o harness.o
-	$CXX $CXXFLAGS $MODFLAG oracle.o k_rem_pio2.o e_rem_pio2.o k_tan.o port.o \
-	    harness.o -o b0276_run -lm
 fi
 
-exec ./b0276_run
+$CXX $CXXFLAGS $MODFLAG port.o harness.o oracle.o k_rem_pio2.o e_rem_pio2.o \
+    k_tan.o -o "$BIN" -lm
+
+exec ./"$BIN"

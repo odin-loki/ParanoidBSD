@@ -15,10 +15,10 @@ MODNAME=pbsd.lib.libc.regex.b0292
 ROOT=$(cd ../../../../.. && pwd)
 HBSD=$ROOT/hbsd
 REGEXDIR=$HBSD/src/lib/libc/regex
-LOCALEDIR=$HBSD/src/lib/libc/locale
 
+TMPDIR=$(mktemp -d)
 PREREQ=$(mktemp)
-trap 'rm -f "$PREREQ"' EXIT
+trap 'rm -rf "$TMPDIR"; rm -f "$PREREQ"' EXIT
 
 cat > "$PREREQ" <<'EOF'
 #ifndef B0292_PREREQ_H
@@ -96,17 +96,55 @@ typedef struct {
 #define REG_BACKR     02000
 
 #define _REGEX_H_
+#define _REGEX_H
 
 #endif /* B0292_PREREQ_H */
 EOF
 
-CFLAGS="-std=c11 -O2 -include $PREREQ -I$REGEXDIR -I$LOCALEDIR"
-CXXFLAGS="-std=c++23 -O2 -include $PREREQ -I$REGEXDIR -I$LOCALEDIR"
+mkdir -p "$TMPDIR/locale"
+cat > "$TMPDIR/locale/collate.h" <<'EOF'
+#ifndef _COLLATE_H_
+#define _COLLATE_H_
+#include <wchar.h>
+#include <limits.h>
+#ifndef COLL_WEIGHTS_MAX
+#define COLL_WEIGHTS_MAX 10
+#endif
+struct xlocale_collate { int __collate_load_error; };
+struct xlocale { void *components[8]; };
+struct xlocale * __get_locale(void);
+int __wcollate_range_cmp(wint_t, wint_t);
+#endif
+EOF
+
+cat > "$TMPDIR/locale/xlocale_private.h" <<'EOF'
+#ifndef _XLOCALE_PRIVATE__H_
+#define _XLOCALE_PRIVATE__H_
+#include "collate.h"
+enum { XLC_COLLATE = 0, XLC_CTYPE, XLC_MONETARY, XLC_NUMERIC, XLC_TIME,
+    XLC_MESSAGES, XLC_LAST };
+#endif
+EOF
+
+cat > "$TMPDIR/glue.c" <<'EOF'
+#include <wchar.h>
+#include "collate.h"
+static struct xlocale the_locale;
+struct xlocale * __get_locale(void) { return &the_locale; }
+int __wcollate_range_cmp(wint_t a, wint_t b)
+{
+	return (a > b) - (a < b);
+}
+EOF
+
+CFLAGS="-std=c11 -O2 -include $PREREQ -I$TMPDIR/locale -I$REGEXDIR"
+CXXFLAGS="-std=c++23 -O2 -include $PREREQ -I$REGEXDIR"
 
 rm -rf gcm.cache
-rm -f oracle.o port.o harness.o regcomp.o regfree.o port.pcm harness
+rm -f oracle.o port.o harness.o regcomp.o regfree.o glue.o port.pcm harness
 
 $CC $CFLAGS -c oracle.c -o oracle.o
+$CC $CFLAGS -c "$TMPDIR/glue.c" -o glue.o
 $CC $CFLAGS -c $REGEXDIR/regcomp.c -o regcomp.o
 $CC $CFLAGS -c $REGEXDIR/regfree.c -o regfree.o
 
@@ -119,6 +157,6 @@ else
 	$CXX $CXXFLAGS -fmodules-ts -c harness.cpp -o harness.o
 fi
 
-$CXX $CXXFLAGS -o harness harness.o port.o oracle.o regcomp.o regfree.o
+$CXX $CXXFLAGS -o harness harness.o port.o oracle.o regcomp.o regfree.o glue.o
 
 exec ./harness
