@@ -198,6 +198,51 @@ int __libc_uexterr_gettext(char *, size_t);
 
 interpos_func_t *__libsys_interposing_slot(int interposno);
 
+void
+__libc_system(void)
+{
+}
+
+int
+__libc_tcdrain(int fd)
+{
+	(void)fd;
+	return (0);
+}
+
+int
+_pthread_mutex_init_calloc_cb_stub(void *mutex, void *calloc_cb)
+{
+	(void)mutex;
+	(void)calloc_cb;
+	return (0);
+}
+
+void
+__libc_spinlock_stub(struct _spinlock *lck)
+{
+	(void)lck;
+}
+
+void
+__libc_spinunlock_stub(struct _spinlock *lck)
+{
+	(void)lck;
+}
+
+void
+__libc_map_stacks_exec(void)
+{
+}
+
+int
+__libc_uexterr_gettext(char *buf, size_t bufsz)
+{
+	(void)buf;
+	(void)bufsz;
+	return (0);
+}
+
 #define	__libc_interposing	ref___libc_interposing
 
 #define	SLOT(a, b) \
@@ -254,6 +299,7 @@ ref___libc_interposing_slot(int interposno)
  */
 
 #include <stdbool.h>
+#include <sys/types.h>
 #include <syslog.h>
 
 void ref___arc4random_stir_fbsd11(void);

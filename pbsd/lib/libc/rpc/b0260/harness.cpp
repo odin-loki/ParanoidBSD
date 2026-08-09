@@ -481,6 +481,33 @@ main()
 			int mock = static_cast<int>(rand_u32() % 2000000u);
 			check_dtablesize_fresh(mock, rand_u32() & 1u,
 			    static_cast<int>(rand_u32()), "rand-dtable-fork");
+		}
+	}
+
+	for (long it = 0; it < 200000; it++) {
+		check_commondata("rand-globals");
+
+		size_t len = static_cast<size_t>(rand_u32());
+		if ((rand_u32() & 3u) == 0u)
+			len &= 0xffu;
+		unsigned char hb = static_cast<unsigned char>(rand_u32());
+		unsigned char xb = static_cast<unsigned char>(rand_u32() >> 8);
+		check_wrap_stub(len, hb, xb, "rand-wrap");
+		check_unwrap_stub(xb, "rand-unwrap");
+
+		enum xdr_op op = static_cast<enum xdr_op>(rand_u32() % 3u);
+		int fail_on = static_cast<int>(rand_u32() % 6u);
+		std::uint32_t prog = rand_u32();
+		std::uint32_t vers = rand_u32();
+		std::uint32_t prot = rand_u32();
+		std::uint32_t port = rand_u32();
+		check_xdr_pmap(ar, op, fail_on, prog, vers, prot, port,
+		    "rand-pmap");
+
+		if ((rand_u32() & 0xffu) == 0u) {
+			int mock = static_cast<int>(rand_u32() % 2000000u);
+			check_dtablesize_fresh(mock, rand_u32() & 1u,
+			    static_cast<int>(rand_u32()), "rand-dtable-fork");
 		} else {
 			check_dtablesize_cached(ref__rpc_dtablesize(),
 			    "rand-dtable-cache");

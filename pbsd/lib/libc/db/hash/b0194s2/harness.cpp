@@ -1271,6 +1271,10 @@ void test_ugly_split_once(int hashret, const char *tag)
 	static unsigned char v[] = { 6, 5 };
 	setup_pair_page(op_init, 512, k, 3, v, 2, 0);
 	page_init_raw(512, np_init);
+	guard_fill(opa, BUF_CAP);
+	guard_fill(opb, BUF_CAP);
+	guard_fill(npa, BUF_CAP);
+	guard_fill(npb, BUF_CAP);
 	std::memcpy(opa, op_init, 512);
 	std::memcpy(npa, np_init, 512);
 

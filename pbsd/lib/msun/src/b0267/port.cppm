@@ -37,7 +37,7 @@ union IEEEl2bits {
 	} xbits;
 };
 
-#include "k_sincos.h"
+#include "../../../../../../hbsd/src/lib/msun/src/k_sincos.h"
 
 /*-
  * SPDX-License-Identifier: BSD-2-Clause

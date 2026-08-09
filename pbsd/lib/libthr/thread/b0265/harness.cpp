@@ -175,9 +175,25 @@ guards_intact(const GuardedPthread *g)
 }
 
 static bool
-guarded_equal(const GuardedPthread *a, const GuardedPthread *b)
+report_death_bufs_equal(const GuardedPthread *a, const GuardedPthread *b)
 {
-	return std::memcmp(a, b, sizeof(*a)) == 0;
+	if (std::memcmp(a->pre, b->pre, sizeof(a->pre)) != 0)
+		return (false);
+	if (std::memcmp(a->post, b->post, sizeof(a->post)) != 0)
+		return (false);
+	if (a->thr.flags != b->thr.flags)
+		return (false);
+	if (a->thr.joiner != b->thr.joiner)
+		return (false);
+	if (a->thr.event_buf.event != b->thr.event_buf.event)
+		return (false);
+	if (a->thr.event_buf.data != b->thr.event_buf.data)
+		return (false);
+	if (a->thr.event_buf.th_p != (uintptr_t)&a->thr)
+		return (false);
+	if (b->thr.event_buf.th_p != (uintptr_t)&b->thr)
+		return (false);
+	return (true);
 }
 
 struct SingleNpResult {
@@ -265,9 +281,8 @@ check_getprio(const char *label, pthread_t pthread, int gs_ret, int gs_err,
 	bool ok;
 
 	b0265_set_getschedparam(gs_ret, gs_err, gs_policy, gs_prio);
-	port = run_getprio_port(pthread);
-	b0265_set_getschedparam(gs_ret, gs_err, gs_policy, gs_prio);
-	ref = run_getprio_ref(pthread);
+	port = run_getprio_port(pthread, gs_ret, gs_err, gs_policy, gs_prio);
+	ref = run_getprio_ref(pthread, gs_ret, gs_err, gs_policy, gs_prio);
 
 	ok = (port.ret == ref.ret) && (port.errno_after == ref.errno_after) &&
 	    (port.last_pthread == ref.last_pthread);
@@ -508,8 +523,7 @@ struct DetachResult {
 };
 
 static DetachResult
-run_detach_port(struct pthread *cur, pthread_t target, int find_ret,
-    const GuardedPthread *in)
+run_detach_port(struct pthread *cur, int find_ret, GuardedPthread in_copy)
 {
 	DetachResult r;
 	unsigned unlock_before, gc_before;
@@ -517,10 +531,10 @@ run_detach_port(struct pthread *cur, pthread_t target, int find_ret,
 	b0265_reset_mocks();
 	b0265_set_curthread(cur);
 	b0265_set_find_thread_ret(find_ret);
-	r.target = *in;
+	r.target = in_copy;
 	unlock_before = b0265_get_thread_unlock_count();
 	gc_before = b0265_get_try_gc_count();
-	r.ret = P::_thr_detach(target);
+	r.ret = P::_thr_detach(&r.target.thr);
 	r.thread_unlock_delta = b0265_get_thread_unlock_count() - unlock_before;
 	r.try_gc_delta = b0265_get_try_gc_count() - gc_before;
 	r.find_include_dead = b0265_get_find_last_include_dead();
@@ -534,8 +548,7 @@ run_detach_port(struct pthread *cur, pthread_t target, int find_ret,
 }
 
 static DetachResult
-run_detach_ref(struct pthread *cur, pthread_t target, int find_ret,
-    const GuardedPthread *in)
+run_detach_ref(struct pthread *cur, int find_ret, GuardedPthread in_copy)
 {
 	DetachResult r;
 	unsigned unlock_before, gc_before;
@@ -543,10 +556,10 @@ run_detach_ref(struct pthread *cur, pthread_t target, int find_ret,
 	b0265_reset_mocks();
 	b0265_set_curthread(cur);
 	b0265_set_find_thread_ret(find_ret);
-	r.target = *in;
+	r.target = in_copy;
 	unlock_before = b0265_get_thread_unlock_count();
 	gc_before = b0265_get_try_gc_count();
-	r.ret = ref__thr_detach(target);
+	r.ret = ref__thr_detach(&r.target.thr);
 	r.thread_unlock_delta = b0265_get_thread_unlock_count() - unlock_before;
 	r.try_gc_delta = b0265_get_try_gc_count() - gc_before;
 	r.find_include_dead = b0265_get_find_last_include_dead();
@@ -578,8 +591,8 @@ check_detach(const char *label, struct pthread *cur, pthread_t target,
 	    (detached_before || joiner_before);
 	expect_gc = expect_success;
 
-	port = run_detach_port(cur, target, find_ret, in);
-	ref = run_detach_ref(cur, target, find_ret, in);
+	port = run_detach_port(cur, find_ret, *in);
+	ref = run_detach_ref(cur, find_ret, *in);
 
 	ok = (port.ret == ref.ret) &&
 	    guarded_equal(&port.target, &ref.target) &&

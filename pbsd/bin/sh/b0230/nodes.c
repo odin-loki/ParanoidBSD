@@ -7,11 +7,14 @@
       new = state->block;
       state->block = (char *)state->block + nodesize[n->type];
       switch (n->type) {
-      case N177:
-	    new->t240.f2 = n->t240.f2;
-	    new->t240.f1 = n->t240.f1;
+      case N116:
 	    break;
-      case N519:
+      case N581:
+	    break;
+      case N868:
+	    new->t737.f1 = nodesavestr(n->t737.f1, state);
+	    break;
+      case N44:
 	    break;
       };
       new->type = n->type;
