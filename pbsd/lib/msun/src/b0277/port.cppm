@@ -162,9 +162,9 @@ fmaximum_magf(float x, float y)
 	float ax = fabsf(x);
 	float ay = fabsf(y);
 
-	if (ay <= ax)
+	if (ay > ax)
 		return (y);
-	if (ax > ay)
+	if (ax <= ay)
 		return (x);
 
 	/* If magnitudes are equal, we break the tie with the sign */

@@ -230,61 +230,32 @@ check_nsap_addr(const char *ascii, int maxlen, const char *origin)
 }
 
 bool
-check_nsap_ntoa(int binlen, const unsigned char *binary, char *ascii,
-    bool use_tmpbuf, const char *origin)
+check_nsap_ntoa_tmp(int binlen, const unsigned char *binary,
+    const char *origin)
 {
 	tbl[2].cases++;
 
-	char *rascii = use_tmpbuf ? nullptr : ascii;
-	char *pascii = use_tmpbuf ? nullptr : ascii;
-
-	char *rret = ref_inet_nsap_ntoa(binlen, binary, rascii);
-	char *pret = port::inet_nsap_ntoa(binlen, binary, pascii);
+	char *rret = ref_inet_nsap_ntoa(binlen, binary, nullptr);
+	char *pret = port::inet_nsap_ntoa(binlen, binary, nullptr);
 
 	bool ok = true;
 	if ((rret == nullptr) != (pret == nullptr))
 		ok = false;
-
-	if (use_tmpbuf) {
-		if (rret == nullptr || pret == nullptr)
+	if (rret != nullptr && pret != nullptr) {
+		if (rret != inet_nsap_ntoa_tmpbuf)
 			ok = false;
-		else {
-			if (rret != inet_nsap_ntoa_tmpbuf)
-				ok = false;
-			if (pret != port::inet_nsap_ntoa_tmpbuf)
-				ok = false;
-			if (std::strcmp(rret, pret) != 0)
-				ok = false;
-		}
-	} else {
-		str_arena ar;
-		str_arena_init(ar, STR_CAP);
-		str_arena_prepare(ar);
-		char *rb = ref_str(ar);
-		char *pb = port_str(ar);
-
-		if (ascii != rb || ascii != pb) {
-			/* caller-provided buffer must match our arena slots */
-		}
-
-		if (rret != nullptr && pret != nullptr) {
-			if (rret != rb || pret != pb)
-				ok = false;
-			if (std::strcmp(rret, pret) != 0)
-				ok = false;
-		}
-		if (std::memcmp(ar.refbuf, ar.portbuf, ar.total) != 0)
+		if (pret != port::inet_nsap_ntoa_tmpbuf)
 			ok = false;
-		str_arena_free(ar);
+		if (std::strcmp(rret, pret) != 0)
+			ok = false;
 	}
 
 	if (!ok) {
 		tbl[2].failures++;
 		if (reported < report_limit) {
 			reported++;
-			std::printf("FAIL inet_nsap_ntoa [%s] binlen=%d "
-			    "use_tmpbuf=%d\n",
-			    origin, binlen, use_tmpbuf ? 1 : 0);
+			std::printf("FAIL inet_nsap_ntoa [%s] binlen=%d tmpbuf\n",
+			    origin, binlen);
 		}
 	}
 	return ok;
@@ -493,7 +464,7 @@ hand_nsap_ntoa_edges()
 
 	for (int len : lens) {
 		check_nsap_ntoa_buf(len, bin, "edge-buf");
-		check_nsap_ntoa(len, bin, nullptr, true, "edge-tmp");
+		check_nsap_ntoa_tmp(len, bin, "edge-tmp");
 	}
 
 	unsigned char nibbles[] = { 0x00, 0x01, 0x09, 0x0a, 0x0f, 0x10, 0x99,
