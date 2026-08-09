@@ -284,6 +284,24 @@ snap_str(char *out, size_t n, const Snap &s)
 }
 
 static void
+cmp_lockf_snap(const Snap &a, const Snap &b, const char *ctx)
+{
+	bool same = a.ncalls == b.ncalls && a.tag == b.tag;
+
+	for (int i = 0; i < 7; i++)
+		same = same && a.sc[i] == b.sc[i];
+	if (same)
+		return;
+
+	char sa[512], sb[512], msg[1200];
+
+	snap_str(sa, sizeof(sa), a);
+	snap_str(sb, sizeof(sb), b);
+	snprintf(msg, sizeof(msg), "%s ref=%s port=%s", ctx, sa, sb);
+	fail(FN_LOCKF, "callee", msg);
+}
+
+static void
 cmp_snap(int fn, const Snap &a, const Snap &b, const char *ctx)
 {
 	bool same = a.ncalls == b.ncalls && a.tag == b.tag;
@@ -409,7 +427,7 @@ case_lockf(int fd, int function, off_t size, int fcntl_ret,
 	eb = errno;
 	snap_b = mock;
 
-	cmp_snap(FN_LOCKF, snap_a, snap_b, ctx);
+	cmp_lockf_snap(snap_a, snap_b, ctx);
 	cmp_ret_int(FN_LOCKF, ra, rb, ctx);
 	if ((ra == -1 || rb == -1) && ea != eb) {
 		char msg[512];

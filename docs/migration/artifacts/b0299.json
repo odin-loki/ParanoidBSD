@@ -1,0 +1,11 @@
+{
+  "batch": "b0299",
+  "verified": "2026-08-09T02:28:13Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction        cases     failures\n--------------------------------------\nlockf           55302            0\nbrk             16920            0\n_brk            16873            0\nsbrk            16999            0\n--------------------------------------\nTOTAL          106094            0\nharness.cpp: In function \u2018void case_lockf(int, int, off_t, int, short int, int, pid_t)\u2019:\nharness.cpp:300:52: warning: \u2018%s\u2019 directive output may be truncated writing up to 511 bytes into a region of size between 423 and 1189 [-Wformat-truncation=]\n  300 |         snprintf(msg, sizeof(msg), \"%s ref=%s port=%s\", ctx, sa, sb);\n      |                                                    ^~            ~~\nIn file included from /usr/include/stdio.h:980,\n                 from harness.cpp:17:\nIn function \u2018int snprintf(char*, size_t, const char*, ...)\u2019,\n    inlined from \u2018void cmp_lockf_snap(const Snap&, const Snap&, const char*)\u2019 at harness.cpp:300:10,\n    inlined from \u2018void case_lockf(int, int, off_t, int, short int, int, pid_t)\u2019 at harness.cpp:430:16:\n/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:35: note: \u2018__builtin___snprintf_chk\u2019 output between 12 and 1289 bytes into a destination of size 1200\n   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,\n      |          ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n   55 |                                    __glibc_objsize (__s), __fmt,\n      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n   56 |                                    __va_arg_pack ());\n      |                                    ~~~~~~~~~~~~~~~~~\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/sys/lockf.c": "df1aa1a1ab174d75",
+    "hbsd/src/lib/libc/sys/brk.c": "881ebb88fde250f0"
+  }
+}
