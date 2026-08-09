@@ -492,9 +492,11 @@ check_semctl_case(int semid, int semnum, int cmd, int semun_val,
 	union semun su;
 	int ref_had, port_had, ref_sid, port_sid, ref_snum, port_snum;
 	int ref_cmd, port_cmd, ref_val, port_val;
+	int mock_ret;
 
 	ncases[F_SEMCTL]++;
-	harness_set_semctl_return((int)(rnd32() & 0x7fffffff));
+	mock_ret = (int)(rnd32() & 0x7fffffff);
+	harness_set_semctl_return(mock_ret);
 	su.val = semun_val;
 
 	ref_rv = ref_semctl(semid, semnum, cmd, su);
@@ -504,7 +506,6 @@ check_semctl_case(int semid, int semnum, int cmd, int semun_val,
 	ref_cmd = harness_last_semctl_cmd();
 	ref_val = harness_last_semctl_semun_val();
 
-	harness_set_semctl_return((int)(rnd32() & 0x7fffffff));
 	port_rv = port::semctl(semid, semnum, cmd, su);
 	port_had = harness_last_semctl_had_semun();
 	port_sid = harness_last_semctl_semid();
@@ -530,7 +531,6 @@ check_semctl_case_nosemun(int semid, int semnum, int cmd, const char *ctx)
 	ref_rv = ref_semctl(semid, semnum, cmd);
 	ref_had = harness_last_semctl_had_semun();
 
-	harness_set_semctl_return(42);
 	port_rv = port::semctl(semid, semnum, cmd);
 	port_had = harness_last_semctl_had_semun();
 
@@ -584,6 +584,8 @@ run_uexterr_case(const port::uexterror *ue, size_t bufsz, int issetugid,
 	copy_ue(ue, &rue);
 	refg.init();
 	portg.init();
+	refg.win()[0] = '\0';
+	portg.win()[0] = '\0';
 
 	pid = fork();
 	if (pid < 0) {

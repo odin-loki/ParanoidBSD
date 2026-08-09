@@ -153,6 +153,8 @@ int issetugid(void);
 char *getenv(const char *);
 int _getlogin(char *, int);
 int __semctl(int, int, int, union semun *);
+int b0279_c_snprintf(char *, size_t, const char *, std::uintmax_t,
+    std::uintmax_t);
 }
 
 /*-
@@ -452,7 +454,7 @@ __uexterr_format(const struct uexterror *ue, char *buf, size_t bufsz)
 	has_msg = ue->msg[0] != '\0';
 
 	if (has_msg) {
-		snprintf(buf, bufsz, ue->msg, (uintmax_t)ue->p1,
+		b0279_c_snprintf(buf, bufsz, ue->msg, (uintmax_t)ue->p1,
 		    (uintmax_t)ue->p2);
 	} else {
 		strlcpy(buf, "", bufsz);

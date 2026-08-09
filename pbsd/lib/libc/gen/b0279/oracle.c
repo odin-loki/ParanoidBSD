@@ -208,6 +208,13 @@ strlcat(char *dst, const char *src, size_t len)
 	return (dstlen + srclen);
 }
 
+int
+b0279_c_snprintf(char *buf, size_t bufsz, const char *fmt, uintmax_t p1,
+    uintmax_t p2)
+{
+	return snprintf(buf, bufsz, fmt, p1, p2);
+}
+
 /* ------------------------------------------------------------------ */
 /* fpclassify.c                                                       */
 /* ------------------------------------------------------------------ */

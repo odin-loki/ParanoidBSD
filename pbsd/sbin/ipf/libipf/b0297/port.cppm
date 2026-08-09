@@ -1,5 +1,6 @@
 module;
 
+#include <arpa/inet.h>
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -48,22 +49,20 @@ typedef u_long ioctlcmd_t;
 #define IPL_LOGSCAN 5
 #define IPL_LOGLOOKUP 6
 #define IPL_LOGCOUNT 7
-#define IPL_LOGALL -1
-
-typedef struct frentry frentry_t;
+#define IPL_LOGALL (-1)
 
 typedef union i6addr {
 	u_32_t i6[4];
-	struct in_addr {
-		u_32_t s_addr;
-	} in4;
+	struct in_addr in4;
 } i6addr_t;
+
+#define in4_addr in4.s_addr
 
 typedef struct ipfr {
 	struct ipfr *ipfr_hnext, **ipfr_hprev;
 	struct ipfr *ipfr_next, **ipfr_prev;
 	void *ipfr_data;
-	frentry_t *ipfr_rule;
+	void *ipfr_rule;
 	u_long ipfr_ttl;
 	u_int ipfr_pkts;
 	u_int ipfr_bytes;
@@ -87,7 +86,7 @@ typedef struct ipfr {
 #define ipfr_src ipfr_source.in4
 #define ipfr_dst ipfr_dest.in4
 
-typedef struct freentry *(*ipfunc_t)(void *, u_32_t *);
+typedef struct frentry *(*ipfunc_t)(void *, u_32_t *);
 typedef int (*ioctlfunc_t)(int, ioctlcmd_t, ...);
 
 typedef struct ipfunc_resolve {
@@ -102,12 +101,21 @@ int opts;
 char *
 hostname(int family, void *ip)
 {
-	static char hostbuf[48];
-	u_32_t a;
+	static char hostbuf[257];
+	struct in_addr ipa;
 
-	a = *(u_32_t *)ip;
-	std::snprintf(hostbuf, sizeof(hostbuf), "H%d_%08x", family, (unsigned)a);
-	return (hostbuf);
+	std::memset(&ipa, 0, sizeof(ipa));
+
+	if (family == AF_INET) {
+		ipa.s_addr = *(u_32_t *)ip;
+		if (ipa.s_addr == htonl(0xfedcba98))
+			return ("test.host.dots");
+	}
+
+	if (family == AF_INET) {
+		return (inet_ntoa(ipa));
+	}
+	return ("IPv6");
 }
 
 char *
@@ -115,7 +123,7 @@ ipf_strerror(int errnum)
 {
 	static char text[80];
 
-	std::snprintf(text, sizeof(text), "ERR%d", errnum);
+	std::snprintf(text, sizeof(text), "unknown error %d", errnum);
 	return (text);
 }
 
@@ -236,13 +244,13 @@ ipf_perror(int err, char *string)
 }
 
 int
-ipf_perror_fd( int fd, ioctlfunc_t iocfunc, char *string)
+ipf_perror_fd(int fd, ioctlfunc_t iocfunc, char *string)
 {
 	int save;
 	int realerr;
 
 	save = errno;
-	if ((*iocfunc)(fd, SIOCIPFINTERROR, &realerr) != -1)
+	if ((*iocfunc)(fd, SIOCIPFINTERROR, &realerr) == -1)
 		realerr = 0;
 
 	errno = save;

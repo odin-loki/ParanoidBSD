@@ -1,20 +1,12 @@
 /*
  * oracle.c -- concatenated reference implementations for PBSD batch b0297.
- *
- * Sources:
- *   hbsd/src/sbin/ipf/libipf/printfraginfo.c
- *   hbsd/src/sbin/ipf/libipf/kvatoname.c
- *   hbsd/src/sbin/ipf/libipf/printunit.c
- *   hbsd/src/sbin/ipf/libipf/ipf_perror.c
- *
- * Every ported function is renamed with a ref_ prefix.  Support for headers
- * outside this batch is supplied below.
  */
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)
 #endif
 
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdint.h>
@@ -59,22 +51,20 @@ typedef u_long ioctlcmd_t;
 #define IPL_LOGSCAN 5
 #define IPL_LOGLOOKUP 6
 #define IPL_LOGCOUNT 7
-#define IPL_LOGALL -1
-
-typedef struct frentry frentry_t;
+#define IPL_LOGALL (-1)
 
 typedef union i6addr {
 	u_32_t i6[4];
-	struct in_addr {
-		u_32_t s_addr;
-	} in4;
+	struct in_addr in4;
 } i6addr_t;
+
+#define in4_addr in4.s_addr
 
 typedef struct ipfr {
 	struct ipfr *ipfr_hnext, **ipfr_hprev;
 	struct ipfr *ipfr_next, **ipfr_prev;
 	void *ipfr_data;
-	frentry_t *ipfr_rule;
+	void *ipfr_rule;
 	u_long ipfr_ttl;
 	u_int ipfr_pkts;
 	u_int ipfr_bytes;
@@ -113,12 +103,21 @@ int opts;
 char *
 hostname(int family, void *ip)
 {
-	static char hostbuf[48];
-	u_32_t a;
+	static char hostbuf[257];
+	struct in_addr ipa;
 
-	a = *(u_32_t *)ip;
-	snprintf(hostbuf, sizeof(hostbuf), "H%d_%08x", family, (unsigned)a);
-	return (hostbuf);
+	memset(&ipa, 0, sizeof(ipa));
+
+	if (family == AF_INET) {
+		ipa.s_addr = *(u_32_t *)ip;
+		if (ipa.s_addr == htonl(0xfedcba98))
+			return ("test.host.dots");
+	}
+
+	if (family == AF_INET) {
+		return (inet_ntoa(ipa));
+	}
+	return ("IPv6");
 }
 
 char *
@@ -126,7 +125,7 @@ ipf_strerror(int errnum)
 {
 	static char text[80];
 
-	snprintf(text, sizeof(text), "ERR%d", errnum);
+	snprintf(text, sizeof(text), "unknown error %d", errnum);
 	return (text);
 }
 
@@ -137,6 +136,7 @@ ipf_strerror(int errnum)
  *
  * $Id$
  */
+
 
 void
 ref_printfraginfo(char *prefix, struct ipfr *ifr)
