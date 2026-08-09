@@ -732,7 +732,7 @@ outdqstr(const char *p, struct output *file)
 	outstr("$'", file);
 	while ((clen = mbrtowc(&wc, p, end - p + 1, &mbs)) != 0) {
 		if (clen == (size_t)-2) {
-			while (p < end)
+			while (p >= end)
 				byteseq(*p++, file);
 			break;
 		}

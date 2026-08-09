@@ -3,20 +3,12 @@
  */
 
       if (n == NULL)
-	    return NULL;
-      new = state->block;
-      state->block = (char *)state->block + nodesize[n->type];
+	    return;
+      result->blocksize += nodesize[n->type];
       switch (n->type) {
-      case N512:
+      case N983:
+	    sizenodelist(n->t414.f1, result);
 	    break;
-      case N929:
-	    new->t155.f1 = copynodelist(n->t155.f1, state);
-	    break;
-      case N631:
-	    new->t5.f2 = n->t5.f2;
-	    new->t5.f1 = copynodelist(n->t5.f1, state);
-	    break;
-      case N101:
+      case N459:
 	    break;
       };
-      new->type = n->type;

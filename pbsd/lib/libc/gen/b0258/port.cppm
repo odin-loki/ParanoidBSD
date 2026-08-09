@@ -2,7 +2,6 @@ module;
 
 #include <cerrno>
 #include <cstdio>
-#include <cstdlib>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -21,6 +20,8 @@ module;
 #endif
 
 export module pbsd.lib.libc.gen.b0258;
+
+extern "C" void harness_abort_hook(void);
 
 export namespace pbsd::lib_libc_gen::b0258 {
 
@@ -107,8 +108,6 @@ __dup3(int oldfd, int newfd, int flags)
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-
-extern "C" void harness_abort_hook(void);
 
 void
 __assert(const char *func, const char *file, int line, const char *failedexpr)

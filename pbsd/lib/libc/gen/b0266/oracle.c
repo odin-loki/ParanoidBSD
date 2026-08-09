@@ -26,6 +26,10 @@
 
 typedef unsigned long cpuset_t;
 typedef int cpuwhich_t;
+#ifndef _ID_T_DECLARED
+typedef int id_t;
+#define _ID_T_DECLARED
+#endif
 
 int __getosreldate(void);
 int cpuset_getaffinity(int level, int which, id_t id, size_t setsize,

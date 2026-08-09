@@ -311,18 +311,29 @@ check_qsort_compat_case(size_t n, size_t es, unsigned seed, const char *tag)
 	free_sortbuf(sb);
 }
 
+template<typename R, typename A, typename B, typename C, typename D>
+static D
+fourth_qsort_b_param(R (*)(A, B, C, D))
+{
+	return D{};
+}
+
 static void
 check_qsort_b_case(size_t n, size_t es, unsigned seed, const char *tag)
 {
 	SortBuf sb = make_sortbuf(n, es);
 	fill_sortbuf(sb, seed);
 
-	struct qsort_block_ty blk{};
+	struct qsort_block blk{};
 	blk.invoke = (es == sizeof(int)) ? block_cmp_int : block_cmp_byte;
 	blk.isa = (void *)(uintptr_t)es;
 
-	P::qsort_b(sb.a + 32, n, es, &blk);
-	ref_qsort_b(sb.b + 32, n, es, (struct qsort_block *)&blk);
+	using port_qsort_block_t = decltype(fourth_qsort_b_param(&P::qsort_b));
+	port_qsort_block_t compar =
+	    reinterpret_cast<port_qsort_block_t>(&blk);
+
+	P::qsort_b(sb.a + 32, n, es, compar);
+	ref_qsort_b(sb.b + 32, n, es, &blk);
 
 	bool ok = bufs_equal(sb);
 	record_case(F_QSORT_B, ok);
@@ -378,7 +389,8 @@ test_qsort_hand(void)
 		}
 	}
 
-	for (size_t n : {2u, 7u, 8u, 40u, 41u, 100u}) {
+	static const size_t dup_ns[] = {2u, 7u, 8u, 40u, 41u, 100u};
+	for (size_t n : dup_ns) {
 		SortBuf sb = make_sortbuf(n, sizeof(int));
 		for (size_t i = 0; i < n; i++) {
 			int v = (int)((i % 3) - 1);

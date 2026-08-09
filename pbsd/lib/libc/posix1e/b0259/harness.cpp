@@ -531,27 +531,19 @@ setup_mac_exec(Region &r1, Region &r2, uint32_t seed, int null_fname,
 
 	snap1 = r1;
 	snap2 = r2;
-	mac_regions(r1.b, r2.b);
+	mac_regions(r1.b, r1.b);
 	mac_track_reset();
 	int rp = P::mac_execve(fname_p, argv_p, envv_p, lab_p);
 	MacExecSnap sp = g_mac_last;
 	int ep = errno;
 
+	mac_regions(r2.b, r2.b);
 	mac_track_reset();
 	int rr = ref_mac_execve(fname_r, argv_r, envv_r, lab_r);
 	MacExecSnap sr = g_mac_last;
 	int er = errno;
 
 	case_bump(F_MAC_EXECVE);
-
-	if (seed == 0 && null_fname == 0 && null_argv == 0 && null_envv == 0 &&
-	    null_label == 0) {
-		std::fprintf(stderr,
-		    "DBG rp=%d rr=%d fo %lld/%lld ao %lld/%lld eo %lld/%lld lo %lld/%lld ret %d/%d\n",
-		    rp, rr, sp.fname_off, sr.fname_off, sp.argv_off, sr.argv_off,
-		    sp.envv_off, sr.envv_off, sp.label_off, sr.label_off,
-		    sp.ret, sr.ret);
-	}
 
 	if (rp != rr)
 		fail(F_MAC_EXECVE, "ret", "return mismatch");
