@@ -550,6 +550,7 @@ test_fstatvfs_random(void)
 		GuardStatvfs gp, gr;
 		char ctx[48];
 		int fd;
+		bool need_close = false;
 
 		std::snprintf(ctx, sizeof ctx, "rand %d", i);
 		gp.init();
@@ -558,18 +559,16 @@ test_fstatvfs_random(void)
 			fd = -1;
 		} else if ((randu32() % 4u) == 0u) {
 			fd = open("/tmp", O_RDONLY | O_DIRECTORY);
+			need_close = fd >= 0;
 		} else if ((randu32() % 4u) == 1u) {
 			fd = open("/proc/self", O_RDONLY);
+			need_close = fd >= 0;
 		} else {
 			fd = (int)(randu32() % 4096);
 		}
 		check_fstatvfs(fd, gp, gr, ctx);
-		if (fd >= 0 &&
-		    (fd == open("/tmp", O_RDONLY | O_DIRECTORY) ||
-		    fd == open("/proc/self", O_RDONLY)))
-			close(fd);
-		if (fd >= 0 && (randu32() % 4u) != 3u)
-			close(fd);
+		if (need_close)
+			(void)close(fd);
 	}
 }
 

@@ -625,7 +625,10 @@ test_uexterr_handwritten(void)
 	port::uexterror ue;
 
 	fill_ue(&ue, 0, 1, 10, 0, 0, "ignored");
-	run_uexterr_case(&ue, 64, 0, nullptr, "error-zero");
+	run_uexterr_case(&ue, 0, 0, nullptr, "error-zero-buf0");
+
+	fill_ue(&ue, 5, 1, 42, 0x11, 0x22, "%#jx %#jx");
+	run_uexterr_case(&ue, 0, 0, nullptr, "default-msg-buf0");
 
 	fill_ue(&ue, 5, 1, 42, 0x11, 0x22, "%#jx %#jx");
 	run_uexterr_case(&ue, 300, 0, nullptr, "default-msg");
@@ -697,7 +700,7 @@ test_uexterr_random(void)
 			break;
 		}
 		isset = (rnd32() & 0xf) == 0 ? 1 : 0;
-		run_uexterr_case(&ue, (size_t)(rnd32() % 600), isset, env, "rand");
+		run_uexterr_case(&ue, (size_t)(1 + (rnd32() % 599)), isset, env, "rand");
 	}
 }
 

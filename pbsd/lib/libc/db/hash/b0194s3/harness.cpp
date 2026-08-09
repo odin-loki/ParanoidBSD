@@ -359,9 +359,11 @@ struct AccessEnv {
 };
 
 static void setup_access_env(AccessEnv &e, const unsigned char *kb, size_t klen,
-    const unsigned char *vb, size_t vlen, bool insert, bool reset_mock = true)
+    const unsigned char *vb, size_t vlen, bool insert, bool reset_mock = true,
+    bool init_htab = true)
 {
-	init_htab_base(&e.htab);
+	if (init_htab)
+		init_htab_base(&e.htab);
 	guard_fill(e.keybuf, MAX_KV);
 	guard_fill(e.valbuf, MAX_KV);
 	for (size_t i = 0; i < klen; i++)
@@ -687,34 +689,35 @@ static void test_hash_access()
 	hash_mock_reset();
 	setup_access_env(er, kb, 1, vb, 1, false);
 	setup_access_env(ep, kb, 1, vb, 1, false, false);
+	keyr.size = 1;
+	keyp.size = 1;
 	auto *sp = (u_int16_t *)er.page;
 	sp[0] = 2;
-	sp[1] = PARTIAL_KEY;
-	sp[2] = OVFLPAGE;
-	sp[3] = 50;
+	sp[1] = 0;
+	sp[2] = PARTIAL_KEY;
+	sp[4] = PARTIAL_KEY;
 	std::memcpy(ep.page, er.page, PAGE_BSIZE);
 	hash_mock_set_find_bigpair_ret(3);
 	rr = ref_hash_access(&er.htab, HASH_GET, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_GET, pd(&keyp),
 	    pd(&valp));
-	std::fprintf(stderr, "bigpair found rr=%d rp=%d\n", rr, rp);
 	check(F_HASH_ACCESS, rr == rp && rr == 0, "bigpair found");
 
 	hash_mock_reset();
 	setup_access_env(er, kb, 1, vb, 1, false);
 	setup_access_env(ep, kb, 1, vb, 1, false, false);
+	keyr.size = 1;
+	keyp.size = 1;
 	sp = (u_int16_t *)er.page;
 	sp[0] = 2;
-	sp[1] = PARTIAL_KEY;
-	sp[2] = OVFLPAGE;
-	sp[3] = 50;
+	sp[1] = 0;
+	sp[2] = PARTIAL_KEY;
 	std::memcpy(ep.page, er.page, PAGE_BSIZE);
 	hash_mock_set_find_bigpair_ret(-2);
 	hash_mock_set_find_last_page_ret(0);
 	rr = ref_hash_access(&er.htab, HASH_GET, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_GET, pd(&keyp),
 	    pd(&valp));
-	std::fprintf(stderr, "bigpair -2 rr=%d rp=%d\n", rr, rp);
 	check(F_HASH_ACCESS, rr == rp && rr == 1, "bigpair -2 no page");
 
 	hash_mock_reset();
@@ -722,12 +725,11 @@ static void test_hash_access()
 	setup_access_env(er, kb, 4, vb, 2, true);
 	setup_access_env(ep, kb, 4, vb, 2, true, false);
 	sp = (u_int16_t *)er.page;
-	sp[3] = PARTIAL_KEY;
+	sp[2] = PARTIAL_KEY;
 	std::memcpy(ep.page, er.page, PAGE_BSIZE);
 	rr = ref_hash_access(&er.htab, HASH_GET, &keyr, &valr);
 	rp = P::hash_access(ph(&ep.htab), (P::ACTION)HASH_GET, pd(&keyp),
 	    pd(&valp));
-	std::fprintf(stderr, "big_return rr=%d rp=%d\n", rr, rp);
 	check(F_HASH_ACCESS, rr == rp && rr == -1, "big_return fail");
 
 	hash_mock_reset();
@@ -901,6 +903,10 @@ static void test_hash_seq()
 
 	setup_access_env(er, kb, 1, vb, 1, true);
 	setup_access_env(ep, kb, 1, vb, 1, true, false);
+	er.htab.hdr.max_bucket = 0;
+	er.htab.hdr.high_mask = 0;
+	ep.htab.hdr.max_bucket = 0;
+	ep.htab.hdr.high_mask = 0;
 	DB *dbr = make_db(&er.htab, true);
 	DB *dbp = make_db(&ep.htab, false);
 	guard_fill(er.keybuf, MAX_KV);
@@ -921,7 +927,6 @@ static void test_hash_seq()
 
 	rr = ref_hash_seq(dbr, &keyr, &valr, R_NEXT);
 	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_NEXT);
-	std::fprintf(stderr, "next end rr=%d rp=%d\n", rr, rp);
 	check(F_HASH_SEQ, rr == rp && rr == 1, "next end");
 
 	er.htab.cbucket = -1;

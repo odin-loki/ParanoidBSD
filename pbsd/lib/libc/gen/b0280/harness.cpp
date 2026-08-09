@@ -258,6 +258,11 @@ snap_capture(SlSnap *s, StringList *sl, const char *pool_base)
 	s->sl_cur = sl->sl_cur;
 	s->sl_max = sl->sl_max;
 	s->sl_str = sl->sl_str;
+	s->entry_offs = NULL;
+	if (sl->sl_cur == 0)
+		return (0);
+	if (sl->sl_str == NULL)
+		return (0);
 	s->entry_offs = (long *)std::calloc(sl->sl_cur, sizeof(long));
 	if (s->entry_offs == NULL)
 		return (-1);
@@ -275,6 +280,8 @@ snap_equal(const SlSnap *a, const SlSnap *b)
 		return (0);
 	if ((a->sl_str == NULL) != (b->sl_str == NULL))
 		return (0);
+	if (a->sl_str == NULL)
+		return (1);
 	for (i = 0; i < a->sl_cur; i++) {
 		if (a->entry_offs[i] != b->entry_offs[i])
 			return (0);
@@ -445,8 +452,8 @@ run_add_sequence(int f, const char *ctx, int nadd, int trigger_realloc_fail)
 			break;
 	}
 
-	ref_sl_free(sl_r, 1);
-	P::sl_free(to_port(sl_p), 1);
+	ref_sl_free(sl_r, 0);
+	P::sl_free(to_port(sl_p), 0);
 }
 
 static void
@@ -476,8 +483,8 @@ test_sl_add_edges(void)
 		s_p = pool_p.dup_bytes(hb, 3);
 		check_sl_add_pair(F_SL_ADD, "high-bit bytes", sl_r, sl_p, s_r, s_p,
 		    &pool_r, &pool_p, 0, NULL, NULL);
-		ref_sl_free(sl_r, 1);
-		P::sl_free(to_port(sl_p), 1);
+		ref_sl_free(sl_r, 0);
+		P::sl_free(to_port(sl_p), 0);
 	}
 }
 
@@ -521,8 +528,8 @@ test_sl_add_random(void)
 			snap_free(&pre_p);
 		}
 
-		ref_sl_free(sl_r, 1);
-		P::sl_free(to_port(sl_p), 1);
+		ref_sl_free(sl_r, 0);
+		P::sl_free(to_port(sl_p), 0);
 	}
 }
 
@@ -551,12 +558,16 @@ check_sl_free_pair(int f, const char *ctx, int all, int nitems)
 	pool_p.reset();
 	for (i = 0; i < nitems; i++) {
 		char buf[32];
-
 		char *s_r, *s_p;
 
 		std::snprintf(buf, sizeof buf, "x%d", i);
-		s_r = pool_r.dup(buf);
-		s_p = pool_p.dup(buf);
+		if (all) {
+			s_r = strdup(buf);
+			s_p = strdup(buf);
+		} else {
+			s_r = pool_r.dup(buf);
+			s_p = pool_p.dup(buf);
+		}
 		(void)ref_sl_add(sl_r, s_r);
 		(void)P::sl_add(to_port(sl_p), s_p);
 	}
@@ -597,12 +608,16 @@ test_sl_free_random(void)
 		pool_p.reset();
 		for (int j = 0; j < n; j++) {
 			char buf[64];
-
 			char *s_r, *s_p;
 
 			std::snprintf(buf, sizeof buf, "%x", randu32());
-			s_r = pool_r.dup(buf);
-			s_p = pool_p.dup(buf);
+			if (all) {
+				s_r = strdup(buf);
+				s_p = strdup(buf);
+			} else {
+				s_r = pool_r.dup(buf);
+				s_p = pool_p.dup(buf);
+			}
 			(void)ref_sl_add(sl_r, s_r);
 			(void)P::sl_add(to_port(sl_p), s_p);
 		}
@@ -697,15 +712,15 @@ test_sl_find_edges(void)
 	    &pool_r, &pool_p, 0);
 	check_sl_find_pair(F_SL_FIND, "empty needle", sl_r, sl_p, "", "",
 	    &pool_r, &pool_p, 0);
-	ref_sl_free(sl_r, 1);
-	P::sl_free(to_port(sl_p), 1);
+	ref_sl_free(sl_r, 0);
+	P::sl_free(to_port(sl_p), 0);
 
 	build_list(&sl_r, &sl_p, &pool_r, &pool_p,
 	    (const char *const[]){ "dup", "dup", "other" }, 3);
 	check_sl_find_pair(F_SL_FIND, "duplicate first", sl_r, sl_p, "dup",
 	    "dup", &pool_r, &pool_p, 1);
-	ref_sl_free(sl_r, 1);
-	P::sl_free(to_port(sl_p), 1);
+	ref_sl_free(sl_r, 0);
+	P::sl_free(to_port(sl_p), 0);
 
 	{
 		const char *hb_items[] = { (const char *)hb_item };
@@ -714,16 +729,16 @@ test_sl_find_edges(void)
 		std::memcpy(hb_buf, hb_needle, sizeof hb_needle);
 		check_sl_find_pair(F_SL_FIND, "high-bit", sl_r, sl_p, hb_buf, hb_buf,
 		    &pool_r, &pool_p, 1);
-		ref_sl_free(sl_r, 1);
-		port_sl_free(sl_p, 1);
+		ref_sl_free(sl_r, 0);
+		port_sl_free(sl_p, 0);
 	}
 
 	build_list(&sl_r, &sl_p, &pool_r, &pool_p,
 	    (const char *const[]){ "a" }, 1);
 	check_sl_find_pair(F_SL_FIND, "prefix miss", sl_r, sl_p, "ab", "ab",
 	    &pool_r, &pool_p, 0);
-	ref_sl_free(sl_r, 1);
-	P::sl_free(to_port(sl_p), 1);
+	ref_sl_free(sl_r, 0);
+	P::sl_free(to_port(sl_p), 0);
 }
 
 static void
@@ -770,8 +785,8 @@ test_sl_find_random(void)
 			    miss, &pool_r, &pool_p, 0);
 		}
 
-		ref_sl_free(sl_r, 1);
-		P::sl_free(to_port(sl_p), 1);
+		ref_sl_free(sl_r, 0);
+		P::sl_free(to_port(sl_p), 0);
 	}
 }
 

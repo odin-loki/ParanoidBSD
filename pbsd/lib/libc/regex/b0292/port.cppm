@@ -14,6 +14,66 @@ module;
 #include <cstdlib>
 #include <cassert>
 
+typedef off_t regoff_t;
+
+struct re_guts;
+
+typedef struct {
+	int re_magic;
+	size_t re_nsub;
+	const char *re_endp;
+	struct re_guts *re_g;
+} regex_t;
+
+typedef struct {
+	regoff_t rm_so;
+	regoff_t rm_eo;
+} regmatch_t;
+
+#define REG_BASIC     0000
+#define REG_EXTENDED  0001
+#define REG_ICASE     0002
+#define REG_NOSUB     0004
+#define REG_NEWLINE   0010
+#define REG_NOSPEC    0020
+#define REG_PEND      0040
+#define REG_DUMP      0200
+#define REG_POSIX     0400
+
+#define REG_NOMATCH   1
+#define REG_BADPAT    2
+#define REG_ECOLLATE  3
+#define REG_ECTYPE    4
+#define REG_EESCAPE   5
+#define REG_ESUBREG   6
+#define REG_EBRACK    7
+#define REG_EPAREN    8
+#define REG_EBRACE    9
+#define REG_BADBR     10
+#define REG_ERANGE    11
+#define REG_ESPACE    12
+#define REG_BADRPT    13
+#define REG_EMPTY     14
+#define REG_ASSERT    15
+#define REG_INVARG    16
+#define REG_ILLSEQ    17
+#define REG_ATOI      255
+#define REG_ITOA      0400
+
+#define REG_NOTBOL    00001
+#define REG_NOTEOL    00002
+#define REG_STARTEND  00004
+#define REG_TRACE     00400
+#define REG_LARGE     01000
+#define REG_BACKR     02000
+
+#ifndef __unused
+#define __unused
+#endif
+
+#define _REGEX_H_
+#define _REGEX_H
+
 #include "utils.h"
 #include "regex2.h"
 
@@ -622,7 +682,7 @@ matcher(struct re_guts *g,
 			dp = dissect(m, m->coldp, endp, gf, gl);
 		} else {
 			if (g->nplus > 0 && m->lastpos == NULL)
-				m->lastpos = malloc((g->nplus+1) *
+				m->lastpos = (const char **)malloc((g->nplus+1) *
 						sizeof(const char *));
 			if (g->nplus > 0 && m->lastpos == NULL) {
 				free(m->pmatch);
@@ -1534,7 +1594,7 @@ pchar(int ch)
 #define	ASSIGN(d, s)	memcpy(d, s, m->g->nstates)
 #define	EQ(a, b)	(memcmp(a, b, m->g->nstates) == 0)
 #define	STATEVARS	long vn; char *space
-#define	STATESETUP(m, nv)	{ (m)->space = malloc((nv)*(m)->g->nstates); \
+#define	STATESETUP(m, nv)	{ (m)->space = (char *)malloc((nv)*(m)->g->nstates); \
 				if ((m)->space == NULL) return(REG_ESPACE); \
 				(m)->vn = 0; }
 #define	STATETEARDOWN(m)	{ free((m)->space); }
@@ -1889,7 +1949,7 @@ matcher(struct re_guts *g,
 			dp = dissect(m, m->coldp, endp, gf, gl);
 		} else {
 			if (g->nplus > 0 && m->lastpos == NULL)
-				m->lastpos = malloc((g->nplus+1) *
+				m->lastpos = (const char **)malloc((g->nplus+1) *
 						sizeof(const char *));
 			if (g->nplus > 0 && m->lastpos == NULL) {
 				free(m->pmatch);
@@ -3112,7 +3172,7 @@ matcher(struct re_guts *g,
 			dp = dissect(m, m->coldp, endp, gf, gl);
 		} else {
 			if (g->nplus > 0 && m->lastpos == NULL)
-				m->lastpos = malloc((g->nplus+1) *
+				m->lastpos = (const char **)malloc((g->nplus+1) *
 						sizeof(const char *));
 			if (g->nplus > 0 && m->lastpos == NULL) {
 				free(m->pmatch);

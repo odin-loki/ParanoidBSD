@@ -12,8 +12,7 @@
  *	lib/libc/iconv/citrus_db.c
  *	lib/libc/iconv/citrus_db_factory.c
  *	lib/libc/iconv/citrus_lookup.c
- *
- * lib/libc/iconv/citrus_mapper.c is not part of this file; see skipped.txt.
+ *	lib/libc/iconv/citrus_mapper.c
  *
  * The support layer at the top of this file (citrus_region.h,
  * citrus_memstream.[ch], citrus_bcs.[ch], citrus_mmap.c, citrus_db_hash.c and
@@ -40,6 +39,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -516,6 +516,152 @@ _citrus_db_hash_std(struct _region *r)
 
 /*
  * ------------------------------------------------------------------------
+ * support layer: citrus_hash.h, citrus_module mock, citrus_lock.h, strlcpy
+ * ------------------------------------------------------------------------
+ */
+
+static int __isthreaded = 0;
+#define WLOCK(lock) if (__isthreaded) pthread_rwlock_wrlock(lock);
+#define UNLOCK(lock) if (__isthreaded) pthread_rwlock_unlock(lock);
+
+static size_t
+strlcpy(char *dst, const char *src, size_t siz)
+{
+	const char *s = src;
+	size_t n = siz;
+
+	if (n != 0) {
+		while (--n != 0) {
+			if ((*dst++ = *s++) == '\0')
+				break;
+		}
+	}
+	if (n == 0) {
+		if (siz != 0)
+			*dst = '\0';
+		while (*s++)
+			;
+	}
+	return (s - src - 1);
+}
+
+#define _CITRUS_HASH_ENTRY(type) LIST_ENTRY(type)
+#define _CITRUS_HASH_HEAD(headname, type, hashsize) \
+	struct headname { LIST_HEAD(, type) chh_table[hashsize]; }
+#define _CITRUS_HASH_INIT(head, hashsize) \
+	do { int _i; for (_i = 0; _i < (hashsize); _i++) \
+	    LIST_INIT(&(head)->chh_table[_i]); } while (0)
+#define _CITRUS_HASH_REMOVE(elm, field) LIST_REMOVE(elm, field)
+#define _CITRUS_HASH_INSERT(head, elm, field, hashval) \
+	LIST_INSERT_HEAD(&(head)->chh_table[hashval], elm, field)
+#define _CITRUS_HASH_SEARCH(head, elm, field, matchfunc, key, hashval) \
+	do { LIST_FOREACH((elm), &(head)->chh_table[hashval], field) \
+	    if ((matchfunc)((elm), (key)) == 0) break; } while (0)
+
+typedef uint32_t _citrus_index_t;
+
+typedef struct _citrus_module_rec {
+	char	mr_name[64];
+} *_citrus_module_t;
+
+struct _citrus_mapper_traits {
+	size_t	mt_state_size;
+	size_t	mt_src_max;
+	size_t	mt_dst_max;
+};
+
+struct _citrus_mapper_ops {
+	int (*mo_init)(struct _citrus_mapper_area *__restrict,
+	    struct _citrus_mapper *__restrict, const char *__restrict,
+	    const void *__restrict, size_t, struct _citrus_mapper_traits *__restrict,
+	    size_t);
+	void (*mo_uninit)(struct _citrus_mapper *);
+	int (*mo_convert)(struct _citrus_mapper *__restrict,
+	    _citrus_index_t *__restrict, _citrus_index_t, void *__restrict);
+	void (*mo_init_state)(void);
+};
+
+typedef int (*_citrus_mapper_getops_t)(struct _citrus_mapper_ops *);
+
+struct _citrus_mapper {
+	struct _citrus_mapper_ops	*cm_ops;
+	void				*cm_closure;
+	_citrus_module_t		 cm_module;
+	struct _citrus_mapper_traits	*cm_traits;
+	LIST_ENTRY(_citrus_mapper)	 cm_entry;
+	int				 cm_refcount;
+	char				*cm_key;
+};
+
+struct _citrus_mapper_area;
+
+static struct {
+	char			 mock_modname[64];
+	_citrus_mapper_getops_t	 mock_getops;
+} b0229_mock_state;
+
+void
+b0229_mock_reset(void)
+{
+
+	memset(&b0229_mock_state, 0, sizeof(b0229_mock_state));
+}
+
+void
+b0229_mock_set_module(const char *name,
+    int (*getops)(struct _citrus_mapper_ops *))
+{
+
+	strncpy(b0229_mock_state.mock_modname, name,
+	    sizeof(b0229_mock_state.mock_modname) - 1);
+	b0229_mock_state.mock_getops = getops;
+}
+
+int
+_citrus_load_module(_citrus_module_t *mod, const char *name)
+{
+
+	if (strcmp(name, b0229_mock_state.mock_modname) != 0)
+		return (ENOENT);
+	*mod = malloc(sizeof(**mod));
+	if (*mod == NULL)
+		return (errno);
+	strncpy((*mod)->mr_name, name, sizeof((*mod)->mr_name) - 1);
+	return (0);
+}
+
+void
+_citrus_unload_module(_citrus_module_t mod)
+{
+
+	free(mod);
+}
+
+void *
+_citrus_find_getops(_citrus_module_t mod, const char *name, const char *kind)
+{
+
+	(void)mod;
+	if (strcmp(name, b0229_mock_state.mock_modname) != 0)
+		return (NULL);
+	if (strcmp(kind, "mapper") != 0)
+		return (NULL);
+	return ((void *)b0229_mock_state.mock_getops);
+}
+
+int
+_citrus_string_hash_func(const char *key, int hashsize)
+{
+	struct _citrus_region r;
+
+	_region_init(&r, __DECONST(void *, key), strlen(key));
+	return ((int)(_db_hash_std(&r) % (uint32_t)hashsize));
+}
+
+#define _string_hash_func _citrus_string_hash_func
+
+/*
+ * ------------------------------------------------------------------------
  * Every function of the batch is defined below under its original name with
  * a "ref_" prefix.  Calls between batch functions are redirected to the
  * prefixed definitions by the macros below, so that the function bodies
@@ -578,6 +724,19 @@ _citrus_db_hash_std(struct _region *r)
 				ref__citrus_lookup_get_number_of_entries
 #define	_citrus_lookup_seq_close	ref__citrus_lookup_seq_close
 #define	_citrus_lookup_simple		ref__citrus_lookup_simple
+
+/* citrus_mapper.c */
+#define	lookup_mapper_entry		ref_lookup_mapper_entry
+#define	mapper_close			ref_mapper_close
+#define	mapper_open			ref_mapper_open
+#define	hash_func			ref_hash_func
+#define	match_func			ref_match_func
+#define	_mapper_close			ref__citrus_mapper_close
+#define	_citrus_mapper_create_area	ref__citrus_mapper_create_area
+#define	_citrus_mapper_open_direct	ref__citrus_mapper_open_direct
+#define	_citrus_mapper_open		ref__citrus_mapper_open
+#define	_citrus_mapper_close		ref__citrus_mapper_close
+#define	_citrus_mapper_set_persistent	ref__citrus_mapper_set_persistent
 
 /*
  * ========================================================================

@@ -132,6 +132,33 @@ int *__h_errno(void);
 void __h_errno_set(res_state res, int err);
 res_state __res_state(void);
 
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2006 The FreeBSD Project. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
 int *
 __h_errno(void)
 {
@@ -153,6 +180,11 @@ static void		__res_destroy_ctx(void *);
 static mtctxres_t	sharedctx;
 
 #ifdef DO_PTHREADS
+/*
+ * Initialize the TSD key. By doing this at library load time, we're
+ * implicitly running without interference from other threads, so there's
+ * no need for locking.
+ */
 static void
 _mtctxres_init(void) {
 	int pthread_keycreate_ret;
@@ -164,6 +196,11 @@ _mtctxres_init(void) {
 #endif
 
 #ifndef _LIBC
+/*
+ * To support binaries that used the private MT-safe interface in
+ * Solaris 8, we still need to provide the __res_enable_mt()
+ * and __res_disable_mt() entry points. They're do-nothing routines.
+ */
 int
 __res_enable_mt(void) {
 	return (-1);
@@ -216,6 +253,11 @@ ___mtctxres(void) {
 #ifdef DO_PTHREADS
 	mtctxres_t	*mt;
 
+	/*
+	 * This if clause should only be executed if we are linking
+	 * statically.  When linked dynamically _mtctxres_init() should
+	 * be called at binding time due the #pragma above.
+	 */
 	if (!mt_key_initialized) {
 		static pthread_mutex_t keylock = PTHREAD_MUTEX_INITIALIZER;
                 if (pthread_mutex_lock(&keylock) == 0) {
@@ -224,6 +266,11 @@ ___mtctxres(void) {
 		}
 	}
 
+	/*
+	 * If we have already been called in this thread return the existing
+	 * context.  Otherwise recreat a new context and return it.  If
+	 * that fails return a global context.
+	 */
 	if (mt_key_initialized) {
 		if (((mt = (mtctxres_t *)pthread_getspecific(key)) != NULL) ||
 		    (__res_init_ctx() == 0 &&
@@ -238,6 +285,33 @@ ___mtctxres(void) {
 static thread_key_t res_key;
 static once_t res_init_once = ONCE_INITIALIZER;
 static int res_thr_keycreated = 0;
+
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2006 The FreeBSD Project. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
 static void
 free_res(void *ptr)
@@ -313,15 +387,58 @@ __res_state(void)
 	return (&_res);
 }
 
-const char *
-hstrerror(int err) {
-	if (err < 0)
-		return ("Resolver internal error");
-	else if (err < h_nerr)
-		return (h_errlist[err]);
-	return ("Unknown resolver error");
-}
+/*-
+ * SPDX-License-Identifier: (BSD-3-Clause AND ISC)
+ *
+ * Copyright (c) 1987, 1993
+ *    The Regents of the University of California.  All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
 
+/*
+ * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
+ * Portions Copyright (c) 1996-1999 by Internet Software Consortium.
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS.  IN NO EVENT SHALL ISC BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+ * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+/*%
+ * herror --
+ *	print the error indicated by the h_errno value.
+ */
 void
 herror(const char *s) {
 	struct iovec iov[4], *v = iov;
@@ -345,6 +462,19 @@ herror(const char *s) {
 	v->iov_base = t;
 	v->iov_len = 1;
 	_writev(STDERR_FILENO, iov, (v - iov) + 1);
+}
+
+/*%
+ * hstrerror --
+ *	return the string associated with a given "host" errno value.
+ */
+const char *
+hstrerror(int err) {
+	if (err < 0)
+		return ("Resolver internal error");
+	else if (err < h_nerr)
+		return (h_errlist[err]);
+	return ("Unknown resolver error");
 }
 
 } /* namespace */

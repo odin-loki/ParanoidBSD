@@ -83,7 +83,7 @@ union yystype {
 jmp_buf b0228_jmp;
 int b0228_err_exit;
 
-static int oracle_uflag;
+int uflag;
 static char oracle_varbuf[256];
 static char oracle_outbuf[512];
 static int oracle_outlen;
@@ -94,7 +94,7 @@ static size_t oracle_stack_off;
 
 void oracle_reset_state(void)
 {
-	oracle_uflag = 0;
+	uflag = 0;
 	oracle_varbuf[0] = '\0';
 	oracle_outlen = 0;
 	oracle_outbuf[0] = '\0';
@@ -109,7 +109,7 @@ void oracle_set_var(const char *name, const char *val)
 	oracle_varbuf[sizeof(oracle_varbuf) - 1] = '\0';
 }
 
-void oracle_set_uflag(int v) { oracle_uflag = v; }
+void oracle_set_uflag(int v) { uflag = v; }
 
 const char *lookupvar(const char *name)
 {
@@ -774,7 +774,7 @@ static arith_t arith_lookupvarint(char *varname)
 	arith_t result;
 
 	str = lookupvar(varname);
-	if (oracle_uflag && str == NULL)
+	if (uflag && str == NULL)
 		yyerror("variable not set");
 	if (str == NULL || *str == '\0')
 		str = "0";

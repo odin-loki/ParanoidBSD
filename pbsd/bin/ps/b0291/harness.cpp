@@ -3,21 +3,44 @@
  */
 
 #include <cmath>
+#include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <clocale>
+#include <initializer_list>
 
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <setjmp.h>
 
 import pbsd.bin.ps.b0291;
 
 namespace P = pbsd::bin_ps::b0291;
+
+typedef int fixpt_t;
+
+#define STAILQ_HEAD(name, type) \
+	struct name { struct type *stqh_first; struct type **stqh_last; }
+#define STAILQ_ENTRY(type) struct { struct type *stqe_next; }
+#define STAILQ_FIRST(head) ((head)->stqh_first)
+#define STAILQ_NEXT(elm, field) ((elm)->field.stqe_next)
+#define STAILQ_INIT(head) do { \
+	(head)->stqh_first = nullptr; \
+	(head)->stqh_last = &(head)->stqh_first; \
+} while (0)
+#define STAILQ_INSERT_TAIL(head, elm, field) do { \
+	(elm)->field.stqe_next = nullptr; \
+	*(head)->stqh_last = (elm); \
+	(head)->stqh_last = &(elm)->field.stqe_next; \
+} while (0)
+
+STAILQ_HEAD(velisthead, varent);
 
 /* ------------------------------------------------------------------ */
 /* Harness globals (shared by oracle + port)                          */
@@ -36,7 +59,6 @@ int sumrusage = 0;
 int termwidth = 80;
 
 struct velisthead varlist;
-const size_t known_keywords_nb = 0; /* real symbol from oracle/port */
 
 jmp_buf b0291_err_jmp;
 int b0291_err_jmp_set = 0;
@@ -82,7 +104,7 @@ struct var {
 };
 
 typedef struct varent {
-	struct varent *next_ve;
+	STAILQ_ENTRY(varent) next_ve;
 	const char *header;
 	const VAR *var;
 	unsigned int width;
@@ -174,6 +196,7 @@ struct kinfo_proc {
 	unsigned int ki_cr_flags;
 	int ki_jid;
 	int ki_numthreads;
+	std::uint32_t ki_tid;
 	long ki_tdflags;
 	struct priority ki_pri;
 	struct rusage ki_rusage;
@@ -736,30 +759,6 @@ fixture_randomize(Fixture &fx, bool last_field)
 	}
 }
 
-#define STAILQ_INIT(head) do { (head)->stqh_first = nullptr; (head)->stqh_last = &(head)->stqh_first; } while (0)
-#define STAILQ_INSERT_TAIL(head, elm, field) do { \
-	(elm)->field.stqe_next = nullptr; \
-	*(head)->stqh_last = (elm); \
-	(head)->stqh_last = &(elm)->field.stqe_next; \
-} while (0)
-
-struct velisthead {
-	struct varent *stqh_first;
-	struct varent **stqh_last;
-};
-
-/* Fix varent STAILQ field name */
-struct varent_q {
-	struct varent *stqe_next;
-};
-
-#undef STAILQ_INSERT_TAIL
-#define STAILQ_INSERT_TAIL(head, elm, next_ve) do { \
-	(elm)->next_ve = nullptr; \
-	*(head)->stqh_last = (elm); \
-	(head)->stqh_last = &(elm)->next_ve; \
-} while (0)
-
 static char *
 dupstr(const char *s)
 {
@@ -910,21 +909,21 @@ run_keyword_tests(void)
 		P::parsefmt(fmt, reinterpret_cast<P::velisthead *>(&pl), 0);
 		/* lists should have same length */
 		int rc = 0, pc = 0;
-		for (auto *v = rl.stqh_first; v; v = v->next_ve)
+		for (auto *v = rl.stqh_first; v; v = v->next_ve.stqe_next)
 			rc++;
-		for (auto *v = pl.stqh_first; v; v = v->next_ve)
+		for (auto *v = pl.stqh_first; v; v = v->next_ve.stqe_next)
 			pc++;
 		if (rc != pc)
 			fail(FN_PARSEFMT, "list length mismatch");
 		while (rl.stqh_first) {
 			auto *v = rl.stqh_first;
-			rl.stqh_first = v->next_ve;
+			rl.stqh_first = v->next_ve.stqe_next;
 			std::free((void *)v->header);
 			std::free(v);
 		}
 		while (pl.stqh_first) {
 			auto *v = pl.stqh_first;
-			pl.stqh_first = v->next_ve;
+			pl.stqh_first = v->next_ve.stqe_next;
 			std::free((void *)v->header);
 			std::free(v);
 		}

@@ -153,15 +153,15 @@ parse(char *lbuf, char **argv, int maxargc)
 	char *c;
 
 	c = lbuf;
-	while (isspace((unsigned char)*c))
+	while (isspace(*c))
 		c++;
 	while (*c != '\0' && argc < maxargc) {
 		*argv++ = c;
 		argc++;
-		while (!isspace((unsigned char)*c) && *c != '\0') {
+		while (!isspace(*c) && *c != '\0') {
 			c++;
 		}
-		while (isspace((unsigned char)*c))
+		while (isspace(*c))
 			*c++ = '\0';
 	}
 	return (argc);

@@ -27,7 +27,23 @@
 #include <string.h>
 #include <strings.h>
 #include <time.h>
+#include <stdarg.h>
 #include <unistd.h>
+
+void
+paxwarn(int set, const char *fmt, ...)
+{
+	(void)set;
+	(void)fmt;
+}
+
+void
+syswarn(int set, int errnum, const char *fmt, ...)
+{
+	(void)set;
+	(void)errnum;
+	(void)fmt;
+}
 
 /*
  * ---------------------------------------------------------------------------
@@ -125,9 +141,6 @@ typedef struct ftree {
  * from extern.h (only what the ported functions reference)
  * ---------------------------------------------------------------------------
  */
-
-extern void paxwarn(int, const char *, ...);
-extern void syswarn(int, int, const char *, ...);
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause

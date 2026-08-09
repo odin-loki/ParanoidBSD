@@ -1,7 +1,5 @@
 module;
 
-#ifndef B0291_PS_BATCH
-#define B0291_PS_BATCH
 #define _DEFAULT_SOURCE 1
 #include <sys/types.h>
 #include <sys/time.h>
@@ -25,6 +23,10 @@ module;
 #include <signal.h>
 #include <time.h>
 #include <bsd/vis.h>
+
+export module pbsd.bin.ps.b0291;
+export namespace pbsd::bin_ps::b0291 {
+
 #ifndef __unused
 #define __unused
 #endif
@@ -143,10 +145,7 @@ extern jmp_buf b0291_err_jmp; extern int b0291_err_jmp_set,b0291_errx_code;
 static inline void b0291_errx(int eval,const char *fmt,...){va_list ap;va_start(ap,fmt);if(b0291_err_jmp_set)longjmp(b0291_err_jmp,eval);vfprintf(stderr,fmt,ap);va_end(ap);exit(eval);} 
 #undef errx
 #define errx b0291_errx
-#endif
 
-export module pbsd.bin.ps.b0291;
-export namespace pbsd::bin_ps::b0291 {
 /* ---- fmt.c ---- */
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -200,7 +199,7 @@ shquote(char **argv)
 		if (arg_max >= LONG_MAX / 4 || arg_max >= (long)(SIZE_MAX / 4))
 			errx(1, "sysconf _SC_ARG_MAX preposterously large");
 		buf_size = 4 * arg_max + 1;
-		if ((buf = malloc(buf_size)) == NULL)
+		if ((buf = (char *)malloc(buf_size)) == NULL)
 			errx(1, "malloc failed");
 	}
 
@@ -250,7 +249,7 @@ fmt_argv(char **argv, char *cmd, char *thread, size_t maxlen)
 		ap = shquote(argv);
 		len = strlen(ap) + maxlen + 4;
 	}
-	cp = malloc(len);
+	cp = (char *)malloc(len);
 	if (cp == NULL)
 		errx(1, "malloc failed");
 	if (ap == NULL) {
@@ -340,7 +339,7 @@ arguments(KINFO *k, VARENT *ve)
 {
 	char *vis_args;
 
-	if ((vis_args = malloc(strlen(k->ki_args) * 4 + 1)) == NULL)
+	if ((vis_args = (char *)malloc(strlen(k->ki_args) * 4 + 1)) == NULL)
 		xo_errx(1, "malloc failed");
 	strvis(vis_args, k->ki_args, VIS_TAB | VIS_NL | VIS_NOSLASH);
 
@@ -369,7 +368,7 @@ command(KINFO *k, VARENT *ve)
 
 		return (str);
 	}
-	if ((vis_args = malloc(strlen(k->ki_args) * 4 + 1)) == NULL)
+	if ((vis_args = (char *)malloc(strlen(k->ki_args) * 4 + 1)) == NULL)
 		xo_errx(1, "malloc failed");
 	strvis(vis_args, k->ki_args, VIS_TAB | VIS_NL | VIS_NOSLASH);
 
@@ -377,7 +376,7 @@ command(KINFO *k, VARENT *ve)
 		/* last field */
 
 		if (k->ki_env) {
-			if ((vis_env = malloc(strlen(k->ki_env) * 4 + 1))
+			if ((vis_env = (char *)malloc(strlen(k->ki_env) * 4 + 1))
 			    == NULL)
 				xo_errx(1, "malloc failed");
 			strvis(vis_env, k->ki_env,
@@ -456,7 +455,7 @@ state(KINFO *k, VARENT *ve __unused)
 	long flag, tdflags;
 	char *cp, *buf;
 
-	buf = malloc(16);
+	buf = (char *)malloc(16);
 	if (buf == NULL)
 		xo_errx(1, "malloc failed");
 
@@ -632,7 +631,7 @@ started(KINFO *k, VARENT *ve __unused)
 	if (!k->ki_valid)
 		return (NULL);
 
-	buf = malloc(buflen);
+	buf = (char *)malloc(buflen);
 	if (buf == NULL)
 		xo_errx(1, "malloc failed");
 
@@ -657,7 +656,7 @@ lstarted(KINFO *k, VARENT *ve __unused)
 	if (!k->ki_valid)
 		return (NULL);
 
-	buf = malloc(buflen);
+	buf = (char *)malloc(buflen);
 	if (buf == NULL)
 		xo_errx(1, "malloc failed");
 
@@ -942,12 +941,12 @@ priorityr(KINFO *k, VARENT *ve __unused)
 {
 	struct priority *lpri;
 	char *str;
-	unsigned class, level;
+	unsigned pri_class, level;
 
 	lpri = &k->ki_p->ki_pri;
-	class = lpri->pri_class;
+	pri_class = lpri->pri_class;
 	level = lpri->pri_level;
-	switch (class) {
+	switch (pri_class) {
 	case RTP_PRIO_REALTIME:
 	/* alias for PRI_REALTIME */
 		asprintf(&str, "real:%u", level - PRI_MIN_REALTIME);
@@ -968,7 +967,7 @@ priorityr(KINFO *k, VARENT *ve __unused)
 		asprintf(&str, "intr:%u", level - PRI_MIN_ITHD);
 		break;
 	default:
-		asprintf(&str, "%u:%u", class, level);
+		asprintf(&str, "%u:%u", pri_class, level);
 		break;
 	}
 	return (str);
@@ -1440,7 +1439,7 @@ resolve_alias(VAR *const k)
 	k->flag |= RESOLVING_ALIAS;
 
 	key.name = k->aliased;
-	t = bsearch(&key, keywords, known_keywords_nb, sizeof(VAR), vcmp);
+	t = (VAR *)bsearch(&key, keywords, known_keywords_nb, sizeof(VAR), vcmp);
 	if (t == NULL)
 		xo_errx(2, "unknown target '%s' for keyword alias '%s'",
 		    k->aliased, k->name);
@@ -1539,7 +1538,7 @@ parsefmt(const char *p, struct velisthead *const var_list,
 
 		/* Find the keyword. */
 		key.name = cp;
-		v = bsearch(&key, keywords,
+		v = (VAR *)bsearch(&key, keywords,
 		    known_keywords_nb, sizeof(VAR), vcmp);
 		if (v == NULL) {
 			xo_warnx("%s: keyword not found", cp);
@@ -1556,7 +1555,7 @@ parsefmt(const char *p, struct velisthead *const var_list,
 		resolve_alias(v);
 #endif
 
-		if ((vent = malloc(sizeof(struct varent))) == NULL)
+		if ((vent = (struct varent *)malloc(sizeof(struct varent))) == NULL)
 			xo_errx(1, "malloc failed");
 		vent->header = v->header;
 		if (hdr_p) {

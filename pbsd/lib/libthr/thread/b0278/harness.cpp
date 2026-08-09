@@ -601,17 +601,13 @@ static void
 check_rwlockattr_setpshared_pair(const char *label, int pshared)
 {
 	pthread_rwlockattr_t port_attr = NULL, ref_attr = NULL;
-	int port_ret, ref_ret, port_get, ref_get;
+	int port_ret, ref_ret;
 
 	b0278_reset_mocks();
 	P::_pthread_rwlockattr_init(&port_attr);
 	ref__pthread_rwlockattr_init(&ref_attr);
 	port_ret = P::_pthread_rwlockattr_setpshared(&port_attr, pshared);
 	ref_ret = ref__pthread_rwlockattr_setpshared(&ref_attr, pshared);
-	port_get = P::_pthread_rwlockattr_getpshared(&port_attr, &port_get);
-	ref_get = ref__pthread_rwlockattr_getpshared(&ref_attr, &ref_get);
-	(void)port_get;
-	(void)ref_get;
 	record_case(F_RWLOCKATTR_SETPSHARED,
 	    port_ret == ref_ret &&
 	    (port_ret != 0 ||
@@ -814,6 +810,8 @@ check_setschedparam(const char *label, struct pthread *cur, GuardedPthread *in,
 	bool ok, self, find_ok, fast_path, expect_sched;
 	unsigned expect_lock, expect_unlock;
 	GuardedPthread in_port, in_ref;
+	struct pthread *port_curthread;
+	struct pthread *ref_curthread;
 	int initial_prio, initial_policy;
 	long initial_tid;
 
@@ -830,20 +828,22 @@ check_setschedparam(const char *label, struct pthread *cur, GuardedPthread *in,
 
 	in_port = *in;
 	in_ref = *in;
-	port = run_setschedparam_port(self ? &in_port.thr : cur, &in_port, find_ret,
+	port_curthread = self ? &in_port.thr : cur;
+	ref_curthread = self ? &in_ref.thr : cur;
+	port = run_setschedparam_port(port_curthread, &in_port, find_ret,
 	    sched_ret, sched_err, policy, prio);
-	ref = run_setschedparam_ref(self ? &in_ref.thr : cur, &in_ref, find_ret,
+	ref = run_setschedparam_ref(ref_curthread, &in_ref, find_ret,
 	    sched_ret, sched_err, policy, prio);
 
 	ok = (port.ret == ref.ret) &&
-	    (std::memcmp(&port.target, &ref.target, sizeof(port.target)) == 0) &&
+	    (port.target.thr.attr.sched_policy ==
+	    ref.target.thr.attr.sched_policy) &&
+	    (port.target.thr.attr.prio == ref.target.thr.attr.prio) &&
+	    (port.target.thr.tid == ref.target.thr.tid) &&
 	    guards_intact_pthread(&port.target) &&
 	    guards_intact_pthread(&ref.target) &&
 	    (port.lock_delta == ref.lock_delta) &&
 	    (port.unlock_delta == ref.unlock_delta) &&
-	    (port.lock_last == ref.lock_last) &&
-	    (port.unlock_cur == ref.unlock_cur) &&
-	    (port.unlock_target == ref.unlock_target) &&
 	    (port.sched_tid == ref.sched_tid) &&
 	    (port.sched_policy == ref.sched_policy) &&
 	    (port.sched_prio == ref.sched_prio);
@@ -856,8 +856,17 @@ check_setschedparam(const char *label, struct pthread *cur, GuardedPthread *in,
 	} else {
 		ok = ok && (port.lock_delta == expect_lock) &&
 		    (port.unlock_delta == expect_unlock) &&
-		    (port.unlock_cur == cur) &&
-		    (port.unlock_target == &in_port.thr);
+		    (port.unlock_cur == port_curthread) &&
+		    (ref.unlock_cur == ref_curthread) &&
+		    (port.unlock_target == &in_port.thr) &&
+		    (ref.unlock_target == &in_ref.thr);
+		if (self) {
+			ok = ok && (port.lock_last == port_curthread) &&
+			    (ref.lock_last == ref_curthread);
+		} else {
+			ok = ok && (port.lock_last == NULL) &&
+			    (ref.lock_last == NULL);
+		}
 
 		if (fast_path) {
 			ok = ok && (port.ret == 0) && (ref.ret == 0) &&

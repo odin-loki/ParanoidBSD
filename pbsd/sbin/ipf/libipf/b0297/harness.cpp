@@ -20,7 +20,7 @@ import pbsd.sbin.ipf.libipf.b0297;
 namespace P = pbsd::sbin_ipf_libipf::b0297;
 
 #ifndef SIOCFUNCL
-#define SIOCFUNCL _IOWR('r', 86, struct ipfunc_resolve)
+#define SIOCFUNCL _IOWR('r', 86, P::ipfunc_resolve_t)
 #endif
 
 #ifndef SIOCIPFINTERROR
@@ -30,7 +30,7 @@ namespace P = pbsd::sbin_ipf_libipf::b0297;
 #define OPT_DONTOPEN 0x10000000
 
 extern "C" {
-int opts;
+extern int opts;
 void ref_printfraginfo(char *prefix, P::ipfr_t *ifr);
 char *ref_kvatoname(P::ipfunc_t func, P::ioctlfunc_t iocfunc);
 void ref_printunit(int unit);
@@ -436,8 +436,8 @@ init_ipfr(P::ipfr_t *ifr, int v, std::uint32_t id, unsigned long ttl,
 	ifr->ipfr_bytes = bytes;
 	ifr->ipfr_seen0 = seen0;
 	ifr->ipfr_ref = ref;
-	ifr->ipfr_src.s_addr = src;
-	ifr->ipfr_dst.s_addr = dst;
+	ifr->ipfr_source.in4.s_addr = src;
+	ifr->ipfr_dest.in4.s_addr = dst;
 }
 
 static void

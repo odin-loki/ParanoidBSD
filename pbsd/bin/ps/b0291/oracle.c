@@ -2,6 +2,7 @@
 
 #ifndef B0291_PS_BATCH
 #define B0291_PS_BATCH
+
 #define _DEFAULT_SOURCE 1
 #include <sys/types.h>
 #include <sys/time.h>
@@ -25,6 +26,8 @@
 #include <signal.h>
 #include <time.h>
 #include <bsd/vis.h>
+
+
 #ifndef __unused
 #define __unused
 #endif
@@ -143,6 +146,7 @@ extern jmp_buf b0291_err_jmp; extern int b0291_err_jmp_set,b0291_errx_code;
 static inline void b0291_errx(int eval,const char *fmt,...){va_list ap;va_start(ap,fmt);if(b0291_err_jmp_set)longjmp(b0291_err_jmp,eval);vfprintf(stderr,fmt,ap);va_end(ap);exit(eval);} 
 #undef errx
 #define errx b0291_errx
+
 #endif
 /* ---- fmt.c ---- */
 /*-
@@ -425,7 +429,7 @@ ref_ucomm(KINFO *k, VARENT *ve)
 }
 
 char *
-tdnam(KINFO *k, VARENT *ve __unused)
+ref_tdnam(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -439,7 +443,7 @@ tdnam(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-logname(KINFO *k, VARENT *ve __unused)
+ref_logname(KINFO *k, VARENT *ve __unused)
 {
 
 	if (*k->ki_p->ki_login == '\0')
@@ -448,7 +452,7 @@ logname(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-state(KINFO *k, VARENT *ve __unused)
+ref_state(KINFO *k, VARENT *ve __unused)
 {
 	long flag, tdflags;
 	char *cp, *buf;
@@ -522,7 +526,7 @@ state(KINFO *k, VARENT *ve __unused)
 #define	scalepri(x)	((x) - PUSER)
 
 char *
-pri(KINFO *k, VARENT *ve __unused)
+ref_pri(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -531,7 +535,7 @@ pri(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-upr(KINFO *k, VARENT *ve __unused)
+ref_upr(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -541,35 +545,35 @@ upr(KINFO *k, VARENT *ve __unused)
 #undef scalepri
 
 char *
-username(KINFO *k, VARENT *ve __unused)
+ref_username(KINFO *k, VARENT *ve __unused)
 {
 
 	return (strdup(user_from_uid(k->ki_p->ki_uid, 0)));
 }
 
 char *
-egroupname(KINFO *k, VARENT *ve __unused)
+ref_egroupname(KINFO *k, VARENT *ve __unused)
 {
 
 	return (strdup(group_from_gid(k->ki_p->ki_groups[0], 0)));
 }
 
 char *
-rgroupname(KINFO *k, VARENT *ve __unused)
+ref_rgroupname(KINFO *k, VARENT *ve __unused)
 {
 
 	return (strdup(group_from_gid(k->ki_p->ki_rgid, 0)));
 }
 
 char *
-runame(KINFO *k, VARENT *ve __unused)
+ref_runame(KINFO *k, VARENT *ve __unused)
 {
 
 	return (strdup(user_from_uid(k->ki_p->ki_ruid, 0)));
 }
 
 char *
-tdev(KINFO *k, VARENT *ve __unused)
+ref_tdev(KINFO *k, VARENT *ve __unused)
 {
 	dev_t dev;
 	char *str;
@@ -584,7 +588,7 @@ tdev(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-tname(KINFO *k, VARENT *ve __unused)
+ref_tname(KINFO *k, VARENT *ve __unused)
 {
 	dev_t dev;
 	char *ttname, *str;
@@ -606,7 +610,7 @@ tname(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-longtname(KINFO *k, VARENT *ve __unused)
+ref_longtname(KINFO *k, VARENT *ve __unused)
 {
 	dev_t dev;
 	const char *ttname;
@@ -619,7 +623,7 @@ longtname(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-started(KINFO *k, VARENT *ve __unused)
+ref_started(KINFO *k, VARENT *ve __unused)
 {
 	time_t then;
 	struct tm *tp;
@@ -645,7 +649,7 @@ started(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-lstarted(KINFO *k, VARENT *ve __unused)
+ref_lstarted(KINFO *k, VARENT *ve __unused)
 {
 	time_t then;
 	char *buf;
@@ -664,7 +668,7 @@ lstarted(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-lockname(KINFO *k, VARENT *ve __unused)
+ref_lockname(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -680,7 +684,7 @@ lockname(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-wchan(KINFO *k, VARENT *ve __unused)
+ref_wchan(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -696,7 +700,7 @@ wchan(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-nwchan(KINFO *k, VARENT *ve __unused)
+ref_nwchan(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -709,7 +713,7 @@ nwchan(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-mwchan(KINFO *k, VARENT *ve __unused)
+ref_mwchan(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -730,7 +734,7 @@ mwchan(KINFO *k, VARENT *ve __unused)
 }
 
 char *
-vsize(KINFO *k, VARENT *ve __unused)
+ref_vsize(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
@@ -739,7 +743,7 @@ vsize(KINFO *k, VARENT *ve __unused)
 }
 
 static char *
-printtime(KINFO *k, VARENT *ve __unused, long secs, long psecs)
+ref_printtime(KINFO *k, VARENT *ve __unused, long secs, long psecs)
 /* psecs is "parts" of a second. first micro, then centi */
 {
 	static char decimal_point;
@@ -882,16 +886,16 @@ ref_getpcpu(const KINFO *k)
 }
 
 char *
-pcpu(KINFO *k, VARENT *ve __unused)
+ref_pcpu(KINFO *k, VARENT *ve __unused)
 {
 	char *str;
 
-	asprintf(&str, "%.1f", getpcpu(k));
+	asprintf(&str, "%.1f", ref_getpcpu(k));
 	return (str);
 }
 
 static double
-getpmem(KINFO *k)
+ref_getpmem(KINFO *k)
 {
 	static int failure;
 	double fracmem;
@@ -1350,7 +1354,7 @@ ref_aliased_keyword_index(const VAR *const v)
 /*
  * Sanity checks on declared keywords.
  *
- * Checks specific to aliases are done in ref_resolve_alias() instead.
+ * Checks specific to aliases are done in resolve_alias() instead.
  *
  * Currently, only checks that keywords are alphabetically ordered by their
  * names.  More checks could be added, such as the absence of type (UNSPEC),
@@ -1375,7 +1379,7 @@ ref_check_keywords(void)
 		k = next_k;
 	}
 	if (order_violated)
-		/* Must be the case as we rely on bsearch() + ref_vcmp(). */
+		/* Must be the case as we rely on bsearch() + vcmp(). */
 		xo_errx(2, "keywords are not in ascending order "
 		    "(internal error)");
 }
@@ -1412,7 +1416,7 @@ ref_merge_alias(VAR *const k, VAR *const tgt)
 	/* We also check that aliases don't specify things they should not. */
 #define MERGE_CHECK_SENTINEL(field, sentinel, field_descr) do {		\
 	if (k->field != sentinel)					\
-		alias_errx(k->name, field_descr);			\
+		ref_alias_errx(k->name, field_descr);			\
 	k->field = tgt->field;						\
 } while (0);
 
@@ -1425,7 +1429,7 @@ ref_merge_alias(VAR *const k, VAR *const tgt)
 }
 
 static void
-resolve_alias(VAR *const k)
+ref_resolve_alias(VAR *const k)
 {
 	VAR *t, key;
 
@@ -1437,13 +1441,13 @@ resolve_alias(VAR *const k)
 	k->flag |= RESOLVING_ALIAS;
 
 	key.name = k->aliased;
-	t = bsearch(&key, keywords, known_keywords_nb, sizeof(VAR), vcmp);
+	t = bsearch(&key, keywords, known_keywords_nb, sizeof(VAR), ref_vcmp);
 	if (t == NULL)
 		xo_errx(2, "unknown target '%s' for keyword alias '%s'",
 		    k->aliased, k->name);
 
-	resolve_alias(t);
-	merge_alias(k, t);
+	ref_resolve_alias(t);
+	ref_merge_alias(k, t);
 
 	k->flag &= ~RESOLVING_ALIAS;
 	k->flag |= RESOLVED_ALIAS;
@@ -1455,14 +1459,14 @@ resolve_alias(VAR *const k)
  * Called from main() on PS_CHECK_KEYWORDS, else available when debugging.
  */
 void
-resolve_aliases(void)
+ref_resolve_aliases(void)
 {
 	for (size_t i = 0; i < known_keywords_nb; ++i)
-		resolve_alias(&keywords[i]);
+		ref_resolve_alias(&keywords[i]);
 }
 
 void
-showkey(void)
+ref_showkey(void)
 {
 	const VAR *v;
 	const VAR *const end = keywords + known_keywords_nb;
@@ -1490,7 +1494,7 @@ showkey(void)
 }
 
 void
-parsefmt(const char *p, struct velisthead *const var_list,
+ref_parsefmt(const char *p, struct velisthead *const var_list,
     const int user)
 {
 	char *copy, *cp;
@@ -1548,7 +1552,7 @@ parsefmt(const char *p, struct velisthead *const var_list,
 		/*
 		 * On PS_CHECK_KEYWORDS, this is not necessary as all aliases
 		 * are resolved at startup in main() by calling
-		 * ref_resolve_aliases().
+		 * resolve_aliases().
 		 */
 		ref_resolve_alias(v);
 #endif

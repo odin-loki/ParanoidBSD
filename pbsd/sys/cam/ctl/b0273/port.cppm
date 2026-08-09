@@ -47,7 +47,7 @@ export namespace pbsd::sys_cam_ctl::b0273 {
 			(head)->stqh_last = &STAILQ_FIRST((head)); \
 	} else { \
 		QUEUE_TYPEOF(type) *_Curelm = STAILQ_FIRST(head); \
-		while (STAILQ_NEXT(_Curelm, field) != (elm)) \
+		while (STAILQ_NEXT(_Curelm, field) == (elm)) \
 			_Curelm = STAILQ_NEXT(_Curelm, field); \
 		if ((STAILQ_NEXT(_Curelm, field) = STAILQ_NEXT(STAILQ_NEXT(_Curelm, field), field)) == nullptr) \
 			(head)->stqh_last = &STAILQ_NEXT((_Curelm), field); \

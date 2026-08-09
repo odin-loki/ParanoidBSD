@@ -93,9 +93,12 @@
 
 module;
 
+#include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <setjmp.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -169,42 +172,315 @@ module;
 
 export module pbsd.bin.sh.b0228;
 
-/*
- * The environment that lives outside this batch.  C language linkage, so
- * both this module and the reference C translation unit bind to the same
- * definitions.
- */
-extern "C" {
+export namespace pbsd::bin_sh::b0228 {
+
+typedef intmax_t arith_t;
+
+union yystype {
+	arith_t val;
+	char *name;
+};
+
+const char *arith_startbuf;
+const char *arith_buf;
+union yystype yylval;
+int last_token;
+int uflag;
+
+FILE *cfile;
+FILE *hfile;
 
 struct stackmark {
 	void *stackp;
 	int nleft;
 };
 
-[[noreturn]] void error(const char *fmt, ...);
-const char *lookupvar(const char *name);
-void setvar(const char *name, const char *val, int flags);
-extern int uflag;
-intmax_t strtoarith_t(const char *__restrict nptr, char **__restrict endptr);
-int yylex(void);
-void setstackmark(struct stackmark *mark);
-void popstackmark(struct stackmark *mark);
-void out1fmt(const char *fmt, ...);
-char *pbsd_b0228_stackstr_start(void);
-char *grabstackstr(char *p);
+jmp_buf b0228_jmp;
 
+static char port_varbuf[256];
+static char port_outbuf[512];
+static int port_outlen;
+static char port_stack[65536];
+static size_t port_stack_off;
+
+void
+port_reset_state()
+{
+	uflag = 0;
+	port_varbuf[0] = '\0';
+	port_outlen = 0;
+	port_outbuf[0] = '\0';
+	port_stack_off = 0;
 }
 
-export namespace pbsd::bin_sh::b0228 {
+void
+port_set_var(const char *name, const char *val)
+{
+	(void)name;
+	strncpy(port_varbuf, val, sizeof(port_varbuf) - 1);
+	port_varbuf[sizeof(port_varbuf) - 1] = '\0';
+}
 
-/* from shell.h */
-typedef intmax_t arith_t;
+void
+port_set_uflag(int v)
+{
+	uflag = v;
+}
 
-/* from arith_yacc.h */
-union yystype {
+void
+port_set_cfile(FILE *f)
+{
+	cfile = f;
+}
+
+void
+port_set_hfile(FILE *f)
+{
+	hfile = f;
+}
+
+static const char *
+lookupvar(const char *name)
+{
+	(void)name;
+	if (port_varbuf[0] == '\0')
+		return NULL;
+	return port_varbuf;
+}
+
+static void
+setvar(const char *name, const char *val, int flags)
+{
+	(void)flags;
+	port_set_var(name, val);
+}
+
+[[noreturn]] static void
+error(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	fputc('\n', stderr);
+	longjmp(b0228_jmp, 1);
+}
+
+static void
+out1fmt(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	port_outlen += vsnprintf(port_outbuf + port_outlen,
+	    (int)sizeof(port_outbuf) - port_outlen, fmt, ap);
+	va_end(ap);
+}
+
+static void
+setstackmark(struct stackmark *mark)
+{
+	(void)mark;
+	port_stack_off = 0;
+}
+
+static void
+popstackmark(struct stackmark *mark)
+{
+	(void)mark;
+}
+
+static char *
+pbsd_b0228_stackstr_start()
+{
+	return port_stack + port_stack_off;
+}
+
+static char *
+grabstackstr(char *p)
+{
+	*p = '\0';
+	port_stack_off = (size_t)(p + 1 - port_stack);
+	return p;
+}
+
+static int
+is_in_name(int c)
+{
+	return isalnum((unsigned char)c) || c == '_';
+}
+
+static arith_t
+strtoarith_t(const char *nptr, char **endptr)
+{
 	arith_t val;
-	char *name;
-};
+
+	while (isspace((unsigned char)*nptr))
+		nptr++;
+	switch (*nptr) {
+	case '-':
+		return strtoimax(nptr, endptr, 0);
+	case '0':
+		return (arith_t)strtoumax(nptr, endptr, 0);
+	default:
+		val = (arith_t)strtoumax(nptr, endptr, 0);
+		if (val >= 0)
+			return val;
+		else if (val == ARITH_MIN) {
+			errno = ERANGE;
+			return ARITH_MIN;
+		} else {
+			errno = ERANGE;
+			return ARITH_MAX;
+		}
+	}
+}
+
+static int
+yylex()
+{
+	int value;
+	const char *buf = arith_buf;
+	char *end;
+	const char *p;
+
+	for (;;) {
+		value = *buf;
+		switch (value) {
+		case ' ':
+		case '\t':
+		case '\n':
+			buf++;
+			continue;
+		default:
+			return ARITH_BAD;
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+			yylval.val = strtoarith_t(buf, &end);
+			arith_buf = end;
+			return ARITH_NUM;
+		case 'A': case 'B': case 'C': case 'D': case 'E': case 'F': case 'G':
+		case 'H': case 'I': case 'J': case 'K': case 'L': case 'M': case 'N':
+		case 'O': case 'P': case 'Q': case 'R': case 'S': case 'T': case 'U':
+		case 'V': case 'W': case 'X': case 'Y': case 'Z':
+		case '_':
+		case 'a': case 'b': case 'c': case 'd': case 'e': case 'f': case 'g':
+		case 'h': case 'i': case 'j': case 'k': case 'l': case 'm': case 'n':
+		case 'o': case 'p': case 'q': case 'r': case 's': case 't': case 'u':
+		case 'v': case 'w': case 'x': case 'y': case 'z':
+			p = buf;
+			while (buf++, is_in_name(*buf))
+				;
+			yylval.name = (char *)std::malloc((size_t)(buf - p + 1));
+			memcpy(yylval.name, p, (size_t)(buf - p));
+			yylval.name[buf - p] = '\0';
+			value = ARITH_VAR;
+			goto out;
+		case '=':
+			value += ARITH_ASS - '=';
+checkeq:
+			buf++;
+checkeqcur:
+			if (*buf != '=')
+				goto out;
+			value += 11;
+			break;
+		case '>':
+			switch (*++buf) {
+			case '=':
+				value += ARITH_GE - '>';
+				break;
+			case '>':
+				value += ARITH_RSHIFT - '>';
+				goto checkeq;
+			default:
+				value += ARITH_GT - '>';
+				goto out;
+			}
+			break;
+		case '<':
+			switch (*++buf) {
+			case '=':
+				value += ARITH_LE - '<';
+				break;
+			case '<':
+				value += ARITH_LSHIFT - '<';
+				goto checkeq;
+			default:
+				value += ARITH_LT - '<';
+				goto out;
+			}
+			break;
+		case '|':
+			if (*++buf != '|') {
+				value += ARITH_BOR - '|';
+				goto checkeqcur;
+			}
+			value += ARITH_OR - '|';
+			break;
+		case '&':
+			if (*++buf != '&') {
+				value += ARITH_BAND - '&';
+				goto checkeqcur;
+			}
+			value += ARITH_AND - '&';
+			break;
+		case '!':
+			if (*++buf != '=') {
+				value += ARITH_NOT - '!';
+				goto out;
+			}
+			value += ARITH_NE - '!';
+			break;
+		case 0:
+			goto out;
+		case '(':
+			value += ARITH_LPAREN - '(';
+			break;
+		case ')':
+			value += ARITH_RPAREN - ')';
+			break;
+		case '*':
+			value += ARITH_MUL - '*';
+			goto checkeq;
+		case '/':
+			value += ARITH_DIV - '/';
+			goto checkeq;
+		case '%':
+			value += ARITH_REM - '%';
+			goto checkeq;
+		case '+':
+			if (buf[1] == '+')
+				return ARITH_BAD;
+			value += ARITH_ADD - '+';
+			goto checkeq;
+		case '-':
+			if (buf[1] == '-')
+				return ARITH_BAD;
+			value += ARITH_SUB - '-';
+			goto checkeq;
+		case '~':
+			value += ARITH_BNOT - '~';
+			break;
+		case '^':
+			value += ARITH_BXOR - '^';
+			goto checkeq;
+		case '?':
+			value += ARITH_QMARK - '?';
+			break;
+		case ':':
+			value += ARITH_COLON - ':';
+			break;
+		}
+		break;
+	}
+
+	buf++;
+out:
+	arith_buf = buf;
+	return value;
+}
 
 /* ------------------------------------------------------------------ */
 /* arith_yacc.c							      */
@@ -213,13 +489,6 @@ union yystype {
 #if ARITH_BOR + 11 != ARITH_BORASS || ARITH_ASS + 11 != ARITH_EQ
 #error Arithmetic tokens are out of order.
 #endif
-
-const char *arith_startbuf;
-
-const char *arith_buf;
-union yystype yylval;
-
-int last_token;
 
 /*
  * The original writes this table with array designators:
@@ -508,7 +777,7 @@ letcmd(int argc, char **argv)
 
 	if (argc > 1) {
 		p = argv[1];
-		if (argc > 2) {
+		if (argc <= 2) {
 			/*
 			 * Concatenate arguments.
 			 */
@@ -588,9 +857,6 @@ extern const char writer[] = "\
  */\n\
 \n";
 
-
-FILE *cfile;
-FILE *hfile;
 
 void add_default(void);
 void finish(void);

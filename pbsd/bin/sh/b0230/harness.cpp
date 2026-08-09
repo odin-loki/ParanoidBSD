@@ -20,6 +20,7 @@ void oracle_mknodes_set_line(const char *s);
 int oracle_mknodes_get_linno(void);
 
 int ref_mknodes_main(int argc, char **argv);
+void ref_mknodes_read_input(FILE *);
 void ref_parsenode(void);
 void ref_parsefield(void);
 void ref_mknodes_output(char *);
@@ -429,16 +430,21 @@ write_pat_file(const char *path, int variant)
 	std::fclose(f);
 }
 
+static int read_nodes_files(char **h, size_t *hl, char **c, size_t *cl);
+
 static void
 rm_rf_dir(const char *dir)
 {
-	char cmd[256];
-	std::snprintf(cmd, sizeof(cmd), "rm -rf '%s'", dir);
-	(void)::system(cmd);
+	char path[512];
+	std::snprintf(path, sizeof(path), "%s/nodes.h", dir);
+	::unlink(path);
+	std::snprintf(path, sizeof(path), "%s/nodes.c", dir);
+	::unlink(path);
+	::rmdir(dir);
 }
 
 static int
-run_main_subprocess(bool port_side, const char *types, const char *pat, char **out_h,
+run_main_inprocess(bool port_side, const char *types, const char *pat, char **out_h,
     size_t *out_hl, char **out_c, size_t *out_cl)
 {
 	char dir[] = "/tmp/b0230_run_XXXXXX";
@@ -455,60 +461,41 @@ run_main_subprocess(bool port_side, const char *types, const char *pat, char **o
 		return -1;
 	}
 
-	pid_t pid = fork();
-	if (pid < 0) {
+	FILE *infp = std::fopen(types, "r");
+	if (!infp) {
 		::chdir(cwd);
 		rm_rf_dir(dir);
 		return -1;
 	}
-	if (pid == 0) {
-		char *argv[] = { (char *)"mknodes", (char *)types, (char *)pat, nullptr };
-		if (port_side) {
-			P::port_mknodes_reset();
-			P::mknodes_main(3, argv);
-		} else {
-			oracle_mknodes_reset();
-			ref_mknodes_main(3, argv);
-		}
-		_exit(0);
+	if (port_side) {
+		P::port_mknodes_reset();
+		P::mknodes_read_input(infp);
+	} else {
+		oracle_mknodes_reset();
+		ref_mknodes_read_input(infp);
 	}
-	int st = 0;
-	waitpid(pid, &st, 0);
-	if (!WIFEXITED(st) || WEXITSTATUS(st) != 0) {
+	std::fclose(infp);
+
+	if (port_side)
+		P::mknodes_output((char *)pat);
+	else
+		ref_mknodes_output((char *)pat);
+
+	if (read_nodes_files(out_h, out_hl, out_c, out_cl) != 0) {
 		::chdir(cwd);
 		rm_rf_dir(dir);
 		return -1;
 	}
-	FILE *hf = std::fopen("nodes.h", "r");
-	FILE *cf = std::fopen("nodes.c", "r");
-	if (!hf || !cf) {
-		if (hf)
-			std::fclose(hf);
-		if (cf)
-			std::fclose(cf);
-		::chdir(cwd);
-		rm_rf_dir(dir);
-		return -1;
-	}
-	std::fseek(hf, 0, SEEK_END);
-	*out_hl = (size_t)std::ftell(hf);
-	std::fseek(hf, 0, SEEK_SET);
-	*out_h = (char *)std::malloc(*out_hl + 1);
-	if (*out_hl)
-		(void)std::fread(*out_h, 1, *out_hl, hf);
-	(*out_h)[*out_hl] = '\0';
-	std::fclose(hf);
-	std::fseek(cf, 0, SEEK_END);
-	*out_cl = (size_t)std::ftell(cf);
-	std::fseek(cf, 0, SEEK_SET);
-	*out_c = (char *)std::malloc(*out_cl + 1);
-	if (*out_cl)
-		(void)std::fread(*out_c, 1, *out_cl, cf);
-	(*out_c)[*out_cl] = '\0';
-	std::fclose(cf);
 	::chdir(cwd);
 	rm_rf_dir(dir);
 	return 0;
+}
+
+static int
+run_main_subprocess(bool port_side, const char *types, const char *pat, char **out_h,
+    size_t *out_hl, char **out_c, size_t *out_cl)
+{
+	return run_main_inprocess(port_side, types, pat, out_h, out_hl, out_c, out_cl);
 }
 
 static void
@@ -557,6 +544,42 @@ test_main_hand()
 }
 
 static void
+test_main_argv_hand()
+{
+	Stat &st = S("mknodes_main");
+	char tbuf[] = "/tmp/b0230_arg_t_XXXXXX";
+	char pbuf[] = "/tmp/b0230_arg_p_XXXXXX";
+	if (!mkstemp(tbuf) || !mkstemp(pbuf)) {
+		fail(st, "mkstemp");
+		return;
+	}
+	write_nodes_input(tbuf);
+	write_pat_file(pbuf, 0);
+	char *argv[] = { (char *)"mknodes", tbuf, pbuf, nullptr };
+	std::fflush(stdout);
+	pid_t pid = fork();
+	if (pid < 0) {
+		fail(st, "fork");
+		::unlink(tbuf);
+		::unlink(pbuf);
+		return;
+	}
+	if (pid == 0) {
+		oracle_mknodes_reset();
+		ref_mknodes_main(3, argv);
+		::_exit(0);
+	}
+	int wst = 0;
+	waitpid(pid, &wst, 0);
+	if (!WIFEXITED(wst) || WEXITSTATUS(wst) != 0)
+		fail(st, "ref_mknodes_main exit");
+	else
+		ok(st);
+	::unlink(tbuf);
+	::unlink(pbuf);
+}
+
+static void
 test_main_sweep()
 {
 	Stat &st = S("mknodes_main");
@@ -571,7 +594,7 @@ test_main_sweep()
 		for (int n = 0; n < nodes; n++) {
 			char name[16], tag[16];
 			std::snprintf(name, sizeof(name), "N%u", (unsigned)rng.u32() % 1000);
-			std::snprintf(tag, sizeof(tag), "t%u", (unsigned)rng.u32() % 1000);
+			std::snprintf(tag, sizeof(tag), "t%u_%ld_%d", (unsigned)rng.u32() % 1000, i, n);
 			std::fprintf(f, "%s %s\n", name, tag);
 			int fields = (int)(rng.u32() % 4);
 			for (int k = 0; k < fields; k++)
@@ -583,6 +606,7 @@ test_main_sweep()
 		size_t rhl = 0, phl = 0, rcl = 0, pcl = 0;
 		reset_both();
 		if (run_main_subprocess(false, tbuf, pbuf, &rh, &rhl, &rc, &rcl) != 0) {
+			fail(st, "oracle sweep");
 			std::free(rh);
 			std::free(rc);
 			continue;
@@ -763,8 +787,8 @@ test_parse_output_sweep()
 		for (int n = 0; n < nlines; n++) {
 			if (n == 0) {
 				std::snprintf(line_storage[li], sizeof(line_storage[li]),
-				    "N%u t%u", (unsigned)rng.u32() % 500,
-				    (unsigned)rng.u32() % 500);
+				    "N%u t%u_%ld", (unsigned)rng.u32() % 500,
+				    (unsigned)rng.u32() % 500, i);
 			} else {
 				const char *ty[] = { "nodeptr", "string", "int", "nodelist" };
 				std::snprintf(line_storage[li], sizeof(line_storage[li]),
@@ -832,6 +856,7 @@ test_outsizes_direct()
 int
 main()
 {
+	std::setvbuf(stdout, nullptr, _IONBF, 0);
 	std::printf("b0230 differential harness (mknodes.c)\n\n");
 	test_savestr_hand();
 	test_savestr_sweep();
@@ -844,6 +869,7 @@ main()
 	test_indent_hand();
 	test_indent_sweep();
 	test_main_hand();
+	test_main_argv_hand();
 	test_main_sweep();
 	test_parse_output_hand();
 	test_parse_output_sweep();

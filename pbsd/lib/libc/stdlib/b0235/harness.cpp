@@ -18,6 +18,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cerrno>
+#include <cstdarg>
 
 import pbsd.lib.libc.stdlib.b0235;
 
@@ -661,7 +662,8 @@ test_qsort_s_constraints(void)
 	    "n=RMAX+1 a=NULL");
 	check_qsort_s_params(pbuf, rbuf, RMAX + 1, 1, true, "n=RMAX+1 a=buf");
 	check_qsort_s_params(pbuf, rbuf, SIZE_MAX, 1, true, "n=SIZE_MAX");
-	check_qsort_s_params(pbuf, rbuf, RMAX - 1, 1, true, "n=RMAX-1 a=buf");
+	check_qsort_s_params(nullptr, nullptr, RMAX - 1, 1, true,
+	    "n=RMAX-1 a=NULL");
 
 	/* es boundary: es == RSIZE_MAX passes and, with n == 1, sorts a
 	 * single element, i.e. returns 0 without touching memory. */
