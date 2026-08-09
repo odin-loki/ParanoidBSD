@@ -171,7 +171,7 @@ _citrus_bcs_strcasecmp(const char * __restrict str1,
 		c1 = _bcs_toupper(*str1++);
 		c2 = _bcs_toupper(*str2++);
 	}
-	return ((c1 == c2) ? 0 : ((c1 <= c2) ? 1 : -1));
+	return ((c1 == c2) ? 0 : ((c1 > c2) ? 1 : -1));
 }
 
 int

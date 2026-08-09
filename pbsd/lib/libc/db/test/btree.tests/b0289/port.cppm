@@ -181,7 +181,7 @@ append(DB *db, char **argv)
 	key.data = argv[1];
 	key.size = sizeof(recno_t);
 	data.data = argv[2];
-	data.size = std::strlen(data.data);
+	data.size = std::strlen((char *)data.data);
 	status = (db->put)(db, &key, &data, R_APPEND);
 	switch (status) {
 	case RET_ERROR:
@@ -329,7 +329,7 @@ iafter(DB *db, char **argv)
 	key.data = argv[1];
 	key.size = sizeof(recno_t);
 	data.data = argv[2];
-	data.size = std::strlen(data.data);
+	data.size = std::strlen((char *)data.data);
 	status = (db->put)(db, &key, &data, R_IAFTER);
 	switch (status) {
 	case RET_ERROR:
@@ -357,7 +357,7 @@ ibefore(DB *db, char **argv)
 	key.data = argv[1];
 	key.size = sizeof(recno_t);
 	data.data = argv[2];
-	data.size = std::strlen(data.data);
+	data.size = std::strlen((char *)data.data);
 	status = (db->put)(db, &key, &data, R_IBEFORE);
 	switch (status) {
 	case RET_ERROR:

@@ -1,20 +1,19 @@
 /*
- * oracle.c -- reference implementation for PBSD batch b0276.
+ * PBSD batch b0276 -- reference oracle.
  *
- * The original HardenedBSD sources are concatenated below.  Every function
- * has been renamed with a ref_ prefix; function bodies are otherwise
- * unmodified.  Supporting definitions from math_private.h are reproduced
- * verbatim.  __kernel_tan, __ieee754_rem_pio2, and __kernel_rem_pio2 are
- * compiled from the original msun sources and linked by build.sh.
+ * The original HardenedBSD C sources of this batch, concatenated, with every
+ * function renamed with a "ref_" prefix.  Function bodies are UNMODIFIED.
+ * Only the declarations/definitions that the FreeBSD private headers would
+ * otherwise have supplied have been added.
  *
- * This file is the specification.  Do not modify any function body.
+ *	lib/msun/src/s_tan.c
+ *	lib/msun/src/s_tanh.c
+ *	lib/msun/src/s_nextafter.c
  */
 
 #include <float.h>
 #include <math.h>
 #include <stdint.h>
-#include <sys/types.h>
-#include <endian.h>
 
 #ifndef LONG_BIT
 #ifdef __LP64__
@@ -24,12 +23,55 @@
 #endif
 #endif
 
+#ifndef __weak_reference
+#define __weak_reference(sym, alias)	/* nothing */
+#endif
+
+typedef unsigned int u_int32_t;
+
+typedef union {
+	double value;
+	struct {
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+		uint32_t msw;
+		uint32_t lsw;
+#else
+		uint32_t lsw;
+		uint32_t msw;
+#endif
+	} parts;
+} ieee_double_shape_type;
+
+#define GET_HIGH_WORD(i, d)						\
+do {									\
+	ieee_double_shape_type gh_u;					\
+	gh_u.value = (d);						\
+	(i) = (int32_t)gh_u.parts.msw;					\
+} while (0)
+
+#define EXTRACT_WORDS(ix0, ix1, d)					\
+do {									\
+	ieee_double_shape_type ew_u;					\
+	ew_u.value = (d);						\
+	(ix0) = (int32_t)ew_u.parts.msw;				\
+	(ix1) = ew_u.parts.lsw;						\
+} while (0)
+
+#define INSERT_WORDS(d, ix0, ix1)					\
+do {									\
+	ieee_double_shape_type iw_u;					\
+	iw_u.parts.msw = (uint32_t)(ix0);				\
+	iw_u.parts.lsw = (uint32_t)(ix1);				\
+	(d) = iw_u.value;						\
+} while (0)
+
+/* Kernels supplied by the untouched msun sources k_tan.c / e_rem_pio2.c. */
 double __kernel_tan(double x, double y, int iy);
 int __ieee754_rem_pio2(double x, double *y);
 
-/* ======================================================================== */
-/* lib/msun/src/s_tan.c                                                     */
-/* ======================================================================== */
+/* ------------------------------------------------------------------ */
+/* lib/msun/src/s_tan.c                                               */
+/* ------------------------------------------------------------------ */
 
 /*
  * ====================================================
@@ -40,6 +82,36 @@ int __ieee754_rem_pio2(double x, double *y);
  * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
+ */
+
+/* tan(x)
+ * Return tangent function of x.
+ *
+ * kernel function:
+ *	__kernel_tan		... tangent function on [-pi/4,pi/4]
+ *	__ieee754_rem_pio2	... argument reduction routine
+ *
+ * Method.
+ *      Let S,C and T denote the sin, cos and tan respectively on
+ *	[-PI/4, +PI/4]. Reduce the argument x to y1+y2 = x-k*pi/2
+ *	in [-pi/4 , +pi/4], and let n = k mod 4.
+ *	We have
+ *
+ *          n        sin(x)      cos(x)        tan(x)
+ *     ----------------------------------------------------------
+ *	    0	       S	   C		 T
+ *	    1	       C	  -S		-1/T
+ *	    2	      -S	  -C		 T
+ *	    3	      -C	   S		-1/T
+ *     ----------------------------------------------------------
+ *
+ * Special cases:
+ *      Let trig be any of sin, cos, or tan.
+ *      trig(+-INF)  is NaN, with signals;
+ *      trig(NaN)    is that NaN;
+ *
+ * Accuracy:
+ *	TRIG(x) returns trig(x) nearly rounded
  */
 
 double
@@ -70,9 +142,13 @@ ref_tan(double x)
 	}
 }
 
-/* ======================================================================== */
-/* lib/msun/src/s_tanh.c                                                    */
-/* ======================================================================== */
+#if (LDBL_MANT_DIG == 53)
+__weak_reference(ref_tan, tanl);
+#endif
+
+/* ------------------------------------------------------------------ */
+/* lib/msun/src/s_tanh.c                                              */
+/* ------------------------------------------------------------------ */
 
 /*
  * ====================================================
@@ -83,6 +159,30 @@ ref_tan(double x)
  * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
+ */
+
+/* Tanh(x)
+ * Return the Hyperbolic Tangent of x
+ *
+ * Method :
+ *				       x    -x
+ *				      e  - e
+ *	0. tanh(x) is defined to be -----------
+ *				       x    -x
+ *				      e  + e
+ *	1. reduce x to non-negative by tanh(-x) = -tanh(x).
+ *	2.  0      <= x <  2**-28 : tanh(x) := x with inexact if x != 0
+ *					        -t
+ *	    2**-28 <= x <  1      : tanh(x) := -----; t = expm1(-2x)
+ *					       t + 2
+ *						     2
+ *	    1      <= x <  22     : tanh(x) := 1 - -----; t = expm1(2x)
+ *						   t + 2
+ *	    22     <= x <= INF    : tanh(x) := 1.
+ *
+ * Special cases:
+ *	tanh(NaN) is NaN;
+ *	only tanh(0)=0 is exact for finite argument.
  */
 
 static const volatile double tiny = 1.0e-300;
@@ -122,9 +222,13 @@ ref_tanh(double x)
 	return (jx>=0)? z: -z;
 }
 
-/* ======================================================================== */
-/* lib/msun/src/s_nextafter.c                                               */
-/* ======================================================================== */
+#if (LDBL_MANT_DIG == 53)
+__weak_reference(ref_tanh, tanhl);
+#endif
+
+/* ------------------------------------------------------------------ */
+/* lib/msun/src/s_nextafter.c                                         */
+/* ------------------------------------------------------------------ */
 
 /*
  * ====================================================
@@ -135,6 +239,13 @@ ref_tanh(double x)
  * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
+ */
+
+/* IEEE functions
+ *	nextafter(x,y)
+ *	return the next machine floating-point number of x in the
+ *	direction toward y.
+ *   Special cases:
  */
 
 double
@@ -187,3 +298,9 @@ ref_nextafter(double x, double y)
 	INSERT_WORDS(x,hx,lx);
 	return x;
 }
+
+#if (LDBL_MANT_DIG == 53)
+__weak_reference(ref_nextafter, nexttoward);
+__weak_reference(ref_nextafter, nexttowardl);
+__weak_reference(ref_nextafter, nextafterl);
+#endif

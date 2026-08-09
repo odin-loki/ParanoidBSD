@@ -47,6 +47,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   bin/pax/b0207/port.cppm
   bin/pax/getoldopt_m/port.cppm
   bin/pkill/b0210/port.cppm
+  bin/ps/b0291/port.cppm
   bin/ps/nlist_m/port.cppm
   bin/pwait/b0181/port.cppm
   bin/pwd/pwd_m/port.cppm
@@ -254,6 +255,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/quad/divdi3_m/port.cppm
   lib/libc/quad/fixdfdi_m/port.cppm
   lib/libc/quad/fixsfdi_m/port.cppm
+  lib/libc/regex/b0292/port.cppm
   lib/libc/regex/regfree_m/port.cppm
   lib/libc/resolv/b0281/port.cppm
   lib/libc/rpc/b0196/port.cppm
@@ -549,6 +551,8 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   sbin/ipf/libipf/b0124s3/port.cppm
   sbin/ipf/libipf/b0124s4/port.cppm
   sbin/ipf/libipf/b0160/port.cppm
+  sbin/ipf/libipf/b0294/port.cppm
+  sbin/ipf/libipf/b0295/port.cppm
   sbin/kldunload/kldunload_m/port.cppm
   sbin/nfsiod/nfsiod_m/port.cppm
   sbin/nvmecontrol/nc_util_m/port.cppm

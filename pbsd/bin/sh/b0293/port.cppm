@@ -31,7 +31,7 @@ struct shparam {
 	char **p;
 	int nparam;
 	char **optp;
-	char *optnext;
+	char **optnext;
 	char *optptr;
 	int reset;
 	int malloc;
@@ -326,7 +326,7 @@ fdctx_init(int fd, struct fdctx *fdc)
 	cur = lseek(fd, 0, SEEK_CUR);
 	*fdc = (struct fdctx){
 		.fd = fd,
-		.buflen = (cur != -1) ? READ_BUFLEN : 1,
+		.buflen = (cur != -1) ? (size_t)READ_BUFLEN : (size_t)1,
 		.ep = &fdc->buf[0],
 	};
 }

@@ -135,7 +135,7 @@ struct shparam {
 	char **p;
 	int nparam;
 	char **optp;
-	char *optnext;
+	char **optnext;
 	char *optptr;
 	int reset;
 	int malloc;

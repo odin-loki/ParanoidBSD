@@ -6,6 +6,7 @@ import pbsd.bin.sh.b0293;
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -320,7 +321,7 @@ test_fdctx_hand()
 {
 	unsigned char d1[] = { 'a', 'b', 'c' };
 	test_fdctx_read(d1, 3, "abc");
-	unsigned char d2[] = { '\x80', '\xff', '\n', '\0' };
+	unsigned char d2[] = { 0x80, 0xff, '\n', 0 };
 	test_fdctx_read(d2, 3, "highbit");
 	unsigned char d3[512];
 	for (size_t i = 0; i < 512; i++)
@@ -526,10 +527,10 @@ test_freeparam_one(int malloc_p, int optp_set, const char *tag)
 {
 	Stat &st = S("freeparam");
 	P::shparam rp, pp;
-	char *rs1 = std::strdup("a");
-	char *rs2 = std::strdup("b");
-	char *ps1 = std::strdup("a");
-	char *ps2 = std::strdup("b");
+	char *rs1 = ::strdup("a");
+	char *rs2 = ::strdup("b");
+	char *ps1 = ::strdup("a");
+	char *ps2 = ::strdup("b");
 	char **rarr = (char **)std::malloc(3 * sizeof(char *));
 	char **parr = (char **)std::malloc(3 * sizeof(char *));
 	rarr[0] = rs1;
@@ -547,9 +548,9 @@ test_freeparam_one(int malloc_p, int optp_set, const char *tag)
 	if (optp_set) {
 		rp.optp = (char **)std::malloc(2 * sizeof(char *));
 		pp.optp = (char **)std::malloc(2 * sizeof(char *));
-		rp.optp[0] = std::strdup("x");
+		rp.optp[0] = ::strdup("x");
 		rp.optp[1] = NULL;
-		pp.optp[0] = std::strdup("x");
+		pp.optp[0] = ::strdup("x");
 		pp.optp[1] = NULL;
 	}
 	ref_freeparam(&rp);
@@ -576,8 +577,8 @@ test_freeparam_sweep()
 
 struct GetoptsCtx {
 	char **optfirst;
-	char ***optnext;
-	char **optptr;
+	char **optnext;
+	char *optptr;
 	char optstr[32];
 	char optvar[16];
 };
@@ -589,7 +590,7 @@ reset_getopts_ctx(GetoptsCtx &ctx, char **argv, const char *optstr,
 	std::strncpy(ctx.optstr, optstr, sizeof(ctx.optstr) - 1);
 	std::strncpy(ctx.optvar, optvar, sizeof(ctx.optvar) - 1);
 	ctx.optfirst = argv;
-	ctx.optnext = &argv[0];
+	ctx.optnext = argv;
 	ctx.optptr = NULL;
 }
 
@@ -597,13 +598,12 @@ static void
 drive_getopts_ref(GetoptsCtx &ctx, int *results, int max, int *n)
 {
 	oracle_reset_all();
-	char **argv = ctx.optfirst;
-	char ***optnext = &argv[0];
+	char **optnext = ctx.optfirst;
 	char *optptr = NULL;
 	*n = 0;
 	while (*n < max) {
 		results[*n] = ref_getopts(ctx.optstr, ctx.optvar, ctx.optfirst,
-		    optnext, &optptr);
+		    &optnext, &optptr);
 		(*n)++;
 		if (results[*n - 1] == 1)
 			break;
@@ -614,13 +614,12 @@ static void
 drive_getopts_port(GetoptsCtx &ctx, int *results, int max, int *n)
 {
 	P::port_reset_all();
-	char **argv = ctx.optfirst;
-	char ***optnext = &argv[0];
+	char **optnext = ctx.optfirst;
 	char *optptr = NULL;
 	*n = 0;
 	while (*n < max) {
 		results[*n] = P::getopts(ctx.optstr, ctx.optvar, ctx.optfirst,
-		    optnext, &optptr);
+		    &optnext, &optptr);
 		(*n)++;
 		if (results[*n - 1] == 1)
 			break;

@@ -4,27 +4,12 @@
  *     lib/libc/resolv/mtctxres.c
  *     lib/libc/resolv/res_state.c
  *     lib/libc/resolv/herror.c
- *
- * Faithful translation: behaviour, signedness, evaluation order and pointer
- * arithmetic are preserved exactly.
  */
 
 module;
 
-export module pbsd.lib.libc.resolv.b0281;
-
-#define DO_PTHREADS 1
-
-typedef struct {
-	int id;
-} pbsd_b0281_pthread_key_t;
-
-typedef struct {
-	int locked;
-} pbsd_b0281_pthread_mutex_t;
-
-#define pthread_key_t pbsd_b0281_pthread_key_t
-#define pthread_mutex_t pbsd_b0281_pthread_mutex_t
+#define __bits_pthreadtypes_common_h 1
+#define _BITS_PTHREADTYPES_COMMON_H 1
 
 #include <errno.h>
 #include <limits.h>
@@ -36,6 +21,18 @@ typedef struct {
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/uio.h>
+
+export module pbsd.lib.libc.resolv.b0281;
+
+#define DO_PTHREADS 1
+
+typedef struct {
+	int id;
+} pthread_key_t;
+
+typedef struct {
+	int locked;
+} pthread_mutex_t;
 
 extern "C" void *malloc(size_t);
 extern "C" void free(void *);
@@ -59,13 +56,21 @@ extern "C" void *calloc(size_t, size_t);
 
 #define DE_CONST(x, t) ((t) = (char *)(uintptr_t)(const void *)(x))
 
-export struct __res_state_ext {
+using thread_key_t = struct { long opaque; };
+using once_t = struct { int state; };
+
+#define ONCE_INITIALIZER {0}
+#define PTHREAD_MUTEX_INITIALIZER {0}
+
+export namespace pbsd::lib_libc_resolv::b0281 {
+
+struct __res_state_ext {
 	time_t conf_stat;
 	struct timespec conf_mtim;
 	unsigned int reload_period;
 };
 
-export struct __res_state_layout {
+struct __res_state_layout {
 	int res_h_errno;
 	unsigned int options;
 	struct {
@@ -75,17 +80,11 @@ export struct __res_state_layout {
 	} _u;
 };
 
-export using res_state = __res_state_layout *;
+using res_state = __res_state_layout *;
 
-export struct mtctxres_t {
+struct mtctxres_t {
 	unsigned char opaque[64];
 };
-
-using thread_key_t = struct { long opaque; };
-using once_t = struct { int state; };
-
-#define ONCE_INITIALIZER {0}
-#define PTHREAD_MUTEX_INITIALIZER {0}
 
 extern "C" {
 extern int mock_thr_main_ret;
@@ -107,11 +106,11 @@ extern int mock_writev_calls;
 extern int mock_writev_last_fd;
 extern int mock_writev_last_count;
 extern struct iovec mock_writev_last_iov[8];
-
-extern struct __res_state_layout _res;
 extern int h_errno;
 extern const char *h_errlist[];
 extern const int h_nerr;
+
+extern struct __res_state_layout _res;
 
 int thr_main(void);
 int thr_once(once_t *, void (*)(void));
@@ -129,39 +128,6 @@ int mock_writev(int, const struct iovec *, int);
 
 #define _writev mock_writev
 
-export namespace pbsd::lib_libc_resolv::b0281 {
-
-/* ------------------------------------------------------------------ */
-/* h_errno.c                                                          */
-/* ------------------------------------------------------------------ */
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2006 The FreeBSD Project. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
 int *__h_errno(void);
 void __h_errno_set(res_state res, int err);
 res_state __res_state(void);
@@ -177,10 +143,6 @@ __h_errno_set(res_state res, int err)
 {
 	h_errno = res->res_h_errno = err;
 }
-
-/* ------------------------------------------------------------------ */
-/* mtctxres.c                                                         */
-/* ------------------------------------------------------------------ */
 
 static pthread_key_t	key;
 static int		mt_key_initialized = 0;
@@ -254,11 +216,6 @@ ___mtctxres(void) {
 #ifdef DO_PTHREADS
 	mtctxres_t	*mt;
 
-	/*
-	 * This if clause should only be executed if we are linking
-	 * statically.  When linked dynamically _mtctxres_init() should
-	 * be called at binding time due the #pragma above.
-	 */
 	if (!mt_key_initialized) {
 		static pthread_mutex_t keylock = PTHREAD_MUTEX_INITIALIZER;
                 if (pthread_mutex_lock(&keylock) == 0) {
@@ -267,11 +224,6 @@ ___mtctxres(void) {
 		}
 	}
 
-	/*
-	 * If we have already been called in this thread return the existing
-	 * context.  Otherwise recreat a new context and return it.  If
-	 * that fails return a global context.
-	 */
 	if (mt_key_initialized) {
 		if (((mt = (mtctxres_t *)pthread_getspecific(key)) != NULL) ||
 		    (__res_init_ctx() == 0 &&
@@ -282,37 +234,6 @@ ___mtctxres(void) {
 #endif
 	return (&sharedctx);
 }
-
-/* ------------------------------------------------------------------ */
-/* res_state.c                                                        */
-/* ------------------------------------------------------------------ */
-
-/*-
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2006 The FreeBSD Project. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
 
 static thread_key_t res_key;
 static once_t res_init_once = ONCE_INITIALIZER;
@@ -384,65 +305,13 @@ __res_state(void)
 	if (statp == NULL)
 		return (&_res);
 #ifdef __BIND_RES_TEXT
-	statp->options = RES_TIMEOUT;			/* Motorola, et al. */
+	statp->options = RES_TIMEOUT;
 #endif
 	if (thr_setspecific(res_key, statp) == 0)
 		return (statp);
 	free(statp);
 	return (&_res);
 }
-
-/* ------------------------------------------------------------------ */
-/* herror.c                                                           */
-/* ------------------------------------------------------------------ */
-
-/*-
- * SPDX-License-Identifier: (BSD-3-Clause AND ISC)
- *
- * Copyright (c) 1987, 1993
- *    The Regents of the University of California.  All rights reserved.
- * 
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- * 
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
-
-/*
- * Copyright (c) 2004 by Internet Systems Consortium, Inc. ("ISC")
- * Portions Copyright (c) 1996-1999 by Internet Software Consortium.
- *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS.  IN NO EVENT SHALL ISC BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
- * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
 
 const char *
 hstrerror(int err) {

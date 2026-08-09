@@ -52,6 +52,7 @@ int pbsd_b0286_replay;
 
 struct statfs pbsd_b0286_snap;
 int pbsd_b0286_snap_rv;
+int pbsd_b0286_snap_errno;
 
 static int (*pbsd_b0286_real_statfs)(const char *, struct statfs *);
 static int (*pbsd_b0286_real_fstatfs)(int, struct statfs *);
@@ -74,8 +75,10 @@ __wrap_statfs(const char *path, struct statfs *buf)
 
 	pbsd_b0286_init_real();
 	if (pbsd_b0286_replay) {
-		if (pbsd_b0286_snap_rv != 0)
+		if (pbsd_b0286_snap_rv != 0) {
+			errno = pbsd_b0286_snap_errno;
 			return (pbsd_b0286_snap_rv);
+		}
 		*buf = pbsd_b0286_snap;
 		return (0);
 	}
@@ -83,6 +86,8 @@ __wrap_statfs(const char *path, struct statfs *buf)
 	pbsd_b0286_snap_rv = rv;
 	if (rv == 0)
 		pbsd_b0286_snap = *buf;
+	else
+		pbsd_b0286_snap_errno = errno;
 	return (rv);
 }
 
@@ -93,8 +98,10 @@ __wrap_fstatfs(int fd, struct statfs *buf)
 
 	pbsd_b0286_init_real();
 	if (pbsd_b0286_replay) {
-		if (pbsd_b0286_snap_rv != 0)
+		if (pbsd_b0286_snap_rv != 0) {
+			errno = pbsd_b0286_snap_errno;
 			return (pbsd_b0286_snap_rv);
+		}
 		*buf = pbsd_b0286_snap;
 		return (0);
 	}
@@ -102,6 +109,8 @@ __wrap_fstatfs(int fd, struct statfs *buf)
 	pbsd_b0286_snap_rv = rv;
 	if (rv == 0)
 		pbsd_b0286_snap = *buf;
+	else
+		pbsd_b0286_snap_errno = errno;
 	return (rv);
 }
 

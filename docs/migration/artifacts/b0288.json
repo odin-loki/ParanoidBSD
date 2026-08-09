@@ -1,0 +1,13 @@
+{
+  "batch": "b0288",
+  "verified": "2026-08-09T00:19:11Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                        cases     failures\n--------                        -----     --------\nbcs_strcasecmp                 200017            0\nbcs_strncasecmp                200010            0\nbcs_skip_ws                    200005            0\nbcs_skip_nonws                 200005            0\nbcs_skip_ws_len                200004            0\nbcs_skip_nonws_len             200003            0\nbcs_trunc_rws_len              200004            0\nbcs_convert_to_lower           200009            0\nbcs_convert_to_upper           200009            0\nmemstream_getln                200009            0\nmemstream_matchline            200006            0\nmemstream_chr                  200007            0\nmemstream_skip_ws              200005            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/iconv/citrus_lookup_factory.c": "b3a0951c142d61dd",
+    "hbsd/src/lib/libc/iconv/citrus_bcs.c": "42b35d76a26e994d",
+    "hbsd/src/lib/libc/iconv/iconv_compat.c": "2f604c2e0a4cf4ed",
+    "hbsd/src/lib/libc/iconv/citrus_memstream.c": "31259d490864273d"
+  }
+}

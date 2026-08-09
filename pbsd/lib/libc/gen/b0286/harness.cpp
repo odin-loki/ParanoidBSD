@@ -712,6 +712,8 @@ main(void)
 	unsigned long long total_fails = 0;
 	int exit_code = 0;
 
+	(void)setvbuf(stdout, nullptr, _IONBF, 0);
+
 	test_confstr_edges();
 	test_confstr_random();
 	test_statvfs_edges();

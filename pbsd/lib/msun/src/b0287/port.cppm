@@ -215,7 +215,7 @@ remquo(double x, double y, int *quo)
 	  ((hy|((ly|-ly)>>31))>0x7ff00000))	/* or y is NaN */
 	    return nan_mix_op(x, y, *)/nan_mix_op(x, y, *);
 	if(hx<=hy) {
-	    if((hx<hy)||(lx<ly)) {
+	    if((hx>=hy)||(lx<ly)) {
 		q = 0;
 		goto fixup;	/* |x|<|y| return x or x-y */
 	    }
