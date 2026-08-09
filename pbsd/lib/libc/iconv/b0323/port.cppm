@@ -329,13 +329,13 @@ _citrus_prop_object_uninit(_citrus_prop_object_t *obj)
 static const char *xdigit = "0123456789ABCDEF";
 
 #define _CITRUS_PROP_READ_UINT_COMMON(_func_, _type_, _max_)		\
-static int								\
+int									\
 _citrus_prop_read_##_func_##_common(struct _memstream * __restrict ms,	\
     _type_ * __restrict result, int base, int neg)			\
 {									\
 	_type_ acc, cutoff;						\
 	int ch, cutlim, n;						\
-	char *p;							\
+	const char *p;							\
 									\
 	acc = (_type_)0;						\
 	cutoff = _max_ / base;						\
@@ -359,7 +359,7 @@ _CITRUS_PROP_READ_UINT_COMMON(num, uint64_t, UINT64_MAX)
 #undef _CITRUS_PROP_READ_UINT_COMMON
 
 #define _CITRUS_PROP_READ_INT(_func_, _type_)			\
-static int							\
+int								\
 _citrus_prop_read_##_func_(struct _memstream * __restrict ms,	\
     _citrus_prop_object_t * __restrict obj)			\
 {								\
@@ -507,7 +507,7 @@ _citrus_prop_read_str(struct _memstream * __restrict ms,
 	size_t m, n;
 
 	m = _CITRUS_PROP_STR_BUFSIZ;
-	s = malloc(m);
+	s = (char *)malloc(m);
 	if (s == NULL)
 		return (ENOMEM);
 	n = 0;
@@ -531,7 +531,7 @@ _citrus_prop_read_str(struct _memstream * __restrict ms,
 	for (;;) {
 		if (m < 1) {
 			m = _CITRUS_PROP_STR_BUFSIZ;
-			t = realloc(s, n + m);
+			t = (char *)realloc(s, n + m);
 			if (t == NULL) {
 				free(s);
 				return (ENOMEM);

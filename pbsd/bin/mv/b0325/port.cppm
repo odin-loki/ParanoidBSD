@@ -12,37 +12,9 @@ module;
 #include <sys/wait.h>
 
 #if defined(__linux__)
-#ifndef ALLPERMS
-#define ALLPERMS (S_ISUID | S_ISGID | S_ISTXT | S_IRWXU | S_IRWXG | S_IRWXO)
-#endif
-#ifndef UF_ARCHIVE
-#define UF_ARCHIVE 0x00000800
-#endif
-#ifndef MAXPHYS
-#define MAXPHYS (128 * 1024)
-#endif
-#include <sys/statfs.h>
-typedef void *acl_t;
-typedef int acl_type_t;
-#ifndef ACL_TYPE_NFS4
-#define ACL_TYPE_NFS4 0x00000004
-#endif
-#ifndef ACL_TYPE_ACCESS
-#define ACL_TYPE_ACCESS 0x00000002
-#endif
-#ifndef _PC_ACL_NFS4
-#define _PC_ACL_NFS4 64
-#endif
-#ifndef _PC_ACL_EXTENDED
-#define _PC_ACL_EXTENDED 65
-#endif
-extern "C" {
-acl_t acl_get_fd_np(int, acl_type_t);
-int acl_is_trivial_np(acl_t, int *);
-int acl_set_fd_np(int, acl_t, acl_type_t);
-int acl_free(acl_t);
-int fchflags(int, unsigned long);
-}
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 #include <bsd/string.h>
 #include <bsd/libutil.h>
 #else
@@ -110,7 +82,7 @@ mv_statfs(const char *path, struct statfs *buf)
 		strncpy(buf->f_mntonname, resolved, MNAMELEN - 1);
 	return (0);
 }
-#define statfs mv_statfs
+#define statfs(p, b) mv_statfs((p), (b))
 typedef void *acl_t;
 typedef int acl_type_t;
 #ifndef ACL_TYPE_NFS4
@@ -131,6 +103,8 @@ int acl_is_trivial_np(acl_t, int *);
 int acl_set_fd_np(int, acl_t, acl_type_t);
 int acl_free(acl_t);
 int fchflags(int, unsigned long);
+char *user_from_uid(uid_t, int);
+char *group_from_gid(gid_t, int);
 }
 #endif
 

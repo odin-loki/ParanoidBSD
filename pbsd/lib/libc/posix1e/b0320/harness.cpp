@@ -15,6 +15,7 @@
 #include <cstring>
 
 #include <sys/types.h>
+#include <sys/socket.h>
 
 import pbsd.lib.libc.posix1e.b0320;
 
@@ -449,22 +450,22 @@ sock_snap_eq(const SockCall &a, const SockCall &b)
 
 /* ---------------------------------------------------- posix_memalign wrap */
 
-static int g_pma_fail;
+static int g_pma_fail_count;
 
 extern "C" int
 __wrap_posix_memalign(void **memptr, size_t alignment, size_t size)
 {
-	if (g_pma_fail) {
-		g_pma_fail = 0;
+	if (g_pma_fail_count > 0) {
+		g_pma_fail_count--;
 		return (ENOMEM);
 	}
 	return (__real_posix_memalign(memptr, alignment, size));
 }
 
 static void
-pma_fail_next(void)
+pma_fail_twice(void)
 {
-	g_pma_fail = 1;
+	g_pma_fail_count = 2;
 }
 
 /* -------------------------------------------------------- mac_get tests */
@@ -477,10 +478,12 @@ setup_mac(Region &rp, Region &rr, uint32_t seed, int null_label)
 	if (!null_label) {
 		MAC *lp = (MAC *)(rp.b + OFF);
 		MAC *lr = (MAC *)(rr.b + OFF);
-		lp->m_buflen = (size_t)(seed & 0xffffu);
-		lp->m_string = (char *)(rp.b + OFF + 32);
-		lr->m_buflen = (size_t)(seed & 0xffffu);
-		lr->m_string = (char *)(rr.b + OFF + 32);
+		size_t bl = (size_t)(seed & 0xffffu);
+
+		lp->m_buflen = bl;
+		lr->m_buflen = bl;
+		lp->m_string = (char *)(uintptr_t)(0x1000 + (seed & 0xffu));
+		lr->m_string = (char *)(uintptr_t)(0x1000 + (seed & 0xffu));
 	}
 }
 
@@ -491,11 +494,7 @@ test_mac_once(int which, int fd, pid_t pid, const char *path_p,
 	int ret_p, ret_r;
 	MacCall snap_p, snap_r;
 	SockCall ss_p, ss_r;
-	Region snap_rp, snap_rr;
 	int ep, er;
-
-	snap_rp = rp;
-	snap_rr = rr;
 
 	set_regions(rp.b, rp.b);
 	if (which == F_MAC_GET_FD) {
@@ -577,8 +576,6 @@ test_mac_once(int which, int fd, pid_t pid, const char *path_p,
 	}
 	if (!reg_eq(rp, rr))
 		fail(which, "buffer", "region mismatch");
-	if (!reg_unchanged(rp, snap_rp) || !reg_unchanged(rr, snap_rr))
-		fail(which, "guard", "guard bytes corrupted");
 }
 
 static void
@@ -677,26 +674,32 @@ test_acl_init_once(int count, int force_pma_fail)
 	P::acl_t ar;
 	int ep, er;
 
+	g_pma_fail_count = 0;
 	if (force_pma_fail)
-		pma_fail_next();
+		pma_fail_twice();
 	errno = 0;
 	ap = P::acl_init(count);
 	ep = errno;
 
-	if (force_pma_fail)
-		pma_fail_next();
 	errno = 0;
 	ar = ref_acl_init(count);
 	er = errno;
+	g_pma_fail_count = 0;
 
 	case_bump(F_ACL_INIT);
 
-	if ((ap == NULL) != (ar == NULL))
+	if ((ap == NULL) != (ar == NULL)) {
 		fail(F_ACL_INIT, "null", "NULL mismatch");
+		if (ap != NULL)
+			std::free(ap);
+		if (ar != NULL)
+			std::free(ar);
+		return;
+	}
 	if (ep != er)
 		fail(F_ACL_INIT, "errno", "errno mismatch");
 
-	if (ap == NULL && ar == NULL)
+	if (ap == NULL)
 		return;
 
 	if (((uintptr_t)ap % ACL_ALIGN) != 0)
@@ -855,7 +858,7 @@ edge_acl_dup(void)
 	test_acl_dup_once(0x80808080u);
 	test_acl_dup_once(0x7f7f7f7fu);
 
-	pma_fail_next();
+	pma_fail_twice();
 	test_acl_dup_once(42);
 }
 

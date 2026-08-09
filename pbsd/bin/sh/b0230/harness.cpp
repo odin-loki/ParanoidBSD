@@ -252,8 +252,6 @@ setup_signames()
 		dep_signame[i] = names[i];
 }
 
-extern "C" const char *dep_signame[128];
-
 #ifndef NSIG
 #define NSIG 65
 #endif

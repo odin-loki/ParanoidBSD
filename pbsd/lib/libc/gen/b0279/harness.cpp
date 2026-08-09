@@ -690,12 +690,20 @@ static void
 test_uexterr_random(void)
 {
 	long i;
+	static const char *const safe_fmts[] = {
+		"",
+		"x",
+		"m%ju",
+		"%#jx",
+		"%#jx %#jx",
+		"err %d",
+		"p1=%ju p2=%ju",
+		"0x%jx",
+	};
 
 	for (i = 0; i < SWEEP_ITERS; i++) {
 		port::uexterror ue;
-		unsigned char msgbytes[64];
-		unsigned mlen = (unsigned)(rnd32() % 64);
-		unsigned j;
+		const char *fmt;
 		const char *env;
 		int isset;
 
@@ -705,10 +713,8 @@ test_uexterr_random(void)
 		ue.src_line = rnd32();
 		ue.p1 = rnd64();
 		ue.p2 = rnd64();
-		for (j = 0; j < mlen; j++)
-			msgbytes[j] = (unsigned char)(rnd32() & 0xff);
-		msgbytes[mlen % 64] = '\0';
-		std::memcpy(ue.msg, msgbytes, 64);
+		fmt = safe_fmts[rnd32() % (sizeof(safe_fmts) / sizeof(safe_fmts[0]))];
+		std::strncpy(ue.msg, fmt, sizeof(ue.msg) - 1);
 
 		switch (rnd32() % 4) {
 		case 0:

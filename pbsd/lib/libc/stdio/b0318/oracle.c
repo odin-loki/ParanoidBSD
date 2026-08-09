@@ -47,6 +47,11 @@
 #include <wchar.h>
 #include <unistd.h>
 
+#undef locale_t
+
+typedef struct xlocale_ctype *b0318_locale_t;
+#define locale_t b0318_locale_t
+
 /* ------------------------------------------------------------------ */
 /* Mock stdio internals shared by fputws and fgetwln.                  */
 /* ------------------------------------------------------------------ */
@@ -103,10 +108,8 @@ struct xlocale_ctype {
 	    size_t, size_t, pb_mbstate_t * __restrict);
 };
 
-typedef struct xlocale_ctype *locale_t;
-
-locale_t b0318_default_locale = &b0318_ctype;
-locale_t b0318_global_locale = &b0318_ctype;
+static size_t b0318_wcsnrtombs_std(char * __restrict,
+    const wchar_t ** __restrict, size_t, size_t, pb_mbstate_t * __restrict);
 
 int b0318_prepwrite_ret = 0;
 int b0318_sfvwrite_ret = 0;
@@ -125,6 +128,8 @@ wint_t b0318_fgetwc_global_vals[4096];
 int b0318_slbexpand_fail = 0;
 int b0318_slbexpand_calls = 0;
 size_t b0318_slbexpand_last = 0;
+
+extern locale_t b0318_global_locale;
 
 locale_t
 b0318_get_locale(void)
@@ -208,6 +213,9 @@ b0318_wcsnrtombs_std(char * __restrict dst, const wchar_t ** __restrict src,
 
 struct xlocale_ctype b0318_ctype = { b0318_wcsnrtombs_std };
 
+locale_t b0318_default_locale = &b0318_ctype;
+locale_t b0318_global_locale = &b0318_ctype;
+
 int
 b0318_prepwrite(FILE *fp)
 {
@@ -289,9 +297,16 @@ b0318_slbexpand(FILE *fp, size_t size)
 		return (1);
 	if ((size_t)fp->_lb._size >= size)
 		return (0);
-	nb = realloc(fp->_lb._base, size);
-	if (nb == NULL)
-		return (1);
+	if (fp->_lb._base == fp->_lb_inline) {
+		nb = malloc(size);
+		if (nb == NULL)
+			return (1);
+		memcpy(nb, fp->_lb._base, (size_t)fp->_lb._size);
+	} else {
+		nb = realloc(fp->_lb._base, size);
+		if (nb == NULL)
+			return (1);
+	}
 	fp->_lb._base = nb;
 	fp->_lb._size = (int)size;
 	return (0);
@@ -375,7 +390,7 @@ b0318_mkstemp(char *tmpl)
 	b0318_mkstemp_last[sizeof(b0318_mkstemp_last) - 1] = '\0';
 	if (b0318_mkstemp_ret < 0)
 		return (-1);
-	strncpy(tmpl, "/tmp/tmp.XXXXXX", sizeof(b0318_mkstemp_last) - 1);
+	strcpy(tmpl, "/tmp/tmp.XXXXXX");
 	return (b0318_mkstemp_ret);
 }
 
@@ -409,12 +424,10 @@ b0318_fdopen(int fd, const char *mode)
 		errno = b0318_tmpfile_errno != 0 ? b0318_tmpfile_errno : ENOMEM;
 		return (NULL);
 	}
+	b0318_fdopen_result = calloc(1, sizeof(b0318_FILE));
 	if (b0318_fdopen_result == NULL) {
-		b0318_fdopen_result = calloc(1, sizeof(b0318_FILE));
-		if (b0318_fdopen_result == NULL) {
-			errno = ENOMEM;
-			return (NULL);
-		}
+		errno = ENOMEM;
+		return (NULL);
 	}
 	return (b0318_fdopen_result);
 }

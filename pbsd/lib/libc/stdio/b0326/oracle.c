@@ -12,6 +12,7 @@
  */
 
 #define _POSIX_C_SOURCE 200809L
+#define _DEFAULT_SOURCE 1
 
 #ifndef LONG_BIT
 #define LONG_BIT (sizeof(long) * 8)
@@ -379,6 +380,10 @@ __printf_flush(struct __printf_io *io)
 
 #define	STDIO_THREAD_LOCK()	do { mock_stdio_lock_calls++; } while (0)
 #define	STDIO_THREAD_UNLOCK()	do { mock_stdio_unlock_calls++; } while (0)
+
+int ref___swhatbuf(FILE *, size_t *, int *);
+off_t ref_ftello(FILE *);
+int ref__ftello(FILE *, fpos_t *);
 
 /* ====================================================================== */
 /* lib/libc/stdio/makebuf.c                                               */

@@ -15,6 +15,9 @@
 #include <sys/wait.h>
 
 #if defined(__linux__)
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 #ifndef ALLPERMS
 #define ALLPERMS (S_ISUID | S_ISGID | S_ISTXT | S_IRWXU | S_IRWXG | S_IRWXO)
 #endif
@@ -24,7 +27,39 @@
 #ifndef MAXPHYS
 #define MAXPHYS (128 * 1024)
 #endif
-#include <sys/statfs.h>
+#ifndef MNAMELEN
+#define MNAMELEN 1024
+#endif
+#ifndef _PATH_CP
+#define _PATH_CP "/bin/cp"
+#endif
+#ifndef _PATH_RM
+#define _PATH_RM "/bin/rm"
+#endif
+#define st_flags st_blksize
+struct statfs {
+	long f_spare[8];
+	char f_mntonname[MNAMELEN];
+};
+static int
+statfs(const char *path, struct statfs *buf)
+{
+	struct stat st;
+	char resolved[PATH_MAX];
+
+	if (buf == NULL) {
+		errno = EINVAL;
+		return (-1);
+	}
+	memset(buf, 0, sizeof(*buf));
+	if (stat(path, &st) != 0)
+		return (-1);
+	if (realpath(path, resolved) == NULL)
+		strncpy(buf->f_mntonname, path, MNAMELEN - 1);
+	else
+		strncpy(buf->f_mntonname, resolved, MNAMELEN - 1);
+	return (0);
+}
 typedef void *acl_t;
 typedef int acl_type_t;
 #ifndef ACL_TYPE_NFS4
@@ -44,6 +79,8 @@ int acl_is_trivial_np(acl_t, int *);
 int acl_set_fd_np(int, acl_t, acl_type_t);
 int acl_free(acl_t);
 int fchflags(int, unsigned long);
+char *user_from_uid(uid_t, int);
+char *group_from_gid(gid_t, int);
 #include <bsd/string.h>
 #include <bsd/libutil.h>
 #else
