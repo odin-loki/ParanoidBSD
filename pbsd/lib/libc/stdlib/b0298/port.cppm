@@ -122,7 +122,7 @@ static void
 trecurse(const posix_tnode *root, cmp_fn_t action, int level)
 {
 
-	if (root->llink != NULL && root->rlink == NULL)
+	if (root->llink == NULL && root->rlink == NULL)
 		(*action)(root, leaf, level);
 	else {
 		(*action)(root, preorder, level);
