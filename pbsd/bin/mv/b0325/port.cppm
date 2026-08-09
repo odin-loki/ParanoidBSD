@@ -67,6 +67,73 @@ export module pbsd.bin.mv.b0325;
 
 export namespace pbsd::bin_mv::b0325 {
 
+#if defined(__linux__)
+#ifndef ALLPERMS
+#define ALLPERMS (S_ISUID | S_ISGID | S_ISTXT | S_IRWXU | S_IRWXG | S_IRWXO)
+#endif
+#ifndef UF_ARCHIVE
+#define UF_ARCHIVE 0x00000800
+#endif
+#ifndef MAXPHYS
+#define MAXPHYS (128 * 1024)
+#endif
+#ifndef MNAMELEN
+#define MNAMELEN 1024
+#endif
+#ifndef _PATH_CP
+#define _PATH_CP "/bin/cp"
+#endif
+#ifndef _PATH_RM
+#define _PATH_RM "/bin/rm"
+#endif
+#define st_flags st_blksize
+struct statfs {
+	long f_spare[8];
+	char f_mntonname[MNAMELEN];
+};
+static inline int
+mv_statfs(const char *path, struct statfs *buf)
+{
+	struct stat st;
+	char resolved[PATH_MAX];
+
+	if (buf == NULL) {
+		errno = EINVAL;
+		return (-1);
+	}
+	memset(buf, 0, sizeof(*buf));
+	if (stat(path, &st) != 0)
+		return (-1);
+	if (realpath(path, resolved) == NULL)
+		strncpy(buf->f_mntonname, path, MNAMELEN - 1);
+	else
+		strncpy(buf->f_mntonname, resolved, MNAMELEN - 1);
+	return (0);
+}
+#define statfs mv_statfs
+typedef void *acl_t;
+typedef int acl_type_t;
+#ifndef ACL_TYPE_NFS4
+#define ACL_TYPE_NFS4 0x00000004
+#endif
+#ifndef ACL_TYPE_ACCESS
+#define ACL_TYPE_ACCESS 0x00000002
+#endif
+#ifndef _PC_ACL_NFS4
+#define _PC_ACL_NFS4 64
+#endif
+#ifndef _PC_ACL_EXTENDED
+#define _PC_ACL_EXTENDED 65
+#endif
+extern "C" {
+acl_t acl_get_fd_np(int, acl_type_t);
+int acl_is_trivial_np(acl_t, int *);
+int acl_set_fd_np(int, acl_t, acl_type_t);
+int acl_free(acl_t);
+int fchflags(int, unsigned long);
+}
+#endif
+
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
