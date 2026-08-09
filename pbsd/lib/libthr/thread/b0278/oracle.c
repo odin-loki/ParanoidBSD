@@ -6,13 +6,14 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
 
 #ifdef PBSD_B0278_PORT_INCLUDE
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern void *malloc(size_t);
+extern void free(void *);
 
 typedef long lwpid_t;
 
@@ -64,7 +65,8 @@ extern int errno;
 extern struct pthread *_get_curthread(void);
 extern int _thr_find_thread(struct pthread *curthread, pthread_t pthread,
     int include_dead);
-extern int _thr_setscheduler(long tid, int policy, struct sched_param *param);
+extern int _thr_setscheduler(long tid, int policy,
+    const struct sched_param *param);
 extern int cpuset_setaffinity(int level, int which, long id, size_t size,
     const cpuset_t *cpuset);
 extern int cpuset_getaffinity(int level, int which, long id, size_t size,
@@ -75,6 +77,9 @@ extern void b0278_thread_unlock(struct pthread *c, pthread_t t);
 }
 #endif
 #else /* PBSD_B0278_PORT_INCLUDE */
+
+#include <stdlib.h>
+#include <string.h>
 
 typedef long lwpid_t;
 
@@ -177,7 +182,7 @@ _thr_find_thread(struct pthread *curthread, pthread_t pthread, int include_dead)
 }
 
 int
-_thr_setscheduler(long tid, int policy, struct sched_param *param)
+_thr_setscheduler(long tid, int policy, const struct sched_param *param)
 {
 
 	b0278_setscheduler_last_tid = tid;

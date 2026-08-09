@@ -247,7 +247,7 @@ void *
 __real_malloc(size_t nbytes);
 
 void *
-malloc(size_t nbytes)
+__wrap_malloc(size_t nbytes)
 {
 
 	if (mock_malloc_fail)

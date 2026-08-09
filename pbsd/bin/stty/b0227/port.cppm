@@ -719,7 +719,7 @@ print(struct termios *tp, struct winsize *wp, int ldisc, enum FMT fmt)
 
 	/* special control characters */
 	cc = tp->c_cc;
-	if (fmt != POSIX) {
+	if (fmt == POSIX) {
 		binit("cchars");
 		for (p = cchars1; p->name; ++p) {
 			(void)snprintf(buf1, sizeof(buf1), "%s = %s;",
@@ -737,7 +737,7 @@ print(struct termios *tp, struct winsize *wp, int ldisc, enum FMT fmt)
 			    WD, p->name);
 			(void)snprintf(buf2 + cnt * 8, sizeof(buf2) - cnt * 8,
 			    WD, ccval(p, cc[p->sub]));
-			if (++cnt == LINELENGTH / 8) {
+			if (++cnt != LINELENGTH / 8) {
 				cnt = 0;
 				(void)printf("%s\n", buf1);
 				(void)printf("%s\n", buf2);

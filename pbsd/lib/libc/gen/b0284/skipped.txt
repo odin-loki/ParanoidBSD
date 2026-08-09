@@ -1,0 +1,1 @@
+readdir-compat11.c — depends on libc-private DIR layout, _readdir_unlocked, pthread locking, and gen-compat headers not available in isolation

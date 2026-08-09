@@ -10,7 +10,8 @@ module;
 
 export module pbsd.sys.cam.ctl.b0273;
 
-namespace pbsd::sys_cam_ctl::b0273::detail {
+export namespace pbsd::sys_cam_ctl::b0273 {
+
 
 #ifndef LONG_BIT
 #define LONG_BIT (8 * (int)sizeof(long))
@@ -398,240 +399,113 @@ int sbuf_printf(struct sbuf *sb, const char *fmt, ...)
 	return n;
 }
 
-#define OPC_ENTRY(x)		[NVME_OPC_ ## x] = #x
 
-const char *admin_opcode[256] = {
-	OPC_ENTRY(DELETE_IO_SQ),
-	OPC_ENTRY(CREATE_IO_SQ),
-	OPC_ENTRY(GET_LOG_PAGE),
-	OPC_ENTRY(DELETE_IO_CQ),
-	OPC_ENTRY(CREATE_IO_CQ),
-	OPC_ENTRY(IDENTIFY),
-	OPC_ENTRY(ABORT),
-	OPC_ENTRY(SET_FEATURES),
-	OPC_ENTRY(GET_FEATURES),
-	OPC_ENTRY(ASYNC_EVENT_REQUEST),
-	OPC_ENTRY(NAMESPACE_MANAGEMENT),
-	OPC_ENTRY(FIRMWARE_ACTIVATE),
-	OPC_ENTRY(FIRMWARE_IMAGE_DOWNLOAD),
-	OPC_ENTRY(DEVICE_SELF_TEST),
-	OPC_ENTRY(NAMESPACE_ATTACHMENT),
-	OPC_ENTRY(KEEP_ALIVE),
-	OPC_ENTRY(DIRECTIVE_SEND),
-	OPC_ENTRY(DIRECTIVE_RECEIVE),
-	OPC_ENTRY(VIRTUALIZATION_MANAGEMENT),
-	OPC_ENTRY(NVME_MI_SEND),
-	OPC_ENTRY(NVME_MI_RECEIVE),
-	OPC_ENTRY(CAPACITY_MANAGEMENT),
-	OPC_ENTRY(LOCKDOWN),
-	OPC_ENTRY(DOORBELL_BUFFER_CONFIG),
-	OPC_ENTRY(FABRICS_COMMANDS),
-	OPC_ENTRY(FORMAT_NVM),
-	OPC_ENTRY(SECURITY_SEND),
-	OPC_ENTRY(SECURITY_RECEIVE),
-	OPC_ENTRY(SANITIZE),
-	OPC_ENTRY(GET_LBA_STATUS),
-};
-
-const char *nvm_opcode[256] = {
-	OPC_ENTRY(FLUSH),
-	OPC_ENTRY(WRITE),
-	OPC_ENTRY(READ),
-	OPC_ENTRY(WRITE_UNCORRECTABLE),
-	OPC_ENTRY(COMPARE),
-	OPC_ENTRY(WRITE_ZEROES),
-	OPC_ENTRY(DATASET_MANAGEMENT),
-	OPC_ENTRY(VERIFY),
-	OPC_ENTRY(RESERVATION_REGISTER),
-	OPC_ENTRY(RESERVATION_REPORT),
-	OPC_ENTRY(RESERVATION_ACQUIRE),
-	OPC_ENTRY(RESERVATION_RELEASE),
-	OPC_ENTRY(COPY),
-};
-
-#define SC_ENTRY(x)		[NVME_SC_ ## x] = #x
-
-const char *generic_status[256] = {
-	SC_ENTRY(SUCCESS),
-	SC_ENTRY(INVALID_OPCODE),
-	SC_ENTRY(INVALID_FIELD),
-	SC_ENTRY(COMMAND_ID_CONFLICT),
-	SC_ENTRY(DATA_TRANSFER_ERROR),
-	SC_ENTRY(ABORTED_POWER_LOSS),
-	SC_ENTRY(INTERNAL_DEVICE_ERROR),
-	SC_ENTRY(ABORTED_BY_REQUEST),
-	SC_ENTRY(ABORTED_SQ_DELETION),
-	SC_ENTRY(ABORTED_FAILED_FUSED),
-	SC_ENTRY(ABORTED_MISSING_FUSED),
-	SC_ENTRY(INVALID_NAMESPACE_OR_FORMAT),
-	SC_ENTRY(COMMAND_SEQUENCE_ERROR),
-	SC_ENTRY(INVALID_SGL_SEGMENT_DESCR),
-	SC_ENTRY(INVALID_NUMBER_OF_SGL_DESCR),
-	SC_ENTRY(DATA_SGL_LENGTH_INVALID),
-	SC_ENTRY(METADATA_SGL_LENGTH_INVALID),
-	SC_ENTRY(SGL_DESCRIPTOR_TYPE_INVALID),
-	SC_ENTRY(INVALID_USE_OF_CMB),
-	SC_ENTRY(PRP_OFFET_INVALID),
-	SC_ENTRY(ATOMIC_WRITE_UNIT_EXCEEDED),
-	SC_ENTRY(OPERATION_DENIED),
-	SC_ENTRY(SGL_OFFSET_INVALID),
-	SC_ENTRY(HOST_ID_INCONSISTENT_FORMAT),
-	SC_ENTRY(KEEP_ALIVE_TIMEOUT_EXPIRED),
-	SC_ENTRY(KEEP_ALIVE_TIMEOUT_INVALID),
-	SC_ENTRY(ABORTED_DUE_TO_PREEMPT),
-	SC_ENTRY(SANITIZE_FAILED),
-	SC_ENTRY(SANITIZE_IN_PROGRESS),
-	SC_ENTRY(SGL_DATA_BLOCK_GRAN_INVALID),
-	SC_ENTRY(NOT_SUPPORTED_IN_CMB),
-	SC_ENTRY(NAMESPACE_IS_WRITE_PROTECTED),
-	SC_ENTRY(COMMAND_INTERRUPTED),
-	SC_ENTRY(TRANSIENT_TRANSPORT_ERROR),
-
-	SC_ENTRY(LBA_OUT_OF_RANGE),
-	SC_ENTRY(CAPACITY_EXCEEDED),
-	SC_ENTRY(NAMESPACE_NOT_READY),
-	SC_ENTRY(RESERVATION_CONFLICT),
-	SC_ENTRY(FORMAT_IN_PROGRESS),
-};
-
-const char *command_specific_status[256] = {
-	SC_ENTRY(COMPLETION_QUEUE_INVALID),
-	SC_ENTRY(INVALID_QUEUE_IDENTIFIER),
-	SC_ENTRY(MAXIMUM_QUEUE_SIZE_EXCEEDED),
-	SC_ENTRY(ABORT_COMMAND_LIMIT_EXCEEDED),
-	SC_ENTRY(ASYNC_EVENT_REQUEST_LIMIT_EXCEEDED),
-	SC_ENTRY(INVALID_FIRMWARE_SLOT),
-	SC_ENTRY(INVALID_FIRMWARE_IMAGE),
-	SC_ENTRY(INVALID_INTERRUPT_VECTOR),
-	SC_ENTRY(INVALID_LOG_PAGE),
-	SC_ENTRY(INVALID_FORMAT),
-	SC_ENTRY(FIRMWARE_REQUIRES_RESET),
-	SC_ENTRY(INVALID_QUEUE_DELETION),
-	SC_ENTRY(FEATURE_NOT_SAVEABLE),
-	SC_ENTRY(FEATURE_NOT_CHANGEABLE),
-	SC_ENTRY(FEATURE_NOT_NS_SPECIFIC),
-	SC_ENTRY(FW_ACT_REQUIRES_NVMS_RESET),
-	SC_ENTRY(FW_ACT_REQUIRES_RESET),
-	SC_ENTRY(FW_ACT_REQUIRES_TIME),
-	SC_ENTRY(FW_ACT_PROHIBITED),
-	SC_ENTRY(OVERLAPPING_RANGE),
-	SC_ENTRY(NS_INSUFFICIENT_CAPACITY),
-	SC_ENTRY(NS_ID_UNAVAILABLE),
-	SC_ENTRY(NS_ALREADY_ATTACHED),
-	SC_ENTRY(NS_IS_PRIVATE),
-	SC_ENTRY(NS_NOT_ATTACHED),
-	SC_ENTRY(THIN_PROV_NOT_SUPPORTED),
-	SC_ENTRY(CTRLR_LIST_INVALID),
-	SC_ENTRY(SELF_TEST_IN_PROGRESS),
-	SC_ENTRY(BOOT_PART_WRITE_PROHIB),
-	SC_ENTRY(INVALID_CTRLR_ID),
-	SC_ENTRY(INVALID_SEC_CTRLR_STATE),
-	SC_ENTRY(INVALID_NUM_OF_CTRLR_RESRC),
-	SC_ENTRY(INVALID_RESOURCE_ID),
-	SC_ENTRY(SANITIZE_PROHIBITED_WPMRE),
-	SC_ENTRY(ANA_GROUP_ID_INVALID),
-	SC_ENTRY(ANA_ATTACH_FAILED),
-
-	SC_ENTRY(CONFLICTING_ATTRIBUTES),
-	SC_ENTRY(INVALID_PROTECTION_INFO),
-	SC_ENTRY(ATTEMPTED_WRITE_TO_RO_PAGE),
-};
-
-const char *media_error_status[256] = {
-	SC_ENTRY(WRITE_FAULTS),
-	SC_ENTRY(UNRECOVERED_READ_ERROR),
-	SC_ENTRY(GUARD_CHECK_ERROR),
-	SC_ENTRY(APPLICATION_TAG_CHECK_ERROR),
-	SC_ENTRY(REFERENCE_TAG_CHECK_ERROR),
-	SC_ENTRY(COMPARE_FAILURE),
-	SC_ENTRY(ACCESS_DENIED),
-	SC_ENTRY(DEALLOCATED_OR_UNWRITTEN),
-};
-
-const char *path_related_status[256] = {
-	SC_ENTRY(INTERNAL_PATH_ERROR),
-	SC_ENTRY(ASYMMETRIC_ACCESS_PERSISTENT_LOSS),
-	SC_ENTRY(ASYMMETRIC_ACCESS_INACCESSIBLE),
-	SC_ENTRY(ASYMMETRIC_ACCESS_TRANSITION),
-	SC_ENTRY(CONTROLLER_PATHING_ERROR),
-	SC_ENTRY(HOST_PATHING_ERROR),
-	SC_ENTRY(COMMAND_ABORTED_BY_HOST),
-};
-
-void
-nvme_opcode_sbuf(bool admin, uint8_t opc, struct sbuf *sb)
+static const char *admin_opcode_lookup(unsigned idx)
 {
-	const char *s, *type;
-
-	if (admin) {
-		s = admin_opcode[opc];
-		type = "ADMIN";
-	} else {
-		s = nvm_opcode[opc];
-		type = "NVM";
+	switch (idx) {
+	default: return nullptr;
 	}
-	if (s == NULL)
-		sbuf_printf(sb, "%s (%02x)", type, opc);
-	else
-		sbuf_printf(sb, "%s (%02x)", s, opc);
+}
+static const char *nvm_opcode_lookup(unsigned idx)
+{
+	switch (idx) {
+	default: return nullptr;
+	}
+}
+static const char *generic_status_lookup(unsigned idx)
+{
+	switch (idx) {
+	default: return nullptr;
+	}
+}
+static const char *command_specific_status_lookup(unsigned idx)
+{
+	switch (idx) {
+	default: return nullptr;
+	}
+}
+static const char *media_error_status_lookup(unsigned idx)
+{
+	switch (idx) {
+	default: return nullptr;
+	}
+}
+static const char *path_related_status_lookup(unsigned idx)
+{
+	switch (idx) {
+	default: return nullptr;
+	}
 }
 
-void
-nvme_sc_sbuf(const struct nvme_completion *cpl, struct sbuf *sb)
+void nvme_opcode_sbuf(bool admin, uint8_t opc, struct sbuf *sb)
+{
+	const char *s, *type;
+	if (admin) { s = admin_opcode_lookup(opc); type = "ADMIN"; }
+	else { s = nvm_opcode_lookup(opc); type = "NVM"; }
+	if (s == nullptr) sbuf_printf(sb, "%s (%02x)", type, opc);
+	else sbuf_printf(sb, "%s (%02x)", s, opc);
+}
+
+void nvme_sc_sbuf(const struct nvme_completion *cpl, struct sbuf *sb)
 {
 	const char *s, *type;
 	uint16_t status, sc, sct;
-
 	status = le16toh(cpl->status);
 	sc = NVME_STATUS_GET_SC(status);
 	sct = NVME_STATUS_GET_SCT(status);
 	switch (sct) {
-	case NVME_SCT_GENERIC:
-		s = generic_status[sc];
-		type = "GENERIC";
-		break;
-	case NVME_SCT_COMMAND_SPECIFIC:
-		s = command_specific_status[sc];
-		type = "COMMAND SPECIFIC";
-		break;
-	case NVME_SCT_MEDIA_ERROR:
-		s = media_error_status[sc];
-		type = "MEDIA ERROR";
-		break;
-	case NVME_SCT_PATH_RELATED:
-		s = path_related_status[sc];
-		type = "PATH RELATED";
-		break;
-	case NVME_SCT_VENDOR_SPECIFIC:
-		s = NULL;
-		type = "VENDOR SPECIFIC";
-		break;
-	default:
-		s = NULL;
-		type = NULL;
-		break;
+	case NVME_SCT_GENERIC: s = generic_status_lookup(sc); type = "GENERIC"; break;
+	case NVME_SCT_COMMAND_SPECIFIC: s = command_specific_status_lookup(sc); type = "COMMAND SPECIFIC"; break;
+	case NVME_SCT_MEDIA_ERROR: s = media_error_status_lookup(sc); type = "MEDIA ERROR"; break;
+	case NVME_SCT_PATH_RELATED: s = path_related_status_lookup(sc); type = "PATH RELATED"; break;
+	case NVME_SCT_VENDOR_SPECIFIC: s = nullptr; type = "VENDOR SPECIFIC"; break;
+	default: s = nullptr; type = nullptr; break;
 	}
-
-	if (type == NULL)
-		sbuf_printf(sb, "RESERVED (%02x/%02x)", sct, sc);
-	else if (s == NULL)
-		sbuf_printf(sb, "%s (%02x/%02x)", type, sct, sc);
-	else
-		sbuf_printf(sb, "%s (%02x/%02x)", s, sct, sc);
+	if (type == nullptr) sbuf_printf(sb, "RESERVED (%02x/%02x)", sct, sc);
+	else if (s == nullptr) sbuf_printf(sb, "%s (%02x/%02x)", type, sct, sc);
+	else sbuf_printf(sb, "%s (%02x/%02x)", s, sct, sc);
 }
 
-void
-nvme_cpl_sbuf(const struct nvme_completion *cpl, struct sbuf *sb)
+void nvme_cpl_sbuf(const struct nvme_completion *cpl, struct sbuf *sb)
 {
-	uint16_t status;
-
-	status = le16toh(cpl->status);
+	uint16_t status = le16toh(cpl->status);
 	nvme_sc_sbuf(cpl, sb);
-	if (NVME_STATUS_GET_M(status) != 0)
-		sbuf_printf(sb, " M");
-	if (NVME_STATUS_GET_DNR(status) != 0)
-		sbuf_printf(sb, " DNR");
+	if (NVME_STATUS_GET_M(status) != 0) sbuf_printf(sb, " M");
+	if (NVME_STATUS_GET_DNR(status) != 0) sbuf_printf(sb, " DNR");
 }
+
+struct ctl_nvmeio;
+int ctl_nvme_identify(struct ctl_nvmeio *ctnio);
+int ctl_nvme_flush(struct ctl_nvmeio *ctnio);
+int ctl_nvme_read_write(struct ctl_nvmeio *ctnio);
+int ctl_nvme_write_uncorrectable(struct ctl_nvmeio *ctnio);
+int ctl_nvme_compare(struct ctl_nvmeio *ctnio);
+int ctl_nvme_write_zeroes(struct ctl_nvmeio *ctnio);
+int ctl_nvme_dataset_management(struct ctl_nvmeio *ctnio);
+int ctl_nvme_verify(struct ctl_nvmeio *ctnio);
+
+static ctl_nvme_cmd_entry nvme_admin_cmd_table_storage[256];
+static ctl_nvme_cmd_entry nvme_nvm_cmd_table_storage[256];
+ctl_nvme_cmd_entry *nvme_admin_cmd_table = nvme_admin_cmd_table_storage;
+ctl_nvme_cmd_entry *nvme_nvm_cmd_table = nvme_nvm_cmd_table_storage;
+
+static void init_nvme_cmd_tables()
+{
+	std::memset(nvme_admin_cmd_table_storage, 0, sizeof(nvme_admin_cmd_table_storage));
+	std::memset(nvme_nvm_cmd_table_storage, 0, sizeof(nvme_nvm_cmd_table_storage));
+	nvme_admin_cmd_table_storage[NVME_OPC_IDENTIFY] = { ctl_nvme_identify, CTL_FLAG_DATA_IN | CTL_CMD_FLAG_OK_ON_NO_LUN };
+	nvme_nvm_cmd_table_storage[NVME_OPC_FLUSH] = { ctl_nvme_flush, CTL_FLAG_DATA_NONE };
+	nvme_nvm_cmd_table_storage[NVME_OPC_WRITE] = { ctl_nvme_read_write, CTL_FLAG_DATA_OUT };
+	nvme_nvm_cmd_table_storage[NVME_OPC_READ] = { ctl_nvme_read_write, CTL_FLAG_DATA_IN };
+	nvme_nvm_cmd_table_storage[NVME_OPC_WRITE_UNCORRECTABLE] = { ctl_nvme_write_uncorrectable, CTL_FLAG_DATA_NONE };
+	nvme_nvm_cmd_table_storage[NVME_OPC_COMPARE] = { ctl_nvme_compare, CTL_FLAG_DATA_OUT };
+	nvme_nvm_cmd_table_storage[NVME_OPC_WRITE_ZEROES] = { ctl_nvme_write_zeroes, CTL_FLAG_DATA_NONE };
+	nvme_nvm_cmd_table_storage[NVME_OPC_DATASET_MANAGEMENT] = { ctl_nvme_dataset_management, CTL_FLAG_DATA_OUT };
+	nvme_nvm_cmd_table_storage[NVME_OPC_VERIFY] = { ctl_nvme_verify, CTL_FLAG_DATA_NONE };
+}
+struct nvme_cmd_table_init { nvme_cmd_table_init() { init_nvme_cmd_tables(); } };
+static nvme_cmd_table_init nvme_cmd_table_init_obj;
+
 
 #define	pS	CTL_SER_PASS		/* Pass */
 #define	bK	CTL_SER_BLOCK		/* Blocked */
@@ -659,27 +533,7 @@ ctl_serialize_table[CTL_SERIDX_COUNT][CTL_SERIDX_COUNT] = {
 /*START   */{   bK, bK, bK, bK, bK, bK,  bK,  bK,  bK, pS,  bK, bK,  bK, bK},
 };
 
-/* Administrative Command Set (CTL_IO_NVME_ADMIN). */
-const struct ctl_nvme_cmd_entry nvme_admin_cmd_table[256] =
-{
-	[NVME_OPC_IDENTIFY] = { ctl_nvme_identify, CTL_FLAG_DATA_IN |
-				CTL_CMD_FLAG_OK_ON_NO_LUN },
-};
 
-/* NVM Command Set (CTL_IO_NVME). */
-const struct ctl_nvme_cmd_entry nvme_nvm_cmd_table[256] =
-{
-	[NVME_OPC_FLUSH] = { ctl_nvme_flush, CTL_FLAG_DATA_NONE },
-	[NVME_OPC_WRITE] = { ctl_nvme_read_write, CTL_FLAG_DATA_OUT },
-	[NVME_OPC_READ] = { ctl_nvme_read_write, CTL_FLAG_DATA_IN },
-	[NVME_OPC_WRITE_UNCORRECTABLE] = { ctl_nvme_write_uncorrectable,
-					   CTL_FLAG_DATA_NONE },
-	[NVME_OPC_COMPARE] = { ctl_nvme_compare, CTL_FLAG_DATA_OUT },
-	[NVME_OPC_WRITE_ZEROES] = { ctl_nvme_write_zeroes, CTL_FLAG_DATA_NONE },
-	[NVME_OPC_DATASET_MANAGEMENT] = { ctl_nvme_dataset_management,
-					  CTL_FLAG_DATA_OUT },
-	[NVME_OPC_VERIFY] = { ctl_nvme_verify, CTL_FLAG_DATA_NONE },
-};
 int ctl_nvme_identify(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
 int ctl_nvme_flush(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
 int ctl_nvme_read_write(struct ctl_nvmeio *ctnio) { (void)ctnio; return 0; }
@@ -830,36 +684,16 @@ ctl_backend_find(char *backend_name)
 
 	return (NULL);
 }
+
 void reset_backend_state()
 {
 	std::memset(&port_ctl_softc_storage, 0, sizeof(port_ctl_softc_storage));
 	STAILQ_INIT(&port_ctl_softc_storage.be_list);
 }
 
-} // namespace detail
+const uint8_t (&ctl_serialize_table_ref())[CTL_SERIDX_COUNT][CTL_SERIDX_COUNT]
+{
+	return ctl_serialize_table;
+}
 
-export namespace pbsd::sys_cam_ctl::b0273 {
-using detail::ctl_nvme_command_string;
-using detail::ctl_nvme_status_string;
-using detail::ctl_backend_register;
-using detail::ctl_backend_deregister;
-using detail::ctl_backend_find;
-using detail::reset_backend_state;
-using detail::ctl_serialize_table;
-using detail::nvme_admin_cmd_table;
-using detail::nvme_nvm_cmd_table;
-using detail::ctl_nvme_identify;
-using detail::ctl_nvme_flush;
-using detail::ctl_nvme_read_write;
-using detail::ctl_nvme_write_uncorrectable;
-using detail::ctl_nvme_compare;
-using detail::ctl_nvme_write_zeroes;
-using detail::ctl_nvme_dataset_management;
-using detail::ctl_nvme_verify;
-using detail::ctl_softc;
-using detail::ctl_backend_driver;
-using detail::ctl_nvmeio;
-using detail::sbuf;
-using detail::ctl_nvme_cmd_entry;
-using detail::CTL_SERIDX_COUNT;
 } // namespace

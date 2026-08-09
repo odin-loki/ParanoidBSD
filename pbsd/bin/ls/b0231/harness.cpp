@@ -241,46 +241,51 @@ struct FtsNode {
 };
 
 struct IoCapture {
-	int saved = -1;
-	int readfd = -1;
+	int saved_fd = -1;
+	FILE *tmp = nullptr;
 
 	bool begin()
 	{
-		int fds[2];
-		saved = dup(STDOUT_FILENO);
-		if (saved < 0)
+		saved_fd = dup(STDOUT_FILENO);
+		if (saved_fd < 0)
 			return false;
-		if (pipe(fds) != 0) {
-			close(saved);
-			saved = -1;
-			return false;
-		}
-		if (dup2(fds[1], STDOUT_FILENO) < 0) {
-			close(fds[0]);
-			close(fds[1]);
-			close(saved);
-			saved = -1;
+		tmp = std::tmpfile();
+		if (tmp == nullptr) {
+			close(saved_fd);
+			saved_fd = -1;
 			return false;
 		}
-		close(fds[1]);
-		readfd = fds[0];
+		if (dup2(fileno(tmp), STDOUT_FILENO) < 0) {
+			std::fclose(tmp);
+			tmp = nullptr;
+			close(saved_fd);
+			saved_fd = -1;
+			return false;
+		}
 		return true;
 	}
 
 	std::vector<unsigned char> end()
 	{
 		std::vector<unsigned char> out;
-		unsigned char buf[4096];
-		ssize_t nr;
-
 		std::fflush(stdout);
-		while ((nr = read(readfd, buf, sizeof(buf))) > 0)
-			out.insert(out.end(), buf, buf + nr);
-		close(readfd);
-		readfd = -1;
-		dup2(saved, STDOUT_FILENO);
-		close(saved);
-		saved = -1;
+		if (tmp != nullptr) {
+			long pos = std::ftell(tmp);
+			if (pos > 0) {
+				std::rewind(tmp);
+				out.resize((size_t)pos);
+				if (std::fread(out.data(), 1, (size_t)pos, tmp) !=
+				    (size_t)pos)
+					out.clear();
+			}
+			std::fclose(tmp);
+			tmp = nullptr;
+		}
+		if (saved_fd >= 0) {
+			dup2(saved_fd, STDOUT_FILENO);
+			close(saved_fd);
+			saved_fd = -1;
+		}
 		return out;
 	}
 };
@@ -403,12 +408,18 @@ test_sizecmp(long sweep_n)
 	a.set_size(0);
 	b.set_size(1);
 	test_cmp_pair(st_sizecmp, ref_sizecmp, P::sizecmp, a, b, 0, "size gt");
+	test_cmp_pair(st_revsizecmp, ref_revsizecmp, P::revsizecmp, a, b, 0,
+	    "rev size gt");
 	b.set_size(-1);
 	test_cmp_pair(st_sizecmp, ref_sizecmp, P::sizecmp, a, b, 0, "size lt");
+	test_cmp_pair(st_revsizecmp, ref_revsizecmp, P::revsizecmp, a, b, 0,
+	    "rev size lt");
 	a.set_size(5);
 	b.set_size(5);
 	b.set_name("z");
 	test_cmp_pair(st_sizecmp, ref_sizecmp, P::sizecmp, a, b, 0, "tie");
+	test_cmp_pair(st_revsizecmp, ref_revsizecmp, P::revsizecmp, a, b, 0,
+	    "rev tie");
 
 	for (long i = 0; i < sweep_n; i++) {
 		char na[12], nb[12];
@@ -419,6 +430,8 @@ test_sizecmp(long sweep_n)
 		fb.set_size((off_t)rng.bits(-1000, 1000));
 		test_cmp_pair(st_sizecmp, ref_sizecmp, P::sizecmp, fa, fb, 0,
 		    "random");
+		test_cmp_pair(st_revsizecmp, ref_revsizecmp, P::revsizecmp, fa,
+		    fb, 0, "rev random");
 	}
 }
 
@@ -598,8 +611,8 @@ test_mastercmp_case(FtsNode &a, FtsNode &b, int listdir, int groupdir,
 	sync_master_flags(listdir, groupdir);
 	::ref_sortfcn = ref_namecmp;
 	P::sortfcn = P::namecmp;
-	const FTSENT *pa = &a.ent;
-	const FTSENT *pb = &b.ent;
+	const FTSENT *pa = a.ent;
+	const FTSENT *pb = b.ent;
 	int r1 = ref_mastercmp(&pa, &pb);
 	int r2 = P::mastercmp(&pa, &pb);
 	if (r1 != r2) {

@@ -144,7 +144,7 @@ _pthread_rwlockattr_init(pthread_rwlockattr_t *rwlockattr)
 	if (rwlockattr == NULL)
 		return (EINVAL);
 
-	prwlockattr = malloc(sizeof(struct pthread_rwlockattr));
+	prwlockattr = (pthread_rwlockattr_t)malloc(sizeof(struct pthread_rwlockattr));
 	if (prwlockattr == NULL)
 		return (ENOMEM);
 
@@ -224,7 +224,7 @@ _pthread_barrierattr_init(pthread_barrierattr_t *attr)
 	if (attr == NULL)
 		return (EINVAL);
 
-	if ((*attr = malloc(sizeof(struct pthread_barrierattr))) == NULL)
+	if ((*attr = (pthread_barrierattr_t)malloc(sizeof(struct pthread_barrierattr))) == NULL)
 		return (ENOMEM);
 
 	(*attr)->pshared = PTHREAD_PROCESS_PRIVATE;

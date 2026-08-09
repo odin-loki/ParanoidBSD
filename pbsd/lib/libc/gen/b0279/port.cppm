@@ -19,6 +19,14 @@ export module pbsd.lib.libc.gen.b0279;
 
 export namespace pbsd::lib_libc_gen::b0279 {
 
+#if !defined(__FreeBSD__)
+union semun {
+	int val;
+	struct semid_ds *buf;
+	unsigned short *array;
+};
+#endif
+
 #ifndef nitems
 #define	nitems(x)	(sizeof((x)) / sizeof((x)[0]))
 #endif
@@ -295,7 +303,7 @@ getlogin_r(char *logname, size_t namelen)
 
 	if (_getlogin(tmpname, sizeof(tmpname)) < 0)
 		return (errno);
-	len = strlen(tmpname) + 1;
+	len = std::strlen(tmpname) + 1;
 	if (len > namelen)
 		return (ERANGE);
 	strlcpy(logname, tmpname, len);
@@ -371,21 +379,23 @@ semctl(int semid, int semnum, int cmd, ...)
  */
 
 static const char * const cat_to_filenames[] = {
-	[EXTERR_CAT_FUSE_DEVICE] = "fs/fuse/fuse_device.c",
-	[EXTERR_CAT_FUSE_VFS] = "fs/fuse/fuse_vfsops.c",
-	[EXTERR_CAT_FUSE_VNOPS] = "fs/fuse/fuse_vnops.c",
-	[EXTERR_CAT_GEOM] = "geom/geom_subr.c",
-	[EXTERR_CAT_GEOMVFS] = "geom/geom_vfs.c",
-	[EXTERR_CAT_FILEDESC] = "kern/kern_descrip.c",
-	[EXTERR_CAT_PROCEXIT] = "kern/kern_exit.c",
-	[EXTERR_CAT_FORK] = "kern/kern_fork.c",
-	[EXTERR_CAT_GENIO] = "kern/sys_generic.c",
-	[EXTERR_CAT_VFSBIO] = "kern/vfs_bio.c",
-	[EXTERR_CAT_INOTIFY] = "kern/vfs_inotify.c",
-	[EXTERR_CAT_VFSSYSCALL] = "kern/vfs_syscalls.c",
-	[EXTERR_CAT_BRIDGE] = "net/if_bridge.c",
-	[EXTERR_CAT_SWAP] = "vm/swap_pager.c",
-	[EXTERR_CAT_MMAP] = "vm/vm_mmap.c",
+	NULL,
+	"vm/vm_mmap.c",
+	"kern/kern_descrip.c",
+	NULL,
+	"fs/fuse/fuse_vnops.c",
+	"kern/vfs_inotify.c",
+	"kern/sys_generic.c",
+	"net/if_bridge.c",
+	"vm/swap_pager.c",
+	"kern/vfs_syscalls.c",
+	"kern/vfs_bio.c",
+	"geom/geom_vfs.c",
+	"geom/geom_subr.c",
+	"fs/fuse/fuse_vfsops.c",
+	"fs/fuse/fuse_device.c",
+	"kern/kern_fork.c",
+	"kern/kern_exit.c",
 };
 
 static const char *
@@ -420,7 +430,7 @@ exterr_verbose_init(void)
 	if (issetugid()) {
 		exterror_verbose = EXTERR_VERBOSE_DEFAULT;
 	} else if ((v = getenv(exterror_verbose_name)) != NULL) {
-		exterror_verbose = strcmp(v, "brief") == 0 ?
+		exterror_verbose = std::strcmp(v, "brief") == 0 ?
 		    EXTERR_VERBOSE_ALLOW_BRIEF : EXTERR_VERBOSE_ALLOW_FULL;
 	} else {
 		exterror_verbose = EXTERR_VERBOSE_DEFAULT;

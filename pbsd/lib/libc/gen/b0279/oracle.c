@@ -39,6 +39,17 @@
 #include <sys/sem.h>
 #include <unistd.h>
 
+#if !defined(__FreeBSD__)
+union semun {
+	int val;
+	struct semid_ds *buf;
+	unsigned short *array;
+};
+#endif
+
+static size_t strlcpy(char *, const char *, size_t);
+static size_t strlcat(char *, const char *, size_t);
+
 /* ------------------------------------------------------------------ */
 /* Harness-controlled mocks                                           */
 /* ------------------------------------------------------------------ */
@@ -273,7 +284,7 @@ union IEEEl2bits {
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN OF ADVISED OF THE POSSIBILITY OF
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
 

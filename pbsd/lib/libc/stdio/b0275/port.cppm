@@ -17,7 +17,6 @@ module;
 
 #include <cassert>
 #include <cstddef>
-#include <cstdlib>
 #include <cstring>
 #include <stdarg.h>
 #include <unistd.h>
@@ -66,6 +65,8 @@ extern int strvisx(char *, const char *, size_t, int);
 extern int __printf_out(struct __printf_io *, const struct printf_info *,
     const char *, int);
 extern void __printf_flush(struct __printf_io *);
+extern void *malloc(size_t);
+extern void free(void *);
 }
 
 #define stdin pbsd_stdin
@@ -297,7 +298,7 @@ __printf_render_vis(struct __printf_io *io, const struct printf_info *pi, const 
 		l = pi->prec;
 	else
 		l = strlen(p);
-	buf = static_cast<char *>(std::malloc(l * 4 + 1));
+	buf = (char *)::malloc(l * 4 + 1);
 	if (buf == NULL)
 		return (-1);
 	if (pi->showsign)
@@ -310,7 +311,7 @@ __printf_render_vis(struct __printf_io *io, const struct printf_info *pi, const 
 		ret = strvisx(buf, p, l, VIS_WHITE | VIS_CSTYLE | VIS_OCTAL);
 	ret += __printf_out(io, pi, buf, ret);
 	__printf_flush(io);
-	free(buf);
+	::free(buf);
 	return(ret);
 }
 

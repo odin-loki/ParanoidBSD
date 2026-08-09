@@ -97,7 +97,8 @@ rm -rf gcm.cache b0277_run oracle.o port.o harness.o k_rem_pio2.o e_rem_pio2.o \
     k_sin.o k_cos.o invtrig.o "$MODULE_NAME.pcm"
 
 CFLAGS="-std=c11 -O2 -include $PREREQ -I$TMPDIR -I$LD80 -I$LIBC_INC -I$AMD64_INC"
-CXXFLAGS="-std=c++23 -O2 -include $PREREQ"
+CXXFLAGS_PORT="-std=c++23 -O2"
+CXXFLAGS_HARNESS="-std=c++23 -O2 -include $PREREQ"
 
 $CC $CFLAGS -c oracle.c -o oracle.o
 $CC $CFLAGS -c "$TMPDIR/k_rem_pio2.c" -o k_rem_pio2.o
@@ -110,23 +111,23 @@ $CC $CFLAGS -c "$LD80/invtrig.c" -o invtrig.o
 OBJS="oracle.o k_rem_pio2.o e_rem_pio2.o k_sin.o k_cos.o invtrig.o"
 
 if $CXX --version 2>&1 | grep -qi clang; then
-	$CXX $CXXFLAGS -x c++-module --precompile port.cppm \
+	$CXX $CXXFLAGS_PORT -x c++-module --precompile port.cppm \
 	    -o "$MODULE_NAME.pcm"
-	$CXX $CXXFLAGS -c "$MODULE_NAME.pcm" -o port.o
-	$CXX $CXXFLAGS -fmodule-file="$MODULE_NAME=$MODULE_NAME.pcm" \
+	$CXX $CXXFLAGS_PORT -c "$MODULE_NAME.pcm" -o port.o
+	$CXX $CXXFLAGS_HARNESS -fmodule-file="$MODULE_NAME=$MODULE_NAME.pcm" \
 	    -c harness.cpp -o harness.o
-	$CXX $CXXFLAGS $OBJS port.o harness.o -o b0277_run -lm
+	$CXX $CXXFLAGS_HARNESS $OBJS port.o harness.o -o b0277_run -lm
 else
 	MODFLAG=""
 	for f in -fmodules-ts -fmodules ""; do
-		if $CXX $CXXFLAGS $f -x c++ -fsyntax-only /dev/null >/dev/null 2>&1; then
+		if $CXX $CXXFLAGS_PORT $f -x c++ -fsyntax-only /dev/null >/dev/null 2>&1; then
 			MODFLAG=$f
 			break
 		fi
 	done
-	$CXX $CXXFLAGS $MODFLAG -x c++ -c port.cppm -o port.o
-	$CXX $CXXFLAGS $MODFLAG -c harness.cpp -o harness.o
-	$CXX $CXXFLAGS $MODFLAG $OBJS port.o harness.o -o b0277_run -lm
+	$CXX $CXXFLAGS_PORT $MODFLAG -x c++ -c port.cppm -o port.o
+	$CXX $CXXFLAGS_HARNESS $MODFLAG -c harness.cpp -o harness.o
+	$CXX $CXXFLAGS_HARNESS $MODFLAG $OBJS port.o harness.o -o b0277_run -lm
 fi
 
 exec ./b0277_run

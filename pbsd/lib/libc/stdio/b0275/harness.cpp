@@ -2,7 +2,13 @@
  * harness.cpp -- differential test for PBSD batch b0275.
  */
 
+#ifndef EOF
+#define EOF (-1)
+#endif
+
 #include <climits>
+#include <cstdarg>
+#include <cstdio>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -13,22 +19,29 @@ import pbsd.lib.libc.stdio.b0275;
 
 namespace P = pbsd::lib_libc_stdio::b0275;
 
-struct RefFILE {
-	unsigned char _pbsd_guard_lo[8];
-	int _orientation;
-	int _pbsd_lockdepth;
-	int _pbsd_lockseq;
-	unsigned char _pbsd_guard_hi[8];
-};
+using RefFILE = __pbsd_sFILE;
+using PrintfInfo = printf_info;
+using PrintfIo = __printf_io;
 
-using PrintfInfo = P::printf_info;
-using PrintfIo = P::__printf_io;
+static int
+harness_dprintf(const char *fmt, ...)
+{
+	char buf[512];
+	va_list ap;
+	int n;
+
+	va_start(ap, fmt);
+	n = vsnprintf(buf, sizeof(buf), fmt, ap);
+	va_end(ap);
+	if (n > 0)
+		(void)write(STDERR_FILENO, buf, (size_t)n);
+	return (n);
+}
 
 extern "C" {
 extern int __isthreaded;
 extern RefFILE mock_stdin_storage;
 extern RefFILE *pbsd_stdin;
-#define stdin pbsd_stdin
 
 extern int mock_flock_calls;
 extern int mock_funlock_calls;
@@ -111,7 +124,7 @@ record_fail(int fn, const char *msg)
 	fn_fail[fn]++;
 	if (fn_reported[fn] < 8) {
 		fn_reported[fn]++;
-		dprintf(STDERR_FILENO, "FAIL %s: %s\n", fn_name[fn], msg);
+		harness_dprintf("FAIL %s: %s\n", fn_name[fn], msg);
 	}
 }
 
@@ -483,7 +496,7 @@ test_sprintf_l_case(int fn, int mock_ret, size_t write_len,
 	fill_guard(ar.data, sizeof(ar.data));
 	fill_guard(ar.after, sizeof(ar.after));
 
-	ret_p = P::sprintf_l(ap.data, loc_p, fmt, 7);
+	ret_p = P::sprintf_l(ap.data, static_cast<P::locale_t>(loc_p), fmt, 7);
 	snap_p.ret = ret_p;
 	snap_p.last_str = mock_vsprintf_l_last_str;
 	snap_p.last_locale = mock_vsprintf_l_last_locale;
@@ -781,9 +794,9 @@ main(void)
 	test_arginfo_vis();
 	test_render_vis();
 
-	dprintf(STDERR_FILENO, "\n%-22s %10s %10s\n", "function", "cases", "failures");
+	harness_dprintf("\n%-22s %10s %10s\n", "function", "cases", "failures");
 	for (i = 0; i < FN_COUNT; i++) {
-		dprintf(STDERR_FILENO, "%-22s %10ld %10ld\n",
+		harness_dprintf("%-22s %10ld %10ld\n",
 		    fn_name[i], fn_cases[i], fn_fail[i]);
 		if (fn_fail[i] != 0)
 			any_fail = 1;

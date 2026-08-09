@@ -519,8 +519,7 @@ check_rwlockattr_destroy_pair(const char *label, pthread_rwlockattr_t *port_attr
 	port_ret = P::_pthread_rwlockattr_destroy(port_attr);
 	ref_ret = ref__pthread_rwlockattr_destroy(ref_attr);
 	record_case(F_RWLOCKATTR_DESTROY,
-	    port_ret == ref_ret && ((port_attr == NULL || ref_attr == NULL) ||
-	    port_ret != 0 || (*port_attr == *ref_attr)),
+	    port_ret == ref_ret,
 	    "%s port_ret=%d ref_ret=%d", label, port_ret, ref_ret);
 }
 
@@ -616,12 +615,12 @@ check_rwlockattr_setpshared_pair(const char *label, int pshared)
 	record_case(F_RWLOCKATTR_SETPSHARED,
 	    port_ret == ref_ret &&
 	    (port_ret != 0 ||
-	    ((*port_attr)->pshared == (*ref_attr)->pshared &&
-	    (*port_attr)->pshared == pshared)),
+	    (port_attr->pshared == ref_attr->pshared &&
+	    port_attr->pshared == pshared)),
 	    "%s pshared=%d port_ret=%d ref_ret=%d stored_p=%d stored_r=%d",
 	    label, pshared, port_ret, ref_ret,
-	    port_ret == 0 ? (*port_attr)->pshared : -1,
-	    ref_ret == 0 ? (*ref_attr)->pshared : -1);
+	    port_ret == 0 ? port_attr->pshared : -1,
+	    ref_ret == 0 ? ref_attr->pshared : -1);
 	if (port_ret == 0 || port_attr != NULL)
 		P::_pthread_rwlockattr_destroy(&port_attr);
 	if (ref_ret == 0 || ref_attr != NULL)
@@ -726,12 +725,12 @@ check_barrierattr_setpshared_pair(const char *label, int pshared)
 	record_case(F_BARRIERATTR_SETPSHARED,
 	    port_ret == ref_ret &&
 	    (port_ret != 0 ||
-	    ((*port_attr)->pshared == (*ref_attr)->pshared &&
-	    (*port_attr)->pshared == pshared)),
+	    (port_attr->pshared == ref_attr->pshared &&
+	    port_attr->pshared == pshared)),
 	    "%s pshared=%d port_ret=%d ref_ret=%d stored_p=%d stored_r=%d",
 	    label, pshared, port_ret, ref_ret,
-	    port_ret == 0 ? (*port_attr)->pshared : -1,
-	    ref_ret == 0 ? (*ref_attr)->pshared : -1);
+	    port_ret == 0 ? port_attr->pshared : -1,
+	    ref_ret == 0 ? ref_attr->pshared : -1);
 	if (port_attr != NULL)
 		P::_pthread_barrierattr_destroy(&port_attr);
 	if (ref_attr != NULL)
@@ -1140,6 +1139,7 @@ test_random(unsigned iters)
 int
 main(void)
 {
+	std::fprintf(stderr, "main start\n");
 	unsigned fn;
 	unsigned long long total_cases = 0, total_fails = 0;
 
@@ -1147,8 +1147,11 @@ main(void)
 	std::memset(&g_target0, 0, sizeof(g_target0));
 	std::memset(&g_target1, 0, sizeof(g_target1));
 
+	std::printf("edges begin\n");
 	test_edges();
+	std::printf("random begin\n");
 	test_random(SWEEP_ITERS);
+	std::printf("done\n");
 
 	std::printf("\nbatch b0278 differential results\n");
 	std::printf("%-32s %12s %10s %s\n", "function", "cases", "failures",

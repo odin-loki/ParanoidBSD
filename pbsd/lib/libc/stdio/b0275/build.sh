@@ -28,6 +28,6 @@ else
 	$CXX -std=c++23 -O2 -fmodules-ts -c harness.cpp -o harness.o
 fi
 
-$CXX -std=c++23 -O2 -Wl,--wrap=malloc -o harness harness.o port.o oracle.o
+$CXX -std=c++23 -O2 -Wl,--wrap=malloc -o harness harness.o oracle.o port.o
 
 exec ./harness

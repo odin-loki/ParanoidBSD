@@ -429,46 +429,85 @@ write_pat_file(const char *path, int variant)
 	std::fclose(f);
 }
 
+static void
+rm_rf_dir(const char *dir)
+{
+	char cmd[256];
+	std::snprintf(cmd, sizeof(cmd), "rm -rf '%s'", dir);
+	(void)::system(cmd);
+}
+
 static int
 run_main_subprocess(bool port_side, const char *types, const char *pat, char **out_h,
     size_t *out_hl, char **out_c, size_t *out_cl)
 {
-	pid_t pid = fork();
-	if (pid < 0)
+	char dir[] = "/tmp/b0230_run_XXXXXX";
+	char cwd[1024];
+
+	if (!::mkdtemp(dir))
 		return -1;
+	if (::getcwd(cwd, sizeof(cwd)) == nullptr) {
+		rm_rf_dir(dir);
+		return -1;
+	}
+	if (::chdir(dir) != 0) {
+		rm_rf_dir(dir);
+		return -1;
+	}
+
+	pid_t pid = fork();
+	if (pid < 0) {
+		::chdir(cwd);
+		rm_rf_dir(dir);
+		return -1;
+	}
 	if (pid == 0) {
-		char tpath[64], ppath[64];
-		std::snprintf(tpath, sizeof(tpath), "%s", types);
-		std::snprintf(ppath, sizeof(ppath), "%s", pat);
-		char *argv[] = { (char *)"mknodes", tpath, ppath, nullptr };
-		if (port_side)
+		char *argv[] = { (char *)"mknodes", (char *)types, (char *)pat, nullptr };
+		if (port_side) {
+			P::port_mknodes_reset();
 			P::mknodes_main(3, argv);
-		else
+		} else {
+			oracle_mknodes_reset();
 			ref_mknodes_main(3, argv);
+		}
 		_exit(0);
 	}
 	int st = 0;
 	waitpid(pid, &st, 0);
-	if (!WIFEXITED(st) || WEXITSTATUS(st) != 0)
+	if (!WIFEXITED(st) || WEXITSTATUS(st) != 0) {
+		::chdir(cwd);
+		rm_rf_dir(dir);
 		return -1;
+	}
 	FILE *hf = std::fopen("nodes.h", "r");
 	FILE *cf = std::fopen("nodes.c", "r");
-	if (!hf || !cf)
+	if (!hf || !cf) {
+		if (hf)
+			std::fclose(hf);
+		if (cf)
+			std::fclose(cf);
+		::chdir(cwd);
+		rm_rf_dir(dir);
 		return -1;
+	}
 	std::fseek(hf, 0, SEEK_END);
 	*out_hl = (size_t)std::ftell(hf);
 	std::fseek(hf, 0, SEEK_SET);
 	*out_h = (char *)std::malloc(*out_hl + 1);
-	std::fread(*out_h, 1, *out_hl, hf);
+	if (*out_hl)
+		(void)std::fread(*out_h, 1, *out_hl, hf);
 	(*out_h)[*out_hl] = '\0';
 	std::fclose(hf);
 	std::fseek(cf, 0, SEEK_END);
 	*out_cl = (size_t)std::ftell(cf);
 	std::fseek(cf, 0, SEEK_SET);
 	*out_c = (char *)std::malloc(*out_cl + 1);
-	std::fread(*out_c, 1, *out_cl, cf);
+	if (*out_cl)
+		(void)std::fread(*out_c, 1, *out_cl, cf);
 	(*out_c)[*out_cl] = '\0';
 	std::fclose(cf);
+	::chdir(cwd);
+	rm_rf_dir(dir);
 	return 0;
 }
 
@@ -587,48 +626,66 @@ build_tree_both(const char *const *lines)
 }
 
 static int
+read_nodes_files(char **h, size_t *hl, char **c, size_t *cl)
+{
+	FILE *hf = std::fopen("nodes.h", "r");
+	FILE *cf = std::fopen("nodes.c", "r");
+	if (!hf || !cf) {
+		if (hf)
+			std::fclose(hf);
+		if (cf)
+			std::fclose(cf);
+		return -1;
+	}
+	std::fseek(hf, 0, SEEK_END);
+	*hl = (size_t)std::ftell(hf);
+	std::fseek(hf, 0, SEEK_SET);
+	*h = (char *)std::malloc(*hl + 1);
+	if (*hl)
+		(void)std::fread(*h, 1, *hl, hf);
+	(*h)[*hl] = '\0';
+	std::fclose(hf);
+	std::fseek(cf, 0, SEEK_END);
+	*cl = (size_t)std::ftell(cf);
+	std::fseek(cf, 0, SEEK_SET);
+	*c = (char *)std::malloc(*cl + 1);
+	if (*cl)
+		(void)std::fread(*c, 1, *cl, cf);
+	(*c)[*cl] = '\0';
+	std::fclose(cf);
+	return 0;
+}
+
+static int
 run_output_both(const char *patpath, char **rh, size_t *rhl, char **rc, size_t *rcl,
     char **ph, size_t *phl, char **pc, size_t *pcl)
 {
-	ref_mknodes_output((char *)patpath);
-	FILE *hf = std::fopen("nodes.h", "r");
-	FILE *cf = std::fopen("nodes.c", "r");
-	if (!hf || !cf)
+	char dir[] = "/tmp/b0230_out_XXXXXX";
+	char cwd[1024];
+
+	if (!::mkdtemp(dir))
 		return -1;
-	std::fseek(hf, 0, SEEK_END);
-	*rhl = (size_t)std::ftell(hf);
-	std::fseek(hf, 0, SEEK_SET);
-	*rh = (char *)std::malloc(*rhl + 1);
-	std::fread(*rh, 1, *rhl, hf);
-	(*rh)[*rhl] = '\0';
-	std::fclose(hf);
-	std::fseek(cf, 0, SEEK_END);
-	*rcl = (size_t)std::ftell(cf);
-	std::fseek(cf, 0, SEEK_SET);
-	*rc = (char *)std::malloc(*rcl + 1);
-	std::fread(*rc, 1, *rcl, cf);
-	(*rc)[*rcl] = '\0';
-	std::fclose(cf);
+	if (::getcwd(cwd, sizeof(cwd)) == nullptr)
+		return -1;
+	if (::chdir(dir) != 0)
+		return -1;
+
+	ref_mknodes_output((char *)patpath);
+	if (read_nodes_files(rh, rhl, rc, rcl) != 0) {
+		::chdir(cwd);
+		rm_rf_dir(dir);
+		return -1;
+	}
 
 	P::mknodes_output((char *)patpath);
-	hf = std::fopen("nodes.h", "r");
-	cf = std::fopen("nodes.c", "r");
-	if (!hf || !cf)
+	if (read_nodes_files(ph, phl, pc, pcl) != 0) {
+		::chdir(cwd);
+		rm_rf_dir(dir);
 		return -1;
-	std::fseek(hf, 0, SEEK_END);
-	*phl = (size_t)std::ftell(hf);
-	std::fseek(hf, 0, SEEK_SET);
-	*ph = (char *)std::malloc(*phl + 1);
-	std::fread(*ph, 1, *phl, hf);
-	(*ph)[*phl] = '\0';
-	std::fclose(hf);
-	std::fseek(cf, 0, SEEK_END);
-	*pcl = (size_t)std::ftell(cf);
-	std::fseek(cf, 0, SEEK_SET);
-	*pc = (char *)std::malloc(*pcl + 1);
-	std::fread(*pc, 1, *pcl, cf);
-	(*pc)[*pcl] = '\0';
-	std::fclose(cf);
+	}
+
+	::chdir(cwd);
+	rm_rf_dir(dir);
 	return 0;
 }
 

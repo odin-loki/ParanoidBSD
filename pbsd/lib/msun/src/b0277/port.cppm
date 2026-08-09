@@ -1,11 +1,34 @@
 module;
 
+#include <cfloat>
 #include <cmath>
 #include <cstdint>
 
 export module pbsd.lib.msun.src.b0277;
 
-namespace pbsd::lib_msun_src::b0277::detail {
+extern "C" {
+extern const long double _ItL_pS0, _ItL_pS1, _ItL_pS2, _ItL_pS3, _ItL_pS4,
+    _ItL_pS5, _ItL_pS6;
+extern const long double _ItL_qS1, _ItL_qS2, _ItL_qS3, _ItL_qS4, _ItL_qS5;
+extern const long double _ItL_atanhi[], _ItL_atanlo[];
+}
+
+namespace {
+
+typedef union {
+	double value;
+	struct {
+		std::uint32_t lsw;
+		std::uint32_t msw;
+	} parts;
+} ieee_double_shape_type;
+
+#define GET_HIGH_WORD(i, d)						\
+do {									\
+	ieee_double_shape_type gh_u;					\
+	gh_u.value = (d);						\
+	(i) = (int32_t)gh_u.parts.msw;					\
+} while (0)
 
 union IEEEf2bits {
 	float	f;
@@ -56,12 +79,7 @@ union IEEEl2bits {
 #define	pio2_hi	atanhi[3]
 #define	pio2_lo	atanlo[3]
 
-extern const long double _ItL_pS0, _ItL_pS1, _ItL_pS2, _ItL_pS3, _ItL_pS4,
-    _ItL_pS5, _ItL_pS6;
-extern const long double _ItL_qS1, _ItL_qS2, _ItL_qS3, _ItL_qS4, _ItL_qS5;
-extern const long double _ItL_atanhi[], _ItL_atanlo[];
-
-static inline long double
+inline long double
 P(long double x)
 {
 
@@ -69,22 +87,12 @@ P(long double x)
 		(pS4 + x * (pS5 + x * pS6)))))));
 }
 
-static inline long double
+inline long double
 Q(long double x)
 {
 
 	return (1.0 + x * (qS1 + x * (qS2 + x * (qS3 + x * (qS4 + x * qS5)))));
 }
-
-extern "C" {
-double __kernel_sin(double, double, int);
-double __kernel_cos(double, double);
-int __ieee754_rem_pio2(double, double *);
-}
-
-} // namespace pbsd::lib_msun_src::b0277::detail
-
-namespace {
 
 static const long double
 one=  1.00000000000000000000e+00;
@@ -101,6 +109,12 @@ pi =  3.14159265358979323846264338327950280e+00L;
 #endif
 
 } // namespace
+
+extern "C" {
+double __kernel_sin(double, double, int);
+double __kernel_cos(double, double);
+int __ieee754_rem_pio2(double, double *);
+}
 
 export namespace pbsd::lib_msun_src::b0277 {
 
@@ -132,10 +146,10 @@ export namespace pbsd::lib_msun_src::b0277 {
  * SUCH DAMAGE.
  */
 
-export float
+float
 fmaximum_magf(float x, float y)
 {
-	detail::IEEEf2bits u[2];
+	IEEEf2bits u[2];
 
 	u[0].f = x;
 	u[1].f = y;
@@ -148,7 +162,7 @@ fmaximum_magf(float x, float y)
 	float ax = fabsf(x);
 	float ay = fabsf(y);
 
-	if (ay > ax)
+	if (ay <= ax)
 		return (y);
 	if (ax > ay)
 		return (x);
@@ -177,36 +191,36 @@ fmaximum_magf(float x, float y)
  * Converted to long double by David Schultz <das@FreeBSD.ORG>.
  */
 
-export long double
+long double
 acosl(long double x)
 {
-	detail::IEEEl2bits u;
+	IEEEl2bits u;
 	long double z,p,q,r,w,s,c,df;
 	int16_t expsign, expt;
 	u.e = x;
 	expsign = u.xbits.expsign;
 	expt = expsign & 0x7fff;
-	if(expt >= detail::BIAS) {	/* |x| >= 1 */
-	    if(expt==detail::BIAS && ((u.bits.manh&~detail::LDBL_NBIT)|u.bits.manl)==0) {
+	if(expt >= BIAS) {	/* |x| >= 1 */
+	    if(expt==BIAS && ((u.bits.manh&~LDBL_NBIT)|u.bits.manl)==0) {
 		if (expsign>0) return 0.0;	/* acos(1) = 0  */
-		else return pi+2.0*detail::pio2_lo;	/* acos(-1)= pi */
+		else return pi+2.0*pio2_lo;	/* acos(-1)= pi */
 	    }
 	    return (x-x)/(x-x);		/* acos(|x|>1) is NaN */
 	}
-	if(expt<detail::BIAS-1) {	/* |x| < 0.5 */
-	    if(expt<detail::ACOS_CONST) return detail::pio2_hi+detail::pio2_lo;/*x tiny: acosl=pi/2*/
+	if(expt<BIAS-1) {	/* |x| < 0.5 */
+	    if(expt<ACOS_CONST) return pio2_hi+pio2_lo;/*x tiny: acosl=pi/2*/
 	    z = x*x;
-	    p = detail::P(z);
-	    q = detail::Q(z);
+	    p = P(z);
+	    q = Q(z);
 	    r = p/q;
-	    return detail::pio2_hi - (x - (detail::pio2_lo-x*r));
+	    return pio2_hi - (x - (pio2_lo-x*r));
 	} else  if (expsign<0) {	/* x < -0.5 */
 	    z = (one+x)*0.5;
-	    p = detail::P(z);
-	    q = detail::Q(z);
+	    p = P(z);
+	    q = Q(z);
 	    s = sqrtl(z);
 	    r = p/q;
-	    w = r*s-detail::pio2_lo;
+	    w = r*s-pio2_lo;
 	    return pi - 2.0*(s+w);
 	} else {			/* x > 0.5 */
 	    z = (one-x)*0.5;
@@ -215,8 +229,8 @@ acosl(long double x)
 	    u.bits.manl = 0;
 	    df = u.e;
 	    c  = (z-df*df)/(s+df);
-	    p = detail::P(z);
-	    q = detail::Q(z);
+	    p = P(z);
+	    q = Q(z);
 	    r = p/q;
 	    w = r*s+c;
 	    return 2.0*(df+w);
@@ -234,7 +248,7 @@ acosl(long double x)
  * ====================================================
  */
 
-export double
+double
 sin(double x)
 {
 	double y[2],z=0.0;
@@ -248,7 +262,7 @@ sin(double x)
 	if(ix <= 0x3fe921fb) {
 	    if(ix<0x3e500000)			/* |x| < 2**-26 */
 	       {if((int)x==0) return x;}	/* generate inexact */
-	    return detail::__kernel_sin(x,z,0);
+	    return __kernel_sin(x,z,0);
 	}
 
     /* sin(Inf or NaN) is NaN */
@@ -256,13 +270,13 @@ sin(double x)
 
     /* argument reduction needed */
 	else {
-	    n = detail::__ieee754_rem_pio2(x,y);
+	    n = __ieee754_rem_pio2(x,y);
 	    switch(n&3) {
-		case 0: return  detail::__kernel_sin(y[0],y[1],1);
-		case 1: return  detail::__kernel_cos(y[0],y[1]);
-		case 2: return -detail::__kernel_sin(y[0],y[1],1);
+		case 0: return  __kernel_sin(y[0],y[1],1);
+		case 1: return  __kernel_cos(y[0],y[1]);
+		case 2: return -__kernel_sin(y[0],y[1],1);
 		default:
-			return -detail::__kernel_cos(y[0],y[1]);
+			return -__kernel_cos(y[0],y[1]);
 	    }
 	}
 }

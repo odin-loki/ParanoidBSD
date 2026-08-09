@@ -1184,7 +1184,13 @@ void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
 	static unsigned char k[] = { 1, 2, 3 };
 	static unsigned char v[] = { 4, 5 };
 	setup_pair_page(op_init, 512, k, 3, v, 2, 0);
+	guard_fill(op_init, BUF_CAP);
 	page_init_raw(512, np_init);
+	guard_fill(np_init, BUF_CAP);
+	guard_fill(opa, BUF_CAP);
+	guard_fill(opb, BUF_CAP);
+	guard_fill(npa, BUF_CAP);
+	guard_fill(npb, BUF_CAP);
 	std::memcpy(opa, op_init, 512);
 	std::memcpy(npa, np_init, 512);
 
@@ -1200,10 +1206,6 @@ void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
 
 	int rp = P::__split_page(&hp, ob, nb);
 
-	if (std::strcmp(tag, "stay") == 0)
-		std::fprintf(stderr, "pre-ref npa[512]=%u calls=%u ret=%u\n",
-		    (unsigned)npa[512], hash_mock.call_hash_calls, (unsigned)rp);
-
 	std::memcpy(opb, op_init, 512);
 	std::memcpy(npb, np_init, 512);
 	hash_mock_reset();
@@ -1216,30 +1218,16 @@ void test_split_page_once(u_int32_t ob, u_int32_t nb, int hashret,
 	std::snprintf(msg, sizeof msg, "%s ob=%u nb=%u hr=%d rp=%d rr=%d", tag,
 	    (unsigned)ob, (unsigned)nb, hashret, rp, rr);
 	check_eq(F_SPLIT_PAGE, rp == rr, msg);
-	if (rp == 0 && rr == 0) {
-		bool ok = bufs_eq(opa, opb, BUF_CAP) && bufs_eq(npa, npb, BUF_CAP);
-		if (!ok && reported[F_SPLIT_PAGE] < 3) {
-			size_t di = 0;
-			for (; di < BUF_CAP && opa[di] == opb[di]; di++)
-				;
-			std::fprintf(stderr,
-			    "split diff %s: first op diff at %zu opa=%u opb=%u\n",
-			    tag, di, (unsigned)opa[di], (unsigned)opb[di]);
-			di = 0;
-			for (; di < BUF_CAP && npa[di] == npb[di]; di++)
-				;
-			std::fprintf(stderr,
-			    "split diff %s: first np diff at %zu npa=%u npb=%u\n",
-			    tag, di, (unsigned)npa[di], (unsigned)npb[di]);
-		}
-		check_eq(F_SPLIT_PAGE, ok, "page bytes");
-	}
+	if (rp == 0 && rr == 0)
+		check_eq(F_SPLIT_PAGE,
+		    bufs_eq(opa, opb, BUF_CAP) && bufs_eq(npa, npb, BUF_CAP),
+		    "page bytes");
 }
 
 void edge_split_page()
 {
-	test_split_page_once(1, 2, 0, "stay");
-	test_split_page_once(1, 2, 1, "move");
+	test_split_page_once(1, 2, 1, "stay");
+	test_split_page_once(1, 2, 0, "move");
 	unsigned char opa[BUF_CAP], opb[BUF_CAP];
 	unsigned char npa[BUF_CAP], npb[BUF_CAP];
 	unsigned char op_init[BUF_CAP], np_init[BUF_CAP];
