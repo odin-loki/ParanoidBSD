@@ -248,19 +248,6 @@ typedef struct {
 	unsigned int	call_idx;
 } pbsd_ctor_hook_t;
 
-static inline long
-port_atomic_fetchadd_long(volatile long *p, long v)
-{
-	return __atomic_fetch_add(p, v, __ATOMIC_SEQ_CST);
-}
-
-static inline void
-port_atomic_add_long(volatile long *p, long v)
-{
-	__atomic_fetch_add(p, v, __ATOMIC_SEQ_CST);
-}
-
-
 extern pbsd_part_load_hook_t pbsd_part_load_hook;
 extern pbsd_rune_hook_t pbsd_rune_hook;
 extern pbsd_setlocale_hook_t pbsd_setlocale_hook;
@@ -305,6 +292,12 @@ int port_has_thread_locale = 0;
 thread_local pbsd_locale_t port_thread_locale = NULL;
 
 static inline void
+port_atomic_add_long(volatile long *p, long v)
+{
+	__atomic_fetch_add(p, v, __ATOMIC_SEQ_CST);
+}
+
+static inline void
 port_atomic_add_long_once(volatile long *p, long v)
 {
 	__atomic_fetch_add(p, v, __ATOMIC_SEQ_CST);
@@ -338,8 +331,8 @@ port_xlocale_release(void *val)
 static inline pbsd_locale_t port_get_real_locale(pbsd_locale_t locale)
 {
 	switch ((intptr_t)locale) {
-	case 0: return (&port_C_locale);
-	case -1: return (&port_global_locale);
+	case 0: return (&::port_C_locale);
+	case -1: return (&::port_global_locale);
 	default: return (locale);
 	}
 }
@@ -348,9 +341,9 @@ static inline pbsd_locale_t port_get_real_locale(pbsd_locale_t locale)
 
 static pbsd_locale_t port_get_locale(void)
 {
-	if (!port_has_thread_locale || port_thread_locale == NULL)
-		return (&port_global_locale);
-	return (port_thread_locale);
+	if (!::port_has_thread_locale || ::port_thread_locale == NULL)
+		return (&::port_global_locale);
+	return (::port_thread_locale);
 }
 
 
@@ -440,7 +433,7 @@ cnv(const char *str)
 static void
 destruct_monetary(void *v)
 {
-	struct xlocale_monetary *l = v;
+	struct xlocale_monetary *l = (struct xlocale_monetary *)v;
 	if (l->buffer)
 		free(l->buffer);
 	free(l);
@@ -502,15 +495,16 @@ monetary_load_locale_l(struct xlocale_monetary *loc, int *using_locale,
 int
 __monetary_load_locale(const char *name)
 {
-	return (monetary_load_locale_l(&port_global_monetary,
-	    &port_global_locale.using_monetary_locale,
-	    &port_global_locale.monetary_locale_changed, name));
+	return (monetary_load_locale_l(&::port_global_monetary,
+	    &::port_global_locale.using_monetary_locale,
+	    &::port_global_locale.monetary_locale_changed, name));
 }
 
 void *
 __monetary_load(const char *name, locale_t l)
 {
-	struct xlocale_monetary *new = calloc(sizeof(struct xlocale_monetary),
+#define new monetary_new_ptr
+	struct xlocale_monetary *new = (struct xlocale_monetary *)calloc(sizeof(struct xlocale_monetary),
 	    1);
 	if (new == NULL)
 		return (NULL);
@@ -521,6 +515,7 @@ __monetary_load(const char *name, locale_t l)
 		return (NULL);
 	}
 	return (new);
+#undef new
 }
 
 struct lc_monetary_T *
@@ -614,7 +609,7 @@ _Read_RuneMagi(const char *fname)
 	}
 
 
-	fdata = mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+	fdata = (char *)mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 	(void) _close(fd);
 	if (fdata == MAP_FAILED) {
 		errno = EINVAL;
@@ -654,7 +649,7 @@ _Read_RuneMagi(const char *fname)
 
 		if (frr[x].map == 0) {
 			int len = frr[x].max - frr[x].min + 1;
-			types = variable;
+			types = (uint32_t *)variable;
 			variable = types + len;
 			runetype_ext_len += len;
 			if (variable > lastp) {
@@ -670,7 +665,7 @@ _Read_RuneMagi(const char *fname)
 	/*
 	 * Convert from disk format to host format.
 	 */
-	data = malloc(sizeof(_RuneLocale) +
+	data = (char *)malloc(sizeof(_RuneLocale) +
 	    (frl->runetype_ext_nranges + frl->maplower_ext_nranges +
 	    frl->mapupper_ext_nranges) * sizeof(_RuneEntry) +
 	    runetype_ext_len * sizeof(*rr->__types) + frl->variable_len);
@@ -681,7 +676,7 @@ _Read_RuneMagi(const char *fname)
 		return (NULL);
 	}
 
-	rl = (_RuneLocale *)data;
+	rl = (_RuneLocale *)(void *)data;
 	rl->__variable = rl + 1;
 
 	memcpy(rl->__magic, _RUNE_MAGIC_1, sizeof(rl->__magic));
@@ -721,9 +716,9 @@ _Read_RuneMagi(const char *fname)
 		rr[x].__map = frr[x].map;
 		if (rr[x].__map == 0) {
 			int len = rr[x].__max - rr[x].__min + 1;
-			types = variable;
+			types = (uint32_t *)variable;
 			variable = types + len;
-			rr[x].__types = rl->__variable;
+			rr[x].__types = (unsigned long *)rl->__variable;
 			rl->__variable = rr[x].__types + len;
 			while (len-- > 0)
 				rr[x].__types[len] = types[len];
@@ -854,7 +849,7 @@ static char current_locale_string[_LC_LAST * (ENCODING_LEN + 1/*"/"*/ + 1)];
 
 static char *currentlocale(void);
 static char *loadlocale(int);
-const char *port_get_locale_env(int);
+const char *__get_locale_env(int);
 
 char *
 setlocale(int category, const char *locale)
@@ -882,7 +877,7 @@ setlocale(int category, const char *locale)
 	if (!*locale) {
 		if (category == LC_ALL) {
 			for (i = 1; i < _LC_LAST; ++i) {
-				env = port_get_locale_env(i);
+				env = __get_locale_env(i);
 				if (strlen(env) > ENCODING_LEN) {
 					errno = EINVAL;
 					return (NULL);
@@ -890,7 +885,7 @@ setlocale(int category, const char *locale)
 				(void)strcpy(new_categories[i], env);
 			}
 		} else {
-			env = port_get_locale_env(category);
+			env = __get_locale_env(category);
 			if (strlen(env) > ENCODING_LEN) {
 				errno = EINVAL;
 				return (NULL);
@@ -986,6 +981,7 @@ currentlocale(void)
 static char *
 loadlocale(int category)
 {
+#define new loadlocale_new_ptr
 	char *new = new_categories[category];
 	char *old = current_categories[category];
 	int (*func) (const char *);
@@ -1032,15 +1028,13 @@ loadlocale(int category)
 
 	if (func(new) != _LDP_ERROR) {
 		(void)strcpy(old, new);
-		(void)strcpy(port_global_locale.components[category-1]->locale, new);
+		(void)strcpy(::port_global_locale.components[category-1]->locale, new);
 		return (old);
 	}
 
 	return (NULL);
+#undef new
 }
-
-const char *
-port_get_locale_env(int category)
 {
 	const char *env;
 
@@ -1063,23 +1057,23 @@ port_get_locale_env(int category)
 }
 
 /*
- * Detect locale storage location and store its value to port_PathLocale variable
+ * Detect locale storage location and store its value to ::port_PathLocale variable
  */
 int
 __detect_path_locale(void)
 {
-	if (port_PathLocale == NULL) {
+	if (::port_PathLocale == NULL) {
 		char *p = secure_getenv("PATH_LOCALE");
 
 		if (p != NULL) {
 			if (strlen(p) + 1/*"/"*/ + ENCODING_LEN +
 			    1/*"/"*/ + CATEGORY_LEN >= PATH_MAX)
 				return (ENAMETOOLONG);
-			port_PathLocale = strdup(p);
-			if (port_PathLocale == NULL)
+			::port_PathLocale = strdup(p);
+			if (::port_PathLocale == NULL)
 				return (errno == 0 ? ENOMEM : errno);
 		} else
-			port_PathLocale = _PATH_LOCALE;
+			::port_PathLocale = _PATH_LOCALE;
 	}
 	return (0);
 }
@@ -1132,7 +1126,7 @@ __detect_path_locale(void)
 /*
  * The locale for this thread.
  */
-_Thread_local locale_t port_thread_locale;
+_Thread_local locale_t ::port_thread_locale;
 
 /*
  * Flag indicating that one or more per-thread locales exist.
@@ -1141,8 +1135,10 @@ _Thread_local locale_t port_thread_locale;
 /*
  * Private functions in setlocale.c.
  */
-const char *port_get_locale_env(int category);
+const char *__get_locale_env(int category);
 int __detect_path_locale(void);
+
+} // namespace - temp close for file-scope locale defs
 
 struct _xlocale port_global_locale = {
 	{0},
@@ -1172,6 +1168,8 @@ struct _xlocale port_C_locale = {
 	1,
 	0
 };
+
+export namespace pbsd::lib_libc_locale::b0332 {
 
 static void *(*constructors[])(const char *, locale_t) =
 {
@@ -1204,7 +1202,7 @@ init_key(void)
 		fake_tls = 1;
 	}
 	/* At least one per-thread locale has now been set. */
-	port_has_thread_locale = 1;
+	::port_has_thread_locale = 1;
 	__detect_path_locale();
 }
 
@@ -1239,7 +1237,7 @@ set_thread_locale(locale_t loc)
 	} else {
 		pthread_setspecific(locale_info_key, l);
 	}
-	port_thread_locale = l;
+	::port_thread_locale = l;
 	__set_thread_rune_locale(loc);
 }
 
@@ -1250,7 +1248,7 @@ set_thread_locale(locale_t loc)
 static void
 destruct_locale(void *l)
 {
-	locale_t loc = l;
+	locale_t loc = (locale_t)l;
 
 	for (int type=0 ; type<XLC_LAST ; type++) {
 		if (loc->components[type]) {
@@ -1296,7 +1294,7 @@ dupcomponent(int type, locale_t base, locale_t new)
 	 */
 	struct xlocale_component *src = base->components[type];
 
-	if (&port_global_locale == base) {
+	if (&::port_global_locale == base) {
 		new->components[type] = constructors[type](src->locale, new);
 		if (new->components[type]) {
 			strncpy(new->components[type]->locale, src->locale,
@@ -1350,7 +1348,7 @@ newlocale(int mask, const char *locale, locale_t base)
 	for (type=0 ; type<XLC_LAST ; type++) {
 		if (mask & 1) {
 			if (useenv) {
-				realLocale = port_get_locale_env(type + 1);
+				realLocale = __get_locale_env(type + 1);
 			}
 			new->components[type] =
 			     constructors[type](realLocale, new);
@@ -1415,7 +1413,7 @@ freelocale(locale_t loc)
 	 * actually do anything.
 	 */
 	if (loc != NULL && loc != LC_GLOBAL_LOCALE &&
-	    loc != &port_global_locale)
+	    loc != &::port_global_locale)
 		port_xlocale_release(loc);
 }
 

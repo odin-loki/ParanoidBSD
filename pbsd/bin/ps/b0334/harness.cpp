@@ -12,12 +12,23 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <setjmp.h>
+#include <grp.h>
+#include <pwd.h>
 
 import pbsd.bin.ps.b0334;
 
 namespace P = pbsd::bin_ps::b0334;
+
+#define STAILQ_INIT(h) do { \
+	(h)->stqh_first = nullptr; (h)->stqh_last = &(h)->stqh_first; } while (0)
+#define STAILQ_INSERT_TAIL(h, e, f) do { \
+	(e)->f.stqe_next = nullptr; *(h)->stqh_last = (e); \
+	(h)->stqh_last = &(e)->f.stqe_next; } while (0)
+#define STAILQ_FIRST(h) ((h)->stqh_first)
+#define STAILQ_NEXT(e, f) ((e)->f.stqe_next)
 
 /* ------------------------------------------------------------------ */
 /* Oracle / mock state                                                */
@@ -297,6 +308,7 @@ int b0334_getopt(int argc, char *const argv[], const char *optstring)
 
 static P::kinfo_proc g_kprocs[64];
 static int g_kproc_count = 0;
+typedef void *kvm_t;
 static kvm_t g_kd_storage;
 static int g_kvm_open_fail = 0;
 static int g_kvm_nentries = 0;
@@ -420,23 +432,8 @@ extern "C" void __wrap_exit(int code)
 	::_exit(code);
 }
 
-/* STAILQ for harness C++ side */
-#define STAILQ_HEAD(name, type) \
-	struct name { struct type *stqh_first; struct type **stqh_last; }
-#define STAILQ_ENTRY(type) struct { struct type *stqe_next; }
-#define STAILQ_FIRST(h) ((h)->stqh_first)
-#define STAILQ_NEXT(e, f) ((e)->f.stqe_next)
-#define STAILQ_INIT(h) do { \
-	STAILQ_FIRST(h) = nullptr; (h)->stqh_last = &STAILQ_FIRST(h); } while (0)
-#define STAILQ_INSERT_TAIL(h, e, f) do { \
-	STAILQ_NEXT(e, f) = nullptr; *(h)->stqh_last = (e); \
-	(h)->stqh_last = &STAILQ_NEXT(e, f); } while (0)
-
-STAILQ_HEAD(velisthead, varent);
-
-extern "C" {
-
 /* Oracle function declarations */
+extern "C" {
 char *ref_kludge_oldps_options(const char *, char *, const char *);
 void ref_pidmax_init(void);
 void ref_init_list(P::listinfo *, int (*)(P::listinfo *, const char *),
@@ -461,8 +458,7 @@ void ref_usage(void);
 
 extern int cflag, eval, rawcpu, sumrusage, termwidth, showthreads;
 extern time_t now;
-extern P::velisthead varlist;
-
+extern struct velisthead varlist;
 } // extern "C"
 
 /* ------------------------------------------------------------------ */
@@ -551,11 +547,12 @@ static void reset_mocks(void)
 	g_malloc_fail_at = -1;
 	g_malloc_calls = 0;
 	xo_warn_count = xo_errx_count = 0;
-	STAILQ_INIT(&varlist);
+	STAILQ_INIT(&::varlist);
 	cflag = eval = rawcpu = sumrusage = 0;
 	termwidth = 79;
 	showthreads = 0;
 	now = 1700000000;
+	STAILQ_INIT(&P::varlist);
 }
 
 static int addelem_count_cb;
@@ -801,8 +798,6 @@ static P::KINFO make_ki(pid_t pid, pid_t tid, dev_t tdev, double pcpu,
 
 static void run_pscomp_tests(void)
 {
-	extern int sortby_e;
-	(void)sortby_e;
 	P::KINFO a = make_ki(1, 1, 5, 10.0, 100, P_CONTROLT);
 	P::KINFO b = make_ki(2, 2, NODEV, 20.0, 200, 0);
 	P::KINFO acopy = a, bcopy = b;
@@ -884,10 +879,16 @@ static void run_descendant_tests(void)
 /* find_varentry / scan_vars / remove_redundant_columns               */
 /* ------------------------------------------------------------------ */
 
+static void setup_varlist_both(const char *fmt)
+{
+	parsefmt(fmt, &::varlist, 0);
+	parsefmt(fmt, &P::varlist, 0);
+}
+
 static void run_var_tests(void)
 {
 	reset_mocks();
-	parsefmt("pid,user,command", &varlist, 0);
+	setup_varlist_both("pid,user,command");
 	casebump(FN_FIND_VARENT);
 	P::VARENT *rv = ref_find_varentry("pid");
 	P::VARENT *pv = P::find_varentry("pid");
@@ -917,7 +918,7 @@ static void run_var_tests(void)
 		reset_mocks();
 		char fmt[64];
 		rand_fill(fmt, randint(0, 20));
-		parsefmt("pid,tt,state", &varlist, 0);
+		setup_varlist_both("pid,tt,state");
 		casebump(FN_FIND_VARENT);
 		const char *names[] = {"pid", "tt", "state", "nope"};
 		const char *q = names[randint(0, 3)];
@@ -935,7 +936,7 @@ static void run_var_tests(void)
 static void run_format_tests(void)
 {
 	reset_mocks();
-	parsefmt("pid,command", &varlist, 0);
+	setup_varlist_both("pid,command");
 	static P::kinfo_proc kp{};
 	kp.ki_pid = 42;
 	kp.ki_stat = 'R';

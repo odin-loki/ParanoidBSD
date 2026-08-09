@@ -626,7 +626,7 @@ typedef struct {
 	size_t			fgetln_idx;
 } B0329MockState;
 
-static B0329MockState b0329_mock_state;
+B0329MockState b0329_mock_state;
 
 void
 b0329_mock_reset(void)

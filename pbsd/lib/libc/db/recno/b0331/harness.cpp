@@ -486,10 +486,8 @@ struct Snap {
 	unsigned pinned_off;
 	unsigned cmap_off;
 	size_t rdata_size;
-	void *rdata_ptr;
 	uint64_t loghash;
 	int logn;
-	int iput_calls;
 	unsigned char page[CMPZONE];
 	unsigned char rdata[RDATA_SZ];
 };
@@ -508,13 +506,13 @@ static void snapshot(Snap &S, int rc, BTREE &t, unsigned char *buf)
 	S.pinned_off = t.bt_pinned ? (unsigned)((unsigned char *)t.bt_pinned - buf) : 0xffffu;
 	S.cmap_off = t.bt_cmap ? (unsigned)((unsigned char *)t.bt_cmap - buf) : 0xffffu;
 	S.rdata_size = t.bt_rdata.size;
-	S.rdata_ptr = t.bt_rdata.data;
 	S.loghash = g_loghash;
 	S.logn = g_logn;
-	S.iput_calls = g_iput_calls;
 	memcpy(S.page, buf, CMPZONE);
-	if (t.bt_rdata.data)
-		memcpy(S.rdata, t.bt_rdata.data, RDATA_SZ);
+	if (t.bt_rdata.data && t.bt_rdata.size > 0) {
+		size_t n = t.bt_rdata.size < RDATA_SZ ? t.bt_rdata.size : RDATA_SZ;
+		memcpy(S.rdata, t.bt_rdata.data, n);
+	}
 }
 
 static int run_one(int fn, bool port, Snap &S)

@@ -244,6 +244,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/nameser/b0154s2/port.cppm
   lib/libc/nameser/b0154s3/port.cppm
   lib/libc/nameser/b0154s4/port.cppm
+  lib/libc/nameser/b0338/port.cppm
   lib/libc/net/b0076/port.cppm
   lib/libc/net/b0129/port.cppm
   lib/libc/net/if_indextoname_m/port.cppm
@@ -314,6 +315,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/softfloat/b0016s4/port.cppm
   lib/libc/softfloat/b0049/port.cppm
   lib/libc/softfloat/b0052/port.cppm
+  lib/libc/softfloat/b0339/port.cppm
   lib/libc/softfloat/bits32/b0047/port.cppm
   lib/libc/softfloat/bits64/b0048/port.cppm
   lib/libc/stdbit/b0026/port.cppm

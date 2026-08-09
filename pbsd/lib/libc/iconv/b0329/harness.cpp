@@ -2,6 +2,8 @@
  * Differential harness for PBSD batch b0329.
  */
 
+#define _GNU_SOURCE
+
 #include <sys/queue.h>
 
 #include <cerrno>
@@ -10,6 +12,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+
+#include <iconv.h>
 
 import pbsd.lib.libc.iconv.b0329;
 
@@ -38,6 +42,7 @@ typedef struct {
 void b0329_mock_reset(void);
 void b0329_mock_snap(B0329MockState *);
 void b0329_mock_set_stdenc_module(const char *, int (*)(P::_citrus_stdenc_ops *, size_t));
+extern B0329MockState b0329_mock_state;
 
 int ref__citrus_NONE_stdenc_init(P::_citrus_stdenc *, const void *, size_t,
     P::_citrus_stdenc_traits *);
@@ -59,17 +64,10 @@ int ref__citrus_NONE_stdenc_get_state_desc(P::_citrus_stdenc *, void *, int,
 int ref__citrus_stdenc_open(P::_citrus_stdenc **, const char *, const void *, size_t);
 void ref__citrus_stdenc_close(P::_citrus_stdenc *);
 
-struct src_entry {
-	char				*se_name;
-	P::_citrus_db_factory		*se_df;
-	STAILQ_ENTRY(src_entry)		 se_entry;
-};
-STAILQ_HEAD(src_head, src_entry);
-
-int ref_find_src(struct src_head *, struct src_entry **, const char *);
-void ref_free_src(struct src_head *);
-int ref_convert_line(struct src_head *, const char *, size_t);
-int ref_dump_db(struct src_head *, P::_citrus_region *);
+int ref_find_src(P::src_head *, P::src_entry **, const char *);
+void ref_free_src(P::src_head *);
+int ref_convert_line(P::src_head *, const char *, size_t);
+int ref_dump_db(P::src_head *, P::_citrus_region *);
 int ref__citrus_pivot_factory_convert(FILE *, FILE *);
 
 iconv_t ref___bsd___iconv_open(const char *, const char *, P::_citrus_iconv *);
@@ -87,8 +85,8 @@ const char *ref__bsd_iconv_canonicalize(const char *);
 int ref__bsd_iconvctl(iconv_t, int, void *);
 void ref__bsd_iconv_set_relocation_prefix(const char *, const char *);
 
-extern struct _citrus_stdenc_ops _citrus_NONE_stdenc_ops;
-extern struct _citrus_stdenc_traits _citrus_NONE_stdenc_traits;
+extern P::_citrus_stdenc_ops _citrus_NONE_stdenc_ops;
+extern P::_citrus_stdenc_traits _citrus_NONE_stdenc_traits;
 extern P::_citrus_stdenc _citrus_stdenc_default;
 }
 
@@ -217,16 +215,10 @@ static void setup_fgetln(const std::vector<std::string> &lines)
 		ptrs.push_back(s.data());
 		lens.push_back(s.size());
 	}
-	b0329_mock_reset();
-	B0329MockState st{};
-	st.fgetln_lines = ptrs.data();
-	st.fgetln_lens = lens.data();
-	st.fgetln_count = ptrs.size();
-	st.fgetln_idx = 0;
-	b0329_mock_snap(&st);
-	// restore via direct assignment through snap copy back - use mock state setter
-	extern B0329MockState b0329_mock_state;
-	b0329_mock_state = st;
+	b0329_mock_state.fgetln_lines = ptrs.data();
+	b0329_mock_state.fgetln_lens = lens.data();
+	b0329_mock_state.fgetln_count = ptrs.size();
+	b0329_mock_state.fgetln_idx = 0;
 }
 
 void test_none_stdenc_ops(void)
@@ -354,8 +346,8 @@ void test_stdenc_open_close(void)
 
 void test_pivot_statics(void)
 {
-	src_head sha{}, shb{};
-	struct src_entry *ea = nullptr, *eb = nullptr;
+	P::src_head sha{}, shb{};
+	P::src_entry *ea = nullptr, *eb = nullptr;
 	int ra, rbv;
 
 	STAILQ_INIT(&sha);
@@ -424,7 +416,13 @@ void test_pivot_convert(void)
 		return;
 	}
 	bump(F_PIVOT_CONVERT);
+	setup_fgetln({
+	    "UTF8\tA\t65\n",
+	    "# comment\n",
+	    "LATIN1\tB\t0x42\n",
+	});
 	int ra = P::_citrus_pivot_factory_convert(fa, ia);
+	b0329_mock_state.fgetln_idx = 0;
 	setup_fgetln({
 	    "UTF8\tA\t65\n",
 	    "# comment\n",
@@ -449,13 +447,9 @@ void test_bsd_iconv(void)
 {
 	b0329_mock_reset();
 	P::_citrus_iconv *cv = make_mock_iconv("utf8/utf8");
-	B0329MockState st{};
-	st.iconv_open_handle = cv;
-	st.iconv_convert_ret = 0;
-	st.iconv_convert_nresults = 7;
-	b0329_mock_snap(&st);
-	extern B0329MockState b0329_mock_state;
-	b0329_mock_state = st;
+	b0329_mock_state.iconv_open_handle = cv;
+	b0329_mock_state.iconv_convert_ret = 0;
+	b0329_mock_state.iconv_convert_nresults = 7;
 
 	bump(F_ICONV_OPEN);
 	iconv_t pa = P::__bsd_iconv_open("utf8", "utf8");
@@ -483,23 +477,23 @@ void test_bsd_iconv(void)
 
 	bump(F_ICONV);
 	b0329_mock_state.iconv_convert_nresults = 2;
-	size_t ca = P::__bsd_iconv((iconv_t)cv, &pin, &sin, &pout, &sout);
+	size_t conv_a = P::__bsd_iconv(reinterpret_cast<iconv_t>(cv), &pin, &sin, &pout, &sout);
 	b0329_mock_state.iconv_convert_nresults = 2;
-	size_t cb = ref__bsd_iconv((iconv_t)cv, &pin, &sin, &pout, &sout);
-	if (ca != cb)
+	size_t conv_b = ref__bsd_iconv(reinterpret_cast<iconv_t>(cv), &pin, &sin, &pout, &sout);
+	if (conv_a != conv_b)
 		fail(F_ICONV, "iconv");
 
 	bump(F_ICONV_X);
 	size_t inv = 99;
-	ca = P::__bsd___iconv((iconv_t)cv, &pin, &sin, &pout, &sout, 0, &inv);
+	conv_a = P::__bsd___iconv(reinterpret_cast<iconv_t>(cv), &pin, &sin, &pout, &sout, 0, &inv);
 	inv = 99;
-	cb = ref__bsd___iconv((iconv_t)cv, &pin, &sin, &pout, &sout, 0, &inv);
-	if (ca != cb)
+	conv_b = ref__bsd___iconv(reinterpret_cast<iconv_t>(cv), &pin, &sin, &pout, &sout, 0, &inv);
+	if (conv_a != conv_b)
 		fail(F_ICONV_X, "__iconv");
 
 	bump(F_ICONV_CLOSE);
-	ra = P::__bsd_iconv_close((iconv_t)cv);
-	rbv = ref__bsd_iconv_close((iconv_t)cv);
+	ra = P::__bsd_iconv_close(reinterpret_cast<iconv_t>(cv));
+	rbv = ref__bsd_iconv_close(reinterpret_cast<iconv_t>(cv));
 	if (ra != rbv)
 		fail(F_ICONV_CLOSE, "close");
 	ra = P::__bsd_iconv_close((iconv_t)-1);
@@ -513,10 +507,8 @@ void test_bsd_iconv(void)
 		(char *)"ascii/utf8",
 	};
 	b0329_mock_reset();
-	st = {};
-	st.esdb_list = elist;
-	st.esdb_list_sz = 3;
-	b0329_mock_state = st;
+	b0329_mock_state.esdb_list = elist;
+	b0329_mock_state.esdb_list_sz = 3;
 
 	bump(F_ICONV_GET_LIST);
 	char **la = nullptr, **lb = nullptr;
@@ -537,14 +529,10 @@ void test_bsd_iconv(void)
 	if (ra != rbv)
 		fail(F_QSORT_HELPER, "qsort_helper");
 
-	b0329_mock_state = st;
+	b0329_mock_state.esdb_list = elist;
+	b0329_mock_state.esdb_list_sz = 3;
 	bump(F_ICONVLIST);
 	int cb_count = 0;
-	auto cb = [](unsigned int n, const char *const *names, void *) -> int {
-		(void)n;
-		(void)names;
-		return (0);
-	};
 	P::__bsd_iconvlist(+[](unsigned int n, const char *const *names, void *d) -> int {
 		*(int *)d = (int)n;
 		return (0);
@@ -558,9 +546,7 @@ void test_bsd_iconv(void)
 		fail(F_ICONVLIST, "iconvlist");
 
 	b0329_mock_reset();
-	st = {};
-	st.canonicalize_ret = "CANON";
-	b0329_mock_state = st;
+	b0329_mock_state.canonicalize_ret = "CANON";
 	bump(F_ICONV_CANON);
 	const char *cpa = P::__bsd_iconv_canonicalize("utf8");
 	const char *cpb = ref__bsd_iconv_canonicalize("utf8");
@@ -571,8 +557,8 @@ void test_bsd_iconv(void)
 	b0329_mock_state.iconv_open_handle = cv;
 	int val = 0;
 	bump(F_ICONVCTL);
-	ra = P::__bsd_iconvctl((iconv_t)cv, ICONV_TRIVIALP, &val);
-	rbv = ref__bsd_iconvctl((iconv_t)cv, ICONV_TRIVIALP, &val);
+	ra = P::__bsd_iconvctl(reinterpret_cast<iconv_t>(cv), ICONV_TRIVIALP, &val);
+	rbv = ref__bsd_iconvctl(reinterpret_cast<iconv_t>(cv), ICONV_TRIVIALP, &val);
 	if (ra != rbv || val != 1)
 		fail(F_ICONVCTL, "trivialp");
 	ra = P::__bsd_iconvctl((iconv_t)-1, ICONV_TRIVIALP, &val);
@@ -611,7 +597,7 @@ void random_none_mbtocs(unsigned n)
 void random_convert_line(unsigned n)
 {
 	for (unsigned i = 0; i < n; i++) {
-		src_head sp{}, sr{};
+		P::src_head sp{}, sr{};
 		STAILQ_INIT(&sp);
 		STAILQ_INIT(&sr);
 		char line[128];
@@ -635,9 +621,14 @@ void random_convert_line(unsigned n)
 		if (rp != rr) {
 			fail(F_CONVERT_LINE, "rand");
 		} else if (rp == 0) {
-			struct src_entry *ep, *er;
-			P::find_src(&sp, &ep, line);
-			ref_find_src(&sr, &er, line);
+			P::src_entry *ep, *er;
+			char key[32];
+			unsigned kpos = 0;
+			while (kpos < pos && line[kpos] != '\t')
+				key[kpos] = line[kpos++];
+			key[kpos] = '\0';
+			P::find_src(&sp, &ep, key);
+			ref_find_src(&sr, &er, key);
 		}
 		P::free_src(&sp);
 		ref_free_src(&sr);
