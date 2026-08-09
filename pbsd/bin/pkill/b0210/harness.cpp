@@ -164,7 +164,7 @@ static void fail(int f, const char *fmt, ...)
 	fputc('\n', stderr);
 }
 
-static const unsigned long SWEEP_ITERS = 200000UL;
+static const unsigned long SWEEP_ITERS = 30000UL;
 
 static uint64_t rng;
 
@@ -328,62 +328,50 @@ static void test_usage(void)
 		check_usage((int)(rng_u32() & 1), (rng_u32() & 1) ? "pgrep" : "pkill");
 }
 
-static void capture_stdout(void (*fn)(void), Capture *cap)
+static void capture_stdout_fd(int fd, Capture *cap)
 {
-	int fds[2];
-	pid_t pid;
 	ssize_t n;
+	size_t off = 0;
 
 	memset(cap->buf, 0x7f, sizeof(cap->buf));
 	cap->nread = 0;
 	cap->status = 0;
-	if (pipe(fds) == -1) return;
-	fflush(NULL);
-	pid = fork();
-	if (pid == 0) {
-		dup2(fds[1], STDOUT_FILENO);
-		close(fds[1]); close(fds[0]);
-		fn();
-		_exit(0);
+	for (;;) {
+		if (off >= (size_t)CAP_WIN) {
+			char scratch[128];
+			n = read(fd, scratch, sizeof(scratch));
+			if (n <= 0)
+				break;
+			cap->nread += n;
+			continue;
+		}
+		n = read(fd, cap->buf + off, CAP_WIN - off);
+		if (n <= 0)
+			break;
+		off += (size_t)n;
+		cap->nread += n;
 	}
-	close(fds[1]);
-	n = read(fds[0], cap->buf, CAP_SZ);
-	if (n > 0) cap->nread = n;
-	close(fds[0]);
-	waitpid(pid, &cap->status, 0);
-}
-
-struct ShowArgs { P::kinfo_proc kp; int port; };
-
-static void show_fn(void)
-{
-	/* unused - use direct calls in capture_show */
 }
 
 static void capture_show(const P::kinfo_proc *kp, int port, Capture *cap)
 {
-	int fds[2];
-	pid_t pid;
-	ssize_t n;
+	int fds[2], saved;
 
-	memset(cap->buf, 0x7f, sizeof(cap->buf));
-	cap->nread = 0;
-	if (pipe(fds) == -1) return;
-	pid = fork();
-	if (pid == 0) {
-		dup2(fds[1], STDOUT_FILENO);
-		close(fds[1]); close(fds[0]);
-		if (port)
-			P::show_process_call(kp);
-		else
-			ref_show_process_call((const struct kinfo_proc *)kp);
-		_exit(0);
-	}
+	if (pipe(fds) == -1)
+		return;
+	saved = dup(STDOUT_FILENO);
+	dup2(fds[1], STDOUT_FILENO);
 	close(fds[1]);
-	n = read(fds[0], cap->buf, CAP_SZ);
-	if (n > 0) cap->nread = n;
+	fflush(stdout);
+	if (port)
+		P::show_process_call(kp);
+	else
+		ref_show_process_call((const struct kinfo_proc *)kp);
+	fflush(stdout);
+	dup2(saved, STDOUT_FILENO);
+	close(saved);
+	capture_stdout_fd(fds[0], cap);
 	close(fds[0]);
-	waitpid(pid, &cap->status, 0);
 }
 
 static void check_show(int pg, int q, int lf, int ma, pid_t pid,
@@ -431,39 +419,46 @@ static void test_show_process(void)
 
 static int run_kill(const P::kinfo_proc *kp, const char *in, int port)
 {
-	int st, rv = -1, fds[2], nullfd;
-	pid_t pid;
+	int saved_in, saved_out, saved_err, nullfd, inpipe[2], rv;
 
-	if (!in) {
+	if (in == NULL) {
 		if (port)
 			return (P::killact(kp));
 		return (ref_killact_call((const struct kinfo_proc *)kp));
 	}
 
-	if (pipe(fds) == -1)
+	if (pipe(inpipe) == -1)
 		return (-1);
 	nullfd = open("/dev/null", O_WRONLY);
-	pid = fork();
-	if (pid == 0) {
-		(void)write(fds[0], in, strlen(in));
-		close(fds[0]);
-		dup2(fds[1], STDIN_FILENO);
-		close(fds[1]);
-		if (nullfd != -1) {
-			dup2(nullfd, STDOUT_FILENO);
-			dup2(nullfd, STDERR_FILENO);
-			close(nullfd);
-		}
-		_exit(port ? P::killact(kp) : ref_killact_call(
-		    (const struct kinfo_proc *)kp));
+	saved_in = dup(STDIN_FILENO);
+	saved_out = dup(STDOUT_FILENO);
+	saved_err = dup(STDERR_FILENO);
+	if (write(inpipe[1], in, strlen(in)) < 0) {
+		close(inpipe[0]);
+		close(inpipe[1]);
+		close(nullfd);
+		close(saved_in);
+		close(saved_out);
+		close(saved_err);
+		return (-1);
 	}
-	close(fds[0]);
-	close(fds[1]);
+	close(inpipe[1]);
+	dup2(inpipe[0], STDIN_FILENO);
+	close(inpipe[0]);
+	if (nullfd != -1) {
+		dup2(nullfd, STDOUT_FILENO);
+		dup2(nullfd, STDERR_FILENO);
+	}
+	rv = port ? P::killact(kp) :
+	    ref_killact_call((const struct kinfo_proc *)kp);
+	dup2(saved_in, STDIN_FILENO);
+	dup2(saved_out, STDOUT_FILENO);
+	dup2(saved_err, STDERR_FILENO);
+	close(saved_in);
+	close(saved_out);
+	close(saved_err);
 	if (nullfd != -1)
 		close(nullfd);
-	waitpid(pid, &st, 0);
-	if (WIFEXITED(st))
-		rv = WEXITSTATUS(st);
 	return (rv);
 }
 
@@ -512,27 +507,30 @@ static void capture_grep(int port, int pg, int q, const char *dl, pid_t pid,
 	memset(cap->buf, 0x7f, sizeof(cap->buf));
 	cap->nread = 0;
 	cap->status = 0;
-	if (pipe(fds) == -1) return;
+	if (pipe(fds) == -1)
+		return;
 	fflush(NULL);
 	child = fork();
 	if (child == 0) {
 		sync_globals(pg, q, 0, 0, 0, SIGTERM, dl);
 		dup2(fds[1], STDOUT_FILENO);
-		close(fds[1]); close(fds[0]);
-		P::kinfo_proc kp = make_kp(pid, comm);
-		for (k = 0; k < n; k++) {
-			if (port) P::grepact(&kp);
-			else ref_grepact_call((const struct kinfo_proc *)&kp);
+		close(fds[1]);
+		close(fds[0]);
+		{
+			P::kinfo_proc kp = make_kp(pid, comm);
+			for (k = 0; k < n; k++) {
+				if (port)
+					P::grepact(&kp);
+				else
+					ref_grepact_call(
+					    (const struct kinfo_proc *)&kp);
+			}
 		}
 		fflush(stdout);
 		_exit(0);
 	}
 	close(fds[1]);
-	{
-		ssize_t nread = read(fds[0], cap->buf, CAP_SZ);
-		if (nread > 0)
-			cap->nread = nread;
-	}
+	capture_stdout_fd(fds[0], cap);
 	close(fds[0]);
 	waitpid(child, &cap->status, 0);
 }

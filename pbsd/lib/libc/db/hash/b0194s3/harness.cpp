@@ -905,8 +905,12 @@ static void test_hash_seq()
 	setup_access_env(ep, kb, 1, vb, 1, true, false);
 	er.htab.hdr.max_bucket = 0;
 	er.htab.hdr.high_mask = 0;
+	er.htab.hdr.low_mask = 0;
 	ep.htab.hdr.max_bucket = 0;
 	ep.htab.hdr.high_mask = 0;
+	ep.htab.hdr.low_mask = 0;
+	er.buf.addr = 0;
+	ep.buf.addr = 0;
 	DB *dbr = make_db(&er.htab, true);
 	DB *dbp = make_db(&ep.htab, false);
 	guard_fill(er.keybuf, MAX_KV);
@@ -920,14 +924,23 @@ static void test_hash_seq()
 
 	int rr = ref_hash_seq(dbr, &keyr, &valr, R_FIRST);
 	int rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_FIRST);
+	std::fprintf(stderr, "DBG first: rr=%d rp=%d bp0=%u addr=%u\n", rr, rp,
+	    ((u_int16_t *)er.page)[0], er.buf.addr);
 	check(F_HASH_SEQ, rr == rp, "first");
-	check(F_HASH_SEQ, keyr.size == keyp.size, "key size");
-	check(F_HASH_SEQ, buf_eq(er.keybuf, ep.keybuf, MAX_KV), "key guard");
-	check(F_HASH_SEQ, buf_eq(er.valbuf, ep.valbuf, MAX_KV), "val guard");
+	check(F_HASH_SEQ, rr == 0, "first ok");
+	if (rr == 0 && rp == 0) {
+		check(F_HASH_SEQ, keyr.size == keyp.size, "key size");
+		check(F_HASH_SEQ, valr.size == valp.size, "val size");
+		check(F_HASH_SEQ, buf_eq(er.keybuf, ep.keybuf, MAX_KV), "key guard");
+		check(F_HASH_SEQ, buf_eq(er.valbuf, ep.valbuf, MAX_KV), "val guard");
+	}
 
 	rr = ref_hash_seq(dbr, &keyr, &valr, R_NEXT);
 	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_NEXT);
-	check(F_HASH_SEQ, rr == rp && rr == 1, "next end");
+	std::fprintf(stderr, "DBG next: rr=%d rp=%d cb=%d cndx=%d\n", rr, rp,
+	    er.htab.cbucket, er.htab.cndx);
+	check(F_HASH_SEQ, rr == rp, "next end");
+	check(F_HASH_SEQ, rr == 1, "next end abnormal");
 
 	er.htab.cbucket = -1;
 	ep.htab.cbucket = -1;
@@ -940,17 +953,111 @@ static void test_hash_seq()
 	check(F_HASH_SEQ, rr == rp && rr == -1, "seq bad flag");
 
 	hash_mock_reset();
+	hash_mock_set_get_fail_cnt(1);
+	setup_access_env(er, kb, 1, vb, 1, true, false);
+	setup_access_env(ep, kb, 1, vb, 1, true, false, false);
+	er.htab.hdr.max_bucket = 0;
+	er.htab.hdr.high_mask = 0;
+	ep.htab.hdr = er.htab.hdr;
+	er.buf.addr = 0;
+	ep.buf.addr = 0;
+	dbr->internal = &er.htab;
+	dbp->internal = &ep.htab;
+	rr = ref_hash_seq(dbr, &keyr, &valr, R_FIRST);
+	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_FIRST);
+	check(F_HASH_SEQ, rr == rp && rr == -1, "get_buf fail");
+
+	hash_mock_reset();
+	setup_access_env(er, kb, 1, vb, 1, true, false);
+	setup_access_env(ep, kb, 1, vb, 1, true, false, false);
+	er.htab.hdr.max_bucket = 1;
+	er.htab.hdr.high_mask = 1;
+	er.htab.hdr.low_mask = 0;
+	ep.htab.hdr = er.htab.hdr;
+	er.buf.addr = 0;
+	ep.buf.addr = 0;
+	BUFHEAD buf1_r, buf1_p;
+	char page1_r[PAGE_BSIZE];
+	char page1_p[PAGE_BSIZE];
+	init_buf(&buf1_r, page1_r, 1, PAGE_BSIZE);
+	init_buf(&buf1_p, page1_p, 1, PAGE_BSIZE);
+	unsigned char kb2[] = {'c'};
+	unsigned char vb2[] = {'d'};
+	DBT k2, v2;
+	k2.data = kb2;
+	k2.size = 1;
+	v2.data = vb2;
+	v2.size = 1;
+	putpair(page1_r, &k2, &v2);
+	std::memcpy(page1_p, page1_r, PAGE_BSIZE);
+	hash_mock_register(&buf1_r);
+	hash_mock_register(&buf1_p);
+	dbr->internal = &er.htab;
+	dbp->internal = &ep.htab;
+	rr = ref_hash_seq(dbr, &keyr, &valr, R_FIRST);
+	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_FIRST);
+	check(F_HASH_SEQ, rr == rp && rr == 0, "first bucket0");
+	rr = ref_hash_seq(dbr, &keyr, &valr, R_NEXT);
+	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_NEXT);
+	check(F_HASH_SEQ, rr == rp && rr == 0, "next bucket1");
+	rr = ref_hash_seq(dbr, &keyr, &valr, R_NEXT);
+	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_NEXT);
+	check(F_HASH_SEQ, rr == rp && rr == 1, "next after two");
+
+	hash_mock_reset();
 	hash_mock_set_big_keydata_fail(1);
 	setup_access_env(er, kb, 1, vb, 1, true, false);
-	setup_access_env(ep, kb, 1, vb, 1, true, false);
+	setup_access_env(ep, kb, 1, vb, 1, true, false, false);
 	auto *sp = (u_int16_t *)er.page;
 	sp[2] = PARTIAL_KEY;
 	std::memcpy(ep.page, er.page, PAGE_BSIZE);
+	er.htab.hdr.max_bucket = 0;
+	er.htab.hdr.high_mask = 0;
+	ep.htab.hdr = er.htab.hdr;
+	er.buf.addr = 0;
+	ep.buf.addr = 0;
 	dbr->internal = &er.htab;
 	dbp->internal = &ep.htab;
 	rr = ref_hash_seq(dbr, &keyr, &valr, R_FIRST);
 	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_FIRST);
 	check(F_HASH_SEQ, rr == rp && rr == -1, "big_keydata fail");
+
+	hash_mock_reset();
+	setup_access_env(er, kb, 1, vb, 1, true, false);
+	setup_access_env(ep, kb, 1, vb, 1, true, false, false);
+	er.htab.hdr.max_bucket = 0;
+	er.htab.hdr.high_mask = 0;
+	ep.htab.hdr = er.htab.hdr;
+	er.buf.addr = 0;
+	ep.buf.addr = 0;
+	sp = (u_int16_t *)er.page;
+	sp[0] = 2;
+	sp[1] = OVFLPAGE;
+	sp[2] = 99;
+	BUFHEAD ovfl_r, ovfl_p;
+	char ovfl_page_r[PAGE_BSIZE];
+	char ovfl_page_p[PAGE_BSIZE];
+	init_buf(&ovfl_r, ovfl_page_r, 99, PAGE_BSIZE);
+	init_buf(&ovfl_p, ovfl_page_p, 99, PAGE_BSIZE);
+	unsigned char kb3[] = {'x'};
+	unsigned char vb3[] = {'y'};
+	DBT k3, v3;
+	k3.data = kb3;
+	k3.size = 1;
+	v3.data = vb3;
+	v3.size = 1;
+	putpair(ovfl_page_r, &k3, &v3);
+	std::memcpy(ovfl_page_p, ovfl_page_r, PAGE_BSIZE);
+	er.buf.ovfl = &ovfl_r;
+	ep.buf.ovfl = &ovfl_p;
+	std::memcpy(ep.page, er.page, PAGE_BSIZE);
+	hash_mock_register(&ovfl_r);
+	hash_mock_register(&ovfl_p);
+	dbr->internal = &er.htab;
+	dbp->internal = &ep.htab;
+	rr = ref_hash_seq(dbr, &keyr, &valr, R_FIRST);
+	rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_FIRST);
+	check(F_HASH_SEQ, rr == rp && rr == 0, "ovfl first");
 
 	std::free(dbr);
 	std::free(dbp);
@@ -1186,6 +1293,55 @@ static void test_access_sweep(Rng &rng)
 	}
 }
 
+static void test_hash_seq_sweep(Rng &rng)
+{
+	unsigned char kb[16], vb[16];
+	for (unsigned long i = 0; i < SWEEP_ITERS; i++) {
+		AccessEnv er, ep;
+		size_t klen = 1 + rng.below(8);
+		size_t vlen = 1 + rng.below(8);
+		for (size_t j = 0; j < klen; j++)
+			kb[j] = (unsigned char)(rng.next() & 0xff);
+		for (size_t j = 0; j < vlen; j++)
+			vb[j] = (unsigned char)(rng.next() & 0xff);
+		setup_access_env(er, kb, klen, vb, vlen, true);
+		setup_access_env(ep, kb, klen, vb, vlen, true, false);
+		er.htab.hdr.max_bucket = rng.below(4);
+		er.htab.hdr.high_mask = er.htab.hdr.max_bucket;
+		er.htab.hdr.low_mask = rng.below(er.htab.hdr.high_mask + 1);
+		ep.htab.hdr = er.htab.hdr;
+		er.buf.addr = 0;
+		ep.buf.addr = 0;
+		DB *dbr = make_db(&er.htab, true);
+		DB *dbp = make_db(&ep.htab, false);
+		DBT keyr, valr, keyp, valp;
+		guard_fill(er.keybuf, MAX_KV);
+		guard_fill(ep.keybuf, MAX_KV);
+		guard_fill(er.valbuf, MAX_KV);
+		guard_fill(ep.valbuf, MAX_KV);
+		keyr.data = er.keybuf;
+		valr.data = er.valbuf;
+		keyp.data = ep.keybuf;
+		valp.data = ep.valbuf;
+		int rr = ref_hash_seq(dbr, &keyr, &valr, R_FIRST);
+		int rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_FIRST);
+		check(F_HASH_SEQ, rr == rp, "sweep first");
+		if (rr == 0) {
+			check(F_HASH_SEQ, keyr.size == keyp.size, "sweep key sz");
+			check(F_HASH_SEQ, valr.size == valp.size, "sweep val sz");
+		}
+		for (int step = 0; step < 4; step++) {
+			rr = ref_hash_seq(dbr, &keyr, &valr, R_NEXT);
+			rp = P::hash_seq(pdb(dbp), pd(&keyp), pd(&valp), R_NEXT);
+			check(F_HASH_SEQ, rr == rp, "sweep next");
+			if (rr != 0)
+				break;
+		}
+		std::free(dbr);
+		std::free(dbp);
+	}
+}
+
 static void print_table()
 {
 	std::printf("\n%-20s %12s %12s\n", "function", "cases", "failures");
@@ -1216,6 +1372,7 @@ int main()
 	test_hash_access();
 	test_db_wrappers();
 	test_hash_seq();
+	test_hash_seq_sweep(rng);
 	test_hdestroy_flush();
 	test_init_hash();
 	test_hash_open();
