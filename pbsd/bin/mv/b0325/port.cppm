@@ -176,7 +176,7 @@ int	fflg, hflg, iflg, nflg, vflg;
 int	copy(const char *, const char *);
 int	do_move(const char *, const char *);
 int	fastcopy(const char *, const char *, struct stat *);
-void	usage(void);
+void	usage(void) __dead2;
 void	preserve_fd_acls(int, int, const char *, const char *);
 
 int
@@ -383,7 +383,7 @@ fastcopy(const char *from, const char *to, struct stat *sbp)
 		warn("fastcopy: open() failed (from): %s", from);
 		return (1);
 	}
-	if (bp == NULL && (bp = malloc(blen)) == NULL) {
+	if (bp == NULL && (bp = (char *)malloc(blen)) == NULL) {
 		warnx("malloc(%zu) failed", blen);
 		(void)close(from_fd);
 		return (1);
@@ -602,7 +602,7 @@ preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
 }
 
 void
-usage(void) __dead2
+usage(void)
 {
 	(void)fprintf(stderr, "%s\n%s\n",
 	    "usage: mv [-f | -i | -n] [-hv] source target",
