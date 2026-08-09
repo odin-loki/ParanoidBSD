@@ -8,6 +8,7 @@ module;
 #include <cstdlib>
 #include <cstring>
 #include <cstdarg>
+#include <cerrno>
 
 export module pbsd.sys.kern.b0217;
 
@@ -25,9 +26,11 @@ namespace pbsd::sys_kern::b0217::detail {
 #define HASH_NOWAIT 0x00000002
 #define EINVAL 22
 #define ENOENT 2
-#define EWOULDBLOCK 35
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK EAGAIN
+#endif
 #define LK_NOWAIT 0x0001
-#define PID_MAX 99999
+#define PID_MAX 4095
 #define STACK_MAX 18
 #define TS_ENTER 0
 #define TS_EXIT 1
@@ -780,9 +783,12 @@ void
 tslog_reset(void)
 {
 	long i;
+	long old = nrecs;
 
 	nrecs = 0;
-	for (i = 0; i < (long)nitems(timestamps); i++) {
+	if (old > (long)nitems(timestamps))
+		old = (long)nitems(timestamps);
+	for (i = 0; i < old; i++) {
 		timestamps[i].td = NULL;
 		timestamps[i].type = 0;
 		timestamps[i].f = NULL;
@@ -1249,10 +1255,27 @@ stack_symbol_ddb(vm_offset_t pc, const char **name, long *offset)
 
 
 
+inline void reset_model() {
+	detail::env_reset();
+}
+
+inline void reset_vfs() {
+	detail::env_reset();
+	vfs_hashinit(nullptr);
+}
+
+inline void reset_tslog() {
+	tslog_reset();
+}
+
 inline void reset_all() {
 	detail::env_reset();
 	vfs_hashinit(nullptr);
 	tslog_reset();
+}
+
+inline void reset_light() {
+	detail::env_reset();
 }
 
 using mount = detail::mount;

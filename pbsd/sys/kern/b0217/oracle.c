@@ -48,12 +48,11 @@ typedef int pid_t;
 
 #define EINVAL 22
 #define ENOENT 2
-#ifndef EWOULDBLOCK
+#undef EWOULDBLOCK
 #define EWOULDBLOCK 35
-#endif
 
 #define LK_NOWAIT 0x0001
-#define PID_MAX 99999
+#define PID_MAX 4095
 #define STACK_MAX 18
 
 #define TS_ENTER 0
@@ -637,6 +636,28 @@ size_t model_out_length(void) { return (model_out_n); }
 void ref_vfs_hashinit(void *dummy);
 void ref_tslog_reset(void);
 
+void oracle_reset_model(void)
+{
+	model_reset();
+}
+
+void oracle_reset_vfs(void)
+{
+	model_reset();
+	ref_vfs_hashinit(NULL);
+}
+
+void oracle_reset_tslog(void)
+{
+	model_reset();
+	ref_tslog_reset();
+}
+
+void oracle_reset_light(void)
+{
+	model_reset();
+}
+
 void oracle_reset(void)
 {
 	model_reset();
@@ -927,7 +948,7 @@ ref_vfs_hash_changesize(u_long newmaxvnodes)
 
 
 #ifndef TSLOGSIZE
-#define TSLOGSIZE 262144
+#define TSLOGSIZE 4096
 #endif
 
 volatile long nrecs = 0;
@@ -1117,9 +1138,12 @@ void
 ref_tslog_reset(void)
 {
 	long i;
+	long old = nrecs;
 
 	nrecs = 0;
-	for (i = 0; i < (long)nitems(timestamps); i++) {
+	if (old > (long)nitems(timestamps))
+		old = (long)nitems(timestamps);
+	for (i = 0; i < old; i++) {
 		timestamps[i].td = NULL;
 		timestamps[i].type = 0;
 		timestamps[i].f = NULL;

@@ -1347,6 +1347,61 @@ tr_makestrspace(void)
 	return t;
 }
 
+/*
+ * growstackblock() rounds up to a power of two with
+ *
+ *	newlen = 512; while (newlen < min) newlen <<= 1;
+ *
+ * so the interesting inputs are the ones where the requested total lands
+ * exactly on a power of two.  Aim at 2^k - 1, 2^k and 2^k + 1 for the total,
+ * which means asking for 2^k - stacknleft - ALIGN(sizeof(struct stack_block))
+ * plus the delta.
+ */
+template <class A>
+static Trace
+tr_grow_exact(void)
+{
+	Trace t;
+	typename A::Mark outer;
+
+	A::setstackmark(&outer);
+	ensureBlock<A>();
+	for (int k = 10; k <= 15; k++) {
+		for (int delta = -1; delta <= 1; delta++) {
+			typename A::Mark m;
+			A::setstackmark(&m);
+			int left = A::get_stacknleft();
+			long target = 1L << k;
+			long arg = target - left - 8 + delta;
+			if (arg > left && arg < 1000000L) {
+				A::growstackblock((int)arg);
+				t.push_back(std::make_pair("growstackblock",
+				    "k=" + num(k) + " d=" + num(delta) +
+				    " left=" + num(left) + " arg=" +
+				    num(arg) + " " + stackState<A>()));
+				char *p = A::get_stacknxt();
+				char *r = A::makestrspace((int)arg, p);
+				t.push_back(std::make_pair("makestrspace",
+				    "k=" + num(k) + " d=" + num(delta) +
+				    " arg=" + num(arg) + " r=" +
+				    num((long long)(r - A::get_stacknxt())) +
+				    " " + stackState<A>()));
+			} else {
+				t.push_back(std::make_pair("growstackblock",
+				    "k=" + num(k) + " d=" + num(delta) +
+				    " skipped left=" + num(left)));
+			}
+			A::popstackmark(&m);
+			t.push_back(std::make_pair("popstackmark", "exact " +
+			    stackState<A>()));
+		}
+	}
+	A::popstackmark(&outer);
+	t.push_back(std::make_pair("popstackmark", "exact-outer " +
+	    stackState<A>()));
+	return t;
+}
+
 template <class A>
 static Trace
 tr_stputbin(void)
@@ -1925,6 +1980,7 @@ run_all(const char *tag)
 	    "growstackstr");
 	cmpTrace(tr_makestrspace<Ref>(), tr_makestrspace<Port>(),
 	    "makestrspace");
+	cmpTrace(tr_grow_exact<Ref>(), tr_grow_exact<Port>(), "grow exact");
 	cmpTrace(tr_stputbin<Ref>(), tr_stputbin<Port>(), "stputbin");
 	test_oom();
 
