@@ -6,15 +6,17 @@ $RefreshSec = 10
 $TotalFiles = 4497
 $TotalLines = 2875339
 
-function Wsl([string]$Script) {
-    $out = wsl -d Ubuntu -- bash -lc $Script 2>&1
+function Invoke-WslBash([string]$Script, [int]$TimeoutSec = 120) {
+    # Must use wsl.exe — a function named Wsl shadows the wsl command and overflows the stack.
+    $out = & wsl.exe -d Ubuntu -- timeout $TimeoutSec bash -c $Script 2>&1
     if ($out -is [System.Array]) { return ($out | Out-String).Trim() }
     return [string]$out
 }
 
 function Stop-PbsdServices {
     Write-Host "Stopping any running PBSD processes..." -ForegroundColor Yellow
-    Wsl 'pkill -9 -f pbsd_watchdog.sh 2>/dev/null; pkill -9 -f pbsd_driver.sh 2>/dev/null; pkill -9 -f "python3 -u pbsd.py" 2>/dev/null; pkill -9 -f "cursor-agent.*index.js" 2>/dev/null; sleep 1; echo stopped'
+    $r = Invoke-WslBash 'pkill -9 -f pbsd_watchdog 2>/dev/null; pkill -9 -f pbsd_driver 2>/dev/null; pkill -9 -f "python3.*pbsd.py" 2>/dev/null; pkill -9 -f cursor-agent 2>/dev/null; echo stopped' 25
+    Write-Host "  $r" -ForegroundColor DarkGray
 }
 
 function Deploy-WslScripts {
@@ -25,19 +27,19 @@ function Deploy-WslScripts {
         'tr -d "\r" < "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/pbsd.py" > /home/odin/pbsd/pbsd.py'
         'chmod +x /home/odin/pbsd_watchdog.sh /home/odin/pbsd_driver.sh /home/odin/push_github.sh'
     )
-    foreach ($c in $cmds) { Wsl $c }
+    foreach ($c in $cmds) { Invoke-WslBash $c 30 }
     return 'deployed'
 }
 
 function Start-PbsdWatchdog {
-    $running = Wsl 'pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null 2>&1 && echo yes || echo no'
+    $running = Invoke-WslBash 'pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null 2>&1 && echo yes || echo no' 15
     if ($running -match 'yes') { return }
     Write-Host "Starting migration watchdog..." -ForegroundColor Green
-    Wsl 'setsid bash /home/odin/pbsd_watchdog.sh >>/home/odin/pbsd_watchdog.log 2>&1 & sleep 2; pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo started || echo failed'
+    Invoke-WslBash 'setsid bash /home/odin/pbsd_watchdog.sh >>/home/odin/pbsd_watchdog.log 2>&1 & sleep 2; pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo started || echo failed' 30
 }
 
 function Get-PbsdStatus {
-    $raw = Wsl 'cd ~/pbsd && python3 pbsd.py --status 2>/dev/null'
+    $raw = Invoke-WslBash 'cd ~/pbsd && python3 pbsd.py --status 2>/dev/null | head -14' 60
     $s = @{
         Verified = 0; TotalFiles = $TotalFiles
         Lines = 0; TotalLines = $TotalLines
@@ -59,7 +61,7 @@ function Get-PbsdStatus {
 }
 
 function Get-ProcessInfo {
-    $raw = Wsl 'printf "watchdog=%s driver=%s agents=%s mem=%s\n" "$(pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo on || echo off)" "$(pgrep -f /home/odin/pbsd_driver.sh >/dev/null && echo on || echo off)" "$(pgrep -cf cursor-agent 2>/dev/null || echo 0)" "$(free -h | awk "/^Mem:/ {print \$3\"/\"\$2}")"'
+    $raw = Invoke-WslBash 'printf "watchdog=%s driver=%s agents=%s mem=%s\n" "$(pgrep -f /home/odin/pbsd_watchdog.sh >/dev/null && echo on || echo off)" "$(pgrep -f /home/odin/pbsd_driver.sh >/dev/null && echo on || echo off)" "$(pgrep -cf cursor-agent 2>/dev/null || echo 0)" "$(free -h | awk "/^Mem:/ {print \$3\"/\"\$2}")"' 15
     $info = @{ Watchdog = '?'; Driver = '?'; Agents = 0; Mem = '?' }
     if ($raw -match 'watchdog=(\w+)') { $info.Watchdog = $Matches[1] }
     if ($raw -match 'driver=(\w+)') { $info.Driver = $Matches[1] }
@@ -69,11 +71,11 @@ function Get-ProcessInfo {
 }
 
 function Get-LogTail([int]$n = 12) {
-    return Wsl "tail -$n /home/odin/pbsd_run.log 2>/dev/null"
+    return Invoke-WslBash "tail -$n /home/odin/pbsd_run.log 2>/dev/null" 15
 }
 
 function Get-BatchProgress {
-    $line = Wsl 'grep -E "\[[0-9]+/[0-9]+\]" /home/odin/pbsd_run.log 2>/dev/null | tail -1'
+    $line = Invoke-WslBash 'grep -E "\[[0-9]+/[0-9]+\]" /home/odin/pbsd_run.log 2>/dev/null | tail -1' 15
     if ($line -match '\[(\d+)/(\d+)\].*?~([\d.]+)h left') {
         return @{ Done = [int]$Matches[1]; Total = [int]$Matches[2]; EtaHours = [double]$Matches[3]; Line = $line.Trim() }
     }
