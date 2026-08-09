@@ -1,9 +1,13 @@
 module;
 
-#include <complex.h>
 #include <math.h>
 
 export module pbsd.lib.msun.src.b0312;
+
+extern "C" float cabsf(float _Complex);
+extern "C" float cargf(float _Complex);
+extern "C" double cabs(double _Complex);
+extern "C" double carg(double _Complex);
 
 namespace pbsd::lib_msun_src::b0312 {
 
@@ -29,14 +33,19 @@ cpowf(float _Complex a, float _Complex z)
 	float _Complex w;
 	float x, y, r, theta, absa, arga;
 
-	x = crealf(z);
-	y = cimagf(z);
+	x = __real__(z);
+	y = __imag__(z);
 	absa = cabsf (a);
 	if (absa == 0.0f) {
-		if (x == 0 && y == 0)
-		    return (CMPLXF(1.f, 0.f));
-		else
-		    return (CMPLXF(0.f, 0.f));
+		if (x == 0 && y == 0) {
+		    __real__ w = 1.f;
+		    __imag__ w = 0.f;
+		    return (w);
+		} else {
+		    __real__ w = 0.f;
+		    __imag__ w = 0.f;
+		    return (w);
+		}
 	}
 	arga = cargf (a);
 	r = powf (absa, x);
@@ -45,7 +54,8 @@ cpowf(float _Complex a, float _Complex z)
 		r = r * expf (-y * arga);
 		theta = theta + y * logf (absa);
 	}
-	w = CMPLXF(r * cosf (theta), r * sinf (theta));
+	__real__ w = r * cosf (theta);
+	__imag__ w = r * sinf (theta);
 	return (w);
 }
 
@@ -71,14 +81,19 @@ cpow(double _Complex a, double _Complex z)
 	double _Complex w;
 	double x, y, r, theta, absa, arga;
 
-	x = creal (z);
-	y = cimag (z);
+	x = __real__(z);
+	y = __imag__(z);
 	absa = cabs (a);
 	if (absa == 0.0) {
-		if (x == 0 && y == 0)
-		    return (CMPLX(1., 0.));
-		else
-		    return (CMPLX(0., 0.));
+		if (x == 0 && y == 0) {
+		    __real__ w = 1.;
+		    __imag__ w = 0.;
+		    return (w);
+		} else {
+		    __real__ w = 0.;
+		    __imag__ w = 0.;
+		    return (w);
+		}
 	}
 	arga = carg (a);
 	r = pow (absa, x);
@@ -87,7 +102,8 @@ cpow(double _Complex a, double _Complex z)
 		r = r * exp (-y * arga);
 		theta = theta + y * log (absa);
 	}
-	w = CMPLX(r * cos (theta),  r * sin (theta));
+	__real__ w = r * cos (theta);
+	__imag__ w = r * sin (theta);
 	return (w);
 }
 
