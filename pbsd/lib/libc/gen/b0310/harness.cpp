@@ -146,20 +146,18 @@ poke_sym(unsigned char *snap, std::size_t off)
 
 extern "C" {
 
-typedef int (*interpos_func_t)(void);
-
-interpos_func_t __libc_interposing[16];
+P::interpos_func_t __libc_interposing[16];
 int __isthreaded = 0;
 
 void
-_reclaim_telldir(void *dirp)
+_reclaim_telldir(P::DIR *dirp)
 {
 	push_ev(EV_RECLAIM, symref(dirp), 0);
 	if (g_cur.overflow || g_cur.nev == 0)
 		return;
 	Ev &e = g_cur.ev[g_cur.nev - 1];
 	if (dirp != nullptr &&
-	    static_cast<const unsigned char *>(dirp) == g_blk) {
+	    reinterpret_cast<const unsigned char *>(dirp) == g_blk) {
 		e.snaplen = (int)g_blk_sz;
 		std::memcpy(e.snap, dirp, g_blk_sz);
 		poke_sym(e.snap, offsetof(P::DIR, dd_buf));
@@ -211,7 +209,7 @@ static void
 install_interposing(void)
 {
 	[]<int... I>(std::integer_sequence<int, I...>) {
-		((__libc_interposing[I] = reinterpret_cast<interpos_func_t>(
+		((__libc_interposing[I] = reinterpret_cast<P::interpos_func_t>(
 		    +[](void *p) { push_ev(EV_SLOT, I, symref(p)); })), ...);
 	}(std::make_integer_sequence<int, 16>{});
 }
@@ -561,9 +559,11 @@ run_dir(bool port, const DirCase &c, bool via_closedir, Run &out)
 
 	long rv;
 	if (via_closedir)
-		rv = port ? P::closedir(d) : ref_closedir(blk);
+		rv = port ? P::closedir(d) :
+		    ref_closedir(reinterpret_cast<P::DIR *>(blk));
 	else
-		rv = port ? P::fdclosedir(d) : ref_fdclosedir(blk);
+		rv = port ? P::fdclosedir(d) :
+		    ref_fdclosedir(reinterpret_cast<P::DIR *>(blk));
 
 	__isthreaded = 0;
 	g_cur.rv = rv;
