@@ -361,8 +361,7 @@ test_basename_random(void)
 		gp.init();
 		gr.init();
 		fill_random_path((unsigned char *)gp.win(), gp.winsz() - 1);
-		gr.copy_path_len((const unsigned char *)gp.win(),
-		    std::strlen(gp.win()));
+		std::memcpy(gr.win(), gp.win(), gr.winsz());
 		ncases[F_BASENAME]++;
 		basename_buf_ok(gp, gr, ctx);
 	}

@@ -108,6 +108,8 @@ __dup3(int oldfd, int newfd, int flags)
  * SUCH DAMAGE.
  */
 
+extern "C" void harness_abort_hook(void);
+
 void
 __assert(const char *func, const char *file, int line, const char *failedexpr)
 {
