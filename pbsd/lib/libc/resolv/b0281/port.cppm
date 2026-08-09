@@ -13,6 +13,17 @@ module;
 
 #define DO_PTHREADS 1
 
+typedef struct {
+	int id;
+} pbsd_b0281_pthread_key_t;
+
+typedef struct {
+	int locked;
+} pbsd_b0281_pthread_mutex_t;
+
+#define pthread_key_t pbsd_b0281_pthread_key_t
+#define pthread_mutex_t pbsd_b0281_pthread_mutex_t
+
 #include <cerrno>
 #include <climits>
 #include <cstddef>
@@ -22,7 +33,6 @@ module;
 #include <ctime>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
@@ -52,7 +62,7 @@ export struct __res_state_ext {
 	unsigned int reload_period;
 };
 
-export struct __res_state {
+export struct __res_state_layout {
 	int res_h_errno;
 	unsigned int options;
 	struct {
@@ -62,7 +72,7 @@ export struct __res_state {
 	} _u;
 };
 
-export using res_state = __res_state *;
+export using res_state = __res_state_layout *;
 
 export struct mtctxres_t {
 	unsigned char opaque[64];
@@ -70,8 +80,6 @@ export struct mtctxres_t {
 
 using thread_key_t = struct { long opaque; };
 using once_t = struct { int state; };
-using pthread_key_t = struct { int id; };
-using pthread_mutex_t = struct { int locked; };
 
 #define ONCE_INITIALIZER {0}
 #define PTHREAD_MUTEX_INITIALIZER {0}
@@ -82,29 +90,14 @@ extern int mock_thr_once_ret;
 extern int mock_thr_keycreate_ret;
 extern int mock_thr_setspecific_ret;
 extern res_state mock_thr_getspecific_val;
-extern int mock_thr_getspecific_calls;
-extern int mock_thr_setspecific_calls;
-extern res_state mock_thr_setspecific_last;
-extern int mock_thr_keycreate_calls;
-extern void (*mock_thr_keycreate_destructor)(void *);
 extern int mock_calloc_fail;
 extern int mock_clock_gettime_ret;
 extern struct timespec mock_clock_now;
 extern int mock_stat_ret;
 extern struct stat mock_stat_sb;
-extern int mock_stat_calls;
-extern int mock_res_ndestroy_calls;
-extern int mock_free_calls;
 extern void *mock_pthread_getspecific_val;
-extern int mock_pthread_getspecific_calls;
 extern int mock_pthread_setspecific_ret;
-extern int mock_pthread_setspecific_calls;
-extern void *mock_pthread_setspecific_last;
 extern int mock_pthread_key_create_ret;
-extern int mock_pthread_key_create_calls;
-extern void (*mock_pthread_key_destructor)(void *);
-extern int mock_pthread_mutex_lock_ret;
-extern int mock_pthread_mutex_unlock_ret;
 extern int mock_malloc_fail;
 extern int mock_writev_ret;
 extern int mock_writev_calls;
@@ -112,7 +105,7 @@ extern int mock_writev_last_fd;
 extern int mock_writev_last_count;
 extern struct iovec mock_writev_last_iov[8];
 
-extern struct __res_state _res;
+extern struct __res_state_layout _res;
 extern int h_errno;
 extern const char *h_errlist[];
 extern const int h_nerr;
@@ -123,8 +116,6 @@ int thr_keycreate(thread_key_t *, void (*)(void *));
 void *thr_getspecific(thread_key_t);
 int thr_setspecific(thread_key_t, void *);
 void res_ndestroy(res_state);
-int clock_gettime(clockid_t, struct timespec *);
-int stat(const char *, struct stat *);
 int pthread_key_create(pthread_key_t *, void (*)(void *));
 void *pthread_getspecific(pthread_key_t);
 int pthread_setspecific(pthread_key_t, const void *);
@@ -168,10 +159,9 @@ export namespace pbsd::lib_libc_resolv::b0281 {
  * SUCH DAMAGE.
  */
 
-extern int h_errno;
-
 int *__h_errno(void);
 void __h_errno_set(res_state res, int err);
+res_state __res_state(void);
 
 int *
 __h_errno(void)
@@ -321,8 +311,6 @@ ___mtctxres(void) {
  * SUCH DAMAGE.
  */
 
-extern struct __res_state _res;
-
 static thread_key_t res_key;
 static once_t res_init_once = ONCE_INITIALIZER;
 static int res_thr_keycreated = 0;
@@ -453,7 +441,14 @@ __res_state(void)
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-extern int h_errno;
+const char *
+hstrerror(int err) {
+	if (err < 0)
+		return ("Resolver internal error");
+	else if (err < h_nerr)
+		return (h_errlist[err]);
+	return ("Unknown resolver error");
+}
 
 void
 herror(const char *s) {
@@ -472,21 +467,12 @@ herror(const char *s) {
 	}
 	DE_CONST(hstrerror(*__h_errno()), t);
 	v->iov_base = t;
-	v->iov_len = strlen(v->iov_base);
+	v->iov_len = strlen((const char *)v->iov_base);
 	v++;
 	DE_CONST("\n", t);
 	v->iov_base = t;
 	v->iov_len = 1;
 	_writev(STDERR_FILENO, iov, (v - iov) + 1);
-}
-
-const char *
-hstrerror(int err) {
-	if (err < 0)
-		return ("Resolver internal error");
-	else if (err < h_nerr)
-		return (h_errlist[err]);
-	return ("Unknown resolver error");
 }
 
 } /* namespace */

@@ -3,6 +3,8 @@
  * __timezone_compat).
  */
 
+#define _DEFAULT_SOURCE
+
 #include <cerrno>
 #include <climits>
 #include <cstddef>
@@ -24,6 +26,7 @@ size_t ref_confstr(int name, char *buf, size_t len);
 int ref_fstatvfs(int fd, struct statvfs *result);
 int ref_statvfs(const char *path, struct statvfs *result);
 char *ref___timezone_compat(int zone, int dst);
+extern int pbsd_b0286_replay;
 }
 
 enum {
@@ -178,7 +181,7 @@ save_tzname(void)
 	const char *v = std::getenv("TZNAME");
 
 	had_tzname = v != nullptr;
-	saved_tzname = had_tzname ? std::strdup(v) : nullptr;
+	saved_tzname = had_tzname ? ::strdup(v) : nullptr;
 }
 
 static void
@@ -350,12 +353,15 @@ check_statvfs(const char *path, GuardStatvfs &gp, GuardStatvfs &gr,
 	int e0 = errno;
 	int pe, re;
 
-	errno = 0;
-	p = P::statvfs(path, &gp.sv);
-	pe = errno;
+	pbsd_b0286_replay = 0;
 	errno = 0;
 	r = ref_statvfs(path, &gr.sv);
 	re = errno;
+	pbsd_b0286_replay = 1;
+	errno = 0;
+	p = P::statvfs(path, &gp.sv);
+	pe = errno;
+	pbsd_b0286_replay = 0;
 
 	ncases[F_STATVFS]++;
 	if (p != r) {
@@ -385,12 +391,15 @@ check_fstatvfs(int fd, GuardStatvfs &gp, GuardStatvfs &gr, const char *ctx)
 	int e0 = errno;
 	int pe, re;
 
-	errno = 0;
-	p = P::fstatvfs(fd, &gp.sv);
-	pe = errno;
+	pbsd_b0286_replay = 0;
 	errno = 0;
 	r = ref_fstatvfs(fd, &gr.sv);
 	re = errno;
+	pbsd_b0286_replay = 1;
+	errno = 0;
+	p = P::fstatvfs(fd, &gp.sv);
+	pe = errno;
+	pbsd_b0286_replay = 0;
 
 	ncases[F_FSTATVFS]++;
 	if (p != r) {

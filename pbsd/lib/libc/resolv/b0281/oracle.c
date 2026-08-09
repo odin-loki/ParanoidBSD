@@ -58,7 +58,7 @@ struct __res_state_ext {
 	unsigned int reload_period;
 };
 
-struct __res_state {
+struct __res_state_layout {
 	int res_h_errno;
 	unsigned int options;
 	struct {
@@ -68,7 +68,7 @@ struct __res_state {
 	} _u;
 };
 
-typedef struct __res_state *res_state;
+typedef struct __res_state_layout *res_state;
 
 typedef struct mtctxres_t {
 	unsigned char opaque[64];
@@ -444,7 +444,7 @@ ref___mtctxres(void) {
 
 #undef _res
 
-struct __res_state _res;
+struct __res_state_layout _res;
 
 static thread_key_t res_key;
 static once_t res_init_once = ONCE_INITIALIZER;

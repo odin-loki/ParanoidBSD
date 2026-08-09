@@ -1351,21 +1351,21 @@ ref_seq_open_db(struct _citrus_lookup *cl, const char *name)
 	if (ret)
 		return (ret);
 
-	ret = ref__citrus_db_open(&cl->cl_db, &r, _CITRUS_LOOKUP_MAGIC,
-	    _citrus_db_hash_std, NULL);
+	ret = _db_open(&cl->cl_db, &r, _CITRUS_LOOKUP_MAGIC,
+	    _db_hash_std, NULL);
 	if (ret) {
 		_unmap_file(&r);
 		return (ret);
 	}
 
 	cl->cl_dbfile = r;
-	cl->cl_dbnum = ref__citrus_db_get_number_of_entries(cl->cl_db);
+	cl->cl_dbnum = _db_get_num_entries(cl->cl_db);
 	cl->cl_dbidx = 0;
 	cl->cl_rewind = 1;
-	cl->cl_lookup = &ref_seq_lookup_db;
-	cl->cl_next = &ref_seq_next_db;
-	cl->cl_num_entries = &ref_seq_get_num_entries_db;
-	cl->cl_close = &ref_seq_close_db;
+	cl->cl_lookup = &seq_lookup_db;
+	cl->cl_next = &seq_next_db;
+	cl->cl_num_entries = &seq_get_num_entries_db;
+	cl->cl_close = &seq_close_db;
 
 	return (0);
 }
@@ -1417,7 +1417,7 @@ ref_seq_get_num_entries_plain(struct _citrus_lookup *cl)
 	int num;
 
 	num = 0;
-	while (ref_seq_next_plain(cl, NULL, NULL) == 0)
+	while (seq_next_plain(cl, NULL, NULL) == 0)
 		num++;
 
 	return (num);
@@ -1464,10 +1464,10 @@ ref_seq_open_plain(struct _citrus_lookup *cl, const char *name)
 		return (ret);
 
 	cl->cl_rewind = 1;
-	cl->cl_next = &ref_seq_next_plain;
-	cl->cl_lookup = &ref_seq_lookup_plain;
-	cl->cl_num_entries = &ref_seq_get_num_entries_plain;
-	cl->cl_close = &ref_seq_close_plain;
+	cl->cl_next = &seq_next_plain;
+	cl->cl_lookup = &seq_lookup_plain;
+	cl->cl_num_entries = &seq_get_num_entries_plain;
+	cl->cl_close = &seq_close_plain;
 
 	return (0);
 }
@@ -1486,9 +1486,9 @@ ref__citrus_lookup_seq_open(struct _citrus_lookup **rcl, const char *name,
 	cl->cl_key = NULL;
 	cl->cl_keylen = 0;
 	cl->cl_ignore_case = ignore_case;
-	ret = ref_seq_open_db(cl, name);
+	ret = seq_open_db(cl, name);
 	if (ret == ENOENT)
-		ret = ref_seq_open_plain(cl, name);
+		ret = seq_open_plain(cl, name);
 	if (!ret)
 		*rcl = cl;
 	else
@@ -1547,20 +1547,20 @@ ref__citrus_lookup_simple(const char *name, const char *key,
 	struct _region data;
 	int ret;
 
-	ret = ref__citrus_lookup_seq_open(&cl, name, ignore_case);
+	ret = _citrus_lookup_seq_open(&cl, name, ignore_case);
 	if (ret)
 		return (NULL);
 
-	ret = ref__citrus_lookup_seq_lookup(cl, key, &data);
+	ret = _citrus_lookup_seq_lookup(cl, key, &data);
 	if (ret) {
-		ref__citrus_lookup_seq_close(cl);
+		_citrus_lookup_seq_close(cl);
 		return (NULL);
 	}
 
 	snprintf(linebuf, linebufsize, "%.*s", (int)_region_size(&data),
 	    (const char *)_region_head(&data));
 
-	ref__citrus_lookup_seq_close(cl);
+	_citrus_lookup_seq_close(cl);
 
 	return (linebuf);
 }

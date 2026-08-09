@@ -31,6 +31,7 @@ else
 	$CXX -std=c++23 -fmodules-ts $CXXFLAGS -c harness.cpp -o harness.o
 fi
 
-$CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o
+$CXX -std=c++23 $CXXFLAGS -o harness harness.o port.o oracle.o -ldl \
+    -Wl,--wrap=statfs -Wl,--wrap=fstatfs
 
 exec ./harness

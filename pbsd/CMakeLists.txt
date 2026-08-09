@@ -190,6 +190,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/iconv/b0063/port.cppm
   lib/libc/iconv/b0072/port.cppm
   lib/libc/iconv/b0229/port.cppm
+  lib/libc/iconv/b0288/port.cppm
   lib/libc/inet/b0274/port.cppm
   lib/libc/inet/b0283/port.cppm
   lib/libc/locale/b0002/port.cppm

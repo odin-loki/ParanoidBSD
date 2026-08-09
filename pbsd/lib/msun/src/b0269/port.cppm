@@ -1,25 +1,53 @@
-// PBSD port of HardenedBSD lib/msun/src batch b0269.
+// PBSD batch b0269 - C++23 module port of HardenedBSD lib/msun/src sources.
 //
 // Sources ported in this module:
-//   s_fabsl.c       -> fabsl
-//   s_nexttoward.c  -> nexttoward
+//   lib/msun/src/s_fabsl.c
+//   lib/msun/src/s_nexttoward.c
 //
-// Original copyright headers are reproduced verbatim above each ported
-// function.  The ports are literal transcriptions.
+// The ports are deliberately faithful: evaluation order, integer signedness,
+// the `hx>0.0` comparison against a floating literal, the exclusive-or of two
+// relational results, the volatile temporary used to force the underflow flag,
+// and every wrap-around on the unsigned low word are preserved exactly as they
+// appear in the original C.
 
 module;
 
 #include <cfloat>
-#include <climits>
 #include <cstdint>
-#include <endian.h>
-#include <sys/types.h>
 
 export module pbsd.lib.msun.src.b0269;
 
 namespace pbsd::lib_msun_src::b0269 {
 
-/* from lib/libc/amd64/_fpmath.h */
+/*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
+ * Copyright (c) 2002, 2003 David Schultz <das@FreeBSD.ORG>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/* From lib/libc/amd64/_fpmath.h */
 union IEEEl2bits {
 	long double	e;
 	struct {
@@ -31,54 +59,41 @@ union IEEEl2bits {
 		unsigned int	junkh	:32;
 	} bits;
 	struct {
-		unsigned long long	man	:64;
-		unsigned int		expsign	:16;
-		unsigned long long	junk	:48;
+		unsigned long	man	:64;
+		unsigned int	expsign	:16;
+		unsigned long	junk	:48;
 	} xbits;
 };
 
 #define	LDBL_NBIT	0x80000000
 
-static inline void extract_words(int32_t &ix0, u_int32_t &ix1, double val)
-{
-	union {
-		double value;
-		struct {
-#if __BYTE_ORDER == __BIG_ENDIAN
-			u_int32_t msw;
-			u_int32_t lsw;
-#else
-			u_int32_t lsw;
-			u_int32_t msw;
-#endif
-		} parts;
-	} ew_u;
-	ew_u.value = val;
-	ix0 = ew_u.parts.msw;
-	ix1 = ew_u.parts.lsw;
-}
+/* From lib/msun/src/math_private.h (little endian variant). */
+typedef union {
+	double value;
+	struct {
+		std::uint32_t lsw;
+		std::uint32_t msw;
+	} parts;
+} ieee_double_shape_type;
 
-static inline void insert_words(double &val, int32_t ix0, u_int32_t ix1)
-{
-	union {
-		double value;
-		struct {
-#if __BYTE_ORDER == __BIG_ENDIAN
-			u_int32_t msw;
-			u_int32_t lsw;
-#else
-			u_int32_t lsw;
-			u_int32_t msw;
-#endif
-		} parts;
-	} iw_u;
-	iw_u.parts.msw = ix0;
-	iw_u.parts.lsw = ix1;
-	val = iw_u.value;
-}
+#define EXTRACT_WORDS(ix0,ix1,d)				\
+do {								\
+  ieee_double_shape_type ew_u;					\
+  ew_u.value = (d);						\
+  (ix0) = ew_u.parts.msw;					\
+  (ix1) = ew_u.parts.lsw;					\
+} while (0)
 
-#define	EXTRACT_WORDS(ix0,ix1,d)	extract_words((ix0),(ix1),(d))
-#define	INSERT_WORDS(d,ix0,ix1)		insert_words((d),(ix0),(ix1))
+#define INSERT_WORDS(d,ix0,ix1)					\
+do {								\
+  ieee_double_shape_type iw_u;					\
+  iw_u.parts.msw = (ix0);					\
+  iw_u.parts.lsw = (ix1);					\
+  (d) = iw_u.value;						\
+} while (0)
+
+typedef std::int32_t	int32_t_;
+typedef std::uint32_t	u_int32_t_;
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -137,17 +152,15 @@ fabsl(long double x)
  * for nextafter(), so we don't use this routine.
  */
 
-#if LDBL_MAX_EXP != 0x4000
-#error "Unsupported long double format"
-#endif
+static_assert(LDBL_MAX_EXP == 0x4000, "Unsupported long double format");
 
 export double
 nexttoward(double x, long double y)
 {
 	union IEEEl2bits uy;
 	volatile double t;
-	int32_t hx,ix;
-	u_int32_t lx;
+	int32_t_ hx,ix;
+	u_int32_t_ lx;
 
 	EXTRACT_WORDS(hx,lx,x);
 	ix = hx&0x7fffffff;		/* |x| */

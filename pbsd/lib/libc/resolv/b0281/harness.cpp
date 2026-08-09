@@ -17,12 +17,12 @@ import pbsd.lib.libc.resolv.b0281;
 
 namespace P = pbsd::lib_libc_resolv::b0281;
 
-using ResState = P::__res_state;
+using ResState = P::__res_state_layout;
 using ResStatePtr = P::res_state;
 using MtCtx = P::mtctxres_t;
 
 extern "C" {
-extern struct __res_state _res;
+extern struct __res_state_layout _res;
 extern int h_errno;
 extern const int h_nerr;
 

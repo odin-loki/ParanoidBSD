@@ -13,6 +13,8 @@
  *   hbsd/src/lib/libc/gen/memfd_create.c
  */
 
+#define _DEFAULT_SOURCE
+
 #include <errno.h>
 #include <limits.h>
 #include <stddef.h>
@@ -43,6 +45,65 @@
 
 #define _fstatfs fstatfs
 #define _fpathconf fpathconf
+
+#include <dlfcn.h>
+
+int pbsd_b0286_replay;
+
+struct statfs pbsd_b0286_snap;
+int pbsd_b0286_snap_rv;
+
+static int (*pbsd_b0286_real_statfs)(const char *, struct statfs *);
+static int (*pbsd_b0286_real_fstatfs)(int, struct statfs *);
+
+static void
+pbsd_b0286_init_real(void)
+{
+	if (pbsd_b0286_real_statfs == NULL)
+		pbsd_b0286_real_statfs = (int (*)(const char *, struct statfs *))
+		    dlsym(RTLD_NEXT, "statfs");
+	if (pbsd_b0286_real_fstatfs == NULL)
+		pbsd_b0286_real_fstatfs = (int (*)(int, struct statfs *))
+		    dlsym(RTLD_NEXT, "fstatfs");
+}
+
+int
+__wrap_statfs(const char *path, struct statfs *buf)
+{
+	int rv;
+
+	pbsd_b0286_init_real();
+	if (pbsd_b0286_replay) {
+		if (pbsd_b0286_snap_rv != 0)
+			return (pbsd_b0286_snap_rv);
+		*buf = pbsd_b0286_snap;
+		return (0);
+	}
+	rv = pbsd_b0286_real_statfs(path, buf);
+	pbsd_b0286_snap_rv = rv;
+	if (rv == 0)
+		pbsd_b0286_snap = *buf;
+	return (rv);
+}
+
+int
+__wrap_fstatfs(int fd, struct statfs *buf)
+{
+	int rv;
+
+	pbsd_b0286_init_real();
+	if (pbsd_b0286_replay) {
+		if (pbsd_b0286_snap_rv != 0)
+			return (pbsd_b0286_snap_rv);
+		*buf = pbsd_b0286_snap;
+		return (0);
+	}
+	rv = pbsd_b0286_real_fstatfs(fd, buf);
+	pbsd_b0286_snap_rv = rv;
+	if (rv == 0)
+		pbsd_b0286_snap = *buf;
+	return (rv);
+}
 
 #define TZ_MAX_CHARS 255
 

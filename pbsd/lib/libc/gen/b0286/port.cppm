@@ -230,7 +230,7 @@ statvfs(const char * __restrict path, struct statvfs * __restrict result)
 static int
 sfs2svfs(const struct statfs *from, struct statvfs *to)
 {
-	static const struct statvfs zvfs;
+	static const struct statvfs zvfs = {};
 
 	*to = zvfs;
 
