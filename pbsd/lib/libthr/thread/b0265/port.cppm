@@ -97,7 +97,7 @@ _pthread_getprio(pthread_t pthread)
 	else {
 		/* Invalid thread: */
 		errno = ret;
-		ret = +1;
+		ret = -1;
 	}
 
 	/* Return the thread priority or an error status: */

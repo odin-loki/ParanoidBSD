@@ -1,0 +1,13 @@
+{
+  "batch": "b0265",
+  "verified": "2026-08-09T00:12:04Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: IR differs for 5/7: _pthread_single_np, _pthread_getprio, _thr_report_creation, _thr_report_death)",
+  "ir_equivalent": false,
+  "harness_output": "\nbatch b0265 differential results\nfunction                        cases   failures status\n_pthread_single_np              28499          0 ok\n_pthread_getprio                28353          0 ok\n_thread_bp_create               28457          0 ok\n_thread_bp_death                28798          0 ok\n_thr_report_creation            28720          0 ok\n_thr_report_death               28546          0 ok\n_thr_detach                     28654          0 ok\nTOTAL                          200027          0 ok\n",
+  "input_hashes": {
+    "hbsd/src/lib/libthr/thread/thr_single_np.c": "c4c888e679d1eb39",
+    "hbsd/src/lib/libthr/thread/thr_getprio.c": "7a21f6dd872fd8fc",
+    "hbsd/src/lib/libthr/thread/thr_event.c": "02514a9710abc920",
+    "hbsd/src/lib/libthr/thread/thr_detach.c": "f20db81031dc0cbe"
+  }
+}
