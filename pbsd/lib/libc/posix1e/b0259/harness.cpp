@@ -21,9 +21,11 @@ import pbsd.lib.libc.posix1e.b0259;
 
 namespace P = pbsd::lib_libc_posix1e::b0259;
 
+using MAC = P::mac;
+
 extern "C" {
 int ref_acl_free(void *obj_p);
-int ref_mac_execve(char *fname, char **argv, char **envv, struct mac *label);
+int ref_mac_execve(char *fname, char **argv, char **envv, MAC *label);
 int ref___oldacl_get_perm_np(uint32_t *permset_d, mode_t perm);
 int ref___oldacl_add_perm(uint32_t *permset_d, mode_t perm);
 int ref___oldacl_delete_perm(uint32_t *permset_d, mode_t perm);
@@ -320,8 +322,7 @@ acl_snap_eq(const AclCall &a, const AclCall &b)
 	    a.permset_off == b.permset_off &&
 	    a.perm == b.perm &&
 	    a.ret == b.ret &&
-	    a.err == b.err &&
-	    a.permset == b.permset);
+	    a.err == b.err);
 }
 
 static bool

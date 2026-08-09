@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 /*
  * Differential harness for batch b0258 (__dup3, __assert).
  */
@@ -181,7 +179,7 @@ stderr_capture_begin(void)
 	std::fflush(stderr);
 	if (dup2(p[1], STDERR_FILENO) < 0)
 		std::abort();
-	std::close(p[1]);
+	::close(p[1]);
 	stderr_pipe_rd = p[0];
 	stderr_pipe_wr = -1;
 }
@@ -192,7 +190,7 @@ stderr_capture_end(void)
 	std::fflush(stderr);
 	if (stderr_saved_fd >= 0) {
 		dup2(stderr_saved_fd, STDERR_FILENO);
-		std::close(stderr_saved_fd);
+		::close(stderr_saved_fd);
 		stderr_saved_fd = -1;
 	}
 	if (stderr_pipe_rd >= 0) {
@@ -207,7 +205,7 @@ stderr_capture_end(void)
 			total += n;
 		}
 		stderr_cap[total] = '\0';
-		std::close(stderr_pipe_rd);
+		::close(stderr_pipe_rd);
 		stderr_pipe_rd = -1;
 	} else {
 		stderr_cap[0] = '\0';
