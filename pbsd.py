@@ -53,7 +53,10 @@ MODEL = "composer-2.5"                    # cheap bulk model; escalate on gate f
 ESCALATE_MODEL = "claude-opus-5-thinking-high"
 BATCH_SIZE = 4          # small batches: much higher pass rate on weaker models
 DEFAULT_JOBS = 18        # agent concurrency; circuit breaker halves on rate limits
-DEFAULT_GATE_JOBS = 6    # max harness builds in flight (~6×5GB peak)
+DEFAULT_GATE_JOBS = 4    # max harness builds in flight (~4×5GB peak)
+DEFAULT_MECH_JOBS = 8    # IR sweep parallelism; driver must use --mech-jobs not --jobs
+MECH_JOB_CAP = 8         # hard cap — --jobs 64 on a 64-core box OOMs WSL
+MECH_SAVE_EVERY = 50     # checkpoint inventory every N files during mechanical
 HARNESS_VMEM_KB = 5 * 1024 * 1024         # virtual memory cap per harness (KiB)
 RATE_LIMIT_PAUSE = 120  # seconds to sleep when the API keeps rate-limiting us
 RATE_LIMIT_STREAK = 8   # consecutive rate limits before we pause and halve concurrency
@@ -139,6 +142,8 @@ LOG = MIG / "drive_log.jsonl"
 DEFERRED = MIG / "deferred.jsonl"
 NEEDS_HUMAN = MIG / "NEEDS_HUMAN.md"
 SETUP_STAMP = MIG / ".setup_done"
+MECH_STAMP = MIG / ".mech_pass_done"
+MECH_CHECKPOINT = MIG / ".mech_checkpoint.jsonl"
 WORK = ROOT / "pbsd"
 
 # ─────────────────────────────── the prompt ──────────────────────────────────
@@ -431,6 +436,8 @@ def setup() -> None:
         say(f"collapsed {n_clone} clone files onto {len(rows)-n_clone} unique ports")
 
     MIG.mkdir(parents=True, exist_ok=True)
+    MECH_STAMP.unlink(missing_ok=True)
+    MECH_CHECKPOINT.unlink(missing_ok=True)
     (ROOT / ".gitignore").touch()
     gi = (ROOT / ".gitignore").read_text(errors="ignore")
     if "docs/migration/inventory.csv" not in gi:
@@ -922,7 +929,7 @@ def emit_ir(src: Path, lang: str, extra: list[str], workdir: Path) -> str | None
     try:
         r = sh(cmd, cwd=workdir, timeout=180)
         if r.returncode != 0:      # retry without the value-names flag
-            cmd.remove("-fno-discard-value-names")
+            cmd = [x for x in cmd if x != "-fno-discard-value-names"]
             r = sh(cmd, cwd=workdir, timeout=180)
     except subprocess.TimeoutExpired:
         return None
@@ -1959,19 +1966,59 @@ def _mech_worker(row):
     return row["path"], ok, detail
 
 
-def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
+def load_mech_checkpoint() -> set[str]:
+    if not MECH_CHECKPOINT.is_file():
+        return set()
+    done: set[str] = set()
+    for line in MECH_CHECKPOINT.read_text(errors="ignore").splitlines():
+        if not line.strip():
+            continue
+        try:
+            done.add(json.loads(line)["path"])
+        except Exception:
+            continue
+    return done
+
+
+def append_mech_checkpoint(path: str) -> None:
+    MECH_CHECKPOINT.parent.mkdir(parents=True, exist_ok=True)
+    with MECH_CHECKPOINT.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({"path": path, "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                                             time.gmtime())}) + "\n")
+
+
+def run_mechanical_phase(rows: list[dict], jobs: int, *, force: bool = False) -> int:
     """Prove as much of the tree as possible with no model calls at all.
 
-    This is pure CPU -- two compiler invocations and an IR comparison per file --
-    so it saturates every core and costs nothing but electricity. Whatever it
-    proves never reaches the agent, which is the only way the whole tree finishes
-    in hours instead of weeks.
+    ProcessPoolExecutor.map streams work (unlike submit-all-futures) and
+    checkpoints per file so a WSL crash can resume. Parallelism is capped —
+    the driver used to pass --jobs 64 on a 64-core host which killed WSL.
     """
     if not MECHANICAL:
         return 0
-    todo = [r for r in rows if r["status"] in ("PENDING", "DEFERRED")]
-    if not todo:
+    jobs = min(max(1, jobs), MECH_JOB_CAP)
+    stamp = MECH_STAMP.read_text(encoding="utf-8").strip() if MECH_STAMP.is_file() else ""
+    if not force and stamp and stamp != "in_progress":
+        say("mechanical phase already complete — skipping (use --force-mech to rerun)")
         return 0
+
+    tried = load_mech_checkpoint()
+    if force:
+        tried = set()
+        MECH_CHECKPOINT.unlink(missing_ok=True)
+    todo = [r for r in rows if r["status"] in ("PENDING", "DEFERRED")
+            and r["path"] not in tried]
+    if not todo:
+        if tried:
+            say(f"mechanical phase done — {len(tried)} files tried, none left to scan")
+            MECH_STAMP.write_text(time.strftime("%Y-%m-%d %H:%M:%S"), encoding="utf-8")
+        else:
+            say("mechanical phase — nothing pending to scan")
+        return 0
+
+    MECH_STAMP.write_text("in_progress", encoding="utf-8")
+    if tried:
+        say(f"resuming mechanical — {len(tried)} already tried, {len(todo)} left")
     banner(f"Mechanical phase — {len(todo)} files, {jobs} parallel, no agent")
 
     proven = 0
@@ -1982,6 +2029,7 @@ def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
 
     with cf.ProcessPoolExecutor(max_workers=jobs) as ex:
         for path, ok, detail in ex.map(_mech_worker, todo, chunksize=4):
+            append_mech_checkpoint(path)
             done += 1
             if ok:
                 proven += 1
@@ -1993,10 +2041,13 @@ def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
             else:
                 key = detail.split(":")[0][:60]
                 reasons[key] = reasons.get(key, 0) + 1
-            if done % 250 == 0 or done == len(todo):
+            if proven and done % MECH_SAVE_EVERY == 0:
+                save_rows(rows)
+            if done % 100 == 0 or done == len(todo):
                 el = time.monotonic() - t0
                 print(f"  [{done}/{len(todo)}] {proven} proven free "
-                      f"({100*proven/done:.0f}%), {done/max(el,1):.0f} files/s",
+                      f"({100*proven/max(done,1):.0f}%), "
+                      f"{done/max(el,1):.1f} files/s",
                       flush=True)
 
     say(f"mechanical phase proved {proven}/{len(todo)} files with no agent call")
@@ -2009,11 +2060,13 @@ def run_mechanical_phase(rows: list[dict], jobs: int) -> int:
                                     if r["status"] == "VERIFIED"})
         if n:
             say(f"+ {n} clone files inherit a mechanical verdict")
-        save_rows(rows)
+    save_rows(rows)
+    if proven:
         emit_build_wiring(rows)
         git("add", "-A")
         git("commit", "-q", "-m",
             f"pbsd: {proven} files ported mechanically, proven by IR equivalence")
+    MECH_STAMP.write_text(time.strftime("%Y-%m-%d %H:%M:%S"), encoding="utf-8")
     return proven
 
 
@@ -2220,13 +2273,17 @@ def main() -> int:
     ap.add_argument("--escalate-model", default=ESCALATE_MODEL)
     ap.add_argument("--batches", type=int, default=0, help="0 = run until done")
     ap.add_argument("--jobs", "-j", type=int, default=JOBS,
-                    help="batches in flight; 0 = DEFAULT_JOBS")
+                    help="agent batches in flight; 0 = DEFAULT_JOBS")
+    ap.add_argument("--mech-jobs", type=int, default=0,
+                    help="mechanical IR-compile parallelism; 0 = DEFAULT_MECH_JOBS")
     ap.add_argument("--gate-jobs", type=int, default=0,
                     help="max harness builds in flight; 0 = DEFAULT_GATE_JOBS")
     ap.add_argument("--no-mechanical", action="store_true",
                     help="always use the agent, skip the free deterministic port")
     ap.add_argument("--mechanical-only", action="store_true",
                     help="run only the free deterministic port, then stop")
+    ap.add_argument("--force-mech", action="store_true",
+                    help="rerun the mechanical phase even if already done")
     ap.add_argument("--reset-queue", action="store_true",
                     help="move NEEDS_HUMAN back to PENDING and clear deferred.jsonl")
     ap.add_argument("--status", action="store_true")
@@ -2272,8 +2329,8 @@ def main() -> int:
         say(f"upstream drift: reopened {n_drift} batches")
         save_rows(rows)
 
-    jobs_mech = min(a.jobs or 8, os.cpu_count() or 8)
-    run_mechanical_phase(rows, jobs_mech)
+    jobs_mech = a.mech_jobs or DEFAULT_MECH_JOBS
+    run_mechanical_phase(rows, jobs_mech, force=a.force_mech)
     if a.mechanical_only:
         status()
         return 0
@@ -2288,7 +2345,7 @@ def main() -> int:
     jobs = a.jobs or DEFAULT_JOBS
     banner(f"Converting {len(queue)} batches   model={a.model}   "
            f"escalate={a.escalate_model}   jobs={jobs}"
-           + ("" if MECHANICAL else "   (mechanical path off)"))
+           + ("" if MECHANICAL else "   (agent pass only)"))
     ver = rej = 0
     try:
         if jobs > 1:

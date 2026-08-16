@@ -119,5 +119,6 @@ docs/migration/clang_port/agent_corpus/
 # docs/migration/clang_port/proposals.jsonl
 # pbsd.py state — never clean these
 !docs/migration/
-# pbsd.py state — never clean these
-!docs/migration/
+# Mechanical IR-sweep runtime (resume state, not source)
+docs/migration/.mech_pass_done
+docs/migration/.mech_checkpoint.jsonl

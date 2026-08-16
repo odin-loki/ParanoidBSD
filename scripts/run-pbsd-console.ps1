@@ -92,8 +92,24 @@ function Get-LogTail([int]$n = 10) {
     return Invoke-WslBash "tail -$n /home/odin/pbsd_run.log 2>/dev/null" 15
 }
 
+function Get-MechanicalProgress {
+    $running = (Invoke-WslBash 'pgrep -f "pbsd.py --mechanical-only" >/dev/null && echo on || echo off' 10).Trim()
+    $line = Invoke-WslBash 'grep -E "^\s+\[[0-9]+/[0-9]+\] [0-9]+ proven" /home/odin/pbsd_run.log 2>/dev/null | tail -1' 15
+    $done = 0; $total = 0; $proven = 0
+    if ($line -match '\[(\d+)/(\d+)\]\s+(\d+) proven') {
+        $done = [int]$Matches[1]
+        $total = [int]$Matches[2]
+        $proven = [int]$Matches[3]
+    } elseif ($line -match 'Mechanical phase — (\d+) files') {
+        $total = [int]$Matches[1]
+    }
+    $ckpt = (Invoke-WslBash 'wc -l < ~/pbsd/docs/migration/.mech_checkpoint.jsonl 2>/dev/null || echo 0' 10).Trim() -replace '\D', ''
+    if (-not $done -and $ckpt) { $done = [int]$ckpt }
+    return @{ Running = ($running -eq 'on'); Done = $done; Total = $total; Proven = $proven }
+}
+
 function Get-BatchProgress {
-    $line = Invoke-WslBash 'grep -E "\[[0-9]+/[0-9]+\]" /home/odin/pbsd_run.log 2>/dev/null | tail -1' 15
+    $line = Invoke-WslBash 'grep -E "\[[0-9]+/[0-9]+\] [0-9]+ verified" /home/odin/pbsd_run.log 2>/dev/null | tail -1' 15
     $done = 0; $total = 0; $eta = 0.0
     if ($line -match '\[(\d+)/(\d+)\]') {
         $done = [int]$Matches[1]
@@ -110,7 +126,7 @@ function Draw-Bar([double]$pct, [int]$width = 44) {
     return '[' + ('#' * $filled) + ('-' * $empty) + (' ] {0:N1}%%' -f $pct)
 }
 
-function Show-Console($s, $proc, $batch, $logLines) {
+function Show-Console($s, $proc, $batch, $mech, $logLines) {
     Clear-Host
     $filePct = if ($s.TotalFiles -gt 0) { 100.0 * $s.Verified / $s.TotalFiles } else { 0 }
     $linePct = if ($s.TotalLines -gt 0) { 100.0 * $s.Lines / $s.TotalLines } else { 0 }
@@ -131,6 +147,11 @@ function Show-Console($s, $proc, $batch, $logLines) {
     Write-Host ""
     Write-Host "  Processes" -ForegroundColor Cyan
     Write-Host "    watchdog $($proc.Watchdog)   driver $($proc.Driver)   agents $($proc.Agents)   RAM $($proc.Mem)"
+    if ($mech.Running -or $mech.Total -gt 0) {
+        $mp = if ($mech.Total -gt 0) { [math]::Round(100.0 * $mech.Done / $mech.Total, 1) } else { 0 }
+        $state = if ($mech.Running) { 'running' } else { 'done' }
+        Write-Host ("    mechanical [{0}/{1}]  {2} proven  ({3:N1}%%, {4})" -f $mech.Done, $mech.Total, $mech.Proven, $mp, $state) -ForegroundColor DarkCyan
+    }
     if ($batch.Total -gt 0) {
         $bp = [math]::Round(100.0 * $batch.Done / $batch.Total, 1)
         Write-Host ("    round      [{0}/{1}]  ~{2}h left  ({3:N1}%%)" -f $batch.Done, $batch.Total, $batch.EtaHours, $bp) -ForegroundColor DarkCyan
@@ -190,9 +211,10 @@ try {
         $s = Get-PbsdStatus
         $proc = Get-ProcessInfo
         $batch = Get-BatchProgress
+        $mech = Get-MechanicalProgress
         $logLines = @(Get-LogTail | Out-String).Trim() -split "`n"
 
-        Show-Console $s $proc $batch $logLines
+        Show-Console $s $proc $batch $mech $logLines
 
         if ($s.Pending -eq 0 -and $s.Deferred -eq 0 -and $proc.Driver -eq 'off') {
             Write-Host "  Queue empty." -ForegroundColor Green
