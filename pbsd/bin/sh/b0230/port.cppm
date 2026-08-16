@@ -787,6 +787,9 @@ port_mknodes_reset(void)
 	linno = 0;
 	line[0] = '\0';
 	linep = line;
+	memset(str, 0, sizeof(str));
+	memset(nodename, 0, sizeof(nodename));
+	memset(nodestr, 0, sizeof(nodestr));
 }
 
 void

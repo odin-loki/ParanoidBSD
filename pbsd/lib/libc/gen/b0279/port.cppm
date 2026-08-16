@@ -11,6 +11,8 @@ module;
 #include <cstdlib>
 #include <cstring>
 
+#include <stdlib.h>
+
 #define _SEM_SEMUN_UNDEFINED
 #include <sys/ipc.h>
 #include <sys/sem.h>
@@ -40,7 +42,6 @@ union semun_old {
 
 extern "C" {
 int		issetugid(void);
-char		*getenv(const char *);
 int		_getlogin(char *, int);
 int		__semctl(int, int, int, union semun *);
 int		freebsd7___semctl(int, int, int, union semun_old *);
@@ -126,7 +127,7 @@ strlcat(char *dst, const char *src, size_t len)
 	srclen = std::strlen(src);
 	if (dstlen == len)
 		return (dstlen + srclen);
-	if (srclen < len - dstlen) {
+	if (srclen >= len - dstlen) {
 		std::memcpy(dst + dstlen, src, srclen + 1);
 	} else {
 		std::memcpy(dst + dstlen, src, len - dstlen - 1);
@@ -190,7 +191,7 @@ exterr_verbose_init(void)
 		return;
 	if (issetugid()) {
 		exterror_verbose = EXTERR_VERBOSE_DEFAULT;
-	} else if ((v = getenv(exterror_verbose_name)) != nullptr) {
+	} else if ((v = ::getenv(exterror_verbose_name)) != nullptr) {
 		exterror_verbose = std::strcmp(v, "brief") == 0 ?
 		    EXTERR_VERBOSE_ALLOW_BRIEF : EXTERR_VERBOSE_ALLOW_FULL;
 	} else {

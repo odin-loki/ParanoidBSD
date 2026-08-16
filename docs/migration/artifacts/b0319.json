@@ -1,0 +1,13 @@
+{
+  "batch": "b0319",
+  "verified": "2026-08-09T03:01:44Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\nfunction                  cases    fails\n--------                  -----    -----\ncons                      50005        0\nnew_string_list           50020        0\nnew_hash_table            50010        0\nnew_hash_bucket              32        0\ngetULong                  50024        0\ngetLong                   50024        0\ngetUShort                 50020        0\ngetShort                  50020        0\nputULong                  50004        0\nputLong                   50004        0\nputUShort                 50004        0\nputShort                  50004        0\npiaddr                    12504        0\nsubnet_number             50004        0\nbroadcast_addr            50004        0\naddr_eq                   50004        0\nTOTAL                    712687        0\n",
+  "input_hashes": {
+    "hbsd/src/sbin/dhclient/tree.c": "432b405f63d3b212",
+    "hbsd/src/sbin/dhclient/alloc.c": "22b0acd7270ecf19",
+    "hbsd/src/sbin/dhclient/convert.c": "338afcbc4588d0fd",
+    "hbsd/src/sbin/dhclient/inet.c": "dad018309f76c959"
+  }
+}

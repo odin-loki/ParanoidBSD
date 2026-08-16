@@ -32,17 +32,18 @@ module;
 #define PA_INT 1
 #endif
 
-#include <cassert>
-#include <cerrno>
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <cwchar>
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
 #include <signal.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+#include <wchar.h>
+#include <stdlib.h>
 #include <unistd.h>
+
+#undef locale_t
 
 export module pbsd.lib.libc.stdio.b0318;
 
@@ -94,14 +95,14 @@ export struct b0318_FILE {
 	size_t		 slbexpand_last;
 };
 
-export using FILE = b0318_FILE;
+export using b0318_file_t = b0318_FILE;
 
 export struct xlocale_ctype {
 	size_t	(*__wcsnrtombs)(char * __restrict, const wchar_t ** __restrict,
 	    size_t, size_t, pb_mbstate_t * __restrict);
 };
 
-export using locale_t = xlocale_ctype *;
+export using b0318_locale_t = xlocale_ctype *;
 
 export struct printf_info {
 	int	width;
@@ -113,9 +114,12 @@ export struct __printf_io {
 	int	_dummy;
 };
 
+#define	FILE			b0318_FILE
+#define	locale_t		b0318_locale_t
+
 extern "C" {
-extern locale_t b0318_default_locale;
-extern locale_t b0318_global_locale;
+extern b0318_locale_t b0318_default_locale;
+extern b0318_locale_t b0318_global_locale;
 extern int b0318_prepwrite_ret;
 extern int b0318_sfvwrite_ret;
 extern int b0318_sfvwrite_calls;
@@ -147,7 +151,7 @@ extern int b0318_fdopen_last_fd;
 extern int b0318_close_calls;
 extern int b0318_close_last_fd;
 extern int b0318_tmpfile_errno;
-extern FILE *b0318_fdopen_result;
+extern b0318_FILE *b0318_fdopen_result;
 extern int b0318_printf_puts_ret;
 extern int b0318_printf_puts_calls;
 extern const char *b0318_printf_puts_last_buf;
@@ -156,22 +160,23 @@ extern unsigned char b0318_printf_puts_capture[8192];
 extern size_t b0318_printf_puts_capture_len;
 extern int b0318_printf_flush_calls;
 extern struct __printf_io *b0318_printf_flush_last_io;
-extern locale_t b0318_get_locale(void);
-extern int b0318_prepwrite(FILE *);
-extern int b0318_sfvwrite(FILE *, __suio *);
-extern wint_t b0318_fgetwc(FILE *, locale_t);
-extern int b0318_slbexpand(FILE *, size_t);
-extern int b0318_sferror(FILE *);
-extern void b0318_file_init(FILE *);
+extern b0318_locale_t b0318_get_locale(void);
+extern int b0318_prepwrite(b0318_FILE *);
+extern int b0318_sfvwrite(b0318_FILE *, __suio *);
+extern wint_t b0318_fgetwc(b0318_FILE *, b0318_locale_t);
+extern int b0318_slbexpand(b0318_FILE *, size_t);
+extern int b0318_sferror(b0318_FILE *);
+extern void b0318_file_init(b0318_FILE *);
 extern const char *b0318_secure_getenv(const char *);
 extern int b0318_asprintf(char **, const char *, ...);
 extern int b0318_mkstemp(char *);
 extern int b0318_unlink(const char *);
 extern int b0318___libc_sigprocmask(int, const sigset_t *, sigset_t *);
-extern FILE *b0318_fdopen(int, const char *);
+extern b0318_FILE *b0318_fdopen(int, const char *);
 extern int b0318__close(int);
 extern int b0318_printf_puts(__printf_io *, const char *, int);
 extern void b0318_printf_flush(__printf_io *);
+int sprintf(char *str, const char *format, ...);
 }
 
 #define	__get_locale()		b0318_get_locale()

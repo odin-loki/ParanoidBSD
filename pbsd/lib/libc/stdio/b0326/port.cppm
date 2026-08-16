@@ -15,6 +15,14 @@ module;
 #ifndef _POSIX_C_SOURCE
 #define _POSIX_C_SOURCE 200809L
 #endif
+#ifndef _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE 1
+#endif
+#ifndef BUFSIZ
+#define BUFSIZ 1024
+#endif
+#undef BUFSIZ
+#define BUFSIZ 1024
 
 #include <cassert>
 #include <cerrno>
@@ -22,8 +30,7 @@ module;
 #include <cinttypes>
 #include <cstdbool>
 #include <cstddef>
-#include <cstdint>
-#include <cstdio>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -34,12 +41,14 @@ module;
 
 export module pbsd.lib.libc.stdio.b0326;
 
+extern "C" int sprintf(char *, const char *, ...);
+
 export struct __sbuf {
 	unsigned char *_base;
 	int _size;
 };
 
-export struct FILE {
+export struct __b0326_FILE {
 	unsigned char *_p;
 	int _r;
 	int _w;
@@ -142,10 +151,10 @@ void b0326_reset(void);
 int _fstat(int, struct stat *);
 int isatty(int);
 void _cleanup(void);
-int __sflush(FILE *);
+int __sflush(struct __b0326_FILE *);
 int __sclose(void *);
 long long __sseek(void *, long long, int);
-long long _sseek(FILE *, long long, int);
+long long _sseek(struct __b0326_FILE *, long long, int);
 int __printf_out(struct __printf_io *, const struct printf_info *,
     const char *, int);
 void __printf_flush(struct __printf_io *);
@@ -201,9 +210,15 @@ void __printf_flush(struct __printf_io *);
 #define	STDIO_THREAD_LOCK()	do { mock_stdio_lock_calls++; } while (0)
 #define	STDIO_THREAD_UNLOCK()	do { mock_stdio_unlock_calls++; } while (0)
 
-namespace pbsd::lib_libc_stdio::b0326 {
+export namespace pbsd::lib_libc_stdio::b0326 {
 
+using FILE = __b0326_FILE;
 using fpos_t = long long;
+
+static int cleanfile(FILE *fp, bool c);
+int __swhatbuf(FILE *fp, size_t *bufsize, int *couldbetty);
+off_t ftello(FILE *fp);
+int _ftello(FILE *fp, fpos_t *offset);
 
 static int
 cleanfile(FILE *fp, bool c)
@@ -231,10 +246,6 @@ cleanfile(FILE *fp, bool c)
 
 	return (r);
 }
-
-} /* namespace pbsd::lib_libc_stdio::b0326 */
-
-export namespace pbsd::lib_libc_stdio::b0326 {
 
 /* ====================================================================== */
 /* lib/libc/stdio/makebuf.c                                               */
@@ -297,7 +308,7 @@ __smakebuf(FILE *fp)
 	__cleanup = _cleanup;
 	flags |= __SMBF;
 	fp->_bf._base = fp->_p = (unsigned char *)p;
-	fp->_bf._size = (int)size;
+	fp->_bf._size = size;
 	if (couldbetty && isatty(fp->_file))
 		flags |= __SLBF;
 	fp->_flags |= flags;
@@ -309,7 +320,7 @@ __smakebuf(FILE *fp)
 int
 __swhatbuf(FILE *fp, size_t *bufsize, int *couldbetty)
 {
-	struct stat st;
+	alignas(16) struct stat st;
 
 	if (fp->_file < 0 || _fstat(fp->_file, &st) < 0) {
 		*couldbetty = 0;
@@ -330,7 +341,7 @@ __swhatbuf(FILE *fp, size_t *bufsize, int *couldbetty)
 	 * unconditionally; it will only be used if __SOPT is also set.
 	 */
 	*bufsize = st.st_blksize;
-	fp->_blksize = (int)st.st_blksize;
+	fp->_blksize = st.st_blksize;
 	return ((st.st_mode & S_IFMT) == S_IFREG && fp->_seek == __sseek ?
 	    __SOPT : __SNPT);
 }

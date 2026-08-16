@@ -38,7 +38,7 @@ struct acl_entry {
 };
 typedef struct acl_entry *acl_entry_t;
 
-inline constexpr unsigned int ACL_MAX_ENTRIES = 254;
+inline constexpr int ACL_MAX_ENTRIES = 254;
 inline constexpr int _ACL_T_ALIGNMENT_BITS = 13;
 inline constexpr int ACL_BRAND_UNKNOWN = 0;
 

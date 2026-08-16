@@ -1965,7 +1965,7 @@ def mech_id(path: str) -> str:
 
 
 def _mech_worker(row):
-    """Child-process entry point for one mechanical file attempt."""
+    """Thread entry point for one mechanical file attempt."""
     outdir = WORK / row["dir"] / (Path(row["path"]).stem + "_m")
     try:
         ok, detail = mechanical_port(row, outdir)

@@ -1,13 +1,12 @@
 module;
 
-#include <complex.h>
 #include <cstdint>
 #include <float.h>
 #include <math.h>
 
 export module pbsd.lib.msun.src.b0322;
 
-namespace pbsd::lib_msun_src::b0322::detail {
+export namespace pbsd::lib_msun_src::b0322 {
 
 typedef union {
 	float value;
@@ -42,7 +41,7 @@ typedef union {
 	do {							\
 		ieee_double_shape_type gh_u;			\
 		gh_u.value = (d);				\
-		(i) = static_cast<std::int32_t>(gh_u.parts.msw); \
+		(i) = gh_u.parts.msw;				\
 	} while (0)
 
 #define GET_LOW_WORD(i, d)					\
@@ -93,7 +92,7 @@ union IEEEl2bits {
 		unsigned long	junk	:48;
 	} xbits;
 };
-#define	LDBL_MANL_SIZE	32
+#define	PBSD_LDBL_MANL_SIZE	32
 #elif LDBL_MANT_DIG == 113
 union IEEEl2bits {
 	long double	e;
@@ -109,14 +108,18 @@ union IEEEl2bits {
 		unsigned int	expsign	:16;
 	} xbits;
 };
-#define	LDBL_MANL_SIZE	64
+#define	PBSD_LDBL_MANL_SIZE	64
 #else
 #error "Unsupported long double format"
 #endif
 
-} // namespace pbsd::lib_msun_src::b0322::detail
-
-export namespace pbsd::lib_msun_src::b0322 {
+#if PBSD_LDBL_MANL_SIZE > 32
+#define	PBSD_MASK	((std::uint64_t)-1)
+#else
+#define	PBSD_MASK	((std::uint32_t)-1)
+#endif
+#define	PBSD_GETFRAC(bits, n)	((bits) & ~(PBSD_MASK << (n)))
+#define	PBSD_HIBITS	(LDBL_MANT_DIG - PBSD_LDBL_MANL_SIZE)
 
 using std::int32_t;
 
@@ -156,14 +159,14 @@ static volatile float huge = 1.0e+30;
 
 } // namespace
 
-export float
+float
 expm1f(float x)
 {
 	float y,hi,lo,c,t,e,hxs,hfx,r1,twopk;
 	int32_t k,xsb;
 	std::uint32_t hx;
 
-	detail::GET_FLOAT_WORD(hx,x);
+	GET_FLOAT_WORD(hx,x);
 	xsb = hx&0x80000000;		/* sign bit of x */
 	hx &= 0x7fffffff;		/* high word of |x| */
 
@@ -195,7 +198,7 @@ expm1f(float x)
 		hi = x - t*ln2_hi;	/* t*ln2_hi is exact here */
 		lo = t*ln2_lo;
 	    }
-	    detail::STRICT_ASSIGN(float, x, hi - lo);
+	    STRICT_ASSIGN(float, x, hi - lo);
 	    c  = (hi-x)-lo;
 	}
 	else if(hx < 0x33000000) {  	/* when |x|<2**-25, return x */
@@ -212,7 +215,7 @@ expm1f(float x)
 	e  = hxs*((r1-t)/((float)6.0 - x*t));
 	if(k==0) return x - (x*e-hxs);		/* c is 0 */
 	else {
-	    detail::SET_FLOAT_WORD(twopk,((std::uint32_t)(0x7f+k))<<23);	/* 2^k */
+	    SET_FLOAT_WORD(twopk,((std::uint32_t)(0x7f+k))<<23);	/* 2^k */
 	    e  = (x*(e-c)-c);
 	    e -= hxs;
 	    if(k== -1) return (float)0.5*(x-e)-(float)0.5;
@@ -228,11 +231,11 @@ expm1f(float x)
 	    }
 	    t = one;
 	    if(k<23) {
-	        detail::SET_FLOAT_WORD(t,0x3f800000 - (0x1000000>>k)); /* t=1-2^-k */
+	        SET_FLOAT_WORD(t,0x3f800000 - (0x1000000>>k)); /* t=1-2^-k */
 	       	y = t-(e-x);
 		y = y*twopk;
 	   } else {
-		detail::SET_FLOAT_WORD(t,((0x7f-k)<<23));	/* 2^-k */
+		SET_FLOAT_WORD(t,((0x7f-k)<<23));	/* 2^-k */
 	       	y = x-(e+t);
 	       	y += one;
 		y = y*twopk;
@@ -279,30 +282,16 @@ expm1f(float x)
  * ====================================================
  */
 
-#if LDBL_MANT_DIG == 64
-#define	PBSD_LDBL_MANL_SIZE	32
-#elif LDBL_MANT_DIG == 113
-#define	PBSD_LDBL_MANL_SIZE	64
-#endif
-
-#if PBSD_LDBL_MANL_SIZE > 32
-#define	PBSD_MASK	((std::uint64_t)-1)
-#else
-#define	PBSD_MASK	((std::uint32_t)-1)
-#endif
-#define	PBSD_GETFRAC(bits, n)	((bits) & ~(PBSD_MASK << (n)))
-#define	PBSD_HIBITS	(LDBL_MANT_DIG - PBSD_LDBL_MANL_SIZE)
-
 namespace {
 
 static const long double zero[] = { 0.0L, -0.0L };
 
 } // namespace
 
-export long double
+long double
 modfl(long double x, long double *iptr)
 {
-	detail::IEEEl2bits ux;
+	IEEEl2bits ux;
 	int e;
 
 	ux.e = x;
@@ -377,16 +366,16 @@ qS4 =  7.70381505559019352791e-02; /* 0x3FB3B8C5, 0xB12E9282 */
 
 } // namespace
 
-export double
+double
 asin(double x)
 {
 	double t=0.0,w,p,q,c,r,s;
 	int32_t hx,ix;
-	detail::GET_HIGH_WORD(hx,x);
+	GET_HIGH_WORD(hx,x);
 	ix = hx&0x7fffffff;
 	if(ix>= 0x3ff00000) {		/* |x|>= 1 */
 	    std::uint32_t lx;
-	    detail::GET_LOW_WORD(lx,x);
+	    GET_LOW_WORD(lx,x);
 	    if(((ix-0x3ff00000)|lx)==0)
 		    /* asin(1)=+-pi/2 with inexact */
 		return x*pio2_hi+x*pio2_lo;	
@@ -412,7 +401,7 @@ asin(double x)
 	    t = pio2_hi-(2.0*(s+s*w)-pio2_lo);
 	} else {
 	    w  = s;
-	    detail::SET_LOW_WORD(w,0);
+	    SET_LOW_WORD(w,0);
 	    c  = (t-w*w)/(s+w);
 	    r  = p/q;
 	    p  = 2.0*s*r-(pio2_lo-2.0*c);
@@ -462,15 +451,15 @@ __frexp_exp(double x, int *expt)
 	std::uint32_t hx;
 
 	exp_x = exp(x - kln2);
-	detail::GET_HIGH_WORD(hx, exp_x);
+	GET_HIGH_WORD(hx, exp_x);
 	*expt = (hx >> 20) - (0x3ff + 1023) + k;
-	detail::SET_HIGH_WORD(exp_x, (hx & 0xfffff) | ((0x3ff + 1023) << 20));
+	SET_HIGH_WORD(exp_x, (hx & 0xfffff) | ((0x3ff + 1023) << 20));
 	return (exp_x);
 }
 
 } // namespace
 
-export double
+double
 __ldexp_exp(double x, int expt)
 {
 	double exp_x, scale;
@@ -478,29 +467,33 @@ __ldexp_exp(double x, int expt)
 
 	exp_x = __frexp_exp(x, &ex_expt);
 	expt += ex_expt;
-	detail::INSERT_WORDS(scale, (0x3ff + expt) << 20, 0);
+	INSERT_WORDS(scale, (0x3ff + expt) << 20, 0);
 	return (exp_x * scale);
 }
 
-export double _Complex
+double _Complex
 __ldexp_cexp(double _Complex z, int expt)
 {
 	double c, exp_x, s, scale1, scale2, x, y;
 	int ex_expt, half_expt;
 
-	x = creal(z);
-	y = cimag(z);
+	x = __real__(z);
+	y = __imag__(z);
 	exp_x = __frexp_exp(x, &ex_expt);
 	expt += ex_expt;
 
 	half_expt = expt / 2;
-	detail::INSERT_WORDS(scale1, (0x3ff + half_expt) << 20, 0);
+	INSERT_WORDS(scale1, (0x3ff + half_expt) << 20, 0);
 	half_expt = expt - half_expt;
-	detail::INSERT_WORDS(scale2, (0x3ff + half_expt) << 20, 0);
+	INSERT_WORDS(scale2, (0x3ff + half_expt) << 20, 0);
 
 	sincos(y, &s, &c);
-	return (CMPLX(c * exp_x * scale1 * scale2,
-	    s * exp_x * scale1 * scale2));
+	{
+		double _Complex w;
+		__real__ w = c * exp_x * scale1 * scale2;
+		__imag__ w = s * exp_x * scale1 * scale2;
+		return w;
+	}
 }
 
 } // namespace pbsd::lib_msun_src::b0322

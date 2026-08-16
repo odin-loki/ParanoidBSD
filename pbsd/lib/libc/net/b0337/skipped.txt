@@ -1,0 +1,1 @@
+nscachedcli.c: requires live Unix-domain socket IPC with kqueue/kevent and an nscd daemon; not differentially testable in isolation

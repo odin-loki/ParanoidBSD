@@ -1,0 +1,11 @@
+{
+  "batch": "b0324",
+  "verified": "2026-08-09T03:00:24Z",
+  "evidence": "harness green + 6/6 mutations killed (IR: port would not compile to IR standalone)",
+  "ir_equivalent": false,
+  "harness_output": "\n=== b0324 differential test results ===\nfunction                cases     failures\ninet_addr               50039            0\ninet_aton               50080            0\ninet_net_pton           54214            0\n",
+  "input_hashes": {
+    "hbsd/src/lib/libc/inet/inet_addr.c": "f8b2174e82138021",
+    "hbsd/src/lib/libc/inet/inet_net_pton.c": "d89932bd4bf4871a"
+  }
+}

@@ -252,8 +252,6 @@ setup_signames()
 		dep_signame[i] = names[i];
 }
 
-extern "C" const char *dep_signame[128];
-
 #ifndef NSIG
 #define NSIG 65
 #endif
@@ -1176,7 +1174,7 @@ test_parse_output_hand()
 	const char *basic[] = {
 		"NCMD cmdnode",
 		" NCMDargv nodeptr",
-		" NPIPE pipenode",
+		"NPIPE pipenode",
 		" NPPIPE nodelist",
 		nullptr,
 	};

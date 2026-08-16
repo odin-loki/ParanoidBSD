@@ -1,0 +1,1 @@
+nlist.c: depends on FreeBSD machine/elf.h, a.out.h, elf-hints.h and ELF object I/O unavailable for isolated linking on this platform.
