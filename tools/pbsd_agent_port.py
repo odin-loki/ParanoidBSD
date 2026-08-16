@@ -22,6 +22,7 @@ if str(ROOT / "tools") not in sys.path:
     sys.path.insert(0, str(ROOT / "tools"))
 
 from convert_c_batch import load_progress, recompute_wave_stats, save_progress  # noqa: E402
+from pbsd_secrets import load_secrets, parse_secrets_text  # noqa: E402
 from pbsd_agent.esbmc_check import parse_esbmc_output  # noqa: E402
 from pbsd_agent.model_clients import estimate_cost_usd, model_name_for_tier  # noqa: E402
 from pbsd_agent.model_clients import Usage  # noqa: E402
@@ -231,6 +232,14 @@ def run_self_test() -> int:
     if model_name_for_tier(1) == model_name_for_tier(3):
         failures.append("tiers must map to distinct models")
 
+    parsed = parse_secrets_text(
+        "DEEPSEEK_API_KEY=sk-test\n# comment\nMOONSHOT_API_KEY=\nexport CURSOR_API_KEY='abc'\n"
+    )
+    if parsed.get("DEEPSEEK_API_KEY") != "sk-test" or parsed.get("CURSOR_API_KEY") != "abc":
+        failures.append("secrets parser failed")
+    if "MOONSHOT_API_KEY" in parsed:
+        failures.append("empty secret values must be skipped")
+
     if failures:
         print("self-test FAILED:")
         for f in failures:
@@ -270,6 +279,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.self_test:
         return run_self_test()
+
+    used = load_secrets(ROOT)
+    if used:
+        print(f"secrets: loaded {used}")
 
     prefixes = expand_scope(args.scope)
     files = args.file or None

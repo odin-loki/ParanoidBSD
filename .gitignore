@@ -106,6 +106,9 @@ Cursor API Key.txt
 .env
 .env.*
 !.env.example
+/secrets/*
+!/secrets/.gitignore
+!/secrets/api-keys.example
 
 # PBSD C→C++23 port generated bulk (re-run tools/run_todo_passes.py)
 docs/migration/clang_port/staged/

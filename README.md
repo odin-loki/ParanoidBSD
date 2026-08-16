@@ -54,8 +54,8 @@ Stop everything: `Stop-PBSD.bat`.
 python3 tools/run_todo_passes.py --corpus-only
 python3 tools/run_todo_passes.py --scope bin --limit 80
 
-# Agent port loop (Stage F/G) — needs DEEPSEEK_API_KEY / MOONSHOT_API_KEY
-cp .env.example .env   # then fill keys; never commit .env
+# Agent port loop (Stage F/G) — keys from secrets/api-keys (gitignored)
+copy secrets\api-keys.example secrets\api-keys   # then fill keys
 python3 tools/pbsd_agent_port.py --self-test
 python3 tools/pbsd_agent_port.py --dry-run --scope bin/echo
 ```

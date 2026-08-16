@@ -2,6 +2,15 @@
 # Outer supervisor: keeps pbsd_driver alive, refreshes auth, pushes periodically.
 export PATH="$HOME/.local/bin:$PATH"
 unset CURSOR_API_KEY
+if [ -f "$HOME/load_secrets.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$HOME/load_secrets.sh"
+  pbsd_load_secrets
+elif [ -f "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/scripts/wsl/load_secrets.sh" ]; then
+  # shellcheck source=/dev/null
+  . "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/scripts/wsl/load_secrets.sh"
+  pbsd_load_secrets
+fi
 LOG="$HOME/pbsd_watchdog.log"
 PUSH_INTERVAL="${PUSH_INTERVAL:-1800}"
 LOCK="$HOME/pbsd_watchdog.lock"
@@ -30,6 +39,18 @@ start_driver() {
       log "pbsd.py from Windows failed py_compile — keeping existing ~/pbsd/pbsd.py"
       rm -f "$tmp"
     fi
+  fi
+  sec_src="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/tools/pbsd_secrets.py"
+  if [ -f "$sec_src" ]; then
+    mkdir -p ~/pbsd/tools
+    cp -f "$sec_src" ~/pbsd/tools/pbsd_secrets.py
+    sed -i 's/\r$//' ~/pbsd/tools/pbsd_secrets.py
+  fi
+  ls_src="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/scripts/wsl/load_secrets.sh"
+  if [ -f "$ls_src" ]; then
+    cp -f "$ls_src" ~/load_secrets.sh
+    sed -i 's/\r$//' ~/load_secrets.sh
+    chmod +x ~/load_secrets.sh
   fi
   if [ -n "${RESTART_FORCE:-}" ]; then
     pkill -f 'cursor-agent.*index.js -p' 2>/dev/null || true

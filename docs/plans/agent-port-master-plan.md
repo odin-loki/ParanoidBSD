@@ -101,7 +101,7 @@ One session, one file, opened once:
 
 ## 5. Config
 
-- `DEEPSEEK_API_KEY`, `MOONSHOT_API_KEY` as env vars — **not committed**. Separately: `Cursor API Key.txt` is currently sitting in plaintext at the repo root — worth moving to `.gitignore` while you're in there tonight, regardless of this plan.
+- `DEEPSEEK_API_KEY`, `MOONSHOT_API_KEY`, `CURSOR_API_KEY` from `secrets/api-keys` (gitignored; stub is `secrets/api-keys.example`). Env vars still override if already set.
 - Base URLs, both native, no OpenRouter: `https://api.deepseek.com` for `deepseek-v4-flash` / `deepseek-v4-pro`; `https://api.moonshot.ai/v1` for `kimi-k3`. Same OpenAI-Chat-Completions shape for all three.
 - Note: `deepseek-chat` / `deepseek-reasoner` were retired July 24, 2026 — already past, so make sure nothing in the existing codebase still references the old model IDs.
 - Moonshot account needs a minimum top-up before the key is live — check that before you're mid-build tonight, not after the first call 401s.

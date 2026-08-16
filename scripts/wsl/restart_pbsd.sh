@@ -1,14 +1,17 @@
 #!/bin/bash
 set -euo pipefail
 ROOT="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System"
-for f in pbsd_watchdog.sh pbsd_driver.sh push_github.sh sync_cursor_auth.sh; do
+for f in pbsd_watchdog.sh pbsd_driver.sh push_github.sh sync_cursor_auth.sh load_secrets.sh; do
   cp -f "$ROOT/scripts/wsl/$f" ~/"$f"
   sed -i 's/\r$//' ~/"$f"
   chmod +x ~/"$f"
 done
 cp -f "$ROOT/pbsd.py" ~/pbsd/pbsd.py
 sed -i 's/\r$//' ~/pbsd/pbsd.py
-python3 -m py_compile ~/pbsd/pbsd.py
+mkdir -p ~/pbsd/tools
+cp -f "$ROOT/tools/pbsd_secrets.py" ~/pbsd/tools/pbsd_secrets.py
+sed -i 's/\r$//' ~/pbsd/tools/pbsd_secrets.py
+python3 -m py_compile ~/pbsd/pbsd.py ~/pbsd/tools/pbsd_secrets.py
 # Graceful stop — avoid wsl --terminate unless necessary (it corrupts the VM).
 pkill -f pbsd_watchdog 2>/dev/null || true
 pkill -f pbsd_driver 2>/dev/null || true

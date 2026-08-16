@@ -33,6 +33,8 @@ Live bookkeeping for the HardenedBSD → PBSD port. Plans and frozen specs live 
 
 Work from `~/pbsd` on ext4. The Windows tree is the editor checkout.
 
+API keys live in `secrets/api-keys` on the Windows checkout (copy `secrets/api-keys.example`). The driver and watchdog load that file; they do not read a key out of the shell.
+
 | Script | Role |
 |--------|------|
 | `scripts/wsl/pbsd_watchdog.sh` | Keeps the driver alive, deploys `pbsd.py` |

@@ -3,6 +3,8 @@ $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
 $Host.UI.RawUI.WindowTitle = "PBSD Migration"
 $Repo = Split-Path $PSScriptRoot -Parent
+. (Join-Path $PSScriptRoot 'load-pbsd-secrets.ps1')
+Import-PbsdSecrets -Root $Repo
 $RefreshSec = 10
 $TotalFiles = 4497
 $TotalLines = 2875339
@@ -26,15 +28,17 @@ function Stop-PbsdServices {
 function Deploy-WslScripts {
     $wsl = '\\wsl$\Ubuntu\home\odin'
     $src = Join-Path $Repo 'scripts\wsl'
-    foreach ($f in @('pbsd_watchdog.sh', 'pbsd_driver.sh', 'push_github.sh', 'sync_cursor_auth.sh')) {
+    foreach ($f in @('pbsd_watchdog.sh', 'pbsd_driver.sh', 'push_github.sh', 'sync_cursor_auth.sh', 'load_secrets.sh')) {
         Copy-Item -Force (Join-Path $src $f) (Join-Path $wsl $f)
     }
     Copy-Item -Force (Join-Path $Repo 'pbsd.py') '\\wsl$\Ubuntu\home\odin\pbsd\pbsd.py'
-    $ok = Invoke-WslBash 'python3 -m py_compile ~/pbsd/pbsd.py && echo ok' 30
+    New-Item -ItemType Directory -Force -Path (Join-Path $wsl 'pbsd\tools') | Out-Null
+    Copy-Item -Force (Join-Path $Repo 'tools\pbsd_secrets.py') (Join-Path $wsl 'pbsd\tools\pbsd_secrets.py')
+    $ok = Invoke-WslBash 'python3 -m py_compile ~/pbsd/pbsd.py ~/pbsd/tools/pbsd_secrets.py && echo ok' 30
     if ($ok -ne 'ok') {
         Write-Host '  WARNING: pbsd.py failed syntax check after deploy' -ForegroundColor Yellow
     }
-    Invoke-WslBash 'sed -i "s/\r$//" ~/pbsd_watchdog.sh ~/pbsd_driver.sh ~/push_github.sh ~/sync_cursor_auth.sh ~/pbsd/pbsd.py; chmod +x ~/pbsd_watchdog.sh ~/pbsd_driver.sh ~/push_github.sh ~/sync_cursor_auth.sh' 30
+    Invoke-WslBash 'sed -i "s/\r$//" ~/pbsd_watchdog.sh ~/pbsd_driver.sh ~/push_github.sh ~/sync_cursor_auth.sh ~/load_secrets.sh ~/pbsd/pbsd.py ~/pbsd/tools/pbsd_secrets.py; chmod +x ~/pbsd_watchdog.sh ~/pbsd_driver.sh ~/push_github.sh ~/sync_cursor_auth.sh ~/load_secrets.sh' 30
 }
 
 function Start-PbsdWatchdog {

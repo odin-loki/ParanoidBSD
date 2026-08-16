@@ -3,6 +3,15 @@
 set -e
 unset CURSOR_API_KEY
 REPO="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System"
+if [ -f "$HOME/load_secrets.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$HOME/load_secrets.sh"
+  pbsd_load_secrets
+elif [ -f "$REPO/scripts/wsl/load_secrets.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$REPO/scripts/wsl/load_secrets.sh"
+  pbsd_load_secrets
+fi
 EXTRACT="$REPO/scripts/wsl/extract_tokens.py"
 OUT="/mnt/c/Users/odinl/AppData/Local/Temp/wsl_auth.json"
 PY="/mnt/c/Windows/System32/py.exe"

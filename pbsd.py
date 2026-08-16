@@ -43,9 +43,17 @@ if _pbsd_bin not in os.environ.get("PATH", ""):
     os.environ["PATH"] = _pbsd_bin + os.pathsep + os.environ.get("PATH", "")
 
 # A stale CURSOR_API_KEY in the shell overrides `cursor-agent login` and every
-# worker call fails instantly. Prefer the login session unless explicitly set
-# later via a dedicated flag.
+# worker call fails instantly. Drop the inherited value, then load secrets/api-keys
+# (gitignored) so a key placed there is the one that counts.
 os.environ.pop("CURSOR_API_KEY", None)
+_tools = Path(__file__).resolve().parent / "tools"
+if _tools.is_dir() and str(_tools) not in sys.path:
+    sys.path.insert(0, str(_tools))
+try:
+    from pbsd_secrets import load_secrets as _load_pbsd_secrets
+    _load_pbsd_secrets(Path(__file__).resolve().parent)
+except Exception:
+    pass
 
 # ─────────────────────────────── config ──────────────────────────────────────
 
@@ -333,7 +341,7 @@ def preflight() -> bool:
                 print("cursor-agent is not authenticated for batch work.")
                 print(f"  {err[:200]}")
                 print("  Fix: wsl -d Ubuntu, then: cursor-agent login")
-                print("  Or set a valid CURSOR_API_KEY in ~/pbsd_driver.sh")
+                print("  Or put CURSOR_API_KEY=... in secrets/api-keys")
                 ok = False
         except Exception as e:
             print(f"cursor-agent probe failed: {e}")

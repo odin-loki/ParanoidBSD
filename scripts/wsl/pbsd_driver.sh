@@ -2,6 +2,16 @@
 # Reruns pbsd.py until nothing is pending. Progress is committed per batch.
 export PATH="$HOME/.local/bin:$PATH"
 unset CURSOR_API_KEY
+# Drop inherited keys, then load secrets/api-keys from the Windows checkout.
+if [ -f "$HOME/load_secrets.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$HOME/load_secrets.sh"
+  pbsd_load_secrets
+elif [ -f "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/scripts/wsl/load_secrets.sh" ]; then
+  # shellcheck source=/dev/null
+  . "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/scripts/wsl/load_secrets.sh"
+  pbsd_load_secrets
+fi
 cd "$HOME/pbsd" || exit 1
 
 JOBS="${JOBS:-18}"

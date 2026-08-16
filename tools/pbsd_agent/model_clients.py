@@ -150,6 +150,11 @@ class ChatClient:
 
 
 def client_for_tier(tier: int, *, timeout: float = 180.0) -> ChatClient:
+    try:
+        from pbsd_secrets import load_secrets
+        load_secrets()
+    except Exception:
+        pass
     if tier <= 1:
         return ChatClient(
             os.environ.get("DEEPSEEK_BASE_URL", DEEPSEEK_BASE),
