@@ -49,6 +49,10 @@ pbsd/_build_*/
 # WSL /tmp gate leftovers accidentally synced under the tree
 **/pbsd-b*-src/
 **/pbsd-b*/
+/bin/
+/lib/
+/a.out
+.pbsd_gate_slots/
 
 # ---- Local helper / one-off scripts (not product source) -------------------
 .git-commit-msg.txt
@@ -71,15 +75,15 @@ pbsd/_run_*.sh
 pbsd/_sync_*.sh
 pbsd/_tmp_*.sh
 
-# Keep curated gate scripts tracked (negations after broader ignores)
-!pbsd/_build_wave.sh
-!pbsd/_burst13_*.sh
-!pbsd/_burst14_*.sh
-!pbsd/_burst15_*.sh
-!pbsd/_burst16_*.sh
-!pbsd/_b16_*.sh
-!pbsd/_b16_*.py
-!pbsd/_fix_*.py
+# Burst/one-off helpers stay local
+pbsd/_b16_*.py
+pbsd/_fix_*.py
+pbsd/_b16_*.sh
+pbsd/_burst13_*.sh
+pbsd/_burst14_*.sh
+pbsd/_burst15_*.sh
+pbsd/_burst16_*.sh
+pbsd/_build_wave.sh
 
 # ---- Editor / OS / local tooling -------------------------------------------
 .vscode/
@@ -122,3 +126,4 @@ docs/migration/clang_port/agent_corpus/
 # Mechanical IR-sweep runtime (resume state, not source)
 docs/migration/.mech_pass_done
 docs/migration/.mech_checkpoint.jsonl
+docs/migration/*.log

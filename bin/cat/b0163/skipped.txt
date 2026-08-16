@@ -1,7 +1,0 @@
-hbsd/src/bin/cat/cat.c: init_casper_net() - needs libcasper's cap_net service (cap_service_open, cap_net_limit*), which exists only on FreeBSD.
-hbsd/src/bin/cat/cat.c: init_casper() - needs cap_init()/fileargs_cinit()/cap_rights_init() from libcasper and Capsicum.
-hbsd/src/bin/cat/cat.c: main() - drives Capsicum (caph_cache_catpages, caph_enter_casper) and the skipped init_casper()/scanfiles(); nothing to port without them.
-hbsd/src/bin/cat/cat.c: scanfiles() - opens files through fileargs_open() (libcasper) and falls back to the skipped udom_open().
-hbsd/src/bin/cat/cat.c: udom_open() - needs cap_getaddrinfo()/cap_connect() from libcasper's cap_net plus caph_rights_limit().
-
-usage(), cook_cat(), in_kernel_copy() and raw_cat() are ported in full in port.cppm.
