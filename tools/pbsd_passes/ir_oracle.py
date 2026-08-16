@@ -1,4 +1,4 @@
-"""IR-equivalence oracle — highest-leverage Tier 0 item (todo.md)."""
+"""IR-equivalence oracle — highest-leverage Tier 0 item (docs/plans/todo-passes.md)."""
 from __future__ import annotations
 
 import hashlib

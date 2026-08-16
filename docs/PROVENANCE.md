@@ -5,7 +5,7 @@
 **Rule:** Spec source must be a public standard, published datasheet, or original design.  
          Never cite an existing implementation's source code.
 
-**Port context:** ParanoidBSD is a full C++23 port of the HardenedBSD kernel tree and KDE Plasma 6 userland. Legacy C components are inventoried in `docs/migration/c_inventory.csv` and retired wave-by-wave; new PBSD code is C++23 modules under `pbsd/`.
+**Port context:** ParanoidBSD is a full C++23 port of the HardenedBSD kernel tree and KDE Plasma 6 userland. Legacy C components are inventoried in `docs/migration/c_inventory.csv` and retired wave-by-wave; new PBSD code is C++23 modules under `pbsd/`. Index: [docs/README.md](README.md).
 
 ## Migration provenance
 

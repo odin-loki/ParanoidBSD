@@ -29,7 +29,7 @@ This does **not** replace or rewrite the deterministic tooling that already exis
 | Differential runner | `tools/pbsd_passes/differential.py` | Stage G oracle — reuse as-is |
 | IR-equivalence oracle | `tools/pbsd_passes/ir_oracle.py` | Reuse as-is |
 | Progress bookkeeping | `docs/migration/batch_progress.json` | Extend, don't replace |
-| Master plan stages | `pbsd-cxx23-port-master-plan.md` §7 | Stages A–H — this plan implements F/G, feeds H |
+| Master plan stages | [cxx23-port-master-plan.md](cxx23-port-master-plan.md) §7 | Stages A–H — this plan implements F/G, feeds H |
 
 **Open assumption — flag this if wrong:** "math verification" is taken to mean **ESBMC**, which has zero integration in the repo currently (checked — no references anywhere). `tier3_maths.py` is a separate, already-working static pass and keeps running as part of the deterministic pre-pass regardless. If you actually meant tier3_maths when you said math verification, the ESBMC section below (§5.4) is the part to cut.
 

@@ -1,5 +1,7 @@
 # PBSD — Automated Port Passes
 
+Checklist for `tools/run_todo_passes.py`. Architecture and Stage F/G live in the sibling plans in this folder.
+
 Everything below is work a **script** can do (deterministic rewriting) or that **analysis/inference** can decide (dataflow, constraint solving, graph algorithms). Anything not on this list goes to the model queue.
 
 **Implementation:** `tools/pbsd_passes/` · entrypoint `tools/run_todo_passes.py` · outputs `docs/migration/clang_port/`.

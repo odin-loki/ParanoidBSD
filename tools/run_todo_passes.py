@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI: run todo.md automated C→C++23 port passes."""
+"""CLI: run docs/plans/todo-passes.md automated C→C++23 port passes."""
 from __future__ import annotations
 
 import argparse

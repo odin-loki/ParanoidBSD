@@ -1,4 +1,4 @@
-"""Refusal-log schema — primary output of every pass (todo.md Tier 0)."""
+"""Refusal-log schema — primary output of every pass (docs/plans/todo-passes.md Tier 0)."""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

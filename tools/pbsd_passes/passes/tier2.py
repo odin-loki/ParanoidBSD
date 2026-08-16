@@ -1,4 +1,4 @@
-"""Tier 2 — local dataflow / intra-procedural (todo.md)."""
+"""Tier 2 — local dataflow / intra-procedural (docs/plans/todo-passes.md)."""
 from __future__ import annotations
 
 import json

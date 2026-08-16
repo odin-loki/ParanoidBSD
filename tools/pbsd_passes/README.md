@@ -1,4 +1,4 @@
-# PBSD automated port passes (`todo.md`)
+# PBSD automated port passes (`docs/plans/todo-passes.md`)
 
 Deterministic rewriting + refusal logging. Refusals are the model work queue.
 
@@ -19,7 +19,7 @@ WSL recommended (Clang 18).
 | Path | Meaning |
 |---|---|
 | `docs/migration/clang_port/staged/**/*.cpp` | Rewritten C++23 candidates |
-| `docs/migration/clang_port/refusals.jsonl` | Refusal log (schema in todo.md) |
+| `docs/migration/clang_port/refusals.jsonl` | Refusal log (schema in docs/plans/todo-passes.md) |
 | `docs/migration/clang_port/pass_report.json` | Full machine report |
 | `docs/migration/clang_port/todo_pass_report.md` | Human summary + reason histogram |
 | `docs/migration/clang_port/compile_commands.json` | Synthetic DB for the run scope |

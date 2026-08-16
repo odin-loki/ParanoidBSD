@@ -1,4 +1,4 @@
-"""Tier 1 — pure syntax mechanical rewrites / refusals (todo.md)."""
+"""Tier 1 — pure syntax mechanical rewrites / refusals (docs/plans/todo-passes.md)."""
 from __future__ import annotations
 
 import json

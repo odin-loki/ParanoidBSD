@@ -199,7 +199,7 @@ Scheduler/allocator semantics · Capsicum lineage · UDA descriptor engines · B
 
 ### 8.5 Driver scripts
 
-Primary (implements `todo.md` Tier 0–4 passes):
+Primary (implements [todo-passes.md](todo-passes.md) Tier 0–4 passes):
 
 ```bash
 python3 tools/run_todo_passes.py --corpus-only

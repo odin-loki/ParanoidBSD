@@ -2,7 +2,7 @@
 
 One class; only base_url, model, and API key differ per tier.
 Message lists are append-only — callers must not rebuild prompts between turns
-or prefix-cache hits are lost (see pbsd-agent-port-master-plan.md §5.1).
+or prefix-cache hits are lost (see docs/plans/agent-port-master-plan.md §5.1).
 """
 from __future__ import annotations
 
