@@ -97,6 +97,12 @@ Thumbs.db
 **/__pycache__/
 *.py[cod]
 
+# Secrets — never commit
+Cursor API Key.txt
+.env
+.env.*
+!.env.example
+
 # PBSD C→C++23 port generated bulk (re-run tools/run_todo_passes.py)
 docs/migration/clang_port/staged/
 docs/migration/clang_port/pass_report.json
@@ -107,6 +113,8 @@ docs/migration/clang_port/stubs/fuzz/
 docs/migration/clang_port/ast_census.json
 docs/migration/clang_port/ast_census_slim.json
 docs/migration/clang_port/*.c.orig
+docs/migration/clang_port/asan_baseline/
+docs/migration/clang_port/agent_corpus/
 # Regenerable; large — prefer local commit of tooling without this if OneDrive stalls git
 # docs/migration/clang_port/proposals.jsonl
 # pbsd.py state — never clean these

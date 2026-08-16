@@ -98,3 +98,37 @@ class PassResult:
     @staticmethod
     def unchanged(text: str) -> PassResult:
         return PassResult(text=text, refusals=[], edits=[])
+
+
+@dataclass
+class StageEvidence:
+    """Appendix A stage bits for a Port Record (B spec, C sanitizers, D tests, E envelope, F port, G oracle)."""
+
+    B: str = "pending"
+    C: str = "pending"
+    D: str = "pending"
+    E: str = "pending"
+    F: str = "pending"
+    G: str = "pending"
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class PortRecord:
+    """Stage H bookkeeping written by tools/pbsd_agent_port.py."""
+
+    source: str
+    model_used: str
+    escalation_trail: list[dict[str, Any]]
+    stage_evidence: dict[str, Any]
+    tokens_in: int
+    tokens_out: int
+    est_cost_usd: float
+    status: str
+    cache_hit_tokens: int = 0
+    cache_miss_tokens: int = 0
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
