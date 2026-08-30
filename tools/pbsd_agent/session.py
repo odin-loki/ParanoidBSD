@@ -1,8 +1,10 @@
 """Consolidated per-file session: one context, tool loop, escalate-up-only.
 
 System prompt + original source + stub + refusals are prepended once and never
-rewritten. Fix-up turns append. That is what makes DeepSeek/Moonshot prefix
-cache actually fire on retries.
+rewritten. Fix-up turns append. That is what makes DeepSeek prefix cache
+actually fire on retries.
+
+DeepSeek-only: Flash → Pro, then NEEDS-REVIEW (no Kimi).
 """
 from __future__ import annotations
 
@@ -14,6 +16,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from pbsd_passes.compile_db import default_flags, find_clang
 from pbsd_passes.differential import differential
@@ -22,6 +25,7 @@ from pbsd_passes.schema import PortRecord, StageEvidence
 
 from .esbmc_check import esbmc_check
 from .model_clients import (
+    MAX_TIER,
     ChatClient,
     Usage,
     client_for_tier,
@@ -33,9 +37,10 @@ ROOT = Path(__file__).resolve().parents[2]
 CORPUS_OUT = ROOT / "docs" / "migration" / "clang_port" / "agent_corpus"
 ASAN_CACHE = ROOT / "docs" / "migration" / "clang_port" / "asan_baseline"
 COST_LOG = ROOT / "docs" / "migration" / "clang_port" / "agent_port_cost.jsonl"
+FAILURES_LOG = ROOT / "docs" / "migration" / "clang_port" / "agent_port_failures.jsonl"
 
-# Plan §3 / cxx23 §8.4 — never start below Kimi for these lineages.
-FORCE_TIER3_MARKERS = (
+# Hard lineages start on Pro (never Flash alone).
+FORCE_PRO_MARKERS = (
     "/sched",
     "kern_switch",
     "kern_malloc",
@@ -127,11 +132,28 @@ class ToolReport:
 
 def starting_tier(ctx: FileContext) -> int:
     path = ctx.source.replace("\\", "/").lower()
-    if any(m in path for m in FORCE_TIER3_MARKERS):
-        return 3
+    if any(m in path for m in FORCE_PRO_MARKERS):
+        return 2
     if ctx.risk_tier == 1:
         return 2
     return 1
+
+
+def append_failure(record: PortRecord, *, detail: str = "") -> None:
+    """Persist failed / NEEDS-REVIEW work so it can be resumed later."""
+    FAILURES_LOG.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "source": record.source,
+        "status": record.status,
+        "model_used": record.model_used,
+        "escalation_trail": record.escalation_trail,
+        "stage_evidence": record.stage_evidence,
+        "est_cost_usd": record.est_cost_usd,
+        "detail": detail,
+        "ts": time.time(),
+    }
+    with FAILURES_LOG.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, sort_keys=True) + "\n")
 
 
 def parse_agent_payload(text: str) -> dict:
@@ -228,7 +250,7 @@ class FileSession:
         self.do_asan = do_asan
         self.do_esbmc = do_esbmc
         self.tier = start_tier or starting_tier(ctx)
-        self.messages: list[dict[str, str]] = []
+        self.messages: list[dict[str, Any]] = []
         self.usage_total = Usage()
         self.est_cost = 0.0
         self.trail: list[dict] = []
@@ -264,7 +286,12 @@ class FileSession:
 
     def _call(self, client: ChatClient) -> str:
         result = client.complete(self.messages)
-        self.messages.append({"role": "assistant", "content": result.text})
+        # DeepSeek multi-turn thinking: pass reasoning_content back (API ignores it
+        # for billing but requires the field shape on later turns).
+        assistant: dict[str, Any] = {"role": "assistant", "content": result.text}
+        if result.reasoning_content:
+            assistant["reasoning_content"] = result.reasoning_content
+        self.messages.append(assistant)
         self.usage_total.prompt_tokens += result.usage.prompt_tokens
         self.usage_total.completion_tokens += result.usage.completion_tokens
         self.usage_total.cache_hit_tokens += result.usage.cache_hit_tokens
@@ -365,7 +392,7 @@ class FileSession:
         deadline = time.monotonic() + self.file_timeout
         evidence = StageEvidence()
         last_report = ToolReport()
-        while self.tier <= 3:
+        while self.tier <= MAX_TIER:
             if time.monotonic() > deadline:
                 self.trail.append(
                     {
@@ -376,9 +403,9 @@ class FileSession:
                     }
                 )
                 break
-            remaining = max(15.0, deadline - time.monotonic())
+            remaining = max(30.0, deadline - time.monotonic())
             try:
-                client = client_for_tier(self.tier, timeout=min(180.0, remaining))
+                client = client_for_tier(self.tier, timeout=min(300.0, remaining))
             except ValueError as e:
                 self.trail.append(
                     {
@@ -443,6 +470,7 @@ class FileSession:
 
         rec = self._record("NEEDS-REVIEW", evidence)
         self._log_cost(rec, "NEEDS-REVIEW")
+        append_failure(rec)
         return rec
 
     def _record(self, status: str, evidence: StageEvidence) -> PortRecord:

@@ -17,7 +17,7 @@ def test_routing() -> None:
     echo.risk_tier = 1
     assert starting_tier(echo) == 2
     hard = FileContext("hbsd/src/sys/vm/uma/uma_core.c", "x", None, "", [], 3, "C")
-    assert starting_tier(hard) == 3
+    assert starting_tier(hard) == 2
 
 
 def test_parse_and_esbmc() -> None:

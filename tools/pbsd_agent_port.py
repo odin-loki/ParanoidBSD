@@ -4,6 +4,8 @@
 Same flag conventions as tools/run_todo_passes.py. Consumes refusals.jsonl,
 existing stubs, differential.py, ir_oracle.py, and (if installed) ESBMC.
 Does not replace those tools.
+
+DeepSeek-only (Flash -> Pro). Failures are saved to progress + agent_port_failures.jsonl.
 """
 from __future__ import annotations
 
@@ -11,6 +13,8 @@ import argparse
 import csv
 import json
 import sys
+import time
+import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from threading import Semaphore
@@ -24,14 +28,23 @@ if str(ROOT / "tools") not in sys.path:
 from convert_c_batch import load_progress, recompute_wave_stats, save_progress  # noqa: E402
 from pbsd_secrets import load_secrets, parse_secrets_text  # noqa: E402
 from pbsd_agent.esbmc_check import parse_esbmc_output  # noqa: E402
-from pbsd_agent.model_clients import estimate_cost_usd, model_name_for_tier  # noqa: E402
-from pbsd_agent.model_clients import Usage  # noqa: E402
+from pbsd_agent.model_clients import (  # noqa: E402
+    MAX_TIER,
+    MODEL_FLASH,
+    MODEL_PRO,
+    Usage,
+    deepseek_extra_body,
+    estimate_cost_usd,
+    model_name_for_tier,
+)
 from pbsd_agent.session import (  # noqa: E402
     FileContext,
     FileSession,
+    append_failure,
     parse_agent_payload,
     starting_tier,
 )
+from pbsd_passes.schema import PortRecord, StageEvidence  # noqa: E402
 
 REFUSALS = ROOT / "docs" / "migration" / "clang_port" / "refusals.jsonl"
 QUEUE = ROOT / "docs" / "migration" / "clang_port" / "queue.json"
@@ -193,6 +206,29 @@ def update_progress(ctx: FileContext, record) -> None:
     save_progress(progress)
 
 
+def crash_record(ctx: FileContext, err: BaseException) -> PortRecord:
+    """Build a NEEDS-REVIEW record when a worker dies unexpectedly."""
+    rec = PortRecord(
+        source=ctx.source,
+        model_used=model_name_for_tier(starting_tier(ctx)),
+        escalation_trail=[
+            {
+                "tier": starting_tier(ctx),
+                "model": model_name_for_tier(starting_tier(ctx)),
+                "reason": f"worker_crash: {err}",
+                "retries": 0,
+            }
+        ],
+        stage_evidence=StageEvidence().to_dict(),
+        tokens_in=0,
+        tokens_out=0,
+        est_cost_usd=0.0,
+        status="NEEDS-REVIEW",
+    )
+    append_failure(rec, detail=traceback.format_exc()[-4000:])
+    return rec
+
+
 def run_self_test() -> int:
     failures: list[str] = []
 
@@ -211,8 +247,8 @@ def run_self_test() -> int:
     if starting_tier(ctx) != 2:
         failures.append("risk-1 should start at Pro")
     ctx.source = "hbsd/src/sys/kern/sched_ule.c"
-    if starting_tier(ctx) != 3:
-        failures.append("scheduler path should force Kimi")
+    if starting_tier(ctx) != 2:
+        failures.append("scheduler path should force Pro")
 
     payload = parse_agent_payload('```json\n{"spec_notes":"n","port_cppm":"x"}\n```')
     if payload.get("port_cppm") != "x":
@@ -229,8 +265,16 @@ def run_self_test() -> int:
     if cost <= 0:
         failures.append("cost estimate should be positive")
 
-    if model_name_for_tier(1) == model_name_for_tier(3):
-        failures.append("tiers must map to distinct models")
+    if model_name_for_tier(1) != MODEL_FLASH or model_name_for_tier(2) != MODEL_PRO:
+        failures.append("tiers must map to Flash then Pro")
+    if model_name_for_tier(3) != MODEL_PRO:
+        failures.append("tier>2 must clamp to Pro (no Kimi)")
+    if MAX_TIER != 2:
+        failures.append("MAX_TIER must be 2 (DeepSeek-only)")
+
+    extra = deepseek_extra_body()
+    if extra.get("reasoning_effort") != "max" or (extra.get("thinking") or {}).get("type") != "enabled":
+        failures.append("DeepSeek default must be thinking+max effort")
 
     parsed = parse_secrets_text(
         "DEEPSEEK_API_KEY=sk-test\n# comment\nMOONSHOT_API_KEY=\nexport CURSOR_API_KEY='abc'\n"
@@ -245,7 +289,7 @@ def run_self_test() -> int:
         for f in failures:
             print(f"  {f}")
         return 1
-    print("self-test OK")
+    print("self-test OK (DeepSeek-only Flash->Pro, effort=max)")
     return 0
 
 
@@ -263,11 +307,21 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--file-timeout",
         type=float,
-        default=300.0,
-        help="Per-file wall-clock timeout seconds (default 300)",
+        default=600.0,
+        help="Per-file wall-clock timeout seconds (default 600; max-effort needs headroom)",
     )
-    ap.add_argument("--jobs", type=int, default=4, help="Flash worker pool size")
-    ap.add_argument("--pro-jobs", type=int, default=1, help="Pro worker pool size (keep smaller than --jobs)")
+    ap.add_argument(
+        "--jobs",
+        type=int,
+        default=48,
+        help="Flash concurrent slots (default 48)",
+    )
+    ap.add_argument(
+        "--pro-jobs",
+        type=int,
+        default=24,
+        help="Pro concurrent slots (default 24)",
+    )
     ap.add_argument("--no-ir", action="store_true")
     ap.add_argument("--no-diff", action="store_true")
     ap.add_argument("--no-asan", action="store_true")
@@ -283,6 +337,9 @@ def main(argv: list[str] | None = None) -> int:
     used = load_secrets(ROOT)
     if used:
         print(f"secrets: loaded {used}")
+    if not __import__("os").environ.get("DEEPSEEK_API_KEY"):
+        print("ERROR: DEEPSEEK_API_KEY missing (secrets/api-keys or env)", file=sys.stderr)
+        return 2
 
     prefixes = expand_scope(args.scope)
     files = args.file or None
@@ -292,10 +349,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.limit is not None:
         work = work[: args.limit]
 
+    flash_n = max(1, args.jobs)
+    pro_n = max(1, args.pro_jobs)
     print(
         f"agent-port files={len(work)} scope={prefixes} "
         f"retries={args.max_retries} timeout={args.file_timeout}s "
-        f"jobs={args.jobs} pro_jobs={args.pro_jobs}"
+        f"jobs={flash_n} pro_jobs={pro_n} effort={deepseek_extra_body().get('reasoning_effort')} "
+        f"models={MODEL_FLASH} -> {MODEL_PRO}"
     )
     if not work:
         print("nothing to do — refusals.jsonl empty or all converted in scope")
@@ -310,41 +370,44 @@ def main(argv: list[str] | None = None) -> int:
             )
         return 0
 
-    flash_sem = Semaphore(max(1, args.jobs))
-    pro_sem = Semaphore(max(1, args.pro_jobs))
-    kimi_sem = Semaphore(1)
+    flash_sem = Semaphore(flash_n)
+    pro_sem = Semaphore(pro_n)
 
     def sem_for(tier: int) -> Semaphore:
-        if tier <= 1:
-            return flash_sem
-        if tier == 2:
-            return pro_sem
-        return kimi_sem
+        return flash_sem if tier <= 1 else pro_sem
 
     def run_one(ctx: FileContext):
         tier = starting_tier(ctx)
         sem = sem_for(tier)
         with sem:
-            session = FileSession(
-                ctx,
-                max_retries=args.max_retries,
-                file_timeout=args.file_timeout,
-                do_diff=not args.no_diff,
-                do_ir=not args.no_ir,
-                do_asan=not args.no_asan,
-                do_esbmc=not args.no_esbmc,
-                start_tier=tier,
-            )
-            return ctx, session.run()
+            try:
+                session = FileSession(
+                    ctx,
+                    max_retries=args.max_retries,
+                    file_timeout=args.file_timeout,
+                    do_diff=not args.no_diff,
+                    do_ir=not args.no_ir,
+                    do_asan=not args.no_asan,
+                    do_esbmc=not args.no_esbmc,
+                    start_tier=tier,
+                )
+                return ctx, session.run()
+            except Exception as e:
+                return ctx, crash_record(ctx, e)
 
     converted = 0
     review = 0
-    # Flash-heavy files can run together; Pro/Kimi stay on smaller pools via semaphores.
-    pool = max(1, args.jobs)
+    # Workers = flash + pro so Pro slots are not starved by the Flash pool size.
+    pool = flash_n + pro_n
+    t0 = time.monotonic()
     with ThreadPoolExecutor(max_workers=pool) as ex:
         futs = [ex.submit(run_one, ctx) for ctx in work]
         for fut in as_completed(futs):
-            ctx, rec = fut.result()
+            try:
+                ctx, rec = fut.result()
+            except Exception as e:
+                print(f"  UNHANDLED future error: {e}", file=sys.stderr)
+                continue
             update_progress(ctx, rec)
             if rec.status == "converted":
                 converted += 1
@@ -358,7 +421,12 @@ def main(argv: list[str] | None = None) -> int:
                 f"${rec.est_cost_usd} trail={rec.escalation_trail}"
             )
 
-    print(f"done converted={converted} needs-review={review} cost_log=docs/migration/clang_port/agent_port_cost.jsonl")
+    elapsed = time.monotonic() - t0
+    print(
+        f"done converted={converted} needs-review={review} elapsed={elapsed:.1f}s "
+        f"cost_log=docs/migration/clang_port/agent_port_cost.jsonl "
+        f"failures=docs/migration/clang_port/agent_port_failures.jsonl"
+    )
     return 0
 
 

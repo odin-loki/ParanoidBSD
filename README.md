@@ -24,7 +24,7 @@ License stays BSD for HBSD-derived code. Every module needs an entry in [`docs/P
 1. **Inventory** — `tools/inventory_c_sources.py` / `tools/clang_cxx23_port.py` score files and write `docs/migration/c_inventory.csv`.
 2. **Deterministic passes** — `tools/run_todo_passes.py` applies safe rewrites (tiers 0–4). Failures go to `docs/migration/clang_port/refusals.jsonl`.
 3. **Mechanical IR sweep** — `pbsd.py --mechanical-only` tries a no-agent C→C++ port and accepts it only if LLVM IR matches.
-4. **Agent loop** — `pbsd.py` (Composer / escalate) or `tools/pbsd_agent_port.py` (DeepSeek / Kimi) fill what the passes refused. Compile, ASan/UBSan, differential, and IR checks still run; the model does not self-certify.
+4. **Agent loop** — `pbsd.py` (Composer / escalate) or `tools/pbsd_agent_port.py` (DeepSeek Flash → Pro) fill what the passes refused. Compile, ASan/UBSan, differential, and IR checks still run; the model does not self-certify.
 5. **Bookkeeping** — verified batches update `docs/migration/inventory.csv` and `docs/migration/batch_progress.json`.
 
 Plans: [C++23 port](docs/plans/cxx23-port-master-plan.md) · [agent port](docs/plans/agent-port-master-plan.md) · [pass checklist](docs/plans/todo-passes.md).

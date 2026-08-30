@@ -1,8 +1,10 @@
-"""Thin OpenAI-compatible chat clients for DeepSeek and Moonshot.
+"""Thin OpenAI-compatible chat client for DeepSeek Flash / Pro.
 
-One class; only base_url, model, and API key differ per tier.
+One class; only model (and key/base) differ per tier.
 Message lists are append-only — callers must not rebuild prompts between turns
 or prefix-cache hits are lost (see docs/plans/agent-port-master-plan.md §5.1).
+
+DeepSeek-only: no Moonshot / Kimi. Thinking mode + max reasoning effort by default.
 """
 from __future__ import annotations
 
@@ -14,19 +16,20 @@ from dataclasses import dataclass, field
 from typing import Any
 
 DEEPSEEK_BASE = "https://api.deepseek.com"
-MOONSHOT_BASE = "https://api.moonshot.ai/v1"
 
 MODEL_FLASH = "deepseek-v4-flash"
 MODEL_PRO = "deepseek-v4-pro"
-MODEL_KIMI = "kimi-k3"
+
+# Highest tier is Pro (2). Kept as MAX_TIER for session loops / CLI.
+MAX_TIER = 2
 
 # USD per million tokens. Estimates for the cost log — override via env.
-# Kimi K3 output is billed at $15/M including reasoning tokens (cannot disable).
 RATES_USD_PER_M: dict[str, dict[str, float]] = {
     MODEL_FLASH: {"in": 0.14, "out": 0.28, "cache_hit": 0.014},
     MODEL_PRO: {"in": 0.55, "out": 2.19, "cache_hit": 0.055},
-    MODEL_KIMI: {"in": 1.20, "out": 15.00, "cache_hit": 0.12},
 }
+
+DEFAULT_REASONING_EFFORT = "max"
 
 
 @dataclass
@@ -51,6 +54,7 @@ class ChatResult:
     model: str
     usage: Usage = field(default_factory=Usage)
     raw: dict[str, Any] = field(default_factory=dict)
+    reasoning_content: str | None = None
 
 
 def estimate_cost_usd(model: str, usage: Usage) -> float:
@@ -91,8 +95,17 @@ def _parse_usage(block: dict[str, Any] | None) -> Usage:
     )
 
 
+def deepseek_extra_body() -> dict[str, Any]:
+    """Thinking on + max effort (override with DEEPSEEK_REASONING_EFFORT)."""
+    effort = os.environ.get("DEEPSEEK_REASONING_EFFORT", DEFAULT_REASONING_EFFORT).strip() or "max"
+    return {
+        "thinking": {"type": "enabled"},
+        "reasoning_effort": effort,
+    }
+
+
 class ChatClient:
-    """Shared Chat Completions client. Swap base_url + model + key per tier."""
+    """Shared Chat Completions client. Swap model (+ key/base) per tier."""
 
     def __init__(
         self,
@@ -100,7 +113,7 @@ class ChatClient:
         model: str,
         api_key: str,
         *,
-        timeout: float = 180.0,
+        timeout: float = 300.0,
         extra_body: dict[str, Any] | None = None,
     ) -> None:
         if not api_key:
@@ -111,7 +124,7 @@ class ChatClient:
         self.timeout = timeout
         self.extra_body = extra_body or {}
 
-    def complete(self, messages: list[dict[str, str]]) -> ChatResult:
+    def complete(self, messages: list[dict[str, Any]]) -> ChatResult:
         body: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
@@ -138,45 +151,35 @@ class ChatClient:
             raise RuntimeError(f"{self.model} returned no choices: {raw!r}"[:800])
         msg = choices[0].get("message") or {}
         text = msg.get("content") or ""
-        # Kimi K3 always emits reasoning; keep only the visible answer for the port.
-        if not text and msg.get("reasoning_content"):
-            text = str(msg["reasoning_content"])
+        reasoning = msg.get("reasoning_content")
+        # Prefer visible answer; fall back to reasoning only if content empty.
+        if not text and reasoning:
+            text = str(reasoning)
         return ChatResult(
             text=text,
             model=self.model,
             usage=_parse_usage(raw.get("usage")),
             raw=raw,
+            reasoning_content=str(reasoning) if reasoning else None,
         )
 
 
-def client_for_tier(tier: int, *, timeout: float = 180.0) -> ChatClient:
+def client_for_tier(tier: int, *, timeout: float = 300.0) -> ChatClient:
     try:
         from pbsd_secrets import load_secrets
+
         load_secrets()
     except Exception:
         pass
+    base = os.environ.get("DEEPSEEK_BASE_URL", DEEPSEEK_BASE)
+    key = os.environ.get("DEEPSEEK_API_KEY", "")
+    extra = deepseek_extra_body()
     if tier <= 1:
-        return ChatClient(
-            os.environ.get("DEEPSEEK_BASE_URL", DEEPSEEK_BASE),
-            MODEL_FLASH,
-            os.environ.get("DEEPSEEK_API_KEY", ""),
-            timeout=timeout,
-        )
-    if tier == 2:
-        return ChatClient(
-            os.environ.get("DEEPSEEK_BASE_URL", DEEPSEEK_BASE),
-            MODEL_PRO,
-            os.environ.get("DEEPSEEK_API_KEY", ""),
-            timeout=timeout,
-        )
-    return ChatClient(
-        os.environ.get("MOONSHOT_BASE_URL", MOONSHOT_BASE),
-        MODEL_KIMI,
-        os.environ.get("MOONSHOT_API_KEY", ""),
-        timeout=timeout,
-        extra_body={"reasoning_effort": os.environ.get("KIMI_REASONING_EFFORT", "low")},
-    )
+        return ChatClient(base, MODEL_FLASH, key, timeout=timeout, extra_body=extra)
+    return ChatClient(base, MODEL_PRO, key, timeout=timeout, extra_body=extra)
 
 
 def model_name_for_tier(tier: int) -> str:
-    return {1: MODEL_FLASH, 2: MODEL_PRO, 3: MODEL_KIMI}.get(tier, MODEL_KIMI)
+    if tier <= 1:
+        return MODEL_FLASH
+    return MODEL_PRO
