@@ -1,8 +1,6 @@
 #!/bin/bash
-# Reruns pbsd.py until nothing is pending. Progress is committed per batch.
+# Reruns DeepSeek agent-port until stubbed work is drained (or rounds exhausted).
 export PATH="$HOME/.local/bin:$PATH"
-unset CURSOR_API_KEY
-# Drop inherited keys, then load secrets/api-keys from the Windows checkout.
 if [ -f "$HOME/load_secrets.sh" ]; then
   # shellcheck source=/dev/null
   . "$HOME/load_secrets.sh"
@@ -14,45 +12,45 @@ elif [ -f "/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/scripts/wsl/load
 fi
 cd "$HOME/pbsd" || exit 1
 
-JOBS="${JOBS:-18}"
-GATE_JOBS="${GATE_JOBS:-4}"
-MECH_JOBS="${MECH_JOBS:-8}"
-SKIP_MECH="${SKIP_MECH:-0}"
+JOBS="${JOBS:-48}"
+PRO_JOBS="${PRO_JOBS:-24}"
+SCOPE="${SCOPE:-}"
 LOG="$HOME/pbsd_run.log"
 MAX_ROUNDS=50
 
 pending() {
   python3 - <<'PY'
-import csv
-rows = list(csv.DictReader(open("docs/migration/inventory.csv", encoding="utf-8")))
-print(sum(1 for r in rows if r["status"] in ("PENDING", "REJECTED")))
+import json
+from pathlib import Path
+p = Path("docs/migration/batch_progress.json")
+if not p.is_file():
+    print(0)
+    raise SystemExit
+data = json.loads(p.read_text(encoding="utf-8"))
+n = sum(1 for e in data.get("entries", []) if e.get("status") in ("stubbed", "NEEDS-REVIEW", "pending", "PENDING"))
+print(n)
 PY
 }
 
 {
   echo "================================================================"
-  echo "PBSD driver $(date -u +%FT%TZ)  jobs=$JOBS  gate_jobs=$GATE_JOBS  mech_jobs=$MECH_JOBS  model=composer-2.5"
+  echo "PBSD driver $(date -u +%FT%TZ)  jobs=$JOBS  pro_jobs=$PRO_JOBS  model=deepseek-v4-flash->pro"
   echo "================================================================"
 } >>"$LOG"
 
 for round in $(seq 1 "$MAX_ROUNDS"); do
   left=$(pending)
   echo "" >>"$LOG"
-  echo "########## round $round — $left pending — $(date -u +%FT%TZ) ##########" >>"$LOG"
+  echo "########## round $round — $left stubbed/needs-review — $(date -u +%FT%TZ) ##########" >>"$LOG"
   if [ "$left" = "0" ]; then
-    echo "nothing pending; deferred pass" >>"$LOG"
-    python3 -u pbsd.py --deferred --jobs "$JOBS" --gate-jobs "$GATE_JOBS" >>"$LOG" 2>&1
+    echo "nothing pending" >>"$LOG"
     break
   fi
-  if [ "$round" = "1" ] && [ "$SKIP_MECH" != "1" ]; then
-    stamp="$HOME/pbsd/docs/migration/.mech_pass_done"
-    if [ -f "$stamp" ] && [ "$(cat "$stamp")" != "in_progress" ]; then
-      echo "mechanical phase already complete ($(cat "$stamp")) — skipping" >>"$LOG"
-    else
-      python3 -u pbsd.py --mechanical-only --mech-jobs "$MECH_JOBS" >>"$LOG" 2>&1
-    fi
+  args=(--jobs "$JOBS" --pro-jobs "$PRO_JOBS")
+  if [ -n "$SCOPE" ]; then
+    args+=(--scope "$SCOPE")
   fi
-  python3 -u pbsd.py --jobs "$JOBS" --gate-jobs "$GATE_JOBS" --no-mechanical >>"$LOG" 2>&1
+  python3 -u pbsd.py "${args[@]}" >>"$LOG" 2>&1
   rc=$?
   echo "round $round exited rc=$rc" >>"$LOG"
   git add -A >/dev/null 2>&1

@@ -1,7 +1,6 @@
 #!/bin/bash
-# Outer supervisor: keeps pbsd_driver alive, refreshes auth, pushes periodically.
+# Outer supervisor: keeps pbsd_driver alive and pushes periodically.
 export PATH="$HOME/.local/bin:$PATH"
-unset CURSOR_API_KEY
 if [ -f "$HOME/load_secrets.sh" ]; then
   # shellcheck source=/dev/null
   . "$HOME/load_secrets.sh"
@@ -14,6 +13,7 @@ fi
 LOG="$HOME/pbsd_watchdog.log"
 PUSH_INTERVAL="${PUSH_INTERVAL:-1800}"
 LOCK="$HOME/pbsd_watchdog.lock"
+WIN="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System"
 last_push=0
 
 log() { echo "$(date -u +%FT%TZ) $*" | tee -a "$LOG"; }
@@ -26,37 +26,34 @@ push_if_needed() {
   last_push=$now
 }
 
-start_driver() {
-  bash "$HOME/sync_cursor_auth.sh" 2>/dev/null || true
-  src="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/pbsd.py"
+sync_file() {
+  local src="$1" dest="$2"
+  local tmp
+  [ -f "$src" ] || return 0
+  mkdir -p "$(dirname "$dest")"
   tmp="$(mktemp)"
-  if [ -f "$src" ]; then
-    cp -f "$src" "$tmp"
-    sed -i 's/\r$//' "$tmp"
-    if python3 -m py_compile "$tmp" 2>/dev/null; then
-      mv "$tmp" ~/pbsd/pbsd.py
-    else
-      log "pbsd.py from Windows failed py_compile — keeping existing ~/pbsd/pbsd.py"
-      rm -f "$tmp"
-    fi
+  cp -f "$src" "$tmp"
+  sed -i 's/\r$//' "$tmp"
+  mv "$tmp" "$dest"
+}
+
+start_driver() {
+  sync_file "$WIN/pbsd.py" "$HOME/pbsd/pbsd.py"
+  sync_file "$WIN/tools/pbsd_secrets.py" "$HOME/pbsd/tools/pbsd_secrets.py"
+  sync_file "$WIN/tools/pbsd_agent_port.py" "$HOME/pbsd/tools/pbsd_agent_port.py"
+  if [ -d "$WIN/tools/pbsd_agent" ]; then
+    mkdir -p "$HOME/pbsd/tools/pbsd_agent"
+    cp -rf "$WIN/tools/pbsd_agent/." "$HOME/pbsd/tools/pbsd_agent/"
+    find "$HOME/pbsd/tools/pbsd_agent" -type f -name '*.py' -exec sed -i 's/\r$//' {} +
   fi
-  sec_src="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/tools/pbsd_secrets.py"
-  if [ -f "$sec_src" ]; then
-    mkdir -p ~/pbsd/tools
-    cp -f "$sec_src" ~/pbsd/tools/pbsd_secrets.py
-    sed -i 's/\r$//' ~/pbsd/tools/pbsd_secrets.py
-  fi
-  ls_src="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System/scripts/wsl/load_secrets.sh"
-  if [ -f "$ls_src" ]; then
-    cp -f "$ls_src" ~/load_secrets.sh
-    sed -i 's/\r$//' ~/load_secrets.sh
-    chmod +x ~/load_secrets.sh
-  fi
-  if [ -n "${RESTART_FORCE:-}" ]; then
-    pkill -f 'cursor-agent.*index.js -p' 2>/dev/null || true
-  fi
+  sync_file "$WIN/scripts/wsl/load_secrets.sh" "$HOME/load_secrets.sh"
+  chmod +x "$HOME/load_secrets.sh" 2>/dev/null || true
+  sync_file "$WIN/scripts/wsl/pbsd_driver.sh" "$HOME/pbsd_driver.sh"
+  chmod +x "$HOME/pbsd_driver.sh" 2>/dev/null || true
+
   rm -f ~/pbsd/.git/index.lock
-  setsid nohup env JOBS="${JOBS:-18}" GATE_JOBS="${GATE_JOBS:-4}" MECH_JOBS="${MECH_JOBS:-8}" SKIP_MECH="${SKIP_MECH:-0}" bash "$HOME/pbsd_driver.sh" >>~/pbsd_run.log 2>&1 &
+  setsid nohup env JOBS="${JOBS:-48}" PRO_JOBS="${PRO_JOBS:-24}" SCOPE="${SCOPE:-}" \
+    bash "$HOME/pbsd_driver.sh" >>~/pbsd_run.log 2>&1 &
   log "started pbsd_driver pid=$!"
 }
 
@@ -78,5 +75,5 @@ while true; do
     fi
   fi
   push_if_needed
-  sleep 120
+  sleep 30
 done

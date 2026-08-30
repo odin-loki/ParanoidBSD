@@ -76,5 +76,5 @@ def load_secrets(root: Path | None = None, *, overwrite: bool = False) -> Path |
 
 
 def loaded_key_names() -> list[str]:
-    names = ("DEEPSEEK_API_KEY", "CURSOR_API_KEY")
+    names = ("DEEPSEEK_API_KEY",)
     return [n for n in names if os.environ.get(n)]

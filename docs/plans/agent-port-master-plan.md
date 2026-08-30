@@ -96,7 +96,7 @@ One session, one file, opened once:
 
 ## 5. Config
 
-- `DEEPSEEK_API_KEY`, `CURSOR_API_KEY` from `secrets/api-keys` (gitignored; stub is `secrets/api-keys.example`). Env vars still override if already set.
+- `DEEPSEEK_API_KEY` from `secrets/api-keys` (gitignored; stub is `secrets/api-keys.example`). Env vars still override if already set.
 - Base URL: `https://api.deepseek.com` for `deepseek-v4-flash` / `deepseek-v4-pro`. Optional `DEEPSEEK_REASONING_EFFORT` (default `max`).
 - Note: `deepseek-chat` / `deepseek-reasoner` were retired July 24, 2026 — already past, so make sure nothing in the existing codebase still references the old model IDs.
 - Concurrency defaults: `--jobs 48` (Flash) / `--pro-jobs 24` (Pro); thread pool = sum of both so Pro is not starved.

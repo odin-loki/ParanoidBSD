@@ -18,7 +18,7 @@ Vendor docs under `hbsd/` and `kde/` stay with those trees. Do not move them her
 | Document | Role |
 |----------|------|
 | [cxx23-port-master-plan.md](plans/cxx23-port-master-plan.md) | Architecture, envelopes, stages A–H, Clang-first doctrine |
-| [agent-port-master-plan.md](plans/agent-port-master-plan.md) | Stage F/G multi-model session (`tools/pbsd_agent_port.py`) |
+| [agent-port-master-plan.md](plans/agent-port-master-plan.md) | Stage F/G DeepSeek session (`pbsd.py`) |
 | [todo-passes.md](plans/todo-passes.md) | Deterministic pass checklist (tiers 0–4) |
 
 ## Specs (frozen)

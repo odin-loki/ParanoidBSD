@@ -121,6 +121,16 @@ def load_inventory_waves() -> dict[str, str]:
         return {r["path"].replace("\\", "/"): r.get("wave", "wave2") for r in csv.DictReader(fh)}
 
 
+def stubbed_candidates(entries: dict[str, dict]) -> list[str]:
+    """Work queue when refusals/queue are empty: stubbed + NEEDS-REVIEW."""
+    out: list[str] = []
+    for src, entry in entries.items():
+        status = entry.get("status")
+        if status in {"stubbed", "NEEDS-REVIEW", "pending", "PENDING"}:
+            out.append(src)
+    return sorted(out)
+
+
 def build_work(
     prefixes: list[str],
     files: list[str] | None,
@@ -140,7 +150,8 @@ def build_work(
     elif refusals:
         candidates = sorted(refusals)
     else:
-        candidates = sorted(queue)
+        stubbed = stubbed_candidates(entries)
+        candidates = stubbed if stubbed else sorted(queue)
 
     work: list[FileContext] = []
     for src in candidates:
@@ -277,11 +288,11 @@ def run_self_test() -> int:
         failures.append("DeepSeek default must be thinking+max effort")
 
     parsed = parse_secrets_text(
-        "DEEPSEEK_API_KEY=sk-test\n# comment\nMOONSHOT_API_KEY=\nexport CURSOR_API_KEY='abc'\n"
+        "DEEPSEEK_API_KEY=sk-test\n# comment\nexport OTHER_KEY='abc'\nEMPTY=\n"
     )
-    if parsed.get("DEEPSEEK_API_KEY") != "sk-test" or parsed.get("CURSOR_API_KEY") != "abc":
+    if parsed.get("DEEPSEEK_API_KEY") != "sk-test" or parsed.get("OTHER_KEY") != "abc":
         failures.append("secrets parser failed")
-    if "MOONSHOT_API_KEY" in parsed:
+    if "EMPTY" in parsed:
         failures.append("empty secret values must be skipped")
 
     if failures:

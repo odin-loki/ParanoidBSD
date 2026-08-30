@@ -16,6 +16,5 @@
 | **PROVENANCE.md** | Living log mapping every module to its spec source (standard/datasheet/original). The legal clean-room trail. |
 | **SPEC.md** | Per-module contract document. Must exist before implementation starts. |
 | **Phase N** | Project plan phase number. See [plans/cxx23-port-master-plan.md](plans/cxx23-port-master-plan.md). |
-| **Mechanical phase** | Free IR-equivalence sweep in `pbsd.py --mechanical-only` — no model calls. |
-| **Agent port** | Stage F/G loop (`pbsd.py` or `tools/pbsd_agent_port.py`) that fills refusals the deterministic passes could not. |
+| **Agent port** | Stage F/G loop (`pbsd.py`) — DeepSeek Flash → Pro fills stubbed / refused files. |
 | **Envelope** | Concurrency class A/B/C from the C++23 port plan (§5). |

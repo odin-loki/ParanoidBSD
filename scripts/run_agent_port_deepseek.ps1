@@ -1,4 +1,4 @@
-# DeepSeek-only agent port runner (Wednesday burn).
+# DeepSeek agent-port runner (pbsd.py).
 # Defaults: Flash×48 + Pro×24, reasoning_effort=max, failures saved.
 # Usage (from repo root, PowerShell):
 #   .\scripts\run_agent_port_deepseek.ps1
@@ -15,6 +15,7 @@ param(
     [double]$FileTimeout = 600,
     [switch]$DryRun,
     [switch]$SelfTest,
+    [switch]$Status,
     [string[]]$File = @()
 )
 
@@ -30,7 +31,12 @@ $py = Get-Command python -ErrorAction SilentlyContinue
 if (-not $py) { $py = Get-Command py -ErrorAction SilentlyContinue }
 if (-not $py) { Write-Error "python not on PATH" }
 
-$argsList = @("tools\pbsd_agent_port.py")
+$argsList = @("pbsd.py")
+if ($Status) {
+    $argsList += "--status"
+    & $py.Source @argsList
+    exit $LASTEXITCODE
+}
 if ($SelfTest) {
     $argsList += "--self-test"
     & $py.Source @argsList

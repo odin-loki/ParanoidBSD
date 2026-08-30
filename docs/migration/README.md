@@ -7,15 +7,15 @@ Live bookkeeping for the HardenedBSD → PBSD port. Plans and frozen specs live 
 | File | Role |
 |------|------|
 | [c_inventory.csv](c_inventory.csv) | All C sources, wave tag, LOC estimate |
-| [inventory.csv](inventory.csv) | `pbsd.py` driver queue (PENDING / VERIFIED / DEFERRED / …) |
-| [batch_progress.json](batch_progress.json) | Stub / converted status per source file |
+| [inventory.csv](inventory.csv) | Legacy driver queue (kept for history) |
+| [batch_progress.json](batch_progress.json) | Stub / converted / NEEDS-REVIEW per source file |
 | [WAVE_STATUS.md](WAVE_STATUS.md) | Burst / wave scoreboard |
 | [CONVERTED.md](CONVERTED.md) | Hand-port log for the C++23 nucleus |
-| [RESUME_PLAN.md](RESUME_PLAN.md) | WSL driver handoff (queue, auth, what is jammed) |
+| [RESUME_PLAN.md](RESUME_PLAN.md) | DeepSeek driver handoff |
 
 `clang_port/` is output from `tools/run_todo_passes.py` and `tools/clang_cxx23_port.py` (refusals, staged rewrites, queue, reports). Most of it is gitignored; the reports that are tracked are generated snapshots.
 
-`artifacts/` is per-batch evidence written by `pbsd.py`.
+Agent outputs: `clang_port/agent_port_cost.jsonl`, `clang_port/agent_port_failures.jsonl`.
 
 ## Subsystem notes
 
@@ -29,24 +29,21 @@ Live bookkeeping for the HardenedBSD → PBSD port. Plans and frozen specs live 
 | [PROFILES.md](PROFILES.md) | Embedded / server / workstation builds |
 | [PURGE_C.md](PURGE_C.md) | When a C TU can be deleted |
 
-## Driver (WSL)
+## Driver
 
-Work from `~/pbsd` on ext4. The Windows tree is the editor checkout.
-
-API keys live in `secrets/api-keys` on the Windows checkout (copy `secrets/api-keys.example`). The driver and watchdog load that file; they do not read a key out of the shell.
+Single path: **DeepSeek** via `pbsd.py` (Flash → Pro). Keys in `secrets/api-keys`.
 
 | Script | Role |
 |--------|------|
-| `scripts/wsl/pbsd_watchdog.sh` | Keeps the driver alive, deploys `pbsd.py` |
-| `scripts/wsl/pbsd_driver.sh` | Mechanical pass, then agent rounds |
+| `pbsd.py` | Status + agent-port CLI |
+| `scripts/wsl/pbsd_watchdog.sh` | Keeps the driver alive |
+| `scripts/wsl/pbsd_driver.sh` | DeepSeek agent rounds |
 | `scripts/wsl/restart_pbsd.sh` | Copy scripts from Windows, restart watchdog |
-| `Watch-PBSD.bat` | Progress console (use `attach` if the driver is already up) |
-| `Stop-PBSD.bat` | Kill watchdog / driver / agents |
+| `Watch-PBSD.bat` | Progress console (`attach` if already up) |
+| `Stop-PBSD.bat` | Kill watchdog / driver |
 
 ```bash
 python3 pbsd.py --status
-python3 pbsd.py --mechanical-only --mech-jobs 8
-python3 pbsd.py --jobs 18 --gate-jobs 4 --no-mechanical
+python3 pbsd.py --dry-run --scope bin --limit 20
+python3 pbsd.py --scope bin,usr.bin --jobs 48 --pro-jobs 24
 ```
-
-Mechanical resume state (local, gitignored): `.mech_pass_done`, `.mech_checkpoint.jsonl`.
