@@ -67,14 +67,14 @@ jobs:
         run: |
           python3 tools/convert_c_batch.py --report
           python3 - <<'PY'
-import json
-from pathlib import Path
-p = Path("docs/migration/batch_progress.json")
-data = json.loads(p.read_text())
-print("=== batch_progress.json ===")
-for wave, stats in sorted(data.get("waves", {}).items()):
-    print(f"{wave}: converted={stats.get('converted',0)} stubbed={stats.get('stubbed',0)} pending={stats.get('pending',0)} total={stats.get('total',0)}")
-PY
+          import json
+          from pathlib import Path
+          p = Path("docs/migration/batch_progress.json")
+          data = json.loads(p.read_text())
+          print("=== batch_progress.json ===")
+          for wave, stats in sorted(data.get("waves", {}).items()):
+              print(f"{wave}: converted={stats.get('converted',0)} stubbed={stats.get('stubbed',0)} pending={stats.get('pending',0)} total={stats.get('total',0)}")
+          PY
 
       - name: Inventory summary by wave
         run: python3 tools/sum_inventory.py
