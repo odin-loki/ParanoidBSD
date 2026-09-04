@@ -37,7 +37,7 @@ jobs:
       - name: Install toolchain
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build clang clang-tidy clang-tools python3
+          sudo apt-get install -y -qq ninja-build clang clang-tidy clang-tools libbsd-dev python3
 
       - name: Licence compliance gate
         run: python3 tools/check_licences.py --verbose
@@ -127,7 +127,7 @@ jobs:
       - name: Install toolchain
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build clang clang-tools python3
+          sudo apt-get install -y -qq ninja-build clang clang-tools libbsd-dev python3
 
       # pbsd/_build_wave.sh has never been committed either. Per
       # docs/migration/WAVE_STATUS.md it is a local wrapper around what

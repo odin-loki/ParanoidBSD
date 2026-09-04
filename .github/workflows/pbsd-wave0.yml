@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang clang-tidy clang-tools cmake ninja-build python3
+          sudo apt-get install -y clang clang-tidy clang-tools cmake libbsd-dev ninja-build python3
 
       - name: Wave 0 analyser + SI harness + inventory
         run: bash tools/ci/run_wave0_analyser.sh
