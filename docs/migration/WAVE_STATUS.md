@@ -2,7 +2,7 @@
 
 **Program:** ParanoidBSD full C++23 port (HardenedBSD kernel + KDE Plasma 6 + PBSD nucleus)
 
-**Hosted build gate:** `pbsd/_build_wave.sh` → Ninja + Clang 18, full `ctest`, inventory + batch scripts → `WAVE_BUILD_OK`.
+**Hosted build gate:** `pbsd/_build_wave.sh` → Ninja + Clang 18, full `ctest`, inventory + batch scripts → `WAVE_BUILD_OK`. **Not committed** — it exists only on the author's machine, so CI skips it with a warning and relies on the equivalent inline steps in `build-and-gate`.
 
 ## Conversion progress (2026-07-20, Burst 16 green gate)
 
@@ -58,7 +58,7 @@
 
 **Partition modules (burst, 2026-07-19):** hand ports across net/fs/geom/zfs/stand/arch/bifrost/compositor/userland — `pbsd_net_{icmp,ifnet,route,in_pcb,arp,ether}`, TCP FSM + `pbsd_fs` vnode flags, expanded `pbsd_zfs.features`, `pbsd_stand_{efi.protocols,bootinfo,loader,reboot}`, `pbsd_arch_amd64_msr` table, `pbsd_bifrost_nested`, xdg positioner/decoration opcodes in `pbsd.compositor.wayland`; userland burst 8–9 (helpers, compression, network, sysadmin, build/auth tools); SI harness in `test_wave6_net_fs_geom_zfs`, `test_wave7_stand_arch`, `test_wave8_compositor`.
 
-**Batch tooling:** `tools/convert_c_batch.py` (`--skip-stubbed` for incremental batches); `tools/wave_purge_c_check.py --metrics` (JSON rollup incl. `wave_partition_modules` for CI); `tools/mark_converted.py --sync` keeps `CONVERTED.md` ↔ `batch_progress.json` aligned.
+**Batch tooling:** `tools/convert_c_batch.py` (`--skip-stubbed` for incremental batches); `tools/wave_purge_c_check.py --metrics` (JSON rollup incl. `wave_partition_modules` for CI); `tools/mark_converted.py --sync` keeps `CONVERTED.md` ↔ `batch_progress.json` aligned — **not committed**, so that drift check does not currently run anywhere.
 
 **CI:** `.github/workflows/pbsd-ci.yml` — module counts, ledger sync, full `ctest`, batch/inventory summary, L1 clang-tidy, optional L2/L4 analyser, Wave 9 purge report (`--json` artifact); `wave-build-script` job runs `pbsd/_build_wave.sh`.
 

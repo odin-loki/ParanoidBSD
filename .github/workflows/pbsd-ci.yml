@@ -37,7 +37,7 @@ jobs:
       - name: Install toolchain
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build clang clang-tidy python3
+          sudo apt-get install -y -qq ninja-build clang clang-tidy clang-tools python3
 
       - name: Licence compliance gate
         run: python3 tools/check_licences.py --verbose
@@ -45,8 +45,16 @@ jobs:
       - name: Module + stub counts
         run: python3 tools/count_modules.py
 
+      # tools/mark_converted.py has never been committed - it exists only on
+      # the author's machine. Skip rather than fail the whole run, but say so,
+      # so the missing gate is visible instead of silently absent.
       - name: Sync conversion ledgers
-        run: python3 tools/mark_converted.py --sync
+        run: |
+          if [ -f tools/mark_converted.py ]; then
+            python3 tools/mark_converted.py --sync
+          else
+            echo "::warning title=Ledger sync skipped::tools/mark_converted.py is not in the repository. CONVERTED.md and batch_progress.json are not being checked for drift."
+          fi
 
       - name: Configure (L3 thread-safety flags via CMake)
         run: |
@@ -119,7 +127,16 @@ jobs:
       - name: Install toolchain
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq ninja-build clang python3
+          sudo apt-get install -y -qq ninja-build clang clang-tools python3
 
+      # pbsd/_build_wave.sh has never been committed either. Per
+      # docs/migration/WAVE_STATUS.md it is a local wrapper around what
+      # build-and-gate already does inline (Ninja + Clang, full ctest,
+      # inventory and batch scripts), so its absence costs no coverage here.
       - name: Hosted wave build gate
-        run: bash pbsd/_build_wave.sh
+        run: |
+          if [ -f pbsd/_build_wave.sh ]; then
+            bash pbsd/_build_wave.sh
+          else
+            echo "::warning title=Wave build gate skipped::pbsd/_build_wave.sh is not in the repository. The build-and-gate job covers the same ground."
+          fi
