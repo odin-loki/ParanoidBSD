@@ -177,7 +177,26 @@ def main() -> int:
             f"({counts[ident]} file(s)) — add it to LICENSING.md 5 first"
         )
 
-    # 5. BSD-4-Clause ratchet.
+    # 5a. The ratchet files must keep a licence notice. Counting only *new*
+    #     BSD-4-Clause files missed the violation the ratchet exists to stop:
+    #     deleting the header makes a file drop out of the set silently, which
+    #     read as good news. A relicence swaps the identifier and is fine; no
+    #     identifier at all means the notice was stripped.
+    for rel in sorted(BSD4_RATCHET):
+        f = ROOT / rel
+        if not f.exists():
+            continue
+        try:
+            body = f.open("rb").read(MAX_BYTES)
+        except OSError:
+            continue
+        if not SPDX.search(body):
+            failures.append(
+                f"{rel} has lost its SPDX-License-Identifier. It is a BSD-4-Clause "
+                f"port (LICENSING.md 4.2.1); the upstream notice must stay."
+            )
+
+    # 5b. BSD-4-Clause ratchet.
     found4 = paths.get("BSD-4-Clause", set())
     for rel in sorted(found4 - BSD4_RATCHET):
         failures.append(
