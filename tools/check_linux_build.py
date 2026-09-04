@@ -16,6 +16,13 @@ with docs/migration/linux_build_exceptions.txt:
   a failure not in the list  regression, exits 1
   an entry that now builds   reported, so the list can shrink
 
+Only modules ninja actually attempted are judged. CMake will not compile
+anything until the whole C++20 dependency scan succeeds, and the scan stops at
+the first wall of errors, so a typical Linux log covers about half the targets.
+An entry ninja never reached has not "started building" - it has not been tried
+- and saying otherwise tells the maintainer to delete an exception that is
+still needed.
+
 Usage:
     ninja -C build -k 0 2>&1 | tee build.log
     python3 tools/check_linux_build.py build.log [--write]
@@ -30,8 +37,23 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EXCEPTIONS = ROOT / "docs" / "migration" / "linux_build_exceptions.txt"
 FAILED = re.compile(r"^FAILED:.*?CMakeFiles/pbsd\.dir/(\S+\.cppm)\.o", re.M)
+# Every module ninja reaches is announced first, whether it then fails or not:
+#   [673/1352] Scanning /abs/path/pbsd/usr.sbin/pw/strtounum_m/port.cppm ...
+#   [21/1352] Building CXX object CMakeFiles/pbsd.dir/handles/pbsd.handles.cppm.o
+SCANNED = re.compile(r"^\[\d+/\d+\] Scanning (\S+\.cppm) for CXX dependencies", re.M)
+BUILDING = re.compile(r"^\[\d+/\d+\] Building CXX object CMakeFiles/pbsd\.dir/(\S+\.cppm)\.o",
+                      re.M)
 PROGRESS = re.compile(r"^\[(\d+)/(\d+)\]", re.M)
 MIN_STEPS = 100   # a real run scans well over a thousand modules
+
+
+def attempted_modules(text: str) -> set[str]:
+    """Modules ninja actually reached, as paths relative to pbsd/."""
+    seen = set(BUILDING.findall(text))
+    for path in SCANNED.findall(text):
+        head, sep, rel = path.rpartition("/pbsd/")
+        seen.add(rel if sep else path)
+    return seen
 
 
 def load_exceptions() -> set[str]:
@@ -53,6 +75,7 @@ def main() -> int:
 
     text = pathlib.Path(args.log).read_text(encoding="utf-8", errors="replace")
     failed = set(FAILED.findall(text))
+    attempted = attempted_modules(text) | failed
     known = load_exceptions()
 
     # `cmake --build ... || true` in CI means a build that dies immediately
@@ -65,6 +88,17 @@ def main() -> int:
               "the same as building cleanly.")
         return 1
 
+    # Rewriting the list from a log that stopped halfway would silently drop
+    # every exception ninja never reached, and each of those comes back as a
+    # regression the next time the scan gets further.
+    if args.write and known and not known <= attempted:
+        missing = len(known - attempted)
+        print(f"FAIL  {args.log} stopped before ninja reached {missing} of the "
+              f"{len(known)} known exceptions.")
+        print("      Rewriting the list from it would delete entries that were "
+              "never tried. Use a log from a complete run.")
+        return 1
+
     if args.write:
         header = [l for l in EXCEPTIONS.read_text(encoding="utf-8").splitlines()
                   if l.startswith("#")] if EXCEPTIONS.exists() else []
@@ -73,15 +107,20 @@ def main() -> int:
         return 0
 
     new = sorted(failed - known)
-    cleared = sorted(known - failed)
+    cleared = sorted((known & attempted) - failed)
+    untried = known - attempted
 
     for m in cleared:
         print(f"note  {m} now builds on Linux — drop it from the exception list")
     for m in new:
         print(f"FAIL  {m} no longer builds, and is not a known Linux exception")
+    if untried:
+        print(f"note  {len(untried)} exception(s) not reached: the scan stopped "
+              f"early, so they were neither built nor failed")
 
     print(f"\n{len(failed)} module(s) failed, {len(known)} expected, "
-          f"{len(new)} regression(s), {len(cleared)} cleared")
+          f"{len(new)} regression(s), {len(cleared)} cleared, "
+          f"{len(untried)} not reached")
     if new:
         print("\nA module outside docs/migration/linux_build_exceptions.txt stopped "
               "building. Fix it, or add it with a reason if it is genuinely "

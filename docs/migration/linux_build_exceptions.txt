@@ -16,6 +16,14 @@
 # this list stops building. The list may shrink - it must never grow without
 # a deliberate edit and a reason.
 #
+# One caveat about shrinking it. CMake compiles nothing until the whole C++20
+# dependency scan succeeds, and the scan stops at the first wall of errors, so
+# a Linux log usually covers only about half the 1,352 targets - which half
+# depends on scheduling. An entry ninja never reached has not started building;
+# check_linux_build.py reports those separately as "not reached" and refuses to
+# --write from such a log, because rewriting from it would quietly delete
+# exceptions that are still needed.
+#
 # Every entry is a FreeBSD-derived port under lib/, bin/, sbin/, usr.bin/,
 # usr.sbin/ or sys/. No module original to PBSD appears here, and none fails:
 # the handle nucleus, UDA, the analyser, BIFROST, the compositor, the theme
