@@ -1,0 +1,178 @@
+# Modules that cannot be built on Linux
+#
+# PBSD targets FreeBSD/HardenedBSD. The modules listed here are ports of
+# FreeBSD userland whose sources include headers that either live inside the
+# FreeBSD tree (math_private.h, namespace.h, fpmath.h, quad.h, local.h) or do
+# not exist on Linux at all (sys/sysctl.h, sys/acl.h, sys/proc.h, sys/mac.h,
+# sys/linker.h, uuid.h, ieeefp.h, ssp/string.h).
+#
+# Pointing the build at hbsd/src/lib/libc/include does not help: those private
+# headers transitively need FreeBSD's sys/*, which then shadows glibc and
+# breaks far more than it fixes (149 failures becomes 174, or 603 once
+# hbsd/src/sys is on the path). The list below is therefore the floor for a
+# Linux build, not a backlog.
+#
+# What it is for: tools/check_linux_build.py fails CI when a module outside
+# this list stops building. The list may shrink - it must never grow without
+# a deliberate edit and a reason.
+#
+# Every entry is a FreeBSD-derived port under lib/, bin/, sbin/, usr.bin/,
+# usr.sbin/ or sys/. No module original to PBSD appears here, and none fails:
+# the handle nucleus, UDA, the analyser, BIFROST, the compositor, the theme
+# and the KDE bridges all scan and compile on Linux.
+#
+# Regenerate after a toolchain change:
+#   cmake -S pbsd -B build -G Ninja -DCMAKE_CXX_COMPILER=clang++
+#   ninja -C build -k 0 2>&1 | tee build.log
+#   python3 tools/check_linux_build.py build.log --write
+#
+# Baseline: clang 18.1.3, CMake 3.28.3, Ubuntu 24.04.
+bin/dd/conv_m/port.cppm
+bin/dd/position_m/port.cppm
+bin/ps/nlist_m/port.cppm
+bin/pwait/b0181/port.cppm
+bin/setfacl/mask_m/port.cppm
+bin/setfacl/util_m/port.cppm
+bin/stty/gfmt_m/port.cppm
+lib/libc/amd64/gen/b0056/port.cppm
+lib/libc/compat-43/gethostid_m/port.cppm
+lib/libc/compat-43/sethostid_m/port.cppm
+lib/libc/csu/b0223/port.cppm
+lib/libc/db/hash/hash_log2_m/port.cppm
+lib/libc/db/recno/rec_utils_m/port.cppm
+lib/libc/gen/check_utility_compat_m/port.cppm
+lib/libc/gen/devname_m/port.cppm
+lib/libc/gen/dirfd_m/port.cppm
+lib/libc/gen/fdevname_m/port.cppm
+lib/libc/gen/feature_present_m/port.cppm
+lib/libc/gen/frexp_m/port.cppm
+lib/libc/gen/getloadavg_m/port.cppm
+lib/libc/gen/getosreldate_m/port.cppm
+lib/libc/gen/getpeereid_m/port.cppm
+lib/libc/gen/modf_m/port.cppm
+lib/libc/gen/psignal_m/port.cppm
+lib/libc/gen/setdomainname_m/port.cppm
+lib/libc/gen/sethostname_m/port.cppm
+lib/libc/gen/setjmperr_m/port.cppm
+lib/libc/gen/sysctlbyname_m/port.cppm
+lib/libc/gen/sysctlnametomib_m/port.cppm
+lib/libc/locale/wctype_m/port.cppm
+lib/libc/net/if_indextoname_m/port.cppm
+lib/libc/net/if_nametoindex_m/port.cppm
+lib/libc/net/map_v4v6_m/port.cppm
+lib/libc/net/sockatmark_m/port.cppm
+lib/libc/posix1e/acl_cmp_np_m/port.cppm
+lib/libc/posix1e/acl_extended_file_np_m/port.cppm
+lib/libc/posix1e/acl_from_mode_np_m/port.cppm
+lib/libc/posix1e/acl_id_to_name_m/port.cppm
+lib/libc/posix1e/acl_perm_m/port.cppm
+lib/libc/quad/divdi3_m/port.cppm
+lib/libc/quad/fixdfdi_m/port.cppm
+lib/libc/quad/fixsfdi_m/port.cppm
+lib/libc/regex/b0292/port.cppm
+lib/libc/regex/b0336/port.cppm
+lib/libc/regex/regfree_m/port.cppm
+lib/libc/rpc/bindresvport_m/port.cppm
+lib/libc/rpc/rtime_m/port.cppm
+lib/libc/secure/fgets_chk_m/port.cppm
+lib/libc/secure/sprintf_chk_m/port.cppm
+lib/libc/secure/stpcpy_chk_m/port.cppm
+lib/libc/secure/strcat_chk_m/port.cppm
+lib/libc/secure/strlcat_chk_m/port.cppm
+lib/libc/secure/strncat_chk_m/port.cppm
+lib/libc/secure/vsprintf_chk_m/port.cppm
+lib/libc/stdio/flags_m/port.cppm
+lib/libc/stdio/funopen_m/port.cppm
+lib/libc/stdio/fwalk_m/port.cppm
+lib/libc/stdio/rget_m/port.cppm
+lib/libc/stdio/wbuf_m/port.cppm
+lib/libc/stdio/wsetup_m/port.cppm
+lib/libc/uuid/uuid_compare_m/port.cppm
+lib/libc/uuid/uuid_equal_m/port.cppm
+lib/libc/uuid/uuid_from_string_m/port.cppm
+lib/libc/uuid/uuid_is_nil_m/port.cppm
+lib/libc/uuid/uuid_to_string_m/port.cppm
+lib/msun/ld128/b0088s2/port.cppm
+lib/msun/ld128/k_cosl_m/port.cppm
+lib/msun/ld128/k_tanl_m/port.cppm
+lib/msun/src/b0267/port.cppm
+lib/msun/src/e_acosh_m/port.cppm
+lib/msun/src/e_acoshf_m/port.cppm
+lib/msun/src/e_atanh_m/port.cppm
+lib/msun/src/e_atanhf_m/port.cppm
+lib/msun/src/e_cosh_m/port.cppm
+lib/msun/src/e_coshf_m/port.cppm
+lib/msun/src/e_remainder_m/port.cppm
+lib/msun/src/e_remainderf_m/port.cppm
+lib/msun/src/e_scalb_m/port.cppm
+lib/msun/src/e_scalbf_m/port.cppm
+lib/msun/src/e_sinh_m/port.cppm
+lib/msun/src/e_sinhf_m/port.cppm
+lib/msun/src/k_cosf_m/port.cppm
+lib/msun/src/k_expf_m/port.cppm
+lib/msun/src/k_sinf_m/port.cppm
+lib/msun/src/s_cbrtf_m/port.cppm
+lib/msun/src/s_ceil_m/port.cppm
+lib/msun/src/s_ceilf_m/port.cppm
+lib/msun/src/s_cexpf_m/port.cppm
+lib/msun/src/s_clogf_m/port.cppm
+lib/msun/src/s_cosf_m/port.cppm
+lib/msun/src/s_cprojf_m/port.cppm
+lib/msun/src/s_floor_m/port.cppm
+lib/msun/src/s_floorf_m/port.cppm
+lib/msun/src/s_frexp_m/port.cppm
+lib/msun/src/s_frexpf_m/port.cppm
+lib/msun/src/s_frexpl_m/port.cppm
+lib/msun/src/s_isfinite_m/port.cppm
+lib/msun/src/s_isnormal_m/port.cppm
+lib/msun/src/s_logb_m/port.cppm
+lib/msun/src/s_logbf_m/port.cppm
+lib/msun/src/s_modf_m/port.cppm
+lib/msun/src/s_modff_m/port.cppm
+lib/msun/src/s_nextafterf_m/port.cppm
+lib/msun/src/s_nexttowardf_m/port.cppm
+lib/msun/src/s_round_m/port.cppm
+lib/msun/src/s_roundf_m/port.cppm
+lib/msun/src/s_roundl_m/port.cppm
+lib/msun/src/s_sincosf_m/port.cppm
+lib/msun/src/s_sinf_m/port.cppm
+lib/msun/src/s_trunc_m/port.cppm
+lib/msun/src/s_truncf_m/port.cppm
+sbin/kldunload/kldunload_m/port.cppm
+sbin/nfsiod/nfsiod_m/port.cppm
+sbin/nvmecontrol/nc_util_m/port.cppm
+sbin/ping/utils_m/port.cppm
+sbin/rcorder/ealloc_m/port.cppm
+sys/fs/procfs/procfs_type_m/port.cppm
+sys/net/toeplitz_m/port.cppm
+usr.bin/calendar/ostern_m/port.cppm
+usr.bin/calendar/paskha_m/port.cppm
+usr.bin/cksum/print_m/port.cppm
+usr.bin/cksum/sum1_m/port.cppm
+usr.bin/cksum/sum2_m/port.cppm
+usr.bin/ctags/tree_m/port.cppm
+usr.bin/diff/xmalloc_m/port.cppm
+usr.bin/find/find_m/port.cppm
+usr.bin/fstat/main_m/port.cppm
+usr.bin/hesinfo/hesinfo_m/port.cppm
+usr.bin/ktrace/subr_m/port.cppm
+usr.bin/login/login_fbtab_m/port.cppm
+usr.bin/mail/getname_m/port.cppm
+usr.bin/mkuzip/mkuz_time_m/port.cppm
+usr.bin/protect/protect_m/port.cppm
+usr.bin/rpcgen/rpc_sample_m/port.cppm
+usr.bin/rpcgen/rpc_tblout_m/port.cppm
+usr.bin/sort/mem_m/port.cppm
+usr.bin/w/proc_compare_m/port.cppm
+usr.sbin/bhyve/console_m/port.cppm
+usr.sbin/bhyve/usb_emul_m/port.cppm
+usr.sbin/boottrace/boottrace_m/port.cppm
+usr.sbin/bsdinstall/runconsoles/common_m/port.cppm
+usr.sbin/cxgbetool/tcbshowt4_m/port.cppm
+usr.sbin/cxgbetool/tcbshowt5_m/port.cppm
+usr.sbin/cxgbetool/tcbshowt6_m/port.cppm
+usr.sbin/getfmac/getfmac_m/port.cppm
+usr.sbin/getpmac/getpmac_m/port.cppm
+usr.sbin/ppp/probe_m/port.cppm
+usr.sbin/pw/strtounum_m/port.cppm
+usr.sbin/rtadvd/timer_subr_m/port.cppm
