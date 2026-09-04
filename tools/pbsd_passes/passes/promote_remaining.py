@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Remaining Tier-1/2/3/4 scripting: tentative defs, str→format, Andersen,
 region/lifetime, macro anti-unification, fn-ptr structs, callback+ctx,
 PPCallbacks-style macro ranges, Alive2/fuzz/syscall stubs.

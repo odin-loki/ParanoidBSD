@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """ESBMC bounded-model-check wrapper — Stage G formal, new integration.
 
 Missing binary is a skip, not a failure. SAT/UNSAT/counterexample are parsed

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Promote former refusal-only sites into deterministic rewrites.
 
 Also: successful edits must NOT emit Refusal rows (those are the model queue).

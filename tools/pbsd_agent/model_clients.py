@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Thin OpenAI-compatible chat client for DeepSeek Flash / Pro.
 
 One class; only model (and key/base) differ per tier.

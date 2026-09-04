@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 # Reruns DeepSeek agent-port until stubbed work is drained (or rounds exhausted).
 export PATH="$HOME/.local/bin:$PATH"
 if [ -f "$HOME/load_secrets.sh" ]; then

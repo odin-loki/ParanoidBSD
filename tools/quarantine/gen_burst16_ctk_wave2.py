@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Burst 16 wave 2 — kde/theme/compositor/stand/arch/bifrost hand ports + dual-world .c stubs."""
 from __future__ import annotations
 

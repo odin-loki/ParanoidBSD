@@ -3,7 +3,11 @@
 **Author:** Odin Loch  
 **Policy:** Every module must have an entry here before implementation begins.  
 **Rule:** Spec source must be a public standard, published datasheet, or original design.  
-         Never cite an existing implementation's source code.
+         Never cite an existing implementation's source code.  
+**Licence:** Original PBSD work is AGPL-3.0-or-later; ported files keep the upstream  
+         header they inherited, and that header governs the file. The authoritative  
+         per-path map is [../LICENSING.md](../LICENSING.md); attribution is in  
+         [../NOTICES.md](../NOTICES.md). `python3 tools/check_licences.py` gates both.
 
 **Port context:** ParanoidBSD is a full C++23 port of the HardenedBSD kernel tree and KDE Plasma 6 userland. Legacy C components are inventoried in `docs/migration/c_inventory.csv` and retired wave-by-wave; new PBSD code is C++23 modules under `pbsd/`. Index: [docs/README.md](README.md).
 
@@ -11,9 +15,10 @@
 
 | Component | Spec source | License | Port note |
 |-----------|-------------|---------|-----------|
-| HardenedBSD kernel | HardenedBSD Project | BSD-2-Clause | Incremental C→C++23 via waves 4–9; `NORMAL_CXX` in `kern.mk` |
-| KDE Plasma 6 | KDE Project | GPL-2.0+ | Wave 3; C++23 already; PBSD theme/compositor integration |
+| HardenedBSD kernel | HardenedBSD Project | BSD-2-Clause (also BSD-3/4-Clause, ISC, MIT per file) | Incremental C→C++23 via waves 4–9; `NORMAL_CXX` in `kern.mk`. Ports retain upstream headers; the 22 BSD-4-Clause files are excluded from the AGPL grant — LICENSING.md §4.2.1 |
+| KDE Plasma 6 | KDE Project | GPL-2.0-or-later, LGPL-2.1-or-later | Wave 3; C++23 already; PBSD theme/compositor integration. AGPL-compatible only via the "or later" upgrade — LICENSING.md §4.3.1 |
 | FreeBSD KPI / kmod ABI | FreeBSD Documentation | BSD-2-Clause | Dual-link via `extern "C"` per `KERNEL_CXX_ABI.md` |
+| OpenZFS (`pbsd/zfs/`) | OpenZFS, via `hbsd/src/sys/contrib/openzfs/` | CDDL-1.0 | **Incompatible with AGPL.** Separate unmodified module only; never statically combined — LICENSING.md §4.3.2 |
 
 ## Entries
 

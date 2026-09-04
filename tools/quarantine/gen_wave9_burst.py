@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Generate Wave 9 burst-9 net/fs/geom/zfs/kde/theme C++23 modules."""
 from __future__ import annotations
 

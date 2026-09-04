@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Tier 2 — local dataflow / intra-procedural (docs/plans/todo-passes.md)."""
 from __future__ import annotations
 

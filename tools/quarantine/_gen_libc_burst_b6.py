@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Wave 2 burst 6 — libc stdio/locale/stdlib + libthr + rtld modules."""
 from __future__ import annotations
 

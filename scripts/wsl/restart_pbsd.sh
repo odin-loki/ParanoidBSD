@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 set -euo pipefail
 ROOT="/mnt/c/Users/odinl/OneDrive/Desktop/Operating System"
 for f in pbsd_watchdog.sh pbsd_driver.sh push_github.sh load_secrets.sh; do

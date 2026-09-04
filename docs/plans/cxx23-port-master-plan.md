@@ -33,7 +33,7 @@ Existing repo artifacts (`docs/specs/*`, `docs/migration/*`, `pbsd/`, `tools/`) 
 
 **Non-negotiables**
 
-1. **License stays BSD.** Preserve copyright headers; attribute derived ports in `NOTICES` / `PROVENANCE.md`.
+1. **Preserve every upstream header.** New PBSD work is AGPL-3.0-or-later; ported files keep the copyright notice, conditions and disclaimer they inherited, and that header governs the file. Attribute derived ports in [`NOTICES.md`](../../NOTICES.md) / [`PROVENANCE.md`](../PROVENANCE.md); the per-path map is [`LICENSING.md`](../../LICENSING.md). A rewrite pass that drops a header is a licence violation, and `tools/check_licences.py` fails on it.
 2. **No file is `DONE` until differential verification passes.** Compile-only = `UNVERIFIED`.
 3. **Behavior observed beats behavior assumed.** Instrument originals before rewriting ambiguous UB.
 4. **Deterministic tooling first.** AST queries, clang-tidy fixits, include graphs, and inventory scripts run before any generative rewrite.
@@ -288,8 +288,14 @@ Analyser layers: L1 tidy/syntactic · L2 ownership CFG · L3 thread-safety · L4
 
 ## 13. Licensing ledger
 
-- **BSD-2/3:** direct derivation + headers → `NOTICES`
-- **CDDL (ZFS/DTrace):** design reference or load unmodified module; do not mix into BSD files casually
+Authoritative version: [`LICENSING.md`](../../LICENSING.md). Summary:
+
+- **PBSD original work:** `AGPL-3.0-or-later`, plus a commercial tier
+- **`hbsd/`, `kde/`:** vendored, excluded, never relicensed
+- **BSD-2/3, ISC, MIT, 0BSD:** direct derivation + retained headers → [`NOTICES.md`](../../NOTICES.md)
+- **BSD-4-Clause (22 files):** the advertising clause bars them from an AGPL binary; excluded and ratcheted — §4.2.1
+- **GPL-2.0-or-later / LGPL-2.1-or-later (KDE):** compatible via the "or later" upgrade and GPL-3.0 §13. `GPL-2.0-only` must never enter the tree
+- **CDDL (ZFS/DTrace):** design reference or load unmodified module; never statically combined with AGPL code
 - **Vendored (jemalloc, zstd, LZ4, crypto):** vendor upstream
 - **CK epoch:** design ref; fresh C++23 EBR preferred for model-checking
 

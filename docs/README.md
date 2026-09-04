@@ -6,6 +6,9 @@ Start at the [repository README](../README.md). This tree is the rest of the wri
 |------|------------|
 | [GLOSSARY.md](GLOSSARY.md) | Project terms |
 | [PROVENANCE.md](PROVENANCE.md) | Spec source / license trail for every module |
+| [../LICENSING.md](../LICENSING.md) | Authoritative per-path licence map, compatibility analysis, open items |
+| [../NOTICES.md](../NOTICES.md) | Third-party attribution ledger |
+| [../COMMERCIAL-LICENCE.md](../COMMERCIAL-LICENCE.md) | The paid alternative to AGPL-3.0 |
 | [plans/](plans/) | How the port is supposed to run |
 | [specs/](specs/) | Frozen module contracts |
 | [security/](security/) | Threat model and invariants |

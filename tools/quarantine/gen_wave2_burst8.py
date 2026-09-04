@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Generate Wave 2 burst 8 hand-port modules (+40 libc, +15 msun, +10 libthr, +5 rtld)."""
 from __future__ import annotations
 

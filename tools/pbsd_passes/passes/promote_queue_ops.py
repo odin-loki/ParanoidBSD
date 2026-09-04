@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Promote queue.h INIT/INSERT/REMOVE macros to pbsd::intrusive pointer wiring.
 
 Runs after MATHS_PASSES (FOREACH rewrite). Leaves opaque RB_/SPLAY_ mutations

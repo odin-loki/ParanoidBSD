@@ -17,7 +17,25 @@ Documentation index: [`docs/README.md`](docs/README.md).
 | `docs/` | Specs, security model, migration status, plans |
 | `scripts/` | WSL driver, watchdog, and the Windows progress console |
 
-License stays BSD for HBSD-derived code. Every module needs an entry in [`docs/PROVENANCE.md`](docs/PROVENANCE.md) before it is treated as done.
+## License
+
+PBSD's own code — `pbsd/`, `tools/`, `scripts/`, `docs/` and the root drivers — is
+**[AGPL-3.0-or-later](LICENSE)**, with a [commercial licence](COMMERCIAL-LICENCE.md)
+for anyone the copyleft does not suit.
+
+The vendored upstream trees are **excluded and not relicensed**: `hbsd/` stays
+under HardenedBSD's and FreeBSD's own terms (predominantly BSD-2-Clause), and
+`kde/` stays under KDE's (predominantly GPL-2.0-or-later / LGPL-2.1-or-later).
+Ported files under `pbsd/` keep the upstream copyright header they inherited, and
+that header governs the file.
+
+Read **[LICENSING.md](LICENSING.md)** for the per-path map, the compatibility
+analysis, and the open items — including 22 `BSD-4-Clause` files that cannot go
+into an AGPL binary. Third-party attribution is in [NOTICES.md](NOTICES.md).
+`python3 tools/check_licences.py` enforces all of it in CI.
+
+Every module also needs an entry in [`docs/PROVENANCE.md`](docs/PROVENANCE.md)
+before it is treated as done.
 
 ## How the port works
 

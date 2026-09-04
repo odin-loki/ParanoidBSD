@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Generate pbsd/ports/<wave>/ C++23 module stubs from c_inventory.csv."""
 from __future__ import annotations
 

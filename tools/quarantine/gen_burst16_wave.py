@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Burst 16 — mass net/fs/geom/zfs hand ports + dual-world .c stubs + CMake wiring."""
 from __future__ import annotations
 

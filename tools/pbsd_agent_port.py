@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """CLI: Stage F/G agent port over the deterministic-pass refusal queue.
 
 Same flag conventions as tools/run_todo_passes.py. Consumes refusals.jsonl,

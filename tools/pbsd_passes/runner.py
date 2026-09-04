@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Pass-runner framework: apply passes, record diffs/refusals, stage outputs."""
 from __future__ import annotations
 

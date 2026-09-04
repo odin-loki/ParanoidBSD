@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Burst 15 wave 3 — mass kernel/net/fs/userland hand ports + dual-world .c stubs."""
 from __future__ import annotations
 

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Consolidated per-file session: one context, tool loop, escalate-up-only.
 
 System prompt + original source + stub + refusals are prepended once and never

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Burst 14 SURGE — emit missing pbsd/ports/ stubs for inventory + progress gaps.
 
 Extends Burst 13 SURGE: inventory rows without on-disk stubs, plus batch_progress

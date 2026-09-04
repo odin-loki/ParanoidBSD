@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 # Keep pbsd watchdog alive in WSL (survives driver death; relaunches if WSL is up).
 $ErrorActionPreference = "Stop"
 $log = "C:\Users\odinl\OneDrive\Desktop\Operating System\docs\migration\watchdog-keepalive.log"

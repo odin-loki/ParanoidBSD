@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 # Live PBSD migration console — DeepSeek agent-port (driver keeps running).
 $Host.UI.RawUI.WindowTitle = "PBSD Migration Monitor"
 $refreshSec = 15

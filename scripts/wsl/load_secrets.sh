@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 # Source this file, then call pbsd_load_secrets.
 # Reads KEY=value from secrets/api-keys (never prints values).
 PBSD_WINDOWS_ROOT="${PBSD_WINDOWS_ROOT:-/mnt/c/Users/odinl/OneDrive/Desktop/Operating System}"

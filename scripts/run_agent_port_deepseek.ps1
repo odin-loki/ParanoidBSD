@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 # DeepSeek agent-port runner (pbsd.py).
 # Defaults: Flash×48 + Pro×24, reasoning_effort=max, failures saved.
 # Usage (from repo root, PowerShell):

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 # Wave 0 CI driver: clang-tidy L1 notes, SI harness, inventory scripts.
 set -euo pipefail
 

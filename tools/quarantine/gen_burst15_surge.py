@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Burst 15 SURGE — emit missing pbsd/ports/ stubs for inventory + progress + hand-port gaps.
 
 Dual-world: preserves converted status in batch_progress while adding thin port stubs

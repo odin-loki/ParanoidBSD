@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Tier 3 — interprocedural inference (census + proposals; conservative rewrites)."""
 from __future__ import annotations
 

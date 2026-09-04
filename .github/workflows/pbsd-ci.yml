@@ -7,6 +7,11 @@ on:
       - 'tools/**'
       - 'docs/migration/**'
       - 'docs/specs/ANALYSER.md'
+      - 'LICENSE'
+      - 'LICENSING.md'
+      - 'NOTICES.md'
+      - 'COMMERCIAL-LICENCE.md'
+      - 'LICENSES/**'
       - '.clang-tidy'
       - '.github/workflows/pbsd-ci.yml'
   pull_request:
@@ -15,6 +20,11 @@ on:
       - 'tools/**'
       - 'docs/migration/**'
       - 'docs/specs/ANALYSER.md'
+      - 'LICENSE'
+      - 'LICENSING.md'
+      - 'NOTICES.md'
+      - 'COMMERCIAL-LICENCE.md'
+      - 'LICENSES/**'
       - '.clang-tidy'
       - '.github/workflows/pbsd-ci.yml'
 
@@ -28,6 +38,9 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ninja-build clang clang-tidy python3
+
+      - name: Licence compliance gate
+        run: python3 tools/check_licences.py --verbose
 
       - name: Module + stub counts
         run: python3 tools/count_modules.py

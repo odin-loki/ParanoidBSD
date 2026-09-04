@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Enhanced malloc-RAII and span-signature rewrites (staged ports).
 
 Registered after REFUSAL_PROMOTE_PASSES. Handles MALLOC_ESCAPE / SPAN_CANDIDATE

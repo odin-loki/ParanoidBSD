@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Generate Wave 6 pass-3 net/fs/geom/zfs + quick stand/arch/bifrost modules."""
 from pathlib import Path
 

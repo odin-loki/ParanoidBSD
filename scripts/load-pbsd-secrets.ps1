@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 # Dot-source, then Import-PbsdSecrets. Loads secrets/api-keys into the process env.
 function Import-PbsdSecrets {
     param(

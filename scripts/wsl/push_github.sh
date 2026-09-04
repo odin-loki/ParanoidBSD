@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 # Commit WSL work. Windows pulls via wslclone (scripts/sync-wsl-github.ps1).
 set -euo pipefail
 cd ~/pbsd

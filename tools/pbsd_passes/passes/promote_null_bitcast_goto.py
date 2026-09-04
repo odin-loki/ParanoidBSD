@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Promote NULLABILITY / BIT_CAST / GOTO cleanup / ERROR_CODE_EXPECTED sites.
 
 Goal: keep refusals only for true failures (unchecked deref, opaque punning,

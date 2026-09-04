@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Burst 15 — kernel kern/vm/sync/net helpers + UDA descriptor ports (dual-world)."""
 from __future__ import annotations
 

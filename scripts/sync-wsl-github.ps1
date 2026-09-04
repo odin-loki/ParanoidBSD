@@ -1,4 +1,6 @@
-﻿# Sync WSL ~/pbsd (wslclone remote) -> Windows working copy -> GitHub.
+﻿# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
+# Sync WSL ~/pbsd (wslclone remote) -> Windows working copy -> GitHub.
 $Repo = "C:\Users\odinl\OneDrive\Desktop\Operating System"
 Set-Location $Repo
 $log = Join-Path $Repo "docs\migration\sync-wsl-github.log"

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Demote proposal-only / false-positive refusals; strengthen queue.h + WILD casts.
 
 Proposal codes go to docs/migration/clang_port/proposals.jsonl — NOT the model refusal queue.
