@@ -30,6 +30,8 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EXCEPTIONS = ROOT / "docs" / "migration" / "linux_build_exceptions.txt"
 FAILED = re.compile(r"^FAILED:.*?CMakeFiles/pbsd\.dir/(\S+\.cppm)\.o", re.M)
+PROGRESS = re.compile(r"^\[(\d+)/(\d+)\]", re.M)
+MIN_STEPS = 100   # a real run scans well over a thousand modules
 
 
 def load_exceptions() -> set[str]:
@@ -52,6 +54,16 @@ def main() -> int:
     text = pathlib.Path(args.log).read_text(encoding="utf-8", errors="replace")
     failed = set(FAILED.findall(text))
     known = load_exceptions()
+
+    # `cmake --build ... || true` in CI means a build that dies immediately
+    # leaves an empty log, and an empty log has no failures in it - which would
+    # read as a clean pass. Require evidence that ninja actually did work.
+    steps = [int(a) for a, _ in PROGRESS.findall(text)]
+    if not args.write and (not steps or max(steps) < MIN_STEPS):
+        print(f"FAIL  the build did not run: {len(steps)} ninja step(s) in {args.log}.")
+        print("      An empty or truncated log has no failures in it, which is not "
+              "the same as building cleanly.")
+        return 1
 
     if args.write:
         header = [l for l in EXCEPTIONS.read_text(encoding="utf-8").splitlines()

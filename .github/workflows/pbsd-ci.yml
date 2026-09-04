@@ -135,7 +135,9 @@ jobs:
         run: |
           python3 tools/inventory_c_sources.py
           python3 tools/wave_purge_c_check.py
-          python3 tools/wave_purge_c_check.py --json > wave9_purge.json
+          # --json does not exist; --metrics emits the rollup and --quiet
+          # suppresses the human summary so the artifact is valid JSON.
+          python3 tools/wave_purge_c_check.py --metrics --quiet > wave9_purge.json
           cat wave9_purge.json
 
       - name: Wave 9 purge gate (PBSD 0.1 — fails until owned .c hits zero)
