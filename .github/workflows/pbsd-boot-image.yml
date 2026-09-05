@@ -109,8 +109,26 @@ jobs:
                -exec cp {} out/ \; 2>/dev/null || true
           ls -lh out/ || echo "no image produced"
 
-      - uses: actions/upload-artifact@v4
+      - name: Boot it
         if: inputs.stage == 'memstick' || inputs.stage == 'iso'
+        # Everything before this proves the tree compiles. This is the only
+        # step that proves the result runs. It is on the Linux runner, not in
+        # the FreeBSD VM: the image is built on FreeBSD because release/ wants
+        # a FreeBSD host, but booting it is just QEMU and does not.
+        #
+        # qemu-system-x86 is already installed - the freebsd-vm action needs
+        # it and put it there.
+        run: |
+          img=$(ls out/*.img out/*.iso 2>/dev/null | head -1)
+          if [ -z "$img" ]; then
+            echo "no image to boot"; exit 1
+          fi
+          python3 tools/ci/boot_test.py "$img" \
+            --target amd64 --timeout 420 --log out/boot.log
+
+      - uses: actions/upload-artifact@v4
+        # always(): a failed boot is exactly when the log is wanted.
+        if: always() && (inputs.stage == 'memstick' || inputs.stage == 'iso')
         with:
           name: pbsd-${{ inputs.stage }}-${{ inputs.kernconf }}
           path: out/*

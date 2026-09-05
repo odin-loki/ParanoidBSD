@@ -23,6 +23,31 @@ of the flat import:
 `world` is the next rung and is hours rather than minutes. Nothing has
 produced a bootable image yet.
 
+## The ladder now ends in a boot
+
+```
+kernel    buildkernel                     tens of minutes
+world     buildworld buildkernel          hours
+memstick  ... + memstick.img  + BOOT      the image, and QEMU starting it
+iso       ... + disc1.iso     + BOOT
+```
+
+Everything up to `world` proves the tree compiles. `tools/ci/boot_test.py`
+is the only thing in the repository that proves the result runs: it starts the
+image under QEMU, watches the serial console, and decides from what it says.
+
+  * a login prompt, a welcome banner or `Starting local daemons` — it booted;
+  * `panic:`, `Fatal trap`, or a `mountroot>` prompt — it did not, and the
+    matching line is printed rather than summarised;
+  * kernel banner but nothing after it — a hang *after* boot, reported as a
+    different failure from never starting;
+  * silence — the loader never ran and the image is not bootable at all.
+
+It runs on the Linux runner rather than in the FreeBSD VM. The image is built
+on FreeBSD because `release/` wants a FreeBSD host; booting it is just QEMU
+and does not. The boot log is uploaded whether the boot passed or failed,
+because a failed boot is exactly when it is wanted.
+
 ## Before anything else
 
 The tree was committed with **every file mode 100644**. FreeBSD's build runs
