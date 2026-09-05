@@ -248,19 +248,46 @@ def _steer_loader(proc, log, console: str, timeout: float,
     """
     # Anything else the caller wants set goes first, so the console command
     # is the last thing sent and its receipt is unambiguous.
+    #
+    # Each one is confirmed the same way the console command is. Run 22 set
+    # boot_verbose and init_path; boot_verbose plainly took effect (the
+    # kernel printed `start_init: trying`, which only bootverbose does) and
+    # init_path plainly did not (it tried /sbin/init). Which of "never
+    # typed", "typed and dropped" or "arrived and ignored" that was could
+    # not be read out of the log, because a verbose boot is hundreds of
+    # lines and the steering is above all of them. So the tool records it.
     for spec in extra or []:
         name, _, value = spec.partition("=")
         line = f'set {name.strip()}="{value.strip()}"'
         print(f"  [loader: {line}]")
         if not _send(proc, line + "\n"):
+            LOADER_SENT.append((line, False, "console went away"))
             return False, "the console went away while typing"
-        # Let the loader digest it; the receipt that matters is the console's.
-        time.sleep(0.5)
-        _drain(proc, log)
+        ok, why = _await_receipt(proc, log, line, min(timeout, 10.0))
+        LOADER_SENT.append((line, ok, why))
 
     cmd = f'set console="{console}"'
     if not _send(proc, cmd + "\n"):
         return False, "the console went away while typing"
+
+    ok, why = _await_receipt(proc, log, cmd, timeout)
+    LOADER_SENT.append((cmd, ok, why))
+    if ok:
+        _send(proc, "boot\n")
+        return True, f"console set, {why}"
+    # Boot anyway. A run that watches an unsteered boot is still worth more
+    # than one that sits at the prompt, and the verdict will say the console
+    # was never confirmed rather than claiming it was set.
+    _send(proc, "boot\n")
+    return False, why
+
+
+# What was typed at the loader prompt, and whether the loader said so.
+LOADER_SENT: list[tuple[str, bool, str]] = []
+
+
+def _await_receipt(proc, log, cmd: str, timeout: float):
+    """Wait for the loader to acknowledge `cmd`. Returns (ok, why).
 
     # Two independent receipts, because neither is guaranteed on its own:
     #
@@ -274,6 +301,7 @@ def _steer_loader(proc, log, console: str, timeout: float,
     #
     # The buffer starts empty, so an `OK ` found here is a new one and not
     # the prompt that got us here.
+    """
     tail = re.compile(re.escape(cmd[-16:]).encode())
     prompt = re.compile(rb"OK\s*$")
     deadline = time.time() + timeout
@@ -282,17 +310,11 @@ def _steer_loader(proc, log, console: str, timeout: float,
         buf += _drain(proc, log)
         vis = _plain(buf)
         if tail.search(vis):
-            _send(proc, "boot\n")
-            return True, "console set, confirmed by echo"
+            return True, "confirmed by echo"
         if prompt.search(vis):
-            _send(proc, "boot\n")
-            return True, "console set, confirmed by a fresh loader prompt"
+            return True, "confirmed by a fresh loader prompt"
         if proc.poll() is not None:
             return False, "qemu exited at the loader prompt"
-    # Boot anyway. A run that watches an unsteered boot is still worth more
-    # than one that sits at the prompt, and the verdict will say the console
-    # was never confirmed rather than claiming it was set.
-    _send(proc, "boot\n")
     return False, f"the loader never echoed the whole command in {timeout:.0f}s"
 
 
@@ -605,6 +627,13 @@ def main() -> int:
     elapsed = time.time() - started
 
     print(f"\n--- {elapsed:.0f}s, log in {args.log}")
+    # What was typed at the loader, at the end where a tail can reach it. A
+    # verbose boot is hundreds of lines and this used to be above all of
+    # them, so "did that set actually land" was unanswerable from the log.
+    if LOADER_SENT:
+        print("    loader commands:")
+        for cmd, ok, why in LOADER_SENT:
+            print(f"      {'ok  ' if ok else 'FAIL'} {cmd}   ({why})")
     print(f"    phases reached: {', '.join(reached) or 'none'}")
     if verdict and verdict[0] == "OK":
         print(f"OK  booted: {verdict[1]}")

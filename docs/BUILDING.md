@@ -250,11 +250,46 @@ A marker echoed back proves a shell is there; silence after three tries is
 evidence there is not. Tested both ways against a fake that boots to a
 silent-but-echoing shell and one that is genuinely dead.
 
+### Run 22: the experiment did not run
+
+`loader_set = boot_verbose=YES init_path=/rescue/sh`, and the kernel said:
+
+```
+start_init: trying /sbin/init
+<three pokes, no marker, 420s>
+```
+
+`/sbin/init`, not `/rescue/sh`. So `boot_verbose` took effect — that line
+only prints under `bootverbose` — and `init_path` did not. The
+discriminator never ran, and the three unanswered pokes are evidence about
+a boot that was never modified.
+
+`init_path` should work: `start_init()` reads it with
+`kern_getenv("init_path")`, and the loader's `md_copyenv()` copies every
+variable that is not flagged `EV_NOKENV` into the kernel environment. Which
+of *never typed*, *typed and dropped*, or *arrived and ignored* this was
+could not be read out of the log — with `boot_verbose` on, the boot is
+hundreds of lines and the steering is above all of them.
+
+So the tool records it. Every loader command is now confirmed the same way
+the console command already was (echo, or a fresh `OK ` prompt), and the
+list prints at the **end**, where a tail reaches it:
+
+```
+    loader commands:
+      ok   set boot_verbose="YES"   (confirmed by echo)
+      ok   set init_path="/rescue/sh"   (confirmed by echo)
+      ok   set console="comconsole,vidconsole"   (confirmed by echo)
+```
+
+That is the same lesson as the oracle's SUMMARY block, in a second place:
+the fact worth reading was being written where nothing could read it.
+
 **Still open:** whether `kern_execve()` hangs, or `init` runs and hangs
-before its first write. The discriminator is `init_path`: pointing it at
-the statically linked `/rescue/sh` replaces both `init` and the dynamic
-loader, so a marker coming back would put the fault in one of those and
-continued silence would put it in the exec path itself.
+before its first write. The discriminator is unchanged — point `init_path`
+at the statically linked `/rescue/sh`, which replaces both `init` and the
+dynamic loader — and the next run can at least say whether the loader took
+the command.
 
 ## Asking the system about itself
 

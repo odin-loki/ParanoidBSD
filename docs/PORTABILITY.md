@@ -319,6 +319,7 @@ finding it a third time.
 | 19 | `memstick` | build | the port-built gate tripped on vendor lldb C++; killed before the boot test |
 | 20 | `memstick` | **kernel** | boots, mounts root, then silence at `exec /sbin/init` |
 | 21 | `memstick` | **kernel** | `start_init: trying /sbin/init` printed, then silence: the exec is reached |
+| 22 | `memstick` | **kernel** | `init_path=/rescue/sh` did not take effect — still `/sbin/init`, so the discriminator never ran |
 | 17 | `vm` | staging | `installworld` into the image mount stopped dead at `usr.sbin/inetd`; 2h23m with no further output, cancelled |
 
 Run 17 is the `vm` stage and is out of order above because it was still
