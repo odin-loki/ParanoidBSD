@@ -166,6 +166,35 @@ if abi_equal > abi_floor:
 PY
 
 echo
+echo "== wider scope"
+# lib/msun is 321 of the tree's 29,579 C files, and it was chosen because it
+# was the only scope the Linux oracle could say anything about - FreeBSD's
+# math_private.h and glibc's type environment could not both be right at once.
+# That constraint went away when this job got a FreeBSD host, and the boundary
+# stayed where it was. lib/libc is 1,220 files and is the next thing anything
+# links against.
+#
+# Reported, not ratcheted. The floors are per-scope by construction, and a
+# floor set against 321 files says nothing about 1,220.
+python3 tools/run_todo_passes.py \
+    --scope lib/libc \
+    --all-passes --safe --skip-corpus \
+    --ir-limit 120 --diff-limit 40 \
+    --file-timeout 30 > /dev/null || true
+python3 - <<'PY2'
+import json, pathlib
+p = pathlib.Path("docs/migration/clang_port/pass_report.json")
+if not p.exists():
+    print("lib/libc: no report produced")
+else:
+    d = json.loads(p.read_text())
+    print(f"lib/libc: files={d['files']} edits={d['edits_total']} "
+          f"refusals={d.get('refusals_total', 0)}")
+    print(f"          IR equal {d['ir_equal']}/{d['ir_ran']}  "
+          f"ABI equal {d.get('abi_equal', 0)}")
+PY2
+
+echo
 echo "== target-flag comparison"
 # The two floors above are measured with the oracle's own flags. lib/msun is
 # built with -ffp-exception-behavior=maytrap and -fno-math-errno, and a math
