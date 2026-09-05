@@ -139,3 +139,62 @@ that claim to are counting `__asm__` as not-assembly.
 
 Ratchet it the way `docs/migration/freebsd_verified_floor.txt` ratchets
 verified ports: a number that may only go down, checked in CI.
+
+## The option was not doing anything for lib/msun on x86
+
+`WITHOUT_MACHDEP_OPTIMIZATIONS` is the switch this whole document rests on:
+one line in `hbsd/src.conf.pbsd` that selects the machine-independent C over
+the hand-written assembly, in `lib/libc`, `lib/msun` and `lib/libmd`. Two of
+those three implement it correctly. `lib/msun` did not.
+
+```make
+.if defined(ARCH_SRCS) && "${MK_MACHDEP_OPTIMIZATIONS}" != no
+.for i in ${ARCH_SRCS}
+COMMON_SRCS:=  ${COMMON_SRCS:N${i:R}.c}
+.endfor
+.endif
+
+SRCS=	${COMMON_SRCS} ${ARCH_SRCS}
+```
+
+With the option **on**, the loop drops `e_fmod.c` and `e_fmod.S` is built —
+the intent. With it **off**, the loop is skipped and nothing drops the
+assembly, so `SRCS` holds both `e_fmod.c` and `e_fmod.S`. Those are the same
+object name. Which one bmake builds is decided by suffix-rule precedence and
+`.PATH` order, not by the option.
+
+Measured rather than reasoned about:
+
+| arch | `ARCH_SRCS` | collide with a `COMMON_SRCS` `.c` |
+|---|---:|---:|
+| amd64 | 23 | **23** |
+| i387 (i386) | 47 | **47** |
+| arm | 2 | 0 |
+| aarch64, powerpc, riscv | 0 | 0 |
+
+Every single machine-dependent source on x86 collides. arm's two are
+`fenv-softfp.c` and `fenv-vfp.c`, which have no machine-independent
+counterpart and are genuinely additional — which is why the fix is a filter
+and not `ARCH_SRCS=`.
+
+The other two libraries get it right, and comparing them is how the shape of
+the bug is clearest:
+
+* `lib/libc/Makefile:159` — `.if empty(MDSRCS) || ${MK_MACHDEP_OPTIMIZATIONS}
+  == no` then `SRCS+= ${MISRCS}`, and `MDSRCS` is appended only in the
+  `.else`. One or the other, never both.
+* `lib/libmd/Makefile:114` — `USE_ASM_SOURCES:=0` and the assembly is never
+  reached.
+* `lib/msun/Makefile:193` — appends both and relies on a loop that only runs
+  in the other configuration.
+
+Fixed by dropping, when the option is off, exactly those `ARCH_SRCS` entries
+that have a `COMMON_SRCS` counterpart. `tools/check_pbsd_marks.py` holds the
+fix, because it is an edit to a vendor file that an upstream merge would take
+back without a conflict.
+
+**What this means for the numbers above.** Everything in this document about
+`lib/libc` stands — that library implements the option correctly, and the 74
+`.S` files deleted from it were deleted, not switched off. The `lib/msun`
+figures were describing an option that was not taking effect on the two x86
+architectures. The next `buildworld` is what says how much moves.

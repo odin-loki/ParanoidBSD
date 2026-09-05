@@ -190,10 +190,36 @@ COMMON_SRCS+=	catrig.c catrigf.c \
 #COMMON_SRCS+=	s_fabs.c s_frexp.c s_isnan.c s_ldexp.c s_modf.c
 
 # Exclude the generic versions of what we provide in the MD area.
-.if defined(ARCH_SRCS) && "${MK_MACHDEP_OPTIMIZATIONS}" != no
+.if defined(ARCH_SRCS)
+.if "${MK_MACHDEP_OPTIMIZATIONS}" != no
 .for i in ${ARCH_SRCS}
 COMMON_SRCS:=  ${COMMON_SRCS:N${i:R}.c}
 .endfor
+.else
+# PBSD: and the other way round when the option is off.
+#
+# SRCS is COMMON_SRCS plus ARCH_SRCS, unconditionally, and e_fmod.c and
+# e_fmod.S are the same object name. With the option on, the loop above
+# removes the .c and the .S wins, which is the intent. With it off nothing
+# removed the .S, so both were in SRCS and which one bmake built was decided
+# by suffix-rule precedence and .PATH order rather than by the option.
+#
+# amd64 has 23 ARCH_SRCS and all 23 collide; i387 has 47 and all 47 collide.
+# So WITHOUT_MACHDEP_OPTIMIZATIONS, which is the option PBSD's whole
+# assembly-reduction rests on, was doing nothing for lib/msun on x86.
+# lib/libc gets this right (Makefile:159 appends MISRCS *instead of* MDSRCS)
+# and so does lib/libmd (USE_ASM_SOURCES:=0); msun is the one that appends
+# both.
+#
+# Only the entries with a machine-independent counterpart are dropped. arm's
+# fenv-softfp.c and fenv-vfp.c have none and have to stay, which is why this
+# is a filter and not ARCH_SRCS=.
+.for i in ${ARCH_SRCS}
+.if !empty(COMMON_SRCS:M${i:R}.c)
+ARCH_SRCS:=  ${ARCH_SRCS:N${i}}
+.endif
+.endfor
+.endif
 .endif
 
 SRCS=	${COMMON_SRCS} ${ARCH_SRCS}

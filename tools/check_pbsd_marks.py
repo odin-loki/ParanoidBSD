@@ -69,6 +69,11 @@ FIXES = {
         "return (ENOMEM)\n",
         "missing semicolon; the file has never been compiled upstream",
     ),
+    "hbsd/src/lib/msun/Makefile": (
+        "ARCH_SRCS:=  ${ARCH_SRCS:N${i}}",
+        None,
+        "make WITHOUT_MACHDEP_OPTIMIZATIONS actually drop msun's assembly",
+    ),
     "hbsd/src/sys/i386/i386/machdep.c": (
         "int i386_read_exec = 0;",
         None,
