@@ -1,9 +1,8 @@
-include         GENERIC64
-ident           HARDENEDBSD
+#
+# HARDENEDBSD64 -- kept as the name powerpc used before HARDENEDBSD existed.
+#
+# It hand-inlined six PAX options and had none of the COMPAT reductions,
+# HARDEN_KLD, PAX_CONTROL_ACL or HBSD_RESIST_FINGERPRINTING that amd64 got.
+# That is what a per-architecture copy of a policy turns into.
 
-options         PAX                     # PaX framework
-options         PAX_SYSCTLS             # sysctls for run-time options
-options         PAX_ASLR                # Address Space Layout Randomization
-options         PAX_NOEXEC              # Remove WX pages from user-space and enforce W^X
-options         PAX_HARDENING           # Various hardening options
-options         PAX_SEGVGUARD           # prevent brute-force attacks
+include HARDENEDBSD

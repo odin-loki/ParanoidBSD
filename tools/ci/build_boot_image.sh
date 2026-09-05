@@ -23,9 +23,22 @@ set -eu
 STAGE="${1:-kernel}"
 SRC="$(cd "$(dirname "$0")/../.." && pwd)/hbsd/src"
 OBJ="${OBJ:-/usr/obj/pbsd}"
-KERNCONF="${KERNCONF:-HARDENEDBSD}"
 TARGET="${TARGET:-amd64}"
-TARGET_ARCH="${TARGET_ARCH:-amd64}"
+# Each architecture names its 64-bit variant differently, and getting it wrong
+# produces a confusing failure a long way in. Derive it unless told otherwise.
+case "$TARGET" in
+amd64)   TARGET_ARCH="${TARGET_ARCH:-amd64}" ;;
+arm64)   TARGET_ARCH="${TARGET_ARCH:-aarch64}" ;;
+arm)     TARGET_ARCH="${TARGET_ARCH:-armv7}" ;;
+i386)    TARGET_ARCH="${TARGET_ARCH:-i386}" ;;
+powerpc) TARGET_ARCH="${TARGET_ARCH:-powerpc64}" ;;
+riscv)   TARGET_ARCH="${TARGET_ARCH:-riscv64}" ;;
+*)       TARGET_ARCH="${TARGET_ARCH:-$TARGET}" ;;
+esac
+# HARDENEDBSD exists for amd64, arm64, i386 and riscv; powerpc calls it
+# HARDENEDBSD64 and arm only has board-specific ones. GENERIC exists for all
+# six, so it is the default that lets every architecture be built at all.
+KERNCONF="${KERNCONF:-GENERIC}"
 JOBS="${JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 
 # hbsd/src.conf.pbsd is PBSD's build options - notably
@@ -78,6 +91,14 @@ run_make() {
              KERNCONF="$KERNCONF" "$@"
     fi
 }
+
+# A kernel for an architecture other than the host needs cross-tools first.
+# buildworld builds them itself; buildkernel alone does not.
+if [ "$TARGET_ARCH" != "$(uname -p 2>/dev/null || echo amd64)" ]; then
+    case "$STAGE" in
+    kernel) run_make kernel-toolchain ;;
+    esac
+fi
 
 case "$STAGE" in
 kernel)

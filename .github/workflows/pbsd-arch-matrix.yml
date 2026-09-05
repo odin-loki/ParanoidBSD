@@ -1,0 +1,68 @@
+name: PBSD architecture matrix
+
+# Every architecture is first tier, which is a claim that has to be checked
+# rather than declared. This builds the HardenedBSD kernel for all six.
+#
+# It is the gate that keeps them equal. The tree had already drifted the other
+# way while nobody was building them: riscv's copy of HARDENEDBSD-CORE was
+# missing HBSD_RESIST_FINGERPRINTING, powerpc's config had six PAX options
+# against amd64's twelve, and arm had no HardenedBSD kernel at all.
+#
+# Weekly rather than per-push. Six cross-builds is hours of runner time, and
+# what it catches is drift, which happens over weeks.
+
+on:
+  workflow_dispatch:
+    inputs:
+      kernconf:
+        description: 'kernel config to build for every architecture'
+        required: true
+        default: 'HARDENEDBSD'
+        type: string
+  schedule:
+    - cron: '0 5 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every architecture has the config, and the tree is complete
+        run: |
+          python3 tools/check_exec_bits.py
+          python3 tools/check_vendor_manifest.py
+          python3 tools/check_subdirs.py hbsd/src --fail-on-missing
+          python3 tools/check_mk_options.py hbsd/src --fail-on-undefined
+          python3 tools/check_clang_srcs.py hbsd/src --fail-on-missing
+          python3 tools/check_pbsd_marks.py
+          python3 tools/arch_contract.py hbsd/src
+
+  kernel:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [amd64, arm64, arm, i386, powerpc, riscv]
+    name: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the kernel on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          copyback: false
+          mem: 8192
+          prepare: |
+            pkg install -y python311
+          # The VM is a separate machine over ssh, so a step-level env: never
+          # reaches it. TARGET_ARCH is derived by the script from TARGET.
+          run: |
+            TARGET="${{ matrix.target }}" \
+            KERNCONF="${{ inputs.kernconf || 'HARDENEDBSD' }}" \
+              sh tools/ci/build_boot_image.sh kernel
