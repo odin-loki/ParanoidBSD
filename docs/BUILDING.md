@@ -349,11 +349,6 @@ guessed at here.
 
 ### Configure the image instead
 
-`loader.conf` demonstrably does reach the kernel: this image mounts root
-from `ufs:/dev/ufs/HardenedBSD_Install`, which is `vfs.root.mountfrom` out
-of the `loader.conf` `release/` writes. So the setting goes where the one
-that works goes.
-
 `build_boot_image.sh` takes `LOADER_CONF_EXTRA` (workflow input
 `loader_conf`, semicolons separating lines) and appends it to
 `/boot/loader.conf` **inside the built image** — `mdconfig` to attach,
@@ -388,6 +383,106 @@ value leaves the image untouched and never runs `mdconfig`.
 The value travels to the FreeBSD VM as a file in the workspace rather than
 a `${{ }}` expansion, for the same reason as `loader_set`: an expansion is
 pasted into the shell before it runs.
+
+### Run 27: `loader.conf` does not carry `init_path` either
+
+The injection worked. `gpart` found the MBR slice, descended into it,
+mounted `md0s2a`, appended, and read the file back:
+
+```
+== appending to /boot/loader.conf in the image
+   init_path="/rescue/sh:/sbin/init"
+   attached as /dev/md0
+   MBR: descending into slice md0s2
+   UFS filesystem: /dev/md0s2a
+   /boot/loader.conf now ends:
+     vfs.mountroot.timeout="10"
+     kernels_autodetect="NO"
+     loader_menu_multi_user_prompt="Installer"
+     init_path="/rescue/sh:/sbin/init"
+   detached /dev/md0
+```
+
+and the kernel printed `start_init: trying /sbin/init`. Again. The
+setting was in the file, in the image the kernel booted, and
+`kern_getenv("init_path")` returned nothing.
+
+**The premise this route was chosen on was wrong.** The claim was that
+`loader.conf` reaches the kernel because the root mount comes from
+`vfs.root.mountfrom` in it. Neither half holds:
+
+* `release/Makefile` writes exactly three lines into that file
+  (`vfs.mountroot.timeout`, `kernels_autodetect`,
+  `loader_menu_multi_user_prompt`) and `vfs.root.mountfrom` is not one
+  of them. It is `grep`-able; it was not `grep`-ed.
+* The loader sets that variable itself, in `stand/common/boot.c:384`,
+  from the device it loaded the kernel off. It is in the loader
+  environment because the loader put it there, not because a file did.
+
+So the root mount says the loader's *own* environment reaches
+`kern_getenv()`. It says nothing about whether `loader.conf` gets into
+that environment, and two runs now say `init_path` does not.
+
+### What `loader.conf` does reach
+
+`sys/kern/subr_boot.c` has a table, `howto_names`, of twelve variables:
+
+```
+boot_askname boot_cdrom  boot_ddb    boot_dfltroot
+boot_gdb     boot_multicons boot_mute boot_mutemsgs
+boot_pause   boot_serial boot_single boot_verbose
+```
+
+`boot_env_to_howto()` turns them into `boothowto` bits, and on this
+platform it is called by **the loader** — `bi_getboothowto()` in
+`stand/efi/loader/bootinfo.c` — before the kernel is entered. The bits
+travel in the bootinfo block, not in the kernel environment. That is why
+`boot_verbose` has worked every time since run 22 while `init_path`
+never has: they do not use the same mechanism, and only one of them has
+been demonstrated.
+
+That makes `boot_single` the next experiment, because it is on the list
+that works and it answers a bigger question than `init_path` did.
+
+### The observation `init_path` was chasing
+
+`start_init()` prints `start_init: trying <path>` and then calls
+`kern_execve()`. Read what the loop actually does with the result:
+
+```c
+error = kern_execve(td, &args, NULL, oldvmspace);
+if (error == EJUSTRETURN) { ...; return; }      /* success */
+if (error != ENOENT) printf("exec %s: error %d\n", path, error);
+```
+
+`ENOENT` would print the *next* `trying` line. Any other error would
+print `exec /sbin/init: error N`. Neither happened, so exactly two things
+are possible: `kern_execve()` never returned, or it returned
+`EJUSTRETURN` — **and init is running.**
+
+One `trying` line followed by silence is what a *successful* exec looks
+like from the kernel's side. It has been read here as a hang for five
+runs, and it is equally consistent with init(8) being alive and
+producing no output.
+
+`boot_single="YES"` separates them. Single-user init execs a shell on
+`/dev/console` instead of running `rc`, and `sbin/init/Makefile` builds
+with `-DDEBUGSHELL -DSECURE`, so it prints
+
+```
+Enter full pathname of shell or RETURN for /bin/sh:
+```
+
+before it does. That string is already in `boot_test.py`'s `USERLAND`
+list. If it appears, init is alive, `execve` worked, the console works,
+and everything unexplained is in `/etc/rc`. If it does not, init really
+is not producing output and the search moves inside `kern_execve()`.
+
+The run puts all three in `loader.conf` together — `boot_single`,
+`boot_verbose`, `init_path` — and nothing at the loader prompt but the
+console. Three independent readings from one boot: whether `loader.conf`
+reaches the loader at all (does `trying` print), whether it reaches the
+kernel environment (does it say `/rescue/sh`), and whether init is alive.
 
 ## Asking the system about itself
 

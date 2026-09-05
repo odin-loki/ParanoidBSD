@@ -345,3 +345,59 @@ Run 23 is the load-bearing one. With the floors at 199 and 174 and the port
 committed, `verified` alone is 198 and `abi_equal` alone is 173 — both one
 below their floor. The `+ committed` term is what makes 199 and 174, and
 without it landing a port would have read as losing one.
+
+## The hundred-file batch, and a fifth thing a port must not break
+
+Run 28 built the world on the hundred-file batch and stopped nine minutes
+in:
+
+```
+lib/msun/src/s_cos.cpp:48:10: fatal error: 'e_rem_pio2.c' file not found
+   48 | #include "e_rem_pio2.c"
+```
+
+`lib/msun` compiles some sources twice — once on their own, and once
+textually, because a second source inlines them by name. There are
+twenty-eight such `#include`s in the library. **A file on the receiving
+end of one is not an independent translation unit**: its name is part of
+another file's source text, so its extension is not free.
+
+Five of the hundred were such files:
+
+| file | included by |
+|---|---|
+| `e_rem_pio2.c` | `s_cos`, `s_sin`, `s_tan`, `s_sincos` |
+| `e_rem_pio2f.c` | `s_cosf`, `s_sinf`, `s_tanf`, `s_sincosf` |
+| `k_cosf.c` | `s_cosf`, `s_sinf`, `s_sinpif`, `s_cospif` |
+| `k_sinf.c` | `s_cosf`, `s_sinf`, `s_sinpif`, `s_cospif` |
+| `k_tanf.c` | `s_tanf`, `s_tanpif` |
+
+Reverted rather than rewritten. Editing the `#include` lines to `.cpp`
+would make `s_sinpif.c`, `s_cospif.c` and `s_tanpif.c` — still C —
+include a `.cpp`; the cluster should move in one commit when it moves.
+
+**None of the checks that were run could see this.** The renamed target
+still exists, `SRCS` still resolves, no two objects collide, and a
+zero-edit port is byte-identical to the C. The twelve-combination
+`bmake` matrix was the right check for the failure mode it was aimed at
+and blind to this one. Worse, the signal was in the commit message: it
+recorded that two test harnesses "read msun sources by hardcoded `.c`
+name" and fixed those, without asking *why* a source is ever named by a
+hardcoded string — which is that something includes it.
+
+So step 3 above gains a clause, and there is now a gate for it:
+
+3. …and check that nothing `#include`s the file by its old name.
+   `tools/check_source_includes.py --gate` fails on an `#include "X.c"`
+   where `X.c` is gone and `X.cpp` is there instead. That is a port and
+   nothing else, `.c` -> `.cpp` being the only rename this project
+   performs, so the rule has no judgement in it. It also lists, without
+   failing, the twenty-three source `#include`s that do not resolve in
+   the tree as imported — `contrib/netbsd-tests` reaching for NetBSD
+   kernel sources, `crypto/krb5`'s `ev.c` naming four back ends,
+   `lib/csu`'s `ignore_init.c` — so a port breaking one of those would
+   be visible without gating on vendor code.
+
+Run against the tree at the broken commit it reports seventeen findings
+naming all five files and every includer, and exits 1; against the
+reverted tree it exits 0. Ninety-five of the hundred stand.
