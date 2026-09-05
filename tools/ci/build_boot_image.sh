@@ -255,7 +255,14 @@ fi
 #
 # So the scopes are named. This list grows as scopes are ported, and it is
 # the same boundary the IR oracle ratchets on.
-PORTED_SCOPES="${PORTED_SCOPES:-lib/msun}"
+#
+# lib/libc joined it with gen/isatty.cpp, the library's first port. Run 32
+# built that world green with lib/msun as the only scope, which asserted
+# nothing whatever about isatty.o - and a leaf function silently dropped
+# from SRCS does not fail a link, it just is not in libc. Symbol.map names
+# isatty, and a version script that names a missing symbol is a warning,
+# not an error. Exactly the hole this check exists to close.
+PORTED_SCOPES="${PORTED_SCOPES:-lib/msun lib/libc}"
 
 # Every ported .cpp must have been compiled.
 #
