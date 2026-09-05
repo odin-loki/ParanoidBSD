@@ -29,6 +29,31 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+def oracle_include_flags(src: Path) -> list[str]:
+    """Include path for compiling a source and its staged port side by side.
+
+    Two things were missing, and between them they made every IR check on real
+    sources report compile_fail:
+
+      * the C side needs the vendored FreeBSD headers - msun's math.h pulls in
+        <sys/_types.h>, which lives under hbsd/src/sys;
+      * the C++ side is compiled from docs/migration/clang_port/staged/..., so
+        it loses the siblings it used to include by quoted path -
+        "math_private.h" sits next to the original, not next to the copy.
+
+    Both directories are added for both sides, so the port is compared against
+    the original rather than against a missing header.
+    """
+    flags = ["-Wno-everything", f"-I{src.parent}"]
+    for extra in (
+        ROOT / "hbsd" / "src" / "sys",
+        ROOT / "hbsd" / "src" / "lib" / "libc" / "include",
+    ):
+        if extra.is_dir():
+            flags.append(f"-I{extra}")
+    return flags
+
+
 def discover_sources(
     scopes: list[str],
     limit: int | None = None,
@@ -162,7 +187,8 @@ def process_file(
     )
 
     if record["ir_eligible"]:
-        record["ir"] = compare_ir(src, dest, include_flags=["-Wno-everything"])
+        record["ir"] = compare_ir(src, dest,
+                                  include_flags=oracle_include_flags(src))
     elif do_ir:
         record["ir"] = {"status": "skipped_heavy", "equal": False}
 
@@ -172,7 +198,7 @@ def process_file(
             src,
             dest,
             inputs=[[]],
-            include_flags=["-Wno-everything"],
+            include_flags=oracle_include_flags(src),
         )
     elif do_diff:
         record["diff"] = {"status": "skipped_heavy", "equal": False}
@@ -279,7 +305,16 @@ def run_corpus_tests() -> dict:
                     }
                 )
 
-    ok = all(r.get("ok") for r in results) if results else False
+    golden_ok = all(r.get("ok") for r in results) if results else False
+
+    # The IR oracle is described as the highest-leverage Tier 0 item, but its
+    # verdict used to be reported and then dropped: `ok` came from the golden
+    # files alone, so a transform that changed the emitted code could still be
+    # reported as passing. It gates now. A case that will not compile counts
+    # as a failure too - the corpus cases take no #include, so a compile error
+    # means the fixture is self-inconsistent and nothing was verified.
+    ir_ok = all(r.get("equal") for r in ir_results) if ir_results else True
+    ok = golden_ok and ir_ok
     from .proposals import flush as flush_proposals
 
     flush_proposals()
@@ -287,6 +322,8 @@ def run_corpus_tests() -> dict:
     ir_equal = sum(1 for r in ir_results if r.get("equal"))
     return {
         "ok": ok,
+        "golden_ok": golden_ok,
+        "ir_ok": ir_ok,
         "cases": results,
         "ir_ran": ir_ran,
         "ir_equal": ir_equal,

@@ -1,3 +1,4 @@
+typedef unsigned long size_t;
 #define SIZE 42
 #define WRAPPED (99)
 #define CASTED ((size_t)0)

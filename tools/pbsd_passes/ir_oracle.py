@@ -24,6 +24,33 @@ def find_clangxx() -> str:
     return "clang++"
 
 
+def demangle_symbol(sym: str) -> str:
+    """Reduce an Itanium-mangled name to its bare identifier.
+
+    Compiling as C++ mangles every non-extern-"C" function, so
+    @usage_msg becomes @_Z9usage_msgv and the IR compares unequal for a port
+    that is byte-for-byte semantically identical. Only the simple shapes a
+    C-derived port produces are handled - a free function, or one nested in
+    namespaces; anything else is left alone rather than guessed at.
+    """
+    if not sym.startswith("_Z"):
+        return sym
+    rest = sym[3:] if sym.startswith("_ZN") else sym[2:]
+    parts = []
+    while rest and rest[0].isdigit():
+        n = 0
+        while rest and rest[0].isdigit():
+            n = n * 10 + int(rest[0])
+            rest = rest[1:]
+        if len(rest) < n:
+            return sym
+        parts.append(rest[:n])
+        rest = rest[n:]
+    if not parts:
+        return sym
+    return "::".join(parts)
+
+
 def normalize_ir(ir: str) -> str:
     # Strip source_filename, ident, names of locals where possible, blank lines
     lines = []
@@ -38,6 +65,15 @@ def normalize_ir(ir: str) -> str:
         # Canonicalize SSA names somewhat: %[[A-Za-z0-9_.]+]] → %tN later
         lines.append(line.rstrip())
     text = "\n".join(lines)
+    # Drop attributes clang emits for C++ but not for C. `noundef` on a
+    # return or parameter is the common one: it made every otherwise-identical
+    # port read as a mismatch, which is the one thing an equivalence oracle
+    # must not do. Same for the C tentative-definition `common` linkage, which
+    # C++ has no equivalent of.
+    text = re.sub(r"\bnoundef\s+", "", text)
+    text = re.sub(r"\bcommon\s+(?=global\b)", "", text)
+    text = re.sub(r"@(_Z[A-Za-z0-9_]+)",
+                  lambda m: "@" + demangle_symbol(m.group(1)), text)
     # Rename %digits and %names to sequential
     counters = {"n": 0}
 
