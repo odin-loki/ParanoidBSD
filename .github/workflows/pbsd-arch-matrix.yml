@@ -48,6 +48,8 @@ jobs:
           python3 tools/check_c_linkage.py hbsd/src --require-guarded
           python3 tools/check_kernconf_parity.py hbsd/src --fail-on-difference
           python3 tools/arch_contract.py hbsd/src
+          python3 tools/check_source_includes.py --gate
+          tools/check_csu_builds.sh
 
   kernel:
     needs: preflight

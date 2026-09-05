@@ -25,46 +25,4 @@
  */
 
 #include <sys/cdefs.h>
-
-#include <stdlib.h>
-
-#include "libc_private.h"
-#include "ignore_init.c"
-
-extern void _start(char *, ...);
-
-#ifdef GCRT
-extern void _mcleanup(void);
-extern void monstartup(void *, void *);
-extern int eprol;
-extern int etext;
-#endif
-
-void _start1(void (*)(void), int, char *[]) __dead2;
-
-/* The entry function, C part. */
-void
-_start1(void (*cleanup)(void), int argc, char *argv[])
-{
-	char **env;
-
-	env = argv + argc + 1;
-	handle_argv(argc, argv, env);
-	if (&_DYNAMIC != NULL) {
-		atexit(cleanup);
-	} else {
-		process_irelocs();
-		_init_tls();
-	}
-
-#ifdef GCRT
-	atexit(_mcleanup);
-	monstartup(&eprol, &etext);
-__asm__("eprol:");
-#endif
-
-	handle_static_init(argc, argv, env);
-	exit(main(argc, argv, env));
-}
-
-__asm(".hidden	_start1");
+#include "csu_common.h"

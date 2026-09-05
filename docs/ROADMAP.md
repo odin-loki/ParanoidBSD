@@ -51,6 +51,15 @@ first. Nothing below in this section should land before it runs once.
 - [ ] **First `lib/msun` `.c` → `.cpp` port.** `CXXSTD=c++23` and the
       mirrored `CXXFLAGS` are in place; 88 of 120 verify under the flags that
       ship. One rename plus one `COMMON_SRCS` line.
+- [x] **`lib/csu` compiles for all seven architectures.** It did not. arm,
+      i386, powerpc and powerpc64 still had `#include "ignore_init.c"`, and
+      that file is in neither this tree nor the HardenedBSD tree it was
+      imported from — the helpers moved into libc as `__libc_start1()` and
+      only amd64, aarch64 and riscv were converted. Nothing caught it
+      because the architecture matrix builds kernels and the only world
+      anyone builds is amd64. `tools/check_csu_builds.sh` now compiles each
+      `crt1_c.c` for its own target on Linux, no cross toolchain needed.
+
 - [ ] **`counter.h`**, four implementations not one — generic covers arm,
       arm64, riscv, powerpc; amd64 keeps `zpcpu_add` (a `lock` prefix on a
       hot counter is not free) and i386 keeps the CX8 path.

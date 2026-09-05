@@ -141,6 +141,15 @@ jobs:
       - name: No port has renamed a source another source #includes
         run: python3 tools/check_source_includes.py --gate
 
+      # crt1_c.c is where a process begins, and it is the one file per
+      # architecture that nothing here builds: the architecture matrix
+      # builds kernels for all six and the only world anyone builds is
+      # amd64. Four of the seven could not compile at all. This compiles
+      # each for its own target with clang -target and a header shim, no
+      # cross toolchain and no sysroot.
+      - name: Every architecture's csu entry point compiles
+        run: tools/check_csu_builds.sh
+
       # The compiled-in default of every hardening knob, from the source.
       # show_hardening.sh answers "is PAX_ASLR compiled in"; this answers
       # "and what does hardening.pax.aslr.status default to", which is a
