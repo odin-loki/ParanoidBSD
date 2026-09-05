@@ -80,6 +80,20 @@ print(f"IR equal {equal} / {ran} ran   differential equal {diff_equal}")
 for k, v in sorted(status.items(), key=lambda kv: -kv[1]):
     print(f"  {v:5}  {k}")
 
+# A count of mismatches is not a finding until you can see one. Print a few
+# with their normalised IR diff so a real semantic break can be told apart
+# from yet another C-vs-C++ artefact.
+mismatches = [r for r in d["records"] if (r.get("ir") or {}).get("status") == "mismatch"]
+for r in mismatches[:4]:
+    src = r.get("source") or r.get("path") or "?"
+    ir = r["ir"]
+    print(f"\n--- mismatch: {src}")
+    print(f"    c_lines={ir.get('c_lines')} cxx_lines={ir.get('cxx_lines')}")
+    for line in (ir.get("diff") or "(no diff captured)").splitlines()[:24]:
+        print(f"    {line}")
+if len(mismatches) > 4:
+    print(f"\n({len(mismatches) - 4} further mismatches not shown)")
+
 floor = 0
 if floor_file.exists():
     for line in floor_file.read_text().splitlines():

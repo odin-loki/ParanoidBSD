@@ -3,7 +3,9 @@
 """IR-equivalence oracle — highest-leverage Tier 0 item (docs/plans/todo-passes.md)."""
 from __future__ import annotations
 
+import difflib
 import hashlib
+import itertools
 import re
 import shutil
 import subprocess
@@ -11,6 +13,8 @@ import tempfile
 from pathlib import Path
 
 from .compile_db import find_clang
+
+MAX_DIFF_LINES = 60
 
 
 def find_clangxx() -> str:
@@ -133,7 +137,7 @@ def compare_ir(
         c_norm = normalize_ir(c_ll.read_text(encoding="utf-8", errors="replace"))
         cxx_norm = normalize_ir(cxx_ll.read_text(encoding="utf-8", errors="replace"))
         equal = c_norm == cxx_norm
-        return {
+        result = {
             "equal": equal,
             "status": "ok" if equal else "mismatch",
             "c_hash": hashlib.sha256(c_norm.encode()).hexdigest()[:16],
@@ -141,3 +145,24 @@ def compare_ir(
             "c_lines": c_norm.count("\n"),
             "cxx_lines": cxx_norm.count("\n"),
         }
+        if not equal:
+            # A mismatch used to report two hashes and nothing else, which says
+            # a port is not equivalent without saying how. That is the
+            # difference between a finding and a dead end: the first FreeBSD
+            # run returned 96 mismatches and there was no way to tell a real
+            # semantic break from another C-vs-C++ artefact like the noundef,
+            # common-linkage and name-mangling classes already normalised away.
+            # Bounded so a report cannot be swamped by one pathological file.
+            result["diff"] = "\n".join(
+                itertools.islice(
+                    difflib.unified_diff(
+                        c_norm.splitlines(),
+                        cxx_norm.splitlines(),
+                        fromfile="c.ll",
+                        tofile="cxx.ll",
+                        lineterm="",
+                    ),
+                    MAX_DIFF_LINES,
+                )
+            )
+        return result
