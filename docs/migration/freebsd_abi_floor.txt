@@ -38,15 +38,27 @@
 #   C only  : fmaximum_mag      C++ only: _Z12fmaximum_magdd
 #   ... fminimum, _num, _mag_num, and the f/l variants
 #
-# Not the same cause as the 14 that closed in run 13. lib/msun/src/math.h
-# declares all of them inside __BEGIN_DECLS, and the __ISO_C_VISIBLE >= 2023
-# guard they sit behind does evaluate true under -std=c++23 (tested).
-# The suspect is oracle_include_flags(), which adds the tree's headers with
-# -idirafter rather than -I so that glibc wins the standard headers on
-# Linux: `#include <math.h>` in s_fmaximum.c then resolves to the HOST's
-# math.h, which on this runner may predate fmaximum entirely. If so the
-# function is declared nowhere, C emits a plain symbol, C++ mangles it, and
-# 25 sound ports are blamed for a header they never saw. run_freebsd_oracle
-# .sh now probes exactly that and prints the answer; this floor stays at the
-# measured 174 until it does.
+# Not the same cause as the 14 that closed in run 13, and the cause is
+# still unknown. Two explanations have been proposed and both were refuted:
+#
+#   1. the __ISO_C_VISIBLE >= 2023 guard those declarations sit behind in
+#      lib/msun/src/math.h. Refuted: the macro evaluates to 2023 under
+#      -std=c++23 exactly as under -std=c17, and the declarations are
+#      already inside __BEGIN_DECLS.
+#   2. oracle_include_flags() adding the tree's headers with -idirafter
+#      rather than -I, so the host's math.h wins. A bare probe on the
+#      FreeBSD runner agreed - host header alone does not declare fmaximum,
+#      -I lib/msun/src does, -idirafter does not. Refuted anyway: the
+#      oracle ALSO passes -I{src.parent}, and s_fmaximum.c sits in the same
+#      directory as math.h, so the tree's header was reachable the whole
+#      time. That probe was describing a command line nobody runs.
+#
+# Both wrong the same way - a question asked that was not the question the
+# oracle asks. So the diagnostic no longer probes an imagined command line:
+# tools/pbsd_passes/why_mangled.py runs the oracle's own include and target
+# flags over the real source and its real staged port and prints the symbol
+# tables each side defines, plus whether <math.h> under those same flags
+# declares the name.
+#
+# This floor stays at the measured 174 until that says something.
 174

@@ -33,75 +33,31 @@ python3 --version
 uname -a
 
 echo
-echo "== which math.h an msun source actually sees"
-# 25 lib/msun ports come out IR-equal and ABI-unequal, and every one of them
-# is in the fmaximum/fminimum family:
+echo "== why 25 ports export a mangled name"
+# Ask with the flags the oracle actually uses, on the actual file.
 #
-#   C only  : fmaximum
-#   C++ only: _Z8fmaximumdd
+# Two explanations were proposed for the fmaximum/fminimum family coming
+# out IR-equal and ABI-unequal, and both were wrong the same way - each
+# answered a question the oracle does not ask.
 #
-# The first guess was the __ISO_C_VISIBLE >= 2023 guard those declarations
-# sit behind in the tree's math.h. That is wrong - the macro comes out 2023
-# under -std=c++23 as well as C17, tested directly.
+#   1. "the __ISO_C_VISIBLE >= 2023 guard in the tree's math.h."
+#      Tested: the macro is 2023 under -std=c++23 exactly as under -std=c17.
+#   2. "the tree's math.h is on -idirafter, so the host's wins." A bare
+#      probe of `clang++ -idirafter <msun/src>` agreed - and the oracle also
+#      passes -I{src.parent}, and s_fmaximum.c sits in the SAME DIRECTORY as
+#      math.h. The tree's header was reachable the whole time. That probe
+#      was describing a command line nobody runs, which is exactly the
+#      mistake it was added to prevent.
 #
-# The real suspect is oracle_include_flags(): the tree's headers are added
-# with -idirafter, not -I, on purpose, so that on Linux glibc wins <stdlib.h>
-# and libstdc++ does not end up including FreeBSD's. The side effect is that
-# `#include <math.h>` in s_fmaximum.c resolves to the HOST's math.h, not
-# lib/msun/src/math.h. If the host's predates the fmaximum addition the
-# function is declared nowhere - so C emits `fmaximum` and C++ mangles it,
-# the bodies stay identical, and the port is blamed for a header it never
-# saw.
+# So no more probes of imagined command lines. This runs the oracle's own
+# oracle_include_flags() and target flags over the real source and its real
+# staged port, and prints the symbol tables both sides actually define,
+# plus whether <math.h> under those same flags declares the name.
 #
-# Calling an undeclared function is an error in C++ and not in C, so one
-# compile of each settles it. Diagnostic only; nothing here gates.
+# Diagnostic only; nothing gates on it.
 PROBE_OUT=/tmp/pbsd_probe.txt
-: > "$PROBE_OUT"
-probe_row() {
-    # The probe rows are the answer to the only open question this job has,
-    # and they print in the first ten seconds of a six-minute log where no
-    # tail can reach them. Say them twice: once here, once in the SUMMARY.
-    echo "$1"
-    echo "$1" >> "$PROBE_OUT"
-}
-probe_dir=$(mktemp -d)
-MSUN_SRC="$ROOT/hbsd/src/lib/msun/src"
-
-# Two questions, not one.
-#
-# The first version of this asked only "does a call to fmaximum compile",
-# and on a Linux host the -I row came back "NOT declared" - not because the
-# function is missing but because the tree's math.h does not compile there
-# at all. A failure for any reason read as an answer about the declaration,
-# which is precisely the mistake this probe exists to avoid making about the
-# 25 ports. So ask whether the header parses first, and only then whether
-# the function is in it.
-probe_case() {
-    _label="$1"; shift
-    if ! clang++ -std=c++23 -fsyntax-only "$@" "$probe_dir/hdr.cc" \
-            2>/dev/null; then
-        probe_row "  $_label header does not compile here"
-        return
-    fi
-    if clang++ -std=c++23 -fsyntax-only "$@" "$probe_dir/call.cc" \
-            2>/dev/null; then
-        probe_row "  $_label fmaximum IS declared"
-    else
-        probe_row "  $_label fmaximum is NOT declared"
-    fi
-}
-
-printf '#include <math.h>\n' > "$probe_dir/hdr.cc"
-printf '#include <math.h>\ndouble probe(void){ return fmaximum(1.0, 2.0); }\n' \
-    > "$probe_dir/call.cc"
-
-probe_case "host <math.h> alone:         "
-probe_case "with -I lib/msun/src:        " -I"$MSUN_SRC"
-probe_case "with -idirafter lib/msun/src:" -idirafter"$MSUN_SRC"
-echo "  (-idirafter is what the oracle uses; -I is what lib/msun's own"
-echo "   Makefile uses. If those two rows disagree, the 25 ABI mismatches"
-echo "   are the oracle's include order and not the ports.)"
-rm -rf "$probe_dir"
+( cd "$ROOT/tools" && python3 -m pbsd_passes.why_mangled ) \
+    2>&1 | tee "$PROBE_OUT" || true
 
 echo
 echo "== golden corpus (hard gate)"
@@ -396,6 +352,7 @@ echo "== SUMMARY"
 # The one block worth reading. Everything above is evidence for it.
 cat /tmp/pbsd_ratchet.txt /tmp/pbsd_targetflags.txt 2>/dev/null || \
     echo "  (no summary recorded - a phase above did not finish)"
-echo "  which math.h an msun source sees:"
-sed 's/^  /    /' /tmp/pbsd_probe.txt 2>/dev/null || echo "    (not probed)"
+echo "  why 25 ports export a mangled name (last lines):"
+tail -14 /tmp/pbsd_probe.txt 2>/dev/null | sed 's/^/    /' || \
+    echo "    (not probed)"
 echo "  committed ports: $(find "$ROOT/hbsd/src/lib/msun" -name '*.cpp' | wc -l | tr -d ' ')"

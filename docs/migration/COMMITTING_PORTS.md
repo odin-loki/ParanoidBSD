@@ -181,6 +181,37 @@ Two things were wrong with the number as well as with its shape:
   under the flags lib/msun is actually built with. `run_freebsd_oracle.sh`
   now prints that set by name under `committable under target flags:`.
 
+### The 25 that are not committable, and two wrong answers about them
+
+199 ports are IR-equal and 174 are ABI-equal. The 25 in the gap are one
+family — `fmaximum`, `fminimum`, their `_mag`/`_num`/`_mag_num` variants
+and the `f`/`l` forms — each computing the same thing and exporting
+`_Z8fmaximumdd` instead of `fmaximum`.
+
+Two explanations were proposed and **both were wrong, the same way**:
+
+1. *The `__ISO_C_VISIBLE >= 2023` guard in the tree's `math.h`.* Refuted in
+   one command: the macro is 2023 under `-std=c++23` exactly as under
+   `-std=c17`, and the declarations are already inside `__BEGIN_DECLS`.
+2. *`oracle_include_flags()` uses `-idirafter`, so the host's `math.h`
+   wins.* A probe on the FreeBSD runner agreed — host header alone does
+   not declare `fmaximum`, `-I lib/msun/src` does, `-idirafter` does not.
+   Refuted anyway: the oracle **also** passes `-I{src.parent}`, and
+   `s_fmaximum.c` sits in the same directory as `math.h`. The tree's header
+   was reachable the whole time; the probe was describing a command line
+   nobody runs.
+
+Each answered a question the oracle does not ask — the recurring failure in
+this project, and the second one got as far as an edit to
+`oracle_include_flags()` before the contradiction turned up.
+
+So the diagnostic no longer probes an imagined command line.
+`tools/pbsd_passes/why_mangled.py` runs the oracle's own
+`oracle_include_flags()` and target flags over the real source and its real
+staged port, and prints the symbol tables each side actually defines plus
+whether `<math.h>` under those same flags declares the name. **The cause is
+still unknown**; the floor stays at the measured 174.
+
 Take the file from that list. Anything else is a guess with a
 forty-minute feedback loop.
 
