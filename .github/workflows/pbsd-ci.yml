@@ -176,6 +176,13 @@ jobs:
       - name: The boot image's init swap and loader.conf editing
         run: sh tools/ci/test_init_swap.sh
 
+      # The port screener encodes what the hundred-file lib/msun batch
+      # learned one expensive run at a time. Its value is entirely in the
+      # reasons it gives, so each reason gets a synthetic file built to
+      # trigger it and nothing else.
+      - name: The port-candidate screener
+        run: python3 tools/test_check_port_candidates.py
+
       # The parity gate above compares ONE config across the six
       # architectures. This asks the other twenty-one the question that
       # actually applies to them, most being single-architecture: does a

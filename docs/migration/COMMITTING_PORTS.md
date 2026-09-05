@@ -449,3 +449,39 @@ The thirteen that remain are each their own header: `arm/gen/fabs.c`,
 and `strncpy`, `rpc/des_soft.c`, `rpc/rpcsec_gss_stub.c`, `stdlib`'s
 `hdestroy_r`, `insque` and `remque`, `string/memset_explicit.c` and
 `sys/pipe.c`.
+
+
+## The screening, as a tool rather than by hand
+
+Every property the hundred-file batch needed was found by hand, and the
+one it missed cost a fifty-minute build. `tools/check_port_candidates.py`
+applies all of them at once:
+
+```
+$ python3 tools/check_port_candidates.py --scope lib/libc --show-rejected
+```
+
+| reason | what it means |
+|---|---|
+| `included by name elsewhere` | something `#include`s it. Renaming it breaks every includer — this is run 28. |
+| `no Makefile in the scope names it` | not built here; there is nothing to port. |
+| `its SRCS line is inside an .if/.for` | built for some configurations only, so a failure would be about which one ran. |
+| `same basename as …` | a `.PATH` may prefer the other copy; renaming one changes which bmake picks. |
+| `named by <Makefile>` | a consumer outside the scope, with its own `SRCS` and its own flags — `lib/libgcc_s` is the case the msun batch hit. |
+
+With `--report` it also requires `ir.equal`, `ir.abi_equal` and
+`edits == 0` from the oracle's `pass_report.json`. Without it the tool says
+so: those three are the oracle's half and it only runs on FreeBSD.
+
+Run against the current tree it reproduces what this session paid for.
+All five files that stopped run 28 — `e_rem_pio2.c`, `e_rem_pio2f.c`,
+`k_cosf.c`, `k_sinf.c`, `k_tanf.c` — come back "included by name
+elsewhere", and the `lib/libgcc_s` twelve come back naming that Makefile.
+It also found two things the manual pass did not: `s_scalbn.c` is
+`#include`d as well as named by `lib/libgcc_s`, and **`lib/libc/gen/assert.c`
+is named by four Makefiles outside libc** — `cddl/lib/libspl`,
+`lib/libfido2`, `lib/libsm` and `stand/libsa`. That last one was on the
+shortlist for libc's first port.
+
+`lib/msun`: 96 of 225 `.c` files pass the tree-side checks.
+`lib/libc`: 592 of 1216.
