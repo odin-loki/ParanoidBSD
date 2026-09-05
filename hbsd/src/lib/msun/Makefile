@@ -118,6 +118,27 @@ LIBC_ARCH=${MACHINE_CPUARCH}
 
 CFLAGS+=	-I${.CURDIR}/src -I${LIBC_SRCTOP}/include \
 		-I${LIBC_SRCTOP}/${LIBC_ARCH}
+
+# PBSD: the same flags for C++ translation units.
+#
+# bsd.lib.mk compiles a .cpp with ${CXX} ${CXXFLAGS}, so none of the CFLAGS
+# above reach a ported source. -fno-math-errno changes what the compiler may
+# assume about every libm call and -ffp-exception-behavior is the subject
+# matter of this library, so a port built without them is not the thing the
+# IR oracle verified - it certifies at -std=c++23 with the target's own
+# flags on both sides (docs/migration/COMMITTING_PORTS.md).
+#
+# CXXSTD is c++23 here rather than the tree default of gnu++17, for the same
+# reason: the oracle compares at c++23 and gnu++17 is not ISO anything.
+#
+# This is a prerequisite for committing a port, and is deliberately landed
+# before any .c becomes a .cpp so that a build failure afterwards can be
+# attributed to the port rather than to the flags.
+CXXSTD=		c++23
+CXXFLAGS+=	${CFLAGS:M-I*}
+CXXFLAGS+=	-ffp-exception-behavior=maytrap
+CXXFLAGS+=	-fno-math-errno
+CXXFLAGS+=	-fno-exceptions -fno-rtti
 SYM_MAPS+=	${.CURDIR}/Symbol.map
 SYM_MAPS+=	${.CURDIR}/${ARCH_SUBDIR}/Symbol.map
 
