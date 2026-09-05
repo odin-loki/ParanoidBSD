@@ -54,12 +54,25 @@ echo "== IR oracle on real sources"
 # --ir-limit 400 ran past the 90-minute job limit and reported nothing at all,
 # because the report is only written at the end. lib/msun is the 316 files
 # that hold every one of the 25 the Linux oracle can see and cannot judge, so
-# it is exactly the set worth turning into verdicts first. Widen this once a
-# green run has shown what the budget actually buys.
+# it is exactly the set worth turning into verdicts first.
+#
+# "Widen this once a green run has shown what the budget actually buys" is
+# what this comment used to end with, and green runs have now shown it: the
+# whole job, all four phases, takes under four minutes of a 120-minute
+# timeout. Meanwhile --ir-limit 120 against 321 files meant two thirds of
+# lib/msun got the verdict `skipped_budget` and "88 of 120" was 88 of the
+# first 120 eligible files, not of the library. Every port outside that
+# prefix was unjudged, so the committable set was drawn from a third of the
+# scope for no reason but a cap nobody had revisited.
+#
+# The budget is spent in discovery order and is deterministic, so raising it
+# can only add verdicts, never withdraw one - the floors below stay valid.
+# lib/libc stays at 120: it is 1,220 files, it is reported rather than
+# ratcheted, and it is not the scope anything is being ported from yet.
 python3 tools/run_todo_passes.py \
     --scope lib/msun \
     --all-passes --skip-corpus \
-    --ir-limit 120 --diff-limit 40 \
+    --ir-limit 400 --diff-limit 40 \
     --file-timeout 30
 
 echo
@@ -73,7 +86,7 @@ echo "== safe-tier comparison"
 python3 tools/run_todo_passes.py \
     --scope lib/msun \
     --all-passes --safe --skip-corpus \
-    --ir-limit 120 --diff-limit 40 \
+    --ir-limit 400 --diff-limit 40 \
     --file-timeout 30 > /dev/null
 python3 - <<'PY2'
 import json
@@ -230,7 +243,7 @@ echo "== target-flag comparison"
 PBSD_TARGET_FLAGS=1 python3 tools/run_todo_passes.py \
     --scope lib/msun \
     --all-passes --safe --skip-corpus \
-    --ir-limit 120 --diff-limit 40 \
+    --ir-limit 400 --diff-limit 40 \
     --file-timeout 30 > /dev/null
 python3 - <<'PY2'
 import json
