@@ -72,6 +72,7 @@ jobs:
           python3 tools/check_clang_srcs.py hbsd/src --fail-on-missing
           python3 tools/check_toolchain_version.py
           python3 tools/check_pbsd_marks.py
+          python3 tools/check_c_linkage.py hbsd/src --require-guarded
 
       - name: Build on FreeBSD
         uses: vmactions/freebsd-vm@v1

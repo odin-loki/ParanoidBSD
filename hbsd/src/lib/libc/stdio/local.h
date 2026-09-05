@@ -46,6 +46,10 @@
 #include <wchar.h>
 #include <locale.h>
 
+/* PBSD: C linkage, so a ported .cpp keeps these symbols. */
+#include <sys/cdefs.h>
+__BEGIN_DECLS
+
 /*
  * Information local to this implementation of stdio,
  * in particular, macros and private variables.
@@ -161,5 +165,7 @@ void __stdio_cancel_cleanup(void *);
 		}							\
 		___pthread_cleanup_pop_imp(1);				\
 	}
+
+__END_DECLS
 
 #endif /* _STDIO_LOCAL_H */

@@ -38,6 +38,7 @@ jobs:
           python3 tools/check_mk_options.py hbsd/src --fail-on-undefined
           python3 tools/check_clang_srcs.py hbsd/src --fail-on-missing
           python3 tools/check_pbsd_marks.py
+          python3 tools/check_c_linkage.py hbsd/src --require-guarded
           python3 tools/arch_contract.py hbsd/src
 
   kernel:
