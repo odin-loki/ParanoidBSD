@@ -10,6 +10,13 @@ name: PBSD architecture matrix
 #
 # Weekly rather than per-push. Six cross-builds is hours of runner time, and
 # what it catches is drift, which happens over weeks.
+#
+# It runs with KEEP_GOING=1, so make -k reports every independent failure in
+# one pass. This is a survey, not a release gate: six runs of it found six
+# bugs, one per run, an hour apart, because each architecture stopped at its
+# first error and hid the next one. i386's PAX ASLR bug never appeared at all
+# - under -j a module failed first every time. The release path
+# (pbsd-boot-image) still stops at the first failure, which is right there.
 
 on:
   workflow_dispatch:
@@ -75,4 +82,5 @@ jobs:
             TARGET="${{ matrix.target }}" \
             KERNCONF="${{ inputs.kernconf || 'HARDENEDBSD' }}" \
             TOOLCHAIN=external \
+            KEEP_GOING=1 \
               sh tools/ci/build_boot_image.sh kernel

@@ -152,14 +152,29 @@ mkdir -p "$OBJ"
 export MAKEOBJDIRPREFIX="$OBJ"
 cd "$SRC"
 
+# KEEP_GOING=1 adds make -k, so a build reports every independent failure
+# instead of the first one.
+#
+# This is worth a flag of its own because of how the architecture matrix has
+# actually gone. Six runs found six bugs, one per run, each an hour apart:
+# arm's PAX ASLR hid arm's sched_shim, which hid whatever is behind that, and
+# i386's identical ASLR bug never appeared at all because a module failed
+# first under -j. Under -k a survey run reports the whole list in one pass.
+#
+# It is off by default because -k also keeps going after a failure that makes
+# everything downstream meaningless, and that noise is the wrong thing for a
+# release build. Survey with it, gate without it.
+KEEP_GOING="${KEEP_GOING:-0}"
+[ "$KEEP_GOING" = "1" ] && KFLAG="-k" || KFLAG=""
+
 run_make() {
     echo "--- make $*"
     if [ -n "$SRCCONF" ]; then
-        make -j"$JOBS" TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
+        make -j"$JOBS" $KFLAG TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
              KERNCONF="$KERNCONF" SRCCONF="$SRCCONF" \
              ${CROSS_TOOLCHAIN:+CROSS_TOOLCHAIN="$CROSS_TOOLCHAIN"} "$@"
     else
-        make -j"$JOBS" TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
+        make -j"$JOBS" $KFLAG TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
              KERNCONF="$KERNCONF" "$@"
     fi
 }
