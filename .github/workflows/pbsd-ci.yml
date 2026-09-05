@@ -131,6 +131,16 @@ jobs:
       - name: setuid inventory — the set has not changed
         run: python3 tools/setuid_inventory.py --gate
 
+      # A source that another source #includes by name is not an independent
+      # translation unit, so renaming it .c -> .cpp breaks the includer and
+      # nothing else notices: the file still exists, SRCS still resolves, no
+      # two objects collide, and a zero-edit port is byte-identical. The
+      # hundred-file lib/msun batch shipped five such files and stopped
+      # buildworld at s_cos.cpp:48 with "'e_rem_pio2.c' file not found",
+      # nine minutes into a fifty-minute job. This is a second of work.
+      - name: No port has renamed a source another source #includes
+        run: python3 tools/check_source_includes.py --gate
+
       # The compiled-in default of every hardening knob, from the source.
       # show_hardening.sh answers "is PAX_ASLR compiled in"; this answers
       # "and what does hardening.pax.aslr.status default to", which is a

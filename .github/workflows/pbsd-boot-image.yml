@@ -46,11 +46,25 @@ on:
       loader_conf:
         description: >-
           Lines to append to /boot/loader.conf INSIDE the built image, e.g.
-          init_path="/rescue/sh:/sbin/init". Use this rather than loader_set
-          for anything the KERNEL must see: a `set` at the loader's
-          interactive prompt is echoed back and still does not reach
-          kern_getenv(), while loader.conf demonstrably does - that is where
-          vfs.root.mountfrom comes from. Semicolons separate lines.
+          boot_single="YES". Semicolons separate lines.
+
+          Note what this does NOT do. Run 27 put
+          init_path="/rescue/sh:/sbin/init" here, read it back out of the
+          mounted image, and the kernel still printed
+          `start_init: trying /sbin/init` - so loader.conf does not reach
+          kern_getenv() either, exactly as a `set` at the interactive prompt
+          does not. The earlier note here claiming it does, "that is where
+          vfs.root.mountfrom comes from", was wrong twice over:
+          release/Makefile writes only three lines into this file and
+          vfs.root.mountfrom is not one of them, and the loader sets that
+          variable itself in stand/common/boot.c from the device it loaded
+          the kernel off.
+
+          What loader.conf DOES reach is the twelve variables in
+          sys/kern/subr_boot.c's howto_names - boot_single, boot_verbose,
+          boot_serial, boot_askname and the rest - because the loader turns
+          those into boothowto bits itself (bi_getboothowto) rather than
+          passing them through the kernel environment.
         required: false
         default: ''
         type: string

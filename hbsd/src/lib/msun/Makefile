@@ -63,11 +63,11 @@ COMMON_SRCS= b_tgamma.c \
 	e_gammaf_r.c e_hypot.cpp e_hypotf.cpp e_j0.c e_j0f.cpp e_j1.c e_j1f.cpp \
 	e_jn.cpp e_jnf.cpp e_lgamma.cpp e_lgamma_r.cpp e_lgammaf.cpp e_lgammaf_r.cpp \
 	e_log.c e_log10.c e_log10f.c e_log2.cpp e_log2f.cpp e_logf.c \
-	e_pow.cpp e_powf.cpp e_rem_pio2.cpp \
-	e_rem_pio2f.cpp e_remainder.c e_remainderf.c e_scalb.cpp e_scalbf.cpp \
+	e_pow.cpp e_powf.cpp e_rem_pio2.c \
+	e_rem_pio2f.c e_remainder.c e_remainderf.c e_scalb.cpp e_scalbf.cpp \
 	e_sinh.cpp e_sinhf.cpp e_sqrt.c e_sqrtf.c fenv.c \
-	k_cos.cpp k_cosf.cpp k_exp.c k_expf.c k_rem_pio2.c k_sin.cpp k_sinf.cpp \
-	k_tan.cpp k_tanf.cpp \
+	k_cos.cpp k_cosf.c k_exp.c k_expf.c k_rem_pio2.c k_sin.cpp k_sinf.c \
+	k_tan.cpp k_tanf.c \
 	s_asinh.cpp s_asinhf.cpp s_atan.cpp s_atanf.cpp s_carg.c s_cargf.c s_cargl.c \
 	s_cbrt.cpp s_cbrtf.cpp s_ceil.c s_ceilf.c s_clog.c s_clogf.c \
 	s_copysign.c s_copysignf.c s_cos.cpp s_cosf.cpp \
