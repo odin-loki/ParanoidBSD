@@ -68,11 +68,24 @@ Decomposed, those 247 names are a cross-product:
 A complete cross-product is 936 names. 247 exist, spread unevenly across six
 files, because each architecture wrote out the subset it happened to need.
 
-That unevenness is a live bug source, not just untidiness: `atomic_add_8`
-exists on amd64 and i386 and on no other architecture, so kernel code using it
-compiles on x86 and fails to build on arm64 — which is exactly the kind of
-breakage a tree that only ever built amd64 would not have noticed. The
-remaining 13 names are i386 legacy variants (`cmpset_i386`, `store_i586`).
+Those are the names written out **literally**. Three architectures also
+generate names with token-pasting macros — arm64 has 18 such generators,
+powerpc 11 — so `atomic_add_32` exists on arm64 without the string
+`atomic_add_32` appearing anywhere in its header.
+
+That matters for what can be claimed. A first attempt at a parity check read
+the headers literally and reported 50 atomics "used by machine-independent
+code but missing on some architecture". Most were macro-generated and present.
+**Which cells of the cross-product are actually filled cannot be read off the
+source** — it needs the preprocessor with each architecture's real include
+path, which means running on FreeBSD. `tools/atomic_survey.py` reports what is
+countable and says so about the rest.
+
+What survives that correction is the burden itself: a regular
+operation × width × ordering space, filled in by hand, unevenly, six times,
+partly literally and partly by six different sets of macros. That is the
+argument for generating it once, and it does not depend on knowing which cells
+are missing.
 
 A template generates the cross-product uniformly and completely. Clang already
 knows how to emit the right instruction for every one of those targets — that is what `__atomic_*` builtins and `std::atomic` are. A generic
