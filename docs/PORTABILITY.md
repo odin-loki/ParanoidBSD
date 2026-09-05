@@ -142,9 +142,33 @@ which architectures the tree builds one for:
 | riscv   | no           | no     | yes  | yes   |
 
 So on arm, powerpc and riscv there is no SafeStack or CFI to have, whatever
-`src.conf` says — `src.opts.mk` already defaults both off outside amd64 and
-aarch64. This is a real gap in first-class support and the honest place for
-it is here rather than in an option that reads as enabled.
+`src.conf` says. `src.opts.mk` defaults both off outside amd64 and aarch64 —
+and `hbsd/src.conf.pbsd` was overriding that default on every architecture,
+on the argument that upstream's limit was about test coverage rather than
+hardware.
+
+Matrix run 8 is where that showed. `show_hardening.sh` reported, faithfully,
+for `arm/armv7`:
+
+```
+  SAFESTACK          yes   (expected where the architecture supports it)
+  CFI                yes   (expected where the architecture supports it)
+```
+
+Both are enabled, and neither has a runtime on arm. Nothing failed, because
+the matrix builds kernels and a kernel does not link `libclang_rt`. A world
+build would have failed at the first PIE binary, the way run 8 and run 9 of
+`pbsd-boot-image` did on amd64 for the toolchain's version of the same
+problem.
+
+`src.conf.pbsd` now conditions those two on `MACHINE_CPUARCH` being one of
+amd64, aarch64 or i386. That is not a retreat from first-class support: for
+`RETPOLINE` and `BRANCH_PROTECTION` the "upstream is being careful, the
+hardware is fine" argument holds and they are unchanged. For these two the
+blocker is that the runtime does not exist, which is a fact about the tree
+rather than a judgement about it. Building it for arm, powerpc and riscv is
+the way to close the gap, and it is open work rather than a configuration
+line.
 
 The external toolchain adds a second condition. `WITHOUT_TOOLCHAIN` sets
 `MK_CLANG=no`, which stops `lib/libclang_rt` being built at all, so the
@@ -157,3 +181,25 @@ and writes `WITHOUT_SAFESTACK` / `WITHOUT_CFI` into the generated `src.conf`
 when the archive is absent. `tools/ci/show_hardening.sh` then reports what the
 build settled on, so the option being off is a line in the log rather than a
 link error later.
+
+## The boot test has not run yet
+
+`tools/ci/boot_test.py` exists and `pbsd-boot-image.yml` has a "Boot it"
+step, and it has been **skipped in every run so far** — runs 8, 9 and 10 all
+failed in "Build on FreeBSD" before an image existed, so `Collect image`,
+`Boot it` and the artifact upload were all skipped.
+
+Runs 8 and 9 failed for the same reason, sixteen minutes in each time:
+
+```
+ld.lld: error: cannot open .../libclang_rt.safestack.a: No such file or directory
+```
+
+Run 8 was `memstick` on `80afbae63` and run 9 was `world` on `b1bd99b89`, so
+the untracking of `contrib/llvm-project` is not what broke run 9 — run 8 hit
+the identical error on the tree before it. Both are the SafeStack runtime,
+and the probe added to `build_boot_image.sh` is what stops a third run
+finding it a third time.
+
+So there is still no answer to which of `boot_test.py`'s four outcomes PBSD
+hits. It is the next thing a green world run buys.

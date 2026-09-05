@@ -56,14 +56,36 @@ WITH_PIE=YES
 WITH_RELRO=YES
 WITH_BIND_NOW=YES
 
-# A compiler feature, implemented per target by clang rather than by the CPU.
-# Upstream defaults it to amd64 only.
+# SafeStack and CFI, where the runtime exists.
+#
+# These two are not codegen alone. -fsanitize=safe-stack and -fsanitize=cfi
+# make clang link a compiler-rt archive, and lib/libclang_rt/Makefile builds
+# one only for amd64, aarch64 and i386 - there is no arm, powerpc or riscv
+# subdirectory in it at all. Asking for them elsewhere produces a link error
+# in world that nothing in the tree or in the packaged toolchain could
+# satisfy.
+#
+# This file said WITH_SAFESTACK / WITH_CFI unconditionally, on the argument
+# that upstream's amd64-only default was about test coverage rather than
+# hardware. For RETPOLINE and BRANCH_PROTECTION that argument is right and
+# they stay as they are. For these two it was wrong, and matrix run 8 is
+# where it showed: show_hardening.sh reported SAFESTACK=yes and CFI=yes on
+# arm, faithfully, because this file said so - and no runtime for either
+# exists on arm. The matrix builds kernels, which do not link libclang_rt,
+# so nothing failed. A world build would have.
+#
+# So the condition is on the runtime existing, which is a real property, and
+# it is written here rather than left to be discovered at link time.
+# tools/ci/build_boot_image.sh narrows it further when the external
+# toolchain ships no archive either. docs/PORTABILITY.md has the table.
+.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64" || \
+    ${MACHINE_CPUARCH} == "i386"
 WITH_SAFESTACK=YES
-
-# Control-flow integrity. Needs LTO, which is why upstream limits it to amd64
-# and arm64 - not because the other architectures cannot do it. Extending it is
-# the part of this most likely to fail, and the matrix is where that shows up.
 WITH_CFI=YES
+.else
+WITHOUT_SAFESTACK=YES
+WITHOUT_CFI=YES
+.endif
 
 # arm64 branch protection: BTI plus pointer authentication.
 # bsd.opts.mk:91 puts BRANCH_PROTECTION in BROKEN_OPTIONS for anything that is

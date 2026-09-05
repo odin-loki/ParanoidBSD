@@ -69,6 +69,11 @@ FIXES = {
         "return (ENOMEM)\n",
         "missing semicolon; the file has never been compiled upstream",
     ),
+    "hbsd/src/sys/i386/i386/machdep.c": (
+        "int i386_read_exec = 0;",
+        None,
+        "the definition pmap.c needs and nothing in the tree supplies",
+    ),
     "hbsd/src/sys/kern/sched_shim.c": (
         "#ifdef __DO_NOT_HAVE_SYS_IFUNCS",
         None,

@@ -338,6 +338,26 @@ SYSCTL_ULONG(_machdep, OID_AUTO, guessed_bootdev,
 
 int _default_ldt;
 
+/*
+ * PBSD: i386_read_exec is declared in <x86/x86_var.h> and read five times in
+ * i386/i386/pmap.c to decide whether a non-executable mapping gets PG_NX.
+ * Nothing in the tree defines it - not here, not in HardenedBSD 15-stable,
+ * where sys/vm/vm_mmap.c still carries the comment "for i386_read_exec" on
+ * the include the variable needed and no longer carries the variable. It
+ * went with the PAX_NOEXEC rework, and the i386 kernel has not linked since:
+ *
+ *   ld.lld: error: undefined symbol: i386_read_exec
+ *   >>> referenced by pmap.c:3679, pmap_pae.o:(pmap_pae_enter)
+ *
+ * Zero, and no sysctl. In stock FreeBSD this is a tunable that lets readable
+ * segments be executable; on a system with PAX_NOEXEC that is a knob for
+ * turning off the thing PBSD exists to do, so the definition comes back
+ * without the switch. !i386_read_exec is then always true and every
+ * non-executable mapping gets PG_NX, which is the behaviour PAX wants
+ * anyway.
+ */
+int i386_read_exec = 0;
+
 struct mtx dt_lock;			/* lock for GDT and LDT */
 
 union descriptor gdt0[NGDT];	/* initial global descriptor table */

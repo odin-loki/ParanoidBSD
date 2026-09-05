@@ -48,6 +48,14 @@ on FreeBSD because `release/` wants a FreeBSD host; booting it is just QEMU
 and does not. The boot log is uploaded whether the boot passed or failed,
 because a failed boot is exactly when it is wanted.
 
+**It has not run yet.** Every `pbsd-boot-image` run so far has failed in
+"Build on FreeBSD", so "Collect image", "Boot it" and the upload were all
+skipped — the step reports `skipped`, not a result, and it would be easy to
+read a green-looking run summary as a boot that happened. Runs 8 and 9 both
+died sixteen minutes in on the same missing SafeStack runtime (see
+docs/PORTABILITY.md). Until a `world` or `memstick` run finishes, PBSD has
+never been started, and nothing in this repository claims otherwise.
+
 ## Before anything else
 
 The tree was committed with **every file mode 100644**. FreeBSD's build runs
