@@ -241,6 +241,22 @@ if [ "$TARGET_ARCH" != "$(uname -p 2>/dev/null || echo amd64)" ]; then
     esac
 fi
 
+# The directories PBSD has ported to C++, and only those.
+#
+# The first version of the check below scanned every .cpp under lib/ and
+# failed the run on
+#
+#   lib/clang/liblldb/LLDBWrapLua.cpp
+#
+# which is vendor source for lldb, is not a port, and is deliberately not
+# built at all: TOOLCHAIN=external sets MK_TOOLCHAIN=no, which cascades to
+# MK_CLANG and MK_LLDB. "A .cpp in the tree" and "a file PBSD ported" are
+# not the same set, and the tree carries a lot of C++ that was always C++.
+#
+# So the scopes are named. This list grows as scopes are ported, and it is
+# the same boundary the IR oracle ratchets on.
+PORTED_SCOPES="${PORTED_SCOPES:-lib/msun}"
+
 # Every ported .cpp must have been compiled.
 #
 # A green buildworld is not by itself evidence that a port was built. The
@@ -249,14 +265,22 @@ fi
 # quietly dropping out of SRCS. libm would then be built without it and the
 # build would stay green until something tried to call the missing symbol.
 #
-# So assert it: for each .cpp under a ported directory, the object has to
-# exist in the objdir. This is the check that turns "world is green on a tree
-# that contains k_cos.cpp" into "k_cos.cpp was compiled".
+# So assert it: for each .cpp under a ported scope, the object has to exist
+# in the objdir. This is the check that turns "world is green on a tree that
+# contains k_cos.cpp" into "k_cos.cpp was compiled".
 check_ports_built() {
     _objroot="$OBJ$SRC/$TARGET.$TARGET_ARCH"
     _missing=0
     _found=0
-    for _cpp in $(find "$SRC/lib" -name '*.cpp' 2>/dev/null); do
+    _dirs=""
+    for _scope in $PORTED_SCOPES; do
+        [ -d "$SRC/$_scope" ] && _dirs="$_dirs $SRC/$_scope"
+    done
+    if [ -z "$_dirs" ]; then
+        echo "== no ported scopes present ($PORTED_SCOPES)"
+        return 0
+    fi
+    for _cpp in $(find $_dirs -name '*.cpp' 2>/dev/null); do
         _rel="${_cpp#$SRC/}"
         _obj="$(basename "$_cpp" .cpp).o"
         # The object lands in the objdir for the library, not beside the
@@ -275,7 +299,7 @@ check_ports_built() {
     if [ "$_missing" -gt 0 ]; then
         return 1
     fi
-    echo "== $_found ported .cpp file(s), all compiled"
+    echo "== $_found ported .cpp file(s) in $PORTED_SCOPES, all compiled"
 }
 
 case "$STAGE" in
