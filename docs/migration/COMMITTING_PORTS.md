@@ -1,9 +1,10 @@
 # What it takes to commit a mechanical port
 
 As of FreeBSD oracle run 13, **88 of 120** lib/msun ports are both
-IR-equivalent to their C original and exporting the same symbols. That is the
-committable set by the oracle's reckoning. It is not yet the shippable set,
-and this is the gap.
+IR-equivalent to their C original and exporting the same symbols.
+
+Run 16 then widened the scope and that number stopped meaning what it looked
+like it meant. Read the second section first.
 
 ## What the oracle proves
 
@@ -15,6 +16,45 @@ two modules define the same externally-visible names.
 
 Together that is a strong statement about the *source*: same computation, same
 ABI surface.
+
+## The flags: answered
+
+Run 16 ran the same scope with the target's own CFLAGS on both sides:
+
+```
+under target flags: files=321 edits=71 IR equal 88/120  ABI equal 88
+  flags used: -ffp-exception-behavior=maytrap -fno-math-errno
+              ... and -Wno-error=overflow for e_powl.c
+```
+
+Identical to the run without them. The lib/msun ports verify under the flags
+that actually ship, so step 4 below is satisfied and the remaining work to
+commit one is steps 1 to 3 — the rename, the `COMMON_SRCS` entry, and
+`CXXFLAGS` mirroring `CFLAGS`.
+
+## The number is not representative, and that matters more
+
+Run 16 also widened the scope to `lib/libc` for the first time:
+
+| scope | files | edits | edits/file | IR equal | ABI equal |
+|---|---:|---:|---:|---:|---:|
+| `lib/msun` | 321 | 71 | **0.22** | 88/120 (73%) | 88 |
+| `lib/libc` | 1,220 | 10,786 | **8.8** | 37/120 (31%) | 34 |
+
+Forty times the edit density, and the verification rate falls from 73% to 31%.
+
+This is the same thing the safe-tier split found and is now confirmed on a
+second scope: **lib/msun verifies because almost nothing is done to it.**
+Where the passes do real work, the ports stop being provably equivalent. The
+88 is a property of the corpus, not of the conversion.
+
+So "88 of 120 verified" should not be read as "73% of the port works". Read as
+a rate for the tree, the honest figure is closer to 31%, and even that is over
+a scope chosen for being tractable.
+
+`lib/libc` also shows three ports that are IR-equal and not ABI-equal (37
+against 34), which is the `math_private.h` class again in a different header.
+Finding which header is the next thing worth doing there.
 
 ## What it does not prove
 
