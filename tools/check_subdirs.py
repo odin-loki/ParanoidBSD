@@ -21,6 +21,16 @@ import re
 import sys
 
 SUBDIR_ASSIGN = re.compile(r"^\s*SUBDIR(?:\.[^\s=+]+)?\s*[+?:]?=\s*(.*)$")
+# sys/modules/Makefile does not list its architecture-conditional modules
+# directly. It writes `SUBDIR= ${_3dfx}` at line 15 and `_3dfx= 3dfx` at line
+# 894, so a checker that skips ${...} tokens sees nothing and an i386 kernel
+# build stops on `cd: sys/modules/3dfx: No such file or directory`.
+#
+# Resolving one level of that is enough for every case in this tree, and one
+# level is where it stops - a value that is itself a variable is left alone
+# rather than guessed at.
+SIMPLE_VAR = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*[+?:]?=\s*([^\s#]+)\s*$")
+VAR_REF = re.compile(r"^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$")
 PLAIN_NAME = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.+-]*$")
 
 # (Makefile relative to the tree root, SUBDIR token) -> why it may be absent.
@@ -37,6 +47,14 @@ def subdir_tokens(makefile: str) -> list[tuple[int, str]]:
             lines = fh.read().splitlines()
     except OSError:
         return []
+
+    # One pass for simple NAME=value assignments, so ${NAME} in a SUBDIR list
+    # can be resolved. Later assignments win, matching make.
+    simple: dict[str, str] = {}
+    for line in lines:
+        m = SIMPLE_VAR.match(line)
+        if m and "$" not in m.group(2):
+            simple[m.group(1)] = m.group(2)
 
     found: list[tuple[int, str]] = []
     i = 0
@@ -59,6 +77,11 @@ def subdir_tokens(makefile: str) -> list[tuple[int, str]]:
                 if token.startswith("#"):
                     stop = True
                     break
+                ref = VAR_REF.match(token)
+                if ref:
+                    token = simple.get(ref.group(1), "")
+                    if not token:
+                        continue
                 if PLAIN_NAME.match(token):
                     found.append((lineno, token))
             if stop or not more or i + 1 >= len(lines):
