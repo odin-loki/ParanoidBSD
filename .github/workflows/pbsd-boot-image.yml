@@ -1,0 +1,67 @@
+name: PBSD boot image
+
+# Builds PBSD from hbsd/src on a FreeBSD VM and uploads what it produces.
+#
+# Manual by default. A buildworld is hours, and the kernel stage alone is
+# tens of minutes, so this is not something to run on every push.
+#
+# The stages are a ladder: kernel proves the config compiles, world proves
+# the userland does, and only then is an image worth attempting. Start at
+# kernel and climb once each rung is green.
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'kernel | world | memstick | iso'
+        required: true
+        default: 'kernel'
+        type: choice
+        options: [kernel, world, memstick, iso]
+      kernconf:
+        description: 'kernel config'
+        required: true
+        default: 'HARDENEDBSD-MINIMAL'
+        type: string
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Exec-bit precondition
+        # The tree shipped with no executable bits at all, which stopped the
+        # build at contrib/bmake/configure. Fail here with a clear message
+        # rather than an hour in with a permission error.
+        run: python3 tools/check_exec_bits.py
+
+      - name: Build on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          copyback: true
+          mem: 8192
+          prepare: |
+            pkg install -y python311
+          run: |
+            sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
+        env:
+          KERNCONF: ${{ inputs.kernconf }}
+
+      - name: Collect image
+        if: inputs.stage == 'memstick' || inputs.stage == 'iso'
+        run: |
+          mkdir -p out
+          find hbsd/src/release -maxdepth 1 \( -name '*.img' -o -name '*.iso' \) \
+               -exec cp {} out/ \; 2>/dev/null || true
+          ls -lh out/ || echo "no image produced"
+
+      - uses: actions/upload-artifact@v4
+        if: inputs.stage == 'memstick' || inputs.stage == 'iso'
+        with:
+          name: pbsd-${{ inputs.stage }}-${{ inputs.kernconf }}
+          path: out/*
+          retention-days: 14
+          if-no-files-found: warn
