@@ -419,22 +419,67 @@ vm|memstick|iso)
         MD="$(mdconfig -a -t vnode -f "$REPOROOT/out/$OUT")" || {
             echo "FAIL mdconfig could not attach the image" >&2; exit 1; }
         echo "   attached as /dev/$MD"
-        # Pick the UFS partition by type rather than by number - the layout
-        # differs between memstick (efi, boot, ufs) and vm images.
+        # Pick the UFS filesystem by type, not by number, and handle both
+        # schemes - because the memstick is not the one I assumed.
+        #
+        # The first version looked only for a GPT `freebsd-ufs` partition,
+        # which is what the vm image has. The memstick is MBR with a BSD
+        # label inside a slice:
+        #
+        #   =>      1  2302010    md0  MBR  (1.1G)
+        #           1   131050  md0s1  efi  (64M)
+        #      131051  2170960  md0s2  freebsd  [active]  (1.0G)
+        #
+        # so there is no freebsd-ufs at the top level at all; the filesystem
+        # is md0s2a, one level down. The stub test that passed before this
+        # ran used a GPT layout I made up, and the real thing differed - the
+        # error path below is what turned that into one clear line instead
+        # of a corrupted image.
         PART="$(gpart show -p "$MD" 2>/dev/null | \
             awk '$4 == "freebsd-ufs" { print $3; exit }')"
         if [ -z "$PART" ]; then
-            echo "FAIL no freebsd-ufs partition in the image:" >&2
+            SLICE="$(gpart show -p "$MD" 2>/dev/null | \
+                awk '$4 == "freebsd" { print $3; exit }')"
+            if [ -n "$SLICE" ]; then
+                echo "   MBR: descending into slice $SLICE"
+                PART="$(gpart show -p "$SLICE" 2>/dev/null | \
+                    awk '$4 == "freebsd-ufs" { print $3; exit }')"
+                # A BSD label whose partition table gpart cannot read still
+                # has its root filesystem at 'a' by convention.
+                [ -n "$PART" ] || PART="${SLICE}a"
+            fi
+        fi
+        if [ -z "$PART" ]; then
+            echo "FAIL no UFS filesystem in the image (looked for a GPT" >&2
+            echo "     freebsd-ufs, then a freebsd MBR slice):" >&2
             gpart show -p "$MD" >&2 || true
+            [ -n "${SLICE:-}" ] && gpart show -p "$SLICE" >&2
             mdconfig -d -u "$MD"; exit 1
         fi
+        echo "   UFS filesystem: /dev/$PART"
         MNT="$(mktemp -d)"
         if ! mount "/dev/$PART" "$MNT"; then
             echo "FAIL could not mount /dev/$PART" >&2
             mdconfig -d -u "$MD"; exit 1
         fi
-        printf '%s\n' "$LOADER_CONF_EXTRA" | tr ';' '\n' \
-            >> "$MNT/boot/loader.conf"
+        if ! printf '%s\n' "$LOADER_CONF_EXTRA" | tr ';' '\n' \
+                >> "$MNT/boot/loader.conf"; then
+            echo "FAIL could not append to /boot/loader.conf (full?)" >&2
+            df -k "$MNT" >&2 || true
+            umount "$MNT" 2>/dev/null || true
+            mdconfig -d -u "$MD"; exit 1
+        fi
+        # Read it back. makefs sizes these images to fit, so a write that
+        # runs out of space is a real possibility, and a setting that
+        # silently did not land is the failure this mechanism exists to
+        # stop happening.
+        for _line in $(printf '%s' "$LOADER_CONF_EXTRA" | tr ';' ' '); do
+            if ! grep -qF "$_line" "$MNT/boot/loader.conf"; then
+                echo "FAIL '$_line' is not in the file after appending" >&2
+                umount "$MNT" 2>/dev/null || true
+                mdconfig -d -u "$MD"; exit 1
+            fi
+        done
         echo "   /boot/loader.conf now ends:"
         tail -5 "$MNT/boot/loader.conf" | sed 's/^/     /'
         umount "$MNT" || { echo "FAIL could not unmount" >&2; \

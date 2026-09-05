@@ -357,10 +357,33 @@ that works goes.
 `build_boot_image.sh` takes `LOADER_CONF_EXTRA` (workflow input
 `loader_conf`, semicolons separating lines) and appends it to
 `/boot/loader.conf` **inside the built image** — `mdconfig` to attach,
-`gpart` to find the `freebsd-ufs` partition by type rather than by number
-(memstick and vm images are laid out differently), mount, append, unmount,
-detach. Verified against both partition layouts and with stubs end to end;
-an empty value leaves the image untouched and never runs `mdconfig`.
+`gpart` to find the filesystem, mount, append, unmount, detach.
+
+**Run 26 found the layout was not what I assumed.** The first version
+looked only for a GPT `freebsd-ufs` partition, and the memstick is MBR
+with a BSD label:
+
+```
+FAIL no freebsd-ufs partition in the image:
+=>      1  2302010    md0  MBR  (1.1G)
+        1   131050  md0s1  efi  (64M)
+   131051  2170960  md0s2  freebsd  [active]  (1.0G)
+```
+
+There is no `freebsd-ufs` at the top level at all; the filesystem is
+`md0s2a`, one level down inside the slice. The stub test that passed
+beforehand used a GPT layout I had made up — the same "tested against my
+idea of the thing" failure as the boot-menu pattern, except that this
+time the defensive branch turned it into one clear line naming the real
+layout instead of a corrupted image.
+
+It now tries GPT `freebsd-ufs` first, then descends into a `freebsd` MBR
+slice, and falls back to the `a` partition by convention if `gpart`
+cannot read the label. Both selections verified against the **observed**
+output, not an invented one. The append is checked and read back, because
+`makefs` sizes these images to fit and a setting that silently did not
+land is exactly the failure this mechanism exists to prevent. An empty
+value leaves the image untouched and never runs `mdconfig`.
 
 The value travels to the FreeBSD VM as a file in the workspace rather than
 a `${{ }}` expansion, for the same reason as `loader_set`: an expansion is
