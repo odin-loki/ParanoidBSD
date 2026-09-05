@@ -45,10 +45,12 @@ jobs:
           mem: 8192
           prepare: |
             pkg install -y python311
+          # The VM is a separate machine over ssh, so a step-level `env:`
+          # never reaches it - the first run silently built HARDENEDBSD
+          # instead of the config that was asked for. Set it in the command.
           run: |
-            sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
-        env:
-          KERNCONF: ${{ inputs.kernconf }}
+            KERNCONF="${{ inputs.kernconf }}" \
+              sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
 
       - name: Collect image
         if: inputs.stage == 'memstick' || inputs.stage == 'iso'
