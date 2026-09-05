@@ -27,5 +27,34 @@
 # current figures.
 WITHOUT_MACHDEP_OPTIMIZATIONS=YES
 
-# Not needed for any target PBSD builds.
-WITHOUT_OFED=YES
+# ---------------------------------------------------------------------------
+# Not built into a shipped image.
+#
+# Each of these is a subsystem the build can leave out entirely. Reducing by
+# configuration rather than by deleting files is the rule this tree learned
+# the hard way: the flat import pruned architectures and prebuilt driver
+# blobs out of the source, and every one of those cost a build run to find.
+# A WITHOUT_ line is reversible, reviewable, and cannot make the tree
+# unmergeable with upstream.
+#
+# Sizes are tracked files under hbsd/src, for scale rather than precision.
+
+WITHOUT_TESTS=YES		# tests 2,400 + netbsd-tests 1,945 + googletest 247
+WITHOUT_GAMES=YES
+WITHOUT_SHAREDOCS=YES		# share/doc, 428
+WITHOUT_HTML=YES
+WITHOUT_EXAMPLES=YES
+WITHOUT_OFED=YES		# InfiniBand; no target PBSD builds has it
+
+# ---------------------------------------------------------------------------
+# Deliberately NOT set here, and why.
+#
+# WITHOUT_KERBEROS / WITHOUT_MITKRB5 would remove crypto/krb5 and kerberos5,
+# 2,179 files, and for a hardened system there is a real argument that a
+# network authentication stack nobody uses is attack surface. But it is
+# functionality, not fat: turning it off changes what PBSD can do, not just
+# what it ships. That is a product decision and it is not made here.
+#
+# WITHOUT_TESTS above is not the same kind of choice - it removes the test
+# suite from the *image*, and CI still builds with tests enabled, which is
+# where the suite is meant to run.
