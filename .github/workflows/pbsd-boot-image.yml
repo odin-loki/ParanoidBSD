@@ -73,6 +73,7 @@ jobs:
           python3 tools/check_toolchain_version.py
           python3 tools/check_pbsd_marks.py
           python3 tools/check_c_linkage.py hbsd/src --require-guarded
+          python3 tools/check_kernconf_parity.py hbsd/src --fail-on-difference
 
       - name: Build on FreeBSD
         uses: vmactions/freebsd-vm@v1
