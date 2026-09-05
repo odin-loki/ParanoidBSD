@@ -283,9 +283,41 @@ Two new candidates, both checked by hand rather than taken from the score:
 
 * **`counter.h`** — 721 lines across six architectures, and all six export
   the same five names: `counter_u64_add`, `counter_u64_add_protected`,
-  `counter_enter`, `counter_exit`, `EARLY_COUNTER`. Per-CPU counters are
-  `curcpu` plus an add, and the add is exactly what `sys/sys/atomic_generic.h`
-  now provides.
+  `counter_enter`, `counter_exit`, `EARLY_COUNTER`.
+
+  That is where the score stops and reading starts, and reading changes the
+  answer. The six `counter_u64_add` bodies are **four** implementations, not
+  one:
+
+  | arch | body |
+  |---|---|
+  | arm64, arm, riscv | `atomic_add_64((uint64_t *)zpcpu_get(c), inc)` — identical |
+  | amd64 | `zpcpu_add(c, inc)`, which is one `addq %r, %gs:(%r)` |
+  | i386 | runtime `CPUID_CX8` test, then `cmpxchg8b` or a critical section |
+  | powerpc | inline `ldarx`/`stdcx.` off SPRG0 |
+
+  Three of the four differences are real and one is not. amd64's is a
+  *performance* choice — per-CPU data needs no `lock` prefix, and replacing
+  it with `atomic_add_64` would put one on a counter in the hottest paths in
+  the kernel. i386's is the CX8 problem `tools/atomic_generic_check.py`
+  found from the other direction: 64-bit atomics are not lock-free there.
+  powerpc's `ldarx`/`stdcx.` is what `atomic_add_64` compiles to on powerpc,
+  written out by hand.
+
+  So the generic version covers four architectures — arm, arm64, riscv and
+  powerpc — and amd64 and i386 keep an override, each for a reason the tree
+  documents elsewhere. That is about 350 lines rather than 721, and it means
+  a seventh architecture writes no `counter.h` at all.
+
+  `sys/sys/pcpu.h` already has this shape one layer down: `#ifndef
+  zpcpu_add_protected` with an MI fallback that amd64 overrides. The pattern
+  to copy is in the tree.
+
+  **This paragraph replaces an earlier version of itself** which said "the
+  add is exactly what `sys/sys/atomic_generic.h` now provides". For three of
+  six it is; for amd64 it would have been a `lock` prefix on a hot counter.
+  That is what taking an agreement score for an answer looks like, two
+  sections after a tool was added to stop exactly that.
 * **`_bus.h`** — 174 lines across six for four typedefs, `bus_addr_t`,
   `bus_size_t`, `bus_space_tag_t` and `bus_space_handle_t`, identical in
   every architecture except for the width behind them. That is
