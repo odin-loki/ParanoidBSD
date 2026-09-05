@@ -241,16 +241,55 @@ if [ "$TARGET_ARCH" != "$(uname -p 2>/dev/null || echo amd64)" ]; then
     esac
 fi
 
+# Every ported .cpp must have been compiled.
+#
+# A green buildworld is not by itself evidence that a port was built. The
+# port is a rename plus one edited line in a hand-written SRCS list, and the
+# failure mode of getting that line wrong is not a build error - it is a file
+# quietly dropping out of SRCS. libm would then be built without it and the
+# build would stay green until something tried to call the missing symbol.
+#
+# So assert it: for each .cpp under a ported directory, the object has to
+# exist in the objdir. This is the check that turns "world is green on a tree
+# that contains k_cos.cpp" into "k_cos.cpp was compiled".
+check_ports_built() {
+    _objroot="$OBJ$SRC/$TARGET.$TARGET_ARCH"
+    _missing=0
+    _found=0
+    for _cpp in $(find "$SRC/lib" -name '*.cpp' 2>/dev/null); do
+        _rel="${_cpp#$SRC/}"
+        _obj="$(basename "$_cpp" .cpp).o"
+        # The object lands in the objdir for the library, not beside the
+        # source, and lib32 builds a second copy - one hit is enough.
+        if find "$_objroot" -name "$_obj" -print -quit 2>/dev/null | \
+                grep -q .; then
+            echo "   built: $_rel -> $_obj"
+            _found=$((_found + 1))
+        else
+            echo "FAIL $_rel is in the tree and $_obj is not in the objdir." >&2
+            echo "     The rename landed and the SRCS entry did not, so the" >&2
+            echo "     library was built without it." >&2
+            _missing=$((_missing + 1))
+        fi
+    done
+    if [ "$_missing" -gt 0 ]; then
+        return 1
+    fi
+    echo "== $_found ported .cpp file(s), all compiled"
+}
+
 case "$STAGE" in
 kernel)
     run_make buildkernel
     ;;
 world)
     run_make buildworld
+    check_ports_built
     run_make buildkernel
     ;;
 vm|memstick|iso)
     run_make buildworld
+    check_ports_built
     run_make buildkernel
     # release/ installs world and kernel into a staging tree, then makefs
     # and mkimg turn that into something bootable.

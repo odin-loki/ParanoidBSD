@@ -192,14 +192,83 @@ def _expect(proc, log, patterns, deadline, initial=b""):
     return -1
 
 
-def _send(proc, text) -> bool:
-    """Type at the guest. False if the console has gone away."""
+# Seconds between characters when typing at the guest.
+#
+# The first version wrote the whole command in one write() and the loader
+# received exactly this:
+#
+#     set console="co
+#
+# Fifteen characters of a forty-character line, and then seven minutes of
+# nothing. The 16550 the loader reads has a sixteen-byte FIFO and no flow
+# control, and the loader polls it between other work, so a burst overruns
+# it and the rest of the line is gone. Nothing reports the overrun: the
+# command simply never completes, `boot` is never reached, and the run times
+# out looking like a kernel that did not start.
+#
+# So type, do not paste.
+TYPE_DELAY = 0.015
+
+
+def _send(proc, text, delay: float = TYPE_DELAY) -> bool:
+    """Type at the guest, one byte at a time. False if the console is gone."""
     try:
-        proc.stdin.write(text.encode())
-        proc.stdin.flush()
+        for byte in text.encode():
+            proc.stdin.write(bytes([byte]))
+            proc.stdin.flush()
+            if delay:
+                time.sleep(delay)
         return True
     except (BrokenPipeError, ValueError, OSError):
         return False
+
+
+def _steer_loader(proc, log, console: str, timeout: float):
+    """At the loader prompt: set the console, confirm it, and boot.
+
+    Returns (confirmed, note). `confirmed` is True only when the loader
+    echoed the whole command back - which is the only evidence available
+    that it received the whole command. The verdict text depends on this:
+    claiming the console was set when the line was truncated is how the
+    memstick run came to report "it is the kernel not printing" about a
+    kernel that had never been asked to start.
+    """
+    cmd = f'set console="{console}"'
+    if not _send(proc, cmd + "\n"):
+        return False, "the console went away while typing"
+
+    # Two independent receipts, because neither is guaranteed on its own:
+    #
+    #   * the echo. The loader echoes what it receives, so seeing the tail of
+    #     the command come back means the whole line arrived. This is the
+    #     signal the real x86 loader gives, and the one whose absence -
+    #     `set console="co` and nothing more - is the bug this exists for.
+    #   * a fresh `OK ` prompt. The loader prints one after each command it
+    #     accepts, and prints none for a line it never saw terminated. A
+    #     console configured not to echo still gives this one.
+    #
+    # The buffer starts empty, so an `OK ` found here is a new one and not
+    # the prompt that got us here.
+    tail = re.compile(re.escape(cmd[-16:]).encode())
+    prompt = re.compile(rb"OK\s*$")
+    deadline = time.time() + timeout
+    buf = b""
+    while time.time() < deadline:
+        buf += _drain(proc, log)
+        vis = _plain(buf)
+        if tail.search(vis):
+            _send(proc, "boot\n")
+            return True, "console set, confirmed by echo"
+        if prompt.search(vis):
+            _send(proc, "boot\n")
+            return True, "console set, confirmed by a fresh loader prompt"
+        if proc.poll() is not None:
+            return False, "qemu exited at the loader prompt"
+    # Boot anyway. A run that watches an unsteered boot is still worth more
+    # than one that sits at the prompt, and the verdict will say the console
+    # was never confirmed rather than claiming it was set.
+    _send(proc, "boot\n")
+    return False, f"the loader never echoed the whole command in {timeout:.0f}s"
 
 
 def interrogate(proc, log, commands, user, password, timeout, outdir,
@@ -356,6 +425,8 @@ def main() -> int:
     loader_stage = 0 if args.loader_console else 2
     loader_asked_at = 0.0
     reboots = 0
+    console_ok = False
+    console_note = ""
     # Not a with-block: the interrogation phase below writes to the same
     # log, and closing it at the end of the boot loop made the first run of
     # this code die with "write to closed file".
@@ -434,9 +505,15 @@ def main() -> int:
                     buf = b""
                 elif loader_stage == 1 and LOADER_READY.search(vis):
                     print(f"\n  [loader prompt: console="
-                          f"{args.loader_console}, boot]\n")
-                    _send(proc, f'set console="{args.loader_console}"\n')
-                    _send(proc, "boot\n")
+                          f"{args.loader_console}]\n")
+                    # Bounded by whichever runs out first. A steering wait
+                    # longer than the run itself spends the whole timeout at
+                    # the loader prompt and reports nothing about the kernel.
+                    left = args.timeout - (time.time() - started)
+                    console_ok, console_note = _steer_loader(
+                        proc, log, args.loader_console,
+                        max(2.0, min(args.loader_timeout, left - 5)))
+                    print(f"  [{console_note}]\n")
                     loader_stage = 2
                     buf = b""
                 elif (loader_stage == 1 and
@@ -501,10 +578,16 @@ def main() -> int:
               f"{args.timeout}s.")
         print("     The loader menu drawing itself is not a boot. This is the")
         print("     case run 15 reported as success.")
-        if args.loader_console and loader_stage == 2:
+        if args.loader_console and loader_stage == 2 and console_ok:
             print(f"     The console was set to {args.loader_console} at the")
-            print("     loader prompt, so this is not the kernel printing")
+            print("     loader prompt and the loader echoed the whole")
+            print("     command back, so this is not the kernel printing")
             print("     somewhere else - it is the kernel not printing.")
+        elif args.loader_console and loader_stage == 2:
+            print(f"     The console was NOT confirmed: {console_note}.")
+            print("     So the kernel may have booted to the Video console")
+            print("     and be running unseen. This is not evidence about")
+            print("     the kernel either way.")
         elif args.loader_console and loader_stage == 3:
             print("     The loader menu was answered and the loader prompt")
             print("     never came, so the console was never changed. The")
