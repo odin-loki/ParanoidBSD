@@ -285,11 +285,43 @@ list prints at the **end**, where a tail reaches it:
 That is the same lesson as the oracle's SUMMARY block, in a second place:
 the fact worth reading was being written where nothing could read it.
 
-**Still open:** whether `kern_execve()` hangs, or `init` runs and hangs
-before its first write. The discriminator is unchanged — point `init_path`
-at the statically linked `/rescue/sh`, which replaces both `init` and the
-dynamic loader — and the next run can at least say whether the loader took
-the command.
+### Run 23: the command landed, the marker did not come back
+
+`loader_set = init_path=/rescue/sh:/sbin/init`, `boot_verbose` off so the
+log stays short:
+
+```
+    loader commands:
+      ok   set init_path="/rescue/sh:/sbin/init"   (confirmed by echo)
+      ok   set console="comconsole,vidconsole"   (confirmed by echo)
+    phases reached: loader, kernel
+```
+
+Two facts, and one boundary on them.
+
+* **The loader received `init_path` this time.** Run 22's identical
+  attempt did not take effect; run 23's was echoed back in full. The
+  difference is that run 22 sent its two extras with a fixed sleep and no
+  receipt, and this run waits for each one — so "typed and dropped" is the
+  best explanation of run 22, and the receipt logic is what makes the
+  difference visible either way.
+* **Three pokes, no `__PBSD_ALIVE__`.** With a colon list beginning at the
+  statically linked `/rescue/sh` — no `init`, no `rtld` — the console
+  answered nothing.
+
+**The boundary:** the receipt is from the *loader*, not the kernel. With
+`boot_verbose` off, `start_init: trying <path>` never prints, so this run
+does not show that the kernel actually tried `/rescue/sh`. The loader
+accepted the variable; whether it reached `kern_getenv("init_path")` is
+unobserved.
+
+So the honest reading is *narrower* than "a static shell also fails to
+run": it is that setting `init_path` to a static shell changed nothing
+observable. The run that closes the gap is both together —
+`boot_verbose=YES init_path=/rescue/sh:/sbin/init` — where
+`start_init: trying /rescue/sh` would confirm the kernel used it. That is
+now readable despite the verbose boot, because the loader-command record
+prints at the end.
 
 ## Asking the system about itself
 
