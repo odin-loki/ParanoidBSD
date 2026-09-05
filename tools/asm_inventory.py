@@ -20,6 +20,10 @@ C++23. This sorts the tree so that goal has a number attached:
                bit twiddling         -> <bit>: popcount, countl_zero,
                                         byteswap, bit_cast
                string and math asm   -> written for speed, C fallbacks exist
+  test-only    assembly that is the subject of a test rather than part of
+               the system - rewriting it would delete what the test tests
+  not assembly linker scripts named .lds.s, counted by the suffix and by
+               nothing else
 
 Usage:  python3 tools/asm_inventory.py [--list CATEGORY]
 """
@@ -42,6 +46,46 @@ IRREDUCIBLE = [
     ("signal trampoline", re.compile(r"(sigtramp|sigcode)", re.I)),
     ("privileged/support",re.compile(r"(support|cpufunc|machdep|msr|apic|efirt)", re.I)),
 ]
+# Everything the ordered lists above leave over, sorted by hand. These run
+# after them and only ever see what is still unclassified, so adding one
+# cannot change a verdict that was already reached.
+IRREDUCIBLE_EXTRA = [
+    # crt1 sets up the stack and calls main; there is no ISO C++23 way to
+    # write what runs before main.
+    ("C runtime startup",   re.compile(r"^lib/csu/[^/]+/(crt1_s|crti|crtn)\.S$")),
+    # Reads the syscall return convention - amd64 signals failure in the
+    # carry flag, which C++ cannot see.
+    ("syscall error path",  re.compile(r"^lib/libsys/[^/]+/(cerror|_umtx_op_err)\.S$")),
+    # vfork must not touch the stack between syscall and return; the rfork
+    # variants return onto a different stack entirely.
+    ("fork/stack switch",   re.compile(r"(^|/)(vfork|rfork_thread|pdrfork_thread)\.S$")),
+    ("ACPI resume trampoline", re.compile(r"acpi_wakecode")),
+    ("BIOS/real mode",      re.compile(r"(bioscall|vm86bios|smapi_bios)")),
+    # Fault handling by instruction address: the fixup table names the
+    # faulting instruction, so the instruction has to be spelled out.
+    ("fault-tolerant copy", re.compile(r"(copyinout|copyout_fast)")),
+    ("hypervisor entry",    re.compile(r"(hyp_stub|vmm_call|vmm_hyp|smccc)")),
+    ("MMIO accessors",      re.compile(r"bus_space_asm")),
+    # .incbin. C++26 gets #embed; C++23 does not have it.
+    ("embedded binary",     re.compile(r"(firmw|embedfs|fdt_static_dtb|vdso_inc|vdso_wrap)")),
+    # ticks = ticksl + offset: a symbol at an offset from another symbol.
+    ("symbol aliasing",     re.compile(r"subr_ticks")),
+]
+
+TEST_ONLY = re.compile(r"^(tests/|tools/regression/|tools/test/)")
+
+# .lds.s is a linker script run through cpp. It is not assembly and never was.
+NOT_ASSEMBLY = re.compile(r"\.lds\.s$")
+
+ELIMINABLE_EXTRA = [
+    # .section .note.* and nothing else - a struct with an attribute does it.
+    ("ELF notes",       re.compile(r"^lib/csu/common/(crtbrand|feature_note|ignore_init_note)\.S$")),
+    ("string/memory",   re.compile(r"^lib/libc/[^/]+/string/|^sys/libkern/[^/]+/memclr\.S$|^sys/arm64/arm64/strncmp\.S$")),
+    ("math",            re.compile(r"^lib/libc/[^/]+/gen/fabs\.S$")),
+    ("integer division",re.compile(r"^lib/libc/[^/]+/stdlib/(div|ldiv|lldiv)\.S$|^sys/libkern/[^/]+/(divsi3|ldivmod)\.S$")),
+    ("checksum",        re.compile(r"crc32")),
+]
+
 ELIMINABLE = [
     ("atomics/barriers",  re.compile(r"(atomic|fence|barrier|lock)", re.I)),
     ("bit ops",           re.compile(r"(bswap|ffs|fls|popcnt|bit)", re.I)),
@@ -59,12 +103,22 @@ VENDORED = re.compile(r"^(contrib/|sys/contrib/|crypto/|sys/crypto/|"
 
 
 def classify(rel: str) -> tuple[str, str]:
+    if NOT_ASSEMBLY.search(rel):
+        return "not assembly", "linker script"
     if VENDORED.match(rel):
         return "vendored", "third-party"
+    if TEST_ONLY.match(rel):
+        return "test-only", "assembly under test"
     for label, pat in IRREDUCIBLE:
         if pat.search(rel):
             return "irreducible", label
     for label, pat in ELIMINABLE:
+        if pat.search(rel):
+            return "eliminable", label
+    for label, pat in IRREDUCIBLE_EXTRA:
+        if pat.search(rel):
+            return "irreducible", label
+    for label, pat in ELIMINABLE_EXTRA:
         if pat.search(rel):
             return "eliminable", label
     return "unclassified", "needs review"
@@ -110,7 +164,8 @@ def main() -> int:
     total = len(rows)
     total_lines = sum(lines_by_verdict.values())
     print(f"assembly files under hbsd/src: {total}  ({total_lines} lines)\n")
-    for verdict in ("irreducible", "eliminable", "unclassified", "vendored"):
+    for verdict in ("irreducible", "eliminable", "unclassified",
+                    "test-only", "not assembly", "vendored"):
         n, ln = by_verdict[verdict], lines_by_verdict[verdict]
         if not n:
             continue
