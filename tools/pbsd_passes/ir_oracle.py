@@ -39,7 +39,9 @@ def demangle_symbol(sym: str) -> str:
     """
     if not sym.startswith("_Z"):
         return sym
-    rest = sym[3:] if sym.startswith("_ZN") else sym[2:]
+    # _ZN nests, _ZL marks internal linkage (a static). Both take three
+    # characters before the length-prefixed name begins.
+    rest = sym[3:] if sym.startswith(("_ZN", "_ZL")) else sym[2:]
     parts = []
     while rest and rest[0].isdigit():
         n = 0
@@ -74,6 +76,13 @@ def normalize_ir(ir: str) -> str:
     # port read as a mismatch, which is the one thing an equivalence oracle
     # must not do. Same for the C tentative-definition `common` linkage, which
     # C++ has no equivalent of.
+    # Drop module-level inline asm. The passes inject #include <cstdlib> into
+    # every staged file, which on FreeBSD pulls in stdlib.h and its
+    # .symver __qsort_r_compat, qsort_r@FBSD_1.0 directive. That is libc
+    # symbol versioning arriving through a header - it appears on the C++ side
+    # of every single comparison and on the C side of none, and it says nothing
+    # about whether the port preserved behaviour.
+    text = re.sub(r"^module asm .*$", "", text, flags=re.M)
     text = re.sub(r"\bnoundef\s+", "", text)
     text = re.sub(r"\bcommon\s+(?=global\b)", "", text)
     text = re.sub(r"@(_Z[A-Za-z0-9_]+)",
