@@ -232,3 +232,241 @@ two outright.
   cannot make.
 - **`SCNX*` macros** — `%X` is a printf conversion; C99 gives scanf no such
   thing.
+
+---
+
+# Part two: the sixty per cent nobody has opened
+
+Everything above is adjacent to something this work has touched. This part is
+the rest of the tree, surveyed rather than worked, because that is where the
+unknown unknowns are. File counts are tracked files under `hbsd/src`.
+
+| area | files | opened |
+|---|---:|---|
+| `sys` | 33,302 | partly |
+| `contrib` | 25,472 | only `llvm-project` |
+| `crypto` | 11,426 | **no** |
+| `lib` | 5,610 | `libc`, `msun`, `libmd` only |
+| `share` | 3,834 | `share/mk` only |
+| `usr.bin` | 3,312 | **no** |
+| `usr.sbin` | 2,855 | **no** |
+| `tests` | 2,400 | **no** |
+| `cddl` | 2,232 | **no** |
+| `sbin` | 1,280 | **no** |
+| `secure` | 1,158 | **no** |
+| `bin` | 1,146 | **no** |
+| `stand` | 755 | `ficl` only |
+| `libexec` | 577 | **no** |
+| `release` | 284 | **no** |
+
+## 11. The CI harness the tree already ships
+
+`tests/ci/` is FreeBSD's own, and it does what this project has been building
+by hand:
+
+```
+ci-smoke   build a release image and boot it
+ci-full    ... then run the whole Kyua suite inside it and extract reports
+```
+
+with `Makefile.amd64`, `.aarch64`, `.armv7`, `.powerpc64`, `.powerpc64le`,
+`.riscv64`, `USE_QEMU=1` by default, bhyve on amd64, and per-architecture
+firmware installed for you — `sysutils/opensbi` and
+`sysutils/u-boot-qemu-riscv64` for riscv, and the equivalents elsewhere.
+
+`tools/ci/boot_test.py` is a hand-written subset of `ci-smoke`. This is the
+same shape as every other finding in this work: the mechanism was already
+there.
+
+- [ ] **Run `ci-smoke` instead of, or alongside, `boot_test.py`.** The four
+      outcomes `boot_test.py` distinguishes are better reporting than
+      `ci-smoke` gives, so the honest answer is probably to drive `ci-smoke`
+      and keep the log parser.
+- [ ] **`ci-full` on amd64.** It is the only way the 2,400-file test suite
+      ever runs.
+- [ ] **`ci-smoke` for arm64, riscv, powerpc.** The arch matrix builds
+      kernels; this boots them. `powerpc64le` and `armv6` have makefiles and
+      no kernel config in PBSD.
+- [ ] **Reconcile with `pbsd-boot-image.yml`.** Two image-building paths in
+      one repository is one too many.
+
+## 12. The test suite nobody runs
+
+2,400 files under `tests/`, including `tests/sys/mac`, `tests/sys/file`,
+`tests/sys/net`, `tests/etc/rc.d`. `contrib/atf` and `contrib/kyua` and
+`usr.bin/kyua` are all present.
+
+`hbsd/src.conf.pbsd` sets `WITHOUT_TESTS=YES`, which removes them from the
+*image* — correct, and it has never been the reason they do not run. Nothing
+runs them.
+
+- [ ] **A green Kyua run is the first real statement that PBSD works.**
+      Everything so far says it compiles.
+- [ ] **`tests/sys/mac` specifically.** PBSD turns on the MAC framework and
+      PAX; there is a MAC test suite in the tree and it has never been
+      executed against this kernel.
+- [ ] **Ratchet the pass count** the way the IR oracle is ratcheted.
+- [ ] **The C++ ports have no runtime tests at all.** IR equivalence is a
+      statement about the compiler's output, not about behaviour under load.
+      `pbsd/tests/` has two harnesses and neither is wired to anything.
+
+## 13. Trust and supply chain
+
+- [ ] **`secure/caroot/trusted/` holds 120 root CAs and
+      `blacklisted/` holds none.** PBSD ships stock FreeBSD's trust set. For
+      a system whose name is Paranoid, which 120 certificate authorities are
+      trusted by default is a product decision that has not been made.
+- [ ] **No SBOM.** `tools/check_vendor_manifest.py` tracks 114 ignore-eaten
+      files; that is not a bill of materials. `contrib/` is 25,472 files
+      from dozens of upstreams with no manifest of versions or licences.
+- [ ] **`MK_REPRODUCIBLE_BUILD` is on and unverified.** Two builds of the
+      same tree have never been compared. That is a `cmp -s` over the staged
+      trees plus a diffoscope run on what differs.
+- [ ] **No release signing.** Nothing in `release/` signs an image, and
+      nothing verifies one.
+- [ ] **The untracked `contrib/llvm-project` re-fetch is pinned to
+      `llvmorg-21.1.8` by tag, not by hash.** A tag can move.
+
+## 14. Verified boot, which the kernel already supports
+
+`sys/security/mac_veriexec/` and `sys/dev/veriexec/` are in the tree with
+SHA-1, SHA-256 and SHA-512 backends. `std.hardenedbsd` does not enable them.
+
+- [ ] **Decide whether PBSD has a verified-boot story.** A hardened OS with
+      no integrity chain from firmware to userland is a gap that
+      `PAX_ASLR` does not fill.
+- [ ] **`MAC_VERIEXEC` + `MAC_VERIEXEC_SHA256` in `std.hardenedbsd`**, and a
+      manifest-generation step in `release/`.
+- [ ] **EFI Secure Boot / loader signing.** Nothing found under `stand/`.
+- [ ] **`HARDEN_KLD` is on and untested.** It forbids module loading after
+      boot; nothing checks that it does.
+
+## 15. The 59 hardening sysctls
+
+`grep -rhoE 'hardening\.[a-z_.0-9]+' sys/` yields **59 distinct knobs** —
+`hardening.pax.aslr.*`, `hardening.pax.mprotect.status`,
+`hardening.harden_rtld`, `hardening.harden_shm`, `hardening.harden_tty`,
+`hardening.forbid_kmod`, `hardening.kmalloc_zero`, `hardening.elf_pie_only`,
+`hardening.control.acl.status`, and the rest.
+
+`tools/ci/show_hardening.sh` reports **build options**. Not one of these 59
+runtime defaults is checked by anything.
+
+- [ ] **Dump all 59 on a booted image and assert the defaults.** The kernel
+      option being compiled in is not the same as the knob defaulting to on
+      — the same distinction that made `WITHOUT_MACHDEP_OPTIMIZATIONS` inert.
+- [ ] **Ratchet them.** A default that silently relaxes across an upstream
+      merge is exactly the drift `std.hardenedbsd` was written to stop, one
+      layer down.
+- [ ] **Document which are PBSD policy and which are HardenedBSD defaults.**
+
+## 16. Userland: 8,600 files, unexamined
+
+`bin` 1,146, `sbin` 1,280, `usr.bin` 3,312, `usr.sbin` 2,855, `libexec` 577.
+
+- [ ] **The oracle has never been pointed at any of it.** `lib/msun` and
+      `lib/libc` are the only measured scopes. `bin` is small, self-contained
+      and the natural third.
+- [ ] **`WITHOUT_*` options for what a hardened system does not ship.**
+      `src.conf.pbsd` turns off tests, games, docs, examples and OFED. It has
+      never been asked what else a paranoid system has no business shipping —
+      `sendmail`, `telnet`, `rsh`, `tftp`, `finger`, `talk`, `bsnmp`, `ppp`,
+      `slattach`. Each is a `WITHOUT_` line and an attack-surface argument.
+- [ ] **setuid inventory.** Nothing enumerates what ships setuid or setgid.
+      That is one `find` over the staged tree and it is the single most
+      useful hardening report a BSD can produce.
+
+## 17. `libexec/rtld-elf` — the highest-value target in userland
+
+8 C files, 7,154 lines in `rtld.c` alone. Every dynamically linked program
+in the system runs it before `main`. HardenedBSD has `hardening.harden_rtld`
+and PBSD has never looked at the file.
+
+- [ ] **Read it against the hardening options.** RELRO and BIND_NOW are
+      linker flags; the loader is what enforces them.
+- [ ] **`LD_*` environment handling** is the classic local-privilege-
+      escalation surface in every Unix.
+- [ ] It is also a strong C++ port candidate: self-contained, no external
+      dependencies, heavily exercised by every test.
+
+## 18. Release engineering: ten targets, none built
+
+`release/` has `Makefile.vm`, `.ec2`, `.gce`, `.azure`, `.oci`, `.vagrant`,
+`.firecracker`, `.mirrors`. `sys/amd64/conf/FIRECRACKER` exists.
+
+- [ ] **Produce one artifact of any kind.** No image has ever been built.
+- [ ] **`FIRECRACKER` is a hardened-workload shape** — minimal kernel, fast
+      boot, no legacy devices — and it already has a config.
+- [ ] **`MINIMAL` and `HARDENEDBSD-MINIMAL` exist** and are unbuilt. A
+      minimal kernel is a smaller attack surface and a much faster matrix.
+
+## 19. `crypto/` and `secure/` — 12,584 files
+
+OpenSSL, OpenSSH, and the libraries that make TLS work. Never examined.
+
+- [ ] **Which OpenSSL, and how far behind?** `check_toolchain_version.py`
+      pins LLVM; nothing pins or reports this.
+- [ ] **OpenSSH configuration defaults.** `secure/ssh.mk` exists.
+- [ ] **`WITHOUT_OPENSSL_KTLS`, cipher policy, FIPS-shaped questions** are
+      all `src.conf` decisions nobody has made.
+
+## 20. `cddl/` — ZFS, 2,232 files
+
+- [ ] **ZFS is on and untested.** `tests/sys/cddl` exists.
+- [ ] **Encryption-at-rest defaults** — a paranoid system's installer should
+      have an opinion, and there is no installer work at all yet.
+
+## 21. Performance: traded away, never measured
+
+The stated position is "I don't care if it costs some performance." That is a
+decision, and it is currently unquantified in both directions.
+
+- [ ] **Microbenchmark the MI C against the MD assembly** for the functions
+      `WITHOUT_MACHDEP_OPTIMIZATIONS` switches — `memcpy`, `strlen`, `fmod`,
+      `sqrt`, the SHA and MD5 blocks. One harness, six architectures, and the
+      number stops being a guess. Note this cannot be measured honestly until
+      the msun option bug fix lands, because on x86 the option was inert.
+- [ ] **Measure the generic atomics against the hand-written ones.** Same
+      instructions in most cells; the counter path is where a `lock` prefix
+      would show.
+- [ ] **Boot time and kernel size** across the six configs.
+- [ ] **The cost of the hardening itself** — PIE, RELRO, BIND_NOW, SSP,
+      SafeStack, CFI. A hardened system should be able to say what its
+      mitigations cost.
+
+## 22. Documentation and the option surface
+
+- [ ] **`share/man/man5/src.conf.5` is 2,066 lines** and documents the
+      upstream options. PBSD's own `src.conf.pbsd` is documented only in its
+      comments and in `docs/`.
+- [ ] **No man page describes PBSD.** No `pbsd(7)`, no `hardening(7)`.
+- [ ] **`UPDATING-HardenedBSD` exists and PBSD has no UPDATING.**
+- [ ] **The docs are eleven files and growing** — `ASSEMBLY`, `BUILDING`,
+      `CONSOLIDATION`, `PORTABILITY`, `TOOLCHAIN`, `VENDOR`, `FLOAT`,
+      `ROADMAP`, plus `migration/`. There is no index and no statement of
+      what PBSD *is* in the repository itself.
+
+## 23. Ports and packages
+
+- [ ] **`hbsd/ports` is untracked** and there is no statement of what a PBSD
+      package set would be.
+- [ ] **The external toolchain comes from a package**, so PBSD already has a
+      hard dependency on a ports tree it does not track or pin.
+- [ ] **No `pkg` repository, no signing key, no update path.** An OS that
+      cannot be updated is a demo.
+
+## 24. What "first class" should mean, written down
+
+The phrase drives most of the decisions in this file and is not defined
+anywhere. A candidate contract, so it can be argued with:
+
+> An architecture is first class when its `HARDENEDBSD` kernel builds, its
+> world builds, its image boots to a login prompt, the Kyua suite passes at
+> the same ratchet as amd64, every hardening option that its hardware can
+> support is on and verified at runtime, and `tools/arch_contract.py` reports
+> no missing header or source.
+
+Today **six architectures meet the first clause and none meets the third.**
+
+- [ ] **Encode that contract as a gate**, one row per architecture, and let
+      the table be the project's status page.
