@@ -114,8 +114,14 @@ under which changing 88 files is a reasonable thing to do.
 08:25:07 UTC 2026`, twenty-seven minutes, zero errors, with SafeStack and
 CFI linking for the first time.
 
-**And that is still not the precondition, by one commit.** Run 12 built
-`b60d5e091`, which is before the `lib/msun/Makefile` fix in `8bfe42d67`.
+**The precondition is now met.** Run 13 reports `== done: world` on
+`044374598`, and `git merge-base --is-ancestor 8bfe42d67 044374598` is true:
+that world was built on a tree containing the msun source-list fix. The
+paragraph below is what stood before run 13 and is kept because it is the
+reason the order was that way round.
+
+Run 12 built `b60d5e091`, which is before the `lib/msun/Makefile` fix in
+`8bfe42d67`.
 Until then `WITHOUT_MACHDEP_OPTIMIZATIONS` was inert for msun on x86:
 `SRCS` held both `e_fmod.c` and `e_fmod.S`, and bmake chose between them by
 suffix-rule precedence (see `docs/ASSEMBLY.md`). So the green world was
@@ -125,3 +131,90 @@ on top of it would put two unattributable changes in the same build.
 The order is: a world build on a tree that contains the msun fix, then the
 port. Not the other way round, for exactly the reason this section already
 gives.
+
+## Which port, and what is left
+
+### Steps 1 to 3, as of `8e77a408e`
+
+Step 3 is done. `lib/msun/Makefile` carries a `CXXFLAGS` block mirroring
+every semantic `CFLAGS` line — `-ffp-exception-behavior=maytrap`,
+`-fno-math-errno`, the `-I` set — plus `CXXSTD=c++23` and
+`-fno-exceptions -fno-rtti` to match what the oracle compiles with. It
+landed on its own and was built green by run 13.
+
+A step 0 that was not in the list turned up with it. The ARCH_SRCS pairing
+
+```make
+COMMON_SRCS:=  ${COMMON_SRCS:N${i:R}.c}
+...
+.if !empty(COMMON_SRCS:M${i:R}.c)
+```
+
+keys on `.c`, and `e_fmod.S` and `e_fmod.cpp` are the same object name. A
+bmake matrix over (option on, option off) × (entry `.c`, entry `.cpp`)
+shows **both** branches break on the rename: with the option off the
+filter stops recognising the collision so the `.S` is never dropped, and
+with it on the exclusion stops matching so the `.c` side is never dropped.
+Either way the library defines `rint` twice. Both directions now match
+`.cpp` as well, which is a no-op on the all-`.c` list of today.
+
+So steps 1 and 2 — the rename and the `COMMON_SRCS` entry — are what
+remains, for a file that has yet to be named.
+
+### The oracle could not name one
+
+Every figure the pipeline produced was a count. "88 of 120 verified" does
+not identify a file, and the first rename was going to be a guess.
+
+Two things were wrong with the number as well as with its shape:
+
+* `--ir-limit 120` against a 321-file scope does not mean 120 files
+  failed. It means the IR budget was spent on the first 120 eligible
+  files in discovery order and the other 201 were recorded
+  `skipped_budget` — never compiled, never compared. **88 of 120 was 88
+  of the first third of lib/msun**, and the candidate set was that third.
+  The whole job takes under four minutes of a 120-minute timeout, so the
+  cap was costing two thirds of the scope for nothing; lib/msun's phases
+  now run at 400.
+* the committable set is stricter than either floor. A port is
+  committable only if it is IR-equal **and** ABI-equal **and** measured
+  under the flags lib/msun is actually built with. `run_freebsd_oracle.sh`
+  now prints that set by name under `committable under target flags:`.
+
+Take the file from that list. Anything else is a guess with a
+forty-minute feedback loop.
+
+## The first port: `lib/msun/src/k_cos.c` -> `k_cos.cpp`
+
+Chosen from the oracle's committable list against four criteria, in order:
+
+1. **Zero edits.** The pass pipeline changed nothing, so the staged `.cpp`
+   is byte-for-byte the original and `git` records the change as a pure
+   rename — `1 file changed, 0 insertions(+), 0 deletions(-)`. If the build
+   breaks it is the build system, not a transformation.
+2. **No assembly counterpart anywhere.** `k_cos` appears in no `ARCH_SRCS`
+   on any of the six architectures, so this port is orthogonal to the
+   `.c`/`.cpp` pairing fix landed just before it and the two cannot be
+   confused for one another.
+3. **Explicit C linkage.** `__kernel_cos(double,double)` is declared inside
+   the `__BEGIN_DECLS` block in `math_private.h`, so C++ does not mangle it
+   and libm ships the same symbol. This is the guard whose absence had six
+   ld80/ld128 ports verified and uncommittable.
+4. **Unconditional `COMMON_SRCS`.** It is built on all six architectures,
+   so the matrix exercises it rather than one target.
+
+### A committed port leaves the candidate set
+
+`discover_sources()` globs `*.c`. The moment `k_cos.c` becomes `k_cos.cpp`
+it is no longer discovered, no longer compared, and `ir_equal` drops by one
+— so the ratchet would have read the first successful port in this
+project's history as *"a port that was proved IR-equivalent no longer is"*
+and failed the job.
+
+The floors are now checked against `verified + committed`. A committed port
+is the stronger statement of the two: it was verified **and** it built. A
+genuine regression — a file that is still a `.c` and stopped verifying —
+lands below the floor and still fails, which is the whole point of the
+ratchet. Verified by running the block against the Linux report, where
+nothing verifies: `FAIL 0 ports verify and 1 are committed, 1 against a
+floor of 88`.

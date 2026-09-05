@@ -98,12 +98,28 @@ PY2
 echo
 echo "== verified-port ratchet"
 ABI_FLOOR_FILE="docs/migration/freebsd_abi_floor.txt"
-python3 - "$FLOOR_FILE" "$REPORT" "$ABI_FLOOR_FILE" <<'PY'
+python3 - "$FLOOR_FILE" "$REPORT" "$ABI_FLOOR_FILE" hbsd/src/lib/msun <<'PY'
 import collections, json, pathlib, sys
 
 floor_file, report = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 abi_floor_file = pathlib.Path(sys.argv[3])
+scope_dir = pathlib.Path(sys.argv[4])
 d = json.loads(report.read_text())
+
+# A port that has been COMMITTED leaves the candidate set.
+#
+# discover_sources() globs *.c, so the moment lib/msun/src/k_cos.c becomes
+# k_cos.cpp it is no longer discovered, no longer compiled, no longer
+# compared - and ir_equal falls by one. The ratchet below would read the
+# first successful port in this project's history as "a port that was proved
+# IR-equivalent no longer is" and fail the job.
+#
+# That is backwards. A committed port is a stronger statement than a
+# verified one: it was verified AND it built. So committed ports are counted
+# and the floors are checked against the sum. A genuine regression - a file
+# that is still a .c and stopped verifying - still lands below the floor and
+# still fails, which is what the ratchet is for.
+ported = sorted(p.as_posix() for p in scope_dir.rglob("*.cpp"))
 equal, ran = d["ir_equal"], d["ir_ran"]
 abi_equal = d.get("abi_equal", 0)
 diff_equal = d.get("diff_equal", 0)
@@ -113,6 +129,9 @@ status = collections.Counter(
 )
 print(f"files={d['files']} edits={d['edits_total']} refusals={d['refusals_total']}")
 print(f"IR equal {equal} / {ran} ran   differential equal {diff_equal}")
+print(f"committed ports in {scope_dir}: {len(ported)}")
+for s_ in ported:
+    print(f"  {s_}")
 for k, v in sorted(status.items(), key=lambda kv: -kv[1]):
     print(f"  {v:5}  {k}")
 
@@ -138,13 +157,16 @@ if floor_file.exists():
             floor = int(line)
             break
 
-if equal < floor:
-    print(f"\nFAIL {equal} ports verify, the floor is {floor}. A port that was "
-          f"proved IR-equivalent no longer is.")
+total = equal + len(ported)
+if total < floor:
+    print(f"\nFAIL {equal} ports verify and {len(ported)} are committed, "
+          f"{total} against a floor of {floor}. A port that was proved "
+          f"IR-equivalent no longer is, and it was not committed either.")
     sys.exit(1)
-print(f"\nOK  {equal} verified, floor {floor}.")
-if equal > floor:
-    print(f"    Raise {floor_file} to {equal} to lock this in.")
+print(f"\nOK  {equal} verified + {len(ported)} committed = {total}, "
+      f"floor {floor}.")
+if total > floor:
+    print(f"    Raise {floor_file} to {total} to lock this in.")
 
 # The second, stricter ratchet: same symbols, not just same behaviour.
 abi_floor = 0
@@ -170,12 +192,15 @@ if abi_broken:
     if len(abi_broken) > 6:
         print(f"  ... and {len(abi_broken) - 6} more")
 
-if abi_equal < abi_floor:
-    print(f"\nFAIL {abi_equal} ports are ABI-equal, the floor is {abi_floor}.")
+abi_total = abi_equal + len(ported)
+if abi_total < abi_floor:
+    print(f"\nFAIL {abi_equal} ports are ABI-equal and {len(ported)} are "
+          f"committed, {abi_total} against a floor of {abi_floor}.")
     sys.exit(1)
-print(f"\nOK  {abi_equal} ABI-equal, floor {abi_floor}.")
-if abi_equal > abi_floor:
-    print(f"    Raise {abi_floor_file} to {abi_equal} to lock this in.")
+print(f"\nOK  {abi_equal} ABI-equal + {len(ported)} committed = {abi_total}, "
+      f"floor {abi_floor}.")
+if abi_total > abi_floor:
+    print(f"    Raise {abi_floor_file} to {abi_total} to lock this in.")
 PY
 
 echo

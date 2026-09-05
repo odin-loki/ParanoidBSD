@@ -16,6 +16,23 @@ LD80=$ROOT/hbsd/src/lib/msun/ld80
 LIBC_INC=$ROOT/hbsd/src/lib/libc/include
 AMD64_INC=$ROOT/hbsd/src/lib/libc/amd64
 
+# PBSD: the C oracle this harness compares against is a file in hbsd/src,
+# and files in hbsd/src are being renamed to .cpp as they are ported. The
+# content does not change on a zero-edit port - k_cos was the first, and its
+# rename is byte-for-byte - so the oracle is still the same C and still
+# compiles as C11. Only the name moved.
+#
+# Resolve it rather than hard-coding a suffix, so this harness keeps working
+# as more of lib/msun is ported and does not have to be edited once per
+# rename.
+msun_src() {
+	for f in "$MSUN/$1.c" "$MSUN/$1.cpp"; do
+		if [ -f "$f" ]; then echo "$f"; return 0; fi
+	done
+	echo "build.sh: no $1.c or $1.cpp in $MSUN" >&2
+	return 1
+}
+
 PREREQ=$(mktemp)
 TMPDIR=$(mktemp -d)
 trap 'rm -f "$PREREQ"; rm -rf "$TMPDIR"' EXIT
@@ -84,13 +101,13 @@ cat > "$TMPDIR/sys/endian.h" << 'EOF2'
 EOF2
 
 sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
-    "$MSUN/k_rem_pio2.c" > "$TMPDIR/k_rem_pio2.c"
+    "$(msun_src k_rem_pio2)" > "$TMPDIR/k_rem_pio2.c"
 sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
-    "$MSUN/e_rem_pio2.c" > "$TMPDIR/e_rem_pio2.c"
+    "$(msun_src e_rem_pio2)" > "$TMPDIR/e_rem_pio2.c"
 sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
-    "$MSUN/k_sin.c" > "$TMPDIR/k_sin.c"
+    "$(msun_src k_sin)" > "$TMPDIR/k_sin.c"
 sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
-    "$MSUN/k_cos.c" > "$TMPDIR/k_cos.c"
+    "$(msun_src k_cos)" > "$TMPDIR/k_cos.c"
 echo '#define _MATH_PRIVATE_H_' > "$TMPDIR/math_private_skip.h"
 
 rm -rf gcm.cache b0277_run oracle.o port.o harness.o k_rem_pio2.o e_rem_pio2.o \
