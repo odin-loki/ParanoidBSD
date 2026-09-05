@@ -386,6 +386,65 @@ vm|memstick|iso)
     # Copy it somewhere the workflow does not have to guess about.
     mkdir -p "$REPOROOT/out"
     cp "$FOUND" "$REPOROOT/out/$OUT"
+
+    # LOADER_CONF_EXTRA: lines to append to the image's /boot/loader.conf.
+    #
+    # Setting a variable at the loader's interactive prompt does not reach
+    # the kernel. Run 25 typed
+    #
+    #   set init_path="/rescue/sh:/sbin/init"
+    #
+    # the loader echoed it back in full - the boot test records the receipt -
+    # and the kernel then printed `start_init: trying /sbin/init`. Whatever
+    # the reason, a loader-prompt `set` is not a way to configure the kernel,
+    # and three runs were spent finding that out.
+    #
+    # loader.conf demonstrably is: this image mounts root from
+    # ufs:/dev/ufs/HardenedBSD_Install, which is vfs.root.mountfrom out of
+    # the loader.conf release/ writes. So put the setting where the one that
+    # works goes.
+    #
+    # Done to the built image rather than to release/'s staging tree, so it
+    # does not have to fit into that makefile's dependency graph: attach the
+    # image with mdconfig, mount the freebsd-ufs partition, append, unmount.
+    # The workflow stages it as a file in the workspace; an environment
+    # variable still wins if one is set, so this works by hand too.
+    if [ -z "${LOADER_CONF_EXTRA:-}" ] && [ -s "$REPOROOT/.loader_conf_extra" ]
+    then
+        LOADER_CONF_EXTRA="$(cat "$REPOROOT/.loader_conf_extra")"
+    fi
+    if [ -n "${LOADER_CONF_EXTRA:-}" ]; then
+        echo "== appending to /boot/loader.conf in the image"
+        printf '%s\n' "$LOADER_CONF_EXTRA" | tr ';' '\n' | sed 's/^/   /'
+        MD="$(mdconfig -a -t vnode -f "$REPOROOT/out/$OUT")" || {
+            echo "FAIL mdconfig could not attach the image" >&2; exit 1; }
+        echo "   attached as /dev/$MD"
+        # Pick the UFS partition by type rather than by number - the layout
+        # differs between memstick (efi, boot, ufs) and vm images.
+        PART="$(gpart show -p "$MD" 2>/dev/null | \
+            awk '$4 == "freebsd-ufs" { print $3; exit }')"
+        if [ -z "$PART" ]; then
+            echo "FAIL no freebsd-ufs partition in the image:" >&2
+            gpart show -p "$MD" >&2 || true
+            mdconfig -d -u "$MD"; exit 1
+        fi
+        MNT="$(mktemp -d)"
+        if ! mount "/dev/$PART" "$MNT"; then
+            echo "FAIL could not mount /dev/$PART" >&2
+            mdconfig -d -u "$MD"; exit 1
+        fi
+        printf '%s\n' "$LOADER_CONF_EXTRA" | tr ';' '\n' \
+            >> "$MNT/boot/loader.conf"
+        echo "   /boot/loader.conf now ends:"
+        tail -5 "$MNT/boot/loader.conf" | sed 's/^/     /'
+        umount "$MNT" || { echo "FAIL could not unmount" >&2; \
+            mdconfig -d -u "$MD"; exit 1; }
+        # Not fatal: set -e is on, and a leftover temp directory is not
+        # worth losing a fifty-minute build over.
+        rmdir "$MNT" 2>/dev/null || true
+        mdconfig -d -u "$MD"
+        echo "   detached /dev/$MD"
+    fi
     echo "== image: $FOUND"
     echo "== copied to: $REPOROOT/out/$OUT"
     ls -lh "$REPOROOT/out/$OUT"

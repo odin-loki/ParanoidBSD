@@ -43,6 +43,17 @@ on:
         required: false
         default: ''
         type: string
+      loader_conf:
+        description: >-
+          Lines to append to /boot/loader.conf INSIDE the built image, e.g.
+          init_path="/rescue/sh:/sbin/init". Use this rather than loader_set
+          for anything the KERNEL must see: a `set` at the loader's
+          interactive prompt is echoed back and still does not reach
+          kern_getenv(), while loader.conf demonstrably does - that is where
+          vfs.root.mountfrom comes from. Semicolons separate lines.
+        required: false
+        default: ''
+        type: string
       machdep_asm:
         description: >-
           Keep the hand-written machine-dependent assembly in libc, msun and
@@ -84,6 +95,19 @@ jobs:
           python3 tools/check_pbsd_marks.py
           python3 tools/check_c_linkage.py hbsd/src --require-guarded
           python3 tools/check_kernconf_parity.py hbsd/src --fail-on-difference
+
+      - name: Stage the loader.conf additions
+        # Written from the environment, never interpolated into the script:
+        # a ${{ }} expansion is pasted in before the shell runs. The file
+        # travels into the VM with the workspace, which is more dependable
+        # than relying on the action to forward an environment variable.
+        env:
+          LOADER_CONF: ${{ inputs.loader_conf }}
+        run: |
+          printf '%s' "$LOADER_CONF" > .loader_conf_extra
+          echo "loader.conf additions:"
+          sed 's/^/  /' .loader_conf_extra
+          echo "(empty means the image is left alone)"
 
       - name: Build on FreeBSD
         uses: vmactions/freebsd-vm@v1

@@ -319,9 +319,52 @@ So the honest reading is *narrower* than "a static shell also fails to
 run": it is that setting `init_path` to a static shell changed nothing
 observable. The run that closes the gap is both together —
 `boot_verbose=YES init_path=/rescue/sh:/sbin/init` — where
-`start_init: trying /rescue/sh` would confirm the kernel used it. That is
-now readable despite the verbose boot, because the loader-command record
-prints at the end.
+`start_init: trying /rescue/sh` would confirm the kernel used it.
+
+### Run 25: a loader-prompt `set` does not reach the kernel
+
+Both together, and the loader confirmed all three commands:
+
+```
+    loader commands:
+      ok   set boot_verbose="YES"   (confirmed by echo)
+      ok   set init_path="/rescue/sh:/sbin/init"   (confirmed by echo)
+      ok   set console="comconsole,vidconsole"   (confirmed by echo)
+```
+
+and the kernel printed:
+
+```
+start_init: trying /sbin/init
+```
+
+**`/sbin/init`.** The loader echoed the command back in full and the
+kernel used the compiled-in default anyway. So the receipt proves the
+loader *received* the line and nothing more — exactly the boundary run 23
+was written up under, now demonstrated rather than argued.
+
+Three runs went into learning that a `set` at the interactive prompt is
+not a way to configure the kernel. Why it is not is unknown and is not
+guessed at here.
+
+### Configure the image instead
+
+`loader.conf` demonstrably does reach the kernel: this image mounts root
+from `ufs:/dev/ufs/HardenedBSD_Install`, which is `vfs.root.mountfrom` out
+of the `loader.conf` `release/` writes. So the setting goes where the one
+that works goes.
+
+`build_boot_image.sh` takes `LOADER_CONF_EXTRA` (workflow input
+`loader_conf`, semicolons separating lines) and appends it to
+`/boot/loader.conf` **inside the built image** — `mdconfig` to attach,
+`gpart` to find the `freebsd-ufs` partition by type rather than by number
+(memstick and vm images are laid out differently), mount, append, unmount,
+detach. Verified against both partition layouts and with stubs end to end;
+an empty value leaves the image untouched and never runs `mdconfig`.
+
+The value travels to the FreeBSD VM as a file in the workspace rather than
+a `${{ }}` expansion, for the same reason as `loader_set`: an expansion is
+pasted into the shell before it runs.
 
 ## Asking the system about itself
 

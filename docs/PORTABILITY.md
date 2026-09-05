@@ -321,6 +321,7 @@ finding it a third time.
 | 21 | `memstick` | **kernel** | `start_init: trying /sbin/init` printed, then silence: the exec is reached |
 | 22 | `memstick` | **kernel** | `init_path=/rescue/sh` did not take effect — still `/sbin/init`, so the discriminator never ran |
 | 23 | `memstick` | **kernel** | `init_path=/rescue/sh:/sbin/init` confirmed received by the loader; three console pokes, no reply. Whether the kernel used it is unobserved — `boot_verbose` was off |
+| 25 | `memstick` | **kernel** | all three loader commands confirmed by echo, and the kernel still ran `/sbin/init`. A loader-prompt `set` does not reach `kern_getenv()` |
 | 17 | `vm` | staging | `installworld` into the image mount stopped dead at `usr.sbin/inetd`; 2h23m with no further output, cancelled |
 
 Run 17 is the `vm` stage and is out of order above because it was still
