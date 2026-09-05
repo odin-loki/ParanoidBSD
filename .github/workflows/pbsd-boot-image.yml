@@ -49,6 +49,8 @@ jobs:
         run: |
           python3 tools/check_vendor_manifest.py
           python3 tools/check_subdirs.py hbsd/src --fail-on-missing
+          python3 tools/check_mk_options.py hbsd/src --fail-on-undefined
+          python3 tools/check_pbsd_marks.py
 
       - name: Build on FreeBSD
         uses: vmactions/freebsd-vm@v1
