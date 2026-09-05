@@ -153,8 +153,18 @@ def compare_ir(
     c_src: Path,
     cxx_src: Path,
     include_flags: list[str] | None = None,
+    target_flags: list[str] | None = None,
 ) -> dict:
+    """Compile both sides and compare.
+
+    target_flags are the semantic CFLAGS the real build would use for this
+    file - see target_flags.flags_for. They go on both sides, so the
+    comparison stays fair while also describing the configuration that
+    ships. Without them a lib/msun port is proved equivalent under
+    -fno-math-errno's absence, which is not how libm is built.
+    """
     include_flags = include_flags or []
+    target_flags = target_flags or []
     clang = find_clang()
     clangxx = find_clangxx()
     with tempfile.TemporaryDirectory(prefix="pbsd_ir_") as td:
@@ -162,7 +172,8 @@ def compare_ir(
         c_ll = td_path / "c.ll"
         cxx_ll = td_path / "cxx.ll"
         c_ok, c_err = emit_llvm(
-            clang, c_src, c_ll, ["-x", "c", "-std=c17", *include_flags]
+            clang, c_src, c_ll,
+            ["-x", "c", "-std=c17", *target_flags, *include_flags],
         )
         cxx_ok, cxx_err = emit_llvm(
             clangxx, cxx_src, cxx_ll,
@@ -178,7 +189,7 @@ def compare_ir(
             # compiles the port freestanding, no exceptions, no RTTI. The
             # oracle was comparing against a configuration nothing ships.
             ["-x", "c++", "-std=c++23", "-fno-exceptions", "-fno-rtti",
-             *include_flags],
+             *target_flags, *include_flags],
         )
         if not c_ok or not cxx_ok:
             return {
@@ -209,6 +220,7 @@ def compare_ir(
         result = {
             "equal": equal,
             "abi_equal": abi_equal,
+            "target_flags": list(target_flags),
             "abi_only_in_c": sorted(c_syms - cxx_syms)[:20],
             "abi_only_in_cxx": sorted(cxx_syms - c_syms)[:20],
             "status": "ok" if equal else "mismatch",

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import platform
 import tempfile
@@ -246,8 +247,17 @@ def process_file(
     )
 
     if record["ir_eligible"]:
+        # PBSD_TARGET_FLAGS=1 compiles both sides with the semantic CFLAGS the
+        # real build would use for this file. Off by default so the existing
+        # floors keep measuring what they were set against; the CI script runs
+        # it as a separate comparison until the number is known.
+        tflags = []
+        if os.environ.get("PBSD_TARGET_FLAGS") == "1":
+            from .target_flags import flags_for
+            tflags, _unresolved = flags_for(src)
         record["ir"] = compare_ir(src, dest,
-                                  include_flags=oracle_include_flags(src))
+                                  include_flags=oracle_include_flags(src),
+                                  target_flags=tflags)
     elif do_ir:
         record["ir"] = {"status": "skipped_heavy", "equal": False}
 

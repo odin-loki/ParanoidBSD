@@ -164,3 +164,32 @@ print(f"\nOK  {abi_equal} ABI-equal, floor {abi_floor}.")
 if abi_equal > abi_floor:
     print(f"    Raise {abi_floor_file} to {abi_equal} to lock this in.")
 PY
+
+echo
+echo "== target-flag comparison"
+# The two floors above are measured with the oracle's own flags. lib/msun is
+# built with -ffp-exception-behavior=maytrap and -fno-math-errno, and a math
+# library proved equivalent without those has been proved equivalent to
+# something the tree does not build. This runs the same scope with the
+# semantic CFLAGS the real build would use, on both sides, and reports the
+# number. It does not gate yet - the floors were set against the other
+# configuration, and moving both at once would say nothing about either.
+PBSD_TARGET_FLAGS=1 python3 tools/run_todo_passes.py \
+    --scope lib/msun \
+    --all-passes --safe --skip-corpus \
+    --ir-limit 120 --diff-limit 40 \
+    --file-timeout 30 > /dev/null
+python3 - <<'PY2'
+import json
+d = json.loads(open("docs/migration/clang_port/pass_report.json").read())
+print(f"under target flags: files={d['files']} edits={d['edits_total']} "
+      f"IR equal {d['ir_equal']}/{d['ir_ran']}  ABI equal {d.get('abi_equal', 0)}")
+seen = set()
+for r in d["records"]:
+    tf = tuple((r.get("ir") or {}).get("target_flags") or ())
+    if tf and tf not in seen:
+        seen.add(tf)
+        print("  flags used:", " ".join(tf))
+if not seen:
+    print("  no target flags resolved - check tools/pbsd_passes/target_flags.py")
+PY2
