@@ -28,11 +28,24 @@ TARGET="${TARGET:-amd64}"
 TARGET_ARCH="${TARGET_ARCH:-amd64}"
 JOBS="${JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 
+# hbsd/src.conf.pbsd is PBSD's build options - notably
+# WITHOUT_MACHDEP_OPTIMIZATIONS, which selects the machine-independent C in
+# libc, msun and libmd instead of the hand-written assembly. It existed for
+# some time without being passed to anything, so it configured nothing. Set
+# SRCCONF= to build with FreeBSD's defaults instead.
+SRCCONF="${SRCCONF-$(cd "$(dirname "$0")/../.." && pwd)/hbsd/src.conf.pbsd}"
+
 echo "== PBSD image build"
 echo "   src=$SRC"
 echo "   stage=$STAGE kernconf=$KERNCONF target=$TARGET/$TARGET_ARCH jobs=$JOBS"
+echo "   srcconf=${SRCCONF:-<none, FreeBSD defaults>}"
 uname -a
 
+if [ -n "$SRCCONF" ] && [ ! -f "$SRCCONF" ]; then
+    echo "FAIL SRCCONF=$SRCCONF does not exist." >&2
+    echo "     Set SRCCONF= (empty) to build with FreeBSD defaults." >&2
+    exit 1
+fi
 if [ ! -f "$SRC/Makefile.inc1" ]; then
     echo "FAIL $SRC does not look like a FreeBSD source tree." >&2
     exit 1
@@ -57,8 +70,13 @@ cd "$SRC"
 
 run_make() {
     echo "--- make $*"
-    make -j"$JOBS" TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
-         KERNCONF="$KERNCONF" "$@"
+    if [ -n "$SRCCONF" ]; then
+        make -j"$JOBS" TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
+             KERNCONF="$KERNCONF" SRCCONF="$SRCCONF" "$@"
+    else
+        make -j"$JOBS" TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
+             KERNCONF="$KERNCONF" "$@"
+    fi
 }
 
 case "$STAGE" in

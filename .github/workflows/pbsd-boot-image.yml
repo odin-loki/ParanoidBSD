@@ -23,6 +23,15 @@ on:
         required: true
         default: 'HARDENEDBSD-MINIMAL'
         type: string
+      machdep_asm:
+        description: >-
+          Keep the hand-written machine-dependent assembly in libc, msun and
+          libmd. Off means WITHOUT_MACHDEP_OPTIMIZATIONS, which is what
+          hbsd/src.conf.pbsd sets: the machine-independent C is used instead.
+          Turn it on to build the same tree the other way and compare.
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   image:
@@ -64,9 +73,17 @@ jobs:
           # The VM is a separate machine over ssh, so a step-level `env:`
           # never reaches it - the first run silently built HARDENEDBSD
           # instead of the config that was asked for. Set it in the command.
+          # SRCCONF is set to hbsd/src.conf.pbsd by the script itself. An
+          # empty SRCCONF means FreeBSD's defaults, which is how you get the
+          # machine-dependent assembly back.
           run: |
-            KERNCONF="${{ inputs.kernconf }}" \
-              sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
+            if [ "${{ inputs.machdep_asm }}" = "true" ]; then
+              KERNCONF="${{ inputs.kernconf }}" SRCCONF="" \
+                sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
+            else
+              KERNCONF="${{ inputs.kernconf }}" \
+                sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
+            fi
 
       - name: Collect image
         if: inputs.stage == 'memstick' || inputs.stage == 'iso'
