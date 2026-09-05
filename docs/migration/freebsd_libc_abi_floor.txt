@@ -1,0 +1,27 @@
+# lib/libc ports proved IR-equivalent AND exporting the same symbols as
+# their C original, on a FreeBSD host.
+#
+# The sibling floor counts semantic equivalence only, and normalize_ir()
+# demangles names to get it. That is right for "does this compute the same
+# thing" and wrong for "can this ship": libc cannot export __adddi3 under a
+# C++ name and still be libc.
+#
+# So this is the number that decides whether a libc port is committable,
+# and like lib/msun's it is a separate ratchet rather than a redefinition.
+#
+# 110 = 109 ABI-equal + 1 committed, from oracle run 33 (commit
+# 72f7c4928, FreeBSD 15.1, clang 21, --ir-limit 1500).
+#
+# It got there in one step worth recording. At the widened limit the gap
+# between IR-equal and ABI-equal was 38 ports, and 25 of them were one
+# directory: lib/libc/quad. quad.h declared seven of its twenty-five
+# functions, outside any linkage guard, and the other eighteen were
+# declared nowhere - so under C++ they got C++ linkage and libc would have
+# shipped __adddi3 as _Z8__adddi3ll. One __BEGIN_DECLS and eighteen
+# prototypes moved ABI-equal from 85 to 110 (commit 5a0a1136f).
+#
+# The thirteen still in the gap are each their own header: arm/gen/fabs.c,
+# gen/dirfd.c, gen/dup3.c, nameser/ns_netint.c, powerpc64's strcpy and
+# strncpy, rpc/des_soft.c, rpc/rpcsec_gss_stub.c, stdlib's hdestroy_r,
+# insque and remque, string/memset_explicit.c, sys/pipe.c.
+110

@@ -485,3 +485,39 @@ shortlist for libc's first port.
 
 `lib/msun`: 96 of 225 `.c` files pass the tree-side checks.
 `lib/libc`: 592 of 1216.
+
+
+## lib/libc has floors now, and run 33 is why it could
+
+A floor on `ir_equal` alone would have failed the first time a port
+succeeded: a landed port stops being a `.c`, `discover_sources()` stops
+finding it, and the count drops by one. `lib/msun`'s ratchet solves that
+by counting `verified + committed`, and `lib/libc` got the same term
+before it got a floor. Oracle run 33 is the proof rather than the
+argument:
+
+| run | | verified | committed | total |
+|---|---|---:|---:|---:|
+| 32 | before `gen/isatty.cpp` | 123 | 0 | 123 |
+| 33 | after | 122 | 1 | 123 |
+
+The sum held across the port. So:
+
+```
+docs/migration/freebsd_libc_verified_floor.txt   123
+docs/migration/freebsd_libc_abi_floor.txt        110
+```
+
+Both are checked after everything else has printed, for the reason
+`lib/msun`'s are: the run that fails a floor is exactly the run whose
+numbers someone wants to read.
+
+Exercised against four synthetic reports before it went near the runner —
+at the floor, one below the IR floor, one below the ABI floor, and above
+both. The first three of those found nothing; the fourth check found the
+bug. `sys.exit(1)` had gone into a block whose `import sys` I had added to
+**a different `PY2` heredoc** — there are three in that script — so the
+gate would have raised `NameError` the first time it fired, on the
+runner, six minutes into a job, on a run that was already failing. A
+regex checking "is `sys` imported" said yes because it was reading the
+wrong heredoc.

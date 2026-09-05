@@ -239,7 +239,7 @@ python3 tools/run_todo_passes.py \
     --ir-limit 1500 --diff-limit 40 \
     --file-timeout 30 > /dev/null || true
 python3 - <<'PY2'
-import json, pathlib
+import json, pathlib, sys
 p = pathlib.Path("docs/migration/clang_port/pass_report.json")
 if not p.exists():
     print("lib/libc: no report produced")
@@ -300,12 +300,42 @@ else:
     print(f"\n          committed: {len(committed)}")
     for c_ in committed:
         print(f"            {c_}")
+
+    def _floor(name):
+        f = pathlib.Path("docs/migration") / name
+        if f.exists():
+            for ln in f.read_text().splitlines():
+                ln = ln.strip()
+                if ln and not ln.startswith("#"):
+                    return int(ln)
+        return 0
+
+    ir_floor = _floor("freebsd_libc_verified_floor.txt")
+    abi_floor = _floor("freebsd_libc_abi_floor.txt")
     pathlib.Path("/tmp/pbsd_libc.txt").write_text(
         f"  lib/libc IR:   {d['ir_equal']} verified + {len(committed)} "
-        f"committed = {ir_total} of {d['ir_ran']} ran\n"
+        f"committed = {ir_total} of {d['ir_ran']} ran (floor {ir_floor})\n"
         f"  lib/libc ABI:  {d.get('abi_equal', 0)} ABI-equal + "
-        f"{len(committed)} committed = {abi_total}  "
+        f"{len(committed)} committed = {abi_total} (floor {abi_floor})  "
         f"committable {len(ready)}\n")
+    # Both floors are checked here, after everything above has printed, for
+    # the reason lib/msun's are: a run that fails a floor is exactly the run
+    # whose numbers someone wants to read.
+    _bad = []
+    if ir_total < ir_floor:
+        _bad.append(f"IR {ir_total} against a floor of {ir_floor}")
+    if abi_total < abi_floor:
+        _bad.append(f"ABI {abi_total} against a floor of {abi_floor}")
+    if _bad:
+        print("\nFAIL lib/libc regressed: " + "; ".join(_bad))
+        print("     A port that was proved equivalent no longer is, and it")
+        print("     was not committed either.")
+        sys.exit(1)
+    print(f"\nOK  lib/libc: IR {ir_total} (floor {ir_floor}), "
+          f"ABI {abi_total} (floor {abi_floor}).")
+    if ir_total > ir_floor or abi_total > abi_floor:
+        print(f"    Raise docs/migration/freebsd_libc_*_floor.txt to "
+              f"{ir_total}/{abi_total} to lock this in.")
 PY2
 
 echo
@@ -429,7 +459,7 @@ for f in ratchet:"lib/msun floors" \
 done
 [ "$SUMMARY_ANY" = 1 ] || \
     echo "  (no summary recorded - every phase above failed to finish)"
-echo "  why 25 ports export a mangled name (last lines):"
+echo "  why a port exports a mangled name (last lines):"
 tail -14 /tmp/pbsd_probe.txt 2>/dev/null | sed 's/^/    /' || \
     echo "    (not probed)"
 echo "  committed ports: $(find "$ROOT/hbsd/src/lib/msun" -name '*.cpp' | wc -l | tr -d ' ')"

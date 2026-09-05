@@ -1,0 +1,28 @@
+# lib/libc ports proved IR-equivalent to their C original on a FreeBSD host.
+#
+# tools/ci/run_freebsd_oracle.sh fails if verified + committed drops below
+# this number. It may only be raised, and only against a run that reported
+# the higher figure.
+#
+# This is a separate ratchet from lib/msun's, because the scopes are
+# separate: a floor set against 321 msun files says nothing about libc's
+# 1,220, and the two move for different reasons.
+#
+# The number waited for two things that had to come first.
+#
+# --ir-limit was 120 against 1,220 files, so "37 of 120" was a statement
+# about the first tenth of the library in discovery order and not about
+# lib/libc. Raising it to 1500 (commit f8327e1d4) put the real figure on
+# the board: 123 IR-equal of 574 ran.
+#
+# And the count had to be verified + committed before it could be floored
+# at all. A port that lands stops being a .c, discover_sources() stops
+# finding it, and ir_equal falls by one - so a floor on ir_equal alone
+# would fail the moment a port succeeded. Oracle run 33 is the proof
+# rather than the argument:
+#
+#   run 32 (before gen/isatty.cpp)  123 verified + 0 committed = 123
+#   run 33 (after)                  122 verified + 1 committed = 123
+#
+# The sum held across the port. That is what this floor is set on.
+123
