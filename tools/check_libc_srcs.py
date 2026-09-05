@@ -46,6 +46,16 @@ crypt_clnt.c) are skipped, and so is anything whose name still contains a
 variable after expansion. LIBC_ARCH is expanded to each of the eight
 architecture directories in turn, since one tree has to satisfy all of
 them.
+
+Scoped to lib/libc on purpose. The same question was asked of every
+Makefile under lib, libexec, bin, sbin, usr.bin, usr.sbin and stand, by
+basename against the whole tree: 116 names in 45 makefiles exist nowhere,
+and every single one is generated - rpcgen's _svc.c/_xdr.c/_clnt.c,
+lex and yacc's _l.c/_y.c and *lex.c/*parse.c, vers.c out of newvers.sh,
+libmd's *hl.c, ncurses' tables, sh's nodes.c and syntax.c. There is no
+second instance of this defect outside lib/libc, and a check covering
+those directories would be almost entirely a list of generated files to
+forgive.
 """
 
 from __future__ import annotations

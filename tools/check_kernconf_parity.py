@@ -22,6 +22,34 @@ directory, `include "NAME"` in sys/conf as well, `options`/`nooptions` are
 applied in order. Anything it cannot resolve is reported rather than assumed
 absent, because an unresolved include is the one case where a missing option
 would look like a real difference.
+
+--all-configs asks a different question of the other twenty-one. Cross
+-architecture parity is the wrong question for most of them: LATT-SEC is
+amd64 only, RPI2-HARDENEDBSD is one arm board, HARDENEDBSD64 is powerpc's
+64-bit kernel, and comparing a config against architectures that do not
+have it says nothing. What DOES apply to every one of them is the promise
+their names make. A kernel called HARDENEDBSD-something, or named for ASLR
+or security, should resolve to the full hardening set wherever it lives -
+and each can drift the way riscv's HARDENEDBSD-CORE did, by being edited
+without the others.
+
+Two things that mode has to get right, and got wrong first time round.
+
+INVARIANTS is not unconditional. sys/hardenedbsd/hbsd_pax_common.c:65
+refuses to build a PAX kernel without it "unless you really know what
+you're doing", and the way you say so is `options PAX_INSECURE_MODE`.
+amd64's HARDENEDBSD-NODEBUG and HARDENEDBSD-MINIMAL and arm64's
+HARDENEDBSD-NODEBUG all carry it deliberately - a NODEBUG kernel dropping
+INVARIANTS is the entire point of the config. So INVARIANTS and
+INVARIANT_SUPPORT count as satisfied when PAX_INSECURE_MODE is set.
+
+And a config whose include chain does not resolve has no option set to
+judge. Five of the twenty-one include a base config that is not in the
+tree - BEAGLEBONE, RPI2, RPI-B and GENERIC-NODEBUG, all removed upstream
+when FreeBSD folded the individual arm boards into GENERIC. Reporting
+BEAGLEBONE-ASLR as "3 of 14" is reporting on the three lines of its own
+file. They are listed separately, as what they are: configs config(8)
+would refuse outright.
 """
 
 from __future__ import annotations
@@ -94,13 +122,97 @@ def effective(root: str, arch: str, conf: str,
     return opts
 
 
+# A config whose name makes a hardening promise. Matched on the name, not
+# on what it contains, because the point is to catch one that has drifted
+# out of carrying what its name says.
+HARDENED_NAME = re.compile(r"HARDENEDBSD|ASLR|(?:^|-)SEC(?:$|-)")
+
+
+def all_configs(root: str) -> list[tuple[str, str]]:
+    """(arch, name) for every kernel config whose name promises hardening."""
+    out = []
+    for a in ARCHES:
+        confdir = os.path.join(root, "sys", a, "conf")
+        if not os.path.isdir(confdir):
+            continue
+        for name in sorted(os.listdir(confdir)):
+            path = os.path.join(confdir, name)
+            if not os.path.isfile(path) or "." in name:
+                continue
+            if HARDENED_NAME.search(name):
+                out.append((a, name))
+    return out
+
+
+# INVARIANTS is required by hbsd_pax_common.c unless this is set.
+INSECURE = "PAX_INSECURE_MODE"
+DEBUG_OPTS = {"INVARIANTS", "INVARIANT_SUPPORT"}
+
+
+def check_all(root: str, gate: bool) -> int:
+    """Every hardening-named config carries the full hardening set."""
+    configs = all_configs(root)
+    print(f"configs whose name promises hardening: {len(configs)}\n")
+    short = []
+    broken = []
+    for arch, name in configs:
+        unresolved: list[str] = []
+        opts = effective(root, arch, name, unresolved)
+        if opts is None:
+            continue
+        if unresolved:
+            broken.append((arch, name, unresolved))
+            print(f"  ??   {arch:<8} {name:<24} include chain incomplete")
+            continue
+        required = set(HARDENING)
+        if INSECURE in opts:
+            required -= DEBUG_OPTS
+        have = required & opts
+        lacking = sorted(required - opts)
+        mark = "ok  " if not lacking else "SHORT"
+        note = f"  ({INSECURE})" if INSECURE in opts else ""
+        print(f"  {mark} {arch:<8} {name:<24} "
+              f"{len(opts):>4} options, {len(have):>2} of "
+              f"{len(required)} hardening{note}")
+        if lacking:
+            short.append((arch, name, lacking))
+
+    if broken:
+        print(f"\n{len(broken)} include a config that is not in the tree, so "
+              f"config(8) would refuse them and there is no option set to "
+              f"judge:")
+        for arch, name, unresolved in broken:
+            miss = ", ".join(sorted({u.rsplit("include ", 1)[-1]
+                                     for u in unresolved}))
+            print(f"  sys/{arch}/conf/{name}  needs {miss}")
+
+    if short:
+        print(f"\n{len(short)} resolve fully and do not carry what their "
+              f"name promises:")
+        for arch, name, lacking in short:
+            print(f"  sys/{arch}/conf/{name}")
+            for o in lacking:
+                print(f"    missing {o}")
+    elif not broken:
+        print("\nevery one carries the full hardening set.")
+
+    return 1 if gate and (short or broken) else 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("root", nargs="?", default="hbsd/src")
     ap.add_argument("--conf", default="HARDENEDBSD")
+    ap.add_argument("--all-configs", action="store_true",
+                    help="instead of comparing one config across the six "
+                         "architectures, check that EVERY config whose name "
+                         "promises hardening resolves to the full set")
     ap.add_argument("--fail-on-difference", action="store_true")
     args = ap.parse_args()
     root = os.path.abspath(args.root)
+
+    if args.all_configs:
+        return check_all(root, args.fail_on_difference)
 
     unresolved: list[str] = []
     per_arch: dict[str, set[str]] = {}

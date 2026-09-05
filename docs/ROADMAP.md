@@ -85,13 +85,28 @@ first. Nothing below in this section should land before it runs once.
       37 against 34, unchanged by the four header guards already added. The
       oracle now names them and the divergent symbols; the fix is one
       `__BEGIN_DECLS` per header once they are named.
-- [ ] **Kernel-config parity beyond `HARDENEDBSD`.** The gate checks one
-      config per architecture. There are 21 others with HardenedBSD in the
-      name or ASLR in their purpose — `HARDENEDBSD-CORE`, `-MINIMAL`,
-      `-NODEBUG`, `-UP`, `-MMCCAM`, `HARDENEDBSD64`, `BEAGLEBONE-HARDENEDBSD`,
-      `RPI2-HARDENEDBSD`, `QEMU-HARDENEDBSD`, `LATT-SEC`, `LATT-ASLR`. Each
-      can drift the same way riscv's did. `--conf` already exists; the gate
-      needs to loop.
+- [ ] **Kernel-config parity beyond `HARDENEDBSD`.** Measured, not yet
+      fixed. `check_kernconf_parity.py --all-configs` resolves all 21 and
+      asks the question that applies to a single-architecture config — does
+      a kernel named for hardening carry the full set? Twelve do. The other
+      nine split two ways:
+
+      *Five cannot be configured at all*, because they include a base config
+      that upstream removed when FreeBSD folded the individual arm boards
+      into `GENERIC`: `arm/BEAGLEBONE-ASLR` and `arm/BEAGLEBONE-HARDENEDBSD`
+      need `BEAGLEBONE`, `arm/LATT-ASLR` needs `RPI-B`,
+      `arm/RPI2-HARDENEDBSD` needs `RPI2`, `arm64/HARDENEDBSD-NODEBUG` needs
+      `GENERIC-NODEBUG`. Either delete them or rebase them on `GENERIC`.
+
+      *Four resolve fully and fall short*: `arm64/HARDENEDBSD-MMCCAM` and
+      `arm64/HARDENEDBSD-UP` (4 and 8 missing), `i386/LATT-ASLR` (12) and
+      `riscv/QEMU-HARDENEDBSD` (8). All four lack `HARDEN_KLD` and
+      `HBSD_RESIST_FINGERPRINTING`.
+
+      Not gated: these are upstream's configs, PBSD builds none of them, and
+      turning CI red on nine inherited configs would say nothing new every
+      run. `INVARIANTS` is exempted where `PAX_INSECURE_MODE` is set, which
+      is how `hbsd_pax_common.c:65` says a NODEBUG kernel opts out.
 - [ ] **`sys/x86` shared code on i386.** `hwpstate_intel.c` used
       `pc_small_core`, which only amd64's `struct pcpu` has. That family
       directory is shared by two architectures with different `pcpu`

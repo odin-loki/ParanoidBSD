@@ -159,6 +159,16 @@ jobs:
       - name: Every source lib/libc names is on disk
         run: python3 tools/check_libc_srcs.py --gate
 
+      # The parity gate above compares ONE config across the six
+      # architectures. This asks the other twenty-one the question that
+      # actually applies to them, most being single-architecture: does a
+      # kernel named for hardening resolve to the full hardening set?
+      # A report, not a gate — nine of the twenty-one fall short in the
+      # tree as imported, and they are upstream's configs, not PBSD's.
+      # docs/ROADMAP.md carries the list.
+      - name: What the other hardening kernel configs actually carry
+        run: python3 tools/check_kernconf_parity.py hbsd/src --all-configs
+
       # The compiled-in default of every hardening knob, from the source.
       # show_hardening.sh answers "is PAX_ASLR compiled in"; this answers
       # "and what does hardening.pax.aslr.status default to", which is a
