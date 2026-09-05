@@ -1,0 +1,47 @@
+name: PBSD FreeBSD oracle
+
+# The mechanical phase stages C++23 candidates, and every one of them carries a
+# banner saying not to mark it DONE without the IR oracle. On Linux that oracle
+# cannot certify a single real port - FreeBSD's math_private.h and glibc's type
+# environment cannot both be right at once. This job gives it a host where they
+# can, so "UNVERIFIED" can start becoming "verified".
+
+on:
+  push:
+    paths:
+      - 'tools/pbsd_passes/**'
+      - 'tools/run_todo_passes.py'
+      - 'tools/ci/run_freebsd_oracle.sh'
+      - 'docs/migration/freebsd_verified_floor.txt'
+      - '.github/workflows/pbsd-freebsd-oracle.yml'
+  pull_request:
+    paths:
+      - 'tools/pbsd_passes/**'
+      - 'tools/run_todo_passes.py'
+      - 'tools/ci/run_freebsd_oracle.sh'
+      - 'docs/migration/freebsd_verified_floor.txt'
+      - '.github/workflows/pbsd-freebsd-oracle.yml'
+  workflow_dispatch:
+
+jobs:
+  freebsd-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      # A FreeBSD VM on a hosted runner. Nothing self-hosted to maintain, and
+      # the headers are native rather than approximated with -idirafter.
+      - name: IR oracle on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          copyback: false
+          # FreeBSD base already ships clang/clang++, which is all the IR
+          # oracle needs - it compiles single translation units, it does not
+          # drive CMake. Only python3 has to come from ports.
+          prepare: |
+            pkg install -y python311
+            ln -sf /usr/local/bin/python3.11 /usr/local/bin/python3
+          run: |
+            sh tools/ci/run_freebsd_oracle.sh
