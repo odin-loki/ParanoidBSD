@@ -33,6 +33,8 @@ MARKS = {
         ("ParanoidBSD", "freestanding kernel C++23 flags"),
     "hbsd/src/sys/conf/kmod.mk":
         ("PBSD", "C++23 module TUs, dual-link pattern"),
+    "hbsd/src/lib/msun/src/math_private.h":
+        ("PBSD", "__BEGIN_DECLS, so ported kernels keep C linkage"),
 }
 
 

@@ -4,4 +4,9 @@
 # It may only be raised, and only against a run that reported the higher
 # figure. This one comes from run 9 (commit 435ef785f, FreeBSD 15.1,
 # clang 19.1.7, scope lib/msun): 73 verified, 23 mismatch, 24 compile_fail.
-73
+# Run 12 (commit 96c555238, same host and scope) reported 88, up from 73:
+# the oracle had been comparing against a build configuration nothing
+# ships. -fno-exceptions restores `nounwind` and the attribute group whose
+# absence shifted every later group number, and `mustprogress` is now
+# normalised away like `noundef` already was. +15 ports, no pass changed.
+88

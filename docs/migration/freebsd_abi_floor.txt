@@ -12,8 +12,12 @@
 # a separate ratchet rather than a redefinition of the old one, because the
 # old one still measures something worth not regressing.
 #
-# Starts at 0: no FreeBSD run has reported it yet. Raise it against the first
-# run that does. On the local corpus it is 3 of 4 - t1_macro_constexpr's
-# usage_msg is the one that fails, which is the same symbol ir_oracle's
-# demangling docstring cites as its reason for existing.
-0
+# Run 12 (commit 96c555238, FreeBSD 15.1, clang 19.1.7, scope lib/msun):
+# 74 ABI-equal against 88 IR-equal. The 14 in the gap are real: msun's
+# __kernel_cosl, __kernel_sinl and __kernel_tanl in both ld80 and ld128
+# compute the right answer and export _Z13__kernel_coslee instead of
+# __kernel_cosl. lib/msun/src/math_private.h declares them with no
+# __BEGIN_DECLS, so under C++ they get C++ linkage. Those ports are correct
+# and unshippable, which is exactly the distinction this floor exists to
+# make.
+74
