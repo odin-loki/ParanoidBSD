@@ -33,33 +33,6 @@ python3 --version
 uname -a
 
 echo
-echo "== why 25 ports export a mangled name"
-# Ask with the flags the oracle actually uses, on the actual file.
-#
-# Two explanations were proposed for the fmaximum/fminimum family coming
-# out IR-equal and ABI-unequal, and both were wrong the same way - each
-# answered a question the oracle does not ask.
-#
-#   1. "the __ISO_C_VISIBLE >= 2023 guard in the tree's math.h."
-#      Tested: the macro is 2023 under -std=c++23 exactly as under -std=c17.
-#   2. "the tree's math.h is on -idirafter, so the host's wins." A bare
-#      probe of `clang++ -idirafter <msun/src>` agreed - and the oracle also
-#      passes -I{src.parent}, and s_fmaximum.c sits in the SAME DIRECTORY as
-#      math.h. The tree's header was reachable the whole time. That probe
-#      was describing a command line nobody runs, which is exactly the
-#      mistake it was added to prevent.
-#
-# So no more probes of imagined command lines. This runs the oracle's own
-# oracle_include_flags() and target flags over the real source and its real
-# staged port, and prints the symbol tables both sides actually define,
-# plus whether <math.h> under those same flags declares the name.
-#
-# Diagnostic only; nothing gates on it.
-PROBE_OUT=/tmp/pbsd_probe.txt
-( cd "$ROOT/tools" && python3 -m pbsd_passes.why_mangled ) \
-    2>&1 | tee "$PROBE_OUT" || true
-
-echo
 echo "== golden corpus (hard gate)"
 python3 tools/run_todo_passes.py --corpus-only > /tmp/corpus.json
 python3 - <<'PY'
@@ -346,6 +319,41 @@ _pl.Path("/tmp/pbsd_targetflags.txt").write_text(
     f"  under target flags: IR {d['ir_equal']}/{d['ir_ran']}  "
     f"ABI {d.get('abi_equal', 0)}  committable {len(ready)}\n")
 PY2
+
+echo "== why 25 ports export a mangled name"
+# Ask with the flags the oracle actually uses, on the actual file.
+#
+# Two explanations were proposed for the fmaximum/fminimum family coming
+# out IR-equal and ABI-unequal, and both were wrong the same way - each
+# answered a question the oracle does not ask.
+#
+#   1. "the __ISO_C_VISIBLE >= 2023 guard in the tree's math.h."
+#      Tested: the macro is 2023 under -std=c++23 exactly as under -std=c17.
+#   2. "the tree's math.h is on -idirafter, so the host's wins." A bare
+#      probe of `clang++ -idirafter <msun/src>` agreed - and the oracle also
+#      passes -I{src.parent}, and s_fmaximum.c sits in the SAME DIRECTORY as
+#      math.h. The tree's header was reachable the whole time. That probe
+#      was describing a command line nobody runs, which is exactly the
+#      mistake it was added to prevent.
+#
+# So no more probes of imagined command lines. This runs the oracle's own
+# oracle_include_flags() and target flags over the real source and its real
+# staged port, and prints the symbol tables both sides actually define,
+# plus whether <math.h> under those same flags declares the name.
+#
+# Diagnostic only; nothing gates on it.
+#
+# It runs HERE, after the pass phases, and not at the top of the job.
+# docs/migration/clang_port/staged/ is generated and .gitignore'd, so on
+# a fresh checkout it is empty until run_todo_passes.py stages into it -
+# and the first version of this ran before any of that and reported
+# "no staged port" for all three files. True, and useless. By this point
+# the target-flag phase has staged lib/msun with the same safe tier the
+# 173/174 numbers came from, so the ports being examined are the ports
+# that were measured.
+PROBE_OUT=/tmp/pbsd_probe.txt
+( cd "$ROOT/tools" && python3 -m pbsd_passes.why_mangled ) \
+    2>&1 | tee "$PROBE_OUT" || true
 
 echo
 echo "== SUMMARY"
