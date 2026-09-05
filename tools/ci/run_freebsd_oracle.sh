@@ -192,6 +192,30 @@ else:
           f"refusals={d.get('refusals_total', 0)}")
     print(f"          IR equal {d['ir_equal']}/{d['ir_ran']}  "
           f"ABI equal {d.get('abi_equal', 0)}")
+
+    # Name the ports that compute the same thing and export different
+    # symbols. That gap is always the same cause - a function that is
+    # external but declared in no header, so C++ mangles it and the library
+    # would ship it under a new name - and the fix is a __BEGIN_DECLS in
+    # whichever header should have declared it. Counting them says there is
+    # work; naming them says where.
+    split = [r for r in d.get("records", [])
+             if (r.get("ir") or {}).get("equal")
+             and not (r.get("ir") or {}).get("abi_equal")]
+    if split:
+        print(f"\n          {len(split)} port(s) IR-equal but not ABI-equal:")
+        for r in split:
+            ir = r["ir"]
+            print(f"            {r.get('source', r.get('case', '?'))}")
+            for s in ir.get("abi_only_in_c", [])[:6]:
+                print(f"              only in C:   {s}")
+            for s in ir.get("abi_only_in_cxx", [])[:6]:
+                print(f"              only in C++: {s}")
+    elif d.get("ir_equal", 0) > 0:
+        print("\n          every IR-equal port is also ABI-equal.")
+    else:
+        print("\n          no port was IR-equal, so there is nothing to "
+              "compare ABIs on.")
 PY2
 
 echo

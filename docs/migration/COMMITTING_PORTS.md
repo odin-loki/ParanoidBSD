@@ -54,7 +54,19 @@ a scope chosen for being tractable.
 
 `lib/libc` also shows three ports that are IR-equal and not ABI-equal (37
 against 34), which is the `math_private.h` class again in a different header.
-Finding which header is the next thing worth doing there.
+
+**The `lib/libc` header guards did not close it.** Oracle run 17, with
+`__BEGIN_DECLS` added to `libc_private.h`, `stdio/local.h`,
+`locale/mblocal.h` and `locale/xlocale_private.h`, reports the same 37 and
+34 as before. Whatever the three are, they are not declared in those four.
+
+Counting them says there is work; it does not say where. The oracle now
+names them: the `lib/libc` section prints each port that is IR-equal and not
+ABI-equal together with the symbols that appear on one side and not the
+other. The cause is always the same — a function that is external but
+declared in no header, so C++ mangles it and the library would ship it under
+a new name — so the symbol name is the header's name in disguise, and the
+fix is a `__BEGIN_DECLS` in whichever header should have declared it.
 
 ## What it does not prove
 
