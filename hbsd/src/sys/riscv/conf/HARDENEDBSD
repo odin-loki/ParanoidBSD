@@ -1,0 +1,7 @@
+#
+# HARDENEDBSD -- Main HardenedBSD kernel configuration
+
+include GENERIC
+include HARDENEDBSD-CORE
+
+ident		HARDENEDBSD

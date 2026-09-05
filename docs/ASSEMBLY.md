@@ -1,7 +1,13 @@
 # Assembly, and why "all ISO C++23" has a floor
 
-The goal of removing assembly is right, and it is worth being precise about
-where it stops, because the stopping point is not a matter of effort.
+**The point of removing assembly is portability, not speed.** Every line of
+architecture-specific assembly is a line that a new architecture has to
+provide before it can boot, and most of it is providing something that
+already exists in architecture-neutral C. Losing some performance to gain a
+port is the trade this is making deliberately.
+
+The goal is right, and it is worth being precise about where it stops,
+because the stopping point is not a matter of effort.
 
 **ISO C++23 has no construct that emits these instructions.** The standard
 deliberately says nothing about registers, privilege levels, or what runs
@@ -19,11 +25,41 @@ asm" is a different and much weaker claim than the one worth making.
 | | files | lines |
 |---|---:|---:|
 | vendored third-party | 533 | 624,548 |
-| **PBSD's own** | **257** | **40,156** |
-| — irreducible | 95 | 20,339 |
-| — eliminable | 151 | 18,113 |
+| **PBSD's own** | **427** | **71,905** |
+| — irreducible | 201 | 40,788 |
+| — eliminable | 215 | 29,413 |
 | — test-only | 7 | 1,394 |
 | — not assembly (linker scripts) | 4 | 310 |
+
+These numbers are for the whole tree, with `arm`, `arm64`, `amd64`, `i386`,
+`powerpc` and `riscv` all present. An earlier revision of this page measured
+40,156 lines because the snapshot had dropped four of those architectures.
+Restoring them is the point: a tree that only builds amd64 has not made the
+assembly problem smaller, it has hidden most of it.
+
+## What a new architecture costs
+
+`python3 tools/asm_inventory.py --by-arch`:
+
+| architecture | files | lines | irreducible | eliminable |
+|---|---:|---:|---:|---:|
+| amd64 | 89 | 16,484 | 7,749 | **8,581** |
+| i386 | 72 | 13,733 | 7,272 | **6,379** |
+| arm | 57 | 12,410 | 6,361 | **6,049** |
+| powerpc | 58 | 12,109 | 10,864 | 1,245 |
+| arm64 | 58 | 10,384 | 5,195 | **4,076** |
+| riscv | 28 | 3,932 | 2,921 | 1,011 |
+| arch-neutral | 65 | 2,853 | 426 | 2,072 |
+
+This is the whole argument in one table. On amd64, arm and i386 there is
+**more eliminable assembly than irreducible** — more than half of what those
+ports carry is hand-written versions of routines that already have
+architecture-neutral C. Every new architecture pays that cost again from
+scratch.
+
+riscv already looks like the target shape: 2,921 lines of genuine nucleus
+against 1,011 of optional. Bringing the others to that ratio is what makes
+the next port cheap, and it is worth roughly 29,000 lines.
 
 Nothing is unclassified. The 77 that were have been sorted by hand, and the
 rules that sort them run only on what the earlier rules leave over, so
@@ -50,9 +86,13 @@ On amd64 the irreducible core is ten files:
   `std::atomic_thread_fence`.
 - **Bit twiddling** → `<bit>`: `popcount`, `countl_zero`, `countr_zero`,
   `byteswap`, `bit_cast`. Replaces hand-written BSF/BSR/POPCNT/BSWAP.
-- **String, memory and math routines** — 144 of the 151 eliminable files.
-  These exist for speed, not necessity; C fallbacks already exist and modern
-  clang matches most of them. Measure before assuming a rewrite is a loss.
+- **String, memory and math routines** — 197 of the 215 eliminable files.
+  Mostly not rewrites at all: `lib/libc/amd64/string/strcat.S` sits beside
+  `lib/libc/string/strcat.c`, and removing it means deleting the `.S` and
+  letting the generic C build. A Makefile edit, not a port.
+- **ARM EABI helpers** — `aeabi_vfp_double.S` and friends implement
+  soft-float and division for targets without VFP. compiler-rt ships C for
+  every one of them.
 - **ELF notes** — `crtbrand.S`, `feature_note.S`, `ignore_init_note.S` emit
   `.note` sections and nothing else. A struct with a section attribute does
   the same job, though the attribute is not ISO C++ either.
@@ -86,9 +126,13 @@ test** — rewriting them in C++ would delete the thing being tested.
 
 ## The target
 
-40,156 lines down to **20,339**, of which 1,704 more is test fixtures and
-linker scripts that were never system code. Call it 18,113 lines of real
-removable assembly, and a floor of 20,339 that stays.
+71,905 lines down to **40,788**, of which 1,704 more is test fixtures and
+linker scripts that were never system code. 29,413 lines of real removable
+assembly, and a floor of 40,788 that stays.
+
+Measured per architecture, that is the difference between a new port needing
+roughly 12,000 lines of assembly and needing roughly 6,000 — and the 6,000
+that remains is the part that genuinely cannot be written any other way.
 
 Not zero — no kernel that boots on real hardware reaches zero, and the ones
 that claim to are counting `__asm__` as not-assembly.

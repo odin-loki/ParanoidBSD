@@ -70,6 +70,16 @@ IRREDUCIBLE_EXTRA = [
     ("embedded binary",     re.compile(r"(firmw|embedfs|fdt_static_dtb|vdso_inc|vdso_wrap)")),
     # ticks = ticksl + offset: a symbol at an offset from another symbol.
     ("symbol aliasing",     re.compile(r"subr_ticks")),
+    # Restoring arm, powerpc, riscv and i386 brought their nuclei with them.
+    # Same categories, different instruction sets - which is the argument for
+    # deleting the eliminable ones: every architecture pays for those twice.
+    ("C runtime startup",   re.compile(r"(crtsavres|powerpc/gen/eabi)\.S$")),
+    ("syscall error path",  re.compile(r"^lib/libsys/[^/]+/syscall\.S$")),
+    ("fault-tolerant copy", re.compile(r"(copystr|fusu)\.S$")),
+    # Reads the TLS register; moves the stack pointer.
+    ("privileged/support",  re.compile(r"(__aeabi_read_tp|alloca|setcpsr|setstack|cpu_asm-v6|cpu_subr64)\.S$")),
+    ("hypervisor entry",    re.compile(r"(hypervisor-stub|ti_smc|vmm_switch|mambocall|ofwcall\d*|opalcall|hvcall)\.S$")),
+    ("boot entry",          re.compile(r"mptramp\.S$")),
 ]
 
 TEST_ONLY = re.compile(r"^(tests/|tools/regression/|tools/test/)")
@@ -83,7 +93,13 @@ ELIMINABLE_EXTRA = [
     ("string/memory",   re.compile(r"^lib/libc/[^/]+/string/|^sys/libkern/[^/]+/memclr\.S$|^sys/arm64/arm64/strncmp\.S$")),
     ("math",            re.compile(r"^lib/libc/[^/]+/gen/fabs\.S$")),
     ("integer division",re.compile(r"^lib/libc/[^/]+/stdlib/(div|ldiv|lldiv)\.S$|^sys/libkern/[^/]+/(divsi3|ldivmod)\.S$")),
-    ("checksum",        re.compile(r"crc32")),
+    ("checksum",        re.compile(r"(crc32|in_cksum_\w+\.S$)")),
+    # ARM EABI soft-float and division helpers. compiler-rt ships C for all
+    # of these; they are here for speed on a target that has no VFP.
+    ("integer division",re.compile(r"^lib/libc/arm/(aeabi/aeabi_(int_div|.*div)|gen/divsi3)\.S$")),
+    ("math",            re.compile(r"^lib/libc/arm/aeabi/aeabi_(asm|vfp)_(double|float)\.S$")),
+    ("crypto/SIMD",     re.compile(r"rmd160")),
+    ("ELF notes",       re.compile(r"elf_note\.S$")),
 ]
 
 ELIMINABLE = [
@@ -98,6 +114,16 @@ ELIMINABLE = [
 # Third-party trees. LLVM's test suite and arm-optimized-routines are
 # upstream's assembly, not PBSD's to rewrite, and counting them buries the
 # number that matters.
+# For --by-arch. A path under sys/arm64 or lib/libc/amd64 belongs to that
+# architecture; anything with no such segment is shared by all of them.
+ARCH_DIR = re.compile(r"(^|/)(aarch64|arm64|armv[67]|arm|amd64|i386|x86|"
+                      r"powerpc64le|powerpc64|powerpcspe|powerpc|"
+                      r"riscv64|riscv|mips64|mips)(/|$)")
+ARCH_ALIAS = {"aarch64": "arm64", "armv6": "arm", "armv7": "arm",
+              "x86": "amd64/i386", "powerpc64": "powerpc",
+              "powerpc64le": "powerpc", "powerpcspe": "powerpc",
+              "riscv64": "riscv", "mips64": "mips"}
+
 VENDORED = re.compile(r"^(contrib/|sys/contrib/|crypto/|sys/crypto/|"
                       r"secure/|cddl/|sys/cddl/|sys/dev/[^/]+/firmware)")
 
@@ -129,6 +155,8 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--list", metavar="CATEGORY",
                     help="print the paths in one category")
+    ap.add_argument("--by-arch", action="store_true",
+                    help="what each architecture costs in assembly")
     args = ap.parse_args()
 
     if not SRC.is_dir():
@@ -146,6 +174,29 @@ def main() -> int:
         except OSError:
             lines = 0
         rows.append((verdict, label, rel, lines))
+
+    if args.by_arch:
+        # What a new architecture actually costs. The irreducible column is
+        # unavoidable; the eliminable column is paid again by every port, for
+        # routines that already have architecture-neutral C.
+        totals: dict[str, collections.Counter[str]] = collections.defaultdict(
+            collections.Counter)
+        for verdict, _label, rel, lines in rows:
+            if verdict == "vendored":
+                continue
+            m = ARCH_DIR.search(rel)
+            arch = ARCH_ALIAS.get(m.group(2), m.group(2)) if m else "arch-neutral"
+            totals[arch][verdict] += lines
+            totals[arch]["files"] += 1
+        print(f"{'architecture':<14}{'files':>7}{'lines':>9}"
+              f"{'irreducible':>13}{'eliminable':>12}")
+        for arch in sorted(totals, key=lambda k: -sum(
+                v for kk, v in totals[k].items() if kk != "files")):
+            c = totals[arch]
+            total = sum(v for kk, v in c.items() if kk != "files")
+            print(f"{arch:<14}{c['files']:>7}{total:>9}"
+                  f"{c['irreducible']:>13}{c['eliminable']:>12}")
+        return 0
 
     if args.list:
         for verdict, label, rel, lines in rows:

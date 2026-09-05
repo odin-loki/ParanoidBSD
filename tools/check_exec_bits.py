@@ -39,8 +39,19 @@ EXCEPTIONS = {
         "a real executable that is also a binary",
 }
 
+# release/Makefile line 318 runs these as `sh .../mkisoimages.sh`, and
+# upstream ships every one of them 100644. The earlier bulk sweep marked ten
+# of them executable on the strength of the #! alone, which was drift; they
+# are back at 644 to match, and the rule yields here rather than re-creating
+# the difference on the next run.
+def _release_script(path: str) -> bool:
+    return (path.startswith("hbsd/src/release/")
+            and (path.endswith(".conf") or path.endswith("mkisoimages.sh")))
+
 
 def excepted(path: str) -> bool:
+    if _release_script(path):
+        return True
     return any(path.startswith(prefix) for prefix in EXCEPTIONS)
 
 

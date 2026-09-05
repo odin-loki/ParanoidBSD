@@ -24,14 +24,10 @@ SUBDIR_ASSIGN = re.compile(r"^\s*SUBDIR(?:\.[^\s=+]+)?\s*[+?:]?=\s*(.*)$")
 PLAIN_NAME = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.+-]*$")
 
 # (Makefile relative to the tree root, SUBDIR token) -> why it may be absent.
-# Only for directories that no amd64 or arm64 build ever walks into; a
-# missing directory the build does reach is a failure, not an entry here.
-EXCEPTIONS = {
-    ("sys/dts/Makefile", "arm"):
-        "device trees for an architecture the snapshot dropped",
-    ("sys/dts/Makefile", "powerpc"):
-        "device trees for an architecture the snapshot dropped",
-}
+# Empty, and worth keeping that way. It held sys/dts/Makefile's arm and
+# powerpc while those architectures were dropped; they are back, so the
+# exception is not a documented gap any more, just a blind spot.
+EXCEPTIONS: dict[tuple[str, str], str] = {}
 
 
 def subdir_tokens(makefile: str) -> list[tuple[int, str]]:

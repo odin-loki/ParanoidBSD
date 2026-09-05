@@ -23,11 +23,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 # file -> (marker that must appear, what PBSD changed there)
+# Makefile.inc1's KNOWN_ARCHES trim and src.opts.mk's __LLVM_TARGETS trim
+# used to be here. They were reverted: PBSD wants first-class support for
+# every architecture, and narrowing the tree to amd64 and arm64 was the
+# thing making each new one expensive. Both files now differ from upstream
+# only where upstream has moved on.
 MARKS = {
-    "hbsd/src/Makefile.inc1":
-        ("PBSD", "lib32 and Tier-2 compat architectures removed"),
-    "hbsd/src/share/mk/src.opts.mk":
-        ("PBSD", "no 32-bit ARM LLVM target"),
     "hbsd/src/sys/conf/kern.mk":
         ("ParanoidBSD", "freestanding kernel C++23 flags"),
     "hbsd/src/sys/conf/kmod.mk":

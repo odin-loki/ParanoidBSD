@@ -145,7 +145,14 @@ MACHINE_TRIPLE?=${MACHINE_ARCH:S/amd64/x86_64/}-${MACHINE_TRIPLE_ABI}-freebsd${O
 TARGET_TRIPLE_ABI?=	unknown
 TARGET_TRIPLE?=	${TARGET_ARCH:S/amd64/x86_64/}-${TARGET_TRIPLE_ABI}-freebsd${OS_REVISION}
 KNOWN_ARCHES?=	aarch64/arm64 \
-		amd64
+		amd64 \
+		armv7/arm \
+		i386 \
+		powerpc \
+		powerpc64/powerpc \
+		powerpc64le/powerpc \
+		powerpcspe/powerpc \
+		riscv64/riscv
 
 .if ${TARGET} == ${TARGET_ARCH}
 _t=		${TARGET}
@@ -158,8 +165,10 @@ _t=		${TARGET_ARCH}/${TARGET}
 .endif
 .endfor
 
-.if ${TARGET_ARCH} == "amd64" || ${TARGET_ARCH} == "aarch64"
-# PBSD: lib32 / Tier-2 compat arches removed (amd64+arm64 only)
+.if ${TARGET_ARCH} == "amd64"
+LIBCOMPAT_INCLUDE_DIRS+= i386
+.elif ${TARGET_ARCH} == "aarch64"
+LIBCOMPAT_INCLUDE_DIRS+= arm
 .endif
 
 .if !defined(_MKSHOWCONFIG)
@@ -173,6 +182,9 @@ _GCC_BROKEN=Missing atomic builtins in libc++.
 .endif
 .if ${TARGET_ARCH:Mpowerpc64*}
 _GCC_BROKEN=libsys.so.7.full has a LOAD segment with RWX permissions.
+.endif
+.if ${TARGET} == "riscv"
+_GCC_BROKEN=boot code linker script issues.
 .endif
 .if defined(_GCC_BROKEN)
 .warning Target ${TARGET} is broken with GCC: ${_GCC_BROKEN}

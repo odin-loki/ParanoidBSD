@@ -26,17 +26,20 @@ and exists only to establish a merge base.
 The base is **this tree, not a fetched upstream revision**. The snapshot's
 upstream revision is not recoverable: the reference clone is shallow and
 HardenedBSD does not tag what was taken. That is sound here because PBSD has
-barely touched the vendor tree. Of the 11,341 files that differ from
-`hardened/15-stable/main`, exactly **four** carry a PBSD change:
+barely touched the vendor tree. Of the files that differ from
+`hardened/15-stable/main`, exactly **two** carry a PBSD change:
 
 | File | Change |
 |---|---|
-| `Makefile.inc1` | lib32 and Tier-2 compat architectures removed |
-| `share/mk/src.opts.mk` | no 32-bit ARM LLVM target |
 | `sys/conf/kern.mk` | freestanding kernel C++23 flags |
 | `sys/conf/kmod.mk` | C++23 module TUs, dual-link pattern |
 
-About 100 lines in total. The other 11,337 are upstream moving on since the
+There were four. `Makefile.inc1` had trimmed `KNOWN_ARCHES` to amd64 and
+`share/mk/src.opts.mk` had trimmed `__LLVM_TARGETS` to aarch64 and x86; both
+are reverted, because PBSD wants first-class support for every architecture
+and narrowing the tree was what made each new one expensive.
+
+About 50 lines in total. The other 11,337 are upstream moving on since the
 snapshot — 6,846 of them `contrib/llvm-project` alone, which is a whole LLVM
 version, not anyone's edit.
 
