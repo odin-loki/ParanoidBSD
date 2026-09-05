@@ -65,7 +65,7 @@ IRREDUCIBLE_EXTRA = [
     # faulting instruction, so the instruction has to be spelled out.
     ("fault-tolerant copy", re.compile(r"(copyinout|copyout_fast)")),
     ("hypervisor entry",    re.compile(r"(hyp_stub|vmm_call|vmm_hyp|smccc)")),
-    ("MMIO accessors",      re.compile(r"bus_space_asm")),
+    ("MMIO accessors",      re.compile(r"(bus_space_asm|blockio)")),
     # .incbin. C++26 gets #embed; C++23 does not have it.
     ("embedded binary",     re.compile(r"(firmw|embedfs|fdt_static_dtb|vdso_inc|vdso_wrap)")),
     # ticks = ticksl + offset: a symbol at an offset from another symbol.
@@ -103,8 +103,12 @@ ELIMINABLE_EXTRA = [
 ]
 
 ELIMINABLE = [
-    ("atomics/barriers",  re.compile(r"(atomic|fence|barrier|lock)", re.I)),
-    ("bit ops",           re.compile(r"(bswap|ffs|fls|popcnt|bit)", re.I)),
+    # \b matters: without it "lock" matches md5block, sha1block and blockio,
+    # which are hash and I/O routines and not atomics at all. That put 3,503
+    # lines of crypto in the atomics bucket. Likewise bare "bit" matches
+    # arbitrary and orbit.
+    ("atomics/barriers",  re.compile(r"\b(atomic|fence|barrier|lock|cas|xchg)\b", re.I)),
+    ("bit ops",           re.compile(r"\b(bswap|ffs|fls|popcnt|bitcount|bitops)\b", re.I)),
     ("string/memory",     re.compile(r"(mem(cpy|set|move|cmp)|str(cpy|len|cmp|chr)|bcopy|bzero)", re.I)),
     ("math",              re.compile(r"(^|/)(e_|s_|k_)|fpu|npx|sqrt|exp|log|sin|cos|tan", re.I)),
     ("crypto/SIMD",       re.compile(r"(aes|sha|gcm|chacha|poly1305|blake|md5|des|rc4|sse|avx|simd)", re.I)),

@@ -53,6 +53,9 @@ def norm_lines(path: str) -> set[str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("root", nargs="?", default="hbsd/src")
+    ap.add_argument("--scope", default="sys",
+                    help="subtree holding the per-architecture directories "
+                         "(sys, lib, libexec, stand, ...)")
     ap.add_argument("--min-similarity", type=float, default=0.5)
     ap.add_argument("--min-lines", type=int, default=40)
     ap.add_argument("--top", type=int, default=25)
@@ -62,7 +65,7 @@ def main() -> int:
     # basename -> arch -> path
     byname: dict[str, dict[str, str]] = collections.defaultdict(dict)
     for arch in ARCHES:
-        base = os.path.join(root, "sys", arch)
+        base = os.path.join(root, args.scope, arch)
         if not os.path.isdir(base):
             continue
         for dirpath, dirnames, filenames in os.walk(base):
