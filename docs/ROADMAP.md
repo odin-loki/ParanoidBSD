@@ -352,9 +352,27 @@ SHA-1, SHA-256 and SHA-512 backends. `std.hardenedbsd` does not enable them.
 `tools/ci/show_hardening.sh` reports **build options**. Not one of these 59
 runtime defaults is checked by anything.
 
-- [ ] **Dump all 59 on a booted image and assert the defaults.** The kernel
-      option being compiled in is not the same as the knob defaulting to on
-      — the same distinction that made `WITHOUT_MACHDEP_OPTIMIZATIONS` inert.
+- [x] ~~Extract the defaults.~~ `tools/hardening_sysctls.py`. Twenty of the
+      59 names are knobs with a compiled-in default; the rest are node names
+      and `_len` tunables. Two things fall out of the table:
+
+      * **`hardening.pax.tpe.status` defaults to 1, opt-in.** Every other PAX
+        feature — aslr, mprotect, pageexec, segvguard, harden_shm,
+        disallow_map32bit — defaults to 2, opt-out. Opt-out is on for
+        everything that does not ask to be excused; opt-in is off for
+        everything that does not ask for it, and nothing asks. Trusted Path
+        Execution is compiled in and inert.
+      * **`hardening.elf_pie_only` defaults to 0.** PBSD builds everything
+        PIE and does not require it. Turning it on is a decision with a cost
+        — every non-PIE binary, ports included, stops running.
+
+      Node paths are resolved from the `SYSCTL_NODE` declarations rather than
+      by splitting the C variable on underscores, which gets
+      `hardening.pax.disallow_map32bit` wrong and would have turned into a
+      silent "not present in the dump" at check time.
+- [ ] **Assert them against a booted kernel.** `--check` takes `sysctl
+      hardening` and compares; it needs a boot and a shell. Verified against
+      a synthetic dump in both directions.
 - [ ] **Ratchet them.** A default that silently relaxes across an upstream
       merge is exactly the drift `std.hardenedbsd` was written to stop, one
       layer down.

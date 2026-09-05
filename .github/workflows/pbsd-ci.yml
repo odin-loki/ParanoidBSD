@@ -131,6 +131,15 @@ jobs:
       - name: setuid inventory — the set has not changed
         run: python3 tools/setuid_inventory.py --gate
 
+      # The compiled-in default of every hardening knob, from the source.
+      # show_hardening.sh answers "is PAX_ASLR compiled in"; this answers
+      # "and what does hardening.pax.aslr.status default to", which is a
+      # different question and the one that decides whether a mitigation is
+      # on for a system that does not ask. Reported here; --check compares it
+      # against a booted kernel, once there is one.
+      - name: Hardening sysctl defaults
+        run: python3 tools/hardening_sysctls.py
+
       # A report, not a gate. arch_duplication.py, atomic_survey.py and
       # asm_inventory.py measure how much per-architecture code there is and
       # arch_interface.py measures how much of it is one interface written
