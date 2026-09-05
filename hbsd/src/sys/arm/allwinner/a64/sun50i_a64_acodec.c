@@ -344,7 +344,7 @@ a64codec_mixer_set(struct snd_mixer *m, unsigned dev, unsigned left, unsigned ri
 	u_int val;
 
 	sc = device_get_softc(mix_getdevinfo(m));
-	mixer_lock = mixer_get_lock(m);
+	mixer_lock = &m->lock;
 
 	if (mtx_owned(mixer_lock)) {
 		do_unlock = 0;

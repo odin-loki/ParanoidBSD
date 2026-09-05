@@ -317,7 +317,7 @@ kern_mmap(struct thread *td, const struct mmap_req *mrp)
 			    align >> MAP_ALIGNMENT_SHIFT, PAGE_SHIFT));
 	}
 
-#if defined(MAP_32BIT) && defined(PAX_HARDENING)
+#if defined(__LP64__) && defined(PAX_HARDENING)
 	if (pax_disallow_map32bit_active(td, flags))
 		return (EPERM);
 #endif
@@ -359,9 +359,21 @@ kern_mmap(struct thread *td, const struct mmap_req *mrp)
 		if (addr + size > MAP_32BIT_MAX_ADDR)
 			addr = 0;
 #ifdef PAX_ASLR
+		/*
+		 * MAP_32BIT names the low 2GB.  Where the address space is
+		 * no bigger than that the flag asks for nothing in
+		 * particular, so the mapping is randomised like any other
+		 * rather than out of a separate delta that only __LP64__
+		 * vmspaces carry.
+		 */
 		PROC_LOCK(td->td_proc);
 		if (!(td->td_proc->p_flag2 & P2_ASLR_ENABLE))
-			pax_aslr_mmap_map_32bit(td->td_proc, &addr, orig_addr, flags);
+#ifdef __LP64__
+			pax_aslr_mmap_map_32bit(td->td_proc, &addr, orig_addr,
+			    flags);
+#else
+			pax_aslr_mmap(td->td_proc, &addr, orig_addr, flags);
+#endif /* __LP64__ */
 		PROC_UNLOCK(td->td_proc);
 		pax_aslr_done = 1;
 #endif /* PAX_ASLR */

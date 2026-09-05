@@ -283,7 +283,7 @@ pax_elf(struct thread *td, struct image_params *imgp)
 
 #ifdef PAX_ASLR
 	flags |= pax_aslr_setup_flags(imgp, td, mode);
-#ifdef MAP_32BIT
+#ifdef __LP64__
 	flags |= pax_disallow_map32bit_setup_flags(imgp, td, mode);
 #endif
 #endif

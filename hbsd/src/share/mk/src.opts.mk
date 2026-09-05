@@ -554,15 +554,20 @@ MK_CLANG_FORMAT:= no
 MK_CLANG_FULL:= no
 MK_LLVM_COV:= no
 # PBSD: SafeStack needs the compiler-rt runtime, and MK_CLANG=no stops the
-# in-tree one being built - which is why upstream disables it here. With
-# CROSS_TOOLCHAIN the packaged toolchain supplies that runtime, so the
-# disable is wrong in exactly the configuration PBSD now builds by default.
+# in-tree one being built - which is why upstream disables it here. It does
+# so with a := that no src.conf can override, so switching to the external
+# toolchain silently turned a hardening feature off on amd64, where it
+# defaults to on, and nothing reported it.
 #
-# It matters because this is a := that no src.conf can override, and
-# SAFESTACK defaults to yes on amd64. Turning on the external toolchain
-# silently turned off a hardening feature, on a system whose reason for
-# existing is hardening, and nothing reported it.
-# tools/ci/show_hardening.sh asks `make -V` so it cannot happen quietly again.
+# Whether an external toolchain can supply the runtime is a property of that
+# toolchain, not of this file, so this exception only stops the := from
+# deciding for it. tools/ci/build_boot_image.sh asks the packaged clang what
+# it actually ships and writes WITHOUT_SAFESTACK into the generated src.conf
+# when the answer is nothing, which is a reported decision rather than a
+# silent one; tools/ci/show_hardening.sh then prints what the build settled
+# on. The FreeBSD llvm21 package did ship no libclang_rt.safestack when this
+# was written, and finding that out cost a link error in bin/cat two thirds
+# of the way through buildworld.
 .if !defined(CROSS_TOOLCHAIN)
 MK_SAFESTACK:=	no
 .endif

@@ -85,6 +85,37 @@ if [ "$TOOLCHAIN" = "external" ]; then
     mkdir -p "$OBJ"
     cat "$SRCCONF" "$EXTRA_SRCCONF" > "$OBJ/src.conf.combined"
     SRCCONF="$OBJ/src.conf.combined"
+
+    # SafeStack and CFI are not just compiler flags: -fsanitize=safe-stack
+    # makes clang link libclang_rt.safestack, and MK_CLANG=no means the
+    # in-tree lib/libclang_rt is not built, so the archive has to come from
+    # the package. Whether it does is a property of how the port was built,
+    # not of this tree, and run 9 found out the expensive way - a link error
+    # in bin/cat two thirds of the way through buildworld, after 16 minutes.
+    #
+    # So ask first, print what is there either way, and turn the option off
+    # rather than failing. show_hardening.sh reports SAFESTACK and CFI, so an
+    # option turned off here is visible in the run rather than silent.
+    XCC="${LOCALBASE:-/usr/local}/bin/clang${LLVM_VERSION:-21}"
+    RTBASE="$("$XCC" -print-resource-dir 2>/dev/null || true)"
+    echo "== external toolchain runtime"
+    echo "   clang=$XCC"
+    echo "   resource-dir=${RTBASE:-<clang could not say>}"
+    if [ -n "$RTBASE" ] && [ -d "$RTBASE/lib" ]; then
+        find "$RTBASE/lib" -name 'libclang_rt.*' | sed "s|^$RTBASE/lib/|     |"
+    else
+        echo "     no runtime directory at all"
+    fi
+    for rt in safestack cfi; do
+        opt="$(echo "$rt" | tr 'a-z' 'A-Z')"
+        if [ -n "$RTBASE" ] && \
+           [ -n "$(find "$RTBASE/lib" -name "libclang_rt.$rt*" -print 2>/dev/null | head -1)" ]
+        then
+            continue
+        fi
+        echo "   $opt off: this toolchain ships no libclang_rt.$rt"
+        echo "WITHOUT_$opt=YES" >> "$SRCCONF"
+    done
 fi
 
 echo "== PBSD image build"

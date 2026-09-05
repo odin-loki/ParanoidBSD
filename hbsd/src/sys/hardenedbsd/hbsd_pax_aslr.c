@@ -109,11 +109,11 @@ __FBSDID("$FreeBSD$");
 #define	PAX_ASLR_DELTA_VDSO_LSB		PAGE_SHIFT
 #endif /* PAX_ASLR_DELTA_VDSO_LSB */
 
-#ifdef MAP_32BIT
+#ifdef __LP64__
 #ifndef PAX_ASLR_DELTA_MAP32BIT_LSB
 #define	PAX_ASLR_DELTA_MAP32BIT_LSB	PAGE_SHIFT
 #endif /* PAX_ASLR_DELTA_MAP32BIT_LSB */
-#endif /* MAP_32BIT */
+#endif /* __LP64__ */
 
 /*
  * ASLR default values for native host
@@ -144,11 +144,11 @@ __FBSDID("$FreeBSD$");
 #define	PAX_ASLR_DELTA_VDSO_DEF_LEN	28
 #endif /* PAX_ASLR_DELTA_VDSO_DEF_LEN */
 
-#ifdef MAP_32BIT
+#ifdef __LP64__
 #ifndef PAX_ASLR_DELTA_MAP32BIT_DEF_LEN
 #define	PAX_ASLR_DELTA_MAP32BIT_DEF_LEN	18
 #endif /* PAX_ASLR_DELTA_MAP32BIT_DEF_LEN */
-#endif /* MAP_32BIT */
+#endif /* __LP64__ */
 
 #else /* ! __LP64__ */
 
@@ -163,6 +163,10 @@ __FBSDID("$FreeBSD$");
 #ifndef PAX_ASLR_DELTA_STACK_DEF_LEN
 #define	PAX_ASLR_DELTA_STACK_DEF_LEN	14
 #endif /* PAX_ASLR_DELTA_STACK_DEF_LEN */
+
+#ifndef PAX_ASLR_DELTA_THR_STACK_DEF_LEN
+#define	PAX_ASLR_DELTA_THR_STACK_DEF_LEN	14
+#endif /* PAX_ASLR_DELTA_THR_STACK_DEF_LEN */
 
 #ifndef PAX_ASLR_DELTA_EXEC_DEF_LEN
 #define	PAX_ASLR_DELTA_EXEC_DEF_LEN	14
@@ -230,7 +234,7 @@ static int pax_aslr_thr_stack_len = PAX_ASLR_DELTA_THR_STACK_DEF_LEN;
 static int pax_aslr_exec_len = PAX_ASLR_DELTA_EXEC_DEF_LEN;
 static int pax_aslr_vdso_len = PAX_ASLR_DELTA_VDSO_DEF_LEN;
 static int elf_pie_only_global= PAX_FEATURE_SIMPLE_DISABLED;
-#ifdef MAP_32BIT
+#ifdef __LP64__
 static int pax_aslr_map32bit_len = PAX_ASLR_DELTA_MAP32BIT_DEF_LEN;
 #ifdef PAX_HARDENING
 static int pax_disallow_map32bit_status_global = PAX_FEATURE_OPTOUT;
@@ -254,7 +258,7 @@ TUNABLE_INT("hardening.pax.aslr.rtld_len", &pax_aslr_rtld_len);
 TUNABLE_INT("hardening.pax.aslr.stack_len", &pax_aslr_stack_len);
 TUNABLE_INT("hardening.pax.aslr.exec_len", &pax_aslr_exec_len);
 TUNABLE_INT("hardening.pax.aslr.vdso_len", &pax_aslr_vdso_len);
-#ifdef MAP_32BIT
+#ifdef __LP64__
 TUNABLE_INT("hardening.pax.aslr.map32bit_len", &pax_aslr_map32bit_len);
 TUNABLE_INT("hardening.pax.disallow_map32bit.status", &pax_disallow_map32bit_status_global);
 #endif
@@ -286,13 +290,13 @@ SYSCTL_HBSD_4STATE(pax_aslr_compat_status, pr_hbsd.aslr.compat_status,
     CTLTYPE_INT|CTLFLAG_RWTUN|CTLFLAG_PRISON|CTLFLAG_SECURE);
 #endif /* COMPAT_FREEBSD32 */
 
-#ifdef MAP_32BIT
+#ifdef __LP64__
 SYSCTL_NODE(_hardening_pax, OID_AUTO, disallow_map32bit, CTLFLAG_RD, 0,
     "Disallow MAP_32BIT mode mmap(2) calls.");
 SYSCTL_HBSD_4STATE(pax_disallow_map32bit_status_global, pr_hbsd.aslr.disallow_map32bit_status,
     _hardening_pax_disallow_map32bit, status,
     CTLTYPE_INT|CTLFLAG_RWTUN|CTLFLAG_PRISON|CTLFLAG_SECURE);
-#endif	/* MAP_32BIT */
+#endif	/* __LP64__ */
 
 SYSCTL_HBSD_2STATE(elf_pie_only_global,
     pr_hbsd.hardening.elf_pie_only,
@@ -319,12 +323,12 @@ SYSCTL_JAIL_PARAM(_hardening_pax_aslr_compat, status,
     CTLTYPE_INT | CTLFLAG_RD, "I",
     "ASLR (compat) status");
 #endif /* COMPAT_FREEBSD32 */
-#ifdef MAP_32BIT
+#ifdef __LP64__
 SYSCTL_JAIL_PARAM_SUBNODE(hardening_pax, disallow_map32bit, "MAP_32BIT");
 SYSCTL_JAIL_PARAM(_hardening_pax_disallow_map32bit, status,
     CTLTYPE_INT | CTLFLAG_RD, "I",
     "MAP_32BIT status");
-#endif /* MAP_32BIT */
+#endif /* __LP64__ */
 #endif /* PAX_JAIL_SUPPORT */
 
 
@@ -349,7 +353,7 @@ pax_aslr_sysinit(void)
 		printf("[HBSD ASLR] stack: %d bit\n", pax_aslr_stack_len);
 		printf("[HBSD ASLR] vdso: %d bit\n", pax_aslr_vdso_len);
 	}
-#ifdef MAP_32BIT
+#ifdef __LP64__
 	if (bootverbose) {
 		printf("[HBSD ASLR] map32bit: %d bit\n",
 		    pax_aslr_map32bit_len);
@@ -467,7 +471,7 @@ try_again:
 	}
 	vm->vm_aslr_delta_vdso = rand_buf;
 
-#ifdef MAP_32BIT
+#ifdef __LP64__
 	arc4rand(&rand_buf, sizeof(rand_buf), 0);
 	vm->vm_aslr_delta_map32bit = PAX_ASLR_DELTA(rand_buf,
 	    PAX_ASLR_DELTA_MAP32BIT_LSB,
@@ -566,7 +570,7 @@ pax_aslr_init_prison(struct prison *pr, struct vfsoptlist *opts)
 		/* prison0 has no parent, use globals */
 		pr->pr_hbsd.aslr.status = pax_aslr_status;
 		pr->pr_hbsd.hardening.elf_pie_only = elf_pie_only_global;
-#ifdef MAP_32BIT
+#ifdef __LP64__
 		pr->pr_hbsd.aslr.disallow_map32bit_status =
 		    pax_disallow_map32bit_status_global;
 #endif
@@ -585,14 +589,14 @@ pax_aslr_init_prison(struct prison *pr, struct vfsoptlist *opts)
 		   &(pr->pr_hbsd.hardening.elf_pie_only));
 		if (error != 0)
 			return (error);
-#ifdef MAP_32BIT
+#ifdef __LP64__
 		pr->pr_hbsd.aslr.disallow_map32bit_status =
 		    pr_p->pr_hbsd.aslr.disallow_map32bit_status;
 		error = pax_handle_prison_param(opts, "hardening.pax.disallow_map32bit.status",
 		    &pr->pr_hbsd.aslr.disallow_map32bit_status);
 		if (error != 0)
 			return (error);
-#endif /* MAP_32BIT */
+#endif /* __LP64__ */
 	}
 
 	return (0);
@@ -634,14 +638,14 @@ pax_aslr_mmap(struct proc *p, vm_offset_t *addr, vm_offset_t orig_addr, int mmap
 
 	PROC_LOCK_ASSERT(p, MA_OWNED);
 
-#ifdef MAP_32BIT
+#ifdef __LP64__
 	if (((mmap_flags & MAP_32BIT) == MAP_32BIT) || !pax_aslr_active(p))
 #else
 	if (!pax_aslr_active(p))
 #endif
 		return;
 
-#ifdef MAP_32BIT
+#ifdef __LP64__
 	KASSERT((mmap_flags & MAP_32BIT) != MAP_32BIT,
 	    ("%s: we can't handle MAP_32BIT mapping here", __func__));
 #endif
@@ -834,7 +838,7 @@ pax_aslr_setup_flags(struct image_params *imgp, struct thread *td, pax_flag_t mo
 	return (flags);
 }
 
-#ifdef MAP_32BIT
+#ifdef __LP64__
 void
 pax_aslr_mmap_map_32bit(struct proc *p, vm_offset_t *addr, vm_offset_t orig_addr, int mmap_flags)
 {
@@ -950,5 +954,5 @@ pax_disallow_map32bit_setup_flags(struct image_params *imgp, struct thread *td, 
 
 	return (flags);
 }
-#endif	/* MAP_32BIT */
+#endif	/* __LP64__ */
 

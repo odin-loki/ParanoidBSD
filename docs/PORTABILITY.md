@@ -74,3 +74,86 @@ across three architectures with over a thousand identical lines each. They are
 generated from `syscalls.master`. The duplication is in the output, not in
 anything a person maintains, and hoisting them would be working on the wrong
 end.
+
+## What the six-architecture matrix actually found
+
+Building all six is the measurement. Run 7 of `pbsd-arch-matrix` was the first
+where every job got past the reporters and into a compiler, and it found four
+bugs. None of them is visible from amd64, and all four are still in
+HardenedBSD 15-stable — three of the four files are byte-identical to a fresh
+upstream clone, and the fourth differs only where upstream has moved on.
+
+| arch    | run 7   | what stopped it                                        |
+|---------|---------|--------------------------------------------------------|
+| amd64   | pass    |                                                          |
+| riscv   | pass    |                                                          |
+| arm     | fail    | `hbsd_pax_aslr.c`: no 32-bit ASLR                        |
+| arm64   | fail    | `sun50i_a64_acodec.c`: calls a removed accessor          |
+| i386    | fail    | `sys/modules/linux`: a source removed years ago          |
+| powerpc | fail    | `phyp_vscsi.c`: missing semicolon                        |
+
+**arm — `sys/hardenedbsd/hbsd_pax_aslr.c`.** The `#else /* ! __LP64__ */`
+branch never got a `PAX_ASLR_DELTA_THR_STACK_DEF_LEN`, so thread-stack ASLR
+does not compile on any 32-bit architecture. Separately, the whole MAP_32BIT
+half of the file is keyed off `#ifdef MAP_32BIT` — but `<sys/mman.h>` defines
+that flag on every architecture, while `struct vmspace` only carries
+`vm_aslr_delta_map32bit` under `__LP64__`, and `vm_map.c` guards its two uses
+the same way. Three files disagreed about one condition. They now all say
+`__LP64__`, and a MAP_32BIT mapping on a 32-bit kernel is randomised as an
+ordinary mmap instead of out of a delta that does not exist there.
+
+i386 has the same bug and did not report it: under `-j`, the module tree
+failed first.
+
+**arm64 — `sys/arm/allwinner/a64/sun50i_a64_acodec.c`.** PBSD carries a newer
+sound stack than the HardenedBSD clone; that version publishes `struct
+snd_mixer` in `mixer.h` and drops `mixer_get_lock()`. One driver still called
+it, and C's implicit-declaration rule turned that into `struct mtx *` from
+`int`. Same shape as the `hwpstate_intel.c` bug in run 6: a newer shared
+subsystem, an older consumer of it, and only a non-amd64 build compiles the
+consumer.
+
+**i386 — `sys/modules/linux/Makefile`.** Lists `imgact_linux.c` for i386.
+The file is not in this tree and not in upstream's; the Linux a.out image
+activator was removed years ago. Nobody builds the i386 linux module.
+
+**powerpc — `sys/powerpc/pseries/phyp_vscsi.c:341`.** `return (ENOMEM)` with
+no semicolon. A syntax error, upstream, in a file that is in the powerpc
+kernel config — which means nothing in HardenedBSD's CI compiles it.
+
+Each of these is a one-line fix and none of them was findable by reading.
+`tools/check_pbsd_marks.py` now guards all four, because an upstream merge
+takes upstream's side on a vendor file without a conflict.
+
+## SafeStack and CFI: the runtime, not the flag
+
+`WITH_SAFESTACK` and `WITH_CFI` are in `hbsd/src.conf.pbsd`, and the question
+of whether they work per architecture is not about the compiler flag. Both
+make clang link a compiler-rt archive, and `lib/libclang_rt/Makefile` says
+which architectures the tree builds one for:
+
+| arch    | SafeStack rt | CFI rt | ASan | UBSan |
+|---------|--------------|--------|------|-------|
+| amd64   | yes          | yes    | yes  | yes   |
+| arm64   | yes          | yes    | yes  | yes   |
+| i386    | yes          | yes    | yes  | yes   |
+| arm     | no           | no     | no   | no    |
+| powerpc | no (32-bit)  | no     | 64-bit only | 64-bit only |
+| riscv   | no           | no     | yes  | yes   |
+
+So on arm, powerpc and riscv there is no SafeStack or CFI to have, whatever
+`src.conf` says — `src.opts.mk` already defaults both off outside amd64 and
+aarch64. This is a real gap in first-class support and the honest place for
+it is here rather than in an option that reads as enabled.
+
+The external toolchain adds a second condition. `WITHOUT_TOOLCHAIN` sets
+`MK_CLANG=no`, which stops `lib/libclang_rt` being built at all, so the
+archive has to come from the packaged clang — and the FreeBSD `llvm21` package
+ships none. Run 9 found that as `ld.lld: error: cannot open
+libclang_rt.safestack.a` while linking `bin/cat`, sixteen minutes into
+`buildworld`. `tools/ci/build_boot_image.sh` now asks the packaged clang for
+its resource directory before starting, prints every `libclang_rt.*` it has,
+and writes `WITHOUT_SAFESTACK` / `WITHOUT_CFI` into the generated `src.conf`
+when the archive is absent. `tools/ci/show_hardening.sh` then reports what the
+build settled on, so the option being off is a line in the log rather than a
+link error later.
