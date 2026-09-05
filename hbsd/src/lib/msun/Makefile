@@ -193,7 +193,7 @@ COMMON_SRCS+=	catrig.c catrigf.c \
 .if defined(ARCH_SRCS)
 .if "${MK_MACHDEP_OPTIMIZATIONS}" != no
 .for i in ${ARCH_SRCS}
-COMMON_SRCS:=  ${COMMON_SRCS:N${i:R}.c}
+COMMON_SRCS:=  ${COMMON_SRCS:N${i:R}.c:N${i:R}.cpp}
 .endfor
 .else
 # PBSD: and the other way round when the option is off.
@@ -214,8 +214,17 @@ COMMON_SRCS:=  ${COMMON_SRCS:N${i:R}.c}
 # Only the entries with a machine-independent counterpart are dropped. arm's
 # fenv-softfp.c and fenv-vfp.c have none and have to stay, which is why this
 # is a filter and not ARCH_SRCS=.
+#
+# PBSD: both directions match .cpp as well as .c, because the whole point of
+# this tree is that COMMON_SRCS entries become .cpp files. e_fmod.S and
+# e_fmod.cpp are still the same object name, and a pairing keyed on `.c`
+# stops seeing the collision the moment the port lands - in BOTH branches.
+# Verified with bmake against a four-case matrix (option on and off, entry
+# .c and .cpp): unfixed, a .cpp entry leaves the .S in SRCS either way;
+# fixed, it does not, and the two all-.c rows are byte-identical to before,
+# so this is a no-op until the first port.
 .for i in ${ARCH_SRCS}
-.if !empty(COMMON_SRCS:M${i:R}.c)
+.if !empty(COMMON_SRCS:M${i:R}.c) || !empty(COMMON_SRCS:M${i:R}.cpp)
 ARCH_SRCS:=  ${ARCH_SRCS:N${i}}
 .endif
 .endfor
