@@ -318,6 +318,16 @@ finding it a third time.
 | 16 | `memstick` | loader | the console command was truncated at fifteen characters by a UART FIFO overrun; `boot` was never sent |
 | 19 | `memstick` | build | the port-built gate tripped on vendor lldb C++; killed before the boot test |
 | 20 | `memstick` | **kernel** | boots, mounts root, then silence at `exec /sbin/init` |
+| 17 | `vm` | staging | `installworld` into the image mount stopped dead at `usr.sbin/inetd`; 2h23m with no further output, cancelled |
+
+Run 17 is the `vm` stage and is out of order above because it was still
+running while 19 and 20 came and went. `vm-image` with `WITH_VMIMAGES=YES
+VMFORMATS=raw VMFSLIST=ufs` does get as far as installing the world into
+`release/vm-image-raw-ufs/`, so the target is doing real work now rather
+than touching a stamp file — but it hung there and never produced
+`vm.ufs.raw`. Whether that is the 6 GB image on a slow VM, `etcupdate
+extract`, or something else is unknown; it needs a re-run on a tree with
+the current fixes before it is worth diagnosing.
 
 Runs 14 to 19 all stopped in the harness rather than in the tree. Run 20
 did not:
