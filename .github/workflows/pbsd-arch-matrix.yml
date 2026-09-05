@@ -69,6 +69,8 @@ jobs:
             sh tools/ci/show_hardening.sh "${{ matrix.target }}" \
                "$PWD/hbsd/src.conf.pbsd" \
                "$PWD/hbsd/toolchains/llvm21.mk"
+            sh tools/ci/show_cxx_config.sh "${{ matrix.target }}" \
+               "$PWD/hbsd/src.conf.pbsd"
             TARGET="${{ matrix.target }}" \
             KERNCONF="${{ inputs.kernconf || 'HARDENEDBSD' }}" \
             TOOLCHAIN=external \

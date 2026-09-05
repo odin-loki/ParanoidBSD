@@ -99,6 +99,8 @@ jobs:
                "$PWD/hbsd/src.conf.pbsd" \
                "$([ "${{ inputs.toolchain || 'external' }}" != internal ] && \
                   echo "$PWD/hbsd/toolchains/llvm21.mk" || true)"
+            sh tools/ci/show_cxx_config.sh "${{ inputs.target || 'amd64' }}" \
+               "$PWD/hbsd/src.conf.pbsd"
             if [ "${{ inputs.machdep_asm }}" = "true" ]; then
               KERNCONF="${{ inputs.kernconf }}" SRCCONF="" \
               TOOLCHAIN="${{ inputs.toolchain }}" \
