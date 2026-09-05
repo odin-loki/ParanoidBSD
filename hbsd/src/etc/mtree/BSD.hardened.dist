@@ -1,0 +1,44 @@
+#
+# The following mtree(8) specification is unique to HardenedBSD.
+# The specification describes the expected ownership and permissions
+# for a specific set of files and directories. The specification can
+# be modified to include additional files and directories.
+#
+# The specification is enforced by the periodic(8) utility,
+# and this might be extended to other contexts in in the future.
+# See '/etc/periodic/security/120.chkfileperm' for more details.
+#
+
+/set uname=root gname=wheel
+. type=dir
+    root type=dir mode=0700
+    ..
+    etc type=dir
+        pf.conf type=file mode=0600
+        crontab type=file mode=0600
+        login.conf type=file mode=0600
+        login.conf.db type=file mode=0600
+        rc.conf type=file mode=0600
+        sysctl.conf type=file mode=0600
+        syslog.conf type=file mode=0600
+        rc.firewall type=file mode=0600
+        ipf.rules   type=file mode=0600
+        ipf6.rules  type=file mode=0600
+        ipnat.rules type=file mode=0600
+        rc.conf.d type=dir mode=0700
+        ..
+        syslog.d type=dir mode=0700
+        ..
+        ssh type=dir
+            sshd_config type=file mode=0600
+        ..
+        pam.d type=dir
+            login type=file mode=0600
+            su type=file mode=0600
+	..
+   ..
+   var type=dir
+       unbound type=dir mode=0700 uname=unbound gname=unbound
+       ..
+       cron type=dir
+           allow type=file mode=0600

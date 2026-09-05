@@ -1,0 +1,4 @@
+comment = "HardenedBSD Control Library"
+desc = <<EOD
+Library for the hbsdcontrol(8) utility.
+EOD

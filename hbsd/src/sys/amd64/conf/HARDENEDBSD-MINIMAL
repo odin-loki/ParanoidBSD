@@ -1,0 +1,10 @@
+#
+# HARDENEDBSD-MINIMAL -- Mostly Minimal HardenedBSD kernel configuration file for FreeBSD/amd64
+
+include MINIMAL
+include HARDENEDBSD-CORE
+
+cpu		HAMMER
+ident		HARDENEDBSD-MINIMAL
+
+options		PAX_INSECURE_MODE
