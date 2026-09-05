@@ -57,43 +57,43 @@ SHLIB_MAJOR= 5
 WARNS?=	1
 IGNORE_PRAGMA=
 COMMON_SRCS= b_tgamma.c \
-	e_acos.c e_acosf.c e_acosh.c e_acoshf.c e_asin.c e_asinf.c \
-	e_atan2.c e_atan2f.c e_atanh.c e_atanhf.c e_cosh.c e_coshf.c e_exp.c \
-	e_expf.c e_fmod.c e_fmodf.c e_gamma.c e_gamma_r.c e_gammaf.c \
-	e_gammaf_r.c e_hypot.c e_hypotf.c e_j0.c e_j0f.c e_j1.c e_j1f.c \
-	e_jn.c e_jnf.c e_lgamma.c e_lgamma_r.c e_lgammaf.c e_lgammaf_r.c \
-	e_log.c e_log10.c e_log10f.c e_log2.c e_log2f.c e_logf.c \
-	e_pow.c e_powf.c e_rem_pio2.c \
-	e_rem_pio2f.c e_remainder.c e_remainderf.c e_scalb.c e_scalbf.c \
-	e_sinh.c e_sinhf.c e_sqrt.c e_sqrtf.c fenv.c \
-	k_cos.cpp k_cosf.c k_exp.c k_expf.c k_rem_pio2.c k_sin.c k_sinf.c \
-	k_tan.c k_tanf.c \
-	s_asinh.c s_asinhf.c s_atan.c s_atanf.c s_carg.c s_cargf.c s_cargl.c \
-	s_cbrt.c s_cbrtf.c s_ceil.c s_ceilf.c s_clog.c s_clogf.c \
-	s_copysign.c s_copysignf.c s_cos.c s_cosf.c \
-	s_csqrt.c s_csqrtf.c s_erf.c s_erff.c \
-	s_exp2.c s_exp2f.c s_expm1.c s_expm1f.c s_fabsf.c s_fdim.c \
-	s_finite.c s_finitef.c \
+	e_acos.cpp e_acosf.cpp e_acosh.cpp e_acoshf.cpp e_asin.cpp e_asinf.c \
+	e_atan2.cpp e_atan2f.cpp e_atanh.cpp e_atanhf.cpp e_cosh.cpp e_coshf.cpp e_exp.c \
+	e_expf.cpp e_fmod.c e_fmodf.c e_gamma.cpp e_gamma_r.c e_gammaf.cpp \
+	e_gammaf_r.c e_hypot.cpp e_hypotf.cpp e_j0.c e_j0f.cpp e_j1.c e_j1f.cpp \
+	e_jn.cpp e_jnf.cpp e_lgamma.cpp e_lgamma_r.cpp e_lgammaf.cpp e_lgammaf_r.cpp \
+	e_log.c e_log10.c e_log10f.c e_log2.cpp e_log2f.cpp e_logf.c \
+	e_pow.cpp e_powf.cpp e_rem_pio2.cpp \
+	e_rem_pio2f.cpp e_remainder.c e_remainderf.c e_scalb.cpp e_scalbf.cpp \
+	e_sinh.cpp e_sinhf.cpp e_sqrt.c e_sqrtf.c fenv.c \
+	k_cos.cpp k_cosf.cpp k_exp.c k_expf.c k_rem_pio2.c k_sin.cpp k_sinf.cpp \
+	k_tan.cpp k_tanf.cpp \
+	s_asinh.cpp s_asinhf.cpp s_atan.cpp s_atanf.cpp s_carg.c s_cargf.c s_cargl.c \
+	s_cbrt.cpp s_cbrtf.cpp s_ceil.c s_ceilf.c s_clog.c s_clogf.c \
+	s_copysign.c s_copysignf.c s_cos.cpp s_cosf.cpp \
+	s_csqrt.c s_csqrtf.c s_erf.cpp s_erff.cpp \
+	s_exp2.c s_exp2f.c s_expm1.cpp s_expm1f.cpp s_fabsf.c s_fdim.cpp \
+	s_finite.c s_finitef.cpp \
 	s_floor.c s_floorf.c s_fma.c s_fmaf.c \
-	s_fmax.c s_fmaxf.c s_fmaximum.c s_fmaximumf.c \
-	s_fmaximum_mag.c s_fmaximum_magf.c s_fmaximum_mag_num.c \
-	s_fmaximum_mag_numf.c s_fmaximum_num.c s_fmaximum_numf.c \
-	s_fmin.c s_fminf.c s_fminimum.c s_fminimumf.c \
-	s_fminimum_mag.c s_fminimum_magf.c s_fminimum_mag_num.c \
-	s_fminimum_mag_numf.c s_fminimum_num.c s_fminimum_numf.c \
-	s_frexp.c s_frexpf.c s_ilogb.c s_ilogbf.c \
-	s_ilogbl.c s_isfinite.c s_isnan.c s_isnormal.c \
-	s_llrint.c s_llrintf.c s_llround.c s_llroundf.c s_llroundl.c \
-	s_log1p.c s_log1pf.c s_logb.c s_logbf.c s_lrint.c s_lrintf.c \
-	s_lround.c s_lroundf.c s_lroundl.c s_modff.c \
-	s_nan.c s_nearbyint.c s_nextafter.c s_nextafterf.c \
-	s_nexttowardf.c s_remquo.c s_remquof.c \
-	s_rint.c s_rintf.c s_round.c s_roundf.c s_rsqrt.c s_rsqrtf.c \
-	s_scalbln.c s_scalbn.c s_scalbnf.c s_signbit.c \
-	s_signgam.c s_significand.c s_significandf.c s_sin.c \
-	s_sincos.c s_sincosf.c s_sinf.c \
-	s_tan.c s_tanf.c s_tanh.c s_tanhf.c s_tgammaf.c s_trunc.c s_truncf.c \
-	w_cabs.c w_cabsf.c w_drem.c w_dremf.c
+	s_fmax.c s_fmaxf.c s_fmaximum.cpp s_fmaximumf.cpp \
+	s_fmaximum_mag.cpp s_fmaximum_magf.cpp s_fmaximum_mag_num.c \
+	s_fmaximum_mag_numf.c s_fmaximum_num.cpp s_fmaximum_numf.cpp \
+	s_fmin.cpp s_fminf.cpp s_fminimum.cpp s_fminimumf.cpp \
+	s_fminimum_mag.cpp s_fminimum_magf.cpp s_fminimum_mag_num.c \
+	s_fminimum_mag_numf.c s_fminimum_num.cpp s_fminimum_numf.cpp \
+	s_frexp.cpp s_frexpf.cpp s_ilogb.cpp s_ilogbf.cpp \
+	s_ilogbl.cpp s_isfinite.cpp s_isnan.c s_isnormal.cpp \
+	s_llrint.c s_llrintf.c s_llround.cpp s_llroundf.cpp s_llroundl.cpp \
+	s_log1p.cpp s_log1pf.cpp s_logb.c s_logbf.c s_lrint.c s_lrintf.c \
+	s_lround.c s_lroundf.cpp s_lroundl.cpp s_modff.cpp \
+	s_nan.c s_nearbyint.c s_nextafter.cpp s_nextafterf.cpp \
+	s_nexttowardf.cpp s_remquo.c s_remquof.c \
+	s_rint.c s_rintf.c s_round.cpp s_roundf.cpp s_rsqrt.c s_rsqrtf.c \
+	s_scalbln.c s_scalbn.c s_scalbnf.c s_signbit.cpp \
+	s_signgam.cpp s_significand.c s_significandf.c s_sin.cpp \
+	s_sincos.cpp s_sincosf.cpp s_sinf.cpp \
+	s_tan.cpp s_tanf.cpp s_tanh.cpp s_tanhf.cpp s_tgammaf.cpp s_trunc.c s_truncf.c \
+	w_cabs.c w_cabsf.c w_drem.cpp w_dremf.cpp
 
 # IEEE-754 2008 and ISO/IEC TS 18661-4 half-cycle trignometric functions
 COMMON_SRCS+= s_cospi.c s_cospif.c \

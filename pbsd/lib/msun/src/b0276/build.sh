@@ -14,6 +14,22 @@ BIN=b0276_run
 ROOT=$(cd ../../../../.. && pwd)
 MSUN=$ROOT/hbsd/src/lib/msun/src
 
+# PBSD: the C oracle this harness compares against is a file in hbsd/src,
+# and files in hbsd/src are being renamed to .cpp as they are ported. On a
+# zero-edit port the content does not change, so the oracle is still the
+# same C and still compiles as C11 - only the name moved.
+#
+# Resolve it rather than hard-coding a suffix, so this harness keeps
+# working as more of lib/msun is ported.
+msun_src() {
+	for f in "$MSUN/$1.c" "$MSUN/$1.cpp"; do
+		if [ -f "$f" ]; then echo "$f"; return 0; fi
+	done
+	echo "build.sh: no $1.c or $1.cpp in $MSUN" >&2
+	return 1
+}
+
+
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT INT HUP TERM
 
@@ -122,8 +138,8 @@ double	__kernel_tan(double, double, int);
 #endif /* _PBSD_B0276_MATH_PRIVATE_H_ */
 EOF
 
-for f in k_rem_pio2.c e_rem_pio2.c k_tan.c; do
-	cp "$MSUN/$f" "$WORK/$f"
+for f in k_rem_pio2 e_rem_pio2 k_tan; do
+	cp "$(msun_src $f)" "$WORK/$f.c"
 done
 
 rm -rf gcm.cache "$BIN" oracle.o port.o harness.o k_rem_pio2.o e_rem_pio2.o \

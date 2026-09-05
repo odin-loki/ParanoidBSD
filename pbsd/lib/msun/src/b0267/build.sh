@@ -13,6 +13,22 @@ MODULE_NAME=pbsd.lib.msun.src.b0267
 ROOT=$(cd ../../../../.. && pwd)
 MSUN=$ROOT/hbsd/src/lib/msun/src
 
+# PBSD: the C oracle this harness compares against is a file in hbsd/src,
+# and files in hbsd/src are being renamed to .cpp as they are ported. On a
+# zero-edit port the content does not change, so the oracle is still the
+# same C and still compiles as C11 - only the name moved.
+#
+# Resolve it rather than hard-coding a suffix, so this harness keeps
+# working as more of lib/msun is ported.
+msun_src() {
+	for f in "$MSUN/$1.c" "$MSUN/$1.cpp"; do
+		if [ -f "$f" ]; then echo "$f"; return 0; fi
+	done
+	echo "build.sh: no $1.c or $1.cpp in $MSUN" >&2
+	return 1
+}
+
+
 PREREQ=$(mktemp)
 TMPDIR=$(mktemp -d)
 trap 'rm -f "$PREREQ"; rm -rf "$TMPDIR"' EXIT
@@ -65,9 +81,9 @@ static inline double rnint(double x) { return rint(x); }
 EOF
 
 sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
-    "$MSUN/k_rem_pio2.c" > "$TMPDIR/k_rem_pio2.c"
+    "$(msun_src k_rem_pio2)" > "$TMPDIR/k_rem_pio2.c"
 sed 's/#include "math.h"/#include <math.h>/; s/#include "math_private.h"/#include "math_private_skip.h"/' \
-    "$MSUN/e_rem_pio2.c" > "$TMPDIR/e_rem_pio2.c"
+    "$(msun_src e_rem_pio2)" > "$TMPDIR/e_rem_pio2.c"
 echo '#define _MATH_PRIVATE_H_' > "$TMPDIR/math_private_skip.h"
 
 rm -rf gcm.cache b0267_run oracle.o port.o harness.o k_rem_pio2.o e_rem_pio2.o \
