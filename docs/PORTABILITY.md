@@ -324,15 +324,30 @@ finding it a third time.
 | 25 | `memstick` | **kernel** | all three loader commands confirmed by echo, and the kernel still ran `/sbin/init`. A loader-prompt `set` does not reach `kern_getenv()` |
 | 26 | `memstick` | build | the loader.conf injection met a real image and found it is MBR with a BSD label, not GPT. No boot |
 | 17 | `vm` | staging | `installworld` into the image mount stopped dead at `usr.sbin/inetd`; 2h23m with no further output, cancelled |
+| 24 | `vm` | staging | the same hang, at `usr.sbin/lpr/lpc`; 1h36m, cancelled. Reproducible |
 
-Run 17 is the `vm` stage and is out of order above because it was still
-running while 19 and 20 came and went. `vm-image` with `WITH_VMIMAGES=YES
-VMFORMATS=raw VMFSLIST=ufs` does get as far as installing the world into
-`release/vm-image-raw-ufs/`, so the target is doing real work now rather
-than touching a stamp file — but it hung there and never produced
-`vm.ufs.raw`. Whether that is the 6 GB image on a slow VM, `etcupdate
-extract`, or something else is unknown; it needs a re-run on a tree with
-the current fixes before it is worth diagnosing.
+### The `vm` stage hangs reproducibly, and is not on the critical path
+
+`vm-image` with `WITH_VMIMAGES=YES VMFORMATS=raw VMFSLIST=ufs` does real
+work — it attaches an image and installs the world into
+`release/vm-image-raw-ufs/` — and has now hung twice at the same stage:
+
+| run | last line before silence | silent for |
+|---|---|---|
+| 17 | `usr.sbin/inetd` man pages | 2h23m, cancelled |
+| 24 | `usr.sbin/lpr/lpc` `_debuginstall`, then `usr.sbin/mlx5tool` | 1h36m, cancelled |
+
+Both inside `realinstall_subdir_usr.sbin`, writing many small files into
+the mounted image. Twice at the same stage is reproducible rather than
+bad luck, and neither run produced `vm.ufs.raw`.
+
+**The cause is unknown and is not guessed at here.** Not re-dispatched a
+third time: the `memstick` path builds and boots, `vm` is the convenience
+of having a login prompt rather than a requirement, and a third fifty-
+minute run that hangs in the same place buys nothing. It is worth
+returning to when the boot question is settled — the `--run`
+interrogation in `boot_test.py` needs a login, and `vm` is where that
+lives.
 
 Runs 14 to 19 all stopped in the harness rather than in the tree. Run 20
 did not:
