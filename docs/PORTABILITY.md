@@ -83,14 +83,19 @@ bugs. None of them is visible from amd64, and all four are still in
 HardenedBSD 15-stable — three of the four files are byte-identical to a fresh
 upstream clone, and the fourth differs only where upstream has moved on.
 
-| arch    | run 7   | what stopped it                                        |
-|---------|---------|--------------------------------------------------------|
-| amd64   | pass    |                                                          |
-| riscv   | pass    |                                                          |
-| arm     | fail    | `hbsd_pax_aslr.c`: no 32-bit ASLR                        |
-| arm64   | fail    | `sun50i_a64_acodec.c`: calls a removed accessor          |
-| i386    | fail    | `sys/modules/linux`: a source removed years ago          |
-| powerpc | fail    | `phyp_vscsi.c`: missing semicolon                        |
+| arch    | run 7 | run 8 | run 9 | what stopped it                          |
+|---------|-------|-------|-------|------------------------------------------|
+| amd64   | pass  | pass  | pass  |                                          |
+| riscv   | pass  | pass  | pass  |                                          |
+| arm64   | fail  | pass  | pass  | `sun50i_a64_acodec.c`, a removed accessor |
+| powerpc | fail  | pass  | pass  | `phyp_vscsi.c`, a missing semicolon       |
+| i386    | fail  | fail  | pass  | a removed source, then a missing variable |
+| arm     | fail  | fail  | pass  | 32-bit ASLR, then the ifunc shims         |
+
+**Run 9 is green on all six.** That is the first time every architecture
+PBSD claims as first tier has built the HardenedBSD kernel in one run. Six
+bugs, none of them visible from amd64, all of them still in HardenedBSD
+15-stable:
 
 **arm — `sys/hardenedbsd/hbsd_pax_aslr.c`.** The `#else /* ! __LP64__ */`
 branch never got a `PAX_ASLR_DELTA_THR_STACK_DEF_LEN`, so thread-stack ASLR
@@ -121,9 +126,31 @@ activator was removed years ago. Nobody builds the i386 linux module.
 no semicolon. A syntax error, upstream, in a file that is in the powerpc
 kernel config — which means nothing in HardenedBSD's CI compiles it.
 
-Each of these is a one-line fix and none of them was findable by reading.
-`tools/check_pbsd_marks.py` now guards all four, because an upstream merge
-takes upstream's side on a vendor file without a conflict.
+**arm — `sys/kern/sched_shim.c`.** FreeBSD 15's pluggable scheduler defines
+its 43 entry points as ifuncs, and `sys/arm/include/ifunc.h` is nine lines
+that say `__DO_NOT_HAVE_SYS_IFUNCS` and define no `DEFINE_IFUNC`. The file
+is `standard` in `sys/conf/files`, so arm could not build it at all.
+`libkern/gsb_crc32.c`, the only other machine-independent user, already
+carries a plain-C `#else`; this is that branch for the scheduler. One load
+of `active_sched` per call instead of a resolve-once branch — the trade PBSD
+exists to make.
+
+**i386 — `i386_read_exec`.** Declared in `sys/x86/include/x86_var.h`, read
+five times in i386's `pmap.c`, defined nowhere in either tree. The
+definition went with the PAX_NOEXEC rework of `vm_mmap.c` and the uses did
+not; `vm_mmap.c` still carries the comment `/* for i386_read_exec */` on an
+include kept for a variable that is not there. Defined as 0 with no sysctl:
+in stock FreeBSD it is a knob for letting readable segments be executable,
+which on a PAX_NOEXEC system is a switch for turning off the point of it.
+
+Each of these is a one-line fix and none was findable by reading.
+`tools/check_pbsd_marks.py` guards all of them by content, because an
+upstream merge takes upstream's side on a vendor file without a conflict.
+
+The rate is worth noting: six runs, six bugs, one per run, roughly an hour
+apart — because each architecture stopped at its first error and hid the
+next. The matrix now runs with `make -k` so a survey reports the whole list
+in one pass; the release path still stops at the first failure.
 
 ## SafeStack and CFI: the runtime, not the flag
 
