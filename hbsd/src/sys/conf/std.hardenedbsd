@@ -26,6 +26,20 @@ nooptions	COMPAT_FREEBSD32
 nooptions	QUEUE_MACRO_DEBUG_TRASH
 nooptions	INCLUDE_CONFIG_FILE	# reduce kernel infoleaks
 
+# INVARIANTS is a hardening option here, not a debugging one.
+# sys/hardenedbsd/hbsd_pax_common.c:65 is a hard #error without it:
+#
+#   "HardenedBSD required enabled INVARIANTS in kernel config... If you
+#    really know what you're doing you can add `options PAX_INSECURE_MODE`"
+#
+# PAX's assertions are how its invariants are enforced, so this is part of
+# the security posture and belongs to every architecture. Splitting it into
+# std.hardenedbsd.debug - which only amd64 includes - broke the kernel build
+# on arm, arm64, i386, powerpc and riscv, which is exactly the drift this
+# file exists to prevent, introduced by the file itself.
+options		INVARIANTS
+options		INVARIANT_SUPPORT
+
 # HardenedBSD hardening options
 options 	HARDEN_KLD		# Harden the kernel module interface
 options 	PAX			# PaX framework

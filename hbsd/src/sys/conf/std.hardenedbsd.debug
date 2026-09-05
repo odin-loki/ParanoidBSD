@@ -6,8 +6,9 @@
 # debugging choice, not a hardening one. Keeping them apart is what let the
 # two copies drift without anyone noticing which half had moved.
 
-options		INVARIANTS
-options		INVARIANT_SUPPORT
+# INVARIANTS and INVARIANT_SUPPORT moved to std.hardenedbsd: HardenedBSD
+# requires them wherever PAX is on, so they are not optional and not a
+# debugging choice.
 options		WITNESS
 options		WITNESS_NO_VNODE
 options		HBSD_DEBUG

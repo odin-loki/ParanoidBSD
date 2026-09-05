@@ -321,6 +321,20 @@ out:
 	return (ret);
 }
 
+/*
+ * PBSD: hybrid-core detection is amd64 only.
+ *
+ * pc_small_core is a member of amd64's struct pcpu and of no other; this file
+ * is shared x86 code and sys/modules/cpufreq/Makefile builds it for i386 as
+ * well as amd64, so PCPU_GET(small_core) does not compile there:
+ *
+ *   hwpstate_intel.c:329: error: no member named 'pc_small_core' in 'pcpu'
+ *
+ * No i386 CPU is hybrid - P-core/E-core parts are all 64-bit - so the answer
+ * on i386 is "no small cores", which is what a zero count means. Guarding the
+ * use is correct rather than merely expedient.
+ */
+#ifdef __amd64__
 static void
 intel_hwpstate_hybrid_cb(void *ctx)
 {
@@ -328,6 +342,7 @@ intel_hwpstate_hybrid_cb(void *ctx)
 
 	atomic_add_32(small_cores, PCPU_GET(small_core));
 }
+#endif
 
 void
 intel_hwpstate_identify(driver_t *driver, device_t parent)
@@ -359,10 +374,14 @@ intel_hwpstate_identify(driver_t *driver, device_t parent)
 	 * the resulting package frequency depends on the last core that
 	 * sets the frequency.
 	 */
+#ifdef __amd64__
 	smp_rendezvous_cpus(all_cpus, smp_no_rendezvous_barrier,
 	    intel_hwpstate_hybrid_cb, smp_no_rendezvous_barrier, &small_cores);
 	if (small_cores > 0 && small_cores < mp_ncores)
 		hwpstate_pkg_ctrl_enable = false;
+#else
+	(void)small_cores;	/* no hybrid-core i386 parts exist */
+#endif
 
 	if (BUS_ADD_CHILD(parent, 10, "hwpstate_intel", device_get_unit(parent))
 	    == NULL)
