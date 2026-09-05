@@ -150,6 +150,15 @@ jobs:
       - name: Every architecture's csu entry point compiles
         run: tools/check_csu_builds.sh
 
+      # lib/libc names 1,051 sources by hand and finds them through one
+      # shared .PATH, so an entry whose file was deleted is not visibly
+      # wrong anywhere - and MDSRCS is dropped whole under
+      # WITHOUT_MACHDEP_OPTIMIZATIONS, so it stays inert until something
+      # asks for the assembly back. Five such entries survived the removal
+      # of the 74 machine-dependent .S files.
+      - name: Every source lib/libc names is on disk
+        run: python3 tools/check_libc_srcs.py --gate
+
       # The compiled-in default of every hardening knob, from the source.
       # show_hardening.sh answers "is PAX_ASLR compiled in"; this answers
       # "and what does hardening.pax.aslr.status default to", which is a

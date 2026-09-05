@@ -50,6 +50,7 @@ jobs:
           python3 tools/arch_contract.py hbsd/src
           python3 tools/check_source_includes.py --gate
           tools/check_csu_builds.sh
+          python3 tools/check_libc_srcs.py --gate
 
   kernel:
     needs: preflight

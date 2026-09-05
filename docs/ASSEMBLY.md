@@ -198,3 +198,38 @@ back without a conflict.
 `.S` files deleted from it were deleted, not switched off. The `lib/msun`
 figures were describing an option that was not taking effect on the two x86
 architectures. The next `buildworld` is what says how much moves.
+
+## The removal was five entries and six files short
+
+`tools/check_source_includes.py` and `tools/check_libc_srcs.py`, both
+written for other reasons, together found what the removal of the 74 `.S`
+files left behind. Three loose ends, none of them visible in any build PBSD
+runs:
+
+* `lib/libc/amd64/stdlib/Makefile.inc` was one line, `MDSRCS+=div.S ldiv.S
+  lldiv.S`, and all three files were deleted. `lib/libc/i386/stdlib` the
+  same for two. The commit said the `MDSRCS` entries were "dropped from six
+  Makefile.inc files" — the `string` ones were, the `stdlib` ones were not.
+* `lib/libc/powerpc64/string` kept `bcopy_vsx.S`, `memcpy_vsx.S` and
+  `memmove_vsx.S` in `MDSRCS` after their templates went. Each is macro
+  definitions ending in `#include "bcopy.S"`, so none of them can compile.
+  The three `_resolver.c` beside them are just as dead: `bcopy_resolver.c`'s
+  ifunc chooses between `__bcopy_vsx` and the `__bcopy` that `bcopy.S`
+  defined.
+
+All six are now removed with their entries, and `strcpy`/`strncpy` keep
+their POWER ISA 2.05 variants, which are complete on disk.
+
+**Why nothing caught it.** `MK_MACHDEP_OPTIMIZATIONS=no` drops `MDSRCS`
+whole (`lib/libc/Makefile:159`), and that is what `src.conf.pbsd` asks for,
+so an `MDSRCS` entry naming a file that does not exist is inert. It stays
+inert right up until something asks for the assembly back — and
+`pbsd-boot-image`'s `machdep_asm` input does exactly that. `powerpc` in the
+matrix is `TARGET_ARCH=powerpc64`, so this was one of the six.
+
+`check_libc_srcs.py` resolves the way bmake does: lib/libc is one build with
+one `.PATH` list, and a source named anywhere can live in any directory on
+it. Resolving per-directory instead reported nineteen sources that are all
+perfectly findable — `ldexp.c` in `gen`, `machdep_ldis*.c` in `gdtoa`,
+`softfloat.c` under `softfloat/bits{32,64}` — and a check that cannot tell
+those from the five real ones is not a check.
