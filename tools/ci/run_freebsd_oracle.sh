@@ -225,10 +225,18 @@ echo "== wider scope"
 #
 # Reported, not ratcheted. The floors are per-scope by construction, and a
 # floor set against 321 files says nothing about 1,220.
+#
+# --ir-limit covers the scope, for the reason it now does for lib/msun: a
+# cap smaller than the scope does not mean the rest failed, it means the
+# rest was recorded `skipped_budget` and never compiled. On lib/msun the
+# same cap was hiding 86 ports that had been verifying all along, and
+# "37 of 120" here is 37 of the first tenth of the library in discovery
+# order. The whole job took four minutes of a 120-minute timeout before
+# lib/msun was widened and six after.
 python3 tools/run_todo_passes.py \
     --scope lib/libc \
     --all-passes --safe --skip-corpus \
-    --ir-limit 120 --diff-limit 40 \
+    --ir-limit 1500 --diff-limit 40 \
     --file-timeout 30 > /dev/null || true
 python3 - <<'PY2'
 import json, pathlib
@@ -265,6 +273,20 @@ else:
     else:
         print("\n          no port was IR-equal, so there is nothing to "
               "compare ABIs on.")
+
+    # Name the committable ones, for the same reason lib/msun's are named:
+    # a count cannot be acted on. Same strict definition - IR-equal and
+    # ABI-equal - though without target flags here, since this phase does
+    # not run under them.
+    ready = sorted(r.get("source") or "?" for r in d.get("records", [])
+                   if (r.get("ir") or {}).get("equal")
+                   and (r.get("ir") or {}).get("abi_equal"))
+    print(f"\n          committable: {len(ready)}")
+    for s_ in ready:
+        print(f"            {s_}")
+    pathlib.Path("/tmp/pbsd_libc.txt").write_text(
+        f"  lib/libc: IR {d['ir_equal']}/{d['ir_ran']}  "
+        f"ABI {d.get('abi_equal', 0)}  committable {len(ready)}\n")
 PY2
 
 echo
@@ -358,8 +380,26 @@ PROBE_OUT=/tmp/pbsd_probe.txt
 echo
 echo "== SUMMARY"
 # The one block worth reading. Everything above is evidence for it.
-cat /tmp/pbsd_ratchet.txt /tmp/pbsd_targetflags.txt 2>/dev/null || \
-    echo "  (no summary recorded - a phase above did not finish)"
+#
+# One file per phase, catted one at a time. `cat a b c` returns non-zero if
+# any one of them is missing, so a single unfinished phase used to print the
+# "no summary recorded" line underneath the two lines that had in fact been
+# recorded. Now a missing file names the phase that did not finish, and the
+# blanket line only appears when nothing at all was recorded.
+SUMMARY_ANY=0
+for f in ratchet:"lib/msun floors" \
+         targetflags:"lib/msun under target flags" \
+         libc:"lib/libc"; do
+    name="${f%%:*}"; label="${f#*:}"
+    if [ -s "/tmp/pbsd_${name}.txt" ]; then
+        cat "/tmp/pbsd_${name}.txt"
+        SUMMARY_ANY=1
+    else
+        echo "  ${label}: phase did not finish, nothing recorded"
+    fi
+done
+[ "$SUMMARY_ANY" = 1 ] || \
+    echo "  (no summary recorded - every phase above failed to finish)"
 echo "  why 25 ports export a mangled name (last lines):"
 tail -14 /tmp/pbsd_probe.txt 2>/dev/null | sed 's/^/    /' || \
     echo "    (not probed)"
