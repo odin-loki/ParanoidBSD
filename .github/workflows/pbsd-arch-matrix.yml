@@ -59,10 +59,11 @@ jobs:
           copyback: false
           mem: 8192
           prepare: |
-            pkg install -y python311
+            pkg install -y python311 llvm21
           # The VM is a separate machine over ssh, so a step-level env: never
           # reaches it. TARGET_ARCH is derived by the script from TARGET.
           run: |
             TARGET="${{ matrix.target }}" \
             KERNCONF="${{ inputs.kernconf || 'HARDENEDBSD' }}" \
+            TOOLCHAIN=external \
               sh tools/ci/build_boot_image.sh kernel

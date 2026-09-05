@@ -30,9 +30,9 @@ on:
           MK_TOOLCHAIN, so 14,337 files stop being compiled and the world
           stops shipping a compiler - at the cost of self-hosting.
         required: false
-        default: 'internal'
+        default: 'external'
         type: choice
-        options: [internal, external]
+        options: [external, internal]
       machdep_asm:
         description: >-
           Keep the hand-written machine-dependent assembly in libc, msun and
@@ -81,7 +81,7 @@ jobs:
           mem: 8192
           prepare: |
             pkg install -y python311
-            if [ "${{ inputs.toolchain }}" = "external" ]; then
+            if [ "${{ inputs.toolchain || 'external' }}" != "internal" ]; then
               pkg install -y llvm21
             fi
           # The VM is a separate machine over ssh, so a step-level `env:`

@@ -54,9 +54,12 @@ SRCCONF="${SRCCONF-$REPOROOT/hbsd/src.conf.pbsd}"
 # stops shipping a compiler and contrib/llvm-project stops being compiled -
 # 14,337 files that the running system does not need.
 #
-# The cost is self-hosting: the installed system cannot rebuild itself. Off by
-# default because that is a property to give up on purpose.
-TOOLCHAIN="${TOOLCHAIN:-internal}"
+# The cost is self-hosting: the installed system cannot rebuild itself without
+# installing a compiler first. That is a real property and it is given up
+# deliberately - building a compiler in order to build a system that does not
+# run one is most of buildworld's time for a benefit PBSD was not using.
+# TOOLCHAIN=internal builds it in-tree if a release ever needs to be.
+TOOLCHAIN="${TOOLCHAIN:-external}"
 CROSS_TOOLCHAIN=""
 EXTRA_SRCCONF=""
 if [ "$TOOLCHAIN" = "external" ]; then

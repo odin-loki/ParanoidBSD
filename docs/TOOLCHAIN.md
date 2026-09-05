@@ -13,11 +13,11 @@ without getting the benefit of treating it as one.
 ## The two configurations
 
 ```sh
-# in-tree (default): builds clang, ships clang, self-hosting
+# external (default): builds against packaged clang21, world ships no compiler
 sh tools/ci/build_boot_image.sh world
 
-# external: builds against packaged clang21, world ships no compiler
-TOOLCHAIN=external sh tools/ci/build_boot_image.sh world
+# internal: builds clang from contrib/llvm-project, self-hosting
+TOOLCHAIN=internal sh tools/ci/build_boot_image.sh world
 ```
 
 External sets `CROSS_TOOLCHAIN=hbsd/toolchains/llvm21.mk` and adds
@@ -32,8 +32,26 @@ installing a compiler first. For a general-purpose OS that is a significant
 property; for a hardened appliance-style system it is arguably a feature,
 since a compiler on the running system is attack surface.
 
-This is why external is not the default. It is a property to give up
-deliberately, not to discover you have given up.
+External is the default, and that is a deliberate trade rather than an
+oversight. The arguments for self-hosting are real and worth stating so the
+choice can be revisited:
+
+- **Supply chain.** Building the compiler from readable source rather than
+  trusting a binary package. For a hardening-focused system, trusting-trust
+  is not a theoretical concern.
+- **Reproducibility.** The compiler that built a release is pinned in the
+  tree; a package repository can change or yank a version.
+- **Patchability.** The compiler could be patched for the OS - hardening
+  defaults, SafeStack, CFI.
+- **Bootstrap from nothing.** Clone plus a running FreeBSD, no network.
+
+Set against that: PBSD was not using any of them. contrib/llvm-project is
+carried at llvmorg-21.1.8 with no PBSD patches to the compiler itself, so the
+patchability argument is unexercised; and building a compiler in order to
+build a system that does not run one is most of buildworld's time.
+
+`TOOLCHAIN=internal` still works and is one word, so a release that needs the
+self-hosted property can have it.
 
 ## What it buys
 
