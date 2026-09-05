@@ -1,12 +1,31 @@
-# PBSD — amd64 + arm64 only. Include from /etc/src.conf or make SRCCONF=...
-WITHOUT_LIB32=YES
-WITHOUT_LLVM_TARGET_ALL=YES
-WITH_LLVM_TARGET_X86=YES
-WITH_LLVM_TARGET_AARCH64=YES
-WITHOUT_LLVM_TARGET_ARM=YES
-WITHOUT_LLVM_TARGET_POWERPC=YES
-WITHOUT_LLVM_TARGET_RISCV=YES
-WITHOUT_LLVM_TARGET_BPF=YES
-WITHOUT_LLVM_TARGET_MIPS=YES
-WITHOUT_UBOOT=YES
+# PBSD build options. Include from /etc/src.conf, or make SRCCONF=...
+#
+# Every architecture is first class. This file used to say the opposite -
+# WITHOUT_LIB32, and the LLVM backends for arm, powerpc and riscv turned off
+# - which did not make the assembly problem smaller, it hid most of it. The
+# tree carries 71,905 lines of its own assembly across six architectures;
+# with four of them dropped it looked like 40,156.
+#
+# See docs/ASSEMBLY.md for the per-architecture breakdown.
+
+# No machine-dependent assembly in libc, msun or libmd.
+#
+# This is upstream's own switch, not a PBSD invention. lib/libc/Makefile:159:
+#
+#   .if empty(MDSRCS) || ${MK_MACHDEP_OPTIMIZATIONS} == no
+#   SRCS+=  ${MISRCS}
+#
+# Machine-independent C is selected instead, and it already exists: of the 80
+# machine-dependent .S files libc lists, 74 have a C counterpart in MISRCS by
+# construction, and the remaining 6 are ifunc-dispatched variants (_vsx,
+# _zva64, _arch_2_05) of functions that also have C. lib/msun honours the
+# same option for its ARCH_SRCS, and lib/libmd for rmd160.
+#
+# It costs performance on the hand-tuned string and math routines. It buys
+# 12,344 lines in libc alone that a new architecture no longer has to write,
+# and it is one line rather than a rewrite. tools/asm_removal_plan.py has the
+# current figures.
+WITHOUT_MACHDEP_OPTIMIZATIONS=YES
+
+# Not needed for any target PBSD builds.
 WITHOUT_OFED=YES
