@@ -9,4 +9,15 @@
 # ships. -fno-exceptions restores `nounwind` and the attribute group whose
 # absence shifted every later group number, and `mustprogress` is now
 # normalised away like `noundef` already was. +15 ports, no pass changed.
-88
+
+# Run 21 (commit 0c7f5735a, same host and scope): 199, up from 88, with no
+# change to any pass. --ir-limit went from 120 to 400. The cap was smaller
+# than lib/msun, so 201 of its 321 files had been recorded `skipped_budget`
+# - never compiled, never compared - and "88 of 120" was 88 of the first
+# third of the library in discovery order. The other 86 were verifying all
+# along and nothing had asked.
+#
+# From here the count is verified + committed. A port that is committed
+# stops being a .c, so discover_sources() stops finding it and ir_equal
+# falls by one; without the sum, landing a port would read as losing one.
+199

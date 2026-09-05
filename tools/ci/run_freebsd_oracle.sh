@@ -33,6 +33,55 @@ python3 --version
 uname -a
 
 echo
+echo "== which math.h an msun source actually sees"
+# 25 lib/msun ports come out IR-equal and ABI-unequal, and every one of them
+# is in the fmaximum/fminimum family:
+#
+#   C only  : fmaximum
+#   C++ only: _Z8fmaximumdd
+#
+# The first guess was the __ISO_C_VISIBLE >= 2023 guard those declarations
+# sit behind in the tree's math.h. That is wrong - the macro comes out 2023
+# under -std=c++23 as well as C17, tested directly.
+#
+# The real suspect is oracle_include_flags(): the tree's headers are added
+# with -idirafter, not -I, on purpose, so that on Linux glibc wins <stdlib.h>
+# and libstdc++ does not end up including FreeBSD's. The side effect is that
+# `#include <math.h>` in s_fmaximum.c resolves to the HOST's math.h, not
+# lib/msun/src/math.h. If the host's predates the fmaximum addition the
+# function is declared nowhere - so C emits `fmaximum` and C++ mangles it,
+# the bodies stay identical, and the port is blamed for a header it never
+# saw.
+#
+# Calling an undeclared function is an error in C++ and not in C, so one
+# compile of each settles it. Diagnostic only; nothing here gates.
+probe_dir=$(mktemp -d)
+printf '#include <math.h>\ndouble probe(void){ return fmaximum(1.0, 2.0); }\n' \
+    > "$probe_dir/probe.cc"
+MSUN_SRC="$ROOT/hbsd/src/lib/msun/src"
+if clang++ -std=c++23 -fsyntax-only "$probe_dir/probe.cc" 2>/dev/null; then
+    echo "  host <math.h> alone:            fmaximum IS declared"
+else
+    echo "  host <math.h> alone:            fmaximum is NOT declared"
+fi
+if clang++ -std=c++23 -fsyntax-only -I"$MSUN_SRC" "$probe_dir/probe.cc" \
+        2>/dev/null; then
+    echo "  with -I lib/msun/src:           fmaximum IS declared"
+else
+    echo "  with -I lib/msun/src:           fmaximum is NOT declared"
+fi
+if clang++ -std=c++23 -fsyntax-only -idirafter"$MSUN_SRC" \
+        "$probe_dir/probe.cc" 2>/dev/null; then
+    echo "  with -idirafter lib/msun/src:   fmaximum IS declared"
+else
+    echo "  with -idirafter lib/msun/src:   fmaximum is NOT declared"
+fi
+echo "  (-idirafter is what the oracle uses; -I is what lib/msun's own"
+echo "   Makefile uses. If those two rows disagree, the 25 ABI mismatches"
+echo "   are the oracle's include order and not the ports.)"
+rm -rf "$probe_dir"
+
+echo
 echo "== golden corpus (hard gate)"
 python3 tools/run_todo_passes.py --corpus-only > /tmp/corpus.json
 python3 - <<'PY'
@@ -149,15 +198,34 @@ for r in mismatches[:4]:
 if len(mismatches) > 4:
     print(f"\n({len(mismatches) - 4} further mismatches not shown)")
 
-floor = 0
-if floor_file.exists():
-    for line in floor_file.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#"):
-            floor = int(line)
-            break
+def _read_floor(path):
+    if path.exists():
+        for line in path.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                return int(line)
+    return 0
+
+
+# Both floors are read here rather than one at each check, so the summary
+# below can name them before either check can exit.
+floor = _read_floor(floor_file)
+abi_floor = _read_floor(abi_floor_file)
 
 total = equal + len(ported)
+abi_total_pre = abi_equal + len(ported)
+
+# Everything above is hundreds of lines by the time the committable list is
+# printed, and the numbers that matter end up buried in the middle. Stash
+# them for the SUMMARY block at the end, so reading a run is a tail and not
+# a search - and do it BEFORE the floor checks, because a run that fails a
+# floor is exactly the run whose numbers someone wants.
+pathlib.Path("/tmp/pbsd_ratchet.txt").write_text(
+    f"  msun ratchet:  {equal} verified + {len(ported)} committed = {total} "
+    f"(floor {floor})\n"
+    f"  msun ABI:      {abi_equal} ABI-equal + {len(ported)} committed = "
+    f"{abi_total_pre} (floor {abi_floor})\n")
+
 if total < floor:
     print(f"\nFAIL {equal} ports verify and {len(ported)} are committed, "
           f"{total} against a floor of {floor}. A port that was proved "
@@ -169,14 +237,6 @@ if total > floor:
     print(f"    Raise {floor_file} to {total} to lock this in.")
 
 # The second, stricter ratchet: same symbols, not just same behaviour.
-abi_floor = 0
-if abi_floor_file.exists():
-    for line in abi_floor_file.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#"):
-            abi_floor = int(line)
-            break
-
 # Name the ports that compute the right answer under the wrong symbol. These
 # are the ones that look committable and are not.
 abi_broken = [r for r in d["records"]
@@ -302,4 +362,16 @@ ready = sorted(r.get("source") or "?" for r in d["records"]
 print(f"\ncommittable under target flags: {len(ready)}")
 for s in ready:
     print(f"  {s}")
+
+import pathlib as _pl
+_pl.Path("/tmp/pbsd_targetflags.txt").write_text(
+    f"  under target flags: IR {d['ir_equal']}/{d['ir_ran']}  "
+    f"ABI {d.get('abi_equal', 0)}  committable {len(ready)}\n")
 PY2
+
+echo
+echo "== SUMMARY"
+# The one block worth reading. Everything above is evidence for it.
+cat /tmp/pbsd_ratchet.txt /tmp/pbsd_targetflags.txt 2>/dev/null || \
+    echo "  (no summary recorded - a phase above did not finish)"
+echo "  committed ports: $(find "$ROOT/hbsd/src/lib/msun" -name '*.cpp' | wc -l | tr -d ' ')"

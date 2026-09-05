@@ -28,4 +28,25 @@
 #
 # 88 of 120 ports are now both semantically identical to their C original
 # and exporting the same symbols. That is the committable set.
-88
+
+# Run 21 (commit 0c7f5735a, same host and scope): 174, from the same
+# --ir-limit raise described in the sibling floor. 199 ports are IR-equal
+# and 174 of those are ABI-equal, so the gap is back to 25 - and all 25 are
+# one family:
+#
+#   C only  : fmaximum          C++ only: _Z8fmaximumdd
+#   C only  : fmaximum_mag      C++ only: _Z12fmaximum_magdd
+#   ... fminimum, _num, _mag_num, and the f/l variants
+#
+# Not the same cause as the 14 that closed in run 13. lib/msun/src/math.h
+# declares all of them inside __BEGIN_DECLS, and the __ISO_C_VISIBLE >= 2023
+# guard they sit behind does evaluate true under -std=c++23 (tested).
+# The suspect is oracle_include_flags(), which adds the tree's headers with
+# -idirafter rather than -I so that glibc wins the standard headers on
+# Linux: `#include <math.h>` in s_fmaximum.c then resolves to the HOST's
+# math.h, which on this runner may predate fmaximum entirely. If so the
+# function is declared nowhere, C emits a plain symbol, C++ mangles it, and
+# 25 sound ports are blamed for a header they never saw. run_freebsd_oracle
+# .sh now probes exactly that and prints the answer; this floor stays at the
+# measured 174 until it does.
+174
