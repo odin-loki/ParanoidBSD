@@ -114,6 +114,15 @@ jobs:
       - name: Generic stdint/inttypes — same expansion as the six headers
         run: python3 tools/stdint_generic_check.py
 
+      # WITHOUT_MACHDEP_OPTIMIZATIONS was set and inert for lib/msun on
+      # amd64 and i386 - every reporter said the option was enabled, because
+      # it was, and the makefile appended both the C and the assembly under
+      # the same object name. Nothing failed and nothing warned. This checks
+      # that each of the four consumers still has a mechanism that takes
+      # effect, and that a fifth has not appeared without one.
+      - name: MACHDEP option — set is not the same as in effect
+        run: python3 tools/machdep_option_check.py
+
       # A report, not a gate. arch_duplication.py, atomic_survey.py and
       # asm_inventory.py measure how much per-architecture code there is and
       # arch_interface.py measures how much of it is one interface written
