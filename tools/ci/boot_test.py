@@ -10,7 +10,8 @@ have noticed.
 
 So: start the image, watch the serial console, and decide from what it says.
 
-  * a marker from the list below means it booted;
+  * three phases are tracked apart - the loader ran, the kernel started,
+    userland is talking - and only the third is a boot;
   * a panic, a mountroot prompt or a trap means it did not, and the line is
     printed rather than summarised;
   * silence until the timeout means it did not get far enough to say anything,
@@ -42,22 +43,53 @@ import subprocess
 import sys
 import time
 
-# Reaching any of these means the kernel started, mounted root, and ran init.
-SUCCESS = [
-    re.compile(rb"login:"),
-    re.compile(rb"Welcome to (Paranoid|Hardened|Free)BSD"),
-    re.compile(rb"Starting local daemons"),
+# Three phases, kept apart on purpose.
+#
+# The first version of this had one SUCCESS list and it contained
+#
+#     re.compile(rb"Welcome to (Paranoid|Hardened|Free)BSD")
+#
+# which is the title of the BOOT LOADER MENU. Run 15 matched it four seconds
+# in, reported "OK booted: reached userland", and exited - and the log
+# contains no "Copyright (c) 1992", no "real memory  =" and no trademark
+# line, because the kernel had not been loaded yet. The tool declared the
+# system booted while it was sitting in /boot/lua drawing a menu.
+#
+# That is the most consequential possible version of the mistake this
+# project keeps making: a pattern that matches something NEAR the answer.
+# So the phases are separate, the verdict is the furthest one reached, and
+# success requires the third.
+
+# The loader ran. Says nothing about the kernel.
+LOADER = [
+    re.compile(rb"FreeBSD/[a-z0-9]+ bootstrap loader"),
+    re.compile(rb"Loading /boot/(?:defaults/)?loader\.conf"),
+    re.compile(rb"Welcome to (?:Paranoid|Hardened|Free)BSD"),  # the menu title
+    re.compile(rb"Consoles: internal video/keyboard"),
 ]
-# Seen early enough that it means the kernel is alive even if userland is not.
-PROGRESS = [
-    re.compile(rb"FreeBSD/[a-z0-9]+ \("),
-    re.compile(rb"Booting\.\.\."),
-    re.compile(rb"KDB: debugger backends"),
+
+# The kernel started. Says nothing about userland.
+KERNEL = [
+    re.compile(rb"Copyright \(c\) 199[0-9]-"),
+    re.compile(rb"FreeBSD is a registered trademark"),
     re.compile(rb"real memory\s*="),
+    re.compile(rb"avail memory\s*="),
+    re.compile(rb"KDB: debugger backends"),
+    re.compile(rb"Timecounter \""),
 ]
-SHELL_PROMPT = re.compile(rb"(?:^|\n)[^\n]*[#$] $|(?:^|\n)# ")
-LOGIN_PROMPT = re.compile(rb"login: *$")
-PASSWORD_PROMPT = re.compile(rb"[Pp]assword: *$")
+
+# init ran and something in userland is talking. This is a boot.
+USERLAND = [
+    re.compile(rb"login:"),
+    re.compile(rb"Starting local daemons"),
+    re.compile(rb"Enter full pathname of shell"),
+    # bsdinstall, which is where an installer image ends up
+    re.compile(rb"Welcome to the (?:Paranoid|Hardened|Free)BSD installer"),
+    re.compile(rb"\bInstall\b.{0,40}\bShell\b.{0,40}\bLive"),
+    re.compile(rb"bsdinstall"),
+]
+
+PHASES = [("loader", LOADER), ("kernel", KERNEL), ("userland", USERLAND)]
 
 FAILURE = [
     (re.compile(rb"panic:.*"), "kernel panic"),
@@ -65,6 +97,10 @@ FAILURE = [
     (re.compile(rb"mountroot>"), "could not mount root"),
     (re.compile(rb"Manual root filesystem specification"), "could not mount root"),
 ]
+
+SHELL_PROMPT = re.compile(rb"(?:^|\n)[^\n]*[#$] $|(?:^|\n)# ")
+LOGIN_PROMPT = re.compile(rb"login: *$")
+PASSWORD_PROMPT = re.compile(rb"[Pp]assword: *$")
 
 QEMU = {
     "amd64": ["qemu-system-x86_64", "-machine", "q35", "-m", "2048"],
@@ -244,7 +280,7 @@ def main() -> int:
 
     started = time.time()
     buf = b""
-    progressed = False
+    reached: list[str] = []
     verdict = None
     # Not a with-block: the interrogation phase below writes to the same
     # log, and closing it at the end of the boot loop made the first run of
@@ -272,10 +308,11 @@ def main() -> int:
                     break
             if verdict:
                 break
-            if not progressed and any(p.search(buf) for p in PROGRESS):
-                progressed = True
-                print("\n  [kernel is alive]\n")
-            if any(p.search(buf) for p in SUCCESS):
+            for name, pats in PHASES:
+                if name not in reached and any(p.search(buf) for p in pats):
+                    reached.append(name)
+                    print(f"\n  [{name} reached]\n")
+            if "userland" in reached:
                 verdict = ("OK", "reached userland", "")
                 break
 
@@ -297,6 +334,7 @@ def main() -> int:
     elapsed = time.time() - started
 
     print(f"\n--- {elapsed:.0f}s, log in {args.log}")
+    print(f"    phases reached: {', '.join(reached) or 'none'}")
     if verdict and verdict[0] == "OK":
         print(f"OK  booted: {verdict[1]}")
         if shell is not None:
@@ -313,11 +351,17 @@ def main() -> int:
         print(f"FAIL {verdict[1]}")
         print(f"     {verdict[2]}")
         return 1
-    if progressed:
-        print("FAIL the kernel started but never reached userland "
-              f"within {args.timeout}s.")
-        print("     That is a hang after boot, not a boot failure - the tail "
-              "of the log is where it stopped.")
+    if "kernel" in reached:
+        print(f"FAIL the kernel started and never reached userland in "
+              f"{args.timeout}s.")
+        print("     A hang after the kernel came up, not a boot failure. The")
+        print("     tail of the log is where it stopped.")
+        return 1
+    if "loader" in reached:
+        print(f"FAIL the loader ran and the kernel never started in "
+              f"{args.timeout}s.")
+        print("     The loader menu drawing itself is not a boot. This is the")
+        print("     case run 15 reported as success.")
         return 1
     print(f"FAIL nothing on the serial console in {args.timeout}s.")
     print("     The loader did not run, or the image is not bootable at all.")

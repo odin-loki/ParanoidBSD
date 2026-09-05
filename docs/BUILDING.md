@@ -55,16 +55,60 @@ on FreeBSD because `release/` wants a FreeBSD host; booting it is just QEMU
 and does not. The boot log is uploaded whether the boot passed or failed,
 because a failed boot is exactly when it is wanted.
 
-**It has not run yet.** Every `pbsd-boot-image` run so far has failed in
-"Build on FreeBSD", so "Collect image", "Boot it" and the upload were all
-skipped — the step reports `skipped`, not a result, and it would be easy to
-read a green-looking run summary as a boot that happened. Runs 8, 9 and 11
-all died sixteen minutes in on the same missing SafeStack runtime, which
-turned out to be a triple mismatch rather than a missing archive (see
-`docs/PORTABILITY.md`). Run 12 got past it: `>>> World build completed on
-Sat Sep 5 08:25:07 UTC 2026`, with SafeStack and CFI linking. Until a run
-reaches "Boot it", PBSD has never been started, and nothing in this
-repository claims otherwise.
+### Run 15 reached it, and the answer was wrong
+
+Run 15 built a memstick, collected it, and ran the boot test, which said:
+
+```
+booting out/memstick.img (1178 MB) as amd64
+--- 4s, log in out/boot.log
+OK  booted: reached userland
+```
+
+**It had not.** Four seconds in, the console was here:
+
+```
+FreeBSD/x86 bootstrap loader, Revision 3.0
+Loading /boot/defaults/loader.conf
+Loading /boot/loader.conf
+... Welcome to HardenedBSD ...          <- the loader MENU
+```
+
+and the log contains no `Copyright (c) 1992`, no `real memory  =` and no
+trademark line. The kernel had not been loaded. The tool matched
+
+```python
+re.compile(rb"Welcome to (Paranoid|Hardened|Free)BSD")
+```
+
+against the title of the boot loader's own menu and called it userland.
+
+That is the same defect this project has now hit six times — a check that
+returns something which parses as an answer to a question it was not asking
+— and this is the most consequential instance of it, because the wrong
+answer was "PBSD boots".
+
+`boot_test.py` now tracks three phases separately and only the third is a
+boot:
+
+| phase | what it proves | markers |
+|---|---|---|
+| `loader` | `/boot/loader` ran | bootstrap loader banner, `Loading /boot/...`, the menu title |
+| `kernel` | the kernel started | `Copyright (c) 199x-`, `real memory =`, `avail memory =`, `Timecounter "`, the trademark line |
+| `userland` | init ran | `login:`, `Starting local daemons`, `bsdinstall`, `Enter full pathname of shell` |
+
+The verdict is the furthest phase reached, and there is a distinct failure
+message for each of "the loader ran and the kernel never started", "the
+kernel started and never reached userland", and "nothing at all".
+
+Verified by replaying **run 15's actual console bytes** through the fixed
+tool: it reports `phases reached: loader` and fails with *the loader menu
+drawing itself is not a boot*. A synthetic full boot still passes, a
+kernel-that-hangs is reported as a hang, and a panic still wins over
+everything.
+
+**So: PBSD's loader runs.** That is further than any previous run got and it
+is not a boot. Whether the kernel starts is still open.
 
 ## Asking the system about itself
 
