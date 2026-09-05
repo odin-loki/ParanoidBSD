@@ -123,6 +123,14 @@ jobs:
       - name: MACHDEP option — set is not the same as in effect
         run: python3 tools/machdep_option_check.py
 
+      # Every setuid-root binary is a local privilege escalation waiting for
+      # a bug. FreeBSD declares them in each program's Makefile, so the set
+      # is readable without building. The gate is that the set does not
+      # change silently - gaining one from an upstream merge is not
+      # something to find out later.
+      - name: setuid inventory — the set has not changed
+        run: python3 tools/setuid_inventory.py --gate
+
       # A report, not a gate. arch_duplication.py, atomic_survey.py and
       # asm_inventory.py measure how much per-architecture code there is and
       # arch_interface.py measures how much of it is one interface written

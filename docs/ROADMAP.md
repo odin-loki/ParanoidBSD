@@ -372,9 +372,23 @@ runtime defaults is checked by anything.
       never been asked what else a paranoid system has no business shipping —
       `sendmail`, `telnet`, `rsh`, `tftp`, `finger`, `talk`, `bsnmp`, `ppp`,
       `slattach`. Each is a `WITHOUT_` line and an attack-surface argument.
-- [ ] **setuid inventory.** Nothing enumerates what ships setuid or setgid.
-      That is one `find` over the staged tree and it is the single most
-      useful hardening report a BSD can produce.
+- [x] ~~setuid inventory.~~ `tools/setuid_inventory.py`. **30 programs are
+      declared setuid or setgid**, four of them mode `6555` — setuid *and*
+      setgid root: `authpf`, `lpq`, `lpr`, `lprm`. Eleven of the thirty are
+      removed by a `src.conf` option that PBSD does not currently set:
+      `WITHOUT_AT`, `WITHOUT_BLUETOOTH`, `WITHOUT_QUOTAS`, `WITHOUT_AUTHPF`,
+      `WITHOUT_LPR` (four binaries), `WITHOUT_PPP`, `WITHOUT_SENDMAIL`,
+      `WITHOUT_INET6`. The other nineteen are `login`, `su`, `passwd`,
+      `chpass`, `newgrp`, `ping`, `shutdown` and friends — what a Unix cannot
+      drop without stopping being one. Gated: a new setuid binary fails CI.
+      The hand-written allowlist missed all four `6555` entries and the tool
+      caught its own author on the first run.
+- [ ] **Decide the eleven.** Each is one `WITHOUT_` line in
+      `src.conf.pbsd` and removes a setuid-root program, its bugs and its
+      attack surface together. `WITHOUT_LPR` alone removes four.
+- [ ] **The other half of the inventory** is `find -perm -4000` over a
+      staged tree, which answers what a built image actually contains rather
+      than what the tree declares. Needs a build.
 
 ## 17. `libexec/rtld-elf` — the highest-value target in userland
 
