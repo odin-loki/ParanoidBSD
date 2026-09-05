@@ -110,7 +110,7 @@ one.
 | eliminable `.S` | 28,820 lines | generic C already present, via `MK_MACHDEP_OPTIMIZATIONS` |
 | `_stdint.h`, `_inttypes.h` | 960 lines, 4-5 copies | `<cstdint>` is literally this |
 | `stand/ficl/<arch>/sysdep.{c,h}` | 810 duplicated lines, 6 arches, 0.95 similar | one implementation |
-| `lib/libc/<arch>/softfloat/softfloat.h` | 333 duplicated lines | one `basic_float<E,M>` template |
+| `lib/libc/<arch>/softfloat/softfloat.h` | 333 duplicated lines | one `basic_float<E,M>` template — **written, see docs/FLOAT.md** |
 | `sys/<arch>/include/bus_dma.h` | 120 duplicated lines | one interface |
 
 ## What does not consolidate, and why

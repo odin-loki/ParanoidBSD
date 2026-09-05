@@ -82,6 +82,18 @@ jobs:
       - name: Linux build gate (no regressions outside the known-unbuildable set)
         run: python3 tools/check_linux_build.py build.log
 
+      # pbsd.fp is original PBSD work rather than a port, and it depends on
+      # nothing FreeBSD, so unlike the 149 modules the ratchet above counts it
+      # can be built AND run on a Linux runner. The tests are exhaustive where
+      # the domain allows: all 65,536 bfloat16 values and all 2^32 binary32
+      # ones. A failure here is a real defect in the arithmetic, not a
+      # cross-platform artefact, so this step does not tolerate one.
+      - name: Generic float module (pbsd.fp) — build and run its tests
+        run: |
+          cmake -S pbsd/lib/fp -B build-fp -G Ninja -DCMAKE_CXX_COMPILER=clang++
+          cmake --build build-fp -j"$(nproc)"
+          ctest --test-dir build-fp --output-on-failure
+
       # ctest currently finds no tests - pbsd/CMakeLists.txt is generated with
       # a single library target and no enable_testing(). Kept so the harness
       # is picked up automatically once it is wired in.
