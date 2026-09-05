@@ -48,10 +48,19 @@ PY
 
 echo
 echo "== IR oracle on real sources"
+# Scope deliberately small. Measured on Linux, the passes run at roughly 100
+# files a minute with the oracle off and about 36 with it on; a VM is slower
+# again, and the first attempt at lib/msun,lib/libc,bin,usr.bin with
+# --ir-limit 400 ran past the 90-minute job limit and reported nothing at all,
+# because the report is only written at the end. lib/msun is the 316 files
+# that hold every one of the 25 the Linux oracle can see and cannot judge, so
+# it is exactly the set worth turning into verdicts first. Widen this once a
+# green run has shown what the budget actually buys.
 python3 tools/run_todo_passes.py \
-    --scope lib/msun,lib/libc,bin,usr.bin \
+    --scope lib/msun \
     --all-passes --skip-corpus \
-    --ir-limit 400 --diff-limit 200
+    --ir-limit 120 --diff-limit 40 \
+    --file-timeout 30
 
 echo
 echo "== verified-port ratchet"
