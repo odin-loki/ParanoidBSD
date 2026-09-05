@@ -87,6 +87,25 @@ FIXES = {
 }
 
 
+# Files PBSD ADDED to the vendor tree. Not edits - these exist on our side
+# and nowhere upstream, so a merge cannot eat them. A re-import can, and has:
+# the flat import this tree started from lost 124 vendor files and every one
+# of them cost a build run to find. Checking they are present is one stat
+# each.
+PBSD_FILES = {
+    "hbsd/src/sys/sys/atomic_generic.h":
+        "generic atomic(9); tools/atomic_generic_check.py measures it",
+    "hbsd/src/sys/sys/_stdint_generic.h":
+        "generic <machine/_stdint.h>",
+    "hbsd/src/sys/sys/_inttypes_generic.h":
+        "generic <machine/_inttypes.h>",
+    "hbsd/src/sys/conf/std.hardenedbsd":
+        "the hardening policy all six kernel configs include",
+    "hbsd/src/sys/conf/std.hardenedbsd.debug":
+        "WITNESS and HBSD_DEBUG, kept apart from the policy",
+}
+
+
 def main() -> int:
     missing = []
     for rel, (marker, what) in sorted(MARKS.items()):
@@ -96,6 +115,10 @@ def main() -> int:
             continue
         if marker.encode() not in path.read_bytes():
             missing.append((rel, what, f"no {marker!r} marker"))
+
+    for rel, what in sorted(PBSD_FILES.items()):
+        if not (ROOT / rel).is_file():
+            missing.append((rel, what, "PBSD added this file and it is gone"))
 
     for rel, (want, unwanted, what) in sorted(FIXES.items()):
         path = ROOT / rel
@@ -113,12 +136,15 @@ def main() -> int:
         print(f"      PBSD change here: {what}")
 
     if missing:
-        print(f"\n{len(missing)} of {len(MARKS) + len(FIXES)} PBSD vendor edits lost.")
-        print("An upstream merge takes upstream's side on these without a")
-        print("conflict. Recover the hunks from the commit before the merge.")
+        print(f"\n{len(missing)} of {len(MARKS) + len(FIXES) + len(PBSD_FILES)}"
+              " PBSD items in the vendor tree lost.")
+        print("An upstream merge takes upstream's side on an edited file")
+        print("without a conflict, and a re-import can drop an added one.")
+        print("Neither says anything. Recover from the commit before it.")
         return 1
 
-    print(f"PBSD vendor edits intact — {len(MARKS)} markers, {len(FIXES)} fixes.")
+    print(f"PBSD vendor edits intact — {len(MARKS)} markers, {len(FIXES)} "
+          f"fixes, {len(PBSD_FILES)} added files.")
     return 0
 
 
