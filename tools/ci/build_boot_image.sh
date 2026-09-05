@@ -89,31 +89,76 @@ if [ "$TOOLCHAIN" = "external" ]; then
     # SafeStack and CFI are not just compiler flags: -fsanitize=safe-stack
     # makes clang link libclang_rt.safestack, and MK_CLANG=no means the
     # in-tree lib/libclang_rt is not built, so the archive has to come from
-    # the package. Whether it does is a property of how the port was built,
-    # not of this tree, and run 9 found out the expensive way - a link error
-    # in bin/cat two thirds of the way through buildworld, after 16 minutes.
+    # the package.
     #
-    # So ask first, print what is there either way, and turn the option off
-    # rather than failing. show_hardening.sh reports SAFESTACK and CFI, so an
-    # option turned off here is visible in the run rather than silent.
+    # Whether clang will find it is not the same question as whether the
+    # package ships it, and the first version of this probe asked the wrong
+    # one. The llvm21 port builds compiler-rt for its own default triple:
+    #
+    #   /usr/local/llvm21/lib/clang/21/lib/x86_64-portbld-freebsd15.0/
+    #
+    # and Makefile.inc1:146 builds the world with
+    #
+    #   -target x86_64-unknown-freebsd15.1
+    #
+    # so clang looks in .../x86_64-unknown-freebsd15.1/ and finds nothing.
+    # A probe that only asked "does a libclang_rt.safestack exist anywhere
+    # under the resource directory" answered yes, left the option on, and
+    # the build failed at bin/cat exactly as before - run 11.
+    #
+    # So the probe asks with the target the build will use. Same derivation
+    # as Makefile.inc1: TARGET_ARCH with amd64 spelled x86_64, the ABI
+    # (gnueabihf for arm, unknown otherwise), and OS_REVISION out of
+    # sys/conf/newvers.sh.
+    OS_REVISION="$(awk -F'"' '/^REVISION=/ { print $2 }' \
+        "$SRC/sys/conf/newvers.sh")"
+    case "$TARGET" in
+    arm) TRIPLE_ABI="gnueabihf" ;;
+    *)   TRIPLE_ABI="unknown" ;;
+    esac
+    case "$TARGET_ARCH" in
+    amd64) TRIPLE_ARCH="x86_64" ;;
+    *)     TRIPLE_ARCH="$TARGET_ARCH" ;;
+    esac
+    TRIPLE="${TRIPLE_ARCH}-${TRIPLE_ABI}-freebsd${OS_REVISION}"
+
     XCC="${LOCALBASE:-/usr/local}/bin/clang${LLVM_VERSION:-21}"
+    RTDIR="$("$XCC" -target "$TRIPLE" -print-runtime-dir 2>/dev/null || true)"
     RTBASE="$("$XCC" -print-resource-dir 2>/dev/null || true)"
     echo "== external toolchain runtime"
     echo "   clang=$XCC"
-    echo "   resource-dir=${RTBASE:-<clang could not say>}"
+    echo "   build target=$TRIPLE"
+    echo "   runtime-dir=${RTDIR:-<clang could not say>}"
     if [ -n "$RTBASE" ] && [ -d "$RTBASE/lib" ]; then
-        find "$RTBASE/lib" -name 'libclang_rt.*' | sed "s|^$RTBASE/lib/|     |"
-    else
-        echo "     no runtime directory at all"
+        echo "   what the package actually has:"
+        ls -1 "$RTBASE/lib" | sed "s|^|     |"
     fi
+
+    # If the archives are under one other triple directory, alias it. The
+    # port's triple and the tree's differ in vendor and in the FreeBSD minor
+    # version, and a compiler-rt archive is the same either way; the
+    # alternative is losing a mitigation to a directory name. Said out loud,
+    # because it is a change to the machine rather than to the tree, and it
+    # is only ever done inside a throwaway CI VM.
+    if [ -n "$RTDIR" ] && [ ! -d "$RTDIR" ] && [ -n "$RTBASE" ]; then
+        alt="$(ls -1d "$RTBASE"/lib/*-freebsd* 2>/dev/null | head -1 || true)"
+        if [ -n "$alt" ] && [ -d "$alt" ]; then
+            echo "   the package built its runtime for $(basename "$alt")"
+            echo "   and this build asks for $(basename "$RTDIR"); aliasing"
+            mkdir -p "$(dirname "$RTDIR")" 2>/dev/null || true
+            ln -sfn "$alt" "$RTDIR" 2>/dev/null \
+                && echo "   $RTDIR -> $alt" \
+                || echo "   could not create the alias; options will go off"
+        fi
+    fi
+
     for rt in safestack cfi; do
         opt="$(echo "$rt" | tr 'a-z' 'A-Z')"
-        if [ -n "$RTBASE" ] && \
-           [ -n "$(find "$RTBASE/lib" -name "libclang_rt.$rt*" -print 2>/dev/null | head -1)" ]
-        then
+        if [ -n "$RTDIR" ] && [ -e "$RTDIR/libclang_rt.$rt.a" ]; then
+            echo "   $opt on: $RTDIR/libclang_rt.$rt.a"
             continue
         fi
-        echo "   $opt off: this toolchain ships no libclang_rt.$rt"
+        echo "   $opt off: no libclang_rt.$rt.a for $TRIPLE"
         echo "WITHOUT_$opt=YES" >> "$SRCCONF"
     done
 fi

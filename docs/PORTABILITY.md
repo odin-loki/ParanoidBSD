@@ -197,17 +197,48 @@ rather than a judgement about it. Building it for arm, powerpc and riscv is
 the way to close the gap, and it is open work rather than a configuration
 line.
 
-The external toolchain adds a second condition. `WITHOUT_TOOLCHAIN` sets
-`MK_CLANG=no`, which stops `lib/libclang_rt` being built at all, so the
-archive has to come from the packaged clang — and the FreeBSD `llvm21` package
-ships none. Run 9 found that as `ld.lld: error: cannot open
-libclang_rt.safestack.a` while linking `bin/cat`, sixteen minutes into
-`buildworld`. `tools/ci/build_boot_image.sh` now asks the packaged clang for
-its resource directory before starting, prints every `libclang_rt.*` it has,
-and writes `WITHOUT_SAFESTACK` / `WITHOUT_CFI` into the generated `src.conf`
-when the archive is absent. `tools/ci/show_hardening.sh` then reports what the
-build settled on, so the option being off is a line in the log rather than a
-link error later.
+The external toolchain adds a second condition, and it turned out to be a
+different one from what it looked like. `WITHOUT_TOOLCHAIN` sets
+`MK_CLANG=no`, which stops `lib/libclang_rt` being built, so the archive has
+to come from the packaged clang. Runs 8 and 9 both died sixteen minutes into
+`buildworld` on
+
+```
+ld.lld: error: cannot open
+  /usr/local/llvm21/lib/clang/21/lib/x86_64-unknown-freebsd15.1/libclang_rt.safestack.a
+```
+
+The obvious reading — the package does not ship a SafeStack runtime — is
+wrong, and the probe added after run 9 was built on it. Run 11 printed what
+the package actually has:
+
+```
+   x86_64-portbld-freebsd15.0/libclang_rt.safestack.a
+   x86_64-portbld-freebsd15.0/libclang_rt.cfi.a
+```
+
+Both archives are there. They are under the port's own default triple, and
+`Makefile.inc1:146` builds the world with `-target
+x86_64-unknown-freebsd15.1`, so clang looks in a directory that does not
+exist. Vendor and FreeBSD minor version differ; the archives do not.
+
+A probe that asked "does a `libclang_rt.safestack` exist anywhere under the
+resource directory" answered yes, left the option on, and run 11 failed at
+`bin/cat` exactly as run 9 had. **That is the fifth time in this work that a
+query returned something which parsed as an answer to a question it was not
+asking**, and the pattern is the same every time: the check was written from
+the expected failure rather than from the actual interface.
+
+`build_boot_image.sh` now derives the build's triple the way
+`Makefile.inc1` does — `TARGET_ARCH` with amd64 spelled `x86_64`, the ABI,
+and `OS_REVISION` out of `sys/conf/newvers.sh` — and asks `clang -target
+<that> -print-runtime-dir`. If the archives are under one other FreeBSD
+triple it symlinks the directory the build asks for onto the one the port
+built, says so, and keeps the mitigation; if there is nothing to alias it
+writes `WITHOUT_SAFESTACK` / `WITHOUT_CFI` into the generated `src.conf` and
+`show_hardening.sh` reports the option as off. Tested against four layouts —
+the port's triple, the tree's triple, an empty resource directory, and a
+directory with other runtimes but not these — before being run again.
 
 ## The boot test has not run yet
 
