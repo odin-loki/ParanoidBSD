@@ -8,21 +8,27 @@
 #
 # Pointing the build at hbsd/src/lib/libc/include does not help: those private
 # headers transitively need FreeBSD's sys/*, which then shadows glibc and
-# breaks far more than it fixes (149 failures becomes 174, or 603 once
-# hbsd/src/sys is on the path). The list below is therefore the floor for a
-# Linux build, not a backlog.
+# breaks far more than it fixes: measured against this baseline it took the
+# failure count to 174, and to 603 once hbsd/src/sys was on the path. The list
+# below is therefore the floor for a Linux build, not a backlog.
 #
 # What it is for: tools/check_linux_build.py fails CI when a module outside
 # this list stops building. The list may shrink - it must never grow without
 # a deliberate edit and a reason.
 #
-# One caveat about shrinking it. CMake compiles nothing until the whole C++20
-# dependency scan succeeds, and the scan stops at the first wall of errors, so
-# a Linux log usually covers only about half the 1,352 targets - which half
-# depends on scheduling. An entry ninja never reached has not started building;
-# check_linux_build.py reports those separately as "not reached" and refuses to
-# --write from such a log, because rewriting from it would quietly delete
-# exceptions that are still needed.
+# This list is a floor for the first 675 targets only, not for all 1,352. CMake
+# compiles nothing until the whole C++20 dependency scan succeeds, and the scan
+# stops at [675/1352] with "cannot make progress due to previous errors". Every
+# entry below is inside that 675; the 677 targets past the stop have never been
+# scanned on Linux at all, so nothing is known about them. If a future change
+# lets the scan run further, modules reached for the first time will fail the
+# gate as regressions and need triaging in - that is the list growing to cover
+# new ground, not a rule being broken.
+#
+# check_linux_build.py therefore separates "failed" from "never reached": an
+# entry is only reported as cleared when ninja actually tried it and it passed,
+# and --write refuses a log that did not reach every listed entry, since
+# rewriting from one would quietly delete exceptions that were never tried.
 #
 # Every entry is a FreeBSD-derived port under lib/, bin/, sbin/, usr.bin/,
 # usr.sbin/ or sys/. No module original to PBSD appears here, and none fails:
@@ -103,7 +109,6 @@ lib/libc/uuid/uuid_to_string_m/port.cppm
 lib/msun/ld128/b0088s2/port.cppm
 lib/msun/ld128/k_cosl_m/port.cppm
 lib/msun/ld128/k_tanl_m/port.cppm
-lib/msun/src/b0267/port.cppm
 lib/msun/src/e_acosh_m/port.cppm
 lib/msun/src/e_acoshf_m/port.cppm
 lib/msun/src/e_atanh_m/port.cppm
