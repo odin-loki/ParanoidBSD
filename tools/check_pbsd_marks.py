@@ -69,6 +69,11 @@ FIXES = {
         "return (ENOMEM)\n",
         "missing semicolon; the file has never been compiled upstream",
     ),
+    "hbsd/src/sys/kern/sched_shim.c": (
+        "#ifdef __DO_NOT_HAVE_SYS_IFUNCS",
+        None,
+        "plain-C shims where the architecture has no kernel ifunc (arm)",
+    ),
     "hbsd/src/sys/modules/linux/Makefile": (
         "SRCS+=\tlinux.c",
         "imgact_linux.c",
@@ -95,7 +100,7 @@ def main() -> int:
         text = path.read_text(encoding="utf-8", errors="replace")
         if want not in text:
             missing.append((rel, what, f"fix is gone: {want!r} not found"))
-        elif unwanted in text:
+        elif unwanted is not None and unwanted in text:
             missing.append((rel, what, f"bug is back: {unwanted!r} present"))
 
     for rel, what, why in missing:

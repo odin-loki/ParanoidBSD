@@ -22,11 +22,35 @@
 
 const struct sched_instance *active_sched;
 
+/*
+ * PBSD: not every architecture has kernel ifunc. arm says so by defining
+ * __DO_NOT_HAVE_SYS_IFUNCS in <machine/ifunc.h> and providing no
+ * DEFINE_IFUNC at all, and kern/sched_shim.c is "standard" in
+ * sys/conf/files - so on arm this file did not compile, with 40 errors
+ * beginning "no previous prototype for function 'DEFINE_IFUNC'".
+ *
+ * libkern/gsb_crc32.c, the only other machine-independent user of
+ * DEFINE_IFUNC, already carries a plain-C #else branch for exactly this
+ * reason. This is that branch for the scheduler shim.
+ *
+ * The ifunc form resolves each name once and then costs nothing. The
+ * generic form loads active_sched on every call, so a scheduler entry
+ * point is one indirection dearer on an architecture without ifunc. That
+ * is the correct trade: the alternative on offer is the file not existing.
+ */
+#ifdef __DO_NOT_HAVE_SYS_IFUNCS
+#define	__DEFINE_SHIM(__m, __r, __n, __p, __a)	\
+	__r __n __p				\
+	{					\
+		return (active_sched->__m __a);	\
+	}
+#else
 #define	__DEFINE_SHIM(__m, __r, __n, __p, __a)	\
 	DEFINE_IFUNC(, __r, __n, __p)		\
 	{					\
 		return (active_sched->__m);	\
 	}
+#endif
 #define	DEFINE_SHIM0(__m, __r, __n)	\
     __DEFINE_SHIM(__m, __r, __n, (void), ())
 #define	DEFINE_SHIM1(__m, __r, __n, __t1, __a1)	\
