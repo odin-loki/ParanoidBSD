@@ -28,6 +28,27 @@ def find_clangxx() -> str:
     return "clang++"
 
 
+# `define` lines that are externally visible. internal/private linkage is a
+# static and never part of the ABI, so it is excluded here on purpose.
+DEFINE_LINE = re.compile(r"^define\s+(.*?)@([A-Za-z0-9_.$\\]+)\(", re.M)
+INTERNAL_LINKAGE = ("internal ", "private ")
+
+
+def exported_symbols(text: str) -> set[str]:
+    """Names this module defines that a linker outside it can see.
+
+    Taken from the raw IR, before normalize_ir() demangles anything - the
+    point is precisely the names that demangling makes look the same.
+    """
+    out = set()
+    for attrs, name in DEFINE_LINE.findall(text):
+        if any(attrs.startswith(k) or " " + k in attrs
+               for k in INTERNAL_LINKAGE):
+            continue
+        out.add(name)
+    return out
+
+
 def demangle_symbol(sym: str) -> str:
     """Reduce an Itanium-mangled name to its bare identifier.
 
@@ -168,11 +189,28 @@ def compare_ir(
                 "c_err": c_err,
                 "cxx_err": cxx_err,
             }
-        c_norm = normalize_ir(c_ll.read_text(encoding="utf-8", errors="replace"))
-        cxx_norm = normalize_ir(cxx_ll.read_text(encoding="utf-8", errors="replace"))
+        c_raw = c_ll.read_text(encoding="utf-8", errors="replace")
+        cxx_raw = cxx_ll.read_text(encoding="utf-8", errors="replace")
+
+        # Linkage is checked before normalisation, because normalisation is
+        # what hides it. normalize_ir() demangles @_Z13pbsd_internald back to
+        # @pbsd_internal so that a body-identical port compares equal - which
+        # is right for semantics and wrong for ABI. A function declared in a
+        # header keeps C linkage through __BEGIN_DECLS and is fine; one that
+        # is external but declared nowhere gets mangled, and libm cannot ship
+        # a symbol under a new name. The oracle would have passed it.
+        c_syms = exported_symbols(c_raw)
+        cxx_syms = exported_symbols(cxx_raw)
+        abi_equal = c_syms == cxx_syms
+
+        c_norm = normalize_ir(c_raw)
+        cxx_norm = normalize_ir(cxx_raw)
         equal = c_norm == cxx_norm
         result = {
             "equal": equal,
+            "abi_equal": abi_equal,
+            "abi_only_in_c": sorted(c_syms - cxx_syms)[:20],
+            "abi_only_in_cxx": sorted(cxx_syms - c_syms)[:20],
             "status": "ok" if equal else "mismatch",
             "c_hash": hashlib.sha256(c_norm.encode()).hexdigest()[:16],
             "cxx_hash": hashlib.sha256(cxx_norm.encode()).hexdigest()[:16],

@@ -1,0 +1,19 @@
+# Ports proved IR-equivalent AND exporting the same symbols as their C
+# original, on a FreeBSD host.
+#
+# The older floor next to this one counts semantic equivalence only, and
+# normalize_ir() demangles names to get it: @_Z9usage_msgv compares equal to
+# @usage_msg. That is right for "does this compute the same thing" and wrong
+# for "can this ship". A function declared in a header keeps C linkage
+# through __BEGIN_DECLS; one that is external but declared nowhere is
+# mangled, and libm cannot ship a symbol under a new name.
+#
+# So this is the number that decides whether a port is committable, and it is
+# a separate ratchet rather than a redefinition of the old one, because the
+# old one still measures something worth not regressing.
+#
+# Starts at 0: no FreeBSD run has reported it yet. Raise it against the first
+# run that does. On the local corpus it is 3 of 4 - t1_macro_constexpr's
+# usage_msg is the one that fails, which is the same symbol ir_oracle's
+# demangling docstring cites as its reason for existing.
+0

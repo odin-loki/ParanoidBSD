@@ -364,6 +364,9 @@ def run_corpus_tests() -> dict:
                         "case": inp.name,
                         "status": ir.get("status"),
                         "equal": bool(ir.get("equal")),
+                        "abi_equal": bool(ir.get("abi_equal")),
+                        "abi_only_in_c": ir.get("abi_only_in_c") or [],
+                        "abi_only_in_cxx": ir.get("abi_only_in_cxx") or [],
                     }
                 )
 
@@ -382,6 +385,10 @@ def run_corpus_tests() -> dict:
     flush_proposals()
     ir_ran = len(ir_results)
     ir_equal = sum(1 for r in ir_results if r.get("equal"))
+    # A port is only committable if it is *both* semantically equal and
+    # exports the same symbols. See exported_symbols() in ir_oracle.
+    abi_equal = sum(1 for r in ir_results
+                    if r.get("equal") and r.get("abi_equal"))
     return {
         "ok": ok,
         "golden_ok": golden_ok,
@@ -389,6 +396,7 @@ def run_corpus_tests() -> dict:
         "cases": results,
         "ir_ran": ir_ran,
         "ir_equal": ir_equal,
+        "abi_equal": abi_equal,
         "ir_cases": ir_results,
     }
 
@@ -667,6 +675,9 @@ def run_pipeline(
         "refusals_total": len(all_refusals),
         "reason_histogram": dict(sorted(hist.items(), key=lambda x: -x[1])),
         "ir_equal": sum(1 for r in records if (r.get("ir") or {}).get("equal")),
+        "abi_equal": sum(1 for r in records
+                         if (r.get("ir") or {}).get("equal")
+                         and (r.get("ir") or {}).get("abi_equal")),
         "ir_ran": sum(
             1
             for r in records
@@ -691,6 +702,8 @@ def run_pipeline(
         f"- Corpus OK: **{corpus.get('ok')}**",
         f"- Corpus IR equal: **{corpus.get('ir_equal', 0)}** / ran **{corpus.get('ir_ran', 0)}**",
         f"- IR equal: **{report['ir_equal']}** / ran **{report['ir_ran']}**",
+        f"- ABI equal (same exported symbols too): "
+        f"**{report['abi_equal']}** / ran **{report['ir_ran']}**",
         f"- Diff equal: **{report['diff_equal']}**",
     ]
     if tidy_report:

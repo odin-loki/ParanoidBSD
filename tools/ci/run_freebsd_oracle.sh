@@ -84,12 +84,15 @@ PY2
 
 echo
 echo "== verified-port ratchet"
-python3 - "$FLOOR_FILE" "$REPORT" <<'PY'
+ABI_FLOOR_FILE="docs/migration/freebsd_abi_floor.txt"
+python3 - "$FLOOR_FILE" "$REPORT" "$ABI_FLOOR_FILE" <<'PY'
 import collections, json, pathlib, sys
 
 floor_file, report = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+abi_floor_file = pathlib.Path(sys.argv[3])
 d = json.loads(report.read_text())
 equal, ran = d["ir_equal"], d["ir_ran"]
+abi_equal = d.get("abi_equal", 0)
 diff_equal = d.get("diff_equal", 0)
 
 status = collections.Counter(
@@ -129,4 +132,35 @@ if equal < floor:
 print(f"\nOK  {equal} verified, floor {floor}.")
 if equal > floor:
     print(f"    Raise {floor_file} to {equal} to lock this in.")
+
+# The second, stricter ratchet: same symbols, not just same behaviour.
+abi_floor = 0
+if abi_floor_file.exists():
+    for line in abi_floor_file.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            abi_floor = int(line)
+            break
+
+# Name the ports that compute the right answer under the wrong symbol. These
+# are the ones that look committable and are not.
+abi_broken = [r for r in d["records"]
+              if (r.get("ir") or {}).get("equal")
+              and not (r.get("ir") or {}).get("abi_equal")]
+if abi_broken:
+    print(f"\n{len(abi_broken)} port(s) are IR-equal but export different symbols:")
+    for r in abi_broken[:6]:
+        ir = r["ir"]
+        print(f"  {r.get('source') or r.get('path')}")
+        print(f"    C only  : {', '.join(ir.get('abi_only_in_c') or []) or '-'}")
+        print(f"    C++ only: {', '.join(ir.get('abi_only_in_cxx') or []) or '-'}")
+    if len(abi_broken) > 6:
+        print(f"  ... and {len(abi_broken) - 6} more")
+
+if abi_equal < abi_floor:
+    print(f"\nFAIL {abi_equal} ports are ABI-equal, the floor is {abi_floor}.")
+    sys.exit(1)
+print(f"\nOK  {abi_equal} ABI-equal, floor {abi_floor}.")
+if abi_equal > abi_floor:
+    print(f"    Raise {abi_floor_file} to {abi_equal} to lock this in.")
 PY
