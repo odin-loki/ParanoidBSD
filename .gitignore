@@ -164,3 +164,6 @@ docs/migration/*.log
 !/hbsd/src/contrib/llvm-project/clang/lib/
 /hbsd/src/contrib/llvm-project/clang/lib/*
 !/hbsd/src/contrib/llvm-project/clang/lib/Headers/
+
+# Images copied out of the build by tools/ci/build_boot_image.sh.
+out/

@@ -263,8 +263,47 @@ vm|memstick|iso)
     vm)       run_make vm-image VMFORMATS=raw VMSIZE="${VMSIZE:-6144m}"
               OUT="vm.raw" ;;
     esac
-    echo "== image: $SRC/release/$OUT"
-    ls -lh "$SRC/release/$OUT"
+
+    # The image is in the OBJECT tree, not the source tree.
+    #
+    # release/ builds under MAKEOBJDIRPREFIX like everything else, and
+    # make-memstick.sh is invoked as
+    #
+    #   cd disc1-memstick && sh .../make-memstick.sh . ../memstick.img
+    #
+    # where disc1-memstick is in the objdir, so ../memstick.img is
+    # .../amd64.amd64/release/memstick.img. Run 12 built a memstick
+    # successfully - makefs and mkimg both finished - and then this script
+    # ran `ls "$SRC/release/memstick.img"`, which does not exist, and set -e
+    # turned a completed build into a failed job with the boot test skipped.
+    # Two months of "it has never booted" and the last step was looking in
+    # the wrong directory.
+    #
+    # Ask make where it built rather than reconstructing the path.
+    OBJRELEASE="$(make -V .OBJDIR TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
+        2>/dev/null | tail -1)"
+    [ -n "$OBJRELEASE" ] && [ -d "$OBJRELEASE" ] || \
+        OBJRELEASE="$OBJ$SRC/$TARGET.$TARGET_ARCH/release"
+
+    FOUND=""
+    for d in "$OBJRELEASE" "$SRC/release"; do
+        if [ -f "$d/$OUT" ]; then FOUND="$d/$OUT"; break; fi
+    done
+    if [ -z "$FOUND" ]; then
+        echo "FAIL the build finished and $OUT is not where it should be." >&2
+        echo "     looked in: $OBJRELEASE" >&2
+        echo "                $SRC/release" >&2
+        echo "     what is in the objdir release directory:" >&2
+        ls -l "$OBJRELEASE" 2>&1 | sed 's/^/       /' >&2
+        exit 1
+    fi
+
+    # Copy it somewhere the workflow does not have to guess about.
+    mkdir -p "$REPOROOT/out"
+    cp "$FOUND" "$REPOROOT/out/$OUT"
+    echo "== image: $FOUND"
+    echo "== copied to: $REPOROOT/out/$OUT"
+    ls -lh "$REPOROOT/out/$OUT"
     ;;
 *)
     echo "FAIL unknown stage '$STAGE' (kernel|world|vm|memstick|iso)" >&2

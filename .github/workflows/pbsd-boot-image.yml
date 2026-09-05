@@ -115,10 +115,12 @@ jobs:
       - name: Collect image
         if: inputs.stage == 'vm' || inputs.stage == 'memstick' || inputs.stage == 'iso'
         run: |
+          # build_boot_image.sh copies the image into out/ itself, because it
+          # is the only thing that knows where release/ built it - the objdir,
+          # not the source tree. This step used to search hbsd/src/release and
+          # find nothing, which is how run 12 built a memstick and skipped the
+          # boot test anyway.
           mkdir -p out
-          find hbsd/src/release -maxdepth 1 \
-               \( -name '*.img' -o -name '*.iso' -o -name 'vm.raw' \) \
-               -exec cp {} out/ \; 2>/dev/null || true
           ls -lh out/ || echo "no image produced"
 
       - name: Boot it
