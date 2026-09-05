@@ -106,7 +106,7 @@ one.
 
 | what | size | replaced by |
 |---|---:|---|
-| six `atomic.h` | 5,107 lines | `std::atomic` / `__atomic` builtins |
+| six `atomic.h` | 5,107 lines | `__atomic` builtins — **written, see below** |
 | eliminable `.S` | 28,820 lines | generic C already present, via `MK_MACHDEP_OPTIMIZATIONS` |
 | `_stdint.h`, `_inttypes.h` | 960 lines, 4-5 copies | `<cstdint>` is literally this |
 | `stand/ficl/<arch>/sysdep.{c,h}` | 810 duplicated lines, 6 arches, 0.95 similar | one implementation |
@@ -134,3 +134,59 @@ Modules are how the result is packaged; builtins are why there is a result.
 
 Worth being precise about that, because "port it to modules" and "stop writing
 six implementations" are separable, and only the second reduces work.
+
+
+## Generic atomics: written, and measured
+
+`hbsd/src/sys/sys/atomic_generic.h`, 350 lines, is the whole of atomic(9) —
+13 operations across 4 widths and 4 orderings, plus the char/short/int/long/
+ptr spellings — expressed in `__atomic` builtins. It replaces, in principle,
+5,107 lines across six headers with 145 inline-asm sites.
+
+"In principle" is doing work in that sentence, so it was measured rather than
+argued. `tools/atomic_generic_check.py` compiles the header for all six
+targets against a shimmed `<sys/types.h>` and nothing else on the include
+path, one object per width, and reads the undefined symbols back out. A
+`__atomic_fetch_add_8` in the undefined list means the backend could not do it
+in an instruction and emitted a call into libatomic — which the kernel does
+not link, so that is a link error waiting, not a slow path.
+
+```
+arch               8         16         32         64   char/short/int/long/ptr
+amd64      lock-free  lock-free  lock-free  lock-free   ok
+arm64      lock-free  lock-free  lock-free  lock-free   ok
+arm        lock-free  lock-free  lock-free  lock-free   ok
+i386       lock-free  lock-free  lock-free    libcall   ok
+powerpc    lock-free  lock-free  lock-free  lock-free   ok
+riscv      lock-free  lock-free  lock-free  lock-free   ok
+```
+
+Twenty-three of the twenty-four cells come out in hardware, armv7's 64-bit
+included — AAPCS aligns 64-bit types to 8, so LDREXD/STREXD is available to
+the compiler with nobody asserting anything.
+
+The twenty-fourth is the interesting one. **i386 64-bit is not lock-free**,
+and not for the reason it looks like: the instruction exists. The i386 ABI
+aligns `uint64_t` to 4, and `__atomic` will not assume the 8 that CMPXCHG8B
+wants, so it calls libatomic instead. Asserting the alignment does produce
+CMPXCHG8B — checked, two of them — but that is a promise about the caller's
+object which a header cannot make, and clang says so under
+`-Walign-mismatch`. `-march=i586`, `i686` and `pentium4` change nothing; it
+was never about the instruction set.
+
+`sys/i386/include/atomic.h` makes that promise for itself and can keep its
+own 64-bit block. So the adoption is not all-or-nothing, and the shape of it
+is now a fact rather than a guess:
+
+* every architecture takes 8, 16 and 32 bits from the generic header;
+* every architecture except i386 takes 64 as well;
+* i386 keeps 44 lines of 64-bit operations out of its 874.
+
+The checker was made to fail before being trusted: marking i386's 64-bit
+width as required reports all eight libcalls by name, and a syntax error in
+the header is caught as a compile failure rather than passed over.
+
+**Nothing includes it yet.** The switch-over is a separate change and wants a
+green `buildworld` behind it, for the reason `docs/migration/
+COMMITTING_PORTS.md` gives about the msun ports: while a build failure could
+still be the tree rather than the change, it cannot be attributed.

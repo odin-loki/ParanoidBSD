@@ -94,6 +94,16 @@ jobs:
           cmake --build build-fp -j"$(nproc)"
           ctest --test-dir build-fp --output-on-failure
 
+      # sys/sys/atomic_generic.h replaces six hand-written atomic.h with one.
+      # "It compiles" is not the question - the question is whether each
+      # operation lowers to an instruction or to a libatomic call, because
+      # the kernel has no libatomic. This compiles the header for all six
+      # targets, one object per width, and reads the undefined symbols back.
+      # Cross-compiling needs no sysroot: the header is compiled against a
+      # shimmed <sys/types.h> and nothing else.
+      - name: Generic atomics — lock-free on every target
+        run: python3 tools/atomic_generic_check.py
+
       # ctest currently finds no tests - pbsd/CMakeLists.txt is generated with
       # a single library target and no enable_testing(). Kept so the harness
       # is picked up automatically once it is wired in.
