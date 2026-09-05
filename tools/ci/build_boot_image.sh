@@ -46,12 +46,35 @@ JOBS="${JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
 # libc, msun and libmd instead of the hand-written assembly. It existed for
 # some time without being passed to anything, so it configured nothing. Set
 # SRCCONF= to build with FreeBSD's defaults instead.
-SRCCONF="${SRCCONF-$(cd "$(dirname "$0")/../.." && pwd)/hbsd/src.conf.pbsd}"
+REPOROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+SRCCONF="${SRCCONF-$REPOROOT/hbsd/src.conf.pbsd}"
+
+# TOOLCHAIN=external builds with the packaged clang instead of building one.
+# MK_TOOLCHAIN=no cascades to CLANG, LLD, LLDB and LLVM_BINUTILS, so the world
+# stops shipping a compiler and contrib/llvm-project stops being compiled -
+# 14,337 files that the running system does not need.
+#
+# The cost is self-hosting: the installed system cannot rebuild itself. Off by
+# default because that is a property to give up on purpose.
+TOOLCHAIN="${TOOLCHAIN:-internal}"
+CROSS_TOOLCHAIN=""
+EXTRA_SRCCONF=""
+if [ "$TOOLCHAIN" = "external" ]; then
+    CROSS_TOOLCHAIN="$REPOROOT/hbsd/toolchains/llvm${LLVM_VERSION:-21}.mk"
+    EXTRA_SRCCONF="$REPOROOT/hbsd/src.conf.pbsd-external-toolchain"
+    [ -f "$CROSS_TOOLCHAIN" ] || { echo "FAIL no $CROSS_TOOLCHAIN" >&2; exit 1; }
+    [ -f "$EXTRA_SRCCONF" ] || { echo "FAIL no $EXTRA_SRCCONF" >&2; exit 1; }
+    # Two src.conf files, and make takes one. Concatenate into the objdir.
+    mkdir -p "$OBJ"
+    cat "$SRCCONF" "$EXTRA_SRCCONF" > "$OBJ/src.conf.combined"
+    SRCCONF="$OBJ/src.conf.combined"
+fi
 
 echo "== PBSD image build"
 echo "   src=$SRC"
 echo "   stage=$STAGE kernconf=$KERNCONF target=$TARGET/$TARGET_ARCH jobs=$JOBS"
 echo "   srcconf=${SRCCONF:-<none, FreeBSD defaults>}"
+echo "   toolchain=$TOOLCHAIN${CROSS_TOOLCHAIN:+ ($CROSS_TOOLCHAIN)}"
 uname -a
 
 if [ -n "$SRCCONF" ] && [ ! -f "$SRCCONF" ]; then
@@ -85,7 +108,8 @@ run_make() {
     echo "--- make $*"
     if [ -n "$SRCCONF" ]; then
         make -j"$JOBS" TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
-             KERNCONF="$KERNCONF" SRCCONF="$SRCCONF" "$@"
+             KERNCONF="$KERNCONF" SRCCONF="$SRCCONF" \
+             ${CROSS_TOOLCHAIN:+CROSS_TOOLCHAIN="$CROSS_TOOLCHAIN"} "$@"
     else
         make -j"$JOBS" TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
              KERNCONF="$KERNCONF" "$@"

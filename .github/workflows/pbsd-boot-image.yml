@@ -23,6 +23,16 @@ on:
         required: true
         default: 'HARDENEDBSD-MINIMAL'
         type: string
+      toolchain:
+        description: >-
+          internal builds clang from contrib/llvm-project as part of the
+          world. external uses the packaged clang21 and turns off
+          MK_TOOLCHAIN, so 14,337 files stop being compiled and the world
+          stops shipping a compiler - at the cost of self-hosting.
+        required: false
+        default: 'internal'
+        type: choice
+        options: [internal, external]
       machdep_asm:
         description: >-
           Keep the hand-written machine-dependent assembly in libc, msun and
@@ -60,6 +70,7 @@ jobs:
           python3 tools/check_subdirs.py hbsd/src --fail-on-missing
           python3 tools/check_mk_options.py hbsd/src --fail-on-undefined
           python3 tools/check_clang_srcs.py hbsd/src --fail-on-missing
+          python3 tools/check_toolchain_version.py
           python3 tools/check_pbsd_marks.py
 
       - name: Build on FreeBSD
@@ -70,6 +81,9 @@ jobs:
           mem: 8192
           prepare: |
             pkg install -y python311
+            if [ "${{ inputs.toolchain }}" = "external" ]; then
+              pkg install -y llvm21
+            fi
           # The VM is a separate machine over ssh, so a step-level `env:`
           # never reaches it - the first run silently built HARDENEDBSD
           # instead of the config that was asked for. Set it in the command.
@@ -79,9 +93,11 @@ jobs:
           run: |
             if [ "${{ inputs.machdep_asm }}" = "true" ]; then
               KERNCONF="${{ inputs.kernconf }}" SRCCONF="" \
+              TOOLCHAIN="${{ inputs.toolchain }}" \
                 sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
             else
               KERNCONF="${{ inputs.kernconf }}" \
+              TOOLCHAIN="${{ inputs.toolchain }}" \
                 sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
             fi
 
