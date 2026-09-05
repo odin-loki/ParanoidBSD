@@ -209,8 +209,54 @@ So the diagnostic no longer probes an imagined command line.
 `tools/pbsd_passes/why_mangled.py` runs the oracle's own
 `oracle_include_flags()` and target flags over the real source and its real
 staged port, and prints the symbol tables each side actually defines plus
-whether `<math.h>` under those same flags declares the name. **The cause is
-still unknown**; the floor stays at the measured 174.
+whether `<math.h>` under those same flags declares the name.
+
+### The answer: `-I` cancelled by `-idirafter` for the same directory
+
+On the FreeBSD runner, with the oracle's real flags:
+
+```
+== hbsd/src/lib/msun/src/s_fminimum.c
+   -> only in C  : fminimum
+   -> only in C++: _Z8fminimumdd
+   <math.h> under these flags: fminimum is NOT declared
+
+== hbsd/src/lib/msun/src/s_cbrt.c
+   C defines: cbrt     C++ defines: cbrt     -> same symbols
+```
+
+The declaration is missing even though `-I{src.parent}` points at the
+directory `math.h` lives in. clang's own search list says why:
+
+```
+$ clang++ -E -v -I<msun/src> -idirafter<msun/src>
+  #include <...> search starts here:
+   2: .../include/c++/13
+   3: .../include/x86_64-linux-gnu/c++/13
+   9: .../hbsd/src/lib/msun/src
+```
+
+`msun/src` appears **once**, at 9, behind the C++ standard library. clang
+deduplicates the search list and keeps the *later* entry, so naming a
+directory on both `-I` and `-idirafter` does not add it twice — it **moves
+it** from before the system headers to after them.
+
+`oracle_include_flags()` did exactly that: `flags` opens with
+`-I{src.parent}`, and `extras` ends with `msun/src` on `-idirafter`. For
+every source in `lib/msun/src` — most of the library — those are the same
+directory, so `#include <math.h>` stopped resolving to the tree's header.
+The `fmaximum`/`fminimum` family is declared only in that newer header, so
+it was declared on **neither** side; C emits a plain symbol and C++ mangles
+the identical definition. That is the 25.
+
+clang warns `duplicate directory ... is ignored` when this happens.
+`-Wno-everything`, the first flag in the list, suppressed it.
+
+Fixed by not repeating a directory already on `-I`. Both floors may move on
+the next run, and can only move up: the previous numbers were measured
+against a header the shipping build never uses. Neither floor is raised
+here on that prediction — the ratchet still fails on a drop, which is what
+it is for.
 
 Take the file from that list. Anything else is a guess with a
 forty-minute feedback loop.
