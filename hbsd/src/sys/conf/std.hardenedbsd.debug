@@ -1,0 +1,13 @@
+#
+# std.hardenedbsd.debug -- the assertion and lock-checking options that
+# HardenedBSD's amd64 HARDENEDBSD-CORE carried and riscv's copy did not.
+#
+# Separate from std.hardenedbsd because these cost performance and are a
+# debugging choice, not a hardening one. Keeping them apart is what let the
+# two copies drift without anyone noticing which half had moved.
+
+options		INVARIANTS
+options		INVARIANT_SUPPORT
+options		WITNESS
+options		WITNESS_NO_VNODE
+options		HBSD_DEBUG

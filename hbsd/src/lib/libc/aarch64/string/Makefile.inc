@@ -21,27 +21,15 @@ AARCH64_STRING_IFUNC_FILES= \
 
 # SIMD-enhanced routines not derived from Arm's code
 MDSRCS+= \
-	memchr.S \
-	strcmp.S \
-	strspn.S \
-	strcspn.S \
 	strpbrk.c \
 	strsep.c \
 	strcat.c \
-	strlcpy.S \
-	strncmp.S \
-	memccpy.S \
 	strncat.c \
 	strlcat.c \
-	strlen.S \
-	timingsafe_bcmp.S \
-	timingsafe_memcmp.S \
 	bcopy.c \
 	bzero.c \
-	memcpy.S \
 	memcpy_resolver.c \
 	memmove_resolver.c \
-	memset.S \
 	memset_resolver.c \
 	memset_zva64.S
 

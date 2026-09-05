@@ -15,8 +15,26 @@
 #ifndef _MATH_PRIVATE_H_
 #define	_MATH_PRIVATE_H_
 
+#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <machine/endian.h>
+
+/*
+ * PBSD: C linkage.
+ *
+ * This header is fdlibm's private interface and was written for C, so it
+ * declares things like
+ *
+ *	long double __kernel_cosl(long double, long double);
+ *
+ * with no linkage guard. Compiled as C++ that declaration has C++ linkage,
+ * so ld80/k_cosl.cpp defines _Z13__kernel_coslee and libm ships a symbol
+ * nothing can call. The IR oracle rated those ports equivalent - correctly,
+ * the bodies are identical - and they still could not be committed.
+ *
+ * Six ports across ld80 and ld128 turned on this one missing pair.
+ */
+__BEGIN_DECLS
 
 /*
  * The original fdlibm code used statements like:
@@ -861,7 +879,10 @@ subnormal_ilogbf(int32_t hx)
 #if defined(__amd64__) || defined(__i386__)
 #define	breakpoint()	asm("int $3")
 #else
+/* PBSD: a system header must not be pulled in inside extern "C". */
+__END_DECLS
 #include <signal.h>
+__BEGIN_DECLS
 
 #define	breakpoint()	raise(SIGTRAP)
 #endif
@@ -923,5 +944,7 @@ float complex __ldexp_cexpf(float complex,int);
 long double __kernel_sinl(long double, long double, int);
 long double __kernel_cosl(long double, long double);
 long double __kernel_tanl(long double, long double, int);
+
+__END_DECLS
 
 #endif /* !_MATH_PRIVATE_H_ */

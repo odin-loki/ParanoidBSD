@@ -1,6 +1,11 @@
-include GENERIC
+#
+# HARDENEDBSD -- Main HardenedBSD kernel configuration for i386.
+#
+# The hardening policy is sys/conf/std.hardenedbsd and is the same on every
+# architecture. Anything below the include is an overload for i386
+# specifically, and has to justify itself as such.
 
-options PAX
-options PAX_ASLR
-options PAX_HARDENING
-options PAX_SYSCTLS
+include GENERIC
+include "std.hardenedbsd"
+
+ident		HARDENEDBSD

@@ -39,6 +39,10 @@
 #include <machine/atomic.h>
 #include "setlocale.h"
 
+/* PBSD: C linkage, so a ported .cpp keeps these symbols. */
+#include <sys/cdefs.h>
+__BEGIN_DECLS
+
 /**
  * The XLC_ values are indexes into the components array.  They are defined in
  * the same order as the LC_ values in locale.h, but without the LC_ALL zero
@@ -222,5 +226,7 @@ static inline locale_t get_real_locale(locale_t locale)
  * Replace a placeholder locale with the real global or thread-local locale_t.
  */
 #define FIX_LOCALE(l) (l = get_real_locale(l))
+
+__END_DECLS
 
 #endif

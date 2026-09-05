@@ -39,6 +39,15 @@
 
 #include <libsys.h>
 
+/* PBSD: C linkage, so a ported .cpp keeps these symbols.
+ *
+ * Opened here rather than after the last #include in the file: there are
+ * declarations both above and below the interior include block at 328,
+ * and anchoring on the last one left 18 of 31 outside the guard.
+ */
+#include <sys/cdefs.h>
+__BEGIN_DECLS
+
 extern char **environ;
 
 /*
@@ -325,8 +334,10 @@ extern void (*__cleanup)(void) __hidden;
  * ignores value of $OSVERSION and caches result.
  */
 int __getosreldate(void);
+__END_DECLS
 #include <sys/_types.h>
 #include <sys/_sigset.h>
+__BEGIN_DECLS
 
 struct aiocb;
 struct fd_set;
@@ -384,4 +395,5 @@ struct uexterror;
 int __uexterr_format(const struct uexterror *ue, char *buf, size_t bufsz);
 int __libc_uexterr_gettext(char *buf, size_t bufsz);
 
+__END_DECLS
 #endif /* _LIBC_PRIVATE_H_ */

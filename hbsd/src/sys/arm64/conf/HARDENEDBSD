@@ -1,20 +1,14 @@
+#
+# HARDENEDBSD -- Main HardenedBSD kernel configuration for arm64.
+#
+# The hardening policy is sys/conf/std.hardenedbsd and is the same on every
+# architecture. Anything below the include is an overload for arm64
+# specifically, and has to justify itself as such.
+
 include GENERIC
-ident	HARDENEDBSD
+include "std.hardenedbsd"
 
-# HardenedBSD hardening options
-options 	HARDEN_KLD		# Harden the kernel module interface
-options 	PAX
-options 	PAX_CONTROL_ACL
-options 	PAX_CONTROL_ACL_OVERRIDE_SUPPORT
-options 	PAX_CONTROL_EXTATTR
-options 	PAX_JAIL_SUPPORT
-options 	PAX_ASLR
-options 	PAX_SYSCTLS
-options 	PAX_HARDENING
-options		PAX_NOEXEC
-options		PAX_SEGVGUARD
-nooptions	COMPAT_FREEBSD32
-nooptions	INCLUDE_CONFIG_FILE # reduce kernel infoleaks
+ident		HARDENEDBSD
 
-# Needed for ThunderX2 systems
+# Needed for ThunderX2 systems.
 options 	NUMA

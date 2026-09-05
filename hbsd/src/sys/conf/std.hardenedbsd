@@ -1,0 +1,42 @@
+#
+# std.hardenedbsd -- HardenedBSD's kernel hardening, for every architecture.
+#
+# This was HARDENEDBSD-CORE, duplicated in sys/amd64/conf and sys/riscv/conf,
+# and hand-inlined a third and fourth way in sys/arm64/conf/HARDENEDBSD and
+# sys/i386/conf/HARDENEDBSD. Four expressions of one policy, and they had
+# already drifted: riscv's copy was missing HBSD_RESIST_FINGERPRINTING, so a
+# riscv kernel was quietly less hardened than an amd64 one. arm and powerpc
+# had no HARDENEDBSD at all.
+#
+# None of these options are architecture-specific. They live here, beside
+# std.debug, so there is one of them; an architecture that needs to differ
+# overrides in its own config after including this, and the difference is
+# then visible as a difference instead of as a divergent copy.
+
+# GENERIC overrides. Old COMPAT layers are attack surface for binaries
+# nothing is expected to run.
+nooptions	RACCT_DEFAULT_TO_DISABLED
+nooptions	COMPAT_FREEBSD4
+nooptions	COMPAT_FREEBSD5
+nooptions	COMPAT_FREEBSD6
+nooptions	COMPAT_FREEBSD7
+nooptions	COMPAT_FREEBSD9
+nooptions	COMPAT_FREEBSD10
+nooptions	COMPAT_FREEBSD32
+nooptions	QUEUE_MACRO_DEBUG_TRASH
+nooptions	INCLUDE_CONFIG_FILE	# reduce kernel infoleaks
+
+# HardenedBSD hardening options
+options 	HARDEN_KLD		# Harden the kernel module interface
+options 	PAX			# PaX framework
+options 	PAX_CONTROL_ACL		# PaX MAC framework, required for secadm
+options 	PAX_CONTROL_ACL_OVERRIDE_SUPPORT # Allow to override hbsdcontrol settings with ACLs
+options 	PAX_CONTROL_EXTATTR	# extattr based control framework for hbsdcontrol
+options 	PAX_JAIL_SUPPORT	# Allow to override PAX settings per jail
+options 	PAX_SYSCTLS		# sysctls for run-time options
+options 	PAX_ASLR		# Address Space Layout Randomization
+options 	PAX_NOEXEC		# Remove WX pages from user-space and enforce W^X
+options 	PAX_HARDENING		# Various hardening options
+#options	PAX_HARDEN_KMALLOC	# Harden malloc(9)
+options 	PAX_SEGVGUARD		# prevent brute-force attacks
+options		HBSD_RESIST_FINGERPRINTING

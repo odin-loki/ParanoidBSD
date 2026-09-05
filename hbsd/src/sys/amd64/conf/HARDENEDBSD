@@ -1,8 +1,15 @@
 #
-# HARDENEDBSD -- Main HardenedBSD kernel configuration
+# HARDENEDBSD -- Main HardenedBSD kernel configuration for amd64.
+#
+# The hardening policy is sys/conf/std.hardenedbsd and is the same on every
+# architecture. Anything below the include is an overload for amd64
+# specifically, and has to justify itself as such.
 
 include GENERIC
-include HARDENEDBSD-CORE
-include "std.debug"
+include "std.hardenedbsd"
 
 ident		HARDENEDBSD
+
+# amd64 is the reference platform and carries the assertion build.
+include "std.hardenedbsd.debug"
+include "std.debug"

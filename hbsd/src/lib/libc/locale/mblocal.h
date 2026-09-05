@@ -39,6 +39,10 @@
 #include <runetype.h>
 #include "xlocale_private.h"
 
+/* PBSD: C linkage, so a ported .cpp keeps these symbols. */
+#include <sys/cdefs.h>
+__BEGIN_DECLS
+
 #define	SS2	0x008e
 #define SS3	0x008f
 
@@ -114,5 +118,7 @@ size_t __mbsnrtowcs_std(wchar_t * __restrict, const char ** __restrict,
     size_t, size_t, mbstate_t * __restrict, mbrtowc_pfn_t);
 size_t __wcsnrtombs_std(char * __restrict, const wchar_t ** __restrict,
     size_t, size_t, mbstate_t * __restrict, wcrtomb_pfn_t);
+
+__END_DECLS
 
 #endif	/* _MBLOCAL_H_ */

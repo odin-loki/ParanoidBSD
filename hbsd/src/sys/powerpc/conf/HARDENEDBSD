@@ -1,0 +1,13 @@
+#
+# HARDENEDBSD -- Main HardenedBSD kernel configuration for powerpc64.
+#
+# GENERIC64 rather than GENERIC: 64-bit is the powerpc PBSD targets.
+#
+# The hardening policy is sys/conf/std.hardenedbsd and is the same on every
+# architecture. Anything below the include is an overload for powerpc
+# specifically, and has to justify itself as such.
+
+include GENERIC64
+include "std.hardenedbsd"
+
+ident		HARDENEDBSD

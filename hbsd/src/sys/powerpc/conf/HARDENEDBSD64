@@ -1,0 +1,8 @@
+#
+# HARDENEDBSD64 -- kept as the name powerpc used before HARDENEDBSD existed.
+#
+# It hand-inlined six PAX options and had none of the COMPAT reductions,
+# HARDEN_KLD, PAX_CONTROL_ACL or HBSD_RESIST_FINGERPRINTING that amd64 got.
+# That is what a per-architecture copy of a policy turns into.
+
+include HARDENEDBSD

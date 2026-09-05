@@ -287,19 +287,26 @@ __T=${MACHINE_ARCH}
 # All supported backends for LLVM_TARGET_XXX
 __LLVM_TARGETS= \
 		aarch64 \
+		arm \
+		powerpc \
+		riscv \
 		x86
 __LLVM_TARGET_FILT=	C/(amd64|i386)/x86/:C/powerpc.*/powerpc/:C/armv[67]/arm/:C/riscv.*/riscv/
 .for __llt in ${__LLVM_TARGETS}
 # Default enable the given TARGET's LLVM_TARGET support
 .if ${__T:${__LLVM_TARGET_FILT}} == ${__llt}
 __DEFAULT_YES_OPTIONS+=	LLVM_TARGET_${__llt:${__LLVM_TARGET_FILT}:tu}
-# PBSD: no 32-bit ARM LLVM target (arm64 + amd64 only)
+# aarch64 needs arm for -m32 support.
+.elif ${__T} == "aarch64" && ${__llt:Marm*} != ""
+__DEFAULT_DEPENDENT_OPTIONS+=	LLVM_TARGET_ARM/LLVM_TARGET_AARCH64
+# Default the rest of the LLVM_TARGETs to the value of MK_LLVM_TARGET_ALL.
 .else
 __DEFAULT_DEPENDENT_OPTIONS+=	LLVM_TARGET_${__llt:${__LLVM_TARGET_FILT}:tu}/LLVM_TARGET_ALL
 .endif
 .endfor
 
 __DEFAULT_NO_OPTIONS+=LLVM_TARGET_BPF LLVM_TARGET_MIPS
+
 
 .include <bsd.compiler.mk>
 
@@ -546,7 +553,19 @@ MK_CLANG_EXTRAS:= no
 MK_CLANG_FORMAT:= no
 MK_CLANG_FULL:= no
 MK_LLVM_COV:= no
+# PBSD: SafeStack needs the compiler-rt runtime, and MK_CLANG=no stops the
+# in-tree one being built - which is why upstream disables it here. With
+# CROSS_TOOLCHAIN the packaged toolchain supplies that runtime, so the
+# disable is wrong in exactly the configuration PBSD now builds by default.
+#
+# It matters because this is a := that no src.conf can override, and
+# SAFESTACK defaults to yes on amd64. Turning on the external toolchain
+# silently turned off a hardening feature, on a system whose reason for
+# existing is hardening, and nothing reported it.
+# tools/ci/show_hardening.sh asks `make -V` so it cannot happen quietly again.
+.if !defined(CROSS_TOOLCHAIN)
 MK_SAFESTACK:=	no
+.endif
 .endif
 
 .if ${MK_ASAN} == "yes"
