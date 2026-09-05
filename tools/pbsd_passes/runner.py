@@ -145,10 +145,11 @@ BANNER = """/* PBSD automated port from {orig}. Do not mark DONE without differe
 def run_passes_on_unit(
     unit: TranslationUnit,
     tiers: set[int] | None = None,
+    safe_only: bool = False,
 ) -> tuple[TranslationUnit, list[Refusal], list[dict]]:
     refusals: list[Refusal] = []
     edit_log: list[dict] = []
-    for p in passes_for_tiers(tiers):
+    for p in passes_for_tiers(tiers, safe_only=safe_only):
         if not p.precondition(unit):
             refusals.append(
                 Refusal(
@@ -181,6 +182,7 @@ def process_file(
     do_ir: bool = False,
     do_diff: bool = False,
     max_bytes: int = 2_000_000,
+    safe_only: bool = False,
 ) -> dict:
     size = src.stat().st_size
     if size > max_bytes:
@@ -201,7 +203,7 @@ def process_file(
     text = src.read_text(encoding="utf-8", errors="replace")
     rel = src.relative_to(ROOT).as_posix()
     unit = TranslationUnit(path=rel, text=text)
-    unit, refusals, edits = run_passes_on_unit(unit, tiers)
+    unit, refusals, edits = run_passes_on_unit(unit, tiers, safe_only=safe_only)
 
     out_text = BANNER.format(orig=rel) + unit.text
     dest = stage_path_for(src)
@@ -267,6 +269,7 @@ def process_file(
 def process_file_timed(
     src: Path,
     tiers: set[int] | None = None,
+    safe_only: bool = False,
     do_ir: bool = False,
     do_diff: bool = False,
     timeout_s: float = 90.0,
@@ -280,7 +283,9 @@ def process_file_timed(
     old = signal.signal(signal.SIGALRM, _alarm)
     signal.setitimer(signal.ITIMER_REAL, timeout_s)
     try:
-        return process_file(src, tiers=tiers, do_ir=do_ir, do_diff=do_diff)
+        return process_file(
+            src, tiers=tiers, do_ir=do_ir, do_diff=do_diff, safe_only=safe_only
+        )
     except TimeoutError:
         flush_proposals()
         print(f"  TIMEOUT {src.name} after {timeout_s}s — skipped", flush=True)
@@ -474,9 +479,10 @@ def _eligibility(src: Path, do_ir: bool, do_diff: bool) -> tuple[bool, bool]:
 
 def _worker(args: tuple) -> dict:
     """Pool entry point. Must be module level so it can be pickled."""
-    src, tiers, want_ir, want_diff, timeout_s = args
+    src, tiers, want_ir, want_diff, timeout_s, safe_only = args
     rec = process_file_timed(
-        src, tiers=tiers, do_ir=want_ir, do_diff=want_diff, timeout_s=timeout_s
+        src, tiers=tiers, do_ir=want_ir, do_diff=want_diff,
+        timeout_s=timeout_s, safe_only=safe_only
     )
     flush_proposals()
     return rec
@@ -499,6 +505,7 @@ def run_pipeline(
     reset_proposals: bool = True,
     file_timeout: float = 90.0,
     jobs: int = 1,
+    safe_only: bool = False,
 ) -> dict:
     OUT.mkdir(parents=True, exist_ok=True)
     clear_proposal_buffer()
@@ -541,7 +548,7 @@ def run_pipeline(
             ir_budget -= 1
         if want_diff and diff_budget is not None:
             diff_budget -= 1
-        plan.append((src, tiers, want_ir, want_diff, file_timeout))
+        plan.append((src, tiers, want_ir, want_diff, file_timeout, safe_only))
 
     def _finish(rec: dict, src: Path, want_ir: bool, want_diff: bool) -> dict:
         if do_ir and not want_ir and "ir" not in rec:
@@ -568,7 +575,7 @@ def run_pipeline(
                 }
                 for fut in _cf.as_completed(futures):
                     idx = futures[fut]
-                    src, _t, w_ir, w_diff, _to = plan[idx]
+                    src, _t, w_ir, w_diff, _to, _s = plan[idx]
                     try:
                         rec = fut.result()
                     except Exception as exc:  # a worker died; do not lose the run
@@ -601,7 +608,7 @@ def run_pipeline(
         for r in records:
             all_refusals.extend(r["refusal_list"])
     else:
-        for i, (src, _t, want_ir, want_diff, _to) in enumerate(plan, 1):
+        for i, (src, _t, want_ir, want_diff, _to, _s) in enumerate(plan, 1):
             rec = _finish(
                 process_file_timed(
                     src,
@@ -609,6 +616,7 @@ def run_pipeline(
                     do_ir=want_ir,
                     do_diff=want_diff,
                     timeout_s=file_timeout,
+                    safe_only=safe_only,
                 ),
                 src, want_ir, want_diff,
             )

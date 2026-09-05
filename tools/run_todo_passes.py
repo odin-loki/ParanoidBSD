@@ -96,6 +96,13 @@ def main(argv: list[str] | None = None) -> int:
              "are CPU-bound and single-threaded, so this is what lets a "
              "full-tree run finish.",
     )
+    ap.add_argument(
+        "--safe",
+        action="store_true",
+        help="Run only the passes whose rewrites are local syntactic "
+             "substitutions - see SAFE_PASS_NAMES. Excludes the span, "
+             "RAII and pointer-kind family, which stays proposal-only.",
+    )
     ap.add_argument("--all-passes", action="store_true", help="Alias: all tiers")
     ap.add_argument("--tidy", action="store_true", help="Run clang-tidy -fix on staged outputs")
     ap.add_argument("--tidy-limit", type=int, default=120)
@@ -147,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
         reset_proposals=not (args.append_proposals or args.keep_proposals),
         file_timeout=args.file_timeout,
         jobs=args.jobs,
+        safe_only=args.safe,
     )
     print(
         f"OK files={report['files']} edits={report['edits_total']} "

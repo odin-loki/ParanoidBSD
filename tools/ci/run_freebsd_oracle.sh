@@ -63,6 +63,26 @@ python3 tools/run_todo_passes.py \
     --file-timeout 30
 
 echo
+echo "== safe-tier comparison"
+# The whole question behind SAFE_PASS_NAMES: do the token-level passes
+# produce ports that verify at a better rate than the full set? The full run
+# above certifies 69 of 120 on lib/msun, and lib/msun averages 0.30 edits per
+# file - the ports that verify are largely the ones barely touched. If the
+# safe tier verifies at a materially higher rate, the split is the conversion
+# path and the span family belongs in proposals for good.
+python3 tools/run_todo_passes.py \
+    --scope lib/msun \
+    --all-passes --safe --skip-corpus \
+    --ir-limit 120 --diff-limit 40 \
+    --file-timeout 30 > /dev/null
+python3 - <<'PY2'
+import json
+d = json.loads(open("docs/migration/clang_port/pass_report.json").read())
+print(f"safe tier: files={d['files']} edits={d['edits_total']} "
+      f"IR equal {d['ir_equal']}/{d['ir_ran']}")
+PY2
+
+echo
 echo "== verified-port ratchet"
 python3 - "$FLOOR_FILE" "$REPORT" <<'PY'
 import collections, json, pathlib, sys

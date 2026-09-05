@@ -67,8 +67,62 @@ def register_all_passes() -> list[Pass]:
     ]
 
 
-def passes_for_tiers(tiers: set[int] | None = None) -> list[Pass]:
+# Passes whose rewrites are safe enough to commit, as opposed to propose.
+#
+# The criterion is narrow on purpose: a local, syntactic substitution that
+# does not reinterpret a pointer as a buffer, change ownership or
+# allocation, or restructure control flow. NULL -> nullptr qualifies;
+# foo(buf, n) -> foo(std::span(buf, n)) does not, because it asserts that
+# two arguments are a pointer and its length.
+#
+# This split is not a guess. Measured over usr.sbin, bin, sbin and usr.bin,
+# null_to_nullptr and const_param_rewrite alone are 68% of all edits, the
+# set below is about 78%, and every one of the 455 corrupted staged files
+# came from the span/RAII family that is excluded. Meanwhile lib/msun, the
+# only place anything has been verified, averages 0.30 edits per file
+# against 35.7 in that sample - the 69 verified ports verify largely
+# because almost nothing was done to them.
+#
+# Excluded passes are not disabled. They still run in a normal invocation,
+# and they still write proposals.jsonl, which is where cxx23-port-master-
+# plan.md 8.3 says this class of rewrite belongs: matcher finds candidates,
+# human or stronger model confirms.
+#
+# Widen this set against oracle results, not intuition.
+SAFE_PASS_NAMES = frozenset({
+    "macro_range_mask",
+    "tier0_marker",
+    "c11_to_cxx",
+    "cpp_keyword_rename",
+    "designated_init_cxx20",
+    "flexible_array_refuse",
+    "generic_refuse",
+    "knr_reject",
+    "kr_definition_fix",
+    "macro_function_constexpr",
+    "macro_object_constexpr",
+    "nested_struct_tag_refuse",
+    "null_to_nullptr",
+    "register_remove",
+    "restrict_to_underscore",
+    "string_literal_const",
+    "tentative_definition",
+    "typedef_to_using",
+    "const_param_rewrite",
+    "dead_store_propose_only",
+    "global_cluster_propose_only",
+    "purity_propose_only",
+    "lock_discipline_propose",
+})
+
+
+def passes_for_tiers(
+    tiers: set[int] | None = None,
+    safe_only: bool = False,
+) -> list[Pass]:
     all_p = register_all_passes()
-    if tiers is None:
-        return all_p
-    return [p for p in all_p if p.tier in tiers]
+    if tiers is not None:
+        all_p = [p for p in all_p if p.tier in tiers]
+    if safe_only:
+        all_p = [p for p in all_p if p.name in SAFE_PASS_NAMES]
+    return all_p
