@@ -248,3 +248,58 @@ The checker was made to fail before being trusted, in both files: pointing
 reported by name, on every target, with both expansions shown.
 
 **Nothing includes these yet either.** Same reason as the atomics.
+
+## Ranking by the interface, not the text
+
+`docs/PORTABILITY.md` left a question open: `atomic.h` scores 0.01 text
+similarity across six architectures and implements one interface, while
+`pte.h` scores 0.00 and genuinely differs, and nothing could tell them apart
+because similarity measures the prose. `tools/arch_interface.py` measures the
+contract instead:
+
+```
+agreement = |names exported by every architecture| / |names exported by any|
+```
+
+and ranks by `agreement - similarity`. A large gap is the `atomic.h` shape:
+one contract, several unrelated implementations, which is the strongest case
+for writing it once. A small gap on a low agreement is a real machine
+dependency.
+
+```
+ agree   sim    gap  lines  n  shared  total  gen  header
+  0.67  0.10   0.57    154  3       6      9    0  iodev.h
+  0.62  0.07   0.55    721  6       8     13   15  counter.h
+  0.50  0.04   0.46    174  6       4      8    0  _bus.h
+  0.60  0.19   0.41    371  6       6     10    0  kdb.h
+  0.31  0.03   0.28    570  6      15     49    0  db_machdep.h
+  0.27  0.05   0.23   1695  6      32    117    8  vmparam.h
+  0.17  0.01   0.16   5107  6      44    263  197  atomic.h
+  0.08  0.04   0.04   1789  6      25    302   30  pmap.h
+  0.03  0.01   0.02   1529  6       7    252  175  cpu.h
+```
+
+Two new candidates, both checked by hand rather than taken from the score:
+
+* **`counter.h`** — 721 lines across six architectures, and all six export
+  the same five names: `counter_u64_add`, `counter_u64_add_protected`,
+  `counter_enter`, `counter_exit`, `EARLY_COUNTER`. Per-CPU counters are
+  `curcpu` plus an add, and the add is exactly what `sys/sys/atomic_generic.h`
+  now provides.
+* **`_bus.h`** — 174 lines across six for four typedefs, `bus_addr_t`,
+  `bus_size_t`, `bus_space_tag_t` and `bus_space_handle_t`, identical in
+  every architecture except for the width behind them. That is
+  `<stdint.h>`-shaped.
+
+And the limit, stated because a previous tool in this tree got exactly this
+wrong and read as a security finding: `agree` is a **lower bound**. arm64's
+`atomic.h` writes `_ATOMIC_OP_IMPL(32, w, , op, ...)` and the name
+`atomic_add_32` never appears in the file, so no regex finds it. The `gen`
+column counts those invocations; where it is large — `atomic.h` at 197,
+`cpu.h` at 175 — the agreement number is an underestimate and the header
+deserves reading rather than scoring.
+
+`pmap.h` and `cpu.h` sit at the bottom with small gaps, which is the tool
+agreeing with the earlier conclusion: page table layout and CPU control
+registers are not one interface written several times, they are several
+interfaces.

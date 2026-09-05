@@ -114,6 +114,21 @@ jobs:
       - name: Generic stdint/inttypes — same expansion as the six headers
         run: python3 tools/stdint_generic_check.py
 
+      # A report, not a gate. arch_duplication.py, atomic_survey.py and
+      # asm_inventory.py measure how much per-architecture code there is and
+      # arch_interface.py measures how much of it is one interface written
+      # several times. None of them can fail the build; they exist so the
+      # numbers in docs/CONSOLIDATION.md and docs/PORTABILITY.md are
+      # re-measured on every push rather than being a snapshot someone took
+      # once and nobody re-ran.
+      - name: Per-architecture duplication survey
+        run: |
+          python3 tools/arch_interface.py hbsd/src --top 15
+          echo
+          python3 tools/arch_duplication.py hbsd/src --scope sys 2>/dev/null | head -25 || true
+          echo
+          python3 tools/atomic_survey.py hbsd/src 2>/dev/null | tail -12 || true
+
       # ctest currently finds no tests - pbsd/CMakeLists.txt is generated with
       # a single library target and no enable_testing(). Kept so the harness
       # is picked up automatically once it is wired in.
