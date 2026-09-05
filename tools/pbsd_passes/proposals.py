@@ -6,6 +6,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from .shard import shard_path
+
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "docs" / "migration" / "clang_port"
 PATH = OUT / "proposals.jsonl"
@@ -28,6 +30,6 @@ def flush() -> None:
     if not _buf:
         return
     OUT.mkdir(parents=True, exist_ok=True)
-    with PATH.open("a", encoding="utf-8") as f:
+    with shard_path(PATH).open("a", encoding="utf-8") as f:
         f.write("\n".join(_buf) + "\n")
     _buf.clear()

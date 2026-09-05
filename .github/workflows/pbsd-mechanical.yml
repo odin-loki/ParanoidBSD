@@ -1,0 +1,73 @@
+name: PBSD mechanical phase
+
+# The deterministic C->C++23 passes over every active conversion wave.
+#
+# This used to be unrunnable in CI: single-process it managed about 100 files
+# a minute, so the 10,464-file scope could not finish inside a job timeout,
+# and because the report is only written at the end an overrun produced
+# nothing at all. With --jobs it completes in a few minutes.
+#
+# Nothing here is committed. The run exists to catch the pipeline breaking or
+# quietly changing what it emits, and to keep a dated report to compare
+# against.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 3 * * 1'
+  push:
+    paths:
+      - 'tools/pbsd_passes/**'
+      - 'tools/run_todo_passes.py'
+      - '.github/workflows/pbsd-mechanical.yml'
+
+jobs:
+  mechanical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq clang clang-tools python3
+
+      - name: Golden corpus (hard gate)
+        run: python3 tools/run_todo_passes.py --corpus-only
+
+      # --no-ir is not a shortcut. On Linux the oracle cannot certify a single
+      # real port - see tools/pbsd_passes/README.md - so every IR compile here
+      # is spent reaching a foregone compile_fail. Verification is the FreeBSD
+      # job's work.
+      - name: Run every active conversion wave
+        run: |
+          python3 tools/run_todo_passes.py \
+            --scope bin,sbin,usr.bin,usr.sbin,lib,libexec,cddl,sys \
+            --all-passes --no-ir --no-diff --jobs 0
+
+      - name: Check the run actually completed
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          d = json.load(open("docs/migration/clang_port/pass_report.json"))
+          files, edits = d["files"], d["edits_total"]
+          print(f"files={files} edits={edits} refusals={d['refusals_total']}")
+          # A truncated run is the failure mode worth catching: the report is
+          # written at the end, so a short one means something died quietly.
+          if files < 10_000:
+              print(f"FAIL only {files} files processed; expected the full scope.")
+              sys.exit(1)
+          if edits < 100_000:
+              print(f"FAIL {edits} edits is far below the ~468k this scope emits.")
+              sys.exit(1)
+          print("OK run completed over the full scope.")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mechanical-report
+          path: |
+            docs/migration/clang_port/todo_pass_report.md
+            docs/migration/clang_port/pass_report.json
+          retention-days: 30

@@ -14,6 +14,7 @@ from pathlib import Path
 from .compile_db import coverage_report, default_flags, generate_compile_commands
 from .differential import differential
 from .ir_oracle import compare_ir
+from .shard import merge_shards
 from .passes import passes_for_tiers
 from .proposals import flush as flush_proposals
 from .proposals import reset as clear_proposal_buffer
@@ -447,6 +448,40 @@ def run_clang_tidy_on_staged(limit: int | None = 80, fix: bool = True) -> dict:
     return out
 
 
+def _eligibility(src: Path, do_ir: bool, do_diff: bool) -> tuple[bool, bool]:
+    """Cheap pre-scan mirroring process_file, so budgets can be assigned
+    before any work is dispatched.
+
+    The serial loop spent its IR and differential budget as it went. A pool
+    finishes files out of order, so deciding there would make the result
+    depend on scheduling. Deciding here keeps a --jobs run reproducible and
+    identical to the serial one.
+    """
+    try:
+        text = src.read_text(encoding='utf-8', errors='replace')
+        size = src.stat().st_size
+    except OSError:
+        return False, False
+    heavy = any(
+        x in text
+        for x in ('capsicum', '#include <sys/', '#include "sys/',
+                  'libcasper', 'caph_')
+    )
+    ir_ok = bool(do_ir and not heavy and size < 12_000)
+    diff_ok = bool(do_diff and not heavy and 'main' in text and size < 4000)
+    return ir_ok, diff_ok
+
+
+def _worker(args: tuple) -> dict:
+    """Pool entry point. Must be module level so it can be pickled."""
+    src, tiers, want_ir, want_diff, timeout_s = args
+    rec = process_file_timed(
+        src, tiers=tiers, do_ir=want_ir, do_diff=want_diff, timeout_s=timeout_s
+    )
+    flush_proposals()
+    return rec
+
+
 def run_pipeline(
     scopes: list[str],
     limit: int | None = None,
@@ -463,6 +498,7 @@ def run_pipeline(
     skip_corpus: bool = False,
     reset_proposals: bool = True,
     file_timeout: float = 90.0,
+    jobs: int = 1,
 ) -> dict:
     OUT.mkdir(parents=True, exist_ok=True)
     clear_proposal_buffer()
@@ -492,35 +528,98 @@ def run_pipeline(
     ir_budget = ir_limit if do_ir else 0
     diff_budget = diff_limit if do_diff else 0
     total = len(sources)
-    for i, src in enumerate(sources, 1):
-        # Probe eligibility without Clang first: size/heavy heuristics in process_file
-        # Cap expensive oracles via remaining budget.
-        want_ir = do_ir and (ir_budget is None or ir_budget > 0)
-        want_diff = do_diff and (diff_budget is None or diff_budget > 0)
-        rec = process_file_timed(
-            src,
-            tiers=tiers,
-            do_ir=want_ir,
-            do_diff=want_diff,
-            timeout_s=file_timeout,
-        )
-        if want_ir and rec.get("ir_eligible") and ir_budget is not None:
+
+    # Assign the IR and differential budgets up front. Both are expensive and
+    # capped, and a pool completes files out of order, so spending the budget
+    # as results arrive would make the outcome depend on scheduling.
+    plan: list[tuple] = []
+    for src in sources:
+        el_ir, el_diff = _eligibility(src, do_ir, do_diff)
+        want_ir = bool(el_ir and (ir_budget is None or ir_budget > 0))
+        want_diff = bool(el_diff and (diff_budget is None or diff_budget > 0))
+        if want_ir and ir_budget is not None:
             ir_budget -= 1
-        if want_diff and rec.get("diff_eligible") and diff_budget is not None:
+        if want_diff and diff_budget is not None:
             diff_budget -= 1
-        # If we asked for IR but were over budget path: skipped via want_ir=False
-        if do_ir and not want_ir:
+        plan.append((src, tiers, want_ir, want_diff, file_timeout))
+
+    def _finish(rec: dict, src: Path, want_ir: bool, want_diff: bool) -> dict:
+        if do_ir and not want_ir and "ir" not in rec:
             rec["ir"] = {"status": "skipped_budget", "equal": False}
-        if do_diff and not want_diff:
+        if do_diff and not want_diff and "diff" not in rec:
             rec["diff"] = {"status": "skipped_budget", "equal": False}
-        records.append(rec)
-        all_refusals.extend(rec["refusal_list"])
-        if i % 10 == 0 or i == total:
-            print(
-                f"  progress {i}/{total} edits={sum(r['edits'] for r in records)} "
-                f"refusals={len(all_refusals)} last={src.name}",
-                flush=True,
+        return rec
+
+    if jobs > 1 and total > 1:
+        import concurrent.futures as _cf
+        import os as _os
+
+        # Each worker appends to its own shard of proposals.jsonl and the
+        # tier-3 side files; the parent folds them back in below.
+        _os.environ["PBSD_SHARD"] = "1"
+        print(f"  running {total} file(s) across {jobs} workers", flush=True)
+        results: list[dict | None] = [None] * total
+        done = 0
+        try:
+            with _cf.ProcessPoolExecutor(max_workers=jobs) as pool:
+                futures = {
+                    pool.submit(_worker, item): idx
+                    for idx, item in enumerate(plan)
+                }
+                for fut in _cf.as_completed(futures):
+                    idx = futures[fut]
+                    src, _t, w_ir, w_diff, _to = plan[idx]
+                    try:
+                        rec = fut.result()
+                    except Exception as exc:  # a worker died; do not lose the run
+                        rec = {
+                            "source": src.relative_to(ROOT).as_posix(),
+                            "staged": "", "edits": 0, "refusals": 0,
+                            "edit_list": [], "refusal_list": [],
+                            "ir": {"status": "worker_error", "equal": False},
+                            "diff": {"status": "worker_error", "equal": False},
+                            "ir_eligible": False, "diff_eligible": False,
+                            "error": str(exc),
+                        }
+                        print(f"  WORKER ERROR {src.name}: {exc}", flush=True)
+                    results[idx] = _finish(rec, src, w_ir, w_diff)
+                    done += 1
+                    if done % 50 == 0 or done == total:
+                        got = [r for r in results if r]
+                        print(
+                            f"  progress {done}/{total} "
+                            f"edits={sum(r['edits'] for r in got)} "
+                            f"refusals={sum(len(r['refusal_list']) for r in got)}",
+                            flush=True,
+                        )
+        finally:
+            _os.environ.pop("PBSD_SHARD", None)
+            for side in ("proposals.jsonl", "pointer_kinds.jsonl",
+                         "global_clusters.jsonl"):
+                merge_shards(OUT / side)
+        records = [r for r in results if r]
+        for r in records:
+            all_refusals.extend(r["refusal_list"])
+    else:
+        for i, (src, _t, want_ir, want_diff, _to) in enumerate(plan, 1):
+            rec = _finish(
+                process_file_timed(
+                    src,
+                    tiers=tiers,
+                    do_ir=want_ir,
+                    do_diff=want_diff,
+                    timeout_s=file_timeout,
+                ),
+                src, want_ir, want_diff,
             )
+            records.append(rec)
+            all_refusals.extend(rec["refusal_list"])
+            if i % 10 == 0 or i == total:
+                print(
+                    f"  progress {i}/{total} edits={sum(r['edits'] for r in records)} "
+                    f"refusals={len(all_refusals)} last={src.name}",
+                    flush=True,
+                )
 
     flush_proposals()
 

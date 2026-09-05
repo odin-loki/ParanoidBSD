@@ -22,6 +22,11 @@ on:
       - 'docs/migration/freebsd_verified_floor.txt'
       - '.github/workflows/pbsd-freebsd-oracle.yml'
   workflow_dispatch:
+  # Run it over time, not only when the pipeline is touched. The verified
+  # count can move without any change here - a FreeBSD or clang update in the
+  # VM image is enough - and the ratchet only protects what it re-measures.
+  schedule:
+    - cron: '17 4 * * *'
 
 jobs:
   freebsd-oracle:

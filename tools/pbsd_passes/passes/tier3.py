@@ -11,6 +11,7 @@ from pathlib import Path
 from ..schema import Edit, PassResult, Refusal
 from ..unit import TranslationUnit
 from .base import Pass
+from ..shard import shard_path
 
 def _propose_lock(unit, kind: str, payload: dict) -> None:
     from ..proposals import propose
@@ -64,7 +65,7 @@ class PointerKindCensusPass(Pass):
                     {"line": unit.line_col(m.start())[0], "snippet": f"{name}:{kind}"},
                 )
         OUT.mkdir(parents=True, exist_ok=True)
-        side = OUT / "pointer_kinds.jsonl"
+        side = shard_path(OUT / "pointer_kinds.jsonl")
         with side.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"file": unit.path, "kinds": kinds}) + "\n")
         return PassResult(text=text, refusals=refusals, edits=[])
@@ -230,7 +231,7 @@ class GlobalClusterPass(Pass):
                 if re.search(rf"\b{re.escape(g)}\b", body):
                     fn_to_g[fname].add(g)
         OUT.mkdir(parents=True, exist_ok=True)
-        path = OUT / "global_clusters.jsonl"
+        path = shard_path(OUT / "global_clusters.jsonl")
         with path.open("a", encoding="utf-8") as f:
             f.write(
                 json.dumps(
