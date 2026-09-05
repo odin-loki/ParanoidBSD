@@ -28,6 +28,51 @@
 WITHOUT_MACHDEP_OPTIMIZATIONS=YES
 
 # ---------------------------------------------------------------------------
+# Hardening, on every architecture.
+#
+# src.opts.mk makes most of these amd64-only, or amd64-and-arm64:
+#
+#   .if ${__T} == "amd64"
+#   __DEFAULT_YES_OPTIONS+=SAFESTACK
+#   __DEFAULT_YES_OPTIONS+=RETPOLINE
+#   .else
+#   __DEFAULT_NO_OPTIONS+=SAFESTACK
+#
+# That is upstream being careful about what it has tested, and it is the same
+# shape of problem the kernel configs had: the hardening policy differed per
+# architecture for reasons that were about coverage rather than about the
+# hardware, and the architectures nobody built quietly got less of it.
+#
+# bsd.mkopt.mk: an option in __DEFAULT_NO_OPTIONS becomes yes when WITH_FOO is
+# defined. So this is a configuration change, not a patch to the logic.
+#
+# pbsd-arch-matrix.yml builds all six and tools/ci/show_hardening.sh reports
+# what each one actually got, so "PBSD hardens every architecture equally" is
+# a claim with a build behind it rather than an aspiration.
+
+# No hardware dependency. These are linker and codegen choices and there is no
+# architecture where they are meaningless.
+WITH_PIE=YES
+WITH_RELRO=YES
+WITH_BIND_NOW=YES
+
+# A compiler feature, implemented per target by clang rather than by the CPU.
+# Upstream defaults it to amd64 only.
+WITH_SAFESTACK=YES
+
+# Control-flow integrity. Needs LTO, which is why upstream limits it to amd64
+# and arm64 - not because the other architectures cannot do it. Extending it is
+# the part of this most likely to fail, and the matrix is where that shows up.
+WITH_CFI=YES
+
+# RETPOLINE is deliberately NOT set here. It is -mretpoline, an x86
+# microarchitectural mitigation for Spectre v2; clang rejects it on other
+# targets, and the equivalent elsewhere is different hardware (arm64's BTI and
+# pointer authentication, which want MK_BRANCH_PROTECTION - an option this
+# tree does not have yet). Leaving it architecture-conditional is correct;
+# leaving SafeStack architecture-conditional was not.
+
+# ---------------------------------------------------------------------------
 # Not built into a shipped image.
 #
 # Each of these is a subsystem the build can leave out entirely. Reducing by

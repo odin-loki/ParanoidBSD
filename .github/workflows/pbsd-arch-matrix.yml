@@ -63,6 +63,11 @@ jobs:
           # The VM is a separate machine over ssh, so a step-level env: never
           # reaches it. TARGET_ARCH is derived by the script from TARGET.
           run: |
+            # What did this architecture actually get? src.conf.pbsd asks for
+            # the same hardening everywhere; this is where each one answers.
+            sh tools/ci/show_hardening.sh "${{ matrix.target }}" \
+               "$PWD/hbsd/src.conf.pbsd" \
+               "$PWD/hbsd/toolchains/llvm21.mk"
             TARGET="${{ matrix.target }}" \
             KERNCONF="${{ inputs.kernconf || 'HARDENEDBSD' }}" \
             TOOLCHAIN=external \
