@@ -167,3 +167,7 @@ docs/migration/*.log
 
 # Images copied out of the build by tools/ci/build_boot_image.sh.
 out/
+
+# The machine-readable half of the port ledger. Regenerate with
+# tools/port_plan.py; the markdown is what is committed.
+docs/port_plan.json
