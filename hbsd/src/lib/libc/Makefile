@@ -208,6 +208,40 @@ GENDIRDEPS_FILTER+= N${RELDIR:H}/msun
 .endif
 .endif
 
+# PBSD: what a C++ translation unit in this library needs, and no more.
+#
+# Almost nothing, as it turns out. share/mk/sys.mk:186 does
+#
+#     CXXFLAGS ?= ${CFLAGS:N-std=*:N-Wnested-externs:N-W*-prototypes:...}
+#
+# and that `?=` is evaluated before bsd.sys.mk touches CXXFLAGS, with `=`
+# semantics, so it expands CFLAGS at USE time. Every -I, -D and codegen flag
+# this Makefile adds - including the ones added after this line, like
+# -I lib/msun/src - is already in CXXFLAGS. Asking bmake directly (-V
+# CXXFLAGS against -V CFLAGS) leaves exactly one C-only flag behind,
+# -std=gnu17, which is the point of the filter.
+#
+# So only the two things the oracle certifies with are missing:
+#
+#   CXXSTD, which is the tree default gnu++17 here. The IR oracle compares
+#   at -std=c++23, and a port built at gnu++17 is not the thing it verified.
+#   gnu++17 is also not ISO anything, which is the standard this port is to.
+#
+#   -fno-exceptions -fno-rtti. C++ turns exceptions on by default and C does
+#   not, so a C source compiled as C++ without these gains unwind tables its
+#   C original has no trace of. The oracle measures with both.
+#
+# One exception to the exception: CANCELPOINTS_CFLAGS re-scopes -fexceptions
+# to cancelpoints_* sources at the bottom of this file, deliberately. Nothing
+# there is a port candidate today - they are generated - but a port of one
+# would need -fexceptions back, per source, not this blanket -fno-exceptions.
+#
+# lib/msun/Makefile carries the same pair plus its own target flags; see
+# docs/migration/COMMITTING_PORTS.md for why the flags are a precondition
+# for committing a port at all.
+CXXSTD=		c++23
+CXXFLAGS+=	-fno-exceptions -fno-rtti
+
 # Disable warnings in contributed sources.
 CWARNFLAGS:=	${.IMPSRC:Ngdtoa_*.c:C/^.+$/${CWARNFLAGS}/:C/^$/-w/}
 # Disable stack protection for SSP symbols.

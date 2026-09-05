@@ -91,7 +91,7 @@ SRCS+= \
 	glob-compat11.c \
 	initgroups.c \
 	inotify.c \
-	isatty.c \
+	isatty.cpp \
 	isinf.c \
 	isnan.c \
 	jrand48.c \
