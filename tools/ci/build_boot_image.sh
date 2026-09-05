@@ -11,13 +11,22 @@
 # are the part that wants the host.
 #
 # Usage:
-#   sh tools/ci/build_boot_image.sh [kernel|world|memstick|iso]
+#   sh tools/ci/build_boot_image.sh [kernel|world|vm|memstick|iso]
 #
 # Stages, cheapest first, because each is a real gate on the one after:
 #   kernel    buildkernel only        - proves the kernel config compiles
 #   world     buildworld buildkernel  - the long one, hours
 #   memstick  ... + memstick.img      - bootable USB image
 #   iso       ... + disc1.iso         - bootable installer ISO
+#   vm        ... + vm.raw            - a disk image that boots to a login
+#
+# memstick and iso are the installer: they boot to bsdinstall's menu, which
+# is enough to prove the kernel and userland start and is not enough to ask
+# the system anything. vm.raw has a root login on the serial console, which
+# is what tools/ci/boot_test.py --run needs - and several open questions in
+# this repository (what hardening.pax.mprotect.status actually defaults to,
+# what is setuid in the built image rather than in the makefiles) can only be
+# answered from inside a booted system.
 set -eu
 
 STAGE="${1:-kernel}"
@@ -240,7 +249,7 @@ world)
     run_make buildworld
     run_make buildkernel
     ;;
-memstick|iso)
+vm|memstick|iso)
     run_make buildworld
     run_make buildkernel
     # release/ installs world and kernel into a staging tree, then makefs
@@ -249,12 +258,16 @@ memstick|iso)
     case "$STAGE" in
     memstick) run_make memstick.img; OUT="memstick.img" ;;
     iso)      run_make disc1.iso;    OUT="disc1.iso" ;;
+    # VMFORMATS defaults to vhd vmdk qcow2 raw; raw is the only one QEMU
+    # needs and the other three are ten minutes of nothing.
+    vm)       run_make vm-image VMFORMATS=raw VMSIZE="${VMSIZE:-6144m}"
+              OUT="vm.raw" ;;
     esac
     echo "== image: $SRC/release/$OUT"
     ls -lh "$SRC/release/$OUT"
     ;;
 *)
-    echo "FAIL unknown stage '$STAGE' (kernel|world|memstick|iso)" >&2
+    echo "FAIL unknown stage '$STAGE' (kernel|world|vm|memstick|iso)" >&2
     exit 1
     ;;
 esac

@@ -27,10 +27,17 @@ produced a bootable image yet.
 
 ```
 kernel    buildkernel                     tens of minutes
-world     buildworld buildkernel          hours
+world     buildworld buildkernel          about half an hour
+vm        ... + vm.raw        + BOOT + ASK
 memstick  ... + memstick.img  + BOOT      the image, and QEMU starting it
 iso       ... + disc1.iso     + BOOT
 ```
+
+`memstick` and `iso` are the installer. They boot to bsdinstall's menu,
+which proves the kernel and userland start and is as far as it goes — there
+is nobody to talk to. `vm` builds `release/vm.raw`, which has a root login on
+the serial console, and that is the difference between "it booted" and "and
+here is what it says about itself".
 
 Everything up to `world` proves the tree compiles. `tools/ci/boot_test.py`
 is the only thing in the repository that proves the result runs: it starts the
@@ -51,10 +58,43 @@ because a failed boot is exactly when it is wanted.
 **It has not run yet.** Every `pbsd-boot-image` run so far has failed in
 "Build on FreeBSD", so "Collect image", "Boot it" and the upload were all
 skipped — the step reports `skipped`, not a result, and it would be easy to
-read a green-looking run summary as a boot that happened. Runs 8 and 9 both
-died sixteen minutes in on the same missing SafeStack runtime (see
-docs/PORTABILITY.md). Until a `world` or `memstick` run finishes, PBSD has
-never been started, and nothing in this repository claims otherwise.
+read a green-looking run summary as a boot that happened. Runs 8, 9 and 11
+all died sixteen minutes in on the same missing SafeStack runtime, which
+turned out to be a triple mismatch rather than a missing archive (see
+`docs/PORTABILITY.md`). Run 12 got past it: `>>> World build completed on
+Sat Sep 5 08:25:07 UTC 2026`, with SafeStack and CFI linking. Until a run
+reaches "Boot it", PBSD has never been started, and nothing in this
+repository claims otherwise.
+
+## Asking the system about itself
+
+`--run NAME=CMD` logs in after a successful boot and runs commands, writing
+each one's output to `NAME.txt` beside the boot log. On a `vm` image the
+workflow asks for `uname -a`, `sysctl hardening`, every setuid and setgid
+file in the image, and `kldstat -v`, and then
+`tools/hardening_sysctls.py --check` compares the sysctl dump against the
+defaults extracted from the source.
+
+That is the only way to answer several questions this repository has been
+carrying:
+
+* `show_hardening.sh` says `PAX_ASLR` is compiled in. Whether
+  `hardening.pax.aslr.status` *defaults* to opt-out is a different question
+  and it decides whether the mitigation applies to anything.
+* `tools/setuid_inventory.py` reads Makefiles, so it says what the tree
+  declares. `find / -perm -4000` says what the image contains, and the two
+  can differ.
+
+The mechanics were tested against a stand-in console before being pointed at
+a real image — a script that prints a plausible boot, offers a login and
+hands over to a shell. It caught three bugs that a real boot would have hit:
+the log being closed before the interrogation ran, waiting for a `login:`
+prompt that was already on screen and had already been consumed by the boot
+loop, and keying on how many times a sentinel appears — which works on a
+serial console because a tty echoes, and fails anywhere that does not. That
+last one is the important one: counting occurrences would have made the
+harness and production behave differently, which is the opposite of what a
+harness is for. Paired begin/end markers work in both.
 
 ## Before anything else
 

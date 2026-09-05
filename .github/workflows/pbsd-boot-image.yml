@@ -13,11 +13,11 @@ on:
   workflow_dispatch:
     inputs:
       stage:
-        description: 'kernel | world | memstick | iso'
+        description: 'kernel | world | vm | memstick | iso'
         required: true
         default: 'kernel'
         type: choice
-        options: [kernel, world, memstick, iso]
+        options: [kernel, world, vm, memstick, iso]
       kernconf:
         description: 'kernel config'
         required: true
@@ -113,15 +113,16 @@ jobs:
             fi
 
       - name: Collect image
-        if: inputs.stage == 'memstick' || inputs.stage == 'iso'
+        if: inputs.stage == 'vm' || inputs.stage == 'memstick' || inputs.stage == 'iso'
         run: |
           mkdir -p out
-          find hbsd/src/release -maxdepth 1 \( -name '*.img' -o -name '*.iso' \) \
+          find hbsd/src/release -maxdepth 1 \
+               \( -name '*.img' -o -name '*.iso' -o -name 'vm.raw' \) \
                -exec cp {} out/ \; 2>/dev/null || true
           ls -lh out/ || echo "no image produced"
 
       - name: Boot it
-        if: inputs.stage == 'memstick' || inputs.stage == 'iso'
+        if: inputs.stage == 'vm' || inputs.stage == 'memstick' || inputs.stage == 'iso'
         # Everything before this proves the tree compiles. This is the only
         # step that proves the result runs. It is on the Linux runner, not in
         # the FreeBSD VM: the image is built on FreeBSD because release/ wants
@@ -130,16 +131,45 @@ jobs:
         # qemu-system-x86 is already installed - the freebsd-vm action needs
         # it and put it there.
         run: |
-          img=$(ls out/*.img out/*.iso 2>/dev/null | head -1)
+          img=$(ls out/vm.raw out/*.img out/*.iso 2>/dev/null | head -1)
           if [ -z "$img" ]; then
             echo "no image to boot"; exit 1
           fi
-          python3 tools/ci/boot_test.py "$img" \
-            --target amd64 --timeout 420 --log out/boot.log
+          # memstick and iso boot to bsdinstall's menu and cannot be asked
+          # anything. vm.raw has a login, so that is where the interrogation
+          # runs - and the answers are the only place several open questions
+          # in this repository can be settled.
+          case "$img" in
+          *vm.raw)
+            python3 tools/ci/boot_test.py "$img" \
+              --target amd64 --timeout 420 --shell-timeout 180 \
+              --log out/boot.log \
+              --run 'uname=uname -a' \
+              --run 'hardening=sysctl hardening' \
+              --run 'setuid=find / -xdev -type f \( -perm -4000 -o -perm -2000 \) -exec ls -l {} +' \
+              --run 'kldstat=kldstat -v | head -50' \
+              --run 'pax=sysctl -a | grep -c ^hardening'
+            ;;
+          *)
+            python3 tools/ci/boot_test.py "$img" \
+              --target amd64 --timeout 420 --log out/boot.log
+            ;;
+          esac
+
+      # The compiled-in defaults, against the kernel that just booted. This
+      # is the check that show_hardening.sh cannot make.
+      - name: Hardening sysctls, against a running kernel
+        if: always() && inputs.stage == 'vm'
+        run: |
+          if [ -f out/hardening.txt ]; then
+            python3 tools/hardening_sysctls.py --check out/hardening.txt
+          else
+            echo "::warning title=No sysctl dump::The boot did not get far enough to produce one."
+          fi
 
       - uses: actions/upload-artifact@v4
         # always(): a failed boot is exactly when the log is wanted.
-        if: always() && (inputs.stage == 'memstick' || inputs.stage == 'iso')
+        if: always() && (inputs.stage == 'vm' || inputs.stage == 'memstick' || inputs.stage == 'iso')
         with:
           name: pbsd-${{ inputs.stage }}-${{ inputs.kernconf }}
           path: out/*
