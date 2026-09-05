@@ -88,8 +88,9 @@ editing six `sys/conf/files.<arch>`, and `uiomove_fromphys` is a hot VM path
 where a mistake is data corruption rather than a compile error. The six-arch
 matrix is green now, so a build failure after such a change would be
 attributable — but the matrix proves it compiles, not that it runs, and
-PBSD's kernel mounts root and goes no further (run 20; run 21 is the one
-that shows it reaching the exec). That is the gate on this one.
+PBSD's kernel mounts root, execs init, and init runs without producing
+output (run 31, from the kernel debugger). The kernel's part works; the
+gate on this one is a system that talks, which is not the same thing.
 
 ## What is generated, and does not count
 
@@ -388,8 +389,12 @@ The kernel **reaches the exec**. And the absences pin it: no `exec
 `boot_single`.
 
 So `kern_execve()` neither failed nor produced a program that spoke.
-Whether it hangs, or `init` runs and hangs before its first write, is
-still open.
+Whether it hangs, or `init` runs and hangs before its first write, was
+open for eleven runs. **Run 31 answered it from the kernel debugger:
+`kern_execve()` returned `EJUSTRETURN`, pid 1 exists, and it is running
+in userland.** See `docs/BUILDING.md`; everything between here and there
+is the search for an instrument, and the instrument was `options DDB`
+and a three-byte escape sequence that had been compiled in all along.
 
 ### Runs 22 to 27: four ways of setting `init_path`, none of which worked
 

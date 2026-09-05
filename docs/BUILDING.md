@@ -587,6 +587,88 @@ Either answer ends the question. And it needs no `init_path`, no
 in this very run — `boot_test.py` already types on that console one byte
 at a time, which is how the three pokes are sent.
 
+### Run 31: init is running
+
+The break was taken, and on the first attempt:
+
+```
+  [console silent after three pokes; breaking to the kernel debugger]
+
+KDB: enter: Break to debugger
+[ thread pid 1 tid 100002 ]
+Stopped at      kdb_alt_break_internal+0x15d
+db> ps
+  pid  ppid  pgrp   uid  state   wmesg   wchan               cmd
+    1     0     0     0  RL      CPU 0                       [init]
+db> show pcpu
+curthread    = 0xfffff80004c98000: pid 1 tid 100002 critnest 1 "init"
+fpcurthread  = 0xfffff80004c98000: pid 1 "init"
+spin locks held:
+db> bt
+Tracing pid 1 tid 100002 td 0xfffff80004c98000
+kdb_alt_break_internal() at ...
+kdb_alt_break() at ...
+uart_intr_rxready() at ...
+uart_intr() at ...
+intr_event_handle() at ...
+intr_execute_handlers() at ...
+Xapic_isr1() at ...
+--- interrupt, rip = 0x2c2994c9fd0, rsp = 0x67061406eb30, rbp = ... ---
+```
+
+**`kern_execve()` returned `EJUSTRETURN`. init is a userland process, pid
+1, and it is running.**
+
+Every line of that says the same thing from a different direction. The
+break landed *on* thread pid 1 — the CPU was executing init when the
+serial interrupt arrived. `ps` gives pid 1 in state `R`, on CPU 0, with
+no wait channel and no `wmesg`: not blocked on anything, not sleeping,
+runnable. `show pcpu` has it as `curthread` and as `fpcurthread`, so it
+has used the FPU. And the backtrace is nothing but the interrupt path —
+`Xapic_isr1` down to `kdb_alt_break_internal` — sitting on top of
+
+```
+--- interrupt, rip = 0x2c2994c9fd0 ---
+```
+
+a **userland** address. Kernel text on this machine is `0xffffffff8…`;
+`0x2c2994c9fd0` is not in it. The interrupt came in from user mode.
+
+So the kernel's part is finished. It mounted root, it exec'd init, and
+init is on the CPU burning time and writing nothing.
+
+### What that retracts
+
+Every reading of runs 20 through 30 that treated this as a kernel hang
+was wrong, this document included. "PBSD's kernel reaches `exec
+/sbin/init` and no further" describes the last line the kernel prints,
+not where it stops — it goes past it, successfully, and hands control to
+userland.
+
+Five runs went into `init_path`, on the theory that pointing it at a
+statically linked `/rescue/sh` would say whether the exec worked. The
+exec worked all along. `init_path` never arrived and it never mattered:
+the question it was meant to answer had a different instrument, and the
+instrument was compiled into the kernel the whole time.
+
+That is the fourth time this session a claim about an unobserved step
+turned out to be the wrong claim, and the first three were caught the
+same way this one was — by looking at what the machine actually did
+rather than at what the mechanism should have done.
+
+### What is left
+
+init runs and says nothing. Two things narrow that, and both are the
+same probe with different arguments:
+
+* **Where is `rip`?** `show procvm 1` prints init's whole `vm_map`, so
+  the address falls in a named object — init's own text, the rtld, or
+  libc. A process spinning in `ld-elf.so` before it reaches `main` looks
+  exactly like this from the kernel.
+* **Does `rip` move?** One break gives one sample. Continuing and
+  breaking again says whether this is a tight spin at one instruction, a
+  loop, or slow progress.
+
 ## Asking the system about itself
 
 `--run NAME=CMD` logs in after a successful boot and runs commands, writing

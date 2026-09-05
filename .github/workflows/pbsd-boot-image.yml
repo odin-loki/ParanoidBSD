@@ -225,12 +225,19 @@ jobs:
             # log separates them, because both are silence. amd64's
             # HARDENEDBSD has options KDB, DDB and ALT_BREAK_TO_DEBUGGER, so
             # once the pokes are spent the console is asked directly.
+            # Run 31 answered the first question: pid 1 exists, it is
+            # runnable on CPU 0, and the interrupt frame under the
+            # backtrace has a userland rip. kern_execve() returned and
+            # init is running. What is left is WHERE it is running, so
+            # `show procvm 1` prints its vm_map for the rip to fall in,
+            # and two rounds say whether the rip moves between them - a
+            # tight spin, a loop and slow progress are the same picture
+            # from one backtrace.
             python3 tools/ci/boot_test.py "$img" \
-              --target amd64 --timeout 420 --log out/boot.log \
-              --ddb-on-hang \
-              --ddb-cmd 'ps' \
-              --ddb-cmd 'show pcpu' \
+              --target amd64 --timeout 480 --log out/boot.log \
+              --ddb-on-hang --ddb-rounds 2 --ddb-gap 15 \
               --ddb-cmd 'bt' \
+              --ddb-cmd 'show procvm 1' \
               "$@"
             ;;
           esac

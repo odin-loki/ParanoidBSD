@@ -42,9 +42,9 @@ PS_OUTPUT = """  PID PPID PGRP  RGID   Flags Stat Wchan    Name
 """
 
 BT_OUTPUT = """Tracing pid 1 tid 100002 td 0xfffff8000a2b0000
-sched_switch() at sched_switch+0x5b6/frame 0xfffffe0045a3a730
-mi_switch() at mi_switch+0xba/frame 0xfffffe0045a3a750
-sleepq_switch() at sleepq_switch+0x111/frame 0xfffffe0045a3a780
+kdb_alt_break_internal() at kdb_alt_break_internal+0x15d
+uart_intr() at uart_intr+0x148
+--- interrupt, rip = RIPMARK, rsp = 0x67061406eb30 ---
 """
 
 
@@ -59,6 +59,7 @@ w(b"start_init: trying /sbin/init\n")
 
 state = []          # the CR ~ ^B state machine, as subr_kdb.c has it
 entered = False
+round_n = 1
 buf = b""
 while True:
     c = sys.stdin.buffer.read(1)
@@ -92,7 +93,10 @@ while True:
             else:
                 w(PS.encode() + b"db> ")
         elif cmd == "bt":
-            w(BT.encode() + b"db> ")
+            w(BT.encode().replace(b"RIPMARK",
+                                  b"0x2c2994c9fd%d" % round_n) + b"db> ")
+        elif cmd == "c":
+            entered = False; state = []; round_n += 1
         elif cmd == "":
             w(b"db> ")
         else:
@@ -100,7 +104,7 @@ while True:
 '''
 
 
-def run_fake(mode, cmds, timeout=8.0):
+def run_fake(mode, cmds, timeout=8.0, rounds=1, gap=0.2):
     src = (FAKE
            .replace("PS1", repr(PS_OUTPUT.split("\n")[0].encode() + b"\n"))
            .replace("PAGE2",
@@ -122,7 +126,8 @@ def run_fake(mode, cmds, timeout=8.0):
     try:
         # let the fake print its first line
         time.sleep(0.2)
-        ok = boot_test.break_to_ddb(proc, log, timeout, cmds)
+        ok = boot_test.break_to_ddb(proc, log, timeout, cmds,
+                                    rounds=rounds, gap=gap)
     finally:
         proc.kill()
         log.close()
@@ -151,8 +156,12 @@ def main() -> int:
     check("ps names process 1",
           any(c == "ps" and " 1 " in o and "init" in o for c, o in rep),
           repr(rep))
-    check("bt captured", any(c == "bt" and "sched_switch" in o
-                             for c, o in rep), repr(rep))
+    # The shape run 31 actually produced: the interrupt path, and under it
+    # a frame whose rip is a userland address. That frame is the whole
+    # finding, so the test asserts on it rather than on any old backtrace.
+    check("bt captured the userland interrupt frame",
+          any(c == "bt" and "--- interrupt, rip = 0x" in o
+              for c, o in rep), repr(rep))
 
     print("\nfake: the same, paging at --More-- like db_output.c:257")
     ok, rep = run_fake("pager", ["ps"])
@@ -171,6 +180,16 @@ def main() -> int:
           any("no db> prompt" in o for _, o in rep), repr(rep))
     check("did not invent command output",
           not any(c == "ps" for c, _ in rep), repr(rep))
+
+    print("\nfake: two rounds, continuing in between")
+    ok, rep = run_fake("ddb", ["bt"], rounds=2, gap=0.2)
+    check("reached db> both times", ok)
+    breaks = [c for c, _ in rep if c.startswith("break sequence")]
+    check("recorded two breaks", len(breaks) == 2, repr(breaks))
+    rips = [o for c, o in rep if c.startswith("bt")]
+    check("captured two backtraces", len(rips) == 2, repr(rips))
+    check("and they carry different rip values",
+          len(rips) == 2 and rips[0] != rips[1], repr(rips))
 
     print()
     if failures:

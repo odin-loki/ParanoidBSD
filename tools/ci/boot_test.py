@@ -349,7 +349,8 @@ def _ddb_read(proc, log, deadline):
     return buf, False
 
 
-def break_to_ddb(proc, log, timeout: float, cmds) -> bool:
+def break_to_ddb(proc, log, timeout: float, cmds, rounds: int = 1,
+                 gap: float = 10.0) -> bool:
     """Type ALT_BREAK_TO_DEBUGGER and run commands at the db> prompt.
 
     This is the only way left to tell the two remaining readings of "one
@@ -365,34 +366,58 @@ def break_to_ddb(proc, log, timeout: float, cmds) -> bool:
     (options DDB, options ALT_BREAK_TO_DEBUGGER) and GENERIC has options KDB.
 
     `ps` then says whether a process 1 exists and what it waits on, and `bt`
-    says where the thread is. Either answer ends the question.
-    """
-    _drain(proc, log)
-    if not _send(proc, "\r~\x02"):
-        DDB_REPORT.append(("break sequence", "the console went away"))
-        return False
-    _, reached = _ddb_read(proc, log, time.time() + timeout)
-    if not reached:
-        DDB_REPORT.append((
-            "break sequence",
-            f"no db> prompt within {timeout:.0f}s. Either the kernel is not "
-            "reading the console, or ALT_BREAK_TO_DEBUGGER is not in this "
-            "kernel, or it is too wedged to take a trap."))
-        return False
-    DDB_REPORT.append(("break sequence", "db> reached"))
+    says where the thread is. Either answer ends the question - run 31 got
+    `pid 1 ... RL CPU 0 [init]` and an `--- interrupt, rip = 0x2c2994c9fd0`
+    frame, a userland address, so kern_execve() had returned EJUSTRETURN and
+    init was on the CPU.
 
-    for cmd in cmds:
-        if not _send(proc, cmd + "\n"):
-            DDB_REPORT.append((cmd, "the console went away"))
+    `rounds` > 1 continues after each pass and breaks again, because one
+    break is one sample: a tight spin at a single instruction, a loop, and
+    slow progress are indistinguishable from one backtrace and obvious from
+    two.
+    """
+    for r in range(1, max(1, rounds) + 1):
+        tag = "" if rounds == 1 else f" [{r}/{rounds}]"
+        _drain(proc, log)
+        if not _send(proc, "\r~\x02"):
+            DDB_REPORT.append((f"break sequence{tag}",
+                               "the console went away"))
             return False
-        out, ok = _ddb_read(proc, log, time.time() + timeout)
-        text = _plain(out).decode("utf-8", "replace")
-        # Drop the echo of the command itself and the trailing prompt.
-        text = text.replace("\r", "")
-        DDB_REPORT.append((cmd, text.strip() or "(no output)"))
-        if not ok:
-            DDB_REPORT.append((cmd, f"...and no db> prompt after {timeout:.0f}s"))
+        _, reached = _ddb_read(proc, log, time.time() + timeout)
+        if not reached:
+            DDB_REPORT.append((
+                f"break sequence{tag}",
+                f"no db> prompt within {timeout:.0f}s. Either the kernel is "
+                "not reading the console, or ALT_BREAK_TO_DEBUGGER is not in "
+                "this kernel, or it is too wedged to take a trap."))
             return False
+        DDB_REPORT.append((f"break sequence{tag}", "db> reached"))
+
+        for cmd in cmds:
+            if not _send(proc, cmd + "\n"):
+                DDB_REPORT.append((cmd + tag, "the console went away"))
+                return False
+            out, ok = _ddb_read(proc, log, time.time() + timeout)
+            text = _plain(out).decode("utf-8", "replace")
+            # Drop the echo of the command itself and the trailing prompt.
+            text = text.replace("\r", "")
+            DDB_REPORT.append((cmd + tag, text.strip() or "(no output)"))
+            if not ok:
+                DDB_REPORT.append((cmd + tag,
+                                   f"...and no db> prompt after "
+                                   f"{timeout:.0f}s"))
+                return False
+
+        if r < rounds:
+            # Continue, let it run, and break again. One break is one
+            # sample of rip; two say whether it moved - a tight spin at one
+            # instruction, a loop, or slow progress all look identical from
+            # a single backtrace.
+            if not _send(proc, "c\n"):
+                DDB_REPORT.append((f"continue{tag}",
+                                   "the console went away"))
+                return False
+            time.sleep(gap)
     return True
 
 
@@ -508,6 +533,12 @@ def main() -> int:
                     help="a command to run at db>. Repeatable. Default: "
                          "`ps` (is there a process 1, and what does it wait "
                          "on) then `bt` (where is the thread).")
+    ap.add_argument("--ddb-rounds", type=int, default=1, metavar="N",
+                    help="break, run the commands, continue, and break "
+                         "again, N times. Two rounds say whether rip moved "
+                         "between them, which one backtrace cannot.")
+    ap.add_argument("--ddb-gap", type=float, default=10.0, metavar="SECONDS",
+                    help="how long to let the guest run between rounds")
     ap.add_argument("--ddb-timeout", type=float, default=30.0,
                     help="seconds to wait for the db> prompt, and for each "
                          "command's output")
@@ -708,7 +739,8 @@ def main() -> int:
                 print("\n  [console silent after three pokes; breaking to "
                       "the kernel debugger]\n")
                 break_to_ddb(proc, log, args.ddb_timeout,
-                             args.ddb_cmd or ["ps", "bt"])
+                             args.ddb_cmd or ["ps", "bt"],
+                             rounds=args.ddb_rounds, gap=args.ddb_gap)
                 last_output = time.time()
 
             if not chunk:
