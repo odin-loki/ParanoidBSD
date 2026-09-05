@@ -62,6 +62,41 @@ def _defined(text: str) -> set[str]:
     return names
 
 
+def _report_missing_context(inc: list[str]) -> None:
+    """Which math.h got opened, and what the visibility macros are."""
+    with tempfile.TemporaryDirectory(prefix="pbsd_ctx_") as td:
+        probe = Path(td) / "ctx.cc"
+        probe.write_text(
+            "#include <math.h>\n"
+            "ISO_C_VISIBLE_IS __ISO_C_VISIBLE\n"
+            "BSD_VISIBLE_IS __BSD_VISIBLE\n"
+            "POSIX_VISIBLE_IS __POSIX_VISIBLE\n")
+        cxx = find_clangxx()
+
+        # -H writes the include tree to stderr, one line per header, so the
+        # first math.h named is the one that was opened.
+        p = subprocess.run([cxx, "-std=c++23", "-fsyntax-only", "-H", *inc,
+                            str(probe)], capture_output=True, text=True)
+        opened = [ln.strip() for ln in p.stderr.splitlines()
+                  if ln.strip().endswith("math.h")]
+        if opened:
+            print(f"   math.h opened: {opened[0].lstrip('. ')}")
+        else:
+            print("   math.h opened: (clang -H named none)")
+
+        p = subprocess.run([cxx, "-std=c++23", "-E", "-P", *inc, str(probe)],
+                           capture_output=True, text=True)
+        for ln in p.stdout.splitlines():
+            if "_VISIBLE_IS" not in ln:
+                continue
+            name, _, value = ln.strip().partition(" ")
+            # An unexpanded token means the macro is not defined at all,
+            # which is a different fact from it having a low value.
+            if value.startswith("__"):
+                value = "(not defined)"
+            print(f"   {name} {value}")
+
+
 def explain(c_src: Path) -> int:
     cxx_src = stage_path_for(c_src)
     rel = c_src.relative_to(ROOT).as_posix()
@@ -97,7 +132,21 @@ def explain(c_src: Path) -> int:
 
     # A mangled name means the definition had no visible prototype. Say
     # whether the header the C++ side saw declares it, using the same flags
-    # rather than a fresh guess at them.
+    # rather than a fresh guess at them - and if it does not, say WHICH
+    # math.h was opened and what the feature-test macros came out as.
+    #
+    # Those two facts are the whole remaining question. lib/msun/src/math.h
+    # guards the fmaximum/fminimum family behind
+    #
+    #     #if __ISO_C_VISIBLE >= 2023
+    #
+    # and it is reachable here: -I{src.parent} is the directory it lives in.
+    # So either a different math.h is being opened, or that macro is not
+    # 2023 in this compile - and the macro comes from <sys/cdefs.h>, which
+    # is on -idirafter and therefore resolves to the HOST's. Printing both
+    # settles it without another hypothesis.
+    _report_missing_context(inc)
+
     for name in sorted(c_syms - x_syms):
         with tempfile.TemporaryDirectory(prefix="pbsd_decl_") as td:
             probe = Path(td) / "decl.cc"

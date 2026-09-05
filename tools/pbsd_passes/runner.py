@@ -98,6 +98,27 @@ def oracle_include_flags(src: Path) -> list[str]:
     if "lib/msun/" in src.as_posix():
         msun = ROOT / "hbsd" / "src" / "lib" / "msun"
         extras += [msun / "src", msun / "ld80", msun / "ld128"]
+    # A directory already on -I must NOT be repeated on -idirafter.
+    #
+    # clang deduplicates its search list, and when the same directory appears
+    # in both, the EARLIER entry is dropped and the later one kept - so the
+    # -I position is lost and the directory ends up after the system headers.
+    # `clang++ -E -v -I<msun/src> -idirafter<msun/src>` lists msun/src once,
+    # at position 9, behind the C++ standard library at 2-3.
+    #
+    # For every source in lib/msun/src - most of the library - src.parent IS
+    # msun/src, so this fired on all of them: `#include <math.h>` stopped
+    # resolving to the tree's math.h and got libstdc++'s (or, on FreeBSD, the
+    # host's) instead. The fmaximum/fminimum family is declared only in the
+    # tree's newer header, so it was declared on NEITHER side, C emitted a
+    # plain symbol, C++ mangled it, and 25 ports were counted ABI-unequal.
+    #
+    # clang says "duplicate directory ... is ignored" when this happens, and
+    # -Wno-everything above suppressed it. Two hypotheses were spent on this
+    # before the search list was simply read.
+    seen = {str(src.parent)}
+    extras = [e for e in extras if str(e) not in seen]
+
     # -idirafter, not -I: these directories go *after* the system ones.
     # With -I, libstdc++'s <cstdlib> does #include_next <stdlib.h> and lands
     # on FreeBSD's instead of glibc's, so `using ::atoll;` fails and every
