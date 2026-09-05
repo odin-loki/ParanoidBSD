@@ -48,7 +48,7 @@ EXPECTED="SAFESTACK CFI BRANCH_PROTECTION RETPOLINE"
 INFO="REPRODUCIBLE_BUILD LTOLIB ASAN UBSAN"
 
 CONF="$(mktemp)"
-trap 'rm -f "$CONF"' EXIT
+trap 'rm -f "$CONF" "$CONF.n"' EXIT
 if ! ( cd "$SRC" && make showconfig \
         TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
         ${SRCCONF:+SRCCONF="$SRCCONF"} \
@@ -60,12 +60,27 @@ then
     exit 1
 fi
 
-ask() { awk -F= -v k="MK_$1" '$1==k{print $2; found=1} END{if(!found) print ""}' "$CONF" | tail -1; }
+# bmake's -dg1 variable dump prints "MK_PIE = yes" with spaces around the =,
+# not "MK_PIE=yes". An awk -F= comparing $1 to "MK_PIE" therefore matched
+# nothing and every option came back "?" - which this script then reported as
+# four disabled mitigations, on all six architectures. Normalise first and
+# accept either spelling.
+sed -E 's/[[:space:]]*=[[:space:]]*/=/' "$CONF" > "$CONF.n"
+ask() { awk -F= -v k="MK_$1" '$1==k{v=$2} END{print v}' "$CONF.n"; }
+
+# If nothing parsed, show what was actually there. Four rewrites of this
+# script have each guessed at an output format; the next one should not have
+# to.
+if [ "$(grep -c '^MK_' "$CONF.n")" -eq 0 ]; then
+    echo "FAIL showconfig produced no MK_ lines. First 10 lines of its output:" >&2
+    head -10 "$CONF" | sed 's/^/    /' >&2
+    exit 1
+fi
 
 echo "== hardening options, $TARGET/$TARGET_ARCH"
 echo "   srcconf=${SRCCONF:-<none>}"
 echo "   toolchain=${CROSS_TOOLCHAIN:-<in-tree>}"
-echo "   options reported by showconfig: $(grep -c '^MK_' "$CONF" || echo 0)"
+echo "   options reported by showconfig: $(grep -c '^MK_' "$CONF.n" || echo 0)"
 echo
 
 fail=0
