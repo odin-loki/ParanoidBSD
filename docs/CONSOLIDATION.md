@@ -190,3 +190,61 @@ the header is caught as a compile failure rather than passed over.
 green `buildworld` behind it, for the reason `docs/migration/
 COMMITTING_PORTS.md` gives about the msun ports: while a build failure could
 still be the tree rather than the change, it cannot be attributed.
+
+## `_stdint.h` and `_inttypes.h`: written, and three ABI traps found
+
+`hbsd/src/sys/sys/_stdint_generic.h` (150 lines) and `_inttypes_generic.h`
+(198 lines) replace five copies each of `<machine/_stdint.h>` and
+`<machine/_inttypes.h>` — 2,041 lines — by writing every macro in terms of a
+compiler predefine rather than a number.
+
+`tools/stdint_generic_check.py` preprocesses the generic header and the
+architecture's own for all six targets and compares every macro: numerically
+for the limits, because `(-0x7f-1)` and `(-127 - 1)` are the same value
+written differently, and textually for the conversions, after concatenating
+adjacent string literals because FreeBSD writes `PRId64` as `__PRI64"d"`.
+
+```
+header         arch       macros   same  differ  missing
+_stdint.h      amd64          57     57       0        0
+_inttypes.h    amd64         154    154       0        0
+   ... the same on arm64, arm, i386, powerpc, riscv
+
+1266 macro expansions compared, all equal.
+```
+
+Getting there took three corrections, and each was a silent ABI change that
+the checker caught and reading would not have:
+
+1. **`int_fast8_t`.** clang's is a `signed char`, so `__INT_FAST8_MAX__` is
+   127. FreeBSD's is `int32_t` — `<machine/_types.h>` says so identically on
+   all six — so the limit is `0x7fffffff`. The generic header uses the
+   tree's choice, which happens to be machine-independent, not the
+   compiler's.
+
+2. **`wint_t` on riscv.** clang defines `__WINT_UNSIGNED__` there, following
+   the RISC-V psABI. FreeBSD's `wint_t` is `__ct_rune_t`, which is `int`,
+   machine-independently. The first version asked the compiler and produced
+   `WINT_MIN` as `0` on riscv and `INT32_MIN` on the other five — a
+   signedness change in a standard type, on one architecture, from a header
+   whose purpose was making them the same.
+
+3. **`PRId8`.** The first `_inttypes_generic.h` used clang's per-type
+   predefines for both PRI and SCN, which made `PRId8` `"hhd"`. FreeBSD says
+   `"d"`, and FreeBSD is right: printf's argument has already been promoted
+   to `int`. The distinction is not cosmetic in the other direction —
+   `SCNd8` must be `"hhd"`, because `"d"` would write four bytes through an
+   `int8_t *`.
+
+What cannot be made generic is `SIG_ATOMIC_MIN`, `SIG_ATOMIC_MAX` and
+`SIG_ATOMIC_WIDTH`. `sig_atomic_t` is 64-bit on amd64, arm64 and riscv and
+32-bit on i386, arm and powerpc — powerpc64 included, so it does not follow
+`__LP64__` — and clang disagrees with FreeBSD about amd64. Those three stay
+in `<machine/_stdint.h>`, which is where about 180 lines per architecture
+becomes 3.
+
+The checker was made to fail before being trusted, in both files: pointing
+`INT_FAST8_MAX` at `INT8_MAX` and `SCNd8` at the int conversion are each
+reported by name, on every target, with both expansions shown.
+
+**Nothing includes these yet either.** Same reason as the atomics.

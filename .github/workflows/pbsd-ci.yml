@@ -104,6 +104,16 @@ jobs:
       - name: Generic atomics — lock-free on every target
         run: python3 tools/atomic_generic_check.py
 
+      # sys/sys/_stdint_generic.h and _inttypes_generic.h replace five copies
+      # each of <machine/_stdint.h> and <machine/_inttypes.h>. They are only a
+      # replacement if they expand to the same thing, so this preprocesses
+      # both for all six targets and compares every macro - numerically for
+      # the limits, textually for the conversions. It has already caught a
+      # signedness change in wint_t on riscv and an ABI change to the FAST
+      # types, both from trusting a compiler predefine over the tree.
+      - name: Generic stdint/inttypes — same expansion as the six headers
+        run: python3 tools/stdint_generic_check.py
+
       # ctest currently finds no tests - pbsd/CMakeLists.txt is generated with
       # a single library target and no enable_testing(). Kept so the harness
       # is picked up automatically once it is wired in.
