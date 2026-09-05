@@ -49,6 +49,7 @@
  * with 48-bit longs.
  */
 
+#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <limits.h>
 
@@ -91,12 +92,53 @@ union uu {
 #define	LHALF(x)	((x) & ((1L << HALF_BITS) - 1))
 #define	LHUP(x)		((x) << HALF_BITS)
 
+typedef unsigned int	qshift_t;
+
+/*
+ * PBSD: C linkage, and the eighteen that were declared nowhere at all.
+ *
+ * Every function in this directory is external and this header declared
+ * seven of them. Under C++ the other eighteen have no prototype, so
+ * adddi3.cpp would define _Z8__adddi3ll and libc would ship
+ * __adddi3 under a name no caller and no compiler-generated reference
+ * can find. The seven that WERE declared had the same problem for the
+ * opposite reason - a declaration outside __BEGIN_DECLS is a C++
+ * declaration.
+ *
+ * The oracle measured it: 25 of lib/libc's 38 IR-equal-but-not-ABI-equal
+ * ports are this directory, every one of them "only in C: __xxxdi3,
+ * only in C++: _Z...". Same shape as lib/msun/src/math_private.h, where
+ * one missing __BEGIN_DECLS accounted for fourteen at once.
+ *
+ * __fixsfdi returns long long rather than quad_t, and notdi2.c defines
+ * __one_cmpldi2 rather than __notdi2. Both are as the .c files have
+ * them; a prototype that disagreed would be worse than none.
+ */
+__BEGIN_DECLS
+quad_t		__adddi3(quad_t a, quad_t b);
+quad_t		__anddi3(quad_t a, quad_t b);
+quad_t		__ashldi3(quad_t a, qshift_t shift);
+quad_t		__ashrdi3(quad_t a, qshift_t shift);
 int		__cmpdi2(quad_t a, quad_t b);
 quad_t		__divdi3(quad_t a, quad_t b);
+quad_t		__fixdfdi(double x);
+long long	__fixsfdi(float x);
+u_quad_t	__fixunsdfdi(double x);
+u_quad_t	__fixunssfdi(float f);
+double		__floatdidf(quad_t x);
+float		__floatdisf(quad_t x);
+double		__floatunsdidf(u_quad_t x);
+quad_t		__iordi3(quad_t a, quad_t b);
+quad_t		__lshldi3(quad_t a, qshift_t shift);
+quad_t		__lshrdi3(quad_t a, qshift_t shift);
 quad_t		__moddi3(quad_t a, quad_t b);
+quad_t		__muldi3(quad_t a, quad_t b);
+quad_t		__negdi2(quad_t a);
+quad_t		__one_cmpldi2(quad_t a);
 u_quad_t	__qdivrem(u_quad_t u, u_quad_t v, u_quad_t *rem);
+quad_t		__subdi3(quad_t a, quad_t b);
 int		__ucmpdi2(u_quad_t a, u_quad_t b);
 u_quad_t	__udivdi3(u_quad_t a, u_quad_t b);
 u_quad_t	__umoddi3(u_quad_t a, u_quad_t b);
-
-typedef unsigned int	qshift_t;
+quad_t		__xordi3(quad_t a, quad_t b);
+__END_DECLS
