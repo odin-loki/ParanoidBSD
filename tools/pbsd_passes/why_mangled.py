@@ -2,8 +2,8 @@
 # SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
 """Why does one port export a mangled name? Ask with the oracle's own flags.
 
-25 lib/msun ports come out IR-equal and ABI-unequal, all of the
-fmaximum/fminimum family:
+The gap this explains is whatever the last pass report says it is. It began
+as 25 lib/msun ports, all of the fmaximum/fminimum family:
 
     C only  : fmaximum
     C++ only: _Z8fmaximumdd
@@ -23,10 +23,25 @@ oracle asks.
 So this asks with the flags the oracle actually uses, on the actual file,
 and prints what each side really defines. No hypothesis: the symbol tables.
 
+That gap is now one port in lib/msun and thirteen in lib/libc, and the
+files it named are not the files it started with - s_fmaximum.c,
+s_fminimum.c and s_cbrt.c were committed in the 95-file batch and are
+.cpp now. Hardcoding them meant the diagnostic printed
+
+    == .../lib/msun/src/s_fmaximum.c: not in the tree
+
+three times and explained nothing, and a committed port is not a candidate
+anyway: it is finished. So the default set is READ FROM the pass report -
+the sources it records as IR-equal and not ABI-equal, which is exactly the
+population this tool exists to explain. A name given on the command line
+still resolves .c -> .cpp if the .c has been ported, so asking about a
+specific file keeps working either way.
+
 Usage:  python3 -m pbsd_passes.why_mangled [source.c ...]
 """
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 import tempfile
@@ -162,17 +177,63 @@ def explain(c_src: Path) -> int:
     return 1
 
 
+def _describe(p: Path) -> str | None:
+    """Why this source cannot be explained, or None if it can be.
+
+    A .c whose .cpp exists is a COMMITTED port. There is no C side left to
+    compare against, so compiling the .cpp as C is not a smaller version of
+    the question - it is a different one, and it fails with a wall of
+    syntax errors from a header that was never meant to be read that way.
+    Resolving .c -> .cpp here was the first attempt at this and it produced
+    exactly that.
+    """
+    if p.exists():
+        return None
+    if p.suffix == ".c" and p.with_suffix(".cpp").exists():
+        return "committed - it is a .cpp now, so there is no C side to compare"
+    return "not in the tree"
+
+
+def _from_report(limit: int = 6) -> list[Path]:
+    """The ports the last run recorded as IR-equal and not ABI-equal."""
+    rep = ROOT / "docs" / "migration" / "clang_port" / "pass_report.json"
+    if not rep.exists():
+        return []
+    try:
+        d = json.loads(rep.read_text())
+    except (OSError, ValueError):
+        return []
+    out = []
+    for r in d.get("records", []):
+        ir = r.get("ir") or {}
+        if ir.get("equal") and not ir.get("abi_equal"):
+            src = r.get("source")
+            if src:
+                out.append((ROOT / src) if not Path(src).is_absolute()
+                           else Path(src))
+    return out[:limit]
+
+
 def main(argv: list[str]) -> int:
     if argv:
         sources = [Path(a).resolve() for a in argv]
+        why = "named on the command line"
     else:
-        msun = ROOT / "hbsd" / "src" / "lib" / "msun" / "src"
-        sources = [msun / "s_fmaximum.c", msun / "s_fminimum.c",
-                   msun / "s_cbrt.c"]
+        sources = _from_report()
+        why = "IR-equal and not ABI-equal in the last pass report"
+        if not sources:
+            print("== nothing to explain: no pass report, or no port in it "
+                  "is IR-equal and not ABI-equal.")
+            print("   Name a source on the command line to ask about one "
+                  "specifically.")
+            return 0
+
+    print(f"== {len(sources)} source(s): {why}")
     bad = 0
     for s in sources:
-        if not s.exists():
-            print(f"\n== {s}: not in the tree")
+        skip = _describe(s)
+        if skip is not None:
+            print(f"\n== {s}: {skip}")
             continue
         bad += explain(s)
     return 0 if bad == 0 else 0  # diagnostic: never gates

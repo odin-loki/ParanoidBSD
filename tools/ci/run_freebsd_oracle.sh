@@ -284,9 +284,24 @@ else:
     print(f"\n          committable: {len(ready)}")
     for s_ in ready:
         print(f"            {s_}")
+    # The same `+ committed` term lib/msun's ratchet has, and for the same
+    # reason: a port that lands stops being a .c, discover_sources() stops
+    # finding it, and ir_equal falls by one. Without the sum, landing a port
+    # reads as losing one - which is precisely the shape that would make a
+    # floor here punish progress. gen/isatty.cpp is the first.
+    libc_dir = pathlib.Path("hbsd/src/lib/libc")
+    committed = sorted(q.as_posix() for q in libc_dir.rglob("*.cpp"))
+    ir_total = d["ir_equal"] + len(committed)
+    abi_total = d.get("abi_equal", 0) + len(committed)
+    print(f"\n          committed: {len(committed)}")
+    for c_ in committed:
+        print(f"            {c_}")
     pathlib.Path("/tmp/pbsd_libc.txt").write_text(
-        f"  lib/libc: IR {d['ir_equal']}/{d['ir_ran']}  "
-        f"ABI {d.get('abi_equal', 0)}  committable {len(ready)}\n")
+        f"  lib/libc IR:   {d['ir_equal']} verified + {len(committed)} "
+        f"committed = {ir_total} of {d['ir_ran']} ran\n"
+        f"  lib/libc ABI:  {d.get('abi_equal', 0)} ABI-equal + "
+        f"{len(committed)} committed = {abi_total}  "
+        f"committable {len(ready)}\n")
 PY2
 
 echo
