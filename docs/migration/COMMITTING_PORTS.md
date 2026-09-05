@@ -218,3 +218,36 @@ lands below the floor and still fails, which is the whole point of the
 ratchet. Verified by running the block against the Linux report, where
 nothing verifies: `FAIL 0 ports verify and 1 are committed, 1 against a
 floor of 88`.
+
+### It builds
+
+Run 18, `stage=world` on `9670b66bd`:
+
+```
+>>> Kernel(s)  HARDENEDBSD built in 780 seconds, ncpu: 4, make -j4
+== done: world
+```
+
+**The first file in PBSD compiled as C++ builds and links.** libm is built
+with `k_cos.cpp` in `COMMON_SRCS`, at `-std=c++23` with
+`-ffp-exception-behavior=maytrap -fno-math-errno -fno-exceptions -fno-rtti`.
+
+A green world is not by itself proof that the port was *built*, though. The
+port is a rename plus one line of a hand-written `SRCS` list, and getting
+that line wrong drops the file out of `SRCS` silently rather than failing —
+libm would be built without it and stay green until something called the
+missing symbol. `build_boot_image.sh` therefore asserts after `buildworld`
+that every `.cpp` under `lib` has its object in the objdir, and names the
+file if it does not. Tested both ways.
+
+### The oracle numbers across the port
+
+| run | commit | verified | ABI-equal | committable | committed |
+|---|---|---:|---:|---:|---:|
+| 21 | `0c7f5735a` | 199 | 174 | 174 | 0 |
+| 23 | `8c147e8c7` | 198 + 1 | 173 + 1 | 173 | 1 |
+
+Run 23 is the load-bearing one. With the floors at 199 and 174 and the port
+committed, `verified` alone is 198 and `abi_equal` alone is 173 — both one
+below their floor. The `+ committed` term is what makes 199 and 174, and
+without it landing a port would have read as losing one.

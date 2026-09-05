@@ -110,6 +110,52 @@ everything.
 **So: PBSD's loader runs.** That is further than any previous run got and it
 is not a boot. Whether the kernel starts is still open.
 
+### The console the loader hands the kernel
+
+The loader writes to the serial port. The kernel it starts does not,
+because the menu says
+
+```
+5. Cons: Video
+```
+
+and `console` is what the loader puts in kenv. So everything from
+`Copyright (c) 1992` onwards goes to a VGA device that `-nographic` is not
+showing anyone, and a run left alone sits through its whole timeout seeing
+nothing after the menu — which reads as "the kernel never started" and is
+not evidence of that at all.
+
+`boot_test.py` therefore drives the menu: `3` to escape to the loader
+prompt, `set console="comconsole,vidconsole"`, `boot`.
+
+### Run 16: the loader got fifteen characters of a forty-character command
+
+```
+11:01:37  [loader prompt: console=comconsole,vidconsole, boot]
+11:08:33  set console="co
+```
+
+Seven minutes apart, and nothing in between. The 16550 the loader reads has
+a sixteen-byte FIFO and no flow control, and the loader polls it between
+other work, so writing the whole line in one `write()` overran it and the
+rest was dropped silently. The command never terminated, `boot` was never
+reached, and the run spent its full 420 seconds at a prompt.
+
+The verdict it printed said *the console was set … so it is the kernel not
+printing*. That was false: it asserted a step the log shows did not happen.
+
+Two fixes. `_send()` types one byte at a time with a 15 ms gap — forty
+characters take 0.6 s and no FIFO is troubled. And steering now waits for a
+**receipt** before sending `boot`: either the echo of the tail of the
+command, or a fresh `OK ` prompt. Without one it boots anyway and the
+verdict says the console was *not confirmed* and that this is not evidence
+about the kernel either way.
+
+**Still open, and now for a reason that is understood.** PBSD's kernel has
+never been asked to start over a console anyone was watching. Runs 14 and
+15 failed on the image path, run 16 on the UART. The next memstick run is
+the first that can answer the question.
+
 ## Asking the system about itself
 
 `--run NAME=CMD` logs in after a successful boot and runs commands, writing

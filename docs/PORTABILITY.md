@@ -289,12 +289,12 @@ died at sixteen minutes on the missing archive; this is the first world
 build to finish since run 7, and the first ever to finish with those two
 mitigations actually linking.
 
-## The boot test has not run yet
+## The boot test, and what it has and has not established
 
 `tools/ci/boot_test.py` exists and `pbsd-boot-image.yml` has a "Boot it"
-step, and it has been **skipped in every run so far** — runs 8, 9 and 10 all
-failed in "Build on FreeBSD" before an image existed, so `Collect image`,
-`Boot it` and the artifact upload were all skipped.
+step. It was **skipped in every run up to 13** — runs 8, 9 and 10 all failed
+in "Build on FreeBSD" before an image existed, so `Collect image`, `Boot it`
+and the artifact upload were all skipped.
 
 Runs 8 and 9 failed for the same reason, sixteen minutes in each time:
 
@@ -308,5 +308,26 @@ the identical error on the tree before it. Both are the SafeStack runtime,
 and the probe added to `build_boot_image.sh` is what stops a third run
 finding it a third time.
 
-So there is still no answer to which of `boot_test.py`'s four outcomes PBSD
-hits. It is the next thing a green world run buys.
+### It has run now, three times, and has not reached the kernel
+
+| run | stage | how far | why it stopped |
+|---|---|---|---|
+| 14 | `vm` | no image | `vm-image` is a no-op stamp without `WITH_VMIMAGES`, and the name is `vm.ufs.raw`, not `vm.raw` |
+| 15 | `memstick` | loader | reported `OK booted` in four seconds by matching the boot **menu title** — a false positive, since corrected |
+| 16 | `memstick` | loader | the console command was truncated at fifteen characters by a UART FIFO overrun; `boot` was never sent |
+
+Every one of the three stopped for a reason in the harness rather than in
+the tree. Run 16 is the closest: the image built, the loader ran, the menu
+was answered, the loader dropped to its prompt, and then forty characters
+of `set console="comconsole,vidconsole"` met a sixteen-byte FIFO with no
+flow control and fifteen of them arrived.
+
+**So there is still no answer to which of `boot_test.py`'s outcomes PBSD
+hits.** What has been established is narrower and worth stating exactly:
+the loader runs, reads `loader.conf`, and accepts input. The kernel has
+never been asked to start over a console anyone was watching, so nothing
+here is evidence for or against it starting.
+
+See `docs/BUILDING.md` for the console mechanics and the two fixes (type
+one byte at a time; require a receipt before claiming the console was
+set).

@@ -55,27 +55,49 @@ echo "== which math.h an msun source actually sees"
 #
 # Calling an undeclared function is an error in C++ and not in C, so one
 # compile of each settles it. Diagnostic only; nothing here gates.
+PROBE_OUT=/tmp/pbsd_probe.txt
+: > "$PROBE_OUT"
+probe_row() {
+    # The probe rows are the answer to the only open question this job has,
+    # and they print in the first ten seconds of a six-minute log where no
+    # tail can reach them. Say them twice: once here, once in the SUMMARY.
+    echo "$1"
+    echo "$1" >> "$PROBE_OUT"
+}
 probe_dir=$(mktemp -d)
-printf '#include <math.h>\ndouble probe(void){ return fmaximum(1.0, 2.0); }\n' \
-    > "$probe_dir/probe.cc"
 MSUN_SRC="$ROOT/hbsd/src/lib/msun/src"
-if clang++ -std=c++23 -fsyntax-only "$probe_dir/probe.cc" 2>/dev/null; then
-    echo "  host <math.h> alone:            fmaximum IS declared"
-else
-    echo "  host <math.h> alone:            fmaximum is NOT declared"
-fi
-if clang++ -std=c++23 -fsyntax-only -I"$MSUN_SRC" "$probe_dir/probe.cc" \
-        2>/dev/null; then
-    echo "  with -I lib/msun/src:           fmaximum IS declared"
-else
-    echo "  with -I lib/msun/src:           fmaximum is NOT declared"
-fi
-if clang++ -std=c++23 -fsyntax-only -idirafter"$MSUN_SRC" \
-        "$probe_dir/probe.cc" 2>/dev/null; then
-    echo "  with -idirafter lib/msun/src:   fmaximum IS declared"
-else
-    echo "  with -idirafter lib/msun/src:   fmaximum is NOT declared"
-fi
+
+# Two questions, not one.
+#
+# The first version of this asked only "does a call to fmaximum compile",
+# and on a Linux host the -I row came back "NOT declared" - not because the
+# function is missing but because the tree's math.h does not compile there
+# at all. A failure for any reason read as an answer about the declaration,
+# which is precisely the mistake this probe exists to avoid making about the
+# 25 ports. So ask whether the header parses first, and only then whether
+# the function is in it.
+probe_case() {
+    _label="$1"; shift
+    if ! clang++ -std=c++23 -fsyntax-only "$@" "$probe_dir/hdr.cc" \
+            2>/dev/null; then
+        probe_row "  $_label header does not compile here"
+        return
+    fi
+    if clang++ -std=c++23 -fsyntax-only "$@" "$probe_dir/call.cc" \
+            2>/dev/null; then
+        probe_row "  $_label fmaximum IS declared"
+    else
+        probe_row "  $_label fmaximum is NOT declared"
+    fi
+}
+
+printf '#include <math.h>\n' > "$probe_dir/hdr.cc"
+printf '#include <math.h>\ndouble probe(void){ return fmaximum(1.0, 2.0); }\n' \
+    > "$probe_dir/call.cc"
+
+probe_case "host <math.h> alone:         "
+probe_case "with -I lib/msun/src:        " -I"$MSUN_SRC"
+probe_case "with -idirafter lib/msun/src:" -idirafter"$MSUN_SRC"
 echo "  (-idirafter is what the oracle uses; -I is what lib/msun's own"
 echo "   Makefile uses. If those two rows disagree, the 25 ABI mismatches"
 echo "   are the oracle's include order and not the ports.)"
@@ -374,4 +396,6 @@ echo "== SUMMARY"
 # The one block worth reading. Everything above is evidence for it.
 cat /tmp/pbsd_ratchet.txt /tmp/pbsd_targetflags.txt 2>/dev/null || \
     echo "  (no summary recorded - a phase above did not finish)"
+echo "  which math.h an msun source sees:"
+sed 's/^  /    /' /tmp/pbsd_probe.txt 2>/dev/null || echo "    (not probed)"
 echo "  committed ports: $(find "$ROOT/hbsd/src/lib/msun" -name '*.cpp' | wc -l | tr -d ' ')"
