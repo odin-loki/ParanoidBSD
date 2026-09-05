@@ -271,6 +271,7 @@ jobs:
             python3 tools/ci/boot_test.py "$img" \
               --target amd64 --timeout 480 --log out/boot.log \
               --ddb-on-hang --ddb-rounds 2 --ddb-gap 15 \
+              --ddb-cmd 'bt 1' \
               --ddb-cmd 'bt' \
               --ddb-cmd 'show procvm 1' \
               "$@"

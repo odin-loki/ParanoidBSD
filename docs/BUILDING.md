@@ -669,6 +669,44 @@ same probe with different arguments:
   breaking again says whether this is a tight spin at one instruction, a
   loop, or slow progress.
 
+### Run 32: the same instruction, twice, under two different ASLR layouts
+
+```
+--- interrupt, rip = 0x48852ba2fd0, rsp = 0x6a94068a2150 ---
+
+db> show procvm 1
+Task map: nentries=11
+  0x387d3523000-0x387d3527000  r--  vnode object, size 0xa  (10 pages)
+  0x387d3527000-0x387d352d000  r-x  same object, offset 0x3000
+  0x387d352d000-0x387d3530000  rw-  anon
+  0x48852b9d000-0x48852ba2000  r--  vnode object, size 0x19 (25 pages)
+  0x48852ba2000-0x48852bb6000  r-x  same object, offset 0x4000   <- rip
+  0x48852bb6000-0x48852bb7000  rw-  anon
+  …stack at 0x6a9406883000-0x6a94068a3000
+```
+
+Three things fall out.
+
+**`rip` is in an executable mapping**, `prot=5/5` — r-x — of a
+vnode-backed object, at offset `0xfd0` into that mapping, which is file
+offset `0x4fd0` in the object.
+
+**init's address space holds exactly two mapped executables**: one of ten
+pages and one of twenty-five, both fully resident. That is a dynamically
+linked process — the binary and its interpreter. `rip` is in the larger.
+
+**And run 31's `rip` was `0x2c2994c9fd0`.** Different boot, independent
+ASLR, different base — and the same low twelve bits, `0xfd0`. ASLR
+randomises the base and preserves the page offset, so this is the *same
+instruction* both times. Not a wandering loop: one place.
+
+The second round did not sample init, because bare `bt` traces whatever
+thread is current and fifteen seconds later that was pid 4 in
+`ahci_execute_transaction`. `sys/ddb/db_command.c`'s `db_stack_trace()`
+looks its argument up as a tid and then falls back to
+`kdb_thr_from_pid()`, and FreeBSD tids start at 100000, so `bt 1` names
+pid 1 unambiguously. The probe now asks for both.
+
 And a third, which is a build question rather than a debugger one.
 `hbsd/src.conf.pbsd` is not a small file:
 
