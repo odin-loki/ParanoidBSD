@@ -68,6 +68,28 @@ on:
         required: false
         default: ''
         type: string
+      init_swap:
+        description: >-
+          rescue moves /sbin/init aside inside the built image, so the kernel
+          falls through its COMPILED-IN init_path - "/sbin/init:/sbin/oinit:
+          /sbin/init.bak:/rescue/init", sys/kern/init_main.c:716 - to
+          /rescue/init.
+
+          That is the control run 31 asks for. rescue/rescue/Makefile builds
+          its crunched binary with MK_CFI=no MK_PIE=no NO_SHARED=yes and
+          MK_SAFESTACK=no, and init is in CRUNCH_PROGS_sbin, so /rescue/init
+          is static with no PIE, no SafeStack, no CFI and no rtld, where
+          /sbin/init has all four. Run 31 left init running in userland and
+          producing nothing; if the static one talks, the cause is in that
+          set and src_conf=none bisects it.
+
+          It uses ENOENT fall-through, which is the only mechanism in this
+          area ever demonstrated to work - unlike init_path, which five runs
+          failed to deliver.
+        required: false
+        default: 'none'
+        type: choice
+        options: [none, rescue]
       src_conf:
         description: >-
           Which build options to use.
@@ -119,6 +141,9 @@ jobs:
           python3 tools/check_pbsd_marks.py
           python3 tools/check_c_linkage.py hbsd/src --require-guarded
           python3 tools/check_kernconf_parity.py hbsd/src --fail-on-difference
+
+      - name: Stage the init swap
+        run: printf '%s' "${{ inputs.init_swap || 'none' }}" > .init_swap
 
       - name: Stage the loader.conf additions
         # Written from the environment, never interpolated into the script:

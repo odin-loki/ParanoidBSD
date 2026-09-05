@@ -413,9 +413,41 @@ vm|memstick|iso)
     then
         LOADER_CONF_EXTRA="$(cat "$REPOROOT/.loader_conf_extra")"
     fi
-    if [ -n "${LOADER_CONF_EXTRA:-}" ]; then
-        echo "== appending to /boot/loader.conf in the image"
-        printf '%s\n' "$LOADER_CONF_EXTRA" | tr ';' '\n' | sed 's/^/   /'
+    # INIT_SWAP=rescue moves /sbin/init aside so the kernel falls through
+    # its COMPILED-IN init_path to /rescue/init.
+    #
+    # sys/kern/init_main.c:716 has that list as
+    #
+    #     "/sbin/init:/sbin/oinit:/sbin/init.bak:/rescue/init"
+    #
+    # and start_init() walks it, taking ENOENT as "try the next one". So
+    # renaming one file selects the fourth entry, using the only mechanism
+    # in this area that has ever been demonstrated to work - no init_path,
+    # no kern_getenv, no loader.conf.
+    #
+    # It is the control this question has needed since run 20.
+    # rescue/rescue/Makefile builds its crunched binary MK_CFI=no MK_PIE=no
+    # NO_SHARED=yes (and MK_SAFESTACK=no per program), and `init` is in
+    # CRUNCH_PROGS_sbin, so /rescue/init is statically linked with none of
+    # PIE, SafeStack, CFI or the rtld. /sbin/init has all four. Run 31 left
+    # init running in userland and saying nothing; if the static one talks,
+    # the cause is in that set and src_conf=none bisects it, and if the
+    # static one is equally silent then it is not those options at all.
+    #
+    # The moved file is init.pbsd deliberately: oinit and init.bak are the
+    # second and third entries of the list above, and either name would put
+    # the same dynamic binary straight back into the path.
+    if [ -z "${INIT_SWAP:-}" ] && [ -s "$REPOROOT/.init_swap" ]; then
+        INIT_SWAP="$(cat "$REPOROOT/.init_swap")"
+    fi
+    INIT_SWAP="${INIT_SWAP:-none}"
+    if [ -n "${LOADER_CONF_EXTRA:-}" ] || [ "$INIT_SWAP" != "none" ]; then
+        if [ -n "${LOADER_CONF_EXTRA:-}" ]; then
+            echo "== appending to /boot/loader.conf in the image"
+            printf '%s\n' "$LOADER_CONF_EXTRA" | tr ';' '\n' | sed 's/^/   /'
+        fi
+        [ "$INIT_SWAP" = "none" ] || \
+            echo "== init swap in the image: $INIT_SWAP"
         MD="$(mdconfig -a -t vnode -f "$REPOROOT/out/$OUT")" || {
             echo "FAIL mdconfig could not attach the image" >&2; exit 1; }
         echo "   attached as /dev/$MD"
@@ -462,26 +494,44 @@ vm|memstick|iso)
             echo "FAIL could not mount /dev/$PART" >&2
             mdconfig -d -u "$MD"; exit 1
         fi
-        if ! printf '%s\n' "$LOADER_CONF_EXTRA" | tr ';' '\n' \
-                >> "$MNT/boot/loader.conf"; then
-            echo "FAIL could not append to /boot/loader.conf (full?)" >&2
-            df -k "$MNT" >&2 || true
+        _bail() {
+            echo "FAIL $1" >&2
             umount "$MNT" 2>/dev/null || true
-            mdconfig -d -u "$MD"; exit 1
+            mdconfig -d -u "$MD"
+            exit 1
+        }
+        if [ "$INIT_SWAP" = "rescue" ]; then
+            [ -f "$MNT/sbin/init" ] || _bail "no /sbin/init in the image"
+            [ -f "$MNT/rescue/init" ] || _bail "no /rescue/init in the image"
+            mv "$MNT/sbin/init" "$MNT/sbin/init.pbsd" || \
+                _bail "could not move /sbin/init aside"
+            [ ! -f "$MNT/sbin/init" ] || \
+                _bail "/sbin/init is still there after moving it"
+            echo "   /sbin/init -> /sbin/init.pbsd; the kernel falls through"
+            echo "   to /rescue/init, 4th in the compiled-in list"
+            ls -l "$MNT/sbin/init.pbsd" "$MNT/rescue/init" | sed 's/^/     /'
+        elif [ "$INIT_SWAP" != "none" ]; then
+            _bail "unknown INIT_SWAP '$INIT_SWAP' (none|rescue)"
+        fi
+        if [ -n "${LOADER_CONF_EXTRA:-}" ] && \
+                ! printf '%s\n' "$LOADER_CONF_EXTRA" | tr ';' '\n' \
+                >> "$MNT/boot/loader.conf"; then
+            df -k "$MNT" >&2 || true
+            _bail "could not append to /boot/loader.conf (full?)"
         fi
         # Read it back. makefs sizes these images to fit, so a write that
         # runs out of space is a real possibility, and a setting that
         # silently did not land is the failure this mechanism exists to
         # stop happening.
-        for _line in $(printf '%s' "$LOADER_CONF_EXTRA" | tr ';' ' '); do
+        for _line in $(printf '%s' "${LOADER_CONF_EXTRA:-}" | tr ';' ' '); do
             if ! grep -qF "$_line" "$MNT/boot/loader.conf"; then
-                echo "FAIL '$_line' is not in the file after appending" >&2
-                umount "$MNT" 2>/dev/null || true
-                mdconfig -d -u "$MD"; exit 1
+                _bail "'$_line' is not in the file after appending"
             fi
         done
-        echo "   /boot/loader.conf now ends:"
-        tail -5 "$MNT/boot/loader.conf" | sed 's/^/     /'
+        if [ -n "${LOADER_CONF_EXTRA:-}" ]; then
+            echo "   /boot/loader.conf now ends:"
+            tail -5 "$MNT/boot/loader.conf" | sed 's/^/     /'
+        fi
         umount "$MNT" || { echo "FAIL could not unmount" >&2; \
             mdconfig -d -u "$MD"; exit 1; }
         # Not fatal: set -e is on, and a leftover temp directory is not

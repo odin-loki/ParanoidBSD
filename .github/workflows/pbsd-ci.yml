@@ -167,6 +167,15 @@ jobs:
       - name: The boot test's kernel-debugger probe
         run: python3 tools/ci/test_boot_test_ddb.py
 
+      # The image-editing block runs at the end of a fifty-minute build, on
+      # FreeBSD, against a real disk image. Run 26 spent one of those
+      # learning the memstick is MBR, because the test before it used a GPT
+      # layout that had been invented. This extracts the block verbatim and
+      # runs it against stubs whose output is what mdconfig and gpart really
+      # printed in runs 26 and 27.
+      - name: The boot image's init swap and loader.conf editing
+        run: sh tools/ci/test_init_swap.sh
+
       # The parity gate above compares ONE config across the six
       # architectures. This asks the other twenty-one the question that
       # actually applies to them, most being single-architecture: does a

@@ -687,8 +687,63 @@ that is on the CPU, has touched the FPU, and has produced no output is
 consistent with any of them going wrong — and none of them is FreeBSD's
 default, so a stock FreeBSD build of the same tree is the control.
 
-The workflow's `src_conf` input is that control: `none` passes `SRCCONF=`
-and builds with FreeBSD's defaults. It was previously called
+Run 31's own build report names the mechanism more precisely than that
+list does:
+
+```
+  PIE yes   RELRO yes   BIND_NOW yes   SSP yes
+  SAFESTACK yes   CFI yes   RETPOLINE yes   LTOLIB yes
+
+== external toolchain runtime
+   the package built its runtime for x86_64-portbld-freebsd15.0
+   and this build asks for x86_64-unknown-freebsd15.1; aliasing
+   SAFESTACK on: .../libclang_rt.safestack.a
+   CFI on:       .../libclang_rt.cfi.a
+```
+
+SafeStack and CFI are on, and their runtimes reach the link through a
+symlink that papers over a triple mismatch. SafeStack in particular runs
+before `main`: it allocates a second stack and moves the stack pointer.
+A process that never says anything is exactly what that failing looks
+like.
+
+### The control that costs one renamed file
+
+`sys/kern/init_main.c:716` compiles this list into every kernel:
+
+```c
+"/sbin/init:/sbin/oinit:/sbin/init.bak:/rescue/init"
+```
+
+and `start_init()` walks it, treating `ENOENT` as "try the next". The
+fourth entry is `/rescue/init` — and `rescue/rescue/Makefile` builds its
+crunched binary `MK_CFI=no MK_PIE=no NO_SHARED=yes` with
+`MK_SAFESTACK=no` per program, with `init` in `CRUNCH_PROGS_sbin`. So
+the image already contains a second init that is static, non-PIE, and
+has neither SafeStack nor CFI nor the rtld.
+
+Renaming `/sbin/init` inside the image selects it. That is the
+`init_swap: rescue` input, and it uses **ENOENT fall-through — the only
+mechanism in this whole area ever shown to work**, where `init_path`
+failed five times.
+
+If `/rescue/init` talks, the cause is in that hardening set and
+`src_conf: none` bisects it. If `/rescue/init` is equally silent, it is
+not those options, and the tree itself is implicated.
+
+`tools/ci/test_init_swap.sh` extracts the image-editing block verbatim
+from `build_boot_image.sh` and runs it against stub `mdconfig`, `gpart`,
+`mount` and `df` whose output is what those commands really printed in
+runs 26 and 27 — because run 26 spent fifty minutes learning the memstick
+is MBR, against a test that had used an invented GPT layout. Eight
+assertions: the swap happens, `loader.conf` is left alone when it is not
+asked for, both together work, nothing is mounted when neither is
+requested, and a bad value fails with the image intact. The first version
+of that test reported "no UFS filesystem" against a script that was
+working, because its `gpart` stub matched the wrong argument.
+
+The workflow's `src_conf` input is the other control: `none` passes
+`SRCCONF=` and builds with FreeBSD's defaults. It was previously called
 `machdep_asm` and described as the assembly switch, which is what it had
 been used for and roughly a sixth of what it did — its true branch drops
 the whole file. Renamed to say so, because a bisection handle that
