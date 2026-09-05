@@ -133,19 +133,24 @@ jobs:
         # qemu-system-x86 is already installed - the freebsd-vm action needs
         # it and put it there.
         run: |
-          img=$(ls out/vm.raw out/*.img out/*.iso 2>/dev/null | head -1)
+          img=$(ls out/vm.ufs.raw out/*.img out/*.iso 2>/dev/null | head -1)
           if [ -z "$img" ]; then
             echo "no image to boot"; exit 1
           fi
           # memstick and iso boot to bsdinstall's menu and cannot be asked
-          # anything. vm.raw has a login, so that is where the interrogation
-          # runs - and the answers are the only place several open questions
-          # in this repository can be settled.
+          # anything. vm.ufs.raw has a login, so that is where the
+          # interrogation runs - and the answers are the only place several
+          # open questions in this repository can be settled.
+          #
+          # --reboot-ok for the vm image only: release/ gives it a swap
+          # partition, which means growfs_enable and /firstboot, which means
+          # its first boot resizes the root filesystem and reboots. With
+          # -no-reboot QEMU would exit there and the login never arrive.
           case "$img" in
-          *vm.raw)
+          *vm.ufs.raw)
             python3 tools/ci/boot_test.py "$img" \
-              --target amd64 --timeout 420 --shell-timeout 180 \
-              --log out/boot.log \
+              --target amd64 --timeout 600 --shell-timeout 180 \
+              --reboot-ok --log out/boot.log \
               --run 'uname=uname -a' \
               --run 'hardening=sysctl hardening' \
               --run 'setuid=find / -xdev -type f \( -perm -4000 -o -perm -2000 \) -exec ls -l {} +' \

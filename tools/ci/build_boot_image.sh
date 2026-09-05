@@ -18,15 +18,15 @@
 #   world     buildworld buildkernel  - the long one, hours
 #   memstick  ... + memstick.img      - bootable USB image
 #   iso       ... + disc1.iso         - bootable installer ISO
-#   vm        ... + vm.raw            - a disk image that boots to a login
+#   vm        ... + vm.ufs.raw        - a disk image that boots to a login
 #
 # memstick and iso are the installer: they boot to bsdinstall's menu, which
 # is enough to prove the kernel and userland start and is not enough to ask
-# the system anything. vm.raw has a root login on the serial console, which
-# is what tools/ci/boot_test.py --run needs - and several open questions in
-# this repository (what hardening.pax.mprotect.status actually defaults to,
-# what is setuid in the built image rather than in the makefiles) can only be
-# answered from inside a booted system.
+# the system anything. vm.ufs.raw has a root login on the serial console,
+# which is what tools/ci/boot_test.py --run needs - and several open
+# questions in this repository (what hardening.pax.mprotect.status really
+# defaults to, what is setuid in the built image rather than in the
+# makefiles) can only be answered from inside a booted system.
 set -eu
 
 STAGE="${1:-kernel}"
@@ -258,10 +258,32 @@ vm|memstick|iso)
     case "$STAGE" in
     memstick) run_make memstick.img; OUT="memstick.img" ;;
     iso)      run_make disc1.iso;    OUT="disc1.iso" ;;
-    # VMFORMATS defaults to vhd vmdk qcow2 raw; raw is the only one QEMU
-    # needs and the other three are ten minutes of nothing.
-    vm)       run_make vm-image VMFORMATS=raw VMSIZE="${VMSIZE:-6144m}"
-              OUT="vm.raw" ;;
+    # vm-image is a no-op unless WITH_VMIMAGES is set and non-empty.
+    #
+    # release/Makefile.vm guards the whole body of the target:
+    #
+    #   vm-image: ${QEMUTGT}
+    #   .if defined(WITH_VMIMAGES) && !empty(WITH_VMIMAGES)
+    #           ... mk-vmimage.sh ...
+    #   .endif
+    #           touch ${.TARGET}
+    #
+    # so without it the target succeeds in 0.1 seconds, touches a stamp file
+    # called `vm-image`, and produces no image. That is exactly what run 14
+    # did: `touch vm-image`, then this script's own error path, then a failed
+    # job. The build did not break - it was never asked to do anything.
+    #
+    # VMFORMATS defaults to `vhd vmdk qcow2 raw` and VMFSLIST to `ufs zfs`,
+    # and the target loops over the cross product. That is eight images when
+    # one is wanted; raw is the only format QEMU needs and ufs is the only
+    # filesystem the boot test cares about.
+    #
+    # The name is ${VMBASE}.${FS}.${FORMAT}, not ${VMBASE}.${FORMAT} - the
+    # filesystem is in the middle. `vm.raw` never existed under any setting.
+    vm)       run_make vm-image WITH_VMIMAGES=YES \
+                       VMFORMATS=raw VMFSLIST=ufs \
+                       VMSIZE="${VMSIZE:-6144m}"
+              OUT="vm.ufs.raw" ;;
     esac
 
     # The image is in the OBJECT tree, not the source tree.
