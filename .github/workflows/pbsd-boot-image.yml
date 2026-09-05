@@ -91,6 +91,13 @@ jobs:
           # empty SRCCONF means FreeBSD's defaults, which is how you get the
           # machine-dependent assembly back.
           run: |
+            # Ask the build system what hardening it will actually use. This
+            # is where the external toolchain silently turning off SafeStack
+            # would have been caught, and was not.
+            sh tools/ci/show_hardening.sh "${{ inputs.target || 'amd64' }}" \
+               "$PWD/hbsd/src.conf.pbsd" \
+               "$([ "${{ inputs.toolchain || 'external' }}" != internal ] && \
+                  echo "$PWD/hbsd/toolchains/llvm21.mk" || true)"
             if [ "${{ inputs.machdep_asm }}" = "true" ]; then
               KERNCONF="${{ inputs.kernconf }}" SRCCONF="" \
               TOOLCHAIN="${{ inputs.toolchain }}" \

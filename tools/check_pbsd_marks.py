@@ -35,6 +35,8 @@ MARKS = {
         ("PBSD", "C++23 module TUs, dual-link pattern"),
     "hbsd/src/lib/msun/src/math_private.h":
         ("PBSD", "__BEGIN_DECLS, so ported kernels keep C linkage"),
+    "hbsd/src/share/mk/src.opts.mk":
+        ("PBSD", "keep SafeStack when the toolchain is external"),
 }
 
 

@@ -553,7 +553,19 @@ MK_CLANG_EXTRAS:= no
 MK_CLANG_FORMAT:= no
 MK_CLANG_FULL:= no
 MK_LLVM_COV:= no
+# PBSD: SafeStack needs the compiler-rt runtime, and MK_CLANG=no stops the
+# in-tree one being built - which is why upstream disables it here. With
+# CROSS_TOOLCHAIN the packaged toolchain supplies that runtime, so the
+# disable is wrong in exactly the configuration PBSD now builds by default.
+#
+# It matters because this is a := that no src.conf can override, and
+# SAFESTACK defaults to yes on amd64. Turning on the external toolchain
+# silently turned off a hardening feature, on a system whose reason for
+# existing is hardening, and nothing reported it.
+# tools/ci/show_hardening.sh asks `make -V` so it cannot happen quietly again.
+.if !defined(CROSS_TOOLCHAIN)
 MK_SAFESTACK:=	no
+.endif
 .endif
 
 .if ${MK_ASAN} == "yes"
