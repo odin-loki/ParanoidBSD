@@ -278,12 +278,16 @@ else:
     # a count cannot be acted on. Same strict definition - IR-equal and
     # ABI-equal - though without target flags here, since this phase does
     # not run under them.
-    ready = sorted(r.get("source") or "?" for r in d.get("records", [])
+    ready = sorted((r.get("source") or "?", r.get("edits", 0))
+                   for r in d.get("records", [])
                    if (r.get("ir") or {}).get("equal")
                    and (r.get("ir") or {}).get("abi_equal"))
-    print(f"\n          committable: {len(ready)}")
-    for s_ in ready:
-        print(f"            {s_}")
+    zero = [s_ for s_, e_ in ready if e_ == 0]
+    print(f"\n          committable: {len(ready)}, of which {len(zero)} "
+          f"are zero-edit")
+    for s_, e_ in ready:
+        mark = "" if e_ == 0 else f"   ({e_} edit(s) - NOT a pure rename)"
+        print(f"            {s_}{mark}")
     # The same `+ committed` term lib/msun's ratchet has, and for the same
     # reason: a port that lands stops being a .c, discover_sources() stops
     # finding it, and ir_equal falls by one. Without the sum, landing a port
@@ -344,12 +348,22 @@ if not seen:
 # built with. Anything short of all three is a port that verifies against a
 # build configuration nothing ships, which is the mistake the floor comment
 # already records once.
-ready = sorted(r.get("source") or "?" for r in d["records"]
+# The edit count comes with it, because "committable" and "a rename is
+# enough" are different claims and only the second one is a one-line commit.
+# The oracle verifies the STAGED .cpp; where the pass made edits, the staged
+# file is not the .c and renaming the .c does not reproduce what was
+# measured. The hundred-file lib/msun batch selected on `edits == 0` for
+# exactly this reason and the list it selected from did not say so, which
+# meant re-deriving it by hand from the report.
+ready = sorted((r.get("source") or "?", r.get("edits", 0))
+               for r in d["records"]
                if (r.get("ir") or {}).get("equal")
                and (r.get("ir") or {}).get("abi_equal"))
-print(f"\ncommittable under target flags: {len(ready)}")
-for s in ready:
-    print(f"  {s}")
+zero = [s for s, e in ready if e == 0]
+print(f"\ncommittable under target flags: {len(ready)}, "
+      f"of which {len(zero)} are zero-edit")
+for s, e in ready:
+    print(f"  {s}" + ("" if e == 0 else f"   ({e} edit(s) - NOT a pure rename)"))
 
 import pathlib as _pl
 _pl.Path("/tmp/pbsd_targetflags.txt").write_text(
