@@ -318,6 +318,84 @@ def _await_receipt(proc, log, cmd: str, timeout: float):
     return False, f"the loader never echoed the whole command in {timeout:.0f}s"
 
 
+# What the kernel debugger said, printed at the END for the same reason the
+# loader record is: a verbose boot is hundreds of lines and no tail reaches
+# above them.
+DDB_REPORT: list[tuple[str, str]] = []
+
+# DDB's prompt, and its pager. db_command.c:552 prints "db> "; db_output.c:257
+# prints "--More--\r" and waits for a key.
+DDB_MORE = re.compile(rb"--More--")
+
+
+def _ddb_read(proc, log, deadline):
+    """Read until the db> prompt, answering the pager. -> (bytes, reached)."""
+    buf = b""
+    while time.time() < deadline:
+        buf += _drain(proc, log)
+        buf = buf[-262144:]
+        flat = _plain(buf)
+        if DDB_MORE.search(flat[-256:]):
+            # Space is another page. Drop the marker so it does not match
+            # again on the next pass through the same tail.
+            _send(proc, " ", delay=0)
+            buf = DDB_MORE.sub(b"", buf)
+            continue
+        if flat.rstrip().endswith(b"db>"):
+            return buf, True
+        if proc.poll() is not None:
+            return buf, False
+        time.sleep(0.1)
+    return buf, False
+
+
+def break_to_ddb(proc, log, timeout: float, cmds) -> bool:
+    """Type ALT_BREAK_TO_DEBUGGER and run commands at the db> prompt.
+
+    This is the only way left to tell the two remaining readings of "one
+    `start_init: trying` line and then silence" apart. kern_execve() either
+    never returned, or it returned EJUSTRETURN and init is running and
+    cannot write - and no boot log can separate those, because both are
+    silence.
+
+    The sequence is three bytes, from sys/kern/subr_kdb.c:327: CR, then '~',
+    then ^B. sys/dev/uart/uart_core.c:353 hands every received byte to
+    kdb_alt_break(), so the console this function is already typing into is
+    the one that carries it. amd64's HARDENEDBSD includes sys/conf/std.debug
+    (options DDB, options ALT_BREAK_TO_DEBUGGER) and GENERIC has options KDB.
+
+    `ps` then says whether a process 1 exists and what it waits on, and `bt`
+    says where the thread is. Either answer ends the question.
+    """
+    _drain(proc, log)
+    if not _send(proc, "\r~\x02"):
+        DDB_REPORT.append(("break sequence", "the console went away"))
+        return False
+    _, reached = _ddb_read(proc, log, time.time() + timeout)
+    if not reached:
+        DDB_REPORT.append((
+            "break sequence",
+            f"no db> prompt within {timeout:.0f}s. Either the kernel is not "
+            "reading the console, or ALT_BREAK_TO_DEBUGGER is not in this "
+            "kernel, or it is too wedged to take a trap."))
+        return False
+    DDB_REPORT.append(("break sequence", "db> reached"))
+
+    for cmd in cmds:
+        if not _send(proc, cmd + "\n"):
+            DDB_REPORT.append((cmd, "the console went away"))
+            return False
+        out, ok = _ddb_read(proc, log, time.time() + timeout)
+        text = _plain(out).decode("utf-8", "replace")
+        # Drop the echo of the command itself and the trailing prompt.
+        text = text.replace("\r", "")
+        DDB_REPORT.append((cmd, text.strip() or "(no output)"))
+        if not ok:
+            DDB_REPORT.append((cmd, f"...and no db> prompt after {timeout:.0f}s"))
+            return False
+    return True
+
+
 def interrogate(proc, log, commands, user, password, timeout, outdir,
                 initial=b""):
     """Log in and run each command, writing its output beside the log.
@@ -417,6 +495,22 @@ def main() -> int:
                          "boot_single=YES makes init exec a shell instead of "
                          "running rc, which separates a broken init from a "
                          "broken rc.")
+    ap.add_argument("--ddb-on-hang", action="store_true",
+                    help="if the kernel is up and the console pokes get "
+                         "nothing back, type the ALT_BREAK_TO_DEBUGGER "
+                         "sequence (CR ~ ^B, subr_kdb.c:327) and run "
+                         "--ddb-cmd at the db> prompt. This is what tells a "
+                         "kern_execve() that never returned from an init(8) "
+                         "that runs and cannot write: no boot log can, "
+                         "because both are silence.")
+    ap.add_argument("--ddb-cmd", action="append", default=[],
+                    metavar="COMMAND",
+                    help="a command to run at db>. Repeatable. Default: "
+                         "`ps` (is there a process 1, and what does it wait "
+                         "on) then `bt` (where is the thread).")
+    ap.add_argument("--ddb-timeout", type=float, default=30.0,
+                    help="seconds to wait for the db> prompt, and for each "
+                         "command's output")
     ap.add_argument("--poke-after", type=int, default=25, metavar="SECONDS",
                     help="once the kernel has started, if nothing new is "
                          "printed for this long, type a marker command at "
@@ -489,6 +583,7 @@ def main() -> int:
     console_note = ""
     last_output = time.time()
     pokes = 0
+    ddb_tried = False
     # Not a with-block: the interrogation phase below writes to the same
     # log, and closing it at the end of the boot loop made the first run of
     # this code die with "write to closed file".
@@ -604,6 +699,18 @@ def main() -> int:
                 _send(proc, f"\necho {ALIVE}\n")
                 last_output = time.time()
 
+            # The pokes are spent and nothing answered. Ask the kernel.
+            if (args.ddb_on_hang and not ddb_tried
+                    and "kernel" in reached and "userland" not in reached
+                    and pokes >= 3
+                    and time.time() - last_output > args.poke_after):
+                ddb_tried = True
+                print("\n  [console silent after three pokes; breaking to "
+                      "the kernel debugger]\n")
+                break_to_ddb(proc, log, args.ddb_timeout,
+                             args.ddb_cmd or ["ps", "bt"])
+                last_output = time.time()
+
             if not chunk:
                 if proc.poll() is not None:
                     break
@@ -634,6 +741,16 @@ def main() -> int:
         print("    loader commands:")
         for cmd, ok, why in LOADER_SENT:
             print(f"      {'ok  ' if ok else 'FAIL'} {cmd}   ({why})")
+    # And what the kernel debugger said, for the same reason.
+    if DDB_REPORT:
+        print("    kernel debugger:")
+        for cmd, out in DDB_REPORT:
+            if "\n" in out:
+                print(f"      db> {cmd}")
+                for line in out.splitlines():
+                    print(f"        {line}")
+            else:
+                print(f"      db> {cmd}   {out}")
     print(f"    phases reached: {', '.join(reached) or 'none'}")
     if verdict and verdict[0] == "OK":
         print(f"OK  booted: {verdict[1]}")

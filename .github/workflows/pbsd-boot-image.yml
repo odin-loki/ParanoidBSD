@@ -218,8 +218,20 @@ jobs:
               --run 'pax=sysctl -a | grep -c ^hardening'
             ;;
           *)
+            # --ddb-on-hang: the memstick has stopped at the same place in
+            # every run since 20 - one `start_init: trying` line and then
+            # nothing - and that has exactly two readings, kern_execve()
+            # never returning or init running and unable to write. No boot
+            # log separates them, because both are silence. amd64's
+            # HARDENEDBSD has options KDB, DDB and ALT_BREAK_TO_DEBUGGER, so
+            # once the pokes are spent the console is asked directly.
             python3 tools/ci/boot_test.py "$img" \
-              --target amd64 --timeout 420 --log out/boot.log "$@"
+              --target amd64 --timeout 420 --log out/boot.log \
+              --ddb-on-hang \
+              --ddb-cmd 'ps' \
+              --ddb-cmd 'show pcpu' \
+              --ddb-cmd 'bt' \
+              "$@"
             ;;
           esac
 

@@ -159,6 +159,14 @@ jobs:
       - name: Every source lib/libc names is on disk
         run: python3 tools/check_libc_srcs.py --gate
 
+      # Four times this session a console change was written, reasoned
+      # about, dispatched, and came back fifty minutes later having not
+      # done what it looked like it did. The kernel-debugger probe is
+      # exercised against fakes that answer, that page at --More--, and
+      # that ignore the break entirely.
+      - name: The boot test's kernel-debugger probe
+        run: python3 tools/ci/test_boot_test_ddb.py
+
       # The parity gate above compares ONE config across the six
       # architectures. This asks the other twenty-one the question that
       # actually applies to them, most being single-architecture: does a
