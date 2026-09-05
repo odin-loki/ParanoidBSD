@@ -303,3 +303,49 @@ deserves reading rather than scoring.
 agreeing with the earlier conclusion: page table layout and CPU control
 registers are not one interface written several times, they are several
 interfaces.
+
+## How many implementations, not how many copies
+
+`tools/arch_clusters.py`. Single-linkage clustering over the similarity
+graph, reporting "n copies, k implementations" and the lines that one
+implementation per cluster would remove.
+
+```
+ saves  lines  n  k  file                     clusters
+  9032  27097  3  2  linux_systrace_args.c    amd64,arm64 | i386
+   614   2458  4  3  busdma_machdep.c         arm64,riscv | arm | powerpc
+   469    938  6  3  uio_machdep.c            arm,i386,powerpc | arm64,riscv | amd64
+   338   1014  3  2  vmm_dev.h                arm64,riscv | amd64
+   289    867  3  2  acpi_machdep.c           amd64,i386 | arm64
+   216    866  4  3  _inttypes.h              arm64,riscv | arm | powerpc
+   198   1191  6  5  mem.c                    arm64,riscv | amd64 | arm | i386 | powerpc
+   191    765  4  3  _stdint.h                arm64,riscv | arm | powerpc
+     0  37831  5  5  pmap.c                   all five separate
+
+over the whole list: 14,119 lines in 49 files
+```
+
+Three things fall out of it that the pairwise measure hid:
+
+* **`uio_machdep.c` is not one implementation.** `arch_duplication.py` ranks
+  it second in all of `sys/` at 0.97 and `docs/PORTABILITY.md` called it "the
+  clearest case" for hoisting. It is three texts and two mechanisms:
+  `pmap_map_io_transient` on amd64, arm64 and riscv, `sf_buf_alloc` on arm,
+  i386 and powerpc — a direct map or the absence of one. Hoisting to one file
+  means breaking three architectures.
+* **`pmap.c` saves nothing.** Five copies, five implementations, 37,831
+  lines, and the tool ranks it last. That is the same answer
+  `arch_interface.py` gives from the other direction, and both agree with
+  the reasoning that was already written down: page table layout is fixed by
+  the MMU.
+* **`_stdint.h` and `_inttypes.h` cluster into three**, and the generic
+  headers already written collapse all three into one — because they work
+  from the compiler's model of the target rather than from the text, so the
+  clustering does not bound what is possible there. It bounds what
+  *text-shaped* consolidation can do, which is the point of having both
+  tools.
+
+The threshold is single linkage on purpose: a chain of similar pairs counts
+as one implementation, so `k` is a lower bound and the tool understates how
+many distinct things there are. Understating is the safe direction — it
+claims less consolidation is available, not more.

@@ -125,6 +125,8 @@ jobs:
         run: |
           python3 tools/arch_interface.py hbsd/src --top 15
           echo
+          python3 tools/arch_clusters.py hbsd/src --top 12
+          echo
           python3 tools/arch_duplication.py hbsd/src --scope sys 2>/dev/null | head -25 || true
           echo
           python3 tools/atomic_survey.py hbsd/src 2>/dev/null | tail -12 || true

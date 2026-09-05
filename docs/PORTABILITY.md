@@ -59,13 +59,36 @@ riscv's was missing `HBSD_RESIST_FINGERPRINTING`.
 summed over the 26 candidates that score above 0.5.
 
 `sys/x86` already exists and is exactly this move, made once for amd64 and
-i386. `uio_machdep.c` at 0.97 across all six is the clearest case for making
-it again.
+i386.
+
+**`uio_machdep.c` at 0.97 is not the clearest case for making it again**,
+which is what this section used to say. 0.97 is the *best pair*, and reading
+the six files rather than the score gives a different answer:
+
+```
+pmap_map_io_transient   amd64, arm64, riscv     architectures with a direct map
+sf_buf_alloc            arm, i386, powerpc      architectures without one
+```
+
+Two implementations, and the split is a real hardware property. Hoisting to
+one file means picking one of them and breaking three architectures. The
+correct change is two machine-independent implementations and a way to
+choose, which is a different and larger piece of work than the score
+suggested.
+
+A pairwise maximum cannot show that, so `tools/arch_clusters.py` clusters
+instead — single linkage over the similarity graph — and reports "n copies,
+k implementations". It is the tool that would have stopped the sentence
+above being written. `pmap.c` comes out 5 copies and 5 implementations,
+saving nothing, which agrees with `arch_interface.py` and with the reasoning
+already in this document.
 
 **Nothing has been hoisted yet.** Moving a file out of `sys/<arch>` means
-editing six `sys/conf/files.<arch>`, and until `buildworld` is green a failure
-afterwards cannot be attributed to the move. The measurement comes first; it
-is the part that was missing.
+editing six `sys/conf/files.<arch>`, and `uiomove_fromphys` is a hot VM path
+where a mistake is data corruption rather than a compile error. The six-arch
+matrix is green now, so a build failure after such a change would be
+attributable — but the matrix proves it compiles, not that it runs, and PBSD
+has still never booted. That is the gate on this one.
 
 ## What is generated, and does not count
 
