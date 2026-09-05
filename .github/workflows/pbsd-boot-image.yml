@@ -37,6 +37,19 @@ jobs:
         # rather than an hour in with a permission error.
         run: python3 tools/check_exec_bits.py
 
+      - name: Vendor-completeness preconditions
+        # Two ways the tree can be missing source that the build needs, both
+        # cheap to check here and both expensive to hit inside the VM:
+        #
+        #   * a SUBDIR entry pointing at a directory that is not there. That
+        #     is how usr.bin/id was lost - usr.bin/Makefile still listed it.
+        #   * a file an ignore rule matched during import. That is how
+        #     sys/dev/hpt27xx/amd64-elf.hpt27xx_lib.o was lost, and
+        #     buildkernel stopped on it with "don't know how to make".
+        run: |
+          python3 tools/check_vendor_manifest.py
+          python3 tools/check_subdirs.py hbsd/src --fail-on-missing
+
       - name: Build on FreeBSD
         uses: vmactions/freebsd-vm@v1
         with:

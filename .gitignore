@@ -46,6 +46,16 @@ pbsd/_build_*/
 *.modmap
 *.d
 
+# ---- The vendor tree is upstream's, not ours -------------------------------
+# Upstream tracks files the globs above match: prebuilt driver blobs
+# (sys/dev/hpt*/*-elf.*.o), bmake and dtrace test fixtures (*.a, *.exe),
+# and gettext catalogues. When hbsd/src was imported as a flat snapshot
+# those rules ate 114 real files, and the kernel build stopped dead on
+# sys/dev/hpt27xx/amd64-elf.hpt27xx_lib.o. Root's rules stop at the
+# vendor boundary; what hbsd/src/.gitignore itself matches is held in
+# tools/vendor_manifest.txt and checked by tools/check_vendor_manifest.py.
+!/hbsd/src/**
+
 # WSL /tmp gate leftovers accidentally synced under the tree
 **/pbsd-b*-src/
 **/pbsd-b*/

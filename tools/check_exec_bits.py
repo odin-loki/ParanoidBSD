@@ -16,6 +16,12 @@ Two rules, both mechanically checkable:
 That second rule is not hypothetical. Marking every "#!" file executable
 caught two test *fixtures* - a bc error case and a file(1) test input - whose
 leading bytes are "#!" by coincidence.
+
+Both rules yield to upstream. Where a file's mode here is byte-identical to
+HardenedBSD's, upstream is right and the heuristic is wrong: the dtrace
+harness reads its .exe cases rather than running them, and bearssl's
+T0Comp.exe is a real executable that happens to be binary. Those live in
+EXCEPTIONS with the reason, so the rules keep their teeth everywhere else.
 """
 from __future__ import annotations
 
@@ -24,6 +30,18 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# path prefix -> why upstream's mode is the correct one
+EXCEPTIONS = {
+    "hbsd/src/cddl/contrib/opensolaris/cmd/dtrace/test/tst/":
+        "dtrace test cases; the harness invokes them, they are not run",
+    "hbsd/src/contrib/bearssl/T0Comp.exe":
+        "a real executable that is also a binary",
+}
+
+
+def excepted(path: str) -> bool:
+    return any(path.startswith(prefix) for prefix in EXCEPTIONS)
 
 
 def tracked() -> list[tuple[str, str]]:
@@ -55,6 +73,8 @@ def main() -> int:
             continue
         shebang = head.startswith(b"#!")
         binary = is_binary(head)
+        if excepted(path):
+            continue
         if shebang and not binary and mode != "100755":
             missing_x.append(path)
         if binary and mode == "100755":
