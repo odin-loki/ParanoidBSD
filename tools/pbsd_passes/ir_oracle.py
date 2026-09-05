@@ -68,6 +68,14 @@ def normalize_ir(ir: str) -> str:
         # Drop llvm.ident metadata noise
         if "llvm.ident" in line or line.startswith("!"):
             continue
+        # Module-level inline asm. The passes inject #include <cstdlib> into
+        # every staged file, which on FreeBSD pulls in stdlib.h and its
+        # .symver __qsort_r_compat, qsort_r@FBSD_1.0 directive - libc symbol
+        # versioning arriving through a header, on the C++ side of every
+        # comparison and the C side of none. Dropped here, with the line,
+        # rather than substituted away and left as a blank.
+        if line.startswith("module asm "):
+            continue
         # Canonicalize SSA names somewhat: %[[A-Za-z0-9_.]+]] → %tN later
         lines.append(line.rstrip())
     text = "\n".join(lines)
@@ -76,17 +84,14 @@ def normalize_ir(ir: str) -> str:
     # port read as a mismatch, which is the one thing an equivalence oracle
     # must not do. Same for the C tentative-definition `common` linkage, which
     # C++ has no equivalent of.
-    # Drop module-level inline asm. The passes inject #include <cstdlib> into
-    # every staged file, which on FreeBSD pulls in stdlib.h and its
-    # .symver __qsort_r_compat, qsort_r@FBSD_1.0 directive. That is libc
-    # symbol versioning arriving through a header - it appears on the C++ side
-    # of every single comparison and on the C side of none, and it says nothing
-    # about whether the port preserved behaviour.
-    text = re.sub(r"^module asm .*$", "", text, flags=re.M)
     text = re.sub(r"\bnoundef\s+", "", text)
     text = re.sub(r"\bcommon\s+(?=global\b)", "", text)
     text = re.sub(r"@(_Z[A-Za-z0-9_]+)",
                   lambda m: "@" + demangle_symbol(m.group(1)), text)
+    # Collapse runs of blank lines. Dropping a line above leaves the blanks
+    # that surrounded it, and a difference in blank-line count is not a
+    # difference in behaviour.
+    text = re.sub(r"\n{2,}", "\n", text).strip()
     # Rename %digits and %names to sequential
     counters = {"n": 0}
 
