@@ -2,7 +2,6 @@
 #
 # tools/ci/run_freebsd_oracle.sh fails if the count drops below this number.
 # It may only be raised, and only against a run that reported the higher
-# figure. Starting value is 0 because no port has been certified yet - on
-# Linux the oracle cannot compile a single one of them (see the table in
-# tools/pbsd_passes/README.md).
-0
+# figure. This one comes from run 5 (commit 162799022, FreeBSD 15.1,
+# clang 19.1.7, scope lib/msun): 69 verified, 27 mismatch, 24 compile_fail.
+69
