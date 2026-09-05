@@ -213,10 +213,48 @@ exec loop. It is a marker of the steering, not a symptom.)
 produces nothing.** Whether `init` is failing to exec, or execs and hangs
 before printing, is the next question and is not answered yet.
 
-`boot_test.py --loader-set` exists for asking it: `boot_verbose=YES` makes
-`start_init()` print `start_init: trying /sbin/init` before each attempt,
-and `boot_single=YES` makes init exec a shell instead of running `rc`, so
-a prompt would place the fault in `rc` rather than in `init`.
+### Run 21: the exec is reached
+
+Same image, `loader_set = boot_verbose=YES boot_single=YES`:
+
+```
+Dual Console: Serial Primary, Video Secondary
+start_init: trying /sbin/init
+<420s of nothing>
+```
+
+`start_init: trying %s` is printed by the exec loop immediately before
+`kern_execve()`, so **the kernel reaches the exec of `/sbin/init`**. What
+did *not* appear is as informative:
+
+* no `exec /sbin/init: error N` — the loop prints that for any failure
+  other than `ENOENT`;
+* no second `start_init: trying` — `ENOENT` would have moved to the next
+  path in `init_path`;
+* no `panic: no init` — that is what running out of paths does;
+* no `Enter full pathname of shell`, though `boot_single=YES` was set.
+
+So `kern_execve()` did not return an error, did not fall through, and did
+not produce a running program that said anything.
+
+### The gap that run exposed in the test
+
+A shell exec'd as PID 1 prints no banner. Nothing in the `USERLAND`
+pattern list would match a working `/rescue/sh`, so the *success* case of
+the next experiment would have been recorded as a failure.
+
+`--poke-after` closes it: once the kernel has started and nothing new has
+been printed for N seconds, the test types `echo __PBSD_ALIVE__` at the
+console, up to three times, and `__PBSD_ALIVE__` is a `USERLAND` pattern.
+A marker echoed back proves a shell is there; silence after three tries is
+evidence there is not. Tested both ways against a fake that boots to a
+silent-but-echoing shell and one that is genuinely dead.
+
+**Still open:** whether `kern_execve()` hangs, or `init` runs and hangs
+before its first write. The discriminator is `init_path`: pointing it at
+the statically linked `/rescue/sh` replaces both `init` and the dynamic
+loader, so a marker coming back would put the fault in one of those and
+continued silence would put it in the exec path itself.
 
 ## Asking the system about itself
 

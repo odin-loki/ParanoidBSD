@@ -318,6 +318,7 @@ finding it a third time.
 | 16 | `memstick` | loader | the console command was truncated at fifteen characters by a UART FIFO overrun; `boot` was never sent |
 | 19 | `memstick` | build | the port-built gate tripped on vendor lldb C++; killed before the boot test |
 | 20 | `memstick` | **kernel** | boots, mounts root, then silence at `exec /sbin/init` |
+| 21 | `memstick` | **kernel** | `start_init: trying /sbin/init` printed, then silence: the exec is reached |
 | 17 | `vm` | staging | `installworld` into the image mount stopped dead at `usr.sbin/inetd`; 2h23m with no further output, cancelled |
 
 Run 17 is the `vm` stage and is out of order above because it was still
@@ -353,11 +354,25 @@ from `start_init()` at `sys/kern/init_main.c:765`, which sits *after*
 So root is mounted and the first userland process is what produces
 nothing.
 
-Whether `init` fails to exec or execs and hangs is not answered.
-`boot_test.py --loader-set` is how to ask: `boot_verbose=YES` makes
-`start_init()` print each path it tries, and `boot_single=YES` makes init
-exec a shell rather than running `rc`, which separates a broken `init`
-from a broken `rc`.
+Run 21, the same image under `boot_verbose=YES boot_single=YES`, moves the
+boundary one step further in:
+
+```
+start_init: trying /sbin/init
+<420s of nothing>
+```
+
+The kernel **reaches the exec**. And the absences pin it: no `exec
+/sbin/init: error N` (printed for any error but `ENOENT`), no second
+`start_init: trying` (which `ENOENT` would cause), no `panic: no init`
+(what running out of paths does), and no single-user shell prompt despite
+`boot_single`.
+
+So `kern_execve()` neither failed nor produced a program that spoke.
+Whether it hangs, or `init` runs and hangs before its first write, is
+still open — and is testable by pointing `init_path` at the statically
+linked `/rescue/sh`, which replaces both `init` and the dynamic loader at
+once.
 
 See `docs/BUILDING.md` for the console mechanics and the fixes that made
 this run possible (type one byte at a time; require a receipt before

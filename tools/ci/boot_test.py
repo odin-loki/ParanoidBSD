@@ -96,8 +96,20 @@ KERNEL = [
     re.compile(rb"Timecounter \""),
 ]
 
+# Typed at the console when the kernel has gone quiet, to tell "nothing is
+# running" apart from "something is running and saying nothing".
+#
+# start_init() printed `start_init: trying /sbin/init` and then produced
+# nothing for 420 seconds. That is consistent with init hanging AND with
+# init running fine while printing nothing - and a shell exec'd as PID 1
+# via init_path prints no banner at all, so the second case would have been
+# recorded as a failure. A marker echoed back is proof a shell is there;
+# silence after it is evidence there is not.
+ALIVE = "__PBSD_ALIVE__"
+
 # init ran and something in userland is talking. This is a boot.
 USERLAND = [
+    re.compile(ALIVE.encode() + rb"\s*$", re.M),
     re.compile(rb"login:"),
     re.compile(rb"Starting local daemons"),
     re.compile(rb"Enter full pathname of shell"),
@@ -383,6 +395,11 @@ def main() -> int:
                          "boot_single=YES makes init exec a shell instead of "
                          "running rc, which separates a broken init from a "
                          "broken rc.")
+    ap.add_argument("--poke-after", type=int, default=25, metavar="SECONDS",
+                    help="once the kernel has started, if nothing new is "
+                         "printed for this long, type a marker command at "
+                         "the console and watch for it coming back. 0 to "
+                         "never poke.")
     ap.add_argument("--loader-timeout", type=int, default=45,
                     help="seconds to wait for the loader prompt after asking "
                          "for it, before giving up and booting as-is")
@@ -448,6 +465,8 @@ def main() -> int:
     reboots = 0
     console_ok = False
     console_note = ""
+    last_output = time.time()
+    pokes = 0
     # Not a with-block: the interrogation phase below writes to the same
     # log, and closing it at the end of the boot loop made the first run of
     # this code die with "write to closed file".
@@ -467,6 +486,7 @@ def main() -> int:
                 sys.stdout.flush()
                 buf += chunk
                 buf = buf[-65536:]
+                last_output = time.time()
             vis = _plain(buf)
 
             # Phases before failures, so a panic during the kernel's own
@@ -548,6 +568,19 @@ def main() -> int:
                           f"{args.loader_timeout}s; booting as-is]\n")
                     _send(proc, "\nboot\n")
                     loader_stage = 3
+
+            # Nothing has been printed for a while and the kernel is up:
+            # ask the console whether anything is listening. Three tries,
+            # spaced, because the first may land while init is still
+            # setting up its terminal.
+            if (args.poke_after and "kernel" in reached
+                    and "userland" not in reached and pokes < 3
+                    and time.time() - last_output > args.poke_after):
+                pokes += 1
+                print(f"\n  [nothing for {args.poke_after}s; poking the "
+                      f"console ({pokes}/3)]\n")
+                _send(proc, f"\necho {ALIVE}\n")
+                last_output = time.time()
 
             if not chunk:
                 if proc.poll() is not None:
