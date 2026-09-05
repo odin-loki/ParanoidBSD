@@ -75,9 +75,35 @@ python3 tools/check_toolchain_version.py
 reads the major out of `VCSRevision.h` and out of the toolchain file and
 asserts they match. It runs as a boot-image precondition.
 
-## If the sources should stop being tracked
+## The compiler sources are not tracked
 
-Not done, and listed here because it is the obvious next question.
+Done. `llvm/`, `lldb/` and `clang/` (except `clang/lib/Headers`) are out of
+git — **9,772 files, 236 MB** — with re-fetch instructions in `.gitignore`.
+
+What stays, and why each one has to:
+
+| subtree | files | why |
+|---|---:|---|
+| `compiler-rt` | 1,372 | `lib/libcompiler_rt`, `lib/libclang_rt`, `stand/libsa`, `stand/i386/boot2` and `lib/libc/arm/aeabi` all compile source out of it |
+| `libcxx` | 1,917 | `lib/libc++` |
+| `libc` | 628 | referenced by the build |
+| `lld` | 235 | linker sources |
+| `clang/lib/Headers` | 275 | `sys/modules/aesni` and `sys/modules/blake2` `.PATH` into it for intrinsics |
+| `openmp` | 103 | `lib/libomp` |
+| `libunwind` | 33 | `lib/libexecinfo` includes its headers |
+
+This is the part that makes "untrack contrib/llvm-project" wrong as stated.
+Most of that directory is not the compiler — it is the runtime the world links
+against no matter what compiled it, plus, in two cases, source files the
+kernel and the boot loader compile directly. Removing the lot would break the
+build with an external toolchain just as thoroughly as with an internal one.
+
+`TOOLCHAIN=internal` now fails immediately with the re-fetch command rather
+than discovering the absence several minutes into a build, and
+`check_clang_srcs.py` reports that there is nothing to check instead of
+reporting 3,855 missing sources.
+
+### The earlier note, kept because it was the right question
 
 The repository already has this pattern — `.gitignore` carries
 

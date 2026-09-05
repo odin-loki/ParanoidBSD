@@ -140,3 +140,27 @@ docs/migration/clang_port/agent_corpus/
 docs/migration/.mech_pass_done
 docs/migration/.mech_checkpoint.jsonl
 docs/migration/*.log
+
+# ---- The LLVM compiler sources are not tracked ----------------------------
+# PBSD builds with an external toolchain by default (docs/TOOLCHAIN.md), so
+# llvm/, clang/ and lldb/ are build inputs for a compiler the system does not
+# build and does not ship. 9,772 files and 236 MB, re-fetchable at the exact
+# revision lib/clang/include/llvm/Support/VCSRevision.h names.
+#
+# Re-fetch (needed only for TOOLCHAIN=internal):
+#   git clone --depth 1 --branch llvmorg-21.1.8 --filter=blob:none --sparse \
+#       https://github.com/llvm/llvm-project /tmp/llvm
+#   (cd /tmp/llvm && git sparse-checkout set llvm clang lldb)
+#   cp -a /tmp/llvm/llvm /tmp/llvm/lldb hbsd/src/contrib/llvm-project/
+#   cp -a /tmp/llvm/clang/. hbsd/src/contrib/llvm-project/clang/
+#
+# What stays tracked, and why it must: compiler-rt, libcxx, libcxxabi,
+# libunwind, openmp and libc are runtime libraries the world links against
+# whatever compiled it, and clang/lib/Headers supplies the intrinsics that
+# sys/modules/aesni and sys/modules/blake2 compile against.
+/hbsd/src/contrib/llvm-project/llvm/
+/hbsd/src/contrib/llvm-project/lldb/
+/hbsd/src/contrib/llvm-project/clang/*
+!/hbsd/src/contrib/llvm-project/clang/lib/
+/hbsd/src/contrib/llvm-project/clang/lib/*
+!/hbsd/src/contrib/llvm-project/clang/lib/Headers/

@@ -60,6 +60,20 @@ SRCCONF="${SRCCONF-$REPOROOT/hbsd/src.conf.pbsd}"
 # run one is most of buildworld's time for a benefit PBSD was not using.
 # TOOLCHAIN=internal builds it in-tree if a release ever needs to be.
 TOOLCHAIN="${TOOLCHAIN:-external}"
+# TOOLCHAIN=internal needs sources that are not tracked. Say so here, with the
+# command, rather than letting the build discover it several minutes in with a
+# missing-file error that does not explain itself.
+if [ "$TOOLCHAIN" = "internal" ] && \
+   [ ! -d "$(cd "$(dirname "$0")/../.." && pwd)/hbsd/src/contrib/llvm-project/llvm/lib" ]; then
+    echo "FAIL TOOLCHAIN=internal, but the LLVM compiler sources are not here." >&2
+    echo "     PBSD does not track them - see docs/TOOLCHAIN.md. To fetch:" >&2
+    echo "       git clone --depth 1 --branch llvmorg-21.1.8 --filter=blob:none \\" >&2
+    echo "           --sparse https://github.com/llvm/llvm-project /tmp/llvm" >&2
+    echo "       (cd /tmp/llvm && git sparse-checkout set llvm clang lldb)" >&2
+    echo "       cp -a /tmp/llvm/llvm /tmp/llvm/lldb hbsd/src/contrib/llvm-project/" >&2
+    echo "       cp -a /tmp/llvm/clang/. hbsd/src/contrib/llvm-project/clang/" >&2
+    exit 1
+fi
 CROSS_TOOLCHAIN=""
 EXTRA_SRCCONF=""
 if [ "$TOOLCHAIN" = "external" ]; then

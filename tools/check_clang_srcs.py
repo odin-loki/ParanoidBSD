@@ -43,6 +43,19 @@ def main() -> int:
         print(f"no llvm-project under {args.root}", file=sys.stderr)
         return 2
 
+    # The compiler sources are not tracked - PBSD builds with an external
+    # toolchain, so llvm/, clang/ and lldb/ are absent from a fresh clone.
+    # lib/clang is then not built either, and checking its source list against
+    # a tree that deliberately does not have those files would report 3,855
+    # missing sources and mean nothing. See docs/TOOLCHAIN.md.
+    if not os.path.isdir(os.path.join(base, "llvm", "lib")):
+        print("llvm-project compiler sources are not present.")
+        print("That is the default: PBSD builds with an external toolchain and")
+        print("does not track llvm/, clang/ or lldb/. lib/clang is not built,")
+        print("so there is nothing here to check.")
+        print("Re-fetch instructions are in .gitignore and docs/TOOLCHAIN.md.")
+        return 0
+
     checked = 0
     skipped = 0
     missing: list[tuple[str, int, str]] = []
