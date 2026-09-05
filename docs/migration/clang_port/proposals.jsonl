@@ -25957,3 +25957,14 @@
 {"file": "hbsd/src/libexec/ypxfr/ypxfr_main.c", "kind": "LIFETIME_FAIL", "outlives": "stack_buf \u2ab0 R_data", "hint": "stack address escapes \u2014 must copy or heap-allocate"}
 {"file": "hbsd/src/libexec/ypxfr/ypxfr_misc.c", "kind": "SPAN_CANDIDATE", "line": 254, "snippet": "key,long:iv-fail"}
 {"file": "hbsd/src/libexec/ypxfr/ypxfrd_getmap.c", "kind": "GLOBAL_CLUSTER", "globals": ["fp"], "count": 1}
+{"file": "t1_macro_constexpr.c", "kind": "PURITY", "function": "usage_msg", "line": 12}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "FEATURE", "line": 6, "body": "1", "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_constexpr.c", "kind": "MACRO_OBJECT", "name": "MSG", "line": 12, "body": "\"flags\"", "hint": "constexpr / inline constexpr variable"}
+{"file": "t1_macro_fn.c", "kind": "MACRO_DIVERGENT", "names": ["BAD"], "template": "do { foo($0); } while (0)", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
+{"file": "t1_tentative.c", "kind": "GLOBAL_CLUSTER", "globals": ["flag", "counter"], "count": 2}
+{"file": "t2_malloc_err.c", "kind": "ANDERSEN_OWNED", "var": "buf", "locs": ["heap:buf@112"], "hint": "unique_ptr candidate"}
+{"file": "t2_malloc_err.c", "kind": "LIFETIME_OWN", "var": "buf", "region": "heap_buf", "hint": "owning region \u2192 unique_ptr"}
+{"file": "t2_span_hint.c", "kind": "CALL_SITE_SPAN", "line": 1, "snippet": "sum"}
+{"file": "t3_macro_au.c", "kind": "MACRO_DIVERGENT", "names": ["WEIRD"], "template": "do { if ($0) foo(); else bar(); } while (0)", "hint": "keep as macro or hand-port \u2014 anti-unification failed"}
+{"file": "t3_queue.c", "kind": "MACRO_OBJECT", "name": "PBSD_INTRUSIVE_FOREACH_HELPERS", "line": 3, "body": "#define pbsd_intrusive_first(h) ((h)->first)", "hint": "constexpr / inline constexpr variable"}
+{"file": "t3_queue.c", "kind": "MACRO_CONSTEXPR", "names": ["pbsd_intrusive_next"], "template": "(($0)->$1.next)", "hint": "inline constexpr / template function"}

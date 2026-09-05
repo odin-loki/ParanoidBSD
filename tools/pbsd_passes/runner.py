@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import platform
 import tempfile
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -29,6 +30,42 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+_ARCH_DIR = {"x86_64": "amd64", "aarch64": "aarch64"}.get(
+    platform.machine(), platform.machine()
+)
+
+_SHIM_DIR: Path | None = None
+
+
+def _machine_include_shim() -> Path | None:
+    """A directory where <machine/...> and <x86/...> resolve.
+
+    FreeBSD's build makes machine/ a symlink to sys/<arch>/include; nothing
+    in a plain checkout does, so every source reaching for
+    <machine/_types.h> failed to compile and the IR oracle could not judge
+    it. Built once per process in a temp dir - the repo is left alone.
+    """
+    global _SHIM_DIR
+    if _SHIM_DIR is not None:
+        return _SHIM_DIR if _SHIM_DIR.is_dir() else None
+    sys_dir = ROOT / "hbsd" / "src" / "sys"
+    arch = platform.machine()
+    candidates = {"x86_64": "amd64", "aarch64": "arm64"}.get(arch, arch)
+    inc = sys_dir / candidates / "include"
+    if not inc.is_dir():
+        return None
+    d = Path(tempfile.mkdtemp(prefix="pbsd_machine_shim_"))
+    try:
+        (d / "machine").symlink_to(inc, target_is_directory=True)
+        x86 = sys_dir / "x86" / "include"
+        if x86.is_dir():
+            (d / "x86").symlink_to(x86, target_is_directory=True)
+    except OSError:
+        return None
+    _SHIM_DIR = d
+    return d
+
+
 def oracle_include_flags(src: Path) -> list[str]:
     """Include path for compiling a source and its staged port side by side.
 
@@ -45,12 +82,31 @@ def oracle_include_flags(src: Path) -> list[str]:
     the original rather than against a missing header.
     """
     flags = ["-Wno-everything", f"-I{src.parent}"]
-    for extra in (
+    shim = _machine_include_shim()
+    if shim is not None:
+        flags.append(f"-idirafter{shim}")
+    libc = ROOT / "hbsd" / "src" / "lib" / "libc"
+    extras = [
         ROOT / "hbsd" / "src" / "sys",
-        ROOT / "hbsd" / "src" / "lib" / "libc" / "include",
-    ):
+        libc / "include",
+        # <_fpmath.h> and union IEEEl2bits are per-architecture.
+        libc / _ARCH_DIR,
+    ]
+    # msun keeps its long-double helpers (invtrig.h) in a sibling of src/.
+    if "lib/msun/" in src.as_posix():
+        msun = ROOT / "hbsd" / "src" / "lib" / "msun"
+        extras += [msun / "src", msun / "ld80", msun / "ld128"]
+    # -idirafter, not -I: these directories go *after* the system ones.
+    # With -I, libstdc++'s <cstdlib> does #include_next <stdlib.h> and lands
+    # on FreeBSD's instead of glibc's, so `using ::atoll;` fails and every
+    # C++ side died with "no member named 'atoll' in namespace '__gnu_cxx'".
+    # Appending instead lets glibc win the standard headers and leaves these
+    # to supply only what it has no answer for - machine/, sys/_types.h,
+    # _fpmath.h, invtrig.h. This is the shadowing trap the Linux build
+    # exception list warns about, avoided rather than walked into.
+    for extra in extras:
         if extra.is_dir():
-            flags.append(f"-I{extra}")
+            flags.append(f"-idirafter{extra}")
     return flags
 
 
