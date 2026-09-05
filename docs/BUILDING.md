@@ -3,6 +3,26 @@
 `hbsd/src` is a complete HardenedBSD source tree — 107,357 files, 31,887 of
 them under `sys/`, with the HardenedBSD kernel configs intact. It builds.
 
+## Status
+
+```
+>>> Kernel(s)  HARDENEDBSD-MINIMAL built in 525 seconds, ncpu: 4, make -j4
+```
+
+`pbsd-boot-image.yml`, run 3, 2026-09-05. The first kernel this repository
+has produced. It took four attempts and each one failed on a different piece
+of the flat import:
+
+| Attempt | Failed on |
+|---|---|
+| 1 | `contrib/bmake/configure: Permission denied` — no executable bits |
+| 2 | `realpath: sys/i386/include: No such file` — `kmod.mk` symlinks i386 for amd64 |
+| 3 | `don't know how to make sys/dev/hpt27xx/amd64-elf.hpt27xx_lib.o` — eaten by `*.o` |
+| 4 | built |
+
+`world` is the next rung and is hours rather than minutes. Nothing has
+produced a bootable image yet.
+
 ## Before anything else
 
 The tree was committed with **every file mode 100644**. FreeBSD's build runs
