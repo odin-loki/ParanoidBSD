@@ -245,4 +245,23 @@ for r in d["records"]:
         print("  flags used:", " ".join(tf))
 if not seen:
     print("  no target flags resolved - check tools/pbsd_passes/target_flags.py")
+
+# Name them.
+#
+# Every number this job prints is a count, and a count cannot be acted on.
+# docs/migration/COMMITTING_PORTS.md says what it takes to land a port and
+# then cannot say WHICH port, because 88 of 120 does not name one; the first
+# real port was going to be picked by guessing which file the 88 contained.
+#
+# This is the committable set and the definition is deliberately strict:
+# IR-equal AND ABI-equal AND measured under the flags lib/msun is actually
+# built with. Anything short of all three is a port that verifies against a
+# build configuration nothing ships, which is the mistake the floor comment
+# already records once.
+ready = sorted(r.get("source") or "?" for r in d["records"]
+               if (r.get("ir") or {}).get("equal")
+               and (r.get("ir") or {}).get("abi_equal"))
+print(f"\ncommittable under target flags: {len(ready)}")
+for s in ready:
+    print(f"  {s}")
 PY2
