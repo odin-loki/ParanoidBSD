@@ -88,8 +88,8 @@ editing six `sys/conf/files.<arch>`, and `uiomove_fromphys` is a hot VM path
 where a mistake is data corruption rather than a compile error. The six-arch
 matrix is green now, so a build failure after such a change would be
 attributable — but the matrix proves it compiles, not that it runs, and
-PBSD's kernel reaches `exec /sbin/init` and no further (run 20). That is
-the gate on this one.
+PBSD's kernel mounts root and goes no further (run 20; run 21 is the one
+that shows it reaching the exec). That is the gate on this one.
 
 ## What is generated, and does not count
 
