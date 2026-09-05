@@ -31,10 +31,19 @@ arm64) TARGET_ARCH=aarch64 ;;
 *)     TARGET_ARCH="$TARGET" ;;
 esac
 
+# `make -f Makefile.inc1 -V` errors for cross targets and `| tail -1` then
+# reports "make: stopped in ..." as if it were a value. Query in a directory
+# that includes the right makefiles, and treat a non-zero exit as unknown
+# rather than as an answer.
 ask() {
-    ( cd "$1" && make -f "$2" -V "$3" \
+    out="$( ( cd "$1" && make -f "$2" -V "$3" \
         TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
-        ${SRCCONF:+SRCCONF="$SRCCONF"} 2>/dev/null ) | tail -1
+        MACHINE="$TARGET" MACHINE_ARCH="$TARGET_ARCH" \
+        ${SRCCONF:+SRCCONF="$SRCCONF"} 2>/dev/null ) )" || out=""
+    case "$out" in
+    *"make: stopped"*|*"error"*|"") echo "?" ;;
+    *) printf '%s\n' "$out" | tail -1 ;;
+    esac
 }
 
 echo "== C++ configuration, $TARGET/$TARGET_ARCH"
