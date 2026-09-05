@@ -450,8 +450,16 @@ class PromoteMallocRaiiPass(Pass):
         if not work:
             return PassResult(text=text, refusals=refusals, edits=edits)
 
+        applied_from = len(text) + 1
         for start, end, payload in sorted(work, key=lambda x: x[0], reverse=True):
+            # Right to left keeps offsets ahead of the cursor valid, but two
+            # entries can still claim overlapping spans. Applying both splices
+            # into text another edit already replaced, so the later one wins
+            # and the overlap is dropped: a lost rewrite, not a mangled file.
+            if end > applied_from:
+                continue
             text = text[:start] + payload + text[end:]
+            applied_from = start
         if "#include <memory>" not in text:
             m = list(re.finditer(r"(?m)^#include\b.*$", text))
             hdr = "#include <memory>\n#include <cstdlib>\n"
@@ -585,11 +593,22 @@ class PromoteSpanSignaturePass(Pass):
                 # Non-static: definition rewritten; callers out of scope for staged ports.
                 _propose_ms(unit, "CALL_SITE_SPAN", {"line": unit.line_col(m.start())[0], "snippet": fname})
 
+        # Overlap guard, as above. _rewrite_static_calls ends a call at the
+        # first ")" rather than the balanced one, so a nested argument like
+        # record_buf(&val, sizeof(val)) yields a span ending inside sizeof(.
+        # That wrong span used to overlap the next edit and produce output
+        # like `errx(1, "...", str)record_buf(std::span(reco, _buf(&val,))`.
+        # Dropping the overlap costs a rewrite; applying it corrupts the file.
+        applied_from = len(text) + 1
         for kind, start, end, payload in sorted(work, key=lambda x: x[1], reverse=True):
+            span_end = end if kind == "repl" else start
+            if span_end > applied_from:
+                continue
             if kind == "repl":
                 text = text[:start] + payload + text[end:]
             else:
                 text = text[:start] + payload + text[start:]
+            applied_from = start
 
         if need_span and "#include <span>" not in text:
             hm = list(re.finditer(r"(?m)^#include\b.*$", text))
@@ -630,6 +649,15 @@ class PromoteSpanSignaturePass(Pass):
             if args.strip().startswith("std::span"):
                 continue
             a0, a1 = parts[0], parts[1]
+            # `close` is the first ")", not the balanced one, so a cast or a
+            # nested call in the arguments truncates the span and the closing
+            # parens land mid-expression. Refuse rather than emit that.
+            if any(a.count("(") != a.count(")") for a in parts):
+                refusals.append(
+                    _ref(unit, self.name, "CALL_SITE_SPAN_UNBALANCED",
+                         cm.start(), text[cm.start() : close + 1][:40])
+                )
+                continue
             new_args = f"std::span({a0}, {a1})"
             if len(parts) > 2:
                 new_args += ", " + ", ".join(parts[2:])

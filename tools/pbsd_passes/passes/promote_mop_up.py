@@ -66,8 +66,18 @@ class MemcpyByteSpanPass(Pass):
             else:
                 text = hdr + text
 
-        # Remaining BIT_CAST only for *(T*)& patterns not yet rewritten
-        for m in re.finditer(r"\*\s*\(\s*([\w:]+)\s*\*\s*\)\s*&(\w+)", unit.mask_strings_comments()):
+        # Remaining BIT_CAST only for *(T*)& patterns not yet rewritten.
+        #
+        # Reversed, and the header hoisted out of the loop. finditer runs
+        # over a snapshot of the original text, so its offsets are only
+        # valid against that snapshot; splicing left to right invalidated
+        # every later match, and prepending the include mid-loop shifted
+        # them another 19 characters on top. Right to left leaves the
+        # offsets ahead of the cursor untouched.
+        needs_bit = False
+        for m in list(
+            re.finditer(r"\*\s*\(\s*([\w:]+)\s*\*\s*\)\s*&(\w+)", unit.mask_strings_comments())
+        )[::-1]:
             typ, src = m.group(1), m.group(2)
             if typ in ("void", "char", "unsigned"):
                 refusals.append(_ref(unit, self.name, "BIT_CAST_CANDIDATE", m.start(), m.group(0)[:40]))
@@ -76,8 +86,9 @@ class MemcpyByteSpanPass(Pass):
             new = f"std::bit_cast<{typ}>({src})"
             text = text[: m.start()] + new + text[m.end() :]
             edits.append(Edit(self.name, "bit_cast", unit.line_col(m.start())[0], old[:40], new[:40]))
-            if "#include <bit>" not in text:
-                text = "#include <bit>\n" + text
+            needs_bit = True
+        if needs_bit and "#include <bit>" not in text:
+            text = "#include <bit>\n" + text
 
         return PassResult(text=text, refusals=refusals, edits=edits)
 
@@ -168,18 +179,24 @@ class SpanCallSiteRewritePass(Pass):
         ):
             span_fns.add(m.group(1))
 
-        for fname in span_fns:
+        # Plan every rewrite against the original text, then apply them
+        # right to left.
+        #
+        # This loop used to splice as it went, while finditer walked a
+        # snapshot of the unmodified text. The first replacement of a
+        # different length invalidated every offset after it, so subsequent
+        # splices cut into the middle of unrelated code and produced things
+        # like `handler = &jmplsetvar(std::span(etva, name, val,))flags);`.
+        # span_fns is a set, so which corruption you got depended on the
+        # hash seed - the non-determinism was the symptom, not the bug.
+        masked = unit.mask_strings_comments()
+        planned: list[tuple[int, int, str, str, str]] = []
+        for fname in sorted(span_fns):
             # call sites: fname(arg1, arg2)
             for m in re.finditer(
                 rf"\b{re.escape(fname)}\s*\(\s*([^,]+)\s*,\s*([^)]+)\)",
-                unit.mask_strings_comments(),
+                masked,
             ):
-                # skip definition
-                line_start = text.rfind("\n", 0, m.start()) + 1
-                prefix = text[line_start : m.start()]
-                if re.search(r"\b(?:static|inline|const|unsigned|int|void|char|size_t)\b", prefix):
-                    # might still be a call
-                    pass
                 # skip if already span
                 args = text[m.start(1) : m.end(2)]
                 if "std::span" in args or "span<" in args:
@@ -189,12 +206,44 @@ class SpanCallSiteRewritePass(Pass):
                 # skip if looks like definition params with types
                 if re.search(r"\b(?:int|char|void|size_t|struct)\b", a1):
                     continue
+                # The argument pattern stops at the first ')', so a cast in
+                # the arguments ends the match early and the replacement's
+                # closing parens land mid-expression:
+                #   lpd_gettime(std::span(&a, b, (size_t))TIMESTR_SIZE);
+                # Refuse anything whose captures are not balanced rather
+                # than emit that. A rewrite declined is recoverable; a
+                # corrupted one is not.
+                if any(a.count("(") != a.count(")") for a in (a1, a2)):
+                    refusals.append(
+                        _ref(
+                            unit,
+                            self.name,
+                            "CALL_SITE_SPAN_UNBALANCED",
+                            m.start(),
+                            m.group(0)[:40],
+                        )
+                    )
+                    continue
                 new_call = f"{fname}(std::span({a1}, {a2}))"
-                old = text[m.start() : m.end()]
-                text = text[: m.start()] + new_call + text[m.end() :]
-                edits.append(
-                    Edit(self.name, f"call-site span {fname}", unit.line_col(m.start())[0], old[:50], new_call[:50])
+                planned.append(
+                    (m.start(), m.end(), new_call, text[m.start() : m.end()], fname)
                 )
+
+        # Right to left keeps the offsets ahead of the cursor valid. Two
+        # patterns can match overlapping spans, and applying both would
+        # corrupt the text just as surely, so the later one wins and the
+        # overlap is dropped.
+        planned.sort(key=lambda item: (item[0], item[1]), reverse=True)
+        applied_from = len(text) + 1
+        for start, end, new_call, old_text, fname in planned:
+            if end > applied_from:
+                continue
+            text = text[:start] + new_call + text[end:]
+            applied_from = start
+            edits.append(
+                Edit(self.name, f"call-site span {fname}", unit.line_col(start)[0], old_text[:50], new_call[:50])
+            )
+        edits.reverse()  # report in line order, not application order
 
         if edits and "#include <span>" not in text:
             text = "#include <span>\n" + text
