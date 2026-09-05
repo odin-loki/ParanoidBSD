@@ -65,6 +65,20 @@ WITH_SAFESTACK=YES
 # the part of this most likely to fail, and the matrix is where that shows up.
 WITH_CFI=YES
 
+# arm64 branch protection: BTI plus pointer authentication.
+# bsd.opts.mk:91 puts BRANCH_PROTECTION in BROKEN_OPTIONS for anything that is
+# not aarch64, so this is safe to state unconditionally - it turns on where the
+# hardware exists and stays off everywhere else, which is the correct kind of
+# architecture-specific. bsd.lib.mk:115 emits -mbranch-protection=standard.
+WITH_BRANCH_PROTECTION=YES
+
+# Already on by default, and listed here so it is not mistaken for missing:
+#   MK_SSP               bsd.opts.mk __DEFAULT_YES_OPTIONS. Brings
+#                        -fstack-protector-strong, -fstack-clash-protection
+#                        where the compiler supports it (bsd.sys.mk:312), and
+#                        FORTIFY_SOURCE=2.
+#   MK_REPRODUCIBLE_BUILD  also default yes.
+
 # RETPOLINE is deliberately NOT set here. It is -mretpoline, an x86
 # microarchitectural mitigation for Spectre v2; clang rejects it on other
 # targets, and the equivalent elsewhere is different hardware (arm64's BTI and

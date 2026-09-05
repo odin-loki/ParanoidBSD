@@ -27,9 +27,9 @@ arm64) TARGET_ARCH=aarch64 ;;
 esac
 
 # Options that carry hardening. REQUIRED ones fail the check when off.
-REQUIRED="PIE RELRO BIND_NOW"
-EXPECTED="SAFESTACK RETPOLINE CFI"
-INFO="ASAN UBSAN LTOLIB SSP"
+REQUIRED="PIE RELRO BIND_NOW SSP"
+EXPECTED="SAFESTACK CFI BRANCH_PROTECTION RETPOLINE"
+INFO="REPRODUCIBLE_BUILD LTOLIB ASAN UBSAN"
 
 ask() {
     ( cd "$SRC" && make -V "MK_$1" \
@@ -47,19 +47,22 @@ echo
 fail=0
 for o in $REQUIRED; do
     v="$(ask "$o")"
-    printf "  %-12s %-4s  (required)\n" "$o" "${v:-?}"
+    printf "  %-18s %-4s  (required)\n" "$o" "${v:-?}"
     [ "$v" = "yes" ] || fail=$((fail + 1))
 done
+# Expected on where the architecture supports it. RETPOLINE is x86-only and
+# BRANCH_PROTECTION is aarch64-only by hardware, so OFF is the right answer
+# for those elsewhere - it is printed, not judged.
 for o in $EXPECTED; do
     v="$(ask "$o")"
     note=""
-    [ "$v" = "no" ] && note="  <- OFF"
-    printf "  %-12s %-4s  (expected on where the architecture supports it)%s\n" \
+    [ "$v" = "no" ] && note="  <- off"
+    printf "  %-18s %-4s  (expected where the architecture supports it)%s\n" \
         "$o" "${v:-?}" "$note"
 done
 for o in $INFO; do
     v="$(ask "$o")"
-    printf "  %-12s %-4s\n" "$o" "${v:-?}"
+    printf "  %-18s %-4s\n" "$o" "${v:-?}"
 done
 
 echo
