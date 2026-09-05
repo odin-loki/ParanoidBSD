@@ -85,6 +85,13 @@ def normalize_ir(ir: str) -> str:
     # must not do. Same for the C tentative-definition `common` linkage, which
     # C++ has no equivalent of.
     text = re.sub(r"\bnoundef\s+", "", text)
+    # `mustprogress` is on every C++ function and no C one: it is the C++11
+    # forward-progress guarantee, a property of the language rather than of
+    # anything the port did. Same class as noundef above. With -fno-exceptions
+    # supplying `nounwind`, this is the last purely-dialectal attribute left,
+    # and stripping it makes byte-identical code compare equal - verified on
+    # a two-function case where neither fix alone was enough.
+    text = re.sub(r"\bmustprogress\s+", "", text)
     text = re.sub(r"\bcommon\s+(?=global\b)", "", text)
     text = re.sub(r"@(_Z[A-Za-z0-9_]+)",
                   lambda m: "@" + demangle_symbol(m.group(1)), text)
@@ -137,7 +144,20 @@ def compare_ir(
             clang, c_src, c_ll, ["-x", "c", "-std=c17", *include_flags]
         )
         cxx_ok, cxx_err = emit_llvm(
-            clangxx, cxx_src, cxx_ll, ["-x", "c++", "-std=c++23", *include_flags]
+            clangxx, cxx_src, cxx_ll,
+            # -fno-exceptions is not a convenience. Without it clang gives C
+            # functions `nounwind` and C++ functions nothing, because C++
+            # functions may throw - so every single function read as a
+            # mismatch on its attribute line. Worse, the C module carries an
+            # `attributes #N = { nounwind }` group the C++ one lacks, which
+            # shifts every later group number and makes identical call sites
+            # differ by `#7` against `#8`.
+            #
+            # It is also what the code will actually be built with: kern.mk
+            # compiles the port freestanding, no exceptions, no RTTI. The
+            # oracle was comparing against a configuration nothing ships.
+            ["-x", "c++", "-std=c++23", "-fno-exceptions", "-fno-rtti",
+             *include_flags],
         )
         if not c_ok or not cxx_ok:
             return {
