@@ -20,8 +20,8 @@ of the flat import:
 | 3 | `don't know how to make sys/dev/hpt27xx/amd64-elf.hpt27xx_lib.o` — eaten by `*.o` |
 | 4 | built |
 
-`world` is the next rung and is hours rather than minutes. Nothing has
-produced a bootable image yet.
+`world` is the next rung and is hours rather than minutes. (Superseded:
+run 20 built a memstick and booted its kernel — see below.)
 
 ## The ladder now ends in a boot
 
@@ -107,8 +107,9 @@ drawing itself is not a boot*. A synthetic full boot still passes, a
 kernel-that-hangs is reported as a hang, and a panic still wins over
 everything.
 
-**So: PBSD's loader runs.** That is further than any previous run got and it
-is not a boot. Whether the kernel starts is still open.
+**So: PBSD's loader runs.** That was further than any previous run had got
+and it is not a boot. (Whether the kernel starts was open at this point;
+run 20, below, answers it.)
 
 ### The console the loader hands the kernel
 
@@ -151,10 +152,71 @@ command, or a fresh `OK ` prompt. Without one it boots anyway and the
 verdict says the console was *not confirmed* and that this is not evidence
 about the kernel either way.
 
-**Still open, and now for a reason that is understood.** PBSD's kernel has
-never been asked to start over a console anyone was watching. Runs 14 and
-15 failed on the image path, run 16 on the UART. The next memstick run is
-the first that can answer the question.
+### Run 20: the kernel boots
+
+```
+---<<BOOT>>---
+Copyright (c) 2013-2025 The HardenedBSD Project.
+FreeBSD 15.1-STABLE-HBSD  HARDENEDBSD amd64
+clang version 21.1.8
+HardenedBSD: initialize and check features
+             (__HardenedBSD_version 1500001 __FreeBSD_version 1501501).
+CPU: QEMU Virtual CPU version 2.5+ (2300.36-MHz K8-class CPU)
+real memory  = 2147483648 (2048 MB)
+avail memory = 2039971840 (1945 MB)
+...
+vtblk0: <VirtIO Block Adapter> on virtio_pci0
+vtblk0: 1122MB (2298747 512 byte sectors)
+uart0: <16550 or compatible> port 0x3f8-0x3ff irq 4 flags 0x10 on acpi0
+uart0: console (115200,n,8,1)
+Trying to mount root from ufs:/dev/ufs/HardenedBSD_Install [ro,noatime]...
+Dual Console: Serial Primary, Video Secondary
+```
+
+**PBSD's kernel starts.** It initialises HardenedBSD's feature checks,
+probes the virtio disk the image is on, takes the serial port as its
+console, and mounts root.
+
+Then six minutes and fifty-one seconds of nothing, and the run times out
+at 420s. No panic, no trap, no `mountroot>`.
+
+### Where it stopped, exactly
+
+The last line is not a guess about how far it got. `Dual Console: Serial
+Primary, Video Secondary` is printed by `start_init()` in
+`sys/kern/init_main.c:765`, and the lines around it are:
+
+```c
+	vfs_mountroot();
+	/* Wipe GELI passphrase from the environment. */
+	kern_unsetenv("kern.geom.eli.passphrase");
+	/* For Multicons, report which console is primary to both */
+	if (boothowto & RB_MULTIPLE) {
+		if (boothowto & RB_SERIAL)
+			printf("Dual Console: Serial Primary, Video Secondary
+");
+	...
+	while ((path = strsep(&tmp_init_path, ":")) != NULL) {
+		...
+		/* Now try to exec the program. */
+```
+
+So `vfs_mountroot()` **returned** — the root filesystem is mounted — and
+the next thing the kernel does is exec `/sbin/init`. That is where it
+stopped.
+
+(The message itself only prints because the console steering sets
+`RB_MULTIPLE`; an unsteered boot would go straight from mountroot to the
+exec loop. It is a marker of the steering, not a symptom.)
+
+**So: the kernel boots and root mounts, and the first userland process
+produces nothing.** Whether `init` is failing to exec, or execs and hangs
+before printing, is the next question and is not answered yet.
+
+`boot_test.py --loader-set` exists for asking it: `boot_verbose=YES` makes
+`start_init()` print `start_init: trying /sbin/init` before each attempt,
+and `boot_single=YES` makes init exec a shell instead of running `rc`, so
+a prompt would place the fault in `rc` rather than in `init`.
 
 ## Asking the system about itself
 

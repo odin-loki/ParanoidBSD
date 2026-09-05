@@ -223,7 +223,8 @@ def _send(proc, text, delay: float = TYPE_DELAY) -> bool:
         return False
 
 
-def _steer_loader(proc, log, console: str, timeout: float):
+def _steer_loader(proc, log, console: str, timeout: float,
+                  extra: list[str] | None = None):
     """At the loader prompt: set the console, confirm it, and boot.
 
     Returns (confirmed, note). `confirmed` is True only when the loader
@@ -233,6 +234,18 @@ def _steer_loader(proc, log, console: str, timeout: float):
     memstick run came to report "it is the kernel not printing" about a
     kernel that had never been asked to start.
     """
+    # Anything else the caller wants set goes first, so the console command
+    # is the last thing sent and its receipt is unambiguous.
+    for spec in extra or []:
+        name, _, value = spec.partition("=")
+        line = f'set {name.strip()}="{value.strip()}"'
+        print(f"  [loader: {line}]")
+        if not _send(proc, line + "\n"):
+            return False, "the console went away while typing"
+        # Let the loader digest it; the receipt that matters is the console's.
+        time.sleep(0.5)
+        _drain(proc, log)
+
     cmd = f'set console="{console}"'
     if not _send(proc, cmd + "\n"):
         return False, "the console went away while typing"
@@ -362,6 +375,14 @@ def main() -> int:
                          "menu's own default is Video, which sends every "
                          "line the kernel prints to a VGA device nobody is "
                          "looking at. Empty string to leave the menu alone.")
+    ap.add_argument("--loader-set", action="append", default=[],
+                    metavar="NAME=VALUE",
+                    help="an extra `set NAME=\"VALUE\"` at the loader prompt, "
+                         "before boot. Repeatable. boot_verbose=YES makes "
+                         "start_init() name each init it tries; "
+                         "boot_single=YES makes init exec a shell instead of "
+                         "running rc, which separates a broken init from a "
+                         "broken rc.")
     ap.add_argument("--loader-timeout", type=int, default=45,
                     help="seconds to wait for the loader prompt after asking "
                          "for it, before giving up and booting as-is")
@@ -512,7 +533,8 @@ def main() -> int:
                     left = args.timeout - (time.time() - started)
                     console_ok, console_note = _steer_loader(
                         proc, log, args.loader_console,
-                        max(2.0, min(args.loader_timeout, left - 5)))
+                        max(2.0, min(args.loader_timeout, left - 5)),
+                        extra=args.loader_set)
                     print(f"  [{console_note}]\n")
                     loader_stage = 2
                     buf = b""

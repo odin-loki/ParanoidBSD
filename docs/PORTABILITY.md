@@ -87,8 +87,9 @@ already in this document.
 editing six `sys/conf/files.<arch>`, and `uiomove_fromphys` is a hot VM path
 where a mistake is data corruption rather than a compile error. The six-arch
 matrix is green now, so a build failure after such a change would be
-attributable — but the matrix proves it compiles, not that it runs, and PBSD
-has still never booted. That is the gate on this one.
+attributable — but the matrix proves it compiles, not that it runs, and
+PBSD's kernel reaches `exec /sbin/init` and no further (run 20). That is
+the gate on this one.
 
 ## What is generated, and does not count
 
@@ -308,26 +309,46 @@ the identical error on the tree before it. Both are the SafeStack runtime,
 and the probe added to `build_boot_image.sh` is what stops a third run
 finding it a third time.
 
-### It has run now, three times, and has not reached the kernel
+### It has run now, and the kernel boots
 
-| run | stage | how far | why it stopped |
+| run | stage | how far | what stopped it |
 |---|---|---|---|
 | 14 | `vm` | no image | `vm-image` is a no-op stamp without `WITH_VMIMAGES`, and the name is `vm.ufs.raw`, not `vm.raw` |
 | 15 | `memstick` | loader | reported `OK booted` in four seconds by matching the boot **menu title** — a false positive, since corrected |
 | 16 | `memstick` | loader | the console command was truncated at fifteen characters by a UART FIFO overrun; `boot` was never sent |
+| 19 | `memstick` | build | the port-built gate tripped on vendor lldb C++; killed before the boot test |
+| 20 | `memstick` | **kernel** | boots, mounts root, then silence at `exec /sbin/init` |
 
-Every one of the three stopped for a reason in the harness rather than in
-the tree. Run 16 is the closest: the image built, the loader ran, the menu
-was answered, the loader dropped to its prompt, and then forty characters
-of `set console="comconsole,vidconsole"` met a sixteen-byte FIFO with no
-flow control and fifteen of them arrived.
+Runs 14 to 19 all stopped in the harness rather than in the tree. Run 20
+did not:
 
-**So there is still no answer to which of `boot_test.py`'s outcomes PBSD
-hits.** What has been established is narrower and worth stating exactly:
-the loader runs, reads `loader.conf`, and accepts input. The kernel has
-never been asked to start over a console anyone was watching, so nothing
-here is evidence for or against it starting.
+```
+FreeBSD 15.1-STABLE-HBSD  HARDENEDBSD amd64
+clang version 21.1.8
+HardenedBSD: initialize and check features
+             (__HardenedBSD_version 1500001 __FreeBSD_version 1501501).
+vtblk0: <VirtIO Block Adapter> on virtio_pci0
+uart0: console (115200,n,8,1)
+Trying to mount root from ufs:/dev/ufs/HardenedBSD_Install [ro,noatime]...
+Dual Console: Serial Primary, Video Secondary
+```
 
-See `docs/BUILDING.md` for the console mechanics and the two fixes (type
-one byte at a time; require a receipt before claiming the console was
-set).
+**The kernel starts, initialises HardenedBSD's feature checks, probes the
+disk, and mounts root.** Then nothing for six minutes fifty-one seconds —
+no panic, no trap, no `mountroot>`.
+
+The stopping point is exact rather than inferred. That last line comes
+from `start_init()` at `sys/kern/init_main.c:765`, which sits *after*
+`vfs_mountroot()` returns and *before* the loop that execs `/sbin/init`.
+So root is mounted and the first userland process is what produces
+nothing.
+
+Whether `init` fails to exec or execs and hangs is not answered.
+`boot_test.py --loader-set` is how to ask: `boot_verbose=YES` makes
+`start_init()` print each path it tries, and `boot_single=YES` makes init
+exec a shell rather than running `rc`, which separates a broken `init`
+from a broken `rc`.
+
+See `docs/BUILDING.md` for the console mechanics and the fixes that made
+this run possible (type one byte at a time; require a receipt before
+claiming the console was set).
