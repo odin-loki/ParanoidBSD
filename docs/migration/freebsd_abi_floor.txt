@@ -20,4 +20,12 @@
 # __BEGIN_DECLS, so under C++ they get C++ linkage. Those ports are correct
 # and unshippable, which is exactly the distinction this floor exists to
 # make.
-74
+#
+# Run 13 (commit fc34304a3, same host and scope): 88, equal to the IR
+# floor. The gap closed entirely - adding __BEGIN_DECLS to
+# lib/msun/src/math_private.h converted all 14 at once, which is what a
+# single missing linkage guard being the whole cause looks like.
+#
+# 88 of 120 ports are now both semantically identical to their C original
+# and exporting the same symbols. That is the committable set.
+88
