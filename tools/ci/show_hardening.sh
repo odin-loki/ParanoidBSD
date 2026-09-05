@@ -31,8 +31,13 @@ REQUIRED="PIE RELRO BIND_NOW SSP"
 EXPECTED="SAFESTACK CFI BRANCH_PROTECTION RETPOLINE"
 INFO="REPRODUCIBLE_BUILD LTOLIB ASAN UBSAN"
 
+# -f Makefile.inc1, not the top-level Makefile. The top-level one is a wrapper
+# and does not include src.opts.mk, so MK_PIE and every other src.opts option
+# came back empty while MK_SSP - which comes from bsd.opts.mk via sys.mk -
+# answered fine. That looked like "three required options are off" and was
+# really "this script asked the wrong makefile".
 ask() {
-    ( cd "$SRC" && make -V "MK_$1" \
+    ( cd "$SRC" && make -f Makefile.inc1 -V "MK_$1" \
         TARGET="$TARGET" TARGET_ARCH="$TARGET_ARCH" \
         ${SRCCONF:+SRCCONF="$SRCCONF"} \
         ${CROSS_TOOLCHAIN:+CROSS_TOOLCHAIN="$CROSS_TOOLCHAIN"} \
@@ -48,7 +53,13 @@ fail=0
 for o in $REQUIRED; do
     v="$(ask "$o")"
     printf "  %-18s %-4s  (required)\n" "$o" "${v:-?}"
-    [ "$v" = "yes" ] || fail=$((fail + 1))
+    if [ -z "$v" ]; then
+        echo "       ^ empty: make could not answer, which is a bug in this"
+        echo "         script or a broken tree, not a disabled option."
+        fail=$((fail + 1))
+    elif [ "$v" != "yes" ]; then
+        fail=$((fail + 1))
+    fi
 done
 # Expected on where the architecture supports it. RETPOLINE is x86-only and
 # BRANCH_PROTECTION is aarch64-only by hardware, so OFF is the right answer
