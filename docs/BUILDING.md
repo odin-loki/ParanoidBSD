@@ -498,15 +498,94 @@ delivery, and one of them has already been caught not arriving.
 
 So run 30 puts all three in `loader.conf` together — `boot_single`,
 `boot_verbose`, `init_path` — and nothing at the loader prompt but the
-console. Three readings from one boot:
+console.
 
-* does `start_init: trying` print at all? `boot_verbose` comes only from
-  the file this time, so that answers whether `loader.conf` reaches the
-  loader environment.
-* does it say `/rescue/sh` or `/sbin/init`? That is `kern_getenv()`, for
-  the fifth time and by the only means left.
-* does the single-user prompt appear? Run 21 asked this through the
-  prompt; this asks it through the file.
+### Run 30: the cleanest of the thirty
+
+The file went in and was read back:
+
+```
+== appending to /boot/loader.conf in the image
+   boot_single="YES"
+   boot_verbose="YES"
+   init_path="/rescue/sh:/sbin/init"
+   MBR: descending into slice md0s2
+   UFS filesystem: /dev/md0s2a
+   /boot/loader.conf now ends:
+     kernels_autodetect="NO"
+     loader_menu_multi_user_prompt="Installer"
+     boot_single="YES"
+     boot_verbose="YES"
+     init_path="/rescue/sh:/sbin/init"
+```
+
+and `LOADER_SET` was empty — the only thing typed at the prompt was
+`set console="comconsole,vidconsole"`. Then:
+
+```
+Dual Console: Serial Primary, Video Secondary
+start_init: trying /sbin/init
+  [nothing for 25s; poking the console (1/3)]
+  ...
+    loader commands:
+      ok   set console="comconsole,vidconsole"   (confirmed by echo)
+    phases reached: loader, kernel
+```
+
+Three things, and the third is the one worth having.
+
+**`loader.conf` does reach the kernel.** `start_init: trying` prints
+under nothing but `bootverbose`, and this run set `boot_verbose` only in
+the file. Run 27 could not tell "the file is not read" from "`init_path`
+does not travel"; that is now settled, and it is the first of the two.
+
+**`init_path` from `loader.conf` does not reach `kern_getenv()`.**
+`/sbin/init`, with the confound gone: one file, one boot, delivering
+`boot_verbose` and not delivering `init_path`. Fifth attempt, fifth
+failure, and the loader's Lua is not the reason — the tree's own Lua
+5.4.8, built from `contrib/lua/src`, parses
+`init_path="/rescue/sh:/sbin/init"` with `config.lua`'s actual pattern
+into key `init_path` and value `/rescue/sh:/sbin/init`. The fault is
+downstream of the loader environment.
+
+**`boot_single` was in that same file and no single-user banner
+appeared.** This is where run 30 beats run 21. `boot_env_to_howto()`
+walks `howto_names` in one loop, over one environment, in one call:
+`boot_verbose` and `boot_single` are read three entries apart. There is
+no mechanism by which one is honoured and the other is not. So
+`RB_SINGLE` was in `boothowto`, `start_init()` added `-s` to init's
+argv, and init printed nothing — where `sbin/init/Makefile` builds with
+`-DDEBUGSHELL -DSECURE` and single-user init prints `Enter full pathname
+of shell or RETURN for /bin/sh:` before it execs anything.
+
+Run 21 asked the same question through the loader prompt and an echoed
+`set` is not proof of anything, as run 25 demonstrated. Run 30 asks it
+through the file, alongside a variable that demonstrably arrived by the
+same road in the same boot. That is as close to proof as this can get
+without looking inside the kernel.
+
+### Which is exactly what to do next
+
+The two readings left are `kern_execve()` never returning, and init
+running and unable to write. Nothing in the boot log can separate them,
+because both look like silence.
+
+The kernel can be asked directly. `sys/amd64/conf/GENERIC` has `options
+KDB`; `sys/conf/std.debug`, which amd64's `HARDENEDBSD` includes, has
+`options DDB` and `options ALT_BREAK_TO_DEBUGGER`. That last one is a
+three-byte sequence typed on the serial console —
+`sys/kern/subr_kdb.c:327` gives it as `CR`, `~`, `^B`, or
+`\r~\x02` — and it drops the running kernel into `db>`.
+
+At that prompt, `ps` says whether a process 1 exists and what it is
+waiting on, and `bt` says where the thread is. If init is a userland
+process, the exec worked and the fault is that it cannot write to the
+console. If the thread is inside `kern_execve`, it is the exec.
+
+Either answer ends the question. And it needs no `init_path`, no
+`kern_getenv()`, and no mechanism that has not already been demonstrated
+in this very run — `boot_test.py` already types on that console one byte
+at a time, which is how the three pokes are sent.
 
 ## Asking the system about itself
 

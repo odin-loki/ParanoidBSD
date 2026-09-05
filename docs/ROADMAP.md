@@ -81,10 +81,16 @@ first. Nothing below in this section should land before it runs once.
       so instead of asking for a mitigation that cannot link. Closing the gap
       means building compiler-rt for the other three, which is a real port,
       not a configuration line.
-- [ ] **The three `lib/libc` ports that are IR-equal and not ABI-equal.**
-      37 against 34, unchanged by the four header guards already added. The
-      oracle now names them and the divergent symbols; the fix is one
-      `__BEGIN_DECLS` per header once they are named.
+- [ ] **The `lib/libc` ports that are IR-equal and not ABI-equal.** Was
+      "37 against 34" when the scope was capped at `--ir-limit 120`. At
+      1500 it is 123 IR-equal of 574, and the gap was 38 — of which **25
+      were `lib/libc/quad`**, closed by one `__BEGIN_DECLS` and the
+      eighteen prototypes that header was missing (committable 85 → 110).
+      Thirteen remain, each its own header: `arm/gen/fabs.c`,
+      `gen/dirfd.c`, `gen/dup3.c`, `nameser/ns_netint.c`, powerpc64's
+      `strcpy` and `strncpy`, `rpc/des_soft.c`, `rpc/rpcsec_gss_stub.c`,
+      `stdlib`'s `hdestroy_r`, `insque` and `remque`,
+      `string/memset_explicit.c`, `sys/pipe.c`.
 - [ ] **Kernel-config parity beyond `HARDENEDBSD`.** Measured, not yet
       fixed. `check_kernconf_parity.py --all-configs` resolves all 21 and
       asks the question that applies to a single-architecture config — does

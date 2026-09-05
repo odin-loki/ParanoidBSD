@@ -401,3 +401,51 @@ So step 3 above gains a clause, and there is now a gate for it:
 Run against the tree at the broken commit it reports seventeen findings
 naming all five files and every includer, and exits 1; against the
 reverted tree it exits 0. Ninety-five of the hundred stand.
+
+
+## lib/libc, measured whole, and one header worth twenty-five ports
+
+`lib/libc` had been reported at `--ir-limit 120` against 1,220 files
+since the scope was added, which made "37 of 120" a statement about the
+first tenth of the library in discovery order. At 1500 it is **123 of
+574**, and the committable list is long enough to work from.
+
+Widening it also changed what the gap is made of. Of the 38 ports that
+were IR-equal and not ABI-equal, **25 were one directory**:
+
+```
+quad/adddi3.c   only in C: __adddi3   only in C++: _Z8__adddi3ll
+quad/anddi3.c   only in C: __anddi3   only in C++: _Z8__anddi3ll
+... 23 more, every one the same shape
+```
+
+`lib/libc/quad/quad.h` declared seven of the twenty-five functions,
+outside any linkage guard, and the other eighteen were declared nowhere.
+Both halves give the same result under C++ — a definition with no C
+prototype gets C++ linkage — so libc would ship `__adddi3` under a name
+no caller and no compiler-generated reference can find. The same shape as
+`lib/msun/src/math_private.h` in run 13, where one missing
+`__BEGIN_DECLS` was worth fourteen.
+
+| run | commit | libc IR | libc ABI | committable |
+|---|---|---:|---:|---:|
+| 30 | `4ec39cefc` | 123/574 | 85 | 85 |
+| 31 | `5a0a1136f` | 123/574 | 110 | 110 |
+
+**+25, exactly the size of the directory.** Two prototypes are not what a
+reader would guess and are as the `.c` files have them: `__fixsfdi`
+returns `long long` rather than `quad_t`, and `notdi2.c` defines
+`__one_cmpldi2` rather than `__notdi2`.
+
+Checked before the run rather than after: every `.c` in the directory
+compiled for the oracle's own target as C and as C++, 26 files, both
+languages, clean — that is the check for prototype/definition agreement,
+and it is the entire risk of adding eighteen prototypes to a header.
+Then the symbols from `clang++` on the actual sources, `_Z8__adddi3xx`
+becoming `__adddi3` and five more. The oracle then agreed to the port.
+
+The thirteen that remain are each their own header: `arm/gen/fabs.c`,
+`gen/dirfd.c`, `gen/dup3.c`, `nameser/ns_netint.c`, powerpc64's `strcpy`
+and `strncpy`, `rpc/des_soft.c`, `rpc/rpcsec_gss_stub.c`, `stdlib`'s
+`hdestroy_r`, `insque` and `remque`, `string/memset_explicit.c` and
+`sys/pipe.c`.
