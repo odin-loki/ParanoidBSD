@@ -20,4 +20,12 @@
 # From here the count is verified + committed. A port that is committed
 # stops being a .c, so discover_sources() stops finding it and ir_equal
 # falls by one; without the sum, landing a port would read as losing one.
-199
+
+# Run 27 (commit 7f5782656, same host and scope): 211 verified + 1
+# committed = 212, up from 199, and again with no change to any pass. The
+# oracle had been repeating -I{src.parent} on -idirafter; clang keeps the
+# later of a duplicated search path, so every source in lib/msun/src was
+# compiled against the host's math.h instead of the tree's. Fixing the
+# duplicate is what these thirteen are - ports that were always equivalent
+# and were being compared against the wrong header.
+212

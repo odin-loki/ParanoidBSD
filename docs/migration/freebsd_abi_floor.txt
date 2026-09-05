@@ -61,4 +61,26 @@
 # declares the name.
 #
 # This floor stays at the measured 174 until that says something.
-174
+
+# Run 27 (commit 7f5782656): 210 ABI-equal + 1 committed = 211, up from
+# 174, and the gap this comment was written about is gone. 211 verified
+# against 210 ABI-equal is a gap of one, where it was 25.
+#
+# The cause was neither of the two guesses above. oracle_include_flags()
+# named lib/msun/src on -I (as src.parent) and again on -idirafter, and
+# clang deduplicates its search list keeping the LATER entry - so the
+# directory moved behind the system headers and `#include <math.h>` in
+# s_fmaximum.c resolved to the host's. The fmaximum/fminimum family is
+# declared only in the tree's newer header, so it was declared on neither
+# side; C emitted a plain symbol and C++ mangled the identical definition.
+# clang says "duplicate directory ... is ignored"; -Wno-everything, the
+# first flag the oracle passes, suppressed it.
+#
+# why_mangled.py now reports `C++ defines: fminimum` and `-> same symbols`
+# for the file that produced _Z8fminimumdd, which is the fix confirmed on
+# the same file that showed the fault.
+#
+# 204 ports are committable under the target flags - IR-equal, ABI-equal,
+# and measured with -ffp-exception-behavior=maytrap -fno-math-errno. That
+# is the set to take the next port from.
+211

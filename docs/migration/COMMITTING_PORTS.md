@@ -252,11 +252,27 @@ the identical definition. That is the 25.
 clang warns `duplicate directory ... is ignored` when this happens.
 `-Wno-everything`, the first flag in the list, suppressed it.
 
-Fixed by not repeating a directory already on `-I`. Both floors may move on
-the next run, and can only move up: the previous numbers were measured
-against a header the shipping build never uses. Neither floor is raised
-here on that prediction — the ratchet still fails on a drop, which is what
-it is for.
+Fixed by not repeating a directory already on `-I`.
+
+### Run 27, after the fix
+
+```
+msun ratchet:  211 verified + 1 committed = 212  (was 199)
+msun ABI:      210 ABI-equal + 1 committed = 211  (was 174)
+under target flags: IR 205/284  ABI 204  committable 204  (was 173)
+```
+
+The gap this whole section is about has collapsed: 211 IR-equal against
+210 ABI-equal, where it was 25. `why_mangled.py` now reports `C++ defines:
+fminimum` and `-> same symbols` for the file that produced
+`_Z8fminimumdd` — the fix confirmed on the file that showed the fault.
+
+Floors raised to the measured 212 and 211.
+
+**204 ports are committable** — IR-equal, ABI-equal, and measured under
+`-ffp-exception-behavior=maytrap -fno-math-errno`. That is the set to take
+the next port from, and it is 31 larger than it looked an hour ago for no
+reason but a duplicated include path.
 
 Take the file from that list. Anything else is a guess with a
 forty-minute feedback loop.
@@ -323,6 +339,7 @@ file if it does not. Tested both ways.
 |---|---|---:|---:|---:|---:|
 | 21 | `0c7f5735a` | 199 | 174 | 174 | 0 |
 | 23 | `8c147e8c7` | 198 + 1 | 173 + 1 | 173 | 1 |
+| 27 | `7f5782656` | 211 + 1 | 210 + 1 | 204 | 1 |
 
 Run 23 is the load-bearing one. With the floors at 199 and 174 and the port
 committed, `verified` alone is 198 and `abi_equal` alone is 173 — both one
