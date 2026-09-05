@@ -109,3 +109,19 @@ has import damage in it, a build failure after committing ports cannot be
 attributed: it could be the port or it could be the next missing directory.
 Once world is green, a failure means the port, which is the only condition
 under which changing 88 files is a reasonable thing to do.
+
+**World is green** — run 12, `>>> World build completed on Sat Sep 5
+08:25:07 UTC 2026`, twenty-seven minutes, zero errors, with SafeStack and
+CFI linking for the first time.
+
+**And that is still not the precondition, by one commit.** Run 12 built
+`b60d5e091`, which is before the `lib/msun/Makefile` fix in `8bfe42d67`.
+Until then `WITHOUT_MACHDEP_OPTIMIZATIONS` was inert for msun on x86:
+`SRCS` held both `e_fmod.c` and `e_fmod.S`, and bmake chose between them by
+suffix-rule precedence (see `docs/ASSEMBLY.md`). So the green world was
+built with an untested msun source list, and landing a `.c` → `.cpp` rename
+on top of it would put two unattributable changes in the same build.
+
+The order is: a world build on a tree that contains the msun fix, then the
+port. Not the other way round, for exactly the reason this section already
+gives.

@@ -263,6 +263,32 @@ writes `WITHOUT_SAFESTACK` / `WITHOUT_CFI` into the generated `src.conf` and
 the port's triple, the tree's triple, an empty resource directory, and a
 directory with other runtimes but not these — before being run again.
 
+**Run 12 says it works.** The probe reported
+
+```
+build target=x86_64-unknown-freebsd15.1
+runtime-dir=.../lib/clang/21/lib/x86_64-unknown-freebsd15.1
+what the package actually has:
+  x86_64-portbld-freebsd15.0
+the package built its runtime for x86_64-portbld-freebsd15.0
+and this build asks for x86_64-unknown-freebsd15.1; aliasing
+SAFESTACK on: .../x86_64-unknown-freebsd15.1/libclang_rt.safestack.a
+CFI on:       .../x86_64-unknown-freebsd15.1/libclang_rt.cfi.a
+```
+
+and then
+
+```
+>>> World build started   on Sat Sep  5 07:58:11 UTC 2026
+>>> World build completed on Sat Sep  5 08:25:07 UTC 2026
+```
+
+Twenty-seven minutes, zero errors, **with SafeStack and CFI on**, on the
+tree with `contrib/llvm-project`'s compiler untracked. Runs 8, 9 and 11 each
+died at sixteen minutes on the missing archive; this is the first world
+build to finish since run 7, and the first ever to finish with those two
+mitigations actually linking.
+
 ## The boot test has not run yet
 
 `tools/ci/boot_test.py` exists and `pbsd-boot-image.yml` has a "Boot it"
