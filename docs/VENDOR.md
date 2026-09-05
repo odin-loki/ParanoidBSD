@@ -39,9 +39,13 @@ There were four. `Makefile.inc1` had trimmed `KNOWN_ARCHES` to amd64 and
 are reverted, because PBSD wants first-class support for every architecture
 and narrowing the tree was what made each new one expensive.
 
-About 50 lines in total. The other 11,337 are upstream moving on since the
-snapshot — 6,846 of them `contrib/llvm-project` alone, which is a whole LLVM
-version, not anyone's edit.
+About 50 lines in total. The other 11,337 differ for a different reason, and it runs the other way
+from what it looks like: `hbsd/src/lib/clang/include/llvm/Support/VCSRevision.h`
+reads `llvmorg-21.1.8-0-g2078da43e25a`, and HardenedBSD's 15-stable is still
+on 19.x. 6,846 of those files are `contrib/llvm-project`, and they differ
+because **PBSD upgraded LLVM**, not because upstream moved on. A merge from
+upstream would drag the toolchain backwards two major versions; the vendor
+sync procedure below has to keep `contrib/llvm-project` on PBSD's side.
 
 Those four files are the one place the base is wrong, and the failure is
 silent: git sees base == ours, takes upstream's side, and reports no
