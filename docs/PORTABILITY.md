@@ -389,10 +389,87 @@ The kernel **reaches the exec**. And the absences pin it: no `exec
 
 So `kern_execve()` neither failed nor produced a program that spoke.
 Whether it hangs, or `init` runs and hangs before its first write, is
-still open — and is testable by pointing `init_path` at the statically
-linked `/rescue/sh`, which replaces both `init` and the dynamic loader at
-once.
+still open.
+
+### Runs 22 to 27: four ways of setting `init_path`, none of which worked
+
+The obvious next test — point `init_path` at the statically linked
+`/rescue/sh`, which replaces both `init` and the dynamic loader at once —
+took four runs and never ran, because the setting never reached the
+kernel.
+
+| run | how `init_path` was set | what the kernel printed |
+|---|---|---|
+| 22 | `set` at the loader prompt, fixed sleep, no receipt | `trying /sbin/init` |
+| 23 | `set` at the prompt, receipt required | (`boot_verbose` off) |
+| 25 | `set` at the prompt, receipt + `boot_verbose` | `trying /sbin/init` |
+| 27 | appended to `/boot/loader.conf` inside the image | `trying /sbin/init` |
+
+Run 25 is the one that settles the prompt. All three commands were echoed
+back in full and the kernel used the compiled-in default anyway, so a
+receipt proves the loader *received* the line and nothing about
+`kern_getenv()`.
+
+Run 27 settles `loader.conf`. The injection worked — `gpart` found the
+MBR slice, descended into it, mounted `md0s2a`, appended, and read the
+file back showing `init_path` — and the kernel still said `/sbin/init`.
+
+**The premise that route was chosen on was wrong**, and it was greppable.
+The claim was that `loader.conf` reaches the kernel because the root
+mount comes from `vfs.root.mountfrom` in it. `release/Makefile` writes
+exactly three lines into that file and `vfs.root.mountfrom` is not one of
+them; the loader sets that variable itself, in `stand/common/boot.c:384`,
+from the device it loaded the kernel off. What the root mount shows is
+that the loader's *own* environment reaches `kern_getenv()` — not that
+`loader.conf` gets into that environment.
+
+### What does reach the kernel, and by which road
+
+`sys/kern/subr_boot.c` has a table, `howto_names`, of twelve variables —
+`boot_single`, `boot_verbose`, `boot_serial`, `boot_multicons`,
+`boot_askname` and the rest. `boot_env_to_howto()` turns them into
+`boothowto` bits, and on this platform **the loader** calls it, in
+`bi_getboothowto()`, before the kernel is entered. Those bits travel in
+the bootinfo block. `init_path` has no such road: `start_init()` reads it
+with `kern_getenv()`, out of the kernel environment the loader copies in
+`md_copyenv()`.
+
+Two roads, and only one of them is demonstrated. `boot_verbose` has
+worked every run since 21 — `start_init: trying` prints under nothing
+else — and `Dual Console: Serial Primary, Video Secondary` is
+`RB_MULTIPLE | RB_SERIAL` arriving the same way. `init_path` has never
+worked, by any of the four means above.
+
+### What one `trying` line then silence actually means
+
+Read the loop rather than the summary of it:
+
+```c
+error = kern_execve(td, &args, NULL, oldvmspace);
+if (error == EJUSTRETURN) { ...; return; }      /* success */
+if (error != ENOENT) printf("exec %s: error %d\n", path, error);
+```
+
+`ENOENT` prints the *next* `trying` line; any other error prints `exec
+/sbin/init: error N`. Neither happened, so there are exactly two
+readings: `kern_execve()` never returned, or it returned `EJUSTRETURN` —
+**and init is running.** One `trying` line followed by nothing is what a
+*successful* exec looks like from the kernel's side.
+
+Against "init is running", run 21 is the evidence: it set `boot_single`
+as well, and single-user init prints `Enter full pathname of shell or
+RETURN for /bin/sh:` before it execs anything (`sbin/init/Makefile` builds
+with `-DDEBUGSHELL -DSECURE`). No such line appeared.
+
+That is evidence and not proof, and the difference is the same one this
+section has been about four times. Run 21's `boot_single` was echoed back
+by the loader; whether it reached `boothowto` is unobserved, exactly as
+`init_path`'s receipts were. The inference is stronger here — `boot_verbose`
+travelled the identical road in the same run and did take effect — but a
+run that put `boot_single` in `loader.conf` instead of at the prompt would
+be testing the one thing run 25 showed can differ.
 
 See `docs/BUILDING.md` for the console mechanics and the fixes that made
-this run possible (type one byte at a time; require a receipt before
-claiming the console was set).
+these runs possible (type one byte at a time; require a receipt before
+claiming the console was set; print the loader record at the end, where a
+verbose boot cannot bury it).

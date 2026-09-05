@@ -465,24 +465,48 @@ like from the kernel's side. It has been read here as a hang for five
 runs, and it is equally consistent with init(8) being alive and
 producing no output.
 
-`boot_single="YES"` separates them. Single-user init execs a shell on
-`/dev/console` instead of running `rc`, and `sbin/init/Makefile` builds
-with `-DDEBUGSHELL -DSECURE`, so it prints
+`boot_single="YES"` is what separates them, and **run 21 already set
+it** — at the loader prompt, alongside `boot_verbose`, and the log shows
+the loader echoing both back:
 
 ```
-Enter full pathname of shell or RETURN for /bin/sh:
+  [loader: set boot_verbose="YES"]
+set boot_verbose="YES"
+OK   [loader: set boot_single="YES"]
+set boot_single="YES"
+OK
 ```
 
-before it does. That string is already in `boot_test.py`'s `USERLAND`
-list. If it appears, init is alive, `execve` worked, the console works,
-and everything unexplained is in `/etc/rc`. If it does not, init really
-is not producing output and the search moves inside `kern_execve()`.
+Single-user init execs a shell on `/dev/console` instead of running
+`rc`, and `sbin/init/Makefile` builds with `-DDEBUGSHELL -DSECURE`, so it
+prints `Enter full pathname of shell or RETURN for /bin/sh:` before it
+does. That string is in `boot_test.py`'s `USERLAND` list. Nothing
+appeared.
 
-The run puts all three in `loader.conf` together — `boot_single`,
+So the evidence points at init *not* being alive — and it is evidence,
+not proof, for the reason this page keeps running into. Run 21's
+`boot_single` was echoed by the loader; whether it reached `boothowto` is
+unobserved, exactly as `init_path`'s three receipts were before run 25
+showed an echoed `set` changing nothing. The inference is stronger here,
+because `boot_verbose` travelled the identical road in that same run and
+did take effect. It is not the same as having seen it.
+
+What has not been tried is `boot_single` in **`loader.conf`** rather than
+at the prompt. Run 25 is the whole reason that distinction is worth a
+run: an echoed prompt `set` and a line in the file are not the same
+delivery, and one of them has already been caught not arriving.
+
+So run 30 puts all three in `loader.conf` together — `boot_single`,
 `boot_verbose`, `init_path` — and nothing at the loader prompt but the
-console. Three independent readings from one boot: whether `loader.conf`
-reaches the loader at all (does `trying` print), whether it reaches the
-kernel environment (does it say `/rescue/sh`), and whether init is alive.
+console. Three readings from one boot:
+
+* does `start_init: trying` print at all? `boot_verbose` comes only from
+  the file this time, so that answers whether `loader.conf` reaches the
+  loader environment.
+* does it say `/rescue/sh` or `/sbin/init`? That is `kern_getenv()`, for
+  the fifth time and by the only means left.
+* does the single-user prompt appear? Run 21 asked this through the
+  prompt; this asks it through the file.
 
 ## Asking the system about itself
 
