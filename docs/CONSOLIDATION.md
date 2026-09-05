@@ -26,9 +26,9 @@ architectures, 14,098 lines in total:
 
 **Low similarity is the interesting case, and it is the opposite of what it
 looks like.** `atomic.h` scores 0.01 — six texts with almost nothing in
-common. But they implement *the same 18 functions*. Six unrelated
-implementations of one contract is a stronger case for consolidation than
-copy-paste is, not a weaker one, and a similarity metric scores it lowest.
+common — and they are six implementations of one small set of operations.
+That is a stronger case for consolidation than copy-paste is, not a weaker
+one, and a similarity metric scores it lowest of anything in the table.
 
 That is the flaw in `arch_duplication.py`: it finds copies, and the biggest
 prize is not a copy.
@@ -53,15 +53,36 @@ every architecture export the same names?
 | riscv | 662 | 24 |
 | **total** | **5,107** | **145** |
 
-5,107 lines of hand-written assembly implementing one interface six times.
-Clang already knows how to emit the right instruction for every one of those
-targets — that is what `__atomic_*` builtins and `std::atomic` are. A generic
+The interfaces are **not** identical, and checking that is what makes the case
+rather than weakens it. Each architecture defines between 122 and 204
+`atomic_*` names; the union is 247 and only **43 are common to all six**.
+
+Decomposed, those 247 names are a cross-product:
+
+| | count | |
+|---|---:|---|
+| operations | 13 | `add`, `subtract`, `set`, `clear`, `cmpset`, `fcmpset`, `load`, `store`, `swap`, `fetchadd`, `readandclear`, `testandset`, `testandclear`, plus `thread_fence` |
+| widths | 9 | `8`, `16`, `32`, `64`, `char`, `short`, `int`, `long`, `ptr` |
+| orderings | 4 | relaxed, `acq`, `rel`, `acq_rel` |
+
+A complete cross-product is 936 names. 247 exist, spread unevenly across six
+files, because each architecture wrote out the subset it happened to need.
+
+That unevenness is a live bug source, not just untidiness: `atomic_add_8`
+exists on amd64 and i386 and on no other architecture, so kernel code using it
+compiles on x86 and fails to build on arm64 — which is exactly the kind of
+breakage a tree that only ever built amd64 would not have noticed. The
+remaining 13 names are i386 legacy variants (`cmpset_i386`, `store_i586`).
+
+A template generates the cross-product uniformly and completely. Clang already
+knows how to emit the right instruction for every one of those targets — that is what `__atomic_*` builtins and `std::atomic` are. A generic
 implementation is a few hundred lines and the compiler supplies the per-target
 codegen that is currently written by hand.
 
 This is also where the payoff for a seventh architecture is largest: today it
-costs another ~800 lines of correct lock-free assembly, which is the hardest
-code in a port to get right and the worst to debug when it is subtly wrong.
+costs another ~850 lines of correct lock-free assembly — the mean across the
+six — which is the hardest code in a port to get right and the worst to debug
+when it is subtly wrong.
 
 Note there is **no atomic assembly in `.S` files at all** — 0 of 214 eliminable
 files. Atomics live in headers as inline asm, so "replace hand-written atomics
