@@ -669,6 +669,31 @@ same probe with different arguments:
   breaking again says whether this is a tight spin at one instruction, a
   loop, or slow progress.
 
+And a third, which is a build question rather than a debugger one.
+`hbsd/src.conf.pbsd` is not a small file:
+
+```
+WITH_PIE=YES        WITH_RELRO=YES      WITH_BIND_NOW=YES
+WITH_BRANCH_PROTECTION=YES
+WITH_SAFESTACK=YES  WITH_CFI=YES        (amd64, arm64, i386)
+```
+
+Every one of those changes how a binary starts. `WITH_PIE` means
+`/sbin/init` is position-independent and goes through `ld-elf.so` before
+`main`; `WITH_BIND_NOW` means the rtld resolves every symbol at load
+rather than lazily; `WITH_CFI` needs LTO and a runtime, and
+`WITH_SAFESTACK` needs a second stack set up before any C runs. A process
+that is on the CPU, has touched the FPU, and has produced no output is
+consistent with any of them going wrong — and none of them is FreeBSD's
+default, so a stock FreeBSD build of the same tree is the control.
+
+The workflow's `src_conf` input is that control: `none` passes `SRCCONF=`
+and builds with FreeBSD's defaults. It was previously called
+`machdep_asm` and described as the assembly switch, which is what it had
+been used for and roughly a sixth of what it did — its true branch drops
+the whole file. Renamed to say so, because a bisection handle that
+understates its own reach is worse than none.
+
 ## Asking the system about itself
 
 `--run NAME=CMD` logs in after a successful boot and runs commands, writing
