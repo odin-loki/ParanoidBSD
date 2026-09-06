@@ -401,6 +401,45 @@ FIXES = {
             "bbr_log_startup_event() reads both",
         ),
     ],
+    "hbsd/src/sys/dev/usb/wlan/if_run.c": [
+        (
+            "None of the 70 call sites in this driver inspects the return",
+            None,
+            "run_rt3070_rf_read() and run_bbp_read() write *val only on "
+            "the success path; 97 of their 98 call sites ignore the "
+            "return and read the object straight back",
+        ),
+        (
+            "The three `return (error)' paths and the EFSROM_KICK timeout",
+            None,
+            "run_efuse_read() write *val only on the success path, and "
+            "neither run_iq_calib() nor sc->sc_srom_read()'s callers "
+            "inspect the return",
+        ),
+    ],
+    "hbsd/src/sys/dev/usb/wlan/if_mtw.c": [
+        (
+            "and none of mtw_srom_read()'s 19",
+            None,
+            "mtw_efuse_read_2(), mtw_bbp_read() and mtw_rf_read() write "
+            "*val only on the success path; 33 of their 35 call sites "
+            "ignore the return and read the object straight back",
+        ),
+        (
+            "PBSD: derive ctl_ridx for both arms",
+            "\t\t\tridx = rn->fix_ridx;\n\n\t\t} else {",
+            "mtw_tx() is a copy of run_tx() with the ctl_ridx assignment "
+            "moved inside the else arm, so a fixed unicast rate indexed "
+            "a 44-entry table with an uninitialised uint8_t",
+        ),
+    ],
+    "hbsd/src/sys/dev/usb/wlan/if_urtw.c": (
+        "uint8_t data8 = 0;",
+        "\tint ret;\n\tuint8_t data8;\n",
+        "urtw_get_rfchip() reads data8 under URTW_RTL8187B but writes it "
+        "only in that flag's arm - and the else arm can set the flag, so "
+        "the two conditions are not complementary",
+    ),
     "hbsd/src/sys/dev/firmware/arm/scmi_shmem.c": (
         "\tssize_t len;",
         "\tsize_t len;",

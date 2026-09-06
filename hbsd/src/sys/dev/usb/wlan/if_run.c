@@ -1460,6 +1460,20 @@ run_efuse_read(struct run_softc *sc, uint16_t addr, uint16_t *val, int count)
 	uint16_t reg;
 	int error, ntries;
 
+	/*
+	 * PBSD: give *val a value before the first early return.
+	 *
+	 * The three `return (error)' paths and the EFSROM_KICK timeout
+	 * leave *val as the caller left it.  Neither of the two ways in
+	 * reaches a caller that inspects the return: run_iq_calib()
+	 * calls this 17 times and passes the object straight to
+	 * run_bbp_write() each time, and run_efuse_read_2() forwards it
+	 * to sc->sc_srom_read(), whose callers build the MAC address and
+	 * the Tx power tables from it.  An eFUSE read error therefore
+	 * programs the baseband from an uninitialised local.
+	 */
+	*val = 0;
+
 	if ((error = run_read(sc, RT3070_EFUSE_CTRL, &tmp)) != 0)
 		return (error);
 
@@ -1560,6 +1574,25 @@ run_rt3070_rf_read(struct run_softc *sc, uint8_t reg, uint8_t *val)
 	uint32_t tmp;
 	int error, ntries;
 
+	/*
+	 * PBSD: give *val a value before the first early return.
+	 *
+	 * *val is written by the last statement of the success path
+	 * only; the two `return (error)' and two `return (ETIMEDOUT)'
+	 * paths above it leave the caller's object as they found it.
+	 * None of the 70 call sites in this driver inspects the return
+	 * value - each one reads the object straight back, usually as
+	 * `rf & ~0x20' fed to the matching rf_write - so a USB transfer
+	 * error or a stuck RF_KICK programs a radio register from an
+	 * uninitialised local.
+	 *
+	 * Zero is not a correct register value; the read failed, so
+	 * there is no correct one.  It is deterministic, which the
+	 * previous behaviour was not.  Fixing the callee covers all 70
+	 * unchecked callers at once.
+	 */
+	*val = 0;
+
 	for (ntries = 0; ntries < 100; ntries++) {
 		if ((error = run_read(sc, RT3070_RF_CSR_CFG, &tmp)) != 0)
 			return (error);
@@ -1610,6 +1643,14 @@ run_bbp_read(struct run_softc *sc, uint8_t reg, uint8_t *val)
 {
 	uint32_t tmp;
 	int ntries, error;
+
+	/*
+	 * PBSD: give *val a value before the first early return.
+	 * Same shape as run_rt3070_rf_read() above: *val is written
+	 * only by the last statement, and 27 of this driver's 28 call
+	 * sites ignore the return value.
+	 */
+	*val = 0;
 
 	for (ntries = 0; ntries < 10; ntries++) {
 		if ((error = run_read(sc, RT2860_BBP_CSR_CFG, &tmp)) != 0)

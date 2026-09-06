@@ -1864,6 +1864,132 @@ that kind of fix is the instrument reaching further, not a regression —
 which is worth knowing before somebody reads the next sweep's delta as
 one.
 
+## Fixed — a driver family that reads registers into whatever the stack held
+
+`sys/dev/usb/wlan` had 22 findings across two files, `if_run.c` (16) and
+`if_mtw.c` (6). They are one defect repeated, and the enumeration is the
+argument rather than the sampling:
+
+| helper | call sites | inspect the return |
+|---|---|---|
+| `run_rt3070_rf_read` | 70 | 0 |
+| `run_bbp_read` | 28 | 1 |
+| `run_efuse_read` | 17 (+ `run_efuse_read_2` → `sc_srom_read`) | 0 |
+| `mtw_efuse_read_2` | via `mtw_srom_read`, 19 | 0 |
+| `mtw_bbp_read` | 11 | 1 (+1 forwarded) |
+| `mtw_rf_read` | 5 | 0 |
+
+Every one of the six has the same shape. `*val` is written by the last
+statement of the success path; two to four `return (error)` paths and a
+KICK timeout above it leave the caller's object exactly as they found
+it. And of 150 call sites, **two** look at the return value. The rest
+read the object straight back — `rf & ~0x20` handed to the matching
+`rf_write`, `val` handed to `run_bbp_write`, an eFUSE word assembled
+into the MAC address and the per-rate Tx power tables. A USB transfer
+error or a stuck KICK bit therefore programs a radio register, or
+derives the interface's hardware address, from an uninitialised local.
+
+The fix goes in the callee: `*val = 0;` before the first early return.
+Zero is not a correct register value — the read failed, so there is no
+correct one — but it is deterministic, which the previous behaviour was
+not, and one line in each callee covers all 150 unchecked callers.
+Changing 150 call sites to check a return they have never checked is a
+different and much larger change, and not one to make blind.
+
+### The seventh candidate, which was left alone
+
+`run_rt3070_filter_calib()` matches the same mechanical test — more
+`return`s than writes to its out-parameter, and neither of its two
+callers checks. It is not the same defect, and patching it the same way
+would have been a regression:
+
+```c
+	sc->rf24_20mhz = 0x1f;	/* default value */
+	target = (sc->mac_ver < 0x3071) ? 0x16 : 0x13;
+	run_rt3070_filter_calib(sc, 0x07, target, &sc->rf24_20mhz);
+```
+
+The caller seeds the documented default *before* the call, into a softc
+field rather than a stack slot. An `*val = 0` at function entry would
+destroy 0x1f (and 0x2f for the 40MHz call) on exactly the timeout path
+the default exists for. The mechanical test found it; only reading the
+callers said what to do about it.
+
+### `if_mtw.c` is a copy of `if_run.c`, and the copy moved one line
+
+The two `core.uninitialized.ArraySubscript` findings in `mtw_tx()` are a
+different bug, and the parent driver holds the proof. `if_run.c`:
+
+```c
+	} else {
+		if (tp->ucastrate != IEEE80211_FIXED_RATE_NONE)
+			ridx = rn->fix_ridx;
+		else
+			ridx = rn->amrr_ridx;
+		ctl_ridx = rt2860_rates[ridx].ctl_ridx;
+	}
+```
+
+`if_mtw.c`, same function, same variables:
+
+```c
+	} else {
+		if (tp->ucastrate != IEEE80211_FIXED_RATE_NONE) {
+			ridx = rn->fix_ridx;
+
+		} else {
+			ridx = rn->amrr_ridx;
+			ctl_ridx = rt2860_rates[ridx].ctl_ridx;
+		}
+	}
+```
+
+The assignment moved *inside* the else arm. A vap with a fixed unicast
+rate — `ifconfig wlan0 ucastrate 54` — takes the other arm and reaches
+
+```c
+	dur = rt2860_rates[ctl_ridx].sp_ack_dur;
+```
+
+with `ctl_ridx` an indeterminate `uint8_t`, indexing a 44-entry table at
+0..255 and writing the result into the frame's 802.11 duration field.
+An out-of-bounds read of up to 211 entries past the end of a `const`
+table, transmitted. Restoring the parent's shape fixes it.
+
+This is the guard-on-one-of-a-pair shape with a provenance: not an
+omission somebody made once, but a correct file copied and edited until
+one assignment ended up one brace too deep.
+
+### `if_urtw.c` — the complementary-condition shape that is *not* a false positive
+
+The remaining finding in the scope was in a third driver. `data8` is
+written only inside `if (sc->sc_flags & URTW_RTL8187B)` and read only
+under the same flag, forty lines down, which is the exact pattern this
+document's triage table dismisses six times over — value assigned under
+`if (X)`, read under `if (X)`, function-scoped variable, analyser cannot
+carry the correlation.
+
+Except the `else` arm sets the flag:
+
+```c
+	} else {
+		urtw_read32_m(sc, URTW_TX_CONF, &data);
+		switch (data & URTW_TX_HWMASK) {
+		case URTW_TX_R8187vD_B:
+			sc->sc_flags |= URTW_RTL8187B;
+```
+
+So the two conditions are not complementary and never were. An RTL8187L
+that reports `R8187vD_B` takes the arm that does not write `data8`,
+leaves it with the flag set, and reads it. The consequence is small —
+the hwrev letter in one `device_printf` at attach — but the reasoning
+that would have filed it as a false positive is wrong, and it is wrong
+in the direction that matters. Initialising to 0 gives "b", which is
+what the switch above treats as `REV_B` and also its `default` arm, so
+the string agrees with the flag that actually got set.
+
+Scope afterwards: **22 findings → 0**, across nine translation units.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

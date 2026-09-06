@@ -1307,6 +1307,19 @@ mtw_efuse_read_2(struct mtw_softc *sc, uint16_t addr, uint16_t *val)
 	uint16_t reg;
 	int error, ntries;
 
+	/*
+	 * PBSD: give *val a value before the first early return.
+	 *
+	 * The two `return (error)' paths and the EFSROM_KICK timeout
+	 * leave *val as the caller left it.  This function is reached
+	 * through sc->sc_srom_read(), and none of mtw_srom_read()'s 19
+	 * call sites inspects the return value: they read the object
+	 * back immediately to build the MAC address, the channel list
+	 * and the per-rate Tx power tables, so an eFUSE read error
+	 * derives all of that from an uninitialised local.
+	 */
+	*val = 0;
+
 	if ((error = mtw_read(sc, MTW_EFUSE_CTRL, &tmp)) != 0)
 		return (error);
 
@@ -1356,6 +1369,14 @@ mtw_bbp_read(struct mtw_softc *sc, uint8_t reg, uint8_t *val)
 {
 	uint32_t tmp;
 	int ntries, error;
+
+	/*
+	 * PBSD: give *val a value before the first early return; see
+	 * mtw_efuse_read_2() above.  10 of the 11 call sites ignore the
+	 * return value, and one of those forwards it to callers that do
+	 * the same.
+	 */
+	*val = 0;
 
 	for (ntries = 0; ntries < 10; ntries++) {
 		if ((error = mtw_read(sc, MTW_BBP_CSR, &tmp)) != 0)
@@ -3078,13 +3099,22 @@ mtw_tx(struct mtw_softc *sc, struct mbuf *m, struct ieee80211_node *ni)
 		}
 		ctl_ridx = rt2860_rates[ridx].ctl_ridx;
 	} else {
-		if (tp->ucastrate != IEEE80211_FIXED_RATE_NONE) {
+		if (tp->ucastrate != IEEE80211_FIXED_RATE_NONE)
 			ridx = rn->fix_ridx;
-
-		} else {
+		else
 			ridx = rn->amrr_ridx;
-			ctl_ridx = rt2860_rates[ridx].ctl_ridx;
-		}
+		/*
+		 * PBSD: derive ctl_ridx for both arms, not just the
+		 * amrr one.  This driver is a copy of if_run.c, where
+		 * this assignment sits outside the inner if/else; the
+		 * copy moved it inside the else arm, so a vap with a
+		 * fixed unicast rate left ctl_ridx indeterminate and
+		 * then used it below as `rt2860_rates[ctl_ridx]' - an
+		 * out-of-bounds read of a 44-entry table at whatever
+		 * uint8_t the stack slot held, whose result is written
+		 * into the frame's 802.11 duration field.
+		 */
+		ctl_ridx = rt2860_rates[ridx].ctl_ridx;
 	}
 
 	if (hasqos)
@@ -3604,6 +3634,13 @@ mtw_rf_read(struct mtw_softc *sc, uint8_t bank, uint8_t reg, uint8_t *val)
 {
 	uint32_t tmp;
 	int error, ntries, shift;
+
+	/*
+	 * PBSD: give *val a value before the first early return; see
+	 * mtw_efuse_read_2() above.  None of the 5 call sites inspects
+	 * the return value.
+	 */
+	*val = 0;
 
 	for (ntries = 0; ntries < 100; ntries++) {
 		if ((error = mtw_read(sc, MTW_RF_CSR, &tmp)) != 0)

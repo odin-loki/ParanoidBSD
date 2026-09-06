@@ -2362,7 +2362,16 @@ static usb_error_t
 urtw_get_rfchip(struct urtw_softc *sc)
 {
 	int ret;
-	uint8_t data8;
+	/*
+	 * PBSD: data8 is read below under `sc->sc_flags & URTW_RTL8187B'
+	 * and written only inside the arm that same flag selects here -
+	 * but the else arm can SET URTW_RTL8187B (URTW_TX_R8187vD_B), so
+	 * the two conditions are not complementary and that path reaches
+	 * the read with data8 never written.  Zero is the value the
+	 * switch below treats as REV_B, which is also its default arm,
+	 * so the hwrev this prints agrees with the flag that was set.
+	 */
+	uint8_t data8 = 0;
 	uint32_t data;
 	usb_error_t error;
 
