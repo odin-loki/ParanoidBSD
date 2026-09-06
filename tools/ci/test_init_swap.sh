@@ -36,6 +36,7 @@ cd "$WORK"
 mkdir -p bin fakeroot/sbin fakeroot/boot fakeroot/usr/freebsd-dist out
 : > out/fake.img
 echo "dynamic-init-with-pie-safestack-cfi" > fakeroot/sbin/init
+: > fakeroot/sbin/init.schg          # /sbin/init is installed schg
 echo 'vfs.mountroot.timeout="10"'          > fakeroot/boot/loader.conf
 echo "base payload"   > fakeroot/usr/freebsd-dist/base.txz
 echo "kernel payload" > fakeroot/usr/freebsd-dist/kernel.txz
@@ -80,6 +81,23 @@ for d in "$@"; do
 done
 printf 'Filesystem 1024-blocks Used Avail Capacity Mounted on\n'
 printf '/dev/md0s2a 1058560 1000000 %s 91%%%% %s\n' "$free" "${1##-*}"
+EOF
+# mv refuses on a file marked immutable, the way it did in run 34. The
+# stub marks /sbin/init immutable with a sentinel file, and only chflags
+# removes it - so a script that does not call chflags fails here exactly
+# as the real one did, on a real image, fifty minutes in.
+cat > bin/chflags <<'EOF'
+#!/bin/sh
+# chflags noschg <file>
+case "$1" in noschg) rm -f "$2.schg" ;; esac
+EOF
+cat > bin/mv <<'EOF'
+#!/bin/sh
+if [ -e "$1.schg" ]; then
+    echo "mv: rename $1 to $2: Operation not permitted" >&2
+    exit 1
+fi
+/bin/mv "$@"
 EOF
 printf '#!/bin/sh\nexit 0\n' > bin/umount
 chmod +x bin/*
@@ -129,6 +147,9 @@ MNT="$(cat "$WORK/mnt.swap-only" 2>/dev/null || true)"
 [ -n "$MNT" ] && {
     [ -f "$MNT/sbin/init.pbsd" ] && note "ok  " "/sbin/init.pbsd exists" \
         || note FAIL "/sbin/init.pbsd missing"
+    [ ! -f "$MNT/sbin/init.schg" ] \
+        && note "ok  " "schg cleared before the move (run 34)" \
+        || note FAIL "schg never cleared; the move would fail as in run 34"
     [ ! -f "$MNT/sbin/init" ] && note "ok  " "/sbin/init is gone" \
         || note FAIL "/sbin/init still there"
     [ -f "$MNT/rescue/init" ] && note "ok  " "/rescue/init installed" \

@@ -573,8 +573,26 @@ vm|memstick|iso)
                     _bail "/rescue/init still absent after installing"
                 echo "   installed $(ls "$MNT/rescue" | wc -l | tr -d ' ') names into /rescue"
             fi
+            # /sbin/init is installed system-immutable. Run 34 got all the
+            # way here, installed 150 names into /rescue, and then:
+            #
+            #   mv: rename .../sbin/init to .../sbin/init.pbsd:
+            #       Operation not permitted
+            #
+            # as root, on a writable filesystem. That is schg: FreeBSD
+            # installs init(8) with the system-immutable flag so a running
+            # system cannot have it swapped underneath it, which is exactly
+            # what this step is doing. release/Makefile has `chflags -R
+            # noschg .` in its own beforeclean for the same reason.
+            #
+            # Cleared only on the one file, and only if chflags is there -
+            # a filesystem without flag support fails the mv below with its
+            # own message rather than this one.
+            if command -v chflags >/dev/null 2>&1; then
+                chflags noschg "$MNT/sbin/init" 2>/dev/null || true
+            fi
             mv "$MNT/sbin/init" "$MNT/sbin/init.pbsd" || \
-                _bail "could not move /sbin/init aside"
+                _bail "could not move /sbin/init aside (schg still set?)"
             [ ! -f "$MNT/sbin/init" ] || \
                 _bail "/sbin/init is still there after moving it"
             echo "   /sbin/init -> /sbin/init.pbsd; the kernel falls through"
