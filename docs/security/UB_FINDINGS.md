@@ -2279,6 +2279,89 @@ which the verification caught by deleting one site and watching it pass.
 It counts the PBSD comment instead, which is unique to the fix, and
 deleting one of the six now reports "found 5 time(s), needs 6".
 
+## The sweep could not have found the boot bug, for three independent reasons
+
+`libexec/rtld-elf/rtld.c` held a read of an uninitialised automatic that
+clang deletes the enclosing function over. It cost thirty-seven boot
+runs. It is a `core.uninitialized`-class defect in a C file in this tree
+— which is exactly what this sweep is for — and the sweep never said a
+word.
+
+Three things had to be true for that silence, and **any one of them
+alone was enough**:
+
+**1. `libexec/` was in no shard.** The scope list is `sys/` directory by
+directory, plus `lib/libc`, plus `lib/msun`. Nothing else in the tree is
+analysed, and that was never written down as a decision anywhere — it
+was just the list. The run-time linker is the first C code every
+dynamically linked process on the system executes.
+
+**2. The file would not compile even if it had been.** `rtld.c` does
+`#include "notes.h"`, which lives in `lib/csu/common` and reaches the
+real build through `libexec/rtld-elf/Makefile:45`. Without it the
+translation unit comes back `ERROR`, and an `ERROR` file reports zero
+findings — indistinguishable, in the totals, from a clean one. This is
+the failure this repository keeps rediscovering, and it was sitting
+inside the instrument.
+
+**3. The defect was `#ifdef`'d out of the compilation.**
+`share/mk/sys.mk:339` includes `bsd.hardenedbsd.mk`, whose entire
+content is `CFLAGS+= -DHARDENEDBSD` and the `CXXFLAGS` line beside it.
+`sys.mk` is the root of the build, so every shipped translation unit has
+it. The sweep did not, so the `#ifdef HARDENEDBSD` block containing the
+defect took its false branch here and its true branch in the binary.
+
+That third one is the `__FreeBSD__`/`__linux__` mistake one macro over,
+and `includes.py` already carries a long comment about how 607 files
+"saw code that is not the code that ships". This is the same sentence
+with a different macro — though the blast radius is far smaller: **three
+files** tree-wide key on `HARDENEDBSD`, and one of them is the rtld.
+
+### Verified rather than assumed
+
+The defect was put back, exactly as it was, and the scope re-analysed at
+each stage:
+
+| state | `rtld.c` |
+|---|---|
+| scope added, nothing else | `ERROR`, 0 findings |
+| + `-I lib/csu/common`, `-I` its arch dir, `-DIN_RTLD` | `ERROR`, 0 findings — now failing on `pax_flags` |
+| + `-DHARDENEDBSD` | **`OK`, 8 findings**, first of them `rtld.c:635 core.UndefinedBinaryOperatorResult — The left operand of '!=' is a garbage value` |
+| defect removed again | `OK`, **7** findings — and the one that disappears is that line |
+
+`:635` is `if (aux_info[AT_PAXFLAGS] != NULL)`. The sweep finds it in
+under a minute once it can see it.
+
+### What changed
+
+`libexec` is now in both matrices — the analyse shard and the model
+shard, because checking one and not the other is the shape this document
+is mostly about. `includes.py` learned the rtld's own build flags and
+`-DHARDENEDBSD` for every translation unit.
+
+And `check_shards.py` grew a second check. It asserted that every
+directory under `sys/` is in a shard; it said nothing about anything
+above `sys/`, which is how a whole top-level directory went unnoticed.
+Now every top-level directory of the tree must be **either** in a shard
+**or** in an `UNANALYSED` table with a reason — so a directory nobody
+analyses is a decision on the record rather than an absence. Twenty-two
+are listed: third-party trees PBSD does not maintain, build tooling, and
+the honest "not yet" for `bin`, `sbin`, `usr.bin`, `usr.sbin`, `stand`
+and the rest of `lib`.
+
+Both arms verified: dropping `libexec` from one matrix alone fails that
+matrix by name, and an `UNANALYSED` entry naming a directory that no
+longer exists fails too, because a stale exemption is its own kind of
+lie.
+
+### Seven more findings in the rtld, now visible
+
+With the file compiling, `rtld.c` reports seven others — a
+`core.uninitialized.Branch` at `:2590`, three `NullDereference` around
+the program-header walk at `:3296`, `:3302`, `:3693`, two
+`uninitialized.Assign`, and a `unix.Malloc` leak. Unread as yet, and
+they are in the run-time linker.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

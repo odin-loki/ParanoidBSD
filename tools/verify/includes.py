@@ -661,9 +661,29 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
     # the tree (__FreeBSD_version 1500000 in sys/sys/param.h), and it is
     # the same value clang's own freebsd15.0 triple predefines, so the
     # two agree rather than fight.
+    #
+    # -DHARDENEDBSD is the same class of mistake one macro over.
+    # share/mk/sys.mk:339 does `.include <bsd.hardenedbsd.mk>', whose
+    # entire content is
+    #
+    #     CFLAGS+=   -DHARDENEDBSD
+    #     CXXFLAGS+= -DHARDENEDBSD
+    #
+    # and sys.mk is the root of the whole build, so every translation
+    # unit that ships is compiled with it. This sweep was not, so every
+    # `#ifdef HARDENEDBSD' block took its false branch here and its true
+    # branch in the shipped binary.
+    #
+    # Three files tree-wide key on it -- libexec/rtld-elf/rtld.c,
+    # usr.bin/gcore/gcore.c and tests/sys/kern/kern_copyin.c -- so this
+    # is not the 607-file blast radius the __FreeBSD__ fix had. It is
+    # worth the flag anyway, because one of the three is the run-time
+    # linker, and the block it hides is the one that cost thirty-seven
+    # boot runs.
     flags = ["-nostdinc",
              *target_flags(arch, cc),
              "-U__linux__", "-U__gnu_linux__", "-D__FreeBSD__=15",
+             "-DHARDENEDBSD",
              f"-I{machine_shim(arch)}"]
 
     # The kernel is a different header universe from userland: no
@@ -781,6 +801,32 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}"]
     if rel.startswith("lib/libmd"):
         flags.append(f"-I{SRC}/lib/libmd")
+    if rel.startswith("libexec/rtld-elf"):
+        # The run-time linker, which was not in any analyse shard until
+        # the rtld.c aux_info defect cost thirty-seven boot runs -- and
+        # which would still have reported nothing if it had been, because
+        # `#include "notes.h"' did not resolve and the whole translation
+        # unit came back ERROR. A file that will not compile reports zero
+        # findings and is indistinguishable from a clean one.
+        #
+        # These are libexec/rtld-elf/Makefile's own flags:
+        #   CFLAGS+= -I${SRCTOP}/lib/csu/common        (notes.h)
+        #   CFLAGS+= -I${RTLD_ELF_DIR}/${RTLD_ARCH} -I${RTLD_ELF_DIR}
+        #   CFLAGS+= -DIN_RTLD
+        # RTLD_ARCH is MACHINE_ARCH where that subdirectory exists and
+        # MACHINE_CPUARCH otherwise. LIBC_ARCH already carries that same
+        # spelling for every architecture this sweep builds -- its values
+        # (amd64, aarch64, arm, i386, powerpc64, riscv) are exactly the
+        # subdirectory names under libexec/rtld-elf -- so it is reused
+        # here rather than a second table being invented to drift from it.
+        rtld = SRC / "libexec/rtld-elf"
+        rtld_arch = arch if (rtld / arch).is_dir() \
+            else LIBC_ARCH.get(arch, "amd64")
+        flags += [f"-I{SRC}/lib/csu/common",
+                  f"-I{rtld}/{rtld_arch}",
+                  f"-I{rtld}",
+                  f"-I{rtld}/rtld-libc",
+                  "-DIN_RTLD"]
     if "/tests/" in rel:
         # A test program is not the library, but it is C in this tree and
         # it exercises the library's edge cases, which is where the

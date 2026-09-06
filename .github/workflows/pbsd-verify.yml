@@ -105,7 +105,7 @@ jobs:
       matrix:
         include:
           - name: userland
-            scopes: --scope lib/libc --scope lib/msun
+            scopes: --scope lib/libc --scope lib/msun --scope libexec
             classes: classes.json
             jobs: 4
           - name: kern
@@ -201,7 +201,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: libs,   scopes: '--scope lib/libc --scope lib/msun' }
+          - { name: libs,   scopes: '--scope lib/libc --scope lib/msun --scope libexec' }
           - { name: kern,   scopes: '--scope sys/kern --scope sys/vm --scope sys/net --scope sys/netinet --scope sys/netinet6' }
           - { name: fs,     scopes: '--scope sys/fs --scope sys/ufs --scope sys/geom --scope sys/cam --scope sys/security --scope sys/cddl' }
           - { name: rest,   scopes: '--scope sys/dev --scope sys/arm64 --scope sys/amd64 --scope sys/arm --scope sys/i386 --scope sys/riscv --scope sys/powerpc --scope sys/x86 --scope sys/compat --scope sys/contrib --scope sys/crypto --scope sys/opencrypto --scope sys/ddb --scope sys/isa --scope sys/nfs --scope sys/netgraph --scope sys/netlink --scope sys/rpc --scope sys/kgssapi --scope sys/libkern --scope sys/modules --scope sys/nlm --scope sys/teken --scope sys/tests --scope sys/xen --scope sys/dts --scope sys/gnu --scope sys/sys --scope sys/hardenedbsd --scope sys/netipsec --scope sys/netpfil --scope sys/net80211 --scope sys/netsmb --scope sys/nfsclient --scope sys/nfsserver --scope sys/ofed --scope sys/bsm --scope sys/conf --scope sys/gdb --scope sys/mips --scope sys/tools --scope sys/xdr' }
