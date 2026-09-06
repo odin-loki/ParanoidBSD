@@ -231,6 +231,17 @@ def arch_of(rel: str, default: str = "amd64") -> str:
     reports a clean check of a program that does not exist.
     """
     parts = rel.split("/")
+    # lib/libc/softfloat is libc's software floating point, and amd64
+    # does not build a word of it - softfloat/Makefile.inc is included
+    # only from arm, powerpc, powerpc64, powerpcspe and riscv. Analysed
+    # against amd64 it cannot find <milieu.h>, because amd64 has no
+    # lib/libc/amd64/softfloat/ for it to come from. It is real code
+    # that five of PBSD's six architectures run for every float
+    # operation; the arch it is checked against just has to be one that
+    # builds it. arm carries SOFTFLOAT_BITS=32 and everything else 64,
+    # so the bits64/ sources are named for a 64-bit one.
+    if rel.startswith("lib/libc/softfloat/"):
+        return "riscv64" if "/bits64/" in rel else "armv7"
     if len(parts) > 2 and parts[0] == "lib" and parts[1] in ("libc", "msun"):
         cand = ARCH_DIR.get(parts[2])
         if cand:
@@ -252,16 +263,22 @@ def arch_of(rel: str, default: str = "amd64") -> str:
             if cand:
                 return cand
     # ...and neither was the run-time linker, which keeps its relocation
-    # processor per architecture under libexec/rtld-elf/<arch>/reloc.c and
-    # spells the directories the way ARCH_DIR's keys do. All seven were
-    # analysed against amd64's <machine/*.h>. Five would not compile and
-    # said so; the interesting two are amd64's, which was right by
-    # coincidence of being amd64, and riscv's, which compiled - a clean
-    # check of a program that is not the one riscv builds. That the one
-    # finding it produced (a leaked symbol cache) is architecture-neutral
-    # C is luck, not method.
-    if len(parts) > 3 and parts[0] == "libexec" and parts[1] == "rtld-elf":
-        cand = ARCH_DIR.get(parts[2])
+    # processor per architecture under libexec/rtld-elf/<arch>/reloc.c.
+    # All seven were analysed against amd64's <machine/*.h>. Five would
+    # not compile and said so; the interesting two are amd64's, right by
+    # coincidence of being amd64, and riscv's, which COMPILED - a clean
+    # check of a program riscv does not build. That the one finding it
+    # produced (a leaked symbol cache) is architecture-neutral C is luck.
+    #
+    # Enumerating the third place was the wrong lesson: a fourth was
+    # already waiting (lib/csu, lib/libsys, stand, usr.sbin/bhyve, and
+    # contrib/arm-optimized-routines, 357 files in 79 directories). The
+    # rule the tree actually follows is the one the sys/ branch above
+    # already uses - the DEEPEST component that names an architecture is
+    # the architecture - so it is applied everywhere rather than to a
+    # list of prefixes that will be short by one again next time.
+    for name in reversed(parts[:-1]):
+        cand = ARCH_DIR.get(name) or SYS_ARCH.get(name)
         if cand:
             return cand
     return default
@@ -808,9 +825,38 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         flags += [f"-I{SRC}/lib/libc/include",
                   f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}",
                   f"-I{SRC}/lib/libc/resolv",
-                  f"-I{SRC}/lib/libc/softfloat",
-                  f"-I{SRC}/lib/libc/softfloat/templates",
+                  # softfloat/Makefile.inc puts the per-architecture
+                  # directory FIRST and lists no third one:
+                  #
+                  #   CFLAGS+= -I${LIBC_SRCTOP}/${LIBC_ARCH}/softfloat \
+                  #            -I${LIBC_SRCTOP}/softfloat
+                  #
+                  # softfloat/templates/ was on this path and had to
+                  # come off it. It is upstream SoftFloat's TEMPLATE
+                  # directory - files meant to be copied and edited -
+                  # and its milieu.h opens with
+                  #
+                  #   #include "../../../processors/!!!processor.h"
+                  #
+                  # a deliberately unopenable path, so that using the
+                  # template unedited fails loudly. It did: 39
+                  # translation units, every one under lib/libc/arm/
+                  # and the softfloat core, came back ERROR on it while
+                  # the edited copy sat in lib/libc/arm/softfloat/ two
+                  # entries below. A template read as though it were the
+                  # program - the same mistake as hbsd_pax_SKEL.c.
                   f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}/softfloat",
+                  f"-I{SRC}/lib/libc/softfloat",
+                  f"-I{SRC}/lib/libc/softfloat/bits"
+                  f"{'32' if LIBC_ARCH.get(arch) == 'arm' else '64'}",
+                  # ...and the -D from the same three lines of that
+                  # Makefile.inc. Without it arm-gcc.h defines neither
+                  # FLOAT64_MANGLE nor FLOAT64_DEMANGLE - the whole pair
+                  # is inside `#if defined(SOFTFLOAT_FOR_GCC)' - and
+                  # every file that mangles a double fails to compile
+                  # on an undeclared function. Harmless anywhere else:
+                  # nothing outside softfloat reads it.
+                  "-DSOFTFLOAT_FOR_GCC",
                   f"-I{SRC}/lib/libc/gdtoa",
                   f"-I{SRC}/contrib/gdtoa",
                   f"-I{SRC}/lib/libc/locale",
@@ -826,6 +872,27 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}"]
     if rel.startswith("lib/libmd"):
         flags.append(f"-I{SRC}/lib/libmd")
+    if rel.startswith("lib/libc/csu/"):
+        # The C start-up: libc_start1.c is the first C any process runs
+        # after the run-time linker, and none of its six translation
+        # units had ever compiled. lib/libc/csu/Makefile.inc is three
+        # lines and they are all load-bearing:
+        #
+        #   .include "${LIBC_SRCTOP}/csu/${LIBC_ARCH}/Makefile.inc"
+        #   CFLAGS+= -I${LIBC_SRCTOP}/csu/${LIBC_ARCH}
+        #
+        # and the per-architecture Makefile.inc is one line, a
+        # -DCRT_IRELOC_{RELA,REL,SUPPRESS} that libc_start1.c turns into
+        # `#error "Define platform reloc type"' when absent. Read out of
+        # that Makefile.inc rather than copied into a table here, because
+        # a table is a second place for the answer to be wrong in.
+        csu = SRC / "lib/libc/csu" / LIBC_ARCH.get(arch, "amd64")
+        flags.append(f"-I{csu}")
+        mk = csu / "Makefile.inc"
+        if mk.is_file():
+            m = re.search(r"-D(CRT_IRELOC_\w+)", mk.read_text(errors="replace"))
+            if m:
+                flags.append(f"-D{m.group(1)}")
     if rel.startswith("libexec/rtld-elf"):
         # The run-time linker, which was not in any analyse shard until
         # the rtld.c aux_info defect cost thirty-seven boot runs -- and

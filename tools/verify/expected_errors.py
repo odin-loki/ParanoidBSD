@@ -42,6 +42,26 @@ EXPECTED = {
     "sys/kern/subr_devmap.c":       "arch-private, #included where used",
     "sys/kern/subr_sfbuf.c":        "arch-private sf_buf helpers",
 
+    # The C start-up's per-architecture IRELATIVE handler. Each is
+    # `#include "reloc.c"' inside libc_start1.c, after that file has
+    # declared __rela_iplt_start and picked Elf_Rela or Elf_Rel from
+    # CRT_IRELOC_RELA/REL. Alone they see no <sys/elf.h> and no
+    # <sys/types.h>, which is why the errors are `unknown type name
+    # u_int' and an Elf_Addr that parsed as a function declaration.
+    # libc_start1.c itself compiles now, and did not before this list
+    # was written: the first C every process runs after the run-time
+    # linker, never analysed once.
+    "lib/libc/csu/amd64/reloc.c":     "#included by libc_start1.c",
+    "lib/libc/csu/aarch64/reloc.c":   "#included by libc_start1.c",
+    "lib/libc/csu/i386/reloc.c":      "#included by libc_start1.c",
+    "lib/libc/csu/powerpc64/reloc.c": "#included by libc_start1.c",
+    "lib/libc/csu/riscv/reloc.c":     "#included by libc_start1.c",
+
+    # upstream SoftFloat's own benchmark harness, with a K&R main().
+    # softfloat/Makefile.inc's SRCS does not name it and no libc links
+    # it; softfloat.txt describes it as the timing program.
+    "lib/libc/softfloat/timesoftfloat.c": "upstream's benchmark, not in SRCS",
+
     # option-gated: no kernel config in this tree sets these
     "sys/kern/subr_asan.c":         "needs option KASAN",
     "sys/kern/subr_csan.c":         "needs option KCSAN",
