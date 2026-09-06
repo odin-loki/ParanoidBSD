@@ -105,10 +105,19 @@ on:
           use is as a bisection handle: a system that behaves differently
           under `none` has the cause somewhere in that list, and a system
           that behaves the same does not.
+
+          nosanitizer is hbsd/src.conf.pbsd-nosanitizer: everything pbsd has
+          EXCEPT SAFESTACK and CFI. Run 41 put the cause inside the hardening
+          set - /rescue/init talks and /sbin/init does not - and those two
+          are the suspects, because both make clang link a compiler-rt
+          archive that this build finds through a symlink papering over an
+          x86_64-portbld-freebsd15.0 vs x86_64-unknown-freebsd15.1 triple
+          mismatch, and because SafeStack runs before main. This narrows six
+          options to two, or rules them out and leaves four.
         required: false
         default: 'pbsd'
         type: choice
-        options: [pbsd, none]
+        options: [pbsd, none, nosanitizer]
 
 jobs:
   image:
@@ -187,6 +196,11 @@ jobs:
                "$PWD/hbsd/src.conf.pbsd"
             if [ "${{ inputs.src_conf }}" = "none" ]; then
               KERNCONF="${{ inputs.kernconf }}" SRCCONF="" \
+              TOOLCHAIN="${{ inputs.toolchain }}" \
+                sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
+            elif [ "${{ inputs.src_conf }}" = "nosanitizer" ]; then
+              KERNCONF="${{ inputs.kernconf }}" \
+              SRCCONF="$PWD/hbsd/src.conf.pbsd-nosanitizer" \
               TOOLCHAIN="${{ inputs.toolchain }}" \
                 sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
             else

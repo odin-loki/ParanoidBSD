@@ -745,6 +745,44 @@ before `main`: it allocates a second stack and moves the stack pointer.
 A process that never says anything is exactly what that failing looks
 like.
 
+### Run 41: the answer
+
+Twenty-one runs, and the control finally ran:
+
+```
+Trying to mount root from ufs:/dev/ufs/HardenedBSD_Install [ro,noatime]...
+start_init: trying /sbin/init
+start_init: trying /sbin/oinit
+start_init: trying /sbin/init.bak
+start_init: trying /rescue/init
+__PBSD_ALIVE__
+[userland reached]
+```
+
+All four `start_init: trying` lines, which independently confirms the
+`ENOENT` fall-through — and then **`/rescue/init` talks.**
+
+Same kernel, same image, same console, same `boot_test.py`. One renamed
+file between the silent case and the speaking one. `/rescue/init` is
+built `MK_SAFESTACK=no MK_CFI=no MK_PIE=no NO_SHARED=yes`; `/sbin/init`
+has PIE, RELRO, BIND_NOW, SafeStack, CFI and BRANCH_PROTECTION.
+
+**The cause is in `hbsd/src.conf.pbsd`'s hardening set.** It is not the
+kernel, not the console, not the rtld theory, and not anything in the
+C-to-C++ port. Eleven runs were read as a kernel hang and it was never
+one; `kern_execve` has been returning `EJUSTRETURN` since run 20.
+
+Six runs of that twenty-one were also spent on a mistake of mine that had
+nothing to do with the question: `HARDENEDBSD-MINIMAL` is the workflow's
+default `kernconf` and it includes `MINIMAL` + `HARDENEDBSD-CORE`, so it
+has no `virtio` at all, while QEMU is handed the image as
+`-device virtio-blk-pci`. Those runs stopped at `Manual root filesystem
+specification:` and `boot_test.py` now explains that case itself.
+
+Next: `src_conf=none` confirms the class, and `src_conf=nosanitizer` —
+everything except `SAFESTACK` and `CFI` — narrows six options to two or
+rules them out and leaves four.
+
 ### The control that costs one renamed file
 
 `sys/kern/init_main.c:716` compiles this list into every kernel:

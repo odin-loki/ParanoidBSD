@@ -1,0 +1,180 @@
+# PBSD build options. Include from /etc/src.conf, or make SRCCONF=...
+#
+# Every architecture is first class. This file used to say the opposite -
+# WITHOUT_LIB32, and the LLVM backends for arm, powerpc and riscv turned off
+# - which did not make the assembly problem smaller, it hid most of it. The
+# tree carries 71,905 lines of its own assembly across six architectures;
+# with four of them dropped it looked like 40,156.
+#
+# See docs/ASSEMBLY.md for the per-architecture breakdown.
+
+# No machine-dependent assembly in libc, msun or libmd.
+#
+# This is upstream's own switch, not a PBSD invention. lib/libc/Makefile:159:
+#
+#   .if empty(MDSRCS) || ${MK_MACHDEP_OPTIMIZATIONS} == no
+#   SRCS+=  ${MISRCS}
+#
+# Machine-independent C is selected instead, and it already exists: of the 80
+# machine-dependent .S files libc lists, 74 have a C counterpart in MISRCS by
+# construction, and the remaining 6 are ifunc-dispatched variants (_vsx,
+# _zva64, _arch_2_05) of functions that also have C. lib/msun honours the
+# same option for its ARCH_SRCS, and lib/libmd for rmd160.
+#
+# It costs performance on the hand-tuned string and math routines. It buys
+# 12,344 lines in libc alone that a new architecture no longer has to write,
+# and it is one line rather than a rewrite. tools/asm_removal_plan.py has the
+# current figures.
+WITHOUT_MACHDEP_OPTIMIZATIONS=YES
+
+# ---------------------------------------------------------------------------
+# Hardening, on every architecture.
+#
+# src.opts.mk makes most of these amd64-only, or amd64-and-arm64:
+#
+#   .if ${__T} == "amd64"
+#   __DEFAULT_YES_OPTIONS+=SAFESTACK
+#   __DEFAULT_YES_OPTIONS+=RETPOLINE
+#   .else
+#   __DEFAULT_NO_OPTIONS+=SAFESTACK
+#
+# That is upstream being careful about what it has tested, and it is the same
+# shape of problem the kernel configs had: the hardening policy differed per
+# architecture for reasons that were about coverage rather than about the
+# hardware, and the architectures nobody built quietly got less of it.
+#
+# bsd.mkopt.mk: an option in __DEFAULT_NO_OPTIONS becomes yes when WITH_FOO is
+# defined. So this is a configuration change, not a patch to the logic.
+#
+# pbsd-arch-matrix.yml builds all six and tools/ci/show_hardening.sh reports
+# what each one actually got, so "PBSD hardens every architecture equally" is
+# a claim with a build behind it rather than an aspiration.
+
+# No hardware dependency. These are linker and codegen choices and there is no
+# architecture where they are meaningless.
+WITH_PIE=YES
+WITH_RELRO=YES
+WITH_BIND_NOW=YES
+
+# SafeStack and CFI, where the runtime exists.
+#
+# These two are not codegen alone. -fsanitize=safe-stack and -fsanitize=cfi
+# make clang link a compiler-rt archive, and lib/libclang_rt/Makefile builds
+# one only for amd64, aarch64 and i386 - there is no arm, powerpc or riscv
+# subdirectory in it at all. Asking for them elsewhere produces a link error
+# in world that nothing in the tree or in the packaged toolchain could
+# satisfy.
+#
+# This file said WITH_SAFESTACK / WITH_CFI unconditionally, on the argument
+# that upstream's amd64-only default was about test coverage rather than
+# hardware. For RETPOLINE and BRANCH_PROTECTION that argument is right and
+# they stay as they are. For these two it was wrong, and matrix run 8 is
+# where it showed: show_hardening.sh reported SAFESTACK=yes and CFI=yes on
+# arm, faithfully, because this file said so - and no runtime for either
+# exists on arm. The matrix builds kernels, which do not link libclang_rt,
+# so nothing failed. A world build would have.
+#
+# So the condition is on the runtime existing, which is a real property, and
+# it is written here rather than left to be discovered at link time.
+# tools/ci/build_boot_image.sh narrows it further when the external
+# toolchain ships no archive either. docs/PORTABILITY.md has the table.
+.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "aarch64" || \
+    ${MACHINE_CPUARCH} == "i386"
+WITHOUT_SAFESTACK=YES
+WITHOUT_CFI=YES
+.else
+WITHOUT_SAFESTACK=YES
+WITHOUT_CFI=YES
+.endif
+
+# arm64 branch protection: BTI plus pointer authentication.
+# bsd.opts.mk:91 puts BRANCH_PROTECTION in BROKEN_OPTIONS for anything that is
+# not aarch64, so this is safe to state unconditionally - it turns on where the
+# hardware exists and stays off everywhere else, which is the correct kind of
+# architecture-specific. bsd.lib.mk:115 emits -mbranch-protection=standard.
+WITH_BRANCH_PROTECTION=YES
+
+# Already on by default, and listed here so it is not mistaken for missing:
+#   MK_SSP               bsd.opts.mk __DEFAULT_YES_OPTIONS. Brings
+#                        -fstack-protector-strong, -fstack-clash-protection
+#                        where the compiler supports it (bsd.sys.mk:312), and
+#                        FORTIFY_SOURCE=2.
+#   MK_REPRODUCIBLE_BUILD  also default yes.
+
+# RETPOLINE is deliberately NOT set here. It is -mretpoline, an x86
+# microarchitectural mitigation for Spectre v2; clang rejects it on other
+# targets, and the equivalent elsewhere is different hardware (arm64's BTI and
+# pointer authentication, which want MK_BRANCH_PROTECTION - an option this
+# tree does not have yet). Leaving it architecture-conditional is correct;
+# leaving SafeStack architecture-conditional was not.
+
+# ---------------------------------------------------------------------------
+# Not built into a shipped image.
+#
+# Each of these is a subsystem the build can leave out entirely. Reducing by
+# configuration rather than by deleting files is the rule this tree learned
+# the hard way: the flat import pruned architectures and prebuilt driver
+# blobs out of the source, and every one of those cost a build run to find.
+# A WITHOUT_ line is reversible, reviewable, and cannot make the tree
+# unmergeable with upstream.
+#
+# Sizes are tracked files under hbsd/src, for scale rather than precision.
+
+WITHOUT_TESTS=YES		# tests 2,400 + netbsd-tests 1,945 + googletest 247
+WITHOUT_GAMES=YES
+WITHOUT_SHAREDOCS=YES		# share/doc, 428
+WITHOUT_HTML=YES
+WITHOUT_EXAMPLES=YES
+WITHOUT_OFED=YES		# InfiniBand; no target PBSD builds has it
+
+# ---------------------------------------------------------------------------
+# Deliberately NOT set here, and why.
+#
+# WITHOUT_KERBEROS / WITHOUT_MITKRB5 would remove crypto/krb5 and kerberos5,
+# 2,179 files, and for a hardened system there is a real argument that a
+# network authentication stack nobody uses is attack surface. But it is
+# functionality, not fat: turning it off changes what PBSD can do, not just
+# what it ships. That is a product decision and it is not made here.
+#
+# WITHOUT_TESTS above is not the same kind of choice - it removes the test
+# suite from the *image*, and CI still builds with tests enabled, which is
+# where the suite is meant to run.
+
+# ---------------------------------------------------------------------------
+# THIS FILE EXISTS TO BISECT ONE RESULT.
+#
+# Boot image run 41, after twenty-one runs:
+#
+#   start_init: trying /sbin/init          <- silent
+#   start_init: trying /sbin/oinit         ENOENT
+#   start_init: trying /sbin/init.bak      ENOENT
+#   start_init: trying /rescue/init
+#   __PBSD_ALIVE__                          <- talks
+#   [userland reached]
+#
+# /rescue/init is static, non-PIE, and built with MK_SAFESTACK=no MK_CFI=no
+# MK_PIE=no NO_SHARED=yes. /sbin/init has PIE, RELRO, BIND_NOW, SafeStack,
+# CFI and BRANCH_PROTECTION. Same kernel, same image, same console, one
+# renamed file between them. So the cause is in this option set.
+#
+# This file is src.conf.pbsd with SAFESTACK and CFI turned OFF and
+# everything else - PIE, RELRO, BIND_NOW, BRANCH_PROTECTION,
+# WITHOUT_MACHDEP_OPTIMIZATIONS - left exactly as it is.
+#
+# Those two are the suspects for a reason rather than by elimination. Both
+# are -fsanitize= options that make clang link a compiler-rt archive, and
+# run 31's own build report says how that archive is being found:
+#
+#   == external toolchain runtime
+#      the package built its runtime for x86_64-portbld-freebsd15.0
+#      and this build asks for x86_64-unknown-freebsd15.1; aliasing
+#      SAFESTACK on: .../libclang_rt.safestack.a
+#      CFI on:       .../libclang_rt.cfi.a
+#
+# through a symlink papering over a triple mismatch. And SafeStack runs
+# BEFORE main: it allocates a second stack and moves the stack pointer. A
+# process that never says anything is what that failing looks like.
+#
+# If /sbin/init talks under this file, it is one of those two and the next
+# bisect is between them. If it stays silent, it is PIE, RELRO, BIND_NOW or
+# BRANCH_PROTECTION and this file becomes the control for those.
