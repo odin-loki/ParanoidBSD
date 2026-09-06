@@ -193,6 +193,16 @@ jobs:
       - name: No port introduces a diagnostic its C original does not
         run: python3 tools/check_port_cxx_warnings.py --gate
 
+      # Boot image run 38 died linking libc.so.7:
+      #   ld.lld: version script assignment of 'FBSD_1.0' to symbol
+      #           '__isnan' failed: symbol not defined
+      # on a file the oracle had certified abi_equal - because
+      # lib/libc/gen/isnan.c is entirely inside #ifdef PIC, the oracle does
+      # not pass -DPIC, and two EMPTY modules compare equal. An empty
+      # module is a failure here, not a pass.
+      - name: Every port exports the symbols its C original does
+        run: python3 tools/check_port_symbols.py --gate
+
       # The parity gate above compares ONE config across the six
       # architectures. This asks the other twenty-one the question that
       # actually applies to them, most being single-architecture: does a

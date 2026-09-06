@@ -93,7 +93,7 @@ SRCS+= \
 	inotify.c \
 	isatty.cpp \
 	isinf.cpp \
-	isnan.cpp \
+	isnan.c \
 	jrand48.cpp \
 	kqueue1.c \
 	lcong48.cpp \
