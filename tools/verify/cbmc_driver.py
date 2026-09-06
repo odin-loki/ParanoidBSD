@@ -177,6 +177,7 @@ def _rec(task: dict, status: str, **kw) -> dict:
         "file": task["file"],
         "function": task["function"],
         "tier": task["tier"],
+        "class": task.get("class"),
         "unwind": task["unwind"],
         "status": status,
         **kw,
@@ -184,34 +185,48 @@ def _rec(task: dict, status: str, **kw) -> dict:
 
 
 def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
-               tier: str, preprocessed: Path | None) -> list[dict]:
+               tier: str, classes: Path, allow: set[str]) -> list[dict]:
+    """One task per (translation unit, function the ledger says it defines).
+
+    Two intersections, and both matter.
+
+    classify.py reports every function in the goto model, which includes
+    every `static inline` dragged in from a header - the same one in
+    hundreds of translation units. The ledger says which functions a FILE
+    defines, so intersecting with it checks each function once, in its own
+    unit, instead of once per includer.
+
+    And `allow` keeps only the classes where an unguarded modular check is
+    sound. A POINTER function needs a precondition and is not run here.
+    """
     d = json.loads(plan.read_text())
-    tasks = []
+    cls = json.loads(classes.read_text())
+    tasks, skipped = [], {"no-model": 0, "class": 0, "not-in-model": 0}
     for rec in d["records"]:
         path = rec.get("path") or ""
         if scopes and not any(path.startswith(s) for s in scopes):
             continue
         if not rec.get("functions"):
             continue
-        if preprocessed:
-            cand = preprocessed / (path + ".i")
-            if not cand.is_file():
-                continue
-            src = str(cand)
-        else:
-            cand = SRC / path
-            if not cand.is_file():
-                # a landed port: .c became .cpp
-                alt = cand.with_suffix(".cpp")
-                if not alt.is_file():
-                    continue
-                cand = alt
-            src = str(cand)
+        c = cls.get(path)
+        if not c or not c.get("ok"):
+            skipped["no-model"] += len(rec["functions"])
+            continue
+        fns = c["functions"]
         for fn in rec["functions"]:
+            if fn not in fns:
+                skipped["not-in-model"] += 1
+                continue
+            if fns[fn] not in allow:
+                skipped["class"] += 1
+                continue
             tasks.append({
-                "file": path, "src": src, "function": fn,
+                "file": path, "src": c["gb"], "function": fn,
+                "class": fns[fn],
                 "unwind": unwind, "timeout": timeout, "tier": tier,
             })
+    print("  skipped: " + "  ".join(f"{k}={v}" for k, v in skipped.items()),
+          flush=True)
     return tasks
 
 
@@ -225,16 +240,19 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=60, help="seconds per function")
     ap.add_argument("--tier", choices=["ub", "advisory"], default="ub")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4)))
-    ap.add_argument("--preprocessed", help="tree of .i files from a FreeBSD host")
+    ap.add_argument("--classes", default="verify_classes.json",
+                    help="output of classify.py")
+    ap.add_argument("--allow", default="SCALAR,VOID",
+                    help="classes to check (SCALAR,VOID are sound unguarded)")
     ap.add_argument("--out", default="verify_results.jsonl")
     ap.add_argument("--limit", type=int)
     ap.add_argument("--resume", action="store_true",
                     help="skip (file, function) pairs already in --out")
     args = ap.parse_args()
 
-    pre = Path(args.preprocessed) if args.preprocessed else None
     tasks = load_tasks(Path(args.plan), args.scope, args.unwind,
-                       args.timeout, args.tier, pre)
+                       args.timeout, args.tier, Path(args.classes),
+                       set(args.allow.split(",")))
 
     out = Path(args.out)
     done: set[tuple[str, str]] = set()

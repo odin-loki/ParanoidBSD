@@ -15,7 +15,7 @@ stdc_first_leading_one_uc(unsigned char x)
 	if (x == 0)
 		return (0);
 
-	return (__builtin_clz(x << offset) + 1);
+	return (__builtin_clz((unsigned int)x << offset) + 1);
 }
 
 unsigned int
@@ -26,7 +26,7 @@ stdc_first_leading_one_us(unsigned short x)
 	if (x == 0)
 		return (0);
 
-	return (__builtin_clz(x << offset) + 1);
+	return (__builtin_clz((unsigned int)x << offset) + 1);
 }
 
 unsigned int

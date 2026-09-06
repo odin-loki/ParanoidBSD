@@ -89,6 +89,9 @@ def _params(type_str: str) -> str | None:
     return None
 
 
+PTR_GLOBAL_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
 def classify_type(type_str: str) -> str:
     p = _params(type_str)
     if p is None:
@@ -130,19 +133,64 @@ def model_one(job: dict) -> dict:
     gi = shutil.which("goto-instrument") or "goto-instrument"
     try:
         q = subprocess.run([gi, "--show-symbol-table", str(gb)],
-                           capture_output=True, text=True, timeout=job["timeout"])
+                           capture_output=True, timeout=job["timeout"])
+        q_out = q.stdout.decode("utf-8", "replace")
     except (subprocess.TimeoutExpired, OSError) as e:
         return {"file": rel, "ok": False, "error": f"symbol table: {e}"}
 
     fns: dict[str, str] = {}
-    for m in SYM_RE.finditer(q.stdout):
+    extern_ptrs: set[str] = set()
+    for m in SYM_RE.finditer(q_out):
         sym, ty = m.group("sym"), m.group("type").strip()
         if "::" in sym:          # a parameter or local, not a function
             continue
         cls = classify_type(ty)
         if cls != "NOTFN":
             fns[sym] = cls
+        elif "*" in ty:
+            # A file-scope POINTER defined in another translation unit.
+            # CBMC has no value for it, so it is nondeterministic - which
+            # means NULL, and dangling, exactly like an unconstrained
+            # pointer parameter.
+            extern_ptrs.add(sym)
+
+    # Which functions touch one. getchar() takes no arguments and still
+    # came back `dereference failure: pointer NULL`, because its body is
+    #     CALL _flockfile(__stdinp)
+    # and __stdinp lives in another unit. A function like that is no more
+    # soundly checkable unguarded than one taking a char *.
+    if extern_ptrs and fns:
+        try:
+            g = subprocess.run([gi, "--show-goto-functions", str(gb)],
+                               capture_output=True, timeout=job["timeout"])
+            # String literals reach this output as raw source bytes, so it
+            # is not necessarily UTF-8. Only identifiers are being read.
+            bodies = _split_bodies(g.stdout.decode("utf-8", "replace"))
+            for name in list(fns):
+                if fns[name] in ("SCALAR", "VOID"):
+                    used = PTR_GLOBAL_RE.findall(bodies.get(name, ""))
+                    if extern_ptrs.intersection(used):
+                        fns[name] = "GLOBALPTR"
+        except (subprocess.TimeoutExpired, OSError):
+            pass
+
     return {"file": rel, "ok": True, "gb": str(gb), "functions": fns}
+
+
+def _split_bodies(text: str) -> dict[str, str]:
+    """goto-instrument prints `name /* pretty */` then an indented body."""
+    out: dict[str, str] = {}
+    cur, buf = None, []
+    for line in text.splitlines():
+        if line and not line[0].isspace() and "/*" in line:
+            if cur:
+                out[cur] = "\n".join(buf)
+            cur, buf = line.split(None, 1)[0], []
+        elif cur is not None:
+            buf.append(line)
+    if cur:
+        out[cur] = "\n".join(buf)
+    return out
 
 
 def main() -> int:

@@ -17,7 +17,7 @@ stdc_leading_ones_uc(unsigned char x)
 {
 	const int offset = UINT_WIDTH - UCHAR_WIDTH;
 
-	return (__builtin_clz(~(x << offset)));
+	return (__builtin_clz(~((unsigned int)x << offset)));
 }
 
 /* Avoid triggering undefined behavior if x == 0. */
@@ -29,7 +29,7 @@ stdc_leading_ones_us(unsigned short x)
 {
 	const int offset = UINT_WIDTH - USHRT_WIDTH;
 
-	return (__builtin_clz(~(x << offset)));
+	return (__builtin_clz(~((unsigned int)x << offset)));
 }
 
 unsigned int

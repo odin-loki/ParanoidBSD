@@ -17,7 +17,7 @@ stdc_leading_zeros_uc(unsigned char x)
 {
 	const int offset = UINT_WIDTH - UCHAR_WIDTH;
 
-	return (__builtin_clz((x << offset) + (1U << (offset - 1))));
+	return (__builtin_clz(((unsigned int)x << offset) + (1U << (offset - 1))));
 }
 
 /* Offset must be greater than zero. */
@@ -29,7 +29,7 @@ stdc_leading_zeros_us(unsigned short x)
 {
 	const int offset = UINT_WIDTH - USHRT_WIDTH;
 
-	return (__builtin_clz((x << offset) + (1U << (offset - 1))));
+	return (__builtin_clz(((unsigned int)x << offset) + (1U << (offset - 1))));
 }
 
 unsigned int
