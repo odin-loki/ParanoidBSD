@@ -521,3 +521,71 @@ gate would have raised `NameError` the first time it fired, on the
 runner, six minutes into a job, on a run that was already failing. A
 regex checking "is `sys` imported" said yes because it was reading the
 wrong heredoc.
+
+
+## The first lib/libc batch: 27 files
+
+Derived rather than chosen. `check_port_candidates.py --scope lib/libc`
+gives what the tree permits (577 of 1,216); oracle run 33's
+`committable: 109, of which 85 are zero-edit` gives what the oracle
+verified; the batch is the intersection, and it is 27.
+
+```
+compat-43/setrgid.cpp  setruid.cpp
+gen/_rand48.cpp  drand48.cpp  erand48.cpp  frexp.cpp  isinf.cpp
+gen/isnan.cpp  jrand48.cpp  lcong48.cpp  lrand48.cpp  mrand48.cpp
+gen/nrand48.cpp  siglist.cpp  srand48.cpp
+locale/iswctype.cpp
+secure/strlcat_chk.cpp
+stdio/dprintf.cpp  fcloseall.cpp
+stdlib/imaxabs.cpp  imaxdiv.cpp  labs.cpp  ldiv.cpp  llabs.cpp  lldiv.cpp
+string/ffsll.cpp
+uuid/uuid_hash.cpp
+```
+
+Every one is a pure rename: `27 files changed, 0 insertions(+), 0
+deletions(-)`, plus one `SRCS` token each.
+
+### The 12 the intersection removed, and why the tool had to learn one
+
+39 files survived the first intersection. Twelve of them should not have,
+and eleven were one Makefile:
+
+| file | named by |
+|---|---|
+| `quad/`: `adddi3` `anddi3` `cmpdi2` `iordi3` `lshldi3` `muldi3` `negdi2` `notdi2` `subdi3` `xordi3` | `KQSRCS`, `lib/libc/Makefile:171` |
+| `string/ffsl.c` | `KSRCS`, same |
+| `stdlib/div.c` | `JEMALLOCSRCS` (a basename collision — jemalloc's is `contrib/jemalloc/src/div.c`) |
+
+`KQSRCS` and `KSRCS` feed `make libkern`, a hand-run target that copies
+those sources into `sys/libkern`. Nothing adds either to `SRCS`, so they
+are not build lists — but they match `*SRCS*=`, and being at the top level
+of the file they read as **unconditional** `SRCS` entries. That then
+masked the real ones: every `SRCS` line in `quad/Makefile.inc` is inside
+an `.if` on `LIBC_ARCH`, and the tool's "unconditional wins" rule
+discarded the conditional finding. Ten quad files were portable on the
+strength of a list that builds nothing.
+
+The rule now is reachability: a `SRCS`-shaped variable counts only if it
+reaches `SRCS` by `${VAR}` reference. See the `unbuilt` row in the table
+above.
+
+### Verified before the build, not by it
+
+* `check_source_includes.py --gate` — nothing `#include`s a renamed name.
+* `check_libc_srcs.py --gate` — all 1,051 sources resolve on disk.
+* `bmake -V SRCS` over **six architectures × two configurations**
+  (defaults, and `SRCCONF=src.conf.pbsd` where
+  `WITHOUT_MACHDEP_OPTIMIZATIONS` takes the other branch of
+  `Makefile:159`): 28 `.cpp` on every one of the twelve, no ported name
+  still present as `.c`, no `.cpp` missing, and no two sources sharing an
+  object stem.
+* the `SRCS` **set**, with extensions normalised, is byte-identical to the
+  set before the batch — 1,425 entries on amd64 under `src.conf.pbsd`. The
+  batch changed extensions, not membership.
+
+`LIBC_NONSHARED_SRCS` is worth knowing about before the next batch:
+`Makefile:152` derives its objects with `${LIBC_NONSHARED_SRCS:S/.c$/.o/}`,
+which is keyed on `.c` and would silently produce nothing for a `.cpp`. It
+resolves to the eleven `iconv` sources, none of which is in this batch,
+and all of which the screener rejects anyway.

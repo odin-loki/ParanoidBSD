@@ -27,14 +27,14 @@ MISRCS+= \
 	heapsort.c \
 	heapsort_b.c \
 	hsearch_r.c \
-	imaxabs.c \
-	imaxdiv.c \
+	imaxabs.cpp \
+	imaxdiv.cpp \
 	insque.c \
 	l64a.c \
-	labs.c \
-	ldiv.c \
-	llabs.c \
-	lldiv.c \
+	labs.cpp \
+	ldiv.cpp \
+	llabs.cpp \
+	lldiv.cpp \
 	lsearch.c \
 	memalignment.c \
 	merge.c \

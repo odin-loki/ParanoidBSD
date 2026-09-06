@@ -1,8 +1,8 @@
 # stdio sources
 .PATH: ${LIBC_SRCTOP}/stdio
 
-SRCS+=	_flock_stub.c asprintf.c clrerr.c dprintf.c \
-	fclose.c fcloseall.c fdopen.c \
+SRCS+=	_flock_stub.c asprintf.c clrerr.c dprintf.cpp \
+	fclose.c fcloseall.cpp fdopen.c \
 	feof.c ferror.c fflush.c fgetc.c fgetln.c fgetpos.c fgets.c fgetwc.c \
 	fgetwln.c fgetws.c \
 	fileno.c findfp.c flags.c fmemopen.c fopen.c \

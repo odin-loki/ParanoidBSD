@@ -13,7 +13,7 @@ MISRCS+=bcmp.c \
 	explicit_bzero.c \
 	ffs.c \
 	ffsl.c \
-	ffsll.c \
+	ffsll.cpp \
 	fls.c \
 	flsl.c \
 	flsll.c \

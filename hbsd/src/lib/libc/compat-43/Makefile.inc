@@ -2,7 +2,7 @@
 .PATH: ${LIBC_SRCTOP}/${LIBC_ARCH}/compat-43 ${LIBC_SRCTOP}/compat-43
 
 SRCS+=	gethostid.c getwd.c killpg.c sethostid.c setpgrp.c \
-	setrgid.c setruid.c sigcompat.c
+	setrgid.cpp setruid.cpp sigcompat.c
 
 SYM_MAPS+=${LIBC_SRCTOP}/compat-43/Symbol.map
 

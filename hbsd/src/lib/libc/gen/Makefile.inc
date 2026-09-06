@@ -10,7 +10,7 @@ SRCS+= \
 	__xuname.c \
 	_once_stub.c \
 	_pthread_stubs.c \
-	_rand48.c \
+	_rand48.cpp \
 	_spinlock_stub.c \
 	_thread_init.c \
 	aio_read2.c \
@@ -40,10 +40,10 @@ SRCS+= \
 	dirname_compat.c \
 	disklabel.c \
 	dlfcn.c \
-	drand48.c \
+	drand48.cpp \
 	dup3.c \
 	elf_utils.c \
-	erand48.c \
+	erand48.cpp \
 	err.c \
 	errlst.c \
 	eventfd.c \
@@ -57,7 +57,7 @@ SRCS+= \
 	fnmatch.c \
 	fpclassify.c \
 	freadlink.c \
-	frexp.c \
+	frexp.cpp \
 	fstab.c \
 	ftok.c \
 	fts.c \
@@ -92,22 +92,22 @@ SRCS+= \
 	initgroups.c \
 	inotify.c \
 	isatty.cpp \
-	isinf.c \
-	isnan.c \
-	jrand48.c \
+	isinf.cpp \
+	isnan.cpp \
+	jrand48.cpp \
 	kqueue1.c \
-	lcong48.c \
+	lcong48.cpp \
 	libc_dlopen.c \
 	libc_interposing_table.c  \
-	lrand48.c \
+	lrand48.cpp \
 	memalign.c \
 	memfd_create.c \
-	mrand48.c \
+	mrand48.cpp \
 	nftw.c \
 	nftw-compat11.c \
 	nice.c \
 	nlist.c \
-	nrand48.c \
+	nrand48.cpp \
 	opendir.c \
 	opendir2.c \
 	pause.c \
@@ -138,11 +138,11 @@ SRCS+= \
 	setprogname.c \
 	sig2str.c \
 	siginterrupt.c \
-	siglist.c \
+	siglist.cpp \
 	signal.c \
 	sigsetops.c \
 	sleep.c \
-	srand48.c \
+	srand48.cpp \
 	statvfs.c \
 	stringlist.c \
 	strtofflags.c \
