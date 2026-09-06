@@ -1698,19 +1698,12 @@ gone with it; what remains there is "shift distance too large", which is
 CBMC not knowing `slot <= PCI_SLOTMAX` — rule three, an exported
 function with a caller-constrained parameter.
 
-### New in this sweep, and not yet read
+### New in this sweep, now read
 
-* `sys/dev/firmware/arm/scmi_shmem.c:168` — `index * (signed int)4u`
-* `lib/msun/ld128/s_cospil.c:76`, `s_sinpil.c:82`, `s_tanpil.c:100` —
-  `(1ull << 49) - 1 >> e + 1` and `(uint64_t)-1 >> e - 48`, shift
-  distance negative and too large
-* `lib/msun/src/e_sqrt.c:127` — `ix1 >> 32 - i`
-* `lib/libcalendar/calendar.c` and `easter.c` — six sites, including
-  `29 / (i + 1)`
-* `lib/libcrypt/misc.c:42` — `n - 1`
-
-Named here so the next pass starts from a list rather than from the
-report again.
+`sys/dev/firmware/arm/scmi_shmem.c` was one of them and was a real
+defect — its own section above. The rest are not, and the reasoning is
+in the table at the end. One item is still open: `core.NullDereference`
+went from 583 to 586 and only two of the three are accounted for.
 
 ## Fixed — an error check that could not fire, on an arm attach path
 
@@ -1821,3 +1814,8 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/netinet/tcp_stacks/rack.c:17528`, `:17547` `rack->r_ctl.crte->rate` | guarded on `rack->rack_hdrw_pacing` rather than on `crte != NULL`, which looks like the guard-on-one-of-a-pair shape and is its **opposite**: the two fields are set together at `:17510-17511` and cleared together at every one of the eight sites that clears either — `:14886/14887`, `:17420/17422`, `:17440/17442`, `:17451/17453`, `:17487/17489`, `:17559/17561`, `:17576/17577`, `:23394/23397`, never more than two lines apart. The invariant `rack_hdrw_pacing == 1` implies `crte != NULL` holds by construction; the analyser cannot carry a two-field invariant across four thousand lines. Worth the row as the counter-example: this file maintains its pair everywhere. |
 | `sys/netinet/tcp_stacks/rack.c` `udp->uh_sum`, **four** sites | `rack->r_ctl.fsb.udp` is set to a real pointer inside `if (tp->t_port)` and to `NULL` in the `else`, at all four assignment sites (`:13887/13892` for v6, `:13909/13913` for v4). The three fast-output functions load it unconditionally and read it under `if (tp->t_port)`. So `fsb.udp != NULL` iff `t_port != 0`, an invariant held across a function boundary *and* a struct field — the same maintained-pair shape as `crte`/`rack_hdrw_pacing` above, and equally invisible. Two of these four only became reachable to the analyser after `if_hw_tsomaxsegsize` was initialised: an indeterminate value had been cutting the path short. |
 | `sys/netinet/tcp_stacks/rack.c` `ip6->ip6_flow`, `ip6->ip6_hlim` | `struct ip6_hdr *ip6 = NULL;` at `:18913`, assigned at `:18916` under `if (rack->r_is_v6)`, read at `:19071` and `:19157` under the same `if (rack->r_is_v6)` in the same function. `r_is_v6` is a bitfield nothing between the two touches. |
+| `lib/msun/ld128/s_cospil.c:76`, `s_sinpil.c:82`, `s_tanpil.c:100` | all three are `FFLOORL128()` (`math_private.h:825`), which shifts by `e + 1` where `e = u.bits.exp - 16383`, and by `e - 48` in its other arm. Each caller reaches the macro only past an early-return block — `if (ax <= 1)` in `cospil`, `if (ax < 1)` in the other two — so `ax >= 1`, `exp >= 16383`, `e >= 0`, and the first shift is 1..48; the enclosing `if (ax < 0x1p112)` puts the second at 0..63. Checked in all three rather than one, because a set of three where one lacks the guard is this document's most common finding — here all three have it, by two slightly different comparisons. CBMC sees an exported function taking an unconstrained `long double` and does not carry a floating-point comparison into the exponent field. |
+| `lib/msun/src/e_sqrt.c:127` `ix1 >> (32 - i)` | fdlibm's subnormal path. `i` comes from `for (i = 0; (ix0 & 0x00100000) == 0; i++) ix0 <<= 1;`, entered only after `while (ix0 == 0)` has guaranteed `ix0 != 0`, so the loop terminates with `i` bounded by the position of bit 20 and `32 - i` stays in range. A loop-exit invariant, which is the shape CBMC is least able to establish and the one `--unwind` bounds rather than proves. |
+| `lib/libcrypt/misc.c:42` `while (--n >= 0)` | `--n` is undefined only at `INT_MIN`. `_crypt_to64(s, v, n)` is called with small literal group counts by every crypt backend in the tree. Exported, so rule three. |
+| `lib/libcalendar/easter.c:46` `29 / (i + 1)` | `i` is `(...) % 30`, and C's `%` yields a negative result for a negative dividend, so `i == -1` divides by zero. Reaching it needs a **negative year**: for `y >= 0` the numerator is `c - c/4 - (c-k)/3 + 19n + 15` with every term non-negative or small, and it stays positive. `easterg(int y, date *dt)` is libcalendar's public entry point and its domain is a calendar year. Rule three — worth the row because the failure is real arithmetic rather than a modelling artefact, and a caller that passes a computed year should know. |
+| `lib/libcalendar/calendar.c` `jdate`, `ndaysg`, `ndaysj`, `weekday`, and `easter.c` `easterog`/`easteroj:100` | the same domain argument: signed arithmetic on a year, day or day-number that overflows only for inputs no calendar produces. Exported, caller-constrained. |
