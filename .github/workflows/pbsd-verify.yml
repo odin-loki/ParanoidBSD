@@ -74,7 +74,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: plan, path: docs }
       - name: Install the instruments
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq cbmc clang
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq cbmc clang bmake
       # A check that cannot see reports zero findings, and this repository
       # has been bitten by that three times. A green sweep from broken
       # instruments is the worst outcome available.
@@ -126,7 +126,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { name: '${{ matrix.classes }}', path: cls }
       - name: Install the instruments
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq cbmc clang
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq cbmc clang bmake
       - name: Model check ${{ matrix.name }}
         run: |
           mkdir -p out
