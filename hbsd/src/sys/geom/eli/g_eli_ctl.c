@@ -483,6 +483,33 @@ g_eli_ctl_configure(struct gctl_req *req, struct g_class *mp)
 	}
 
 	for (i = 0; i < *nargs; i++) {
+		/*
+		 * PBSD: clear md at the top of every iteration.
+		 *
+		 * Two reasons, and the second is the one that matters.
+		 *
+		 * 1. ONETIME providers never fill md - the read at :560 is
+		 *    skipped and the comment there says so: "we're
+		 *    bit-flipping uninitialized memory in md below, but
+		 *    that's OK; we don't do anything with it later." True
+		 *    about the result, and still ten `md.md_flags |= ...`
+		 *    reads of an indeterminate object.
+		 *
+		 * 2. md is FUNCTION-scoped and this loop runs once per
+		 *    provider, while explicit_bzero(&md, sizeof(md)) sits
+		 *    at the very end of the loop body on the single path
+		 *    that falls all the way through. There are fourteen
+		 *    `continue`s before it. So one provider's decoded
+		 *    metadata - including md_mkeys[G_ELI_MAXMKEYS *
+		 *    G_ELI_MKEYLEN], the master keys - can survive into the
+		 *    next iteration and past the return, in a function that
+		 *    plainly intends to scrub it.
+		 *
+		 * explicit_bzero rather than bzero for the same reason the
+		 * existing call uses it: this one must not be optimised
+		 * away either. One memset per provider, on a gctl path.
+		 */
+		explicit_bzero(&md, sizeof(md));
 		snprintf(param, sizeof(param), "arg%d", i);
 		prov = gctl_get_asciiparam(req, param);
 		if (prov == NULL) {

@@ -1805,6 +1805,65 @@ indistinguishable from one that is not there. The same reason the
 and "114 potential leaks, plus 35 in tests" are different sentences, and
 only one of them is true.
 
+## Fixed — master keys carried between providers, and one scrub of fifteen
+
+`g_eli_ctl_configure()` declares `struct g_eli_metadata md;` at function
+scope and loops once per provider. Two things follow.
+
+**The uninitialised read, which upstream documents.** ONETIME providers
+have no on-disk metadata, so the read is skipped:
+
+```c
+	if (!(sc->sc_flags & G_ELI_FLAG_ONETIME)) {
+		/*
+		 * ONETIME providers don't write metadata to
+		 * disk, so don't try reading it.  This means
+		 * we're bit-flipping uninitialized memory in md
+		 * below, but that's OK; we don't do anything
+		 * with it later.
+		 */
+		...
+		error = g_eli_read_metadata(mp, pp, &md);
+```
+
+and then ten `md.md_flags |= ...` / `&= ~...` follow. The comment is
+right about the *result* — the ONETIME arm `continue`s before `md` is
+encoded — and it is still ten reads of an indeterminate object.
+
+**The one that matters.** `explicit_bzero(&md, sizeof(md))` sits at the
+end of the loop body, on the single path that falls all the way through.
+**There are fourteen `continue`s before it.** `struct g_eli_metadata`
+contains `md_mkeys[G_ELI_MAXMKEYS * G_ELI_MKEYLEN]` — the master keys —
+so one provider's decoded metadata can survive into the next iteration
+and past the return, in a function that plainly means to scrub it.
+
+That is not a guess about intent. `g_eli_ctl_attach()`, in the same
+file, scrubs `md` on **every** early exit — six of them, at `:122`,
+`:127`, `:134`, `:145`, `:149` and `:163`. `g_eli_ctl_configure()` does
+it on one path out of fifteen.
+
+One `explicit_bzero(&md, sizeof(md))` at the top of each iteration fixes
+both: the reads become defined, and nothing carries between providers.
+`explicit_bzero` rather than `bzero` for the same reason the existing
+call uses it.
+
+### A third instance of the same instrument behaviour
+
+Four `core.uninitialized.Assign` gone, and **one new
+`core.NullDereference` at `:651`** that is not a shift of anything:
+`pp->sectorsize`, where `pp` is assigned only under `if (!(... ONETIME))`
+and used only after the complementary `if (... ONETIME) continue;`.
+Complementary tests of one flag on a function-scoped variable — the same
+class as `udp`/`t_port` and `ip6`/`r_is_v6` in `rack.c`.
+
+It appeared for the same reason two did there: while `md` was
+indeterminate the analyser could not carry a path this far, and defining
+it opened the road. **Fixing an uninitialised value raises the finding
+count**, reliably, and three times today. A total that goes up after
+that kind of fix is the instrument reaching further, not a regression —
+which is worth knowing before somebody reads the next sweep's delta as
+one.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

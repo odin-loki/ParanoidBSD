@@ -415,6 +415,12 @@ FIXES = {
         "divisor in fifteen places, two of them inside "
         "g_raid3_check_metadata() itself; the bound was < 1",
     ),
+    "hbsd/src/sys/geom/eli/g_eli_ctl.c": (
+        "\t\texplicit_bzero(&md, sizeof(md));\n\t\tsnprintf(param,",
+        None,
+        "g_eli_ctl_configure() scrubbed md on one path of fifteen and "
+        "read it uninitialised on the ONETIME path; md holds md_mkeys",
+    ),
     "hbsd/src/sys/geom/eli/g_eli.h": (
         "eli_metadata_sectorsize_supported",
         None,
