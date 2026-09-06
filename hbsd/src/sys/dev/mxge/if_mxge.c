@@ -4448,6 +4448,11 @@ mxge_add_msix_irqs(mxge_softc_t *sc)
 
 	bytes = sizeof (*sc->msix_ih) * sc->num_slices;
 	sc->msix_ih =  malloc(bytes, M_DEVBUF, M_NOWAIT|M_ZERO);
+	if (sc->msix_ih == NULL) {
+		device_printf(sc->dev, "couldn't allocate msix handlers\n");
+		err = ENOMEM;
+		goto abort_with_res;
+	}
 
 	for (i = 0; i < sc->num_slices; i++) {
 		err = bus_setup_intr(sc->dev, sc->msix_irq_res[i],

@@ -559,6 +559,13 @@ enic_msix_intr_assign(if_ctx_t ctx, int msix)
 	    enic->conf_intr_count, M_DEVBUF, M_NOWAIT | M_ZERO);
 	enic->intr = malloc(sizeof(*enic->intr) * msix, M_DEVBUF, M_NOWAIT
 	    | M_ZERO);
+	if (enic->intr_queues == NULL || enic->intr == NULL) {
+		free(enic->intr_queues, M_DEVBUF);
+		enic->intr_queues = NULL;
+		free(enic->intr, M_DEVBUF);
+		enic->intr = NULL;
+		return (ENOMEM);
+	}
 	for (i = 0; i < scctx->isc_nrxqsets; i++) {
 		snprintf(irq_name, sizeof(irq_name), "erxq%d:%d", i,
 		    device_get_unit(softc->dev));

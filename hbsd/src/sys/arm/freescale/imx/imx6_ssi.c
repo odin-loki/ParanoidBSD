@@ -755,6 +755,10 @@ ssi_attach(device_t dev)
 
 	/* Setup PCM */
 	scp = malloc(sizeof(struct sc_pcminfo), M_DEVBUF, M_NOWAIT | M_ZERO);
+	if (scp == NULL) {
+		device_printf(dev, "could not allocate pcm info\n");
+		return (ENOMEM);
+	}
 	scp->sc = sc;
 	scp->dev = dev;
 

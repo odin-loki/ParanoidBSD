@@ -897,6 +897,8 @@ bhndb_alloc_intr_handler(device_t owner, struct resource *r,
 	struct bhndb_intr_handler *ih;
 
 	ih = malloc(sizeof(*ih), M_BHND, M_NOWAIT | M_ZERO);
+	if (ih == NULL)
+		return (NULL);
 	ih->ih_owner = owner;
 	ih->ih_res = r;
 	ih->ih_isrc = isrc;

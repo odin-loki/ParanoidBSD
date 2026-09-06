@@ -242,6 +242,18 @@ jobs:
       - name: Every MDSRCS source calls something that is defined
         run: python3 tools/check_machdep_symbols.py --gate
 
+      # M_WAITOK cannot fail and M_NOWAIT can, and the difference is one
+      # token. This started as a report-only lint because it had false
+      # positives; it has four documented classes it now handles, and the
+      # nine real sites it found are fixed, so the tree is at zero and the
+      # gate is about the NEXT one.
+      #
+      # A fifth false-positive class is fixed by teaching sites() about it,
+      # never by an allowlist - an allowlist here would hide the next real
+      # one, which is exactly the failure this lint exists to prevent.
+      - name: No M_NOWAIT allocation used without a NULL check
+        run: python3 tools/verify/nowait_check.py --gate
+
       # Boot image run 38 died linking libc.so.7:
       #   ld.lld: version script assignment of 'FBSD_1.0' to symbol
       #           '__isnan' failed: symbol not defined

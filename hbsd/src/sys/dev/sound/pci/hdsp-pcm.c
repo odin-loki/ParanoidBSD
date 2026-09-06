@@ -722,6 +722,10 @@ hdspchan_init(kobj_t obj, void *devinfo, struct snd_dbuf *b,
 	ch->cap_fmts[3] = 0;
 
 	ch->caps = malloc(sizeof(struct pcmchan_caps), M_HDSP, M_NOWAIT);
+	if (ch->caps == NULL) {
+		mtx_unlock(&sc->lock);
+		return (NULL);
+	}
 	*(ch->caps) = (struct pcmchan_caps) {32000, 192000, ch->cap_fmts, 0};
 
 	/* HDSP 9652 does not support quad speed sample rates. */

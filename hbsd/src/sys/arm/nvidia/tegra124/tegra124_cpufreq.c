@@ -256,18 +256,27 @@ freq_to_voltage(struct tegra124_cpufreq_softc *sc, uint64_t freq)
 
 }
 
-static void
+static int
 build_speed_points(struct tegra124_cpufreq_softc *sc) {
 	int i;
 
 	sc->nspeed_points = nitems(cpu_freq_tbl);
 	sc->speed_points = malloc(sizeof(struct cpu_speed_point) *
 	    sc->nspeed_points, M_DEVBUF, M_NOWAIT);
+	/*
+	 * get_speed_point() reads speed_points[0] with no bound of its own,
+	 * so an empty table is no more survivable here than a NULL one.
+	 */
+	if (sc->speed_points == NULL) {
+		sc->nspeed_points = 0;
+		return (ENOMEM);
+	}
 	for (i = 0; i < sc->nspeed_points; i++) {
 		sc->speed_points[i].freq = cpu_freq_tbl[i];
 		sc->speed_points[i].uvolt = freq_to_voltage(sc,
 		    cpu_freq_tbl[i]);
 	}
+	return (0);
 }
 
 static struct cpu_speed_point *
@@ -517,7 +526,11 @@ tegra124_cpufreq_attach(device_t dev)
 		return (rv);
 	}
 
-	build_speed_points(sc);
+	rv = build_speed_points(sc);
+	if (rv != 0) {
+		device_printf(dev, "Can't build CPU speed point table\n");
+		return (rv);
+	}
 
 	rv = clk_get_freq(sc->clk_cpu_g, &freq);
 	if (rv != 0) {

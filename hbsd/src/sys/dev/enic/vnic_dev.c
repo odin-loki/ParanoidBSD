@@ -138,6 +138,8 @@ void __iomem *vnic_dev_get_res(struct vnic_dev *vdev, enum vnic_res_type type,
 		return NULL;
 
 	res = malloc(sizeof(*res), M_DEVBUF, M_NOWAIT | M_ZERO);
+	if (res == NULL)
+		return (NULL);
 	bcopy(&vdev->res[type], res, sizeof(*res));
 
 	switch (type) {

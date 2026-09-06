@@ -295,14 +295,39 @@ dropped, like every other receive failure in the file.
 of an unchecked `malloc(..., M_NOWAIT | M_ZERO)`, and the loop after it
 dereferences the same pointer.
 
-### Reported, not fixed — nine more
+### Fixed — the nine that were reported and not fixed
 
-`tools/verify/nowait_check.py` finds nine others, all in device attach and
-setup paths: `sys/arm/freescale/imx`, `sys/arm/freescale/vybrid`,
-`sys/arm/nvidia/tegra124`, `sys/dev/bhnd`, `sys/dev/enic` (a second one),
-`sys/dev/mxge`, `sys/dev/sound/pci/hdsp`, `sys/dev/ufshci`. They are real
-and they are each a separate vendor edit in a driver PBSD does not boot, so
-they are listed rather than changed. Run the tool to see them.
+All nine are device attach and setup paths, each a separate vendor edit,
+and each was left listed rather than changed on the grounds that PBSD does
+not boot those drivers. That reasoning does not survive the fact that they
+are one-line fixes in code whose *own* error convention was sitting beside
+them:
+
+| file | what it already had |
+|---|---|
+| `sys/dev/bhnd/bhndb/bhndb_subr.c:899` | its own doc comment — `@retval NULL if allocation fails` — for a function that could not return NULL because it faulted first |
+| `sys/dev/enic/vnic_dev.c:140` | a `return NULL` five lines up, for the other failure |
+| `sys/dev/mxge/if_mxge.c:4450` | `err = ENXIO; goto abort_with_res;` immediately above |
+| `sys/arm/freescale/imx/imx6_ssi.c:757`, `sys/arm/freescale/vybrid/vf_sai.c:712` | `return (ENXIO)` four lines up. The same driver twice — two SoCs, one copy |
+| `sys/dev/enic/if_enic.c:558` | `return (error)` inside the loop below. Two allocations, neither checked |
+| `sys/dev/sound/pci/hdsp-pcm.c:724` | `return (NULL)` below, and `sc->lock` held — so the fix has to unlock |
+| `sys/dev/ufshci/ufshci_req_sdb.c:167` | `return (error)`. `&req_queue->hwq[0]` is not a dereference; `hwq->num_entries` two lines down is. Its second `M_NOWAIT` was unchecked too |
+| `sys/arm/nvidia/tegra124/tegra124_cpufreq.c:264` | nothing — `build_speed_points()` returns `void` |
+
+The tegra one is the only one that needed more than a check.
+`get_speed_point()` reads `speed_points[0]` with no bound of its own, so
+an empty table is no more survivable than a NULL one; the function gets a
+return value (it has one caller) and attach fails.
+
+**And the lint is a gate now.** It was report-only because it had false
+positives. It has four documented classes it handles, the nine real sites
+are fixed, and the tree is at zero — so `--gate` is about the *next* one.
+Verified by reverting the `vnic_dev.c` fix alone and watching it name that
+file and exit 1.
+
+A fifth false-positive class gets fixed by teaching `sites()` about it,
+never by an allowlist. An allowlist here would hide the next real one,
+which is the exact failure this lint exists to prevent.
 
 ---
 

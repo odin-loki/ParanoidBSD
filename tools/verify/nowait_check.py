@@ -153,6 +153,11 @@ def main() -> int:
     ap.add_argument("--scope", action="append",
                     help="limit to paths under hbsd/src starting with this "
                          "(repeatable). Default: sys")
+    ap.add_argument("--gate", action="store_true",
+                    help="exit 1 on any finding. The tree is at zero, so "
+                         "this catches NEW ones; a false positive is fixed "
+                         "by teaching sites() a fifth class, not by an "
+                         "allowlist that would hide the next real one.")
     ap.add_argument("--ahead", type=int, default=10,
                     help="lines after the allocation to look in (default 10)")
     args = ap.parse_args()
@@ -182,9 +187,15 @@ def main() -> int:
         print(f"    {alloc[:78]}")
         print(f"    -> {use[:74]}")
     if hits:
-        print("\nRead each one. The false-positive classes this cannot see")
-        print("are in the docstring, and they are why this reports rather")
-        print("than gates.")
+        print("\nRead each one. The four false-positive classes this DOES")
+        print("know about are in the docstring; a fifth belongs there too,")
+        print("taught to sites(), rather than in an allowlist.")
+    if args.gate and hits:
+        print(f"\nFAIL  {len(hits)} unchecked M_NOWAIT allocation(s). The")
+        print("      tree was at zero when this gate was added.")
+        return 1
+    if args.gate:
+        print("no unchecked M_NOWAIT allocation")
     return 0
 
 
