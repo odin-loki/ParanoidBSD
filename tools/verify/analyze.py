@@ -105,11 +105,21 @@ def analyze(job: dict) -> dict:
     return {"file": job["rel"], "status": "OK", "findings": out}
 
 
+DEFAULT_SCOPES = ["lib/libc", "lib/msun"]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--scope", action="append", default=["lib/libc", "lib/msun"])
+    # default=None, not default=[...]: argparse's "append" action APPENDS to
+    # whatever default it is given, it does not replace it. With a non-empty
+    # default, `--scope lib/libc/inet` produced
+    #     ["lib/libc", "lib/msun", "lib/libc/inet"]
+    # so a narrowed run silently did the whole of libc and msun - 1552
+    # translation units where 14 were asked for. The narrowing never worked
+    # and nothing said so, because a superset still contains the answer.
+    ap.add_argument("--scope", action="append")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4)))
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--out", default="analyze_results.jsonl")
@@ -117,7 +127,7 @@ def main() -> int:
     args = ap.parse_args()
 
     jobs = []
-    for s in args.scope:
+    for s in (args.scope or DEFAULT_SCOPES):
         for pat in ("*.c", "*.cpp"):
             for f in sorted((SRC / s).rglob(pat)):
                 jobs.append({"src": str(f), "rel": f.relative_to(SRC).as_posix(),

@@ -160,6 +160,57 @@ def arch_of(rel: str, default: str = "amd64") -> str:
 
 
 @functools.lru_cache(maxsize=None)
+def iface_shim() -> str:
+    """The kernel interface headers, GENERATED the way the real build does.
+
+    2,540 of the 6,345 translation units the sweep could not compile failed
+    on one line:
+
+        fatal error: 'device_if.h' file not found
+
+    and 369 more on vnode_if.h. Those files are not missing and they are not
+    optional - they do not exist in a source tree at all. sys/kern/device_if.m
+    is an interface DESCRIPTION, and buildkernel runs
+
+        awk -f sys/tools/makeobjops.awk sys/kern/device_if.m -h
+
+    to write device_if.h into the object directory. Same for every other
+    *_if.m (138 of them: bus_if, cpufreq_if, pci_if, ...) and, through a
+    different generator, sys/kern/vnode_if.src -> vnode_if.h.
+
+    Generating them is not a stub or an approximation: it is the same awk
+    script on the same input the kernel build uses, so the declarations are
+    the ones the kernel actually compiles against. Skipping it silently cost
+    46 percent of the kernel corpus - the analyser and the model checker both
+    reported those files as ERROR, and an ERROR is not a finding, so the
+    unchecked files simply did not appear anywhere in the results.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_iface_"))
+    tools = SRC / "sys" / "tools"
+    mko, vno = tools / "makeobjops.awk", tools / "vnode_if.awk"
+    if not mko.is_file():
+        return d.as_posix()
+
+    for m in (SRC / "sys").rglob("*_if.m"):
+        try:
+            subprocess.run(["awk", "-f", str(mko), str(m), "-h"],
+                           cwd=d, check=True, capture_output=True, timeout=60)
+        except (OSError, subprocess.SubprocessError):
+            # One interface that will not generate is one interface's worth
+            # of files still failing, not a reason to lose the other 137.
+            pass
+
+    src = SRC / "sys" / "kern" / "vnode_if.src"
+    if vno.is_file() and src.is_file():
+        try:
+            subprocess.run(["awk", "-f", str(vno), str(src), "-h"],
+                           cwd=d, check=True, capture_output=True, timeout=60)
+        except (OSError, subprocess.SubprocessError):
+            pass
+    return d.as_posix()
+
+
+@functools.lru_cache(maxsize=None)
 def opt_shim() -> str:
     """Empty opt_*.h, which is exactly what config(8) writes for an unset option.
 
@@ -201,6 +252,20 @@ def opt_shim() -> str:
     return d.as_posix()
 
 
+def _subsystem_dirs(rel: str) -> list[str]:
+    """sys/amd64/vmm/io/ppt.c -> sys/amd64/vmm/io, sys/amd64/vmm, sys/amd64.
+
+    Nearest first, so a header shadowed by a closer one resolves the way
+    the kernel build resolves it.
+    """
+    parts = rel.split("/")[:-1]          # drop the filename
+    out = []
+    while len(parts) > 1:                # stop before "sys" itself
+        out.append((SRC / "/".join(parts)).as_posix())
+        parts.pop()
+    return out
+
+
 def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str]:
     """-nostdinc plus everything that source needs, in build order."""
     try:
@@ -210,7 +275,26 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         # compiler's own headers and nothing of FreeBSD's.
         return []
     arch = arch_of(rel, arch)
-    flags = ["-nostdinc", f"-I{machine_shim(arch)}"]
+
+    # This is FreeBSD source, compiled on Linux, and the preprocessor was
+    # answering Linux. clang and goto-cc both take their platform macros
+    # from the host triple, so every translation unit in this sweep saw
+    #
+    #     __linux__ 1   __gnu_linux__ 1   __FreeBSD__ undefined
+    #
+    # 607 files under sys/, lib/libc and lib/msun key on one of those two
+    # names - libsodium, ck, ACPICA, linuxkpi, zfs, and the libc bits that
+    # ask which BSD they are on. Every `#ifdef __FreeBSD__` took its false
+    # branch and every `#ifdef __linux__` its true one, so the checked code
+    # was, in those files, not the code that ships.
+    #
+    # -U/-D rather than --target=: goto-cc is a gcc driver and does not
+    # accept --target, and the identity is the whole of what needs to
+    # change. __FreeBSD__ = 15 matches the tree (__FreeBSD_version 1500000
+    # in sys/sys/param.h).
+    flags = ["-nostdinc",
+             "-U__linux__", "-U__gnu_linux__", "-D__FreeBSD__=15",
+             f"-I{machine_shim(arch)}"]
 
     # The kernel is a different header universe from userland: no
     # include/, -D_KERNEL, and <sys/foo.h> resolving inside sys/. Mixing
@@ -257,7 +341,16 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         flags += ["-D_KERNEL", "-DGENOFFSET",
                   "-D__has_c_attribute(x)=0",
                   f"-I{opt_shim()}",
+                  # device_if.h and friends: generated, not shipped.
+                  f"-I{iface_shim()}",
                   f"-I{(SRC / rel).parent}",
+                  # Every directory between sys/ and the file. A kernel
+                  # module Makefile adds its own subsystem root - vmm's
+                  # does `-I${SRCTOP}/sys/amd64/vmm` - and without it
+                  # sys/amd64/vmm/io/ppt.c cannot find vmm_lapic.h, which
+                  # is its sibling one level up, nor `io/iommu.h`, which is
+                  # named relative to that root rather than to the file.
+                  *[f"-I{d}" for d in _subsystem_dirs(rel)],
                   f"-I{SRC}/sys",
                   f"-I{SRC}/sys/contrib/ck/include",
                   f"-I{SRC}/sys/contrib/libnv",

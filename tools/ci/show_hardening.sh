@@ -34,6 +34,18 @@ TARGET="${1:-amd64}"
 SRCCONF="${2:-}"
 CROSS_TOOLCHAIN="${3:-}"
 
+# Whether a required option being off is a failure or an observation.
+#
+# The default is a failure: a pbsd build that has lost PIE is broken and the
+# run should stop. But src_conf=none deliberately hands the build FreeBSD's
+# defaults, and PIE is default-off there - that is the whole point of the
+# bisection handle. Reporting it as "1 required hardening option is off" and
+# exiting 1 would kill exactly the run that was asked for. So the caller that
+# knows it asked for defaults sets REQUIRE_HARDENING=0, and the table is still
+# printed - which is the part that matters, because until this the run printed
+# src.conf.pbsd's hardening for a build that was not using src.conf.pbsd.
+REQUIRE_HARDENING="${REQUIRE_HARDENING:-1}"
+
 case "$TARGET" in
 amd64) TARGET_ARCH=amd64 ;;
 arm64) TARGET_ARCH=aarch64 ;;
@@ -111,6 +123,11 @@ done
 
 echo
 if [ "$fail" -gt 0 ]; then
+    if [ "$REQUIRE_HARDENING" = "0" ]; then
+        echo "NOTE $fail required hardening option(s) are off, and this run"
+        echo "     asked for that - REQUIRE_HARDENING=0."
+        exit 0
+    fi
     echo "FAIL $fail required hardening option(s) are off."
     exit 1
 fi

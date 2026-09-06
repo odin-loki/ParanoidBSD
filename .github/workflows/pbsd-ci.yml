@@ -176,6 +176,32 @@ jobs:
       - name: The boot image's init swap and loader.conf editing
         run: sh tools/ci/test_init_swap.sh
 
+      # The two instruments the verification sweep is built on, each
+      # tested against defects it must report. Both had a first version
+      # that ran and answered and was not doing the work:
+      #
+      #   analyze.py    "0 findings across 60 translation units" -
+      #                 -analyzer-disable-all-checks turned every checker
+      #                 off and the -analyzer-checker flags after it did
+      #                 not turn any back on. A real zero and an empty
+      #                 check look identical in a summary line.
+      #
+      #   classify.py   26,548 of 26,607 kernel functions "exported",
+      #                 because Flags comes after Type in goto-instrument's
+      #                 symbol table and the regex only looked before it.
+      #                 Linkage decides whether a modular finding is a
+      #                 defect or a missing precondition, so every finding
+      #                 downstream was labelled off a value never read.
+      #
+      # apt's cbmc and clang are enough for both; the sweep itself is not
+      # run here, only its instruments.
+      - name: Verification instruments (CBMC + clang analyser)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cbmc clang
+          python3 tools/verify/test_analyze.py
+          python3 tools/verify/test_classify.py
+
       # The port screener encodes what the hundred-file lib/msun batch
       # learned one expensive run at a time. Its value is entirely in the
       # reasons it gives, so each reason gets a synthetic file built to

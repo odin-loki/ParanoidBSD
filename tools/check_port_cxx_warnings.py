@@ -61,12 +61,21 @@ def flags_raised(path: Path, as_cxx: bool) -> tuple[set[str], str]:
     return set(FLAG_RE.findall(p.stderr)), p.stderr
 
 
+DEFAULT_SCOPES = ["lib/libc", "lib/msun"]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--scope", action="append",
-                    default=["lib/libc", "lib/msun"])
+    # default=None, not default=[...]: argparse's "append" action APPENDS to
+    # whatever default it is given, it does not replace it. With a non-empty
+    # default, `--scope lib/libc/inet` produced
+    #     ["lib/libc", "lib/msun", "lib/libc/inet"]
+    # so a narrowed run silently did the whole of libc and msun - 1552
+    # translation units where 14 were asked for. The narrowing never worked
+    # and nothing said so, because a superset still contains the answer.
+    ap.add_argument("--scope", action="append")
     ap.add_argument("--gate", action="store_true",
                     help="exit 1 if any port raises a warning the C did not")
     ap.add_argument("--candidates", action="store_true",
@@ -78,7 +87,7 @@ def main() -> int:
     args = ap.parse_args()
 
     pats = ("*.cpp", "*.c") if args.candidates else ("*.cpp",)
-    ports = sorted(p for s in args.scope for pat in pats
+    ports = sorted(p for s in (args.scope or DEFAULT_SCOPES) for pat in pats
                    for p in (SRC / s).rglob(pat))
     findings = []
     for cpp in ports:

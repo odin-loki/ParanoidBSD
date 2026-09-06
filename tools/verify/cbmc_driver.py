@@ -188,8 +188,28 @@ def _tail(s: str, n: int = 600) -> str:
     return s[-n:]
 
 
+# Stamped into every result, and checked by --resume.
+#
+# A resumed run reuses records verbatim, which is right while the meaning of
+# a record has not changed and silently wrong the moment it has. The linkage
+# fix is the case that made this necessary: `linkage` is copied out of
+# classes.json, every record written before that fix carries the value the
+# broken regex produced, and a --resume over them keeps 26,548 kernel
+# functions labelled "exported" no matter how correct the code now is. The
+# fix would have been real and the report would not have shown it.
+#
+# So: bump this whenever what a record MEANS changes - a new or removed
+# check, a change to how status is decided, a change to a field's source.
+# Not for a bug fix that leaves the fields meaning what they meant.
+#
+#   1  the sweep as first run
+#   2  linkage is read from goto-instrument's Flags line (it was never read)
+RESULT_VERSION = 2
+
+
 def _rec(task: dict, status: str, **kw) -> dict:
     return {
+        "v": RESULT_VERSION,
         "file": task["file"],
         "function": task["function"],
         "tier": task["tier"],
@@ -283,12 +303,33 @@ def main() -> int:
     out = Path(args.out)
     done: set[tuple[str, str]] = set()
     if args.resume and out.is_file():
+        stale = 0
+        keep = []
         for line in out.read_text().splitlines():
+            if not line.strip():
+                continue
             try:
                 r = json.loads(line)
+            except ValueError:
+                continue
+            if r.get("v") != RESULT_VERSION:
+                # Written by an older driver, so its fields do not mean what
+                # this one's mean. Drop it and check the function again
+                # rather than resume onto an answer to a different question.
+                stale += 1
+                continue
+            try:
                 done.add((r["file"], r["function"]))
-            except (ValueError, KeyError):
-                pass
+            except KeyError:
+                continue
+            keep.append(line)
+        if stale:
+            print(f"  {stale} result(s) were written by an older driver "
+                  f"(result version != {RESULT_VERSION}); rechecking those",
+                  flush=True)
+            # Rewrite --out with only the still-valid records, so the file
+            # never holds two generations of answers at once.
+            out.write_text("".join(l + "\n" for l in keep))
         tasks = [t for t in tasks if (t["file"], t["function"]) not in done]
 
     if args.limit:

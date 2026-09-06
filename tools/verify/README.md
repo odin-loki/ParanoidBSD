@@ -36,6 +36,37 @@ check of that file.
 
 **480 → 1000 of 1306 translation units.**
 
+The kernel needed three more, each found by reading what the failures
+actually said rather than the total:
+
+- **The interface headers are generated.** 2,540 of the 6,345 kernel
+  translation units the sweep could not compile failed on
+  `fatal error: 'device_if.h' file not found`, and 369 more on
+  `vnode_if.h`. Those files do not exist in a source tree: `buildkernel`
+  runs `awk -f sys/tools/makeobjops.awk sys/kern/device_if.m -h` over each
+  of the 138 `*_if.m` interface descriptions, and `vnode_if.awk` over
+  `sys/kern/vnode_if.src`. `iface_shim()` runs the same generators on the
+  same inputs, so the declarations are the ones the kernel compiles
+  against — not a stub.
+- **A module's own subsystem root.** `sys/amd64/vmm/io/ppt.c` includes
+  `vmm_lapic.h`, a sibling one level up, and `io/iommu.h`, named relative
+  to `sys/amd64/vmm` rather than to the file. The vmm module's Makefile
+  adds `-I${SRCTOP}/sys/amd64/vmm`; `_subsystem_dirs()` adds every
+  directory between `sys/` and the file, nearest first.
+- **The preprocessor was answering Linux.** clang and goto-cc take their
+  platform macros from the host triple, so every translation unit in this
+  sweep saw `__linux__ 1` and no `__FreeBSD__`. 607 files under `sys/`,
+  `lib/libc` and `lib/msun` key on one of those two names — libsodium,
+  ck, ACPICA, linuxkpi, zfs. Every `#ifdef __FreeBSD__` took its false
+  branch and every `#ifdef __linux__` its true one, so in those files the
+  checked code was not the code that ships. `-U__linux__ -U__gnu_linux__
+  -D__FreeBSD__=15` fixes the identity; `--target=` is not used because
+  goto-cc is a gcc driver and does not accept it.
+
+Measured: `sys/amd64/vmm` **12 → 26 of 34**, `sys/kern` **67 → 78 of 212**.
+The gain is largest where drivers are, because that is where `device_if.h`
+is.
+
 ## Why `classify.py` exists
 
 CBMC started at an arbitrary function makes that function's parameters

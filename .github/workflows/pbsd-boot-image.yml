@@ -185,29 +185,48 @@ jobs:
           # empty SRCCONF means FreeBSD's defaults - which gives up every
           # option in that file, not only the assembly one.
           run: |
+            # One place decides which src.conf this run uses, and both the
+            # diagnostics and the build read it.
+            #
+            # They used to disagree. The two show_ scripts were hardcoded to
+            # src.conf.pbsd while the build below branched on src_conf, so a
+            # nosanitizer run printed "SAFESTACK yes" and then built with
+            # SafeStack off, and a none run printed PBSD's whole hardening
+            # set for a build that had none of it. The step whose job is to
+            # say what the build will actually do was answering about a
+            # different build - the same shape of mistake as run 40, where a
+            # correct verdict was on screen and the wrong thing was read.
+            case "${{ inputs.src_conf }}" in
+            none)        SRCCONF="" ;;
+            nosanitizer) SRCCONF="$PWD/hbsd/src.conf.pbsd-nosanitizer" ;;
+            *)           SRCCONF="$PWD/hbsd/src.conf.pbsd" ;;
+            esac
+            # Under `none` the build asks for FreeBSD's defaults, and PIE is
+            # default-off there. That is the bisection handle working, not a
+            # regression, so the table is printed without the gate.
+            if [ "${{ inputs.src_conf }}" = "none" ]; then
+              REQUIRE_HARDENING=0
+            else
+              REQUIRE_HARDENING=1
+            fi
+            export REQUIRE_HARDENING
+
             # Ask the build system what hardening it will actually use. This
             # is where the external toolchain silently turning off SafeStack
             # would have been caught, and was not.
             sh tools/ci/show_hardening.sh "${{ inputs.target || 'amd64' }}" \
-               "$PWD/hbsd/src.conf.pbsd" \
+               "$SRCCONF" \
                "$([ "${{ inputs.toolchain || 'external' }}" != internal ] && \
                   echo "$PWD/hbsd/toolchains/llvm21.mk" || true)"
             sh tools/ci/show_cxx_config.sh "${{ inputs.target || 'amd64' }}" \
-               "$PWD/hbsd/src.conf.pbsd"
-            if [ "${{ inputs.src_conf }}" = "none" ]; then
-              KERNCONF="${{ inputs.kernconf }}" SRCCONF="" \
-              TOOLCHAIN="${{ inputs.toolchain }}" \
-                sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
-            elif [ "${{ inputs.src_conf }}" = "nosanitizer" ]; then
-              KERNCONF="${{ inputs.kernconf }}" \
-              SRCCONF="$PWD/hbsd/src.conf.pbsd-nosanitizer" \
-              TOOLCHAIN="${{ inputs.toolchain }}" \
-                sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
-            else
-              KERNCONF="${{ inputs.kernconf }}" \
-              TOOLCHAIN="${{ inputs.toolchain }}" \
-                sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
-            fi
+               "$SRCCONF"
+
+            # SRCCONF is exported deliberately empty for `none`;
+            # build_boot_image.sh reads it with ${SRCCONF-...} so that an
+            # explicitly-empty value survives instead of being replaced.
+            KERNCONF="${{ inputs.kernconf }}" SRCCONF="$SRCCONF" \
+            TOOLCHAIN="${{ inputs.toolchain }}" \
+              sh tools/ci/build_boot_image.sh "${{ inputs.stage }}"
 
       - name: Collect image
         if: inputs.stage == 'vm' || inputs.stage == 'memstick' || inputs.stage == 'iso'

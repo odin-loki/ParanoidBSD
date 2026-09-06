@@ -76,6 +76,20 @@ if [ -f "$ROOT/tools/verify/test_analyze.py" ]; then
     fi
 fi
 
+# The corpus splitter. A finding's meaning depends on the linkage this
+# reads: for an exported function the whole signature domain is the
+# contract, and for a static helper it is not. The first version marked
+# 26,548 of 26,607 kernel functions exported, because goto-instrument
+# prints Flags AFTER Type and the regex only looked before it.
+if [ -f "$ROOT/tools/verify/test_classify.py" ]; then
+    if python3 "$ROOT/tools/verify/test_classify.py" >/dev/null 2>&1; then
+        say "ok" "classify reads linkage and signature class off the goto model"
+    else
+        say FAIL "classify mislabels linkage or signature class"
+        python3 "$ROOT/tools/verify/test_classify.py" 2>&1 | sed 's/^/       /'
+    fi
+fi
+
 # UBSan is the second opinion every finding in docs/security/UB_FINDINGS.md
 # was confirmed with, so it has to actually abort.
 cat > "$T/ub.c" <<'C'
@@ -140,13 +154,21 @@ for g in "check_exec_bits.py" "check_source_includes.py --gate" \
          "check_port_cxx_warnings.py --gate"; do
     # Announce BEFORE running. Each of these can take a while on a slow
     # filesystem and silence is indistinguishable from a hang.
-    printf '  ..   tools/%s\r' "$g"
+    #
+    # Only on a terminal, and erased with the full-line escape rather than
+    # by padding the result with spaces: piped into a file or a pager the
+    # \r does nothing, so every gate printed twice - once as ".." and once
+    # as its result - in exactly the logs that get sent somewhere to be
+    # read.
+    if [ -t 1 ]; then printf '  ..   tools/%s\r' "$g"; fi
     # shellcheck disable=SC2086
     if (cd "$ROOT" && python3 tools/$g >/dev/null 2>&1); then
-        say "ok" "tools/$g            "
+        rc=ok
     else
-        say FAIL "tools/$g            "
+        rc=FAIL
     fi
+    if [ -t 1 ]; then printf '\033[2K'; fi
+    say "$rc" "tools/$g"
 done
 
 echo
