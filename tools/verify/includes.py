@@ -181,9 +181,12 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/lib/libc/net",
                   f"-I{SRC}/lib/msun/src"]
     if rel.startswith("lib/msun"):
+        # _fpmath.h is libc's, per architecture - lib/msun/Makefile adds
+        # -I${LIBC_SRCTOP}/${LIBC_ARCH} for exactly this.
         flags += [f"-I{SRC}/lib/msun/src", f"-I{SRC}/lib/msun/ld80",
                   f"-I{SRC}/lib/msun/ld128", f"-I{SRC}/lib/msun/x86",
-                  f"-I{SRC}/lib/libc/include"]
+                  f"-I{SRC}/lib/libc/include",
+                  f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}"]
     if rel.startswith("lib/libmd"):
         flags.append(f"-I{SRC}/lib/libmd")
 

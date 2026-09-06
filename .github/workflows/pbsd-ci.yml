@@ -183,6 +183,16 @@ jobs:
       - name: The port-candidate screener
         run: python3 tools/test_check_port_candidates.py
 
+      # Boot image run 35 died three minutes into buildworld on
+      #   siglist.cpp:35: error: array designators are a C99 extension
+      # a file the IR oracle had certified ir.equal AND abi_equal. The
+      # oracle compiles with -Wno-everything, deliberately, so it cannot
+      # see a diagnostic - and the FreeBSD build is -Werror. This closes
+      # that gap: a diagnostic the C++ raises and the C does not is what
+      # the rename introduced.
+      - name: No port introduces a diagnostic its C original does not
+        run: python3 tools/check_port_cxx_warnings.py --gate
+
       # The parity gate above compares ONE config across the six
       # architectures. This asks the other twenty-one the question that
       # actually applies to them, most being single-architecture: does a

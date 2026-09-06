@@ -138,7 +138,7 @@ SRCS+= \
 	setprogname.c \
 	sig2str.c \
 	siginterrupt.c \
-	siglist.cpp \
+	siglist.c \
 	signal.c \
 	sigsetops.c \
 	sleep.c \
