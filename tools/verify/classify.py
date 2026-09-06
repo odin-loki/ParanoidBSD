@@ -138,7 +138,7 @@ def model_one(job: dict) -> dict:
     gb.parent.mkdir(parents=True, exist_ok=True)
     cc = shutil.which("goto-cc") or "goto-cc"
     sp = Path(src)
-    inc = include_flags(sp, job.get("arch", "amd64"))
+    inc = include_flags(sp, job.get("arch", "amd64"), cc="goto-cc")
     # A landed port is a PURE RENAME - byte-identical to the .c - and
     # CBMC's C++ front end is much weaker than its C one (`parse error
     # before 'noexcept'`, and 96 files on a __char16_t typedef). Since the

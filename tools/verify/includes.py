@@ -56,6 +56,66 @@ ARCH = {
     "riscv64":   ("riscv",   []),
 }
 
+# clang's name for each architecture. Nothing was passing one of these,
+# so clang took its target from the HOST, and every architecture in this
+# sweep was checked with x86-64's data model. That is not a detail:
+#
+#   sys/arm/arm/mp_machdep.c has
+#       CTASSERT(PAGE_SIZE % sizeof(struct pcpu) == 0);
+#   and -Xclang -fdump-record-layouts says why it failed --
+#
+#       0 | struct pcpu
+#       0 |   struct thread * pc_curthread
+#       8 |   struct thread * pc_idlethread     <- 8-byte pointers
+#
+#   on armv7, a 32-bit architecture. sizeof(struct pcpu) came out 640
+#   with no --target and 512 with an armv7 one; 4096 % 512 == 0, and the
+#   assertion the tree ships is correct.
+#
+# arm and i386 are ILP32 and were being compiled LP64: every struct
+# layout, every pointer, every long. arm64/riscv64/powerpc64 are LP64
+# like the host, so they only ACCIDENTALLY agreed -- and powerpc64 is
+# big-endian and was being checked little-endian.
+TRIPLE = {
+    "amd64":     "x86_64-unknown-freebsd15.0",
+    "aarch64":   "aarch64-unknown-freebsd15.0",
+    "armv7":     "armv7-unknown-freebsd15.0",
+    "i386":      "i386-unknown-freebsd15.0",
+    "powerpc64": "powerpc64-unknown-freebsd15.0",
+    "riscv64":   "riscv64-unknown-freebsd15.0",
+}
+
+# goto-cc is a gcc driver. It rejects --target= outright, and --arm-linux
+# and friends are "uninterpreted gcc option"s; -m32 is the one thing it
+# takes, and it takes it properly - the goto model's sizeof(void *) goes
+# from /*8l*/ to /*4*/ and __i386__ replaces __x86_64__.
+#
+# So the model checker can be pointed at exactly two data models, the
+# host's and 32-bit x86, and these two architectures are the ones -m32
+# describes:
+#
+#   i386   exactly - it IS 32-bit x86.
+#   armv7  in every respect CBMC reasons about - ILP32, little-endian,
+#          the same integer widths. What it does not get right is the
+#          predefined macro, so an `#ifdef __arm__` in an armv7 file
+#          still takes its false branch under goto-cc.
+#
+# The remaining three (aarch64, riscv64, powerpc64) get the host model,
+# which is right for the first two and WRONG FOR POWERPC64: it is
+# big-endian and goto-cc cannot be told so. Endianness-dependent results
+# on powerpc64 are therefore not sound, and that limit is the compiler's,
+# not something a flag here can close.
+GOTO_ILP32 = frozenset({"i386", "armv7"})
+
+
+def target_flags(arch: str, cc: str = "clang") -> list[str]:
+    """Point the compiler at ARCH, in whichever spelling CC understands."""
+    if "goto-" in Path(cc).name:
+        return ["-m32"] if arch in GOTO_ILP32 else []
+    t = TRIPLE.get(arch)
+    return [f"--target={t}"] if t else []
+
+
 # libc's per-architecture private header directory is named differently
 # from the kernel's: lib/libc/amd64, lib/libc/aarch64, ...
 LIBC_ARCH = {
@@ -441,6 +501,107 @@ def opt_shim(arch: str = "amd64") -> str:
     return d.as_posix()
 
 
+# Some kernel sources do not compile with the standard flag set, and the
+# tree says so per-file rather than by convention: sys/conf/files* carries
+#
+#   contrib/ck/src/ck_epoch.c  standard compile-with "${NORMAL_C} -I$S/contrib/ck/include"
+#
+# for 402 of them. Guessing prefixes would be inventing an answer the
+# build system already gives, so this reads config(8)'s own input the way
+# kernconf_options() reads its options -- $S is sys/.
+_CONF_FLAG = re.compile(r'-I\$S/([^\s"]+)|(-D[A-Za-z_][^\s"]*)')
+
+
+@functools.lru_cache(maxsize=None)
+def conf_file_includes(arch: str = "amd64") -> dict:
+    """sys-relative source path -> the extra flags sys/conf/files gives it."""
+    sysdir = ARCH.get(arch, ARCH["amd64"])[0]
+    names = ["files", f"files.{sysdir}"] + [f"files.{e}" for e in ARCH.get(arch, ARCH["amd64"])[1]]
+    out: dict[str, list[str]] = {}
+    for name in names:
+        f = SRC / "sys" / "conf" / name
+        if not f.exists():
+            continue
+        # Logical lines: a trailing backslash continues onto the next.
+        text = f.read_text(errors="replace").replace("\\\n", " ")
+        for line in text.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "compile-with" not in line:
+                continue
+            src = line.split()[0]
+            if not src.endswith((".c", ".cc", ".cpp")):
+                continue
+            flags = []
+            for inc, define in _CONF_FLAG.findall(line):
+                if inc:
+                    flags.append(f"-I{SRC}/sys/{inc.rstrip('/')}")
+                elif define:
+                    flags.append(define)
+            if flags:
+                out.setdefault(src, []).extend(flags)
+    return {k: tuple(dict.fromkeys(v)) for k, v in out.items()}
+
+
+# What sys/conf/files cannot say, because these trees are built ONLY as
+# modules and a module Makefile is where their flags live. Each entry is
+# a path prefix (sys-relative) and the Makefile line it was copied from.
+MODULE_INCLUDES = (
+    # sys/conf/kmod.mk:114-117. Every linuxkpi consumer gets this set;
+    # the wireless drivers under contrib/dev are all linuxkpi ports and
+    # their own Makefiles add `CFLAGS+= ${LINUXKPI_INCLUDES}` verbatim
+    # (sys/modules/iwlwifi/Makefile:79, rtw88:87, rtw89:82).
+    (("compat/linuxkpi/", "contrib/dev/athk/", "contrib/dev/iwlwifi/",
+      "contrib/dev/rtw88/", "contrib/dev/rtw89/", "contrib/dev/mediatek/",
+      "contrib/dev/broadcom/", "contrib/dev/mt76/", "dev/mlx5/", "ofed/"),
+     ("-I{S}/sys/compat/linuxkpi/common/include",
+      "-I{S}/sys/compat/linuxkpi/dummy/include",
+      "-include", "{S}/sys/compat/linuxkpi/common/include/linux/kconfig.h")),
+    # sys/conf/kern.pre.mk:172-202 (CDDL_CFLAGS, common to dtrace and
+    # zfs) plus :205-208 (ZFS_CFLAGS). Reproduced rather than guessed,
+    # because the deciding macro is __KERNEL__ -- Linux's spelling, which
+    # the FreeBSD kernel does NOT otherwise define. Without it
+    # zfs_context.h:44 takes its USERLAND branch and asks for <unistd.h>,
+    # which is why -D_KERNEL alone got 9 of 72 files under sys/cddl.
+    (("contrib/openzfs/", "cddl/"),
+     ("-DFREEBSD_NAMECACHE", "-D_SYS_VMEM_H_", "-D__KERNEL", "-D__KERNEL__",
+      "-D_SYS_CONDVAR_H_", "-DBUILDING_ZFS", "-DHAVE_UIO_ZEROCOPY",
+      "-include", "{S}/sys/modules/zfs/static_ccompile.h",
+      "-include", "{S}/sys/contrib/openzfs/include/os/freebsd/spl/sys/ccompile.h",
+      "-I{S}/sys/contrib/openzfs/include",
+      "-I{S}/sys/contrib/openzfs/include/os/freebsd",
+      "-I{S}/sys/contrib/openzfs/include/os/freebsd/spl",
+      "-I{S}/sys/contrib/openzfs/include/os/freebsd/zfs",
+      "-I{S}/sys/modules/zfs",
+      "-I{S}/sys/contrib/openzfs/module/icp/include",
+      "-I{S}/sys/contrib/openzfs/module/zstd/include",
+      "-I{S}/sys/cddl/contrib/opensolaris/uts/common",
+      "-I{S}/sys/cddl/compat/opensolaris")),
+    # sys/conf/files:682 gives this to the in-kernel libsodium files, but
+    # only to the ones the kernel builds; the rest of the vendor tree is
+    # the same code and needs the same headers to be read at all.
+    (("contrib/libsodium/", "crypto/libsodium/"),
+     ("-I{S}/sys/contrib/libsodium/src/libsodium/include",
+      "-I{S}/sys/contrib/libsodium/src/libsodium/include/sodium",
+      "-I{S}/sys/crypto/libsodium")),
+)
+
+
+def _module_flags(rel_sys: str) -> list[str]:
+    out = []
+    for prefixes, flags in MODULE_INCLUDES:
+        if rel_sys.startswith(prefixes):
+            out += [f.format(S=SRC) for f in flags]
+    # Every linuxkpi driver Makefile names itself, because the Linux code
+    # it carries prints KBUILD_MODNAME in its own error messages
+    # (sys/modules/iwlwifi/Makefile:97-98, rtw88:93-94, and so on for
+    # each). The module is the directory under contrib/dev, so the name
+    # is derivable rather than another table to keep in sync.
+    if rel_sys.startswith("contrib/dev/"):
+        mod = rel_sys.split("/")[2]
+        out += [f'-DKBUILD_MODNAME="{mod}"', "-DLINUXKPI_VERSION=70000"]
+    return out
+
+
 def _subsystem_dirs(rel: str) -> list[str]:
     """sys/amd64/vmm/io/ppt.c -> sys/amd64/vmm/io, sys/amd64/vmm, sys/amd64.
 
@@ -477,11 +638,14 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
     # branch and every `#ifdef __linux__` its true one, so the checked code
     # was, in those files, not the code that ships.
     #
-    # -U/-D rather than --target=: goto-cc is a gcc driver and does not
-    # accept --target, and the identity is the whole of what needs to
-    # change. __FreeBSD__ = 15 matches the tree (__FreeBSD_version 1500000
-    # in sys/sys/param.h).
+    # The -U/-D pair does the identity by hand, because goto-cc has no
+    # --target to carry it (see TRIPLE / GOTO_ILP32 above) and the
+    # identity is what those 607 files key on. __FreeBSD__ = 15 matches
+    # the tree (__FreeBSD_version 1500000 in sys/sys/param.h), and it is
+    # the same value clang's own freebsd15.0 triple predefines, so the
+    # two agree rather than fight.
     flags = ["-nostdinc",
+             *target_flags(arch, cc),
              "-U__linux__", "-U__gnu_linux__", "-D__FreeBSD__=15",
              f"-I{machine_shim(arch)}"]
 
@@ -527,6 +691,17 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         # own `#else #define __nodiscard` branch - the empty definition the
         # header already provides for a compiler without the feature, which
         # is exactly true of this one.
+        # What the tree says THIS file needs, and it goes first. Order
+        # is not cosmetic here: sys/conf/kern.pre.mk:172-202 puts the
+        # ZFS spl include dir ahead of -I$S and passes -D_SYS_CONDVAR_H_,
+        # so that <sys/condvar.h> resolves to openzfs's and FreeBSD's is
+        # suppressed. Append these after -I sys and the guard silences
+        # the real header while nothing supplies the replacement --
+        # `struct cv p_pwait` in sys/sys/proc.h:775 then has incomplete
+        # type, which is a compile error invented entirely by flag order.
+        rel_sys = rel[len("sys/"):]
+        flags += list(conf_file_includes(arch).get(rel_sys, ()))
+        flags += _module_flags(rel_sys)
         flags += ["-D_KERNEL", "-DGENOFFSET",
                   "-D__has_c_attribute(x)=0",
                   # The kernel build force-includes this into every
