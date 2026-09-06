@@ -732,8 +732,16 @@ def interrogate(proc, log, commands, user, password, timeout, outdir,
     Returns (ok, note). A failure here is reported apart from the boot
     verdict: the system booted either way, and "booted but could not log in"
     is a different fact from "did not boot".
+
+    `timeout' bounds the login AND is the per-command budget, rather than a
+    single deadline shared by everything. Run 59 shared it: `find / -xdev'
+    over a 7.5GB image used the lot, and the two commands after it were
+    typed into the still-running find's stdin, which is what the log shows.
+    A slow command is not a hung one, and it should not spend the next
+    command's time.
     """
     deadline = time.time() + timeout
+    per_cmd = timeout
     print("\n  [logging in]\n")
     idx = _expect(proc, log, [LOGIN_PROMPT, SHELL_PROMPT], deadline,
                   initial=initial)
@@ -764,14 +772,41 @@ def interrogate(proc, log, commands, user, password, timeout, outdir,
         # driving a pipe looks like. Keying on a count means the same code
         # behaves differently in the harness and in production, which is the
         # opposite of what a harness is for.
+        #
+        # AND THE MARKERS MUST MATCH AT THE START OF A LINE.
+        #
+        # Two markers do not by themselves solve the echo problem, because
+        # the echoed command line contains BOTH of them:
+        #
+        #   root@freebsd:~ # echo __PBSD_0_BEGIN__; uname -a 2>&1; echo __PBSD_0_END__
+        #
+        # so the very first read matched END inside the echo, took the text
+        # between the two as the body, and wrote the COMMAND to uname.txt
+        # instead of its output. Run 59's uname.txt is
+        #
+        #   ; uname -a 2>&1; echo
+        #
+        # in full. hardening.txt escaped only by accident: its echoed line
+        # was long enough to wrap at eighty columns, arriving as
+        # `echo __PBSD_1_END __' with a space in it, which did not match -
+        # so that one command waited for the real output and captured 30
+        # lines of sysctl. One of five right, for a reason that had nothing
+        # to do with the code being right.
+        #
+        # The output markers begin a line; the echo never does, since the
+        # prompt and `echo ' precede it. Anchoring is the whole fix.
         begin = f"__PBSD_{n}_BEGIN__"
         end = f"__PBSD_{n}_END__"
-        rx_begin = re.compile(begin.encode())
-        rx_end = re.compile(end.encode())
+        rx_begin = re.compile(rb"(?m)^\r?" + begin.encode())
+        rx_end = re.compile(rb"(?m)^\r?" + end.encode())
         print(f"\n  [{name}] {cmd}\n")
         _send(proc, f"echo {begin}; {cmd} 2>&1; echo {end}\n")
         buf = b""
         done = False
+        # Each command gets its own budget. `find / -xdev' over a 7.5GB
+        # image is not a hung shell, and run 59 spent the whole shared
+        # deadline on it, then reported the NEXT command as the failure.
+        deadline = time.time() + per_cmd
         while time.time() < deadline:
             buf += _drain(proc, log)
             m_end = rx_end.search(buf)

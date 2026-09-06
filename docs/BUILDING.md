@@ -1180,6 +1180,97 @@ three USB wireless drivers and `g_eli_ctl.c` are never exercised by a
 QEMU memstick boot. The seventh is `libexec/rtld-elf/rtld.c`, which is
 where pid 1 was wedged.
 
+### The first running PBSD system, asked about itself
+
+Run 59 is the `vm` image — the first with a login. It booted, logged in
+as root, and answered. `sysctl hardening` on a running
+`HARDENEDBSD` kernel:
+
+```
+    hardening.kmalloc_zero: 0
+    hardening.prohibit_ptrace_capsicum: 2
+    hardening.prohibit_ptrace_syscall: 1
+    hardening.harden_shm: 2
+    hardening.harden_tty: 1
+    hardening.harden_rtld: 1
+    hardening.insecure_kmod: 0
+    hardening.procfs_harden: 1
+    hardening.elf_pie_only: 0
+    hardening.log.ulog: 0
+    hardening.log.log: 1
+    hardening.version: 1500001
+    hardening.control.extattr.status: 1
+    hardening.control.acl.status: 1
+    hardening.pax.segvguard.max_crashes: 5
+    hardening.pax.segvguard.suspend_timeout: 600
+    hardening.pax.segvguard.expiry_timeout: 120
+    hardening.pax.segvguard.status: 2
+    hardening.pax.mprotect.status: 2
+    hardening.pax.pageexec.status: 2
+    hardening.pax.kmod_load_disable: 0
+    hardening.pax.disallow_map32bit.status: 2
+    hardening.pax.aslr.status: 2
+    hardening.pax.tpe.user_owned: 0
+    hardening.pax.tpe.root_owned: 1
+    hardening.pax.tpe.all: 0
+    hardening.pax.tpe.negate: 0
+    hardening.pax.tpe.gid: 0
+    hardening.pax.tpe.status: 1
+    hardening.pax.prohibit_new_usb: 0
+```
+
+Every PaX feature reports **status 2**, which is enforcing — `aslr`,
+`mprotect`, `pageexec`, `segvguard` — alongside `harden_rtld: 1`,
+`harden_shm: 2`, `harden_tty: 1`, `procfs_harden: 1` and the two
+`prohibit_ptrace` knobs. This is the first time any of that has been
+read off a running system rather than argued from `sys/conf/options` and
+`sys/hardenedbsd`.
+
+It also settles the last of the boot bisection's loose ends. The
+hypothesis that carried eleven runs was that `PAX_NOEXEC`'s W^X was
+stopping the run-time linker relocating itself. Here is the run-time
+linker having relocated itself, on a kernel with `pax.mprotect.status:
+2` and `pax.pageexec.status: 2`.
+
+### The run still failed, in the part that asks the questions
+
+Four of the five answer files hold the **command** rather than its
+output. `uname.txt`, in full:
+
+```
+; uname -a 2>&1; echo
+```
+
+A serial console echoes what you type, so the line the shell shows back —
+
+```
+root@freebsd:~ # echo __PBSD_0_BEGIN__; uname -a 2>&1; echo __PBSD_0_END__
+```
+
+— carries *both* markers the capture keys on. The matcher found END
+inside that echo, took the text between the two as the body, and wrote it
+out. Two markers instead of one does not help; they are on the same line.
+
+`hardening.txt` above is the one that worked, and it worked **by
+accident**: its echoed line was long enough to wrap at eighty columns and
+came back as `echo __PBSD_1_END __`, with a space, which did not match —
+so that command alone waited for the real output. One of five right, for
+a reason with nothing to do with the code being right, which is how four
+wrong ones stay hidden.
+
+The output markers begin a line and the echo never does, since a prompt
+and `echo ` precede it. Anchoring them to start-of-line is the whole fix.
+
+A second thing the log shows: `find / -xdev` over a 7.5GB image ran past
+a deadline **shared by every command**, so the two commands after it were
+typed into the still-running `find`'s stdin. Each command now gets its
+own budget — a slow command is not a hung one.
+
+Both are covered by `tools/ci/test_interrogate_echo.py`, which drives
+`interrogate()` against a fake console that echoes like a tty and, in its
+second case, takes its time. Against the old matcher the test reports
+`uname.txt` as `'; uname -a 2>&1; echo'` — run 59's file, exactly.
+
 ### Confirmed with enforcement on
 
 Run 57 was `HARDENEDBSD-NOENFORCE`, which was only ever the control. Run

@@ -167,6 +167,16 @@ jobs:
       - name: The boot test's kernel-debugger probe
         run: python3 tools/ci/test_boot_test_ddb.py
 
+      # Run 59 was the first image with a login. It booted, logged in and
+      # answered - and four of its five answer files held the COMMAND
+      # rather than the answer, because a serial console echoes what you
+      # type and the echoed line carries both of the markers the capture
+      # keys on. The fifth worked only because its echo wrapped at eighty
+      # columns and so failed to match. One of five right, for a reason
+      # unrelated to the code being right.
+      - name: The boot test's --run capture
+        run: python3 tools/ci/test_interrogate_echo.py
+
       # Run 43 printed a backtrace whose interrupt frame carried a USER
       # rip and a vm_map that placed it inside the run-time linker, with no
       # shared library mapped after it - and then concluded "the kernel
