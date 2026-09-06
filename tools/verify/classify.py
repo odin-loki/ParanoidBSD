@@ -59,10 +59,29 @@ from includes import include_flags, lang_flags  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
 
+# goto-instrument prints, IN THIS ORDER:
+#
+#   Symbol......: xtob
+#   Pretty name.: xtob
+#   ...
+#   Type........: char (signed int c)
+#   Value.......: irep(...)
+#   Flags.......: lvalue file_local
+#   Location....: file ... line 36
+#
+# Flags comes AFTER Type. The first version of this regex captured only
+# what lay BETWEEN Symbol and Type and looked for file_local there, so it
+# never saw a flag at all: 26,548 of 26,607 kernel functions came back
+# "exported", in a kernel that is mostly static, and the 59 exceptions were
+# a previous symbol's Flags line landing in the gap. md5c.c's rol32 and
+# subr_blist.c's bitrange - both `static inline` - were triaged as exported
+# API on the strength of it.
 SYM_RE = re.compile(
     r"^Symbol\.+:\s*(?P<sym>\S+)\s*$"
     r"(?P<mid>.*?)"
-    r"^Type\.+:\s*(?P<type>.*?)$",
+    r"^Type\.+:\s*(?P<type>.*?)$"
+    r"(?P<tail>.*?)"
+    r"(?=^Symbol\.+:|\Z)",
     re.M | re.S,
 )
 
@@ -171,7 +190,8 @@ def model_one(job: dict) -> dict:
             # at INT_MIN - and its one caller passes an isxdigit() char.
             # Reporting that as a defect needs the callers, which a modular
             # check does not have.
-            linkage[sym] = ("static" if "file_local" in (m.group("mid") or "")
+            linkage[sym] = ("static"
+                            if "file_local" in (m.group("tail") or "")
                             else "exported")
         elif "*" in ty:
             # A file-scope POINTER defined in another translation unit.
