@@ -2815,7 +2815,18 @@ identify_cpu_sysinit(void *dummy __unused)
 	prev_desc = NULL;
 	CPU_FOREACH(cpu) {
 		desc = get_cpu_desc(cpu);
-		if (cpu != 0) {
+		/*
+		 * The guard was `cpu != 0`: it tests the INDEX and then uses
+		 * the POINTER, which is only the same question while CPU 0
+		 * is in all_cpus and CPU_FOREACH reaches it first. If it is
+		 * not, the first iteration passes prev_desc == NULL and
+		 * check_cpu_regs() dereferences it five times before
+		 * anything else happens, during SI_SUB_CPU.
+		 *
+		 * prev_desc is set at the end of every iteration, so this is
+		 * the same condition wherever the old one was right.
+		 */
+		if (prev_desc != NULL) {
 			check_cpu_regs(cpu, desc, prev_desc);
 			update_special_regs(cpu);
 		}

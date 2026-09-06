@@ -142,6 +142,12 @@ FIXES = {
         "mtod() on an unchecked m_getcl(M_NOWAIT); usbd_copy_out() then "
         "wrote actlen bytes of device data through NULL",
     ),
+    "hbsd/src/sys/arm64/arm64/identcpu.c": (
+        "if (prev_desc != NULL) {",
+        None,
+        "the guard tested the CPU INDEX and used the POINTER; with CPU 0 "
+        "absent from all_cpus, check_cpu_regs() dereferences NULL",
+    ),
 }
 
 

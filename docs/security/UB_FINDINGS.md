@@ -299,6 +299,39 @@ they are listed rather than changed. Run the tool to see them.
 
 ---
 
+## Fixed — arm64, which nothing had ever actually checked
+
+`arch_of()` mapped `lib/libc/<arch>` and `lib/msun/<arch>` to that
+architecture's headers and said nothing about `sys/`, so 671 kernel files
+under `sys/arm64`, `sys/arm`, `sys/powerpc` and `sys/riscv` were compiled
+against **amd64's** `machine/`. `sys/arm64` went from 9 usable translation
+units to 108 of 164 when that was fixed, and 13 findings appeared in code
+that had never been looked at.
+
+### `sys/arm64/arm64/identcpu.c` — the guard tests the index and uses the pointer
+
+```c
+	prev_desc = NULL;
+	CPU_FOREACH(cpu) {
+		desc = get_cpu_desc(cpu);
+		if (cpu != 0) {
+			check_cpu_regs(cpu, desc, prev_desc);
+```
+
+`prev_desc` is set at the end of each iteration, so `cpu != 0` and
+`prev_desc != NULL` are the same question **only while CPU 0 is in
+`all_cpus` and `CPU_FOREACH` reaches it first**. If it is not, the first
+iteration passes NULL and `check_cpu_regs()` dereferences it five times,
+during `SI_SUB_CPU`. The condition now tests what it means to test.
+
+Twelve of the thirteen did not survive reading, and the reasoning is in the
+last section — but they were only *available* to read because the
+architecture fix made the files compile. PBSD's claim is that every
+architecture is first class; a verifier checking four of the six against
+the wrong headers is not that.
+
+---
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -322,3 +355,7 @@ Kept because the reasoning is what stops them being re-reported.
 | `uipc_mbuf.c:1199`, `igmp.c:2837` "unchecked M_NOWAIT" (my own lint) | `if (m && ...)` and `if (m)` are NULL tests. The first version of `nowait_check.py` did not know that. |
 | `if_ptnet.c:1760` (same lint) | `mhead = mtail = m_getcl(...)` and the check is on `mhead`. |
 | `uma_core.c:1252` (same lint) | `sizeof(hash->uh_slab_hash[0])` does not evaluate the pointer. |
+| `sys/arm64/vmm/vmm_arm64.c:1054-1063` "garbage value" | `pte` and `pte_shift` are set in a `for (;levels > 0;)` loop that falls through to `done:`. `levels` is `howmany(ia_bits - granule_shift, granule_shift - 3)` and the code above rejects `tsz < 16 \|\| tsz > 39` and every granule but 4K and 16K, so `ia_bits - granule_shift >= 11` and the loop always runs. |
+| `sys/arm64/vmm/vmm_arm64.c:415` "garbage value" | `vmm_base` is assigned inside one `if (!in_vhe())` block and used inside another. `in_vhe()` is a call, so the analyser explores false-then-true. Fragile, not wrong. |
+| `sys/arm64/vmm/vmm_mmu.c:408` "undefined pointer" | `l3_list` is allocated under `if (invalidate)` and used under `if (invalidate)`, with `M_WAITOK`. |
+| `sys/arm64/broadcom/genet/if_genet.c:1413`, `busdma_machdep.c:111` | driver attach paths where the analyser cannot see the device probe that establishes the field. |
