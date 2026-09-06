@@ -847,6 +847,58 @@ architecture file shadows a `MISRCS` entry by name whether or not
 `MDSRCS` lists it, and eleven such files called symbols that were
 deleted with the assembly.
 
+### Run 49: RELRO is out, and so is every other build option
+
+`src_conf=norelro` stopped at the same instruction as 43, 45 and 48 —
+boot step 10:13:11 to 10:21:11, the full 480 seconds, `_rtld+0x10`
+again. All six of `hbsd/src.conf.pbsd`'s hardening options are now ruled
+out, and `WITHOUT_MACHDEP_OPTIMIZATIONS` was ruled out the strongest way
+available, by run 48 testing the **opposite** value.
+
+The rtld's own libc is vendor-identical too. `rtld-libc/Makefile.inc:43-47`
+names 24 generic string functions out of `lib/libc/string`, and not one of
+them carries a PBSD edit; the only `.cpp` in that directory is `ffsll.cpp`,
+which is not on the list.
+
+**So the bisect was searching the wrong axis.** Every value of `src_conf`
+changes *userland build flags*. `kernconf` has been `HARDENEDBSD` in all
+of them, and `sys/conf/std.hardenedbsd` compiles in
+
+```
+options PAX_ASLR        # Address Space Layout Randomization
+options PAX_NOEXEC      # Remove WX pages from user-space and enforce W^X
+options PAX_SEGVGUARD   # prevent brute-force attacks
+options PAX_HARDENING
+```
+
+which no run has ever varied. And the kernel debugger's own output has
+been pointing at it since run 43 — `show procvm 1` on the stuck process:
+
+```
+0x25653763000-0x25653768000  prot=1/1   r--, max r--
+0x25653768000-0x2565377c000  prot=5/5   r-x, max r-x
+0x2565377c000-0x2565377d000  prot=3/7   rw-, max rwx
+0x2565377d000-0x2565377e000  prot=3/3   rw-, max rw-
+```
+
+Three of the rtld's four mappings have a **maximum** protection with no
+write or no execute bit. That is what `PAX_NOEXEC`'s W^X does to
+`max_prot`, and `ld-elf.so.1` relocating itself is the one thing in the
+system that has to write to a mapping it will then execute. A static
+`/rescue/init` never does it, which is the whole reason `/rescue/init`
+talks.
+
+Two controls follow, and they vary the axis rather than the flags:
+
+* `kernconf: GENERIC`, `src_conf: pbsd` — PaX compiled out, userland
+  exactly as it is. Unambiguous: no sysctl can be wrong about whether it
+  took effect.
+* `kernconf: HARDENEDBSD` with
+  `loader_set: hardening.pax.aslr.status=0 hardening.pax.segvguard.status=0`
+  — the same kernel, the policy turned off at the loader. If the first
+  talks and this one does not, the answer is `PAX_NOEXEC`, which has no
+  runtime switch of its own.
+
 ### The control that costs one renamed file
 
 `sys/kern/init_main.c:716` compiles this list into every kernel:
