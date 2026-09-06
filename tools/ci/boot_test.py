@@ -121,6 +121,39 @@ USERLAND = [
 
 PHASES = [("loader", LOADER), ("kernel", KERNEL), ("userland", USERLAND)]
 
+# Disk providers the kernel announces as it attaches them. If root cannot be
+# mounted, WHICH of these appeared is the whole diagnosis.
+DISKS = re.compile(rb"GEOM: new disk (\w+)|(\bvtbd\d+|\bada\d+|\bda\d+|"
+                   rb"\bcd\d+|\bmd\d+)\b")
+
+
+def _explain_mountroot(vis: bytes) -> None:
+    """Say WHY root could not be mounted, not just that it could not.
+
+    Run 40 reached `Manual root filesystem specification:` and the boot test
+    reported "could not mount root" correctly and in nine seconds. What it
+    could not say was that the kernel had attached a CD-ROM and nothing
+    else - because HARDENEDBSD-MINIMAL, the workflow's DEFAULT kernconf,
+    includes MINIMAL and HARDENEDBSD-CORE and therefore no virtio at all,
+    while HARDENEDBSD includes GENERIC and gets `device virtio_blk`.
+
+    QEMU was handing it a virtio-blk disk the kernel had no driver for. That
+    is a kernel/VM mismatch and not a PBSD fault, and half an hour went into
+    reading a boot log to find it out. So the probe says it.
+    """
+    seen = set()
+    for m in DISKS.finditer(vis):
+        seen.add((m.group(1) or m.group(2)).decode())
+    print("\n  why root could not be mounted")
+    print(f"    disk devices the kernel attached: "
+          f"{', '.join(sorted(seen)) if seen else 'NONE'}")
+    if not any(d.startswith("vtbd") for d in seen):
+        print("    no vtbd* - this kernel has no virtio_blk, and the boot")
+        print("    image is presented to QEMU as -device virtio-blk-pci.")
+        print("    HARDENEDBSD-MINIMAL includes MINIMAL + HARDENEDBSD-CORE")
+        print("    and has no virtio; HARDENEDBSD includes GENERIC and does.")
+        print("    Re-run with kernconf=HARDENEDBSD.")
+
 FAILURE = [
     (re.compile(rb"panic:.*"), "kernel panic"),
     (re.compile(rb"Fatal trap \d+"), "fatal trap"),
@@ -651,6 +684,8 @@ def main() -> int:
                 if m:
                     verdict = ("FAIL", why,
                                m.group(0).decode("utf-8", "replace"))
+                    if why == "could not mount root":
+                        _explain_mountroot(vis)
                     break
             if verdict:
                 break
