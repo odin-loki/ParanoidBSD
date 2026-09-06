@@ -129,7 +129,7 @@ on:
         required: false
         default: 'pbsd'
         type: choice
-        options: [pbsd, none, nosanitizer, nobindnow]
+        options: [pbsd, none, nosanitizer, nobindnow, norelro]
 
 jobs:
   image:
@@ -212,6 +212,7 @@ jobs:
             none)        SRCCONF="" ;;
             nosanitizer) SRCCONF="$PWD/hbsd/src.conf.pbsd-nosanitizer" ;;
             nobindnow)   SRCCONF="$PWD/hbsd/src.conf.pbsd-nobindnow" ;;
+            norelro)     SRCCONF="$PWD/hbsd/src.conf.pbsd-norelro" ;;
             *)           SRCCONF="$PWD/hbsd/src.conf.pbsd" ;;
             esac
             # The gate belongs on `pbsd` and on nothing else.

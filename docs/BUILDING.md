@@ -783,6 +783,70 @@ Next: `src_conf=none` confirms the class, and `src_conf=nosanitizer` —
 everything except `SAFESTACK` and `CFI` — narrows six options to two or
 rules them out and leaves four.
 
+### Three runs later: five of six options are out, and RELRO is not
+
+Runs 43 (`nosanitizer` — SafeStack and CFI off), 45 (`nobindnow` —
+BIND_NOW off) and 48 (`none` — `SRCCONF=` entirely) all stop at the
+**same instruction**:
+
+```
+rip 0x25653768fd0, load base 0x25653763000   ->  ELF vaddr 0x5fd0
+nearest preceding symbol: _rtld+0x10
+two executable mappings, four samples at one rip and one rsp
+```
+
+Two executable mappings is the binary and `ld-elf.so.1` and nothing else:
+the run-time linker has not mapped a single shared library. It is stuck
+relocating itself — which is exactly why a static `/rescue/init`
+(`NO_SHARED=yes`) gets past it, and why "not anything in the rtld"
+above was wrong.
+
+**Run 48 is the one that reorganised this.** `src_conf=none` reads as
+"no hardening at all", and it is not: `share/mk/src.opts.mk:59,68,170`
+puts both `RELRO` and `BIND_NOW` in `__DEFAULT_YES_OPTIONS`, so
+FreeBSD's own defaults still have them. What `none` does settle is
+everything PBSD adds on top —
+
+| option | how it was ruled out |
+|---|---|
+| `WITHOUT_MACHDEP_OPTIMIZATIONS` | run 48 tested the **opposite** value (assembly and ifunc dispatch back ON) and hung identically |
+| `PIE` | `libexec/rtld-elf/Makefile:123` sets `NOPIE=yes`; the rtld is never PIE |
+| `CFI` | `libexec/rtld-elf/Makefile:11` forces `MK_CFI=no` for the rtld |
+| `SAFESTACK` | run 43 |
+| `BRANCH_PROTECTION` | `bsd.opts.mk:91` puts it in `BROKEN_OPTIONS` off aarch64 |
+| `BIND_NOW` | run 45 |
+
+That leaves **RELRO**, and it is the only option that was on in every
+one of the three failing runs. `src.conf.pbsd-nobindnow`'s own closing
+note said so before the run happened — *"If it stays silent, it is
+RELRO, and this file is the control"* — and it stayed silent.
+
+`hbsd/src.conf.pbsd-norelro` is `src.conf.pbsd` with `WITHOUT_RELRO=YES`
+and nothing else changed; `src_conf: norelro` selects it.
+
+The mechanism, if this is it: `-z relro` alone is *partial* relro and
+leaves `.got.plt` writable, while `-z relro` with `-z now` is *full*
+relro and folds `.got.plt` into a `.got` the linker marks read-only.
+`ld-elf.so.1` relocates itself before anything exists to do it for it,
+and a write to a page just made read-only faults with no handler
+installed — which is what a spin at a fixed rip with a fixed rsp looks
+like from the kernel debugger. The fix would then be to exempt the rtld
+the way its Makefile already exempts CFI and PIE, not to give up RELRO
+system-wide.
+
+If it stays silent under `norelro` too, no build option is responsible,
+the six-option bisect is finished with nothing to show, and the next
+suspect is this tree's own libc — `rtld-libc/Makefile.inc:43-47` pulls
+the generic string functions straight out of `lib/libc/string`, which is
+code PBSD has changed.
+
+Run 48 also produced the first `src_conf=none` **build** to complete
+since the assembly removal. That is the `.PATH` fix landing: `make`
+searches `lib/libc/${LIBC_ARCH}/string` before `lib/libc/string`, so an
+architecture file shadows a `MISRCS` entry by name whether or not
+`MDSRCS` lists it, and eleven such files called symbols that were
+deleted with the assembly.
+
 ### The control that costs one renamed file
 
 `sys/kern/init_main.c:716` compiles this list into every kernel:
