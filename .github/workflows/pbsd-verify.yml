@@ -236,6 +236,12 @@ jobs:
       # directories, sys/hardenedbsd among them.
       - name: Every directory under sys/ is in an analyse shard
         run: python3 tools/verify/check_shards.py
+      # Three boot runs of forty minutes each were spent discovering,
+      # one undefined symbol at a time, that `options PAX` without a
+      # given feature does not link. This answers the question by
+      # enumeration in under a second.
+      - name: A PaX feature that is off still links
+        run: python3 tools/verify/check_pax_options.py
 
   report:
     needs: [sweep, analyze]

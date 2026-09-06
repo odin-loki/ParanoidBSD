@@ -1522,6 +1522,86 @@ exact wording. A merge could have taken the fix and left the gate
 passing on a vendor line. The marker is a sentence from the comment
 instead. The same mistake as `ti_clk_dpll`, caught the same way.
 
+## Asking "are there more?" by enumeration instead of by sampling
+
+Boot run 54 got further than any before it — buildworld passed, so the
+`g_eli.h` fix held — and died at the kernel link on a fifth symbol:
+
+```
+ld.lld: error: undefined symbol: pax_disallow_map32bit_active
+>>> referenced by vm_mmap.c:321 (kern_mmap)
+```
+
+`hbsd_pax_aslr.c` is `optional pax pax_aslr`, and the call site is
+guarded
+
+```c
+#if defined(__LP64__) && defined(PAX_HARDENING)
+	if (pax_disallow_map32bit_active(td, flags))
+```
+
+on **the wrong option**. A kernel with hardening but not ASLR does not
+link, and PBSD had already edited that very line once — the registered
+fix changes `MAP_32BIT` to `__LP64__` in it — without noticing that the
+other half named a feature the function does not live in.
+
+### The mistake was mine, twice, in the same shape
+
+Run 52 taught that `options PAX` alone does not link. Asked "are there
+more?", I answered by reading and generalising, both times:
+
+> "Every call site outside `sys/hardenedbsd` is `#ifdef`'d on its own
+> feature, checked: five of them."
+
+> "The other 34 are not getting stubs. They are called only from sites
+> that are themselves `#ifdef`'d on the feature."
+
+The first was wrong and cost run 52. The second was wrong *after* the
+first had been proved wrong the same way, and cost run 54. Sampling call
+sites and generalising is precisely the defect this document catalogues
+in other people's code — the guard on five of nine — and I wrote it into
+my own reasoning twice while cataloguing it.
+
+### `tools/verify/check_pax_options.py`
+
+So the question is now answered by enumeration. A call to a function
+whose defining file needs option X is fine when any of:
+
+1. an enclosing `#ifdef` in the caller mentions X;
+2. the **caller's own file** is gated on X by `sys/conf/files`, so it is
+   not compiled when X is off;
+3. `pax.h` declares it under `#ifdef X` with an `#else` no-op.
+
+It reports 63 feature-gated PaX functions and found exactly three sites
+left, including the one run 54 died on:
+
+```
+FAIL  sys/kern/link_elf.c:268
+      pax_insecure_kmod() needs PAX_HARDENING; guarded by: HARDEN_KLD
+FAIL  sys/kern/link_elf_obj.c:247
+      pax_insecure_kmod() needs PAX_HARDENING; guarded by: HARDEN_KLD
+FAIL  sys/vm/vm_mmap.c:321
+      pax_disallow_map32bit_active() needs PAX_ASLR; guarded by:
+      defined(__LP64__) && defined(PAX_HARDENING)
+```
+
+`HARDEN_KLD` is a different option from `pax_hardening` — the same
+class as `vm_mmap.c`'s, a guard naming a neighbour of the right option.
+All three are fixed in `pax.h` rather than at the call sites: stubbing
+the function fixes every site including future ones, correcting a guard
+fixes one. Each verified to fail the gate when reverted alone.
+
+### Why this gate exists and the `bool` one below does not
+
+Both were written the same afternoon, for failures of the same kind —
+something the analyser cannot see and only a forty-minute build reveals.
+This one is decidable from the tree: the gate is in `sys/conf/files`,
+the guard is in the preprocessor, the stub is in one header, and it
+reports **zero** false positives. The `bool` rule was not a property of
+the header at all and reported 159. The difference is not effort or
+intent; it is whether the thing being checked is actually determined by
+what is being read.
+
 ## A fix of mine that broke buildworld, and the gate I could not write
 
 The `g_eli` divisor fix above put this next to `eli_metadata_softc()`:

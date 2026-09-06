@@ -312,6 +312,18 @@ FIXES = {
     ),
     "hbsd/src/sys/sys/pax.h": [
         (
+            "#define\tpax_disallow_map32bit_active(td, flags)",
+            None,
+            "hbsd_pax_aslr.c is gated on pax_aslr and both call sites "
+            "guard on a different option; boot run 54 died on it",
+        ),
+        (
+            "#define\tpax_insecure_kmod()",
+            None,
+            "called under #ifdef HARDEN_KLD, which is not the "
+            "pax_hardening its definition needs",
+        ),
+        (
             "#define\tpax_harden_tty(td)\t\t({ 0; })",
             None,
             "pax_harden_tty and pax_kmod_load_disabled are called from "

@@ -176,8 +176,30 @@ void pax_aslr_stack(struct proc *p, vm_offset_t *addr);
 void pax_aslr_thr_stack(struct proc *p, vm_offset_t *addr);
 void pax_aslr_stack_with_gap(struct proc *p, vm_offset_t *addr);
 void pax_aslr_vdso(struct proc *p, vm_offset_t *addr);
+/*
+ * PBSD: both live in hbsd_pax_aslr.c, which sys/conf/files gates on
+ * pax_aslr - and both call sites name a DIFFERENT option.
+ *
+ *   vm_mmap.c:320   #if defined(__LP64__) && defined(PAX_HARDENING)
+ *   hbsd_pax_common.c:287  #ifdef __LP64__     (file is `optional pax`)
+ *
+ * Boot run 54 is the one that found the first of those:
+ *
+ *     ld.lld: error: undefined symbol: pax_disallow_map32bit_active
+ *     >>> referenced by vm_mmap.c:321 (kern_mmap)
+ *
+ * The guard says PAX_HARDENING and the function needs PAX_ASLR, so a
+ * kernel with hardening but not ASLR does not link. Stubbing here fixes
+ * both sites and every future one; correcting the two guards would fix
+ * only the two.
+ */
+#ifdef PAX_ASLR
 pax_flag_t pax_disallow_map32bit_setup_flags(struct image_params *imgp, struct thread *td, pax_flag_t mode);
 bool pax_disallow_map32bit_active(struct thread *td, int mmap_flags);
+#else
+#define	pax_disallow_map32bit_setup_flags(imgp, td, mode)  ((pax_flag_t)0)
+#define	pax_disallow_map32bit_active(td, flags)		({ false; })
+#endif
 
 /*
  * Log related functions
@@ -255,7 +277,18 @@ int pax_harden_shm(struct thread *td);
 pax_flag_t pax_hardening_setup_flags(struct image_params *, struct thread *,
     pax_flag_t);
 
+/*
+ * PBSD: link_elf.c:268 and link_elf_obj.c:247 call this under
+ * `#ifdef HARDEN_KLD`, which is a different option from the
+ * pax_hardening that sys/conf/files gates hbsd_pax_hardening.c on.
+ * Found by tools/verify/check_pax_options.py rather than by a fourth
+ * forty-minute boot run.
+ */
+#ifdef PAX_HARDENING
 bool pax_insecure_kmod(void);
+#else
+#define	pax_insecure_kmod()		({ false; })
+#endif
 
 /*
  * PBSD: these two are called from files compiled under plain `options
