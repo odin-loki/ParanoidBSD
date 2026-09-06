@@ -50,7 +50,15 @@ CHECKERS = [
     "unix.cstring.BadSizeArg", "unix.cstring.NullArg",
 ]
 
-DIAG = re.compile(r"^(?P<file>[^:]+):(?P<line>\d+):(?P<col>\d+): "
+# [^:]+ matches NEWLINES, so the file group swallowed every preceding line
+# of -analyzer-output=text's source context until it found the next
+# colon-digit-colon. 430 of 705 findings came back with a location like
+#
+#   '   60 |         *dstlenp = len;\n      |          ~~~~~~~ ^\n/home/.../sysctl.c:110'
+#
+# which is unusable for grouping and unreadable in a report. [^:\n] keeps
+# the match on one line, which is what a diagnostic header is.
+DIAG = re.compile(r"^(?P<file>[^:\n]+):(?P<line>\d+):(?P<col>\d+): "
                   r"warning: (?P<msg>.*?)\s*\[(?P<checker>[^\]]+)\]$", re.M)
 
 

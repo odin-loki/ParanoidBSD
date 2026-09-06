@@ -17,11 +17,45 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from analyze import analyze  # noqa: E402
 
+# Deliberately several functions with several lines between them, so the
+# analyser emits interleaved source context and a location regex that
+# matches across newlines has something to swallow. The single-function
+# version of this probe passed while 430 of 705 real findings came back
+# with a location like
+#
+#   '   60 |  *dstlenp = len;\n      |   ~~~ ^\n/home/.../sysctl.c:110'
+#
+# because [^:]+ matches newlines. A probe that cannot produce the failure
+# cannot report it.
 PROBE = """#include <stdlib.h>
+#include <string.h>
+
+static int helper(int *p, int n)
+{
+        int total = 0;
+        for (int i = 0; i < n; i++)
+                total += p[i];
+        return total;
+}
+
 int leak(void){ char *p = malloc(10); return p ? 1 : 0; }
-int nulldrf(int c){ int *p = 0; if (c) p = malloc(4); return *p; }
+
+int nulldrf(int c)
+{
+        int *p = 0;
+        if (c)
+                p = malloc(4);
+        return *p + helper(p, 1);
+}
+
 int divz(int a){ return a / 0; }
-int uninit(void){ int x; return x + 1; }
+
+int uninit(void)
+{
+        int x;
+        int y = x + 1;
+        return y;
+}
 """
 
 WANT = ["unix.Malloc", "core.NullDereference", "core.DivideZero",
@@ -38,6 +72,18 @@ def main() -> int:
     for x in r["findings"]:
         print(f"    [{x['checker']}] {x['msg'][:70]}")
     fail = 0
+
+    # Every location must be a clean file:line. This is the assertion the
+    # first version did not have, and it is the one that was needed.
+    import re as _re
+    bad = [x for x in r["findings"]
+           if not _re.fullmatch(r"[^\s:]+:\d+", x["where"])]
+    print(f"  {'ok  ' if not bad else 'FAIL'} every location is a clean "
+          f"file:line ({len(bad)} malformed)")
+    for x in bad[:3]:
+        print(f"      {x['where']!r}")
+    fail += bool(bad)
+
     for w in WANT:
         hit = any(c.startswith(w) for c in got)
         print(f"  {'ok  ' if hit else 'FAIL'} {w}")
