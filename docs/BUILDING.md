@@ -1166,6 +1166,125 @@ been used for and roughly a sixth of what it did — its true branch drops
 the whole file. Renamed to say so, because a bisection handle that
 understates its own reach is worse than none.
 
+## SOLVED — run 57 boots, and the cause was undefined behaviour the compiler acted on
+
+`/sbin/init` runs. `/etc/rc` runs. Filesystems mount, `em0` comes up,
+`devd` and `syslogd` start, and the log ends at `Starting local
+daemons:`. Thirty-seven boot runs, and the memstick reaches multi-user.
+
+Run 57 is the same configuration as run 56 — `memstick`,
+`HARDENEDBSD-NOENFORCE`, `src_conf=pbsd`, `toolchain=external` — with
+one relevant source change between them. The diff over `hbsd/src` is
+seven files: `scmi_shmem.c` is arm-only, `ofw_real.c` is powerpc-only,
+three USB wireless drivers and `g_eli_ctl.c` are never exercised by a
+QEMU memstick boot. The seventh is `libexec/rtld-elf/rtld.c`, which is
+where pid 1 was wedged.
+
+### The defect
+
+`_rtld()` — the run-time linker's C entry point, the first C function of
+every dynamically linked process — opened like this:
+
+```c
+	aux = (Elf_Auxinfo *)sp;
+
+#ifdef HARDENEDBSD
+	/* Load PaX flags */
+	if (aux_info[AT_PAXFLAGS] != NULL) {
+		pax_flags = aux_info[AT_PAXFLAGS]->a_un.a_val;
+		aux_info[AT_PAXFLAGS]->a_un.a_val = 0;
+	}
+
+	cache_harden_rtld();
+#endif
+	/* Digest the auxiliary vector. */
+	for (i = 0; i < AT_COUNT; i++)
+		aux_info[i] = NULL;
+	for (auxp = aux; auxp->a_type != AT_NULL; auxp++) {
+		if (auxp->a_type < AT_COUNT)
+			aux_info[auxp->a_type] = auxp;
+	}
+```
+
+`aux_info` is an automatic array. It is read before either loop writes
+it. The index is in bounds — `AT_PAXFLAGS` is 40, `AT_COUNT` is 41 — but
+the value is indeterminate, so this is undefined behaviour, and the
+statement after it stores through the same pointer.
+
+### What the compiler did with it
+
+A compiler may assume undefined behaviour does not happen. If the read
+cannot legally occur, the code that depends on it is unreachable, and
+unreachable code can be deleted. Reduced to a standalone file and
+compiled with the same clang 18 at `-O2`:
+
+```
+broken order (read before the loops)   rtldish = 0x0 bytes
+fixed order  (read after the loops)    rtldish = 0x73 bytes
+```
+
+**Zero bytes.** The optimiser deleted the entire function.
+`tools/verify/testdata/rtld_ub_deleted.c` is that file, so the claim can
+be re-run rather than believed.
+
+And the sharpest version of the point: **gcc 13.3.0 on the same machine,
+same flags, keeps the broken form at 0x8f bytes.** Two compilers one
+`cc` symlink apart disagree about what this source means. PBSD builds
+with an external clang.
+
+The real binaries agree. In run 56's `ld-elf.so.1`, `_rtld` sat at
+`0x5fc0` with `_rtld_error` 32 bytes later — a 534-line function
+occupying thirty-two bytes. In run 57's, `_rtld` spans **13,136**.
+
+So pid 1 entered the run-time linker, reached a stub where the linker
+should have been, and stayed there: the same `rip`, the same `rsp` and
+the same `rbp` for the full 480 seconds, which is exactly what runs 43
+through 56 recorded and what this document read, correctly, as "spinning
+at one instruction".
+
+### Why every earlier reading was pointed the wrong way
+
+`/rescue/init` boots because `rescue/rescue/Makefile` builds it
+`NO_SHARED=yes` — a static binary never runs the rtld at all. That was
+read as evidence about `MK_PIE`, `MK_RELRO`, `MK_BIND_NOW`,
+`MK_SAFESTACK` and `MK_CFI`, because those are what PBSD changes and
+they are all things that act on dynamic linking. Every one of those
+controls was a reasonable hypothesis and every one was wrong: the rtld
+is where the failure lives, but not because of how it is *linked*.
+
+The `prot=1/1`, `prot=5/5`, `prot=3/3` maximum protections on the rtld's
+mappings, read since run 43 as `PAX_NOEXEC`'s W^X and the strongest
+remaining lead, are simply what those segments always look like.
+
+**And the reasoning that put this defect aside was mine, hours before
+this run.** On finding it I wrote that it is "identical in upstream
+HardenedBSD, which boots, so it is inherited and almost certainly **not**
+what wedges pid 1", and moved the block anyway as ordinary hygiene. The
+inference was wrong in a specific and instructive way: undefined
+behaviour is not a property of source alone. Upstream and PBSD share the
+source; they do not share the compiler or the flags, and what an
+optimiser does with a UB-dependent branch is exactly the thing that
+varies between them. "Upstream has this too and upstream works" is
+evidence about upstream's toolchain, not about the code.
+
+That is the same mistake in a different coat as every entry in
+`docs/security/UB_FINDINGS.md`: an invariant that holds by accident,
+trusted because it has held so far.
+
+### What it cost, and what it says about the instruments
+
+Thirty-seven runs. The defect is not exotic — it is a read of an
+uninitialised automatic, the single most common finding class in this
+tree's sweeps, in a file the sweeps cover. It was not found by the boot
+bisection, which spent its time on kernel hardening options; it was
+found by reading `_rtld()` for an unrelated reason, and then set aside
+as inherited.
+
+One irony worth recording: the `objdump -d` probe added to name the
+faulting instruction landed in the *same commit* as the fix, so it never
+saw the broken binary. The deletion was established from symbol spans
+and then reproduced locally instead.
+
 ## Run 56 — the control finally built, and it says PaX enforcement is not it
 
 Runs 52 through 55 all failed to *build*, three of the four on mistakes of
@@ -1247,7 +1366,14 @@ over the zip's central directory for the three small members — worth
 knowing, because "the answer is in a 665 MB artifact" had been treated as
 a reason not to look.
 
-### One real defect found while reading `_rtld()`, which is *not* this bug
+### One real defect found while reading `_rtld()` — and it WAS this bug
+
+> **This heading used to end "which is *not* this bug", and the section
+> below argued the point at length. It is left standing, with this note,
+> because the reasoning that got it wrong is worth more than a tidy
+> page.** Run 57 booted with this one line moved and nothing else in the
+> failing path changed; the account is under "SOLVED" above.
+
 
 Stated separately because the temptation to connect them is strong and
 the evidence does not. `_rtld()` opened with:
@@ -1280,6 +1406,16 @@ Identical in upstream HardenedBSD, which boots, so it is inherited and it
 is almost certainly **not** what wedges pid 1. Moved below the digest
 loops anyway, still ahead of `init_rtld()`; `pax_flags` is a file-scope
 static, which the function's own comment says is safe to touch there.
+
+> **That last sentence was wrong, and the change it dismisses as hygiene
+> is what made the system boot.** The flaw in the argument: undefined
+> behaviour is not a property of source alone. Upstream and PBSD share
+> this source and do not share the compiler or the flags, and what an
+> optimiser does with a UB-dependent branch is exactly what differs
+> between them. "Upstream has this too and upstream works" is evidence
+> about upstream's toolchain.
+>
+> It was moved "anyway" — and "anyway" turned out to be the whole thing.
 
 ## Asking the system about itself
 

@@ -471,9 +471,13 @@ FIXES = {
     "hbsd/src/libexec/rtld-elf/rtld.c": (
         "PBSD: read the PaX flags AFTER the vector has been digested",
         "aux = (Elf_Auxinfo *)sp;\n\n\n#ifdef HARDENEDBSD",
-        "_rtld() read aux_info[AT_PAXFLAGS] before either loop had "
-        "written the array, then dereferenced and stored through it; it "
-        "survived only because exec(2) hands out a zero-filled stack",
+        "THE BOOT BUG. _rtld() read aux_info[AT_PAXFLAGS] before either "
+        "loop had written the array, then dereferenced and stored "
+        "through it. Reading an indeterminate automatic is undefined "
+        "behaviour, and clang 18 at -O2 deletes the whole function on "
+        "that basis: _rtld was 32 bytes in boot run 56's ld-elf.so.1 and "
+        "13,136 in run 57's, which is the first run to reach multi-user. "
+        "Lose this line and /sbin/init stops booting",
     ),
     "hbsd/src/sys/powerpc/ofw/ofw_real.c": [
         (
