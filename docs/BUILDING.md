@@ -1180,6 +1180,33 @@ three USB wireless drivers and `g_eli_ctl.c` are never exercised by a
 QEMU memstick boot. The seventh is `libexec/rtld-elf/rtld.c`, which is
 where pid 1 was wedged.
 
+### Confirmed with enforcement on
+
+Run 57 was `HARDENEDBSD-NOENFORCE`, which was only ever the control. Run
+58 is the configuration that matters — `kernconf: HARDENEDBSD`, PaX
+enforcement **on**, same `src_conf=pbsd` — and it reaches the same
+place:
+
+```
+FreeBSD 15.1-STABLE-HBSD  HARDENEDBSD amd64
+HardenedBSD: initialize and check features
+    (__HardenedBSD_version 1500001 __FreeBSD_version 1501501).
+...
+Starting syslogd.
+Starting local daemons:
+```
+
+Build 35 minutes, boot 53 seconds, `/etc/rc` through to local daemons.
+So PaX enforcement was never implicated at either end: it did not cause
+the hang, and turning it back on does not reintroduce one. The
+thirty-seven-run bisection is closed.
+
+The ladder moves on to `stage: vm`, which unlike a memstick has a login
+and can be asked questions — `uname`, the hardening sysctls against a
+running kernel, a setuid inventory, `kldstat`, the PaX sysctl count.
+Several things in this repository have been arguments from source
+reading for want of a system to ask.
+
 ### The defect
 
 `_rtld()` — the run-time linker's C entry point, the first C function of
