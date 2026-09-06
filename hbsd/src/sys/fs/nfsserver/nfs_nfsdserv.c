@@ -1471,6 +1471,9 @@ nfsrvd_mknod(struct nfsrv_descript *nd, __unused int isdgram,
 	NFSACL_T *aclp = NULL, *daclp = NULL;
 	struct thread *p = curthread;
 
+	/* PBSD: see nfsrvd_remove() - change_info4 has no "unknown". */
+	NFSVNO_ATTRINIT(&dirfor);
+	NFSVNO_ATTRINIT(&diraft);
 	NFSVNO_ATTRINIT(&nva);
 	cnflags = LOCKPARENT;
 	if (nd->nd_repstat) {
@@ -1709,6 +1712,42 @@ nfsrvd_remove(struct nfsrv_descript *nd, __unused int isdgram,
 	u_long *hashp;
 	struct thread *p = curthread;
 
+	/*
+	 * PBSD: define the change_info4 attributes before any path can
+	 * put them on the wire.
+	 *
+	 * dirfor and diraft are filled by nfsvno_getattr(), and only when
+	 * it is called and succeeds -- diraft only `if (dirp)', and either
+	 * of them not at all if the underlying VOP_GETATTR fails. That is
+	 * exactly what dirfor_ret and diraft_ret record, and they start at
+	 * 1 meaning "not fetched".
+	 *
+	 * The NFSv3 reply path honours them: nfsrv_wcc() emits a single
+	 * newnfs_false and no values when before_ret is set, because the
+	 * v3 wire format makes the attributes optional. The NFSv4 path
+	 * ignores both flags and writes
+	 *
+	 *	txdr_hyper(dirfor.na_filerev, tl);
+	 *	txdr_hyper(diraft.na_filerev, tl);
+	 *
+	 * unconditionally, because change_info4 is `bool atomic; changeid4
+	 * before; changeid4 after' and has no encoding for "unknown". So a
+	 * v4 operation that SUCCEEDS while a directory getattr fails sends
+	 * the client eight bytes of this stack frame per value.
+	 * na_filerev is na_vattr.va_filerev (nfsport.h:683), which
+	 * VOP_GETATTR fills on success and leaves alone otherwise.
+	 *
+	 * The same shape is in six sibling handlers here, all with the
+	 * flags present and honoured on one of the two reply paths.
+	 * NFSVNO_ATTRINIT() is this tree's own initialiser for the type
+	 * and is already used ten times in these two files; it makes the
+	 * never-fetched value a defined VNOVAL rather than whatever the
+	 * frame held. It does not invent a change_info4 the server does
+	 * not have - nothing can, in that format - it stops the one it
+	 * does not have from being kernel memory.
+	 */
+	NFSVNO_ATTRINIT(&dirfor);
+	NFSVNO_ATTRINIT(&diraft);
 	if (nd->nd_repstat) {
 		nfsrv_wcc(nd, dirfor_ret, &dirfor, diraft_ret, &diraft);
 		goto out;
@@ -1796,6 +1835,11 @@ nfsrvd_rename(struct nfsrv_descript *nd, int isdgram,
 	fhandle_t fh;
 	struct thread *p = curthread;
 
+	/* PBSD: see nfsrvd_remove() - change_info4 has no "unknown". */
+	NFSVNO_ATTRINIT(&fdirfor);
+	NFSVNO_ATTRINIT(&fdiraft);
+	NFSVNO_ATTRINIT(&tdirfor);
+	NFSVNO_ATTRINIT(&tdiraft);
 	if (nd->nd_repstat) {
 		nfsrv_wcc(nd, fdirfor_ret, &fdirfor, fdiraft_ret, &fdiraft);
 		nfsrv_wcc(nd, tdirfor_ret, &tdirfor, tdiraft_ret, &tdiraft);
@@ -1963,6 +2007,9 @@ nfsrvd_link(struct nfsrv_descript *nd, int isdgram,
 	struct thread *p = curthread;
 	nfsquad_t clientid;
 
+	/* PBSD: see nfsrvd_remove() - change_info4 has no "unknown". */
+	NFSVNO_ATTRINIT(&dirfor);
+	NFSVNO_ATTRINIT(&diraft);
 	if (nd->nd_repstat) {
 		nfsrv_postopattr(nd, getret, &at);
 		nfsrv_wcc(nd, dirfor_ret, &dirfor, diraft_ret, &diraft);
@@ -2076,6 +2123,9 @@ nfsrvd_symlink(struct nfsrv_descript *nd, __unused int isdgram,
 	u_long *hashp;
 	struct thread *p = curthread;
 
+	/* PBSD: see nfsrvd_remove() - change_info4 has no "unknown". */
+	NFSVNO_ATTRINIT(&dirfor);
+	NFSVNO_ATTRINIT(&diraft);
 	if (nd->nd_repstat) {
 		nfsrv_wcc(nd, dirfor_ret, &dirfor, diraft_ret, &diraft);
 		goto out;
@@ -2202,6 +2252,9 @@ nfsrvd_mkdir(struct nfsrv_descript *nd, __unused int isdgram,
 	u_long *hashp;
 	struct thread *p = curthread;
 
+	/* PBSD: see nfsrvd_remove() - change_info4 has no "unknown". */
+	NFSVNO_ATTRINIT(&dirfor);
+	NFSVNO_ATTRINIT(&diraft);
 	if (nd->nd_repstat) {
 		nfsrv_wcc(nd, dirfor_ret, &dirfor, diraft_ret, &diraft);
 		goto out;
@@ -3024,6 +3077,9 @@ nfsrvd_open(struct nfsrv_descript *nd, __unused int isdgram,
 	__enum_uint8_decl(wdelegace) { USENONE, USEMODE, USENFSV4ACL }
 	    delegace;
 
+	/* PBSD: see nfsrvd_remove() - change_info4 has no "unknown". */
+	NFSVNO_ATTRINIT(&dirfor);
+	NFSVNO_ATTRINIT(&diraft);
 #ifdef NFS4_ACL_EXTATTR_NAME
 	aclp = acl_alloc(M_WAITOK);
 	aclp->acl_cnt = 0;
@@ -3863,6 +3919,21 @@ nfsrvd_opendowngrade(struct nfsrv_descript *nd, __unused int isdgram,
 		    NFSLCK_DOWNGRADE);
 		break;
 	default:
+		/*
+		 * PBSD: assign on this arm too, as the other three do.
+		 *
+		 * st is a stack struct (`struct nfsstate st, *stp = &st'),
+		 * i comes straight off the wire, and the deny switch below
+		 * does `stp->ls_flags |= ...' -- a read-modify-write of a
+		 * value this arm never wrote. A client sending an invalid
+		 * access mode with a valid deny mode reaches it.
+		 *
+		 * Harmless today only because nfsrv_openupdate() is called
+		 * under `if (!nd->nd_repstat)' and nothing else reads
+		 * ls_flags on this path. That is one moved guard away from
+		 * mattering, and the three arms above already assign.
+		 */
+		stp->ls_flags = 0;
 		nd->nd_repstat = NFSERR_INVAL;
 	}
 	i = fxdr_unsigned(int, *tl);

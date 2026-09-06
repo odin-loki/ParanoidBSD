@@ -406,6 +406,37 @@ FIXES = {
     # here would stay silent when a merge ate one of the two -- which is
     # the guard-on-one-of-a-pair defect this file exists to catch,
     # committed in the file that catches it. Each names its function.
+    "hbsd/src/sys/fs/nfsserver/nfs_nfsdserv.c": [
+        (
+            # Counting the PBSD comment and not "NFSVNO_ATTRINIT",
+            # which this file already uses thirteen times for other
+            # reasons -- a count-based gate over a string that is not
+            # unique to the fix is satisfied by the pre-existing uses and
+            # bites on nothing, which is how the first version of this
+            # entry passed with one of the six sites deliberately removed.
+            ("PBSD: see nfsrvd_remove() - change_info4 has no", 6),
+            None,
+            "seven NFSv4 handlers wrote dirfor/diraft na_filerev into "
+            "change_info4 without consulting the dirfor_ret/diraft_ret "
+            "flags the NFSv3 path honours, so a successful operation "
+            "whose directory getattr failed sent the client eight bytes "
+            "of stack per value -- ten sites, counted rather than tested "
+            "for presence so losing one of them is not silent",
+        ),
+        (
+            "PBSD: define the change_info4 attributes before any path can",
+            None,
+            "the long-form explanation in nfsrvd_remove() that the six "
+            "short markers refer back to",
+        ),
+        (
+            "PBSD: assign on this arm too, as the other three do",
+            None,
+            "nfsrvd_opendowngrade()'s access switch left ls_flags "
+            "unassigned on its default arm and the deny switch below "
+            "read-modify-writes it, with both selectors off the wire",
+        ),
+    ],
     "hbsd/src/sys/netpfil/pf/pf.c": [
         (
             "PBSD: s is optional in pf_route() and every other use says so",
@@ -630,8 +661,21 @@ def main() -> int:
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
         for want, unwanted, what in entries:
-            if want not in text:
-                missing.append((rel, what, f"fix is gone: {want!r} not found"))
+            # `want' may be (text, n): the marker has to appear at least n
+            # times. Plain substring presence cannot see a lost sibling --
+            # one marker covering a pair of twins is satisfied by either,
+            # so a merge that ate one of the two passed silently. That is
+            # the guard-on-one-of-a-pair defect, in the file whose whole
+            # job is catching it; it was found by reverting one twin and
+            # watching this not fail. Six identical NFSVNO_ATTRINIT sites
+            # are the same problem at greater width.
+            need = 1
+            if isinstance(want, tuple):
+                want, need = want
+            seen = text.count(want)
+            if seen < need:
+                missing.append((rel, what, f"fix is gone: {want!r} found "
+                                           f"{seen} time(s), needs {need}"))
             elif unwanted is not None and unwanted in text:
                 missing.append((rel, what, f"bug is back: {unwanted!r} present"))
 

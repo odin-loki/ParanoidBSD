@@ -2133,6 +2133,104 @@ are four things:
 | `pf_lb.c:1026` `ctx->nk->addr[idx]` | `switch (nat_action)` has three arms — `PF_NAT`, `PF_BINAT`, `PF_RDR` — out of an enum of fifteen, and `int idx;` is uninitialised. Both callers constrain it: `pf.c:5628` passes a local that is literally `PF_NAT` or `PF_RDR`, and `pf_lb.c:987` passes `r->action` for a rule that came out of the NAT, BINAT or RDR ruleset, having just excluded `PF_NONAT`, `PF_NOBINAT` and `PF_NORDR`. A rule cannot reach those rulesets with any other action: `pf_get_ruleset_number()` maps exactly ten actions to five rulesets and returns `PF_RULESET_MAX` for the rest, which `pf_ioctl.c:2296` rejects with `EINVAL`. The guarantee is real and it lives in a different translation unit, behind a mapping table. |
 | `pf_lb.c:473,906`, `pf_lb.c:1238`, `if_pfsync.c:733`, `pflow.c:1666` | out-parameters and family-keyed pointers of the classes already above. |
 
+## Fixed — NFSv4 sends the client stack bytes when a directory getattr fails
+
+`sys/fs/nfsserver/nfs_nfsdserv.c` carried 23 findings, 18 of them one
+`core.CallAndMessage` repeated. Seven NFSv4 handlers share this shape —
+`nfsrvd_remove`, `nfsrvd_mknod`, `nfsrvd_rename`, `nfsrvd_link`,
+`nfsrvd_symlink`, `nfsrvd_mkdir`, `nfsrvd_open`:
+
+```c
+	int error = 0, dirfor_ret = 1, diraft_ret = 1;
+	struct nfsvattr dirfor, diraft;
+	...
+	if (dirp)
+		diraft_ret = nfsvno_getattr(dirp, &diraft, nd, p, 0, NULL);
+	...
+	if (nd->nd_flag & ND_NFSV3) {
+		nfsrv_wcc(nd, dirfor_ret, &dirfor, diraft_ret, &diraft);
+	} else if ((nd->nd_flag & ND_NFSV4) && !nd->nd_repstat) {
+		NFSM_BUILD(tl, u_int32_t *, 5 * NFSX_UNSIGNED);
+		*tl++ = newnfs_false;
+		txdr_hyper(dirfor.na_filerev, tl);
+		tl += 2;
+		txdr_hyper(diraft.na_filerev, tl);
+	}
+```
+
+`dirfor` and `diraft` are stack `struct nfsvattr`. They are filled by
+`nfsvno_getattr()` — `diraft` only `if (dirp)`, and neither of them if
+the underlying `VOP_GETATTR` returns an error. `na_filerev` is
+`na_vattr.va_filerev` (`nfsport.h:683`), which `VOP_GETATTR` writes on
+success and leaves alone otherwise. `dirfor_ret` and `diraft_ret` record
+exactly this and start at 1, meaning "not fetched".
+
+**The NFSv3 path honours those flags. The NFSv4 path ignores both.**
+
+`nfsrv_wcc()` emits a bare `newnfs_false` and no values when
+`before_ret` is set, because the v3 wire format makes the attributes
+optional. NFSv4's `change_info4` is `bool atomic; changeid4 before;
+changeid4 after` and has **no encoding for "unknown"**, so the v4 code
+writes the values unconditionally — and an operation that *succeeds*
+while a directory getattr fails puts eight bytes of that stack frame on
+the wire per value. `nfsrvd_rename` has four of them.
+
+The guard exists, is computed, is passed to one of the two reply paths,
+and is dropped by the other — seven times over, in an unauthenticated
+network service.
+
+Nothing can invent a `change_info4` the server does not have; that
+format has no way to say so. What can be stopped is the value being
+kernel memory. All seven now call `NFSVNO_ATTRINIT()` — this tree's own
+initialiser for the type, already used thirteen times in these two files
+— before any path can reach the emission.
+
+### And a read-modify-write of a field one arm never wrote
+
+`nfsrvd_opendowngrade()` decodes two client-supplied words in a row:
+
+```c
+	i = fxdr_unsigned(int, *tl++);
+	switch (i) {
+	case NFSV4OPEN_ACCESSREAD:  stp->ls_flags = (...); break;
+	case NFSV4OPEN_ACCESSWRITE: stp->ls_flags = (...); break;
+	case NFSV4OPEN_ACCESSBOTH:  stp->ls_flags = (...); break;
+	default:
+		nd->nd_repstat = NFSERR_INVAL;      /* and nothing else */
+	}
+	i = fxdr_unsigned(int, *tl);
+	switch (i) {
+	...
+	case NFSV4OPEN_DENYREAD:    stp->ls_flags |= NFSLCK_READDENY; break;
+```
+
+`stp` points at a stack `struct nfsstate st`. Three arms of the first
+switch assign `ls_flags`; the fourth sets an error and leaves it
+indeterminate, and the second switch then `|=` it. Both selectors come
+straight off the wire, so a client sends an invalid access mode with a
+valid deny mode and reaches it.
+
+It does not currently matter — `nfsrv_openupdate()` is called under `if
+(!nd->nd_repstat)` and nothing else on that path reads `ls_flags`. It is
+one moved guard from mattering, and the three arms above already assign.
+Now all four do. `nfs_nfsdserv.c` goes from 23 findings to 7.
+
+### The gate for this found a second hole in the gate machinery
+
+`check_pbsd_marks.py` tested `want in text`, and six of these seven
+markers are the same sentence. Substring presence is satisfied by any
+one of them, so a merge that ate five of the six would have passed
+silently — the same guard-on-one-of-a-pair defect found in the `pf.c`
+gate an hour earlier, at greater width.
+
+A marker may now be `(text, n)`, meaning it must appear at least `n`
+times. The first version of this entry counted `NFSVNO_ATTRINIT(&`,
+which this file already uses thirteen times for unrelated reasons — so
+the count was met by the pre-existing uses and the gate bit on nothing,
+which the verification caught by deleting one site and watching it pass.
+It counts the PBSD comment instead, which is unique to the fix, and
+deleting one of the six now reports "found 5 time(s), needs 6".
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
