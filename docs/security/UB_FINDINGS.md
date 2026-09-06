@@ -1490,6 +1490,16 @@ and above every `goto` in the function, so it is set on entry and reset
 on each back-edge. The analyser loses that across three thousand lines
 and a `switch` on `error`.
 
+## Still unread, and named so nobody assumes otherwise
+
+`sys/netinet/tcp_stacks/rack.c` has seven findings this pass did not
+reach: `:8296`, `:18482`, `:19037`, `:24194`, `:24203`
+(`core.CallAndMessage`, an uninitialised argument at the 2nd, 6th, 4th,
+3rd and 4th position) and `:19072`, `:19158` (`core.NullDereference`,
+"Dereference of null pointer"). They are listed here rather than left
+out, because a triage document that only records what was read looks
+identical to one where everything was.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -1547,3 +1557,5 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/arm64/arm64/cpu_errata.c:59`, `sys/arm64/vmm/vmm.c:230`, `sys/dev/psci/smccc.c:56,58`, `sys/i386/pci/pci_cfgreg.c:177,223`, `sys/kern/posix4_mib.c:139` | stale, not false. All six describe the `CPU_IMPL_MASK` / `SMCCC_FUNC_ID` / `1 << slot` / `p31b_unsetcfg()` defects already fixed above, and the check is that the tree now reads `#define CPU_IMPL_MASK (0xffU << 24)`, `1U << slot`, and so on — a finding describing the unfixed form is from before the fix by definition. **Not** the argument first written here, which was that the sweep's `ksys.jsonl` is timestamped 09:57 and the header fix landed at 10:14: `/tmp/run50` is an *unpacked artifact*, so those mtimes are when the zip was extracted and say nothing about when the data was collected. A triage pass that re-reads a fixed finding as a live one wastes exactly as much time as one that misses a real one — and dating the evidence by the wrong clock is how you get there. |
 | `sys/cam/scsi/scsi_enc_ses.c:2762,2792` "undefined value returned" | `ses_set_enc_status()` and `ses_set_elm_status()` return `req.result` from a stack `ses_control_request_t` they never assign. It is assigned by whoever wakes them: `ses_terminate_control_requests()` (`:133`) and the request loop in `ses_encode`'s caller (`:2228`) both set `req->result` **before** `wakeup(req)`, on every path, and `cam_periph_sleep(..., PUSER, ..., 0)` carries no `PCATCH` and no timeout, so there is no early return. The out-parameter class again, filled through a queue and a wakeup rather than a direct call. |
 | `sys/cam/cam_xpt.c:5253` `xpt_path_mtx()` | `return (&path->device->device_mtx);` — taking the address of a member, of a field of a caller-supplied `struct cam_path`. A parameter precondition, and not even a dereference at run time. |
+| `sys/netinet/tcp_stacks/rack.c:17528`, `:17547` `rack->r_ctl.crte->rate` | guarded on `rack->rack_hdrw_pacing` rather than on `crte != NULL`, which looks like the guard-on-one-of-a-pair shape and is its **opposite**: the two fields are set together at `:17510-17511` and cleared together at every one of the eight sites that clears either — `:14886/14887`, `:17420/17422`, `:17440/17442`, `:17451/17453`, `:17487/17489`, `:17559/17561`, `:17576/17577`, `:23394/23397`, never more than two lines apart. The invariant `rack_hdrw_pacing == 1` implies `crte != NULL` holds by construction; the analyser cannot carry a two-field invariant across four thousand lines. Worth the row as the counter-example: this file maintains its pair everywhere. |
+| `sys/netinet/tcp_stacks/rack.c:19129`, `:21706` `udp->uh_sum` | `udp` is assigned inside `if (tp->t_port)` (`:21517`, `:21532`) and read inside `if (tp->t_port)` (`:21703`). `t_port` is a struct field the analyser re-reads opaquely between the two blocks, so it explores false-then-true. Same shape as `sys/i386/i386/sys_machdep.c:674` above — path explosion within one translation unit rather than a boundary. |
