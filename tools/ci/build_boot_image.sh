@@ -91,8 +91,31 @@ if [ "$TOOLCHAIN" = "external" ]; then
     [ -f "$CROSS_TOOLCHAIN" ] || { echo "FAIL no $CROSS_TOOLCHAIN" >&2; exit 1; }
     [ -f "$EXTRA_SRCCONF" ] || { echo "FAIL no $EXTRA_SRCCONF" >&2; exit 1; }
     # Two src.conf files, and make takes one. Concatenate into the objdir.
+    #
+    # SRCCONF may be deliberately EMPTY - that is what src_conf=none means,
+    # and line 59 uses ${SRCCONF-...} with a bare `-` precisely so that an
+    # explicitly-empty value survives rather than being replaced by the
+    # default. `cat "" "$EXTRA_SRCCONF"` then fails with
+    #
+    #   cat: : No such file or directory
+    #
+    # and the build stops before it starts. Run 42 - the first bisect this
+    # repository ever actually needed - died there in two and a half
+    # minutes, and the combination has been broken since the external
+    # toolchain was added, because nobody had run src_conf=none with it.
+    #
+    # The external toolchain's own src.conf is NOT optional even under
+    # src_conf=none: it is what turns MK_TOOLCHAIN off, and without it the
+    # build tries to compile a compiler that is not there. So it is always
+    # in the list; only the PBSD options are dropped.
     mkdir -p "$OBJ"
-    cat "$SRCCONF" "$EXTRA_SRCCONF" > "$OBJ/src.conf.combined"
+    if [ -n "$SRCCONF" ]; then
+        cat "$SRCCONF" "$EXTRA_SRCCONF" > "$OBJ/src.conf.combined"
+    else
+        echo "== src_conf is empty: FreeBSD defaults plus the external" \
+             "toolchain options only"
+        cat "$EXTRA_SRCCONF" > "$OBJ/src.conf.combined"
+    fi
     SRCCONF="$OBJ/src.conf.combined"
 
     # SafeStack and CFI are not just compiler flags: -fsanitize=safe-stack
