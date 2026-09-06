@@ -738,6 +738,32 @@ Arm DEN 0028 puts the function identifier in the low 32 bits as an
 unsigned value. Monitors evidently ignore the high half, which is why
 nothing has noticed.
 
+### The rest of the class, and why it is not being fixed
+
+Read the class, then grep for it — and this time the grep says don't.
+A signed literal shifted past `INT_MAX` in a `#define`, excluding
+`contrib/`, `cddl/` and `linuxkpi/`:
+
+```
+977 signed shift(s) past INT_MAX in a sys/ header #define
+```
+
+`(1 << 31)` for a bit-31 register flag is how every BSD and Linux driver
+header in existence has always been written. All 977 are undefined
+behaviour and essentially none of them matter: the value is assigned to a
+`uint32_t` register field, the compiler produces the right bits, and
+nothing widens or compares it.
+
+The two that were fixed are different because each had **a consequence
+beyond the undefined behaviour** — one made a comparison give the wrong
+answer, the other put the wrong value in a 64-bit register. That is the
+line: not "is it UB", but "does the sign change what the code does".
+
+Fixing all 977 would be a 977-line vendor diff that conflicts on every
+upstream merge and changes no behaviour. It is recorded here so that the
+number is known and the decision is explicit rather than an omission
+somebody has to rediscover.
+
 ### How they became visible
 
 `report.py`'s `bucket()` returned one bucket per record, and *any*
