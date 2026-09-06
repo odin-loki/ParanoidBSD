@@ -25,6 +25,44 @@ not running is worse than a red one.**
 The last row is the only thing that has to stay in CI, and only because of
 two tools. Everything that decides whether the tree is *correct* is local.
 
+## Memory is the limit, not cores — read this before a big sweep
+
+On WSL2 the symptom of running out is not an error. **The terminal window
+closes.** Windows reclaims the whole VM, every process in it goes, and it
+reads as a crash. It is not one, and nothing is lost: every stage of
+`run_all.sh` resumes.
+
+WSL2 gives its VM half the host's RAM by default. Give it more, and give it
+swap so a spike gets paged instead of killing everything — in
+`C:\Users\<you>\.wslconfig`:
+
+```ini
+[wsl2]
+memory=48GB
+swap=32GB
+```
+
+then `wsl --shutdown` from PowerShell and start it again. `free -g` inside
+WSL shows what it actually got.
+
+`run_all.sh` now budgets itself on RAM as well as cores — roughly one job
+per 1.5GB, so 64 cores and 32GB of WSL runs 21 jobs rather than 64, and the
+two kernel stages run at half that again. It says so when it does. Override
+with `PBSD_JOBS=N` if you know better.
+
+Why memory and not cores: CBMC builds an SMT instance per function and a
+pointer-heavy one wants gigabytes. `goto-cc` on a kernel translation unit
+is not far behind. And the kernel corpus grew by several thousand
+translation units the moment the generated interface headers
+(`device_if.h` and its 137 siblings) stopped being missing — so a job count
+that was fine before is not necessarily fine now.
+
+**If it does die, just run the same command again.** Both `classify.py`
+stages journal one line per translation unit to `<out>.partial.jsonl` and
+skip what is already there; every `cbmc_driver.py` stage appends per
+function and `--resume` picks up from it. The analyser stage is the only
+one that starts over, and it is the cheapest.
+
 ## Core count is the whole story
 
 The CI runner is 4 cores and a `buildworld` there takes about 45 minutes.

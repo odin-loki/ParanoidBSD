@@ -13,7 +13,30 @@ set -eu
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 OUT="${1:-/tmp/pbsd-verify}"
-J="$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+J="${PBSD_JOBS:-$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)}"
+
+# This sweep is bounded by MEMORY, not by cores, and a 64-core box tempts
+# you to use all 64.
+#
+# CBMC builds an SMT instance per function and a pointer-heavy one wants
+# gigabytes; goto-cc on a kernel translation unit is not far behind, and
+# the corpus grew several thousand translation units the moment the
+# interface headers (device_if.h and friends) stopped being missing. A
+# 64-job run of that was enough to have WSL2 reclaim its whole VM - the
+# terminal window simply disappears, which reads as a crash and is not one.
+#
+# So budget on memory as well as cores: roughly one job per 1.5GB of RAM,
+# whichever is smaller. Override with PBSD_JOBS if you know better.
+_kb="$(awk '/^MemTotal:/{print $2}' /proc/meminfo 2>/dev/null || echo 0)"
+if [ "${_kb:-0}" -gt 0 ]; then
+    _byram=$(( _kb / 1024 / 1536 ))
+    [ "$_byram" -lt 2 ] && _byram=2
+    if [ "$_byram" -lt "$J" ]; then
+        echo "== $(( _kb / 1024 / 1024 ))GB of RAM, so $_byram jobs and not $J."
+        echo "   This is memory-bound; PBSD_JOBS overrides."
+        J="$_byram"
+    fi
+fi
 mkdir -p "$OUT"
 cd "$ROOT"
 
@@ -72,12 +95,16 @@ fi
 stage "classifying userland (which functions can be checked, and how)" \
     "classify.log" \
     python3 tools/verify/classify.py --scope lib/libc --scope lib/msun \
-        --jobs "$J" --out "$OUT/classes.json"
+        --jobs "$J" --resume --out "$OUT/classes.json"
 
-stage "classifying the kernel (its own header universe)" \
+# The kernel is where the corpus is. Half the jobs and --resume, because
+# this is the stage that grew from a few hundred usable translation units
+# to thousands when the generated interface headers arrived, and a killed
+# run used to lose all of it: classify wrote one JSON object at the end.
+stage "classifying the kernel (its own header universe, $(( J / 2 + 1 )) jobs)" \
     "classify_sys.log" \
     python3 tools/verify/classify.py --scope sys \
-        --jobs "$J" --out "$OUT/classes_sys.json"
+        --jobs "$(( J / 2 + 1 ))" --resume --out "$OUT/classes_sys.json"
 
 stage "model checking: SCALAR and VOID, where an unguarded check is sound" \
     "ub.log" \
@@ -99,10 +126,10 @@ stage "model checking: POINTER, under a stated precondition ($PJ jobs, memory-bo
         --classes "$OUT/classes.json" --allow POINTER --null-depth 3 \
         --jobs "$PJ" --timeout 30 --unwind 6 --resume --out "$OUT/ptr.jsonl"
 
-stage "model checking: the kernel" \
+stage "model checking: the kernel ($(( J / 2 + 1 )) jobs)" \
     "ksys.log" \
     python3 tools/verify/cbmc_driver.py --scope sys \
-        --classes "$OUT/classes_sys.json" --jobs "$J" --resume \
+        --classes "$OUT/classes_sys.json" --jobs "$(( J / 2 + 1 ))" --resume \
         --out "$OUT/ksys.jsonl"
 
 stage "static analysis: the second instrument" \

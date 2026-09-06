@@ -42,6 +42,7 @@ Emits JSON: {file: {"ok": bool, "error": str, "functions": {name: class}}}
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import os
 import re
@@ -246,6 +247,9 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--plan", default=str(ROOT / "docs" / "port_plan.json"))
     ap.add_argument("--scope", action="append", default=[])
+    ap.add_argument("--resume", action="store_true",
+                    help="continue from <out>.partial.jsonl, which is "
+                         "written as each translation unit finishes")
     ap.add_argument("--outdir", default="/tmp/pbsd_goto")
     ap.add_argument("--out", default="verify_classes.json")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4)))
@@ -272,24 +276,74 @@ def main() -> int:
     if args.limit:
         jobs = jobs[:args.limit]
 
-    print(f"{len(jobs)} translation units to model", flush=True)
+    # One line of JSON per translation unit, appended as it finishes.
+    #
+    # --out is a single JSON object written at the end, which means a run
+    # that is killed leaves nothing at all - and this stage got long enough
+    # to be killed once the kernel corpus stopped failing to compile: the
+    # interface-header fix took `sys` from a few hundred usable translation
+    # units to thousands. A 64-job sweep of that was enough to have WSL2's
+    # VM reclaimed out from under it.
+    #
+    # So the work is journalled beside --out, and --resume reads it back.
+    part = Path(str(args.out) + ".partial.jsonl")
     results: dict[str, dict] = {}
+    if args.resume and part.is_file():
+        for line in part.read_text().splitlines():
+            if not line.strip():
+                continue
+            try:
+                r = json.loads(line)
+                results[r["file"]] = r
+            except (ValueError, KeyError):
+                pass
+        before = len(jobs)
+        jobs = [j for j in jobs if j["rel"] not in results]
+        print(f"resuming: {len(results)} already modelled, "
+              f"{before - len(jobs)} skipped", flush=True)
+
+    print(f"{len(jobs)} translation units to model", flush=True)
     counts: dict[str, int] = {}
+    for r in results.values():
+        if r.get("ok"):
+            for c in r["functions"].values():
+                counts[c] = counts.get(c, 0) + 1
+        else:
+            counts["TU-ERROR"] = counts.get("TU-ERROR", 0) + 1
     t0 = time.time()
-    with ProcessPoolExecutor(max_workers=args.jobs) as ex:
-        futs = [ex.submit(model_one, j) for j in jobs]
-        for i, fut in enumerate(as_completed(futs), 1):
-            r = fut.result()
-            results[r["file"]] = r
-            if r["ok"]:
-                for c in r["functions"].values():
-                    counts[c] = counts.get(c, 0) + 1
-            else:
-                counts["TU-ERROR"] = counts.get("TU-ERROR", 0) + 1
-            if i % 250 == 0 or i == len(jobs):
-                print(f"  [{i}/{len(jobs)}] {i/max(1e-9,time.time()-t0):.1f}/s  "
-                      + "  ".join(f"{k}={v}" for k, v in sorted(counts.items())),
-                      flush=True)
+    done = 0
+    # Submitted in bounded batches rather than all at once. Handing an
+    # executor nineteen thousand futures keeps every result alive in the
+    # parent until the loop reaches it; a window of four per worker is
+    # enough to keep them all fed.
+    window = max(args.jobs * 4, 64)
+    with ProcessPoolExecutor(max_workers=args.jobs) as ex, \
+            part.open("a") as jf:
+        it = iter(jobs)
+        futs = {ex.submit(model_one, j) for j in itertools.islice(it, window)}
+        while futs:
+            for fut in as_completed(list(futs)):
+                futs.discard(fut)
+                r = fut.result()
+                results[r["file"]] = r
+                jf.write(json.dumps(r) + "\n")
+                if r["ok"]:
+                    for c in r["functions"].values():
+                        counts[c] = counts.get(c, 0) + 1
+                else:
+                    counts["TU-ERROR"] = counts.get("TU-ERROR", 0) + 1
+                done += 1
+                if done % 250 == 0 or done == len(jobs):
+                    jf.flush()
+                    print(f"  [{done}/{len(jobs)}] "
+                          f"{done/max(1e-9,time.time()-t0):.1f}/s  "
+                          + "  ".join(f"{k}={v}"
+                                      for k, v in sorted(counts.items())),
+                          flush=True)
+                nxt = next(it, None)
+                if nxt is not None:
+                    futs.add(ex.submit(model_one, nxt))
+                break
 
     Path(args.out).write_text(json.dumps(results, indent=1))
     ok = sum(1 for r in results.values() if r["ok"])
