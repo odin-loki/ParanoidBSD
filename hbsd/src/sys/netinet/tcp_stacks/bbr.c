@@ -2930,7 +2930,31 @@ measure:
 		} else if (bbr->rc_tp->t_srtt != 0) {
 			/* No rttProp, use srtt? */
 			rtt = bbr_get_rtt(bbr, BBR_SRTT);
-			goto measure;
+			/*
+			 * PBSD: `measure:` is INSIDE the `if (rtt && (rtt <
+			 * 0xffffffff))` above, so this goto reaches
+			 * `min_bw /= rtt` having tested t_srtt rather than
+			 * rtt - and they are not the same number.
+			 *
+			 * bbr_get_rtt(BBR_SRTT) returns
+			 * `TICKS_2_USEC(t_srtt) >> TCP_RTT_SHIFT`. The
+			 * delayed-ack floor in that function applies only
+			 * to f_rtt, on the no-rtt-at-all path, not to this
+			 * one. TICKS_2_USEC is max(1, ...), so a shift of 5
+			 * takes it to zero whenever
+			 * `t_srtt * 1000000 / hz < 32`: at the 137kHz
+			 * HZ_MAXIMUM (sys/time.h:614) that is any t_srtt
+			 * below 5, or an RTT under about a microsecond. Not
+			 * reachable at the default hz of 1000, where the
+			 * same expression floors at 31.
+			 *
+			 * Falling through to the initial pacing bandwidth is
+			 * what the t_srtt == 0 arm below already does, and
+			 * "we have no usable rtt" is the same situation.
+			 */
+			if (rtt != 0)
+				goto measure;
+			min_bw = bbr->r_ctl.rc_initial_hptsi_bw;
 		} else {
 			min_bw = bbr->r_ctl.rc_initial_hptsi_bw;
 		}

@@ -1232,6 +1232,60 @@ unchanged, finding for finding, against the pre-change sweep: the four
 that moved are the same four, shifted by exactly the comment lengths
 (19 lines in `g_eli.c`, 24 in `g_raid3.c`).
 
+## Fixed — a `goto` that enters a guarded block past its guard
+
+`sys/netinet/tcp_stacks/bbr.c`, `bbr_get_bw()`:
+
+```c
+	if (bbr->rc_bbr_state == BBR_STATE_STARTUP) {
+		/* Attempt first to use rttProp */
+		rtt = (uint64_t)get_filter_value_small(&bbr->r_ctl.rc_rttprop);
+		if (rtt && (rtt < 0xffffffff)) {
+measure:
+			min_bw = (uint64_t)(bbr_initial_cwnd(bbr, bbr->rc_tp)) *
+				((uint64_t)1000000);
+			min_bw /= rtt;
+			...
+	} else if (bbr->rc_tp->t_srtt != 0) {
+		/* No rttProp, use srtt? */
+		rtt = bbr_get_rtt(bbr, BBR_SRTT);
+		goto measure;
+```
+
+The label is **inside** the guard. The second path tests `t_srtt` and
+then divides by `rtt`, and they are not the same number:
+`bbr_get_rtt(BBR_SRTT)` returns `TICKS_2_USEC(t_srtt) >>
+TCP_RTT_SHIFT`. The delayed-ack floor inside that function applies only
+to `f_rtt`, on the no-rtt-at-all path — not to this one.
+
+`TICKS_2_USEC` is `max(1, ...)`, so the shift by 5 takes it to zero
+whenever `t_srtt * 1000000 / hz < 32`. At the 137kHz `HZ_MAXIMUM`
+(`sys/time.h:614`) that is any `t_srtt` below 5 — an RTT under about a
+microsecond. At the default `hz` of 1000 the same expression floors at
+31, so this is not reachable on a stock kernel; it needs a raised
+`kern.hz` and a very fast path.
+
+Reachability aside, the structure is the defect: one entry into the
+block tests the divisor and the other jumps over that test. The fix is
+to test it on the second path too, and fall through to the initial
+pacing bandwidth — which is exactly what the `t_srtt == 0` arm below
+already does, "we have no usable rtt" being the same situation either
+way.
+
+### The other three `bbr.c` divisions, read and left alone
+
+| reported | why it holds |
+|---|---|
+| `:3537` `(len + maxseg - 1) / maxseg` | `maxseg = t_maxseg - rc_last_options`. `t_maxseg` is floored at 64 in both places `tcp_mss()` sets it (`tcp_input.c:3891`, `:3955`), and `rc_last_options` is a TCP options length, at most 40 by the header's 4-bit data offset. So the divisor is at least 24. Worth noting that the identical expression 2200 lines down **is** guarded — `if (bbr->rc_tp->t_maxseg > bbr->rc_last_options)` at `:5739` — and this one is not. |
+| `:5806` `tso_len / maxseg` | that same `:5739` guard, 66 lines up. |
+| `:5817` `rounddown(tso_len, min_tso)` | `bbr_minseg()` is `rc_pace_min_segs - rc_last_options`, and `rc_pace_min_segs` has exactly one assignment in the file (`:5758`), from `t_maxseg`. Floored at 64 as above, minus at most 40. |
+
+The floor that makes all three safe is `mss = max(mss, 64)`, not
+`net.inet.tcp.minmss` — which is a bare `SYSCTL_INT` with no handler
+and no validation (`tcp_subr.c:203`), the same shape as
+`net.inet.ip.reass_hashsize` before it was fixed. It happens not to
+matter here because `tcp_mss()` floors `t_maxseg` independently of it.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

@@ -310,6 +310,12 @@ FIXES = {
         "the guard tested the CPU INDEX and used the POINTER; with CPU 0 "
         "absent from all_cpus, check_cpu_regs() dereferences NULL",
     ),
+    "hbsd/src/sys/netinet/tcp_stacks/bbr.c": (
+        "if (rtt != 0)\n\t\t\t\tgoto measure;",
+        "rtt = bbr_get_rtt(bbr, BBR_SRTT);\n\t\t\tgoto measure;",
+        "`measure:` is inside the `if (rtt && ...)` guard and this goto "
+        "entered it having tested t_srtt instead",
+    ),
     "hbsd/src/sys/geom/raid3/g_raid3.c": (
         "if (md->md_all < 2)",
         "if (md->md_all < 1)",
