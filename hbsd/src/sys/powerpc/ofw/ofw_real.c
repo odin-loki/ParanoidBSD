@@ -899,6 +899,20 @@ ofw_real_interpret(ofw_t ofw, const char *cmd, int nreturns, cell_t *returns)
 	args.name = IN((cell_t)(uintptr_t)"interpret");
 	args.nargs = IN(1);
 
+	/*
+	 * PBSD: slot[] holds the command cell, the status cell and then
+	 * nreturns results, so this call fits only while nreturns + 2 <=
+	 * nitems(args.slot).  Nothing bounded it, and args.nreturns is
+	 * what tells the firmware how many cells to write -- so a caller
+	 * asking for more than fourteen had the firmware write past a
+	 * stack object.  OF_interpret()'s own slots[] is sized 16, which
+	 * makes fifteen and sixteen look legal from the caller's side.
+	 * Every in-tree caller passes 0 (arm/machdep.c:577), so this is
+	 * a precondition being stated rather than a live overflow.
+	 */
+	if (nreturns < 0 || nreturns + 2 > (int)nitems(args.slot))
+		return (-1);
+
 	ofw_real_start();
 	args.nreturns = IN(++nreturns);
 	args.slot[i++] = IN(ofw_real_map(cmd, strlen(cmd) + 1));
@@ -940,13 +954,29 @@ ofw_real_open(ofw_t ofw, const char *device)
 
 	args.device = IN(ofw_real_map(device, strlen(device) + 1));
 	argsptr = ofw_real_map(&args, sizeof(args));
-	if (args.device == 0 || openfirmware((void *)argsptr) == -1 
-	    || args.instance == 0) {
+	if (args.device == 0 || openfirmware((void *)argsptr) == -1) {
 		ofw_real_stop();
 		return (-1);
 	}
 	ofw_real_unmap(argsptr, &args, sizeof(args));
 	ofw_real_stop();
+	/*
+	 * PBSD: instance is an OUT cell, so it is not readable until
+	 * ofw_real_unmap() has copied the bounce page back over args.
+	 * Nineteen other call sites in this file test only the IN cells
+	 * -- args.device, args.propname, args.buf, the results of
+	 * ofw_real_map() -- inside that `if'; this one also tested
+	 * args.instance, which at that point still holds whatever was on
+	 * the stack, so a successful open was reported as a failure
+	 * whenever that happened to be zero.
+	 *
+	 * The check is not wrong in ofw_standard.c:570, which has the
+	 * same line: that backend calls openfirmware(&args) directly and
+	 * the firmware writes the cell in place.  It is wrong here, and
+	 * only here, because of the bounce buffer.
+	 */
+	if (args.instance == 0)
+		return (-1);
 	return (OUT(args.instance));
 }
 

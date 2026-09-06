@@ -1664,8 +1664,18 @@ instead of being papered over.
 ## What the sweep says the day's fixes did
 
 Verify sweep 5 is the first full run over the tree with everything above
-in it. Against the sweep taken before any of it (run 50 on the
-workstation), clang's analyser:
+in it. Eleven of its twelve jobs are green; the twelfth is `report`,
+which computed and printed the whole report and *then* died on the
+apostrophe in run 5's own scope note — the injection bug written up
+below, in the run that motivated writing it up. So the numbers in this
+table are read out of the job log, and there is no `verify-report`
+artifact for run 5 to check them against: `upload-artifact` never ran.
+Worth saying rather than leaving as "sweep 5 said", because a number
+whose artifact does not exist is a number somebody will fail to
+reproduce.
+
+Against the sweep taken before any of it (run 50 on the workstation),
+clang's analyser:
 
 | checker | before | after |
 |---|---|---|
@@ -1990,6 +2000,63 @@ the string agrees with the flag that actually got set.
 
 Scope afterwards: **22 findings → 0**, across nine translation units.
 
+## Fixed — an Open Firmware output cell tested before it is copied back
+
+`sys/powerpc/ofw/ofw_real.c` is the Open Firmware client interface for
+real-mode PowerPC. Every call in it has the same six lines: fill the IN
+cells, `ofw_real_map()` the argument struct into a physically-addressable
+bounce page, `openfirmware()`, `ofw_real_unmap()` to copy the bounce page
+back over the struct, then read the OUT cells.
+
+Twenty call sites use that idiom. Nineteen test only IN cells inside the
+`if` around `openfirmware()` — `args.service`, `args.propname`,
+`args.buf`, `args.device`, each of them the return of `ofw_real_map()`,
+so the test is "did the mapping succeed". `ofw_real_open()` tests one
+more thing:
+
+```c
+	if (args.device == 0 || openfirmware((void *)argsptr) == -1
+	    || args.instance == 0) {
+```
+
+`args.instance` is an OUT cell. At that point `ofw_real_unmap()` has not
+run, the firmware wrote its answer into the bounce page, and the struct
+member still holds whatever was on the stack. A successful open is
+reported as a failure whenever that happens to be zero.
+
+### The same line is correct in the other backend
+
+This is not a line somebody wrote carelessly. `sys/dev/ofw/ofw_standard.c:570`:
+
+```c
+	if (openfirmware(&args) == -1 || args.instance == 0)
+```
+
+That backend hands the firmware `&args` itself, so the cell is written in
+place and readable the moment the call returns. `ofw_real` is the same
+code with a bounce buffer inserted underneath it, and the check did not
+move. Identical to upstream FreeBSD, so this is not a PBSD divergence —
+it is a bug PBSD inherits on an architecture it wants first-class.
+
+The fix moves the test after `ofw_real_unmap()`, where the cell means
+something.
+
+### And a bound nothing was checking
+
+`ofw_real_interpret()` has `cell_t slot[16]`, holding the command cell,
+the status cell, and then `nreturns` results — so it fits only while
+`nreturns + 2 <= 16`, that is, fourteen. `args.nreturns` is what tells
+the *firmware* how many cells to write, and nothing bounded it. The
+public entry point, `OF_interpret()` in `sys/dev/ofw/openfirm.c`, has its
+own `cell_t slots[16]`, which makes fifteen and sixteen look legal from
+the caller's side while the callee overflows its stack frame at both.
+
+Every in-tree caller passes 0 — `sys/arm/arm/machdep.c:577`,
+`OF_interpret("perform-fixup", 0)`, the only one — so this is a
+precondition being stated rather than a live overflow. Two arrays sized
+16 for capacities of 16 and 14 is the kind of disagreement that stays
+harmless exactly until somebody adds the second caller.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -2054,4 +2121,6 @@ Kept because the reasoning is what stops them being re-reported.
 | `lib/msun/src/e_sqrt.c:127` `ix1 >> (32 - i)` | fdlibm's subnormal path. `i` comes from `for (i = 0; (ix0 & 0x00100000) == 0; i++) ix0 <<= 1;`, entered only after `while (ix0 == 0)` has guaranteed `ix0 != 0`, so the loop terminates with `i` bounded by the position of bit 20 and `32 - i` stays in range. A loop-exit invariant, which is the shape CBMC is least able to establish and the one `--unwind` bounds rather than proves. |
 | `lib/libcrypt/misc.c:42` `while (--n >= 0)` | `--n` is undefined only at `INT_MIN`. `_crypt_to64(s, v, n)` is called with small literal group counts by every crypt backend in the tree. Exported, so rule three. |
 | `lib/libcalendar/easter.c:46` `29 / (i + 1)` | `i` is `(...) % 30`, and C's `%` yields a negative result for a negative dividend, so `i == -1` divides by zero. Reaching it needs a **negative year**: for `y >= 0` the numerator is `c - c/4 - (c-k)/3 + 19n + 15` with every term non-negative or small, and it stays positive. `easterg(int y, date *dt)` is libcalendar's public entry point and its domain is a calendar year. Rule three — worth the row because the failure is real arithmetic rather than a modelling artefact, and a caller that passes a computed year should know. |
+| `sys/powerpc/ofw/ofw_real.c` — 19 findings, and `rtas.c:252` | one idiom. The OUT cells are written either by `ofw_real_unmap()`'s `memcpy(buf, ...)` — in this translation unit, but past two early returns — or, before the MMU is up, by the firmware writing straight into `args` at its own physical address, because `ofw_real_map()` returns `(uintptr_t)buf & ~DMAP_BASE_ADDRESS` when `!pmap_bootstrapped`. Which of the two happens depends on `pmap_bootstrapped` and on `of_bounce_virt`, and the second is a store the analyser cannot see at all. The one finding in this file that was **not** this — `ofw_real_open()` reading `args.instance` before the copy-back — is fixed above; the point of the row is that eighteen identical-looking findings hid one real one. |
+| `sys/dev/mpr/mpr_config.c` (19) and `sys/dev/mps/mps_config.c` (7) | `error = mpr_wait_command(sc, &cm, 60, CAN_SLEEP); if (cm != NULL) reply = ...; if (error || (reply == NULL))` — so the analyser explores `error == 0` with `cm == NULL`, which makes `reply` indeterminate at the `==` and `cm` NULL at the later `cm->cm_length`. That state does not exist: `mpr_wait_command()` (`mpr.c`, and `mps.c` identically) writes `*cmp = NULL` **only** inside `if (error == EWOULDBLOCK)`, and the next statement is `error = ETIMEDOUT`. It cannot return 0 having freed the command, so `error == 0` implies `cm != NULL` and the guard binds. A cross-translation-unit out-parameter contract again. Worth the row for what is true underneath it: `mps_config.c` declares `reply = NULL` in **9 of 9** functions and `mpr_config.c`, which was copied from it, in **2 of 12** — so the newer driver's correctness rests entirely on that invariant while the older one does not need it. Nothing to fix, and not nothing to know. |
 | `lib/libcalendar/calendar.c` `jdate`, `ndaysg`, `ndaysj`, `weekday`, and `easter.c` `easterog`/`easteroj:100` | the same domain argument: signed arithmetic on a year, day or day-number that overflows only for inputs no calendar produces. Exported, caller-constrained. |

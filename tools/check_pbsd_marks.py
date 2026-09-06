@@ -401,6 +401,24 @@ FIXES = {
             "bbr_log_startup_event() reads both",
         ),
     ],
+    "hbsd/src/sys/powerpc/ofw/ofw_real.c": [
+        (
+            "PBSD: instance is an OUT cell",
+            "|| args.instance == 0) {",
+            "ofw_real_open() tested a firmware OUT cell before "
+            "ofw_real_unmap() copied the bounce page back over args, so "
+            "a successful open was reported as a failure whenever the "
+            "stack happened to hold zero there",
+        ),
+        (
+            "nreturns + 2 > (int)nitems(args.slot)",
+            None,
+            "ofw_real_interpret() told the firmware to write nreturns "
+            "cells into a 16-cell slot[] that fits fourteen, and "
+            "OF_interpret()'s own slots[16] makes fifteen and sixteen "
+            "look legal to the caller",
+        ),
+    ],
     "hbsd/src/sys/dev/usb/wlan/if_run.c": [
         (
             "None of the 70 call sites in this driver inspects the return",
