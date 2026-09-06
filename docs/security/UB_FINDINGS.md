@@ -1431,6 +1431,65 @@ Verified: exactly one finding left `sys/netinet/tcp_stacks` — the
 moved by exactly the 25 lines of comment added, `:17384` to `:17409`
 among them.
 
+## Fixed — an allocation failure that jumps over an initialisation
+
+`rack_output()` declares `int32_t len, error = 0;` — `error` gets an
+initialiser and `len` does not — and its body starts
+
+```c
+19853  again:
+19857	tso = 0;
+	...
+19900	while (rack->rc_free_cnt < rack_free_cache) {
+19901		rsm = rack_alloc(rack);
+19902		if (rsm == NULL) {
+19903			if (hpts_calling)
+19905				slot = (1 * HPTS_USEC_IN_MSEC);
+19906			so = inp->inp_socket;
+19907			sb = &so->so_snd;
+19908			goto just_return_nolock;
+		}
+	}
+19914	sack_rxmit = 0;
+19915	len = 0;
+```
+
+The `goto` is **seven lines above** the first assignment to `len`, and
+two sites past the label read it:
+
+```c
+20694	    (len == 0) &&
+22188	    rack_log_queue_level(tp, rack, len, &tv, cts);
+```
+
+`rack_alloc()` returning NULL is memory pressure, so this is a real path
+rather than a corner: the TCP output routine, out of send-map entries,
+takes a branch that reads an uninitialised stack slot.
+
+`int32_t len = 0` is the whole fix. Zero is what `:19915` sets eleven
+lines later, so no path that already reaches that line changes, and
+`again:` sits above it so a loop back-edge still resets it. Same shape
+and same fix as the four uninitialised returns above.
+
+Everything else the block reads was checked one at a time: `segsiz`
+(`:19723`), `tot_len_this_send` (`:19516`) and `orig_len` (`:19551`) are
+all assigned before the `goto`. `len` is the only one that is not.
+
+Verified: **two** findings left `sys/netinet/tcp_stacks` for this one
+initialiser — `:20694 core.UndefinedBinaryOperatorResult` and `:22188
+core.CallAndMessage` ("3rd function call argument is an uninitialized
+value"), which are the comparison and the log call reading the same
+variable. Every remaining finding moved by exactly the 22 lines of
+comment added.
+
+### `if (tso)` at the EMSGSIZE arm is not one of them
+
+`core.uninitialized.Branch` on `:22211` survives the fix and is a false
+positive: `tso = 0;` is at `:19857`, directly under the `again:` label
+and above every `goto` in the function, so it is set on entry and reset
+on each back-edge. The analyser loses that across three thousand lines
+and a `switch` on `error`.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

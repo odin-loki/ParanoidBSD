@@ -19506,7 +19506,29 @@ rack_output(struct tcpcb *tp)
 	struct socket *so;
 	uint32_t recwin;
 	uint32_t sb_offset, s_moff = 0;
-	int32_t len, error = 0;
+	/*
+	 * PBSD: `len = 0` at the declaration. Its first assignment in the
+	 * body is at :19915, and the `goto just_return_nolock` at :19908 -
+	 * seven lines earlier - is reachable:
+	 *
+	 *   while (rack->rc_free_cnt < rack_free_cache) {
+	 *           rsm = rack_alloc(rack);
+	 *           if (rsm == NULL) {
+	 *                   ...
+	 *                   goto just_return_nolock;
+	 *
+	 * so an allocation failure under memory pressure lands at
+	 * :20694's `(len == 0)` having never assigned it. segsiz,
+	 * tot_len_this_send and orig_len are all assigned before that
+	 * goto - checked one at a time; len is the only one that is not.
+	 *
+	 * Zero is what :19915 sets it to eleven lines later, so this
+	 * cannot change any path that already reaches that line, and the
+	 * `again:` label sits above it so a loop back-edge still resets
+	 * it. Same shape and same fix as the four uninitialised returns
+	 * in docs/security/UB_FINDINGS.md.
+	 */
+	int32_t len = 0, error = 0;
 	uint16_t flags;
 	struct mbuf *m, *s_mb = NULL;
 	struct mbuf *mb;

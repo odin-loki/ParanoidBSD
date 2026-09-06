@@ -330,13 +330,22 @@ FIXES = {
             "`#ifdef PAX_HARDENING`",
         ),
     ],
-    "hbsd/src/sys/netinet/tcp_stacks/rack.c": (
-        "if (high_rate && (fill_bw > high_rate)) {",
-        None,
-        "fill_bw is the divisor at `lentim /= fill_bw` and this was the "
-        "one of the file's four hardware-rate caps that did not check "
-        "the value it assigns",
-    ),
+    "hbsd/src/sys/netinet/tcp_stacks/rack.c": [
+        (
+            "if (high_rate && (fill_bw > high_rate)) {",
+            None,
+            "fill_bw is the divisor at `lentim /= fill_bw` and this was "
+            "the one of the file's four hardware-rate caps that did not "
+            "check the value it assigns",
+        ),
+        (
+            "int32_t len = 0, error = 0;",
+            None,
+            "rack_output()'s `goto just_return_nolock` on an allocation "
+            "failure is seven lines above len's first assignment, and "
+            "two sites past the label read it",
+        ),
+    ],
     "hbsd/src/sys/netinet/tcp_stacks/bbr.c": (
         "if (rtt != 0)\n\t\t\t\tgoto measure;",
         "rtt = bbr_get_rtt(bbr, BBR_SRTT);\n\t\t\tgoto measure;",
