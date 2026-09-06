@@ -93,6 +93,30 @@ out of CBMC's own goto model rather than by parsing C:
 | `POINTER` | needs a harness establishing the callee's precondition; the result is then only as good as that precondition, and is recorded with it |
 | `OTHER` | neither — triaged by hand |
 
+## Why there is a third instrument
+
+`tools/verify/nowait_check.py` is a lint, and it exists because of one
+result. clang's analyser reported
+
+    sys/netgraph/netflow/ng_netflow.c:414  Attempt to free released memory
+
+and the same file has the identical bug at `:388` and `:556`. It reported
+neither. The analyser explores paths and stops at the first defect on each,
+so **three instances of one mistake in one file came back as one finding**.
+Exhaustiveness over paths is not exhaustiveness over instances.
+
+So: `M_WAITOK` cannot fail, `M_NOWAIT` can and returns NULL, the difference
+is one token, and a pattern check finds every place the second is written
+and the result used anyway. Nine of the nine it reports today are real.
+
+It **reports and does not gate**, and the reason is in its docstring: four
+false-positive classes, each found by reading output that looked like a
+hundred bugs and was not — `if ((p = malloc(...)) == NULL)` puts the test
+nowhere near the variable name; `if (m)` is a NULL test; `sizeof(p->x)`
+does not evaluate `p`; `mhead = mtail = alloc()` is checked on the other
+name. It also read its own explanatory comment as a bug. A lint that cannot
+parse C cannot carry a build.
+
 ## What a result means
 
 `cbmc_driver.py` never merges these:

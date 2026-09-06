@@ -132,6 +132,14 @@ stage "model checking: the kernel ($(( J / 2 + 1 )) jobs)" \
         --classes "$OUT/classes_sys.json" --jobs "$(( J / 2 + 1 ))" --resume \
         --out "$OUT/ksys.jsonl"
 
+# The third instrument, and the cheapest. The analyser explores paths and
+# stops at the first defect on each, so three instances of one mistake in
+# one file come back as one finding - which is exactly what happened in
+# sys/netgraph/netflow/ng_netflow.c. A pattern check finds all of them.
+stage "pattern check: M_NOWAIT results used without a NULL check" \
+    "nowait.log" \
+    python3 tools/verify/nowait_check.py
+
 stage "static analysis: the second instrument" \
     "analyze.log" \
     python3 tools/verify/analyze.py --scope lib/libc --scope lib/msun \
