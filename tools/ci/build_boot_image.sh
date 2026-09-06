@@ -509,7 +509,70 @@ vm|memstick|iso)
         }
         if [ "$INIT_SWAP" = "rescue" ]; then
             [ -f "$MNT/sbin/init" ] || _bail "no /sbin/init in the image"
-            [ -f "$MNT/rescue/init" ] || _bail "no /rescue/init in the image"
+            # The installer media has no /rescue. Run 33 is how I found out.
+            #
+            # release/Makefile's disc1 target installs the world with
+            #
+            #     MK_RESCUE=no MK_DICT=no
+            #
+            # on its installworld line. Every claim run 33 was dispatched on
+            # was right about the binary - static, non-PIE, no SafeStack, no
+            # CFI, no rtld - and wrong about it being in this image. Fifty-one
+            # minutes to find out, at the last step before the boot.
+            #
+            # test_init_swap.sh could not have caught it. Its stub wrote
+            # fakeroot/rescue/init itself and then asserted that same file
+            # was still there afterwards: it exercised the swap and
+            # manufactured the precondition the swap needs. A stub that
+            # supplies what the real thing lacks says nothing about the real
+            # thing - the same shape as run 26's invented GPT layout.
+            #
+            # buildworld does build rescue: src.conf.pbsd sets no
+            # WITHOUT_RESCUE, and release/Makefile's base.txz target runs
+            # distributeworld into ${.OBJDIR}/dist, which stages the real
+            # installed layout - one crunched binary plus a hard link per
+            # program name. Only the *.txz are moved out of DISTDIR
+            # afterwards, so dist/base/rescue is still there when this runs.
+            if [ ! -f "$MNT/rescue/init" ]; then
+                RTREE=""
+                if [ -n "${RESCUE_DIST:-}" ] && \
+                        [ -f "${RESCUE_DIST}/init" ]; then
+                    RTREE="$RESCUE_DIST"
+                elif [ -n "${OBJRELEASE:-}" ] && \
+                        [ -f "${OBJRELEASE}/dist/base/rescue/init" ]; then
+                    RTREE="${OBJRELEASE}/dist/base/rescue"
+                fi
+                [ -n "$RTREE" ] || _bail "no /rescue in the image and no staged rescue tree to install from (looked in ${RESCUE_DIST:-<RESCUE_DIST unset>} and ${OBJRELEASE:-<OBJRELEASE unset>}/dist/base/rescue)"
+                echo "   no /rescue in the image - disc1 is built"
+                echo "   MK_RESCUE=no - installing it from $RTREE"
+                NEED="$(du -sk "$RTREE" | awk '{print $1}')"
+                HAVE="$(df -k "$MNT" | awk 'END {print $4}')"
+                echo "   /rescue is ${NEED}K; ${HAVE}K free in the image"
+                # makefs sizes these images to fit their contents, so there
+                # is no promise of room. The distribution tarballs under
+                # /usr/freebsd-dist are the installer's payload and this
+                # boot test never opens one, so they are what gives way.
+                if [ "$HAVE" -lt "$((NEED + 2048))" ]; then
+                    echo "   not enough room; removing the installer"
+                    echo "   distribution tarballs, which a boot test"
+                    echo "   never reads"
+                    rm -f "$MNT"/usr/freebsd-dist/*.txz
+                    HAVE="$(df -k "$MNT" | awk 'END {print $4}')"
+                    echo "   ${HAVE}K free now"
+                fi
+                mkdir -p "$MNT/rescue"
+                # tar and not cp -R, because every name in /rescue is a hard
+                # link to one crunched binary of twelve-odd megabytes, and a
+                # copy that does not preserve them writes it once per name.
+                if ! ( cd "$RTREE" && tar -cf - . ) | \
+                        ( cd "$MNT/rescue" && tar -xof - ); then
+                    df -k "$MNT" >&2 || true
+                    _bail "could not install /rescue into the image"
+                fi
+                [ -f "$MNT/rescue/init" ] || \
+                    _bail "/rescue/init still absent after installing"
+                echo "   installed $(ls "$MNT/rescue" | wc -l | tr -d ' ') names into /rescue"
+            fi
             mv "$MNT/sbin/init" "$MNT/sbin/init.pbsd" || \
                 _bail "could not move /sbin/init aside"
             [ ! -f "$MNT/sbin/init" ] || \

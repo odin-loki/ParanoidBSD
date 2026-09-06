@@ -757,13 +757,41 @@ and `start_init()` walks it, treating `ENOENT` as "try the next". The
 fourth entry is `/rescue/init` — and `rescue/rescue/Makefile` builds its
 crunched binary `MK_CFI=no MK_PIE=no NO_SHARED=yes` with
 `MK_SAFESTACK=no` per program, with `init` in `CRUNCH_PROGS_sbin`. So
-the image already contains a second init that is static, non-PIE, and
-has neither SafeStack nor CFI nor the rtld.
+`buildworld` produces a second init that is static, non-PIE, and has
+neither SafeStack nor CFI nor the rtld.
 
 Renaming `/sbin/init` inside the image selects it. That is the
 `init_swap: rescue` input, and it uses **ENOENT fall-through — the only
 mechanism in this whole area ever shown to work**, where `init_path`
 failed five times.
+
+**It is not in the installer media.** This section used to say the image
+"already contains" that binary, and run 33 spent fifty-one minutes
+disproving it at the last step before the boot:
+
+```
+== init swap in the image: rescue
+   UFS filesystem: /dev/md0s2a
+FAIL no /rescue/init in the image
+```
+
+`release/Makefile`'s `disc1` target installs the world with
+`MK_RESCUE=no MK_DICT=no` on its `installworld` line. Every claim about
+the *binary* held; the claim about *where it is* did not, and it was
+never checked.
+
+`buildworld` still builds it — `src.conf.pbsd` sets no `WITHOUT_RESCUE` —
+and `release/Makefile`'s `base.txz` target runs `distributeworld` into
+`${.OBJDIR}/dist`, which stages the real installed layout: one crunched
+binary plus a **hard link** per program name. Only the `*.txz` are moved
+out of `DISTDIR` afterwards, so `dist/base/rescue` is still on disk when
+the image-editing step runs. So `init_swap=rescue` now installs `/rescue`
+from there when the image has none, with `tar` rather than `cp -R`
+because a copy that does not preserve those hard links writes a
+twelve-megabyte binary once per name. `makefs` sizes these images to fit
+their contents, so when there is no room the installer's distribution
+tarballs under `/usr/freebsd-dist` — which a boot test never opens — are
+what gives way.
 
 If `/rescue/init` talks, the cause is in that hardening set and
 `src_conf: none` bisects it. If `/rescue/init` is equally silent, it is
@@ -773,12 +801,25 @@ not those options, and the tree itself is implicated.
 from `build_boot_image.sh` and runs it against stub `mdconfig`, `gpart`,
 `mount` and `df` whose output is what those commands really printed in
 runs 26 and 27 — because run 26 spent fifty minutes learning the memstick
-is MBR, against a test that had used an invented GPT layout. Eight
-assertions: the swap happens, `loader.conf` is left alone when it is not
-asked for, both together work, nothing is mounted when neither is
-requested, and a bad value fails with the image intact. The first version
-of that test reported "no UFS filesystem" against a script that was
-working, because its `gpart` stub matched the wrong argument.
+is MBR, against a test that had used an invented GPT layout.
+
+Its stub image now has **no** `/rescue`, because the real one does not.
+The version that passed before run 33 wrote `fakeroot/rescue/init`
+itself and then asserted that same file was still there afterwards: it
+exercised the swap and manufactured the precondition the swap needs. A
+stub that supplies what the real thing lacks says nothing about the real
+thing — the same shape of error as the invented GPT layout, one level up.
+
+Seventeen assertions now: `/rescue` is installed from the staged
+distribution tree and `/rescue/init` comes out sharing an inode with the
+crunched binary rather than being a second copy; with no staged tree the
+run fails and the message names both places it looked; with no room the
+`*.txz` go and nothing else does; `RESCUE_DIST` overrides `OBJRELEASE`;
+`loader.conf` is left alone when it is not asked for; both together work;
+nothing is mounted when neither is requested; and a bad value fails with
+the image intact. The first version of that test reported "no UFS
+filesystem" against a script that was working, because its `gpart` stub
+matched the wrong argument.
 
 The workflow's `src_conf` input is the other control: `none` passes
 `SRCCONF=` and builds with FreeBSD's defaults. It was previously called
