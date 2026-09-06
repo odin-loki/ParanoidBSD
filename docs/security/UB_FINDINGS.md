@@ -1661,6 +1661,57 @@ checker with 159 false positives is worse than none, because the first
 thing anybody does with it is stop reading its output. This class is
 caught by `buildworld` and by nothing cheaper, and that is written here
 instead of being papered over.
+## What the sweep says the day's fixes did
+
+Verify sweep 5 is the first full run over the tree with everything above
+in it. Against the sweep taken before any of it (run 50 on the
+workstation), clang's analyser:
+
+| checker | before | after |
+|---|---|---|
+| `core.DivideZero` | 76 | **68** |
+| `core.uninitialized.UndefReturn` | 55 | **48** |
+| `core.uninitialized.Assign` | 133 | **128** |
+| `core.CallAndMessage` | 278 | **275** |
+| `core.UndefinedBinaryOperatorResult` | 246 | 244 |
+| `core.NullDereference` | 583 | **586** |
+| total | 1626 at 1489 sites | 1604 at 1467 sites |
+
+Eight fewer divisions by zero and seven fewer uninitialised returns is
+the shape of the day: `md_promise`, `g_virstor` ×2, `g_raid3`, `g_eli`,
+`cam_ccbq_resize` and `cam_ccbq_init`, `bbr_get_bw`, `rack`'s hardware
+rate cap; and `rack_output`'s `len`, `if_hw_tsomaxsegsize` ×3,
+`rack_set_sockopt`'s pair, `bbr`'s `delta`.
+
+**`core.NullDereference` went UP by three**, and that is not noise to
+wave past. Two are accounted for above: initialising
+`if_hw_tsomaxsegsize` let the analyser reach two `udp->uh_sum` sites it
+had previously been cut short of, both of which are in the not-a-defect
+table. The third is unaccounted for and is in the next pass's list.
+
+CBMC's exported-arithmetic list confirms the same fixes from the other
+instrument. Gone since run 50: `posix4_mib.c:139`,
+`arm64/cpu_errata.c`, `arm64/vmm/vmm.c:230`, `dev/psci/smccc.c:56,58`,
+`cam_queue.c:60` and `:274`. `i386/pci/pci_cfgreg.c` now reads
+`1u << slot` and the *"arithmetic overflow on signed shl"* complaint is
+gone with it; what remains there is "shift distance too large", which is
+CBMC not knowing `slot <= PCI_SLOTMAX` — rule three, an exported
+function with a caller-constrained parameter.
+
+### New in this sweep, and not yet read
+
+* `sys/dev/firmware/arm/scmi_shmem.c:168` — `index * (signed int)4u`
+* `lib/msun/ld128/s_cospil.c:76`, `s_sinpil.c:82`, `s_tanpil.c:100` —
+  `(1ull << 49) - 1 >> e + 1` and `(uint64_t)-1 >> e - 48`, shift
+  distance negative and too large
+* `lib/msun/src/e_sqrt.c:127` — `ix1 >> 32 - i`
+* `lib/libcalendar/calendar.c` and `easter.c` — six sites, including
+  `29 / (i + 1)`
+* `lib/libcrypt/misc.c:42` — `n - 1`
+
+Named here so the next pass starts from a list rather than from the
+report again.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
