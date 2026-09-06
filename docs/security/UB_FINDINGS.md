@@ -1368,6 +1368,69 @@ outcome for every one of those 34; the four here are different only
 because their callers are compiled unconditionally and permit is the
 right answer for them.
 
+## Fixed — the one of four hardware-rate caps that checks nothing
+
+`sys/netinet/tcp_stacks/rack.c`, `rack_get_output_bw()`. `fill_bw` is
+the divisor eighty lines below:
+
+```c
+	lentim = (uint64_t)(len) * (uint64_t)HPTS_USEC_IN_SEC;
+	lentim /= fill_bw;
+```
+
+and it is guarded on the way in — `if ((fill_bw < RACK_MIN_BW) || ...)
+return (slot);` at `:17177`, with `RACK_MIN_BW` 8000. Between that guard
+and the division it is reassigned three times, and this is the file's
+four "cap it at the hardware rate" assignments side by side:
+
+```c
+:2195   if ((calcbw > 0) && (*bw > calcbw))                  *bw = calcbw;
+:2205   if ((rack->r_ctl.bw_rate_cap > 0) && (*bw > ...))    *bw = ...;
+:17212  if (high_rate) { if (fill_bw > high_rate)            fill_bw = high_rate; }
+:17185                  if (fill_bw > high_rate)             fill_bw = high_rate;   <-- 
+```
+
+Three check the value they are about to assign. The fourth does not, and
+`fill_bw > high_rate` is *true* when `high_rate` is zero, because
+`fill_bw` is at least 8000 by the guard above. Nothing between there and
+the division puts it back: `:17220`'s cap needs `fill_bw >
+bw_rate_cap`, which zero fails.
+
+The one at `:17212` is twenty-seven lines below, in the same function,
+assigning the same variable from the same kind of source, with the check
+present. That is the whole argument for the fix.
+
+### Reachability, stated rather than assumed
+
+`tcp_hw_highest_rate()` returns
+`rle->ptbl->rs_rlt[rle->ptbl->rs_highest_valid].rate` — an entry in a
+rate table the **NIC driver** supplies (`tcp_ratelimit.c:677` copies
+`rate_table_act[i]` straight in), so a zero there is a driver's to
+produce and nothing in `tcp_ratelimit.c` rejects one at the highest
+valid index.
+
+Without `options RATELIMIT` the branch cannot be entered at all:
+`tcp_ratelimit.h:140-157` makes `tcp_set_pacing_rate()` and
+`tcp_chg_pacing_rate()` return `NULL`, so `rack->r_ctl.crte` never
+becomes non-NULL and `:17181`'s `crte != NULL` is false. Worth writing
+down because the *other* definition of `tcp_hw_highest_rate()` in that
+same header returns a literal `0` — so in the build where the function
+is guaranteed to return zero, the code that would divide by it is
+unreachable. Two halves of one `#ifdef`, each safe only because of the
+other.
+
+### The rest of rack.c's divisions, read and left alone
+
+| reported | why it holds |
+|---|---|
+| `:17384` `res = lentim / rate_wanted` | `:17352` does `if (((bw_est == 0) \|\| (rate_wanted == 0) \|\| ...)) goto old_method;`. The one thing between that and the division is `rack_rate_cap_bw()`, which can only lower it — and both of its assignments (`:2199`, `:2223`) are guarded on the new value being positive, which is two of the four rows in the table above. |
+| `:2496` `bw_est = high_rate` | the same unguarded shape as `:17185`, but `bw_est` leaves the function as a bandwidth rather than a divisor, and its caller rejects zero at `:17352` before dividing. Defended downstream rather than at the site — worth knowing if that caller ever changes. |
+
+Verified: exactly one finding left `sys/netinet/tcp_stacks` — the
+`:17231 core.DivideZero` this fixes. Every other finding in the file
+moved by exactly the 25 lines of comment added, `:17384` to `:17409`
+among them.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

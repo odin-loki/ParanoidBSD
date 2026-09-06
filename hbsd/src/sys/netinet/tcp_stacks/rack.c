@@ -17182,7 +17182,32 @@ at_lt_bw:
 		uint64_t high_rate;
 
 		high_rate = tcp_hw_highest_rate(rack->r_ctl.crte);
-		if (fill_bw > high_rate) {
+		/*
+		 * PBSD: `high_rate &&`. fill_bw is the divisor at the
+		 * `lentim /= fill_bw` below, and this is the one of the
+		 * file's four "cap it at the hardware rate" assignments
+		 * that does not check the value it is about to assign:
+		 *
+		 *   :17212  if (high_rate) { if (fill_bw > high_rate) ...
+		 *   :2195   if ((calcbw > 0) && (*bw > calcbw)) *bw = calcbw;
+		 *   :2205   if ((rack->r_ctl.bw_rate_cap > 0) && ...
+		 *
+		 * The second of those is twenty-seven lines down, in this
+		 * same function, assigning this same variable from this
+		 * same kind of source. `fill_bw > high_rate` is true for
+		 * high_rate == 0 - fill_bw is at least RACK_MIN_BW (8000)
+		 * by the return at :17177 - and nothing between here and
+		 * the division puts it back.
+		 *
+		 * tcp_hw_highest_rate() reads
+		 * rs_rlt[rs_highest_valid].rate out of a rate table the
+		 * NIC driver supplies, so zero is a driver's to produce.
+		 * Note that the whole branch is unreachable without
+		 * `options RATELIMIT`, where tcp_set_pacing_rate() and
+		 * tcp_chg_pacing_rate() both return NULL
+		 * (tcp_ratelimit.h:140-157) and crte therefore stays NULL.
+		 */
+		if (high_rate && (fill_bw > high_rate)) {
 			/* We are capping bw at the highest rate table entry */
 			if (*rate_wanted > high_rate) {
 				/* The original rate was also capped */
