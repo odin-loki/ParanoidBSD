@@ -10970,8 +10970,29 @@ bbr_state_startup(struct tcp_bbr *bbr, uint32_t cts, int32_t epoch, int32_t pkt_
 		    (bbr->r_ctl.rc_pkt_epoch_rtt > bbr->r_ctl.startup_last_srtt)) {
 			delta = bbr->r_ctl.rc_pkt_epoch_rtt - bbr->r_ctl.startup_last_srtt;
 			rtt_gain = (delta * 100) / bbr->r_ctl.startup_last_srtt;
-		} else
+		} else {
+			/*
+			 * PBSD: `delta = 0` as well. The if arm assigns both
+			 * delta and rtt_gain; this else assigned only
+			 * rtt_gain, and `int delta, rtt_gain;` at :10932
+			 * initialises neither. Both are then read together:
+			 *
+			 *     bbr_log_startup_event(bbr, cts, rtt_gain,
+			 *                           delta, ..., 10);
+			 *
+			 * so on the else path a BBR black-box log record got a
+			 * garbage delta. Diagnostic output only, and a read of
+			 * an indeterminate automatic whose address is never
+			 * taken - C11 6.3.2.1p2 undefined rather than merely
+			 * unspecified.
+			 *
+			 * Zero is what the arm means: no measurable gain, so
+			 * no measurable delta. It is what the author wrote for
+			 * this variable's partner on this very line.
+			 */
+			delta = 0;
 			rtt_gain = 0;
+		}
 		if ((bbr->r_ctl.startup_last_srtt == 0)  ||
 		    (bbr->r_ctl.rc_pkt_epoch_rtt < bbr->r_ctl.startup_last_srtt))
 			/* First time or new lower value */

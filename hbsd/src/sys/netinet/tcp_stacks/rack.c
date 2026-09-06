@@ -8293,8 +8293,22 @@ again:
 		(void)tqhash_insert(rack->r_ctl.tqh, rsm);
 #else
 		if ((insret = tqhash_insert(rack->r_ctl.tqh, rsm)) != 0) {
-			panic("Insert in tailq_hash of %p fails ret:%d rack:%p rsm:%p",
-			      nrsm, insret, rack, rsm);
+			/*
+			 * PBSD: was `... of %p ...", nrsm, insret, rack, rsm`.
+			 * rack_log_output() declares nrsm at :8131 and does not
+			 * assign it until after this panic, so the pointer this
+			 * printed was stack garbage - in a panic message, which
+			 * is the one place a wrong value costs the most.
+			 *
+			 * Six of the nine `Insert in tailq_hash` panics in this
+			 * file do pass an assigned nrsm; the two in
+			 * rack_init_outstanding() (:14250, :14310) use exactly
+			 * this shorter form for the case where there is no new
+			 * map to name. This is that case: the map being inserted
+			 * is rsm, which the message already prints.
+			 */
+			panic("Insert in tailq_hash fails ret:%d rack:%p rsm:%p",
+			      insret, rack, rsm);
 		}
 #endif
 		TAILQ_INSERT_TAIL(&rack->r_ctl.rc_tmap, rsm, r_tnext);
@@ -9794,7 +9808,11 @@ do_rest_ofb:
 			(void)tqhash_insert(rack->r_ctl.tqh, nrsm);
 #else
 			if ((insret = tqhash_insert(rack->r_ctl.tqh, nrsm)) != 0) {
-				panic("Insert in tailq_hash of %p fails ret:% rack:%p rsm:%p",
+				/* PBSD: `ret:%` was a conversion with no
+				 * specifier - four arguments for three and a
+				 * half conversions. The other eight copies of
+				 * this panic all say `ret:%d`. */
+				panic("Insert in tailq_hash of %p fails ret:%d rack:%p rsm:%p",
 				      nrsm, insret, rack, rsm);
 			}
 #endif
@@ -24061,8 +24079,33 @@ rack_set_sockopt(struct tcpcb *tp, struct sockopt *sopt)
 #endif
 	struct tcp_rack *rack;
 	struct tcp_hybrid_req hybrid;
-	uint64_t loptval;
-	int32_t error = 0, optval;
+	/*
+	 * PBSD: both initialised, to match the `error = 0` beside them.
+	 *
+	 * The three-way branch at :24199 sets optval AND loptval on two of
+	 * its arms and NEITHER on the TCP_HYBRID_PACING one, which fills
+	 * `hybrid` instead. The deferred-option branch below knows that -
+	 * its condition excludes TCP_HYBRID_PACING explicitly before
+	 * passing loptval - and then
+	 *
+	 *     error = rack_process_option(tp, rack, sopt->sopt_name,
+	 *                                 optval, loptval, &hybrid);
+	 *
+	 * two lines further on passes both, unguarded, on that same arm.
+	 * The guard on one of a pair, with the pair four lines apart.
+	 *
+	 * setsockopt(fd, IPPROTO_TCP, TCP_HYBRID_PACING, ...) is how a
+	 * user reaches it. Harmless as it stands - rack_process_option()'s
+	 * TCP_HYBRID_PACING case (:22987) calls
+	 * process_hybrid_pacing(rack, hybrid) and reads neither - so this
+	 * is the value being read and copied rather than acted on. Their
+	 * addresses are taken by the sooptcopyin() calls above, which
+	 * makes it unspecified rather than undefined; it is still two
+	 * indeterminate values crossing a call boundary on a path
+	 * userland picks.
+	 */
+	uint64_t loptval = 0;
+	int32_t error = 0, optval = 0;
 
 	rack = (struct tcp_rack *)tp->t_fb_ptr;
 	if (rack == NULL) {

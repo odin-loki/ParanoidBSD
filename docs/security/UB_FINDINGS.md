@@ -1490,18 +1490,37 @@ and above every `goto` in the function, so it is set on entry and reset
 on each back-edge. The analyser loses that across three thousand lines
 and a `switch` on `error`.
 
-## Still unread, and named so nobody assumes otherwise
+## `sys/netinet/tcp_stacks` is fully read
 
-`sys/netinet/tcp_stacks/rack.c` has **three** findings not yet read:
-`:8296` (`core.CallAndMessage`, 2nd argument — a `panic()` format
-argument inside `#ifdef INVARIANTS`) and `:24229`, `:24238` (3rd and 4th
-arguments in `rack_set_sockopt`). They are listed rather than left out,
-because a triage document that only records what was read looks
-identical to one where everything was.
+This section used to name seven unread findings in `rack.c`, then
+three. It is zero: every finding clang's analyser reports in `bbr.c` and
+`rack.c` has been read, and each is either fixed above or in the
+not-a-defect table below. Kept as a heading rather than deleted, because
+"nothing listed here" and "nobody looked" are the two states this whole
+document exists to tell apart.
 
-It was seven when this section was written. `:18482` and `:19037` were
-the `if_hw_tsomaxsegsize` pair, now fixed; `:19072` and `:19158` were
-the `ip6` pair, now in the table below.
+### Four more, all one shape
+
+| where | what |
+|---|---|
+| `bbr.c` `rtt_gain`/`delta` | `if (...) { delta = ...; rtt_gain = ...; } else rtt_gain = 0;` — the `else` initialises one of the two, `int delta, rtt_gain;` initialises neither, and four lines later `bbr_log_startup_event(bbr, cts, rtt_gain, delta, ...)` reads both. The most literal instance of the shape in the document: the two variables are assigned on the same line as each other in the `if`, and only one of them in the `else`. |
+| `rack.c` `optval`/`loptval` | `rack_set_sockopt()`'s three-way branch sets both on two arms and **neither** on the `TCP_HYBRID_PACING` one. The deferred-option branch below knows it — its condition excludes `TCP_HYBRID_PACING` explicitly before passing `loptval` — and then `rack_process_option(tp, rack, sopt->sopt_name, optval, loptval, &hybrid)` two lines further on passes both, unguarded, on that same arm. `setsockopt(fd, IPPROTO_TCP, TCP_HYBRID_PACING, ...)` is how a user reaches it. Harmless as it stands: that case calls `process_hybrid_pacing(rack, hybrid)` and reads neither. |
+| `rack.c:8296` `nrsm` in a `panic()` | `rack_log_output()` declares `nrsm` at `:8131` and does not assign it until *after* this panic, so the message printed stack garbage — in the one place a wrong value costs most. Six of the nine `Insert in tailq_hash` panics in the file pass an assigned `nrsm`; the two in `rack_init_outstanding()` use a shorter form with no `%p` for exactly this case. Now the same. |
+| `rack.c:9797` `ret:%` | a conversion with no specifier, in one of the nine copies of that panic. The other eight say `ret:%d`. |
+
+The first three were `core.CallAndMessage` — "Nth function call argument
+is an uninitialized value" — which is the analyser's name for this
+shape, and it names the argument position rather than the variable, so
+they read as unrelated until the declarations are lined up.
+
+### The gate caught a second over-broad marker
+
+Registering the `:8296` fix with its own `panic(...)` line as the
+must-appear string failed a check that the string occurs exactly once:
+`rack_init_outstanding()` at `:14268` and `:14328` already use that
+exact wording. A merge could have taken the fix and left the gate
+passing on a vendor line. The marker is a sentence from the comment
+instead. The same mistake as `ti_clk_dpll`, caught the same way.
 
 ## A fix of mine that broke buildworld, and the gate I could not write
 

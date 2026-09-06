@@ -351,13 +351,44 @@ FIXES = {
             "three functions declared the TSO seg-count initialised and "
             "the seg-size not, and passed both to one call",
         ),
+        (
+            "\tuint64_t loptval = 0;\n\tint32_t error = 0, optval = 0;",
+            None,
+            "rack_set_sockopt()'s TCP_HYBRID_PACING arm sets neither, and "
+            "rack_process_option() is passed both unguarded",
+        ),
+        (
+            # NOT the panic() line itself: rack_init_outstanding() at
+            # :14268 and :14328 already use that exact wording, so the
+            # obvious marker matches two vendor sites as well as this
+            # fix and would pass with the fix gone. The second time this
+            # gate has caught an over-broad marker of mine.
+            "rack_log_output() declares nrsm at :8131 and does not",
+            None,
+            "rack_log_output() printed nrsm, which it never assigns, in a "
+            "panic message",
+        ),
+        (
+            'fails ret:%d rack:%p rsm:%p",\n\t\t\t\t      nrsm, insret',
+            "fails ret:% rack",
+            "one of the nine copies of this panic had `ret:%` - a "
+            "conversion with no specifier",
+        ),
     ],
-    "hbsd/src/sys/netinet/tcp_stacks/bbr.c": (
-        "if (rtt != 0)\n\t\t\t\tgoto measure;",
-        "rtt = bbr_get_rtt(bbr, BBR_SRTT);\n\t\t\tgoto measure;",
-        "`measure:` is inside the `if (rtt && ...)` guard and this goto "
-        "entered it having tested t_srtt instead",
-    ),
+    "hbsd/src/sys/netinet/tcp_stacks/bbr.c": [
+        (
+            "if (rtt != 0)\n\t\t\t\tgoto measure;",
+            "rtt = bbr_get_rtt(bbr, BBR_SRTT);\n\t\t\tgoto measure;",
+            "`measure:` is inside the `if (rtt && ...)` guard and this "
+            "goto entered it having tested t_srtt instead",
+        ),
+        (
+            "\t\t\tdelta = 0;\n\t\t\trtt_gain = 0;",
+            None,
+            "the else arm assigned rtt_gain and not delta, and "
+            "bbr_log_startup_event() reads both",
+        ),
+    ],
     "hbsd/src/sys/geom/raid3/g_raid3.c": (
         "if (md->md_all < 2)",
         "if (md->md_all < 1)",
