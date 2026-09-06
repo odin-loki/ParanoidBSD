@@ -109,6 +109,39 @@ FIXES = {
         None,
         "same uninitialised parse target, in genl(1)",
     ),
+    # Five more from the second sweep. Same discipline: reproduced on the
+    # single file, read against the code that establishes the precondition,
+    # confirmed gone. See docs/security/UB_FINDINGS.md.
+    "hbsd/src/sys/geom/gate/g_gate.c": (
+        "unit == G_GATE_NAME_GIVEN && name != NULL",
+        None,
+        "a KASSERT is not a check: gctl_unit = G_GATE_NAME_GIVEN with a "
+        "NULL name reached strcmp(NULL, ...) from three ioctls",
+    ),
+    "hbsd/src/sys/netgraph/netflow/ng_netflow.c": (
+        "if (resp == NULL)",
+        None,
+        "three M_NOWAIT NG_MKRESPONSE results dereferenced unchecked; the "
+        "fourth in the same file checks",
+    ),
+    "hbsd/src/sys/fs/p9fs/p9_protocol.c": (
+        "if (wnames == NULL) {",
+        None,
+        "nwname is a uint16_t off the 9P wire; a failed M_NOWAIT malloc "
+        "then wrote through NULL for i in [0, nwname)",
+    ),
+    "hbsd/src/sys/dev/enic/vnic_dev.c": (
+        "if (r == NULL) {",
+        None,
+        "device registers read straight into an unchecked M_NOWAIT "
+        "allocation",
+    ),
+    "hbsd/src/sys/dev/usb/net/uhso.c": (
+        "IFCOUNTER_IQDROPS",
+        None,
+        "mtod() on an unchecked m_getcl(M_NOWAIT); usbd_copy_out() then "
+        "wrote actlen bytes of device data through NULL",
+    ),
 }
 
 

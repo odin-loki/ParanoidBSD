@@ -306,8 +306,24 @@ g_gate_hold(int unit, const char *name)
 	mtx_lock(&g_gate_units_lock);
 	if (unit >= 0 && unit < g_gate_maxunits)
 		sc = g_gate_units[unit];
-	else if (unit == G_GATE_NAME_GIVEN) {
-		KASSERT(name != NULL, ("name is NULL"));
+	else if (unit == G_GATE_NAME_GIVEN && name != NULL) {
+		/*
+		 * `unit` is ggio->gctl_unit, straight from an ioctl, and
+		 * G_GATE_CMD_MODIFY, G_GATE_CMD_START and G_GATE_CMD_DONE all
+		 * call this as g_gate_hold(ggio->gctl_unit, NULL). So
+		 * gctl_unit = G_GATE_NAME_GIVEN reached strcmp(NULL, ...).
+		 *
+		 * This was a KASSERT, which is not a check: without
+		 * INVARIANTS it compiles to nothing and the kernel
+		 * dereferences NULL, and WITH INVARIANTS it panics on a
+		 * userland argument, which is the wrong thing for an
+		 * assertion to do. g_gate_create() validates gctl_unit and
+		 * gctl_name (:490 and :496); the other three commands did
+		 * not.
+		 *
+		 * Falling through leaves sc == NULL, which every caller
+		 * already handles as ENXIO or ENOENT.
+		 */
 		for (unit = 0; unit < g_gate_maxunits; unit++) {
 			if (g_gate_units[unit] == NULL)
 				continue;

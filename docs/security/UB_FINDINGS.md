@@ -216,6 +216,89 @@ to find out.
 
 ---
 
+## Fixed — a NULL that nothing checked, five more
+
+`M_WAITOK` cannot fail. `M_NOWAIT` can, and returns NULL. The difference is
+one token, and these are the places where the second one is written and the
+result is used anyway.
+
+### `sys/geom/gate/g_gate.c` — a KASSERT is not a check
+
+```c
+	else if (unit == G_GATE_NAME_GIVEN) {
+		KASSERT(name != NULL, ("name is NULL"));
+		...
+			if (strcmp(name, ...) != 0)
+```
+
+`unit` is `ggio->gctl_unit`, straight from an ioctl on `/dev/ggctl`, and
+`G_GATE_CMD_MODIFY`, `G_GATE_CMD_START` and `G_GATE_CMD_DONE` all call this
+as `g_gate_hold(ggio->gctl_unit, NULL)`. So `gctl_unit = G_GATE_NAME_GIVEN`
+reached `strcmp(NULL, ...)`.
+
+`KASSERT` is the wrong tool twice over: without `INVARIANTS` it compiles to
+nothing and the kernel dereferences NULL, and *with* `INVARIANTS` it panics
+on a userland argument, which is not what an assertion is for.
+`g_gate_create()` validates both fields (`:490`, `:496`); the other three
+commands did not. Now the loop is simply not entered, leaving `sc == NULL`,
+which every caller already turns into `ENXIO` or `ENOENT`.
+
+### `sys/netgraph/netflow/ng_netflow.c` — three of four
+
+`NG_MKRESPONSE(..., M_NOWAIT)` leaves the pointer NULL on failure —
+`ng_message.h:402` breaks out of the macro without touching it. Four call
+sites in this file; `:539` checks, and `:388`, `:411` and `:556`
+dereferenced it.
+
+**clang's analyser reported exactly one of the three.** It explores paths
+and stops at the first defect on each, so three instances of one mistake in
+one file came back as one finding. That is what
+`tools/verify/nowait_check.py` exists for.
+
+### `sys/fs/p9fs/p9_protocol.c` — a length off the wire
+
+```c
+	nwname = *nwname_p;			/* uint16_t, read from the server */
+	wnames = malloc(sizeof(char *) * nwname, M_TEMP, M_NOWAIT | M_ZERO);
+
+	for (i = 0; i < nwname && (error == 0); i++)
+		error = p9_buf_readf(buf, proto_version, "s", &wnames[i]);
+```
+
+Up to 512KB asked for with `M_NOWAIT`, and on failure the loop writes
+through `&wnames[i]` for every `i` the *server* chose — and the error path
+below then frees `wnames[i]` from the same pointer. A hostile or
+compromised 9P server plus memory pressure is a kernel write through NULL.
+
+### `sys/dev/usb/net/uhso.c` — device data into a NULL mbuf
+
+```c
+	m = m_getcl(M_NOWAIT, MT_DATA, M_PKTHDR);
+	usbd_copy_out(pc, 0, mtod(m, uint8_t *), actlen);
+```
+
+`mtod(NULL, ...)` is a NULL dereference, and `usbd_copy_out()` writes
+`actlen` bytes of device data into it. A USB device that keeps sending
+while memory is tight panics the kernel. Now counted as `IQDROPS` and
+dropped, like every other receive failure in the file.
+
+### `sys/dev/enic/vnic_dev.c` — registers into an unchecked allocation
+
+`ENIC_BUS_READ_REGION_4()` reads device registers straight into the result
+of an unchecked `malloc(..., M_NOWAIT | M_ZERO)`, and the loop after it
+dereferences the same pointer.
+
+### Reported, not fixed — nine more
+
+`tools/verify/nowait_check.py` finds nine others, all in device attach and
+setup paths: `sys/arm/freescale/imx`, `sys/arm/freescale/vybrid`,
+`sys/arm/nvidia/tegra124`, `sys/dev/bhnd`, `sys/dev/enic` (a second one),
+`sys/dev/mxge`, `sys/dev/sound/pci/hdsp`, `sys/dev/ufshci`. They are real
+and they are each a separate vendor edit in a driver PBSD does not boot, so
+they are listed rather than changed. Run the tool to see them.
+
+---
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -234,3 +317,8 @@ Kept because the reasoning is what stops them being re-reported.
 | `cpuset_alloc.c:32` `MallocSizeof` | `CPU_ALLOC_SIZE(n)` is `__BITSET_SIZE(n)`, a **byte count**, deliberately not `sizeof(cpuset_t)`. |
 | `radixsort.c:109` `MallocSizeof` | `malloc(n * sizeof(a))` where `a` is `const u_char **` and the elements are `const u_char *`. Both are pointers, so the size is right on every supported target; `sizeof(*a)` would say so more clearly. |
 | `g_stripe.c:111`, `g_shsec.c:107` "division by zero" | `lcm(a, b)` is `(a * b) / gcd(a, b)`, `static`, and every caller passes a sector size. |
+| `fread.c:129`, `fnmatch.c:331`, `getdelim.c:103`, `fvwrite.c:182`, `fts*.c` "null passed to memcpy" | the pointer is the caller's buffer or the result of an allocation the analyser cannot see succeed. `fread(NULL, ...)` is the caller violating the contract, not libc having a bug. |
+| `msgcat.c:241` "null passed to strlcpy" | the path needs `lang == NULL`, and `strdup(lang)` twenty lines earlier would have crashed first. |
+| `uipc_mbuf.c:1199`, `igmp.c:2837` "unchecked M_NOWAIT" (my own lint) | `if (m && ...)` and `if (m)` are NULL tests. The first version of `nowait_check.py` did not know that. |
+| `if_ptnet.c:1760` (same lint) | `mhead = mtail = m_getcl(...)` and the check is on `mhead`. |
+| `uma_core.c:1252` (same lint) | `sizeof(hash->uh_slab_hash[0])` does not evaluate the pointer. |

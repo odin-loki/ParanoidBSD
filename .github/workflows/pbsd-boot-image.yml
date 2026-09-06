@@ -214,13 +214,21 @@ jobs:
             nobindnow)   SRCCONF="$PWD/hbsd/src.conf.pbsd-nobindnow" ;;
             *)           SRCCONF="$PWD/hbsd/src.conf.pbsd" ;;
             esac
-            # Under `none` the build asks for FreeBSD's defaults, and PIE is
-            # default-off there. That is the bisection handle working, not a
-            # regression, so the table is printed without the gate.
-            if [ "${{ inputs.src_conf }}" = "none" ]; then
-              REQUIRE_HARDENING=0
-            else
+            # The gate belongs on `pbsd` and on nothing else.
+            #
+            # Every other value of src_conf turns hardening OFF on purpose -
+            # that is what a bisect is - so a table showing an option off is
+            # the run working. Run 44 died two minutes in because this
+            # condition named `none` alone: `nobindnow` turns off BIND_NOW,
+            # which show_hardening.sh lists as REQUIRED, and the gate killed
+            # the run it was dispatched for. `nosanitizer` only escaped it
+            # because SAFESTACK and CFI are in EXPECTED rather than
+            # REQUIRED - luck, not design.
+            if [ "${{ inputs.src_conf }}" = "pbsd" ] || \
+               [ -z "${{ inputs.src_conf }}" ]; then
               REQUIRE_HARDENING=1
+            else
+              REQUIRE_HARDENING=0
             fi
             export REQUIRE_HARDENING
 

@@ -200,13 +200,49 @@ def iface_shim() -> str:
             # of files still failing, not a reason to lose the other 137.
             pass
 
+    # vnode_if.awk is run THREE times by the build, not once:
+    #
+    #   sys/conf/kern.post.mk:499   -h   vnode_if.h
+    #   sys/conf/kern.post.mk:501   -p   vnode_if_newproto.h
+    #   sys/conf/kern.post.mk:503   -q   vnode_if_typedef.h
+    #
+    # and vnode_if.h's first line includes vnode_if_typedef.h. Generating
+    # only -h therefore resolved <sys/vnode.h> one step further and then
+    # failed on the next, which is every kernel file that includes
+    # sys/mount.h or sys/vnode.h - most of the file systems.
+    # The same story for the device-ID tables. sys/conf/kmod.mk:510 and
+    # its neighbours run four more generators over four more description
+    # files, and every USB driver includes "usbdevs.h".
+    #
+    #   usbdevs2h.awk    sys/dev/usb/usbdevs        -h, -d
+    #   sdiodevs2h.awk   sys/dev/sdio/sdiodevs      -h, -d
+    #   miidevs2h.awk    sys/dev/mii/miidevs        (no flag)
+    #   acpi_quirks2h.awk sys/dev/acpica/acpi_quirks (no flag)
+    for tool, inp, flags in (
+            ("usbdevs2h.awk", "dev/usb/usbdevs", ("-h", "-d")),
+            ("sdiodevs2h.awk", "dev/sdio/sdiodevs", ("-h", "-d")),
+            ("miidevs2h.awk", "dev/mii/miidevs", ()),
+            ("acpi_quirks2h.awk", "dev/acpica/acpi_quirks", ())):
+        t, i = tools / tool, SRC / "sys" / inp
+        if not (t.is_file() and i.is_file()):
+            continue
+        for flag in (flags or ("",)):
+            cmd = ["awk", "-f", str(t), str(i)] + ([flag] if flag else [])
+            try:
+                subprocess.run(cmd, cwd=d, check=True, capture_output=True,
+                               timeout=60)
+            except (OSError, subprocess.SubprocessError):
+                pass
+
     src = SRC / "sys" / "kern" / "vnode_if.src"
     if vno.is_file() and src.is_file():
-        try:
-            subprocess.run(["awk", "-f", str(vno), str(src), "-h"],
-                           cwd=d, check=True, capture_output=True, timeout=60)
-        except (OSError, subprocess.SubprocessError):
-            pass
+        for flag in ("-h", "-p", "-q"):
+            try:
+                subprocess.run(["awk", "-f", str(vno), str(src), flag],
+                               cwd=d, check=True, capture_output=True,
+                               timeout=60)
+            except (OSError, subprocess.SubprocessError):
+                pass
     return d.as_posix()
 
 

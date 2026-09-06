@@ -79,6 +79,13 @@ static int vnic_dev_discover_res(struct vnic_dev *vdev,
 		r_offset = sizeof(*rh);
 
 	r = malloc(sizeof(*r), M_DEVBUF, M_NOWAIT | M_ZERO);
+	if (r == NULL) {
+		/* M_NOWAIT: the read below writes device registers straight
+		 * into it, and the loop after that dereferences it. */
+		free(rh, M_DEVBUF);
+		free(mrh, M_DEVBUF);
+		return (ENOMEM);
+	}
 	ENIC_BUS_READ_REGION_4(softc, mem, r_offset, (void *)r, sizeof(*r) / 4);
 	while ((type = r->type) != RES_TYPE_EOL) {
 		u8 bar_num = r->bar;

@@ -387,6 +387,15 @@ ng_netflow_rcvmsg (node_p node, item_p item, hook_p lasthook)
 
 			NG_MKRESPONSE(resp, msg, sizeof(struct ng_netflow_info),
 			    M_NOWAIT);
+			/*
+			 * M_NOWAIT, so this fails under memory pressure and
+			 * NG_MKRESPONSE leaves resp NULL - ng_message.h:402
+			 * breaks out of the macro without touching it. The
+			 * NGM_NETFLOW_SHOW case at :539 checks; these three
+			 * did not, and dereferenced NULL.
+			 */
+			if (resp == NULL)
+				ERROUT(ENOMEM);
 			i = (struct ng_netflow_info *)resp->data;
 			ng_netflow_copyinfo(priv, i);
 
@@ -410,6 +419,8 @@ ng_netflow_rcvmsg (node_p node, item_p item, hook_p lasthook)
 
 			NG_MKRESPONSE(resp, msg,
 			     sizeof(struct ng_netflow_ifinfo), M_NOWAIT);
+			if (resp == NULL)
+				ERROUT(ENOMEM);
 			i = (struct ng_netflow_ifinfo *)resp->data;
 			memcpy((void *)i, (void *)&priv->ifaces[*index].info,
 			    sizeof(priv->ifaces[*index].info));
@@ -555,6 +566,8 @@ ng_netflow_rcvmsg (node_p node, item_p item, hook_p lasthook)
 
 			NG_MKRESPONSE(resp, msg,
 			    sizeof(struct ng_netflow_v9info), M_NOWAIT);
+			if (resp == NULL)
+				ERROUT(ENOMEM);
 			i = (struct ng_netflow_v9info *)resp->data;
 			ng_netflow_copyv9info(priv, i);
 

@@ -1621,6 +1621,19 @@ uhso_ifnet_read_callback(struct usb_xfer *xfer, usb_error_t error)
 			if (mbufq_full(&sc->sc_rxq))
 				break;
 			m = m_getcl(M_NOWAIT, MT_DATA, M_PKTHDR);
+			/*
+			 * M_NOWAIT returns NULL under memory pressure, and
+			 * mtod(NULL, uint8_t *) is a NULL dereference that
+			 * usbd_copy_out() then writes actlen bytes of device
+			 * data into. Nothing here checked; a USB device that
+			 * keeps sending while memory is tight panics the
+			 * kernel.
+			 */
+			if (m == NULL) {
+				if_inc_counter(sc->sc_ifp, IFCOUNTER_IQDROPS,
+				    1);
+				break;
+			}
 			usbd_copy_out(pc, 0, mtod(m, uint8_t *), actlen);
 			m->m_pkthdr.len = m->m_len = actlen;
 			/* Enqueue frame for further processing */

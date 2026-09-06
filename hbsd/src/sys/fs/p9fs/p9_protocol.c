@@ -248,6 +248,19 @@ p9_buf_vreadf(struct p9_buffer *buf, int proto_version, const char *fmt,
 
 			nwname = *nwname_p;
 			wnames = malloc(sizeof(char *) * nwname, M_TEMP, M_NOWAIT | M_ZERO);
+			/*
+			 * nwname is a uint16_t read straight off the 9P wire,
+			 * so this asks for up to 512KB with M_NOWAIT and gets
+			 * NULL under memory pressure. The loop below then
+			 * writes to &wnames[i] for i in [0, nwname) - a
+			 * kernel write through NULL, driven by a value the
+			 * server chose - and the error path frees wnames[i]
+			 * from the same pointer.
+			 */
+			if (wnames == NULL) {
+				error = ENOMEM;
+				break;
+			}
 
 			for (i = 0; i < nwname && (error == 0); i++)
 				error = p9_buf_readf(buf, proto_version, "s", &wnames[i]);
