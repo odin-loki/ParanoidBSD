@@ -37,6 +37,19 @@ on:
 permissions:
   contents: read
 
+# One sweep at a time. Runs 3, 4 and 5 were all in flight at once while
+# the SIGTERM was being diagnosed, which is a confounder to be rid of
+# rather than one that explains anything: run 3's kernel job died at
+# 15:31 with no other verify run active, so competition for runners was
+# never the cause. Memory was, and --mem-mb is the fix. This is so the
+# question cannot be raised again about the run that tests it.
+#
+# cancel-in-progress, because a superseded sweep is three hours of
+# runner time spent on a tree nobody is looking at any more.
+concurrency:
+  group: pbsd-verify
+  cancel-in-progress: true
+
 jobs:
   plan:
     runs-on: ubuntu-latest
