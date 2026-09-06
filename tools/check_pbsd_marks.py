@@ -118,6 +118,20 @@ FIXES = {
         None,
         "same uninitialised parse target, in genl(1)",
     ),
+    "hbsd/src/sys/kern/kern_procctl.c": [
+        (
+            "int d = PROC_PROTMAX_NOFORCE;",
+            None,
+            "protmax_status() switched on a TWO-bit mask with THREE arms "
+            "and copied d to userland with *(int *)data, so both bits set "
+            "would be a kernel stack disclosure through procctl(2)",
+        ),
+        (
+            "int d = PROC_ASLR_NOFORCE;",
+            None,
+            "aslr_status(), the same shape, reporting the ASLR state",
+        ),
+    ],
     # Two GEOM tasters, which run on whatever medium is plugged in.
     "hbsd/src/sys/geom/part/g_part_ldm.c": [
         (

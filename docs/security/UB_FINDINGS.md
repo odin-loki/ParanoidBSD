@@ -632,6 +632,48 @@ paths and returns `EINVAL` or `-1` otherwise, and the caller checks
 `error != 0` first. The analyser cannot correlate a callee's return value
 with which of its assignments ran.
 
+## Fixed — a two-bit switch with three arms, copied to userland
+
+`sys/kern/kern_procctl.c`, `protmax_status()` at `:750` and
+`aslr_status()` at `:799`:
+
+```c
+int d;
+
+switch (p->p_flag2 & (P2_PROTMAX_ENABLE | P2_PROTMAX_DISABLE)) {
+case 0:                   d = PROC_PROTMAX_NOFORCE;       break;
+case P2_PROTMAX_ENABLE:   d = PROC_PROTMAX_FORCE_ENABLE;  break;
+case P2_PROTMAX_DISABLE:  d = PROC_PROTMAX_FORCE_DISABLE; break;
+}
+if (kern_mmap_maxprot(p, PROT_READ) == PROT_READ)
+        d |= PROC_PROTMAX_ACTIVE;
+*(int *)data = d;
+```
+
+The mask has **two bits**, so four values; the switch has **three arms**.
+`ENABLE|DISABLE` together falls through with `d` uninitialised, gets
+`|=`'d, and `*(int *)data = d` copies it to the caller of `procctl(2)`.
+That is a kernel stack disclosure, not a wrong answer.
+
+Not reachable as the tree stands, and the reason is the point:
+`protmax_ctl()` clears the opposite bit on all three of its arms,
+`kern_fork.c:552` inherits a pair that already satisfies that, and
+`imgact_elf.c:1182` clears both. The invariant is maintained in three
+files and depended on in a fourth — in a tree that is actively adding
+`PAX` variants to `p_flag2` handling in this very file (`wxmap_ctl`'s
+`#ifndef PAX`). One new `p_flag2 |=` anywhere turns a masked-switch gap
+into an infoleak.
+
+`PROC_PROTMAX_NOFORCE` / `PROC_ASLR_NOFORCE` are what `case 0` already
+says, and are the honest answer for a bit pair that forces nothing
+coherent. Both sites, one token each, no behaviour change on any
+reachable path.
+
+These are the only two masked switches on `p_flag` or `p_flag2` in the
+tree — `stackgap_status()` beside them uses ternaries and is total, and
+the two `switch (state)` forms take user input and have `default: return
+(EINVAL)`.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

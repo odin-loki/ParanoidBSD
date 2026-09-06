@@ -745,7 +745,23 @@ protmax_ctl(struct thread *td, struct proc *p, void *data)
 static int
 protmax_status(struct thread *td, struct proc *p, void *data)
 {
-	int d;
+	/*
+	 * PBSD: the mask has TWO bits and the switch has THREE arms, so
+	 * ENABLE|DISABLE together falls through with d uninitialised - and
+	 * `*(int *)data = d` below copies it to userland. That is a kernel
+	 * stack disclosure through procctl(2), not a wrong answer.
+	 *
+	 * protmax_ctl() clears the opposite bit on every arm, kern_fork.c:552
+	 * inherits a pair that already satisfies that, and imgact_elf.c:1182
+	 * clears both, so the combination is not reachable as the tree
+	 * stands. It is an invariant maintained in three files and depended
+	 * on in a fourth, in a tree that is actively adding PAX variants to
+	 * p_flag2 handling right here (see wxmap_ctl's #ifndef PAX).
+	 *
+	 * NOFORCE is what `case 0` says and is the honest answer for a pair
+	 * that forces nothing coherent.
+	 */
+	int d = PROC_PROTMAX_NOFORCE;
 
 	switch (p->p_flag2 & (P2_PROTMAX_ENABLE | P2_PROTMAX_DISABLE)) {
 	case 0:
@@ -794,7 +810,12 @@ static int
 aslr_status(struct thread *td, struct proc *p, void *data)
 {
 	struct vmspace *vm;
-	int d;
+	/*
+	 * PBSD: as protmax_status() above - two bits, three arms, and
+	 * `*(int *)data = d` at the end. This one reports the ASLR state,
+	 * which is the thing this system exists to get right.
+	 */
+	int d = PROC_ASLR_NOFORCE;
 
 	switch (p->p_flag2 & (P2_ASLR_ENABLE | P2_ASLR_DISABLE)) {
 	case 0:
