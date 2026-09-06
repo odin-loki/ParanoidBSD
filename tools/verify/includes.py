@@ -159,11 +159,108 @@ def arch_of(rel: str, default: str = "amd64") -> str:
     return default
 
 
+@functools.lru_cache(maxsize=None)
+def opt_shim() -> str:
+    """Empty opt_*.h, which is exactly what config(8) writes for an unset option.
+
+    A kernel source says `#include "opt_inet.h"` and config(8) generates
+    that file during buildkernel: it holds `#define INET 1` when the option
+    is in the kernel configuration and IS EMPTY when it is not. There is no
+    such file in a source tree.
+
+    So an empty one is not a stub standing in for something real - it is
+    the genuine content for a kernel built without that option, and it
+    makes every `#ifdef INET` take its false branch. That is a real
+    configuration, and it is the conservative one: the code under the
+    option is not checked rather than checked wrongly.
+
+    Names are harvested from the tree rather than listed, so this does not
+    go stale.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_opt_"))
+    names = set()
+    pat = re.compile(r'#\s*include\s+"(opt_[A-Za-z0-9_]+\.h)"')
+    sysdir = SRC / "sys"
+    for f in sysdir.rglob("*.[ch]"):
+        try:
+            names.update(pat.findall(f.read_text(errors="replace")))
+        except OSError:
+            pass
+    for n in names:
+        (d / n).write_text(f"/* {n}: not set in this configuration */\n")
+
+    # clang's own <limits.h> ends in `#include_next <limits.h>`, and under
+    # -nostdinc there is nowhere for that to go: 293 kernel translation
+    # units failed on "no include path in which to search for limits.h".
+    # The kernel's is sys/sys/limits.h, which is what the real build
+    # resolves <limits.h> to inside sys/. Placed here so it is found
+    # BEFORE the compiler's.
+    lim = SRC / "sys" / "sys" / "limits.h"
+    if lim.is_file():
+        (d / "limits.h").symlink_to(lim)
+    return d.as_posix()
+
+
 def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str]:
     """-nostdinc plus everything that source needs, in build order."""
     rel = src.relative_to(SRC).as_posix() if src.is_absolute() else str(src)
     arch = arch_of(rel, arch)
     flags = ["-nostdinc", f"-I{machine_shim(arch)}"]
+
+    # The kernel is a different header universe from userland: no
+    # include/, -D_KERNEL, and <sys/foo.h> resolving inside sys/. Mixing
+    # the two puts userland's <stdio.h> in a kernel translation unit,
+    # which is how you get a compile that succeeds and means nothing.
+    if rel.startswith("sys/"):
+        # sys/sys/kpilite.h:31 does `#include "offset.inc"`, which
+        # genassym generates during buildkernel from sys/kern/genoffset.c
+        # and which does not exist in a source tree. Its guard is
+        #
+        #   #if !defined(GENOFFSET) && (!defined(KLD_MODULE) || ...)
+        #
+        # so -DGENOFFSET skips it - and that is the honest spelling of the
+        # situation here, where the offsets genuinely have not been
+        # generated. -DKLD_MODULE reaches the same 85 of 95 but says
+        # something false about how the code is being built.
+        #
+        # The cost is that sched_pin_lite() and sched_unpin_lite() are not
+        # declared, so a file calling them still fails - recorded, not
+        # papered over. 21 of 95 -> 85 of 95.
+        # CBMC's C front end cannot parse C23 attribute syntax. 225 kernel
+        # translation units failed on
+        #
+        #   sys/sys/systm.h:313:1: error: syntax error before '['
+        #
+        # which is __nodiscard, defined at cdefs.h:298 as [[nodiscard]].
+        # cdefs.h:315 already defines it EMPTY on a compiler that does not
+        # support it, so an empty definition is a configuration the header
+        # itself provides rather than something invented here - and an
+        # attribute that only affects diagnostics changes nothing a model
+        # checker looks at.
+        # ...and -D__nodiscard= does not work, because cdefs.h:301
+        # REDEFINES it. The guard is
+        #
+        #   #elif defined(__STDC_VERSION__) && defined(__has_c_attribute)
+        #   #if __has_c_attribute(__nodiscard__)
+        #   #define __nodiscard [[__nodiscard__]]
+        #
+        # and CBMC's PREPROCESSOR answers __has_c_attribute yes while its
+        # PARSER cannot read the result. Answering 0 sends cdefs.h down its
+        # own `#else #define __nodiscard` branch - the empty definition the
+        # header already provides for a compiler without the feature, which
+        # is exactly true of this one.
+        flags += ["-D_KERNEL", "-DGENOFFSET",
+                  "-D__has_c_attribute(x)=0",
+                  f"-I{opt_shim()}",
+                  f"-I{(SRC / rel).parent}",
+                  f"-I{SRC}/sys",
+                  f"-I{SRC}/sys/contrib/ck/include",
+                  f"-I{SRC}/sys/contrib/libnv",
+                  f"-I{SRC}/sys/cddl/compat/opensolaris"]
+        rd = resource_dir(cc)
+        if rd:
+            flags.append(f"-I{rd}")
+        return flags
 
     # The source's own directory first: many libc and msun sources include a
     # private header sitting beside them.
