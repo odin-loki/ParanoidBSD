@@ -815,6 +815,54 @@ described and which had never been applied to this case: **strip** the
 pointer failures, then classify what is left. "Worth a person's time"
 went from 65 to 177 across the three sweeps, 4 to 23 in the kernel.
 
+## Fixed — the one of four that does not check its index
+
+`sys/kern/posix4_mib.c` has four functions that index
+`facility[num - 1]`, and `P31B_VALID(num)` — `(num) >= 1 && (num) <
+CTL_P1003_1B_MAXID` — is right there at `:106`:
+
+| function | guard |
+|---|---|
+| `p31b_sysctl_proc()` `:114` | `if (!P31B_VALID(num)) return (EINVAL);` |
+| `p31b_setcfg()` `:129` | `if (P31B_VALID(num)) { … }` |
+| **`p31b_unsetcfg()` `:136`** | **none** |
+| `p31b_getcfg()` `:147` | `if (P31B_VALID(num)) return …` |
+
+It sits between two functions that use the guard, it is the only one of
+the four that **writes without reading first**, it writes *two* static
+arrays, and it is exported in `sys/sys/posix4.h`. `num == 0` gives
+`facility[-1]`.
+
+Both callers today are `sys/kern/uipc_sem.c:1065-1066` with
+`CTL_P1003_1B_` constants, so it is not reachable as the tree stands.
+
+This is the shape every real defect found this week has had: **the guard
+exists on one of a pair, or on three of four.** `if_getgroup()` set
+`error = 0` in one of its two branches; `ldm_vmdbhdr_check()` rejected a
+zero `dh.size` and not a zero `last_seq`; `g_llvm_taste()` zeroed `md`
+and not `ll`; `protmax_status()` had three arms for a two-bit mask. The
+useful question about a finding is not "can I reach it" but "does the
+code right beside it already do the thing this one does not".
+
+### Ruled out from the same batch
+
+| finding | why |
+|---|---|
+| `sys/arm/arm/identcpu-v6.c:260` `hw_buf_idx + len` | `hw_buf` is `char[81]`, the guard above resets at `hw_buf_idx + len + 2 >= 79`, and the longest string any caller passes is 17. CBMC cannot bound a `static int`. |
+| `sys/dev/videomode/pickmode.c:77` `/(htotal * vtotal)` | `videomode_list[]` is a `const struct videomode[46]` compiled into the kernel, not anything a monitor supplies. |
+| `sys/i386/i386/machdep.c:1807` `md_spinlock_count - 1`, `sys/x86/x86/delay.c` `td_pinned + 1` | per-thread counters whose invariant is held by a paired enter/exit in another function. |
+| `sys/ddb/db_access.c:69,72` | `size` is 1, 2, 4 or 8 and `value` accumulates that many bytes; the operand of `<< 8` is `db_expr_t`, which is signed by design because DDB expressions are. |
+| `sys/cam/cam_queue.c:60,274` | `size` and `openings` are a driver's own queue depth. |
+
+**A sixth rule is doing most of that work, and it is worth naming:
+module state is as unconstrained to a modular checker as a parameter is.**
+`hw_buf_idx`, `md_spinlock_count`, `td_pinned` and `facility` are a
+`static int`, two struct fields and a file-scope array. Rule three says
+`static` *linkage* means callers constrain the domain; this is the same
+argument for *storage* — CBMC starts every function with every global and
+every struct field nondeterministic, so an invariant maintained across
+calls is invisible to it in exactly the way a caller's precondition is.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

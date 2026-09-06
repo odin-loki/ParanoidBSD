@@ -157,6 +157,14 @@ FIXES = {
         "shift of a VARIABLE at run time, unlike the 977 folded constants "
         "left alone in the same class",
     ),
+    "hbsd/src/sys/kern/posix4_mib.c": (
+        "\tif (P31B_VALID(num)) {\n\t\tfacility[num - 1] = 0;",
+        None,
+        "p31b_unsetcfg() was the only one of the file's four functions "
+        "indexing facility[num - 1] without P31B_VALID, and the only one "
+        "that writes without reading first; it is exported in "
+        "sys/sys/posix4.h and num == 0 gives facility[-1]",
+    ),
     # Two GEOM tasters, which run on whatever medium is plugged in.
     "hbsd/src/sys/geom/part/g_part_ldm.c": [
         (

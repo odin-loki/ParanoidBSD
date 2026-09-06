@@ -136,8 +136,26 @@ void
 p31b_unsetcfg(int num)
 {
 
-	facility[num - 1] = 0;
-	facility_initialized[num - 1] = 0;
+	/*
+	 * PBSD: P31B_VALID, like its three neighbours.
+	 *
+	 * This is the only one of the four functions in this file that
+	 * indexes facility[num - 1] without it - p31b_sysctl_proc() above
+	 * returns EINVAL, p31b_setcfg() immediately above wraps the same
+	 * two assignments in it, and p31b_getcfg() immediately below
+	 * returns 0. It writes two static arrays with an index it does not
+	 * check, and it is exported in sys/sys/posix4.h.
+	 *
+	 * num == 0 gives facility[-1]. Both callers today are
+	 * sys/kern/uipc_sem.c:1065-1066 with CTL_P1003_1B_ constants, so
+	 * this is not reachable as the tree stands - which is why nothing
+	 * has noticed that the guard is missing on exactly the one of the
+	 * four that writes without reading first.
+	 */
+	if (P31B_VALID(num)) {
+		facility[num - 1] = 0;
+		facility_initialized[num - 1] = 0;
+	}
 }
 
 int
