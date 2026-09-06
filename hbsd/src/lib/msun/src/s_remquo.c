@@ -120,7 +120,7 @@ remquo(double x, double y, int *quo)
 		lx = (lx>>n)|((u_int32_t)hx<<(32-n));
 		hx >>= n;
 	    } else if (n<=31) {
-		lx = (hx<<(32-n))|(lx>>n); hx = 0;
+		lx = ((u_int32_t)hx<<(32-n))|(lx>>n); hx = 0;
 	    } else {
 		lx = hx>>(n-32); hx = 0;
 	    }

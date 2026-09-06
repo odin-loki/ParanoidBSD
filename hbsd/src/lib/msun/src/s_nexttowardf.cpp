@@ -34,7 +34,7 @@ nexttowardf(float x, long double y)
 	   return x+y;	/* x or y is nan */
 	if(x==y) return (float)y;		/* x=y, return y */
 	if(ix==0) {				/* x == 0 */
-	    SET_FLOAT_WORD(x,(uy.bits.sign<<31)|1);/* return +-minsubnormal */
+	    SET_FLOAT_WORD(x,((u_int32_t)uy.bits.sign<<31)|1);/* return +-minsubnormal */
 	    t = x*x;
 	    if(t==x) return t; else return x;	/* raise underflow flag */
 	}
