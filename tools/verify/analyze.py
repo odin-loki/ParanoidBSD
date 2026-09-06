@@ -163,6 +163,16 @@ def summarise_errors(path: str, top: int = 12) -> None:
         print(f"  ...and {rest} more distinct reason(s)")
 
 
+def analyzer_version() -> str:
+    """The exact clang that produced this run's findings."""
+    try:
+        out = subprocess.run(["clang", "--version"], capture_output=True,
+                             text=True, timeout=20)
+        return (out.stdout or out.stderr).splitlines()[0].strip()
+    except (OSError, IndexError, subprocess.SubprocessError) as e:
+        return f"unknown ({e})"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -200,6 +210,23 @@ def main() -> int:
 
     counts, nfind, t0 = {}, 0, time.time()
     with open(args.out, "w") as fh, ProcessPoolExecutor(args.jobs) as ex:
+        # First record: what produced these numbers.
+        #
+        # Two sweeps were compared - one from a workstation, one from a
+        # GitHub runner - and a three-finding difference was attributed
+        # to a source change. Nothing in either file said which clang
+        # had run, and clang's analyser changes between releases, so
+        # that attribution could not be made at all. A finding count is
+        # only comparable to another count from the same checker.
+        #
+        # Marked with "_meta" so every reader that iterates findings
+        # skips it: it has no "findings" key.
+        fh.write(json.dumps({
+            "_meta": True,
+            "analyzer": analyzer_version(),
+            "scopes": args.scope or DEFAULT_SCOPES,
+            "units": len(jobs),
+        }) + "\n")
         futs = [ex.submit(analyze, j) for j in jobs]
         for i, fut in enumerate(as_completed(futs), 1):
             r = fut.result()

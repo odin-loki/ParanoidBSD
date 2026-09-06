@@ -413,6 +413,12 @@ def main() -> int:
     if args.analyze:
         an = [json.loads(l) for l in Path(args.analyze).read_text().splitlines()
               if l.strip()]
+        # analyze.py writes a leading _meta record naming the clang that
+        # produced the run. Findings from different clangs are not
+        # comparable - the analyser changes between releases - so the
+        # version is printed rather than left for somebody to assume.
+        metas = {r.get("analyzer") for r in an if r.get("_meta")}
+        an = [r for r in an if not r.get("_meta")]
         finds = [(f, r) for r in an for f in r.get("findings", [])]
         by = collections.Counter(f["checker"] for f, _ in finds)
         sites = collections.Counter((f["where"], f["checker"]) for f, _ in finds)
@@ -421,6 +427,16 @@ def main() -> int:
         ntest = sum(tby.values())
         print(f"\n== clang --analyze: {len(finds)} finding(s) at "
               f"{len(sites)} distinct site(s), a DIFFERENT instrument")
+        if metas:
+            for m in sorted(x for x in metas if x):
+                print(f"   {m}")
+            if len(metas) > 1:
+                print("   MORE THAN ONE ANALYSER produced this corpus; the")
+                print("   totals are a sum across them, not one measurement.")
+        else:
+            print("   (no analyser version recorded - a sweep from before")
+            print("    analyze.py started writing one. Not comparable to a")
+            print("    run from a different machine.)")
         for c, n in by.most_common():
             intest = tby.get(c, 0)
             note = f"   ({intest} in test files)" if intest else ""

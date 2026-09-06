@@ -1683,11 +1683,8 @@ the shape of the day: `md_promise`, `g_virstor` ×2, `g_raid3`, `g_eli`,
 rate cap; and `rack_output`'s `len`, `if_hw_tsomaxsegsize` ×3,
 `rack_set_sockopt`'s pair, `bbr`'s `delta`.
 
-**`core.NullDereference` went UP by three**, and that is not noise to
-wave past. Two are accounted for above: initialising
-`if_hw_tsomaxsegsize` let the analyser reach two `udp->uh_sum` sites it
-had previously been cut short of, both of which are in the not-a-defect
-table. The third is unaccounted for and is in the next pass's list.
+**`core.NullDereference` went UP by three** — and then the comparison
+itself turned out not to support that sentence. See below.
 
 CBMC's exported-arithmetic list confirms the same fixes from the other
 instrument. Gone since run 50: `posix4_mib.c:139`,
@@ -1697,6 +1694,36 @@ instrument. Gone since run 50: `posix4_mib.c:139`,
 gone with it; what remains there is "shift distance too large", which is
 CBMC not knowing `slot <= PCI_SLOTMAX` — rule three, an exported
 function with a caller-constrained parameter.
+
+### The comparison in that table is between two different machines
+
+Run 50 was collected on a workstation and sweep 5 on a GitHub runner,
+and **neither recorded which clang produced it**. clang's analyser
+changes between releases: checkers are added, and existing ones get more
+or less precise. So a three-finding difference across that pair cannot
+be attributed to a source change at all, and "two accounted for, one
+open" was a conclusion the data could not carry.
+
+What *is* sound is a before-and-after on one machine with one compiler,
+which is how every individual fix above was checked — the `+2` in
+`rack.c` was established that way at the time, running the same local
+clang either side of the change, and re-confirmed here: `sys/netinet*`
+is `27 -> 29`, both in `rack.c`. `sys/kern` is unchanged at 123, which
+disproved the hypothesis that the `pax.h` stubs had shifted anything
+there.
+
+The direction of the totals is still worth having — eight fewer
+`DivideZero` is not a clang-version artefact — but the third
+`NullDereference` is not a finding, it is a difference between two
+measurements that were never comparable.
+
+`analyze.py` now writes a `_meta` record naming the analyser as the
+first line of every run, and `report.py` prints it — or says plainly
+that a sweep predates the record and is not comparable across machines.
+This is the third time today that evidence was dated or attributed by
+the wrong instrument: artifact mtimes for collection times, interleaved
+log gaps for per-function durations, and now two machines' finding
+counts for one machine's diff.
 
 ### New in this sweep, now read
 
