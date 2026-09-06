@@ -187,6 +187,14 @@ FIXES = {
             "the loop at a divisor of zero",
         ),
     ],
+    "hbsd/src/sys/fs/nfsserver/nfs_nfsdsubs.c": (
+        "if (nfsrv_clienthashsize <= 0) {",
+        None,
+        "nfsd_init() took four CTLFLAG_RDTUN hash sizes from loader.conf "
+        "and validated none of them; three are used as a modulus, so "
+        "vfs.nfsd.clienthashsize=0 is a kernel divide by zero the first "
+        "time a client connects",
+    ),
     # Two GEOM tasters, which run on whatever medium is plugged in.
     "hbsd/src/sys/geom/part/g_part_ldm.c": [
         (

@@ -46,6 +46,7 @@ extern int nfs_pubfhset;
 extern int nfsrv_clienthashsize;
 extern int nfsrv_lockhashsize;
 extern int nfsrv_sessionhashsize;
+extern int nfsrv_statehashsize;	/* PBSD: validated in nfsd_init() below */
 extern int nfsrv_useacl;
 extern uid_t nfsrv_defaultuid;
 extern gid_t nfsrv_defaultgid;
@@ -2148,6 +2149,53 @@ nfsd_init(void)
 {
 	int i;
 
+
+	/*
+	 * PBSD: the four hash sizes are CTLFLAG_RDTUN - taken from
+	 * loader.conf and never looked at again - and nothing validated
+	 * them. Each is used as a MODULUS:
+	 *
+	 *   nfsrvstate.h:59  nfsclienthash[(id).lval[1] % nfsrv_clienthashsize]
+	 *   nfsrvstate.h:61  lc_stateid[(id).other[2] % nfsrv_statehashsize]
+	 *   nfsdport.h:95    nfslockhash[nfsrv_hashfh(f) % nfsrv_lockhashsize]
+	 *
+	 * so vfs.nfsd.clienthashsize=0 in loader.conf is a kernel division
+	 * by zero the first time a client connects, and sessionhashsize=0
+	 * gives a zero-length allocation indexed below. A negative value is
+	 * worse: `sizeof(x) * n` converts to size_t and the M_WAITOK
+	 * allocations below ask for something near SIZE_MAX.
+	 *
+	 * Same shape as net.inet.ip.reass_hashsize, fixed in
+	 * sys/netinet/ip_reass.c:691 - an unvalidated boot tunable used as a
+	 * divisor - and clamped the same way, with a printf rather than a
+	 * panic so a typo in loader.conf still boots.
+	 *
+	 * These are not powers of two (20, 20, 20, 10), so unlike ip_reass
+	 * only positivity is required. nfsd_init() runs once per vnet before
+	 * any client is served, which is why all four are checked here
+	 * rather than at each use.
+	 */
+	if (nfsrv_clienthashsize <= 0) {
+		printf("vfs.nfsd.clienthashsize must be positive; ignoring %d "
+		    "and using %d\n", nfsrv_clienthashsize, NFSCLIENTHASHSIZE);
+		nfsrv_clienthashsize = NFSCLIENTHASHSIZE;
+	}
+	if (nfsrv_statehashsize <= 0) {
+		printf("vfs.nfsd.statehashsize must be positive; ignoring %d "
+		    "and using %d\n", nfsrv_statehashsize, NFSSTATEHASHSIZE);
+		nfsrv_statehashsize = NFSSTATEHASHSIZE;
+	}
+	if (nfsrv_lockhashsize <= 0) {
+		printf("vfs.nfsd.fhhashsize must be positive; ignoring %d "
+		    "and using %d\n", nfsrv_lockhashsize, NFSLOCKHASHSIZE);
+		nfsrv_lockhashsize = NFSLOCKHASHSIZE;
+	}
+	if (nfsrv_sessionhashsize <= 0) {
+		printf("vfs.nfsd.sessionhashsize must be positive; ignoring %d "
+		    "and using %d\n", nfsrv_sessionhashsize,
+		    NFSSESSIONHASHSIZE);
+		nfsrv_sessionhashsize = NFSSESSIONHASHSIZE;
+	}
 
 	/*
 	 * Initialize client queues. Don't free/reinitialize

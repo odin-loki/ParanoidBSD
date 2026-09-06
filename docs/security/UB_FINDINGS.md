@@ -907,6 +907,39 @@ the next line. The marker was not unique; the code was fine. The `want`
 string alone does the job, and a marker that matches a second function is
 the same mistake as a lint that reads its own comment.
 
+## Fixed — four unvalidated loader tunables in the NFS server
+
+`sys/fs/nfsserver/nfs_nfsdstate.c:68-86` declares four hash sizes, all
+`CTLFLAG_RDTUN` — taken from `loader.conf` and never looked at again —
+and nothing validated any of them. Three are used as a **modulus**:
+
+```c
+nfsrvstate.h:59   nfsclienthash[(id).lval[1] % nfsrv_clienthashsize]
+nfsrvstate.h:61   lc_stateid[(id).other[2]    % nfsrv_statehashsize]
+nfsdport.h:95     nfslockhash[nfsrv_hashfh(f) % nfsrv_lockhashsize]
+```
+
+So `vfs.nfsd.clienthashsize=0` in `loader.conf` is a kernel division by
+zero the first time a client connects, and `sessionhashsize=0` gives a
+zero-length allocation that `nfsd_init()` then indexes. A **negative**
+value is worse: `sizeof(x) * n` converts to `size_t`, so the three
+`M_WAITOK` allocations ask for something near `SIZE_MAX`.
+
+This is the same shape as `net.inet.ip.reass_hashsize`, fixed earlier in
+`sys/netinet/ip_reass.c:691`, and it is clamped the same way — a `printf`
+and the compiled default rather than a panic, so a typo in `loader.conf`
+still boots. Unlike `ip_reass` these are not powers of two (20, 20, 20,
+10), so only positivity is required.
+
+All four are checked in `nfsd_init()`, which runs once per vnet before
+any client is served, rather than at each use.
+
+**The analyser still reports `nfs_nfsdstate.c:415` after the fix**, and
+that is correct of it: `nfsd_init()` is in `nfs_nfsdsubs.c`, a different
+translation unit. It is the same boundary described above for
+`g_read_data()` — a finding in one file that is a fact about a callee in
+another.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
