@@ -153,6 +153,8 @@ and the certificate carries the result across.
 |---|---|
 | **`lib/libc/stdbit`** — six C23 functions | `x << offset` on a promoted `unsigned char`/`unsigned short`. UB for any `x` with the top bit set. `stdc_first_leading_zero.c`, same author, has the `(unsigned int)` cast the other three omit. |
 | **`lib/msun/src/s_rint.c`, `s_rintf.c`** | `sx << 31` where `int32_t sx = (i0>>31)&1`. `1 << 31` on a signed int is UB, and `rint()` reaches it on **every negative argument**. |
+| **`lib/msun/src/s_ceil.c`, `s_floor.c`** | `i1 + (1<<(52-j0))` in the `j0` ∈ [21,51] branch. At `j0 == 21` that is `1 << 31` on a signed `int`. `ceil(3000000.5)` reaches it. |
+| **`lib/libc/gen/nice.c`** | `prio + incr` — `incr` is the caller's `int`, so `nice(INT_MAX)` overflows. Reported, not yet fixed: defining it changes an exported function's behaviour and that is a decision, not a repair. |
 
 Both were confirmed with UBSan before anything was edited, and both were
 re-checked after: exhaustively against an independent reference for
