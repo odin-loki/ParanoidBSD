@@ -28,12 +28,37 @@
 #     hardenedbsd/hbsd_pax_common.c    optional pax
 #     hardenedbsd/hbsd_pax_noexec.c    optional pax pax_noexec
 #
-# - so the framework alone is a supported configuration. Every call site
-# outside sys/hardenedbsd is #ifdef'd on its own feature, checked: five of
-# them, in kern_exec.c, kern_fork.c and vm_unix.c.
+# - but the framework ALONE DOES NOT LINK, and the first version of this
+# file said it did. Run 52:
 #
-# What this therefore tests, and nothing else: whether the kernel's W^X and
-# ASLR enforcement is what stops ld-elf.so.1 relocating itself.
+#     ld.lld: error: undefined symbol: pax_kmod_load_disabled
+#     >>> referenced by link_elf_obj.c:227, link_elf.c:248
+#     ld.lld: error: undefined symbol: pax_control_extattr_kmod
+#     >>> referenced by link_elf_obj.c:240, link_elf.c:261
+#     ld.lld: error: undefined symbol: pax_enforce_tpe
+#     >>> referenced by vm_mmap.c:461 (kern_mmap)
+#     ld.lld: error: undefined symbol: pax_harden_tty
+#     >>> referenced by tty.c:2034, tty.c:614
+#
+# I wrote "every call site outside sys/hardenedbsd is #ifdef'd on its own
+# feature, checked: five of them". Five were. These four are not: they sit
+# under a plain `#ifdef PAX` (vm_mmap.c:453) or under none, while the
+# functions live in files sys/conf/files gates on the FEATURE:
+#
+#     hardenedbsd/hbsd_grsec_tpe.c         optional pax pax_hardening
+#     hardenedbsd/hbsd_pax_hardening.c     optional pax pax_hardening
+#     hardenedbsd/hbsd_control_extattr.c   optional pax pax_control_extattr
+#
+# The same shape as everything else in docs/security/UB_FINDINGS.md - the
+# guard on five of nine - and inherited from HardenedBSD rather than
+# introduced here. Fixing those four #ifdefs is a separate change; this
+# file takes the two options that make it link instead, because the point
+# of the control is the three it still leaves out.
+#
+# What this therefore tests, and nothing else: whether the kernel's W^X,
+# ASLR and segvguard enforcement is what stops ld-elf.so.1 relocating
+# itself. PAX_HARDENING is TPE, kernel-module restrictions and TIOCSTI -
+# none of which touch how rtld's own mappings are protected.
 
 include GENERIC
 
@@ -42,15 +67,24 @@ include GENERIC
 options 	PAX
 options 	PAX_SYSCTLS		# so the run can be asked what it did
 
+# PRESENT ONLY BECAUSE THE KERNEL DOES NOT LINK WITHOUT THEM. See the
+# four undefined symbols above. Neither has anything to do with how a
+# process's own mappings are protected.
+options 	PAX_HARDENING		# pax_harden_tty, pax_enforce_tpe,
+					# pax_kmod_load_disabled
+options 	PAX_CONTROL_EXTATTR	# pax_control_extattr_kmod
+
 # DELIBERATELY ABSENT, and this is the whole point of the file:
 #
 #   PAX_ASLR             address space layout randomisation
 #   PAX_NOEXEC           "Remove WX pages from user-space and enforce W^X"
 #   PAX_SEGVGUARD        brute-force protection
-#   PAX_HARDENING        the rest
 #
 # If /sbin/init talks under this and not under HARDENEDBSD, one of those
-# four is the answer and the next run bisects them.
+# three is the answer and the next run bisects them. Note that
+# sys/conf/options carries a PAX_ASLR_DELTA_RTLD_DEF_LEN - rtld has its
+# own randomisation delta, and rtld is exactly where every run so far
+# has stopped.
 
 ident		HARDENEDBSD-NOENFORCE
 
