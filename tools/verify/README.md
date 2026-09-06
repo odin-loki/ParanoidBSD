@@ -263,6 +263,34 @@ warnings are deliberately conservative; the path-sensitive analyser is not.
 That is what `--analyze` buys over a warning flag, measured rather than
 assumed.
 
+### What "interprocedural" does and does not mean
+
+The analyser is interprocedural **within** a translation unit and not
+**across** one, and the difference accounts for most of `sys/geom`'s
+findings in one go. 34 GEOM files carry
+
+```c
+buf = g_read_data(cp, offset, length, &error);
+if (buf == NULL)
+        return (error);
+/* decode into *md */
+return (0);
+```
+
+and a caller that tests `error != 0` before reading `md`.
+`g_read_data()` returns NULL exactly when it has set `*error` —
+`if (errorc) { g_free(ptr); ptr = NULL; }` is the last thing it does and
+there is no earlier return — so the struct is never read untouched. But
+`g_read_data()` lives in `sys/geom/geom_io.c`, a different translation
+unit, so the analyser must assume it may return NULL and leave `*error`
+alone; every field of `md` is then a garbage value and every comparison
+against it is a finding.
+
+Nothing in the tree is wrong and nothing in the analyser is wrong. The
+lesson is that a finding in a caller can be a fact about a **callee it
+could not see**, and that one such contract, copied 34 times, looks like
+a class of defects.
+
 ## What a result means
 
 `cbmc_driver.py` never merges these:
