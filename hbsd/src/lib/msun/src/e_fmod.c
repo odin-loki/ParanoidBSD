@@ -113,7 +113,7 @@ fmod(double x, double y)
 		lx = (lx>>n)|((u_int32_t)hx<<(32-n));
 		hx >>= n;
 	    } else if (n<=31) {
-		lx = (hx<<(32-n))|(lx>>n); hx = sx;
+		lx = ((u_int32_t)hx<<(32-n))|(lx>>n); hx = sx;
 	    } else {
 		lx = hx>>(n-32); hx = sx;
 	    }

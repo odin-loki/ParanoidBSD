@@ -43,7 +43,7 @@ nexttoward(double x, long double y)
 	   return x+y;	/* x or y is nan */
 	if(x==y) return (double)y;		/* x=y, return y */
 	if(x==0.0) {
-	    INSERT_WORDS(x,uy.bits.sign<<31,1);	/* return +-minsubnormal */
+	    INSERT_WORDS(x,(u_int32_t)uy.bits.sign<<31,1);	/* return +-minsubnormal */
 	    t = x*x;
 	    if(t==x) return t; else return x;	/* raise underflow flag */
 	}
