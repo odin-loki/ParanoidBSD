@@ -327,6 +327,21 @@ lesson is that a finding in a caller can be a fact about a **callee it
 could not see**, and that one such contract, copied 34 times, looks like
 a class of defects.
 
+**The general shape is an out-parameter written across a translation-unit
+boundary**, and once you know to look for it, it is everywhere:
+
+| finding | the callee it could not see |
+|---|---|
+| ~18 GEOM classes, "left operand of `!=` is a garbage value" | `g_read_data()` fills `*error` exactly when it returns NULL |
+| `sys/kern/sys_pipe.c:640,646` "null passed to memory copy" | `vm_map_find_locked()` fills `*addr` when it returns `KERN_SUCCESS` |
+| `sys/kern/kern_jail.c:663` "null passed to memory copy" | `vfs_getopt()` fills `*buf` and `*len` when it returns 0, and the caller only proceeds when the length is positive |
+
+Three unrelated subsystems, one shape. The tell is that the finding is
+always *at the use* and never at the call, and that the guard the caller
+does have — `if (buf == NULL)`, `if (error != KERN_SUCCESS)`,
+`if (ip4s > 0)` — tests something the analyser cannot connect to the
+variable it is complaining about.
+
 ## What a result means
 
 `cbmc_driver.py` never merges these:
