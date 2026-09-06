@@ -576,6 +576,62 @@ reverting each fix in turn and watching the gate name that file. `FIXES`
 now takes a list per file, because `sys/vm/vm_mmap.c` needed a second
 entry alongside its `MAP_32BIT` one.
 
+## Fixed — two GEOM tasters, which run on whatever is plugged in
+
+`g_taste` is called for every provider that appears, so the parsers below
+read attacker-supplied bytes with no authentication of any kind. That
+raises the bar for "not reachable" here: an invariant that holds across
+five functions today is not a bound on a removable medium.
+
+### `sys/geom/part/g_part_ldm.c` — a validator that checks one field of two
+
+`ldm_vmdbhdr_check()` reads both `dh.size` and `dh.last_seq` off the disk
+and rejects only the first for being zero:
+
+```c
+if (error != 0 || db->dh.size == 0 ||
+    pp->sectorsize % db->dh.size != 0 || ...
+    db->dh.size * db->dh.last_seq > db->ph.conf_size * pp->sectorsize) {
+```
+
+`ldm_vmdb_parse()` then computes, on a `size_t`:
+
+```c
+size = howmany(db->dh.last_seq * db->dh.size, pp->sectorsize);
+size -= 1;      /* one sector takes vmdb header */
+```
+
+`last_seq == 0` makes `howmany()` return 0 and the subtraction `SIZE_MAX`,
+so the read loop's bound is nonsense — it walks off the end of the
+provider until `g_read_data()` fails. It also passes the
+`size * last_seq > conf_size * sectorsize` test trivially, by multiplying
+to zero, which is why the one bound that looks like it covers both fields
+does not. `last_seq == 0` is rejected beside `dh.size == 0` now.
+
+`buf` in the same function is also initialised: `fail:` frees it
+unconditionally and the loop that assigns it can have zero iterations.
+That one is not reachable — with `last_seq` non-zero the xVBLK loop
+between them cannot run either — and is a free of a stack value if it
+ever becomes so.
+
+### `sys/geom/linux_lvm/g_linux_lvm.c` — one of two locals zeroed
+
+`g_llvm_taste()` declares `struct g_llvm_label ll;` and
+`struct g_llvm_metadata md;` and zeroes only `md`.
+`llvm_label_decode()` has four early `return (EINVAL)`s, two of them
+above the assignment to `ll_md_offset` that `g_llvm_read_md()` then uses
+as a disk offset. Every path returning 0 does set it, so this is not
+reachable today; it is one line beside a line that already does it, in a
+routine that runs on every medium that appears.
+
+### Not a defect, in the same file
+
+`g_llvm_taste():567` dereferences `md.md_vg` with no check.
+`llvm_textconf_decode()` sets `md->md_vg` on both of its `return (0)`
+paths and returns `EINVAL` or `-1` otherwise, and the caller checks
+`error != 0` first. The analyser cannot correlate a callee's return value
+with which of its assignments ran.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

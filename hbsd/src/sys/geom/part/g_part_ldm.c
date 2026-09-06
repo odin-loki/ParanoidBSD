@@ -679,7 +679,22 @@ ldm_vmdbhdr_check(struct ldm_db *db, struct g_consumer *cp)
 	db->dh.size = be32dec(buf + LDM_DB_SIZE_OFF);
 	error = parse_uuid(buf + LDM_DB_DGGUID_OFF, &dg_guid);
 	/* Compare disk group name and guid from VMDB and private headers */
-	if (error != 0 || db->dh.size == 0 ||
+	/*
+	 * PBSD: last_seq is checked for zero beside size, which was
+	 * already checked. Both come off the disk, and ldm_vmdb_parse()
+	 * computes
+	 *
+	 *   size = howmany(db->dh.last_seq * db->dh.size, pp->sectorsize);
+	 *   size -= 1;      // one sector takes vmdb header
+	 *
+	 * on a size_t. last_seq == 0 makes howmany() 0 and the subtraction
+	 * SIZE_MAX, so the read loop's bound is nonsense - it walks off the
+	 * end of the provider until g_read_data() fails. last_seq == 0 also
+	 * passes the size * last_seq <= conf_size * sectorsize test below
+	 * trivially, which is why nothing else caught it. LDM metadata is
+	 * whatever is on the removable medium.
+	 */
+	if (error != 0 || db->dh.size == 0 || db->dh.last_seq == 0 ||
 	    pp->sectorsize % db->dh.size != 0 ||
 	    strncmp(buf + LDM_DB_DGNAME_OFF, db->ph.dg_name, 31) != 0 ||
 	    memcmp(&dg_guid, &db->ph.dg_guid, sizeof(dg_guid)) != 0 ||
@@ -1009,7 +1024,14 @@ ldm_vmdb_parse(struct ldm_db *db, struct g_consumer *cp)
 	struct ldm_volume *volume;
 	struct ldm_component *comp;
 	struct ldm_vblkhdr vh;
-	u_char *buf, *p;
+	/*
+	 * PBSD: buf initialised, because `fail:` below does g_free(buf) and
+	 * the read loop that assigns it can have zero iterations. With
+	 * last_seq now non-zero (ldm_vmdbhdr_check) the xVBLK loop between
+	 * them cannot run either, so this is not reachable as the tree
+	 * stands - but the free is unconditional and the assignment is not.
+	 */
+	u_char *buf = NULL, *p;
 	size_t size, n, sectors;
 	uint64_t offset;
 	int error;

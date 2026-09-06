@@ -533,6 +533,15 @@ g_llvm_taste(struct g_class *mp, struct g_provider *pp, int flags __unused)
 	struct g_llvm_vg *vg;
 	int error;
 
+	/*
+	 * PBSD: ll was the one of the two not zeroed. g_llvm_read_label()
+	 * only returns 0 after a decode that sets every field, so this is
+	 * not reachable today - but this is g_taste, it runs on every
+	 * medium that appears, and llvm_label_decode() has four early
+	 * `return (EINVAL)`s of which two are above the assignment to
+	 * ll_md_offset that g_llvm_read_md() then reads.
+	 */
+	bzero(&ll, sizeof(ll));
 	bzero(&md, sizeof(md));
 
 	g_topology_assert();

@@ -118,6 +118,30 @@ FIXES = {
         None,
         "same uninitialised parse target, in genl(1)",
     ),
+    # Two GEOM tasters, which run on whatever medium is plugged in.
+    "hbsd/src/sys/geom/part/g_part_ldm.c": [
+        (
+            "db->dh.size == 0 || db->dh.last_seq == 0 ||",
+            None,
+            "ldm_vmdbhdr_check() rejected an on-disk dh.size of 0 and not "
+            "last_seq, and ldm_vmdb_parse() does `size -= 1` on "
+            "howmany(last_seq * size, sectorsize) - so last_seq == 0 made "
+            "the read loop's size_t bound SIZE_MAX",
+        ),
+        (
+            "u_char *buf = NULL, *p;",
+            None,
+            "`fail:` frees buf unconditionally and the loop that assigns "
+            "it can have zero iterations",
+        ),
+    ],
+    "hbsd/src/sys/geom/linux_lvm/g_linux_lvm.c": (
+        "\tbzero(&ll, sizeof(ll));\n\tbzero(&md, sizeof(md));",
+        None,
+        "g_llvm_taste() zeroed md and not ll, and llvm_label_decode() has "
+        "early returns above the assignment to the ll_md_offset that "
+        "g_llvm_read_md() reads",
+    ),
     # Four uninitialised returns, three of them reachable, all found by
     # clang's core.uninitialized.UndefReturn. See docs/security/UB_FINDINGS.md.
     "hbsd/src/sys/net/if.c": (
