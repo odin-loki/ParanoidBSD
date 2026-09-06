@@ -1063,8 +1063,25 @@ feature-gated PaX functions, every call site checked against its file's
 gate, the enclosing `#ifdef`s, and the `#else` no-ops in `pax.h`. It
 found the remaining three in under a second, `vm_mmap.c:321` among them.
 
-**Run 55** is the next attempt, and the first with nothing known to be
-between it and a boot.
+**Run 55** was the next attempt, and it died in **forty-one seconds**:
+
+```
+FAIL  tools/verify/check_pax_options.py starts with #! but is not executable
+```
+
+Written with a heredoc and never `chmod`'d. The exec-bit precondition
+exists because the tree once shipped with no executable bits at all and
+stopped an hour in at `contrib/bmake/configure`; this is the first time
+it caught something of mine, and it cost forty-one seconds instead of
+forty minutes. Fourth build failure in a row on this control and the
+fourth that says nothing about PaX enforcement — the reason run 55 did
+not answer the question is that a file was added wrong, not anything
+about the experiment.
+
+**Run 56 is where the sentence above finally came true**, and it is
+written up under "the control finally built" below. Short version: it
+builds, it boots, and it hangs in exactly the same place with PaX
+enforcement off.
 
 ### The control that costs one renamed file
 
