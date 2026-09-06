@@ -39,7 +39,7 @@ rintf(float x)
 		STRICT_ASSIGN(float,w,TWO23[sx]+x);
 	        t =  w-TWO23[sx];
 		GET_FLOAT_WORD(i0,t);
-		SET_FLOAT_WORD(t,(i0&0x7fffffff)|(sx<<31));
+		SET_FLOAT_WORD(t,(i0&0x7fffffff)|((u_int32_t)sx<<31));
 	        return t;
 	    }
 	    STRICT_ASSIGN(float,w,TWO23[sx]+x);

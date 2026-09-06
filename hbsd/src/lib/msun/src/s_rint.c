@@ -49,7 +49,7 @@ rint(double x)
 	        STRICT_ASSIGN(double,w,TWO52[sx]+x);
 	        t =  w-TWO52[sx];
 		GET_HIGH_WORD(i0,t);
-		SET_HIGH_WORD(t,(i0&0x7fffffff)|(sx<<31));
+		SET_HIGH_WORD(t,(i0&0x7fffffff)|((u_int32_t)sx<<31));
 	        return t;
 	    } else {
 		i = (0x000fffff)>>j0;

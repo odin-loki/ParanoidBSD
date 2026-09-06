@@ -92,6 +92,27 @@ defect in a three-line function that has none, 114,217 times.
 - **Advisory tier** (defined but suspicious, gates nothing): conversion,
   unsigned overflow, NaN, float overflow.
 
+### `division by zero` needs triage, in both directions
+
+`--div-by-zero-check` does not distinguish integer from floating-point
+division, and only the integer one is undefined:
+
+```
+$ cbmc fdiv.c --function fdiv --div-by-zero-check     /* double a / b */
+[fdiv.division-by-zero.1] division by zero in a / b: FAILURE
+```
+
+IEEE-754 defines `x / 0.0` as ±∞ with a flag raised, and `lib/msun`
+**relies on that** — it is how `log(0)`, `logb`, `rsqrt` and the `catrig`
+family produce their infinities. Thirty-odd of the first run's "failures"
+in `lib/msun` were exactly this and not one was a defect.
+
+So a `division by zero` finding is read by hand: integer, and it is real;
+floating-point, and it is the library working as designed. The tool does
+not guess, and it does not silently drop the class either — an integer
+division by zero in `lib/libc/stdlib/getopt_long.c:gcd` is in the same
+list and is worth looking at.
+
 ## Transfer to PBSD
 
 For a port the IR oracle certifies `ir.equal` **and** `abi_equal`, the C
@@ -100,3 +121,16 @@ therefore holds of the C++ without re-verification. CBMC's C++ front end
 cannot parse the ports anyway (`parse error before 'noexcept'`), and it
 does not need to: a pure rename is byte-identical, so it is checked as C
 and the certificate carries the result across.
+
+
+## What it has found
+
+| | |
+|---|---|
+| **`lib/libc/stdbit`** — six C23 functions | `x << offset` on a promoted `unsigned char`/`unsigned short`. UB for any `x` with the top bit set. `stdc_first_leading_zero.c`, same author, has the `(unsigned int)` cast the other three omit. |
+| **`lib/msun/src/s_rint.c`, `s_rintf.c`** | `sx << 31` where `int32_t sx = (i0>>31)&1`. `1 << 31` on a signed int is UB, and `rint()` reaches it on **every negative argument**. |
+
+Both were confirmed with UBSan before anything was edited, and both were
+re-checked after: exhaustively against an independent reference for
+`stdbit` (197,376 cases, zero mismatches), and `PROVED` by CBMC plus an
+identical bit pattern for `rint`.
