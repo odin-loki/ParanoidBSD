@@ -151,7 +151,30 @@ scmi_shmem_get(device_t dev, phandle_t node, int index)
 {
 	phandle_t *shmems;
 	device_t shmem_dev;
-	size_t len;
+	/*
+	 * PBSD: ssize_t, not size_t.
+	 *
+	 * OF_getencprop_alloc_multi() returns ssize_t and -1 on failure
+	 * (openfirm.c), and OF_getprop_alloc_multi() under it does
+	 * `*buf = NULL;` as its first statement and leaves it NULL on
+	 * every failing path. Stored in a size_t, -1 is SIZE_MAX, so
+	 *
+	 *	if (len <= 0)
+	 *
+	 * could only ever catch zero and the failure check was dead. A
+	 * device tree with no "shmem" property therefore fell through to
+	 * `shmems[index]` with shmems NULL - a panic during attach, on
+	 * any arm platform whose firmware node is missing or malformed.
+	 *
+	 * This is the only caller in the tree that used size_t;
+	 * cpufreq_dt.c:352 and openfirm.c:500 both use ssize_t.
+	 *
+	 * `index < 0` is now explicit. It was previously caught by
+	 * accident - a negative int converted to size_t is huge, so
+	 * `index >= len` was true - and that accident goes away with the
+	 * type. Both callers pass a constant today.
+	 */
+	ssize_t len;
 
 	len = OF_getencprop_alloc_multi(node, "shmem", sizeof(*shmems),
 	    (void **)&shmems);
@@ -160,7 +183,7 @@ scmi_shmem_get(device_t dev, phandle_t node, int index)
 		return (NULL);
 	}
 
-	if (index >= len) {
+	if (index < 0 || index >= len) {
 		OF_prop_free(shmems);
 		return (NULL);
 	}

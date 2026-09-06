@@ -401,6 +401,13 @@ FIXES = {
             "bbr_log_startup_event() reads both",
         ),
     ],
+    "hbsd/src/sys/dev/firmware/arm/scmi_shmem.c": (
+        "\tssize_t len;",
+        "\tsize_t len;",
+        "OF_getencprop_alloc_multi() returns ssize_t and -1 on failure; "
+        "in a size_t that is SIZE_MAX, so `len <= 0` was a dead check "
+        "and a missing shmem property dereferenced NULL at attach",
+    ),
     "hbsd/src/sys/geom/raid3/g_raid3.c": (
         "if (md->md_all < 2)",
         "if (md->md_all < 1)",

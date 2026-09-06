@@ -1712,6 +1712,55 @@ function with a caller-constrained parameter.
 Named here so the next pass starts from a list rather than from the
 report again.
 
+## Fixed — an error check that could not fire, on an arm attach path
+
+The first thing read off the new sweep's list, and it was a real one.
+`sys/dev/firmware/arm/scmi_shmem.c`:
+
+```c
+	size_t len;
+
+	len = OF_getencprop_alloc_multi(node, "shmem", sizeof(*shmems),
+	    (void **)&shmems);
+	if (len <= 0) {
+		device_printf(dev, "%s: Can't get shmem node.\n", __func__);
+		return (NULL);
+	}
+	if (index >= len) { ... }
+	shmem_dev = OF_device_from_xref(shmems[index]);
+```
+
+`OF_getencprop_alloc_multi()` returns **`ssize_t`**, and `-1` on
+failure. Stored in a `size_t`, `-1` is `SIZE_MAX`, so `len <= 0` can
+only ever catch zero: **the failure check is dead**. And
+`OF_getprop_alloc_multi()` beneath it opens with `*buf = NULL;` and
+leaves it NULL on every failing path.
+
+So a device tree with no `shmem` property, or a malformed one, falls
+through both guards — `index >= SIZE_MAX` is false too — and
+dereferences a NULL `shmems`. Both callers (`scmi_smc.c:84`,
+`scmi_mailbox.c:99`) are in device attach, so that is a panic at boot on
+any arm platform whose SCMI firmware node is missing or wrong.
+
+It is the only caller in the tree that got the type wrong:
+`cpufreq_dt.c:352` declares `ssize_t n;` and `openfirm.c:500` declares
+`ssize_t ret;`. One of four, again.
+
+`index < 0` is now explicit as well. It had been caught *by accident* —
+a negative `int` converted to `size_t` is huge, so `index >= len` was
+true — and that accident disappears with the correct type. Both callers
+pass a constant today, so this is closing a hole the fix would otherwise
+have opened rather than one that was there.
+
+### What the instruments say afterwards
+
+clang's analyser reports **zero** findings across all seven translation
+units in `sys/dev/firmware`. CBMC still reports `index * 4` and
+`shmems + index` at that line, and is right to: `index` is a parameter
+of an exported function and `len` comes from a call it cannot see
+inside, so it has neither bound. The `g_read_data` boundary again — the
+check that matters here is one no modular checker can make.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
