@@ -37,7 +37,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from includes import include_flags, lang_flags, SRC  # noqa: E402
+from includes import include_flags, is_kernel_tu, lang_flags, SRC  # noqa: E402
 
 # Failure of one of these is a defect, not a matter of taste.
 CHECKERS = [
@@ -185,7 +185,14 @@ def main() -> int:
     for s in (args.scope or DEFAULT_SCOPES):
         for pat in ("*.c", "*.cpp"):
             for f in sorted((SRC / s).rglob(pat)):
-                jobs.append({"src": str(f), "rel": f.relative_to(SRC).as_posix(),
+                rel = f.relative_to(SRC).as_posix()
+                # Userland C under sys/ - see includes.NOT_KERNEL. It is
+                # skipped rather than recorded as ERROR, because "wants
+                # <stdio.h> under -D_KERNEL" is not a finding about the
+                # kernel and 700+ of them drowned the ones that were.
+                if not is_kernel_tu(rel):
+                    continue
+                jobs.append({"src": str(f), "rel": rel,
                              "timeout": args.timeout})
     if args.limit:
         jobs = jobs[:args.limit]

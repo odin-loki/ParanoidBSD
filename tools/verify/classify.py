@@ -55,7 +55,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from includes import include_flags, lang_flags  # noqa: E402
+from includes import include_flags, is_kernel_tu, lang_flags  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
@@ -265,6 +265,8 @@ def main() -> int:
         if args.scope and not any(path.startswith(s) for s in args.scope):
             continue
         if not rec.get("functions"):
+            continue
+        if not is_kernel_tu(path):      # includes.NOT_KERNEL
             continue
         cand = SRC / path
         if not cand.is_file():

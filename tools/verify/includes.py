@@ -764,12 +764,55 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}"]
     if rel.startswith("lib/libmd"):
         flags.append(f"-I{SRC}/lib/libmd")
+    if "/tests/" in rel:
+        # A test program is not the library, but it is C in this tree and
+        # it exercises the library's edge cases, which is where the
+        # defects are. All 179 of them wanted <atf-c.h>, and it is in the
+        # tree at contrib/atf - share/mk/atf.test.mk is what adds it to a
+        # real build.
+        flags.append(f"-I{SRC}/contrib/atf")
 
     flags += [f"-I{SRC}/lib/libsys", f"-I{SRC}/include", f"-I{SRC}/sys"]
     rd = resource_dir(cc)
     if rd:
         flags.append(f"-I{rd}")
     return flags
+
+
+# Not everything under sys/ is a kernel translation unit, and compiling
+# the ones that are not produces an error that says nothing: they are
+# userland C, they want <stdio.h> and <unistd.h>, and -D_KERNEL means
+# they will never find them. They are not failures to fix - they are
+# files no FreeBSD kernel builds, and this is the list with the reason.
+NOT_KERNEL = (
+    # OpenZFS ships its whole upstream repo. sys/modules/zfs/Makefile
+    # takes .PATH only under module/, and sys/conf/files.* names nothing
+    # else; cmd/, tests/, udev/, etc/, lib/ and contrib/ are the Linux
+    # distribution's userland and are built, if at all, under cddl/.
+    "contrib/openzfs/cmd/", "contrib/openzfs/tests/",
+    "contrib/openzfs/udev/", "contrib/openzfs/etc/",
+    "contrib/openzfs/lib/", "contrib/openzfs/contrib/",
+    "contrib/openzfs/scripts/",
+    # ...and its Linux kernel port, which FreeBSD replaces wholesale
+    # with module/os/freebsd/.
+    "contrib/openzfs/module/os/linux/",
+    # ACPICA likewise: common/, compiler/ and tools/ are iasl, acpidump
+    # and acpiexec, built from usr.sbin/acpi. Only the interpreter and
+    # the dispatcher under contrib/dev/acpica/components/ is kernel.
+    "contrib/dev/acpica/common/", "contrib/dev/acpica/compiler/",
+    "contrib/dev/acpica/tools/",
+    "contrib/dev/acpica/os_specific/service_layers/oswinxf.c",
+    "contrib/dev/acpica/os_specific/service_layers/osunix",
+    "contrib/dev/acpica/os_specific/service_layers/oswin",
+    "contrib/dev/acpica/os_specific/service_layers/osl",
+)
+
+
+def is_kernel_tu(rel: str) -> bool:
+    """False for the userland C that happens to live under sys/."""
+    if not rel.startswith("sys/"):
+        return True
+    return not rel[len("sys/"):].startswith(NOT_KERNEL)
 
 
 def lang_flags(src: Path) -> list[str]:
