@@ -131,7 +131,8 @@ def bucket(rec: dict) -> str:
     return "EXPORTED, arithmetic - READ THESE"
 
 
-DOC = Path(__file__).resolve().parents[2] / "docs/security/UB_FINDINGS.md"
+ROOT = Path(__file__).resolve().parents[2]
+DOC = ROOT / "docs/security/UB_FINDINGS.md"
 _TRIAGED = re.compile(r"`([\w./-]+\.(?:c|cpp|h)):(\d+(?:\s*,\s*\d+)*)`")
 
 
@@ -200,6 +201,35 @@ def is_test_file(path: str) -> bool:
             or path.endswith(("_test.c", "_test.cpp")))
 
 
+GENERATOR = re.compile(r"\b(?:RB|ARB|SPLAY|RQ)_(?:GENERATE|PROTOTYPE)\w*\s*\(")
+_srccache: dict = {}
+
+
+def source_line(where: str) -> str:
+    """The text of the line a finding names, or "" if unreadable."""
+    path, _, ln = where.rpartition(":")
+    f = ROOT / "hbsd" / "src" / path
+    if f not in _srccache:
+        try:
+            _srccache[f] = f.read_text(errors="replace").splitlines()
+        except OSError:
+            _srccache[f] = []
+    try:
+        return _srccache[f][int(ln) - 1]
+    except (ValueError, IndexError):
+        return ""
+
+
+def generated_sites(sites) -> dict:
+    """where -> macro name, for findings sitting on a *_GENERATE* line."""
+    out = {}
+    for (w, _c) in sites:
+        m = GENERATOR.search(source_line(w))
+        if m:
+            out[w] = m.group(0).rstrip("( ")
+    return out
+
+
 def macro_report(sites, floor: int = 8) -> None:
     """Lines the analyser reports many times, which are macro expansions.
 
@@ -217,9 +247,22 @@ def macro_report(sites, floor: int = 8) -> None:
     offenders is what stops the count being read as a defect count. They
     are not suppressed: a real bug in a generated tree is still a real
     bug, and it is still in the .jsonl.
+
+    THE REPETITION HEURISTIC ALONE MISSES THE DISTRIBUTED CASE
+
+    ARB_GENERATE_STATIC is 94 findings at TWO lines, so counting
+    repetitions finds it. RB_GENERATE is 30 findings at 30 lines - one
+    per file that instantiates a red-black tree - and every one of them
+    looks like a lone finding. Same macro, same reason, invisible to a
+    threshold.
+
+    So the source line is read as well. 124 of 1626 findings in one
+    sweep, 7.6%, sit on a *_GENERATE* invocation; a third of those were
+    not visible before this.
     """
     heavy = [(w, c, n) for (w, c), n in sites.items() if n >= floor]
-    if not heavy:
+    gen = generated_sites(sites)
+    if not heavy and not gen:
         return
     heavy.sort(key=lambda x: -x[2])
     total = sum(n for _, _, n in heavy)
@@ -232,6 +275,22 @@ def macro_report(sites, floor: int = 8) -> None:
         path, _, ln = w.rpartition(":")
         mark = " [triaged]" if is_triaged(path, ln) else ""
         print(f"    {n:4d}  {w}  [{c}]{mark}")
+    if gen:
+        # sites is keyed (where, checker); one line can carry several
+        # checkers, so sum the counts of every entry at a generated line.
+        by_macro = collections.Counter()
+        nfind = 0
+        for (w, _c), n in sites.items():
+            macro = gen.get(w)
+            if macro:
+                by_macro[macro] += n
+                nfind += n
+        print(f"\n  {nfind} finding(s) at {len(gen)} site(s) sit ON a")
+        print("  macro-generator line, found by reading the source rather")
+        print("  than by counting repeats - RB_GENERATE is one finding per")
+        print("  file that instantiates a tree, so no threshold sees it.")
+        for macro, n in by_macro.most_common(6):
+            print(f"    {n:4d}  {macro}")
 
 
 def agree(recs: list, an: list) -> None:
