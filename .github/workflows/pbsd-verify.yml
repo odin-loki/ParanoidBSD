@@ -64,6 +64,25 @@ jobs:
   # in seven seconds, with every job in the workflow green. cbmc_driver.py
   # now exits non-zero when nothing at all could be checked, and the two
   # halves run in the same job so there is nothing to carry.
+  #
+  # SHARDED, because one job holding all of sys was killed at
+  #
+  #     [200/1258] 0.3/s  BOUNDED=4 ERROR=3 FAILED=74 PROVED=93 TIMEOUT=26
+  #     ##[error]The runner has received a shutdown signal.
+  #     ##[error]Process completed with exit code 143.
+  #
+  # 200 of 1258 functions in ten minutes, then SIGTERM at about 280 with
+  # nineteen minutes on the clock - the runner was reclaimed, which on a
+  # hosted runner is usually memory. Three concurrent CBMC instances on
+  # kernel goto binaries is a lot to hold at once.
+  #
+  # The `if: always()` upload did not save it either: a runner that dies
+  # does not run post steps, so the partial .jsonl went with it and
+  # --resume had nothing to resume from. Sharding fixes both halves -
+  # less held at once, and a shard that dies costs one shard.
+  #
+  # Shard names and scopes match the analyze matrix below deliberately,
+  # so check_shards.py can gate BOTH from one list.
   sweep:
     needs: plan
     runs-on: ubuntu-latest
@@ -76,10 +95,22 @@ jobs:
             scopes: --scope lib/libc --scope lib/msun
             classes: classes.json
             jobs: 4
-          - name: kernel
-            scopes: --scope sys
-            classes: classes_sys.json
-            jobs: 3
+          - name: kern
+            scopes: '--scope sys/kern --scope sys/vm --scope sys/net --scope sys/netinet --scope sys/netinet6'
+            classes: classes_sys_kern.json
+            jobs: 2
+          - name: fs
+            scopes: '--scope sys/fs --scope sys/ufs --scope sys/geom --scope sys/cam --scope sys/security --scope sys/cddl'
+            classes: classes_sys_fs.json
+            jobs: 2
+          - name: dev
+            scopes: '--scope sys/dev'
+            classes: classes_sys_dev.json
+            jobs: 2
+          - name: rest
+            scopes: '--scope sys/arm64 --scope sys/amd64 --scope sys/arm --scope sys/i386 --scope sys/riscv --scope sys/powerpc --scope sys/x86 --scope sys/compat --scope sys/contrib --scope sys/crypto --scope sys/opencrypto --scope sys/ddb --scope sys/isa --scope sys/nfs --scope sys/netgraph --scope sys/netlink --scope sys/rpc --scope sys/kgssapi --scope sys/libkern --scope sys/modules --scope sys/nlm --scope sys/teken --scope sys/tests --scope sys/xen --scope sys/dts --scope sys/gnu --scope sys/sys --scope sys/hardenedbsd --scope sys/netipsec --scope sys/netpfil --scope sys/net80211 --scope sys/netsmb --scope sys/nfsclient --scope sys/nfsserver --scope sys/ofed --scope sys/bsm --scope sys/conf --scope sys/gdb --scope sys/mips --scope sys/tools --scope sys/xdr'
+            classes: classes_sys_rest.json
+            jobs: 2
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -114,12 +145,17 @@ jobs:
           python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
             --classes out/classes.json --allow POINTER --null-depth 3 \
             --jobs 2 --timeout 30 --unwind 6 --resume --out out/ptr.jsonl
-      - name: Model check the kernel
-        if: matrix.name == 'kernel'
+      # --timeout, which the whole-tree version did not have: the run
+      # that died had single functions taking 100 and 143 seconds
+      # (ata-cypress, ata-sata) and no bound at all on the worst one.
+      # A TIMEOUT is a reported result; an unbounded solver is a job
+      # that never finishes.
+      - name: Model check ${{ matrix.name }}
+        if: matrix.name != 'userland'
         run: |
-          python3 tools/verify/cbmc_driver.py --scope sys \
-            --classes out/classes_sys.json --jobs 3 --resume \
-            --out out/ksys.jsonl
+          python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
+            --classes out/${{ matrix.classes }} --jobs ${{ matrix.jobs }} \
+            --timeout 60 --resume --out out/ksys-${{ matrix.name }}.jsonl
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -192,7 +228,7 @@ jobs:
           # translation units it saw rather than pretending otherwise.
           cat dl/analyze-*.jsonl > dl/analyze.jsonl 2>/dev/null || : > dl/analyze.jsonl
           set --
-          for f in dl/ub.jsonl dl/ptr.jsonl dl/ksys.jsonl; do
+          for f in dl/ub.jsonl dl/ptr.jsonl dl/ksys-*.jsonl; do
             [ -f "$f" ] && set -- "$@" "$f"
           done
           if [ $# -eq 0 ]; then
