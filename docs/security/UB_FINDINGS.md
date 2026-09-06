@@ -940,6 +940,109 @@ translation unit. It is the same boundary described above for
 `g_read_data()` — a finding in one file that is a fact about a callee in
 another.
 
+## Fixed — three in GEOM, two of them reachable without privilege
+
+`sys/geom` is the part of the kernel that reads bytes off whatever is
+plugged in and believes them. Its tasters run on every provider that
+appears, before any policy, and `kern.geom.confxml` is `CTLFLAG_RD` — any
+user can read it. Both of those are attacker-adjacent by construction, so
+the divisor guards there are load-bearing in a way they are not in a
+driver attach path.
+
+### `sys/geom/raid/md_promise.c` — a disk count of zero, then two divisions by it
+
+`promise_meta_read()` validated `meta->total_disks` at `:390`:
+
+```c
+	if (meta->total_disks > PROMISE_MAX_DISKS) {
+```
+
+One bound of two. `total_disks` is a `uint8_t` read straight off the
+medium (`:929` copies it into `vol->v_disks_count`), and
+`promise_meta_translate_disk()` is the consumer:
+
+```c
+	if (md_disk_pos >= 0 && vol->v_raid_level == G_RAID_VOLUME_RL_RAID1E) {
+		width = vol->v_disks_count / 2;
+		disk_pos = (md_disk_pos / width) +
+		    (md_disk_pos % width) * width;
+```
+
+`width` is a divisor twice on one line and nothing above establishes it is
+non-zero. RAID1E is selected at `:912-916` by `type == PROMISE_T_RAID1 &&
+array_width != 1`, which does not mention `total_disks` at all, so a
+volume claiming RAID1E with one disk halves to zero.
+
+Both halves are fixed. `promise_meta_read()` now rejects `total_disks ==
+0` — a volume with no disks in it is not a volume, and every other
+consumer indexes by it — and the RAID1E branch is conditional on the
+divisor it is about to use:
+
+```c
+	if (md_disk_pos >= 0 && vol->v_raid_level == G_RAID_VOLUME_RL_RAID1E &&
+	    (width = vol->v_disks_count / 2) > 0) {
+```
+
+The `else` branch, which every other RAID level already takes, leaves the
+position untranslated. That is the right answer for metadata that
+describes a geometry it cannot have.
+
+### `sys/geom/virstor/g_virstor.c` — three guards, all on the numerator
+
+`g_virstor_dumpconf()` had this, twice in two different shapes:
+
+```c
+	sbuf_printf(sb, "%s<StorageFree>%u%%</StorageFree>\n", indent,
+	    comp->chunk_next > 0 ? 100 -
+	    ((comp->chunk_next + comp->chunk_reserved) * 100) /
+	    comp->chunk_count : 100);
+	...
+	sbuf_printf(sb, "%s<State>%u%% physical free</State>\n",
+	    indent, 100-(used * 100) / count);
+	...
+	sbuf_printf(sb, "%s<PhysicalFree>%u%%</PhysicalFree>\n",
+	    indent, used > 0 ? 100 - (used * 100) / count : 100);
+```
+
+Three divisions, two guards, and neither guard is on a divisor. The third
+line is the tell: the author reached for a guard, wrote `used > 0` — the
+numerator — and the divisor `count` went unchecked one line above and one
+line below. It is the same confusion three times, which is why the middle
+one has no guard at all.
+
+`count` is the sum of `chunk_count` over the components that are
+**attached**, so it is zero for a virstor whose components have all gone
+away — a state this same function prints two lines earlier as `Online=0`.
+`g_virstor_dumpconf()` runs for `kern.geom.confxml`. That is an
+unprivileged kernel division by zero, and the sweep found it: `analyze.jsonl`
+from the run before this fix carries
+`sys/geom/virstor/g_virstor.c:1502 core.DivideZero`. All three guards are
+on `count` / `chunk_count` now, and it is gone from the re-run.
+
+### `sys/geom/virstor/g_virstor.c:700` — `||` where `&` was meant
+
+Found by reading, not by a tool, while confirming the finding above:
+
+```c
+		for (n = 0; n < sc->chunk_count; n++) {
+			if (sc->map[n].flags || VIRSTOR_MAP_ALLOCATED != 0)
+				count++;
+		}
+```
+
+`VIRSTOR_MAP_ALLOCATED` is `1` (`g_virstor.h:34`), so
+`VIRSTOR_MAP_ALLOCATED != 0` is the constant true, the `||` short-circuits
+to it whatever `flags` holds, and `count` ends up as `chunk_count`. The
+message two lines down — *"Device %s has %d allocated chunks"* — has
+therefore been printing the total chunk count on every `INVARIANTS` kernel
+since the code was written. Every other test of this bit in the same file
+(`:1336`, `:1628`, `:1659`, `:1858`) is `&`.
+
+It is diagnostic output inside `#ifdef INVARIANTS`, so nothing downstream
+is wrong — but it is also why no instrument saw it: the analyser compiles
+the default configuration, and this block is not in it. A precedence-shaped
+typo in code nobody compiles is the least visible defect class there is.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -991,3 +1094,5 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/kern/kern_timeout.c:1451` `st / count` | `count` is the number of scheduled callouts in the whole callwheel, and `kern.callout_stat` needs a sysctl **write** to run at all. Zero callouts system-wide on a running kernel. |
 | `sys/kern/kern_shutdown.c:1459` `length % di->blocksize` | `blocksize` is set by the dump driver at `dumper_insert()` and never validated, but every in-tree dumper passes a real sector size. Same class as the driver attach paths above. |
 | `sys/geom/shsec/g_shsec.c:107`, `g_stripe.c:111` | already listed above — `lcm()` is `static` and every caller passes a sector size. |
+| `sys/geom/virstor/g_virstor.c:1324` "left operand of `>=` is a garbage value" | `sc->map` is `malloc(..., M_WAITOK)` at `:1218` and filled by `bcopy(mapbuf, &sc->map[n], bs)` at `:1267`, where `mapbuf` came from `g_read_data()` in another translation unit. The `g_read_data()` boundary again, one indirection further out — the analyser cannot see the buffer written, so every field of the map is garbage to it. Reported before and after the divide-by-zero fix in the same function, at the same line, which is how the fix was confirmed not to have introduced it. |
+| `sys/geom/raid/md_intel.c:2569` `mmap1->disk_idx[sdi]` | `mmap1` is NULL exactly when `mvol->migr_state == 0` (`:2557`), and the loop 70 lines up (`:2489`, same array, same bound, nothing in between mutates it) sets `migr_state = 1` if **any** subdisk is `REBUILD` or `RESYNC`. This line runs only under that condition, so it cannot be reached with `mmap1` NULL. Worth noting that every other `mmap1` use in the loop carries an explicit `if (mvol->migr_state)` and this one does not — the guard is genuinely absent, it is simply redundant. |

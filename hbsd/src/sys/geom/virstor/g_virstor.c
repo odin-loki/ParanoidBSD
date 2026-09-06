@@ -697,7 +697,16 @@ g_virstor_destroy_geom(struct gctl_req *req __unused, struct g_class *mp,
 		    "table for %s", sc->geom->name);
 		count = 0;
 		for (n = 0; n < sc->chunk_count; n++) {
-			if (sc->map[n].flags || VIRSTOR_MAP_ALLOCATED != 0)
+			/*
+			 * PBSD: `||` where `&` was meant. VIRSTOR_MAP_ALLOCATED
+			 * is 1, so `VIRSTOR_MAP_ALLOCATED != 0` is the constant
+			 * true and the whole condition is always true - this
+			 * counted every chunk, allocated or not, and reported
+			 * chunk_count as the allocation count on every
+			 * INVARIANTS kernel. Every other test of this bit in
+			 * the file (:1336, :1628, :1659, :1858) is `& `.
+			 */
+			if (sc->map[n].flags & VIRSTOR_MAP_ALLOCATED)
 				count++;
 		}
 		LOG_MSG(LVL_INFO, "Device %s has %d allocated chunks",
@@ -1474,9 +1483,16 @@ g_virstor_dumpconf(struct sbuf *sb, const char *indent, struct g_geom *gp,
 		    indent, comp->chunk_next);
 		sbuf_printf(sb, "%s<ChunksReserved>%u</ChunksReserved>\n",
 		    indent, comp->chunk_reserved);
+		/*
+		 * PBSD: the guard is on chunk_count, the DIVISOR. It was on
+		 * chunk_next, the numerator, which does not prevent the
+		 * division by zero it looks like it prevents - see the
+		 * `count` case below, which has the same confusion and is
+		 * reachable.
+		 */
 		sbuf_printf(sb, "%s<StorageFree>%u%%</StorageFree>\n",
 		    indent,
-		    comp->chunk_next > 0 ? 100 -
+		    comp->chunk_count > 0 ? 100 -
 		    ((comp->chunk_next + comp->chunk_reserved) * 100) /
 		    comp->chunk_count : 100);
 	} else {
@@ -1498,12 +1514,26 @@ g_virstor_dumpconf(struct sbuf *sb, const char *indent, struct g_geom *gp,
 		sbuf_printf(sb, "%s<Status>"
 		    "Components=%u, Online=%u</Status>\n", indent,
 		    sc->n_components, virstor_valid_components(sc));
+		/*
+		 * PBSD: count is the sum of chunk_count over the components
+		 * that are ATTACHED, so it is zero for a virstor whose
+		 * components have all gone away - which is a state this
+		 * function prints, two lines up, as "Online=0".
+		 *
+		 * g_virstor_dumpconf() runs for kern.geom.confxml, which is
+		 * CTLFLAG_RD and readable by anyone, so that is an
+		 * unprivileged kernel division by zero.
+		 *
+		 * The line four below has `used > 0 ?` on the same division,
+		 * which shows the author thinking about it and guarding the
+		 * numerator instead of the divisor. Both are on count now.
+		 */
 		sbuf_printf(sb, "%s<State>%u%% physical free</State>\n",
-		    indent, 100-(used * 100) / count);
+		    indent, count > 0 ? 100 - (used * 100) / count : 100);
 		sbuf_printf(sb, "%s<ChunkSize>%zu</ChunkSize>\n", indent,
 		    sc->chunk_size);
 		sbuf_printf(sb, "%s<PhysicalFree>%u%%</PhysicalFree>\n",
-		    indent, used > 0 ? 100 - (used * 100) / count : 100);
+		    indent, count > 0 ? 100 - (used * 100) / count : 100);
 		sbuf_printf(sb, "%s<ChunkPhysicalCount>%u</ChunkPhysicalCount>\n",
 		    indent, count);
 		sbuf_printf(sb, "%s<ChunkVirtualCount>%zu</ChunkVirtualCount>\n",

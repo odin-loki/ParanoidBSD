@@ -310,6 +310,29 @@ FIXES = {
         "the guard tested the CPU INDEX and used the POINTER; with CPU 0 "
         "absent from all_cpus, check_cpu_regs() dereferences NULL",
     ),
+    "hbsd/src/sys/geom/raid/md_promise.c": (
+        "meta->total_disks == 0 || meta->total_disks > PROMISE_MAX_DISKS",
+        "width = vol->v_disks_count / 2;\n\t\tdisk_pos",
+        "total_disks is a uint8_t off the medium and the check had only an "
+        "upper bound; promise_meta_translate_disk() then divides and mods "
+        "by total_disks/2 for RAID1E",
+    ),
+    "hbsd/src/sys/geom/virstor/g_virstor.c": [
+        (
+            "comp->chunk_count > 0 ? 100 -",
+            "100-(used * 100) / count",
+            "three divisions in g_virstor_dumpconf() guarded on the "
+            "numerator instead of the divisor; kern.geom.confxml is "
+            "world-readable",
+        ),
+        (
+            "if (sc->map[n].flags & VIRSTOR_MAP_ALLOCATED)\n\t\t\t\tcount++;",
+            "sc->map[n].flags || VIRSTOR_MAP_ALLOCATED != 0",
+            "`||` where `&` was meant: VIRSTOR_MAP_ALLOCATED is 1, so the "
+            "condition was constant-true and the INVARIANTS allocation "
+            "count was always chunk_count",
+        ),
+    ],
     "hbsd/src/lib/libc/rpc/rpc_prot.c": (
         "NOT unreachable, and this used to say NOTREACHED",
         "assert(0);",

@@ -298,8 +298,22 @@ promise_meta_translate_disk(struct g_raid_volume *vol, int md_disk_pos)
 {
 	int disk_pos, width;
 
-	if (md_disk_pos >= 0 && vol->v_raid_level == G_RAID_VOLUME_RL_RAID1E) {
-		width = vol->v_disks_count / 2;
+	/*
+	 * PBSD: width can be zero, and it is a divisor twice on the next
+	 * line. v_disks_count is meta->total_disks (:929), a uint8_t off
+	 * the medium; the metadata check above now rejects 0, but RAID1E
+	 * is selected by `type == PROMISE_T_RAID1 && array_width != 1`
+	 * (:912-916) with no constraint tying it to total_disks, so a
+	 * single-disk RAID1E still halves to zero.
+	 *
+	 * g_raid tastes every provider that appears, so this is a division
+	 * by zero in the kernel from bytes on a disk somebody plugged in.
+	 * A volume that claims RAID1E and one disk is not one; treating it
+	 * as an untranslated position is what the else branch below already
+	 * does for every other level.
+	 */
+	if (md_disk_pos >= 0 && vol->v_raid_level == G_RAID_VOLUME_RL_RAID1E &&
+	    (width = vol->v_disks_count / 2) > 0) {
 		disk_pos = (md_disk_pos / width) +
 		    (md_disk_pos % width) * width;
 	} else
@@ -387,7 +401,13 @@ next:
 		return (subdisks);
 	}
 
-	if (meta->total_disks > PROMISE_MAX_DISKS) {
+	/*
+	 * PBSD: the lower bound. This checked only the upper one, and
+	 * total_disks is a uint8_t read straight off the medium - a volume
+	 * with no disks in it is not a volume, and every consumer below
+	 * divides or indexes by it. See promise_meta_translate_disk().
+	 */
+	if (meta->total_disks == 0 || meta->total_disks > PROMISE_MAX_DISKS) {
 		G_RAID_DEBUG(1, "Wrong number of disks on %s (%d)",
 		    pp->name, meta->total_disks);
 		free(meta, M_MD_PROMISE);
