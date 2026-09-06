@@ -122,6 +122,18 @@ def verify_one(task: dict) -> dict:
         "--unwinding-assertions",
         *task.get("extra", []),
     ]
+    # A POINTER function is checked under an explicit, stated precondition:
+    # its pointer arguments are valid, non-null objects. Without it the run
+    # reports the ABSENCE of that precondition as a defect - strcat went
+    # from 15 failures to 3 with --min-null-tree-depth 3, and the 15 were
+    # every dereference of a nondeterministic char *.
+    #
+    # It does NOT encode "NUL-terminated within the object". The three that
+    # survive on strcat are exactly that, and they are the caller's contract
+    # rather than a bug. So a POINTER result is never PROVED outright: it is
+    # recorded with the assumption that produced it.
+    if task.get("null_depth"):
+        cmd += ["--min-null-tree-depth", str(task["null_depth"])]
     t0 = time.time()
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
@@ -155,6 +167,10 @@ def verify_one(task: dict) -> dict:
         status = "FAILED"
     elif unwind_failed:
         status = "BOUNDED"
+    elif task.get("null_depth"):
+        # Not PROVED. Proved GIVEN that the pointer arguments were valid
+        # objects, which is an assumption this run made and did not check.
+        status = "PROVED-ASSUMING"
     else:
         status = "PROVED"
 
@@ -179,6 +195,7 @@ def _rec(task: dict, status: str, **kw) -> dict:
         "tier": task["tier"],
         "class": task.get("class"),
         "linkage": task.get("linkage"),
+        "null_depth": task.get("null_depth", 0),
         "unwind": task["unwind"],
         "status": status,
         **kw,
@@ -186,7 +203,8 @@ def _rec(task: dict, status: str, **kw) -> dict:
 
 
 def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
-               tier: str, classes: Path, allow: set[str]) -> list[dict]:
+               tier: str, classes: Path, allow: set[str],
+               null_depth: int = 0) -> list[dict]:
     """One task per (translation unit, function the ledger says it defines).
 
     Two intersections, and both matter.
@@ -226,6 +244,7 @@ def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
                 "class": fns[fn],
                 "linkage": c.get("linkage", {}).get(fn, "?"),
                 "unwind": unwind, "timeout": timeout, "tier": tier,
+                "null_depth": null_depth,
             })
     print("  skipped: " + "  ".join(f"{k}={v}" for k, v in skipped.items()),
           flush=True)
@@ -244,6 +263,11 @@ def main() -> int:
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4)))
     ap.add_argument("--classes", default="verify_classes.json",
                     help="output of classify.py")
+    ap.add_argument("--null-depth", type=int, default=0,
+                    help="CBMC --min-null-tree-depth. Non-zero states the "
+                         "precondition that pointer arguments are valid, "
+                         "non-null objects; a result under it is a proof "
+                         "UNDER THAT ASSUMPTION and is recorded as such.")
     ap.add_argument("--allow", default="SCALAR,VOID",
                     help="classes to check (SCALAR,VOID are sound unguarded)")
     ap.add_argument("--out", default="verify_results.jsonl")
@@ -254,7 +278,7 @@ def main() -> int:
 
     tasks = load_tasks(Path(args.plan), args.scope, args.unwind,
                        args.timeout, args.tier, Path(args.classes),
-                       set(args.allow.split(",")))
+                       set(args.allow.split(",")), args.null_depth)
 
     out = Path(args.out)
     done: set[tuple[str, str]] = set()
