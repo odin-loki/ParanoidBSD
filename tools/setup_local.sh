@@ -119,15 +119,33 @@ else
 fi
 
 echo
+# A Windows drive under WSL goes through drvfs, and these gates read every
+# one of the ~24,000 files in hbsd/src. On /mnt/c that is minutes per gate
+# with no output, which looks exactly like a hang; on ext4 it is seconds.
+# OneDrive on top of it can be worse again, because it may hydrate files on
+# access.
+case "$ROOT" in
+/mnt/*)
+    echo "!! $ROOT is a Windows drive mounted through WSL."
+    echo "!! File I/O here is 10-50x slower than the WSL filesystem, and"
+    echo "!! every check below reads the whole tree. Clone into ~ instead:"
+    echo "!!     git clone https://github.com/odin-loki/ParanoidBSD ~/ParanoidBSD"
+    echo
+    ;;
+esac
+
 echo "== the repository's own gates"
 for g in "check_exec_bits.py" "check_source_includes.py --gate" \
          "check_libc_srcs.py --gate" "check_port_symbols.py --gate" \
          "check_port_cxx_warnings.py --gate"; do
+    # Announce BEFORE running. Each of these can take a while on a slow
+    # filesystem and silence is indistinguishable from a hang.
+    printf '  ..   tools/%s\r' "$g"
     # shellcheck disable=SC2086
     if (cd "$ROOT" && python3 tools/$g >/dev/null 2>&1); then
-        say "ok" "tools/$g"
+        say "ok" "tools/$g            "
     else
-        say FAIL "tools/$g"
+        say FAIL "tools/$g            "
     fi
 done
 
