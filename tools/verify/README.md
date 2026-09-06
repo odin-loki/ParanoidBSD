@@ -67,6 +67,31 @@ Measured: `sys/amd64/vmm` **12 → 26 of 34**, `sys/kern` **67 → 78 of 212**.
 The gain is largest where drivers are, because that is where `device_if.h`
 is.
 
+### The one architecture this still cannot see
+
+`sys/arm` is 1 usable translation unit out of 322, and the arch fix did not
+change that. 188 of them stop at
+
+    machine/pcpu_aux.h:46: _Static_assert(PAGE_SIZE % sizeof(struct pcpu)
+                           == 0, "fix pcpu size")
+    note: expression evaluates to '256 == 0'
+
+`sizeof(struct pcpu)` comes out 640 here and `PAGE_SIZE` is 4096, so it is
+384 bytes off a divisor. `sys/arm/include/pcpu.h` ends `PCPU_MD_FIELDS`
+with a hand-tuned `char __pad[135]` sized for what the **real armv7 kernel
+build** produces, and that number is a property of the configuration —
+which options are set, which headers are in the translation unit — not of
+the code being verified.
+
+The empty-`opt_*.h` shim is a real configuration and a deliberately
+conservative one (`docs` and `opt_shim()` say why): code under an unset
+option is not checked rather than checked wrongly. On five architectures
+that is fine. On armv7 it lands on a static assertion, and satisfying it
+means reproducing armv7's actual option set, which is a bigger change than
+the shim.
+
+So: recorded, not hidden. Do not read "1 of 322" as "arm is clean".
+
 ## Why `classify.py` exists
 
 CBMC started at an arbitrary function makes that function's parameters
