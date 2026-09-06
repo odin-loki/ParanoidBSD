@@ -345,6 +345,12 @@ FIXES = {
             "failure is seven lines above len's first assignment, and "
             "two sites past the label read it",
         ),
+        (
+            "uint32_t if_hw_tsomaxsegsize = 0;",
+            None,
+            "three functions declared the TSO seg-count initialised and "
+            "the seg-size not, and passed both to one call",
+        ),
     ],
     "hbsd/src/sys/netinet/tcp_stacks/bbr.c": (
         "if (rtt != 0)\n\t\t\t\tgoto measure;",

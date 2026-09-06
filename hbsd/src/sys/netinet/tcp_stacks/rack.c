@@ -18317,7 +18317,24 @@ rack_fast_rsm_output(struct tcpcb *tp, struct tcp_rack *rack, struct rack_sendma
 	int32_t slot, segsiz, max_val, tso = 0, error = 0, ulen = 0;
 	uint16_t flags;
 	uint32_t if_hw_tsomaxsegcount = 0, startseq;
-	uint32_t if_hw_tsomaxsegsize;
+	/*
+	 * PBSD: `= 0`, to match the partner declared beside it. Both are
+	 * assigned together, once, inside `if ((tso) && (len + optlen >
+	 * segsiz))`, and both are passed to one call - so without TSO the
+	 * count is a defined 0 and the size is indeterminate.
+	 *
+	 * Not a bug today: rack_fo_base_copym() reads segsize only inside
+	 * `if (seglimit)`, and seglimit is the count. The initialised half
+	 * of the pair gates the uninitialised half, which is also why only
+	 * one of them ever got an initialiser.
+	 *
+	 * It is still a read of an indeterminate automatic object whose
+	 * address is never taken, which C11 6.3.2.1p2 leaves undefined
+	 * rather than merely unspecified - and this tree is about that
+	 * distinction. Zero changes nothing, because the only reader
+	 * already ignores it in exactly the case where it is zero here.
+	 */
+	uint32_t if_hw_tsomaxsegsize = 0;
 	int32_t ip_sendflag = IP_NO_SND_TAG_RL;
 
 #ifdef INET6
@@ -18907,7 +18924,24 @@ rack_fast_output(struct tcpcb *tp, struct tcp_rack *rack, uint64_t ts_val,
 	uint16_t flags;
 	uint32_t s_soff;
 	uint32_t if_hw_tsomaxsegcount = 0, startseq;
-	uint32_t if_hw_tsomaxsegsize;
+	/*
+	 * PBSD: `= 0`, to match the partner declared beside it. Both are
+	 * assigned together, once, inside `if ((tso) && (len + optlen >
+	 * segsiz))`, and both are passed to one call - so without TSO the
+	 * count is a defined 0 and the size is indeterminate.
+	 *
+	 * Not a bug today: rack_fo_base_copym() reads segsize only inside
+	 * `if (seglimit)`, and seglimit is the count. The initialised half
+	 * of the pair gates the uninitialised half, which is also why only
+	 * one of them ever got an initialiser.
+	 *
+	 * It is still a read of an indeterminate automatic object whose
+	 * address is never taken, which C11 6.3.2.1p2 leaves undefined
+	 * rather than merely unspecified - and this tree is about that
+	 * distinction. Zero changes nothing, because the only reader
+	 * already ignores it in exactly the case where it is zero here.
+	 */
+	uint32_t if_hw_tsomaxsegsize = 0;
 	uint32_t add_flag = RACK_SENT_FP;
 #ifdef INET6
 	struct ip6_hdr *ip6 = NULL;
@@ -19533,7 +19567,8 @@ rack_output(struct tcpcb *tp)
 	struct mbuf *m, *s_mb = NULL;
 	struct mbuf *mb;
 	uint32_t if_hw_tsomaxsegcount = 0;
-	uint32_t if_hw_tsomaxsegsize;
+	/* PBSD: see the note in rack_fast_output(); same pair, same reason. */
+	uint32_t if_hw_tsomaxsegsize = 0;
 	int32_t segsiz, minseg;
 	long tot_len_this_send = 0;
 #ifdef INET

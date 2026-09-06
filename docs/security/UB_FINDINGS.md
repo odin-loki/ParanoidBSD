@@ -1492,13 +1492,16 @@ and a `switch` on `error`.
 
 ## Still unread, and named so nobody assumes otherwise
 
-`sys/netinet/tcp_stacks/rack.c` has seven findings this pass did not
-reach: `:8296`, `:18482`, `:19037`, `:24194`, `:24203`
-(`core.CallAndMessage`, an uninitialised argument at the 2nd, 6th, 4th,
-3rd and 4th position) and `:19072`, `:19158` (`core.NullDereference`,
-"Dereference of null pointer"). They are listed here rather than left
-out, because a triage document that only records what was read looks
+`sys/netinet/tcp_stacks/rack.c` has **three** findings not yet read:
+`:8296` (`core.CallAndMessage`, 2nd argument — a `panic()` format
+argument inside `#ifdef INVARIANTS`) and `:24229`, `:24238` (3rd and 4th
+arguments in `rack_set_sockopt`). They are listed rather than left out,
+because a triage document that only records what was read looks
 identical to one where everything was.
+
+It was seven when this section was written. `:18482` and `:19037` were
+the `if_hw_tsomaxsegsize` pair, now fixed; `:19072` and `:19158` were
+the `ip6` pair, now in the table below.
 
 ## A fix of mine that broke buildworld, and the gate I could not write
 
@@ -1617,4 +1620,5 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/cam/scsi/scsi_enc_ses.c:2762,2792` "undefined value returned" | `ses_set_enc_status()` and `ses_set_elm_status()` return `req.result` from a stack `ses_control_request_t` they never assign. It is assigned by whoever wakes them: `ses_terminate_control_requests()` (`:133`) and the request loop in `ses_encode`'s caller (`:2228`) both set `req->result` **before** `wakeup(req)`, on every path, and `cam_periph_sleep(..., PUSER, ..., 0)` carries no `PCATCH` and no timeout, so there is no early return. The out-parameter class again, filled through a queue and a wakeup rather than a direct call. |
 | `sys/cam/cam_xpt.c:5253` `xpt_path_mtx()` | `return (&path->device->device_mtx);` — taking the address of a member, of a field of a caller-supplied `struct cam_path`. A parameter precondition, and not even a dereference at run time. |
 | `sys/netinet/tcp_stacks/rack.c:17528`, `:17547` `rack->r_ctl.crte->rate` | guarded on `rack->rack_hdrw_pacing` rather than on `crte != NULL`, which looks like the guard-on-one-of-a-pair shape and is its **opposite**: the two fields are set together at `:17510-17511` and cleared together at every one of the eight sites that clears either — `:14886/14887`, `:17420/17422`, `:17440/17442`, `:17451/17453`, `:17487/17489`, `:17559/17561`, `:17576/17577`, `:23394/23397`, never more than two lines apart. The invariant `rack_hdrw_pacing == 1` implies `crte != NULL` holds by construction; the analyser cannot carry a two-field invariant across four thousand lines. Worth the row as the counter-example: this file maintains its pair everywhere. |
-| `sys/netinet/tcp_stacks/rack.c:19129`, `:21706` `udp->uh_sum` | `udp` is assigned inside `if (tp->t_port)` (`:21517`, `:21532`) and read inside `if (tp->t_port)` (`:21703`). `t_port` is a struct field the analyser re-reads opaquely between the two blocks, so it explores false-then-true. Same shape as `sys/i386/i386/sys_machdep.c:674` above — path explosion within one translation unit rather than a boundary. |
+| `sys/netinet/tcp_stacks/rack.c` `udp->uh_sum`, **four** sites | `rack->r_ctl.fsb.udp` is set to a real pointer inside `if (tp->t_port)` and to `NULL` in the `else`, at all four assignment sites (`:13887/13892` for v6, `:13909/13913` for v4). The three fast-output functions load it unconditionally and read it under `if (tp->t_port)`. So `fsb.udp != NULL` iff `t_port != 0`, an invariant held across a function boundary *and* a struct field — the same maintained-pair shape as `crte`/`rack_hdrw_pacing` above, and equally invisible. Two of these four only became reachable to the analyser after `if_hw_tsomaxsegsize` was initialised: an indeterminate value had been cutting the path short. |
+| `sys/netinet/tcp_stacks/rack.c` `ip6->ip6_flow`, `ip6->ip6_hlim` | `struct ip6_hdr *ip6 = NULL;` at `:18913`, assigned at `:18916` under `if (rack->r_is_v6)`, read at `:19071` and `:19157` under the same `if (rack->r_is_v6)` in the same function. `r_is_v6` is a bitfield nothing between the two touches. |
