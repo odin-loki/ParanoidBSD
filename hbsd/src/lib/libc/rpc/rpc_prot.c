@@ -155,8 +155,19 @@ xdr_rejected_reply(XDR *xdrs, struct rejected_reply *rr)
 		prj_why = &rr->rj_why;
 		return (xdr_enum(xdrs, (enum_t *) prj_why));
 	}
-	/* NOTREACHED */
-	assert(0);
+	/*
+	 * NOT unreachable, and this used to say NOTREACHED and assert(0).
+	 *
+	 * enum reject_stat has exactly two values, RPC_MISMATCH and
+	 * AUTH_ERROR, and rj_stat was just decoded off the WIRE by
+	 * xdr_enum() - which reads a 32-bit integer and does not range
+	 * check it. A server replying MSG_DENIED with rj_stat = 2 lands
+	 * here, and libc is not built -DNDEBUG, so assert(0) called
+	 * abort(): any RPC client killed by a peer's reply.
+	 *
+	 * FALSE is what every other malformed-input path in this file
+	 * returns and what every caller of xdr_replymsg() already handles.
+	 */
 	return (FALSE);
 }
 

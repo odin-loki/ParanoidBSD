@@ -332,6 +332,42 @@ the wrong headers is not that.
 
 ---
 
+## Fixed — a peer's RPC reply could abort any client
+
+`lib/libc/rpc/rpc_prot.c:159`, found by the model checker as
+`line 159 assertion 0` — the only failure on that function, with valid
+pointers supplied.
+
+```c
+	/* personalized union, rather than calling xdr_union */
+	if (! xdr_enum(xdrs, (enum_t *) prj_stat))
+		return (FALSE);
+	switch (rr->rj_stat) {
+	case RPC_MISMATCH: ...
+	case AUTH_ERROR:   ...
+	}
+	/* NOTREACHED */
+	assert(0);
+	return (FALSE);
+```
+
+`enum reject_stat` has exactly two values, `RPC_MISMATCH = 0` and
+`AUTH_ERROR = 1`. `rj_stat` was decoded from the **wire** one line earlier
+by `xdr_enum()`, which reads a 32-bit integer and does not range check it.
+A server replying `MSG_DENIED` with `rj_stat = 2` lands on the `assert`,
+and **libc is not built `-DNDEBUG`** — so `assert(0)` calls `abort()`.
+
+Any RPC client — NFS, NIS, rpcbind, anything linking libc's RPC — killed
+by a value its peer chose. `/* NOTREACHED */` is true of a correct peer
+and false of the network.
+
+The fix is the line already beneath it. `FALSE` is what every other
+malformed-input path in the file returns and what every caller of
+`xdr_replymsg()` already handles. It is the only `assert(0)` in libc's RPC
+and XDR code.
+
+---
+
 ## Reported, not fixed — CAM's "insulate against a race" does not insulate
 
 `sys/cam/cam_xpt.c`'s `xpt_done_process()` says exactly what it is doing:
@@ -410,3 +446,10 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/arm64/vmm/vmm_arm64.c:415` "garbage value" | `vmm_base` is assigned inside one `if (!in_vhe())` block and used inside another. `in_vhe()` is a call, so the analyser explores false-then-true. Fragile, not wrong. |
 | `sys/arm64/vmm/vmm_mmu.c:408` "undefined pointer" | `l3_list` is allocated under `if (invalidate)` and used under `if (invalidate)`, with `M_WAITOK`. |
 | `sys/arm64/broadcom/genet/if_genet.c:1413`, `busdma_machdep.c:111` | driver attach paths where the analyser cannot see the device probe that establishes the field. |
+| `sys/x86/isa/clock.c:200` `i8254_freq / freq` | all four callers checked: `sc_tone()` guards `if (herz)`, syscons guards `pitch != 0`, `vtterm_beep()` guards `(param & 0xffff) == 0`, and spkr(4)'s `SPKRTONE` ioctl routes frequency 0 to `rest()`. Exported, so rule three cannot see them. |
+| `sys/net/altq/altq_subr.c:922` `machclk_freq / hz` | `hz` **is** range-checked — `subr_param.c:187` clamps it to `[HZ_MINIMUM, HZ_MAXIMUM]`. Worth contrasting with `net.inet.ip.reass_hashsize`, which was fetched with no check at all and is fixed above: the same shape, one validated and one not. |
+| `lib/libc/locale/wcsftime.c:90` `SIZE_T_MAX / MB_CUR_MAX` | `MB_CUR_MAX` is at least 1 for every locale; the division IS the overflow guard. CBMC does not model the locale table. |
+| six `xprintf_*.c` `assert(n > 0)` | `n` is the argument-type array length, and `parse_printf_format()` never passes 0. Exported, caller-constrained. |
+| `lib/libc/stdio/_flock_stub.c` `fp->_fl_count + 1` | the recursion counter would need 2^31 nested `flockfile()` calls on one `FILE`, each holding a stack frame. |
+| `lib/libc/iconv/citrus_mapper.c` "must hold lock upon unlock" | CBMC does not model the tree's rwlock macros. |
+| `sys/dev/syscons/scvtb.c:114` `cols * rows` | video-mode dimensions, bounded by the hardware mode table. |

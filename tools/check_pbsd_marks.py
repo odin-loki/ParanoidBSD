@@ -148,6 +148,13 @@ FIXES = {
         "the guard tested the CPU INDEX and used the POINTER; with CPU 0 "
         "absent from all_cpus, check_cpu_regs() dereferences NULL",
     ),
+    "hbsd/src/lib/libc/rpc/rpc_prot.c": (
+        "NOT unreachable, and this used to say NOTREACHED",
+        "assert(0);",
+        "rj_stat is decoded off the wire and has two valid values; a third "
+        "reached assert(0), and libc is not built -DNDEBUG, so a peer's "
+        "reply aborted the client",
+    ),
 }
 
 
