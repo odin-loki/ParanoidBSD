@@ -228,6 +228,20 @@ jobs:
       - name: No port introduces a diagnostic its C original does not
         run: python3 tools/check_port_cxx_warnings.py --gate
 
+      # Boot image run 46 asked for src_conf=none - FreeBSD's own defaults,
+      # as a bisection control - and buildworld died linking the first
+      # static binary on `undefined symbol: __stpcpy`. The assembly
+      # removal deleted lib/libc/amd64/string/*.S and left the C files
+      # that CALL those routines in MDSRCS, each carrying a prototype for
+      # a symbol nothing defines. Invisible because src.conf.pbsd sets
+      # WITHOUT_MACHDEP_OPTIMIZATIONS and lib/libc/Makefile:159 then never
+      # selects MDSRCS at all.
+      #
+      # check_libc_srcs.py checks every listed source EXISTS. This checks
+      # that what those sources call exists too.
+      - name: Every MDSRCS source calls something that is defined
+        run: python3 tools/check_machdep_symbols.py --gate
+
       # Boot image run 38 died linking libc.so.7:
       #   ld.lld: version script assignment of 'FBSD_1.0' to symbol
       #           '__isnan' failed: symbol not defined

@@ -73,8 +73,40 @@ def defined_symbols() -> set[str]:
             t = f.read_text(errors="replace")
         except OSError:
             continue
-        # name(...) followed by an opening brace rather than a semicolon
-        for m in re.finditer(r"\b(__\w+)\s*\([^;{]*\)\s*(?:__\w+\s*)*\{", t):
+        # Preprocessor lines are dropped first. FreeBSD writes a
+        # conditionally-named definition as
+        #
+        #     char *
+        #     #ifdef WEAK_STRNCPY
+        #     __strncpy
+        #     #else
+        #     strncpy
+        #     #endif
+        #     (char * __restrict dst, const char * __restrict src, size_t n)
+        #     {
+        #
+        # - lib/libc/string/strncpy.c:43, reached by powerpc64's own
+        # strncpy.c, which #defines WEAK_STRNCPY and includes it. With the
+        # directives in the way the name and its parameter list are not
+        # adjacent and no regex over the raw text will pair them, so
+        # __strncpy read as undefined and powerpc64 was reported broken
+        # when it is not.
+        #
+        # This collects BOTH branches' names, which over-counts
+        # definitions. That is the safe direction for a gate whose job is
+        # to find symbols with NO definition: it can only make this quieter,
+        # never noisier.
+        t = re.sub(r"^\s*#.*$", "", t, flags=re.M)
+        # name(...) followed by an opening brace rather than a semicolon.
+        #
+        # `(?:\w+\s+){0,3}` between the name and the parameter list is what
+        # survives the stripped #else branch: after the directives go, the
+        # text above reads `char * __strncpy strncpy (char *...) {`, and a
+        # regex demanding the `(` immediately after the name pairs with
+        # neither.
+        for m in re.finditer(
+                r"\b(__\w+)\s*(?:\w+\s+){0,3}\([^;{]*\)\s*(?:__\w+\s*)*\{",
+                t):
             out.add(m.group(1))
         # __weak_reference(foo, __bar) and __strong_reference
         out.update(re.findall(r"__(?:weak|strong)_reference\s*\([^,]+,\s*(\w+)",

@@ -98,7 +98,15 @@ def main() -> int:
             text = p.read_text(errors="replace")
         except OSError:
             continue
-        if OPTION not in text:
+        # A makefile COMMENT is not a consumer.
+        #
+        # lib/libc/amd64/string/Makefile.inc is now nothing but a comment
+        # explaining why its MDSRCS is empty, and that explanation names
+        # the option - so a raw substring search called it a new consumer
+        # with no mechanism. The same shape as the M_NOWAIT lint reading
+        # its own explanatory comment as a bug.
+        code = re.sub(r"^\s*#.*$", "", text, flags=re.M)
+        if OPTION not in code:
             continue
         rel = p.relative_to(SRC).as_posix()
         found.add(rel)

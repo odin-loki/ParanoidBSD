@@ -3,9 +3,15 @@
 # https://github.com/ARM-software/optimized-routines
 #
 
+# memmove was in this list and must not be. contrib has no
+# aarch64/memmove.S, so the .for loop below fell to the `exists` branch and
+# used lib/libc/aarch64/string/memmove.S - which is a STUB. Its own comment
+# says "memmove is implemented in memcpy.S", and memcpy.S is one of the
+# files the assembly removal deleted. So it emitted nothing AND, by being
+# in MDSRCS, stopped lib/libc/Makefile:159 from adding the machine-
+# independent memmove.c. The file is left on disk, unreferenced.
 AARCH64_STRING_FUNCS= \
 	memcmp \
-	memmove \
 	memrchr \
 	stpcpy \
 	strchr \
@@ -14,24 +20,37 @@ AARCH64_STRING_FUNCS= \
 	strnlen \
 	strrchr
 
-AARCH64_STRING_IFUNC_FILES= \
-	memcpy-mops.S \
-	memmove-mops.S \
-	memset-mops.S
+# The -mops files generate __memcpy_aarch64_mops and friends, and the only
+# things that referenced them were the three *_resolver.c below, which are
+# gone. Nothing is left to dispatch.
+AARCH64_STRING_IFUNC_FILES=
 
-# SIMD-enhanced routines not derived from Arm's code
+# SIMD-enhanced routines not derived from Arm's code.
+#
+# Seven entries were removed here, each calling a symbol nothing in the
+# tree defines any more - the assembly removal took the definitions and
+# left the callers:
+#
+#   strpbrk.c, strsep.c   -> __strcspn
+#   strncat.c             -> __memccpy
+#   strlcat.c             -> __memchr_aarch64, __strlcpy
+#   memcpy_resolver.c     -> __memcpy_aarch64_simd  (memcpy-advsimd.S is
+#                            in contrib and this Makefile never built it)
+#   memmove_resolver.c    -> __memmove_aarch64_simd (same)
+#   memset_resolver.c     -> __memset_aarch64_mops  (memset_zva64.S has the
+#                            other two; the mops one came from the ifunc
+#                            list above)
+#
+# memset_zva64.S goes with them: it defined __memset_aarch64 and
+# __memset_aarch64_zva64 for a resolver that no longer exists.
+#
+# bcopy.c, bzero.c and strcat.c stay. They call memmove(), memset() and
+# stpcpy() - public functions that are still built - rather than into
+# assembly. tools/check_machdep_symbols.py is what tells the two apart.
 MDSRCS+= \
-	strpbrk.c \
-	strsep.c \
 	strcat.c \
-	strncat.c \
-	strlcat.c \
 	bcopy.c \
-	bzero.c \
-	memcpy_resolver.c \
-	memmove_resolver.c \
-	memset_resolver.c \
-	memset_zva64.S
+	bzero.c
 
 #
 # Add the above functions. Generate an asm file that includes the needed
@@ -61,9 +80,7 @@ MDSRCS+=       ${FILE}
 CFLAGS.${FILE}+=-I${SRCTOP}/contrib/arm-optimized-routines/string
 .endfor
 
-# Several files are wrappers in the src tree for the implementation from
-# arm-optimized-routines
-CFLAGS.memchr.S+=-I${SRCTOP}/contrib/arm-optimized-routines/string
-CFLAGS.memcpy.S+=-I${SRCTOP}/contrib/arm-optimized-routines/string
-CFLAGS.memset.S+=-I${SRCTOP}/contrib/arm-optimized-routines/string
-CFLAGS.memset_zva64.S+=-I${SRCTOP}/contrib/arm-optimized-routines/string
+# memchr.S, memcpy.S, memset.S and memset_zva64.S are not built: the first
+# three were deleted by the assembly removal and are not in the generated
+# list either, and the fourth went with the resolver that used it. Their
+# CFLAGS lines were left behind pointing at files that do not exist.
