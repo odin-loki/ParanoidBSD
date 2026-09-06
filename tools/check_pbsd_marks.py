@@ -310,6 +310,25 @@ FIXES = {
         "the guard tested the CPU INDEX and used the POINTER; with CPU 0 "
         "absent from all_cpus, check_cpu_regs() dereferences NULL",
     ),
+    "hbsd/src/sys/geom/raid3/g_raid3.c": (
+        "if (md->md_all < 2)",
+        "if (md->md_all < 1)",
+        "md_all is a uint16_t off the medium and `sc_ndisks - 1` is a "
+        "divisor in fifteen places, two of them inside "
+        "g_raid3_check_metadata() itself; the bound was < 1",
+    ),
+    "hbsd/src/sys/geom/eli/g_eli.h": (
+        "eli_metadata_sectorsize_supported",
+        None,
+        "sc_data_per_sector can be zero and is the divisor for "
+        "sc_bytes_per_sector; md(4) allows any power-of-two sector size",
+    ),
+    "hbsd/src/sys/geom/eli/g_eli.c": (
+        "if (!eli_metadata_sectorsize_supported(md, bpp->sectorsize))",
+        None,
+        "the call site, in g_eli_create() rather than its two callers, "
+        "because the crypto check there is only a KASSERT",
+    ),
     "hbsd/src/sys/cam/cam_queue.c": [
         (
             "if (new_size > CAM_MAX_DEV_OPENINGS)",

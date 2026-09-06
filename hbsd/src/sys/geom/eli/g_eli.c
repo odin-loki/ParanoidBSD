@@ -1017,6 +1017,25 @@ g_eli_create(struct gctl_req *req, struct g_class *mp, struct g_provider *bpp,
 	KASSERT(eli_metadata_crypto_supported(md),
 	    ("%s: unsupported crypto for %s", __func__, bpp->name));
 
+	/*
+	 * PBSD: before anything is allocated - the `failed:` label below
+	 * unwinds sc_queue_mtx, the consumer and the UMA zones, none of
+	 * which exist yet, so this cannot goto there. See
+	 * eli_metadata_sectorsize_supported() for what it rejects and
+	 * why the check is here rather than at g_eli_create()'s two
+	 * callers.
+	 */
+	if (!eli_metadata_sectorsize_supported(md, bpp->sectorsize)) {
+		if (req != NULL) {
+			gctl_error(req, "Sector size of %s is too small for "
+			    "the authentication algorithm.", bpp->name);
+		} else {
+			G_ELI_DEBUG(1, "Sector size of %s is too small for "
+			    "the authentication algorithm.", bpp->name);
+		}
+		return (NULL);
+	}
+
 	gp = g_new_geomf(mp, "%s%s", bpp->name, G_ELI_SUFFIX);
 	sc = malloc(sizeof(*sc), M_ELI, M_WAITOK | M_ZERO);
 	gp->start = g_eli_start;

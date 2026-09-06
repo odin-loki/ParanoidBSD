@@ -1142,6 +1142,96 @@ in it. The two records that still say FAILED say it only for
 `__CPROVER_memory_leak`, which is what a function that returns its
 allocation looks like to a modular checker.
 
+## Fixed — two more divisors nobody bounded, one of them in a validator
+
+### `sys/geom/raid3/g_raid3.c:3162` — the check is `< 1` and the code needs `> 1`
+
+```c
+	/* One disk is minimum. */
+	if (md->md_all < 1)
+		return (NULL);
+	...
+	sc->sc_ndisks = md->md_all;
+```
+
+`md_all` is a `uint16_t` decoded straight off the medium
+(`g_raid3.h:304`, `:333`, `:362`) and that is the only bound on it.
+`sc_ndisks - 1` is the number of **data** disks, and it is a divisor in
+fifteen places. Two of them are inside `g_raid3_check_metadata()` — the
+function whose entire job is to reject bad metadata:
+
+```c
+	if ((md->md_mediasize % (sc->sc_ndisks - 1)) != 0) {
+	...
+	if ((sc->sc_mediasize / (sc->sc_ndisks - 1)) > pp->mediasize) {
+```
+
+So `md_all == 1` divides by zero in the validator, before any of the
+other thirteen get a chance. `g_raid3_taste()` runs on every provider
+that appears, so this is a panic from bytes on a disk somebody plugged
+in — the same reach as the two GEOM RAID tasters above.
+
+The comment is the interesting part. "One disk is minimum" is true of
+the *array* and false of the arithmetic: a raid3 with one disk has zero
+data disks. `graid3(8)` will not create fewer than three
+(`lib/geom/raid3/geom_raid3.c:153` requires `nargs >= 4`, and `:157`
+requires the data-disk count be a power of two), so `md_all < 2` cannot
+reject an array anybody has.
+
+### `sys/geom/eli/g_eli.h:677` — a divisor computed from the provider's sector size
+
+```c
+	sc->sc_data_per_sector  = sectorsize - sc->sc_alen;
+	sc->sc_data_per_sector -= sc->sc_data_per_sector % 16;
+
+	sc->sc_bytes_per_sector =
+	    (md->md_sectorsize - 1) / sc->sc_data_per_sector + 1;
+```
+
+`sectorsize` is the **underlying provider's**, not the metadata's, and
+`sc_alen` is 20, 32, 48 or 64 depending on the authentication algorithm
+— which `eli_metadata_crypto_supported()` does validate. Nothing
+validates their difference. Enumerated rather than argued:
+
+```
+  sectorsize   32  sha1/rmd160  alen=20 -> 12 -> 0   DIVISION BY ZERO
+  sectorsize   32  sha256       alen=32 ->  0 -> 0   DIVISION BY ZERO
+  sectorsize   64  sha512       alen=64 ->  0 -> 0   DIVISION BY ZERO
+```
+
+`md.c:1368` rejects a sector size that is not a power of two and
+nothing else, so `mdconfig -a -t malloc -s 10m -S 64` followed by `geli
+onetime -a hmac/sha512 /dev/md0` is a kernel division by zero from two
+ordinary administrative commands. Root-only, like the four nfsd loader
+tunables above, and rejected for the same reason. `gnop` cannot reach
+it — `g_nop.c:376` requires the new sector size be a multiple of the
+old — which is worth writing down because it is the near miss.
+
+The fix is `eli_metadata_sectorsize_supported()`, shaped and named
+after the `eli_metadata_crypto_supported()` it should have been
+standing beside, called from `g_eli_create()` rather than from
+`g_eli_create()`'s two callers — because the crypto check there is a
+`KASSERT`, and a `KASSERT` is not a check without `INVARIANTS`. It runs
+before `g_new_geomf()`, since the `failed:` label unwinds a mutex, a
+consumer and two UMA zones that do not exist yet.
+
+Refusing costs nothing that would have worked: `sc_data_per_sector ==
+0` means the geom has no room for a single byte of payload.
+
+### Both were reported, and both are still reported
+
+`g_eli_integrity.c:232` and `g_raid3_ctl.c:479` are where the analyser
+saw the division. The guards are in `g_eli.c`/`g_eli.h` and
+`g_raid3.c`, so both findings survive the fix — the same
+translation-unit boundary as `nfs_nfsdstate.c:415` and
+`g_read_data()`. Chasing the warning rather than the defect would have
+meant a check at each of the fifteen `sc_ndisks - 1` sites.
+
+Every other finding under `sys/geom/raid3` and `sys/geom/eli` is
+unchanged, finding for finding, against the pre-change sweep: the four
+that moved are the same four, shifted by exactly the comment lengths
+(19 lines in `g_eli.c`, 24 in `g_raid3.c`).
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -1197,3 +1287,5 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/geom/raid/md_intel.c:2569` `mmap1->disk_idx[sdi]` | `mmap1` is NULL exactly when `mvol->migr_state == 0` (`:2557`), and the loop 70 lines up (`:2489`, same array, same bound, nothing in between mutates it) sets `migr_state = 1` if **any** subdisk is `REBUILD` or `RESYNC`. This line runs only under that condition, so it cannot be reached with `mmap1` NULL. Worth noting that every other `mmap1` use in the loop carries an explicit `if (mvol->migr_state)` and this one does not — the guard is genuinely absent, it is simply redundant. |
 | `sys/dev/videomode/pickmode.c:77` division by zero and `dot_clock * 1000` | measured rather than argued: `videomode_list` is a generated `const` table of **92** entries (`videomode.c`, "THIS FILE AUTOMATICALLY GENERATED"), **none** with a zero `htotal` or `vtotal`, and its largest `dot_clock` is 297000, so `dot_clock * 1000` peaks at 297,000,000 against an `INT_MAX` of 2,147,483,647. The mode arguments are userland's; the divisor never is. |
 | `sys/arm64/arm64/cpu_errata.c:59`, `sys/arm64/vmm/vmm.c:230`, `sys/dev/psci/smccc.c:56,58`, `sys/i386/pci/pci_cfgreg.c:177,223`, `sys/kern/posix4_mib.c:139` | stale, not false: run 50's `ksys.jsonl` is timestamped 09:57 and the `sys/arm64/include/cpu.h` fix landed at 10:14. All six are the `CPU_IMPL_MASK` / `SMCCC_FUNC_ID` / `1 << slot` / `p31b_unsetcfg()` defects already fixed above. Worth a row because a triage pass that re-reads a fixed finding as a live one wastes exactly as much time as one that misses a real one. |
+| `sys/cam/scsi/scsi_enc_ses.c:2762,2792` "undefined value returned" | `ses_set_enc_status()` and `ses_set_elm_status()` return `req.result` from a stack `ses_control_request_t` they never assign. It is assigned by whoever wakes them: `ses_terminate_control_requests()` (`:133`) and the request loop in `ses_encode`'s caller (`:2228`) both set `req->result` **before** `wakeup(req)`, on every path, and `cam_periph_sleep(..., PUSER, ..., 0)` carries no `PCATCH` and no timeout, so there is no early return. The out-parameter class again, filled through a queue and a wakeup rather than a direct call. |
+| `sys/cam/cam_xpt.c:5253` `xpt_path_mtx()` | `return (&path->device->device_mtx);` — taking the address of a member, of a field of a caller-supplied `struct cam_path`. A parameter precondition, and not even a dereference at run time. |

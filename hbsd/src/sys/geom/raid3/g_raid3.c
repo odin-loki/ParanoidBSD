@@ -3158,8 +3158,32 @@ g_raid3_create(struct g_class *mp, const struct g_raid3_metadata *md)
 	g_topology_assert();
 	G_RAID3_DEBUG(1, "Creating device %s (id=%u).", md->md_name, md->md_id);
 
-	/* One disk is minimum. */
-	if (md->md_all < 1)
+	/*
+	 * PBSD: two disks is the minimum, not one.
+	 *
+	 * md_all is a uint16_t decoded straight off the medium
+	 * (g_raid3.h:304, :333, :362) and this is the only bound on it.
+	 * sc_ndisks is set from it below, and `sc_ndisks - 1` - the
+	 * number of DATA disks - is a divisor in fifteen places,
+	 * g_raid3_check_metadata() among them:
+	 *
+	 *	if ((md->md_mediasize % (sc->sc_ndisks - 1)) != 0)
+	 *	if ((sc->sc_mediasize / (sc->sc_ndisks - 1)) > pp->mediasize)
+	 *
+	 * so md_all == 1 divides by zero inside the function whose job
+	 * is to reject bad metadata, before any of the other thirteen.
+	 * g_raid3_taste() runs on every provider that appears, so this
+	 * is a panic from bytes on a disk somebody plugged in - the same
+	 * shape as the two GEOM RAID tasters fixed above.
+	 *
+	 * The comment that was here said "One disk is minimum", which is
+	 * what a raid3 with zero data disks looks like if you count the
+	 * parity one. graid3(8) will not create fewer than three
+	 * (lib/geom/raid3/geom_raid3.c:153 requires nargs >= 4, and :157
+	 * requires the data-disk count be a power of two), so refusing
+	 * md_all < 2 cannot reject an array anybody has.
+	 */
+	if (md->md_all < 2)
 		return (NULL);
 	/*
 	 * Action geom.

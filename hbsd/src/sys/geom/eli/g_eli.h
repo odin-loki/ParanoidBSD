@@ -636,6 +636,54 @@ eli_mediasize(const struct g_eli_softc *sc, off_t mediasize, u_int sectorsize)
 	return (mediasize);
 }
 
+/*
+ * PBSD: the authenticated layout needs room for data after the tag.
+ *
+ * eli_metadata_softc() below computes
+ *
+ *	sc->sc_data_per_sector  = sectorsize - sc->sc_alen;
+ *	sc->sc_data_per_sector -= sc->sc_data_per_sector % 16;
+ *	sc->sc_bytes_per_sector =
+ *	    (md->md_sectorsize - 1) / sc->sc_data_per_sector + 1;
+ *
+ * and nothing establishes that the divisor on the third line is not
+ * zero. `sectorsize` is the underlying PROVIDER's, and md(4) accepts
+ * any power of two (md.c:1368 rejects only non-powers-of-two), so
+ * three ordinary combinations reach it:
+ *
+ *	sectorsize 32, hmac/sha1 or hmac/ripemd160 (alen 20) -> 12 -> 0
+ *	sectorsize 32, hmac/sha256                 (alen 32) ->  0 -> 0
+ *	sectorsize 64, hmac/sha512                 (alen 64) ->  0 -> 0
+ *
+ * `mdconfig -a -t malloc -s 10m -S 64` and then `geli onetime -a
+ * hmac/sha512 /dev/md0` is a kernel division by zero. Root-only, like
+ * the four nfsd loader tunables fixed earlier, and rejected for the
+ * same reason: a divisor nobody checked is a defect whoever reaches it.
+ * sc_data_per_sector == 0 means the geom has no room for a single byte
+ * of payload, so there is nothing to refuse that would have worked.
+ *
+ * Named and shaped after eli_metadata_crypto_supported(), which is the
+ * check this one should have been standing beside. Called by
+ * g_eli_create() rather than by its callers, because that function
+ * only KASSERTs the crypto one - and a KASSERT is not a check without
+ * INVARIANTS.
+ */
+static __inline bool
+eli_metadata_sectorsize_supported(const struct g_eli_metadata *md,
+    u_int sectorsize)
+{
+	u_int alen, data_per_sector;
+
+	if ((md->md_flags & G_ELI_FLAG_AUTH) == 0)
+		return (true);
+	alen = g_eli_hashlen(md->md_aalgo);
+	if (sectorsize <= alen)
+		return (false);
+	data_per_sector = sectorsize - alen;
+	data_per_sector -= data_per_sector % 16;
+	return (data_per_sector != 0);
+}
+
 static __inline void
 eli_metadata_softc(struct g_eli_softc *sc, const struct g_eli_metadata *md,
     u_int sectorsize, off_t mediasize)
