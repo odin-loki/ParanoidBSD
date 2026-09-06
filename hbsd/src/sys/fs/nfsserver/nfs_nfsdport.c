@@ -7179,8 +7179,30 @@ nfsvno_setxattr(struct vnode *vp, char *name, int len, struct mbuf *m,
 	uiop->uio_resid = len;
 	if (len > 0) {
 		error = nfsrv_createiovecw(len, m, cp, &iv, &cnt);
-		uiop->uio_iov = iv;
-		uiop->uio_iovcnt = cnt;
+		/*
+		 * PBSD: iv and cnt are out-parameters, so read them only
+		 * when the call succeeded.
+		 *
+		 * nfsrv_createiovecw() returns EBADRPC from its counting
+		 * loop before it has written either one, and this stored
+		 * both into the uio regardless. nfsvno_write(), the only
+		 * other caller, does it the other way round:
+		 *
+		 *	error = nfsrv_createiovecw(retlen, mp, cp, &iv, &cnt);
+		 *	if (error != 0)
+		 *		return (error);
+		 *	uiop->uio_iov = iv;
+		 *
+		 * Two callers, and the guard was on one of them. Harmless
+		 * so far because the uio is used and iv freed under
+		 * `if (error == 0)' below -- so the indeterminate values
+		 * are stored and never read -- which is the same distance
+		 * from mattering as every other entry of this shape.
+		 */
+		if (error == 0) {
+			uiop->uio_iov = iv;
+			uiop->uio_iovcnt = cnt;
+		}
 	} else {
 		uiop->uio_iov = iv = NULL;
 		uiop->uio_iovcnt = 0;

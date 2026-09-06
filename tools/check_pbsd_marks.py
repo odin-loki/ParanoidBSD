@@ -406,6 +406,14 @@ FIXES = {
     # here would stay silent when a merge ate one of the two -- which is
     # the guard-on-one-of-a-pair defect this file exists to catch,
     # committed in the file that catches it. Each names its function.
+    "hbsd/src/sys/fs/nfsserver/nfs_nfsdport.c": (
+        "PBSD: iv and cnt are out-parameters, so read them only",
+        "\t\terror = nfsrv_createiovecw(len, m, cp, &iv, &cnt);\n"
+        "\t\tuiop->uio_iov = iv;",
+        "nfsvno_setxattr() stored nfsrv_createiovecw()'s out-parameters "
+        "into the uio without checking the return, while nfsvno_write() "
+        "- the only other caller - returns on error before touching them",
+    ),
     "hbsd/src/sys/fs/nfsserver/nfs_nfsdserv.c": [
         (
             # Counting the PBSD comment and not "NFSVNO_ATTRINIT",

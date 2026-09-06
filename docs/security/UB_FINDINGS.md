@@ -2215,6 +2215,54 @@ It does not currently matter — `nfsrv_openupdate()` is called under `if
 one moved guard from mattering, and the three arms above already assign.
 Now all four do. `nfs_nfsdserv.c` goes from 23 findings to 7.
 
+### `nfs_nfsdport.c` — one more of a pair, and the sibling is three lines away
+
+`nfsrv_createiovecw()` fills `*ivpp` and `*iovcntp`, and returns
+`EBADRPC` from its counting loop before writing either. It has two
+callers. `nfsvno_write()`:
+
+```c
+	error = nfsrv_createiovecw(retlen, mp, cp, &iv, &cnt);
+	if (error != 0)
+		return (error);
+	uiop->uio_iov = iv;
+	uiop->uio_iovcnt = cnt;
+```
+
+and `nfsvno_setxattr()`:
+
+```c
+	error = nfsrv_createiovecw(len, m, cp, &iv, &cnt);
+	uiop->uio_iov = iv;
+	uiop->uio_iovcnt = cnt;
+```
+
+Two callers, the guard on one. Harmless so far because the uio is used
+and `iv` freed under `if (error == 0)` further down, so the indeterminate
+values are stored and never read — the same distance from mattering as
+the `pf_ioctl` out-parameter above, and the same one-line fix.
+`nfs_nfsdport.c` goes from 14 findings to 13.
+
+The remaining thirteen are read. Five of them — `:5875`, `:6037`,
+`:6220`, `:6406`, `:6554`, all `tdrpc->done` — are one pNFS idiom
+repeated across the data-server fan-out functions:
+
+```c
+	drpc = NULL;
+	if (mirrorcnt > 1)
+		tdrpc = drpc = malloc(sizeof(*drpc) * (mirrorcnt - 1), M_TEMP,
+		    M_WAITOK);
+	...
+	for (i = 0; i < mirrorcnt - 1; i++, tdrpc++)
+		tdrpc->done = 0;
+```
+
+allocated under `mirrorcnt > 1` and used under `i < mirrorcnt - 1`, which
+is zero iterations for every `mirrorcnt` that skips the allocation —
+with `M_WAITOK` on top, which cannot return NULL. A maintained pair
+across an arithmetic relation rather than a repeated test, which is the
+version of that shape the analyser has no chance with.
+
 ### The gate for this found a second hole in the gate machinery
 
 `check_pbsd_marks.py` tested `want in text`, and six of these seven
