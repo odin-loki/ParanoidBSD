@@ -667,7 +667,20 @@ eli_mediasize(const struct g_eli_softc *sc, off_t mediasize, u_int sectorsize)
  * g_eli_create() rather than by its callers, because that function
  * only KASSERTs the crypto one - and a KASSERT is not a check without
  * INVARIANTS.
+ *
+ * #ifdef _KERNEL for the same reason that sibling has it, and learned
+ * the hard way: lib/geom/eli/Makefile compiles g_eli_crypto.c,
+ * g_eli_hmac.c, g_eli_key.c and pkcs5v2.c OUT OF sys/geom/eli INTO
+ * USERLAND, where <stdbool.h> is not in scope. The first version of
+ * this function sat outside the guard and broke buildworld:
+ *
+ *     g_eli.h:671:17: error: unknown type name 'bool'
+ *     g_eli.h:678:11: error: use of undeclared identifier 'true'
+ *
+ * usr.sbin/fstyp/geli.c and lib/geom/eli/geom_eli.c include this header
+ * too. A kernel header that userland compiles is not a kernel header.
  */
+#ifdef _KERNEL
 static __inline bool
 eli_metadata_sectorsize_supported(const struct g_eli_metadata *md,
     u_int sectorsize)
@@ -683,6 +696,7 @@ eli_metadata_sectorsize_supported(const struct g_eli_metadata *md,
 	data_per_sector -= data_per_sector % 16;
 	return (data_per_sector != 0);
 }
+#endif	/* _KERNEL */
 
 static __inline void
 eli_metadata_softc(struct g_eli_softc *sc, const struct g_eli_metadata *md,

@@ -1500,6 +1500,65 @@ reach: `:8296`, `:18482`, `:19037`, `:24194`, `:24203`
 out, because a triage document that only records what was read looks
 identical to one where everything was.
 
+## A fix of mine that broke buildworld, and the gate I could not write
+
+The `g_eli` divisor fix above put this next to `eli_metadata_softc()`:
+
+```c
+static __inline bool
+eli_metadata_sectorsize_supported(const struct g_eli_metadata *md, ...)
+```
+
+Boot run 53 spent seventeen minutes to say what was wrong with it:
+
+```
+g_eli.h:671:17: error: unknown type name 'bool'
+g_eli.h:678:11: error: use of undeclared identifier 'true'
+g_eli.h:681:11: error: use of undeclared identifier 'false'
+```
+
+`lib/geom/eli/Makefile` has `.PATH: ${SRCTOP}/sys/geom/eli` and builds
+`g_eli_crypto.c`, `g_eli_hmac.c`, `g_eli_key.c` and `pkcs5v2.c` **into
+userland**, where that TU's include chain has no `<stdbool.h>`.
+`usr.sbin/fstyp/geli.c` includes the header too. A kernel header that
+userland compiles is not a kernel header.
+
+The sibling this function was named after —
+`eli_metadata_crypto_supported()` — is inside `#ifdef _KERNEL` and I did
+not ask why. It is now too. Verified structurally: all eight
+`bool`/`true`/`false` in `g_eli.h` are inside a `_KERNEL` region, and so
+are all eleven in `pax.h`; `cam_queue.h` has none.
+
+### The instruments could not have caught it, and one attempt made that worse
+
+clang's analyser only ever compiles the kernel side of these headers,
+so it reported nothing before the change and nothing after. The other
+instrument is a forty-minute `buildworld`.
+
+So I wrote a gate: *a `sys/` header that a userland Makefile pulls
+sources from must not use `bool` outside `#ifdef _KERNEL`.* It found
+**159 hits across the vendor tree** — `sys/sys/refcount.h`,
+`sys/sys/runq.h`, `sys/crypto/curve25519.h`, `sys/ufs/ffs/ffs_extern.h`
+and thirty more files of correct, shipping code.
+
+The rule is simply false. `sys/sys/runq.h:41` says so out loud:
+
+```c
+#include <sys/types.h>		/* For bool. */
+```
+
+and `curve25519.h` and `ffs_extern.h` use `bool` with no provider of
+their own at all, because every one of *their* includers has one. The
+narrower hypothesis — "a header using `bool` must include something that
+supplies it" — fails on exactly those two.
+
+Whether a given `bool` compiles depends on the include chain of each
+translation unit that reaches it, which is not a property of the header.
+So the gate was deleted rather than allowlisted down to a passing set: a
+checker with 159 false positives is worse than none, because the first
+thing anybody does with it is stop reading its output. This class is
+caught by `buildworld` and by nothing cheaper, and that is written here
+instead of being papered over.
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
