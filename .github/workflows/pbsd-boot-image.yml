@@ -301,13 +301,21 @@ jobs:
             # and two rounds say whether the rip moves between them - a
             # tight spin, a loop and slow progress are the same picture
             # from one backtrace.
+            # build_boot_image.sh saved `nm -n` of the run-time linker
+            # beside the image. Run 43's rip was a user address inside
+            # ld-elf.so.1 and there was nothing to look it up in; with
+            # this, the same hang names its function.
+            sym=""
+            [ -f out/ld-elf.so.1.nm ] && sym="--symbols out/ld-elf.so.1.nm"
+            # shellcheck disable=SC2086
             python3 tools/ci/boot_test.py "$img" \
               --target amd64 --timeout 480 --log out/boot.log \
               --ddb-on-hang --ddb-rounds 2 --ddb-gap 15 \
               --ddb-cmd 'bt 1' \
               --ddb-cmd 'bt' \
+              --ddb-cmd 'show registers' \
               --ddb-cmd 'show procvm 1' \
-              "$@"
+              $sym "$@"
             ;;
           esac
 

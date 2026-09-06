@@ -454,6 +454,198 @@ def break_to_ddb(proc, log, timeout: float, cmds, rounds: int = 1,
     return True
 
 
+# `--- interrupt, rip = 0x3d6201b9fd0, rsp = 0x6ab2caaa2f60, rbp = ... ---`
+# is DDB saying the trap came from somewhere other than kernel code. The
+# addresses are what say WHERE, and reading them is the whole point of
+# breaking in.
+IFRAME = re.compile(
+    r"---\s*interrupt,\s*rip\s*=\s*0x([0-9a-f]+)"
+    r"(?:,\s*rsp\s*=\s*0x([0-9a-f]+))?"
+    r"(?:,\s*rbp\s*=\s*0x([0-9a-f]+))?", re.I)
+
+# `  map entry 0xfff...: start=0x6054539000, end=0x605453c000, eflags=0xc0c,`
+# `   prot=1/1/copy, object=0xfff..., offset=0x0, copy (needed)`
+#
+# eflags is printed WITHOUT the 0x when it is zero - `eflags=0,` - and four
+# of run 43's twelve entries are like that. Requiring 0x silently dropped
+# them, which is the failure mode this whole function exists to avoid.
+MAPENT = re.compile(
+    r"map entry\s+0x[0-9a-f]+:\s*start=0x([0-9a-f]+),\s*end=0x([0-9a-f]+),"
+    r"\s*eflags=(?:0x)?([0-9a-f]+)[^\n]*\n\s*prot=(\d)/(\d)/(\w+)"
+    r"[^\n]*?offset=0x([0-9a-f]+)", re.I)
+
+# Kernel text on amd64 lives at the top of the address space. Anything
+# below the canonical hole is a user address.
+KERNBASE = 0xffff800000000000
+
+
+def _load_symbols(path):
+    """`nm -n` output: `0000000000005f80 T reloc_nonplt_self`, sorted.
+
+    Anything that is not an address and a name is skipped, so a link map or
+    an `nm` with extra columns still works.
+    """
+    out = []
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                parts = line.split()
+                if len(parts) < 3:
+                    continue
+                try:
+                    addr = int(parts[0], 16)
+                except ValueError:
+                    continue
+                out.append((addr, parts[-1]))
+    except OSError as e:
+        print(f"  [could not read symbols from {path}: {e}]")
+        return None
+    out.sort()
+    return out or None
+
+
+def _nearest_symbol(symbols, va):
+    """The last symbol at or below va, and the offset into it."""
+    lo, hi = 0, len(symbols)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if symbols[mid][0] <= va:
+            lo = mid + 1
+        else:
+            hi = mid
+    if lo == 0:
+        return None, 0
+    addr, name = symbols[lo - 1]
+    return name, va - addr
+
+
+def _explain_ddb(report, symbols=None) -> None:
+    """Say what the debugger output MEANS, not just that it happened.
+
+    Run 43 printed all of this and then concluded "the kernel started and
+    never reached userland" - which the same output disproves. The frame
+    said
+
+        --- interrupt, rip = 0x3d6201b9fd0, rsp = 0x6ab2caaa2f60 ---
+
+    a USER address, so pid 1 was on the CPU in userland; and `show procvm 1`
+    put that rip inside the second vnode-backed r-x mapping, 0xfd0 bytes in,
+    with no third one - the run-time linker executing, before it had mapped
+    a single shared library. That is a completely different failure from a
+    kernel hang and the verdict named the wrong one.
+
+    This is the same shape as run 40, where the correct answer was on
+    screen and the wrong thing was read, and it cost six runs. So it is
+    read here instead.
+    """
+    frames, maps = [], []
+    for cmd, out in report:
+        for m in IFRAME.finditer(out):
+            frames.append((int(m.group(1), 16),
+                           int(m.group(2), 16) if m.group(2) else None))
+        if "procvm" in cmd:
+            ents = []
+            for m in MAPENT.finditer(out):
+                ents.append({"start": int(m.group(1), 16),
+                             "end": int(m.group(2), 16),
+                             "eflags": int(m.group(3), 16),
+                             "prot": int(m.group(4)),
+                             "share": m.group(6).lower(),
+                             "offset": int(m.group(7), 16)})
+            if ents:
+                maps.append(ents)
+    if not frames:
+        return
+
+    print("    what the debugger output says:")
+
+    rip, rsp = frames[0]
+    if rip >= KERNBASE:
+        print(f"      rip=0x{rip:x} is a KERNEL address: the thread was in "
+              "the kernel.")
+    else:
+        print(f"      rip=0x{rip:x} is a USER address. pid 1 was executing "
+              "in USERLAND -")
+        print("      kern_execve() returned and the image is running. This "
+              "is NOT a")
+        print("      kernel hang and not a failure to reach userland.")
+
+    # Two samples of the same rip and the same rsp is a spin, not progress.
+    uniq_rip = {f[0] for f in frames}
+    uniq_rsp = {f[1] for f in frames if f[1] is not None}
+    if len(frames) > 1:
+        if len(uniq_rip) == 1 and len(uniq_rsp) <= 1:
+            print(f"      {len(frames)} samples, all at the SAME rip and the "
+                  "same rsp: it is")
+            print("      spinning at one instruction, not making slow "
+                  "progress. A fault")
+            print("      that re-faults on delivery looks exactly like this.")
+        else:
+            print(f"      {len(frames)} samples at {len(uniq_rip)} distinct "
+                  "rip(s): it is running,")
+            print("      not stuck at a single instruction.")
+
+    if rip >= KERNBASE or not maps:
+        return
+
+    ents = maps[0]
+    # Executable PRIVATE mappings, in address order: the loaded objects.
+    # One is the executable, one is the rtld, and each shared library adds
+    # another. The `share` ones are excluded deliberately - the kernel's
+    # shared page carries the signal trampoline at prot=5/5/share and is
+    # executable without being anything the rtld loaded.
+    text = [e for e in ents if e["prot"] & 4 and e["share"] != "share"]
+    hit = next((e for e in ents if e["start"] <= rip < e["end"]), None)
+    if hit is not None:
+        idx = text.index(hit) + 1 if hit in text else None
+        where = (f"executable mapping #{idx} of {len(text)}"
+                 if idx else "a NON-EXECUTABLE mapping (!)")
+        print(f"      rip is 0x{rip - hit['start']:x} bytes into {where} "
+              f"(0x{hit['start']:x}-0x{hit['end']:x}).")
+        if idx == 2 and len(text) == 2:
+            print("      Two executable mappings means the binary and the "
+                  "run-time linker")
+            print("      and nothing else: ld-elf.so.1 has not mapped a "
+                  "single shared")
+            print("      library yet. The rtld is where this is stuck, "
+                  "which is also why")
+            print("      a STATIC init (/rescue/init, NO_SHARED=yes) gets "
+                  "past it.")
+        # ASLR put this object somewhere random, so the raw rip means
+        # nothing on its own. The object's LOAD BASE is the start of its
+        # lowest mapping, which is the one whose file offset is 0; rip minus
+        # that is the ELF virtual address, which IS meaningful - it can be
+        # looked up in the link map the build already writes
+        # (libexec/rtld-elf/Makefile:79 asks the linker for
+        # ld-elf.so.1.map).
+        base = None
+        for e in ents:
+            if e["start"] <= hit["start"] and e["offset"] == 0:
+                if base is None or e["start"] > base:
+                    base = e["start"]
+        if base is not None:
+            va = rip - base
+            print(f"      load base 0x{base:x}, so its ELF virtual address "
+                  f"is 0x{va:x}.")
+            print("      Look that up in the object's link map or `nm -n` "
+                  "output to name")
+            print("      the function; ASLR makes the raw rip meaningless "
+                  "and this is not.")
+            if symbols:
+                name, off = _nearest_symbol(symbols, va)
+                if name:
+                    print(f"      nearest preceding symbol: {name}"
+                          + (f"+0x{off:x}" if off else ""))
+                else:
+                    print("      no symbol at or below that address in the "
+                          "supplied table.")
+    else:
+        print(f"      rip=0x{rip:x} is in NO mapping of pid 1 - it jumped "
+              "somewhere unmapped.")
+    print(f"      pid 1 has {len(ents)} map entries, {len(text)} of them "
+          "executable.")
+
+
 def interrogate(proc, log, commands, user, password, timeout, outdir,
                 initial=b""):
     """Log in and run each command, writing its output beside the log.
@@ -561,6 +753,11 @@ def main() -> int:
                          "kern_execve() that never returned from an init(8) "
                          "that runs and cannot write: no boot log can, "
                          "because both are silence.")
+    ap.add_argument("--symbols",
+                    help="`nm -n` output for the object the hang is in "
+                         "(ld-elf.so.1, say). A user rip is meaningless "
+                         "under ASLR; with this, its ELF virtual address "
+                         "is resolved to the nearest preceding symbol.")
     ap.add_argument("--ddb-cmd", action="append", default=[],
                     metavar="COMMAND",
                     help="a command to run at db>. Repeatable. Default: "
@@ -818,6 +1015,8 @@ def main() -> int:
                     print(f"        {line}")
             else:
                 print(f"      db> {cmd}   {out}")
+        _explain_ddb(DDB_REPORT,
+                     _load_symbols(args.symbols) if args.symbols else None)
     print(f"    phases reached: {', '.join(reached) or 'none'}")
     if verdict and verdict[0] == "OK":
         print(f"OK  booted: {verdict[1]}")
@@ -836,10 +1035,29 @@ def main() -> int:
         print(f"     {verdict[2]}")
         return 1
     if "kernel" in reached:
-        print(f"FAIL the kernel started and never reached userland in "
-              f"{args.timeout}s.")
-        print("     A hang after the kernel came up, not a boot failure. The")
-        print("     tail of the log is where it stopped.")
+        # "never reached userland" means this test never saw its marker on
+        # the console. It does NOT mean no userland process ran, and run 43
+        # is the case where saying so was wrong: the debugger frame put pid
+        # 1 at a user rip. Say which of the two this is.
+        user_rip = any(
+            m and int(m.group(1), 16) < KERNBASE
+            for m in (IFRAME.search(out) for _, out in DDB_REPORT))
+        if user_rip:
+            print(f"FAIL nothing reached the console in {args.timeout}s, and "
+                  "the kernel debugger")
+            print("     found pid 1 executing in USERLAND. So userland was "
+                  "entered and")
+            print("     is not talking - a hang or a fault loop INSIDE the "
+                  "process, not a")
+            print("     kernel hang and not a failure to exec. The 'what the "
+                  "debugger")
+            print("     output says' block above locates it.")
+        else:
+            print(f"FAIL the kernel started and never reached userland in "
+                  f"{args.timeout}s.")
+            print("     A hang after the kernel came up, not a boot failure. "
+                  "The")
+            print("     tail of the log is where it stopped.")
         return 1
     if "loader" in reached:
         print(f"FAIL the loader ran and the kernel never started in "

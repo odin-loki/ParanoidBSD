@@ -167,6 +167,15 @@ jobs:
       - name: The boot test's kernel-debugger probe
         run: python3 tools/ci/test_boot_test_ddb.py
 
+      # Run 43 printed a backtrace whose interrupt frame carried a USER
+      # rip and a vm_map that placed it inside the run-time linker, with no
+      # shared library mapped after it - and then concluded "the kernel
+      # started and never reached userland", which its own output
+      # disproves. Same shape as run 40. So the reading is code now, and
+      # this is run 43's real output fed back through it.
+      - name: The debugger output is read, not just printed
+        run: python3 tools/ci/test_ddb_explain.py
+
       # The image-editing block runs at the end of a fifty-minute build, on
       # FreeBSD, against a real disk image. Run 26 spent one of those
       # learning the memstick is MBR, because the test before it used a GPT

@@ -417,6 +417,43 @@ vm|memstick|iso)
     mkdir -p "$REPOROOT/out"
     cp "$FOUND" "$REPOROOT/out/$OUT"
 
+    # Symbol tables for the two binaries a userland hang lands in.
+    #
+    # Run 43's debugger frame carried rip = 0x3d6201b9fd0, a user address
+    # inside pid 1's second executable mapping. ASLR makes that number mean
+    # nothing on its own; minus the object's load base it is ELF virtual
+    # address 0x5fd0, and that DOES mean something - if the symbols are to
+    # hand. They were built an hour earlier and thrown away.
+    #
+    # `nm -n`, so boot_test.py --symbols can name the function. Two files,
+    # a few hundred KB, and the difference between reading the answer and
+    # dispatching another fifty-minute run to guess at it.
+    # OBJRELEASE came from `make -V .OBJDIR` for release/, so its parent is
+    # the object tree top. Derived from a path make itself gave, not
+    # reconstructed - which is the mistake this block sits next to.
+    _objtop="$(dirname "$OBJRELEASE")"
+    for _b in "libexec/rtld-elf/ld-elf.so.1.full" \
+              "libexec/rtld-elf/ld-elf.so.1" \
+              "sbin/init/init.full" "sbin/init/init"; do
+        _p="$_objtop/$_b"
+        [ -f "$_p" ] || continue
+        _n="$(basename "$_b" .full)"
+        [ -f "$REPOROOT/out/$_n.nm" ] && continue
+        if nm -n "$_p" > "$REPOROOT/out/$_n.nm" 2>/dev/null &&
+           [ -s "$REPOROOT/out/$_n.nm" ]; then
+            echo "   symbols: out/$_n.nm ($(wc -l < "$REPOROOT/out/$_n.nm") \
+entries, from $_b)"
+        else
+            # A stripped install is the normal case; the .full is the one
+            # that carries symbols. Say which was found rather than leaving
+            # an empty file that looks like a table with nothing in it.
+            rm -f "$REPOROOT/out/$_n.nm"
+        fi
+    done
+    [ -f "$REPOROOT/out/ld-elf.so.1.nm" ] || \
+        echo "   no ld-elf.so.1 symbols under $_objtop/libexec/rtld-elf;" \
+             "a userland hang will report an ELF vaddr and no name"
+
     # LOADER_CONF_EXTRA: lines to append to the image's /boot/loader.conf.
     #
     # Setting a variable at the loader's interactive prompt does not reach
