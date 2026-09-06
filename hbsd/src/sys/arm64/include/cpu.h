@@ -176,17 +176,49 @@
 #define	CPU_ARCH(midr)	(((midr) >> 16) & 0xf)
 #define	CPU_REV(midr)	(((midr) >> 0) & 0xf)
 
-#define	CPU_IMPL_TO_MIDR(val)	(((val) & 0xff) << 24)
-#define	CPU_PART_TO_MIDR(val)	(((val) & 0xfff) << 4)
-#define	CPU_VAR_TO_MIDR(val)	(((val) & 0xf) << 20)
-#define	CPU_ARCH_TO_MIDR(val)	(((val) & 0xf) << 16)
-#define	CPU_REV_TO_MIDR(val)	(((val) & 0xf) << 0)
+/*
+ * PBSD: unsigned, because two of these shift into bit 31 of a signed int.
+ *
+ *   CPU_IMPL_MASK              0xff << 24 = 4278190080 > INT_MAX
+ *   CPU_IMPL_TO_MIDR(0xC0)     192  << 24 = 3221225472 > INT_MAX
+ *
+ * Both are undefined behaviour (C11 6.5.7p4), and UBSan says so:
+ * "left shift of 255 by 24 places cannot be represented in type 'int'".
+ * But the value is wrong as well as undefined, and that is the part
+ * that matters. As a signed int, 0xff000000 is NEGATIVE, so
+ *
+ *   CPU_MATCH(mask, ...)  ->  ((mask) & PCPU_GET(midr)) ==
+ *                             ((mask) & CPU_ID_RAW(...))
+ *
+ * sign-extends the right-hand side to 64 bits and the left-hand side
+ * does not - midr is a uint64_t whose top bits are RES0. Measured, on
+ * an implementer code of 0xC0:
+ *
+ *   lhs = 0x00000000c0000000
+ *   rhs = 0xffffffffc0000000     CPU_MATCH -> 0
+ *
+ * so CPU_MATCH cannot match ANY implementer >= 0x80. CPU_IMPL_AMPERE is
+ * 0xC0 and is only used in identcpu.c's name table today, which compares
+ * the extracted field directly - so no erratum is currently misapplied,
+ * and the next 0x80+ implementer to need one would have got a workaround
+ * that silently never fired.
+ *
+ * The U suffixes are value-preserving where the value was already right:
+ * the four small shifts are unchanged, and CPU_IMPL_MASK's left-hand
+ * side goes from 0xffffffffff000000 to 0x00000000ff000000, which is the
+ * mask the name always claimed.
+ */
+#define	CPU_IMPL_TO_MIDR(val)	(((val) & 0xffU) << 24)
+#define	CPU_PART_TO_MIDR(val)	(((val) & 0xfffU) << 4)
+#define	CPU_VAR_TO_MIDR(val)	(((val) & 0xfU) << 20)
+#define	CPU_ARCH_TO_MIDR(val)	(((val) & 0xfU) << 16)
+#define	CPU_REV_TO_MIDR(val)	(((val) & 0xfU) << 0)
 
-#define	CPU_IMPL_MASK	(0xff << 24)
-#define	CPU_PART_MASK	(0xfff << 4)
-#define	CPU_VAR_MASK	(0xf << 20)
-#define	CPU_ARCH_MASK	(0xf << 16)
-#define	CPU_REV_MASK	(0xf << 0)
+#define	CPU_IMPL_MASK	(0xffU << 24)
+#define	CPU_PART_MASK	(0xfffU << 4)
+#define	CPU_VAR_MASK	(0xfU << 20)
+#define	CPU_ARCH_MASK	(0xfU << 16)
+#define	CPU_REV_MASK	(0xfU << 0)
 
 #define	CPU_ID_RAW(impl, part, var, rev)		\
     (CPU_IMPL_TO_MIDR((impl)) |				\

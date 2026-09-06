@@ -132,6 +132,23 @@ FIXES = {
             "aslr_status(), the same shape, reporting the ASLR state",
         ),
     ],
+    # Two header macros that shift into bit 31 of a signed int. Found by
+    # CBMC once report.py stopped hiding arithmetic failures behind
+    # pointer ones in the same record. See docs/security/UB_FINDINGS.md.
+    "hbsd/src/sys/arm64/include/cpu.h": (
+        "#define\tCPU_IMPL_MASK\t(0xffU << 24)",
+        "#define\tCPU_IMPL_MASK\t(0xff << 24)",
+        "0xff << 24 is UB and NEGATIVE as an int, so CPU_MATCH()'s two "
+        "sides sign-extend differently and it cannot match any ARM "
+        "implementer >= 0x80 - CPU_IMPL_AMPERE is 0xC0",
+    ),
+    "hbsd/src/sys/dev/psci/smccc.h": (
+        "(((uint32_t)(type) << 31) |",
+        "(((type) << 31) |",
+        "1 << 31 is UB, and the negative int it produces sign-extends "
+        "in psci_call()'s register_t parameter, so the SMCCC function "
+        "identifier handed to the secure monitor is 0xffffffff80000000",
+    ),
     # Two GEOM tasters, which run on whatever medium is plugged in.
     "hbsd/src/sys/geom/part/g_part_ldm.c": [
         (

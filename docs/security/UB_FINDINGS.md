@@ -674,6 +674,92 @@ tree — `stackgap_status()` beside them uses ternaries and is total, and
 the two `switch (state)` forms take user input and have `default: return
 (EINVAL)`.
 
+## Fixed — two header macros that shift into bit 31 of a signed `int`
+
+Both were invisible until `report.py` stopped letting one pointer failure
+decide a whole record (see below). Both are arm64 headers used across the
+tree, and one of them is a functional bug and not only undefined
+behaviour.
+
+### `sys/arm64/include/cpu.h` — `CPU_MATCH()` cannot match implementer ≥ 0x80
+
+```c
+#define CPU_IMPL_MASK       (0xff << 24)
+#define CPU_IMPL_TO_MIDR(v) (((v) & 0xff) << 24)
+```
+
+`0xff << 24` is 4278190080, which is not representable in `int`. UBSan
+says so directly — *"left shift of 255 by 24 places cannot be represented
+in type 'int'"* — but the value is wrong as well as undefined, and that
+is the part that matters. As a signed `int`, `0xff000000` is **negative**,
+so in
+
+```c
+#define CPU_MATCH(mask, impl, part, var, rev)   \
+    (((mask) & PCPU_GET(midr)) ==               \
+     ((mask) & CPU_ID_RAW((impl), (part), (var), (rev))))
+```
+
+the left side is `int & uint64_t` (the mask sign-extends, `midr`'s top
+bits are RES0, result positive) and the right side is `int & int`
+(stays negative, then sign-extends at the `==`). Measured, for an
+implementer code of `0xC0`:
+
+```
+lhs = 0x00000000c0000000
+rhs = 0xffffffffc0000000     CPU_MATCH -> 0
+```
+
+`CPU_IMPL_AMPERE` is `0xC0`. It appears only in `identcpu.c`'s name
+table today, which compares the extracted field directly, so no erratum
+is currently misapplied — the next `0x80`+ implementer needing a
+workaround would have got one that silently never fired. With the `U`
+suffixes both sides read `0xc0000000` and it matches; `APM` (`0x50`) is
+unchanged, checked.
+
+### `sys/dev/psci/smccc.h` — the SMC function ID is sign-extended into x0
+
+```c
+#define SMCCC_FUNC_ID(type, call_conv, range, func) \
+        (((type) << 31) | ((call_conv) << 30) | ...)
+```
+
+`type` is `SMCCC_FAST_CALL`, which is 1, for **every** SMCCC call in the
+tree. `1 << 31` is UB, and the negative `int` it produces is passed to
+`psci_call()`, whose parameters are `register_t` — `int64_t` on arm64.
+Measured:
+
+```
+old  fid as register_t = 0xffffffff80000000
+new  fid as register_t = 0x0000000080000000
+```
+
+Arm DEN 0028 puts the function identifier in the low 32 bits as an
+unsigned value. Monitors evidently ignore the high half, which is why
+nothing has noticed.
+
+### How they became visible
+
+`report.py`'s `bucket()` returned one bucket per record, and *any*
+failure matching `PTR_WORDS` sent the whole record to "pointer/memory (a
+missing precondition, not a bug)". A translation unit reporting both
+
+```
+dereference failure: pointer NULL in ...
+arithmetic overflow on signed shl in ...
+```
+
+was dismissed and its overflow was never printed. In the kernel sweep
+that hid 9 signed `+`, 5 signed `shl`, 3 array upper-bound, 2 signed `-`,
+2 signed `*` and 2 array lower-bound behind 176 NULL-pointer
+preconditions — and an array bound is memory safety, not a missing
+precondition.
+
+The fix is the one the `msun` comment three lines below already
+described and which had never been applied to this case: **strip** the
+pointer failures, then classify what is left. "Worth a person's time"
+went from 65 to 177 across the three sweeps, 4 to 23 in the kernel.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

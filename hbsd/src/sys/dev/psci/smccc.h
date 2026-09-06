@@ -36,11 +36,28 @@
 #define	SMCCC_VERSION_MAJOR(ver)	(((ver) >> 16) & 0x7fff)
 #define	SMCCC_VERSION_MINOR(ver)	((ver) & 0xffff)
 
+/*
+ * PBSD: unsigned. `(type) << 31` with type = SMCCC_FAST_CALL = 1 is
+ * `1 << 31` on a signed int - undefined behaviour (C11 6.5.7p4), and
+ * UBSan agrees: "left shift of 1 by 31 places cannot be represented in
+ * type 'int'". Every SMCCC function ID in the tree is a fast call, so
+ * every one of them goes through it.
+ *
+ * The value it happens to produce, 0x80000000 as a NEGATIVE int, is then
+ * passed to psci_call(), whose parameters are register_t - int64_t on
+ * arm64 - so it SIGN-EXTENDS to 0xffffffff80000000 and that is what goes
+ * into x0. Arm DEN 0028 makes the function identifier a 32-bit unsigned
+ * value in the low half of the register; monitors evidently ignore the
+ * high half, which is why nothing has ever noticed. Measured:
+ *
+ *   old  fid as register_t = 0xffffffff80000000
+ *   new  fid as register_t = 0x0000000080000000
+ */
 #define	SMCCC_FUNC_ID(type, call_conv, range, func)	\
-	(((type) << 31) |				\
-	 ((call_conv) << 30) |				\
-	 (((range) & 0x3f) << 24) |				\
-	 ((func) & 0xffff))
+	(((uint32_t)(type) << 31) |			\
+	 ((uint32_t)(call_conv) << 30) |		\
+	 (((uint32_t)(range) & 0x3f) << 24) |		\
+	 ((uint32_t)(func) & 0xffff))
 
 #define	SMCCC_YIELDING_CALL	0
 #define	SMCCC_FAST_CALL		1

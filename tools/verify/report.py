@@ -73,13 +73,46 @@ TOOL_LIMITS = ("not yet supported", "unwinding assertion",
                "no body for callee")
 
 
+def deciding_failures(rec: dict) -> list:
+    """The failures that survived bucket()'s strips, most-specific first.
+
+    Printing rec["failures"][:2] under the "EXPORTED, arithmetic" heading
+    shows a reader "dereference failure: pointer NULL" for a record that
+    is in that bucket BECAUSE its pointer failures were set aside. The two
+    lines then contradict each other and the arithmetic - the reason the
+    record is there at all - may not be printed.
+    """
+    out = [d for d in rec.get("failures", [])
+           if not any(w in d.get("desc", "") for w in PTR_WORDS)]
+    if rec["file"].startswith("lib/msun"):
+        out = [d for d in out if "division by zero" not in d.get("desc", "")] or out
+    return out or rec.get("failures", [])
+
+
 def bucket(rec: dict) -> str:
     k = kinds(rec)
     if not k:
         return "no detail"
     if any(w in x for x in k for w in TOOL_LIMITS):
         return "CBMC could not model it (not a property that failed)"
-    if any(w in x for x in k for w in PTR_WORDS):
+    # STRIP the pointer failures rather than letting one of them decide the
+    # whole record - the same fix the msun comment below already describes,
+    # left undone for this case. A translation unit that reports both
+    #
+    #   dereference failure: pointer NULL in ...
+    #   arithmetic overflow on signed shl in ...
+    #
+    # went to "not a bug" and its overflow was never shown to anybody. In
+    # the kernel sweep that hid 9 signed +, 5 signed shl, 3 array upper
+    # bound, 2 signed -, 2 signed * and 2 array lower bound behind 176
+    # NULL-pointer preconditions.
+    #
+    # An array bound is memory safety and does not belong in a bucket
+    # labelled "a missing precondition"; it is only here because
+    # PTR_WORDS has to contain "array " and "object" for CBMC's spelling
+    # of the pointer checks.
+    k = {x for x in k if not any(w in x for w in PTR_WORDS)}
+    if not k:
         return "pointer/memory (a missing precondition, not a bug)"
     # Strip the IEEE-defined case BEFORE deciding, rather than only
     # recognising a record that has nothing else. lib/msun/ld128's cospil,
@@ -296,7 +329,7 @@ def main() -> int:
         print("   dropped - a triage that was wrong has to stay visible.")
     for r in sorted(real, key=lambda x: (x["file"], x["function"])):
         print(f"  {r['file']}:{r['function']}")
-        for d in r.get("failures", [])[:2]:
+        for d in deciding_failures(r)[:2]:
             mark = (" [triaged]" if is_triaged(r["file"], desc_line(d))
                     else "")
             print(f"      {d['desc'][:100]}{mark}")
