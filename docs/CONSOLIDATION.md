@@ -247,7 +247,41 @@ The checker was made to fail before being trusted, in both files: pointing
 `INT_FAST8_MAX` at `INT8_MAX` and `SCNd8` at the int conversion are each
 reported by name, on every target, with both expansions shown.
 
-**Nothing includes these yet either.** Same reason as the atomics.
+**Nothing includes these yet either.** Same reason as the atomics — and
+that reason has changed, so it is worth restating rather than leaving as
+a stale "not yet".
+
+### The build precondition is met. A different one is not.
+
+`buildworld` is green: boot-image runs 48 (`src_conf=none`), 49
+(`norelro`) and 51 all completed `buildworld`, `buildkernel` and a
+memstick image. Both checkers pass on the tree as it stands —
+
+```
+1266 macro expansions compared, all equal.
+Every required width is lock-free on every target.
+```
+
+— so the sentence above about attribution no longer blocks anything.
+
+What blocks it now is worse than a build failure: **`/sbin/init` does not
+talk, and nobody yet knows why.** Fifty-two runs have narrowed it to
+something below userland's build options and below the rtld's own libc,
+and the current experiment varies the kernel's PaX enforcement. Changing
+`<machine/_stdint.h>` and `<machine/atomic.h>` on all six architectures
+in the middle of that makes every subsequent boot unattributable in
+exactly the way the original sentence was worried about, one level up.
+
+So the condition to switch these over is now:
+
+1. `buildworld` green — **met**;
+2. both checkers passing — **met**;
+3. **`/sbin/init` reaching a console, or the reason it does not being
+   understood and written down** — not met.
+
+(3) is not a general rule about header changes. It is specific to having
+an open bisect: the value of a bisect is that one thing changed, and a
+tree-wide ABI header edit is not one thing.
 
 ## Ranking by the interface, not the text
 
