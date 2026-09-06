@@ -254,6 +254,15 @@ jobs:
       - name: No M_NOWAIT allocation used without a NULL check
         run: python3 tools/verify/nowait_check.py --gate
 
+      # A switch over a bit mask with fewer arms than the mask has states.
+      # procctl(2)'s protmax_status() and aslr_status() each had two bits,
+      # three arms, and `*(int *)data = d` - a kernel stack disclosure had
+      # anything ever set both bits. clang's -Wuninitialized says nothing
+      # about this shape; its analyser found one instance and this looks
+      # for the shape everywhere, which is the lesson mld6.c taught.
+      - name: No masked switch leaves a variable uninitialised
+        run: python3 tools/verify/masked_switch_check.py --gate
+
       # Boot image run 38 died linking libc.so.7:
       #   ld.lld: version script assignment of 'FBSD_1.0' to symbol
       #           '__isnan' failed: symbol not defined

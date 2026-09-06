@@ -246,6 +246,42 @@ fixed by teaching `sites()` about it, never by an allowlist: an allowlist
 here would hide the next real one, which is the exact failure this lint
 exists to prevent.
 
+### A fourth instrument, from the same lesson
+
+`tools/verify/masked_switch_check.py` exists because `procctl(2)` had
+this, twice:
+
+```c
+int d;
+
+switch (p->p_flag2 & (P2_ASLR_ENABLE | P2_ASLR_DISABLE)) {
+case 0:                d = PROC_ASLR_NOFORCE;       break;
+case P2_ASLR_ENABLE:   d = PROC_ASLR_FORCE_ENABLE;  break;
+case P2_ASLR_DISABLE:  d = PROC_ASLR_FORCE_DISABLE; break;
+}
+...
+*(int *)data = d;
+```
+
+Two bits is four values; there are three arms. `ENABLE|DISABLE` falls
+through with `d` uninitialised and `*(int *)data` copies it to
+userland — a kernel stack disclosure rather than a wrong answer.
+`-Wuninitialized` says nothing about it, and the analyser found it in
+one file the same way it found `igmp.c` and missed `mld6.c`.
+
+So this looks for the *shape*: a `switch` over `X & (A | B | …)`, with
+no `default:`, fewer than `2**N` arms, and a variable assigned inside
+that was declared without an initialiser. That last condition is what
+separates "the author enumerated the states that matter" from "a value
+escapes uninitialised", and it takes 37 candidate switches under `sys/`
+down to the two that mattered.
+
+Its own first version reported line 724 for a defect on line 820,
+because stripping `/* … */` **deleted** the lines rather than blanking
+them. A checker that names the wrong line is worse than one that names
+none — and it is the third tool here to have been caught out by its own
+explanatory comment.
+
 ### And the compiler cannot substitute for the analyser
 
 The five uninitialised returns in `docs/security/UB_FINDINGS.md` are all

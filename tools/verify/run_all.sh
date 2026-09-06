@@ -140,6 +140,13 @@ stage "pattern check: M_NOWAIT results used without a NULL check" \
     "nowait.log" \
     python3 tools/verify/nowait_check.py
 
+echo
+echo "== pattern check: a masked switch with fewer arms than states"
+(
+    cd "$ROOT" || exit 1
+    python3 tools/verify/masked_switch_check.py
+)
+
 stage "static analysis: the second instrument" \
     "analyze.log" \
     python3 tools/verify/analyze.py --scope lib/libc --scope lib/msun \
