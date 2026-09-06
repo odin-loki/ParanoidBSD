@@ -69,9 +69,17 @@ def main() -> int:
                     default=["lib/libc", "lib/msun"])
     ap.add_argument("--gate", action="store_true",
                     help="exit 1 if any port raises a warning the C did not")
+    ap.add_argument("--candidates", action="store_true",
+                    help="also check .c files that have NOT been ported yet. "
+                         "The same comparison applies - a candidate is "
+                         "compiled as C and as C++ exactly as a landed port "
+                         "is - so this is the pre-flight for the next batch "
+                         "rather than a regression check on the last one.")
     args = ap.parse_args()
 
-    ports = sorted(p for s in args.scope for p in (SRC / s).rglob("*.cpp"))
+    pats = ("*.cpp", "*.c") if args.candidates else ("*.cpp",)
+    ports = sorted(p for s in args.scope for pat in pats
+                   for p in (SRC / s).rglob(pat))
     findings = []
     for cpp in ports:
         cxx, cxx_err = flags_raised(cpp, True)

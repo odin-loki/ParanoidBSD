@@ -589,3 +589,50 @@ above.
 which is keyed on `.c` and would silently produce nothing for a `.cpp`. It
 resolves to the eleven `iconv` sources, none of which is in this batch,
 and all of which the screener rejects anyway.
+
+
+## What certifies a port, after runs 35 and 38
+
+Two files in the 27-file batch had `ir.equal`, `abi_equal` and
+`edits == 0`, passed the tree-side screener, and did not build. Each
+exposed something the oracle structurally cannot see.
+
+| run | file | what stopped it | why certification missed it |
+|---|---|---|---|
+| 35 | `gen/siglist.cpp` | `error: array designators are a C99 extension` | the oracle passes `-Wno-everything`; the build is `-Werror` |
+| 38 | `gen/isnan.cpp` | `ld.lld: version script assignment of 'FBSD_1.0' to symbol '__isnan' failed` | the whole file is inside `#ifdef PIC`; the oracle passes no `-DPIC`, so it **compared two empty modules** |
+
+The second is the sharper lesson. Nothing was wrong with the oracle's
+comparison — it compared what it compiled, and it compiled nothing. A
+vacuous check reports a pass unless it is built not to.
+
+So a port now has to survive four things, not two:
+
+| | |
+|---|---|
+| `check_port_candidates.py` | the tree permits the rename (6 rules) |
+| the oracle | `ir.equal`, `abi_equal`, `edits == 0` |
+| `check_port_cxx_warnings.py` | **no diagnostic under C++23 that C17 does not also raise** — a differential, so the four `lib/msun` files whose C originals already warn are not called regressions |
+| `check_port_symbols.py` | **the same exported symbols**, compiled with the build's `-D` set (`-DPIC` first among them), and **an empty module is a failure, not a pass** |
+
+Both new tools take `--candidates`, which applies the identical comparison
+to `.c` files that have not been ported. That turns them from a regression
+check on the last batch into a pre-flight for the next one.
+
+Run over the 60 still-unported zero-edit committable candidates:
+
+```
+  MANGLES  lib/libc/gen/isnan.c    only in C++: _Z7__isnand, _Z8__isnanff
+  58 clean, 1 would mangle, 0 vacuous
+
+  lib/libc/gen/siglist.c   new under C++: -Wc99-designator
+  60 candidates, 1 introduces a C++-only diagnostic
+```
+
+Each pre-flight names exactly the file that broke its run, and nothing
+else. **58 of the 60 are clean under all four.**
+
+`errlst.c` is the control worth keeping in mind: it is also `#ifdef PIC`
+and it is in the batch, and with `-DPIC` it compares clean, because
+`errlst.h` declares `sys_errlist` inside `__BEGIN_DECLS`. The guard is not
+the rule — emitting nothing is.
