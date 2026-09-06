@@ -1754,6 +1754,30 @@ of an exported function and `len` comes from a call it cannot see
 inside, so it has neither bound. The `g_read_data` boundary again — the
 check that matters here is one no modular checker can make.
 
+## `unix.Malloc` is 149 findings and a quarter of it is test files
+
+The category had never been read. Reading it:
+
+* **35 of the 149 are in `lib/libc/tests/`** — `fortify_string_test.c`
+  alone has 21. A leak in a program that runs once and exits is not the
+  finding a leak in libc is.
+* **5 say "Use of memory after it is freed"** rather than "potential
+  leak", which is a different class and the only part worth reading
+  first. Four are the `UNLINK`-then-`free` list walk already in the
+  table below; the fifth is `fmtmsg_test.c:206`, a test.
+* The rest are leak reports on error paths, dominated by three
+  variables: `st` (19), `dstvar` (15) and `np` (9).
+
+Across the whole sweep, 73 of 1626 findings (4.5%) are in test files —
+small overall, and 23% of this one category.
+
+`report.py` now prints that count per checker and in total. **Not
+dropped**: a test can have a real bug, and a finding nobody can see is
+indistinguishable from one that is not there. The same reason the
+`[triaged]` marker marks rather than hides. But "149 potential leaks"
+and "114 potential leaks, plus 35 in tests" are different sentences, and
+only one of them is true.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -1766,7 +1790,7 @@ Kept because the reasoning is what stops them being re-reported.
 | `strcat`, `stpcpy`, `memrchr`, … | a nondeterministic `char *` includes NULL. These are the functions' *missing preconditions*, not bugs. |
 | ~43 `lib/msun` "division by zero" | floating-point division by zero is **defined** by IEEE-754, and msun depends on it for `log(0)`, `logb`, `rsqrt` and `catrig`. |
 | `nsap_addr.c:xtob`, `getopt_long.c:gcd` | `static`. Their callers constrain the domain; a modular check does not see callers. |
-| `hash_buf.c:325`, `res_update.c:195`, `res_findzonecut.c:642` "use after free" | all three are `while ((p = HEAD(list))) { ...; UNLINK(list, p); free(p); }`. `UNLINK` updates `list.head` **before** the free — but only on the branch where `p->link.prev == NULL`, which the analyser cannot prove holds for a list head. |
+| `hash_buf.c:325`, `res_update.c:195`, `res_findzonecut.c:642` **and `:651`** "use after free" | all four are `while ((p = HEAD(list))) { ...; UNLINK(list, p); free(p); }`. `UNLINK` updates `list.head` **before** the free — but only on the branch where `p->link.prev == NULL`, which the analyser cannot prove holds for a list head. This row named **three of the four** until the `unix.Malloc` category was read: `free_nsrrset()` at `:641-642` and `free_nsrr()` at `:650-653` are the same idiom ten lines apart, and only the first was here. The guard on three of four, in this document's own triage table. |
 | `gethostbyht.c:213`, `getnetbyht.c:182` "garbage returned" | the path needs `errno` to be non-zero at `return ((errno != 0) ? errno : -1)` and zero at the caller's `!= 0`. `errno` is `(*__error())`, a call the analyser re-evaluates opaquely, so it does not know the two reads agree. |
 | `citrus_lookup_factory.c` "garbage returned" | same shape: `dump_db()` returns `errno` after a failed `malloc`, and the analyser does not model `malloc` setting `ENOMEM`. Reaching it needs `malloc` to return NULL with `errno == 0`, which FreeBSD's allocator does not do — `malloc(0)` returns a unique pointer rather than NULL. |
 | `cpuset_alloc.c:32` `MallocSizeof` | `CPU_ALLOC_SIZE(n)` is `__BITSET_SIZE(n)`, a **byte count**, deliberately not `sizeof(cpuset_t)`. |

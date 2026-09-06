@@ -183,6 +183,23 @@ def is_triaged(path: str, line) -> bool:
                for k in range(len(parts)))
 
 
+def is_test_file(path: str) -> bool:
+    """A translation unit that ships as a test rather than as the system.
+
+    23% of unix.Malloc is in lib/libc/tests - fortify_string_test.c
+    alone has 21 - and a leak in a program that runs once and exits is
+    not the same finding as a leak in libc. Reading "149 potential
+    leaks" without knowing a fifth of them are tests overstates it.
+
+    Counted separately and never dropped, for the same reason the
+    [triaged] marker marks instead of hiding: a finding nobody can see
+    is indistinguishable from one that is not there, and a test can
+    have a real bug in it too.
+    """
+    return ("/tests/" in path or "/test/" in path
+            or path.endswith(("_test.c", "_test.cpp")))
+
+
 def macro_report(sites, floor: int = 8) -> None:
     """Lines the analyser reports many times, which are macro expansions.
 
@@ -340,10 +357,21 @@ def main() -> int:
         finds = [(f, r) for r in an for f in r.get("findings", [])]
         by = collections.Counter(f["checker"] for f, _ in finds)
         sites = collections.Counter((f["where"], f["checker"]) for f, _ in finds)
+        tby = collections.Counter(f["checker"] for f, r in finds
+                                  if is_test_file(r["file"]))
+        ntest = sum(tby.values())
         print(f"\n== clang --analyze: {len(finds)} finding(s) at "
               f"{len(sites)} distinct site(s), a DIFFERENT instrument")
         for c, n in by.most_common():
-            print(f"  {n:4d}  {c}")
+            intest = tby.get(c, 0)
+            note = f"   ({intest} in test files)" if intest else ""
+            print(f"  {n:4d}  {c}{note}")
+        if ntest:
+            print(f"\n  {ntest} of those are in test files rather than in the")
+            print("  system. Not dropped - a test can have a real bug, and a")
+            print("  finding nobody can see is indistinguishable from one")
+            print("  that is not there - but 23% of unix.Malloc being")
+            print("  lib/libc/tests changes what that number means.")
         print("\n  Path-sensitive and interprocedural where CBMC is")
         print("  exhaustive and modular, and approximate where CBMC is")
         print("  exact.")
