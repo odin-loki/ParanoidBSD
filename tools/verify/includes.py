@@ -203,7 +203,12 @@ def opt_shim() -> str:
 
 def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str]:
     """-nostdinc plus everything that source needs, in build order."""
-    rel = src.relative_to(SRC).as_posix() if src.is_absolute() else str(src)
+    try:
+        rel = src.relative_to(SRC).as_posix() if src.is_absolute() else str(src)
+    except ValueError:
+        # Outside the tree - a probe or a scratch file. It gets the
+        # compiler's own headers and nothing of FreeBSD's.
+        return []
     arch = arch_of(rel, arch)
     flags = ["-nostdinc", f"-I{machine_shim(arch)}"]
 
