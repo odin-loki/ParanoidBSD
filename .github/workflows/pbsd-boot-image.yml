@@ -114,10 +114,22 @@ on:
           x86_64-portbld-freebsd15.0 vs x86_64-unknown-freebsd15.1 triple
           mismatch, and because SafeStack runs before main. This narrows six
           options to two, or rules them out and leaves four.
+
+          nobindnow is hbsd/src.conf.pbsd-nobindnow: everything pbsd has
+          EXCEPT BIND_NOW. Run 43's debugger output puts pid 1 in USERLAND,
+          spinning at one instruction inside ld-elf.so.1 with no shared
+          library mapped yet - so the question is which option breaks the
+          RUN-TIME LINKER, and /rescue/init gets past it by being
+          NO_SHARED. The rtld's own Makefile already forces MK_CFI=no and
+          NOPIE=yes, rtld-libc/Makefile.inc names the generic C string
+          functions explicitly, and run 43 ruled out SafeStack, which
+          leaves RELRO and BIND_NOW. -z relro alone is partial relro;
+          -z relro with -z now is FULL relro, and the rtld relocates itself
+          before anything exists to do it for it.
         required: false
         default: 'pbsd'
         type: choice
-        options: [pbsd, none, nosanitizer]
+        options: [pbsd, none, nosanitizer, nobindnow]
 
 jobs:
   image:
@@ -199,6 +211,7 @@ jobs:
             case "${{ inputs.src_conf }}" in
             none)        SRCCONF="" ;;
             nosanitizer) SRCCONF="$PWD/hbsd/src.conf.pbsd-nosanitizer" ;;
+            nobindnow)   SRCCONF="$PWD/hbsd/src.conf.pbsd-nobindnow" ;;
             *)           SRCCONF="$PWD/hbsd/src.conf.pbsd" ;;
             esac
             # Under `none` the build asks for FreeBSD's defaults, and PIE is
