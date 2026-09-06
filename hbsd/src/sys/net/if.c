@@ -1595,6 +1595,12 @@ if_getgroup(struct ifgroupreq *ifgr, struct ifnet *ifp)
 	} else {
 		len = ifgr->ifgr_len;
 		ifgp = ifgr->ifgr_groups;
+		/*
+		 * PBSD: as in the branch above, which says so explicitly.
+		 * An interface with no groups leaves this loop's body
+		 * unexecuted, and error is SIOCGIFGROUP's errno.
+		 */
+		error = 0;
 		CK_STAILQ_FOREACH(ifgl, &ifp->if_groups, ifgl_next) {
 			if (len < sizeof(ifgrq)) {
 				error = EINVAL;

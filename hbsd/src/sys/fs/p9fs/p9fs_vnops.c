@@ -621,6 +621,18 @@ p9fs_uflags_mode(int uflags, int extended)
 	case O_RDWR:
 	    ret = P9PROTO_ORDWR;
 	    break;
+
+	default:
+	    /*
+	     * PBSD: OFLAGS() is FFLAGS() undone, so a descriptor with
+	     * neither FREAD nor FWRITE - O_EXEC or O_PATH - gives
+	     * OFLAGS(0) == -1 and (-1 & 3) == 3, which had no case and
+	     * left ret uninitialised. It then went on the 9P wire as the
+	     * open mode. This function has no error channel, so the
+	     * unreadable-and-unwritable case asks for the least.
+	     */
+	    ret = P9PROTO_OREAD;
+	    break;
 	}
 
 	if (extended) {

@@ -514,6 +514,68 @@ precondition is four callers' responsibility and nothing checks it where
 it is depended on — which is how a user-supplied weight of 0 reached this
 line once already.
 
+## Fixed — four uninitialised returns, three of them reachable
+
+`core.uninitialized.UndefReturn`. All four are the same mistake: a
+variable assigned only inside a loop or a `switch` arm that some path
+does not take, then returned.
+
+### `sys/vm/vm_mmap.c` — `mincore(addr, 0, vec)` returns stack garbage
+
+`kern_mincore()` declares `int error` and assigns it only inside the scan
+loop and the trailing zero-fill loop. `len == 0` is not rejected — `end <
+addr` is the only bound above — so with `addr` page-aligned at the start
+of a map entry:
+
+* `end == addr`, so `while (entry->start < end)` is false;
+* `vecindex = atop(end - first_addr)` is 0 and `lastvecindex` is -1, so
+  `while ((lastvecindex + 1) < vecindex)` is false.
+
+Both loops are skipped and `return (error)` hands an uninitialised `int`
+back as the syscall's return value. **Unprivileged, one call, no setup.**
+
+### `sys/net/if.c` — `SIOCGIFGROUP` on an interface with no groups
+
+`if_getgroup()`'s `ifgr_len == 0` branch ends with an explicit
+`error = 0;`. The other branch sets `error` only inside
+`CK_STAILQ_FOREACH(ifgl, &ifp->if_groups, ...)`, and an interface with an
+empty group list never enters it. The author was thinking about this — in
+one of the two branches.
+
+### `sys/kern/vfs_lookup.c` — two `continue`s above the only assignment
+
+`vfs_lookup_cross_mount()` assigns `error` at its `VFS_ROOT()` call near
+the end of the body. Two `continue`s sit above it: the `dp->v_mountedhere
+!= mp` recheck and the `vfs_busy(mp, 0) != 0` failure. An iteration that
+takes either and then finds `dp` is no longer a mountpoint leaves the
+`do`/`while` with `error` never assigned, returning garbage into
+`namei()`.
+
+### `sys/fs/p9fs/p9fs_vnops.c` — a two-bit `switch` with three cases
+
+`p9fs_uflags_mode()` switches on `uflags & 3` with `O_RDONLY`, `O_WRONLY`
+and `O_RDWR`, and no `default`. `OFLAGS()` is `FFLAGS()` undone, so a
+descriptor carrying neither `FREAD` nor `FWRITE` — `O_EXEC`, `O_PATH` —
+gives `OFLAGS(0) == -1` and `(-1 & 3) == 3`. `ret` is then uninitialised
+and goes on the 9P wire as the open mode. The function has no error
+channel, so the unreadable-and-unwritable case now asks for the least
+(`P9PROTO_OREAD`), and the `default:` makes the switch total.
+
+### `sys/kern/kern_event.c` ×2 — not reachable, and fixed anyway
+
+`kevent11_copyout()` and `kevent11_copyin()` assign `error` only inside
+their loop. Their two non-compat siblings handle `count == 0` **by
+construction** — `copyout(p, u, 0)` is a well-defined no-op returning 0 —
+and no caller passes 0 today (`kqueue_scan` guards with `nkev != 0`,
+`kern_kevent` with `n >= 1`). This is the four `kevent_copyops`
+implementations agreeing on a contract, not a reachable bug, and it is
+recorded that way.
+
+All five files are registered in `tools/check_pbsd_marks.py`, verified by
+reverting each fix in turn and watching the gate name that file. `FIXES`
+now takes a list per file, because `sys/vm/vm_mmap.c` needed a second
+entry alongside its `MAP_32BIT` one.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

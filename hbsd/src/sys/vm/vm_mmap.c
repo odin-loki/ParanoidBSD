@@ -918,7 +918,16 @@ kern_mincore(struct thread *td, uintptr_t addr0, size_t len, char *vec)
 	vm_paddr_t pa;
 	vm_page_t m;
 	vm_pindex_t pindex;
-	int error, lastvecindex, mincoreinfo, vecindex;
+	/*
+	 * PBSD: error was uninitialised and is this syscall's return value.
+	 * It is assigned only inside the scan loop and the trailing
+	 * zero-fill loop, and mincore(addr, 0, vec) skips both when addr is
+	 * page-aligned at the start of a map entry: end == addr makes
+	 * `entry->start < end` false, and vecindex == 0 with
+	 * lastvecindex == -1 makes `(lastvecindex + 1) < vecindex` false.
+	 * len == 0 is not rejected above - `end < addr` is the only bound.
+	 */
+	int error = 0, lastvecindex, mincoreinfo, vecindex;
 	unsigned int timestamp;
 
 	/*

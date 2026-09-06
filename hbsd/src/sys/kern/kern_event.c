@@ -1388,7 +1388,16 @@ kevent11_copyout(void *arg, struct kevent *kevp, int count)
 {
 	struct freebsd11_kevent_args *uap;
 	struct freebsd11_kevent kev11;
-	int error, i;
+	/*
+	 * PBSD: kevent_copyout() and kevent_copyin() handle count == 0 by
+	 * construction - copyout(p, u, 0) is a well-defined no-op that
+	 * returns 0 - and these two COMPAT_FREEBSD11 versions assign error
+	 * only inside the loop. No caller passes 0 today (kqueue_scan
+	 * guards with `nkev != 0`, kern_kevent with `n >= 1`), so this is
+	 * about the four k_copyops implementations agreeing on a contract
+	 * rather than about a reachable bug.
+	 */
+	int error = 0, i;
 
 	KASSERT(count <= KQ_NEVENTS, ("count (%d) > KQ_NEVENTS", count));
 	uap = (struct freebsd11_kevent_args *)arg;
@@ -1417,7 +1426,7 @@ kevent11_copyin(void *arg, struct kevent *kevp, int count)
 {
 	struct freebsd11_kevent_args *uap;
 	struct freebsd11_kevent kev11;
-	int error, i;
+	int error = 0, i;	/* PBSD: as kevent11_copyout() above */
 
 	KASSERT(count <= KQ_NEVENTS, ("count (%d) > KQ_NEVENTS", count));
 	uap = (struct freebsd11_kevent_args *)arg;

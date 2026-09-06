@@ -966,7 +966,15 @@ vfs_lookup_cross_mount(struct nameidata *ndp)
 	struct componentname *cnp;
 	struct mount *mp;
 	struct vnode *dp, *tdp;
-	int error, crosslkflags;
+	/*
+	 * PBSD: error is assigned only at the VFS_ROOT() call near the end
+	 * of the body, and two `continue`s above it - the v_mountedhere
+	 * recheck and the vfs_busy() failure - jump straight to the
+	 * VIRF_MOUNTPOINT condition. An iteration that takes either and
+	 * then finds dp is no longer a mountpoint leaves this function
+	 * returning an uninitialised value into namei().
+	 */
+	int error = 0, crosslkflags;
 	bool crosslock;
 
 	cnp = &ndp->ni_cnd;

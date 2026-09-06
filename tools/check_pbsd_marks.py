@@ -54,11 +54,20 @@ FIXES = {
         "#ifdef MAP_32BIT\n",
         "call the map32bit setup only where the function is compiled",
     ),
-    "hbsd/src/sys/vm/vm_mmap.c": (
-        "#if defined(__LP64__) && defined(PAX_HARDENING)",
-        "#if defined(MAP_32BIT) && defined(PAX_HARDENING)",
-        "MAP_32BIT ASLR call sites match where the delta exists",
-    ),
+    "hbsd/src/sys/vm/vm_mmap.c": [
+        (
+            "#if defined(__LP64__) && defined(PAX_HARDENING)",
+            "#if defined(MAP_32BIT) && defined(PAX_HARDENING)",
+            "MAP_32BIT ASLR call sites match where the delta exists",
+        ),
+        (
+            "int error = 0, lastvecindex, mincoreinfo, vecindex;",
+            "int error, lastvecindex, mincoreinfo, vecindex;",
+            "kern_mincore() returned an uninitialised int to userland for "
+            "mincore(addr, 0, vec) on a page-aligned map entry start, which "
+            "skips both loops that assign it",
+        ),
+    ],
     "hbsd/src/sys/arm/allwinner/a64/sun50i_a64_acodec.c": (
         "mixer_lock = &m->lock;",
         "mixer_get_lock",
@@ -108,6 +117,35 @@ FIXES = {
         "struct nl_request_parsed req = {};",
         None,
         "same uninitialised parse target, in genl(1)",
+    ),
+    # Four uninitialised returns, three of them reachable, all found by
+    # clang's core.uninitialized.UndefReturn. See docs/security/UB_FINDINGS.md.
+    "hbsd/src/sys/net/if.c": (
+        "\t\terror = 0;\n\t\tCK_STAILQ_FOREACH(ifgl, &ifp->if_groups, ifgl_next) {",
+        None,
+        "if_getgroup() set error only inside a loop an interface with no "
+        "groups never enters, and error is SIOCGIFGROUP's errno",
+    ),
+    "hbsd/src/sys/kern/vfs_lookup.c": (
+        "int error = 0, crosslkflags;",
+        "int error, crosslkflags;",
+        "vfs_lookup_cross_mount() has two `continue`s above its only "
+        "assignment to error, so an iteration taking either and then "
+        "leaving the loop returned garbage into namei()",
+    ),
+    "hbsd/src/sys/fs/p9fs/p9fs_vnops.c": (
+        "\t    ret = P9PROTO_OREAD;\n\t    break;\n\t}",
+        None,
+        "p9fs_uflags_mode() switched on a two-bit value with three cases; "
+        "an O_EXEC or O_PATH descriptor gives (OFLAGS(0) & 3) == 3 and put "
+        "an uninitialised open mode on the 9P wire",
+    ),
+    "hbsd/src/sys/kern/kern_event.c": (
+        "int error = 0, i;\t/* PBSD: as kevent11_copyout() above */",
+        None,
+        "the two COMPAT_FREEBSD11 k_copyops assigned error only inside "
+        "their loop, where their two non-compat siblings handle count == 0 "
+        "by construction",
     ),
     # Three divisions by zero, all the same shape: a value that is 0 to
     # mean ABSENT used as a divisor by code that reads it as SMALL.
@@ -214,30 +252,37 @@ def main() -> int:
         if not (ROOT / rel).is_file():
             missing.append((rel, what, "PBSD added this file and it is gone"))
 
-    for rel, (want, unwanted, what) in sorted(FIXES.items()):
+    nfixes = 0
+    for rel, entry in sorted(FIXES.items()):
+        # One file can carry more than one independent PBSD fix, so a value
+        # may be a single (want, unwanted, what) or a list of them. It went
+        # this way the first time sys/vm/vm_mmap.c needed a second.
+        entries = entry if isinstance(entry, list) else [entry]
+        nfixes += len(entries)
         path = ROOT / rel
         if not path.is_file():
-            missing.append((rel, what, "file is gone"))
+            missing += [(rel, w, "file is gone") for _, _, w in entries]
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
-        if want not in text:
-            missing.append((rel, what, f"fix is gone: {want!r} not found"))
-        elif unwanted is not None and unwanted in text:
-            missing.append((rel, what, f"bug is back: {unwanted!r} present"))
+        for want, unwanted, what in entries:
+            if want not in text:
+                missing.append((rel, what, f"fix is gone: {want!r} not found"))
+            elif unwanted is not None and unwanted in text:
+                missing.append((rel, what, f"bug is back: {unwanted!r} present"))
 
     for rel, what, why in missing:
         print(f"FAIL  {rel}: {why}")
         print(f"      PBSD change here: {what}")
 
     if missing:
-        print(f"\n{len(missing)} of {len(MARKS) + len(FIXES) + len(PBSD_FILES)}"
+        print(f"\n{len(missing)} of {len(MARKS) + nfixes + len(PBSD_FILES)}"
               " PBSD items in the vendor tree lost.")
         print("An upstream merge takes upstream's side on an edited file")
         print("without a conflict, and a re-import can drop an added one.")
         print("Neither says anything. Recover from the commit before it.")
         return 1
 
-    print(f"PBSD vendor edits intact — {len(MARKS)} markers, {len(FIXES)} "
+    print(f"PBSD vendor edits intact — {len(MARKS)} markers, {nfixes} "
           f"fixes, {len(PBSD_FILES)} added files.")
     return 0
 
