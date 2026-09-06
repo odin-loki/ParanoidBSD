@@ -407,7 +407,16 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/sys",
                   f"-I{SRC}/sys/contrib/ck/include",
                   f"-I{SRC}/sys/contrib/libnv",
-                  f"-I{SRC}/sys/cddl/compat/opensolaris"]
+                  # The opensolaris/dtrace/ZFS include set, which the
+                  # module Makefiles add and nothing else does.
+                  # sys/modules/dtrace/dtrace/Makefile:47-50 is the list;
+                  # without it 18 files fail on <sys/dtrace.h> and 12 more
+                  # on <sys/dtrace_impl.h>, in sys/cddl alone.
+                  f"-I{SRC}/sys/cddl/compat/opensolaris",
+                  f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/common",
+                  f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs",
+                  f"-I{SRC}/sys/cddl/contrib/opensolaris/common/zfs",
+                  f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/intel"]
         rd = resource_dir(cc)
         if rd:
             flags.append(f"-I{rd}")

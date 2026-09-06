@@ -108,6 +108,61 @@ def analyze(job: dict) -> dict:
 DEFAULT_SCOPES = ["lib/libc", "lib/msun"]
 
 
+def summarise_errors(path: str, top: int = 12) -> None:
+    """Why the translation units that did not compile did not compile.
+
+    An ERROR is not a finding, so a file that will not compile contributes
+    NOTHING and says so nowhere. That is how the kernel corpus sat at 1,227
+    usable translation units out of 6,914 without anybody noticing: the
+    summary line said "1227 OK, 5687 ERROR" and the reason was five
+    thousand individual messages nobody had bucketed.
+
+    Bucketing them by hand three times found three generated headers the
+    build makes and this did not - device_if.h (2,540 files), then
+    vnode_if_typedef.h, then usbdevs.h - and each one roughly doubled what
+    could be checked. So it is a mode now rather than a one-liner rewritten
+    each time.
+    """
+    import collections
+    buckets: collections.Counter = collections.Counter()
+    example: dict[str, str] = {}
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                if not line.strip():
+                    continue
+                try:
+                    r = json.loads(line)
+                except ValueError:
+                    continue
+                if r.get("status") != "ERROR":
+                    continue
+                d = r.get("detail") or ""
+                m = re.search(r"fatal error: '([^']+)' file not found", d)
+                if m:
+                    key = f"missing header: {m.group(1)}"
+                else:
+                    m2 = re.search(r"error: (.{0,72})", d)
+                    key = (m2.group(1) if m2 else d[-72:]).strip()
+                    key = re.sub(r"\s+", " ", key)
+                buckets[key] += 1
+                example.setdefault(key, r["file"])
+    except OSError:
+        return
+    if not buckets:
+        return
+    print(f"\n== why {sum(buckets.values())} translation unit(s) did not "
+          "compile")
+    print("   A file that does not compile contributes no findings and "
+          "says so nowhere.")
+    for key, n in buckets.most_common(top):
+        print(f"  {n:5d}  {key}")
+        print(f"         e.g. {example[key]}")
+    rest = len(buckets) - min(top, len(buckets))
+    if rest > 0:
+        print(f"  ...and {rest} more distinct reason(s)")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -155,6 +210,8 @@ def main() -> int:
     print(f"\n{nfind} finding(s) across {len(jobs)} translation units")
     for k, v in sorted(counts.items()):
         print(f"  {k:8s} {v}")
+    if counts.get("ERROR"):
+        summarise_errors(args.out)
     return 0
 
 
