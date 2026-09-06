@@ -82,18 +82,28 @@ stage "classifying the kernel (its own header universe)" \
 stage "model checking: SCALAR and VOID, where an unguarded check is sound" \
     "ub.log" \
     python3 tools/verify/cbmc_driver.py --scope lib/libc --scope lib/msun \
-        --classes "$OUT/classes.json" --jobs "$J" --out "$OUT/ub.jsonl"
+        --classes "$OUT/classes.json" --jobs "$J" --resume \
+        --out "$OUT/ub.jsonl"
 
-stage "model checking: POINTER, under a stated precondition" \
+# The POINTER stage is MEMORY-bound, not CPU-bound, and killed a 16-job run
+# on WSL. --min-null-tree-depth makes CBMC build a tree of allocated objects
+# for every pointer parameter, and each solver instance can want gigabytes;
+# sixteen at once is tens of them. Quarter the jobs here, and cap each one.
+#
+# --resume matters as much: results are appended per function, so a run that
+# is killed loses only what was in flight, and starting again continues.
+PJ=$(( J / 4 )); [ "$PJ" -lt 2 ] && PJ=2
+stage "model checking: POINTER, under a stated precondition ($PJ jobs, memory-bound)" \
     "ptr.log" \
     python3 tools/verify/cbmc_driver.py --scope lib/libc --scope lib/msun \
         --classes "$OUT/classes.json" --allow POINTER --null-depth 3 \
-        --jobs "$J" --out "$OUT/ptr.jsonl"
+        --jobs "$PJ" --timeout 30 --unwind 6 --resume --out "$OUT/ptr.jsonl"
 
 stage "model checking: the kernel" \
     "ksys.log" \
     python3 tools/verify/cbmc_driver.py --scope sys \
-        --classes "$OUT/classes_sys.json" --jobs "$J" --out "$OUT/ksys.jsonl"
+        --classes "$OUT/classes_sys.json" --jobs "$J" --resume \
+        --out "$OUT/ksys.jsonl"
 
 stage "static analysis: the second instrument" \
     "analyze.log" \
