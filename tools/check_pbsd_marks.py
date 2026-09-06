@@ -310,6 +310,32 @@ FIXES = {
         "the guard tested the CPU INDEX and used the POINTER; with CPU 0 "
         "absent from all_cpus, check_cpu_regs() dereferences NULL",
     ),
+    "hbsd/src/sys/cam/cam_queue.c": [
+        (
+            "if (new_size > CAM_MAX_DEV_OPENINGS)",
+            "int delta;\n\n\tdelta = new_size -",
+            "cam_ccbq_resize() computes 1 << fls(n + n/2) from an int a "
+            "userland ccb supplies through XPT_REL_SIMQ; the caller "
+            "bounded it below and not above",
+        ),
+        (
+            "if (openings > CAM_MAX_DEV_OPENINGS)",
+            None,
+            "cam_ccbq_init() is the twin of cam_ccbq_resize() with the "
+            "identical expression, exported beside it",
+        ),
+        (
+            "if (size < 0 || size == INT_MAX)",
+            None,
+            "camq_init()'s `size + 1` is UB at INT_MAX; exported, same "
+            "file, same class",
+        ),
+    ],
+    "hbsd/src/sys/cam/cam_queue.h": (
+        "#define\tCAM_MAX_DEV_OPENINGS\t65536",
+        None,
+        "the bound the three cam_queue.c clamps use",
+    ),
     "hbsd/src/sys/geom/raid/md_promise.c": (
         "meta->total_disks == 0 || meta->total_disks > PROMISE_MAX_DISKS",
         "width = vol->v_disks_count / 2;\n\t\tdisk_pos",

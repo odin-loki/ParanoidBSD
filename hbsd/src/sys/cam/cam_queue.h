@@ -57,6 +57,19 @@ TAILQ_HEAD(ccb_hdr_tailq, ccb_hdr);
 LIST_HEAD(ccb_hdr_list, ccb_hdr);
 SLIST_HEAD(ccb_hdr_slist, ccb_hdr);
 
+/*
+ * PBSD: an upper bound on a device's queue depth, to go with the lower
+ * bound the callers already have. cam_ccbq_resize() computes its array
+ * size as `1 << fls(n + n / 2)`, which overflows a signed int above two
+ * thirds of INT_MAX and then shifts an int by its own width - both
+ * undefined - and one of its callers takes n straight from userland.
+ * See cam_ccbq_resize() in cam_queue.c.
+ *
+ * 65536 is above what any real device can queue: NVMe's maximum is
+ * 65535 entries and SCSI's tag space is smaller still.
+ */
+#define	CAM_MAX_DEV_OPENINGS	65536
+
 struct cam_ccbq {
 	struct	camq queue;
 	struct ccb_hdr_tailq	queue_extra_head;

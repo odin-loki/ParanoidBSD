@@ -849,7 +849,7 @@ code right beside it already do the thing this one does not".
 | finding | why |
 |---|---|
 | `sys/arm/arm/identcpu-v6.c:260` `hw_buf_idx + len` | `hw_buf` is `char[81]`, the guard above resets at `hw_buf_idx + len + 2 >= 79`, and the longest string any caller passes is 17. CBMC cannot bound a `static int`. |
-| `sys/dev/videomode/pickmode.c:77` `/(htotal * vtotal)` | `videomode_list[]` is a `const struct videomode[46]` compiled into the kernel, not anything a monitor supplies. |
+| `sys/dev/videomode/pickmode.c:77` `/(htotal * vtotal)` | `videomode_list[]` is a generated `const` table compiled into the kernel, not anything a monitor supplies. Counted exactly in the table at the end of this document — this row said 46 from an eyeball and it is 92. |
 | `sys/i386/i386/machdep.c:1807` `md_spinlock_count - 1`, `sys/x86/x86/delay.c` `td_pinned + 1` | per-thread counters whose invariant is held by a paired enter/exit in another function. |
 | `sys/ddb/db_access.c:69,72` | `size` is 1, 2, 4 or 8 and `value` accumulates that many bytes; the operand of `<< 8` is `db_expr_t`, which is signed by design because DDB expressions are. |
 | `sys/cam/cam_queue.c:60,274` | `size` and `openings` are a driver's own queue depth. |
@@ -1043,6 +1043,105 @@ is wrong — but it is also why no instrument saw it: the analyser compiles
 the default configuration, and this block is not in it. A precedence-shaped
 typo in code nobody compiles is the least visible defect class there is.
 
+## Fixed — an int from a userland ccb, bounded below and not above
+
+`sys/cam/cam_queue.c`, `cam_ccbq_resize()`:
+
+```c
+	delta = new_size - (ccbq->dev_active + ccbq->dev_openings);
+	ccbq->total_openings += delta;
+	ccbq->dev_openings += delta;
+
+	new_size = imax(64, 1 << fls(new_size + new_size / 2));
+```
+
+`new_size + new_size / 2` overflows a signed `int` above two thirds of
+`INT_MAX`. Measured rather than reasoned:
+
+```
+new_size            = 2147483647
+n + n/2 exact       = 3221225470  (INT_MAX = 2147483647)
+n + n/2 as int      = -1073741826   <- signed overflow
+fls(that)           = 32            <- shift count == width of int
+```
+
+So `1 << fls(...)` then shifts an `int` by its own width. Two counts of
+undefined behaviour on one line, and `total_openings += delta` overflows
+beside them.
+
+### Where the number comes from
+
+```
+cam_xpt.c:2938   if ((crs->release_flags & RELSIM_ADJUST_OPENINGS) != 0) {
+cam_xpt.c:2939           /* Don't ever go below one opening */
+cam_xpt.c:2940           if (crs->openings > 0) {
+cam_xpt.c:2941                   xpt_dev_ccbq_resize(path, crs->openings);
+```
+
+The shape this tree keeps finding, with the author's own comment naming
+the half he checked. And `crs->openings` is userland's:
+
+* `passdoioctl()`'s `CAMIOCOMMAND` rejects only `func_code &
+  XPT_FC_XPT_ONLY` (`scsi_pass.c:1793`). `XPT_REL_SIMQ` is `0x05`
+  (`cam_ccb.h:146`) and carries no such bit, so it passes.
+* `passsendccb()` calls `xpt_merge_ccb()`, whose last statement is
+  `bcopy(&(&src_ccb->ccb_h)[1], &(&dst_ccb->ccb_h)[1], sizeof(union ccb)
+  - sizeof(struct ccb_hdr))` — the whole union body, `openings` and
+  `release_flags` included, copied from the caller.
+* `cam_periph_runccb()` → `xpt_action()` → the case above.
+
+The other three callers of `xpt_dev_ccbq_resize()` pass
+`sim->max_dev_openings`, `min(device->maxtags,
+sim->max_tagged_dev_openings)` and `sim->max_dev_openings` — SIM
+constants. This one is the only one that does not, and it is the only
+one with a bound.
+
+### What it is not
+
+Not memory corruption, and the reason is worth writing down because the
+first reading of it said otherwise. `camq_insert()` writes
+`queue_array[++entries]` under a `KASSERT` — a no-op without
+`INVARIANTS` — and on a benign wrap `new_size` comes out as
+`imax(64, 1) == 64`, so the queue is *not* resized while `dev_openings`
+has been raised to about two billion. That looks like a write past a
+64-entry array.
+
+It is not, because `cam_ccbq_insert_ccb()` (`cam_queue.h:170-180`)
+checks `entries == array_size` first, tries `camq_resize()`, and on
+failure spills the lowest-priority ccb to `queue_extra_head`. The
+`KASSERT` asserts an invariant its caller maintains; it is not the only
+check. What is left is the arithmetic, which is wrong on its own terms.
+
+### The fix, and the twin it exposed
+
+A clamp at the top of `cam_ccbq_resize()`, before anything is computed
+from `new_size`, against a new `CAM_MAX_DEV_OPENINGS` of 65536 — above
+what any real device can queue, since NVMe's maximum is 65535 entries
+and SCSI's tag space is smaller.
+
+The first version clamped the upper bound only, and CBMC still reported
+the same two failures. It was right: `INT_MIN + INT_MIN / 2` underflows
+the identical sum from the other side. Both bounds are there now.
+
+Then the model checker found the twin. `cam_ccbq_init()` twenty lines
+down has
+
+```c
+	if (camq_init(&ccbq->queue,
+	    imax(64, 1 << fls(openings + openings / 2))) != 0)
+```
+
+— the same expression, exported beside the function I had just fixed,
+with both of its callers passing a SIM constant. Fixing one of a pair is
+the defect this document is mostly about, and I had just done it. It is
+clamped too, and so is `camq_init()`'s own `size + 1`, which is UB at
+`INT_MAX` for the same reason and in the same file.
+
+`sys/cam/cam_queue.c` now proves every arithmetic property CBMC checks
+in it. The two records that still say FAILED say it only for
+`__CPROVER_memory_leak`, which is what a function that returns its
+allocation looks like to a modular checker.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -1096,3 +1195,5 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/geom/shsec/g_shsec.c:107`, `g_stripe.c:111` | already listed above — `lcm()` is `static` and every caller passes a sector size. |
 | `sys/geom/virstor/g_virstor.c:1324` "left operand of `>=` is a garbage value" | `sc->map` is `malloc(..., M_WAITOK)` at `:1218` and filled by `bcopy(mapbuf, &sc->map[n], bs)` at `:1267`, where `mapbuf` came from `g_read_data()` in another translation unit. The `g_read_data()` boundary again, one indirection further out — the analyser cannot see the buffer written, so every field of the map is garbage to it. Reported before and after the divide-by-zero fix in the same function, at the same line, which is how the fix was confirmed not to have introduced it. |
 | `sys/geom/raid/md_intel.c:2569` `mmap1->disk_idx[sdi]` | `mmap1` is NULL exactly when `mvol->migr_state == 0` (`:2557`), and the loop 70 lines up (`:2489`, same array, same bound, nothing in between mutates it) sets `migr_state = 1` if **any** subdisk is `REBUILD` or `RESYNC`. This line runs only under that condition, so it cannot be reached with `mmap1` NULL. Worth noting that every other `mmap1` use in the loop carries an explicit `if (mvol->migr_state)` and this one does not — the guard is genuinely absent, it is simply redundant. |
+| `sys/dev/videomode/pickmode.c:77` division by zero and `dot_clock * 1000` | measured rather than argued: `videomode_list` is a generated `const` table of **92** entries (`videomode.c`, "THIS FILE AUTOMATICALLY GENERATED"), **none** with a zero `htotal` or `vtotal`, and its largest `dot_clock` is 297000, so `dot_clock * 1000` peaks at 297,000,000 against an `INT_MAX` of 2,147,483,647. The mode arguments are userland's; the divisor never is. |
+| `sys/arm64/arm64/cpu_errata.c:59`, `sys/arm64/vmm/vmm.c:230`, `sys/dev/psci/smccc.c:56,58`, `sys/i386/pci/pci_cfgreg.c:177,223`, `sys/kern/posix4_mib.c:139` | stale, not false: run 50's `ksys.jsonl` is timestamped 09:57 and the `sys/arm64/include/cpu.h` fix landed at 10:14. All six are the `CPU_IMPL_MASK` / `SMCCC_FUNC_ID` / `1 << slot` / `p31b_unsetcfg()` defects already fixed above. Worth a row because a triage pass that re-reads a fixed finding as a live one wastes exactly as much time as one that misses a real one. |

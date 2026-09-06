@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/malloc.h>
 #include <sys/kernel.h>
+#include <sys/limits.h>
 
 #include <cam/cam.h>
 #include <cam/cam_ccb.h>
@@ -50,6 +51,22 @@ static void	heap_down(cam_pinfo **queue_array, int index,
 int
 camq_init(struct camq *camq, int size)
 {
+	/*
+	 * PBSD: `size + 1` below is undefined at INT_MAX, and a negative
+	 * size sets array_size negative. The negative case already fails
+	 * - (size + 1) * sizeof() converts to a huge size_t and the
+	 * M_NOWAIT malloc cannot satisfy it - so rejecting it up front
+	 * changes nothing except that it now says so. INT_MAX is the one
+	 * that is UB rather than merely wrong.
+	 *
+	 * Not reachable today: every caller passes a bus's device count
+	 * or an opening count that cam_ccbq_init() and cam_ccbq_resize()
+	 * now clamp. camq_init() is exported in cam_queue.h, which is
+	 * the same reason those two carry the clamp rather than their
+	 * one reachable caller.
+	 */
+	if (size < 0 || size == INT_MAX)
+		return (1);
 	bzero(camq, sizeof(*camq));
 	camq->array_size = size;
 	if (camq->array_size != 0) {
@@ -255,6 +272,40 @@ cam_ccbq_resize(struct cam_ccbq *ccbq, int new_size)
 {
 	int delta;
 
+	/*
+	 * PBSD: clamp before anything is computed from new_size.
+	 *
+	 * XPT_REL_SIMQ with RELSIM_ADJUST_OPENINGS reaches here with
+	 * crs->openings copied verbatim out of a userland ccb -
+	 * xpt_merge_ccb() bcopy()s the whole union body, and pass(4)
+	 * does not restrict this function code. cam_xpt.c:2939 checks
+	 * `crs->openings > 0` and says why: "Don't ever go below one
+	 * opening". That is the lower bound, and there was no upper one.
+	 *
+	 * With new_size = INT_MAX:
+	 *
+	 *   new_size + new_size / 2   3221225470, wraps to -1073741826
+	 *   fls(-1073741826)          32
+	 *   1 << 32                   a shift by the width of the type
+	 *
+	 * two counts of undefined behaviour, and `total_openings +=
+	 * delta` overflows as well. INT_MIN underflows the same sum from
+	 * the other side, which is why both bounds are here and not just
+	 * the one the reachable caller needs. On a target where the wrap is
+	 * benign the result is imax(64, 1) == 64, so the queue is NOT
+	 * resized while dev_openings has been raised to ~2 billion.
+	 *
+	 * Not a memory-safety bug: cam_ccbq_insert_ccb() resizes on a
+	 * full queue and spills the lowest-priority ccb to
+	 * queue_extra_head when that fails, so camq_insert()'s KASSERT
+	 * is an invariant its caller maintains rather than the only
+	 * check. It is the arithmetic that is wrong.
+	 */
+	if (new_size < 0)
+		new_size = 0;
+	else if (new_size > CAM_MAX_DEV_OPENINGS)
+		new_size = CAM_MAX_DEV_OPENINGS;
+
 	delta = new_size - (ccbq->dev_active + ccbq->dev_openings);
 	ccbq->total_openings += delta;
 	ccbq->dev_openings += delta;
@@ -270,6 +321,17 @@ int
 cam_ccbq_init(struct cam_ccbq *ccbq, int openings)
 {
 	bzero(ccbq, sizeof(*ccbq));
+	/*
+	 * PBSD: the same clamp as cam_ccbq_resize(), because this is the
+	 * same expression. Both callers today pass a SIM's own
+	 * max_dev_openings, so this one is not reachable from userland -
+	 * but it is exported in cam_queue.h beside the function that is,
+	 * and fixing one of a pair is the defect this tree keeps finding.
+	 */
+	if (openings < 0)
+		openings = 0;
+	else if (openings > CAM_MAX_DEV_OPENINGS)
+		openings = CAM_MAX_DEV_OPENINGS;
 	if (camq_init(&ccbq->queue,
 	    imax(64, 1 << fls(openings + openings / 2))) != 0)
 		return (1);
