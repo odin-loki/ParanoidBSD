@@ -210,7 +210,12 @@ ARCH_DIR = {"amd64": "amd64", "aarch64": "aarch64", "arm": "armv7",
 # spelling again: sys/arm64 where libc says aarch64 and the ARCH table's
 # key is aarch64. sys/<this> -> the ARCH key to build the shim from.
 SYS_ARCH = {"amd64": "amd64", "arm64": "aarch64", "arm": "armv7",
-            "i386": "i386", "powerpc": "powerpc64", "riscv": "riscv64"}
+            "i386": "i386", "powerpc": "powerpc64", "riscv": "riscv64",
+            # ...and sys/cddl uses the TOOLCHAIN's spelling for the same
+            # directories - sys/cddl/dev/dtrace/aarch64, .../riscv64,
+            # .../powerpc64 - so both spellings map to the same shim.
+            "aarch64": "aarch64", "riscv64": "riscv64",
+            "powerpc64": "powerpc64"}
 
 
 def arch_of(rel: str, default: str = "amd64") -> str:
@@ -230,10 +235,22 @@ def arch_of(rel: str, default: str = "amd64") -> str:
         cand = ARCH_DIR.get(parts[2])
         if cand:
             return cand
-    if len(parts) > 2 and parts[0] == "sys":
-        cand = SYS_ARCH.get(parts[1])
-        if cand:
-            return cand
+    # ...and then it was still only sys/<arch>/, which is not where the
+    # kernel keeps all of its per-architecture code:
+    #
+    #   sys/cddl/dev/fbt/riscv/fbt_isa.c          <machine/riscvreg.h>
+    #   sys/cddl/dev/dtrace/aarch64/dtrace_subr.c <machine/armreg.h>
+    #   sys/cddl/contrib/opensolaris/uts/powerpc/dtrace/fasttrap_isa.c
+    #
+    # all asked amd64 for a header only their own architecture has. Any
+    # component that names an architecture names it, so take the DEEPEST
+    # one: sys/cddl/dev/dtrace/i386/ is i386, and the sys/ prefix is not
+    # a claim about anything.
+    if parts[0] == "sys":
+        for name in reversed(parts[1:-1]):
+            cand = SYS_ARCH.get(name)
+            if cand:
+                return cand
     return default
 
 

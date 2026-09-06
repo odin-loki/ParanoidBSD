@@ -105,38 +105,85 @@ code computes.
 or any other config under `sys/<arch>/conf` selects that one instead — a
 real handle now that the answer depends on it.
 
-### The one architecture this still cannot see
+### The architecture that could not be seen, and why
 
-`sys/arm` is 1 usable translation unit out of 322, and the arch fix did not
-change that. 188 of them stop at
+`sys/arm` was 1 usable translation unit out of 322. 188 of them stopped at
 
     machine/pcpu_aux.h:46: _Static_assert(PAGE_SIZE % sizeof(struct pcpu)
                            == 0, "fix pcpu size")
     note: expression evaluates to '256 == 0'
 
-`sizeof(struct pcpu)` comes out 640 in that translation unit and
-`PAGE_SIZE` is 4096, so it is 384 bytes off a divisor.
-`sys/arm/include/pcpu.h` ends `PCPU_MD_FIELDS` with a hand-tuned
-`char __pad[135]` sized for what the **real armv7 kernel build** produces.
+and the investigation went in circles for a long time: `sizeof(struct
+pcpu)` came out 640 in the real translation unit and 256 in a probe that
+included the same headers, while `clang -E -P` on both produced a
+**byte-identical** struct — 1030 characters, no diff. Two textually
+identical structs cannot have different sizes, so one number was not
+measuring what it appeared to.
 
-Reading the real kernel configuration (below) did **not** fix it, and
-narrowing it further only made it stranger. With the same flags:
+`-Xclang -fdump-record-layouts` said which:
 
-- a probe including exactly what `a10_padconf.c` includes —
-  `sys/param.h`, `sys/systm.h`, `sys/kernel.h`, `sys/types.h`,
-  `arm/allwinner/allwinner_pinctrl.h` — gives `sizeof(struct pcpu)` =
-  **256**, and 4096 % 256 = 0, so the assertion would pass;
-- the file itself gives **640**;
-- and `clang -E -P` on both produces a **byte-identical** `struct pcpu`,
-  alignment attribute included — 1030 characters, 23 lines, no diff.
+    0 | struct pcpu
+    0 |   struct thread * pc_curthread
+    8 |   struct thread * pc_idlethread
 
-Two textually identical structs cannot have different sizes, so one of
-those two numbers is not measuring what it looks like it is measuring, and
-finding out which needs a real armv7 build to compare against rather than
-more probing here.
+Eight-byte pointers, on a 32-bit architecture. **Nothing in this tooling
+ever passed `--target`**, so clang used the HOST triple for all six
+architectures, and the probe's 256 was as wrong as the file's 640 — both
+were x86-64.
 
-So: recorded, not hidden, and sharper than it was. Do not read "1 of 322"
-as "arm is clean".
+    no --target   sizeof(struct pcpu)=640   4096%640=256   rc=1
+    armv7 triple  sizeof(struct pcpu)=512   4096%512=0     rc=0
+
+The assertion the tree ships is correct and always was. arm and i386 are
+ILP32 and were being compiled LP64 — every struct layout, every pointer,
+every `long`. arm64, riscv64 and powerpc64 are LP64 like the host, so they
+only *accidentally* agreed; powerpc64 is big-endian and was being checked
+little-endian. Only amd64 was ever right.
+
+`TRIPLE` in `includes.py` fixes it for clang. goto-cc is a gcc driver: it
+rejects `--target=`, `--arm-linux` is an "uninterpreted gcc option", and
+`-m32` is the one thing it takes — so the model checker gets i386 exactly,
+armv7 in every respect CBMC reasons about, and the host model for the
+rest. **powerpc64's endianness cannot be modelled by goto-cc at all**, and
+endianness-dependent CBMC results on powerpc64 are not sound. That is the
+compiler's limit, and it is stated rather than papered over.
+
+    sys/arm     1 of 322 -> 274 of 323
+    sys/i386             -> 46 of 52
+
+The moral is the one this file keeps relearning: when two measurements of
+the same thing disagree, at least one instrument is lying, and the answer
+is to measure the instrument.
+
+### What the tree says about a file, read instead of guessed
+
+`sys/conf/files*` carries `compile-with` for 402 sources —
+
+    contrib/ck/src/ck_epoch.c standard compile-with "${NORMAL_C} -I$S/contrib/ck/include"
+
+— so `conf_file_includes()` reads it the way `kernconf_options()` reads
+`sys/conf/options`. `MODULE_INCLUDES` adds the sets that live only in
+module Makefiles, each entry citing the line it came from:
+`LINUXKPI_INCLUDES` (`kmod.mk:114-117`), `CDDL_CFLAGS`/`ZFS_CFLAGS`
+(`kern.pre.mk:172-208`), libsodium (`files:682`), and the
+`-DKBUILD_MODNAME` every `contrib/dev` driver names itself with.
+
+Order is not cosmetic. `kern.pre.mk` puts openzfs's spl include directory
+ahead of `-I$S` and passes `-D_SYS_CONDVAR_H_` so `<sys/condvar.h>`
+resolves to openzfs's. Append it *after* `-I sys` instead and the guard
+silences FreeBSD's header while nothing supplies the replacement, so
+`struct cv p_pwait` at `sys/sys/proc.h:775` has incomplete type — a
+compile error invented entirely by flag order.
+
+### Not everything under `sys/` is a kernel translation unit
+
+`includes.NOT_KERNEL` lists the subtrees that are userland C living under
+`sys/`: ACPICA's host tools (`iasl`, `acpidump`), OpenZFS's upstream Linux
+userland (`cmd/`, `tests/`, `udev/`, …) and its Linux kernel port. "Wants
+`<stdio.h>` under `-D_KERNEL`" is not a finding about the kernel, and 700
+of them drowned the ones that were.
+
+Both instruments consult it, so they agree on what is being checked.
 
 ## Why `classify.py` exists
 
@@ -176,17 +223,45 @@ neither. The analyser explores paths and stops at the first defect on each,
 so **three instances of one mistake in one file came back as one finding**.
 Exhaustiveness over paths is not exhaustiveness over instances.
 
+`sys/netinet6/mld6.c` made the same point more sharply. `sys/netinet/igmp.c`
+and `mld6.c` carry byte-for-byte the same division by zero — the same
+`min()` with a timer field that means *stopped* when it is 0. The analyser
+found it in `igmp.c` and reported **zero findings** for `mld6.c`, which
+compiled cleanly. So: read the class, then grep for it.
+
 So: `M_WAITOK` cannot fail, `M_NOWAIT` can and returns NULL, the difference
 is one token, and a pattern check finds every place the second is written
-and the result used anyway. Nine of the nine it reports today are real.
+and the result used anyway.
 
-It **reports and does not gate**, and the reason is in its docstring: four
+It **gates** now. It did not, and the reason was in its docstring: four
 false-positive classes, each found by reading output that looked like a
 hundred bugs and was not — `if ((p = malloc(...)) == NULL)` puts the test
 nowhere near the variable name; `if (m)` is a NULL test; `sizeof(p->x)`
 does not evaluate `p`; `mhead = mtail = alloc()` is checked on the other
-name. It also read its own explanatory comment as a bug. A lint that cannot
-parse C cannot carry a build.
+name. It also read its own explanatory comment as a bug.
+
+Those four are handled, the nine real sites it found are fixed, and the
+tree is at zero — so `--gate` is about the *next* one. A fifth class gets
+fixed by teaching `sites()` about it, never by an allowlist: an allowlist
+here would hide the next real one, which is the exact failure this lint
+exists to prevent.
+
+### And the compiler cannot substitute for the analyser
+
+The five uninitialised returns in `docs/security/UB_FINDINGS.md` are all
+"assigned only inside a loop that some path does not enter". That looks
+like something `-Wuninitialized` should say, and it is not — not for the
+real files, and not even for
+
+```c
+int f(int n) { int e; for (int i = 0; i < n; i++) e = i; return e; }
+```
+
+which `-Wuninitialized`, `-Wsometimes-uninitialized` and
+`-Wconditional-uninitialized` all compile in silence. clang's flow-sensitive
+warnings are deliberately conservative; the path-sensitive analyser is not.
+That is what `--analyze` buys over a warning flag, measured rather than
+assumed.
 
 ## What a result means
 
@@ -282,7 +357,25 @@ and the certificate carries the result across.
 | **`lib/msun/src/s_ceil.c`, `s_floor.c`** | `i1 + (1<<(52-j0))` in the `j0` ∈ [21,51] branch. At `j0 == 21` that is `1 << 31` on a signed `int`. `ceil(3000000.5)` reaches it. |
 | **`lib/libc/gen/nice.c`** | `prio + incr` — `incr` is the caller's `int`, so `nice(INT_MAX)` overflows. Reported, not yet fixed: defining it changes an exported function's behaviour and that is a decision, not a repair. |
 
-Both were confirmed with UBSan before anything was edited, and both were
-re-checked after: exhaustively against an independent reference for
-`stdbit` (197,376 cases, zero mismatches), and `PROVED` by CBMC plus an
-identical bit pattern for `rint`.
+Each was confirmed with UBSan before anything was edited, and re-checked
+after: exhaustively against an independent reference for `stdbit`
+(197,376 cases, zero mismatches), and `PROVED` by CBMC plus an identical
+bit pattern for `rint`.
+
+That table was the whole list once. **`docs/security/UB_FINDINGS.md` is
+the list now** — around thirty defects, and, just as usefully, the ones
+that looked like defects and were not, each with the reasoning that
+killed it. The reasoning is the part worth keeping: it is what stops a
+finding being re-reported, and three plausible ones died that way
+(`FP_ILOGB0` is `-INT_MAX` and not `INT_MIN`, so `-ilogb(x)` cannot
+overflow).
+
+The high-water marks so far, all reachable without privilege or from the
+network:
+
+- `mincore(addr, 0, vec)` returns an uninitialised `int` from the kernel;
+- a peer's RPC reply could `abort()` any client, because libc is not
+  built `-DNDEBUG`;
+- a user-supplied netlink nexthop weight of 0 divided by zero in the
+  kernel;
+- `snl_free()` was not idempotent, and closed the same fd twice.
