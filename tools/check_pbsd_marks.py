@@ -478,6 +478,15 @@ FIXES = {
             "dereference or a wild read inside the run-time linker",
         ),
         (
+            "PBSD: where starts NULL, and a bitmap entry that arrives",
+            None,
+            "reloc_relr() read `where' on the RELR bitmap branch and "
+            "assigned it only on the address branch, so a DT_RELR whose "
+            "first entry is a bitmap made the run-time linker WRITE "
+            "through an indeterminate pointer, driven by the contents "
+            "of the object being loaded",
+        ),
+        (
             "PBSD: first_seg was declared and never initialised",
             "\tbool first_seg;\n",
             "parse_rtld_phdr() read an indeterminate bool to decide "

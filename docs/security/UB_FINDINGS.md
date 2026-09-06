@@ -2416,10 +2416,42 @@ exist.
 `digest_phdr()`, which does the same walk sixty lines away, uses `int
 nsegs = 0` and `if (nsegs == 0)`. Initialised there. One of a pair.
 
-`rtld.c` is at 4 findings, from 8. The remaining four —
-`NullDereference` and `uninitialized.Assign` at `:3751`/`:3752`, an
-`uninitialized.Assign` at `:4822`, and a `unix.Malloc` leak at `:6690` —
-are unread.
+**`reloc_relr()` — a write through an indeterminate pointer, driven by
+the file being loaded.** RELR alternates: an even entry is an address
+and sets `where`, an odd entry is a bitmap of the words after the last
+one.
+
+```c
+	Elf_Addr *where;
+	...
+		if ((entry & 1) == 0) {
+			where = (Elf_Addr *)(obj->relocbase + entry);
+			*where++ += (Elf_Addr)obj->relocbase;
+		} else {
+			for (long i = 0; (entry >>= 1) != 0; i++)
+				if ((entry & 1) != 0)
+					where[i] += (Elf_Addr)obj->relocbase;
+```
+
+`where` is assigned on the address branch and read on the bitmap branch.
+A well-formed section always opens with an address, so it is always set
+first — and `obj->relr` is `DT_RELR` out of **the object being loaded**,
+so that well-formedness is a property of the file rather than of this
+code. A section whose first entry is a bitmap leaves `where`
+indeterminate, and the bitmap branch does not read it, it **writes
+through it**. Now NULL-initialised, with a bitmap-before-address entry
+refused.
+
+"The linker would not emit that" is not a bound the run-time linker gets
+to assume about every object it is asked to map.
+
+`rtld.c` is at **2 findings, from 8**. Both remaining are read and left
+alone:
+
+| reported | why it is not a defect |
+|---|---|
+| `rtld.c:4845` `s_entry->dls_name = arg->strspace` | `arg` arrives as `void *param` from `fill_search_info()`'s three callers (`:2404`, `:2409`, `:4894`), and every one of them sets `strspace` to point just past the `dl_serpath` array before the fill pass runs. The `RTLD_DI_SERINFOSIZE` pass, which is the one that runs before `strspace` means anything, takes the other arm of the `if`. A `void *` callback parameter is about as far as an interprocedural analysis can be asked to see. |
+| `rtld.c:6713` "potential leak of memory pointed to by `pe`" | real, and inconsequential. `open_binary_fd()` does `pathenv = strdup(pathenv)` and then `strsep(&pathenv, ":")`, which advances the pointer, so the original is lost. It is a few hundred bytes, once, at process start, on the direct-exec path (`rtld -p prog`) — and the function's own error paths call `rtld_die()`. A bounded one-time leak with defined behaviour is a different class from everything else in this file, and not worth a patch to vendor code. |
 
 **Two live defects in the run-time linker, in the first minute after the
 scope was added.** That is the argument for the `UNANALYSED` table, made

@@ -3736,7 +3736,28 @@ static void
 reloc_relr(Obj_Entry *obj)
 {
 	const Elf_Relr *relr, *relrlim;
-	Elf_Addr *where;
+	/*
+	 * PBSD: where starts NULL, and a bitmap entry that arrives before
+	 * any address entry is refused.
+	 *
+	 * RELR alternates: an even entry is an address and sets `where',
+	 * an odd entry is a bitmap of the words following the last one.
+	 * A well-formed section therefore always opens with an address.
+	 * This read `where' on the bitmap branch and assigned it only on
+	 * the address branch, so a section whose FIRST entry is a bitmap
+	 * left it indeterminate -- and the bitmap branch does
+	 *
+	 *	where[i] += (Elf_Addr)obj->relocbase;
+	 *
+	 * which is a WRITE through it.
+	 *
+	 * obj->relr is DT_RELR out of the object being loaded, so the
+	 * well-formedness that made this safe is a property of the file,
+	 * not of this code. "The linker would not emit that" is not a
+	 * bound the run-time linker gets to assume about every object it
+	 * is asked to map.
+	 */
+	Elf_Addr *where = NULL;
 
 	relrlim = (const Elf_Relr *)((const char *)obj->relr + obj->relrsize);
 	for (relr = obj->relr; relr < relrlim; relr++) {
@@ -3746,6 +3767,8 @@ reloc_relr(Obj_Entry *obj)
 			where = (Elf_Addr *)(obj->relocbase + entry);
 			*where++ += (Elf_Addr)obj->relocbase;
 		} else {
+			if (where == NULL)
+				continue;
 			for (long i = 0; (entry >>= 1) != 0; i++)
 				if ((entry & 1) != 0)
 					where[i] += (Elf_Addr)obj->relocbase;
