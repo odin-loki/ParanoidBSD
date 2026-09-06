@@ -97,6 +97,38 @@ def bucket(rec: dict) -> str:
     return "EXPORTED, arithmetic - READ THESE"
 
 
+def macro_report(sites, floor: int = 8) -> None:
+    """Lines the analyser reports many times, which are macro expansions.
+
+    sys/kern/subr_stats.c:351 came back 94 times in one sweep - 38% of
+    every core.NullDereference under sys/kern, sys/vm, sys/net, sys/fs and
+    sys/ufs put together. The line is
+
+        ARB_GENERATE_STATIC(ctdth32, voistatdata_tdgstctd32, ctdlnk, ctd32cmp);
+
+    a macro that generates an entire array-based red-black tree. Every
+    finding inside the generated code is attributed to the one line that
+    expanded it, so one macro outvotes every real defect in the sweep.
+
+    Counting sites as well as findings is the fix, and printing the worst
+    offenders is what stops the count being read as a defect count. They
+    are not suppressed: a real bug in a generated tree is still a real
+    bug, and it is still in the .jsonl.
+    """
+    heavy = [(w, c, n) for (w, c), n in sites.items() if n >= floor]
+    if not heavy:
+        return
+    heavy.sort(key=lambda x: -x[2])
+    total = sum(n for _, _, n in heavy)
+    print(f"\n  {total} of those are at {len(heavy)} line(s) reported "
+          f"{floor}+ times each,")
+    print("  which is what a code-generating macro looks like - every")
+    print("  finding inside the expansion carries the line that expanded")
+    print("  it. Read them as one site, not as that many defects.")
+    for w, c, n in heavy[:8]:
+        print(f"    {n:4d}  {w}  [{c}]")
+
+
 def agree(recs: list, an: list) -> None:
     """Where the two instruments land on the same line.
 
@@ -206,13 +238,15 @@ def main() -> int:
               if l.strip()]
         finds = [(f, r) for r in an for f in r.get("findings", [])]
         by = collections.Counter(f["checker"] for f, _ in finds)
-        print(f"\n== clang --analyze: {len(finds)} finding(s), a DIFFERENT "
-              f"instrument")
+        sites = collections.Counter((f["where"], f["checker"]) for f, _ in finds)
+        print(f"\n== clang --analyze: {len(finds)} finding(s) at "
+              f"{len(sites)} distinct site(s), a DIFFERENT instrument")
         for c, n in by.most_common():
             print(f"  {n:4d}  {c}")
         print("\n  Path-sensitive and interprocedural where CBMC is")
         print("  exhaustive and modular, and approximate where CBMC is")
         print("  exact.")
+        macro_report(sites)
         agree(recs, an)
 
     print("\n== before you fix anything")
