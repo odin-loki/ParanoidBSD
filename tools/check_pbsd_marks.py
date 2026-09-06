@@ -165,6 +165,28 @@ FIXES = {
         "that writes without reading first; it is exported in "
         "sys/sys/posix4.h and num == 0 gives facility[-1]",
     ),
+    "hbsd/src/sys/arm/ti/clk/ti_clk_dpll.c": [
+        (
+            "uint64_t cur, best = 0;",
+            # NOT "uint64_t cur, best;" as the must-not-appear: the same
+            # declaration is in ti_dpll_clk_set_freq() forty lines down,
+            # which assigns `best = cur = 0;` on the next line and is
+            # fine. The gate caught that on its first run, which is what
+            # it is for; the `want` string alone is unique and a merge
+            # that reverts the fix removes it.
+            None,
+            "ti_dpll_clk_find_best() read best at its first comparison "
+            "before assigning it, and returned it uninitialised when "
+            "either loop had zero iterations",
+        ),
+        (
+            "\t\tif (p == 0) {\n\t\t\tp++;\n\t\t\tcontinue;\n\t\t}",
+            None,
+            "p is a divisor and ti_clk_factor_get_min() returns 0 for a "
+            "TI_CLK_FACTOR_ZERO_BASED factor, so a zero-based p started "
+            "the loop at a divisor of zero",
+        ),
+    ],
     # Two GEOM tasters, which run on whatever medium is plugged in.
     "hbsd/src/sys/geom/part/g_part_ldm.c": [
         (

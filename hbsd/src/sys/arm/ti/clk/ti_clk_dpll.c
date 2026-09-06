@@ -111,7 +111,16 @@ static uint64_t
 ti_dpll_clk_find_best(struct ti_dpll_clknode_sc *sc, uint64_t fparent,
 	uint64_t *fout, uint32_t *factor_n, uint32_t *factor_p)
 {
-	uint64_t cur, best;
+	/*
+	 * PBSD: best is initialised. It is READ at the first comparison
+	 * below, before anything has assigned it, and RETURNED at the end
+	 * if either loop has zero iterations. Zero matches *factor_n and
+	 * *factor_p, which the next line already zeroes for that case, and
+	 * on the first real iteration abs(*fout - cur) beats abs(*fout - 0)
+	 * for any candidate anywhere near the target, so the first
+	 * candidate still wins as the code intends.
+	 */
+	uint64_t cur, best = 0;
 	uint32_t n, p, max_n, max_p, min_n, min_p;
 
 	*factor_n = *factor_p = 0;
@@ -122,6 +131,16 @@ ti_dpll_clk_find_best(struct ti_dpll_clknode_sc *sc, uint64_t fparent,
 	min_p = ti_clk_factor_get_min(&sc->p);
 
 	for (p = min_p; p <= max_p; ) {
+		/*
+		 * PBSD: p is a divisor, and ti_clk_factor_get_min() returns
+		 * 0 for a factor with TI_CLK_FACTOR_ZERO_BASED (:100-101).
+		 * A zero-based p factor therefore starts this loop at a
+		 * divisor of zero.
+		 */
+		if (p == 0) {
+			p++;
+			continue;
+		}
 		for (n = min_n; n <= max_n; ) {
 			cur = fparent * n / p;
 			if (abs(*fout - cur) < abs(*fout - best)) {

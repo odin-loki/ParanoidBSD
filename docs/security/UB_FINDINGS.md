@@ -863,6 +863,50 @@ argument for *storage* — CBMC starts every function with every global and
 every struct field nondeterministic, so an invariant maintained across
 calls is invisible to it in exactly the way a caller's precondition is.
 
+## Fixed — three defects in one twenty-five-line arm clock function
+
+`sys/arm/ti/clk/ti_clk_dpll.c`, `ti_dpll_clk_find_best()`:
+
+```c
+uint64_t cur, best;                     /* never assigned before use */
+...
+min_p = ti_clk_factor_get_min(&sc->p);
+for (p = min_p; p <= max_p; ) {
+        for (n = min_n; n <= max_n; ) {
+                cur = fparent * n / p;                    /* p can be 0 */
+                if (abs(*fout - cur) < abs(*fout - best)) /* best is garbage */
+                        best = cur;
+                ...
+        }
+}
+return (best);                          /* garbage if either loop is empty */
+```
+
+1. `best` is **read** at the first comparison, before anything assigns it.
+2. `best` is **returned** uninitialised when either loop has zero
+   iterations.
+3. `p` is a divisor, and `ti_clk_factor_get_min()` returns **0** for a
+   factor with `TI_CLK_FACTOR_ZERO_BASED` (`:100-101`) — so a zero-based
+   `p` factor starts the loop at a divisor of zero.
+
+`best = 0` matches `*factor_n` and `*factor_p`, which the function
+already zeroes for the empty case, and on the first real iteration
+`abs(*fout - cur)` beats `abs(*fout - 0)` for any candidate near the
+target, so the first candidate still wins as intended. `p == 0` is
+skipped, because zero is never a valid divisor.
+
+This is `sys/arm`, which had **one** usable translation unit out of 322
+before `--target` landed. Nothing here had ever been looked at.
+
+### The gate caught an over-broad marker of mine
+
+Registering the fix with `"uint64_t cur, best;"` as the must-not-appear
+string failed immediately, and correctly: `ti_dpll_clk_set_freq()` forty
+lines down has the identical declaration and assigns `best = cur = 0;` on
+the next line. The marker was not unique; the code was fine. The `want`
+string alone does the job, and a marker that matches a second function is
+the same mistake as a lint that reads its own comment.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -899,6 +943,7 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/dev/syscons/scvtb.c:114` `cols * rows` | video-mode dimensions, bounded by the hardware mode table. |
 | `sys/dev/ath/ath_hal/ah.c:422` `streams * 4` | `streams` is `HT_RC_2_STREAMS(rc)` = `((rc & 0x78) >> 3) + 1`, so 1..16 by construction and 1..4 in practice. Exported, so rule three cannot see `ath_hal_computetxtime_ht()` three lines up computing it. |
 | `sys/dev/dpaa2/dpaa2_swp.c:338` `sd << 5` and the eleven shifts beside it | both call sites (`:235`, `:254`) pass literal 0/1/2/3 for every `int` parameter. Exported, caller-constrained; the parameters would be better typed `uint8_t` like the six above them, which is a readability point and not a defect. |
+| `sys/net/if.c:1757-1759` (three), and every `fail:` label after an `M_ZERO` allocation | `ifa_alloc()` does `malloc(size, M_IFADDR, M_ZERO | flags)`, so all four counter fields are NULL before any of them is assigned, and its `fail:` path says so — `/* free(NULL) is okay */`. The analyser does not model `M_ZERO`, so every field of a zeroed allocation is an uninitialised value to it. This is a large class in a kernel that zeroes most of what it allocates. |
 | ~18 GEOM classes, "The left operand of `!=` is a garbage value" | one idiom, copied into 34 files: `buf = g_read_data(cp, off, len, &error); if (buf == NULL) return (error);` then a caller that checks `error != 0` before touching `md`. `g_read_data()` (`sys/geom/geom_io.c:878`) returns NULL **exactly when** it has set `*error` — `if (errorc) { g_free(ptr); ptr = NULL; }` is the last thing it does, with no earlier return — so `read_metadata()` cannot return 0 with the struct untouched. `geom_io.c` is a different translation unit, and the analyser is interprocedural *within* one and not *across* one, so it must assume the callee left `*error` alone. This is most of `sys/geom`'s 42 findings and it is one function's contract. The same shape, elsewhere: `sys/kern/sys_pipe.c:640,646` (`vm_map_find_locked()` fills `*addr` on `KERN_SUCCESS`) and `sys/kern/kern_jail.c:663` (`vfs_getopt()` fills `*buf` on 0, and the caller only proceeds when the length is positive). An out-parameter written across a translation-unit boundary is the general case. |
 | `sys/dev/ata/ata-all.c:698` `ATA_ATAPI_MASTER << target` | `target` is a two-valued channel index — `ata-ite.c`, the only caller, branches on `target == 0` five lines from the call and shifts by `target << 2` elsewhere. Exported, caller-constrained. |
 | `sys/kern/subr_blist.c:216` `blocks - 1` | signed `daddr_t`, so the subtraction overflows only at `DADDR_MIN`. `KASSERT(blocks > 0)` sits directly above — not a check without `INVARIANTS`, but every caller sizes a swap device. |
