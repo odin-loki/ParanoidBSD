@@ -2545,6 +2545,78 @@ the callers test it.
 
 `sys/net80211`: **11 findings → 6.**
 
+## The M_NOWAIT lint could not see the bug it exists to find
+
+The two 802.11 mesh NULL dereferences above are exactly what
+`tools/verify/nowait_check.py` was written for — an `M_NOWAIT`
+allocation dereferenced without a NULL test — and it reported neither.
+They were found by reading clang's output by hand.
+
+Two reasons, and they are different from each other:
+
+**The allocator was spelled differently.** `IEEE80211_MALLOC` is
+`#define IEEE80211_MALLOC malloc` (`ieee80211_freebsd.h:745`). The call
+sites do write the flag, as `IEEE80211_M_NOWAIT`, so the token test
+passed — the lint's hard-coded list of allocator *names* was the only
+thing keeping them out. `BITSET_ALLOC` is the same shape.
+
+**Or the flag never appears at the call site at all.**
+
+```c
+#define SCTP_MALLOC(var, type, size, name) \
+	do { var = (type)malloc(size, name, M_NOWAIT); } while (0)
+```
+
+`SCTP_MALLOC` is unconditionally `M_NOWAIT`, and the token lives in the
+macro body. So `if "M_NOWAIT" not in stmt: continue` skipped **every one
+of the tree's thirty-three SCTP_MALLOC calls** — a whole network
+protocol invisible to the check, and not because the test was wrong but
+because it was reading the wrong text. `R_Zalloc` in the routing code is
+the same.
+
+Both classes are covered now: the wrapper names joined the list, and the
+baked-in allocators get their own pattern that skips the token test and
+takes the variable from the macro's first argument rather than the left
+of an `=`.
+
+### What it then found
+
+Eight SCTP sites on the first run, six of which already had their NULL
+check — the checker had captured only the leading identifier of
+`asoc->strmin`, looked for a test on `asoc`, and found none. Member
+paths are the normal case for SCTP_MALLOC, so the capture takes the
+whole path now, and six false positives went away.
+
+The two that survived reading are real:
+
+- `sctp_pcb.c:5543` — `sctp_cpuarry` allocated and then indexed,
+  `sctp_cpuarry[i] = cpu`, with no test.
+- `sctp_pcb.c:5589` — `SCTP_BASE_STATS` allocated and then `memset`.
+  Live only under `SCTP_USE_PERCPU_STAT`, which nothing in this tree
+  defines — a reason it was never noticed and not a reason to leave it.
+
+Both are subsystem-init paths where `M_WAITOK` would have been the
+correct flag in the first place; both are now guarded.
+
+### And it was checked against the bugs it missed
+
+Not "it looks right now" — run against `ieee80211_mesh.c` **as it stood
+before today's fix**:
+
+```
+extended lint on the PRE-FIX ieee80211_mesh.c: 2 hit(s)
+  line 882   gr = IEEE80211_MALLOC(...)  ->  IEEE80211_ADDR_COPY(gr->gr_addr, addr);
+  line 2610  gr = IEEE80211_MALLOC(...)  ->  IEEE80211_ADDR_COPY(gr->gr_addr, ie.gann_addr);
+```
+
+Both of them, which is the whole point.
+
+One thing that showed up while testing and is worth knowing: run against
+the *fixed* file with only the `if (gr == NULL)` blocks deleted, it
+reports one site and not two — because the explanatory comment left
+behind is twelve lines long and pushes the dereference past the ten-line
+lookahead. The lint measures distance in lines, and a comment is lines.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

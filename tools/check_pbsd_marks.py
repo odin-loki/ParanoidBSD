@@ -445,6 +445,22 @@ FIXES = {
             "read-modify-writes it, with both selectors off the wire",
         ),
     ],
+    "hbsd/src/sys/netinet/sctp_pcb.c": [
+        (
+            "PBSD: SCTP_MALLOC is unconditionally M_NOWAIT",
+            None,
+            "sctp_startup_mcore_threads() indexed straight into an "
+            "unchecked SCTP_MALLOC result; the wait flag is inside the "
+            "macro, so no M_NOWAIT token appears at any of the tree's "
+            "SCTP_MALLOC call sites",
+        ),
+        (
+            "PBSD: same unchecked SCTP_MALLOC as",
+            None,
+            "sctp_pcb_init()'s SCTP_BASE_STATS allocation, live only "
+            "under SCTP_USE_PERCPU_STAT which this tree never defines",
+        ),
+    ],
     "hbsd/src/sys/net80211/ieee80211_mesh.c": [
         (
             ("PBSD: M_NOWAIT returns NULL under memory pressure", 1),

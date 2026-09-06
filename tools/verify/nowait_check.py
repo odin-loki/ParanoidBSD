@@ -47,14 +47,43 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
 
 # Allocators that take a wait flag and can return NULL with M_NOWAIT.
+#
+# IEEE80211_MALLOC and BITSET_ALLOC are macro spellings of the same
+# thing - `#define IEEE80211_MALLOC malloc' (ieee80211_freebsd.h:745)
+# and `#define BITSET_ALLOC(_s, mt, mf) malloc(..., (mf))'. Their call
+# sites DO write the flag, as IEEE80211_M_NOWAIT or M_NOWAIT, so only
+# this list of names was keeping them out. Two live NULL dereferences
+# in 802.11 mesh frame handlers were found by hand that this should
+# have reported.
 ALLOC = re.compile(
     r'(?P<var>[A-Za-z_]\w*)\s*=\s*'
     r'(?P<fn>malloc|mallocarray|malloc_domainset|malloc_domainset_aligned'
     r'|uma_zalloc|uma_zalloc_arg|uma_zalloc_domain|contigmalloc'
-    r'|m_get|m_getcl|m_gethdr|m_getjcl)\s*\(')
+    r'|m_get|m_getcl|m_gethdr|m_getjcl'
+    r'|IEEE80211_MALLOC|BITSET_ALLOC)\s*\(')
 # ng_message.h:402 - `if ((rsp) == NULL) break;` leaves rsp NULL and the
 # macro's callers each have to notice.
 MK = re.compile(r'NG_MKRESPONSE\(\s*(?P<var>\w+)')
+
+# Allocators with the wait flag BAKED IN, where M_NOWAIT never appears at
+# the call site at all:
+#
+#   #define SCTP_MALLOC(var, type, size, name) \
+#           do { var = (type)malloc(size, name, M_NOWAIT); } while (0)
+#   #define R_Zalloc(p, t, n) (p = (t) malloc(..., M_RTABLE, M_NOWAIT|M_ZERO))
+#
+# These are invisible to the M_NOWAIT token test below - not because the
+# test is wrong but because it is looking at the wrong text - so they get
+# their own pattern and skip that test. The variable is the macro's FIRST
+# argument rather than the left of an `=', like NG_MKRESPONSE above.
+#
+# The variable is a member PATH, not an identifier: nearly every
+# SCTP_MALLOC call allocates into `asoc->strmin' or `stcb->asoc.strmout'.
+# Capturing only the leading identifier made the checker look for a NULL
+# test on `asoc', find none, and report six correct sites as bugs.
+IMPLICIT_NOWAIT = re.compile(
+    r'\b(?P<fn>SCTP_MALLOC|R_Zalloc)\s*\('
+    r'\s*(?P<var>[A-Za-z_]\w*(?:\s*(?:->|\.)\s*\w+)*)')
 
 COND_START = ("if (", "if(", "} else if", "else if", "while (", "while(",
               "for (", "for(")
@@ -103,11 +132,14 @@ def sites(lines: list[str], ahead: int = 10):
     lines = _uncomment(lines)
     out = []
     for i, line in enumerate(lines):
-        m = ALLOC.search(line) or MK.search(line)
+        implicit = IMPLICIT_NOWAIT.search(line)
+        m = ALLOC.search(line) or MK.search(line) or implicit
         if not m:
             continue
         stmt = " ".join(x.strip() for x in lines[i:i + 4])
-        if "M_NOWAIT" not in stmt or "M_WAITOK" in stmt:
+        # The token test does not apply to the baked-in allocators: the
+        # flag is in the macro body, not on this line.
+        if not implicit and ("M_NOWAIT" not in stmt or "M_WAITOK" in stmt):
             continue
         # Inside an if/while condition: the value is being tested.
         if (line.lstrip().startswith(COND_START)

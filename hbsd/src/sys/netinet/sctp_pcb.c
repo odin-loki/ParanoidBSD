@@ -5543,10 +5543,30 @@ sctp_startup_mcore_threads(void)
 		SCTP_MALLOC(sctp_cpuarry, int *,
 		    (mp_ncpus * sizeof(int)),
 		    SCTP_M_MCORE);
-		i = 0;
-		CPU_FOREACH(cpu) {
-			sctp_cpuarry[i] = cpu;
-			i++;
+		/*
+		 * PBSD: SCTP_MALLOC is unconditionally M_NOWAIT.
+		 *
+		 *	#define SCTP_MALLOC(var, type, size, name) \
+		 *		do { var = (type)malloc(size, name, \
+		 *		    M_NOWAIT); } while (0)
+		 *
+		 * so it can return NULL and this indexed straight into it.
+		 * The flag is inside the macro, which is why neither the
+		 * token M_NOWAIT nor any wait-flag argument appears at the
+		 * call site, and why every SCTP_MALLOC in the tree was
+		 * invisible to the M_NOWAIT lint until it was taught the
+		 * baked-in spellings.
+		 *
+		 * Six of the eight sites it then reported already had their
+		 * NULL check. This one and the SCTP_BASE_STATS one below
+		 * did not.
+		 */
+		if (sctp_cpuarry != NULL) {
+			i = 0;
+			CPU_FOREACH(cpu) {
+				sctp_cpuarry[i] = cpu;
+				i++;
+			}
 		}
 	}
 	/* Now start them all */
@@ -5592,9 +5612,18 @@ sctp_pcb_init(void)
 #endif
 	(void)SCTP_GETTIME_TIMEVAL(&tv);
 #if defined(SMP) && defined(SCTP_USE_PERCPU_STAT)
+	/*
+	 * PBSD: same unchecked SCTP_MALLOC as sctp_startup_mcore_threads()
+	 * above. SCTP_USE_PERCPU_STAT is not defined anywhere in this tree,
+	 * so this arm does not compile today - which is a reason it was
+	 * never noticed and not a reason to leave it, since it is live for
+	 * anyone who turns the option on.
+	 */
+	if (SCTP_BASE_STATS != NULL) {
 	memset(SCTP_BASE_STATS, 0, sizeof(struct sctpstat) * (mp_maxid + 1));
 	SCTP_BASE_STATS[PCPU_GET(cpuid)].sctps_discontinuitytime.tv_sec = (uint32_t)tv.tv_sec;
 	SCTP_BASE_STATS[PCPU_GET(cpuid)].sctps_discontinuitytime.tv_usec = (uint32_t)tv.tv_usec;
+	}
 #else
 	memset(&SCTP_BASE_STATS, 0, sizeof(struct sctpstat));
 	SCTP_BASE_STAT(sctps_discontinuitytime).tv_sec = (uint32_t)tv.tv_sec;
