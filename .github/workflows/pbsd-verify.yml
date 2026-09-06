@@ -1,0 +1,229 @@
+# The whole verification sweep, on GitHub's runners instead of a laptop.
+#
+# tools/verify/run_all.sh is one script because on a 47GB workstation the
+# whole thing is an hour. A GitHub runner is 4 cores and 16GB with a
+# 6-hour job limit, so the same work has to be a PIPELINE: each stage its
+# own job, passing its output on as an artifact.
+#
+# Every stage already supports --resume, which is what makes this safe to
+# split. A stage that runs out of time leaves its .partial.jsonl behind in
+# the artifact, and re-running the workflow with that artifact restored
+# continues rather than starting again.
+#
+# Timings from the 31-job workstation run, scaled to 4 cores:
+#
+#   classify userland   1295 TUs          ~15 min
+#   classify kernel     4737 TUs          ~80 min
+#   model ub             695 fns          ~20 min
+#   model ptr           1893 fns          ~85 min   memory-bound, 2 jobs
+#   model ksys          1257 fns          ~65 min
+#   analyze             8452 TUs          sharded four ways, ~40 min each
+#
+# All well inside six hours, and they run concurrently after classify.
+name: PBSD verify
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope_note:
+        description: 'Free text recorded in the summary (what this run is for)'
+        required: false
+        default: ''
+  schedule:
+    # 03:00 UTC daily. The sweep is the slow instrument; nightly is the
+    # cadence it can actually keep.
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # docs/port_plan.json is the ledger every stage reads - which file
+      # defines which functions - and it is gitignored: 6.9MB generated
+      # from the tree, with only the markdown committed.
+      - name: Build the function ledger
+        run: python3 tools/port_plan.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plan
+          path: docs/port_plan.json
+          retention-days: 7
+
+  classify:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: userland
+            scopes: --scope lib/libc --scope lib/msun
+            out: classes.json
+            jobs: 4
+          - name: kernel
+            scopes: --scope sys
+            out: classes_sys.json
+            jobs: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: plan, path: docs }
+      - name: Install the instruments
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq cbmc clang
+      # A check that cannot see reports zero findings, and this repository
+      # has been bitten by that three times. A green sweep from broken
+      # instruments is the worst outcome available.
+      - name: Prove the instruments work before trusting any number
+        run: sh tools/setup_local.sh
+      - name: Classify ${{ matrix.name }}
+        run: |
+          mkdir -p out
+          python3 tools/verify/classify.py ${{ matrix.scopes }} \
+            --jobs ${{ matrix.jobs }} --resume --out out/${{ matrix.out }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: classes-${{ matrix.name }}
+          path: out/
+          retention-days: 7
+
+  model:
+    needs: classify
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # SCALAR and VOID, where an unguarded check is sound.
+          - name: ub
+            classes: classes-userland
+            args: --scope lib/libc --scope lib/msun --classes cls/classes.json --jobs 4
+            out: ub.jsonl
+          # POINTER, under a stated precondition. --min-null-tree-depth
+          # makes CBMC build a tree of allocated objects per pointer
+          # parameter and each solver instance can want gigabytes, so this
+          # one is memory-bound rather than CPU-bound: two jobs, not four.
+          - name: ptr
+            classes: classes-userland
+            args: >-
+              --scope lib/libc --scope lib/msun --classes cls/classes.json
+              --allow POINTER --null-depth 3 --jobs 2 --timeout 30 --unwind 6
+            out: ptr.jsonl
+          - name: ksys
+            classes: classes-kernel
+            args: --scope sys --classes cls/classes_sys.json --jobs 3
+            out: ksys.jsonl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { name: plan, path: docs }
+      - uses: actions/download-artifact@v4
+        with: { name: '${{ matrix.classes }}', path: cls }
+      - name: Install the instruments
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq cbmc clang
+      - name: Model check ${{ matrix.name }}
+        run: |
+          mkdir -p out
+          python3 tools/verify/cbmc_driver.py ${{ matrix.args }} \
+            --resume --out out/${{ matrix.out }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-${{ matrix.name }}
+          path: out/
+          retention-days: 7
+
+  # The cheapest instrument, and the one whose corpus grew the most when
+  # --target and the per-file include flags landed. Sharded because 8452
+  # translation units on four cores is most of an afternoon in one job.
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: libs,   scopes: '--scope lib/libc --scope lib/msun' }
+          - { name: kern,   scopes: '--scope sys/kern --scope sys/vm --scope sys/net --scope sys/netinet --scope sys/netinet6' }
+          - { name: fs,     scopes: '--scope sys/fs --scope sys/ufs --scope sys/geom --scope sys/cam --scope sys/security --scope sys/cddl' }
+          - { name: rest,   scopes: '--scope sys/dev --scope sys/arm64 --scope sys/amd64 --scope sys/arm --scope sys/i386 --scope sys/riscv --scope sys/powerpc --scope sys/x86 --scope sys/compat --scope sys/contrib --scope sys/crypto --scope sys/opencrypto --scope sys/ddb --scope sys/isa --scope sys/nfs --scope sys/netgraph --scope sys/netlink --scope sys/rpc --scope sys/kgssapi --scope sys/libkern --scope sys/modules --scope sys/nlm --scope sys/teken --scope sys/tests --scope sys/xen --scope sys/dts --scope sys/gnu --scope sys/sys --scope sys/hardenedbsd --scope sys/netipsec --scope sys/netpfil --scope sys/net80211 --scope sys/netsmb --scope sys/nfsclient --scope sys/nfsserver --scope sys/ofed --scope sys/bsm --scope sys/conf --scope sys/gdb --scope sys/mips --scope sys/tools --scope sys/xdr' }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the instruments
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang
+      - name: Analyse ${{ matrix.name }}
+        run: |
+          mkdir -p out
+          python3 tools/verify/analyze.py ${{ matrix.scopes }} \
+            --jobs 4 --out out/analyze-${{ matrix.name }}.jsonl
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: analyze-${{ matrix.name }}
+          path: out/
+          retention-days: 7
+
+  # The pattern checks are seconds, not hours, and they GATE - so they run
+  # on their own rather than behind three hours of model checking.
+  lints:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: M_NOWAIT results used without a NULL check
+        run: python3 tools/verify/nowait_check.py --gate
+      - name: A masked switch with fewer arms than states
+        run: python3 tools/verify/masked_switch_check.py --gate
+      # A scope nobody analyses reports zero findings and looks exactly
+      # like one that is clean. The first shard list here missed fourteen
+      # directories, sys/hardenedbsd among them.
+      - name: Every directory under sys/ is in an analyse shard
+        run: python3 tools/verify/check_shards.py
+
+  report:
+    needs: [model, analyze]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { pattern: 'model-*', path: dl, merge-multiple: true }
+      - uses: actions/download-artifact@v4
+        with: { pattern: 'analyze-*', path: dl, merge-multiple: true }
+      - name: One report over everything that finished
+        run: |
+          ls -la dl/
+          # The analyse shards are one corpus split four ways; report.py
+          # takes a single --analyze, so concatenate them. A shard that
+          # timed out simply is not here, and the report says how many
+          # translation units it saw rather than pretending otherwise.
+          cat dl/analyze-*.jsonl > dl/analyze.jsonl 2>/dev/null || : > dl/analyze.jsonl
+          set --
+          for f in dl/ub.jsonl dl/ptr.jsonl dl/ksys.jsonl; do
+            [ -f "$f" ] && set -- "$@" "$f"
+          done
+          if [ $# -eq 0 ]; then
+            echo "::error title=No model-checker output::every model job failed"
+            exit 1
+          fi
+          python3 tools/verify/report.py "$@" --analyze dl/analyze.jsonl \
+            | tee REPORT.txt
+          {
+            echo '### PBSD verify'
+            [ -n "${{ inputs.scope_note }}" ] && echo '_${{ inputs.scope_note }}_'
+            echo '```'
+            head -60 REPORT.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verify-report
+          path: |
+            REPORT.txt
+            dl/
+          retention-days: 14
