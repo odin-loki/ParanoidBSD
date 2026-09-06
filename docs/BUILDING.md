@@ -950,20 +950,80 @@ hardenedbsd/hbsd_pax_common.c    optional pax
 hardenedbsd/hbsd_pax_noexec.c    optional pax pax_noexec
 ```
 
-so the framework alone is a supported configuration. Every call site
-outside `sys/hardenedbsd` is `#ifdef`'d on its own feature — five of
-them, in `kern_exec.c`, `kern_fork.c` and `vm_unix.c`, checked one at a
-time.
+which reads as a promise that the framework alone is a configuration.
 
-`sys/amd64/conf/HARDENEDBSD-NOENFORCE` is `GENERIC` plus `PAX` and
-`PAX_SYSCTLS` and **none** of `PAX_ASLR`, `PAX_NOEXEC`, `PAX_SEGVGUARD`
-or `PAX_HARDENING`, plus `std.debug` because `boot_test.py` needs
-`ALT_BREAK_TO_DEBUGGER` and `GENERIC` has only `KDB`.
+### Run 52: it is not, and the claim here was mine
 
-If `/sbin/init` talks under it and not under `HARDENEDBSD`, one of those
-four is the answer and the next run bisects them. If it stays silent, the
+This section used to continue: *"so the framework alone is a supported
+configuration. Every call site outside `sys/hardenedbsd` is `#ifdef`'d
+on its own feature — five of them, in `kern_exec.c`, `kern_fork.c` and
+`vm_unix.c`, checked one at a time."*
+
+Five were. Run 52 built for forty-three minutes and stopped at the
+kernel link:
+
+```
+ld.lld: error: undefined symbol: pax_kmod_load_disabled
+>>> referenced by link_elf_obj.c:227, link_elf.c:248
+ld.lld: error: undefined symbol: pax_control_extattr_kmod
+>>> referenced by link_elf_obj.c:240, link_elf.c:261
+ld.lld: error: undefined symbol: pax_enforce_tpe
+>>> referenced by vm_mmap.c:461 (kern_mmap)
+ld.lld: error: undefined symbol: pax_harden_tty
+>>> referenced by tty.c:2034, tty.c:614
+```
+
+Four more call sites, in four files nobody had looked at. `vm_mmap.c:453`
+guards its block with a plain `#ifdef PAX`; the other three carry no
+guard at all. Their definitions live in files `sys/conf/files` gates on
+the **feature**:
+
+```
+hardenedbsd/hbsd_grsec_tpe.c         optional pax pax_hardening
+hardenedbsd/hbsd_pax_hardening.c     optional pax pax_hardening
+hardenedbsd/hbsd_control_extattr.c   optional pax pax_control_extattr
+```
+
+I read five call sites and generalised to all of them. The guard on five
+of nine is the shape this tree spends most of its time finding in other
+people's code, and this time it was in a claim of mine — which is why
+the wrong sentence stays quoted above rather than being edited away.
+
+`sys/sys/pax.h` already solved this correctly for exactly five
+functions, every one an `*_init_prison`, with an `#ifdef FEATURE` and an
+`#else` no-op. The four that broke the link now have the same treatment
+(permit values: `0`, `false`, `(pax_flag_t)0`), so `options PAX` alone
+links. Of the 43 functions in that header whose defining file is gated
+on a feature, **38 carried no `#ifdef`**; the other 34 were deliberately
+left alone, because they are called only from sites that are themselves
+`#ifdef`'d and a stub there would convert a loud link error into a
+silent no-op inside a security feature.
+
+### Run 53, the control as it actually runs
+
+`sys/amd64/conf/HARDENEDBSD-NOENFORCE` is `GENERIC` plus `PAX`,
+`PAX_SYSCTLS`, and — only because the kernel would not otherwise link at
+the time it was written — `PAX_HARDENING` and `PAX_CONTROL_EXTATTR`. It
+has **none** of `PAX_ASLR`, `PAX_NOEXEC` or `PAX_SEGVGUARD`, plus
+`std.debug` because `boot_test.py` needs `ALT_BREAK_TO_DEBUGGER` and
+`GENERIC` has only `KDB`.
+
+`PAX_HARDENING` is TPE, kernel-module restrictions and `TIOCSTI`;
+`PAX_CONTROL_EXTATTR` is extended-attribute policy for module loading.
+Neither touches how a process's own mappings are protected, which is
+what every run since 43 has pointed at — `prot=1/1`, `prot=5/5` and
+`prot=3/3` on three of the rtld's four mappings.
+
+So the control still isolates the three that matter. If `/sbin/init`
+talks under it and not under `HARDENEDBSD`, one of `PAX_ASLR`,
+`PAX_NOEXEC` or `PAX_SEGVGUARD` is the answer and the next run bisects
+them — starting with `PAX_NOEXEC`, which is W^X. If it stays silent, the
 kernel's hardening is not it either, and what is left is the difference
-between this tree and stock HardenedBSD — which is the C++ port.
+between this tree and stock HardenedBSD: the C++ port.
+
+Noted while reading `sys/conf/options` for this: there is a
+`PAX_ASLR_DELTA_RTLD_DEF_LEN`. rtld has its own randomisation delta, and
+rtld is exactly where every run so far has stopped.
 
 ### The control that costs one renamed file
 
