@@ -2577,7 +2577,31 @@ parse_rtld_phdr(Obj_Entry *obj)
 {
 	const Elf_Phdr *ph;
 	Elf_Addr note_start, note_end;
-	bool first_seg;
+	/*
+	 * PBSD: first_seg was declared and never initialised.
+	 *
+	 * It is READ at the top of the PT_LOAD arm below to decide
+	 * whether this is the first load segment, and ASSIGNED only
+	 * inside the branch that read chooses -- so the whole of
+	 * obj->vaddrbase depended on whatever byte the stack held. A
+	 * nonzero one gave the intended behaviour; a zero one skipped
+	 * `obj->vaddrbase = rtld_trunc_page(ph->p_vaddr)' for every
+	 * segment, leaving the run-time linker's own object entry based
+	 * at whatever obj_new() left there, and mapsize computed against
+	 * it on the next line.
+	 *
+	 * Reading an indeterminate bool is worse than reading an
+	 * indeterminate int: a byte that is neither 0 nor 1 is not a
+	 * valid representation of the type, and a compiler may do
+	 * anything with a value that cannot exist. This file has already
+	 * demonstrated what "anything" can mean - see _rtld() above and
+	 * docs/BUILDING.md.
+	 *
+	 * digest_phdr(), which does the same walk sixty lines away, uses
+	 * `int nsegs = 0' and `if (nsegs == 0)'. The counter is
+	 * initialised there. One of a pair.
+	 */
+	bool first_seg = true;
 
 #ifdef HARDENEDBSD
 	obj->stack_flags = PF_R | PF_W;
@@ -3270,7 +3294,16 @@ load_kpreload(const void *addr)
 	obj->phdr = phdr;
 	obj->phnum = ehdr->e_phnum;
 	phlimit = phdr + ehdr->e_phnum;
-	seg0 = segn = NULL;
+	/*
+	 * PBSD: phdyn gets the same NULL as its two siblings.
+	 *
+	 * seg0 and segn are initialised here because the loop below sets
+	 * them only if the object HAS a PT_LOAD; phdyn is set only if it
+	 * has a PT_DYNAMIC and was left indeterminate. Three pointers
+	 * filled the same way by the same loop, two of them defined
+	 * beforehand.
+	 */
+	phdyn = seg0 = segn = NULL;
 
 	for (; phdr < phlimit; phdr++) {
 		switch (phdr->p_type) {
@@ -3290,6 +3323,31 @@ load_kpreload(const void *addr)
 				segn = phdr;
 			break;
 		}
+	}
+
+	/*
+	 * PBSD: and all three are checked before they are dereferenced.
+	 *
+	 * segn->p_vaddr below, phdyn->p_vaddr twelve lines further down
+	 * and seg0->p_vaddr in the dbg() after it were each read without
+	 * a test, so an object with no PT_LOAD or no PT_DYNAMIC gave a
+	 * NULL dereference or a read through an indeterminate pointer -
+	 * inside the run-time linker, before the process has run a line
+	 * of its own code.
+	 *
+	 * check_elf_headers() above validates the ELF header and says
+	 * nothing about which program headers are present. The kernel is
+	 * what supplies this object, so a malformed one is not the
+	 * ordinary case; `not the ordinary case' is the whole of what
+	 * stood between here and a NULL dereference.
+	 *
+	 * -1 is the established failure here: check_elf_headers() and
+	 * digest_dynamic() both take it, and the caller turns it into
+	 * rtld_die().
+	 */
+	if (seg0 == NULL || segn == NULL || phdyn == NULL) {
+		obj_free(obj);
+		return (-1);
 	}
 
 	obj->mapbase = __DECONST(caddr_t, addr);

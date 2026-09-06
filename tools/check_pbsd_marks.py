@@ -468,7 +468,24 @@ FIXES = {
         "writes it; not a leak only because kern_ioctl() gates copyout "
         "on error == 0",
     ),
-    "hbsd/src/libexec/rtld-elf/rtld.c": (
+    "hbsd/src/libexec/rtld-elf/rtld.c": [
+        (
+            "PBSD: phdyn gets the same NULL as its two siblings",
+            None,
+            "load_kpreload() left phdyn indeterminate while giving seg0 "
+            "and segn a NULL, then dereferenced all three unchecked; a "
+            "vdso with no PT_LOAD or no PT_DYNAMIC gave a NULL "
+            "dereference or a wild read inside the run-time linker",
+        ),
+        (
+            "PBSD: first_seg was declared and never initialised",
+            "\tbool first_seg;\n",
+            "parse_rtld_phdr() read an indeterminate bool to decide "
+            "whether a PT_LOAD was the first segment, so obj->vaddrbase "
+            "was set or skipped according to a stack byte; digest_phdr() "
+            "sixty lines away initialises the same counter",
+        ),
+        (
         "PBSD: read the PaX flags AFTER the vector has been digested",
         "aux = (Elf_Auxinfo *)sp;\n\n\n#ifdef HARDENEDBSD",
         "THE BOOT BUG. _rtld() read aux_info[AT_PAXFLAGS] before either "
@@ -478,7 +495,8 @@ FIXES = {
         "that basis: _rtld was 32 bytes in boot run 56's ld-elf.so.1 and "
         "13,136 in run 57's, which is the first run to reach multi-user. "
         "Lose this line and /sbin/init stops booting",
-    ),
+        ),
+    ],
     "hbsd/src/sys/powerpc/ofw/ofw_real.c": [
         (
             "PBSD: instance is an OUT cell",

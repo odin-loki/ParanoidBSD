@@ -2354,13 +2354,76 @@ matrix by name, and an `UNANALYSED` entry naming a directory that no
 longer exists fails too, because a stale exemption is its own kind of
 lie.
 
-### Seven more findings in the rtld, now visible
+### Two more real ones in the rtld, from the first minute of coverage
 
-With the file compiling, `rtld.c` reports seven others — a
-`core.uninitialized.Branch` at `:2590`, three `NullDereference` around
-the program-header walk at `:3296`, `:3302`, `:3693`, two
-`uninitialized.Assign`, and a `unix.Malloc` leak. Unread as yet, and
-they are in the run-time linker.
+With the file compiling, `rtld.c` reported seven findings besides the
+boot bug. Two of them are defects of the same family, in the same file,
+found immediately:
+
+**`load_kpreload()` — three pointers, two initialised.** The vDSO
+loader walks the preloaded object's program headers:
+
+```c
+	const Elf_Phdr *phdr, *phlimit, *phdyn, *seg0, *segn;
+	...
+	seg0 = segn = NULL;
+
+	for (; phdr < phlimit; phdr++) {
+		switch (phdr->p_type) {
+		case PT_DYNAMIC:  phdyn = phdr;  break;
+		case PT_LOAD:     ... seg0, segn ...
+		}
+	}
+
+	obj->mapsize = segn->p_vaddr + segn->p_memsz;
+	...
+	obj->dynamic = (const Elf_Dyn *)(obj->relocbase + phdyn->p_vaddr);
+```
+
+`seg0` and `segn` are given NULL **because the author knew the loop
+might not set them**. `phdyn` is filled by the same loop, under the same
+conditions, and was left indeterminate. Then all three are dereferenced
+with no test at all — `segn` at `:3296`, `phdyn` at `:3302`, `seg0`
+inside the `dbg()` after it. An object with no `PT_LOAD` or no
+`PT_DYNAMIC` gives a NULL dereference or a read through garbage, inside
+the run-time linker, before the process has run a line of its own code.
+`check_elf_headers()` validates the ELF header and says nothing about
+which program headers exist. Now all three are NULL-initialised and
+checked, taking the `return (-1)` that `check_elf_headers()` and
+`digest_dynamic()` already use.
+
+**`parse_rtld_phdr()` — an uninitialised `bool`.**
+
+```c
+	bool first_seg;
+	...
+		case PT_LOAD:
+			if (first_seg) {
+				obj->vaddrbase = rtld_trunc_page(ph->p_vaddr);
+				first_seg = false;
+			}
+```
+
+Declared, never initialised, **read** to decide whether this is the
+first load segment and **assigned only inside the branch that read
+selects**. So `obj->vaddrbase` was set or skipped according to a stack
+byte, and `mapsize` computed against it on the next line. Reading an
+indeterminate `bool` is worse than an `int`: a byte that is neither 0
+nor 1 is not a valid representation of the type, and this file has
+already demonstrated what a compiler may do with a value that cannot
+exist.
+
+`digest_phdr()`, which does the same walk sixty lines away, uses `int
+nsegs = 0` and `if (nsegs == 0)`. Initialised there. One of a pair.
+
+`rtld.c` is at 4 findings, from 8. The remaining four —
+`NullDereference` and `uninitialized.Assign` at `:3751`/`:3752`, an
+`uninitialized.Assign` at `:4822`, and a `unix.Malloc` leak at `:6690` —
+are unread.
+
+**Two live defects in the run-time linker, in the first minute after the
+scope was added.** That is the argument for the `UNANALYSED` table, made
+better than the table itself makes it.
 
 ## Not defects, and why they looked like defects
 
