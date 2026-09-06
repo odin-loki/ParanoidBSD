@@ -612,6 +612,16 @@ kmem_back(vm_object_t object, vm_offset_t addr, vm_size_t size, int flags)
 	KASSERT(object == kernel_object,
 	    ("kmem_back: only supports kernel object."));
 
+	/*
+	 * rv is assigned inside the loop, and the loop does not run when
+	 * size is 0 - `return (rv)` then returns whatever was on the stack,
+	 * which every caller compares against KERN_SUCCESS. No caller in the
+	 * tree passes 0 today (memguard_alloc() returns early on it), so
+	 * this changes no current behaviour; it makes the function total
+	 * rather than leaving the next caller to find out.
+	 */
+	rv = KERN_SUCCESS;
+
 	for (start = addr, end = addr + size; addr < end; addr = next) {
 		/*
 		 * We must ensure that pages backing a given large virtual page

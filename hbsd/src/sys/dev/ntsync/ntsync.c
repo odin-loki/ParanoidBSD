@@ -212,8 +212,18 @@ ntsync_wait_locked(struct ntsync_wait_state *state, struct thread *td)
 
 	for (;;) {
 		ntsync_wait_check_ready(state);
-		if (state->ready)
+		/*
+		 * error is assigned by msleep_sbt() below, so breaking here
+		 * on the FIRST iteration returned it uninitialised - and this
+		 * is the common fast path, not an edge case: a wait on an
+		 * object that is already signalled is ready before the first
+		 * sleep. The second readiness check below already spells this
+		 * out as `error = 0`.
+		 */
+		if (state->ready) {
+			error = 0;
 			break;
+		}
 		error = msleep_sbt(state, &state->owner->lock,
 		    PCATCH, "ntsync", state->sb, state->prec,
 		    C_ABSOLUTE /* | C_HARDCLOCK XXXKIB */);

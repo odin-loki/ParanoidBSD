@@ -61,7 +61,8 @@ SNL_DECLARE_PARSER(request_parser, struct genlmsghdr, snl_f_p_empty,
 void
 parser_rpc(struct snl_state *ss __unused, struct nlmsghdr *hdr)
 {
-	struct nl_request_parsed req;
+	/* Not zeroed by the parser; an absent attribute leaves garbage. */
+	struct nl_request_parsed req = {};
 	struct genlmsghdr *ghdr = (struct genlmsghdr *)(hdr + 1);
 	XDR xdrs;
 	struct rpc_msg msg;
@@ -70,6 +71,11 @@ parser_rpc(struct snl_state *ss __unused, struct nlmsghdr *hdr)
 
 	if (!snl_parse_nlmsg(NULL, hdr, &request_parser, &req))
 		errx(EXIT_FAILURE, "failed to parse RPC message");
+
+	if (req.data == NULL) {
+		printf("RPC message with no body\n");
+		return;
+	}
 
 	printf("RPC %s: group %8s[0x%2x] length %4u XDR length %4u\n",
 	    ghdr->cmd == RPCNL_REQUEST ? "request" : "unknown",

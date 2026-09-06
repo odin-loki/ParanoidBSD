@@ -69,6 +69,7 @@ SYSCTL_DECL(_net_inet_ip);
  */
 #define	IPREASS_NHASH_LOG2	10
 #define	IPREASS_NHASH		(1 << IPREASS_NHASH_LOG2)
+#define	IPREASS_NHASH_MAX	(1 << 20)
 #define	IPREASS_HMASK		(V_ipq_hashsize - 1)
 
 struct ipqbucket {
@@ -689,6 +690,25 @@ ipreass_vnet_init(void)
 
 	V_ipq_hashsize = IPREASS_NHASH;
 	TUNABLE_INT_FETCH("net.inet.ip.reass_hashsize", &V_ipq_hashsize);
+	/*
+	 * The tunable was taken exactly as given, and three things here
+	 * require it to be a power of two greater than zero:
+	 *
+	 *   IPREASS_HMASK is V_ipq_hashsize - 1 and is used as a MASK, so a
+	 *   non-power-of-two selects bucket indexes past the end of V_ipq.
+	 *   ipq_reuse() takes `% V_ipq_hashsize`, and the line below divides
+	 *   by `V_ipq_hashsize / 2` - both divide by zero at 0.
+	 *
+	 * The bound stops a power of two large enough to make the M_WAITOK
+	 * allocation below the failure instead.
+	 */
+	if (V_ipq_hashsize == 0 || !powerof2(V_ipq_hashsize) ||
+	    V_ipq_hashsize > IPREASS_NHASH_MAX) {
+		printf("net.inet.ip.reass_hashsize must be a power of two "
+		    "in [1, %u]; ignoring %u and using %u\n",
+		    IPREASS_NHASH_MAX, V_ipq_hashsize, IPREASS_NHASH);
+		V_ipq_hashsize = IPREASS_NHASH;
+	}
 	V_ipq = malloc(sizeof(struct ipqbucket) * V_ipq_hashsize,
 	    M_IPREASS_HASH, M_WAITOK);
 
@@ -896,7 +916,14 @@ sysctl_maxfragpackets(SYSCTL_HANDLER_ARGS)
 static struct ipq *
 ipq_reuse(int start)
 {
-	struct ipq *fp;
+	/*
+	 * Assigned in the loop below, which runs at least once for any
+	 * V_ipq_hashsize >= 1 - the bucket == start iteration cannot take
+	 * the `continue`. ipreass_vnet_init() now rejects 0, so this is
+	 * belt and braces; an uninitialised struct ipq * returned here is
+	 * dereferenced by every caller.
+	 */
+	struct ipq *fp = NULL;
 	int bucket, i;
 
 	IPQ_LOCK_ASSERT(start);

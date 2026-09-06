@@ -174,7 +174,16 @@ SNL_DECLARE_GENL_PARSER(request_parser, rpcnl_attr_parser);
 static bool_t
 svc_nl_recv(SVCXPRT *xprt, struct rpc_msg *msg)
 {
-	struct nl_request_parsed req;
+	/*
+	 * snl_parse_header() writes only the attributes the message
+	 * carries; it does not zero the target. A request without
+	 * RPCNL_REQUEST_GROUP left req.group as stack garbage, compared
+	 * against sc->group below, and a request without RPCNL_REQUEST_BODY
+	 * left req.data a garbage POINTER that NLA_DATA_LEN() then
+	 * dereferences. sys/rpc/clnt_nl.c - the kernel end of this same
+	 * protocol - already declares its parse target `= {}`.
+	 */
+	struct nl_request_parsed req = {};
 	struct nl_softc *sc = xprt->xp_p1;
 	struct nlmsghdr *hdr = sc->hdr;
 
@@ -210,6 +219,10 @@ svc_nl_recv(SVCXPRT *xprt, struct rpc_msg *msg)
 		return (FALSE);
 
 	if (req.group != sc->group)
+		return (FALSE);
+
+	/* Zero-initialised above, so an absent body is NULL and not garbage. */
+	if (req.data == NULL)
 		return (FALSE);
 
 	xdrmem_create(&sc->xdrs, NLA_DATA(req.data), NLA_DATA_LEN(req.data),

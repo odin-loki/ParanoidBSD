@@ -89,6 +89,26 @@ FIXES = {
         "imgact_linux.c",
         "i386 module listed a source removed from the tree years ago",
     ),
+    # Three memory-safety fixes in the netlink RPC transport, found by
+    # clang's analyser and each reproduced on the single file before and
+    # after. See docs/security/UB_FINDINGS.md.
+    "hbsd/src/sys/netlink/netlink_snl.h": (
+        "ss->init_done = false;",
+        None,
+        "snl_free() is idempotent; snl_init() calls it and callers call it "
+        "again, which closed the fd twice and freed ss->buf twice",
+    ),
+    "hbsd/src/lib/libc/rpc/svc_nl.c": (
+        "struct nl_request_parsed req = {};",
+        None,
+        "the parser writes only present attributes; an absent body left "
+        "req.data a garbage pointer that NLA_DATA_LEN() dereferenced",
+    ),
+    "hbsd/src/usr.bin/genl/parser_rpc.c": (
+        "struct nl_request_parsed req = {};",
+        None,
+        "same uninitialised parse target, in genl(1)",
+    ),
 }
 
 

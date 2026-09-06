@@ -237,16 +237,36 @@ snl_clear_lb(struct snl_state *ss)
 	}
 }
 
+/*
+ * Releasing twice has to be safe, because snl_init() ITSELF calls this on
+ * every failure after the socket exists - and then returns false, leaving a
+ * caller that cleans up on failure to call it a second time.
+ * lib/libc/rpc/svc_nl.c:102 is such a caller: `if (!snl_init(...)) goto
+ * fail;` and fail: does snl_free(&sc->snl). So a setsockopt(NETLINK_EXT_ACK)
+ * that an older kernel rejects closed ss->fd twice, and an lb_init() that
+ * could not allocate freed ss->buf twice.
+ *
+ * The double close is the more reachable of the two and the worse: between
+ * the two closes another thread can be handed that descriptor number, and
+ * the second close then shuts down an unrelated connection.
+ *
+ * So clear what is released. A correct caller cannot tell the difference.
+ */
 static void
 snl_free(struct snl_state *ss)
 {
-	if (ss->init_done)
+	if (ss->init_done) {
 		close(ss->fd);
-	if (ss->buf != NULL)
+		ss->init_done = false;
+	}
+	if (ss->buf != NULL) {
 		free(ss->buf);
+		ss->buf = NULL;
+	}
 	if (ss->lb != NULL) {
 		snl_clear_lb(ss);
 		lb_free(ss->lb);
+		ss->lb = NULL;
 	}
 }
 

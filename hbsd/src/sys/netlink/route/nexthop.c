@@ -782,7 +782,23 @@ newnhg(struct unhop_ctl *ctl, struct nl_parsed_nhop *attrs, struct user_nhop *un
 		 * restrict nexthops with the same gateway
 		 */
 		wn[i].nh = unhop->un_nhop_src;
-		wn[i].weight = grp[i].weight;
+		/*
+		 * grp[] is a user-supplied NHA_GROUP attribute.
+		 * nlattr_get_nhg() checks its LENGTH and nothing else, so the
+		 * weight arrived unvalidated - and weight 0 panics the
+		 * kernel: calc_min_mpath_slots_fast() sorts the weights
+		 * ascending, takes xmin = wn[0].storage, and then evaluates
+		 * `total % xmin`. Its own comment says "each weight is > 0"
+		 * and nothing on this path made that true.
+		 *
+		 * Clamped rather than rejected, which is what
+		 * sys/netlink/route/rt.c:884 does for RTA_MULTIPATH and what
+		 * get_info_weight() does for RTV_WEIGHT. Linux stores an
+		 * RTNH weight biased by one, so a client sending 0 means the
+		 * default rather than an error.
+		 */
+		wn[i].weight = grp[i].weight > 0 ? grp[i].weight :
+		    RT_DEFAULT_WEIGHT;
 	}
 	unhop->un_nhgrp_src = wn;
 	unhop->un_nhgrp_count = count;
