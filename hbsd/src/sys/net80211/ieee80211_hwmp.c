@@ -1133,9 +1133,18 @@ hwmp_recv_preq(struct ieee80211vap *vap, struct ieee80211_node *ni,
 			struct ieee80211_mesh_gate_route *gr;
 
 			rtorig->rt_flags |= IEEE80211_MESHRT_FLAGS_GATE;
+			/*
+			 * PBSD: ieee80211_mesh_mark_gate() allocates with
+			 * M_NOWAIT and can now return NULL rather than
+			 * dereferencing it there. Both of its callers -
+			 * this one and the RANN handler below - assigned
+			 * through the result unchecked, and both run on a
+			 * frame received from a mesh peer.
+			 */
 			gr = ieee80211_mesh_mark_gate(vap, preq->preq_origaddr,
 			    rtorig);
-			gr->gr_lastseq = 0; /* NOT GANN */
+			if (gr != NULL)
+				gr->gr_lastseq = 0; /* NOT GANN */
 		}
 
 		/*
@@ -1786,9 +1795,11 @@ hwmp_recv_rann(struct ieee80211vap *vap, struct ieee80211_node *ni,
 		struct ieee80211_mesh_gate_route *gr;
 
 		rt->rt_flags |= IEEE80211_MESHRT_FLAGS_GATE;
+		/* PBSD: see the PREQ handler above - this can be NULL. */
 		gr = ieee80211_mesh_mark_gate(vap, rann->rann_addr,
 			rt);
-		gr->gr_lastseq = 0; /* NOT GANN */
+		if (gr != NULL)
+			gr->gr_lastseq = 0; /* NOT GANN */
 	}
 	/* discovery timeout */
 	ieee80211_mesh_rt_update(rt,

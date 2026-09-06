@@ -881,6 +881,21 @@ ieee80211_mesh_mark_gate(struct ieee80211vap *vap, const uint8_t *addr,
 		gr = IEEE80211_MALLOC(ALIGN(sizeof(struct ieee80211_mesh_gate_route)),
 		    M_80211_MESH_GT_RT,
 		    IEEE80211_M_NOWAIT | IEEE80211_M_ZERO);
+		/*
+		 * PBSD: M_NOWAIT returns NULL under memory pressure and
+		 * this dereferenced it immediately.
+		 *
+		 * Five IEEE80211_MALLOC sites in this file; :211, :665 and
+		 * :3458 check the result. These two - here and in
+		 * mesh_recv_action_meshgate() - did not, and both allocate
+		 * the same struct on a path reached from a received frame.
+		 * A remote peer that can make the kernel fail one
+		 * allocation gets a NULL dereference out of it.
+		 */
+		if (gr == NULL) {
+			MESH_RT_UNLOCK(ms);
+			return (NULL);
+		}
 		IEEE80211_ADDR_COPY(gr->gr_addr, addr);
 		TAILQ_INSERT_TAIL(&ms->ms_known_gates, gr, gr_next);
 	}
@@ -2529,6 +2544,29 @@ mesh_parse_meshgate_action(struct ieee80211_node *ni,
 {
 	struct ieee80211vap *vap = ni->ni_vap;
 	const struct ieee80211_meshgann_ie *gannie;
+	/*
+	 * PBSD: say so when the frame carried no GANN element.
+	 *
+	 * This walked the elements and returned 0 whether or not it found
+	 * one, so a GANN action frame containing any other element - or
+	 * none - left the caller's `struct ieee80211_meshgann_ie ie' an
+	 * untouched stack object and reported success.
+	 *
+	 * mesh_recv_action_meshgate() then compares ie.gann_addr against
+	 * iv_myaddr, stores ie.gann_seq into the known-gates table, and
+	 * does IEEE80211_ADDR_COPY(gr->gr_addr, ie.gann_addr) - six bytes
+	 * of this stack frame into a table whose contents this node
+	 * afterwards puts back on the air in its own GANN frames. The
+	 * frame is unauthenticated and comes from a mesh peer.
+	 *
+	 * mesh_parse_meshpeering_action(), the sibling parser forty lines
+	 * up, returns a POINTER and hands back NULL when the element it
+	 * needs is absent, and its caller checks. This one returns int
+	 * and never used the failure it already has: the caller's
+	 * `!= 0' arm logs "GANN parsing failed" and counts
+	 * is_rx_mgtdiscard.
+	 */
+	bool found = false;
 
 	while (efrm - frm > 1) {
 		IEEE80211_VERIFY_LENGTH(efrm - frm, frm[1] + 2, return -1);
@@ -2536,6 +2574,7 @@ mesh_parse_meshgate_action(struct ieee80211_node *ni,
 		case IEEE80211_ELEMID_MESHGANN:
 			gannie = (const struct ieee80211_meshgann_ie *) frm;
 			memset(ie, 0, sizeof(*ie));
+			found = true;
 			ie->gann_ie = gannie->gann_ie;
 			ie->gann_len = gannie->gann_len;
 			ie->gann_flags = gannie->gann_flags;
@@ -2549,7 +2588,7 @@ mesh_parse_meshgate_action(struct ieee80211_node *ni,
 		frm += frm[1] + 2;
 	}
 
-	return 0;
+	return (found ? 0 : -1);
 }
 
 /*
@@ -2609,6 +2648,12 @@ mesh_recv_action_meshgate(struct ieee80211_node *ni,
 		gr = IEEE80211_MALLOC(ALIGN(sizeof(struct ieee80211_mesh_gate_route)),
 		    M_80211_MESH_GT_RT,
 		    IEEE80211_M_NOWAIT | IEEE80211_M_ZERO);
+		/* PBSD: see ieee80211_mesh_mark_gate() - M_NOWAIT can fail,
+		 * and this is a GANN action frame off the air. */
+		if (gr == NULL) {
+			MESH_RT_UNLOCK(ms);
+			return (0);
+		}
 		IEEE80211_ADDR_COPY(gr->gr_addr, ie.gann_addr);
 		TAILQ_INSERT_TAIL(&ms->ms_known_gates, gr, gr_next);
 	}

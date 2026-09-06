@@ -2457,6 +2457,94 @@ alone:
 scope was added.** That is the argument for the `UNANALYSED` table, made
 better than the table itself makes it.
 
+## Fixed — a mesh action frame that reads the stack and puts it back on the air
+
+`sys/net80211` is 802.11, so its inputs arrive from the radio and nobody
+authenticated them. Eleven findings in the scope, five of them one chain.
+
+### The parser reports success without having parsed anything
+
+```c
+mesh_parse_meshgate_action(..., struct ieee80211_meshgann_ie *ie,
+    const uint8_t *frm, const uint8_t *efrm)
+{
+	while (efrm - frm > 1) {
+		IEEE80211_VERIFY_LENGTH(efrm - frm, frm[1] + 2, return -1);
+		switch (*frm) {
+		case IEEE80211_ELEMID_MESHGANN:
+			... fills *ie ...
+			break;
+		}
+		frm += frm[1] + 2;
+	}
+
+	return 0;
+}
+```
+
+The `switch` has one arm. A GANN action frame carrying any other element
+— or none — walks the loop, matches nothing, and **returns 0**. The
+caller:
+
+```c
+	struct ieee80211_meshgann_ie ie;		/* stack, uninitialised */
+
+	if (mesh_parse_meshgate_action(ni, wh, &ie, frm + 2, efrm) != 0) {
+		... "GANN parsing failed", is_rx_mgtdiscard++, return (0);
+	}
+
+	if (IEEE80211_ADDR_EQ(vap->iv_myaddr, ie.gann_addr))
+		return 0;
+	...
+	IEEE80211_ADDR_COPY(gr->gr_addr, ie.gann_addr);
+	...
+	gr->gr_lastseq = ie.gann_seq;
+```
+
+So an unauthenticated peer sends a GANN frame with the element left out,
+and the handler compares a stack-garbage MAC against the local address,
+files a stack-garbage sequence number in the known-gates table, and
+copies **six bytes of this kernel stack frame** into `gr->gr_addr` — a
+table whose contents this node afterwards transmits in the GANN frames
+it forwards. Kernel stack, onto the air, on request.
+
+The failure path already existed and was never reachable. It is now:
+the parser records whether it found the element and returns `-1` if it
+did not, which lands in the caller's existing discard arm.
+
+`mesh_parse_meshpeering_action()`, forty lines up, returns a **pointer**
+and hands back NULL when the element it needs is absent, and its caller
+checks. Same file, same job, same frame class.
+
+### And two allocations of five that never checked
+
+```c
+	gr = IEEE80211_MALLOC(ALIGN(sizeof(struct ieee80211_mesh_gate_route)),
+	    M_80211_MESH_GT_RT, IEEE80211_M_NOWAIT | IEEE80211_M_ZERO);
+	IEEE80211_ADDR_COPY(gr->gr_addr, addr);
+```
+
+`IEEE80211_MALLOC` is `malloc` and `IEEE80211_M_NOWAIT` is `M_NOWAIT`
+(`ieee80211_freebsd.h:745,749`), so it returns NULL under memory
+pressure. Five sites in `ieee80211_mesh.c`: `:211`, `:665` and `:3458`
+check the result; `:881` and `:2609` did not, and both allocate the same
+struct on a path a received frame reaches.
+
+The chain runs further. `ieee80211_mesh_mark_gate()` — the `:881` one —
+*returns* `gr`, and both of its callers are in `ieee80211_hwmp.c`, in
+the PREQ and RANN handlers, and both did
+
+```c
+	gr = ieee80211_mesh_mark_gate(vap, preq->preq_origaddr, rtorig);
+	gr->gr_lastseq = 0; /* NOT GANN */
+```
+
+with no check either. Four sites, all reached from frames off the air,
+all now guarded — the allocator's failure returns NULL up the chain and
+the callers test it.
+
+`sys/net80211`: **11 findings → 6.**
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

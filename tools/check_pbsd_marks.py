@@ -445,6 +445,42 @@ FIXES = {
             "read-modify-writes it, with both selectors off the wire",
         ),
     ],
+    "hbsd/src/sys/net80211/ieee80211_mesh.c": [
+        (
+            ("PBSD: M_NOWAIT returns NULL under memory pressure", 1),
+            None,
+            "two of this file's five IEEE80211_MALLOC sites dereferenced "
+            "an M_NOWAIT result unchecked, both allocating the same "
+            "struct on a path reached from a received 802.11 frame",
+        ),
+        (
+            "PBSD: see ieee80211_mesh_mark_gate() - M_NOWAIT can fail",
+            None,
+            "the GANN action-frame handler's copy of the same unchecked "
+            "allocation",
+        ),
+        (
+            "PBSD: say so when the frame carried no GANN element",
+            "\t\tfrm += frm[1] + 2;\n\t}\n\n\treturn 0;\n}",
+            "mesh_parse_meshgate_action() returned success whether or "
+            "not it found the element, so a GANN frame carrying none "
+            "left the caller's stack struct untouched and had six bytes "
+            "of kernel stack copied into the known-gates table and back "
+            "onto the air",
+        ),
+    ],
+    "hbsd/src/sys/net80211/ieee80211_hwmp.c": (
+        # Counted, not tested for presence: there are two call sites and
+        # losing the guard on either one restores the defect. The first
+        # version of this entry used the unguarded assignment as the
+        # `unwanted' marker and matched the FIXED line, because adding
+        # the `if' left the RANN site at the indentation the marker was
+        # written for.
+        ("if (gr != NULL)", 2),
+        None,
+        "both callers of ieee80211_mesh_mark_gate() assigned through "
+        "its result unchecked, on the PREQ and RANN frame paths",
+    ),
     "hbsd/src/sys/netpfil/pf/pf.c": [
         (
             "PBSD: s is optional in pf_route() and every other use says so",
