@@ -2807,6 +2807,167 @@ defect into an exemption is worse than no inventory.
 |---|---|
 | `sys/security/mac_lomac/mac_lomac.c:461` | `lomac_copy_single()` does `labelto->ml_flags \|= MAC_LOMAC_FLAG_SINGLE` on a caller-supplied label. Every caller gets it from the MAC framework's label allocator, which zeroes. The `M_ZERO` class, in a `static` function whose callers the analyser does see but whose *label* provenance is three frames up. |
 
+## Fixed — the run-time linker's symbol cache, freed on four architectures of six
+
+`reloc_non_plt()` processes an object's non-PLT relocations. It
+allocates a symbol cache once per object and hands it to `find_symdef()`
+for every relocation:
+
+```c
+	if (obj == obj_rtld)
+		cache = NULL;
+	else
+		cache = calloc(obj->dynsymcount, sizeof(SymCache));
+		/* No need to check for NULL here */
+```
+
+amd64, i386, arm and powerpc end the function at a `done:` label that
+every exit goes through:
+
+```c
+	r = 0;
+done:
+	free(cache);
+	return (r);
+```
+
+aarch64 and riscv have no such label. Every `return (-1)` inside the
+loop — five in aarch64, six in riscv — and the `return (0)` at the end
+leave the allocation behind. `SymCache` is `{const Elf_Sym *; const
+Obj_Entry *}`, sixteen bytes, times `dynsymcount`: tens of kilobytes per
+shared object, leaked once at start-up and again on **every**
+`dlopen(3)`, for the life of the process. A daemon that loads and
+unloads nsswitch or PAM modules in a loop grows without bound.
+
+The fix is amd64's `done:` label, copied verbatim into both. Not a new
+idiom — the idiom this function already has on four of the six
+architectures PBSD ships.
+
+The guard on N of M, again. This document's most common finding, and
+the first time it has been *across* architectures rather than within one
+file.
+
+### Only one of the two was reported, and the reason is the point
+
+clang found riscv's. It did not find aarch64's:
+
+```
+  use of undeclared identifier '_IFUNC_ARG_HWCAP'
+```
+
+`_IFUNC_ARG_HWCAP` is in `sys/arm64/include/ifunc.h`, reached through
+`<machine/ifunc.h>` from `aarch64/rtld_machdep.h`. `arch_of()` resolves
+the `machine/` shim for `lib/libc/<arch>/`, `lib/msun/<arch>/` and
+`sys/**/<arch>/` — and not for `libexec/rtld-elf/<arch>/`. So all seven
+per-architecture relocation processors were analysed against **amd64's**
+machine headers.
+
+Five of the seven failed to compile and contributed nothing, which is
+the harmless outcome and the one this file has now named often enough.
+The interesting two are amd64's, right by coincidence of being amd64,
+and riscv's, which **compiled** — a clean check of a program riscv does
+not build. That its one finding is architecture-neutral C is luck, not
+method.
+
+Four lines in `arch_of()` and `libexec/rtld-elf` goes from 6 ERROR of 28
+translation units to 2, both survivors being test fixtures whose
+generated inputs are genuinely absent. Every relocation processor PBSD
+ships is analysed now, for the first time.
+
+Verified by putting both leaks back: `aarch64/reloc.c:615` and
+`riscv/reloc.c:444` are reported, and neither is with the fixes in.
+
+## The first check against a running kernel was red, and the instrument was wrong
+
+Boot run 60 is the first PBSD system interrogated successfully — the
+console-echo fix worked, and all five `--run` answers hold output rather
+than the command. The step that compares its `sysctl hardening` dump
+against the compiled-in defaults failed:
+
+```
+FAIL hardening.kmalloc_zero: source says 1, kernel says 0
+
+17 knobs agree, 1 differ, 2 not present in the dump.
+```
+
+The kernel is right. `kern_malloc.c:265`:
+
+```c
+#ifdef PAX_HARDENING
+#ifdef PAX_HARDEN_KMALLOC
+static int kmalloc_zero = PAX_FEATURE_SIMPLE_ENABLED;
+#else
+static int kmalloc_zero = PAX_FEATURE_SIMPLE_DISABLED;
+#endif
+```
+
+and `sys/conf/std.hardenedbsd:54` is `#options	PAX_HARDEN_KMALLOC`,
+commented out. `hardening_sysctls.py` did one `re.search` for an
+initialiser and took the first, so for **every** guarded pair in the
+tree it reported the enabled arm regardless of configuration.
+
+The first comparison this project has ever been able to make against a
+running system, red because of the instrument, on the one knob the
+kernel had exactly right. Two of those and the reader stops reading the
+step — which is the real cost, and it is larger than the bug.
+
+A default behind an `#ifdef` is not a property of the C file. It is a
+property of the C file **and** the kernel config, and the tool had half
+of that. `--kernconf` now names the config: its options are read the way
+`config(8)` reads them, includes followed, `nooptions` honoured, a
+commented-out `#options` line setting nothing. Where a guard cannot be
+decided — no config, or a condition outside the
+`defined()`/`&&`/`||`/`!` subset — every reachable arm is kept and a
+disagreement reports `?`, so the knob is **skipped** rather than
+asserted from whichever branch happens to be written first. Two arms
+that agree are not a disagreement.
+
+Worth passing: against run 60's dump, **18 knobs checked with
+`--kernconf`, 10 without**.
+
+### And two knobs that were never knobs
+
+`hardening.pax.SKEL.status` came from `hardenedbsd/hbsd_pax_SKEL.c`, the
+template a new PaX feature is copied from. It is in no
+`sys/conf/files*`, so no kernel has ever compiled it.
+`hardening.pax.aslr.compat.status` is real but sits inside `#ifdef
+COMPAT_FREEBSD32`, which `std.hardenedbsd` removes with `nooptions`.
+
+Both landed in `--check`'s "not present in the dump" pile — which is
+also where a knob that really *did* disappear from the kernel would
+land. That pile has to stay empty to mean anything. It is 0 now:
+
+```
+18 knobs agree, 0 differ, 0 not present in the dump,
+1 not decided by the source.
+```
+
+Verified in both directions. Uncommenting `PAX_HARDEN_KMALLOC` flips the
+expected default to 1 and the check goes red against the same dump;
+putting it back makes it green. The resolution is live, not a fixed
+second pick. `tools/test_hardening_sysctls.py` holds all of it, and
+restoring the old first-initialiser-wins behaviour fails five of its
+checks.
+
+### What the running system said
+
+The five answers from run 60, which are the first facts about PBSD read
+off a booted machine rather than argued from `sys/conf/options`:
+
+| asked | answered |
+|---|---|
+| `uname -a` | `FreeBSD freebsd 15.1-STABLE-HBSD FreeBSD 15.1-STABLE-HBSD  HARDENEDBSD amd64` |
+| `sysctl hardening` | 30 knobs; every PaX feature at status **2**, enforcing |
+| `sysctl -a \| grep -c ^hardening` | 30 — so the dump above is complete, not truncated |
+| setuid/setgid binaries | **33**, from `/sbin/mksnap_ffs` to `/usr/sbin/traceroute6` |
+| `kldstat -v` | one module, the kernel, with everything linked in |
+
+The double space in the `uname` output is not a capture artefact — the
+kernel's own boot banner has it (`boot.log:51`). `newvers.sh` took its
+`include_metadata != yes` branch, so `VERINFO` is version, ident and
+architecture with nothing between: no build host, user, path or date in
+the running kernel's version string.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -2883,3 +3044,4 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/dev/md/md.c`, eight `dst` | `mdstart_malloc()` sets `dst = NULL` in the `notmapped` arm and in the `vlist != NULL` arm, and `dst = bp->bio_data` only in the final `else` — then every use is inside a matching three-way `if (notmapped) ... else if (vlist != NULL) ... else`. Exactly complementary, three ways, and correct. |
 | `sys/netinet/tcp_syncache.c` `syncache_respond()`, **seven** findings | `ip`, `ip6`, `udp` and `ulen` are one maintained set. `udp` and `ulen` are assigned together on exactly the branches where `sc->sc_port != 0` -- written `if (sc->sc_port != 0) {...}` in the v6 arm and `if (sc->sc_port == 0) {...} else {...}` in the v4 arm, inverted but the same condition -- and read only under `if (udp)` and `if (sc->sc_port)`. `ip` and `ip6` are the `INC_ISIPV6` pair. All four arms maintain it, checked one at a time because a set of four where one differs is this document's most common finding. Same class as `rack.c`'s `udp`/`t_port` and `ip6`/`r_is_v6`, in a function that answers unauthenticated SYNs. |
 | `lib/libcalendar/calendar.c` `jdate`, `ndaysg`, `ndaysj`, `weekday`, and `easter.c` `easterog`/`easteroj:100` | the same domain argument: signed arithmetic on a year, day or day-number that overflows only for inputs no calendar produces. Exported, caller-constrained. |
+| `libexec/phttpget/phttpget.c:471` `isdigit(hln[7])` | the path needs `readln()`'s `while (strnstr(resbuf + *resbufpos, "\r\n", *resbuflen - *resbufpos) == NULL)` to be **false on its first evaluation**, with `resbuflen` and `resbufpos` both 0 — that is `strnstr(s, "\r\n", 0)` returning non-NULL, which libc's `strnstr` cannot do (`if (slen-- < 1) return (NULL)` before any read). `strnstr` is in another translation unit, so the analyser models it as returning an arbitrary pointer into the buffer and then reads `malloc`'d bytes through it. In the real program `readln()` returns 0 only with a `\r\n` in range, `*eolp = '\0'` terminates the line, and `hln[7]` is reached only after `strncmp(hln, "HTTP/1.", 7) == 0` has proved seven non-NUL bytes precede it. Worth the row because `phttpget` is what `freebsd-update` runs as root against a network peer. |
