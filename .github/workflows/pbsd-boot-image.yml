@@ -353,7 +353,8 @@ jobs:
         if: always() && inputs.stage == 'vm'
         run: |
           if [ -f out/hardening.txt ]; then
-            python3 tools/hardening_sysctls.py --check out/hardening.txt
+            python3 tools/hardening_sysctls.py --check out/hardening.txt \
+              --kernconf "${{ inputs.kernconf }}" --arch "${{ inputs.target || 'amd64' }}"
           else
             echo "::warning title=No sysctl dump::The boot did not get far enough to produce one."
           fi

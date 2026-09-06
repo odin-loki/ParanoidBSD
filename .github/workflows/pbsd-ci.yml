@@ -298,10 +298,28 @@ jobs:
       # show_hardening.sh answers "is PAX_ASLR compiled in"; this answers
       # "and what does hardening.pax.aslr.status default to", which is a
       # different question and the one that decides whether a mitigation is
-      # on for a system that does not ask. Reported here; --check compares it
-      # against a booted kernel, once there is one.
+      # on for a system that does not ask. Reported here; the boot-image
+      # workflow's --check compares it against the kernel that booted.
+      #
+      # --kernconf is not decoration. Half these defaults sit behind an
+      # #ifdef, and without a config to resolve it the tool has to report
+      # them as conditional and skip them: 18 knobs checked with it, 10
+      # without. Both configs are printed so a guard that only one of them
+      # takes is visible as a difference.
+      # Run 60's dump made the comparison possible for the first time and
+      # the step went red on a knob the kernel had exactly right: the
+      # default was read from the first of two #ifdef arms, and the option
+      # guarding it is commented out in std.hardenedbsd. A check that is
+      # red because of the instrument teaches the reader to ignore it.
+      - name: The hardening defaults are read with their guards
+        run: python3 tools/test_hardening_sysctls.py
+
       - name: Hardening sysctl defaults
-        run: python3 tools/hardening_sysctls.py
+        run: |
+          for kc in HARDENEDBSD HARDENEDBSD-MINIMAL; do
+            echo "=== $kc ==="
+            python3 tools/hardening_sysctls.py --kernconf "$kc"
+          done
 
       # A report, not a gate. arch_duplication.py, atomic_survey.py and
       # asm_inventory.py measure how much per-architecture code there is and
