@@ -119,9 +119,15 @@ def model_one(job: dict) -> dict:
     cc = shutil.which("goto-cc") or "goto-cc"
     sp = Path(src)
     inc = include_flags(sp, job.get("arch", "amd64"))
+    # A landed port is a PURE RENAME - byte-identical to the .c - and
+    # CBMC's C++ front end is much weaker than its C one (`parse error
+    # before 'noexcept'`, and 96 files on a __char16_t typedef). Since the
+    # bytes are the same, compile it as C: that is the same translation
+    # unit, and it is the side the IR oracle's certificate transfers FROM.
+    lang = ["-xc", "-std=c17"] if sp.suffix == ".cpp" else lang_flags(sp)
     try:
         p = subprocess.run(
-            [cc, *lang_flags(sp), *inc, "-Wno-everything", src, "-o", str(gb)],
+            [cc, *lang, *inc, "-Wno-everything", src, "-o", str(gb)],
             capture_output=True, text=True, timeout=job["timeout"],
         )
     except subprocess.TimeoutExpired:

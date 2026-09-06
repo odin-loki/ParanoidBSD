@@ -174,6 +174,8 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}",
                   f"-I{SRC}/lib/libc/resolv",
                   f"-I{SRC}/lib/libc/softfloat",
+                  f"-I{SRC}/lib/libc/softfloat/templates",
+                  f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}/softfloat",
                   f"-I{SRC}/lib/libc/gdtoa",
                   f"-I{SRC}/contrib/gdtoa",
                   f"-I{SRC}/lib/libc/locale",
