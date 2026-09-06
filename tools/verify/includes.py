@@ -251,6 +251,19 @@ def arch_of(rel: str, default: str = "amd64") -> str:
             cand = SYS_ARCH.get(name)
             if cand:
                 return cand
+    # ...and neither was the run-time linker, which keeps its relocation
+    # processor per architecture under libexec/rtld-elf/<arch>/reloc.c and
+    # spells the directories the way ARCH_DIR's keys do. All seven were
+    # analysed against amd64's <machine/*.h>. Five would not compile and
+    # said so; the interesting two are amd64's, which was right by
+    # coincidence of being amd64, and riscv's, which compiled - a clean
+    # check of a program that is not the one riscv builds. That the one
+    # finding it produced (a leaked symbol cache) is architecture-neutral
+    # C is luck, not method.
+    if len(parts) > 3 and parts[0] == "libexec" and parts[1] == "rtld-elf":
+        cand = ARCH_DIR.get(parts[2])
+        if cand:
+            return cand
     return default
 
 

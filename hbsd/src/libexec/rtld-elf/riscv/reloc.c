@@ -321,6 +321,13 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 	SymCache *cache;
 	Elf_Addr *where, symval;
 	unsigned long symnum;
+	/*
+	 * PBSD: free the symbol cache on every path out, as amd64, i386,
+	 * arm and powerpc already do. See the `done' label below.
+	 */
+	int r;
+
+	r = -1;
 
 	/*
 	 * The dynamic loader may be called from a thread, we have
@@ -347,7 +354,7 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 			def = find_symdef(symnum, obj, &defobj, flags, cache,
 			    lockstate);
 			if (def == NULL)
-				return (-1);
+				goto done;
 
 			/*
 			 * If symbol is IFUNC, only perform relocation
@@ -389,14 +396,14 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 			if (!obj->mainprog) {
 				_rtld_error("%s: Unexpected R_RISCV_COPY "
 				    "relocation in shared library", obj->path);
-				return (-1);
+				goto done;
 			}
 			break;
 		case R_RISCV_TLS_DTPREL64:
 			def = find_symdef(symnum, obj, &defobj, flags, cache,
 			    lockstate);
 			if (def == NULL)
-				return (-1);
+				goto done;
 
 			*where += (Elf_Addr)(def->st_value + rela->r_addend
 			    - TLS_DTV_OFFSET);
@@ -405,7 +412,7 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 			def = find_symdef(symnum, obj, &defobj, flags, cache,
 			    lockstate);
 			if (def == NULL)
-				return (-1);
+				goto done;
 
 			/*
 			 * We lazily allocate offsets for static TLS as we
@@ -421,7 +428,7 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 					_rtld_error(
 					    "%s: No space available for static "
 					    "Thread Local Storage", obj->path);
-					return (-1);
+					goto done;
 				}
 			}
 
@@ -437,11 +444,13 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 		default:
 			rtld_printf("%s: Unhandled relocation %lu\n",
 			    obj->path, ELF_R_TYPE(rela->r_info));
-			return (-1);
+			goto done;
 		}
 	}
-
-	return (0);
+	r = 0;
+done:
+	free(cache);
+	return (r);
 }
 
 unsigned long elf_hwcap;

@@ -596,6 +596,28 @@ FIXES = {
         "Lose this line and /sbin/init stops booting",
         ),
     ],
+    "hbsd/src/libexec/rtld-elf/aarch64/reloc.c": [
+        (
+            ("goto done;", 5),
+            None,
+            "reloc_non_plt() calloc'd a per-object symbol cache and freed "
+            "it on no path at all - not the five error returns, not the "
+            "success return. amd64, i386, arm and powerpc all free it at "
+            "a `done' label; aarch64 and riscv were the two that did not. "
+            "dynsymcount * 16 bytes per shared object, leaked again on "
+            "every dlopen(3), for the life of the process",
+        ),
+    ],
+    "hbsd/src/libexec/rtld-elf/riscv/reloc.c": [
+        (
+            ("goto done;", 6),
+            None,
+            "the same leaked symbol cache as aarch64/reloc.c, six error "
+            "paths here. This is the one clang reported, because riscv "
+            "was also the one per-architecture reloc.c that COMPILED "
+            "under the sweep - against amd64's machine headers",
+        ),
+    ],
     "hbsd/src/sys/powerpc/ofw/ofw_real.c": [
         (
             "PBSD: instance is an OUT cell",

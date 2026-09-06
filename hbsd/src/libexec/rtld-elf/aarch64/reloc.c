@@ -474,6 +474,13 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 	const Elf_Sym *def;
 	SymCache *cache;
 	Elf_Addr *where, symval;
+	/*
+	 * PBSD: free the symbol cache on every path out, as amd64, i386,
+	 * arm and powerpc already do. See the `done' label below.
+	 */
+	int r;
+
+	r = -1;
 
 	/*
 	 * The dynamic loader may be called from a thread, we have
@@ -500,7 +507,7 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 			def = find_symdef(ELF_R_SYM(rela->r_info), obj,
 			    &defobj, flags, cache, lockstate);
 			if (def == NULL)
-				return (-1);
+				goto done;
 			/*
 			 * If symbol is IFUNC, only perform relocation
 			 * when caller allowed it by passing
@@ -525,7 +532,7 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 				default:
 					_rtld_error("%s: IFUNC for TLS reloc",
 					    obj->path);
-					return (-1);
+					goto done;
 				}
 			} else {
 				if ((flags & SYMLOOK_IFUNC) != 0)
@@ -556,7 +563,7 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 			if (!obj->mainprog) {
 				_rtld_error("%s: Unexpected R_AARCH64_COPY "
 				    "relocation in shared library", obj->path);
-				return (-1);
+				goto done;
 			}
 			break;
 		case R_AARCH64_TLSDESC:
@@ -578,7 +585,7 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 					_rtld_error(
 					    "%s: No space available for static "
 					    "Thread Local Storage", obj->path);
-					return (-1);
+					goto done;
 				}
 			}
 			*where = def->st_value + rela->r_addend +
@@ -608,11 +615,13 @@ reloc_non_plt(Obj_Entry *obj, Obj_Entry *obj_rtld, int flags,
 		default:
 			rtld_printf("%s: Unhandled relocation %lu\n",
 			    obj->path, ELF_R_TYPE(rela->r_info));
-			return (-1);
+			goto done;
 		}
 	}
-
-	return (0);
+	r = 0;
+done:
+	free(cache);
+	return (r);
 }
 
 void
