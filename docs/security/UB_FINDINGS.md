@@ -332,6 +332,57 @@ the wrong headers is not that.
 
 ---
 
+## Reported, not fixed — CAM's "insulate against a race" does not insulate
+
+`sys/cam/cam_xpt.c`'s `xpt_done_process()` says exactly what it is doing:
+
+```c
+	/*
+	 * Insulate against a race where the periph is destroyed but CCBs are
+	 * still not all processed. This shouldn't happen, but allows us better
+	 * bug diagnostic when it does.
+	 */
+	if (ccb_h->path->bus)
+		sim = ccb_h->path->bus->sim;
+
+	if (ccb_h->status & CAM_RELEASE_SIMQ) {
+		KASSERT(sim, ("sim missing for CAM_RELEASE_SIMQ request"));
+		xpt_release_simq(sim, /*run_queue*/FALSE);
+```
+
+The guard exists because `bus` can be NULL. Three lines later `sim` is
+passed to `xpt_release_simq()`, which does `devq = sim->devq`. The same
+function does it again at `:5325`:
+
+```c
+		if (sim)
+			devq = sim->devq;
+		KASSERT(devq, ("Periph disappeared with CCB %p ..."));
+
+		mtx_lock(&devq->send_mtx);
+```
+
+`KASSERT` is not a check — without `INVARIANTS` it compiles to nothing —
+so in a production kernel the insulation is defeated on the next line,
+twice, in the completion path of every SCSI and ATA command.
+
+**Not fixed here**, and deliberately. The first one could be made
+`if (sim != NULL)`, but the effect of skipping `xpt_release_simq()` is a
+SIM queue left frozen: a hang instead of a panic. The second cannot be
+skipped at all — `cam_ccbq_ccb_done()` is inside it, and not calling it
+leaves the CCB accounted active forever. What the kernel *should* do when a
+periph vanished mid-CCB is a design question CAM answered with "assert and
+find out", and changing the failure semantics of the storage completion
+path is not a change to make from a static analyser finding.
+
+Same rule as the four integer overflows above: recorded with the reasoning,
+because the reasoning is the part worth having.
+
+`sys/cam/scsi/scsi_enc_ses.c:2762` and `:2792` are two more uninitialised
+returns in the same subsystem and are not yet read.
+
+---
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
