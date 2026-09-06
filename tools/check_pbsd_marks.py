@@ -445,6 +445,29 @@ FIXES = {
             "read-modify-writes it, with both selectors off the wire",
         ),
     ],
+    "hbsd/src/sys/kern/subr_mchain.c": [
+        (
+            "PBSD: report m_copym()'s failure instead of returning 0",
+            # No `unwanted': this fix only INSERTS. The tail it guards -
+            # md_get_mem(); *ret = rm; return (0) - is unchanged by
+            # design, so any marker drawn from it matches the fixed file
+            # too. Third time today a bug-is-back marker has fired on
+            # code that was correct; the rule is that `unwanted' must be
+            # text the fix DELETES, and a purely additive fix deletes
+            # nothing. Where there is nothing to delete, the positive
+            # marker is the whole gate.
+            None,
+            "md_get_mbuf() discarded m_copym()'s NULL and returned 0 "
+            "always, making the `if (error) goto freerq' at all four of "
+            "its netsmb call sites dead code",
+        ),
+        (
+            "PBSD: and be NULL-tolerant here too",
+            None,
+            "mb_put_mbuf() assigned NULL happily, tested for it in its "
+            "loop, and then dereferenced it in M_TRAILINGSPACE()",
+        ),
+    ],
     "hbsd/src/sys/kern/kern_time.c": (
         "PBSD: cts is only readable when the gettime",
         "\t\t} else {\n\t\t\tts = it->it_time.it_value;\n"

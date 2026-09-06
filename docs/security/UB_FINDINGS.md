@@ -2653,6 +2653,44 @@ not touch `cts` and keeps its behaviour exactly. A timer that fails to
 re-arm is worse than one that re-arms correctly and better than one armed
 from stack contents.
 
+### An error check that could never fire, and the NULL behind it
+
+`md_get_mbuf()` in `subr_mchain.c` was four lines:
+
+```c
+	rm = m_copym(m, mdp->md_pos - mtod(m, u_char*), size, M_WAITOK);
+	md_get_mem(mdp, NULL, size, MB_MZERO);
+	*ret = rm;
+	return (0);
+```
+
+`m_copym()` returns NULL from its `nospace` path. This discarded that
+and returned 0 **always** — so the error check at all four of its call
+sites, in `netsmb/smb_rq.c`,
+
+```c
+	error = md_get_mbuf(&mbparam, txpcount, &m);
+	if (error)
+		goto freerq;
+	mb_put_mbuf(mbp, m);
+```
+
+is dead code, and `mb_put_mbuf()` gets the NULL. That function
+half-expects one: `mbp->mb_cur->m_next = m` is fine with NULL and
+`while (m)` tests for it explicitly — and then the next statement is
+`M_TRAILINGSPACE(m)`, which dereferences. Two NULL-safe statements and a
+third that is not, two lines apart.
+
+Fixed at the source: `md_get_mbuf()` returns `ENOBUFS` when `m_copym()`
+fails, which makes the branch the callers already have do the job it was
+written for. `mb_put_mbuf()` returns early on NULL as well, because it
+is exported and its own first two statements make a promise the third
+was breaking.
+
+This is the shape worth naming separately from "missing NULL check": the
+check was **present at every call site** and could not fire, because the
+function it guarded had no way to say no.
+
 ### And one byte in the TLS record parser
 
 `tls13_find_record_type()` finds the real record type behind TLS 1.3's

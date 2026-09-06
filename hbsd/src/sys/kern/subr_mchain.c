@@ -252,6 +252,18 @@ mb_put_mem(struct mbchain *mbp, c_caddr_t source, int size, int type)
 int
 mb_put_mbuf(struct mbchain *mbp, struct mbuf *m)
 {
+	/*
+	 * PBSD: and be NULL-tolerant here too, since the body already
+	 * reads as though it is.
+	 *
+	 * `mbp->mb_cur->m_next = m' accepts NULL and `while (m)' tests
+	 * for it, and then M_TRAILINGSPACE(m) below dereferences it.
+	 * With md_get_mbuf() now reporting m_copym()'s failure the live
+	 * path is closed, but this is an exported function and the two
+	 * statements that handle NULL make a promise the third breaks.
+	 */
+	if (m == NULL)
+		return (0);
 	mbp->mb_cur->m_next = m;
 	while (m) {
 		mbp->mb_count += m->m_len;
@@ -515,6 +527,31 @@ md_get_mbuf(struct mdchain *mdp, int size, struct mbuf **ret)
 	struct mbuf *m = mdp->md_cur, *rm;
 
 	rm = m_copym(m, mdp->md_pos - mtod(m, u_char*), size, M_WAITOK);
+	/*
+	 * PBSD: report m_copym()'s failure instead of returning 0 always.
+	 *
+	 * m_copym() returns NULL from its `nospace' path, and this
+	 * discarded that and reported success unconditionally - which
+	 * made the error check at every one of its four call sites
+	 *
+	 *	error = md_get_mbuf(&mbparam, txpcount, &m);
+	 *	if (error)
+	 *		goto freerq;
+	 *	mb_put_mbuf(mbp, m);
+	 *
+	 * dead code, and handed mb_put_mbuf() a NULL. That function
+	 * half-expects one: `mbp->mb_cur->m_next = m' is fine with NULL
+	 * and `while (m)' tests for it explicitly, and then the next
+	 * statement is M_TRAILINGSPACE(m), which dereferences. Two
+	 * NULL-safe statements and a third that is not, two lines apart.
+	 *
+	 * The callers were already written for this. Returning ENOBUFS
+	 * makes the branch they already have do the job it was written
+	 * for, which is a smaller change than adding a guard to
+	 * mb_put_mbuf() and leaves the failure where it happened.
+	 */
+	if (rm == NULL)
+		return (ENOBUFS);
 	md_get_mem(mdp, NULL, size, MB_MZERO);
 	*ret = rm;
 	return (0);
