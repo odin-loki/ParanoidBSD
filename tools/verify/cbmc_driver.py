@@ -71,6 +71,7 @@ import argparse
 import json
 import os
 import re
+import resource
 import shutil
 import subprocess
 import sys
@@ -107,6 +108,43 @@ def cbmc_bin() -> str:
     return shutil.which("cbmc") or "cbmc"
 
 
+def _mem_capped(mb: int):
+    """An RLIMIT_AS for the child, or None to leave it uncapped.
+
+    A checker that can kill its host is worse than one that reports
+    ERROR, and this one did - twice. The sys/dev shard of verify run 4:
+
+        FAILED sys/dev/ata/chipsets/ata-cypress.c:ata_cypress_setmode
+        ##[error]The runner has received a shutdown signal.
+        ##[error]Process completed with exit code 143.
+        Cleaning up orphan processes
+        Terminate orphan process: pid (34642) (cbmc)
+
+    SIGTERM thirteen minutes in, with one cbmc still running and the
+    `if: always()` artifact skipped, so the partial .jsonl went with it
+    and --resume had nothing to resume from. --jobs 2 and --timeout 60
+    did not prevent it, because the bound that was missing is memory:
+    subprocess.run's timeout does bound wall time, and a solver can
+    exhaust a 16GB runner well inside sixty seconds.
+
+    RLIMIT_AS makes that instance fail its allocation and exit, which
+    the driver records as an ERROR for that one function. One function
+    unproved beats a shard lost - and the "nothing could be checked"
+    gate still fires if it is every function rather than a few.
+
+    ProcessPoolExecutor means each task already runs in its own
+    process, so preexec_fn here is safe.
+    """
+    if mb <= 0:
+        return None
+
+    def _limit() -> None:
+        lim = mb * 1024 * 1024
+        resource.setrlimit(resource.RLIMIT_AS, (lim, lim))
+
+    return _limit
+
+
 def verify_one(task: dict) -> dict:
     """Run CBMC on one (translation unit, function) pair."""
     src = task["src"]
@@ -136,7 +174,8 @@ def verify_one(task: dict) -> dict:
         cmd += ["--min-null-tree-depth", str(task["null_depth"])]
     t0 = time.time()
     try:
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout,
+                           preexec_fn=_mem_capped(task.get("mem_mb", 0)))
         out = (p.stdout or "") + "\n" + (p.stderr or "")
         rc = p.returncode
     except subprocess.TimeoutExpired:
@@ -224,7 +263,7 @@ def _rec(task: dict, status: str, **kw) -> dict:
 
 def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
                tier: str, classes: Path, allow: set[str],
-               null_depth: int = 0) -> list[dict]:
+               null_depth: int = 0, mem_mb: int = 0) -> list[dict]:
     """One task per (translation unit, function the ledger says it defines).
 
     Two intersections, and both matter.
@@ -264,7 +303,7 @@ def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
                 "class": fns[fn],
                 "linkage": c.get("linkage", {}).get(fn, "?"),
                 "unwind": unwind, "timeout": timeout, "tier": tier,
-                "null_depth": null_depth,
+                "null_depth": null_depth, "mem_mb": mem_mb,
             })
     print("  skipped: " + "  ".join(f"{k}={v}" for k, v in skipped.items()),
           flush=True)
@@ -279,6 +318,10 @@ def main() -> int:
                     help="restrict to paths starting with this (repeatable)")
     ap.add_argument("--unwind", type=int, default=16)
     ap.add_argument("--timeout", type=int, default=60, help="seconds per function")
+    ap.add_argument("--mem-mb", type=int, default=0,
+                    help="RLIMIT_AS per CBMC instance, MB. 0 (default) is "
+                         "uncapped, which is right on a workstation and "
+                         "wrong on a 16GB runner - see _mem_capped().")
     ap.add_argument("--tier", choices=["ub", "advisory"], default="ub")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4)))
     ap.add_argument("--classes", default="verify_classes.json",
@@ -298,7 +341,8 @@ def main() -> int:
 
     tasks = load_tasks(Path(args.plan), args.scope, args.unwind,
                        args.timeout, args.tier, Path(args.classes),
-                       set(args.allow.split(",")), args.null_depth)
+                       set(args.allow.split(",")), args.null_depth,
+                       args.mem_mb)
 
     out = Path(args.out)
     done: set[tuple[str, str]] = set()

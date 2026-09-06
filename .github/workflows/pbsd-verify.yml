@@ -144,18 +144,33 @@ jobs:
         run: |
           python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
             --classes out/classes.json --allow POINTER --null-depth 3 \
-            --jobs 2 --timeout 30 --unwind 6 --resume --out out/ptr.jsonl
-      # --timeout, which the whole-tree version did not have: the run
-      # that died had single functions taking 100 and 143 seconds
-      # (ata-cypress, ata-sata) and no bound at all on the worst one.
-      # A TIMEOUT is a reported result; an unbounded solver is a job
-      # that never finishes.
+            --jobs 2 --timeout 30 --unwind 6 --mem-mb 4096 --resume \
+            --out out/ptr.jsonl
+      # --mem-mb, which is the bound that was actually missing.
+      #
+      # Run 4 sharded the kernel four ways, halved --jobs and added
+      # --timeout 60, and the dev and rest shards were STILL SIGTERMed:
+      #
+      #     Terminate orphan process: pid (34642) (cbmc)
+      #     ##[error]Process completed with exit code 143.
+      #
+      # subprocess.run's timeout does bound wall time, so time was never
+      # the problem - a single solver can exhaust a 16GB runner well
+      # inside sixty seconds. RLIMIT_AS makes that instance fail its
+      # allocation and be recorded as one ERROR instead of taking the
+      # whole shard, and its artifact, down with it. Verified on
+      # lib/libc/stdlib: uncapped FAILED=12 PROVED=10, at --mem-mb 32
+      # ERROR=2 FAILED=10 PROVED=10, and at --mem-mb 1 the
+      # nothing-could-be-checked gate still exits 1.
+      #
+      # 4096 with --jobs 2 on a 16GB runner leaves room for the rest.
       - name: Model check ${{ matrix.name }}
         if: matrix.name != 'userland'
         run: |
           python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
             --classes out/${{ matrix.classes }} --jobs ${{ matrix.jobs }} \
-            --timeout 60 --resume --out out/ksys-${{ matrix.name }}.jsonl
+            --timeout 60 --mem-mb 4096 --resume \
+            --out out/ksys-${{ matrix.name }}.jsonl
       - uses: actions/upload-artifact@v4
         if: always()
         with:
