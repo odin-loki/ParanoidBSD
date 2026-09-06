@@ -239,6 +239,13 @@ reached `strcmp(NULL, ...)`.
 `KASSERT` is the wrong tool twice over: without `INVARIANTS` it compiles to
 nothing and the kernel dereferences NULL, and *with* `INVARIANTS` it panics
 on a userland argument, which is not what an assertion is for.
+
+**Which of those PBSD gets, today, is the second one.** `HARDENEDBSD` and
+`HARDENEDBSD-MINIMAL` both set `INVARIANTS` (via `sys/conf/std.debug`);
+`GENERIC` does not. So on the kernels PBSD currently builds this is a panic
+from an ioctl argument rather than a NULL dereference — and on the release
+kernel PBSD will eventually ship, it becomes the NULL dereference. Both are
+wrong and the fix answers both.
 `g_gate_create()` validates both fields (`:490`, `:496`); the other three
 commands did not. Now the loop is simply not entered, leaving `sc == NULL`,
 which every caller already turns into `ENXIO` or `ENOENT`.
@@ -400,7 +407,9 @@ function does it again at `:5325`:
 
 `KASSERT` is not a check — without `INVARIANTS` it compiles to nothing —
 so in a production kernel the insulation is defeated on the next line,
-twice, in the completion path of every SCSI and ATA command.
+twice, in the completion path of every SCSI and ATA command. PBSD's current
+configs do set `INVARIANTS`, so today it panics with a message instead;
+`GENERIC` does not, and neither will a release kernel.
 
 **Not fixed here**, and deliberately. The first one could be made
 `if (sim != NULL)`, but the effect of skipping `xpt_release_simq()` is a

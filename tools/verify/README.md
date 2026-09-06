@@ -67,6 +67,44 @@ Measured: `sys/amd64/vmm` **12 → 26 of 34**, `sys/kern` **67 → 78 of 212**.
 The gain is largest where drivers are, because that is where `device_if.h`
 is.
 
+### The configuration matters as much as the headers
+
+`opt_shim()` used to write every `opt_*.h` **empty**, and argued that this
+was the conservative choice: code under an unset option is not checked
+rather than checked wrongly. That is a good argument for one option. It is
+a bad one for all of them at once, because the result is a configuration
+nobody ships — with everything off, `INET` is off, and a sweep of
+`sys/netinet` is checking a TCP stack compiled without IP.
+
+Measured on `sys/netinet/tcp_syncache.c`: **2** findings with nothing
+defined, **1** with `-DINET`, **7** with `-DINET -DINET6`. The third is the
+only one where most of the file is compiled at all. The empty shim was not
+producing conservative results; it was producing results about a different
+program.
+
+So the options come from the kernel configuration PBSD builds, read the way
+`config(8)` reads it — `sys/amd64/conf/HARDENEDBSD`, following `include`,
+`options FOO`, `options FOO=v` and `nooptions`, mapped through
+`sys/conf/options` to the header each one lands in, with `opt_dontuse.h`
+skipped because that is `config(8)`'s sink for options that only steer
+`files` rules. `opt_global.h` is force-included, as `kern.pre.mk` does.
+
+Four options are dropped, and each has to meet one test: **it adds
+instrumentation, not behaviour.** `KDTRACE_HOOKS` and `KDTRACE_MIB_SDT`
+turn on the SDT probes, and `sys/sys/sdt.h:218` writes them as
+`asm goto(...)`, which clang's analyser gives up on — with them on,
+`sys/netinet` was 85 errors out of 105 translation units and 39 of those
+were that one macro. A dtrace probe does not change what the surrounding
+code computes.
+
+    sys/netinet, everything off        20 of 105 usable
+    ... with KDTRACE_HOOKS on          20 of 105, 85 errors
+    ... HARDENEDBSD minus the probes  100 of 105, 54 findings
+
+`PBSD_KERNCONF=none` restores the empty shim, and `PBSD_KERNCONF=GENERIC`
+or any other config under `sys/<arch>/conf` selects that one instead — a
+real handle now that the answer depends on it.
+
 ### The one architecture this still cannot see
 
 `sys/arm` is 1 usable translation unit out of 322, and the arch fix did not

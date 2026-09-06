@@ -37,6 +37,7 @@ all against glibc.
 from __future__ import annotations
 
 import functools
+import os
 import re
 import subprocess
 import tempfile
@@ -264,7 +265,86 @@ def iface_shim() -> str:
 
 
 @functools.lru_cache(maxsize=None)
-def opt_shim() -> str:
+def kernconf_options(config: str = "HARDENEDBSD",
+                     arch: str = "amd64") -> tuple[tuple[str, str], ...]:
+    """The options a real kernel configuration sets, as config(8) reads them.
+
+    The empty-opt_*.h shim (below) is a real configuration and the
+    conservative one: code under an unset option is not checked rather
+    than checked wrongly. But it is a configuration NOBODY SHIPS. With
+    every option off, INET is off, and a sweep of sys/netinet is checking
+    a TCP stack compiled without IP.
+
+    Measured on sys/netinet/tcp_syncache.c: 2 findings with nothing
+    defined, 1 with -DINET, and 7 with -DINET -DINET6 - because the third
+    is the only one where most of the file is compiled at all. The empty
+    shim was not producing conservative results, it was producing results
+    about a different program.
+
+    So the option set comes from the kernel configuration PBSD builds.
+    config(8)'s rules, followed rather than approximated:
+
+      sys/amd64/conf/HARDENEDBSD   `include GENERIC`, `options FOO`,
+                                   `options FOO=value`, `nooptions FOO`
+      sys/conf/options             NAME -> the header it lands in; a name
+      sys/conf/options.<arch>      with no header goes to opt_<name>.h
+
+    Returns ((NAME, value), ...) with value "" for a plain option.
+    """
+    confdir = SRC / "sys" / arch / "conf"
+    opts: dict[str, str] = {}
+    seen: set[str] = set()
+
+    def read(name: str) -> None:
+        name = name.strip().strip('"')
+        if name in seen:
+            return
+        seen.add(name)
+        for cand in (confdir / name, SRC / "sys" / "conf" / name):
+            if not cand.is_file():
+                continue
+            for raw in cand.read_text(errors="replace").splitlines():
+                line = raw.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                head, _, rest = line.partition("\t")
+                parts = line.split()
+                if parts[0] == "include" and len(parts) > 1:
+                    read(parts[1])
+                elif parts[0] == "options" and len(parts) > 1:
+                    for tok in parts[1:]:
+                        nm, _, val = tok.partition("=")
+                        opts[nm] = val
+                elif parts[0] == "nooptions" and len(parts) > 1:
+                    for tok in parts[1:]:
+                        opts.pop(tok.partition("=")[0], None)
+            return
+
+    read(config)
+    return tuple(sorted(opts.items()))
+
+
+@functools.lru_cache(maxsize=None)
+def option_headers(arch: str = "amd64") -> tuple[tuple[str, str], ...]:
+    """sys/conf/options: which opt_*.h each option name lands in."""
+    out: dict[str, str] = {}
+    for f in (SRC / "sys" / "conf" / "options",
+              SRC / "sys" / "conf" / f"options.{arch}"):
+        if not f.is_file():
+            continue
+        for raw in f.read_text(errors="replace").splitlines():
+            line = raw.split("#", 1)[0].strip()
+            if not line:
+                continue
+            parts = line.split()
+            name = parts[0]
+            out[name] = (parts[1] if len(parts) > 1
+                         else f"opt_{name.lower()}.h")
+    return tuple(sorted(out.items()))
+
+
+@functools.lru_cache(maxsize=None)
+def opt_shim(arch: str = "amd64") -> str:
     """Empty opt_*.h, which is exactly what config(8) writes for an unset option.
 
     A kernel source says `#include "opt_inet.h"` and config(8) generates
@@ -290,8 +370,53 @@ def opt_shim() -> str:
             names.update(pat.findall(f.read_text(errors="replace")))
         except OSError:
             pass
+    # Which configuration this is.
+    #
+    # PBSD_KERNCONF=none keeps every header empty - the original behaviour,
+    # and still the right answer when you want to know what survives with
+    # nothing turned on. Anything else names a kernel config under
+    # sys/<arch>/conf, and the default is the one PBSD actually builds.
+    #
+    # config(8)'s rules, followed: an option in sys/conf/options maps to a
+    # header, `options FOO=v` writes the value, and opt_dontuse.h is
+    # config(8)'s sink for options that only steer `files` rules - it
+    # writes no header for those, so neither does this.
+    conf = os.environ.get("PBSD_KERNCONF", "HARDENEDBSD")
+    setopts = {} if conf == "none" else dict(kernconf_options(conf, arch))
+    # Options that add INSTRUMENTATION rather than behaviour, and that the
+    # checker cannot parse.
+    #
+    # KDTRACE_HOOKS turns on the SDT probes, and sys/sys/sdt.h:218 writes
+    # them as `asm goto(...)`. clang's analyser gives up on it: with
+    # KDTRACE_HOOKS on, sys/netinet went to 85 errors of 105 translation
+    # units, and 39 of them are that one macro.
+    #
+    # Dropping them is not the same kind of choice as leaving a real
+    # option off. A dtrace probe does not change what the surrounding code
+    # computes - it is a nop sled the kernel patches at runtime - so the
+    # properties being checked are the same either way. Each name here has
+    # to meet that test.
+    for instrumentation in ("KDTRACE_HOOKS", "KDTRACE_MIB_SDT",
+                            "HWPMC_HOOKS", "EXTERR_STRINGS"):
+        setopts.pop(instrumentation, None)
+    hdrof = dict(option_headers(arch))
+    per: dict[str, list[str]] = {}
+    for name, val in setopts.items():
+        h = hdrof.get(name, f"opt_{name.lower()}.h")
+        if h == "opt_dontuse.h":
+            continue
+        per.setdefault(h, []).append(
+            f"#define\t{name}\t{val}" if val else f"#define\t{name}\t1")
+
+    names.update(per)
     for n in names:
-        (d / n).write_text(f"/* {n}: not set in this configuration */\n")
+        body = per.get(n)
+        if body:
+            (d / n).write_text(
+                f"/* {n}: from {conf}, via sys/conf/options */\n"
+                + "\n".join(sorted(body)) + "\n")
+        else:
+            (d / n).write_text(f"/* {n}: not set in this configuration */\n")
 
     # clang's own <limits.h> ends in `#include_next <limits.h>`, and under
     # -nostdinc there is nowhere for that to go: 293 kernel translation
@@ -393,7 +518,12 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         # is exactly true of this one.
         flags += ["-D_KERNEL", "-DGENOFFSET",
                   "-D__has_c_attribute(x)=0",
-                  f"-I{opt_shim()}",
+                  # The kernel build force-includes this into every
+                  # translation unit (sys/conf/kern.pre.mk), and it is
+                  # where config(8) puts the options that are not tied to
+                  # one subsystem - INET's neighbours, INVARIANTS, SMP.
+                  "-include", "opt_global.h",
+                  f"-I{opt_shim(arch)}",
                   # device_if.h and friends: generated, not shipped.
                   f"-I{iface_shim()}",
                   f"-I{(SRC / rel).parent}",
