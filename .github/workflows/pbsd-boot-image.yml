@@ -327,8 +327,14 @@ jobs:
             # beside the image. Run 43's rip was a user address inside
             # ld-elf.so.1 and there was nothing to look it up in; with
             # this, the same hang names its function.
+            # Run 56 named `_rtld+0x10` from a 32-byte symbol, and
+            # _rtld() is 534 lines of C - so the name was the closest
+            # label and not the function. The disassembly answers what
+            # the symbol table only guesses at.
             sym=""
             [ -f out/ld-elf.so.1.nm ] && sym="--symbols out/ld-elf.so.1.nm"
+            [ -f out/ld-elf.so.1.dis ] && \
+                sym="$sym --disasm out/ld-elf.so.1.dis"
             # shellcheck disable=SC2086
             python3 tools/ci/boot_test.py "$img" \
               --target amd64 --timeout 480 --log out/boot.log \

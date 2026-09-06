@@ -505,7 +505,17 @@ def _load_symbols(path):
 
 
 def _nearest_symbol(symbols, va):
-    """The last symbol at or below va, and the offset into it."""
+    """The last symbol at or below va, its offset, and how far it extends.
+
+    The span matters. Run 56 printed `nearest preceding symbol: _rtld+0x10`
+    and that was taken at face value for some time -- but the next symbol
+    was 32 bytes later, and _rtld() is 534 lines of C. A 32-byte _rtld is
+    not _rtld, so the name was wrong and the confident sentence carrying
+    it was worse than no name at all.
+
+    "Nearest preceding" is all a symbol table can give; whether that is an
+    ANSWER depends on how big the symbol is, so say how big it is.
+    """
     lo, hi = 0, len(symbols)
     while lo < hi:
         mid = (lo + hi) // 2
@@ -514,12 +524,55 @@ def _nearest_symbol(symbols, va):
         else:
             hi = mid
     if lo == 0:
-        return None, 0
+        return None, 0, None
     addr, name = symbols[lo - 1]
-    return name, va - addr
+    span = symbols[lo][0] - addr if lo < len(symbols) else None
+    return name, va - addr, span
 
 
-def _explain_ddb(report, symbols=None) -> None:
+def _load_disasm(path):
+    """`objdump -d` output, as {elf virtual address: text of the line}.
+
+    A symbol name is a guess about which function an address is in. The
+    instruction AT that address is not a guess, and when the process is
+    wedged at one rip forever the instruction is the whole question --
+    a load, a store, an indirect call and an ud2 fail in four different
+    ways and only one of them is a fault loop.
+    """
+    out = {}
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                # `  5fd0:\t48 8b 04 25 ...\tmovq  0x0, %rax`
+                head, sep, _ = line.partition(":")
+                if not sep:
+                    continue
+                head = head.strip()
+                if not head or any(c not in "0123456789abcdefABCDEF"
+                                   for c in head):
+                    continue
+                out[int(head, 16)] = line.rstrip("\n")
+    except OSError as e:
+        print(f"  [could not read disassembly from {path}: {e}]")
+        return None
+    return out or None
+
+
+def _print_disasm(disasm, va, window=6):
+    """The instruction at va, with a few either side for context."""
+    addrs = sorted(disasm)
+    if va not in disasm:
+        print(f"      0x{va:x} is not an instruction boundary in the "
+              "supplied disassembly")
+        print("      (wrong object, or the rip is mid-instruction).")
+        return
+    i = addrs.index(va)
+    print("      instructions around the rip:")
+    for a in addrs[max(0, i - window):i + window + 1]:
+        print(f"      {'>>' if a == va else '  '} {disasm[a]}")
+
+
+def _explain_ddb(report, symbols=None, disasm=None) -> None:
     """Say what the debugger output MEANS, not just that it happened.
 
     Run 43 printed all of this and then concluded "the kernel started and
@@ -540,9 +593,18 @@ def _explain_ddb(report, symbols=None) -> None:
     """
     frames, maps = [], []
     for cmd, out in report:
-        for m in IFRAME.finditer(out):
-            frames.append((int(m.group(1), 16),
-                           int(m.group(2), 16) if m.group(2) else None))
+        # ONLY pid 1's backtrace. Run 56 collected every `--- interrupt,
+        # rip = ...` line in the report, including the one from the bare
+        # `bt` of pid 12 (an ithread, in the kernel), and then counted it
+        # as a sample of pid 1. Three identical userland frames plus one
+        # unrelated kernel frame came out as "4 samples at 2 distinct
+        # rip(s): it is running, not stuck at a single instruction" - the
+        # exact opposite of what the output said. Every frame here has to
+        # come from a trace that named pid 1.
+        if "Tracing pid 1 " in out:
+            for m in IFRAME.finditer(out):
+                frames.append((int(m.group(1), 16),
+                               int(m.group(2), 16) if m.group(2) else None))
         if "procvm" in cmd:
             ents = []
             for m in MAPENT.finditer(out):
@@ -632,13 +694,30 @@ def _explain_ddb(report, symbols=None) -> None:
             print("      the function; ASLR makes the raw rip meaningless "
                   "and this is not.")
             if symbols:
-                name, off = _nearest_symbol(symbols, va)
+                name, off, span = _nearest_symbol(symbols, va)
                 if name:
                     print(f"      nearest preceding symbol: {name}"
-                          + (f"+0x{off:x}" if off else ""))
+                          + (f"+0x{off:x}" if off else "")
+                          + (f"  (that symbol spans {span} bytes)"
+                             if span is not None else ""))
+                    # A name is only an answer if the symbol is big enough
+                    # to be the function you think it is. Run 56 reported
+                    # `_rtld+0x10` from a 32-byte symbol, and _rtld() is
+                    # 534 lines of C - so the table's idea of _rtld was not
+                    # the function, and the name sent the reading the wrong
+                    # way for as long as nobody checked the next entry.
+                    if span is not None and span <= 64:
+                        print("      NOTE: that is a very small symbol. The "
+                              "next entry follows")
+                        print(f"      {span} bytes later, so this name is "
+                              "'the closest label', not")
+                        print("      necessarily the function the rip is "
+                              "in. Trust --disasm over it.")
                 else:
                     print("      no symbol at or below that address in the "
                           "supplied table.")
+            if disasm:
+                _print_disasm(disasm, va)
     else:
         print(f"      rip=0x{rip:x} is in NO mapping of pid 1 - it jumped "
               "somewhere unmapped.")
@@ -758,6 +837,12 @@ def main() -> int:
                          "(ld-elf.so.1, say). A user rip is meaningless "
                          "under ASLR; with this, its ELF virtual address "
                          "is resolved to the nearest preceding symbol.")
+    ap.add_argument("--disasm",
+                    help="`objdump -d` output for the same object as "
+                         "--symbols. A symbol name is a guess about which "
+                         "function an address is in; the instruction at "
+                         "that address is not, and for a process wedged at "
+                         "one rip it is the whole question.")
     ap.add_argument("--ddb-cmd", action="append", default=[],
                     metavar="COMMAND",
                     help="a command to run at db>. Repeatable. Default: "
@@ -1016,7 +1101,8 @@ def main() -> int:
             else:
                 print(f"      db> {cmd}   {out}")
         _explain_ddb(DDB_REPORT,
-                     _load_symbols(args.symbols) if args.symbols else None)
+                     _load_symbols(args.symbols) if args.symbols else None,
+                     _load_disasm(args.disasm) if args.disasm else None)
     print(f"    phases reached: {', '.join(reached) or 'none'}")
     if verdict and verdict[0] == "OK":
         print(f"OK  booted: {verdict[1]}")

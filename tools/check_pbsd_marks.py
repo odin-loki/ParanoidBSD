@@ -401,6 +401,13 @@ FIXES = {
             "bbr_log_startup_event() reads both",
         ),
     ],
+    "hbsd/src/libexec/rtld-elf/rtld.c": (
+        "PBSD: read the PaX flags AFTER the vector has been digested",
+        "aux = (Elf_Auxinfo *)sp;\n\n\n#ifdef HARDENEDBSD",
+        "_rtld() read aux_info[AT_PAXFLAGS] before either loop had "
+        "written the array, then dereferenced and stored through it; it "
+        "survived only because exec(2) hands out a zero-filled stack",
+    ),
     "hbsd/src/sys/powerpc/ofw/ofw_real.c": [
         (
             "PBSD: instance is an OUT cell",

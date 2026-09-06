@@ -630,15 +630,6 @@ _rtld(Elf_Addr *sp, func_ptr_type *exit_proc, Obj_Entry **objp)
 	aux = (Elf_Auxinfo *)sp;
 
 
-#ifdef HARDENEDBSD
-	/* Load PaX flags */
-	if (aux_info[AT_PAXFLAGS] != NULL) {
-		pax_flags = aux_info[AT_PAXFLAGS]->a_un.a_val;
-		aux_info[AT_PAXFLAGS]->a_un.a_val = 0;
-	}
-
-	cache_harden_rtld();
-#endif
 	/* Digest the auxiliary vector. */
 	for (i = 0; i < AT_COUNT; i++)
 		aux_info[i] = NULL;
@@ -647,6 +638,44 @@ _rtld(Elf_Addr *sp, func_ptr_type *exit_proc, Obj_Entry **objp)
 			aux_info[auxp->a_type] = auxp;
 	}
 	arch_fix_auxv(aux, aux_info);
+
+#ifdef HARDENEDBSD
+	/*
+	 * PBSD: read the PaX flags AFTER the vector has been digested.
+	 *
+	 * This block used to sit above the two loops. aux_info is an
+	 * automatic array, so aux_info[AT_PAXFLAGS] was read before
+	 * anything had written it -- an indeterminate pointer, tested
+	 * against NULL, then dereferenced AND STORED THROUGH:
+	 *
+	 *	pax_flags = aux_info[AT_PAXFLAGS]->a_un.a_val;
+	 *	aux_info[AT_PAXFLAGS]->a_un.a_val = 0;
+	 *
+	 * It survives in practice only because exec(2) hands the process
+	 * a zero-filled stack, so the slot happens to read NULL and the
+	 * `if' happens to be false. That is the whole of the guarantee:
+	 * an accident of fresh anonymous memory, in the first C function
+	 * of every dynamically linked process on the system, protecting
+	 * a wild write. Nothing about it is documented and nothing checks
+	 * it.
+	 *
+	 * AT_PAXFLAGS is 40 and AT_COUNT is 41, so the index is in
+	 * bounds; the value is not. Identical in upstream HardenedBSD,
+	 * so this is inherited rather than a PBSD regression.
+	 *
+	 * pax_flags is a file-scope static, which the comment at the top
+	 * of this function says is safe to touch before init_rtld(), and
+	 * this still runs before it -- only after the array it reads has
+	 * been filled in.
+	 */
+	/* Load PaX flags */
+	if (aux_info[AT_PAXFLAGS] != NULL) {
+		pax_flags = aux_info[AT_PAXFLAGS]->a_un.a_val;
+		aux_info[AT_PAXFLAGS]->a_un.a_val = 0;
+	}
+
+	cache_harden_rtld();
+#endif
 
 	/* Initialize and relocate ourselves. */
 	assert(aux_info[AT_BASE] != NULL);

@@ -443,6 +443,25 @@ vm|memstick|iso)
            [ -s "$REPOROOT/out/$_n.nm" ]; then
             echo "   symbols: out/$_n.nm ($(wc -l < "$REPOROOT/out/$_n.nm") \
 entries, from $_b)"
+            # And the disassembly. Run 56's rip resolved to `_rtld+0x10`
+            # from a symbol 32 bytes wide, and _rtld() is 534 lines of C -
+            # so the nearest-preceding-symbol name was not the function,
+            # and there was no way to tell from the artifact. The
+            # instruction at the address is not a guess: a load, a store,
+            # an indirect call and a ud2 wedge a process in four different
+            # ways, and only the disassembly separates them.
+            #
+            # A few MB of text against another fifty-minute run to find
+            # out what one instruction was.
+            if objdump -d "$_p" > "$REPOROOT/out/$_n.dis" 2>/dev/null &&
+               [ -s "$REPOROOT/out/$_n.dis" ]; then
+                echo "   disasm:  out/$_n.dis ($(wc -l \
+< "$REPOROOT/out/$_n.dis") lines)"
+            else
+                rm -f "$REPOROOT/out/$_n.dis"
+                echo "   no objdump output for $_b; a userland hang will" \
+                     "name a symbol and not an instruction"
+            fi
         else
             # A stripped install is the normal case; the .full is the one
             # that carries symbols. Say which was found rather than leaving

@@ -1149,6 +1149,121 @@ been used for and roughly a sixth of what it did — its true branch drops
 the whole file. Renamed to say so, because a bisection handle that
 understates its own reach is worse than none.
 
+## Run 56 — the control finally built, and it says PaX enforcement is not it
+
+Runs 52 through 55 all failed to *build*, three of the four on mistakes of
+mine. Run 56 is the first of the five to produce an image: a 665 MB
+`HARDENEDBSD-NOENFORCE` memstick, built and uploaded, forty-nine minutes
+in. Everything below is from a real boot.
+
+**It hangs in the same place.** With PaX enforcement off, `/sbin/init`
+still does not talk, and the debugger finds pid 1 exactly where runs 43
+and 47 found it. So the enforcement toggle is not the cause, and four
+build failures' worth of waiting bought one clean negative result.
+
+The three `bt 1` rounds, fifteen seconds apart:
+
+```
+--- interrupt, rip = 0x801031fd0, rsp = 0x7fffffffac90, rbp = 0x7fffffffac90 ---
+--- interrupt, rip = 0x801031fd0, rsp = 0x7fffffffac90, rbp = 0x7fffffffac90 ---
+--- interrupt, rip = 0x801031fd0, rsp = 0x7fffffffac90, rbp = 0x7fffffffac90 ---
+```
+
+Identical rip, rsp **and** rbp, three times across thirty seconds. The
+kernel frames above them are `Xtimerint -> mi_switch ->
+sched_ule_sswitch`, which is the clock interrupt preempting userland — so
+pid 1 is *on the CPU burning time* at one instruction, not blocked. `rsp
+== rbp` puts it just past a function prologue. A fault that re-faults on
+delivery looks exactly like this, and so does a two-instruction spin.
+
+### The tool said the opposite, and the tool was wrong
+
+`boot_test.py` printed:
+
+```
+4 samples at 2 distinct rip(s): it is running,
+not stuck at a single instruction.
+```
+
+There are three samples of pid 1, all identical. The fourth "sample" is
+`rip = 0xffffffff80c76539` — a **kernel** address, from the `bt` of pid
+12, an interrupt thread that has nothing to do with pid 1. `_explain_ddb`
+collected every `--- interrupt, rip = ...` line in the whole report
+instead of only those under a trace that named pid 1.
+
+This is a regression the `--ddb-cmd 'bt'` addition introduced: run 43,
+with only `bt 1`, correctly reported "four samples at one rip and one
+rsp" and this document quotes it doing so. Adding a second backtrace
+command silently poisoned the analysis of the first. Frames now have to
+come from output containing `Tracing pid 1 `, and the fix is tested
+against run 56's exact shape — two `bt 1` blocks, two `bt` blocks, two
+`show procvm 1` blocks — where it now says "spinning at one instruction".
+
+### `_rtld+0x10` is a label, not a function
+
+The other line to distrust is this one:
+
+```
+nearest preceding symbol: _rtld+0x10
+```
+
+In the run's own `ld-elf.so.1.nm` — the full `.symtab`, 419 entries,
+locals and all — `_rtld` sits at `0x5fc0` and the next symbol,
+`_rtld_error`, at `0x5fe0`. Thirty-two bytes. `_rtld()` is 534 lines of
+C. Whatever occupies `0x5fc0`, it is not the function this document has
+been calling it for three runs, and there was no way to see that from the
+artifact.
+
+Two changes, so the next run cannot make the same mistake:
+
+* `--symbols` now prints how far the symbol extends and says plainly that
+  a span of 64 bytes or less makes the name "the closest label" rather
+  than an answer.
+* `build_boot_image.sh` saves `objdump -d` beside the `nm -n`, and
+  `--disasm` prints the instructions either side of the rip. A load, a
+  store, an indirect call and a `ud2` wedge a process in four different
+  ways and only one of them is a fault loop; the disassembly separates
+  them and a symbol name never will.
+
+The artifacts were read without downloading the 1.1 GB image, by ranging
+over the zip's central directory for the three small members — worth
+knowing, because "the answer is in a 665 MB artifact" had been treated as
+a reason not to look.
+
+### One real defect found while reading `_rtld()`, which is *not* this bug
+
+Stated separately because the temptation to connect them is strong and
+the evidence does not. `_rtld()` opened with:
+
+```c
+	aux = (Elf_Auxinfo *)sp;
+
+#ifdef HARDENEDBSD
+	if (aux_info[AT_PAXFLAGS] != NULL) {
+		pax_flags = aux_info[AT_PAXFLAGS]->a_un.a_val;
+		aux_info[AT_PAXFLAGS]->a_un.a_val = 0;    /* through it */
+	}
+	cache_harden_rtld();
+#endif
+	/* Digest the auxiliary vector. */
+	for (i = 0; i < AT_COUNT; i++)
+		aux_info[i] = NULL;
+```
+
+`aux_info` is an automatic array read before either loop writes it: an
+indeterminate pointer, tested against NULL, dereferenced, and **stored
+through**. `AT_PAXFLAGS` is 40 and `AT_COUNT` is 41, so the index is in
+bounds; the value is not. It survives only because `exec(2)` hands the
+process a zero-filled stack, so the slot happens to read NULL — an
+accident of fresh anonymous memory standing between every dynamically
+linked process on the system and a wild write, in the first C function
+any of them runs.
+
+Identical in upstream HardenedBSD, which boots, so it is inherited and it
+is almost certainly **not** what wedges pid 1. Moved below the digest
+loops anyway, still ahead of `init_rtld()`; `pax_flags` is a file-scope
+static, which the function's own comment says is safe to touch there.
+
 ## Asking the system about itself
 
 `--run NAME=CMD` logs in after a successful boot and runs commands, writing
