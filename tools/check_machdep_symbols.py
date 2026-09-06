@@ -124,6 +124,65 @@ def defined_symbols() -> set[str]:
     return out
 
 
+def misrcs() -> set[str]:
+    """The machine-independent sources lib/libc/string lists."""
+    f = LIBC / "string" / "Makefile.inc"
+    m = re.search(r"MISRCS\+=((?:[^\n]*\\\n)*[^\n]*)",
+                  f.read_text(errors="replace"))
+    if not m:
+        return set()
+    return {x for x in re.split(r"[\s\\]+", m.group(1))
+            if x.endswith((".c", ".cpp"))}
+
+
+def reachable():
+    """(directory, name, path) for every arch source the build can compile.
+
+    MDSRCS is only half of it, and the half that misled run 47.
+
+    lib/libc/string/Makefile.inc:1 reads
+
+        .if ${MK_MACHDEP_OPTIMIZATIONS} != "no"
+        .PATH: ${LIBC_SRCTOP}/${LIBC_ARCH}/string
+        .endif
+        .PATH: ${LIBC_SRCTOP}/string
+
+    so with the option on, the ARCHITECTURE's directory comes first on the
+    search path and any file there SHADOWS the machine-independent one of
+    the same name - whether or not MDSRCS mentions it. Emptying amd64's
+    MDSRCS therefore changed nothing: strcpy.c was still found by .PATH,
+    still compiled, and still referenced __stpcpy. Run 47 failed at
+    exactly the same line as run 46.
+
+    So: everything MDSRCS lists, plus every file in an architecture's
+    string directory whose name collides with a MISRCS entry.
+    """
+    seen: set[tuple[str, str]] = set()
+    out = []
+    mi = misrcs()
+    for mk in sorted(LIBC.rglob("Makefile.inc")):
+        m = MDSRCS.search(mk.read_text(errors="replace"))
+        if m:
+            for src in [x for x in re.split(r"[\s\\]+", m.group(1))
+                        if x.endswith(".c")]:
+                p = mk.parent / src
+                if p.is_file():
+                    key = (mk.parent.as_posix(), src)
+                    if key not in seen:
+                        seen.add(key)
+                        out.append((mk.parent.relative_to(ROOT).as_posix(),
+                                    src, p))
+    for d in sorted(LIBC.glob("*/string")):
+        for p in sorted(d.glob("*.c")):
+            if p.name not in mi:
+                continue
+            key = (d.as_posix(), p.name)
+            if key not in seen:
+                seen.add(key)
+                out.append((d.relative_to(ROOT).as_posix(), p.name, p))
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -136,24 +195,16 @@ def main() -> int:
     have = defined_symbols()
     bad: dict[str, list[tuple[str, list[str]]]] = collections.defaultdict(list)
     checked = 0
-    for mk in sorted(LIBC.rglob("Makefile.inc")):
-        m = MDSRCS.search(mk.read_text(errors="replace"))
-        if not m:
-            continue
-        for src in [x for x in re.split(r"[\s\\]+", m.group(1))
-                    if x.endswith(".c")]:
-            p = mk.parent / src
-            if not p.is_file():
-                continue          # check_libc_srcs.py owns that case
-            checked += 1
-            used = {u for u in CALL.findall(p.read_text(errors="replace"))
-                    if not u.startswith(SKIP)}
-            gone = sorted(u for u in used if u not in have)
-            if gone:
-                bad[mk.parent.relative_to(ROOT).as_posix()].append((src, gone))
+    for d, src, p in reachable():
+        checked += 1
+        used = {u for u in CALL.findall(p.read_text(errors="replace"))
+                if not u.startswith(SKIP)}
+        gone = sorted(u for u in used if u not in have)
+        if gone:
+            bad[d].append((src, gone))
 
     n = sum(len(v) for v in bad.values())
-    print(f"MDSRCS sources checked: {checked}")
+    print(f"architecture sources the build can reach: {checked}")
     if not bad:
         print("\nevery symbol they call is defined in the tree.")
         return 0
