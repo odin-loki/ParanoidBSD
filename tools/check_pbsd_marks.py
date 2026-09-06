@@ -310,6 +310,26 @@ FIXES = {
         "the guard tested the CPU INDEX and used the POINTER; with CPU 0 "
         "absent from all_cpus, check_cpu_regs() dereferences NULL",
     ),
+    "hbsd/src/sys/sys/pax.h": [
+        (
+            "#define\tpax_harden_tty(td)\t\t({ 0; })",
+            None,
+            "pax_harden_tty and pax_kmod_load_disabled are called from "
+            "files compiled under plain `options PAX` while their "
+            "definitions are gated on pax_hardening",
+        ),
+        (
+            "#define\tpax_control_extattr_kmod(td, vp)\t((pax_flag_t)0)",
+            None,
+            "same, gated on pax_control_extattr and called from link_elf",
+        ),
+        (
+            "#define\tpax_enforce_tpe(td, vn, path)\t({ 0; })",
+            None,
+            "same, called from vm_mmap.c under `#ifdef PAX` rather than "
+            "`#ifdef PAX_HARDENING`",
+        ),
+    ],
     "hbsd/src/sys/netinet/tcp_stacks/bbr.c": (
         "if (rtt != 0)\n\t\t\t\tgoto measure;",
         "rtt = bbr_get_rtt(bbr, BBR_SRTT);\n\t\t\tgoto measure;",

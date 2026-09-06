@@ -1286,6 +1286,88 @@ and no validation (`tcp_subr.c:203`), the same shape as
 `net.inet.ip.reass_hashsize` before it was fixed. It happens not to
 matter here because `tcp_mss()` floors `t_maxseg` independently of it.
 
+## Fixed — the PaX framework did not link without its features
+
+Not a UB finding. It is here because it is the same defect shape as
+everything above it, it was found by making a claim and having a linker
+disprove it, and the claim was mine.
+
+`sys/conf/files` gates each PaX feature separately:
+
+```
+hardenedbsd/hbsd_pax_common.c        optional pax
+hardenedbsd/hbsd_pax_hardening.c     optional pax pax_hardening
+hardenedbsd/hbsd_grsec_tpe.c         optional pax pax_hardening
+hardenedbsd/hbsd_control_extattr.c   optional pax pax_control_extattr
+```
+
+which reads as a promise that `options PAX` alone is a configuration.
+Boot run 52 tested it and the kernel did not link:
+
+```
+ld.lld: error: undefined symbol: pax_kmod_load_disabled
+>>> referenced by link_elf_obj.c:227, link_elf.c:248
+ld.lld: error: undefined symbol: pax_control_extattr_kmod
+>>> referenced by link_elf_obj.c:240, link_elf.c:261
+ld.lld: error: undefined symbol: pax_enforce_tpe
+>>> referenced by vm_mmap.c:461 (kern_mmap)
+ld.lld: error: undefined symbol: pax_harden_tty
+>>> referenced by tty.c:2034, tty.c:614
+```
+
+I had written, in the config file that failed, "every call site outside
+sys/hardenedbsd is #ifdef'd on its own feature, checked: five of them".
+Five were. I read five and generalised to all of them. These four are
+not: `vm_mmap.c:453` guards its block with a plain `#ifdef PAX`, and the
+other three carry no guard at all.
+
+### The idiom was already there
+
+`sys/sys/pax.h` solves this correctly for exactly five functions, all of
+them `*_init_prison`:
+
+```c
+#ifdef PAX_HARDENING
+int pax_hardening_init_prison(struct prison *pr, struct vfsoptlist *opts);
+#else
+#define	pax_hardening_init_prison(pr, opts)	({ 0; })
+#endif
+```
+
+The four that broke the link now have it too, with permit values —
+`0`, `false`, `(pax_flag_t)0` — because a feature nobody compiled in has
+to mean "allowed". Verified by preprocessing the declarations both ways:
+
+```
+=== -DPAX_HARDENING -DPAX_CONTROL_EXTATTR ===
+CALL_tty:  pax_harden_tty(td)
+CALL_kmod: pax_kmod_load_disabled()
+CALL_tpe:  pax_enforce_tpe(td, vn, path)
+CALL_ext:  pax_control_extattr_kmod(td, vp)
+=== defines: none ===
+CALL_tty:  ({ 0; })
+CALL_kmod: ({ false; })
+CALL_tpe:  ({ 0; })
+CALL_ext:  ((pax_flag_t)0)
+```
+
+### And the 34 that were left alone, deliberately
+
+Counting the whole class rather than the four the linker named: of the
+43 functions in `pax.h` whose defining file `sys/conf/files` gates on a
+feature option, **38 carry no `#ifdef`** and 5 do.
+
+The other 34 are not being given stubs, and that is a decision rather
+than an oversight. They are called only from sites that are themselves
+`#ifdef`'d on the feature, so today a stub would change nothing — and
+tomorrow it would convert a loud link error into a **silent no-op inside
+a security feature**. That is the failure this entire document exists to
+catch, and adding 34 of them to tidy up a warning nobody has hit would
+be manufacturing it. A link error naming the symbol is the better
+outcome for every one of those 34; the four here are different only
+because their callers are compiled unconditionally and permit is the
+right answer for them.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

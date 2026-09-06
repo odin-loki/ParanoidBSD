@@ -137,7 +137,19 @@ bool pax_feature_simple_validate_state(pax_state_t *state);
  */
 int pax_control_acl_set_flags(struct thread *td, struct image_params *imgp, const pax_flag_t req_flags);
 int pax_control_extattr_parse_flags(struct thread *td, struct image_params *imgp);
+
+/*
+ * PBSD: called from link_elf.c:261 and link_elf_obj.c:240, which are
+ * compiled under plain `options PAX`, while hbsd_control_extattr.c is
+ * `optional pax pax_control_extattr`. Zero is "no flags set", so the
+ * PERMITKMOD and FORBIDKMOD tests below both fall through to the
+ * kernel's own decision. See the note by pax_harden_tty().
+ */
+#ifdef PAX_CONTROL_EXTATTR
 pax_flag_t pax_control_extattr_kmod(struct thread *td, struct vnode *vp);
+#else
+#define	pax_control_extattr_kmod(td, vp)	((pax_flag_t)0)
+#endif
 
 /*
  * ASLR related functions
@@ -239,13 +251,32 @@ int pax_hardening_init_prison(struct prison *pr, struct vfsoptlist *opts);
 int pax_procfs_harden(struct thread *td);
 bool pax_ptrace_capsicum_prohibit(struct proc *p);
 int pax_ptrace_syscall_prohibit(struct thread *td);
-int pax_harden_tty(struct thread *td);
 int pax_harden_shm(struct thread *td);
 pax_flag_t pax_hardening_setup_flags(struct image_params *, struct thread *,
     pax_flag_t);
 
 bool pax_insecure_kmod(void);
+
+/*
+ * PBSD: these two are called from files compiled under plain `options
+ * PAX` - tty.c:614 and :2034, link_elf.c:248 and link_elf_obj.c:227 -
+ * while hbsd_pax_hardening.c is `optional pax pax_hardening` in
+ * sys/conf/files. Without the #else the kernel does not link:
+ *
+ *     ld.lld: error: undefined symbol: pax_harden_tty
+ *     ld.lld: error: undefined symbol: pax_kmod_load_disabled
+ *
+ * Same shape and same no-op idiom as pax_hardening_init_prison() twelve
+ * lines up. 0 and false are "permit", which is what a feature nobody
+ * compiled in has to mean.
+ */
+#ifdef PAX_HARDENING
+int pax_harden_tty(struct thread *td);
 bool pax_kmod_load_disabled(void);
+#else
+#define	pax_harden_tty(td)		({ 0; })
+#define	pax_kmod_load_disabled()	({ false; })
+#endif
 
 /*
  * Trusted Path Execution (TPE)
@@ -255,7 +286,17 @@ int pax_tpe_init_prison(struct prison *pr, struct vfsoptlist *opts);
 #else
 #define	pax_tpe_init_prison(pr, opts)	({ 0; })
 #endif
+/*
+ * PBSD: called from vm_mmap.c:461, inside a block guarded `#ifdef PAX`
+ * rather than `#ifdef PAX_HARDENING`, while hbsd_grsec_tpe.c is
+ * `optional pax pax_hardening`. 0 is "no TPE violation". See the note by
+ * pax_harden_tty().
+ */
+#ifdef PAX_HARDENING
 int pax_enforce_tpe(struct thread *, struct vnode *, const char *);
+#else
+#define	pax_enforce_tpe(td, vn, path)	({ 0; })
+#endif
 pax_flag_t pax_tpe_setup_flags(struct image_params *, struct thread *,
     pax_flag_t);
 
