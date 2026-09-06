@@ -1025,6 +1025,47 @@ Noted while reading `sys/conf/options` for this: there is a
 `PAX_ASLR_DELTA_RTLD_DEF_LEN`. rtld has its own randomisation delta, and
 rtld is exactly where every run so far has stopped.
 
+### Runs 53 and 54, and three failures that were not the experiment
+
+The control took three more runs to *build*, and none of the three
+failures said anything about PaX enforcement. They are recorded because
+each was a mistake of a kind this tree is supposed to catch.
+
+**Run 53** — failed in `buildworld` at seventeen minutes. Mine: the
+`g_eli` divisor fix put a `static __inline bool` next to
+`eli_metadata_softc()`, outside the `#ifdef _KERNEL` that its own
+sibling `eli_metadata_crypto_supported()` sits in.
+`lib/geom/eli/Makefile` has `.PATH: ${SRCTOP}/sys/geom/eli` and compiles
+four of those sources **into userland**, where there is no
+`<stdbool.h>`. A kernel header that userland compiles is not a kernel
+header. See `docs/security/UB_FINDINGS.md` for the gate I tried to write
+for this and deleted: the rule is not a property of the header, and the
+checker found 159 hits in correct vendor code.
+
+**Run 54** — buildworld passed, so that fix held. Failed at the kernel
+link, thirty-eight minutes in, on a fifth undefined symbol:
+
+```
+ld.lld: error: undefined symbol: pax_disallow_map32bit_active
+>>> referenced by vm_mmap.c:321 (kern_mmap)
+```
+
+`hbsd_pax_aslr.c` is `optional pax pax_aslr`; the call site is guarded
+`#if defined(__LP64__) && defined(PAX_HARDENING)` — the wrong option.
+PBSD had already edited that line once, changing `MAP_32BIT` to
+`__LP64__`, without noticing the other half.
+
+Twice now, asked "are there more?", I answered by reading some call
+sites and generalising, and twice that was wrong — the second time
+*after* the first had been disproved the same way. There is now a gate,
+`tools/verify/check_pax_options.py`, which enumerates instead: 63
+feature-gated PaX functions, every call site checked against its file's
+gate, the enclosing `#ifdef`s, and the `#else` no-ops in `pax.h`. It
+found the remaining three in under a second, `vm_mmap.c:321` among them.
+
+**Run 55** is the next attempt, and the first with nothing known to be
+between it and a boot.
+
 ### The control that costs one renamed file
 
 `sys/kern/init_main.c:716` compiles this list into every kernel:
