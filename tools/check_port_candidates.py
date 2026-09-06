@@ -41,11 +41,36 @@ What it checks, per .c file in the scope:
                 changes which one bmake picks.
   outside       a Makefile OUTSIDE the scope names it - lib/libgcc_s is the
                 real case - so the port needs that consumer handled too.
+  unbuilt       a SRCS-SHAPED variable names it that is not a plain SRCS
+                list - so the name is hardcoded somewhere a rename breaks.
+                Three shapes of it are in lib/libc:
+
+                  KQSRCS, KSRCS       lib/libc/Makefile:171. A hand-run
+                                      `make libkern` copies those sources
+                                      into sys/libkern.
+                  CANCELPOINTS_SRCS   gen/Makefile.inc:197, and
+                  JEMALLOCSRCS        jemalloc/Makefile.inc:3. Both are
+                                      .for loops that `ln -sf` each name to
+                                      a prefixed one and add THAT to SRCS.
+
+                KQSRCS is why the rule exists. It matches `*SRCS*=` and it
+                is at the top level, so it read as an UNCONDITIONAL SRCS
+                entry - which then masked the real quad/Makefile.inc lines,
+                every one of which is inside an .if. Ten quad files came
+                back portable on the strength of a list that builds nothing
+                and would break if they were renamed.
 
 With --report (the oracle's pass_report.json, which is only produced on a
 FreeBSD host) it also requires ir.equal, ir.abi_equal and edits == 0. Those
 are the oracle's claims and cannot be checked here; without the report this
 lists what the TREE permits and says so.
+
+Every rule matches on BASENAME, so every one of them is conservative: it
+says "this might break", never "this will break". lib/libc/stdlib/div.c is
+rejected because jemalloc names a div.c, and jemalloc's is
+contrib/jemalloc/src/div.c. That costs a port. Accepting a file wrongly
+costs a fifty-minute build, which is the asymmetry the whole tool is built
+around.
 """
 
 from __future__ import annotations
@@ -62,17 +87,21 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "hbsd" / "src"
 
 INCLUDE = re.compile(r'^\s*#\s*include\s+"([^"]+)"', re.M)
-SRCS_LINE = re.compile(r"^\s*[A-Z0-9_]*SRCS[A-Za-z0-9_.]*\s*\+?[:?]?=")
+SRCS_LINE = re.compile(r"^\s*([A-Z0-9_]*SRCS[A-Za-z0-9_.]*)\s*\+?[:?]?=")
+VAR_REF = re.compile(r"[$][{(]([A-Za-z0-9_.]+)")
 COND_OPEN = re.compile(r"^\s*\.\s*(if|ifdef|ifndef|for)\b")
 COND_CLOSE = re.compile(r"^\s*\.\s*endif\b|^\s*\.\s*endfor\b")
 
 
 def makefile_srcs(mk: Path):
-    """(name, conditional) for every source a Makefile names.
+    """(variable, name, conditional) for every source a Makefile names.
 
     Conditional means the line sits inside an .if/.for. Continuations are
     joined first so a name on the fifth line of a list is still attributed
     to the line that started it.
+
+    The variable is yielded because a SRCS-SHAPED name is not the same as a
+    build list - see reaching_vars().
     """
     try:
         text = mk.read_text(errors="replace")
@@ -87,11 +116,58 @@ def makefile_srcs(mk: Path):
         if COND_OPEN.match(line):
             depth += 1
             continue
-        if not SRCS_LINE.match(line):
+        m = SRCS_LINE.match(line)
+        if not m:
             continue
         for tok in line.split("=", 1)[1].split():
             if tok.endswith((".c", ".cpp", ".S", ".s")) and "$" not in tok:
-                yield os.path.basename(tok), depth > 0
+                yield m.group(1), os.path.basename(tok), depth > 0
+
+
+def reaching_vars(makefiles) -> set[str]:
+    """The SRCS-shaped variables that actually reach SRCS.
+
+    A regex for `*SRCS*=` matches things that are not build lists.
+    lib/libc/Makefile:171 is the case that cost a batch:
+
+        KQSRCS= adddi3.c anddi3.c ashldi3.c ...
+        KSRCS=  bcmp.c ffs.c ffsl.c fls.c flsl.c ...
+        libkern.gen: ${KQSRCS} ${KSRCS}
+                ${CP} ... ${.ALLSRC} ${DESTDIR}/sys/libkern
+
+    That is a hand-run target which refreshes the kernel's copies of those
+    sources. Nothing adds either variable to SRCS, so it is not a build
+    list - and being at the top level it read as UNCONDITIONAL, which then
+    masked the real quad/Makefile.inc entries, every one of which is inside
+    an .if. Ten files came back portable on the strength of a list that
+    does not build anything and would break if they were renamed.
+
+    So: start at SRCS and follow ${VAR} references through the scope's
+    assignments. SRCS+= ${MISRCS} makes MISRCS reach; SRCS= ${COMMON_SRCS}
+    ${ARCH_SRCS} makes both reach. Nothing references KQSRCS or KSRCS.
+    """
+    edges: dict[str, set[str]] = defaultdict(set)
+    for mk in makefiles:
+        try:
+            text = mk.read_text(errors="replace")
+        except OSError:
+            continue
+        for line in re.sub(r"\\\n", " ", text).splitlines():
+            m = SRCS_LINE.match(line)
+            if not m:
+                continue
+            edges[m.group(1)].update(VAR_REF.findall(line.split("=", 1)[1]))
+    reach, todo = {"SRCS"}, ["SRCS"]
+    while todo:
+        for nxt in edges.get(todo.pop(), ()):
+            if nxt not in reach:
+                reach.add(nxt)
+                todo.append(nxt)
+    # SRCS.<prog> is a per-program list that bsd.progs.mk and bsd.test.mk
+    # consume by construction, so it never appears on the right of an
+    # assignment and the walk above cannot see it. It is a build list.
+    reach.update(v for v in edges if v.startswith("SRCS."))
+    return reach
 
 
 def main() -> int:
@@ -119,19 +195,26 @@ def main() -> int:
         except OSError:
             pass
 
+    # Which SRCS-shaped variables in this scope actually reach SRCS.
+    scope_mk = [mk for mk in scope.rglob("Makefile*") if mk.is_file()]
+    reach = reaching_vars(scope_mk)
+
     # Who names each source, inside the scope and outside it.
     inside: dict[str, bool] = {}          # name -> conditional
     outside: dict[str, list[str]] = defaultdict(list)
+    unbuilt: dict[str, list[str]] = defaultdict(list)   # name -> VAR in mk
     for mk in SRC.rglob("Makefile*"):
         if not mk.is_file():
             continue
         in_scope = scope in mk.parents or mk.parent == scope
-        for name, cond in makefile_srcs(mk):
-            if in_scope:
+        for var, name, cond in makefile_srcs(mk):
+            if not in_scope:
+                outside[name].append(str(mk.relative_to(SRC)))
+            elif var in reach:
                 # unconditional wins if the name appears both ways
                 inside[name] = inside.get(name, True) and cond
             else:
-                outside[name].append(str(mk.relative_to(SRC)))
+                unbuilt[name].append(f"{var} in {mk.relative_to(SRC)}")
 
     # Basenames appearing more than once in the scope.
     seen: dict[str, list[Path]] = defaultdict(list)
@@ -154,6 +237,10 @@ def main() -> int:
             why.append(f"same basename as {others}")
         if f.name in outside:
             why.append("named by " + ", ".join(sorted(set(outside[f.name]))))
+        if f.name in unbuilt:
+            why.append("named by hardcoded .c name in "
+                       + ", ".join(sorted(set(unbuilt[f.name])))
+                       + ", which is not a plain SRCS list")
         (ok if not why else rejected).append((rel, why))
 
     verdict = "the tree permits"

@@ -44,12 +44,29 @@ def build_tree(root: Path) -> None:
     (lib / "sub" / "dup.c").write_text("int dup2(void) { return 0; }\n")
     # named by a Makefile outside the scope
     (lib / "shared.c").write_text("int shared(void) { return 0; }\n")
+    # named ONLY by a SRCS-shaped variable that nothing adds to SRCS - and
+    # named at the top level, so before reaching_vars() it read as an
+    # UNCONDITIONAL SRCS entry that also masked its real conditional one.
+    # This is lib/libc/Makefile's KQSRCS, which put ten quad files on a
+    # batch list they had no business being on.
+    (lib / "copied.c").write_text("int copied(void) { return 0; }\n")
+    # reached through an alias: SRCS+= ${EXTRA_SRCS}. Must still pass.
+    (lib / "aliased.c").write_text("int aliased(void) { return 0; }\n")
+    # a per-program list, which bsd.progs.mk consumes by construction and
+    # the reachability walk cannot see on the right of any assignment.
+    (lib / "prog.c").write_text("int main(void) { return 0; }\n")
 
     (lib / "Makefile").write_text(
         "SRCS+= clean.c includer.c dup.c shared.c \\\n"
         "\ttemplate.c\n"
+        "SRCS+= ${EXTRA_SRCS}\n"
+        "EXTRA_SRCS= aliased.c\n"
+        "SRCS.demoprog= prog.c\n"
+        "COPYSRCS= copied.c\n"
+        "install-copies: ${COPYSRCS}\n"
+        "\tcp ${.ALLSRC} /elsewhere\n"
         ".if ${MK_SOMETHING} != \"no\"\n"
-        "SRCS+= maybe.c\n"
+        "SRCS+= maybe.c copied.c\n"
         ".endif\n")
     (lib / "sub" / "Makefile.inc").write_text("SRCS+= dup.c\n")
     (src / "lib" / "other" / "Makefile").write_text(
@@ -116,6 +133,17 @@ def main() -> int:
                   for r in got.get("lib/demo/shared.c", [])), out)
         check("includer.c is still acceptable itself",
               "lib/demo/includer.c" in acc, out)
+        check("copied.c: named by a list that is not a plain SRCS list",
+              any("COPYSRCS" in r and "not a plain SRCS list" in r
+                  for r in got.get("lib/demo/copied.c", [])), out)
+        check("copied.c: its real SRCS entry is seen as conditional, "
+              "not masked by the top-level COPYSRCS line",
+              any(".if" in r for r in got.get("lib/demo/copied.c", [])), out)
+        check("aliased.c: SRCS+= ${EXTRA_SRCS} reaches",
+              "lib/demo/aliased.c" in acc, out)
+        check("prog.c: SRCS.<prog> is a build list, not a hardcoded name",
+              not any("not a plain SRCS list" in r
+                      for r in got.get("lib/demo/prog.c", [])), out)
 
         print("\nwith a pass report")
         rep = root / "rep.json"
