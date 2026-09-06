@@ -738,6 +738,35 @@ Arm DEN 0028 puts the function identifier in the low 32 bits as an
 unsigned value. Monitors evidently ignore the high half, which is why
 nothing has noticed.
 
+### `sys/i386/pci/pci_cfgreg.c` — the same shift, executed
+
+Three sites, `1 << slot` with `slot` a variable:
+
+```c
+if (domain == 0 && bus == 0 && (1 << slot & pcie_badslots) != 0)   /* :177, :223 */
+...
+for (slot = 0; slot <= PCI_SLOTMAX; slot++)
+        ...
+        pcie_badslots |= (1 << slot);                              /* :537 */
+```
+
+`PCI_SLOTMAX` is 31 (`sys/dev/pci/pcireg.h:47`), so `1 << 31` on a signed
+`int` is **executed on every boot of a machine with PCIe** — and device 31
+is where the LPC bridge lives on Intel chipsets, so it is not a corner
+either.
+
+This one is fixed and the 977 below are not, and the line is not
+arbitrary: those are `#define` constants the compiler folds, and these are
+a shift of a variable at run time — the thing UBSan traps and the thing a
+compiler is entitled to assume cannot happen. The value is unchanged
+either way (`1 << 31` is `INT_MIN`, which converts to `0x80000000` in the
+`uint32_t` it is masked against), so `1U` is two characters and no
+behaviour change.
+
+It was found because `includes.py` started passing `--target`, so i386
+was compiled as i386 rather than as x86-64 for the first time. It is the
+first defect that fix produced.
+
 ### The rest of the class, and why it is not being fixed
 
 Read the class, then grep for it — and this time the grep says don't.

@@ -149,6 +149,14 @@ FIXES = {
         "in psci_call()'s register_t parameter, so the SMCCC function "
         "identifier handed to the secure monitor is 0xffffffff80000000",
     ),
+    "hbsd/src/sys/i386/pci/pci_cfgreg.c": (
+        "pcie_badslots |= (1U << slot);",
+        "pcie_badslots |= (1 << slot);",
+        "PCI_SLOTMAX is 31 and pcie_init_badslots() walks 0..31, so "
+        "`1 << 31` on a signed int is executed on every PCIe boot - a "
+        "shift of a VARIABLE at run time, unlike the 977 folded constants "
+        "left alone in the same class",
+    ),
     # Two GEOM tasters, which run on whatever medium is plugged in.
     "hbsd/src/sys/geom/part/g_part_ldm.c": [
         (

@@ -74,6 +74,25 @@ static struct pcie_mcfg_region *mcfg_regions;
 static int mcfg_numregions;
 static TAILQ_HEAD(pcie_cfg_list, pcie_cfg_elem) pcie_list[MAXCPU];
 static int pcie_cache_initted;
+/*
+ * PBSD: the three `1 << slot` below are `1U << slot`.
+ *
+ * PCI_SLOTMAX is 31 (sys/dev/pci/pcireg.h:47) and pcie_init_badslots()
+ * walks slot 0..PCI_SLOTMAX, so `1 << 31` on a signed int is EXECUTED on
+ * every boot of a machine with PCIe - device 31 is where the LPC bridge
+ * lives on Intel chipsets, so it is not a corner either.
+ *
+ * This tree has 977 other signed shifts past INT_MAX in sys/ headers and
+ * they are deliberately left alone (docs/security/UB_FINDINGS.md). The
+ * difference is that those are `#define` constants the compiler folds,
+ * and these are a shift of a variable at run time - the thing UBSan traps
+ * and the thing a compiler is free to assume cannot happen. The value is
+ * unchanged either way: `1 << 31` as an int is INT_MIN, and converting
+ * that to the uint32_t it is masked against gives 0x80000000 regardless.
+ *
+ * Found by clang's analyser once includes.py started passing --target, so
+ * i386 was compiled as i386 rather than as x86-64 for the first time.
+ */
 static uint32_t pcie_badslots;
 int cfgmech;
 static int devmax;
@@ -174,7 +193,7 @@ pcie_lookup_region(int domain, int bus)
 static uint32_t
 pci_docfgregread(int domain, int bus, int slot, int func, int reg, int bytes)
 {
-	if (domain == 0 && bus == 0 && (1 << slot & pcie_badslots) != 0)
+	if (domain == 0 && bus == 0 && (1U << slot & pcie_badslots) != 0)
 		return (pcireg_cfgread(bus, slot, func, reg, bytes));
 
 	if (cfgmech == CFGMECH_PCIE) {
@@ -220,7 +239,7 @@ void
 pci_cfgregwrite(int domain, int bus, int slot, int func, int reg, uint32_t data,
     int bytes)
 {
-	if (domain == 0 && bus == 0 && (1 << slot & pcie_badslots) != 0) {
+	if (domain == 0 && bus == 0 && (1U << slot & pcie_badslots) != 0) {
 		pcireg_cfgwrite(bus, slot, func, reg, data, bytes);
 		return;
 	}
@@ -534,7 +553,7 @@ pcie_init_badslots(struct pcie_mcfg_region *region)
 
 			val2 = pciereg_cfgread(region, 0, slot, 0, 0, 4);
 			if (val2 != val1)
-				pcie_badslots |= (1 << slot);
+				pcie_badslots |= (1U << slot);
 		}
 	}
 }
