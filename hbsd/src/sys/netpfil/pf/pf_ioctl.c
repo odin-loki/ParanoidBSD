@@ -4411,7 +4411,23 @@ DIOCGETSTATESV2_full:
 		unsigned int old_limit;
 
 		error = pf_ioctl_set_limit(pl->index, pl->limit, &old_limit);
-		pl->limit = old_limit;
+		/*
+		 * PBSD: only read old_limit when it was written.
+		 *
+		 * pf_ioctl_set_limit() returns EINVAL without touching
+		 * *old_limit for an out-of-range index or a NULL zone, and
+		 * this copied it into pl->limit regardless.
+		 *
+		 * That is NOT the information leak it looks like:
+		 * kern_ioctl() copies the buffer back only on success
+		 * (`if (error == 0 && (com & IOC_OUT))', sys_generic.c),
+		 * so on the EINVAL path nothing reaches userland. It is an
+		 * indeterminate read whose value is then discarded -- and
+		 * one moved copyout away from being a disclosure bug, in
+		 * an ioctl whose index argument comes from userland.
+		 */
+		if (error == 0)
+			pl->limit = old_limit;
 		break;
 	}
 

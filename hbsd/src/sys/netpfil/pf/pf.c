@@ -9240,7 +9240,20 @@ pf_route(struct pf_krule *r, struct ifnet *oifp,
 		}
 	}
 
-	if (r->rt == PF_DUPTO || (pd->af != pd->naf && s->direction == PF_IN))
+	/*
+	 * PBSD: s is optional in pf_route() and every other use says so.
+	 *
+	 * Eleven uses of s in this function, ten of them NULL-guarded --
+	 * `if (s)' four times, `if (s != NULL)' three, `if (s && ...)'
+	 * once, and MPASS(s != NULL) six lines below this one, inside
+	 * the branch skip_test opens. This was the eleventh.
+	 *
+	 * Short-circuiting saves it whenever r->rt == PF_DUPTO; the rest
+	 * of the time it dereferences the pointer the line above just
+	 * finished testing against NULL.
+	 */
+	if (r->rt == PF_DUPTO ||
+	    (s != NULL && pd->af != pd->naf && s->direction == PF_IN))
 		skip_test = true;
 
 	if (pd->dir == PF_IN) {
@@ -9571,7 +9584,20 @@ pf_route6(struct pf_krule *r, struct ifnet *oifp,
 		}
 	}
 
-	if (r->rt == PF_DUPTO || (pd->af != pd->naf && s->direction == PF_IN))
+	/*
+	 * PBSD: s is optional in pf_route6() and every other use says so.
+	 *
+	 * Eleven uses of s in this function, ten of them NULL-guarded --
+	 * `if (s)' four times, `if (s != NULL)' three, `if (s && ...)'
+	 * once, and MPASS(s != NULL) six lines below this one, inside
+	 * the branch skip_test opens. This was the eleventh.
+	 *
+	 * Short-circuiting saves it whenever r->rt == PF_DUPTO; the rest
+	 * of the time it dereferences the pointer the line above just
+	 * finished testing against NULL.
+	 */
+	if (r->rt == PF_DUPTO ||
+	    (s != NULL && pd->af != pd->naf && s->direction == PF_IN))
 		skip_test = true;
 
 	if (pd->dir == PF_IN) {

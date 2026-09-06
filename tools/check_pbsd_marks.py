@@ -401,6 +401,34 @@ FIXES = {
             "bbr_log_startup_event() reads both",
         ),
     ],
+    # Two entries and not one, because the comment is the same in both
+    # twins and `want in text' is satisfied by either. A single marker
+    # here would stay silent when a merge ate one of the two -- which is
+    # the guard-on-one-of-a-pair defect this file exists to catch,
+    # committed in the file that catches it. Each names its function.
+    "hbsd/src/sys/netpfil/pf/pf.c": [
+        (
+            "PBSD: s is optional in pf_route() and every other use says so",
+            "\tif (r->rt == PF_DUPTO || (pd->af != pd->naf && s->direction",
+            "pf_route() uses the optional pf_kstate pointer eleven times "
+            "and guarded ten of them; the eleventh sat between an "
+            "`if (s != NULL)' and an MPASS(s != NULL)",
+        ),
+        (
+            "PBSD: s is optional in pf_route6() and every other use says so",
+            None,
+            "pf_route6() is the same function for IPv6 and had the same "
+            "census: eleven uses, the same one unguarded",
+        ),
+    ],
+    "hbsd/src/sys/netpfil/pf/pf_ioctl.c": (
+        "PBSD: only read old_limit when it was written",
+        None,
+        "DIOCSETLIMIT copied pf_ioctl_set_limit()'s out-parameter into "
+        "the userland-visible buffer even on the EINVAL path that never "
+        "writes it; not a leak only because kern_ioctl() gates copyout "
+        "on error == 0",
+    ),
     "hbsd/src/libexec/rtld-elf/rtld.c": (
         "PBSD: read the PaX flags AFTER the vector has been digested",
         "aux = (Elf_Auxinfo *)sp;\n\n\n#ifdef HARDENEDBSD",

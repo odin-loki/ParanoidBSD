@@ -2057,6 +2057,82 @@ precondition being stated rather than a live overflow. Two arrays sized
 16 for capacities of 16 and 14 is the kind of disagreement that stays
 harmless exactly until somebody adds the second caller.
 
+## Fixed — the eleventh use, in a packet filter's route-to path
+
+`pf_route()` takes `struct pf_kstate *s` and that pointer is optional.
+Its own body says so eleven times:
+
+```
+9075   if (s) {
+9100       if (s != NULL) {
+9116       if (s)
+9125       if (s)
+9198   if (s != NULL) {
+9234   if (s != NULL && s->kif == V_pfi_all && ...)
+9236       MPASS(r->rt == PF_REPLYTO || (pd->af != pd->naf && s->direction == PF_IN));
+9243   if (r->rt == PF_DUPTO || (pd->af != pd->naf && s->direction == PF_IN))
+9249           MPASS(s != NULL);
+9347       if (s && s->nat_rule != NULL) {
+9400   if (s)
+```
+
+Ten guarded, one not. `:9243` sits between a test of `s != NULL` on the
+line above and an `MPASS(s != NULL)` six lines below, inside the branch
+it opens. Short-circuiting saves it whenever `r->rt == PF_DUPTO`; the
+rest of the time it dereferences the pointer the previous statement
+finished checking.
+
+`pf_route6()` is the same function for IPv6 and has the same census —
+eleven uses, the same one unguarded, at `:9574`. Identical in upstream,
+so inherited.
+
+This is the shape this document keeps naming, at its clearest: not a
+guard nobody thought of, but a guard present on ten of eleven siblings.
+Both twins now read `(s != NULL && pd->af != pd->naf && ...)`. The two
+`core.NullDereference` findings for `direction` go with them; pf.c drops
+from 10 to 8.
+
+### And an ioctl out-parameter that is one line from being a leak
+
+```c
+	unsigned int old_limit;
+
+	error = pf_ioctl_set_limit(pl->index, pl->limit, &old_limit);
+	pl->limit = old_limit;
+```
+
+`pf_ioctl_set_limit()` returns `EINVAL` without touching `*old_limit`
+when the index is out of range or the zone is NULL, and `pl` is the
+`DIOCSETLIMIT` buffer. The obvious reading is a four-byte kernel stack
+disclosure, and it is wrong: `kern_ioctl()` copies the buffer back only
+on success —
+
+```c
+	if (error == 0 && (com & IOC_OUT))
+		error = copyout(data, uap->data, (u_int)size);
+```
+
+— so on the `EINVAL` path nothing reaches userland. What is left is an
+indeterminate read whose value is discarded. Guarded on `error == 0`
+anyway: "out-parameter written only on success, copied unconditionally
+into a userland-visible struct" is one moved `copyout` away from being a
+disclosure bug, and the index argument comes from userland.
+
+Checking the framework before writing that sentence is the point of the
+entry. The first reading of it was the exciting one.
+
+### The rest of `sys/netpfil/pf`, read and left alone
+
+Twenty-five findings in the scope, three fixed, and the other twenty-two
+are four things:
+
+| reported | why it is not a defect |
+|---|---|
+| **ten** findings across `pf.c:229`, `pf_if.c:105`, `pf_ioctl.c:144`, `pf_norm.c:134,139`, `pf_table.c:178`, `pf_ruleset.c:77,78,79,81` | every one of them is an `RB_GENERATE(...)` line. Ten of the scope's twenty-five findings are one red-black-tree macro, the same class as `subr_stats.c`'s two `ARB_GENERATE_STATIC` lines carrying 94 between them. |
+| `pf.c` `pf_change_ap`/`pf_change_a6`, **seven** `core.CallAndMessage` | `pf_addrcpy(&ao, a, pd->af)` is a visible `static inline` that copies **four** bytes for `AF_INET` and sixteen for `AF_INET6`, so after an IPv4 copy only `ao.addr16[0..1]` are defined. The author knew: the two address-family-translating arms pass literal `0` for words 2-7 rather than reading them, and only the two same-family arms read all eight — under a `switch (pd->af)` that selects the same value `pf_addrcpy` switched on. The analyser cannot correlate the two switches because the *next* statement, `pf_addrcpy(a, an, pd->af)`, writes sixteen bytes through `a`, and nothing rules out `a` aliasing `&pd->af`. All four arms check out; the guard is the literal `0`. |
+| `pf_lb.c:1026` `ctx->nk->addr[idx]` | `switch (nat_action)` has three arms — `PF_NAT`, `PF_BINAT`, `PF_RDR` — out of an enum of fifteen, and `int idx;` is uninitialised. Both callers constrain it: `pf.c:5628` passes a local that is literally `PF_NAT` or `PF_RDR`, and `pf_lb.c:987` passes `r->action` for a rule that came out of the NAT, BINAT or RDR ruleset, having just excluded `PF_NONAT`, `PF_NOBINAT` and `PF_NORDR`. A rule cannot reach those rulesets with any other action: `pf_get_ruleset_number()` maps exactly ten actions to five rulesets and returns `PF_RULESET_MAX` for the rest, which `pf_ioctl.c:2296` rejects with `EINVAL`. The guarantee is real and it lives in a different translation unit, behind a mapping table. |
+| `pf_lb.c:473,906`, `pf_lb.c:1238`, `if_pfsync.c:733`, `pflow.c:1666` | out-parameters and family-keyed pointers of the classes already above. |
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -2123,4 +2199,5 @@ Kept because the reasoning is what stops them being re-reported.
 | `lib/libcalendar/easter.c:46` `29 / (i + 1)` | `i` is `(...) % 30`, and C's `%` yields a negative result for a negative dividend, so `i == -1` divides by zero. Reaching it needs a **negative year**: for `y >= 0` the numerator is `c - c/4 - (c-k)/3 + 19n + 15` with every term non-negative or small, and it stays positive. `easterg(int y, date *dt)` is libcalendar's public entry point and its domain is a calendar year. Rule three — worth the row because the failure is real arithmetic rather than a modelling artefact, and a caller that passes a computed year should know. |
 | `sys/powerpc/ofw/ofw_real.c` — 19 findings, and `rtas.c:252` | one idiom. The OUT cells are written either by `ofw_real_unmap()`'s `memcpy(buf, ...)` — in this translation unit, but past two early returns — or, before the MMU is up, by the firmware writing straight into `args` at its own physical address, because `ofw_real_map()` returns `(uintptr_t)buf & ~DMAP_BASE_ADDRESS` when `!pmap_bootstrapped`. Which of the two happens depends on `pmap_bootstrapped` and on `of_bounce_virt`, and the second is a store the analyser cannot see at all. The one finding in this file that was **not** this — `ofw_real_open()` reading `args.instance` before the copy-back — is fixed above; the point of the row is that eighteen identical-looking findings hid one real one. |
 | `sys/dev/mpr/mpr_config.c` (19) and `sys/dev/mps/mps_config.c` (7) | `error = mpr_wait_command(sc, &cm, 60, CAN_SLEEP); if (cm != NULL) reply = ...; if (error || (reply == NULL))` — so the analyser explores `error == 0` with `cm == NULL`, which makes `reply` indeterminate at the `==` and `cm` NULL at the later `cm->cm_length`. That state does not exist: `mpr_wait_command()` (`mpr.c`, and `mps.c` identically) writes `*cmp = NULL` **only** inside `if (error == EWOULDBLOCK)`, and the next statement is `error = ETIMEDOUT`. It cannot return 0 having freed the command, so `error == 0` implies `cm != NULL` and the guard binds. A cross-translation-unit out-parameter contract again. Worth the row for what is true underneath it: `mps_config.c` declares `reply = NULL` in **9 of 9** functions and `mpr_config.c`, which was copied from it, in **2 of 12** — so the newer driver's correctness rests entirely on that invariant while the older one does not need it. Nothing to fix, and not nothing to know. |
+| `sys/netinet/tcp_syncache.c` `syncache_respond()`, **seven** findings | `ip`, `ip6`, `udp` and `ulen` are one maintained set. `udp` and `ulen` are assigned together on exactly the branches where `sc->sc_port != 0` -- written `if (sc->sc_port != 0) {...}` in the v6 arm and `if (sc->sc_port == 0) {...} else {...}` in the v4 arm, inverted but the same condition -- and read only under `if (udp)` and `if (sc->sc_port)`. `ip` and `ip6` are the `INC_ISIPV6` pair. All four arms maintain it, checked one at a time because a set of four where one differs is this document's most common finding. Same class as `rack.c`'s `udp`/`t_port` and `ip6`/`r_is_v6`, in a function that answers unauthenticated SYNs. |
 | `lib/libcalendar/calendar.c` `jdate`, `ndaysg`, `ndaysj`, `weekday`, and `easter.c` `easterog`/`easteroj:100` | the same domain argument: signed arithmetic on a year, day or day-number that overflows only for inputs no calendar produces. Exported, caller-constrained. |
