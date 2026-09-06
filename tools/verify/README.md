@@ -92,6 +92,30 @@ defect in a three-line function that has none, 114,217 times.
 - **Advisory tier** (defined but suspicious, gates nothing): conversion,
   unsigned overflow, NaN, float overflow.
 
+### `static` and exported are different claims
+
+A modular check explores a function's **whole signature domain**. Whether
+that is the right domain depends on linkage, which the goto symbol table
+records as `file_local`:
+
+| | |
+|---|---|
+| **exported** | the signature domain *is* the contract callers are entitled to, so UB anywhere in it is a defect. `stdc_leading_ones_uc(unsigned char)` is UB for every `x >= 128`; `rint(double)` for every negative `x`. Both were real. |
+| **`static`** | the wrong domain — the only callers are in the same file and they constrain it. `nsap_addr.c`'s `xtob(int c)` subtracts `'0'` or `'7'` and overflows at `INT_MIN`; its one caller passes an `isxdigit()`-validated char. |
+
+A `static` finding is not dismissed, it is **deferred**: proving it
+unreachable needs the callers, which a modular check does not have.
+
+### Extern function returns are unconstrained too
+
+`clock()` overflows on `CONVTCK(ru.ru_utime) + CONVTCK(ru.ru_stime)` — but
+`ru` was filled by `getrusage()`, which CBMC does not model, so its fields
+are arbitrary. Same for `alarm()` on `setitimer`'s `oitv`, and `svc_run()`.
+This is the pointer-parameter trap a third time: unconstrained input
+reported as a defect. `nice(int incr)` is the one in that group worth a
+second look, because `incr` is a **parameter** of an exported function, so
+`nice(INT_MAX)` really does overflow `prio + incr`.
+
 ### `division by zero` needs triage, in both directions
 
 `--div-by-zero-check` does not distinguish integer from floating-point

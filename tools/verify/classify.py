@@ -60,7 +60,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
 
 SYM_RE = re.compile(
-    r"^Symbol\.+:\s*(?P<sym>\S+)\s*$.*?^Type\.+:\s*(?P<type>.*?)$",
+    r"^Symbol\.+:\s*(?P<sym>\S+)\s*$"
+    r"(?P<mid>.*?)"
+    r"^Type\.+:\s*(?P<type>.*?)$",
     re.M | re.S,
 )
 
@@ -139,6 +141,7 @@ def model_one(job: dict) -> dict:
         return {"file": rel, "ok": False, "error": f"symbol table: {e}"}
 
     fns: dict[str, str] = {}
+    linkage: dict[str, str] = {}
     extern_ptrs: set[str] = set()
     for m in SYM_RE.finditer(q_out):
         sym, ty = m.group("sym"), m.group("type").strip()
@@ -147,6 +150,23 @@ def model_one(job: dict) -> dict:
         cls = classify_type(ty)
         if cls != "NOTFN":
             fns[sym] = cls
+            # `static` shows in the goto symbol table as file_local, and it
+            # decides how a finding must be read.
+            #
+            # A modular check gives a function's WHOLE signature domain. For
+            # an exported function that is the right domain - it is the
+            # contract callers are entitled to, so UB anywhere in it is a
+            # defect. stdc_leading_ones_uc(unsigned char) is UB for every x
+            # >= 128 and rint(double) for every negative x; both were real.
+            #
+            # For a static helper it is the wrong domain, because the only
+            # callers are in the same file and they constrain it.
+            # nsap_addr.c's xtob(int c) subtracts '0' or '7' and overflows
+            # at INT_MIN - and its one caller passes an isxdigit() char.
+            # Reporting that as a defect needs the callers, which a modular
+            # check does not have.
+            linkage[sym] = ("static" if "file_local" in (m.group("mid") or "")
+                            else "exported")
         elif "*" in ty:
             # A file-scope POINTER defined in another translation unit.
             # CBMC has no value for it, so it is nondeterministic - which
@@ -174,7 +194,8 @@ def model_one(job: dict) -> dict:
         except (subprocess.TimeoutExpired, OSError):
             pass
 
-    return {"file": rel, "ok": True, "gb": str(gb), "functions": fns}
+    return {"file": rel, "ok": True, "gb": str(gb), "functions": fns,
+            "linkage": linkage}
 
 
 def _split_bodies(text: str) -> dict[str, str]:

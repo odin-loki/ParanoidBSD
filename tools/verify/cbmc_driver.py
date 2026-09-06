@@ -178,6 +178,7 @@ def _rec(task: dict, status: str, **kw) -> dict:
         "function": task["function"],
         "tier": task["tier"],
         "class": task.get("class"),
+        "linkage": task.get("linkage"),
         "unwind": task["unwind"],
         "status": status,
         **kw,
@@ -223,6 +224,7 @@ def load_tasks(plan: Path, scopes: list[str], unwind: int, timeout: int,
             tasks.append({
                 "file": path, "src": c["gb"], "function": fn,
                 "class": fns[fn],
+                "linkage": c.get("linkage", {}).get(fn, "?"),
                 "unwind": unwind, "timeout": timeout, "tier": tier,
             })
     print("  skipped: " + "  ".join(f"{k}={v}" for k, v in skipped.items()),
