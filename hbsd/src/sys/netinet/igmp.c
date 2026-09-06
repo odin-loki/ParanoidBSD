@@ -1196,7 +1196,17 @@ igmp_input_v3_group_query(struct in_multi *inm, struct igmp_ifsoftc *igi,
 		if (inm->inm_state == IGMP_G_QUERY_PENDING_MEMBER ||
 		    inm->inm_state == IGMP_SG_QUERY_PENDING_MEMBER) {
 			inm_clear_recorded(inm);
-			timer = min(inm->inm_timer, timer);
+			/*
+			 * PBSD: a stopped timer is not an earlier deadline.
+			 * inm_timer == 0 means "not running" everywhere else
+			 * in this file - igmp_v3_process_group_timers()
+			 * returns early on it - so taking it as the minimum
+			 * makes timer 0, and IGMP_RANDOM_DELAY is
+			 * `random() % (X) + 1`. A remote querier does not
+			 * get to divide by zero in the kernel.
+			 */
+			if (inm->inm_timer != 0)
+				timer = min(inm->inm_timer, timer);
 		}
 		inm->inm_state = IGMP_G_QUERY_PENDING_MEMBER;
 		inm->inm_timer = IGMP_RANDOM_DELAY(timer);
@@ -1209,7 +1219,9 @@ igmp_input_v3_group_query(struct in_multi *inm, struct igmp_ifsoftc *igi,
 	 * been received but a group-specific query is already pending.
 	 */
 	if (inm->inm_state == IGMP_G_QUERY_PENDING_MEMBER) {
-		timer = min(inm->inm_timer, timer);
+		/* PBSD: as above - 0 means stopped, not sooner. */
+		if (inm->inm_timer != 0)
+			timer = min(inm->inm_timer, timer);
 		inm->inm_timer = IGMP_RANDOM_DELAY(timer);
 		V_current_state_timers_running = 1;
 		return (retval);

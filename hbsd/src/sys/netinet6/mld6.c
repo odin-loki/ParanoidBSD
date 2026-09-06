@@ -1002,7 +1002,18 @@ mld_v2_process_group_query(struct in6_multi *inm, struct mld_ifsoftc *mli,
 		if (inm->in6m_state == MLD_G_QUERY_PENDING_MEMBER ||
 		    inm->in6m_state == MLD_SG_QUERY_PENDING_MEMBER) {
 			in6m_clear_recorded(inm);
-			timer = min(inm->in6m_timer, timer);
+			/*
+			 * PBSD: a stopped timer is not an earlier deadline.
+			 * in6m_timer == 0 means "not running" - see
+			 * mld_v2_process_group_timers() - so taking it as
+			 * the minimum makes timer 0, and MLD_RANDOM_DELAY
+			 * is `arc4random() % (X) + 1`. Same defect as
+			 * sys/netinet/igmp.c, which is where it was found;
+			 * clang's analyser explored that path and not this
+			 * one, and the two files are the same code.
+			 */
+			if (inm->in6m_timer != 0)
+				timer = min(inm->in6m_timer, timer);
 		}
 		inm->in6m_state = MLD_G_QUERY_PENDING_MEMBER;
 		inm->in6m_timer = MLD_RANDOM_DELAY(timer);
@@ -1015,7 +1026,9 @@ mld_v2_process_group_query(struct in6_multi *inm, struct mld_ifsoftc *mli,
 	 * been received but a group-specific query is already pending.
 	 */
 	if (inm->in6m_state == MLD_G_QUERY_PENDING_MEMBER) {
-		timer = min(inm->in6m_timer, timer);
+		/* PBSD: as above - 0 means stopped, not sooner. */
+		if (inm->in6m_timer != 0)
+			timer = min(inm->in6m_timer, timer);
 		inm->in6m_timer = MLD_RANDOM_DELAY(timer);
 		V_current_state_timers_running6 = 1;
 		return (retval);

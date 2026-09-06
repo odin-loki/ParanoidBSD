@@ -109,6 +109,29 @@ FIXES = {
         None,
         "same uninitialised parse target, in genl(1)",
     ),
+    # Three divisions by zero, all the same shape: a value that is 0 to
+    # mean ABSENT used as a divisor by code that reads it as SMALL.
+    # See docs/security/UB_FINDINGS.md.
+    "hbsd/src/sys/netinet/igmp.c": (
+        "if (inm->inm_timer != 0)\n\t\t\t\ttimer = min(inm->inm_timer, timer);",
+        "inm_clear_recorded(inm);\n\t\t\ttimer = min(inm->inm_timer, timer);",
+        "inm_timer == 0 means the timer is STOPPED, so min()ing with it "
+        "made IGMP_RANDOM_DELAY's `random() % (X)` divide by zero, from "
+        "a remote IGMPv3 group query",
+    ),
+    "hbsd/src/sys/netinet6/mld6.c": (
+        "if (inm->in6m_timer != 0)\n\t\t\t\ttimer = min(inm->in6m_timer, timer);",
+        "in6m_clear_recorded(inm);\n\t\t\ttimer = min(inm->in6m_timer, timer);",
+        "the same defect in the IPv6 twin, which the analyser did not "
+        "report because it explores paths and not classes",
+    ),
+    "hbsd/src/sys/net/route/nhgrp_ctl.c": (
+        "if (xmin == 0)\n\t\treturn (0);",
+        None,
+        "all-zero weights made `total % xmin` divide by zero, and "
+        "alloc_nhgrp()'s own \"Zero weights, abort\" branch could never "
+        "be reached because the divide came first",
+    ),
     # Five more from the second sweep. Same discipline: reproduced on the
     # single file, read against the code that establishes the precondition,
     # confirmed gone. See docs/security/UB_FINDINGS.md.

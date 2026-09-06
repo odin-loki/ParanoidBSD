@@ -428,6 +428,67 @@ returns in the same subsystem and are not yet read.
 
 ---
 
+## Fixed — a divisor that means "not running"
+
+Three kernel divisions by zero, all of the same shape: a value that is
+zero to mean *absent* is used as a divisor by code that reads it as
+*small*.
+
+### `sys/netinet/igmp.c:1199,1212` and `sys/netinet6/mld6.c:1005,1018` — a remote querier's divide by zero
+
+`IGMP_RANDOM_DELAY(X)` is `random() % (X) + 1`. `igmp_input_v3_group_query()`
+gets a `timer` the caller has already clamped to at least 1
+(`igmp.c:1036`), and then does
+
+```c
+timer = min(inm->inm_timer, timer);
+inm->inm_timer = IGMP_RANDOM_DELAY(timer);
+```
+
+`inm_timer == 0` means **the timer is not running** — that is exactly how
+`igmp_v3_process_group_timers()` reads it at `:1867`, returning early
+rather than treating 0 as expiry. Taking it as a minimum reads a stopped
+timer as the soonest possible deadline, and the result is `random() % 0`
+in the kernel, from a packet.
+
+These are the only two of the file's four `IGMP_RANDOM_DELAY` call sites
+that take a `min()` with that field, and they are the two clang's
+analyser reported. The fix takes the minimum only when the timer is
+running, which is what the `min()` was for.
+
+Reachability was **not** established: every path that zeroes `inm_timer`
+also moves the group out of `G_QUERY_PENDING_MEMBER`
+(`igmp_v3_cancel_link_timers()`, `igmp_final_leave()`, and the fast
+timeout itself). The invariant holds today across five functions and
+nothing local to the divide enforces it.
+
+`sys/netinet6/mld6.c` is the same code for IPv6 — `arc4random() % (X) + 1`,
+the same `min()`, `in6m_timer == 0` meaning stopped at `mld6.c:1450`. The
+analyser reported **nothing** for that file, and the file compiled
+cleanly: a path-sensitive checker explores paths, not classes, so one of
+two identical files came back clean. Same lesson as `ng_netflow.c`, where
+three instances of one mistake in one file were reported as one finding.
+
+### `sys/net/route/nhgrp_ctl.c:168` — an abort path the divide made unreachable
+
+`calc_min_mpath_slots_fast()` sets `xmin = wn[0].storage` and evaluates
+`total % xmin`. Its own comment says "Assumes @wn is sorted by weight
+ascending and **each weight is > 0**", and `xmin` is 0 exactly when every
+weight is 0.
+
+`alloc_nhgrp()` already handles that case — its `if (nhgrp_size == 0)`
+branch is commented *"Zero weights, abort"* — and could never reach it,
+because the divide happens first. Returning 0 is this function's own
+documented "precise calculation failed" and the caller
+(`calc_min_mpath_slots()`) already handles it.
+
+All four callers clamp the weight today: netlink `NHA_GROUP` (fixed
+above), rtsock `RTA_MULTIPATH` at `rt.c:884`, `RTV_WEIGHT` via
+`get_info_weight()`, and propagation from an existing group. The
+precondition is four callers' responsibility and nothing checks it where
+it is depended on — which is how a user-supplied weight of 0 reached this
+line once already.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -464,3 +525,9 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/dev/syscons/scvtb.c:114` `cols * rows` | video-mode dimensions, bounded by the hardware mode table. |
 | `sys/dev/ath/ath_hal/ah.c:422` `streams * 4` | `streams` is `HT_RC_2_STREAMS(rc)` = `((rc & 0x78) >> 3) + 1`, so 1..16 by construction and 1..4 in practice. Exported, so rule three cannot see `ath_hal_computetxtime_ht()` three lines up computing it. |
 | `sys/dev/dpaa2/dpaa2_swp.c:338` `sd << 5` and the eleven shifts beside it | both call sites (`:235`, `:254`) pass literal 0/1/2/3 for every `int` parameter. Exported, caller-constrained; the parameters would be better typed `uint8_t` like the six above them, which is a readability point and not a defect. |
+| `sys/net/rtsock.c:997` "stack address escapes" | `update_rtm_from_rc()` writes `&sa_dst.sa` and `&sa_mask.sa` — its own locals — into the caller's `info`. The caller says so: *"any pointer in @info CANNOT BE USED"*, and sets `rti_need_deembed = 0` in the same branch so the `#ifdef INET6` block forty lines down that would dereference them is skipped. Correct, and correct only because of a flag set in one branch guarding a use in another. |
+| `sys/kern/kern_prot.c:646` "stack address escapes" | `user_setcred()` leaves `wcred->sc_label` pointing at its local `mac` and `sc_supp_groups` possibly at its local `smallgroups`. Its one caller is `sys_setcred()`, whose `return (user_setcred(td, uap->flags, &wcred));` reads neither again. |
+| `sys/vm/vnode_pager.c:1022,1026` `trim * rbehind / sum` | `sum` is 0 only when `rbehind` and `rahead` are both 0, and the enclosing `if` then needs `count > atop(maxphys)`, which `vnode_pager.c:916` asserts against. A KASSERT, so not a check without INVARIANTS — but `count` comes from the VM, not from userland. |
+| `sys/kern/kern_timeout.c:1451` `st / count` | `count` is the number of scheduled callouts in the whole callwheel, and `kern.callout_stat` needs a sysctl **write** to run at all. Zero callouts system-wide on a running kernel. |
+| `sys/kern/kern_shutdown.c:1459` `length % di->blocksize` | `blocksize` is set by the dump driver at `dumper_insert()` and never validated, but every in-tree dumper passes a real sector size. Same class as the driver attach paths above. |
+| `sys/geom/shsec/g_shsec.c:107`, `g_stripe.c:111` | already listed above — `lcm()` is `static` and every caller passes a sector size. |

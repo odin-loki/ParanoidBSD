@@ -164,6 +164,25 @@ calc_min_mpath_slots_fast(struct weightened_nhop *wn, size_t num_items,
 		last = wn[i].storage;
 	}
 	*ptotal = total;
+	/*
+	 * PBSD: xmin is 0 when every weight is 0, and `total % xmin` is
+	 * then a kernel division by zero. alloc_nhgrp() already handles
+	 * that case - its "Zero weights, abort" branch - and could never
+	 * reach it, because the divide happens first. 0 is this
+	 * function's own documented "precise calculation failed", so the
+	 * caller falls back exactly as it does for every other failure.
+	 *
+	 * The four callers that reach here all clamp the weight today
+	 * (netlink NHA_GROUP, rtsock RTA_MULTIPATH, RTV_WEIGHT via
+	 * get_info_weight(), and propagation from an existing group), so
+	 * this is not reachable as the tree stands. It is here because
+	 * the precondition in the comment above is four callers'
+	 * responsibility and nothing checks it at the point that
+	 * depends on it - which is how a user-supplied weight of 0
+	 * reached this line once already.
+	 */
+	if (xmin == 0)
+		return (0);
 	/* xmin is the minimum unit of desired capacity */
 	if ((total % xmin) != 0)
 		return (0);
