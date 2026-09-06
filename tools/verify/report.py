@@ -97,6 +97,67 @@ def bucket(rec: dict) -> str:
     return "EXPORTED, arithmetic - READ THESE"
 
 
+def agree(recs: list, an: list) -> None:
+    """Where the two instruments land on the same line.
+
+    This section used to be one sentence - "a finding in BOTH is much
+    stronger than either" - and the intersection was never computed, so the
+    claim was never tested. Computed, on a full sweep, it is nine lines out
+    of 1,874 CBMC failures and 1,096 analyser findings, and reading them
+    says something more useful than the sentence did:
+
+      lib/libc/iconv/citrus_mapper.c:188 - both report a null call through
+      cm->cm_ops->mo_uninit. Neither is right. mapper_open() validates all
+      four operators before calling mo_init(), and mo_init() is the only
+      thing that sets cm_closure, so `if (cm->cm_closure)` already implies
+      the validation passed. Both instruments miss it for the SAME reason:
+      the invariant lives across two functions and a struct field.
+
+    So agreement is corroboration only when the two are failing
+    independently. When they share a blind spot - an unconstrained pointer
+    parameter, an invariant carried in a field - they agree and are both
+    wrong. Six of the nine here are the pointer-precondition class that
+    rule one already sets aside.
+
+    Printed anyway, because a line both instruments dislike is worth
+    thirty seconds, and because the honest version of the claim is more
+    useful than the confident one.
+    """
+    cb: dict = collections.defaultdict(lambda: collections.defaultdict(list))
+    for r in recs:
+        if r.get("status") != "FAILED":
+            continue
+        for d in r.get("failures", []):
+            m = re.match(r"line (\d+) (.*)", d.get("desc", ""))
+            if m:
+                cb[r["file"]][int(m.group(1))].append(
+                    (r["function"], m.group(2)))
+
+    ana: dict = collections.defaultdict(lambda: collections.defaultdict(list))
+    for r in an:
+        for f in r.get("findings", []):
+            m = re.fullmatch(r"([^\s:]+):(\d+)", f.get("where", ""))
+            if m:
+                ana[m.group(1)][int(m.group(2))].append(
+                    (f["checker"], f["msg"]))
+
+    both = []
+    for f in set(cb) & set(ana):
+        for ln, ds in cb[f].items():
+            if ln in ana[f]:
+                both.append((f, ln, ds[0], ana[f][ln][0]))
+    both.sort()
+    print(f"\n== {len(both)} line(s) BOTH instruments flag")
+    print("   Agreement is corroboration only where they fail independently.")
+    print("   A shared blind spot - an unconstrained pointer parameter, an")
+    print("   invariant held in a struct field - makes them agree and both")
+    print("   be wrong. Worth thirty seconds each; not worth more on trust.")
+    for f, ln, (fn, desc), (checker, msg) in both:
+        print(f"  {f}:{ln}  ({fn})")
+        print(f"      CBMC      {desc[:66]}")
+        print(f"      analyser  [{checker}] {msg[:52]}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -151,7 +212,8 @@ def main() -> int:
             print(f"  {n:4d}  {c}")
         print("\n  Path-sensitive and interprocedural where CBMC is")
         print("  exhaustive and modular, and approximate where CBMC is")
-        print("  exact. A finding in BOTH is much stronger than either.")
+        print("  exact.")
+        agree(recs, an)
 
     print("\n== before you fix anything")
     print("  Confirm it with UBSan first. Every entry in")
