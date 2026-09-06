@@ -114,21 +114,29 @@ change that. 188 of them stop at
                            == 0, "fix pcpu size")
     note: expression evaluates to '256 == 0'
 
-`sizeof(struct pcpu)` comes out 640 here and `PAGE_SIZE` is 4096, so it is
-384 bytes off a divisor. `sys/arm/include/pcpu.h` ends `PCPU_MD_FIELDS`
-with a hand-tuned `char __pad[135]` sized for what the **real armv7 kernel
-build** produces, and that number is a property of the configuration —
-which options are set, which headers are in the translation unit — not of
-the code being verified.
+`sizeof(struct pcpu)` comes out 640 in that translation unit and
+`PAGE_SIZE` is 4096, so it is 384 bytes off a divisor.
+`sys/arm/include/pcpu.h` ends `PCPU_MD_FIELDS` with a hand-tuned
+`char __pad[135]` sized for what the **real armv7 kernel build** produces.
 
-The empty-`opt_*.h` shim is a real configuration and a deliberately
-conservative one (`docs` and `opt_shim()` say why): code under an unset
-option is not checked rather than checked wrongly. On five architectures
-that is fine. On armv7 it lands on a static assertion, and satisfying it
-means reproducing armv7's actual option set, which is a bigger change than
-the shim.
+Reading the real kernel configuration (below) did **not** fix it, and
+narrowing it further only made it stranger. With the same flags:
 
-So: recorded, not hidden. Do not read "1 of 322" as "arm is clean".
+- a probe including exactly what `a10_padconf.c` includes —
+  `sys/param.h`, `sys/systm.h`, `sys/kernel.h`, `sys/types.h`,
+  `arm/allwinner/allwinner_pinctrl.h` — gives `sizeof(struct pcpu)` =
+  **256**, and 4096 % 256 = 0, so the assertion would pass;
+- the file itself gives **640**;
+- and `clang -E -P` on both produces a **byte-identical** `struct pcpu`,
+  alignment attribute included — 1030 characters, 23 lines, no diff.
+
+Two textually identical structs cannot have different sizes, so one of
+those two numbers is not measuring what it looks like it is measuring, and
+finding out which needs a real armv7 build to compare against rather than
+more probing here.
+
+So: recorded, not hidden, and sharper than it was. Do not read "1 of 322"
+as "arm is clean".
 
 ## Why `classify.py` exists
 

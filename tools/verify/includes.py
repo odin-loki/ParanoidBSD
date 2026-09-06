@@ -291,7 +291,17 @@ def kernconf_options(config: str = "HARDENEDBSD",
 
     Returns ((NAME, value), ...) with value "" for a plain option.
     """
-    confdir = SRC / "sys" / arch / "conf"
+    # `arch` is the ARCH-table key - aarch64, armv7, powerpc64, riscv64 -
+    # and the kernel's directory is named differently: sys/arm64,
+    # sys/arm, sys/powerpc, sys/riscv. Passing the key straight through
+    # pointed at sys/aarch64/conf, which does not exist, and every
+    # architecture but amd64 and i386 (where the two names happen to
+    # coincide) silently got NO options at all - the empty shim again, on
+    # four of six, with nothing saying so.
+    #
+    # HARDENEDBSD exists under all six.
+    sysdir = ARCH.get(arch, ARCH["amd64"])[0]
+    confdir = SRC / "sys" / sysdir / "conf"
     opts: dict[str, str] = {}
     seen: set[str] = set()
 
@@ -328,8 +338,9 @@ def kernconf_options(config: str = "HARDENEDBSD",
 def option_headers(arch: str = "amd64") -> tuple[tuple[str, str], ...]:
     """sys/conf/options: which opt_*.h each option name lands in."""
     out: dict[str, str] = {}
+    sysdir = ARCH.get(arch, ARCH["amd64"])[0]
     for f in (SRC / "sys" / "conf" / "options",
-              SRC / "sys" / "conf" / f"options.{arch}"):
+              SRC / "sys" / "conf" / f"options.{sysdir}"):
         if not f.is_file():
             continue
         for raw in f.read_text(errors="replace").splitlines():
