@@ -254,6 +254,26 @@ jobs:
       - uses: actions/download-artifact@v4
         with: { pattern: 'analyze-*', path: dl, merge-multiple: true }
       - name: One report over everything that finished
+        # scope_note reaches the shell through the ENVIRONMENT, not
+        # through ${{ }}. It used to be interpolated straight into a
+        # single-quoted echo, and run 5's note - "run 4's dev and rest
+        # shards were SIGTERMed" - ended the quote on its apostrophe:
+        #
+        #   .sh: line 22: unexpected EOF while looking for matching `''
+        #   ##[error]Process completed with exit code 2.
+        #
+        # after the report had already been computed and printed, so a
+        # three-hour sweep produced no artifact over a possessive.
+        #
+        # The apostrophe is the harmless version. ${{ }} pastes the
+        # value in before the shell parses the line, so anyone who can
+        # dispatch this workflow could have run arbitrary commands on the
+        # runner by putting them in that box. Passing it via env: is the
+        # documented fix, and the reason it is worth a paragraph in a
+        # repository about undefined behaviour is that it is the same
+        # error: text from outside being read as something with meaning.
+        env:
+          SCOPE_NOTE: ${{ inputs.scope_note }}
         run: |
           ls -la dl/
           # The analyse shards are one corpus split four ways; report.py
@@ -273,7 +293,7 @@ jobs:
             | tee REPORT.txt
           {
             echo '### PBSD verify'
-            [ -n "${{ inputs.scope_note }}" ] && echo '_${{ inputs.scope_note }}_'
+            [ -n "$SCOPE_NOTE" ] && printf '_%s_\n' "$SCOPE_NOTE"
             echo '```'
             head -60 REPORT.txt
             echo '```'
