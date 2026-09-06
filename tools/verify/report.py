@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import functools
 import json
 import re
 import sys
@@ -97,6 +98,58 @@ def bucket(rec: dict) -> str:
     return "EXPORTED, arithmetic - READ THESE"
 
 
+DOC = Path(__file__).resolve().parents[2] / "docs/security/UB_FINDINGS.md"
+_TRIAGED = re.compile(r"`([\w./-]+\.(?:c|cpp|h)):(\d+(?:\s*,\s*\d+)*)`")
+
+
+@functools.lru_cache(maxsize=1)
+def triaged() -> frozenset:
+    """(path suffix, line) pairs already read and found not to be defects.
+
+    docs/security/UB_FINDINGS.md's last section is the list of findings
+    that looked like defects and were not, each with the reasoning that
+    killed it. Re-listing them every sweep buries the ones nobody has
+    read yet: 44 of them by now, against 65 in the bucket the report
+    asks a person to read.
+
+    They are MARKED and still printed, never dropped. A finding whose
+    triage was wrong has to stay visible for that to be discoverable, and
+    the whole point of writing the reasoning down was that the reasoning
+    can be checked.
+
+    Matching is on the path SUFFIX because that is what the document
+    contains - `fread.c:129` for a libc path it names once and
+    `sys/x86/isa/clock.c:200` for a kernel one it wants to disambiguate.
+    """
+    if not DOC.is_file():
+        return frozenset()
+    text = DOC.read_text(errors="replace")
+    head = text.find("## Not defects, and why they looked like defects")
+    if head < 0:
+        return frozenset()
+    out = set()
+    for name, lines in _TRIAGED.findall(text[head:]):
+        for ln in lines.split(","):
+            out.add((name, ln.strip()))
+    return frozenset(out)
+
+
+_DESCLINE = re.compile(r"^line (\d+) ")
+
+
+def desc_line(d: dict):
+    """CBMC puts the line inside the description, not in a field of its own."""
+    m = _DESCLINE.match(d.get("desc", ""))
+    return m.group(1) if m else None
+
+
+def is_triaged(path: str, line) -> bool:
+    known = triaged()
+    parts = path.split("/")
+    return any((("/".join(parts[k:]), str(line)) in known)
+               for k in range(len(parts)))
+
+
 def macro_report(sites, floor: int = 8) -> None:
     """Lines the analyser reports many times, which are macro expansions.
 
@@ -126,7 +179,9 @@ def macro_report(sites, floor: int = 8) -> None:
     print("  finding inside the expansion carries the line that expanded")
     print("  it. Read them as one site, not as that many defects.")
     for w, c, n in heavy[:8]:
-        print(f"    {n:4d}  {w}  [{c}]")
+        path, _, ln = w.rpartition(":")
+        mark = " [triaged]" if is_triaged(path, ln) else ""
+        print(f"    {n:4d}  {w}  [{c}]{mark}")
 
 
 def agree(recs: list, an: list) -> None:
@@ -227,11 +282,24 @@ def main() -> int:
         print(f"  {len(buckets[b]):4d}  {b}")
 
     real = buckets.get("EXPORTED, arithmetic - READ THESE", [])
-    print(f"\n== the {len(real)} worth a person's time")
+    def _all_read(r):
+        lns = [desc_line(d) for d in r.get("failures", [])[:2]]
+        lns = [x for x in lns if x is not None]
+        return bool(lns) and all(is_triaged(r["file"], x) for x in lns)
+
+    seen_before = sum(1 for r in real if _all_read(r))
+    print(f"\n== the {len(real)} worth a person's time"
+          + (f", {seen_before} of them already read" if seen_before else ""))
+    if seen_before:
+        print("   [triaged] is in docs/security/UB_FINDINGS.md's not-a-defect")
+        print("   table with the reasoning that killed it. Marked, not")
+        print("   dropped - a triage that was wrong has to stay visible.")
     for r in sorted(real, key=lambda x: (x["file"], x["function"])):
         print(f"  {r['file']}:{r['function']}")
         for d in r.get("failures", [])[:2]:
-            print(f"      {d['desc'][:100]}")
+            mark = (" [triaged]" if is_triaged(r["file"], desc_line(d))
+                    else "")
+            print(f"      {d['desc'][:100]}{mark}")
 
     if args.analyze:
         an = [json.loads(l) for l in Path(args.analyze).read_text().splitlines()

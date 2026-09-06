@@ -210,6 +210,7 @@ jobs:
           sudo apt-get install -y -qq cbmc clang
           python3 tools/verify/test_analyze.py
           python3 tools/verify/test_classify.py
+          python3 tools/verify/test_report_triage.py
 
       # The port screener encodes what the hundred-file lib/msun batch
       # learned one expensive run at a time. Its value is entirely in the
