@@ -2718,6 +2718,95 @@ rest on a parameter being non-zero when it can rest on an initialiser.
 inside `if (tls->tx)` and read inside `if (tls->tx)`, with nothing
 between that touches it.
 
+## `options mac_grantbylabel` has never compiled, in either tree
+
+`sys/hardenedbsd` — PBSD's own PaX code, 74 translation units analysed
+alongside `sys/security` — reports **zero findings**. Worth saying
+plainly, because the rest of this document is the other kind of news.
+
+The one thing that scope did turn up came from the ERROR inventory
+rather than from a finding, on its first outing against a scope it had
+not been seeded from:
+
+```
+FAIL  sys/hardenedbsd/hbsd_pax_SKEL.c does not compile and is not in EXPECTED
+FAIL  sys/security/audit/audit_dtrace.c does not compile and is not in EXPECTED
+FAIL  sys/security/mac_grantbylabel/mac_grantbylabel.c does not compile and is not in EXPECTED
+```
+
+Two are ordinary — a template in no `sys/conf/files` line, and a
+DTrace-gated file wanting the opensolaris compat headers. The third is
+not.
+
+`sys/conf/files:5299` builds it:
+
+```
+security/mac_grantbylabel/mac_grantbylabel.c	optional mac_grantbylabel
+```
+
+and it fails with **one** error:
+
+```
+mac_grantbylabel.c:496:3: error: field designator 'mpo_proc_check_resource'
+    does not refer to any field in type 'struct mac_policy_ops'
+```
+
+`struct mac_policy_ops` has `mpo_proc_check_debug`, `_sched`, `_signal`
+and `_wait`. There is no `_resource`, and the only two occurrences of
+that name in the entire tree are this file's own function definition at
+`:344` and the initialiser at `:496`. Upstream HardenedBSD is identical.
+
+**So `options mac_grantbylabel` cannot be enabled, and never could, in
+either tree.**
+
+### What the orphaned hook did, and why the fix is not mechanical
+
+```c
+static int
+mac_grantbylabel_proc_check_resource(struct ucred *cred, struct proc *proc)
+{
+	if (!SLOT(proc->p_textvp->v_label)) {
+		gbl = gbl_get_vlabel(proc->p_textvp, cred);
+		if (gbl == 0)
+			gbl = GBL_EMPTY;
+		SLOT_SET(proc->p_textvp->v_label, gbl);
+	}
+	return 0;
+}
+```
+
+It never denies anything. It is the **cache-population** step:
+`gbl_get_vlabel()` reads the label and, if unset, fetches it from
+`mac_veriexec` — but does not store it. This hook is the only caller of
+`gbl_get_vlabel()` and the only writer of the vnode label slot, and
+`mac_grantbylabel_priv_grant()` at `:234` reads that slot **raw**:
+
+```c
+	label = (gbl_label_t)(SLOT(curproc->p_textvp->v_label) |
+	    SLOT(curproc->p_label));
+```
+
+Deleting the dead initialiser would make the option compile and produce
+a policy whose grants read a cache nothing ever fills — it would fail
+closed, granting nothing, silently. That converts a build error into a
+security feature that appears to be enabled and does nothing, which is
+worse than the error.
+
+Moving the fetch to the point of use is the design-correct answer, and
+it puts a `VOP_GETATTR()` inside `priv_grant()`, whose locking context
+is not something to change on inference. Adding `mpo_proc_check_resource`
+to the MAC KPI is a third option and a much larger one.
+
+That is a decision about MAC entry points and locking, not a defect fix,
+so it is written down here rather than guessed at. The inventory entry
+says `BROKEN: registers a MAC entry point that does not exist` rather
+than pretending it is option-gated, because an inventory that launders a
+defect into an exemption is worse than no inventory.
+
+| reported | why it is not a defect |
+|---|---|
+| `sys/security/mac_lomac/mac_lomac.c:461` | `lomac_copy_single()` does `labelto->ml_flags \|= MAC_LOMAC_FLAG_SINGLE` on a caller-supplied label. Every caller gets it from the MAC framework's label allocator, which zeroes. The `M_ZERO` class, in a `static` function whose callers the analyser does see but whose *label* provenance is three frames up. |
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

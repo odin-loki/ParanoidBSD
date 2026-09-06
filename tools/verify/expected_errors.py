@@ -59,6 +59,27 @@ EXPECTED = {
     # net80211
     "sys/net80211/ieee80211_alq.c": "needs option IEEE80211_ALQ",
 
+    # security
+    "sys/security/audit/audit_dtrace.c":
+        "needs the opensolaris compat headers, i.e. option KDTRACE_HOOKS",
+    "sys/hardenedbsd/hbsd_pax_SKEL.c":
+        "a template, in no sys/conf/files line - see the note below",
+
+    # NOT an honest entry. Listed so the gate is truthful about what it
+    # sees, not so the problem is filed away: this one is a DEFECT.
+    #
+    # sys/conf/files:5299 builds it under `optional mac_grantbylabel',
+    # and it does not compile, because its mac_policy_ops initialiser
+    # names .mpo_proc_check_resource and struct mac_policy_ops has no
+    # such member - the KPI has _debug, _sched, _signal and _wait. The
+    # only two references to the name in the whole tree are this file's
+    # own function and this initialiser, and upstream HardenedBSD is
+    # identical, so `options mac_grantbylabel' has never built in either
+    # tree. docs/security/UB_FINDINGS.md has the analysis; it needs a
+    # decision that is not a mechanical fix.
+    "sys/security/mac_grantbylabel/mac_grantbylabel.c":
+        "BROKEN: registers a MAC entry point that does not exist",
+
     # libexec/rtld-elf. The other nine translation units in this
     # directory compiled for the first time when the rtld's own include
     # flags were supplied - see includes.py - and riscv/reloc.c reported
