@@ -145,15 +145,32 @@ ARCH_DIR = {"amd64": "amd64", "aarch64": "aarch64", "arm": "armv7",
             "riscv": "riscv64", "powerpcspe": "powerpc64"}
 
 
+# The KERNEL's per-architecture directory names, which are a third
+# spelling again: sys/arm64 where libc says aarch64 and the ARCH table's
+# key is aarch64. sys/<this> -> the ARCH key to build the shim from.
+SYS_ARCH = {"amd64": "amd64", "arm64": "aarch64", "arm": "armv7",
+            "i386": "i386", "powerpc": "powerpc64", "riscv": "riscv64"}
+
+
 def arch_of(rel: str, default: str = "amd64") -> str:
-    """A source under lib/libc/<arch>/ or lib/msun/<arch>/ is that arch.
+    """A source under lib/libc/<arch>/, lib/msun/<arch>/ or sys/<arch>/.
 
     Verifying lib/libc/aarch64/gen/getcontextx.c against amd64's
     <machine/*.h> is not a check of anything; it is a different program.
+
+    That was written for lib/ and the kernel was left out, so every file
+    under sys/arm64, sys/arm, sys/powerpc and sys/riscv - 671 of them - got
+    amd64's machine/ shim. Most failed to compile, which is the harmless
+    outcome; the danger is the ones that DO compile, because then the tool
+    reports a clean check of a program that does not exist.
     """
     parts = rel.split("/")
     if len(parts) > 2 and parts[0] == "lib" and parts[1] in ("libc", "msun"):
         cand = ARCH_DIR.get(parts[2])
+        if cand:
+            return cand
+    if len(parts) > 2 and parts[0] == "sys":
+        cand = SYS_ARCH.get(parts[1])
         if cand:
             return cand
     return default
