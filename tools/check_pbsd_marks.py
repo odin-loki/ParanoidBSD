@@ -445,6 +445,21 @@ FIXES = {
             "read-modify-writes it, with both selectors off the wire",
         ),
     ],
+    "hbsd/src/sys/kern/kern_time.c": (
+        "PBSD: cts is only readable when the gettime",
+        "\t\t} else {\n\t\t\tts = it->it_time.it_value;\n"
+        "\t\t\ttimespecsub(&ts, &cts, &ts);",
+        "realtimer_expire_l() guards its first use of cts on `error == "
+        "0' and its second on nothing, so a failed kern_clock_gettime() "
+        "re-armed the callout from an indeterminate timespec",
+    ),
+    "hbsd/src/sys/kern/uipc_ktls.c": (
+        "PBSD: record_type is written together with last_offset",
+        "\tuint8_t record_type;\n",
+        "tls13_find_record_type() returned record_type to the caller "
+        "with only a test against tls->params.tls_hlen between an "
+        "all-zero TLS record and a byte of stack",
+    ),
     "hbsd/src/sys/netinet/sctp_pcb.c": [
         (
             "PBSD: SCTP_MALLOC is unconditionally M_NOWAIT",

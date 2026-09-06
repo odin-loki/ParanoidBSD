@@ -2388,7 +2388,27 @@ tls13_find_record_type(struct ktls_session *tls, struct mbuf *m, int tls_len,
 {
 	char *cp;
 	u_int digest_start, last_offset, m_len, offset;
-	uint8_t record_type;
+	/*
+	 * PBSD: record_type is written together with last_offset, inside
+	 * `if (m_len > 0)', and the only thing standing between an
+	 * all-zero record and `*record_typep = record_type' with nothing
+	 * ever written is
+	 *
+	 *	if (last_offset < tls->params.tls_hlen)
+	 *		return (EBADMSG);
+	 *
+	 * which is a test against a SESSION PARAMETER, not against the
+	 * flag that records whether the write happened. It holds because
+	 * tls_hlen is 5 for TLS 1.3, and it is the whole of what holds.
+	 * A tls_hlen of zero turns a record of nothing but zero bytes -
+	 * which an attacker sends - into a byte of this stack frame
+	 * handed back as the record type.
+	 *
+	 * Not reachable today. Initialised anyway: zero is not a valid
+	 * TLS ContentType, so the poison value is one the caller's switch
+	 * already rejects, and the cost is a byte.
+	 */
+	uint8_t record_type = 0;
 
 	digest_start = tls_len - *trailer_len;
 	last_offset = 0;

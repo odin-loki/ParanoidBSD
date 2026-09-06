@@ -2617,6 +2617,69 @@ reports one site and not two — because the explanatory comment left
 behind is twelve lines long and pushes the dereference past the ten-line
 lookahead. The lint measures distance in lines, and a comment is lines.
 
+## Fixed — a POSIX timer re-armed from an indeterminate timespec
+
+`sys/kern` was analysed in full: 230 translation units, 167 findings, and
+**99 of them are `subr_stats.c`'s two `ARB_GENERATE_STATIC` lines**, so
+the real pool is about sixty-eight spread thin. Two of them are defects.
+
+`realtimer_expire_l()` (`kern_time.c:1705`) opens with
+
+```c
+	error = kern_clock_gettime(curthread, it->it_clockid, &cts);
+
+	/* Only fire if time is reached. */
+	if (error == 0 && timespeccmp(&cts, &it->it_time.it_value, >=)) {
+```
+
+and its `else if` arm — reached when the deadline has not arrived **and
+when the gettime failed** — ends with
+
+```c
+			ts = it->it_time.it_value;
+			timespecsub(&ts, &cts, &ts);
+			TIMESPEC_TO_TIMEVAL(&tv, &ts);
+			callout_reset(&it->it_callout, tvtohz(&tv), ...);
+```
+
+The function already treats `error` as something that can be non-zero —
+it tests it three lines up — and then reads the same `cts` without it.
+On that path the subtraction runs against an indeterminate timespec and
+its result becomes `tvtohz()`'s argument: the timer is re-armed at an
+arbitrary tick count.
+
+The guard goes on the re-arm only. The `ITF_PSTOPPED` arm beside it does
+not touch `cts` and keeps its behaviour exactly. A timer that fails to
+re-arm is worse than one that re-arms correctly and better than one armed
+from stack contents.
+
+### And one byte in the TLS record parser
+
+`tls13_find_record_type()` finds the real record type behind TLS 1.3's
+zero padding. `record_type` and `last_offset` are written **together**,
+inside `if (m_len > 0)`, and the only thing between an all-zero record
+and `*record_typep = record_type` with nothing ever written is
+
+```c
+	if (last_offset < tls->params.tls_hlen)
+		return (EBADMSG);
+```
+
+— a test against a **session parameter**, not against the flag that
+records whether the write happened. It holds because `tls_hlen` is 5 for
+TLS 1.3, and that is the whole of what holds. A `tls_hlen` of zero turns
+a record of nothing but zero bytes, which an attacker sends, into a byte
+of that stack frame returned as the record type.
+
+Not reachable today, and initialised anyway: zero is not a valid TLS
+`ContentType`, so the poison is a value the caller's switch already
+rejects, and the cost is a byte. A stack-disclosure boundary should not
+rest on a parameter being non-zero when it can rest on an initialiser.
+
+`uipc_ktls.c:2064` in the same file is **not** a defect: `wlocked` is set
+inside `if (tls->tx)` and read inside `if (tls->tx)`, with nothing
+between that touches it.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

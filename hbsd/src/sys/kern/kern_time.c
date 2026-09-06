@@ -1770,7 +1770,29 @@ realtimer_expire_l(struct itimer *it, bool proc_locked)
 		p = it->it_proc;
 		if (P_SHOULDSTOP(p) || P_KILLED(p)) {
 			it->it_flags |= ITF_PSTOPPED;
-		} else {
+		} else if (error == 0) {
+			/*
+			 * PBSD: cts is only readable when the gettime
+			 * above succeeded, and this arm is reached when it
+			 * did NOT as well as when the deadline simply has
+			 * not arrived.
+			 *
+			 * `error' is tested in the `if' at the top of this
+			 * chain, so the function already treats it as
+			 * something that can be non-zero - and then used
+			 * the same cts here without it. On that path the
+			 * subtraction below runs against an indeterminate
+			 * timespec and its result becomes tvtohz()'s
+			 * argument, so the timer is re-armed at an
+			 * arbitrary tick count.
+			 *
+			 * Only the re-arm needs the guard: the
+			 * ITF_PSTOPPED arm above does not touch cts, so it
+			 * keeps its behaviour exactly. A timer that fails
+			 * to re-arm is a worse outcome than one that
+			 * re-arms correctly and a better one than a timer
+			 * armed from stack contents.
+			 */
 			ts = it->it_time.it_value;
 			timespecsub(&ts, &cts, &ts);
 			TIMESPEC_TO_TIMEVAL(&tv, &ts);
