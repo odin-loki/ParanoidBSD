@@ -899,6 +899,72 @@ Two controls follow, and they vary the axis rather than the flags:
   talks and this one does not, the answer is `PAX_NOEXEC`, which has no
   runtime switch of its own.
 
+### Runs 50 and 51, and a kernel config that cannot be built
+
+Neither control worked, and one of them failed for a reason worth
+keeping.
+
+**Run 51** — `HARDENEDBSD` with
+`hardening.pax.aslr.status=0 hardening.pax.segvguard.status=0` at the
+loader — built and then sat out the full 480 seconds like every run
+before it. Those are the only two PaX features with a runtime switch;
+`PAX_NOEXEC` and `PAX_HARDENING` have none, so this narrows rather than
+settles.
+
+**Run 50** — `kernconf: GENERIC` — never got to boot. `buildkernel`
+stopped at
+
+```
+kern_thread.c:102: static assertion failed
+    offsetof(struct thread, td_frame): 1264 == 1256
+kern_thread.c:104: offsetof(struct thread, td_emuldata): 1792 == 1776
+kern_thread.c:114: offsetof(struct proc, p_emuldata):   1280 == 1232
+```
+
+`sys/sys/proc.h` adds `td_pax` and `p_pax` to `struct thread` and
+`struct proc` **unconditionally** — no `#ifdef PAX` — and
+`sys/kern/kern_thread.c:86` says what HardenedBSD does about that:
+
+```c
+/*
+ * In HardenedBSD enabled builds disable these checks, since we
+ * already changed the layouts of the struct proc and struct thread.
+ */
+#ifndef PAX
+```
+
+FreeBSD's KBI assertions exist to catch exactly this, and they are live
+only in the configuration where the layout is wrong for them. **This tree
+cannot build a stock `GENERIC` kernel**, and that is inherited from
+HardenedBSD rather than introduced here — but it is worth writing down,
+because "all six architectures are first class" and "no non-PaX kernel
+builds" are both true at once.
+
+### `HARDENEDBSD-NOENFORCE`, the control that does build
+
+`options PAX` keeps the layout and therefore the assertion suppression,
+and `sys/conf/files` gates every enforcement feature separately:
+
+```
+hardenedbsd/hbsd_pax_common.c    optional pax
+hardenedbsd/hbsd_pax_noexec.c    optional pax pax_noexec
+```
+
+so the framework alone is a supported configuration. Every call site
+outside `sys/hardenedbsd` is `#ifdef`'d on its own feature — five of
+them, in `kern_exec.c`, `kern_fork.c` and `vm_unix.c`, checked one at a
+time.
+
+`sys/amd64/conf/HARDENEDBSD-NOENFORCE` is `GENERIC` plus `PAX` and
+`PAX_SYSCTLS` and **none** of `PAX_ASLR`, `PAX_NOEXEC`, `PAX_SEGVGUARD`
+or `PAX_HARDENING`, plus `std.debug` because `boot_test.py` needs
+`ALT_BREAK_TO_DEBUGGER` and `GENERIC` has only `KDB`.
+
+If `/sbin/init` talks under it and not under `HARDENEDBSD`, one of those
+four is the answer and the next run bisects them. If it stays silent, the
+kernel's hardening is not it either, and what is left is the difference
+between this tree and stock HardenedBSD — which is the C++ port.
+
 ### The control that costs one renamed file
 
 `sys/kern/init_main.c:716` compiles this list into every kernel:

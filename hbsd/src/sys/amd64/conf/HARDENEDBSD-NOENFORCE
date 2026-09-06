@@ -1,0 +1,59 @@
+#
+# HARDENEDBSD-NOENFORCE -- the PaX framework, and none of its enforcement.
+#
+# A CONTROL, not a configuration anybody should run. It exists because the
+# /sbin/init bisect spent six runs on hbsd/src.conf.pbsd's hardening options
+# and ruled out all six, and every one of those is a USERLAND BUILD FLAG.
+# kernconf was HARDENEDBSD in all of them, so PAX_ASLR, PAX_NOEXEC,
+# PAX_SEGVGUARD and PAX_HARDENING were never varied.
+#
+# The obvious control is `kernconf: GENERIC`, and it does not build.
+# sys/sys/proc.h adds td_pax and p_pax to struct thread and struct proc
+# UNCONDITIONALLY, and sys/kern/kern_thread.c:86 says what HardenedBSD does
+# about that:
+#
+#     In HardenedBSD enabled builds disable these checks, since we
+#     already changed the layouts of the struct proc and struct thread.
+#     #ifndef PAX
+#
+# So the KBI assertions are live only where the layout is wrong for them.
+# Run 50 hit exactly that:
+#
+#     kern_thread.c:102: static assertion failed
+#         offsetof(struct thread, td_frame): 1264 == 1256
+#
+# `options PAX` keeps the layout and the suppression, and sys/conf/files
+# gates every enforcement feature separately -
+#
+#     hardenedbsd/hbsd_pax_common.c    optional pax
+#     hardenedbsd/hbsd_pax_noexec.c    optional pax pax_noexec
+#
+# - so the framework alone is a supported configuration. Every call site
+# outside sys/hardenedbsd is #ifdef'd on its own feature, checked: five of
+# them, in kern_exec.c, kern_fork.c and vm_unix.c.
+#
+# What this therefore tests, and nothing else: whether the kernel's W^X and
+# ASLR enforcement is what stops ld-elf.so.1 relocating itself.
+
+include GENERIC
+
+# The framework. Keeps struct thread and struct proc as HARDENEDBSD has
+# them, so kern_thread.c's KBI assertions stay suppressed and this builds.
+options 	PAX
+options 	PAX_SYSCTLS		# so the run can be asked what it did
+
+# DELIBERATELY ABSENT, and this is the whole point of the file:
+#
+#   PAX_ASLR             address space layout randomisation
+#   PAX_NOEXEC           "Remove WX pages from user-space and enforce W^X"
+#   PAX_SEGVGUARD        brute-force protection
+#   PAX_HARDENING        the rest
+#
+# If /sbin/init talks under this and not under HARDENEDBSD, one of those
+# four is the answer and the next run bisects them.
+
+ident		HARDENEDBSD-NOENFORCE
+
+# boot_test.py needs ALT_BREAK_TO_DEBUGGER and DDB to say anything at all
+# when the image is silent, and GENERIC has only KDB.
+include "std.debug"
