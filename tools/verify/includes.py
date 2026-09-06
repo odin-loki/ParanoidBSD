@@ -739,6 +739,18 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         rel_sys = rel[len("sys/"):]
         flags += list(conf_file_includes(arch).get(rel_sys, ()))
         flags += _module_flags(rel_sys)
+        # MAXUSERS is not an option anyone writes in a kernel config; it
+        # is a NUMBER config(8) turns into one - mkoptions.cc:86 says
+        # `/* Fake MAXUSERS as an option. */' - so it reaches the build
+        # through a generated header this sweep does not synthesise, and
+        # sys/kern/subr_param.c did not compile at all. That file sets
+        # hz, maxfiles, nbuf and maxproc; `hz' being clamped there is an
+        # argument this repository's own triage table leans on, made
+        # about a file the analyser had never read.
+        #
+        # 0 is the auto-size value, which is what every kernel config in
+        # this tree gets by not mentioning maxusers at all.
+        flags += ["-DMAXUSERS=0"]
         flags += ["-D_KERNEL", "-DGENOFFSET",
                   "-D__has_c_attribute(x)=0",
                   # The kernel build force-includes this into every

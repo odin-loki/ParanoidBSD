@@ -38,6 +38,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from includes import include_flags, is_kernel_tu, lang_flags, SRC  # noqa: E402
+from expected_errors import EXPECTED  # noqa: E402
 
 # Failure of one of these is a defect, not a matter of taste.
 CHECKERS = [
@@ -189,6 +190,11 @@ def main() -> int:
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--out", default="analyze_results.jsonl")
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--check-errors", action="store_true",
+                    help="fail if a translation unit does not compile and is "
+                         "not in tools/verify/expected_errors.py, or if one "
+                         "listed there compiles now. An ERROR contributes no "
+                         "findings and reads as clean in every total.")
     args = ap.parse_args()
 
     jobs = []
@@ -246,6 +252,39 @@ def main() -> int:
         print(f"  {k:8s} {v}")
     if counts.get("ERROR"):
         summarise_errors(args.out)
+
+    # An ERROR is invisible in every total this prints: no findings, and
+    # a file that reports none looks exactly like one that is clean.
+    # rtld.c was ERROR on an unresolvable `#include "notes.h"' and the
+    # defect behind it cost thirty-seven boot runs, so the ERROR set is
+    # inventoried rather than merely summarised.
+    if args.check_errors:
+        seen, erred = set(), set()
+        with open(args.out, encoding="utf-8") as fh:
+            for line in fh:
+                r = json.loads(line)
+                if r.get("_meta"):
+                    continue
+                seen.add(r["file"])
+                if r.get("status") == "ERROR":
+                    erred.add(r["file"])
+        unexpected = sorted(erred - set(EXPECTED))
+        # Only files this run actually looked at can be called stale.
+        stale = sorted((set(EXPECTED) & seen) - erred)
+        for f in unexpected:
+            print(f"FAIL  {f} does not compile and is not in EXPECTED")
+        for f in stale:
+            print(f"FAIL  {f} compiles now; its EXPECTED entry is stale "
+                  f"({EXPECTED[f]})")
+        if unexpected or stale:
+            print("\n      tools/verify/expected_errors.py is the inventory.")
+            print("      A file that will not compile reports zero findings")
+            print("      and is indistinguishable from a clean one, which is")
+            print("      how libexec/rtld-elf/rtld.c hid the boot bug.")
+            return 1
+        if erred:
+            print(f"\nok    all {len(erred)} ERROR translation unit(s) are "
+                  f"on the record")
     return 0
 
 
