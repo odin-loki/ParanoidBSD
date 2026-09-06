@@ -38,7 +38,16 @@ import sys
 from pathlib import Path
 
 PTR_WORDS = ("dereference", "pointer", "object", "memory never freed",
-             "array ")
+             "array ",
+             # CBMC's memcpy/memmove/memset checks are spelled
+             #   memmove source region readable
+             #   memset destination region writeable
+             # with neither "pointer" nor "dereference" in them, so they
+             # went to the READ THESE pile - lib/libc/aarch64/string's
+             # bcopy and bzero were the first two entries a person was
+             # asked to read, and both are "this function has a
+             # precondition", the same as strcat.
+             "region readable", "region writeable", "region writable")
 # Functions whose inputs come from an extern this run did not model.
 EXTERN_DRIVEN = {
     "clock", "alarm", "svc_run", "cap_sandboxed", "significand",
@@ -52,14 +61,35 @@ def kinds(rec: dict) -> set[str]:
             for d in rec.get("failures", [])}
 
 
+# CBMC saying it cannot model something. Not a property that failed.
+#
+# `destructors are not yet supported` is emitted for a pthread key with a
+# destructor - lib/libc/locale/xlocale.c and lib/libc/resolv/mtctxres.c -
+# and it arrived in the FAILED pile beside real arithmetic overflows,
+# which is where it does the most damage: a reader who checks two of these
+# and finds nothing stops reading the rest.
+TOOL_LIMITS = ("not yet supported", "unwinding assertion",
+               "no body for callee")
+
+
 def bucket(rec: dict) -> str:
     k = kinds(rec)
     if not k:
         return "no detail"
+    if any(w in x for x in k for w in TOOL_LIMITS):
+        return "CBMC could not model it (not a property that failed)"
     if any(w in x for x in k for w in PTR_WORDS):
         return "pointer/memory (a missing precondition, not a bug)"
-    if k == {"division by zero"} and rec["file"].startswith("lib/msun"):
-        return "float div-by-zero (IEEE-754 defines it; msun depends on it)"
+    # Strip the IEEE-defined case BEFORE deciding, rather than only
+    # recognising a record that has nothing else. lib/msun/ld128's cospil,
+    # sinpil and tanpil each report `vzero / vzero` alongside a shift, and
+    # requiring `k == {"division by zero"}` sent all three to the bucket a
+    # person is asked to read.
+    if rec["file"].startswith("lib/msun"):
+        k = k - {"division by zero"}
+        if not k:
+            return ("float div-by-zero (IEEE-754 defines it; msun depends "
+                    "on it)")
     if rec.get("linkage") == "static":
         return "static (callers constrain the domain - deferred)"
     if rec["function"] in EXTERN_DRIVEN:
