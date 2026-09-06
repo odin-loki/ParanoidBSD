@@ -362,6 +362,32 @@ def main() -> int:
     print("\n== totals")
     for k, v in sorted(counts.items()):
         print(f"  {k:9s} {v}")
+
+    # A run in which NOTHING could be checked is not a success, and this
+    # exited 0 for one. The first CI sweep reported
+    #
+    #     [1258/1258] 180.0/s  ERROR=1258
+    #     == totals
+    #       ERROR     1258
+    #
+    # in seven seconds, the report folded it in, and every job in the
+    # workflow was green. The cause was that classify's real output is the
+    # goto binaries in --outdir and the pipeline carried only the JSON
+    # index, so cbmc had nothing to run on - but the cause is not the
+    # point. A driver that cannot check anything has to say so in its exit
+    # status, because that is the only thing the layer above reads.
+    #
+    # The floor is ALL of them, not a percentage: an ERROR is a normal
+    # result for a function CBMC cannot model, and 1257 of 1258 is a bad
+    # day rather than a broken pipeline. Nothing at all is broken.
+    checked = sum(v for k, v in counts.items() if k != "ERROR")
+    if tasks and checked == 0:
+        print(f"\nFAIL  {len(tasks)} function(s) and not one could be")
+        print("      checked. Every result is ERROR, so this run measured")
+        print("      the instrument rather than the tree - most often the")
+        print("      goto binaries classify.py wrote to its --outdir are")
+        print("      not where this process can see them.")
+        return 1
     return 0
 
 

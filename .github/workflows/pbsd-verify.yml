@@ -53,7 +53,18 @@ jobs:
           path: docs/port_plan.json
           retention-days: 7
 
-  classify:
+  # classify and model check are ONE stage, split across an artifact
+  # boundary in the first version of this file - and the boundary could not
+  # carry the payload. classify's real output is the goto binaries it
+  # writes to --outdir; classes.json is only an index into them. The model
+  # jobs downloaded the index, found no binaries, and reported
+  #
+  #     [1258/1258] 180.0/s  ERROR=1258
+  #
+  # in seven seconds, with every job in the workflow green. cbmc_driver.py
+  # now exits non-zero when nothing at all could be checked, and the two
+  # halves run in the same job so there is nothing to carry.
+  sweep:
     needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 330
@@ -63,11 +74,11 @@ jobs:
         include:
           - name: userland
             scopes: --scope lib/libc --scope lib/msun
-            out: classes.json
+            classes: classes.json
             jobs: 4
           - name: kernel
             scopes: --scope sys
-            out: classes_sys.json
+            classes: classes_sys.json
             jobs: 3
     steps:
       - uses: actions/checkout@v4
@@ -76,7 +87,7 @@ jobs:
       - name: Install the instruments
         run: sudo apt-get update -qq && sudo apt-get install -y -qq cbmc clang bmake
       # A check that cannot see reports zero findings, and this repository
-      # has been bitten by that three times. A green sweep from broken
+      # has been bitten by that four times now. A green sweep from broken
       # instruments is the worst outcome available.
       - name: Prove the instruments work before trusting any number
         run: sh tools/setup_local.sh
@@ -84,54 +95,31 @@ jobs:
         run: |
           mkdir -p out
           python3 tools/verify/classify.py ${{ matrix.scopes }} \
-            --jobs ${{ matrix.jobs }} --resume --out out/${{ matrix.out }}
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: classes-${{ matrix.name }}
-          path: out/
-          retention-days: 7
-
-  model:
-    needs: classify
-    runs-on: ubuntu-latest
-    timeout-minutes: 330
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # SCALAR and VOID, where an unguarded check is sound.
-          - name: ub
-            classes: classes-userland
-            args: --scope lib/libc --scope lib/msun --classes cls/classes.json --jobs 4
-            out: ub.jsonl
-          # POINTER, under a stated precondition. --min-null-tree-depth
-          # makes CBMC build a tree of allocated objects per pointer
-          # parameter and each solver instance can want gigabytes, so this
-          # one is memory-bound rather than CPU-bound: two jobs, not four.
-          - name: ptr
-            classes: classes-userland
-            args: >-
-              --scope lib/libc --scope lib/msun --classes cls/classes.json
-              --allow POINTER --null-depth 3 --jobs 2 --timeout 30 --unwind 6
-            out: ptr.jsonl
-          - name: ksys
-            classes: classes-kernel
-            args: --scope sys --classes cls/classes_sys.json --jobs 3
-            out: ksys.jsonl
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with: { name: plan, path: docs }
-      - uses: actions/download-artifact@v4
-        with: { name: '${{ matrix.classes }}', path: cls }
-      - name: Install the instruments
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq cbmc clang bmake
-      - name: Model check ${{ matrix.name }}
+            --jobs ${{ matrix.jobs }} --resume \
+            --outdir "$RUNNER_TEMP/goto" --out out/${{ matrix.classes }}
+          df -h "$RUNNER_TEMP" | tail -1
+      # SCALAR and VOID, where an unguarded check is sound.
+      - name: Model check, unguarded
+        if: matrix.name == 'userland'
         run: |
-          mkdir -p out
-          python3 tools/verify/cbmc_driver.py ${{ matrix.args }} \
-            --resume --out out/${{ matrix.out }}
+          python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
+            --classes out/classes.json --jobs 4 --resume --out out/ub.jsonl
+      # POINTER, under a stated precondition. --min-null-tree-depth makes
+      # CBMC build a tree of allocated objects per pointer parameter and
+      # each solver instance can want gigabytes, so this is memory-bound
+      # rather than CPU-bound: two jobs, not four.
+      - name: Model check, pointer parameters
+        if: matrix.name == 'userland'
+        run: |
+          python3 tools/verify/cbmc_driver.py ${{ matrix.scopes }} \
+            --classes out/classes.json --allow POINTER --null-depth 3 \
+            --jobs 2 --timeout 30 --unwind 6 --resume --out out/ptr.jsonl
+      - name: Model check the kernel
+        if: matrix.name == 'kernel'
+        run: |
+          python3 tools/verify/cbmc_driver.py --scope sys \
+            --classes out/classes_sys.json --jobs 3 --resume \
+            --out out/ksys.jsonl
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -186,7 +174,7 @@ jobs:
         run: python3 tools/verify/check_shards.py
 
   report:
-    needs: [model, analyze]
+    needs: [sweep, analyze]
     if: always()
     runs-on: ubuntu-latest
     steps:
