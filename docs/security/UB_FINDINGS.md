@@ -5300,3 +5300,35 @@ sweep 10 reads `1 new, 0 gone`. Two things are worth keeping from it:
 editing a source under a running sweep destroys the measurement in a way
 that looks like a result, and the accident did demonstrate — before the
 fix was even committed — that the guard removes the finding.
+
+## Sweep 11's `contrib`: twenty-one more read, and an invariant in a comment
+
+965 OK / 385 ERROR becomes **986 / 364**. Twenty-one `ERROR -> OK`, none
+the other way, and "ERRORs the inventory does not cover: 0". Two
+findings are new, both in one file that had never compiled:
+
+    sys/contrib/dev/acpica/components/disassembler/dmwalk.c:1250
+    sys/contrib/dev/acpica/components/disassembler/dmwalk.c:1270
+        [core.NullDereference]
+
+    /*
+     * The parent Op is guaranteed to be valid because of the flag
+     * ACPI_PARSEOP_PARAMETER_LIST -- which means that this op is part of
+     * a parameter list and thus has a valid parent.
+     */
+    ParentOp = Op->Common.Parent;              /* :1233 */
+    ...
+        ParentOp = ParentOp->Common.Parent;    /* :1250 */
+        if (ParentOp && ...)                   /* :1251 */
+    ...
+        ParentOp->Common.DisasmFlags |= ...;   /* :1270 */
+
+The invariant is stated, in a comment, four lines above the use — and
+the very next line after the first dereference checks the *grandparent*
+for NULL. So the file contemplates a short parent chain one level up and
+asserts nothing at the level it relies on.
+
+Left as it is. This is Intel's ACPICA, vendored whole; the claim is
+upstream's, written down where a reader will find it, and an
+`ACPI_ASSERT` added here diverges from the source tree PBSD re-imports
+from. Recorded so the next sweep does not spend the same half hour.
