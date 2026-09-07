@@ -4943,3 +4943,50 @@ between this code and a NULL dereference. Recorded rather than
 "fixed": adding a check would be reasonable defensive practice and
 would also assert something about libc's caching that no comment
 anywhere claims.
+
+## `libexec/atrun`: `perr()` and `perrx()` never return, and two of three
+ declarations did not say so
+
+Reading a program's real `CFLAGS` out of bmake — rather than walking its
+Makefile chain, which cannot follow `libexec/atrun/Makefile`'s
+`.include "${SRCTOP}/usr.bin/at/Makefile.inc"` — took `atrun.c` from
+"`use of undeclared identifier 'DAEMON_GID'`" to compiling for the first
+time. It came with one finding:
+
+    atrun.c:176  [core.NullDereference]
+        Access to field 'pw_name' results in a dereference of a null
+        pointer (loaded from variable 'pentry')
+
+and the caller looks like it has already handled that:
+
+    pentry = getpwuid(uid);
+    if (pentry == NULL)
+        perrx("Userid %lu not found - aborting job %s", ...);
+
+    pam_err = pam_start(atrun, pentry->pw_name, &pamc, &pamh);  /* :176 */
+
+`perrx()` ends in `exit(EXIT_FAILURE)` and never comes back — but nothing
+in the file's declarations says so:
+
+    void perr(const char *fmt, ...);            /* atrun.c:92  */
+    void perrx(const char *fmt, ...);           /* atrun.c:93  */
+    static void usage(void) __dead2;            /* atrun.c:94  */
+
+One of the three carries the attribute, and it is the one that needed it
+least. The same one-of-N shape as the mlx5 `SRCS` (6 of 7), the arm64
+atomics (3 of 9) and `ed`'s `strip_escapes()` callers (1 of 4) — and
+here the idiom is on the very next line. The program's other translation
+unit repeats the omission (`gloadavg.c:44`), while upstream's own
+`usr.bin/at/panic.h:32` has declared `void perr(const char *a) __dead2;`
+all along.
+
+Fixed: `__dead2` on both declarations in `atrun.c` and on `gloadavg.c`'s.
+The finding goes away — checked, not assumed: `libexec/atrun` reports 1
+finding before and 0 after, with both files still OK. `perrx` is
+newly-visible only in the sense that nothing had ever compiled this file;
+the missing attribute has been in the tree the whole time, costing a
+compiler that cannot see unreachable code after either call.
+
+`check_pbsd_marks.py` carries both, and both were checked by reverting
+them: dropping `perrx`'s attribute reports "found 1 time(s), needs 2",
+dropping `gloadavg.c`'s reports "found 0 time(s), needs 1".

@@ -1194,6 +1194,29 @@ FIXES = {
         "does not check ->with_data - read those bytes into the "
         "radiotap header. Its twin iwl_mvm_rx_mpdu_mq() has the = {}",
     ),
+    "hbsd/src/libexec/atrun/atrun.c": (
+        # TWO declarations, so a count: perr and perrx both end in
+        # exit(EXIT_FAILURE), and the `static void usage(void) __dead2'
+        # one line below them shows the file already knows the idiom.
+        # This is the same one-of-three shape as the mlx5 SRCS and the
+        # arm64 atomics: the attribute exists on the third declaration
+        # in the block and on neither of the other two.
+        # `usage(void) __dead2' does not match this - the `...' is the
+        # point - so the count is the two that were missing it.
+        ("...) __dead2;", 2),
+        "void perrx(const char *fmt, ...);\n",
+        "perr() and perrx() never return - both end in exit() - but only "
+        "usage() said so, so a caller's `if (pentry == NULL) perrx(...)' "
+        "did not stop the analyser reading pentry->pw_name two lines "
+        "later as a NULL dereference",
+    ),
+    "hbsd/src/libexec/atrun/gloadavg.c": (
+        "void perr(const char *fmt, ...) __dead2;",
+        "void perr(const char *fmt, ...);\n",
+        "the same declaration in the program's other translation unit, "
+        "where upstream's usr.bin/at/panic.h has carried __dead2 on its "
+        "perr() all along",
+    ),
     "hbsd/src/bin/ed/main.c": (
         # TWO sites, so a count: the `%' expansion and the `f' command
         # both call it, and fixing one is this document's most common

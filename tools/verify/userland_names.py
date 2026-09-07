@@ -42,6 +42,7 @@ import functools
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -193,6 +194,51 @@ def build(arch: str, src: Path = SRC, jobs: int = 8
                 continue
             named |= resolve(srcs, path, d, src)
     return named, sorted(failed)
+
+
+def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40
+               ) -> list[str]:
+    """The -I, -D and -U this directory's build really passes.
+
+    includes.py reads a component's Makefile.inc chain by walking from
+    the source's directory up to the component root, which is right for
+    lib/libc and wrong for anything that reaches sideways. libexec/atrun
+    is three lines of Makefile and one of them is
+
+        MAINSRC=${SRCTOP}/usr.bin/at
+        .include "${MAINSRC}/Makefile.inc"
+
+    which is not an ancestor of anything. DAEMON_GID, DAEMON_UID,
+    ATJOB_DIR, PERM_PATH and five more -D live in that file, and without
+    them atrun.c does not compile - `use of undeclared identifier
+    DAEMON_GID'. No walk up the tree finds it; bmake does, because
+    following .include is what bmake is.
+
+    So the flags are read out of the build rather than re-derived from
+    it. Only -I, -D and -U are taken: the rest of a real CFLAGS is
+    HardenedBSD's hardening (-fsanitize=cfi, -mretpoline, -flto) and
+    the tree's warning policy, none of which the analyser wants and
+    some of which it cannot accept. shlex does the splitting, because
+    bmake escapes for sh and a -D can carry a quoted string with a
+    space in it:
+
+        -DATJOB_DIR=\"/var/at/jobs/\"
+    """
+    got = _bmake(d, arch, ["CFLAGS", "CXXFLAGS"], src, timeout)
+    if got is None:
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for line in got:
+        try:
+            words = shlex.split(line)
+        except ValueError:
+            words = line.split()
+        for w in words:
+            if w[:2] in ("-I", "-D", "-U") and len(w) > 2 and w not in seen:
+                seen.add(w)
+                out.append(w)
+    return out
 
 
 def ask_incs(d: Path, arch: str, src: Path = SRC, timeout: int = 40

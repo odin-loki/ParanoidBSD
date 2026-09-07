@@ -41,7 +41,7 @@
 
 /* Global functions */
 
-void perr(const char *fmt, ...);
+void perr(const char *fmt, ...) __dead2;
 
 double
 gloadavg(void)

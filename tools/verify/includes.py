@@ -46,6 +46,9 @@ from pathlib import Path
 
 import userland_names
 
+USERLAND_TOP = ("lib", "libexec", "bin", "sbin", "usr.bin",
+                "usr.sbin", "libexec", "games", "secure", "cddl")
+
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
 SYS = SRC / "sys"
@@ -1193,6 +1196,29 @@ def gen_headers() -> str:
 
 
 @functools.lru_cache(maxsize=None)
+def _component_dir(rel: str) -> Path | None:
+    """The directory bmake would be run in to build this source.
+
+    The nearest ancestor with a Makefile, stopping at the scope root -
+    lib/libc/stdio/fopen.c is built by a make in lib/libc, because
+    lib/libc/stdio holds a Makefile.inc and no Makefile. Returns None
+    for a source with no Makefile above it at all, which is a source
+    nothing builds.
+    """
+    top = rel.split("/")[0]
+    if top not in USERLAND_TOP:
+        return None
+    d = (SRC / rel).parent
+    root = SRC / top
+    while True:
+        if (d / "Makefile").is_file():
+            return d
+        if d == root or root not in d.parents:
+            return None
+        d = d.parent
+
+
+@functools.lru_cache(maxsize=None)
 def incs_shim(arch: str = "amd64") -> str:
     """/usr/include, as the tree's own Makefiles say to build it.
 
@@ -2031,6 +2057,27 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}"]
     if rel.startswith("lib/libmd"):
         flags.append(f"-I{SRC}/lib/libmd")
+    # The flags the build really passes this component, read out of the
+    # build. The walk below climbs from the source's directory to the
+    # component root, which is right for lib/libc and blind to anything
+    # that reaches sideways: libexec/atrun's Makefile is three lines and
+    # one of them is `.include "${SRCTOP}/usr.bin/at/Makefile.inc"',
+    # where nine of its -D live -- DAEMON_GID among them, without which
+    # atrun.c does not compile. No walk up the tree finds that file.
+    # bmake does, because following .include is what bmake is.
+    #
+    # Appended rather than substituted for the walk: where the two agree
+    # the duplicate is dropped, and where the walk has something bmake
+    # will not give (a directory whose Makefile bmake cannot read) the
+    # walk still has it.
+    comp = _component_dir(rel)
+    if comp is not None:
+        seen = set(flags)
+        for f in userland_names.ask_cflags(comp, arch):
+            if f not in seen:
+                seen.add(f)
+                flags.append(f)
+
     if rel.split("/")[0] in ("lib", "libexec"):
         # ...from the source's own directory up to the component root,
         # because a flag set in lib/libc/Makefile.inc applies to
