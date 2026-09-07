@@ -5196,3 +5196,86 @@ The four `unix.Malloc` reports are still there afterwards, because they
 were never about this. That is worth stating plainly: the finding was a
 false positive, and following it to its source found a defect it was not
 reporting.
+
+## A file that compiles to nothing is also indistinguishable from a clean one
+
+`tools/verify/expected_errors.py` exists because a file that does not
+compile reports zero findings and looks exactly like a clean one. Sweep
+11's `kern` shard found the same failure one level down, where no
+inventory was watching: a file that **does** compile, to nothing.
+
+    netinet/tcp_ratelimit.c  optional ratelimit inet | ratelimit inet6
+
+and `tcp_ratelimit.c:67` is `#ifdef RATELIMIT`, closed at the end of the
+file. Without that macro the translation unit is a licence header and a
+list of `#include`s. It compiled, it was `OK`, it reported nothing, and
+it had reported nothing in every sweep since the first — 1,003 lines of
+kernel code that no run has ever looked at.
+
+Defining the options a file's own `optional` clause names — 2,141
+sources that resolve to a file on disk — is what turned the body on.
+
+How much code was dark? Counting only the lines of the **file's own**
+text that survive the preprocessor (the linemarkers say which file each
+line came from, so the headers do not drown the answer), across the 48
+sources that open with an `#ifdef` naming one of their own options:
+
+| off | on | source |
+|---:|---:|---|
+| 1 | 1,064 | `sys/netinet/tcp_ratelimit.c` |
+| 0 | 638 | `sys/net80211/ieee80211_superg.c` |
+| 0 | 452 | `sys/net80211/ieee80211_tdma.c` |
+| 0 | 109 | `sys/arm/allwinner/a64/a64_padconf.c` |
+| 0 | 19 | `sys/arm/allwinner/a64/a64_r_padconf.c` |
+| 76 | 168 | `sys/dev/gpio/gpiopps.c` |
+| … | … | 41 more, +487 lines between them |
+
+Five of them were **empty**. Not "mostly guarded" — empty: a licence
+header, some `#include`s, and one `#ifdef` that was false. They compiled,
+they were counted `OK`, and they contributed nothing to any total in any
+sweep. 2,282 lines of kernel code, two of them in the 802.11 stack.
+
+The first thing the largest of them says:
+
+    tcp_ratelimit.c:747  The left operand of '&' is a garbage value
+                         [core.UndefinedBinaryOperatorResult]
+
+    if (rs->rs_rlt[(rs->rs_rate_cnt - 1)].flags & HDWRPACE_INITED)
+
+`rs_rate_cnt` comes straight from the driver, at `:607` and `:618`:
+
+    rs->rs_rate_cnt = rl.number_of_rates;
+
+with no check for zero at either site. When it is zero: `:641` computes
+`sz = 0`, `malloc(0, M_TCPPACE, M_NOWAIT)` hands back a valid non-NULL
+pointer, the population loop at `:676` and the setup loop at `:682`
+(`for (i = rs_rate_cnt - 1; i >= 0; i--)`) both have no iterations, and
+`:747` reads `rs_rlt[-1]` — out of bounds, before the allocation, and
+then decides whether to keep the table on what it finds there.
+
+And the guard already exists in the same file, on the other path:
+`rl_add_syctl_entries()` at `:349` is `if (rs->rs_rlt && rs->rs_rate_cnt
+> 0)`. One of two — the shape this document keeps recording.
+
+To be exact about what is and is not shown: no driver in this tree was
+found returning `number_of_rates == 0`. The defect is that nothing
+between the assignment and the read forbids it, on a value the kernel
+takes from a device driver, in code the analyser had never been able to
+read. The fix is an early return before the `malloc`, in the shape of
+the `RT_IS_*` rejection twenty lines above it.
+
+### And a note on method, from getting this one wrong first
+
+The guard was written, and reverted within two minutes, because sweep
+11's `kern` shard was part-way through `sys/netinet` at the time. It got
+far enough: the shard recorded `tcp_ratelimit.c` as OK **with no
+findings**, because it read the patched file. The finding then appeared
+to have vanished between a standalone probe and the shard, which is a
+much more alarming thing to believe than what had actually happened.
+
+The record was re-measured against the reverted tree and replaced in the
+shard, so `w11-kern` is now uniformly unpatched and the diff against
+sweep 10 reads `1 new, 0 gone`. Two things are worth keeping from it:
+editing a source under a running sweep destroys the measurement in a way
+that looks like a result, and the accident did demonstrate — before the
+fix was even committed — that the guard removes the finding.
