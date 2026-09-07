@@ -759,6 +759,57 @@ def kernel_flag_index(arch: str = "amd64"
                     pass
                 break
 
+        # A module that builds objects OUTSIDE SrcS is invisible to the
+        # reading above, and the seven that do are the ones with
+        # per-file instruction-set flags. sys/modules/blake2 is the
+        # shape:
+        #
+        #   SRCS_IN += blake2b-avx.c
+        #   OBJS    += ${SRCS_IN:S/.c/.o/g}
+        #   .for src in ${SRCS_IN}
+        #   ${src:S/.c/.o/}: ${src}
+        #           ${CC} -c ${CFLAGS:N-nostdinc} ${CFLAGS.${src}} ...
+        #
+        # so no SRCS line names its ten SIMD implementations, and none
+        # of them compiles without CFLAGS.blake2b-avx.c, which is
+        # `-DSUFFIX=_avx -msse2 -mssse3 -msse4.1 -mavx'. Expanding
+        # ${SRCS_IN:S/.c/.o/g} here would be a third implementation of
+        # bmake's modifiers; ask bmake. Only where an OBJS line exists -
+        # seven Makefiles in the tree - so the cost is seven bmake runs
+        # and not a thousand.
+        if re.search(r"^OBJS\s*\+?=", text, re.M):
+            per, _ = userland_names.ask_module(mk.parent, arch, SRC)
+            # A .for rule compiles with its OWN command line, and the -D
+            # on it are not in any variable bmake will hand back.
+            # blake2's is
+            #
+            #   ${CC} -c ${CFLAGS:N-nostdinc} ${CFLAGS.${src}} ${WERROR} \
+            #       ${PROF} -D_MM_MALLOC_H_INCLUDED -Wno-unused-function
+            #
+            # and without that -D, clang's own <mm_malloc.h> - which
+            # <immintrin.h> pulls in - calls malloc() and free() with no
+            # <stdlib.h>, in a kernel translation unit. The rule bodies
+            # are the tab-indented lines; take their literal -D and
+            # nothing else.
+            rules = [line for line in text.splitlines()
+                     if line.startswith("\t")]
+            rule_d = [w for line in rules for w in line.split()
+                      if w.startswith("-D") and "$" not in w and len(w) > 2]
+            # ...and `${CFLAGS:N-nostdinc}' is the rule saying it wants
+            # the standard headers, which is the other half of the same
+            # decision: -D_MM_MALLOC_H_INCLUDED does not silence clang's
+            # own <mm_malloc.h> (its guard is __MM_MALLOC_H), so
+            # <immintrin.h> reaches malloc() and free() and needs a real
+            # <stdlib.h>. A marker flag the analyser strips later,
+            # rather than a second flag list to keep in step.
+            if any(":N-nostdinc" in line for line in rules):
+                rule_d.append("-DPBSD_WANTS_STDINC")
+            for rel_src, own in per.items():
+                by_src.setdefault(rel_src, []).extend(
+                    list(flags) + rule_d
+                    + [f for f in own
+                       if f.startswith(("-I", "-D", "-U", "-m"))])
+
         # ...and the directory, for the files under a .PATH that the
         # SRCS do not name. Dropping it where the SRCS resolved looked
         # tidier and cost six files their include set - the TX99 corner
@@ -2180,6 +2231,14 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         rd = resource_dir(cc)
         if rd:
             flags.append(f"-I{rd}")
+        # The marker a module's .for rule leaves when it compiles with
+        # ${CFLAGS:N-nostdinc}: that rule wants the standard headers, so
+        # take -nostdinc back off. Ten files, all of them SIMD
+        # implementations whose <immintrin.h> pulls clang's own
+        # <mm_malloc.h>, which calls malloc() and free().
+        if "-DPBSD_WANTS_STDINC" in flags:
+            flags = [f for f in flags
+                     if f not in ("-nostdinc", "-DPBSD_WANTS_STDINC")]
         return _dedupe_defines(flags)
 
     # The source's own directory first: many libc and msun sources include a

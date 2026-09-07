@@ -245,6 +245,35 @@ check_that("a disjunction is a union, not an intersection",
 # for the options, each alternative is a DIFFERENT configuration, and
 # defining one alternative's options is asserting a configuration the
 # file may never be built in.
+# A module that builds objects OUTSIDE SRCS. Seven Makefiles in the tree
+# have an OBJS line, and they are the ones with per-file instruction-set
+# flags: sys/modules/blake2 reaches its ten SIMD implementations through
+# SRCS_IN, OBJS and a `.for' rule, so no SRCS line names them.
+_bs = includes.kernel_flag_index("amd64")[1]
+_avx = _bs.get("sys/crypto/blake2/blake2b-avx.c") or ()
+check_that("OBJS: a module's .for sources are named",
+           bool(_avx),
+           "sys/modules/blake2's ten SIMD files are `SRCS_IN' and "
+           "`OBJS+= ${SRCS_IN:S/.c/.o/g}', which no reading of SRCS finds")
+check_that("CFLAGS.<file>: with its own -mavx",
+           "-mavx" in _avx,
+           "CFLAGS.blake2b-avx.c is `-DSUFFIX=_avx -msse2 -mssse3 "
+           "-msse4.1 -mavx' and the intrinsics do not compile without it")
+check_that("...and the rule's own -D",
+           "-D_MM_MALLOC_H_INCLUDED" in _avx,
+           "the .for rule's command line carries it, and it is in no "
+           "variable bmake will hand back")
+_fl = includes.include_flags(includes.SRC /
+                             "sys/crypto/blake2/blake2b-avx.c", "amd64")
+check_that("...and ${CFLAGS:N-nostdinc} takes -nostdinc back off",
+           "-nostdinc" not in _fl,
+           "clang's own <mm_malloc.h> calls malloc() and free(), and the "
+           "rule says it wants the standard headers")
+check_that("a file NOT built by that rule keeps -nostdinc",
+           "-nostdinc" in includes.include_flags(
+               includes.SRC / "sys/kern/kern_exec.c", "amd64"),
+           "the marker must not leak to the rest of the kernel")
+
 # config(8)'s other two sources of macros. A DEVICE becomes DEV_<NAME>
 # where sys/conf/options declares one, whether the device is named by a
 # file's own `optional' clause or by the architecture's DEFAULTS.
