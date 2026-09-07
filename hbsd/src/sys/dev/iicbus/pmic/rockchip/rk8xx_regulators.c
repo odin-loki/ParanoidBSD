@@ -78,7 +78,15 @@ rk8xx_regnode_init(struct regnode *regnode)
 
 	rv = rk8xx_regnode_set_voltage(regnode, param->min_uvolt,
 	    param->max_uvolt, &udelay);
-	if (udelay != 0)
+	/*
+	 * PBSD: rv first. rk8xx_regnode_set_voltage() writes *udelay only
+	 * on its success path, returning ENXIO for a regulator with no
+	 * voltage step and ERANGE for a request it cannot meet, and this
+	 * was reading the cell either way and DELAY()ing for it. The
+	 * third of three call sites of that method in the tree, and the
+	 * only one that checked neither the return nor anything else.
+	 */
+	if (rv == 0 && udelay != 0)
 		DELAY(udelay);
 
 	return (rv);

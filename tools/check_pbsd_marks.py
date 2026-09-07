@@ -623,6 +623,29 @@ FIXES = {
             "identical, already says `int err = 0;'",
         ),
     ],
+    "hbsd/src/sys/dev/regulator/regulator.c": [
+        (
+            "PBSD: udelay is an OUT cell and every driver writes it",
+            "\trv = REGNODE_SET_VOLTAGE(regnode, min_uvolt, max_uvolt, "
+            "&udelay);\n\tregnode_delay(udelay);\n",
+            "REGNODE_SET_VOLTAGE has three call sites in the tree and "
+            "one of them checked rv before using the OUT cell. Every "
+            "driver writes *udelay only on its success path, so the "
+            "other two called regnode_delay() on an indeterminate int - "
+            "a DELAY() for as long as a stack word says",
+        ),
+    ],
+    "hbsd/src/sys/dev/iicbus/pmic/rockchip/rk8xx_regulators.c": [
+        (
+            "PBSD: rv first. rk8xx_regnode_set_voltage() writes",
+            "\t    param->max_uvolt, &udelay);\n\tif (udelay != 0)\n",
+            "the third of those three call sites: it checked neither "
+            "the return nor anything else, and rk8xx_regnode_set_voltage"
+            "() returns ENXIO for a regulator with no voltage step and "
+            "ERANGE for a request it cannot meet, both before writing "
+            "the cell",
+        ),
+    ],
     "hbsd/src/sys/dev/clk/clk.c": [
         (
             "PBSD: `done' is the out-parameter every clknode driver's",

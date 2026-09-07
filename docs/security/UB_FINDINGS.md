@@ -3395,6 +3395,44 @@ same lesson as the previous four: a gate is worth exactly what its own
 reversion test says it is worth, and nothing that it is *supposed* to
 catch.
 
+## Fixed — a DELAY() for as long as a stack word says
+
+`REGNODE_SET_VOLTAGE(regnode, min, max, &udelay)` has three call sites
+in the tree. Every driver implementing it writes `*udelay` **only on its
+success path** — the default method (`regulator.c:291`) is `*udelay = 0;`
+after its own checks, and Rockchip's returns `ENXIO` for a regulator with
+no voltage step and `ERANGE` for a request it cannot meet, both before
+reaching the assignment.
+
+Of the three callers:
+
+```c
+	/* regulator.c:773 -- regnode_set_voltage() */
+	rv = REGNODE_SET_VOLTAGE(regnode, min_uvolt, max_uvolt, &udelay);
+	if (rv == 0)
+		regnode_delay(udelay);			/* correct */
+
+	/* regulator.c:829 -- the constraint path */
+	rv = REGNODE_SET_VOLTAGE(regnode, min_uvolt, max_uvolt, &udelay);
+	regnode_delay(udelay);				/* no check */
+
+	/* rk8xx_regulators.c:80 */
+	rv = rk8xx_regnode_set_voltage(regnode, param->min_uvolt,
+	    param->max_uvolt, &udelay);
+	if (udelay != 0)
+		DELAY(udelay);				/* checks the wrong thing */
+```
+
+One of three, and the two that do not check spin the CPU for as many
+microseconds as an uninitialised `int` names — at regulator-init time,
+on every Rockchip and every other FDT board. `regnode_enable()`, forty
+lines up from the first, gets it right a third way, by returning early
+on error before its own `regnode_delay()`.
+
+The out-parameter-written-only-on-success shape, which this document has
+now recorded eight times, and the first where the missing check is in
+the framework rather than a driver.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

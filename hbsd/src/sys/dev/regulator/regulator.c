@@ -827,7 +827,19 @@ regnode_set_voltage_checked(struct regnode *regnode, struct regulator *reg,
 		max_uvolt = all_max_uvolt;
 
 	rv = REGNODE_SET_VOLTAGE(regnode, min_uvolt, max_uvolt, &udelay);
-	regnode_delay(udelay);
+	/*
+	 * PBSD: udelay is an OUT cell and every driver writes it only on
+	 * the success path - regnode_method_set_voltage() at :291 is
+	 * `*udelay = 0;' after its own checks, and rk8xx's returns ENXIO
+	 * or ERANGE before reaching it. regnode_set_voltage() twenty
+	 * lines up says `if (rv == 0) regnode_delay(udelay);' and
+	 * regnode_enable() says the same by returning early. This site
+	 * was the one that did not, and regnode_delay() of an
+	 * indeterminate int is a DELAY() for as long as a stack word
+	 * says.
+	 */
+	if (rv == 0)
+		regnode_delay(udelay);
 	REGNODE_UNLOCK(regnode);
 	return (rv);
 }
