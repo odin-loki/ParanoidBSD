@@ -16,7 +16,7 @@ file under a prefix compiles. So the justification is checked here
 instead, against the build system, the way the flags are.
 """
 from __future__ import annotations
-import re, sys
+import re, shutil, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -122,6 +122,17 @@ import sweep_report  # noqa: E402
 # both authorities, kernel and userland, unioned; asking it here means
 # the inventory and the sweep report can never disagree about what the
 # build names.
+
+# bmake IS the userland authority, and without it userland_names returns
+# an empty set for everything - at which point every NOT_NAMED claim
+# under lib/ and libexec/ passes because nothing names anything. The two
+# sentinels below catch that, and did, on the first CI run after this
+# check landed; saying it in one line here is friendlier than two
+# cryptic sentinel failures.
+if not shutil.which("bmake"):
+    print("  NOTE bmake is not installed. The userland half of the "
+          "authority is empty,\n       so the two sentinels below will "
+          "fail. Install bmake.")
 
 # It has to be able to say "named", or it says "not named" to everything.
 # One from each authority, for the same reason.
