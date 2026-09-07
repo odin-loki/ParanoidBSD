@@ -4773,3 +4773,32 @@ headers — `kvm.h`, `vis.h`, `libxo/xo.h`, `histedit.h`, `netinet/ip_compat.h`
 `contrib/libedit` and `sbin/ipf`. Chasing findings before that is the
 mistake this document opens with, one directory over: an ERROR is not a
 finding, and a fifth of a corpus is not the corpus.
+
+## The severe checkers, swept for: five use-after-frees and four escapes,
+ none of them real
+
+`core.StackAddressEscape` and `unix.Malloc`'s "use of memory after it is
+freed" are the two shapes worth interrupting other work for, so sweep 9's
+1,750 findings were sorted by checker and every instance of both was
+traced. There are nine, at six sites, and all nine are the analyser
+failing to model a linked-list macro or a lifetime the caller documents.
+
+| site | why it is not a defect |
+|---|---|
+| `lib/libc/db/hash/hash_buf.c:325` "use after free" | `__buf_free()` does `BUF_REMOVE(bp); free(bp); bp = LRU;`. `BUF_REMOVE` (`:70`) is `(B)->prev->next = (B)->next; (B)->next->prev = (B)->prev;` and `LRU` (`:84`) is `hashp->bufhead.prev`, so the re-read gets the next buffer, not the freed one. Reported because the checker does not follow the unlink through two pointer writes. |
+| `lib/libc/resolv/res_findzonecut.c:642`, `:651`, `res_update.c:195` | `free_nsrrset()` is `while ((nsrr = HEAD(*nsrrsp)) != NULL) free_nsrr(nsrrsp, nsrr);` and `free_nsrr()` ends `UNLINK(*nsrrsp, nsrr, link); free(nsrr);`. Same shape as above, in BIND's list macros rather than hash's, in the DNS resolver. The `UNLINK` is before the `free` at every one of the three sites. |
+| `lib/libc/tests/gen/fmtmsg_test.c:206` | a test, and the same list shape. |
+| `sys/kern/kern_prot.c:646`, twice | `user_setcred()` stores `&mac` and possibly `smallgroups` — both its own locals — into the caller's `struct setcred *wcred`. Its only two callers, `sys_setcred()` (`:668`) and freebsd32's (`freebsd32_misc.c:4235`), each declare `struct setcred wcred;` on their own frame and `return (user_setcred(td, uap->flags, &wcred));` immediately. The pointers dangle into an object that dies in the same statement. |
+| `sys/net/rtsock.c:997`, twice | `update_rtm_from_rc()` points `info->rti_info[RTAX_DST]` and `[RTAX_NETMASK]` at its locals `sa_dst` and `sa_mask`. The caller says so itself, at `:1216`: *"Note that some sockaddr pointers may have changed to point to memory outsize @rtm. Some may be pointing to the on-stack variables. Given that, any pointer in @info CANNOT BE USED."* — and it does not use them. |
+
+### And the eleven undefined array subscripts
+
+`core.uninitialized.ArraySubscript` is the third shape worth reading
+whole, because an indeterminate index is a memory-safety question rather
+than a correctness one. The three traced furthest:
+
+| site | why it is not a defect |
+|---|---|
+| `sys/netpfil/pf/pf_lb.c:1026` — `ctx->nk->port[idx]` | `int idx;` is set by a `switch (nat_action)` with arms for `PF_NAT`, `PF_BINAT` and `PF_RDR` **and no `default:`**, then used to subscript a two-element array in the packet path. It holds on an invariant spread over two files: `pf_ioctl.c:2295` admits a rule only if `pf_get_ruleset_number(rule->action)` is below `PF_RULESET_MAX`, and that function maps exactly `PF_NAT`/`PF_NONAT` to the NAT ruleset, `PF_BINAT`/`PF_NOBINAT` to BINAT and `PF_RDR`/`PF_NORDR` to RDR; `pf_get_translation()` (`pf_lb.c:979`) then returns early for the three `PF_NO*`. So the three arms are the three reachable values. The other caller, `pf.c:5628`, passes a local set to `PF_NAT` or `PF_RDR`. Sound, and thin: an uninitialised index into the firewall's fast path, guarded by an admission check in another file and no assertion. |
+| `sys/dev/evdev/evdev_mt.c:267` — `r2c[row]` | `row` is assigned inside `if (d < delta \|\| ...)` in a loop the analyser thinks may not take. `delta` starts at `INT_MAX` and the function's own comment states its preconditions — `m >= n`, and inputs in `0 .. INT_MAX / 2` — so the first iteration's `d` is below `INT_MAX` and assigns `row`. With `n == 0` the outer loop never runs and `row` is never read. |
+| `sys/netgraph/ng_pptpgre.c:645` — `gre->data[gre->hasSeq]` | `hasSeq` is a bitfield in the GRE header being built, and `be32enc(gre, PPTP_INIT_VALUE)` at `:626` writes the whole flag word before anything reads it. The checker does not carry a bitfield's value through a four-byte store to the struct's first word. |
