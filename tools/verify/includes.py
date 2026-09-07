@@ -445,6 +445,42 @@ def kernel_flag_index() -> tuple[dict[str, tuple[str, ...]],
             {k: tuple(dict.fromkeys(v)) for k, v in by_dir.items()})
 
 
+# ...and the same trick for the architecture. sys/dev/cesa/cesa.c is a
+# Marvell ARM crypto engine and nothing in its path says so; it is named
+# by sys/arm/mv/files.arm7, and analysed as amd64 it fails on
+# <machine/intr.h>. There are ~90 files.* under sys/ outside conf/ -
+# every SoC and every platform has one - and between them they say which
+# architecture each driver belongs to. 14 translation units failed on
+# machine/intr.h alone, and the rest of that pile is the same thing:
+# ext_resources, FDT regulators, DPAA, dbdma.
+FILES_SRC = re.compile(r"^(\S+\.c)\s")
+
+
+@functools.lru_cache(maxsize=None)
+def files_arch_index() -> dict[str, str]:
+    """source path under sys/ -> the architecture whose files.* names it."""
+    out: dict[str, str] = {}
+    for mk in SYS.rglob("files*"):
+        if not mk.is_file() or mk.suffix in (".c", ".h"):
+            continue
+        parts = mk.relative_to(SYS).parts
+        if parts[0] == "conf":
+            arch = SYS_ARCH.get(mk.name.partition(".")[2])
+        else:
+            arch = SYS_ARCH.get(parts[0])
+        if not arch:
+            continue
+        text = mk.read_text(errors="replace").replace("\\\n", " ")
+        for line in text.splitlines():
+            m = FILES_SRC.match(line)
+            if m:
+                # First writer wins, so a driver named by two SoCs of the
+                # same architecture is not fought over, and one named by
+                # conf/files (no architecture) never reaches here at all.
+                out.setdefault("sys/" + m.group(1), arch)
+    return out
+
+
 def arch_of(rel: str, default: str = "amd64") -> str:
     """A source under lib/libc/<arch>/, lib/msun/<arch>/ or sys/<arch>/.
 
@@ -506,6 +542,10 @@ def arch_of(rel: str, default: str = "amd64") -> str:
     # list of prefixes that will be short by one again next time.
     for name in reversed(parts[:-1]):
         cand = ARCH_DIR.get(name) or SYS_ARCH.get(name)
+        if cand:
+            return cand
+    if parts[0] == "sys":
+        cand = files_arch_index().get(rel)
         if cand:
             return cand
     return default
