@@ -5215,10 +5215,12 @@ kernel code that no run has ever looked at.
 Defining the options a file's own `optional` clause names — 2,141
 sources that resolve to a file on disk — is what turned the body on.
 
-How much code was dark? Counting only the lines of the **file's own**
-text that survive the preprocessor (the linemarkers say which file each
-line came from, so the headers do not drown the answer), across the 48
-sources that open with an `#ifdef` naming one of their own options:
+How much code was dark? `tools/verify/check_empty_tus.py --measure`
+counts only the lines of the **file's own** text that survive the
+preprocessor — the linemarkers say which file each line came from, so
+the headers do not drown the answer — for every source whose `#ifdef`
+opens the file, names one of its own `optional` tokens, and **closes at
+the last line**:
 
 | off | on | source |
 |---:|---:|---|
@@ -5227,15 +5229,34 @@ sources that open with an `#ifdef` naming one of their own options:
 | 0 | 452 | `sys/net80211/ieee80211_tdma.c` |
 | 0 | 109 | `sys/arm/allwinner/a64/a64_padconf.c` |
 | 0 | 19 | `sys/arm/allwinner/a64/a64_r_padconf.c` |
-| 76 | 168 | `sys/dev/gpio/gpiopps.c` |
-| … | … | 41 more, +487 lines between them |
+| 18,545 | 20,826 | all thirteen candidates |
 
-Five of them were **empty**. Not "mostly guarded" — empty: a licence
-header, some `#include`s, and one `#ifdef` that was false. They compiled,
-they were counted `OK`, and they contributed nothing to any total in any
-sweep. 2,282 lines of kernel code, two of them in the 802.11 stack.
+Five were **empty**, or as near as makes no difference. Not "mostly
+guarded" — a licence header, some `#include`s, and one `#ifdef` that was
+false. They compiled, they were counted `OK`, and they contributed
+nothing to any total in any sweep. 2,282 lines of kernel code, two of
+them in the 802.11 stack.
 
-The first thing the largest of them says:
+The check is now a gate, and getting it to bite took two goes, both of
+which are the point:
+
+- **The first version could not fail.** It took its candidate list from
+  `includes.files_option_defines()` — the map under test — so dropping
+  `RATELIMIT` from that map dropped `tcp_ratelimit.c` from the
+  candidates too, and it reported "every one of them has its option
+  defined" while the file went dark. A check whose input is its own
+  answer agrees with itself. The candidates now come from
+  `sys/conf/files*` and the source text, read here.
+- **The second version failed too loudly.** Twenty of its twenty-two
+  complaints were files that merely *open* with a conditional include
+  block — `tcp_syncache.c`, `ipsec.c`, `udp_usrreq.c` — and carry
+  hundreds of lines after the `#endif`. Requiring the guard to close at
+  the end of the file takes it from 22 wrong answers to 0, and leaves
+  the thirteen that are really one macro from nothing.
+
+Dropping `RATELIMIT` from the map now exits 1 and names the file.
+
+The first thing the largest of them says:The first thing the largest of them says:
 
     tcp_ratelimit.c:747  The left operand of '&' is a garbage value
                          [core.UndefinedBinaryOperatorResult]

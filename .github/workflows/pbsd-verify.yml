@@ -261,6 +261,13 @@ jobs:
       # lib/libc. Each check below is one reading that can go empty.
       - name: The userland build authority still reads the build
         run: python3 tools/verify/test_userland_names.py
+      # A file that COMPILES TO NOTHING reports nothing and is counted
+      # OK - the same failure expected_errors.py covers one level down,
+      # where no inventory was watching. Five kernel sources were in
+      # that state, tcp_ratelimit.c's 1,064 lines among them, and the
+      # first look at the largest found an out-of-bounds read.
+      - name: A translation unit one #ifdef from empty
+        run: python3 tools/verify/check_empty_tus.py --gate
       - name: M_NOWAIT results used without a NULL check
         run: python3 tools/verify/nowait_check.py --gate
       - name: A masked switch with fewer arms than states
