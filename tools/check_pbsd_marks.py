@@ -1194,6 +1194,24 @@ FIXES = {
         "does not check ->with_data - read those bytes into the "
         "radiotap header. Its twin iwl_mvm_rx_mpdu_mq() has the = {}",
     ),
+    "hbsd/src/sys/arm64/include/atomic.h": (
+        # Six lines in two hunks, and this counts a string common to
+        # none of them, so it marks the one that matters most: the
+        # release store cxgbe asks for. A merge that drops either hunk
+        # loses this or the set/clear pair; the comment above each in the
+        # header says why they are there, which is what a reader needs
+        # when the diff looks like a no-op.
+        "#define\tatomic_store_rel_8\tatomic_store_rel_8",
+        None,
+        "arm64 implements atomic_set_8, atomic_clear_8 and "
+        "atomic_store_rel_8 as inline functions, so `#ifdef "
+        "atomic_store_rel_8' was false there and sys/dev/cxgbe/t4_main.c "
+        "took its fallback - a PLAIN store where the header has a release "
+        "store - on a weak-memory architecture; the same for "
+        "sys/vm/vm_page.c's byte path. The file already spells "
+        "atomic_cmpset_8, atomic_fcmpset_8 and atomic_load_acq_8 as "
+        "themselves for exactly this reason",
+    ),
     "hbsd/src/sys/powerpc/include/atomic.h": (
         "#define\tatomic_subtract_acq_64\tatomic_subtract_acq_long",
         "atomic_subract_acq_long",

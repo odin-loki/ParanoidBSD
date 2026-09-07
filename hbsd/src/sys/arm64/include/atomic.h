@@ -137,6 +137,19 @@ _ATOMIC_OP_PROTO(t, op, bar, )						\
 	__ATOMIC_OP(op, llsc_asm_op, lse_asm_op, pre, acq_, a,  )	\
 	__ATOMIC_OP(op, llsc_asm_op, lse_asm_op, pre, rel_,  , l)
 
+/*
+ * The sub-word operations are spelled as their own name so that
+ * `#ifdef atomic_set_8' can see them, exactly as atomic_cmpset_8,
+ * atomic_fcmpset_8 and atomic_load_acq_8 are below. That test is how
+ * MI code asks whether an architecture has a byte or halfword atomic -
+ * sys/vm/vm_page.c and sys/dev/cxgbe/t4_main.c both do it - and an
+ * inline function is invisible to it.
+ */
+#define	atomic_clear_8		atomic_clear_8
+#define	atomic_clear_16		atomic_clear_16
+#define	atomic_set_8		atomic_set_8
+#define	atomic_set_16		atomic_set_16
+
 _ATOMIC_OP(add,      add, add, )
 _ATOMIC_OP(clear,    bic, clr, )
 _ATOMIC_OP(set,      orr, set, )
@@ -495,6 +508,10 @@ atomic_store_rel_##t(volatile uint##t##_t *p, uint##t##_t val)		\
 	    : "r" (val), "r" (p)					\
 	    : "memory");						\
 }
+
+/* Same reason as the sub-word set and clear above. */
+#define	atomic_store_rel_8	atomic_store_rel_8
+#define	atomic_store_rel_16	atomic_store_rel_16
 
 _ATOMIC_STORE_REL_IMPL(8,  w, b)
 _ATOMIC_STORE_REL_IMPL(16, w, h)
