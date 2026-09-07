@@ -55,6 +55,7 @@ CFLAGS+= ${LINUXKPI_INCLUDES}
 .if defined(CONFIG_BUILD_FPGA)
 SRCS+= \
 	mlx5fpga_cmd.c \
+	mlx5fpga_conn.c \
 	mlx5fpga_core.c \
 	mlx5fpga_sdk.c \
 	mlx5fpga_trans.c \

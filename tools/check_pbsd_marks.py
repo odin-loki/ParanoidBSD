@@ -1194,6 +1194,15 @@ FIXES = {
         "does not check ->with_data - read those bytes into the "
         "radiotap header. Its twin iwl_mvm_rx_mpdu_mq() has the = {}",
     ),
+    "hbsd/src/sys/modules/mlx5/Makefile": (
+        "\tmlx5fpga_conn.c \\",
+        None,
+        "the CONFIG_BUILD_FPGA block listed six of the seven sources in "
+        "sys/dev/mlx5/mlx5_fpga, and the missing one defines "
+        "mlx5_fpga_conn_create, _destroy, _send and _device_init - which "
+        "mlx5fpga_core.c and mlx5fpga_sdk.c, both in the same list, call. "
+        "Enabling the option would have produced four undefined symbols",
+    ),
     "hbsd/src/sys/arm64/include/atomic.h": (
         # Six lines in two hunks, and this counts a string common to
         # none of them, so it marks the one that matters most: the
