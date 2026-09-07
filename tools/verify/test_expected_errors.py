@@ -138,6 +138,32 @@ for pre in _claimed:
     check(f"{pre} has sources at all", bool(srcs),
           "an empty prefix absorbs nothing and hides its own staleness")
 
+print("\n== and the DEAD_OPTION prefixes name a variable nothing sets")
+# A prefix whose reason ends in DEAD_OPTION:NAME claims that no makefile
+# in the tree ASSIGNS that make variable - only tests it - so the block
+# guarding these sources never runs. Recomputed here, because "nobody
+# enables this" is exactly the sort of claim that stops being true
+# quietly.
+_MK = list(SYS.rglob("**/Makefile*")) + list(SYS.rglob("**/*.mk"))
+for pre, why in sorted(NOT_BUILT.items()):
+    if "DEAD_OPTION:" not in why:
+        continue
+    var = why.rsplit("DEAD_OPTION:", 1)[1].strip()
+    setters = []
+    for mk in _MK:
+        for ln in mk.read_text(errors="replace").splitlines():
+            if re.match(rf"^\s*{re.escape(var)}\s*[?+:]?=", ln):
+                setters.append(mk.relative_to(ROOT).as_posix())
+                break
+    check(f"{pre}: nothing assigns {var}", not setters,
+          f"assigned by {setters[:3]}, so the block is live and this "
+          f"prefix is absorbing ERRORs from code that IS compiled")
+    check(f"{pre}: something still tests {var}",
+          any(re.search(rf"defined\({re.escape(var)}\)",
+                        mk.read_text(errors="replace")) for mk in _MK),
+          "no makefile mentions it at all any more, so the reason "
+          "describes a block that is gone")
+
 # ACPICA's two are option-gated rather than module-gated: no kernel
 # config in the tree sets ACPI_DEBUGGER.
 opt = "ACPI_DEBUGGER"

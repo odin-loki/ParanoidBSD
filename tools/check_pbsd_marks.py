@@ -1195,13 +1195,17 @@ FIXES = {
         "radiotap header. Its twin iwl_mvm_rx_mpdu_mq() has the = {}",
     ),
     "hbsd/src/sys/modules/mlx5/Makefile": (
-        "\tmlx5fpga_conn.c \\",
+        # Two lines, one block. Counting a string common to both is not
+        # possible, so this marks the CFLAGS - the one whose absence made
+        # every source in the block fail rather than only the link.
+        "CFLAGS+= -DCONFIG_MLX5_FPGA",
         None,
         "the CONFIG_BUILD_FPGA block listed six of the seven sources in "
-        "sys/dev/mlx5/mlx5_fpga, and the missing one defines "
-        "mlx5_fpga_conn_create, _destroy, _send and _device_init - which "
-        "mlx5fpga_core.c and mlx5fpga_sdk.c, both in the same list, call. "
-        "Enabling the option would have produced four undefined symbols",
+        "sys/dev/mlx5/mlx5_fpga and set none of the CFLAGS its two "
+        "sibling modules set in the identical block. The missing source "
+        "defines the four mlx5_fpga_conn_* functions that two of the "
+        "listed six call; the missing -DCONFIG_MLX5_FPGA is what "
+        "mlx5_fpga/core.h puts its entire body behind",
     ),
     "hbsd/src/sys/arm64/include/atomic.h": (
         # Six lines in two hunks, and this counts a string common to

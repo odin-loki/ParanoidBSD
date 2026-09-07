@@ -487,6 +487,19 @@ NOT_BUILT = {
     "sys/dev/xen/pcifront/":
         "the Xen PCI frontend, which wants <machine/xen-os.h> - a header "
         "removed when FreeBSD's Xen support was rewritten. NOT_NAMED",
+
+    "sys/dev/mlx5/mlx5_fpga/":
+        "the Innova FPGA half of mlx5. Its sources ARE named, but only "
+        "inside `.if defined(CONFIG_BUILD_FPGA)' in "
+        "sys/modules/mlx5/Makefile, and nothing in the tree defines that "
+        "variable - the only three mentions are the three modules testing "
+        "it. So the block is dead, includes.py correctly drops the "
+        "CFLAGS of a definitely-false block, and these compile without "
+        "the -DCONFIG_MLX5_FPGA that mlx5_fpga/core.h puts its whole body "
+        "behind. Five of the seven compile cleanly when it is supplied by "
+        "hand; mlx5fpga_ipsec.c and mlx5fpga_conn.c do not, and that is "
+        "the code having rotted under a dead option rather than anything "
+        "about this sweep. DEAD_OPTION:CONFIG_BUILD_FPGA",
 }
 
 

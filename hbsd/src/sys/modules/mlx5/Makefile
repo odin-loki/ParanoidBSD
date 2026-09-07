@@ -61,6 +61,7 @@ SRCS+= \
 	mlx5fpga_trans.c \
 	mlx5fpga_xfer.c \
 	mlx5fpga_ipsec.c
+CFLAGS+= -DCONFIG_MLX5_FPGA
 .endif
 
 EXPORT_SYMS=	YES
