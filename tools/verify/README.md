@@ -275,6 +275,44 @@ the header. Thirteen ERRORs were one of those missing and nothing else;
 eleven of the twelve translation units under the six RPC `libexec`
 directories now compile, where one did.
 
+### Four more files the build reads every time
+
+Each was found the same way — by reading the largest remaining class of
+compile errors rather than the findings — and each is a file the kernel
+build opens for every translation unit while this tool did not.
+
+| what | where it lives | what it was costing |
+|---|---|---|
+| `INCLUDES+= -I$S/contrib/libfdt` | `sys/conf/Makefile.<arch>`, all six | five files on `<fdt.h>`; libfdt's headers include it with angle brackets |
+| a device's `DEV_<name>` | `sys/conf/options`, 18 of 929 | `ACPI_MSI_XREF` and friends are inside `#ifdef DEV_ACPI` in `sys/arm64/include/intr.h:45` |
+| `DEFAULTS`' `device` lines | `sys/<arch>/conf/DEFAULTS` | `atrtc.c` is `standard` in every x86 kernel and needs `DEV_ISA`; no config declares `device isa`, `DEFAULTS:10` does |
+| `OBJS` and a `.for` rule's own command line | seven `sys/modules/*/Makefile` | blake2's ten SIMD files, named by nothing and compiled by nobody |
+
+Two of them are worth spelling out, because each is a rule about how
+the build states a fact rather than a fact in itself.
+
+**A disjunction is not a configuration.** `files_option_defines()` first
+took the leading alternative of `optional a | b | c`, which cost six
+regressions in one sweep:
+
+    xdr/xdr.c  optional xdr | krpc | nfslockd | nfscl | nfsd | zfs
+
+`XDR` is a declared option (`sys/conf/options:489`) that no configuration
+sets, and `sys/rpc/xdr.h` uses `XDR` as a **type** — so `-DXDR` turned
+every declaration in that header into a syntax error. The rule is the
+INTERSECTION now, and nothing when the alternatives share nothing. Note
+this is the OPPOSITE of `files_opt_arch_index()`'s rule, and deliberately:
+for the architecture, any alternative that builds the file names an
+architecture that builds it, so union; for the options, each alternative
+is a different kernel.
+
+**A directory can name a format instead of a machine.** `lib/msun/ld128`
+is not an architecture, and the tree says which architectures have a
+113-bit long double — `lib/msun/<arch>/Makefile.inc` sets `LDBL_PREC`
+and `lib/msun/Makefile:24-29` maps 64 to `ld80` and 113 to `ld128`.
+Analysed as amd64 all five `ld128` sources failed; as aarch64 they are
+clean.
+
 ### The same question asked of userland, and what it does not answer
 
 `check_empty_tus.py` works because the kernel says which option a file
