@@ -4164,6 +4164,109 @@ tracked conditional depth from the start; `_std()`, written an hour
 later, did not. The guard on one of two, in the pair of functions that
 read the same file.
 
+## Fixed — two more in the wifi drivers, both the same shape
+
+With the mt76 include set and the `-D` in place, `sys/contrib/dev` reads
+467 of its 769 translation units and reports 44 findings where it
+reported none. Two are defects, and both are the guard that exists on one
+of two.
+
+### A firmware field seven bits wide, indexing an array of 32
+
+`iwl_mvm_sta_rx_agg()` starts an RX block-ack session, gets a BAID back
+from the device and stores it:
+
+```c
+	if (baid < 0) {
+		ret = baid;
+		goto out_free;
+	}
+	...
+	baid_data->rcu_ptr = &mvm->baid_map[baid];
+	...
+	rcu_assign_pointer(mvm->baid_map[baid], baid_data);
+```
+
+`mvm->baid_map` is `struct iwl_mvm_baid_data __rcu *baid_map[IWL_MAX_BAID]`
+— **32** pointers. The only check on the index is that it is not
+negative.
+
+The BAID comes from `iwl_mvm_fw_baid_op()`, a two-line dispatcher over
+two implementations:
+
+```c
+/* iwl_mvm_fw_baid_op_cmd(), the newer path */
+	if (baid < 0 || baid >= ARRAY_SIZE(mvm->baid_map))
+		return -EINVAL;
+	return baid;
+
+/* iwl_mvm_fw_baid_op_sta(), the older one */
+	return u32_get_bits(status, IWL_ADD_STA_BAID_MASK);
+```
+
+`IWL_ADD_STA_BAID_MASK` is `0x7F00` — seven bits, **0..127** — lifted
+straight out of the firmware's `ADD_STA` response. So the older path can
+return 32..127, the caller's `baid < 0` lets it through, and the driver
+writes a pointer up to 96 slots past the end of an array inside
+`struct iwl_mvm`. A kernel heap out-of-bounds write, whose value is a
+pointer to memory the driver just allocated, at an offset the device
+chooses.
+
+The fix is the line its twin already has, in the function that lacked it.
+Its marker is a **count of two**, for the same reason as `rxmq.c`'s
+above: a presence check would have been satisfied by the path that was
+already right — which is to say, by the very asymmetry being fixed.
+
+The reachability caveat is worth stating plainly, because it is the
+difference between this and a remote hole. The value crosses the
+device-to-host boundary, not the air-to-host one: it is what the Intel
+adapter's firmware says, in response to a command the driver sent. This
+repository already treats that boundary as untrusted — the same class as
+the NIC reserved-register write and the medium-supplied GEOM metadata
+fixed above — and the sibling function agrees, since bounding it is
+exactly what the newer path does.
+
+### A DTIM period from the air, used as a divisor, with a `WARN` on top
+
+`rtw89_core_update_beacon_track()`:
+
+```c
+	beacon_int = bss_conf->beacon_int ?: 100;
+	dtim = bss_conf->dtim_period;
+	rcu_read_unlock();
+
+#if defined(__FreeBSD__)
+	WARN(beacon_int == 0 || dtim == 0, "period %u / beacon_int %u / dtim %u\n",
+	    period, beacon_int, dtim);
+#endif
+	beacons_in_period = period / beacon_int / dtim;
+```
+
+`beacon_int` has the `?:`. `dtim` does not, and it is the second divisor
+on the next line. `dtim_period` is parsed out of the AP's beacon, and
+mac80211 leaves it **0** until one has been parsed — so this divides by
+zero on the association path, and on anything an AP chooses to send.
+
+The `#if defined(__FreeBSD__)` block is the part worth reading twice.
+Somebody in this tree already hit it, added a FreeBSD-local warning that
+names the exact condition, and left the division. The guard exists, and
+it does not guard. `dtim = bss_conf->dtim_period ?: 1;` — the same
+idiom as the line above it, and 1 is the conservative reading, a DTIM in
+every beacon, which keeps `beacons_in_period` an upper bound.
+
+### The other forty-two
+
+The `rf_path_num` class from the last pass accounts for eleven of them
+again. The rest are the shapes this document has been cataloguing all
+along: `sta.c:1034`'s `find_first_bit(&tid_bitmap, IWL_MAX_TID_COUNT + 1)`
+can return 9 and index a nine-element table, but every writer of that
+bitmap sets a TID of 8 or less, so `WARN(!tid_bitmap)` does imply a bit
+in range; `rtw89/core.c:5286`'s `highest[nss - 1]` needs `nss == 0` from
+a hardware path count that is 1 or 2; ACPICA's five are its
+`ACPI_DEBUGGER` and namespace-repair paths, where the caller establishes
+what the callee cannot see. They are on the record as the previous
+tables are, not fixed.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

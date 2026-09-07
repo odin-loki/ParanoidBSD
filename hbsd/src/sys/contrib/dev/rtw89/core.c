@@ -2924,7 +2924,17 @@ static void rtw89_core_bcn_track_assoc(struct rtw89_dev *rtwdev,
 	rcu_read_lock();
 	bss_conf = rtw89_vif_rcu_dereference_link(rtwvif_link, true);
 	beacon_int = bss_conf->beacon_int ?: 100;
-	dtim = bss_conf->dtim_period;
+	/*
+	 * ?: like beacon_int above it, and for the same reason: dtim is
+	 * the second divisor two lines down. dtim_period comes out of
+	 * the AP's beacon and mac80211 leaves it 0 until one has been
+	 * parsed, so this divided by zero on the association path and on
+	 * anything an AP chose to send. The FreeBSD-local WARN below saw
+	 * exactly that and only logged it. 1 is the conservative
+	 * reading - a DTIM in every beacon - and it keeps
+	 * beacons_in_period an upper bound.
+	 */
+	dtim = bss_conf->dtim_period ?: 1;
 	rcu_read_unlock();
 
 #if defined(__FreeBSD__)

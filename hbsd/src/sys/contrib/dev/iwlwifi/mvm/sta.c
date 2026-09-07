@@ -2774,7 +2774,7 @@ static int iwl_mvm_fw_baid_op_sta(struct iwl_mvm *mvm,
 		.add_modify = STA_MODE_MODIFY,
 	};
 	u32 status;
-	int ret;
+	int ret, baid;
 
 	if (start) {
 		cmd.add_immediate_ba_tid = tid;
@@ -2800,7 +2800,20 @@ static int iwl_mvm_fw_baid_op_sta(struct iwl_mvm *mvm,
 		if (WARN_ON(start && iwl_mvm_has_new_rx_api(mvm) &&
 			    !(status & IWL_ADD_STA_BAID_VALID_MASK)))
 			return -EINVAL;
-		return u32_get_bits(status, IWL_ADD_STA_BAID_MASK);
+		/*
+		 * IWL_ADD_STA_BAID_MASK is 0x7F00 - seven bits, 0..127 -
+		 * and mvm->baid_map has IWL_MAX_BAID (32) entries. The
+		 * only caller, iwl_mvm_sta_rx_agg(), checks `baid < 0'
+		 * and then writes mvm->baid_map[baid], so a firmware
+		 * response outside 0..31 stores a pointer past the end
+		 * of that array. iwl_mvm_fw_baid_op_cmd(), this
+		 * function's twin behind the same dispatcher, ends with
+		 * exactly this test; this one had only the -1.
+		 */
+		baid = u32_get_bits(status, IWL_ADD_STA_BAID_MASK);
+		if (baid < 0 || baid >= ARRAY_SIZE(mvm->baid_map))
+			return -EINVAL;
+		return baid;
 	case ADD_STA_IMMEDIATE_BA_FAILURE:
 		IWL_WARN(mvm, "RX BA Session refused by fw\n");
 		return -ENOSPC;

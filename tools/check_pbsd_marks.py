@@ -1150,6 +1150,27 @@ FIXES = {
             "dequeue TNUM count",
         ),
     ],
+    "hbsd/src/sys/contrib/dev/iwlwifi/mvm/sta.c": (
+        # TWO: iwl_mvm_fw_baid_op_cmd() already ended with this exact
+        # test, so a presence marker would be satisfied by the twin that
+        # was already right - the very asymmetry being fixed.
+        ("if (baid < 0 || baid >= ARRAY_SIZE(mvm->baid_map))", 2),
+        "\t\treturn u32_get_bits(status, IWL_ADD_STA_BAID_MASK);\n",
+        "iwl_mvm_fw_baid_op_sta() returned a seven-bit firmware field "
+        "(IWL_ADD_STA_BAID_MASK is 0x7F00, so 0..127) as an index into "
+        "mvm->baid_map, which has 32 entries, and its only caller checks "
+        "just `baid < 0' before writing baid_map[baid]. Its twin behind "
+        "the same dispatcher bounds it; this one did not",
+    ),
+    "hbsd/src/sys/contrib/dev/rtw89/core.c": (
+        "dtim = bss_conf->dtim_period ?: 1;",
+        "\tdtim = bss_conf->dtim_period;\n",
+        "dtim_period comes out of the AP's beacon, is 0 until one has "
+        "been parsed, and is the second divisor of `period / beacon_int "
+        "/ dtim' two lines below. beacon_int on the line above already "
+        "had the ?:, and the FreeBSD-local WARN saw the zero and only "
+        "logged it",
+    ),
     "hbsd/src/sys/contrib/dev/iwlwifi/mvm/rxmq.c": (
         # TWO, not one. iwl_mvm_rx_mpdu_mq() already had this exact
         # declaration, so a plain presence marker was satisfied by the
