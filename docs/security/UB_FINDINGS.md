@@ -2968,6 +2968,29 @@ kernel's own boot banner has it (`boot.log:51`). `newvers.sh` took its
 architecture with nothing between: no build host, user, path or date in
 the running kernel's version string.
 
+## What the coverage work moved, in one table
+
+Six changes to `tools/verify/includes.py`, none of them a new heuristic
+and all of them reading something the build system already says. The
+numbers are translation units the analyser could not compile, before and
+after, measured on the same tree:
+
+| scope | before | after | what was missing |
+|---|---:|---:|---|
+| `lib/libc` + `lib/msun` + `libexec` | 172 | 76 | the `-D` and `-I` on `CFLAGS` in each directory's own Makefile; its `.PATH`; `arch_of` for `libexec/rtld-elf/<arch>` and every other `<arch>` component |
+| `sys/dev` | 552 | 155 | `sys/conf/files*`'s `compile-with`, `sys/modules/*/Makefile`'s `.PATH` + `CFLAGS`, and the `files.*` that says which architecture a driver belongs to |
+| `sys/arm64` + `sys/arm` + `sys/powerpc` + `sys/riscv` + `sys/i386` | 124 | 55 | `conf/DEFAULTS`'s options, `contrib/device-tree/include`, and a per-architecture interface shim |
+
+**848 translation units that reported nothing, and looked exactly like
+848 clean ones, now report.** They produced 34 defects, of which the ones
+above are written up.
+
+Each of the six was found the same way: by reading the largest remaining
+ERROR class instead of the findings. That is the whole method, and it is
+worth stating plainly because the instinct is the opposite — a list of
+findings looks like work and a list of compile errors looks like noise.
+The compile errors were where the bugs were.
+
 ## Fixed — a compatibility layer that is not compatible on the NULL case
 
 `sys/dev` came back **552 ERROR of 2,633** translation units — a fifth of
