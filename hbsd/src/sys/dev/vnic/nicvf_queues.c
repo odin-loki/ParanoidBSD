@@ -1291,7 +1291,8 @@ nicvf_rcv_queue_config(struct nicvf *nic, struct queue_set *qs,
 {
 	union nic_mbx mbx = {};
 	struct rcv_queue *rq;
-	struct rq_cfg rq_cfg;
+	/* PBSD: see nicvf_cmp_queue_config() - reserved bits, zeroed. */
+	struct rq_cfg rq_cfg = { 0 };
 	if_t ifp;
 	struct lro_ctrl	*lro;
 
@@ -1371,7 +1372,17 @@ nicvf_cmp_queue_config(struct nicvf *nic, struct queue_set *qs,
     int qidx, boolean_t enable)
 {
 	struct cmp_queue *cq;
-	struct cq_cfg cq_cfg;
+	/*
+	 * PBSD: zeroed before use. The whole struct is written to a
+	 * hardware register with *(uint64_t *)&cq_cfg, and its
+	 * reserved_* bitfields are never assigned - so what went into
+	 * the NIC's reserved bits was whatever the stack held. Linux's
+	 * thunder driver, which this is a port of, declares these as a
+	 * union and opens with `.value = 0'; the port dropped both the
+	 * union and the zeroing. All four queue configs in this file
+	 * have the shape and none of them had the initialiser.
+	 */
+	struct cq_cfg cq_cfg = { 0 };
 
 	cq = &qs->cq[qidx];
 	cq->enable = enable;
@@ -1409,7 +1420,8 @@ nicvf_snd_queue_config(struct nicvf *nic, struct queue_set *qs, int qidx,
 {
 	union nic_mbx mbx = {};
 	struct snd_queue *sq;
-	struct sq_cfg sq_cfg;
+	/* PBSD: see nicvf_cmp_queue_config() - reserved bits, zeroed. */
+	struct sq_cfg sq_cfg = { 0 };
 
 	sq = &qs->sq[qidx];
 	sq->enable = enable;
@@ -1455,7 +1467,8 @@ nicvf_rbdr_config(struct nicvf *nic, struct queue_set *qs, int qidx,
     boolean_t enable)
 {
 	struct rbdr *rbdr;
-	struct rbdr_cfg rbdr_cfg;
+	/* PBSD: see nicvf_cmp_queue_config() - reserved bits, zeroed. */
+	struct rbdr_cfg rbdr_cfg = { 0 };
 
 	rbdr = &qs->rbdr[qidx];
 	nicvf_reclaim_rbdr(nic, rbdr, qidx);

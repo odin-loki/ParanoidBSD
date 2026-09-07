@@ -3472,6 +3472,35 @@ nothing, which is the harmless form.
 
 `mthca` + `mlx5_ib` + `mlx5_core`: 14 findings → 6.
 
+## Fixed — the stack, written into a NIC's reserved register bits
+
+`sys/dev/vnic` is the ThunderX / OcteonTX network driver, arm64's, and
+its four queue-configuration functions all end the same way:
+
+```c
+	struct cq_cfg cq_cfg;			/* 64 bits of bitfields */
+	...
+	cq_cfg.ena = 1;
+	cq_cfg.reset = 0;
+	cq_cfg.caching = 0;
+	cq_cfg.qsize = CMP_QSIZE;
+	cq_cfg.avg_con = 0;
+	nicvf_queue_reg_write(nic, NIC_QSET_CQ_0_7_CFG, qidx,
+	    *(uint64_t *)&cq_cfg);
+```
+
+`struct cq_cfg` is `reserved_0_15:16`, `avg_con:9`, `reserved_25_31:7`,
+`qsize:3`, `reserved_35_39:5`, `caching:1`, `reset:1`, `ena:1`,
+`reserved_43_63:21` — **51 of its 64 bits are reserved fields, and not
+one of them is ever assigned.** The struct is then written whole to a
+hardware register, so the NIC received whatever the stack held in the
+bits the datasheet reserves.
+
+Linux's `thunder` driver, which this is a port of, declares these as a
+`union` and opens each function with `.value = 0`. The port dropped the
+union, and the zeroing with it. All four — `cq_cfg`, `rq_cfg`, `sq_cfg`,
+`rbdr_cfg` — have the shape, and none had the initialiser.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

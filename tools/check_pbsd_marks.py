@@ -623,6 +623,19 @@ FIXES = {
             "identical, already says `int err = 0;'",
         ),
     ],
+    "hbsd/src/sys/dev/vnic/nicvf_queues.c": [
+        (
+            ("_cfg = { 0 };", 4),
+            "\tstruct cq_cfg cq_cfg;\n",
+            "all four queue-config structs are written whole to a "
+            "hardware register with *(uint64_t *)&x, and none of their "
+            "reserved_* bitfields is ever assigned, so what reached the "
+            "NIC's reserved bits was whatever the stack held. Linux's "
+            "thunder driver declares these as a union and opens with "
+            "`.value = 0'; the FreeBSD port dropped the union and the "
+            "zeroing with it",
+        ),
+    ],
     "hbsd/src/sys/dev/regulator/regulator.c": [
         (
             "PBSD: udelay is an OUT cell and every driver writes it",
