@@ -134,6 +134,16 @@ not to be the item it says.
       layouts and nothing checks that a `sys/x86` file compiles for both
       except building i386 — which now happens, so this is closed by the
       matrix rather than by a tool. Worth a note in `docs/PORTABILITY.md`.
+- [ ] **Two ownership transfers the analyser cannot see.** Both produce
+      false NULL/leak findings in volume, and both are one modelling
+      change rather than dozens of triages. `m_get(M_WAITOK, ...)` and
+      `malloc(..., M_WAITOK)` block until they succeed and never return
+      NULL, and everything in the kernel bottoms out in
+      `uma_zalloc_arg()` or `malloc()`; `_pthread_setspecific()` takes
+      ownership of what libc's `nss_tls.h` hands it, which is why every
+      `NSS_MP_CACHE_HANDLING` instantiation reports four leaks. Following
+      the second one to its source found a real leak the checker was not
+      reporting — see `docs/security/UB_FINDINGS.md`.
 - [ ] **`vm_mmap.c`'s `MAP_32BIT` path on 32-bit.** Now randomised as an
       ordinary mmap rather than out of a delta that does not exist there.
       Correct, and untested at runtime — a boot with `PAX_ASLR` and a
@@ -462,6 +472,20 @@ runtime defaults is checked by anything.
 - [ ] **The oracle has never been pointed at any of it.** `lib/msun` and
       `lib/libc` are the only measured scopes. `bin` is small, self-contained
       and the natural third.
+- [x] ~~The analyser could not have been pointed at it either.~~ Extending
+      the sweep past `lib/` and `libexec/` was blocked on a missing
+      instrument, not on effort: a program in `usr.bin` compiles against
+      headers that only exist in `/usr/include` after an `installworld`,
+      and against `-D` that live in a Makefile no walk up the directory
+      tree reaches. `tools/verify/userland_names.py` asks bmake instead —
+      `-V SRCS -V .PATH -V PROGS -V CFLAGS -V INCS -V INCSDIR` over the
+      tree's own `share/mk` — and `includes.py` turns the answers into a
+      `/usr/include` of symlinks (2,079 of them) plus the real `-I` and
+      `-D` per component. Measured on the shard that already existed:
+      `lib/libc` + `lib/msun` + `libexec` went from 1,558 OK / 72 ERROR to
+      **1,582 / 48**, no regressions, and libc's name-service switch was
+      analysed for the first time. `bin`, `sbin`, `usr.bin` and `usr.sbin`
+      are now a scope list, not a research problem.
 - [ ] **`WITHOUT_*` options for what a hardened system does not ship.**
       `src.conf.pbsd` turns off tests, games, docs, examples and OFED. It has
       never been asked what else a paranoid system has no business shipping —
