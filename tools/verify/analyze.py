@@ -80,7 +80,8 @@ def analyze(job: dict) -> dict:
     """
     src = Path(job["src"])
     cmd = ["clang", "--analyze", "-Xclang", "-analyzer-output=text",
-           *lang_flags(src), *include_flags(src), str(src), "-o", "/dev/null"]
+           *lang_flags(src, job["rel"]), *include_flags(src),
+           str(src), "-o", "/dev/null"]
     try:
         p = subprocess.run(cmd, capture_output=True, text=True,
                            timeout=job["timeout"], cwd="/tmp")

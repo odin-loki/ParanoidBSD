@@ -236,6 +236,14 @@ jobs:
           python3 tools/verify/test_analyze.py
           python3 tools/verify/test_classify.py
           python3 tools/verify/test_report_triage.py
+          # The build-system readers. Every one of them exists because
+          # the tool had a rule where a makefile had the answer, and each
+          # was found by a translation unit that came back ERROR and
+          # looked exactly like a clean one. A reader that quietly stops
+          # reading gives back the zero it gave before it was written -
+          # and the CSTD reader was already taking a `CSTD?= c89' from
+          # inside a compiler conditional when this test first ran.
+          python3 tools/verify/test_includes.py
 
       # The port screener encodes what the hundred-file lib/msun batch
       # learned one expensive run at a time. Its value is entirely in the

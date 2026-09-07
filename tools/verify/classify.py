@@ -144,7 +144,7 @@ def model_one(job: dict) -> dict:
     # before 'noexcept'`, and 96 files on a __char16_t typedef). Since the
     # bytes are the same, compile it as C: that is the same translation
     # unit, and it is the side the IR oracle's certificate transfers FROM.
-    lang = ["-xc", "-std=c17"] if sp.suffix == ".cpp" else lang_flags(sp)
+    lang = lang_flags(sp, rel, as_c=True)
     try:
         p = subprocess.run(
             [cc, *lang, *inc, "-Wno-everything", src, "-o", str(gb)],

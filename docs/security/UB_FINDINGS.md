@@ -3974,6 +3974,160 @@ beamforming it becomes the bug it looks like. Left alone because it is
 vendored and not reachable; recorded because "not reachable" here rests on
 nothing anyone wrote down.
 
+## The kernel is written in GNU C and was being read as ISO C
+
+`sys/conf/kern.mk:376` and `share/mk/bsd.sys.mk:13` both say
+
+```
+CSTD?=		gnu17
+```
+
+and `tools/verify/includes.py` said `-std=c17`. Every translation unit
+this repository has ever analysed — 8,199 of them, across nine sweeps —
+was compiled in strict ISO mode against a tree that is not written in it.
+
+The difference is not academic. In ISO mode `typeof` is not a keyword, so
+
+```c
+/* sys/compat/linuxkpi/common/include/linux/slab.h:54 */
+#define	kzalloc_obj(_p, ...)  kzalloc(sizeof(typeof(_p)), default_gfp(__VA_ARGS__))
+```
+
+is `error: expected expression`, and **every vendored Linux driver that
+allocates a struct** fails to compile on that one macro. Statement
+expressions `({ ... })`, case ranges and the bare `asm` spelling are the
+same story.
+
+It was found from the far end. `sys/contrib/dev/iwlwifi/iwl-phy-db.c`
+reported one error, thirty-odd lines of `-Wincompatible-library-redeclaration`
+noise around it, and a `note: expanded from macro 'kzalloc'` — which reads
+like a linuxkpi gap and is not. Twenty of iwlwifi's translation units were
+that macro; another fifteen were the other GNU extensions.
+
+| `iwlwifi` + `rtw88` + `rtw89` | OK | ERROR | findings |
+|---|---:|---:|---:|
+| before | 163 | 76 | 16 |
+| after the module Makefiles' `-D` and decidable `.if` | 166 | 73 | 15 |
+| after `-std=gnu17` | **201** | **38** | **25** |
+
+The standard is read from those two makefiles now rather than named here,
+along with `CXXSTD` — `c++23` for the kernel (`kern.mk:364`, which is what
+this port exists for) and `gnu++17` for userland, where the analyser had
+been applying the kernel's C++ standard to libc.
+
+Every shard, re-run against the change. The FreeBSD core does not move at
+all — it was already written in the subset both standards accept — and
+the whole gain is in the vendored code, which is where the extensions are:
+
+| shard | OK before | OK after | ERROR before | ERROR after | findings |
+|---|---:|---:|---:|---:|---:|
+| `kern` | 452 | 452 | 14 | 14 | 255 → 255 |
+| `fs` | 374 | 374 | 34 | 34 | 238 → 240 |
+| `libs` | 1554 | 1558 | 76 | 72 | 229 → 229 |
+| `sys/dev` | 2514 | 2518 | 119 | 115 | 550 → 554 |
+| the five architecture trees | 712 | 714 | 55 | 53 | 99 → 99 |
+| `iwlwifi`+`rtw88`+`rtw89` | 163 | 201 | 76 | 38 | 16 → 25 |
+
+Not one translation unit that compiled before stopped compiling, and not
+one finding was lost. `sys/contrib` as a whole now reads 954 OK to 396
+ERROR, against the six hundred-odd it could not read at sweep 8; 91 of
+the 396 are on the record in `expected_errors.py` and the remaining 305
+are the wifi drivers nobody has analysed yet — `mediatek` (135 files),
+`athk` (119), `broadcom` (57) and `ath` (31).
+
+### What the `-D` are for, and the one rule they needed
+
+`kernel_flag_index()` collected `-I` and `-include` from a `compile-with`
+and from a module's `CFLAGS` and dropped every `-D`. An `-I` makes a header
+findable; a `-D` decides what is in it. `sys/modules/iwlwifi/Makefile`
+passes nine, and without `-DCONFIG_IWLMLD=1` the driver's own headers
+declare a different `struct iwl_mld` than its sources use — "no member
+named `netdetect`".
+
+Taking them needed one rule. A file can be named by a `sys/conf/files`
+line **and** sit under a module Makefile's `.PATH`, and the two do not
+agree, because a real build compiles it into the kernel **or** into the
+module and never both: `sys/conf/kern.pre.mk:208` passes `-DWITH_NETDUMP`
+for the in-kernel ZFS and `sys/modules/zfs/Makefile:38` passes
+`-DWITHOUT_NETDUMP`. Merged, clang takes the last one on the command line,
+so which of the two won depended on the order this file happens to
+assemble them in. `-I` are additive and an unused one costs nothing, so
+those still merge; a `-D` is exclusive per macro name, and the earlier
+source wins — the analyser's own `-D_KERNEL` first, then the file's own
+`compile-with`, then the module's. (`WITH_`/`WITHOUT_NETDUMP` are
+different *names*, so that pair still both arrive; neither is tested
+anywhere in the tree, and no rule short of modelling two separate builds
+can separate them.)
+
+And `.if` in a module Makefile is not always a question the tool cannot
+answer:
+
+```make
+IWLWIFI_CONFIG_PM=	1
+...
+.if defined(IWLWIFI_CONFIG_PM) && ${IWLWIFI_CONFIG_PM} > 0
+CFLAGS+=	-DCONFIG_PM
+CFLAGS+=	-DCONFIG_PM_SLEEP
+.endif
+```
+
+is a block the build always takes, from a variable set fifty lines up in
+the same file. `_mk_cond()` is three-valued — `defined()`, a comparison
+against a variable the Makefile itself assigned, `&&` and `||`, and
+**None** for everything else, which skips exactly as before. An `.else` is
+never taken: its `.if` was either taken (so the else is dead) or
+undecidable (so the else is too).
+
+That last part is also what puts the wifi drivers' remaining 38 on the
+record honestly. `RTW88_SDIO= 0`, `RTW88_USB= 0`, `RTW88_LEDS= 0`,
+`RTW89_CONFIG_PM= 0`, `IWLWIFI_DEBUGFS= 0` and three commented-out
+`SRCS+=` lines are the Makefiles saying which files a FreeBSD kernel does
+not take — 29 of them — plus eight Linux kunit tests named in no `SRCS`
+at all.
+
+One gap is left and it is deliberately **not** in that list.
+`sys/contrib/dev/iwlwifi/fw/acpi.c` **is** built, on any kernel with
+`DEV_ACPI`, and its 20 errors are one missing `-DCONFIG_ACPI` — verified
+by adding it and watching them all go. The define sits inside
+`.if ${KERN_OPTS:MDEV_ACPI}`, and `KERN_OPTS` is the kernel's own option
+set, which this module index does not have because it is built once for
+the whole tree rather than per architecture. Naming it here is the point:
+an ERROR with a known cause and a known fix is a different thing from an
+ERROR nobody has read.
+
+### The readers are checked now, and the first check found a bug in one
+
+Eight readers of the build system have accumulated in `includes.py`, and
+none of them was tested. That is the wrong shape for this particular kind
+of code: a reader that quietly stops reading gives back exactly the zero
+it gave before it was written, which is the failure mode this whole
+repository exists to catch.
+
+`tools/verify/test_includes.py` checks each — the standard, the quoted and
+unquoted `compile-with`, the `-D` dedupe, the three-valued `.if`,
+`kern.pre.mk`, the `cpu` intersection, the relative-`-I` filter — against
+both synthetic input and the real tree, and each check was confirmed to
+fail when its reader is broken. Eleven deliberate breaks, eleven failures.
+
+Three of them were silent on the first pass and are not any more: the
+relative-`-I` filter had no check at all, and the `CSTD` reader could not
+be told apart from its own fallback, because `STD_DEFAULT` happens to
+agree with what the tree says today. Pointing it at a synthetic makefile
+that says something else is what separated them — and that check failed
+immediately, on a bug it had just found: `_std()` was taking the first
+`CSTD?=` line in the file, including one inside
+
+```make
+.if ${COMPILER_TYPE} == "gcc"
+CSTD?=		c89
+.endif
+```
+
+which is not this compiler and not this build. `kern_pre_vars()` had
+tracked conditional depth from the start; `_std()`, written an hour
+later, did not. The guard on one of two, in the pair of functions that
+read the same file.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

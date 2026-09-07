@@ -380,6 +380,14 @@ def _kernel_dirs(text: str, vars: dict[str, str]) -> list[str]:
     # -I$S/...) replacing it before expansion is too early.
     text = _expand(text, vars).replace("$S", str(SYS))
     out = []
+    # The -D as well as the -I. An -I makes a header findable; a -D
+    # decides what is in it, and for the vendored Linux drivers that is
+    # the whole difference: without -DCONFIG_IWLMLD=1 and -DCONFIG_PM,
+    # iwlwifi's headers declare a different `struct iwl_mld' than its
+    # sources use, and the file does not compile at all.
+    for tok in DEFINE.findall(text):
+        if "$" not in tok:
+            out.append(tok)
     for tok in DASH_INCLUDE.findall(text):
         if "$" not in tok and Path(tok).is_file():
             out.append(f"-include{tok}")
@@ -426,6 +434,72 @@ def kern_pre_vars() -> dict[str, str]:
         m = MAKE_VAR.match(st)
         if m:
             out.setdefault(m.group("name"), m.group("val").strip())
+    return out
+
+
+# `.if' in a module Makefile is not always a question the tool cannot
+# answer. sys/modules/iwlwifi/Makefile sets IWLWIFI_CONFIG_PM=1 at the
+# top and then
+#
+#   .if defined(IWLWIFI_CONFIG_PM) && ${IWLWIFI_CONFIG_PM} > 0
+#   SRCS+= mvm/d3.c mld/d3.c lkpi_iwlwifi_pm.c
+#   CFLAGS+= -DCONFIG_PM
+#   CFLAGS+= -DCONFIG_PM_SLEEP
+#   .endif
+#
+# which is a block the build always takes, from a variable set five
+# lines up in the same file. Skipping every conditional lost those two
+# -D. Three-valued on purpose: undecidable skips, exactly as before,
+# because guessing at ${MK_SOMETHING} or ${KERN_OPTS:M...} would be
+# inventing a build rather than reading one.
+MK_DEFINED = re.compile(r"defined\(([A-Za-z_]\w*)\)")
+MK_CMP = re.compile(r"\$\{([A-Za-z_]\w*)\}\s*(==|!=|>=|<=|>|<)\s*"
+                    r'"?([A-Za-z0-9_.]*)"?')
+
+
+def _mk_cond(expr: str, vars: dict[str, str]) -> bool | None:
+    """Truth of a module Makefile `.if', or None when not decidable."""
+    parts = re.split(r"\s*(&&|\|\|)\s*", expr.strip())
+    if not parts or not parts[0]:
+        return None
+    vals: list[bool | None] = []
+    ops: list[str] = []
+    for i, tok in enumerate(parts):
+        if i % 2:
+            ops.append(tok)
+            continue
+        tok = tok.strip()
+        m = MK_DEFINED.fullmatch(tok)
+        if m:
+            vals.append(m.group(1) in vars)
+            continue
+        m = MK_CMP.fullmatch(tok)
+        if not m:
+            return None
+        name, op, rhs = m.groups()
+        if name not in vars:
+            vals.append(None)
+            continue
+        lhs = vars[name].strip()
+        try:
+            a: object = int(lhs)
+            b: object = int(rhs)
+        except ValueError:
+            if op not in ("==", "!="):
+                vals.append(None)
+                continue
+            a, b = lhs, rhs
+        vals.append({"==": a == b, "!=": a != b,
+                     ">": a > b, "<": a < b,          # type: ignore[operator]
+                     ">=": a >= b, "<=": a <= b}[op])  # type: ignore[operator]
+    out = vals[0]
+    for op, v in zip(ops, vals[1:]):
+        if op == "&&":
+            out = False if False in (out, v) else \
+                (None if None in (out, v) else True)
+        else:
+            out = True if True in (out, v) else \
+                (None if None in (out, v) else False)
     return out
 
 
@@ -493,16 +567,37 @@ def kernel_flag_index() -> tuple[dict[str, tuple[str, ...]],
         vars[".CURDIR"] = str(mk.parent)
         paths: list[str] = []
         flags: list[str] = []
-        depth = 0
+        # A stack of "is this block live?", so a nested .if inside a
+        # skipped one stays skipped.
+        live: list[bool] = []
         for line in text.splitlines():
             st = line.strip()
-            if st.startswith((".if", ".for")):
-                depth += 1
+            if st.startswith(".if"):
+                cond = None
+                if all(live):
+                    kw, _, rest = st.partition(" ")
+                    if kw == ".ifdef":
+                        cond = rest.strip() in vars
+                    elif kw == ".ifndef":
+                        cond = rest.strip() not in vars
+                    elif kw == ".if":
+                        cond = _mk_cond(rest, vars)
+                live.append(cond is True)
+                continue
+            if st.startswith(".for"):
+                live.append(False)
+                continue
+            if st.startswith((".else", ".elif")):
+                # Never take an else: the .if it belongs to was either
+                # taken (so this is dead) or undecidable (so this is).
+                if live:
+                    live[-1] = False
                 continue
             if st.startswith((".endif", ".endfor")):
-                depth = max(0, depth - 1)
+                if live:
+                    live.pop()
                 continue
-            if depth or not st:
+            if not all(live) or not st:
                 continue
             if st.startswith(".PATH:"):
                 for d in _expand(st[len(".PATH:"):].replace("$S", str(SYS)),
@@ -1130,6 +1225,34 @@ MODULE_INCLUDES = (
 )
 
 
+def _dedupe_defines(flags: list[str]) -> list[str]:
+    """Drop a -DNAME whose NAME an earlier flag already defined.
+
+    A file can be named by a sys/conf/files line AND sit under a module
+    Makefile's .PATH, and the two do not agree, because a real build
+    compiles it into the kernel OR into the module and never both:
+    sys/conf/kern.pre.mk:208 passes -DWITH_NETDUMP for the in-kernel
+    ZFS and sys/modules/zfs/Makefile:38 passes -DWITHOUT_NETDUMP.
+    Merged, clang takes the last one on the line, so which of the two
+    won depended on the order this file happens to assemble them in.
+
+    An -I is additive and an unused one costs nothing, so those still
+    merge. A -D is exclusive per name, and the earlier source wins: the
+    analyser's own -D_KERNEL first, then what the file's own
+    compile-with says, then the module's.
+    """
+    out: list[str] = []
+    seen: set[str] = set()
+    for f in flags:
+        if f.startswith("-D"):
+            name = f[2:].split("=", 1)[0].split("(", 1)[0]
+            if name in seen:
+                continue
+            seen.add(name)
+        out.append(f)
+    return out
+
+
 def _module_flags(rel_sys: str) -> list[str]:
     out = []
     for prefixes, flags in MODULE_INCLUDES:
@@ -1337,7 +1460,7 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         rd = resource_dir(cc)
         if rd:
             flags.append(f"-I{rd}")
-        return flags
+        return _dedupe_defines(flags)
 
     # The source's own directory first: many libc and msun sources include a
     # private header sitting beside them.
@@ -1537,9 +1660,68 @@ def is_kernel_tu(rel: str) -> bool:
     return not rel[len("sys/"):].startswith(NOT_KERNEL)
 
 
-def lang_flags(src: Path) -> list[str]:
-    return (["-xc++", "-std=c++23", "-fno-exceptions", "-fno-rtti"]
-            if src.suffix == ".cpp" else ["-xc", "-std=c17"])
+# The language standard is in the build system too, and this said c17
+# where both halves of the tree say gnu17:
+#
+#   sys/conf/kern.mk:376      CSTD?=  gnu17
+#   share/mk/bsd.sys.mk:13    CSTD?=  gnu17
+#
+# The difference is not academic. In strict ISO mode `typeof' is not a
+# keyword, so linuxkpi's
+#
+#   #define kzalloc_obj(_p, ...)  kzalloc(sizeof(typeof(_p)), ...)
+#
+# is "error: expected expression" and every vendored Linux driver that
+# allocates a struct fails to compile - twenty of iwlwifi's alone, on
+# one macro. Statement expressions, case ranges and the bare `asm'
+# spelling are the same story: the kernel is written in GNU C and was
+# being read as ISO C.
+STD_DEFAULT = {"kernel-c": "gnu17", "user-c": "gnu17",
+               "kernel-c++": "c++23", "user-c++": "gnu++17"}
+STD_LINE = re.compile(r"^(CSTD|CXXSTD)\s*\??=\s*(\S+)")
+
+
+@functools.lru_cache(maxsize=None)
+def _std(kind: str) -> str:
+    """CSTD/CXXSTD as the makefile that governs this half of the tree
+    sets it, falling back to what that file says today."""
+    mk = (SYS / "conf" / "kern.mk") if kind.startswith("kernel") \
+        else (SRC / "share" / "mk" / "bsd.sys.mk")
+    want = "CXXSTD" if kind.endswith("c++") else "CSTD"
+    if mk.is_file():
+        # Depth 0 only, as kern_pre_vars() does: kern.mk carries a
+        # `CSTD?= c89' inside a compiler conditional, and taking the
+        # first line that matches picked that one.
+        depth = 0
+        for line in mk.read_text(errors="replace").splitlines():
+            st = line.strip()
+            if st.startswith((".if", ".for")):
+                depth += 1
+                continue
+            if st.startswith((".endif", ".endfor")):
+                depth = max(0, depth - 1)
+                continue
+            if depth:
+                continue
+            m = STD_LINE.match(st)
+            if m and m.group(1) == want:
+                return m.group(2)
+    return STD_DEFAULT[kind]
+
+
+def lang_flags(src: Path, rel: str | None = None,
+               as_c: bool = False) -> list[str]:
+    """`as_c' compiles a .cpp as C - see classify.py, where a landed port
+    is a pure rename and CBMC's C front end is the stronger one."""
+    try:
+        rel = rel or src.resolve().relative_to(SRC).as_posix()
+    except ValueError:
+        rel = str(src)
+    half = "kernel" if rel.startswith("sys/") else "user"
+    if src.suffix == ".cpp" and not as_c:
+        return ["-xc++", f"-std={_std(half + '-c++')}",
+                "-fno-exceptions", "-fno-rtti"]
+    return ["-xc", f"-std={_std(half + '-c')}"]
 
 
 if __name__ == "__main__":

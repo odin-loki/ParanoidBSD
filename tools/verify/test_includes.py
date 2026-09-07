@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
+"""The build-system readers in includes.py, against inputs and the tree.
+
+Every one of these exists because the tool had a rule where the build
+system had an answer, and each was found by a translation unit that came
+back ERROR and looked exactly like a clean one:
+
+  the language standard   -std=c17 against a tree that says gnu17, so
+                          `typeof' was not a keyword and every vendored
+                          Linux driver that allocates a struct failed
+  makeoptions             a compile-with naming a variable defined in an
+                          architecture's own conf/, not in sys/conf
+  files.* outside conf/   sys/powerpc/conf/dpaa/files.dpaa
+  unquoted compile-with   `compile-with ${ZSTD_C}', twenty-one lines of
+                          sys/conf/files, no quotes
+  kern.pre.mk             LINUXKPI_INCLUDES, previously a hand-written
+                          copy of three flags
+  cpu lines               `cpu BOOKE_E500', which DEFAULTS does not carry
+  .if in a module         a block the build always takes, from a variable
+                          set fifty lines above it
+  -D at all               an -I makes a header findable; a -D decides
+                          what is in it
+
+They are load-bearing now, so they are checked. A reader that silently
+stops reading gives back the same zero it gave before it was written.
+"""
+from __future__ import annotations
+import sys, tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import includes  # noqa: E402
+
+fails: list[str] = []
+
+
+def check(name: str, got, want) -> None:
+    if got == want:
+        print(f"  ok   {name}")
+    else:
+        print(f"  FAIL {name}\n         got  {got!r}\n         want {want!r}")
+        fails.append(name)
+
+
+def check_that(name: str, cond: bool, why: str = "") -> None:
+    if cond:
+        print(f"  ok   {name}")
+    else:
+        print(f"  FAIL {name}{'  ' + why if why else ''}")
+        fails.append(name)
+
+
+print("== the language standard is the one the tree sets")
+SRC = includes.SRC
+check("kernel C", includes.lang_flags(SRC / "sys/kern/kern_malloc.c"),
+      ["-xc", "-std=gnu17"])
+check("userland C", includes.lang_flags(SRC / "lib/libc/gen/err.c"),
+      ["-xc", "-std=gnu17"])
+check("kernel C++", includes.lang_flags(SRC / "sys/kern/x.cpp"),
+      ["-xc++", "-std=c++23", "-fno-exceptions", "-fno-rtti"])
+check("userland C++", includes.lang_flags(SRC / "lib/libc/gen/x.cpp"),
+      ["-xc++", "-std=gnu++17", "-fno-exceptions", "-fno-rtti"])
+check("a .cpp forced to C for CBMC",
+      includes.lang_flags(SRC / "sys/kern/x.cpp", "sys/kern/x.cpp",
+                          as_c=True),
+      ["-xc", "-std=gnu17"])
+# The point of reading them rather than naming them: gnu17 must be what
+# the makefiles say, not what this test says.
+for mk, var, want in (("sys/conf/kern.mk", "CSTD", "gnu17"),
+                      ("share/mk/bsd.sys.mk", "CSTD", "gnu17"),
+                      ("sys/conf/kern.mk", "CXXSTD", "c++23")):
+    text = (SRC / mk).read_text(errors="replace")
+    check_that(f"{mk} still says {var}?= {want}",
+               any(line.strip().startswith(var)
+                   and line.split("=")[-1].strip() == want
+                   for line in text.splitlines()
+                   if line.strip().startswith(var + "?=")
+                   or line.strip().startswith(var + "=")),
+               "if the tree changed it, lang_flags follows and this "
+               "expectation is what is stale")
+
+# ...and it must be READ, not defaulted. Break the read and this is the
+# only check that notices: STD_DEFAULT happens to agree with the tree
+# today, so every other expectation above passes on the fallback.
+_saved_sys, _saved_src = includes.SYS, includes.SRC
+_fake = Path(tempfile.mkdtemp())
+(_fake / "sys" / "conf").mkdir(parents=True)
+(_fake / "sys" / "conf" / "kern.mk").write_text(
+    "# a comment\n.if ${COMPILER_TYPE} == \"gcc\"\nCSTD?=\tc89\n.endif\n"
+    "CSTD?=\tgnu99\nCXXSTD?=\tc++26\n")
+includes.SYS, includes.SRC = _fake / "sys", _fake
+includes._std.cache_clear()
+check("CSTD comes from the file, not the fallback",
+      includes._std("kernel-c"), "gnu99")
+check("CXXSTD too", includes._std("kernel-c++"), "c++26")
+check_that("and a conditional CSTD is not taken",
+           includes._std("kernel-c") != "c89")
+# ...and the fallback, for a tree where the makefile is absent. It is a
+# last resort and it still has to say what the tree says, or a missing
+# file silently changes the language.
+includes.SYS = _fake / "nothing" / "sys"
+includes.SRC = _fake / "nothing"
+includes._std.cache_clear()
+check("the fallback C standard", includes._std("kernel-c"), "gnu17")
+check("the fallback userland C++", includes._std("user-c++"), "gnu++17")
+
+includes.SYS, includes.SRC = _saved_sys, _saved_src
+includes._std.cache_clear()
+
+check("STD_LINE reads a plain assignment",
+      includes.STD_LINE.match("CSTD=	gnu17").groups(), ("CSTD", "gnu17"))
+check("STD_LINE reads a ?= assignment",
+      includes.STD_LINE.match("CXXSTD?=	c++23").groups(),
+      ("CXXSTD", "c++23"))
+check_that("STD_LINE does not match a comment",
+           includes.STD_LINE.match("# CSTD?= c89") is None)
+
+print("\n== a compile-with, quoted or not")
+tmp = Path(tempfile.mkdtemp())
+srcs = {
+    'a.c   optional x compile-with "${NORMAL_C} -I/usr/include"': "/usr/include",
+    "b.c   optional x compile-with ${SOME_CMD}": None,
+    "c.c   optional x standard": None,
+}
+for line, _ in srcs.items():
+    m = includes.FILES_COMPILE.match(line)
+    if line.startswith("a.c"):
+        check_that("quoted compile-with matches", m is not None)
+        check("...and yields the command", m and m.group("dq"),
+              "${NORMAL_C} -I/usr/include")
+    elif line.startswith("b.c"):
+        check_that("bare compile-with matches", m is not None)
+        check("...and yields the variable", m and m.group("bare"),
+              "${SOME_CMD}")
+    else:
+        check_that("a line with no compile-with does not match", m is None)
+
+print("\n== -I merge, -D first-wins")
+# `-I.' is the kernel build directory. Resolved against the analyser's
+# own cwd it is a real directory, so it passes is_dir() and quietly puts
+# whatever happens to be there on the include path.
+check("a relative -I is dropped",
+      includes._kernel_dirs("-I. -I.. -I/usr/include", {}),
+      ["-I/usr/include"])
+check("a later -D of the same name is dropped",
+      includes._dedupe_defines(["-D_KERNEL", "-DFOO=1", "-I/a", "-DFOO=2",
+                                "-DBAR", "-I/a"]),
+      ["-D_KERNEL", "-DFOO=1", "-I/a", "-DBAR", "-I/a"])
+check("a function-like -D is keyed on its name too",
+      includes._dedupe_defines(["-D__has_c_attribute(x)=0",
+                                "-D__has_c_attribute(x)=1"]),
+      ["-D__has_c_attribute(x)=0"])
+
+print("\n== a module Makefile's .if, three-valued")
+V = {"PM": "1", "OFF": "0", "NAME": "yes"}
+for expr, want in (
+        ("defined(PM)", True),
+        ("defined(NOPE)", False),
+        ("${PM} > 0", True),
+        ("${OFF} > 0", False),
+        ("defined(PM) && ${PM} > 0", True),
+        ("defined(OFF) && ${OFF} > 0", False),
+        ("${NAME} == \"yes\"", True),
+        ("${NAME} != \"yes\"", False),
+        # Undecidable: a variable nothing in this file set, and a
+        # modifier expression. Both must be None, not False and not
+        # True - None skips the block, which is the old behaviour.
+        ("${UNSET} > 0", None),
+        ("${KERN_OPTS:MDEV_PCI}", None),
+        ("defined(PM) && ${UNSET} > 0", None),
+        ("defined(NOPE) && ${UNSET} > 0", False),
+        ("defined(PM) || ${UNSET} > 0", True),
+):
+    check(f".if {expr}", includes._mk_cond(expr, V), want)
+
+print("\n== against the real tree")
+kp = includes.kern_pre_vars()
+check_that("kern.pre.mk gives LINUXKPI_INCLUDES",
+           "LINUXKPI_INCLUDES" in kp and "linuxkpi" in kp["LINUXKPI_INCLUDES"])
+check_that("kern.pre.mk gives ZSTD_C",
+           "ZSTD_C" in kp and "contrib/zstd/lib/freebsd" in kp["ZSTD_C"])
+check_that("kern.pre.mk's conditional assignments are NOT taken",
+           "ZSTD_DECOMPRESS_BLOCK_FLAGS" not in kp,
+           "it is inside .if ${COMPILER_TYPE} == \"gcc\"")
+
+cpu = includes.files_cpu_index()
+check("the DPAA ethernet's cpu set",
+      cpu.get("sys/dev/dpaa/portals_common.c"), ("BOOKE", "BOOKE_E500"))
+check_that("and it is an intersection, not a union",
+           all(len(v) <= 2 for v in cpu.values()),
+           "a file built by configs that disagree keeps only what they "
+           "all declare")
+
+by_file, by_dir = includes.kernel_flag_index()
+ncsw = by_file.get("sys/contrib/ncsw/etc/error.c", ())
+check_that("the DPAA compile-with expanded",
+           any("contrib/ncsw/inc" in f for f in ncsw),
+           "makeoptions DPAA_COMPILE_CMD in sys/powerpc/conf/dpaa")
+check_that("...including the linuxkpi it opens with",
+           any("linuxkpi" in f for f in ncsw),
+           "${LINUXKPI_C} is ${NORMAL_C} ${LINUXKPI_INCLUDES}")
+zstd = by_file.get("sys/contrib/zstd/lib/common/error_private.c", ())
+check_that("the unquoted ${ZSTD_C} expanded",
+           any("contrib/zstd/lib/freebsd" in f for f in zstd),
+           "sys/conf/files:648, no quotes")
+
+iwl = by_dir.get("sys/contrib/dev/iwlwifi", ())
+for want in ("-DCONFIG_IWLMVM=1", "-DCONFIG_PM"):
+    check_that(f"iwlwifi gets {want}", want in iwl,
+               "the second is inside a .if the Makefile itself decides")
+check_that("iwlwifi does not get -DCONFIG_IWLWIFI_DEBUGFS",
+           "-DCONFIG_IWLWIFI_DEBUGFS" not in iwl,
+           "IWLWIFI_DEBUGFS=0, so that block is dead")
+check_that("no -I resolves to the analyser's own directory",
+           all(not f.startswith("-I.") for f in iwl))
+
+# The whole point, end to end: one real translation unit's flags.
+rel = "sys/contrib/dev/iwlwifi/mvm/rxmq.c"
+fl = includes.include_flags(SRC / rel, includes.arch_of(rel))
+names = [f[2:].split("=")[0].split("(")[0] for f in fl if f.startswith("-D")]
+check("no macro is defined twice on one command line",
+      sorted(n for n in set(names) if names.count(n) > 1), [])
+
+print()
+if fails:
+    print(f"{len(fails)} check(s) failed")
+    sys.exit(1)
+print("all checks passed")

@@ -265,6 +265,98 @@ EXPECTED = {
         "not built: the v0.6 format decoder, ZSTD_LEGACY_SUPPORT",
     "sys/contrib/zstd/lib/legacy/zstd_v07.c":
         "not built: the v0.7 format decoder, ZSTD_LEGACY_SUPPORT",
+
+    # The vendored Linux wifi drivers. Their module Makefiles say which
+    # bus attachments and options a FreeBSD kernel takes -
+    # `RTW88_SDIO= 0', `RTW88_USB= 0', `IWLWIFI_DEBUGFS= 0', three
+    # `#SRCS+=' lines - and these 37 are what those say no to, plus
+    # eight Linux kunit tests that are in no SRCS at all. Reading the
+    # rest of those Makefiles (their -D, and the .if blocks that are
+    # decidable from a variable set five lines above them) took this
+    # scope from 76 ERROR of 239 to 38; -std=gnu17 in place of c17 took
+    # it to 38 from 73.
+    #
+    # There is one honest gap left and it is NOT in this list:
+    # sys/contrib/dev/iwlwifi/fw/acpi.c IS built, on any kernel with
+    # DEV_ACPI, and needs the -DCONFIG_ACPI that sits inside
+    # `.if ${KERN_OPTS:MDEV_ACPI}'. KERN_OPTS is the kernel's own option
+    # set and the module index is not per-architecture yet, so that one
+    # condition stays undecidable. With the flag it compiles clean; the
+    # 20 errors it reports without it are all one missing define.
+    "sys/contrib/dev/iwlwifi/fw/debugfs.c":
+        "not built: sys/modules/iwlwifi/Makefile sets IWLWIFI_DEBUGFS=0",
+    "sys/contrib/dev/iwlwifi/mld/debugfs.c":
+        "not built: sys/modules/iwlwifi/Makefile sets IWLWIFI_DEBUGFS=0",
+    "sys/contrib/dev/iwlwifi/mvm/debugfs.c":
+        "not built: sys/modules/iwlwifi/Makefile sets IWLWIFI_DEBUGFS=0",
+    "sys/contrib/dev/iwlwifi/mvm/debugfs-vif.c":
+        "not built: sys/modules/iwlwifi/Makefile sets IWLWIFI_DEBUGFS=0",
+    "sys/contrib/dev/iwlwifi/fw/uefi.c":
+        "not built: commented out of the module's SRCS",
+    "sys/contrib/dev/iwlwifi/mld/led.c":
+        "not built: commented out of the module's SRCS",
+    "sys/contrib/dev/iwlwifi/mvm/led.c":
+        "not built: commented out of the module's SRCS",
+    "sys/contrib/dev/iwlwifi/mld/tests/agg.c":
+        "not built: a Linux kunit test, in no SRCS",
+    "sys/contrib/dev/iwlwifi/mld/tests/hcmd.c":
+        "not built: a Linux kunit test, in no SRCS",
+    "sys/contrib/dev/iwlwifi/mld/tests/link.c":
+        "not built: a Linux kunit test, in no SRCS",
+    "sys/contrib/dev/iwlwifi/mld/tests/link-selection.c":
+        "not built: a Linux kunit test, in no SRCS",
+    "sys/contrib/dev/iwlwifi/mld/tests/rx.c":
+        "not built: a Linux kunit test, in no SRCS",
+    "sys/contrib/dev/iwlwifi/mld/tests/utils.c":
+        "not built: a Linux kunit test, in no SRCS",
+    "sys/contrib/dev/iwlwifi/mvm/tests/hcmd.c":
+        "not built: a Linux kunit test, in no SRCS",
+    "sys/contrib/dev/iwlwifi/tests/devinfo.c":
+        "not built: a Linux kunit test, in no SRCS",
+    "sys/contrib/dev/rtw88/rtw8723cs.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_SDIO=0",
+    "sys/contrib/dev/rtw88/rtw8723ds.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_SDIO=0",
+    "sys/contrib/dev/rtw88/rtw8821cs.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_SDIO=0",
+    "sys/contrib/dev/rtw88/rtw8822bs.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_SDIO=0",
+    "sys/contrib/dev/rtw88/rtw8822cs.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_SDIO=0",
+    "sys/contrib/dev/rtw88/sdio.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_SDIO=0",
+    "sys/contrib/dev/rtw88/rtw8723du.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_USB=0",
+    "sys/contrib/dev/rtw88/rtw8812au.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_USB=0",
+    "sys/contrib/dev/rtw88/rtw8814au.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_USB=0",
+    "sys/contrib/dev/rtw88/rtw8821au.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_USB=0",
+    "sys/contrib/dev/rtw88/rtw8821cu.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_USB=0",
+    "sys/contrib/dev/rtw88/rtw8822bu.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_USB=0",
+    "sys/contrib/dev/rtw88/rtw8822cu.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_USB=0",
+    "sys/contrib/dev/rtw88/rtw88xxa.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_USB=0",
+    "sys/contrib/dev/rtw88/usb.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_USB=0",
+    "sys/contrib/dev/rtw88/led.c":
+        "not built: sys/modules/rtw88/Makefile sets RTW88_LEDS=0",
+    "sys/contrib/dev/rtw89/rtw8851bu.c":
+        "not built: sys/modules/rtw89/Makefile sets RTW89_USB=0",
+    "sys/contrib/dev/rtw89/rtw8852au.c":
+        "not built: sys/modules/rtw89/Makefile sets RTW89_USB=0",
+    "sys/contrib/dev/rtw89/rtw8852bu.c":
+        "not built: sys/modules/rtw89/Makefile sets RTW89_USB=0",
+    "sys/contrib/dev/rtw89/rtw8852cu.c":
+        "not built: sys/modules/rtw89/Makefile sets RTW89_USB=0",
+    "sys/contrib/dev/rtw89/usb.c":
+        "not built: sys/modules/rtw89/Makefile sets RTW89_USB=0",
+    "sys/contrib/dev/rtw89/wow.c":
+        "not built: sys/modules/rtw89/Makefile sets RTW89_CONFIG_PM=0",
 }
 
 
