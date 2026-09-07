@@ -9,7 +9,7 @@ module;
 
 export module pbsd.usr_bin.mkstr.mkstr;
 
-export namespace pbsd::usr_bin::mkstr::mkstr {
+namespace pbsd::usr_bin::mkstr::mkstr {
 
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
@@ -79,14 +79,14 @@ export namespace pbsd::usr_bin::mkstr::mkstr {
 static FILE	*mesgread, *mesgwrite;
 static char	name[100], *np;
 
-void copystr(void);
-int fgetNUL(char *, int, FILE *);
-unsigned hashit(char *, int, unsigned);
-void inithash(void);
-int match(const char *);
-int octdigit(char);
-void process(void);
-void usage(void);
+export void copystr(void);
+export int fgetNUL(char *, int, FILE *);
+export unsigned hashit(char *, int, unsigned);
+export void inithash(void);
+export int match(const char *);
+export int octdigit(char);
+export void process(void);
+export void usage(void);
 
 int
 main(int argc, char *argv[])

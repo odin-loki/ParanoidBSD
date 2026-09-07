@@ -49,7 +49,7 @@ namespace pbsd::lib::libc::gen::fmtmsg {
 /* Maximum valid size for a MSGVERB. */
 #define	MAX_MSGVERB	sizeof(DFLT_MSGVERB)
 
-static char	*printfmt(char *, long, const char *, int, const char *,
+static char	*printfmt(const char *, long, const char *, int, const char *,
 		    const char *, const char *);
 static char	*nextcomp(const char *);
 static const char
@@ -121,7 +121,7 @@ def:
  * a newly malloc()'d output buffer.
  */
 static char *
-printfmt(char *msgverb, long class_, const char *label, int sev,
+printfmt(const char *msgverb, long class_, const char *label, int sev,
     const char *text, const char *act, const char *tag)
 {
 	size_t size;
@@ -140,7 +140,7 @@ printfmt(char *msgverb, long class_, const char *label, int sev,
 	if (tag != MM_NULLTAG)
 		size += strlen(tag);
 
-	if ((output = malloc(size)) == NULL)
+	if ((output = static_cast<char *>(malloc(size))) == NULL)
 		return (NULL);
 	*output = '\0';
 	while ((comp = nextcomp(msgverb)) != NULL) {

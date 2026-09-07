@@ -176,6 +176,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   lib/libc/gen/exect_m/port.cppm
   lib/libc/gen/fdevname_m/port.cppm
   lib/libc/gen/feature_present_m/port.cppm
+  lib/libc/gen/fmtmsg_m/port.cppm
   lib/libc/gen/frexp_m/port.cppm
   lib/libc/gen/ftok_m/port.cppm
   lib/libc/gen/ftw_m/port.cppm
@@ -659,6 +660,7 @@ target_sources(pbsd PUBLIC FILE_SET CXX_MODULES FILES
   usr.bin/ktrace/subr_m/port.cppm
   usr.bin/login/login_fbtab_m/port.cppm
   usr.bin/mail/getname_m/port.cppm
+  usr.bin/mkstr/mkstr_m/port.cppm
   usr.bin/mkuzip/mkuz_time_m/port.cppm
   usr.bin/patch/mkpath_m/port.cppm
   usr.bin/protect/protect_m/port.cppm

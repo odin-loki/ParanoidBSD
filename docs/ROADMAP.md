@@ -195,9 +195,27 @@ by how many implementations there really are. Both are in CI as reports.
       and the ones that fail want the tree's own library headers (`kvm.h`,
       `vis.h`, `libxo/xo.h`, `histedit.h`). `bin/ed` gave up one real
       defect on the first pass.
-- [ ] **74 `pbsd/` modules on disk are not in `CMakeLists.txt`** because
-      nothing has verified them. `check_pbsd_modules.py` reports the number;
-      nothing reduces it.
+- [ ] **72 `pbsd/` modules on disk are not in `CMakeLists.txt`.** It was
+      74, and "because nothing has verified them" was the reason given.
+      They have been verified now, in the only way a Linux host can: all 74
+      were compiled with `clang++ -std=c++23 -x c++-module --precompile`,
+      and **none** of them built. 69 fail on the headers the exception list
+      already names — 26 on `math_private.h`, 10 on `namespace.h`, 3 each
+      on `sys/systm.h` and `fpmath.h`, the rest on `sys/sysctl.h`,
+      `sys/sockio.h`, `cam/cam.h`, `ipf.h`, `ufs/ufs/dinode.h` — so they
+      are not a separate problem from the 149 below, they are more of it,
+      and the FreeBSD runner the oracle already uses is where all 221 get
+      judged.
+      Five failed on something Linux CAN judge, and two of those were real
+      C++ defects in PBSD's own generated code, now fixed and listed:
+      `usr.bin/mkstr` had `export namespace` around file-scope `static`
+      declarations, which is ill-formed — every module already in
+      `CMakeLists.txt` uses a plain `namespace` with `export` per
+      declaration — and `lib/libc/gen/fmtmsg` assigned `malloc()`'s
+      `void *` straight to a `char *` and passed a string literal to a
+      `char *` parameter `nextcomp()` never writes through. The other
+      three (`lib/libcrypt`'s two, ipfilter's `ip_raudio_pxy`) fail on
+      FreeBSD-only declarations and belong with the 69.
 - [ ] **149 modules fail the Linux build** and are held by a ratchet. Every
       one is a FreeBSD private header that Linux cannot supply. A FreeBSD
       runner would move that number to its real value, whatever that is.
