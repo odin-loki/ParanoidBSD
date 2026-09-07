@@ -49,6 +49,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SRC = HERE.parent.parent / "hbsd" / "src"
 SHARE_MK = SRC / "share" / "mk"
+OBJDIR = os.environ.get("PBSD_BMAKE_OBJDIR", "/tmp/pbsd_bmake_obj")
 
 # The same six the sweep analyses, spelled the way includes.py spells
 # them, so a caller can hand either table's key to either.
@@ -71,7 +72,7 @@ MACHINE_OF = {
 # are.  `sys' is not here either - the kernel's authority answers for it.
 SCOPES = ("lib", "libexec", "bin", "sbin", "usr.bin", "usr.sbin",
           "kerberos5", "cddl", "rescue", "stand", "tests",
-          "secure", "games")
+          "secure", "games", "include")
 
 SUFFIXES = (".c", ".cc", ".cpp", ".cxx", ".S", ".s", ".m", ".y", ".l")
 
@@ -98,9 +99,14 @@ def _bmake(d: Path, arch: str, want: list[str], src: Path,
         cmd += ["-V", v]
     cmd += [f"MACHINE={mach}", f"MACHINE_ARCH={marcH}",
             f"MACHINE_CPUARCH={cpuarch}", f"SRCTOP={src}"]
+    # bmake creates an object directory as a side effect of reading a
+    # Makefile that has one - 15,313 of them under /usr/obj the first
+    # time this ran over the tree. MAKEOBJDIRPREFIX puts them somewhere
+    # disposable instead; MK_AUTO_OBJ=no does not stop it.
+    env = dict(os.environ, MAKEOBJDIRPREFIX=OBJDIR)
     try:
         p = subprocess.run(cmd, cwd=d, capture_output=True, text=True,
-                           timeout=timeout)
+                           timeout=timeout, env=env)
     except (subprocess.TimeoutExpired, OSError):
         return None
     lines = p.stdout.split("\n")
@@ -187,6 +193,100 @@ def build(arch: str, src: Path = SRC, jobs: int = 8
                 continue
             named |= resolve(srcs, path, d, src)
     return named, sorted(failed)
+
+
+def ask_incs(d: Path, arch: str, src: Path = SRC, timeout: int = 40
+             ) -> dict[str, str]:
+    """{installed path: source file} for the headers this directory installs.
+
+    A program compiles against <devstat.h>, <jail.h>, <netgraph.h>,
+    <security/pam_appl.h> - headers that are in the tree but not beside
+    the program, and that the real build reaches through /usr/include
+    because someone installed them there first. The analyser has no
+    installed tree, so it has to be told, and the Makefile that installs
+    each one says exactly where it goes:
+
+        INCS=       devstat.h
+        INCSDIR=    ${INCLUDEDIR}
+
+    A directory can install more than one group - include/rpcsvc has
+    INCSGROUPS= INCS RPCHDRS, and RPCHDRS goes to ${INCLUDEDIR}/rpc, not
+    ${INCLUDEDIR}/rpcsvc - so the groups are read out of INCSGROUPS
+    rather than INCS being assumed to be all of them.
+
+    The name is resolved against .PATH like any other, because a header
+    listed here need not live in the directory that installs it. What
+    this does NOT handle is INCSNAME, which installs a file under a
+    different name than it has on disk; there are few of those and they
+    would come back as a header still not found rather than as a wrong
+    one.
+    """
+    got = _bmake(d, arch, ["INCSGROUPS", ".PATH", "INCLUDEDIR"], src, timeout)
+    if got is None:
+        return {}
+    groups = got[0].split() or ["INCS"]
+    path, incdir = got[1].split(), got[2].strip() or "/usr/include"
+    want: list[str] = []
+    for g in groups:
+        want += [g, g + "DIR"]
+    vals = _bmake(d, arch, want, src, timeout)
+    if vals is None:
+        return {}
+    dirs = [str(d)] + [x for x in path if x != "."]
+    out: dict[str, str] = {}
+    for i in range(0, len(want), 2):
+        names = vals[i].split()
+        where = vals[i + 1].strip() or incdir
+        if not where.startswith(incdir):
+            continue          # installed outside /usr/include; not a
+        sub = where[len(incdir):].strip("/")   # header a program includes
+        for n in names:
+            if "$" in n or not n.endswith((".h", ".hh", ".hpp")):
+                continue
+            # The name can carry a directory of its own -
+            # lib/libpam/libpam lists `security/pam_appl.h' and installs
+            # it into ${INCLUDEDIR}/security, so the installed path is
+            # security/pam_appl.h and not security/security/pam_appl.h.
+            base = os.path.basename(n)
+            for pdir in dirs:
+                cand = os.path.join(pdir, n)
+                if os.path.isfile(cand):
+                    out[f"{sub}/{base}" if sub else base] = cand
+                    break
+    return out
+
+
+def build_incs(arch: str, src: Path = SRC, jobs: int = 8) -> dict[str, str]:
+    """{installed path: source file} for the whole tree, this architecture."""
+    out: dict[str, str] = {}
+    dirs = makefile_dirs(src)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
+        for got in ex.map(lambda x: ask_incs(x, arch, src), dirs):
+            for k, v in got.items():
+                out.setdefault(k, v)
+    return out
+
+
+def incs_cache_path(arch: str) -> Path:
+    return Path(os.environ.get("PBSD_CACHE", "/tmp")) / \
+        f"pbsd_userland_incs_{arch}.json"
+
+
+@functools.lru_cache(maxsize=None)
+def installed_headers(arch: str = "amd64",
+                      refresh: bool = False) -> dict[str, str]:
+    p = incs_cache_path(arch)
+    if not refresh and p.is_file():
+        try:
+            return json.loads(p.read_text())
+        except (ValueError, OSError):
+            pass
+    out = build_incs(arch)
+    try:
+        p.write_text(json.dumps(out, indent=0, sort_keys=True))
+    except OSError:
+        pass
+    return out
 
 
 def cache_path(arch: str) -> Path:

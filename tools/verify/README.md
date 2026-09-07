@@ -238,6 +238,43 @@ And the reading is of the build *as configured here*: `COMPILER_FEATURES
 under `lib/libc/tests/gen` come back unnamed. That is the same fact as
 their being flag-dependent, arrived at from the other side.
 
+### /usr/include, built rather than guessed at
+
+The same question, asked of headers. A program compiles against
+`<devstat.h>`, `<netgraph.h>`, `<jail.h>`, `<security/pam_appl.h>` —
+every one of those is in the tree, none of them is beside the program,
+and the real build reaches them through `/usr/include` because
+`installworld` put them there first. Ten of the libs shard's unlisted
+ERRORs were one such header each.
+
+Adding the library's source directory to `-I` is a guess in two
+directions at once: it puts every private header in that directory on
+the path as well, and it gets the layout wrong — `<security/pam_appl.h>`
+lives in `contrib/openpam/include/security` and `<sha256.h>` in
+`sys/crypto/sha2`, neither of which any `-I` on a `lib` directory finds.
+
+So `incs_shim()` builds the layout instead. Each Makefile is asked what
+it installs and where —
+
+    INCS=       devstat.h
+    INCSDIR=    ${INCLUDEDIR}
+
+— and the answer is reproduced as a tree of symlinks, 2,079 of them,
+rooted at one directory that goes on `-I`. `INCSGROUPS` is read rather
+than `INCS` being assumed to be all of them, because `include/rpcsvc`
+has two groups going to two different directories. What lives under
+`include/` is deliberately **left out**: it is already on the path in
+the position the rest of the flag assembly puts it, and linking it in
+here as well would put a second `<stdio.h>` ahead of
+`lib/libc/include` — flag order is not cosmetic.
+
+And the rpcsvc headers, by the same rule as the kernel's generated ones:
+`include/rpcsvc/Makefile` lists twenty-two `.x` interface definitions and
+one suffix rule, so `rpc_headers()` runs the rule rather than stubbing
+the header. Thirteen ERRORs were one of those missing and nothing else;
+eleven of the twelve translation units under the six RPC `libexec`
+directories now compile, where one did.
+
 ## Why `classify.py` exists
 
 CBMC started at an arbitrary function makes that function's parameters

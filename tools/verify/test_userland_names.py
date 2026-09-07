@@ -17,7 +17,9 @@ by it. Each case below is one way the index can quietly go empty:
     MACHINE_ARCH is aarch64 and by nothing else, and an index built for
     one architecture and used for all six would say so for amd64 too;
   * the scope overlap: lib/libc's build names three sources under sys/,
-    so the two authorities are unioned and not selected between.
+    so the two authorities are unioned and not selected between;
+  * and the INCS reading, which is the same question asked of headers:
+    what each Makefile installs into /usr/include, and where.
 
 Each assertion is recomputed from the tree, so a file that moves takes
 the assertion with it rather than leaving a stale expectation behind.
@@ -99,6 +101,29 @@ def main() -> int:
     from_sys = sorted(p for p in libc if p.startswith("sys/"))
     check(len(from_sys) >= 3,
           f"scope: lib/libc's build names kernel sources too ({from_sys})")
+
+    # What each Makefile installs into /usr/include, which is how a
+    # program reaches <devstat.h> and <security/pam_appl.h> - neither
+    # of which is anywhere near the program that includes it.
+    incs = u.ask_incs(u.SRC / "lib/libdevstat", "amd64")
+    check(incs.get("devstat.h", "").endswith("lib/libdevstat/devstat.h"),
+          "INCS: lib/libdevstat installs devstat.h")
+
+    # A group that is not INCS, and a subdirectory of ${INCLUDEDIR}.
+    # lib/libpam/libpam lists `security/pam_appl.h' and installs it into
+    # ${INCLUDEDIR}/security, so the installed path is
+    # security/pam_appl.h - not security/security/pam_appl.h, which is
+    # what joining the two without a basename gives.
+    pam = u.ask_incs(u.SRC / "lib/libpam/libpam", "amd64")
+    check("security/pam_appl.h" in pam,
+          f"INCSDIR: pam_appl.h installs one level deep "
+          f"({sorted(pam)[:1]})")
+
+    # And the .PATH reading again, from the other side: that header is
+    # not in lib/libpam/libpam at all, it is in contrib/openpam.
+    check(pam.get("security/pam_appl.h", "").startswith(
+              str(u.SRC / "contrib/openpam")),
+          "INCS: and it comes from contrib/openpam through .PATH")
 
     print(f"\n{'FAILED' if FAIL else 'all checks passed'}"
           f"{f' ({FAIL})' if FAIL else ''}")

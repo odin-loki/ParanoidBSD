@@ -44,6 +44,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+import userland_names
+
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
 SYS = SRC / "sys"
@@ -1191,6 +1193,62 @@ def gen_headers() -> str:
 
 
 @functools.lru_cache(maxsize=None)
+def incs_shim(arch: str = "amd64") -> str:
+    """/usr/include, as the tree's own Makefiles say to build it.
+
+    A program compiles against <devstat.h>, <netgraph.h>, <jail.h>,
+    <security/pam_appl.h>. Every one of those is in the tree and none of
+    them is beside the program: the real build reaches them through
+    /usr/include, because `make installworld' put them there first. The
+    analyser has no installed tree, and ten of one shard's unlisted
+    ERRORs were one such header each.
+
+    The obvious fix - add the library's source directory to -I - is a
+    guess in two directions at once. It puts every private header in
+    that directory on the path as well, and it gets the installed
+    LAYOUT wrong: <security/pam_appl.h> lives in
+    contrib/openpam/include/security, <sha256.h> in sys/crypto/sha2,
+    and neither is found by -I on a lib directory.
+
+    So the layout is built rather than guessed. Each Makefile in the
+    tree is asked what it installs and where -
+
+        INCS=       devstat.h
+        INCSDIR=    ${INCLUDEDIR}
+
+    - and this reproduces the answer as a tree of symlinks, 2,079 of
+    them, rooted at one directory that goes on -I. The result is the
+    include path a program is actually compiled against, and no more:
+    a header no Makefile installs is not on it, which is the same
+    answer the build gives.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_incs_"))
+    try:
+        headers = userland_names.installed_headers(arch)
+    except Exception:
+        return d.as_posix()
+    skip = str(SRC / "include") + "/"
+    for installed, source in headers.items():
+        # include/'s own headers are already reached through -I on the
+        # tree's include directory, in the position the rest of this
+        # function puts it. Linking them in here as well would put a
+        # second copy of <stdio.h> and <sys/*.h> EARLIER on the path
+        # than lib/libc/include, which is an ordering the build chose -
+        # and flag order is not cosmetic (see kern.pre.mk and openzfs's
+        # condvar.h). Only what lives outside include/ is new here.
+        if source.startswith(skip):
+            continue
+        dst = d / installed
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            if not dst.exists():
+                dst.symlink_to(source)
+        except OSError:
+            pass
+    return d.as_posix()
+
+
+@functools.lru_cache(maxsize=None)
 def rpc_headers() -> str:
     """The rpcsvc headers the build generates, generated the same way.
 
@@ -1917,6 +1975,10 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
     # runs it. Thirteen ERRORs in one shard were a missing one of these
     # and nothing else.
     flags.append(f"-I{rpc_headers()}")
+
+    # ...and the headers the tree's other Makefiles install into
+    # /usr/include, laid out the way they install them.
+    flags.append(f"-I{incs_shim(arch)}")
 
     if rel.startswith("lib/libc"):
         flags += [f"-I{SRC}/lib/libc/include",

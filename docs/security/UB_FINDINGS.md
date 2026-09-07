@@ -4838,3 +4838,108 @@ about which hardware this tree intends to support. The inventory entry
 says `VCHIQ_UNREACHABLE` and `test_expected_errors.py` checks all six
 facts above, so the day any one of them changes the exemption fails
 rather than quietly absorbing a driver that has started building.
+
+## Sweep 10's `sys/dev`: 26 files that could not be read now can, and the
+ two findings they carried
+
+The `sys/dev` shard came back 2,563 OK / 70 ERROR against sweep 9's
+2,537 / 96: twenty-six ERROR → OK, none the other way. Two findings are
+new, and both are in files that had never compiled — which is the whole
+point of chasing ERRORs, and also the reason to read new findings
+carefully rather than count them.
+
+Neither is a defect. One is the analyser's memory model and one is a
+guard that means nothing.
+
+### `sys/dev/bwn/if_bwn.c:5317` — a punned store leaves three of four bytes undefined
+
+    uint8_t noise[4];
+    *((uint32_t *)noise) = htole32(bwn_jssi_read(mac));
+    if (noise[0] == 0x7f || noise[1] == 0x7f || noise[2] == 0x7f ||
+        noise[3] == 0x7f)
+
+`core.UndefinedBinaryOperatorResult`: *the left operand of `==` is a
+garbage value* — on `noise[1]`, not `noise[0]`. The analyser binds a
+store made through a wider type to the region's **first** element and
+leaves the rest of the array undefined. Nine lines reproduce it with no
+driver, no headers and no configuration:
+
+    uint8_t noise[4];
+    *((uint32_t *)noise) = __builtin_bswap32(src());
+    if (noise[0] == 0x7f || noise[1] == 0x7f)   /* noise[1] is garbage */
+
+so it is a property of the instrument, not of the code under it. The
+pattern appears 71 times under `sys/`, so this class will recur and is
+worth recognising on sight.
+
+Passing `-fno-strict-aliasing` — which the kernel really is compiled
+with, `sys/conf/kern.pre.mk:67-68` adds it whenever `COPTFLAGS` carries
+`-O2`, and the default `COPTFLAGS?=-O2 -pipe` does — does **not** change
+the result: checked on the reproducer, same warning with and without.
+The analyser's store model is not the aliasing rules, so the flag would
+be added for faithfulness and would silence nothing. It is left off, and
+recorded here so the next person does not repeat the experiment.
+
+### `sys/dev/sound/pcm/feeder_volume.c:279` — a NULL check after the dereference
+
+`core.NullDereference` on `muted[j]`, reached from
+
+    vol   = c->volume[SND_VOL_C_VAL(info->volume_class)];   /* :250 */
+    muted = c->muted[SND_VOL_C_VAL(info->volume_class)];    /* :251 */
+    ...
+    d = (c != NULL) ? c->parentsnddev : NULL;               /* :272 */
+
+The checker is reading the code's own claim: a function that tests `c !=
+NULL` at `:272` is a function whose author thought `c` could be NULL,
+and if it could, `:250` dereferenced it twenty-two lines earlier without
+looking.
+
+Only one of those two readings can be right, and it is not the guard's.
+The two lines at `:272-273` are verbatim `chn_syncstate()`
+(`sys/dev/sound/pcm/channel.c:2129-2131`), where the channel genuinely
+can be NULL and the function returns if it is. Copied into
+`feed_volume_feed()`, which is reached only through a channel's own
+feeder chain, they guard nothing that `:250` has not already settled.
+
+Left alone. Deleting a vestigial NULL test from upstream is churn with
+no behaviour behind it, and the finding is now on the record with the
+reason it is not a bug — which is what the next sweep needs.
+
+## `libexec/ypxfr`: two `strlen(NULL)` that the two calls rule out
+
+Generating the rpcsvc headers took eleven of the twelve translation
+units under the six RPC `libexec` directories from ERROR to OK, and
+`ypxfr_main.c` came with two `unix.cstring.NullArg` findings at `:448`
+and `:458`. Both are infeasible, for different reasons, and both are
+worth writing down because the second one is not obvious.
+
+`:448`, `strlen(ypxfr_master)`. `ypxfr_master` is `strdup()`'d at `:318`
+without a NULL check — but `:325` is `if (ypxfr_master == NULL)`, and
+the `ypxfr_get_master()` it then calls **is** checked, with
+`ypxfr_exit()` on failure. The unchecked `strdup` is caught by the test
+that follows it.
+
+`:458`, `strlen(ypxfr_dest_domain)`. This one turns on libc:
+
+    if (!yp_get_default_domain(&ypxfr_local_domain) &&    /* :266 */
+        _yp_check(&ypxfr_local_domain))
+            ypxfr_use_yplib = 1;
+    ...
+    if (ypxfr_dest_domain == NULL) {
+            if (ypxfr_use_yplib)
+                    yp_get_default_domain(&ypxfr_dest_domain);   /* :277 */
+
+The second call's return value is ignored, and on failure
+`yp_get_default_domain()` sets `*domp = NULL` (`lib/libc/yp/yplib.c:747`)
+— so on the face of it `ypxfr_dest_domain` can be NULL at `:458`,
+`:478` and `:528`. It cannot, and the reason is not in this file:
+`yp_get_default_domain_locked()` only calls `getdomainname()` when its
+static `_yp_domain` is still empty, and `:277` is reached only when
+`:266` already succeeded and filled it. The second call cannot fail
+after the first succeeded.
+
+That invariant lives in libc, is undocumented, and is the only thing
+between this code and a NULL dereference. Recorded rather than
+"fixed": adding a check would be reasonable defensive practice and
+would also assert something about libc's caching that no comment
+anywhere claims.
