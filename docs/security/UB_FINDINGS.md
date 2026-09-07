@@ -4095,6 +4095,41 @@ the whole tree rather than per architecture. Naming it here is the point:
 an ERROR with a known cause and a known fix is a different thing from an
 ERROR nobody has read.
 
+### A submodule's variables are in its parent's `Makefile.inc`
+
+`sys/modules/mt76/mt7615/Makefile` opens
+
+```make
+MT76_DRIVER_NAME=	mt7615
+.include <kmod.opts.mk>
+.PATH: ${DEVDIR}
+```
+
+and `DEVDIR` is defined in `sys/modules/mt76/Makefile.inc`, one directory
+up — bmake pulls it in through `bsd.init.mk`, which that `.include` on
+line 2 reaches. Reading each `Makefile` alone, the `.PATH` expanded to
+nothing, and all 135 mt76 translation units found none of their own
+headers. The same file carries `MT76_PCI`, `MT76_ACPI`, the shared
+`CFLAGS` and the `.if` conditions the submodule Makefiles test.
+
+The reader walks up to `sys/modules` collecting them now, and does it in
+two passes: variables first (the Makefile's own line-1 assignment wins,
+then the `.inc` chain nearest-first), then `.PATH` and `CFLAGS` with the
+table complete — because a `.PATH` can name a variable defined in a file
+read after it, and an `.if` can test one.
+
+The first pass needed a rule of its own, and it is the one place this
+tool assumes rather than reads: **a block it can prove false is skipped;
+a block it cannot decide is taken.** That is the assumption the whole
+sweep already runs on — a GENERIC-like kernel of this architecture — and
+it is what supplies `IWLWIFI_CONFIG_ACPI= 1` from inside
+`.if ${KERN_OPTS:MDEV_ACPI}`, which every amd64 and arm64 config
+satisfies. With it, `fw/acpi.c`'s twenty errors go, which is the gap
+named two sections above; `MT76_ACPI?= 0` and `RTW88_USB= 0` are at
+depth 0 and stay off. Written down because the first version of this
+took the assignment unconditionally and got the right answer by
+accident.
+
 ### The readers are checked now, and the first check found a bug in one
 
 Eight readers of the build system have accumulated in `includes.py`, and
@@ -4104,10 +4139,11 @@ it gave before it was written, which is the failure mode this whole
 repository exists to catch.
 
 `tools/verify/test_includes.py` checks each — the standard, the quoted and
-unquoted `compile-with`, the `-D` dedupe, the three-valued `.if`,
-`kern.pre.mk`, the `cpu` intersection, the relative-`-I` filter — against
-both synthetic input and the real tree, and each check was confirmed to
-fail when its reader is broken. Eleven deliberate breaks, eleven failures.
+unquoted `compile-with`, the `-D` dedupe, the three-valued `.if`, the
+`Makefile.inc` chain, `kern.pre.mk`, the `cpu` intersection, the
+relative-`-I` filter — against both synthetic input and the real tree,
+and each check was confirmed to fail when its reader is broken. Twelve
+deliberate breaks, twelve failures.
 
 Three of them were silent on the first pass and are not any more: the
 relative-`-I` filter had no check at all, and the `CSTD` reader could not

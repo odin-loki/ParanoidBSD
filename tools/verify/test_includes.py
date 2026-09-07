@@ -216,6 +216,40 @@ check_that("iwlwifi does not get -DCONFIG_IWLWIFI_DEBUGFS",
 check_that("no -I resolves to the analyser's own directory",
            all(not f.startswith("-I.") for f in iwl))
 
+# bmake pulls ${.CURDIR}/../Makefile.inc in through bsd.init.mk, so a
+# submodule Makefile can open `.PATH: ${COMMONDIR}' with COMMONDIR
+# defined a directory up. mt76 does exactly that, and without the chain
+# the .PATH resolved to nothing and all 135 of its files found none of
+# their own headers.
+mt76 = by_dir.get("sys/contrib/dev/mediatek/mt76", ())
+check_that("a submodule's .PATH from the parent Makefile.inc",
+           any(f.endswith("/mediatek/mt76") for f in mt76),
+           "COMMONDIR is in sys/modules/mt76/Makefile.inc")
+check_that("...and the .inc's own CFLAGS with it",
+           "-DCONFIG_ARCH_DMA_ADDR_T_64BIT" in mt76)
+# A variable set inside a condition the tool cannot decide is taken; one
+# inside a condition it can decide as FALSE is not. iwlwifi sets
+# IWLWIFI_CONFIG_ACPI=1 inside `.if ${KERN_OPTS:MDEV_ACPI}' (undecidable,
+# and true on every amd64 and arm64 config), and mt76's Makefile.inc sets
+# MT76_ACPI?=0 at depth 0.
+check_that("a variable from an undecidable block is taken",
+           "-DCONFIG_ACPI" in iwl,
+           "and it is what makes iwlwifi's fw/acpi.c compile")
+check_that("...but a definitely-false block's is not",
+           "-DCONFIG_ACPI" not in by_dir.get("sys/contrib/dev/mediatek/mt76",
+                                             ()),
+           "MT76_ACPI?= 0")
+rtw = by_dir.get("sys/contrib/dev/rtw88", ())
+check_that("rtw88 gets its DEBUGFS, which is 1", "-DCONFIG_RTW88_DEBUGFS" in rtw)
+for off in ("-DCONFIG_RTW88_USB", "-DCONFIG_RTW88_LEDS", "-DCONFIG_PM"):
+    check_that(f"...and not {off}, which is 0", off not in rtw)
+
+mt7615 = by_dir.get("sys/contrib/dev/mediatek/mt76/mt7615", ())
+check_that("a per-driver .PATH resolves ${MT76_DRIVER_NAME}",
+           any(f.endswith("/mt76/mt7615") for f in mt7615),
+           "DEVDIR is ${COMMONDIR}/${MT76_DRIVER_NAME}, and the name is "
+           "set on line 1 of the submodule's own Makefile")
+
 # The whole point, end to end: one real translation unit's flags.
 rel = "sys/contrib/dev/iwlwifi/mvm/rxmq.c"
 fl = includes.include_flags(SRC / rel, includes.arch_of(rel))

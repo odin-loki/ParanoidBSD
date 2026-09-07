@@ -562,15 +562,87 @@ def kernel_flag_index() -> tuple[dict[str, tuple[str, ...]],
                 by_file.setdefault("sys/" + m.group("src"), []).extend(fl)
 
     for mk in sorted((SYS / "modules").rglob("Makefile")):
+        # bmake pulls ${.CURDIR}/../Makefile.inc in from bsd.init.mk,
+        # which every one of these Makefiles reaches through its
+        # `.include <kmod.opts.mk>' on line 3. sys/modules/mt76/*/Makefile
+        # opens `.PATH: ${COMMONDIR}' and COMMONDIR is defined in
+        # sys/modules/mt76/Makefile.inc, one directory up - so the
+        # .PATH resolved to nothing and every mt76 driver, 135
+        # translation units, found none of its own headers. Walk up to
+        # sys/modules collecting them; nested submodules inherit each
+        # level, which is exactly what bmake does.
+        incs = []
+        d = mk.parent.parent
+        while d != SYS / "modules" and d != d.parent:
+            inc = d / "Makefile.inc"
+            if inc.is_file():
+                incs.append(inc)
+            d = d.parent
+        if (SYS / "modules" / "Makefile.inc").is_file():
+            incs.append(SYS / "modules" / "Makefile.inc")
+
         text = mk.read_text(errors="replace").replace("\\\n", " ")
         vars = dict(base)
         vars[".CURDIR"] = str(mk.parent)
+        # Two passes. The Makefile's own assignments come first (its
+        # `MT76_DRIVER_NAME= mt7615' is line 1 and the .inc's DEVDIR
+        # expands it), then the .inc chain nearest-first; then the whole
+        # lot is re-read for .PATH and CFLAGS with the table complete,
+        # because a .PATH can name a variable defined in a file read
+        # after it and an .if can test one.
+        for src in [text] + [i.read_text(errors="replace").replace("\\\n", " ")
+                             for i in incs]:
+            # A block this pass can prove FALSE is skipped; one it
+            # cannot decide is taken. That asymmetry is the assumption
+            # the whole sweep already runs on - a GENERIC-like kernel of
+            # this architecture - and it is what supplies
+            # `IWLWIFI_CONFIG_ACPI= 1' from inside
+            # `.if ${KERN_OPTS:MDEV_ACPI}', which every amd64 and arm64
+            # config satisfies. Taking a definitely-dead assignment
+            # instead would let a variable nobody sets decide a later
+            # condition, which is how -DCONFIG_ACPI first arrived here:
+            # by accident.
+            dead = 0
+            for line in src.splitlines():
+                st = line.strip()
+                if st.startswith((".if", ".for")):
+                    if dead:
+                        dead += 1
+                    elif st.startswith(".ifdef"):
+                        dead = 1 if st.partition(" ")[2].strip() not in vars else 0
+                    elif st.startswith(".ifndef"):
+                        dead = 1 if st.partition(" ")[2].strip() in vars else 0
+                    elif st.startswith(".if"):
+                        dead = 1 if _mk_cond(st.partition(" ")[2],
+                                             vars) is False else 0
+                    continue
+                if st.startswith((".endif", ".endfor")):
+                    dead = max(0, dead - 1)
+                    continue
+                if st.startswith((".else", ".elif")):
+                    # The complement of a block we skipped is live, and
+                    # of one we took is dead. Undecidable stays taken.
+                    dead = 0 if dead == 1 else dead
+                    continue
+                if dead:
+                    continue
+                v = MAKE_VAR.match(line)
+                if v and v.group("name") not in ("CFLAGS", "SRCS"):
+                    vars.setdefault(v.group("name"),
+                                    _expand(v.group("val").strip(), vars))
+        # A variable whose value named another that was not known yet.
+        for k, v2 in list(vars.items()):
+            if "${" in v2:
+                vars[k] = _expand(v2, vars)
+
         paths: list[str] = []
         flags: list[str] = []
         # A stack of "is this block live?", so a nested .if inside a
         # skipped one stays skipped.
         live: list[bool] = []
-        for line in text.splitlines():
+        for line in "\n".join(
+                [text] + [i.read_text(errors="replace").replace("\\\n", " ")
+                          for i in incs]).splitlines():
             st = line.strip()
             if st.startswith(".if"):
                 cond = None
@@ -610,10 +682,6 @@ def kernel_flag_index() -> tuple[dict[str, tuple[str, ...]],
                 flags.extend(_kernel_dirs(
                     m.group("rest").replace("$S", str(SYS)), vars))
                 continue
-            v = MAKE_VAR.match(line)
-            if v and v.group("name") not in ("CFLAGS", "SRCS"):
-                vars.setdefault(v.group("name"),
-                                _expand(v.group("val").strip(), vars))
         if not flags:
             continue
         # A module's own directory too: sys/modules/<x>/ holds generated
