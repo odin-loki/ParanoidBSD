@@ -42,6 +42,32 @@ EXPECTED = {
     "libexec/bootpd/trygetif.c":    "a hand-run probe, not in SRCS. NOT_NAMED",
     "libexec/bootpd/trylook.c":     "a hand-run probe, not in SRCS. NOT_NAMED",
 
+    # ipfilter's application proxies. ip_proxy.c is the translation
+    # unit and it #includes the nine of them by name, three of those
+    # inside `#if defined(_KERNEL)'. The tenth, ip_dns_pxy.c, is
+    # referenced by nothing anywhere in the tree - ipfilter ships it and
+    # FreeBSD has never wired it up.
+    "sys/netpfil/ipfilter/netinet/ip_ftp_pxy.c":
+        "INCLUDED_BY:sys/netpfil/ipfilter/netinet/ip_proxy.c",
+    "sys/netpfil/ipfilter/netinet/ip_tftp_pxy.c":
+        "INCLUDED_BY:sys/netpfil/ipfilter/netinet/ip_proxy.c",
+    "sys/netpfil/ipfilter/netinet/ip_rcmd_pxy.c":
+        "INCLUDED_BY:sys/netpfil/ipfilter/netinet/ip_proxy.c",
+    "sys/netpfil/ipfilter/netinet/ip_pptp_pxy.c":
+        "INCLUDED_BY:sys/netpfil/ipfilter/netinet/ip_proxy.c",
+    "sys/netpfil/ipfilter/netinet/ip_irc_pxy.c":
+        "INCLUDED_BY:sys/netpfil/ipfilter/netinet/ip_proxy.c",
+    "sys/netpfil/ipfilter/netinet/ip_raudio_pxy.c":
+        "INCLUDED_BY:sys/netpfil/ipfilter/netinet/ip_proxy.c",
+    "sys/netpfil/ipfilter/netinet/ip_netbios_pxy.c":
+        "INCLUDED_BY:sys/netpfil/ipfilter/netinet/ip_proxy.c",
+    "sys/netpfil/ipfilter/netinet/ip_ipsec_pxy.c":
+        "INCLUDED_BY:sys/netpfil/ipfilter/netinet/ip_proxy.c",
+    "sys/netpfil/ipfilter/netinet/ip_rpcb_pxy.c":
+        "INCLUDED_BY:sys/netpfil/ipfilter/netinet/ip_proxy.c",
+    "sys/netpfil/ipfilter/netinet/ip_dns_pxy.c":
+        "a tenth proxy nothing includes and nothing builds. NOT_NAMED",
+
     # not a translation unit: #included by another file
     "sys/kern/kern_ctf.c":          "#included by kern_linker.c",
     "sys/kern/subr_syscall.c":      "#included by each arch's trap.c",

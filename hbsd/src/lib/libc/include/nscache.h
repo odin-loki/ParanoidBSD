@@ -87,6 +87,8 @@ name##_mp_endstate(void *s) {						\
 									\
 	if (mp_state->mp_read_session != INVALID_CACHED_MP_READ_SESSION)\
 		__close_cached_mp_read_session(mp_state->mp_read_session);\
+									\
+	free(mp_state);							\
 }									\
 NSS_TLS_HANDLING(name##_mp);						\
 									\

@@ -77,6 +77,24 @@ def kernel_names() -> frozenset[str]:
             m = re.match(r"^(\S+\.[cS])\s", line)
             if m:
                 named.add("sys/" + m.group(1))
+                continue
+            # Twenty-five entries in files* name an OBJECT, not a
+            # source, and say where the source is in a `dependency':
+            #
+            #   aesni_ghash.o  optional aesni \
+            #       dependency "$S/crypto/aesni/aesni_ghash.c" \
+            #       compile-with "${CC} -c ... -maes -mpclmul -msse4"
+            #
+            # because those three need instruction-set flags the rest
+            # of the kernel is not built with. Matching only `<x>.c '
+            # called all five aesni sources unbuilt - a file the kernel
+            # certainly compiles, reported as scratch.
+            if re.match(r"^\S+\.o\s", line):
+                for d in re.findall(r'dependency\s+"([^"]*)"', line):
+                    for w in d.split():
+                        if w.endswith((".c", ".S")):
+                            named.add("sys/" + w.replace("$S/", "")
+                                      .replace("${SRCTOP}/sys/", ""))
     by_file, by_src, _ = includes.kernel_flag_index("amd64")
     return frozenset(named | set(by_file) | set(by_src))
 

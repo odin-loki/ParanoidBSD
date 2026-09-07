@@ -112,31 +112,25 @@ print("\n== and the NOT_NAMED prefixes really are named by nothing")
 # in sys/cddl/boot/zfs. Matching basenames called the second one built and
 # reported a prefix that is correct as absorbing live code.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import includes  # noqa: E402
+import sweep_report  # noqa: E402
 
-_named: set[str] = set()
-for _p in sorted(SYS.glob("conf/files*")):
-    _t = _p.read_text(errors="replace").replace("\\\n", " ")
-    for _l in _t.splitlines():
-        _m = re.match(r"^(\S+\.[cS])\s", _l)
-        if _m:
-            _named.add("sys/" + _m.group(1))
-_by_file, _by_src, _ = includes.kernel_flag_index("amd64")
-_named |= set(_by_file) | set(_by_src)
-# And userland's authority alongside the kernel's, because a NOT_NAMED
-# prefix under lib/ or libexec/ is a claim about Makefiles, not about
-# sys/conf/files -- which has no opinion about lib/libc at all and would
-# grant the claim to every source in it.
-import userland_names  # noqa: E402
-_named |= set(userland_names.names())
+# One authority, not a copy of one. This block used to re-implement
+# sweep_report's reading of sys/conf/files* and got to keep its own
+# bugs: when that reading learned the `<name>.o ... dependency
+# "$S/x.c"' form -- twenty-five entries, aesni's three among them --
+# only one of the two copies learned it. sweep_report.names_it() is
+# both authorities, kernel and userland, unioned; asking it here means
+# the inventory and the sweep report can never disagree about what the
+# build names.
 
 # It has to be able to say "named", or it says "not named" to everything.
 # One from each authority, for the same reason.
 for built in ("sys/dev/pci/pci.c", "sys/kern/kern_exec.c",
               "sys/vm/vm_page.c",
               "sys/contrib/openzfs/module/zfs/blake3_zfs.c",
+              "sys/crypto/aesni/aesni_ghash.c",
               "lib/libc/gen/getcwd.c", "libexec/rtld-elf/rtld.c"):
-    check(f"the build does name {built}", built in _named,
+    check(f"the build does name {built}", sweep_report.names_it(built),
           "if this fails every check below passes for the wrong reason")
 
 _claimed = [pre for pre, why in NOT_BUILT.items() if why.endswith("NOT_NAMED")]
@@ -145,7 +139,7 @@ for pre in _claimed:
     d = ROOT / "hbsd" / "src" / pre.rstrip("/")
     srcs = sorted(q.relative_to(ROOT / "hbsd" / "src").as_posix()
                   for q in d.glob("*.c")) if d.is_dir() else []
-    named_here = [s for s in srcs if s in _named]
+    named_here = [s for s in srcs if sweep_report.names_it(s)]
     check(f"{pre} is named by nothing", not named_here,
           f"the build names {named_here[:3]}, so this prefix is absorbing "
           f"ERRORs from code that IS compiled")
@@ -161,7 +155,7 @@ _claimed_f = [f for f, why in EXPECTED.items() if why.endswith("NOT_NAMED")]
 check("some file makes the NOT_NAMED claim", bool(_claimed_f))
 for _f in _claimed_f:
     check(f"{_f} exists", (ROOT / "hbsd" / "src" / _f).is_file())
-    check(f"{_f} is named by nothing", _f not in _named,
+    check(f"{_f} is named by nothing", not sweep_report.names_it(_f),
           "the build does name it, so this entry is hiding a real "
           "coverage gap")
 

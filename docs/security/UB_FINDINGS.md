@@ -5119,3 +5119,80 @@ checker reaches it through `RB_GENERATE_STATIC`'s generated body, where
 the node under comparison is whatever the caller supplied. Same class as
 the `phy_n` five: an invariant held by every caller and asserted by
 none.
+
+## Sweep 11's libs shard: 24 more files read, and one real leak the
+ checker did not report
+
+Reading userland's real `CFLAGS` out of bmake took the libs shard from
+1,558 OK / 72 ERROR to **1,582 / 48** — 24 `ERROR -> OK`, none the other
+way — and its unlisted ERRORs from 57 to 22. Eighteen findings are new,
+and almost all of them are in libc's name-service switch: `getpwent.c`,
+`getgrent.c`, `getservent.c`, `getprotoent.c`, `getrpcent.c`. Those
+files need `-DNS_CACHING`, `-DYP` and `-DHESIOD`, which live in
+`lib/libc/Makefile`'s chain, and until bmake was asked for them the NSS
+code had never been analysed at all.
+
+Twenty of the eighteen-plus-duplicates land on one line each, four at a
+time:
+
+    lib/libc/gen/getpwent.c:420  Potential leak of memory pointed to by
+                                 'mp_state'  [unix.Malloc]   (x4)
+
+and line 420 is `NSS_MP_CACHE_HANDLING(passwd);` — one macro,
+instantiated five times across the five files, four functions deep each.
+
+**What the checker is complaining about is not a leak.**
+`nss_tls.h:67-70` does
+
+    *p = calloc(1, sizeof(**p));
+    if (*p == NULL)
+            return (ENOMEM);
+    rv = _pthread_setspecific(name##_state_key, *p);
+
+and the analyser does not model `_pthread_setspecific()` as taking
+ownership, so the allocation looks abandoned at the end of `getstate`.
+Four reports per instantiation, five instantiations, in every NSS
+consumer. That is the same class as `M_WAITOK` in the kernel: an
+ownership transfer the instrument cannot see.
+
+**Reading it led to one that is real, and that the checker never
+mentions.** The pointer `_pthread_setspecific()` takes is freed by the
+key's destructor when the thread exits — and `NSS_MP_CACHE_HANDLING`'s
+destructor did not free it:
+
+    static void
+    name##_mp_endstate(void *s) {
+        struct name##_mp_state *mp_state = (struct name##_mp_state *)s;
+        if (mp_state->mp_write_session != INVALID_CACHED_MP_WRITE_SESSION)
+                __abandon_cached_mp_write_session(...);
+        if (mp_state->mp_read_session != INVALID_CACHED_MP_READ_SESSION)
+                __close_cached_mp_read_session(...);
+    }                                        /* and never free(s) */
+
+Sixteen of the seventeen `_endstate` functions written out by hand in
+`lib/libc` free the state itself — `files_endstate`, `dns_endstate`,
+`nis_endstate` and `compat_endstate` in each of `getpwent.c`,
+`getgrent.c`, `getservent.c` and `getrpcent.c`, plus `nsdispatch.c`'s
+`fb_endstate`. The seventeenth, `getnetgrent.c`'s `netgr_endstate`,
+deliberately does not — and is right not to, because it is *also*
+called directly on a static (`getnetgrent.c:399`,
+`netgr_endstate(&compat_state)`) and only frees the state's members.
+The generated one is the eighteenth, is only ever a key destructor, and
+had no reason.
+
+So: one `struct <db>_mp_state` leaked per non-main thread, per NSS
+database that went through nscd, for each of `passwd`, `group`,
+`services`, `protocols` and `rpc`. Sixteen bytes each — small, and
+unbounded in a long-lived threaded server that keeps creating threads.
+
+Fixed with `free(mp_state);` in the macro's destructor. The static state
+that `nss_tls.h` hands the main thread never reaches the destructor —
+only values passed to `_pthread_setspecific()` do, and the static is not
+one of them — so freeing there is safe; and when `setspecific` itself
+fails, `nss_tls.h:71-73` already frees and clears, so there is no second
+owner.
+
+The four `unix.Malloc` reports are still there afterwards, because they
+were never about this. That is worth stating plainly: the finding was a
+false positive, and following it to its source found a defect it was not
+reporting.

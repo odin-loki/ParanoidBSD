@@ -984,6 +984,72 @@ def _option_arches() -> dict[str, frozenset[str]]:
 
 
 @functools.lru_cache(maxsize=None)
+def _declared_options() -> dict[str, str]:
+    """lower-case option name -> the spelling sys/conf/options* uses.
+
+    config(8) turns each of these into a #define in the opt_*.h named on
+    the same line - or into opt_global.h when no header is named - and
+    sys/conf/files refers to the same option in lower case. Keyed for the
+    lower-case lookup and valued with the spelling that becomes the macro.
+    """
+    out: dict[str, str] = {}
+    for f in sorted(SYS.glob("conf/options*")):
+        if not f.is_file():
+            continue
+        for line in f.read_text(errors="replace").splitlines():
+            line = line.split("#")[0].strip()
+            m = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\b", line)
+            if m:
+                out.setdefault(m.group(1).lower(), m.group(1))
+    return out
+
+
+@functools.lru_cache(maxsize=None)
+def files_option_defines() -> dict[str, tuple[str, ...]]:
+    """source under sys/ -> the -D its own `optional' clause implies.
+
+    opt_shim() writes EMPTY opt_*.h, which is what config(8) writes for an
+    option that is NOT set. That is right for a file the kernel builds
+    either way, and wrong for one whose `optional' clause NAMES the
+    option: sys/dev/random/fenestrasX/fx_brng.c is `optional
+    !random_loadable random_fenestrasx', so the only configuration that
+    compiles it has RANDOM_FENESTRASX set - and sys/sys/vdso.h:96 declares
+    fxrng_push_seed_generation() inside `#ifdef RANDOM_FENESTRASX', so
+    without it the file fails on a function that is not declared.
+
+    Only tokens sys/conf/options* declares become a -D, because those are
+    exactly the ones config(8) turns into a #define; a `device' name is
+    not one. A negated token (`!random_loadable') is left unset, which is
+    what the shim already does. For a disjunction the FIRST alternative is
+    taken - it is a configuration that builds the file, and taking all of
+    them would be a configuration that may not exist.
+    """
+    opts = _declared_options()
+    out: dict[str, tuple[str, ...]] = {}
+    for mk in sorted(SYS.rglob("files*")):
+        if not mk.is_file() or mk.suffix in (".c", ".h"):
+            continue
+        text = mk.read_text(errors="replace").replace("\\\n", " ")
+        for line in text.splitlines():
+            m = FILES_OPTIONAL.match(line)
+            if not m:
+                continue
+            toks: list[str] = []
+            for tok in m.group("opts").split():
+                if tok in ("compile-with", "no-obj", "no-depend",
+                           "dependency", "clean", "warning",
+                           "before-depend", "local"):
+                    break
+                toks.append(tok)
+            first = " ".join(toks).split("|")[0].split()
+            defs = tuple(f"-D{opts[t.lower()]}" for t in first
+                         if not t.startswith("!") and t.lower() in opts)
+            if defs:
+                out.setdefault("sys/" + m.group("src"), defs)
+    return out
+
+
+@functools.lru_cache(maxsize=None)
 def files_opt_arch_index() -> dict[str, str]:
     """source under sys/ -> the one architecture its options allow.
 
@@ -1935,6 +2001,10 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         #
         # 0 is the auto-size value, which is what every kernel config in
         # this tree gets by not mentioning maxusers at all.
+        # ...and the options this file's own `optional' clause names,
+        # which config(8) would have written into an opt_*.h. First-wins
+        # dedup means an explicit -D from a compile-with still beats it.
+        flags += list(files_option_defines().get(rel, ()))
         flags += ["-DMAXUSERS=0"]
         flags += ["-D_KERNEL", "-DGENOFFSET",
                   "-D__has_c_attribute(x)=0",
