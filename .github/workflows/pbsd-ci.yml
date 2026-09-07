@@ -104,6 +104,26 @@ jobs:
       - name: Generic atomics — lock-free on every target
         run: python3 tools/atomic_generic_check.py
 
+      # Lock-free is a precondition, not a proof. This compiles the same
+      # 618 operations twice for the six targets - once against
+      # <machine/atomic.h>, once against <sys/atomic_generic.h> - and
+      # compares the instructions, because a barrier is the whole content
+      # of an atomic operation and two headers agreeing that
+      # atomic_add_acq_32 exists says nothing about which one it emits.
+      #
+      # It is not a gate on the adoption; nothing includes the generic
+      # header yet, and 171 of 618 match. It is a gate on the MEASUREMENT:
+      # docs/migration/atomic_codegen.json holds a verdict and a digest of
+      # both sequences per operation, so a change to either header that
+      # moves the generated code is reported with the side that moved.
+      # The verdict alone was not enough - weakening an acquire to seq_cst
+      # left it at "different barrier" and the first version of this gate
+      # called that no change.
+      - name: Generic atomics — what the two headers actually emit
+        run: |
+          python3 tools/atomic_codegen_check.py \
+            --baseline docs/migration/atomic_codegen.json
+
       # sys/sys/_stdint_generic.h and _inttypes_generic.h replace five copies
       # each of <machine/_stdint.h> and <machine/_inttypes.h>. They are only a
       # replacement if they expand to the same thing, so this preprocesses

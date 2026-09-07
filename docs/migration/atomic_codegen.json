@@ -1,0 +1,2855 @@
+{
+ "_comment": "Per (architecture, operation): does sys/sys/atomic_generic.h emit the same instructions as <machine/atomic.h>, and if not, what kind of difference is it. Written by tools/atomic_codegen_check.py --freeze; checked by --baseline. A measurement, not an edited file.",
+ "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)",
+ "tree": "12948e920a1f70267a7b5ec21da6074a5cb7f493",
+ "verdicts": {
+  "amd64": {
+   "w_add_16": {
+    "g": "cb06b3d3e99c",
+    "m": "cb06b3d3e99c",
+    "v": "same"
+   },
+   "w_add_32": {
+    "g": "04b9810393d7",
+    "m": "04b9810393d7",
+    "v": "same"
+   },
+   "w_add_64": {
+    "g": "582df2854eda",
+    "m": "582df2854eda",
+    "v": "same"
+   },
+   "w_add_8": {
+    "g": "8b8a4ef51c9f",
+    "m": "8b8a4ef51c9f",
+    "v": "same"
+   },
+   "w_add_acq_16": {
+    "g": "cb06b3d3e99c",
+    "m": "cb06b3d3e99c",
+    "v": "same"
+   },
+   "w_add_acq_32": {
+    "g": "04b9810393d7",
+    "m": "04b9810393d7",
+    "v": "same"
+   },
+   "w_add_acq_64": {
+    "g": "582df2854eda",
+    "m": "582df2854eda",
+    "v": "same"
+   },
+   "w_add_acq_8": {
+    "g": "8b8a4ef51c9f",
+    "m": "8b8a4ef51c9f",
+    "v": "same"
+   },
+   "w_add_rel_16": {
+    "g": "cb06b3d3e99c",
+    "m": "cb06b3d3e99c",
+    "v": "same"
+   },
+   "w_add_rel_32": {
+    "g": "04b9810393d7",
+    "m": "04b9810393d7",
+    "v": "same"
+   },
+   "w_add_rel_64": {
+    "g": "582df2854eda",
+    "m": "582df2854eda",
+    "v": "same"
+   },
+   "w_add_rel_8": {
+    "g": "8b8a4ef51c9f",
+    "m": "8b8a4ef51c9f",
+    "v": "same"
+   },
+   "w_clear_16": {
+    "g": "f2bdbe0ca8c6",
+    "m": "f2bdbe0ca8c6",
+    "v": "same"
+   },
+   "w_clear_32": {
+    "g": "caaf1361f71e",
+    "m": "caaf1361f71e",
+    "v": "same"
+   },
+   "w_clear_64": {
+    "g": "34c54d9d4cc6",
+    "m": "34c54d9d4cc6",
+    "v": "same"
+   },
+   "w_clear_8": {
+    "g": "75ee36c01071",
+    "m": "ef6b35ee951c",
+    "v": "different instructions"
+   },
+   "w_clear_acq_16": {
+    "g": "f2bdbe0ca8c6",
+    "m": "f2bdbe0ca8c6",
+    "v": "same"
+   },
+   "w_clear_acq_32": {
+    "g": "caaf1361f71e",
+    "m": "caaf1361f71e",
+    "v": "same"
+   },
+   "w_clear_acq_64": {
+    "g": "34c54d9d4cc6",
+    "m": "34c54d9d4cc6",
+    "v": "same"
+   },
+   "w_clear_acq_8": {
+    "g": "75ee36c01071",
+    "m": "ef6b35ee951c",
+    "v": "different instructions"
+   },
+   "w_clear_rel_16": {
+    "g": "f2bdbe0ca8c6",
+    "m": "f2bdbe0ca8c6",
+    "v": "same"
+   },
+   "w_clear_rel_32": {
+    "g": "caaf1361f71e",
+    "m": "caaf1361f71e",
+    "v": "same"
+   },
+   "w_clear_rel_64": {
+    "g": "34c54d9d4cc6",
+    "m": "34c54d9d4cc6",
+    "v": "same"
+   },
+   "w_clear_rel_8": {
+    "g": "75ee36c01071",
+    "m": "ef6b35ee951c",
+    "v": "different instructions"
+   },
+   "w_cmpset_16": {
+    "g": "97ffa35fc350",
+    "m": "97ffa35fc350",
+    "v": "same"
+   },
+   "w_cmpset_32": {
+    "g": "00265dd5136d",
+    "m": "00265dd5136d",
+    "v": "same"
+   },
+   "w_cmpset_64": {
+    "g": "1c3636c6914d",
+    "m": "1c3636c6914d",
+    "v": "same"
+   },
+   "w_cmpset_8": {
+    "g": "7a6cfa9a5af4",
+    "m": "7a6cfa9a5af4",
+    "v": "same"
+   },
+   "w_cmpset_acq_16": {
+    "g": "97ffa35fc350",
+    "m": "97ffa35fc350",
+    "v": "same"
+   },
+   "w_cmpset_acq_32": {
+    "g": "00265dd5136d",
+    "m": "00265dd5136d",
+    "v": "same"
+   },
+   "w_cmpset_acq_64": {
+    "g": "1c3636c6914d",
+    "m": "1c3636c6914d",
+    "v": "same"
+   },
+   "w_cmpset_acq_8": {
+    "g": "7a6cfa9a5af4",
+    "m": "7a6cfa9a5af4",
+    "v": "same"
+   },
+   "w_cmpset_rel_16": {
+    "g": "97ffa35fc350",
+    "m": "97ffa35fc350",
+    "v": "same"
+   },
+   "w_cmpset_rel_32": {
+    "g": "00265dd5136d",
+    "m": "00265dd5136d",
+    "v": "same"
+   },
+   "w_cmpset_rel_64": {
+    "g": "1c3636c6914d",
+    "m": "1c3636c6914d",
+    "v": "same"
+   },
+   "w_cmpset_rel_8": {
+    "g": "7a6cfa9a5af4",
+    "m": "7a6cfa9a5af4",
+    "v": "same"
+   },
+   "w_fcmpset_16": {
+    "g": "ba21b245aeaa",
+    "m": "3f9b76f15850",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_32": {
+    "g": "eacbee34c0ad",
+    "m": "02161bd37039",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_64": {
+    "g": "96bdde52f1ff",
+    "m": "f57108d72507",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_8": {
+    "g": "574f337142cd",
+    "m": "ad4aaa4797bb",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_acq_16": {
+    "g": "ba21b245aeaa",
+    "m": "3f9b76f15850",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_acq_32": {
+    "g": "eacbee34c0ad",
+    "m": "02161bd37039",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_acq_64": {
+    "g": "96bdde52f1ff",
+    "m": "f57108d72507",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_acq_8": {
+    "g": "574f337142cd",
+    "m": "ad4aaa4797bb",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_16": {
+    "g": "ba21b245aeaa",
+    "m": "3f9b76f15850",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_32": {
+    "g": "eacbee34c0ad",
+    "m": "02161bd37039",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_64": {
+    "g": "96bdde52f1ff",
+    "m": "f57108d72507",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_8": {
+    "g": "574f337142cd",
+    "m": "ad4aaa4797bb",
+    "v": "different sequence length"
+   },
+   "w_fence_acq": {
+    "g": "5940592ef8ea",
+    "m": "5940592ef8ea",
+    "v": "same"
+   },
+   "w_fence_acq_rel": {
+    "g": "5940592ef8ea",
+    "m": "5940592ef8ea",
+    "v": "same"
+   },
+   "w_fence_rel": {
+    "g": "5940592ef8ea",
+    "m": "5940592ef8ea",
+    "v": "same"
+   },
+   "w_fence_seq_cst": {
+    "g": "6f5401ad4b73",
+    "m": "3a21bda5c983",
+    "v": "different barrier"
+   },
+   "w_fetchadd_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_32": {
+    "g": "a5bf97cf12ef",
+    "m": "a5bf97cf12ef",
+    "v": "same"
+   },
+   "w_fetchadd_64": {
+    "g": "e09dbcc05aa9",
+    "m": "e09dbcc05aa9",
+    "v": "same"
+   },
+   "w_fetchadd_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_64": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_64": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_8": {
+    "v": "generic only"
+   },
+   "w_load_16": {
+    "g": "6f7e4a660f3c",
+    "m": "6f7e4a660f3c",
+    "v": "same"
+   },
+   "w_load_32": {
+    "g": "c62f9264d2be",
+    "m": "c62f9264d2be",
+    "v": "same"
+   },
+   "w_load_64": {
+    "g": "70786300dbf4",
+    "m": "70786300dbf4",
+    "v": "same"
+   },
+   "w_load_8": {
+    "g": "b3f4b7ebff58",
+    "m": "b3f4b7ebff58",
+    "v": "same"
+   },
+   "w_load_acq_16": {
+    "g": "6f7e4a660f3c",
+    "m": "6f7e4a660f3c",
+    "v": "same"
+   },
+   "w_load_acq_32": {
+    "g": "c62f9264d2be",
+    "m": "c62f9264d2be",
+    "v": "same"
+   },
+   "w_load_acq_64": {
+    "g": "70786300dbf4",
+    "m": "70786300dbf4",
+    "v": "same"
+   },
+   "w_load_acq_8": {
+    "g": "b3f4b7ebff58",
+    "m": "b3f4b7ebff58",
+    "v": "same"
+   },
+   "w_readandclear_16": {
+    "v": "generic only"
+   },
+   "w_readandclear_32": {
+    "g": "35b75ee65b99",
+    "m": "35b75ee65b99",
+    "v": "same"
+   },
+   "w_readandclear_64": {
+    "g": "b4959bc339b2",
+    "m": "b4959bc339b2",
+    "v": "same"
+   },
+   "w_readandclear_8": {
+    "v": "generic only"
+   },
+   "w_set_16": {
+    "g": "516cf6703c04",
+    "m": "516cf6703c04",
+    "v": "same"
+   },
+   "w_set_32": {
+    "g": "f7a1d78b603b",
+    "m": "f7a1d78b603b",
+    "v": "same"
+   },
+   "w_set_64": {
+    "g": "8678a8b177e3",
+    "m": "8678a8b177e3",
+    "v": "same"
+   },
+   "w_set_8": {
+    "g": "3388cf1f59ac",
+    "m": "3388cf1f59ac",
+    "v": "same"
+   },
+   "w_set_acq_16": {
+    "g": "516cf6703c04",
+    "m": "516cf6703c04",
+    "v": "same"
+   },
+   "w_set_acq_32": {
+    "g": "f7a1d78b603b",
+    "m": "f7a1d78b603b",
+    "v": "same"
+   },
+   "w_set_acq_64": {
+    "g": "8678a8b177e3",
+    "m": "8678a8b177e3",
+    "v": "same"
+   },
+   "w_set_acq_8": {
+    "g": "3388cf1f59ac",
+    "m": "3388cf1f59ac",
+    "v": "same"
+   },
+   "w_set_rel_16": {
+    "g": "516cf6703c04",
+    "m": "516cf6703c04",
+    "v": "same"
+   },
+   "w_set_rel_32": {
+    "g": "f7a1d78b603b",
+    "m": "f7a1d78b603b",
+    "v": "same"
+   },
+   "w_set_rel_64": {
+    "g": "8678a8b177e3",
+    "m": "8678a8b177e3",
+    "v": "same"
+   },
+   "w_set_rel_8": {
+    "g": "3388cf1f59ac",
+    "m": "3388cf1f59ac",
+    "v": "same"
+   },
+   "w_store_16": {
+    "g": "eb88f4088f81",
+    "m": "eb88f4088f81",
+    "v": "same"
+   },
+   "w_store_32": {
+    "g": "0dc3ce693d3a",
+    "m": "0dc3ce693d3a",
+    "v": "same"
+   },
+   "w_store_64": {
+    "g": "5aa5100cb226",
+    "m": "5aa5100cb226",
+    "v": "same"
+   },
+   "w_store_8": {
+    "g": "a3574c88d205",
+    "m": "a3574c88d205",
+    "v": "same"
+   },
+   "w_store_rel_16": {
+    "g": "eb88f4088f81",
+    "m": "eb88f4088f81",
+    "v": "same"
+   },
+   "w_store_rel_32": {
+    "g": "0dc3ce693d3a",
+    "m": "0dc3ce693d3a",
+    "v": "same"
+   },
+   "w_store_rel_64": {
+    "g": "5aa5100cb226",
+    "m": "5aa5100cb226",
+    "v": "same"
+   },
+   "w_store_rel_8": {
+    "g": "a3574c88d205",
+    "m": "a3574c88d205",
+    "v": "same"
+   },
+   "w_subtract_16": {
+    "g": "d700983169e7",
+    "m": "d700983169e7",
+    "v": "same"
+   },
+   "w_subtract_32": {
+    "g": "b84be3ca197c",
+    "m": "b84be3ca197c",
+    "v": "same"
+   },
+   "w_subtract_64": {
+    "g": "70a8591d5d74",
+    "m": "70a8591d5d74",
+    "v": "same"
+   },
+   "w_subtract_8": {
+    "g": "56257ae19d83",
+    "m": "56257ae19d83",
+    "v": "same"
+   },
+   "w_subtract_acq_16": {
+    "g": "d700983169e7",
+    "m": "d700983169e7",
+    "v": "same"
+   },
+   "w_subtract_acq_32": {
+    "g": "b84be3ca197c",
+    "m": "b84be3ca197c",
+    "v": "same"
+   },
+   "w_subtract_acq_64": {
+    "g": "70a8591d5d74",
+    "m": "70a8591d5d74",
+    "v": "same"
+   },
+   "w_subtract_acq_8": {
+    "g": "56257ae19d83",
+    "m": "56257ae19d83",
+    "v": "same"
+   },
+   "w_subtract_rel_16": {
+    "g": "d700983169e7",
+    "m": "d700983169e7",
+    "v": "same"
+   },
+   "w_subtract_rel_32": {
+    "g": "b84be3ca197c",
+    "m": "b84be3ca197c",
+    "v": "same"
+   },
+   "w_subtract_rel_64": {
+    "g": "70a8591d5d74",
+    "m": "70a8591d5d74",
+    "v": "same"
+   },
+   "w_subtract_rel_8": {
+    "g": "56257ae19d83",
+    "m": "56257ae19d83",
+    "v": "same"
+   },
+   "w_swap_16": {
+    "v": "generic only"
+   },
+   "w_swap_32": {
+    "g": "d8018c1b49e7",
+    "m": "d8018c1b49e7",
+    "v": "same"
+   },
+   "w_swap_64": {
+    "g": "6fa1da8226aa",
+    "m": "6fa1da8226aa",
+    "v": "same"
+   },
+   "w_swap_8": {
+    "v": "generic only"
+   }
+  },
+  "arm": {
+   "w_add_16": {
+    "v": "generic only"
+   },
+   "w_add_32": {
+    "g": "ed5d6af4f4e7",
+    "m": "335e7dbd8cd2",
+    "v": "different barrier"
+   },
+   "w_add_64": {
+    "g": "194289976410",
+    "m": "49d165cdf8bb",
+    "v": "different barrier"
+   },
+   "w_add_8": {
+    "v": "generic only"
+   },
+   "w_add_acq_16": {
+    "v": "generic only"
+   },
+   "w_add_acq_32": {
+    "g": "6ecb394d43a5",
+    "m": "b09afd2213b1",
+    "v": "different barrier"
+   },
+   "w_add_acq_64": {
+    "g": "76d4ef72518c",
+    "m": "40d47830fa3b",
+    "v": "different barrier"
+   },
+   "w_add_acq_8": {
+    "v": "generic only"
+   },
+   "w_add_rel_16": {
+    "v": "generic only"
+   },
+   "w_add_rel_32": {
+    "g": "8a4761e26ab4",
+    "m": "c29071ce464c",
+    "v": "different barrier"
+   },
+   "w_add_rel_64": {
+    "g": "99c22eea6cf8",
+    "m": "3715e4d11aad",
+    "v": "different barrier"
+   },
+   "w_add_rel_8": {
+    "v": "generic only"
+   },
+   "w_clear_16": {
+    "g": "32efff8e4dc6",
+    "m": "b061e51ad283",
+    "v": "different barrier"
+   },
+   "w_clear_32": {
+    "g": "b7af2379b484",
+    "m": "7478f61e0fa6",
+    "v": "different barrier"
+   },
+   "w_clear_64": {
+    "g": "b01a6be57fae",
+    "m": "da591ba34c01",
+    "v": "different barrier"
+   },
+   "w_clear_8": {
+    "v": "generic only"
+   },
+   "w_clear_acq_16": {
+    "v": "generic only"
+   },
+   "w_clear_acq_32": {
+    "g": "787578235a3c",
+    "m": "bb773df4ada9",
+    "v": "different barrier"
+   },
+   "w_clear_acq_64": {
+    "g": "3b545fa6b40f",
+    "m": "b2eacef4e46c",
+    "v": "different barrier"
+   },
+   "w_clear_acq_8": {
+    "v": "generic only"
+   },
+   "w_clear_rel_16": {
+    "v": "generic only"
+   },
+   "w_clear_rel_32": {
+    "g": "81d7d2422ec6",
+    "m": "dc9b216f829f",
+    "v": "different barrier"
+   },
+   "w_clear_rel_64": {
+    "g": "1b2d5517165a",
+    "m": "ff84ef4553b7",
+    "v": "different barrier"
+   },
+   "w_clear_rel_8": {
+    "v": "generic only"
+   },
+   "w_cmpset_16": {
+    "g": "5caa3df39244",
+    "m": "8530d9bac1fc",
+    "v": "different barrier"
+   },
+   "w_cmpset_32": {
+    "g": "6256e5f0d253",
+    "m": "1ca752bcdfb8",
+    "v": "different barrier"
+   },
+   "w_cmpset_64": {
+    "g": "f1d2040a84c9",
+    "m": "57a18ae5f736",
+    "v": "different barrier"
+   },
+   "w_cmpset_8": {
+    "g": "a32db805b929",
+    "m": "d2b0ca231503",
+    "v": "different barrier"
+   },
+   "w_cmpset_acq_16": {
+    "g": "afa6b555bb41",
+    "m": "193a306bad20",
+    "v": "different barrier"
+   },
+   "w_cmpset_acq_32": {
+    "g": "c0792f55d663",
+    "m": "e573f96de1a2",
+    "v": "different barrier"
+   },
+   "w_cmpset_acq_64": {
+    "g": "ae0d4debf6d9",
+    "m": "0f238a5e3491",
+    "v": "different barrier"
+   },
+   "w_cmpset_acq_8": {
+    "g": "08fbc77093cc",
+    "m": "849a9641a2ef",
+    "v": "different barrier"
+   },
+   "w_cmpset_rel_16": {
+    "g": "ab944ef68e2f",
+    "m": "b3c30f36f58a",
+    "v": "different barrier"
+   },
+   "w_cmpset_rel_32": {
+    "g": "33cede1e301a",
+    "m": "424ccf5c4e4d",
+    "v": "different barrier"
+   },
+   "w_cmpset_rel_64": {
+    "g": "9095808ca3cf",
+    "m": "3056e68533f9",
+    "v": "different barrier"
+   },
+   "w_cmpset_rel_8": {
+    "g": "7f4e881dacd4",
+    "m": "bebc5a616588",
+    "v": "different barrier"
+   },
+   "w_fcmpset_16": {
+    "g": "2cc3a74334ed",
+    "m": "c064416ad33d",
+    "v": "different barrier"
+   },
+   "w_fcmpset_32": {
+    "g": "f711a305864d",
+    "m": "f731fe6e9998",
+    "v": "different barrier"
+   },
+   "w_fcmpset_64": {
+    "g": "5b44ba7450f6",
+    "m": "0f9429dcff8c",
+    "v": "different barrier"
+   },
+   "w_fcmpset_8": {
+    "g": "3e2872e41f40",
+    "m": "0719cab92498",
+    "v": "different barrier"
+   },
+   "w_fcmpset_acq_16": {
+    "g": "8c643c256fa1",
+    "m": "ba7b95574beb",
+    "v": "different barrier"
+   },
+   "w_fcmpset_acq_32": {
+    "g": "a967f13e71c3",
+    "m": "e269b3f91b7e",
+    "v": "different barrier"
+   },
+   "w_fcmpset_acq_64": {
+    "g": "79b416d23d56",
+    "m": "48c9eaf699d6",
+    "v": "different barrier"
+   },
+   "w_fcmpset_acq_8": {
+    "g": "f47a435420a6",
+    "m": "ebc3df770d65",
+    "v": "different barrier"
+   },
+   "w_fcmpset_rel_16": {
+    "g": "be7cdb0cd551",
+    "m": "449f50d39f61",
+    "v": "different barrier"
+   },
+   "w_fcmpset_rel_32": {
+    "g": "3b3daaee9868",
+    "m": "609e6264a6e7",
+    "v": "different barrier"
+   },
+   "w_fcmpset_rel_64": {
+    "g": "3af5e2f5bccd",
+    "m": "0671b1c64aea",
+    "v": "different barrier"
+   },
+   "w_fcmpset_rel_8": {
+    "g": "4fb9afda971f",
+    "m": "738def27bbb8",
+    "v": "different barrier"
+   },
+   "w_fence_acq": {
+    "g": "640a76ad919d",
+    "m": "72758254b465",
+    "v": "different barrier"
+   },
+   "w_fence_acq_rel": {
+    "g": "640a76ad919d",
+    "m": "72758254b465",
+    "v": "different barrier"
+   },
+   "w_fence_rel": {
+    "g": "640a76ad919d",
+    "m": "72758254b465",
+    "v": "different barrier"
+   },
+   "w_fence_seq_cst": {
+    "g": "640a76ad919d",
+    "m": "72758254b465",
+    "v": "different barrier"
+   },
+   "w_fetchadd_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_32": {
+    "g": "196d4d8c80ef",
+    "m": "14dc25000355",
+    "v": "different barrier"
+   },
+   "w_fetchadd_64": {
+    "g": "5762bdf6dc32",
+    "m": "c69f649ee40c",
+    "v": "different barrier"
+   },
+   "w_fetchadd_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_64": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_64": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_8": {
+    "v": "generic only"
+   },
+   "w_load_16": {
+    "g": "335382d66c00",
+    "m": "335382d66c00",
+    "v": "same"
+   },
+   "w_load_32": {
+    "g": "68718e769269",
+    "m": "68718e769269",
+    "v": "same"
+   },
+   "w_load_64": {
+    "g": "379354345fc9",
+    "m": "987ab29b82e9",
+    "v": "different barrier"
+   },
+   "w_load_8": {
+    "g": "7a3b0d68edfa",
+    "m": "7a3b0d68edfa",
+    "v": "same"
+   },
+   "w_load_acq_16": {
+    "g": "e0cd065b909d",
+    "m": "b5cf527b6a68",
+    "v": "different barrier"
+   },
+   "w_load_acq_32": {
+    "g": "116c09b49aa5",
+    "m": "25be23739da6",
+    "v": "different barrier"
+   },
+   "w_load_acq_64": {
+    "g": "3aae0eb987e8",
+    "m": "d1c6357ed137",
+    "v": "different barrier"
+   },
+   "w_load_acq_8": {
+    "g": "9325fb950c50",
+    "m": "e7d681931b05",
+    "v": "different barrier"
+   },
+   "w_readandclear_16": {
+    "v": "generic only"
+   },
+   "w_readandclear_32": {
+    "g": "3c5dcfc0fdd0",
+    "m": "2261077cb59a",
+    "v": "different barrier"
+   },
+   "w_readandclear_64": {
+    "g": "3b5f817b5c01",
+    "m": "dfb54b247dfb",
+    "v": "different barrier"
+   },
+   "w_readandclear_8": {
+    "v": "generic only"
+   },
+   "w_set_16": {
+    "g": "921a7e54e1d5",
+    "m": "690838e5d942",
+    "v": "different barrier"
+   },
+   "w_set_32": {
+    "g": "cf7891c2f565",
+    "m": "790eb02d5f66",
+    "v": "different barrier"
+   },
+   "w_set_64": {
+    "g": "5be2d3f9fbd7",
+    "m": "a4547f149661",
+    "v": "different barrier"
+   },
+   "w_set_8": {
+    "v": "generic only"
+   },
+   "w_set_acq_16": {
+    "v": "generic only"
+   },
+   "w_set_acq_32": {
+    "g": "e700ed6da236",
+    "m": "b701cd50ee63",
+    "v": "different barrier"
+   },
+   "w_set_acq_64": {
+    "g": "6dac8fd05915",
+    "m": "11269896512a",
+    "v": "different barrier"
+   },
+   "w_set_acq_8": {
+    "v": "generic only"
+   },
+   "w_set_rel_16": {
+    "v": "generic only"
+   },
+   "w_set_rel_32": {
+    "g": "b6ba3792a188",
+    "m": "0001f2c656c7",
+    "v": "different barrier"
+   },
+   "w_set_rel_64": {
+    "g": "c86771776676",
+    "m": "75c732b66114",
+    "v": "different barrier"
+   },
+   "w_set_rel_8": {
+    "v": "generic only"
+   },
+   "w_store_16": {
+    "g": "bb7a091f6359",
+    "m": "bb7a091f6359",
+    "v": "same"
+   },
+   "w_store_32": {
+    "g": "a8c1aabde69a",
+    "m": "a8c1aabde69a",
+    "v": "same"
+   },
+   "w_store_64": {
+    "g": "ce7cb1b4797c",
+    "m": "57e528998368",
+    "v": "different sequence length"
+   },
+   "w_store_8": {
+    "g": "1655393fca9b",
+    "m": "1655393fca9b",
+    "v": "same"
+   },
+   "w_store_rel_16": {
+    "v": "generic only"
+   },
+   "w_store_rel_32": {
+    "g": "30238f7ac803",
+    "m": "d25e41ce7737",
+    "v": "different barrier"
+   },
+   "w_store_rel_64": {
+    "g": "5dd84bc0965f",
+    "m": "a4e9c2f99a02",
+    "v": "different barrier"
+   },
+   "w_store_rel_8": {
+    "v": "generic only"
+   },
+   "w_subtract_16": {
+    "v": "generic only"
+   },
+   "w_subtract_32": {
+    "g": "6dafe10c33c9",
+    "m": "3fae8749f8c4",
+    "v": "different barrier"
+   },
+   "w_subtract_64": {
+    "g": "69f16b8110f5",
+    "m": "5f80b011445e",
+    "v": "different barrier"
+   },
+   "w_subtract_8": {
+    "v": "generic only"
+   },
+   "w_subtract_acq_16": {
+    "v": "generic only"
+   },
+   "w_subtract_acq_32": {
+    "g": "0e73092ddcc9",
+    "m": "3d8f0849182f",
+    "v": "different barrier"
+   },
+   "w_subtract_acq_64": {
+    "g": "c685810421e7",
+    "m": "0841953e192f",
+    "v": "different barrier"
+   },
+   "w_subtract_acq_8": {
+    "v": "generic only"
+   },
+   "w_subtract_rel_16": {
+    "v": "generic only"
+   },
+   "w_subtract_rel_32": {
+    "g": "31108a67a70d",
+    "m": "ec903d60d554",
+    "v": "different barrier"
+   },
+   "w_subtract_rel_64": {
+    "g": "84e80cd00ef4",
+    "m": "6cb1e5621c82",
+    "v": "different barrier"
+   },
+   "w_subtract_rel_8": {
+    "v": "generic only"
+   },
+   "w_swap_16": {
+    "v": "generic only"
+   },
+   "w_swap_32": {
+    "g": "1e44451af580",
+    "m": "345073265326",
+    "v": "different sequence length"
+   },
+   "w_swap_64": {
+    "g": "f19cbff3142a",
+    "m": "cf872f7be8e5",
+    "v": "different barrier"
+   },
+   "w_swap_8": {
+    "v": "generic only"
+   }
+  },
+  "arm64": {
+   "w_add_16": {
+    "g": "324146de31c2",
+    "m": "4f1a3e95ed06",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_32": {
+    "g": "1aa8e80de621",
+    "m": "d83298a245a6",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_64": {
+    "g": "e5f649db027e",
+    "m": "1883c7a41ecf",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_8": {
+    "g": "0ca4cb75c918",
+    "m": "a36c3ec36a9c",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_acq_16": {
+    "g": "217f7d39c5c9",
+    "m": "b0ef67f60559",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_acq_32": {
+    "g": "de55cfde07e0",
+    "m": "74e8729363a9",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_acq_64": {
+    "g": "e707b06d6831",
+    "m": "7559d0dcd2ce",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_acq_8": {
+    "g": "eac595539584",
+    "m": "6c860b4b4115",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_rel_16": {
+    "g": "e167f5450a51",
+    "m": "cc6e9f824381",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_rel_32": {
+    "g": "ccfb6f51ad24",
+    "m": "cd8680c27051",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_rel_64": {
+    "g": "600f2c7be87a",
+    "m": "77f2dab17fd3",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_add_rel_8": {
+    "g": "915f9435dc20",
+    "m": "272510eeda68",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_16": {
+    "g": "7930ce31f767",
+    "m": "5cfb55ee53e7",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_32": {
+    "g": "8910070cf768",
+    "m": "e892ef468e7a",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_64": {
+    "g": "06d974785e6e",
+    "m": "8dd473322bb0",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_8": {
+    "g": "9d4da4c8bbd1",
+    "m": "cb9be53d60b7",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_acq_16": {
+    "g": "b94d1c5a0b15",
+    "m": "04c4116ace0c",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_acq_32": {
+    "g": "6f40d0b6dba7",
+    "m": "95c3a6285081",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_acq_64": {
+    "g": "6e598a24f83f",
+    "m": "8b050c6e7a53",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_acq_8": {
+    "g": "8422cc3deb39",
+    "m": "1b8c9305569f",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_rel_16": {
+    "g": "ef72bda5f4e0",
+    "m": "9b8c677b51b4",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_rel_32": {
+    "g": "d6fad636d1d7",
+    "m": "4a039924cf4b",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_rel_64": {
+    "g": "4b845daed885",
+    "m": "b342ff8d3971",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_clear_rel_8": {
+    "g": "550fa55997f0",
+    "m": "d623f843c198",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_16": {
+    "g": "3f4ba4579a6a",
+    "m": "e3b755469921",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_32": {
+    "g": "2c9d136ff654",
+    "m": "e571b391e23a",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_64": {
+    "g": "34ae5f69ed1a",
+    "m": "3f6057e071be",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_8": {
+    "g": "5f2a5c9365b9",
+    "m": "af461896a018",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_acq_16": {
+    "g": "ffdc052b340a",
+    "m": "7819e32d925f",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_acq_32": {
+    "g": "a1baf1a6767b",
+    "m": "0d53a411ed0e",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_acq_64": {
+    "g": "70d7620dbe59",
+    "m": "04220dd26706",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_acq_8": {
+    "g": "6b64557faa7d",
+    "m": "66592fa83f12",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_rel_16": {
+    "g": "db9d5df5128b",
+    "m": "7c10c06cb085",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_rel_32": {
+    "g": "a6f7783f4bff",
+    "m": "307c04561915",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_rel_64": {
+    "g": "c4173a70ac55",
+    "m": "cc4cd577cc65",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_cmpset_rel_8": {
+    "g": "c06d2828962c",
+    "m": "336e8ba516eb",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_16": {
+    "g": "f815c82a0ad8",
+    "m": "01b42cf245f5",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_32": {
+    "g": "35693baca395",
+    "m": "7456f6bf3d51",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_64": {
+    "g": "4406fb9a029c",
+    "m": "2357a4c01e20",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_8": {
+    "g": "eacb3f0d8c67",
+    "m": "5e2e1c611570",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_acq_16": {
+    "g": "d4d8491ac321",
+    "m": "85fae84f4ec9",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_acq_32": {
+    "g": "16e2daecf355",
+    "m": "840e48a124d8",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_acq_64": {
+    "g": "214a7fe7a538",
+    "m": "073c404aca43",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_acq_8": {
+    "g": "72d9a25f028b",
+    "m": "41bb563f7204",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_rel_16": {
+    "g": "19a2f3001a31",
+    "m": "9417430cef50",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_rel_32": {
+    "g": "0ed7ce530d7f",
+    "m": "ee2281acd063",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_rel_64": {
+    "g": "50836a116164",
+    "m": "5865b53754bb",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fcmpset_rel_8": {
+    "g": "74b325a6f353",
+    "m": "c9168813b17f",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fence_acq": {
+    "g": "dfcd28e8a91d",
+    "m": "8997a66d9914",
+    "v": "different barrier"
+   },
+   "w_fence_acq_rel": {
+    "g": "90c1685b7e66",
+    "m": "7e76d2b44e3d",
+    "v": "different barrier"
+   },
+   "w_fence_rel": {
+    "g": "90c1685b7e66",
+    "m": "7e76d2b44e3d",
+    "v": "different barrier"
+   },
+   "w_fence_seq_cst": {
+    "g": "90c1685b7e66",
+    "m": "7e76d2b44e3d",
+    "v": "different barrier"
+   },
+   "w_fetchadd_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_32": {
+    "g": "e3cb77d9ccfb",
+    "m": "2d2542d26c85",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fetchadd_64": {
+    "g": "6fcc20813d38",
+    "m": "f4d2ec40b24b",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_fetchadd_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_64": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_64": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_8": {
+    "v": "generic only"
+   },
+   "w_load_16": {
+    "g": "844ff2906f91",
+    "m": "844ff2906f91",
+    "v": "same"
+   },
+   "w_load_32": {
+    "g": "79241ef9479a",
+    "m": "79241ef9479a",
+    "v": "same"
+   },
+   "w_load_64": {
+    "g": "9bb36e0296e1",
+    "m": "9bb36e0296e1",
+    "v": "same"
+   },
+   "w_load_8": {
+    "g": "caaa40edc221",
+    "m": "caaa40edc221",
+    "v": "same"
+   },
+   "w_load_acq_16": {
+    "g": "dcdac4dae9e1",
+    "m": "4c001463f9fb",
+    "v": "different barrier"
+   },
+   "w_load_acq_32": {
+    "g": "7d538cb249ea",
+    "m": "223fb8abd3cf",
+    "v": "different barrier"
+   },
+   "w_load_acq_64": {
+    "g": "d93d7f386bc1",
+    "m": "36dbe26f8a37",
+    "v": "different barrier"
+   },
+   "w_load_acq_8": {
+    "g": "4a67bae01b2f",
+    "m": "87e462127b3b",
+    "v": "different barrier"
+   },
+   "w_readandclear_16": {
+    "v": "generic only"
+   },
+   "w_readandclear_32": {
+    "g": "64db641cbe85",
+    "m": "e24ca50535e9",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_readandclear_64": {
+    "g": "f4056d523984",
+    "m": "bcc597b7f31b",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_readandclear_8": {
+    "v": "generic only"
+   },
+   "w_set_16": {
+    "g": "1f3aaee4b5a8",
+    "m": "448932033328",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_32": {
+    "g": "635cbc5aed5c",
+    "m": "2f05c30c8077",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_64": {
+    "g": "8eec408c290f",
+    "m": "a9ddf62a72f5",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_8": {
+    "g": "09a6a59f8fd1",
+    "m": "fc6cc71f2d2a",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_acq_16": {
+    "g": "eea63df25042",
+    "m": "b5b3e651eca7",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_acq_32": {
+    "g": "58eebc250387",
+    "m": "ca081eb86e0a",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_acq_64": {
+    "g": "fb9ef5b493e3",
+    "m": "fed94868450e",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_acq_8": {
+    "g": "323531f4634c",
+    "m": "86f29cd7f45a",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_rel_16": {
+    "g": "6cd5d0c6a8ba",
+    "m": "09a007359847",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_rel_32": {
+    "g": "f5d5e84729b6",
+    "m": "81eea323faf0",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_rel_64": {
+    "g": "079917d54982",
+    "m": "d5487f7401c5",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_set_rel_8": {
+    "g": "73fbb56ec25d",
+    "m": "a8e2daf26464",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_store_16": {
+    "g": "5c1b34dda1dc",
+    "m": "5c1b34dda1dc",
+    "v": "same"
+   },
+   "w_store_32": {
+    "g": "0c76e0ccd528",
+    "m": "0c76e0ccd528",
+    "v": "same"
+   },
+   "w_store_64": {
+    "g": "8f837daa1c46",
+    "m": "8f837daa1c46",
+    "v": "same"
+   },
+   "w_store_8": {
+    "g": "2b9dc6df75dc",
+    "m": "2b9dc6df75dc",
+    "v": "same"
+   },
+   "w_store_rel_16": {
+    "g": "92ebdee1b76f",
+    "m": "92ebdee1b76f",
+    "v": "same"
+   },
+   "w_store_rel_32": {
+    "g": "008f29ad70ab",
+    "m": "008f29ad70ab",
+    "v": "same"
+   },
+   "w_store_rel_64": {
+    "g": "7281b3faef5b",
+    "m": "7281b3faef5b",
+    "v": "same"
+   },
+   "w_store_rel_8": {
+    "g": "cc8e9fd15403",
+    "m": "cc8e9fd15403",
+    "v": "same"
+   },
+   "w_subtract_16": {
+    "g": "75db9d4fee3b",
+    "m": "33e48f13c673",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_32": {
+    "g": "deddb9c1f0bd",
+    "m": "3c244d242ae2",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_64": {
+    "g": "f9570e6750ad",
+    "m": "4b058473a526",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_8": {
+    "g": "38d2be6f5bf0",
+    "m": "87eaa157dd0e",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_acq_16": {
+    "g": "2b9889e4bbc4",
+    "m": "317c7083eb69",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_acq_32": {
+    "g": "2ca413ee4d30",
+    "m": "1fb81fcd5a2e",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_acq_64": {
+    "g": "b65b48d469c2",
+    "m": "10300c7ff5de",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_acq_8": {
+    "g": "fb041db995d5",
+    "m": "3f1b0d482cb5",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_rel_16": {
+    "g": "f89911166d73",
+    "m": "0b6f35cff104",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_rel_32": {
+    "g": "7873e041a84a",
+    "m": "e7fb0ac555bf",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_rel_64": {
+    "g": "06ed8dd9ac36",
+    "m": "ed6c94dc2ba7",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_subtract_rel_8": {
+    "g": "facec709667d",
+    "m": "0235f9d45ff2",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_swap_16": {
+    "v": "generic only"
+   },
+   "w_swap_32": {
+    "g": "8dbff47710ba",
+    "m": "aa039341048c",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_swap_64": {
+    "g": "5e868475c0fa",
+    "m": "6f61281e65c2",
+    "v": "LSE dispatch (machine only)"
+   },
+   "w_swap_8": {
+    "v": "generic only"
+   }
+  },
+  "i386": {
+   "w_add_16": {
+    "g": "b3e8f0e282cf",
+    "m": "b3e8f0e282cf",
+    "v": "same"
+   },
+   "w_add_32": {
+    "g": "2650a925ca78",
+    "m": "2650a925ca78",
+    "v": "same"
+   },
+   "w_add_64": {
+    "g": "390bdcf29efa",
+    "m": "69680d5f12f1",
+    "v": "different sequence length"
+   },
+   "w_add_8": {
+    "g": "024553cd95ce",
+    "m": "024553cd95ce",
+    "v": "same"
+   },
+   "w_add_acq_16": {
+    "g": "b3e8f0e282cf",
+    "m": "b3e8f0e282cf",
+    "v": "same"
+   },
+   "w_add_acq_32": {
+    "g": "2650a925ca78",
+    "m": "2650a925ca78",
+    "v": "same"
+   },
+   "w_add_acq_64": {
+    "g": "696c43274c19",
+    "m": "d3ea858d7dc8",
+    "v": "different sequence length"
+   },
+   "w_add_acq_8": {
+    "g": "024553cd95ce",
+    "m": "024553cd95ce",
+    "v": "same"
+   },
+   "w_add_rel_16": {
+    "g": "b3e8f0e282cf",
+    "m": "b3e8f0e282cf",
+    "v": "same"
+   },
+   "w_add_rel_32": {
+    "g": "2650a925ca78",
+    "m": "2650a925ca78",
+    "v": "same"
+   },
+   "w_add_rel_64": {
+    "g": "9a90dbbdb4a2",
+    "m": "ce83f26068ca",
+    "v": "different sequence length"
+   },
+   "w_add_rel_8": {
+    "g": "024553cd95ce",
+    "m": "024553cd95ce",
+    "v": "same"
+   },
+   "w_clear_16": {
+    "g": "1d872cdbb482",
+    "m": "e1e130f9f18b",
+    "v": "different instructions"
+   },
+   "w_clear_32": {
+    "g": "89966322a008",
+    "m": "89966322a008",
+    "v": "same"
+   },
+   "w_clear_64": {
+    "v": "generic only"
+   },
+   "w_clear_8": {
+    "g": "e09c04894cee",
+    "m": "22bfe7680ad7",
+    "v": "different instructions"
+   },
+   "w_clear_acq_16": {
+    "g": "1d872cdbb482",
+    "m": "e1e130f9f18b",
+    "v": "different instructions"
+   },
+   "w_clear_acq_32": {
+    "g": "89966322a008",
+    "m": "89966322a008",
+    "v": "same"
+   },
+   "w_clear_acq_64": {
+    "v": "generic only"
+   },
+   "w_clear_acq_8": {
+    "g": "e09c04894cee",
+    "m": "22bfe7680ad7",
+    "v": "different instructions"
+   },
+   "w_clear_rel_16": {
+    "g": "1d872cdbb482",
+    "m": "e1e130f9f18b",
+    "v": "different instructions"
+   },
+   "w_clear_rel_32": {
+    "g": "89966322a008",
+    "m": "89966322a008",
+    "v": "same"
+   },
+   "w_clear_rel_64": {
+    "v": "generic only"
+   },
+   "w_clear_rel_8": {
+    "g": "e09c04894cee",
+    "m": "22bfe7680ad7",
+    "v": "different instructions"
+   },
+   "w_cmpset_16": {
+    "g": "b243da9dfffe",
+    "m": "1dbddd02eb4b",
+    "v": "different sequence length"
+   },
+   "w_cmpset_32": {
+    "g": "cb2e66c1f749",
+    "m": "9916d74419d0",
+    "v": "different sequence length"
+   },
+   "w_cmpset_64": {
+    "g": "6f050c406c7f",
+    "m": "4bfef5ebc14c",
+    "v": "different sequence length"
+   },
+   "w_cmpset_8": {
+    "g": "b0cb9a38989c",
+    "m": "1ebbc1d7a30a",
+    "v": "different sequence length"
+   },
+   "w_cmpset_acq_16": {
+    "g": "b243da9dfffe",
+    "m": "1dbddd02eb4b",
+    "v": "different sequence length"
+   },
+   "w_cmpset_acq_32": {
+    "g": "cb2e66c1f749",
+    "m": "9916d74419d0",
+    "v": "different sequence length"
+   },
+   "w_cmpset_acq_64": {
+    "g": "20fa538d281f",
+    "m": "4bfef5ebc14c",
+    "v": "different sequence length"
+   },
+   "w_cmpset_acq_8": {
+    "g": "b0cb9a38989c",
+    "m": "1ebbc1d7a30a",
+    "v": "different sequence length"
+   },
+   "w_cmpset_rel_16": {
+    "g": "b243da9dfffe",
+    "m": "1dbddd02eb4b",
+    "v": "different sequence length"
+   },
+   "w_cmpset_rel_32": {
+    "g": "cb2e66c1f749",
+    "m": "9916d74419d0",
+    "v": "different sequence length"
+   },
+   "w_cmpset_rel_64": {
+    "g": "62457a0d17c8",
+    "m": "4bfef5ebc14c",
+    "v": "different sequence length"
+   },
+   "w_cmpset_rel_8": {
+    "g": "b0cb9a38989c",
+    "m": "1ebbc1d7a30a",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_16": {
+    "g": "b63f18a0ec44",
+    "m": "8134d14bf5ca",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_32": {
+    "g": "85a23b152e81",
+    "m": "75371455886c",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_64": {
+    "g": "972bc86d49c3",
+    "m": "5fa2f18aae04",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_8": {
+    "g": "b76da7912449",
+    "m": "8658683995e3",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_acq_16": {
+    "g": "b63f18a0ec44",
+    "m": "8134d14bf5ca",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_acq_32": {
+    "g": "85a23b152e81",
+    "m": "75371455886c",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_acq_64": {
+    "g": "819fccfda35b",
+    "m": "5fa2f18aae04",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_acq_8": {
+    "g": "b76da7912449",
+    "m": "8658683995e3",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_16": {
+    "g": "b63f18a0ec44",
+    "m": "8134d14bf5ca",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_32": {
+    "g": "85a23b152e81",
+    "m": "75371455886c",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_64": {
+    "g": "01a0cab78285",
+    "m": "5fa2f18aae04",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_8": {
+    "g": "b76da7912449",
+    "m": "8658683995e3",
+    "v": "different sequence length"
+   },
+   "w_fence_acq": {
+    "g": "0f66c38c9f8c",
+    "m": "0f66c38c9f8c",
+    "v": "same"
+   },
+   "w_fence_acq_rel": {
+    "g": "0f66c38c9f8c",
+    "m": "0f66c38c9f8c",
+    "v": "same"
+   },
+   "w_fence_rel": {
+    "g": "0f66c38c9f8c",
+    "m": "0f66c38c9f8c",
+    "v": "same"
+   },
+   "w_fence_seq_cst": {
+    "g": "fab84c40ea87",
+    "m": "840957505f5f",
+    "v": "different instructions"
+   },
+   "w_fetchadd_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_32": {
+    "g": "d51981c9449f",
+    "m": "62bc43a09475",
+    "v": "different instructions"
+   },
+   "w_fetchadd_64": {
+    "g": "390bdcf29efa",
+    "m": "5d4d3fa1ff0f",
+    "v": "different sequence length"
+   },
+   "w_fetchadd_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_64": {
+    "g": "696c43274c19",
+    "m": "e73540b556cd",
+    "v": "different sequence length"
+   },
+   "w_fetchadd_acq_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_64": {
+    "g": "9a90dbbdb4a2",
+    "m": "3fcc7413c208",
+    "v": "different sequence length"
+   },
+   "w_fetchadd_rel_8": {
+    "v": "generic only"
+   },
+   "w_load_16": {
+    "g": "7c6e25c30121",
+    "m": "7c6e25c30121",
+    "v": "same"
+   },
+   "w_load_32": {
+    "g": "a7e118a15fee",
+    "m": "a7e118a15fee",
+    "v": "same"
+   },
+   "w_load_64": {
+    "g": "cebf6487fa05",
+    "m": "f72ffe6ca6c6",
+    "v": "different sequence length"
+   },
+   "w_load_8": {
+    "g": "cbc95123a352",
+    "m": "cbc95123a352",
+    "v": "same"
+   },
+   "w_load_acq_16": {
+    "g": "7c6e25c30121",
+    "m": "7c6e25c30121",
+    "v": "same"
+   },
+   "w_load_acq_32": {
+    "g": "a7e118a15fee",
+    "m": "a7e118a15fee",
+    "v": "same"
+   },
+   "w_load_acq_64": {
+    "g": "1c183031ad6d",
+    "m": "f72ffe6ca6c6",
+    "v": "different sequence length"
+   },
+   "w_load_acq_8": {
+    "g": "cbc95123a352",
+    "m": "cbc95123a352",
+    "v": "same"
+   },
+   "w_readandclear_16": {
+    "v": "generic only"
+   },
+   "w_readandclear_32": {
+    "g": "9f92381692d0",
+    "m": "9f92381692d0",
+    "v": "same"
+   },
+   "w_readandclear_64": {
+    "v": "generic only"
+   },
+   "w_readandclear_8": {
+    "v": "generic only"
+   },
+   "w_set_16": {
+    "g": "61fca084a7db",
+    "m": "61fca084a7db",
+    "v": "same"
+   },
+   "w_set_32": {
+    "g": "c05511921270",
+    "m": "c05511921270",
+    "v": "same"
+   },
+   "w_set_64": {
+    "v": "generic only"
+   },
+   "w_set_8": {
+    "g": "b4f45ab2b02f",
+    "m": "b4f45ab2b02f",
+    "v": "same"
+   },
+   "w_set_acq_16": {
+    "g": "61fca084a7db",
+    "m": "61fca084a7db",
+    "v": "same"
+   },
+   "w_set_acq_32": {
+    "g": "c05511921270",
+    "m": "c05511921270",
+    "v": "same"
+   },
+   "w_set_acq_64": {
+    "v": "generic only"
+   },
+   "w_set_acq_8": {
+    "g": "b4f45ab2b02f",
+    "m": "b4f45ab2b02f",
+    "v": "same"
+   },
+   "w_set_rel_16": {
+    "g": "61fca084a7db",
+    "m": "61fca084a7db",
+    "v": "same"
+   },
+   "w_set_rel_32": {
+    "g": "c05511921270",
+    "m": "c05511921270",
+    "v": "same"
+   },
+   "w_set_rel_64": {
+    "v": "generic only"
+   },
+   "w_set_rel_8": {
+    "g": "b4f45ab2b02f",
+    "m": "b4f45ab2b02f",
+    "v": "same"
+   },
+   "w_store_16": {
+    "g": "bc2e4bb2031e",
+    "m": "bc2e4bb2031e",
+    "v": "same"
+   },
+   "w_store_32": {
+    "g": "4066cb5df4bf",
+    "m": "4066cb5df4bf",
+    "v": "same"
+   },
+   "w_store_64": {
+    "g": "961674cf80df",
+    "m": "98faf93172a1",
+    "v": "different sequence length"
+   },
+   "w_store_8": {
+    "g": "1726f782f91c",
+    "m": "1726f782f91c",
+    "v": "same"
+   },
+   "w_store_rel_16": {
+    "g": "bc2e4bb2031e",
+    "m": "bc2e4bb2031e",
+    "v": "same"
+   },
+   "w_store_rel_32": {
+    "g": "4066cb5df4bf",
+    "m": "4066cb5df4bf",
+    "v": "same"
+   },
+   "w_store_rel_64": {
+    "g": "6f06a595b90c",
+    "m": "98faf93172a1",
+    "v": "different sequence length"
+   },
+   "w_store_rel_8": {
+    "g": "1726f782f91c",
+    "m": "1726f782f91c",
+    "v": "same"
+   },
+   "w_subtract_16": {
+    "g": "27ed53759127",
+    "m": "27ed53759127",
+    "v": "same"
+   },
+   "w_subtract_32": {
+    "g": "37385d7ec3c6",
+    "m": "37385d7ec3c6",
+    "v": "same"
+   },
+   "w_subtract_64": {
+    "g": "3470bb075c9d",
+    "m": "ae232f82af6d",
+    "v": "different sequence length"
+   },
+   "w_subtract_8": {
+    "g": "182ac49b1ce5",
+    "m": "182ac49b1ce5",
+    "v": "same"
+   },
+   "w_subtract_acq_16": {
+    "g": "27ed53759127",
+    "m": "27ed53759127",
+    "v": "same"
+   },
+   "w_subtract_acq_32": {
+    "g": "37385d7ec3c6",
+    "m": "37385d7ec3c6",
+    "v": "same"
+   },
+   "w_subtract_acq_64": {
+    "g": "75ef5410c986",
+    "m": "7cf65e9e38b3",
+    "v": "different sequence length"
+   },
+   "w_subtract_acq_8": {
+    "g": "182ac49b1ce5",
+    "m": "182ac49b1ce5",
+    "v": "same"
+   },
+   "w_subtract_rel_16": {
+    "g": "27ed53759127",
+    "m": "27ed53759127",
+    "v": "same"
+   },
+   "w_subtract_rel_32": {
+    "g": "37385d7ec3c6",
+    "m": "37385d7ec3c6",
+    "v": "same"
+   },
+   "w_subtract_rel_64": {
+    "g": "c6fc984793f0",
+    "m": "7378cb384fc6",
+    "v": "different sequence length"
+   },
+   "w_subtract_rel_8": {
+    "g": "182ac49b1ce5",
+    "m": "182ac49b1ce5",
+    "v": "same"
+   },
+   "w_swap_16": {
+    "v": "generic only"
+   },
+   "w_swap_32": {
+    "g": "df64a615b5ed",
+    "m": "ff9656923f5a",
+    "v": "different instructions"
+   },
+   "w_swap_64": {
+    "g": "674480f89a95",
+    "m": "3bdd92d24f5a",
+    "v": "different sequence length"
+   },
+   "w_swap_8": {
+    "v": "generic only"
+   }
+  },
+  "powerpc": {
+   "w_add_16": {
+    "v": "generic only"
+   },
+   "w_add_32": {
+    "g": "bb65af603b5a",
+    "m": "977a0385c56f",
+    "v": "different instructions"
+   },
+   "w_add_64": {
+    "g": "80a6af7a5f66",
+    "m": "491f26c43f33",
+    "v": "different instructions"
+   },
+   "w_add_8": {
+    "v": "generic only"
+   },
+   "w_add_acq_16": {
+    "v": "generic only"
+   },
+   "w_add_acq_32": {
+    "g": "52e347af85fd",
+    "m": "bddc991b52ef",
+    "v": "different barrier"
+   },
+   "w_add_acq_64": {
+    "g": "7d8698356a31",
+    "m": "e1ba6fc6a5aa",
+    "v": "different barrier"
+   },
+   "w_add_acq_8": {
+    "v": "generic only"
+   },
+   "w_add_rel_16": {
+    "v": "generic only"
+   },
+   "w_add_rel_32": {
+    "g": "4aaa7297de04",
+    "m": "63eac76aca4e",
+    "v": "different instructions"
+   },
+   "w_add_rel_64": {
+    "g": "50c83c5b93ac",
+    "m": "d77b9b063bca",
+    "v": "different instructions"
+   },
+   "w_add_rel_8": {
+    "v": "generic only"
+   },
+   "w_clear_16": {
+    "g": "c683aa23f8f4",
+    "m": "11947f146b23",
+    "v": "different sequence length"
+   },
+   "w_clear_32": {
+    "g": "7da5af25de5e",
+    "m": "d90ca33c029b",
+    "v": "different sequence length"
+   },
+   "w_clear_64": {
+    "g": "a2331dfbfa93",
+    "m": "1e5c97b6466d",
+    "v": "different sequence length"
+   },
+   "w_clear_8": {
+    "v": "generic only"
+   },
+   "w_clear_acq_16": {
+    "v": "generic only"
+   },
+   "w_clear_acq_32": {
+    "g": "f33a80fc0e3f",
+    "m": "aaa59a004cf0",
+    "v": "different barrier"
+   },
+   "w_clear_acq_64": {
+    "g": "f00f32b4dac2",
+    "m": "83cc80ab78a7",
+    "v": "different barrier"
+   },
+   "w_clear_acq_8": {
+    "v": "generic only"
+   },
+   "w_clear_rel_16": {
+    "v": "generic only"
+   },
+   "w_clear_rel_32": {
+    "g": "ba5844d7c535",
+    "m": "61e8c0d98c13",
+    "v": "different sequence length"
+   },
+   "w_clear_rel_64": {
+    "g": "6936da1dfcaa",
+    "m": "53a3b240435b",
+    "v": "different sequence length"
+   },
+   "w_clear_rel_8": {
+    "v": "generic only"
+   },
+   "w_cmpset_16": {
+    "g": "b23ea11a780a",
+    "m": "55a01f55a668",
+    "v": "different instructions"
+   },
+   "w_cmpset_32": {
+    "g": "da3fdd7f0935",
+    "m": "ada374502fa0",
+    "v": "different sequence length"
+   },
+   "w_cmpset_64": {
+    "g": "e6daa43a1ba7",
+    "m": "19d04f11921b",
+    "v": "different sequence length"
+   },
+   "w_cmpset_8": {
+    "g": "6e3bae8847ce",
+    "m": "dde7b1f213d6",
+    "v": "different instructions"
+   },
+   "w_cmpset_acq_16": {
+    "g": "2dbeaa04fba2",
+    "m": "1a9811970f78",
+    "v": "different barrier"
+   },
+   "w_cmpset_acq_32": {
+    "g": "e021d1dfdb03",
+    "m": "6ba15031cd90",
+    "v": "different barrier"
+   },
+   "w_cmpset_acq_64": {
+    "g": "ddd96f2b12a9",
+    "m": "c5c61a1816ce",
+    "v": "different barrier"
+   },
+   "w_cmpset_acq_8": {
+    "g": "9ecd823232c0",
+    "m": "f91388f00dbf",
+    "v": "different barrier"
+   },
+   "w_cmpset_rel_16": {
+    "g": "ca430dc13376",
+    "m": "d2fa49fdd010",
+    "v": "different instructions"
+   },
+   "w_cmpset_rel_32": {
+    "g": "cbb18f321dce",
+    "m": "43e72af9cfbf",
+    "v": "different sequence length"
+   },
+   "w_cmpset_rel_64": {
+    "g": "3fa0a215568c",
+    "m": "c75c5b1a5d29",
+    "v": "different sequence length"
+   },
+   "w_cmpset_rel_8": {
+    "g": "3d7685801c8a",
+    "m": "c7278e410969",
+    "v": "different instructions"
+   },
+   "w_fcmpset_16": {
+    "g": "e07a639b5b01",
+    "m": "4de1e0307325",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_32": {
+    "g": "d07133775ea7",
+    "m": "d37a86d2b975",
+    "v": "different instructions"
+   },
+   "w_fcmpset_64": {
+    "g": "52f1bce82515",
+    "m": "d0a9f9da8eec",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_8": {
+    "g": "a1229513c336",
+    "m": "4b4756c87a5f",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_acq_16": {
+    "g": "4e6fd696c2b5",
+    "m": "a0ca02182b27",
+    "v": "different barrier"
+   },
+   "w_fcmpset_acq_32": {
+    "g": "5a8940acf3b9",
+    "m": "d995a8ee496a",
+    "v": "different barrier"
+   },
+   "w_fcmpset_acq_64": {
+    "g": "4a080902c587",
+    "m": "04953c2fce92",
+    "v": "different barrier"
+   },
+   "w_fcmpset_acq_8": {
+    "g": "09a5c437ed18",
+    "m": "6e19118c578b",
+    "v": "different barrier"
+   },
+   "w_fcmpset_rel_16": {
+    "g": "fdecea0883f9",
+    "m": "94dd3677f1b6",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_32": {
+    "g": "91bdbcaa3712",
+    "m": "7ff2ac455ab9",
+    "v": "different instructions"
+   },
+   "w_fcmpset_rel_64": {
+    "g": "84bf2f7ff655",
+    "m": "2db1bb530c1b",
+    "v": "different sequence length"
+   },
+   "w_fcmpset_rel_8": {
+    "g": "af62f8b9896e",
+    "m": "5ad90bd2ee80",
+    "v": "different sequence length"
+   },
+   "w_fence_acq": {
+    "g": "bbfab3b9cf2e",
+    "m": "bbfab3b9cf2e",
+    "v": "same"
+   },
+   "w_fence_acq_rel": {
+    "g": "bbfab3b9cf2e",
+    "m": "bbfab3b9cf2e",
+    "v": "same"
+   },
+   "w_fence_rel": {
+    "g": "bbfab3b9cf2e",
+    "m": "bbfab3b9cf2e",
+    "v": "same"
+   },
+   "w_fence_seq_cst": {
+    "g": "cf7e8aaafc8e",
+    "m": "cf7e8aaafc8e",
+    "v": "same"
+   },
+   "w_fetchadd_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_32": {
+    "g": "3e5b97b33997",
+    "m": "a3b9a0ee93fa",
+    "v": "different sequence length"
+   },
+   "w_fetchadd_64": {
+    "g": "0a5c96fdda57",
+    "m": "e3b844910ec4",
+    "v": "different sequence length"
+   },
+   "w_fetchadd_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_64": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_8": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_16": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_64": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_8": {
+    "v": "generic only"
+   },
+   "w_load_16": {
+    "g": "f7538979fc81",
+    "m": "f7538979fc81",
+    "v": "same"
+   },
+   "w_load_32": {
+    "g": "6a3b20666eef",
+    "m": "6a3b20666eef",
+    "v": "same"
+   },
+   "w_load_64": {
+    "g": "884df007d839",
+    "m": "884df007d839",
+    "v": "same"
+   },
+   "w_load_8": {
+    "g": "1e2ff96c688c",
+    "m": "1e2ff96c688c",
+    "v": "same"
+   },
+   "w_load_acq_16": {
+    "g": "f0dd882fda18",
+    "m": "f1687b66d3ae",
+    "v": "different barrier"
+   },
+   "w_load_acq_32": {
+    "g": "ec520a2c39cf",
+    "m": "df486f4b9a2a",
+    "v": "different barrier"
+   },
+   "w_load_acq_64": {
+    "g": "14fd9dd95266",
+    "m": "095e8f6d21a0",
+    "v": "different barrier"
+   },
+   "w_load_acq_8": {
+    "g": "27ebfaf00ed7",
+    "m": "b3d647e1814c",
+    "v": "different barrier"
+   },
+   "w_readandclear_16": {
+    "v": "generic only"
+   },
+   "w_readandclear_32": {
+    "g": "8790035f88e1",
+    "m": "0b1ecaf7ecc9",
+    "v": "different barrier"
+   },
+   "w_readandclear_64": {
+    "g": "c817937e62b0",
+    "m": "04c87815ccb7",
+    "v": "different barrier"
+   },
+   "w_readandclear_8": {
+    "v": "generic only"
+   },
+   "w_set_16": {
+    "g": "d6f0e76d361a",
+    "m": "47a3a2293124",
+    "v": "different sequence length"
+   },
+   "w_set_32": {
+    "g": "8d233cb0de43",
+    "m": "3f001cfb9e42",
+    "v": "different instructions"
+   },
+   "w_set_64": {
+    "g": "74a6f90095c1",
+    "m": "138ca9a897f7",
+    "v": "different instructions"
+   },
+   "w_set_8": {
+    "v": "generic only"
+   },
+   "w_set_acq_16": {
+    "v": "generic only"
+   },
+   "w_set_acq_32": {
+    "g": "3a2d69711635",
+    "m": "0c59c5de0a4f",
+    "v": "different barrier"
+   },
+   "w_set_acq_64": {
+    "g": "3d7d6736d53c",
+    "m": "8164b15d4f4d",
+    "v": "different barrier"
+   },
+   "w_set_acq_8": {
+    "v": "generic only"
+   },
+   "w_set_rel_16": {
+    "v": "generic only"
+   },
+   "w_set_rel_32": {
+    "g": "a98e8885beae",
+    "m": "cb02ea197d8a",
+    "v": "different instructions"
+   },
+   "w_set_rel_64": {
+    "g": "144be339c9b8",
+    "m": "99a4f291b52f",
+    "v": "different instructions"
+   },
+   "w_set_rel_8": {
+    "v": "generic only"
+   },
+   "w_store_16": {
+    "g": "3110f4cf467a",
+    "m": "3110f4cf467a",
+    "v": "same"
+   },
+   "w_store_32": {
+    "g": "cacf82ad544c",
+    "m": "cacf82ad544c",
+    "v": "same"
+   },
+   "w_store_64": {
+    "g": "0d6f61fa2109",
+    "m": "0d6f61fa2109",
+    "v": "same"
+   },
+   "w_store_8": {
+    "g": "05f9f695d995",
+    "m": "05f9f695d995",
+    "v": "same"
+   },
+   "w_store_rel_16": {
+    "v": "generic only"
+   },
+   "w_store_rel_32": {
+    "g": "40353d5b48f4",
+    "m": "40353d5b48f4",
+    "v": "same"
+   },
+   "w_store_rel_64": {
+    "g": "898a28bb21e1",
+    "m": "898a28bb21e1",
+    "v": "same"
+   },
+   "w_store_rel_8": {
+    "v": "generic only"
+   },
+   "w_subtract_16": {
+    "v": "generic only"
+   },
+   "w_subtract_32": {
+    "g": "44cda002a3d1",
+    "m": "56c4e89e7c9a",
+    "v": "different instructions"
+   },
+   "w_subtract_64": {
+    "g": "245f946de756",
+    "m": "8f3d5a05f7d0",
+    "v": "different instructions"
+   },
+   "w_subtract_8": {
+    "v": "generic only"
+   },
+   "w_subtract_acq_16": {
+    "v": "generic only"
+   },
+   "w_subtract_acq_32": {
+    "g": "cd0a0f9944bd",
+    "m": "8a457c7c7f31",
+    "v": "different barrier"
+   },
+   "w_subtract_acq_64": {
+    "g": "514434bc0103",
+    "m": "d00ee3bc7c70",
+    "v": "different barrier"
+   },
+   "w_subtract_acq_8": {
+    "v": "generic only"
+   },
+   "w_subtract_rel_16": {
+    "v": "generic only"
+   },
+   "w_subtract_rel_32": {
+    "g": "f723b9bf72d8",
+    "m": "7030f305f482",
+    "v": "different instructions"
+   },
+   "w_subtract_rel_64": {
+    "g": "f13aec70d9a9",
+    "m": "51c85d9b0550",
+    "v": "different instructions"
+   },
+   "w_subtract_rel_8": {
+    "v": "generic only"
+   },
+   "w_swap_16": {
+    "v": "generic only"
+   },
+   "w_swap_32": {
+    "g": "f098d81b9489",
+    "m": "502afb76728b",
+    "v": "different instructions"
+   },
+   "w_swap_64": {
+    "g": "9d412d5ab872",
+    "m": "b2986e02dc59",
+    "v": "different instructions"
+   },
+   "w_swap_8": {
+    "v": "generic only"
+   }
+  },
+  "riscv": {
+   "w_add_32": {
+    "g": "0efa0a509e40",
+    "m": "0efa0a509e40",
+    "v": "same"
+   },
+   "w_add_64": {
+    "g": "a0e156bec1b6",
+    "m": "a0e156bec1b6",
+    "v": "same"
+   },
+   "w_add_acq_32": {
+    "g": "4deb7118a5f8",
+    "m": "949def0fe715",
+    "v": "different barrier"
+   },
+   "w_add_acq_64": {
+    "g": "4c8a20d836b3",
+    "m": "2debd373c413",
+    "v": "different barrier"
+   },
+   "w_add_rel_32": {
+    "g": "0ce166035eef",
+    "m": "da00dcb06416",
+    "v": "different barrier"
+   },
+   "w_add_rel_64": {
+    "g": "04a5db4e9f1c",
+    "m": "b7953cc3f855",
+    "v": "different barrier"
+   },
+   "w_clear_32": {
+    "g": "fef5415829d1",
+    "m": "fef5415829d1",
+    "v": "same"
+   },
+   "w_clear_64": {
+    "g": "078a20fe58c2",
+    "m": "078a20fe58c2",
+    "v": "same"
+   },
+   "w_clear_acq_32": {
+    "g": "e3176baa3b65",
+    "m": "a602d200535e",
+    "v": "different barrier"
+   },
+   "w_clear_acq_64": {
+    "g": "3392a9f2ec0d",
+    "m": "e0161b879d99",
+    "v": "different barrier"
+   },
+   "w_clear_rel_32": {
+    "g": "1e16dc496242",
+    "m": "6389bf9a7d8b",
+    "v": "different barrier"
+   },
+   "w_clear_rel_64": {
+    "g": "1da1d77a0f03",
+    "m": "dd4490911d1d",
+    "v": "different barrier"
+   },
+   "w_cmpset_32": {
+    "g": "62da63cbfb6a",
+    "m": "e64f4f249228",
+    "v": "different sequence length"
+   },
+   "w_cmpset_64": {
+    "g": "6ea11a9a96ba",
+    "m": "51fc6ed456e4",
+    "v": "different sequence length"
+   },
+   "w_cmpset_acq_32": {
+    "g": "72f33b139355",
+    "m": "ba2dc7dfacf8",
+    "v": "different barrier"
+   },
+   "w_cmpset_acq_64": {
+    "g": "32590a1b9f8a",
+    "m": "ccc1ba2b7ba8",
+    "v": "different barrier"
+   },
+   "w_cmpset_rel_32": {
+    "g": "64af6cdf34af",
+    "m": "c42bf55242fc",
+    "v": "different barrier"
+   },
+   "w_cmpset_rel_64": {
+    "g": "acf5125b7bcc",
+    "m": "c3ca6d0d43d2",
+    "v": "different barrier"
+   },
+   "w_fcmpset_32": {
+    "g": "62dde685fe0b",
+    "m": "c3e14224d6cd",
+    "v": "different barrier"
+   },
+   "w_fcmpset_64": {
+    "g": "cacc12e18a84",
+    "m": "52041eb69f11",
+    "v": "different barrier"
+   },
+   "w_fcmpset_acq_32": {
+    "g": "718317472305",
+    "m": "bae443bf15e3",
+    "v": "different barrier"
+   },
+   "w_fcmpset_acq_64": {
+    "g": "105ebdacfdb2",
+    "m": "cd17bf1c0bca",
+    "v": "different barrier"
+   },
+   "w_fcmpset_rel_32": {
+    "g": "95f3bb1c9ff4",
+    "m": "112cd8c31246",
+    "v": "different barrier"
+   },
+   "w_fcmpset_rel_64": {
+    "g": "cb51e62c713e",
+    "m": "cf634baec048",
+    "v": "different barrier"
+   },
+   "w_fence_acq": {
+    "g": "f92811aada0a",
+    "m": "629087b64fb3",
+    "v": "different barrier"
+   },
+   "w_fence_acq_rel": {
+    "g": "e400be821c20",
+    "m": "629087b64fb3",
+    "v": "different barrier"
+   },
+   "w_fence_rel": {
+    "g": "2904af04ed2f",
+    "m": "629087b64fb3",
+    "v": "different barrier"
+   },
+   "w_fence_seq_cst": {
+    "g": "ea845adc40ea",
+    "m": "629087b64fb3",
+    "v": "different barrier"
+   },
+   "w_fetchadd_32": {
+    "g": "eb4ca30e706a",
+    "m": "00753dab6d0e",
+    "v": "different sequence length"
+   },
+   "w_fetchadd_64": {
+    "g": "ba04ea138cee",
+    "m": "ca29958de739",
+    "v": "different sequence length"
+   },
+   "w_fetchadd_acq_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_acq_64": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_32": {
+    "v": "generic only"
+   },
+   "w_fetchadd_rel_64": {
+    "v": "generic only"
+   },
+   "w_load_32": {
+    "g": "467ed63f5f11",
+    "m": "467ed63f5f11",
+    "v": "same"
+   },
+   "w_load_64": {
+    "g": "db882bf28e01",
+    "m": "db882bf28e01",
+    "v": "same"
+   },
+   "w_load_acq_32": {
+    "g": "f84e026fe832",
+    "m": "47174d19725a",
+    "v": "different barrier"
+   },
+   "w_load_acq_64": {
+    "g": "4a8bb402165c",
+    "m": "c8f22fee6be3",
+    "v": "different barrier"
+   },
+   "w_readandclear_32": {
+    "g": "500cdde510c6",
+    "m": "d93851afef1e",
+    "v": "different sequence length"
+   },
+   "w_readandclear_64": {
+    "g": "8348eaf8aa69",
+    "m": "23eea7d8402b",
+    "v": "different sequence length"
+   },
+   "w_set_32": {
+    "g": "8babf6cacc3d",
+    "m": "8babf6cacc3d",
+    "v": "same"
+   },
+   "w_set_64": {
+    "g": "de02264b285c",
+    "m": "de02264b285c",
+    "v": "same"
+   },
+   "w_set_acq_32": {
+    "g": "eac400d4350c",
+    "m": "0bdc20463f4e",
+    "v": "different barrier"
+   },
+   "w_set_acq_64": {
+    "g": "e84c4133101a",
+    "m": "480eb1bb7c0c",
+    "v": "different barrier"
+   },
+   "w_set_rel_32": {
+    "g": "809e5b2fd2ac",
+    "m": "384bee5d2ab5",
+    "v": "different barrier"
+   },
+   "w_set_rel_64": {
+    "g": "aadf5d7808c2",
+    "m": "f6b1d070f11f",
+    "v": "different barrier"
+   },
+   "w_store_32": {
+    "g": "e1a914d296d9",
+    "m": "e1a914d296d9",
+    "v": "same"
+   },
+   "w_store_64": {
+    "g": "ba7bd2c2e031",
+    "m": "ba7bd2c2e031",
+    "v": "same"
+   },
+   "w_store_rel_32": {
+    "g": "b5fda86279b9",
+    "m": "de4ac885159a",
+    "v": "different barrier"
+   },
+   "w_store_rel_64": {
+    "g": "8cb390e92c89",
+    "m": "268d570f5d46",
+    "v": "different barrier"
+   },
+   "w_subtract_32": {
+    "g": "5e312a3827c5",
+    "m": "43c01d3a6e88",
+    "v": "different instructions"
+   },
+   "w_subtract_64": {
+    "g": "5cdaf9c44ae2",
+    "m": "5cdaf9c44ae2",
+    "v": "same"
+   },
+   "w_subtract_acq_32": {
+    "g": "49e2e2cc16a6",
+    "m": "10b28832db23",
+    "v": "different barrier"
+   },
+   "w_subtract_acq_64": {
+    "g": "34df770303d7",
+    "m": "e1e466ccf8f3",
+    "v": "different barrier"
+   },
+   "w_subtract_rel_32": {
+    "g": "480d3f931a8c",
+    "m": "1d2dcbfb595e",
+    "v": "different barrier"
+   },
+   "w_subtract_rel_64": {
+    "g": "0861198ac626",
+    "m": "02077e15f971",
+    "v": "different barrier"
+   },
+   "w_swap_32": {
+    "g": "171594d8f459",
+    "m": "76c900f93c3a",
+    "v": "different sequence length"
+   },
+   "w_swap_64": {
+    "g": "7a17b35fdfc6",
+    "m": "4b2c3eafaf5f",
+    "v": "different sequence length"
+   }
+  }
+ }
+}

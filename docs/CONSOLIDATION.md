@@ -194,12 +194,63 @@ anyway, because its claim is checkable without running anything: every
 macro is a value, and `--baseline` compares 1,284 of them against what
 the six headers expanded to before the change.
 
-`atomic.h` has no such comparison. Two headers agreeing on
-`atomic_add_int`'s *name* says nothing about the barrier it emits, and the
-existing checker answers a narrower question — whether each width is
-lock-free — which is a precondition, not a proof. So the switch-over waits
-on something that can compare the generated code, the way the IR oracle
-does for the ports.
+`atomic.h` had no such comparison, so one was written:
+`tools/atomic_codegen_check.py` compiles the same 618 operations twice for
+each of the six targets — once against `<machine/atomic.h>`, once against
+`<sys/atomic_generic.h>` — at `-O2`, and compares the instructions.
+
+Two sequences count as equal after dropping the assembler's comments,
+`.cfi` directives and clang's inline-asm markers, renumbering local labels
+in order of first appearance, and joining the x86 `lock` prefix to its
+instruction (the machine header writes `lock ; addl` in inline asm; the
+builtin emits `lock addl`). Everything else counts, and a different
+barrier counts most of all.
+
+```
+arch        ops   same  differ   kinds of difference
+amd64       112     82      30   barrier x1, instructions x3, length x12, generic only x14
+arm64       112     12     100   LSE dispatch (machine only) x78, barrier x8, generic only x14
+arm         112      6     106   barrier x66, length x2, generic only x38
+i386        112     46      66   instructions x9, length x38, generic only x19
+powerpc     112     14      98   barrier x22, instructions x20, length x18, generic only x38
+riscv        58     11      47   barrier x34, length x8, instructions x1, generic only x4
+```
+
+**171 of 618.** The generic header is not a drop-in replacement, and the
+three ways it differs are each worth naming:
+
+* **arm64 loses a runtime dispatch.** `<machine/atomic.h>` reads a global
+  `lse_supported` and branches between an LSE instruction (`ldadd`,
+  `cas`, `casa`) and the `ldxr`/`stxr` loop. `__atomic` emits only the
+  loop. That is 78 of arm64's 112 operations, and it is a performance
+  decision FreeBSD made deliberately, on the architecture where it
+  matters most.
+* **the barriers are not the same instructions.** riscv's machine header
+  spells acquire as `amoadd.w` followed by a full `fence` where the
+  builtin emits `amoadd.w.aq`; powerpc's is `isync` where the builtin
+  emits `lwsync`. Both pairs are defensible readings of their memory
+  model and they are not interchangeable by inspection.
+* **the generic header offers more than it replaces.** 14 to 38
+  operations per architecture exist only on the generic side — `arm` and
+  `powerpc` have no 8- or 16-bit atomics at all — and *nothing* is
+  machine-only. Whatever the six headers implement, the generic one
+  implements too.
+
+So the switch-over is not blocked on writing a checker any more; it is
+blocked on a decision the checker has made visible. Taking the generic
+atomics as they stand costs arm64 its LSE path and changes barrier
+instructions on four architectures. The shape that survives this is the
+one `counter.h` already suggested: the generic header as the default and
+a per-architecture override where the tree has a reason, with the reason
+being one of these rows rather than an assertion.
+
+The measurement is frozen the same way `_stdint.h`'s was, and for a
+sharper reason: `docs/migration/atomic_codegen.json` holds a verdict *and
+a digest of both instruction sequences* per operation. Verdicts alone were
+not enough — weakening an acquire to `__ATOMIC_SEQ_CST` in the generic
+header left every affected operation at "different barrier", and the first
+version of the gate reported no change at all. With digests the same edit
+names eleven operations and says which side moved.
 
 ## `_stdint.h` and `_inttypes.h`: written, and three ABI traps found
 
