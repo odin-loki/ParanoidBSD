@@ -416,24 +416,33 @@ def kern_pre_vars() -> dict[str, str]:
     Only depth-0 assignments are taken: the conditional ones are per
     compiler and per architecture and this sweep is neither.
     """
-    mk = SYS / "conf" / "kern.pre.mk"
     out: dict[str, str] = {}
-    if not mk.is_file():
-        return out
-    depth = 0
-    for line in mk.read_text(errors="replace").replace("\\\n", " ").splitlines():
-        st = line.strip()
-        if st.startswith((".if", ".for")):
-            depth += 1
+    # Both of them. kern.pre.mk is what a kernel build reads and
+    # kmod.mk is what every module Makefile reaches through its closing
+    # `.include <bsd.kmod.mk>' - and OPENZFS_CFLAGS, the twelve -I that
+    # put opensolaris's <sys/types.h> ahead of FreeBSD's, is defined at
+    # kmod.mk:576 and nowhere else. Reading only the first left
+    # sys/modules/dtrace/sdt/Makefile with `CFLAGS+= ${OPENZFS_CFLAGS}'
+    # expanding to nothing, which then failed the `if not flags' test
+    # below and threw away the module's .PATH as well.
+    for mk in (SYS / "conf" / "kern.pre.mk", SYS / "conf" / "kmod.mk"):
+        if not mk.is_file():
             continue
-        if st.startswith((".endif", ".endfor")):
-            depth = max(0, depth - 1)
-            continue
-        if depth or not st or st.startswith("#"):
-            continue
-        m = MAKE_VAR.match(st)
-        if m:
-            out.setdefault(m.group("name"), m.group("val").strip())
+        depth = 0
+        for line in mk.read_text(errors="replace").replace(
+                "\\\n", " ").splitlines():
+            st = line.strip()
+            if st.startswith((".if", ".for")):
+                depth += 1
+                continue
+            if st.startswith((".endif", ".endfor")):
+                depth = max(0, depth - 1)
+                continue
+            if depth or not st or st.startswith("#"):
+                continue
+            m = MAKE_VAR.match(st)
+            if m:
+                out.setdefault(m.group("name"), m.group("val").strip())
     return out
 
 
@@ -532,6 +541,7 @@ def kernel_flag_index(arch: str = "amd64"
                                  dict[str, tuple[str, ...]]]:
     """(by source path, by directory) the flags a kernel build adds."""
     by_file: dict[str, list[str]] = {}
+    by_src: dict[str, list[str]] = {}
     by_dir: dict[str, list[str]] = {}
     base = dict(kern_pre_vars())
     # These three are make's, not kern.pre.mk's, and are the roots the
@@ -664,6 +674,7 @@ def kernel_flag_index(arch: str = "amd64"
 
         paths: list[str] = []
         flags: list[str] = []
+        srcs: list[str] = []
         # A stack of "is this block live?", so a nested .if inside a
         # skipped one stays skipped.
         live: list[bool] = []
@@ -709,10 +720,46 @@ def kernel_flag_index(arch: str = "amd64"
                 flags.extend(_kernel_dirs(
                     m.group("rest").replace("$S", str(SYS)), vars))
                 continue
+            m = MODULE_SRCS.match(line)
+            if m:
+                srcs.extend(x for x in _expand(m.group(1), vars).split()
+                            if x.endswith(".c") and "${" not in x)
+                continue
         if not flags:
             continue
-        # A module's own directory too: sys/modules/<x>/ holds generated
-        # headers in a real build, and some drivers live there.
+
+        # The files this module actually names, resolved against its
+        # .PATH set. A directory entry is too coarse on its own:
+        # sys/modules/dtrace/dtnfscl takes .PATH on sys/fs/nfsclient and
+        # builds ONE file from it, and tagging the directory gave every
+        # other NFS client source ${OPENZFS_CFLAGS} - twelve -I that put
+        # openzfs's SPL <sys/rwlock.h> ahead of FreeBSD's. Harmless
+        # while those flags were appended last; the moment they moved in
+        # front of -I$S, as sys/conf/kmod.mk:128 says they are,
+        # nfs_clsubs.c and nfs_clkrpc.c went from clean to seventeen
+        # errors on rw_assert and RA_WLOCKED. Found by compiling all 72
+        # order-changed files both ways rather than reasoning about the
+        # flag sets.
+        for s in srcs:
+            for base_dir in paths:
+                f = (Path(base_dir) / s).resolve()
+                if not f.is_file():
+                    continue
+                try:
+                    by_src.setdefault(
+                        f.relative_to(SRC.resolve()).as_posix(),
+                        []).extend(flags)
+                except ValueError:
+                    pass
+                break
+
+        # ...and the directory, for the files under a .PATH that the
+        # SRCS do not name. Dropping it where the SRCS resolved looked
+        # tidier and cost six files their include set - the TX99 corner
+        # of the ath HAL, brcmfmac's ring code, amd64's linux32
+        # genassym - all siblings of files a module does build. What
+        # the directory must NOT do is decide flag ORDER, which is why
+        # include_flags keeps it at the end; see there.
         for d in paths:
             try:
                 key = str(Path(d).relative_to(SRC))
@@ -721,6 +768,7 @@ def kernel_flag_index(arch: str = "amd64"
             by_dir.setdefault(key, []).extend(flags)
 
     return ({k: tuple(dict.fromkeys(v)) for k, v in by_file.items()},
+            {k: tuple(dict.fromkeys(v)) for k, v in by_src.items()},
             {k: tuple(dict.fromkeys(v)) for k, v in by_dir.items()})
 
 
@@ -733,6 +781,7 @@ def kernel_flag_index(arch: str = "amd64"
 # machine/intr.h alone, and the rest of that pile is the same thing:
 # ext_resources, FDT regulators, DPAA, dbdma.
 FILES_SRC = re.compile(r"^(\S+\.c)\s")
+MODULE_SRCS = re.compile(r"^\s*SRCS(?:\.\w+)?\s*\+?=\s*(.*)$")
 
 
 @functools.lru_cache(maxsize=None)
@@ -1595,6 +1644,55 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         rel_sys = rel[len("sys/"):]
         flags += list(conf_file_includes(arch).get(rel_sys, ()))
         flags += _module_flags(rel_sys)
+
+        # What the module Makefile and the compile-with say, and it goes
+        # HERE rather than at the end. sys/conf/kmod.mk:128 is
+        #
+        #   CFLAGS:= ${CFLAGS:N-I*} ${NOSTDINC} ${INCLMAGIC} ${CFLAGS:M-I*}
+        #
+        # which exists to hold every -I the module Makefile wrote, in
+        # its own order, and line 139 then appends
+        # `-I. -I${SYSDIR} -I${SYSDIR}/contrib/ck/include' AFTER them.
+        # So a module's include directories precede -I$S in the real
+        # build, and appending them last here is the reverse of what the
+        # tree does. It cost four files that need opensolaris's
+        # <sys/types.h> - uint_t, hrtime_t, uio_t - rather than
+        # FreeBSD's: sdt.c, nfs_clkdtrace.c, opensolaris_uio.c and
+        # ctf_mod.c, all of them named by a module whose CFLAGS say so.
+        #
+        # A module's SRCS are named relative to its .PATH, so one .PATH
+        # covers a whole subtree: sys/modules/qat/qat_api takes .PATH on
+        # sys/dev/qat/qat_api and then names
+        # common/crypto/sym/lac_sym_api.c under it. Walk up to sys/.
+        by_file, by_src, by_dir = kernel_flag_index(arch)
+        # THIS file's own answer - the compile-with line that names it,
+        # or the module whose SRCS does - goes in front, per kmod.mk:128.
+        found: list[str] = list(by_file.get(rel, ())) + list(
+            by_src.get(rel, ()))
+        # A directory's is a guess about a file nothing named, and a
+        # guess does not get to decide order: it stays at the end, where
+        # it has always been. sys/modules/dtrace/dtnfscl takes .PATH on
+        # sys/fs/nfsclient and builds ONE file from it; in front, its
+        # ${OPENZFS_CFLAGS} put openzfs's SPL <sys/rwlock.h> ahead of
+        # FreeBSD's and took nfs_clsubs.c and nfs_clkrpc.c from clean to
+        # seventeen errors on rw_assert. Both halves were established by
+        # compiling all 2,037 translation units whose flags this change
+        # moves, twice.
+        back: list[str] = []
+        if not found:
+            d = Path(rel).parent
+            while str(d) not in (".", "sys"):
+                back.extend(by_dir.get(str(d), ()))
+                d = d.parent
+        seen = set(flags)
+        # Only the include flags move forward. The -D are order-free once
+        # _dedupe_defines has keyed them by name, and leaving them where
+        # they were keeps this change to the one thing kmod.mk:128 is
+        # about.
+        for f in found:
+            if not f.startswith("-D") and f not in seen:
+                seen.add(f)
+                flags.append(f)
         # MAXUSERS is not an option anyone writes in a kernel config; it
         # is a NUMBER config(8) turns into one - mkoptions.cc:86 says
         # `/* Fake MAXUSERS as an option. */' - so it reaches the build
@@ -1648,18 +1746,9 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/intel"]
         flags += defaults_options(arch)
         flags += [f"-D{c}" for c in files_cpu_index().get(rel, ())]
-        by_file, by_dir = kernel_flag_index(arch)
-        # A module's SRCS are named relative to its .PATH, so one .PATH
-        # covers a whole subtree: sys/modules/qat/qat_api takes .PATH on
-        # sys/dev/qat/qat_api and then names
-        # common/crypto/sym/lac_sym_api.c under it. Walk up to sys/.
-        found: list[str] = list(by_file.get(rel, ()))
-        d = Path(rel).parent
-        while str(d) not in (".", "sys"):
-            found.extend(by_dir.get(str(d), ()))
-            d = d.parent
+        # ...the -D held back above, and then the directory's guess.
         seen = set(flags)
-        for f in found:
+        for f in list(found) + back:
             if f not in seen:
                 seen.add(f)
                 flags.append(f)
@@ -1856,6 +1945,12 @@ NOT_KERNEL = (
     # gzwrite and friends. sys/conf/files:644-664 names neither, and
     # usr.bin/zstd builds programs/ as userland.
     "contrib/zstd/programs/", "contrib/zstd/zlibWrapper/",
+    # The CTF reader lives under sys/ and is built by
+    # cddl/lib/libctf/Makefile - a userland library, for ctfconvert(1)
+    # and ctfmerge(1). The kernel's CTF support is sys/kern/kern_ctf.c,
+    # which is a different program. ctf_impl.h, the header these fail
+    # on, is under src/cddl/ and not under src/sys/ at all.
+    "cddl/contrib/opensolaris/uts/common/ctf/",
 )
 
 

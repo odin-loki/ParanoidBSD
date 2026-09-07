@@ -4452,14 +4452,97 @@ kinst find instruction boundaries in the running kernel. That is a large
 enough single-file cluster to want its own pass rather than a paragraph
 here.
 
-Four files still do not compile and the reason is one this document has
-met before, in `include_flags`'s own comment about ZFS: **flag order**.
-`sdt.c`, `nfs_clkdtrace.c`, `opensolaris_uio.c` and `ctf_mod.c` need the
-opensolaris compat headers to come **before** `-I$S`, so that
-`<sys/types.h>` resolves to Solaris's `uint_t`/`hrtime_t`/`uio_t` and not
-FreeBSD's. The module's `.PATH` flags are appended last, so they arrive
-too late. Moving them is a tree-wide reordering with its own validation
-to do, and it is on the record rather than half-done.
+Four files still did not compile and the reason was one this document
+has met before, in `include_flags`'s own comment about ZFS: **flag
+order**. That is the next section.
+
+## `sys/conf/kmod.mk:128`, and 2,037 translation units compiled twice
+
+```make
+# Don't use any standard or source-relative include directories.
+NOSTDINC=	-nostdinc
+CFLAGS:=	${CFLAGS:N-I*} ${NOSTDINC} ${INCLMAGIC} ${CFLAGS:M-I*}
+...
+CFLAGS+=	-I. -I${SYSDIR} -I${SYSDIR}/contrib/ck/include
+```
+
+That reassignment exists for one purpose: to hold every `-I` a module
+Makefile wrote, **in its own order**, and then append `-I${SYSDIR}`
+after them. A module's include directories precede `-I$S` in the real
+build, by explicit construction. `include_flags()` appended them last —
+the reverse — and that is why `sdt.c`, `nfs_clkdtrace.c`,
+`opensolaris_uio.c` and `ctf_mod.c` got FreeBSD's `<sys/types.h>` where
+the module asks for Solaris's `uint_t`, `hrtime_t` and `uio_t`.
+
+The fix is three lines of reordering and it took two wrong versions to
+get right, both caught the same way: **compile every file whose flags
+move, before and after.**
+
+**Wrong version one** put all of it in front. Seventy-two files changed;
+seventy stayed the same, and two — `sys/fs/nfsclient/nfs_clsubs.c` and
+`nfs_clkrpc.c` — went from clean to seventeen errors on `rw_assert` and
+`RA_WLOCKED`. `sys/modules/dtrace/dtnfscl` takes `.PATH` on
+`sys/fs/nfsclient` and builds **one** file from it, so the whole
+directory was inheriting its `${OPENZFS_CFLAGS}` — twelve `-I` that, in
+front, put openzfs's SPL `<sys/rwlock.h>` ahead of FreeBSD's. Harmless
+for as long as those flags were last; fatal the moment they were first.
+
+**Wrong version two** fixed that by resolving each module's `SRCS`
+against its `.PATH` set and dropping the directory entry wherever the
+sources resolved. Tidier, and it cost six files their include set
+entirely — the TX99 corner of the ath HAL, three brcmfmac ring files,
+amd64's `linux32_genassym.c` — all siblings of files a module does
+build, none of them named in any `SRCS`.
+
+**What is right** is the distinction the two failures describe between
+them. A `compile-with` line that names a file, or a module whose `SRCS`
+names it, is *that file's own answer* and goes in front, as kmod.mk
+says. A directory is a *guess* about a file nothing named, and a guess
+does not get to decide order: it stays at the end, where it has always
+been, and it is still there so nothing loses its headers.
+
+The final measurement, over the whole tree rather than a sample: **1,553
+kernel translation units change flags; 2 compile that did not, 0 stop
+compiling.** The two are `sys/fs/nfsclient/nfs_clkdtrace.c` and
+`sys/security/audit/audit_dtrace.c` — the second of which was on the
+record as *"needs the opensolaris compat headers, i.e. option
+KDTRACE_HOOKS"*, and was a missing flag all along. That is the third
+exemption this week to turn out to be one.
+
+`OPENZFS_CFLAGS` itself needed a second read to exist at all: it is
+defined at `sys/conf/kmod.mk:576`, not in `kern.pre.mk`, and every
+module Makefile reaches it through the closing
+`.include <bsd.kmod.mk>`. Reading only `kern.pre.mk` left
+`sys/modules/dtrace/sdt/Makefile`'s one `CFLAGS+= ${OPENZFS_CFLAGS}`
+expanding to nothing — which then failed the reader's own `if not
+flags` test and threw the module's `.PATH` away with it.
+
+### And the four, one at a time
+
+`nfs_clkdtrace.c` compiles. The other three do not, and none of them is
+a coverage gap:
+
+* **`sys/cddl/dev/sdt/sdt.c`** is the one file that cannot survive a
+  decision made deliberately elsewhere in this tool. `opt_shim()` drops
+  `KDTRACE_HOOKS` on purpose — `sys/sys/sdt.h:218` writes every probe as
+  `asm goto(...)`, which clang's analyser gives up on, and it cost 85
+  errors of 105 translation units in `sys/netinet` alone. The argument
+  for dropping it is that a probe is a nop sled the kernel patches at
+  run time, so it does not change what the surrounding code computes.
+  It does change what `sdt.c` computes, because SDT is its whole
+  subject: `struct sdt_tracepoint` is declared only under the option.
+* **`opensolaris_uio.c`, `opensolaris_cmn_err.c`, `opensolaris_vm.c`**
+  are named by nothing — not `sys/conf/files*`, not any module's `SRCS`,
+  not the dtrace or zfs module, both of which take a `.PATH` on that
+  directory and build their own files from it. `uio_t` has no definition
+  left anywhere under `sys/` except ipfilter's. `opensolaris_atomic.c`,
+  the file beside them that **is** built, is in `conf/files.powerpc` and
+  `sys/modules/opensolaris/Makefile`.
+* **`ctf_mod.c`, `ctf_subr.c`** live under `sys/` and are built by
+  `cddl/lib/libctf/Makefile` — a userland library, for `ctfconvert(1)`
+  and `ctfmerge(1)`. `ctf_impl.h`, the header they fail on, is under
+  `src/cddl/` and not under `src/sys/` at all. They join ACPICA's
+  `compiler/` and zlib's `test/` in `includes.NOT_KERNEL`.
 
 ## Not defects, and why they looked like defects
 

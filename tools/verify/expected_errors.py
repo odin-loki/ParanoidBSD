@@ -95,8 +95,11 @@ EXPECTED = {
     "sys/net80211/ieee80211_alq.c": "needs option IEEE80211_ALQ",
 
     # security
-    "sys/security/audit/audit_dtrace.c":
-        "needs the opensolaris compat headers, i.e. option KDTRACE_HOOKS",
+    # audit_dtrace.c used to be here - "needs the opensolaris compat
+    # headers, i.e. option KDTRACE_HOOKS". It compiles now: a module's
+    # own include flags go ahead of -I$S, as sys/conf/kmod.mk:128 says
+    # they do, so opensolaris's headers win where the module asks for
+    # them. Another exemption that was a missing flag.
     "sys/hardenedbsd/hbsd_pax_SKEL.c":
         "a template, in no sys/conf/files line - see the note below",
 
@@ -122,6 +125,33 @@ EXPECTED = {
         "kernel config in this tree sets STATS",
     "sys/vm/memguard.c":
         "option-gated: `optional DEBUG_MEMGUARD'",
+
+    # DTrace's own SDT provider, and it is the one file that cannot
+    # survive a decision made deliberately elsewhere. opt_shim() drops
+    # KDTRACE_HOOKS on purpose - sys/sys/sdt.h:218 writes every probe as
+    # `asm goto(...)', which clang's analyser gives up on, and it cost 85
+    # errors of 105 translation units in sys/netinet alone. A probe is a
+    # nop sled the kernel patches at run time, so dropping it does not
+    # change what the surrounding code computes. It does change what
+    # sdt.c computes, because SDT is its whole subject: `struct
+    # sdt_tracepoint' is only defined under the option.
+    "sys/cddl/dev/sdt/sdt.c":
+        "option-gated: opt_shim() drops KDTRACE_HOOKS by design, and "
+        "struct sdt_tracepoint is declared only under it",
+
+    # Vendored beside the opensolaris compat layer and named by nothing:
+    # not sys/conf/files*, not a module's SRCS, not the dtrace or zfs
+    # module (both of which take a .PATH on this directory and build
+    # their own files from it). opensolaris_atomic.c, the file beside
+    # them that IS built, is in conf/files.powerpc and
+    # modules/opensolaris/Makefile.
+    "sys/cddl/compat/opensolaris/kern/opensolaris_uio.c":
+        "not built: named by no files* or SRCS; uio_t has no definition "
+        "left in this tree",
+    "sys/cddl/compat/opensolaris/kern/opensolaris_cmn_err.c":
+        "not built: named by no files* or SRCS",
+    "sys/cddl/compat/opensolaris/kern/opensolaris_vm.c":
+        "not built: named by no files* or SRCS",
 
     # libexec/rtld-elf. The other nine translation units in this
     # directory compiled for the first time when the rtld's own include

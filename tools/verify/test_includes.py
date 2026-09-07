@@ -193,7 +193,7 @@ check_that("and it is an intersection, not a union",
            "a file built by configs that disagree keeps only what they "
            "all declare")
 
-by_file, by_dir = includes.kernel_flag_index()
+by_file, by_src, by_dir = includes.kernel_flag_index()
 ncsw = by_file.get("sys/contrib/ncsw/etc/error.c", ())
 check_that("the DPAA compile-with expanded",
            any("contrib/ncsw/inc" in f for f in ncsw),
@@ -242,12 +242,12 @@ check_that("...even though the hint has an opinion",
 # ${MACHINE_CPUARCH} and means it.
 for a, want in (("amd64", "cddl/dev/dtrace/x86"),
                 ("aarch64", "cddl/dev/dtrace/aarch64")):
-    _bf, _bd = includes.kernel_flag_index(a)
+    _bf, _bs, _bd = includes.kernel_flag_index(a)
     key = "sys/cddl/dev/dtrace/" + ("amd64" if a == "amd64" else "aarch64")
     check_that(f"{a}'s dtrace gets {want}",
                any(f.endswith(want) for f in _bd.get(key, ())),
                "ARCHDIR= ${MACHINE_CPUARCH}, and a .PATH built from it")
-_bd64 = includes.kernel_flag_index("aarch64")[1]
+_bd64 = includes.kernel_flag_index("aarch64")[2]
 check_that("...and arm64 does NOT get the x86 one",
            not any(f.endswith("cddl/dev/dtrace/x86")
                    for f in _bd64.get("sys/cddl/dev/dtrace/aarch64", ())),
