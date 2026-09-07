@@ -636,3 +636,64 @@ else. **58 of the 60 are clean under all four.**
 and it is in the batch, and with `-DPIC` it compares clean, because
 `errlst.h` declares `sys_errlist` inside `__BEGIN_DECLS`. The guard is not
 the rule — emitting nothing is.
+
+## Run 38: 83 committable, and none of them portable
+
+The oracle and the tree have to agree before a port can land, and after
+the 27-file batch they no longer overlap at all.
+
+```
+oracle run 38, lib/libc:   committable 83, of which 60 are zero-edit
+check_port_candidates.py:  548 of 1,216 permitted
+intersection:              2
+```
+
+and the two are `gen/isnan.c` and `gen/siglist.c` — the two that the
+certification step already rejects, for the reasons runs 35 and 38
+recorded above (a vacuous comparison behind `#ifdef PIC`, and a C99 array
+designator that `-Werror` refuses). **The available batch is zero.**
+
+That is worth stating plainly, because "83 committable" reads like 83
+files waiting to be renamed and it is not. Every blocking reason, counted
+over the 60 (a file can have several):
+
+| files | blocked by |
+|---:|---|
+| 25 | its `SRCS` line is inside an `.if` — all of `quad/`, whose `Makefile.inc` has three `LIBC_ARCH` branches |
+| 18 | `KQSRCS`, and 8 more by `KSRCS` — `lib/libc/Makefile:172` |
+| 11+ | `stand/libsa/Makefile` and six other `stand/` makefiles |
+| 9 | same basename as another architecture's copy — `infinity.c` and `flt_rounds.c` exist for six or seven architectures, `strcpy.c` and `strncpy.c` for several |
+| 4 | `tools/build/Makefile` |
+| 6 | `libexec/rtld-elf/rtld-libc/Makefile.inc` |
+| 2 each | `lib/libsm`, `lib/libcompiler_rt` |
+| 1 each | `secure/lib/libcrypto` (and libssl, localedef), `bin/sh` (and find), `kerberos5/libexec/kcm` (and stand/uboot), `krb5/util/support`, `usr.sbin/makefs`, `JEMALLOCSRCS` |
+| 1 | `stdlib/_Exit.c`, which no makefile in `lib/libc` names at all |
+
+### These are decisions, not screening
+
+Three of the classes are one question each, and none of them is answered
+by another oracle run.
+
+**`KQSRCS` and `KSRCS` copy libc's sources into the kernel.**
+`lib/libc/Makefile:180` is `libkern.gen: ${KQSRCS} ${KSRCS}` and copies
+them, plus `quad/quad.h`, into `${DESTDIR}/sys/libkern`.
+`sys/conf/files.arm:123` and `sys/conf/files.i386:110` then build
+`libkern/divdi3.c` and `libkern/qdivrem.c` as **kernel C**. So renaming
+`lib/libc/quad/divdi3.c` does not only break `make libkern`; it
+desynchronises libc's quad arithmetic from the copy two 32-bit kernels
+compile. Porting `quad/` means deciding what the kernel's copy is, and
+that is a kernel change, not a libc one.
+
+**`stand/` is freestanding.** The loader's mini-libc builds these sources
+with its own flags in an environment that has no C++ runtime. A `.cpp` in
+`stand/libsa`'s `SRCS` is a different question from a `.cpp` in libc's.
+
+**The per-architecture basenames are a `.PATH` question.** `infinity.c`
+exists for seven architectures on one `.PATH` list; renaming one changes
+which of the seven bmake finds, which is the exact mechanism commit
+`4f926059c` was about.
+
+So the migration's next step in `lib/libc` is not more verification. The
+oracle has verified more than the tree will take, and what is left is a
+small number of build-system decisions, each of which reaches outside
+`lib/libc`.
