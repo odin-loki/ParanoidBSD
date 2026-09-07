@@ -64,6 +64,7 @@ static void *hash_realloc(SEGMENT **, int, int);
 static int   hash_seq(const DB *, DBT *, DBT *, u_int32_t);
 static int   hash_sync(const DB *, u_int32_t);
 static int   hdestroy(HTAB *);
+static HTAB *destroy_hash(HTAB *);
 static HTAB *init_hash(HTAB *, const char *, const HASHINFO *);
 static int   init_htab(HTAB *, int);
 #if BYTE_ORDER == LITTLE_ENDIAN
@@ -263,6 +264,41 @@ hash_fd(const DB *dbp)
 }
 
 /************************** LOCAL CREATION ROUTINES **********************/
+/*
+ * PBSD: init_hash() has four ways to fail and only one of them cleaned up.
+ *
+ * __hash_open() calls it as
+ *
+ *	if (!(hashp = init_hash(hashp, file, info)))
+ *		RETURN_ERROR(errno, error1);
+ *
+ * so a NULL return OVERWRITES the only reference to the table. error1's
+ * `if (hashp != NULL) _close(hashp->fp)' is then skipped and error0's
+ * free(hashp) is a free(NULL): both the HTAB and the descriptor opened
+ * at :119 are gone. That is correct exactly when init_hash has already
+ * destroyed the table, which is what the comment at :327 and
+ * alloc_segs()'s hdestroy() promise - and what three of its four exits
+ * did not do. Two of the three are plain argument validation on a
+ * caller-supplied HASHINFO, so dbopen(3) in a loop with a bad bsize or
+ * lorder leaks a descriptor per call until the process runs out.
+ *
+ * hdestroy() is safe on a table this young: __buf_free() returns early
+ * on !LRU, flush_meta() on !save_file (set at :182, after this), dir is
+ * NULL, nmaps is 0, and fp is either -1 from :104 or the descriptor
+ * that has to be closed. It sets errno on its own failure, so the
+ * caller's is saved across it.
+ */
+static HTAB *
+destroy_hash(HTAB *hashp)
+{
+	int save_errno;
+
+	save_errno = errno;
+	(void)hdestroy(hashp);
+	errno = save_errno;
+	return (NULL);
+}
+
 static HTAB *
 init_hash(HTAB *hashp, const char *file, const HASHINFO *info)
 {
@@ -285,7 +321,7 @@ init_hash(HTAB *hashp, const char *file, const HASHINFO *info)
 	/* Fix bucket size to be optimal for file system */
 	if (file != NULL) {
 		if (stat(file, &statbuf))
-			return (NULL);
+			return (destroy_hash(hashp));
 		hashp->BSIZE = statbuf.st_blksize;
 		if (hashp->BSIZE > MAX_BSIZE)
 			hashp->BSIZE = MAX_BSIZE;
@@ -299,7 +335,7 @@ init_hash(HTAB *hashp, const char *file, const HASHINFO *info)
 			hashp->BSIZE = 1 << hashp->BSHIFT;
 			if (hashp->BSIZE > MAX_BSIZE) {
 				errno = EINVAL;
-				return (NULL);
+				return (destroy_hash(hashp));
 			}
 		}
 		if (info->ffactor)
@@ -312,7 +348,7 @@ init_hash(HTAB *hashp, const char *file, const HASHINFO *info)
 			if (info->lorder != BIG_ENDIAN &&
 			    info->lorder != LITTLE_ENDIAN) {
 				errno = EINVAL;
-				return (NULL);
+				return (destroy_hash(hashp));
 			}
 			hashp->LORDER = info->lorder;
 		}

@@ -657,6 +657,20 @@ overflow_page(HTAB *hashp)
 #ifdef DEBUG2
 	int tmp1, tmp2;
 #endif
+	/*
+	 * PBSD: freep is assigned only inside the search loop below, and
+	 * the loop does not run when first_page > free_page. That needs
+	 * LAST_FREED to be past the last in-use bitmap page - and
+	 * LAST_FREED is hdr.last_freed, _read() straight out of the
+	 * database file at hash.c:137 with only MAGIC, VERSION and
+	 * H_CHARKEY checked. The "No Free Page Found" path below then
+	 * falls into an else arm that does SETBIT(freep, free_bit): a
+	 * write through a pointer nothing assigned, at an offset also
+	 * taken from the header. Same shape as the run-time linker's
+	 * DT_RELR bitmap - well-formedness that is a property of the FILE
+	 * and not of this code.
+	 */
+	freep = NULL;
 	splitnum = hashp->OVFL_POINT;
 	max_free = hashp->SPARES[splitnum];
 
@@ -751,6 +765,11 @@ overflow_page(HTAB *hashp)
 		 * Free_bit addresses the last used bit.  Bump it to address
 		 * the first available bit.
 		 */
+		if (freep == NULL) {
+			/* No bitmap page was examined; see above. */
+			errno = EFTYPE;
+			return (0);
+		}
 		free_bit++;
 		SETBIT(freep, free_bit);
 	}

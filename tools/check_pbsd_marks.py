@@ -596,6 +596,35 @@ FIXES = {
         "Lose this line and /sbin/init stops booting",
         ),
     ],
+    "hbsd/src/lib/libc/db/hash/hash.c": [
+        (
+            ("return (destroy_hash(hashp));", 3),
+            None,
+            "init_hash() has four ways to fail and one of them cleaned "
+            "up. __hash_open() writes the NULL return over its only "
+            "reference to the table, so error1's _close(hashp->fp) is "
+            "skipped and error0's free(hashp) is a free(NULL): both the "
+            "HTAB and the descriptor opened three statements earlier "
+            "are gone. Two of the three uncleaned exits are argument "
+            "validation on a caller-supplied HASHINFO, so dbopen(3) in "
+            "a loop with a bad bsize or lorder leaks a descriptor per "
+            "call",
+        ),
+    ],
+    "hbsd/src/lib/libc/db/hash/hash_page.c": [
+        (
+            "PBSD: freep is assigned only inside the search loop",
+            None,
+            "overflow_page() writes SETBIT(freep, free_bit) on a path "
+            "where the loop that assigns freep never ran. It needs "
+            "LAST_FREED past the last in-use bitmap page, and "
+            "LAST_FREED is hdr.last_freed, _read() out of the database "
+            "file with only MAGIC, VERSION and H_CHARKEY checked - so "
+            "a crafted .db writes through an indeterminate pointer at "
+            "an offset the file also chooses. Same shape as the "
+            "run-time linker's DT_RELR bitmap",
+        ),
+    ],
     "hbsd/src/libexec/rtld-elf/aarch64/reloc.c": [
         (
             ("goto done;", 5),

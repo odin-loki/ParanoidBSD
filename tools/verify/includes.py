@@ -218,6 +218,56 @@ SYS_ARCH = {"amd64": "amd64", "arm64": "aarch64", "arm": "armv7",
             "powerpc64": "powerpc64"}
 
 
+# A libc subdirectory's Makefile.inc is where its -D flags live, and
+# without them the directory does not compile: lib/libc/posix1e is
+# -D_ACL_PRIVATE, without which <sys/acl.h> makes acl_t a `void *' and
+# every acl->ats_brand is "member reference base type void". Twelve
+# translation units of the POSIX.1e and NFSv4 ACL layer, on one -D from
+# a three-line Makefile.
+#
+# lib/libc/db is -D__DBINTERFACE_PRIVATE, lib/libc/regex is
+# -DPOSIX_MISTAKE, lib/libc/rpc is -DBROKEN_DES -DPORTMAP -DDES_BUILTIN,
+# lib/libc/net is -DINET6. Reading them out of the Makefile is the only
+# form of this that does not go stale: a table here is a second place
+# for the answer to be wrong in, and the softfloat and csu cases already
+# showed what that costs.
+CFLAGS_LINE = re.compile(r"^CFLAGS\s*\+?=\s*(.*)$")
+DEFINE = re.compile(r"-D[A-Za-z_]\w*(?:=\S+)?")
+
+
+@functools.lru_cache(maxsize=None)
+def makefile_defines(d: str) -> tuple[str, ...]:
+    """The UNCONDITIONAL -D flags in a directory's Makefile.inc.
+
+    Unconditional only. A CFLAGS line inside .if/.endif is a build-time
+    choice this sweep has not made - lib/libc/softfloat's -DFLOAT128 is
+    under `.if defined(SOFTFLOAT_128)', and applying it would compile a
+    quad-precision softfloat that no libc in this tree builds. Taking
+    only what holds for every build is the difference between reading
+    the program and inventing one.
+    """
+    mk = Path(d) / "Makefile.inc"
+    if not mk.is_file():
+        return ()
+    out: list[str] = []
+    depth = 0
+    text = mk.read_text(errors="replace").replace("\\\n", " ")
+    for line in text.splitlines():
+        st = line.strip()
+        if st.startswith((".if", ".for")):
+            depth += 1
+            continue
+        if st.startswith((".endif", ".endfor")):
+            depth = max(0, depth - 1)
+            continue
+        if depth:
+            continue
+        m = CFLAGS_LINE.match(line)
+        if m:
+            out.extend(DEFINE.findall(m.group(1)))
+    return tuple(out)
+
+
 def arch_of(rel: str, default: str = "amd64") -> str:
     """A source under lib/libc/<arch>/, lib/msun/<arch>/ or sys/<arch>/.
 
@@ -872,6 +922,21 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/lib/libc/{LIBC_ARCH.get(arch, 'amd64')}"]
     if rel.startswith("lib/libmd"):
         flags.append(f"-I{SRC}/lib/libmd")
+    if rel.split("/")[0] in ("lib", "libexec"):
+        # ...and every Makefile.inc from the source's own directory up to
+        # the component root, because a -D set in lib/libc/Makefile.inc
+        # applies to lib/libc/gen/ too.
+        d = (SRC / rel).parent
+        root = SRC / rel.split("/")[0]
+        seen = set(flags)
+        while d != root and root in d.parents or d == root:
+            for f in makefile_defines(str(d)):
+                if f not in seen:
+                    seen.add(f)
+                    flags.append(f)
+            if d == root:
+                break
+            d = d.parent
     if rel.startswith("lib/libc/csu/"):
         # The C start-up: libc_start1.c is the first C any process runs
         # after the run-time linker, and none of its six translation
