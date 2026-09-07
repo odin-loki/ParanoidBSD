@@ -13,6 +13,11 @@ on:
       - 'tools/run_todo_passes.py'
       - 'tools/ci/run_freebsd_oracle.sh'
       - 'docs/migration/freebsd_verified_floor.txt'
+      - 'docs/migration/freebsd_abi_floor.txt'
+      - 'docs/migration/freebsd_libc_verified_floor.txt'
+      - 'docs/migration/freebsd_libc_abi_floor.txt'
+      - 'docs/migration/freebsd_oracle_removed.txt'
+      - 'tools/check_oracle_removed.py'
       - '.github/workflows/pbsd-freebsd-oracle.yml'
   pull_request:
     paths:
@@ -20,6 +25,11 @@ on:
       - 'tools/run_todo_passes.py'
       - 'tools/ci/run_freebsd_oracle.sh'
       - 'docs/migration/freebsd_verified_floor.txt'
+      - 'docs/migration/freebsd_abi_floor.txt'
+      - 'docs/migration/freebsd_libc_verified_floor.txt'
+      - 'docs/migration/freebsd_libc_abi_floor.txt'
+      - 'docs/migration/freebsd_oracle_removed.txt'
+      - 'tools/check_oracle_removed.py'
       - '.github/workflows/pbsd-freebsd-oracle.yml'
   workflow_dispatch:
   # Run it over time, not only when the pipeline is touched. The verified
