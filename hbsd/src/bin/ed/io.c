@@ -35,8 +35,14 @@ read_file(char *fn, long n)
 	FILE *fp;
 	long size;
 	int cs;
+	char *p;
 
-	fp = (*fn == '!') ? popen(fn + 1, "r") : fopen(strip_escapes(fn), "r");
+	if (*fn == '!')
+		fp = popen(fn + 1, "r");
+	else if ((p = strip_escapes(fn)) == NULL)
+		return ERR;
+	else
+		fp = fopen(p, "r");
 	if (fp == NULL) {
 		fprintf(stderr, "%s: %s\n", fn, strerror(errno));
 		errmsg = "cannot open input file";
@@ -142,8 +148,14 @@ write_file(char *fn, const char *mode, long n, long m)
 	FILE *fp;
 	long size;
 	int cs;
+	char *p;
 
-	fp = (*fn == '!') ? popen(fn+1, "w") : fopen(strip_escapes(fn), mode);
+	if (*fn == '!')
+		fp = popen(fn + 1, "w");
+	else if ((p = strip_escapes(fn)) == NULL)
+		return ERR;
+	else
+		fp = fopen(p, mode);
 	if (fp == NULL) {
 		fprintf(stderr, "%s: %s\n", fn, strerror(errno));
 		errmsg = "cannot open output file";

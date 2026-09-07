@@ -516,7 +516,9 @@ exec_command(void)
 		GET_COMMAND_SUFFIX();
 		if (*fnp)
 			strlcpy(old_filename, fnp, PATH_MAX);
-		printf("%s\n", strip_escapes(old_filename));
+		if ((fnp = strip_escapes(old_filename)) == NULL)
+			return ERR;
+		printf("%s\n", fnp);
 		break;
 	case 'g':
 	case 'v':
@@ -988,7 +990,9 @@ get_shell_command(void)
 				errmsg = "no current filename";
 				return ERR;
 			}
-			j = strlen(s = strip_escapes(old_filename));
+			if ((s = strip_escapes(old_filename)) == NULL)
+				return ERR;
+			j = strlen(s);
 			REALLOC(buf, n, i + j, ERR);
 			while (j--)
 				buf[i++] = *s++;

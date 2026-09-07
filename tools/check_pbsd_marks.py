@@ -1194,6 +1194,23 @@ FIXES = {
         "does not check ->with_data - read those bytes into the "
         "radiotap header. Its twin iwl_mvm_rx_mpdu_mq() has the = {}",
     ),
+    "hbsd/src/bin/ed/main.c": (
+        # TWO sites, so a count: the `%' expansion and the `f' command
+        # both call it, and fixing one is this document's most common
+        # shape of half-fix.
+        ("strip_escapes(old_filename)) == NULL", 2),
+        None,
+        "strip_escapes() returns NULL when its REALLOC fails - the macro "
+        "returns the caller's `err' argument and this caller passes NULL "
+        "- and the `%' expansion passed that straight to strlen()",
+    ),
+    "hbsd/src/bin/ed/io.c": (
+        ("strip_escapes(fn)) == NULL", 2),
+        None,
+        "read_file() and write_file() passed a possibly-NULL "
+        "strip_escapes() result to fopen(), which reports EFAULT and so "
+        "printed `Bad address' for what is an out-of-memory condition",
+    ),
     "hbsd/src/sys/modules/mlx5/Makefile": (
         # Two lines, one block. Counting a string common to both is not
         # possible, so this marks the CFLAGS - the one whose absence made
