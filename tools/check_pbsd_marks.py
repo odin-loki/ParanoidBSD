@@ -812,6 +812,19 @@ FIXES = {
             "is supported, which is what BNXT_MEDIA_END gives",
         ),
     ],
+    "hbsd/src/sys/compat/linuxkpi/common/include/linux/compiler.h": [
+        (
+            "#define\tuninitialized_var(x)\t\tx = 0",
+            "#define\tuninitialized_var(x)\t\tx = x",
+            "`int uninitialized_var(index);' expanded to `int index = "
+            "index;', which reads an indeterminate object to initialise "
+            "itself - undefined behaviour at the declaration, before any "
+            "question of whether the variable is later read. Neither gcc "
+            "nor clang warns on self-init, which is the macro's whole "
+            "purpose and exactly why Linux deleted it in 2021. Eighteen "
+            "uses in this tree, every one a scalar or a pointer",
+        ),
+    ],
     "hbsd/src/sys/compat/linuxkpi/common/include/linux/device.h": [
         (
             "PBSD: a NULL device logs, as it does on Linux",

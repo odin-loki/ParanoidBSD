@@ -62,7 +62,31 @@
 #define	unlikely(x)			__builtin_expect(!!(x), 0)
 #define typeof(x)			__typeof(x)
 
-#define	uninitialized_var(x)		x = x
+/*
+ * PBSD: zero, not self-initialisation.
+ *
+ * `int uninitialized_var(index);' expanded to `int index = index;',
+ * which reads an indeterminate object to initialise itself - undefined
+ * behaviour at the declaration, before any question of whether the
+ * variable is later read. The macro exists only because neither gcc
+ * nor clang warns on self-init, so it silences -Wuninitialized while
+ * leaving the UB in place, and it is exactly why Linux deleted it in
+ * 2021 (commit "compiler: remove uninitialized_var() macro"): it papers
+ * over real bugs.
+ *
+ * There are eighteen uses in this tree - mthca_qp.c, mlx4, mlx5 - and
+ * every one of them is a scalar or a pointer, so zero is assignable at
+ * all of them. Each carries a comment from its author arguing the
+ * variable cannot be read before assignment; those arguments may all be
+ * right, and this costs one store on a path they say is unreachable.
+ * What it buys is that the declaration is no longer undefined whether
+ * they are right or not.
+ *
+ * The other definition of this macro in the tree,
+ * sys/dev/drm2/drm_os_freebsd.h:41, is `#define uninitialized_var(x) x'
+ * - it suppresses nothing and adds nothing, which is the harmless form.
+ */
+#define	uninitialized_var(x)		x = 0
 
 #define	barrier()			__asm__ __volatile__("": : :"memory")
 

@@ -3433,6 +3433,45 @@ The out-parameter-written-only-on-success shape, which this document has
 now recorded eight times, and the first where the missing check is in
 the framework rather than a driver.
 
+## Fixed — a macro whose only job is to hide the warning for the bug
+
+Eighteen declarations across `mthca`, `mlx4` and `mlx5` read
+
+```c
+	int uninitialized_var(index);
+	u32 uninitialized_var(f0);
+	struct ib_uobject *uninitialized_var(xrcd_uobj);
+```
+
+and `sys/compat/linuxkpi/common/include/linux/compiler.h:65` was
+
+```c
+#define	uninitialized_var(x)		x = x
+```
+
+so each of them expands to `int index = index;` — **reading an
+indeterminate object to initialise itself**, which is undefined at the
+declaration, before any question of whether the variable is later read.
+
+The macro exists because neither gcc nor clang warns on self-init. That
+is its entire function: it silences `-Wuninitialized` and leaves the
+undefined behaviour exactly where it was. It is why Linux deleted it in
+2021 — *"compiler: remove uninitialized_var() macro"*, whose commit
+message is that it papers over real bugs.
+
+Every one of the eighteen is a scalar or a pointer, so `x = 0` is
+assignable at all of them. Each carries a comment from its author
+arguing the variable cannot be read before assignment, and those
+arguments may all be right; this costs one store on a path they say is
+unreachable. What it buys is that the declaration is defined whether
+they are right or not.
+
+The tree's other definition, `sys/dev/drm2/drm_os_freebsd.h:41`, is
+`#define uninitialized_var(x) x` — it suppresses nothing and adds
+nothing, which is the harmless form.
+
+`mthca` + `mlx5_ib` + `mlx5_core`: 14 findings → 6.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
