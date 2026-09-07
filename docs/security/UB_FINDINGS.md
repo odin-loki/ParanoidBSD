@@ -3575,6 +3575,31 @@ and both CI and the boot workflow run against it, the latter against the
 image it just built. Verified to bite: one fabricated
 `/usr/local/bin/evil` in the listing and the check fails by name.
 
+## What the model checker says about `sys/kern`, and why none of it is new
+
+Sweep 8's `sys/kern` CBMC shard: **91 PROVED, 5 BOUNDED, 20 FAILED, 39
+TIMEOUT, 4 ERROR**. All twenty failures are in classes this document
+already carries, which is the useful negative result:
+
+* **six** are `__CPROVER__start.memory-leak.1` on an allocator —
+  `blist_create`, `int_alloc_resource`, `clock_register`, `stack_create`,
+  `m_tag_alloc`, `nl_buf_alloc`. A function whose job is to allocate and
+  return leaks its allocation from a single-function view by definition.
+* **eight** are `dereference failure: pointer NULL in x->y` immediately
+  after an `M_WAITOK` allocation, which cannot return NULL.
+  `devctl_alloc_dei`, `rctl_rule_alloc`, `ng_alloc_item`,
+  `livedump_start`, `nl_find_port` and friends.
+* `subr_boot.c:boot_env_to_howto` is `strcasecmp` on an unconstrained
+  `char *` — the missing-precondition class.
+* `subr_blist.c:bitrange` is `static inline` with callers that pass
+  `0 <= n`, `n + count <= BLIST_RADIX`; `subr_stats.c`'s
+  `(sbintime_t)_bt.sec << 32` and `subr_autoconf.c`'s `warninterval *`
+  are a clock reading and a tunable, both bounded in practice.
+
+Nothing there is a defect, and nothing there is new. Worth recording
+because a triage pass that finds nothing is evidence too — the earlier
+passes over this shard held.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
