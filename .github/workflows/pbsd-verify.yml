@@ -217,11 +217,25 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install the instruments
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang
+      # --check-errors, which this step did not pass for three sweeps.
+      # The inventory in tools/verify/expected_errors.py was therefore
+      # only ever checked where somebody checked it by hand, and the
+      # first run of it over the kern shard found three stale exemptions
+      # and one shard-wide hole: sys/netinet/cc/cc.c, the congestion
+      # control framework, had been reporting "'opt_cc.h' file not
+      # found" and contributing nothing to a shard reported as fully
+      # read. A file that does not compile is indistinguishable from a
+      # clean one in every total this job prints.
+      #
+      # It exits non-zero on a mismatch, which fails the job - and the
+      # artifact upload below is `if: always()', so the sweep's data
+      # survives the failure.
       - name: Analyse ${{ matrix.name }}
         run: |
           mkdir -p out
           python3 tools/verify/analyze.py ${{ matrix.scopes }} \
-            --jobs 4 --out out/analyze-${{ matrix.name }}.jsonl
+            --jobs 4 --check-errors \
+            --out out/analyze-${{ matrix.name }}.jsonl
       - uses: actions/upload-artifact@v4
         if: always()
         with:
