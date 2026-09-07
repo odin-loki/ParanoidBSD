@@ -39,6 +39,32 @@ EXPECTED = {
     "sys/kern/subr_syscall.c":      "#included by each arch's trap.c",
     "sys/kern/systrace_args.c":     "generated, #included by the dtrace glue",
     "sys/kern/subr_busdma_bounce.c": "#included by each arch's busdma",
+
+    # Sweep 10's first --check-errors over sys/fs and sys/cddl. Nine of
+    # these are the DTrace layout: dtrace.c is one translation unit that
+    # #includes the rest of the directory, `#include <dtrace_anon.c>' at
+    # :18479 and its neighbours. INCLUDED_BY names the file that does it,
+    # and test_expected_errors.py checks that the file exists and really
+    # does include this one.
+    "sys/cddl/dev/dtrace/dtrace_anon.c":
+        "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
+    "sys/cddl/dev/dtrace/dtrace_debug.c":
+        "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
+    "sys/cddl/dev/dtrace/dtrace_hacks.c":
+        "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
+    "sys/cddl/dev/dtrace/dtrace_ioctl.c":
+        "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
+    "sys/cddl/dev/dtrace/dtrace_load.c":
+        "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
+    "sys/cddl/dev/dtrace/dtrace_modevent.c":
+        "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
+    "sys/cddl/dev/dtrace/dtrace_sysctl.c":
+        "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
+    "sys/cddl/dev/dtrace/dtrace_unload.c":
+        "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
+    "sys/cddl/dev/dtrace/dtrace_vtime.c":
+        "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
+    "sys/cam/ctl/ctl_ser_table.c": "INCLUDED_BY:sys/cam/ctl/ctl.c",
     # subr_devmap.c, subr_sfbuf.c and subr_intr.c used to be here, all
     # three for the same reason - "arch-private", "needs machine/intr.h,
     # which amd64 has not". They compile now: analyze.py retries a file
@@ -487,6 +513,14 @@ NOT_BUILT = {
     "sys/dev/xen/pcifront/":
         "the Xen PCI frontend, which wants <machine/xen-os.h> - a header "
         "removed when FreeBSD's Xen support was rewritten. NOT_NAMED",
+
+    "sys/cddl/boot/zfs/":
+        "the BOOT LOADER's ZFS reader, not the kernel's. "
+        "stand/libsa/zfs/zfsimpl.c #includes zfssubr.c, which #includes "
+        "the rest of the directory, and stand/libsa/zfs/Makefile.inc is "
+        "what names it. Nothing under sys/ compiles any of these as a "
+        "translation unit of its own - sys/cddl/boot/zfs/README says so "
+        "in as many words. NOT_NAMED",
 
     "sys/dev/mlx5/mlx5_fpga/":
         "the Innova FPGA half of mlx5. Its sources ARE named, but only "

@@ -106,21 +106,28 @@ print("\n== and the NOT_NAMED prefixes really are named by nothing")
 # a computation over the build system, so it is done here rather than
 # believed - the same rule as everywhere else in tools/verify: read the
 # build, do not keep a second copy of its answer.
+# Resolved the way the build resolves it, not by basename. A module's
+# SRCS names `blake3_zfs.c' and its .PATH decides WHICH one that is:
+# sys/contrib/openzfs/module/zfs/blake3_zfs.c, not the boot loader's copy
+# in sys/cddl/boot/zfs. Matching basenames called the second one built and
+# reported a prefix that is correct as absorbing live code.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import includes  # noqa: E402
+
 _named: set[str] = set()
 for _p in sorted(SYS.glob("conf/files*")):
     _t = _p.read_text(errors="replace").replace("\\\n", " ")
     for _l in _t.splitlines():
         _m = re.match(r"^(\S+\.[cS])\s", _l)
         if _m:
-            _named.add(_m.group(1))
-            _named.add(Path(_m.group(1)).name)
-for _p in sorted(SYS.rglob("modules/**/Makefile")):
-    for _m in re.finditer(r"(\S+\.[cS])", _p.read_text(errors="replace")):
-        _named.add(_m.group(1))
-        _named.add(Path(_m.group(1)).name)
+            _named.add("sys/" + _m.group(1))
+_by_file, _by_src, _ = includes.kernel_flag_index("amd64")
+_named |= set(_by_file) | set(_by_src)
 
 # It has to be able to say "named", or it says "not named" to everything.
-for built in ("dev/pci/pci.c", "kern/kern_exec.c", "vm/vm_page.c"):
+for built in ("sys/dev/pci/pci.c", "sys/kern/kern_exec.c",
+              "sys/vm/vm_page.c",
+              "sys/contrib/openzfs/module/zfs/blake3_zfs.c"):
     check(f"the build does name {built}", built in _named,
           "if this fails every check below passes for the wrong reason")
 
@@ -128,15 +135,35 @@ _claimed = [pre for pre, why in NOT_BUILT.items() if why.endswith("NOT_NAMED")]
 check("some prefix makes the NOT_NAMED claim", bool(_claimed))
 for pre in _claimed:
     d = ROOT / "hbsd" / "src" / pre.rstrip("/")
-    srcs = sorted(q.relative_to(ROOT / "hbsd" / "src" / "sys").as_posix()
+    srcs = sorted(q.relative_to(ROOT / "hbsd" / "src").as_posix()
                   for q in d.glob("*.c")) if d.is_dir() else []
-    named_here = [s for s in srcs
-                  if s in _named or Path(s).name in _named]
+    named_here = [s for s in srcs if s in _named]
     check(f"{pre} is named by nothing", not named_here,
           f"the build names {named_here[:3]}, so this prefix is absorbing "
           f"ERRORs from code that IS compiled")
     check(f"{pre} has sources at all", bool(srcs),
           "an empty prefix absorbs nothing and hides its own staleness")
+
+print("\n== the INCLUDED_BY entries name a file that really includes them")
+# An entry whose reason is INCLUDED_BY:<path> claims that the named file
+# #includes this one, which is why it is not a translation unit of its
+# own. dtrace.c does it nine times with `#include <dtrace_anon.c>' and
+# angle brackets, so the check looks for either spelling of the basename
+# in an #include line.
+for _f, _why in sorted(EXPECTED.items()):
+    if not _why.startswith("INCLUDED_BY:"):
+        continue
+    _by = _why.split("INCLUDED_BY:", 1)[1].strip()
+    _p = ROOT / "hbsd" / "src" / _by
+    check(f"{_f}: {_by} exists", _p.is_file())
+    if not _p.is_file():
+        continue
+    _base = Path(_f).name
+    check(f"{_f}: it is #included there",
+          bool(re.search(rf'#\s*include\s*[<"][^>"]*{re.escape(_base)}[>"]',
+                         _p.read_text(errors="replace"))),
+          "nothing in that file includes this one, so the reason is "
+          "describing a layout that has changed")
 
 print("\n== and the DEAD_OPTION prefixes name a variable nothing sets")
 # A prefix whose reason ends in DEAD_OPTION:NAME claims that no makefile
