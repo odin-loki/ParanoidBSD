@@ -209,32 +209,53 @@ barrier counts most of all.
 ```
 arch        ops   same  differ   kinds of difference
 amd64       112     82      30   barrier x1, instructions x3, length x12, generic only x14
-arm64       112     12     100   LSE dispatch (machine only) x78, barrier x8, generic only x14
-arm         112      6     106   barrier x66, length x2, generic only x38
+arm64       112     12     100   LSE dispatch (machine only) x78, instructions x4, length x4, generic only x14
+arm         112      6     106   barrier x26, length x42, generic only x38
 i386        112     46      66   instructions x9, length x38, generic only x19
 powerpc     112     14      98   barrier x22, instructions x20, length x18, generic only x38
-riscv        58     11      47   barrier x34, length x8, instructions x1, generic only x4
+riscv        58     11      47   barrier x25, instructions x10, length x8, generic only x4
 ```
 
 **171 of 618.** The generic header is not a drop-in replacement, and the
-three ways it differs are each worth naming:
+ways it differs are each worth naming:
 
 * **arm64 loses a runtime dispatch.** `<machine/atomic.h>` reads a global
   `lse_supported` and branches between an LSE instruction (`ldadd`,
   `cas`, `casa`) and the `ldxr`/`stxr` loop. `__atomic` emits only the
   loop. That is 78 of arm64's 112 operations, and it is a performance
   decision FreeBSD made deliberately, on the architecture where it
-  matters most.
-* **the barriers are not the same instructions.** riscv's machine header
-  spells acquire as `amoadd.w` followed by a full `fence` where the
-  builtin emits `amoadd.w.aq`; powerpc's is `isync` where the builtin
-  emits `lwsync`. Both pairs are defensible readings of their memory
-  model and they are not interchangeable by inspection.
+  matters most. Everything else on arm64 is small: the four fences differ
+  in *scope* (`dmb ishld` against `dmb ld` — inner-shareable against full
+  system, the generic being the narrower and the one Linux uses), and the
+  four acquire loads are the same `ldar` plus a register move the inline
+  asm forces.
+* **the barriers are two accepted idioms, and which side uses which
+  depends on the operation.** On powerpc the generic acquire *load* is
+  the control-`isync` sequence (`lwz; cmpd; bne-; isync`) and the machine
+  one is `lwsync`; on acquire *cmpset* it is the other way round — the
+  machine header ends with `isync` and the builtin with `lwsync`. On
+  riscv the machine header uses a bare `fence` — a full barrier — where
+  the builtin emits exactly what the operation needs: `fence r, rw` after
+  an acquire load, `lr.w.aq` for an acquire cmpset. Adopting would make
+  riscv's barriers *weaker and still correct*, which is a change to argue
+  for on the record, not one to make by deleting a file.
 * **the generic header offers more than it replaces.** 14 to 38
   operations per architecture exist only on the generic side — `arm` and
   `powerpc` have no 8- or 16-bit atomics at all — and *nothing* is
   machine-only. Whatever the six headers implement, the generic one
   implements too.
+
+amd64 is the closest to a straight swap and its thirty are worth reading,
+because they are what "adopt it here first" would cost. Twelve are
+`fcmpset` at four widths and three orderings, where the builtin skips
+writing `*old` on the success path and the hand-written version writes it
+unconditionally — same value either way, one branch different. Three are
+`atomic_clear_8`, where the generic complements a byte (`notb %sil`) and
+the machine header a word (`notl %esi`) before the same `lock andb`. One
+is `atomic_thread_fence_seq_cst`: `mfence` against `lock addl $0, %gs:256`,
+which is FreeBSD choosing a locked no-op over `mfence` because on much x86
+hardware it is faster. The remaining fourteen are operations only the
+generic header has.
 
 So the switch-over is not blocked on writing a checker any more; it is
 blocked on a decision the checker has made visible. Taking the generic

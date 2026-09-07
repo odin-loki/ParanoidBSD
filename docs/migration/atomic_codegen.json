@@ -1,7 +1,7 @@
 {
  "_comment": "Per (architecture, operation): does sys/sys/atomic_generic.h emit the same instructions as <machine/atomic.h>, and if not, what kind of difference is it. Written by tools/atomic_codegen_check.py --freeze; checked by --baseline. A measurement, not an edited file.",
  "compiler": "Ubuntu clang version 18.1.3 (1ubuntu1)",
- "tree": "12948e920a1f70267a7b5ec21da6074a5cb7f493",
+ "tree": "a8ea582816a02a1cd38c037db030610126440ba6",
  "verdicts": {
   "amd64": {
    "w_add_16": {
@@ -544,12 +544,12 @@
    "w_add_32": {
     "g": "ed5d6af4f4e7",
     "m": "335e7dbd8cd2",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_add_64": {
     "g": "194289976410",
     "m": "49d165cdf8bb",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_add_8": {
     "v": "generic only"
@@ -560,12 +560,12 @@
    "w_add_acq_32": {
     "g": "6ecb394d43a5",
     "m": "b09afd2213b1",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_add_acq_64": {
     "g": "76d4ef72518c",
     "m": "40d47830fa3b",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_add_acq_8": {
     "v": "generic only"
@@ -576,12 +576,12 @@
    "w_add_rel_32": {
     "g": "8a4761e26ab4",
     "m": "c29071ce464c",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_add_rel_64": {
     "g": "99c22eea6cf8",
     "m": "3715e4d11aad",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_add_rel_8": {
     "v": "generic only"
@@ -594,12 +594,12 @@
    "w_clear_32": {
     "g": "b7af2379b484",
     "m": "7478f61e0fa6",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_clear_64": {
     "g": "b01a6be57fae",
     "m": "da591ba34c01",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_clear_8": {
     "v": "generic only"
@@ -610,12 +610,12 @@
    "w_clear_acq_32": {
     "g": "787578235a3c",
     "m": "bb773df4ada9",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_clear_acq_64": {
     "g": "3b545fa6b40f",
     "m": "b2eacef4e46c",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_clear_acq_8": {
     "v": "generic only"
@@ -626,12 +626,12 @@
    "w_clear_rel_32": {
     "g": "81d7d2422ec6",
     "m": "dc9b216f829f",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_clear_rel_64": {
     "g": "1b2d5517165a",
     "m": "ff84ef4553b7",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_clear_rel_8": {
     "v": "generic only"
@@ -759,22 +759,22 @@
    "w_fence_acq": {
     "g": "640a76ad919d",
     "m": "72758254b465",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_fence_acq_rel": {
     "g": "640a76ad919d",
     "m": "72758254b465",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_fence_rel": {
     "g": "640a76ad919d",
     "m": "72758254b465",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_fence_seq_cst": {
     "g": "640a76ad919d",
     "m": "72758254b465",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_fetchadd_16": {
     "v": "generic only"
@@ -782,12 +782,12 @@
    "w_fetchadd_32": {
     "g": "196d4d8c80ef",
     "m": "14dc25000355",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_fetchadd_64": {
     "g": "5762bdf6dc32",
     "m": "c69f649ee40c",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_fetchadd_8": {
     "v": "generic only"
@@ -829,7 +829,7 @@
    "w_load_64": {
     "g": "379354345fc9",
     "m": "987ab29b82e9",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_load_8": {
     "g": "7a3b0d68edfa",
@@ -839,22 +839,22 @@
    "w_load_acq_16": {
     "g": "e0cd065b909d",
     "m": "b5cf527b6a68",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_load_acq_32": {
     "g": "116c09b49aa5",
     "m": "25be23739da6",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_load_acq_64": {
     "g": "3aae0eb987e8",
     "m": "d1c6357ed137",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_load_acq_8": {
     "g": "9325fb950c50",
     "m": "e7d681931b05",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_readandclear_16": {
     "v": "generic only"
@@ -862,12 +862,12 @@
    "w_readandclear_32": {
     "g": "3c5dcfc0fdd0",
     "m": "2261077cb59a",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_readandclear_64": {
     "g": "3b5f817b5c01",
     "m": "dfb54b247dfb",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_readandclear_8": {
     "v": "generic only"
@@ -880,12 +880,12 @@
    "w_set_32": {
     "g": "cf7891c2f565",
     "m": "790eb02d5f66",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_set_64": {
     "g": "5be2d3f9fbd7",
     "m": "a4547f149661",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_set_8": {
     "v": "generic only"
@@ -896,12 +896,12 @@
    "w_set_acq_32": {
     "g": "e700ed6da236",
     "m": "b701cd50ee63",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_set_acq_64": {
     "g": "6dac8fd05915",
     "m": "11269896512a",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_set_acq_8": {
     "v": "generic only"
@@ -912,12 +912,12 @@
    "w_set_rel_32": {
     "g": "b6ba3792a188",
     "m": "0001f2c656c7",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_set_rel_64": {
     "g": "c86771776676",
     "m": "75c732b66114",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_set_rel_8": {
     "v": "generic only"
@@ -948,12 +948,12 @@
    "w_store_rel_32": {
     "g": "30238f7ac803",
     "m": "d25e41ce7737",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_store_rel_64": {
     "g": "5dd84bc0965f",
     "m": "a4e9c2f99a02",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_store_rel_8": {
     "v": "generic only"
@@ -964,12 +964,12 @@
    "w_subtract_32": {
     "g": "6dafe10c33c9",
     "m": "3fae8749f8c4",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_subtract_64": {
     "g": "69f16b8110f5",
     "m": "5f80b011445e",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_subtract_8": {
     "v": "generic only"
@@ -980,12 +980,12 @@
    "w_subtract_acq_32": {
     "g": "0e73092ddcc9",
     "m": "3d8f0849182f",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_subtract_acq_64": {
     "g": "c685810421e7",
     "m": "0841953e192f",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_subtract_acq_8": {
     "v": "generic only"
@@ -996,12 +996,12 @@
    "w_subtract_rel_32": {
     "g": "31108a67a70d",
     "m": "ec903d60d554",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_subtract_rel_64": {
     "g": "84e80cd00ef4",
     "m": "6cb1e5621c82",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_subtract_rel_8": {
     "v": "generic only"
@@ -1017,7 +1017,7 @@
    "w_swap_64": {
     "g": "f19cbff3142a",
     "m": "cf872f7be8e5",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_swap_8": {
     "v": "generic only"
@@ -1267,22 +1267,22 @@
    "w_fence_acq": {
     "g": "dfcd28e8a91d",
     "m": "8997a66d9914",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_fence_acq_rel": {
     "g": "90c1685b7e66",
     "m": "7e76d2b44e3d",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_fence_rel": {
     "g": "90c1685b7e66",
     "m": "7e76d2b44e3d",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_fence_seq_cst": {
     "g": "90c1685b7e66",
     "m": "7e76d2b44e3d",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_fetchadd_16": {
     "v": "generic only"
@@ -1347,22 +1347,22 @@
    "w_load_acq_16": {
     "g": "dcdac4dae9e1",
     "m": "4c001463f9fb",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_load_acq_32": {
     "g": "7d538cb249ea",
     "m": "223fb8abd3cf",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_load_acq_64": {
     "g": "d93d7f386bc1",
     "m": "36dbe26f8a37",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_load_acq_8": {
     "g": "4a67bae01b2f",
     "m": "87e462127b3b",
-    "v": "different barrier"
+    "v": "different sequence length"
    },
    "w_readandclear_16": {
     "v": "generic only"
@@ -2661,12 +2661,12 @@
    "w_fcmpset_32": {
     "g": "62dde685fe0b",
     "m": "c3e14224d6cd",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_fcmpset_64": {
     "g": "cacc12e18a84",
     "m": "52041eb69f11",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_fcmpset_acq_32": {
     "g": "718317472305",
@@ -2691,7 +2691,7 @@
    "w_fence_acq": {
     "g": "f92811aada0a",
     "m": "629087b64fb3",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_fence_acq_rel": {
     "g": "e400be821c20",
@@ -2701,12 +2701,12 @@
    "w_fence_rel": {
     "g": "2904af04ed2f",
     "m": "629087b64fb3",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_fence_seq_cst": {
     "g": "ea845adc40ea",
     "m": "629087b64fb3",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_fetchadd_32": {
     "g": "eb4ca30e706a",
@@ -2743,12 +2743,12 @@
    "w_load_acq_32": {
     "g": "f84e026fe832",
     "m": "47174d19725a",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_load_acq_64": {
     "g": "4a8bb402165c",
     "m": "c8f22fee6be3",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_readandclear_32": {
     "g": "500cdde510c6",
@@ -2803,12 +2803,12 @@
    "w_store_rel_32": {
     "g": "b5fda86279b9",
     "m": "de4ac885159a",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_store_rel_64": {
     "g": "8cb390e92c89",
     "m": "268d570f5d46",
-    "v": "different barrier"
+    "v": "different instructions"
    },
    "w_subtract_32": {
     "g": "5e312a3827c5",

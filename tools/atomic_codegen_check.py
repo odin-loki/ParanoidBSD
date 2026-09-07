@@ -254,7 +254,20 @@ def classify(arch: str, gen: list[str], mach: list[str]) -> str:
     }[arch]
 
     def barriers(seq):
-        return [x for x in seq if any(b in x for b in bar)]
+        """The barrier-bearing MNEMONICS, without their operands.
+
+        Comparing whole lines put `ldar w0, [x0]' against `ldar w8, [x0]'
+        in this category, which is a register allocation and not a
+        barrier: arm64's inline asm names its own destination and the
+        builtin does not. The mnemonic is the part that says what the
+        instruction orders.
+        """
+        out = []
+        for x in seq:
+            mnem = x.split()[0].rstrip(",")
+            if any(b in mnem for b in bar):
+                out.append(mnem)
+        return out
     if barriers(gen) != barriers(mach):
         return "different barrier"
     if len(gen) != len(mach):
