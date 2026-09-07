@@ -186,10 +186,20 @@ The checker was made to fail before being trusted: marking i386's 64-bit
 width as required reports all eight libcalls by name, and a syntax error in
 the header is caught as a compile failure rather than passed over.
 
-**Nothing includes it yet.** The switch-over is a separate change and wants a
-green `buildworld` behind it, for the reason `docs/migration/
-COMMITTING_PORTS.md` gives about the msun ports: while a build failure could
-still be the tree rather than the change, it cannot be attributed.
+**Nothing includes it yet.** The blocker that held both this and the
+`_stdint.h` pair — an open boot bisection, which a tree-wide header edit
+would have made unattributable — is gone: run 58 boots with PaX
+enforcement on and run 59 has a login. The `_stdint.h` pair went first
+anyway, because its claim is checkable without running anything: every
+macro is a value, and `--baseline` compares 1,284 of them against what
+the six headers expanded to before the change.
+
+`atomic.h` has no such comparison. Two headers agreeing on
+`atomic_add_int`'s *name* says nothing about the barrier it emits, and the
+existing checker answers a narrower question — whether each width is
+lock-free — which is a precondition, not a proof. So the switch-over waits
+on something that can compare the generated code, the way the IR oracle
+does for the ports.
 
 ## `_stdint.h` and `_inttypes.h`: written, and three ABI traps found
 
@@ -247,41 +257,53 @@ The checker was made to fail before being trusted, in both files: pointing
 `INT_FAST8_MAX` at `INT8_MAX` and `SCNd8` at the int conversion are each
 reported by name, on every target, with both expansions shown.
 
-**Nothing includes these yet either.** Same reason as the atomics — and
-that reason has changed, so it is worth restating rather than leaving as
-a stale "not yet".
+### Adopted, and how the claim survived the adoption
 
-### The build precondition is met. A different one is not.
+All three conditions this section used to list are met, so the five
+`<machine/_stdint.h>` and five `<machine/_inttypes.h>` now include the
+generic headers and keep only `SIG_ATOMIC_MIN`, `SIG_ATOMIC_MAX` and
+`SIG_ATOMIC_WIDTH`. 2,041 lines became 592.
 
-`buildworld` is green: boot-image runs 48 (`src_conf=none`), 49
-(`norelro`) and 51 all completed `buildworld`, `buildkernel` and a
-memstick image. Both checkers pass on the tree as it stands —
+1. `buildworld` green — boot-image runs 48 (`src_conf=none`), 49
+   (`norelro`) and 51;
+2. both checkers passing;
+3. **`/sbin/init` reaching a console** — run 58 boots `HARDENEDBSD` with
+   PaX enforcement on, through `/etc/rc` to local daemons, and run 59 is
+   a system with a login. The thirty-seven-run bisection is closed, so a
+   tree-wide header change is attributable again.
+
+The adoption breaks the check that justified it, and that had to be dealt
+with before the headers were touched rather than after. Once
+`<machine/_stdint.h>` is an include of `<sys/_stdint_generic.h>`,
+`stdint_generic_check.py` preprocesses one header twice and reports 1,266
+equal expansions forever.
+
+So the measurement was frozen while it was still a measurement.
+`docs/migration/stdint_expansions.json` holds what the six architecture
+headers expanded to *before* the change — values, not spellings — and
+`--baseline` checks the tree against it on every CI run. It covers
+eighteen macros the old comparison could not: the `SIG_ATOMIC_*` three
+stay per-architecture, so they are absent from the generic header, so
+nothing was comparing them, and they are exactly what a switch-over could
+get wrong.
+
+Finding those needed the preprocessor rather than a text scan.
+`<machine/_stdint.h>` on amd64 and i386 is five lines including
+`<x86/_stdint.h>`; reading the file for `#define` finds nothing, and the
+table would have covered four architectures while claiming six. `clang
+-dM` with the header and without, differenced, finds what it defines.
 
 ```
+1284 frozen expansion(s) checked against the architecture headers as they are now.
 1266 macro expansions compared, all equal.
-Every required width is lock-free on every target.
 ```
 
-— so the sentence above about attribution no longer blocks anything.
-
-What blocks it now is worse than a build failure: **`/sbin/init` does not
-talk, and nobody yet knows why.** Fifty-two runs have narrowed it to
-something below userland's build options and below the rtld's own libc,
-and the current experiment varies the kernel's PaX enforcement. Changing
-`<machine/_stdint.h>` and `<machine/atomic.h>` on all six architectures
-in the middle of that makes every subsequent boot unattributable in
-exactly the way the original sentence was worried about, one level up.
-
-So the condition to switch these over is now:
-
-1. `buildworld` green — **met**;
-2. both checkers passing — **met**;
-3. **`/sbin/init` reaching a console, or the reason it does not being
-   understood and written down** — not met.
-
-(3) is not a general rule about header changes. It is specific to having
-an open bisect: the value of a bisect is that one thing changed, and a
-tree-wide ABI header edit is not one thing.
+One deliberate behaviour change, on three of the five. `arm`, `powerpc`
+and `riscv` wrapped their limit and constant macros in `#if
+!defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)`, which C++11 made
+obsolete and which `x86` and `arm64` had already dropped. The generic
+header has no such guard, so those macros are now defined in C++ on all
+six — the majority behaviour, and the one a C++23 tree needs.
 
 ## Ranking by the interface, not the text
 
