@@ -920,6 +920,55 @@ SYS_DIR = {"amd64": "amd64", "aarch64": "arm64", "armv7": "arm",
 DEFAULTS_OPT = re.compile(r"^\s*options?\s+([A-Za-z_][A-Za-z0-9_]*)")
 
 
+# ...and sys/conf/Makefile.<arch>, which the kernel build reads for
+# every file and this tool never opened. All six add to INCLUDES:
+#
+#   Makefile.amd64:32    INCLUDES+= -I$S/contrib/libfdt
+#   Makefile.arm:30      INCLUDES+= -I$S/contrib/libfdt \
+#                                   -I$S/contrib/device-tree/include \
+#                                   -I$S/dts/include
+#
+# libfdt's own headers include <fdt.h> with ANGLE brackets and the file
+# is sys/contrib/libfdt/fdt.h, so the directory itself has to be on the
+# path - which those six lines do and nothing else in the build does.
+# Five translation units failed on exactly that: dev/ofw/ofw_fdt.c,
+# arm and arm64's machdep_boot.c, powerpc/ofw/ofw_machdep.c and
+# riscv/riscv/machdep.c.
+#
+# CFLAGS is read for its -D and -I only. The rest of what those files
+# add is code generation - -msoft-float, -mabi=spe, -fPIC,
+# -fno-omit-frame-pointer - which is the compiler's business and not
+# the analyser's, and CFLAGS.gcc / CFLAGS.clang lines are a choice of
+# compiler this tool has already made.
+ARCH_MK_ADD = re.compile(r"^\s*(INCLUDES|CFLAGS)\s*\+?=\s*(.*)$")
+
+
+@functools.lru_cache(maxsize=None)
+def arch_makefile_flags(arch: str) -> tuple[str, ...]:
+    """The -I and -D sys/conf/Makefile.<arch> adds for every kernel file."""
+    d = SYS_DIR.get(arch)
+    if not d:
+        return ()
+    p = SYS / "conf" / f"Makefile.{d}"
+    if not p.is_file():
+        return ()
+    out: list[str] = []
+    text = p.read_text(errors="replace").replace("\\\n", " ")
+    for line in text.splitlines():
+        m = ARCH_MK_ADD.match(line.split("#")[0])
+        if not m:
+            continue
+        for w in m.group(2).split():
+            if w.startswith("-I"):
+                path = w[2:].replace("$S", str(SYS)).replace("${SRCTOP}",
+                                                             str(SRC))
+                if "$" not in path and Path(path).is_dir():
+                    out.append(f"-I{path}")
+            elif w.startswith("-D") and "$" not in w and len(w) > 2:
+                out.append(w)
+    return tuple(dict.fromkeys(out))
+
+
 @functools.lru_cache(maxsize=None)
 def defaults_options(arch: str) -> tuple[str, ...]:
     """-D for every option in this architecture's conf/DEFAULTS."""
@@ -2084,6 +2133,7 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/common/zfs",
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/intel"]
         flags += defaults_options(arch)
+        flags += arch_makefile_flags(arch)
         flags += [f"-D{c}" for c in files_cpu_index().get(rel, ())]
         # ...the -D held back above, and then the directory's guess.
         seen = set(flags)

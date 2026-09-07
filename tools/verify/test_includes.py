@@ -245,6 +245,25 @@ check_that("a disjunction is a union, not an intersection",
 # for the options, each alternative is a DIFFERENT configuration, and
 # defining one alternative's options is asserting a configuration the
 # file may never be built in.
+# sys/conf/Makefile.<arch>, which the kernel build reads for every file.
+# All six add -I$S/contrib/libfdt, and libfdt's own headers include
+# <fdt.h> with ANGLE brackets, so the directory itself has to be on the
+# path. Five translation units failed on exactly that.
+_amk = includes.arch_makefile_flags("aarch64")
+check_that("Makefile.<arch> puts libfdt on the path",
+           any(f.endswith("/sys/contrib/libfdt") for f in _amk),
+           "sys/contrib/libfdt/libfdt.h:55 is `#include <fdt.h>' and the "
+           "file is sys/contrib/libfdt/fdt.h - nothing else in the build "
+           "adds that directory")
+check_that("...and arm64's device-tree headers with it",
+           any(f.endswith("/sys/contrib/device-tree/include") for f in _amk),
+           "Makefile.arm64:26 adds both")
+check_that("amd64 does not get the device-tree headers",
+           not any(f.endswith("/sys/contrib/device-tree/include")
+                   for f in includes.arch_makefile_flags("amd64")),
+           "Makefile.amd64:32 adds libfdt alone; a per-architecture file "
+           "read once for all six would say otherwise")
+
 _od = includes.files_option_defines()
 check_that("a single alternative gives all its options",
            _od.get("sys/dev/random/fenestrasX/fx_brng.c") ==
