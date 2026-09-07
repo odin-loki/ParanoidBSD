@@ -301,6 +301,19 @@ def makefile_flags(d: str, arch: str, base: str) -> tuple[tuple[str, ...],
                 continue
             if depth or not st:
                 continue
+            if st.startswith(".PATH:"):
+                # .PATH names the directories make finds the SOURCES in,
+                # and a source's private header sits beside it there:
+                # lib/libc/stdtime takes .PATH on contrib/tzcode, where
+                # private.h lives, and lib/libc/gen takes it on
+                # contrib/libc-vis for vis.h. The sweep compiles each
+                # file where it lies rather than where make would put
+                # it, so those directories have to be on the include
+                # path or the header beside the source is unreachable.
+                for d2 in _expand(st[len(".PATH:"):], vars).split():
+                    if "${" not in d2 and Path(d2).is_dir():
+                        includes.append(f"-I{d2}")
+                continue
             m = CFLAGS_LINE.match(line)
             if m:
                 if m.group("file") and m.group("file") != base:
@@ -1048,6 +1061,23 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         flags.append(f"-I{SRC}/contrib/atf")
 
     flags += [f"-I{SRC}/lib/libsys", f"-I{SRC}/include", f"-I{SRC}/sys"]
+
+    if rel.split("/")[0] in ("lib", "libexec", "usr.bin", "usr.sbin"):
+        # Headers buildworld STAGES into /usr/include from somewhere
+        # else in the tree, which a source tree has no equivalent of.
+        # include/Makefile:39 takes .PATH on contrib/libc-vis for
+        # <vis.h>, and lib/libutil/Makefile installs <libutil.h> by
+        # INCS. Neither is reachable from where the source sits, so
+        # xprintf_errno.c and the five posix1e files that want them do
+        # not compile.
+        #
+        # Last on the path, so they fill a gap and never shadow a header
+        # the source's own directory or its Makefile's -I would have
+        # found. The general form of this is a staging directory built
+        # from include/Makefile's own SRCS the way iface_shim() builds
+        # the kernel's, and 90 lib/*/Makefile carry an INCS worth
+        # staging; these two are the ones anything in scope asks for.
+        flags += [f"-I{SRC}/contrib/libc-vis", f"-I{SRC}/lib/libutil"]
     rd = resource_dir(cc)
     if rd:
         flags.append(f"-I{rd}")
