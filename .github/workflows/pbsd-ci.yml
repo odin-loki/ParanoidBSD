@@ -244,6 +244,12 @@ jobs:
           # and the CSTD reader was already taking a `CSTD?= c89' from
           # inside a compiler conditional when this test first ran.
           python3 tools/verify/test_includes.py
+          # The ERROR inventory's REASONS, which --check-errors
+          # cannot see: a NOT_BUILT prefix says the module build
+          # does not descend into a vendored driver, and the day
+          # somebody adds it there the prefix goes on absorbing
+          # three hundred ERRORs that have become real.
+          python3 tools/verify/test_expected_errors.py
 
       # The port screener encodes what the hundred-file lib/msun batch
       # learned one expensive run at a time. Its value is entirely in the

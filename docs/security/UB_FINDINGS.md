@@ -4267,6 +4267,75 @@ a hardware path count that is 1 or 2; ACPICA's five are its
 what the callee cannot see. They are on the record as the previous
 tables are, not fixed.
 
+## `sys/contrib/dev`, all 302 of it, on the record
+
+The wifi drivers were the last of `sys/contrib`'s six hundred unreadable
+translation units, and the answer turned out not to be include paths at
+all. `sys/modules/Makefile` — the file that says which modules a
+`make buildkernel` actually builds — descends into `iwlwifi`, `rtw88` and
+`rtw89`, and into **none** of `mt76`, `ath10k`, `ath11k`, `ath12k`,
+`athk_common` or `brcm80211`. Their module directories exist, their
+Makefiles are complete, and nothing enters them.
+
+So of the 302 that will not compile:
+
+```
+   262  covered by a NOT_BUILT prefix
+    40  named one at a time in EXPECTED
+     0  unexpected
+     0  stale
+```
+
+Three hundred hand-written entries saying the same sentence would go
+stale on the next vendor import, so `expected_errors.py` grows a second
+table: `NOT_BUILT`, prefix → reason, where the reason is a fact about the
+build system you can grep for. `--check-errors` prints what each prefix
+absorbed —
+
+```
+      135 of 135 under sys/contrib/dev/mediatek/ are NOT_BUILT
+       79 of 119 under sys/contrib/dev/athk/ are NOT_BUILT
+       29 of  57 under sys/contrib/dev/broadcom/ are NOT_BUILT
+```
+
+— and fails on a prefix that absorbed nothing, which is the file-entry
+staleness check one level up.
+
+That is a weaker signal than the per-file one, on purpose and with a
+limit worth stating: a prefix keeps passing while **one** file under it
+still errors. So the reason is checked separately, in
+`tools/verify/test_expected_errors.py`, against `sys/modules/Makefile`
+itself — the day somebody adds `mt76` to that SUBDIR list, the prefix
+stops being true and the test says so rather than the prefix quietly
+absorbing 135 ERRORs that have become real.
+
+Writing that test found a bug in the test. `descends()` joined the
+Makefile's line continuations before stripping comments, which turns the
+whole SUBDIR list into one enormous line and makes every per-line
+`^...$` match fail forever — so it answered "no, not built" to
+everything, including the three modules that are. Found by adding `mt76`
+to the list and watching the check pass; the fix is the ordering, and the
+test now proves it can say **yes** (for `iwlwifi`, `rtw88`, `rtw89`)
+before it is allowed to say no. A check that cannot fail is the same
+zero this document keeps being about.
+
+### And one finding underneath the not-built
+
+`sys/contrib/dev/mediatek/mt76/mt76.h:2035` calls `page_pool_alloc_frag()`,
+and `sys/compat/linuxkpi` does not define it — anywhere. The function is
+called from a `static inline` in the header, so **every** translation
+unit that includes `mt76.h` fails on it: all 66 of them. The tree carries
+an mt76 newer than the linuxkpi that has to support it.
+
+It is not the kind of thing to paper over with a stub, even though the
+one-line stub is exactly what the rest of that file is:
+`sys/compat/linuxkpi/common/include/net/page_pool/helpers.h` is eight
+functions, every one of them `pr_debug("%s: TODO\n", __func__)` returning
+NULL or 0. FreeBSD's linuxkpi does not implement page pools at all, and
+adding a ninth stub would make a driver compile that cannot work. It is
+on the record instead, in the prefix's own reason, where the next person
+to try building mt76 will read it.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

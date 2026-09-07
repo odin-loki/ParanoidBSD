@@ -38,7 +38,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from includes import include_flags, is_kernel_tu, lang_flags, SRC  # noqa: E402
-from expected_errors import EXPECTED  # noqa: E402
+from expected_errors import EXPECTED, NOT_BUILT, not_built  # noqa: E402
 
 # Failure of one of these is a defect, not a matter of taste.
 CHECKERS = [
@@ -269,15 +269,34 @@ def main() -> int:
                 seen.add(r["file"])
                 if r.get("status") == "ERROR":
                     erred.add(r["file"])
-        unexpected = sorted(erred - set(EXPECTED))
+        unexpected = sorted(e for e in erred
+                            if e not in EXPECTED and not not_built(e))
         # Only files this run actually looked at can be called stale.
         stale = sorted((set(EXPECTED) & seen) - erred)
+        # A prefix is an inventory entry too, so it is reported, and a
+        # prefix that absorbed nothing in a run that looked inside it is
+        # as stale as a file entry that compiles now.
+        absorbed: dict[str, int] = {}
+        looked: dict[str, int] = {}
+        for f in seen:
+            pre = not_built(f)
+            if pre:
+                looked[pre] = looked.get(pre, 0) + 1
+                if f in erred:
+                    absorbed[pre] = absorbed.get(pre, 0) + 1
+        dead = sorted(p for p in looked if not absorbed.get(p))
         for f in unexpected:
             print(f"FAIL  {f} does not compile and is not in EXPECTED")
         for f in stale:
             print(f"FAIL  {f} compiles now; its EXPECTED entry is stale "
                   f"({EXPECTED[f]})")
-        if unexpected or stale:
+        for p_ in dead:
+            print(f"FAIL  every file under {p_} compiles now; its "
+                  f"NOT_BUILT entry is stale ({NOT_BUILT[p_]})")
+        for p_ in sorted(absorbed):
+            print(f"      {absorbed[p_]:4d} of {looked[p_]} under {p_} "
+                  f"are NOT_BUILT")
+        if unexpected or stale or dead:
             print("\n      tools/verify/expected_errors.py is the inventory.")
             print("      A file that will not compile reports zero findings")
             print("      and is indistinguishable from a clean one, which is")

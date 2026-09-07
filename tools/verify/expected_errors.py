@@ -357,7 +357,63 @@ EXPECTED = {
         "not built: sys/modules/rtw89/Makefile sets RTW89_USB=0",
     "sys/contrib/dev/rtw89/wow.c":
         "not built: sys/modules/rtw89/Makefile sets RTW89_CONFIG_PM=0",
+
+    # Three under sys/contrib/dev that no NOT_BUILT prefix covers,
+    # because they sit inside trees that ARE built.
+    "sys/contrib/dev/acpica/components/resources/rsdump.c":
+        "option-gated: sys/conf/files:545 is `optional acpi acpi_debug'",
+    "sys/contrib/dev/acpica/os_specific/service_layers/osgendbg.c":
+        "option-gated: sys/conf/files:601 is `optional acpi acpi_debug'",
+    "sys/contrib/dev/ath/ath_hal/ar9300/ar9300_sim.c":
+        "not built: the ar9300 HAL's simulator, in no files* or SRCS",
 }
+
+
+# A whole vendored driver that the module build never enters. Naming
+# three hundred files one at a time would be a list that goes stale on
+# the next import and says the same sentence three hundred times; naming
+# the tree, with the line of the build system that excludes it, says it
+# once and stays true.
+#
+# This is NOT a way to make an ERROR quiet. analyze.py --check-errors
+# prints how many translation units each prefix absorbed and fails on a
+# prefix that absorbed none, so a driver that starts being built - or one
+# whose files all start compiling - shows up as loudly as an unexpected
+# ERROR does. The rule for adding one is narrow: the tree must be
+# vendored under sys/contrib, and sys/modules/Makefile must not descend
+# into its module, which is a fact you can grep for.
+NOT_BUILT = {
+    "sys/contrib/dev/mediatek/":
+        "MediaTek mt76: sys/modules/mt76 exists and sys/modules/Makefile "
+        "does not descend into it. The tree also carries a mt76 newer "
+        "than its linuxkpi - mt76.h:2035 calls page_pool_alloc_frag(), "
+        "which sys/compat/linuxkpi does not define, and every one of the "
+        "66 translation units that includes mt76.h fails on it. The "
+        "whole page_pool shim is TODO stubs returning NULL.",
+    "sys/contrib/dev/athk/":
+        "Qualcomm ath10k/ath11k/ath12k: sys/modules/ath10k, ath11k, "
+        "ath12k and athk_common all exist and sys/modules/Makefile "
+        "descends into none of them. They want <linux/of_reserved_mem.h> "
+        "and <linux/clk.h>, which this linuxkpi does not have.",
+    "sys/contrib/dev/broadcom/":
+        "Broadcom brcm80211: sys/modules/brcm80211 exists and "
+        "sys/modules/Makefile does not descend into it. brcmsmac's own "
+        "headers - defs.h, brcmu_utils.h, brcm_hw_ids.h - are named by "
+        "no SRCS either.",
+    "sys/contrib/dev/acpica/components/debugger/":
+        "the ACPI debugger, option ACPI_DEBUGGER, which no config sets",
+    "sys/contrib/dev/acpica/components/disassembler/":
+        "the AML disassembler, built from usr.sbin/acpi as iasl",
+}
+
+
+
+def not_built(rel: str) -> str | None:
+    """The NOT_BUILT prefix covering this file, if any."""
+    for pre, why in NOT_BUILT.items():
+        if rel.startswith(pre):
+            return pre
+    return None
 
 
 def classify(errors: set[str]) -> tuple[list[str], list[str]]:
@@ -367,5 +423,6 @@ def classify(errors: set[str]) -> tuple[list[str], list[str]]:
     the caller passes the scope's whole file set as `errors' being the
     ERROR subset of it - see analyze.py.
     """
-    unexpected = sorted(e for e in errors if e not in EXPECTED)
+    unexpected = sorted(e for e in errors
+                        if e not in EXPECTED and not not_built(e))
     return unexpected, []
