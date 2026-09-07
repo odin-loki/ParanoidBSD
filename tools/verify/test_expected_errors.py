@@ -100,6 +100,44 @@ for pre, names in CLAIMED_NOT_DESCENDED.items():
         check(f"sys/modules/{n} exists", (SYS / "modules" / n).is_dir(),
               "the prefix's reason names a module that is gone")
 
+print("\n== and the NOT_NAMED prefixes really are named by nothing")
+# A prefix whose reason ends in NOT_NAMED claims that no sys/conf/files*
+# entry and no sys/modules Makefile mentions any source under it. That is
+# a computation over the build system, so it is done here rather than
+# believed - the same rule as everywhere else in tools/verify: read the
+# build, do not keep a second copy of its answer.
+_named: set[str] = set()
+for _p in sorted(SYS.glob("conf/files*")):
+    _t = _p.read_text(errors="replace").replace("\\\n", " ")
+    for _l in _t.splitlines():
+        _m = re.match(r"^(\S+\.[cS])\s", _l)
+        if _m:
+            _named.add(_m.group(1))
+            _named.add(Path(_m.group(1)).name)
+for _p in sorted(SYS.rglob("modules/**/Makefile")):
+    for _m in re.finditer(r"(\S+\.[cS])", _p.read_text(errors="replace")):
+        _named.add(_m.group(1))
+        _named.add(Path(_m.group(1)).name)
+
+# It has to be able to say "named", or it says "not named" to everything.
+for built in ("dev/pci/pci.c", "kern/kern_exec.c", "vm/vm_page.c"):
+    check(f"the build does name {built}", built in _named,
+          "if this fails every check below passes for the wrong reason")
+
+_claimed = [pre for pre, why in NOT_BUILT.items() if why.endswith("NOT_NAMED")]
+check("some prefix makes the NOT_NAMED claim", bool(_claimed))
+for pre in _claimed:
+    d = ROOT / "hbsd" / "src" / pre.rstrip("/")
+    srcs = sorted(q.relative_to(ROOT / "hbsd" / "src" / "sys").as_posix()
+                  for q in d.glob("*.c")) if d.is_dir() else []
+    named_here = [s for s in srcs
+                  if s in _named or Path(s).name in _named]
+    check(f"{pre} is named by nothing", not named_here,
+          f"the build names {named_here[:3]}, so this prefix is absorbing "
+          f"ERRORs from code that IS compiled")
+    check(f"{pre} has sources at all", bool(srcs),
+          "an empty prefix absorbs nothing and hides its own staleness")
+
 # ACPICA's two are option-gated rather than module-gated: no kernel
 # config in the tree sets ACPI_DEBUGGER.
 opt = "ACPI_DEBUGGER"

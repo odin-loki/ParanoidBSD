@@ -446,6 +446,47 @@ NOT_BUILT = {
         "the ACPI debugger, option ACPI_DEBUGGER, which no config sets",
     "sys/contrib/dev/acpica/components/disassembler/":
         "the AML disassembler, built from usr.sbin/acpi as iasl",
+
+    # The sys/dev half, from sweep 9's first --check-errors over sys/dev.
+    #
+    # These fourteen are one fact, checked one way: no sys/conf/files*
+    # entry and no sys/modules Makefile names ANY source in the directory,
+    # so config(8) cannot reach them and no module builds them. Each
+    # reason below says the same thing in the form the directory needs it,
+    # and test_expected_errors.py recomputes the fact rather than trusting
+    # the sentence - the marker it looks for is NOT_NAMED at the end.
+    "sys/dev/etherswitch/ar40xx/":
+        "the Qualcomm IPQ40xx switch. sys/arm/conf/std.qca:81 has `device "
+        "ar40xx_switch' and no files* entry gives that device a source, "
+        "so config(8) accepts the line and compiles nothing. NOT_NAMED",
+    "sys/dev/qcom_dwc3/": "Qualcomm DWC3 glue. NOT_NAMED",
+    "sys/dev/qcom_ess_edma/": "Qualcomm ESS EDMA ethernet. NOT_NAMED",
+    "sys/dev/qcom_gcc/":
+        "Qualcomm global clock controller. sys/conf/files.arm64 builds "
+        "arm64/qualcomm/qcom_gcc.c, which is a different file. NOT_NAMED",
+    "sys/dev/qcom_qup/": "Qualcomm QUP SPI/I2C. NOT_NAMED",
+    "sys/dev/qcom_rnd/": "Qualcomm RNG. NOT_NAMED",
+    "sys/dev/aic7xxx/aicasm/":
+        "aicasm is a HOST program - usr.bin's build runs it to generate "
+        "aic7xxx_seq.h - so it includes <ctype.h> and <db.h> and is not "
+        "kernel code at all. NOT_NAMED",
+    "sys/dev/ath/ath_hal/ar5312/":
+        "the AR5312 SoC HAL, which no files* list and no module names. "
+        "ar5312_attach.c reaches for ah_gpioSetIntr, a member the current "
+        "struct ath_hal_private does not have. NOT_NAMED",
+    "sys/dev/cfe/": "Broadcom CFE firmware interface. NOT_NAMED",
+    "sys/dev/etherswitch/mtkswitch/": "MediaTek switch. NOT_NAMED",
+    "sys/dev/hdmi/": "the DWC HDMI FDT glue. NOT_NAMED",
+    "sys/dev/pms/RefTisa/tisa/sassata/sas/tgt/":
+        "the PMC-Sierra driver's SAS TARGET mode. The initiator half is "
+        "built; every source in this directory wants <osenv.h>, which the "
+        "tree does not have. NOT_NAMED",
+    "sys/dev/pms/freebsd/driver/common/":
+        "the same driver's OS-abstraction sources, which agtiapi.c "
+        "#includes rather than links against. NOT_NAMED",
+    "sys/dev/xen/pcifront/":
+        "the Xen PCI frontend, which wants <machine/xen-os.h> - a header "
+        "removed when FreeBSD's Xen support was rewritten. NOT_NAMED",
 }
 
 
