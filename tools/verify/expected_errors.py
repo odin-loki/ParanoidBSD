@@ -65,6 +65,63 @@ EXPECTED = {
     "sys/cddl/dev/dtrace/dtrace_vtime.c":
         "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
     "sys/cam/ctl/ctl_ser_table.c": "INCLUDED_BY:sys/cam/ctl/ctl.c",
+
+    # Sweep 10's sys/contrib shard. Everything here is a source no
+    # sys/conf/files* entry and no module Makefile names - checked with
+    # includes.kernel_flag_index(), which resolves SRCS through .PATH -
+    # in a directory where OTHER sources are built, so a prefix would
+    # absorb the built ones too.
+    "sys/contrib/alpine-hal/al_hal_pcie.c":
+        "one of nine in the directory that nothing names; the other eight "
+        "are in sys/conf/files under `optional al_iofic' and compile",
+    "sys/contrib/libb2/blake2b.c":
+        "the reference implementation. sys/conf/files builds "
+        "blake2b-ref.c and the SSE variants, not this",
+    "sys/contrib/libb2/blake2s.c": "the same, for BLAKE2s",
+    "sys/contrib/openzfs/module/icp/illumos-crypto.c":
+        "illumos' crypto framework entry point, which wants "
+        "<linux/module.h>; the FreeBSD build takes none of icp/",
+    "sys/contrib/openzfs/module/icp/include/generic_impl.c":
+        "a template #included by the icp algorithm sources, not a "
+        "translation unit - it opens on IMPL_OPS_T, which its includer "
+        "defines first",
+    "sys/contrib/openzfs/module/zcommon/simd_stat.c":
+        "the Linux /proc/spl/kstat SIMD reporter; the FreeBSD build does "
+        "not name it",
+    "sys/contrib/openzfs/module/zstd/zstd-in.c":
+        "an amalgamation that #includes common/debug.c and the rest of "
+        "zstd's sources, for builds that want one translation unit",
+    "sys/contrib/xz-embedded/linux/lib/decompress_unxz.c":
+        "Linux's decompressor glue; the whole linux/lib directory is "
+        "unnamed by this tree's build",
+    "sys/contrib/xz-embedded/linux/lib/xz/xz_dec_syms.c":
+        "EXPORT_SYMBOL definitions for a Linux module",
+    "sys/contrib/xz-embedded/linux/lib/xz/xz_dec_test.c":
+        "a Linux kernel module that exercises the decoder",
+    "sys/contrib/zlib/gzclose.c":
+        "zlib's gzip FILE * layer, which needs <stdio.h>; sys/conf/files "
+        "builds the ten sources the kernel uses and none of the four gz*",
+    "sys/contrib/zlib/gzlib.c": "the same",
+    "sys/contrib/zlib/gzread.c": "the same",
+    "sys/contrib/zlib/gzwrite.c": "the same",
+
+    # And four that the build DOES name. All four are the openzfs SPL
+    # include order - its <sys/*.h> shadow FreeBSD's - which
+    # sys/conf/kmod.mk's OPENZFS_CFLAGS arranges deliberately and which
+    # this sweep reproduces well enough to compile 22 of 24 files in the
+    # same directory.
+    "sys/contrib/openzfs/module/os/freebsd/spl/spl_vm.c":
+        "VM_OBJECT_WUNLOCK undeclared: <vm/vm_object.h> resolved to the "
+        "SPL's rather than FreeBSD's",
+    "sys/contrib/openzfs/module/os/freebsd/zfs/zfs_ctldir.c":
+        "DT_DIR undeclared, from the same <sys/dirent.h> shadowing",
+    "sys/contrib/openzfs/module/os/freebsd/zfs/zfs_vnops_os.c":
+        "DT_UNKNOWN undeclared, the same",
+    "sys/contrib/openzfs/module/zstd/lib/common/xxhash.c":
+        "its default allocator calls malloc(size); the kernel's malloc "
+        "takes three arguments, and the zfs module supplies "
+        "XXH_STATIC_LINKING_ONLY and its own allocator that this sweep "
+        "does not reproduce",
     # subr_devmap.c, subr_sfbuf.c and subr_intr.c used to be here, all
     # three for the same reason - "arch-private", "needs machine/intr.h,
     # which amd64 has not". They compile now: analyze.py retries a file
@@ -521,6 +578,13 @@ NOT_BUILT = {
         "what names it. Nothing under sys/ compiles any of these as a "
         "translation unit of its own - sys/cddl/boot/zfs/README says so "
         "in as many words. NOT_NAMED",
+
+    "sys/contrib/xz-embedded/userspace/":
+        "xz-embedded's own test programs - boottest, buftest, bytetest, "
+        "xzminidec - which include <stdio.h> and are built by its own "
+        "Makefile, not by this tree. NOT_NAMED",
+    "sys/contrib/zlib/test/":
+        "zlib's example, infcover and minigzip, the same way. NOT_NAMED",
 
     "sys/contrib/vchiq/":
         "the Raspberry Pi VCHIQ driver, which no kernel configuration in "
