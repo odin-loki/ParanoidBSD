@@ -131,6 +131,21 @@ jobs:
       - name: setuid inventory — the set has not changed
         run: python3 tools/setuid_inventory.py --gate
 
+      # ...and against a real one. That inventory reads Makefiles, and its
+      # own docstring said a `find -perm -4000' over a built image was the
+      # missing half. Boot run 60 is that image - the first PBSD system
+      # with a login - and the answer disagreed with the tool three ways,
+      # all of them the tool's fault: BINMODE read out of an .if nothing
+      # satisfies (newgrp is not setuid), the directory named instead of
+      # PROG (dmagent/dma), and LINKS's hard links unaccounted for
+      # (at/atq/atrm/batch, ping/ping6, shutdown/poweroff,
+      # authpf/authpf-noip). It now predicts 33 files and the image has
+      # those 33.
+      - name: setuid inventory — against a real image
+        run: |
+          python3 tools/setuid_inventory.py \
+            --check tools/verify/testdata/setuid_boot_run60.txt
+
       # A source that another source #includes by name is not an independent
       # translation unit, so renaming it .c -> .cpp breaks the includer and
       # nothing else notices: the file still exists, SRCS still resolves, no

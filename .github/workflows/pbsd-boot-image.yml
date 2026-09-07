@@ -349,6 +349,17 @@ jobs:
 
       # The compiled-in defaults, against the kernel that just booted. This
       # is the check that show_hardening.sh cannot make.
+      # The setuid inventory reads Makefiles; this is the other half, and
+      # it is the half that catches a binary nobody declared.
+      - name: setuid inventory, against the image that just booted
+        if: always() && inputs.stage == 'vm'
+        run: |
+          if [ -f out/setuid.txt ]; then
+            python3 tools/setuid_inventory.py --check out/setuid.txt
+          else
+            echo "::warning title=No setuid listing::The boot did not get far enough to produce one."
+          fi
+
       - name: Hardening sysctls, against a running kernel
         if: always() && inputs.stage == 'vm'
         run: |

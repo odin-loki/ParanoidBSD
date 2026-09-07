@@ -3501,6 +3501,80 @@ Linux's `thunder` driver, which this is a port of, declares these as a
 union, and the zeroing with it. All four — `cq_cfg`, `rq_cfg`, `sq_cfg`,
 `rbdr_cfg` — have the shape, and none had the initialiser.
 
+## The setuid inventory said three things a real image disproves
+
+`tools/setuid_inventory.py` is a gate: it reads every program Makefile's
+`BINMODE` and fails if the setuid set changes. Its own docstring said
+what it could not do:
+
+> This reads Makefiles, not a staged tree. It is therefore a statement
+> about what the tree declares, not about what a built image contains; a
+> `find -perm -4000` over the staging directory is the other half and
+> needs a build.
+
+Boot run 60 is that build — the first PBSD image with a login, asked the
+question directly. It has **33** setuid or setgid files. The tool
+declared **30**, and every one of the differences was the tool's fault.
+
+**`newgrp` was reported setuid root and ships 0555.**
+
+```make
+.if defined(ENABLE_SUID_NEWGRP)
+BINMODE=	4555
+PRECIOUSPROG=
+.endif
+```
+
+`ENABLE_SUID_NEWGRP` appears nowhere in this tree except that line and a
+**commented-out** example in `share/examples/etc/make.conf`. The tool
+matched `BINMODE` anywhere in the file. A false entry in a security
+inventory — and the same defect as `hardening_sysctls.py`'s, found the
+same morning: a value read out of a conditional block without asking
+whether the condition holds.
+
+Getting that right turned up the harder half of the same bug: the setuid
+`BINMODE` is usually in the **`.else`**.
+
+```make
+.if defined(NOSUID)
+BINMODE=554
+.else
+BINMODE=4554
+.endif
+```
+
+so a first attempt that kept the `.if` text attributed the setuid mode
+to the condition that switches it *off*, and declared `mksnap_ffs`, `ppp`
+and `login` not shipped setuid — which the image says they are. And
+`sendmail` has both arms, `4555` under `.ifdef SENDMAIL_SET_USER_ID` and
+`2555` in the `.else`; taking the highest mode and *then* asking about
+its guard picked the arm nobody builds and lost the setgid one that is
+on the image. The condition has to be evaluated per branch.
+
+**`ksu` was reported with nothing that removes it.** `Makefile.inc1:436`
+is `.if ${MK_KERBEROS} != "no"`, and the tool matched only the
+`SUBDIR.${MK_X}` spelling — so both copies of a setuid-root program, the
+most attractive one on the list, had an empty "removed by" column.
+`WITHOUT_KERBEROS` removes both. (The inner `.if ${MK_MITKRB5}` only
+chooses *which* Kerberos; `WITHOUT_MITKRB5` builds `kerberos5` with the
+same `ksu` in it, so the answer is the outermost option, not the
+innermost.)
+
+**And `dmagent` is a directory, not a program.** `PROG= dma`. The
+inventory named a path no system has.
+
+**Plus the count itself: 30 declarations, 33 files.** The difference is
+entirely hard links, which `LINKS` in each Makefile spells out —
+`at`→`atq`/`atrm`/`batch`, `ping`→`ping6`, `shutdown`→`poweroff`,
+`authpf`→`authpf-noip`. Six of them, and nothing said so.
+
+The tool now declares **27 programs plus 6 hard links = 33 files**, and
+`--check` against run 60's listing agrees in both directions. That
+listing is committed as `tools/verify/testdata/setuid_boot_run60.txt`
+and both CI and the boot workflow run against it, the latter against the
+image it just built. Verified to bite: one fabricated
+`/usr/local/bin/evil` in the listing and the check fails by name.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
