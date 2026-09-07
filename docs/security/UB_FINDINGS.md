@@ -3027,6 +3027,67 @@ than becoming `do/while` blocks, because `device_printf()` and
 `sys/compat/linuxkpi`, `mlx4`, `mlx5` and `irdma` still compile, so the
 expression form did not break a consumer.
 
+## Fixed — three in the driver the compat-layer fix uncovered
+
+With the 52 `->bsddev` dereferences gone, `sys/dev/bnxt` had eleven
+findings left. Three are defects.
+
+**Two `int rc;` returned to iflib without being assigned.**
+`bnxt_tx_queues_alloc()` assigns `rc` on its failure paths and inside the
+`iflib_dma_alloc()` loop, then ends
+
+```c
+	softc->ntxqsets = ntxqsets;
+	return rc;
+```
+
+which `ntxqsets == 0` reaches having run neither. `bnxt_msix_intr_assign()`
+is the same shape one `goto` further: `if (BNXT_CHIP_P5_PLUS(softc)) goto
+skip_default_cp;` jumps past the only assignment before its loop. iflib
+reads the return as attach success or failure, so a zero-queue device
+attached or did not according to a stack slot. `int rc = 0;` in both.
+
+**And a media type the card chooses by not being recognised.**
+`bnxt_add_media_types()`:
+
+```c
+	uint8_t phy_type = get_phy_type(softc), media_type;
+
+	switch (phy_type) {
+	...
+	case HWRM_PORT_PHY_QCFG_OUTPUT_PHY_TYPE_UNKNOWN:
+		/* Only Autoneg is supported for TYPE_UNKNOWN */
+		break;
+
+	default:
+		/* Only Autoneg is supported for new phy type values */
+		device_printf(softc->dev, "phy type %d not supported by driver\n", phy_type);
+		break;
+	}
+
+	switch (link_info->sig_mode) {
+	case BNXT_SIG_MODE_NRZ:
+		...add_media(softc, media_type, ...);
+```
+
+Two arms of the first switch leave `media_type` unassigned and the second
+switch passes it to `add_media()` on every path. `phy_type` is
+`get_phy_type(softc)` — the PHY type the **card** reported over HWRM — so
+a new or unrecognised card makes the driver advertise whichever of the
+ten `BNXT_MEDIA_*` values a stack byte happens to name, one time in ten.
+Both arms say in a comment that only autoneg is supported. That is
+`BNXT_MEDIA_END`, which `add_media()`'s switch does not have an arm for,
+so it adds nothing — which is what the comments describe.
+
+`sys/dev/bnxt`: 63 findings → 4, and the four are read and left alone:
+`bnxt_hwrm.c:198` writes `*data` from the caller's `void *msg`;
+`qplib_res.c:137` frees `tmp_sg` on its only exit, through linuxkpi's
+`vzalloc`/`vfree`, which clang does not model as an allocator pair;
+`bnxt_auxbus_compat.c:93` is `list_for_each_entry` on a possibly-empty
+list, whose `container_of` on the head is an offset computation and not
+a load; and `linux/io.h:456` is the same caller's-buffer shape as the
+first.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

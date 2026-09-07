@@ -596,6 +596,34 @@ FIXES = {
         "Lose this line and /sbin/init stops booting",
         ),
     ],
+    "hbsd/src/sys/dev/bnxt/bnxt_en/if_bnxt.c": [
+        (
+            "PBSD: rc is assigned only on a failure path",
+            None,
+            "bnxt_tx_queues_alloc() returns rc from a success exit that "
+            "ntxqsets == 0 reaches having assigned it nowhere; iflib "
+            "reads that as attach success or failure, so a zero-queue "
+            "device attached according to a stack slot",
+        ),
+        (
+            "PBSD: see bnxt_tx_queues_alloc() - the goto skips",
+            None,
+            "bnxt_msix_intr_assign() has the same shape one goto "
+            "further: BNXT_CHIP_P5_PLUS jumps past the only assignment "
+            "before the loop",
+        ),
+        (
+            "media_type = BNXT_MEDIA_END;",
+            None,
+            "bnxt_add_media_types() leaves media_type unassigned in the "
+            "PHY_TYPE_UNKNOWN and default arms - the two the card "
+            "reaches by reporting a PHY type this driver does not know "
+            "- and passes it to add_media() regardless, so the driver "
+            "advertised whichever of ten BNXT_MEDIA_ values a stack "
+            "byte named. Both arms say in a comment that only autoneg "
+            "is supported, which is what BNXT_MEDIA_END gives",
+        ),
+    ],
     "hbsd/src/sys/compat/linuxkpi/common/include/linux/device.h": [
         (
             "PBSD: a NULL device logs, as it does on Linux",

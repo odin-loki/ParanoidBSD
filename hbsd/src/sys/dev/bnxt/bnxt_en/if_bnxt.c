@@ -451,7 +451,14 @@ bnxt_tx_queues_alloc(if_ctx_t ctx, caddr_t *vaddrs,
 {
 	struct bnxt_softc *softc;
 	int i;
-	int rc;
+	/*
+	 * PBSD: rc is assigned only on a failure path or inside the
+	 * iflib_dma_alloc() loop, and `return rc' at the success exit is
+	 * reached with ntxqsets == 0 having run neither. iflib reads the
+	 * return as attach success or failure, so a zero-queue device
+	 * attached or did not according to a stack slot.
+	 */
+	int rc = 0;
 
 	softc = iflib_get_softc(ctx);
 
@@ -3836,7 +3843,10 @@ bnxt_msix_intr_assign(if_ctx_t ctx, int msix)
 	struct bnxt_cp_ring *ring;
 	struct if_irq *irq;
 	uint16_t id;
-	int rc;
+	/* PBSD: see bnxt_tx_queues_alloc() - the goto skips the only
+	 * assignment before the loop, so a P5+ chip with no rx queues
+	 * returns a stack slot to iflib as its attach status. */
+	int rc = 0;
 	int i;
 	char irq_name[16];
 
@@ -4530,7 +4540,18 @@ bnxt_add_media_types(struct bnxt_softc *softc)
 {
 	struct bnxt_link_info *link_info = &softc->link_info;
 	uint16_t supported_NRZ_speeds = 0, supported_pam4_speeds = 0, supported_speeds2 = 0;
-	uint8_t phy_type = get_phy_type(softc), media_type;
+	/*
+	 * PBSD: media_type is left unassigned by two arms of the switch
+	 * below - PHY_TYPE_UNKNOWN and the default for a phy type this
+	 * driver does not know - and the second switch then passes it to
+	 * add_media() on every path. phy_type is get_phy_type(softc), the
+	 * PHY type the CARD reported over HWRM, so a new or unrecognised
+	 * card makes the driver advertise whichever of the ten BNXT_MEDIA_
+	 * values a stack byte happens to name. Both of those arms carry a
+	 * comment saying only autoneg is supported, which is BNXT_MEDIA_END:
+	 * out of range for add_media()'s switch, so it adds nothing.
+	 */
+	uint8_t phy_type = get_phy_type(softc), media_type = BNXT_MEDIA_END;
 
 	supported_NRZ_speeds = link_info->support_speeds;
 	supported_speeds2 = link_info->support_speeds2;
