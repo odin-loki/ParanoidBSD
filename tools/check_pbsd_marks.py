@@ -1066,6 +1066,111 @@ FIXES = {
         "reached assert(0), and libc is not built -DNDEBUG, so a peer's "
         "reply aborted the client",
     ),
+
+    # The DPAA ethernet - NXP's NetCommSw drop and the FreeBSD driver on
+    # top of it. Fifty-five of its sixty-six translation units had never
+    # been analysed, for want of one makeoptions; see includes.py.
+    "hbsd/src/sys/contrib/ncsw/inc/xx_ext.h": (
+        "XX_Exit(int status) __dead2",
+        "void    XX_Exit(int status);",
+        "XX_Exit panics, and ASSERT_COND - live here, dflags.h does not "
+        "set DISABLE_ASSERTIONS - ends in it, so it is this driver's "
+        "null check; undeclared noreturn, every caller past a failed "
+        "assertion was a reachable path dereferencing what the assertion "
+        "rejected",
+    ),
+    "hbsd/src/sys/contrib/ncsw/Peripherals/FM/fm_ncsw.c": [
+        (
+            "bool tmp = FALSE;",
+            "            bool tmp;\n",
+            "FM_IS_PORT_STALLED replies with a stack byte FmIsPortStalled "
+            "does not write on its three error paths, to another "
+            "partition",
+        ),
+        (
+            "t_FmCtrlCodeRevisionInfo        fmanCtrlRevInfo = { 0 };",
+            None,
+            "FM_GET_FMAN_CTRL_CODE_REV, same shape: the reply body is "
+            "memcpy'd whatever FM_GetFmanCtrlCodeRevision returned",
+        ),
+        (
+            "t_FmDmaStatus       dmaStatus = { 0 };",
+            None,
+            "FM_DMA_STAT, same shape, and FM_GetDmaStatus returns void - "
+            "there was not even an error to ignore",
+        ),
+        (
+            "t_FmPhysAddr        physAddr = { 0 };",
+            None,
+            "FM_GET_PHYS_MURAM_BASE, same shape; FmGetPhysicalMuramBase "
+            "returns early on two IPC failures",
+        ),
+    ],
+    "hbsd/src/sys/contrib/ncsw/Peripherals/BM/bm.c": (
+        "t_BmRevisionInfo    revInfo = { 0 };",
+        None,
+        "BM_GET_REVISION replies with a stack struct BmGetRevision does "
+        "not write when it fails",
+    ),
+    "hbsd/src/sys/contrib/ncsw/Peripherals/QM/qm.c": [
+        (
+            "t_QmRevisionInfo    revInfo = { 0 };",
+            None,
+            "QM_GET_REVISION, the twin of BM_GET_REVISION",
+        ),
+        (
+            'RETURN_ERROR(MAJOR, err, ("Can\'t read QMan revision"))',
+            "        QmGetRevision(p_Qm, &revInfo);\n\n        if ((revInfo",
+            "QmGetSetPortalParams discarded the return and then read "
+            "revInfo to choose which of two layouts the portal's LIODN "
+            "registers are programmed in",
+        ),
+    ],
+    "hbsd/src/sys/contrib/ncsw/Peripherals/FM/Port/fm_port.h": (
+        "uint8_t                     deqPipelineDepth;",
+        None,
+        "the depth the port reserved with, kept where it survives "
+        "FmPortDriverParamFree",
+    ),
+    "hbsd/src/sys/contrib/ncsw/Peripherals/FM/Port/fm_port.c": [
+        (
+            "fmParams.deqPipelineDepth = p_FmPort->deqPipelineDepth;",
+            "tx_fifo_deq_pipeline_depth;\n\n    FmFreePortParams",
+            "FM_PORT_Free read p_FmPortDriverParam->dfltCfg one line "
+            "after FmPortDriverParamFree() freed it and set it to NULL - "
+            "and FM_PORT_Init had already nulled it, so every free of an "
+            "initialised port dereferenced NULL",
+        ),
+        (
+            "p_FmPort->deqPipelineDepth = fmParams.deqPipelineDepth;",
+            None,
+            "the other half: record it AFTER the override to 2 that "
+            "FM_PORT_Init applies to the OH ports, because "
+            "FmFreePortParams subtracts this from the FM's accumulated "
+            "dequeue TNUM count",
+        ),
+    ],
+    "hbsd/src/sys/contrib/dev/iwlwifi/mvm/rxmq.c": (
+        # TWO, not one. iwl_mvm_rx_mpdu_mq() already had this exact
+        # declaration, so a plain presence marker was satisfied by the
+        # twin that never needed fixing and did not bite at all.
+        ("struct iwl_mvm_rx_phy_data phy_data = {};\n\tu32 format;", 2),
+        "\tstruct iwl_mvm_rx_phy_data phy_data;\n\tu32 format;",
+        "iwl_mvm_rx_monitor_no_data() left d2/d3/d4/d5/eht_d4 "
+        "uninitialised while setting phy_info to TSF_OVERLOAD, so "
+        "info_type came out of the firmware's d1 and "
+        "iwl_mvm_decode_he_phy_data() - which, unlike the EHT decoders, "
+        "does not check ->with_data - read those bytes into the "
+        "radiotap header. Its twin iwl_mvm_rx_mpdu_mq() has the = {}",
+    ),
+    "hbsd/src/sys/dev/dpaa/if_dtsec_rm.c": (
+        "t_DpaaFD fd = { 0 };",
+        "\tt_DpaaFD fd;\n",
+        "every DPAA_FD_SET_* that touches fd.length read-modify-writes "
+        "it and each clears only its own mask, so the first read the "
+        "descriptor before anything wrote it, and it is enqueued to the "
+        "QMan",
+    ),
 }
 
 

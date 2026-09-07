@@ -3644,6 +3644,336 @@ Nothing there is a defect, and nothing there is new. Worth recording
 because a triage pass that finds nothing is evidence too — the earlier
 passes over this shard held.
 
+## Fixed — the DPAA ethernet, sixty-six files nobody had ever analysed
+
+`sys/contrib` is over 600 of the 1,036 ERROR translation units sweep 8 left,
+and the largest single reason in it was not a missing header at all. It was
+one line of the build system nothing here had read:
+
+```
+# sys/powerpc/conf/dpaa/config.dpaa
+makeoptions DPAA_COMPILE_CMD="${LINUXKPI_C} ${DPAAWARNFLAGS} \
+	-include $S/contrib/ncsw/build/dflags.h \
+	-I$S/contrib/ncsw/build/ \
+	-I$S/contrib/ncsw/inc \
+	...twenty-one -I in all
+```
+
+and `files.dpaa` builds every NCSW source with `compile-with
+"${DPAA_COMPILE_CMD}"`. Three things had to be read to expand that, and
+each was a place the tool had been guessing instead:
+
+1. **`makeoptions` in `sys/*/conf/**`.** The variable table was seeded from
+   `sys/conf/files*` only, so a `compile-with` naming a variable defined in
+   an architecture's own conf directory expanded to nothing.
+2. **`files.*` outside `sys/conf`.** `files.dpaa` lives in
+   `sys/powerpc/conf/dpaa/`, and the glob stopped at `sys/conf`.
+3. **`sys/conf/kern.pre.mk`.** `DPAA_COMPILE_CMD` opens with `${LINUXKPI_C}`,
+   which is `${NORMAL_C} ${LINUXKPI_INCLUDES}` — and `LINUXKPI_INCLUDES` was
+   represented in `includes.py` by a **hand-written copy of its three
+   flags**, applied to module Makefiles and to nothing else. So five ncsw
+   files that this tree ships a `<linux/math64.h>` for still failed on it.
+   The copy is gone; `kern_pre_vars()` reads the file's seventy
+   unconditional assignments.
+
+There is also a `cpu` line to read, which `DEFAULTS` does not carry:
+`sys/powerpc/include/tlb.h:33` is `#if defined(BOOKE_E500)`, and
+`sys/dev/dpaa/portals_common.c` uses `_TLB_ENTRY_IO` from inside it. All
+four configs that build the DPAA — MPC85XX, MPC85XXSPE, QORIQ64, dpaa/DPAA
+— declare `cpu BOOKE_E500`, so `files_cpu_index()` takes the **intersection**
+of the cpu sets of every config that names a file. Union would be inventing
+a kernel nobody builds; it also gave `CPU_CORTEXA` to 136 arm sources and
+`RISCV` to 25.
+
+The result, for `sys/contrib/ncsw` + `sys/dev/dpaa`:
+
+| | before | after the build-system reads | after the fixes |
+|---|---|---|---|
+| OK | 4 | 55 | 55 |
+| ERROR | 62 | 11 | 11 |
+| findings | 0 | 24 | 1 |
+
+The eleven that remain are a fourth honest reason for `expected_errors.py`:
+**not built** — the mEMAC MAC, the MACSEC block, the frame replicator and
+the storage-profile helper are in NXP's drop and in no `files*`, no module
+Makefile and no other source in the tree.
+
+### One declaration was worth nine of the twenty-four
+
+`ASSERT_COND` is live in this driver — `contrib/ncsw/build/dflags.h` does not
+define `DISABLE_ASSERTIONS` — and it ends in `XX_Exit(1)`, whose FreeBSD
+implementation is `panic()`. It is therefore this driver's null check, used
+that way in hundreds of places. But `contrib/ncsw/inc/xx_ext.h` declared
+
+```c
+void    XX_Exit(int status);
+```
+
+with nothing saying it does not return. So every caller past a failed
+assertion was a reachable path that dereferences the pointer the assertion
+had just rejected — nine `core.NullDereference` findings across `fm_pcd.c`,
+`fm_port.c`, `fm_port_im.c`, `fm_cc.c`, `qm_portal_fqr.c`, `fm_ncsw.c` and
+`sys/powerpc/include/pio.h`, none of them a bug in the code reported. One
+`__dead2` removed all nine, and it removes them from the compiler's view
+too: a compiler reading that header was in exactly the same position.
+
+### The IPC handlers reply with the stack when the getter fails
+
+Six sites, one shape, in the two functions that answer inter-partition
+messages on behalf of a guest:
+
+```c
+        case (FM_DMA_STAT):
+        {
+            t_FmDmaStatus       dmaStatus;      /* never written on error */
+            t_FmIpcDmaStatus    ipcDmaStatus;
+
+            FM_GetDmaStatus(h_Fm, &dmaStatus);
+            ipcDmaStatus.boolCmqNotEmpty = (uint8_t)dmaStatus.cmqNotEmpty;
+            ...
+            memcpy(p_IpcReply->replyBody, (uint8_t*)&ipcDmaStatus, ...);
+```
+
+`FM_GetDmaStatus` returns `void` and `REPORT_ERROR(...); return;` on two IPC
+failures without touching the caller's struct. The other five are the same
+with a return value that is stored into `p_IpcReply->error` and then ignored
+for the purpose of deciding whether the body is meaningful:
+`FmIsPortStalled` (three error paths), `FM_GetFmanCtrlCodeRevision`,
+`FmGetPhysicalMuramBase`, `BmGetRevision`, `QmGetRevision`. Each is a
+garbage value the guest acts on **and** a kernel stack leak across the
+partition boundary. All six now zero the local at its declaration; the
+reply already carries the error, so a zeroed body is the honest thing to
+send with it.
+
+`FmIsPortStalled` is the guard-on-N-of-M shape again at its plainest: of its
+two callers, `FmResumeStalledPort` at `fm_ncsw.c:2352` checks the error
+before reading `isStalled` and the IPC handler at `:941` does not.
+
+### A revision number that picks a register layout
+
+```c
+t_Error QmGetSetPortalParams(t_Handle h_Qm, ...)
+{
+    t_QmRevisionInfo    revInfo;
+    ...
+        QmGetRevision(p_Qm, &revInfo);
+
+        if ((revInfo.majorRev == 1) && (revInfo.minorRev == 0))
+```
+
+Not a report — the comparison chooses which of two layouts this portal's
+LIODN registers are programmed in. Read uninitialised it picks one at
+random and the portal is configured wrong, silently. The function returns
+`t_Error` and its caller checks it, so there was somewhere for the failure
+to go; it now goes there.
+
+### `FM_PORT_Free()` faulted on every initialised port
+
+```c
+    FmPortDriverParamFree(p_FmPort);     /* XX_Free, then = NULL */
+
+    memset(&fmParams, 0, sizeof(fmParams));
+    fmParams.hardwarePortId = p_FmPort->hardwarePortId;
+    fmParams.portType = (e_FmPortType)p_FmPort->portType;
+    fmParams.deqPipelineDepth =
+            p_FmPort->p_FmPortDriverParam->dfltCfg.tx_fifo_deq_pipeline_depth;
+```
+
+Five lines after the free-and-null. And it is worse than the local ordering
+suggests: `FM_PORT_Init` calls the same `FmPortDriverParamFree` at
+`fm_port.c:2709` on success, so for any port that ever finished
+initialising the pointer is **already** NULL on entry to `FM_PORT_Free`.
+Tearing down a FMan port — interface detach, driver unload — dereferenced
+NULL unconditionally.
+
+Hoisting the read above the free would not have been right either. The
+value `FmFreePortParams` subtracts from the FM's `accumulatedNumOfDeqTnums`
+has to be the value `FmGetSetPortParams` added, and `FM_PORT_Init` overrides
+it to 2 for the OH ports under `#ifndef FM_DEQ_PIPELINE_PARAMS_FOR_OP`. So
+the port now records what it actually reserved with, after the override,
+and the free gives back that.
+
+### A frame descriptor built out of the stack
+
+`sys/dev/dpaa/if_dtsec_rm.c:543` declared `t_DpaaFD fd;` and filled it with
+the `DPAA_FD_SET_*` macros. Every one of the three that touches `fd.length`
+is a read-modify-write clearing only its own mask —
+`SET_LENGTH` 0x000fffff, `SET_FORMAT` 0xe0000000, `SET_OFFSET` 0x1ff00000
+(`contrib/ncsw/inc/Peripherals/dpaa_ext.h:135-137`). The first of them reads
+the descriptor before anything has written it. Between the three the word
+does end up fully defined, which is why this survived; the read is
+undefined behaviour all the same, and the descriptor is then enqueued to
+the QMan.
+
+## `sys/contrib`, continued — libsodium and zstd
+
+Two more families, one more build-system read, and a distinction worth
+keeping straight. `sys/contrib` holds whole upstream repositories, and a
+translation unit in one is in exactly one of three states:
+
+* **built** — named by a `files*` line or a module's `SRCS`. It must
+  compile; if it does not, the tool is missing a flag.
+* **not built** — vendored beside the built ones and named by nothing.
+  It belongs in `expected_errors.py`, because an ERROR that is never
+  compiled by anybody is a fact about the drop, not a hole.
+* **not kernel** — a test program or a command-line tool with a `main()`.
+  It belongs in `includes.NOT_KERNEL`, with OpenZFS's `tests/` and
+  ACPICA's `compiler/`: "wants `<signal.h>` under `-D_KERNEL`" is not a
+  finding about the kernel, and 700 of them once drowned the ones that
+  were.
+
+**libsodium** needed no flag at all. `sys/conf/files:5142-5200` names 77
+sources — the stream ciphers, the one-time auth, ed25519, AEGIS — and
+every one of the 77 compiles clean, with zero findings. Its other 100 are
+28 library sources FreeBSD does not take (password hashing, generic hash,
+secretbox, libsodium's own randomness) and 72 standalone test programs.
+All 100 are now on the record or excluded as userland.
+
+**zstd** did, and it was the same kind of miss as the DPAA's. The files*
+reader required the compile line to be quoted:
+
+```
+FILES_COMPILE = re.compile(r'... compile-with\s+"(?P<cmd>[^"]*)"')
+```
+
+and `sys/conf/files:644-664` writes twenty-one lines of
+
+```
+contrib/zstd/lib/common/error_private.c  optional zstdio compile-with ${ZSTD_C}
+```
+
+with no quotes at all. `ZSTD_C` (`sys/conf/kern.pre.mk:160`) carries
+`-I$S/contrib/zstd/lib/freebsd`, which is where `zstd_deps.h` lives — the
+shim that maps zstd's `<stdlib.h>`, `<string.h>` and `assert()` onto the
+kernel. Without it the **entire in-kernel zstd** — zstdio(9) and the ZFS
+compressor — reported `missing header: stdlib.h` and contributed nothing.
+
+| `sys/contrib/zstd` | before | after |
+|---|---|---|
+| OK | 7 | 27 |
+| ERROR | 51 | 15 |
+
+All 27 built sources compile; the 15 are upstream's legacy v0.1-v0.7
+decoders, the dictionary trainer, the deprecated ZBUFF API and the
+threaded compressor, none of them in `files*`. Its 16 `programs/` and
+`zlibWrapper/` files are the zstd CLI and a zlib shim — userland.
+
+Three misses, three different shapes, all in the same reader: a variable
+defined in an architecture's own `conf/`, a `files.*` outside `sys/conf`,
+and a `compile-with` without quotes. Each was a place the tool had a rule
+where the build system had an answer.
+
+## Fixed — a wireless monitor path that puts the stack in the radiotap header
+
+The 359 vendored Linux wifi drivers are the last of `sys/contrib`'s six
+hundred. Their include problem is real but different in kind: their module
+Makefiles carry the flags (`.PATH` plus `${LINUXKPI_INCLUDES}`), so the
+`-I` are already found — what is missing is the `-D`, and that is a
+separate change with a conflict rule to settle first (see below). Even
+without it, 163 of the 239 translation units in `iwlwifi`, `rtw88` and
+`rtw89` analyse today, and they reported 16.
+
+One is a defect, and it is the shape this document keeps finding.
+
+`sys/contrib/dev/iwlwifi/mvm/rxmq.c` builds a `struct iwl_mvm_rx_phy_data`
+in two places:
+
+```c
+2128:	struct iwl_mvm_rx_phy_data phy_data = {};   /* iwl_mvm_rx_mpdu_mq  */
+2442:	struct iwl_mvm_rx_phy_data phy_data;        /* ..._rx_monitor_no_data */
+```
+
+The no-data path — the notification for a frame the radio saw and did not
+receive, the one monitor mode exists to report — fills `d0`, `d1`,
+`phy_info`, the energies, the channel and `rx_vec[0..3]`, and leaves `d2`,
+`d3`, `d4`, `d5` and `eht_d4` as whatever was on the stack. It also sets
+
+```c
+	phy_data.phy_info = IWL_RX_MPDU_PHY_TSF_OVERLOAD;
+```
+
+**unconditionally**, and `iwl_mvm_rx_fill_status()` reads that as
+permission to take the info type out of the firmware's own bytes:
+
+```c
+	if (phy_data->phy_info & IWL_RX_MPDU_PHY_TSF_OVERLOAD)
+		phy_data->info_type =
+			le32_get_bits(phy_data->d1, IWL_RX_PHY_DATA1_INFO_TYPE_MASK);
+```
+
+The EHT decoders guard on `phy_data->with_data`, which this path sets
+false. `iwl_mvm_decode_he_phy_data()` does not: its `switch
+(phy_data->info_type)` reads `d2` for `IWL_RX_PHY_INFO_TYPE_HE_TB_EXT`
+(`:1169`) and `d4` for `HE_MU_EXT` (`:1242`), and encodes them into
+`he->data4` and `he_mu->flags1` — the radiotap header that goes to
+mac80211 and out to every monitor-mode listener.
+
+So: uninitialised kernel stack, with **which** bytes selected by a value
+derived from what a nearby radio transmitted, delivered to userland. The
+guard on one of two, in a pair of functions forty lines apart in the same
+file, one of which has the `= {}` and the other of which does not.
+
+The fix is that `= {}`. Its marker in `check_pbsd_marks.py` is a **count**
+of two, not a presence check, for a reason worth writing down: the
+declaration it adds is character-for-character the one `iwl_mvm_rx_mpdu_mq`
+already had, so a presence marker was satisfied by the twin that never
+needed fixing. Found by reverting the fix and watching the check pass —
+the fifth marker-failure mode, caught by the procedure that exists for it.
+
+### The other fifteen, and what they have in common
+
+None is a defect, and eleven of them are one idea: **a count the hardware
+fixes**. `rtwdev->hal.rf_path_num` is assigned 1 or 2 in exactly one place
+(`rtw88/main.c:1989-1996`, on a chip-version register bit), and every array
+indexed by it — `rf_efuse_2g[2]`, `rf_efuse_5g[2][5]`, `thermal[2]`,
+`dpk_gs[]` — is sized for that. The analyser sees a `u8` field and a loop
+bound. `rtw8822c.c:4301`'s `cfo_path_sum / path_num` is the same field
+again, as a divisor.
+
+Two more are maintained pairs: `rtw88/mac.c:808` reads `ltecoex_bckp`
+under `if (rtwdev->chip->ltecoex_addr && ...)` and writes it at `:789`
+under the identical guard, returning `-EBUSY` if the read fails; and
+`rtw89/efuse_be.c:530` reads a `buff[4]` that
+`rtw89_dump_physical_efuse_map_be()` fills — its one `return 0` without
+filling is `if (!map || dump_size == 0)`, and this caller passes a stack
+array and 4.
+
+`iwlwifi/mld/rx.c:592` is worth its own note because it looks like the
+classic uninitialised-`switch` bug and is not:
+
+```c
+	u32 he_type = rate_n_flags & RATE_MCS_HE_TYPE_MSK;
+	u32 nsts;
+
+	switch (he_type) {          /* no default: */
+```
+
+`RATE_MCS_HE_TYPE_MSK` is `(3 << 23)`, two bits, and the four cases —
+`SU` 0, `EXT_SU` 1, `MU` 2, `TRIG` 3 — exhaust it. The switch is total over
+the masked value and `nsts` is always set. An exhaustive switch with no
+`default` is invisible to a path-sensitive analysis, which is an argument
+for writing the `default` rather than a bug.
+
+And one is latent rather than absent. `rtw88/bf.h:117`:
+
+```c
+static inline void rtw_chip_cfg_csi_rate(..., u8 *new_rate)
+{
+	if (rtwdev->chip->ops->cfg_csi_rate)
+		rtwdev->chip->ops->cfg_csi_rate(..., new_rate);
+}
+```
+
+— a no-op when the op is NULL, and `rtw8703b.c:1874` and `rtw8723d.c:1415`
+set it to NULL. `main.c:256` then reads `new_csi_rate_idx` unconditionally.
+It is unreachable today only because `bfee->role` is set nowhere but
+`rtw_bf_enable_bfee_su/mu`, called nowhere but 8821c, 8822b and 8822c —
+the three chips that *do* supply the op. That is an invariant spread over
+five files and stated in none of them, and the day a fourth chip grows
+beamforming it becomes the bug it looks like. Left alone because it is
+vendored and not reachable; recorded because "not reachable" here rests on
+nothing anyone wrote down.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -3723,4 +4053,6 @@ Kept because the reasoning is what stops them being re-reported.
 | `libexec/phttpget/phttpget.c:471` `isdigit(hln[7])` | the path needs `readln()`'s `while (strnstr(resbuf + *resbufpos, "\r\n", *resbuflen - *resbufpos) == NULL)` to be **false on its first evaluation**, with `resbuflen` and `resbufpos` both 0 — that is `strnstr(s, "\r\n", 0)` returning non-NULL, which libc's `strnstr` cannot do (`if (slen-- < 1) return (NULL)` before any read). `strnstr` is in another translation unit, so the analyser models it as returning an arbitrary pointer into the buffer and then reads `malloc`'d bytes through it. In the real program `readln()` returns 0 only with a `\r\n` in range, `*eolp = '\0'` terminates the line, and `hln[7]` is reached only after `strncmp(hln, "HTTP/1.", 7) == 0` has proved seven non-NUL bytes precede it. Worth the row because `phttpget` is what `freebsd-update` runs as root against a network peer. |
 | `lib/libc/gen/arc4random.c:211`, `:231` "null passed to memcpy" | `keystream = rsx->rs_buf + ...` where `rsx` is a global the analyser can see NULL. `rs` and `rsx` are one maintained pair: `_rs_allocate()` sets both or returns -1, and `_rs_stir()` — reached from `_rs_stir_if_needed()` on every path where `rs` is NULL — either allocates both or calls `abort()`. So `rs != NULL` implies `rsx != NULL` for the life of the process. The maintained-pair shape again, this time across two file-scope pointers in libc's CSPRNG. |
 | `lib/libc/db/hash/hash.c:853`, `:922`, `:932` `unix.MallocSizeof` | `SEGMENT` is `BUFHEAD **`, so `sizeof(SEGMENT)` and `sizeof(BUFHEAD *)` agree on every supported target and the allocation is the right size; the spelling is one indirection off. Same as `radixsort.c:109` above. |
+| `sys/contrib/ncsw/Peripherals/FM/Pcd/fm_cc.c:77` "1st function call argument is an uninitialized value" | `CcRootReleaseLock()` reads `p_FmPcdCcTree->p_Lock`, and the tree is `memset(p_FmPcdCcTree, 0, sizeof(t_FmPcdCcTree))` at its one allocation site (`:6026`), so the field is NULL and never garbage. The helper takes a `t_Handle` — an opaque `void *` — from API entry points, so analysed in isolation every field behind it is unknown. The last finding standing in the DPAA ethernet after the twenty-three above it were fixed. |
+| `sys/contrib/zstd/lib/common/bitstream.h:173` "right operand of `&` is a garbage value due to array index out of bounds" | `BIT_getLowerBits()` does `bitContainer & BIT_mask[nbBits]` under `assert(nbBits < BIT_MASK_SIZE)`, and `debug.h:70` makes `assert` `((void)0)` at DEBUGLEVEL 0 — so the bound is upstream's contract with its callers, not a run-time check. The reporting caller, `ZSTD_encodeSequences_body()`, passes `LL_bits[]`, `ML_bits[]` and `ofCodeTable[]` entries; an offset code is `ZSTD_highbit32(offBase)`, so 0..31 against a `BIT_MASK_SIZE` of 32. The analyser cannot bound the contents of a byte table filled by the match finder. Worth noting which side this is: compression **encoding**, where the codes are zstd's own, not decoding, where they come off the medium. |
 | `lib/libc/db/hash/hash.c:940` `store` leak | `alloc_segs()` writes `hashp->dir[i] = &store[i << hashp->SSHIFT]`, so `dir[0] == store`, and `hdestroy()` frees it as `free(*hashp->dir); /* Free initial segments */`. The analyser loses a pointer that escapes only through a computed address. |

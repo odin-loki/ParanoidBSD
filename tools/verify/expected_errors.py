@@ -123,6 +123,148 @@ EXPECTED = {
         "#includes parse_integer_func.c, which the test Makefile stages",
     "libexec/rtld-elf/tests/target/target.c":
         "#includes pythagoras.h from a sibling test library",
+
+    # The DPAA ethernet. sys/powerpc/conf/dpaa/config.dpaa is a
+    # `makeoptions DPAA_COMPILE_CMD=...' twenty-one -I long, and
+    # files.dpaa builds every NCSW source through it; reading that made
+    # 55 of these 66 translation units analysable for the first time.
+    # These eleven are the remainder, and they are a fourth honest
+    # reason:
+    #
+    #   not built   vendored with the rest of NXP's NetCommSw drop and
+    #               named by no files*, no module Makefile and no other
+    #               source in the tree. FreeBSD's DPAA port never took
+    #               the mEMAC MAC, the MACSEC block, the storage-profile
+    #               helper or the frame replicator.
+    #
+    # If any of them is ever wired into files.dpaa this list is what
+    # says so: --check-errors fails on an entry that starts compiling.
+    "sys/contrib/ncsw/Peripherals/FM/MAC/fman_crc32.c":
+        "not built: no files* or Makefile names it",
+    "sys/contrib/ncsw/Peripherals/FM/MAC/fman_memac.c":
+        "not built: the mEMAC MAC is not in files.dpaa",
+    "sys/contrib/ncsw/Peripherals/FM/MAC/fman_memac_mii_acc.c":
+        "not built: the mEMAC MAC is not in files.dpaa",
+    "sys/contrib/ncsw/Peripherals/FM/MAC/memac.c":
+        "not built: the mEMAC MAC is not in files.dpaa",
+    "sys/contrib/ncsw/Peripherals/FM/MAC/memac_mii_acc.c":
+        "not built: the mEMAC MAC is not in files.dpaa",
+    "sys/contrib/ncsw/Peripherals/FM/MACSEC/fm_macsec.c":
+        "not built: the MACSEC block is not in files.dpaa",
+    "sys/contrib/ncsw/Peripherals/FM/MACSEC/fm_macsec_guest.c":
+        "not built: the MACSEC block is not in files.dpaa",
+    "sys/contrib/ncsw/Peripherals/FM/MACSEC/fm_macsec_master.c":
+        "not built: the MACSEC block is not in files.dpaa",
+    "sys/contrib/ncsw/Peripherals/FM/MACSEC/fm_macsec_secy.c":
+        "not built: the MACSEC block is not in files.dpaa",
+    "sys/contrib/ncsw/Peripherals/FM/Pcd/fm_replic.c":
+        "not built: the frame replicator is not in files.dpaa",
+    "sys/contrib/ncsw/Peripherals/FM/SP/fman_sp.c":
+        "not built: the storage-profile helper is not in files.dpaa",
+
+    # libsodium, same fourth reason. sys/conf/files:5142-5200 names the
+    # 77 sources the kernel takes - the stream ciphers, the one-time
+    # auth, ed25519, AEGIS - and every one of them compiles. These 28
+    # are the rest of upstream's library: password hashing, generic
+    # hash, secretbox, libsodium's own randomness and its runtime init.
+    # They want <assert.h>, <errno.h> and <stdlib.h> because they are
+    # not kernel code and were never asked to be. (Its 72 test/default
+    # programs are userland outright and are in includes.NOT_KERNEL,
+    # with OpenZFS's tests/ and ACPICA's compiler/.)
+    "sys/contrib/libsodium/src/libsodium/crypto_aead/aes256gcm/aesni/aead_aes256gcm_aesni.c":
+        "not built: sys/conf/files takes AEGIS and chacha20poly1305, not aesni AES-GCM",
+    "sys/contrib/libsodium/src/libsodium/crypto_generichash/blake2b/ref/blake2b-ref.c":
+        "not built: the kernel has no generichash consumer",
+    "sys/contrib/libsodium/src/libsodium/crypto_generichash/blake2b/ref/generichash_blake2b.c":
+        "not built: the kernel has no generichash consumer",
+    "sys/contrib/libsodium/src/libsodium/crypto_kdf/blake2b/kdf_blake2b.c":
+        "not built: the kernel has no libsodium KDF consumer",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-core.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-encoding.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-fill-block-avx2.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-fill-block-avx512f.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-fill-block-ref.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/argon2-fill-block-ssse3.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/argon2.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/pwhash_argon2i.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/argon2/pwhash_argon2id.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/crypto_pwhash.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/nosse/pwhash_scryptsalsa208sha256_nosse.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/pwhash_scryptsalsa208sha256.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/scrypt_platform.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/sse/pwhash_scryptsalsa208sha256_sse.c":
+        "not built: argon2 and scrypt are userland password hashing",
+    "sys/contrib/libsodium/src/libsodium/crypto_secretbox/crypto_secretbox_easy.c":
+        "not built: no in-kernel secretbox consumer",
+    "sys/contrib/libsodium/src/libsodium/crypto_secretbox/xchacha20poly1305/secretbox_xchacha20poly1305.c":
+        "not built: no in-kernel secretbox consumer",
+    "sys/contrib/libsodium/src/libsodium/randombytes/nativeclient/randombytes_nativeclient.c":
+        "not built: the kernel supplies its own randomness, sys/crypto/libsodium",
+    "sys/contrib/libsodium/src/libsodium/randombytes/randombytes.c":
+        "not built: the kernel supplies its own randomness, sys/crypto/libsodium",
+    "sys/contrib/libsodium/src/libsodium/randombytes/salsa20/randombytes_salsa20_random.c":
+        "not built: the kernel supplies its own randomness, sys/crypto/libsodium",
+    "sys/contrib/libsodium/src/libsodium/randombytes/sysrandom/randombytes_sysrandom.c":
+        "not built: the kernel supplies its own randomness, sys/crypto/libsodium",
+    "sys/contrib/libsodium/src/libsodium/sodium/codecs.c":
+        "not built: libsodium's own runtime init, allocator and version",
+    "sys/contrib/libsodium/src/libsodium/sodium/core.c":
+        "not built: libsodium's own runtime init, allocator and version",
+    "sys/contrib/libsodium/src/libsodium/sodium/utils.c":
+        "not built: libsodium's own runtime init, allocator and version",
+    "sys/contrib/libsodium/src/libsodium/sodium/version.c":
+        "not built: libsodium's own runtime init, allocator and version",
+
+    # zstd, same reason again, and the one that had been hiding real
+    # coverage: sys/conf/files:644-664 writes `compile-with ${ZSTD_C}'
+    # WITHOUT quotes, which the files* reader had required. Supplying
+    # ZSTD_C's three -I took the in-kernel zstd - zstdio(9) and the ZFS
+    # compressor - from 7 OK / 51 ERROR to 27 / 31, and every one of the
+    # 27 built sources now compiles. These fifteen are what upstream
+    # ships beside them and FreeBSD does not take.
+    "sys/contrib/zstd/lib/common/pool.c":
+        "not built: the POSIX-thread worker pool, for zstdmt",
+    "sys/contrib/zstd/lib/compress/zstdmt_compress.c":
+        "not built: multi-threaded compression, userland only",
+    "sys/contrib/zstd/lib/deprecated/zbuff_common.c":
+        "not built: the deprecated ZBUFF API",
+    "sys/contrib/zstd/lib/deprecated/zbuff_compress.c":
+        "not built: the deprecated ZBUFF API",
+    "sys/contrib/zstd/lib/dictBuilder/cover.c":
+        "not built: dictionary training is a userland tool",
+    "sys/contrib/zstd/lib/dictBuilder/divsufsort.c":
+        "not built: dictionary training is a userland tool",
+    "sys/contrib/zstd/lib/dictBuilder/fastcover.c":
+        "not built: dictionary training is a userland tool",
+    "sys/contrib/zstd/lib/dictBuilder/zdict.c":
+        "not built: dictionary training is a userland tool",
+    "sys/contrib/zstd/lib/legacy/zstd_v01.c":
+        "not built: the v0.1 format decoder, ZSTD_LEGACY_SUPPORT",
+    "sys/contrib/zstd/lib/legacy/zstd_v02.c":
+        "not built: the v0.2 format decoder, ZSTD_LEGACY_SUPPORT",
+    "sys/contrib/zstd/lib/legacy/zstd_v03.c":
+        "not built: the v0.3 format decoder, ZSTD_LEGACY_SUPPORT",
+    "sys/contrib/zstd/lib/legacy/zstd_v04.c":
+        "not built: the v0.4 format decoder, ZSTD_LEGACY_SUPPORT",
+    "sys/contrib/zstd/lib/legacy/zstd_v05.c":
+        "not built: the v0.5 format decoder, ZSTD_LEGACY_SUPPORT",
+    "sys/contrib/zstd/lib/legacy/zstd_v06.c":
+        "not built: the v0.6 format decoder, ZSTD_LEGACY_SUPPORT",
+    "sys/contrib/zstd/lib/legacy/zstd_v07.c":
+        "not built: the v0.7 format decoder, ZSTD_LEGACY_SUPPORT",
 }
 
 

@@ -926,6 +926,17 @@ typedef struct {
     int                         savedPrsStartOffset;
     bool                        includeInPrsStatistics;
     uint16_t                    maxFrameLength;
+    /*
+     * The deqPipelineDepth this port actually reserved with
+     * FmGetSetPortParams. It used to be re-read at free time from
+     * p_FmPortDriverParam->dfltCfg, which FM_PORT_Init has by then
+     * freed and set to NULL - and which in any case does not carry the
+     * override to 2 that FM_PORT_Init applies to the OH ports. Both
+     * matter: the read faulted, and the value is what
+     * FmFreePortParams subtracts from the FM's accumulated dequeue
+     * TNUM count, so it has to be the number that was added.
+     */
+    uint8_t                     deqPipelineDepth;
     t_FmFmanCtrl                orFmanCtrl;
     t_FmPortRsrc                openDmas;
     t_FmPortRsrc                tasks;

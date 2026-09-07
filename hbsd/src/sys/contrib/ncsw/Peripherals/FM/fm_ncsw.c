@@ -936,7 +936,17 @@ static t_Error FmHandleIpcMsgCB(t_Handle  h_Fm,
         }
         case (FM_IS_PORT_STALLED):
         {
-            bool tmp;
+            /*
+             * FmIsPortStalled does not write *p_IsStalled on its
+             * error paths, and this reply body is memcpy'd to
+             * another partition whatever the error was. An
+             * uninitialised local here is both a garbage value
+             * the guest acts on and a kernel stack leak across
+             * the partition boundary; p_IpcReply->error already
+             * carries the failure, so a zeroed body is the
+             * honest thing to send with it.
+             */
+            bool tmp = FALSE;
 
             p_IpcReply->error = (uint32_t)FmIsPortStalled(h_Fm, p_IpcMsg->msgBody[0], &tmp);
             *(uint8_t*)(p_IpcReply->replyBody) = (uint8_t)tmp;
@@ -1042,7 +1052,17 @@ static t_Error FmHandleIpcMsgCB(t_Handle  h_Fm,
         }
         case (FM_GET_FMAN_CTRL_CODE_REV):
         {
-            t_FmCtrlCodeRevisionInfo        fmanCtrlRevInfo;
+            /*
+             * FM_GetFmanCtrlCodeRevision does not write *p_RevisionInfo on its
+             * error paths, and this reply body is memcpy'd to
+             * another partition whatever the error was. An
+             * uninitialised local here is both a garbage value
+             * the guest acts on and a kernel stack leak across
+             * the partition boundary; p_IpcReply->error already
+             * carries the failure, so a zeroed body is the
+             * honest thing to send with it.
+             */
+            t_FmCtrlCodeRevisionInfo        fmanCtrlRevInfo = { 0 };
             t_FmIpcFmanCtrlCodeRevisionInfo ipcRevInfo;
 
             p_IpcReply->error = (uint32_t)FM_GetFmanCtrlCodeRevision(h_Fm, &fmanCtrlRevInfo);
@@ -1056,7 +1076,17 @@ static t_Error FmHandleIpcMsgCB(t_Handle  h_Fm,
 
         case (FM_DMA_STAT):
         {
-            t_FmDmaStatus       dmaStatus;
+            /*
+             * FM_GetDmaStatus does not write *p_FmDmaStatus on its
+             * error paths, and this reply body is memcpy'd to
+             * another partition whatever the error was. An
+             * uninitialised local here is both a garbage value
+             * the guest acts on and a kernel stack leak across
+             * the partition boundary; p_IpcReply->error already
+             * carries the failure, so a zeroed body is the
+             * honest thing to send with it.
+             */
+            t_FmDmaStatus       dmaStatus = { 0 };
             t_FmIpcDmaStatus    ipcDmaStatus;
 
             FM_GetDmaStatus(h_Fm, &dmaStatus);
@@ -1116,7 +1146,17 @@ static t_Error FmHandleIpcMsgCB(t_Handle  h_Fm,
         }
         case (FM_GET_PHYS_MURAM_BASE):
         {
-            t_FmPhysAddr        physAddr;
+            /*
+             * FmGetPhysicalMuramBase does not write *p_FmPhysAddr on its
+             * error paths, and this reply body is memcpy'd to
+             * another partition whatever the error was. An
+             * uninitialised local here is both a garbage value
+             * the guest acts on and a kernel stack leak across
+             * the partition boundary; p_IpcReply->error already
+             * carries the failure, so a zeroed body is the
+             * honest thing to send with it.
+             */
+            t_FmPhysAddr        physAddr = { 0 };
             t_FmIpcPhysAddr     ipcPhysAddr;
 
             FmGetPhysicalMuramBase(h_Fm, &physAddr);

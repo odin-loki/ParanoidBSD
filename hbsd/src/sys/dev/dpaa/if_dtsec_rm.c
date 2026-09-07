@@ -540,7 +540,15 @@ dtsec_rm_if_start_locked(struct dtsec_softc *sc)
 	unsigned int qlen, i;
 	struct mbuf *m0, *m;
 	vm_offset_t vaddr;
-	t_DpaaFD fd;
+	/*
+	 * Every DPAA_FD_SET_* that touches fd.length is a
+	 * read-modify-write of it: SET_LENGTH clears only 0x000fffff,
+	 * SET_FORMAT only 0xe0000000 and SET_OFFSET only 0x1ff00000
+	 * (contrib/ncsw/inc/Peripherals/dpaa_ext.h). The first of them
+	 * therefore reads this descriptor before anything has written
+	 * it, and the frame descriptor is then enqueued to the QMan.
+	 */
+	t_DpaaFD fd = { 0 };
 
 	DTSEC_LOCK_ASSERT(sc);
 	/* TODO: IFF_DRV_OACTIVE */

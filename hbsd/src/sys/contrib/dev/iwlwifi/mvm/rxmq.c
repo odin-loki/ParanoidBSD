@@ -2439,7 +2439,19 @@ void iwl_mvm_rx_monitor_no_data(struct iwl_mvm *mvm, struct napi_struct *napi,
 	u32 rssi;
 	struct ieee80211_sta *sta = NULL;
 	struct sk_buff *skb;
-	struct iwl_mvm_rx_phy_data phy_data;
+	/*
+	 * = {} like its twin at the top of iwl_mvm_rx_mpdu_mq(), and for
+	 * the same reason. This path fills d0 and d1 and leaves d2, d3,
+	 * d4, d5 and eht_d4 alone - but it also sets phy_info to
+	 * IWL_RX_MPDU_PHY_TSF_OVERLOAD unconditionally, so
+	 * iwl_mvm_rx_fill_status() takes info_type out of d1, which came
+	 * from the firmware. The EHT decoders check ->with_data before
+	 * reading the rest; iwl_mvm_decode_he_phy_data() does not, and
+	 * its switch on info_type reads d2 for HE_TB_EXT and d4 for
+	 * HE_MU_EXT. Those bytes then go into the radiotap header and out
+	 * to any monitor-mode listener.
+	 */
+	struct iwl_mvm_rx_phy_data phy_data = {};
 	u32 format;
 
 	if (unlikely(test_bit(IWL_MVM_STATUS_IN_HW_RESTART, &mvm->status)))

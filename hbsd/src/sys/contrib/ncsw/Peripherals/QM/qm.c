@@ -144,7 +144,17 @@ static t_Error QmHandleIpcMsgCB(t_Handle  h_Qm,
         }
         case (QM_GET_REVISION):
         {
-            t_QmRevisionInfo    revInfo;
+            /*
+             * QmGetRevision does not write *p_QmRevisionInfo on its
+             * error paths, and this reply body is memcpy'd to
+             * another partition whatever the error was. An
+             * uninitialised local here is both a garbage value
+             * the guest acts on and a kernel stack leak across
+             * the partition boundary; p_IpcReply->error already
+             * carries the failure, so a zeroed body is the
+             * honest thing to send with it.
+             */
+            t_QmRevisionInfo    revInfo = { 0 };
             t_QmIpcRevisionInfo ipcRevInfo;
 
             p_IpcReply->error = (uint32_t)QmGetRevision(h_Qm, &revInfo);
@@ -432,6 +442,7 @@ t_Error QmGetSetPortalParams(t_Handle h_Qm, t_QmInterModulePortalInitParams *p_P
 {
     t_Qm                *p_Qm = (t_Qm *)h_Qm;
     t_QmRevisionInfo    revInfo;
+    t_Error             err;
     uint32_t            lioReg,ioReg;
 
     SANITY_CHECK_RETURN_ERROR(p_Qm, E_INVALID_HANDLE);
@@ -439,7 +450,17 @@ t_Error QmGetSetPortalParams(t_Handle h_Qm, t_QmInterModulePortalInitParams *p_P
 
     if (p_Qm->guestId == NCSW_MASTER_ID)
     {
-        QmGetRevision(p_Qm, &revInfo);
+        /*
+         * QmGetRevision leaves revInfo untouched when it fails, and the
+         * comparison below is not a report - it chooses which of two
+         * layouts the LIODN registers of this portal are programmed in.
+         * Read uninitialised it picks one at random and the portal is
+         * configured wrong, silently. The caller of this function
+         * (QM_GET_SET_PORTAL_PARAMS, qm.c) already checks a t_Error,
+         * so there is somewhere for the failure to go.
+         */
+        if ((err = QmGetRevision(p_Qm, &revInfo)) != E_OK)
+            RETURN_ERROR(MAJOR, err, ("Can't read QMan revision"));
 
         if ((revInfo.majorRev == 1) && (revInfo.minorRev == 0))
         {

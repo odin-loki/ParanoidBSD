@@ -214,8 +214,21 @@ t_Error XX_DeallocIntr(uintptr_t irq);
  @Description   Stop execution and report status (where it is applicable)
 
  @Param[in]     status - exit status
+
+                XX_Exit does not return: the FreeBSD implementation in
+                contrib/ncsw/user/env/xx.c panics. Saying so is not
+                cosmetic. ASSERT_COND - which is live here, dflags.h
+                does not define DISABLE_ASSERTIONS - ends in XX_Exit(1),
+                so `ASSERT_COND(p)' is this driver's null check; with
+                the declaration silent about that, every caller past a
+                failed assertion is a reachable path that dereferences
+                the pointer the assertion just rejected. Nine of the
+                twenty-four findings in the DPAA ethernet were that and
+                nothing else, and a compiler reading this header is in
+                exactly the same position: it cannot prune the path
+                either.
 *//***************************************************************************/
-void    XX_Exit(int status);
+void    XX_Exit(int status) __dead2;
 
 
 /*****************************************************************************/

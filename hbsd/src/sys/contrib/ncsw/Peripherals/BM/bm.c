@@ -139,7 +139,17 @@ static t_Error BmHandleIpcMsgCB(t_Handle  h_Bm,
         }
         case (BM_GET_REVISION):
         {
-            t_BmRevisionInfo    revInfo;
+            /*
+             * BmGetRevision does not write *p_BmRevisionInfo on its
+             * error paths, and this reply body is memcpy'd to
+             * another partition whatever the error was. An
+             * uninitialised local here is both a garbage value
+             * the guest acts on and a kernel stack leak across
+             * the partition boundary; p_IpcReply->error already
+             * carries the failure, so a zeroed body is the
+             * honest thing to send with it.
+             */
+            t_BmRevisionInfo    revInfo = { 0 };
             t_BmIpcRevisionInfo ipcRevInfo;
 
             p_IpcReply->error = (uint32_t)BmGetRevision(h_Bm, &revInfo);

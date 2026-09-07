@@ -2691,6 +2691,8 @@ t_Error FM_PORT_Init(t_Handle h_FmPort)
         fmParams.deqPipelineDepth = 2;
     }
 #endif /* !FM_DEQ_PIPELINE_PARAMS_FOR_OP */
+    /* Remember it: FM_PORT_Free has to give back what was reserved. */
+    p_FmPort->deqPipelineDepth = fmParams.deqPipelineDepth;
 
     errCode = FmGetSetPortParams(p_FmPort->h_Fm, &fmParams);
     if (errCode)
@@ -2787,8 +2789,14 @@ t_Error FM_PORT_Free(t_Handle h_FmPort)
     memset(&fmParams, 0, sizeof(fmParams));
     fmParams.hardwarePortId = p_FmPort->hardwarePortId;
     fmParams.portType = (e_FmPortType)p_FmPort->portType;
-    fmParams.deqPipelineDepth =
-            p_FmPort->p_FmPortDriverParam->dfltCfg.tx_fifo_deq_pipeline_depth;
+    /*
+     * NOT p_FmPort->p_FmPortDriverParam->dfltCfg: the line above
+     * FmPortDriverParamFree()s that pointer and sets it to NULL, and a
+     * port that reached FM_PORT_Init had it freed and nulled there
+     * too, so this dereferenced NULL on every free of an initialised
+     * port. The reserved depth is kept on the port itself now.
+     */
+    fmParams.deqPipelineDepth = p_FmPort->deqPipelineDepth;
 
     FmFreePortParams(p_FmPort->h_Fm, &fmParams);
 

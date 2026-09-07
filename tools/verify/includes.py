@@ -348,8 +348,20 @@ def makefile_flags(d: str, arch: str, base: str) -> tuple[tuple[str, ...],
 # set below was the first instance of this and was solved by copying one
 # module Makefile's four lines into this file; that does not scale to
 # 115 module Makefiles, and a copy goes stale where a read does not.
+#
+# The quotes on a compile-with are optional. sys/conf/files:644-664 is twenty-one lines of
+#
+#   contrib/zstd/lib/common/error_private.c  optional zstdio \
+#       compile-with ${ZSTD_C}
+#
+# and ZSTD_C (sys/conf/kern.pre.mk:160) carries the three -I that make
+# zstd's own headers findable. Requiring the quotes cost every one of
+# them: the whole in-kernel zstd, which is zstdio(9) and the ZFS
+# compressor, came back "missing header: stdlib.h" - it had not found
+# <zstd_deps.h>, the shim that maps those onto the kernel.
 FILES_COMPILE = re.compile(
-    r'^(?P<src>\S+\.c)\s+\S+.*?compile-with\s+"(?P<cmd>[^"]*)"')
+    r'^(?P<src>\S+\.c)\s+\S+.*?compile-with\s+'
+    r'(?:"(?P<dq>[^"]*)"|\'(?P<sq>[^\']*)\'|(?P<bare>\S+))')
 DASH_INCLUDE = re.compile(r"-include\s+(\S+)")
 
 
@@ -362,14 +374,58 @@ def _kernel_dirs(text: str, vars: dict[str, str]) -> list[str]:
     what left every linuxkpi-using driver - qat among them - still
     failing on <linux/types.h> after its own -I had been found.
     """
-    text = _expand(text, vars)
+    # $S is make's own abbreviation for the kernel source root and is
+    # bare, not ${S}, so _expand does not see it - and when it arrives
+    # inside an expanded variable's VALUE (DPAA_COMPILE_CMD is twenty-one
+    # -I$S/...) replacing it before expansion is too early.
+    text = _expand(text, vars).replace("$S", str(SYS))
     out = []
     for tok in DASH_INCLUDE.findall(text):
         if "$" not in tok and Path(tok).is_file():
             out.append(f"-include{tok}")
     for tok in INCLUDE.findall(DASH_INCLUDE.sub("", text)):
-        if "$" not in tok and Path(tok).is_dir():
+        # `-I.' is the kernel build directory, not the analyser's cwd,
+        # and there is nothing at the latter this sweep should read.
+        if "$" not in tok and tok.startswith("/") and Path(tok).is_dir():
             out.append(f"-I{tok}")
+    return out
+
+
+@functools.lru_cache(maxsize=None)
+def kern_pre_vars() -> dict[str, str]:
+    """The unconditional assignments in sys/conf/kern.pre.mk.
+
+    This file was previously represented here by a hand-written table of
+    three flags for LINUXKPI_INCLUDES and three more for OFEDINCLUDES,
+    copied out of it. The table was right about those two and knew
+    nothing else, so `compile-with "${LINUXKPI_C}"' - which is
+    ${NORMAL_C} ${LINUXKPI_INCLUDES}, and which sys/powerpc/conf/dpaa
+    builds twenty-one -I on top of - expanded to nothing, and five
+    built DPAA translation units failed on <linux/math64.h> that this
+    tree ships. A copy is a second place for the answer to be wrong in;
+    read the file.
+
+    Only depth-0 assignments are taken: the conditional ones are per
+    compiler and per architecture and this sweep is neither.
+    """
+    mk = SYS / "conf" / "kern.pre.mk"
+    out: dict[str, str] = {}
+    if not mk.is_file():
+        return out
+    depth = 0
+    for line in mk.read_text(errors="replace").replace("\\\n", " ").splitlines():
+        st = line.strip()
+        if st.startswith((".if", ".for")):
+            depth += 1
+            continue
+        if st.startswith((".endif", ".endfor")):
+            depth = max(0, depth - 1)
+            continue
+        if depth or not st or st.startswith("#"):
+            continue
+        m = MAKE_VAR.match(st)
+        if m:
+            out.setdefault(m.group("name"), m.group("val").strip())
     return out
 
 
@@ -379,15 +435,55 @@ def kernel_flag_index() -> tuple[dict[str, tuple[str, ...]],
     """(by source path, by directory) the flags a kernel build adds."""
     by_file: dict[str, list[str]] = {}
     by_dir: dict[str, list[str]] = {}
-    base = {"SRCTOP": str(SRC), "SYSDIR": str(SYS), "S": str(SYS)}
+    base = dict(kern_pre_vars())
+    # These three are make's, not kern.pre.mk's, and are the roots the
+    # rest resolve against: they win over anything read out of a file.
+    base.update({"SRCTOP": str(SRC), "SYSDIR": str(SYS), "S": str(SYS)})
 
-    for mk in sorted((SYS / "conf").glob("files*")):
+    # A compile-with can name a variable rather than spell the flags out:
+    #
+    #   contrib/ncsw/etc/error.c  optional dpaa \
+    #       no-depend compile-with "${DPAA_COMPILE_CMD}"
+    #
+    # and DPAA_COMPILE_CMD is a `makeoptions' in
+    # sys/powerpc/conf/dpaa/config.dpaa, twenty-one -I long. Without it
+    # the whole DPAA ethernet - fifty-one translation units, the
+    # networking on every QorIQ board - fails on <std_ext.h>. Collect
+    # every makeoptions in every architecture's conf/ before reading the
+    # files* that use them.
+    MAKEOPT = re.compile(r'^\s*makeoptions\s+([A-Za-z_]\w*)\s*[+?]?=\s*(.*)$')
+    for cf in sorted(SYS.glob("*/conf/**/*")):
+        if not cf.is_file() or cf.suffix in (".c", ".h", ".m"):
+            continue
+        try:
+            text = cf.read_text(errors="replace").replace("\\\n", " ")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for line in text.splitlines():
+            m = MAKEOPT.match(line)
+            if not m:
+                continue
+            val = m.group(2).strip()
+            if val.startswith('"'):
+                end = val.find('"', 1)
+                val = val[1:end] if end > 0 else val[1:]
+            else:
+                # a bare value ends at make's comment character, and
+                # sixteen configs write `makeoptions WITH_CTF=1 # ...'
+                val = val.split("#", 1)[0].strip()
+            base.setdefault(m.group(1), val)
+
+    files = sorted((SYS / "conf").glob("files*")) + \
+        sorted(f for f in SYS.rglob("files.*")
+               if f.is_file() and f.parent != SYS / "conf")
+    for mk in files:
         text = mk.read_text(errors="replace").replace("\\\n", " ")
         for line in text.splitlines():
             m = FILES_COMPILE.match(line)
             if not m:
                 continue
-            fl = _kernel_dirs(m.group("cmd").replace("$S", str(SYS)), base)
+            cmd = m.group("dq") or m.group("sq") or m.group("bare") or ""
+            fl = _kernel_dirs(cmd.replace("$S", str(SYS)), base)
             if fl:
                 by_file.setdefault("sys/" + m.group("src"), []).extend(fl)
 
@@ -395,13 +491,6 @@ def kernel_flag_index() -> tuple[dict[str, tuple[str, ...]],
         text = mk.read_text(errors="replace").replace("\\\n", " ")
         vars = dict(base)
         vars[".CURDIR"] = str(mk.parent)
-        vars["LINUXKPI_INCLUDES"] = (
-            f"-I{SYS}/compat/linuxkpi/common/include "
-            f"-I{SYS}/compat/linuxkpi/dummy/include "
-            f"-include {SYS}/compat/linuxkpi/common/include/linux/kconfig.h")
-        vars["OFEDINCLUDES"] = (f"-I{SYS}/ofed/include "
-                                f"-I{SYS}/ofed/include/uapi "
-                                + vars["LINUXKPI_INCLUDES"])
         paths: list[str] = []
         flags: list[str] = []
         depth = 0
@@ -478,6 +567,98 @@ def files_arch_index() -> dict[str, str]:
                 # same architecture is not fought over, and one named by
                 # conf/files (no architecture) never reaches here at all.
                 out.setdefault("sys/" + m.group(1), arch)
+    return out
+
+
+# `cpu' is not an option a kernel may or may not want; it names the CPU
+# family, and the machine headers are gated on it:
+#
+#   sys/powerpc/include/tlb.h:33   #if defined(BOOKE_E500)
+#
+# so sys/dev/dpaa/portals_common.c, which uses _TLB_ENTRY_IO from inside
+# that block, cannot compile without it - and the four configs that
+# build the DPAA ethernet (MPC85XX, MPC85XXSPE, QORIQ64, dpaa/DPAA) all
+# say `cpu BOOKE_E500'. DEFAULTS does not carry cpu lines, so this is a
+# second read of the same kind: what the configs that build this file
+# agree on.
+CONFIG_CPU = re.compile(r"^\s*cpu\s+([A-Za-z_][A-Za-z0-9_]*)")
+CONFIG_INCLUDE = re.compile(r'^\s*include\s+"([^"]+)"')
+CONFIG_FILES = re.compile(r'^\s*files\s+"([^"]+)"')
+
+
+def _config_read(p: Path, root: Path,
+                 seen: set[Path]) -> tuple[set[str], set[Path]]:
+    """(cpu names, files* this config pulls in), following `include'.
+
+    Both `include' and `files' name a path relative to the
+    architecture's conf/ directory, never to the file doing the naming:
+    sys/powerpc/conf/dpaa/config.dpaa says `files "dpaa/files.dpaa"'
+    and means sys/powerpc/conf/dpaa/files.dpaa. Resolved against its own
+    parent that is dpaa/dpaa/, which does not exist, and the DPAA
+    configs then agreed on no cpu at all.
+    """
+    cpus: set[str] = set()
+    files: set[Path] = set()
+    if p in seen or not p.is_file():
+        return cpus, files
+    seen.add(p)
+    for line in p.read_text(errors="replace").splitlines():
+        line = line.split("#")[0]
+        m = CONFIG_CPU.match(line)
+        if m:
+            cpus.add(m.group(1))
+            continue
+        m = CONFIG_FILES.match(line)
+        if m:
+            files.add((root / m.group(1)).resolve())
+            continue
+        m = CONFIG_INCLUDE.match(line)
+        if m:
+            c, f = _config_read((root / m.group(1)).resolve(), root, seen)
+            cpus |= c
+            files |= f
+    return cpus, files
+
+
+@functools.lru_cache(maxsize=None)
+def files_cpu_index() -> dict[str, tuple[str, ...]]:
+    """source under sys/ -> the cpu names EVERY config building it sets.
+
+    Intersection, not union: a cpu only some of them declare is not one
+    this file may assume, and inventing it would be the analyser
+    checking a kernel nobody builds.
+    """
+    per_files: dict[Path, list[set[str]]] = {}
+    for arch_dir in sorted(SYS_DIR.values()):
+        confd = SYS / arch_dir / "conf"
+        for cf in sorted(confd.rglob("*")):
+            # A kernel config is the ALL-CAPS file; DEFAULTS, NOTES and
+            # the files.*/std.*/config.* fragments are not kernels.
+            if not cf.is_file() or not cf.name.isupper():
+                continue
+            if cf.name in ("DEFAULTS", "NOTES"):
+                continue
+            cpus, files = _config_read(cf, confd, set())
+            if not cpus:
+                continue
+            for f in files:
+                per_files.setdefault(f, []).append(cpus)
+
+    per_src: dict[str, list[set[str]]] = {}
+    for f, sets in per_files.items():
+        if not f.is_file():
+            continue
+        text = f.read_text(errors="replace").replace("\\\n", " ")
+        srcs = [m.group(1) for m in
+                (FILES_SRC.match(ln) for ln in text.splitlines()) if m]
+        for s in srcs:
+            per_src.setdefault("sys/" + s, []).extend(sets)
+
+    out: dict[str, tuple[str, ...]] = {}
+    for rel, sets in per_src.items():
+        common = set.intersection(*sets)
+        if common:
+            out[rel] = tuple(sorted(common))
     return out
 
 
@@ -1137,6 +1318,7 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/common/zfs",
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/intel"]
         flags += defaults_options(arch)
+        flags += [f"-D{c}" for c in files_cpu_index().get(rel, ())]
         by_file, by_dir = kernel_flag_index()
         # A module's SRCS are named relative to its .PATH, so one .PATH
         # covers a whole subtree: sys/modules/qat/qat_api takes .PATH on
@@ -1335,6 +1517,16 @@ NOT_KERNEL = (
     "contrib/dev/acpica/os_specific/service_layers/osunix",
     "contrib/dev/acpica/os_specific/service_layers/oswin",
     "contrib/dev/acpica/os_specific/service_layers/osl",
+    # libsodium ships its test suite too. test/default/ is 72 standalone
+    # programs with a main(), <stdio.h> and <assert.h>; sys/conf/files
+    # names not one of them. "wants <signal.h> under -D_KERNEL" is not a
+    # finding about the kernel.
+    "contrib/libsodium/test/",
+    # zstd ships its command-line tool and a zlib compatibility shim.
+    # programs/ is zstdcli, benchzstd and fileio; zlibWrapper/ is gzread,
+    # gzwrite and friends. sys/conf/files:644-664 names neither, and
+    # usr.bin/zstd builds programs/ as userland.
+    "contrib/zstd/programs/", "contrib/zstd/zlibWrapper/",
 )
 
 
