@@ -184,6 +184,26 @@ aw_clk_nm_set_freq(struct clknode *clk, uint64_t fparent, uint64_t *fout,
 
 	best = cur = 0;
 	best_parent = 0;
+	/*
+	 * PBSD: best_n and best_m are the divisors written into the
+	 * clock control register at the bottom of this function, and on
+	 * the AW_CLK_REPARENT path they are assigned only inside
+	 * `if (clk_freq_diff(*fout, cur) < clk_freq_diff(*fout, best))'.
+	 * With best starting at 0 that needs some parent to yield a
+	 * non-zero frequency; when none does, best stays 0 and the two
+	 * divisors are never assigned. best == 0 then survives the
+	 * range checks below whenever CLK_SET_ROUND_DOWN is set, and
+	 *
+	 *	val |= n << sc->n.shift;
+	 *	val |= m << sc->m.shift;
+	 *
+	 * writes a stack value into a live clock divider. Three of the
+	 * five locals here were already initialised on these two lines;
+	 * these are the other two. (best == 0 arguably deserves an
+	 * ERANGE of its own, but that would change the non-reparent
+	 * path too, which is not what this fixes.)
+	 */
+	best_n = best_m = 0;
 
 	if ((sc->flags & AW_CLK_REPARENT) != 0) {
 		p_names = clknode_get_parent_names(clk);

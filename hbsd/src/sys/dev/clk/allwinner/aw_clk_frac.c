@@ -195,6 +195,10 @@ aw_clk_frac_set_freq(struct clknode *clk, uint64_t fparent, uint64_t *fout,
 	best = best_frac = cur = 0;
 	best_mult = 0;
 	max_mult = 1;
+	/* PBSD: see aw_clk_nm_set_freq() - the same two divisors, written
+	 * into the register on the integer-mode path, assigned only where
+	 * a candidate beat best. */
+	best_n = best_m = 0;
 
 	dprintf("Trying to find freq %ju with parent %ju\n", *fout, fparent);
 	if ((flags & CLK_SET_ROUND_MULTIPLE) != 0)

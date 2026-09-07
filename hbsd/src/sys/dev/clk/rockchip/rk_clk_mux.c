@@ -183,6 +183,14 @@ rk_clk_mux_set_freq(struct clknode *clk, uint64_t fparent, uint64_t *fout,
 	}
 
 	dprintf("Finding best parent for target freq of %ju\n", *fout);
+	/*
+	 * PBSD: best_parent is assigned only where *stop is, so this
+	 * function is correct exactly when *stop starts at 0. The
+	 * early return above already sets it; say it on this path too,
+	 * beside the loop that depends on it. sys/dev/clk/clk.c now
+	 * initialises the caller's variable as well.
+	 */
+	*stop = 0;
 	p_names = clknode_get_parent_names(clk);
 	for (p_idx = 0; p_idx != clknode_get_parents_num(clk); p_idx++) {
 		p_clk = clknode_find_by_name(p_names[p_idx]);

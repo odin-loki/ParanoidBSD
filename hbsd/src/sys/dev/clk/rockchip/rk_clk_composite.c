@@ -240,6 +240,18 @@ rk_clk_composite_set_freq(struct clknode *clk, uint64_t fparent, uint64_t *fout,
 		dprintf("Testing with parent %s (%d) at freq %ju\n",
 		    clknode_get_name(p_clk), p_idx, fparent);
 		div = rk_clk_composite_find_best(sc, fparent, *fout, &div_reg);
+		/*
+		 * PBSD: find_best() starts best_div at 0 and returns it
+		 * unchanged when no divisor beat the initial best - which
+		 * is every divisor when fparent is 0, and
+		 * clknode_get_freq() above can leave it 0 for a parent
+		 * that is off, its return being unchecked. The check for
+		 * that exists ten lines below, at `if (best_div == 0)
+		 * return (ERANGE)', one statement too late: the divide is
+		 * inside the loop.
+		 */
+		if (div == 0)
+			continue;
 		cur = fparent / div;
 		if ((*fout - cur) < (*fout - best)) {
 			best = cur;

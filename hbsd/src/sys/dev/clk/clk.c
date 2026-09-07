@@ -977,7 +977,26 @@ static int
 _clknode_set_freq(struct clknode *clknode, uint64_t *freq, int flags,
     int enablecnt)
 {
-	int rv, done;
+	/*
+	 * PBSD: `done' is the out-parameter every clknode driver's
+	 * set_freq method receives as *stop, and it went in
+	 * indeterminate. A driver that sets it on only some paths -
+	 * rk_clk_mux_set_freq() sets it inside `if (rv == 0)' in its
+	 * parent loop and nowhere else on that path - then has its
+	 * `if (!*stop) return (0);' decided by this stack slot, and the
+	 * statement after that guard is
+	 *
+	 *	clknode_set_parent_by_idx(clk, best_parent);
+	 *
+	 * with best_parent set in the same block as *stop. So a garbage
+	 * non-zero here reparents a clock to an arbitrary index.
+	 *
+	 * The default method (clknode_method_set_freq, :218) opens with
+	 * `*stop = 0', which is what every caller was relying on without
+	 * the framework guaranteeing it. Guarantee it here instead of in
+	 * each of the fifty drivers.
+	 */
+	int rv, done = 0;
 	uint64_t parent_freq;
 
 	/* We have exclusive topology lock, node lock is not needed. */

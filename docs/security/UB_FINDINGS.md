@@ -3213,6 +3213,98 @@ read out of the CPU, so a core this driver did not expect admitted or
 refused a performance event according to a stack byte. `= 0` is what the
 test below means by "this core does not support this event".
 
+## Fixed — the clock framework, and six drivers below it
+
+`sys/dev/clk` is arm, arm64 and riscv's clock tree, analysed against its
+own architecture for the first time. Six defects, one of them in the
+framework everything else sits on.
+
+**`sys/dev/clk/clk.c:980` — `int rv, done;`.** `done` is passed as
+`&done` to `CLKNODE_SET_FREQ()`, where it is every driver's `*stop`
+out-parameter, and it went in **indeterminate**. The default method
+(`clknode_method_set_freq`, `:218`) opens with `*stop = 0`, which is what
+every driver was relying on without the framework guaranteeing it. A
+driver that sets it on only some paths inherits a stack slot:
+
+```c
+	/* rk_clk_mux_set_freq() */
+	for (p_idx = 0; ...; p_idx++) {
+		rv = clknode_set_freq(p_clk, *fout, flags | CLK_SET_DRYRUN, 0);
+		if (rv == 0) {
+			best_parent = p_idx;
+			*stop = 1;			/* the only assignment */
+		}
+	}
+	if (!*stop)
+		return (0);
+	...
+	if (p_idx != best_parent)
+		clknode_set_parent_by_idx(clk, best_parent);
+```
+
+A garbage non-zero there reparents a clock to an arbitrary index. Fixed
+in the framework — one line, rather than in each of the fifty drivers —
+and `rk_clk_mux_set_freq()` also says `*stop = 0` beside the loop that
+depends on it, matching its own early return.
+
+**`rk_clk_composite.c:243` — a divide the guard is ten lines late for.**
+`rk_clk_composite_find_best()` starts `best_div = 0` and returns it
+unchanged when no divisor beat the initial best, which is every divisor
+when the parent is at 0 Hz — and `clknode_get_freq()`'s return is not
+checked. The caller divides by it inside its parent loop; the
+`if (best_div == 0) return (ERANGE)` for exactly that case is *after*
+the loop. `continue` on a zero divisor.
+
+**Two Allwinner `find_best()` functions of seven that never set `best`.**
+`aw_clk_nm.c`, `aw_clk_m.c` and `aw_clk_frac.c` open with `best = 0`;
+`aw_clk_nkmp.c` and `aw_clk_mipi.c` assign it on the next line;
+`aw_clk_nmm.c` and `aw_clk_np.c` do neither. So the first
+`abs(*fout - best)` reads a stack value and, if nothing beats it,
+`return (best)` hands it back as the frequency the clock can produce —
+with the divisors still 0, which is what then reaches the register.
+
+**And the divisors themselves, in two more.** `aw_clk_nm_set_freq()`
+assigns `best_n`/`best_m` only where a parent beat the running best, and
+writes them into the clock control register unconditionally:
+
+```c
+	n = aw_clk_factor_get_value(&sc->n, best_n);
+	m = aw_clk_factor_get_value(&sc->m, best_m);
+	val |= n << sc->n.shift;
+	val |= m << sc->m.shift;
+```
+
+With every parent failing, `best` stays 0 — which survives the two range
+checks above whenever `CLK_SET_ROUND_DOWN` is set — and a stack value
+goes into a live clock divider. Three of the five locals in that
+function were already initialised on the two lines where these two now
+are. `aw_clk_frac_set_freq()` is the same pair on its integer-mode path.
+
+### The twenty-one Allwinner divide-by-zeros that are not defects
+
+Every `aw_clk_*_find_best()` divides by factors from
+`aw_clk_factor_get_min()`, whose third arm is
+
+```c
+	else if (factor->flags & AW_CLK_FACTOR_ZERO_BASED)
+		min = 0;
+```
+
+so clang has a zero divisor on every one of them. `AW_CLK_FACTOR_ZERO_BASED`
+appears **13 times in the tree and every one is an `/* n factor */` of an
+`NKMP_CLK`**, where `n` is the PLL multiplier in
+`cur = (fparent * n * k) / (m * p)` and never a divisor. The one
+`AW_CLK_FACTOR_MIN_VALUE` in the tree (`ccu_a64.c:401`) is 2. Every
+divisor factor in every SoC table therefore has a minimum of at least 1,
+by `aw_clk_factor_get_min()`'s final `else min = 1`.
+
+The tables are in `ccu_a10.c`, `ccu_a83t.c` and their siblings; the
+accessor is in `aw_clk.h`; the divide is in `aw_clk_nkmp.c`. Caller-
+constrained across a translation unit, the largest false-positive class
+in this document — but measured here rather than assumed, because the
+zero arm is real and one `NM_CLK` with a zero-based divisor would make
+all twenty-one of these true.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

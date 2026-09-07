@@ -101,7 +101,17 @@ static uint64_t
 aw_clk_nmm_find_best(struct aw_clk_nmm_sc *sc, uint64_t fparent, uint64_t *fout,
   uint32_t *factor_n, uint32_t *factor_m0, uint32_t *factor_m1)
 {
-	uint64_t cur, best;
+	/*
+	 * PBSD: best was declared and never assigned, so the first
+	 * comparison below reads it and, if nothing ever beats it,
+	 * `return (best)' hands a stack value back as the frequency
+	 * this clock can produce - with *factor_n and the divisors
+	 * still 0, which is what then gets written to the register.
+	 * aw_clk_nm.c, aw_clk_m.c and aw_clk_frac.c open with
+	 * `best = 0', aw_clk_nkmp.c and aw_clk_mipi.c assign it on
+	 * the next line; five of seven, and these are the two.
+	 */
+	uint64_t cur, best = 0;
 	uint32_t n, m0, m1;
 	uint32_t max_n, max_m0, max_m1;
 	uint32_t min_n, min_m0, min_m1;

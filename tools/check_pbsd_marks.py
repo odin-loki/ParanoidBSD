@@ -596,6 +596,83 @@ FIXES = {
         "Lose this line and /sbin/init stops booting",
         ),
     ],
+    "hbsd/src/sys/dev/clk/clk.c": [
+        (
+            "PBSD: `done' is the out-parameter every clknode driver's",
+            "\tint rv, done;\n",
+            "_clknode_set_freq() passed &done to CLKNODE_SET_FREQ() "
+            "uninitialised. It is the *stop out-parameter every clknode "
+            "driver's set_freq method receives, and a driver that sets "
+            "it on only some paths - rk_clk_mux_set_freq() sets it "
+            "inside `if (rv == 0)' and nowhere else - then has its "
+            "`if (!*stop) return (0);' decided by this stack slot, with "
+            "clknode_set_parent_by_idx(clk, best_parent) on the far "
+            "side of the guard",
+        ),
+    ],
+    "hbsd/src/sys/dev/clk/rockchip/rk_clk_composite.c": [
+        (
+            "PBSD: find_best() starts best_div at 0 and returns it",
+            None,
+            "rk_clk_composite_set_freq() divides by find_best()'s "
+            "return inside its parent loop, and find_best() returns 0 "
+            "when no divisor beat the initial best - which is every "
+            "divisor when the parent is at 0 Hz, clknode_get_freq()'s "
+            "return being unchecked. The `if (best_div == 0) return "
+            "(ERANGE)' for exactly that case is ten lines below the "
+            "divide",
+        ),
+    ],
+    "hbsd/src/sys/dev/clk/rockchip/rk_clk_mux.c": [
+        (
+            "PBSD: best_parent is assigned only where *stop is",
+            None,
+            "the driver half of the clk.c fix: *stop = 0 before the "
+            "loop that depends on it, matching the early return above "
+            "which already sets it",
+        ),
+    ],
+    "hbsd/src/sys/dev/clk/allwinner/aw_clk_nmm.c": [
+        (
+            "PBSD: best was declared and never assigned",
+            "\tuint64_t cur, best;\n\tuint32_t n, m0, m1;",
+            "aw_clk_nmm_find_best() compared against best on its first "
+            "iteration and returned it if nothing beat it - a stack "
+            "value handed back as the frequency this clock can make. "
+            "aw_clk_nm.c, aw_clk_m.c and aw_clk_frac.c open with "
+            "best = 0; aw_clk_nkmp.c and aw_clk_mipi.c assign it on the "
+            "next line. Five of seven",
+        ),
+    ],
+    "hbsd/src/sys/dev/clk/allwinner/aw_clk_np.c": [
+        (
+            "PBSD: best was declared and never assigned",
+            "\tuint64_t cur, best;\n\tuint32_t n, p, max_n",
+            "the other of the two find_best() functions that did not "
+            "initialise best",
+        ),
+    ],
+    "hbsd/src/sys/dev/clk/allwinner/aw_clk_nm.c": [
+        (
+            "PBSD: best_n and best_m are the divisors written into the",
+            None,
+            "aw_clk_nm_set_freq() assigns best_n and best_m only where "
+            "a parent beat the running best, and writes them into the "
+            "clock control register unconditionally. With every parent "
+            "failing, best stays 0, survives the range checks whenever "
+            "CLK_SET_ROUND_DOWN is set, and a stack value goes into a "
+            "live clock divider. Three of the five locals were already "
+            "initialised on the two lines above",
+        ),
+    ],
+    "hbsd/src/sys/dev/clk/allwinner/aw_clk_frac.c": [
+        (
+            "PBSD: see aw_clk_nm_set_freq() - the same two divisors",
+            None,
+            "the same pair, written on aw_clk_frac_set_freq()'s "
+            "integer-mode path",
+        ),
+    ],
     "hbsd/src/sys/dev/hwpmc/hwpmc_powerpc.c": [
         (
             ("if (pmc >= ppc_max_pmcs)", 2),
