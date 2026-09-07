@@ -583,7 +583,7 @@ def arch_of(rel: str, default: str = "amd64") -> str:
 
 
 @functools.lru_cache(maxsize=None)
-def iface_shim() -> str:
+def iface_shim(arch: str = "amd64") -> str:
     """The kernel interface headers, GENERATED the way the real build does.
 
     2,540 of the 6,345 translation units the sweep could not compile failed
@@ -614,7 +614,25 @@ def iface_shim() -> str:
     if not mko.is_file():
         return d.as_posix()
 
-    for m in (SRC / "sys").rglob("*_if.m"):
+    # Two interfaces in this tree share a basename, and the shim is one
+    # flat directory, so the second one written wins:
+    #
+    #   sys/kern/pic_if.m               14 methods, the INTRNG interface
+    #   sys/powerpc/powerpc/pic_if.m     9 methods, PowerPC's own
+    #
+    # arm64 got PowerPC's, and every arm64 interrupt controller failed on
+    # `unknown type name pic_disable_intr_t' - 37 translation units of
+    # "too many errors emitted", which is what a cascade from ten unknown
+    # types looks like. Skip the .m files that belong to a DIFFERENT
+    # architecture; sys/kern's and the architecture's own both stay, and
+    # the architecture's is written last so it wins where they collide,
+    # which is what config(8) does with .PATH.
+    mine = SYS_DIR.get(arch, "amd64")
+    others = {v for k, v in SYS_DIR.items() if v != mine} | {"powerpcspe"}
+    ms = [m for m in (SRC / "sys").rglob("*_if.m")
+          if m.relative_to(SRC / "sys").parts[0] not in others]
+    ms.sort(key=lambda m: m.relative_to(SRC / "sys").parts[0] == mine)
+    for m in ms:
         try:
             subprocess.run(["awk", "-f", str(mko), str(m), "-h"],
                            cwd=d, check=True, capture_output=True, timeout=60)
@@ -1088,7 +1106,7 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   "-include", "opt_global.h",
                   f"-I{opt_shim(arch)}",
                   # device_if.h and friends: generated, not shipped.
-                  f"-I{iface_shim()}",
+                  f"-I{iface_shim(arch)}",
                   f"-I{(SRC / rel).parent}",
                   # Every directory between sys/ and the file. A kernel
                   # module Makefile adds its own subsystem root - vmm's
