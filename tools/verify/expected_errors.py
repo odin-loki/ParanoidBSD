@@ -68,6 +68,18 @@ EXPECTED = {
     "sys/netpfil/ipfilter/netinet/ip_dns_pxy.c":
         "a tenth proxy nothing includes and nothing builds. NOT_NAMED",
 
+    # msun's Bell Labs gamma: b_tgamma.c and its long double twin each
+    # #include the exp and log they need, so four of the six files in
+    # those two directories are not translation units.
+    "lib/msun/bsdsrc/b_exp.c":
+        "INCLUDED_BY:lib/msun/bsdsrc/b_tgamma.c",
+    "lib/msun/bsdsrc/b_log.c":
+        "INCLUDED_BY:lib/msun/bsdsrc/b_tgamma.c",
+    "lib/msun/ld80/b_expl.c":
+        "INCLUDED_BY:lib/msun/ld80/b_tgammal.c",
+    "lib/msun/ld80/b_logl.c":
+        "INCLUDED_BY:lib/msun/ld80/b_tgammal.c",
+
     # not a translation unit: #included by another file
     "sys/kern/kern_ctf.c":          "#included by kern_linker.c",
     "sys/kern/subr_syscall.c":      "#included by each arch's trap.c",

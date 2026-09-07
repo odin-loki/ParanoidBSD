@@ -245,6 +245,25 @@ check_that("a disjunction is a union, not an intersection",
 # for the options, each alternative is a DIFFERENT configuration, and
 # defining one alternative's options is asserting a configuration the
 # file may never be built in.
+# lib/msun/ld80 and lib/msun/ld128 name a long double FORMAT, and the
+# tree says which architectures have which - lib/msun/<arch>/Makefile.inc
+# sets LDBL_PREC and lib/msun/Makefile:24-29 maps 64 to ld80 and 113 to
+# ld128. Analysed as amd64, whose long double is 80-bit, the five ld128
+# sources fail.
+check_that("ld128 is an architecture with 113-bit long double",
+           includes.arch_of("lib/msun/ld128/s_logl.c") in
+           ("aarch64", "riscv64"),
+           "lib/msun/aarch64/Makefile.inc:1 and riscv/Makefile.inc:1 are "
+           "LDBL_PREC = 113; amd64's is 64 and the file does not compile "
+           "there")
+check_that("...and ld80 one with 64-bit",
+           includes.arch_of("lib/msun/ld80/b_expl.c") in ("amd64", "i386"),
+           "lib/msun/amd64/Makefile.inc:8 is LDBL_PREC = 64")
+check_that("an msun architecture directory still wins",
+           includes.arch_of("lib/msun/aarch64/fenv.c") == "aarch64",
+           "the format rule must not displace the one that names an "
+           "architecture outright")
+
 # A module that builds objects OUTSIDE SRCS. Seven Makefiles in the tree
 # have an OBJS line, and they are the ones with per-file instruction-set
 # flags: sys/modules/blake2 reaches its ten SIMD implementations through

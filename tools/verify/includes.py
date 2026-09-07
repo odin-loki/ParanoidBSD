@@ -1294,6 +1294,44 @@ def files_opt_arch_index() -> dict[str, str]:
     return out
 
 
+# lib/msun/ld80 and lib/msun/ld128 name a long double FORMAT, not an
+# architecture, and the tree says which architectures have which:
+#
+#   lib/msun/aarch64/Makefile.inc:1   LDBL_PREC = 113
+#   lib/msun/amd64/Makefile.inc:8     LDBL_PREC = 64
+#   lib/msun/Makefile:24-29           .if ${LDBL_PREC} == 64
+#                                     .PATH: ${.CURDIR}/ld80
+#                                     .elif ${LDBL_PREC} == 113
+#                                     .PATH: ${.CURDIR}/ld128
+#
+# Analysed as amd64, whose long double is 80-bit, the five ld128 sources
+# fail; as aarch64 or riscv64 they compile clean. Read the mapping out
+# of those Makefile.inc rather than writing "ld128 means aarch64" here,
+# because the tree is where it is decided and a copy drifts.
+LDBL_DIR = {64: "ld80", 113: "ld128"}
+
+
+@functools.lru_cache(maxsize=None)
+def _ldbl_arch() -> dict[str, str]:
+    """ld80/ld128 -> an architecture key whose long double is that wide."""
+    out: dict[str, str] = {}
+    inv = {v: k for k, v in ARCH_DIR.items()}
+    for mk in sorted((SRC / "lib" / "msun").glob("*/Makefile.inc")):
+        m = re.search(r"^LDBL_PREC\s*=\s*(\d+)", mk.read_text(errors="replace"),
+                      re.M)
+        if not m:
+            continue
+        d = LDBL_DIR.get(int(m.group(1)))
+        if not d:
+            continue
+        # msun's i387 is i386's directory; the rest match ARCH_DIR.
+        name = mk.parent.name
+        arch = inv.get(name) or ("i386" if name == "i387" else None)
+        if arch:
+            out.setdefault(d, arch)
+    return out
+
+
 def arch_of(rel: str, default: str = "amd64") -> str:
     """A source under lib/libc/<arch>/, lib/msun/<arch>/ or sys/<arch>/.
 
@@ -1318,6 +1356,10 @@ def arch_of(rel: str, default: str = "amd64") -> str:
     # so the bits64/ sources are named for a 64-bit one.
     if rel.startswith("lib/libc/softfloat/"):
         return "riscv64" if "/bits64/" in rel else "armv7"
+    if len(parts) > 2 and parts[0] == "lib" and parts[1] == "msun":
+        cand = _ldbl_arch().get(parts[2])
+        if cand:
+            return cand
     if len(parts) > 2 and parts[0] == "lib" and parts[1] in ("libc", "msun"):
         cand = ARCH_DIR.get(parts[2])
         if cand:
