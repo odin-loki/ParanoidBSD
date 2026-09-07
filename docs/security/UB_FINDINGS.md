@@ -4417,6 +4417,50 @@ been reported as fully read for three sweeps. One file, one character,
 and the same shape as everything else here: the guard existed for one of
 two spellings.
 
+## `${MACHINE_CPUARCH}`, and why the module index is per architecture now
+
+`sys/modules/dtrace/dtrace/Makefile`:
+
+```make
+ARCHDIR=	${MACHINE_CPUARCH}
+.PATH: ${SYSDIR}/cddl/dev/dtrace/${ARCHDIR}
+.if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "i386"
+CFLAGS+=	-I${SYSDIR}/cddl/contrib/opensolaris/uts/intel \
+		-I${SYSDIR}/cddl/dev/dtrace/x86
+.endif
+```
+
+`kernel_flag_index()` was one table for the whole tree, so none of
+`MACHINE_CPUARCH`, `MACHINE_ARCH` or `MACHINE` had a value: that `.PATH`
+resolved to nothing and that `.if` was undecidable. DTrace, FBT, kinst,
+SDT and the CTF reader all failed on their own architecture-private
+headers — `regset.h`, `fbt_isa.h`, `kinst_isa.h`, `dis_tables.h` — in a
+shard that reports its ERROR count every sweep.
+
+The index takes an architecture now, and `include_flags` passes the one
+it already resolved. 69 of a 1200-file sample gain flags and none loses
+any; the additions are the openzfs SIMD set (`-DHAVE_AVX512F` and eleven
+more, from `.if ${MACHINE_ARCH} == "amd64"` in the ZFS module),
+`-DVMM_KEEP_STATS` and `-DCOMPAT_LINUX32`. Six of the ten failing files
+compile, and `sys/cddl` goes from 29 ERROR to 24 — with **78 findings
+where it had none**, because DTrace's own provider code had never been
+read.
+
+Seventy-three of those are one file, `sys/cddl/dev/dtrace/x86/dis_tables.c`,
+the x86 instruction decoder — which is where `dtrace -n fbt:::` and
+kinst find instruction boundaries in the running kernel. That is a large
+enough single-file cluster to want its own pass rather than a paragraph
+here.
+
+Four files still do not compile and the reason is one this document has
+met before, in `include_flags`'s own comment about ZFS: **flag order**.
+`sdt.c`, `nfs_clkdtrace.c`, `opensolaris_uio.c` and `ctf_mod.c` need the
+opensolaris compat headers to come **before** `-I$S`, so that
+`<sys/types.h>` resolves to Solaris's `uint_t`/`hrtime_t`/`uio_t` and not
+FreeBSD's. The module's `.PATH` flags are appended last, so they arrive
+too late. Moving them is a tree-wide reordering with its own validation
+to do, and it is on the record rather than half-done.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

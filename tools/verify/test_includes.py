@@ -238,6 +238,21 @@ check_that("...even though the hint has an opinion",
            "nvmem is declared only by the three FDT architectures and "
            "the file compiles clean as amd64")
 
+# The index is per architecture, because a module Makefile says
+# ${MACHINE_CPUARCH} and means it.
+for a, want in (("amd64", "cddl/dev/dtrace/x86"),
+                ("aarch64", "cddl/dev/dtrace/aarch64")):
+    _bf, _bd = includes.kernel_flag_index(a)
+    key = "sys/cddl/dev/dtrace/" + ("amd64" if a == "amd64" else "aarch64")
+    check_that(f"{a}'s dtrace gets {want}",
+               any(f.endswith(want) for f in _bd.get(key, ())),
+               "ARCHDIR= ${MACHINE_CPUARCH}, and a .PATH built from it")
+_bd64 = includes.kernel_flag_index("aarch64")[1]
+check_that("...and arm64 does NOT get the x86 one",
+           not any(f.endswith("cddl/dev/dtrace/x86")
+                   for f in _bd64.get("sys/cddl/dev/dtrace/aarch64", ())),
+           "the .if that adds it tests MACHINE_CPUARCH")
+
 mt76 = by_dir.get("sys/contrib/dev/mediatek/mt76", ())
 check_that("a submodule's .PATH from the parent Makefile.inc",
            any(f.endswith("/mediatek/mt76") for f in mt76),

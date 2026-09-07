@@ -503,8 +503,32 @@ def _mk_cond(expr: str, vars: dict[str, str]) -> bool | None:
     return out
 
 
+# make's own idea of the machine, in the three spellings a module
+# Makefile uses. sys/modules/dtrace/dtrace/Makefile is
+#
+#   ARCHDIR=	${MACHINE_CPUARCH}
+#   .PATH: ${SYSDIR}/cddl/dev/dtrace/${ARCHDIR}
+#   .if ${MACHINE_CPUARCH} == "amd64" || ${MACHINE_CPUARCH} == "i386"
+#   CFLAGS+= -I${SYSDIR}/cddl/contrib/opensolaris/uts/intel ...
+#
+# and with none of the three defined that .PATH resolved to nothing and
+# that .if was undecidable, so DTrace, FBT, kinst, SDT and the CTF
+# reader all failed on their own arch-private headers - regset.h,
+# fbt_isa.h, kinst_isa.h, dis_tables.h. This is why the index is per
+# architecture rather than one table for the tree.
+MACHINE_OF = {
+    "amd64":     ("amd64", "amd64", "amd64"),
+    "i386":      ("i386", "i386", "i386"),
+    "aarch64":   ("aarch64", "aarch64", "arm64"),
+    "armv7":     ("arm", "armv7", "arm"),
+    "powerpc64": ("powerpc", "powerpc64", "powerpc"),
+    "riscv64":   ("riscv", "riscv64", "riscv"),
+}
+
+
 @functools.lru_cache(maxsize=None)
-def kernel_flag_index() -> tuple[dict[str, tuple[str, ...]],
+def kernel_flag_index(arch: str = "amd64"
+                      ) -> tuple[dict[str, tuple[str, ...]],
                                  dict[str, tuple[str, ...]]]:
     """(by source path, by directory) the flags a kernel build adds."""
     by_file: dict[str, list[str]] = {}
@@ -513,6 +537,9 @@ def kernel_flag_index() -> tuple[dict[str, tuple[str, ...]],
     # These three are make's, not kern.pre.mk's, and are the roots the
     # rest resolve against: they win over anything read out of a file.
     base.update({"SRCTOP": str(SRC), "SYSDIR": str(SYS), "S": str(SYS)})
+    cpuarch, marcH, mach = MACHINE_OF.get(arch, MACHINE_OF["amd64"])
+    base.update({"MACHINE_CPUARCH": cpuarch, "MACHINE_ARCH": marcH,
+                 "MACHINE": mach})
 
     # A compile-with can name a variable rather than spell the flags out:
     #
@@ -1621,7 +1648,7 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/intel"]
         flags += defaults_options(arch)
         flags += [f"-D{c}" for c in files_cpu_index().get(rel, ())]
-        by_file, by_dir = kernel_flag_index()
+        by_file, by_dir = kernel_flag_index(arch)
         # A module's SRCS are named relative to its .PATH, so one .PATH
         # covers a whole subtree: sys/modules/qat/qat_api takes .PATH on
         # sys/dev/qat/qat_api and then names
