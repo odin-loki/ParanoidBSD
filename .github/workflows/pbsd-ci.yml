@@ -282,6 +282,17 @@ jobs:
       - name: Every MDSRCS source calls something that is defined
         run: python3 tools/check_machdep_symbols.py --gate
 
+      # The oracle's ratchets check verified + committed + removed against a
+      # floor, and the third term is the only one a human writes down rather
+      # than measures - so it is the only place a floor could be held up by a
+      # claim. docs/migration/freebsd_oracle_removed.txt names each source
+      # that left the tree after being counted; this holds every entry to
+      # what git says about it: gone from the tree now, present at the named
+      # commit's parent, absent at that commit, and that commit an ancestor
+      # of HEAD. An entry for a file that is back would count it twice.
+      - name: Every recorded oracle removal is one git agrees with
+        run: python3 tools/check_oracle_removed.py
+
       # M_WAITOK cannot fail and M_NOWAIT can, and the difference is one
       # token. This started as a report-only lint because it had false
       # positives; it has four documented classes it now handles, and the

@@ -1,0 +1,59 @@
+# Sources the oracle had counted, and that are no longer in the tree.
+#
+# The ratchets in tools/ci/run_freebsd_oracle.sh check
+#
+#   verified + committed >= floor
+#
+# and the `+ committed' term exists because a port that LANDS stops being a
+# .c: discover_sources() globs *.c, so gen/isatty.c disappears from the
+# candidate set the moment it becomes gen/isatty.cpp, and ir_equal falls by
+# one. Without the sum, the first successful port in the project's history
+# would read as a regression.
+#
+# There is a third way for a file to leave the candidate set, and the sum
+# did not account for it: the source can be DELETED. It is then neither a .c
+# that verifies nor a .cpp that shipped, and the sum drops by one for a
+# reason that is not a regression - a port that was proved equivalent has
+# not stopped being equivalent, it has stopped existing.
+#
+# That is what this file is: the deletions, named, with the commit that made
+# each one and why. The oracle adds the count for a scope to that scope's
+# sum. tools/check_oracle_removed.py holds every entry to facts git can
+# settle - the path is absent from the tree now, it was present at the named
+# commit's parent, it was absent at the named commit itself, and that commit
+# is an ancestor of HEAD - so an entry cannot quietly become a way to hold a
+# floor up over a file that is back, or that was never removed by the commit
+# it blames.
+#
+# It is the same shape as tools/verify/expected_errors.py: the number stays
+# honest and the reason is on the record, rather than the floor being moved
+# down to meet a run.
+#
+# Format, one entry per line:
+#
+#   <path>  <commit>  <ir|ir,abi>  <reason>
+#
+# The path is repo-relative, the commit is the one that removed it, and the
+# third field says which floors had counted it. ABI-equal implies IR-equal
+# in the report (runner.py:421 counts a record only if it is both), so
+# `abi' alone is not a legal value.
+
+# Run 34 (the last green one) listed this file in lib/libc's committable
+# set - IR-equal AND ABI-equal:
+#
+#   hbsd/src/lib/libc/amd64/string/strnlen.c   (1 edit(s) - NOT a pure rename)
+#
+# and reported 122 verified + 1 committed = 123, 109 ABI-equal + 1 = 110.
+# Run 36 reported 122 and 109 with 26 committed, and no amd64/string file
+# appears anywhere in its log. Twenty-five ports landed and one file left
+# without landing: this one.
+#
+# It was deleted because lib/libc/string/Makefile.inc puts the
+# architecture's directory first on .PATH under MK_MACHDEP_OPTIMIZATIONS,
+# so amd64/string/strnlen.c SHADOWED the machine-independent strnlen.c
+# whether or not MDSRCS named it - and it called into assembly that commit
+# b1bd99b89 had already removed. It could not build. Being IR-equal to a C
+# original that also could not link is not a claim worth keeping a floor up
+# with on its own; it is kept because the floor is a statement about the
+# oracle's measurement, and the measurement was made.
+hbsd/src/lib/libc/amd64/string/strnlen.c  4f926059c  ir,abi  shadowed the MI strnlen.c through .PATH and called symbols deleted with the machine-dependent assembly

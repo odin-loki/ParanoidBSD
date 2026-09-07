@@ -25,4 +25,26 @@
 #   run 33 (after)                  122 verified + 1 committed = 123
 #
 # The sum held across the port. That is what this floor is set on.
+# THE SUM GAINED A THIRD TERM (run 36)
+#
+# Run 34, the last green one, reported 122 verified + 1 committed = 123.
+# Run 36 reported 96 verified + 26 committed = 122 and failed the floor by
+# one. Twenty-five ports landed in between and verified fell by twenty-six,
+# so exactly one file left the candidate set without becoming a port:
+# hbsd/src/lib/libc/amd64/string/strnlen.c, which run 34 named in its
+# committable list - IR-equal AND ABI-equal - and which commit 4f926059c
+# deleted along with ten other arch-string sources that shadowed their
+# machine-independent originals through .PATH and called assembly that was
+# already gone. The ABI figures moved by the same one, for the same file.
+#
+# So a source has three ways out of the candidate set, not two: it can be
+# ported (counted by `+ committed'), it can regress (which is what this
+# floor is for), or it can be DELETED - neither a .c that verifies nor a
+# .cpp that shipped. The third was not accounted for, and the honest fix is
+# to complete the invariant rather than to move the number: this floor is
+# unchanged, and docs/migration/freebsd_oracle_removed.txt names the
+# deletion with the commit that made it. tools/check_oracle_removed.py
+# holds every entry to what git says, so the term cannot become a way to
+# hold a floor up over a file that is back.
+
 123

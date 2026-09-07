@@ -101,6 +101,9 @@ ABI_FLOOR_FILE="docs/migration/freebsd_abi_floor.txt"
 python3 - "$FLOOR_FILE" "$REPORT" "$ABI_FLOOR_FILE" hbsd/src/lib/msun <<'PY'
 import collections, json, pathlib, sys
 
+sys.path.insert(0, "tools")
+from check_oracle_removed import counted_for  # noqa: E402
+
 floor_file, report = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 abi_floor_file = pathlib.Path(sys.argv[3])
 scope_dir = pathlib.Path(sys.argv[4])
@@ -119,6 +122,16 @@ d = json.loads(report.read_text())
 # and the floors are checked against the sum. A genuine regression - a file
 # that is still a .c and stopped verifying - still lands below the floor and
 # still fails, which is what the ratchet is for.
+# And a third way out of the candidate set, which the sum did not have a
+# term for: the source can be DELETED. It is then neither a .c that
+# verifies nor a .cpp that shipped, and the count falls for a reason that
+# is not a regression. Those are named in
+# docs/migration/freebsd_oracle_removed.txt, one line each with the commit
+# that removed them, and tools/check_oracle_removed.py holds every entry to
+# what git says: absent from the tree now, present at the commit's parent,
+# gone at the commit itself. Moving the floor down instead would have
+# discarded the measurement to describe one deletion.
+rm_ir, rm_abi = counted_for(scope_dir.as_posix())
 ported = sorted(p.as_posix() for p in scope_dir.rglob("*.cpp"))
 equal, ran = d["ir_equal"], d["ir_ran"]
 abi_equal = d.get("abi_equal", 0)
@@ -132,6 +145,11 @@ print(f"IR equal {equal} / {ran} ran   differential equal {diff_equal}")
 print(f"committed ports in {scope_dir}: {len(ported)}")
 for s_ in ported:
     print(f"  {s_}")
+if rm_ir:
+    print(f"removed after being counted: {len(rm_ir)} "
+          f"({len(rm_abi)} also ABI-equal)")
+    for s_ in rm_ir:
+        print(f"  {s_}")
 for k, v in sorted(status.items(), key=lambda kv: -kv[1]):
     print(f"  {v:5}  {k}")
 
@@ -163,8 +181,8 @@ def _read_floor(path):
 floor = _read_floor(floor_file)
 abi_floor = _read_floor(abi_floor_file)
 
-total = equal + len(ported)
-abi_total_pre = abi_equal + len(ported)
+total = equal + len(ported) + len(rm_ir)
+abi_total_pre = abi_equal + len(ported) + len(rm_abi)
 
 # Everything above is hundreds of lines by the time the committable list is
 # printed, and the numbers that matter end up buried in the middle. Stash
@@ -172,17 +190,21 @@ abi_total_pre = abi_equal + len(ported)
 # a search - and do it BEFORE the floor checks, because a run that fails a
 # floor is exactly the run whose numbers someone wants.
 pathlib.Path("/tmp/pbsd_ratchet.txt").write_text(
-    f"  msun ratchet:  {equal} verified + {len(ported)} committed = {total} "
+    f"  msun ratchet:  {equal} verified + {len(ported)} committed"
+    f"{f' + {len(rm_ir)} removed' if rm_ir else ''} = {total} "
     f"(floor {floor})\n"
-    f"  msun ABI:      {abi_equal} ABI-equal + {len(ported)} committed = "
+    f"  msun ABI:      {abi_equal} ABI-equal + {len(ported)} committed"
+    f"{f' + {len(rm_abi)} removed' if rm_abi else ''} = "
     f"{abi_total_pre} (floor {abi_floor})\n")
 
 if total < floor:
-    print(f"\nFAIL {equal} ports verify and {len(ported)} are committed, "
-          f"{total} against a floor of {floor}. A port that was proved "
-          f"IR-equivalent no longer is, and it was not committed either.")
+    print(f"\nFAIL {equal} ports verify, {len(ported)} are committed and "
+          f"{len(rm_ir)} were removed on the record, {total} against a "
+          f"floor of {floor}. A port that was proved IR-equivalent no "
+          f"longer is, and it was neither committed nor deleted.")
     sys.exit(1)
-print(f"\nOK  {equal} verified + {len(ported)} committed = {total}, "
+print(f"\nOK  {equal} verified + {len(ported)} committed"
+      f"{f' + {len(rm_ir)} removed' if rm_ir else ''} = {total}, "
       f"floor {floor}.")
 if total > floor:
     print(f"    Raise {floor_file} to {total} to lock this in.")
@@ -203,10 +225,11 @@ if abi_broken:
     if len(abi_broken) > 6:
         print(f"  ... and {len(abi_broken) - 6} more")
 
-abi_total = abi_equal + len(ported)
+abi_total = abi_equal + len(ported) + len(rm_abi)
 if abi_total < abi_floor:
-    print(f"\nFAIL {abi_equal} ports are ABI-equal and {len(ported)} are "
-          f"committed, {abi_total} against a floor of {abi_floor}.")
+    print(f"\nFAIL {abi_equal} ports are ABI-equal, {len(ported)} are "
+          f"committed and {len(rm_abi)} were removed on the record, "
+          f"{abi_total} against a floor of {abi_floor}.")
     sys.exit(1)
 print(f"\nOK  {abi_equal} ABI-equal + {len(ported)} committed = {abi_total}, "
       f"floor {abi_floor}.")
@@ -293,13 +316,25 @@ else:
     # finding it, and ir_equal falls by one. Without the sum, landing a port
     # reads as losing one - which is precisely the shape that would make a
     # floor here punish progress. gen/isatty.cpp is the first.
+    # A deleted source leaves the candidate set the same way and is not a
+    # regression either; run 35 lost exactly one that way. Those are on the
+    # record in docs/migration/freebsd_oracle_removed.txt, checked against
+    # git by tools/check_oracle_removed.py.
+    sys.path.insert(0, "tools")
+    from check_oracle_removed import counted_for
     libc_dir = pathlib.Path("hbsd/src/lib/libc")
+    rm_ir, rm_abi = counted_for(libc_dir.as_posix())
     committed = sorted(q.as_posix() for q in libc_dir.rglob("*.cpp"))
-    ir_total = d["ir_equal"] + len(committed)
-    abi_total = d.get("abi_equal", 0) + len(committed)
+    ir_total = d["ir_equal"] + len(committed) + len(rm_ir)
+    abi_total = d.get("abi_equal", 0) + len(committed) + len(rm_abi)
     print(f"\n          committed: {len(committed)}")
     for c_ in committed:
         print(f"            {c_}")
+    if rm_ir:
+        print(f"\n          removed after being counted: {len(rm_ir)} "
+              f"({len(rm_abi)} also ABI-equal)")
+        for c_ in rm_ir:
+            print(f"            {c_}")
 
     def _floor(name):
         f = pathlib.Path("docs/migration") / name
@@ -314,10 +349,12 @@ else:
     abi_floor = _floor("freebsd_libc_abi_floor.txt")
     pathlib.Path("/tmp/pbsd_libc.txt").write_text(
         f"  lib/libc IR:   {d['ir_equal']} verified + {len(committed)} "
-        f"committed = {ir_total} of {d['ir_ran']} ran (floor {ir_floor})\n"
+        f"committed{f' + {len(rm_ir)} removed' if rm_ir else ''} = "
+        f"{ir_total} of {d['ir_ran']} ran (floor {ir_floor})\n"
         f"  lib/libc ABI:  {d.get('abi_equal', 0)} ABI-equal + "
-        f"{len(committed)} committed = {abi_total} (floor {abi_floor})  "
-        f"committable {len(ready)}\n")
+        f"{len(committed)} committed"
+        f"{f' + {len(rm_abi)} removed' if rm_abi else ''} = {abi_total} "
+        f"(floor {abi_floor})  committable {len(ready)}\n")
     # Both floors are checked here, after everything above has printed, for
     # the reason lib/msun's are: a run that fails a floor is exactly the run
     # whose numbers someone wants to read.
@@ -329,7 +366,8 @@ else:
     if _bad:
         print("\nFAIL lib/libc regressed: " + "; ".join(_bad))
         print("     A port that was proved equivalent no longer is, and it")
-        print("     was not committed either.")
+        print("     was neither committed nor recorded as removed in")
+        print("     docs/migration/freebsd_oracle_removed.txt.")
         sys.exit(1)
     print(f"\nOK  lib/libc: IR {ir_total} (floor {ir_floor}), "
           f"ABI {abi_total} (floor {abi_floor}).")
