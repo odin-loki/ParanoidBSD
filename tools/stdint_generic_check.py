@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import json
 import re
 import shutil
 import subprocess
@@ -109,6 +110,40 @@ def expand(cc: str, triple: str, incs: list[Path], include: str,
     return out
 
 
+def defined_names(cc: str, triple: str, incs: list[Path],
+                  include: str) -> list[str]:
+    """Every object-like macro the header adds, asked of the preprocessor.
+
+    Reading the file would be wrong here: <machine/_stdint.h> on amd64 and
+    i386 is five lines that include <x86/_stdint.h>, so a text scan finds
+    nothing at all and the frozen table quietly covers two architectures
+    less than it says. -dM twice, with the header and without, is the
+    difference the header actually makes.
+    """
+    def dump(src: str) -> set[str]:
+        args = [cc, "-target", triple, "-E", "-dM", "-nostdinc",
+                "-D__ISO_C_VISIBLE=2023", "-D__BSD_VISIBLE=1",
+                "-D__POSIX_VISIBLE=200809", "-D__XSI_VISIBLE=700",
+                "-DINT8_WIDTH=8", "-DINT16_WIDTH=16",
+                "-DINT32_WIDTH=32", "-DINT64_WIDTH=64",
+                "-x", "c", "-"]
+        for i in incs:
+            args[-1:-1] = [f"-I{i}"]
+        r = subprocess.run(args, input=src, capture_output=True, text=True)
+        if r.returncode != 0:
+            raise RuntimeError(r.stderr.strip().splitlines()[0]
+                               if r.stderr.strip() else "preprocessor failed")
+        out = set()
+        for line in r.stdout.splitlines():
+            m = re.match(r"#define\s+([A-Za-z_][A-Za-z0-9_]*)(\(|\s|$)",
+                         line)
+            if m and m.group(2) != "(":
+                out.add(m.group(1))
+        return out
+    added = dump(f"#include <{include}>\n") - dump("\n")
+    return sorted(n for n in added if not n.startswith("_"))
+
+
 _STR = re.compile(r'"((?:[^"\\\\]|\\\\.)*)"')
 
 
@@ -148,15 +183,48 @@ def as_number(text: str):
         return None
 
 
+def normalise(kind: str, text: str):
+    """The macro's VALUE, not its spelling.
+
+    A baseline of raw preprocessor output would fail on a harmless
+    rewrite - (-0x7f-1) becoming (-127 - 1), or __PRI64"d" coming out as
+    "l" "d" - and those are exactly the differences this file already
+    knows are not differences. So the frozen table holds what the macro
+    means: an integer for the limits, the concatenated literal for the
+    conversions.
+    """
+    return as_number(text) if kind == "numeric" else as_string(text)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--cc", default="clang")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--freeze", metavar="FILE",
+                    help="write what <machine/_stdint.h> and "
+                         "<machine/_inttypes.h> expand to TODAY, per "
+                         "architecture, and exit. Run this before the "
+                         "architecture headers are changed - it is the "
+                         "record the change is checked against.")
+    ap.add_argument("--baseline", metavar="FILE",
+                    help="also check every machine-header expansion against "
+                         "a frozen table. Once <machine/_stdint.h> includes "
+                         "the generic header, the comparison above is a "
+                         "header against itself and proves nothing; this is "
+                         "what still does.")
     args = ap.parse_args()
 
     if shutil.which(args.cc) is None:
         print(f"SKIP {args.cc} not installed; nothing measured")
         return 0
+
+    baseline = {}
+    if args.baseline:
+        bp = Path(args.baseline)
+        if not bp.is_absolute():
+            bp = ROOT / bp
+        baseline = json.loads(bp.read_text())["expansions"]
+    frozen: dict = {}
 
     failures = 0
     checked = 0
@@ -185,8 +253,22 @@ def main() -> int:
                 failures += 1
                 continue
             names = macro_names(SYS / genname)
+            # The frozen table covers what the ARCHITECTURE header defines,
+            # which is a superset: SIG_ATOMIC_MIN, SIG_ATOMIC_MAX and
+            # SIG_ATOMIC_WIDTH stay per-architecture on purpose, so they
+            # are not in the generic header and the comparison above never
+            # looks at them. They are exactly the three a switch-over could
+            # get wrong, so the baseline has to.
             try:
-                a = expand(args.cc, triple, incs, f"machine/{archname}", names)
+                allnames = sorted(set(names) | set(defined_names(
+                    args.cc, triple, incs, f"machine/{archname}")))
+            except RuntimeError as e:
+                print(f"{archname:14s} {arch:9s}   preprocessor: {e}")
+                failures += 1
+                continue
+            try:
+                a = expand(args.cc, triple, incs, f"machine/{archname}",
+                           allnames)
                 b = expand(args.cc, triple, incs, genname, names)
             except RuntimeError as e:
                 print(f"{archname:14s} {arch:9s}   preprocessor: {e}")
@@ -194,6 +276,8 @@ def main() -> int:
                 continue
 
             same = differ = missing = 0
+            here = frozen.setdefault(arch, {}).setdefault(archname, {})
+            want = baseline.get(arch, {}).get(archname, {})
             for n in names:
                 av, bv = a.get(n), b.get(n)
                 # An unexpanded name means the header does not define it.
@@ -218,6 +302,20 @@ def main() -> int:
                     failures += 1
                     print(f"  FAIL {arch} {n}: machine={av!r} generic={bv!r}")
                 checked += 1
+
+
+            # What the architecture's header says today, by value - over
+            # everything it defines, not only what the generic header does.
+            for n in allnames:
+                av = a.get(n)
+                if av is None or av == n:
+                    continue
+                here[n] = normalise(kind, av)
+                if want and n in want and want[n] != here[n]:
+                    failures += 1
+                    print(f"  FAIL {arch} {archname} {n}: was {want[n]!r} "
+                          f"in the baseline, is {here[n]!r} now")
+
             print(f"{archname:14s} {arch:9s} {len(names):7d} {same:6d} "
                   f"{differ:7d} {missing:8d}")
             if args.verbose and missing:
@@ -225,7 +323,46 @@ def main() -> int:
                           if a.get(n) is None or a.get(n) == n]
                 print(f"    only in the generic header: {', '.join(absent)}")
 
+    # A macro that vanished is the failure a value comparison cannot see:
+    # every value still agrees, because there is nothing left to disagree.
+    for a_, hdrs in baseline.items():
+        for h_, macros in hdrs.items():
+            got = frozen.get(a_, {}).get(h_, {})
+            for n in macros:
+                if n not in got:
+                    failures += 1
+                    print(f"  FAIL {a_} {h_} no longer defines {n}, which "
+                          f"the baseline recorded as {macros[n]!r}")
+
+    if args.freeze:
+        out = Path(args.freeze)
+        if not out.is_absolute():
+            out = ROOT / out
+        cc_v = subprocess.run([args.cc, "--version"], capture_output=True,
+                              text=True).stdout.splitlines()[0].strip()
+        rev = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                             capture_output=True, text=True).stdout.strip()
+        out.write_text(json.dumps(
+            {"_comment": "What <machine/_stdint.h> and <machine/_inttypes.h> "
+                         "expanded to, per architecture, before the generic "
+                         "headers were adopted. Values, not spellings: an "
+                         "integer for the limits and the concatenated literal "
+                         "for the conversions. Written by "
+                         "tools/stdint_generic_check.py --freeze; checked by "
+                         "--baseline. It is a measurement, so it is not "
+                         "edited by hand.",
+             "compiler": cc_v, "tree": rev, "expansions": frozen},
+            indent=1, sort_keys=True) + "\n")
+        n_ = sum(len(v) for a in frozen.values() for v in a.values())
+        print(f"\nfroze {n_} expansions across {len(frozen)} architectures "
+              f"to {out.relative_to(ROOT)}")
+        return 1 if failures else 0
+
     print()
+    if args.baseline:
+        n_ = sum(len(v) for a in baseline.values() for v in a.values())
+        print(f"{n_} frozen expansion(s) checked against the architecture "
+              f"headers as they are now.")
     if failures:
         print(f"{failures} macro(s) do not match. The generic header is not a")
         print("replacement until they do.")

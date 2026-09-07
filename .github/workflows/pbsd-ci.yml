@@ -111,8 +111,20 @@ jobs:
       # the limits, textually for the conversions. It has already caught a
       # signedness change in wint_t on riscv and an ABI change to the FAST
       # types, both from trusting a compiler predefine over the tree.
+      #
+      # --baseline is what survives the switch-over. Once
+      # <machine/_stdint.h> includes the generic header the comparison
+      # above is a header against itself, so docs/migration/
+      # stdint_expansions.json holds what the six architecture headers
+      # expanded to BEFORE they were changed - by value, not by spelling -
+      # and every one of them is checked against it. It also covers the
+      # three macros the comparison above cannot see: SIG_ATOMIC_MIN, MAX
+      # and WIDTH stay per-architecture, so they are not in the generic
+      # header, and they are exactly what a switch-over could get wrong.
       - name: Generic stdint/inttypes — same expansion as the six headers
-        run: python3 tools/stdint_generic_check.py
+        run: |
+          python3 tools/stdint_generic_check.py \
+            --baseline docs/migration/stdint_expansions.json
 
       # WITHOUT_MACHDEP_OPTIMIZATIONS was set and inert for lib/msun on
       # amd64 and i386 - every reporter said the option was enabled, because
