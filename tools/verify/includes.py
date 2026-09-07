@@ -231,41 +231,93 @@ SYS_ARCH = {"amd64": "amd64", "arm64": "aarch64", "arm": "armv7",
 # form of this that does not go stale: a table here is a second place
 # for the answer to be wrong in, and the softfloat and csu cases already
 # showed what that costs.
-CFLAGS_LINE = re.compile(r"^CFLAGS\s*\+?=\s*(.*)$")
+CFLAGS_LINE = re.compile(r"^CFLAGS(?:\.(?P<file>\S+))?\s*[+?]?=\s*(?P<rest>.*)$")
+MAKE_VAR = re.compile(r"^(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*[+?]?=\s*(?P<val>.*)$")
 DEFINE = re.compile(r"-D[A-Za-z_]\w*(?:=\S+)?")
+INCLUDE = re.compile(r"-I(\S+)")
+VAR_REF = re.compile(r"\$\{(\.?[A-Za-z_][A-Za-z0-9_.]*)\}")
+
+
+def _expand(text: str, vars: dict[str, str]) -> str:
+    """${FOO} against the Makefile's own assignments, three deep.
+
+    A reference that does not resolve is left alone, and the caller
+    drops any flag that still contains one. Guessing at ${MK_SOMETHING}
+    would be inventing a build rather than reading it.
+    """
+    for _ in range(3):
+        new = VAR_REF.sub(lambda m: vars.get(m.group(1), m.group(0)), text)
+        if new == text:
+            break
+        text = new
+    return text
 
 
 @functools.lru_cache(maxsize=None)
-def makefile_defines(d: str) -> tuple[str, ...]:
-    """The UNCONDITIONAL -D flags in a directory's Makefile.inc.
+def makefile_flags(d: str, arch: str, base: str) -> tuple[tuple[str, ...],
+                                                          tuple[str, ...]]:
+    """(-D, -I) a directory's own Makefile puts on CFLAGS, expanded.
 
-    Unconditional only. A CFLAGS line inside .if/.endif is a build-time
-    choice this sweep has not made - lib/libc/softfloat's -DFLOAT128 is
-    under `.if defined(SOFTFLOAT_128)', and applying it would compile a
-    quad-precision softfloat that no libc in this tree builds. Taking
-    only what holds for every build is the difference between reading
-    the program and inventing one.
+    The build system already knows every answer this sweep has been
+    guessing at, and each guess has been wrong in its own way:
+    lib/libc/posix1e is one -D_ACL_PRIVATE, without which <sys/acl.h>
+    makes acl_t a `void *' and all twelve translation units of the
+    POSIX.1e and NFSv4 ACL layer die on "member reference base type
+    void". lib/libc/gen wants -I${SRCTOP}/contrib/libc-vis for <vis.h>
+    and ${RTLD_HDRS} for dlfcn.c. libexec/bootpd/bootpgw wants
+    -I${SRCDIR}, which that Makefile defines two lines above.
+
+    So read them. Unconditional lines only - a CFLAGS inside .if/.endif
+    is a build-time choice this sweep has not made, and applying
+    lib/libc/softfloat's -DFLOAT128 (under `.if defined(SOFTFLOAT_128)')
+    would compile a quad-precision softfloat no libc in this tree
+    builds. Per-file CFLAGS.<name> lines count only for that file.
     """
-    mk = Path(d) / "Makefile.inc"
-    if not mk.is_file():
-        return ()
-    out: list[str] = []
-    depth = 0
-    text = mk.read_text(errors="replace").replace("\\\n", " ")
-    for line in text.splitlines():
-        st = line.strip()
-        if st.startswith((".if", ".for")):
-            depth += 1
+    dpath = Path(d)
+    defines: list[str] = []
+    includes: list[str] = []
+    vars = {
+        "SRCTOP": str(SRC),
+        ".CURDIR": d,
+        "LIBC_SRCTOP": str(SRC / "lib/libc"),
+        "LIBC_ARCH": LIBC_ARCH.get(arch, "amd64"),
+        "MACHINE_CPUARCH": LIBC_ARCH.get(arch, "amd64"),
+        "MACHINE_ARCH": arch,
+        "RTLD_HDRS": f"-I{SRC}/libexec/rtld-elf",
+    }
+    for name in ("Makefile.inc", "Makefile"):
+        mk = dpath / name
+        if not mk.is_file():
             continue
-        if st.startswith((".endif", ".endfor")):
-            depth = max(0, depth - 1)
-            continue
-        if depth:
-            continue
-        m = CFLAGS_LINE.match(line)
-        if m:
-            out.extend(DEFINE.findall(m.group(1)))
-    return tuple(out)
+        depth = 0
+        for line in mk.read_text(errors="replace").replace("\\\n",
+                                                           " ").splitlines():
+            st = line.strip()
+            if st.startswith((".if", ".for")):
+                depth += 1
+                continue
+            if st.startswith((".endif", ".endfor")):
+                depth = max(0, depth - 1)
+                continue
+            if depth or not st:
+                continue
+            m = CFLAGS_LINE.match(line)
+            if m:
+                if m.group("file") and m.group("file") != base:
+                    continue
+                rest = _expand(m.group("rest"), vars)
+                defines.extend(f for f in DEFINE.findall(rest)
+                               if "${" not in f)
+                for inc in INCLUDE.findall(rest):
+                    if "${" not in inc and Path(inc).is_dir():
+                        includes.append(f"-I{inc}")
+                continue
+            v = MAKE_VAR.match(line)
+            if v and v.group("name") not in ("CFLAGS", "SRCS", "MLINKS",
+                                             "MAN", "SYM_MAPS"):
+                vars.setdefault(v.group("name"),
+                                _expand(v.group("val").strip(), vars))
+    return tuple(defines), tuple(includes)
 
 
 def arch_of(rel: str, default: str = "amd64") -> str:
@@ -923,18 +975,21 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
     if rel.startswith("lib/libmd"):
         flags.append(f"-I{SRC}/lib/libmd")
     if rel.split("/")[0] in ("lib", "libexec"):
-        # ...and every Makefile.inc from the source's own directory up to
-        # the component root, because a -D set in lib/libc/Makefile.inc
-        # applies to lib/libc/gen/ too.
+        # ...from the source's own directory up to the component root,
+        # because a flag set in lib/libc/Makefile.inc applies to
+        # lib/libc/gen/ too. Nearest first: a directory's own Makefile
+        # is more specific than its parent's.
         d = (SRC / rel).parent
         root = SRC / rel.split("/")[0]
+        base = Path(rel).name
         seen = set(flags)
-        while d != root and root in d.parents or d == root:
-            for f in makefile_defines(str(d)):
+        while True:
+            ds, incs = makefile_flags(str(d), arch, base)
+            for f in ds + incs:
                 if f not in seen:
                     seen.add(f)
                     flags.append(f)
-            if d == root:
+            if d == root or root not in d.parents:
                 break
             d = d.parent
     if rel.startswith("lib/libc/csu/"):

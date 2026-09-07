@@ -638,7 +638,19 @@ handle_reply()
 		/* Create an ARP cache entry for the client. */
 		ha = bp->bp_chaddr;
 		len = bp->bp_hlen;
-		struct in_addr dst;
+		/*
+		 * PBSD: dst was declared here and never assigned. bootpd.c's
+		 * sendreply() opens the identical block with
+		 *
+		 *	dst = bp->bp_yiaddr;
+		 *
+		 * and this copy lost the line: inet_ntoa(dst) printed the
+		 * stack and setarp() installed an ARP entry, by SIOCSARP, for
+		 * whatever address that was. Two lines up, send_addr.sin_addr
+		 * is already bp->bp_yiaddr - the client being replied to, and
+		 * the address the cache entry is for.
+		 */
+		struct in_addr dst = bp->bp_yiaddr;
 
 		if (len > MAXHADDRLEN)
 			len = MAXHADDRLEN;

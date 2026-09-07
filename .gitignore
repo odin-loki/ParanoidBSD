@@ -171,3 +171,7 @@ out/
 # The machine-readable half of the port ledger. Regenerate with
 # tools/port_plan.py; the markdown is what is committed.
 docs/port_plan.json
+
+# tools/verify/analyze.py --out defaults here; it is a scratch result
+# file, not a repository artefact.
+analyze_results.jsonl

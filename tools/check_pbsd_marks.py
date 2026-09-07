@@ -596,6 +596,18 @@ FIXES = {
         "Lose this line and /sbin/init stops booting",
         ),
     ],
+    "hbsd/src/libexec/bootpd/bootpgw/bootpgw.c": [
+        (
+            "PBSD: dst was declared here and never assigned",
+            "\t\tstruct in_addr dst;\n",
+            "the ARP-cache block in bootpgw's sendreply() lost the "
+            "`dst = bp->bp_yiaddr;' that bootpd.c's identical block "
+            "opens with, so inet_ntoa(dst) logged the stack and "
+            "setarp() installed an SIOCSARP entry for whatever address "
+            "it held - as root, on a program that answers packets from "
+            "the network",
+        ),
+    ],
     "hbsd/src/lib/libc/db/hash/hash.c": [
         (
             ("return (destroy_hash(hashp));", 3),
