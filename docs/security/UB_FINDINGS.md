@@ -4544,6 +4544,67 @@ a coverage gap:
   `src/cddl/` and not under `src/sys/` at all. They join ACPICA's
   `compiler/` and zlib's `test/` in `includes.NOT_KERNEL`.
 
+## Fixed — DTrace frees the alias, not the buffer, on one path of three
+
+`dtrace_dof_property()` reads a DOF blob the loader preloaded and decodes
+it from hex. Its FreeBSD half — this is inside `#ifdef __FreeBSD__`, so
+it is this tree's code and not Solaris's — has **five** `goto doferr`
+sites and one label:
+
+```c
+	dof = NULL;
+	...
+	if (len % 2 != 0)      goto doferr;   /* dof NULL, nothing allocated */
+	if (bytes < sizeof())  goto doferr;   /* dof NULL, nothing allocated */
+
+	dofbuf = malloc(bytes, M_SOLARIS, M_WAITOK);
+	for (i = 0; i < bytes; i++) {
+		...
+		if (c1 == UCHAR_MAX || c2 == UCHAR_MAX)
+			goto doferr;          /* dof still NULL - and dofbuf is not */
+	}
+
+	dof = (dof_hdr_t *)dofbuf;
+	if (bytes < dof->dofh_loadsz)     goto doferr;   /* dof == dofbuf */
+	if (dof->dofh_loadsz >= max)      goto doferr;   /* dof == dofbuf */
+
+doferr:
+	free(dof, M_SOLARIS);
+```
+
+Two of the five are before the allocation, where `free(NULL)` is right.
+Two are after `dof` has been pointed at the buffer, where it is also
+right. The fifth is in the hex-decoding loop, **between** them, and there
+`dof` is still `NULL`: the free does nothing and the whole buffer leaks.
+
+The trigger is a single non-hex character in the preloaded blob, and the
+size leaked is `bytes`, which the blob chooses — the length check
+against `dtrace_dof_maxsize` happens two branches later, after
+`dof = dofbuf`. Boot-time and root-supplied, so not a remote hole; a
+leak of an attacker-chosen size all the same, and the kind that is
+invisible because the error path *looks* like it frees.
+
+`dofbuf` is what the label has to free, and it has to start `NULL` so
+the two pre-allocation paths still work. One initialiser and one name.
+
+### The five that came with it
+
+Reading `dtrace.c` at all is new — it needed `${MACHINE_CPUARCH}` and
+the module flag ordering before it would compile — and the other five
+findings in it are classes this document already has:
+
+* `dtrace_hash_remove()` at `:8232`, `:8236`, `:8245`: `ASSERT(b != NULL)`
+  compiled out, over a bucket the caller just found in that same chain.
+* `dtrace_difo_init()` at `:10733` and `dtrace_difo_destroy()` at
+  `:10855`: `switch (v->dtdv_scope)` whose `default:` is `ASSERT(0)`, so
+  `np` and `svarp` look unset. `dtdv_scope` is userland's, which is why
+  it is worth checking rather than assuming — and
+  `dtrace_difo_validate()` at `:10125-10131` rejects any scope that is
+  not `GLOBAL`, `THREAD` or `LOCAL`, at `:13834`, one line before
+  `dtrace_difo_init()` is called at `:13837`. Enforced one function
+  earlier, in the same file, which is one function further than the
+  analyser carries it.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

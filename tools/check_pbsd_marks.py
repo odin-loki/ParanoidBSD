@@ -1150,6 +1150,16 @@ FIXES = {
             "dequeue TNUM count",
         ),
     ],
+    "hbsd/src/sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c": (
+        "free(dofbuf, M_SOLARIS);",
+        "\tfree(dof, M_SOLARIS);\n",
+        "dtrace_dof_property()'s FreeBSD half has five `goto doferr' "
+        "sites: two before the malloc, two after `dof = "
+        "(dof_hdr_t *)dofbuf', and one in the hex-decoding loop between "
+        "them, where dof is still NULL. free(dof) was free(NULL) there "
+        "and the whole buffer leaked - on a bad character in a "
+        "preloaded DOF blob, at a size the blob chooses",
+    ),
     "hbsd/src/sys/contrib/dev/iwlwifi/mvm/sta.c": (
         # TWO: iwl_mvm_fw_baid_op_cmd() already ended with this exact
         # test, so a presence marker would be satisfied by the twin that

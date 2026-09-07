@@ -13448,6 +13448,16 @@ dtrace_dof_property(const char *name)
 	u_char c1, c2;
 
 	dof = NULL;
+	/*
+	 * dofbuf, not dof, is what the error path has to free, and it has
+	 * to be NULL until the malloc: of the five `goto doferr' sites,
+	 * two are before the allocation and two are after
+	 * `dof = (dof_hdr_t *)dofbuf', but the one in the hex-decoding
+	 * loop is between them. There dof is still NULL, so free(dof) was
+	 * free(NULL) and the whole buffer leaked - a bad character in a
+	 * preloaded DOF blob, which is a size the blob chooses.
+	 */
+	dofbuf = NULL;
 
 	doffile = preload_search_by_type("dtrace_dof");
 	if (doffile == NULL)
@@ -13512,7 +13522,7 @@ dtrace_dof_property(const char *name)
 	return (dof);
 
 doferr:
-	free(dof, M_SOLARIS);
+	free(dofbuf, M_SOLARIS);
 	return (NULL);
 #else /* __FreeBSD__ */
 	uchar_t *buf;
