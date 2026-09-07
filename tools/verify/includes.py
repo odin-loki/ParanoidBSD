@@ -917,7 +917,16 @@ def files_cpu_index() -> dict[str, tuple[str, ...]]:
 # them, and the file is two dozen lines: read it rather than list them.
 SYS_DIR = {"amd64": "amd64", "aarch64": "arm64", "armv7": "arm",
            "i386": "i386", "powerpc64": "powerpc", "riscv64": "riscv"}
-DEFAULTS_OPT = re.compile(r"^\s*options?\s+([A-Za-z_][A-Za-z0-9_]*)")
+# `device' as well as `options', because config(8) reads both out of
+# DEFAULTS and turns a device into DEV_<NAME> where sys/conf/options
+# declares one. sys/x86/isa/atrtc.c is `standard' - in every x86 kernel
+# - and its `#include <isa/isavar.h>' is inside `#ifdef DEV_ISA' while
+# four uses of what that header declares are not, so without the macro
+# `ISA_PNP_INFO(atrtc_ids);' at :683 parses as a function declaration
+# with an untyped parameter. NO amd64 or i386 config declares `device
+# isa' directly; DEFAULTS:10 does, for all of them.
+DEFAULTS_OPT = re.compile(
+    r"^\s*(options?|device)\s+([A-Za-z_][A-Za-z0-9_]*)")
 
 
 # ...and sys/conf/Makefile.<arch>, which the kernel build reads for
@@ -982,9 +991,17 @@ def defaults_options(arch: str) -> tuple[str, ...]:
     for line in p.read_text(errors="replace").splitlines():
         line = line.split("#")[0]
         m = DEFAULTS_OPT.match(line)
-        if m:
-            out.append(f"-D{m.group(1)}")
-    return tuple(out)
+        if not m:
+            continue
+        if m.group(1) == "device":
+            # A device only becomes a macro where options* declares its
+            # DEV_<NAME>; `device mem' and `device io' do not.
+            spelled = _declared_options().get("dev_" + m.group(2).lower())
+            if spelled:
+                out.append(f"-D{spelled}")
+        else:
+            out.append(f"-D{m.group(2)}")
+    return tuple(dict.fromkeys(out))
 
 
 # An architecture can also be stated by the OPTION a file is `optional'
@@ -1050,6 +1067,25 @@ def _declared_options() -> dict[str, str]:
             m = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\b", line)
             if m:
                 out.setdefault(m.group(1).lower(), m.group(1))
+    # config(8) also writes a macro for a DEVICE. `device acpi' becomes
+    # `#define DEV_ACPI 1' in the header the DEV_ACPI line of
+    # sys/conf/options names - :711, opt_acpi.h. The token in files* and
+    # in a config is `acpi'; the macro is DEV_ACPI; a lookup on the name
+    # alone misses it, and sys/arm64/include/intr.h:45 is
+    #
+    #   #ifdef DEV_ACPI
+    #   #define ACPI_MSI_XREF   2
+    #   #define ACPI_GPIO_XREF  3
+    #
+    # so pl061_acpi.c, vmbus_pcib.c and pci_host_generic_acpi.c failed on
+    # an undeclared identifier while machine/intr.h sat on their path
+    # with the definition guarded out. The device name maps to its
+    # DEV_<NAME> only where options* declares one, which is 18 of the
+    # 929: it is not a rule about every device, it is the list config(8)
+    # keeps.
+    for k in list(out):
+        if k.startswith("dev_"):
+            out.setdefault(k[4:], out[k])
     return out
 
 

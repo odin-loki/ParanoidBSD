@@ -245,6 +245,28 @@ check_that("a disjunction is a union, not an intersection",
 # for the options, each alternative is a DIFFERENT configuration, and
 # defining one alternative's options is asserting a configuration the
 # file may never be built in.
+# config(8)'s other two sources of macros. A DEVICE becomes DEV_<NAME>
+# where sys/conf/options declares one, whether the device is named by a
+# file's own `optional' clause or by the architecture's DEFAULTS.
+check_that("a device's DEV_<name> is defined",
+           "-DDEV_ACPI" in (includes.files_option_defines()
+                            .get("sys/dev/gpio/pl061_acpi.c") or ()),
+           "`optional pl061 gpio acpi' and sys/arm64/include/intr.h:45 "
+           "guards ACPI_GPIO_XREF with `#ifdef DEV_ACPI' - the token is "
+           "acpi, the macro is DEV_ACPI, and a lookup on the name alone "
+           "misses it")
+check_that("DEFAULTS' device lines too",
+           "-DDEV_ISA" in includes.defaults_options("amd64"),
+           "no amd64 config declares `device isa' - DEFAULTS:10 does, "
+           "for all of them - and sys/x86/isa/atrtc.c is `standard' with "
+           "its <isa/isavar.h> inside `#ifdef DEV_ISA' and four uses "
+           "outside it")
+check_that("...and only where options* declares the macro",
+           not any(f == "-DDEV_MEM" for f in includes.defaults_options("amd64")),
+           "`device mem' is in every DEFAULTS and sys/conf/options "
+           "declares no DEV_MEM; inventing one would be this tool "
+           "asserting a macro config(8) never writes")
+
 # sys/conf/Makefile.<arch>, which the kernel build reads for every file.
 # All six add -I$S/contrib/libfdt, and libfdt's own headers include
 # <fdt.h> with ANGLE brackets, so the directory itself has to be on the
