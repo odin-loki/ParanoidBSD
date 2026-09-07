@@ -290,7 +290,17 @@ powerpc_pmcn_read_default(unsigned int pmc)
 {
 	pmc_value_t val;
 
-	if (pmc > ppc_max_pmcs)
+	/*
+	 * PBSD: >=, not >. PMC indices run 0..ppc_max_pmcs-1 - that is
+	 * what the six KASSERTs and two loops elsewhere in this file say
+	 * with `ri < ppc_max_pmcs' - and these two functions were the
+	 * only places bounding it with `>'. pmc == ppc_max_pmcs got
+	 * through: on E500 (4 PMCs) that reads SPR_PMC5, a counter the
+	 * CPU does not have, and on PPC970 (8) it matches no case in the
+	 * switch below and returns an indeterminate pmc_value_t as a
+	 * performance counter reading. The guard on six of eight.
+	 */
+	if (pmc >= ppc_max_pmcs)
 		panic("Invalid PMC number: %d\n", pmc);
 
 	switch (pmc) {
@@ -318,6 +328,16 @@ powerpc_pmcn_read_default(unsigned int pmc)
 	case 7:
 		val = mfspr(SPR_PMC8);
 		break;
+	default:
+		/*
+		 * PBSD: the switch covers 0..7 and ppc_max_pmcs is 4, 6 or 8
+		 * depending on which back end attached, so this is
+		 * unreachable - but it was a silent fall-through to
+		 * `return (val)' with val never assigned, which is the one
+		 * outcome a function that panics on a bad index must not
+		 * have. Say the same thing the bound above says.
+		 */
+		panic("Invalid PMC number: %d\n", pmc);
 	}
 
 	return (val);
@@ -326,7 +346,8 @@ powerpc_pmcn_read_default(unsigned int pmc)
 void
 powerpc_pmcn_write_default(unsigned int pmc, uint32_t val)
 {
-	if (pmc > ppc_max_pmcs)
+	/* PBSD: see powerpc_pmcn_read_default() - the same off-by-one. */
+	if (pmc >= ppc_max_pmcs)
 		panic("Invalid PMC number: %d\n", pmc);
 
 	switch (pmc) {
@@ -354,6 +375,9 @@ powerpc_pmcn_write_default(unsigned int pmc, uint32_t val)
 	case 7:
 		mtspr(SPR_PMC8, val);
 		break;
+	default:
+		/* PBSD: see powerpc_pmcn_read_default(). */
+		panic("Invalid PMC number: %d\n", pmc);
 	}
 }
 

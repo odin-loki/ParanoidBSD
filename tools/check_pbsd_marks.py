@@ -596,6 +596,36 @@ FIXES = {
         "Lose this line and /sbin/init stops booting",
         ),
     ],
+    "hbsd/src/sys/dev/hwpmc/hwpmc_powerpc.c": [
+        (
+            ("if (pmc >= ppc_max_pmcs)", 2),
+            "\tif (pmc > ppc_max_pmcs)\n",
+            "six KASSERTs and two loops in this file bound the PMC "
+            "index with `ri < ppc_max_pmcs'; powerpc_pmcn_read_default() "
+            "and _write_default() were the two that used `>'. "
+            "pmc == ppc_max_pmcs got through - on E500 (4 counters) "
+            "that reads SPR_PMC5, which the CPU does not have",
+        ),
+        (
+            ("panic(\"Invalid PMC number: %d\\n\", pmc);", 4),
+            None,
+            "and both switches fell through silently for an index the "
+            "bound had already declared invalid: read_default returned "
+            "an unassigned pmc_value_t as a counter reading, "
+            "write_default wrote nothing and said nothing",
+        ),
+    ],
+    "hbsd/src/sys/dev/hwpmc/hwpmc_e500.c": [
+        (
+            "PBSD: the switch on `vers' below covers four Freescale",
+            "\tuint8_t pe_cpu_mask;\n",
+            "the switch on mfpvr() >> 16 has no default, so a core this "
+            "driver did not expect left pe_cpu_mask indeterminate - and "
+            "the next statement is `if (pe_cpu_mask == 0) return "
+            "(EINVAL);', admitting or refusing a performance event by a "
+            "stack byte",
+        ),
+    ],
     "hbsd/src/sys/dev/cpufreq/cpufreq_dt.c": [
         (
             "PBSD: copp is the operating point to go back to",

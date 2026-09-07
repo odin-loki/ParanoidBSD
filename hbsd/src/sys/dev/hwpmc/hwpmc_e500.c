@@ -366,7 +366,17 @@ e500_allocate_pmc(int cpu, int ri, struct pmc *pm,
 	uint32_t caps, config, counter;
 	struct e500_event_code_map *ev;
 	uint16_t vers;
-	uint8_t pe_cpu_mask;
+	/*
+	 * PBSD: the switch on `vers' below covers four Freescale cores and
+	 * has no default, so a core this driver did not expect left
+	 * pe_cpu_mask indeterminate - and the very next statement is
+	 * `if (pe_cpu_mask == 0) return (EINVAL);', which then admitted or
+	 * refused the event by a stack byte. vers is mfpvr() >> 16, read
+	 * out of the CPU. Zero is what that test means by "this core does
+	 * not support this event", which is the answer for a core the
+	 * switch does not name.
+	 */
+	uint8_t pe_cpu_mask = 0;
 
 	KASSERT(cpu >= 0 && cpu < pmc_cpu_max(),
 	    ("[powerpc,%d] illegal CPU value %d", __LINE__, cpu));

@@ -3160,6 +3160,59 @@ class as the run-time linker's `DT_RELR` bitmap and `libc`'s hash
 database header: well-formedness that is a property of the input, being
 treated as a property of the code.
 
+## Fixed — a performance counter one past the end, on six of eight bounds
+
+`sys/dev/hwpmc/hwpmc_powerpc.c` bounds the PMC index eight times. Six of
+them are
+
+```c
+	KASSERT(ri >= 0 && ri < ppc_max_pmcs, ...);	/* ×6 */
+	for (i = 0; i < ppc_max_pmcs; i++)		/* ×2 */
+```
+
+and two are
+
+```c
+	if (pmc > ppc_max_pmcs)
+		panic("Invalid PMC number: %d\n", pmc);
+```
+
+`>` where every other site says `<`. PMC indices run 0..`ppc_max_pmcs`-1
+— 4 on E500, 6 on MPC7xxx and POWER8, 8 on PPC970 — so
+`pmc == ppc_max_pmcs` passes the guard. On E500 that reaches `case 4:`
+and reads `SPR_PMC5`, a counter the CPU does not have. On PPC970 it
+matches no case at all: the `switch` covers 0..7, has no `default`, and
+falls through to `return (val)` with `val` never assigned — an
+indeterminate value handed back as a performance counter reading. The
+write side is the same guard and falls through writing nothing, silently.
+
+Both bounds are `>=` now, and both switches have a `default:` that says
+the same thing the bound says. The switch arms are unreachable once the
+bound is right; the point is that a function which panics on a bad index
+must not also have a path that quietly does something else with one.
+
+**And the same shape in `hwpmc_e500.c`.** `powerpc_pmc_config_pmc()`:
+
+```c
+	uint8_t pe_cpu_mask;
+	...
+	vers = mfpvr() >> 16;
+	switch (vers) {
+	case FSL_E500v1:  pe_cpu_mask = ev->pe_cpu & PMC_PPC_E500V1; break;
+	case FSL_E500v2:  ...
+	case FSL_E500mc:
+	case FSL_E5500:   ...
+	}
+	if (pe_cpu_mask == 0)
+		return (EINVAL);
+```
+
+Four cores named, no `default`, and the very next statement decides
+whether the event is supported. `vers` is the Processor Version Register
+read out of the CPU, so a core this driver did not expect admitted or
+refused a performance event according to a stack byte. `= 0` is what the
+test below means by "this core does not support this event".
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
