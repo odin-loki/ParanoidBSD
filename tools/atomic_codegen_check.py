@@ -114,13 +114,29 @@ def wrappers(widths) -> dict[str, str]:
     return out
 
 
-# A line-initial `#' is a comment on x86 and powerpc, where clang writes
-# `# %bb.0:' and the `#APP' / `#NO_APP' markers around inline asm; `//' is
-# the same thing on arm64. An immediate like `mov w0, #1' has its `#' in
-# the middle of a line and is not touched.
-_DROP = re.compile(r"^(//|#|;|\.cfi_|\.p2align|\.align|\.size|\.type|\.globl|"
-                   r"\.text|\.file|\.section|\.addrsig|\.ident|\.hidden|"
-                   r"\.local|\.protected|\.weak|\.set\b|\.Lfunc_end)")
+# What is not an instruction. The comment character is not the same on
+# every target - `#' on x86 and powerpc, `//' on arm64, `@' on arm - and
+# clang wraps inline asm in a marker built from whichever it is (#APP,
+# //APP, @APP). Missing one of those counts a comment as an instruction:
+# before `#' was here amd64 read as 8 of 112 matching instead of 82, and
+# before `@' arm's differences were inflated the same way.
+#
+# Directives go too, except a local label definition, which is part of the
+# shape. That covers .cfi_*, .p2align, ARM's .fnstart/.cantunwind, and
+# powerpc's traceback-table .long/.quad, without a list to keep current.
+_COMMENT = re.compile(r"^(//|#|@|;)")
+_DIRECTIVE = re.compile(r"^\.")
+_LABELDEF = re.compile(r"^\.L[\w.$]*:$")
+
+
+def _is_noise(s: str) -> bool:
+    if _COMMENT.match(s):
+        return True
+    if _DIRECTIVE.match(s) and not _LABELDEF.match(s):
+        return True
+    return False
+
+
 _LABEL = re.compile(r"\.L[A-Za-z0-9_.$]+")
 _FUNC = re.compile(r"^(w_[A-Za-z0-9_]+):")
 
@@ -141,9 +157,7 @@ def instructions(asm: str) -> dict[str, list[str]]:
         if s.startswith(".Lfunc_end"):
             cur = None
             continue
-        # A local label of its own is part of the shape and is kept; a
-        # directive or a comment is not.
-        if _DROP.match(s):
+        if _is_noise(s):
             continue
         out[cur].append(re.sub(r"\s+", " ", s))
 

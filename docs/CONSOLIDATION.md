@@ -210,10 +210,10 @@ barrier counts most of all.
 arch        ops   same  differ   kinds of difference
 amd64       112     82      30   barrier x1, instructions x3, length x12, generic only x14
 arm64       112     12     100   LSE dispatch (machine only) x78, instructions x4, length x4, generic only x14
-arm         112      6     106   barrier x26, length x42, generic only x38
+arm         112      6     106   barrier x26, instructions x6, length x36, generic only x38
 i386        112     46      66   instructions x9, length x38, generic only x19
-powerpc     112     14      98   barrier x22, instructions x20, length x18, generic only x38
-riscv        58     11      47   barrier x25, instructions x10, length x8, generic only x4
+powerpc     112     14      98   barrier x22, instructions x4, length x34, generic only x38
+riscv        58     11      47   barrier x25, instructions x8, length x10, generic only x4
 ```
 
 **171 of 618.** The generic header is not a drop-in replacement, and the
@@ -244,6 +244,17 @@ ways it differs are each worth naming:
   `powerpc` have no 8- or 16-bit atomics at all — and *nothing* is
   machine-only. Whatever the six headers implement, the generic one
   implements too.
+
+One thing the tool was pointed at and did **not** find: a missing
+barrier. For every architecture, every `_acq` and `_rel` operation was
+compared against its unordered form in `<machine/atomic.h>` itself. On
+amd64 and i386 the ordered and unordered forms are identical, which is
+what TSO means — a locked read-modify-write is already both. On the four
+weak-memory architectures the only coincidences are the fences, and each
+is sound: arm64's `_rel`, `_acq_rel` and `_seq_cst` are all `dmb sy`
+against `_acq`'s `dmb ld`; powerpc's three are `lwsync` with `sync` for
+`_seq_cst`; arm and riscv use one full barrier for all four. No operation
+anywhere claims an ordering it does not emit.
 
 amd64 is the closest to a straight swap and its thirty are worth reading,
 because they are what "adopt it here first" would cost. Twelve are
