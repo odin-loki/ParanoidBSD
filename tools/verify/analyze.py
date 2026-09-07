@@ -102,10 +102,14 @@ def analyze(job: dict) -> dict:
         # files of ARM barrier intrinsics named by the ARCHITECTURE-
         # NEUTRAL sys/conf/files, `optional al_iofic', and the only
         # place al_iofic appears is two ARM configs.
-        alt = files_opt_arch_index().get(job["rel"])
-        if alt and alt != arch and not job.get("retried"):
-            again = dict(job, arch=alt, retried=True)
-            r = analyze(again)
+        # ALL the candidates, in turn. `optional gpioregulator fdt' leaves
+        # aarch64 and armv7, and sys/dev/gpio/gpioregulator.c compiles as
+        # armv7 and not as aarch64 - so trying only the first was trying
+        # the wrong one for twelve of sys/dev's files.
+        for alt in files_opt_arch_index().get(job["rel"], ()):
+            if alt == arch or job.get("retried"):
+                continue
+            r = analyze(dict(job, arch=alt, retried=True))
             if r["status"] != "ERROR":
                 r["arch"] = alt
                 return r

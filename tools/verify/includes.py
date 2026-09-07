@@ -951,7 +951,16 @@ CONF_DECL = re.compile(r"^\s*(?:device|options?)\s+([A-Za-z_][A-Za-z0-9_]*)",
 
 @functools.lru_cache(maxsize=None)
 def _option_arches() -> dict[str, frozenset[str]]:
-    """option or device name -> the architectures whose configs declare it."""
+    """option or device name -> the architectures whose configs declare it.
+
+    Keyed in LOWER CASE, because config(8) is: a kernel configuration
+    writes `options FDT' and sys/conf/files writes `optional ... fdt',
+    and they are the same option. Keying on the spelling made `fdt'
+    resolve to riscv64 alone - the one architecture whose config happens
+    to say `device fdt' in lower case - so every FDT driver's option set
+    intersected to nothing and the index had no opinion about any of
+    them.
+    """
     out: dict[str, set[str]] = {}
     for arch, d in sorted(SYS_DIR.items()):
         confd = SYS / d / "conf"
@@ -964,7 +973,7 @@ def _option_arches() -> dict[str, frozenset[str]]:
             if not cf.is_file() or cf.name == "NOTES":
                 continue
             for m in CONF_DECL.finditer(cf.read_text(errors="replace")):
-                out.setdefault(m.group(1), set()).add(arch)
+                out.setdefault(m.group(1).lower(), set()).add(arch)
     return {k: frozenset(v) for k, v in out.items()}
 
 
@@ -975,11 +984,11 @@ def files_opt_arch_index() -> dict[str, str]:
     Intersection over the file's options, like files_cpu_index: a file
     that needs `al_iofic' AND `fdt' can only be built where both exist.
 
-    When more than one survives, the answer is still worth having if
-    amd64 is not among them - `al_iofic' is declared by
-    sys/arm64/conf/std.al AND sys/arm/conf/ALPINE, so the Alpine HAL is
-    32- and 64-bit ARM and neither is the default. Sorted, so the choice
-    is at least the same one every run.
+    ALL the survivors are returned, sorted, not just the first: `fdt' and
+    `gpioregulator' between them leave aarch64 and armv7, and
+    sys/dev/gpio/gpioregulator.c compiles as armv7 and not as aarch64.
+    Picking one was picking wrong half the time, so the caller retries
+    each in turn.
 
     This is a HINT, not an answer, and arch_of() deliberately does not
     use it. "No amd64 config declares this device" is not "amd64 cannot
@@ -1020,8 +1029,16 @@ def files_opt_arch_index() -> dict[str, str]:
             for alt in " ".join(toks).split("|"):
                 inner: frozenset[str] | None = None
                 for tok in alt.split():
-                    a = opts.get(tok)
+                    a = opts.get(tok.lower())
                     if a is None:
+                        continue
+                    if inner is not None and not (inner & a):
+                        # The tokens disagree, and a file the build lists
+                        # is built SOMEWHERE, so an empty intersection is
+                        # this index being incomplete rather than an
+                        # answer. Keep the union: the retry wants
+                        # candidates, and none is worse than several.
+                        inner = inner | a
                         continue
                     inner = a if inner is None else (inner & a)
                 if inner is None:
@@ -1031,7 +1048,7 @@ def files_opt_arch_index() -> dict[str, str]:
                     break
                 cands |= inner
             if cands and "amd64" not in cands:
-                out.setdefault("sys/" + m.group("src"), sorted(cands)[0])
+                out.setdefault("sys/" + m.group("src"), tuple(sorted(cands)))
     return out
 
 
@@ -1103,6 +1120,73 @@ def arch_of(rel: str, default: str = "amd64") -> str:
         if cand:
             return cand
     return default
+
+
+_GEN_VAR = re.compile(r"\$\{[A-Za-z_.][A-Za-z0-9_.]*\}")
+
+
+@functools.lru_cache(maxsize=None)
+def gen_headers() -> str:
+    """The headers sys/conf/files says the build generates, generated.
+
+    Nineteen entries in sys/conf/files are not sources but RECIPES: a
+    header name, a `dependency', a `compile-with' naming the script that
+    writes it, and `before-depend' saying it happens before anything is
+    compiled. bhnd_nvram_map.h and snd_fxdiv_gen.h are two of them, and
+    sixteen translation units in sys/dev failed on nothing but their
+    absence - `fatal error: bhnd_nvram_map.h file not found' - which is
+    the same shape as device_if.h above and has the same answer.
+
+    So the recipe is read and run, rather than the header being stubbed.
+    A stub would be a guess about a file the tree tells you how to make;
+    running the tree's own generator on the tree's own input gives the
+    declarations the kernel compiles against.
+
+    $S, ${SRCTOP}, ${AWK} and ${CPP} are substituted because the build
+    sets them, and anything left is expanded to NOTHING - which is what
+    bmake does with a variable no makefile defines. That is not a guess:
+    ${FEEDER_EQ_PRESETS} is genuinely unset in this tree, and the awk
+    script's own default is what the shipped header contains.
+
+    Where the variable does carry a kernel configuration's answer -
+    ${SC_DFLT_FONT}, ${KEYMAP}, ${FDT_DTS_FILE}, ${.TARGET} - expanding
+    it away makes the recipe fail rather than write something wrong: the
+    redirect has no filename, or uudecode has no input. So the header is
+    simply absent and the files needing it stay ERROR, which is the
+    honest report. The result is checked rather than assumed: a recipe
+    that exits 0 without producing the header it names is treated as
+    having failed.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_gen_"))
+    f = SYS / "conf" / "files"
+    if not f.is_file():
+        return d.as_posix()
+    text = f.read_text(errors="replace").replace("\\\n", " ")
+    for line in text.splitlines():
+        if not re.match(r"^\S+\.h\s", line) or "before-depend" not in line:
+            continue
+        m = re.search(r'compile-with\s+"([^"]*)"', line)
+        if not m:
+            continue
+        hdr = line.split()[0]
+        cmd = (m.group(1).replace("$S", str(SYS))
+               .replace("${SRCTOP}", str(SRC))
+               .replace("${AWK}", "awk").replace("${CPP}", "cpp"))
+        cmd = _GEN_VAR.sub("", cmd)
+        try:
+            subprocess.run(["sh", "-c", cmd], cwd=d, check=True,
+                           capture_output=True, timeout=120)
+        except (OSError, subprocess.SubprocessError):
+            # One recipe that will not run is one header still missing,
+            # not a reason to lose the others.
+            pass
+        out = d / hdr
+        if out.exists() and out.stat().st_size == 0:
+            # An empty file is worse than none: it satisfies the #include
+            # and then every declaration in it is absent, which reports as
+            # a wall of unrelated errors.
+            out.unlink()
+    return d.as_posix()
 
 
 @functools.lru_cache(maxsize=None)
@@ -1715,6 +1799,10 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{opt_shim(arch)}",
                   # device_if.h and friends: generated, not shipped.
                   f"-I{iface_shim(arch)}",
+                  # ...and the nineteen recipes in sys/conf/files, which
+                  # are generated into the object directory the same way
+                  # and reached through the build's own -I. on it.
+                  f"-I{gen_headers()}",
                   f"-I{(SRC / rel).parent}",
                   # Every directory between sys/ and the file. A kernel
                   # module Makefile adds its own subsystem root - vmm's

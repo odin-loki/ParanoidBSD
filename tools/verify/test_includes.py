@@ -27,7 +27,7 @@ They are load-bearing now, so they are checked. A reader that silently
 stops reading gives back the same zero it gave before it was written.
 """
 from __future__ import annotations
-import sys, tempfile
+import os, sys, tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -225,8 +225,14 @@ check_that("no -I resolves to the analyser's own directory",
 # NOT use it, because "no amd64 config declares this device" is not
 # "amd64 cannot build this file".
 opt = includes.files_opt_arch_index()
-check("the Alpine HAL is ARM", opt.get("sys/contrib/alpine-hal/al_hal_iofic.c"),
-      "aarch64")
+check("the Alpine HAL is ARM, both widths",
+      opt.get("sys/contrib/alpine-hal/al_hal_iofic.c"),
+      ("aarch64", "armv7"))
+check_that("an option is matched case-insensitively, as config(8) does",
+           "armv7" in (opt.get("sys/dev/gpio/gpioregulator.c") or ()),
+           "`options FDT' in a kernel config and `optional ... fdt' in "
+           "sys/conf/files are the same option; keying on the spelling "
+           "left fdt resolving to riscv64 alone")
 check_that("a disjunction is a union, not an intersection",
            opt.get("sys/dev/mii/e1000phy.c") is None,
            "`optional miibus | e1000phy' - miibus is declared by all six, "
@@ -288,6 +294,31 @@ fl = includes.include_flags(SRC / rel, includes.arch_of(rel))
 names = [f[2:].split("=")[0].split("(")[0] for f in fl if f.startswith("-D")]
 check("no macro is defined twice on one command line",
       sorted(n for n in set(names) if names.count(n) > 1), [])
+
+print("\n== the generated headers sys/conf/files describes")
+# The recipes in sys/conf/files are read and RUN. What must hold: the
+# ones whose variables all resolve produce a non-empty header, the ones
+# needing a kernel configuration's answer produce nothing rather than
+# something wrong, and the directory is on the include path of a kernel
+# translation unit that needs one.
+_gen = includes.gen_headers()
+_made = set(os.listdir(_gen))
+for _h in ("bhnd_nvram_map.h", "snd_fxdiv_gen.h", "feeder_eq_gen.h",
+           "usbdevs.h", "miidevs.h"):
+    check_that(f"{_h} is generated", _h in _made)
+    if _h in _made:
+        check_that(f"{_h} is not empty",
+                   (Path(_gen) / _h).stat().st_size > 0,
+                   "an empty header satisfies the #include and then "
+                   "declares nothing, which reports as a wall of "
+                   "unrelated errors")
+for _h in ("font.h", "kbdmuxmap.h", "fdt_static_dtb.h"):
+    check_that(f"{_h} is NOT invented", _h not in _made,
+               "its recipe needs a kernel configuration's answer, so "
+               "producing it here would be a guess")
+_fl = includes.include_flags(SRC / "sys/dev/sound/pcm/feeder_eq.c", "amd64")
+check_that("the generated-header directory is on a kernel file's -I",
+           f"-I{_gen}" in _fl)
 
 print()
 if fails:
