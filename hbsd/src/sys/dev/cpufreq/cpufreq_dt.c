@@ -110,6 +110,18 @@ cpufreq_dt_find_opp(device_t dev, uint64_t freq)
 
 	diff = 0;
 	best_diff = ~0;
+	/*
+	 * PBSD: best_n indexed sc->opp[] without ever having been
+	 * assigned when the loop below does not run, which is nopp == 0.
+	 * The returned pointer goes straight to clk_set_freq() and
+	 * regulator_set_voltage() in cpufreq_dt_set(), so an empty
+	 * operating-point table set the CPU clock and the CPU SUPPLY
+	 * VOLTAGE from an out-of-bounds heap read at a stack-chosen
+	 * index. nopp is a count of device-tree nodes; see the two
+	 * parsers, which now refuse an empty table so that this is
+	 * belt and braces rather than the only guard.
+	 */
+	best_n = 0;
 	DPRINTF(dev, "Looking for freq %ju\n", freq);
 	for (n = 0; n < sc->nopp; n++) {
 		diff = abs64((int64_t)sc->opp[n].freq - (int64_t)freq);
@@ -170,6 +182,31 @@ cpufreq_dt_set(device_t dev, const struct cf_setting *set)
 	const struct cpufreq_dt_opp *opp, *copp;
 	uint64_t freq;
 	int uvolt, error;
+
+	/*
+	 * PBSD: copp is the operating point to go back to, and it is
+	 * assigned in ONE place - inside `if (regulator_get_voltage()
+	 * != 0)', the backup path taken when the regulator will not say
+	 * what voltage it is at. Both reads of it are guarded by
+	 * CPUFREQ_DT_HAVE_REGULATOR(sc), which is the OUTER test, so on
+	 * the ordinary path (a regulator that answers) copp is never
+	 * assigned - and the two reads are in the clk_set_freq() failure
+	 * handler, which then calls
+	 *
+	 *	regulator_set_voltage(sc->reg, copp->uvolt_min,
+	 *	    copp->uvolt_max);
+	 *
+	 * programming the CPU SUPPLY VOLTAGE from two words read through
+	 * an indeterminate pointer, and clk_set_freq(sc->clk,
+	 * copp->freq, 0) the CPU clock from a third. The least-tested
+	 * path in the driver, doing the most dangerous thing in it.
+	 *
+	 * NULL here and tested at both uses. Both are best-effort
+	 * restores whose result is already discarded, so skipping one is
+	 * the behaviour that was intended where copp is not known; the
+	 * frequency set is failing either way.
+	 */
+	copp = NULL;
 
 	sc = device_get_softc(dev);
 
@@ -236,7 +273,7 @@ cpufreq_dt_set(device_t dev, const struct cf_setting *set)
 	if (error != 0) {
 		DPRINTF(dev, "Failed, backout\n");
 		/* Restore previous voltage (best effort) */
-		if (CPUFREQ_DT_HAVE_REGULATOR(sc))
+		if (CPUFREQ_DT_HAVE_REGULATOR(sc) && copp != NULL)
 			error = regulator_set_voltage(sc->reg,
 			    copp->uvolt_min,
 			    copp->uvolt_max);
@@ -253,7 +290,8 @@ cpufreq_dt_set(device_t dev, const struct cf_setting *set)
 			DPRINTF(dev, "Failed to switch regulator to %d\n",
 			    opp->uvolt_target);
 			/* Restore previous CPU frequency (best effort) */
-			(void)clk_set_freq(sc->clk, copp->freq, 0);
+			if (copp != NULL)
+				(void)clk_set_freq(sc->clk, copp->freq, 0);
 			return (ENXIO);
 		}
 	}
@@ -353,7 +391,8 @@ cpufreq_dt_oppv1_parse(struct cpufreq_dt_softc *sc, phandle_t node)
 
 	sc->nopp = OF_getencprop_alloc_multi(node, "operating-points",
 	    sizeof(uint32_t) * 2, (void **)&opp);
-	if (sc->nopp == -1)
+	/* PBSD: <= 0, not == -1; a zero-length property is no table. */
+	if (sc->nopp <= 0)
 		return (ENXIO);
 
 	if (OF_getencprop(node, "clock-latency", &lat, sizeof(lat)) == -1)
@@ -408,6 +447,11 @@ cpufreq_dt_oppv2_parse(struct cpufreq_dt_softc *sc, phandle_t node)
 
 	for (opp = OF_child(opp_table); opp > 0; opp = OF_peer(opp))
 		sc->nopp += 1;
+	/* PBSD: an operating-points-v2 node with no children is no table. */
+	if (sc->nopp <= 0) {
+		device_printf(sc->dev, "No operating points\n");
+		return (ENXIO);
+	}
 
 	sc->opp = malloc(sizeof(*sc->opp) * sc->nopp, M_DEVBUF, M_WAITOK);
 

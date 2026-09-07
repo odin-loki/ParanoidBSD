@@ -3088,6 +3088,78 @@ list, whose `container_of` on the head is an offset computation and not
 a load; and `linux/io.h:456` is the same caller's-buffer shape as the
 first.
 
+## Fixed — the CPU supply voltage, programmed from an indeterminate pointer
+
+Reading the ~90 `files.*` under `sys/` for the architecture each driver
+belongs to (`sys/arm/mv/files.arm7:24` is what says `dev/cesa/cesa.c` is
+ARM) took `sys/dev` from 237 ERROR of 2,633 to 155, and produced sixteen
+findings from arm, arm64, powerpc and riscv drivers analysed against
+their own `<machine/*.h>` for the first time. Three of them are in
+`sys/dev/cpufreq/cpufreq_dt.c`, the device-tree CPU frequency driver
+every FDT platform uses, and all three are the same defect twice over.
+
+**`copp` — the operating point to go back to.** `cpufreq_dt_set()`:
+
+```c
+	if (CPUFREQ_DT_HAVE_REGULATOR(sc)) {
+		error = regulator_get_voltage(sc->reg, &uvolt);
+		if (error != 0) {
+			copp = cpufreq_dt_find_opp(sc->dev, freq);   /* the only assignment */
+			...
+			uvolt = copp->uvolt_target;
+		}
+	} else
+		uvolt = 0;
+	...
+	error = clk_set_freq(sc->clk, opp->freq, CLK_SET_ROUND_DOWN);
+	if (error != 0) {
+		/* Restore previous voltage (best effort) */
+		if (CPUFREQ_DT_HAVE_REGULATOR(sc))
+			error = regulator_set_voltage(sc->reg,
+			    copp->uvolt_min, copp->uvolt_max);
+		return (ENXIO);
+	}
+```
+
+`copp` is assigned inside `if (regulator_get_voltage(...) != 0)` — the
+backup path, taken when the regulator will not report its voltage — and
+read under `CPUFREQ_DT_HAVE_REGULATOR(sc)`, which is the **outer** test.
+So on the ordinary path, a regulator that answers, `copp` is never
+assigned; and both reads of it are in the `clk_set_freq()` failure
+handler, which then programs the **CPU supply voltage** from
+`copp->uvolt_min`/`uvolt_max` and, twenty lines down, the **CPU clock**
+from `copp->freq`. The least-tested path in the driver doing the most
+dangerous thing in it.
+
+The guard on one of a pair, with the pair being an outer condition and
+an inner one that looks like it. `copp = NULL;` and a test at both uses:
+they are best-effort restores whose result is already discarded, so
+skipping one is what was intended where the previous point is unknown.
+
+**And `best_n`, one function up.**
+
+```c
+	ssize_t n, best_n;
+	...
+	for (n = 0; n < sc->nopp; n++) {
+		if (diff < best_diff) { best_diff = diff; best_n = n; }
+	}
+	return (&sc->opp[best_n]);
+```
+
+`nopp == 0` runs the loop zero times and indexes `sc->opp[]` at an
+indeterminate offset, returning that address to `cpufreq_dt_set()`. And
+`nopp` counts device-tree nodes: `cpufreq_dt_oppv1_parse()` accepted a
+zero-length `operating-points` property (`if (sc->nopp == -1)` was the
+only rejection) and `cpufreq_dt_oppv2_parse()` accepted an
+`operating-points-v2` node with no children. Both refuse an empty table
+now, and `best_n = 0` makes the function defined regardless.
+
+On an embedded board the device tree is firmware-supplied data. Same
+class as the run-time linker's `DT_RELR` bitmap and `libc`'s hash
+database header: well-formedness that is a property of the input, being
+treated as a property of the code.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

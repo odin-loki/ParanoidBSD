@@ -596,6 +596,37 @@ FIXES = {
         "Lose this line and /sbin/init stops booting",
         ),
     ],
+    "hbsd/src/sys/dev/cpufreq/cpufreq_dt.c": [
+        (
+            "PBSD: copp is the operating point to go back to",
+            "\t\tif (CPUFREQ_DT_HAVE_REGULATOR(sc))\n"
+            "\t\t\terror = regulator_set_voltage(sc->reg,\n",
+            "cpufreq_dt_set() assigns copp only inside `if "
+            "(regulator_get_voltage() != 0)' and reads it under the "
+            "OUTER CPUFREQ_DT_HAVE_REGULATOR(sc), so a regulator that "
+            "answers leaves it indeterminate - and both reads are in "
+            "the clk_set_freq() failure handler, which programs the "
+            "CPU supply voltage from copp->uvolt_min/max and the CPU "
+            "clock from copp->freq. The least-tested path in the "
+            "driver doing the most dangerous thing in it",
+        ),
+        (
+            "PBSD: best_n indexed sc->opp[] without ever having been",
+            None,
+            "cpufreq_dt_find_opp() returns &sc->opp[best_n] with "
+            "best_n unassigned when nopp == 0, and the caller hands "
+            "the result to clk_set_freq() and regulator_set_voltage(). "
+            "nopp counts device-tree nodes: a zero-length "
+            "operating-points property, or an operating-points-v2 node "
+            "with no children, and neither parser rejected either",
+        ),
+        (
+            "PBSD: an operating-points-v2 node with no children",
+            None,
+            "the v2 parser's half of that: nopp <= 0 is refused, so "
+            "the driver does not attach with an empty table",
+        ),
+    ],
     "hbsd/src/sys/dev/bnxt/bnxt_en/if_bnxt.c": [
         (
             "PBSD: rc is assigned only on a failure path",
