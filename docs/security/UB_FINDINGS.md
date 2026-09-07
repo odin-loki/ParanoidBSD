@@ -4802,3 +4802,39 @@ than a correctness one. The three traced furthest:
 | `sys/netpfil/pf/pf_lb.c:1026` — `ctx->nk->port[idx]` | `int idx;` is set by a `switch (nat_action)` with arms for `PF_NAT`, `PF_BINAT` and `PF_RDR` **and no `default:`**, then used to subscript a two-element array in the packet path. It holds on an invariant spread over two files: `pf_ioctl.c:2295` admits a rule only if `pf_get_ruleset_number(rule->action)` is below `PF_RULESET_MAX`, and that function maps exactly `PF_NAT`/`PF_NONAT` to the NAT ruleset, `PF_BINAT`/`PF_NOBINAT` to BINAT and `PF_RDR`/`PF_NORDR` to RDR; `pf_get_translation()` (`pf_lb.c:979`) then returns early for the three `PF_NO*`. So the three arms are the three reachable values. The other caller, `pf.c:5628`, passes a local set to `PF_NAT` or `PF_RDR`. Sound, and thin: an uninitialised index into the firewall's fast path, guarded by an admission check in another file and no assertion. |
 | `sys/dev/evdev/evdev_mt.c:267` — `r2c[row]` | `row` is assigned inside `if (d < delta \|\| ...)` in a loop the analyser thinks may not take. `delta` starts at `INT_MAX` and the function's own comment states its preconditions — `m >= n`, and inputs in `0 .. INT_MAX / 2` — so the first iteration's `d` is below `INT_MAX` and assigns `row`. With `n == 0` the outer loop never runs and `row` is never read. |
 | `sys/netgraph/ng_pptpgre.c:645` — `gre->data[gre->hasSeq]` | `hasSeq` is a bitfield in the GRE header being built, and `be32enc(gre, PPTP_INIT_VALUE)` at `:626` writes the whole flag word before anything reads it. The checker does not carry a bitfield's value through a four-byte store to the struct's first word. |
+
+## `device vchiq` is declared where its sources are not, and listed where
+ nothing declares it
+
+Sweep 10's `sys/contrib` shard put twenty-nine ERROR translation units
+outside the inventory, and two of them are the Raspberry Pi VCHIQ driver
+failing under every architecture that was tried. Reading why gave a
+build-system defect of the `mac_grantbylabel` family, in both directions
+at once.
+
+| | |
+|---|---|
+| `sys/conf/files.arm64` | lists all **20** VCHIQ sources, `optional vchiq soc_brcm_bcm2837 fdt` |
+| any `sys/arm64/conf/*` | declares `device vchiq` **nowhere** — not `std.broadcom`, not `NOTES` |
+| `sys/arm/conf/GENERIC:228` | `device vchiq` |
+| `sys/conf/files.arm` | names **no** VCHIQ source |
+| `sys/conf/files` (MI) | names none either |
+| `sys/modules/vchiq` | does not exist |
+
+So on 32-bit ARM the device is declared and no source is listed —
+`config GENERIC` accepts the line and compiles nothing — and on arm64 the
+sources are listed and no configuration asks for them. Twenty files that
+no kernel in this tree can reach.
+
+And they could not be built on the architecture that lists them anyway:
+`vchiq_kmod.c:50` includes `<machine/fdt.h>` unconditionally, and that
+header exists for amd64, arm, i386 and x86 and **not** for arm64.
+
+Recorded rather than fixed, for the same reason `mac_grantbylabel` was:
+making it build is a decision — move the twenty entries to
+`sys/conf/files.arm`, or teach arm64 a `machine/fdt.h`, or drop `device
+vchiq` from arm's GENERIC — and each of those says something different
+about which hardware this tree intends to support. The inventory entry
+says `VCHIQ_UNREACHABLE` and `test_expected_errors.py` checks all six
+facts above, so the day any one of them changes the exemption fails
+rather than quietly absorbing a driver that has started building.

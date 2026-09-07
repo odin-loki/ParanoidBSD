@@ -191,6 +191,32 @@ for pre, why in sorted(NOT_BUILT.items()):
           "no makefile mentions it at all any more, so the reason "
           "describes a block that is gone")
 
+print("\n== vchiq is unreachable from both ends, still")
+# Four facts make that prefix true, and any one of them flipping means a
+# kernel can reach the driver and the exemption is hiding real ERRORs.
+if any("VCHIQ_UNREACHABLE" in w for w in NOT_BUILT.values()):
+    _f_arm64 = (SYS / "conf" / "files.arm64").read_text(errors="replace")
+    _f_arm = (SYS / "conf" / "files.arm").read_text(errors="replace")
+    _f_mi = (SYS / "conf" / "files").read_text(errors="replace")
+    check("files.arm64 names vchiq sources", "vchiq" in _f_arm64)
+    check("files.arm names none", "vchiq" not in _f_arm)
+    check("the MI files names none", "vchiq" not in _f_mi)
+    check("there is no sys/modules/vchiq",
+          not (SYS / "modules" / "vchiq").exists())
+    _a64 = [p for p in sorted((SYS / "arm64" / "conf").rglob("*"))
+            if p.is_file() and re.search(r"^\s*device\s+vchiq\b",
+                                         p.read_text(errors="replace"), re.M)]
+    check("no arm64 config declares device vchiq", not _a64,
+          f"declared by {[p.name for p in _a64]}, so arm64 CAN build it")
+    _a32 = [p for p in sorted((SYS / "arm" / "conf").rglob("*"))
+            if p.is_file() and re.search(r"^\s*device\s+vchiq\b",
+                                         p.read_text(errors="replace"), re.M)]
+    check("an arm config still declares it, pointlessly", bool(_a32),
+          "if nothing declares it anywhere the reason needs rewriting, "
+          "not deleting")
+    check("arm64 has no machine/fdt.h",
+          not (SYS / "arm64" / "include" / "fdt.h").exists())
+
 # ACPICA's two are option-gated rather than module-gated: no kernel
 # config in the tree sets ACPI_DEBUGGER.
 opt = "ACPI_DEBUGGER"

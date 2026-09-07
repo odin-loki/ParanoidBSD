@@ -522,6 +522,19 @@ NOT_BUILT = {
         "translation unit of its own - sys/cddl/boot/zfs/README says so "
         "in as many words. NOT_NAMED",
 
+    "sys/contrib/vchiq/":
+        "the Raspberry Pi VCHIQ driver, which no kernel configuration in "
+        "this tree can reach - in either direction. sys/conf/files.arm64 "
+        "lists all 20 of its sources under `optional vchiq "
+        "soc_brcm_bcm2837 fdt' and NO arm64 config declares `device "
+        "vchiq', not even NOTES; sys/arm/conf/GENERIC:228 DOES declare it "
+        "and sys/conf/files.arm names no vchiq source at all, nor does the "
+        "machine-independent files, nor is there a sys/modules/vchiq. And "
+        "vchiq_kmod.c:50 includes <machine/fdt.h>, which exists for amd64, "
+        "arm, i386 and x86 and not for arm64 - so the architecture whose "
+        "files list names it could not compile it even if a config asked. "
+        "VCHIQ_UNREACHABLE",
+
     "sys/dev/mlx5/mlx5_fpga/":
         "the Innova FPGA half of mlx5. Its sources ARE named, but only "
         "inside `.if defined(CONFIG_BUILD_FPGA)' in "
