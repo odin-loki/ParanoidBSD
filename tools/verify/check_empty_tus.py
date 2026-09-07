@@ -139,6 +139,36 @@ def candidates() -> list[tuple[str, str]]:
     return sorted(out)
 
 
+def defines(rel: str) -> set[str] | None:
+    """Every macro defined while preprocessing this file, as clang sees it.
+
+    Not the -D on the command line. An option reaches a kernel file two
+    ways - a -D, or a `#define' that opt_shim() writes into the opt_*.h
+    the file #includes - and only the first is visible in the flags.
+    Looking for the -D called sys/netinet/tcp_stacks/rack.c dark, when
+    INET reaches it through opt_inet.h and it has 15,157 lines of code.
+    `clang -dM -E' answers the question that was actually being asked.
+    """
+    src = SRC / rel
+    arch = analyze.arch_of(rel)
+    try:
+        p = subprocess.run(["clang", "-dM", "-E",
+                            *analyze.lang_flags(src, rel),
+                            *analyze.include_flags(src, arch), str(src)],
+                           capture_output=True, text=True, timeout=120,
+                           cwd="/tmp")
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if p.returncode != 0:
+        return None
+    out = set()
+    for line in p.stdout.splitlines():
+        parts = line.split(None, 2)
+        if len(parts) >= 2 and parts[0] == "#define":
+            out.add(parts[1].split("(")[0])
+    return out
+
+
 def own_lines(rel: str, with_options: bool) -> int | None:
     """Lines of THIS file's own text that survive the preprocessor.
 
@@ -176,44 +206,55 @@ def own_lines(rel: str, with_options: bool) -> int | None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--measure", action="store_true",
-                    help="preprocess each candidate both ways and print "
-                         "how much code its option turns on")
+                    help="also print how much code each candidate's "
+                         "option turns on")
     ap.add_argument("--gate", action="store_true",
-                    help="exit non-zero if a candidate's option is not "
-                         "defined by the analyser's flags")
+                    help="exit non-zero if a candidate preprocesses to "
+                         "nothing")
     args = ap.parse_args()
 
     cands = candidates()
-    defined = includes.files_option_defines()
-    print(f"{len(defined)} sources carry a -D from their own `optional' "
-          f"clause")
+    print(f"{len(includes.files_option_defines())} sources carry a -D "
+          f"from their own `optional' clause")
     print(f"{len(cands)} of them open with an #ifdef naming one of those "
-          f"options, with no code before it")
+          f"options and close at the last line")
 
-    missing = [(rel, opt) for rel, opt in cands
-               if f"-D{opt}" not in defined.get(rel, ())]
-    for rel, opt in missing:
-        print(f"  FAIL {rel}: the file is one #ifdef {opt} from empty and "
-              f"the analyser does not define it")
+    # Ask the preprocessor, not the command line. An option reaches a
+    # file two ways - a -D, or a `#define' the opt_*.h shim writes into
+    # the header the file #includes - and only one of them is visible in
+    # the flags. Checking for the -D called rack.c and rack_pcm.c dark
+    # when INET reaches them through opt_inet.h and they have 15,157
+    # lines of code between them. What matters is whether anything
+    # survives, so measure that.
+    empty = []
+    rows = []
+    for rel, opt in cands:
+        d = defines(rel)
+        if d is None:
+            print(f"  SKIP {rel}: will not preprocess")
+            continue
+        if opt not in d:
+            empty.append((rel, opt))
+        if args.measure:
+            on, off = own_lines(rel, True), own_lines(rel, False)
+            rows.append((rel, off if off is not None else -1,
+                         on if on is not None else -1))
+
+    for rel, opt in empty:
+        print(f"  FAIL {rel}: nothing defines {opt}, and the whole body "
+              f"of the file is inside `#ifdef {opt}'. It compiles, "
+              f"reports no findings, and is counted OK.")
 
     if args.measure:
-        rows = []
-        for rel, _ in cands:
-            on, off = own_lines(rel, True), own_lines(rel, False)
-            if on is not None and off is not None:
-                rows.append((rel, off, on))
         rows.sort(key=lambda r: -(r[2] - r[1]))
-        empty = [r for r in rows if r[1] == 0]
-        print(f"\n{len(rows)} measured; {len(empty)} are EMPTY without "
-              f"their option:")
+        print(f"\n{len(rows)} measured, off -> on:")
         for rel, off, on in rows[:12]:
             print(f"   {off:6d} -> {on:6d}  (+{on - off:6d})  {rel}")
         print(f"   {sum(r[1] for r in rows):6d} -> "
               f"{sum(r[2] for r in rows):6d}  total")
 
-    if missing:
-        print(f"\n{len(missing)} source(s) would compile to nothing and "
-              f"report OK.")
+    if empty:
+        print(f"\n{len(empty)} source(s) compile to nothing and report OK.")
         return 1 if args.gate else 0
     print("\nevery one of them has its option defined.")
     return 0

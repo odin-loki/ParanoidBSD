@@ -237,6 +237,34 @@ check_that("a disjunction is a union, not an intersection",
            opt.get("sys/dev/mii/e1000phy.c") is None,
            "`optional miibus | e1000phy' - miibus is declared by all six, "
            "and intersecting made a PHY driver look like ARM code")
+
+# The -D a file's own `optional' clause implies. Note that the rule for
+# the ARCHITECTURE above is the opposite of the rule for the OPTIONS
+# here, and deliberately: for the architecture, any alternative that
+# builds the file is an architecture that builds the file, so union;
+# for the options, each alternative is a DIFFERENT configuration, and
+# defining one alternative's options is asserting a configuration the
+# file may never be built in.
+_od = includes.files_option_defines()
+check_that("a single alternative gives all its options",
+           _od.get("sys/dev/random/fenestrasX/fx_brng.c") ==
+           ("-DRANDOM_FENESTRASX",),
+           "`optional !random_loadable random_fenestrasx' is one "
+           "configuration and sys/sys/vdso.h:96 declares "
+           "fxrng_push_seed_generation() inside `#ifdef "
+           "RANDOM_FENESTRASX'")
+check_that("a disjunction gives only what its alternatives share",
+           _od.get("sys/netinet/tcp_ratelimit.c") == ("-DRATELIMIT",),
+           "`optional ratelimit inet | ratelimit inet6' - both name "
+           "ratelimit and only one names inet, so -DINET would be a "
+           "guess at which of the two kernels this is")
+check_that("...and nothing when they share nothing",
+           _od.get("sys/xdr/xdr.c") is None,
+           "`optional xdr | krpc | nfslockd | nfscl | nfsd | zfs'. "
+           "Taking the first alternative cost six regressions in sweep "
+           "11: XDR is a declared option nothing sets (options:489) and "
+           "sys/rpc/xdr.h uses XDR as a TYPE, so `#define XDR 1' makes "
+           "every declaration in that header a syntax error")
 check("arch_of does not use the hint",
       includes.arch_of("sys/dev/nvmem/nvmem.c"), "amd64")
 check_that("...even though the hint has an opinion",

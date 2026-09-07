@@ -1041,9 +1041,43 @@ def files_option_defines() -> dict[str, tuple[str, ...]]:
                            "before-depend", "local"):
                     break
                 toks.append(tok)
-            first = " ".join(toks).split("|")[0].split()
-            defs = tuple(f"-D{opts[t.lower()]}" for t in first
-                         if not t.startswith("!") and t.lower() in opts)
+            # A DISJUNCTION means the build has several configurations
+            # that compile this file, and picking one of them is a
+            # guess. Take the INTERSECTION - the tokens every
+            # alternative names - and define nothing when they share
+            # none.
+            #
+            # Taking the first alternative instead cost six regressions
+            # in sweep 11, all of them sys/xdr:
+            #
+            #   xdr/xdr.c  optional xdr | krpc | nfslockd | nfscl |
+            #                       nfsd | zfs
+            #
+            # `XDR' is a declared option (sys/conf/options:489, bare,
+            # so opt_global.h) that no configuration in the tree sets,
+            # and sys/rpc/xdr.h:299 is
+            #
+            #   extern bool_t xdr_u_int(XDR *, u_int *);
+            #
+            # where XDR is a TYPE. `#define XDR 1' turns every one of
+            # those declarations into a syntax error. The six files
+            # went from OK to ERROR on a -D chosen from an alternative
+            # nothing uses, in a header the option's own subsystem
+            # defines.
+            #
+            # The intersection keeps what is not a guess:
+            # fx_brng.c's `optional !random_loadable random_fenestrasx'
+            # is one alternative and keeps -DRANDOM_FENESTRASX; and
+            # tcp_ratelimit.c's `optional ratelimit inet | ratelimit
+            # inet6' keeps -DRATELIMIT, which is the one both agree on,
+            # and drops the -DINET that only one of them names.
+            alts = [a.split() for a in " ".join(toks).split("|")]
+            common = set(alts[0])
+            for a in alts[1:]:
+                common &= set(a)
+            defs = tuple(f"-D{opts[t.lower()]}" for t in alts[0]
+                         if t in common and not t.startswith("!")
+                         and t.lower() in opts)
             if defs:
                 out.setdefault("sys/" + m.group("src"), defs)
     return out
