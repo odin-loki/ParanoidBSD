@@ -4336,6 +4336,50 @@ adding a ninth stub would make a driver compile that cannot work. It is
 on the record instead, in the prefix's own reason, where the next person
 to try building mt76 will read it.
 
+## The architecture can be stated by the option, not the directory
+
+`sys/conf/files` — the architecture-neutral one — carries
+
+```
+contrib/alpine-hal/al_hal_iofic.c	optional al_iofic	\
+	compile-with "${CC} -c -o ${.TARGET} ${CFLAGS} -I$S/contrib/alpine-hal ..."
+```
+
+and `device al_iofic` appears in exactly two places in the tree,
+`sys/arm64/conf/std.al` and `sys/arm/conf/ALPINE`. Nothing in the path
+says ARM, no `files.arm64` names it, and `arch_of()` therefore analysed
+the Annapurna Alpine HAL — eleven files — as amd64, where it reports
+twenty errors on `dsb`, `dmb` and the rest of ARM's barrier intrinsics.
+As arm64 it compiles clean, zero errors.
+
+So the option is a third thing the build system knows about a file's
+architecture, after the directory and the `files.*`. Reading it took two
+corrections, and the second is the interesting one.
+
+**`optional miibus | e1000phy` is a disjunction.** The first version
+intersected the option list, which for that line gives `armv7` — only
+`sys/arm/conf` declares `e1000phy` — and turned a PHY driver every
+architecture builds into ARM code. Union across the `|` alternatives,
+intersection within each.
+
+**And even corrected, it is a hint and not an answer.** `arch_of()`
+deliberately does not use it, because "no amd64 config declares this
+device" is not "amd64 cannot build this file": `sys/dev/nvmem/nvmem.c`
+is `optional nvmem`, which only the three FDT architectures declare, and
+it compiles clean as amd64. Wiring the hint into `arch_of()` would have
+re-interpreted 272 translation units that were already being read
+correctly — inventing a build rather than reading one, which is the
+thing this file keeps warning about.
+
+It is used in exactly one place instead: `analyze.py`, on the error
+path. A file that does **not** compile under the default is retried
+against the architecture the build system says can build it, and the
+better of the two results is reported, tagged with the architecture that
+produced it. A file that already compiled is never re-interpreted, and a
+file that did not has nothing to lose. The check that it stays out of
+`arch_of()` is in `test_includes.py`, alongside the one that a
+disjunction is a union.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

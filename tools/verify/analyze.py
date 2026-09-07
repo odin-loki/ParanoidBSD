@@ -38,6 +38,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from includes import include_flags, is_kernel_tu, lang_flags, SRC  # noqa: E402
+from includes import arch_of, files_opt_arch_index  # noqa: E402
 from expected_errors import EXPECTED, NOT_BUILT, not_built  # noqa: E402
 
 # Failure of one of these is a defect, not a matter of taste.
@@ -79,8 +80,9 @@ def analyze(job: dict) -> dict:
     the probe in tools/verify/test_analyze.py fails if it is.
     """
     src = Path(job["src"])
+    arch = job.get("arch") or arch_of(job["rel"])
     cmd = ["clang", "--analyze", "-Xclang", "-analyzer-output=text",
-           *lang_flags(src, job["rel"]), *include_flags(src),
+           *lang_flags(src, job["rel"]), *include_flags(src, arch),
            str(src), "-o", "/dev/null"]
     try:
         p = subprocess.run(cmd, capture_output=True, text=True,
@@ -91,6 +93,22 @@ def analyze(job: dict) -> dict:
         return {"file": job["rel"], "status": "ERROR", "detail": str(e),
                 "findings": []}
     if p.returncode != 0 and "error:" in p.stderr:
+        # It did not compile for the architecture arch_of() picked. The
+        # build system may name one that CAN build it - see
+        # includes.files_opt_arch_index(), which is a hint and not an
+        # answer precisely because it is only trustworthy here: a file
+        # that already compiled is never re-interpreted, and a file that
+        # did not has nothing to lose. sys/contrib/alpine-hal is eleven
+        # files of ARM barrier intrinsics named by the ARCHITECTURE-
+        # NEUTRAL sys/conf/files, `optional al_iofic', and the only
+        # place al_iofic appears is two ARM configs.
+        alt = files_opt_arch_index().get(job["rel"])
+        if alt and alt != arch and not job.get("retried"):
+            again = dict(job, arch=alt, retried=True)
+            r = analyze(again)
+            if r["status"] != "ERROR":
+                r["arch"] = alt
+                return r
         return {"file": job["rel"], "status": "ERROR",
                 "detail": p.stderr.strip()[-300:], "findings": []}
     out = []

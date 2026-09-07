@@ -221,6 +221,23 @@ check_that("no -I resolves to the analyser's own directory",
 # defined a directory up. mt76 does exactly that, and without the chain
 # the .PATH resolved to nothing and all 135 of its files found none of
 # their own headers.
+# The architecture an `optional' clause implies. A HINT: arch_of() must
+# NOT use it, because "no amd64 config declares this device" is not
+# "amd64 cannot build this file".
+opt = includes.files_opt_arch_index()
+check("the Alpine HAL is ARM", opt.get("sys/contrib/alpine-hal/al_hal_iofic.c"),
+      "aarch64")
+check_that("a disjunction is a union, not an intersection",
+           opt.get("sys/dev/mii/e1000phy.c") is None,
+           "`optional miibus | e1000phy' - miibus is declared by all six, "
+           "and intersecting made a PHY driver look like ARM code")
+check("arch_of does not use the hint",
+      includes.arch_of("sys/dev/nvmem/nvmem.c"), "amd64")
+check_that("...even though the hint has an opinion",
+           opt.get("sys/dev/nvmem/nvmem.c") is not None,
+           "nvmem is declared only by the three FDT architectures and "
+           "the file compiles clean as amd64")
+
 mt76 = by_dir.get("sys/contrib/dev/mediatek/mt76", ())
 check_that("a submodule's .PATH from the parent Makefile.inc",
            any(f.endswith("/mediatek/mt76") for f in mt76),

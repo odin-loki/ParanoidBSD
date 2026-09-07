@@ -856,6 +856,109 @@ def defaults_options(arch: str) -> tuple[str, ...]:
     return tuple(out)
 
 
+# An architecture can also be stated by the OPTION a file is `optional'
+# on rather than by the files* it is in. sys/conf/files - the
+# architecture-neutral one - carries
+#
+#   contrib/alpine-hal/al_hal_iofic.c  optional al_iofic ...
+#
+# and `device al_eth' / `device al_iofic' appear in exactly one place in
+# the tree, sys/arm64/conf/std.al. Analysed as amd64 those eleven files
+# report twenty errors on `dsb', `dmb' and the rest of arm64's barrier
+# intrinsics; as arm64 they compile clean. The option is the only thing
+# that says so.
+FILES_OPTIONAL = re.compile(
+    r"^(?P<src>\S+\.c)\s+(?:optional|standard)\s+(?P<opts>[^\\]*)")
+CONF_DECL = re.compile(r"^\s*(?:device|options?)\s+([A-Za-z_][A-Za-z0-9_]*)",
+                       re.M)
+
+
+@functools.lru_cache(maxsize=None)
+def _option_arches() -> dict[str, frozenset[str]]:
+    """option or device name -> the architectures whose configs declare it."""
+    out: dict[str, set[str]] = {}
+    for arch, d in sorted(SYS_DIR.items()):
+        confd = SYS / d / "conf"
+        if not confd.is_dir():
+            continue
+        for cf in sorted(confd.rglob("*")):
+            # NOTES lists every option the architecture COULD have, which
+            # is not the same as one a kernel is built with, and taking
+            # it makes every option ambiguous.
+            if not cf.is_file() or cf.name == "NOTES":
+                continue
+            for m in CONF_DECL.finditer(cf.read_text(errors="replace")):
+                out.setdefault(m.group(1), set()).add(arch)
+    return {k: frozenset(v) for k, v in out.items()}
+
+
+@functools.lru_cache(maxsize=None)
+def files_opt_arch_index() -> dict[str, str]:
+    """source under sys/ -> the one architecture its options allow.
+
+    Intersection over the file's options, like files_cpu_index: a file
+    that needs `al_iofic' AND `fdt' can only be built where both exist.
+
+    When more than one survives, the answer is still worth having if
+    amd64 is not among them - `al_iofic' is declared by
+    sys/arm64/conf/std.al AND sys/arm/conf/ALPINE, so the Alpine HAL is
+    32- and 64-bit ARM and neither is the default. Sorted, so the choice
+    is at least the same one every run.
+
+    This is a HINT, not an answer, and arch_of() deliberately does not
+    use it. "No amd64 config declares this device" is not "amd64 cannot
+    build this file": sys/dev/nvmem/nvmem.c is `optional nvmem', which
+    only the three FDT architectures declare, and it compiles clean as
+    amd64. Inferring an architecture from that would re-interpret 272
+    translation units that were already being read correctly, which is
+    inventing a build rather than reading one.
+
+    So analyze.py uses it only where the default FAILED: a file that
+    does not compile as amd64 is retried against the architecture the
+    build system says can build it, and the better of the two results is
+    the one reported. Empirical, and it cannot touch a file that already
+    compiled.
+    """
+    opts = _option_arches()
+    out: dict[str, str] = {}
+    for mk in sorted(SYS.rglob("files*")):
+        if not mk.is_file() or mk.suffix in (".c", ".h"):
+            continue
+        text = mk.read_text(errors="replace").replace("\\\n", " ")
+        for line in text.splitlines():
+            m = FILES_OPTIONAL.match(line)
+            if not m:
+                continue
+            # `optional miibus | e1000phy' is a DISJUNCTION: the file is
+            # built where either holds. Intersecting the two gave armv7,
+            # because only sys/arm/conf declares e1000phy - and made a
+            # PHY driver every architecture builds look like ARM code.
+            # Union over the alternatives, intersection within each.
+            toks: list[str] = []
+            for tok in m.group("opts").split():
+                if tok in ("compile-with", "no-obj", "no-depend", "dependency",
+                           "clean", "warning", "before-depend", "local"):
+                    break
+                toks.append(tok)
+            cands: set[str] = set()
+            for alt in " ".join(toks).split("|"):
+                inner: frozenset[str] | None = None
+                for tok in alt.split():
+                    a = opts.get(tok)
+                    if a is None:
+                        continue
+                    inner = a if inner is None else (inner & a)
+                if inner is None:
+                    # An alternative with no known option constrains
+                    # nothing, so the whole line constrains nothing.
+                    cands = set()
+                    break
+                cands |= inner
+            if cands and "amd64" not in cands:
+                out.setdefault("sys/" + m.group("src"), sorted(cands)[0])
+    return out
+
+
 def arch_of(rel: str, default: str = "amd64") -> str:
     """A source under lib/libc/<arch>/, lib/msun/<arch>/ or sys/<arch>/.
 
