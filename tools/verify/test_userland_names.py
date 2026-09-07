@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# SPDX-FileCopyrightText: 2026 Odin Loch <odin.loch@outlook.com.au>
+"""The userland authority, checked against facts it must get right.
+
+An index that answers "no" to everything looks exactly like a tree the
+build names nothing in, which is how sweep_report came to report 57 of
+57 unlisted ERRORs as "nothing in the build names it" and mean nothing
+by it. Each case below is one way the index can quietly go empty:
+
+  * the plain SRCS reading - lib/libc/gen/getcwd.c;
+  * the .PATH reading, which is what makes a lib/libc source that lives
+    under contrib resolve at all;
+  * the PROGS reading, without which every tests/ directory in the tree
+    names nothing - fifty programs in lib/libc/tests/gen alone;
+  * the per-architecture reading: lib/libc/aarch64 is named when
+    MACHINE_ARCH is aarch64 and by nothing else, and an index built for
+    one architecture and used for all six would say so for amd64 too;
+  * the scope overlap: lib/libc's build names three sources under sys/,
+    so the two authorities are unioned and not selected between.
+
+Each assertion is recomputed from the tree, so a file that moves takes
+the assertion with it rather than leaving a stale expectation behind.
+"""
+
+from __future__ import annotations
+
+import shutil
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import userland_names as u  # noqa: E402
+
+FAIL = 0
+
+
+def check(cond: bool, what: str) -> None:
+    global FAIL
+    print(f"  {'ok  ' if cond else 'FAIL'}  {what}")
+    if not cond:
+        FAIL += 1
+
+
+def one_dir(rel: str, arch: str) -> set[str]:
+    d = u.SRC / rel
+    srcs, path = u.ask(d, arch)
+    return u.resolve(srcs, path, d)
+
+
+def main() -> int:
+    if not shutil.which("bmake"):
+        print("bmake is not installed; the userland authority cannot be "
+              "asked. Skipping.")
+        return 0
+    if not u.SHARE_MK.is_dir():
+        print(f"no {u.SHARE_MK}; skipping.")
+        return 0
+
+    print("one directory at a time, so a failure names the reading "
+          "that broke:")
+
+    # SRCS, read straight. lib/libc/gen/getcwd.c is in SRCS via
+    # lib/libc/gen/Makefile.inc, and reaches lib/libc through .PATH.
+    libc = one_dir("lib/libc", "amd64")
+    check("lib/libc/gen/getcwd.c" in libc,
+          "SRCS: lib/libc names gen/getcwd.c")
+    check(len(libc) > 500,
+          f"SRCS: lib/libc names hundreds of sources ({len(libc)})")
+
+    # .PATH into another tree entirely: libc's gdtoa comes from contrib.
+    check(any(p.startswith("contrib/") for p in libc),
+          ".PATH: some of what lib/libc names lives under contrib/")
+
+    # PROGS, without which a tests directory names nothing.
+    tests = one_dir("lib/libc/tests/gen", "amd64")
+    check(len(tests) > 20,
+          f"PROGS: lib/libc/tests/gen names its programs ({len(tests)})")
+
+    # Per architecture. lib/libc/aarch64/gen/getcontextx.c is named when
+    # MACHINE_ARCH is aarch64, and by no other architecture's build.
+    a64 = one_dir("lib/libc", "aarch64")
+    mine = "lib/libc/aarch64/gen/getcontextx.c"
+    check(mine in a64, f"per-arch: aarch64 names {Path(mine).name}")
+    check(mine not in libc, "per-arch: amd64 does not name it")
+
+    # And a source no architecture's build names: the db test drivers,
+    # which have no Makefile at all - they are run by hand.
+    scratch = "lib/libc/db/test/hash.tests/tdel.c"
+    check((u.SRC / scratch).is_file(), f"the tree still has {scratch}")
+    check(scratch not in libc, "scratch: nothing in lib/libc names tdel.c")
+
+    # The trees are not disjoint. lib/libc's build reaches into the
+    # kernel's for three sources, which is why sweep_report asks both
+    # authorities rather than picking one by the path's first component
+    # - routing sys/ to the kernel would answer for these three with a
+    # list that has never heard of them.
+    from_sys = sorted(p for p in libc if p.startswith("sys/"))
+    check(len(from_sys) >= 3,
+          f"scope: lib/libc's build names kernel sources too ({from_sys})")
+
+    print(f"\n{'FAILED' if FAIL else 'all checks passed'}"
+          f"{f' ({FAIL})' if FAIL else ''}")
+    return 1 if FAIL else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

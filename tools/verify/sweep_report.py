@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import functools
 import json
 import re
 import sys
@@ -31,6 +32,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import includes  # noqa: E402
+import userland_names  # noqa: E402
 from expected_errors import EXPECTED, not_built  # noqa: E402
 
 SYS = includes.SRC / "sys"
@@ -65,8 +67,9 @@ def findings(recs: dict[str, dict]) -> set[tuple]:
     return out
 
 
-def build_names() -> set[str]:
-    """Every source the build names, resolved the way the build resolves."""
+@functools.lru_cache(maxsize=None)
+def kernel_names() -> frozenset[str]:
+    """Every kernel source the build names, as the build resolves it."""
     named = set()
     for p in sorted(SYS.glob("conf/files*")):
         t = p.read_text(errors="replace").replace("\\\n", " ")
@@ -75,7 +78,25 @@ def build_names() -> set[str]:
             if m:
                 named.add("sys/" + m.group(1))
     by_file, by_src, _ = includes.kernel_flag_index("amd64")
-    return named | set(by_file) | set(by_src)
+    return frozenset(named | set(by_file) | set(by_src))
+
+
+def names_it(path: str) -> bool:
+    """Does anything in the build name this source?
+
+    The kernel's authority and userland's are different files asked
+    different ways. Asking only the kernel's about lib/libc/gen/getcwd.c
+    is how all 57 of one shard's unlisted ERRORs came back "nothing in
+    the build names it" - a true statement about sys/conf/files and no
+    statement at all about lib/libc.
+
+    Both are asked, rather than one being picked by the path's scope,
+    because the trees are not disjoint: lib/libc's own build names
+    sys/kern/subr_capability.c, sys/kern/subr_acl_nfs4.c and
+    sys/libkern/explicit_bzero.c through .PATH. Routing sys/ to the
+    kernel would have answered for those with the wrong authority.
+    """
+    return path in kernel_names() or path in userland_names.names()
 
 
 def main() -> int:
@@ -130,10 +151,9 @@ def main() -> int:
         unl = sorted(k for k, r in new.items() if r["status"] == "ERROR"
                      and k not in EXPECTED and not not_built(k))
         print(f"\nERRORs the inventory does not cover: {len(unl)}")
-        named = build_names()
         by = collections.defaultdict(list)
         for k in unl:
-            by["the build names it" if k in named
+            by["the build names it" if names_it(k)
                else "nothing in the build names it"].append(k)
         for kind, files in sorted(by.items()):
             print(f"  {len(files):4d}  {kind}")

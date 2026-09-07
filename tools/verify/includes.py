@@ -39,6 +39,7 @@ from __future__ import annotations
 import functools
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -1190,6 +1191,68 @@ def gen_headers() -> str:
 
 
 @functools.lru_cache(maxsize=None)
+def rpc_headers() -> str:
+    """The rpcsvc headers the build generates, generated the same way.
+
+    Thirteen of one sweep shard's unlisted ERRORs were one missing
+    header each: rpcsvc/rquota.h under libexec/rpc.rquotad,
+    rpcsvc/rstat.h under rpc.rstatd, rnusers.h, rwall.h, spray.h, and
+    rpcsvc/yp.h five times under libexec/ypxfr. None of them is in the
+    tree, and none of them is meant to be - include/rpcsvc/Makefile
+    lists twenty-two .x interface definitions and one suffix rule:
+
+        .x.h:
+            ${RPCCOM} -h -DWANT_NFS3 ${.IMPSRC} -o ${.TARGET}
+        RPCCOM= RPCGEN_CPP=${CPP:Q} rpcgen -C
+
+    which is the same shape as sys/conf/files' before-depend recipes,
+    and gets the same answer: run the tree's recipe on the tree's input
+    rather than stub the header. Both HDRS and the rule are read out of
+    that Makefile, so an interface added to it is generated without
+    this function being touched.
+
+    One substitution is not the tree's, and is worth naming: rpcgen
+    itself is the host's, not usr.bin/rpcgen. Both implement the same
+    RFC 1831 mapping from a .x to its declarations, and the header is
+    wanted here only so the declarations exist - nothing in it is
+    compiled into anything that runs. A recipe that exits non-zero, or
+    exits 0 without writing the header it names, leaves that header
+    absent and its callers ERROR, which is the honest report.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_rpc_"))
+    out = d / "rpcsvc"
+    out.mkdir()
+    mk = SRC / "include" / "rpcsvc" / "Makefile"
+    if not mk.is_file() or not shutil.which("rpcgen"):
+        return d.as_posix()
+    text = mk.read_text(errors="replace").replace("\\\n", " ")
+    m = re.search(r"^HDRS=\s*(.*)$", text, re.M)
+    r = re.search(r"^\.x\.h:\s*\n\t(.*)$", text, re.M)
+    if not m or not r:
+        return d.as_posix()
+    recipe = (r.group(1).replace("${RPCCOM}", "rpcgen -C")
+              .replace("${.IMPSRC}", "{src}").replace("${.TARGET}", "{dst}"))
+    env = dict(os.environ, RPCGEN_CPP="cpp")
+    for hdr in m.group(1).split():
+        if not hdr.endswith(".h"):
+            continue
+        x = SRC / "include" / "rpcsvc" / (hdr[:-2] + ".x")
+        if not x.is_file():
+            continue
+        cmd = recipe.format(src=str(x), dst=str(out / hdr))
+        try:
+            subprocess.run(["sh", "-c", cmd], cwd=SRC / "include" / "rpcsvc",
+                           check=True, capture_output=True, timeout=60,
+                           env=env)
+        except (OSError, subprocess.SubprocessError):
+            pass
+        f = out / hdr
+        if f.exists() and f.stat().st_size == 0:
+            f.unlink()
+    return d.as_posix()
+
+
+@functools.lru_cache(maxsize=None)
 def iface_shim(arch: str = "amd64") -> str:
     """The kernel interface headers, GENERATED the way the real build does.
 
@@ -1848,6 +1911,12 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
     # The source's own directory first: many libc and msun sources include a
     # private header sitting beside them.
     flags.append(f"-I{(SRC / rel).parent}")
+
+    # <rpcsvc/rquota.h> and its twenty siblings do not exist in the tree;
+    # include/rpcsvc/Makefile says how to make them and rpc_headers()
+    # runs it. Thirteen ERRORs in one shard were a missing one of these
+    # and nothing else.
+    flags.append(f"-I{rpc_headers()}")
 
     if rel.startswith("lib/libc"):
         flags += [f"-I{SRC}/lib/libc/include",

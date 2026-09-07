@@ -185,6 +185,59 @@ of them drowned the ones that were.
 
 Both instruments consult it, so they agree on what is being checked.
 
+### The kernel's file list is not an authority on userland
+
+`sweep_report.py --unlisted` sorts the ERRORs the inventory does not
+cover into "the build names it" — a coverage gap, the analyser cannot
+read a file the build compiles — and "nothing in the build names it" —
+scratch, a test driver, something abandoned. The sort only means
+something if the authority has an opinion about the file.
+
+For three sweeps it had one authority: `sys/conf/files*` plus the module
+Makefiles. That is the **kernel's**. Asked about `lib/libc/gen/getcwd.c`
+it answers "nothing in the build names it", which is a true statement
+about `sys/conf/files` and no statement at all about `lib/libc` — so all
+57 of the libs shard's unlisted ERRORs landed in one bucket and the
+bucket said nothing.
+
+Userland has no `files` list; the answer is in each directory's
+`Makefile`, after `bsd.lib.mk`, `bsd.prog.mk` and the component's
+`Makefile.inc` chain have had their say. `userland_names.py` does not
+re-implement that — a second implementation of `.PATH` resolution is a
+second place for the answer to be wrong — it asks bmake over the tree's
+own `share/mk`:
+
+    bmake -m <src>/share/mk -V SRCS -V .PATH -V PROGS -V PROGS_CXX
+
+and resolves each name against `.PATH` the way bmake does. Four readings
+have to be right, and `test_userland_names.py` breaks each one to check:
+
+- **SRCS**, read straight;
+- **`.PATH`**, without which nothing resolves at all — `lib/libc`'s
+  gdtoa lives under `contrib/`;
+- **PROGS**, without which every `tests/` directory in the tree names
+  nothing: fifty programs in `lib/libc/tests/gen` alone are `PROGS` with
+  `SRCS.<prog>`, or `bsd.prog.mk`'s default of `<prog>.c`;
+- **per architecture**, because `lib/libc/aarch64/gen/getcontextx.c` is
+  named when `MACHINE_ARCH` is `aarch64` and by no other build. The
+  index is built six times and unioned.
+
+The two authorities are **unioned, not selected between by the path's
+first component**: the trees are not disjoint. `lib/libc`'s own build
+names `sys/kern/subr_capability.c`, `sys/kern/subr_acl_nfs4.c` and
+`sys/libkern/explicit_bzero.c` through `.PATH`, and routing `sys/` to
+the kernel's list would answer for those three with a list that has
+never heard of them.
+
+Two limits, stated rather than hidden. 94 Makefiles bmake will not read
+— `lib/libclang_rt`, `usr.bin/ofed`, `kerberos5` — and `--refresh
+--failed` groups them, so the number is visible instead of silently
+shrinking the answer; none of them is in a scope the sweep has reached.
+And the reading is of the build *as configured here*: `COMPILER_FEATURES
+:Mblocks` is false for the host compiler, so the three `_blocks` tests
+under `lib/libc/tests/gen` come back unnamed. That is the same fact as
+their being flag-dependent, arrived at from the other side.
+
 ## Why `classify.py` exists
 
 CBMC started at an arbitrary function makes that function's parameters

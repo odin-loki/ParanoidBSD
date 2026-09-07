@@ -249,6 +249,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # bmake, because the userland half of "does the build name this
+      # file" is answered by asking bmake rather than by a second
+      # implementation of .PATH and SRCS resolution.
+      - name: Install the instruments
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bmake
+      # An index that answers "no" to everything is indistinguishable
+      # from a tree the build names nothing in - which is exactly how
+      # sweep_report reported 57 of 57 unlisted ERRORs as "nothing in
+      # the build names it" while asking the KERNEL's file list about
+      # lib/libc. Each check below is one reading that can go empty.
+      - name: The userland build authority still reads the build
+        run: python3 tools/verify/test_userland_names.py
       - name: M_NOWAIT results used without a NULL check
         run: python3 tools/verify/nowait_check.py --gate
       - name: A masked switch with fewer arms than states
