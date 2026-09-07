@@ -4707,3 +4707,69 @@ for.
 | `sys/contrib/alpine-hal/al_hal_serdes_25g.c` — **eight** findings at `:504`, `:536`, `:938`, `:955`, `:1161`, `:1378`, `:1643` | one error path, ignored eight times. `al_serdes_25g_reg_read()` returns `-1` without writing `*data` for a `page` its switch does not name, and `al_serdes_25g_reg_masked_read()` propagates that. Every caller here ignores the return and reads the out-parameter — so `al_serdes_25g_cdr_is_locked()` would answer from a stack byte. It cannot happen in this tree: the only pages the switch omits are `AL_SRDS_REG_PAGE_2_LANE_2` and `_3_LANE_3`, which `al_hal_serdes_interface.h:69` marks "Relevant to Serdes hssp only" — the 25G SerDes has two lanes, and the callers cast `(enum al_serdes_reg_page)lane` from a lane the hardware has. Vendored HAL, an unreachable path, and no in-tree caller of the four affected entry points at all: recorded rather than changed, like `rtw88/bf.h` and `dis_tables.c`'s `done:`. Worth the row because a fifth lane would make all eight live at once. |
 | `sys/contrib/dev/iwlwifi/mvm/sta.c:2973` — `baid_data->baid` | `baid_data` is allocated under `if (iwl_mvm_has_new_rx_api(mvm) && start)` and dereferenced under `if (start)` — three statements after `if (!iwl_mvm_has_new_rx_api(mvm)) return 0;`. The same predicate on both sides, tested twice because the allocation has to happen before the firmware command. `iwl_mvm_has_new_rx_api()` reads a capability bit fixed at device setup; the analyser cannot assume a function returns the same answer twice. |
 | `sys/contrib/dev/rtw89/core.c:5286` — `highest[nss - 1]` | `nss` is `hal->rx_nss`, and `mac.c:3139` assigns it `rx_nss ? min_t(u8, rx_nss, chip->rx_nss) : chip->rx_nss` — the firmware's PHYCAP answer clamped by the chip table, and the chip table when the answer is zero. So `nss == 0` requires `chip->rx_nss == 0`, a compile-time constant that is 1 or 2 for every supported chip. `highest[-1]` needs a chip definition that does not exist. Not the same as the beacon-field divisor fixed above: that one took its divisor off the air. |
+
+## Fixed — `ed(1)` calls `strlen()` on a function that returns NULL
+
+The sweep has never covered `bin/`, `sbin/`, `usr.bin/` or `usr.sbin/` —
+1,849 translation units of the userland that ships. A probe over `bin/`
+alone: 111 sources, 77 of which compile with the flags as they stand, and
+nine findings.
+
+One is a defect. `bin/ed/main.c:1301`:
+
+```c
+char *
+strip_escapes(char *s)
+{
+        static char *file = NULL;
+        static int filesz = 0;
+        int i = 0;
+
+        REALLOC(file, filesz, PATH_MAX, NULL);
+        ...
+        return file;
+}
+```
+
+`REALLOC` (`ed.h:113`) is a macro that **returns the caller's `err`
+argument** when the allocation fails, and this caller passes `NULL`. So
+`strip_escapes()` has a NULL return path — its comment does not mention
+one — and all four call sites used the result directly:
+
+| site | what happens |
+|---|---|
+| `main.c:995` `strlen(s = strip_escapes(old_filename))` | SIGSEGV |
+| `main.c:519` `printf("%s\n", strip_escapes(...))` | undefined; FreeBSD's `vfprintf` prints `(null)` |
+| `io.c:39` `fopen(strip_escapes(fn), "r")` | `EFAULT`, so ed reports "Bad address" for an out-of-memory |
+| `io.c:146` `fopen(strip_escapes(fn), mode)` | the same |
+
+Only the first crashes; the other three survive by accident, and two of
+them print the wrong reason. All four check now, each returning `ERR` —
+which is what the rest of the file does after a failed `REALLOC`, and
+which leaves the `"out of memory"` `errmsg` the macro has already set.
+Fixed on all four rather than on the one that crashes, for the reason
+this document keeps giving.
+
+`bin/ed`'s findings went 6 to 5. The three that remain are the
+`buf`/`bufsz` and `ocmd`/`ocmdsz` maintained pairs: `REALLOC` assigns only
+when `i > n`, so "a NULL buffer with a non-zero recorded size" is a state
+the analyser explores and the program cannot reach.
+
+### The rest of the `bin/` nine, and what a 21%-compiled corpus is worth
+
+| site | why it is not a defect |
+|---|---|
+| `bin/ed/glbl.c:118`, `main.c:959`, `:1076` | the `REALLOC` maintained pair above, three more times |
+| `bin/ed/glbl.c:186` `lp->q_forw` | `unset_active_nodes()` walks a circular list from `np` to `mp`, both caller-supplied |
+| `bin/pax/tables.c:1261` `key += val` | `u_int val;` is filled byte-wise through `dest = (char *)&val` in a loop that runs exactly `sizeof(u_int)` times; the analyser does not track initialisation through a `char *` alias |
+| `bin/pax/options.c:895` `incfiles` leak | `tar_options()` walks the pointer forward with `incfiles++` as it consumes entries, losing the base. Real, and it is an option parser in a program that then does its work and exits |
+| `bin/pwait/pwait.c:64` `rbe_link` | the red-black tree macros again |
+
+`sbin/` was probed the same way and is not yet worth triaging: **94 of
+439** translation units compile, so its 35 findings are a sample of a
+fifth of the corpus. The 345 that fail want the tree's own library
+headers — `kvm.h`, `vis.h`, `libxo/xo.h`, `histedit.h`, `netinet/ip_compat.h`
+— which live in `lib/libkvm`, `lib/libnetbsd`, `contrib/libxo`,
+`contrib/libedit` and `sbin/ipf`. Chasing findings before that is the
+mistake this document opens with, one directory over: an ERROR is not a
+finding, and a fifth of a corpus is not the corpus.
