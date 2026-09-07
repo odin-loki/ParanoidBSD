@@ -3305,6 +3305,73 @@ in this document — but measured here rather than assumed, because the
 zero arm is real and one `NM_CLK` with a zero-based divisor would make
 all twenty-one of these true.
 
+## Fixed — a NULL check that logs and then dereferences anyway
+
+`sys/<arch>/conf/DEFAULTS` is read by `config(8)` before any kernel
+config, so its options hold for every kernel that architecture builds —
+arm64's carries `INTRNG`, and without it nine translation units hit
+`#error Need INTRNG for this file`. Adding those, plus
+`-I$S/contrib/device-tree/include` for `<dt-bindings/…>` (which
+`files.arm64` adds by `compile-with` for exactly one file while every
+per-SoC clock driver wants it), took the architecture directories from
+124 ERROR of 767 to 89, and produced eight more findings.
+
+**`tegra210_xusbpadctl.c` — four sites, and its predecessor has the
+answer.**
+
+```c
+	port = search_lane_port(sc, lane);
+	if (port == NULL) {
+		device_printf(sc->dev, "Cannot find port for lane: %s\n",
+		    lane->name);
+	}
+	pad = lane->pad;
+
+	if (port->supply_vbus != NULL) {
+		rv = regulator_enable(port->supply_vbus);
+```
+
+The NULL check is there. It prints, and then falls through and
+dereferences anyway — no `return`. This file is the Tegra210 copy of
+`sys/arm/nvidia/tegra124/tegra124_xusbpadctl.c`, which writes the same
+line as
+
+```c
+	if (port != NULL && port->supply_vbus != NULL) {
+```
+
+everywhere. The newer copy lost the first half of the test at four
+sites, and at two more inside their error paths. Restored to match its
+predecessor: six changes, and the older driver is the evidence for what
+the newer one meant.
+
+**And `ti_sysc_clock_enable()`, one of two.**
+
+```c
+	int err;					/* enable  */
+	int err = 0;					/* disable */
+```
+
+The two functions are twenty lines apart and otherwise identical: a
+`TAILQ_FOREACH_SAFE` over `sc->clk_list` assigning `err`, then
+`return (err)`. An empty list returns the enable one's `err` unassigned
+to a caller that reads it as success or failure. The disable twin
+already had the initialiser.
+
+### And a fifth way a gate marker can fail to bite
+
+The count marker for the Tegra210 fix was registered as six, and the
+comment the fix added **quoted the corrected line**. So the file held
+seven copies of the string, deleting one of the six still left six, and
+the marker passed. Found the same way as the other four: by reverting
+one site and watching `check_pbsd_marks.py` not fail.
+
+The rule is now written into the tool beside the others — do not quote
+the marker text in the comment the fix adds; describe it. Which is the
+same lesson as the previous four: a gate is worth exactly what its own
+reversion test says it is worth, and nothing that it is *supposed* to
+catch.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

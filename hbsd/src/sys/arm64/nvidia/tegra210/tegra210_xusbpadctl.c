@@ -1144,7 +1144,16 @@ hsic_enable(struct padctl_softc *sc, struct padctl_lane *lane)
 	}
 	pad = lane->pad;
 
-	if (port->supply_vbus != NULL) {
+	/*
+	 * PBSD: search_lane_port() can return NULL and the block above
+	 * says so - it prints "Cannot find port for lane" and then falls
+	 * through without returning. tegra124_xusbpadctl.c, which this
+	 * file is the Tegra210 copy of, tests the pointer before the
+	 * member at every one of these sites. The newer copy lost that
+	 * first half at four of them, and at two more inside their error
+	 * paths. Restored to match its predecessor.
+	 */
+	if (port != NULL && port->supply_vbus != NULL) {
 		rv = regulator_enable(port->supply_vbus);
 		if (rv != 0) {
 			device_printf(sc->dev,
@@ -1191,7 +1200,7 @@ hsic_enable(struct padctl_softc *sc, struct padctl_lane *lane)
 	if (rv < 0) {
 		device_printf(sc->dev, "Cannot enable clock for pad '%s': %d\n",
 		    pad->name, rv);
-		if (port->supply_vbus != NULL)
+		if (port != NULL && port->supply_vbus != NULL)
 			regulator_disable(port->supply_vbus);
 		return (rv);
 	}
@@ -1239,7 +1248,7 @@ hsic_disable(struct padctl_softc *sc, struct padctl_lane *lane)
 	reg |= HSIC_PAD_CTL0_PD_TX_STROBE;
 	WR4(sc, XUSB_PADCTL_HSIC_PAD_CTL1(lane->idx), reg);
 
-	if (port->supply_vbus != NULL) {
+	if (port != NULL && port->supply_vbus != NULL) {
 		rv = regulator_disable(port->supply_vbus);
 		if (rv != 0) {
 			device_printf(sc->dev,
@@ -1303,7 +1312,7 @@ usb2_enable(struct padctl_softc *sc, struct padctl_lane *lane)
 	reg |= USB2_BATTERY_CHRG_OTGPAD_CTL1_VREG_FIX18;
 	WR4(sc, XUSB_PADCTL_USB2_BATTERY_CHRG_OTGPAD_CTL1(lane->idx), reg);
 
-	if (port->supply_vbus != NULL) {
+	if (port != NULL && port->supply_vbus != NULL) {
 		rv = regulator_enable(port->supply_vbus);
 		if (rv != 0) {
 			device_printf(sc->dev,
@@ -1315,7 +1324,7 @@ usb2_enable(struct padctl_softc *sc, struct padctl_lane *lane)
 	if (rv < 0) {
 		device_printf(sc->dev, "Cannot enable clock for pad '%s': %d\n",
 		    pad->name, rv);
-		if (port->supply_vbus != NULL)
+		if (port != NULL && port->supply_vbus != NULL)
 			regulator_disable(port->supply_vbus);
 		return (rv);
 	}
@@ -1351,7 +1360,7 @@ usb2_disable(struct padctl_softc *sc, struct padctl_lane *lane)
 	reg |= USB2_BIAS_PAD_CTL0_PD;
 	WR4(sc, XUSB_PADCTL_USB2_BIAS_PAD_CTL0, reg);
 
-	if (port->supply_vbus != NULL) {
+	if (port != NULL && port->supply_vbus != NULL) {
 		rv = regulator_disable(port->supply_vbus);
 		if (rv != 0) {
 			device_printf(sc->dev,

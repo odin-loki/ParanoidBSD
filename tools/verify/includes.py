@@ -481,6 +481,37 @@ def files_arch_index() -> dict[str, str]:
     return out
 
 
+# config(8) reads sys/<arch>/conf/DEFAULTS before any kernel config, so
+# its options hold for every kernel that architecture builds. arm64's
+# has INTRNG, and without it nine translation units hit
+#
+#   #error Need INTRNG for this file
+#
+# or lose intr_ipi_pic_register(). Six architectures, 33 options between
+# them, and the file is two dozen lines: read it rather than list them.
+SYS_DIR = {"amd64": "amd64", "aarch64": "arm64", "armv7": "arm",
+           "i386": "i386", "powerpc64": "powerpc", "riscv64": "riscv"}
+DEFAULTS_OPT = re.compile(r"^\s*options?\s+([A-Za-z_][A-Za-z0-9_]*)")
+
+
+@functools.lru_cache(maxsize=None)
+def defaults_options(arch: str) -> tuple[str, ...]:
+    """-D for every option in this architecture's conf/DEFAULTS."""
+    d = SYS_DIR.get(arch)
+    if not d:
+        return ()
+    p = SYS / d / "conf" / "DEFAULTS"
+    if not p.is_file():
+        return ()
+    out = []
+    for line in p.read_text(errors="replace").splitlines():
+        line = line.split("#")[0]
+        m = DEFAULTS_OPT.match(line)
+        if m:
+            out.append(f"-D{m.group(1)}")
+    return tuple(out)
+
+
 def arch_of(rel: str, default: str = "amd64") -> str:
     """A source under lib/libc/<arch>/, lib/msun/<arch>/ or sys/<arch>/.
 
@@ -1069,6 +1100,14 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/sys",
                   f"-I{SRC}/sys/contrib/ck/include",
                   f"-I{SRC}/sys/contrib/libnv",
+                  # <dt-bindings/...> - the constants a device tree and
+                  # the driver reading it agree on. sys/conf/files.arm64
+                  # adds this with a compile-with for one file; every
+                  # per-SoC clock and pinctrl driver wants it and the
+                  # per-SoC files.* do not say so. Nothing else in the
+                  # tree provides a dt-bindings/ directory, so it cannot
+                  # shadow anything.
+                  f"-I{SRC}/sys/contrib/device-tree/include",
                   # The opensolaris/dtrace/ZFS include set, which the
                   # module Makefiles add and nothing else does.
                   # sys/modules/dtrace/dtrace/Makefile:47-50 is the list;
@@ -1079,6 +1118,7 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs",
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/common/zfs",
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/intel"]
+        flags += defaults_options(arch)
         by_file, by_dir = kernel_flag_index()
         # A module's SRCS are named relative to its .PATH, so one .PATH
         # covers a whole subtree: sys/modules/qat/qat_api takes .PATH on

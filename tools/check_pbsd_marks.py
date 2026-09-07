@@ -596,6 +596,33 @@ FIXES = {
         "Lose this line and /sbin/init stops booting",
         ),
     ],
+    "hbsd/src/sys/arm64/nvidia/tegra210/tegra210_xusbpadctl.c": [
+        (
+            ("if (port != NULL && port->supply_vbus != NULL)", 6),
+            # No `unwanted': `if (port->supply_vbus != NULL) {' is still
+            # correct at :1016, in a function that reached port another
+            # way. The count is the marker - six of them, and reverting
+            # any one is caught.
+            None,
+            "search_lane_port() can return NULL and the block above each "
+            "of these says so - it prints \"Cannot find port for lane\" "
+            "and falls through without returning. "
+            "tegra124_xusbpadctl.c, which this file is the Tegra210 copy "
+            "of, writes every one as `if (port != NULL && "
+            "port->supply_vbus != NULL)'. The newer copy lost the first "
+            "half at four sites and two more in their error paths",
+        ),
+    ],
+    "hbsd/src/sys/arm/ti/ti_sysc.c": [
+        (
+            "PBSD: err is assigned only inside the loop",
+            "\tstruct ti_sysc_softc *sc = device_get_softc(dev);\n\tint err;\n",
+            "ti_sysc_clock_enable() returns err unassigned for an empty "
+            "clk_list, to a caller that reads it as success or failure. "
+            "ti_sysc_clock_disable(), twenty lines below and otherwise "
+            "identical, already says `int err = 0;'",
+        ),
+    ],
     "hbsd/src/sys/dev/clk/clk.c": [
         (
             "PBSD: `done' is the out-parameter every clknode driver's",
@@ -1047,6 +1074,14 @@ def main() -> int:
             # job is catching it; it was found by reverting one twin and
             # watching this not fail. Six identical NFSVNO_ATTRINIT sites
             # are the same problem at greater width.
+            #
+            # A count marker also has to be counted in the file AFTER the
+            # fix, not in the diff: tegra210_xusbpadctl.c's comment quoted
+            # the corrected line, so the file held seven copies of a
+            # marker registered as six, and deleting one of the six still
+            # passed. Found the same way, by reverting one and watching
+            # this not fail. Do not quote the marker text in the comment
+            # the fix adds -- describe it instead.
             need = 1
             if isinstance(want, tuple):
                 want, need = want

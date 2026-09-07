@@ -235,7 +235,13 @@ int
 ti_sysc_clock_enable(device_t dev) {
 	struct clk_list *clkp, *clkp_tmp;
 	struct ti_sysc_softc *sc = device_get_softc(dev);
-	int err;
+	/*
+	 * PBSD: err is assigned only inside the loop, and an empty
+	 * clk_list returns it unassigned to a caller that reads it as
+	 * success or failure. ti_sysc_clock_disable(), the twin twenty
+	 * lines below, already says `int err = 0;'. One of two.
+	 */
+	int err = 0;
 
 	TAILQ_FOREACH_SAFE(clkp, &sc->clk_list, next, clkp_tmp) {
 		err = clk_enable(clkp->clk);
