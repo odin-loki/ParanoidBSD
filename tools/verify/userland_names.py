@@ -335,6 +335,82 @@ def installed_headers(arch: str = "amd64",
     return out
 
 
+def module_dirs(src: Path = SRC) -> list[Path]:
+    """Every sys/modules directory with a Makefile."""
+    top = src / "sys" / "modules"
+    out = []
+    if top.is_dir():
+        for dirpath, dirnames, filenames in os.walk(top):
+            dirnames[:] = [d for d in dirnames if d != ".git"]
+            if "Makefile" in filenames:
+                out.append(Path(dirpath))
+    return sorted(out)
+
+
+def ask_module(d: Path, arch: str, src: Path = SRC, timeout: int = 40
+               ) -> tuple[dict[str, tuple[str, ...]], list[str]]:
+    """({source: its per-file CFLAGS}, .PATH) for one kernel module.
+
+    The kernel half of the same problem userland had. includes.py hand-
+    parses `SRCS' out of sys/modules/*/Makefile, and a module that names
+    its sources any other way is invisible to it. sys/modules/blake2 is
+    the case that showed it: its ten SIMD implementations are reached
+    through
+
+        SRCS_IN += blake2b-avx.c
+        OBJS    += ${SRCS_IN:S/.c/.o/g}
+        .for src in ${SRCS_IN}
+        ${src:S/.c/.o/}: ${src}
+                ${CC} -c ${CFLAGS:N-nostdinc} ${CFLAGS.${src}} ...
+
+    so no SRCS line names them and the hand parser reported all ten as
+    "nothing in the build names it". They also do not compile without
+    the flags on the line below - CFLAGS.blake2b-avx.c is
+    `-DSUFFIX=_avx -msse2 -mssse3 -msse4.1 -mavx' - which is why they
+    were ERROR as well as unlisted.
+
+    bmake reads both. OBJS is asked alongside SRCS and each .o is mapped
+    back to its source through .PATH; then CFLAGS.<basename> is asked
+    for every source found, in one further invocation.
+
+    Returns the sources with the flags each one's own CFLAGS.<file>
+    adds - not the module's whole CFLAGS, which is kern.pre.mk's job and
+    already in includes.kernel_flag_index().
+    """
+    got = _bmake(d, arch, ["SRCS", "OBJS", ".PATH"], src, timeout)
+    if got is None:
+        return {}, []
+    srcs, objs, path = (g.split() for g in got)
+    names = [s for s in srcs if s.endswith(SUFFIXES) and "$" not in s]
+    for o in objs:
+        if o.endswith(".o") and "$" not in o:
+            names.append(o[:-2] + ".c")
+    dirs = [str(d)] + [x for x in path if x != "."]
+    found: dict[str, str] = {}
+    for n in names:
+        for pdir in dirs:
+            cand = os.path.join(pdir, n)
+            if os.path.isfile(cand):
+                try:
+                    found[str(Path(cand).resolve().relative_to(src))] = n
+                except ValueError:
+                    pass
+                break
+    if not found:
+        return {}, path
+    rel = sorted(found)
+    per = _bmake(d, arch, [f"CFLAGS.{found[r]}" for r in rel], src, timeout)
+    out: dict[str, tuple[str, ...]] = {}
+    for i, r in enumerate(rel):
+        line = per[i] if per and i < len(per) else ""
+        try:
+            words = shlex.split(line)
+        except ValueError:
+            words = line.split()
+        out[r] = tuple(words)
+    return out, path
+
+
 def cache_path(arch: str) -> Path:
     return Path(os.environ.get("PBSD_CACHE", "/tmp")) / \
         f"pbsd_userland_names_{arch}.json"
