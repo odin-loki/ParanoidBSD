@@ -45,6 +45,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "hbsd" / "src"
+SYS = SRC / "sys"
 
 # TARGET_ARCH -> (sys/<dir>/include for machine/, extra sys dirs)
 ARCH = {
@@ -331,6 +332,117 @@ def makefile_flags(d: str, arch: str, base: str) -> tuple[tuple[str, ...],
                 vars.setdefault(v.group("name"),
                                 _expand(v.group("val").strip(), vars))
     return tuple(defines), tuple(includes)
+
+
+# The kernel says, per driver, what a driver needs - in two places, both
+# authoritative and neither previously read:
+#
+#   sys/conf/files*        compile-with "${NORMAL_C} -I$S/contrib/ck/include"
+#   sys/modules/*/Makefile .PATH on the source directory, plus its CFLAGS
+#
+# sys/dev alone had 1,510 translation units of 5,695 come back ERROR, and
+# whole drivers are in that number for want of one -I: 84 for Intel QAT
+# (<cpa.h>, <qat_freebsd.h>, <adf_accel_devices.h>, all under
+# sys/dev/qat/, all named by sys/modules/qat/Makefile), 31 for the DPAA
+# ethernet, twenty-odd for anything using linuxkpi. The dtrace include
+# set below was the first instance of this and was solved by copying one
+# module Makefile's four lines into this file; that does not scale to
+# 115 module Makefiles, and a copy goes stale where a read does not.
+FILES_COMPILE = re.compile(
+    r'^(?P<src>\S+\.c)\s+\S+.*?compile-with\s+"(?P<cmd>[^"]*)"')
+DASH_INCLUDE = re.compile(r"-include\s+(\S+)")
+
+
+def _kernel_dirs(text: str, vars: dict[str, str]) -> list[str]:
+    """The -I and -include in a compile-with or a module's CFLAGS.
+
+    Expand the whole line before matching, not each token after: half
+    these lines are a bare ${LINUXKPI_INCLUDES}, which is three flags
+    and matches neither regex until it has been substituted. That is
+    what left every linuxkpi-using driver - qat among them - still
+    failing on <linux/types.h> after its own -I had been found.
+    """
+    text = _expand(text, vars)
+    out = []
+    for tok in DASH_INCLUDE.findall(text):
+        if "$" not in tok and Path(tok).is_file():
+            out.append(f"-include{tok}")
+    for tok in INCLUDE.findall(DASH_INCLUDE.sub("", text)):
+        if "$" not in tok and Path(tok).is_dir():
+            out.append(f"-I{tok}")
+    return out
+
+
+@functools.lru_cache(maxsize=None)
+def kernel_flag_index() -> tuple[dict[str, tuple[str, ...]],
+                                 dict[str, tuple[str, ...]]]:
+    """(by source path, by directory) the flags a kernel build adds."""
+    by_file: dict[str, list[str]] = {}
+    by_dir: dict[str, list[str]] = {}
+    base = {"SRCTOP": str(SRC), "SYSDIR": str(SYS), "S": str(SYS)}
+
+    for mk in sorted((SYS / "conf").glob("files*")):
+        text = mk.read_text(errors="replace").replace("\\\n", " ")
+        for line in text.splitlines():
+            m = FILES_COMPILE.match(line)
+            if not m:
+                continue
+            fl = _kernel_dirs(m.group("cmd").replace("$S", str(SYS)), base)
+            if fl:
+                by_file.setdefault("sys/" + m.group("src"), []).extend(fl)
+
+    for mk in sorted((SYS / "modules").rglob("Makefile")):
+        text = mk.read_text(errors="replace").replace("\\\n", " ")
+        vars = dict(base)
+        vars[".CURDIR"] = str(mk.parent)
+        vars["LINUXKPI_INCLUDES"] = (
+            f"-I{SYS}/compat/linuxkpi/common/include "
+            f"-I{SYS}/compat/linuxkpi/dummy/include "
+            f"-include {SYS}/compat/linuxkpi/common/include/linux/kconfig.h")
+        vars["OFEDINCLUDES"] = (f"-I{SYS}/ofed/include "
+                                f"-I{SYS}/ofed/include/uapi "
+                                + vars["LINUXKPI_INCLUDES"])
+        paths: list[str] = []
+        flags: list[str] = []
+        depth = 0
+        for line in text.splitlines():
+            st = line.strip()
+            if st.startswith((".if", ".for")):
+                depth += 1
+                continue
+            if st.startswith((".endif", ".endfor")):
+                depth = max(0, depth - 1)
+                continue
+            if depth or not st:
+                continue
+            if st.startswith(".PATH:"):
+                for d in _expand(st[len(".PATH:"):].replace("$S", str(SYS)),
+                                 vars).split():
+                    if "${" not in d and Path(d).is_dir():
+                        paths.append(d)
+                continue
+            m = CFLAGS_LINE.match(line)
+            if m and not m.group("file"):
+                flags.extend(_kernel_dirs(
+                    m.group("rest").replace("$S", str(SYS)), vars))
+                continue
+            v = MAKE_VAR.match(line)
+            if v and v.group("name") not in ("CFLAGS", "SRCS"):
+                vars.setdefault(v.group("name"),
+                                _expand(v.group("val").strip(), vars))
+        if not flags:
+            continue
+        # A module's own directory too: sys/modules/<x>/ holds generated
+        # headers in a real build, and some drivers live there.
+        for d in paths:
+            try:
+                key = str(Path(d).relative_to(SRC))
+            except ValueError:
+                continue
+            by_dir.setdefault(key, []).extend(flags)
+
+    return ({k: tuple(dict.fromkeys(v)) for k, v in by_file.items()},
+            {k: tuple(dict.fromkeys(v)) for k, v in by_dir.items()})
 
 
 def arch_of(rel: str, default: str = "amd64") -> str:
@@ -927,6 +1039,21 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/common/fs/zfs",
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/common/zfs",
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/intel"]
+        by_file, by_dir = kernel_flag_index()
+        # A module's SRCS are named relative to its .PATH, so one .PATH
+        # covers a whole subtree: sys/modules/qat/qat_api takes .PATH on
+        # sys/dev/qat/qat_api and then names
+        # common/crypto/sym/lac_sym_api.c under it. Walk up to sys/.
+        found: list[str] = list(by_file.get(rel, ()))
+        d = Path(rel).parent
+        while str(d) not in (".", "sys"):
+            found.extend(by_dir.get(str(d), ()))
+            d = d.parent
+        seen = set(flags)
+        for f in found:
+            if f not in seen:
+                seen.add(f)
+                flags.append(f)
         rd = resource_dir(cc)
         if rd:
             flags.append(f"-I{rd}")
