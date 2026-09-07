@@ -1535,6 +1535,29 @@ static, which the function's own comment says is safe to touch there.
 >
 > It was moved "anyway" — and "anyway" turned out to be the whole thing.
 
+## Run 63 — the generic headers, built and booted
+
+The `_stdint.h` / `_inttypes.h` adoption removed 1,638 lines from ten
+`<machine/...>` headers, which is the widest ABI-surface change this tree
+has made. `tools/stdint_generic_check.py --baseline` proves every macro
+still expands to the same value on all six targets, and that is a
+preprocessor argument; run 63 is the other kind of evidence.
+
+Same configuration as run 59 — `stage=vm`, `kernconf=HARDENEDBSD`,
+`toolchain=external`, `src_conf=pbsd` — on commit `0f85442de`:
+
+```
+Build on FreeBSD                                 19:13 -> 19:59   46 min
+Collect image                                                     ok
+Boot it                                          19:59 -> 20:01    2 min
+setuid inventory, against the image that just booted              ok
+Hardening sysctls, against a running kernel                       ok
+```
+
+Every step green. So the adoption survives a `buildworld`, a
+`buildkernel`, a VM image, a boot, and the two checks that interrogate the
+running system rather than the source.
+
 ## Asking the system about itself
 
 `--run NAME=CMD` logs in after a successful boot and runs commands, writing
