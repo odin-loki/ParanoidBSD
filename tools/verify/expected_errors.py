@@ -34,6 +34,14 @@ analyser had never read. One -D and it compiles.
 from __future__ import annotations
 
 EXPECTED = {
+    # Named by no Makefile, in a directory whose other sources ARE named
+    # - so a prefix here would absorb the daemon along with the probes.
+    # Each is a `main()' that calls one function to see what the platform
+    # does, from when that was worth checking; none is in bootpd's SRCS.
+    "libexec/bootpd/trygetea.c":    "a hand-run probe, not in SRCS. NOT_NAMED",
+    "libexec/bootpd/trygetif.c":    "a hand-run probe, not in SRCS. NOT_NAMED",
+    "libexec/bootpd/trylook.c":     "a hand-run probe, not in SRCS. NOT_NAMED",
+
     # not a translation unit: #included by another file
     "sys/kern/kern_ctf.c":          "#included by kern_linker.c",
     "sys/kern/subr_syscall.c":      "#included by each arch's trap.c",
@@ -585,6 +593,26 @@ NOT_BUILT = {
         "Makefile, not by this tree. NOT_NAMED",
     "sys/contrib/zlib/test/":
         "zlib's example, infcover and minigzip, the same way. NOT_NAMED",
+
+    # Userland's scratch. Until userland_names.py these could not be
+    # distinguished from a coverage gap, because the only authority the
+    # inventory had was sys/conf/files* -- which has no opinion about
+    # lib/libc and would have called every source in it unbuilt.
+    "lib/libc/db/test/":
+        "the db package's hand-run drivers - btree.tests/main.c and the "
+        "eight programs under hash.tests. There is no Makefile anywhere "
+        "under lib/libc/db/test, and lib/libc/db/Makefile.inc names none "
+        "of them; they are run by a person with a compiler, which is why "
+        "they call random() with no <stdlib.h> and bcopy() with no "
+        "<strings.h>. NOT_NAMED",
+    "lib/libc/quad/TESTS/":
+        "divrem.c and mul.c, which exercise the quad arithmetic support "
+        "by hand. lib/libc/quad/Makefile.inc lists the support routines "
+        "and not these. NOT_NAMED",
+    "lib/libc/regex/grot/":
+        "Henry Spencer's own regex test harness, kept with the vendored "
+        "engine. lib/libc/regex/Makefile.inc names regcomp.c, regerror.c, "
+        "regexec.c and regfree.c, and nothing in grot/. NOT_NAMED",
 
     "sys/contrib/vchiq/":
         "the Raspberry Pi VCHIQ driver, which no kernel configuration in "

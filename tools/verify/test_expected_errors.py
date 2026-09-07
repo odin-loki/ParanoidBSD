@@ -123,11 +123,19 @@ for _p in sorted(SYS.glob("conf/files*")):
             _named.add("sys/" + _m.group(1))
 _by_file, _by_src, _ = includes.kernel_flag_index("amd64")
 _named |= set(_by_file) | set(_by_src)
+# And userland's authority alongside the kernel's, because a NOT_NAMED
+# prefix under lib/ or libexec/ is a claim about Makefiles, not about
+# sys/conf/files -- which has no opinion about lib/libc at all and would
+# grant the claim to every source in it.
+import userland_names  # noqa: E402
+_named |= set(userland_names.names())
 
 # It has to be able to say "named", or it says "not named" to everything.
+# One from each authority, for the same reason.
 for built in ("sys/dev/pci/pci.c", "sys/kern/kern_exec.c",
               "sys/vm/vm_page.c",
-              "sys/contrib/openzfs/module/zfs/blake3_zfs.c"):
+              "sys/contrib/openzfs/module/zfs/blake3_zfs.c",
+              "lib/libc/gen/getcwd.c", "libexec/rtld-elf/rtld.c"):
     check(f"the build does name {built}", built in _named,
           "if this fails every check below passes for the wrong reason")
 
@@ -143,6 +151,19 @@ for pre in _claimed:
           f"ERRORs from code that IS compiled")
     check(f"{pre} has sources at all", bool(srcs),
           "an empty prefix absorbs nothing and hides its own staleness")
+
+# The same claim made about ONE file, which is what a directory holding
+# both built and unbuilt code needs. libexec/bootpd's try* probes are
+# unnamed and bootpd.c beside them is not, so a prefix over that
+# directory would absorb the whole daemon - this check caught exactly
+# that, on its first run, on a prefix written five minutes earlier.
+_claimed_f = [f for f, why in EXPECTED.items() if why.endswith("NOT_NAMED")]
+check("some file makes the NOT_NAMED claim", bool(_claimed_f))
+for _f in _claimed_f:
+    check(f"{_f} exists", (ROOT / "hbsd" / "src" / _f).is_file())
+    check(f"{_f} is named by nothing", _f not in _named,
+          "the build does name it, so this entry is hiding a real "
+          "coverage gap")
 
 print("\n== the INCLUDED_BY entries name a file that really includes them")
 # An entry whose reason is INCLUDED_BY:<path> claims that the named file

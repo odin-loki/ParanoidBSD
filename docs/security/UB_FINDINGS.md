@@ -4990,3 +4990,132 @@ compiler that cannot see unreachable code after either call.
 `check_pbsd_marks.py` carries both, and both were checked by reverting
 them: dropping `perrx`'s attribute reports "found 1 time(s), needs 2",
 dropping `gloadavg.c`'s reports "found 0 time(s), needs 1".
+
+## Sweep 10, whole: 8,109 translation units, 67 recovered, no regressions
+
+| | sweep 9 | sweep 10 |
+|---|---|---|
+| OK | 7,348 | **7,415** |
+| ERROR | 760 | **693** |
+| findings | 1,612 | 1,622 |
+
+`ERROR -> OK` 67, `OK -> ERROR` **0**, 11 findings new and 1 gone. Every
+one of the eleven is in a file that had never compiled before, which is
+the point of chasing ERRORs and also the reason to read each one rather
+than count it. Two are written up above (`if_bwn.c`,
+`feeder_volume.c`). The other nine:
+
+### `sys/gnu/dev/bwn/phy_n/if_bwn_phy_n_core.c` — six, all one invariant
+
+Five `core.NullDereference` (`:771`, `:1147`, `:1487`, `:4442`, `:4444`)
+are the same shape. `bwn_radio_2057_chantab_upload()` takes two table
+pointers and tests one of them:
+
+    if (e_r7_2g) {
+        ... e_r7_2g->radio_vcocal_countval0 ...
+    } else {
+        ... e_r7->radio_vcocal_countval0 ...      /* :771 */
+    }
+
+The `else` reaches `e_r7` with no test of its own. Both pointers start
+NULL two calls up, in `bwn_nphy_set_channel()`:
+
+    const struct bwn_nphy_chantabent_rev7    *tabent_r7 = NULL;
+    const struct bwn_nphy_chantabent_rev7_2g *tabent_r7_2g = NULL;
+    ...
+    r2057_get_chantabent_rev7(mac, freq, &tabent_r7, &tabent_r7_2g);
+    if (!tabent_r7 && !tabent_r7_2g)
+            return -ESRCH;
+
+so exactly-one-or-both is guaranteed — by a caller, two frames away,
+with no assertion anywhere in between. Infeasible, and thin in the same
+way `pf_lb.c:1026` is thin.
+
+`:5497` is `core.uninitialized.Assign` and is **not** infeasible:
+
+    uint16_t coef[4];                    /* :5473, never written here */
+    ...
+    for (i = 0; i < 4; i++) {
+            if (mac->mac_phy.rev >= 3)
+                    table[i] = coef[i];  /* :5497 */
+            else
+                    coef[i] = 0;
+    }
+
+On rev 3 and above the loop copies four uninitialised stack halfwords
+into `nphy->cal_cache.txcal_coeffs_{2G,5G}`, the driver's TX
+calibration cache; the `else` that would have zeroed them runs only on
+the revisions that do not read them. The loop is verbatim Linux b43's
+`b43_nphy_restore_cal()`, so this is upstream's, shared with Linux, and
+on hardware neither tree can test here.
+
+Left alone deliberately. `sys/gnu/` is the GPL-licensed vendored half of
+this driver and a divergence here is a divergence from b43; the fix
+(hoisting the read of `coef` that upstream evidently intended) changes
+what reaches a radio's calibration registers, which is not a change to
+make blind. Recorded so it is a decision and not an oversight.
+
+### `sys/kgssapi/krb5/krb5_mech.c:661` — `M_WAITOK` cannot fail
+
+    MGET(m, M_WAITOK, MT_DATA);     /* :656 -> m_get(M_WAITOK, ...) */
+    M_ALIGN(m, tlen);
+    m->m_len = tlen;
+    p = (uint8_t *) m->m_data;
+    *p++ = 0x60;                    /* :661 */
+
+`m_get(M_WAITOK, ...)` blocks until it succeeds and never returns NULL.
+The analyser does not know that, so every `M_WAITOK` allocation in the
+tree is a potential NULL for it — which is a systemic false-positive
+source, not a fact about Kerberos. Filed as its own piece of work:
+teaching the analyser what `M_WAITOK` means is worth more than any
+single triage.
+
+### `sys/rpc/rpcsec_gss/rpcsec_gss_prot.c:191` — three guards and no assertion
+
+    static uint32_t
+    get_uint32(struct mbuf **mp)
+    {
+        struct mbuf *m = *mp;
+        if (m->m_len < sizeof(uint32_t)) {      /* :191 */
+
+`m` is `*mp` and `get_uint32()` itself sets `*mp = NULL` when its
+`m_pullup()` fails. Its four call sites in this file check the result
+three times and not the fourth (`:243`), which is the usual shape — but
+`:243`'s omission is absorbed, because the `m_split(NULL, ...)` it feeds
+returns NULL and the `if (!results)` on the next line catches it.
+
+The path the checker actually found is different and better: at `:308`,
+`get_uint32(&message)` where `message` is still the `NULL` it was
+initialised to at `:235`, because `svc` matched neither
+`rpc_gss_svc_integrity` nor `rpc_gss_svc_privacy`. There is a fourth
+value — `rpc_gss_svc_default = 0`, `sys/rpc/rpcsec_gss.h:42` — and
+`xdr_rpc_gss_unwrap_data()` asserts nothing about `svc` at all.
+
+It is unreachable today, and it takes three separate facts to say so:
+
+1. both callers return early on `rpc_gss_svc_none` before calling
+   (`svc_rpcsec_gss.c:1702`, `rpcsec_gss.c:720`) — but neither names
+   `rpc_gss_svc_default`;
+2. the server rejects any other `gc_svc` with `AUTH_BADCRED`
+   (`svc_rpcsec_gss.c:1492-1494`) — but **only** when `gc_proc` is
+   neither `RPCSEC_GSS_INIT` nor `RPCSEC_GSS_CONTINUE_INIT`, and
+   `cc->cc_service = gc.gc_svc` is assigned twenty lines *earlier*, at
+   `:1472`, unvalidated;
+3. and the INIT path ends in `RPCSEC_GSS_NODISPATCH`
+   (`svc_rpcsec_gss.c:1543`), so the request whose service was never
+   validated is never dispatched and never unwrapped.
+
+Remove any one of the three and a remote peer chooses a service number
+that reaches a NULL dereference in the kernel. Recorded here rather than
+patched, because the patch is a design question — assert in the callee,
+validate `gc_svc` before assigning it, or name `rpc_gss_svc_default` in
+both callers' guards — and all three change an on-the-wire error path.
+
+### `sys/rpc/rpcsec_tls/rpctls_impl.c:100`
+
+`upsock_compare()` dereferences `a->so` and `b->so` as the RB-tree
+comparator. The tree's own insert and lookup never pass NULL; the
+checker reaches it through `RB_GENERATE_STATIC`'s generated body, where
+the node under comparison is whatever the caller supplied. Same class as
+the `phy_n` five: an invariant held by every caller and asserted by
+none.
