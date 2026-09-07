@@ -275,6 +275,37 @@ the header. Thirteen ERRORs were one of those missing and nothing else;
 eleven of the twelve translation units under the six RPC `libexec`
 directories now compile, where one did.
 
+### The same question asked of userland, and what it does not answer
+
+`check_empty_tus.py` works because the kernel says which option a file
+needs, in `sys/conf/files*`. Userland says no such thing, so the
+equivalent has to be measured rather than gated: preprocess every OK
+translation unit in the libs shard and count the lines that are the
+file's *own* text or a sibling `.c` it `#include`s.
+
+**21 of 1,582** have no program text under that definition, and reading
+them splits the list in three, only one of which is a gap:
+
+- **eight are the header-body idiom**, and the metric is what is wrong,
+  not the file: `lib/libc/locale/mbrtoc16_iconv.c` is five `#define`s
+  and `#include "mbrtocXX_iconv.h"`, where the implementation lives.
+  Counting only `.c` misses a body in a `.h`.
+- **eleven are `softfloat`'s quad and extended comparisons** —
+  `eqtf2.c`, `getf2.c`, `gexf2.c` and their siblings, each entirely
+  inside `#ifdef FLOAT128`, which `lib/libc/softfloat/Makefile.inc`
+  supplies only under `.if defined(SOFTFLOAT_128)`.
+- **two are conditional on a build variant**: `db/btree/bt_debug.c`
+  (`#ifdef DEBUG`, never built) and `gen/isnan.c` (`#ifdef PIC`). The
+  second is the only gap of the three: libc really is compiled twice,
+  and the PIC half of that file is analysed by nothing.
+
+The first count of this was **66**, three times too high, because it
+attributed a body to whichever file the preprocessor's linemarkers
+named — so `qsort_r.c`'s `#define I_AM_QSORT_R` + `#include "qsort.c"`,
+`memcpy.c`'s `#include "bcopy.c"` and `s_llrint.c`'s `#include
+"s_lrint.c"` all read as empty when the body was being analysed under
+exactly the macros those files exist to set.
+
 ## Why `classify.py` exists
 
 CBMC started at an arbitrary function makes that function's parameters
