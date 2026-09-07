@@ -32,25 +32,40 @@ Five of them, each paid for:
 
 ---
 
-## 1. Blocked on the first boot
+## 1. Was blocked on the first boot; is not any more
 
-PBSD has never been started. `tools/ci/boot_test.py` exists, distinguishes
-four outcomes, and has been skipped in every run because the build failed
-first. Nothing below in this section should land before it runs once.
+PBSD had never been started when this section was written. It has been
+now, so the three items it gated are settled and the fourth turned out
+not to be the item it says.
 
-- [ ] **Boot once.** The blocker chain was: SafeStack runtime → wrong triple
-      → aliasing. The current `memstick` run is the first past the point that
-      killed runs 8, 9 and 11.
-- [ ] **Adopt `sys/sys/atomic_generic.h`.** Written, 350 lines, replaces
-      5,107 across six headers; 23 of 24 (arch, width) cells verified
-      lock-free. i386 keeps 44 lines for its 64-bit block. Adoption is six
-      `#include` edits plus deleting what they replace.
-- [ ] **Adopt `_stdint_generic.h` / `_inttypes_generic.h`.** Written, 1,266
-      macro expansions verified identical on all six targets. `SIG_ATOMIC_*`
-      stays per-architecture: about 180 lines each becomes 3.
-- [ ] **First `lib/msun` `.c` → `.cpp` port.** `CXXSTD=c++23` and the
-      mirrored `CXXFLAGS` are in place; 88 of 120 verify under the flags that
-      ship. One rename plus one `COMMON_SRCS` line.
+- [x] **Boot once.** Run 58 boots `HARDENEDBSD` with PaX enforcement on,
+      through `/etc/rc` to local daemons; run 59 is a system with a login;
+      run 63 does the same over the adopted headers, and passes the setuid
+      inventory and the hardening sysctls against the *running* kernel. The
+      blocker chain was SafeStack runtime → wrong triple → aliasing.
+- [x] **Adopt `_stdint_generic.h` / `_inttypes_generic.h`.** Done: 1,638
+      lines removed from ten `<machine/…>` headers, each keeping only
+      `SIG_ATOMIC_MIN`, `_MAX` and `_WIDTH`. The claim is checked after the
+      change as well as before it — `docs/migration/stdint_expansions.json`
+      holds what the six architecture headers expanded to *first*, by value,
+      and `stdint_generic_check.py --baseline` compares 1,284 of them,
+      including the eighteen `SIG_ATOMIC_*` the old comparison could not see.
+- [x] **First `lib/msun` `.c` → `.cpp` port.** Landed, and then a
+      hundred-file batch, and then 27 in `lib/libc`. What is left there is
+      not verification — see `docs/migration/COMMITTING_PORTS.md`: the
+      oracle certifies 83 and the tree permits none of them.
+- [ ] **Adopt `sys/sys/atomic_generic.h`.** Written, 350 lines against
+      5,107 across six headers, every required width lock-free. **It is not
+      six `#include` edits**, which is what this line used to say.
+      `tools/atomic_codegen_check.py` compiles the same 618 operations
+      against both headers for all six targets and compares the
+      instructions: **171 match**. arm64's header dispatches at run time on
+      `lse_supported` and the builtin does not, which is 78 of its 112;
+      riscv's uses a full `fence` where the builtin emits `fence r, rw`;
+      powerpc and the builtin disagree about `isync` versus `lwsync` in
+      opposite directions depending on the operation. Adoption is now a
+      decision about what to keep per architecture, with the per-operation
+      table in `docs/migration/atomic_codegen.json` to make it on.
 - [x] **`lib/csu` compiles for all seven architectures.** It did not. arm,
       i386, powerpc and powerpc64 still had `#include "ignore_init.c"`, and
       that file is in neither this tree nor the HardenedBSD tree it was
@@ -174,6 +189,12 @@ by how many implementations there really are. Both are in CI as reports.
       `usr.bin`, `sbin` have never been measured. The first attempt ran past
       the 90-minute job limit and reported nothing; it needs to be split per
       scope rather than made bigger.
+      The ANALYSER — a different instrument — has now been pointed at two
+      of them, and the answer is that the include model is what is missing
+      rather than the time: `bin` compiles 77 of 111 and `sbin` 94 of 439,
+      and the ones that fail want the tree's own library headers (`kvm.h`,
+      `vis.h`, `libxo/xo.h`, `histedit.h`). `bin/ed` gave up one real
+      defect on the first pass.
 - [ ] **74 `pbsd/` modules on disk are not in `CMakeLists.txt`** because
       nothing has verified them. `check_pbsd_modules.py` reports the number;
       nothing reduces it.
@@ -196,8 +217,10 @@ by how many implementations there really are. Both are in CI as reports.
 - [ ] **`TOOLCHAIN=internal` has not been built since the untracking.** The
       guard fails fast with the re-fetch command, which is the right
       behaviour and is not the same as knowing it works.
-- [ ] **No release artifact has ever been produced.** `memstick` and `iso`
-      exist as stages; neither has completed.
+- [ ] **`iso` has never completed.** `memstick` has (boot run 30) and so
+      has `vm` (runs 59 and 63, the second of which then booted the image
+      and was asked questions through its console). `iso` is the stage
+      still untried.
 - [ ] **Reproducible builds.** `MK_REPRODUCIBLE_BUILD` is on and nothing
       checks that two builds of the same tree agree.
 - [ ] **`WITHOUT_KERBEROS` remains deliberately unset** — 2,179 files, and
