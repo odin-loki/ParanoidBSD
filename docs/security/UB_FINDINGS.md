@@ -2968,6 +2968,50 @@ kernel's own boot banner has it (`boot.log:51`). `newvers.sh` took its
 architecture with nothing between: no build host, user, path or date in
 the running kernel's version string.
 
+## Verify sweep 8 — the whole tree, after the coverage work
+
+Run `34075626317`, head `83e625c16`, clang 18.1.3. Every analyse shard,
+against sweep 6's numbers where they are comparable:
+
+| shard | OK | ERROR | findings |
+|---|---:|---:|---:|
+| `libs` (`lib/libc`, `lib/msun`, `libexec`) | 1554 | **76** | 229 |
+| `kern` (`sys/kern`, `vm`, `net`, `netinet`, `netinet6`) | 452 | **14** | 255 |
+| `fs` (`sys/fs`, `ufs`, `geom`, `cam`, `security`, `cddl`) | 374 | **34** | 238 |
+| `rest` (`sys/dev` + ~40 more) | 4783 | **912** | 934 |
+| **total** | **7163** | **1036** | **1656** |
+
+**8,199 translation units, 7,163 of them read.** The `rest` shard alone
+went from 1,510 ERROR of 5,695 in sweep 6 to 912, and its findings from
+474 to 934.
+
+### Where the remaining 1,036 is
+
+It is no longer spread across the tree. `rest`'s 912 breaks down as:
+
+```
+  359  sys/contrib/dev          vendored Linux wifi drivers (rtw88, mediatek)
+  133  sys/dev
+  100  sys/contrib/libsodium    its own test programs, not kernel TUs
+   54  sys/contrib/zstd
+   51  sys/contrib/ncsw         DPAA, wants sys/contrib/ncsw/inc
+   28  sys/kgssapi
+   24  sys/powerpc
+   ... a tail
+```
+
+**Over 600 of the 912 are `sys/contrib/` — vendored third-party code.**
+`sys/contrib/dev`'s 359 are one thing again: `page_pool_alloc_frag()`
+and forty-odd linuxkpi headers those drivers want and this linuxkpi does
+not have. libsodium's 100 are the library's own `test/` programs, which
+are userland and belong in the not-a-kernel-TU list rather than in a
+count of things the analyser could not read.
+
+That is a good place for the next pass to start and a fair place for
+this one to stop: what is left is overwhelmingly code PBSD vendors
+rather than code PBSD owns, and the FreeBSD core — `sys/kern` at 14
+ERROR of 466, `sys/fs` at 34 of 408 — is read.
+
 ## What the coverage work moved, in one table
 
 Six changes to `tools/verify/includes.py`, none of them a new heuristic
