@@ -39,8 +39,13 @@ EXPECTED = {
     "sys/kern/subr_syscall.c":      "#included by each arch's trap.c",
     "sys/kern/systrace_args.c":     "generated, #included by the dtrace glue",
     "sys/kern/subr_busdma_bounce.c": "#included by each arch's busdma",
-    "sys/kern/subr_devmap.c":       "arch-private, #included where used",
-    "sys/kern/subr_sfbuf.c":        "arch-private sf_buf helpers",
+    # subr_devmap.c, subr_sfbuf.c and subr_intr.c used to be here, all
+    # three for the same reason - "arch-private", "needs machine/intr.h,
+    # which amd64 has not". They compile now: analyze.py retries a file
+    # that fails under the default against the architecture the build
+    # system says can build it, and for these three that is enough. An
+    # exemption that turns out to have been a missing flag is exactly
+    # what --check-errors' staleness half is for; it named all three.
 
     # The C start-up's per-architecture IRELATIVE handler. Each is
     # `#include "reloc.c"' inside libc_start1.c, after that file has
@@ -84,7 +89,6 @@ EXPECTED = {
 
     # wrong architecture for an amd64 sweep
     "sys/kern/subr_atomic64.c":     "32-bit archs only",
-    "sys/kern/subr_intr.c":         "needs machine/intr.h, which amd64 has not",
     "sys/powerpc/ofw/ofw_machdep.c": "wants powerpc's <fdt.h>, absent on amd64",
 
     # net80211
@@ -110,6 +114,14 @@ EXPECTED = {
     # decision that is not a mechanical fix.
     "sys/security/mac_grantbylabel/mac_grantbylabel.c":
         "BROKEN: registers a MAC entry point that does not exist",
+
+    # Option-gated, found the first time --check-errors was run over the
+    # kern shard rather than over lib and sys/dev alone.
+    "sys/netinet/tcp_stats.c":
+        "option-gated: `optional stats inet | stats inet6', and no "
+        "kernel config in this tree sets STATS",
+    "sys/vm/memguard.c":
+        "option-gated: `optional DEBUG_MEMGUARD'",
 
     # libexec/rtld-elf. The other nine translation units in this
     # directory compiled for the first time when the rtld's own include

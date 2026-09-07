@@ -1244,7 +1244,15 @@ def opt_shim(arch: str = "amd64") -> str:
     """
     d = Path(tempfile.mkdtemp(prefix="pbsd_opt_"))
     names = set()
-    pat = re.compile(r'#\s*include\s+"(opt_[A-Za-z0-9_]+\.h)"')
+    # Both spellings. sys/netinet/cc/cc.c:52 is the tree's only
+    #
+    #   #include <opt_cc.h>
+    #
+    # and matching only the quoted form left the whole congestion-control
+    # framework - the file every cc_*.c algorithm hangs off - reporting
+    # "'opt_cc.h' file not found" and contributing nothing. One file, and
+    # one character of regex.
+    pat = re.compile(r'#\s*include\s+["<](opt_[A-Za-z0-9_]+\.h)[">]')
     sysdir = SRC / "sys"
     for f in sysdir.rglob("*.[ch]"):
         try:

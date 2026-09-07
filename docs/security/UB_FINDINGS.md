@@ -4380,6 +4380,43 @@ file that did not has nothing to lose. The check that it stays out of
 `arch_of()` is in `test_includes.py`, alongside the one that a
 disjunction is a union.
 
+## The first `--check-errors` over `sys/kern` named six things
+
+The CI `analyze` job does not pass `--check-errors`, so the ERROR
+inventory has only ever been checked where it was checked by hand — lib,
+`sys/dev`, `sys/contrib`. Running it over the `kern` shard for the first
+time reported six, three in each direction, and every one of them was
+worth having.
+
+**Three exemptions had gone stale.** `sys/kern/subr_devmap.c`,
+`subr_sfbuf.c` and `subr_intr.c` were on the record as "arch-private" and
+"needs machine/intr.h, which amd64 has not" — and they compile now,
+because a file that fails under the default is retried against the
+architecture the build system names. All three were a missing flag
+wearing an exemption's clothes. That is precisely what the staleness half
+of `--check-errors` is for, and it had never been pointed at them.
+
+**Two were honestly option-gated** — `tcp_stats.c` needs `STATS` and
+`memguard.c` needs `DEBUG_MEMGUARD`, neither of which any config in this
+tree sets — and are on the record now.
+
+**And one was a character of regex.** `opt_shim()` synthesises the empty
+`opt_*.h` that config(8) writes for an unset option, harvesting the names
+from the tree so the list cannot go stale. It harvested
+`#include "opt_foo.h"`. `sys/netinet/cc/cc.c:52` is the one file in the
+tree that writes
+
+```c
+#include <opt_cc.h>
+```
+
+with angle brackets, and it is the congestion-control framework itself —
+the file every `cc_*.c` algorithm registers with. It reported
+`'opt_cc.h' file not found` and contributed nothing, in a shard that has
+been reported as fully read for three sweeps. One file, one character,
+and the same shape as everything else here: the guard existed for one of
+two spellings.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
