@@ -12,6 +12,15 @@
 # failure count to 174, and to 603 once hbsd/src/sys was on the path. The list
 # below is therefore the floor for a Linux build, not a backlog.
 #
+# One entry is not a header. lib/libc/csu/b0223/port.cppm stops at the
+# `#error "Define platform reloc type"' its C original has at
+# libc_start1.c:77, because CRT_IRELOC_RELA comes from
+# lib/libc/csu/<arch>/Makefile.inc and nothing in the CMake build passes
+# it. Same class - a thing the FreeBSD build supplies and this one does
+# not - and worth naming, because "they all fail on headers" is the sort
+# of summary that stops being true without anyone noticing. Checked by
+# reading every failure in the ninja log: 147 missing headers, this one.
+#
 # What it is for: tools/check_linux_build.py fails CI when a module outside
 # this list stops building. The list may shrink - it must never grow without
 # a deliberate edit and a reason.
