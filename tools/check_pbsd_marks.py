@@ -1194,6 +1194,39 @@ FIXES = {
         "does not check ->with_data - read those bytes into the "
         "radiotap header. Its twin iwl_mvm_rx_mpdu_mq() has the = {}",
     ),
+    "hbsd/src/sys/netinet/tcp_ratelimit.c": (
+        "if (rs->rs_rate_cnt == 0) {",
+        # Nothing was removed - the guard is an insertion - so there is
+        # no upstream text to forbid.
+        None,
+        "rs_rate_cnt comes straight from the driver at :607 and :618 with "
+        "no zero check, and at zero malloc(0) succeeds, both population "
+        "loops have no iterations, and the `did we get at least 1 rate' "
+        "test at :747 reads rs_rlt[-1] - out of bounds, before the "
+        "allocation. The same file already guards it on the other path, "
+        "at :349",
+    ),
+    "hbsd/src/sys/dev/xilinx/xlnx_pcib.c": (
+        # THREE functions used sc->bst and sc->bsh, so a count of the
+        # replacement; plus the kmem_alloc_contig cast, which is a
+        # separate drift in the same file.
+        ("bus_read_4(sc->res, ", 5),
+        "\tt = sc->bst;",
+        "struct generic_pcie_core_softc has no bst or bsh - the driver "
+        "was not updated when they went - and kmem_alloc_contig() "
+        "returns void * where msi_page is a vm_offset_t. Two API drifts "
+        "in a file sys/conf/files.riscv:28 names and no kernel could "
+        "compile",
+    ),
+    "hbsd/src/sys/dev/pci/pci_host_generic_acpi.c": (
+        "off = res->Data.Address16.Address.TranslationOffset;",
+        None,
+        "the ADDRESS16 arm of the _CRS parser set restype, min and max "
+        "and not off, while ADDRESS32, ADDRESS64 and FIXED_MEMORY32 all "
+        "set it and :187 computes phys_base = min + off for all four - "
+        "so a 16-bit address descriptor in firmware programmed a PCI "
+        "range's physical base from an uninitialised stack slot",
+    ),
     "hbsd/src/lib/libc/include/nscache.h": (
         "\tfree(mp_state);",
         "__close_cached_mp_read_session(mp_state->mp_read_session);\\\n}",

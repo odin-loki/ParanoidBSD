@@ -638,6 +638,22 @@ rt_setup_new_rs(struct ifnet *ifp, int *error)
 		free(rs, M_TCPPACE);
 		return (NULL);
 	}
+	if (rs->rs_rate_cnt == 0) {
+		/*
+		 * The interface answered if_ratelimit_query saying it
+		 * does rate limiting, and then offered no rates. Nothing
+		 * below copes with that: malloc(0) succeeds, both
+		 * population loops have no iterations, and the "did we
+		 * get at least 1 rate" test indexes rs_rlt[-1]. The
+		 * sysctl path already guards this - see
+		 * `rs->rs_rlt && rs->rs_rate_cnt > 0' in
+		 * rl_add_syctl_entries() - and this is the other half.
+		 */
+		if (error)
+			*error = ENOSPC;
+		free(rs, M_TCPPACE);
+		return (NULL);
+	}
 	sz = sizeof(struct tcp_hwrate_limit_table) * rs->rs_rate_cnt;
 	rs->rs_rlt = malloc(sz, M_TCPPACE, M_NOWAIT);
 	if (rs->rs_rlt == NULL) {

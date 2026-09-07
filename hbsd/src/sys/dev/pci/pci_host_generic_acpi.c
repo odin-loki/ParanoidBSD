@@ -148,6 +148,7 @@ pci_host_generic_acpi_parse_resource(ACPI_RESOURCE *res, void *arg)
 		restype = res->Data.Address16.ResourceType;
 		min = res->Data.Address16.Address.Minimum;
 		max = res->Data.Address16.Address.Maximum;
+		off = res->Data.Address16.Address.TranslationOffset;
 		break;
 	case ACPI_RESOURCE_TYPE_ADDRESS32:
 		restype = res->Data.Address32.ResourceType;

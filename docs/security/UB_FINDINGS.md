@@ -5332,3 +5332,69 @@ Left as it is. This is Intel's ACPICA, vendored whole; the claim is
 upstream's, written down where a reader will find it, and an
 `ACPI_ASSERT` added here diverges from the source tree PBSD re-imports
 from. Recorded so the next sweep does not spend the same half hour.
+
+## Three the coverage work found, fixed
+
+Each was invisible until something the build system says was read, and
+each is verified by the finding disappearing — not by argument.
+
+### `sys/netinet/tcp_ratelimit.c:747` — `rs_rlt[-1]`
+
+Written up above: `rs_rate_cnt` comes straight from the driver at `:607`
+and `:618` with no zero check, and at zero `malloc(0)` succeeds, both
+population loops have no iterations, and the "did we get at least 1
+rate" test indexes `-1`. The guard is an early return before the
+allocation, in the shape of the `RT_IS_*` rejection twenty lines above
+it. The file's own `rl_add_syctl_entries()` has tested
+`rs->rs_rlt && rs->rs_rate_cnt > 0` all along.
+
+No driver in this tree was found returning `number_of_rates == 0`. The
+defect is that nothing between the assignment and the read forbids it,
+on a value the kernel takes from a device driver.
+
+### `sys/dev/xilinx/xlnx_pcib.c` — two API drifts, in a driver nothing could build
+
+`sys/conf/files.riscv:28` names it. It has not compiled in a long time:
+
+    struct generic_pcie_core_softc  has no `bst' and no `bsh'
+
+and three functions used them — `xlnx_pcib_req_valid()`,
+`xlnx_pcib_read_config()` and `xlnx_pcib_write_config()`. The rest of
+the same file already uses the modern idiom (`bus_read_4(sc->res, …)` at
+`:113`, `:134`, `:215`), and so does the reference implementation it
+wraps, `generic_pcie_read_config()` at `sys/dev/pci/pci_host_generic.c:304`.
+The translation is mechanical and exact: `bus_read_4(r, o)` **is**
+`bus_space_read_4(rman_get_bustag(r), rman_get_bushandle(r), o)`. The
+driver's 32-bit-only quirk and the comment explaining it are untouched.
+
+Then, one layer down, `sc->msi_page = kmem_alloc_contig(...)` at `:297`:
+that function returns `void *` (`sys/vm/vm_extern.h:62`) and `msi_page`
+is a `vm_offset_t` (`:87`). `sys/dev/xdma/controller/pl330.c:389` shows
+the convention — it casts.
+
+ERROR to **OK with no findings**. The same category as
+`phyp_vscsi.c`'s missing semicolon: upstream has never compiled it.
+
+### `sys/dev/pci/pci_host_generic_acpi.c:187` — three of four arms set `off`
+
+Visible only with `-DDEV_ACPI`, which `optional pci acpi` implies and
+the analyser does not yet supply — so this one was found by hand, with
+the macro on the command line, while measuring what that change would be
+worth. `pci_host_generic_acpi_parse_resource()` parses a PCI host
+bridge's `_CRS`:
+
+| arm | sets |
+|---|---|
+| `ACPI_RESOURCE_TYPE_ADDRESS16` (`:147`) | `restype`, `min`, `max` |
+| `ACPI_RESOURCE_TYPE_ADDRESS32` (`:152`) | `restype`, `min`, `max`, **`off`** |
+| `ACPI_RESOURCE_TYPE_ADDRESS64` (`:158`) | `restype`, `min`, `max`, **`off`** |
+| `ACPI_RESOURCE_TYPE_FIXED_MEMORY32` (`:164`) | `restype`, `min`, `max`, **`off = 0`** |
+
+and `:187` is `sc->base.ranges[r].phys_base = min + off;` for all four.
+A 16-bit address descriptor in firmware's `_CRS` makes the kernel
+program a PCI range's physical base from an uninitialised stack slot.
+One line, the same one the 32- and 64-bit arms have, and the file goes
+from one finding to none.
+
+Three of four again — the shape this document has now recorded eleven
+times.

@@ -294,7 +294,7 @@ xlnx_pcib_init(struct xlnx_pcib_softc *sc)
 	bus_write_4(sc->res[0], XLNX_PCIE_IDR, reg);
 
 	/* Setup an MSI page. */
-	sc->msi_page = kmem_alloc_contig(PAGE_SIZE, M_WAITOK, 0,
+	sc->msi_page = (vm_offset_t)kmem_alloc_contig(PAGE_SIZE, M_WAITOK, 0,
 	    BUS_SPACE_MAXADDR, PAGE_SIZE, 0, VM_MEMATTR_DEFAULT);
 	addr = vtophys(sc->msi_page);
 	bus_write_4(sc->res[0], XLNX_PCIE_RPMSIBR1, (addr >> 32));
@@ -420,12 +420,7 @@ static int
 xlnx_pcib_req_valid(struct generic_pcie_core_softc *sc,
     u_int bus, u_int slot, u_int func, u_int reg)
 {
-	bus_space_handle_t h;
-	bus_space_tag_t t;
 	uint32_t val;
-
-	t = sc->bst;
-	h = sc->bsh;
 
 	if ((bus < sc->bus_start) || (bus > sc->bus_end))
 		return (0);
@@ -436,7 +431,7 @@ xlnx_pcib_req_valid(struct generic_pcie_core_softc *sc,
 	if (bus == 0 && slot > 0)
 		return (0);
 
-	val = bus_space_read_4(t, h, XLNX_PCIE_PHYSCR);
+	val = bus_read_4(sc->res, XLNX_PCIE_PHYSCR);
 	if ((val & PHYSCR_LINK_UP) == 0) {
 		/* Link is down */
 		return (0);
@@ -454,8 +449,6 @@ xlnx_pcib_read_config(device_t dev, u_int bus, u_int slot,
 	struct generic_pcie_fdt_softc *fdt_sc;
 	struct xlnx_pcib_softc *xlnx_sc;
 	struct generic_pcie_core_softc *sc;
-	bus_space_handle_t h;
-	bus_space_tag_t t;
 	uint64_t offset;
 	uint32_t data;
 
@@ -467,10 +460,8 @@ xlnx_pcib_read_config(device_t dev, u_int bus, u_int slot,
 		return (~0U);
 
 	offset = PCIE_ADDR_OFFSET(bus - sc->bus_start, slot, func, reg);
-	t = sc->bst;
-	h = sc->bsh;
 
-	data = bus_space_read_4(t, h, offset & ~3);
+	data = bus_read_4(sc->res, offset & ~3);
 
 	switch (bytes) {
 	case 1:
@@ -498,8 +489,6 @@ xlnx_pcib_write_config(device_t dev, u_int bus, u_int slot,
 	struct generic_pcie_fdt_softc *fdt_sc;
 	struct xlnx_pcib_softc *xlnx_sc;
 	struct generic_pcie_core_softc *sc;
-	bus_space_handle_t h;
-	bus_space_tag_t t;
 	uint64_t offset;
 	uint32_t data;
 
@@ -512,9 +501,6 @@ xlnx_pcib_write_config(device_t dev, u_int bus, u_int slot,
 
 	offset = PCIE_ADDR_OFFSET(bus - sc->bus_start, slot, func, reg);
 
-	t = sc->bst;
-	h = sc->bsh;
-
 	/*
 	 * 32-bit access used due to a bug in the Xilinx bridge that
 	 * requires to write primary and secondary buses in one blast.
@@ -523,19 +509,19 @@ xlnx_pcib_write_config(device_t dev, u_int bus, u_int slot,
 	 */
 	switch (bytes) {
 	case 1:
-		data = bus_space_read_4(t, h, offset & ~3);
+		data = bus_read_4(sc->res, offset & ~3);
 		data &= ~(0xff << ((offset & 3) * 8));
 		data |= (val & 0xff) << ((offset & 3) * 8);
-		bus_space_write_4(t, h, offset & ~3, htole32(data));
+		bus_write_4(sc->res, offset & ~3, htole32(data));
 		break;
 	case 2:
-		data = bus_space_read_4(t, h, offset & ~3);
+		data = bus_read_4(sc->res, offset & ~3);
 		data &= ~(0xffff << ((offset & 3) * 8));
 		data |= (val & 0xffff) << ((offset & 3) * 8);
-		bus_space_write_4(t, h, offset & ~3, htole32(data));
+		bus_write_4(sc->res, offset & ~3, htole32(data));
 		break;
 	case 4:
-		bus_space_write_4(t, h, offset, htole32(val));
+		bus_write_4(sc->res, offset, htole32(val));
 		break;
 	default:
 		return;
