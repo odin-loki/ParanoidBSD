@@ -1194,6 +1194,14 @@ FIXES = {
         "does not check ->with_data - read those bytes into the "
         "radiotap header. Its twin iwl_mvm_rx_mpdu_mq() has the = {}",
     ),
+    "hbsd/src/sys/powerpc/include/atomic.h": (
+        "#define\tatomic_subtract_acq_64\tatomic_subtract_acq_long",
+        "atomic_subract_acq_long",
+        "atomic_subtract_acq_64 expanded to a name with no `t\' in "
+        "subtract, so any powerpc64 use of it was a call to an undeclared "
+        "function; the atomic_subtract_acq_ptr two lines below has the "
+        "spelling right",
+    ),
     "hbsd/src/sys/dev/dpaa/if_dtsec_rm.c": (
         "t_DpaaFD fd = { 0 };",
         "\tt_DpaaFD fd;\n",

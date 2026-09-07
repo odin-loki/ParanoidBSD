@@ -418,7 +418,7 @@ _ATOMIC_SUBTRACT(long)
 
 #ifdef __powerpc64__
 #define	atomic_subtract_64	atomic_subtract_long
-#define	atomic_subtract_acq_64	atomic_subract_acq_long
+#define	atomic_subtract_acq_64	atomic_subtract_acq_long
 #define	atomic_subtract_rel_64	atomic_subtract_rel_long
 
 #define	atomic_subtract_ptr	atomic_subtract_long
