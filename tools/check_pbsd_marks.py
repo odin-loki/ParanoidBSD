@@ -596,6 +596,26 @@ FIXES = {
         "Lose this line and /sbin/init stops booting",
         ),
     ],
+    "hbsd/src/sys/compat/linuxkpi/common/include/linux/device.h": [
+        (
+            "PBSD: a NULL device logs, as it does on Linux",
+            "#define\tdev_err(dev, fmt, ...)\t\tdevice_printf((dev)->bsddev",
+            "Linux's _dev_printk() is `if (dev) ... else printk(...)', so "
+            "dev_err(NULL, ...) is a supported call and drivers written "
+            "for Linux make it. linuxkpi's eight dev_* macros wrote "
+            "through the pointer unconditionally. bnxt_re defines "
+            "rdev_to_dev(rdev) as ((rdev) ? &(rdev)->ibdev.dev : NULL) "
+            "and feeds it to dev_err() at 52 sites - a macro that "
+            "carefully yields NULL into one that dereferences it. "
+            "sys/dev/bnxt: 63 findings -> 11",
+        ),
+        (
+            ("__lkpi_dev_printf(dev,", 11),
+            None,
+            "all eleven uses of the macros that print through a device go "
+            "through the NULL-tolerant helper, not just dev_err",
+        ),
+    ],
     "hbsd/src/libexec/bootpd/bootpgw/bootpgw.c": [
         (
             "PBSD: dst was declared here and never assigned",

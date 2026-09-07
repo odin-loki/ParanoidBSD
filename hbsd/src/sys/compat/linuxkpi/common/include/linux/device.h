@@ -191,20 +191,46 @@ show_class_attr_string(struct class *class,
 	struct class_attribute_string class_attr_##_name = \
 		_CLASS_ATTR_STRING(_name, _mode, _str)
 
-#define	dev_printk(lvl, dev, fmt, ...)					\
-    device_printf((dev)->bsddev, fmt, ##__VA_ARGS__)
+/*
+ * PBSD: a NULL device logs, as it does on Linux, instead of faulting.
+ *
+ * Linux's _dev_printk() opens with `if (dev) dev_printk_emit(...) else
+ * printk(...)', so dev_err(NULL, ...) is a supported call there and
+ * drivers written against it treat it as one. bnxt_re says so in a
+ * macro (sys/dev/bnxt/bnxt_re/bnxt_re.h:705):
+ *
+ *	#define rdev_to_dev(rdev)  ((rdev) ? (&(rdev)->ibdev.dev) : NULL)
+ *
+ * and then hands the result straight to dev_err() at 49 sites in
+ * ib_verbs.c and three more in main.c. A macro that carefully yields
+ * NULL, feeding a macro that unconditionally writes through it. The
+ * ternary exists because its author believed rdev could be NULL; the
+ * compatibility layer is what turns that belief into a page fault.
+ *
+ * These stay expressions rather than becoming do/while blocks, because
+ * device_printf() and printf() both return int and some callers use
+ * the value or sit in a ternary. The NULL arm names itself the way
+ * Linux's does, so a message with no device is still attributable.
+ */
+#define	__lkpi_dev_printf(dev, fmt, ...)				\
+    ((dev) != NULL ?							\
+	device_printf((dev)->bsddev, fmt, ##__VA_ARGS__) :		\
+	(printf("(NULL device *): "), printf(fmt, ##__VA_ARGS__)))
 
-#define	dev_emerg(dev, fmt, ...)	device_printf((dev)->bsddev, fmt, ##__VA_ARGS__)
-#define	dev_alert(dev, fmt, ...)	device_printf((dev)->bsddev, fmt, ##__VA_ARGS__)
-#define	dev_crit(dev, fmt, ...)		device_printf((dev)->bsddev, fmt, ##__VA_ARGS__)
-#define	dev_err(dev, fmt, ...)		device_printf((dev)->bsddev, fmt, ##__VA_ARGS__)
-#define	dev_warn(dev, fmt, ...)		device_printf((dev)->bsddev, fmt, ##__VA_ARGS__)
-#define	dev_notice(dev, fmt, ...)	device_printf((dev)->bsddev, fmt, ##__VA_ARGS__)
-#define	dev_info(dev, fmt, ...)		device_printf((dev)->bsddev, fmt, ##__VA_ARGS__)
+#define	dev_printk(lvl, dev, fmt, ...)					\
+    __lkpi_dev_printf(dev, fmt, ##__VA_ARGS__)
+
+#define	dev_emerg(dev, fmt, ...)	__lkpi_dev_printf(dev, fmt, ##__VA_ARGS__)
+#define	dev_alert(dev, fmt, ...)	__lkpi_dev_printf(dev, fmt, ##__VA_ARGS__)
+#define	dev_crit(dev, fmt, ...)		__lkpi_dev_printf(dev, fmt, ##__VA_ARGS__)
+#define	dev_err(dev, fmt, ...)		__lkpi_dev_printf(dev, fmt, ##__VA_ARGS__)
+#define	dev_warn(dev, fmt, ...)		__lkpi_dev_printf(dev, fmt, ##__VA_ARGS__)
+#define	dev_notice(dev, fmt, ...)	__lkpi_dev_printf(dev, fmt, ##__VA_ARGS__)
+#define	dev_info(dev, fmt, ...)		__lkpi_dev_printf(dev, fmt, ##__VA_ARGS__)
 #define	dev_dbg(dev, fmt, ...)		do { } while (0)
 
 #define	dev_WARN(dev, fmt, ...)	\
-    device_printf((dev)->bsddev, "%s:%d: " fmt, __func__, __LINE__, ##__VA_ARGS__)
+    __lkpi_dev_printf(dev, "%s:%d: " fmt, __func__, __LINE__, ##__VA_ARGS__)
 
 #define	dev_WARN_ONCE(dev, condition, fmt, ...) do {		\
 	static bool __dev_WARN_ONCE;				\
@@ -212,7 +238,7 @@ show_class_attr_string(struct class *class,
 	if (unlikely(__ret_warn_on)) {				\
 		if (!__dev_WARN_ONCE) {				\
 			__dev_WARN_ONCE = true;			\
-			device_printf((dev)->bsddev, "%s:%d: " fmt, __func__, __LINE__, ##__VA_ARGS__); \
+			__lkpi_dev_printf(dev, "%s:%d: " fmt, __func__, __LINE__, ##__VA_ARGS__); \
 		}						\
 	}							\
 } while (0)

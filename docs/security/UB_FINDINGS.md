@@ -2968,6 +2968,65 @@ kernel's own boot banner has it (`boot.log:51`). `newvers.sh` took its
 architecture with nothing between: no build host, user, path or date in
 the running kernel's version string.
 
+## Fixed — a compatibility layer that is not compatible on the NULL case
+
+`sys/dev` came back **552 ERROR of 2,633** translation units — a fifth of
+the driver tree contributing nothing and looking, in every total this
+sweep prints, exactly like a fifth that is clean. The kernel states each
+driver's include path in two places nobody was reading:
+
+```
+sys/conf/files*         compile-with "${NORMAL_C} -I$S/contrib/ck/include"
+sys/modules/*/Makefile  .PATH on the source directory, plus its CFLAGS
+```
+
+348 source files are named by the first, 137 directories by the second.
+Reading both takes `sys/dev` to **237 ERROR of 2,633** and produces
+**127 findings from code that had never been analysed** — Intel QAT
+(121 translation units, 119 of them ERROR before), bnxt, mlx4, mlx5,
+qlnx, irdma, mthca, iser: the crypto accelerator and every Ethernet and
+InfiniBand driver that uses linuxkpi.
+
+**52 of those 127 are one thing.** `sys/dev/bnxt/bnxt_re/bnxt_re.h:705`:
+
+```c
+#define	rdev_to_dev(rdev)	((rdev) ? (&(rdev)->ibdev.dev) : NULL)
+```
+
+and `sys/compat/linuxkpi/common/include/linux/device.h:200`:
+
+```c
+#define	dev_err(dev, fmt, ...)	device_printf((dev)->bsddev, fmt, ##__VA_ARGS__)
+```
+
+so `dev_err(rdev_to_dev(rdev), ...)` — 49 sites in `ib_verbs.c`, three
+more in `main.c` — is a macro that carefully yields NULL feeding a macro
+that unconditionally writes through it.
+
+The driver is not wrong. Linux's `_dev_printk()` opens with
+
+```c
+	if (dev)
+		dev_printk_emit(...);
+	else
+		printk(...);
+```
+
+so `dev_err(NULL, ...)` is a supported call there, and a driver written
+against Linux makes it. The ternary in `rdev_to_dev` exists because its
+author believed `rdev` could be NULL; **the compatibility layer is what
+turns that belief into a page fault.**
+
+Fixed where it belongs — all eight `dev_*` macros, plus `dev_WARN` and
+`dev_WARN_ONCE`, now route through one helper that logs a NULL device
+the way Linux does instead of faulting. They stay expressions rather
+than becoming `do/while` blocks, because `device_printf()` and
+`printf()` both return `int` and some callers sit in a ternary.
+
+`sys/dev/bnxt`: 63 findings → 11. 167 of 175 translation units across
+`sys/compat/linuxkpi`, `mlx4`, `mlx5` and `irdma` still compile, so the
+expression form did not break a consumer.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
