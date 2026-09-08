@@ -6645,3 +6645,55 @@ the first thing that made visible was that 31 findings across 25 files
 are one `RB_GENERATE` — the section above. `param_premise.py`'s
 "attributed to no function" went from 52 to **zero**: the 25 it cannot
 find in the text are now a named class, `macro`, rather than a residue.
+
+### `usb_serial.c` — eight calls through a pointer, guarded by a bitmask
+
+`ucom_cfg_line_state()` calls four optional callbacks, twice each:
+
+```c
+	if (notch_bits & UCOM_LS_DTR)
+		sc->sc_callback->ucom_cfg_set_dtr(sc, ...);
+```
+
+and the analyser is right that `ucom_cfg_set_dtr` may be null — a
+`struct ucom_callback` fills in only what its driver implements. The
+guard is nine lines above, at `usb_serial.c:1065`:
+
+```c
+	mask = 0;
+	/* compute callback mask */
+	if (sc->sc_callback->ucom_cfg_set_dtr)
+		mask |= UCOM_LS_DTR;
+	if (sc->sc_callback->ucom_cfg_set_rts)
+		mask |= UCOM_LS_RTS;
+	if (sc->sc_callback->ucom_cfg_set_break)
+		mask |= UCOM_LS_BREAK;
+	if (sc->sc_callback->ucom_cfg_set_ring)
+		mask |= UCOM_LS_RING;
+
+	notch_bits = (sc->sc_pls_set & sc->sc_pls_clr) & mask;
+	any_bits = (sc->sc_pls_set | sc->sc_pls_clr) & mask;
+```
+
+so `notch_bits & UCOM_LS_DTR` is true only when the pointer is not null.
+The invariant is *bit i of `mask` is set exactly when pointer i is
+non-null*, carried through two `&` and an `|`, and a path-sensitive
+checker does not track a correspondence between a bit position and a
+struct member. Eight findings, one bitmask: `usb_serial.c:1089`,
+`usb_serial.c:1092`, `usb_serial.c:1095`, `usb_serial.c:1098`,
+`usb_serial.c:1103`, `usb_serial.c:1106`, `usb_serial.c:1109`,
+`usb_serial.c:1112`.
+
+### `init_main.c:328` — the SYSINIT loop
+
+`(*(sip->func))(sip->udata)` in `mi_startup()`. `sip` walks the `sysinit`
+linker set, and every entry in it was written by the `SYSINIT()` macro,
+which takes the function as an argument — there is no way to put a null
+one in. The analyser sees a pointer loaded out of an array whose contents
+the linker supplies, which is exactly the kind of thing it cannot see.
+
+Twelve more findings of the same checker are not covered here:
+`citrus_iconv.c:100`, `citrus_mapper.c:188`, `clnt_vc.c:424`,
+`ng_parse.c:148`, `ng_parse.c:1445`, `drm_crtc_helper.c:302`,
+`subr_scanf.c:531`, `linux_80211_macops.c:586`, `ib_cache.c:599` and two
+in a test.
