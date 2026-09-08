@@ -4671,7 +4671,7 @@ Kept because the reasoning is what stops them being re-reported.
 | `lib/libcalendar/easter.c:46` `29 / (i + 1)` | `i` is `(...) % 30`, and C's `%` yields a negative result for a negative dividend, so `i == -1` divides by zero. Reaching it needs a **negative year**: for `y >= 0` the numerator is `c - c/4 - (c-k)/3 + 19n + 15` with every term non-negative or small, and it stays positive. `easterg(int y, date *dt)` is libcalendar's public entry point and its domain is a calendar year. Rule three — worth the row because the failure is real arithmetic rather than a modelling artefact, and a caller that passes a computed year should know. |
 | `sys/powerpc/ofw/ofw_real.c` — 19 findings, and `rtas.c:252` | one idiom. The OUT cells are written either by `ofw_real_unmap()`'s `memcpy(buf, ...)` — in this translation unit, but past two early returns — or, before the MMU is up, by the firmware writing straight into `args` at its own physical address, because `ofw_real_map()` returns `(uintptr_t)buf & ~DMAP_BASE_ADDRESS` when `!pmap_bootstrapped`. Which of the two happens depends on `pmap_bootstrapped` and on `of_bounce_virt`, and the second is a store the analyser cannot see at all. The one finding in this file that was **not** this — `ofw_real_open()` reading `args.instance` before the copy-back — is fixed above; the point of the row is that eighteen identical-looking findings hid one real one. |
 | `sys/dev/mpr/mpr_config.c` (19) and `sys/dev/mps/mps_config.c` (7) | `error = mpr_wait_command(sc, &cm, 60, CAN_SLEEP); if (cm != NULL) reply = ...; if (error || (reply == NULL))` — so the analyser explores `error == 0` with `cm == NULL`, which makes `reply` indeterminate at the `==` and `cm` NULL at the later `cm->cm_length`. That state does not exist: `mpr_wait_command()` (`mpr.c`, and `mps.c` identically) writes `*cmp = NULL` **only** inside `if (error == EWOULDBLOCK)`, and the next statement is `error = ETIMEDOUT`. It cannot return 0 having freed the command, so `error == 0` implies `cm != NULL` and the guard binds. A cross-translation-unit out-parameter contract again. Worth the row for what is true underneath it: `mps_config.c` declares `reply = NULL` in **9 of 9** functions and `mpr_config.c`, which was copied from it, in **2 of 12** — so the newer driver's correctness rests entirely on that invariant while the older one does not need it. Nothing to fix, and not nothing to know. |
-| `kern_condvar.c` ×4, `kern_synch.c:234`, `kern_exit.c:1576`, `uipc_sockbuf.c:747` — "2nd function call argument is an uninitialized value" | one idiom, seven times. `WITNESS_SAVE_DECL(lock_witness)` declares it, `WITNESS_SAVE(lock, lock_witness)` fills it inside `if (lock != &Giant.lock_object)`, and `WITNESS_RESTORE(lock, lock_witness)` reads it inside the same test with `lock` a parameter nothing between them touches. (`lock_state`, the argument it looks like at a glance, is initialised to 0 unconditionally.) |
+| `kern_condvar.c:162`, `kern_condvar.c:284`, `kern_condvar.c:352`, `kern_condvar.c:423`, `kern_synch.c:234`, `kern_exit.c:1576`, `uipc_sockbuf.c:747` — "2nd function call argument is an uninitialized value" | one idiom, seven times. `WITNESS_SAVE_DECL(lock_witness)` declares it, `WITNESS_SAVE(lock, lock_witness)` fills it inside `if (lock != &Giant.lock_object)`, and `WITNESS_RESTORE(lock, lock_witness)` reads it inside the same test with `lock` a parameter nothing between them touches. (`lock_state`, the argument it looks like at a glance, is initialised to 0 unconditionally.) |
 | `sys_generic.c:1354,1355` — `copyout(obits[x], ...)` | `select()`'s `getbits` macro sets `ibits[x] = obits[x] = NULL` when the user passed a NULL fd_set and to real storage otherwise; `putbits` reads `obits[x]` only under `if (name && ...)`. The same `name` on both sides. |
 | `tty_info.c:342` `thread_lock(td)` | `td = NULL` then `FOREACH_THREAD_IN_PROC(p, tdpick) if (thread_compare(td, tdpick)) td = tdpick;` — and `thread_compare()` opens with `if (td == NULL) return (1);`, so the first thread always takes it, and a process always has one. |
 
@@ -6819,3 +6819,37 @@ The shape is the one to remember, because it is not about this file: a
 branch variable read before an opaque call and re-read after it is two
 different questions to a path-sensitive checker, and every long function
 in this tree that dispatches on an address family does exactly that.
+
+### `pfil.c` — three, and one masked equality
+
+`pfil_link()` allocates its two link records conditionally
+(`pfil.c:381`):
+
+```c
+	if ((pa->pa_flags & (PFIL_IN | PFIL_UNLINK)) == PFIL_IN)
+		in = malloc(sizeof(*in), M_PFIL, M_WAITOK | M_ZERO);
+	else
+		in = NULL;
+	if ((pa->pa_flags & (PFIL_OUT | PFIL_UNLINK)) == PFIL_OUT)
+		out = malloc(sizeof(*out), M_PFIL, M_WAITOK | M_ZERO);
+	else
+		out = NULL;
+```
+
+— allocate exactly when this direction is asked for **and** the request
+is not an unlink. Then:
+
+* `pfil.c:410` is `if (pa->pa_flags & PFIL_UNLINK) return
+  (pfil_unlink(...));`, which returns without freeing either. It cannot
+  leak: `PFIL_UNLINK` set means both were `NULL`.
+* `pfil.c:432` and `pfil.c:445` dereference `in` and `out` under
+  `if (pa->pa_flags & PFIL_IN)` and `if (pa->pa_flags & PFIL_OUT)`,
+  which is the first half of each allocation's test; the second half —
+  `PFIL_UNLINK` clear — is established by the early return above.
+
+Three findings, one idiom: an allocation guarded by `(flags & (A|B)) ==
+A` and a use guarded by `flags & A` with `B` ruled out somewhere else.
+Folding those is not something a path-sensitive checker does, and this
+is the second file today where the guard is arithmetic on a flag word
+rather than a test of the pointer — `ip_fw_sockopt.c:1886` is the other,
+and `usb_serial.c`'s eight are a third variant of the same thing.
