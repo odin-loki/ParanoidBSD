@@ -5567,6 +5567,12 @@ weight, into a file where no caller can exercise them. The analyser
 reports them because `a_vpp` is a field of a parameter and so
 unconstrained.
 
+Cited so the reader can count them: `ufs_lookup.c:601`,
+`ufs_lookup.c:606`, `ufs_lookup.c:662`, `ufs_lookup.c:708`,
+`ufs_lookup.c:730`, `ufs_lookup.c:740`; `ext2_lookup.c:579`,
+`ext2_lookup.c:584`, `ext2_lookup.c:622`, `ext2_lookup.c:630`,
+`ext2_lookup.c:664`, `ext2_lookup.c:674`.
+
 Twelve findings, no defect in either, and the reason they read the same
 is that the second file inherited the first file's contract without
 inheriting its callers. Recorded rather than changed: removing ext2fs's
@@ -5931,3 +5937,58 @@ recorded here rather than edited.
 
 The shape, for the thirteenth time: the guard exists on N of M. Here N and
 M are whole files.
+
+### Ten more out of the same column, all preconditions, all cited
+
+The rest of the exported-and-names-a-parameter column in the shards that
+had finished. None is a defect; each is written up with its line so it
+stops being counted as unread.
+
+**`msdosfs_lookup.c:518`, `:575`, `:584`, `:591`, `:605`** — the third
+copy of the `ufs_lookup_ino()` shape above, and the best-built of the
+three. `msdosfs_lookup_ino(vdp, vpp, cnp, scnp, blkoffp)` says at `:178`
+that `vpp` may be null and stores through it five times, but where UFS
+scatters four `if (dd_ino != NULL) return` guards through the body,
+msdosfs has exactly one — `:488`
+
+```c
+	if (scnp != NULL) {
+		*scnp = cluster;
+		*blkoffp = blkoff;
+		return (0);
+	}
+```
+
+— and it dominates all five stores. The six call sites keep the same
+invariant UFS's five do: `msdosfs_vnops.c:1009`, `:1033`, `:1157`,
+`:1186` and `:1208` pass `vpp == NULL` with `&scn`, and `:92`, the VFS
+`lookup` entry, passes a real `a_vpp` with `scnp == NULL`. One guard
+instead of four, in the file that copied the idiom last.
+
+**`nfs_nfsdstate.c:700`, `:716`, `:877`** — `nfsrv_getclient()` tests
+`nd == NULL` in its own second statement (`:679`) and again at `:727`,
+and dereferences `nd` without a test at three places. The three
+dereferences are all inside `if (opflags & CLOPS_CONFIRM)` (`:696`) or
+`if (opflags & CLOPS_RENEWOP)` (`:871`), and **every one of the seven
+call sites in the tree passes a real `nd`** —
+`nfs_nfsdserv.c:4020`, `:4500`, `:4926` and `nfs_nfsdstate.c:1943`,
+`:1956`, `:2602`, `:2871`. So the `nd == NULL` arm at `:679` is
+vestigial, in the same way `ext2_lookup_ino()`'s guards are, and it is
+what makes the analyser explore a null `nd` at all.
+
+**`nfs_nfsdport.c:3566`** — `nfsd_excred()` uses `credanon` three times
+without testing it, and its caller tests it five lines later:
+`:3776` is `if (credanon != NULL) crfree(credanon);`. The guard that
+matters is neither: `vfs_stdcheckexp()` (`vfs_export.c:683`) really can
+return 0 with `*credanonp == NULL`, and every path that does so also
+leaves `exp->nes_exflag = 0` — `nfsvno_fhtovp()` sets it explicitly at
+`nfs_nfsdport.c:3608` and `:3649` on the CHECKEXP error it then converts
+back to success — so `NFSVNO_EXPORTED(exp)` at `:3562` is false and the
+three uses are not reached. The correlation is between an out-parameter
+and a flag word filled by an indirect call through the VFS vector, which
+is exactly what an analyser confined to one translation unit cannot
+follow.
+
+**`kern_jail.c:4050`** — `prison_isalive(const struct prison *pr)` is
+two lines and dereferences its parameter. A precondition, not a defect,
+and the same class as `cam_xpt.c:5253` above.
