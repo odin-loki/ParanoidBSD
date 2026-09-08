@@ -5521,10 +5521,16 @@ literal:
 | `ld128/e_rem_pio2l.h:125` | 3 |
 
 Four callers, four literals, four table entries — the domain is covered
-exactly and nothing outside libm can reach the function. Recorded rather
-than changed: `static` would be the honest annotation, and fdlibm's
-`__kernel_*` functions are shared across `src/`, `ld80/` and `ld128/`
-translation units, so it is not available.
+exactly and nothing outside libm can reach the function.
+
+Sweep 16 reports nine of them, cited so they can be counted:
+`k_rem_pio2.c:310`, `k_rem_pio2.c:329`, `k_rem_pio2.c:333`,
+`k_rem_pio2.c:365`, `k_rem_pio2.c:380`, `k_rem_pio2.c:394`,
+`k_rem_pio2.c:416`, `k_rem_pio2.c:433`, `k_rem_pio2.c:435`.
+
+Recorded rather than changed: `static` would be the honest annotation,
+and fdlibm's `__kernel_*` functions are shared across `src/`, `ld80/`
+and `ld128/` translation units, so it is not available.
 
 ### `ufs_lookup.c` and `ext2_lookup.c` — twelve findings, one copied idiom
 
@@ -6334,3 +6340,55 @@ Not a defect, not editable — the files are generated, and a change would
 be to `generate-fortify-tests.lua` and would make the tests test less.
 Fourteen more findings are in hand-written tests under other `tests/`
 directories and are not covered here.
+
+### `lib/libc/nls/msgcat.c` — a lock that returns out of the middle of an ownership transfer
+
+Nine findings: eight `unix.Malloc` "potential leak" and one
+`unix.cstring.NullArg`. The eight are real, and they are one line.
+
+```c
+#define WLOCK(fail)	{ int ret;						\
+			  if (__isthreaded &&					\
+			      ((ret = _pthread_rwlock_wrlock(&rwlock)) != 0)) {	\
+				  errno = ret;					\
+				  return (fail);				\
+			  }}
+```
+
+`WLOCK()` returns **from the caller**, and both places that use it are
+one statement away from handing something to `cache`, which is where the
+ownership of that something lives:
+
+* `SAVEFAIL()` builds a `struct catentry` with two `strdup()`s and inserts
+  it under `WLOCK(NLERR)`. Seven call sites — `msgcat.c:246`,
+  `msgcat.c:270`, `msgcat.c:412`, `msgcat.c:419`, `msgcat.c:426`,
+  `msgcat.c:445`, `msgcat.c:453`, `msgcat.c:472`.
+* `load_msgcat()`'s success path, `msgcat.c:485`, is `WLOCK(NLERR)`
+  immediately after `mmap()`ing the catalogue and allocating `catd`, `np`
+  and three copied strings. On the failure path all of it goes, including
+  the mapping.
+
+The lock can fail. `rwlock` is `PTHREAD_RWLOCK_INITIALIZER`; libthr
+initialises a statically-initialised rwlock on first use in
+`rwlock_init()` (`lib/libthr/thread/thr_rwlock.c:97`), and that is an
+`aligned_alloc()` which returns `ENOMEM` at `:106`. So the leak happens
+exactly when the process is already short of memory — which is when a
+message catalogue is most likely to be opened by an error path.
+
+`TRY_WLOCK()` reports the failure instead of returning through it.
+`SAVEFAIL()` then frees the entry it could not cache, which is the same
+thing it already does when a `strdup()` fails, and `errno` ends up as the
+`catopen()` failure the caller asked about rather than the lock's. In
+`load_msgcat()` the cache entry cannot simply be dropped — `catclose()`
+(`:369`) finds the catalogue *through* the cache, so an uncached `catd`
+would leak the mapping instead of the entry — so that site undoes the
+load the same way the `ENOMEM` arm eleven lines above it does. Eight
+findings to none, at the same flag digest.
+
+The ninth, `msgcat.c:253`, is not a defect: `strlcpy(pathP, tmpptr,
+spcleft)` with `tmpptr` from `%l`/`%t`/`%c`/`%L`, and the analyser has
+`lang == NULL` in hand from `:155`. That arm is taken only when `name`
+contains a `/`, and `:190` returns for exactly that case before any of
+this runs, so by `:194` `lang` is non-null — `"C"` at worst, `:166`. The
+same test written twice, thirty-five lines apart, which the analyser does
+not fold.

@@ -95,6 +95,17 @@ FIXES = {
         "an uninitialised error-code-valid bit; vmx.c:2740 sets its "
         "equivalent unconditionally before the test that can raise it",
     ),
+    "hbsd/src/lib/libc/nls/msgcat.c": (
+        "#define\tTRY_WLOCK()",
+        "\t\t\t\t\t\tWLOCK(NLERR);",
+        "WLOCK()'s `return (fail)' fires in the middle of an ownership "
+        "transfer to the cache - SAVEFAIL()'s entry, and in load_msgcat() "
+        "the whole mmap'd catalogue with its five allocations - and the "
+        "cache is where that ownership lives, so the failure path lost "
+        "them; _pthread_rwlock_wrlock() on this statically-initialised "
+        "rwlock really can fail, because libthr's rwlock_init() "
+        "aligned_alloc()s on first use and returns ENOMEM",
+    ),
     "hbsd/src/lib/libc/iconv/citrus_stdenc.c": (
         "if (ce == NULL)\n\t\treturn;",
         "{\n\n\tif (ce == &_citrus_stdenc_default)",

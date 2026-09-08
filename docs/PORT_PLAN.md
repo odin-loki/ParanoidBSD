@@ -51,7 +51,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,606 | 9,056 |
+| 1 | `lib` | 2,827 | 639,632 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,088 | 1,063 |
 | 4 | `sbin` | 533 | 228,442 | 3,567 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,296,177** | **114,204** |
+| | **total** | **41,143** | **21,296,203** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -3714,7 +3714,7 @@ function; a file with two hundred of them is a project.
 
 ### 1.80 `lib/libc/nls`
 
-- [ ] **1.80.1** `msgcat.c` · 490L gen:1 · `TODO-PORT` · 6 fn
+- [ ] **1.80.1** `msgcat.c` · 516L gen:1 · `TODO-PORT` · 6 fn
   - [ ] 1.80.1.1 `catopen()` · `TODO-FN`
   - [ ] 1.80.1.2 `__catopen_l()` · `TODO-FN`
   - [ ] 1.80.1.3 `catgets()` · `TODO-FN`

@@ -78,6 +78,18 @@ up-to-date.  Many thanks.
 
 #define	NLERR		((nl_catd) -1)
 #define NLRETERR(errc)  { errno = errc; return (NLERR); }
+/*
+ * A write lock that reports failure instead of returning from the caller.
+ *
+ * WLOCK()'s early return is a `return (fail);' in the middle of whatever
+ * the caller was about to hand to the cache, and the cache is where the
+ * ownership of that thing lives - so on the failure path it is simply
+ * lost.  The lock really can fail: `rwlock' is statically initialised,
+ * libthr initialises it on first use in rwlock_init()
+ * (lib/libthr/thread/thr_rwlock.c:97), and that is an aligned_alloc()
+ * which returns ENOMEM.
+ */
+#define	TRY_WLOCK()	(!__isthreaded || _pthread_rwlock_wrlock(&rwlock) == 0)
 #define SAVEFAIL(n, l, e)	{ np = calloc(1, sizeof(struct catentry));	\
 				  if (np != NULL) {				\
 				  	np->name = strdup(n);			\
@@ -86,12 +98,12 @@ up-to-date.  Many thanks.
 					    strdup(l);				\
 					np->caterrno = e;			\
 					if (np->name == NULL ||			\
-					    (l != NULL && np->lang == NULL)) {	\
+					    (l != NULL && np->lang == NULL) ||	\
+					    !TRY_WLOCK()) {			\
 						free(np->name);			\
 						free(np->lang);			\
 						free(np);			\
 					} else {				\
-						WLOCK(NLERR);			\
 						SLIST_INSERT_HEAD(&cache, np,	\
 						    list);			\
 						UNLOCK;				\
@@ -482,7 +494,21 @@ load_msgcat(const char *path, const char *name, const char *lang)
 	np->catd = catd;
 	np->lang = copy_lang;
 	atomic_store_int(&np->refcount, 1);
-	WLOCK(NLERR);
+	if (!TRY_WLOCK()) {
+		/*
+		 * The cache entry is the ownership record: catclose() frees
+		 * the catalogue by finding it there, so returning catd
+		 * uncached would lose the mapping instead of the entry.
+		 * Undo the load, the same way the ENOMEM arm above does.
+		 */
+		free(copy_name);
+		free(copy_path);
+		free(copy_lang);
+		free(catd);
+		free(np);
+		munmap(data, (size_t)st.st_size);
+		NLRETERR(ENOMEM);
+	}
 	SLIST_INSERT_HEAD(&cache, np, list);
 	UNLOCK;
 	return (catd);
