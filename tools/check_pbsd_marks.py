@@ -192,6 +192,29 @@ FIXES = {
         "so every path after a fatal() anywhere in patch(1) was "
         "analysed as though the program continued",
     ),
+    "hbsd/src/usr.bin/gencat/gencat.c": (
+        "while ((msg = set->msghead.lh_first) != NULL) {",
+        "while (msg) {\n\t\t\tfree(msg->str);",
+        "MCDelSet()'s loop never advanced msg -- LIST_REMOVE unlinks it "
+        "and does not change it -- so $delset for an existing set hung "
+        "gencat and freed msg->str again on the second pass",
+    ),
+    "hbsd/src/usr.sbin/rtadvd/if.c": (
+        ("free(ifi);\n", 3),
+        "if (ifi_new)\n\t\t\t\t\tfree(ifi);\n\t\t\t\tcontinue;",
+        "update_ifinfo() ends `return (ifi)' and three arms free ifi and "
+        "continue, so a last iteration taking one of them returned a "
+        "dangling pointer; the count is 3 because losing one of the "
+        "three is the same bug",
+    ),
+    "hbsd/src/usr.sbin/mountd/mountd.c": (
+        "if ((opt_flags & OP_MASKLEN) && prefp != NULL) {",
+        "if (opt_flags & OP_MASKLEN) {\n\t\t\tpreflen = strtol(prefp",
+        "get_net() tested the OP_MASKLEN flag rather than the string it "
+        "claims, so `-network a/len -mask m' passed NULL to strtol() and "
+        "wrote through a NULL p; check_options() rejects that pair at "
+        ":3886, after the option line has been parsed",
+    ),
     "hbsd/src/usr.sbin/rtadvd/config.c": (
         "delete_prefix(pfx);\n\t\treturn;",
         "delete_prefix(pfx);\n\t}\n\ttimo.tv_sec = prefix_timo;",

@@ -55,8 +55,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
 | 4 | `sbin` | 533 | 228,447 | 3,567 |
-| 5 | `usr.bin` | 732 | 247,965 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,004 | 9,020 |
+| 5 | `usr.bin` | 732 | 247,971 | 4,186 |
+| 6 | `usr.sbin` | 1,142 | 657,025 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,495,420 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,296,287** | **114,204** |
+| | **total** | **41,143** | **21,296,314** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -21629,7 +21629,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.77 `usr.bin/gencat`
 
-- [ ] **5.77.1** `gencat.c` · 695L · `TODO-PORT` · 17 fn
+- [ ] **5.77.1** `gencat.c` · 701L · `TODO-PORT` · 17 fn
   - [ ] 5.77.1.1 `usage()` · `TODO-FN`
   - [ ] 5.77.1.2 `main()` · `TODO-FN`
   - [ ] 5.77.1.3 `warning()` · `TODO-FN`
@@ -32301,7 +32301,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.144 `usr.sbin/mountd`
 
-- [ ] **6.144.1** `mountd.c` · 4,139L gen:2 · `TODO-PORT`
+- [ ] **6.144.1** `mountd.c` · 4,153L gen:2 · `TODO-PORT`
 - [ ] **6.144.2** `pathnames.h` · 37L · `TODO-HDR`
 
 ### 6.145 `usr.sbin/moused/moused`
@@ -35640,7 +35640,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.208.9.23 `is_do_shutdown()` · `TODO-FN`
   - [ ] 6.208.9.24 `reload_ifname()` · `TODO-FN`
 - [ ] **6.208.10** `control_server.h` · 43L · `TODO-HDR`
-- [ ] **6.208.11** `if.c` · 770L · `TODO-PORT` · 17 fn
+- [ ] **6.208.11** `if.c` · 777L · `TODO-PORT` · 17 fn
   - [ ] 6.208.11.1 `get_rtaddrs()` · `TODO-FN`
   - [ ] 6.208.11.2 `lladdropt_length()` · `TODO-FN`
   - [ ] 6.208.11.3 `lladdropt_fill()` · `TODO-FN`

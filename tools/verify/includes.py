@@ -2173,6 +2173,22 @@ def rpc_headers() -> str:
         f = out / hdr
         if f.exists() and f.stat().st_size == 0:
             f.unlink()
+
+    # A second destination for the same generated header. That Makefile
+    # has INCSGROUPS= INCS RPCHDRS, and RPCHDRS= key_prot.h with
+    # RPCHDRSDIR= ${INCLUDEDIR}/rpc - so key_prot.h is installed as BOTH
+    # <rpcsvc/key_prot.h> and <rpc/key_prot.h>, and rpc.ypupdated
+    # includes the second spelling. Two translation units failed on it
+    # while the file sat one directory over.
+    g = re.search(r"^RPCHDRS=\s*([^\n]*)$", text, re.M)
+    gd = re.search(r"^RPCHDRSDIR=\s*\$\{INCLUDEDIR\}/(\w+)\s*$", text, re.M)
+    if g and gd:
+        sub = d / gd.group(1)
+        sub.mkdir(parents=True, exist_ok=True)
+        for hdr in g.group(1).split():
+            src_h = out / hdr
+            if src_h.is_file() and not (sub / hdr).exists():
+                (sub / hdr).write_text(src_h.read_text(errors="replace"))
     return d.as_posix()
 
 
@@ -2743,8 +2759,14 @@ def _gen_rpcgen(out: Path, directory: str) -> None:
                          text, re.M):
         names |= {w[:-2] for w in m.group(1).split() if w.endswith(".h")}
     for name in sorted(names):
-        x = SRC / "include" / "rpcsvc" / f"{name}.x"
-        if not x.is_file():
+        # Beside the Makefile first: rpc.yppasswdd has its own
+        # yppasswd_private.x and generates yppasswd_private.h from it,
+        # which include/rpcsvc knows nothing about.
+        for x in (SRC / directory / f"{name}.x",
+                  SRC / "include" / "rpcsvc" / f"{name}.x"):
+            if x.is_file():
+                break
+        else:
             continue
         # -C for ANSI C, -h for the header. The -I and -L in the various
         # RPCGEN lines pick a server style and affect the .c, not this.

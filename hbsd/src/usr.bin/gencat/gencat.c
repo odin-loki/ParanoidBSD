@@ -662,10 +662,16 @@ MCDelSet(int setId)
 
 	if (set && set->setId == setId) {
 
-		msg = set->msghead.lh_first;
-		while (msg) {
-			free(msg->str);
+		/*
+		 * LIST_REMOVE unlinks msg; it does not change msg.  Taking
+		 * the head each time is what terminates, and freeing the
+		 * node is what stops the second pass freeing msg->str
+		 * again.
+		 */
+		while ((msg = set->msghead.lh_first) != NULL) {
 			LIST_REMOVE(msg, entries);
+			free(msg->str);
+			free(msg);
 		}
 
 		LIST_REMOVE(set, entries);

@@ -3461,9 +3461,15 @@ get_net(char *cp, struct netmsk *net, int maskflg)
 
 	p = prefp = NULL;
 	if ((opt_flags & OP_MASKLEN) && !maskflg) {
+		/*
+		 * OP_MASKLEN says a '/' was seen somewhere on this option
+		 * line, not that this string has one.  Key on the string.
+		 */
 		p = strchr(cp, '/');
-		*p = '\0';
-		prefp = p + 1;
+		if (p != NULL) {
+			*p = '\0';
+			prefp = p + 1;
+		}
 	}
 
 	/*
@@ -3535,7 +3541,15 @@ get_net(char *cp, struct netmsk *net, int maskflg)
 		 * Extract a mask from either a "/<masklen>" suffix, or
 		 * from the class of an IPv4 address.
 		 */
-		if (opt_flags & OP_MASKLEN) {
+		/*
+		 * prefp, not the flag: `-network 1.2.3.0/24 -mask m.m.m.m'
+		 * sets OP_MASKLEN from the -network argument and then calls
+		 * this with maskflg, which skips the block above and leaves
+		 * p and prefp NULL.  check_options() rejects that pair --
+		 * at :1825, after the whole option line has been parsed,
+		 * which is after here.
+		 */
+		if ((opt_flags & OP_MASKLEN) && prefp != NULL) {
 			preflen = strtol(prefp, NULL, 10);
 			if (preflen < 0L || preflen == LONG_MAX)
 				goto fail;

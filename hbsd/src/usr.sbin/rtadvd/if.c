@@ -527,8 +527,10 @@ update_ifinfo(struct ifilist_head_t *ifi_head, int ifindex)
 			if ((s = socket(AF_INET6, SOCK_DGRAM, 0)) < 0) {
 				syslog(LOG_ERR,
 				    "<%s> socket() failed.", __func__);
-				if (ifi_new)
+				if (ifi_new) {
 					free(ifi);
+					ifi = NULL;
+				}
 				continue;
 			}
 
@@ -545,8 +547,10 @@ update_ifinfo(struct ifilist_head_t *ifi_head, int ifindex)
 					syslog(LOG_ERR,
 					    "<%s> ioctl() failed.",
 					    __func__);
-					if (ifi_new)
+					if (ifi_new) {
 						free(ifi);
+						ifi = NULL;
+					}
 					continue;
 				}
 				ifi->ifi_phymtu = ifr.ifr_mtu;
@@ -564,8 +568,11 @@ update_ifinfo(struct ifilist_head_t *ifi_head, int ifindex)
 			/* ND flags */
 			error = update_ifinfo_nd_flags(ifi);
 			if (error) {
-				if (ifi_new)
+				if (ifi_new) {
 					free(ifi);
+					/* the function ends `return (ifi)' */
+					ifi = NULL;
+				}
 				continue;
 			}
 

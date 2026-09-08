@@ -5083,13 +5083,66 @@ the node —
 
 which is also the only version that terminates. (`MCDelMsg()` leaks its
 `_msgT` in the same way and is otherwise correct; that leak is left
-alone rather than folded into this.)
+alone rather than folded into this.) **Fixed**; `gencat.c` goes from
+eleven findings to ten.
+
+**`rtadvd`: a function that ends `return (ifi)` and three arms that free
+it.** `update_ifinfo()` (`usr.sbin/rtadvd/if.c`) has three
+`if (ifi_new) { free(ifi); } continue;` arms and finishes
+`return (ifi);` at `:613`. A last loop iteration taking any of them
+returns a dangling pointer. All seven call sites discard the value, so
+nothing is dereferenced — but returning an indeterminate pointer is
+itself the read, and it is the same shape as `ping6`'s escaping `iov`
+above. **Fixed** with `ifi = NULL;` beside each free, which is safe
+because the next iteration's `TAILQ_FOREACH` reassigns it; one finding
+to none. Registered with a count of **3**, so losing one of the three
+fails as well as losing all of them.
+
+**`mountd`: the guard exists and runs after the code it guards.**
+`get_net()` (`usr.sbin/mountd/mountd.c:3452`) does
+
+```c
+	p = prefp = NULL;
+	if ((opt_flags & OP_MASKLEN) && !maskflg) {
+		p = strchr(cp, '/');
+		*p = '\0';
+		prefp = p + 1;
+	}
+	...
+	if (opt_flags & OP_MASKLEN) {
+		preflen = strtol(prefp, NULL, 10);
+		...
+		*p = '/';               /* :3546 */
+	}
+```
+
+An `/etc/exports` line reading `-network 1.2.3.0/24 -mask 255.255.255.0`
+sets `OP_MASKLEN` from the `-network` argument — correctly, only when a
+`/` is present — and then the `-mask` handler calls
+`get_net(cpoptarg, ..., maskflg=1)`. With `maskflg` set the first block
+is skipped and `p` and `prefp` stay NULL; the second block tests only
+the **flag**, so it runs, passes NULL to `strtol()` and writes through
+`p`.
+
+`check_options()` **does** reject it — *"-mask and /masklen are mutually
+exclusive"*, at `:3886` — and it is called from `get_exportlist_one()`
+at `:1825`, after the whole option line has been parsed. The guard is
+written, is correct, and runs after the code it was meant to guard.
+Order matters too: `-mask` before `-network` does not crash, because
+`OP_MASKLEN` is not set yet.
+
+`/etc/exports` is root-written, so this is robustness rather than a
+security boundary — but `mountd` dying at startup or on a `SIGHUP`
+reload takes NFS down. **Fixed** by keying on `prefp`, which is the
+thing actually needed, and by checking the `strchr` result two lines
+up — that one is not reachable today and is the same premise, so it is
+fixed and said so rather than left. Eight findings to seven.
 
 Two more read and put down, both in `makefs` and both the queue macros
-again — they are in the table below. That is **eight** of the
-twenty-one read: three defects fixed, one queued, four not defects. Two
-of the thirteen left are the same `preen.c` copied between `sbin/fsck`
-and `sbin/quotacheck`, so twelve distinct sites remain.
+again — they are in the table below. That is **nine** of the twenty-one
+read: five defects fixed, four not defects. Two of the twelve left are
+the same `preen.c` copied between `sbin/fsck` and `sbin/quotacheck`, so
+eleven distinct sites remain.
 
 ### 249 → 190: three include-path answers read out of the build
 
@@ -5196,7 +5249,7 @@ seven classes, none of them large:
 | 37 | not a missing header at all: `ipfilter`'s `ipsend`/`ipftest`/`ipresend`, which `sbin/ipf/Makefile:9` has **commented out** of `SUBDIR`, plus a handful of one-off compile errors |
 | 13 | `type_traits` — C++ sources handed to a C analyser |
 | 21 | `hostres_oid.h`, `bridge_tree.h`, `wlan_tree.h` — bsnmp modules, `gensnmptree` |
-| 14 | `yp.h`, `ypxfrd.h`, `yppasswd.h`, `bootparam_prot.h`, `sm_inter.h`, `rpc/key_prot.h` — rpcgen output, the same shape `rpc_headers()` already handles for `include/rpcsvc` |
+| — | **rpcgen output: done.** Each of those Makefiles says how — `RPCGEN= ... rpcgen -I -C` and a `name.h: name.x` rule — so a directory whose Makefile mentions `rpcgen` gets its headers generated from the `.x` beside it or in `include/rpcsvc`. 14 recovered, in two rounds, because the first missed two things the build does: `include/rpcsvc/Makefile` has `INCSGROUPS= INCS RPCHDRS` and installs `key_prot.h` to **both** `rpcsvc/` and `rpc/` (`RPCHDRSDIR= ${INCLUDEDIR}/rpc`), which is the spelling `rpc.ypupdated` uses; and `rpc.yppasswdd` has its own `yppasswd_private.x` beside its Makefile. **Two are left and stay left**: `rpc.statd`'s `statd.c` and `bootparamd`'s `main.c` reference the per-version *dispatcher* — `sm_prog_1`, `bootparamprog_1` — which FreeBSD's own rpcgen declares in the header (`usr.bin/rpcgen/rpc_hout.c:264`, `pdispatch()`) and the **host's** rpcgen does not. Building the tree's rpcgen for the host wants `<rpc/types.h>` and then `<sys/_null.h>`: the FreeBSD header universe inside a host tool, which is the compile-that-means-nothing hazard this whole apparatus exists to avoid. Recorded as an ERROR with the reason rather than papered over. |
 | 9 | `parser.h` under `usr.bin/localedef` — yacc output |
 | 6 | `nl_defs.h` under `usr.bin/netstat` — generated by its own Makefile |
 | 6 | `ipf.h` — the same unbuilt ipfilter programs |
