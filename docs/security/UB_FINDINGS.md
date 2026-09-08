@@ -6585,3 +6585,63 @@ and one neighbour share a line): `al_hal_serdes_25g.c:504`,
 `al_hal_serdes_25g.c:536`, `al_hal_serdes_25g.c:938`,
 `al_hal_serdes_25g.c:955`, `al_hal_serdes_25g.c:1161`,
 `al_hal_serdes_25g.c:1378`, `al_hal_serdes_25g.c:1643`.
+
+## Sweep 17: five fixes land, and the output format changes where a finding sits
+
+| | sweep 16 | sweep 17 |
+|---|---|---|
+| OK | 7,545 | **7,545** |
+| ERROR | 564 | **564** |
+| findings (deduplicated) | 1,651 | **1,635** |
+
+`ERROR -> OK` 0 and `OK -> ERROR` 0, which is the first thing this sweep
+had to show: it is the first run with `-analyzer-output=plist-multi-file`
+instead of `text`, and a change to how the analyser is asked must not
+change what compiles. It did not, over 8,109 translation units.
+
+34 findings gone and 18 new, and every one of the 52 is accounted for.
+
+**Fifteen are gone for a reason.** Fourteen are the five fixes above —
+`sysctl.c:60`, `:110`, `:114`; `citrus_stdenc.c:137`;
+`msgcat.c:246`, `:270`, `:412`, `:419`, `:426`, `:445`, `:453`, `:472`,
+`:485`; `pmap_prot2.c:105`; `svm.c:1548`. The fifteenth is
+`subr_stats.c`, where the two reports at `:3032` and `:3033` became one
+at `:3031`: they are the two arms of one `KASSERT`'s ternary, and the
+plist writer anchors a diagnostic at the statement rather than the
+sub-expression. One assertion, one finding, which is the better answer.
+
+**Nineteen moved, by one to four lines, and are the same findings.**
+Every one pairs with a new report of the same checker in the same file:
+
+| | |
+|---|---|
+| `umass.c` | `:1440`, `:1495`, `:1951`, `:2007` → `:1439`, `:1494`, `:1950`, `:2006` |
+| `icrdma.c` | `:423`, `:447` → `:421`, `:445` |
+| `mpi3mr.c` | `:4933` → `:4929` |
+| `mpi3mr_cam.c` | `:1845` → `:1843` |
+| `t4_sge.c` | `:4366` → `:4365` |
+| `hw_channel.c` | `:289` → `:288` |
+| `mlx5_en_main.c` | `:2404` → `:2403` |
+| `drm_sysctl.c` | `:365` → `:364` |
+| `dmu_traverse.c` | `:127` → `:126` |
+| `dsl_scan.c` | `:1826` → `:1824` |
+| `vdev.c` | `:3563` → `:3562` |
+| `zil.c` | `:350` → `:349` |
+| `msgcat.c` | `:241` → `:253`, which is this file's own fix moving twelve lines in |
+
+None of the nineteen had been cited, so no citation in this document
+broke. `param_premise.py --audit` went 192 → 204 unmatched citations, and
+all thirteen of the difference are the fixed findings, cited by the
+sections that fixed them.
+
+The ERROR inventory needed no reconciliation: all six shards report
+"every ERROR translation unit is on the record", 5 + 24 + 60 + 76 + 35 +
+364 = 564.
+
+### What the format bought
+
+Every record now carries the function clang says the finding is in, and
+the first thing that made visible was that 31 findings across 25 files
+are one `RB_GENERATE` — the section above. `param_premise.py`'s
+"attributed to no function" went from 52 to **zero**: the 25 it cannot
+find in the text are now a named class, `macro`, rather than a residue.
