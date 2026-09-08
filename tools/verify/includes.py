@@ -889,6 +889,42 @@ MODULE_SRCS = re.compile(r"^\s*SRCS(?:\.\w+)?\s*\+?=\s*(.*)$")
 
 
 @functools.lru_cache(maxsize=None)
+def kernel_files_named() -> frozenset[str]:
+    """Every source sys/conf/files* names, as `sys/<path>'.
+
+    The union over every architecture's list, which is the conservative
+    direction for the one question it is asked: is this source built into
+    a kernel anywhere, or only by a module? A file named by files.arm and
+    analysed as amd64 comes out "the kernel builds it" and simply does not
+    get -DKLD_MODULE, which is the old behaviour.
+
+    sweep_report.kernel_names() cannot be used here: it unions in
+    kernel_flag_index()'s module index, which is the other half of this
+    comparison.
+    """
+    named: set[str] = set()
+    for p in sorted(SYS.glob("conf/files*")):
+        if not p.is_file():
+            continue
+        text = p.read_text(errors="replace").replace("\\\n", " ")
+        for line in text.splitlines():
+            line = line.split("#")[0]
+            m = re.match(r"^(\S+\.[cS])\s", line)
+            if m:
+                named.add("sys/" + m.group(1))
+                continue
+            # An entry whose target is an object names its source in a
+            # `dependency', the aesni and armv8_crypto shape.
+            if re.match(r"^\S+\.o\s", line):
+                for d in re.findall(r'dependency\s+"([^"]*)"', line):
+                    for w in d.split():
+                        if w.endswith((".c", ".S")):
+                            named.add("sys/" + w.replace("$S/", "")
+                                      .replace("${SRCTOP}/sys/", ""))
+    return frozenset(named)
+
+
+@functools.lru_cache(maxsize=None)
 def files_arch_index() -> dict[str, str]:
     """source path under sys/ -> the architecture whose files.* names it."""
     out: dict[str, str] = {}
@@ -2424,6 +2460,18 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
         # or the module whose SRCS does - goes in front, per kmod.mk:128.
         found: list[str] = list(by_file.get(rel, ())) + list(
             by_src.get(rel, ()))
+        # sys/conf/kmod.mk:121 is `CFLAGS+= -DKLD_MODULE', and a source
+        # that only a module builds is compiled with it. 594 of amd64's
+        # translation units are in that position - the whole of
+        # sys/amd64/vmm, sys/contrib/dev's 323 linuxkpi driver sources,
+        # sys/dev/qat's 121, sys/amd64/linux32, sys/compat/linux - and
+        # the sweep was compiling every one of them without it. The macro
+        # is not decoration: sys/sys/kpilite.h turns the lite KPI from
+        # inline code into calls on it, and mutex.h, _lock.h, systm.h,
+        # sysctl.h, namei.h, conf.h, sysent.h, pcpu.h, net/vnet.h,
+        # vm/vm_page.h, vm/vm_map.h and cddl's atomic.h all read it.
+        if rel in by_src and rel not in kernel_files_named():
+            found.append("-DKLD_MODULE")
         # A directory's is a guess about a file nothing named, and a
         # guess does not get to decide order: it stays at the end, where
         # it has always been. sys/modules/dtrace/dtnfscl takes .PATH on

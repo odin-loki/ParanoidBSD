@@ -501,6 +501,31 @@ _fl = includes.include_flags(SRC / "sys/dev/sound/pcm/feeder_eq.c", "amd64")
 check_that("the generated-header directory is on a kernel file's -I",
            f"-I{_gen}" in _fl)
 
+print("\n== -DKLD_MODULE, for a source only a module builds")
+# sys/conf/kmod.mk:121. The question the flag turns on is "does anything
+# in sys/conf/files* name this source", and both answers have to be
+# checked, because a rule that says yes to everything and a rule that
+# says no to everything both look like a rule.
+_named = includes.kernel_files_named()
+check_that("sys/conf/files* names sys/kern/kern_malloc.c",
+           "sys/kern/kern_malloc.c" in _named)
+check_that("...and does not name sys/amd64/vmm/amd/svm.c",
+           "sys/amd64/vmm/amd/svm.c" not in _named,
+           "bhyve is built by sys/modules/vmm and by nothing else")
+check_that("an aesni source named only by a compile-with dependency "
+           "still counts as named",
+           "sys/crypto/aesni/aesni_ghash.c" in _named,
+           "its files entry's target is aesni_ghash.o and the source is "
+           "in the dependency, which is the shape sweep_report already "
+           "had to learn")
+_svm = includes.include_flags(SRC / "sys/amd64/vmm/amd/svm.c", "amd64")
+_km = includes.include_flags(SRC / "sys/kern/kern_malloc.c", "amd64")
+check_that("a module-only source is compiled with -DKLD_MODULE",
+           "-DKLD_MODULE" in _svm)
+check_that("...and a source the kernel builds is not",
+           "-DKLD_MODULE" not in _km,
+           "kern_malloc.c is in sys/conf/files and in no module")
+
 print()
 if fails:
     print(f"{len(fails)} check(s) failed")
