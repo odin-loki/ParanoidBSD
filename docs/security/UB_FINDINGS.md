@@ -5517,3 +5517,51 @@ exactly and nothing outside libm can reach the function. Recorded rather
 than changed: `static` would be the honest annotation, and fdlibm's
 `__kernel_*` functions are shared across `src/`, `ld80/` and `ld128/`
 translation units, so it is not available.
+
+### `ufs_lookup.c` and `ext2_lookup.c` — twelve findings, one copied idiom
+
+Six each, every one *"Dereference of null pointer (loaded from variable
+`vpp`)"*, and both functions have the same shape because one is a copy of
+the other:
+
+    ufs_lookup_ino(struct vnode *vdp, struct vnode **vpp,
+        struct componentname *cnp, ino_t *dd_ino)
+    {
+            ...
+            if (vpp != NULL)          /* :216 - so vpp MAY be NULL */
+                    *vpp = NULL;
+            ...
+            *vpp = tdp;               /* :606, :662, :708, :730, :740 */
+            ...
+            cache_enter(vdp, *vpp, cnp);  /* :747 */
+
+The function states in its own third statement that `vpp` may be NULL and
+then dereferences it six times without a test. The analyser is following
+a branch the code creates.
+
+**UFS**: reachable, and guarded — by the *other* argument. Every store is
+behind an `if (dd_ino != NULL) return (0);`: `:584` covers `:601` and
+`:606`, `:630` covers `:662`, and `:665` covers `:708`, `:730`, `:740`
+and the `cache_enter(vdp, *vpp, cnp)` at `:747`. The four callers that
+pass `vpp == NULL` — `ufs_vnops.c:1346`, `:1372`, `:1714` and
+`ffs_softdep.c:2891` — all pass a non-NULL `dd_ino`, and the one that
+passes a real `vpp`, `ufs_lookup()` at `:184`, passes `dd_ino = NULL`.
+So the invariant is *`vpp == NULL` implies `dd_ino != NULL`*, maintained
+at five call sites and asserted at none. Thin, in the same way
+`pf_lb.c:1026` is thin: it holds, and nothing in the function says so.
+
+**ext2fs**: not reachable at all. `ext2_lookup_ino()` is `static`
+(`:125`) with exactly one caller, `ext2_lookup()` at `:311`, which passes
+`ap->a_vpp` and `dd_ino = NULL`. A VFS lookup's `a_vpp` is never NULL. So
+`:342`'s `if (vpp != NULL)` and the `dd_ino != NULL` returns at `:579`,
+`:622` and `:630` are all vestigial — copied from UFS, where they carry
+weight, into a file where no caller can exercise them. The analyser
+reports them because `a_vpp` is a field of a parameter and so
+unconstrained.
+
+Twelve findings, no defect in either, and the reason they read the same
+is that the second file inherited the first file's contract without
+inheriting its callers. Recorded rather than changed: removing ext2fs's
+dead half would silence six findings and buy nothing, and the divergence
+from the UFS shape it was deliberately copied from is worth more than the
+six.
