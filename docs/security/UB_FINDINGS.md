@@ -6180,3 +6180,88 @@ single `goto done` in the row above.
 Nothing to change in a vendored CDDL decoder. Cited so that the largest
 file in the sweep stops being 72 uncounted findings and becomes one that
 has been read.
+
+### `linux_socket.c` — the same 61, cited
+
+The sweep-13 section above establishes that every one of this file's
+findings comes from one path the program does not have:
+`linux_socketcall()` fills `l_args[i]` for `i < lxs_args_cnt[args->what]`
+and then dispatches on `args->what`, and the analyser explores "the loop
+ran once" together with "the `switch` went to `case LINUX_SENDTO`",
+because it loads the count symbolically and does not fold it against the
+same `what` the `switch` uses. Thirty lines reproduce it.
+
+Sweep 16 still reports 61 sites — 33 `core.CallAndMessage`, 13
+`core.UndefinedBinaryOperatorResult`, 13 `core.uninitialized.Assign`, 2
+`core.uninitialized.Branch` — and only `:1018` was ever written where a
+reader could count it. All 61:
+
+`linux_socket.c:832`, `linux_socket.c:848`, `linux_socket.c:880`,
+`linux_socket.c:892`, `linux_socket.c:911`, `linux_socket.c:918`,
+`linux_socket.c:959`, `linux_socket.c:981`, `linux_socket.c:1018`,
+`linux_socket.c:1099`, `linux_socket.c:1107`, `linux_socket.c:1118`,
+`linux_socket.c:1143`, `linux_socket.c:1166`, `linux_socket.c:1169`,
+`linux_socket.c:1176`, `linux_socket.c:1188`, `linux_socket.c:1218`,
+`linux_socket.c:1219`, `linux_socket.c:1220`, `linux_socket.c:1221`,
+`linux_socket.c:1259`, `linux_socket.c:1260`, `linux_socket.c:1261`,
+`linux_socket.c:1262`, `linux_socket.c:1278`, `linux_socket.c:1288`,
+`linux_socket.c:1293`, `linux_socket.c:1294`, `linux_socket.c:1296`,
+`linux_socket.c:1308`, `linux_socket.c:1531`, `linux_socket.c:1542`,
+`linux_socket.c:1548`, `linux_socket.c:1560`, `linux_socket.c:1943`,
+`linux_socket.c:1947`, `linux_socket.c:2009`, `linux_socket.c:2049`,
+`linux_socket.c:2063`, `linux_socket.c:2066`, `linux_socket.c:2074`,
+`linux_socket.c:2108`, `linux_socket.c:2119`, `linux_socket.c:2130`,
+`linux_socket.c:2133`, `linux_socket.c:2141`, `linux_socket.c:2148`,
+`linux_socket.c:2157`, `linux_socket.c:2172`, `linux_socket.c:2191`,
+`linux_socket.c:2232`, `linux_socket.c:2307`, `linux_socket.c:2338`,
+`linux_socket.c:2386`, `linux_socket.c:2389`, `linux_socket.c:2407`,
+`linux_socket.c:2414`, `linux_socket.c:2431`, `linux_socket.c:2683`,
+`linux_socket.c:2690`.
+
+Nothing to change: the table and the `switch` agree, and making the
+analyser see it would mean writing the count twice.
+
+### `ofw_real.c` — 19 OUT cells, read at the right moment this time
+
+The section above fixed the one site that read an OUT cell *before*
+`ofw_real_unmap()`. The other nineteen read it after, which is correct,
+and the analyser cannot tell — for a reason worth writing down, because
+it is the same bounce buffer seen from the other side.
+
+An OUT cell is never assigned in C. Two things can write it, and the
+analyser can follow neither:
+
+* `ofw_real_unmap()` (`:354`) ends in
+  `memcpy(buf, of_bounce_virt + (physaddr - of_bounce_phys), len)` — a
+  copy out of a pointer nothing relates to `&args` — and it returns
+  early, without copying, when `of_bounce_virt == NULL` (`:358`) or
+  `physaddr == 0` (`:361`). That early return is the path the analyser
+  explores.
+* `openfirmware()` is an indirect call through a function pointer
+  assigned at `ofw_real_init()`. When there is no bounce page it is
+  handed the struct's own address, and it writes the cell in place.
+
+Those two cases are exhaustive and they interlock. `ofw_real_map()`
+(`:301`) returns `(cell_t)((uintptr_t)buf & ~DMAP_BASE_ADDRESS)` — the
+1:1 physical address of the caller's own storage — when
+`of_bounce_virt == NULL && !pmap_bootstrapped`, and *does not set*
+`of_bounce_virt`; so the very `ofw_real_unmap()` early return the
+analyser takes is the case where no copy back is needed, because the
+firmware wrote `args` directly. Otherwise `ofw_real_map()` has a bounce
+page (it installs `emergency_buffer` at `:323` if it must), so the
+`memcpy` runs.
+
+Either the firmware wrote the struct or `ofw_real_unmap()` copied it
+back. Never neither, and never something the analyser can see.
+
+`ofw_real.c:425`, `ofw_real.c:458`, `ofw_real.c:487`, `ofw_real.c:516`,
+`ofw_real.c:545`, `ofw_real.c:577`, `ofw_real.c:617`, `ofw_real.c:654`,
+`ofw_real.c:693`, `ofw_real.c:730`, `ofw_real.c:761`, `ofw_real.c:798`,
+`ofw_real.c:835`, `ofw_real.c:926`, `ofw_real.c:978`,
+`ofw_real.c:1038`, `ofw_real.c:1072`, `ofw_real.c:1105`,
+`ofw_real.c:1142`.
+
+Two of the nineteen are not `UndefReturn`: `ofw_real.c:926` is
+`ofw_real_interpret()`'s `status = OUT(args.slot[i++])` and
+`ofw_real.c:978` is the `args.instance == 0` test the fix above moved to
+after the unmap. Same cell, same reason.
