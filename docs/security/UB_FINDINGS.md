@@ -5702,3 +5702,112 @@ duplicate symbol.
 So it is on the record as not built, and the reason says which of the
 two it is: not an include path, a file the tree stopped compiling and
 never removed.
+
+## Sorting the 1,569 nobody has read, and the first thing it found
+
+Fifteen sweeps in, the pile that is not written up here is larger than
+the pile that is: 1,569 of sweep 15's 1,638 deduplicated findings have
+never been read. That is past the point where reading them one at a time
+is a plan.
+
+`tools/verify/param_premise.py` sorts them by **whose precondition they
+are** — the rule `tools/verify/report.py` has applied to the CBMC runs
+since the beginning and the clang sweep never had:
+
+|  | findings | names a param | param on the line |
+|---|---:|---:|---:|
+| exported | 621 | 48 | 246 |
+| static, address taken | 235 | 0 | 44 |
+| static, called here | 611 | 60 | 244 |
+| static, unreferenced | 8 | 1 | 4 |
+| in a header | 35 | 10 | 21 |
+| in a generated header | 7 | 0 | 0 |
+| **attributed to no function** | **52** | | |
+
+Four of those categories are new information rather than a restatement.
+
+**static, address taken** is a `static` function with no call site in its
+own file and a mention that is not a call — a `DEVMETHOD` entry, a kobj
+method, a callout, an ioctl table. It is reached through a pointer by
+code that is not in the translation unit, so as far as a precondition is
+concerned it is exported, and the 235 findings in that class are not
+deferrable on the "the callers are all here" argument.
+
+**in a header** is a `static __inline` in a `.h`: `sys/sys/refcount.h:69`,
+`sys/vm/vm_page.h:959`, `sys/sys/time.h:87`. It has no caller in its own
+file and a caller in every unit that includes it, and the analyser starts
+at it as a top-level entry with its parameters unconstrained in each one.
+
+**in a generated header** is `config(8)`'s `vnode_if.h` and the other
+`*_if.h` interfaces, which the sweep writes into a `mkdtemp` directory
+that does not outlive the run. Seven findings live at a path that belongs
+to one run; `sweep_report.py` already normalises it away, which is why
+they have never shown up as fourteen in a delta.
+
+**attributed to no function** is the tool declining. All of it is code a
+macro generated at file scope — `RB_GENERATE_STATIC` is most of it — and
+saying nothing there is better than charging it to whichever function
+happens to be above it.
+
+### `lib/libc/gen/sysctl.c` — the guard was on one write of three
+
+The first thing read out of the exported-and-names-a-parameter column is
+a null store from a public libc entry point.
+
+`sysctl(3)` documents `oldp` and `oldlenp` both being `NULL` when the old
+value is not wanted, and `sysctl()` itself knows it — line 71 is
+
+```c
+	orig_oldlen = oldlenp != NULL ? *oldlenp : 0;
+```
+
+There are three writes through `oldlenp` in the `CTL_USER` post-processing
+that follows, and **one of them tested for it**:
+
+| | |
+|---|---|
+| `:92` `USER_LOCALBASE` | `if (oldlenp == NULL \|\| *oldlenp > sizeof("")) return (0);` |
+| `:106` `USER_CS_PATH` | `set_user_str(oldp, oldlenp, ...)`, whose `:60` is an unconditional `*dstlenp = len;` |
+| `:114` every `USER_*` int | `*oldlenp = sizeof(int);`, reached with `oldp == NULL` |
+
+So
+
+```c
+	sysctl((int []){CTL_USER, USER_BC_BASE_MAX}, 2, NULL, NULL, NULL, 0);
+```
+
+stores through a null pointer. The path is short and every step of it is
+in the tree:
+
+1. `sys___sysctl()` (`kern_sysctl.c:2455`) handles a null `oldlenp`
+   explicitly — `if (uap->oldlenp)` guards the `copyout` at `:2472` — and
+   `userland_sysctl()` does too, at `:2560`, leaving `req.oldlen` zero.
+2. `kern_mib.c:688` really does register `_user.bc_base_max` as a
+   `CTLFLAG_RD` int with `SYSCTL_NULL_INT_PTR`, so the lookup succeeds and
+   `SYSCTL_OUT` with a null `oldptr` returns 0. `retval` is 0.
+3. libc's `:81` `if (retval != 0 || name[0] != CTL_USER) return (retval);`
+   therefore does not return, `namelen` is 2, `newp` is `NULL`, `name[1]`
+   is neither `USER_LOCALBASE` nor `USER_CS_PATH`, and `:110`'s
+   `oldp != NULL &&` short-circuits past the read.
+4. `:114` writes.
+
+`oldp != NULL` with `oldlenp == NULL` does *not* reach it: `SYSCTL_OUT`
+against a zero `validlen` returns `ENOMEM`, `retval` is non-zero and libc
+returns at `:81`. The reachable case is exactly the documented one.
+
+The fix is the guard the other name already has, moved to where it covers
+all three:
+
+```c
+	if (oldlenp == NULL)
+		return (0);
+```
+
+placed after the `newp != NULL` check, so `USER_CS_PATH` is covered as
+well as the integers. Three findings to none on that file, at the same
+flag digest `3e06ab59bf8b` — the digest sweep 15 added exists to say that
+the change was the code and not the command, and this is the first time
+it has been used to say it.
+
+That is the twelfth time in this document that the shape has been "the
+guard exists on N of M".

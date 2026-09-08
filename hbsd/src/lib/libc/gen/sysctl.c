@@ -101,6 +101,18 @@ sysctl(const int *name, u_int namelen, void *oldp, size_t *oldlenp,
 		return (-1);
 	}
 
+	/*
+	 * The old value is not wanted: sysctl(3) documents oldp and oldlenp
+	 * both being NULL for that, and __sysctl() has already validated the
+	 * name.  USER_LOCALBASE above was the only one of the three writes
+	 * through oldlenp in this routine that tested for it, so
+	 * sysctl((int []){CTL_USER, USER_BC_BASE_MAX}, 2, NULL, NULL, NULL, 0)
+	 * stored through a null pointer - as did USER_CS_PATH, through
+	 * set_user_str()'s unconditional *dstlenp.
+	 */
+	if (oldlenp == NULL)
+		return (0);
+
 	switch (name[1]) {
 	case USER_CS_PATH:
 		return (set_user_str(oldp, oldlenp, _PATH_STDPATH,

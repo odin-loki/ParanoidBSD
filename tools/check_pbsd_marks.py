@@ -85,6 +85,15 @@ FIXES = {
         "the usermode test that guards every other write to them, and "
         "the kernel-mode caller at :481 passes NULL for both",
     ),
+    "hbsd/src/lib/libc/gen/sysctl.c": (
+        "if (oldlenp == NULL)\n\t\treturn (0);\n\n\tswitch (name[1]) {",
+        "\t}\n\n\tswitch (name[1]) {\n\tcase USER_CS_PATH:",
+        "sysctl(3) documents oldp and oldlenp both being NULL when the old "
+        "value is not wanted, and of the three writes through oldlenp under "
+        "CTL_USER only USER_LOCALBASE tested for it, so "
+        "sysctl({CTL_USER, USER_BC_BASE_MAX}, 2, NULL, NULL, NULL, 0) "
+        "stored through a null pointer from a public libc entry point",
+    ),
     "hbsd/src/sys/modules/tpm/Makefile": (
         ".if !empty(OPT_FDT)",
         ".if defined(${OPT_FDT})",
