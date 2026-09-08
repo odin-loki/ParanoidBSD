@@ -112,6 +112,250 @@ EXPECTED = {
         "INCLUDED_BY:sys/cddl/contrib/opensolaris/uts/common/dtrace/dtrace.c",
     "sys/cam/ctl/ctl_ser_table.c": "INCLUDED_BY:sys/cam/ctl/ctl.c",
 
+    # Sweep 14's reconciliation. Each of these came out of
+    # --check-errors as "does not compile and is not in EXPECTED", and
+    # each was sorted the way sweep_report.py sorts them: does the BUILD
+    # name it. Those it does not name are here; those it does are below,
+    # with what the analyser is not yet giving them.
+    #
+    # Not translation units at all - another source #includes them.
+    "lib/libc/regex/engine.c":
+        "INCLUDED_BY:lib/libc/regex/regexec.c",
+    "lib/libc/tests/stdbit/stdbit-test-framework.c":
+        "INCLUDED_BY:lib/libc/tests/stdbit/stdc_bit_ceil_test.c",
+    "lib/libc/tests/stdbit/stdbit-test-kernel.c":
+        "INCLUDED_BY:lib/libc/tests/stdbit/stdbit-test-framework.c",
+    "sys/dev/filemon/filemon_wrapper.c":
+        "INCLUDED_BY:sys/dev/filemon/filemon.c",
+    "sys/dev/xen/netback/netback_unit_tests.c":
+        "INCLUDED_BY:sys/dev/xen/netback/netback.c",
+    "sys/dev/aic7xxx/aic_osm_lib.c":
+        "INCLUDED_BY:sys/dev/aic7xxx/aic79xx_osm.c",
+    "sys/arm64/vmm/vmm_hyp.c":
+        "INCLUDED_BY:sys/arm64/vmm/vmm_nvhe.c",
+    "sys/i386/i386/pmap.c":
+        "INCLUDED_BY:sys/i386/i386/pmap_pae.c",
+    "sys/i386/i386/minidump_machdep_base.c":
+        "INCLUDED_BY:sys/i386/i386/minidump_machdep_pae.c",
+    # systrace's argument tables. Five architectures' worth, and the one
+    # translation unit that compiles them is DTrace's provider, which
+    # #includes whichever the kernel has.
+    "sys/amd64/linux/linux_systrace_args.c":
+        "INCLUDED_BY:sys/cddl/dev/systrace/systrace.c",
+    "sys/amd64/linux32/linux32_systrace_args.c":
+        "INCLUDED_BY:sys/cddl/dev/systrace/systrace.c",
+    "sys/arm64/linux/linux_systrace_args.c":
+        "INCLUDED_BY:sys/cddl/dev/systrace/systrace.c",
+    "sys/i386/linux/linux_systrace_args.c":
+        "INCLUDED_BY:sys/cddl/dev/systrace/systrace.c",
+    "sys/compat/freebsd32/freebsd32_systrace_args.c":
+        "INCLUDED_BY:sys/cddl/dev/systrace/systrace.c",
+
+    # Named by nothing: no files* line, no module SRCS, no #include.
+    "sys/dev/axgbe/xgbe-ptp.c":
+        "not built: named by no files* or SRCS",
+    "sys/dev/drm2/ttm/ttm_page_alloc_dma.c":
+        "not built: wants <linux/dma-mapping.h>; drm2's TTM keeps the "
+        "Linux allocator's file and names it nowhere",
+    "sys/dev/pms/freebsd/driver/ini/src/osapi.c":
+        "not built: named by no files* or SRCS",
+    "sys/ofed/drivers/infiniband/core/ib_umem_odp.c":
+        "not built: named by no files* or SRCS",
+    "sys/ofed/drivers/infiniband/core/ib_umem_rbtree.c":
+        "not built: named by no files* or SRCS",
+    "sys/ofed/drivers/infiniband/ulp/ipoib/ipoib_ethtool.c":
+        "not built: named by no files* or SRCS",
+    "sys/ofed/drivers/infiniband/ulp/ipoib/ipoib_fs.c":
+        "not built: named by no files* or SRCS",
+    "sys/ofed/drivers/infiniband/ulp/ipoib/ipoib_vlan.c":
+        "not built: named by no files* or SRCS",
+    "sys/ofed/drivers/infiniband/ulp/sdp/sdp_proc.c":
+        "not built: wants <linux/proc_fs.h>, and named by nothing",
+    "sys/ofed/drivers/infiniband/ulp/sdp/sdp_zcopy.c":
+        "not built: wants <asm/ioctls.h>, and named by nothing",
+    "sys/ofed/drivers/infiniband/util/madeye.c":
+        "not built: wants <rdma/ib_mad.h>, and named by nothing",
+    # ...and the OFED SDP transport itself, which IS named by
+    # sys/conf/files but whose own sdp.h opens with <rdma/ib_verbs.h> -
+    # an OFED header this tree does not ship.
+    "sys/ofed/drivers/infiniband/ulp/sdp/sdp_bcopy.c":
+        "wants <rdma/ib_verbs.h>, which this tree does not have",
+    "sys/ofed/drivers/infiniband/ulp/sdp/sdp_cma.c":
+        "wants <rdma/ib_verbs.h>, which this tree does not have",
+    "sys/ofed/drivers/infiniband/ulp/sdp/sdp_main.c":
+        "wants <rdma/ib_verbs.h>, which this tree does not have",
+    "sys/ofed/drivers/infiniband/ulp/sdp/sdp_rx.c":
+        "wants <rdma/ib_verbs.h>, which this tree does not have",
+    "sys/ofed/drivers/infiniband/ulp/sdp/sdp_tx.c":
+        "wants <rdma/ib_verbs.h>, which this tree does not have",
+
+    # Named only by a fragment no configuration pulls in - the same shape
+    # as sys/dev/qcom_ess_edma, established by reading which configs
+    # declare which tokens. sys/arm/ti/files.ti is named by no arm
+    # config in this tree.
+    "sys/arm/ti/ti_gpio.c":
+        "not built: sys/arm/ti/files.ti, which no arm config names",
+    "sys/arm/ti/clk/ti_gate_clock.c":
+        "not built: sys/arm/ti/files.ti, which no arm config names",
+    "sys/arm/ti/clk/ti_mux_clock.c":
+        "not built: sys/arm/ti/files.ti, which no arm config names",
+    "sys/arm/broadcom/bcm2835/bcm2835_fb.c":
+        "not built: `optional sc', and no arm config declares `device sc'",
+    "sys/dev/gpio/gpiomdio.c":
+        "not built: `optional gpiomdio mii_bitbang', and no config on any "
+        "architecture declares gpiomdio",
+    "sys/dev/xdma/xdma_fdt_test.c":
+        "not built: `optional xdma xdma_test fdt', and no config declares "
+        "xdma_test",
+    "sys/dev/ath/ath_hal/ar5212/ar2316.c":
+        "not built: `optional ath_rf2316', declared by no config",
+    "sys/dev/ath/ath_hal/ar5212/ar2317.c":
+        "not built: `optional ath_rf2317', declared by no config",
+    "sys/dev/ath/ath_rate/amrr/amrr.c":
+        "not built: `optional ath_rate_amrr', declared by no config",
+    "sys/dev/ath/ath_rate/onoe/onoe.c":
+        "not built: `optional ath_rate_onoe', declared by no config",
+
+    # Built by an explicit rule in a module Makefile whose target is in
+    # neither SRCS nor OBJS, so ask_module() does not see it.
+    "sys/i386/linux/linux_vdso_gtod.c":
+        "built by sys/modules/linux/Makefile:105's own rule, which "
+        "ask_module() does not read",
+    "sys/dev/dwwdt/dwwdt.c":
+        "sys/modules/dwwdt builds it; the FDT clock API it calls is "
+        "declared only where the analyser is not looking",
+
+    # The blocks tests. lib/libc/tests/gen/Makefile:10 puts each inside
+    # `.if ${COMPILER_FEATURES:Mblocks}' and :120 gives it -fblocks, and
+    # the analyser passes neither - it asks bmake with no CC, so the
+    # probe answers for gcc.
+    "lib/libc/tests/gen/fts_blocks_test.c":     "needs -fblocks",
+    "lib/libc/tests/gen/glob_blocks_test.c":    "needs -fblocks",
+    "lib/libc/tests/gen/scandir_blocks_test.c": "needs -fblocks",
+    "lib/libc/tests/stdlib/qsort_b_test.c":     "needs -fblocks",
+
+    # A file's own CFLAGS.<file>, which the userland reader does not ask
+    # bmake for yet.
+    "lib/libc/gen/dlfcn.c":
+        "CFLAGS.dlfcn.c is ${RTLD_HDRS}; without it rtld.h cannot find "
+        "rtld_machdep.h",
+    "lib/libc/gen/tls.c":
+        "CFLAGS.tls.c is ${RTLD_HDRS}; without it rtld.h cannot find "
+        "rtld_machdep.h",
+    "lib/libc/tests/stdtime/detect_tz_changes_test.c":
+        "CFLAGS.detect_tz_changes_test is -I${SRCTOP}/contrib/tzcode",
+    "lib/msun/i387/fenv.c":
+        "msun's ARCH_SUBDIR is ${MACHINE_CPUARCH:S/i386/i387/}, so i387 "
+        "IS i386 and arch_of() calls it amd64",
+    "libexec/atf/atf-pytest-wrapper/atf_pytest_wrapper.cpp":
+        "#include <format>, which needs a C++20 standard library",
+    "sys/crypto/sha2/sha256c_arm64.c":
+        "built by lib/libmd/Makefile through a .PATH into sys/, with "
+        "CFLAGS.sha256c_arm64.c+= -march=armv8-a+crypto",
+    "sys/crypto/sha2/sha512c_arm64.c":
+        "built by lib/libmd/Makefile through a .PATH into sys/, with "
+        "CFLAGS.sha512c_arm64.c+= -march=armv8.2-a+sha3",
+
+    # A files* entry whose TARGET is an object: the flags are on its own
+    # compile-with, and the reader only looks at .c entries.
+    "sys/crypto/aesni/aesni_ccm.c":     "the compile-with on aesni_ccm.o",
+    "sys/crypto/aesni/aesni_ghash.c":   "the compile-with on aesni_ghash.o",
+    "sys/crypto/aesni/aesni_wrap.c":    "the compile-with on aesni_wrap.o",
+    "sys/crypto/aesni/intel_sha1.c":    "the compile-with on intel_sha1.o",
+    "sys/crypto/aesni/intel_sha256.c":  "the compile-with on intel_sha256.o",
+    "sys/crypto/armv8/armv8_crypto_wrap.c":
+        "the compile-with on armv8_crypto_wrap.o, which carries "
+        "-I$S/crypto/armv8 and -march=armv8-a+crypto",
+
+    # A header the BUILD generates by assembling and linking, which this
+    # analyser does not do. Each is a genassym-shaped recipe: build a
+    # small object, read its symbols, write a .h.
+    "sys/amd64/acpica/acpi_wakeup.c":  "wants acpi_wakecode.h, generated",
+    "sys/i386/acpica/acpi_wakeup.c":   "wants acpi_wakecode.h, generated",
+    "sys/amd64/amd64/elf_machdep.c":   "wants vdso_offsets.h, generated",
+    "sys/amd64/ia32/ia32_signal.c":    "wants vdso_ia32_offsets.h, generated",
+    "sys/amd64/ia32/ia32_syscall.c":   "wants vdso_ia32_offsets.h, generated",
+    "sys/compat/ia32/ia32_sysvec.c":   "wants vdso_ia32_offsets.h, generated",
+
+    # An interface header generated from a .m the ARCHITECTURE'S OWN
+    # files* names, in another architecture's directory. incs for the
+    # *_if.h are generated by directory, and these two live under
+    # sys/arm/ while sys/conf/files.arm64 is what names them.
+    "sys/arm64/arm64/gic_v3.c":
+        "wants gic_if.h, from sys/arm/arm/gic_if.m",
+    "sys/arm64/nvidia/tegra210/tegra210_coretemp.c":
+        "wants tegra_soctherm_if.h, from sys/arm/nvidia/tegra_soctherm_if.m",
+
+    # sys/conf/Makefile.<arch>:28 computes LINUX_DTS_VERSION with awk
+    # over $S/dts/freebsd-compatible.dts and passes it as a -D; the
+    # reader takes -D from that file but not one whose value is a make
+    # variable it has not expanded.
+    "sys/arm/arm/machdep.c":    "wants -DLINUX_DTS_VERSION, computed by awk",
+    "sys/arm64/arm64/machdep.c": "wants -DLINUX_DTS_VERSION, computed by awk",
+
+    # amd64's bhyve. Its own headers live in sys/amd64/vmm/io/, which
+    # sys/modules/vmm/Makefile puts on the path with two -I and the
+    # kernel reader does not.
+    "sys/amd64/vmm/vmm.c":        "wants vatpic.h, in sys/amd64/vmm/io",
+    "sys/amd64/vmm/vmm_ioport.c": "wants vatpic.h, in sys/amd64/vmm/io",
+    "sys/amd64/vmm/vmm_lapic.c":  "wants vlapic.h, in sys/amd64/vmm/io",
+    "sys/amd64/vmm/amd/svm.c":    "wants vatpic.h, in sys/amd64/vmm/io",
+    "sys/amd64/vmm/amd/vmcb.c":   "wants vlapic.h, in sys/amd64/vmm/io",
+    "sys/amd64/vmm/amd/amdv.c":   "wants iommu.h, in sys/amd64/vmm/io",
+    "sys/amd64/vmm/intel/vmx.c":  "wants vatpic.h, in sys/amd64/vmm/io",
+
+    # -DKLD_MODULE. sys/conf/kmod.mk:121 passes it and sys/sys/sysctl.h
+    # :140 relaxes SYSCTL's type CTASSERT under it, so a driver only ever
+    # built as a module may overspecify a sysctl's type. These three do.
+    "sys/dev/amd_ecc_inject/ecc_inject.c": "needs -DKLD_MODULE",
+    "sys/dev/iicbus/adc/pcf8591.c":        "needs -DKLD_MODULE",
+    "sys/dev/iicbus/sensor/htu21.c":       "needs -DKLD_MODULE",
+
+    # The rest, each read once and left with what it said.
+    "sys/amd64/amd64/mp_machdep.c":
+        "acpi_pxm_get_cpu_locality() is declared inside `#ifdef DEV_ACPI' "
+        "in a header this file does not get the macro for",
+    "sys/arm/arm/gic_acpi.c":
+        "acfreebsd.h:185 wants machine/acpica_machdep.h, which sys/arm "
+        "does not have - ACPI on arm is arm64's",
+    "sys/arm/arm/pmu_acpi.c":
+        "acfreebsd.h:185 wants machine/acpica_machdep.h, which sys/arm "
+        "does not have - ACPI on arm is arm64's",
+    "sys/arm/broadcom/bcm2835/raspberrypi_virtgpio.c":
+        "calls pmap_mapdev_attr() under a name sys/arm does not declare",
+    "sys/i386/i386/mp_machdep.c":
+        "#error \"The apic device is required for SMP\" - DEV_APIC, which "
+        "i386's DEFAULTS declares and the reader does not reach",
+    "sys/dev/ispfw/ispfw.c":
+        "the firmware images are .h files the build generates from "
+        "vendor blobs",
+    "sys/dev/mlx5/mlx5_fpga_tools/mlx5fpga_tools_char.c":
+        "the Innova FPGA half of mlx5 again - see the mlx5_fpga/ prefix "
+        "above; this one sits outside it",
+    "sys/dev/vt/hw/fb/vt_early_fb.c":
+        "the whole body is inside `#ifdef FDT', and the reader supplies "
+        "no -DFDT for a file `optional vt fdt' on an architecture whose "
+        "configs do not all set it",
+
+    # Userland programs that live under sys/. Each opens with <stdio.h>,
+    # <inttypes.h> or <assert.h> and is compiled by hand, not by the
+    # kernel build - the same class as libexec/bootpd's try*.c probes.
+    "sys/crypto/rijndael/test00.c":
+        "a hand-run test program; wants <stdio.h> under -nostdinc",
+    "sys/crypto/skein/skein_debug.c":
+        "upstream's debug printer; wants <stdio.h> under -nostdinc",
+    "sys/dev/random/unit_test.c":
+        "the yarrow/fortuna unit test; wants <inttypes.h> under -nostdinc",
+    "sys/dev/videomode/test.c":
+        "a hand-run mode-table test; wants <stdio.h> under -nostdinc",
+
+    # ...and the flag order the Makefile walk gets wrong.
+    "lib/msun/arm/fenv-softfp.c":
+        "lib/msun/Makefile:18 adds -I${.CURDIR}/x86 inside an `.if' that "
+        "armv7 does not take; the walk cannot evaluate the condition, so "
+        "x86's <fenv.h> lands ahead of arm's and __fetestexcept_int() is "
+        "undeclared",
+
     # Sweep 10's sys/contrib shard. Everything here is a source no
     # sys/conf/files* entry and no module Makefile names - checked with
     # includes.kernel_flag_index(), which resolves SRCS through .PATH -
@@ -199,26 +443,14 @@ EXPECTED = {
     # rpcgen output. include/rpcsvc/Makefile runs rpcgen over yp.x,
     # nis.x and key_prot.x during buildworld; the .h files do not exist
     # in a source tree and there is nothing to point an -I at.
-    "lib/libc/yp/xdryp.c":            "wants rpcsvc/yp.h, generated by rpcgen",
-    "lib/libc/yp/yplib.c":            "wants rpcsvc/yp.h, generated by rpcgen",
     "lib/libc/rpc/getpublickey.c":    "wants rpc/key_prot.h, from rpcgen",
     "lib/libc/rpc/key_call.c":        "wants rpc/key_prot.h, from rpcgen",
-    "lib/libc/rpc/auth_des.c":        "wants rpcsvc/nis.h, from rpcgen",
-    "lib/libc/rpc/auth_time.c":       "wants rpcsvc/nis.h, from rpcgen",
     "lib/libc/rpc/key_prot_xdr.c":    "wants rpc/key_prot.h, from rpcgen",
-    "lib/libc/rpc/crypt_client.c":    "wants rpcsvc/crypt.h, from rpcgen",
 
     # option-gated: no kernel config in this tree sets these
-    "sys/kern/subr_asan.c":         "needs option KASAN",
-    "sys/kern/subr_csan.c":         "needs option KCSAN",
-    "sys/kern/subr_msan.c":         "needs option KMSAN",
-    "sys/kern/kern_tslog.c":        "needs option TSLOG",
-    "sys/kern/kern_poll.c":         "needs option DEVICE_POLLING",
-    "sys/kern/tty_compat.c":        "needs option COMPAT_43TTY",
 
     # wrong architecture for an amd64 sweep
     "sys/kern/subr_atomic64.c":     "32-bit archs only",
-    "sys/powerpc/ofw/ofw_machdep.c": "wants powerpc's <fdt.h>, absent on amd64",
 
     # 32-bit PowerPC, which no architecture this sweep runs is. The
     # cpu index recovered twelve of the fourteen named powerpc ERRORs
@@ -269,11 +501,6 @@ EXPECTED = {
 
     # Option-gated, found the first time --check-errors was run over the
     # kern shard rather than over lib and sys/dev alone.
-    "sys/netinet/tcp_stats.c":
-        "option-gated: `optional stats inet | stats inet6', and no "
-        "kernel config in this tree sets STATS",
-    "sys/vm/memguard.c":
-        "option-gated: `optional DEBUG_MEMGUARD'",
 
     # DTrace's own SDT provider, and it is the one file that cannot
     # survive a decision made deliberately elsewhere. opt_shim() drops
@@ -306,14 +533,8 @@ EXPECTED = {
     # directory compiled for the first time when the rtld's own include
     # flags were supplied - see includes.py - and riscv/reloc.c reported
     # a finding immediately. These six are what is left.
-    "libexec/rtld-elf/aarch64/reloc.c":   "another architecture's relocations",
-    "libexec/rtld-elf/arm/reloc.c":       "another architecture's relocations",
-    "libexec/rtld-elf/powerpc/reloc.c":   "another architecture's relocations",
-    "libexec/rtld-elf/powerpc64/reloc.c": "another architecture's relocations",
     "libexec/rtld-elf/tests/parse_integer_test.c":
         "#includes parse_integer_func.c, which the test Makefile stages",
-    "libexec/rtld-elf/tests/target/target.c":
-        "#includes pythagoras.h from a sibling test library",
 
     # The DPAA ethernet. sys/powerpc/conf/dpaa/config.dpaa is a
     # `makeoptions DPAA_COMPILE_CMD=...' twenty-one -I long, and
@@ -551,10 +772,6 @@ EXPECTED = {
 
     # Three under sys/contrib/dev that no NOT_BUILT prefix covers,
     # because they sit inside trees that ARE built.
-    "sys/contrib/dev/acpica/components/resources/rsdump.c":
-        "option-gated: sys/conf/files:545 is `optional acpi acpi_debug'",
-    "sys/contrib/dev/acpica/os_specific/service_layers/osgendbg.c":
-        "option-gated: sys/conf/files:601 is `optional acpi acpi_debug'",
     "sys/contrib/dev/ath/ath_hal/ar9300/ar9300_sim.c":
         "not built: the ar9300 HAL's simulator, in no files* or SRCS",
 }
@@ -591,10 +808,13 @@ NOT_BUILT = {
         "sys/modules/Makefile does not descend into it. brcmsmac's own "
         "headers - defs.h, brcmu_utils.h, brcm_hw_ids.h - are named by "
         "no SRCS either.",
-    "sys/contrib/dev/acpica/components/debugger/":
-        "the ACPI debugger, option ACPI_DEBUGGER, which no config sets",
-    "sys/contrib/dev/acpica/components/disassembler/":
-        "the AML disassembler, built from usr.sbin/acpi as iasl",
+    # The ACPI debugger (option ACPI_DEBUGGER, which no config sets) and
+    # the AML disassembler (built from usr.sbin/acpi as iasl) used to be
+    # here. Both compile now - the option retry supplies the -D their
+    # `optional' clause names - so the prefixes absorbed nothing and
+    # --check-errors called them stale. The FACT is unchanged: neither is
+    # built into a kernel. What changed is that a file this analyser can
+    # read no longer needs an entry to explain an ERROR it does not have.
 
     # The sys/dev half, from sweep 9's first --check-errors over sys/dev.
     #
@@ -697,6 +917,20 @@ NOT_BUILT = {
         "hand; mlx5fpga_ipsec.c and mlx5fpga_conn.c do not, and that is "
         "the code having rotted under a dead option rather than anything "
         "about this sweep. DEAD_OPTION:CONFIG_BUILD_FPGA",
+
+    # Whole directories of userland test programs under sys/. Each has
+    # its own Makefile and is built by hand; sys/conf/files* names none
+    # of them.
+    "sys/netpfil/ipfw/test/":
+        "dummynet's scheduler test harness, built by its own Makefile",
+    "sys/teken/demo/":
+        "the teken terminal emulator's ncurses demo",
+    "sys/teken/stress/":
+        "the teken terminal emulator's fuzz driver",
+    "sys/tests/runtest/":
+        "the in-kernel test runner's userland front end",
+    "sys/tools/syscalls/examples/":
+        "worked examples for the syscall generator, compiled by hand",
 }
 
 

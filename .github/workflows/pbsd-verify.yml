@@ -229,8 +229,16 @@ jobs:
           - { name: rest,   scopes: '--scope sys/arm64 --scope sys/amd64 --scope sys/arm --scope sys/i386 --scope sys/riscv --scope sys/powerpc --scope sys/x86 --scope sys/compat --scope sys/contrib --scope sys/crypto --scope sys/opencrypto --scope sys/ddb --scope sys/isa --scope sys/nfs --scope sys/netgraph --scope sys/netlink --scope sys/rpc --scope sys/kgssapi --scope sys/libkern --scope sys/modules --scope sys/nlm --scope sys/teken --scope sys/tests --scope sys/xen --scope sys/dts --scope sys/gnu --scope sys/sys --scope sys/hardenedbsd --scope sys/netipsec --scope sys/netpfil --scope sys/net80211 --scope sys/netsmb --scope sys/nfsclient --scope sys/nfsserver --scope sys/ofed --scope sys/bsm --scope sys/conf --scope sys/gdb --scope sys/mips --scope sys/tools --scope sys/xdr' }
     steps:
       - uses: actions/checkout@v4
+      # bmake as well as clang. Half of what a userland translation unit
+      # is compiled with is answered by ASKING the build - a component's
+      # CFLAGS, its INCS, which sources it names - and without bmake
+      # every one of those answers is empty. An empty answer is not an
+      # error here, it is a different set of flags, and so a different
+      # ERROR set than the one expected_errors.py was reconciled
+      # against: --check-errors would report holes this tree does not
+      # have.
       - name: Install the instruments
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang bmake
       # --check-errors, which this step did not pass for three sweeps.
       # The inventory in tools/verify/expected_errors.py was therefore
       # only ever checked where somebody checked it by hand, and the
