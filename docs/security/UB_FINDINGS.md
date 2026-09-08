@@ -5811,3 +5811,112 @@ it has been used to say it.
 
 That is the twelfth time in this document that the shape has been "the
 guard exists on N of M".
+
+### `lib/libc/iconv/citrus_stdenc.c:137` — the close path takes the malloc failure
+
+`_citrus_stdenc_open()` allocates the handle and, when that fails, goes to
+the same label every other failure goes to:
+
+```c
+	ce = malloc(sizeof(*ce));
+	if (ce == NULL) {
+		ret = errno;
+		goto bad;
+	}
+	...
+bad:
+	_citrus_stdenc_close(ce);
+```
+
+and `_citrus_stdenc_close()`'s first test is `ce == &_citrus_stdenc_default`,
+not `ce == NULL`, so the next line dereferences it. Every other `goto bad`
+in the function reaches the label with a valid `ce`; this one is the
+allocation that produced it.
+
+Fixed by taking a null handle the way `free(3)` does. One finding to none
+at the same digest `1081cf899313`. The four call sites outside this file —
+`libiconv_modules/iconv_std/citrus_iconv_std.c:393,395,414,415` — all pass
+handles that `_stdenc_open()` filled, so nothing else changes.
+
+### `lib/libc/rpc/pmap_prot2.c:105` — a use-after-free the tree had already fixed three times
+
+The analyser's complaint here is a false positive of a class this document
+already knows: `xdr_bool()` is in another translation unit, so the checker
+must assume it can set `more_elements` true while `*rp` is null, and the
+comment four lines above says it cannot —
+
+```c
+	 * more_elements is pre-computed in case the direction is
+	 * XDR_ENCODE or XDR_FREE.  more_elements is overwritten by
+	 * xdr_bool when the direction is XDR_DECODE.
+```
+
+Reading the loop to establish that found something else.
+
+```c
+		if (freeing)
+			next = &((*rp)->pml_next);
+		if (! xdr_reference(xdrs, (caddr_t *)rp,
+		    (u_int)sizeof(struct pmaplist), (xdrproc_t)xdr_pmap))
+			return (FALSE);
+		rp = (freeing) ? next : &((*rp)->pml_next);
+```
+
+The comment above it says "in the case of freeing we must remember the
+next object before we free the current object", and the code remembers the
+**address of a field inside the object about to be freed**.
+`xdr_reference()` under `XDR_FREE` (`xdr_reference.c`) ends with
+
+```c
+	if (xdrs->x_op == XDR_FREE) {
+		mem_free(loc, size);
+		*pp = NULL;
+	}
+```
+
+and `sys/rpc/types.h:69` is `#define mem_free(ptr, bsize) free(ptr)`. So
+`rp` is left pointing into freed memory, the next iteration reads `*rp`
+out of it, and — if the value read is not null — passes it to
+`xdr_reference()` to be freed in turn. A freed-memory-driven `free()`.
+
+What settles it is that **this tree already carries the fix, three times
+over.** `xdr_rpcblist_ptr()` and `xdr_rpcb_entry_list_ptr()`, in
+`lib/libc/rpc/rpcb_prot.c` and again in the kernel's `sys/rpc/rpcb_prot.c`,
+are this same loop with this same comment, and all four copies read
+
+```c
+		if (freeing && *rp)
+			next = (*rp)->rpcb_next;		/* the VALUE */
+		...
+		if (freeing) {
+			next_copy = next;
+			rp = &next_copy;
+			/*
+			 * Note that in the subsequent iteration, next_copy
+			 * gets nulled out by the xdr_reference
+			 * but next itself survives.
+			 */
+		} else if (*rp) {
+			rp = &((*rp)->rpcb_next);
+		}
+```
+
+`pmap_prot2.c` kept the original. The fix is that shape, transcribed:
+`next` becomes a `struct pmaplist *`, `next_copy` appears, and the
+non-freeing arm gains the `*rp` test that also disposes of the analyser's
+complaint. One finding to none at the same digest `bf5404f30c2d`.
+
+Reachable: `usr.sbin/rpcbind/warmstart.c:175` is
+`xdr_free((xdrproc_t)xdr_pmaplist_ptr, &list_pml)` on the list read back
+out of `/tmp/portmap.xdr` at warm start, and `xdr_pmaplist_ptr()` is one
+line — `return xdr_pmaplist(xdrs, (struct pmaplist **)(void *)rp);`.
+`lib/libc/rpc/pmap_getmaps.c:85` reaches it through `CLNT_CALL`'s result
+free. The kernel does not: `sys/rpc/pmap_prot.h` declares `xdr_pmaplist()`
+and nothing under `sys/` defines or calls it.
+
+One copy is left unfixed, `crypto/krb5/src/lib/rpc/pmap_prot2.c:110`, and
+it is vendor code PBSD does not own — `SKIP-VENDOR` in the ledger. It is
+recorded here rather than edited.
+
+The shape, for the thirteenth time: the guard exists on N of M. Here N and
+M are whole files.

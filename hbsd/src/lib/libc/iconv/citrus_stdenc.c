@@ -131,6 +131,15 @@ void
 _citrus_stdenc_close(struct _citrus_stdenc *ce)
 {
 
+	/*
+	 * _citrus_stdenc_open()'s `bad:' label is reached from its own
+	 * `ce = malloc(...); if (ce == NULL)' arm, so this is called with a
+	 * null handle whenever that allocation fails.  Take it the way
+	 * free(3) does rather than dereferencing it.
+	 */
+	if (ce == NULL)
+		return;
+
 	if (ce == &_citrus_stdenc_default)
 		return;
 

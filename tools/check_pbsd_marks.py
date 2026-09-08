@@ -85,6 +85,22 @@ FIXES = {
         "the usermode test that guards every other write to them, and "
         "the kernel-mode caller at :481 passes NULL for both",
     ),
+    "hbsd/src/lib/libc/iconv/citrus_stdenc.c": (
+        "if (ce == NULL)\n\t\treturn;",
+        "{\n\n\tif (ce == &_citrus_stdenc_default)",
+        "_citrus_stdenc_open()'s `bad:' label is reached from its own "
+        "`ce = malloc(...); if (ce == NULL)' arm, so an allocation failure "
+        "called _citrus_stdenc_close(NULL), which dereferenced it at once",
+    ),
+    "hbsd/src/lib/libc/rpc/pmap_prot2.c": (
+        "next = (*rp)->pml_next;",
+        "next = &((*rp)->pml_next);",
+        "xdr_pmaplist() under XDR_FREE remembered the ADDRESS of the field "
+        "inside the object xdr_reference() then free()d, so the next "
+        "iteration read *rp out of freed memory and free()d what it found; "
+        "rpcb_prot.c's two copies of this loop, in libc and in sys/rpc, "
+        "both already carry the next_copy form and this one did not",
+    ),
     "hbsd/src/lib/libc/gen/sysctl.c": (
         "if (oldlenp == NULL)\n\t\treturn (0);\n\n\tswitch (name[1]) {",
         "\t}\n\n\tswitch (name[1]) {\n\tcase USER_CS_PATH:",

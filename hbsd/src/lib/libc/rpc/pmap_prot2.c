@@ -94,7 +94,8 @@ xdr_pmaplist(XDR *xdrs, struct pmaplist **rp)
 	 */
 	bool_t more_elements;
 	int freeing;
-	struct pmaplist **next	= NULL; /* pacify gcc */
+	struct pmaplist *next	= NULL; /* pacify gcc */
+	struct pmaplist *next_copy;
 
 	assert(xdrs != NULL);
 	assert(rp != NULL);
@@ -111,14 +112,34 @@ xdr_pmaplist(XDR *xdrs, struct pmaplist **rp)
 		 * the unfortunate side effect of non-recursion is that in
 		 * the case of freeing we must remember the next object
 		 * before we free the current object ...
+		 *
+		 * Remember its VALUE.  This used to remember `next =
+		 * &((*rp)->pml_next)', the address of a field INSIDE the
+		 * object xdr_reference() is about to free() - so the
+		 * following iteration read `*rp' out of freed memory and
+		 * then free()d whatever it found there.  xdr_rpcblist_ptr()
+		 * and xdr_rpcb_entry_list_ptr() in rpcb_prot.c, which are
+		 * this loop copied, both carry the next_copy form already;
+		 * this file kept the original.
 		 */
-		if (freeing)
-			next = &((*rp)->pml_next); 
+		if (freeing && *rp)
+			next = (*rp)->pml_next;
 		if (! xdr_reference(xdrs, (caddr_t *)rp,
 		    (u_int)sizeof(struct pmaplist), (xdrproc_t)xdr_pmap))
 			return (FALSE);
-		rp = (freeing) ? next : &((*rp)->pml_next);
+		if (freeing) {
+			next_copy = next;
+			rp = &next_copy;
+			/*
+			 * Note that in the subsequent iteration, next_copy
+			 * gets nulled out by the xdr_reference
+			 * but next itself survives.
+			 */
+		} else if (*rp) {
+			rp = &((*rp)->pml_next);
+		}
 	}
+	/*NOTREACHED*/
 }
 
 
