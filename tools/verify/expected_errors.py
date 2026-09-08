@@ -220,6 +220,26 @@ EXPECTED = {
     "sys/kern/subr_atomic64.c":     "32-bit archs only",
     "sys/powerpc/ofw/ofw_machdep.c": "wants powerpc's <fdt.h>, absent on amd64",
 
+    # 32-bit PowerPC, which no architecture this sweep runs is. The
+    # cpu index recovered twelve of the fourteen named powerpc ERRORs
+    # by asking what the configs that build a file agree on; this is
+    # what was left. `optional aim powerpc' is satisfied by exactly one
+    # config, sys/powerpc/conf/GENERIC, whose `machine powerpc powerpc'
+    # makes MACHINE_ARCH 32-bit - and moea_pte_change() calls mtsrin(),
+    # which sys/powerpc/include/cpufunc.h:80 defines inside
+    # `#ifndef __powerpc64__'. -DAIM does not help and neither does
+    # -DPOWERPC; the file needs a 32-bit target.
+    "sys/powerpc/aim/mmu_oea.c":
+        "32-bit AIM, built only by powerpc/GENERIC (MACHINE_ARCH powerpc)",
+
+    # ...and three more that are not translation units at all.
+    "sys/powerpc/booke/pmap_32.c":
+        "INCLUDED_BY:sys/powerpc/booke/pmap.c",
+    "sys/powerpc/booke/pmap_64.c":
+        "INCLUDED_BY:sys/powerpc/booke/pmap.c",
+    "sys/powerpc/powerpc/elf_common.c":
+        "INCLUDED_BY:sys/powerpc/powerpc/elf32_machdep.c",
+
     # net80211
     "sys/net80211/ieee80211_alq.c": "needs option IEEE80211_ALQ",
 

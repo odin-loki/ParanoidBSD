@@ -38,7 +38,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from includes import (include_flags, is_kernel_tu, lang_flags,  # noqa: E402
-                      files_option_alternatives, SRC)
+                      files_option_alternatives, files_cpu_alternatives,
+                      SRC)
 from includes import arch_of, files_opt_arch_index  # noqa: E402
 from expected_errors import EXPECTED, NOT_BUILT, not_built  # noqa: E402
 
@@ -84,7 +85,8 @@ def analyze(job: dict) -> dict:
     arch = job.get("arch") or arch_of(job["rel"])
     cmd = ["clang", "--analyze", "-Xclang", "-analyzer-output=text",
            *lang_flags(src, job["rel"]),
-           *include_flags(src, arch, opts=job.get("opts")),
+           *include_flags(src, arch, opts=job.get("opts"),
+                          cpu=job.get("cpu")),
            str(src), "-o", "/dev/null"]
     try:
         p = subprocess.run(cmd, capture_output=True, text=True,
@@ -128,6 +130,20 @@ def analyze(job: dict) -> dict:
                 r = analyze(dict(job, opts=alt, retried_opts=True))
                 if r["status"] != "ERROR":
                     r["opts"] = list(alt)
+                    return r
+        # ...and then the CPU. sys/powerpc/powerpc/trap.c is
+        # `standard' - every powerpc kernel builds it - and half of
+        # them are AIM and half BOOKE, so the intersection is empty.
+        # Its frame_is_trap_inst() reads frame->cpu.booke.esr in the
+        # #else of an `#ifdef AIM', and ESR_PTR is inside
+        # `#if defined(BOOKE)' in sys/powerpc/include/spr.h:713, so
+        # with neither macro the file cannot compile either way.
+        if not job.get("retried_cpu"):
+            for alt in files_cpu_alternatives().get(
+                    job["rel"], {}).get(arch, ()):
+                r = analyze(dict(job, cpu=alt, retried_cpu=True))
+                if r["status"] != "ERROR":
+                    r["cpu"] = list(alt)
                     return r
         return {"file": job["rel"], "status": "ERROR",
                 "detail": p.stderr.strip()[-300:], "findings": []}

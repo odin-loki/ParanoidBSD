@@ -36,6 +36,7 @@ all against glibc.
 
 from __future__ import annotations
 
+import collections
 import functools
 import os
 import re
@@ -877,22 +878,66 @@ def files_arch_index() -> dict[str, str]:
 # `cpu' is not an option a kernel may or may not want; it names the CPU
 # family, and the machine headers are gated on it:
 #
-#   sys/powerpc/include/tlb.h:33   #if defined(BOOKE_E500)
+#   sys/powerpc/include/spr.h:563   #if defined(AIM)  ... #elif defined(BOOKE)
+#   sys/powerpc/include/pte.h:39    #if defined(AIM)  ... #else /* BOOKE */
+#   sys/powerpc/include/tlb.h:33    #if defined(BOOKE_E500)
 #
-# so sys/dev/dpaa/portals_common.c, which uses _TLB_ENTRY_IO from inside
-# that block, cannot compile without it - and the four configs that
-# build the DPAA ethernet (MPC85XX, MPC85XXSPE, QORIQ64, dpaa/DPAA) all
-# say `cpu BOOKE_E500'. DEFAULTS does not carry cpu lines, so this is a
-# second read of the same kind: what the configs that build this file
-# agree on.
+# config(8) turns them into options like any other - usr.sbin/config/
+# mkoptions.cc:65, "Fake the cpu types as options" - so `cpu BOOKE_E500'
+# is `#define BOOKE_E500 1' wherever sys/conf/options* declares the name.
+#
+# The first version of this index read only the files* lists a config
+# pulls in with an explicit `files "..."' line, which is the DPAA
+# fragment and almost nothing else: 315 sources. Every source named by
+# sys/conf/files.<arch> got nothing, because no config mentions that
+# list - config(8) reads it implicitly. Twelve of sweep 12's fourteen
+# named powerpc ERRORs were that gap, all of them failing on an
+# identifier inside an AIM or BOOKE block.
+#
+# So the question is asked properly: WHICH CONFIGS BUILD THIS FILE. A
+# config's declared tokens are its `options', `device' and `cpu' names,
+# transitively through `include', minus what `nooptions'/`nodevice'
+# removes; a file's `optional' clause is satisfied when some alternative
+# has all of its tokens; `standard' is satisfied always.
+#
+# Keyed by MACHINE_ARCH, because a cpu name belongs to the architecture
+# whose configs declared it. sys/dev/xdma/xdma_sg.c is `optional xdma'
+# and only riscv/GENERIC and riscv/QEMU declare that device, so the
+# answer is RISCV - but arch_of() analyses that file as arm, where
+# -DRISCV cost a translation unit that compiles today. One regression in
+# a sample of sixty, and the whole reason this index is two-dimensional.
 CONFIG_CPU = re.compile(r"^\s*cpu\s+([A-Za-z_][A-Za-z0-9_]*)")
-CONFIG_INCLUDE = re.compile(r'^\s*include\s+"([^"]+)"')
+# config(8) accepts both forms - usr.sbin/config/config.y:131 is
+# `INCLUDE PATH' (quoted) and :136 is `INCLUDE ID' (bare) - and the
+# quoted-only regex missed every one of the bare ones. `include
+# GENERIC' is how all sixteen HARDENEDBSD configs in the tree are
+# written, so each of them was read as if it declared nothing but its
+# own overrides.
+CONFIG_INCLUDE = re.compile(r'^\s*include\s+"?([^"\s]+)"?')
 CONFIG_FILES = re.compile(r'^\s*files\s+"([^"]+)"')
+CONFIG_DECL = re.compile(r"^\s*(?:device|options?)\s+([A-Za-z_][A-Za-z0-9_]*)")
+CONFIG_NODECL = re.compile(
+    r"^\s*(?:nodevice|nooptions?)\s+([A-Za-z_][A-Za-z0-9_]*)")
+# usr.sbin/config/mkoptions.cc:96 - "Fake the value of MACHINE_ARCH as an
+# option if necessary": config(8) sets the option whose name equals the
+# config's machine_arch, case-insensitively, where options* declares one.
+# `machine powerpc powerpc64' is the only reason
+# sys/powerpc/pseries/mmu_phyp.c's `optional pseries powerpc64' is
+# satisfiable at all; no config in the tree writes `options POWERPC64'.
+CONFIG_MACHINE = re.compile(r"^\s*machine\s+(\S+)(?:\s+(\S+))?")
+# The keywords that end a file's `optional' clause and begin its build
+# instructions.
+FILES_KEYWORD = ("compile-with", "no-obj", "no-depend", "dependency",
+                 "clean", "warning", "before-depend", "local")
 
 
-def _config_read(p: Path, root: Path,
-                 seen: set[Path]) -> tuple[set[str], set[Path]]:
-    """(cpu names, files* this config pulls in), following `include'.
+# (cpu names, the lower-case tokens it declares, the extra files* lists
+# it names, its machine_arch).
+Config = collections.namedtuple("Config", "cpus decl files march")
+
+
+def _config_read(p: Path, root: Path, seen: set[Path]) -> Config:
+    """One kernel config, read the way config(8) reads it.
 
     Both `include' and `files' name a path relative to the
     architecture's conf/ directory, never to the file doing the naming:
@@ -902,15 +947,18 @@ def _config_read(p: Path, root: Path,
     configs then agreed on no cpu at all.
     """
     cpus: set[str] = set()
+    decl: set[str] = set()
     files: set[Path] = set()
+    march = ""
     if p in seen or not p.is_file():
-        return cpus, files
+        return Config(frozenset(), frozenset(), (), "")
     seen.add(p)
     for line in p.read_text(errors="replace").splitlines():
         line = line.split("#")[0]
         m = CONFIG_CPU.match(line)
         if m:
             cpus.add(m.group(1))
+            decl.add(m.group(1).lower())
             continue
         m = CONFIG_FILES.match(line)
         if m:
@@ -918,23 +966,92 @@ def _config_read(p: Path, root: Path,
             continue
         m = CONFIG_INCLUDE.match(line)
         if m:
-            c, f = _config_read((root / m.group(1)).resolve(), root, seen)
-            cpus |= c
-            files |= f
-    return cpus, files
+            c = _config_read((root / m.group(1)).resolve(), root, seen)
+            cpus |= c.cpus
+            decl |= c.decl
+            files.update(c.files)
+            march = march or c.march
+            continue
+        m = CONFIG_MACHINE.match(line)
+        if m:
+            march = march or (m.group(2) or m.group(1))
+            decl.add((m.group(2) or m.group(1)).lower())
+            continue
+        m = CONFIG_NODECL.match(line)
+        if m:
+            decl.discard(m.group(1).lower())
+            continue
+        m = CONFIG_DECL.match(line)
+        if m:
+            decl.add(m.group(1).lower())
+    return Config(frozenset(cpus), frozenset(decl),
+                  tuple(sorted(files)), march)
+
+
+def _clause(line: str, kind: str, opts: str) -> list[list[str]] | None:
+    """The alternatives of one files* line, or None for `standard'."""
+    if kind == "standard":
+        return None
+    toks: list[str] = []
+    for tok in opts.split():
+        if tok in FILES_KEYWORD:
+            break
+        toks.append(tok)
+    return [a.split() for a in " ".join(toks).split("|")]
 
 
 @functools.lru_cache(maxsize=None)
-def files_cpu_index() -> dict[str, tuple[str, ...]]:
-    """source under sys/ -> the cpu names EVERY config building it sets.
+def _files_list(p: Path) -> tuple[tuple[str, tuple[tuple[str, ...], ...] | None], ...]:
+    """(source, clause alternatives) for every .c a files* list names.
 
-    Intersection, not union: a cpu only some of them declare is not one
-    this file may assume, and inventing it would be the analyser
-    checking a kernel nobody builds.
+    `include "conf/files.x86"' inside sys/conf/files.amd64 is resolved
+    against sys/, not against the list doing the naming.
     """
-    per_files: dict[Path, list[set[str]]] = {}
-    for arch_dir in sorted(SYS_DIR.values()):
+    out: list[tuple[str, tuple[tuple[str, ...], ...] | None]] = []
+    if not p.is_file():
+        return ()
+    text = p.read_text(errors="replace").replace("\\\n", " ")
+    for line in text.splitlines():
+        # config(8) reads # as a comment, and sys/conf/files carries
+        # commented-out source lines - `#ofed/drivers/...' among them -
+        # that match the line shape exactly.
+        line = line.split("#")[0]
+        m = CONFIG_INCLUDE.match(line)
+        if m:
+            out.extend(_files_list((SYS / m.group(1)).resolve()))
+            continue
+        m = FILES_OPTIONAL.match(line)
+        if not m:
+            continue
+        alts = _clause(line, m.group("kind"), m.group("opts"))
+        out.append(("sys/" + m.group("src"),
+                    None if alts is None
+                    else tuple(tuple(a) for a in alts)))
+    return tuple(out)
+
+
+def _satisfied(decl: frozenset[str],
+               alts: tuple[tuple[str, ...], ...] | None) -> bool:
+    """config(8)'s reading of an `optional' clause."""
+    if alts is None:
+        return True
+    for a in alts:
+        if not a:
+            return True
+        if all((t[1:].lower() not in decl) if t.startswith("!")
+               else (t.lower() in decl) for t in a):
+            return True
+    return False
+
+
+@functools.lru_cache(maxsize=None)
+def _config_index() -> dict[tuple[str, str], tuple[frozenset[str], ...]]:
+    """(source, machine_arch) -> the cpu set of each config that builds it."""
+    per: dict[tuple[str, str], list[frozenset[str]]] = {}
+    for arch_dir in sorted(set(SYS_DIR.values())):
         confd = SYS / arch_dir / "conf"
+        base = [SYS / "conf" / "files", SYS / "conf" / f"files.{arch_dir}"]
+        dflt = _config_read(confd / "DEFAULTS", confd, set())
         for cf in sorted(confd.rglob("*")):
             # A kernel config is the ALL-CAPS file; DEFAULTS, NOTES and
             # the files.*/std.*/config.* fragments are not kernels.
@@ -942,27 +1059,55 @@ def files_cpu_index() -> dict[str, tuple[str, ...]]:
                 continue
             if cf.name in ("DEFAULTS", "NOTES"):
                 continue
-            cpus, files = _config_read(cf, confd, set())
-            if not cpus:
+            c = _config_read(cf, confd, set())
+            if not c.cpus and not c.decl:
                 continue
-            for f in files:
-                per_files.setdefault(f, []).append(cpus)
+            cpus = c.cpus | dflt.cpus
+            decl = c.decl | dflt.decl
+            march = c.march or dflt.march or arch_dir
+            for fl in base + sorted(set(c.files) | set(dflt.files)):
+                for rel, alts in _files_list(fl.resolve()):
+                    if _satisfied(decl, alts):
+                        per.setdefault((rel, march), []).append(cpus)
+    return {k: tuple(v) for k, v in per.items()}
 
-    per_src: dict[str, list[set[str]]] = {}
-    for f, sets in per_files.items():
-        if not f.is_file():
-            continue
-        text = f.read_text(errors="replace").replace("\\\n", " ")
-        srcs = [m.group(1) for m in
-                (FILES_SRC.match(ln) for ln in text.splitlines()) if m]
-        for s in srcs:
-            per_src.setdefault("sys/" + s, []).extend(sets)
 
-    out: dict[str, tuple[str, ...]] = {}
-    for rel, sets in per_src.items():
-        common = set.intersection(*sets)
+@functools.lru_cache(maxsize=None)
+def files_cpu_index() -> dict[str, dict[str, tuple[str, ...]]]:
+    """source -> machine_arch -> the cpu names EVERY config building it sets.
+
+    Intersection, not union: a cpu only some of them declare is not one
+    this file may assume, and inventing it would be the analyser
+    checking a kernel nobody builds.
+    """
+    out: dict[str, dict[str, tuple[str, ...]]] = {}
+    for (rel, march), sets in _config_index().items():
+        common = frozenset.intersection(*sets)
         if common:
-            out[rel] = tuple(sorted(common))
+            out.setdefault(rel, {})[march] = tuple(sorted(common))
+    return out
+
+
+@functools.lru_cache(maxsize=None)
+def files_cpu_alternatives() -> dict[str, dict[str, tuple[tuple[str, ...], ...]]]:
+    """source -> machine_arch -> each cpu set a config building it declares.
+
+    The intersection is the only part that is not a guess, and for a
+    `standard' file it is often empty: sys/powerpc/powerpc/trap.c is
+    built by every powerpc kernel, half of them AIM and half BOOKE, and
+    its frame_is_trap_inst() reads frame->cpu.booke.esr in the #else of
+    an `#ifdef AIM'. With neither macro the BOOKE arm is compiled and
+    ESR_PTR is undeclared, because sys/powerpc/include/spr.h:713 puts it
+    inside `#if defined(BOOKE)'. This is what analyze.py retries with -
+    the same rule the option retry follows, and never for a file that
+    already compiled.
+    """
+    out: dict[str, dict[str, tuple[tuple[str, ...], ...]]] = {}
+    for (rel, march), sets in _config_index().items():
+        common = frozenset.intersection(*sets)
+        distinct = sorted({tuple(sorted(s)) for s in sets if s})
+        if distinct and (len(distinct) > 1 or not common):
+            out.setdefault(rel, {})[march] = tuple(distinct)
     return out
 
 
@@ -1074,8 +1219,10 @@ def defaults_options(arch: str) -> tuple[str, ...]:
 # report twenty errors on `dsb', `dmb' and the rest of arm64's barrier
 # intrinsics; as arm64 they compile clean. The option is the only thing
 # that says so.
+# The \s+ AFTER the keyword meant a `standard' line with nothing
+# following it never matched at all - arm/arm/sp804.c and 578 others.
 FILES_OPTIONAL = re.compile(
-    r"^(?P<src>\S+\.c)\s+(?:optional|standard)\s+(?P<opts>[^\\]*)")
+    r"^(?P<src>\S+\.c)\s+(?P<kind>optional|standard)\b(?P<opts>[^\\]*)")
 CONF_DECL = re.compile(r"^\s*(?:device|options?)\s+([A-Za-z_][A-Za-z0-9_]*)",
                        re.M)
 
@@ -2100,7 +2247,8 @@ def _subsystem_dirs(rel: str) -> list[str]:
 
 
 def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
-                  opts: tuple[str, ...] | None = None) -> list[str]:
+                  opts: tuple[str, ...] | None = None,
+                  cpu: tuple[str, ...] | None = None) -> list[str]:
     """-nostdinc plus everything that source needs, in build order.
 
     `opts' overrides the -D a file's own `optional' clause implies. The
@@ -2324,7 +2472,14 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
                   f"-I{SRC}/sys/cddl/contrib/opensolaris/uts/intel"]
         flags += defaults_options(arch)
         flags += arch_makefile_flags(arch)
-        flags += [f"-D{c}" for c in files_cpu_index().get(rel, ())]
+        # Only a cpu name sys/conf/options* declares becomes a macro,
+        # because that is the list config(8) looks the faked option up
+        # in - the same rule files_option_defines() follows.
+        _opts = _declared_options()
+        _cpu = (cpu if cpu is not None
+                else files_cpu_index().get(rel, {}).get(arch, ()))
+        flags += [f"-D{_opts[c.lower()]}" for c in _cpu
+                  if c.lower() in _opts]
         # ...the -D held back above, and then the directory's guess.
         seen = set(flags)
         for f in list(found) + back:

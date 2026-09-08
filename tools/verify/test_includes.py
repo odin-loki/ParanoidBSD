@@ -186,12 +186,52 @@ check_that("kern.pre.mk's conditional assignments are NOT taken",
            "it is inside .if ${COMPILER_TYPE} == \"gcc\"")
 
 cpu = includes.files_cpu_index()
-check("the DPAA ethernet's cpu set",
-      cpu.get("sys/dev/dpaa/portals_common.c"), ("BOOKE", "BOOKE_E500"))
-check_that("and it is an intersection, not a union",
-           all(len(v) <= 2 for v in cpu.values()),
-           "a file built by configs that disagree keeps only what they "
-           "all declare")
+alt = includes.files_cpu_alternatives()
+check("the DPAA ethernet's cpu set, on an architecture that builds it",
+      cpu.get("sys/dev/dpaa/portals_common.c", {}).get("powerpc64"),
+      ("BOOKE", "BOOKE_E500"))
+# The half the first version could not see: sys/conf/files.<arch> is read
+# by config(8) implicitly, so no config NAMES it, and every source in it
+# got no cpu at all. Twelve of sweep 12's fourteen named powerpc ERRORs.
+check("...and a source only sys/conf/files.powerpc names",
+      cpu.get("sys/powerpc/booke/pmap.c", {}).get("powerpc64"),
+      ("BOOKE", "BOOKE_E500"))
+check_that("a `standard' file whose configs disagree keeps no cpu",
+           "powerpc64" not in cpu.get("sys/powerpc/powerpc/trap.c", {}),
+           "every powerpc kernel builds trap.c, half AIM and half BOOKE")
+check("...and is retried against each of them instead",
+      alt.get("sys/powerpc/powerpc/trap.c", {}).get("powerpc64"),
+      (("AIM",), ("BOOKE", "BOOKE_E500")))
+# A cpu name belongs to the architecture whose configs declared it.
+check("a device only riscv configs declare gives riscv its cpu",
+      cpu.get("sys/dev/xdma/xdma_sg.c", {}).get("riscv64"), ("RISCV",))
+check_that("...and never an architecture that did not declare it",
+           "amd64" not in cpu.get("sys/dev/xdma/xdma_sg.c", {}),
+           "arch_of() analyses that file as arm, and -DRISCV there cost a "
+           "translation unit that compiles")
+# usr.sbin/config/config.y:136 is `INCLUDE ID' - an include need not be
+# quoted, and `include GENERIC' is how every HARDENEDBSD config is written.
+hb = includes._config_read(includes.SYS / "arm64" / "conf" / "HARDENEDBSD",
+                           includes.SYS / "arm64" / "conf", set())
+check_that("a bare `include GENERIC' is followed", "ARM64" in hb.cpus,
+           "HARDENEDBSD declares no cpu of its own")
+check_that("...and brings the included config's options with it",
+           "acpi" in hb.decl)
+# usr.sbin/config/mkoptions.cc:96 fakes MACHINE_ARCH as an option.
+check_that("machine_arch is one of the tokens a config declares",
+           "powerpc64" in includes._config_read(
+               includes.SYS / "powerpc" / "conf" / "GENERIC64",
+               includes.SYS / "powerpc" / "conf", set()).decl,
+           "no config writes `options POWERPC64', and mmu_phyp.c is "
+           "`optional pseries powerpc64'")
+check_that("a `standard' line with nothing after the keyword is read",
+           includes.FILES_OPTIONAL.match("arm/arm/sp804.c\t\t\tstandard")
+           is not None)
+check_that("a commented-out source line is not",
+           all(not r.startswith("sys/#") for r, _ in
+               includes._files_list(includes.SYS / "conf" / "files")),
+           "sys/conf/files carries `#ofed/drivers/...' lines that match "
+           "the shape exactly")
 
 by_file, by_src, by_dir = includes.kernel_flag_index()
 ncsw = by_file.get("sys/contrib/ncsw/etc/error.c", ())

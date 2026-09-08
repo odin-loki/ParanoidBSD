@@ -313,6 +313,67 @@ and `lib/msun/Makefile:24-29` maps 64 to `ld80` and 113 to `ld128`.
 Analysed as amd64 all five `ld128` sources failed; as aarch64 they are
 clean.
 
+### Which kernels build this file, asked the way config(8) asks it
+
+`cpu` is not an option a kernel may or may not want; it names the CPU
+family, and on powerpc the machine headers are gated on it —
+`sys/powerpc/include/spr.h:563` is `#if defined(AIM) ... #elif
+defined(BOOKE)`, `pte.h:39` the same, and `tlb.h:33` puts every Book-E
+TLB definition inside `#if defined(BOOKE_E500)`. config(8) turns a `cpu`
+line into an option like any other — `mkoptions.cc:65`, "Fake the cpu
+types as options" — so `cpu BOOKE_E500` is `#define BOOKE_E500 1`.
+
+The first version of `files_cpu_index()` read only the files\* lists a
+config pulls in with an explicit `files "..."` line. That is the DPAA
+fragment and almost nothing else: **315 sources**. Every source named by
+`sys/conf/files.<arch>` got nothing at all, because no config *mentions*
+that list — config(8) reads it implicitly — and twelve of sweep 12's
+fourteen named powerpc `ERROR`s were exactly that, each failing on an
+identifier inside an `AIM` or a `BOOKE` block.
+
+So the question is asked properly now: **which configs build this file**.
+A config's declared tokens are its `options`, `device` and `cpu` names,
+transitively through `include`, minus what `nooptions`/`nodevice`
+removes; a file's `optional` clause is satisfied when some alternative
+has all of its tokens; `standard` is satisfied always. What every config
+that builds a file agrees on is what the analyser may assume; where they
+disagree, `files_cpu_alternatives()` is what `analyze.py` retries with,
+on the same rule as the option retry — a file that already compiled is
+never re-interpreted.
+
+Three things about the reading are worth stating, because each was a
+place the answer was silently wrong:
+
+**The index is keyed by MACHINE\_ARCH.** A cpu name belongs to the
+architecture whose configs declared it. `sys/dev/xdma/xdma_sg.c` is
+`optional xdma`, and riscv's `GENERIC` and `QEMU` are among the configs
+that declare that device — but `arch_of()` analyses that file as arm,
+and `-DRISCV` there cost a translation unit that compiles today. One
+regression in a sample of sixty, and the reason the index has two
+dimensions instead of one.
+
+**An `include` need not be quoted.** `usr.sbin/config/config.y:131` is
+`INCLUDE PATH` and `:136` is `INCLUDE ID`; the quoted-only regex matched
+the first and missed the second, which is how every `include GENERIC` in
+the tree is written — all sixteen `HARDENEDBSD` configs among them. Each
+was being read as if it declared nothing but its own overrides. Reading
+them properly moved 409 sources out of "no configuration can ask for
+this".
+
+**config(8) fakes MACHINE\_ARCH as an option.** `mkoptions.cc:96` sets
+the option whose name equals the config's machine\_arch, case-
+insensitively, wherever `options*` declares one. That is the only reason
+`sys/powerpc/pseries/mmu_phyp.c`'s `optional pseries powerpc64` is
+satisfiable — no config in the tree writes `options POWERPC64`, only
+`machine powerpc powerpc64`.
+
+What remains after all of it is the residue this was chasing:
+`sys/powerpc/aim/mmu_oea.c` is `optional aim powerpc`, built by
+`powerpc/GENERIC` alone, whose MACHINE\_ARCH is 32-bit `powerpc`. It uses
+`mtsrin()`, which `machine/cpufunc.h` defines only for 32-bit, and no
+architecture this sweep runs is 32-bit PowerPC. It is on the record as
+that, and not as a hole.
+
 ### The same question asked of userland, and what it does not answer
 
 `check_empty_tus.py` works because the kernel says which option a file
