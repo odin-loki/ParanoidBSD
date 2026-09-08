@@ -2842,6 +2842,121 @@ def _gen_getaddrinfo(out: Path, _dir: str = "") -> None:
                        env=dict(os.environ, LC_ALL="C"))
 
 
+def _make_var(makefile: Path, name: str) -> str:
+    """One VAR= assignment out of a Makefile, continuations joined.
+
+    XSYM in usr.sbin/bsnmpd/modules/snmp_hostres/Makefile is fifty-two
+    names over eleven backslash-continued lines, and reading only the
+    first line of it produces an oid header with four of the fifty-two.
+    """
+    out, taking = [], False
+    for line in makefile.read_text(errors="replace").splitlines():
+        if not taking:
+            m = re.match(rf"^{name}\s*\+?=\s*(.*)$", line)
+            if not m:
+                continue
+            taking, body = True, m.group(1)
+        else:
+            body = line
+        cont = body.rstrip().endswith("\\")
+        out.append(body.rstrip().rstrip("\\"))
+        if not cont:
+            break
+    return " ".join(out).strip()
+
+
+@functools.lru_cache(maxsize=None)
+def _gensnmptree() -> str:
+    """usr.sbin/bsnmpd/gensnmptree, built with the host's cc.
+
+    Its Makefile is four lines of CFLAGS over one contrib source:
+
+        CONTRIB=${SRCTOP}/contrib/bsnmp
+        CFLAGS+= -I${CONTRIB}/lib
+        CFLAGS+= -DQUADFMT='"llu"' -DQUADXFMT='"llx"' -DHAVE_STDINT_H
+        CFLAGS+= -DHAVE_INTTYPES_H
+
+    plus two things a FreeBSD host would have supplied and this one does
+    not: -DHAVE_ERR_H, since contrib/bsnmp/lib/support.h declares its own
+    err()/warn() with __printflike when the host has no <err.h>, and a
+    -include shim defining __dead2, __unused and __printflike away, since
+    those come from FreeBSD's <sys/cdefs.h> and this compile uses the
+    host's.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_gensnmp_"))
+    pre = d / "pre.h"
+    pre.write_text("#define __dead2\n#define __unused\n"
+                   "#define __printflike(a,b)\n#define __printf0like(a,b)\n")
+    exe = d / "gensnmptree"
+    contrib = SRC / "contrib" / "bsnmp"
+    subprocess.run(
+        ["cc", "-O1", "-w", "-include", str(pre), "-o", str(exe),
+         f"-I{contrib / 'lib'}",
+         '-DQUADFMT="llu"', '-DQUADXFMT="llx"',
+         "-DHAVE_STDINT_H", "-DHAVE_INTTYPES_H", "-DHAVE_ERR_H",
+         str(contrib / "gensnmptree" / "gensnmptree.c")],
+        check=True, capture_output=True)
+    return exe.as_posix()
+
+
+def _gen_bsnmp(out: Path, directory: str = "") -> None:
+    """A bsnmpd module's generated files, into a directory that is its -I.
+
+    bsd.snmpmod.mk adds `CFLAGS+= -I.' and generates three files into
+    that objdir, so the shim is the objdir: two headers and the
+    <mod>_tree.c that SRCS names. The .c is not a source the sweep
+    walks - it is not in the tree - and it costs nothing to leave where
+    the build puts it.
+
+    share/mk/bsd.snmpmod.mk is the whole recipe:
+
+        SRCS+= ${MOD}_oid.h ${MOD}_tree.c ${MOD}_tree.h
+        GENSNMPTREEFLAGS+= -I${SHAREDIR}/snmpdefs
+
+        ${MOD}_oid.h: ${MOD}_tree.def ${EXTRAMIBDEFS} ${EXTRAMIBSYMS}
+            cat ${.ALLSRC} | gensnmptree ${GENSNMPTREEFLAGS} -e ${XSYM} \
+                > ${.TARGET}
+        ${MOD}_tree.c: ${MOD}_tree.def ${EXTRAMIBDEFS}
+            cat ${.ALLSRC} | gensnmptree -f ${GENSNMPTREEFLAGS} -p ${MOD}_
+
+    -f writes both ${MOD}_tree.c and ${MOD}_tree.h into the working
+    directory. No Makefile in the tree sets EXTRAMIBDEFS or EXTRAMIBSYMS,
+    so ${.ALLSRC} is the one .def file in each case.
+
+    The -I is for the `include "tc.def"' at :31 of the three contrib
+    modules' .def files; snmp_target, snmp_usm and snmp_vacm add
+    -I${CONTRIB}/lib to reach it, and it is passed unconditionally here
+    because it is the only place tc.def lives. bridge and wlan have
+
+        #include "tc.def"
+
+    instead, with a `#', and gensnmptree.c:538 treats `#' as a comment to
+    end of line - so that line is a comment and those two do not need it.
+
+    Four modules keep their sources in contrib/bsnmp/snmp_<mod>/ and
+    reach them through .PATH; their .def lives there too, which is why
+    the file is looked for in both places.
+    """
+    mk = SRC / directory / "Makefile"
+    mod = _make_var(mk, "MOD")
+    if not mod:
+        return
+    xsym = _make_var(mk, "XSYM").split()
+    contrib = SRC / "contrib" / "bsnmp"
+    d = SRC / directory / f"{mod}_tree.def"
+    if not d.exists():
+        d = contrib / f"snmp_{mod}" / f"{mod}_tree.def"
+    if not d.exists():
+        return
+    exe, inc = _gensnmptree(), ["-I", str(contrib / "lib")]
+    with open(d, "rb") as fh, open(out / f"{mod}_oid.h", "wb") as o:
+        subprocess.run([exe, *inc, "-e", *xsym],
+                       stdin=fh, stdout=o, check=True)
+    with open(d, "rb") as fh:
+        subprocess.run([exe, "-f", *inc, "-p", f"{mod}_"],
+                       stdin=fh, check=True, cwd=out)
+
+
 _GENERATED = {
     "bin/sh": _gen_bin_sh,
     "usr.sbin/bsdinstall/partedit": _gen_opt_osname,
@@ -2851,6 +2966,17 @@ _GENERATED = {
     "usr.bin/netstat": _gen_netstat,
     "sbin/route": _gen_route,
     "usr.bin/getaddrinfo": _gen_getaddrinfo,
+    "usr.sbin/bsnmpd/modules/snmp_bridge": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_hast": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_hostres": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_lm75": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_mibII": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_netgraph": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_pf": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_target": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_usm": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_vacm": _gen_bsnmp,
+    "usr.sbin/bsnmpd/modules/snmp_wlan": _gen_bsnmp,
 }
 
 

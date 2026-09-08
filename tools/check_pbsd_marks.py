@@ -1780,6 +1780,27 @@ FIXES = {
             "and the kiconv helper\'s copy of the same string",
         ),
     ],
+    "hbsd/src/sbin/route/route.c": [
+        (
+            "\tif (i != 2) {",
+            None,
+            "fiboptlist_range: one field leaves fib[1] unwritten and the "
+            "test below reads it; the contract lived only in the caller",
+        ),
+    ],
+    "hbsd/src/usr.bin/netstat/inet.c": [
+        (
+            "if (istcp && cflag) {",
+            "\t\t\tif (cflag) {\n\t\t\t\txo_emit(\" {T:/%-*.*s}\"",
+            "protopr: the Stack column header, which read fnamelen on a "
+            "non-TCP pass where nothing had assigned it",
+        ),
+        (
+            "if (istcp && Cflag)",
+            None,
+            "and the CC column header, the same way with cnamelen",
+        ),
+    ],
 }
 
 

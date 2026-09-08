@@ -359,11 +359,19 @@ protopr(u_long off, const char *name, int af1, int proto)
 				xo_emit("  {T:/%8.8s} {T:/%5.5s}",
 				    "flowid", "ftype");
 			}
-			if (cflag) {
+			/*
+			 * PBSD: istcp, as at the per-connection uses
+			 * below. fnamelen and cnamelen are only assigned
+			 * under `istcp && (cflag || Cflag)', so on a UDP
+			 * or divert pass these read indeterminate ints
+			 * and hand them to xo_emit as a width and a
+			 * precision.
+			 */
+			if (istcp && cflag) {
 				xo_emit(" {T:/%-*.*s}",
 					fnamelen, fnamelen, "Stack");
 			}
-			if (Cflag)
+			if (istcp && Cflag)
 				xo_emit(" {T:/%-*.*s} {T:/%10.10s}"
 					" {T:/%10.10s} {T:/%5.5s}"
 					" {T:/%3.3s}", cnamelen,

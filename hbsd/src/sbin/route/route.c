@@ -336,6 +336,15 @@ fiboptlist_range(const char *arg, struct fibl_head_t *flh)
 			goto fiboptlist_range_ret;
 		i++;
 	}
+	if (i != 2) {
+		/*
+		 * PBSD: one field means no `-' in the argument, and
+		 * fib[1] was never written. The only caller guarantees
+		 * a `-'; nothing in here did.
+		 */
+		error = 1;
+		goto fiboptlist_range_ret;
+	}
 	if (fib[0] >= fib[1]) {
 		error = 1;
 		goto fiboptlist_range_ret;
