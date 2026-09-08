@@ -5992,3 +5992,56 @@ follow.
 **`kern_jail.c:4050`** — `prison_isalive(const struct prison *pr)` is
 two lines and dereferences its parameter. A precondition, not a defect,
 and the same class as `cam_xpt.c:5253` above.
+
+### 29 "potential leak"s in libc, and all of them are thread-local storage
+
+`param_premise.py`'s static-with-its-address-taken column is 235
+findings, and the first thing visible in it is that libc's name-service
+backends account for 29 of them with one cause. Every one is
+`unix.Malloc`, *"Potential leak of memory pointed to by …"*, in a
+`static` function that appears in an `ns_dtab[]` rather than at a call
+site.
+
+Two macros generate the same thing. `lib/libc/include/nss_tls.h:39`'s
+`NSS_TLS_HANDLING(name)` writes a `name_getstate()`:
+
+```c
+	if (!__isthreaded || _pthread_main_np() != 0) {
+		*p = &st;			/* a static - must NOT be freed */
+		return (0);
+	}
+	rv = _pthread_once(&keyinit, name##_keyinit);
+	...
+	*p = calloc(1, sizeof(**p));
+	...
+	rv = _pthread_setspecific(name##_state_key, *p);
+```
+
+and `keyinit` is `_pthread_key_create(&key, name##_endstate)`.
+`lib/libc/net/netdb_private.h:33`'s `NETDB_THREAD_ALLOC(name)` is the
+same shape with `name##_free` as the destructor and `__name_init()` as
+the accessor. Ownership goes to the thread-specific-data key at the
+moment of allocation, and the destructor runs at thread exit. There is
+nothing for the backend to free — and on the single-threaded path
+freeing would be a bug, because what came back is the file-scope `st`.
+
+The analyser models neither `pthread_setspecific()` nor the destructor
+registered next to it, so every backend that takes the state and returns
+looks like a leak.
+
+`getgrent.c:834`, `getgrent.c:877`, `getgrent.c:1086`,
+`getgrent.c:1291`, `getgrent.c:1482`;
+`getnetgrent.c:243`, `getnetgrent.c:280`;
+`getpwent.c:788`, `getpwent.c:915`, `getpwent.c:1282`,
+`getpwent.c:1723`, `getpwent.c:1939`;
+`gethostnamadr.c:672`, `gethostnamadr.c:687`, `gethostnamadr.c:702`;
+`getprotoent.c:428`, `getprotoent.c:452`, `getprotoent.c:464`;
+`getservent.c:334`, `getservent.c:464`, `getservent.c:537`,
+`getservent.c:641`, `getservent.c:822`, `getservent.c:1320`;
+`getrpcent.c:249`, `getrpcent.c:365`, `getrpcent.c:593`,
+`getrpcent.c:952`; `nsdispatch.c:667`.
+
+Nothing to change. Recorded because 29 findings that read as memory
+leaks in a library every program links are worth being able to dismiss
+by name rather than one at a time — which is the whole point of sorting
+the sweep by who can call the function.
