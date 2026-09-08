@@ -164,6 +164,12 @@ FIXES = {
         "pinger() left the file-scope smsghdr.msg_iov pointing into its "
         "own dead frame",
     ),
+    "hbsd/src/bin/sh/eval.c": (
+        "pip[0] = pip[1] = -1;",
+        "prehash(lp->n);\n\t\tpip[1] = -1;\n",
+        "evalpipe() read pip[0] on the last element of the pipeline, "
+        "where pipe() is not called and never wrote it",
+    ),
     "hbsd/src/usr.sbin/rtadvd/config.c": (
         "delete_prefix(pfx);\n\t\treturn;",
         "delete_prefix(pfx);\n\t}\n\ttimo.tv_sec = prefix_timo;",

@@ -4884,6 +4884,63 @@ findings to 1, and the one that stays is `:307`, where the analyser has
 aliased `pfx` and `rai` in `rm_rainfo()` — `delete_prefix()` frees the
 prefix, not the rainfo.
 
+### `bin/sh` compiles: 19 of 26 recovered, and three findings in the shell
+
+The largest recoverable class from the first `bin`/`sbin`/`usr.bin`/`usr.sbin`
+sweep, done. `bin/sh/Makefile` writes four headers that do not exist in a
+source tree:
+
+```make
+builtins.c builtins.h: builtins.def     sh mkbuiltins
+nodes.c nodes.h: nodetypes nodes.c.pat  mknodes nodetypes nodes.c.pat
+syntax.c syntax.h:                      mksyntax
+token.h: mktokens                       sh mktokens
+```
+
+`includes.py` runs those, the way `iface_shim()` already runs
+`makeobjops.awk` for the kernel's `device_if.h`. Two of the four are C
+programs the build compiles for the host and runs, so this compiles and
+runs them; the other two are shell scripts.
+
+Two things had to be dealt with, and both are the sort of thing that
+would otherwise have produced a shim that looks right:
+
+* `mknodes.c` and `mksyntax.c` use `__printf0like`, `__dead2` and
+  `__unused`, which come from `<sys/cdefs.h>` — a *host* tool built by
+  the host compiler does not get FreeBSD's. They are defined away, which
+  is what `cdefs.h` itself defines them to on a compiler without the
+  attribute.
+* `mkbuiltins` and `mktokens` both open `temp=`` `mktemp -t ka` ``.
+  BSD's `mktemp -t PREFIX` makes `/tmp/PREFIX.XXXXXXXX`; GNU coreutils
+  deprecated that spelling and wants X's in the template, so both scripts
+  die on Linux — and `mktokens` dies **after** writing a `token.h` whose
+  arrays are empty, which is worse than writing none, because it
+  compiles. A four-line `mktemp` on the front of `PATH` does the BSD
+  spelling.
+
+**19 of `bin/sh`'s 26 translation units go ERROR → OK**, and the
+directory now compiles completely. A generator that fails leaves the
+ERROR standing rather than returning a half-written directory: a compile
+that succeeds and means nothing is the outcome this whole apparatus
+exists to avoid.
+
+Three findings came with them, in the system shell:
+
+* **`eval.c:603`** — `evalpipe()` does `pip[1] = -1;` at the top of the
+  loop and `prevfd = pip[0];` at the bottom. On the last element of the
+  pipeline `pipe(pip)` is not called, so `pip[0]` was never written by
+  that iteration. The parser builds an `NPIPE` only for two commands or
+  more, so what is read is the *previous* iteration's read end — which
+  the `close()` two lines up just shut — rather than an indeterminate
+  value, and it is dead either way. **Fixed** as `pip[0] = pip[1] = -1;`,
+  which is what `prevfd` started as; the finding goes to 0.
+* **`jobs.c:1518`** (`cmdputs()`, `subtype = *p++`) and
+  **`histedit.c:725`** (`sh_matches()`, `strndup(matches[1], ...)`) are
+  both about the contents of a buffer filled elsewhere — the string
+  `cmdputs()` walks and the array libedit's `el_filename_complete()`
+  fills. The cross-translation-unit out-parameter class, one indirection
+  out.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

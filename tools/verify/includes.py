@@ -2438,6 +2438,115 @@ def _subsystem_dirs(rel: str) -> list[str]:
     return out
 
 
+@functools.lru_cache(maxsize=1)
+def _bsd_mktemp() -> str:
+    """A PATH entry whose `mktemp' understands BSD's `-t PREFIX'.
+
+    bin/sh's mkbuiltins and mktokens both open with
+
+        temp=`mktemp -t ka`
+
+    which on BSD makes ${TMPDIR:-/tmp}/ka.XXXXXXXX. GNU coreutils
+    deprecated that spelling and wants X's in the template, so both
+    scripts die - and mktokens dies AFTER writing a token.h with the
+    arrays empty, which is worse than not writing one, because it
+    compiles.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_mktemp_"))
+    sh = d / "mktemp"
+    sh.write_text(
+        "#!/bin/sh\n"
+        "if [ \"$1\" = -t ] && [ -n \"$2\" ]; then\n"
+        "    exec /usr/bin/mktemp \"${TMPDIR:-/tmp}/$2.XXXXXXXX\"\n"
+        "fi\n"
+        "exec /usr/bin/mktemp \"$@\"\n")
+    sh.chmod(0o755)
+    return d.as_posix()
+
+
+# The compiler that builds a build-tool. `cc' is what the Makefiles say
+# and what CI has; falling back to clang keeps this working on a box that
+# only has the analyser installed.
+HOST_CC = shutil.which("cc") or shutil.which("clang") or "cc"
+
+
+# `__printf0like' and friends live in <sys/cdefs.h>, which a HOST tool
+# built by the host compiler does not get. The build gets away with it
+# because build-tools runs under the bootstrapped toolchain; here they
+# are defined away, which is what they compile to on a compiler without
+# the attribute anyway.
+_HOST_TOOL_PRELUDE = """#define __printf0like(a, b)
+#define __printflike(a, b)
+#define __dead2
+#define __unused
+"""
+
+
+def _gen_bin_sh(out: Path) -> None:
+    """bin/sh's four generated headers, by its own Makefile's recipe.
+
+    31 of the 249 translation units in the first bin/sbin/usr.bin/usr.sbin
+    sweep failed on nodes.h, syntax.h, parser.h or token.h, and none of
+    those files is missing - bin/sh/Makefile writes all four:
+
+        builtins.c builtins.h: builtins.def   sh mkbuiltins
+        nodes.c nodes.h:       nodetypes nodes.c.pat
+                               mknodes nodetypes nodes.c.pat
+        syntax.c syntax.h:     mksyntax
+        token.h:               sh mktokens
+
+    mknodes and mksyntax are C programs the build compiles for the host
+    and runs, which is exactly what this does.
+    """
+    sh = SRC / "bin" / "sh"
+    env = dict(os.environ, PATH=f"{_bsd_mktemp()}:{os.environ.get('PATH', '')}")
+    pre = out / "_cdefs_prelude.h"
+    pre.write_text(_HOST_TOOL_PRELUDE)
+    for tool, args in (("mknodes", [str(sh / "nodetypes"), str(sh / "nodes.c.pat")]),
+                       ("mksyntax", [])):
+        exe = out / tool
+        subprocess.run([HOST_CC, "-w", "-include", str(pre), "-o", str(exe),
+                        str(sh / f"{tool}.c")], check=True,
+                       capture_output=True)
+        subprocess.run([str(exe), *args], cwd=out, check=True,
+                       capture_output=True)
+    for script in ("mktokens", "mkbuiltins"):
+        cmd = ["sh", str(sh / script)]
+        if script == "mkbuiltins":
+            cmd.append(str(sh))
+        subprocess.run(cmd, cwd=out, check=True, capture_output=True, env=env)
+    pre.unlink()
+
+
+# directory (relative to SRC) -> the function that writes its generated
+# headers. Adding one is the same rule iface_shim() follows: run the
+# generator the Makefile runs, on the input the Makefile names. A stub
+# would be worse than the ERROR it replaces.
+_GENERATED = {
+    "bin/sh": _gen_bin_sh,
+}
+
+
+@functools.lru_cache(maxsize=None)
+def generated_shim(directory: str) -> str | None:
+    """Headers this directory's Makefile generates, generated the same way.
+
+    None when the directory has no generator, or when the generator
+    fails - a half-written shim is a compile that succeeds and means
+    nothing, so a failure leaves the ERROR standing where it can be seen.
+    """
+    fn = _GENERATED.get(directory)
+    if fn is None:
+        return None
+    d = Path(tempfile.mkdtemp(prefix="pbsd_gen_"))
+    try:
+        fn(d)
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return d.as_posix()
+
+
+
 def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
                   opts: tuple[str, ...] | None = None,
                   cpu: tuple[str, ...] | None = None) -> list[str]:
@@ -2709,6 +2818,13 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     # The source's own directory first: many libc and msun sources include a
     # private header sitting beside them.
     flags.append(f"-I{(SRC / rel).parent}")
+
+    # ...and any header this directory's Makefile GENERATES. bin/sh's
+    # nodes.h, syntax.h and token.h do not exist in a source tree, the
+    # same way device_if.h does not.
+    _gen = generated_shim(str(Path(rel).parent))
+    if _gen:
+        flags.append(f"-I{_gen}")
 
     # <rpcsvc/rquota.h> and its twenty siblings do not exist in the tree;
     # include/rpcsvc/Makefile says how to make them and rpc_headers()

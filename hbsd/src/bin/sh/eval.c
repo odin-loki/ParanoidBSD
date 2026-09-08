@@ -574,7 +574,16 @@ evalpipe(union node *n)
 	prevfd = -1;
 	for (lp = n->npipe.cmdlist ; lp ; lp = lp->next) {
 		prehash(lp->n);
-		pip[1] = -1;
+		/*
+		 * Both halves: pipe() writes neither on the last element of
+		 * the list, where it is not called, and `prevfd = pip[0]'
+		 * below reads pip[0] anyway. The parser builds an NPIPE only
+		 * for two commands or more, so the read is of the PREVIOUS
+		 * iteration's read end - which the close() above just shut -
+		 * rather than of an indeterminate value; but the value is
+		 * dead either way, and -1 is what prevfd started as.
+		 */
+		pip[0] = pip[1] = -1;
 		if (lp->next) {
 			if (pipe(pip) < 0) {
 				if (prevfd >= 0)

@@ -53,7 +53,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 |---:|---|---:|---:|---:|
 | 1 | `lib` | 2,827 | 639,632 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
-| 3 | `bin` | 162 | 58,088 | 1,063 |
+| 3 | `bin` | 162 | 58,097 | 1,063 |
 | 4 | `sbin` | 533 | 228,447 | 3,567 |
 | 5 | `usr.bin` | 732 | 247,963 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 656,984 | 9,020 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,296,256** | **114,204** |
+| | **total** | **41,143** | **21,296,265** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -15481,7 +15481,7 @@ function; a file with two hundred of them is a project.
   - [ ] 3.33.9.6 `error()` · `TODO-FN`
   - [ ] 3.33.9.7 `errorwithstatus()` · `TODO-FN`
 - [ ] **3.33.10** `error.h` · 92L · `TODO-HDR`
-- [ ] **3.33.11** `eval.c` · 1,368L · `TODO-PORT` · 28 fn
+- [ ] **3.33.11** `eval.c` · 1,377L · `TODO-PORT` · 28 fn
   - [ ] 3.33.11.1 `reseteval()` · `TODO-FN`
   - [ ] 3.33.11.2 `evalcmd()` · `TODO-FN`
   - [ ] 3.33.11.3 `evalstring()` · `TODO-FN`
