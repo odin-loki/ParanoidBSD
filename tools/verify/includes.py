@@ -2723,11 +2723,91 @@ def _gen_opt_osname(out: Path, _dir: str = "") -> None:
     (out / "opt_osname.h").write_text('#define OSNAME "FreeBSD"\n')
 
 
+def _gen_localedef(out: Path, _dir: str = "") -> None:
+    """usr.bin/localedef's parser.h, which nine of its ten sources include.
+
+        SRCS=   charmap.c ... parser.y scanner.c time.c wide.c
+        ${SRCS:M*.c}: parser.h
+        parser.h: parser.y
+
+    bsd.prog.mk's .y.c rule runs yacc with -d, which writes the header
+    beside the .c it is told to write. That is the whole recipe.
+    """
+    subprocess.run(["yacc", "-d", "-o", str(out / "parser.c"),
+                    str(SRC / "usr.bin" / "localedef" / "parser.y")],
+                   check=True, capture_output=True, cwd=out)
+    (out / "parser.c").unlink(missing_ok=True)
+
+
+def _gen_netstat(out: Path, _dir: str = "") -> None:
+    """usr.bin/netstat's nl_defs.h, verbatim from its Makefile:
+
+        nl_defs.h: nlist_symbols
+            awk 'BEGIN { print "#include <nlist.h>";
+                         print "extern struct nlist nl[];"; i = 0; }
+                 !/^\#/ { printf("#define\tN%s\t%s\n", toupper($2), i++); }' \
+                < ${.ALLSRC} > ${.TARGET} || rm -f ${.TARGET}
+
+    The same Makefile generates nl_symbols.c the same way; that one is a
+    SRCS entry rather than a header, and no such file exists in the tree
+    for the sweep to walk, so it needs nothing here.
+    """
+    prog = ('BEGIN { print "#include <nlist.h>";\n'
+            '        print "extern struct nlist nl[];";\n'
+            '        i = 0; }\n'
+            '!/^#/ { printf("#define\\tN%s\\t%s\\n", toupper($2), i++); }')
+    src = SRC / "usr.bin" / "netstat" / "nlist_symbols"
+    with open(out / "nl_defs.h", "w") as fh:
+        subprocess.run(["awk", prog, str(src)], check=True, stdout=fh)
+
+
+def _gen_route(out: Path, _dir: str = "") -> None:
+    """sbin/route's keywords.h, verbatim from its Makefile:
+
+        keywords.h: keywords
+            LC_ALL=C awk '!/^#|^$$/ {
+                printf "#define\tK_%s\t%d\n\t{\"%s\", K_%s},\n",
+                    toupper($1), ++L, $1, toupper($1); }' \
+                < ${.CURDIR}/keywords > ${.TARGET}
+
+    Both a #define and a table row per keyword, which is why route.c
+    #includes it twice under different macros.
+    """
+    prog = ('!/^#|^$/ { printf "#define\\tK_%s\\t%d\\n\\t{\\"%s\\", '
+            'K_%s},\\n", toupper($1), ++L, $1, toupper($1); }')
+    src = SRC / "sbin" / "route" / "keywords"
+    with open(out / "keywords.h", "w") as fh:
+        subprocess.run(["awk", prog, str(src)], check=True, stdout=fh,
+                       env=dict(os.environ, LC_ALL="C"))
+
+
+def _gen_getaddrinfo(out: Path, _dir: str = "") -> None:
+    """usr.bin/getaddrinfo's tables.h:
+
+        SYS_SOCKET_H?=  ${SRCTOP}/sys/sys/socket.h
+        tables.h: tables.awk ${SYS_SOCKET_H}
+            LC_ALL=C awk -f ${.ALLSRC} > ${.TARGET}
+
+    `.ALLSRC' is both prerequisites in order: the script, then the header
+    it reads the address families out of.
+    """
+    d = SRC / "usr.bin" / "getaddrinfo"
+    with open(out / "tables.h", "w") as fh:
+        subprocess.run(["awk", "-f", str(d / "tables.awk"),
+                        str(SRC / "sys" / "sys" / "socket.h")],
+                       check=True, stdout=fh,
+                       env=dict(os.environ, LC_ALL="C"))
+
+
 _GENERATED = {
     "bin/sh": _gen_bin_sh,
     "usr.sbin/bsdinstall/partedit": _gen_opt_osname,
     "usr.sbin/bsdinstall/distextract": _gen_opt_osname,
     "usr.sbin/bsdinstall/distfetch": _gen_opt_osname,
+    "usr.bin/localedef": _gen_localedef,
+    "usr.bin/netstat": _gen_netstat,
+    "sbin/route": _gen_route,
+    "usr.bin/getaddrinfo": _gen_getaddrinfo,
 }
 
 

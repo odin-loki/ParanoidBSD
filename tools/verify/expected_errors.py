@@ -77,6 +77,15 @@ EXPECTED = {
     "sbin/ipf/common/lexer.c":
         "a sed template, not a translation unit. NOT_NAMED",
 
+    # usr.bin/lex's bootstrap copies. The Makefile's GENFILES is
+    # `parse.c parse.h scan.c skel.c' and its `bootstrap:' target copies
+    # init<name> over each when they differ, so the init* files are the
+    # checked-in fallback rather than sources. SRCS names scan.c, not
+    # initscan.c, and none of the three is named by the build.
+    "usr.bin/lex/initscan.c":  "a bootstrap copy, not in SRCS. NOT_NAMED",
+    "usr.bin/lex/initparse.c": "a bootstrap copy, not in SRCS. NOT_NAMED",
+    "usr.bin/lex/initskel.c":  "a bootstrap copy, not in SRCS. NOT_NAMED",
+
     # Test programs no build walks.
     "usr.sbin/bhyve/mevent_test.c":
         "a hand-run probe, not in SRCS. NOT_NAMED",
