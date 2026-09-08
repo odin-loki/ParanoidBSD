@@ -63,6 +63,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -204,7 +205,30 @@ def functions(text: str) -> list[str]:
     return names
 
 
-def modules_by_dir() -> dict[str, int]:
+def tracked() -> set[str] | None:
+    """The paths git tracks, relative to ROOT, or None if git cannot say.
+
+    The ledger used to be whatever `rglob` found on disk, which made it a
+    property of the machine that ran it rather than of the repository. A
+    working tree that also holds an ignored checkout - here,
+    hbsd/src/contrib/llvm-project, which the analyser wants and the repo does
+    not carry - counted 8,914 extra vendor files, so the committed ledger
+    could never match one regenerated from a fresh clone and the CI gate that
+    checks it could never pass.
+
+    Ask git which files the repository actually has. A file git does not
+    track is not part of the port, whatever is sitting next to it on disk.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(ROOT), "ls-files", "-z"],
+            capture_output=True, check=True).stdout
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return {n.decode() for n in out.split(b"\0") if n}
+
+
+def modules_by_dir(keep: set[str] | None = None) -> dict[str, int]:
     """Source directory -> number of C++23 modules under the matching
     pbsd/ directory.
 
@@ -224,6 +248,8 @@ def modules_by_dir() -> dict[str, int]:
     if not pbsd.is_dir():
         return out
     for p in pbsd.rglob("*.cppm"):
+        if keep is not None and p.relative_to(ROOT).as_posix() not in keep:
+            continue
         d = p.parent.relative_to(pbsd)
         # pbsd/bin/cat/b0163/port.cppm -> bin/cat, and also bin/cat/b0163
         parts = list(d.parts)
@@ -246,7 +272,8 @@ def main() -> int:
     args = ap.parse_args()
 
     want = set(a.strip() for a in args.areas.split(",") if a.strip())
-    modules = modules_by_dir()
+    keep = tracked()
+    modules = modules_by_dir(keep)
 
     out_path = Path(args.out)
     if not out_path.is_absolute():
@@ -351,6 +378,8 @@ def main() -> int:
         bydir: dict[str, list[Path]] = {}
         for p in base.rglob("*"):
             if not p.is_file() or p.suffix not in SOURCE:
+                continue
+            if keep is not None and p.relative_to(ROOT).as_posix() not in keep:
                 continue
             d = p.parent.relative_to(SRC).as_posix()
             bydir.setdefault(d, []).append(p)

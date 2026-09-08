@@ -62,6 +62,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The ledger counts the files GIT tracks, not the files on disk. The
+      # machine that regenerates it also carries an ignored checkout of
+      # hbsd/src/contrib/llvm-project, 8,914 of whose files have a source
+      # suffix; while the walk was a plain rglob the committed ledger said
+      # 50,057 files, this runner regenerated 41,143, and the gate below
+      # went red over a difference that was the generator's, not the tree's.
+      - name: The ledger reads the tree git has, not the disk
+        run: python3 tools/test_port_plan.py
       # docs/port_plan.json is the ledger every stage reads - which file
       # defines which functions - and it is gitignored: 6.9MB generated
       # from the tree, with only the markdown committed.
