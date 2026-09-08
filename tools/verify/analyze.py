@@ -31,8 +31,10 @@ import hashlib
 import json
 import os
 import re
+import plistlib
 import subprocess
 import sys
+import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
@@ -91,8 +93,24 @@ def analyze(job: dict) -> dict:
     flags = [*lang_flags(src, job["rel"]),
              *include_flags(src, arch, opts=job.get("opts"),
                             cpu=job.get("cpu"))]
-    cmd = ["clang", "--analyze", "-Xclang", "-analyzer-output=text",
-           *flags, str(src), "-o", "/dev/null"]
+    # plist rather than text, for one field text does not carry:
+    # issue_context, the function clang says the finding is in.
+    # tools/verify/param_premise.py sorts every finding by that and had to
+    # work it out by reading style(9) braces, which declines on code a
+    # macro generated at file scope. The rest of the record is the same
+    # three things under different names - check_name, description and
+    # location - and the kern shard was run both ways to confirm it.
+    plist = tempfile.NamedTemporaryFile(
+        prefix="pbsd_diag_", suffix=".plist", delete=False)
+    plist.close()
+    # plist-MULTI-FILE, not plist. Plain plist's writer answers no to
+    # supportsCrossFileDiagnostics(), so it DROPS every report whose path
+    # leaves the main source - and says nothing. Over the kern shard that
+    # was 13 of 255 findings gone, refcount.h:69, atomic.h:382,
+    # vm_page.h:959 and ip_carp.c:2314 among them, with no error and no
+    # count to notice it by.
+    cmd = ["clang", "--analyze", "-Xclang", "-analyzer-output=plist-multi-file",
+           *flags, str(src), "-o", plist.name]
     # A finding that appears in one sweep and not the next is either a
     # change in the CODE or a change in the COMMAND, and a record that
     # carries only the finding cannot tell you which.
@@ -114,12 +132,15 @@ def analyze(job: dict) -> dict:
         p = subprocess.run(cmd, capture_output=True, text=True,
                            timeout=job["timeout"], cwd="/tmp")
     except subprocess.TimeoutExpired:
+        Path(plist.name).unlink(missing_ok=True)
         return {"file": job["rel"], "status": "TIMEOUT", "findings": [],
                 "flags": digest}
     except OSError as e:
+        Path(plist.name).unlink(missing_ok=True)
         return {"file": job["rel"], "status": "ERROR", "detail": str(e),
                 "findings": [], "flags": digest}
     if p.returncode != 0 and "error:" in p.stderr:
+        Path(plist.name).unlink(missing_ok=True)
         # It did not compile for the architecture arch_of() picked. The
         # build system may name one that CAN build it - see
         # includes.files_opt_arch_index(), which is a hint and not an
@@ -173,15 +194,34 @@ def analyze(job: dict) -> dict:
                 "flags": digest}
     out = []
     wanted = set(CHECKERS)
-    for m in DIAG.finditer(p.stderr):
-        if m.group("checker") not in wanted:
+    # clang writes the file only when it has something to say, so an
+    # absent plist means no findings rather than a failure.
+    pl = Path(plist.name)
+    raw = pl.read_bytes() if pl.is_file() else b""
+    pl.unlink(missing_ok=True)
+    # A unit the analyser gives up on leaves the file empty rather than
+    # reporting it, and plistlib raises on that.
+    doc = plistlib.loads(raw) if raw.lstrip().startswith(b"<?xml") else {}
+    files = doc.get("files", [])
+    for d in doc.get("diagnostics", []):
+        if d.get("check_name") not in wanted:
             continue
+        loc = d.get("location", {})
+        name = files[loc["file"]] if loc.get("file") is not None else ""
         try:
-            rel = Path(m.group("file")).resolve().relative_to(SRC).as_posix()
+            rel = Path(name).resolve().relative_to(SRC).as_posix()
         except ValueError:
-            rel = m.group("file")
-        out.append({"where": f"{rel}:{m.group('line')}",
-                    "checker": m.group("checker"), "msg": m.group("msg")})
+            rel = str(name)
+        rec = {"where": f"{rel}:{loc.get('line')}",
+               "checker": d["check_name"], "msg": d.get("description", "")}
+        # The function clang says it is in, when it says. A finding in
+        # code a macro generated at file scope has one and a reader of
+        # the source cannot find it; one at file scope proper has none.
+        if d.get("issue_context"):
+            rec["fn"] = d["issue_context"]
+            if d.get("issue_context_kind", "function") != "function":
+                rec["fn_kind"] = d["issue_context_kind"]
+        out.append(rec)
     return {"file": job["rel"], "status": "OK", "findings": out,
             "flags": digest}
 
