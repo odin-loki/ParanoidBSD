@@ -5399,13 +5399,18 @@ from one finding to none.
 Three of four again — the shape this document has now recorded eleven
 times.
 
-## Sweep 13: 32 recovered, none regressed, and 71 findings with one cause
+## Sweep 13: 32 recovered, none regressed, and 61 findings with one cause
 
 | | sweep 12 | sweep 13 |
 |---|---|---|
 | OK | 7,487 | **7,519** |
 | ERROR | 622 | **590** |
-| findings | 1,728 | 1,803 |
+| findings | 1,585 | 1,650 |
+
+(Findings are counted the way `sweep_report.py` counts them — distinct
+`(file, line, checker)`. The raw warning count is 1,728 and 1,803; one
+line can carry several, as `linux_socket.c:1018` carries three, one per
+argument.)
 
 `ERROR -> OK` 32, `OK -> ERROR` **0**. Twenty-six of the thirty-two are
 sweep 12's own regressions coming back — `sys/compat/linux` and
@@ -5416,10 +5421,11 @@ is the option retry finding `-DCOMPAT_FREEBSD32` — the third alternative
 of `optional powerpc | powerpcspe | compat_freebsd32`, and the only one
 that compiles.
 
-Of the 75 new findings, **71 are in one file** —
+Of the 65 new findings, **61 are in one file** —
 `sys/compat/linux/linux_socket.c`, which had not compiled since the
-regression — and all 71 are one cause. Every trace passes through
-`linux_socketcall()`:
+regression — and all of them are one cause. The file produces 71
+warnings at 61 distinct sites, and every one of the 71 traces passes
+through `linux_socketcall()`:
 
     static const unsigned char lxs_args_cnt[] = {
         0 /* unused*/,      3 /* socket */,
@@ -5469,9 +5475,11 @@ Execution continues"* immediately followed by *"Control jumps to
 `case 2:`"*.
 
 So: an analyser limitation, recorded as a decision rather than counted
-as 71 defects. Worth stating plainly because the alternative reading —
-1,803 findings, up 75 — is the one a total gives you, and 71 of those 75
-are one symbolic array load.
+as 61 defects. Worth stating plainly because the alternative reading —
+1,650 findings, up 65 — is the one a total gives you, and 61 of those 65
+are one symbolic array load. The other four are one each in
+`linux_ioctl.c`, `linux_misc.c`, `linux_signal.c` and
+`nfs_nfsdport.c`, and nothing went away: `gone` is zero.
 
 The 72nd warning the file produces is a `deadcode` note at `:1427`
 (`Value stored to 'error' is never read`), which the checker list does
