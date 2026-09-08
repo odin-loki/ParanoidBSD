@@ -48,9 +48,20 @@ and by whether the finding NAMES a parameter of that function:
 
 The function extents come from style(9): a definition's opening brace is
 alone at column 0. tools/verify/test_param_premise.py checks that rule
-against clang's own AST on a sample, because a rule about where
+against clang's own issue_context on a sample, because a rule about where
 functions start that is a little bit wrong produces a table that is
 entirely wrong and looks fine.
+
+Where the rule cannot answer it says so rather than guessing, and over
+sixty files sampled against the analyser every disagreement was of that
+kind - never a wrong function. Two things it declines: code a macro
+generated at file scope (`RB_GENERATE_STATIC', `NSS_MP_CACHE_HANDLING'),
+and a definition that puts its brace on the declarator line, which is
+every non-BSD file in the tree - openzfs's Lua is the example. 52 of
+sweep 15's 1,554 come out unattributed, five of them in sys/contrib, and
+a rule for the one-line brace was considered and left out: it would
+recover a handful and its failure mode is silent misattribution, which
+is the thing this whole file is arranged not to do.
 """
 from __future__ import annotations
 
