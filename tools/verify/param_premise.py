@@ -36,6 +36,10 @@ A finding is sorted by the function it is inside and by who can call it:
                   since analyze.py started asking clang for the name; a
                   record older than that lands in "attributed to no
                   function" instead.
+  BRACE-ON-DECLARATOR
+                  a definition that puts its `{' on the declarator line.
+                  Not style(9), and not a macro either: BIND's resolver
+                  under lib/libc/resolv and openzfs's Lua both do it.
   GENERATED       config(8)'s vnode_if.h and the other *_if.h interfaces,
                   written into a directory that does not outlive the run.
   HEADER          the finding is in a .h. A `static __inline' there has no
@@ -203,6 +207,30 @@ class File:
         self.lines = path.read_text(errors="replace").splitlines()
         self.defs = definitions(self.lines)
         self._uses: dict[str, int] | None = None
+
+    def one_line_brace(self, name: str) -> bool:
+        """Is `name' defined with its brace on the declarator line?
+
+        style(9) does not do this and most of the tree does not either,
+        but BIND's resolver under lib/libc/resolv and openzfs's Lua both
+        write `free_nsrr(rrset_ns *nsrrsp, rr_ns *nsrr) {'. Worth telling
+        apart from a name a macro generated, because one is a function a
+        reader can open and the other is not.
+        """
+        pat = re.compile(r"^\s*(?:\w[\w \t*]*\s)?\**" + re.escape(name)
+                         + r"\s*\(")
+        for i, ln in enumerate(self.lines):
+            if not pat.match(ln):
+                continue
+            j, depth = i, 0
+            while j < len(self.lines) and j < i + 8:
+                depth += self.lines[j].count("(") - self.lines[j].count(")")
+                if depth <= 0 and self.lines[j].rstrip().endswith("{"):
+                    return True
+                if depth <= 0:
+                    break
+                j += 1
+        return False
 
     def enclosing(self, line: int):
         """(name, params, is_static, brace, head) around a 1-based line.
@@ -412,11 +440,16 @@ def main() -> int:
             if e is None or not e[0]:
                 if said:
                     # At file scope as far as the text goes, and clang has
-                    # a name for it: RB_GENERATE_STATIC and friends.
-                    tally["macro"][0] += 1
-                    if args.list == "macro":
-                        rows["macro"].append(
-                            f"  {path}:{line}  {said}()  [file scope]"
+                    # a name for it: either a macro generated the function
+                    # (RB_GENERATE_STATIC and friends) or the file writes
+                    # its brace on the declarator line, which is not
+                    # style(9) but is what BIND's resolver and Lua do.
+                    cls = ("brace-on-declarator" if f.one_line_brace(said)
+                           else "macro")
+                    tally[cls][0] += 1
+                    if args.list == cls:
+                        rows[cls].append(
+                            f"  {path}:{line}  {said}()"
                             f"\n      {checker}: {msg}")
                 else:
                     unattributed += 1
@@ -462,7 +495,8 @@ def main() -> int:
                     f"\n      {checker}: {msg}")
 
     order = ["exported", "static-taken", "static-called",
-             "static-unseen", "header", "generated", "macro"]
+             "static-unseen", "header", "generated", "macro",
+             "brace-on-declarator"]
     print(f"{len(keys):,} findings"
           f"{'' if args.all else ' not cited by line in UB_FINDINGS.md'}"
           f" in {len(byfile):,} files")
@@ -470,16 +504,16 @@ def main() -> int:
         print(f"  ({discussed:,} of them are in a file the document does "
               f"discuss, which is a weaker claim than a citation)")
     print()
-    print(f"  {'':<16}{'findings':>9}{'names a param':>15}"
+    print(f"  {'':<20}{'findings':>9}{'names a param':>15}"
           f"{'param on the line':>19}")
     for cls in order:
         if cls not in tally:
             continue
         n, named, online = tally[cls]
-        print(f"  {cls:<16}{n:>9,}{named:>15,}{online:>19,}")
+        print(f"  {cls:<20}{n:>9,}{named:>15,}{online:>19,}")
     tot = [sum(tally[c][i] for c in tally) for i in range(3)]
-    print(f"  {'':-<16}{'':->9}{'':->15}{'':->19}")
-    print(f"  {'total':<16}{tot[0]:>9,}{tot[1]:>15,}{tot[2]:>19,}")
+    print(f"  {'':-<20}{'':->9}{'':->15}{'':->19}")
+    print(f"  {'total':<20}{tot[0]:>9,}{tot[1]:>15,}{tot[2]:>19,}")
     if unattributed:
         print(f"\n  {unattributed} finding(s) attributed to no function"
               + (f", {len(unreadable)} of them in a source that is not here"
