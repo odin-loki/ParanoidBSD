@@ -6045,3 +6045,77 @@ Nothing to change. Recorded because 29 findings that read as memory
 leaks in a library every program links are worth being able to dismiss
 by name rather than one at a time — which is the whole point of sorting
 the sweep by who can call the function.
+
+## Sweep 16: the six bhyve files, and the one finding they were hiding
+
+| | sweep 15 | sweep 16 |
+|---|---|---|
+| OK | 7,539 | **7,545** |
+| ERROR | 570 | **564** |
+| findings (deduplicated) | 1,650 | **1,651** |
+
+Six `ERROR -> OK`, none the other way, and the six are the ones the
+`.elif` fix predicted: `sys/amd64/vmm/vmm.c`, `vmm_ioport.c`,
+`vmm_lapic.c`, `amd/svm.c`, `amd/vmcb.c` and `intel/vmx.c`. Five of them
+compile clean. The sixth is the point of the exercise.
+
+### `sys/amd64/vmm/amd/svm.c:1548` — `errcode_valid` on the arm that says nothing
+
+```c
+	case 0x40 ... 0x5F:
+		vmm_stat_incr(vcpu->vcpu, VMEXIT_EXCEPTION, 1);
+		reflect = 1;
+		idtvec = code - 0x40;
+		switch (idtvec) {
+		...
+		}
+
+		if (reflect) {
+			...
+			error = vm_inject_exception(vcpu->vcpu, idtvec,
+			    errcode_valid, info1, 0);
+```
+
+`errcode_valid` is declared at `:1358` and never initialised. Of the arms
+of the inner switch, `IDT_NP`/`SS`/`GP`/`AC`/`TS` set it to 1 (`:1441`),
+`IDT_DF` sets it to 1 (`:1445`), the `default` sets it to 0 (`:1535`),
+and `IDT_MC` (`:1427`) and `IDT_BP` (`:1516`) clear `reflect` so they
+never reach the read.
+
+`IDT_DB` does neither. `:1507`'s `reflect = 0` is **inside**
+
+```c
+		if (stepped && (vcpu->caps & (1 << VM_CAP_RFLAGS_TF))) {
+```
+
+so it applies to a TF single-step the hypervisor is expecting. A #DB the
+hypervisor is *not* expecting — a guest's own hardware breakpoint through
+DR0–DR3, or DR6.BD — leaves `stepped` false, `reflect` 1, and
+`errcode_valid` never written. The value handed to
+`vm_inject_exception()` is whatever was in that stack slot, and it
+decides whether an error code is pushed onto the guest's stack for a
+vector that has none.
+
+Guest-triggerable: setting a debug register and hitting it is an
+unprivileged operation inside the guest.
+
+The fix is the idiom the Intel side already uses. `vmx.c:2740` is
+
+```c
+		/* Reflect all other exceptions back into the guest */
+		errcode_valid = errcode = 0;
+		if (intr_info & VMCS_INTR_DEL_ERRCODE) {
+			errcode_valid = 1;
+```
+
+— cleared unconditionally on the line above the test that can raise it —
+so `svm.c` now clears it next to `reflect = 1`, before the switch that
+may or may not set it. One finding to none at the same flag digest
+`4552621976ec`.
+
+This one is worth noting for how it was found: the file has been in the
+tree the whole time and in `expected_errors.py` since sweep 6, because
+`sys/modules/vmm/Makefile`'s `.elif` arm was being skipped and bhyve was
+compiled with one include directory of four. **A file that does not
+compile reports zero findings and is indistinguishable from a clean one**
+— fourteen sweeps of that, in the hypervisor.

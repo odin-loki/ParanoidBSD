@@ -1417,6 +1417,15 @@ svm_vmexit(struct svm_softc *svm_sc, struct svm_vcpu *vcpu,
 	case 0x40 ... 0x5F:
 		vmm_stat_incr(vcpu->vcpu, VMEXIT_EXCEPTION, 1);
 		reflect = 1;
+		/*
+		 * No error code unless an arm below says otherwise.  IDT_DB
+		 * is the arm that says nothing: it clears reflect only for a
+		 * TF single-step it is expecting, so a #DB from a guest debug
+		 * register reaches the vm_inject_exception() below with this
+		 * never assigned.  vmx.c:2740 sets its equivalent the same
+		 * way, on the line above the test that can raise it.
+		 */
+		errcode_valid = 0;
 		idtvec = code - 0x40;
 		switch (idtvec) {
 		case IDT_MC:

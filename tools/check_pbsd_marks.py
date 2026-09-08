@@ -85,6 +85,16 @@ FIXES = {
         "the usermode test that guards every other write to them, and "
         "the kernel-mode caller at :481 passes NULL for both",
     ),
+    "hbsd/src/sys/amd64/vmm/amd/svm.c": (
+        "errcode_valid = 0;\n\t\tidtvec = code - 0x40;",
+        "reflect = 1;\n\t\tidtvec = code - 0x40;",
+        "the 0x40...0x5F exception arm reflects the exception into the "
+        "guest with an errcode_valid that case IDT_DB never assigns - and "
+        "IDT_DB clears reflect only for a TF single-step it is expecting, "
+        "so a #DB from a guest debug register injected an exception with "
+        "an uninitialised error-code-valid bit; vmx.c:2740 sets its "
+        "equivalent unconditionally before the test that can raise it",
+    ),
     "hbsd/src/lib/libc/iconv/citrus_stdenc.c": (
         "if (ce == NULL)\n\t\treturn;",
         "{\n\n\tif (ce == &_citrus_stdenc_default)",
