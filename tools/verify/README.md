@@ -7,6 +7,7 @@ Three tools, in the order they have to run.
 | `includes.py` | compile FreeBSD source on a Linux host, against FreeBSD's own headers |
 | `classify.py` | which functions can be checked soundly with no precondition |
 | `cbmc_driver.py` | run CBMC, record what kind of answer each function got |
+| `lock_balance.py` | a lock released on some paths out of a function and not others |
 
 ## Why `includes.py` exists
 
@@ -678,3 +679,26 @@ network:
 - a user-supplied netlink nexthop weight of 0 divided by zero in the
   kernel;
 - `snl_free()` was not idempotent, and closed the same fd twice.
+
+
+## Why `lock_balance.py` exists
+
+The default clang checkers have no model for `mtx_lock`.
+`sys/netipsec/ipsec.c` compiles and reports zero findings in every sweep,
+and `ipsec_chkreplay()` returns holding `replay->lock` on one of its
+eleven paths - the sibling function twenty lines down has the same block
+with the unlock in it. That one was found by reading a finding in a
+*different* translation unit and following the callee, which does not
+scale and is not repeatable.
+
+It looks for inconsistency, not balance: within one function, a lock
+released before some returns and not others. A function that never
+unlocks has a contract; a function that unlocks on ten paths and not the
+eleventh has a bug or an undocumented contract, and both are worth a
+line of output.
+
+Thirteen returns in 6,914 files, ten of them leaks. The three that are
+not are named in `test_lock_balance.py`, so a change that stops
+reporting one of the ten has to say what it did. The four rules that got
+the list down from 833 - and the mutation test that says what they cost
+- are in `docs/security/UB_FINDINGS.md`.

@@ -4677,6 +4677,106 @@ than acted on. It is queued behind the running sweep: editing a source
 under a sweep destroys the measurement, and this file is in a shard that
 has not finished.
 
+### Ten locks released on some paths out of a function and not others
+
+`sys/netipsec/ipsec.c` compiles clean and reports **nothing**, in every
+sweep it has ever been in. It also contains this, in `ipsec_chkreplay()`:
+
+```c
+	SECREPLAY_LOCK(replay);
+	...
+	if (tl < window - 1 && seq >= bl) {
+		if (th == 0)
+			return (0);                    /* :1357 */
+		*seqhigh = th - 1;
+		...
+		SECREPLAY_UNLOCK(replay);
+		return (1);
+	}
+```
+
+Eleven ways out of that function, ten of which unlock. `SECREPLAY_LOCK`
+is `mtx_lock(&(_r)->lock)`, so `:1357` returns to the caller holding a
+mutex. The sibling function twenty lines down, `ipsec_updatereplay()`,
+has the same block written correctly:
+
+```c
+		if (th == 0) {
+			SECREPLAY_UNLOCK(replay);
+			return (1);
+		}
+```
+
+Two functions from one template, one with the unlock and one without.
+
+The default clang checkers have no model for `mtx_lock`, which is why
+the sweep is silent on it: this was found by reading `xform_ah.c:666`,
+in a different translation unit, and following the callee. Reading is
+not a gate, so `tools/verify/lock_balance.py` is.
+
+**What it looks for.** Not balance - plenty of functions in this tree
+take a lock and hand it to their caller on purpose, and `..._locked()`
+names a whole family of them. It looks for *inconsistency*: within one
+function, a lock released before some returns and not others. It walks
+the brace structure keeping one bit - "the lock is definitely held here"
+- so the join for two arms is AND, an arm that cannot fall through does
+not join at all, and a construct that may be skipped joins with its own
+entry state.
+
+Four rules kill the four false-positive families, each found by reading
+what the tool reported and each written into `testdata/`:
+
+* **A callee took it.** `vm_object_deallocate()` calls
+  `vm_object_deallocate_vnode(object)` and returns; the callee owns the
+  lock from there. So a call as the statement before the return, as the
+  return's own expression, or in the condition of the block the return
+  sits in, disqualifies it. Walking *every* line between the lock and
+  the return instead - which reads better - was measured and was
+  useless: a mutation test that deleted one unlock guarding an early
+  return in 120 files caught **2** of them, because almost every
+  function calls something after taking a lock.
+* **Entered holding it.** A release above the first acquire means the
+  function was called locked, dropped it for work it could not do
+  holding it, and took it back. `udp_append()` says so in a comment,
+  `passregister()` does it across `cam_periph_mapmem()`, and
+  `ext2_nodealloccg()` across `bread()`.
+* **Returns holding it by contract.** If control leaves the bottom of
+  the function still holding, or the last return does, that is the
+  point of the function.
+* **The return is not reachable.** `siba.c` writes `panic(...); return
+  (ENXIO);` in two switch arms.
+
+**What it found.** Thirteen returns in 6,914 files. Ten are leaks:
+
+| | |
+|---|---|
+| `sys/netipsec/ipsec.c:1357` | the one above |
+| `sys/dev/drm2/drm_bufs.c:85`, `sys/dev/drm2/drm_bufs.c:102` | `drm_get_resource_start()` and `drm_get_resource_len()`, the same three lines copied: `mtx_lock(&dev->pcir_lock); if (drm_alloc_resource(dev, resource) != 0) return 0;`. `drm_alloc_resource()` is `static` in the same file and never touches `pcir_lock`. |
+| `sys/arm/allwinner/aw_mmc.c:312` | `aw_mmc_cam_request()` takes `AW_MMC_LOCK` and returns `EBUSY` on "Controller still has an active command" without it. A CAM request arriving while one is in flight is not an unusual event. |
+| `sys/arm64/nvidia/tegra210/max77620_gpio.c:563` | one of **five** identical `if (rv != 0) { device_printf(...); return (ENXIO); }` arms in one function. The other four unlock. |
+| `sys/arm/nvidia/drm2/tegra_bo.c:165` | `if (vm_page_iter_insert(...) != 0) return (EINVAL);` between `VM_OBJECT_WLOCK` and the `VM_OBJECT_WUNLOCK` two lines below it |
+| `sys/powerpc/mpc85xx/fsl_espi.c:350` | `if (plat_clk == 0) { ...; return (EINVAL); }` under `FSL_ESPI_LOCK` |
+| `sys/powerpc/pseries/phyp_vscsi.c:341` | the `malloc(..., M_NOWAIT)` failure path in attach, under `sc->io_lock` |
+| `sys/dev/sound/pci/ich.c:411` | `ichchan_init()`'s `default: return (NULL);`. Latent - the driver calls `pcm_addchan()` at most three times and the switch covers 0, 1, 2 - but the arm exists, and `ch = &sc->ch[num]` is dereferenced *before* it, which is the more interesting half if it ever fires. |
+| `sys/netpfil/ipfw/ip_fw_table.c:1079` | `find_table_entry()`'s `if (ta->find_tentry == NULL) return (ENOTSUP);` under `IPFW_UH_RLOCK`. Also latent: all seven in-tree table algorithms set `find_tentry`. `ipfw_add_table_algo()` is exported for modules, which is presumably why the NULL test is there at all. |
+
+Three are not, and are in the test by name so that a change which stops
+reporting one of the ten has to account for it: `iw_cxgbe/cm.c:1146`
+(`solisten_dequeue()` unlocks, and the comment two lines down says so),
+`vfs_mount.c:2319` (`dounmount_cleanup()` ends with `MNT_IUNLOCK(mp)`),
+and `kern_proc.c:454` (`_pfind()` returns the process locked on success
+and NULL otherwise - genuinely ambiguous from the text).
+
+**What it misses.** The same mutation test, after the four rules, catches
+**33 of 120**. It gives up entirely on any function containing a `goto`,
+because a label joins paths the walk does not model, and that is most of
+the miss. Three quarters missed and ten found is the trade a reader
+wants from a list of thirteen; a list of 833, which is what the first
+version produced, is a list nobody opens.
+
+All ten fixes are queued behind the sweep that is running: editing a
+source under a sweep destroys the measurement.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.

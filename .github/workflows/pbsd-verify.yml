@@ -322,6 +322,17 @@ jobs:
       - name: The finding is attributed to the function clang says it is in
         run: python3 tools/verify/test_param_premise.py
 
+      # The default clang checkers have no model for mtx_lock, so a
+      # leaked mutex is invisible to the sweep - sys/netipsec/ipsec.c
+      # compiles clean and reports nothing, and ipsec_chkreplay() returns
+      # holding replay->lock on one of its eleven paths. lock_balance.py
+      # is the reader that does see it. Ten of the thirteen it reports
+      # over the whole kernel were read and are leaks; the three that are
+      # not are named in the test, so a change that stops reporting one
+      # of the ten has to say what it did.
+      - name: A lock released on some paths out of a function and not others
+        run: python3 tools/verify/test_lock_balance.py
+
   report:
     needs: [sweep, analyze]
     if: always()
