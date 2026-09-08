@@ -6788,3 +6788,34 @@ init_thread)` is declared in `linux_emul.h` and dereferences `td` at
 a real thread; the parameter that is ever `NULL` is the *second*
 (`:279`). Exported and caller-constrained, the class `report.py` names in
 its header.
+
+### `tcp_syncache.c` — seven, and one opaque call between two asks
+
+`syncache_respond()` declares `struct ip *ip = NULL` (`:1801`) and
+`struct ip6_hdr *ip6 = NULL` (`:1809`), fills exactly one of them at
+`:1848`/`:1877` under
+
+```c
+	if (sc->sc_inc.inc_flags & INC_ISIPV6) {
+		ip6 = mtod(m, struct ip6_hdr *);
+```
+
+and then, a hundred lines later, asks the same question again to decide
+which one to touch — `:1963`, `:1999` and the rest. The two asks are the
+same expression and nothing in the function changes it.
+
+Between them is `optlen = tcp_addoptions(&to, (u_char *)(th + 1))`
+(`:1956`), a call into another translation unit taking a pointer into
+the mbuf. The analyser has to assume it may write anything reachable,
+`sc->sc_inc.inc_flags` included, so the second ask is unconstrained by
+the first and it explores "IPv6 the first time, IPv4 the second" — where
+`ip` is still the `NULL` it was declared as.
+
+Seven findings, one call: `tcp_syncache.c:1964`, `tcp_syncache.c:1967`,
+`tcp_syncache.c:2003`, `tcp_syncache.c:2012`, `tcp_syncache.c:2034`,
+`tcp_syncache.c:2035`, `tcp_syncache.c:2040`.
+
+The shape is the one to remember, because it is not about this file: a
+branch variable read before an opaque call and re-read after it is two
+different questions to a path-sensitive checker, and every long function
+in this tree that dispatches on an address family does exactly that.
