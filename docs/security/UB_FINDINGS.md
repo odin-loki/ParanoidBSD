@@ -5007,10 +5007,18 @@ pointer into the iovec and not back into the structure:
 `dl->name` is freed and `dl->name` still points at it. The error path
 then frees that stale pointer. `datalink.c:1418`.
 
-Both are queued behind the A/B measuring the include-path work; neither
-is a shape the kernel half of this document has seen, because the kernel
-half is mostly `M_ZERO` and locks, and this is what a modelled
-`malloc()` finds instead.
+**All three are fixed**, each A/B'd at an unchanged flag digest against
+the record the include-path work produced. `lockd_lock.c` and
+`datalink.c` go from one finding to none.
+
+`patch(1)` went from **five to two**, not three to two: the missing
+`noreturn` was costing findings in `inp.c` and `util.c` as well, which
+is the point — the declaration is not local to the three sites that
+made it visible. What is left is `pch.c:1316` and `:1320` in
+`pch_swap()`, a different question. Neither of the first two is a shape
+the kernel half of this document has seen: the kernel half is mostly
+`M_ZERO` and locks, and this is what a modelled `malloc()` finds
+instead.
 
 **`patch(1)`: three findings, one missing `noreturn`.** `pch.c:998`,
 `:1020` and `:1045` are all this arm, three times in `another_hunk()`:

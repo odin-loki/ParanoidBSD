@@ -1408,7 +1408,20 @@ datalink2iov(struct datalink *dl, struct iovec *iov, int *niov, int maxiov,
 
   iov[*niov].iov_base = (void *)dl;
   iov[(*niov)++].iov_len = sizeof *dl;
-  iov[*niov].iov_base = dl ? realloc(dl->name, DATALINK_MAXNAME) : NULL;
+  if (dl) {
+    /*
+     * realloc() is free to move the block, and the error path below
+     * frees dl->name -- so the result has to go back into dl->name and
+     * not only into the iovec.  On failure dl->name is still the old
+     * pointer, which is what there is to free.
+     */
+    char *name = realloc(dl->name, DATALINK_MAXNAME);
+
+    if (name != NULL)
+      dl->name = name;
+    iov[*niov].iov_base = dl->name;
+  } else
+    iov[*niov].iov_base = NULL;
   iov[(*niov)++].iov_len = DATALINK_MAXNAME;
 
   link_fd = physical2iov(dl ? dl->physical : NULL, iov, niov, maxiov, auxfd,

@@ -940,6 +940,13 @@ split_nfslock(const struct file_lock *exist_lock,
 			debuglog("Unable to allocate resource for split 1\n");
 			if (*left_lock != NULL) {
 				deallocate_file_lock(*left_lock);
+				/*
+				 * unlock_nfslock() frees *left_lock again on
+				 * SPL_RESERR, and reads it before that to
+				 * dump it.  Leaving the pointer behind made
+				 * both a use and a free of freed memory.
+				 */
+				*left_lock = NULL;
 			}
 			return SPL_RESERR;
 		}

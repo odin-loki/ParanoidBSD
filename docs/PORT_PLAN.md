@@ -55,8 +55,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
 | 4 | `sbin` | 533 | 228,447 | 3,567 |
-| 5 | `usr.bin` | 732 | 247,963 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 656,984 | 9,020 |
+| 5 | `usr.bin` | 732 | 247,965 | 4,186 |
+| 6 | `usr.sbin` | 1,142 | 657,004 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,495,420 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,296,265** | **114,204** |
+| | **total** | **41,143** | **21,296,287** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -23737,7 +23737,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.156.11.13 `fetchname()` · `TODO-FN`
   - [ ] 5.156.11.14 `version()` · `TODO-FN`
   - [ ] 5.156.11.15 `my_exit()` · `TODO-FN`
-- [ ] **5.156.12** `util.h` · 51L · `TODO-HDR`
+- [ ] **5.156.12** `util.h` · 53L · `TODO-HDR`
 
 ### 5.157 `usr.bin/pathchk`
 
@@ -33943,7 +33943,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.179.21.69 `IfaceClearCommand()` · `TODO-FN`
   - [ ] 6.179.21.70 `SetProcTitle()` · `TODO-FN`
 - [ ] **6.179.22** `command.h` · 76L · `TODO-HDR`
-- [ ] **6.179.23** `datalink.c` · 1,479L · `TODO-PORT` · 41 fn
+- [ ] **6.179.23** `datalink.c` · 1,492L · `TODO-PORT` · 41 fn
   - [ ] 6.179.23.1 `datalink_OpenTimeout()` · `TODO-FN`
   - [ ] 6.179.23.2 `datalink_StartDialTimer()` · `TODO-FN`
   - [ ] 6.179.23.3 `datalink_HangupDone()` · `TODO-FN`
@@ -35226,7 +35226,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.196.3.7 `init_nsm()` · `TODO-FN`
   - [ ] 6.196.3.8 `out_of_mem()` · `TODO-FN`
 - [ ] **6.196.4** `lockd.h` · 43L · `TODO-HDR`
-- [ ] **6.196.5** `lockd_lock.c` · 2,279L gen:4 · `TODO-PORT` · 43 fn
+- [ ] **6.196.5** `lockd_lock.c` · 2,286L gen:4 · `TODO-PORT` · 43 fn
   - [ ] 6.196.5.1 `debuglog()` · `TODO-FN`
   - [ ] 6.196.5.2 `dump_static_object()` · `TODO-FN`
   - [ ] 6.196.5.3 `dump_netobj()` · `TODO-FN`

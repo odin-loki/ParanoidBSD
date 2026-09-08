@@ -170,6 +170,28 @@ FIXES = {
         "evalpipe() read pip[0] on the last element of the pipeline, "
         "where pipe() is not called and never wrote it",
     ),
+    "hbsd/src/usr.sbin/rpc.lockd/lockd_lock.c": (
+        "deallocate_file_lock(*left_lock);\n\t\t\t\t/*",
+        "deallocate_file_lock(*left_lock);\n\t\t\t}\n\t\t\treturn "
+        "SPL_RESERR;",
+        "split_nfslock() freed *left_lock and left the pointer behind, "
+        "so unlock_nfslock() read it and freed it a second time",
+    ),
+    "hbsd/src/usr.sbin/ppp/datalink.c": (
+        "char *name = realloc(dl->name, DATALINK_MAXNAME);",
+        "iov[*niov].iov_base = dl ? realloc(dl->name, DATALINK_MAXNAME)"
+        " : NULL;",
+        "datalink2iov() put the realloc() result in the iovec and not "
+        "back in dl->name, so the error path freed what realloc freed",
+    ),
+    "hbsd/src/usr.bin/patch/util.h": (
+        ("__attribute__((noreturn));", 2),
+        "__printf__, 1, 2)));\nvoid\t\tpfatal",
+        "fatal() and pfatal() end in my_exit(), which this header "
+        "already declares noreturn, and said so themselves nowhere -- "
+        "so every path after a fatal() anywhere in patch(1) was "
+        "analysed as though the program continued",
+    ),
     "hbsd/src/usr.sbin/rtadvd/config.c": (
         "delete_prefix(pfx);\n\t\treturn;",
         "delete_prefix(pfx);\n\t}\n\ttimo.tv_sec = prefix_timo;",

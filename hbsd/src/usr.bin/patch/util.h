@@ -33,9 +33,11 @@ int		copy_file(const char *, const char *);
 void		say(const char *, ...)
 		    __attribute__((__format__(__printf__, 1, 2)));
 void		fatal(const char *, ...)
-		    __attribute__((__format__(__printf__, 1, 2)));
+		    __attribute__((__format__(__printf__, 1, 2)))
+		    __attribute__((noreturn));
 void		pfatal(const char *, ...)
-		    __attribute__((__format__(__printf__, 1, 2)));
+		    __attribute__((__format__(__printf__, 1, 2)))
+		    __attribute__((noreturn));
 void		ask(const char *, ...)
 		    __attribute__((__format__(__printf__, 1, 2)));
 char		*savestr(const char *);
