@@ -6853,3 +6853,50 @@ Folding those is not something a path-sensitive checker does, and this
 is the second file today where the guard is arithmetic on a flag word
 rather than a test of the pointer — `ip_fw_sockopt.c:1886` is the other,
 and `usb_serial.c`'s eight are a third variant of the same thing.
+
+### `kern_lock.c` — three, and the contract is in the comment
+
+`LOCK_CLASS(ilk)` is `lock_classes[LO_CLASSINDEX(ilk)]`, which reads
+`ilk->lo_flags`. All three sites reach it only under `flags &
+LK_INTERLOCK`:
+
+* `kern_lock.c:194` — `lockmgr_exit()`, `if (flags & LK_INTERLOCK) {
+  class = LOCK_CLASS(ilk); class->lc_unlock(ilk); }`
+* `kern_lock.c:272` — `sleeplk()`, `class = (flags & LK_INTERLOCK) ?
+  LOCK_CLASS(ilk) : NULL;`
+* `kern_lock.c:809` — `lockmgr_xlock_hard()`, the same three lines as
+  the first, on the path to a `panic()`
+
+and `sleeplk()`'s own comment (`:258`) states the contract the whole file
+runs on:
+
+```c
+ * It assumes sleepq_lock held and returns with this one unheld.
+ * It also assumes the generic interlock is sane and previously checked.
+ * If LK_INTERLOCK is specified the interlock is not reacquired after the
+ * sleep.
+```
+
+*`LK_INTERLOCK` in the flags means the caller supplied an interlock* is
+a `lockmgr()` API contract held at every call site in the tree and
+checked at none. Three findings, and the interesting part is that the
+invariant is written down — in prose, in the file, ten lines above one
+of them.
+
+### `rtsock.c:2497`, `rtsock.c:2548` — an assertion that is not compiled
+
+`sysctl_iflist()` and `sysctl_ifmalist()` reach
+`w->w_req->td->td_ucred`, and `w_req` is the `struct sysctl_req *` the
+sysctl framework hands a handler. `req->td` is set from a thread
+argument in both entry points — `kern_sysctl.c:252` is `req.td =
+curthread` and `:2138` is `req.td = td` — and `sysctl_root()`, which
+every handler is reached through, says so at `:2364`:
+
+```c
+	KASSERT(req->td != NULL, ("sysctl_root(): req->td == NULL"));
+```
+
+Without `INVARIANTS` that is `((void)0)`, so the analyser takes the path
+the assertion exists to deny. The same shape as `dtrace.c:8232`'s three
+and `dis_tables.c`'s sixty-four: an invariant asserted in a form that
+compiles to nothing in the configuration the sweep uses.
