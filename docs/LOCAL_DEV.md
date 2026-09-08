@@ -25,6 +25,35 @@ not running is worse than a red one.**
 The last row is the only thing that has to stay in CI, and only because of
 two tools. Everything that decides whether the tree is *correct* is local.
 
+## Warm the build-authority caches before a big sweep
+
+`analyze.py` asks bmake what the userland build names and what flags it
+passes, and `userland_names.for_arch()` keeps the answer in
+`/tmp/pbsd_userland_names_<arch>.json`. With that file missing the
+question is asked properly: a walk of the whole tree, one bmake per
+directory, about fifteen thousand of them — and **every worker process
+in a sweep does it independently**.
+
+Deleting the caches and starting a sweep took the libs shard from twenty
+minutes to a projected five hours, at a load average of 45 on four
+cores. Nothing was broken and nothing said anything; the shard simply
+crawled while ten processes each rebuilt the same index.
+
+So warm them in ONE process first:
+
+```sh
+python3 tools/verify/userland_names.py --refresh      # all six architectures
+```
+
+`includes.incs_shim()` is cached the same way, in
+`/tmp/pbsd_userland_incs_<arch>.json`, and costs about 82 seconds per
+architecture to rebuild.
+
+The caches do not record WHICH COMPILER answered, and the answer depends
+on it — asked as gcc the amd64 build names 14,770 sources, asked as
+clang 14,959 — so delete them after changing anything about how bmake is
+invoked, and warm them again before sweeping.
+
 ## Memory is the limit, not cores — read this before a big sweep
 
 On WSL2 the symptom of running out is not an error. **The terminal window
