@@ -147,10 +147,30 @@ echo "== pattern check: a masked switch with fewer arms than states"
     python3 tools/verify/masked_switch_check.py
 )
 
+# The default clang checkers have no model for mtx_lock, so a leaked
+# mutex is invisible to the stage below: sys/netipsec/ipsec.c compiles
+# clean and reports nothing, and ipsec_chkreplay() returned holding
+# replay->lock on one of its eleven paths. Cheap - seconds, no compiler -
+# and it found ten leaks the first time it ran.
+echo
+echo "== pattern check: a lock released on some paths out of a function"
+(
+    cd "$ROOT" || exit 1
+    python3 tools/verify/lock_balance.py hbsd/src/sys
+)
+
+# bin, sbin, usr.bin and usr.sbin joined the corpus in sweep 18: 1,862
+# translation units, and the first look at them found ping6 leaving a
+# file-scope msghdr pointing into a dead frame and rtadvd falling through
+# from a free() into a dereference. --check-errors is NOT on for them
+# yet: 249 do not compile, 212 of those on a header the build generates
+# (ncurses', bin/sh's, bsnmp's, rpcgen's), and an inventory of a hole
+# that is about to be filled is an inventory nobody should write.
 stage "static analysis: the second instrument" \
     "analyze.log" \
     python3 tools/verify/analyze.py --scope lib/libc --scope lib/msun \
-        --scope sys --jobs "$J" --out "$OUT/analyze.jsonl"
+        --scope sys --scope bin --scope sbin --scope usr.bin \
+        --scope usr.sbin --jobs "$J" --out "$OUT/analyze.jsonl"
 
 echo "================================================================"
 python3 tools/verify/report.py "$OUT/ub.jsonl" "$OUT/ptr.jsonl" \
