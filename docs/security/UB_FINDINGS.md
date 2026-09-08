@@ -6119,3 +6119,64 @@ tree the whole time and in `expected_errors.py` since sweep 6, because
 compiled with one include directory of four. **A file that does not
 compile reports zero findings and is indistinguishable from a clean one**
 — fourteen sweeps of that, in the hypervisor.
+
+### `dis_tables.c` — all 73, cited
+
+`dis_tables.c` is 73 findings, the largest single file in the sweep, and
+the two rows above account for 66 of them without naming a line the
+reader can count. All three causes are the same one seen from three
+angles: **the decoder's state machine decides which local is live in
+which arm, and the analyser switches on a table entry it cannot
+correlate with how that entry was reached.**
+
+The 64 `core.CallAndMessage` "uninitialized value" findings are the
+`d86_got_modrm` invariant, walked site by site in the row above:
+
+`dis_tables.c:4654`, `dis_tables.c:4673`, `dis_tables.c:4686`,
+`dis_tables.c:4720`, `dis_tables.c:4728`, `dis_tables.c:4738`,
+`dis_tables.c:4744`, `dis_tables.c:4755`, `dis_tables.c:4772`,
+`dis_tables.c:4782`, `dis_tables.c:4789`, `dis_tables.c:4802`,
+`dis_tables.c:4861`, `dis_tables.c:4874`, `dis_tables.c:4892`,
+`dis_tables.c:4907`, `dis_tables.c:5089`, `dis_tables.c:5177`,
+`dis_tables.c:5185`, `dis_tables.c:5196`, `dis_tables.c:5232`,
+`dis_tables.c:5246`, `dis_tables.c:5272`, `dis_tables.c:5308`,
+`dis_tables.c:5325`, `dis_tables.c:5331`, `dis_tables.c:5336`,
+`dis_tables.c:5344`, `dis_tables.c:5352`, `dis_tables.c:5359`,
+`dis_tables.c:5380`, `dis_tables.c:5451`, `dis_tables.c:5457`,
+`dis_tables.c:5473`, `dis_tables.c:5554`, `dis_tables.c:5719`,
+`dis_tables.c:5737`, `dis_tables.c:5790`, `dis_tables.c:5829`,
+`dis_tables.c:5867`, `dis_tables.c:5901`, `dis_tables.c:5959`,
+`dis_tables.c:5970`, `dis_tables.c:6028`, `dis_tables.c:6042`,
+`dis_tables.c:6050`, `dis_tables.c:6053`, `dis_tables.c:6066`,
+`dis_tables.c:6084`, `dis_tables.c:6105`, `dis_tables.c:6118`,
+`dis_tables.c:6126`, `dis_tables.c:6139`, `dis_tables.c:6149`,
+`dis_tables.c:6164`, `dis_tables.c:6175`, `dis_tables.c:6194`,
+`dis_tables.c:6196`, `dis_tables.c:6214`, `dis_tables.c:6227`,
+`dis_tables.c:6241`, `dis_tables.c:6252`, `dis_tables.c:6263`,
+`dis_tables.c:6275`.
+
+Three more are the same invariant with a different checker —
+`dis_tables.c:3073` and `dis_tables.c:3132` are `*reg += 8` inside
+`dtrace_vex_adjust()` and `dtrace_evex_adjust_reg()`, which take the
+address of that same `reg`, and `dis_tables.c:4461` is `reg == 4`.
+
+Four are a second invariant of the same kind, on the opcode nibbles
+rather than the modrm byte. `dis_tables.c:4675` is `MOVZ`'s
+`WBIT(opcode5)`; `dis_tables.c:4687` and `dis_tables.c:4700` are
+`CRC32`'s and `MOVBE`'s `WBIT(opcode7)`; `dis_tables.c:4829` is
+`XMMSH`/`mm_shift`'s `REGNO(opcode7)`. Each of the four is reachable
+only through the table walk that read the byte its nibble came from —
+`:4141`'s `dtrace_get_opcode(x, &opcode4, &opcode5)` fills `opcode5`
+before `dp = &dis_op0F[...]`, `:4147`'s fills `opcode7` before
+`dp = &dis_op0F7123[opcode5][subcode]` (the `0F 71/72/73` SIMD shift
+group, which is where `mm_shift` comes from), and `:4194`'s fills it
+before the `dis_op0F38` lookup that yields `CRC32` and `MOVBE`. Reading
+the byte and selecting the arm are the same step; a failed read is
+`goto error`, not a fallthrough.
+
+The last two, `dis_tables.c:6419` and `dis_tables.c:6447`, are the
+single `goto done` in the row above.
+
+Nothing to change in a vendored CDDL decoder. Cited so that the largest
+file in the sweep stops being 72 uncounted findings and becomes one that
+has been read.
