@@ -313,17 +313,59 @@ def collect(shards) -> dict:
     return seen
 
 
+def audit(seen: dict) -> int:
+    """Citations in UB_FINDINGS.md that no finding in this sweep matches.
+
+    A citation is `file.c:601` and report.is_triaged() reads it by
+    basename, so this reads it the same way. Not every one is a mistake:
+    the document cites call sites, guards and macro definitions in prose
+    too, and a finding that has been FIXED is cited by a section that
+    describes fixing it. What it catches is the citation written from the
+    prose rather than from the sweep - six lines of ext2_lookup.c were
+    cited at the `dd_ino != NULL` returns the paragraph names instead of
+    at the reports, which counts as triaged and reads as read.
+    """
+    doc = ROOT / "docs/security/UB_FINDINGS.md"
+    if not doc.is_file():
+        print("no docs/security/UB_FINDINGS.md here")
+        return 0
+    have: dict[str, set[int]] = collections.defaultdict(set)
+    for path, line, _ in seen:
+        have[path.rsplit("/", 1)[-1]].add(line)
+    cited: dict[str, set[int]] = collections.defaultdict(set)
+    for name, lines in report._TRIAGED.findall(doc.read_text()):
+        base = name.rsplit("/", 1)[-1]
+        for n in lines.split(","):
+            cited[base].add(int(n.strip()))
+    miss = {b: sorted(ls - have.get(b, set()))
+            for b, ls in cited.items() if ls - have.get(b, set())}
+    total = sum(len(v) for v in cited.values())
+    n = sum(len(v) for v in miss.values())
+    print(f"{total:,} citations in {len(cited)} files; "
+          f"{n} match no finding in this sweep")
+    for b in sorted(miss, key=lambda x: -len(miss[x])):
+        print(f"  {len(miss[b]):3d}  {b}: "
+              + ", ".join(str(x) for x in miss[b][:12])
+              + (" ..." if len(miss[b]) > 12 else ""))
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("shards", nargs="+", help="a sweep's .jsonl files")
     ap.add_argument("--all", action="store_true",
                     help="include findings already written up")
+    ap.add_argument("--audit", action="store_true",
+                    help="list the citations in UB_FINDINGS.md that match "
+                         "no finding in this sweep")
     ap.add_argument("--list", default="",
                     help="print every finding in this class, e.g. "
                          "'static-called' or 'exported'")
     args = ap.parse_args()
 
     seen = collect(args.shards)
+    if args.audit:
+        return audit(seen)
     keys = [k for k in seen
             if args.all or not report.is_triaged(k[0], str(k[1]))]
     # report.is_triaged() wants the finding cited as `file.c:601'. The
