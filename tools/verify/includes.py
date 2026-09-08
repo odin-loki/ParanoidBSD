@@ -3073,13 +3073,9 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
                      if f not in ("-nostdinc", "-DPBSD_WANTS_STDINC")]
         return _dedupe_defines(flags)
 
-    # The source's own directory first: many libc and msun sources include a
-    # private header sitting beside them.
-    flags.append(f"-I{(SRC / rel).parent}")
-
-    # ...and any header this directory's Makefile GENERATES. bin/sh's
-    # nodes.h, syntax.h and token.h do not exist in a source tree, the
-    # same way device_if.h does not.
+    # Any header this directory's Makefile GENERATES. bin/sh's nodes.h,
+    # syntax.h and token.h do not exist in a source tree, the same way
+    # device_if.h does not.
     _gen = generated_shim(str(Path(rel).parent))
     if _gen:
         flags.append(f"-I{_gen}")
@@ -3093,6 +3089,24 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     # ...and the headers the tree's other Makefiles install into
     # /usr/include, laid out the way they install them.
     flags.append(f"-I{incs_shim(arch)}")
+
+    # The source's own directory LAST. Many libc and msun sources include
+    # a private header sitting beside them, and this used to go first for
+    # that - but a quoted `#include "foo.h"' finds the including file's
+    # own directory with no -I at all, so first only decides what an
+    # ANGLE-bracket include means. And there it is wrong:
+    #
+    #   usr.sbin/bluetooth/btpand/sdp.h:32   #include <sdp.h>
+    #
+    # is asking for lib/libsdp's installed <sdp.h>, and with btpand's own
+    # directory ahead of the staged headers it found ITSELF - a file with
+    # no include guard - until clang's nesting limit. Five translation
+    # units, and the cascade of twenty errors made it look like the file
+    # was broken.
+    #
+    # Last, so <foo.h> means the installed foo.h and "foo.h" still means
+    # the one beside the source.
+    flags.append(f"-I{(SRC / rel).parent}")
 
     if rel.startswith("lib/libc"):
         flags += [f"-I{SRC}/lib/libc/include",
