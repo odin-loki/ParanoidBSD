@@ -5144,11 +5144,15 @@ thing: the analyser does not model `TAILQ_REMOVE`. Every one of them
 removes the node before freeing it, and takes the next one off a list
 the freed node is no longer in.
 
-That is **eleven** of the twenty-one read: five defects fixed, six not
-defects. Ten sites remain, and the ones worth reading first are the
-network-facing daemons — `hastd` and `jail`'s config parser — because
-the rest are `gprof` and `patch`, which read files a developer already
-trusts.
+That is **sixteen** of the twenty-one read: five defects fixed, eleven
+not defects — and **nine of the eleven are one macro**. `hastd`'s reload
+path and `jail`'s config parser, the two the network can reach, are both
+in that nine: every loop takes the head, `TAILQ_REMOVE`s it, and only
+then frees it.
+
+Five sites are left, and they are `gprof` and the two `patch` findings
+in `pch_swap()` — programs that read a file a developer already chose to
+trust. The interesting half of this list is done.
 
 ### 249 → 190: three include-path answers read out of the build
 
@@ -5362,6 +5366,7 @@ Kept because the reasoning is what stops them being re-reported.
 
 | reported | why it is not a defect |
 |---|---|
+| `sbin/hastd/hastd.c:702`, `usr.sbin/jail/config.c:268`, `usr.sbin/jail/config.c:274`, `usr.sbin/jail/config.c:276`, `usr.sbin/jail/config.c:914` | Five more of the same macro, and the two programs the list above singled out as worth reading first because they are the network-facing ones. `hastd_reload()`'s `failed:` block does `TAILQ_REMOVE(&newcfg->hc_listen, nlst, hl_next); free(nlst);` and loops back to `TAILQ_FIRST`; all three `goto failed` sites are above the one `yy_config_free(newcfg)` on the success path, so `newcfg` itself is not freed when the block reads it. `jail`'s `free_param()` is `free(p->name); free_param_strings(p); TAILQ_REMOVE(pp, p, tq); free(p);` — removed before freed — and `free_param_strings()` is the same take-head, remove, free loop one level down. Nothing here is out of order; the analyser is not modelling the macro. |
 | `sbin/fsck/preen.c:324`, `sbin/quotacheck/preen.c:280` | The same `preen` framework in two programs, and the same order in both: the caller does `TAILQ_REMOVE(&d->d_part, p, p_entries)` **then** `free(p)`, and only then calls `startdisk(d)`, which takes `TAILQ_FIRST(&d->d_part)` — a node the freed one is no longer in front of, because it is no longer in the list at all. `fsck`'s `startdisk()` runs the check and `quotacheck`'s forks `chkquota()`, but the lifetime question is identical. The queue macros again: this is the fourth pair of findings in this sweep whose whole content is that the analyser does not model `TAILQ_REMOVE`. |
 | `sbin/fsck_ffs/pass5.c:287` (`i / fs->fs_frag`), `sbin/quotacheck/quotacheck.c:620` (`inum % sblock.fs_ipg`) | Both divisors come out of the superblock of the filesystem being checked, which is exactly the attacker-supplied input if the threat model is "somebody hands you a disk image". Both are validated, in `sys/ufs/ffs/ffs_subr.c` — `validate_sblock()` has `FCHK(fs->fs_frag, <, 1, ...)` and `FCHK(fs->fs_frag, >, MAXFRAG, ...)` at `:652`, and `FCHK(fs->fs_ipg, <, fs->fs_inopb, ...)` at `:660`. Both programs read the superblock through `sbget()` (`fsck_ffs/setup.c:410`, `quotacheck.c:306`), which is libufs' entry into `ffs_sbget()`, and `validate_sblock()` runs at `ffs_subr.c:275` — **before** the check-hash comparison, so `UFS_NOHASHFAIL` (which `fsck_ffs` passes deliberately, to repair damaged filesystems) does not skip it. Neither caller passes `UFS_NOWARNFAIL`, so even the downgradeable checks are errors. A different translation unit, in the kernel tree, shared with userland through libufs — which is why the analyser cannot see it. |
 | `usr.sbin/makefs/ffs.c:1219` | The same shape and not the same question: `makefs` **builds** the superblock it is dividing by, from its own command line, rather than reading one off a disk. |
