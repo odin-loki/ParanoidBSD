@@ -300,13 +300,22 @@ update_resources(void)
 		if (res == NULL) {
 			pjdlog_error("Unable to allocate %zu bytes for "
 			    "resource", sizeof(*res));
+			nv_free(nvout);	/* PBSD: not leaked on the way out */
 			return (-1);
 		}
 		res->index = i + 1;
 		strncpy(res->name, str, sizeof(res->name) - 1);
 		error = nv_get_int16(nvout, "error%u", i);
-		if (error != 0)
+		if (error != 0) {
+			/*
+			 * PBSD: res is only linked into the list at the
+			 * bottom of this loop, so continuing here dropped
+			 * it -- once per resource in an error state, on
+			 * every refresh, for the life of the daemon.
+			 */
+			free(res);
 			continue;
+		}
 		str = nv_get_string(nvout, "role%u", i);
 		res->role = str != NULL ? str2role(str) : HAST_ROLE_UNDEF;
 		str = nv_get_string(nvout, "provname%u", i);

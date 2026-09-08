@@ -297,6 +297,15 @@ refresh_processor_tbl(void)
 	struct processor_entry *entry;
 	size_t size;
 
+	/*
+	 * PBSD: both failure arms of the kern.cp_times lookup in
+	 * init_processor_tbl() set cplen = 0, and a VLA of length zero
+	 * is undefined (C11 6.7.6.2p5). There is nothing to refresh
+	 * from either: cpmib is {0, 0} on that path.
+	 */
+	if (cplen == 0)
+		return;
+
 	long pcpu_cp_times[cplen];
 	memset(pcpu_cp_times, 0, sizeof(pcpu_cp_times));
 

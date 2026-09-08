@@ -199,6 +199,13 @@ fs_entry_create(const char *name)
 		syslog(LOG_WARNING, "%s: %m", __func__);
 		return (NULL);
 	}
+	/*
+	 * PBSD: the line the other nine tables in this module have and
+	 * this one did not. fs_tbl_process_statfs_entry() does
+	 * `entry->flags |= HR_FS_FOUND' on what comes back, and flags
+	 * was never written.
+	 */
+	memset(entry, 0, sizeof(*entry));
 
 	if ((entry->mountPoint = strdup(name)) == NULL) {
 		syslog(LOG_ERR, "%s: %m", __func__);

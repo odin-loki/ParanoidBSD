@@ -1788,6 +1788,63 @@ FIXES = {
             "test below reads it; the contract lived only in the caller",
         ),
     ],
+    "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_fs_tbl.c": [
+        (
+            "\tmemset(entry, 0, sizeof(*entry));",
+            None,
+            "fs_entry_create: the line the other nine tables in this "
+            "module have; without it `entry->flags |= HR_FS_FOUND\' reads "
+            "indeterminate heap, and flags decides what survives a refresh",
+        ),
+    ],
+    "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hostres/hostres_processor_tbl.c": [
+        (
+            "\tif (cplen == 0)\n\t\treturn;",
+            None,
+            "refresh_processor_tbl: both failure arms of the kern.cp_times "
+            "lookup set cplen = 0, and `long pcpu_cp_times[cplen]\' is then "
+            "a zero-length VLA",
+        ),
+    ],
+    "hbsd/src/usr.sbin/bsnmpd/modules/snmp_hast/hast_snmp.c": [
+        (
+            "\t\t\tnv_free(nvout);\t/* PBSD: not leaked on the way out */",
+            None,
+            "update_resources: the calloc-failure return dropped nvout",
+        ),
+        (
+            "\t\t\tfree(res);\n\t\t\tcontinue;",
+            "\t\tif (error != 0)\n\t\t\tcontinue;",
+            "and the error%u arm dropped res, which is only linked in at "
+            "the bottom of the loop -- once per resource in an error state, "
+            "on every refresh, for the life of the daemon",
+        ),
+    ],
+    "hbsd/src/usr.sbin/bsnmpd/modules/snmp_pf/pf_snmp.c": [
+        (
+            # `} else {' alone occurs twice in this file, so removing
+            # the fix left the other one standing and the check passed.
+            "INSERT_OBJECT_INT_LINK_INDEX(e, &pfq_table, link, index);\n"
+            "\t\t} else {",
+            None,
+            "pfq_refresh: an altq with qid 0 is a parent discipline, was "
+            "never inserted, and the next iteration overwrote e",
+        ),
+    ],
+    "hbsd/src/usr.sbin/bsnmpd/modules/snmp_wlan/wlan_snmp.c": [
+        (
+            "\t*wif = NULL;\n\n\tif (wlan_mac_index_decode(oid, sub, wname, mac) < 0)",
+            None,
+            "wlan_get_acl_mac: the out-parameter was written only on the "
+            "paths that reach wlan_find_interface(), and "
+            "wlan_acl_mac_set_status() reads it after a NULL result",
+        ),
+        (
+            "\t*wif = NULL;\t/* PBSD: as in wlan_get_acl_mac() above. */",
+            None,
+            "and wlan_get_next_acl_mac, which short-circuits the same way",
+        ),
+    ],
     "hbsd/src/usr.bin/netstat/inet.c": [
         (
             "if (istcp && cflag) {",

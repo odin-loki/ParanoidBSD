@@ -1261,6 +1261,13 @@ pfq_refresh(void)
 			e->index = pa.altq.qid;
 			pfq_table_count = i;
 			INSERT_OBJECT_INT_LINK_INDEX(e, &pfq_table, link, index);
+		} else {
+			/*
+			 * PBSD: only leaf queues carry a qid. The parent
+			 * disciplines have qid 0, were never inserted, and
+			 * the next iteration overwrote e.
+			 */
+			free(e);
 		}
 	}
 

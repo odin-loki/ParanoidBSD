@@ -3991,6 +3991,14 @@ wlan_get_acl_mac(const struct asn_oid *oid, uint sub, struct wlan_iface **wif)
 	char wname[IFNAMSIZ];
 	char mac[IEEE80211_ADDR_LEN];
 
+	/*
+	 * PBSD: the out-parameter gets a value on every return, not only
+	 * on the ones that reach wlan_find_interface().
+	 * wlan_acl_mac_set_status() is the caller that keeps going after
+	 * a NULL result and then reads *wif.
+	 */
+	*wif = NULL;
+
 	if (wlan_mac_index_decode(oid, sub, wname, mac) < 0)
 		return (NULL);
 
@@ -4007,6 +4015,8 @@ wlan_get_next_acl_mac(const struct asn_oid *oid, uint sub,
 	char wname[IFNAMSIZ];
 	char mac[IEEE80211_ADDR_LEN];
 	struct wlan_mac_mac *wmm;
+
+	*wif = NULL;	/* PBSD: as in wlan_get_acl_mac() above. */
 
 	if (oid->len - sub == 0) {
 		for (*wif = wlan_first_interface(); *wif != NULL;

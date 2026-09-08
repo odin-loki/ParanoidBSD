@@ -9012,3 +9012,125 @@ passed to all eleven because `contrib/bsnmp/lib` is the only place
 All eleven modules generate: the seven in `usr.sbin/bsnmpd/modules` and
 the four whose sources live in `contrib/bsnmp/snmp_*` and are reached
 through `.PATH`, which is why the `.def` is looked for in both places.
+
+### What the twenty-five newly-readable bsnmpd files said
+
+Seven findings, in a daemon that runs as root and answers the network.
+Five are real; two are the checker being wrong about `sizeof`.
+
+**`hostres_fs_tbl.c:353` — the one table in the module that forgot to
+zero its entry.** `fs_tbl_process_statfs_entry()` does
+
+    entry->flags |= HR_FS_FOUND;
+
+on what `fs_entry_create()` returns, and `fs_entry_create()` at `:198`
+is
+
+    if ((entry = malloc(sizeof(*entry))) == NULL) {
+        syslog(LOG_WARNING, "%s: %m", __func__);
+        return (NULL);
+    }
+
+    if ((entry->mountPoint = strdup(name)) == NULL) {
+
+`flags` is never assigned before that `|=`, so the compound assignment
+reads indeterminate heap. That matters beyond the read itself:
+`HR_FS_FOUND` is the bit `fs_tbl` uses to decide which entries survive a
+refresh, so a garbage `flags` decides whether a filesystem stays in the
+table or is deleted from it.
+
+This is not a judgement call about house style. Every one of the other
+**nine** `*_entry_create()` functions in the same module — device,
+diskstorage, network, partition, printer, processor, storage,
+swinstalled, swrun — has exactly the line this one is missing:
+
+    if ((entry = malloc(sizeof(*entry))) == NULL) { ... }
+    memset(entry, 0, sizeof(*entry));
+
+Nine of ten. The fix is the tenth copy of that line.
+
+**`hostres_processor_tbl.c:300` — a zero-length VLA.**
+`refresh_processor_tbl()` opens with
+
+    long pcpu_cp_times[cplen];
+    memset(pcpu_cp_times, 0, sizeof(pcpu_cp_times));
+
+and `cplen` is a file-scope `size_t` that `init_processor_tbl()` sets to
+`0` on **both** failure arms of its `kern.cp_times` lookup — the
+`sysctlnametomib` failure at `:261` and the length-query failure at
+`:264`. A VLA whose size is zero is undefined (C11 6.7.6.2p5). Nothing
+dangerous follows it here, because `cpmib` is `{0, 0}` on that path and
+the `sysctl` call fails with `EINVAL` rather than `ENOMEM`, so the
+function logs and returns — but it declares the array first. `cplen ==
+0` means there is nothing to refresh, and saying so before the
+declaration is one `if`.
+
+**`hast_snmp.c:364` — a leak per resource in an error state, per
+refresh, forever.** `update_resources()` allocates one
+`struct hast_snmp_resource` per resource and links it into the list at
+the *bottom* of the loop:
+
+    res = calloc(1, sizeof(*res));
+    ...
+    error = nv_get_int16(nvout, "error%u", i);
+    if (error != 0)
+        continue;              /* res is dropped here */
+    ...
+    TAILQ_INSERT_TAIL(&resources, res, link);
+
+So a resource reporting an error costs one `res` on every call, and
+`update_resources()` is called from the table handler on every SNMP poll
+past `UPDATE_INTERVAL`. `bsnmpd` is a long-running daemon; this is
+unbounded. While in the function: the `calloc`-failure arm two lines
+above returns `-1` without `nv_free(nvout)`, which is the same shape on
+the OOM path. Both closed.
+
+**`pf_snmp.c:1267` — a leak per non-leaf ALTQ queue, per refresh.**
+`pfq_refresh()` allocates before it knows whether it will keep:
+
+    e = malloc(sizeof(struct pfq_entry));
+    ...
+    if (pa.altq.qid > 0) {
+        ...
+        INSERT_OBJECT_INT_LINK_INDEX(e, &pfq_table, link, index);
+    }
+    }
+
+Only leaf queues carry a `qid`; the parent disciplines have `qid == 0`,
+are not inserted, and are overwritten by the next iteration's `malloc`.
+Any system with an ALTQ hierarchy leaks one entry per parent per
+refresh. An `else free(e);` closes it.
+
+**`wlan_snmp.c:4064` — an out-parameter that is not written on every
+return.** `wlan_get_acl_mac()` writes `*wif` only once it reaches
+`wlan_find_interface()`:
+
+    if (wlan_mac_index_decode(oid, sub, wname, mac) < 0)
+        return (NULL);
+    if ((*wif = wlan_find_interface(wname)) == NULL)
+        return (NULL);
+
+and `wlan_acl_mac_set_status()` is the one caller that keeps going after
+a `NULL` result — `RowStatus_createAndGo` *wants* `macl == NULL` — and
+then reads `wif == NULL`. Today the caller happens to have called
+`wlan_mac_index_decode` itself, with the same arguments, and returned on
+failure, so the unwritten path is unreachable. That is the
+`fiboptlist_range()` shape again: a contract that lives in the caller
+and nowhere in the callee. `*wif = NULL` as the first statement of
+`wlan_get_acl_mac()` — and of `wlan_get_next_acl_mac()`, which
+short-circuits the same way at `:4021` — makes it true of the function
+rather than of one of its callers.
+
+**Two are the checker, not the code.** `hast_snmp.c:125` and
+`hostres_swinstalled_tbl.c:426` are `unix.MallocSizeof` on
+
+    cfgpath = malloc(sizeof(HAST_CONFIG));
+    ...
+    strcpy(cfgpath, HAST_CONFIG);
+
+`sizeof` of a string literal is its length plus the NUL, which is
+exactly what the following `strcpy` needs. The checker compares the
+pointee type (`char`, size 1) against the `sizeof` operand's type
+(`char[N]`) and calls the mismatch suspicious. Here it is the correct
+allocation, written the way that cannot drift if the macro changes.
+Left alone.
