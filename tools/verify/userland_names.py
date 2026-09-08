@@ -348,7 +348,7 @@ def module_dirs(src: Path = SRC) -> list[Path]:
 
 
 def ask_module(d: Path, arch: str, src: Path = SRC, timeout: int = 40
-               ) -> tuple[dict[str, tuple[str, ...]], list[str]]:
+               ) -> tuple[dict[str, tuple[str, ...]], list[str], set[str]]:
     """({source: its per-file CFLAGS}, .PATH) for one kernel module.
 
     The kernel half of the same problem userland had. includes.py hand-
@@ -379,25 +379,48 @@ def ask_module(d: Path, arch: str, src: Path = SRC, timeout: int = 40
     """
     got = _bmake(d, arch, ["SRCS", "OBJS", ".PATH"], src, timeout)
     if got is None:
-        return {}, []
+        return {}, [], set()
     srcs, objs, path = (g.split() for g in got)
     names = [s for s in srcs if s.endswith(SUFFIXES) and "$" not in s]
+    # Which of them came from OBJS, and so are built by a rule of the
+    # module's own rather than by the ordinary one. That distinction is
+    # the whole reason to separate them: a rule's flags belong to its
+    # target and not to everything the module names. sys/modules/linux
+    # has `OBJS= linux_vdso.so' and a locore rule carrying -DLOCORE, and
+    # giving that -D to all of sys/compat/linux told every header the
+    # file was assembly - twenty-six regressions in one sweep.
+    # kmod.mk appends every SRCS-derived object to OBJS as well, so
+    # "came from OBJS" is not the question - "is in OBJS and NOT in
+    # SRCS" is. That is exactly the .for-rule set: blake2's ten SIMD
+    # objects are in OBJS alone, and sys/modules/linux's linux_file.o is
+    # in both. Using the first question gave sys/compat/linux the
+    # locore rule's -DLOCORE and told every header those files were
+    # assembly - twenty-six regressions in one sweep.
+    have = set(srcs)
+    from_objs: set[str] = set()
     for o in objs:
-        if o.endswith(".o") and "$" not in o:
-            names.append(o[:-2] + ".c")
+        if o.endswith(".o") and "$" not in o and o not in have:
+            c = o[:-2] + ".c"
+            if c not in have:
+                names.append(c)
+                from_objs.add(c)
     dirs = [str(d)] + [x for x in path if x != "."]
     found: dict[str, str] = {}
+    obj_rels: set[str] = set()
     for n in names:
         for pdir in dirs:
             cand = os.path.join(pdir, n)
             if os.path.isfile(cand):
                 try:
-                    found[str(Path(cand).resolve().relative_to(src))] = n
+                    r = str(Path(cand).resolve().relative_to(src))
+                    found[r] = n
+                    if n in from_objs:
+                        obj_rels.add(r)
                 except ValueError:
                     pass
                 break
     if not found:
-        return {}, path
+        return {}, path, set()
     rel = sorted(found)
     per = _bmake(d, arch, [f"CFLAGS.{found[r]}" for r in rel], src, timeout)
     out: dict[str, tuple[str, ...]] = {}
@@ -408,7 +431,7 @@ def ask_module(d: Path, arch: str, src: Path = SRC, timeout: int = 40
         except ValueError:
             words = line.split()
         out[r] = tuple(words)
-    return out, path
+    return out, path, obj_rels
 
 
 def cache_path(arch: str) -> Path:

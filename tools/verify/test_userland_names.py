@@ -129,11 +129,14 @@ def main() -> int:
     # its ten SIMD sources through SRCS_IN and OBJS, not SRCS, and none
     # of them compiles without the per-file CFLAGS on the next line.
     # A reader that sees only SRCS reports all ten as built by nothing.
-    mod, _ = u.ask_module(u.SRC / "sys/modules/blake2", "amd64")
+    mod, _, objs = u.ask_module(u.SRC / "sys/modules/blake2", "amd64")
     avx = "sys/crypto/blake2/blake2b-avx.c"
     check(avx in mod, f"OBJS: sys/modules/blake2 names {Path(avx).name}")
     check("-mavx" in mod.get(avx, ()),
           f"CFLAGS.<file>: ...with its own -mavx ({mod.get(avx)})")
+    check(avx in objs,
+          "...and it is known to come from OBJS, so the rule's own "
+          "flags reach it and nothing else")
 
     print(f"\n{'FAILED' if FAIL else 'all checks passed'}"
           f"{f' ({FAIL})' if FAIL else ''}")

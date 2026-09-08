@@ -778,7 +778,8 @@ def kernel_flag_index(arch: str = "amd64"
         # seven Makefiles in the tree - so the cost is seven bmake runs
         # and not a thousand.
         if re.search(r"^OBJS\s*\+?=", text, re.M):
-            per, _ = userland_names.ask_module(mk.parent, arch, SRC)
+            per, _, obj_rels = userland_names.ask_module(mk.parent, arch,
+                                                        SRC)
             # A .for rule compiles with its OWN command line, and the -D
             # on it are not in any variable bmake will hand back.
             # blake2's is
@@ -804,7 +805,14 @@ def kernel_flag_index(arch: str = "amd64"
             # rather than a second flag list to keep in step.
             if any(":N-nostdinc" in line for line in rules):
                 rule_d.append("-DPBSD_WANTS_STDINC")
-            for rel_src, own in per.items():
+            # ONLY the .for-rule sources. The SRCS the hand reading
+            # above already covers, and adding them here again gave
+            # sys/compat/linux the module's -DLOCORE, which the reading
+            # above deliberately keeps in by_dir and out of by_src.
+            # Twenty-six regressions in one sweep, all of them a header
+            # told the file was assembly.
+            for rel_src in sorted(obj_rels):
+                own = per.get(rel_src, ())
                 by_src.setdefault(rel_src, []).extend(
                     list(flags) + rule_d
                     + [f for f in own
@@ -1216,6 +1224,50 @@ def files_option_defines() -> dict[str, tuple[str, ...]]:
                          and t.lower() in opts)
             if defs:
                 out.setdefault("sys/" + m.group("src"), defs)
+    return out
+
+
+@functools.lru_cache(maxsize=None)
+def files_option_alternatives() -> dict[str, tuple[tuple[str, ...], ...]]:
+    """source under sys/ -> the -D each alternative of its clause implies.
+
+    files_option_defines() answers with the intersection, which is the
+    only part that is not a guess. Some files need a guess to compile at
+    all: sys/arm/arm/debug_monitor.c is `optional ddb | gdb' and defines
+    dbg_monitor_init() twice, once inside `#ifdef DDB' and once outside,
+    so with neither macro it is a redefinition. This is what analyze.py
+    retries with when the intersection will not build - never for a file
+    that already compiled, which is the same rule the architecture retry
+    follows and for the same reason.
+    """
+    opts = _declared_options()
+    out: dict[str, tuple[tuple[str, ...], ...]] = {}
+    for mk in sorted(SYS.rglob("files*")):
+        if not mk.is_file() or mk.suffix in (".c", ".h"):
+            continue
+        text = mk.read_text(errors="replace").replace("\\\n", " ")
+        for line in text.splitlines():
+            m = FILES_OPTIONAL.match(line)
+            if not m:
+                continue
+            toks: list[str] = []
+            for tok in m.group("opts").split():
+                if tok in ("compile-with", "no-obj", "no-depend",
+                           "dependency", "clean", "warning",
+                           "before-depend", "local"):
+                    break
+                toks.append(tok)
+            alts = [a.split() for a in " ".join(toks).split("|")]
+            if len(alts) < 2:
+                continue
+            got = []
+            for a in alts:
+                d = tuple(f"-D{opts[x.lower()]}" for x in a
+                          if not x.startswith("!") and x.lower() in opts)
+                if d and d not in got:
+                    got.append(d)
+            if got:
+                out.setdefault("sys/" + m.group("src"), tuple(got))
     return out
 
 
@@ -2047,8 +2099,16 @@ def _subsystem_dirs(rel: str) -> list[str]:
     return out
 
 
-def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str]:
-    """-nostdinc plus everything that source needs, in build order."""
+def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
+                  opts: tuple[str, ...] | None = None) -> list[str]:
+    """-nostdinc plus everything that source needs, in build order.
+
+    `opts' overrides the -D a file's own `optional' clause implies. The
+    default - None - is the no-guess answer: for a disjunction, only the
+    tokens every alternative names. analyze.py's retry passes one
+    alternative's full set when that answer will not compile, the same
+    way it passes another architecture. See files_option_alternatives().
+    """
     try:
         rel = src.relative_to(SRC).as_posix() if src.is_absolute() else str(src)
     except ValueError:
@@ -2216,7 +2276,8 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang") -> list[str
         # ...and the options this file's own `optional' clause names,
         # which config(8) would have written into an opt_*.h. First-wins
         # dedup means an explicit -D from a compile-with still beats it.
-        flags += list(files_option_defines().get(rel, ()))
+        flags += (list(opts) if opts is not None
+                  else list(files_option_defines().get(rel, ())))
         flags += ["-DMAXUSERS=0"]
         flags += ["-D_KERNEL", "-DGENOFFSET",
                   "-D__has_c_attribute(x)=0",

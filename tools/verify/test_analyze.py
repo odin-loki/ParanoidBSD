@@ -88,6 +88,32 @@ def main() -> int:
         hit = any(c.startswith(w) for c in got)
         print(f"  {'ok  ' if hit else 'FAIL'} {w}")
         fail += not hit
+    # The option retry, on the file that needs it. A disjunction gives
+    # the intersection of its alternatives, which is the only part that
+    # is not a guess; sys/arm/arm/debug_monitor.c is `optional ddb |
+    # gdb' and defines dbg_monitor_init() twice, once inside `#ifdef
+    # DDB' and once outside, so with neither macro it does not compile.
+    # The retry supplies one alternative and RECORDS which, so the
+    # guess is in the data rather than hidden in the flags.
+    import includes as _inc
+    rel = "sys/arm/arm/debug_monitor.c"
+    if (_inc.SRC / rel).is_file():
+        r2 = analyze({"src": str(_inc.SRC / rel), "rel": rel,
+                      "timeout": 200})
+        ok = r2["status"] == "OK" and r2.get("opts")
+        print(f"  {'ok  ' if ok else 'FAIL'} the option retry compiles "
+              f"{rel.split('/')[-1]} and says with what "
+              f"({r2['status']}, opts={r2.get('opts')})")
+        fail += not ok
+        # ...and a file that compiles without a guess must not get one.
+        r3 = analyze({"src": str(_inc.SRC / "sys/xdr/xdr.c"),
+                      "rel": "sys/xdr/xdr.c", "timeout": 200})
+        clean = r3["status"] == "OK" and not r3.get("opts")
+        print(f"  {'ok  ' if clean else 'FAIL'} ...and xdr.c compiles "
+              f"with no guess at all ({r3['status']}, "
+              f"opts={r3.get('opts')})")
+        fail += not clean
+
     print("\n" + ("all planted defects found" if not fail
                   else f"FAILURES: {fail} checker family/families silent"))
     return 1 if fail else 0

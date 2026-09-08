@@ -37,7 +37,8 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from includes import include_flags, is_kernel_tu, lang_flags, SRC  # noqa: E402
+from includes import (include_flags, is_kernel_tu, lang_flags,  # noqa: E402
+                      files_option_alternatives, SRC)
 from includes import arch_of, files_opt_arch_index  # noqa: E402
 from expected_errors import EXPECTED, NOT_BUILT, not_built  # noqa: E402
 
@@ -82,7 +83,8 @@ def analyze(job: dict) -> dict:
     src = Path(job["src"])
     arch = job.get("arch") or arch_of(job["rel"])
     cmd = ["clang", "--analyze", "-Xclang", "-analyzer-output=text",
-           *lang_flags(src, job["rel"]), *include_flags(src, arch),
+           *lang_flags(src, job["rel"]),
+           *include_flags(src, arch, opts=job.get("opts")),
            str(src), "-o", "/dev/null"]
     try:
         p = subprocess.run(cmd, capture_output=True, text=True,
@@ -113,6 +115,20 @@ def analyze(job: dict) -> dict:
             if r["status"] != "ERROR":
                 r["arch"] = alt
                 return r
+        # ...and then the OPTIONS. A file's `optional' clause gives the
+        # intersection of its alternatives, which is the only part that
+        # is not a guess -- and sys/arm/arm/debug_monitor.c is
+        # `optional ddb | gdb' and defines dbg_monitor_init() twice,
+        # once inside `#ifdef DDB' and once outside, so with neither it
+        # is a redefinition. Same rule as the architecture retry: a file
+        # that already compiled is never re-interpreted, and one that
+        # did not has nothing to lose.
+        if not job.get("retried_opts"):
+            for alt in files_option_alternatives().get(job["rel"], ()):
+                r = analyze(dict(job, opts=alt, retried_opts=True))
+                if r["status"] != "ERROR":
+                    r["opts"] = list(alt)
+                    return r
         return {"file": job["rel"], "status": "ERROR",
                 "detail": p.stderr.strip()[-300:], "findings": []}
     out = []

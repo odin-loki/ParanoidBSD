@@ -288,6 +288,14 @@ check_that("...and ${CFLAGS:N-nostdinc} takes -nostdinc back off",
            "-nostdinc" not in _fl,
            "clang's own <mm_malloc.h> calls malloc() and free(), and the "
            "rule says it wants the standard headers")
+check_that("a module's own CFLAGS do not reach its ordinary sources",
+           "-DLOCORE" not in (_bs.get("sys/compat/linux/linux_file.c") or ()),
+           "sys/modules/linux has a locore rule and kmod.mk appends every "
+           "SRCS object to OBJS as well, so `came from OBJS' is not the "
+           "question - `in OBJS and NOT in SRCS' is. Getting that wrong "
+           "told twenty-six files in sys/compat/linux and sys/amd64/"
+           "linux32 that they were assembly")
+
 check_that("a file NOT built by that rule keeps -nostdinc",
            "-nostdinc" in includes.include_flags(
                includes.SRC / "sys/kern/kern_exec.c", "amd64"),
