@@ -108,7 +108,8 @@ struct statfs *getmntpoint(const char *);
 int chkdoreload(struct statfs *, void (*)(const char *, ...) __printflike(1,2));
 extern int getmnt_silent;
 void build_iovec(struct iovec **iov, int *iovlen, const char *name, void *val, size_t len);
-void build_iovec_argf(struct iovec **iov, int *iovlen, const char *name, const char *fmt, ...);
+void build_iovec_argf(struct iovec **iov, int *iovlen, const char *name,
+	const char *fmt, ...) __printflike(4, 5);
 void free_iovec(struct iovec **iovec, int *iovlen);
 
 #endif /* !_MNTOPTS_H_ */

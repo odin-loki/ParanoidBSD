@@ -182,6 +182,18 @@ __bt_stkacq(BTREE *t, PAGE **hp, CURSOR *c)
 			}
 			mpool_put(t->bt_mp, h, 0);
 		}
+		/*
+		 * PBSD: the for above sets idx only on the arm that breaks.
+		 * Running off the top of the stack instead leaves idx unset
+		 * and h already mpool_put(), and the loop below would
+		 * subscript that page at an undefined index. On a consistent
+		 * tree it cannot happen - popping every level means the leaf
+		 * is the rightmost, and then h->nextpg == P_INVALID broke the
+		 * outer loop before this one was entered - but db(3) is
+		 * handed files it did not write.
+		 */
+		if (parent == NULL)
+			return (1);
 
 		/* Restore the stack. */
 		while (level--) {
@@ -237,6 +249,9 @@ __bt_stkacq(BTREE *t, PAGE **hp, CURSOR *c)
 			}
 			mpool_put(t->bt_mp, h, 0);
 		}
+		/* PBSD: see the identical loop above. */
+		if (parent == NULL)
+			return (1);
 
 		/* Restore the stack. */
 		while (level--) {

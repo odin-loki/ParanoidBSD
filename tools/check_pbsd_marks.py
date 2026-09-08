@@ -1636,6 +1636,137 @@ FIXES = {
             "listener",
         ),
     ],
+
+    # The lib/ half of the same sweep, and the one mount helper it reaches.
+    "hbsd/src/lib/libbluetooth/hci.c": [
+        # TWO error returns after wait_for_more, so a count: both were
+        # freeing the cursor rather than the array.
+        (
+            ("\t\tfree(*ii);\n\t\t*ii = NULL;", 2),
+            # NOT just `free(i); bt_devclose(s);' - the call BEFORE the
+            # wait_for_more label has that exact shape and is correct,
+            # because i still equals *ii there. The marker has to name
+            # the site by what precedes it.
+            "if (n < 0) {\n\t\tfree(i);",
+            "bt_devinquiry: i walks forward one 256-byte bt_devinquiry per "
+            "device reported and control returns to wait_for_more, so after "
+            "one device both error arms free()d a pointer into the middle "
+            "of the calloc block",
+        ),
+    ],
+    "hbsd/src/lib/lib80211/lib80211_regdomain.c": [
+        (
+            # The marker is the free() itself, not the comment above it:
+            # the first version matched the comment and passed with
+            # free(dp) deleted. Caught by reverting, which is what the
+            # reverting is for.
+            "\t\tfree(dp);\n\t}",
+            None,
+            "lib80211_regdomain_cleanup: the first of three unlink-and-free "
+            "loops freed the domain\'s bands and name and not the domain, "
+            "while the two below it end in free(cp) and free(fp)",
+        ),
+    ],
+    "hbsd/src/lib/libradius/radlib.c": [
+        (
+            "if (mlen < SALT_LEN + 16 || mlen % 16 != SALT_LEN) {",
+            "\tif (mlen % 16 != SALT_LEN) {",
+            "rad_demangle_mppe_key: mlen == SALT_LEN passes the modulus "
+            "test, and then alloca(0) is read past by `*len = *P\'",
+        ),
+    ],
+    "hbsd/src/lib/libc/resolv/res_debug.c": [
+        (
+            "static const unsigned int poweroften[10]",
+            "static unsigned int poweroften[10]",
+            "poweroften is a table of powers of ten that nothing writes; "
+            "const puts it in .rodata and lets the analyser fold the "
+            "divisor",
+        ),
+    ],
+    "hbsd/src/lib/libdevstat/devstat.c": [
+        (
+            "} const devstat_arg_list[] = {",
+            "} devstat_arg_list[] = {",
+            "devstat_arg_list is the table devstat_compute_statistics() "
+            "switches on to pick destu64 or destld and then switches on "
+            "metric to write through - writable and externally linked, the "
+            "analyser had to assume it changed between the two switches",
+        ),
+    ],
+    "hbsd/src/lib/libc/gen/getpwent.c": [
+        (
+            "\tkeynum = st->keynum;\n\tif (how == nss_lt_all && st->keynum < 0) {",
+            "\t\tkeynum = st->keynum;\n\t\tstayopen = 1;",
+            "compat_passwd: three goto fin jump over the only assignment to "
+            "keynum and fin: writes it back to the thread state, so the "
+            "getpwent() after the last one overwrote the cursor with a "
+            "stack value",
+        ),
+        (
+            "int\t\t\t rv, from_compat, stayopen = 0, *errnop;",
+            "int\t\t\t rv, from_compat, stayopen, *errnop;",
+            "compat_passwd: stayopen has the identical bug one line down - "
+            "the same three goto fin jump over it and fin: reads it to "
+            "decide whether to close the database. files_passwd() at :805 "
+            "already declares its own `stayopen = 0'",
+        ),
+    ],
+    "hbsd/src/lib/libc/gen/syslog.c": [
+        (
+            "char hostname[MAXHOSTNAMELEN], tbuf[MAXLINE], *stdp = tbuf,",
+            "char hostname[MAXHOSTNAMELEN], *stdp, tbuf[MAXLINE],",
+            "vsyslog1: stdp is written and read under two reads of LogStat, "
+            "a global openlog() writes",
+        ),
+    ],
+    "hbsd/src/lib/libc/db/btree/bt_delete.c": [
+        # TWO identical loops, so a count.
+        (
+            ("\t\tif (parent == NULL)\n\t\t\treturn (1);", 2),
+            None,
+            "__bt_stkacq: running off the top of the stack left idx unset "
+            "and h already mpool_put(), and the restore loop subscripts "
+            "that page",
+        ),
+    ],
+    "hbsd/src/lib/libutil/mntopts.h": [
+        (
+            "const char *fmt, ...) __printflike(4, 5);",
+            "const char *name, const char *fmt, ...);",
+            "build_iovec_argf hands fmt to vsnprintf and never said so, "
+            "which is why three call sites passing a runtime string never "
+            "warned",
+        ),
+    ],
+    "hbsd/src/lib/libutil/mntopts.c": [
+        (
+            "\t*iov = NULL;\n\t*iovlen = 0;\n}",
+            "\tfree(*iov);\n}",
+            "free_iovec: the reset its own comment documents, without which "
+            "the documented `call nmount in a loop\' hands realloc() a "
+            "freed pointer",
+        ),
+    ],
+    "hbsd/src/sbin/mount_msdosfs/mount_msdosfs.c": [
+        (
+            'build_iovec_argf(&iov, &iovlen, "cs_local", "%s", quirk);',
+            'build_iovec_argf(&iov, &iovlen, "cs_local", quirk);',
+            "the -L argument, reached through kiconv_quirkcs() which returns "
+            "its input unchanged when no quirk matches",
+        ),
+        (
+            'build_iovec_argf(&iov, &iovlen, "cs_dos", "%s", cs_dos);',
+            'build_iovec_argf(&iov, &iovlen, "cs_dos", cs_dos, (size_t)-1);',
+            "the -D argument, strdup(optarg) with nothing between the getopt "
+            "case and the call",
+        ),
+        (
+            'build_iovec_argf(iov, iovlen, "cs_dos", "%s", cs_local);',
+            'build_iovec_argf(iov, iovlen, "cs_dos", cs_local);',
+            "and the kiconv helper\'s copy of the same string",
+        ),
+    ],
 }
 
 

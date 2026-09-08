@@ -319,4 +319,11 @@ free_iovec(struct iovec **iov, int *iovlen)
 	for (i = 0; i < *iovlen; i += 2)
 		free((*iov)[i].iov_base);
 	free(*iov);
+	/*
+	 * PBSD: the reset the comment above promises. Without it the
+	 * documented "useful for calling nmount in a loop" pattern hands
+	 * the next build_iovec() a freed pointer to realloc().
+	 */
+	*iov = NULL;
+	*iovlen = 0;
 }

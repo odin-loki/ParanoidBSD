@@ -1740,7 +1740,15 @@ compat_passwd(void *retval, void *mdata, va_list ap)
 	size_t			 bufsize;
 	uid_t			 uid;
 	uint32_t		 store;
-	int			 rv, from_compat, stayopen, *errnop;
+	/*
+	 * PBSD: stayopen initialised, as files_passwd() at :805 already
+	 * does with `int rv, stayopen = 0, *errnop;'. The same three
+	 * goto fin that jumped over the keynum assignment jump over this
+	 * one too, and `fin:' reads it at :1943 to decide whether to
+	 * close the database. The keynum fix is what made it visible:
+	 * with that value defined the analyser walks one line further.
+	 */
+	int			 rv, from_compat, stayopen = 0, *errnop;
 
 	from_compat = 0;
 	name = NULL;
@@ -1766,6 +1774,15 @@ compat_passwd(void *retval, void *mdata, va_list ap)
 	*errnop = compat_getstate(&st);
 	if (*errnop != 0)
 		return (NS_UNAVAIL);
+	/*
+	 * PBSD: read the cursor here, not at the assignment below.
+	 * `fin:' does `if (how == nss_lt_all) st->keynum = keynum;' and
+	 * three goto fin jump over the only place keynum was set - the
+	 * ordinary "enumeration already finished" return among them - so
+	 * the cursor was being overwritten with a stack value, and a
+	 * non-negative one restarts getpwent() at an arbitrary key.
+	 */
+	keynum = st->keynum;
 	if (how == nss_lt_all && st->keynum < 0) {
 		rv = NS_NOTFOUND;
 		goto fin;
@@ -1781,7 +1798,6 @@ compat_passwd(void *retval, void *mdata, va_list ap)
 			rv = NS_NOTFOUND;
 			goto fin;
 		}
-		keynum = st->keynum;
 		stayopen = 1;
 	} else {
 		keynum = 0;

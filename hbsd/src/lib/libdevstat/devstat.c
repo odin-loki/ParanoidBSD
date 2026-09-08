@@ -93,7 +93,7 @@ struct devstat_match_table match_table[] = {
 struct devstat_args {
 	devstat_metric 		metric;
 	devstat_arg_type	argtype;
-} devstat_arg_list[] = {
+} const devstat_arg_list[] = {
 	{ DSM_NONE, DEVSTAT_ARG_NOTYPE },
 	{ DSM_TOTAL_BYTES, DEVSTAT_ARG_UINT64 },
 	{ DSM_TOTAL_BYTES_READ, DEVSTAT_ARG_UINT64 },

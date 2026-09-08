@@ -8361,3 +8361,212 @@ list is a line shift from the comments the fixes carry: `rack.c`'s nine
 by twenty-six lines, `in_mcast.c`'s one by thirteen, `in6_mcast.c`'s one
 by four. `rack.c:17427 core.DivideZero`, the one this document had
 already dismissed, is gone.
+## Fixed — `bt_devinquiry()` frees the cursor, not the array
+
+`lib/libbluetooth/hci.c`. The analyser's wording is the whole finding:
+
+```
+Argument to free() is offset by 256 bytes from the start of memory
+allocated by calloc()
+```
+
+reported three times at each of two sites, for one, two and three
+devices. `sizeof(struct bt_devinquiry)` is 256 — `bluetooth.h:157` is a
+`bdaddr_t`, four small fields and a `uint8_t data[240]`, padded — so the
+offsets are one, two and three of them.
+
+```c
+	i = *ii = calloc(num_rsp, sizeof(struct bt_devinquiry));
+	...
+wait_for_more:
+	n = bt_devrecv(s, buf, sizeof(buf), length);
+	if (n < 0) {
+		free(i);
+```
+
+`i` is the cursor. It walks forward once per device the controller
+reports (`i ++`, in the `NG_HCI_EVENT_INQUIRY_RESULT` arm) and the
+function's own `return (i - *ii)` is what it is for. Control comes back
+to the label by `goto wait_for_more`, so after a single device has
+answered, both error returns hand `free()` a pointer into the middle of
+the block.
+
+It needs no hostile device. `length` is the inquiry timeout passed to
+`bt_devrecv()`, and "one device answered, then the read timed out" takes
+the first arm. `free()` on a pointer that is not the start of an
+allocation is undefined; under jemalloc it aborts or corrupts the arena.
+
+`free(*ii)` at both, and `*ii = NULL` with it, because the function has
+already published the pointer to its caller and would otherwise leave it
+dangling on an error return. The two `free(i)` *before* the label are
+correct and stay: `i` still equals `*ii` there.
+
+## Fixed — three tables, two of which were writable by accident
+
+The analyser cannot fold a lookup table it must assume something else
+can write, and two tables in `lib` are non-`const` for no reason anybody
+would defend.
+
+`lib/libc/resolv/res_debug.c:747` is `static unsigned int
+poweroften[10] = {1, 10, 100, ...}`. Nothing writes it — its three uses
+are reads. Because it is not `const`, `core.DivideZero` fires on
+`cmval / poweroften[exponent]` for a divisor that is 1 at index 0.
+
+`lib/libdevstat/devstat.c:96` is the other one: `devstat_arg_list[]` is
+at file scope, not `static`, not `const`, and named in no header —
+`devstat.h` does not mention it, there is no `Symbol.map`, and it
+appears nowhere else in the tree. `devstat_compute_statistics()`
+switches on `devstat_arg_list[metric].argtype` to choose between
+`destu64` and `destld`, then switches on `metric` itself to write
+through one of them. That correlation is 53 `core.NullDereference` in
+one function, the second densest cluster in the sweep after a
+disassembler's opcode tables.
+
+`const` on both, and here the measurement says something I did not
+expect.
+
+`poweroften` moved: `res_debug.c:796 core.DivideZero` is gone.
+`devstat_arg_list` did not — 54 findings before, 54 after. **The
+prediction was wrong, and the reason it was wrong is worth more than the
+prediction.** `poweroften[exponent]` is indexed by a value the analyser
+has bounded to `0..9` by the loop above it, so once the table is
+constant the load folds and the divisor is known. `metric` is a
+`va_arg`: it is symbolic, and a load from a *fully constant* table at an
+unknown index is still an unknown value. Constness was never what
+stood in the way.
+
+The change stays, because it was never only about the findings: a
+dispatch table that decides which of two pointers a function writes
+through belongs in `.rodata`, where a memory-corruption bug cannot
+redirect it. But the 53 remain, and they remain for a reason this
+document now records rather than one it guessed at.
+
+## Fixed — four more in `lib`, each one line
+
+`lib/lib80211/lib80211_regdomain.c:583` — `lib80211_regdomain_cleanup()`
+has three unlink-and-free loops. The second and third end in `free(cp)`
+and `free(fp)`. The first frees the domain's seven band lists and its
+name and then drops `dp`; `free(dp)` appears nowhere in the file. Every
+domain in `/etc/regdomain.xml` leaked.
+
+The analyser's own finding here is *not* that. It reports "Attempt to
+free released memory" at the `free(dp->name)`, because it does not model
+`LIST_REMOVE` and so walks the same node twice. The leak is what a
+person sees reading the same six lines — which is the argument for
+reading them.
+
+`lib/libradius/radlib.c:1528` — `rad_demangle_mppe_key()` checks
+`mlen % 16 != SALT_LEN` with `SALT_LEN` 2, and `mlen == 2` passes it.
+Then `Clen` is 0, `P = alloca(Clen)` is a zero-sized object, the decrypt
+loop never runs, and `*len = *P` reads past it; if that byte is 0 or 1
+the two range checks below pass and the `memcpy` reads one byte further
+out again and returns it as the decrypted key. `mlen` is the length of
+an MS-MPPE-Send-Key attribute in the RADIUS server's reply. The
+condition the loop already assumes — at least one cipher block — is now
+in the same `if`.
+
+`lib/libc/gen/getpwent.c` (reported at `:1934`, now `:1942`) —
+`compat_passwd()` ends with
+`if (how == nss_lt_all) st->keynum = keynum;` and three `goto fin` jump
+over the only place `keynum` is set. One of them is the ordinary case:
+the `getpwent()` call after the last one, where `st->keynum` is already
+negative. It was overwriting the enumeration cursor in the thread state
+with a stack value, and a non-negative one restarts the walk at an
+arbitrary key. The read moves up to just after `compat_getstate()`, so
+every early return writes back the value it read.
+
+And then the A/B found a second one under it. With `keynum` defined the
+analyser walked one line further and reported
+`core.uninitialized.Branch` at the *next* statement:
+
+```c
+fin:
+	if (how == nss_lt_all)
+		st->keynum = keynum;
+	if (st->db != NULL && !stayopen) {
+```
+
+`stayopen` is set in the same `if (how == nss_lt_all) ... else ...` the
+three `goto fin` jump over, so it had the identical bug — deciding
+whether to close the password database on an indeterminate value. The
+answer was already in the file: `files_passwd()`, the same function one
+backend along, declares `int rv, stayopen = 0, *errnop;` at `:805` and
+reads it at `:911` in the identical `if (st->db != NULL && !stayopen)`.
+One initialised, one not.
+
+This is the third time in this document that **fixing an uninitialised
+value has raised what the analyser can see**, and the first time the
+thing it then saw was a second defect in the same eight lines rather
+than a false positive. A finding count that goes up after that kind of
+fix is the instrument reaching further.
+
+`lib/libc/db/btree/bt_delete.c` (reported at `:189` and `:244`, now
+`:195` and `:253`) — `__bt_stkacq()`'s two
+identical loops set `idx` only on the arm that `break`s. Running off the
+top of the stack instead leaves `idx` unset and `h` already
+`mpool_put()`, and the restore loop then subscripts that page at an
+undefined index. On a consistent tree it cannot happen — popping every
+level means the leaf is the rightmost, and `h->nextpg == P_INVALID`
+broke the outer loop before this one was entered — but `db(3)` is handed
+files it did not write. `if (parent == NULL) return (1);` after each,
+which is the error return the two `mpool_get` failures above already
+use.
+
+## Fixed — `build_iovec_argf()` takes a printf format and never said so
+
+`lib/libutil/mntopts.h:111`:
+
+```c
+void build_iovec_argf(struct iovec **iov, int *iovlen, const char *name,
+	const char *fmt, ...);
+```
+
+no `__printflike`, and `mntopts.c` hands `fmt` straight to `vsnprintf()`.
+The declaration two lines above it, `chkdoreload()`, carries
+`__printflike(1,2)` on its callback — so the file knows the annotation
+exists.
+
+Three call sites pass a runtime string in that position, all in
+`mount_msdosfs(8)`:
+
+```c
+:116	build_iovec_argf(&iov, &iovlen, "cs_local", quirk);
+:122	build_iovec_argf(&iov, &iovlen, "cs_dos", cs_dos, (size_t)-1);
+:313	build_iovec_argf(iov, iovlen, "cs_dos", cs_local);
+```
+
+`cs_dos` is `strdup(optarg)` from `-D`, with nothing between the getopt
+case and the call, so `mount_msdosfs -D '%n' ...` formats the user's
+string against an empty `va_list`. `quirk` is
+`kiconv_quirkcs(csp + 1, ...)`, and `lib/libkiconv/quirks.c:132` returns
+`base` unchanged when no quirk matches — the text after the `.` in `-L`
+— though that path needs `setlocale()` to accept the string first, which
+for an arbitrary one means pointing `PATH_LOCALE` at a directory of your
+own. `cs_local` at `:313` is `strdup(quirk)`.
+
+`mount_msdosfs` is not installed setuid, so the immediate exposure is a
+user corrupting their own process. Which is why the annotation matters
+more than the three call sites: it is what stops the next caller being
+one that runs with privilege. (The `(size_t)-1` at `:122` and the one at
+`:90` are arguments the varargs never reads; both go.)
+
+While in the file: `free_iovec()` is documented as "Free the iovec and
+reset to NULL with zero length. Useful for calling nmount in a loop" and
+does not do the reset, so the documented loop hands the next
+`build_iovec()` a freed pointer to `realloc()`. Every in-tree caller
+happens to reset the variables itself. Two lines make the code match its
+own comment.
+
+That one **relocated** a finding rather than removing it, and the new
+place is the truthful one. `mntopts.c:259` — a leak of `iov` reported in
+`chkdoreload()` — is gone, because the pointer is nulled now. In its
+place is `mntopts.c:328`, in `free_iovec()` itself, and that is a real
+leak the reset made visible: the loop frees `(*iov)[i].iov_base` for
+**even** `i` only, so the option *names* `build_iovec()` strdup'd are
+freed and the *values* are not. For every caller that is right — the
+values are borrowed, `mntp->f_mntonname` and an `errmsg[]` on the stack
+— and for `build_iovec_argf()`, which passes `strdup(val)`, it is a leak
+by construction. Every caller of that is a `mount_*` helper that exits
+seconds later, so nothing is going to be restructured for it; the
+finding is the honest record of an API whose ownership rule is "the
+caller owns the value, except when it doesn't".

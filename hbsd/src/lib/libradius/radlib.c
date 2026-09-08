@@ -1519,7 +1519,13 @@ rad_demangle_mppe_key(struct rad_handle *h, const void *mangled,
 	int Slen, i, Clen, Ppos;
 	u_char *P;
 
-	if (mlen % 16 != SALT_LEN) {
+	/*
+	 * PBSD: at least one cipher block, as well as the right modulus.
+	 * mlen == SALT_LEN satisfies `mlen % 16 == SALT_LEN', and then
+	 * Clen is 0, alloca(0) returns a zero-sized object, the decrypt
+	 * loop never runs, and `*len = *P' below reads past it.
+	 */
+	if (mlen < SALT_LEN + 16 || mlen % 16 != SALT_LEN) {
 		generr(h, "Cannot interpret mangled data of length %lu",
 		    (u_long)mlen);
 		return NULL;

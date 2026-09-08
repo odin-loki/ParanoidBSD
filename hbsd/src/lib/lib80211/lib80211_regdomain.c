@@ -594,6 +594,13 @@ lib80211_regdomain_cleanup(struct regdata *rdp)
 		cleanup_bands(&dp->bands_11acg);
 		if (dp->name != NULL)
 			free(__DECONST(char *, dp->name));
+		/*
+		 * PBSD: and the domain itself. The two loops below - over
+		 * struct country and struct freqband - end in free(cp) and
+		 * free(fp); this one did not, and free(dp) appears nowhere
+		 * else in the file.
+		 */
+		free(dp);
 	}
 	for (;;) {
 		struct country *cp = LIST_FIRST(&rdp->countries);

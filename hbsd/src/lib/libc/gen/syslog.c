@@ -138,8 +138,16 @@ vsyslog1(int pri, const char *fmt, va_list ap)
 	char ch, *p;
 	long tz_offset;
 	int cnt, fd, saved_errno;
-	char hostname[MAXHOSTNAMELEN], *stdp, tbuf[MAXLINE], fmt_cpy[MAXLINE],
-	    errstr[64], tz_sign;
+	/*
+	 * PBSD: stdp is set under `if (LogStat & LOG_PERROR)' and read
+	 * eighty lines later under the same test. LogStat is a global that
+	 * openlog() writes, so those are two reads of a word another thread
+	 * can change between them, and the second one winning handed
+	 * writev() an indeterminate pointer. tbuf makes that case print the
+	 * header twice rather than read arbitrary memory.
+	 */
+	char hostname[MAXHOSTNAMELEN], tbuf[MAXLINE], *stdp = tbuf,
+	    fmt_cpy[MAXLINE], errstr[64], tz_sign;
 	FILE *fp, *fmt_fp;
 	struct bufcookie tbuf_cookie;
 	struct bufcookie fmt_cookie;

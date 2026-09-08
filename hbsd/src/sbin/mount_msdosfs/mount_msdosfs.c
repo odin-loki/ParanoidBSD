@@ -87,7 +87,7 @@ main(int argc, char **argv)
 			build_iovec(&iov, &iovlen, "longnames", NULL, (size_t)-1);
 			break;
 		case '9':
-			build_iovec_argf(&iov, &iovlen, "nowin95", "", (size_t)-1);
+			build_iovec_argf(&iov, &iovlen, "nowin95", "");
 			break;
 		case 'u':
 			uid = a_uid(optarg);
@@ -113,13 +113,13 @@ main(int argc, char **argv)
 			if (!csp)
 				err(EX_CONFIG, "%s", optarg);
 			quirk = kiconv_quirkcs(csp + 1, KICONV_VENDOR_MICSFT);
-			build_iovec_argf(&iov, &iovlen, "cs_local", quirk);
+			build_iovec_argf(&iov, &iovlen, "cs_local", "%s", quirk);
 			cs_local = strdup(quirk);
 			}
 			break;
 		case 'D':
 			cs_dos = strdup(optarg);
-			build_iovec_argf(&iov, &iovlen, "cs_dos", cs_dos, (size_t)-1);
+			build_iovec_argf(&iov, &iovlen, "cs_dos", "%s", cs_dos);
 			break;
 		case 'o': {
 			char *p = NULL;
@@ -310,7 +310,7 @@ set_charset(struct iovec **iov, int *iovlen, const char *cs_local, const char *c
 		if (error && errno != EEXIST)
 			return (-1);
 	} else {
-		build_iovec_argf(iov, iovlen, "cs_dos", cs_local);
+		build_iovec_argf(iov, iovlen, "cs_dos", "%s", cs_local);
 		error = kiconv_add_xlat16_cspair(cs_local, cs_local,
 				KICONV_FROM_UPPER | KICONV_LOWER);
 		if (error && errno != EEXIST)

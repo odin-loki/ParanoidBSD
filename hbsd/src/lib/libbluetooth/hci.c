@@ -495,13 +495,25 @@ wait_for_more:
 
 	n = bt_devrecv(s, buf, sizeof(buf), length);
 	if (n < 0) {
-		free(i);
+		/*
+		 * PBSD: free the allocation, not the cursor. `i' walks
+		 * forward one struct bt_devinquiry (256 bytes) per device
+		 * reported, and control comes back here through
+		 * `goto wait_for_more' - so after one INQUIRY_RESULT this
+		 * was free()ing a pointer into the middle of the calloc'd
+		 * block. An inquiry that times out after one device
+		 * answered is enough. *ii is NULLed because it has already
+		 * been handed to the caller.
+		 */
+		free(*ii);
+		*ii = NULL;
 		bt_devclose(s);
 		return (-1);
 	}
 
 	if (n < sizeof(ng_hci_event_pkt_t)) {
-		free(i);
+		free(*ii);
+		*ii = NULL;
 		bt_devclose(s);
 		errno = EIO;
 		return (-1);
