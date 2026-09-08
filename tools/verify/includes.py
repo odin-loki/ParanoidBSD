@@ -889,6 +889,110 @@ MODULE_SRCS = re.compile(r"^\s*SRCS(?:\.\w+)?\s*\+?=\s*(.*)$")
 
 
 @functools.lru_cache(maxsize=None)
+def files_compile_with(arch: str = "amd64") -> dict[str, tuple[str, ...]]:
+    """source -> the flags a files* entry's own compile-with adds.
+
+    Twenty-odd entries in sys/conf/files* build an OBJECT rather than a
+    source, name the source in a `dependency', and give the command in a
+    `compile-with' because the file needs instruction-set flags the rest
+    of the kernel is not built with:
+
+        aesni_ghash.o  optional aesni \\
+            dependency  "$S/crypto/aesni/aesni_ghash.c" \\
+            compile-with "${CC} -c ${CFLAGS:C/^-O2$/-O3/:N-nostdinc} \\
+                ${WERROR} ${NO_WCAST_QUAL} -mmmx -msse -msse4 -maes \\
+                -mpclmul ${.IMPSRC}"
+
+    Without them the five aesni sources and crypto/armv8's wrapper do not
+    compile at all - `<emmintrin.h>' and `veorq_u8' - and six translation
+    units of crypto code report nothing and look clean.
+
+    PER ARCHITECTURE, because the same source has two entries: files.amd64
+    compiles sys/kern/subr_clockcalib.c with `-mmmx -msse -msse2' and
+    files.i386 with `-m80387', and unioning them hands x86_64 an i386
+    flag. sys/conf/files itself is architecture-neutral and applies to
+    all.
+
+    Three things are read and nothing else. A literal `-m' word OUTSIDE
+    any ${...}; the `:N-nostdinc' those entries carry, as the
+    -DPBSD_WANTS_STDINC marker the module reader already uses for the
+    same reason; and one bmake idiom that cannot be skipped, because
+    without it armv8_crypto_wrap.c still does not compile -
+
+        ${CFLAGS:M-march=*:S/^$/-march=armv8-a/}+crypto
+
+    which is "the -march already in CFLAGS, or -march=armv8-a if there is
+    none, with +crypto appended".
+    """
+    brace = re.compile(r"\$\{[^}]*\}")
+    marchidiom = re.compile(
+        r"\$\{CFLAGS:M-march=\*:S/\^\$/(-march=[\w.+-]+)/\}(\+[\w+]+)")
+
+    # The lists THIS architecture reads, following `include' the way
+    # config(8) does: files.amd64 and files.i386 both begin with
+    # `include "conf/files.x86"', and the five aesni entries live there.
+    # Matching by the filename's suffix alone found none of them.
+    # SYS_ARCH maps a DIRECTORY to an architecture and two directories
+    # can map to one - arm64 and aarch64 both mean aarch64 - so the list
+    # is found by asking which of them exists rather than by inverting.
+    todo, lists, seen = [SYS / "conf/files"], [], set()
+    todo += [SYS / f"conf/files.{d}"
+             for d, a in SYS_ARCH.items() if a == arch]
+    while todo:
+        f = todo.pop()
+        if not f.is_file() or f in seen:
+            continue
+        seen.add(f)
+        lists.append(f)
+        for m in re.finditer(r'^\s*include\s+"?([^"\s]+)"?', 
+                             f.read_text(errors="replace"), re.M):
+            todo.append((SYS / m.group(1)).resolve())
+
+    out: dict[str, list[str]] = {}
+    for p in sorted(lists):
+        text = p.read_text(errors="replace").replace("\\\n", " ")
+        for line in text.splitlines():
+            if not re.match(r"^\S+\.o\s", line.split("#")[0]):
+                continue
+            srcs = []
+            for d in re.findall(r'dependency\s+"([^"]*)"', line):
+                for w in d.split():
+                    if w.endswith((".c", ".S")):
+                        srcs.append("sys/" + w.replace("$S/", "")
+                                    .replace("${SRCTOP}/sys/", ""))
+            cw = re.findall(r'compile-with\s+"([^"]*)"', line)
+            if not srcs or not cw:
+                continue
+            cmd = " ".join(cw)
+            got = []
+            m = marchidiom.search(cmd)
+            if m:
+                got.append(m.group(1) + m.group(2))
+            # ...then the literal words, with every ${...} taken out
+            # first so a `:N-mgeneral-regs-only' - which REMOVES a flag -
+            # is never read as one to add.
+            for w in brace.sub(" ", cmd).split():
+                if re.match(r"^-m[\w.+=-]+$", w):
+                    got.append(w)
+            if ":N-nostdinc" in cmd:
+                # The entry drops -nostdinc because clang's <emmintrin.h>
+                # and its neighbours pull <mm_malloc.h>, which includes
+                # <stdlib.h>. On a FreeBSD build machine that is FreeBSD's
+                # own; here it is glibc's, which wants
+                # <bits/libc-header-start.h> off a multiarch path, and the
+                # five aesni sources traded one fatal error for another.
+                #
+                # -nostdinc stays, and mm_malloc.h's include guard is
+                # predefined instead: none of these files calls
+                # _mm_malloc() or _mm_free(), which is all that header
+                # declares. With that, all five compile.
+                got.append("-D__MM_MALLOC_H")
+            for src in srcs:
+                out.setdefault(src, []).extend(got)
+    return {k: tuple(dict.fromkeys(v)) for k, v in out.items() if v}
+
+
+@functools.lru_cache(maxsize=None)
 def kernel_files_named() -> frozenset[str]:
     """Every source sys/conf/files* names, as `sys/<path>'.
 
@@ -946,6 +1050,20 @@ def files_arch_index() -> dict[str, str]:
                 # same architecture is not fought over, and one named by
                 # conf/files (no architecture) never reaches here at all.
                 out.setdefault("sys/" + m.group(1), arch)
+                continue
+            # ...and the entries whose target is an OBJECT, which name
+            # their source in a `dependency'. sys/conf/files.arm64 names
+            # crypto/armv8/armv8_crypto_wrap.c that way and nowhere else,
+            # so nothing said it was arm64 and it was analysed as amd64,
+            # where <arm_neon.h> is not there and `veorq_u8' is an
+            # implicit declaration. Analysed as aarch64 it compiles.
+            if re.match(r"^\S+\.o\s", line):
+                for d in re.findall(r'dependency\s+"([^"]*)"', line):
+                    for w in d.split():
+                        if w.endswith((".c", ".S")):
+                            out.setdefault(
+                                "sys/" + w.replace("$S/", "")
+                                .replace("${SRCTOP}/sys/", ""), arch)
     return out
 
 
@@ -2472,6 +2590,9 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
         # vm/vm_page.h, vm/vm_map.h and cddl's atomic.h all read it.
         if rel in by_src and rel not in kernel_files_named():
             found.append("-DKLD_MODULE")
+        # ...and the entry's own compile-with, for the twenty-odd whose
+        # target is an object.
+        found.extend(files_compile_with(arch).get(rel, ()))
         # A directory's is a guess about a file nothing named, and a
         # guess does not get to decide order: it stays at the end, where
         # it has always been. sys/modules/dtrace/dtnfscl takes .PATH on

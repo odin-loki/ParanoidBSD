@@ -526,6 +526,53 @@ check_that("...and a source the kernel builds is not",
            "-DKLD_MODULE" not in _km,
            "kern_malloc.c is in sys/conf/files and in no module")
 
+print("\n== the compile-with on a files* entry whose target is a .o")
+# Six translation units of crypto code did not compile at all until this
+# was read, and every part of the reading can go wrong quietly: the list
+# is found through an `include', the flags are per-architecture, and one
+# of them is a bmake expression rather than a literal.
+_cw_amd64 = includes.files_compile_with("amd64")
+_cw_i386 = includes.files_compile_with("i386")
+_cw_arm64 = includes.files_compile_with("aarch64")
+check_that("files.x86's aesni entries are found from files.amd64",
+           "sys/crypto/aesni/aesni_ghash.c" in _cw_amd64,
+           "they are in conf/files.x86, which conf/files.amd64 reaches "
+           "with `include \"conf/files.x86\"'")
+check_that("...with the instruction-set flags its compile-with names",
+           {"-maes", "-mpclmul", "-msse4"} <=
+           set(_cw_amd64.get("sys/crypto/aesni/aesni_ghash.c", ())))
+check_that("subr_clockcalib.c gets amd64's flags on amd64",
+           "-mmmx" in _cw_amd64.get("sys/kern/subr_clockcalib.c", ()))
+check_that("...and i386's on i386, not both",
+           _cw_i386.get("sys/kern/subr_clockcalib.c") == (
+               "-m80387", "-D__MM_MALLOC_H"),
+           "files.amd64 and files.i386 give the same source different "
+           "flags, and unioning them hands x86_64 an i386 flag")
+check_that("the ${CFLAGS:M-march=*:S/^$/-march=armv8-a/}+crypto idiom "
+           "is read",
+           "-march=armv8-a+crypto" in
+           _cw_arm64.get("sys/crypto/armv8/armv8_crypto_wrap.c", ()),
+           "without it the file still does not compile")
+check_that("a :N-<flag> is not read as a flag to ADD",
+           not any(f == "-mgeneral-regs-only"
+                   for f in _cw_arm64.get(
+                       "sys/crypto/armv8/armv8_crypto_wrap.c", ())),
+           "that entry's ${CFLAGS:...:N-mgeneral-regs-only} REMOVES it")
+check_that("armv8_crypto_wrap.c is aarch64",
+           includes.arch_of("sys/crypto/armv8/armv8_crypto_wrap.c")
+           == "aarch64",
+           "sys/conf/files.arm64 names it only through a .o entry's "
+           "dependency, so nothing said so and it was analysed as amd64")
+_ag = includes.include_flags(SRC / "sys/crypto/aesni/aesni_ghash.c",
+                             "amd64")
+check_that("...and the flags reach the compiler", "-maes" in _ag)
+check_that("-nostdinc is kept", "-nostdinc" in _ag,
+           "the entry drops it so clang's <emmintrin.h> can reach "
+           "<stdlib.h>; on this host that is glibc's and wants a "
+           "multiarch path, so mm_malloc.h's guard is predefined instead")
+check_that("...by predefining mm_malloc.h's guard",
+           "-D__MM_MALLOC_H" in _ag)
+
 print()
 if fails:
     print(f"{len(fails)} check(s) failed")

@@ -240,16 +240,12 @@ EXPECTED = {
         "built by lib/libmd/Makefile through a .PATH into sys/, with "
         "CFLAGS.sha512c_arm64.c+= -march=armv8.2-a+sha3",
 
-    # A files* entry whose TARGET is an object: the flags are on its own
-    # compile-with, and the reader only looks at .c entries.
-    "sys/crypto/aesni/aesni_ccm.c":     "the compile-with on aesni_ccm.o",
-    "sys/crypto/aesni/aesni_ghash.c":   "the compile-with on aesni_ghash.o",
-    "sys/crypto/aesni/aesni_wrap.c":    "the compile-with on aesni_wrap.o",
-    "sys/crypto/aesni/intel_sha1.c":    "the compile-with on intel_sha1.o",
-    "sys/crypto/aesni/intel_sha256.c":  "the compile-with on intel_sha256.o",
-    "sys/crypto/armv8/armv8_crypto_wrap.c":
-        "the compile-with on armv8_crypto_wrap.o, which carries "
-        "-I$S/crypto/armv8 and -march=armv8-a+crypto",
+    # (The six entries that were here - the five aesni sources and
+    # crypto/armv8's wrapper, all of them "the flags are on the
+    # compile-with of a .o target and the reader only looks at .c
+    # entries" - are gone: includes.files_compile_with() reads that
+    # entry now, and files_arch_index() reads its `dependency' so
+    # armv8_crypto_wrap.c is aarch64 rather than amd64. All six compile.)
 
     # A header the BUILD generates by assembling and linking, which this
     # analyser does not do. Each is a genassym-shaped recipe: build a
