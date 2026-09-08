@@ -6506,3 +6506,54 @@ treatment, and the same reason, as `al_hal_serdes_25g.c`'s eight above.
 `aw_clk_nkmp.c:155`, `aw_clk_nkmp.c:339`, `aw_clk_nm.c:150`,
 `aw_clk_nm.c:303`, `aw_clk_nmm.c:131`, `aw_clk_nmm.c:228`,
 `aw_clk_np.c:125`, `aw_clk_np.c:216`, `aw_clk_prediv_mux.c:121`.
+
+### `RB_GENERATE` — 31 findings, one macro, and the invariant is in its comment
+
+31 findings across 25 files, every one *"Array access (via field
+`rbe_link`) results in an undefined pointer dereference"*, every one at
+the line where a file says `RB_GENERATE(...)`. They are not 31 things.
+They are `sys/sys/tree.h:524`, `RB_GENERATE_INSERT_COLOR`, reported once
+per instantiation — which is what made them hard to see as one until the
+sweep started recording the function clang names, and the name came back
+`<something>_RB_INSERT_COLOR` every time.
+
+The variable is `child`, declared at `:540` and assigned only at `:557`
+and `:596`, both on paths that loop; the rotations at `:583` and `:612`
+read it. The macro says why that is safe, in its own words, at `:529`:
+
+```c
+	/*
+	 * Initially, elm is a leaf.  Either its parent was previously
+	 * a leaf, with two black null children, or an interior node
+	 * with a black non-null child and a red null child. The
+	 * balance criterion "the rank of any leaf is 1" precludes the
+	 * possibility of two red null children for the initial parent.
+	 * So the first loop iteration cannot lead to accessing an
+	 * uninitialized 'child', and a later iteration can only happen
+	 * when a value has been assigned to 'child' in the previous
+	 * one.
+	 */
+```
+
+A rank invariant over a red-black tree, maintained by the other half of
+the same header, is not something a path-sensitive checker is going to
+reconstruct from one function. The comment exists because somebody
+already had this argument.
+
+Nothing to change, and the reason to record it is arithmetic: 31 of the
+sweep's findings — more than any single file except `dis_tables.c` and
+`linux_socket.c` — are one macro, and every future `RB_GENERATE` added to
+the tree will add one more.
+
+`clnt_dg.c:118`, `clnt_vc.c:147`, `linux_compat.c:179`,
+`ttm_bo_vm.c:54`, `iommu_gas.c:187`, `evtchn_dev.c:94`, `gntdev.c:112`,
+`gntdev.c:246`, `gntdev.c:491`, `autofs.c:157`, `tmpfs_subr.c:2410`,
+`g_eli_key_cache.c:98`, `kern_sysctl.c:84`, `vfs_inotify.c:162`,
+`if_ovpn.c:223`, `in_mcast.c:3014`, `tcp_log_buf.c:357`,
+`in6_mcast.c:100`, `pf.c:229`, `pf_if.c:105`, `pf_ioctl.c:144`,
+`pf_norm.c:134`, `pf_norm.c:139`, `pf_ruleset.c:77`, `pf_ruleset.c:78`,
+`pf_ruleset.c:79`, `pf_ruleset.c:81`, `pf_table.c:178`,
+`clnt_nl.c:157`, `rpctls_impl.c:100`, `vm_phys.c:113`.
+
+(`pf_ruleset.c` has four, `gntdev.c` three and `pf_norm.c` two, because a
+file may instantiate the macro more than once.)
