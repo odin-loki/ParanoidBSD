@@ -138,6 +138,37 @@ def main() -> int:
           "...and it is known to come from OBJS, so the rule's own "
           "flags reach it and nothing else")
 
+    # The compiler the probe describes. share/mk's bsd.compiler.mk runs
+    # `cc' and every `.if ${COMPILER_TYPE} == "clang"' and
+    # `${COMPILER_FEATURES:M...}' in the tree turns on the answer - and
+    # unset, `cc' is gcc here while the analyser is clang. It changes
+    # what the build NAMES, not only its flags.
+    gen = u.SRC / "lib/libc/tests/gen"
+    names, _ = u.ask(gen, "amd64")
+    check("fts_blocks_test.c" in names,
+          "COMPILER_FEATURES:Mblocks names lib/libc/tests/gen's blocks "
+          "tests")
+
+    # A file's OWN CFLAGS.<file>, which a component's CFLAGS do not
+    # carry. Three shapes, all in libc.
+    dl = u.ask_cflags(u.SRC / "lib/libc", "amd64", name="dlfcn.c")
+    check(any(f.endswith("libexec/rtld-elf") for f in dl),
+          "CFLAGS.dlfcn.c is ${RTLD_HDRS}, and rtld.h needs it")
+    check(not any(f.endswith("libexec/rtld-elf")
+                  for f in u.ask_cflags(u.SRC / "lib/libc", "amd64")),
+          "...and the component's own CFLAGS do not carry it")
+    bl = u.ask_cflags(gen, "amd64", name="fts_blocks_test.c")
+    check("-fblocks" in bl,
+          "CFLAGS.${t}.c is -fblocks, and the file will not PARSE "
+          "without it")
+    check("-fblocks" not in u.ask_cflags(gen, "amd64"),
+          "...and -f is taken from a file's own flags and nothing else")
+    tz = u.ask_cflags(u.SRC / "lib/libc/tests/stdtime", "amd64",
+                      name="detect_tz_changes_test.c")
+    check(any("contrib/tzcode" in f for f in tz),
+          "CFLAGS.<file> is spelled without the suffix too "
+          "(detect_tz_changes_test)")
+
     print(f"\n{'FAILED' if FAIL else 'all checks passed'}"
           f"{f' ({FAIL})' if FAIL else ''}")
     return 1 if FAIL else 0

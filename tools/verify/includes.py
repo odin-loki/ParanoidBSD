@@ -211,7 +211,12 @@ def machine_shim(arch: str = "amd64") -> str:
 
 ARCH_DIR = {"amd64": "amd64", "aarch64": "aarch64", "arm": "armv7",
             "i386": "i386", "powerpc": "powerpc64", "powerpc64": "powerpc64",
-            "riscv": "riscv64", "powerpcspe": "powerpc64"}
+            "riscv": "riscv64", "powerpcspe": "powerpc64",
+            # lib/msun/Makefile:13 - ARCH_SUBDIR is
+            # ${MACHINE_CPUARCH:S/i386/i387/}, so lib/msun/i387 IS i386.
+            # Called amd64, i387/fenv.c fails on `__SSE_YES', which
+            # lib/msun/x86/fenv.h declares.
+            "i387": "i386"}
 
 
 # The KERNEL's per-architecture directory names, which are a third
@@ -2580,7 +2585,8 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     comp = _component_dir(rel)
     if comp is not None:
         seen = set(flags)
-        for f in userland_names.ask_cflags(comp, arch):
+        for f in userland_names.ask_cflags(comp, arch,
+                                           name=Path(rel).name):
             if f not in seen:
                 seen.add(f)
                 flags.append(f)

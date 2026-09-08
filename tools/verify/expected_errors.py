@@ -225,28 +225,12 @@ EXPECTED = {
         "sys/modules/dwwdt builds it; the FDT clock API it calls is "
         "declared only where the analyser is not looking",
 
-    # The blocks tests. lib/libc/tests/gen/Makefile:10 puts each inside
-    # `.if ${COMPILER_FEATURES:Mblocks}' and :120 gives it -fblocks, and
-    # the analyser passes neither - it asks bmake with no CC, so the
-    # probe answers for gcc.
-    "lib/libc/tests/gen/fts_blocks_test.c":     "needs -fblocks",
-    "lib/libc/tests/gen/glob_blocks_test.c":    "needs -fblocks",
-    "lib/libc/tests/gen/scandir_blocks_test.c": "needs -fblocks",
-    "lib/libc/tests/stdlib/qsort_b_test.c":     "needs -fblocks",
-
-    # A file's own CFLAGS.<file>, which the userland reader does not ask
-    # bmake for yet.
-    "lib/libc/gen/dlfcn.c":
-        "CFLAGS.dlfcn.c is ${RTLD_HDRS}; without it rtld.h cannot find "
-        "rtld_machdep.h",
-    "lib/libc/gen/tls.c":
-        "CFLAGS.tls.c is ${RTLD_HDRS}; without it rtld.h cannot find "
-        "rtld_machdep.h",
-    "lib/libc/tests/stdtime/detect_tz_changes_test.c":
-        "CFLAGS.detect_tz_changes_test is -I${SRCTOP}/contrib/tzcode",
-    "lib/msun/i387/fenv.c":
-        "msun's ARCH_SUBDIR is ${MACHINE_CPUARCH:S/i386/i387/}, so i387 "
-        "IS i386 and arch_of() calls it amd64",
+    # A file's own CFLAGS.<file>. Eight entries were here and are gone:
+    # ask_cflags() asks bmake for CFLAGS.<file> now, and asks it as
+    # clang, so libc's dlfcn.c and tls.c get ${RTLD_HDRS}, the four
+    # blocks tests get -fblocks and are NAMED at all, i387/fenv.c is
+    # read as i386, and detect_tz_changes_test gets contrib/tzcode.
+    # These two are what is left, and neither is about a flag.
     "libexec/atf/atf-pytest-wrapper/atf_pytest_wrapper.cpp":
         "#include <format>, which needs a C++20 standard library",
     "sys/crypto/sha2/sha256c_arm64.c":

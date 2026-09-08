@@ -95,7 +95,16 @@ def makefile_dirs(src: Path = SRC) -> list[Path]:
 def _bmake(d: Path, arch: str, want: list[str], src: Path,
            timeout: int) -> list[str] | None:
     cpuarch, marcH, mach = MACHINE_OF.get(arch, MACHINE_OF["amd64"])
-    cmd = ["bmake", "-m", str(SHARE_MK)]
+    # CC, because share/mk's bsd.compiler.mk PROBES the compiler and
+    # every `.if ${COMPILER_TYPE} == "clang"' and `${COMPILER_FEATURES:M...}'
+    # in the tree turns on the answer. Unset, it probes `cc' - gcc 13 on
+    # this machine - while the instrument doing the analysing is clang
+    # and PBSD's own build is clang. It changes what the build NAMES,
+    # not only its flags: lib/libc/tests/gen puts three ATF tests inside
+    # `.if ${COMPILER_FEATURES:Mblocks}', and asked as gcc bmake returns
+    # fifty names without them.
+    cmd = ["bmake", "-m", str(SHARE_MK), "CC=clang", "CXX=clang++",
+           "CPP=clang-cpp"]
     for v in want:
         cmd += ["-V", v]
     cmd += [f"MACHINE={mach}", f"MACHINE_ARCH={marcH}",
@@ -196,8 +205,8 @@ def build(arch: str, src: Path = SRC, jobs: int = 8
     return named, sorted(failed)
 
 
-def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40
-               ) -> list[str]:
+def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40,
+               name: str = "") -> list[str]:
     """The -I, -D and -U this directory's build really passes.
 
     includes.py reads a component's Makefile.inc chain by walking from
@@ -224,18 +233,43 @@ def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40
 
         -DATJOB_DIR=\"/var/at/jobs/\"
     """
-    got = _bmake(d, arch, ["CFLAGS", "CXXFLAGS"], src, timeout)
+    want = ["CFLAGS", "CXXFLAGS"]
+    if name:
+        # A file's OWN flags, which the component's CFLAGS do not carry.
+        # The tree spells the variable both ways - with the suffix and
+        # without - so both are asked:
+        #
+        #   lib/libc/gen/Makefile.inc:185   CFLAGS.dlfcn.c= ${RTLD_HDRS}
+        #   lib/libc/tests/stdtime/Makefile:6
+        #       CFLAGS.detect_tz_changes_test+= -I${SRCTOP}/contrib/tzcode
+        #   lib/libc/tests/gen/Makefile:120 CFLAGS.${t}.c+= -fblocks
+        #
+        # Without the first, rtld.h cannot find rtld_machdep.h, which
+        # lives in libexec/rtld-elf/<cpuarch>/. Without the last the
+        # file does not PARSE - blocks are a language extension, not an
+        # include path - which is why -f is passed through here and not
+        # in the component flags, where -flto and -fsanitize live.
+        stem = name.rsplit(".", 1)[0]
+        want += [f"CFLAGS.{name}", f"CFLAGS.{stem}",
+                 f"CXXFLAGS.{name}", f"CXXFLAGS.{stem}"]
+    got = _bmake(d, arch, want, src, timeout)
     if got is None:
         return []
     out: list[str] = []
     seen: set[str] = set()
-    for line in got:
+    for i, line in enumerate(got):
         try:
             words = shlex.split(line)
         except ValueError:
             words = line.split()
         for w in words:
-            if w[:2] in ("-I", "-D", "-U") and len(w) > 2 and w not in seen:
+            if w in seen or len(w) <= 2:
+                continue
+            # -f and -m only from the file's own flags, and never the
+            # two the analyser cannot accept.
+            if w[:2] in ("-I", "-D", "-U") or (
+                    i >= 2 and w[:2] in ("-f", "-m")
+                    and not w.startswith(("-fsanitize", "-flto"))):
                 seen.add(w)
                 out.append(w)
     return out
