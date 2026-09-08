@@ -172,6 +172,49 @@ def _lhdrs() -> tuple[str, ...]:
 
 
 @functools.lru_cache(maxsize=None)
+def libcxx_shim() -> tuple[str, ...]:
+    """The two -I a C++ translation unit needs, in front of every C one.
+
+    -nostdinc leaves a .cpp with no C++ standard library at all, and the
+    thirteen driver stubs under usr.bin/clang were ERROR on
+
+        ADL.h:12:10: fatal error: 'type_traits' file not found
+
+    which is the shape of a translation unit reporting zero findings
+    because it never compiled.
+
+    lib/libc++/Makefile installs ${SRCTOP}/contrib/llvm-project/libcxx/
+    include into ${INCLUDEDIR}/c++/v${SHLIB_MAJOR}, and four files that
+    CMake generates upstream are checked in beside the Makefile and
+    installed into the same directory:
+
+        STD+=  ${.CURDIR}/__assertion_handler   # as of libc++ 18
+        STD+=  ${.CURDIR}/__config_site         # as of libc++ 13
+        STD+=  ${.CURDIR}/libcxx.imp            # as of libc++ 19
+        STD+=  ${.CURDIR}/module.modulemap      # as of libc++ 21
+
+    so the shim is that directory's four files, and libcxx/include
+    itself. Both go BEFORE the C header directories, not after: libc++'s
+    <cstddef> and <cctype> check that the <stddef.h> and <ctype.h> they
+    pulled in were libc++'s own wrappers and #error by name when they
+    were not -
+
+        <cstddef> tried including <stddef.h> but didn't find libc++'s
+        <stddef.h> header. ... The header search paths should contain
+        the C++ Standard Library headers before any C Standard Library
+
+    which is the same ordering the installed tree gives a real build.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_cxx_"))
+    for name in ("__assertion_handler", "__config_site", "libcxx.imp",
+                 "module.modulemap"):
+        src = SRC / "lib" / "libc++" / name
+        if src.exists():
+            (d / name).symlink_to(src)
+    return (f"-I{d}", f"-I{SRC / 'contrib/llvm-project/libcxx/include'}")
+
+
+@functools.lru_cache(maxsize=None)
 def machine_shim(arch: str = "amd64") -> str:
     """A directory laid out the way the installed header tree is.
 
@@ -2944,8 +2987,29 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     flags = ["-nostdinc",
              *target_flags(arch, cc),
              "-U__linux__", "-U__gnu_linux__", "-D__FreeBSD__=15",
-             "-DHARDENEDBSD",
-             f"-I{machine_shim(arch)}"]
+             "-DHARDENEDBSD"]
+
+    # A .cpp gets the C++ standard library first - see libcxx_shim().
+    # The thirteen driver stubs under usr.bin/clang cannot compile
+    # without it. The 123 .cpp under lib/ are landed ports - a pure
+    # rename of a C file - and the pair moved no finding in any of them,
+    # but it did stop five compiling: lib/msun/src/s_llround.cpp and
+    # four beside it `#define type double' and then reach libc++'s
+    # <__type_traits/enable_if.h>, where `typedef _Tp type;' is no
+    # longer a declaration. Those five do not build in the shipped tree
+    # either; the macro is renamed ftype, and
+    # tools/check_port_cxx_warnings.py now reads the compiler's exit
+    # status so the next one of those is a gate failure rather than
+    # silence.
+    #
+    # The sys/ test is a fence, not a filter: the kernel is a different
+    # header universe (no include/, -D_KERNEL) and userland's libc++
+    # would drag userland's <stddef.h> into it. There is no .cpp under
+    # sys/ today, so nothing takes that branch yet.
+    if src.suffix in (".cpp", ".cc") and not rel.startswith("sys/"):
+        flags.extend(libcxx_shim())
+
+    flags.append(f"-I{machine_shim(arch)}")
 
     # The kernel is a different header universe from userland: no
     # include/, -D_KERNEL, and <sys/foo.h> resolving inside sys/. Mixing

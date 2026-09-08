@@ -30,8 +30,8 @@
 #include <fenv.h>
 #include <math.h>
 
-#ifndef type
-#define type		double
+#ifndef ftype
+#define ftype		double
 #define	roundit		round
 #define dtype		long
 #define	DTYPE_MIN	LONG_MIN
@@ -40,22 +40,22 @@
 #endif
 
 /*
- * If type has more precision than dtype, the endpoints dtype_(min|max) are
+ * If ftype has more precision than dtype, the endpoints dtype_(min|max) are
  * of the form xxx.5; they are "out of range" because lround() rounds away
- * from 0.  On the other hand, if type has less precision than dtype, then
+ * from 0.  On the other hand, if ftype has less precision than dtype, then
  * all values that are out of range are integral, so we might as well assume
  * that everything is in range.  At compile time, INRANGE(x) should reduce to
  * two floating-point comparisons in the former case, or TRUE otherwise.
  */
-static const type type_min = (type)DTYPE_MIN;
-static const type type_max = (type)DTYPE_MAX;
-static const type dtype_min = (type)DTYPE_MIN - 0.5;
-static const type dtype_max = (type)DTYPE_MAX + 0.5;
+static const ftype type_min = (ftype)DTYPE_MIN;
+static const ftype type_max = (ftype)DTYPE_MAX;
+static const ftype dtype_min = (ftype)DTYPE_MIN - 0.5;
+static const ftype dtype_max = (ftype)DTYPE_MAX + 0.5;
 #define	INRANGE(x)	(dtype_max - type_max != 0.5 || \
 			 ((x) > dtype_min && (x) < dtype_max))
 
 dtype
-fn(type x)
+fn(ftype x)
 {
 
 	if (INRANGE(x)) {

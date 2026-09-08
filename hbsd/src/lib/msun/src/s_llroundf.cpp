@@ -1,4 +1,4 @@
-#define type		float
+#define ftype		float
 #define	roundit		roundf
 #define dtype		long long
 #define	DTYPE_MIN	LLONG_MIN

@@ -573,6 +573,48 @@ check_that("-nostdinc is kept", "-nostdinc" in _ag,
 check_that("...by predefining mm_malloc.h's guard",
            "-D__MM_MALLOC_H" in _ag)
 
+# == the C++ standard library reaches a C++ translation unit, first ==
+_cxx = includes.include_flags(
+    SRC / "usr.bin/clang/clang/clang-driver.cpp", "amd64")
+_libcxx = f"-I{SRC / 'contrib/llvm-project/libcxx/include'}"
+check_that("a .cpp gets libcxx/include", _libcxx in _cxx,
+           "without it <type_traits> is not found and the unit reports "
+           "zero findings because it never compiled")
+check_that("...and __config_site with it",
+           any(f.startswith("-I/") and
+               (Path(f[2:]) / "__config_site").exists()
+               for f in _cxx),
+           "libcxx/include/__config includes <__config_site>, which "
+           "CMake generates upstream and lib/libc++ checks in")
+check_that("...and __assertion_handler",
+           any(f.startswith("-I/") and
+               (Path(f[2:]) / "__assertion_handler").exists()
+               for f in _cxx))
+_c_dirs = [i for i, f in enumerate(_cxx)
+           if f.startswith("-I") and f != _libcxx
+           and not (Path(f[2:]) / "__config_site").exists()]
+check_that("the C++ pair comes before every C header directory",
+           _libcxx in _cxx and _c_dirs
+           and _cxx.index(_libcxx) < min(_c_dirs),
+           "libc++'s <cstddef> #errors by name when the <stddef.h> it "
+           "reached was not libc++'s own wrapper")
+check_that("a .c gets neither", _libcxx not in includes.include_flags(
+    SRC / "bin/cat/cat.c", "amd64"))
+
+# The sentinel: the pair is what makes a real C++ unit compile. If this
+# passes with libcxx_shim() returning nothing, the check above is
+# decorative.
+import subprocess as _sp
+_probe = SRC / "usr.bin/clang/llvm-size/llvm-size-driver.cpp"
+_r = _sp.run(["clang-18", "-fsyntax-only",
+              *includes.lang_flags(_probe),
+              *includes.include_flags(_probe, "amd64"), str(_probe)],
+             capture_output=True, text=True, timeout=900)
+check_that("...and a C++ translation unit really compiles with them",
+           _r.returncode == 0,
+           (_r.stderr or "").strip().splitlines()[-1:] and
+           (_r.stderr or "").strip().splitlines()[-1] or "")
+
 print()
 if fails:
     print(f"{len(fails)} check(s) failed")

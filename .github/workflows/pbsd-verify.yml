@@ -291,7 +291,7 @@ jobs:
       # file" is answered by asking bmake rather than by a second
       # implementation of .PATH and SRCS resolution.
       - name: Install the instruments
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq bmake
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq bmake clang
       # An index that answers "no" to everything is indistinguishable
       # from a tree the build names nothing in - which is exactly how
       # sweep_report reported 57 of 57 unlisted ERRORs as "nothing in
@@ -340,6 +340,16 @@ jobs:
       # of the ten has to say what it did.
       - name: A lock released on some paths out of a function and not others
         run: python3 tools/verify/test_lock_balance.py
+
+      # A landed port that does not COMPILE as C++ raised no [-W...] tag,
+      # so the differential above matched its C original's empty set and
+      # said nothing. Five lib/msun files were in that state for three
+      # days - they #define a lowercase `type' macro and then reach
+      # libc++'s <__type_traits/enable_if.h>, where `typedef _Tp type;'
+      # stops being a declaration. The check now reads the compiler's
+      # exit status as well as its warnings.
+      - name: Every landed .cpp port still compiles as C++
+        run: python3 tools/check_port_cxx_warnings.py --gate
 
   report:
     needs: [sweep, analyze]

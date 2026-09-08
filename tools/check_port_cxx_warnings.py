@@ -52,13 +52,24 @@ WARN = ["-Wall", "-Wextra", "-Wno-unused-parameter", "-fsyntax-only"]
 FLAG_RE = re.compile(r"\[-W([a-z0-9-]+)\]")
 
 
-def flags_raised(path: Path, as_cxx: bool) -> tuple[set[str], str]:
+def flags_raised(path: Path, as_cxx: bool) -> tuple[set[str], str, bool]:
+    """The warning flags raised, the stderr, and whether it compiled AT ALL.
+
+    The third value is the one this check was missing. FLAG_RE finds
+    `[-Wname]' tags, and a hard error carries none - so a port that does
+    not compile as C++ raised an empty set, matched its C original's
+    empty set, and passed. lib/msun/src/s_lroundl.cpp did exactly that
+    for three days: it `#define type long double' and then reaches
+    libc++'s <__type_traits/enable_if.h>, where `typedef _Tp type;' is
+    not a declaration any more. A file that does not compile reports zero
+    findings and is indistinguishable from a clean one.
+    """
     lang = (["-xc++", "-std=c++23", "-fno-exceptions", "-fno-rtti"]
             if as_cxx else ["-xc", "-std=c17"])
     cc = "clang++" if as_cxx else "clang"
     p = subprocess.run([cc, *lang, *WARN, *include_flags(path), str(path)],
                        capture_output=True, text=True)
-    return set(FLAG_RE.findall(p.stderr)), p.stderr
+    return set(FLAG_RE.findall(p.stderr)), p.stderr, p.returncode == 0
 
 
 DEFAULT_SCOPES = ["lib/libc", "lib/msun"]
@@ -89,12 +100,20 @@ def main() -> int:
     pats = ("*.cpp", "*.c") if args.candidates else ("*.cpp",)
     ports = sorted(p for s in (args.scope or DEFAULT_SCOPES) for pat in pats
                    for p in (SRC / s).rglob(pat))
-    findings = []
+    findings, broken = [], []
     for cpp in ports:
-        cxx, cxx_err = flags_raised(cpp, True)
+        cxx, cxx_err, cxx_ok = flags_raised(cpp, True)
         # The C original: a pure rename is byte-identical, so the same file
         # compiled as C is the right comparison and needs no git archaeology.
-        c, _ = flags_raised(cpp, False)
+        c, _, c_ok = flags_raised(cpp, False)
+        if c_ok and not cxx_ok:
+            # Compiles as C, does not compile as C++. Not a warning
+            # difference - the port is not a port.
+            first = next((l for l in cxx_err.splitlines()
+                          if ": error: " in l), cxx_err.splitlines()[:1] or "")
+            broken.append((cpp.relative_to(SRC).as_posix(),
+                           first if isinstance(first, str) else ""))
+            continue
         new = cxx - c
         if new:
             lines = [l for l in cxx_err.splitlines()
@@ -103,13 +122,22 @@ def main() -> int:
                              lines[:3]))
 
     print(f"{len(ports)} ported .cpp compared against the same source as C\n")
+    for name, err in broken:
+        print(f"  {name}")
+        print("      does NOT COMPILE as C++, and does as C:")
+        print(f"      {err.split(':', 3)[-1].strip()[:110]}")
     for name, new, lines in findings:
         print(f"  {name}")
         print(f"      new under C++: {', '.join('-W' + n for n in new)}")
         for l in lines:
             print(f"      {l.split(':', 3)[-1].strip()[:110]}")
-    if not findings:
-        print("  no port raises a diagnostic its C original does not.")
+    if not findings and not broken:
+        print("  no port raises a diagnostic its C original does not, "
+              "and every one compiles.")
+    if args.gate and broken:
+        print(f"\nFAIL {len(broken)} port(s) do not compile as C++ at all. "
+              f"The build compiles a .cpp with ${{CXX}} ${{CXXFLAGS}}.")
+        return 1
     if args.gate and findings:
         print(f"\nFAIL {len(findings)} port(s) introduce a diagnostic the C "
               f"original does not raise. The build is -Werror.")

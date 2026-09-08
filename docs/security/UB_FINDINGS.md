@@ -8570,3 +8570,381 @@ by construction. Every caller of that is a `mount_*` helper that exits
 seconds later, so nothing is going to be restructured for it; the
 finding is the honest record of an API whose ownership rule is "the
 caller owns the value, except when it doesn't".
+
+## Four generated headers, and the seventeen files that could not be read
+
+Four userland directories were entirely dark. Every translation unit in
+them was ERROR on a header the build makes and the sweep did not, and an
+ERROR unit reports zero findings and is indistinguishable from a clean
+one — which is the failure mode this document keeps coming back to.
+
+The four headers, each recipe taken from the directory's own Makefile
+rather than reconstructed from what the header looks like:
+
+| header | who makes it | how |
+|---|---|---|
+| `usr.bin/localedef/parser.h` | `bsd.prog.mk`'s `.y.c` rule | `yacc -d`, which writes the header beside the `.c`; the Makefile then says `${SRCS:M*.c}: parser.h`, and nine of the ten sources include it |
+| `usr.bin/netstat/nl_defs.h` | its own Makefile | an `awk` over `nlist_symbols` emitting `#define N<SYMBOL> <i>` |
+| `sbin/route/keywords.h` | its own Makefile | `LC_ALL=C awk` over `keywords`, emitting *both* a `#define K_<NAME>` and a table row per line, which is why `route.c` includes it twice under different macros |
+| `usr.bin/getaddrinfo/tables.h` | its own Makefile | `LC_ALL=C awk -f tables.awk` over `sys/sys/socket.h` |
+
+Measured in one run over `bin`, `sbin`, `usr.bin` and `usr.sbin`:
+
+    before (1754 OK, 108 ERROR, 716 findings)
+    after  (1771 OK,  91 ERROR, 739 findings)
+    1862 units; 17 changed, every one ERROR->OK
+    32 flag digests changed, all inside the four directories
+
+Nothing regressed and no finding moved in a file outside the four. What
+the seventeen newly-readable units say, read one by one:
+
+**Twenty of the twenty-three are the red-black tree class already on the
+record.** `usr.bin/localedef/collate.c` has eight `core.NullDereference`
+at `:365`, `:378`, `:391`, `:404`, `:417`, `:428`, `:439` and `:452`, and
+every one of those lines is a bare
+
+    RB_GENERATE_STATIC(weights, weight, entry, weight_compare);
+
+— the finding is inside the tree code the macro pastes in, not in
+anything `collate.c` wrote. Its four `unix.Malloc` at `:960`, `:998`,
+`:1019` and `:1048` are the other half of the same gap: a node is
+`calloc`'d and handed to `RB_INSERT`, the checker does not model
+`RB_INSERT` as taking ownership, and the `return` after it reads as a
+leak. `charmap.c` (`:61`, `:62`, `:274`, `:288`) and `ctype.c` (`:88`,
+`:290`) are the same two shapes in the same proportions. Nothing to fix
+in any of them; they are what the checker says about a macro it cannot
+see through.
+
+**`sys/netlink/netlink_snl.h:457`, reached through
+`usr.bin/netstat/route_netlink.c`,** is `find_parser()`'s
+
+    if (key < ps[0].type || key > ps[pslen - 1].type)
+
+with `ps` NULL. `find_parser` is a `static` in a header, so the analyser
+takes it as an entry point of its own and gets to choose the arguments;
+every in-tree caller passes `&parser->np[0]` from a statically
+initialised table. An artefact of analysing a static function as a root.
+
+**Two are real, and both are in files nothing had ever read.** They get
+their own sections below.
+
+## `netstat -c` on a non-TCP protocol prints a column width nobody set
+
+`usr.bin/netstat/inet.c` has never been read by this sweep — every unit
+in the directory was ERROR on `nl_defs.h` — and the first thing it says
+is `core.CallAndMessage` at `inet.c:363` and `:367`.
+
+`protopr()` declares the two column widths uninitialised at `:200`
+
+    int fnamelen, cnamelen;
+
+and computes them at `:241`
+
+    if (istcp && (cflag || Cflag)) {
+        fnamelen = strlen("Stack");
+        cnamelen = strlen("CC");
+        ...
+            fnamelen = max(fnamelen, (int)strlen(tp->xt_stack));
+            cnamelen = max(cnamelen, (int)strlen(tp->xt_cc));
+    }
+
+`istcp` is set only in the `case IPPROTO_TCP:` arm of the switch at the
+top. So on a UDP, UDP-Lite or divert pass the two stay uninitialised.
+
+The **per-connection** uses know that. At `:542` they sit inside
+
+    if (istcp) {
+        if (cflag)
+            xo_emit(" {t:stack/%-*.*s}", fnamelen, fnamelen, tp->xt_stack);
+        if (Cflag)
+            xo_emit(" {t:cc/%-*.*s} ...", cnamelen, cnamelen, tp->xt_cc, ...);
+
+The **header** uses do not:
+
+    362:  if (cflag) {
+    363:      xo_emit(" {T:/%-*.*s}",
+    364:          fnamelen, fnamelen, "Stack");
+    365:  }
+    366:  if (Cflag)
+    367:      xo_emit(" {T:/%-*.*s} {T:/%10.10s}" ... , cnamelen,
+    370:          cnamelen, "CC", ...
+
+and that block is under `if (first)`, guarded by nothing but the flag.
+`cflag` and `Cflag` are plain globals set by `-c` and `-C` in `main.c`
+with no protocol test, and `netstat -a` walks the protocol table calling
+`protopr()` for TCP *and* UDP. So `netstat -a -c` prints its UDP header
+with an indeterminate `int` as both the field width and the precision of
+a `%-*.*s`. What comes out is whatever was on the stack: a huge width
+makes libxo pad a five-character string out to it, a negative one flips
+the justification and drops the precision. It is not a memory-safety
+bug and `netstat` is not setuid, but it is a read of an indeterminate
+value passed straight to a formatter, and the output is garbage.
+
+The fix is to make the header agree with the data it is a header for.
+The columns exist only when `istcp`, because only the `istcp` branch
+ever fills a cell under them:
+
+    -			if (cflag) {
+    +			if (istcp && cflag) {
+     				xo_emit(" {T:/%-*.*s}",
+     					fnamelen, fnamelen, "Stack");
+     			}
+    -			if (Cflag)
+    +			if (istcp && Cflag)
+
+which is the same predicate `:542` already uses, one screen up.
+
+## `fiboptlist_range()` reads `fib[1]` if its argument has no range in it
+
+`sbin/route/route.c` was ERROR on `keywords.h`, so this is also a first
+reading. `core.UndefinedBinaryOperatorResult` at `route.c:339`:
+
+    int fib[2], i, error;
+    ...
+    while ((token = strsep(&str, "-")) != NULL) {
+        switch (i) {
+        case 0:
+        case 1:
+            ... fib[i] = strtol(token, &endptr, 0); ...
+        default:
+            error = 1;
+        }
+        ...
+        i++;
+    }
+    if (fib[0] >= fib[1]) {
+
+One iteration of the loop leaves `fib[1]` unwritten and the test at
+`:339` reads it.
+
+This one does **not** reach a shipped path. `fiboptlist_range` is
+`static`, declared at `:150`, and called from exactly one place —
+`fiboptlist_csv` at `:389`, under
+
+    if (*token != '-' && strchr(token, '-') != NULL)
+
+so the token is guaranteed to contain a `-` that is not its first
+character, `strsep` on `"-"` therefore yields at least two fields, and
+`fib[1]` is always written. The finding is the analyser doing what it
+does with a `static` function: taking it as an entry point of its own
+and choosing `arg` freely. `"5"` is a legal argument to the function's
+*signature* and an illegal one to its *contract*, and nothing in the
+function says so.
+
+That is worth closing anyway, because the contract lives in the caller
+and the next caller will not know it. The loop already counts its
+fields; requiring two is one line and turns an indeterminate read into
+the error the caller would want:
+
+    	if (error)
+    		goto fiboptlist_range_ret;
+    	i++;
+    }
+    +	if (i != 2) {
+    +		/* Not "lo-hi": one end of the range is missing. */
+    +		error = 1;
+    +		goto fiboptlist_range_ret;
+    +	}
+    if (fib[0] >= fib[1]) {
+
+Left as a finding until it is measured; both fixes go in one batch.
+
+## The C++ standard library was never on the sweep's include path, and five landed ports do not compile without it
+
+`-nostdinc` leaves a `.cpp` with no C++ standard library at all. Thirteen
+translation units under `usr.bin/clang` were ERROR on
+
+    llvm/ADT/ADL.h:12:10: fatal error: 'type_traits' file not found
+
+— the shape this document keeps naming: a unit that reports zero findings
+because it never compiled.
+
+`lib/libc++/Makefile` says where the headers are. It installs
+`${SRCTOP}/contrib/llvm-project/libcxx/include` into
+`${INCLUDEDIR}/c++/v${SHLIB_MAJOR}`, and four files CMake generates
+upstream are checked in beside the Makefile and installed into the same
+directory:
+
+    STD+=  ${.CURDIR}/__assertion_handler   # as of libc++ 18
+    STD+=  ${.CURDIR}/__config_site         # as of libc++ 13
+    STD+=  ${.CURDIR}/libcxx.imp            # as of libc++ 19
+    STD+=  ${.CURDIR}/module.modulemap      # as of libc++ 21
+
+So a `.cpp` now gets a shim directory of those four plus
+`libcxx/include`, and gets them **before** every C header directory, not
+after. That ordering is not a preference; libc++ checks it and says so:
+
+    <cstddef> tried including <stddef.h> but didn't find libc++'s
+    <stddef.h> header. ... The header search paths should contain the
+    C++ Standard Library headers before any C Standard Library
+
+`tools/verify/test_includes.py` gains five checks and a sentinel that
+compiles a real driver stub. All six were confirmed to fail with
+`libcxx_shim()` returning nothing, and the ordering check plus the
+sentinel were confirmed to fail again with the pair present but appended
+last instead of first — the subtler of the two mistakes, and the one a
+presence-only check would have waved through.
+
+### What it found on the way in
+
+Measured over `lib`, 2,169 units:
+
+    before (2089 OK, 80 ERROR, 392 findings)
+    after  (2085 OK, 84 ERROR, 436 findings)
+
+`lib/clang/liblldb/LLDBWrapLua.cpp` went ERROR->OK and brought 45
+findings with it — a 90,000-line SWIG-generated Lua binding nothing had
+ever read. **And five units went the other way**, which is the thing
+worth writing down:
+
+    lib/msun/src/s_llround.cpp:  OK->ERROR
+    lib/msun/src/s_llroundf.cpp: OK->ERROR
+    lib/msun/src/s_llroundl.cpp: OK->ERROR
+    lib/msun/src/s_lroundf.cpp:  OK->ERROR
+    lib/msun/src/s_lroundl.cpp:  OK->ERROR
+
+Each of the five is a five-line wrapper that parameterises a shared body
+by macro and includes it:
+
+    #define type		long double
+    #define roundit		roundl
+    #define dtype		long
+    ...
+    #include "s_lround.c"
+
+`s_lround.c:31` then does `#include <math.h>`. Under C that is FreeBSD's
+`math.h` and `type` collides with nothing. Under C++ it is libc++'s
+`math.h`, which reaches `<__math/abs.h>` and `<__type_traits/enable_if.h>`,
+where the line is
+
+    typedef _Tp type;
+
+and the macro rewrites it:
+
+    enable_if.h:29:15: error: cannot combine with previous 'type-name'
+        declaration specifier
+       29 |   typedef _Tp type;
+    s_llround.cpp:1:15: note: expanded from macro 'type'
+        1 | #define type            double
+
+**This is not an artefact of the sweep. These five files do not compile
+in the shipped build either.** `lib/msun/Makefile:86` and `:88` name
+`s_llround.cpp s_llroundf.cpp s_llroundl.cpp` and `s_lroundf.cpp
+s_lroundl.cpp` in `COMMON_SRCS`; `bsd.lib.mk` compiles a `.cpp` with
+`${CXX} ${CXXFLAGS}`, and `CXXFLAGS+= -D_LIBCPP_HARDENING_MODE=...` two
+lines up settles which C++ library that is. The port landed in
+`be4ec29f4` ("A hundred more of lib/msun compiled as C++") three days
+ago and nothing in the tree could see it: the two gates that compile
+every port as C++ — `tools/check_port_symbols.py` and
+`tools/check_port_cxx_warnings.py` — both build their command line from
+`include_flags()`, so they had no libc++ either and were comparing a
+C++ compile that had never included a C++ header.
+
+The fix is the macro's name. `type` is a plain lowercase identifier in
+the C++ standard library's own namespace; `dtype` beside it is not, and
+neither is `roundit` or `fn`. Renaming `type` to `ftype` across
+`s_lround.c` and its five includers — the complete set, since nothing
+else includes that body — leaves the generated code identical and the
+collision gone. Measured over `lib/msun`, 321 units:
+
+    before (311 OK, 10 ERROR, 20 findings)
+    after  (316 OK,  5 ERROR, 20 findings)
+    5 changed, every one ERROR->OK; 0 flag digests changed
+
+The `lrint` family beside it — `s_lrint.c`, `s_lrintf.c`, `s_lrintl.c`,
+`s_llrint.c`, `s_llrintf.c`, `s_llrintl.c` — has the same
+`#define type` shape and is still C, so it compiles today and will hit
+this wall the moment it is ported. Nothing else in the tree defines a
+bare `type` macro in a `.cpp`.
+
+### The gate that should have caught it, and now does
+
+`tools/check_port_cxx_warnings.py` compiles every landed port twice — as
+C17 and as C++23 — and reports any warning flag the C++ side raises that
+the C side does not. It is the right differential and it was blind to
+this, for a reason worth stating plainly:
+
+    FLAG_RE = re.compile(r"\[-W([a-z0-9-]+)\]")
+    ...
+    return set(FLAG_RE.findall(p.stderr)), p.stderr
+
+It reads the compiler's **stderr for warning tags** and throws away the
+compiler's **exit status**. A hard error carries no `[-W...]` tag, so
+`s_lroundl.cpp` raised the empty set as C++, matched its C original's
+empty set, and passed. The check printed
+
+    122 ported .cpp compared against the same source as C
+
+      no port raises a diagnostic its C original does not.
+
+for three days about a file that does not build. Same shape as the
+sweep's own ERROR problem, one tool over.
+
+`flags_raised()` now returns a third value — whether the compile
+succeeded — and a port that compiles as C and not as C++ is a finding of
+its own, reported before the warning differential and failing `--gate`
+on its own line. Verified by reverting one of the five renames with the
+new check in place:
+
+    lib/msun/src/s_lroundl.cpp
+        does NOT COMPILE as C++, and does as C:
+        error: cannot combine with previous 'type-name' declaration specifier
+
+    FAIL 1 port(s) do not compile as C++ at all.
+    exit=1
+
+and green again with the rename restored. The check was also not run by
+any workflow; it is now a step in the `lints` job, which gains `clang`
+alongside `bmake` for it.
+
+### `LLDBWrapLua.cpp`, read for the first time
+
+The one unit the change turned ERROR->OK in `lib` is
+`lib/clang/liblldb/LLDBWrapLua.cpp`: 2.8 MB of SWIG output, checked into
+the tree, named by `lib/clang/liblldb/Makefile:343` in `SRCS` — so it
+ships — and regenerated by the rule at `:830`:
+
+    # this directory to generate generate LLDBWrapLua.cpp, and commit the
+    # result.
+        ... -o ${.CURDIR}/LLDBWrapLua.cpp ${LLDB_SRCS}/bindings/lua.swig
+
+It reports 45 findings in two shapes, and both are upstream's, not this
+tree's — a fix here would be overwritten by the next `swig` run, so what
+follows is the record rather than a patch.
+
+**Twenty-eight `unix.Malloc`**, all the same typemap. The list-of-numbers
+argument converter at `:19481` and its twenty-seven copies do
+
+    arg3 = (uint64_t *)malloc((arg4) * sizeof(uint64_t));
+    int i = 0, j = 0;
+    while (i++ < arg4) {
+      lua_rawgeti(L, 3, i);
+      if (!lua_isnumber(L, -1)) {
+        lua_pop(L, 1);
+        return luaL_error(L, "List should only contain numbers");
+      }
+
+`luaL_error` does not return — it `longjmp`s out — so `arg3` leaks once
+per non-numeric element in a list passed to any of those twenty-eight
+entry points from an lldb Lua script. It belongs to the typemap in
+`lldb/bindings/lua/lua-typemaps.swig`.
+
+**Seventeen in the `__repr__` extensions and the argument converters.**
+`:3720` is the shape:
+
+    SWIGINTERN std::string lldb_SBWatchpoint___repr__(lldb::SBWatchpoint *self){
+      lldb::SBStream stream;
+      self->GetDescription (stream, lldb::eDescriptionLevelVerbose);
+      const char *desc = stream.GetData();
+      size_t desc_len = stream.GetSize();
+      ...
+      return std::string(desc, desc_len);
+
+`SBStream::GetData()` returns `NULL` for an empty stream, and
+`std::string(nullptr, 0)` is undefined however harmless it looks. The
+rest of the cluster at `:81831`-`:82358` is the `SWIG_ConvertPtr` /
+`SWIG_fail_ptr` pattern, where the analyser cannot see that the failure
+macro leaves the block.
+
+Nothing here is PBSD's to change. It is on the record because 2.8 MB of
+shipped code had never been compiled by this sweep at all.

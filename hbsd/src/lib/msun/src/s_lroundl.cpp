@@ -1,4 +1,4 @@
-#define type		long double
+#define ftype		long double
 #define	roundit		roundl
 #define dtype		long
 #define	DTYPE_MIN	LONG_MIN

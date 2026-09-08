@@ -44,6 +44,19 @@ MARKS = {
 # by building an architecture upstream does not build. file -> (must appear,
 # must not appear, what and why).
 FIXES = {
+    # The five .cpp wrappers around this body are compiled as C++ by
+    # lib/msun/Makefile:86 and :88, and C++ means libc++'s <math.h>,
+    # which reaches <__type_traits/enable_if.h> and its `typedef _Tp
+    # type;'. A macro called `type' rewrites that line. Renamed here and
+    # in the five includers - the complete set, nothing else includes
+    # this file - so a vendor resync that puts `type' back is a failure
+    # rather than a build that stops on a header nobody edited.
+    "hbsd/src/lib/msun/src/s_lround.c": (
+        "#ifndef ftype\n#define ftype\t\tdouble",
+        "#define type\t\tdouble",
+        "s_lround.c's macro is ftype, not type: `type' collides with "
+        "libc++ when the five .cpp wrappers compile it as C++",
+    ),
     "hbsd/src/sys/hardenedbsd/hbsd_pax_aslr.c": (
         "#define\tPAX_ASLR_DELTA_THR_STACK_DEF_LEN\t14",
         "#ifdef MAP_32BIT\n",
