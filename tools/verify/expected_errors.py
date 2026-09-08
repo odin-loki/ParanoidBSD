@@ -77,20 +77,66 @@ EXPECTED = {
     "sbin/ipf/common/lexer.c":
         "a sed template, not a translation unit. NOT_NAMED",
 
-    # usr.bin/lex's bootstrap copies. The Makefile's GENFILES is
-    # `parse.c parse.h scan.c skel.c' and its `bootstrap:' target copies
-    # init<name> over each when they differ, so the init* files are the
-    # checked-in fallback rather than sources. SRCS names scan.c, not
-    # initscan.c, and none of the three is named by the build.
+    # usr.bin/lex's bootstrap copy of the scanner. The Makefile's
+    # GENFILES is `parse.c parse.h scan.c skel.c' and its `bootstrap:'
+    # target copies init<name> over each when they differ, so the init*
+    # files are the checked-in fallback rather than sources; SRCS names
+    # scan.c. Only initscan.c is an ERROR - it opens with scan.l's
+    # `#include "parse.h"', which yacc makes from parse.y and no rule
+    # makes for a file the build never compiles. initparse.c and
+    # initskel.c are equally unnamed but compile clean, so they are not
+    # in this inventory: EXPECTED is the list of translation units that
+    # FAIL, and the --check-errors gate calls an entry that compiles
+    # stale.
     "usr.bin/lex/initscan.c":  "a bootstrap copy, not in SRCS. NOT_NAMED",
-    "usr.bin/lex/initparse.c": "a bootstrap copy, not in SRCS. NOT_NAMED",
-    "usr.bin/lex/initskel.c":  "a bootstrap copy, not in SRCS. NOT_NAMED",
 
     # Test programs no build walks.
     "usr.sbin/bhyve/mevent_test.c":
         "a hand-run probe, not in SRCS. NOT_NAMED",
     "sbin/setkey/test-pfkey.c":  "a hand-run probe, not in SRCS. NOT_NAMED",
     "sbin/setkey/test-policy.c": "a hand-run probe, not in SRCS. NOT_NAMED",
+    "usr.sbin/rpc.lockd/test.c":
+        "a hand-run probe, not in SRCS. NOT_NAMED",
+
+    # cxgbetool's four register tables. cxgbetool.c:92-95 is
+    #
+    #     #include "reg_defs_t4.c"
+    #     #include "reg_defs_t5.c"
+    #     #include "reg_defs_t6.c"
+    #     #include "reg_defs_t4vf.c"
+    #
+    # each of which is a bare initialiser list continuing a declaration
+    # the including file opened, so none of the four is a translation
+    # unit and SRCS names none of them.
+    "usr.sbin/cxgbetool/reg_defs_t4.c":
+        "INCLUDED_BY:usr.sbin/cxgbetool/cxgbetool.c",
+    "usr.sbin/cxgbetool/reg_defs_t5.c":
+        "INCLUDED_BY:usr.sbin/cxgbetool/cxgbetool.c",
+    "usr.sbin/cxgbetool/reg_defs_t6.c":
+        "INCLUDED_BY:usr.sbin/cxgbetool/cxgbetool.c",
+    "usr.sbin/cxgbetool/reg_defs_t4vf.c":
+        "INCLUDED_BY:usr.sbin/cxgbetool/cxgbetool.c",
+
+    # crunchgen's skeleton. Its Makefile:5-6 is
+    #
+    #     crunched_skel.c: crunched_main.c
+    #         sh -e ${.CURDIR}/mkskel.sh ${.CURDIR}/crunched_main.c \
+    #             >crunched_skel.c
+    #
+    # and mkskel.sh turns the file's TEXT into a C string literal, so
+    # crunched_main.c is data to the build, never compiled here. SRCS is
+    # `crunchgen.c crunched_skel.c'.
+    "usr.sbin/crunch/crunchgen/crunched_main.c":
+        "input to mkskel.sh, not in SRCS. NOT_NAMED",
+
+    # Two more the build names nowhere. route6d's Makefile has no SRCS
+    # at all, so bsd.prog.mk's default is route6d.c and the misc/
+    # directory is not descended into; ntpdc's SRCS is `ntpdc.c
+    # ntpdc_ops.c ntpdc-opts.c version.c' and nl.c is not among them.
+    "usr.sbin/route6d/misc/cksum.c":
+        "not in SRCS; misc/ is not built. NOT_NAMED",
+    "usr.sbin/ntp/ntpdc/nl.c":
+        "not in SRCS. NOT_NAMED",
 
     # ipfilter's application proxies. ip_proxy.c is the translation
     # unit and it #includes the nine of them by name, three of those
