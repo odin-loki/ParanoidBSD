@@ -4774,6 +4774,12 @@ the miss. Three quarters missed and ten found is the trade a reader
 wants from a list of thirteen; a list of 833, which is what the first
 version produced, is a list nobody opens.
 
+Userland reports **zero**, in `lib`, `bin`, `sbin`, `usr.bin`,
+`usr.sbin` and `libexec` together - 3,997 files - and that is a
+measurement rather than a no-op: 165 functions under `lib` alone have a
+lock/unlock pair the tool pairs up, and every one of them is consistent.
+The kernel is where this defect lives.
+
 All ten fixes are queued behind the sweep that is running: editing a
 source under a sweep destroys the measurement.
 
