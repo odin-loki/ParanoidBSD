@@ -78,6 +78,15 @@ FIXES = {
         "return (ENOMEM)\n",
         "missing semicolon; the file has never been compiled upstream",
     ),
+    "hbsd/src/sys/modules/tpm/Makefile": (
+        ".if !empty(OPT_FDT)",
+        ".if defined(${OPT_FDT})",
+        "bmake expands ${OPT_FDT} and then asks whether a variable of THAT "
+        "NAME is defined, so the block was dead however OPT_FDT was set and "
+        "tpm_spibus.c and tpm_tis_spibus.c were compiled by nothing on any "
+        "architecture; twenty other modules and sys/conf/kern.opts.mk:221 "
+        "spell the same test !empty(OPT_FDT)",
+    ),
     "hbsd/src/lib/msun/Makefile": (
         "ARCH_SRCS:=  ${ARCH_SRCS:N${i}}",
         None,
