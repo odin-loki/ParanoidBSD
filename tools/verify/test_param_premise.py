@@ -114,9 +114,12 @@ def main() -> int:
                      "-analyzer-output=plist", "-o", str(out)]
                     + flags + [str((SRC / rel).resolve())],
                     capture_output=True)
-                if not out.is_file():
+                # A unit the analyser gave up on leaves an empty or absent
+                # plist rather than an error, and reading it as one raises.
+                raw = out.read_bytes() if out.is_file() else b""
+                if not raw.lstrip().startswith(b"<?xml"):
                     continue
-                d = plistlib.loads(out.read_bytes())
+                d = plistlib.loads(raw)
             src = pp.File(SRC / rel)
             for diag in d.get("diagnostics", []):
                 line = diag.get("location", {}).get("line")
