@@ -6449,3 +6449,60 @@ the libc one.
 
 Five findings, no defect, and the reason all five read the same is that
 the pNFS DS-mirror path is one function written five times.
+
+### The Allwinner clock drivers — 15 divisions by zero, held off by data
+
+Eight files under `sys/dev/clk/allwinner/` produce 15 `core.DivideZero`
+findings, and they are one flag.
+
+A clock factor is a register field plus a rule for turning it into a
+number, and `aw_clk.h` has three functions that read that rule.
+`aw_clk_factor_get_factor()` (`:119`) converts a raw field —
+`1 << raw` for `POWER_OF_TWO`, `raw + 1` normally, and **`raw` itself for
+`AW_CLK_FACTOR_ZERO_BASED`**. `aw_clk_factor_get_min()` (`:144`) mirrors
+that: `1` normally, and **`0` for `AW_CLK_FACTOR_ZERO_BASED`** (`:151`).
+
+So a factor with that flag has a minimum of zero and can read zero out of
+the hardware, and the search loops divide by it:
+
+```c
+	for (m = min_m; m <= max_m; ) {
+		for (n = min_n; n <= max_n; ) {
+			cur = fparent / n / m;		/* aw_clk_nm.c:150 */
+```
+
+```c
+	div = aw_clk_get_factor(val, &sc->div);
+	prediv = aw_clk_get_factor(val, &sc->prediv);
+
+	*freq = *freq / prediv / div;		/* aw_clk_prediv_mux.c:121 */
+```
+
+A kernel division by zero on arm or arm64 is not a signal, it is a panic.
+
+What keeps it latent is the clock definitions. `AW_CLK_FACTOR_ZERO_BASED`
+appears **13 times in the whole tree** — three in `ccu_a10.c` and ten in
+`ccu_a83t.c` — and every single one is the `n` factor of an `NKMP_CLK`:
+
+    NKMP_CLK(pll_ddr_clk, ...
+        8, 5, 0, AW_CLK_FACTOR_ZERO_BASED,	/* n factor */
+
+In NKMP, `n` multiplies —
+`cur = (fparent * n * k) / (m * p)`, `aw_clk_nkmp.c:155` — so `n == 0`
+gives a candidate frequency of zero, which the search rejects, and never
+a division. Not one divisor in the tree is zero-based: the `m` and `p`
+factors of those same PLLs are `FIXED 1`, plain width fields (minimum 1)
+or `POWER_OF_TWO` (minimum 1, since `get_min()` has no `POWER_OF_TWO`
+arm and falls through to `1`).
+
+Recorded rather than changed, and worth the section for what it depends
+on: the guard is not in the code, it is in thirteen driver-data lines,
+and a fourteenth that put `AW_CLK_FACTOR_ZERO_BASED` on an `m`, `p`,
+`div` or `prediv` field would make all fifteen live at once. The same
+treatment, and the same reason, as `al_hal_serdes_25g.c`'s eight above.
+
+`aw_clk_frac.c:161`, `aw_clk_frac.c:332`, `aw_clk_m.c:146`,
+`aw_clk_m.c:236`, `aw_clk_mipi.c:127`, `aw_clk_mipi.c:224`,
+`aw_clk_nkmp.c:155`, `aw_clk_nkmp.c:339`, `aw_clk_nm.c:150`,
+`aw_clk_nm.c:303`, `aw_clk_nmm.c:131`, `aw_clk_nmm.c:228`,
+`aw_clk_np.c:125`, `aw_clk_np.c:216`, `aw_clk_prediv_mux.c:121`.
