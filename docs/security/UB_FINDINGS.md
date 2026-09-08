@@ -5398,3 +5398,81 @@ from one finding to none.
 
 Three of four again — the shape this document has now recorded eleven
 times.
+
+## Sweep 13: 32 recovered, none regressed, and 71 findings with one cause
+
+| | sweep 12 | sweep 13 |
+|---|---|---|
+| OK | 7,487 | **7,519** |
+| ERROR | 622 | **590** |
+| findings | 1,728 | 1,803 |
+
+`ERROR -> OK` 32, `OK -> ERROR` **0**. Twenty-six of the thirty-two are
+sweep 12's own regressions coming back — `sys/compat/linux` and
+`sys/amd64/linux32`, which had been given `-DLOCORE` from a module rule
+that belonged to one object and not to every source the module names.
+Five more are `lib/msun/ld128`, and one, `sys/powerpc/powerpc/elf32_machdep.c`,
+is the option retry finding `-DCOMPAT_FREEBSD32` — the third alternative
+of `optional powerpc | powerpcspe | compat_freebsd32`, and the only one
+that compiles.
+
+Of the 75 new findings, **71 are in one file** —
+`sys/compat/linux/linux_socket.c`, which had not compiled since the
+regression — and all 71 are one cause. Every trace passes through
+`linux_socketcall()`:
+
+    static const unsigned char lxs_args_cnt[] = {
+        0 /* unused*/,      3 /* socket */,
+        ...
+        4 /* recv */,       6 /* sendto */,
+        ...
+    };
+
+    if (args->what < LINUX_SOCKET || args->what > LINUX_ARGS_CNT)
+            return (EINVAL);
+    error = copyin(PTRIN(args->args), a, LINUX_ARG_SIZE(args->what));
+    ...
+    for (int i = 0; i < lxs_args_cnt[args->what]; ++i)
+            l_args[i] = a[i];               /* :2761 */
+    arg = l_args;
+    switch (args->what) {
+    ...
+    case LINUX_SENDTO:
+            return (linux_sendto(td, arg));  /* :2789 */
+
+The handler reads all six words of what the loop filled. `what` is
+`LINUX_SENDTO`, which is 11, so `lxs_args_cnt[11]` is 6 and the loop
+fills all six — but the analyser loads `lxs_args_cnt[args->what]`
+symbolically, does not fold it against the `switch`, and explores
+"loop runs once" together with "dispatch to `case 11:`". That path does
+not exist in the program.
+
+Thirty lines reproduce it exactly:
+
+    static const unsigned char cnt[] = { 0, 3, 6 };
+    struct six { unsigned long a, b, c, d, e, f; };
+    int sink(unsigned long);
+    static int handler(struct six *s) { return sink(s->a) + sink(s->f); }
+
+    int dispatch(int what, const unsigned long *in) {
+            unsigned long out[6];
+            if (what < 1 || what > 2) return 22;
+            for (int i = 0; i < cnt[what]; ++i) out[i] = in[i];
+            switch (what) {
+            case 2: return handler((struct six *)out);
+            }
+            return 0;
+    }
+
+— same checker, same two notes in the trace: *"Loop condition is false.
+Execution continues"* immediately followed by *"Control jumps to
+`case 2:`"*.
+
+So: an analyser limitation, recorded as a decision rather than counted
+as 71 defects. Worth stating plainly because the alternative reading —
+1,803 findings, up 75 — is the one a total gives you, and 71 of those 75
+are one symbolic array load.
+
+The 72nd warning the file produces is a `deadcode` note at `:1427`
+(`Value stored to 'error' is never read`), which the checker list does
+not run and this sweep does not count.
