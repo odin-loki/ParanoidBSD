@@ -182,17 +182,40 @@ def resolve(srcs: list[str], path: list[str], d: Path,
 
 
 def build(arch: str, src: Path = SRC, jobs: int = 8
-          ) -> tuple[set[str], list[str]]:
-    """(sources this architecture's build names, Makefiles bmake refused)
+          ) -> tuple[set[str], list[str], dict[str, str]]:
+    """(sources named, Makefiles bmake refused, source -> naming directory)
 
     The refusals are returned rather than counted so that a caller can
     see whether they matter: 94 of them sound alarming until they turn
     out to be libclang_rt, ofed and kerberos5, none of which any sweep
     scope has yet reached.
+
+    The third value is what .PATH makes necessary. A source is compiled
+    by the Makefile whose SRCS NAMES it, which is not always an ancestor
+    of it: usr.bin/tip/tip/Makefile has
+
+        CFLAGS+=-I${.CURDIR} ...
+        .PATH:  ${.CURDIR}/../libacu
+        SRCS=   acu.c acutab.c ... biz22.c biz31.c ...
+
+    so usr.bin/tip/libacu/biz22.c is built in usr.bin/tip/tip with that
+    -I, and the nearest ancestor holding a Makefile is usr.bin/tip,
+    whose Makefile is `SUBDIR=tip' and has no flags at all. Ten of the
+    first progs sweep's ERRORs were that one directory failing on
+    `tip.h' file not found.
+
+    ALL the directories that name it, not one. Two Makefiles naming the
+    same source is common and the choice between them is not arbitrary:
+    sbin/fsdb reaches into sbin/fsck_ffs and cddl/usr.bin/ctfconvert into
+    cddl/contrib, and in both cases the source's OWN directory is one of
+    the answers and is the right one. Keeping only the first resolved
+    answer moved 265 sources, most of them to the wrong side of exactly
+    that pair.
     """
     dirs = makefile_dirs(src)
     named: set[str] = set()
     failed: list[str] = []
+    builder: dict[str, list[str]] = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=jobs) as ex:
         futs = {ex.submit(ask, d, arch, src): d for d in dirs}
         for f in concurrent.futures.as_completed(futs):
@@ -201,8 +224,14 @@ def build(arch: str, src: Path = SRC, jobs: int = 8
             if not srcs and not path:
                 failed.append(str(d.relative_to(src)))
                 continue
-            named |= resolve(srcs, path, d, src)
-    return named, sorted(failed)
+            got = resolve(srcs, path, d, src)
+            named |= got
+            here = str(d.relative_to(src))
+            for r in got:
+                builder.setdefault(r, []).append(here)
+    for r in builder:
+        builder[r].sort()
+    return named, sorted(failed), builder
 
 
 def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40,
@@ -473,6 +502,32 @@ def cache_path(arch: str) -> Path:
         f"pbsd_userland_names_{arch}.json"
 
 
+def builder_cache_path(arch: str) -> Path:
+    return Path(os.environ.get("PBSD_CACHE", "/tmp")) / \
+        f"pbsd_userland_builder_{arch}.json"
+
+
+@functools.lru_cache(maxsize=None)
+def builders(arch: str) -> dict[str, list[str]]:
+    """source (tree-relative) -> every directory whose SRCS names it.
+
+    Written by the same walk that fills the names cache, so asking for
+    it does not run bmake a second time; an old cache without the file
+    just rebuilds both.
+    """
+    p = builder_cache_path(arch)
+    if p.is_file():
+        try:
+            return json.loads(p.read_text())
+        except (ValueError, OSError):
+            pass
+    for_arch(arch, refresh=True)
+    try:
+        return json.loads(p.read_text())
+    except (ValueError, OSError):
+        return {}
+
+
 @functools.lru_cache(maxsize=None)
 def for_arch(arch: str, refresh: bool = False) -> frozenset[str]:
     p = cache_path(arch)
@@ -481,9 +536,10 @@ def for_arch(arch: str, refresh: bool = False) -> frozenset[str]:
             return frozenset(json.loads(p.read_text()))
         except (ValueError, OSError):
             pass
-    named, _ = build(arch)
+    named, _, builder = build(arch)
     try:
         p.write_text(json.dumps(sorted(named)))
+        builder_cache_path(arch).write_text(json.dumps(builder, sort_keys=True))
     except OSError:
         pass
     return frozenset(named)
@@ -519,8 +575,10 @@ def main() -> int:
     refused: set[str] = set()
     for a in arches:
         if args.refresh:
-            named, failed = build(a, jobs=args.jobs)
+            named, failed, builder = build(a, jobs=args.jobs)
             cache_path(a).write_text(json.dumps(sorted(named)))
+            builder_cache_path(a).write_text(
+                json.dumps(builder, sort_keys=True))
             refused |= set(failed)
             print(f"{a:10s} {len(named):6d} sources named"
                   f"   ({len(failed)} Makefiles bmake would not read)")

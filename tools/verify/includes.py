@@ -1877,14 +1877,34 @@ def _component_dir(rel: str) -> Path | None:
     top = rel.split("/")[0]
     if top not in USERLAND_TOP:
         return None
+    # The Makefile whose SRCS NAMES this source, when one does. .PATH
+    # makes that not always an ancestor: usr.bin/tip/tip/Makefile says
+    # `.PATH: ${.CURDIR}/../libacu' and `CFLAGS+=-I${.CURDIR}', so
+    # usr.bin/tip/libacu/biz22.c is compiled in usr.bin/tip/tip and finds
+    # tip.h there. The nearest ancestor with a Makefile is usr.bin/tip,
+    # whose Makefile is `SUBDIR=tip' and has no flags -- ten of the first
+    # progs sweep's ERRORs were that directory, all on `tip.h'.
+    # ...but only when the ancestor is not itself one of them. sbin/fsdb
+    # reaches into sbin/fsck_ffs and cddl/usr.bin/ctfconvert into
+    # cddl/contrib; there the source's own directory names it too and is
+    # the right answer. Preferring a naming directory unconditionally
+    # moved 265 sources, most of them onto the wrong side of that pair.
+    named_by = userland_names.builders("amd64").get(rel) or []
     d = (SRC / rel).parent
     root = SRC / top
     while True:
         if (d / "Makefile").is_file():
-            return d
+            if not named_by or str(d.relative_to(SRC)) in named_by:
+                return d
+            break
         if d == root or root not in d.parents:
-            return None
+            break
         d = d.parent
+    for cand in named_by:
+        c = SRC / cand
+        if (c / "Makefile").is_file():
+            return c
+    return d if (d / "Makefile").is_file() else None
 
 
 @functools.lru_cache(maxsize=None)
@@ -1940,7 +1960,45 @@ def incs_shim(arch: str = "amd64") -> str:
                 dst.symlink_to(source)
         except OSError:
             pass
+    _installed_generated(d)
     return d.as_posix()
+
+
+def _installed_generated(d: Path) -> None:
+    """The two INCS in that layout that no source file backs.
+
+    installed_headers() maps an installed path to a source path, so a
+    header the build GENERATES has nothing to link to and simply is not
+    there. Two of them are asked for by translation units in scope, and
+    both recipes are three lines in the Makefile that installs them.
+    """
+    # include/Makefile:341. osreldate.h is __FreeBSD_version out of
+    # sys/sys/param.h, formatted by a script beside it.
+    try:
+        subprocess.run(
+            ["sh", str(SRC / "include" / "mk-osreldate.sh")], cwd=d,
+            check=True, capture_output=True,
+            env=dict(os.environ,
+                     NEWVERS_SH=str(SRC / "sys" / "conf" / "newvers.sh"),
+                     PARAMFILE=str(SRC / "sys" / "sys" / "param.h"),
+                     SYSDIR=str(SRC / "sys")))
+    except (OSError, subprocess.CalledProcessError):
+        pass
+
+    # lib/libexpat/Makefile:22. bsdxml.h is expat.h with three
+    # substitutions, and bsdxml_external.h is expat_external.h copied.
+    exp = SRC / "contrib" / "expat" / "lib"
+    try:
+        h = (exp / "expat.h").read_text()
+        for a, b in (("XmlParse_INCLUDED", "_BSD_XML_H_"),
+                     ("COPYING", "src/contrib/expat/COPYING"),
+                     ("expat_external", "bsdxml_external")):
+            h = h.replace(a, b)
+        (d / "bsdxml.h").write_text(h)
+        (d / "bsdxml_external.h").write_text(
+            (exp / "expat_external.h").read_text())
+    except OSError:
+        pass
 
 
 @functools.lru_cache(maxsize=None)
@@ -2522,8 +2580,25 @@ def _gen_bin_sh(out: Path) -> None:
 # headers. Adding one is the same rule iface_shim() follows: run the
 # generator the Makefile runs, on the input the Makefile names. A stub
 # would be worse than the ERROR it replaces.
+def _gen_opt_osname(out: Path) -> None:
+    """usr.sbin/bsdinstall/include/Makefile's one generated header.
+
+        OSNAME?=  FreeBSD
+        opt_osname.h:
+                echo "#define OSNAME \"${OSNAME}\"" > ${.TARGET}
+
+    The three programs that include it reach it through
+    `-I${.OBJDIR}/../include', an object-directory path this analyser
+    has no answer for; the header itself is one line.
+    """
+    (out / "opt_osname.h").write_text('#define OSNAME "FreeBSD"\n')
+
+
 _GENERATED = {
     "bin/sh": _gen_bin_sh,
+    "usr.sbin/bsdinstall/partedit": _gen_opt_osname,
+    "usr.sbin/bsdinstall/distextract": _gen_opt_osname,
+    "usr.sbin/bsdinstall/distfetch": _gen_opt_osname,
 }
 
 
@@ -2545,6 +2620,17 @@ def generated_shim(directory: str) -> str | None:
         return None
     return d.as_posix()
 
+
+
+_INSTALLED_I = re.compile(r"^-I/*(?:.*/)?usr/include(/.*)?$")
+
+
+def _reroot_installed(flag: str, arch: str) -> str:
+    """-I into /usr/include -> the same place inside incs_shim()."""
+    m = _INSTALLED_I.match(flag)
+    if m is None:
+        return flag
+    return f"-I{incs_shim(arch)}{m.group(1) or ''}"
 
 
 def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
@@ -3003,7 +3089,20 @@ def include_flags(src: Path, arch: str = "amd64", cc: str = "clang",
     rd = resource_dir(cc)
     if rd:
         flags.append(f"-I{rd}")
-    return flags
+
+    # A -I into the INSTALLED header tree means the tree's own headers,
+    # and for this analyser those live in incs_shim(). Left alone it is
+    # an absolute path on the HOST, and with SYSROOT and DESTDIR both
+    # empty it is not even a plausible one:
+    #
+    #   usr.sbin/virtual_oss/virtual_oss/Makefile
+    #     CFLAGS+= -I${SYSROOT:U${DESTDIR}}/${INCLUDEDIR}/private/samplerate
+    #
+    # comes back as `-I//usr/include/private/samplerate'. Ten translation
+    # units failed on `samplerate.h' file not found while
+    # incs_shim()/private/samplerate/samplerate.h sat there, staged from
+    # lib/libsamplerate's own INCS.
+    return [_reroot_installed(f, arch) for f in flags]
 
 
 # Not everything under sys/ is a kernel translation unit, and compiling
