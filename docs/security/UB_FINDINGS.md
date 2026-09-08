@@ -4605,6 +4605,78 @@ findings in it are classes this document already has:
   earlier, in the same file, which is one function further than the
   analyser carries it.
 
+### `pci.c:858`, `pci.c:859` — a three-bit length into a four-element array
+
+The two `pci_ea_fill_info()` findings were on the same list as the four
+above, in a function that names `M_ZERO`, and they are not that class
+either. They are a defect.
+
+`pci_read_extcap()` calls `pci_ea_fill_info()` once for every PCI
+function that advertises the Enhanced Allocation capability, during bus
+enumeration. Everything it reads comes out of the device's own
+configuration space:
+
+```c
+	int a, b;
+	uint32_t val;
+	int ent_size;
+	uint32_t dw[4];
+	...
+	for (a = 0; a < num_ent; a++) {
+		...
+		/* Read a number of dwords in the entry */
+		val = REG(ptr, 4);
+		ptr += 4;
+		ent_size = (val & PCIM_EA_ES);
+
+		for (b = 0; b < ent_size; b++) {
+			dw[b] = REG(ptr, 4);
+			ptr += 4;
+		}
+
+		...
+		base = dw[0] & PCIM_EA_FIELD_MASK;          /* :858 */
+		max_offset = dw[1] | ~PCIM_EA_FIELD_MASK;   /* :859 */
+```
+
+`PCIM_EA_ES` is `0x00000007` (`pcireg.h:633`). An EA entry is one header
+dword — the `val` already consumed — followed by `ent_size` more, and
+the layout tops out at four of them: base-low, max-offset-low, and a
+high half for each when the entry is 64-bit. The array is sized for
+exactly that. The *field* is three bits wide.
+
+So a device that reports an entry size of 5, 6 or 7 makes the inner loop
+write `dw[4]`, `dw[5]` and `dw[6]` — **up to twelve bytes past the end
+of a stack array, with contents the device chooses**. Nothing between
+the read and the store bounds `b` against `nitems(dw)`; nothing rejects
+an out-of-range `ent_size` before or after the loop. The value is
+attacker-controlled in every threat model where the device is: an
+emulated function presented by a hostile hypervisor, an SR-IOV VF, or
+anything arriving over Thunderbolt or PCIe hotplug.
+
+The two findings clang reports are the *other* half of the same missing
+check. With `ent_size` of 0 or 1 the loop leaves `dw[0]` or `dw[1]`
+unwritten, and `:858` and `:859` read them anyway. On the first
+iteration that is indeterminate stack; on a later one it is the previous
+entry's dwords, because `dw` is declared outside the loop and never
+reset. Either way `base` and `max_offset` are then stored into the
+`pci_ea_entry` and used to program resource allocation.
+
+Clang can only see the second half — reading an array element the loop
+did not write is a path it can walk, while `b < ent_size` with `ent_size`
+unbounded is a range it has no reason to think exceeds 4. Reading the
+finding is what turns up the first half, which is the serious one. That
+is twice now that the interesting bug was one line away from the one
+that was reported: `svm.c`'s `errcode_valid` was the same, found while
+reading a "1st function call argument" a few lines below it.
+
+The fix has to keep `ptr` advancing by what the device claimed, or every
+subsequent entry is parsed at the wrong offset — so the excess dwords
+are still read, just not stored, and a malformed entry is dropped rather
+than acted on. It is queued behind the running sweep: editing a source
+under a sweep destroys the measurement, and this file is in a shard that
+has not finished.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
@@ -4641,7 +4713,7 @@ Kept because the reasoning is what stops them being re-reported.
 | `sys/dev/syscons/scvtb.c:114` `cols * rows` | video-mode dimensions, bounded by the hardware mode table. |
 | `sys/dev/ath/ath_hal/ah.c:422` `streams * 4` | `streams` is `HT_RC_2_STREAMS(rc)` = `((rc & 0x78) >> 3) + 1`, so 1..16 by construction and 1..4 in practice. Exported, so rule three cannot see `ath_hal_computetxtime_ht()` three lines up computing it. |
 | `sys/dev/dpaa2/dpaa2_swp.c:338` `sd << 5` and the eleven shifts beside it | both call sites (`:235`, `:254`) pass literal 0/1/2/3 for every `int` parameter. Exported, caller-constrained; the parameters would be better typed `uint8_t` like the six above them, which is a readability point and not a defect. |
-| `sys/net/if.c:1757-1759` (three), and every `fail:` label after an `M_ZERO` allocation | `ifa_alloc()` does `malloc(size, M_IFADDR, M_ZERO | flags)`, so all four counter fields are NULL before any of them is assigned, and its `fail:` path says so — `/* free(NULL) is okay */`. The analyser does not model `M_ZERO`, so every field of a zeroed allocation is an uninitialised value to it. This is a large class in a kernel that zeroes most of what it allocates. |
+| `sys/net/if.c:1763`, `sys/net/if.c:1764`, `sys/net/if.c:1765`, and every `fail:` label after an `M_ZERO` allocation | `ifa_alloc()` does `malloc(size, M_IFADDR, M_ZERO | flags)`, so all four counter fields are NULL before any of them is assigned, and its `fail:` path says so — `/* free(NULL) is okay */`. The analyser does not model `M_ZERO`, so every field of a zeroed allocation is an uninitialised value to it. Measured below rather than asserted: 30 of sweep 17's 481 uncited uninitialised-value findings sit in a function that names `M_ZERO`, which is an upper bound and not a count. This row previously cited a *range*, `:1757-1759`, which the citation reader does not match and which was the wrong three lines anyway. |
 | `sys/i386/i386/sys_machdep.c:674` `pldt->ldt_base` | `i386_ldt_grow()` sets `mdp->md_ldt = pldt = new_ldt` at `:780` on exactly the path where it was NULL, so every `return (0)` leaves it non-NULL and the caller's re-read cannot be. Same translation unit, so the analyser could see it — this one is path-explosion rather than a boundary. |
 | `sys/i386/i386/vm86.c:763,769`, `db_trace.c:130-132,414`, `db_disasm.c:1026,1038` | i386 debugger and vm86 BIOS-call support, reading a trapframe or a page table the caller established. `sys/i386` had 46 of 52 translation units compile for the first time this week; these are the first findings anybody has seen from it. |
 | ~18 GEOM classes, "The left operand of `!=` is a garbage value" | one idiom, copied into 34 files: `buf = g_read_data(cp, off, len, &error); if (buf == NULL) return (error);` then a caller that checks `error != 0` before touching `md`. `g_read_data()` (`sys/geom/geom_io.c:878`) returns NULL **exactly when** it has set `*error` — `if (errorc) { g_free(ptr); ptr = NULL; }` is the last thing it does, with no earlier return — so `read_metadata()` cannot return 0 with the struct untouched. `geom_io.c` is a different translation unit, and the analyser is interprocedural *within* one and not *across* one, so it must assume the callee left `*error` alone. This is most of `sys/geom`'s 42 findings and it is one function's contract. The same shape, elsewhere: `sys/kern/sys_pipe.c:640,646` (`vm_map_find_locked()` fills `*addr` on `KERN_SUCCESS`) and `sys/kern/kern_jail.c:663` (`vfs_getopt()` fills `*buf` on 0, and the caller only proceeds when the length is positive). An out-parameter written across a translation-unit boundary is the general case. |
@@ -6900,3 +6972,159 @@ Without `INVARIANTS` that is `((void)0)`, so the analyser takes the path
 the assertion exists to deny. The same shape as `dtrace.c:8232`'s three
 and `dis_tables.c`'s sixty-four: an invariant asserted in a form that
 compiles to nothing in the configuration the sweep uses.
+
+### `if.c:1763-1765` — `M_ZERO`, and a thirty-line probe that settles it
+
+The table above has carried a row asserting that the analyser does not
+model `M_ZERO` since the first sweep that reached `sys/net`. It cited
+`sys/net/if.c:1757-1759`, which is a *range*, and the citation reader
+matches `file.c:NNN` and `file.c:NNN, NNN` and nothing else — so the row
+cited no finding at all, and the three findings it was written about
+have been sitting in the unread bucket the whole time under their real
+lines. Both halves are now fixed: the lines are `:1763`, `:1764`,
+`:1765`, and the claim has been measured rather than asserted.
+
+`ifa_alloc()` is the shape:
+
+```c
+	ifa = malloc(size, M_IFADDR, M_ZERO | flags);
+	if (ifa == NULL)
+		return (NULL);
+
+	if ((ifa->ifa_opackets = counter_u64_alloc(flags)) == NULL)
+		goto fail;
+	if ((ifa->ifa_ipackets = counter_u64_alloc(flags)) == NULL)
+		goto fail;
+	...
+fail:
+	/* free(NULL) is okay */
+	counter_u64_free(ifa->ifa_opackets);
+	counter_u64_free(ifa->ifa_ipackets);   /* :1763 */
+	counter_u64_free(ifa->ifa_obytes);     /* :1764 */
+	counter_u64_free(ifa->ifa_ibytes);     /* :1765 */
+```
+
+The reported set is the tell. `ifa_opackets` is assigned on *every* path
+that reaches `fail:`, and it is the one field of the four that is **not**
+reported. The other three are reported at exactly the lines where a
+field that may not have been assigned yet is read. The analyser is being
+perfectly consistent; it simply does not believe the memory was zeroed.
+
+Asserting that is not the same as knowing it, so here is the probe —
+thirty lines, no kernel headers, the tree's `malloc()` prototype and
+nothing else:
+
+```c
+typedef unsigned long size_t;
+struct malloc_type;
+#define M_ZERO 0x0100
+#define M_NOWAIT 0x0001
+void *malloc(size_t size, struct malloc_type *type, int flags);
+void sink(unsigned long);
+
+struct s { unsigned long a, b; };
+extern struct malloc_type *M_X;
+
+int probe(void)
+{
+	struct s *p = malloc(sizeof(*p), M_X, M_NOWAIT | M_ZERO);
+	if (p == 0)
+		return 1;
+	sink(p->a);          /* zeroed by M_ZERO; is clang told? */
+	return 0;
+}
+```
+
+```
+mzero_probe.c:16:2: warning: 1st function call argument is an
+    uninitialized value [core.CallAndMessage]
+mzero_probe.c:13:16: note: Uninitialized value stored to field 'a'
+```
+
+and the control, which is the same function with the flag removed and an
+explicit `memset()` in its place:
+
+```c
+	struct s *p = malloc(sizeof(*p), M_X, M_NOWAIT);
+	if (p == 0)
+		return 1;
+	memset(p, 0, sizeof(*p));
+	sink(p->a);
+```
+
+```
+mzero_control.c:18:2: warning: Potential leak of memory pointed to by 'p'
+```
+
+One warning in the control, and it is a *different* one. So the analyser
+does recognise the name `malloc` as an allocator — it tracks the leak —
+and it does honour `memset`. What it has no model for is the third
+argument. `M_ZERO` is an ordinary `int` flag to a function whose name it
+knows and whose body it has never seen, and there is no reason it would
+be anything else.
+
+That is the whole mechanism, and it is worth being precise about how
+large the class actually is, because the old row's "this is a large
+class in a kernel that zeroes most of what it allocates" was a guess.
+
+Sweep 17 has **481** uncited findings whose message is an uninitialised
+or garbage value. Of those, **30**, across **20** files, sit in a
+function whose own body names `M_ZERO`. That is the honest upper bound
+on this class, and it is an upper bound and not a count, because "the
+enclosing function contains an `M_ZERO` allocation" is a proxy for "the
+reported value came from an `M_ZERO` allocation" and the two are not the
+same question. The next section is the file where they come apart.
+
+### `cardbus_cis.c` — four in an `M_ZERO` function, and not this class
+
+`cardbus_parse_cis()` allocates `tupledata` with `M_WAITOK | M_ZERO`, so
+the proxy above claims its four findings. Reading them says otherwise.
+All four are `3rd function call argument is an uninitialized value` on
+
+```c
+	cardbus_read_tuple_finish(cbdev, child, rid, res);
+```
+
+and `rid` has nothing to do with `tupledata`. It is an out-parameter:
+
+```c
+	res = cardbus_read_tuple_init(cbdev, child, &start, &rid);
+	if (res == NULL) { ... return (ENXIO); }
+```
+
+`cardbus_read_tuple_init()` writes `*rid` on its `PCIM_CIS_ASI_BAR*` and
+`PCIM_CIS_ASI_ROM` arms, and on the `PCIM_CIS_ASI_CONFIG` arm it does
+
+```c
+		/* CIS in PCI config space need no initialization */
+		return (CIS_CONFIG_SPACE);
+```
+
+which is `(struct resource *)~0UL` — a non-NULL sentinel. So there is a
+real path on which the function returns success and leaves `*rid`
+untouched, and the caller then passes `rid` by value four times.
+
+The callee is safe: `cardbus_read_tuple_finish()` opens with
+`if (res != CIS_CONFIG_SPACE)`, which is exactly the path on which `rid`
+was set. But *passing* an indeterminate `int` is itself the read — the
+argument is evaluated before the callee's guard is anywhere near
+running, and `core.CallAndMessage` is right to flag the call site rather
+than the use. No supported architecture gives `int` a trap
+representation, so nothing goes wrong today; it is still an
+indeterminate read in a language that is about to become C++23, where
+the answer to "what does reading an uninitialised `int` do" is not one
+anybody should want to rely on. `int rid = 0;` costs nothing and is
+queued behind the sweep that is running — editing a source under a sweep
+destroys the measurement.
+
+Four findings, in a function the proxy picked out, that are the
+cross-function out-parameter class and not the `M_ZERO` class at all.
+Which is the point of writing the caveat down rather than reporting 30
+as though it were a count.
+
+### One from that list is a defect, not a class
+
+The other two findings on that list — `pci_ea_fill_info()`'s pair — are
+neither the `M_ZERO` class nor a false positive. They are written up
+above the *Not defects* line, where defects go: a three-bit
+device-supplied length indexing a four-element stack array.
