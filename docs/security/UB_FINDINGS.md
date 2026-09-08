@@ -6727,3 +6727,64 @@ state. All six findings are inside it: `md.c:708`, `md.c:719`,
 Worth the entry for the shape rather than the file: a guard evaluated
 *before* a loop and re-tested *inside* it is not a guard the analyser can
 keep, and this tree does it wherever a bio can be unmapped.
+
+### `siena_phy.c` — six, and the short-circuit is the guard
+
+`siena_phy_decode_stats(enp, vmask, esmp, smaskp, stat)` is called twice.
+`siena_nic.c:232` passes `esmp` **and** `stat` as `NULL` — it wants only
+the mask conversion — and `siena_phy.c:584` passes both for real. The
+parameter is even annotated `__in_opt`.
+
+`SIENA_SIMPLE_STAT_SET` (`siena_phy.c:443`) is expanded eleven times and
+its guard is
+
+```c
+		if ((_stat) != NULL && !EFSYS_MEM_IS_NULL(_esmp)) {
+```
+
+with `EFSYS_MEM_IS_NULL(_esmp)` being `((_esmp)->esm_base == NULL)`
+(`efsys.h:330`) — a dereference. So the second operand is only evaluated
+when `stat != NULL`, and the invariant that makes that safe is
+*`esmp == NULL` implies `stat == NULL`*, held at both call sites and
+written down nowhere. The analyser is following the order the code
+gives it and asking what happens if only one of the two is null.
+
+Six findings, one macro, one short-circuit: `siena_phy.c:495`,
+`siena_phy.c:497`, `siena_phy.c:499`, `siena_phy.c:501`,
+`siena_phy.c:504`, `siena_phy.c:505`.
+
+Worth noting that the function's own hand-written block at `:482` spells
+the test the other way round —
+`if (stat != NULL && esmp != NULL && !EFSYS_MEM_IS_NULL(esmp))` — which
+does not need the invariant at all. The macro is the one place in the
+function that does.
+
+### `ip_fw_sockopt.c:1886` — allocated on a wider condition than it is used
+
+`ipfw_mark_object_kidx(uint32_t *bmask, ...)` indexes `bmask[bidx]` with
+no test, and its caller passes `da->bmask`, which `dump_config()`
+(`ip_fw_sockopt.c:1956`) leaves `NULL` unless
+
+```c
+	if (hdr->flags & (IPFW_CFG_GET_STATIC | IPFW_CFG_GET_STATES))
+		da.bmask = bmask = malloc(...);
+```
+
+The walk that reaches it runs under `if (hdr->flags &
+IPFW_CFG_GET_STATIC)` at `:1985`, and `ip_fw_dynamic.c:2924`'s runs under
+`IPFW_CFG_GET_STATES` at `:2001`. Both are members of the pair the
+allocation tests, so each use's condition implies the allocation's — the
+allocation is guarded by a **superset** of the use's condition, which is
+correct and is not a folding a path-sensitive checker does across
+`flags & (A|B)` and `flags & A`. A `setsockopt` path with neither flag
+allocates nothing and walks nothing.
+
+### `linux_emul.c:167` — a precondition on the first parameter
+
+`linux_proc_init(struct thread *td, struct thread *newtd, bool
+init_thread)` is declared in `linux_emul.h` and dereferences `td` at
+`:167`. Eleven call sites — `linux_emul.c:279`, `:284`, `:295`,
+`linux_fork.c:80`, `:110`, `:177`, `:286` and the rest — every one passes
+a real thread; the parameter that is ever `NULL` is the *second*
+(`:279`). Exported and caller-constrained, the class `report.py` names in
+its header.
