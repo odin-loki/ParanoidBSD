@@ -5051,9 +5051,45 @@ call sites.
 Two more were read and put down; they are in the *Not defects* table
 below, where the citation reader can see them.
 
-Sixteen of the twenty-one are still unread. Two of those are the same
-`preen.c` copied between `sbin/fsck` and `sbin/quotacheck`, so fifteen
-distinct sites remain.
+**`gencat(1)`: a loop that does not advance, so it frees the same string
+for ever.** `MCDelSet()` (`usr.bin/gencat/gencat.c:667`) is
+
+```c
+		msg = set->msghead.lh_first;
+		while (msg) {
+			free(msg->str);
+			LIST_REMOVE(msg, entries);
+		}
+```
+
+`LIST_REMOVE` unlinks `msg` from the list; it does not change `msg`. So
+the loop never terminates, and its **second** iteration frees `msg->str`
+a second time. `MCDelSet()` is what `$delset N` in a message-catalogue
+source calls, and the set has to exist for the arm to be taken — so any
+`.msg` file with a `$delset` for a set it defined hangs `gencat` and
+double-frees. It has plainly never been run.
+
+The fix is the loop the same file's `MCDelMsg()` would have needed if it
+looped: take the head each time, unlink it, then free the string *and*
+the node —
+
+```c
+		while ((msg = set->msghead.lh_first) != NULL) {
+			LIST_REMOVE(msg, entries);
+			free(msg->str);
+			free(msg);
+		}
+```
+
+which is also the only version that terminates. (`MCDelMsg()` leaks its
+`_msgT` in the same way and is otherwise correct; that leak is left
+alone rather than folded into this.)
+
+Two more read and put down, both in `makefs` and both the queue macros
+again — they are in the table below. That is **eight** of the
+twenty-one read: three defects fixed, one queued, four not defects. Two
+of the thirteen left are the same `preen.c` copied between `sbin/fsck`
+and `sbin/quotacheck`, so twelve distinct sites remain.
 
 ### 249 → 190: three include-path answers read out of the build
 
@@ -5267,6 +5303,8 @@ Kept because the reasoning is what stops them being re-reported.
 
 | reported | why it is not a defect |
 |---|---|
+| `usr.sbin/makefs/walk.c:376` | `apply_specdir()` saves `next = curfsnode->next` before `free_fsnodes(curfsnode)`, which is the `_SAFE` idiom written out by hand. `free_fsnodes()` frees a whole sibling chain — `for (cur = node; cur != NULL; cur = next)` — but only after unlinking `node` from that chain and setting `node->next = NULL`, and the unlink runs whenever `node->first != node`, which holds here because `first` is the `.` entry and `curfsnode` starts at `dirnode->next`. So only the one node and its children go. The analyser is not modelling the queue macros. |
+| `usr.sbin/makefs/cd9660.c:1517` | `cd9660_generate_path_table()`'s breadth-first loop takes `n = TAILQ_FIRST(&pt_head)`, saves `dirNode = n->node`, `TAILQ_REMOVE`s and frees `n` — in that order — and the `n` it reuses later in the body comes from a fresh `PTQUEUE_NEW`. Same class as the row above. |
 | `sys/netpfil/pf/pf.c:3391`, `sys/netpfil/pf/pf.c:3406`, `sys/netpfil/pf/pf.c:3430`, `sys/netpfil/pf/pf.c:3445`, `sys/netpfil/pf/pf.c:3510`, `sys/netpfil/pf/pf.c:3554`, `sys/netpfil/pf/pf.c:3568`, `sys/netpfil/pf/if_pfsync.c:733`, `sys/netpfil/pf/pf_lb.c:906` | `struct pf_addr` is a union; `pf_addrcpy()` writes `v4` and every caller reads `addr16[]` or `addr32[]`. **In C this is defined** (6.5.2.3 footnote 99) and the bytes are the bytes `memcpy` wrote, so these are not defects and are cited here. In C++ reading a non-active union member is undefined, and none of the ten will diagnose when the port reaches them — which is why they are also written up ABOVE this line, with the probe that shows the analyser taking the `AF_INET` arm, seeing the `memcpy`, and calling the read uninitialised anyway. Cited so they leave the unread bucket; read the section, not this row, before touching `pf`. |
 | `usr.bin/tail/reverse.c:209` | `r_buf()`'s out-of-memory loop takes `first = TAILQ_FIRST(&head)` *before* testing `TAILQ_EMPTY(&head)`, which reads as a null dereference waiting to happen and is not one: the empty case calls `err(1, ...)` and exits before `first->len` is reached, and every `free(first)` is preceded by its `TAILQ_REMOVE`. The analyser's "use after free" is it re-entering the loop with the queue macros unmodelled. |
 | `usr.sbin/rtadvd/config.c:307` | `rm_rainfo()`'s `while ((sol = TAILQ_FIRST(&rai->rai_soliciter)))`, after a loop of `delete_prefix(pfx)`. `delete_prefix()` frees the *prefix* and decrements `rai->rai_pfxs`; it does not free the rainfo. The analyser has aliased `pfx` and `rai`. Worth keeping beside the fix two hundred lines down at `:1284`, which is the same file, the same function family, and a real use-after-free. |
