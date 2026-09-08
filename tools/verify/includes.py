@@ -688,8 +688,30 @@ def kernel_flag_index(arch: str = "amd64"
         flags: list[str] = []
         srcs: list[str] = []
         # A stack of "is this block live?", so a nested .if inside a
-        # skipped one stays skipped.
+        # skipped one stays skipped. Each frame also remembers whether
+        # any branch of its chain has been TAKEN and whether every
+        # branch so far was DECIDABLE, which is what an .elif needs:
+        # sys/modules/vmm/Makefile is
+        #
+        #   .if ${MACHINE_CPUARCH} == "aarch64"
+        #   CFLAGS+= -I${SRCTOP}/sys/${MACHINE}/vmm/io
+        #   ...
+        #   .elif ${MACHINE_CPUARCH} == "amd64"
+        #   CFLAGS+= -I${SRCTOP}/sys/${MACHINE}/vmm/io
+        #   CFLAGS+= -I${SRCTOP}/sys/amd64/vmm/intel
+        #   CFLAGS+= -I${SRCTOP}/sys/amd64/vmm/amd
+        #
+        # and refusing every else cost bhyve three of its four -I on
+        # amd64. Six sources came back "'vatpic.h' file not found":
+        # vmm.c, vmm_ioport.c, vmm_lapic.c, amd/svm.c, amd/vmcb.c and
+        # intel/vmx.c.
+        #
+        # The rule stays conservative in the same direction as before -
+        # a branch is live only when it can be PROVED live, so an
+        # undecidable .if poisons its whole chain and none of its
+        # branches is taken.
         live: list[bool] = []
+        chain: list[list[bool]] = []   # [any_taken, all_decidable]
         for line in "\n".join(
                 [text] + [i.read_text(errors="replace").replace("\\\n", " ")
                           for i in incs]).splitlines():
@@ -705,19 +727,30 @@ def kernel_flag_index(arch: str = "amd64"
                     elif kw == ".if":
                         cond = _mk_cond(rest, vars)
                 live.append(cond is True)
+                chain.append([cond is True, cond is not None])
                 continue
             if st.startswith(".for"):
                 live.append(False)
+                chain.append([True, False])
                 continue
             if st.startswith((".else", ".elif")):
-                # Never take an else: the .if it belongs to was either
-                # taken (so this is dead) or undecidable (so this is).
-                if live:
+                if not live:
+                    continue
+                taken, decided = chain[-1]
+                # A branch of an undecidable chain is never taken, and
+                # neither is one after a branch that already was.
+                if taken or not decided or not all(live[:-1]):
                     live[-1] = False
+                    continue
+                kw, _, rest = st.partition(" ")
+                cond = True if kw == ".else" else _mk_cond(rest, vars)
+                live[-1] = cond is True
+                chain[-1] = [cond is True, cond is not None]
                 continue
             if st.startswith((".endif", ".endfor")):
                 if live:
                     live.pop()
+                    chain.pop()
                 continue
             if not all(live) or not st:
                 continue

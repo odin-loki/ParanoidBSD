@@ -256,6 +256,22 @@ check_that("iwlwifi does not get -DCONFIG_IWLWIFI_DEBUGFS",
 check_that("no -I resolves to the analyser's own directory",
            all(not f.startswith("-I.") for f in iwl))
 
+# An `.elif' this reader can decide. sys/modules/vmm/Makefile puts
+# three of bhyve's four -I inside `.elif ${MACHINE_CPUARCH} == "amd64"',
+# and refusing every else cost six sources their headers - vmm.c,
+# vmm_ioport.c, vmm_lapic.c, amd/svm.c, amd/vmcb.c and intel/vmx.c all
+# came back "'vatpic.h' file not found".
+vmm = by_dir.get("sys/amd64/vmm", ())
+for want in ("amd64/vmm/io", "amd64/vmm/intel", "amd64/vmm/amd"):
+    check_that(f"bhyve gets -I...{want}, from an .elif",
+               any(f.endswith(want) for f in vmm))
+# ...and the branch NOT taken stays not taken. sys/modules/zfs/Makefile
+# is `.if ${MACHINE_ARCH} == "i386" || ... -DBITS_PER_LONG=32 .else
+# -DBITS_PER_LONG=64', and amd64 is in neither list by name.
+zfs = by_src.get("sys/contrib/openzfs/module/zfs/arc.c", ())
+check_that("zfs gets -DBITS_PER_LONG=64 on amd64", "-DBITS_PER_LONG=64" in zfs)
+check_that("...and not the 32 its .if names", "-DBITS_PER_LONG=32" not in zfs)
+
 # bmake pulls ${.CURDIR}/../Makefile.inc in through bsd.init.mk, so a
 # submodule Makefile can open `.PATH: ${COMMONDIR}' with COMMONDIR
 # defined a directory up. mt76 does exactly that, and without the chain

@@ -277,18 +277,13 @@ EXPECTED = {
     "sys/arm/arm/machdep.c":    "wants -DLINUX_DTS_VERSION, computed by awk",
     "sys/arm64/arm64/machdep.c": "wants -DLINUX_DTS_VERSION, computed by awk",
 
-    # amd64's bhyve. Its own headers live in sys/amd64/vmm/io/, which
-    # sys/modules/vmm/Makefile puts on the path with two -I and the
-    # kernel reader does not. Measured: -I$S/amd64/vmm -I$S/amd64/vmm/io
-    # -I$S/amd64/vmm/intel -I$S/amd64/vmm/amd compiles all six, three of
-    # them with a finding.
-    "sys/amd64/vmm/vmm.c":        "wants vatpic.h, in sys/amd64/vmm/io",
-    "sys/amd64/vmm/vmm_ioport.c": "wants vatpic.h, in sys/amd64/vmm/io",
-    "sys/amd64/vmm/vmm_lapic.c":  "wants vlapic.h, in sys/amd64/vmm/io",
-    "sys/amd64/vmm/amd/svm.c":    "wants vatpic.h, in sys/amd64/vmm/io",
-    "sys/amd64/vmm/amd/vmcb.c":   "wants vlapic.h, in sys/amd64/vmm/io",
-    "sys/amd64/vmm/intel/vmx.c":  "wants vatpic.h, in sys/amd64/vmm/io",
-    # ...and a seventh that is NOT an include path. amdv.c is named by
+    # amd64's bhyve. Six sources were here - vmm.c, vmm_ioport.c,
+    # vmm_lapic.c, amd/svm.c, amd/vmcb.c and intel/vmx.c - all on
+    # "'vatpic.h' file not found". sys/modules/vmm/Makefile puts three
+    # of bhyve's four -I inside `.elif ${MACHINE_CPUARCH} == "amd64"',
+    # and the module reader refused every else; it decides them now.
+    #
+    # This one is NOT an include path. amdv.c is named by
     # no files* line and by no module - sys/modules/vmm builds
     # amdvi_hw.c and not this - and with the -I above it still fails:
     #
