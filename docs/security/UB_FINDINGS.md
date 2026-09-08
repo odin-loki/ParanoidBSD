@@ -4941,12 +4941,120 @@ Three findings came with them, in the system shell:
   fills. The cross-translation-unit out-parameter class, one indirection
   out.
 
+### Two in root daemons, from the userland use-after-free list
+
+`unix.Malloc` is the largest bucket in the first `bin`/`sbin`/`usr.bin`/
+`usr.sbin` sweep — 170 findings — because userland's `malloc()` is the
+one clang models properly. Twenty-one of them are "Use of memory after
+it is freed" or "Attempt to free released memory". Two read so far, both
+in daemons that run as root and take their input off the network.
+
+**`rpc.lockd`: a double free, because the callee does not clear what it
+freed.** `split_nfslock()` (`usr.sbin/rpc.lockd/lockd_lock.c`) allocates
+the left half of a split lock range, then the right:
+
+```c
+	if ((spstatus & SPL_LOCK2) != 0) {
+		*right_lock = allocate_file_lock(...);
+		if (*right_lock == NULL) {
+			debuglog("Unable to allocate resource for split 1\n");
+			if (*left_lock != NULL) {
+				deallocate_file_lock(*left_lock);
+			}
+			return SPL_RESERR;
+		}
+```
+
+and its only caller, `unlock_nfslock()`, does this with the answer:
+
+```c
+		if (spstatus == SPL_RESERR) {
+			if (*left_lock != NULL) {
+				deallocate_file_lock(*left_lock);
+				*left_lock = NULL;
+			}
+```
+
+The callee frees `*left_lock` and leaves the pointer where it was, so
+the caller's `!= NULL` test passes and frees it again. Between the two
+frees, `unlock_nfslock()` also passes it to `debuglog()` and
+`dump_filelock()` — `lockd_lock.c:981` is what clang reports, and it is
+the *read*, one line before the second free.
+
+Reachable when the second `allocate_file_lock()` fails, on an NLM unlock
+that splits an existing range. Allocation failure, in a root daemon
+answering the network. `*left_lock = NULL;` after the callee's
+`deallocate_file_lock()` is the whole fix, and it makes the callee's
+contract match what its caller already assumes.
+
+**`ppp`: `realloc()` moved the block and nothing told the owner.**
+`datalink2iov()` (`usr.sbin/ppp/datalink.c`) writes the reallocated
+pointer into the iovec and not back into the structure:
+
+```c
+  iov[*niov].iov_base = dl ? realloc(dl->name, DATALINK_MAXNAME) : NULL;
+  iov[(*niov)++].iov_len = DATALINK_MAXNAME;
+
+  link_fd = physical2iov(...);
+
+  if (link_fd == -1 && dl) {
+    free(dl->name);          /* :1418 */
+    free(dl);
+  }
+```
+
+`realloc()` is free to move the allocation, and when it does, the old
+`dl->name` is freed and `dl->name` still points at it. The error path
+then frees that stale pointer. `datalink.c:1418`.
+
+Both are queued behind the A/B measuring the include-path work; neither
+is a shape the kernel half of this document has seen, because the kernel
+half is mostly `M_ZERO` and locks, and this is what a modelled
+`malloc()` finds instead.
+
+**`patch(1)`: three findings, one missing `noreturn`.** `pch.c:998`,
+`:1020` and `:1045` are all this arm, three times in `another_hunk()`:
+
+```c
+	if (fillold > p_ptrn_lines) {
+		free(s);
+		p_end = fillnew - 1;
+		malformed();
+	}
+	p_char[fillold] = ch;
+	p_line[fillold] = s;          /* clang: use after free */
+```
+
+`malformed()` is `static` and its body is one call to `fatal()`, and
+`fatal()` ends in `my_exit(2)`. `util.h:47` declares
+`my_exit(int) __attribute__((noreturn))` — and `util.h:35` declares
+`fatal()` with a `format` attribute and nothing else. `fatal()` lives in
+`util.c` and its callers are in `pch.c`, so there is no way for the
+analyser to see through it.
+
+The three findings are the visible cost. The larger one is that **every
+path after a `fatal()` anywhere in `patch(1)` is explored as though the
+program continued** — inventing findings and spending the analyser's
+budget on unreachable code, in a program whose whole input is a file
+somebody else wrote. The same class as the `atrun.c` `__dead2` fix
+above; the fix is the same shape, on the declaration rather than at the
+call sites.
+
+Two more were read and put down; they are in the *Not defects* table
+below, where the citation reader can see them.
+
+Sixteen of the twenty-one are still unread. Two of those are the same
+`preen.c` copied between `sbin/fsck` and `sbin/quotacheck`, so fifteen
+distinct sites remain.
+
 ## Not defects, and why they looked like defects
 
 Kept because the reasoning is what stops them being re-reported.
 
 | reported | why it is not a defect |
 |---|---|
+| `usr.bin/tail/reverse.c:209` | `r_buf()`'s out-of-memory loop takes `first = TAILQ_FIRST(&head)` *before* testing `TAILQ_EMPTY(&head)`, which reads as a null dereference waiting to happen and is not one: the empty case calls `err(1, ...)` and exits before `first->len` is reached, and every `free(first)` is preceded by its `TAILQ_REMOVE`. The analyser's "use after free" is it re-entering the loop with the queue macros unmodelled. |
+| `usr.sbin/rtadvd/config.c:307` | `rm_rainfo()`'s `while ((sol = TAILQ_FIRST(&rai->rai_soliciter)))`, after a loop of `delete_prefix(pfx)`. `delete_prefix()` frees the *prefix* and decrements `rai->rai_pfxs`; it does not free the rainfo. The analyser has aliased `pfx` and `rai`. Worth keeping beside the fix two hundred lines down at `:1284`, which is the same file, the same function family, and a real use-after-free. |
 | `s_significand.c`: `-ilogb(x)` overflows | `math.h:45` defines `FP_ILOGB0` as `(-__INT_MAX)`, **not** `INT_MIN`, precisely so negation is safe. CBMC does not model `ilogb`, so its return was unconstrained. |
 | `s_cosl`, `s_sinl`, `s_tanl`: `-n` overflows | `n` is written by `__ieee754_rem_pio2l`, also unmodelled. |
 | `clock()`, `alarm()`, `svc_run()` | the values come from `getrusage`, `setitimer`, unmodelled externs. |
