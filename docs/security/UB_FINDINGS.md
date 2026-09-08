@@ -6392,3 +6392,60 @@ contains a `/`, and `:190` returns for exactly that case before any of
 this runs, so by `:194` `lang` is non-null — `"C"` at worst, `:166`. The
 same test written twice, thirty-five lines apart, which the analyser does
 not fold.
+
+### `mpr_config.c` and `mps_config.c` — the 19 and the 7, cited
+
+The row above works out why `error == 0` cannot coexist with `cm == NULL`
+— `mpr_wait_command()` writes `*cmp = NULL` only inside
+`if (error == EWOULDBLOCK)` and the next statement is
+`error = ETIMEDOUT` — and names no line. Sweep 16's 26:
+
+`mpr_config.c:100`, `mpr_config.c:183`, `mpr_config.c:232`,
+`mpr_config.c:315`, `mpr_config.c:557`, `mpr_config.c:642`,
+`mpr_config.c:694`, `mpr_config.c:831`, `mpr_config.c:916`,
+`mpr_config.c:968`, `mpr_config.c:1053`, `mpr_config.c:1105`,
+`mpr_config.c:1190`, `mpr_config.c:1239`, `mpr_config.c:1322`,
+`mpr_config.c:1452`, `mpr_config.c:1502`, `mpr_config.c:1586`,
+`mpr_config.c:1742`.
+
+`mps_config.c:183`, `mps_config.c:681`, `mps_config.c:956`,
+`mps_config.c:1088`, `mps_config.c:1218`, `mps_config.c:1352`,
+`mps_config.c:1508`.
+
+`mpr_config.c` is 19: ten `core.NullDereference` at the later
+`cm->cm_length` and nine `core.UndefinedBinaryOperatorResult` at the
+`reply == NULL` test. `mps_config.c` is 7, all dereferences, because
+it declares `reply = NULL` in 9 of 9 functions and so never reaches the
+indeterminate `==`. That difference is the whole point of the row: the
+newer driver, copied from the older, dropped the initialiser in 10 of its
+12 functions and rests entirely on the invariant instead.
+
+### `nfs_nfsdport.c` — five pNFS mirror loops, one `M_WAITOK`
+
+`nfs_nfsdport.c:5875`, `nfs_nfsdport.c:6037`, `nfs_nfsdport.c:6220`,
+`nfs_nfsdport.c:6406`, `nfs_nfsdport.c:6554` — *"Access to field `done`
+results in a dereference of a null pointer"*, five times, one idiom
+copied into `nfsrv_writedsrpc()`, `nfsrv_allocatedsrpc()`,
+`nfsrv_deallocatedsrpc()`, `nfsrv_setattrdsrpc()` and
+`nfsrv_setacldsrpc()`:
+
+```c
+	drpc = NULL;
+	if (mirrorcnt > 1)
+		tdrpc = drpc = malloc(sizeof(*drpc) * (mirrorcnt - 1), M_TEMP,
+		    M_WAITOK);
+	...
+	for (i = 0; i < mirrorcnt - 1; i++, tdrpc++) {
+		tdrpc->done = 0;
+```
+
+The loop runs exactly when the allocation ran — both are
+`mirrorcnt > 1` — so the only way to reach `tdrpc->done` with `tdrpc`
+null is for the `malloc()` to have returned null. It cannot:
+`M_WAITOK` sleeps until it can satisfy the request, which this document
+established at the `nowait_check.py` work and states again at
+`kern_malloc.c`'s row. The analyser models the kernel's `malloc()` as
+the libc one.
+
+Five findings, no defect, and the reason all five read the same is that
+the pNFS DS-mirror path is one function written five times.
