@@ -5575,9 +5575,15 @@ unconstrained.
 
 Cited so the reader can count them: `ufs_lookup.c:601`,
 `ufs_lookup.c:606`, `ufs_lookup.c:662`, `ufs_lookup.c:708`,
-`ufs_lookup.c:730`, `ufs_lookup.c:740`; `ext2_lookup.c:579`,
-`ext2_lookup.c:584`, `ext2_lookup.c:622`, `ext2_lookup.c:630`,
-`ext2_lookup.c:664`, `ext2_lookup.c:674`.
+`ufs_lookup.c:730`, `ufs_lookup.c:740`; `ext2_lookup.c:583`,
+`ext2_lookup.c:602`, `ext2_lookup.c:627`, `ext2_lookup.c:676`,
+`ext2_lookup.c:690`, `ext2_lookup.c:695`.
+
+(The ext2fs six are the findings' own lines. An earlier revision of this
+paragraph listed `:579`, `:584`, `:622`, `:630`, `:664` and `:674`, which
+are the GUARDS the prose above names — the `dd_ino != NULL` returns — and
+not the reports. Citing the guard instead of the finding is the same
+mistake as citing nothing.)
 
 Twelve findings, no defect in either, and the reason they read the same
 is that the second file inherited the first file's contract without
@@ -5950,7 +5956,9 @@ The rest of the exported-and-names-a-parameter column in the shards that
 had finished. None is a defect; each is written up with its line so it
 stops being counted as unread.
 
-**`msdosfs_lookup.c:518`, `:575`, `:584`, `:591`, `:605`** — the third
+**`msdosfs_lookup.c:518`, `msdosfs_lookup.c:575`,
+`msdosfs_lookup.c:584`, `msdosfs_lookup.c:591`,
+`msdosfs_lookup.c:605`** — the third
 copy of the `ufs_lookup_ino()` shape above, and the best-built of the
 three. `msdosfs_lookup_ino(vdp, vpp, cnp, scnp, blkoffp)` says at `:178`
 that `vpp` may be null and stores through it five times, but where UFS
@@ -5966,12 +5974,20 @@ msdosfs has exactly one — `:488`
 ```
 
 — and it dominates all five stores. The six call sites keep the same
-invariant UFS's five do: `msdosfs_vnops.c:1009`, `:1033`, `:1157`,
-`:1186` and `:1208` pass `vpp == NULL` with `&scn`, and `:92`, the VFS
-`lookup` entry, passes a real `a_vpp` with `scnp == NULL`. One guard
-instead of four, in the file that copied the idiom last.
+invariant UFS's five do: `msdosfs_vnops.c:1009`, `msdosfs_vnops.c:1033`,
+`msdosfs_vnops.c:1157`, `msdosfs_vnops.c:1186` and
+`msdosfs_vnops.c:1208` pass `vpp == NULL` with `&scn`, and
+`msdosfs_lookup.c:92`, the VFS `lookup` entry, passes a real `a_vpp` with
+`scnp == NULL`. One guard instead of four, in the file that copied the
+idiom last.
 
-**`nfs_nfsdstate.c:700`, `:716`, `:877`** — `nfsrv_getclient()` tests
+Two more in the same file are the same `vpp`: `msdosfs_lookup.c:80` and
+`msdosfs_lookup.c:84`, in `msdosfs_lookup_checker()`, whose only caller
+is `msdosfs_lookup.c:595` — inside the region the `:488` guard already
+dominates.
+
+**`nfs_nfsdstate.c:700`, `nfs_nfsdstate.c:716`,
+`nfs_nfsdstate.c:877`** — `nfsrv_getclient()` tests
 `nd == NULL` in its own second statement (`:679`) and again at `:727`,
 and dereferences `nd` without a test at three places. The three
 dereferences are all inside `if (opflags & CLOPS_CONFIRM)` (`:696`) or
@@ -6557,3 +6573,15 @@ the tree will add one more.
 
 (`pf_ruleset.c` has four, `gntdev.c` three and `pf_norm.c` two, because a
 file may instantiate the macro more than once.)
+
+### `al_hal_serdes_25g.c` — the eight, cited
+
+The row above works out that `al_serdes_25g_reg_read()` returns `-1`
+without writing `*data` for a page its switch does not name, that every
+caller here ignores the return and reads the out-parameter, and that the
+only unnamed pages are `AL_SRDS_REG_PAGE_2_LANE_2` and `_3_LANE_3` on a
+SerDes with two lanes. Sweep 16 reports seven of the eight sites (`:955`
+and one neighbour share a line): `al_hal_serdes_25g.c:504`,
+`al_hal_serdes_25g.c:536`, `al_hal_serdes_25g.c:938`,
+`al_hal_serdes_25g.c:955`, `al_hal_serdes_25g.c:1161`,
+`al_hal_serdes_25g.c:1378`, `al_hal_serdes_25g.c:1643`.
