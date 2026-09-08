@@ -5706,9 +5706,20 @@ never removed.
 ## Sorting the 1,569 nobody has read, and the first thing it found
 
 Fifteen sweeps in, the pile that is not written up here is larger than
-the pile that is: 1,569 of sweep 15's 1,638 deduplicated findings have
-never been read. That is past the point where reading them one at a time
-is a plan.
+the pile that is: 1,569 of sweep 15's 1,638 deduplicated findings are not
+cited by line in this document. That is past the point where reading them
+one at a time is a plan.
+
+"Not cited" overstates "not read", and by a lot. `report.is_triaged()`
+looks for the finding written as `` `ufs_lookup.c:601` ``, and this
+document also writes `:601` inside a section whose heading already named
+the file — the `ufs_lookup.c` and `ext2_lookup.c` section is twelve
+findings written up exactly that way. 542 of the 1,569 are in a file this
+document discusses somewhere. That is a weaker claim than a citation and
+`param_premise.py` prints it as its own number rather than folding it
+into the first; the real figure for "nobody has looked at this" is
+somewhere between 1,022 and 1,569, and closing the gap means citing lines
+in the prose, not loosening the reader.
 
 `tools/verify/param_premise.py` sorts them by **whose precondition they
 are** — the rule `tools/verify/report.py` has applied to the CBMC runs

@@ -306,6 +306,20 @@ def main() -> int:
     seen = collect(args.shards)
     keys = [k for k in seen
             if args.all or not report.is_triaged(k[0], str(k[1]))]
+    # report.is_triaged() wants the finding cited as `file.c:601'. The
+    # document also writes `:601' inside a section whose heading already
+    # named the file - the ufs_lookup.c and ext2_lookup.c section is twelve
+    # findings written up that way - so "not cited" overstates "not read".
+    # Naming the file is a weaker signal than citing the line and is
+    # reported as its own number, never folded into the first.
+    discussed = 0
+    if not args.all:
+        doc = (ROOT / "docs/security/UB_FINDINGS.md")
+        base = set()
+        if doc.is_file():
+            base = {n.rsplit("/", 1)[-1] for n in
+                    re.findall(r"[\w./-]+\.(?:c|h|cpp)", doc.read_text())}
+        discussed = sum(1 for k in keys if k[0].rsplit("/", 1)[-1] in base)
     byfile: dict[str, list] = collections.defaultdict(list)
     for k in keys:
         byfile[k[0]].append(k)
@@ -368,8 +382,12 @@ def main() -> int:
     order = ["exported", "static-taken", "static-called",
              "static-unseen", "header", "generated"]
     print(f"{len(keys):,} findings"
-          f"{'' if args.all else ' not written up'}"
-          f" in {len(byfile):,} files\n")
+          f"{'' if args.all else ' not cited by line in UB_FINDINGS.md'}"
+          f" in {len(byfile):,} files")
+    if discussed:
+        print(f"  ({discussed:,} of them are in a file the document does "
+              f"discuss, which is a weaker claim than a citation)")
+    print()
     print(f"  {'':<16}{'findings':>9}{'names a param':>15}"
           f"{'param on the line':>19}")
     for cls in order:
