@@ -5138,11 +5138,17 @@ thing actually needed, and by checking the `strchr` result two lines
 up — that one is not reachable today and is the same premise, so it is
 fixed and said so rather than left. Eight findings to seven.
 
-Two more read and put down, both in `makefs` and both the queue macros
-again — they are in the table below. That is **nine** of the twenty-one
-read: five defects fixed, four not defects. Two of the twelve left are
-the same `preen.c` copied between `sbin/fsck` and `sbin/quotacheck`, so
-eleven distinct sites remain.
+Four more read and put down — two in `makefs`, two in the `preen`
+framework `fsck` and `quotacheck` share — and all four are the same
+thing: the analyser does not model `TAILQ_REMOVE`. Every one of them
+removes the node before freeing it, and takes the next one off a list
+the freed node is no longer in.
+
+That is **eleven** of the twenty-one read: five defects fixed, six not
+defects. Ten sites remain, and the ones worth reading first are the
+network-facing daemons — `hastd` and `jail`'s config parser — because
+the rest are `gprof` and `patch`, which read files a developer already
+trusts.
 
 ### 249 → 190: three include-path answers read out of the build
 
@@ -5356,6 +5362,7 @@ Kept because the reasoning is what stops them being re-reported.
 
 | reported | why it is not a defect |
 |---|---|
+| `sbin/fsck/preen.c:324`, `sbin/quotacheck/preen.c:280` | The same `preen` framework in two programs, and the same order in both: the caller does `TAILQ_REMOVE(&d->d_part, p, p_entries)` **then** `free(p)`, and only then calls `startdisk(d)`, which takes `TAILQ_FIRST(&d->d_part)` — a node the freed one is no longer in front of, because it is no longer in the list at all. `fsck`'s `startdisk()` runs the check and `quotacheck`'s forks `chkquota()`, but the lifetime question is identical. The queue macros again: this is the fourth pair of findings in this sweep whose whole content is that the analyser does not model `TAILQ_REMOVE`. |
 | `sbin/fsck_ffs/pass5.c:287` (`i / fs->fs_frag`), `sbin/quotacheck/quotacheck.c:620` (`inum % sblock.fs_ipg`) | Both divisors come out of the superblock of the filesystem being checked, which is exactly the attacker-supplied input if the threat model is "somebody hands you a disk image". Both are validated, in `sys/ufs/ffs/ffs_subr.c` — `validate_sblock()` has `FCHK(fs->fs_frag, <, 1, ...)` and `FCHK(fs->fs_frag, >, MAXFRAG, ...)` at `:652`, and `FCHK(fs->fs_ipg, <, fs->fs_inopb, ...)` at `:660`. Both programs read the superblock through `sbget()` (`fsck_ffs/setup.c:410`, `quotacheck.c:306`), which is libufs' entry into `ffs_sbget()`, and `validate_sblock()` runs at `ffs_subr.c:275` — **before** the check-hash comparison, so `UFS_NOHASHFAIL` (which `fsck_ffs` passes deliberately, to repair damaged filesystems) does not skip it. Neither caller passes `UFS_NOWARNFAIL`, so even the downgradeable checks are errors. A different translation unit, in the kernel tree, shared with userland through libufs — which is why the analyser cannot see it. |
 | `usr.sbin/makefs/ffs.c:1219` | The same shape and not the same question: `makefs` **builds** the superblock it is dividing by, from its own command line, rather than reading one off a disk. |
 | `usr.sbin/makefs/walk.c:376` | `apply_specdir()` saves `next = curfsnode->next` before `free_fsnodes(curfsnode)`, which is the `_SAFE` idiom written out by hand. `free_fsnodes()` frees a whole sibling chain — `for (cur = node; cur != NULL; cur = next)` — but only after unlinking `node` from that chain and setting `node->next = NULL`, and the unlink runs whenever `node->first != node`, which holds here because `first` is the `.` entry and `curfsnode` starts at `dirnode->next`. So only the one node and its children go. The analyser is not modelling the queue macros. |
