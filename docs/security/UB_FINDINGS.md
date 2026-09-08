@@ -1423,8 +1423,8 @@ other.
 
 | reported | why it holds |
 |---|---|
-| `:17384` `res = lentim / rate_wanted` | `:17352` does `if (((bw_est == 0) \|\| (rate_wanted == 0) \|\| ...)) goto old_method;`. The one thing between that and the division is `rack_rate_cap_bw()`, which can only lower it — and both of its assignments (`:2199`, `:2223`) are guarded on the new value being positive, which is two of the four rows in the table above. |
-| `:2496` `bw_est = high_rate` | the same unguarded shape as `:17185`, but `bw_est` leaves the function as a bandwidth rather than a divisor, and its caller rejects zero at `:17352` before dividing. Defended downstream rather than at the site — worth knowing if that caller ever changes. |
+| ~~`:17384` `res = lentim / rate_wanted`~~ **WITHDRAWN** | This row was wrong, and it is left here struck rather than deleted. It quoted the guard as `if (((bw_est == 0) \|\| (rate_wanted == 0) \|\| ...))` and the elided half was `) && (rack->use_fixed_rate == 0)` — a fixed pacing rate turns the zero test off, and a fixed pacing rate is the only thing that can produce a zero. See *Withdrawn — a dismissal that read the guard with an ellipsis in it*, below. Fixed. |
+| ~~`:2496` `bw_est = high_rate`~~ **WITHDRAWN** | Same reason: it leans on "its caller rejects zero at `:17352` before dividing", which is the sentence that was not true. The value is now rejected there unconditionally, so the row's conclusion holds again — by the fix, not by the reasoning. |
 
 Verified: exactly one finding left `sys/netinet/tcp_stacks` — the
 `:17231 core.DivideZero` this fixes. Every other finding in the file
@@ -8062,9 +8062,13 @@ Two of the seven wanted checking rather than counting.
 
 `nfs_clvnops.c:2432` and `:2521` — `nfs_symlink()` and `nfs_mkdir()`
 doing `newvp = NFSTOV(np)` on `nfs_lookitup()`'s out-parameter — are
-still reported, at `:2436` and `:2525`. The `np = dnp` that fixes
-`nfs_lookitup` is real; the analyser has another path it has not
-given up.
+still reported, at `:2436` and `:2525`, and the reason is the fix
+itself. `np = dnp` sets it to `VTONFS(dvp)`, which is
+`((struct nfsnode *)(dvp)->v_data)` — a cast of a field the analyser
+has no reason to believe is non-NULL. It was an *uninitialised* pointer
+being published before; it is a pointer clang cannot prove non-NULL
+now. The VFS invariant that a live vnode has `v_data` is not something
+a path-sensitive checker can carry.
 
 `nfsrpc_statfs`'s pair is still reported too, at `:5020` and `:5028`.
 That one is explainable and worth writing down: the guard now reads
@@ -8101,3 +8105,259 @@ and writes through `retopsp` at the end under `if (taglen == -1)`'s
 it is in another translation unit, and the guard that keeps a remote
 NFSv4 client from reaching `*NULL` should not depend on that. The
 second spelling is now `taglen < 0`, the same as the first.
+## Withdrawn — a dismissal that read the guard with an ellipsis in it
+
+`sys/netinet/tcp_stacks/rack.c`'s `res = lentim / rate_wanted` is in
+this document already, in *The rest of rack.c's divisions, read and left
+alone*, and the row is wrong. It says:
+
+> `:17352` does `if (((bw_est == 0) || (rate_wanted == 0) || ...)) goto old_method;`
+
+The `...` is not "and some more disjuncts". It is
+
+```c
+		if (((bw_est == 0) || (rate_wanted == 0) || (rack->gp_ready == 0)) &&
+		    (rack->use_fixed_rate == 0)) {
+			goto old_method;
+		}
+```
+
+— the whole disjunction is **conjoined with `use_fixed_rate == 0`**. A
+fixed pacing rate turns the check for a zero divisor off. And a fixed
+pacing rate is the one thing that can hand this function a zero:
+
+```c
+		if (rack->use_fixed_rate) {
+			rate_wanted = bw_est = rack_get_fixed_pacing_bw(rack);
+```
+
+`rack_get_fixed_pacing_bw()` returns one of
+`rc_fixed_pacing_rate_rec`, `_ss` or `_ca`, and the three
+`setsockopt` cases that write them —
+`TCP_RACK_PACE_RATE_REC`, `TCP_RACK_PACE_RATE_SS`,
+`TCP_RACK_PACE_RATE_CA` — store `optval` with no lower bound at all.
+Each also propagates the value to whichever of the other two is still
+zero, so one call sets all three.
+
+So, from an unprivileged process:
+
+```c
+	setsockopt(fd, IPPROTO_TCP, TCP_FUNCTION_BLK,      "rack", ...);
+	setsockopt(fd, IPPROTO_TCP, TCP_RACK_PACE_ALWAYS,  &one,   4);
+	setsockopt(fd, IPPROTO_TCP, TCP_RACK_PACE_RATE_CA, &zero,  4);
+	write(fd, buf, len);
+```
+
+`rc_always_pace` takes `rack_get_pacing_delay()` into the paced arm,
+`use_fixed_rate` takes the zero test off, `rack_rate_cap_bw()` cannot
+put it back — both of its writes to `*bw` are guarded on `*bw` being
+*greater* than the cap — and the division faults. There is no
+`priv_check()` anywhere in `rack.c`; `tcp_can_enable_pacing()` is a
+global count of pacing sockets, not a check on the caller.
+
+The fix splits the test so the zero is unconditional:
+
+```c
+		if (rate_wanted == 0)
+			goto old_method;
+		if (((bw_est == 0) || (rack->gp_ready == 0)) &&
+		    (rack->use_fixed_rate == 0))
+			goto old_method;
+```
+
+which changes nothing for any non-zero rate.
+
+The row `:2496` in the same table leans on the same sentence — "its
+caller rejects zero at `:17352` before dividing" — and inherits the same
+error. Both rows are struck rather than edited: the point of the table
+is the reasoning, and reasoning that quoted a guard with the operative
+half inside an ellipsis is the thing to record, not to tidy away.
+
+**The lesson is mechanical and worth stating as a rule: never elide part
+of a condition when writing down why a finding is not a defect.** Quote
+the guard entire, or do not quote it. Three other rows in this document
+put a `...` inside a quoted `if`; all three were re-read against the
+tree and all three hold — `rack.c`'s own `fill_bw` guard (complete at
+`:17195`), `rtw88/mac.c`'s `ltecoex_bckp` pair (`:788` and `:807`, the
+identical two-term guard on a field of the const chip descriptor), and
+`msdosfs`'s complementary `ONETIME` tests. One in four was wrong, which
+is exactly the rate at which a shortcut like that should be expected to
+be.
+
+## Fixed — `rtprio_thread(2)` hands out two bytes of kernel stack
+
+`sys/kern/kern_resource.c`:
+
+```c
+pri_to_rtp(struct thread *td, struct rtprio *rtp)
+{
+
+	thread_lock(td);
+	switch (PRI_BASE(td->td_pri_class)) {
+	case PRI_REALTIME:
+		rtp->prio = td->td_base_user_pri - PRI_MIN_REALTIME;
+		break;
+	case PRI_TIMESHARE:
+		rtp->prio = td->td_base_user_pri - PRI_MIN_TIMESHARE;
+		break;
+	case PRI_IDLE:
+		rtp->prio = td->td_base_user_pri - PRI_MIN_IDLE;
+		break;
+	default:
+		break;
+	}
+	rtp->type = td->td_pri_class;
+	thread_unlock(td);
+}
+```
+
+`type` is written on every path. `prio` is written on three of four.
+The classes are `PRI_ITHD` 1, `PRI_REALTIME` 2, `PRI_TIMESHARE` 3,
+`PRI_IDLE` 4 (`sys/sys/priority.h:45-48`), so `default:` is exactly one
+case: the interrupt thread.
+
+Both callers copy the struct straight out.
+
+`sys_rtprio_thread()`'s `RTP_LOOKUP` declares `struct rtprio rtp;` with
+no initialiser, takes `td1 = tdfind(uap->lwpid, -1)` — which resolves a
+tid in **any** process — checks `p_cansee()`, and then
+
+```c
+		pri_to_rtp(td1, &rtp);
+		PROC_UNLOCK(p);
+		return (copyout(&rtp, uap->rtp, sizeof(struct rtprio)));
+```
+
+`struct rtprio` is two `u_short` (`sys/sys/rtprio.h:73`), so `rtp.prio`
+is two bytes of this frame's kernel stack, per call, repeatable.
+
+**Who reaches it depends on `security.bsd.see_other_uids`, and this is
+the hardening earning its keep.** `p_cansee()` is what stands between an
+unprivileged caller and the kernel's interrupt process, whose tids
+`procstat -at` prints for anyone. `kern_prot.c:1870`:
+
+```c
+#ifdef PAX_HARDENING
+static int	see_other_uids = 0;
+#else
+static int	see_other_uids = 1;
+#endif
+```
+
+and `sys/conf/std.hardenedbsd:53` is `options PAX_HARDENING`, which
+every HARDENEDBSD config includes. So on a stock FreeBSD kernel this is
+an unprivileged kernel-memory disclosure; on a PBSD kernel the default
+closes it, and what is left is root reading two bytes of its own
+kernel's stack — plus whatever an administrator opens by setting the
+sysctl back to 1, which is `CTLFLAG_RW` and is a common compatibility
+change.
+
+That is worth stating precisely rather than either way round. The
+hardening is not the fix: it is a second door in front of a first one
+that should not have been open, and `pri_to_rtp()` writing every field
+it is documented to write is the first door.
+
+`sys_rtprio()`'s `RTP_LOOKUP` reaches the same bytes without needing a
+tid: it walks `FOREACH_THREAD_IN_PROC` with an uninitialised `struct
+rtprio rtp2`, and
+
+```c
+			rtp.type = RTP_PRIO_IDLE;	/* 4 */
+			rtp.prio = RTP_PRIO_MAX;
+			FOREACH_THREAD_IN_PROC(p, tdp) {
+				pri_to_rtp(tdp, &rtp2);
+				if (rtp2.type <  rtp.type || ...) {
+					rtp.type = rtp2.type;
+					rtp.prio = rtp2.prio;
+```
+
+An interrupt thread reports `type` 1, `1 < 4` is true, and the unwritten
+`rtp2.prio` is copied into the struct that `:451` copies out.
+
+The fix is `rtp->prio = 0;` before the switch: every arm that sets it
+overwrites it, and the class that has no user priority now says so
+rather than saying whatever was on the stack. The other direction of the
+same conversion, `rtp_to_pri()`, ends its identical switch with
+`default: return (EINVAL);` — the asymmetry is what makes this an
+oversight rather than a design.
+
+Found from `core.uninitialized.Assign` at `kern_resource.c:446`. The
+analyser named the comparison; the `copyout` two lines further on is
+what makes it a disclosure. That distance is the argument for reading
+the findings.
+
+## Fixed — the SPD dump's lifetime extension, and two multicast rollbacks
+
+Three more from the same reading, each one `core.uninitialized` and each
+one a value that leaves the kernel or steers a tree walk.
+
+`sys/netipsec/key.c`'s `key_setdumpsp()` declares `struct seclifetime
+lt;` with no initialiser and fills two of its four fields:
+
+```c
+	if (sp->lifetime) {
+		lt.addtime = sp->created;
+		lt.usetime = sp->lastused;
+		m = key_setlifetime(&lt, SADB_EXT_LIFETIME_CURRENT);
+```
+
+`key_setlifetime()` copies all four into the `sadb_lifetime` extension,
+`allocations` and `bytes` among them — twelve bytes of stack
+(`keydb.h:89` is a `u_int32_t` and three `u_int64_t`), twice per policy,
+into a message that goes to every PF_KEY listener. Not a privilege
+boundary on a stock system, since `key_attach()` requires
+`PRIV_NET_RAW`, and not something the sending path should be doing
+either way. The same file already writes `memset(&lft_c, 0,
+sizeof(lft_c))` at another call site, so the shape was known.
+
+`inm_merge()` and `in6m_merge()` are the same function twice:
+
+```c
+	struct ip_msource	*ims, *nims;		/* neither initialised */
+	...
+	RB_FOREACH(ims, ip_msource_tree, &imf->imf_sources) {
+		error = inm_get_source(inm, lims->ims_haddr, 0, &nims);
+		++schanged;
+		if (error)
+			break;
+		ims_merge(nims, lims, 0);
+	}
+	if (error) {
+		RB_FOREACH_REVERSE_FROM(ims, ip_msource_tree, nims) {
+```
+
+`inm_get_source()` writes `*pims` only on its success path — its
+`return (ENOSPC);` at the `in_mcast_maxgrpsrc` limit and its
+`return (ENOMEM);` from an `M_NOWAIT` malloc leave it untouched. On any
+iteration but the first, `nims` therefore still holds the previous
+node, which is exactly what the rollback wants. On the *first*, it
+holds the uninitialised stack word, and the red-black tree walk starts
+from it. Filling a group to `net.inet.ip.mcast.maxgrpsrc` (512 by
+default) and adding one more source is an unprivileged
+`setsourcefilter(3)` away.
+
+`nims = NULL` at the declaration and `if (nims == NULL) goto out_reap;`
+before the walk. When the first call failed nothing was merged, so
+there is nothing to roll back, and `out_reap` is where the loop falls
+through to anyway.
+
+### What the measurement said
+
+An A/B over `sys/kern`, `sys/netinet`, `sys/netinet6` and `sys/netipsec`
+— 384 translation units, these five edits and nothing else:
+
+```
+  kern_resource.c        OK->OK  findings  1->0
+  in_mcast.c             OK->OK  findings  2->1
+  in6_mcast.c            OK->OK  findings  4->3
+  key.c                  OK->OK  findings  2->1
+  tcp_stacks/rack.c      OK->OK  findings 10->9
+  before (379, 5, 221)  after (379, 5, 216)
+  384 units; 5 changed; 0 flag digests changed
+```
+
+Five findings, five fixes, one each — and every other movement in the
+list is a line shift from the comments the fixes carry: `rack.c`'s nine
+by twenty-six lines, `in_mcast.c`'s one by thirteen, `in6_mcast.c`'s one
+by four. `rack.c:17427 core.DivideZero`, the one this document had
+already dismissed, is gone.

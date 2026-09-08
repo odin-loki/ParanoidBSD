@@ -586,6 +586,14 @@ FIXES = {
             "panic message",
         ),
         (
+            "\t\tif (rate_wanted == 0) {",
+            "if (((bw_est == 0) || (rate_wanted == 0) || (rack->gp_ready == 0)) &&",
+            "rack_get_pacing_delay: the zero test was one disjunct of a "
+            "disjunction conjoined with `use_fixed_rate == 0', so a fixed "
+            "rate switched the check OFF for the one case that produces a "
+            "zero - and TCP_RACK_PACE_RATE_CA takes 0 from any user",
+        ),
+        (
             'fails ret:%d rack:%p rsm:%p",\n\t\t\t\t      nrsm, insret',
             "fails ret:% rack",
             "one of the nine copies of this panic had `ret:%` - a "
@@ -1592,6 +1600,42 @@ FIXES = {
             "agree, so retopsp cannot be NULL where it is written",
         ),
     ],
+
+    # Four more from the same sweep, in the network stack and one syscall.
+    "hbsd/src/sys/kern/kern_resource.c": [
+        (
+            "\trtp->prio = 0;\n\tswitch (PRI_BASE(td->td_pri_class)) {",
+            None,
+            "pri_to_rtp: the switch writes prio on three of four arms and "
+            "`default\' is PRI_ITHD, so rtprio_thread(2)\'s RTP_LOOKUP "
+            "copyout()s two bytes of kernel stack for an interrupt thread",
+        ),
+    ],
+    "hbsd/src/sys/netinet/in_mcast.c": [
+        (
+            "\tnims = NULL;\n\tschanged = 0;",
+            "\t\tstruct ip_msource *bims;\n\n\t\tRB_FOREACH_REVERSE_FROM(",
+            "inm_merge: inm_get_source() writes *pims only when it returns "
+            "0, so a first-iteration ENOSPC left the rollback walking the "
+            "tree from an uninitialised node",
+        ),
+    ],
+    "hbsd/src/sys/netinet6/in6_mcast.c": [
+        (
+            "\tnims = NULL;\n\tschanged = 0;",
+            "\t\tstruct ip6_msource *bims;\n\n\t\tRB_FOREACH_REVERSE_FROM(",
+            "in6m_merge: the same function with in6 spellings",
+        ),
+    ],
+    "hbsd/src/sys/netipsec/key.c": [
+        (
+            "\tstruct seclifetime lt = { 0 };",
+            "\tstruct seclifetime lt;\n",
+            "key_setdumpsp: two of four fields set and all four copied into "
+            "the sadb_lifetime extension the SPD dump sends to every PF_KEY "
+            "listener",
+        ),
+    ],
 }
 
 
@@ -1614,8 +1658,47 @@ PBSD_FILES = {
 }
 
 
+def _duplicate_keys() -> list[str]:
+    """Names this file's own tables list twice.
+
+    A dict literal with the same key twice is not an error in Python: the
+    second entry silently replaces the first, and every marker in the one
+    that lost goes with it. It happened here -- a second
+    `"hbsd/src/sys/netinet/tcp_stacks/rack.c"` entry, added six hundred
+    lines below the first, took six existing markers out of the file
+    without changing a single check's result. Nothing in this checker
+    could have noticed: the table it validates was already short.
+
+    So the file reads itself. Same rule as everywhere else in this
+    repository -- the invariant a gate depends on is checked, not
+    assumed.
+    """
+    import ast
+
+    dupes = []
+    tree = ast.parse(Path(__file__).read_text())
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Dict):
+            continue
+        seen = set()
+        for k in node.keys:
+            if not isinstance(k, ast.Constant) or not isinstance(k.value, str):
+                continue
+            if k.value in seen:
+                dupes.append(f"{k.value} (line {k.lineno})")
+            seen.add(k.value)
+    return dupes
+
+
 def main() -> int:
     missing = []
+    dupes = _duplicate_keys()
+    if dupes:
+        for d in dupes:
+            print(f"FAIL  duplicate table entry: {d}")
+        print("\nA repeated dict key silently replaces the first one, and "
+              "every marker\nin it. Merge the two entries.")
+        return 1
     for rel, (marker, what) in sorted(MARKS.items()):
         path = ROOT / rel
         if not path.is_file():

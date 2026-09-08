@@ -17392,7 +17392,33 @@ rack_get_pacing_delay(struct tcp_rack *rack, struct tcpcb *tp, uint32_t len, str
 						   rack->r_ctl.rc_last_us_rtt,
 						   88, __LINE__, NULL, gain);
 		}
-		if (((bw_est == 0) || (rate_wanted == 0) || (rack->gp_ready == 0)) &&
+		if (rate_wanted == 0) {
+			/*
+			 * PBSD: the zero test, unconditionally.
+			 *
+			 * It used to be one disjunct of the test below, and
+			 * that whole disjunction is conjoined with
+			 * `use_fixed_rate == 0' - so a fixed rate turned the
+			 * check for a zero divisor OFF, on the one path that
+			 * can hand this function a zero. rack_get_fixed_pacing_bw()
+			 * returns rc_fixed_pacing_rate_{rec,ss,ca}, and
+			 * TCP_RACK_PACE_RATE_REC, _SS and _CA store optval with
+			 * no lower bound (rack_process_option(), and each `if
+			 * (... == 0)' beside them propagates a zero to the other
+			 * two). An unprivileged
+			 *
+			 *   setsockopt(TCP_RACK_PACE_ALWAYS, 1)
+			 *   setsockopt(TCP_RACK_PACE_RATE_CA, 0)
+			 *
+			 * on a rack socket therefore reached `res = lentim /
+			 * rate_wanted' below with rate_wanted == 0.
+			 * rack_rate_cap_bw() cannot rescue it either: both of
+			 * its writes to *bw are guarded on *bw being GREATER
+			 * than the cap.
+			 */
+			goto old_method;
+		}
+		if (((bw_est == 0) || (rack->gp_ready == 0)) &&
 		    (rack->use_fixed_rate == 0)) {
 			/*
 			 * No way yet to make a b/w estimate or

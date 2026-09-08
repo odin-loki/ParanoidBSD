@@ -1011,6 +1011,17 @@ inm_merge(struct in_multi *inm, /*const*/ struct in_mfilter *imf)
 	int			 schanged, error;
 	int			 nsrc0, nsrc1;
 
+	/*
+	 * PBSD: inm_get_source() writes *pims only when it returns 0. Its
+	 * two failures - ENOSPC at in_mcast_maxgrpsrc, ENOMEM from an
+	 * M_NOWAIT malloc - leave it alone, so if the FIRST allocating call
+	 * in the loop below fails, the rollback's
+	 * RB_FOREACH_REVERSE_FROM(..., nims) starts from whatever was on
+	 * the stack. On any later iteration nims holds the previous node,
+	 * which is what the rollback wants; NULL says "nothing was merged,
+	 * so there is nothing to undo".
+	 */
+	nims = NULL;
 	schanged = 0;
 	error = 0;
 	nsrc1 = nsrc0 = 0;
@@ -1037,6 +1048,8 @@ inm_merge(struct in_multi *inm, /*const*/ struct in_mfilter *imf)
 	if (error) {
 		struct ip_msource *bims;
 
+		if (nims == NULL)
+			goto out_reap;
 		RB_FOREACH_REVERSE_FROM(ims, ip_msource_tree, nims) {
 			lims = (struct in_msource *)ims;
 			if (lims->imsl_st[0] == lims->imsl_st[1])

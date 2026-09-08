@@ -537,6 +537,24 @@ pri_to_rtp(struct thread *td, struct rtprio *rtp)
 {
 
 	thread_lock(td);
+	/*
+	 * PBSD: every class writes prio, including the one that has none.
+	 *
+	 * The switch below has an arm for PRI_REALTIME, PRI_TIMESHARE and
+	 * PRI_IDLE and a `default: break;'. The classes are 1..4 and
+	 * PRI_ITHD is 1, so `default' is the interrupt thread, and it left
+	 * rtp->prio holding whatever the caller's stack held. Both callers
+	 * copy the whole struct out: sys_rtprio_thread()'s RTP_LOOKUP does
+	 * copyout() on a `struct rtprio' it never initialised, for any
+	 * thread tdfind() can reach by tid, and sys_rtprio()'s RTP_LOOKUP
+	 * compares an ithread's unwritten prio into the value it then
+	 * copies out. Two bytes of kernel stack per call, to an
+	 * unprivileged caller.
+	 *
+	 * rtp_to_pri(), the same conversion in the other direction, ends
+	 * its identical switch with `default: return (EINVAL);'.
+	 */
+	rtp->prio = 0;
 	switch (PRI_BASE(td->td_pri_class)) {
 	case PRI_REALTIME:
 		rtp->prio = td->td_base_user_pri - PRI_MIN_REALTIME;

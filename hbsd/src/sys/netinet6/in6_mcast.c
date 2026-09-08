@@ -1027,6 +1027,8 @@ in6m_merge(struct in6_multi *inm, /*const*/ struct in6_mfilter *imf)
 	int			 schanged, error;
 	int			 nsrc0, nsrc1;
 
+	/* PBSD: see the comment in inm_merge(); this is the same function. */
+	nims = NULL;
 	schanged = 0;
 	error = 0;
 	nsrc1 = nsrc0 = 0;
@@ -1053,6 +1055,8 @@ in6m_merge(struct in6_multi *inm, /*const*/ struct in6_mfilter *imf)
 	if (error) {
 		struct ip6_msource *bims;
 
+		if (nims == NULL)
+			goto out_reap;
 		RB_FOREACH_REVERSE_FROM(ims, ip6_msource_tree, nims) {
 			lims = (struct in6_msource *)ims;
 			if (lims->im6sl_st[0] == lims->im6sl_st[1])

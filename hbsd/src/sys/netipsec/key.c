@@ -2758,7 +2758,12 @@ key_setdumpsp(struct secpolicy *sp, u_int8_t type, u_int32_t seq,
     u_int32_t pid)
 {
 	struct mbuf *result = NULL, *m;
-	struct seclifetime lt;
+	/*
+	 * PBSD: the block below sets addtime and usetime; key_setlifetime()
+	 * copies allocations and bytes too, into a message that goes to
+	 * every PF_KEY listener.
+	 */
+	struct seclifetime lt = { 0 };
 
 	m = key_setsadbmsg(type, 0, SADB_SATYPE_UNSPEC, seq, pid, sp->refcnt);
 	if (!m)
