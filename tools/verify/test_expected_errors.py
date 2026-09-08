@@ -170,6 +170,76 @@ for _f in _claimed_f:
           "the build does name it, so this entry is hiding a real "
           "coverage gap")
 
+print("\n== and the NOT_SUBDIR prefixes really are not descended into")
+# A prefix whose reason ends in NOT_SUBDIR claims something the
+# NOT_NAMED check cannot express: the directory has a Makefile of its
+# own, so asking bmake IN it names its sources -- and no parent SUBDIR
+# reaches it, so the build never asks. sbin/ipf/Makefile is the case
+# that forced the distinction:
+#
+#   SUBDIR=       libipf .WAIT
+#   SUBDIR+=      ipf ipfstat ipmon ipnat ippool
+#   # XXX Temporarily disconnected.
+#   # SUBDIR+=    ipftest ipresend ipsend
+#
+# NOT_NAMED was tried first and the gate rejected it, correctly: bmake
+# in sbin/ipf/ipftest names ipftest.c. What is true is the line above,
+# and this reads it.
+_sub = [pre for pre, why in NOT_BUILT.items() if why.endswith("NOT_SUBDIR")]
+check("some prefix makes the NOT_SUBDIR claim", bool(_sub))
+
+
+def _subdirs(makefile: Path) -> set[str]:
+    """The SUBDIR words a Makefile actually assigns, comments excluded."""
+    out: set[str] = set()
+    if not makefile.is_file():
+        return out
+    cont = False
+    for raw in makefile.read_text().splitlines():
+        line = raw.rstrip("\n")
+        if not cont:
+            stripped = line.lstrip()
+            if stripped.startswith("#"):
+                continue
+            m = re.match(r"\s*SUBDIR(?:\.\$\{[^}]*\})?\s*\+?=\s*(.*)$", line)
+            if not m:
+                continue
+            rest = m.group(1)
+        else:
+            if line.lstrip().startswith("#"):
+                cont = line.rstrip().endswith("\\")
+                continue
+            rest = line
+        cont = rest.rstrip().endswith("\\")
+        rest = rest.rstrip().rstrip("\\")
+        out.update(w for w in rest.split() if not w.startswith(".") and
+                   not w.startswith("$"))
+    return out
+
+
+for pre in _sub:
+    rel = pre.rstrip("/")
+    d = ROOT / "hbsd" / "src" / rel
+    check(f"{pre} is a directory", d.is_dir())
+    srcs = sorted(q.name for q in d.glob("*.c")) if d.is_dir() else []
+    check(f"{pre} has sources at all", bool(srcs),
+          "an empty prefix absorbs nothing and hides its own staleness")
+    parent = d.parent
+    listed = _subdirs(parent / "Makefile")
+    check(f"{pre} is in no parent SUBDIR", d.name not in listed,
+          f"{parent.relative_to(ROOT / 'hbsd' / 'src')}/Makefile lists "
+          f"{d.name} in SUBDIR, so the build DOES descend into it")
+
+# And the sentinel, for the same reason the NOT_NAMED block has one: a
+# reader that returns the empty set makes every claim above pass.
+check("the SUBDIR reader can say `yes'",
+      "ipf" in _subdirs(ROOT / "hbsd" / "src" / "sbin" / "ipf" / "Makefile"),
+      "if this fails every NOT_SUBDIR check passes for the wrong reason")
+check("and does not read commented lines",
+      "ipftest" not in _subdirs(ROOT / "hbsd" / "src" / "sbin" / "ipf" /
+                                "Makefile"),
+      "the reader is taking `# SUBDIR+= ipftest' as an assignment")
+
 print("\n== the INCLUDED_BY entries name a file that really includes them")
 # An entry whose reason is INCLUDED_BY:<path> claims that the named file
 # #includes this one, which is why it is not a translation unit of its

@@ -18,6 +18,15 @@ Most entries are one of three honest reasons:
   not a translation unit   the file is #included by another (arch trap.c
                            includes subr_syscall.c) and has no business
                            compiling alone.
+  not descended into      a userland directory with a Makefile of its
+                           own that no parent SUBDIR reaches, so bmake
+                           in it answers questions about a program the
+                           build never makes. Marked NOT_SUBDIR, and
+                           checked - the NOT_NAMED check cannot be used
+                           for these, because asking bmake IN the
+                           directory names the sources whether or not
+                           anything descends into it. That distinction
+                           is the whole content of the marker.
   option-gated             it needs a kernel option no config in this
                            tree sets - KASAN, KCSAN, KMSAN, TSLOG,
                            DEVICE_POLLING, COMPAT_43TTY.
@@ -41,6 +50,38 @@ EXPECTED = {
     "libexec/bootpd/trygetea.c":    "a hand-run probe, not in SRCS. NOT_NAMED",
     "libexec/bootpd/trygetif.c":    "a hand-run probe, not in SRCS. NOT_NAMED",
     "libexec/bootpd/trylook.c":     "a hand-run probe, not in SRCS. NOT_NAMED",
+
+    # gzip(1) is a single-source PROG - usr.bin/gzip/Makefile has no SRCS
+    # at all - and gzip.c #includes the decompressors by name at :2201
+    # through :2216. unlz.c is the sixth of them and happens to compile
+    # alone, so it is not here: the rule is what the build does, not what
+    # the directory looks like.
+    "usr.bin/gzip/unbzip2.c":     "INCLUDED_BY:usr.bin/gzip/gzip.c",
+    "usr.bin/gzip/unpack.c":      "INCLUDED_BY:usr.bin/gzip/gzip.c",
+    "usr.bin/gzip/unxz.c":        "INCLUDED_BY:usr.bin/gzip/gzip.c",
+    "usr.bin/gzip/unzstd.c":      "INCLUDED_BY:usr.bin/gzip/gzip.c",
+    "usr.bin/gzip/zuncompress.c": "INCLUDED_BY:usr.bin/gzip/gzip.c",
+
+    # locate(1)'s SRCS is `util.c locate.c'; locate.c #includes
+    # fastfind.c four times, at :326, :328, :335 and :337, each with a
+    # different set of macros defined.
+    "usr.bin/locate/locate/fastfind.c":
+        "INCLUDED_BY:usr.bin/locate/locate/locate.c",
+
+    # Not a source at all. Each ipfilter program seds common/lexer.c into
+    # its own lexer -- `ipf_l.c: lexer.c' with s/yy/ipf_yy/g,
+    # s/y.tab.h/ipf_y.h/ and s/lexer.h/ipf_l.h/ in sbin/ipf/ipf/Makefile
+    # :21, and the same rule in ipmon, ipnat, ippool and ipftest -- so its
+    # `#include "y.tab.h"' at :25 names a file that exists only after the
+    # sed has run.
+    "sbin/ipf/common/lexer.c":
+        "a sed template, not a translation unit. NOT_NAMED",
+
+    # Test programs no build walks.
+    "usr.sbin/bhyve/mevent_test.c":
+        "a hand-run probe, not in SRCS. NOT_NAMED",
+    "sbin/setkey/test-pfkey.c":  "a hand-run probe, not in SRCS. NOT_NAMED",
+    "sbin/setkey/test-policy.c": "a hand-run probe, not in SRCS. NOT_NAMED",
 
     # ipfilter's application proxies. ip_proxy.c is the translation
     # unit and it #includes the nine of them by name, three of those
@@ -782,6 +823,29 @@ EXPECTED = {
 # vendored under sys/contrib, and sys/modules/Makefile must not descend
 # into its module, which is a fact you can grep for.
 NOT_BUILT = {
+    # ipfilter's disconnected programs. sbin/ipf/Makefile:3-4 is
+    #
+    #   SUBDIR=       libipf .WAIT
+    #   SUBDIR+=      ipf ipfstat ipmon ipnat ippool
+    #
+    # plus ipfs under MK_IPFILTER_IPFS, and then :8-9
+    #
+    #   # XXX Temporarily disconnected.
+    #   # SUBDIR+=    ipftest ipresend ipsend
+    #
+    # so three directories are commented out of the build and ipfsync,
+    # ipscan and iplang were never in it. Together with common/lexer.c
+    # above, that is every ERROR sbin/ipf has.
+    "sbin/ipf/ipftest/":
+        "commented out of SUBDIR at sbin/ipf/Makefile:9. NOT_SUBDIR",
+    "sbin/ipf/ipsend/":
+        "the other half of that commented-out line. It also wants "
+        "<sys/stream.h>, <sys/stropts.h> and <net/nit.h>, which are SunOS "
+        "headers FreeBSD has never had. NOT_SUBDIR",
+    "sbin/ipf/ipfsync/":
+        "never in SUBDIR at all - sbin/ipf/Makefile:3-4 lists libipf, ipf, "
+        "ipfstat, ipmon, ipnat and ippool, plus ipfs under "
+        "MK_IPFILTER_IPFS. NOT_SUBDIR",
     "sys/contrib/dev/mediatek/":
         "MediaTek mt76: sys/modules/mt76 exists and sys/modules/Makefile "
         "does not descend into it. The tree also carries a mt76 newer "
