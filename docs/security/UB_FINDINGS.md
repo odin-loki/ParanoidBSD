@@ -5650,3 +5650,55 @@ callback, so the analyser has no caller and `args->e` is arbitrary.
 `sys/fs/nfsserver/nfs_nfsdport.c:2683` is the same shape one field
 deeper. Both belong to the class `k_rem_pio2.c` is the worked example
 of, and neither is a defect.
+
+## Sweep 15: the userland flags, and a dead file with a duplicate symbol
+
+| | sweep 14 | sweep 15 |
+|---|---|---|
+| OK | 7,531 | **7,539** |
+| ERROR | 578 | **570** |
+| findings | 1,652 | 1,650 |
+
+`ERROR -> OK` 8, `OK -> ERROR` **0**, no new findings and two gone. All
+eight are `lib/libc` and `lib/msun`, and they are what asking bmake for
+a file's own `CFLAGS.<file>` — and asking it as clang — buys:
+
+    dlfcn.c tls.c                        CFLAGS.<file> is ${RTLD_HDRS}
+    fts_blocks_test.c glob_blocks_test.c
+    scandir_blocks_test.c qsort_b_test.c -fblocks, and NAMED at all
+    detect_tz_changes_test.c             -I${SRCTOP}/contrib/tzcode
+    i387/fenv.c                          i387 IS i386
+
+The two findings that went away are `sys/i386/i386/trap.c:810`, which is
+the F00F guard fixed above, and `sys/fs/nfsserver/nfs_nfsdport.c:2683`,
+which is not explained. That one is absent in sweep 13, present in 14,
+absent in 15, and every hypothesis has been ruled out — the flag list is
+deterministic across processes, the analyser is deterministic on it, a
+no-op macro changes nothing, and the module route does not reach the
+file. What is left is a flag list that differed in sweep 14, and a sweep
+records the finding and not the command that produced it. That is worth
+fixing before the next one.
+
+### `sys/amd64/vmm/amd/amdv.c` — a second `iommu_ops_amd`, without the const
+
+Six of bhyve's seven unreadable sources want a header in
+`sys/amd64/vmm/io/`, which `sys/modules/vmm/Makefile` puts on the path
+with two `-I` and the kernel reader does not; supplying them by hand
+compiles all six, three of them with a finding. The seventh does not,
+and reading why says something about the file:
+
+    io/iommu.h:62          extern const struct iommu_ops iommu_ops_amd;
+    amd/amdvi_hw.c:1367          const struct iommu_ops iommu_ops_amd = {
+    amd/amdv.c:118                     struct iommu_ops iommu_ops_amd = {
+
+Two definitions of the same object, one of them without the `const` that
+the header and the other definition both carry. `amdv.c` is the "not
+implemented" stub — eleven functions whose bodies are `printf("...: not
+implemented\n")` — that `amdvi_hw.c` replaced, and it is named by no
+`files*` line and by no module: `sys/modules/vmm/Makefile:124` builds
+`amdvi_hw.c` and not this. Were it built, the link would fail on a
+duplicate symbol.
+
+So it is on the record as not built, and the reason says which of the
+two it is: not an include path, a file the tree stopped compiling and
+never removed.

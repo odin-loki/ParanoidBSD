@@ -279,14 +279,30 @@ EXPECTED = {
 
     # amd64's bhyve. Its own headers live in sys/amd64/vmm/io/, which
     # sys/modules/vmm/Makefile puts on the path with two -I and the
-    # kernel reader does not.
+    # kernel reader does not. Measured: -I$S/amd64/vmm -I$S/amd64/vmm/io
+    # -I$S/amd64/vmm/intel -I$S/amd64/vmm/amd compiles all six, three of
+    # them with a finding.
     "sys/amd64/vmm/vmm.c":        "wants vatpic.h, in sys/amd64/vmm/io",
     "sys/amd64/vmm/vmm_ioport.c": "wants vatpic.h, in sys/amd64/vmm/io",
     "sys/amd64/vmm/vmm_lapic.c":  "wants vlapic.h, in sys/amd64/vmm/io",
     "sys/amd64/vmm/amd/svm.c":    "wants vatpic.h, in sys/amd64/vmm/io",
     "sys/amd64/vmm/amd/vmcb.c":   "wants vlapic.h, in sys/amd64/vmm/io",
-    "sys/amd64/vmm/amd/amdv.c":   "wants iommu.h, in sys/amd64/vmm/io",
     "sys/amd64/vmm/intel/vmx.c":  "wants vatpic.h, in sys/amd64/vmm/io",
+    # ...and a seventh that is NOT an include path. amdv.c is named by
+    # no files* line and by no module - sys/modules/vmm builds
+    # amdvi_hw.c and not this - and with the -I above it still fails:
+    #
+    #   io/iommu.h:62      extern const struct iommu_ops iommu_ops_amd;
+    #   amd/amdvi_hw.c:1367      const struct iommu_ops iommu_ops_amd = {
+    #   amd/amdv.c:118                 struct iommu_ops iommu_ops_amd = {
+    #
+    # A second definition of the same object, without the const the
+    # header and the live definition both carry. It is the "not
+    # implemented" stub amdvi_hw.c replaced, left behind: were it built,
+    # it would be a duplicate symbol.
+    "sys/amd64/vmm/amd/amdv.c":
+        "not built: the superseded AMD IOMMU stub, named by nothing, and "
+        "its iommu_ops_amd disagrees with iommu.h about const",
 
     # -DKLD_MODULE. sys/conf/kmod.mk:121 passes it and sys/sys/sysctl.h
     # :140 relaxes SYSCTL's type CTASSERT under it, so a driver only ever
