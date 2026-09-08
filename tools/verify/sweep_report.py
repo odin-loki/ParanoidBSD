@@ -165,6 +165,30 @@ def main() -> int:
         if len(b - a) > 20:
             print(f"      ... and {len(b - a) - 20} more")
 
+        # ...and WHY. A finding appears or goes away because the code
+        # changed or because the command did, and the two look the same
+        # in a total. Every record carries a digest of the flags it was
+        # analysed with, so the second case can be named instead of
+        # guessed at: sys/fs/nfsserver/nfs_nfsdport.c:2683 came and went
+        # across three sweeps and the reason had to be chased by hand,
+        # to no conclusion, because no sweep had recorded its command.
+        moved = {x[0] for x in (a - b) | (b - a)}
+        reflagged = sorted(
+            k for k in moved
+            if k in old and "flags" in old[k] and "flags" in new.get(k, {})
+            and old[k]["flags"] != new[k]["flags"])
+        unflagged = sorted(
+            k for k in moved
+            if "flags" not in old.get(k, {}) or "flags" not in new.get(k, {}))
+        if reflagged:
+            print(f"  of the files whose findings moved, {len(reflagged)} "
+                  f"were analysed with DIFFERENT flags:")
+            for k in reflagged[:20]:
+                print(f"      {k}  {old[k]['flags']} -> {new[k]['flags']}")
+        if unflagged:
+            print(f"  ({len(unflagged)} of them predate the flag digest "
+                  f"and cannot be told apart)")
+
     if args.unlisted:
         unl = sorted(k for k, r in new.items() if r["status"] == "ERROR"
                      and k not in EXPECTED and not not_built(k))

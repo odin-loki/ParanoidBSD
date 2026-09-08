@@ -114,6 +114,46 @@ def main() -> int:
               f"opts={r3.get('opts')})")
         fail += not clean
 
+    # The flag digest. A finding that moves between sweeps is either the
+    # code changing or the command changing, and a record that carries
+    # only the finding cannot tell you which - which is how
+    # nfs_nfsdport.c:2683 came and went across three sweeps with nothing
+    # in the file touched and no way left to check.
+    rel = "sys/kern/kern_malloc.c"
+    if (_inc.SRC / rel).is_file():
+        job = {"src": str(_inc.SRC / rel), "rel": rel, "timeout": 200}
+        d1 = analyze(dict(job)).get("flags")
+        d2 = analyze(dict(job)).get("flags")
+        print(f"  {'ok  ' if d1 else 'FAIL'} a record carries the flags "
+              f"it was analysed with ({d1})")
+        fail += not d1
+        print(f"  {'ok  ' if d1 == d2 else 'FAIL'} ...and the same "
+              f"question gets the same digest")
+        fail += d1 != d2
+        # A different architecture is a different command, and the
+        # digest has to say so or it is measuring nothing.
+        d3 = analyze(dict(job, arch="aarch64")).get("flags")
+        print(f"  {'ok  ' if d3 and d3 != d1 else 'FAIL'} ...and a "
+              f"different architecture gets a different one ({d3})")
+        fail += not (d3 and d3 != d1)
+        # ...and, the point of it, a SECOND PROCESS agrees. Within one
+        # process incs_shim() is cached and every call sees the same
+        # mkdtemp'd directory, so dropping the normalisation of those
+        # paths costs nothing here and everything between two sweeps.
+        code = ("import sys; sys.path.insert(0, %r)\n"
+                "from analyze import analyze\n"
+                "print(analyze({'src': %r, 'rel': %r, 'timeout': 200})"
+                "['flags'])" % (str(Path(__file__).resolve().parent), job["src"], rel))
+        try:
+            d4 = subprocess.run([sys.executable, "-c", code],
+                                capture_output=True, text=True,
+                                timeout=600).stdout.strip()
+        except (OSError, subprocess.SubprocessError):
+            d4 = ""
+        print(f"  {'ok  ' if d4 == d1 else 'FAIL'} ...and a second "
+              f"process agrees ({d4 or 'no answer'})")
+        fail += d4 != d1
+
     print("\n" + ("all planted defects found" if not fail
                   else f"FAILURES: {fail} checker family/families silent"))
     return 1 if fail else 0

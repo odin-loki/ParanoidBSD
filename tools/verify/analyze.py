@@ -27,6 +27,7 @@ deliberately calls strcpy, and they are not run.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -53,6 +54,10 @@ CHECKERS = [
     "unix.Malloc", "unix.MallocSizeof", "unix.MismatchedDeallocator",
     "unix.cstring.BadSizeArg", "unix.cstring.NullArg",
 ]
+
+# The mkdtemp'd directories incs_shim() and rpc_headers() build. Their
+# NAMES are a run's own; their contents are what was asked for.
+TMPDIR = re.compile(r"(/tmp/pbsd_[a-z]+_)[A-Za-z0-9_]+")
 
 # [^:]+ matches NEWLINES, so the file group swallowed every preceding line
 # of -analyzer-output=text's source context until it found the next
@@ -83,19 +88,37 @@ def analyze(job: dict) -> dict:
     """
     src = Path(job["src"])
     arch = job.get("arch") or arch_of(job["rel"])
+    flags = [*lang_flags(src, job["rel"]),
+             *include_flags(src, arch, opts=job.get("opts"),
+                            cpu=job.get("cpu"))]
     cmd = ["clang", "--analyze", "-Xclang", "-analyzer-output=text",
-           *lang_flags(src, job["rel"]),
-           *include_flags(src, arch, opts=job.get("opts"),
-                          cpu=job.get("cpu")),
-           str(src), "-o", "/dev/null"]
+           *flags, str(src), "-o", "/dev/null"]
+    # A finding that appears in one sweep and not the next is either a
+    # change in the CODE or a change in the COMMAND, and a record that
+    # carries only the finding cannot tell you which.
+    # sys/fs/nfsserver/nfs_nfsdport.c:2683 was absent in sweep 13,
+    # present in 14 and absent in 15 with nothing in that file touched,
+    # and every hypothesis had to be ruled out by hand - the flag list
+    # is deterministic across processes, the analyser is deterministic
+    # on it, a no-op macro changes nothing - to arrive at "the flags
+    # must have differed", which is where the evidence ran out.
+    #
+    # The temp directories are per-run: incs_shim() and rpc_headers()
+    # mkdtemp, so their names are not part of what was asked, only their
+    # contents are. Normalised away so two sweeps of the same tree
+    # agree.
+    digest = hashlib.sha256(
+        "\n".join(TMPDIR.sub(r"\1<tmp>", f) for f in flags).encode()
+    ).hexdigest()[:12]
     try:
         p = subprocess.run(cmd, capture_output=True, text=True,
                            timeout=job["timeout"], cwd="/tmp")
     except subprocess.TimeoutExpired:
-        return {"file": job["rel"], "status": "TIMEOUT", "findings": []}
+        return {"file": job["rel"], "status": "TIMEOUT", "findings": [],
+                "flags": digest}
     except OSError as e:
         return {"file": job["rel"], "status": "ERROR", "detail": str(e),
-                "findings": []}
+                "findings": [], "flags": digest}
     if p.returncode != 0 and "error:" in p.stderr:
         # It did not compile for the architecture arch_of() picked. The
         # build system may name one that CAN build it - see
@@ -146,7 +169,8 @@ def analyze(job: dict) -> dict:
                     r["cpu"] = list(alt)
                     return r
         return {"file": job["rel"], "status": "ERROR",
-                "detail": p.stderr.strip()[-300:], "findings": []}
+                "detail": p.stderr.strip()[-300:], "findings": [],
+                "flags": digest}
     out = []
     wanted = set(CHECKERS)
     for m in DIAG.finditer(p.stderr):
@@ -158,7 +182,8 @@ def analyze(job: dict) -> dict:
             rel = m.group("file")
         out.append({"where": f"{rel}:{m.group('line')}",
                     "checker": m.group("checker"), "msg": m.group("msg")})
-    return {"file": job["rel"], "status": "OK", "findings": out}
+    return {"file": job["rel"], "status": "OK", "findings": out,
+            "flags": digest}
 
 
 DEFAULT_SCOPES = ["lib/libc", "lib/msun"]
