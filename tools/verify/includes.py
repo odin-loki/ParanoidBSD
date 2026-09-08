@@ -1964,6 +1964,117 @@ def incs_shim(arch: str = "amd64") -> str:
     return d.as_posix()
 
 
+# lib/ncurses/tinfo/Makefile writes its own headers, and the recipes are
+# a uniform shape: `sed <${NCURSES_DIR}/include/<name>.in >$@' with a
+# list of -e substitutions. Two forms appear -
+#
+#   -e "/@NAME@/s%%${NAME}%"     on lines matching @NAME@, the first one
+#   -e "s%@NAME@%1%g"            everywhere, and the value may be literal
+#
+# and a trailing `g' on the first form makes it every occurrence on the
+# matching line. The NAMES are read out of the Makefile so a variable
+# added upstream is picked up; the VALUES come from bmake, so a version
+# bump is too. Only the shape of each rule is written here.
+_NC_ANCHORED = re.compile(r'-e\s+"/@(\w+)@/s%%([^%]*)%(g?)"')
+_NC_GLOBAL = re.compile(r'-e\s+"s%@(\w+)@%([^%]*)%g?"')
+_NC_VAR = re.compile(r"\$\{(\w+)\}")
+
+
+def _nc_rule(text: str, target: str) -> str:
+    m = re.search(rf"^{re.escape(target)}:[^\n]*\n((?:\t[^\n]*\n)+)",
+                  text, re.M)
+    return m.group(1) if m else ""
+
+
+def _nc_subs(body: str) -> list[tuple[str, str, str]]:
+    out = [("global" if m.group(3) else "anchored", m.group(1), m.group(2))
+           for m in _NC_ANCHORED.finditer(body)]
+    out += [("global", m.group(1), m.group(2))
+            for m in _NC_GLOBAL.finditer(body)]
+    return out
+
+
+def _nc_apply(text: str, subs, env: dict) -> str:
+    for kind, name, repl in subs:
+        repl = _NC_VAR.sub(lambda m: env.get(m.group(1), ""), repl)
+        tok = f"@{name}@"
+        if kind == "global":
+            text = text.replace(tok, repl)
+        else:
+            text = "\n".join(l.replace(tok, repl, 1) for l in text.split("\n"))
+    return text
+
+
+def _ncurses_headers(d: Path) -> None:
+    """ncurses' installed headers, by lib/ncurses/tinfo/Makefile's recipes.
+
+    47 of the 249 translation units in the first bin/sbin/usr.bin/usr.sbin
+    sweep failed on curses.h, ncurses.h, term.h or termcap.h. None of
+    them is missing: lib/ncurses/tinfo/Makefile's HEADERS are generated
+    from contrib/ncurses/include/*.in, and INCSLINKS makes ncurses.h a
+    link to curses.h. Same story as device_if.h and bin/sh's nodes.h.
+    """
+    tinfo = SRC / "lib" / "ncurses" / "tinfo"
+    inc = SRC / "contrib" / "ncurses" / "include"
+    mk = tinfo / "Makefile"
+    if not mk.is_file() or not inc.is_dir():
+        return
+    text = mk.read_text(errors="replace")
+
+    plain = {"ncurses_dll.h": "ncurses_dll.h.in",
+             "termcap.h": "termcap.h.in",
+             "unctrl.h": "unctrl.h.in",
+             "curses.head": "curses.h.in",
+             "MKterm.h.awk": "MKterm.h.awk.in"}
+    subs = {t: _nc_subs(_nc_rule(text, t)) for t in plain}
+    want = sorted({v for s in subs.values() for _k, _n, r in s
+                   for v in _NC_VAR.findall(r)})
+    vals = userland_names._bmake(tinfo, "amd64", want, SRC, 90)
+    if vals is None:
+        return
+    env = dict(zip(want, vals))
+
+    work = Path(tempfile.mkdtemp(prefix="pbsd_nc_"))
+    for target, src_in in plain.items():
+        f = inc / src_in
+        if not f.is_file():
+            return
+        (work / target).write_text(
+            _nc_apply(f.read_text(errors="replace"), subs[target], env))
+
+    # curses.h is the head, the key definitions, the wide-character half
+    # and the tail, concatenated - tinfo/Makefile:261.
+    keys = subprocess.run(
+        ["sh", str(inc / "MKkey_defs.sh"), str(inc / "Caps"),
+         str(inc / "Caps-ncurses")], cwd=work, capture_output=True,
+        text=True, env=dict(os.environ, AWK="awk",
+                            _POSIX2_VERSION="199209"))
+    if keys.returncode != 0:
+        return
+    (d / "curses.h").write_text(
+        (work / "curses.head").read_text() + keys.stdout
+        + (inc / "curses.wide").read_text(errors="replace")
+        + (inc / "curses.tail").read_text(errors="replace"))
+    # INCSLINKS= curses.h ${INCLUDEDIR}/ncurses.h - tinfo/Makefile:177
+    (d / "ncurses.h").write_text((d / "curses.h").read_text())
+
+    # term.h is MKterm.h.awk over the capability tables, then edit_cfg.sh
+    # over the autoconf header - tinfo/Makefile:249. edit_cfg.sh handles
+    # exactly four names and leaves @HAVE_SGTTY_H@ standing, which the
+    # real build does too: it sits in an #elif the first arm never lets
+    # the preprocessor reach.
+    awk = subprocess.run(["awk", "-f", str(work / "MKterm.h.awk"),
+                          str(inc / "Caps"), str(inc / "Caps-ncurses")],
+                         capture_output=True, text=True)
+    if awk.returncode == 0:
+        (d / "term.h").write_text(awk.stdout)
+        subprocess.run(["sh", str(inc / "edit_cfg.sh"),
+                        str(tinfo / "ncurses_cfg.h"), str(d / "term.h")],
+                       cwd=work, capture_output=True)
+    for t in ("termcap.h", "unctrl.h", "ncurses_dll.h"):
+        (d / t).write_text((work / t).read_text())
+
+
 def _installed_generated(d: Path) -> None:
     """The two INCS in that layout that no source file backs.
 
@@ -1987,6 +2098,8 @@ def _installed_generated(d: Path) -> None:
 
     # lib/libexpat/Makefile:22. bsdxml.h is expat.h with three
     # substitutions, and bsdxml_external.h is expat_external.h copied.
+    _ncurses_headers(d)
+
     exp = SRC / "contrib" / "expat" / "lib"
     try:
         h = (exp / "expat.h").read_text()
