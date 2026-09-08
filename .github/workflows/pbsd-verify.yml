@@ -67,6 +67,20 @@ jobs:
       # from the tree, with only the markdown committed.
       - name: Build the function ledger
         run: python3 tools/port_plan.py
+      # ...and the markdown half of it is COMMITTED, so it can go stale
+      # while this job stays green. It had: regenerating at HEAD rewrote
+      # 623 lines, `lib' short by 17 files and the total by 121 lines,
+      # because the ledger was describing a tree that no longer exists.
+      # A generated file nobody diffs is a reading that quietly stopped
+      # matching, which is the failure this repository keeps finding.
+      - name: ...and the committed copy still matches the tree
+        run: |
+          git diff --quiet docs/PORT_PLAN.md || {
+            echo "docs/PORT_PLAN.md is stale. Regenerate and commit it:"
+            echo "    python3 tools/port_plan.py"
+            git --no-pager diff --stat docs/PORT_PLAN.md
+            exit 1
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: plan
