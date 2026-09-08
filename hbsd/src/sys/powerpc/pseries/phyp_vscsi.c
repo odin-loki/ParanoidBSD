@@ -338,6 +338,7 @@ vscsi_attach(device_t dev)
 	    M_NOWAIT);
 	if (sc->xfer == NULL) {
 		device_printf(dev, "Could not allocate buffer\n");
+		mtx_unlock(&sc->io_lock);
 		return (ENOMEM);
 	}
 	for (i = 0; i < sc->max_transactions; i++) {

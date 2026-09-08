@@ -4670,12 +4670,28 @@ is twice now that the interesting bug was one line away from the one
 that was reported: `svm.c`'s `errcode_valid` was the same, found while
 reading a "1st function call argument" a few lines below it.
 
-The fix has to keep `ptr` advancing by what the device claimed, or every
-subsequent entry is parsed at the wrong offset — so the excess dwords
-are still read, just not stored, and a malformed entry is dropped rather
-than acted on. It is queued behind the running sweep: editing a source
-under a sweep destroys the measurement, and this file is in a shard that
-has not finished.
+**Fixed.** The fix keeps `ptr` advancing by what the device claimed, or
+every subsequent entry parses at the wrong offset — so the excess dwords
+are still read, just not stored:
+
+```c
+		for (b = 0; b < ent_size; b++) {
+			dwv = REG(ptr, 4);
+			if (b < (int)nitems(dw))
+				dw[b] = dwv;
+			ptr += 4;
+		}
+
+		if (ent_size < 2 || ent_size > (int)nitems(dw)) {
+			...
+			free(eae, M_DEVBUF);
+			continue;
+		}
+```
+
+An entry with fewer than two dwords is dropped rather than built out of
+whatever `dw` still holds from the previous one. Both findings go to 0 at
+an unchanged flag digest.
 
 ### Ten locks released on some paths out of a function and not others
 
@@ -4780,8 +4796,15 @@ measurement rather than a no-op: 165 functions under `lib` alone have a
 lock/unlock pair the tool pairs up, and every one of them is consistent.
 The kernel is where this defect lives.
 
-All ten fixes are queued behind the sweep that is running: editing a
-source under a sweep destroys the measurement.
+**All ten are fixed.** Sweep 18 finished first — editing a source under
+a sweep destroys the measurement — and the tool now reports the three
+non-leaks and nothing else over the same 6,914 files. Each fix is
+registered in `tools/check_pbsd_marks.py`, and each entry was checked by
+reverting the fix and watching the check name it; `drm_bufs.c` carries a
+count of **2**, so losing one of the two identical hunks fails as well as
+losing both. `test_lock_balance.py` asserts each fixed file now reports
+nothing, and that the three non-leaks are still reported — a tool that
+quietly stops looking is the failure mode worth a test.
 
 ### The first sweep of `bin`, `sbin`, `usr.bin` and `usr.sbin`
 
@@ -4841,11 +4864,25 @@ why the analyser reports it and why it is worth writing down rather than
 dismissing: it holds by data, not by code, and nothing checks it.
 
 **`ping6.c:1425`** is `core.StackAddressEscape` and is real. `pinger()`
-sets `smsghdr.msg_iov = iov` where `iov` is a local array and `smsghdr`
-is file-scope, so the global holds a pointer into a dead frame from the
-moment the function returns. Nothing reads it before the next call
-overwrites it, and `ping` is setuid root, which makes it exactly the
-kind of thing to fix rather than argue about. Queued with the rest.
+sets `smsghdr.msg_iov = iov` where `iov` is a local array and `smsghdr` is
+`static struct msghdr` at `:235`, so the global holds a pointer into a
+dead frame from the moment the function returns. Nothing reads it before
+the next call overwrites it, and `ping` is setuid root, which makes it
+exactly the kind of thing to fix rather than argue about. **Fixed** by
+making `iov` itself `static` — it was already cleared on every call.
+`sbin/ping/ping.c` was checked for the same shape and does not have it:
+there both the `msghdr` and the `iovec` are locals of one function.
+
+**`rtadvd/config.c:1284`** is `unix.Malloc`, "Use of memory after it is
+freed", and is also real. `invalidate_prefix()` calls `delete_prefix(pfx)`
+— which ends in `free(pfx)` — on the arm where `rtadvd_add_timer()`
+returned NULL, and then falls straight through into
+`rtadvd_set_timer(&timo, pfx->pfx_timer)`. The arm was missing its
+`return`. Reachable only under allocation failure, in a root daemon driven
+by router solicitations off the network. **Fixed**; the file goes from 2
+findings to 1, and the one that stays is `:307`, where the analyser has
+aliased `pfx` and `rai` in `rm_rainfo()` — `delete_prefix()` frees the
+prefix, not the rainfo.
 
 ## Not defects, and why they looked like defects
 
@@ -7280,12 +7317,11 @@ was set. But *passing* an indeterminate `int` is itself the read — the
 argument is evaluated before the callee's guard is anywhere near
 running, and `core.CallAndMessage` is right to flag the call site rather
 than the use. No supported architecture gives `int` a trap
-representation, so nothing goes wrong today; it is still an
-indeterminate read in a language that is about to become C++23, where
-the answer to "what does reading an uninitialised `int` do" is not one
-anybody should want to rely on. `int rid = 0;` costs nothing and is
-queued behind the sweep that is running — editing a source under a sweep
-destroys the measurement.
+representation, so nothing goes wrong today; it is still an indeterminate
+read in a language that is about to become C++23, where the answer to
+"what does reading an uninitialised `int` do" is not one anybody should
+want to rely on. `int rid = 0;` costs nothing, and is **fixed**: all four
+findings go to 0 at an unchanged flag digest.
 
 Four findings, in a function the proxy picked out, that are the
 cross-function out-parameter class and not the `M_ZERO` class at all.

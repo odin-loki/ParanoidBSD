@@ -408,6 +408,7 @@ ichchan_init(kobj_t obj, void *devinfo, struct snd_dbuf *b, struct pcm_channel *
 		break;
 
 	default:
+		ICH_UNLOCK(sc);
 		return (NULL);
 	}
 

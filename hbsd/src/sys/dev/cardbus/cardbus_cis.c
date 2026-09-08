@@ -586,7 +586,13 @@ cardbus_parse_cis(device_t cbdev, device_t child,
 	int expect_linktarget;
 	uint32_t start, off;
 	struct resource *res;
-	int rid;
+	/*
+	 * cardbus_read_tuple_init() returns the CIS_CONFIG_SPACE sentinel
+	 * without writing *rid.  cardbus_read_tuple_finish() does not use
+	 * rid on that path, but the argument is evaluated before it can
+	 * decide that, so the value has to exist.
+	 */
+	int rid = 0;
 
 	tupledata = malloc(MAXTUPLESIZE, M_DEVBUF, M_WAITOK | M_ZERO);
 	expect_linktarget = TRUE;

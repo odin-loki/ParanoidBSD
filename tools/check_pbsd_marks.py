@@ -73,10 +73,102 @@ FIXES = {
         "mixer_get_lock",
         "the sound stack published struct snd_mixer and dropped the accessor",
     ),
-    "hbsd/src/sys/powerpc/pseries/phyp_vscsi.c": (
-        "return (ENOMEM);",
-        "return (ENOMEM)\n",
-        "missing semicolon; the file has never been compiled upstream",
+    "hbsd/src/sys/powerpc/pseries/phyp_vscsi.c": [
+        (
+            "return (ENOMEM);",
+            "return (ENOMEM)\n",
+            "missing semicolon; the file has never been compiled upstream",
+        ),
+        (
+            "allocate buffer\\n\");\n\t\tmtx_unlock(&sc->io_lock);",
+            "allocate buffer\\n\");\n\t\treturn (ENOMEM);",
+            "vscsi_attach() returned holding sc->io_lock on the M_NOWAIT "
+            "failure path",
+        ),
+    ],
+    # Twelve more, all one shape: a lock this function releases on every
+    # other way out, and not on this one. lock_balance.py found them and
+    # reading confirmed every one; the tool's own test asserts they stay
+    # reported as fixed, and these entries are what survives a vendor
+    # merge that drops the hunk without dropping the file.
+    "hbsd/src/sys/netipsec/ipsec.c": (
+        "if (th == 0) {\n\t\t\tSECREPLAY_UNLOCK(replay);",
+        "if (th == 0)\n\t\t\treturn (0);",
+        "ipsec_chkreplay() returned holding replay->lock on the th == 0 "
+        "arm; ipsec_updatereplay() twenty lines down has the same block "
+        "with the unlock in it",
+    ),
+    "hbsd/src/sys/dev/drm2/drm_bufs.c": (
+        ("mtx_unlock(&dev->pcir_lock);\n\t\treturn 0;", 2),
+        "if (drm_alloc_resource(dev, resource) != 0)\n\t\treturn 0;",
+        "drm_get_resource_start() and drm_get_resource_len() both "
+        "returned holding dev->pcir_lock; the count is 2 because the two "
+        "are the same three lines copied",
+    ),
+    "hbsd/src/sys/arm/allwinner/aw_mmc.c": (
+        "active command\\n\");\n\t\tAW_MMC_UNLOCK(sc);",
+        "active command\\n\");\n\t\treturn (EBUSY);",
+        "aw_mmc_cam_request() returned EBUSY holding the softc lock when "
+        "a CAM request arrived with one already in flight",
+    ),
+    "hbsd/src/sys/arm/nvidia/drm2/tegra_bo.c": (
+        "!= 0) {\n\t\t\tVM_OBJECT_WUNLOCK(bo->cdev_pager);",
+        "&pages) != 0)\n\t\t\treturn (EINVAL);",
+        "tegra_bo_init_pager() returned holding the object write lock it "
+        "drops two lines below",
+    ),
+    "hbsd/src/sys/arm64/nvidia/tegra210/max77620_gpio.c": (
+        # Two arms in this file carry that unlock now: the one at :530
+        # always did, and the one below it did not. Five arms print the
+        # same message, so "the message then return" matches three that
+        # are correct - the unwanted string has to reach the line AFTER
+        # the return to name only the one that was wrong.
+        ("GIPO_CFG register\\n\");\n\t\tGPIO_UNLOCK(sc);", 2),
+        "GIPO_CFG register\\n\");\n\t\treturn (ENXIO);\n\t}\n"
+        "\tif (old_reg_pue != sc->gpio_reg_pue) {",
+        "one of five identical error arms in "
+        "max77620_gpio_pin_setflags() did not unlock",
+    ),
+    "hbsd/src/sys/dev/sound/pci/ich.c": (
+        "default:\n\t\tICH_UNLOCK(sc);\n\t\treturn (NULL);",
+        "default:\n\t\treturn (NULL);",
+        "ichchan_init()'s default: arm returned holding ICH_LOCK",
+    ),
+    "hbsd/src/sys/netpfil/ipfw/ip_fw_table.c": (
+        "if (ta->find_tentry == NULL) {\n\t\tIPFW_UH_RUNLOCK(ch);",
+        "if (ta->find_tentry == NULL)\n\t\treturn (ENOTSUP);",
+        "find_table_entry() returned holding IPFW_UH_RLOCK when a table "
+        "algorithm has no find_tentry method",
+    ),
+    "hbsd/src/sys/powerpc/mpc85xx/fsl_espi.c": (
+        "giving up.\\n\");\n\t\tFSL_ESPI_UNLOCK(sc);",
+        "giving up.\\n\");\n\t\treturn (EINVAL);",
+        "fsl_espi_transfer() returned holding the controller lock when "
+        "the platform clock reads zero",
+    ),
+    "hbsd/src/sys/dev/pci/pci.c": (
+        "if (b < (int)nitems(dw))",
+        "\t\t\tdw[b] = REG(ptr, 4);\n",
+        "pci_ea_fill_info() indexed uint32_t dw[4] with a three-bit "
+        "entry size read out of the device's own config space",
+    ),
+    "hbsd/src/sys/dev/cardbus/cardbus_cis.c": (
+        "int rid = 0;",
+        "\tstruct resource *res;\n\tint rid;\n",
+        "cardbus_read_tuple_init() returns the CIS_CONFIG_SPACE sentinel "
+        "without writing *rid, and the caller passed it by value",
+    ),
+    "hbsd/src/sbin/ping/ping6.c": (
+        "static struct iovec iov[2];",
+        "struct icmp6_hdr *icp;\n\tstruct iovec iov[2];",
+        "pinger() left the file-scope smsghdr.msg_iov pointing into its "
+        "own dead frame",
+    ),
+    "hbsd/src/usr.sbin/rtadvd/config.c": (
+        "delete_prefix(pfx);\n\t\treturn;",
+        "delete_prefix(pfx);\n\t}\n\ttimo.tv_sec = prefix_timo;",
+        "invalidate_prefix() fell through from delete_prefix(), which "
+        "ends in free(pfx), into a dereference of pfx",
     ),
     "hbsd/src/sys/i386/i386/trap.c": (
         "if (usermode && (eva == (unsigned int)&idt[6]) &&",

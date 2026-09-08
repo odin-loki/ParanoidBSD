@@ -347,6 +347,7 @@ fsl_espi_transfer(device_t dev, device_t child, struct spi_command *cmd)
 	if (plat_clk == 0) {
 		device_printf(dev,
 		    "unable to get platform clock, giving up.\n");
+		FSL_ESPI_UNLOCK(sc);
 		return (EINVAL);
 	}
 	csmode = 0;

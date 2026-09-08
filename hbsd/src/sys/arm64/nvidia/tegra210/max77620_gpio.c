@@ -560,6 +560,7 @@ max77620_gpio_pin_setflags(device_t dev, uint32_t pin_num, uint32_t flags)
 	rv = WR1(sc, pin->reg, reg);
 	if (rv != 0) {
 		device_printf(sc->dev, "Cannot read GIPO_CFG register\n");
+		GPIO_UNLOCK(sc);
 		return (ENXIO);
 	}
 	if (old_reg_pue != sc->gpio_reg_pue) {

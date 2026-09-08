@@ -1294,7 +1294,12 @@ static int
 pinger(void)
 {
 	struct icmp6_hdr *icp;
-	struct iovec iov[2];
+	/*
+	 * smsghdr is file scope and keeps msg_iov across the return, so
+	 * what it points at has to outlive this frame.  Cleared below on
+	 * every call, as it was when it was automatic.
+	 */
+	static struct iovec iov[2];
 	int i, cc;
 	struct icmp6_nodeinfo *nip;
 	uint16_t seq;

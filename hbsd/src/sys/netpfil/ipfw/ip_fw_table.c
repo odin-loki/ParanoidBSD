@@ -1075,8 +1075,10 @@ find_table_entry(struct ip_fw_chain *ch, ip_fw3_opheader *op3,
 	kti = KIDX_TO_TI(ch, tc->no.kidx);
 	ta = tc->ta;
 
-	if (ta->find_tentry == NULL)
+	if (ta->find_tentry == NULL) {
+		IPFW_UH_RUNLOCK(ch);
 		return (ENOTSUP);
+	}
 
 	error = ta->find_tentry(tc->astate, kti, tent);
 	if (error == 0) {

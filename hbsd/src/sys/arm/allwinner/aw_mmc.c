@@ -309,6 +309,7 @@ aw_mmc_cam_request(device_t dev, union ccb *ccb)
 	}
 	if (sc->ccb != NULL) {
 		device_printf(sc->aw_dev, "Controller still has an active command\n");
+		AW_MMC_UNLOCK(sc);
 		return (EBUSY);
 	}
 	sc->ccb = ccb;

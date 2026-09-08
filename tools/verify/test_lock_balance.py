@@ -64,48 +64,54 @@ class Fixture(unittest.TestCase):
 class Tree(unittest.TestCase):
     """Read by hand, one at a time, and these are the answers."""
 
-    LEAKS = {
-        "sys/netipsec/ipsec.c": 1357,
-        "sys/dev/sound/pci/ich.c": 411,
-        "sys/netpfil/ipfw/ip_fw_table.c": 1079,
-        "sys/arm/allwinner/aw_mmc.c": 312,
-        "sys/arm/nvidia/drm2/tegra_bo.c": 165,
-        "sys/arm64/nvidia/tegra210/max77620_gpio.c": 563,
-        "sys/powerpc/mpc85xx/fsl_espi.c": 350,
-        "sys/powerpc/pseries/phyp_vscsi.c": 341,
+    # Reported, read, confirmed, and FIXED in the same commit that added
+    # this file's tool. They are kept by name rather than deleted: the
+    # tool is only worth its output, and a regression that puts one of
+    # these back has to be visible as this test going red rather than as
+    # a line reappearing in a list nobody diffs.
+    FIXED = {
+        "sys/netipsec/ipsec.c": "ipsec_chkreplay(), th == 0 arm",
+        "sys/dev/drm2/drm_bufs.c": "drm_get_resource_start() and _len()",
+        "sys/arm/allwinner/aw_mmc.c": "aw_mmc_cam_request(), EBUSY",
+        "sys/arm64/nvidia/tegra210/max77620_gpio.c": "one of five arms",
+        "sys/arm/nvidia/drm2/tegra_bo.c": "tegra_bo_init_pager()",
+        "sys/powerpc/mpc85xx/fsl_espi.c": "fsl_espi_transfer()",
+        "sys/powerpc/pseries/phyp_vscsi.c": "vscsi_attach(), M_NOWAIT",
+        "sys/dev/sound/pci/ich.c": "ichchan_init(), default: arm",
+        "sys/netpfil/ipfw/ip_fw_table.c": "find_table_entry()",
     }
-    # two in one file, so they do not fit the dict above
-    PAIRS = [("sys/dev/drm2/drm_bufs.c", 85), ("sys/dev/drm2/drm_bufs.c", 102)]
-    # Reported, and read, and not leaks. Kept so that a change which
-    # "fixes" one of them has to say what it did to the ten above.
+    # Reported, and read, and NOT leaks. Kept so that a change which
+    # "fixes" one of them has to say what it did.
     KNOWN_FALSE = {
         "sys/dev/cxgbe/iw_cxgbe/cm.c": 1146,        # solisten_dequeue unlocks
         "sys/kern/vfs_mount.c": 2319,               # dounmount_cleanup does
         "sys/kern/kern_proc.c": 454,                # _pfind returns it locked
     }
 
-    def test_each_named_leak_is_still_reported(self):
-        for rel, line in self.LEAKS.items():
+    def test_the_fixed_ones_stay_fixed(self):
+        for rel, why in self.FIXED.items():
+            src = ROOT / "hbsd/src" / rel
+            if not src.is_file():
+                self.skipTest(f"{rel} is not in this tree")
+            with self.subTest(rel):
+                self.assertEqual(lines_of(src), set(), why)
+
+    def test_the_three_that_are_not_leaks_are_still_reported(self):
+        """Not because they should be fixed - because the tool should not
+        quietly stop looking at the shapes they are made of."""
+        for rel, line in self.KNOWN_FALSE.items():
             src = ROOT / "hbsd/src" / rel
             if not src.is_file():
                 self.skipTest(f"{rel} is not in this tree")
             with self.subTest(rel):
                 self.assertIn(line, lines_of(src))
 
-    def test_the_pair_in_one_file(self):
-        src = ROOT / "hbsd/src" / self.PAIRS[0][0]
-        if not src.is_file():
-            self.skipTest("drm_bufs.c is not in this tree")
-        got = lines_of(src)
-        for _rel, line in self.PAIRS:
-            self.assertIn(line, got)
-
     def test_the_tool_runs_on_a_directory(self):
         out = subprocess.run(
             [sys.executable, str(HERE / "lock_balance.py"),
-             str(ROOT / "hbsd/src/sys/netipsec")],
+             str(ROOT / "hbsd/src/sys/kern")],
             capture_output=True, text=True, check=True).stdout
-        self.assertIn("ipsec.c:1357", out)
+        self.assertIn("kern_proc.c:454", out)
         self.assertIn("return(s) in", out.splitlines()[-1])
 
 

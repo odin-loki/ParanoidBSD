@@ -818,7 +818,7 @@ pci_ea_fill_info(device_t pcib, pcicfgregs *cfg)
 	int a, b;
 	uint32_t val;
 	int ent_size;
-	uint32_t dw[4];
+	uint32_t dw[4], dwv;
 	uint64_t base, max_offset;
 	struct pci_ea_entry *eae;
 
@@ -847,9 +847,35 @@ pci_ea_fill_info(device_t pcib, pcicfgregs *cfg)
 		ptr += 4;
 		ent_size = (val & PCIM_EA_ES);
 
+		/*
+		 * PCIM_EA_ES is three bits wide, so a device can claim up
+		 * to seven dwords follow the entry header, while the
+		 * largest entry the spec defines has four: base low,
+		 * max_offset low, and a high half for each.  Read what the
+		 * device claims so that ptr still lands on the next entry,
+		 * but store only what fits.
+		 */
 		for (b = 0; b < ent_size; b++) {
-			dw[b] = REG(ptr, 4);
+			dwv = REG(ptr, 4);
+			if (b < (int)nitems(dw))
+				dw[b] = dwv;
 			ptr += 4;
+		}
+
+		/*
+		 * The two mandatory dwords are what base and max_offset
+		 * are read from below; without them there is nothing to
+		 * describe, and above nitems(dw) the entry is not one this
+		 * code knows how to read.  Either way it is not an entry,
+		 * so do not invent one from whatever dw still holds.
+		 */
+		if (ent_size < 2 || ent_size > (int)nitems(dw)) {
+			if (bootverbose)
+				printf("PCI(EA) dev %04x:%04x, bad entry size "
+				    "%d, ignored\n", cfg->vendor, cfg->device,
+				    ent_size);
+			free(eae, M_DEVBUF);
+			continue;
 		}
 
 		eae->eae_flags = val;

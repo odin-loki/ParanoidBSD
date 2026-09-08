@@ -81,8 +81,10 @@ unsigned long drm_get_resource_start(struct drm_device *dev,
 
 	mtx_lock(&dev->pcir_lock);
 
-	if (drm_alloc_resource(dev, resource) != 0)
+	if (drm_alloc_resource(dev, resource) != 0) {
+		mtx_unlock(&dev->pcir_lock);
 		return 0;
+	}
 
 	start = rman_get_start(dev->pcir[resource]);
 
@@ -98,8 +100,10 @@ unsigned long drm_get_resource_len(struct drm_device *dev,
 
 	mtx_lock(&dev->pcir_lock);
 
-	if (drm_alloc_resource(dev, resource) != 0)
+	if (drm_alloc_resource(dev, resource) != 0) {
+		mtx_unlock(&dev->pcir_lock);
 		return 0;
+	}
 
 	len = rman_get_size(dev->pcir[resource]);
 

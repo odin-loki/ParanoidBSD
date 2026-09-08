@@ -1278,6 +1278,7 @@ invalidate_prefix(struct prefix *pfx)
 		syslog(LOG_ERR, "<%s> failed to add a timer for a prefix. "
 		    "remove the prefix", __func__);
 		delete_prefix(pfx);
+		return;
 	}
 	timo.tv_sec = prefix_timo;
 	timo.tv_nsec = 0;

@@ -54,11 +54,11 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,632 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,088 | 1,063 |
-| 4 | `sbin` | 533 | 228,442 | 3,567 |
+| 4 | `sbin` | 533 | 228,447 | 3,567 |
 | 5 | `usr.bin` | 732 | 247,963 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 656,983 | 9,020 |
+| 6 | `usr.sbin` | 1,142 | 656,984 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,495,373 | 81,387 |
+| 8 | `sys` | 14,951 | 10,495,420 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,296,203** | **114,204** |
+| | **total** | **41,143** | **21,296,256** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -149,7 +149,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.1014.2 | `sys/dev/sound/pci/hda/hdaa.c` | 7,216 | 0 | `TODO-PORT` |
 | 8.615.8 | `sys/dev/ath/if_ath.c` | 7,126 | 0 | `TODO-PORT` |
 | 8.671.20 | `sys/dev/cxgbe/t4_sge.c` | 7,089 | 0 | `TODO-PORT` |
-| 8.887.5 | `sys/dev/pci/pci.c` | 7,053 | 0 | `TODO-PORT` |
+| 8.887.5 | `sys/dev/pci/pci.c` | 7,079 | 0 | `TODO-PORT` |
 | 8.788.132 | `sys/dev/isci/scil/scic_sds_controller.c` | 7,043 | 0 | `TODO-PORT` |
 | 8.1200.75 | `sys/net/iflib.c` | 7,032 | 0 | `TODO-PORT` |
 | 8.959.14 | `sys/dev/qlnx/qlnxe/ecore_dev.c` | 7,019 | 0 | `TODO-PORT` |
@@ -19673,7 +19673,7 @@ function; a file with two hundred of them is a project.
   - [ ] 4.85.3.8 `fill()` · `TODO-FN`
   - [ ] 4.85.3.9 `capdns_setup()` · `TODO-FN`
 - [ ] **4.85.4** `ping.h` · 35L · `TODO-HDR`
-- [ ] **4.85.5** `ping6.c` · 2,779L · `TODO-PORT` · 24 fn
+- [ ] **4.85.5** `ping6.c` · 2,784L · `TODO-PORT` · 24 fn
   - [ ] 4.85.5.1 `ping6()` · `TODO-FN`
   - [ ] 4.85.5.2 `pingerlen()` · `TODO-FN`
   - [ ] 4.85.5.3 `pinger()` · `TODO-FN`
@@ -35580,7 +35580,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.208.1.8 `tgetstr()` · `TODO-FN`
   - [ ] 6.208.1.9 `tdecode()` · `TODO-FN`
 - [ ] **6.208.2** `advcap.h` · 48L · `TODO-HDR`
-- [ ] **6.208.3** `config.c` · 1,638L · `TODO-PORT` · 17 fn
+- [ ] **6.208.3** `config.c` · 1,639L · `TODO-PORT` · 17 fn
   - [ ] 6.208.3.1 `dname_labelenc()` · `TODO-FN`
   - [ ] 6.208.3.2 `loadconfig_index()` · `TODO-FN`
   - [ ] 6.208.3.3 `loadconfig_ifname()` · `TODO-FN`
@@ -41707,7 +41707,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.15.14.11 `allwinner_soc_type()` · `TODO-FN`
   - [ ] 8.15.14.12 `allwinner_soc_family()` · `TODO-FN`
 - [ ] **8.15.15** `aw_machdep.h` · 50L · `TODO-MD`
-- [ ] **8.15.16** `aw_mmc.c` · 1,531L gen:5 · `TODO-MD` · 30 fn
+- [ ] **8.15.16** `aw_mmc.c` · 1,532L gen:5 · `TODO-MD` · 30 fn
   - [ ] 8.15.16.1 `aw_mmc_get_tran_settings()` · `TODO-FN`
   - [ ] 8.15.16.2 `aw_mmc_set_tran_settings()` · `TODO-FN`
   - [ ] 8.15.16.3 `aw_mmc_cam_request()` · `TODO-FN`
@@ -44604,7 +44604,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.38.1.39 `hdmi_audio_infoframe_unpack()` · `TODO-FN`
   - [ ] 8.38.1.40 `hdmi_infoframe_unpack()` · `TODO-FN`
 - [ ] **8.38.2** `hdmi.h` · 332L · `TODO-MD`
-- [ ] **8.38.3** `tegra_bo.c` · 368L · `TODO-MD` · 14 fn
+- [ ] **8.38.3** `tegra_bo.c` · 370L · `TODO-MD` · 14 fn
   - [ ] 8.38.3.1 `tegra_bo_destruct()` · `TODO-FN`
   - [ ] 8.38.3.2 `tegra_bo_free_object()` · `TODO-FN`
   - [ ] 8.38.3.3 `tegra_bo_alloc_contig()` · `TODO-FN`
@@ -47056,7 +47056,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.61.1.14 `max77620_gpio_get_node()` · `TODO-FN`
   - [ ] 8.61.1.15 `max77620_read_buf()` · `TODO-FN`
 - [ ] **8.61.2** `max77620.h` · 261L · `TODO-MD`
-- [ ] **8.61.3** `max77620_gpio.c` · 713L gen:1 · `TODO-MD` · 18 fn
+- [ ] **8.61.3** `max77620_gpio.c` · 714L gen:1 · `TODO-MD` · 18 fn
   - [ ] 8.61.3.1 `max77620_pinmux_get_function()` · `TODO-FN`
   - [ ] 8.61.3.2 `max77620_pinmux_set_fps()` · `TODO-FN`
   - [ ] 8.61.3.3 `max77620_pinmux_config_node()` · `TODO-FN`
@@ -65683,7 +65683,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.653.1.10 `cardbus_detach_card()` · `TODO-FN`
   - [ ] 8.653.1.11 `cardbus_driver_added()` · `TODO-FN`
   - [ ] 8.653.1.12 `cardbus_read_ivar()` · `TODO-FN`
-- [ ] **8.653.2** `cardbus_cis.c` · 659L · `TODO-PORT` · 17 fn
+- [ ] **8.653.2** `cardbus_cis.c` · 665L · `TODO-PORT` · 17 fn
   - [ ] 8.653.2.1 `decode_tuple_generic()` · `TODO-FN`
   - [ ] 8.653.2.2 `decode_tuple_linktarget()` · `TODO-FN`
   - [ ] 8.653.2.3 `decode_tuple_vers_1()` · `TODO-FN`
@@ -68454,7 +68454,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.686.6.3 `drm_buffer_free()` · `TODO-FN`
   - [ ] 8.686.6.4 `drm_buffer_read_object()` · `TODO-FN`
 - [ ] **8.686.7** `drm_buffer.h` · 150L · `TODO-HDR`
-- [ ] **8.686.8** `drm_bufs.c` · 1,704L gen:6 · `TODO-PORT` · 22 fn
+- [ ] **8.686.8** `drm_bufs.c` · 1,708L gen:6 · `TODO-PORT` · 22 fn
   - [ ] 8.686.8.1 `drm_alloc_resource()` · `TODO-FN`
   - [ ] 8.686.8.2 `drm_get_resource_start()` · `TODO-FN`
   - [ ] 8.686.8.3 `drm_get_resource_len()` · `TODO-FN`
@@ -91199,7 +91199,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.887.4.2 `isab_pci_attach()` · `TODO-FN`
   - [ ] 8.887.4.3 `isab_pci_alloc_resource()` · `TODO-FN`
   - [ ] 8.887.4.4 `isab_pci_release_resource()` · `TODO-FN`
-- [ ] **8.887.5** `pci.c` · 7,053L gen:24 · `TODO-PORT`
+- [ ] **8.887.5** `pci.c` · 7,079L gen:24 · `TODO-PORT`
 - [ ] **8.887.6** `pci_dw.c` · 860L gen:1 · `TODO-PORT` · 23 fn
   - [ ] 8.887.6.1 `pci_dw_dbi_read()` · `TODO-FN`
   - [ ] 8.887.6.2 `pci_dw_dbi_write()` · `TODO-FN`
@@ -100899,7 +100899,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1013.34.21 `hdspe_dmafree()` · `TODO-FN`
   - [ ] 8.1013.34.22 `hdspe_detach()` · `TODO-FN`
 - [ ] **8.1013.35** `hdspe.h` · 259L · `TODO-HDR`
-- [ ] **8.1013.36** `ich.c` · 1,241L gen:5 · `TODO-PORT` · 26 fn
+- [ ] **8.1013.36** `ich.c` · 1,242L gen:5 · `TODO-PORT` · 26 fn
   - [ ] 8.1013.36.1 `ich_rd()` · `TODO-FN`
   - [ ] 8.1013.36.2 `ich_wr()` · `TODO-FN`
   - [ ] 8.1013.36.3 `ich_waitcd()` · `TODO-FN`
@@ -127786,7 +127786,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.1220.4** `esp_var.h` · 97L gen:3 · `TODO-HDR`
 - [ ] **8.1220.5** `ipcomp.h` · 57L · `TODO-HDR`
 - [ ] **8.1220.6** `ipcomp_var.h` · 89L gen:2 · `TODO-HDR`
-- [ ] **8.1220.7** `ipsec.c` · 1,589L gen:58 · `TODO-PORT` · 34 fn
+- [ ] **8.1220.7** `ipsec.c` · 1,591L gen:58 · `TODO-PORT` · 34 fn
   - [ ] 8.1220.7.1 `sysctl_def_policy()` · `TODO-FN`
   - [ ] 8.1220.7.2 `key_allocsp_default()` · `TODO-FN`
   - [ ] 8.1220.7.3 `ipsec_invalidate_cache()` · `TODO-FN`
@@ -129428,7 +129428,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1224.31.109 `ipfw_objhash_foreach_type()` · `TODO-FN`
   - [ ] 8.1224.31.110 `ipfw_objhash_free_idx()` · `TODO-FN`
   - [ ] 8.1224.31.111 `ipfw_objhash_alloc_idx()` · `TODO-FN`
-- [ ] **8.1224.32** `ip_fw_table.c` · 3,060L · `TODO-PORT` · 74 fn
+- [ ] **8.1224.32** `ip_fw_table.c` · 3,062L · `TODO-PORT` · 74 fn
   - [ ] 8.1224.32.1 `rollback_toperation_state()` · `TODO-FN`
   - [ ] 8.1224.32.2 `add_toperation_state()` · `TODO-FN`
   - [ ] 8.1224.32.3 `del_toperation_state()` · `TODO-FN`
@@ -132921,7 +132921,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1250.5.4 `diu_init()` · `TODO-FN`
   - [ ] 8.1250.5.5 `diu_attach()` · `TODO-FN`
   - [ ] 8.1250.5.6 `diu_fb_getinfo()` · `TODO-FN`
-- [ ] **8.1250.6** `fsl_espi.c` · 431L gen:1 · `TODO-MD` · 8 fn
+- [ ] **8.1250.6** `fsl_espi.c` · 432L gen:1 · `TODO-MD` · 8 fn
   - [ ] 8.1250.6.1 `fsl_espi_probe()` · `TODO-FN`
   - [ ] 8.1250.6.2 `fsl_espi_attach()` · `TODO-FN`
   - [ ] 8.1250.6.3 `fsl_espi_detach()` · `TODO-FN`
@@ -134337,7 +134337,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1256.6.12 `llan_set_maddr()` · `TODO-FN`
   - [ ] 8.1256.6.13 `llan_set_multicast()` · `TODO-FN`
   - [ ] 8.1256.6.14 `llan_ioctl()` · `TODO-FN`
-- [ ] **8.1256.7** `phyp_vscsi.c` · 1,004L gen:3 · `TODO-MD` · 14 fn
+- [ ] **8.1256.7** `phyp_vscsi.c` · 1,005L gen:3 · `TODO-MD` · 14 fn
   - [ ] 8.1256.7.1 `vscsi_probe()` · `TODO-FN`
   - [ ] 8.1256.7.2 `vscsi_attach()` · `TODO-FN`
   - [ ] 8.1256.7.3 `vscsi_detach()` · `TODO-FN`

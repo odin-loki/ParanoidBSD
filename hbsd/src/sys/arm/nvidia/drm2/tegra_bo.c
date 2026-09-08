@@ -161,8 +161,10 @@ tegra_bo_init_pager(struct tegra_bo *bo)
 		 */
 		m->oflags &= ~VPO_UNMANAGED;
 		m->flags |= PG_FICTITIOUS;
-		if (vm_page_iter_insert(m, bo->cdev_pager, i, &pages) != 0)
+		if (vm_page_iter_insert(m, bo->cdev_pager, i, &pages) != 0) {
+			VM_OBJECT_WUNLOCK(bo->cdev_pager);
 			return (EINVAL);
+		}
 	}
 	VM_OBJECT_WUNLOCK(bo->cdev_pager);
 
