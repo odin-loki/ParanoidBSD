@@ -2653,7 +2653,7 @@ _HOST_TOOL_PRELUDE = """#define __printf0like(a, b)
 """
 
 
-def _gen_bin_sh(out: Path) -> None:
+def _gen_bin_sh(out: Path, _dir: str = "") -> None:
     """bin/sh's four generated headers, by its own Makefile's recipe.
 
     31 of the 249 translation units in the first bin/sbin/usr.bin/usr.sbin
@@ -2693,7 +2693,7 @@ def _gen_bin_sh(out: Path) -> None:
 # headers. Adding one is the same rule iface_shim() follows: run the
 # generator the Makefile runs, on the input the Makefile names. A stub
 # would be worse than the ERROR it replaces.
-def _gen_opt_osname(out: Path) -> None:
+def _gen_opt_osname(out: Path, _dir: str = "") -> None:
     """usr.sbin/bsdinstall/include/Makefile's one generated header.
 
         OSNAME?=  FreeBSD
@@ -2715,6 +2715,43 @@ _GENERATED = {
 }
 
 
+# A header a directory's own Makefile generates with rpcgen, from an
+# interface definition in include/rpcsvc. Fourteen translation units
+# under usr.sbin/ypserv, rpc.statd, rpc.yppasswdd, rpc.ypxfrd,
+# rpc.ypupdated and bootparamd failed on one each - `yp.h', `sm_inter.h',
+# `bootparam_prot.h' - and each of those Makefiles says how:
+#
+#   RPCGEN= RPCGEN_CPP=${CPP:Q} rpcgen -I -C
+#   yp.h: yp.x
+#           ${RPCGEN} -h -o ${.TARGET} ${RPCDIR}/yp.x
+#
+# rpc_headers() already does this for include/rpcsvc's own installed
+# <rpcsvc/*.h>; these are the same generator run for a program's own
+# build directory, where the program includes the header unqualified.
+_RPC_TARGET = re.compile(r"^(\w+)\.h:", re.M)
+
+
+def _gen_rpcgen(out: Path, directory: str) -> None:
+    mk = SRC / directory / "Makefile"
+    if not mk.is_file():
+        return
+    text = mk.read_text(errors="replace")
+    if "rpcgen" not in text:
+        return
+    names = set(_RPC_TARGET.findall(text))
+    for m in re.finditer(r"^(?:GENSRCS|CLEANFILES)\+?=([^\n]*(?:\\\n[^\n]*)*)",
+                         text, re.M):
+        names |= {w[:-2] for w in m.group(1).split() if w.endswith(".h")}
+    for name in sorted(names):
+        x = SRC / "include" / "rpcsvc" / f"{name}.x"
+        if not x.is_file():
+            continue
+        # -C for ANSI C, -h for the header. The -I and -L in the various
+        # RPCGEN lines pick a server style and affect the .c, not this.
+        subprocess.run(["rpcgen", "-C", "-h", "-o", str(out / f"{name}.h"),
+                        str(x)], capture_output=True, cwd=out)
+
+
 @functools.lru_cache(maxsize=None)
 def generated_shim(directory: str) -> str | None:
     """Headers this directory's Makefile generates, generated the same way.
@@ -2723,15 +2760,15 @@ def generated_shim(directory: str) -> str | None:
     fails - a half-written shim is a compile that succeeds and means
     nothing, so a failure leaves the ERROR standing where it can be seen.
     """
-    fn = _GENERATED.get(directory)
-    if fn is None:
-        return None
+    fn = _GENERATED.get(directory, _gen_rpcgen)
     d = Path(tempfile.mkdtemp(prefix="pbsd_gen_"))
     try:
-        fn(d)
+        fn(d, directory)
     except (OSError, subprocess.CalledProcessError):
         return None
-    return d.as_posix()
+    # Nothing written means this directory generates nothing, which is
+    # the common case - do not put an empty directory on every -I.
+    return d.as_posix() if any(d.iterdir()) else None
 
 
 

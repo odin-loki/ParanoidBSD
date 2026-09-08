@@ -57,10 +57,6 @@ UNANALYSED = {
     "secure":     "third-party source PBSD does not maintain",
     "sys":        "checked directory-by-directory above, not as a whole",
     "lib":        "lib/libc and lib/msun are sharded; the rest is not yet",
-    "bin":        "not yet - userland utilities, after libexec",
-    "sbin":       "not yet - userland utilities, after libexec",
-    "usr.bin":    "not yet - userland utilities, after libexec",
-    "usr.sbin":   "not yet - userland utilities, after libexec",
     "stand":      "not yet - the loader is its own header universe",
     "tests":      "not yet - exercises the tree rather than being it",
     "tools":      "build tooling, not shipped code",
@@ -70,6 +66,23 @@ UNANALYSED = {
     "etc":        "configuration, not C",
     "include":    "headers only; they are checked through their users",
     "rescue":     "no C at all - a Makefile that crunchgens bin/ and sbin/",
+}
+
+# The same, for the model checker only. bin, sbin, usr.bin and usr.sbin
+# joined the ANALYSE shards in sweep 18 and are not in a model-check
+# shard: CBMC over 1,862 more translation units is a different order of
+# cost from clang over them, and the analyse shard has to earn its
+# --check-errors first.
+#
+# They were in UNANALYSED, which is checked against both jobs, and stayed
+# there for a while after the analyse shard existed - which is exactly
+# the stale-exemption shape this script was written to catch, in the
+# script itself. The `in both' check below is new because of it.
+UNCHECKED = {
+    "bin":        "analysed since sweep 18; not model-checked yet",
+    "sbin":       "analysed since sweep 18; not model-checked yet",
+    "usr.bin":    "analysed since sweep 18; not model-checked yet",
+    "usr.sbin":   "analysed since sweep 18; not model-checked yet",
 }
 
 
@@ -109,8 +122,26 @@ def main() -> int:
     for job, block in blocks.items():
         covered = set(re.findall(r"--scope\s+([^\s'\"}]+)", block))
         roots = {c.split("/", 1)[0] for c in covered}
+        excused = UNANALYSED | (UNCHECKED if job == "model-check" else {})
         undecided = [d for d in tree
-                     if d not in roots and d not in UNANALYSED]
+                     if d not in roots and d not in excused]
+        # A directory that is BOTH in a shard and excused from it is a
+        # lie in the other direction, and the version of this script that
+        # only looked for the first kind carried four of them.
+        #
+        # WHOLE, not roots: `--scope lib/libc' puts `lib' in roots, and
+        # lib's UNANALYSED entry says "lib/libc and lib/msun are sharded;
+        # the rest is not yet", which is true and not a stale exemption.
+        # Only a scope naming the top-level directory ITSELF - `--scope
+        # bin' - makes an entry for it a lie. sys is the same case.
+        whole = {c for c in covered if "/" not in c}
+        both = sorted(d for d in tree if d in whole and d in excused)
+        if both:
+            bad = True
+            print(f"FAIL  {len(both)} directory(ies) are in a {job} shard "
+                  f"AND excused from it:")
+            for d in both:
+                print(f"      {d}")
         if undecided:
             bad = True
             print(f"FAIL  {len(undecided)} top-level directory(ies) are in "
@@ -119,10 +150,11 @@ def main() -> int:
                 print(f"      {d}")
         else:
             print(f"ok    every top-level directory is in a {job} shard or "
-                  f"on the record ({len(UNANALYSED)} listed)")
+                  f"on the record ({len(excused)} listed)")
 
     # A stale UNANALYSED entry is its own kind of lie.
-    gone = sorted(d for d in UNANALYSED if not (SRC / d).is_dir())
+    gone = sorted(d for d in (UNANALYSED | UNCHECKED)
+                  if not (SRC / d).is_dir())
     if gone:
         bad = True
         print(f"FAIL  {len(gone)} UNANALYSED entry(ies) name a directory "
