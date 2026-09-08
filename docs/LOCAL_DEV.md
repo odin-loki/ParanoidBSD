@@ -25,6 +25,24 @@ not running is worse than a red one.**
 The last row is the only thing that has to stay in CI, and only because of
 two tools. Everything that decides whether the tree is *correct* is local.
 
+## Regenerate the port ledger in the same commit as a source edit
+
+`docs/PORT_PLAN.md` records each file's line count, and CI's `plan` job
+regenerates it and fails if the committed copy differs. So **any** edit
+to a tracked source under `hbsd/src` makes it stale — a nine-line comment
+in `svm.c` is enough — and the fix is one command in the same commit:
+
+```sh
+python3 tools/port_plan.py
+```
+
+It takes ten seconds and touches `docs/PORT_PLAN.md` (committed) and
+`docs/port_plan.json` (gitignored). The gate first went red for a
+different reason — the ledger used to count files on disk, and this
+machine carries an ignored `hbsd/src/contrib/llvm-project` checkout that
+a fresh clone does not — and now that it counts what git tracks, the only
+thing that makes it red is forgetting this.
+
 ## Warm the build-authority caches before a big sweep
 
 `analyze.py` asks bmake what the userland build names and what flags it

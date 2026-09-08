@@ -51,14 +51,14 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 
 | # | area | files | lines | functions |
 |---:|---|---:|---:|---:|
-| 1 | `lib` | 2,827 | 639,564 | 9,056 |
+| 1 | `lib` | 2,827 | 639,606 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,088 | 1,063 |
 | 4 | `sbin` | 533 | 228,442 | 3,567 |
 | 5 | `usr.bin` | 732 | 247,963 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 656,983 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,495,364 | 81,387 |
+| 8 | `sys` | 14,951 | 10,495,373 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,296,126** | **114,204** |
+| | **total** | **41,143** | **21,296,177** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -2421,7 +2421,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.68.153.2 `strtofflags()` · `TODO-FN`
 - [ ] **1.68.154** `sysconf.c` · 634L · `TODO-PORT` · 1 fn
   - [ ] 1.68.154.1 `sysconf()` · `TODO-FN`
-- [ ] **1.68.155** `sysctl.c` · 214L · `TODO-PORT` · 2 fn
+- [ ] **1.68.155** `sysctl.c` · 226L · `TODO-PORT` · 2 fn
   - [ ] 1.68.155.1 `set_user_str()` · `TODO-FN`
   - [ ] 1.68.155.2 `sysctl()` · `TODO-FN`
 - [ ] **1.68.156** `sysctlbyname.c` · 55L · `TODO-PORT` · 1 fn
@@ -2763,7 +2763,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.72.51.9 `_citrus_prop_parse_variable()` · `TODO-FN`
 - [ ] **1.72.52** `citrus_prop.h` · 94L gen:4 · `TODO-HDR`
 - [ ] **1.72.53** `citrus_region.h` · 115L · `TODO-HDR`
-- [ ] **1.72.54** `citrus_stdenc.c` · 148L · `TODO-PORT` · 2 fn
+- [ ] **1.72.54** `citrus_stdenc.c` · 157L · `TODO-PORT` · 2 fn
   - [ ] 1.72.54.1 `_citrus_stdenc_open()` · `TODO-FN`
   - [ ] 1.72.54.2 `_citrus_stdenc_close()` · `TODO-FN`
 - [ ] **1.72.55** `citrus_stdenc.h` · 140L · `TODO-HDR`
@@ -4594,7 +4594,7 @@ function; a file with two hundred of them is a project.
   - [ ] 1.101.31.1 `pmap_getport()` · `TODO-FN`
 - [ ] **1.101.32** `pmap_prot.c` · 62L · `TODO-PORT` · 1 fn
   - [ ] 1.101.32.1 `xdr_pmap()` · `TODO-FN`
-- [ ] **1.101.33** `pmap_prot2.c` · 134L · `TODO-PORT` · 2 fn
+- [ ] **1.101.33** `pmap_prot2.c` · 155L · `TODO-PORT` · 2 fn
   - [ ] 1.101.33.1 `xdr_pmaplist()` · `TODO-FN`
   - [ ] 1.101.33.2 `xdr_pmaplist_ptr()` · `TODO-FN`
 - [ ] **1.101.34** `pmap_rmt.c` · 162L · `TODO-PORT` · 3 fn
@@ -41116,7 +41116,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.12.6.3 `svm_npt_alloc()` · `TODO-FN`
   - [ ] 8.12.6.4 `svm_npt_free()` · `TODO-FN`
 - [ ] **8.12.7** `npt.h` · 37L · `TODO-MD`
-- [ ] **8.12.8** `svm.c` · 2,855L asm gen:6 · `TODO-MD` · 80 fn
+- [ ] **8.12.8** `svm.c` · 2,864L asm gen:6 · `TODO-MD` · 80 fn
   - [ ] 8.12.8.1 `flush_by_asid()` · `TODO-FN`
   - [ ] 8.12.8.2 `decode_assist()` · `TODO-FN`
   - [ ] 8.12.8.3 `svm_disable()` · `TODO-FN`
