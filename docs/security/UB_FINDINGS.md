@@ -6697,3 +6697,33 @@ Twelve more findings of the same checker are not covered here:
 `ng_parse.c:148`, `ng_parse.c:1445`, `drm_crtc_helper.c:302`,
 `subr_scanf.c:531`, `linux_80211_macops.c:586`, `ib_cache.c:599` and two
 in a test.
+
+### `md.c` — six, and a three-way branch the loop forgets
+
+`mdstart_malloc()` decides once, before the loop, which of three ways it
+will move data (`md.c:677`):
+
+```c
+	if (notmapped) {
+		m = bp->bio_ma;
+		ma_offs = bp->bio_ma_offset;
+		dst = NULL;
+	} else if (vlist != NULL) {
+		ma_offs = bp->bio_ma_offset;
+		dst = NULL;
+	} else {
+		dst = bp->bio_data;
+	}
+```
+
+and then, inside `while (nsec--)`, every use of `dst` is in the `else` of
+the same two tests — `if (notmapped) ... else if (vlist != NULL) ...
+else bzero(dst, sc->sectorsize);`. The correspondence is exact and both
+tests are on locals the function set itself, which is a correlation the
+checker holds at the top of the loop and drops when it widens the loop
+state. All six findings are inside it: `md.c:708`, `md.c:719`,
+`md.c:731`, `md.c:749`, `md.c:784`, `md.c:801`.
+
+Worth the entry for the shape rather than the file: a guard evaluated
+*before* a loop and re-tested *inside* it is not a guard the analyser can
+keep, and this tree does it wherever a bio can be unmapped.
