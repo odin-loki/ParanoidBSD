@@ -5476,3 +5476,44 @@ are one symbolic array load.
 The 72nd warning the file produces is a `deadcode` note at `:1427`
 (`Value stored to 'error' is never read`), which the checker list does
 not run and this sweep does not count.
+
+### `lib/msun/src/k_rem_pio2.c` — eleven, and `prec` is not an input
+
+Eleven findings, every one of them downstream of `:296`:
+
+    static const int init_jk[] = {3,4,4,6};   /* :133 */
+    ...
+    int
+    __kernel_rem_pio2(double *x, double *y, int e0, int nx, int prec)
+    {
+            int32_t jz,jx,jv,jp,jk,carry,n,iq[20],i,j,k,m,q0,ih;
+            double z,fw,f[20],fq[20],q[20];
+
+            jk = init_jk[prec];               /* :296 */
+
+`init_jk[]` has four entries. With `prec` unconstrained the read is out
+of bounds, `jk` is garbage, `m = jx+jk` is garbage, the loop at `:306`
+fills none of `f[]`, and everything that touches `f`, `q` or `iq`
+afterwards is reported: `:310`, `:329`, `:333`, `:365`, `:380`, `:394`,
+`:416`, and four assignments at `:433` and `:435`.
+
+The function is not static, so the analyser must treat `prec` as
+arbitrary — the same rule that makes `nice(int incr)` worth reading.
+Here it is not, and the test is the one that section states: is this a
+parameter of an **exported** function? It is not. `__kernel_rem_pio2`
+appears in no `Symbol.map` under `lib/msun`; it is declared in
+`math_private.h:911` and called from exactly four places, each with a
+literal:
+
+| caller | `prec` |
+|---|---:|
+| `src/e_rem_pio2f.c:72` | 0 |
+| `src/e_rem_pio2.c:173` | 1 |
+| `ld80/e_rem_pio2l.h:134` | 2 |
+| `ld128/e_rem_pio2l.h:125` | 3 |
+
+Four callers, four literals, four table entries — the domain is covered
+exactly and nothing outside libm can reach the function. Recorded rather
+than changed: `static` would be the honest annotation, and fdlibm's
+`__kernel_*` functions are shared across `src/`, `ld80/` and `ld128/`
+translation units, so it is not available.
