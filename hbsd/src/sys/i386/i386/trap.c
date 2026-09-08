@@ -806,7 +806,8 @@ trap_pfault(struct trapframe *frame, bool usermode, vm_offset_t eva,
 		 * fault.
 		 */
 #if defined(I586_CPU) && !defined(NO_F00F_HACK)
-		if ((eva == (unsigned int)&idt[6]) && has_f00f_bug) {
+		if (usermode && (eva == (unsigned int)&idt[6]) &&
+		    has_f00f_bug) {
 			*ucode = ILL_PRVOPC;
 			*signo = SIGILL;
 			return (-2);

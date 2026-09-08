@@ -5573,3 +5573,80 @@ inheriting its callers. Recorded rather than changed: removing ext2fs's
 dead half would silence six findings and buy nothing, and the divergence
 from the UFS shape it was deliberately copied from is worth more than the
 six.
+
+## Sweep 14: the twelve powerpc files, and one guard that was on one of two
+
+| | sweep 13 | sweep 14 |
+|---|---|---|
+| OK | 7,519 | **7,531** |
+| ERROR | 590 | **578** |
+| findings | 1,650 | 1,652 |
+
+`ERROR -> OK` 12, `OK -> ERROR` **0**. All twelve are what the cpu index
+was for — `sys/powerpc/{booke,mpc85xx,powernv,ps3,pseries,powerpc,ofw}`,
+each of which had been failing on an identifier inside an `AIM` or a
+`BOOKE` block in `sys/powerpc/include/{spr,pte,tlb}.h`. Three findings
+are new and one is gone.
+
+### `sys/i386/i386/trap.c:809` — the F00F arm writes before the guard
+
+Not a powerpc file at all. Every i386 configuration in this tree says
+`cpu I486_CPU`, `cpu I586_CPU` and `cpu I686_CPU`, so the cpu index
+supplies all three — and `-DI586_CPU` opened a block the analyser had
+never compiled:
+
+    trap_pfault(struct trapframe *frame, bool usermode, vm_offset_t eva,
+        int *signo, int *ucode)
+    {
+            MPASS(!usermode || (signo != NULL && ucode != NULL));   /* :750 */
+            ...
+            if (eva >= PMAP_TRM_MIN_ADDRESS) {
+    #if defined(I586_CPU) && !defined(NO_F00F_HACK)
+                    if ((eva == (unsigned int)&idt[6]) && has_f00f_bug) {
+                            *ucode = ILL_PRVOPC;                   /* :810 */
+                            *signo = SIGILL;
+                            return (-2);
+                    }
+    #endif
+                    if (usermode) {
+                            *signo = SIGSEGV;                      /* :816 */
+                            *ucode = SEGV_MAPERR;
+                            return (1);
+                    }
+                    trap_fatal(frame, eva);
+                    return (-1);
+
+The function has two callers. `:396` passes `&signo, &ucode` with
+`usermode = true`; `:481` passes `NULL, NULL` with `usermode = false`,
+and the assertion on `:750` is what says that is allowed — `MPASS`,
+which is `((void)0)` without `INVARIANTS`.
+
+Every write to those pointers in the function is behind a test of
+`usermode` — every one except this arm, which is reached first. The
+guard exists on one of two, the twelfth time this document has recorded
+that shape.
+
+Reachability is narrow: a Pentium with the F00F erratum, the workaround
+active, and a fault at `&idt[6]` taken in kernel mode. The bug delivers
+that fault while the CPU is fetching the descriptor for `#UD`, so the
+frame's CPL is the offending instruction's and a user program's F00F
+sequence arrives with `usermode` true. What is left is a kernel-mode
+access to the read-only IDT page — not something the kernel does, and
+not something anyone can test here.
+
+The fix is the one the rest of the function already makes: test
+`usermode` first, and let a kernel-mode fault in that range fall through
+to `trap_fatal()` like every other kernel fault in it. One line, and the
+file goes from two findings to one.
+
+Recorded in `check_pbsd_marks.py` as the 150th vendor-tree fix, and
+checked by reverting it.
+
+### The other two are the unconstrained-input class
+
+`sys/powerpc/booke/pmap.c:2630` reads `args->e->virt` where `args` is
+`tlb1_write_entry_int(void *arg)`'s parameter — an `smp_rendezvous`
+callback, so the analyser has no caller and `args->e` is arbitrary.
+`sys/fs/nfsserver/nfs_nfsdport.c:2683` is the same shape one field
+deeper. Both belong to the class `k_rem_pio2.c` is the worked example
+of, and neither is a defect.

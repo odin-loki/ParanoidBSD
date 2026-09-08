@@ -78,6 +78,13 @@ FIXES = {
         "return (ENOMEM)\n",
         "missing semicolon; the file has never been compiled upstream",
     ),
+    "hbsd/src/sys/i386/i386/trap.c": (
+        "if (usermode && (eva == (unsigned int)&idt[6]) &&",
+        "if ((eva == (unsigned int)&idt[6]) && has_f00f_bug) {",
+        "trap_pfault()'s F00F arm wrote through *ucode and *signo before "
+        "the usermode test that guards every other write to them, and "
+        "the kernel-mode caller at :481 passes NULL for both",
+    ),
     "hbsd/src/sys/modules/tpm/Makefile": (
         ".if !empty(OPT_FDT)",
         ".if defined(${OPT_FDT})",
