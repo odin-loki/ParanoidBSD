@@ -555,6 +555,7 @@ nfsrpc_openrpc(struct nfsmount *nmp, vnode_t vp, u_int8_t *nfhp, int fhlen,
 	u_int32_t rflags, deleg;
 	nfsattrbit_t attrbits;
 	int error, ret, acesize, limitby;
+	int gotattr = 0;
 	struct nfsclsession *tsep;
 
 	dp = *dpp;
@@ -702,13 +703,14 @@ nfsrpc_openrpc(struct nfsmount *nmp, vnode_t vp, u_int8_t *nfhp, int fhlen,
 			    NULL, NULL, NULL, NULL, NULL, NULL, p, cred);
 			if (error)
 				goto nfsmout;
+			gotattr = 1;
 		}
 		if (ndp != NULL) {
 			if (reclaim != 0 && dp != NULL) {
 				ndp->nfsdl_change = dp->nfsdl_change;
 				ndp->nfsdl_modtime = dp->nfsdl_modtime;
 				ndp->nfsdl_flags |= NFSCLDL_MODTIMESET;
-			} else if (nd->nd_repstat == 0) {
+			} else if (nd->nd_repstat == 0 && gotattr != 0) {
 				ndp->nfsdl_change = nfsva.na_filerev;
 				ndp->nfsdl_modtime = nfsva.na_mtime;
 				ndp->nfsdl_flags |= NFSCLDL_MODTIMESET;
@@ -5014,7 +5016,7 @@ nfsrpc_statfs(vnode_t vp, struct nfsstatfs *sbp, struct nfsfsinfo *fsp,
 		NFSM_DISSECT(tl, u_int32_t *,
 		    NFSX_STATFS(nd->nd_flag & ND_NFSV3));
 	}
-	if (NFSHASNFSV3(nmp)) {
+	if (NFSHASNFSV3(nmp) && NFSHASNFSV4(nmp) == 0) {
 		sbp->sf_tbytes = fxdr_hyper(tl); tl += 2;
 		sbp->sf_fbytes = fxdr_hyper(tl); tl += 2;
 		sbp->sf_abytes = fxdr_hyper(tl); tl += 2;
@@ -8203,7 +8205,7 @@ nfsrv_parselayoutget(struct nfsmount *nmp, struct nfsrv_descript *nd,
 						error = nfsrv_parseug(nd, 1,
 						    &user, &grp, curthread);
 					NFSCL_DEBUG(4, "aft parseg=%d\n",
-					    grp);
+					    error);
 					if (error != 0)
 						goto nfsmout;
 					NFSCL_DEBUG(4, "user=%d group=%d\n",

@@ -5366,6 +5366,14 @@ Kept because the reasoning is what stops them being re-reported.
 
 | reported | why it is not a defect |
 |---|---|
+| `sys/fs/nfsclient/nfs_clrpcops.c:1793`, `sys/fs/nfsclient/nfs_clrpcops.c:3834` | One mount flag word, read twice, with a call in between. `nfsrpc_read()` sets `nfhp = np->n_fhp` under `NFSHASNFSV4(nmp)` and then re-tests `NFSHASNFSV4(nmp)` inside the retry loop; `nfsrpc_readdir()` sets `rderr` under `nd->nd_flag & ND_NFSV4` and reads it under the same test twenty lines down. Neither word changes: the only writes to `nm_flag` after mount are `sys/fs/nfsclient/nfs_clbio.c:1632` and `sys/fs/nfsclient/nfs_clvfsops.c:2098`, `sys/fs/nfsclient/nfs_clvfsops.c:2100`, and they touch only `NFSMNT_RDIRPLUS` and `NFSMNT_NOLOCKS` — the version bits are fixed for the life of the mount — and `nfsv4_loadattr()` never touches `nd_flag` (it is 1,250 lines of `nfs_commonsubs.c` with no write to it). The analyser has to assume a cross-TU call can change either. |
+| `sys/fs/nfsclient/nfs_clrpcops.c:3032` | `nfsrvd_renamerpc()` reads `nd->nd_flag` after `if (ret == 0) NFSCL_REQSTART(...)`, so on `ret != 0` the descriptor looks unwritten. It is not: `nfscl_renamedeleg()` (`nfs_clstate.c:4960`) increments `retcnt` only on the two lines that also set `*gotfdp` or `*gottdp` — `:5070`/`:5071` and `:5112`/`:5113` — and every early return sets both to 0 and returns 0. So `ret > 0` implies one of the three `NFSCL_REQSTART` above ran. The correlation is between a return value and two out-parameters, in another translation unit. |
+| `sys/fs/nfsclient/nfs_clrpcops.c:3740`, `sys/fs/nfsclient/nfs_clrpcops.c:4214` | `dp` is NULL until the first directory entry is written, and both sites are `dp->d_reclen += left` inside `if (_GENERIC_DIRLEN(len) + NFSX_HYPER > left)`. `left` is `DIRBLKSIZ - blksiz` with `DIRBLKSIZ` 512 - `sys/fs/nfs/nfsport.h:103` includes `<ufs/ufs/dir.h>`, whose `sys/ufs/ufs/dir.h:73` makes it `DEV_BSIZE`, and `blksiz` is only ever incremented after a `dp` has been set — so `dp == NULL` implies `blksiz == 0` implies `left == 512`. The largest the guard can be is `_GENERIC_DIRLEN(255) + 8`, and `offsetof(struct dirent, d_name)` is 24, so `(24 + 255 + 1 + 7) & ~7` is 280 and the sum is 288. The branch cannot be taken on the entry where `dp` is NULL. |
+| `sys/fs/nfsclient/nfs_clrpcops.c:6176`, `sys/fs/nfsclient/nfs_clrpcops.c:6248`, `sys/fs/nfsclient/nfs_clrpcops.c:8802`, `sys/fs/nfsclient/nfs_clrpcops.c:8810`, `sys/fs/nfsclient/nfs_clrpcops.c:9973` | Five of the cross-function out-parameter class in one file. `retonclose` (`:6246`) is written by `nfsrv_parselayoutget()` at `:8009`/`:8011`, four lines into the function, and read by `nfsrpc_layoutgetres()` only under `if (laystat == 0)` — which is the caller's `error`, which is 0 only if that parse ran. `*nfhpp` (`:8800`, `:8808`) is set by `nfscl_mtofh()`, which sets `ND_NOMOREDATA` on every path that leaves it NULL, and the block is entered on `(nd->nd_flag & ND_NOMOREDATA) == 0`. `lease` (`:9971`) is filled only on the NFSv4 path of `nfsrpc_statfs()` and read only under `if (nmp->nm_clp != NULL)`, and `nm_clp` is set in exactly one place, `nfs_clstate.c:965`, on an NFSv4 mount. `devid` (`:6174`) is a parameter of an exported function. |
+| `sys/fs/nfsserver/nfs_nfsdsocket.c:641`, `sys/fs/nfsserver/nfs_nfsdsocket.c:1359` | `vp` at `:641` and `md`/`dpos` at `:1359` are both dominated by their writes within one iteration: `md = nd->nd_md` at `:1219` runs unconditionally on every pass of the ops loop that does not `break` out of it, and `:1359` is inside that same pass. |
+| `sys/fs/nfsserver/nfs_nfsdserv.c:3153`, `sys/fs/nfsserver/nfs_nfsdserv.c:3184` | `nfsquad_t` is `union nfs_quadconvert { u_int32_t lval[2]; u_quad_t qval; }` (`nfsproto.h:822`). The wire gives a clientid as two 32-bit words, so the code writes `clientid.lval[0]` and `clientid.lval[1]` and compares `clientid.qval`. Defined in C; the analyser does not transfer initialisation between union members. 94 writes through `lval` and 76 reads of `qval` across `sys/fs`, and every one of them is undefined in C++23 — which is why this is also in the port ledger, next to `pf_addr`. |
+| `sys/fs/nfsclient/nfs_clbio.c:736` | `ncl_bioread()`'s `default:` arm sets `bp = NULL` and the read below is guarded by `if (n > 0)`. `n` is 0 at `:472` before the loop and can only become non-zero in the `VREG`, `VDIR` or `VLNK` arms — so reaching the guard with `n > 0` and `bp == NULL` needs `vp->v_type` to change between two iterations of one loop over one vnode. |
+| `lib/libufs/cgroup.c:164` | The third program in the `validate_sblock()` row above. `ino_to_fsba()` divides by `fs->fs_ipg`, and `char block[MAXBSIZE]` is bzero'd to `fs->fs_bsize`; `ffs_subr.c:660` has `FCHK(fs->fs_ipg, <, fs->fs_inopb, ...)` and `:648`/`:649` bound `fs_bsize` to `[MINBSIZE, MAXBSIZE]`. libufs reads every superblock through `sbget()`, which is `ffs_sbget()`, which runs `validate_sblock()` at `ffs_subr.c:275`. |
 | `sbin/hastd/hastd.c:702`, `usr.sbin/jail/config.c:268`, `usr.sbin/jail/config.c:274`, `usr.sbin/jail/config.c:276`, `usr.sbin/jail/config.c:914` | Five more of the same macro, and the two programs the list above singled out as worth reading first because they are the network-facing ones. `hastd_reload()`'s `failed:` block does `TAILQ_REMOVE(&newcfg->hc_listen, nlst, hl_next); free(nlst);` and loops back to `TAILQ_FIRST`; all three `goto failed` sites are above the one `yy_config_free(newcfg)` on the success path, so `newcfg` itself is not freed when the block reads it. `jail`'s `free_param()` is `free(p->name); free_param_strings(p); TAILQ_REMOVE(pp, p, tq); free(p);` — removed before freed — and `free_param_strings()` is the same take-head, remove, free loop one level down. Nothing here is out of order; the analyser is not modelling the macro. |
 | `sbin/fsck/preen.c:324`, `sbin/quotacheck/preen.c:280` | The same `preen` framework in two programs, and the same order in both: the caller does `TAILQ_REMOVE(&d->d_part, p, p_entries)` **then** `free(p)`, and only then calls `startdisk(d)`, which takes `TAILQ_FIRST(&d->d_part)` — a node the freed one is no longer in front of, because it is no longer in the list at all. `fsck`'s `startdisk()` runs the check and `quotacheck`'s forks `chkquota()`, but the lifetime question is identical. The queue macros again: this is the fourth pair of findings in this sweep whose whole content is that the analyser does not model `TAILQ_REMOVE`. |
 | `sbin/fsck_ffs/pass5.c:287` (`i / fs->fs_frag`), `sbin/quotacheck/quotacheck.c:620` (`inum % sblock.fs_ipg`) | Both divisors come out of the superblock of the filesystem being checked, which is exactly the attacker-supplied input if the threat model is "somebody hands you a disk image". Both are validated, in `sys/ufs/ffs/ffs_subr.c` — `validate_sblock()` has `FCHK(fs->fs_frag, <, 1, ...)` and `FCHK(fs->fs_frag, >, MAXFRAG, ...)` at `:652`, and `FCHK(fs->fs_ipg, <, fs->fs_inopb, ...)` at `:660`. Both programs read the superblock through `sbget()` (`fsck_ffs/setup.c:410`, `quotacheck.c:306`), which is libufs' entry into `ffs_sbget()`, and `validate_sblock()` runs at `ffs_subr.c:275` — **before** the check-hash comparison, so `UFS_NOHASHFAIL` (which `fsck_ffs` passes deliberately, to repair damaged filesystems) does not skip it. Neither caller passes `UFS_NOWARNFAIL`, so even the downgradeable checks are errors. A different translation unit, in the kernel tree, shared with userland through libufs — which is why the analyser cannot see it. |
@@ -7819,3 +7827,277 @@ The other two findings on that list — `pci_ea_fill_info()`'s pair — are
 neither the `M_ZERO` class nor a false positive. They are written up
 above the *Not defects* line, where defects go: a three-bit
 device-supplied length indexing a four-element stack array.
+
+## The NFS client, read as a parser of a server's replies
+
+`sys/fs/nfsclient/nfs_clrpcops.c` had fifteen findings and is the file
+that turns whatever an NFS server sends into kernel data structures, so
+it is worth reading rather than counting. Three of the fifteen are
+defects, one of them a NULL dereference; reading the two files beside it
+turned up three more, including an uninitialised pointer that gets
+*stored* rather than merely read.
+
+The threat model is not exotic. A client mounts a server; from then on
+every reply is input, and "the server is malicious" is only the strongest
+form of "the server is buggy, or another client raced you".
+
+### `nfsrpc_openrpc()`: the Getattr that did not happen
+
+```c
+	NFSM_DISSECT(tl, u_int32_t *, 2 * NFSX_UNSIGNED);
+	/* If the 2nd element == NFS_OK, the Getattr succeeded. */
+	if (*++tl == 0) {
+		KASSERT(nd->nd_repstat == 0,
+		    ("nfsrpc_openrpc: Getattr repstat"));
+		error = nfsv4_loadattr(nd, NULL, &nfsva, ...);
+		...
+	}
+	if (ndp != NULL) {
+		if (reclaim != 0 && dp != NULL) {
+			...
+		} else if (nd->nd_repstat == 0) {
+			ndp->nfsdl_change = nfsva.na_filerev;
+			ndp->nfsdl_modtime = nfsva.na_mtime;
+```
+
+The `KASSERT` states one direction: Getattr status OK implies
+`nd_repstat == 0`. Fourteen lines later the code takes the *converse* as
+though it had been asserted too. It has not been. The enclosing block is
+entered on `nd_repstat == 0`, so on a reply that grants a delegation and
+gives the trailing Getattr a non-zero status, `nfsva` — a `struct
+nfsvattr` on the stack, written nowhere else in the function — is copied
+into the new delegation's change ID and modify time.
+
+The `else` two lines down already sets `NFSCLDL_RECALL`, which is the
+right answer when the attributes are unknown. A `gotattr` flag routes
+the no-attributes case there. **Fixed.**
+
+### `nfsrpc_statfs()`: one arm has the version guard and the other does not
+
+```c
+	} else {
+		...
+		NFSM_DISSECT(tl, u_int32_t *,
+		    NFSX_STATFS(nd->nd_flag & ND_NFSV3));
+	}
+	if (NFSHASNFSV3(nmp)) {
+		sbp->sf_tbytes = fxdr_hyper(tl); tl += 2;
+		...
+	} else if (NFSHASNFSV4(nmp) == 0) {
+		sbp->sf_tsize = fxdr_unsigned(u_int32_t, *tl++);
+```
+
+`tl` is `NULL` at the top of the function and is only dissected in the
+`else` — the non-NFSv4 arm. The second reader carries
+`NFSHASNFSV4(nmp) == 0`, so the author knew NFSv4 had to be excluded;
+the first reader does not carry it.
+
+`NFSHASNFSV3` and `NFSHASNFSV4` are two bits of one word, not two values
+of one enum:
+
+```c
+#define	NFSHASNFSV3(n)		((n)->nm_flag & NFSMNT_NFSV3)
+#define	NFSHASNFSV4(n)		((n)->nm_flag & NFSMNT_NFSV4)
+```
+
+and `nfs_clvfsops.c` sets each from its own mount option — `:1017` and
+`:1019` — with nothing anywhere rejecting the pair. `mount -t nfs -o
+nfsv3,nfsv4` therefore produces a mount that takes the NFSv4 branch,
+leaves `tl` NULL, and dereferences it. (The `mount -u` path cannot do
+it: `:1279` strips both version bits out of the update's arguments and
+takes them from the existing mount.) Root-only, so a robustness bug
+rather than a privilege boundary — and a NULL dereference in the kernel,
+fixed by giving the first arm the guard the second one already has.
+The NFSv4 path has already filled `sbp` through `nfsv4_loadattr()`, so
+skipping both arms is not just safe but correct. **Fixed.**
+
+### `nfsrv_parselayoutget()`: a debug line one argument out
+
+```c
+	error = nfsrv_parseug(nd, 0, &user, &grp, curthread);
+	NFSCL_DEBUG(4, "after parseu=%d\n", error);
+	if (error == 0)
+		error = nfsrv_parseug(nd, 1, &user, &grp, curthread);
+	NFSCL_DEBUG(4, "aft parseg=%d\n", grp);
+	if (error != 0)
+		goto nfsmout;
+	NFSCL_DEBUG(4, "user=%d group=%d\n", user, grp);
+```
+
+`grp` is `gid_t grp;` with no initialiser, and only the *second*
+`nfsrv_parseug()` writes it. The line above prints `error`, the line
+below prints `grp` after the error check; this one prints `grp` before
+it. It is a typo for `error`, and on the failure path the kernel
+formats an uninitialised stack word into `dmesg` — only when
+`vfs.nfs.debuglevel` has been raised to 4, but that is a sysctl and not
+a compile-time switch. **Fixed.**
+
+### `nfs_lookitup()`: three arms, two of which set `np`
+
+This one the sweep found in `nfs_clvnops.c`, and it is the worst of the
+six.
+
+```c
+	if (npp && !error) {
+		if (*npp != NULL) {
+		    np = *npp;
+		    ...
+		    newvp = NFSTOV(np);
+		} else if (NFS_CMPFH(dnp, nfhp->nfh_fh, nfhp->nfh_len)) {
+		    free(nfhp, M_NFSFH);
+		    VREF(dvp);
+		    newvp = dvp;
+		} else {
+		    error = nfscl_nget(dvp->v_mount, dvp, nfhp, &cn, td,
+			&np, LK_EXCLUSIVE);
+		    ...
+		}
+		...
+	}
+	if (npp && *npp == NULL) {
+		if (error) {
+			...
+		} else
+			*npp = np;
+	}
+```
+
+The middle arm — the server answered the LOOKUP with the directory's
+*own* filehandle — sets `newvp` and never touches `np`. Reaching it
+requires `*npp == NULL`, which is exactly the condition the tail then
+acts on: with `error == 0` it stores `np`, an uninitialised stack
+pointer, into the caller's out-parameter. `nfs_symlink()` at `:2436`
+and `nfs_mkdir()` at `:2525` immediately do `newvp = NFSTOV(np)` on
+it.
+
+That is not a NULL dereference, which faults predictably at address
+zero; it is whatever the stack slot last held, dereferenced at
+`offsetof(struct nfsnode, n_vnode)`. On that arm `newvp` is `dvp`, so
+the node is `dnp` — the value the other two arms would have produced —
+and `np = dnp;` is the fix. **Fixed.**
+
+### `nfs_mknodrpc()` and `nfs_createrpc()`: `NFSTOV(NULL)`
+
+```c
+	if (!error) {
+		if (!nfhp)
+			(void) nfsrpc_lookup(dvp, cnp->cn_nameptr, ...);
+		if (nfhp)
+			error = nfscl_nget(dvp->v_mount, dvp, nfhp, cnp,
+			    curthread, &np, LK_EXCLUSIVE);
+	}
+	...
+	if (!error) {
+		newvp = NFSTOV(np);
+```
+
+`np` is `NULL`-initialised and `NFSTOV(np)` is `(np)->n_vnode`. The
+guard on the `nfscl_nget()` is `if (nfhp)`; the guard on the use is
+`if (!error)`, and the two are not the same condition, because the
+fallback lookup's return is discarded.
+
+The fallback exists because `nfscl_mtofh()` returns 0 with `*nfhpp`
+still NULL whenever an NFSv3 server answers "no file handle follows" —
+`flag` there, at `nfs_clcomsubs.c:352`, is read straight off the wire:
+
+```c
+	if (nd->nd_flag & ND_NFSV3) {
+		NFSM_DISSECT(tl, u_int32_t *, NFSX_UNSIGNED);
+		flag = fxdr_unsigned(int, *tl);
+	}
+	...
+	if (flag) {
+		error = nfsm_getfh(nd, nfhpp);
+```
+
+So the sequence is ordinary: NFSv3 CREATE or MKNOD succeeds without a
+post-op filehandle, the follow-up LOOKUP fails — another client removing
+the entry in between is enough, no malice required — and the client
+dereferences NULL. Both functions get `else error = ENOENT;`, which is
+what `nfs_symlinkrpc()`'s and `nfs_mkdirrpc()`'s fallbacks already
+produce by propagating theirs. **Fixed.**
+
+### `nfs_mount()`: the two allocations `out:` does not free
+
+```c
+	tlscertname = malloc(len, M_NEWNFSMNT, M_WAITOK);
+	strlcpy(tlscertname, opt, len);
+```
+
+`mountnfs()` is the only consumer of `tlscertname` and of `nam`: it
+frees them at `:1540` and `:1555`, hangs them off the new `nfsmount`
+otherwise, and frees them again on its own `bad:` path at `:1861` and
+`:1863`. Between the `malloc` and that call there are **37** `goto out`
+for `tlscertname` and **9** for `nam`, and `out:` frees only `hst` and
+`dirpath`. Every rejected mount that named a certificate and then
+tripped a later option check leaks up to `NAME_MAX - 6` bytes of
+`M_NEWNFSMNT` and a `struct sockaddr` of `M_SONAME`.
+
+Clearing both locals immediately after the `mountnfs()` call — the one
+point where ownership transfers — and freeing both at `out:` fixes all
+46 exits at once without any risk of double-freeing the paths that do
+reach `mountnfs()`; `free(NULL, ...)` is a no-op. **Fixed.**
+
+### What the measurement said
+
+An A/B over `sys/fs/nfsclient`, `sys/fs/nfsserver` and `sys/fs/nfs` —
+24 translation units, the six edits above and nothing else, flag
+digests unchanged:
+
+```
+  nfs_clrpcops.c:   OK->OK  findings 15->13
+  nfs_clvfsops.c:   OK->OK  findings  1->0
+  nfs_clvnops.c:    OK->OK  findings  5->2
+  nfs_nfsdsocket.c: OK->OK  findings  5->4
+  before (24, 0, 59)  after (24, 0, 52)
+  24 units; 4 changed; 0 flag digests changed
+```
+
+Seven findings gone, no status moved, and eleven of `nfs_clrpcops.c`'s
+fifteen simply shifted by the two lines the `gotattr` declaration adds —
+which is why the comparison is by `(file, line, checker)` and prints
+both sides.
+
+Two of the seven wanted checking rather than counting.
+
+`nfs_clvnops.c:2432` and `:2521` — `nfs_symlink()` and `nfs_mkdir()`
+doing `newvp = NFSTOV(np)` on `nfs_lookitup()`'s out-parameter — are
+still reported, at `:2436` and `:2525`. The `np = dnp` that fixes
+`nfs_lookitup` is real; the analyser has another path it has not
+given up.
+
+`nfsrpc_statfs`'s pair is still reported too, at `:5020` and `:5028`.
+That one is explainable and worth writing down: the guard now reads
+`NFSHASNFSV3(nmp) && NFSHASNFSV4(nmp) == 0`, and the branch that
+dissected `tl` was taken on `NFSHASNFSV4(nmp)` being false — the *same*
+expression. What sits between the two reads is `nfscl_request()`, a
+call into another translation unit that takes `nmp`, so the analyser
+must assume `nm_flag` changed. The fix closes the reachable path
+(`mount -o nfsv3,nfsv4`); it does not, and cannot, close the analyser's.
+
+**A finding that does not move is not a fix that did not work.** It is
+the difference between what the code guarantees and what a
+path-sensitive analyser can carry across a call boundary, and the two
+were never the same thing.
+
+### And one alignment, which is not a bug today
+
+`nfsrvd_compound()` builds its reply-op-count slot only after
+
+```c
+	/* If taglen < 0, there was a parsing error in nfsd_getminorvers(). */
+	if (taglen < 0) {
+		error = EBADRPC;
+		goto nfsmout;
+	}
+	...
+	NFSM_BUILD(retopsp, u_int32_t *, NFSX_UNSIGNED);
+```
+
+and writes through `retopsp` at the end under `if (taglen == -1)`'s
+`else`. Two spellings of one condition, five hundred lines apart, with
+`retopsp = NULL` in between if they ever disagree. They do not:
+`nfsd_getminorvers()` forces `taglen = -1` on every error it has. But
+it is in another translation unit, and the guard that keeps a remote
+NFSv4 client from reaching `*NULL` should not depend on that. The
+second spelling is now `taglen < 0`, the same as the first.

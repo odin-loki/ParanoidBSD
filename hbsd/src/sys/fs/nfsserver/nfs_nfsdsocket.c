@@ -1396,7 +1396,7 @@ nfsmout:
 		else
 			printf("nfsv4 comperr1=%d\n", error);
 	}
-	if (taglen == -1) {
+	if (taglen < 0) {
 		NFSM_BUILD(tl, u_int32_t *, 2 * NFSX_UNSIGNED);
 		*tl++ = 0;
 		*tl = 0;

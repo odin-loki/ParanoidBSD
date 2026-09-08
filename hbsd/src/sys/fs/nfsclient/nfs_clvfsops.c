@@ -1466,6 +1466,13 @@ nfs_mount(struct mount *mp)
 	error = mountnfs(&args, mp, nam, hst, krbname, krbnamelen, dirpath,
 	    dirlen, srvkrbname, srvkrbnamelen, &vp, td->td_ucred, td,
 	    nametimeo, negnametimeo, minvers, newflag, tlscertname, aconn);
+	/*
+	 * mountnfs() consumes both of these on every path it can return
+	 * by - it frees them itself or hangs them off the new nfsmount -
+	 * so from here on they are not ours to free.
+	 */
+	nam = NULL;
+	tlscertname = NULL;
 out:
 	if (!error) {
 		MNT_ILOCK(mp);
@@ -1475,6 +1482,8 @@ out:
 			mp->mnt_kern_flag |= MNTK_NULL_NOCACHE;
 		MNT_IUNLOCK(mp);
 	}
+	free(nam, M_SONAME);
+	free(tlscertname, M_NEWNFSMNT);
 	free(hst, M_TEMP);
 	free(dirpath, M_TEMP);
 	return (error);

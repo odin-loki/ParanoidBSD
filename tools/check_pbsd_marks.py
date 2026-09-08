@@ -1530,6 +1530,68 @@ FIXES = {
         "descriptor before anything wrote it, and it is enqueued to the "
         "QMan",
     ),
+
+    # The NFS client and server, from the sweep that read them as parsers
+    # of whatever the other end sends.
+    "hbsd/src/sys/fs/nfsclient/nfs_clrpcops.c": [
+        (
+            "} else if (nd->nd_repstat == 0 && gotattr != 0) {",
+            "} else if (nd->nd_repstat == 0) {\n\t\t\t\tndp->nfsdl_change =",
+            "openrpc: the KASSERT states `Getattr OK implies repstat 0\' and "
+            "the code fourteen lines down used the converse, so a server "
+            "that grants a delegation and fails the trailing Getattr had "
+            "an uninitialised nfsvattr copied into it",
+        ),
+        (
+            "if (NFSHASNFSV3(nmp) && NFSHASNFSV4(nmp) == 0) {",
+            "if (NFSHASNFSV3(nmp)) {\n\t\tsbp->sf_tbytes",
+            "statfs: tl is dissected only on the non-NFSv4 path, and the V2 "
+            "arm below already carried the guard this one was missing",
+        ),
+        (
+            'NFSCL_DEBUG(4, "aft parseg=%d\\n",\n\t\t\t\t\t    error);',
+            'NFSCL_DEBUG(4, "aft parseg=%d\\n",\n\t\t\t\t\t    grp);',
+            "parselayoutget: the debug line printed grp before the second "
+            "nfsrv_parseug had filled it",
+        ),
+    ],
+    "hbsd/src/sys/fs/nfsclient/nfs_clvnops.c": [
+        (
+            "\t\t    np = dnp;\n\t\t    newvp = dvp;",
+            "\t\t    VREF(dvp);\n\t\t    newvp = dvp;\n\t\t} else {",
+            "lookitup: the arm where the server answered with the "
+            "directory\'s own filehandle set newvp and not np, and the tail "
+            "published np to the caller",
+        ),
+        # TWO sites, so a count: nfs_mknodrpc() and nfs_create() both
+        # reached NFSTOV(np) with np NULL. Losing one twin has to fail.
+        (
+            ("\t\telse\n\t\t\terror = ENOENT;\t/* No file handle, and none "
+             "looked up. */", 2),
+            None,
+            "mknodrpc and create: NFSTOV(NULL) when neither the reply nor "
+            "the fallback lookup produced a filehandle",
+        ),
+    ],
+    "hbsd/src/sys/fs/nfsclient/nfs_clvfsops.c": [
+        (
+            "\tfree(nam, M_SONAME);\n\tfree(tlscertname, M_NEWNFSMNT);\n"
+            "\tfree(hst, M_TEMP);",
+            "newflag, tlscertname, aconn);\nout:",
+            "nfs_mount: 37 goto out between the tlscertname malloc and "
+            "mountnfs(), which is the only thing that owns it, and nine "
+            "more after nam is set",
+        ),
+    ],
+    "hbsd/src/sys/fs/nfsserver/nfs_nfsdsocket.c": [
+        (
+            "\tif (taglen < 0) {\n\t\tNFSM_BUILD(tl, u_int32_t *, "
+            "2 * NFSX_UNSIGNED);",
+            "\tif (taglen == -1) {\n\t\tNFSM_BUILD(tl, u_int32_t *,",
+            "compound: the two spellings of `the tag did not parse\' now "
+            "agree, so retopsp cannot be NULL where it is written",
+        ),
+    ],
 }
 
 

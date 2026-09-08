@@ -1747,6 +1747,8 @@ nfs_mknodrpc(struct vnode *dvp, struct vnode **vpp, struct componentname *cnp,
 		if (nfhp)
 			error = nfscl_nget(dvp->v_mount, dvp, nfhp, cnp,
 			    curthread, &np, LK_EXCLUSIVE);
+		else
+			error = ENOENT;	/* No file handle, and none looked up. */
 	}
 	if (dattrflag)
 		(void) nfscl_loadattrcache(&dvp, &dnfsva, NULL, 0, 1);
@@ -1888,6 +1890,8 @@ again:
 		if (nfhp != NULL)
 			error = nfscl_nget(dvp->v_mount, dvp, nfhp, cnp,
 			    curthread, &np, LK_EXCLUSIVE);
+		else
+			error = ENOENT;	/* No file handle, and none looked up. */
 	}
 	if (dattrflag)
 		(void) nfscl_loadattrcache(&dvp, &dnfsva, NULL, 0, 1);
@@ -2923,6 +2927,7 @@ nfs_lookitup(struct vnode *dvp, char *name, int len, struct ucred *cred,
 		} else if (NFS_CMPFH(dnp, nfhp->nfh_fh, nfhp->nfh_len)) {
 		    free(nfhp, M_NFSFH);
 		    VREF(dvp);
+		    np = dnp;
 		    newvp = dvp;
 		} else {
 		    cn.cn_nameptr = name;
