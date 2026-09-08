@@ -31,6 +31,11 @@ A finding is sorted by the function it is inside and by who can call it:
                   code that is not here, so it is exported in every way
                   that matters to a precondition.
   STATIC, UNSEEN  the name appears nowhere but its own definition.
+  MACRO           the analyser named a function the source does not
+                  contain - RB_GENERATE_STATIC and its family. Recorded
+                  since analyze.py started asking clang for the name; a
+                  record older than that lands in "attributed to no
+                  function" instead.
   GENERATED       config(8)'s vnode_if.h and the other *_if.h interfaces,
                   written into a directory that does not outlive the run.
   HEADER          the finding is in a .h. A `static __inline' there has no
@@ -280,7 +285,11 @@ GENERATED = re.compile(r"^/tmp/pbsd_\w+_[A-Za-z0-9_]+/")
 
 
 def collect(shards) -> dict:
-    """{(file, line, checker): message} over a sweep's shards.
+    """{(file, line, checker): (message, function or None)} over a sweep.
+
+    The function is what the analyser itself said - analyze.py records
+    clang's issue_context since the plist-multi-file switch - and is
+    absent from a record older than that.
 
     Keyed by the PLACE, so a finding in a generated header that every unit
     including it reports is counted once. sweep_report.py keys by the
@@ -291,7 +300,7 @@ def collect(shards) -> dict:
     normalised the same way sweep_report.py normalises it - otherwise the
     same seven findings have a different name in every sweep.
     """
-    seen: dict[tuple, str] = {}
+    seen: dict[tuple, tuple[str, str | None]] = {}
     for sh in shards:
         for ln in open(sh):
             rec = json.loads(ln)
@@ -300,7 +309,7 @@ def collect(shards) -> dict:
             for f in rec.get("findings", []):
                 path, _, line = f["where"].rpartition(":")
                 path = GENERATED.sub("<generated>/", path)
-                seen[(path, int(line), f["checker"])] = f["msg"]
+                seen[(path, int(line), f["checker"])] = (f["msg"], f.get("fn"))
     return seen
 
 
@@ -356,11 +365,32 @@ def main() -> int:
         f = File(p)
         for k in sorted(byfile[path]):
             _, line, checker = k
+            msg, said = seen[k]
             e = f.enclosing(line)
             if e is None or not e[0]:
-                unattributed += 1
+                if said:
+                    # At file scope as far as the text goes, and clang has
+                    # a name for it: RB_GENERATE_STATIC and friends.
+                    tally["macro"][0] += 1
+                    if args.list == "macro":
+                        rows["macro"].append(
+                            f"  {path}:{line}  {said}()  [file scope]"
+                            f"\n      {checker}: {msg}")
+                else:
+                    unattributed += 1
                 continue
             name, params, static, brace, _head = e
+            if said and said != name:
+                # clang named a different function: the brace rule found
+                # the definition this line is textually inside, and the
+                # analyser is reporting code a macro generated there. Its
+                # answer wins, and it has no parameters to read.
+                tally["macro"][0] += 1
+                if args.list == "macro":
+                    rows["macro"].append(
+                        f"  {path}:{line}  {said}()  [textually in "
+                        f"{name}()]\n      {checker}: {msg}")
+                continue
             if path.endswith((".h", ".hh", ".hpp")):
                 # A `static __inline' in a header has no callers in its own
                 # file and every including translation unit's callers
@@ -377,7 +407,6 @@ def main() -> int:
                        "static-taken" if others else "static-unseen")
             t = tally[cls]
             t[0] += 1
-            msg = seen[k]
             named = named_objects(msg) & set(params)
             if named:
                 t[1] += 1
@@ -391,7 +420,7 @@ def main() -> int:
                     f"\n      {checker}: {msg}")
 
     order = ["exported", "static-taken", "static-called",
-             "static-unseen", "header", "generated"]
+             "static-unseen", "header", "generated", "macro"]
     print(f"{len(keys):,} findings"
           f"{'' if args.all else ' not cited by line in UB_FINDINGS.md'}"
           f" in {len(byfile):,} files")
