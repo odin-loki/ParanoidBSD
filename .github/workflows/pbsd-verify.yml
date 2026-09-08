@@ -313,6 +313,14 @@ jobs:
       # enumeration in under a second.
       - name: A PaX feature that is off still links
         run: python3 tools/verify/check_pax_options.py
+      # param_premise.py sorts the sweep's findings by the function they
+      # are in, which it works out by reading the text. A rule about where
+      # a function begins can be a little bit wrong and still produce a
+      # table that looks entirely reasonable, so it is checked against the
+      # analyser's own issue_context on real files as well as against the
+      # written-out shapes.
+      - name: The finding is attributed to the function clang says it is in
+        run: python3 tools/verify/test_param_premise.py
 
   report:
     needs: [sweep, analyze]
