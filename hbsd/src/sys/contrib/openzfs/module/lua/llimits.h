@@ -99,8 +99,20 @@ typedef LUAI_UACNUMBER l_uacNumber;
 ** non-return type
 **
 ** Suppress noreturn attribute in kernel builds to avoid objtool check warnings
+**
+** PBSD: ...but not when a static analyser is the compiler.  objtool is
+** Linux's, and it is looking at CODE; an analyser is looking at PATHS,
+** and without the attribute it walks out of luaX_syntaxerror() and reads
+** the locals the caller never initialised - lparser.c:858's `args.k'
+** after the `default:' arm, ldebug.c:42 and lstrlib.c:780.  This is the
+** same exception openzfs already makes for its own noreturn:
+** include/os/freebsd/spl/sys/debug.h:85 gives spl_panic() the attribute
+** under `__COVERITY__ || __clang_analyzer__' and for the same stated
+** reason.  Neither macro is defined when the kernel is built, so the
+** object code does not change.
 */
-#if defined(__GNUC__) && !defined(_KERNEL)
+#if defined(__GNUC__) && (!defined(_KERNEL) || \
+    defined(__COVERITY__) || defined(__clang_analyzer__))
 #define l_noret		void __attribute__((noreturn))
 #elif defined(_MSC_VER)
 #define l_noret		void __declspec(noreturn)

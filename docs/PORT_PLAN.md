@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,810 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,840 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,869** | **114,204** |
+| | **total** | **41,143** | **21,297,899** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -56512,7 +56512,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.499.18** `lgc.h` · 159L · `SKIP-VENDOR`
 - [ ] **8.499.19** `llex.c` · 531L · `SKIP-VENDOR`
 - [ ] **8.499.20** `llex.h` · 83L · `SKIP-VENDOR`
-- [ ] **8.499.21** `llimits.h` · 314L asm · `SKIP-VENDOR`
+- [ ] **8.499.21** `llimits.h` · 326L asm · `SKIP-VENDOR`
 - [ ] **8.499.22** `lmem.c` · 98L · `SKIP-VENDOR`
 - [ ] **8.499.23** `lmem.h` · 56L · `SKIP-VENDOR`
 - [ ] **8.499.24** `lobject.c` · 282L · `SKIP-VENDOR`
@@ -56590,7 +56590,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.503.5** `event_os.c` · 65L · `SKIP-VENDOR`
 - [ ] **8.503.6** `hkdf.c` · 102L · `SKIP-VENDOR`
 - [ ] **8.503.7** `kmod_core.c` · 346L gen:11 · `SKIP-VENDOR`
-- [ ] **8.503.8** `spa_os.c` · 297L · `SKIP-VENDOR`
+- [ ] **8.503.8** `spa_os.c` · 315L · `SKIP-VENDOR`
 - [ ] **8.503.9** `sysctl_os.c` · 852L gen:85 · `SKIP-VENDOR`
 - [ ] **8.503.10** `vdev_geom.c` · 1,308L gen:5 · `SKIP-VENDOR`
 - [ ] **8.503.11** `vdev_label_os.c` · 131L · `SKIP-VENDOR`

@@ -2686,6 +2686,22 @@ FIXES = {
             "all-parity-targets case reconstruct_general() is reached with",
         ),
     ],
+    "hbsd/src/sys/contrib/openzfs/module/os/freebsd/zfs/spa_os.c": (
+        "nvlist_t *best_cfg = NULL;",
+        "\tnvlist_t *best_cfg, *nvtop, *nvroot;\n",
+        "spa_generate_rootconf: best_cfg was assigned only under "
+        "`txg > best_txg' with best_txg starting at 0, and the next line "
+        "passed it to nvlist_lookup_uint64() - at boot, on labels read "
+        "off the root pool's disks",
+    ),
+    "hbsd/src/sys/contrib/openzfs/module/lua/llimits.h": (
+        "defined(__COVERITY__) || defined(__clang_analyzer__))",
+        "#if defined(__GNUC__) && !defined(_KERNEL)\n#define l_noret",
+        "l_noret dropped __attribute__((noreturn)) in every kernel build "
+        "for a Linux objtool warning, so an analyser walked out of "
+        "luaX_syntaxerror() and read the caller's uninitialised locals; "
+        "restored under the same two macros debug.h:85 uses for spl_panic",
+    ),
     "hbsd/src/sys/cddl/dev/dtrace/x86/dis_tables.c": [
         (
             "PBSD: the outputs are written BEFORE either early return",

@@ -13270,3 +13270,84 @@ reverted, "a built armv7 msun file gets arm/ and src/" reports all seven
 directories. The second check holds the other half of the rule — that
 `lib/libc/softfloat/eqdf2.c`, which `for_arch('armv7')` does not name,
 still gets `-I lib/libc/softfloat`.
+
+## The rest of openzfs: a boot-time uninitialised pointer, and a `noreturn` a Linux tool took away
+
+`module/zfs` is 137 of the 288 translation units under
+`sys/contrib/openzfs`. The other 151 — the FreeBSD SPL and VFS layer,
+`zcommon`, `icp`, `nvpair`, `lua`, `zstd`, `unicode` — had never been
+read, and until the `-include` order was fixed they were being read with
+every `ASSERT` compiled out. 18 findings live outside `module/zfs`. Two
+are defects.
+
+**`os/freebsd/zfs/spa_os.c:108`.** `spa_generate_rootconf()` declares
+`nvlist_t *best_cfg` uninitialised and assigns it only inside
+
+```c
+	best_txg = 0;
+	for (i = 0; i < count; i++) {
+		if (configs[i] == NULL)
+			continue;
+		txg = fnvlist_lookup_uint64(configs[i], ZPOOL_CONFIG_POOL_TXG);
+		if (txg > best_txg) {
+			best_txg = txg;
+			best_cfg = configs[i];
+		}
+	}
+	nchildren = 1;
+	nvlist_lookup_uint64(best_cfg, ZPOOL_CONFIG_VDEV_CHILDREN, &nchildren);
+```
+
+A set of labels whose `POOL_TXG` is 0 — or whose `configs[]` entries are
+all NULL, which the loop's own `continue` says is a case — leaves it a
+stack word, and the very next line hands that word to
+`nvlist_lookup_uint64()`, which walks it. This runs at **boot**, on the
+labels read off the root pool's disks by
+`vdev_geom_read_pool_label()`, so the deciding value comes off disk. Now
+initialised to NULL, with the "nothing was best" case freeing `configs`
+and returning NULL — which is what the function's other failure path
+already does.
+
+**`module/lua/llimits.h:104`.** Lua's `l_noret` is the return type of
+`luaX_syntaxerror()`, `luaG_runerror()` and the rest of the interpreter's
+error paths, all of which `longjmp`. The vendor tree has
+
+```c
+/* Suppress noreturn attribute in kernel builds to avoid objtool
+   check warnings */
+#if defined(__GNUC__) && !defined(_KERNEL)
+#define	l_noret		void __attribute__((noreturn))
+```
+
+so in every kernel build the attribute is gone. objtool is Linux's, and
+it is looking at *code*; a static analyser is looking at *paths*, and
+without the attribute it walks out of `luaX_syntaxerror()` and reads what
+the caller never initialised — `lparser.c:858`'s `args.k`, after the
+`default:` arm that is the only path not to set it.
+
+openzfs already knows this shape and already makes the exception:
+`include/os/freebsd/spl/sys/debug.h:85` gives `spl_panic()` the attribute
+under `__COVERITY__ || __clang_analyzer__`, with a comment saying exactly
+why the general case is suppressed. The same two macros, on the same
+argument: neither is defined when the kernel is built, so no object code
+changes.
+
+```
+--scope sys/contrib/openzfs --check-errors
+  32 -> 30 findings, 280 OK, 8 ERROR on both sides, all 8 on the record
+```
+
+Both markers verified by restoring the file from `HEAD`: `exit=1`.
+
+### The sixteen that remain outside `module/zfs`
+
+| where | rests on |
+|---|---|
+| `icp/algs/modes/ccm.c:260,267,279` | `macp` is set under `ccm_remainder_len > 0` and used under the same test, with `calculate_ccm_mac()` and `crypto_{init,get}_ptrs()` in between — one predicate read twice across calls that take the same `ctx`. |
+| `lua/ldebug.c:42`, `lua/lstrlib.c:780` | the interpreter's own invariants (`ci->func` points at a Lua closure when `isLua(ci)`; `str_gsub`'s match state). Reachable only through `zfs program`, which needs pool-owner privilege. Not discharged in detail — named here so the next reader starts from that rather than from zero. |
+| `os/freebsd/zfs/zvol_os.c:816,864` | `zfs_uio_init()` tolerates a NULL `struct uio *` (`if (uio_s != NULL)`) and every caller then dereferences it; the cdev `d_read`/`d_write` entry points are never called with one. The defensive test inside the helper, carried forward. |
+| `os/freebsd/zfs/zfs_acl.c:830` | `zfs_acl_node_alloc(n * sizeof (zfs_object_ace_t))` leaves `z_acldata` NULL when `n` is 0, and a v0 ACL being transformed has at least one ACE. |
+| `unicode/u8_textprep.c:1370,1524,1703` | `l` never exceeds the number of bytes written into the local `t[]`. This is a hand-rolled backtracking buffer — `saved_l` is restored on a failed match at `:1327` — and the analyser cannot follow the index across the restore. The input is filenames, so this is the one in the table worth a closer look than it got here. |
+| `zstd/lib/decompress/zstd_decompress_block.c:1388,1394` | `ZSTD_decodeSeqHeaders()` writes `*nbSeqPtr` on both of its non-error returns (`:496` and `:509`), and every earlier return is a `RETURN_ERROR_IF` the caller catches with `ZSTD_isError()`. The analyser loses the `size_t` wraparound arithmetic that makes `ZSTD_isError` true for those codes. |
+| `zstd/lib/common/bitstream.h:205` | `assert(nbBits < BIT_MASK_SIZE)` two lines above the `BIT_mask[nbBits]` it guards — compiled out here, and a caller contract besides. Compression side, not decompression. |
+| `zstd/lib/compress/fse_compress.c:251` | `normalizedCounter[symbol++]` bounded by the `maxSymbolValue` the same function validated. Compression side. |

@@ -78,7 +78,18 @@ spa_generate_rootconf(const char *name)
 {
 	nvlist_t **configs, **tops;
 	nvlist_t *config;
-	nvlist_t *best_cfg, *nvtop, *nvroot;
+	nvlist_t *nvtop, *nvroot;
+	/*
+	 * PBSD: best_cfg initialised, and the "nothing was best" case given a
+	 * return.  It was assigned only under `txg > best_txg' with best_txg
+	 * starting at 0, so a set of labels whose POOL_TXG is 0 - or whose
+	 * configs[] entries are all NULL, which the loop's own `continue'
+	 * says is possible - left it a stack word, and the very next line
+	 * passed it to nvlist_lookup_uint64().  This runs at boot on the
+	 * labels read off the root pool's disks, so the value comes from
+	 * DISK.
+	 */
+	nvlist_t *best_cfg = NULL;
 	uint64_t *holes;
 	uint64_t best_txg;
 	uint64_t nchildren;
@@ -102,6 +113,13 @@ spa_generate_rootconf(const char *name)
 			best_txg = txg;
 			best_cfg = configs[i];
 		}
+	}
+
+	if (best_cfg == NULL) {
+		for (i = 0; i < count; i++)
+			fnvlist_free(configs[i]);
+		kmem_free(configs, count * sizeof (void *));
+		return (NULL);
 	}
 
 	nchildren = 1;
