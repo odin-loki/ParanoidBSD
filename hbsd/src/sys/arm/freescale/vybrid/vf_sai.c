@@ -735,6 +735,20 @@ sai_attach(device_t dev)
 	    sc->dma_size, 0,		/* maxsegsize, flags */
 	    NULL, NULL,			/* lockfunc, lockarg */
 	    &sc->dma_tag);
+	/*
+	 * PBSD: err, checked. This assignment was dead - the next
+	 * statement overwrote it with bus_dmamem_alloc()'s return before
+	 * anything read it - and bus_dma_tag_create() opens with
+	 * `*dmat = NULL;' (busdma_bounce.c:179), so a failed tag create
+	 * left sc->dma_tag NULL and handed that straight to
+	 * bus_dmamem_alloc(), which dereferences it. A NULL kernel
+	 * dereference at attach, on the one path the discarded value was
+	 * there to report.
+	 */
+	if (err != 0) {
+		device_printf(dev, "cannot create DMA tag\n");
+		return (ENXIO);
+	}
 
 	err = bus_dmamem_alloc(sc->dma_tag, (void **)&sc->buf_base,
 	    BUS_DMA_NOWAIT | BUS_DMA_COHERENT, &sc->dma_map);

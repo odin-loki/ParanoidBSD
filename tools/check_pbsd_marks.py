@@ -898,6 +898,26 @@ FIXES = {
             "given",
         ),
     ],
+    # The same driver twice: vf_sai.c is imx6_ssi.c one SoC over, down
+    # to the dead `err = bus_dma_tag_create(...)'.
+    "hbsd/src/sys/arm/freescale/imx/imx6_ssi.c": [
+        (
+            "PBSD: err, checked. This assignment was dead",
+            "\t    &sc->dma_tag);\n\n\terr = bus_dmamem_alloc(",
+            "bus_dma_tag_create()'s return was overwritten before "
+            "anything read it, and that function opens with "
+            "*dmat = NULL, so a failure handed NULL to "
+            "bus_dmamem_alloc()",
+        ),
+    ],
+    "hbsd/src/sys/arm/freescale/vybrid/vf_sai.c": [
+        (
+            "PBSD: err, checked. This assignment was dead",
+            "\t    &sc->dma_tag);\n\n\terr = bus_dmamem_alloc(",
+            "the same dead assignment as imx6_ssi.c, in the driver it "
+            "was copied from or to",
+        ),
+    ],
     "hbsd/src/sys/dev/backlight/backlight.c": [
         (
             "PBSD: an unknown cmd fell out of this switch",

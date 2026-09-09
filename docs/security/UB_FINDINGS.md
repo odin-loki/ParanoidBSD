@@ -10185,3 +10185,77 @@ reports nothing else in either.
 `*word = temp[0] | (temp[1] << 8)`, each its own unwritten value. That
 is why the finding list has six entries and the file has five distinct
 sites.
+
+---
+
+## A dead assignment the analyser did not report
+
+`imx6_ssi.c` and `vf_sai.c` — the same audio driver, one Freescale SoC
+apart — each carry two findings: one false, one a leak that cannot be
+fixed without an answer this reading did not have. What the reading
+found instead was in neither.
+
+```c
+	err = bus_dma_tag_create(
+	    bus_get_dma_tag(sc->dev),
+	    ...
+	    &sc->dma_tag);
+
+	err = bus_dmamem_alloc(sc->dma_tag, (void **)&sc->buf_base,
+	    BUS_DMA_NOWAIT | BUS_DMA_COHERENT, &sc->dma_map);
+	if (err) {
+```
+
+The first `err` is overwritten by the second before anything reads it.
+And `bus_dma_tag_create()` opens with
+
+```c
+	*dmat = NULL;                            /* busdma_bounce.c:179 */
+```
+
+so a failed tag create leaves `sc->dma_tag` NULL and the next line hands
+that to `bus_dmamem_alloc()`, which dereferences it. A NULL kernel
+dereference at attach, on precisely the path the discarded return value
+existed to report.
+
+**The finding count does not move.** This is not one of the four things
+the analyser reported in these two files; the leak finding shifts down
+by the seven lines of comment and that is all. It is recorded here as
+something a reading found while checking something else, which is a
+different kind of evidence from a finding, and worth saying so rather
+than letting a commit imply the sweep caught it.
+
+### The two findings that stay in those files
+
+`imx6_ssi.c:385` and `vf_sai.c:357` are false, and they are the `aw_sid`
+shape again — a table the analyser will not fold:
+
+```c
+	sr = NULL;
+	for (i = 0; rate_map[i].speed != 0; i++)          /* exact match */
+		if (rate_map[i].speed == speed) sr = &rate_map[i];
+	if (sr == NULL) {
+		for (i = 0; rate_map[i].speed != 0; i++) {    /* nearest */
+			sr = &rate_map[i];
+			...
+		}
+	}
+	sc->sr = sr;
+	...
+	pll4_configure_output(sr->mfi, sr->mfn, sr->mfd);
+```
+
+`sr` stays NULL only if `rate_map[0].speed == 0`. Both tables have real
+entries before their sentinel — one in `imx6_ssi.c:143`, three in
+`vf_sai.c:129` — so the second loop always runs at least once.
+
+`imx6_ssi.c:790` and `vf_sai.c:742` are the `scp` leak, and they are
+**real**: `ssi_attach()` mallocs `sc`, `sc->conf` and `scp`, and four
+later `return (ENXIO)` paths free none of them. It is not fixed here,
+and the reason is specific rather than a shrug. Two of those returns are
+after `pcm_init(dev, scp)`, at which point the sound(4) framework holds
+`scp` — so freeing it there would turn a boot-time leak of a few hundred
+bytes into a use-after-free. Which of `pcm_init`, `pcm_addchan` and
+`pcm_register` takes ownership, and what each one's failure contract is,
+has to be established before the unwind can be written. Recorded as a
+task with that named as the blocker.
