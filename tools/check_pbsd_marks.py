@@ -1115,6 +1115,18 @@ FIXES = {
             "device",
         ),
     ],
+    "hbsd/src/sys/dev/iommu/busdma_iommu.c": [
+        (
+            "PBSD: this function is reachable only as bus_dma_iommu_impl's",
+            "\terror = common_bus_dma_tag_create(parent != NULL ?\n"
+            "\t    &((struct bus_dma_tag_iommu *)parent)->common : NULL,",
+            "iommu_bus_dma_tag_create() tested parent for NULL in its "
+            "first statement and dereferenced it unconditionally three "
+            "lines later; bus_dma_tag_create() reaches a tag's impl "
+            "only when parent is not NULL, so the test was the wrong "
+            "half",
+        ),
+    ],
     "hbsd/src/sys/dev/sound/macio/i2s.c": [
         (
             "PBSD: past this point the softc is no longer ours alone.",

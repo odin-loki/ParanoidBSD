@@ -11749,3 +11749,62 @@ not a per-softc field. A second i2s device would overwrite the first
 one's hook pointer between `config_intrhook_establish()` and
 `i2s_postattach()`. Every Apple machine this driver runs on has one, so
 it is a latent bug rather than a live one.
+
+## `iommu_bus_dma_tag_create`: the test and the dereference disagreed
+
+```c
+	*dmat = NULL;
+	error = common_bus_dma_tag_create(parent != NULL ?
+	    &((struct bus_dma_tag_iommu *)parent)->common : NULL, alignment,
+	    ...);
+	if (error != 0)
+		goto out;
+
+	oldtag = (struct bus_dma_tag_iommu *)parent;
+	newtag->common.impl = &bus_dma_iommu_impl;
+	newtag->ctx = oldtag->ctx;
+	newtag->owner = oldtag->owner;
+```
+
+The first statement says `parent` may be NULL. Three lines later
+`oldtag->ctx` says it may not. Both cannot be right, and the finding —
+
+```
+sys/dev/iommu/busdma_iommu.c:393  [core.NullDereference]
+    Access to field 'ctx' results in a dereference of a null pointer
+    (loaded from variable 'oldtag')
+```
+
+— is the analyser reading the first as a claim about the second.
+
+Which half is wrong is answerable without judgement. This function is
+reachable at exactly one call site, `bus_dma_iommu_impl.tag_create`, and
+`bus_dma_tag_create()` reaches a tag's `impl` only in its non-NULL arm:
+
+```c
+	if (parent == NULL) {
+		error = bus_dma_bounce_impl.tag_create(parent, ...);
+	} else {
+		tc = (struct bus_dma_tag_common *)parent;
+		error = tc->impl->tag_create(parent, ...);
+	}
+```
+
+— `sys/x86/x86/busdma_machdep.c:151`, `sys/arm64/arm64/busdma_machdep.c:134`,
+`sys/riscv/riscv/busdma_machdep.c:128`; those are the three architectures
+that build this file. A NULL parent never gets an IOMMU tag; it gets a
+bounce tag. So the conditional is the dead half, and the dereference is
+correct.
+
+Removing the conditional and stating the invariant as a `KASSERT` is the
+fix. It is not a behaviour change in either direction: without
+`INVARIANTS`, a NULL parent would have faulted on `oldtag->ctx` exactly
+as before; with it, the panic now names the reason.
+
+```
+--scope sys/dev/iommu   2 findings -> 1   2 units, OK on both sides
+```
+
+The one that remains is `iommu_gas.c:187`, which is the `RB_GENERATE()`
+line — a finding inside the generated red-black tree code, of the class
+already triaged in sweep 17, not a defect in this file.

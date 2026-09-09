@@ -379,16 +379,29 @@ iommu_bus_dma_tag_create(bus_dma_tag_t parent, bus_size_t alignment,
 	struct bus_dma_tag_iommu *newtag, *oldtag;
 	int error;
 
+	/*
+	 * PBSD: this function is reachable only as bus_dma_iommu_impl's
+	 * .tag_create, and bus_dma_tag_create() dispatches through a tag's
+	 * impl only in its `parent != NULL' arm - a NULL parent goes to
+	 * bus_dma_bounce_impl instead (busdma_machdep.c:151 on x86,
+	 * :134 on arm64, :128 on riscv).  So parent is never NULL here, and
+	 * the conditional below said otherwise while the three lines after
+	 * it dereferenced parent unconditionally.  Only one of the two can
+	 * be right; the tests above say which.  State the invariant instead
+	 * of half-honouring it.
+	 */
+	KASSERT(parent != NULL,
+	    ("%s: NULL parent tag", __func__));
+	oldtag = (struct bus_dma_tag_iommu *)parent;
+
 	*dmat = NULL;
-	error = common_bus_dma_tag_create(parent != NULL ?
-	    &((struct bus_dma_tag_iommu *)parent)->common : NULL, alignment,
+	error = common_bus_dma_tag_create(&oldtag->common, alignment,
 	    boundary, lowaddr, highaddr, maxsize, nsegments, maxsegsz, flags,
 	    lockfunc, lockfuncarg, sizeof(struct bus_dma_tag_iommu),
 	    (void **)&newtag);
 	if (error != 0)
 		goto out;
 
-	oldtag = (struct bus_dma_tag_iommu *)parent;
 	newtag->common.impl = &bus_dma_iommu_impl;
 	newtag->ctx = oldtag->ctx;
 	newtag->owner = oldtag->owner;
