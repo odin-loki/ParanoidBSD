@@ -240,6 +240,80 @@ check("and does not read commented lines",
                                 "Makefile"),
       "the reader is taking `# SUBDIR+= ipftest' as an assignment")
 
+print("\n== the DEFAULT_OFF entries name an option that really is off")
+# A third shape, which neither NOT_NAMED nor NOT_SUBDIR can express: the
+# file IS named -- bmake in its directory says so -- and the DIRECTORY
+# is one the parent only descends into under an option. usr.bin/dpv is
+# the case:
+#
+#   usr.bin/Makefile:194   SUBDIR.${MK_DIALOG}+=  dpv
+#
+# NOT_NAMED is false here and NOT_SUBDIR is false here; what is true is
+# that MK_DIALOG is off unless somebody turns it on. The claim carries
+# the option's name so both halves can be checked: the parent really
+# gates the directory on that option, and src.opts.mk really defaults
+# it to no.
+
+
+def _default_no_options() -> set[str]:
+    """The __DEFAULT_NO_OPTIONS list out of share/mk/src.opts.mk."""
+    mk = ROOT / "hbsd" / "src" / "share" / "mk" / "src.opts.mk"
+    out: set[str] = set()
+    if not mk.is_file():
+        return out
+    taking = False
+    for line in mk.read_text().splitlines():
+        if re.match(r"^__DEFAULT_NO_OPTIONS\s*\+?=", line):
+            taking = True
+            line = line.split("=", 1)[1]
+        elif not taking:
+            continue
+        body = line.strip()
+        if body.startswith("#"):
+            continue
+        cont = body.endswith("\\")
+        out.update(w for w in body.rstrip("\\").split() if w.isupper()
+                   or "_" in w)
+        if not cont:
+            taking = False
+    return {w for w in out if re.fullmatch(r"[A-Z0-9_]+", w)}
+
+
+_no = _default_no_options()
+check("the __DEFAULT_NO_OPTIONS reader finds something", len(_no) > 20)
+check("...and it is not just returning everything", "KERBEROS" not in _no,
+      "KERBEROS is __DEFAULT_YES; a reader that says no to everything "
+      "makes every DEFAULT_OFF claim pass")
+_off = [(f, why.split(":", 1)[1].strip())
+        for f, why in EXPECTED.items() if why.startswith("DEFAULT_OFF:")]
+check("some file makes the DEFAULT_OFF claim", bool(_off))
+for _f, _opt in _off:
+    d = Path(_f).parent
+    check(f"{_f}: MK_{_opt} is off by default", _opt in _no,
+          f"{_opt} is not in __DEFAULT_NO_OPTIONS, so this entry is "
+          f"hiding a directory the build does descend into")
+    parent = ROOT / "hbsd" / "src" / d.parent / "Makefile"
+    txt = parent.read_text() if parent.is_file() else ""
+    check(f"{_f}: its parent gates the directory on MK_{_opt}",
+          re.search(r"SUBDIR\.\$\{MK_" + re.escape(_opt) +
+                    r"\}\s*\+?=[^\n]*\b" + re.escape(d.name) + r"\b",
+                    txt) is not None,
+          f"{d.parent}/Makefile does not gate {d.name} on MK_{_opt}")
+
+print("\n== the NEEDS_LOCALBASE entries really name the ports prefix")
+# The last shape: the directory IS built, and its own Makefile says the
+# header comes from a port. /usr/local is the ports prefix and nothing
+# in this tree installs into it, so the claim is checkable by reading
+# the Makefile that makes it.
+_loc = [f for f, why in EXPECTED.items() if why.strip() == "NEEDS_LOCALBASE"]
+check("some file makes the NEEDS_LOCALBASE claim", bool(_loc))
+for _f in _loc:
+    mk = ROOT / "hbsd" / "src" / Path(_f).parent / "Makefile"
+    check(f"{_f}: its Makefile exists", mk.is_file())
+    check(f"{_f}: and it names /usr/local",
+          "/usr/local" in (mk.read_text() if mk.is_file() else ""),
+          "nothing in the tree says this program needs a port")
+
 print("\n== the INCLUDED_BY entries name a file that really includes them")
 # An entry whose reason is INCLUDED_BY:<path> claims that the named file
 # #includes this one, which is why it is not a translation unit of its

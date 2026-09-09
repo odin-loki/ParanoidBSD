@@ -71,8 +71,28 @@ MACHINE_OF = {
 # lib and usr.bin Makefiles that .PATH into them, and its own Makefiles
 # are upstream's, which bmake reads as something other than what they
 # are.  `sys' is not here either - the kernel's authority answers for it.
+# krb5 is the MIT tree and kerberos5 is Heimdal, and Makefile.inc1:436
+# picks between them:
+#
+#     .if ${MK_KERBEROS} != "no"
+#     .if ${MK_MITKRB5} != "no"
+#     SUBDIR+=krb5
+#     .else
+#     SUBDIR+=kerberos5
+#     .endif
+#
+# MITKRB5 is __DEFAULT_YES, so the build descends into krb5 and never
+# into kerberos5. This list had it the other way round: 54 kerberos5
+# directories and no krb5 one, so <krb5.h> - which krb5/include installs
+# from contrib/../crypto/krb5/src/include/krb5.h - was on no include
+# path and usr.sbin/gssd was ERROR. Asking bmake in the Heimdal tree
+# does not even work: src.libnames.mk:952 `.error's there, because
+# _DP_krb5 is the MIT dependency set while that Makefile's LIBADD is the
+# Heimdal one. kerberos5 stays, because a tree built with MK_MITKRB5=no
+# is a legal configuration and its headers are then the right ones; it
+# simply contributes nothing under the defaults.
 SCOPES = ("lib", "libexec", "bin", "sbin", "usr.bin", "usr.sbin",
-          "kerberos5", "cddl", "rescue", "stand", "tests",
+          "krb5", "kerberos5", "cddl", "rescue", "stand", "tests",
           "secure", "games", "include")
 
 SUFFIXES = (".c", ".cc", ".cpp", ".cxx", ".S", ".s", ".m", ".y", ".l")
@@ -234,6 +254,60 @@ def build(arch: str, src: Path = SRC, jobs: int = 8
     return named, sorted(failed), builder
 
 
+# Flags a translation unit needs to PARSE, taken from a component's
+# CFLAGS as well as from a file's own. Deliberately short: anything that
+# only changes code generation belongs in the per-file carve-out, where
+# -flto and -fsanitize can be excluded by name.
+PARSE_AFFECTING = ("-fbracket-depth", "-fblocks")
+
+# `-include <path>' is two words, so it survives neither the -I/-D/-U
+# test nor the -f/-m one, and it is the strongest parse-affecting flag
+# there is: it prepends a whole header. Thirty-two userland Makefiles
+# use it, in both forms. usr.sbin/fstyp/Makefile:34 and :36 are
+#
+#     CFLAGS.zfs.c+= -include ${ZFSTOP}/include/os/freebsd/spl/sys/ccompile.h
+#     CFLAGS.zfs.c+= -include ${SRCTOP}/sys/modules/zfs/zfs_config.h
+#
+# and without them zfs.c is fourteen errors starting inside libspl's
+# own <string.h>.
+INCLUDE_FLAG = "-include"
+
+
+# The variables a directory can list programs in. Each may carry an
+# SRCS.<prog>, and bsd.progs.mk / bsd.test.mk then read CFLAGS.<prog>.
+_PROG_VARS = ("PROGS", "PROGS_CXX", "PLAIN_TESTS_C", "PLAIN_TESTS_CXX",
+              "ATF_TESTS_C", "ATF_TESTS_CXX", "GTESTS")
+
+
+@functools.lru_cache(maxsize=None)
+def _progs_srcs(d: Path, arch: str, src: Path,
+                timeout: int) -> tuple[tuple[str, frozenset[str]], ...]:
+    """{program: the sources its SRCS.<prog> names} for one directory.
+
+    Cached on the DIRECTORY, not the file. Asked per file this would be
+    two extra bmake runs for each of 1,862 progs units; asked per
+    directory it is two for each directory that lists programs at all,
+    and one cheap one for each that does not.
+    """
+    got = _bmake(d, arch, list(_PROG_VARS), src, timeout)
+    if got is None:
+        return ()
+    progs = [w for line in got for w in line.split()]
+    if not progs:
+        return ()
+    srcs = _bmake(d, arch, [f"SRCS.{p}" for p in progs], src, timeout)
+    if srcs is None:
+        return ()
+    return tuple((p, frozenset(line.split()))
+                 for p, line in zip(progs, srcs))
+
+
+def _programs_naming(d: Path, arch: str, name: str, src: Path,
+                     timeout: int) -> list[str]:
+    """The programs in this directory whose SRCS.<prog> names `name'."""
+    return [p for p, s in _progs_srcs(d, arch, src, timeout) if name in s]
+
+
 def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40,
                name: str = "") -> list[str]:
     """The -I, -D and -U this directory's build really passes.
@@ -281,6 +355,19 @@ def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40,
         stem = name.rsplit(".", 1)[0]
         want += [f"CFLAGS.{name}", f"CFLAGS.{stem}",
                  f"CXXFLAGS.{name}", f"CXXFLAGS.{stem}"]
+        # And the flags of the PROGRAM this file belongs to, which
+        # bsd.progs.mk and bsd.test.mk spell CFLAGS.<prog> rather than
+        # CFLAGS.<file>. sbin/dhclient/tests/Makefile is the case:
+        #
+        #     PLAIN_TESTS_C=            option-domain-search_test
+        #     SRCS.option-domain-search_test= alloc.c ... fake.c \
+        #                                     option-domain-search.c
+        #     CFLAGS.option-domain-search_test+= -I${.CURDIR:H}
+        #
+        # fake.c has no CFLAGS.fake.c of its own; the -I that lets it
+        # find <dhcpd.h> is on the test program's name.
+        for prog in _programs_naming(d, arch, name, src, timeout):
+            want += [f"CFLAGS.{prog}", f"CXXFLAGS.{prog}"]
     got = _bmake(d, arch, want, src, timeout)
     if got is None:
         return []
@@ -291,14 +378,47 @@ def ask_cflags(d: Path, arch: str, src: Path = SRC, timeout: int = 40,
             words = shlex.split(line)
         except ValueError:
             words = line.split()
+        pending = False
         for w in words:
+            if pending:
+                # The path half of `-include <path>', emitted JOINED to
+                # the flag. clang accepts `-include/path/x.h', and one
+                # word is what every caller of this function expects:
+                # includes.py drops a flag it has already seen, so two
+                # `-include' words deduplicate to one and orphan the
+                # second path, which clang then reads as a source file.
+                # usr.sbin/fstyp has exactly two.
+                pending = False
+                w = INCLUDE_FLAG + w
+            elif w == INCLUDE_FLAG:
+                pending = True
+                continue
             if w in seen or len(w) <= 2:
+                continue
+            if w.startswith(INCLUDE_FLAG) and len(w) > len(INCLUDE_FLAG):
+                seen.add(w)
+                out.append(w)
                 continue
             # -f and -m only from the file's own flags, and never the
             # two the analyser cannot accept.
-            if w[:2] in ("-I", "-D", "-U") or (
-                    i >= 2 and w[:2] in ("-f", "-m")
-                    and not w.startswith(("-fsanitize", "-flto"))):
+            #
+            # PARSE_AFFECTING is the exception, and it comes from the
+            # same reasoning the per-file carve-out already uses:
+            # without them the file does not PARSE, so dropping them
+            # does not produce a differently-optimised compile, it
+            # produces an ERROR. usr.sbin/wlanstat/Makefile:10 is
+            #
+            #     CFLAGS.clang+= -fbracket-depth=512 -Wno-cast-align
+            #
+            # for a file whose ~300 `#define S_X AFTER(S_PREV)' chain
+            # expands to that many nested parentheses; without it,
+            # `fatal error: bracket nesting level exceeded maximum of
+            # 256'. -fblocks is the same shape one extension over, and
+            # appears in component CFLAGS as well as per-file ones.
+            if (w[:2] in ("-I", "-D", "-U")
+                    or w.startswith(PARSE_AFFECTING)
+                    or (i >= 2 and w[:2] in ("-f", "-m")
+                        and not w.startswith(("-fsanitize", "-flto")))):
                 seen.add(w)
                 out.append(w)
     return out

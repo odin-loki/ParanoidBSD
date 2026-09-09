@@ -503,7 +503,16 @@ create_service(struct netconfig *nconf)
 	struct sockaddr_in6 *sin6;
 	struct __rpc_sockinfo si;
 	int aicode;
-	int fd;
+	/*
+	 * PBSD: -1, the same "invalid" this function already stores into
+	 * sock_fd[] two screens down and that create_service() tests for
+	 * with `if (fd < 0) continue'. fd is assigned only inside
+	 * `if (!kernel_lockd)', and every use is inside the same test --
+	 * but kernel_lockd is a file-scope global (:85) and the two tests
+	 * have syslog(), inet_pton() and getaddrinfo() between them, so
+	 * nothing carries the correlation. close(-1) fails EBADF.
+	 */
+	int fd = -1;
 	int nhostsbak;
 	int r;
 	u_int32_t host_addr[4];  /* IPv4 or IPv6 */

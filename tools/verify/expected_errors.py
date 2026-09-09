@@ -98,6 +98,73 @@ EXPECTED = {
     "usr.sbin/rpc.lockd/test.c":
         "a hand-run probe, not in SRCS. NOT_NAMED",
 
+    # usr.bin/tip/libacu holds ten ACU drivers and no Makefile of its
+    # own; usr.bin/tip/tip/Makefile reaches them with
+    #
+    #     .PATH:  ${.CURDIR}/../libacu
+    #     SRCS=   ... biz22.c courier.c df.c dn11.c hayes.c t3000.c
+    #             v3451.c v831.c ventel.c
+    #
+    # which is nine of the ten. biz31.c is the one it does not name.
+    "usr.bin/tip/libacu/biz31.c":
+        "nine of its ten siblings are in tip's SRCS and this one is "
+        "not. NOT_NAMED",
+
+    # usr.sbin/traceroute/Makefile:6 is
+    #     SRCS= as.c traceroute.c ifaddrlist.c findsaddr-udp.c
+    # so the socket variant of findsaddr is the road not taken.
+    "usr.sbin/traceroute/findsaddr-socket.c":
+        "SRCS names findsaddr-udp.c instead. NOT_NAMED",
+
+    # Named only under an option, and the option is off. bhyve's
+    # Makefile:74 is
+    #
+    #     .if ${MK_BHYVE_SNAPSHOT} != "no"
+    #     SRCS+= snapshot.c
+    #     .endif
+    #
+    # and BHYVE_SNAPSHOT is in share/mk/src.opts.mk's
+    # __DEFAULT_NO_OPTIONS, so bmake asked with the tree's own defaults
+    # does not name it -- which is why this is NOT_NAMED and not the
+    # DEFAULT_OFF marker below, where the file IS named and the
+    # DIRECTORY is what the option gates.
+    "usr.sbin/bhyve/snapshot.c":
+        "SRCS+= only under MK_BHYVE_SNAPSHOT, which is "
+        "__DEFAULT_NO. NOT_NAMED",
+
+    # sbin/Makefile:85 is SUBDIR.${MK_VERIEXEC}+= veriexec, and
+    # src.opts.mk:246 makes VERIEXEC depend on BEARSSL, which is
+    # __DEFAULT_NO. bmake in the directory names nothing either, because
+    # its own Makefile is inside the same .if.
+    "sbin/veriexec/veriexec.c":
+        "MK_VERIEXEC depends on BEARSSL, which is "
+        "__DEFAULT_NO. NOT_NAMED",
+
+    # Named by its own Makefile, in a directory the build only descends
+    # into under an option that is off. usr.bin/Makefile:194 is
+    #
+    #     SUBDIR.${MK_DIALOG}+=  dpv
+    #
+    # and DIALOG is in __DEFAULT_NO_OPTIONS, so nothing builds dpv and
+    # <dialog.h> - contrib/dialog/dialog.h, installed by gnu/lib/
+    # libdialog only when that option is on - is not on any include
+    # path. NOT_NAMED cannot say this: bmake IN the directory does name
+    # dpv.c. NOT_SUBDIR cannot either: the parent's SUBDIR line does
+    # list it, conditionally.
+    "usr.bin/dpv/dpv.c":      "DEFAULT_OFF:DIALOG",
+
+    # Built - MK_CUSE and MK_SOUND are both __DEFAULT_YES - and needing
+    # a port. Its own Makefile says so in two lines:
+    #
+    #     CFLAGS+=  -I${SRCTOP}/usr.sbin/virtual_oss/virtual_oss \
+    #               -I/usr/local/include
+    #     LDFLAGS+= -L/usr/local/lib -lm -lfftw3
+    #
+    # /usr/local is the ports prefix; <fftw3.h> is math/fftw3 and is in
+    # no part of this tree.
+    "usr.sbin/virtual_oss/virtual_equalizer/equalizer.c":
+        "NEEDS_LOCALBASE",
+
     # cxgbetool's four register tables. cxgbetool.c:92-95 is
     #
     #     #include "reg_defs_t4.c"
@@ -528,11 +595,17 @@ EXPECTED = {
     "lib/libc/softfloat/timesoftfloat.c": "upstream's benchmark, not in SRCS",
 
     # rpcgen output. include/rpcsvc/Makefile runs rpcgen over yp.x,
-    # nis.x and key_prot.x during buildworld; the .h files do not exist
-    # in a source tree and there is nothing to point an -I at.
-    "lib/libc/rpc/getpublickey.c":    "wants rpc/key_prot.h, from rpcgen",
-    "lib/libc/rpc/key_call.c":        "wants rpc/key_prot.h, from rpcgen",
-    "lib/libc/rpc/key_prot_xdr.c":    "wants rpc/key_prot.h, from rpcgen",
+    # nis.x and key_prot.x during buildworld, and the .h files do not
+    # exist in a source tree -- so includes.rpc_headers() runs the same
+    # recipe over the same .x, and lib/libc/rpc/getpublickey.c,
+    # key_call.c and key_prot_xdr.c compile. Their entries are gone.
+    #
+    # Worth naming why they lasted this long: the recipe needed rpcgen,
+    # and until rpcgen_tool() built usr.bin/rpcgen it was the HOST's.
+    # This machine has one and the CI runner does not, so --check-errors
+    # called these three stale here and valid there -- the same tree,
+    # two verdicts, depending on a package. Building the tool out of the
+    # tree removes the question.
 
     # option-gated: no kernel config in this tree sets these
 

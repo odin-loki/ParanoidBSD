@@ -172,6 +172,74 @@ def _lhdrs() -> tuple[str, ...]:
 
 
 @functools.lru_cache(maxsize=None)
+def rpcgen_tool() -> str | None:
+    """usr.bin/rpcgen, built from the tree, rather than the host's.
+
+    The two are not interchangeable, which is what this replaced. Over
+    include/rpcsvc/sm_inter.x the host's rpcgen and the tree's disagree
+    on three things:
+
+        -  #define SM_PROG 100024
+        +  #define SM_PROG ((unsigned long)(100024))
+        +  extern  void sm_prog_1(struct svc_req *rqstp, SVCXPRT *transp);
+        -  stat_fail = 1,            (a trailing comma in the enum)
+
+    The second line is usr.bin/rpcgen/rpc_hout.c's pdispatch(), which
+    pprogramdef() emits for every version when generating a header, and
+    which the host's implementation does not emit at all. It is the
+    declaration of the SERVER DISPATCH function, and three daemons take
+    its address:
+
+        rpc.statd/statd.c:565   svc_register(transp, SM_PROG, SM_VERS,
+                                    sm_prog_1, 0)
+        rpc.lockd/lockd.c:296   nlm_prog_4
+        bootparamd/main.c:103   bootparamprog_1
+
+    None of them declares it itself, so with the host's header all three
+    were ERROR - and every other rpcgen consumer in the sweep was being
+    compiled against a header a different implementation wrote.
+
+    Built with the host's cc. Three things the host does not supply:
+    -include <stdint.h>, since sys/rpc/types.h uses uint32_t and reaches
+    it through FreeBSD's <sys/types.h>; a -D for nitems(), which is
+    FreeBSD's <sys/param.h>; and the same __dead2/__printflike shim
+    _gensnmptree() needs. The two headers it does include - rpc/types.h
+    and netconfig.h - are the tree's own, symlinked into place, along
+    with sys/_null.h that rpc/types.h wants, which is pure preprocessor.
+
+    None of this is a reimplementation: the generator is the tree's
+    source, and a failure to build it returns None so the callers keep
+    the host's rpcgen rather than silently generating nothing.
+    """
+    d = Path(tempfile.mkdtemp(prefix="pbsd_rpcgen_"))
+    inc = d / "inc"
+    (inc / "rpc").mkdir(parents=True)
+    (inc / "sys").mkdir()
+    for h in (SRC / "sys" / "rpc").glob("*.h"):
+        (inc / "rpc" / h.name).symlink_to(h)
+    (inc / "sys" / "_null.h").symlink_to(SRC / "sys" / "sys" / "_null.h")
+    (inc / "netconfig.h").symlink_to(SRC / "include" / "netconfig.h")
+    pre = d / "pre.h"
+    pre.write_text("#define __dead2\n#define __unused\n"
+                   "#define __printflike(a,b)\n#define __printf0like(a,b)\n")
+    exe = d / "rpcgen"
+    srcs = ["rpc_main.c", "rpc_clntout.c", "rpc_cout.c", "rpc_hout.c",
+            "rpc_parse.c", "rpc_sample.c", "rpc_scan.c", "rpc_svcout.c",
+            "rpc_tblout.c", "rpc_util.c"]
+    try:
+        subprocess.run(
+            ["cc", "-O1", "-w", "-include", "stdint.h",
+             "-include", str(pre),
+             "-Dnitems(x)=(sizeof(x)/sizeof((x)[0]))", f"-I{inc}",
+             "-o", str(exe),
+             *[str(SRC / "usr.bin" / "rpcgen" / f) for f in srcs]],
+            check=True, capture_output=True)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return exe.as_posix() if exe.is_file() else None
+
+
+@functools.lru_cache(maxsize=None)
 def libcxx_shim() -> tuple[str, ...]:
     """The two -I a C++ translation unit needs, in front of every C one.
 
@@ -2178,26 +2246,26 @@ def rpc_headers() -> str:
     that Makefile, so an interface added to it is generated without
     this function being touched.
 
-    One substitution is not the tree's, and is worth naming: rpcgen
-    itself is the host's, not usr.bin/rpcgen. Both implement the same
-    RFC 1831 mapping from a .x to its declarations, and the header is
-    wanted here only so the declarations exist - nothing in it is
-    compiled into anything that runs. A recipe that exits non-zero, or
-    exits 0 without writing the header it names, leaves that header
-    absent and its callers ERROR, which is the honest report.
+    rpcgen is usr.bin/rpcgen, built from the tree - see rpcgen_tool(),
+    and the three declarations the host's implementation does not write.
+    The host's is the fallback if that build fails. A recipe that exits
+    non-zero, or exits 0 without writing the header it names, leaves
+    that header absent and its callers ERROR, which is the honest
+    report.
     """
     d = Path(tempfile.mkdtemp(prefix="pbsd_rpc_"))
     out = d / "rpcsvc"
     out.mkdir()
     mk = SRC / "include" / "rpcsvc" / "Makefile"
-    if not mk.is_file() or not shutil.which("rpcgen"):
+    gen = rpcgen_tool() or shutil.which("rpcgen")
+    if not mk.is_file() or not gen:
         return d.as_posix()
     text = mk.read_text(errors="replace").replace("\\\n", " ")
     m = re.search(r"^HDRS=\s*(.*)$", text, re.M)
     r = re.search(r"^\.x\.h:\s*\n\t(.*)$", text, re.M)
     if not m or not r:
         return d.as_posix()
-    recipe = (r.group(1).replace("${RPCCOM}", "rpcgen -C")
+    recipe = (r.group(1).replace("${RPCCOM}", f"{gen} -C")
               .replace("${.IMPSRC}", "{src}").replace("${.TARGET}", "{dst}"))
     env = dict(os.environ, RPCGEN_CPP="cpp")
     for hdr in m.group(1).split():
@@ -2996,6 +3064,65 @@ _GENERATED = {
 _RPC_TARGET = re.compile(r"^(\w+)\.h:", re.M)
 
 
+def _rpcgen_flags(text: str) -> list[str]:
+    """The flags a directory's own RPCGEN= line passes.
+
+        RPCGEN= RPCGEN_CPP=${CPP:Q} rpcgen -L -C          (rpc.statd)
+        RPCGEN= RPCGEN_CPP=${CPP:Q} rpcgen -L -C -M       (rpc.tlsclntd)
+
+    -M is not cosmetic: with it, rpc_hout.c's pprocdef() writes the
+    multithread-safe prototypes -- `bool_t f_1_svc(args, result, struct
+    svc_req *)' rather than `result *f_1_svc(args, struct svc_req *)' --
+    and rpc.tlsclntd.c and rpc.tlsservd.c define the -M form. Generated
+    without it they were `conflicting types for rpctlscd_null_2_svc'.
+    The per-target flags (-h -c -m -o) are not taken; this function
+    supplies only what the RPCGEN macro fixes for every target in the
+    directory. -C is always included, since a header without it is K&R.
+    """
+    m = re.search(r"^RPCGEN\s*\??=.*?\brpcgen\b([^\n]*)", text, re.M)
+    flags = ["-C"]
+    if m:
+        skip = False
+        for w in m.group(1).split():
+            if skip:
+                skip = False
+                continue
+            if w in ("-o", "-i", "-I", "-Y", "-D"):
+                skip = True
+                continue
+            if w in ("-h", "-c", "-m", "-l", "-t", "-s", "-n"):
+                continue
+            if w.startswith("-") and w not in flags:
+                flags.append(w)
+    return flags
+
+
+def _rpcsrc_of(text: str, name: str) -> tuple[Path, ...]:
+    """The RPCSRC= a directory's own Makefile names, if it names one.
+
+        RPCSRC= ${SRCTOP}/sys/rpc/rpcsec_tls/rpctlscd.x
+        RPCSRC= ${SYSROOT:U${DESTDIR}}/usr/include/rpcsvc/sm_inter.x
+
+    ${SRCTOP} is the tree, and a path under /usr/include/rpcsvc is
+    include/rpcsvc in it. Only a value whose basename matches the header
+    being generated is returned, so a Makefile with several is not
+    matched to the wrong one.
+    """
+    found = []
+    for m in re.finditer(r"^RPCSRC\s*\??=\s*(\S+)", text, re.M):
+        v = m.group(1)
+        v = re.sub(r"\$\{SYSROOT:U\$\{DESTDIR\}\}/usr/include/", "include/", v)
+        v = v.replace("${SRCTOP}/", "").replace("${.CURDIR}/", "")
+        if v.startswith("/usr/include/"):
+            v = "include/" + v[len("/usr/include/"):]
+        if "${" in v or not v.endswith(".x"):
+            continue
+        p = SRC / v
+        if p.name == f"{name}.x":
+            found.append(p)
+    return tuple(found)
+
+
 def _gen_rpcgen(out: Path, directory: str) -> None:
     mk = SRC / directory / "Makefile"
     if not mk.is_file():
@@ -3011,16 +3138,24 @@ def _gen_rpcgen(out: Path, directory: str) -> None:
         # Beside the Makefile first: rpc.yppasswdd has its own
         # yppasswd_private.x and generates yppasswd_private.h from it,
         # which include/rpcsvc knows nothing about.
+        # Beside the Makefile, in include/rpcsvc, or wherever this
+        # directory's own RPCSRC points: rpc.tlsclntd's is
+        # ${SRCTOP}/sys/rpc/rpcsec_tls/rpctlscd.x, which is in neither
+        # of the first two places.
         for x in (SRC / directory / f"{name}.x",
-                  SRC / "include" / "rpcsvc" / f"{name}.x"):
+                  SRC / "include" / "rpcsvc" / f"{name}.x",
+                  *_rpcsrc_of(text, name)):
             if x.is_file():
                 break
         else:
             continue
-        # -C for ANSI C, -h for the header. The -I and -L in the various
-        # RPCGEN lines pick a server style and affect the .c, not this.
-        subprocess.run(["rpcgen", "-C", "-h", "-o", str(out / f"{name}.h"),
-                        str(x)], capture_output=True, cwd=out)
+        # -h for the header, and whatever the directory's own RPCGEN=
+        # line fixes for every target in it - see _rpcgen_flags(), and
+        # -M, which is the difference between two prototypes for the
+        # same _svc function.
+        subprocess.run([rpcgen_tool() or "rpcgen", *_rpcgen_flags(text),
+                        "-h", "-o", str(out / f"{name}.h"), str(x)],
+                       capture_output=True, cwd=out)
 
 
 @functools.lru_cache(maxsize=None)

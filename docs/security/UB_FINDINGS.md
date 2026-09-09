@@ -9134,3 +9134,322 @@ pointee type (`char`, size 1) against the `sizeof` operand's type
 (`char[N]`) and calls the mismatch suspicious. Here it is the correct
 allocation, written the way that cannot drift if the macro changes.
 Left alone.
+
+## rpcgen was the host's, and the host's writes a different header
+
+`rpc.statd`, `rpc.lockd` and `bootparamd` were ERROR on an identifier
+that nothing in the tree declares:
+
+    statd.c:565:  use of undeclared identifier 'sm_prog_1'
+    lockd.c:296:  use of undeclared identifier 'nlm_prog_4'
+    main.c:103:   use of undeclared identifier 'bootparamprog_1'
+
+`sm_prog_1` is the RPC **server dispatch** function. `rpc.statd`'s
+Makefile generates it into `sm_inter_svc.c` with `rpcgen -m`, and
+`statd.c` takes its address:
+
+    svc_register(transp, SM_PROG, SM_VERS, sm_prog_1, 0)
+
+without declaring it anywhere. It does not need to, because
+`usr.bin/rpcgen/rpc_hout.c` declares it for them:
+
+    static void
+    pdispatch(const char * name, const char *vers)
+    {
+        f_print(fout, "void ");
+        pvname(name, vers);
+        f_print(fout, "(struct svc_req *rqstp, SVCXPRT *transp);\n");
+    }
+
+called from `pprogramdef()` once per version whenever a header is being
+generated. **The host's rpcgen does not emit it.** Diffing the two over
+`include/rpcsvc/sm_inter.x`:
+
+    -  #define SM_PROG 100024
+    +  #define	SM_PROG ((unsigned long)(100024))
+    +  extern  void sm_prog_1(struct svc_req *rqstp, SVCXPRT *transp);
+    -  stat_fail = 1,
+    +  stat_fail = 1
+    -  #if defined(__STDC__) || defined(__cplusplus)   (a K&R fallback)
+
+Three differences, and the middle one is why three daemons could not be
+read. The other two matter less but matter: the program number's type is
+`unsigned long` in one and `int` in the other, and `svc_register()`
+takes it as `rpcprog_t`.
+
+The point is larger than the three files. **Every** rpcgen consumer in
+the sweep — the twenty-two interfaces `include/rpcsvc/Makefile` names,
+and every directory with its own `.x` — was being compiled against a
+header a different implementation wrote. The lesson is the one the
+gensnmptree work had just made: the build runs a tool the build builds,
+so build that tool.
+
+`rpcgen_tool()` compiles `usr.bin/rpcgen`'s ten sources with the host's
+`cc`. Three things the host does not supply: `-include <stdint.h>`,
+because `sys/rpc/types.h` uses `uint32_t` and reaches it through
+FreeBSD's `<sys/types.h>`; a `-D` for `nitems()`, which is FreeBSD's
+`<sys/param.h>`; and the `__dead2`/`__printflike` shim `gensnmptree`
+also needed. The only headers it reads are the tree's own —
+`sys/rpc/*.h` symlinked as `rpc/`, `include/netconfig.h`, and
+`sys/sys/_null.h`, which is pure preprocessor. Nothing is
+reimplemented, and a failed build returns `None` so the host's rpcgen
+remains the fallback rather than the generator silently writing nothing.
+
+Two more things the directory's own Makefile settles, both of which
+were wrong before:
+
+**The flags.** `rpc.statd` has `RPCGEN= ... rpcgen -L -C`;
+`rpc.tlsclntd` and `rpc.tlsservd` have `-L -C -M`. `-M` is not
+cosmetic — `rpc_hout.c`'s `pprocdef()` writes the multithread-safe
+prototypes under it, `bool_t f_2_svc(args, result, struct svc_req *)`
+rather than `result *f_2_svc(args, struct svc_req *)`, and both daemons
+*define* the `-M` form. Generated without it they were
+
+    error: conflicting types for 'rpctlscd_null_2_svc'
+
+`_rpcgen_flags()` reads the `RPCGEN=` line and takes what it fixes for
+every target in the directory, not the per-target `-h -c -m -o`.
+
+**Where the `.x` is.** The generator looked beside the Makefile and in
+`include/rpcsvc`. `rpc.tlsclntd`'s is
+
+    RPCSRC=	${SRCTOP}/sys/rpc/rpcsec_tls/rpctlscd.x
+
+which is neither. `_rpcsrc_of()` reads the `RPCSRC=` line, expands
+`${SRCTOP}` and the `${SYSROOT:U${DESTDIR}}/usr/include/` form, and only
+returns a path whose basename matches the header being generated, so a
+Makefile with several is not matched to the wrong one.
+
+Six checks in `tools/verify/test_includes.py`, each confirmed failing:
+with `rpcgen_tool()` returning `None`, and with `_rpcgen_flags()`
+ignoring the Makefile.
+
+## A flag the component's CFLAGS carried, and the sweep dropped on principle
+
+`usr.sbin/wlanstat/wlanstat.c` was ERROR on
+
+    fatal error: bracket nesting level exceeded maximum of 256
+      653 |         case S_RATE:
+    wlanstat.c:369:24: note: expanded from macro 'S_RATE'
+      369 | #define S_RATE                  AFTER(S_TX_MCAST)
+    wlanstat.c:367:27: note: expanded from macro 'S_TX_MCAST'
+      367 | #define S_TX_MCAST              AFTER(S_TX_UCAST)
+
+The file numbers about three hundred wireless statistics with a chain of
+
+    #define AFTER(prev)  ((prev)+1)
+    #define S_RX_BADVERSION      0
+    #define S_RX_ELEM_UNKNOWN    AFTER(S_RX_ELEM_TOOSMALL)
+    #define S_RX_BADCHAN         AFTER(S_RX_ELEM_UNKNOWN)
+    ...
+
+so the last one expands to three hundred nested parentheses, and clang's
+default limit is 256. Its Makefile says so:
+
+    usr.sbin/wlanstat/Makefile:10
+        CFLAGS.clang+= -fbracket-depth=512 -Wno-cast-align
+
+`bsd.sys.mk` folds `CFLAGS.${COMPILER_TYPE}` into `CFLAGS`, so bmake was
+already handing this flag to `ask_cflags()`. It was thrown away there,
+by a rule that is right in general:
+
+    # -f and -m only from the file's own flags, and never the
+    # two the analyser cannot accept.
+    if w[:2] in ("-I", "-D", "-U") or (
+            i >= 2 and w[:2] in ("-f", "-m")
+            and not w.startswith(("-fsanitize", "-flto"))):
+
+A component's `CFLAGS` is where `-flto`, `-fsanitize=cfi` and
+`-mretpoline` live, and the analyser does not want them; the per-file
+`CFLAGS.<name>` is where `-fblocks` lives, and without that a file does
+not compile. The rule separates the two by where the flag was written.
+
+That is the wrong axis for two flags. `-fbracket-depth` and `-fblocks`
+decide whether the source **parses** — dropping them does not produce a
+differently-optimised compile, it produces an ERROR — and both appear in
+component `CFLAGS` as well as per-file ones (`-fblocks` four times in
+userland). So they are taken from either, by name:
+
+    PARSE_AFFECTING = ("-fbracket-depth", "-fblocks")
+
+Deliberately two entries. Anything that only changes code generation
+stays behind the per-file rule, where `-flto` and `-fsanitize` can go on
+being excluded by name.
+
+## Two more shapes of "the build does not compile this", and gates for both
+
+`expected_errors.py` could say three things about a file that will not
+compile: `NOT_NAMED` (no `SRCS`, no `files*` entry names it),
+`NOT_SUBDIR` (its directory has a Makefile but no parent descends into
+it), and `INCLUDED_BY:<path>` (it is `#include`d, not compiled). Four of
+the remaining nineteen progs ERRORs fit the first:
+
+| file | why |
+|---|---|
+| `usr.bin/tip/libacu/biz31.c` | `usr.bin/tip/tip/Makefile:41` reaches `../libacu` by `.PATH` and names **nine** of its ten drivers. This is the tenth. |
+| `usr.sbin/traceroute/findsaddr-socket.c` | `SRCS` names `findsaddr-udp.c`. |
+| `usr.sbin/bhyve/snapshot.c` | `SRCS+=` only inside `.if ${MK_BHYVE_SNAPSHOT} != "no"`, and that option is `__DEFAULT_NO`, so bmake asked with the tree's defaults names nothing. |
+| `sbin/veriexec/veriexec.c` | `MK_VERIEXEC` depends on `BEARSSL`, `__DEFAULT_NO`. |
+
+Two did not fit anything, and each needed its own marker.
+
+**`DEFAULT_OFF:<option>`.** `usr.bin/dpv/dpv.c` is named by its own
+Makefile — bmake in that directory says so — so `NOT_NAMED` is false.
+And `usr.bin/Makefile:194` is
+
+    SUBDIR.${MK_DIALOG}+=	dpv
+
+which the `NOT_SUBDIR` reader counts as a `SUBDIR` line, correctly: it
+was written to catch a *commented-out* one. What is true is that
+`DIALOG` is in `__DEFAULT_NO_OPTIONS`, so nothing descends into `dpv`
+and `contrib/dialog/dialog.h` is on no include path. The marker carries
+the option's name so the gate can check both halves: that the parent
+really gates that directory on that option, and that `src.opts.mk`
+really defaults it to no. Verified by planting `DEFAULT_OFF:KERBEROS`
+(rejected — `KERBEROS` is `__DEFAULT_YES`) and by claiming it for
+`bin/cat/cat.c` (rejected — `bin/Makefile` does not gate `cat`). The
+option reader has its own sentinel: a reader that answered "off" to
+everything would make every one of these claims pass.
+
+**`NEEDS_LOCALBASE`.** `usr.sbin/virtual_oss/virtual_equalizer` **is**
+built — `MK_CUSE` and `MK_SOUND` are both `__DEFAULT_YES` — and its own
+Makefile says where its header comes from:
+
+    CFLAGS+=  -I${SRCTOP}/usr.sbin/virtual_oss/virtual_oss \
+              -I/usr/local/include
+    LDFLAGS+= -L/usr/local/lib -lm -lfftw3
+
+`/usr/local` is the ports prefix; `<fftw3.h>` is `math/fftw3` and is in
+no part of this tree. The gate reads the same Makefile the claim is
+about. Verified by claiming it for `bin/cat/cat.c`, which names no port
+and is rejected.
+
+## Three more things bmake was already saying and nothing was listening to
+
+Chasing the last nineteen unexplained progs ERRORs turned up three gaps
+in how the sweep reads a userland file's flags. None is a guess: in each
+case bmake had the answer and the reader threw it away.
+
+### `-include`, and a deduplication that turned a flag into a source file
+
+`ask_cflags()` took `-I`, `-D`, `-U` and — from a file's own
+`CFLAGS.<name>` — `-f` and `-m`. `-include <path>` is two words, so it
+matched neither test and both halves were dropped.
+`usr.sbin/fstyp/Makefile` needs two of them:
+
+    CFLAGS.zfs.c+= -include ${ZFSTOP}/include/os/freebsd/spl/sys/ccompile.h
+    CFLAGS.zfs.c+= -include ${SRCTOP}/sys/modules/zfs/zfs_config.h
+
+and without them `zfs.c` is fourteen errors starting inside libspl's own
+`<string.h>`, where `extern size_t strlcat(...)` collides with FreeBSD's
+`ssp/string.h` macro of the same name. Thirty-two userland Makefiles use
+`-include`, in the component form and the per-file form both.
+
+Taking the pair naively made it worse in a way worth recording.
+`includes.py` merges bmake's answer into the flag list with
+
+    if f not in seen:
+
+so the *second* `-include` word — identical to the first — was dropped
+and its path appended alone. clang reads a bare path as another **source
+file**. The fix is to emit the flag joined to its path,
+`-include/path/x.h`, which clang accepts and which is one word, so
+deduplication does the right thing by construction.
+
+### A file's flags can be written on its program's name, not its own
+
+`sbin/dhclient/tests/fake.c` was ERROR on `'dhcpd.h' file not found`.
+The `-I` that finds it exists, and it is spelled the way `bsd.progs.mk`
+and `bsd.test.mk` spell things:
+
+    PLAIN_TESTS_C=                     option-domain-search_test
+    SRCS.option-domain-search_test=    alloc.c ... fake.c \
+                                       option-domain-search.c
+    CFLAGS.option-domain-search_test+= -I${.CURDIR:H}
+
+`fake.c` has no `CFLAGS.fake.c`; the flags are on the *program* that
+names it. `ask_cflags()` now asks bmake for `PROGS`, `PROGS_CXX`,
+`PLAIN_TESTS_C`, `PLAIN_TESTS_CXX`, `ATF_TESTS_C`, `ATF_TESTS_CXX` and
+`GTESTS`, then for each one's `SRCS.<prog>`, and adds `CFLAGS.<prog>`
+for whichever names this file. Cached on the **directory**: asked per
+file that would be two extra bmake runs for each of 1,862 progs units.
+
+### The sweep was reading the Kerberos tree the build does not build
+
+`usr.sbin/gssd/gssd.c` was ERROR on `'krb5.h' file not found`, and
+`installed_headers()` — 2,392 entries — had no `krb5.h` in it.
+`Makefile.inc1:436` is
+
+    .if ${MK_KERBEROS} != "no"
+    .if ${MK_MITKRB5} != "no"
+    SUBDIR+=krb5
+    .else
+    SUBDIR+=kerberos5
+    .endif
+
+and `MITKRB5` is `__DEFAULT_YES`. The build descends into the top-level
+`krb5/` (MIT) and never into `kerberos5/` (Heimdal). `SCOPES` had it the
+other way round: `makefile_dirs()` returned **54** `kerberos5`
+directories and **zero** `krb5` ones.
+
+Asking bmake in the Heimdal tree does not even work, which is why this
+was silent rather than wrong:
+
+    src.libnames.mk line 952: kerberos5/lib/libkrb5: Missing or incorrect
+    _DP_krb5 entry in src.libnames.mk. Should match LIBADD for krb5
+    ('asn1 com_err crypt crypto hx509 roken wind heimbase heimipcc' vs
+     'krb5profile k5crypto com_err krb5support')
+
+`_DP_krb5` is the MIT dependency set under the default options while
+that Makefile's `LIBADD` is the Heimdal one, so bmake `.error`s and
+`ask_incs()` returns the empty dict — the shape this document keeps
+naming, one level up: a reader that answers "nothing" is
+indistinguishable from a directory that installs nothing.
+
+With `krb5` in `SCOPES`, `krb5/include` contributes `krb5.h`,
+`gssapi.h`, `kdb.h`, `krad.h` and fourteen more under `krb5/`.
+`kerberos5` stays in the list, because a tree built `MK_MITKRB5=no` is a
+legal configuration whose headers are then the right ones; it simply
+contributes nothing under the defaults.
+
+**`gssd.c` still does not compile,** and now for a reason that is
+precisely located rather than "file not found":
+`crypto/krb5/src/include/krb5.h` is MIT's compatibility stub, whose
+whole body is `#include <krb5/krb5.h>`, and the real
+`krb5/krb5.h` is *generated* — `krb5/include/krb5/Makefile` builds it by
+`cat`-ing `krb5.hin` together with error-table headers that
+`compile_et` makes first. That is a third host tool, after
+`gensnmptree` and `rpcgen`, and it is on the list rather than in this
+commit.
+
+## Two globals consulted twice, with a call in between
+
+The five `rpc.lockd` findings and the one in `rpc.tlsservd` — the files
+the tree's own rpcgen made readable — are one shape.
+
+`lockd.c` assigns `fd` only inside `if (!kernel_lockd)` at `:549`, and
+every use of it is inside the same test:
+
+    if (!kernel_lockd)
+            close(fd);
+
+`kernel_lockd` is a file-scope `int` at `:85`, written once in `main()`
+and never again — but between the two tests are `syslog()`,
+`inet_pton()` and `getaddrinfo()`, and nothing tells the analyser a
+global survives an opaque call. `rpc.tlsservd.c` is the same with
+`gethostret`, assigned under `if (rpctls_verbose)` at `:752` and under
+`if (!rpctls_verbose)` at `:767` — every real path writes it — with
+`SSL_get_version()`, `SSL_get_cipher()` and
+`SSL_get1_peer_certificate()` between them.
+
+Neither is reachable. Both get a one-word initialiser anyway, and in
+both cases the value is the one the file's own conventions already use:
+
+  - `int fd = -1`, which is exactly what `lockd.c` stores into `sock_fd[]`
+    twenty lines earlier as "invalid for now" and what
+    `create_service()` tests with `if (fd < 0) continue`. `close(-1)`
+    fails `EBADF`.
+  - `int gethostret = 0`, which means "no hostname", leaves `ret` at 0
+    at `:803`, and takes the `ret != 1` arm — `RPCTLS_FLAGS_DISABLED`.
+    A TLS server that cannot tell whether it got the peer's name should
+    fail closed.

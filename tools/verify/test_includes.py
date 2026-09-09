@@ -573,6 +573,40 @@ check_that("-nostdinc is kept", "-nostdinc" in _ag,
 check_that("...by predefining mm_malloc.h's guard",
            "-D__MM_MALLOC_H" in _ag)
 
+# == rpcgen is the tree's, and the difference is load-bearing ==
+_rg = includes.rpcgen_tool()
+check_that("usr.bin/rpcgen builds", _rg is not None,
+           "the host's rpcgen writes a different header; see rpcgen_tool()")
+if _rg:
+    import subprocess as _sp, tempfile as _tf, os as _os
+    _d = _tf.mkdtemp(prefix="pbsd_rgtest_")
+    _x = SRC / "include/rpcsvc/sm_inter.x"
+    _sp.run([_rg, "-C", "-h", "-o", _os.path.join(_d, "t.h"), str(_x)],
+            capture_output=True, env=dict(_os.environ, RPCGEN_CPP="cpp"))
+    _h = Path(_d, "t.h").read_text() if Path(_d, "t.h").exists() else ""
+    check_that("...and writes the server dispatch prototype",
+               "void sm_prog_1(struct svc_req *rqstp, SVCXPRT *transp);" in _h,
+               "rpc_hout.c's pdispatch(); rpc.statd, rpc.lockd and "
+               "bootparamd take its address and declare it nowhere")
+    check_that("...and casts the program number",
+               "#define\tSM_PROG ((unsigned long)(100024))" in _h)
+
+_flags = includes._rpcgen_flags(
+    (SRC / "usr.sbin/rpc.tlsclntd/Makefile").read_text())
+check_that("a directory's own RPCGEN flags are read", "-M" in _flags,
+           "without -M the _svc prototypes are the single-threaded ones "
+           "and rpc.tlsclntd.c defines the other")
+check_that("...and not a per-target one", "-h" not in _flags
+           and "-m" not in _flags)
+_s = includes._rpcgen_flags((SRC / "usr.sbin/rpc.statd/Makefile").read_text())
+check_that("...and rpc.statd, which has no -M, does not get one",
+           "-M" not in _s and "-L" in _s)
+check_that("an RPCSRC outside include/rpcsvc is found",
+           any(p.name == "rpctlscd.x" for p in includes._rpcsrc_of(
+               (SRC / "usr.sbin/rpc.tlsclntd/Makefile").read_text(),
+               "rpctlscd")),
+           "rpc.tlsclntd's .x is ${SRCTOP}/sys/rpc/rpcsec_tls/rpctlscd.x")
+
 # == the C++ standard library reaches a C++ translation unit, first ==
 _cxx = includes.include_flags(
     SRC / "usr.bin/clang/clang/clang-driver.cpp", "amd64")

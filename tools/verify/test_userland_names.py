@@ -162,7 +162,43 @@ def main() -> int:
           "CFLAGS.${t}.c is -fblocks, and the file will not PARSE "
           "without it")
     check("-fblocks" not in u.ask_cflags(gen, "amd64"),
-          "...and -f is taken from a file's own flags and nothing else")
+          "...and this directory's component CFLAGS do not carry it")
+    wl = u.ask_cflags(u.SRC / "usr.sbin/wlanstat", "amd64", name="wlanstat.c")
+    check("-fbracket-depth=512" in wl,
+          "a PARSE_AFFECTING flag is taken from the COMPONENT's CFLAGS: "
+          "wlanstat/Makefile:10 is CFLAGS.clang+= -fbracket-depth=512, and "
+          "the ~300-deep AFTER() chain does not parse at clang's default 256")
+    check(not any(f.startswith(("-flto", "-fsanitize")) for f in wl),
+          "...and the ones the analyser cannot accept are still excluded")
+    check(not any(f == "-Wno-cast-align" for f in wl),
+          "...and a -W on the same line is not a parse-affecting flag")
+    zf = u.ask_cflags(u.SRC / "usr.sbin/fstyp", "amd64", name="zfs.c")
+    _inc = [f for f in zf if f.startswith("-include")]
+    check(len(_inc) == 2,
+          "BOTH -include reach the compiler: fstyp/Makefile:34 and :36 "
+          f"are two of them, and zfs.c does not compile without either "
+          f"(got {len(_inc)})")
+    check(all(len(f) > len("-include") for f in _inc),
+          "...joined to their paths, because a bare `-include' repeats "
+          "and includes.py drops a flag it has seen, orphaning the path "
+          "into a second source file")
+    dh = u.ask_cflags(u.SRC / "sbin/dhclient/tests", "amd64", name="fake.c")
+    check(any(f.endswith("sbin/dhclient") for f in dh),
+          "a file gets its PROGRAM's flags: fake.c is in "
+          "SRCS.option-domain-search_test, and the -I that finds "
+          "<dhcpd.h> is CFLAGS.option-domain-search_test")
+    check(not any(f.endswith("sbin/dhclient") for f in
+                  u.ask_cflags(u.SRC / "sbin/dhclient/tests", "amd64")),
+          "...and not from the directory's own CFLAGS, which lack it")
+
+    _scopes = set(u.SCOPES)
+    check("krb5" in _scopes,
+          "Makefile.inc1:438 descends into krb5 when MK_MITKRB5 != no, "
+          "which is the default; without this <krb5.h> is nowhere")
+    _dirs = u.makefile_dirs(u.SRC)
+    check(any(str(d).endswith("/krb5/include") for d in _dirs),
+          "...and the walk reaches krb5/include, which installs it")
+
     tz = u.ask_cflags(u.SRC / "lib/libc/tests/stdtime", "amd64",
                       name="detect_tz_changes_test.c")
     check(any("contrib/tzcode" in f for f in tz),

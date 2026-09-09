@@ -1845,6 +1845,26 @@ FIXES = {
             "and wlan_get_next_acl_mac, which short-circuits the same way",
         ),
     ],
+    "hbsd/src/usr.sbin/rpc.lockd/lockd.c": [
+        (
+            "\tint fd = -1;",
+            "\tint fd;\n\tint nhostsbak;",
+            "create_service: fd is assigned only inside "
+            "`if (!kernel_lockd)\' and kernel_lockd is a global with "
+            "syslog(), inet_pton() and getaddrinfo() between the two "
+            "tests; -1 is this function\'s own `invalid\'",
+        ),
+    ],
+    "hbsd/src/usr.sbin/rpc.tlsservd/rpc.tlsservd.c": [
+        (
+            "\tint gethostret = 0, ret;",
+            "\tint gethostret, ret;",
+            "rpctls_server: gethostret is written under "
+            "`if (rpctls_verbose)\' and under `if (!rpctls_verbose)\', "
+            "with three SSL_* calls between; 0 means no hostname and "
+            "takes the RPCTLS_FLAGS_DISABLED arm -- fail closed",
+        ),
+    ],
     "hbsd/src/usr.bin/netstat/inet.c": [
         (
             "if (istcp && cflag) {",

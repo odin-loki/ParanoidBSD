@@ -723,7 +723,16 @@ rpctls_server(SSL_CTX *ctx, int s, uint32_t *flags, uint32_t *uidp,
 	struct sockaddr *sad;
 	struct sockaddr_storage ad;
 	char hostnam[NI_MAXHOST];
-	int gethostret, ret;
+	/*
+	 * PBSD: gethostret is assigned under `if (rpctls_verbose)' at
+	 * :752 and under `if (!rpctls_verbose)' at :767, so every real
+	 * path writes it -- but rpctls_verbose is a global (:77) and
+	 * SSL_get_version(), SSL_get_cipher() and
+	 * SSL_get1_peer_certificate() sit between the two tests. Zero is
+	 * "no hostname", which leaves ret at 0 at :803 and takes the
+	 * `ret != 1' arm: RPCTLS_FLAGS_DISABLED. Fail closed.
+	 */
+	int gethostret = 0, ret;
 	char *cp, *cp2;
 	long verfret;
 
