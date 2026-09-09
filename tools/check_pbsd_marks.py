@@ -2686,6 +2686,29 @@ FIXES = {
             "all-parity-targets case reconstruct_general() is reached with",
         ),
     ],
+    "hbsd/src/sys/cddl/dev/dtrace/x86/dis_tables.c": [
+        (
+            "PBSD: the outputs are written BEFORE either early return",
+            "\tint byte;\n\n\tif (x->d86_error)\n\t\treturn;\n",
+            "dtrace_get_SIB: both early returns wrote nothing, and "
+            "dtrace_get_modrm() passes &mode, &reg and &r_m through it "
+            "and then sets d86_got_modrm so nothing retries",
+        ),
+        (
+            "uint_t reg = 0;\t\t/* reg value from ModRM byte */",
+            "\tuint_t reg;\t\t/* reg value from ModRM byte */\n",
+            "dtrace_disx86: reg and r_m left uninitialised beside a "
+            "`mode' that was not, and the table-indirection path takes "
+            "the ModRM byte into opcode3 so a later call writes nothing",
+        ),
+        (
+            "const instable_t *dp = NULL; /* decode table being used */",
+            "\tconst instable_t *dp;\t/* decode table being used */\n",
+            "dtrace_disx86: the zero-padding arm does `goto done' from "
+            "above the only assignment of dp, and the DIS_MEM block at "
+            "done: dereferences it",
+        ),
+    ],
 }
 
 

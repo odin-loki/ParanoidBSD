@@ -3009,6 +3009,24 @@ dtrace_get_SIB(dis86_t *x, uint_t *ss, uint_t *index, uint_t *base)
 {
 	int byte;
 
+	/*
+	 * PBSD: the outputs are written BEFORE either early return, because
+	 * both of them return having written nothing and no caller looks at
+	 * d86_error before using what it asked for.  dtrace_get_modrm()
+	 * passes &mode, &reg and &r_m through here and then sets
+	 * d86_got_modrm, so a second call will not retry; dtrace_disx86()
+	 * initialises `mode' at its declaration and not `reg' or `r_m'.
+	 *
+	 * d86_get_byte() returns < 0 when the instruction stream ends -
+	 * which for fasttrap is a USER address, so an unmapped page after
+	 * the last byte of a probed instruction is a way to reach it.  The
+	 * values are register numbers that index dis_REG[][] and are then
+	 * printed, so garbage there reads off the end of a static table.
+	 */
+	*base = 0;
+	*index = 0;
+	*ss = 0;
+
 	if (x->d86_error)
 		return;
 
@@ -3629,7 +3647,18 @@ dtrace_get_operand(dis86_t *x, uint_t mode, uint_t r_m, int wbit, int opindex)
 int
 dtrace_disx86(dis86_t *x, uint_t cpu_mode)
 {
-	const instable_t *dp;	/* decode table being used */
+	/*
+	 * PBSD: dp initialised, because the zero-padding arm below does
+	 * `goto done' from ABOVE the only assignment - dp is first written
+	 * inside the prefix loop that follows it - and the DIS_MEM block at
+	 * done: reads dp->it_stackop, dp->it_size and dp->it_adrmode.  That
+	 * is a dereference of this frame.  No caller in this tree sets
+	 * d86_check_func (kinst_isa.c:290, instr_size.c:108 and libdtrace's
+	 * dt_isadep.c:503 all set it NULL), so the arm is unreachable here
+	 * and the defect is latent - which is a reason to name it, not to
+	 * leave it.
+	 */
+	const instable_t *dp = NULL; /* decode table being used */
 #ifdef DIS_TEXT
 	uint_t i;
 #endif
@@ -3644,9 +3673,20 @@ dtrace_disx86(dis86_t *x, uint_t cpu_mode)
 	uint_t wbit;		/* opcode wbit, 0 is 8 bit, !0 for opnd_size */
 	uint_t w2;		/* wbit value for second operand */
 	uint_t vbit;
+	/*
+	 * PBSD: reg and r_m initialised, as `mode' beside them already was.
+	 * dtrace_get_modrm() writes all three, but only `if (x->d86_got_modrm
+	 * == 0)' - so the first call wins and every later one is a no-op.
+	 * The table-indirection path calls it as
+	 * `dtrace_get_modrm(x, &mode, &opcode3, &r_m)', putting the ModRM
+	 * reg field in opcode3 and setting d86_got_modrm; an arm reached
+	 * after that indirection then calls it again with &reg, gets
+	 * nothing, and uses `reg' as a register number.  0 is %rax - a wrong
+	 * disassembly rather than a read of this frame.
+	 */
 	uint_t mode = 0;	/* mode value from ModRM byte */
-	uint_t reg;		/* reg value from ModRM byte */
-	uint_t r_m;		/* r_m value from ModRM byte */
+	uint_t reg = 0;		/* reg value from ModRM byte */
+	uint_t r_m = 0;		/* r_m value from ModRM byte */
 
 	uint_t opcode1;		/* high nibble of 1st byte */
 	uint_t opcode2;		/* low nibble of 1st byte */
@@ -6414,7 +6454,12 @@ done:
 	/*
 	 * compute the size of any memory accessed by the instruction
 	 */
-	if (x->d86_memsize != 0) {
+	/*
+	 * PBSD: dp NULL is the zero-padding arm, a `.byte 0' pseudo
+	 * instruction that accesses no memory - the same answer as
+	 * d86_memsize already being set.
+	 */
+	if (dp == NULL || x->d86_memsize != 0) {
 		return (0);
 	} else if (dp->it_stackop) {
 		switch (opnd_size) {

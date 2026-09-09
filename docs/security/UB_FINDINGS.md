@@ -13020,3 +13020,120 @@ premise is what is worth recording.
 | `vdev_raidz.c:2146,2153,2164,2165` | `parity_valid[c]` is written for every `c < rr->rr_firstdatacol` by the loop above, and the reads are the constant indices `VDEV_RAIDZ_P` and `VDEV_RAIDZ_Q` under `ASSERT(rr_firstdatacol > 1)`. The analyser honours the assertion — it does not unroll the loop far enough to know it covered indices 0 and 1. A loop-coverage limit, not an assertion one. |
 | `vdev_raidz.c:2856` | `orig[c]` is written and read under the identical `!rc_tried \|\| rc_error != 0` test; `vdev_draid_map_verify_empty()` in between writes `rc_error` only for `c >= rr_bigcols`, which are data columns, not the parity columns this loop walks. |
 | `zfs_log.c:355,360` | `fuidp` is non-NULL whenever an id is ephemeral, because the same `zfs_acl_ids_create()` that made the id allocated the fuid info. On FreeBSD `IS_EPHEMERAL(x)` is `x > UID_MAX` and `z_uid` is a `uint64_t`, so the branch is not folded away as it is on a 32-bit uid — but the value is the creating process's uid, and no such uid exists. |
+
+## dtrace's x86 disassembler: three uninitialised reads, and a table premise for the rest
+
+`--scope sys/cddl` reported 76 findings, 73 of them in one file —
+`sys/cddl/dev/dtrace/x86/dis_tables.c`, and 71 of those in one function,
+`dtrace_disx86()`. A count like that is a hypothesis before it is an
+inventory: seventy-one separate defects in one function is not what
+seventy-one findings in one function usually means.
+
+It was three.
+
+**`dtrace_get_SIB()` returns without writing its outputs.** Both of its
+early returns — `x->d86_error` already set, and `d86_get_byte()`
+returning `< 0` — leave `*ss`, `*index` and `*base` as the caller left
+them. And `dtrace_get_modrm()` passes the ModRM byte's three fields
+straight through it:
+
+```c
+	if (x->d86_got_modrm == 0) {
+		...
+		dtrace_get_SIB(x, mode, reg, r_m);
+		x->d86_got_modrm = 1;
+	}
+```
+
+so a failed read leaves `mode`, `reg` and `r_m` unwritten *and* sets
+`d86_got_modrm`, which stops anything from retrying. `d86_get_byte()`
+returns `< 0` when the instruction stream ends — for fasttrap that is a
+**user** address, so an unmapped page after the last byte of a probed
+instruction is a way to reach it. The values are register numbers that
+index `dis_REG[][]` and are then printed. Writing the outputs before
+either return fixes every caller in one place: 76 -> 40.
+
+**`reg` and `r_m` were declared uninitialised beside a `mode` that was
+not.** `uint_t mode = 0;` on one line, `uint_t reg;` and `uint_t r_m;` on
+the next two — someone had already met this and fixed a third of it. The
+remaining path is the table indirection at `:4320`, which calls
+`dtrace_get_modrm(x, &mode, &opcode3, &r_m)`, putting the ModRM *reg*
+field in `opcode3` and setting `d86_got_modrm`; an arm reached after that
+indirection calls `dtrace_get_modrm(x, &mode, &reg, &r_m)`, gets nothing,
+and uses `reg` as a register number. 40 -> 35.
+
+**`goto done` jumps over the only assignment of `dp`.** The zero-padding
+check runs *before* the prefix loop that first writes `dp`:
+
+```c
+	if (opcode1 == 0 && opcode2 == 0 &&
+	    x->d86_check_func != NULL && x->d86_check_func(x->d86_data)) {
+		(void) strncpy(x->d86_mnem, ".byte\t0", OPLEN);
+		goto done;
+	}
+```
+
+and the `DIS_MEM` block at `done:` reads `dp->it_stackop`, `dp->it_size`
+and `dp->it_adrmode`. `-DDIS_MEM` is in this tree's flags for this file,
+so that block is compiled. It is **latent**, not reachable: every caller
+in the tree sets `d86_check_func` to NULL — `kinst_isa.c:290`,
+`instr_size.c:108`, and libdtrace's `dt_isadep.c:503` — so the arm cannot
+be taken today. Which is a reason to name it rather than a reason to
+leave it: the field exists precisely so a caller can supply one.
+35 -> 34.
+
+```
+--scope sys/cddl --check-errors
+  76 -> 34 findings, 48 OK, 22 ERROR on both sides, all 22 on the record
+```
+
+### The 31 that remain in `dtrace_disx86()`, and the one premise under them
+
+27 of them are `wbit`, 3 are `opcode7` and 1 is `opcode5` — all
+"uninitialised" in a path where the analyser has `dp` pointing at an
+opcode table entry whose `it_adrmode` selects a `VEX_*` arm of the big
+switch, while `vex_prefix` is 0. `wbit` is set for the VEX case at
+`:4106`:
+
+```c
+	if (vex_prefix) {
+		if (dp->it_vexwoxmm) { wbit = LONG_OPND; }
+		else if (dp->it_vexopmask) { wbit = KOPMASK_OPND; }
+		else { wbit = vex_L ? YMM_OPND : XMM_OPND; }
+	}
+```
+
+so the arm is unreachable if a `VEX_*` `it_adrmode` implies a VEX prefix
+was parsed. That is a claim about table *contents*, and it is checkable
+rather than arguable — scanning every `instable_t` array in the file for
+`VEX_*` adrmode values gives exactly nine tables:
+
+```
+dis_opAVX0F  dis_opAVX660F  dis_opAVX660F38  dis_opAVX660F3A
+dis_opAVXF20F  dis_opAVXF20F38  dis_opAVXF20F3A
+dis_opAVXF30F  dis_opAVXF30F38
+```
+
+(`dis_distable` matches the regex too, on `VEX_B`/`VEX_L`/`VEX_R`/`VEX_W`
+/`VEX_X`/`VEX_m` — those are prefix *bit* masks, not adrmodes.) Every one
+of the nine is assigned to `dp` only inside the `vex_prefix ==
+VEX_2bytes` and `VEX_3bytes` blocks. So `it_adrmode` being a `VEX_*`
+value implies `vex_prefix != 0` implies `wbit` was set. The same
+reasoning covers `opcode5` and `opcode7`: the arms that read them are
+reached only through a `dp` in a table that a second or third opcode byte
+selected.
+
+This is the `const` dispatch-table family from task #88 with an extra
+step: not just "the table is `const` so the value is one of these", but
+"the value being one of *these* says which table `dp` points into, and
+therefore what was parsed to get there". The analyser reads
+`dp->it_adrmode` as an unconstrained symbol and has no way to run that
+inference backwards.
+
+The other three findings in the scope:
+
+| where | rests on |
+|---|---|
+| `fasttrap_isa.c:1621` | `ftt_ripmode` is written only at `:609` and `:614`, as `FASTTRAP_RIP_1\|(FASTTRAP_RIP_X * FASTTRAP_REX_B(rex))` and the `RIP_2` form; `FASTTRAP_REX_B(rex)` is `((rex) & 1)`, so the value is one of 1, 2, 5, 6 — exactly the switch's four arms, and `reg` is always assigned. |
+| `fbt/riscv/fbt_isa.c:153` | `rval` and `patchval` are written only inside the loop, which `break`s when it writes them; reaching `:153` needs `instr < limit`, and the loop exits only on `break` or on `instr >= limit`. Another loop bound the analyser will not relate to a guard after it. |
+| `fbt.c:792` | `ctf_list_append()` stores the pointer into the list via `lp->l_prev = q`, which `unix.Malloc` does not count as an escape. |

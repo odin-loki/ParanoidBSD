@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,765 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,810 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,824** | **114,204** |
+| | **total** | **41,143** | **21,297,869** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -49222,7 +49222,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.105 `sys/cddl/dev/dtrace/x86`
 
-- [ ] **8.105.1** `dis_tables.c` · 6,735L · `SKIP-VENDOR`
+- [ ] **8.105.1** `dis_tables.c` · 6,780L · `SKIP-VENDOR`
 - [ ] **8.105.2** `dis_tables.h` · 111L · `SKIP-VENDOR`
 - [ ] **8.105.3** `instr_size.c` · 135L · `SKIP-VENDOR`
 - [ ] **8.105.4** `regset.h` · 125L · `SKIP-VENDOR`
