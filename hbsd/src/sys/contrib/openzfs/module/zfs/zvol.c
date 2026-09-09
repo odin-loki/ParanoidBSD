@@ -1532,7 +1532,16 @@ zvol_create_minors_impl(zvol_task_t *task)
 	list_t minors_list;
 	minors_job_t *job;
 	uint64_t snapdev;
-	int total = 0, done = 0, last_error, error;
+	/*
+	 * PBSD: last_error initialised.  The `@' arm below assigns it only
+	 * when zvol_os_create_minor() fails, and the prefetch loop only when
+	 * a job failed, so a name with an `@' whose snapdev is not visible -
+	 * or whose dsl_prop_get_integer() fails - reaches
+	 * zvol_task_update_status() with the callee reading a stack word as
+	 * the task's error.  zt_error is what zvol_remove_minors() returns to
+	 * its caller.
+	 */
+	int total = 0, done = 0, last_error = 0, error;
 
 	/*
 	 * Note: the dsl_pool_config_lock must not be held.
@@ -1773,7 +1782,15 @@ zvol_rename_minors_impl(zvol_task_t *task)
 	zvol_state_t *zv, *zv_next;
 	const char *oldname = task->zt_name1;
 	const char *newname = task->zt_name2;
-	int total = 0, done = 0, last_error, error, oldnamelen;
+	/*
+	 * PBSD: error and last_error initialised.  error is assigned inside
+	 * the loop only when the zvol's name matches oldname or is under it;
+	 * any OTHER zvol in zvol_state_list - which is the common case, one
+	 * per unrelated volume - falls through to `if (error)' having never
+	 * written it.  That reads a stack word, counts the rename as failed
+	 * when it is non-zero, and stores it in the task's zt_error.
+	 */
+	int total = 0, done = 0, last_error = 0, error = 0, oldnamelen;
 
 	if (zvol_inhibit_dev)
 		return;
@@ -1908,6 +1925,19 @@ zvol_set_volmode_impl(zvol_task_t *task)
 				break;
 			else /* if zvol_volmode is invalid defaults to "geom" */
 				error = zvol_os_create_minor(name);
+			break;
+		default:
+			/*
+			 * PBSD: a switch over a value that came off DISK.
+			 * task->zt_value is the volmode property as
+			 * zvol_set_common_sync_cb() read it with
+			 * dsl_prop_get_int_ds(); nothing between there and here
+			 * checks it against zfs_volmode_t's four values.  With
+			 * no default arm, a dataset carrying any other number
+			 * left `error' unwritten and the line below then read
+			 * it twice - as the done count and as the task's error.
+			 */
+			error = SET_ERROR(EINVAL);
 			break;
 	}
 	zvol_task_update_status(task, 1, error == 0, error);

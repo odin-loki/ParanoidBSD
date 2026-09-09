@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,692 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,765 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,751** | **114,204** |
+| | **total** | **41,143** | **21,297,824** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -56767,7 +56767,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.508.72** `txg.c` · 1,098L gen:15 · `SKIP-VENDOR`
 - [ ] **8.508.73** `uberblock.c` · 76L · `SKIP-VENDOR`
 - [ ] **8.508.74** `unique.c` · 114L · `SKIP-VENDOR`
-- [ ] **8.508.75** `vdev.c` · 6,852L gen:22 · `SKIP-VENDOR`
+- [ ] **8.508.75** `vdev.c` · 6,863L gen:22 · `SKIP-VENDOR`
 - [ ] **8.508.76** `vdev_draid.c` · 2,853L · `SKIP-VENDOR`
 - [ ] **8.508.77** `vdev_draid_rand.c` · 42L · `SKIP-VENDOR`
 - [ ] **8.508.78** `vdev_file.c` · 374L gen:2 · `SKIP-VENDOR`
@@ -56779,7 +56779,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.508.84** `vdev_mirror.c` · 1,065L gen:5 · `SKIP-VENDOR`
 - [ ] **8.508.85** `vdev_missing.c` · 134L · `SKIP-VENDOR`
 - [ ] **8.508.86** `vdev_queue.c` · 1,146L gen:27 · `SKIP-VENDOR`
-- [ ] **8.508.87** `vdev_raidz.c` · 5,523L gen:7 · `SKIP-VENDOR`
+- [ ] **8.508.87** `vdev_raidz.c` · 5,546L gen:7 · `SKIP-VENDOR`
 - [ ] **8.508.88** `vdev_raidz_math.c` · 664L · `SKIP-VENDOR`
 - [ ] **8.508.89** `vdev_raidz_math_aarch64_neon.c` · 2,281L gen:2 · `SKIP-VENDOR`
 - [ ] **8.508.90** `vdev_raidz_math_aarch64_neon_common.h` · 686L asm · `SKIP-VENDOR`
@@ -56824,7 +56824,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.508.129** `zfs_sa.c` · 473L gen:10 · `SKIP-VENDOR`
 - [ ] **8.508.130** `zfs_vnops.c` · 2,094L gen:14 · `SKIP-VENDOR`
 - [ ] **8.508.131** `zfs_znode.c` · 411L · `SKIP-VENDOR`
-- [ ] **8.508.132** `zil.c` · 4,908L gen:33 · `SKIP-VENDOR`
+- [ ] **8.508.132** `zil.c` · 4,917L gen:33 · `SKIP-VENDOR`
 - [ ] **8.508.133** `zio.c` · 6,102L gen:12 · `SKIP-VENDOR`
 - [ ] **8.508.134** `zio_checksum.c` · 610L · `SKIP-VENDOR`
 - [ ] **8.508.135** `zio_compress.c` · 182L · `SKIP-VENDOR`
@@ -56832,7 +56832,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.508.137** `zle.c` · 98L gen:2 · `SKIP-VENDOR`
 - [ ] **8.508.138** `zrlock.c` · 190L gen:2 · `SKIP-VENDOR`
 - [ ] **8.508.139** `zthr.c` · 549L · `SKIP-VENDOR`
-- [ ] **8.508.140** `zvol.c` · 2,235L gen:6 · `SKIP-VENDOR`
+- [ ] **8.508.140** `zvol.c` · 2,265L gen:6 · `SKIP-VENDOR`
 
 ### 8.509 `sys/contrib/openzfs/module/zstd`
 

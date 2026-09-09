@@ -1889,7 +1889,19 @@ vdev_raidz_matrix_reconstruct(raidz_row_t *rr, int n, int nmissing,
 		ASSERT3U(c, <, rr->rr_cols);
 
 		ccount = rr->rr_col[c].rc_size;
-		ASSERT(ccount >= rr->rr_col[missing[0]].rc_size || i > 0);
+		/*
+		 * PBSD: nmissing == 0 first, because missing[] holds nmissing
+		 * entries and this indexes its first one.  The caller fills
+		 * missing_rows[] only from the targets at or above
+		 * rr_firstdatacol, so a reconstruct whose targets are all
+		 * PARITY columns - vdev_raidz_reconstruct() reaches
+		 * reconstruct_general() with nbaddata 0, its switch having no
+		 * arm for it - passes nmissing 0 and an array nothing wrote.
+		 * The loops either side of this one are bounded by nmissing
+		 * and do nothing in that case; only the assertion read it.
+		 */
+		ASSERT(nmissing == 0 ||
+		    ccount >= rr->rr_col[missing[0]].rc_size || i > 0);
 		if (ccount == 0)
 			continue;
 		src = abd_to_buf(rr->rr_col[c].rc_abd);
@@ -3314,8 +3326,19 @@ raidz_reconstruct(zio_t *zio, int *ltgts, int ntgts, int nparity)
 	int dbgmsg = zfs_flags & ZFS_DEBUG_RAIDZ_RECONSTRUCT;
 
 	if (dbgmsg) {
+		/*
+		 * PBSD: only the ntgts entries that exist.  The caller's
+		 * tstore[] is written for indices -1 through num_failures,
+		 * and num_failures is this ntgts - so with one or two
+		 * targets ltgts[1] and ltgts[2] are untouched stack, printed
+		 * into the debug ring where anyone who can read dbgmsg sees
+		 * it.  -1 is not a valid child id, so it cannot be confused
+		 * with one that is.
+		 */
 		zfs_dbgmsg("raidz_reconstruct_expanded(zio=%px ltgts=%u,%u,%u "
-		    "ntgts=%u", zio, ltgts[0], ltgts[1], ltgts[2], ntgts);
+		    "ntgts=%u", zio, ltgts[0],
+		    ntgts > 1 ? ltgts[1] : -1,
+		    ntgts > 2 ? ltgts[2] : -1, ntgts);
 	}
 
 	/* Reconstruct each row */

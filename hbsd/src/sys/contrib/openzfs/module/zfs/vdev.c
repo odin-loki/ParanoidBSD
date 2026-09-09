@@ -490,7 +490,18 @@ static int
 vdev_prop_get_bool(vdev_t *vd, vdev_prop_t prop, boolean_t *bvalue)
 {
 	int err;
-	uint64_t ivalue;
+	/*
+	 * PBSD: seeded with the property's default, because
+	 * vdev_prop_get_int() writes *value on exactly two paths - a
+	 * successful zap_lookup(), and ENOENT, where it writes the default -
+	 * and returns EINVAL without writing anything when the vdev has no
+	 * ZAP object.  *bvalue was then a stack word.  vdev_load() stores
+	 * this straight into vd->vdev_slow_io_events and only DEBUG-prints
+	 * the error, so a vdev with no ZAP got a random answer to "should
+	 * this vdev post slow-IO events", and the default is on
+	 * (zpool_prop.c:484 registers slow_io_events with B_TRUE).
+	 */
+	uint64_t ivalue = vdev_prop_default_numeric(prop);
 
 	err = vdev_prop_get_int(vd, prop, &ivalue);
 	*bvalue = ivalue != 0;

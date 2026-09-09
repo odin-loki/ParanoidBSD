@@ -12919,3 +12919,104 @@ options it defines" reports `opt_global.h at [37], module -include at
 The third check asks the *preprocessor* whether `ZFS_DEBUG` is set,
 rather than asking the flag list — because the flag list is not where
 `NDEBUG` is decided, which is the whole of what went wrong here.
+
+## openzfs: eight uninitialised reads, and the fourteen that are premises
+
+With the assertions restored (above), `--scope
+sys/contrib/openzfs/module/zfs` reports 22. Eight of them are defects and
+all eight are the same shape — a local that one path writes and another
+path reads — which is what the `core.uninitialized.*` and
+`core.CallAndMessage` checkers are for.
+
+**`zvol.c`, three functions.**
+
+`zvol_create_minors_impl()` declares `int total = 0, done = 0, last_error,
+error;`. `last_error` is assigned only when `zvol_os_create_minor()`
+fails, or when a prefetch job carries an error. A name containing `@`
+whose `snapdev` is not `visible` — or whose `dsl_prop_get_integer()`
+fails — skips both, the prefetch list is empty, and
+`zvol_task_update_status(task, total, done, last_error)` reads a stack
+word. It lands in `task->zt_error`, which `zvol_remove_minors()` returns
+to its caller.
+
+`zvol_rename_minors_impl()` is worse: `error` is uninitialised too, and
+it is assigned inside the loop **only** for a zvol whose name matches
+`oldname` or lies under it. Every *other* zvol in `zvol_state_list` — one
+per unrelated volume on the system, so the common case — falls through to
+`if (error)` having never written it. A non-zero stack word counts the
+rename as failed and becomes the task's error.
+
+`zvol_set_volmode_impl()` switches on `task->zt_value` with `case
+ZFS_VOLMODE_NONE/GEOM/DEV/DEFAULT` and **no `default`**. That value is
+the `volmode` property as `zvol_set_common_sync_cb()` read it with
+`dsl_prop_get_int_ds()` — a number off disk, checked against the four
+`zfs_volmode_t` values nowhere in between. A dataset carrying any other
+value leaves `error` unwritten, and the next line reads it twice, as the
+done count and as the error. Same shape as `hyperv/pcib`'s
+protocol-version switch.
+
+**`zil.c`.** `zil_lwb_write_issue()` declares `boolean_t slog;` and
+writes it only through `zio_alloc_zil(..., &slog, ...)`, which is inside
+`if (error == 0)` where `error = lwb->lwb_error`. An lwb that already
+carries an allocation failure skips that whole block, and `if (slog)`
+near the end of the function then sets `LWB_FLAG_SLOG` on the next lwb
+from a stack word.
+
+**`vdev.c`.** `vdev_prop_get_bool()` calls `vdev_prop_get_int()` and
+converts. But `vdev_prop_get_int()` writes `*value` on exactly two
+paths — a successful `zap_lookup()`, and `ENOENT`, where it writes the
+default — and returns `EINVAL` **without writing anything** when
+`vdev_prop_get_objid()` finds no ZAP object. `vdev_load()` stores the
+result straight into `vd->vdev_slow_io_events` and only `vdev_dbgmsg()`s
+the error, so a vdev with no ZAP got a random answer to "should this vdev
+post slow-IO events" — and the property's default is **on**
+(`zpool_prop.c:484` registers `slow_io_events` with `B_TRUE`), so the
+half of the time it lands zero is a vdev silently not reporting slow IO.
+Seeded with `vdev_prop_default_numeric(prop)`, which is what
+`vdev_prop_get_int()` itself writes on `ENOENT`.
+
+**`vdev_raidz.c`, two.** `raidz_reconstruct()`'s debug line prints
+`ltgts[0], ltgts[1], ltgts[2]` unconditionally; the caller writes
+`tstore[]` for indices `-1` through `num_failures`, and `num_failures` is
+this function's `ntgts`. With one or two targets the other two are
+untouched stack, printed into the debug ring. And
+`vdev_raidz_matrix_reconstruct()` asserts
+`ccount >= rr->rr_col[missing[0]].rc_size || i > 0` — indexing
+`missing[0]` without first asking whether `nmissing` is 0.
+`vdev_raidz_reconstruct()`'s `switch (nbaddata)` has arms for 1 and 2 and
+falls through to `vdev_raidz_reconstruct_general()` for 0, which is the
+all-parity-targets case; there `nmissing_rows` is 0 and `missing_rows[]`
+is a stack array nothing wrote. The loops either side of that assertion
+are bounded by `nmissing` and do nothing; only the assertion read it —
+and this tree ships with assertions on, which is the whole reason it is
+visible at all.
+
+```
+--scope sys/contrib/openzfs/module/zfs
+  22 -> 14 findings, 137 OK, 0 ERROR on both sides
+```
+
+Each of the eight has a `check_pbsd_marks.py` entry, and each was
+verified by restoring the file from `HEAD` and reading the exit status:
+all four files go to `exit=1`, naming the individual fix that went.
+That matters more here than in tree-owned code — this is a vendor
+directory that gets re-imported, and a fix with no marker is a fix with a
+deletion date.
+
+### The fourteen that remain, and what each rests on
+
+None is a defect; each is a premise the analyser cannot reach, and the
+premise is what is worth recording.
+
+| where | rests on |
+|---|---|
+| `dbuf.c:3869` | `dbuf_prefetch_impl()` returns early on `level >= nlevels`, so `curlevel <= nlevels-1` and `bp` is written either by the loop's `break` or by the `curlevel == nlevels-1` arm. A loop bound the analyser will not relate to a guard on the entry value. |
+| `dmu.c:2460` | `dn == NULL` implies `type = DMU_OT_OBJSET`, whose `dmu_ot[]` entry has `ot_metadata` TRUE, so `ismd` is true and the `else` is not reached. `dmu_ot[]` is `const` — the same family as the dispatch tables in task #88. |
+| `dmu.c:2540` | the one caller passing `dn == NULL` (`dmu_objset_sync()`) passes `wp = 0`, so `(wp & WP_SPILL)` picks `type`. |
+| `dmu_send.c:2490` | `redact_rl` is set exactly when `dspp->redactbook != NULL`, and the deref is under the same test — one predicate read twice across intervening calls on a struct the analyser must assume they can write. |
+| `dsl_dataset.h:276` (from `dsl_destroy.c:802`) | a clone has an origin snapshot, so `dd_origin_obj != 0` implies `ds_prev_snap_obj != 0` implies `ds->ds_prev != NULL` — `dsl_dataset.c:1794` asserts the second half. Worth noting that the same function tests `ds->ds_prev != NULL` fourteen lines earlier, at `:788`. |
+| `metaslab.c:3416` | `ms_sm == NULL` implies `ms_allocated_space == 0` (`metaslab_init()` sets one from the other, and `metaslab_sync()` creates the space map before adding), so the `allocated == 0` early return covers it. The caller at `:3528` explicitly permits `ms_sm == NULL`, which is what makes this one worth a second look rather than a shrug. |
+| `spa.c:1242` | `boot_ncpus >= 1`. With it, `cpus >= 1` and the `while (count * count > cpus) count--` stops at 1. |
+| `vdev_raidz.c:2146,2153,2164,2165` | `parity_valid[c]` is written for every `c < rr->rr_firstdatacol` by the loop above, and the reads are the constant indices `VDEV_RAIDZ_P` and `VDEV_RAIDZ_Q` under `ASSERT(rr_firstdatacol > 1)`. The analyser honours the assertion — it does not unroll the loop far enough to know it covered indices 0 and 1. A loop-coverage limit, not an assertion one. |
+| `vdev_raidz.c:2856` | `orig[c]` is written and read under the identical `!rc_tried \|\| rc_error != 0` test; `vdev_draid_map_verify_empty()` in between writes `rc_error` only for `c >= rr_bigcols`, which are data columns, not the parity columns this loop walks. |
+| `zfs_log.c:355,360` | `fuidp` is non-NULL whenever an id is ephemeral, because the same `zfs_acl_ids_create()` that made the id allocated the fuid info. On FreeBSD `IS_EPHEMERAL(x)` is `x > UID_MAX` and `z_uid` is a `uint64_t`, so the branch is not folded away as it is on a 32-bit uid — but the value is the creating process's uid, and no such uid exists. |

@@ -2634,6 +2634,58 @@ FIXES = {
             "and the CC column header, the same way with cnamelen",
         ),
     ],
+    "hbsd/src/sys/contrib/openzfs/module/zfs/zvol.c": [
+        (
+            "int total = 0, done = 0, last_error = 0, error;",
+            "\tint total = 0, done = 0, last_error, error;\n",
+            "zvol_create_minors_impl: last_error reached "
+            "zvol_task_update_status() unwritten when the `@' arm did not "
+            "run and the prefetch list was empty",
+        ),
+        (
+            "int total = 0, done = 0, last_error = 0, error = 0, oldnamelen;",
+            None,
+            "zvol_rename_minors_impl: error is assigned only for a zvol "
+            "whose name matches, so any unrelated zvol in the list read a "
+            "stack word in `if (error)'",
+        ),
+        (
+            "PBSD: a switch over a value that came off DISK",
+            None,
+            "zvol_set_volmode_impl: no default arm, and zt_value is the "
+            "volmode property as dsl_prop_get_int_ds() read it",
+        ),
+    ],
+    "hbsd/src/sys/contrib/openzfs/module/zfs/zil.c": (
+        "boolean_t slog = B_FALSE;",
+        "\tboolean_t slog;\n",
+        "zil_lwb_write_issue: slog is written only inside "
+        "`if (error == 0)', and an lwb carrying an allocation failure "
+        "skips that block and then reads it",
+    ),
+    "hbsd/src/sys/contrib/openzfs/module/zfs/vdev.c": (
+        "uint64_t ivalue = vdev_prop_default_numeric(prop);",
+        "\tuint64_t ivalue;\n\n\terr = vdev_prop_get_int(vd, prop, &ivalue);",
+        "vdev_prop_get_bool: vdev_prop_get_int() returns EINVAL without "
+        "writing *value, and vdev_load() stores the result into "
+        "vd->vdev_slow_io_events regardless",
+    ),
+    "hbsd/src/sys/contrib/openzfs/module/zfs/vdev_raidz.c": [
+        (
+            "ntgts > 2 ? ltgts[2] : -1, ntgts);",
+            "\"ntgts=%u\", zio, ltgts[0], ltgts[1], ltgts[2], ntgts);\n",
+            "raidz_reconstruct: the debug line printed ltgts[1] and "
+            "ltgts[2] whatever ntgts was, and the caller writes only "
+            "num_failures of them",
+        ),
+        (
+            "ASSERT(nmissing == 0 ||",
+            None,
+            "vdev_raidz_matrix_reconstruct: the assertion indexed "
+            "missing[0] when nmissing may be 0, which is the "
+            "all-parity-targets case reconstruct_general() is reached with",
+        ),
+    ],
 }
 
 

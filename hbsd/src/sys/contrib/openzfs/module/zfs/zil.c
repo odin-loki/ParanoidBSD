@@ -1939,7 +1939,16 @@ zil_lwb_write_issue(zilog_t *zilog, lwb_t *lwb)
 {
 	spa_t *spa = zilog->zl_spa;
 	zil_chain_t *zilc;
-	boolean_t slog;
+	/*
+	 * PBSD: slog initialised.  It is written only by the
+	 * zio_alloc_zil() call below, which is inside `if (error == 0)' -
+	 * so an lwb that already carries an allocation failure
+	 * (lwb->lwb_error != 0) skips that block entirely and the
+	 * `if (slog)' near the end of this function reads a stack word,
+	 * setting LWB_FLAG_SLOG on the next lwb at random.  B_FALSE is
+	 * what "we did not allocate on a slog" means.
+	 */
+	boolean_t slog = B_FALSE;
 	zbookmark_phys_t zb;
 	zio_priority_t prio;
 	int error;
