@@ -410,17 +410,36 @@ mv_gpio_setup_intrhandler(device_t dev, const char *name, driver_filter_t *filt,
 	struct mv_gpio_pindev *s;
 	struct mv_gpio_softc *sc;
 	sc = (struct mv_gpio_softc *)device_get_softc(dev);
-	s = malloc(sizeof(struct mv_gpio_pindev), M_DEVBUF, M_NOWAIT | M_ZERO);
 
+	/*
+	 * PBSD: allocate where it is used, check M_NOWAIT, and free it
+	 * on the paths that do not hand it over.
+	 *
+	 * The pindev was allocated at the top of the function and
+	 * intr_event_create() is its only consumer, so it leaked on the
+	 * bounds check, on both failing returns below, AND on the
+	 * ordinary success path whenever this pin already had an event
+	 * - which is every call after the first for that pin. A
+	 * M_NOWAIT malloc that returned NULL was also passed straight
+	 * through as the cookie that mv_gpio_intr_mask(),
+	 * mv_gpio_intr_unmask() and mv_gpio_int_ack() dereference.
+	 */
 	if (pin < 0 || pin >= sc->pin_num)
 		return (ENXIO);
+
 	event = sc->gpio_events[pin];
 	if (event == NULL) {
+		s = malloc(sizeof(struct mv_gpio_pindev), M_DEVBUF,
+		    M_NOWAIT | M_ZERO);
+		if (s == NULL)
+			return (ENOMEM);
+
 		MV_GPIO_LOCK();
 		if (sc->gpio_setup[pin].gp_flags & MV_GPIO_IN_DEBOUNCE) {
 			error = mv_gpio_debounce_init(dev, pin);
 			if (error != 0) {
 				MV_GPIO_UNLOCK();
+				free(s, M_DEVBUF);
 				return (error);
 			}
 		} else if (sc->gpio_setup[pin].gp_flags & MV_GPIO_IN_IRQ_DOUBLE_EDGE)
@@ -432,8 +451,10 @@ mv_gpio_setup_intrhandler(device_t dev, const char *name, driver_filter_t *filt,
 		    (void (*)(void *))mv_gpio_int_ack,
 		    NULL,
 		    "gpio%d:", pin);
-		if (error != 0)
+		if (error != 0) {
+			free(s, M_DEVBUF);
 			return (error);
+		}
 		sc->gpio_events[pin] = event;
 	}
 

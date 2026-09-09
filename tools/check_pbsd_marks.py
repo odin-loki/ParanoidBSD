@@ -920,6 +920,36 @@ FIXES = {
     ],
     # Three drivers whose `timeout' is assigned only inside the loop
     # that a zero-length transfer skips, and read after it.
+    "hbsd/src/sys/arm/mv/gpio.c": [
+        (
+            "PBSD: allocate where it is used, check M_NOWAIT",
+            "\ts = malloc(sizeof(struct mv_gpio_pindev), M_DEVBUF, M_NOWAIT | M_ZERO);\n\n\tif (pin < 0",
+            "the pindev was allocated at the top of "
+            "mv_gpio_setup_intrhandler() and intr_event_create() is "
+            "its only consumer, so it leaked on the bounds check, on "
+            "both failing returns, and on the ordinary success path "
+            "whenever the pin already had an event; a NULL from the "
+            "M_NOWAIT malloc went through as the cookie the three "
+            "mv_gpio_intr_* callbacks dereference",
+        ),
+    ],
+    "hbsd/src/sys/arm/ti/ti_adc.c": [
+        (
+            "PBSD: bounded by the buffer, and the FIFO still drained.",
+            "\t\tdata[i++] = ADC_READ4(sc, ADC_FIFO1DATA) & ADC_FIFO_DATA_MSK;\n",
+            "ti_adc_tsc_read_data() filled a 16-word stack array from "
+            "the hardware FIFO with no bound at all - the count "
+            "register is masked with 0x7f, so up to 127 words",
+        ),
+        (
+            "PBSD: bounded. This was taken from the device",
+            "\t\t    sizeof(cell))) > 0)\n\t\t\tsc->sc_coord_readouts = cell;\n",
+            "ti,coordinate-readouts came from the device tree "
+            "unchecked and is used as an index base into that same "
+            "16-word buffer over [n + 2, 2n + 2), and at "
+            "ti_adc_setup() as ADC_STEPS - (n * 2 + 2) + 1",
+        ),
+    ],
     "hbsd/src/sys/arm/mv/mvebu_gpio.c": [
         (
             "PBSD: read the pin here rather than through",

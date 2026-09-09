@@ -10482,3 +10482,127 @@ worth preserving, and a driver that cannot do its job should say so.
 All 44 `sys/arm/ti` units still OK. Over this reading those two
 directories have gone `mv 4 -> 1` and `ti 6 -> 2`. What is left is
 `mv/gpio.c:416` and `ti_adc.c:460` and `:464`, still unread.
+
+---
+
+## An unbounded FIFO drain into a 16-word stack array
+
+The last two findings in `sys/arm/mv` and `sys/arm/ti`. The second is
+the most serious thing this reading found.
+
+### `ti_adc_tsc_read_data` has no bound on either side
+
+```c
+	int count;
+	uint32_t data[16];
+	...
+	count = ADC_READ4(sc, ADC_FIFO1COUNT) & ADC_FIFO_COUNT_MSK;
+	if (count == 0)
+		return;
+
+	i = 0;
+	while (count > 0) {
+		data[i++] = ADC_READ4(sc, ADC_FIFO1DATA) & ADC_FIFO_DATA_MSK;
+		count = ADC_READ4(sc, ADC_FIFO1COUNT) & ADC_FIFO_COUNT_MSK;
+	}
+```
+
+`i` has **no bound**. The loop runs until the hardware's own count
+register reads zero, and that register is masked with
+
+```c
+#define	ADC_FIFO_COUNT_MSK		0x0000007f
+```
+
+— up to **127 words into a 16-word array on the kernel stack**. The step
+configuration normally queues `2n + 2` samples, but the AM335x FIFO is
+64 entries deep and nothing stops it holding more than one sequencer run
+when an interrupt is late.
+
+Bounded, with the reads past the array continuing so the FIFO is still
+drained — leaving entries in it leaves the controller stuck.
+
+The analyser's actual finding was the *other* direction, at the two
+summing lines: a run that delivered **fewer** than a full coordinate set
+leaves the tail of `data[]` unwritten and the sums read it. Guarded by
+returning when `i < sc->sc_coord_readouts * 2 + 2` — an incomplete set
+is not a coordinate.
+
+### And the index base came from the device tree unchecked
+
+```c
+		if ((OF_getencprop(child, "ti,coordinate-readouts", &cell,
+		    sizeof(cell))) > 0)
+			sc->sc_coord_readouts = cell;
+```
+
+`sc_coord_readouts` indexes that same 16-word buffer over
+`[n + 2, 2n + 2)` and is a `qsort()` length there, and at
+`ti_adc_setup()` it is
+
+```c
+	start_step = ADC_STEPS - (sc->sc_coord_readouts*2 + 2) + 1;
+```
+
+which goes negative past 7. So the buffer holds only for `2n + 2 <= 16`,
+i.e. `n <= 7`, and nothing said so. Named the bound
+(`TI_ADC_MAX_READOUTS`), derived it from the buffer size rather than
+writing 7, and rejected an out-of-range property with a message.
+
+One of the two findings stays, at the `x` sum. The guard makes it
+unreachable — with `i >= 2n + 2`, entries `0..2n+1` are written, and the
+largest index either loop touches is `2n`  when `n > 3` and `2n + 1`
+otherwise — but the analyser does not connect the count of words written
+to the range of indices read. It cleared the `y` sum and not the `x` one,
+which is the difference between low indices and high ones, not between
+two different arguments.
+
+### `mv_gpio_setup_intrhandler` leaked on the success path
+
+```c
+	sc = (struct mv_gpio_softc *)device_get_softc(dev);
+	s = malloc(sizeof(struct mv_gpio_pindev), M_DEVBUF, M_NOWAIT | M_ZERO);
+
+	if (pin < 0 || pin >= sc->pin_num)
+		return (ENXIO);
+	event = sc->gpio_events[pin];
+	if (event == NULL) {
+		...
+		error = intr_event_create(&event, (void *)s, ...);
+```
+
+`intr_event_create()` is the *only* consumer of `s`, and it is inside
+`if (event == NULL)`. So the allocation leaked on the bounds check, on
+both failing returns — and on the ordinary success path every time the
+pin already had an event, which is every call after the first for that
+pin. The `M_NOWAIT` return was also never checked, and a NULL would go
+through as the cookie `mv_gpio_intr_mask()`, `mv_gpio_intr_unmask()` and
+`mv_gpio_int_ack()` all dereference.
+
+Moved to its point of use, checked, and freed on the two paths that do
+not hand it over.
+
+Worth saying: this function has **no callers in the tree** — only its
+own declaration and the comment in `mv_gpio_finish_intrhandler()` about
+"when we achieve full interrupt support" — and nothing ever fills in
+`s->dev` or `s->pin`, so a future first caller would NULL-dereference in
+the mask callback before the leak mattered. The leak is the smallest of
+its problems, and is fixed because it was reported, not because it is
+the interesting thing about this function.
+
+### Measured
+
+```
+--scope sys/arm/mv   1 finding -> 0    44 units, all OK
+--scope sys/arm/ti   2 findings -> 1   44 units, all OK
+```
+
+`sys/arm/mv` is clean. Over this reading:
+
+| directory | at the start | now |
+|---|---|---|
+| `sys/arm/allwinner` | 8 | 4 |
+| `sys/arm/mv` | 4 | 0 |
+| `sys/arm/ti` | 6 | 1 |
+| `sys/dev/amdsmb` | 6 | 0 |
+| `sys/dev/backlight` | 1 | 0 |

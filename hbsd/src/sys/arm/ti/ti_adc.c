@@ -63,6 +63,17 @@
 #undef	DEBUG_TSC
 
 #define	DEFAULT_CHARGE_DELAY	0x400
+
+/*
+ * PBSD: the coordinate buffer in ti_adc_tsc_read_data() and the bound
+ * ti,coordinate-readouts must satisfy for it to hold. That function
+ * indexes data[] over [0, n) and again over [n + 2, 2n + 2), so the
+ * largest index it touches is 2n + 1 and the buffer must be at least
+ * 2n + 2 words. Neither the loop that fills it nor the device-tree
+ * property that sets n was bounded by anything at all.
+ */
+#define	TI_ADC_COORD_BUF	16
+#define	TI_ADC_MAX_READOUTS	((TI_ADC_COORD_BUF - 2) / 2)
 #define	STEPDLY_OPEN		0x98
 
 #define	ORDER_XP	0
@@ -424,7 +435,7 @@ static void
 ti_adc_tsc_read_data(struct ti_adc_softc *sc)
 {
 	int count;
-	uint32_t data[16];
+	uint32_t data[TI_ADC_COORD_BUF];
 	uint32_t x, y;
 	int i, start, end;
 
@@ -435,11 +446,38 @@ ti_adc_tsc_read_data(struct ti_adc_softc *sc)
 	if (count == 0)
 		return;
 
+	/*
+	 * PBSD: bounded by the buffer, and the FIFO still drained.
+	 *
+	 * `i' had no bound. This loop ran until the hardware's own count
+	 * register read zero, and that register is masked with
+	 * ADC_FIFO_COUNT_MSK, which is 0x7f - up to 127 words into a
+	 * 16-word array on the kernel stack. The step configuration
+	 * normally queues 2n + 2 samples, but the FIFO is 64 entries
+	 * deep and nothing stops it holding more than one sequencer run
+	 * when an interrupt is late.
+	 *
+	 * The reads past the array continue, without storing, because
+	 * leaving entries in the FIFO leaves the controller stuck.
+	 */
 	i = 0;
 	while (count > 0) {
-		data[i++] = ADC_READ4(sc, ADC_FIFO1DATA) & ADC_FIFO_DATA_MSK;
+		if (i < nitems(data))
+			data[i++] = ADC_READ4(sc, ADC_FIFO1DATA) &
+			    ADC_FIFO_DATA_MSK;
+		else
+			(void)ADC_READ4(sc, ADC_FIFO1DATA);
 		count = ADC_READ4(sc, ADC_FIFO1COUNT) & ADC_FIFO_COUNT_MSK;
 	}
+
+	/*
+	 * PBSD: and the other direction. A run that delivered FEWER than
+	 * a full coordinate set leaves the tail of data[] unwritten, and
+	 * the sums below read it - which is what the analyser reported
+	 * at the two `+=' lines. An incomplete set is not a coordinate.
+	 */
+	if (i < sc->sc_coord_readouts * 2 + 2)
+		return;
 
 	if (sc->sc_coord_readouts > 3) {
 		start = 1;
@@ -768,8 +806,25 @@ ti_adc_attach(device_t dev)
 		if ((OF_getencprop(child, "ti,wires", &cell, sizeof(cell))) > 0)
 			sc->sc_tsc_wires = cell;
 		if ((OF_getencprop(child, "ti,coordinate-readouts", &cell,
-		    sizeof(cell))) > 0)
-			sc->sc_coord_readouts = cell;
+		    sizeof(cell))) > 0) {
+			/*
+			 * PBSD: bounded. This was taken from the device
+			 * tree and used unchecked as an index base into
+			 * ti_adc_tsc_read_data()'s 16-word stack buffer
+			 * (over [n + 2, 2n + 2)) and as a qsort() length
+			 * there, and at ti_adc_setup() as
+			 * ADC_STEPS - (n * 2 + 2) + 1, which goes
+			 * negative past 7.
+			 */
+			if (cell < 1 || cell > TI_ADC_MAX_READOUTS) {
+				device_printf(sc->sc_dev,
+				    "ti,coordinate-readouts %u out of range "
+				    "1..%u, using %u\n", cell,
+				    TI_ADC_MAX_READOUTS,
+				    sc->sc_coord_readouts);
+			} else
+				sc->sc_coord_readouts = cell;
+		}
 		if ((OF_getencprop(child, "ti,x-plate-resistance", &cell,
 		    sizeof(cell))) > 0)
 			sc->sc_x_plate_resistance = cell;
