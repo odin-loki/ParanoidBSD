@@ -1098,6 +1098,35 @@ FIXES = {
             "device",
         ),
     ],
+    "hbsd/src/sys/dev/sdhci/sdhci_fdt.c": [
+        (
+            "PBSD: clknode_create() copies both the name and the parent",
+            '\t\t\tdevice_printf(sc->dev, "cannot create clknode\\n");\n'
+            "\t\t\treturn;\n",
+            "sdhci_export_clocks() allocated a one-entry parent name "
+            "array inside the loop and freed none of them, and let the "
+            "clock-output-names array go on all three returns",
+        ),
+    ],
+    "hbsd/src/sys/arm64/rockchip/rk_usb2phy.c": [
+        (
+            "PBSD: a malformed property can still hand back an array;",
+            "\tif (nclocks != 1)\n\t\treturn (ENXIO);\n",
+            "rk_usb2phy_export_clock() leaked the clock-output-names "
+            "array on five paths and def.parent_names on four, "
+            "including the success path",
+        ),
+    ],
+    "hbsd/src/sys/riscv/sifive/sifive_prci.c": [
+        (
+            "PBSD: this arm reached 'fail', which is past the free of",
+            '\t\tdevice_printf(dev, "Couldn\'t create clock domain\\n");\n'
+            "\t\tgoto fail;\n",
+            "prci_attach() jumped past its own fail1: free on two "
+            "arms and never freed clkdef.parent_names on the success "
+            "path; the clkdom arm also returned the 0 left in error",
+        ),
+    ],
     "hbsd/src/sys/dev/cyapa/cyapa.c": [
         (
             "PBSD: error = 0. It is assigned only inside",

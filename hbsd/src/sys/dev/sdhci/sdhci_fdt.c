@@ -159,9 +159,19 @@ sdhci_export_clocks(struct sdhci_fdt_softc *sc)
 		def.parent_cnt = 1;
 
 		clk = clknode_create(clkdom, &sdhci_exported_clocks_clknode_class, &def);
+		/*
+		 * PBSD: clknode_create() copies both the name and the parent
+		 * name array (def.flags has no CLK_NODE_STATIC_STRINGS), so
+		 * the array allocated just above belongs to us on every path
+		 * out of the loop.  Previously it was allocated once per
+		 * exported clock and never freed, and the array returned by
+		 * ofw_bus_string_list_to_array() leaked on every return as
+		 * well.
+		 */
+		free(def.parent_names, M_OFWPROP);
 		if (clk == NULL) {
 			device_printf(sc->dev, "cannot create clknode\n");
-			return;
+			goto out;
 		}
 
 		clksc = clknode_get_softc(clk);
@@ -172,11 +182,14 @@ sdhci_export_clocks(struct sdhci_fdt_softc *sc)
 
 	if (clkdom_finit(clkdom) != 0) {
 		device_printf(sc->dev, "cannot finalize clkdom initialization\n");
-		return;
+		goto out;
 	}
 
 	if (bootverbose)
 		clkdom_dump(clkdom);
+
+out:
+	OF_prop_free(clknames);
 }
 
 int

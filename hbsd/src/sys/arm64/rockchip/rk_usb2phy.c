@@ -276,8 +276,16 @@ rk_usb2phy_export_clock(struct rk_usb2phy_softc *devsc)
 
 	nclocks = ofw_bus_string_list_to_array(node, "clock-output-names",
 	    &clknames);
-	if (nclocks != 1)
+	if (nclocks != 1) {
+		/*
+		 * PBSD: a malformed property can still hand back an array;
+		 * it leaked here, along with def.parent_names on every
+		 * failing return below and on the success path.
+		 */
+		if (nclocks > 0)
+			OF_prop_free(clknames);
 		return (ENXIO);
+	}
 
 	clkdom = clkdom_create(devsc->dev);
 	clkdom_set_ofw_mapper(clkdom, rk_usb2phy_clk_ofw_map);
@@ -290,7 +298,8 @@ rk_usb2phy_export_clock(struct rk_usb2phy_softc *devsc)
 		error = clk_get_by_ofw_index(devsc->dev, 0, i, &clk_parent);
 		if (error != 0) {
 			device_printf(devsc->dev, "cannot get clock %d\n", error);
-			return (ENXIO);
+			error = ENXIO;
+			goto out;
 		}
 		def.parent_names[i] = clk_get_name(clk_parent);
 		clk_release(clk_parent);
@@ -300,7 +309,8 @@ rk_usb2phy_export_clock(struct rk_usb2phy_softc *devsc)
 	clk = clknode_create(clkdom, &rk_usb2phy_clk_clknode_class, &def);
 	if (clk == NULL) {
 		device_printf(devsc->dev, "cannot create clknode\n");
-		return (ENXIO);
+		error = ENXIO;
+		goto out;
 	}
 
 	sc = clknode_get_softc(clk);
@@ -315,13 +325,23 @@ rk_usb2phy_export_clock(struct rk_usb2phy_softc *devsc)
 
 	if (clkdom_finit(clkdom) != 0) {
 		device_printf(devsc->dev, "cannot finalize clkdom initialization\n");
-		return (ENXIO);
+		error = ENXIO;
+		goto out;
 	}
 
 	if (bootverbose)
 		clkdom_dump(clkdom);
 
-	return (0);
+	error = 0;
+out:
+	/*
+	 * clknode_create() copies the name and the parent name array, so both
+	 * allocations are ours to release once it has returned - and ours to
+	 * release on the paths that never reach it.
+	 */
+	free(def.parent_names, M_OFWPROP);
+	OF_prop_free(clknames);
+	return (error);
 }
 
 static int

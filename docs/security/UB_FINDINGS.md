@@ -11532,3 +11532,124 @@ commit, and the other seventeen were never reported — the analyser flags
 a discarded return only when the unwritten value then reaches a
 comparison or an assignment it tracks, and most of these land in softc
 fields.
+
+## Three more clknode `parent_names` arrays, and the one that never fails
+
+`clknode_create()` copies its `struct clknode_init_def` — unless the
+caller sets `CLK_NODE_STATIC_STRINGS`, both the name and the parent name
+array are `strdup`'d into the node:
+
+```c
+	/* Copy all strings unless they're flagged as static. */
+	if (def->flags & CLK_NODE_STATIC_STRINGS) {
+		clknode->name = def->name;
+		clknode->parent_names = def->parent_names;
+	} else {
+		clknode->name = strdup(def->name, M_CLOCK);
+		clknode->parent_names =
+		    strdup_list(def->parent_names, def->parent_cnt);
+	}
+```
+
+Every one of the three drivers below `memset`s or `bzero`s the def, so
+`flags` is 0 and the copy is always taken. The array the driver built is
+therefore the driver's to free the moment `clknode_create()` returns —
+and none of the three gave it back.
+
+There is a second allocation at each site that is easier to miss.
+`ofw_bus_string_list_to_array()` returns a *single* `M_OFWPROP` block
+holding the pointer array and all the strings it points at:
+
+```c
+	array = malloc((cnt + 1) * sizeof(char *) + nelems, M_OFWPROP,
+	    M_WAITOK);
+	/* Get address of first string. */
+	tptr = (char *)(array + cnt + 1);
+```
+
+so one `OF_prop_free()` releases the lot — which is exactly what
+`clk_parse_ofw_clk_name()` in `sys/dev/clk/clk.c:1648` does, on both its
+success and its failure return. Two of the three drivers never called it
+at all.
+
+### `sys/dev/sdhci/sdhci_fdt.c`
+
+`sdhci_export_clocks()` allocates **inside the loop**:
+
+```c
+	for (i = 0; i < nclocks; i++) {
+		...
+		def.parent_names = malloc(sizeof(char *) * 1, M_OFWPROP, M_WAITOK);
+```
+
+one array per exported clock, none of them freed — plus `clknames`,
+leaked on all three returns. The function returns `void`, so there was
+nowhere for an unwind to hide; there now is an `out:` label, and the
+per-iteration array is released immediately after `clknode_create()`,
+before the `NULL` test, because it is dead either way.
+
+### `sys/arm64/rockchip/rk_usb2phy.c`
+
+The same pair, on more paths. `def.parent_names` leaked on the
+`clk_get_by_ofw_index` failure, the `clknode_create` failure, the
+`clkdom_finit` failure and the success return; `clknames` leaked on
+those four *and* on
+
+```c
+	nclocks = ofw_bus_string_list_to_array(node, "clock-output-names",
+	    &clknames);
+	if (nclocks != 1)
+		return (ENXIO);
+```
+
+— a device tree naming two output clocks where the driver wants one
+returns here with the array already allocated. That return is the reason
+the new `out:` label cannot simply absorb it: at that point `def` has not
+been `memset` yet, so the early arm frees `clknames` on its own and the
+label handles everything after.
+
+### `sys/riscv/sifive/sifive_prci.c`
+
+This one already had the unwind, and a comment saying where the point of
+no return is:
+
+```c
+	/* We can't free a clkdom, so from now on we cannot fail. */
+```
+
+`fail1:` frees `clkdef.parent_names` and falls into `fail:`. Two arms
+jumped straight to `fail:`, past it — the `clkdom_create()` NULL test and
+the `clknode_gate_register()` error — and the success path, `return (0)`
+after `clkdom_finit()`, never freed it either.
+
+The `clkdom_create()` arm carried a second defect that only showed up
+because the label was wrong:
+
+```c
+	sc->clkdom = clkdom_create(dev);
+	if (sc->clkdom == NULL) {
+		device_printf(dev, "Couldn't create clock domain\n");
+		goto fail;			/* ...to `return (error)' */
+	}
+```
+
+`error` at that point holds the 0 that the last successful
+`clk_get_by_ofw_index()` left in it. `fail:` ends `return (error)`, so a
+clock domain that could not be created was reported to newbus as a
+successful attach — resources released, mutex destroyed, and a device
+the rest of the system believes is there. It now sets `ENXIO` and goes
+to `fail1:` like the rest.
+
+```
+--scope sys/arm64/rockchip   4 findings -> 3   19 units, OK on both sides
+--scope sys/dev/sdhci        1 finding  -> 1   13 units, OK on both sides
+--scope sys/riscv/sifive     0 findings -> 0    7 units, OK on both sides
+```
+
+Only the rockchip one was ever a finding
+(`rk_usb2phy.c:292 unix.Malloc`). The other two are leaks the analyser
+does not report: in `sdhci_fdt.c` the allocation is handed to
+`clknode_create()`, an unknown function as far as the checker is
+concerned, which is enough for it to stop tracking; in `sifive_prci.c`
+there *is* a `free()` of the pointer in the function, on the path the
+analyser happens to walk. Neither absence says anything about the leak.

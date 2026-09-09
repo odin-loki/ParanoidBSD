@@ -494,7 +494,13 @@ prci_attach(device_t dev)
 	sc->clkdom = clkdom_create(dev);
 	if (sc->clkdom == NULL) {
 		device_printf(dev, "Couldn't create clock domain\n");
-		goto fail;
+		/*
+		 * PBSD: this arm reached 'fail', which is past the free of
+		 * clkdef.parent_names, and returned the 0 left in error by
+		 * the loop above - an attach failure reported as success.
+		 */
+		error = ENXIO;
+		goto fail1;
 	}
 
 	/* We can't free a clkdom, so from now on we cannot fail. */
@@ -534,7 +540,7 @@ prci_attach(device_t dev)
 				device_printf(dev,
 				    "Couldn't create gated clock %s: %d\n",
 				    gate_clk->name, error);
-				goto fail;
+				goto fail1;
 			}
 		}
 	}
@@ -554,6 +560,12 @@ prci_attach(device_t dev)
 		panic("Couldn't finalise clock domain");
 
 	sc->nresets = cfg->nresets;
+
+	/*
+	 * PBSD: the parent name array is copied by clknode_create(), and the
+	 * success path never gave it back.
+	 */
+	free(clkdef.parent_names, M_OFWPROP);
 
 	return (0);
 

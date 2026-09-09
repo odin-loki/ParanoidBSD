@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,495,877 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,116 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,296,920** | **114,204** |
+| | **total** | **41,143** | **21,297,159** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -124,7 +124,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.1146.9 | `sys/fs/nfsclient/nfs_clrpcops.c` | 9,982 | 0 | `TODO-PORT` |
 | 8.1026.6 | `sys/dev/sym/sym_hipd.c` | 9,603 | 0 | `TODO-PORT` |
 | 8.74.1 | `sys/cam/scsi/scsi_all.c` | 9,430 | 0 | `TODO-PORT` |
-| 8.798.1 | `sys/dev/iwn/if_iwn.c` | 9,230 | 0 | `TODO-PORT` |
+| 8.798.1 | `sys/dev/iwn/if_iwn.c` | 9,354 | 0 | `TODO-PORT` |
 | 8.899.2 | `sys/dev/pms/RefTisa/tisa/sassata/common/ossacmnapi.c` | 9,093 | 0 | `TODO-PORT` |
 | 8.1220.18 | `sys/netipsec/key.c` | 9,028 | 0 | `TODO-PORT` |
 | 8.1147.8 | `sys/fs/nfsserver/nfs_nfsdstate.c` | 8,862 | 0 | `TODO-PORT` |
@@ -667,7 +667,7 @@ function; a file with two hundred of them is a project.
 | 8.632.6 | `sys/dev/axgbe/xgbe-dev.c` | 2,869 | 108 | `TODO-PORT` |
 | 8.1191.29 | `sys/kern/kern_event.c` | 3,443 | 108 | `TODO-PORT` |
 | 8.834.9 | `sys/dev/mlx5/mlx5_ib/mlx5_ib_main.c` | 3,679 | 107 | `TODO-PORT` |
-| 8.865.3 | `sys/dev/ntb/ntb_hw/ntb_hw_intel.c` | 3,912 | 107 | `TODO-PORT` |
+| 8.865.3 | `sys/dev/ntb/ntb_hw/ntb_hw_intel.c` | 3,938 | 107 | `TODO-PORT` |
 | 8.649.8 | `sys/dev/bwi/if_bwi.c` | 3,995 | 106 | `TODO-PORT` |
 | 8.852.6 | `sys/dev/mwl/mwlhal.c` | 2,777 | 104 | `TODO-PORT` |
 | 8.788.143 | `sys/dev/isci/scil/scic_sds_port.c` | 3,663 | 102 | `TODO-PORT` |
@@ -47542,7 +47542,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.65.18.4 `rk_typec_phy_set_mode()` · `TODO-FN`
   - [ ] 8.65.18.5 `rk_typec_phy_probe()` · `TODO-FN`
   - [ ] 8.65.18.6 `rk_typec_phy_attach()` · `TODO-FN`
-- [ ] **8.65.19** `rk_usb2phy.c` · 431L gen:4 · `TODO-MD` · 10 fn
+- [ ] **8.65.19** `rk_usb2phy.c` · 451L gen:4 · `TODO-MD` · 10 fn
   - [ ] 8.65.19.1 `rk_usb2phy_enable()` · `TODO-FN`
   - [ ] 8.65.19.2 `rk_usb2phy_get_mode()` · `TODO-FN`
   - [ ] 8.65.19.3 `rk_usb2phy_set_mode()` · `TODO-FN`
@@ -67748,7 +67748,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.679 `sys/dev/cyapa`
 
-- [ ] **8.679.1** `cyapa.c` · 1,843L gen:17 · `TODO-PORT` · 31 fn
+- [ ] **8.679.1** `cyapa.c` · 1,854L gen:17 · `TODO-PORT` · 31 fn
   - [ ] 8.679.1.1 `cyapa_read_bytes()` · `TODO-FN`
   - [ ] 8.679.1.2 `cyapa_write_bytes()` · `TODO-FN`
   - [ ] 8.679.1.3 `cyapa_lock()` · `TODO-FN`
@@ -73340,7 +73340,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.731.19.4 `hms_probe()` · `TODO-FN`
   - [ ] 8.731.19.5 `hms_attach()` · `TODO-FN`
   - [ ] 8.731.19.6 `hms_detach()` · `TODO-FN`
-- [ ] **8.731.20** `hmt.c` · 915L gen:9 · `TODO-PORT` · 8 fn
+- [ ] **8.731.20** `hmt.c` · 937L gen:9 · `TODO-PORT` · 8 fn
   - [ ] 8.731.20.1 `hmt_ev_close()` · `TODO-FN`
   - [ ] 8.731.20.2 `hmt_ev_open()` · `TODO-FN`
   - [ ] 8.731.20.3 `hmt_probe()` · `TODO-FN`
@@ -80526,7 +80526,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.798 `sys/dev/iwn`
 
-- [ ] **8.798.1** `if_iwn.c` · 9,230L gen:6 · `TODO-PORT`
+- [ ] **8.798.1** `if_iwn.c` · 9,354L gen:6 · `TODO-PORT`
 - [ ] **8.798.2** `if_iwn_chip_cfg.h` · 411L · `TODO-HDR`
 - [ ] **8.798.3** `if_iwn_debug.h` · 125L · `TODO-HDR`
 - [ ] **8.798.4** `if_iwn_devid.h` · 333L · `TODO-HDR`
@@ -88706,7 +88706,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.865.1.56 `amd_ntb_attach()` · `TODO-FN`
   - [ ] 8.865.1.57 `amd_ntb_detach()` · `TODO-FN`
 - [ ] **8.865.2** `ntb_hw_amd.h` · 264L · `TODO-HDR`
-- [ ] **8.865.3** `ntb_hw_intel.c` · 3,912L gen:23 · `TODO-PORT` · 107 fn
+- [ ] **8.865.3** `ntb_hw_intel.c` · 3,938L gen:23 · `TODO-PORT` · 107 fn
   - [ ] 8.865.3.1 `bus_space_read_8()` · `TODO-FN`
   - [ ] 8.865.3.2 `bus_space_write_8()` · `TODO-FN`
   - [ ] 8.865.3.3 `intel_ntb_pat_flags()` · `TODO-FN`
@@ -98024,7 +98024,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.993.4.15 `sdhci_acpi_suspend()` · `TODO-FN`
   - [ ] 8.993.4.16 `sdhci_acpi_resume()` · `TODO-FN`
   - [ ] 8.993.4.17 `sdhci_acpi_intr()` · `TODO-FN`
-- [ ] **8.993.5** `sdhci_fdt.c` · 528L gen:4 · `TODO-PORT` · 20 fn
+- [ ] **8.993.5** `sdhci_fdt.c` · 541L gen:4 · `TODO-PORT` · 20 fn
   - [ ] 8.993.5.1 `sdhci_exported_clocks_init()` · `TODO-FN`
   - [ ] 8.993.5.2 `sdhci_clock_ofw_map()` · `TODO-FN`
   - [ ] 8.993.5.3 `sdhci_export_clocks()` · `TODO-FN`
@@ -102357,7 +102357,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1043 `sys/dev/ti`
 
-- [ ] **8.1043.1** `if_ti.c` · 4,038L gen:3 · `TODO-PORT`
+- [ ] **8.1043.1** `if_ti.c` · 4,049L gen:3 · `TODO-PORT`
 - [ ] **8.1043.2** `if_tireg.h` · 1,095L gen:1 · `TODO-HDR`
 - [ ] **8.1043.3** `ti_fw.h` · 4,592L · `TODO-GEN`
 - [ ] **8.1043.4** `ti_fw2.h` · 5,232L · `TODO-GEN`
@@ -134929,7 +134929,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1263.4.12 `sfgpio_pin_access_32()` · `TODO-FN`
   - [ ] 8.1263.4.13 `sfgpio_pin_config_32()` · `TODO-FN`
   - [ ] 8.1263.4.14 `sfgpio_get_node()` · `TODO-FN`
-- [ ] **8.1263.5** `sifive_prci.c` · 699L gen:3 · `TODO-MD` · 15 fn
+- [ ] **8.1263.5** `sifive_prci.c` · 711L gen:3 · `TODO-MD` · 15 fn
   - [ ] 8.1263.5.1 `prci_clk_pll_init()` · `TODO-FN`
   - [ ] 8.1263.5.2 `prci_clk_pll_recalc()` · `TODO-FN`
   - [ ] 8.1263.5.3 `prci_clk_div_init()` · `TODO-FN`
