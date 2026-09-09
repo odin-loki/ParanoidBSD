@@ -1071,7 +1071,15 @@ cp2112iic_transfer(device_t dev, struct iic_msg *msgs, uint32_t nmsgs)
 	const char *reason = NULL;
 	uint32_t i;
 	uint16_t read_off, to_read;
-	int err;
+	/*
+	 * PBSD: err, initialised. Both loops below are
+	 * `for (i = 0; i < nmsgs; i++)' - the validation pass and the
+	 * transfer pass - so nmsgs == 0 runs neither, leaves `reason'
+	 * NULL so the validation is considered passed, and reaches
+	 * `return (err);' having assigned it nowhere. A transfer of no
+	 * messages moved no data and did not fail.
+	 */
+	int err = 0;
 
 	/*
 	 * The hardware interface imposes limits on allowed I2C messages.

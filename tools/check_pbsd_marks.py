@@ -1004,6 +1004,34 @@ FIXES = {
             "label to decide whether to wait for the bus",
         ),
     ],
+    "hbsd/src/sys/dev/pci/pci_user.c": [
+        (
+            "PBSD: error, before the walk.",
+            "\t\tcio->num_matches = 0;\n\n\t\t/*\n\t\t * If the user specified an offset",
+            "PCIOCGETCONF reached its getconfexit: label with `error' "
+            "unassigned whenever the device walk matched nothing - "
+            "which is `pciconf -l' with a selector that matches no "
+            "device",
+        ),
+    ],
+    "hbsd/src/sys/dev/hid/u2f.c": [
+        (
+            "PBSD: error, initialised, like `length' one line up.",
+            "\tsize_t length = 0;\n\tint error;\n",
+            "u2f_read() assigns error only inside the wait loop or on "
+            "a goto exit: path, so a zero-length read issued while a "
+            "report is already buffered returned a stack word",
+        ),
+    ],
+    "hbsd/src/sys/dev/usb/misc/cp2112.c": [
+        (
+            "PBSD: err, initialised. Both loops below are",
+            "\tuint16_t read_off, to_read;\n\tint err;\n",
+            "cp2112iic_transfer()'s validation pass and transfer pass "
+            "are both `for (i = 0; i < nmsgs; i++)', so nmsgs == 0 ran "
+            "neither and returned err unassigned",
+        ),
+    ],
     "hbsd/src/sys/dev/backlight/backlight.c": [
         (
             "PBSD: an unknown cmd fell out of this switch",

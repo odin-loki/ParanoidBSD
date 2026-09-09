@@ -10606,3 +10606,104 @@ the interesting thing about this function.
 | `sys/arm/ti` | 6 | 1 |
 | `sys/dev/amdsmb` | 6 | 0 |
 | `sys/dev/backlight` | 1 | 0 |
+
+---
+
+## Three more stack words returned to userspace
+
+Same class as `backlight_ioctl`, and the first of these is on every
+amd64 machine.
+
+### `pci_ioctl`'s `PCIOCGETCONF` returns an unassigned `error`
+
+This one has a `default: error = ENOTTY;`, so the obvious reading of the
+`core.uninitialized.UndefReturn` at `pci_user.c:1566` is wrong. The
+uncovered path is inside an arm:
+
+```c
+	case PCIOCGETCONF:
+		...
+		cio->num_matches = 0;
+		...
+		for (cio->num_matches = 0, i = 0,
+			 dinfo = STAILQ_FIRST(devlist_head);
+		     dinfo != NULL;
+		     dinfo = STAILQ_NEXT(dinfo, pci_links), i++) {
+			if (i < cio->offset)
+				continue;
+			...
+			error = copyout(&pcu, ...);
+			...
+		}
+		...
+getconfexit:
+		pci_conf_io_update_data(cio, data, cmd);
+		free(cio, M_TEMP);
+		free(pattern_buf, M_TEMP);
+
+		break;
+```
+
+`error` is assigned inside the walk — at the `copyout`, and at the
+`num_matches >= ionum` limit — and on the several `goto getconfexit`
+error paths. A walk that **matches nothing** does neither, falls into
+`getconfexit:`, breaks, and returns a stack word.
+
+`pciconf -l` with a selector that matches no device is exactly that
+call.
+
+### `u2f_read` on a zero-length read
+
+```c
+	size_t length = 0;
+	int error;
+	...
+	while (!sc->sc_state.data) {
+		...                       /* every assignment to error is here */
+	}
+	if (sc->sc_state.data && uio->uio_resid > 0) {
+		length = min(uio->uio_resid, sc->sc_isize);
+		...
+	}
+exit:
+	mtx_unlock(&sc->sc_mtx);
+	if (length != 0)
+		error = uiomove(buf, length, uio);
+
+	return (error);
+```
+
+`length` is initialised; `error` is not, one line apart. A read issued
+when a report is **already** buffered runs the wait loop zero times, and
+asking for zero bytes leaves `length` at 0, so the `uiomove` is skipped
+too. `read(fd, buf, 0)` on `/dev/u2f/N`.
+
+### `cp2112iic_transfer` with no messages
+
+Both of that function's loops — the validation pass and the transfer
+pass — are `for (i = 0; i < nmsgs; i++)`. `nmsgs == 0` runs neither, so
+`reason` stays NULL and the validation is considered passed, and
+`return (err)` reads a slot nothing wrote. The same shape as
+`ti_i2c_transfer` above, in a USB-attached I²C bridge.
+
+### Measured
+
+```
+--scope sys/dev/pci        1 finding  -> 0   19 units, all OK
+--scope sys/dev/hid        2 findings -> 1   18 units, all OK
+--scope sys/dev/usb/misc   1 finding  -> 0    5 units, all OK
+```
+
+`sys/dev/pci` and `sys/dev/usb/misc` are clean. `sys/dev/hid/hmt.c:348`
+remains, unread.
+
+### And one that is false by its registration
+
+`lio_get_ringparam()` (`lio_sysctl.c:979`) switches on `arg2` with two
+cases and no default, then returns an `int err` only those two assign.
+`arg2` is fixed when the sysctl is registered, and the only two
+registrations of this handler pass `LIO_SET_RING_RX` and
+`LIO_SET_RING_TX` (`lio_sysctl.c:186` and `:189`). The analyser cannot
+see a `SYSCTL_PROC` registration, so it treats `arg2` as free.
+Recorded, not changed — the same shape as `axp2xx_attach`, where
+`probe` gates what reaches `attach`.

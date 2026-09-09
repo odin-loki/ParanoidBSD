@@ -1195,6 +1195,18 @@ pci_ioctl(struct cdev *dev, u_long cmd, caddr_t data, int flag, struct thread *t
 		dinfo = NULL;
 
 		cio->num_matches = 0;
+		/*
+		 * PBSD: error, before the walk. The switch below has a
+		 * `default: error = ENOTTY;' and every other arm assigns,
+		 * but this one reaches its getconfexit: label - and the
+		 * `break' after it - without assigning on its ordinary
+		 * path: `error' is set inside the STAILQ walk only, at
+		 * the copyout and at the num_matches limit, and a walk
+		 * that matches nothing does neither. `pciconf -l' with a
+		 * selector that matches no device is exactly that call,
+		 * and it returned a word of kernel stack as errno.
+		 */
+		error = 0;
 
 		/*
 		 * If the user specified an offset into the device list,

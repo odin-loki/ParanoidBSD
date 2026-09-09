@@ -316,7 +316,20 @@ u2f_read(struct cdev *dev, struct uio *uio, int flag)
 	uint8_t buf[U2F_MAX_REPORT_SIZE];
 	struct u2f_softc *sc = dev->si_drv1;
 	size_t length = 0;
-	int error;
+	/*
+	 * PBSD: error, initialised, like `length' one line up. Every
+	 * assignment to it is inside the `while (!sc->sc_state.data)'
+	 * loop or on a goto exit: path, and the tail is
+	 *
+	 *	if (length != 0)
+	 *		error = uiomove(buf, length, uio);
+	 *	return (error);
+	 *
+	 * so a read issued when a report is ALREADY buffered - the loop
+	 * runs zero times - and asking for zero bytes leaves length 0
+	 * and error never written. read(fd, buf, 0) on /dev/u2f/N.
+	 */
+	int error = 0;
 
 	DPRINTFN(1, "\n");
 
