@@ -658,6 +658,16 @@ FIXES = {
             "nfsrv_pnfscreate: the same struct, written to the same "
             "extended attribute with the same sizeof",
         ),
+        (
+            "PBSD: savbits too.  This arm was initialising for the",
+            "\t} else {\n\t\tNFSZERO_ATTRBIT(&attrbits);\n\t}\n"
+            "\tfullsiz = siz;",
+            "nfsrvd_readdirplus: savbits is filled only under "
+            "ND_NFSV4 and the non-V4 arm zeroed attrbits alone, while "
+            "the entry loop's `(nd->nd_flag & ND_NFSV3) || "
+            "NFSNONZERO_ATTRBIT(&savbits)' reads it whenever the "
+            "request is not V3",
+        ),
     ],
     "hbsd/src/sys/fs/nfsserver/nfs_nfsdserv.c": [
         (
@@ -2463,6 +2473,15 @@ FIXES = {
         ),
     ],
     "hbsd/src/sys/fs/nfsserver/nfs_nfsdsocket.c": [
+        (
+            "PBSD: start the rollback cursors for EVERY operation.",
+            "\t\t}\n\n\t\tbinuptime(&start_time);",
+            "nfsrvd_compound: the six ERELOOKUP rollback cursors are "
+            "saved inside the op switch's `default:' case only, and "
+            "the rollback that reads them is AFTER the switch -- so "
+            "the five explicit cases reach `nd->nd_md = md' with "
+            "nothing having written it",
+        ),
         (
             "\tif (taglen < 0) {\n\t\tNFSM_BUILD(tl, u_int32_t *, "
             "2 * NFSX_UNSIGNED);",

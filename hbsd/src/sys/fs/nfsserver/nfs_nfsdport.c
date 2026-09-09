@@ -2569,6 +2569,22 @@ nfsrvd_readdirplus(struct nfsrv_descript *nd, int isdgram,
 		NFSCLRBIT_ATTRBIT(&savbits, NFSATTRBIT_RDATTRERROR);
 	} else {
 		NFSZERO_ATTRBIT(&attrbits);
+		/*
+		 * PBSD: savbits too.  This arm was initialising for the
+		 * non-V4 case and covered one of the two that are read
+		 * outside a V4 guard: the entry loop's
+		 *
+		 *   if ((nd->nd_flag & ND_NFSV3) ||
+		 *       NFSNONZERO_ATTRBIT(&savbits) || ...
+		 *
+		 * short-circuits on ND_NFSV3, so savbits is reached only
+		 * when the request is neither V3 nor V4 -- which the RPC
+		 * procedure numbering does not allow, READDIRPLUS being a
+		 * V3 procedure.  Zero is what "no attributes requested"
+		 * means here, and it is what the V4 arm computes when the
+		 * client asks for only the four it clears.
+		 */
+		NFSZERO_ATTRBIT(&savbits);
 	}
 	fullsiz = siz;
 	nd->nd_repstat = getret = nfsvno_getattr(vp, &at, nd, p, 1, NULL);

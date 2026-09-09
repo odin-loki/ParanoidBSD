@@ -892,6 +892,31 @@ nfsrvd_compound(struct nfsrv_descript *nd, int isdgram, u_char *tag,
 			repp++;
 		}
 
+		/*
+		 * PBSD: start the rollback cursors for EVERY operation.
+		 *
+		 * The six are saved further down, inside the switch's
+		 * `default:' case only -- but the ERELOOKUP rollback that
+		 * reads them is AFTER the switch, so the five explicit
+		 * cases (PUTFH, PUTPUBFH, PUTROOTFH, SAVEFH, RESTOREFH)
+		 * reach `nd->nd_md = md' with nothing having written it.
+		 * Each of them can set nd_repstat from nfsd_fhtovp() and
+		 * break out of the switch, and ERELOOKUP is a value the VFS
+		 * layer returns.
+		 *
+		 * This is an addition, not a move: the default case still
+		 * re-saves at the point it always did, so the path that
+		 * works today is byte for byte unchanged.  Here the values
+		 * are the ones this operation's reply starts at, which is
+		 * what nfsm_trimtrailing() below wants.
+		 */
+		mb = nd->nd_mb;
+		bpos = nd->nd_bpos;
+		bextpg = nd->nd_bextpg;
+		bextpgsiz = nd->nd_bextpgsiz;
+		md = nd->nd_md;
+		dpos = nd->nd_dpos;
+
 		binuptime(&start_time);
 		nfsrvd_statstart(op, &start_time);
 		statsinprog = 1;

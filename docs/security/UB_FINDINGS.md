@@ -14644,3 +14644,103 @@ NUL but cannot relate that to index 1.
 sweep 18 was collected before the `-include opt_global.h` reorder and the
 userland `-I` filter changed which files compile. Six findings existed in
 the tree that the list it was closed against did not contain.
+
+## The fs shard, re-read against a fresh inventory
+
+Sweep 20's fs shard passes `--check-errors` and reports 154 findings over
+336 translation units, 11 of them `core.uninitialized.*` — down from 18 in
+sweep 18, the difference being the fixes already in this document.
+
+Seven of the eleven are already recorded here. The four that were not are
+all NFS.
+
+### nfsd's ERELOOKUP rollback reads cursors five of six paths never save
+
+`sys/fs/nfsserver/nfs_nfsdsocket.c:1359`, in `nfsrvd_compound()`. Each
+operation of a compound saves six mbuf cursors so an `ERELOOKUP` return
+can roll back and redo it:
+
+```c
+		    md = nd->nd_md;
+		    dpos = nd->nd_dpos;
+tryagain:
+```
+
+and the rollback reads them:
+
+```c
+		if (nd->nd_repstat == ERELOOKUP) {
+			nd->nd_md = md;
+			nd->nd_dpos = dpos;
+```
+
+The save is inside the operation switch's `default:` case at `:1175`. The
+rollback is **after** the switch. So `PUTFH`, `PUTPUBFH`, `PUTROOTFH`,
+`SAVEFH` and `RESTOREFH` — the five operations with explicit cases — run
+their bodies, `break` out of the switch, and reach `nd->nd_md = md` with
+nothing in this function having written `md`. Each of them calls
+`nfsd_fhtovp()`, which sets `nd->nd_repstat` from `nfsvno_fhtovp()`, and
+`ERELOOKUP` is a value the VFS layer returns.
+
+The six are now also saved at the top of the loop body, right after the
+operation number is decoded. This is an **addition, not a move**: the
+`default:` case still re-saves where it always did, so the path that
+works today is byte for byte unchanged, and the five explicit cases get
+the cursors their own reply started at — which is what
+`nfsm_trimtrailing()` below wants.
+
+### nfsrvd_readdirplus: an initialiser that covered one of two
+
+`sys/fs/nfsserver/nfs_nfsdport.c:2815`. `savbits` is filled under
+`if (nd->nd_flag & ND_NFSV4)`, and the `else` arm reads
+
+```c
+	} else {
+		NFSZERO_ATTRBIT(&attrbits);
+	}
+```
+
+— one of the two that are read outside a V4 guard. The entry loop tests
+
+```c
+			if ((nd->nd_flag & ND_NFSV3) ||
+			    NFSNONZERO_ATTRBIT(&savbits) || ...
+```
+
+which short-circuits on `ND_NFSV3`, so `savbits` is reached only for a
+request that is neither V3 nor V4. The RPC procedure numbering does not
+allow that — READDIRPLUS is a V3 procedure — so this is not reachable;
+it is also not a premise anyone reasoned about. It is an initialising
+block that exists and covers half of what it should. Zero is exactly
+what the V4 arm computes when the client asks for only the four
+attributes it clears.
+
+```
+--scope sys/fs/nfsserver
+  before  33 findings
+  after   30 findings
+```
+
+Three go: the two above and — unlooked for —
+`nfs_nfsdport.c:2166`, a `core.UndefinedBinaryOperatorResult` in
+`nfsvno_fillattr()`, which is downstream of the same `savbits`. Nine
+"arrive", every one a finding in the same function shifted by the new
+comments.
+
+### The other two, and why they are premises
+
+`nfs_clrpcops.c:3834` reads `rderr` under `if (nd->nd_flag & ND_NFSV4)`,
+and `rderr = 0` sits under the same test twenty lines up, with
+`nfsv4_loadattr()` and an `NFSM_DISSECT` in between — both of which take
+`nd` by pointer, so the analyser stops knowing what `nd_flag` holds.
+`nfsv4_loadattr()` never writes `nd_flag`; there are 38 references to it
+in `nfs_commonsubs.c` and none inside that function assigns it. The same
+shape as `kdump`'s `ktr_header.ktr_type` earlier in this document, where
+the fix was a local — here there is nothing to fix, because the two
+tests genuinely agree.
+
+`nfs_nfsdsocket.c:641` reads `vp`, which the `!(nd->nd_flag & ND_NFSV4)`
+block above sets on both of its arms — `vp = NULL` explicitly, or through
+`nfsd_fhtovp()`, whose first statement is `*vpp = NULL`. The read at
+`:641` is in the `else` of `if (nd->nd_flag & ND_NFSV4)`, the same
+predicate. Same reason, same verdict.

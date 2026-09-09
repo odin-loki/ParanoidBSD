@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,944 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,985 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,614** | **114,204** |
+| | **total** | **41,143** | **21,298,655** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -140,7 +140,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.630.9 | `sys/dev/atkbdc/psm.c` | 7,702 | 0 | `TODO-PORT` |
 | 8.1213.103 | `sys/netinet/sctputil.c` | 7,700 | 0 | `TODO-PORT` |
 | 8.744.5 | `sys/dev/hyperv/netvsc/if_hn.c` | 7,690 | 0 | `TODO-PORT` |
-| 8.1147.5 | `sys/fs/nfsserver/nfs_nfsdport.c` | 7,658 | 0 | `TODO-PORT` |
+| 8.1147.5 | `sys/fs/nfsserver/nfs_nfsdport.c` | 7,674 | 0 | `TODO-PORT` |
 | 8.1213.101 | `sys/netinet/sctp_usrreq.c` | 7,541 | 0 | `TODO-PORT` |
 | 8.1191.230 | `sys/kern/vfs_subr.c` | 7,518 | 0 | `TODO-PORT` |
 | 8.892.2 | `sys/dev/pms/RefTisa/discovery/dm/dmdisc.c` | 7,466 | 0 | `TODO-PORT` |
@@ -110866,9 +110866,9 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1147.4.4 `nfsrvd_addsock()` · `TODO-FN`
   - [ ] 8.1147.4.5 `nfsrvd_nfsd()` · `TODO-FN`
   - [ ] 8.1147.4.6 `nfsrvd_init()` · `TODO-FN`
-- [ ] **8.1147.5** `nfs_nfsdport.c` · 7,658L gen:42 · `TODO-PORT`
+- [ ] **8.1147.5** `nfs_nfsdport.c` · 7,674L gen:42 · `TODO-PORT`
 - [ ] **8.1147.6** `nfs_nfsdserv.c` · 6,827L gen:10 · `TODO-PORT`
-- [ ] **8.1147.7** `nfs_nfsdsocket.c` · 1,438L gen:11 · `TODO-PORT` · 5 fn
+- [ ] **8.1147.7** `nfs_nfsdsocket.c` · 1,463L gen:11 · `TODO-PORT` · 5 fn
   - [ ] 8.1147.7.1 `nfsrvd_statstart()` · `TODO-FN`
   - [ ] 8.1147.7.2 `nfsrvd_statend()` · `TODO-FN`
   - [ ] 8.1147.7.3 `nfsrvd_dorpc()` · `TODO-FN`
