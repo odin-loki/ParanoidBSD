@@ -2737,6 +2737,45 @@ FIXES = {
         "peer setting the MP header's reserved bits chose which "
         "fragments ppp dropped",
     ),
+    "hbsd/src/usr.bin/kdump/kdump.c": [
+        (
+            "PBSD: a record is only as long as the file says it is.",
+            '\t\t\terrx(1, "data too short");\n'
+            "\t\tif (fetchprocinfo(&ktr_header, (u_int *)m) != 0)",
+            "main: every fixed-layout record type was dispatched to a "
+            "handler that reads the whole struct with no test that "
+            "ktr_len is that big -- a zero-length record read the "
+            "malloc(1025) buffer this run never wrote, and a crafted "
+            "ktr_narg walked print_number() off the end of it",
+        ),
+        (
+            "\t\tif ((trpoints & (1<<type)) == 0)",
+            "\t\tif ((trpoints & (1<<ktr_header.ktr_type)) == 0)",
+            "main: the dispatch switches on a local copy of "
+            "ktr_type, because findabi(), dumpheader() and "
+            "fetchprocinfo() all take &ktr_header by non-const "
+            "pointer and the analyser forgets the length guard's case "
+            "across them -- none of the three writes to the header",
+        ),
+    ],
+    "hbsd/src/sbin/init/init.c": [
+        (
+            "PBSD: stop at the terminator rather than at "
+            "SCRIPT_ARGV_SIZE.",
+            "\tfor (i = 0; i != SCRIPT_ARGV_SIZE; ++i)\n"
+            "\t\tsh_argv[i + sh_argv_len] = argv[i];",
+            "execute_script: the copy loop ran a fixed count rather "
+            "than to the NULL, so replace_init()'s argv[2] -- which "
+            "it never fills -- was loaded in pid 1",
+        ),
+        (
+            "PBSD: the other two callers fill all three",
+            "\targv[0] = path;\n\targv[1] = NULL;\n\n"
+            "\texecute_script(argv);",
+            "replace_init: fills argv[0] and argv[1] where "
+            "run_script() and run_rc_shutdown() fill all three",
+        ),
+    ],
     "hbsd/src/usr.bin/gzip/unpack.c": (
         "PBSD: start the accumulator.",
         "\tunpack_descriptor_t unpackd;\n\n\tin = dup(in);",

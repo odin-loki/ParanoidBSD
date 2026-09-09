@@ -1093,8 +1093,25 @@ execute_script(char *argv[])
 		sh_argv_len = 3;
 	}
 #endif
-	for (i = 0; i != SCRIPT_ARGV_SIZE; ++i)
+	/*
+	 * PBSD: stop at the terminator rather than at SCRIPT_ARGV_SIZE.
+	 *
+	 * argv is a NULL-terminated argument vector -- that is what the
+	 * execv() at :1080 above and the one below both assume -- but this
+	 * loop copied a fixed count regardless of where the NULL was, so
+	 * replace_init(), which fills argv[0] and argv[1] only, had its
+	 * argv[2] read.  The entry is past the terminator and execv() never
+	 * looks at it, which is why nothing ever went wrong; it is still an
+	 * indeterminate pointer value loaded in pid 1.  Copying the NULL and
+	 * stopping is what the two other callers already expect, and it
+	 * means a future caller that fills fewer than SCRIPT_ARGV_SIZE
+	 * entries cannot reintroduce this.
+	 */
+	for (i = 0; i != SCRIPT_ARGV_SIZE; ++i) {
 		sh_argv[i + sh_argv_len] = argv[i];
+		if (argv[i] == NULL)
+			break;
+	}
 	execv(shell, sh_argv);
 	stall("can't exec %s for %s: %m", shell, script);
 }
@@ -1109,6 +1126,7 @@ replace_init(char *path)
 
 	argv[0] = path;
 	argv[1] = NULL;
+	argv[2] = NULL;	/* PBSD: the other two callers fill all three */
 
 	execute_script(argv);
 }

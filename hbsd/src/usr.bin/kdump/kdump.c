@@ -334,11 +334,12 @@ print_mask_argul(bool (*decoder)(FILE *, u_long, u_long *), u_long value)
 int
 main(int argc, char *argv[])
 {
-	int ch, ktrlen, size;
+	int ch, ktrlen, narg, size, type;
 	void *m;
 	int trpoints = ALL_POINTS;
 	int drop_logged;
 	pid_t pid = 0;
+	size_t need;
 	u_int sv_flags;
 
 	setlocale(LC_CTYPE, "");
@@ -472,17 +473,106 @@ main(int argc, char *argv[])
 			errx(1, "%s", strerror(errno));
 		if (ktrlen && fread_tail(m, ktrlen, 1) == 0)
 			errx(1, "data too short");
+
+		/*
+		 * PBSD: a record is only as long as the file says it is.
+		 *
+		 * The dispatch below casts this buffer to whatever struct
+		 * the record's type implies and hands it to a handler that
+		 * reads the whole struct.  Nothing checked that ktr_len is
+		 * that big.  The buffer is malloc(1025), grown only for a
+		 * larger record and filled by the `if (ktrlen)' above -- so
+		 * a zero-length record of any fixed-layout type reaches its
+		 * handler over bytes this run never wrote, which is every
+		 * one of the ten uninitialised reads the analyser reports
+		 * in this file.  A KTR_SYSCALL header is worse: ktr_narg
+		 * comes from the file too, and print_number() walks that
+		 * many register_t from ktr_args and prints each one, so a
+		 * crafted header spills up to 32767 words of heap.
+		 *
+		 * A ktrace.out is a file, and a file comes from wherever
+		 * the person running kdump(1) got it.  The kernel never
+		 * writes a record like this; that is not the same as never
+		 * having to read one.
+		 *
+		 * The type is read into a local because the three calls
+		 * below all take `&ktr_header' by non-const pointer, and
+		 * after any of them the analyser no longer knows which case
+		 * of this switch it took -- it would follow the `default'
+		 * arm here into `case KTR_SYSRET' there and report all ten
+		 * again over a guard that had in fact rejected the record.
+		 * None of the three writes to the header; switching on the
+		 * local says so.
+		 */
+		type = ktr_header.ktr_type;
+		switch (type) {
+		case KTR_SYSCALL:
+			need = __offsetof(struct ktr_syscall, ktr_args);
+			break;
+		case KTR_SYSRET:
+			need = sizeof(struct ktr_sysret);
+			break;
+		case KTR_GENIO:
+			need = sizeof(struct ktr_genio);
+			break;
+		case KTR_PSIG:
+			need = sizeof(struct ktr_psig);
+			break;
+		case KTR_PROCCTOR:
+			need = sizeof(u_int);
+			break;
+		case KTR_CSW:
+			/* Two layouts, told apart by length at the call. */
+			need = MIN(sizeof(struct ktr_csw),
+			    sizeof(struct ktr_csw_old));
+			break;
+		case KTR_CAPFAIL:
+			need = sizeof(struct ktr_cap_fail);
+			break;
+		case KTR_FAULT:
+			need = sizeof(struct ktr_fault);
+			break;
+		case KTR_FAULTEND:
+			need = sizeof(struct ktr_faultend);
+			break;
+		case KTR_STRUCT_ARRAY:
+			need = sizeof(struct ktr_struct_array);
+			break;
+		case KTR_EXTERR:
+			need = sizeof(struct ktr_exterr);
+			break;
+		default:
+			/* The rest are handed ktr_len and parse within it. */
+			need = 0;
+			break;
+		}
+		if (need != 0 && (ktrlen <= 0 || (size_t)ktrlen < need)) {
+			warnx("truncated type %d record: %d of %zu bytes",
+			    type, ktrlen, need);
+			continue;
+		}
+		if (type == KTR_SYSCALL) {
+			narg = ((struct ktr_syscall *)m)->ktr_narg;
+			need += (size_t)narg * sizeof(register_t);
+			if (narg < 0 || (size_t)ktrlen < need) {
+				warnx("type %d record claims %d arguments "
+				    "but is %d of %zu bytes", type, narg,
+				    ktrlen, need);
+				continue;
+			}
+		}
+
 		if (fetchprocinfo(&ktr_header, (u_int *)m) != 0)
 			continue;
 		if (pid && ktr_header.ktr_pid != pid &&
 		    ktr_header.ktr_tid != pid)
 			continue;
-		if ((trpoints & (1<<ktr_header.ktr_type)) == 0)
+		if ((trpoints & (1<<type)) == 0)
 			continue;
 		sv_flags = findabi(&ktr_header);
 		dumpheader(&ktr_header, sv_flags);
 		drop_logged = 0;
-		switch (ktr_header.ktr_type) {
+		switch (type) {
 		case KTR_SYSCALL:
 			ktrsyscall((struct ktr_syscall *)m, sv_flags);
 			break;

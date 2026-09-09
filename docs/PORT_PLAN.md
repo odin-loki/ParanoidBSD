@@ -54,8 +54,8 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 1 | `lib` | 2,827 | 639,720 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
 | 3 | `bin` | 162 | 58,097 | 1,063 |
-| 4 | `sbin` | 533 | 228,465 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,009 | 4,186 |
+| 4 | `sbin` | 533 | 228,483 | 3,567 |
+| 5 | `usr.bin` | 732 | 248,099 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,152 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
 | 8 | `sys` | 14,951 | 10,496,886 | 81,387 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,051** | **114,204** |
+| | **total** | **41,143** | **21,298,159** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -17866,7 +17866,7 @@ function; a file with two hundred of them is a project.
 
 ### 4.39 `sbin/init`
 
-- [ ] **4.39.1** `init.c` · 2,176L · `TODO-PORT` · 50 fn
+- [ ] **4.39.1** `init.c` · 2,194L · `TODO-PORT` · 50 fn
   - [ ] 4.39.1.1 `main()` · `TODO-FN`
   - [ ] 4.39.1.2 `handle()` · `TODO-FN`
   - [ ] 4.39.1.3 `delset()` · `TODO-FN`
@@ -22147,7 +22147,7 @@ function; a file with two hundred of them is a project.
 
 ### 5.100 `usr.bin/kdump`
 
-- [ ] **5.100.1** `kdump.c` · 2,480L · `TODO-PORT` · 52 fn
+- [ ] **5.100.1** `kdump.c` · 2,570L · `TODO-PORT` · 52 fn
   - [ ] 5.100.1.1 `cappwdgrp_setup()` · `TODO-FN`
   - [ ] 5.100.1.2 `print_integer_arg()` · `TODO-FN`
   - [ ] 5.100.1.3 `print_integer_arg_valid()` · `TODO-FN`

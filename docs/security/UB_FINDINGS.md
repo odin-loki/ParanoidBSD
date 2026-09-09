@@ -13881,3 +13881,113 @@ The survivor is `unix.Malloc` at `gzip.c:554`. Note that the finding is
 reported *through* `gzip.c`: `unpack.c` is `#include`d, not compiled, so
 its own translation unit is an `ERROR` in both runs and contributes
 nothing either way — the count that moved is `gzip.c`'s.
+
+### kdump(1) dispatches a zero-length record to a handler that reads a struct
+
+Four of the sweep's `core.uninitialized.*` findings in `usr.bin/kdump`
+name four different functions — `fetchprocinfo`, `ktrsyscall`,
+`ktrsysret`, `ktrcsw` — and six more of `core.CallAndMessage` and
+`core.UndefinedBinaryOperatorResult` name six others. They are one bug.
+
+`main()` reads a `struct ktr_header`, takes `ktrlen = ktr_header.ktr_len`
+from it, and then
+
+```c
+		if (ktrlen && fread_tail(m, ktrlen, 1) == 0)
+			errx(1, "data too short");
+```
+
+— note the `if (ktrlen)`. `m` is `malloc(1025)`, grown by `realloc` only
+when a record is larger. Then the dispatch casts `m` to whatever struct
+the record's *type* implies and hands it to a handler that reads the
+whole struct. Nothing checked that the length and the type agree. A
+record whose `ktr_len` is zero skips the `fread` entirely and reaches its
+handler over 1025 bytes of heap this run never wrote.
+
+That is not a guess about which path the analyser is on. Making the
+`fread_tail` unconditional — an experiment, not a fix — took the file
+from eleven findings to one:
+
+```
+--scope usr.bin/kdump, fread_tail made unconditional
+  11 findings -> 1
+```
+
+The one that stays is `unix.Malloc` on `m` at the end of `main`.
+
+`KTR_SYSCALL` is worse than the rest. `ktr_narg` is a `short` that comes
+from the file too, and `ktrsyscall()` does
+
+```c
+	ip = &ktr->ktr_args[0];
+	...
+	while (narg > 0)
+		print_number(ip, narg, c);
+```
+
+so a header claiming 32767 arguments walks that many `register_t` off the
+end of the buffer and prints every one. A `ktrace.out` is a file, and a
+file comes from wherever the person running kdump(1) got it — a bug
+report, a shared machine, a tarball. The kernel never writes a record
+like this; that is not the same as never having to read one.
+
+The fix is a length table in `main()`, checked before the dispatch: each
+fixed-layout type's minimum, plus `ktr_narg * sizeof(register_t)` for
+`KTR_SYSCALL`. A short record is warned about and skipped.
+
+**Two attempts did not work, and the reason is worth recording.**
+
+The first put the check in a helper, `ktr_lenok()`. The analyser never
+inlines it — `grep -c "Calling 'ktr_lenok'"` over the text-output path is
+`0` — so the guard was opaque and all ten findings stood. The count did
+move, 11 to 10, which was worse than not moving: `fetchprocinfo`'s
+finding vanished only because passing `m` to a function the analyser
+treats as opaque invalidates what it knows about that memory. A count
+that moves for the wrong reason is a measurement that has stopped
+measuring.
+
+The second spelled the `switch` out in `main()` and still reported all
+ten. The path says why:
+
+```
+kdump.c:503:3: note: Control jumps to the 'default' case at line 539
+...
+kdump.c:570:3: note: Control jumps to 'case 2:'  at line 574
+```
+
+Two switches on `ktr_header.ktr_type`, one taking `default` and the other
+taking `KTR_SYSRET`. Between them are `fetchprocinfo(&ktr_header, ...)`,
+`findabi(&ktr_header)` and `dumpheader(&ktr_header, ...)` — three calls
+that take the header by non-`const` pointer, after which the analyser no
+longer knows which case the guard took. Reading the type into a local
+once, and switching on the local in both places, is what made the guard
+visible. None of the three writes to the header, so the local says
+something true that the pointer did not.
+
+```
+--scope sbin/init --scope usr.bin/kdump
+  before  12 findings
+  after    1 finding
+```
+
+### init(8): `replace_init()` fills two of three argv entries, and the copy loop reads all three
+
+`sbin/init/init.c:1097`. `execute_script()` ends
+
+```c
+	for (i = 0; i != SCRIPT_ARGV_SIZE; ++i)
+		sh_argv[i + sh_argv_len] = argv[i];
+	execv(shell, sh_argv);
+```
+
+A fixed count, not a walk to the terminator. Two of the three callers
+fill all three entries; `replace_init()` fills `argv[0]` and `argv[1] =
+NULL` and leaves `argv[2]`. So pid 1 loads an indeterminate `char *` and
+stores it one past the NULL that `execv()` stops at — which is why
+nothing ever went wrong, and why it is still a load of an indeterminate
+pointer value in the one process the machine cannot restart.
+
+The loop now copies the NULL and stops, which is what `argv` means and
+what the `execv(script, argv)` twenty lines above already assumed;
+`replace_init()` also fills `argv[2]`, so the object is complete either
+way.
