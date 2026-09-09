@@ -1085,7 +1085,13 @@ FIXES = {
     "hbsd/src/sys/dev/cyapa/cyapa.c": [
         (
             "PBSD: error = 0. It is assigned only inside",
-            "\tstruct cyapa_softc *sc;\n\tint error;\n",
+            # NB: narrowed. `struct cyapa_softc *sc;' followed by
+            # `int error;' also opens cyaparead() at :696 and
+            # cyapaioctl() at :1215, so the first version of this
+            # marker was red the moment it was added - and was
+            # committed anyway, because only `| tail -1' was read.
+            # `int cmd_completed;' is what makes it cyapawrite()'s.
+            "\tstruct cyapa_softc *sc;\n\tint error;\n\tint cmd_completed;\n",
             "cyapawrite() assigns error only inside the copy-in loop "
             "and reads it in the command loop's condition and at the "
             "return; a full FIFO or a zero-length write runs no body",

@@ -11363,3 +11363,54 @@ rejected outright with `ENXIO`; the compact path requires
 `spad_count >= 3` before it can assign `spad_count - 2`; the other path
 requires `spad_count >= 6` before assigning `(spad_count - 4) / 2`. Both
 floors give at least 1. The analyser follows none of it.
+
+### The cyapa marker was red when it was committed, and the test that "passed" was vacuous
+
+Two mistakes in one commit, both worth writing down because each has
+bitten this document before in a different disguise.
+
+**The marker was not unique.** It registered
+
+```
+	struct cyapa_softc *sc;
+	int error;
+```
+
+as the text that must be *absent* once the fix is in. That opening also
+begins `cyaparead()` at `:696` and `cyapaioctl()` at `:1215`, so
+`check_pbsd_marks.py` reported *"bug is back"* the moment the entry was
+added — correctly. It is the same defect as the `pf_snmp.c` and
+`lib80211` markers before it: a marker whose text is not unique to the
+site it guards. `int cmd_completed;` is what makes it `cyapawrite()`'s.
+
+**And the failure was committed**, because only `| tail -1` of the
+check's output was read, and the last line of a *failing* run —
+"Neither says anything. Recover from the commit before it." — is prose,
+not a verdict. `tail -1` was chosen when the check passes, where the
+last line is the summary. Read the exit status, or the whole thing.
+
+**Then the verification was vacuous.** The revert test in that same
+command was
+
+```sh
+	git checkout -- hbsd/src/sys/dev/cyapa/cyapa.c
+```
+
+which restores the file from HEAD — and by then the fix was *in* HEAD,
+so nothing was reverted and the check was re-run against the fixed file.
+It printed a FAIL, which looked like the marker biting; it was the
+non-unique marker failing for the other reason.
+
+Once a fix is committed, the pre-fix file has to come from the commit
+before it:
+
+```sh
+	git show HEAD~1:<path> > <path>
+	python3 tools/check_pbsd_marks.py        # must FAIL
+	git checkout -- <path>
+```
+
+Checked that way, the narrowed marker does bite. Every earlier fix in
+this session was revert-tested *before* its commit, where
+`git checkout --` does restore the vendor file, so those tests were
+real.
