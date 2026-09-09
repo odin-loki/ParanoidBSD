@@ -12494,3 +12494,48 @@ next line holds — an invariant one function up. The rest —
 `t4_mp_ring.c:318`, `t4_filter.c:1259`, `t4_listen.c:1519`,
 `t4_main.c:10240`, `cxgbei.c:630`, `t4_tls.c:1037` — are unread and stay
 on task #61.
+
+## `sys/contrib/openzfs`: fifty findings, and what they are not
+
+```
+--scope sys/contrib/openzfs/module/zfs   50 findings, 137 units, all OK
+```
+
+Unread, and now task #112. One thing was established first, because it
+decides whether reading them is worth anything.
+
+The obvious guess is that they are the assertion class — ZFS is written
+with `ASSERT` everywhere, and an assertion the analyser cannot see is a
+guard it cannot honour. In
+`sys/contrib/openzfs/include/os/freebsd/spl/sys/debug.h`:
+
+```c
+#ifdef NDEBUG
+#define	ASSERT(x)		((void) sizeof ((uintptr_t)(x)))
+...
+#else
+#define	ASSERT		VERIFY
+#endif
+```
+
+The sweep does **not** pass `-DNDEBUG` for this tree —
+`include_flags()` for `module/zfs/vdev_raidz.c` gives `-DBUILDING_ZFS`
+and `-DZFS` and nothing else of the kind. So every `ASSERT` is a
+`VERIFY`, a real check, and the analyser is following all of them. The
+fifty are not assertion artefacts.
+
+The three in `vdev_raidz.c` bear that out. They are
+`parity_valid[VDEV_RAIDZ_P]` and `[VDEV_RAIDZ_Q]` reads in
+`vdev_raidz_reconstruct()`, each preceded by
+`ASSERT(rr->rr_firstdatacol > 1)`, and the analyser does honour that
+constraint. What it cannot do is relate the loop above —
+
+```c
+		if (c < rr->rr_firstdatacol)
+			parity_valid[c] = B_FALSE;
+```
+
+— to the two constant indices, because it does not unroll far enough to
+know that `c` took the values 0 and 1. A loop-coverage limit, not an
+assertion one, and a different class from anything else read this
+session.
