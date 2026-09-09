@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,116 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,244 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,159** | **114,204** |
+| | **total** | **41,143** | **21,297,287** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -43322,7 +43322,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.29.17.5 `src_attach()` · `TODO-FN`
   - [ ] 8.29.17.6 `src_probe()` · `TODO-FN`
 - [ ] **8.29.18** `imx6_src.h` · 33L · `TODO-MD`
-- [ ] **8.29.19** `imx6_ssi.c` · 870L gen:6 · `TODO-MD` · 21 fn
+- [ ] **8.29.19** `imx6_ssi.c` · 903L gen:6 · `TODO-MD` · 21 fn
   - [ ] 8.29.19.1 `ssimixer_init()` · `TODO-FN`
   - [ ] 8.29.19.2 `ssimixer_set()` · `TODO-FN`
   - [ ] 8.29.19.3 `ssichan_init()` · `TODO-FN`
@@ -43559,7 +43559,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.30.17.3 `port_probe()` · `TODO-FN`
   - [ ] 8.30.17.4 `port_attach()` · `TODO-FN`
 - [ ] **8.30.18** `vf_port.h` · 44L · `TODO-MD`
-- [ ] **8.30.19** `vf_sai.c` · 815L gen:5 · `TODO-MD` · 19 fn
+- [ ] **8.30.19** `vf_sai.c` · 847L gen:5 · `TODO-MD` · 19 fn
   - [ ] 8.30.19.1 `saimixer_init()` · `TODO-FN`
   - [ ] 8.30.19.2 `saimixer_set()` · `TODO-FN`
   - [ ] 8.30.19.3 `saichan_init()` · `TODO-FN`
@@ -100074,7 +100074,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1011.1.12 `aoa_chan_getcaps()` · `TODO-FN`
   - [ ] 8.1011.1.13 `aoa_attach()` · `TODO-FN`
 - [ ] **8.1011.2** `aoa.h` · 47L · `TODO-HDR`
-- [ ] **8.1011.3** `davbus.c` · 598L gen:4 · `TODO-PORT` · 19 fn
+- [ ] **8.1011.3** `davbus.c` · 623L gen:4 · `TODO-PORT` · 19 fn
   - [ ] 8.1011.3.1 `davbus_probe()` · `TODO-FN`
   - [ ] 8.1011.3.2 `burgundy_init()` · `TODO-FN`
   - [ ] 8.1011.3.3 `burgundy_uninit()` · `TODO-FN`
@@ -100095,7 +100095,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1011.3.18 `davbus_attach()` · `TODO-FN`
   - [ ] 8.1011.3.19 `davbus_cint()` · `TODO-FN`
 - [ ] **8.1011.4** `davbusreg.h` · 283L · `TODO-HDR`
-- [ ] **8.1011.5** `i2s.c` · 755L gen:6 · `TODO-PORT` · 13 fn
+- [ ] **8.1011.5** `i2s.c` · 793L gen:6 · `TODO-PORT` · 13 fn
   - [ ] 8.1011.5.1 `i2s_probe()` · `TODO-FN`
   - [ ] 8.1011.5.2 `i2s_attach()` · `TODO-FN`
   - [ ] 8.1011.5.3 `aoagpio_int()` · `TODO-FN`

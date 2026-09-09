@@ -695,7 +695,8 @@ sai_attach(device_t dev)
 
 	if (bus_alloc_resources(dev, sai_spec, sc->res)) {
 		device_printf(dev, "could not allocate resources\n");
-		return (ENXIO);
+		err = ENXIO;
+		goto fail_sc;
 	}
 
 	/* Memory interface */
@@ -705,14 +706,16 @@ sai_attach(device_t dev)
 	/* eDMA */
 	if (find_edma_controller(sc)) {
 		device_printf(dev, "could not find active eDMA\n");
-		return (ENXIO);
+		err = ENXIO;
+		goto fail_res;
 	}
 
 	/* Setup PCM */
 	scp = malloc(sizeof(struct sc_pcminfo), M_DEVBUF, M_NOWAIT | M_ZERO);
 	if (scp == NULL) {
 		device_printf(dev, "could not allocate pcm info\n");
-		return (ENOMEM);
+		err = ENOMEM;
+		goto fail_res;
 	}
 	scp->sc = sc;
 	scp->dev = dev;
@@ -747,21 +750,24 @@ sai_attach(device_t dev)
 	 */
 	if (err != 0) {
 		device_printf(dev, "cannot create DMA tag\n");
-		return (ENXIO);
+		err = ENXIO;
+		goto fail_scp;
 	}
 
 	err = bus_dmamem_alloc(sc->dma_tag, (void **)&sc->buf_base,
 	    BUS_DMA_NOWAIT | BUS_DMA_COHERENT, &sc->dma_map);
 	if (err) {
 		device_printf(dev, "cannot allocate framebuffer\n");
-		return (ENXIO);
+		err = ENXIO;
+		goto fail_tag;
 	}
 
 	err = bus_dmamap_load(sc->dma_tag, sc->dma_map, sc->buf_base,
 	    sc->dma_size, sai_dmamap_cb, &sc->buf_base_phys, BUS_DMA_NOWAIT);
 	if (err) {
 		device_printf(dev, "cannot load DMA map\n");
-		return (ENXIO);
+		err = ENXIO;
+		goto fail_mem;
 	}
 
 	bzero(sc->buf_base, sc->dma_size);
@@ -771,9 +777,20 @@ sai_attach(device_t dev)
 	    NULL, sai_intr, scp, &sc->ih);
 	if (err) {
 		device_printf(dev, "Unable to alloc interrupt resource.\n");
-		return (ENXIO);
+		err = ENXIO;
+		goto fail_load;
 	}
 
+	/*
+	 * PBSD: pcm_init() stores scp as the sound layer's devinfo and
+	 * pcm_addchan() gives it to a channel; the interrupt handler installed
+	 * just above holds it too, and scp holds sc.  From here on neither
+	 * allocation is this function's alone, so the failure below keeps them
+	 * - freeing would turn a boot-time leak of a few hundred bytes into a
+	 * use-after-free.  Everything BEFORE this point is unwound: the seven
+	 * returns above used to drop sc, scp, the mutex, the bus resources,
+	 * the DMA tag, its memory and its map.
+	 */
 	pcm_setflags(dev, pcm_getflags(dev) | SD_F_MPSAFE);
 
 	pcm_init(dev, scp);
@@ -795,6 +812,21 @@ sai_attach(device_t dev)
 	setup_sai(sc);
 
 	return (0);
+
+fail_load:
+	bus_dmamap_unload(sc->dma_tag, sc->dma_map);
+fail_mem:
+	bus_dmamem_free(sc->dma_tag, sc->buf_base, sc->dma_map);
+fail_tag:
+	bus_dma_tag_destroy(sc->dma_tag);
+fail_scp:
+	free(scp, M_DEVBUF);
+fail_res:
+	bus_release_resources(dev, sai_spec, sc->res);
+fail_sc:
+	mtx_destroy(&sc->lock);
+	free(sc, M_DEVBUF);
+	return (err);
 }
 
 static device_method_t sai_pcm_methods[] = {

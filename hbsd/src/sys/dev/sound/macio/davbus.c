@@ -507,22 +507,28 @@ davbus_attach(device_t self)
 	/* Map the controller register space. */
 	rid = 0;
 	sc->reg = bus_alloc_resource_any(self, SYS_RES_MEMORY, &rid, RF_ACTIVE);
-	if (sc->reg == NULL) 
-		return (ENXIO);
+	if (sc->reg == NULL) {
+		err = ENXIO;
+		goto fail_sc;
+	}
 
 	/* Map the DBDMA channel register space. */
 	rid = 1;
 	sc->aoa.sc_odma = bus_alloc_resource_any(self, SYS_RES_MEMORY, 
 	    &rid, RF_ACTIVE);
-	if (sc->aoa.sc_odma == NULL)
-		return (ENXIO);
+	if (sc->aoa.sc_odma == NULL) {
+		err = ENXIO;
+		goto fail_reg;
+	}
 
 	/* Establish the DBDMA channel edge-triggered interrupt. */
 	rid = 1;
 	dbdma_irq = bus_alloc_resource_any(self, SYS_RES_IRQ, 
 	    &rid, RF_SHAREABLE | RF_ACTIVE);
-	if (dbdma_irq == NULL)
-		return (ENXIO);
+	if (dbdma_irq == NULL) {
+		err = ENXIO;
+		goto fail_odma;
+	}
 
 	oirq = rman_get_start(dbdma_irq);
 
@@ -530,8 +536,8 @@ davbus_attach(device_t self)
 
 	err = powerpc_config_intr(oirq, INTR_TRIGGER_EDGE, INTR_POLARITY_LOW);
 	if (err != 0)
-		return (err);
-		
+		goto fail_irq;
+
 	snd_setup_intr(self, dbdma_irq, INTR_MPSAFE, aoa_interrupt,
 	    sc, &cookie);
 
@@ -557,6 +563,15 @@ davbus_attach(device_t self)
         bus_write_4(sc->reg, DAVBUS_SOUND_CTRL, DAVBUS_INPUT_SUBFRAME0 | 
 	    DAVBUS_OUTPUT_SUBFRAME0 | DAVBUS_RATE_44100 | DAVBUS_INTR_PORTCHG);
 
+	/*
+	 * PBSD: from here the softc is the sound layer's as well - aoa_attach()
+	 * hands it to pcm_init() as devinfo and to pcm_addchan() as a channel's
+	 * private data, and the DBDMA interrupt handler installed above holds
+	 * it.  So this failure keeps the softc, as it always has, rather than
+	 * turning a leak into a use-after-free.  The four returns above it are
+	 * a different case: nothing but this function had seen the softc yet,
+	 * and each of them dropped it, along with the resources mapped so far.
+	 */
 	/* Attach DBDMA engine and PCM layer */
 	err = aoa_attach(sc);
 	if (err)
@@ -569,6 +584,16 @@ davbus_attach(device_t self)
 		mixer_init(self, &burgundy_mixer_class, sc);
 
 	return (0);
+
+fail_irq:
+	bus_release_resource(self, SYS_RES_IRQ, 1, dbdma_irq);
+fail_odma:
+	bus_release_resource(self, SYS_RES_MEMORY, 1, sc->aoa.sc_odma);
+fail_reg:
+	bus_release_resource(self, SYS_RES_MEMORY, 0, sc->reg);
+fail_sc:
+	free(sc, M_DEVBUF);
+	return (err);
 }
 
 static void 

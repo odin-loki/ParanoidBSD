@@ -909,6 +909,15 @@ FIXES = {
             "*dmat = NULL, so a failure handed NULL to "
             "bus_dmamem_alloc()",
         ),
+        (
+            "PBSD: pcm_init() stores scp as the sound layer's devinfo",
+            "\tif (bus_alloc_resources(dev, ssi_spec, sc->res)) {\n"
+            '\t\tdevice_printf(dev, "could not allocate resources\\n");\n'
+            "\t\treturn (ENXIO);\n\t}\n",
+            "ssi_attach() dropped sc, sc->conf, scp, the mutex, the bus "
+            "resources and the whole DMA tag/memory/map stack on seven "
+            "returns; the analyser named only scp",
+        ),
     ],
     "hbsd/src/sys/arm/freescale/vybrid/vf_sai.c": [
         (
@@ -916,6 +925,14 @@ FIXES = {
             "\t    &sc->dma_tag);\n\n\terr = bus_dmamem_alloc(",
             "the same dead assignment as imx6_ssi.c, in the driver it "
             "was copied from or to",
+        ),
+        (
+            "PBSD: pcm_init() stores scp as the sound layer's devinfo",
+            "\tif (bus_alloc_resources(dev, sai_spec, sc->res)) {\n"
+            '\t\tdevice_printf(dev, "could not allocate resources\\n");\n'
+            "\t\treturn (ENXIO);\n\t}\n",
+            "sai_attach() is imx6_ssi.c one SoC over and leaked the same "
+            "way, minus sc->conf, which this driver does not have",
         ),
     ],
     # Three drivers whose `timeout' is assigned only inside the loop
@@ -1096,6 +1113,27 @@ FIXES = {
             "unassigned whenever the device walk matched nothing - "
             "which is `pciconf -l' with a selector that matches no "
             "device",
+        ),
+    ],
+    "hbsd/src/sys/dev/sound/macio/i2s.c": [
+        (
+            "PBSD: past this point the softc is no longer ours alone.",
+            '\tport = of_find_firstchild_byname(sc->node, "i2s-a");\n'
+            "\tif (port == -1)\n\t\treturn (ENXIO);\n",
+            "i2s_attach() dropped the softc, the port mutex and up to "
+            "three bus resources on seven returns, every one of them "
+            "before anything else had seen the softc",
+        ),
+    ],
+    "hbsd/src/sys/dev/sound/macio/davbus.c": [
+        (
+            "PBSD: from here the softc is the sound layer's as well",
+            "\tsc->reg = bus_alloc_resource_any(self, SYS_RES_MEMORY, "
+            "&rid, RF_ACTIVE);\n\tif (sc->reg == NULL) \n"
+            "\t\treturn (ENXIO);\n",
+            "davbus_attach() dropped the softc and the resources mapped "
+            "so far on four returns; the mutex is initialised later "
+            "here than in i2s.c, so the unwind has one stage fewer",
         ),
     ],
     "hbsd/src/sys/dev/sdhci/sdhci_fdt.c": [

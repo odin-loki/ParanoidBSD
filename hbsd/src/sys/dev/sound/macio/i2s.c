@@ -196,38 +196,48 @@ i2s_attach(device_t self)
 	sc->node = ofw_bus_get_node(self);
 
 	port = of_find_firstchild_byname(sc->node, "i2s-a");
-	if (port == -1)
-		return (ENXIO);
+	if (port == -1) {
+		err = ENXIO;
+		goto fail_sc;
+	}
 	sc->soundnode = of_find_firstchild_byname(port, "sound");
-	if (sc->soundnode == -1)
-		return (ENXIO);
+	if (sc->soundnode == -1) {
+		err = ENXIO;
+		goto fail_sc;
+	}
 
 	mtx_init(&sc->port_mtx, "port_mtx", NULL, MTX_DEF);
 
 	/* Map the controller register space. */
 	rid = 0;
 	sc->reg = bus_alloc_resource_any(self, SYS_RES_MEMORY, &rid, RF_ACTIVE);
-	if (sc->reg == NULL)
-		return ENXIO;
+	if (sc->reg == NULL) {
+		err = ENXIO;
+		goto fail_mtx;
+	}
 
 	/* Map the DBDMA channel register space. */
 	rid = 1;
 	sc->aoa.sc_odma = bus_alloc_resource_any(self, SYS_RES_MEMORY, &rid, 
 	    RF_ACTIVE);
-	if (sc->aoa.sc_odma == NULL)
-		return ENXIO;
+	if (sc->aoa.sc_odma == NULL) {
+		err = ENXIO;
+		goto fail_reg;
+	}
 
 	/* Establish the DBDMA channel edge-triggered interrupt. */
 	rid = 1;
 	dbdma_irq = bus_alloc_resource_any(self, SYS_RES_IRQ, 
 	    &rid, RF_SHAREABLE | RF_ACTIVE);
-	if (dbdma_irq == NULL)
-		return (ENXIO);
+	if (dbdma_irq == NULL) {
+		err = ENXIO;
+		goto fail_odma;
+	}
 
 	/* Now initialize the controller. */
 	err = i2s_setup(sc, 44100, 16, 64);
 	if (err != 0)
-		return (err);
+		goto fail_irq;
 
 	snd_setup_intr(self, dbdma_irq, INTR_MPSAFE, aoa_interrupt,
 	    sc, &dbdma_ih);
@@ -235,7 +245,7 @@ i2s_attach(device_t self)
 	oirq = rman_get_start(dbdma_irq);
 	err = powerpc_config_intr(oirq, INTR_TRIGGER_EDGE, INTR_POLARITY_LOW);
 	if (err != 0)
-		return (err);
+		goto fail_ih;
 
 	/*
 	 * Register a hook for delayed attach in order to allow
@@ -246,10 +256,38 @@ i2s_attach(device_t self)
 	i2s_delayed_attach->ich_func = i2s_postattach;
 	i2s_delayed_attach->ich_arg = sc;
 
-	if (config_intrhook_establish(i2s_delayed_attach) != 0)
-		return (ENOMEM);
+	if (config_intrhook_establish(i2s_delayed_attach) != 0) {
+		free(i2s_delayed_attach, M_TEMP);
+		i2s_delayed_attach = NULL;
+		err = ENOMEM;
+		goto fail_ih;
+	}
 
+	/*
+	 * PBSD: past this point the softc is no longer ours alone.  aoa_attach()
+	 * calls pcm_init(), which stores it as the sound layer's devinfo, and
+	 * pcm_addchan(), which hands it to a channel; the intrhook above holds
+	 * it too.  So a failure here is left as it always was - the softc stays
+	 * allocated - because freeing it would turn a leak into a
+	 * use-after-free.  Every stage BEFORE this one is unambiguously the
+	 * driver's, and each of the seven returns below used to drop the softc,
+	 * the mutex and up to three bus resources on the floor.
+	 */
 	return (aoa_attach(sc));
+
+fail_ih:
+	bus_teardown_intr(self, dbdma_irq, dbdma_ih);
+fail_irq:
+	bus_release_resource(self, SYS_RES_IRQ, 1, dbdma_irq);
+fail_odma:
+	bus_release_resource(self, SYS_RES_MEMORY, 1, sc->aoa.sc_odma);
+fail_reg:
+	bus_release_resource(self, SYS_RES_MEMORY, 0, sc->reg);
+fail_mtx:
+	mtx_destroy(&sc->port_mtx);
+fail_sc:
+	free(sc, M_DEVBUF);
+	return (err);
 }
 
 /*****************************************************************************

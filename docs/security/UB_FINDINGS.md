@@ -11653,3 +11653,99 @@ does not report: in `sdhci_fdt.c` the allocation is handed to
 concerned, which is enough for it to stop tracking; in `sifive_prci.c`
 there *is* a `free()` of the pointer in the function, on the path the
 analyser happens to walk. Neither absence says anything about the leak.
+
+## Four sound drivers that leak their softc, and where the line is
+
+Task #109 was parked on a question, not on a defect: `ssi_attach()` and
+`sai_attach()` leak three allocations on seven returns each, but two of
+those returns are *after* `pcm_init(dev, scp)`, and freeing there would
+turn a leak into a use-after-free. The unwind could not be written until
+the sound(4) ownership contract was established rather than guessed.
+
+### The contract
+
+`sys/dev/sound/pcm/sound.c` answers it in three places.
+
+`pcm_init()` stores the pointer and nothing else:
+
+```c
+	d = device_get_softc(dev);
+	...
+	d->devinfo = devinfo;
+```
+
+`pcm_register()` never touches `devinfo`; it sets `SD_F_REGISTERED`,
+creates the sysctl trees and the dsp device. `pcm_unregister()` tears all
+of that down — `pcm_killchans`, both sysctl contexts, `sndstat_unregister`,
+`mixer_uninit`, `dsp_destroy_dev`, `cv_destroy`, `mtx_destroy` — and
+frees **nothing** the driver allocated. There is no `free(d->devinfo)`
+anywhere in the sound layer.
+
+So the devinfo is the driver's memory for its whole life: sound(4)
+borrows the pointer and hands it back to every method. That is why the
+drivers in the tree that malloc a softc free it in their own `detach`
+(`es137x.c`'s `free(es, M_DEVBUF)` is the pattern).
+
+What it does *not* license is freeing on an attach failure that happens
+after `pcm_init()`. By then three other things hold the pointer:
+`d->devinfo`, the channel `pcm_addchan()` created, and — in all four
+drivers here — the interrupt handler installed a few lines earlier. The
+line is `pcm_init()`. Before it, the allocation is the attach path's
+alone and must be unwound; after it, the leak stays, because the
+alternative is worse. Each of the four now says so in a comment at
+exactly that point.
+
+### `sys/arm/freescale/imx/imx6_ssi.c`, `sys/arm/freescale/vybrid/vf_sai.c`
+
+Seven returns each, before `pcm_init()`, dropping in turn: `sc`
+(`M_WAITOK`), `sc->conf` (`M_WAITOK`, imx only), `scp` (`M_NOWAIT`), the
+softc mutex, the `bus_alloc_resources()` set, the DMA tag, the DMA
+memory and the DMA map. The analyser named one of the eight —
+
+```
+sys/arm/freescale/imx/imx6_ssi.c:797  [unix.Malloc]
+    Potential leak of memory pointed to by 'scp'
+```
+
+— because `scp` is the only one whose `malloc` it can follow to a return
+without an intervening store into a structure it has stopped tracking.
+Fixing what it named and stopping there would have left the function
+half-unwound, which is the whole reason a finding is a starting point
+rather than a work item.
+
+### `sys/dev/sound/macio/i2s.c`, `sys/dev/sound/macio/davbus.c`
+
+The same shape on PowerPC. `i2s_attach()` has seven such returns and
+`davbus_attach()` four, and the stage order differs between them:
+`i2s_attach()` does `mtx_init()` *before* mapping its resources, so its
+unwind has a `fail_mtx:` stage that `davbus_attach()`'s does not need —
+one more reason to read each rather than copy the first.
+
+`i2s_attach()` also establishes a `config_intrhook` holding the softc.
+That hook is disestablished and freed by `i2s_postattach()` when it runs,
+so the only path that has to undo it is the one where
+`config_intrhook_establish()` itself fails — which cannot have
+established anything.
+
+```
+--scope sys/arm/freescale/imx      2 findings -> 1   23 units, OK both sides
+--scope sys/arm/freescale/vybrid   2 findings -> 1   17 units, OK both sides
+--scope sys/dev/sound/macio        2 findings -> 0    6 units, OK both sides
+```
+
+The two that remain are the unrelated `sr` null-dereference in each
+Freescale driver's rate lookup.
+
+### Two things read on the way that are not fixed here
+
+`davbus_attach()` passes the same `void *cookie` to `snd_setup_intr()`
+and then to `bus_setup_intr()` for the control interrupt, so the first
+cookie is overwritten and lost. It costs nothing today because the driver
+has no `detach` method at all and never tears either handler down; it
+would matter the moment one is written.
+
+`i2s_delayed_attach` is a single file-scope `struct intr_config_hook *`,
+not a per-softc field. A second i2s device would overwrite the first
+one's hook pointer between `config_intrhook_establish()` and
+`i2s_postattach()`. Every Apple machine this driver runs on has one, so
+it is a latent bug rather than a live one.
