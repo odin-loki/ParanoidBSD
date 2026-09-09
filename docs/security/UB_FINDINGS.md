@@ -10707,3 +10707,103 @@ registrations of this handler pass `LIO_SET_RING_RX` and
 see a `SYSCTL_PROC` registration, so it treats `arg2` as free.
 Recorded, not changed — the same shape as `axp2xx_attach`, where
 `probe` gates what reaches `attach`.
+
+---
+
+## The inverse of the `copyin` premise, and it is measured
+
+Three findings in `sys/dev/usb/controller/` are the same line in three
+drivers:
+
+```c
+	/* receive data */
+	bus_space_read_multi_1(sc->sc_io_tag, sc->sc_io_hdl,
+	    MUSB2_REG_EPFIFO(0), (void *)&req, sizeof(req));
+	...
+	if ((req.bmRequestType == UT_WRITE_DEVICE) &&      /* <- reported */
+```
+
+`atmegadci.c:295`, `musb_otg.c:503` and `uss820dci.c:326` — each reading
+a USB SETUP packet off the controller's FIFO into a local `struct
+usb_device_request` and then looking at it. All three are
+`core.UndefinedBinaryOperatorResult` on `req.bmRequestType`.
+
+Earlier in this document, the `copyin` premise was disproved with the
+observation that **CSA invalidates a by-pointer argument passed to an
+unknown function** — it must, because the callee may have written
+through it. So why is `req` still undefined here?
+
+Because `bus_space_read_multi_1` is not unknown. It is
+`static __inline`, in `sys/x86/include/bus.h:275`, and its body is
+inline assembly:
+
+```c
+static __inline void
+bus_space_read_multi_1(bus_space_tag_t tag, bus_space_handle_t bsh,
+		       bus_size_t offset, u_int8_t *addr, size_t count)
+{
+	if (tag == X86_BUS_SPACE_IO)
+		insb(bsh + offset, addr, count);
+	else {
+		__asm __volatile("				\n\
+		1:	movb (%2),%%al				\n\
+			stosb					\n\
+			loop 1b"				:
+		    "=D" (addr), "=c" (count)			:
+		    "r" (bsh + offset), "0" (addr), "1" (count)	:
+		    "%eax", "memory");
+	}
+}
+```
+
+The analyser steps *into* it, finds no C store through `addr`, and comes
+back out with the buffer still undefined. The `"memory"` clobber is a
+constraint on the optimiser, not something CSA folds into its value
+model for the pointee.
+
+So the rule is the exact inverse of the one that disproved `copyin`:
+**an unknown function invalidates what it is given; a visible inline
+function that writes only through inline assembly does not.** Being able
+to see the callee is what loses the information.
+
+### Probed, not asserted
+
+`tools/verify/probes/inline_asm_write.c` makes all three predictions at
+once and clang answers all three:
+
+| | expected | reported? |
+|---|---|---|
+| read through a visible inline function with an asm body | reported | **yes**, with `note: Calling 'read_multi'` / `Returning from 'read_multi'` |
+| read after an **unknown** function was handed the pointer | not reported | **no** — the control |
+| read of something nothing wrote at all | reported | **yes** — the sanity control |
+
+```
+asm_probe.c:28:13: warning: The left operand of '==' is a garbage value
+asm_probe.c:27:2: note: Calling 'read_multi'
+asm_probe.c:27:2: note: Returning from 'read_multi'
+asm_probe.c:48:13: warning: The left operand of '==' is a garbage value
+2 warnings generated.
+```
+
+Line 38 — the unknown-function control — is absent, which is the half
+that makes the other two mean something. The note trail is the whole
+answer: it says clang went in and came back.
+
+### How much this explains: 3, and the proxy said 13
+
+The tempting next step is to count findings in files that use a
+multi-word bus-space read. That gives **13 findings in 5 files**. It is
+an upper bound and not a count, and reading the largest cluster shows
+why: `fdc.c`'s eight are `fdc_sense_int()` writing `*st0p` and `*cylp`
+on some paths and not others — a plain out-parameter shape that has
+nothing to do with inline assembly, in a file that happens to also
+contain a `bus_space_read_multi_1` elsewhere.
+
+"The file contains X" is a proxy for "the finding rests on X", and the
+same substitution was already caught once in this document over
+`M_ZERO`. So the honest number is the three that were read: the USB
+SETUP-packet trio. The other ten stay in the unread bucket where they
+belong.
+
+Nothing to change in any of the three. Recorded so they can be
+dismissed by name.
