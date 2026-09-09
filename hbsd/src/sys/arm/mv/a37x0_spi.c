@@ -367,7 +367,18 @@ a37x0_spi_intr(void *arg)
 static int
 a37x0_spi_transfer(device_t dev, device_t child, struct spi_command *cmd)
 {
-	int timeout;
+	/*
+	 * PBSD: nonzero, which is what "did not time out" reads as at the
+	 * return below. `timeout' is assigned only inside the transfer
+	 * loop, and that loop's condition is the number of bytes left to
+	 * send: a command of zero length runs no body at all, and the
+	 * function ends `return ((timeout == 0) ? EIO : 0);' - a stack
+	 * slot deciding whether a transfer that had nothing to do
+	 * failed. spigen(4) rejects a zero-length command
+	 * (spigen.c:191), so this is not reachable from userspace; any
+	 * in-kernel SPIBUS_TRANSFER consumer can reach it.
+	 */
+	int timeout = 1;
 	struct a37x0_spi_softc *sc;
 	uint32_t clock, cs, mode, reg;
 

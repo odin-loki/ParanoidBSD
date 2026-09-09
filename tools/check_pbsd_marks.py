@@ -918,6 +918,33 @@ FIXES = {
             "was copied from or to",
         ),
     ],
+    # Three drivers whose `timeout' is assigned only inside the loop
+    # that a zero-length transfer skips, and read after it.
+    "hbsd/src/sys/arm/mv/mv_spi.c": [
+        (
+            "PBSD: nonzero, which is what \"did not time out\" reads as",
+            "\tint resid, timeout;\n",
+            "mv_spi_transfer() ends `return ((timeout == 0) ? EIO : 0);' "
+            "and assigns timeout only inside a loop bounded by the "
+            "bytes left to send",
+        ),
+    ],
+    "hbsd/src/sys/arm/mv/a37x0_spi.c": [
+        (
+            "PBSD: nonzero, which is what \"did not time out\" reads as",
+            "\tint timeout;\n\n\tsc = device_get_softc(dev);",
+            "the same shape as mv_spi.c, in the same directory",
+        ),
+    ],
+    "hbsd/src/sys/arm/ti/ti_i2c.c": [
+        (
+            "PBSD: 0, the value the normal flow leaves here.",
+            "\tint err, i, repstart, timeout;\n",
+            "ti_i2c_transfer() assigns timeout only inside "
+            "`for (i = 0; i < nmsgs; i++)' and reads it at the out: "
+            "label to decide whether to wait for the bus",
+        ),
+    ],
     "hbsd/src/sys/dev/backlight/backlight.c": [
         (
             "PBSD: an unknown cmd fell out of this switch",

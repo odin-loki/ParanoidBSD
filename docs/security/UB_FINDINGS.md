@@ -10259,3 +10259,99 @@ bytes into a use-after-free. Which of `pcm_init`, `pcm_addchan` and
 `pcm_register` takes ownership, and what each one's failure contract is,
 has to be established before the unwind can be written. Recorded as a
 task with that named as the blocker.
+
+---
+
+## Three bus drivers whose `timeout` is only assigned inside the loop
+
+`mv_spi.c:373`, `a37x0_spi.c:459` and `ti_i2c.c:432` are one shape, and
+it is the `awusb3phy_attach` shape from earlier in this reading: a
+variable assigned only inside a loop, read after it, where the loop's
+own condition can be false on entry.
+
+The two SPI drivers are the same file one Marvell SoC apart:
+
+```c
+	int resid, timeout;
+	...
+	while ((resid = sc->sc_len - sc->sc_written) > 0) {
+		...
+		timeout = 1000;
+		while (--timeout > 0) { ... }
+		if (timeout == 0)
+			break;
+		...
+	}
+	...
+	/*
+	 * Check for transfer timeout.  The SPI controller doesn't
+	 * return errors.
+	 */
+	return ((timeout == 0) ? EIO : 0);
+```
+
+`sc->sc_len` is `cmd->tx_cmd_sz + cmd->tx_data_sz`, so a command of zero
+length runs no body and the return reads a stack slot to decide whether
+a transfer that had nothing to do failed. The driver's own comment says
+what that value means — this controller reports nothing, so `timeout` is
+the *only* evidence of success — which is what makes reading an
+unwritten one worse than usual.
+
+Not reachable from userspace: `spigen_transfer()` rejects a zero-length
+command at `spigen.c:191`. Any in-kernel `SPIBUS_TRANSFER` consumer can
+reach it, and nothing between it and the driver checks.
+
+Initialised nonzero, which is what "did not time out" reads as at that
+return.
+
+`ti_i2c_transfer()` is the same with a different loop:
+
+```c
+	int err, i, repstart, timeout;
+	...
+	for (i = 0; i < nmsgs; i++) {
+		...
+		if (repstart == 0) {
+			timeout = 0;
+			while (ti_i2c_read_2(sc, I2C_REG_STATUS_RAW) & I2C_STAT_BB) {
+				if (timeout++ > 100) { err = EBUSY; goto out; }
+				DELAY(1000);
+			}
+			timeout = 0;
+		} else
+			repstart = 0;
+	...
+out:
+	if (timeout == 0) {
+		while (ti_i2c_read_2(sc, I2C_REG_STATUS_RAW) & I2C_STAT_BB) {
+```
+
+A transfer of no messages runs no body, and the `out:` label reads the
+stack slot to decide whether to wait for the bus to go idle. Initialised
+to 0, the value the normal flow leaves there.
+
+### Measured
+
+```
+--scope sys/arm/mv   4 findings -> 2   (a37x0_spi.c:459, mv_spi.c:373 gone)
+--scope sys/arm/ti   6 findings -> 5   (ti_i2c.c:432 gone)
+```
+
+All units still OK. What remains in those two directories is
+`mv/gpio.c:416`, `mvebu_gpio.c:296`, `am335x_pwmss.c:140`,
+`ti_divider_clock.c:170` and `:172`, and `ti_adc.c:460` and `:464` —
+unread, and named here so the count is not mistaken for a clean bill.
+
+### Running total for this reading
+
+Of the 32 `static-taken` findings with a parameter on their own line:
+
+| | |
+|---|---|
+| defects fixed | 10 |
+| explained as false, with a named cause | 12 |
+| real, deferred with the blocker named | 2 |
+| not yet read | 8 |
+
+Plus one defect found by reading rather than by the analyser
+(`bus_dma_tag_create` in two drivers), which moves no count at all.

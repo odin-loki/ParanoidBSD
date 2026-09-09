@@ -352,7 +352,15 @@ ti_i2c_intr(void *arg)
 static int
 ti_i2c_transfer(device_t dev, struct iic_msg *msgs, uint32_t nmsgs)
 {
-	int err, i, repstart, timeout;
+	int err, i, repstart;
+	/*
+	 * PBSD: 0, the value the normal flow leaves here. `timeout' is
+	 * assigned only inside `for (i = 0; i < nmsgs; i++)' and only
+	 * under `if (repstart == 0)', so a transfer of no messages runs
+	 * no body and the `if (timeout == 0)' at the out: label below
+	 * reads a stack slot to decide whether to wait for the bus.
+	 */
+	int timeout = 0;
 	struct ti_i2c_softc *sc;
 	uint16_t reg;
 
