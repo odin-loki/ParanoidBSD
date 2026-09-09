@@ -736,6 +736,14 @@ read_again:
 			/* Get the data length in the descriptor buffers */
 			buf1_len = xgbe_rx_buf1_len(pdata, rdata, packet);
 			len += buf1_len;
+			/*
+			 * PBSD: buf2_len = 0 on the no-split-header path.  It
+			 * was assigned only inside the sph_enable arm, and the
+			 * axgbe_printf() below prints it as its eighth
+			 * argument whenever packet->errors is set - with
+			 * sph_enable off, from an unwritten stack slot.
+			 */
+			buf2_len = 0;
 			if (pdata->sph_enable) {
 				buf2_len = xgbe_rx_buf2_len(pdata, rdata, packet, len);
 				len += buf2_len;

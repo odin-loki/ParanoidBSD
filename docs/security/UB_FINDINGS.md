@@ -11985,3 +11985,135 @@ and `$?` there is the status of `basename`, not of the check. The same
 lesson as `| tail -1` two commits ago, in a new disguise: the verdict has
 to be read from the thing that produced it. Re-run with the status
 captured into a variable first, all six failed as they should.
+
+## Task #61, second batch: five drivers, and eight findings that are guards
+
+### `sys/dev/aic7xxx/aic7xxx_pci.c` — a resume that drives the SEEPROM from stack
+
+`ahc_parse_pci_eeprom()` builds its `struct seeprom_descriptor` in full:
+
+```c
+	sd.sd_ahc = ahc;
+	sd.sd_control_offset = SEECTL;
+	sd.sd_status_offset = SEECTL;
+	sd.sd_dataout_offset = SEECTL;
+	...
+	sd.sd_MS = SEEMS;
+	sd.sd_RDY = SEERDY;
+	sd.sd_CS = SEECS;
+	sd.sd_CK = SEECK;
+	sd.sd_DO = SEEDO;
+	sd.sd_DI = SEEDI;
+```
+
+`ahc_pci_resume()` declares its own and sets **only the four offsets**.
+It then calls `ahc_acquire_seeprom()`, which does `SEEPROM_OUTB(sd,
+sd->sd_MS)` — a write to the SEECTL register — and spins on
+`SEEPROM_STATUS_INB(sd) & sd->sd_RDY`, and `configure_termination()`,
+which writes `sd->sd_MS | sd->sd_CS`. So a resume on any controller with
+`AHC_HAS_TERM_LOGIC` drove the SEEPROM control register from
+uninitialised stack and decided the SCSI bus termination from what came
+back. Both findings in that file were this one bug, seen from two
+functions.
+
+### `sys/dev/mana/hw_channel.c` — the NULL arm printed the NULL
+
+```c
+	if (!hwc_txq || hwc_txq->gdma_wq->id != gdma_txq_id) {
+		mana_warn(NULL, "unmatched tx queue %u != %u\n",
+		    hwc_txq->gdma_wq->id, gdma_txq_id);
+	}
+
+	bus_dmamap_sync(hwc_txq->gdma_wq->mem_info.dma_tag, ...);
+```
+
+`!hwc_txq` short-circuits *into* the body, which reads
+`hwc_txq->gdma_wq->id`. And there is no `return`, so a queue id that did
+not match was warned about and then acted on anyway. The rx handler ten
+lines up is the shape this was meant to have: warn, and return.
+
+### `sys/dev/axgbe` — an unvalidated device tree property, twice over
+
+```c
+	} else if (ad_reg & 0x20) {
+		switch (pdata->speed_set) {
+		case XGBE_SPEEDSET_1000_10000: ... break;
+		case XGBE_SPEEDSET_2500_10000: ... break;
+		}
+	} else {
+		mode = XGBE_MODE_UNKNOWN;
+```
+
+No `default`, and `speed_set` is `amd,speed-set` taken verbatim from the
+device tree — `if_axgbe.c` checks only that `OF_getencprop()` returned
+something. A third value falls out of the switch and
+`xgbe_an73_outcome()` returns an unwritten `mode` to the caller that
+programs the PHY. Fixed at both ends: a `default` that gives the same
+answer the `else` arm gives, and a range check where the property is
+read, since two more switches elsewhere in the driver read the same
+field.
+
+`xgbe_phy_redrv_write()` builds a five-byte redriver command and writes
+two of the bytes through `(__be16 *)&redrv_data[2]` — the same
+aliasing violation as `if_bwn.c` and `if_sbni_isa.c` below — then
+computes a checksum over all four. `memcpy` writes the same bytes and is
+defined.
+
+`xgbe_rx()` assigns `buf2_len` only inside its `pdata->sph_enable` arm
+and prints it as the eighth argument of an `axgbe_printf()` that fires
+whenever `packet->errors` is set. With split-header receive off, that is
+an unwritten stack slot.
+
+### `sys/dev/bwn/if_bwn.c` — the third aliasing pun this session
+
+```c
+	uint8_t noise[4];
+	...
+	*((uint32_t *)noise) = htole32(bwn_jssi_read(mac));
+```
+
+A `uint32_t` stored into an object whose declared type is `uint8_t[4]`.
+`memcpy` of the same four bytes.
+
+### `sys/dev/irdma` — eight findings, three shapes, no defect
+
+Read in full and left alone:
+
+| Where | Why it is not a defect |
+|---|---|
+| `icrdma.c:421`, `:445` | the `irdma_debug(h, ...)` macro's own first branch is `if (!(h))`, and `h` is `&rf->sc_dev`. Under that branch the analyser has `rf == NULL`, and the *arguments* it then evaluates include `rf->peer_info->pf_id`. The macro's defensiveness is what produces the finding. |
+| `irdma_hw.c:615`, `:681`, `:748` | `iw_msixtbl` is tested for NULL where it is allocated, and the analyser carries that into the teardown paths. `irdma_del_ceq_0()` runs only in state `CEQ0_CREATED` and `irdma_destroy_aeq()` only when `rf->rsrc_created` — both reached only after the allocation succeeded. |
+| `irdma_puda.c:495`, `:507` | `irdma_puda_send_buf()` sets `info.ah_id` on the `hw_rev >= IRDMA_GEN_2` branch and `info.maclen`/`do_lpb` on the other; `irdma_puda_send()` tests the same thing again and reads each on the matching arm. `qp->dev = rsrc->dev` (`irdma_puda.c:720`), so it is one predicate, tested twice across a call. |
+| `irdma_cm.c:3965` | `irdma_create_cm_node()` writes `*caller_cm_node` on every path that returns 0; the only early return is `if (IS_ERR(cm_node)) return PTR_ERR(cm_node);`, and `IS_ERR` true implies `PTR_ERR` in `[-MAX_ERRNO, -1]`. The analyser does not model that pair. |
+
+### `sys/dev/aic7xxx` — the five that remain
+
+`aic7xxx_osm.c:853` and `aic79xx_osm.c:872` are `scsi->flags &=
+~CTS_SCSI_FLAGS_TAG_ENB` on a `struct ccb_trans_settings` the CAM caller
+supplies. Reading the caller's bits and clearing one is the
+XPT_GET_TRAN_SETTINGS contract, not a defect in this driver.
+
+`aic7xxx_osm.c:552` is `ahc->pending_device == lstate` inside `if
+(ccb->ccb_h.func_code == XPT_CONT_TARGET_IO)`. `lstate` is assigned on
+exactly that path, in the target-mode case that falls through into this
+one — but `ahc_find_tmode_devs()` writes through `ccb`, so the analyser
+loses the earlier `func_code` equality and reaches the second test with
+`lstate` unset.
+
+`aic79xx_osm.h:193` and `aic79xx.c:7254` are the allocation-check class
+again: `platform_data` and `scb->hscb` are each tested for NULL where
+they are allocated.
+
+```
+--scope sys/dev/aic7xxx   7 findings -> 5   16 units, 3 ERROR both sides
+--scope sys/dev/mana      2 findings -> 0    6 units, OK both sides
+--scope sys/dev/axgbe     3 findings -> 0   14 units, 1 ERROR both sides
+--scope sys/dev/bwn       1 finding  -> 0    7 units, OK both sides
+--scope sys/dev/irdma     8 findings -> 8   15 units, OK both sides
+```
+
+Three aliasing puns in one session — `if_sbni_isa.c`, `if_bwn.c`,
+`xgbe-phy-v2.c` — all of the same shape: a wide store through a cast
+pointer into a narrow array, and every later read of that array reported
+as a garbage value. The analyser is right to refuse to model them: the
+compiler is entitled not to perform the store at all.

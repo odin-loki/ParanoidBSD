@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,354 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,442 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,397** | **114,204** |
+| | **total** | **41,143** | **21,297,485** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -135,8 +135,8 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.899.13 | `sys/dev/pms/RefTisa/tisa/sassata/common/tdport.c` | 8,044 | 0 | `TODO-PORT` |
 | 8.895.18 | `sys/dev/pms/RefTisa/sallsdk/spc/sampirsp.c` | 7,873 | 0 | `TODO-PORT` |
 | 8.597.14 | `sys/dev/aic7xxx/aic7xxx.c` | 7,847 | 0 | `TODO-PORT` |
+| 8.650.1 | `sys/dev/bwn/if_bwn.c` | 7,746 | 0 | `TODO-PORT` |
 | 8.801.5 | `sys/dev/ixl/i40e_common.c` | 7,740 | 0 | `TODO-PORT` |
-| 8.650.1 | `sys/dev/bwn/if_bwn.c` | 7,736 | 0 | `TODO-PORT` |
 | 8.630.9 | `sys/dev/atkbdc/psm.c` | 7,702 | 0 | `TODO-PORT` |
 | 8.1213.103 | `sys/netinet/sctputil.c` | 7,700 | 0 | `TODO-PORT` |
 | 8.744.5 | `sys/dev/hyperv/netvsc/if_hn.c` | 7,681 | 0 | `TODO-PORT` |
@@ -60372,7 +60372,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.597.19.21 `ahc_dump_targcmd()` · `TODO-FN`
   - [ ] 8.597.19.22 `ahc_modevent()` · `TODO-FN`
 - [ ] **8.597.20** `aic7xxx_osm.h` · 255L · `TODO-HDR`
-- [ ] **8.597.21** `aic7xxx_pci.c` · 2,499L · `TODO-PORT` · 43 fn
+- [ ] **8.597.21** `aic7xxx_pci.c` · 2,521L · `TODO-PORT` · 43 fn
   - [ ] 8.597.21.1 `ahc_compose_id()` · `TODO-FN`
   - [ ] 8.597.21.2 `ahc_9005_subdevinfo_valid()` · `TODO-FN`
   - [ ] 8.597.21.3 `ahc_find_pci_device()` · `TODO-FN`
@@ -63089,7 +63089,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.632 `sys/dev/axgbe`
 
-- [ ] **8.632.1** `if_axgbe.c` · 611L gen:5 · `TODO-PORT` · 11 fn
+- [ ] **8.632.1** `if_axgbe.c` · 624L gen:5 · `TODO-PORT` · 11 fn
   - [ ] 8.632.1.1 `axgbe_init()` · `TODO-FN`
   - [ ] 8.632.1.2 `axgbe_ioctl()` · `TODO-FN`
   - [ ] 8.632.1.3 `axgbe_qflush()` · `TODO-FN`
@@ -63376,7 +63376,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.632.9.66 `xgbe_phy_exit()` · `TODO-FN`
   - [ ] 8.632.9.67 `xgbe_phy_init()` · `TODO-FN`
   - [ ] 8.632.9.68 `xgbe_init_function_ptrs_phy()` · `TODO-FN`
-- [ ] **8.632.10** `xgbe-phy-v1.c` · 706L · `TODO-PORT` · 27 fn
+- [ ] **8.632.10** `xgbe-phy-v1.c` · 719L · `TODO-PORT` · 27 fn
   - [ ] 8.632.10.1 `xgbe_phy_kr_training_pre()` · `TODO-FN`
   - [ ] 8.632.10.2 `xgbe_phy_kr_training_post()` · `TODO-FN`
   - [ ] 8.632.10.3 `xgbe_phy_an_outcome()` · `TODO-FN`
@@ -63404,7 +63404,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.632.10.25 `xgbe_phy_exit()` · `TODO-FN`
   - [ ] 8.632.10.26 `xgbe_phy_init()` · `TODO-FN`
   - [ ] 8.632.10.27 `xgbe_init_function_ptrs_phy_v1()` · `TODO-FN`
-- [ ] **8.632.11** `xgbe-phy-v2.c` · 4,071L · `TODO-PORT`
+- [ ] **8.632.11** `xgbe-phy-v2.c` · 4,079L · `TODO-PORT`
 - [ ] **8.632.12** `xgbe-ptp.c` · 275L · `TODO-PORT` · 8 fn
   - [ ] 8.632.12.1 `xgbe_cc_read()` · `TODO-FN`
   - [ ] 8.632.12.2 `xgbe_adjfreq()` · `TODO-FN`
@@ -63442,7 +63442,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.632.13.25 `sysctl_an_cdr_track_early_handler()` · `TODO-FN`
   - [ ] 8.632.13.26 `axgbe_sysctl_exit()` · `TODO-FN`
   - [ ] 8.632.13.27 `axgbe_sysctl_init()` · `TODO-FN`
-- [ ] **8.632.14** `xgbe-txrx.c` · 801L · `TODO-PORT` · 13 fn
+- [ ] **8.632.14** `xgbe-txrx.c` · 809L · `TODO-PORT` · 13 fn
   - [ ] 8.632.14.1 `xgbe_print_pkt_info()` · `TODO-FN`
   - [ ] 8.632.14.2 `axgbe_ctx_desc_setup()` · `TODO-FN`
   - [ ] 8.632.14.3 `axgbe_calculate_tx_parms()` · `TODO-FN`
@@ -65360,7 +65360,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.650 `sys/dev/bwn`
 
-- [ ] **8.650.1** `if_bwn.c` · 7,736L gen:14 · `TODO-PORT`
+- [ ] **8.650.1** `if_bwn.c` · 7,746L gen:14 · `TODO-PORT`
 - [ ] **8.650.2** `if_bwn_cordic.h` · 95L · `TODO-HDR`
 - [ ] **8.650.3** `if_bwn_debug.h` · 79L · `TODO-HDR`
 - [ ] **8.650.4** `if_bwn_misc.h` · 67L · `TODO-HDR`
@@ -82231,7 +82231,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.815.3.4 `wait_for_completion()` · `TODO-FN`
   - [ ] 8.815.3.5 `wait_for_completion_timeout()` · `TODO-FN`
 - [ ] **8.815.4** `gdma_util.h` · 184L · `TODO-HDR`
-- [ ] **8.815.5** `hw_channel.c` · 925L · `TODO-PORT` · 26 fn
+- [ ] **8.815.5** `hw_channel.c` · 939L · `TODO-PORT` · 26 fn
   - [ ] 8.815.5.1 `mana_hwc_get_msg_index()` · `TODO-FN`
   - [ ] 8.815.5.2 `mana_hwc_put_msg_index()` · `TODO-FN`
   - [ ] 8.815.5.3 `mana_hwc_verify_resp_msg()` · `TODO-FN`

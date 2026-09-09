@@ -209,6 +209,19 @@ xgbe_phy_an_outcome(struct xgbe_prv_data *pdata)
 			pdata->phy.speed = SPEED_2500;
 			mode = XGBE_MODE_KX_2500;
 			break;
+
+		/*
+		 * PBSD: `amd,speed-set' comes out of the device tree with no
+		 * range check (if_axgbe.c takes whatever OF_getencprop gives
+		 * it), so this switch could match nothing and the function
+		 * returned an unwritten `mode' to the caller, which programs
+		 * the PHY with it.  Unknown speed set, unknown mode - the
+		 * same answer the else arm below gives.
+		 */
+		default:
+			pdata->phy.speed = SPEED_UNKNOWN;
+			mode = XGBE_MODE_UNKNOWN;
+			break;
 		}
 	} else {
 		mode = XGBE_MODE_UNKNOWN;

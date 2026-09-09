@@ -2130,6 +2130,28 @@ ahc_pci_resume(struct ahc_softc *ahc)
 		sd.sd_status_offset = SEECTL;		
 		sd.sd_dataout_offset = SEECTL;		
 
+		/*
+		 * PBSD: the six bit masks, which this path never set.
+		 * ahc_acquire_seeprom() writes sd_MS to the SEECTL register
+		 * and then spins on `SEEPROM_STATUS_INB(sd) & sd->sd_RDY',
+		 * and configure_termination() writes `sd_MS | sd_CS' - so a
+		 * resume on a controller with AHC_HAS_TERM_LOGIC drove the
+		 * SEEPROM control register from uninitialised stack and
+		 * decided the bus termination from what came back.  These
+		 * are the same assignments ahc_parse_pci_eeprom() makes at
+		 * attach; only that path had them.
+		 */
+		if (ahc->flags & AHC_LARGE_SEEPROM)
+			sd.sd_chip = C56_66;
+		else
+			sd.sd_chip = C46;
+		sd.sd_MS = SEEMS;
+		sd.sd_RDY = SEERDY;
+		sd.sd_CS = SEECS;
+		sd.sd_CK = SEECK;
+		sd.sd_DO = SEEDO;
+		sd.sd_DI = SEEDI;
+
 		ahc_acquire_seeprom(ahc, &sd);
 		configure_termination(ahc, &sd,
 				      ahc->seep_config->adapter_control,

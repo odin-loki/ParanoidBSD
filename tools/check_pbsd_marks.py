@@ -1115,6 +1115,70 @@ FIXES = {
             "device",
         ),
     ],
+    "hbsd/src/sys/dev/mana/hw_channel.c": [
+        (
+            "PBSD: the NULL arm printed the pointer it had just found NULL",
+            "\tif (!hwc_txq || hwc_txq->gdma_wq->id != gdma_txq_id) {\n",
+            "the tx event handler's `!hwc_txq' short-circuited into a "
+            "body that read hwc_txq->gdma_wq->id, and then fell through "
+            "to bus_dmamap_sync() on it either way",
+        ),
+    ],
+    "hbsd/src/sys/dev/bwn/if_bwn.c": [
+        (
+            "PBSD: memcpy, not `*((uint32_t *)noise) = ...'.",
+            "\t*((uint32_t *)noise) = htole32(bwn_jssi_read(mac));\n",
+            "bwn_intr_noise() wrote a uint32_t through a pointer to a "
+            "uint8_t[4] object and read the bytes back",
+        ),
+    ],
+    "hbsd/src/sys/dev/aic7xxx/aic7xxx_pci.c": [
+        (
+            "PBSD: the six bit masks, which this path never set.",
+            "\t\tsd.sd_dataout_offset = SEECTL;\t\t\n\n"
+            "\t\tahc_acquire_seeprom(ahc, &sd);\n",
+            "ahc_pci_resume() built a seeprom_descriptor with only the "
+            "four offsets set and handed it to code that writes sd_MS "
+            "to the SEECTL register and masks with sd_RDY and sd_CS",
+        ),
+    ],
+    "hbsd/src/sys/dev/axgbe/xgbe-phy-v1.c": [
+        (
+            "PBSD: `amd,speed-set' comes out of the device tree with no",
+            "\t\t\tmode = XGBE_MODE_KX_2500;\n\t\t\tbreak;\n"
+            "\t\t}\n\t} else {\n",
+            "xgbe_an73_outcome()'s switch on an unvalidated device tree "
+            "property had no default, and returned an unwritten `mode' "
+            "to the caller that programs the PHY",
+        ),
+    ],
+    "hbsd/src/sys/dev/axgbe/if_axgbe.c": [
+        (
+            "PBSD: and check its range.",
+            "\t\t    XGBE_SPEEDSET_PROPERTY);\n\t\treturn (EINVAL);\n"
+            "\t}\n\n\terror = axgbe_get_optional_prop(",
+            "the `amd,speed-set' property was taken verbatim from the "
+            "device tree and switched on in three places",
+        ),
+    ],
+    "hbsd/src/sys/dev/axgbe/xgbe-phy-v2.c": [
+        (
+            "PBSD: memcpy, not a store through `(__be16 *)&redrv_data[2]'.",
+            "\tredrv_val = (__be16 *)&redrv_data[2];\n"
+            "\t*redrv_val = cpu_to_be16(val);\n",
+            "two of the five redriver bytes and the checksum built from "
+            "them were written through a __be16 lvalue into a uint8_t "
+            "array",
+        ),
+    ],
+    "hbsd/src/sys/dev/axgbe/xgbe-txrx.c": [
+        (
+            "PBSD: buf2_len = 0 on the no-split-header path.",
+            "\t\t\tlen += buf1_len;\n\t\t\tif (pdata->sph_enable) {\n",
+            "buf2_len was assigned only inside the sph_enable arm and "
+            "printed unconditionally whenever packet->errors was set",
+        ),
+    ],
     "hbsd/src/sys/dev/usb/input/wmt.c": [
         (
             "PBSD: err, initialised to a FAILURE.",

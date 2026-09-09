@@ -405,6 +405,19 @@ axgbe_attach(device_t dev)
 		    XGBE_SPEEDSET_PROPERTY);
 		return (EINVAL);
 	}
+	/*
+	 * PBSD: and check its range.  The property was taken verbatim, and
+	 * xgbe-phy-v1.c switches on it in three places without a default -
+	 * one of them, xgbe_an73_outcome(), returned an unwritten `mode' to
+	 * the caller that programs the PHY.  Those switches now have a
+	 * default too; this is where the value stops being arbitrary.
+	 */
+	if (sc->prv.speed_set != XGBE_SPEEDSET_1000_10000 &&
+	    sc->prv.speed_set != XGBE_SPEEDSET_2500_10000) {
+		device_printf(dev, "invalid %s property: %u\n",
+		    XGBE_SPEEDSET_PROPERTY, sc->prv.speed_set);
+		return (EINVAL);
+	}
 
 	error = axgbe_get_optional_prop(dev, phy_node, XGBE_BLWC_PROPERTY,
 	    sc->prv.serdes_blwc, sizeof(sc->prv.serdes_blwc));

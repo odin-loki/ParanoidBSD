@@ -284,9 +284,23 @@ mana_hwc_tx_event_handler(void *ctx, uint32_t gdma_txq_id,
 	struct hw_channel_context *hwc = ctx;
 	struct hwc_wq *hwc_txq = hwc->txq;
 
-	if (!hwc_txq || hwc_txq->gdma_wq->id != gdma_txq_id) {
+	/*
+	 * PBSD: the NULL arm printed the pointer it had just found NULL -
+	 * `!hwc_txq' short-circuits into the body, which reads
+	 * hwc_txq->gdma_wq->id - and then fell through to the
+	 * bus_dmamap_sync() below either way, so a mismatched queue id was
+	 * warned about and then acted on.  The rx handler ten lines up has
+	 * the shape this one was meant to have: warn, and return.
+	 */
+	if (hwc_txq == NULL) {
+		mana_warn(NULL, "tx queue %u on a channel with no txq\n",
+		    gdma_txq_id);
+		return;
+	}
+	if (hwc_txq->gdma_wq->id != gdma_txq_id) {
 		mana_warn(NULL, "unmatched tx queue %u != %u\n",
 		    hwc_txq->gdma_wq->id, gdma_txq_id);
+		return;
 	}
 
 	bus_dmamap_sync(hwc_txq->gdma_wq->mem_info.dma_tag,

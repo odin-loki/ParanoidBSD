@@ -435,7 +435,7 @@ xgbe_phy_redrv_write(struct xgbe_prv_data *pdata, unsigned int reg,
 {
 	struct xgbe_phy_data *phy_data = pdata->phy_data;
 	struct xgbe_i2c_op i2c_op;
-	__be16 *redrv_val;
+	__be16 redrv_val;
 	uint8_t redrv_data[5], csum;
 	unsigned int i, retry;
 	int ret;
@@ -443,8 +443,16 @@ xgbe_phy_redrv_write(struct xgbe_prv_data *pdata, unsigned int reg,
 	/* High byte of register contains read/write indicator */
 	redrv_data[0] = ((reg >> 8) & 0xff) << 1;
 	redrv_data[1] = reg & 0xff;
-	redrv_val = (__be16 *)&redrv_data[2];
-	*redrv_val = cpu_to_be16(val);
+	/*
+	 * PBSD: memcpy, not a store through `(__be16 *)&redrv_data[2]'.
+	 * That wrote a __be16 into an object whose declared type is
+	 * uint8_t[5] - a strict aliasing violation the compiler may discard,
+	 * which would leave two of the five bytes and the checksum below
+	 * built from whatever was on the stack.  The bytes written are the
+	 * same ones.
+	 */
+	redrv_val = cpu_to_be16(val);
+	memcpy(&redrv_data[2], &redrv_val, sizeof(redrv_val));
 
 	/* Calculate 1 byte checksum */
 	csum = 0;

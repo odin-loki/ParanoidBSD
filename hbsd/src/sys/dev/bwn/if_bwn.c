@@ -5308,12 +5308,22 @@ bwn_intr_noise(struct bwn_mac *mac)
 	uint8_t noise[4];
 	uint8_t i, j;
 	int32_t average;
+	uint32_t jssi;
 
 	if (mac->mac_phy.type != BWN_PHYTYPE_G)
 		return;
 
 	KASSERT(mac->mac_noise.noi_running, ("%s: fail", __func__));
-	*((uint32_t *)noise) = htole32(bwn_jssi_read(mac));
+	/*
+	 * PBSD: memcpy, not `*((uint32_t *)noise) = ...'.  That wrote a
+	 * uint32_t through a pointer to an object whose declared type is
+	 * uint8_t[4] - a strict aliasing violation the compiler may discard,
+	 * and one the analyser does not model, so every noise[] read below
+	 * was a garbage value to it.  The bytes copied are the same ones on
+	 * every platform, htole32() included.
+	 */
+	jssi = htole32(bwn_jssi_read(mac));
+	memcpy(noise, &jssi, sizeof(noise));
 	if (noise[0] == 0x7f || noise[1] == 0x7f || noise[2] == 0x7f ||
 	    noise[3] == 0x7f)
 		goto new;
