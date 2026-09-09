@@ -11032,3 +11032,99 @@ the kernel sweep's row — which was safe only because those were all
 *disappearances*, and a finding that vanishes cannot be an artefact of
 the baseline having fewer. This one had a shift and an apparent
 addition, and needed the real A/B.
+
+---
+
+## Read and left alone, with the reason each time
+
+Findings from the `static-taken` list that were read in this pass and
+are not defects. Each is here so it leaves the unread bucket by name
+rather than by a count going down.
+
+### `mpr_sas.c:2583` and `mps_sas.c:2118` — a guard 40 lines from its alias
+
+```c
+	rep = (MPI2_SCSI_IO_REPLY *)cm->cm_reply;        /* :2436 */
+	...
+	if (cm->cm_reply == NULL) {                       /* :2544 */
+		...
+		return;                                   /* :2576 */
+	}
+	...
+	rep->SCSIStatus = mprsas_complete_nvme_unmap(sc, cm);   /* :2583 */
+```
+
+The NULL case is handled and returns. What the analyser will not do is
+carry a guard on `cm->cm_reply` across to `rep`, which was aliased to it
+147 lines earlier. Two intermediate blocks test `cm->cm_reply != NULL`
+before logging through `rep`, which is the same author making the same
+connection by hand.
+
+Worth stating plainly: this is a heavily-deployed SAS driver, and
+"fixing" it on the first reading — before finding the `return` at
+`:2576` — would have added a redundant branch to a hot completion path
+on the strength of a false positive.
+
+### `rk_pinctrl.c:692` and `:694` — a bank validated by a table lookup
+
+`rk3399_parse_bias()` switches on `bank` with arms for 0-4 and no
+default, then returns `pullup`/`pulldown`. Its only caller checks the
+`(bank, subbank)` pair against `sc->conf->iomux_conf[]` and returns
+before calling if there is no match — and `rk3399_iomux_bank[]` has
+exactly banks 0 through 4. The same shape as `aw_gpio_pic_setup_intr()`:
+validation one function up, through a table.
+
+### `micphy.c:299` — a softc field read twice across an opaque call
+
+```c
+	if (sc->mii_mpd_model == MII_MODEL_MICREL_KSZ8081)
+		reg = PHY_READ(sc, MII_KSZ8081_PHYCTL2);
+	mii_phy_reset(sc);
+	if (sc->mii_mpd_model == MII_MODEL_MICREL_KSZ8081)
+		PHY_WRITE(sc, MII_KSZ8081_PHYCTL2, reg);
+```
+
+Assigned and read under the same test, with an unknown call between
+them. The `fpu.c` / `aw_rsb.c` shape.
+
+### `kbdmux.c:493` — the M_ZERO class
+
+`kbd_set_maps()`, which stores `fkeymap` into a structure that escapes
+to the caller, is called only inside `if (!KBD_IS_PROBED(kbd))`.
+`KBD_IS_PROBED` reads `kbd->kb_flags`, which is zero only because the
+`malloc` two lines above passed `M_ZERO` — and clang has no model for
+`malloc`'s third argument, as this document established with a probe.
+
+### `lio_sysctl.c:979` — false by its registration
+
+`switch (arg2)` with two cases and no default, returning an `int` only
+those two assign. `arg2` is fixed when the sysctl is registered, and the
+only two registrations of this handler pass `LIO_SET_RING_RX` and
+`LIO_SET_RING_TX`. `SYSCTL_PROC` is not something the analyser reads.
+
+### `fdc.c` ×8 — out-parameters, not the bus-space class
+
+Named here because they were nearly miscounted into the inline-assembly
+class above: `fdc_sense_int()` writes `*st0p` and `*cylp` on some paths
+and not others, in a file that also contains a `bus_space_read_multi_1`
+somewhere else entirely.
+
+### `busdma_iommu.c:393` — recorded as a task, not fixed
+
+```c
+	error = common_bus_dma_tag_create(parent != NULL ?
+	    &((struct bus_dma_tag_iommu *)parent)->common : NULL, ...);
+	...
+	oldtag = (struct bus_dma_tag_iommu *)parent;
+	newtag->ctx = oldtag->ctx;
+```
+
+The same self-contradiction as the two sound detach paths — a ternary
+that contemplates NULL, then an unconditional dereference — but without
+their obvious resolution. A detach with no devinfo has nothing to tear
+down, so returning is right; a *tag* with no parent has no `ctx` to
+inherit, and one built with a NULL `ctx` would fault later in the map
+path rather than here. Which of the two lines is wrong depends on
+whether `parent` can be NULL at all, given that this implementation is
+only selected when the parent already carries it. Left for a reading
+that settles that.
