@@ -638,21 +638,68 @@ check_that("a .c gets neither", _libcxx not in includes.include_flags(
 # The sentinel: the pair is what makes a real C++ unit compile. If this
 # passes with libcxx_shim() returning nothing, the check above is
 # decorative.
+#
+# It comes in two halves, because the obvious probe cannot run everywhere.
+# usr.bin/clang/llvm-size/llvm-size-driver.cpp opens with
+#
+#     #include "llvm/Support/LLVMDriver.h"
+#
+# and /hbsd/src/contrib/llvm-project/llvm/ is in .gitignore - deliberately,
+# it is re-fetchable and enormous - so a fresh checkout does not have that
+# header. This check was red on CI and green here for exactly that reason,
+# and "1 error generated." was all it said. A missing vendor directory is a
+# fault to READ, not a fault in the tree, and the two must not be reported
+# as the same thing.
+#
+# So the always-on half is a synthesised translation unit that includes the
+# three headers the ordering claim above is ABOUT: <type_traits> is what
+# was `file not found' before the shim existed, and <cstddef> and <cctype>
+# are the two that #error by name when the <stddef.h> and <ctype.h> they
+# reached were not libc++'s own. It needs only contrib/llvm-project/libcxx
+# and lib/libc++, both of which are tracked, so it runs in CI.
 import subprocess as _sp
 _probe = SRC / "usr.bin/clang/llvm-size/llvm-size-driver.cpp"
-_r = _sp.run(["clang-18", "-fsyntax-only",
-              *includes.lang_flags(_probe),
-              *includes.include_flags(_probe, "amd64"), str(_probe)],
-             capture_output=True, text=True, timeout=900)
+_synth = Path(tempfile.mkdtemp(prefix="pbsd_cxxprobe_")) / "probe.cpp"
+_synth.write_text(
+    "#include <type_traits>\n"
+    "#include <cstddef>\n"
+    "#include <cctype>\n"
+    "static_assert(std::is_same<std::size_t, std::size_t>::value, \"\");\n")
+_sr = _sp.run(["clang-18", "-fsyntax-only",
+               *includes.lang_flags(_probe),
+               *includes.include_flags(_probe, "amd64"), str(_synth)],
+              capture_output=True, text=True, timeout=900)
+_serr = [l for l in (_sr.stderr or "").splitlines() if l.strip()]
+check_that("...and <type_traits>, <cstddef> and <cctype> really compile "
+           "with them",
+           _sr.returncode == 0,
+           " | ".join(_serr[:4]) if _serr else
+           f"clang exited {_sr.returncode} with no diagnostics")
+
+# The other half is the real file, which also exercises the -I that reach
+# LLVM's own headers. It runs only where those headers are.
+_llvm_h = SRC / "contrib/llvm-project/llvm/include/llvm/Support/LLVMDriver.h"
+if not _llvm_h.is_file():
+    print("  n/a  ...and a C++ translation unit really compiles with them"
+          "  (contrib/llvm-project/llvm is not in this checkout - "
+          ".gitignore excludes it; the synthesised probe above covers "
+          "the shim)")
+    _r = None
+else:
+    _r = _sp.run(["clang-18", "-fsyntax-only",
+                  *includes.lang_flags(_probe),
+                  *includes.include_flags(_probe, "amd64"), str(_probe)],
+                 capture_output=True, text=True, timeout=900)
 # The LAST line of a failing clang run is "N errors generated." - a count,
 # not a diagnosis. This check has been red on the CI runner while green
 # here, and that message said nothing about why. Report the FIRST lines,
 # which name the file, the line and the error.
-_err = [l for l in (_r.stderr or "").splitlines() if l.strip()]
-check_that("...and a C++ translation unit really compiles with them",
-           _r.returncode == 0,
-           " | ".join(_err[:4]) if _err else
-           f"clang exited {_r.returncode} with no diagnostics")
+if _r is not None:
+    _err = [l for l in (_r.stderr or "").splitlines() if l.strip()]
+    check_that("...and a C++ translation unit really compiles with them",
+               _r.returncode == 0,
+               " | ".join(_err[:4]) if _err else
+               f"clang exited {_r.returncode} with no diagnostics")
 
 print()
 if fails:
