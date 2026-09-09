@@ -203,7 +203,7 @@ struct iwn_fw_info {
 
 struct iwn_ops {
 	int		(*load_firmware)(struct iwn_softc *);
-	void		(*read_eeprom)(struct iwn_softc *);
+	int		(*read_eeprom)(struct iwn_softc *);
 	int		(*post_alive)(struct iwn_softc *);
 	int		(*nic_config)(struct iwn_softc *);
 	void		(*update_sched)(struct iwn_softc *, int, int, uint8_t,

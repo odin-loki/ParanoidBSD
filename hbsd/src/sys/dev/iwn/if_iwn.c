@@ -170,17 +170,17 @@ static void	iwn_check_tx_ring(struct iwn_softc *, int);
 static void	iwn5000_ict_reset(struct iwn_softc *);
 static int	iwn_read_eeprom(struct iwn_softc *,
 		    uint8_t macaddr[IEEE80211_ADDR_LEN]);
-static void	iwn4965_read_eeprom(struct iwn_softc *);
+static int	iwn4965_read_eeprom(struct iwn_softc *);
 #ifdef	IWN_DEBUG
 static void	iwn4965_print_power_group(struct iwn_softc *, int);
 #endif
-static void	iwn5000_read_eeprom(struct iwn_softc *);
+static int	iwn5000_read_eeprom(struct iwn_softc *);
 static uint32_t	iwn_eeprom_channel_flags(struct iwn_eeprom_chan *);
 static void	iwn_read_eeprom_band(struct iwn_softc *, int, int, int *,
 		    struct ieee80211_channel[]);
 static void	iwn_read_eeprom_ht40(struct iwn_softc *, int, int, int *,
 		    struct ieee80211_channel[]);
-static void	iwn_read_eeprom_channels(struct iwn_softc *, int, uint32_t);
+static int	iwn_read_eeprom_channels(struct iwn_softc *, int, uint32_t);
 static struct iwn_eeprom_chan *iwn_find_eeprom_channel(struct iwn_softc *,
 		    struct ieee80211_channel *);
 static void	iwn_getradiocaps(struct ieee80211com *, int, int *,
@@ -188,7 +188,7 @@ static void	iwn_getradiocaps(struct ieee80211com *, int, int *,
 static int	iwn_setregdomain(struct ieee80211com *,
 		    struct ieee80211_regdomain *, int,
 		    struct ieee80211_channel[]);
-static void	iwn_read_eeprom_enhinfo(struct iwn_softc *);
+static int	iwn_read_eeprom_enhinfo(struct iwn_softc *);
 static struct ieee80211_node *iwn_node_alloc(struct ieee80211vap *,
 		    const uint8_t mac[IEEE80211_ADDR_LEN]);
 static void	iwn_newassoc(struct ieee80211_node *, int);
@@ -2201,31 +2201,54 @@ iwn_read_eeprom(struct iwn_softc *sc, uint8_t macaddr[IEEE80211_ADDR_LEN])
 		return error;
 	}
 
+	/*
+	 * PBSD: the three reads below are checked, ops->read_eeprom()
+	 * now returns int, and both are unwound through one exit rather
+	 * than returned past.
+	 *
+	 * iwn_read_prom_data() returns ETIMEDOUT or EIO BEFORE its first
+	 * store, so a failure leaves the caller's buffer untouched -
+	 * here that means the SKU capability word deciding whether 11n
+	 * is bonded out, the radio configuration the transmit and
+	 * receive chain masks come from, and the MAC address.
+	 *
+	 * And the unwind was already wrong for a different reason: the
+	 * OTPROM-init failure below returned with the ROM still LOCKED
+	 * by iwn_eeprom_lock() and the adapter still powered on by
+	 * iwn_apm_init(), and the bad-signature return above left it
+	 * powered on. Everything after each acquisition now leaves
+	 * through the label that releases it.
+	 */
 	if ((IWN_READ(sc, IWN_EEPROM_GP) & 0x7) == 0) {
 		device_printf(sc->sc_dev, "%s: bad ROM signature\n", __func__);
-		return EIO;
+		error = EIO;
+		goto poweroff;
 	}
 	if ((error = iwn_eeprom_lock(sc)) != 0) {
 		device_printf(sc->sc_dev, "%s: could not lock ROM, error %d\n",
 		    __func__, error);
-		return error;
+		goto poweroff;
 	}
 	if (sc->sc_flags & IWN_FLAG_HAS_OTPROM) {
 		if ((error = iwn_init_otprom(sc)) != 0) {
 			device_printf(sc->sc_dev,
 			    "%s: could not initialize OTPROM, error %d\n",
 			    __func__, error);
-			return error;
+			goto unlock;
 		}
 	}
 
-	iwn_read_prom_data(sc, IWN_EEPROM_SKU_CAP, &val, 2);
+	error = iwn_read_prom_data(sc, IWN_EEPROM_SKU_CAP, &val, 2);
+	if (error != 0)
+		goto unlock;
 	DPRINTF(sc, IWN_DEBUG_RESET, "SKU capabilities=0x%04x\n", le16toh(val));
 	/* Check if HT support is bonded out. */
 	if (val & htole16(IWN_EEPROM_SKU_CAP_11N))
 		sc->sc_flags |= IWN_FLAG_HAS_11N;
 
-	iwn_read_prom_data(sc, IWN_EEPROM_RFCFG, &val, 2);
+	error = iwn_read_prom_data(sc, IWN_EEPROM_RFCFG, &val, 2);
+	if (error != 0)
+		goto unlock;
 	sc->rfcfg = le16toh(val);
 	DPRINTF(sc, IWN_DEBUG_RESET, "radio config=0x%04x\n", sc->rfcfg);
 	/* Read Tx/Rx chains from ROM unless it's known to be broken. */
@@ -2235,40 +2258,61 @@ iwn_read_eeprom(struct iwn_softc *sc, uint8_t macaddr[IEEE80211_ADDR_LEN])
 		sc->rxchainmask = IWN_RFCFG_RXANTMSK(sc->rfcfg);
 
 	/* Read MAC address. */
-	iwn_read_prom_data(sc, IWN_EEPROM_MAC, macaddr, 6);
+	error = iwn_read_prom_data(sc, IWN_EEPROM_MAC, macaddr, 6);
+	if (error != 0)
+		goto unlock;
 
 	/* Read adapter-specific information from EEPROM. */
-	ops->read_eeprom(sc);
+	error = ops->read_eeprom(sc);
 
-	iwn_apm_stop(sc);	/* Power OFF adapter. */
-
+unlock:
 	iwn_eeprom_unlock(sc);
+poweroff:
+	iwn_apm_stop(sc);	/* Power OFF adapter. */
 
 	DPRINTF(sc, IWN_DEBUG_TRACE, "->%s end\n", __func__);
 
-	return 0;
+	return (error);
 }
 
-static void
+static int
 iwn4965_read_eeprom(struct iwn_softc *sc)
 {
 	uint32_t addr;
 	uint16_t val;
-	int i;
+	int error, i;
 
 	DPRINTF(sc, IWN_DEBUG_TRACE, "->%s begin\n", __func__);
 
+	/*
+	 * PBSD: every iwn_read_prom_data() here is checked, and the
+	 * method itself now returns int. It returns ETIMEDOUT when the
+	 * EEPROM does not answer in twenty tries and EIO on an
+	 * uncorrectable OTPROM ECC error, both BEFORE its first store,
+	 * so the caller's buffer is left untouched - and this function
+	 * used its results as the regulatory domain, the channel list,
+	 * the maximum transmit power, the per-group power samples and
+	 * the calibration voltage.
+	 */
+
 	/* Read regulatory domain (4 ASCII characters). */
-	iwn_read_prom_data(sc, IWN4965_EEPROM_DOMAIN, sc->eeprom_domain, 4);
+	error = iwn_read_prom_data(sc, IWN4965_EEPROM_DOMAIN,
+	    sc->eeprom_domain, 4);
+	if (error != 0)
+		return (error);
 
 	/* Read the list of authorized channels (20MHz & 40MHz). */
 	for (i = 0; i < IWN_NBANDS - 1; i++) {
 		addr = iwn4965_regulatory_bands[i];
-		iwn_read_eeprom_channels(sc, i, addr);
+		error = iwn_read_eeprom_channels(sc, i, addr);
+		if (error != 0)
+			return (error);
 	}
 
 	/* Read maximum allowed TX power for 2GHz and 5GHz bands. */
-	iwn_read_prom_data(sc, IWN4965_EEPROM_MAXPOW, &val, 2);
+	error = iwn_read_prom_data(sc, IWN4965_EEPROM_MAXPOW, &val, 2);
+	if (error != 0)
+		return (error);
 	sc->maxpwr2GHz = val & 0xff;
 	sc->maxpwr5GHz = val >> 8;
 	/* Check that EEPROM values are within valid range. */
@@ -2280,11 +2324,15 @@ iwn4965_read_eeprom(struct iwn_softc *sc)
 	    sc->maxpwr2GHz, sc->maxpwr5GHz);
 
 	/* Read samples for each TX power group. */
-	iwn_read_prom_data(sc, IWN4965_EEPROM_BANDS, sc->bands,
+	error = iwn_read_prom_data(sc, IWN4965_EEPROM_BANDS, sc->bands,
 	    sizeof sc->bands);
+	if (error != 0)
+		return (error);
 
 	/* Read voltage at which samples were taken. */
-	iwn_read_prom_data(sc, IWN4965_EEPROM_VOLTAGE, &val, 2);
+	error = iwn_read_prom_data(sc, IWN4965_EEPROM_VOLTAGE, &val, 2);
+	if (error != 0)
+		return (error);
 	sc->eeprom_voltage = (int16_t)le16toh(val);
 	DPRINTF(sc, IWN_DEBUG_RESET, "voltage=%d (in 0.3V)\n",
 	    sc->eeprom_voltage);
@@ -2298,6 +2346,8 @@ iwn4965_read_eeprom(struct iwn_softc *sc)
 #endif
 
 	DPRINTF(sc, IWN_DEBUG_TRACE, "->%s end\n", __func__);
+
+	return (0);
 }
 
 #ifdef IWN_DEBUG
@@ -2335,14 +2385,14 @@ iwn4965_print_power_group(struct iwn_softc *sc, int i)
 }
 #endif
 
-static void
+static int
 iwn5000_read_eeprom(struct iwn_softc *sc)
 {
 	struct iwn5000_eeprom_calib_hdr hdr;
 	int32_t volt;
 	uint32_t base, addr;
 	uint16_t val;
-	int i;
+	int error, i;
 
 	DPRINTF(sc, IWN_DEBUG_TRACE, "->%s begin\n", __func__);
 
@@ -2365,28 +2415,40 @@ iwn5000_read_eeprom(struct iwn_softc *sc)
 	 * Left as a task rather than half-done here.
 	 */
 	/* Read regulatory domain (4 ASCII characters). */
-	if (iwn_read_prom_data(sc, IWN5000_EEPROM_REG, &val, 2) != 0) {
+	error = iwn_read_prom_data(sc, IWN5000_EEPROM_REG, &val, 2);
+	if (error != 0) {
 		device_printf(sc->sc_dev,
 		    "could not read the EEPROM regulatory base\n");
-		return;
+		return (error);
 	}
 	base = le16toh(val);
-	iwn_read_prom_data(sc, base + IWN5000_EEPROM_DOMAIN,
+	error = iwn_read_prom_data(sc, base + IWN5000_EEPROM_DOMAIN,
 	    sc->eeprom_domain, 4);
+	if (error != 0)
+		return (error);
 
 	/* Read the list of authorized channels (20MHz & 40MHz). */
 	for (i = 0; i < IWN_NBANDS - 1; i++) {
 		addr =  base + sc->base_params->regulatory_bands[i];
-		iwn_read_eeprom_channels(sc, i, addr);
+		error = iwn_read_eeprom_channels(sc, i, addr);
+		if (error != 0)
+			return (error);
 	}
 
 	/* Read enhanced TX power information for 6000 Series. */
-	if (sc->base_params->enhanced_TX_power)
-		iwn_read_eeprom_enhinfo(sc);
+	if (sc->base_params->enhanced_TX_power) {
+		error = iwn_read_eeprom_enhinfo(sc);
+		if (error != 0)
+			return (error);
+	}
 
-	iwn_read_prom_data(sc, IWN5000_EEPROM_CAL, &val, 2);
+	error = iwn_read_prom_data(sc, IWN5000_EEPROM_CAL, &val, 2);
+	if (error != 0)
+		return (error);
 	base = le16toh(val);
-	iwn_read_prom_data(sc, base, &hdr, sizeof hdr);
+	error = iwn_read_prom_data(sc, base, &hdr, sizeof hdr);
+	if (error != 0)
+		return (error);
 	DPRINTF(sc, IWN_DEBUG_CALIBRATE,
 	    "%s: calib version=%u pa type=%u voltage=%u\n", __func__,
 	    hdr.version, hdr.pa_type, le16toh(hdr.volt));
@@ -2394,31 +2456,46 @@ iwn5000_read_eeprom(struct iwn_softc *sc)
 
 	if (sc->base_params->calib_need & IWN_FLG_NEED_PHY_CALIB_TEMP_OFFSETv2) {
 		sc->eeprom_voltage = le16toh(hdr.volt);
-		iwn_read_prom_data(sc, base + IWN5000_EEPROM_TEMP, &val, 2);
+		error = iwn_read_prom_data(sc, base + IWN5000_EEPROM_TEMP,
+		    &val, 2);
+		if (error != 0)
+			return (error);
 		sc->eeprom_temp_high=le16toh(val);
-		iwn_read_prom_data(sc, base + IWN5000_EEPROM_VOLT, &val, 2);
+		error = iwn_read_prom_data(sc, base + IWN5000_EEPROM_VOLT,
+		    &val, 2);
+		if (error != 0)
+			return (error);
 		sc->eeprom_temp = le16toh(val);
 	}
 
 	if (sc->hw_type == IWN_HW_REV_TYPE_5150) {
 		/* Compute temperature offset. */
-		iwn_read_prom_data(sc, base + IWN5000_EEPROM_TEMP, &val, 2);
+		error = iwn_read_prom_data(sc, base + IWN5000_EEPROM_TEMP,
+		    &val, 2);
+		if (error != 0)
+			return (error);
 		sc->eeprom_temp = le16toh(val);
-		iwn_read_prom_data(sc, base + IWN5000_EEPROM_VOLT, &val, 2);
+		error = iwn_read_prom_data(sc, base + IWN5000_EEPROM_VOLT,
+		    &val, 2);
+		if (error != 0)
+			return (error);
 		volt = le16toh(val);
 		sc->temp_off = sc->eeprom_temp - (volt / -5);
 		DPRINTF(sc, IWN_DEBUG_CALIBRATE, "temp=%d volt=%d offset=%dK\n",
 		    sc->eeprom_temp, volt, sc->temp_off);
 	} else {
 		/* Read crystal calibration. */
-		iwn_read_prom_data(sc, base + IWN5000_EEPROM_CRYSTAL,
+		error = iwn_read_prom_data(sc, base + IWN5000_EEPROM_CRYSTAL,
 		    &sc->eeprom_crystal, sizeof (uint32_t));
+		if (error != 0)
+			return (error);
 		DPRINTF(sc, IWN_DEBUG_CALIBRATE, "crystal calibration 0x%08x\n",
 		    le32toh(sc->eeprom_crystal));
 	}
 
 	DPRINTF(sc, IWN_DEBUG_TRACE, "->%s end\n", __func__);
 
+	return (0);
 }
 
 /*
@@ -2554,13 +2631,24 @@ iwn_read_eeprom_ht40(struct iwn_softc *sc, int n, int maxchans, int *nchans,
 
 }
 
-static void
+static int
 iwn_read_eeprom_channels(struct iwn_softc *sc, int n, uint32_t addr)
 {
 	struct ieee80211com *ic = &sc->sc_ic;
+	int error;
 
-	iwn_read_prom_data(sc, addr, &sc->eeprom_channels[n],
+	/*
+	 * PBSD: the channel list is what the regulatory domain is built
+	 * from. A failed read here left sc->eeprom_channels[n] holding
+	 * whatever it held before - zeroes on the first pass, the
+	 * PREVIOUS BAND's channels on any later one, since the array is
+	 * indexed per band and iwn_read_eeprom_band() walks it
+	 * regardless.
+	 */
+	error = iwn_read_prom_data(sc, addr, &sc->eeprom_channels[n],
 	    iwn_bands[n].nchan * sizeof (struct iwn_eeprom_chan));
+	if (error != 0)
+		return (error);
 
 	if (n < 5) {
 		iwn_read_eeprom_band(sc, n, IEEE80211_CHAN_MAX, &ic->ic_nchans,
@@ -2570,6 +2658,8 @@ iwn_read_eeprom_channels(struct iwn_softc *sc, int n, uint32_t addr)
 		    ic->ic_channels);
 	}
 	ieee80211_sort_channels(ic->ic_channels, ic->ic_nchans);
+
+	return (0);
 }
 
 static struct iwn_eeprom_chan *
@@ -2639,7 +2729,7 @@ iwn_setregdomain(struct ieee80211com *ic, struct ieee80211_regdomain *rd,
 	return 0;
 }
 
-static void
+static int
 iwn_read_eeprom_enhinfo(struct iwn_softc *sc)
 {
 	struct iwn_eeprom_enhinfo enhinfo[35];
@@ -2648,14 +2738,25 @@ iwn_read_eeprom_enhinfo(struct iwn_softc *sc)
 	uint16_t val, base;
 	int8_t maxpwr;
 	uint8_t flags;
-	int i, j;
+	int error, i, j;
 
 	DPRINTF(sc, IWN_DEBUG_TRACE, "->%s begin\n", __func__);
 
-	iwn_read_prom_data(sc, IWN5000_EEPROM_REG, &val, 2);
+	/*
+	 * PBSD: checked, and the method returns int. `enhinfo' is 35
+	 * structures on the kernel stack, and the loop below walks every
+	 * one of them - flags, three per-chain limits, two MIMO limits -
+	 * to set the maximum transmit power of each channel. An
+	 * unchecked read left all of it whatever the frame held.
+	 */
+	error = iwn_read_prom_data(sc, IWN5000_EEPROM_REG, &val, 2);
+	if (error != 0)
+		return (error);
 	base = le16toh(val);
-	iwn_read_prom_data(sc, base + IWN6000_EEPROM_ENHINFO,
+	error = iwn_read_prom_data(sc, base + IWN6000_EEPROM_ENHINFO,
 	    enhinfo, sizeof enhinfo);
+	if (error != 0)
+		return (error);
 
 	for (i = 0; i < nitems(enhinfo); i++) {
 		flags = enhinfo[i].flags;
@@ -2705,6 +2806,7 @@ iwn_read_eeprom_enhinfo(struct iwn_softc *sc)
 
 	DPRINTF(sc, IWN_DEBUG_TRACE, "->%s end\n", __func__);
 
+	return (0);
 }
 
 static struct ieee80211_node *

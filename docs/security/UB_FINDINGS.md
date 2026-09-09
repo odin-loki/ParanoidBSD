@@ -11462,3 +11462,73 @@ fifteen. Deleting the caches to be sure they were fresh cost more than
 it could ever have saved, and the reason it looked like progress at the
 time is that a stalled sweep and a slow one produce the same output:
 nothing.
+
+---
+
+## `iwn`: all eighteen, and the lock the failure path never released
+
+The earlier commit fixed one of `iwn_read_prom_data()`'s eighteen call
+sites — the one producing `base`, the address every later read uses —
+and left the other seventeen with the reason stated: the `read_eeprom`
+method is `void`, so propagating an error means changing the ops
+signature and both implementations, and half-doing it would leave the
+file looking checked where it is not.
+
+Done properly now. `int (*read_eeprom)(struct iwn_softc *)` in
+`if_iwnvar.h:206`, and `iwn4965_read_eeprom`, `iwn5000_read_eeprom`,
+`iwn_read_eeprom_channels` and `iwn_read_eeprom_enhinfo` all return
+`int` and check every read. **20 of 20 calls checked**, up from 1.
+
+What each unchecked read had been feeding, when the EEPROM timed out or
+the OTPROM reported an uncorrectable ECC error:
+
+| | |
+|---|---|
+| `IWN_EEPROM_SKU_CAP` | whether 11n is bonded out |
+| `IWN_EEPROM_RFCFG` | the transmit and receive chain masks |
+| `IWN_EEPROM_MAC` | the MAC address |
+| `IWN4965_EEPROM_DOMAIN`, `IWN5000_EEPROM_DOMAIN` | the regulatory domain |
+| `iwn_read_eeprom_channels` | the channel list — and note the array is indexed **per band**, so a failure on band *n* leaves band *n−1*'s channels there, not zeroes |
+| `IWN4965_EEPROM_MAXPOW` | maximum transmit power for 2GHz and 5GHz |
+| `IWN4965_EEPROM_BANDS` | the per-group power samples |
+| `IWN5000_EEPROM_CAL` and the header at `base` | the calibration version and voltage |
+| `IWN5000_EEPROM_TEMP`, `_VOLT`, `_CRYSTAL` | temperature offset and crystal calibration |
+| `iwn_read_eeprom_enhinfo` | **35 structures on the kernel stack**, every one walked for per-channel transmit power |
+
+### And a lock leak the reading found
+
+`iwn_read_eeprom()` acquires two things and released neither on failure:
+
+```c
+	if ((error = iwn_apm_init(sc)) != 0)
+		return error;                    /* adapter now powered ON */
+
+	if ((IWN_READ(sc, IWN_EEPROM_GP) & 0x7) == 0)
+		return EIO;                      /* ...and left powered on */
+
+	if ((error = iwn_eeprom_lock(sc)) != 0)
+		return error;                    /* ...still powered on */
+
+	if (sc->sc_flags & IWN_FLAG_HAS_OTPROM) {
+		if ((error = iwn_init_otprom(sc)) != 0)
+			return error;            /* ROM LOCKED, adapter on */
+	}
+```
+
+The success path ends with `iwn_apm_stop(sc); iwn_eeprom_unlock(sc);`.
+Every failure path skipped both. Now there are two labels — `unlock:`
+after the lock is taken, `poweroff:` after the power-on — and every exit
+goes through the one that matches what it holds.
+
+That was not a finding. It was visible only because propagating the
+error meant reading every exit from the function.
+
+```
+--scope sys/dev/iwn   0 findings -> 0   1 unit, OK on both sides
+```
+
+The count does not move: the one finding was cleared by the earlier
+commit, and the other seventeen were never reported — the analyser flags
+a discarded return only when the unwritten value then reaches a
+comparison or an assignment it tracks, and most of these land in softc
+fields.

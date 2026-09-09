@@ -1016,12 +1016,28 @@ FIXES = {
     ],
     "hbsd/src/sys/dev/iwn/if_iwn.c": [
         (
-            "PBSD: check this one. iwn_read_prom_data() returns",
-            "\t/* Read regulatory domain (4 ASCII characters). */\n\tiwn_read_prom_data(sc, IWN5000_EEPROM_REG, &val, 2);\n",
+            ("PBSD: the three reads below are checked", 1),
+            "\tvoid\t\t(*read_eeprom)(struct iwn_softc *);\n",
             "iwn_read_prom_data() returns ETIMEDOUT or EIO without "
-            "writing the caller's buffer, and this call produces "
-            "`base' - the address every later EEPROM read in "
-            "iwn5000_read_eeprom() uses",
+            "writing the caller's buffer, and seventeen of its eighteen "
+            "call sites discarded that; read_eeprom is now int and "
+            "every one is checked",
+        ),
+        (
+            # The read_eeprom method itself, in the other file. If a
+            # resync brings back `void (*read_eeprom)', the .c will not
+            # compile - but the marks check should say so first.
+            "PBSD: every iwn_read_prom_data() here is checked",
+            None,
+            "iwn4965_read_eeprom() checks all four of its reads and the "
+            "channel loop",
+        ),
+        (
+            "PBSD: checked, and the method returns int.",
+            None,
+            "iwn_read_eeprom_enhinfo() fills 35 structures on the stack "
+            "and walks every one of them to set per-channel transmit "
+            "power",
         ),
     ],
     "hbsd/src/sys/dev/ti/if_ti.c": [
