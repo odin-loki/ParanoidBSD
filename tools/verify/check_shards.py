@@ -85,6 +85,20 @@ UNCHECKED = {
     "usr.sbin":   "analysed since sweep 18; not model-checked yet",
 }
 
+# Analyse shards deliberately run WITHOUT --check-errors, and why. A
+# shard missing the flag and missing from this table fails the gate.
+#
+# It was `progs' for two sweeps, while 133 of its 1,862 translation units
+# did not compile and an inventory of them would have gone stale faster
+# than it was written. The table is empty because that hole is filled --
+# and because of what turned up the moment the flag went on: sweep 19
+# failed on usr.sbin/gssd/gssd.c, which had never compiled in eighteen
+# sweeps, and nothing else had noticed. A shard without this flag is a
+# shard where a file that does not compile reads exactly like a clean
+# one, which is the same lie this whole script exists to catch, one level
+# down.
+UNGATED: dict[str, str] = {}
+
 
 def main() -> int:
     if not WF.is_file() or not SYS.is_dir():
@@ -151,6 +165,32 @@ def main() -> int:
         else:
             print(f"ok    every top-level directory is in a {job} shard or "
                   f"on the record ({len(excused)} listed)")
+
+    # Every analyse shard carries --check-errors, or says why not.
+    shards = re.findall(r"\{\s*name:\s*(\w+),.*?check:\s*'([^']*)'",
+                        blocks["analyse"])
+    if not shards:
+        bad = True
+        print("FAIL  no analyse shard matched: the matrix shape changed "
+              "and this check is reading nothing")
+    ungated = sorted(n for n, c in shards
+                     if "--check-errors" not in c and n not in UNGATED)
+    if ungated:
+        bad = True
+        print(f"FAIL  {len(ungated)} analyse shard(s) run without "
+              f"--check-errors and are not in UNGATED:")
+        for n in ungated:
+            print(f"      {n}")
+    else:
+        print(f"ok    all {len(shards)} analyse shards carry "
+              f"--check-errors ({len(UNGATED)} excused)")
+    stale = sorted(n for n in UNGATED
+                   if any(x == n and "--check-errors" in c
+                          for x, c in shards))
+    if stale:
+        bad = True
+        print(f"FAIL  {len(stale)} UNGATED entry(ies) name a shard that "
+              f"DOES carry the flag: {', '.join(stale)}")
 
     # A stale UNANALYSED entry is its own kind of lie.
     gone = sorted(d for d in (UNANALYSED | UNCHECKED)

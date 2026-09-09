@@ -231,14 +231,21 @@ jobs:
       matrix:
         include:
           - { name: libs,   scopes: '--scope lib/libc --scope lib/msun --scope libexec', check: '--check-errors' }
-          # bin, sbin, usr.bin and usr.sbin. --check-errors is NOT passed
-          # for this shard (see the analyse step below): 133 of its 1,862
-          # translation units still do not compile, in seven named
-          # classes, and an inventory of a hole that is still being
-          # filled goes stale faster than it is written. The shard runs
-          # so that the FINDINGS are collected; the ERROR set joins the
-          # gate when the classes are gone.
-          - { name: progs,  scopes: '--scope bin --scope sbin --scope usr.bin --scope usr.sbin', check: '' }
+          # bin, sbin, usr.bin and usr.sbin. This shard ran WITHOUT
+          # --check-errors while its hole was being filled: 133 of its
+          # 1,862 translation units did not compile, in seven named
+          # classes, and an inventory of a hole still being dug goes
+          # stale faster than it is written. The condition that comment
+          # set was "when the classes are gone", and they are: sweep 20
+          # reports 1,822 OK and 40 ERROR, every one of the forty on the
+          # record in expected_errors.py.
+          #
+          # It is not a formality. The first run collected WITH the flag,
+          # sweep 19, failed on usr.sbin/gssd/gssd.c -- which had never
+          # compiled, because krb5/krb5.h resolved to a stub that
+          # includes krb5/krb5.h. Nothing else had noticed in eighteen
+          # sweeps. This was the one shard without the gate.
+          - { name: progs,  scopes: '--scope bin --scope sbin --scope usr.bin --scope usr.sbin', check: '--check-errors' }
           - { name: kern,   scopes: '--scope sys/kern --scope sys/vm --scope sys/net --scope sys/netinet --scope sys/netinet6', check: '--check-errors' }
           - { name: fs,     scopes: '--scope sys/fs --scope sys/ufs --scope sys/geom --scope sys/cam --scope sys/security --scope sys/cddl', check: '--check-errors' }
           - { name: dev,    scopes: '--scope sys/dev', check: '--check-errors' }

@@ -14744,3 +14744,38 @@ block above sets on both of its arms — `vp = NULL` explicitly, or through
 `nfsd_fhtovp()`, whose first statement is `*vpp = NULL`. The read at
 `:641` is in the `else` of `if (nd->nd_flag & ND_NFSV4)`, the same
 predicate. Same reason, same verdict.
+
+### The shard without the gate
+
+`progs` — `bin`, `sbin`, `usr.bin`, `usr.sbin` — was the one analyse
+shard in `.github/workflows/pbsd-verify.yml` that ran without
+`--check-errors`. The comment beside it said why, and set a condition:
+
+> 133 of its 1,862 translation units still do not compile, in seven
+> named classes, and an inventory of a hole that is still being filled
+> goes stale faster than it is written. The shard runs so that the
+> FINDINGS are collected; the ERROR set joins the gate when the classes
+> are gone.
+
+They are gone. Sweep 20 reports 1,822 OK and 40 ERROR, every one of the
+forty on the record in `expected_errors.py`. The flag is on.
+
+It is not a formality, and the evidence is `usr.sbin/gssd/gssd.c`: the
+first run of this shard collected *with* the flag — sweep 19 — failed on
+it, and it had never compiled in eighteen sweeps. Nothing else had
+noticed, because a file that does not compile reports zero findings and
+is indistinguishable from a clean one. **This was the one shard where
+that could happen.**
+
+So the exemption gets a gate of its own. `check_shards.py` now reads the
+analyse matrix and fails when a shard runs without `--check-errors` and
+is not in an `UNGATED` table — which is empty. It also fails when an
+`UNGATED` entry names a shard that *does* carry the flag (a stale
+exemption, the same shape the rest of that script was written to catch),
+and when the matrix regex matches nothing at all, because a check reading
+zero shards passes silently.
+
+All three verified by deliberate breakage: removing the flag from `progs`
+fails the first, adding `progs` to `UNGATED` fails the second, renaming
+the matrix key from `name:` to `nom:` fails the third, and the file
+restored passes all of them.
