@@ -3368,6 +3368,26 @@ FIXES = {
         "init block named neither updates_low nor updates_high, which "
         "index the chunk walk and the updates_mask bzero",
     ),
+
+    "hbsd/src/sys/net/if_bridge.c": (
+        "\t\t\tif_inc_counter(ifp, IFCOUNTER_IERRORS, 1);\n\t\t\tm_freem(m);",
+        "m = m_pullup(m, ETHER_HDR_LEN);\n\t\tif (m == NULL) {\n\t\t\tif_inc_counter(sc->sc_ifp",
+        "bridge_input: the m_pullup() failure path counted on sc->sc_ifp "
+        "with sc declared NULL and not assigned until after that block",
+    ),
+    "hbsd/src/sys/netinet/cc/cc_newreno.c": (
+        ("\t\tif (nreno != NULL &&\n\t\t    (nreno->newreno_flags & CC_NEWRENO_HYSTART_ENABLED)) {", 2),
+        "\t\tif (nreno->newreno_flags & CC_NEWRENO_HYSTART_ENABLED) {",
+        "newreno_cong_signal: the CC_NDUPACK and CC_ECN arms dereferenced "
+        "nreno unguarded, in a function whose first three lines all test "
+        "it for NULL because newreno_cb_init() can leave cc_data NULL",
+    ),
+    "hbsd/src/sys/kern/subr_firmware.c": (
+        "\t\tif (fp->fw.name == NULL)\n\t\t\tcontinue;\n\t\tif (strcasecmp(name, fp->fw.name) == 0)",
+        "\t\tif (fp->fw.name != NULL && strcasecmp(name, fp->fw.name) == 0)",
+        "lookup(): the absolute-path test dereferenced fw.name on exactly "
+        "the path where the NULL check above it had just failed",
+    ),
 }
 
 

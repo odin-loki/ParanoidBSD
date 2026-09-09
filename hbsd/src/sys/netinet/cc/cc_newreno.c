@@ -395,7 +395,15 @@ newreno_cong_signal(struct cc_var *ccv, ccsignal_t type)
 
 	switch (type) {
 	case CC_NDUPACK:
-		if (nreno->newreno_flags & CC_NEWRENO_HYSTART_ENABLED) {
+		/*
+		 * PBSD: nreno may be NULL.  The three lines that compute
+		 * beta, beta_ecn and factor at the top of this function all
+		 * test for it -- newreno_cb_init() returns ENOMEM with
+		 * cc_data left NULL when its M_NOWAIT allocation fails --
+		 * and then these two arms dereferenced it unguarded.
+		 */
+		if (nreno != NULL &&
+		    (nreno->newreno_flags & CC_NEWRENO_HYSTART_ENABLED)) {
 			/* Make sure the flags are all off we had a loss */
 			nreno->newreno_flags &= ~CC_NEWRENO_HYSTART_ENABLED;
 			nreno->newreno_flags &= ~CC_NEWRENO_HYSTART_IN_CSS;
@@ -414,7 +422,15 @@ newreno_cong_signal(struct cc_var *ccv, ccsignal_t type)
 		}
 		break;
 	case CC_ECN:
-		if (nreno->newreno_flags & CC_NEWRENO_HYSTART_ENABLED) {
+		/*
+		 * PBSD: nreno may be NULL.  The three lines that compute
+		 * beta, beta_ecn and factor at the top of this function all
+		 * test for it -- newreno_cb_init() returns ENOMEM with
+		 * cc_data left NULL when its M_NOWAIT allocation fails --
+		 * and then these two arms dereferenced it unguarded.
+		 */
+		if (nreno != NULL &&
+		    (nreno->newreno_flags & CC_NEWRENO_HYSTART_ENABLED)) {
 			/* Make sure the flags are all off we had a loss */
 			nreno->newreno_flags &= ~CC_NEWRENO_HYSTART_ENABLED;
 			nreno->newreno_flags &= ~CC_NEWRENO_HYSTART_IN_CSS;

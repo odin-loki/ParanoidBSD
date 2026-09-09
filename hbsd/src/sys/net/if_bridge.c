@@ -2862,7 +2862,18 @@ bridge_input(struct ifnet *ifp, struct mbuf *m)
 	if (m->m_len < ETHER_HDR_LEN) {
 		m = m_pullup(m, ETHER_HDR_LEN);
 		if (m == NULL) {
-			if_inc_counter(sc->sc_ifp, IFCOUNTER_IERRORS, 1);
+			/*
+			 * PBSD: count on the member interface.  sc is NULL
+			 * here and provably so -- it is declared NULL and
+			 * not assigned until after this block, from
+			 * ifp->if_bridge -- so `sc->sc_ifp' read a field
+			 * offset from address zero on the bridge receive
+			 * path, which m_pullup() reaches whenever it cannot
+			 * get an mbuf or the frame is shorter than an
+			 * Ethernet header.  (m_freem(NULL) is a no-op; the
+			 * call is left where it was.)
+			 */
+			if_inc_counter(ifp, IFCOUNTER_IERRORS, 1);
 			m_freem(m);
 			return (NULL);
 		}

@@ -159,7 +159,18 @@ lookup(const char *name)
 	mtx_assert(&firmware_mtx, MA_OWNED);
 
 	LIST_FOREACH(fp, &firmware_table, link) {
-		if (fp->fw.name != NULL && strcasecmp(name, fp->fw.name) == 0)
+		/*
+		 * PBSD: one NULL check for both uses of fw.name.  The test
+		 * below used to carry `fp->fw.name != NULL' as its first
+		 * conjunct, and the absolute-path test a few lines further
+		 * down -- reached exactly when that conjunct is false --
+		 * dereferenced it anyway.  The file comment above, and the
+		 * MOD_UNLOAD arm of firmware_modevent(), both treat a NULL
+		 * name as something that happens.
+		 */
+		if (fp->fw.name == NULL)
+			continue;
+		if (strcasecmp(name, fp->fw.name) == 0)
 			break;
 
 		/*

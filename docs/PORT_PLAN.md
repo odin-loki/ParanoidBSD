@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 248,272 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,339 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,497,221 | 81,387 |
+| 8 | `sys` | 14,951 | 10,497,259 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,891** | **114,204** |
+| | **total** | **41,143** | **21,298,929** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -117582,7 +117582,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1191.133.16 `apply_filter_min_small()` · `TODO-FN`
   - [ ] 8.1191.133.17 `apply_filter_max()` · `TODO-FN`
   - [ ] 8.1191.133.18 `apply_filter_max_small()` · `TODO-FN`
-- [ ] **8.1191.134** `subr_firmware.c` · 660L gen:5 · `TODO-PORT` · 13 fn
+- [ ] **8.1191.134** `subr_firmware.c` · 671L gen:5 · `TODO-PORT` · 13 fn
   - [ ] 8.1191.134.1 `lookup()` · `TODO-FN`
   - [ ] 8.1191.134.2 `firmware_register()` · `TODO-FN`
   - [ ] 8.1191.134.3 `firmware_unregister()` · `TODO-FN`
@@ -120942,7 +120942,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.1200.24** `if.c` · 5,270L gen:26 · `TODO-PORT`
 - [ ] **8.1200.25** `if.h` · 704L gen:2 · `TODO-HDR`
 - [ ] **8.1200.26** `if_arp.h` · 133L gen:1 · `TODO-HDR`
-- [ ] **8.1200.27** `if_bridge.c` · 4,477L gen:35 · `TODO-PORT`
+- [ ] **8.1200.27** `if_bridge.c` · 4,488L gen:35 · `TODO-PORT`
 - [ ] **8.1200.28** `if_bridgevar.h` · 378L · `TODO-HDR`
 - [ ] **8.1200.29** `if_clone.c` · 966L gen:3 · `TODO-PORT` · 40 fn
   - [ ] 8.1200.29.1 `ifc_create_ifp()` · `TODO-FN`
@@ -126689,7 +126689,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1214.9.10 `htcp_record_rtt()` · `TODO-FN`
   - [ ] 8.1214.9.11 `htcp_ssthresh_update()` · `TODO-FN`
 - [ ] **8.1214.10** `cc_module.h` · 60L · `TODO-HDR`
-- [ ] **8.1214.11** `cc_newreno.c` · 603L gen:8 · `TODO-PORT` · 11 fn
+- [ ] **8.1214.11** `cc_newreno.c` · 619L gen:8 · `TODO-PORT` · 11 fn
   - [ ] 8.1214.11.1 `newreno_log_hystart_event()` · `TODO-FN`
   - [ ] 8.1214.11.2 `newreno_data_sz()` · `TODO-FN`
   - [ ] 8.1214.11.3 `newreno_cb_init()` · `TODO-FN`

@@ -15053,3 +15053,70 @@ stayed.
 
 Neither is a reason to write the fix differently. A finding that
 survives a correct fix is a statement about the instrument.
+
+### Three the NullDereference class had after all
+
+The first reading of the kern shard treated `core.NullDereference` as
+task #51's premise-heavy class and went at the other 80 findings. That
+was the right order — but "premise-heavy" is not "empty", and reading
+the class properly afterwards found three.
+
+The class breaks down: 90 of the 169 are two `ARB_GENERATE_STATIC` lines
+in `subr_stats.c` and seven more are `<something>_RB_INSERT_COLOR`, all
+red-black rebalance macro expansions, the class this document has
+described twice already. Five are inline functions in headers
+(`refcount.h`, `atomic.h`, `vm_page.h`, `vm_pager.h`, `sf_buf.h`) reached
+from a caller whose pointer the analyser cannot constrain. Six are
+`LOCK_CLASS()` dispatch tables that are not `const` — task #88. Thirteen
+are the `t_port`/`sc_port`/`crte` predicate in `rack.c` and
+`tcp_syncache.c`. That leaves 48 read one at a time.
+
+`bridge_input()` declares `struct bridge_softc *sc = NULL` and does not
+assign it until after the header-pullup block — but that block's failure
+path does `if_inc_counter(sc->sc_ifp, IFCOUNTER_IERRORS, 1)`. `sc` is
+provably NULL there. `m_pullup()` returns NULL when it cannot get an
+mbuf or when the whole chain is shorter than an Ethernet header, so a
+runt frame or mbuf exhaustion is a NULL dereference on the bridge
+receive path. The counter now goes on the member interface, which is
+what the function actually has at that point.
+
+`newreno_cong_signal()` opens by computing `beta`, `beta_ecn` and
+`factor`, and all three lines test `nreno == NULL` — because
+`newreno_cb_init()` returns ENOMEM with `ccv->cc_data` left NULL when its
+`M_NOWAIT` allocation fails. Twenty lines later the `CC_NDUPACK` and
+`CC_ECN` arms dereference `nreno->newreno_flags` with no guard at all.
+A function that establishes its own premise and then ignores it.
+
+`lookup()` in `subr_firmware.c` tests `fp->fw.name != NULL &&
+strcasecmp(...)`, and then, a few lines below — on exactly the path where
+that first conjunct was false — dereferences `*fp->fw.name` to see
+whether the name looks like an absolute path. The guard-on-one-of-a-pair
+shape, in a file whose own header comment and whose `MOD_UNLOAD` arm both
+treat a NULL name as a thing that happens. One check now covers both
+uses.
+
+```
+              before   after
+findings         215     211      (sys/kern, sys/net, sys/netinet)
+```
+
+All four from the three files, nothing else moved, `--check-errors` still
+passes.
+
+The rest of the 48 are premises, and two are worth naming because they
+are the same fail-open shape as `sbsetopt()` above and were left alone
+rather than fixed. `unp_dispose()` switches on `so->so_type` over
+SOCK_DGRAM, SOCK_STREAM and SOCK_SEQPACKET with no `default`, leaving
+`sb` and `m` undefined for anything else — dead, because AF_UNIX creates
+no other type, and there is no fail-closed action for a dispose path.
+`init_sockaddrs_family()` is the other, described above. The remainder
+are unconstrained parameters (`m_collapse()`, `sl_uncompress_tcp_core()`,
+`pim_register_send()`, `slab_free_item()`, `HandleCFIBadType()`),
+out-parameters written in another translation unit (`kern_idle.c`'s
+`kproc_kthread_add()`), and predicates the analyser lost across an
+intervening call (`in6_control_ioctl()`'s `if_afdata[AF_INET6]` guard,
+`tcp_subr.c`'s two switches on `addrs[0].ss_family`, `pfil_link()`'s
+`PFIL_IN`). Two carry the original author's own note that they knew:
+`rn_walktree_from()`'s `last = NULL; /* shut up gcc */`, safe because a
+radix head's top node is always internal, and `vsscanf()`'s `ccfn = NULL;
+/* XXX just to keep gcc happy */`.
