@@ -11316,3 +11316,50 @@ same effect.
 ```
 
 `sys/dev/hid` is clean.
+
+---
+
+## `cyapawrite`: two findings, one initialiser
+
+`cyapa.c:888` and `:1113`, both `core.UndefinedBinaryOperatorResult`, in
+a Cypress trackpad's `d_write`.
+
+```c
+	int error;
+	...
+	while ((n = fifo_space(sc, &sc->wfifo)) > 0 && uio->uio_resid) {
+		...
+		error = uiomove(ptr, n, uio);
+		...
+	}
+
+	/* Handle commands */
+	cmd_completed = (fifo_ready(sc, &sc->wfifo) != 0);
+	while (fifo_ready(sc, &sc->wfifo) && cmd_completed && error == 0) {
+```
+
+`error` is assigned only inside the copy-in loop, whose condition is
+"there is FIFO space **and** the caller has bytes left". A write issued
+when the FIFO is already full, or a zero-length write, runs no body —
+and the command loop's condition, and the function's return, are then
+decided by a stack slot. `write(fd, buf, 0)` on `/dev/cyapa*` is the
+second of those.
+
+The same shape as `u2f_read` and `cp2112iic_transfer` above: a value set
+only inside a loop whose guard can be false on entry. One `= 0` clears
+both findings.
+
+```
+--scope sys/dev/cyapa   2 findings -> 0   1 unit, OK on both sides
+```
+
+### And the `ntb_transport` divisions, read and left alone
+
+`ntb_transport.c:604` and `:1337` are `core.DivideZero` on
+`QP_TO_MW(nt, qp)`, which is `((qp) % nt->mw_count)`. `mw_count` cannot
+be zero by the time either runs, but only through a chain of three
+guards a hundred lines earlier in `ntb_transport_attach()`: zero is
+rejected outright with `ENXIO`; the compact path requires
+`spad_count >= 3` before it can assign `spad_count - 2`; the other path
+requires `spad_count >= 6` before assigning `(spad_count - 4) / 2`. Both
+floors give at least 1. The analyser follows none of it.

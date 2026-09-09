@@ -858,7 +858,18 @@ static int
 cyapawrite(struct cdev *dev, struct uio *uio, int ioflag)
 {
 	struct cyapa_softc *sc;
-	int error;
+	/*
+	 * PBSD: error = 0. It is assigned only inside
+	 *
+	 *	while ((n = fifo_space(sc, &sc->wfifo)) > 0 && uio->uio_resid)
+	 *
+	 * and read straight after it by the command loop's
+	 * `... && error == 0' and by the return at the end. A write
+	 * whose FIFO is already full, or a zero-length write, runs no
+	 * body and decides both on a stack slot. write(fd, buf, 0) on
+	 * /dev/cyapa* is the second of those.
+	 */
+	int error = 0;
 	int cmd_completed;
 	size_t n;
 	uint8_t c0;

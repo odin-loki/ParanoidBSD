@@ -1082,6 +1082,15 @@ FIXES = {
             "device",
         ),
     ],
+    "hbsd/src/sys/dev/cyapa/cyapa.c": [
+        (
+            "PBSD: error = 0. It is assigned only inside",
+            "\tstruct cyapa_softc *sc;\n\tint error;\n",
+            "cyapawrite() assigns error only inside the copy-in loop "
+            "and reads it in the command loop's condition and at the "
+            "return; a full FIFO or a zero-length write runs no body",
+        ),
+    ],
     "hbsd/src/sys/dev/hid/hmt.c": [
         (
             "PBSD: rsize = 0, and the two guards below now test it.",
