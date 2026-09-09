@@ -1004,6 +1004,16 @@ FIXES = {
             "label to decide whether to wait for the bus",
         ),
     ],
+    "hbsd/src/sys/dev/ntb/ntb_hw/ntb_hw_intel.c": [
+        (
+            "PBSD: check these. intel_ntb_spad_read() returns EINVAL",
+            "\tintel_ntb_spad_read(ntb->device, NTB_MSIX_GUARD, &val);\n",
+            "intel_ntb_spad_read() returns EINVAL without writing *val "
+            "when the scratchpad index is past ntb->spad_count, and "
+            "intel_ntb_exchange_msix() discarded that on four calls - "
+            "two of which write the peer's MSI-X address and data",
+        ),
+    ],
     "hbsd/src/sys/dev/iwn/if_iwn.c": [
         (
             "PBSD: check this one. iwn_read_prom_data() returns",

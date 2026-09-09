@@ -11190,3 +11190,69 @@ where it is not.
 ```
 
 Both sides at the same scope, per the `ti_copy_scratch` note above.
+
+---
+
+## `intel_ntb_exchange_msix`: the peer's interrupt address, from a stack word
+
+`ntb_hw_intel.c:3413` and `:3430`.
+
+```c
+static int
+intel_ntb_spad_read(device_t dev, unsigned int idx, uint32_t *val)
+{
+	struct ntb_softc *ntb = device_get_softc(dev);
+
+	if (idx >= ntb->spad_count)
+		return (EINVAL);
+
+	*val = intel_ntb_reg_read(4, ntb->self_reg->spad + idx * 4);
+
+	return (0);
+}
+```
+
+The bounds check returns **before** the write. All four calls in
+`intel_ntb_exchange_msix()` discarded the return:
+
+```c
+	intel_ntb_spad_read(ntb->device, NTB_MSIX_GUARD, &val);
+	if (val != NTB_MSIX_VER_GUARD)                      /* :3413 */
+		goto reschedule;
+
+	for (i = 0; i < XEON_NONLINK_DB_MSIX_BITS; i++) {
+		intel_ntb_spad_read(ntb->device, NTB_MSIX_DATA0 + i, &val);
+		ntb->peer_msix_data[i].nmd_data = val;
+		intel_ntb_spad_read(ntb->device, NTB_MSIX_OFS0 + i, &val);
+		ntb->peer_msix_data[i].nmd_ofs = val;
+	}
+	...
+	intel_ntb_spad_read(ntb->device, NTB_MSIX_DONE, &val);
+	if (val != NTB_MSIX_RECEIVED)                       /* :3430 */
+		goto reschedule;
+```
+
+The indices are fixed by the MSI-X handshake protocol; `spad_count`
+comes from the hardware. On a device with fewer scratchpad registers
+than the protocol uses, every one of these fails, and:
+
+- the two guard comparisons decide the handshake on a stack word — the
+  two findings the analyser reports;
+- and the two reads in the loop go straight into
+  `ntb->peer_msix_data[i]`, which is the **address and data this driver
+  later writes to signal the peer**. Those two are not reported at all,
+  because their destination is a struct field rather than a comparison,
+  and they are the reason this is worth more than tidiness.
+
+Every call now checks and takes `reschedule` — the path the function
+already uses when the peer is not ready, which is the right answer for a
+read that did not happen.
+
+```
+--scope sys/dev/ntb   8 findings -> 6   7 units, OK on both sides
+  gone: ntb_hw_intel.c:3413, :3430
+```
+
+Both sides at the same scope. What remains is `ntb_hw_amd.c:697`,
+`ntb_transport.c:467`, `:604`, `:1337` and two in `ntb_tool.c`, all
+unread.

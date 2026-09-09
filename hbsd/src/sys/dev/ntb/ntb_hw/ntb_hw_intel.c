@@ -3409,15 +3409,40 @@ intel_ntb_exchange_msix(void *ctx)
 	}
 	intel_ntb_peer_spad_write(ntb->device, NTB_MSIX_GUARD, NTB_MSIX_VER_GUARD);
 
-	intel_ntb_spad_read(ntb->device, NTB_MSIX_GUARD, &val);
+	/*
+	 * PBSD: check these. intel_ntb_spad_read() returns EINVAL
+	 * without writing *val when the scratchpad index is at or past
+	 * ntb->spad_count, and every call in this function discarded
+	 * that. The indices here are fixed by the MSI-X handshake
+	 * protocol (NTB_MSIX_GUARD, NTB_MSIX_DATA0 + i, NTB_MSIX_OFS0 +
+	 * i, NTB_MSIX_DONE) while spad_count comes from the hardware, so
+	 * on a device with fewer scratchpads than the protocol needs
+	 * every one of them fails and leaves `val' a stack word.
+	 *
+	 * Two consequences, and the second is the reason this is not
+	 * just tidiness: the guard comparisons below decide the
+	 * handshake on that word, and the two reads in the loop go
+	 * straight into ntb->peer_msix_data[i], which is the ADDRESS and
+	 * DATA this driver later writes to signal the peer.
+	 *
+	 * `goto reschedule' is what the function already does when the
+	 * peer is not ready, which is the right answer for a read that
+	 * did not happen.
+	 */
+	if (intel_ntb_spad_read(ntb->device, NTB_MSIX_GUARD, &val) != 0)
+		goto reschedule;
 	if (val != NTB_MSIX_VER_GUARD)
 		goto reschedule;
 
 	for (i = 0; i < XEON_NONLINK_DB_MSIX_BITS; i++) {
-		intel_ntb_spad_read(ntb->device, NTB_MSIX_DATA0 + i, &val);
+		if (intel_ntb_spad_read(ntb->device,
+		    NTB_MSIX_DATA0 + i, &val) != 0)
+			goto reschedule;
 		intel_ntb_printf(2, "remote MSIX data(%u): 0x%x\n", i, val);
 		ntb->peer_msix_data[i].nmd_data = val;
-		intel_ntb_spad_read(ntb->device, NTB_MSIX_OFS0 + i, &val);
+		if (intel_ntb_spad_read(ntb->device,
+		    NTB_MSIX_OFS0 + i, &val) != 0)
+			goto reschedule;
 		intel_ntb_printf(2, "remote MSIX addr(%u): 0x%x\n", i, val);
 		ntb->peer_msix_data[i].nmd_ofs = val;
 	}
@@ -3426,7 +3451,8 @@ intel_ntb_exchange_msix(void *ctx)
 
 msix_done:
 	intel_ntb_peer_spad_write(ntb->device, NTB_MSIX_DONE, NTB_MSIX_RECEIVED);
-	intel_ntb_spad_read(ntb->device, NTB_MSIX_DONE, &val);
+	if (intel_ntb_spad_read(ntb->device, NTB_MSIX_DONE, &val) != 0)
+		goto reschedule;
 	if (val != NTB_MSIX_RECEIVED)
 		goto reschedule;
 
