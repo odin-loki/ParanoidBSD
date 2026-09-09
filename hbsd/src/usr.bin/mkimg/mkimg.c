@@ -464,6 +464,16 @@ mkimg(void)
 	TAILQ_FOREACH(part, &partlist, link) {
 		byteoffset = blkoffset = 0;
 		abs_offset = false;
+		/*
+		 * PBSD: and error, which neither switch below assigns on
+		 * its success paths and neither has a default.  A
+		 * PART_KIND_SIZE partition falls through both untouched, so
+		 * the `if (error)' at the bottom tested whatever the
+		 * PREVIOUS partition left -- correct only because a nonzero
+		 * one would already have exited, which is a chain nobody
+		 * wrote down.
+		 */
+		error = 0;
 
 		/* Look for an offset. Set size too if we can. */
 		switch (part->kind) {

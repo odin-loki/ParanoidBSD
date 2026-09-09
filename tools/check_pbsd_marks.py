@@ -632,14 +632,33 @@ FIXES = {
     # here would stay silent when a merge ate one of the two -- which is
     # the guard-on-one-of-a-pair defect this file exists to catch,
     # committed in the file that catches it. Each names its function.
-    "hbsd/src/sys/fs/nfsserver/nfs_nfsdport.c": (
-        "PBSD: iv and cnt are out-parameters, so read them only",
-        "\t\terror = nfsrv_createiovecw(len, m, cp, &iv, &cnt);\n"
-        "\t\tuiop->uio_iov = iv;",
-        "nfsvno_setxattr() stored nfsrv_createiovecw()'s out-parameters "
-        "into the uio without checking the return, while nfsvno_write() "
-        "- the only other caller - returns on error before touching them",
-    ),
+    "hbsd/src/sys/fs/nfsserver/nfs_nfsdport.c": [
+        (
+            "PBSD: iv and cnt are out-parameters, so read them only",
+            "\t\terror = nfsrv_createiovecw(len, m, cp, &iv, &cnt);\n"
+            "\t\tuiop->uio_iov = iv;",
+            "nfsvno_setxattr() stored nfsrv_createiovecw()'s "
+            "out-parameters into the uio without checking the return, "
+            "while nfsvno_write() - the only other caller - returns on "
+            "error before touching them",
+        ),
+        (
+            "PBSD: zero the object, because all of it goes to disk.",
+            "vp\");\n\tdsattr.dsa_filerev = nap->na_filerev;",
+            "nfsrv_setextattr: the five assignments cover every named "
+            "member but vn_extattr_set() writes sizeof(dsattr), so any "
+            "padding the ABI puts in the struct or in its two struct "
+            "timespec is stack that lands in the pnfsd.dsattr extended "
+            "attribute and comes back to any pNFS client",
+        ),
+        (
+            "PBSD: see nfsrv_setextattr() -- all of this goes to disk "
+            "too.",
+            "\tstruct pnfsdsattr dsattr;\n\tstruct vattr va;",
+            "nfsrv_pnfscreate: the same struct, written to the same "
+            "extended attribute with the same sizeof",
+        ),
+    ],
     "hbsd/src/sys/fs/nfsserver/nfs_nfsdserv.c": [
         (
             # Counting the PBSD comment and not "NFSVNO_ATTRINIT",
@@ -2243,16 +2262,27 @@ FIXES = {
         "where upstream's usr.bin/at/panic.h has carried __dead2 on its "
         "perr() all along",
     ),
-    "hbsd/src/bin/ed/main.c": (
-        # TWO sites, so a count: the `%' expansion and the `f' command
-        # both call it, and fixing one is this document's most common
-        # shape of half-fix.
-        ("strip_escapes(old_filename)) == NULL", 2),
-        None,
-        "strip_escapes() returns NULL when its REALLOC fails - the macro "
-        "returns the caller's `err' argument and this caller passes NULL "
-        "- and the `%' expansion passed that straight to strlen()",
-    ),
+    "hbsd/src/bin/ed/main.c": [
+        (
+            # TWO sites, so a count: the `%' expansion and the `f'
+            # command both call it, and fixing one is this document's
+            # most common shape of half-fix.
+            ("strip_escapes(old_filename)) == NULL", 2),
+            None,
+            "strip_escapes() returns NULL when its REALLOC fails - the "
+            "macro returns the caller's `err' argument and this caller "
+            "passes NULL - and the `%' expansion passed that straight "
+            "to strlen()",
+        ),
+        (
+            "PBSD: terminate.",
+            "\t\ts++;\n\treturn file;",
+            "strip_escapes: the loop stops either on the NUL it copied "
+            "or on running out of buffer, and in the second case "
+            "nothing wrote one -- so the caller's strlen() ran off a "
+            "PATH_MAX allocation",
+        ),
+    ],
     "hbsd/src/bin/ed/io.c": (
         ("strip_escapes(fn)) == NULL", 2),
         None,
@@ -2736,6 +2766,68 @@ FIXES = {
         "->end, and four of its six callers ignore the return - so a "
         "peer setting the MP header's reserved bits chose which "
         "fragments ppp dropped",
+    ),
+    "hbsd/src/sbin/routed/if.c": (
+        "PBSD: start the alias prototype.",
+        "\t}\n\n\t/* XXX: thanks to malloc(3), alignment can be presumed "
+        "OK */",
+        "ifinit: ifs0 is filled only in the RTM_IFINFO arm, which then "
+        "continues, so an RTM_NEWADDR not preceded by one copies this "
+        "frame into the interface record and ORs alias flags into it",
+    ),
+    "hbsd/src/sys/cam/ctl/ctl_frontend_iscsi.c": [
+        (
+            "PBSD: the rest of this function assumes ext_data_filled is "
+            "within",
+            "\t    expected_len - io->scsiio.kern_rel_offset);\n\n"
+            "\ttarget_transfer_tag =",
+            "cfiscsi_datamove_out: expected_len is the initiator's own "
+            "bhssc_expected_data_transfer_length, and both the "
+            "scatter-gather walk and the uint32_t "
+            "`datamove_len - ext_data_filled' rest on it bounding "
+            "ext_data_filled",
+        ),
+        (
+            "PBSD: test before loading, so consuming the list exactly "
+            "does not",
+            "\t\tif (r2t_off >= cdw->cdw_sg_len) {",
+            "cfiscsi_datamove_out: the walk advanced cdw_sg_index and "
+            "LOADED the entry before re-testing r2t_off, so consuming "
+            "the list exactly read one entry past its end -- which on "
+            "the kern_sg_entries == 0 path is a single stack "
+            "ctl_sg_entry, and what came back became the address the "
+            "next Data-Out is copied to",
+        ),
+    ],
+    "hbsd/src/usr.bin/env/envopts.c": (
+        "PBSD: the first entry may BE the terminator.",
+        "\t\tfprintf(stderr, \"#env      into:\\t'%s'\\n\", *oldarg);\n"
+        "\t\tfor (oldarg++;",
+        "split_spaces: `*nextarg = NULL' writes newargv[1] when the -S "
+        "string produced no arguments, and the -v -v dump printed that "
+        "NULL and stepped past it into the rest of the malloc",
+    ),
+    "hbsd/src/usr.bin/mkimg/mkimg.c": (
+        "PBSD: and error, which neither switch below assigns on",
+        "\t\tbyteoffset = blkoffset = 0;\n\t\tabs_offset = false;\n\n"
+        "\t\t/* Look for an offset.",
+        "mkimg: a PART_KIND_SIZE partition falls through both switches "
+        "untouched, so `if (error)' tested whatever the previous "
+        "partition left",
+    ),
+    "hbsd/src/usr.sbin/bhyve/amd64/fwctl.c": (
+        "PBSD: 0xffffffff, which is what the default arm below already",
+        "\tuint32_t retval;\n\n\tswitch (be_state) {",
+        "fwctl_inl: fwctl_response()'s default arm writes *retval only "
+        "when remlen is positive and returns anyway, and this value "
+        "goes straight out of the fwctl I/O port to the guest",
+    ),
+    "hbsd/src/usr.sbin/pmcstudy/eval_expr.c": (
+        "PBSD: say so, as the two `rest' arms below already do.",
+        "\tif (op == NULL) {\n\t\treturn (val1);\n\t}",
+        "run_expr: the one return that left *lastone unwritten, and "
+        "gather_exp_to_paren_close() returns it for the caller to walk "
+        "as a struct expression *",
     ),
     "hbsd/src/usr.bin/col/col.c": (
         "PBSD: parenthesise, and clear what was ALLOCATED.",

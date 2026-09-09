@@ -497,7 +497,17 @@ fwctl_outw(uint16_t val)
 static uint32_t
 fwctl_inl(void)
 {
-	uint32_t retval;
+	/*
+	 * PBSD: 0xffffffff, which is what the default arm below already
+	 * means by "nothing to say".
+	 *
+	 * fwctl_response()'s own default arm writes *retval only when
+	 * `remlen' is positive -- it computes remlen, takes neither branch
+	 * when the response body is exhausted, and returns anyway.  This
+	 * value goes straight out of the fwctl I/O port, so an unwritten
+	 * one is four bytes of the host's stack handed to the guest.
+	 */
+	uint32_t retval = 0xffffffff;
 
 	switch (be_state) {
 	case RESP:

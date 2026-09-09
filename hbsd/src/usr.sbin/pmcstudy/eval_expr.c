@@ -592,6 +592,18 @@ run_expr(struct expression *exp, int initial_call, struct expression **lastone)
 		exit(-1);
 	}
 	if (op == NULL) {
+		/*
+		 * PBSD: say so, as the two `rest' arms below already do.
+		 *
+		 * This was the one return in this function that left
+		 * *lastone unwritten, and gather_exp_to_paren_close() does
+		 * `*val_fill = run_expr(exp, 0, &lastproc); return lastproc'
+		 * -- so a value with no operator after it handed the caller
+		 * a stack word to walk as a struct expression *.
+		 */
+		if (lastone) {
+			*lastone = NULL;
+		}
 		return (val1);
 	}
 more_to_do:

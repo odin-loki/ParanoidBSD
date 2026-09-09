@@ -53,12 +53,12 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 |---:|---|---:|---:|---:|
 | 1 | `lib` | 2,827 | 639,720 | 9,056 |
 | 2 | `libexec` | 170 | 47,997 | 623 |
-| 3 | `bin` | 162 | 58,097 | 1,063 |
-| 4 | `sbin` | 533 | 228,483 | 3,567 |
-| 5 | `usr.bin` | 732 | 248,226 | 4,186 |
-| 6 | `usr.sbin` | 1,142 | 657,250 | 9,020 |
+| 3 | `bin` | 162 | 58,109 | 1,063 |
+| 4 | `sbin` | 533 | 228,496 | 3,567 |
+| 5 | `usr.bin` | 732 | 248,249 | 4,186 |
+| 6 | `usr.sbin` | 1,142 | 657,272 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,886 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,944 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,298,384** | **114,204** |
+| | **total** | **41,143** | **21,298,512** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -140,7 +140,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 8.630.9 | `sys/dev/atkbdc/psm.c` | 7,702 | 0 | `TODO-PORT` |
 | 8.1213.103 | `sys/netinet/sctputil.c` | 7,700 | 0 | `TODO-PORT` |
 | 8.744.5 | `sys/dev/hyperv/netvsc/if_hn.c` | 7,690 | 0 | `TODO-PORT` |
-| 8.1147.5 | `sys/fs/nfsserver/nfs_nfsdport.c` | 7,645 | 0 | `TODO-PORT` |
+| 8.1147.5 | `sys/fs/nfsserver/nfs_nfsdport.c` | 7,658 | 0 | `TODO-PORT` |
 | 8.1213.101 | `sys/netinet/sctp_usrreq.c` | 7,541 | 0 | `TODO-PORT` |
 | 8.1191.230 | `sys/kern/vfs_subr.c` | 7,518 | 0 | `TODO-PORT` |
 | 8.892.2 | `sys/dev/pms/RefTisa/discovery/dm/dmdisc.c` | 7,466 | 0 | `TODO-PORT` |
@@ -14866,7 +14866,7 @@ function; a file with two hundred of them is a project.
   - [ ] 3.13.4.7 `get_extended_line()` · `TODO-FN`
   - [ ] 3.13.4.8 `get_tty_line()` · `TODO-FN`
   - [ ] 3.13.4.9 `put_tty_line()` · `TODO-FN`
-- [ ] **3.13.5** `main.c` · 1,400L · `TODO-PORT` · 26 fn
+- [ ] **3.13.5** `main.c` · 1,412L · `TODO-PORT` · 26 fn
   - [ ] 3.13.5.1 `main()` · `TODO-FN`
   - [ ] 3.13.5.2 `extract_addr_range()` · `TODO-FN`
   - [ ] 3.13.5.3 `next_addr()` · `TODO-FN`
@@ -20007,7 +20007,7 @@ function; a file with two hundred of them is a project.
 ### 4.93 `sbin/routed`
 
 - [ ] **4.93.1** `defs.h` · 603L gen:1 · `TODO-HDR`
-- [ ] **4.93.2** `if.c` · 1,363L · `TODO-PORT` · 20 fn
+- [ ] **4.93.2** `if.c` · 1,376L · `TODO-PORT` · 20 fn
   - [ ] 4.93.2.1 `nhash()` · `TODO-FN`
   - [ ] 4.93.2.2 `if_link()` · `TODO-FN`
   - [ ] 4.93.2.3 `ifwithaddr()` · `TODO-FN`
@@ -21226,7 +21226,7 @@ function; a file with two hundred of them is a project.
 - [ ] **5.58.1** `env.c` · 230L · `TODO-PORT` · 2 fn
   - [ ] 5.58.1.1 `main()` · `TODO-FN`
   - [ ] 5.58.1.2 `usage()` · `TODO-FN`
-- [ ] **5.58.2** `envopts.c` · 469L · `TODO-PORT` · 4 fn
+- [ ] **5.58.2** `envopts.c` · 482L · `TODO-PORT` · 4 fn
   - [ ] 5.58.2.1 `is_there()` · `TODO-FN`
   - [ ] 5.58.2.2 `search_paths()` · `TODO-FN`
   - [ ] 5.58.2.3 `split_spaces()` · `TODO-FN`
@@ -23179,7 +23179,7 @@ function; a file with two hundred of them is a project.
   - [ ] 5.138.10.1 `mbr_metadata()` · `TODO-FN`
   - [ ] 5.138.10.2 `mbr_chs()` · `TODO-FN`
   - [ ] 5.138.10.3 `mbr_write()` · `TODO-FN`
-- [ ] **5.138.11** `mkimg.c` · 771L · `TODO-PORT` · 14 fn
+- [ ] **5.138.11** `mkimg.c` · 781L · `TODO-PORT` · 14 fn
   - [ ] 5.138.11.1 `print_formats()` · `TODO-FN`
   - [ ] 5.138.11.2 `print_schemes()` · `TODO-FN`
   - [ ] 5.138.11.3 `print_version()` · `TODO-FN`
@@ -27662,7 +27662,7 @@ function; a file with two hundred of them is a project.
   - [ ] 6.13.4.10 `e820_init()` · `TODO-FN`
   - [ ] 6.13.4.11 `e820_finalize()` · `TODO-FN`
 - [ ] **6.13.5** `e820.h` · 46L · `TODO-MD`
-- [ ] **6.13.6** `fwctl.c` · 582L gen:2 · `TODO-MD` · 26 fn
+- [ ] **6.13.6** `fwctl.c` · 592L gen:2 · `TODO-MD` · 26 fn
   - [ ] 6.13.6.1 `fwctl_send_rest()` · `TODO-FN`
   - [ ] 6.13.6.2 `errop_set()` · `TODO-FN`
   - [ ] 6.13.6.3 `errop_start()` · `TODO-FN`
@@ -33544,7 +33544,7 @@ function; a file with two hundred of them is a project.
 
 ### 6.174 `usr.sbin/pmcstudy`
 
-- [ ] **6.174.1** `eval_expr.c` · 715L · `TODO-PORT` · 13 fn
+- [ ] **6.174.1** `eval_expr.c` · 727L · `TODO-PORT` · 13 fn
   - [ ] 6.174.1.1 `alloc_and_hook_expr()` · `TODO-FN`
   - [ ] 6.174.1.2 `validate_expr()` · `TODO-FN`
   - [ ] 6.174.1.3 `print_exp()` · `TODO-FN`
@@ -48341,7 +48341,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.71.14.8 `cfi_done()` · `TODO-FN`
   - [ ] 8.71.14.9 `cfi_submit_wait()` · `TODO-FN`
   - [ ] 8.71.14.10 `ctl_ioctl_io()` · `TODO-FN`
-- [ ] **8.71.15** `ctl_frontend_iscsi.c` · 3,086L gen:8 · `TODO-PORT` · 54 fn
+- [ ] **8.71.15** `ctl_frontend_iscsi.c` · 3,131L gen:8 · `TODO-PORT` · 54 fn
   - [ ] 8.71.15.1 `cfiscsi_pdu_new_response()` · `TODO-FN`
   - [ ] 8.71.15.2 `cfiscsi_pdu_update_cmdsn()` · `TODO-FN`
   - [ ] 8.71.15.3 `cfiscsi_pdu_handle()` · `TODO-FN`
@@ -110866,7 +110866,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1147.4.4 `nfsrvd_addsock()` · `TODO-FN`
   - [ ] 8.1147.4.5 `nfsrvd_nfsd()` · `TODO-FN`
   - [ ] 8.1147.4.6 `nfsrvd_init()` · `TODO-FN`
-- [ ] **8.1147.5** `nfs_nfsdport.c` · 7,645L gen:42 · `TODO-PORT`
+- [ ] **8.1147.5** `nfs_nfsdport.c` · 7,658L gen:42 · `TODO-PORT`
 - [ ] **8.1147.6** `nfs_nfsdserv.c` · 6,827L gen:10 · `TODO-PORT`
 - [ ] **8.1147.7** `nfs_nfsdsocket.c` · 1,438L gen:11 · `TODO-PORT` · 5 fn
   - [ ] 8.1147.7.1 `nfsrvd_statstart()` · `TODO-FN`

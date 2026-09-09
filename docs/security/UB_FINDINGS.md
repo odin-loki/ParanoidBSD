@@ -14266,3 +14266,148 @@ its nineteen-line comment and gprof's `unix.Malloc` by its twelve.
 | `usr.sbin/watchdogd/watchdogd.c:280,281,311` | `do_timedog`, a static set once at `:698`. `watchdog_getuptime()` writes `*tp` only under it and `watchdog_check_dogfunction_time()` returns early under it — the same predicate at the write and at the read, with a call in between. |
 | `bin/pax/tables.c:1261` | `val` is filled a byte at a time through a `char *` alias, `sizeof(u_int)` of them, immediately above. |
 | `usr.sbin/mptutil/mpt_cam.c:162,427,539` | `fetch_path_id()` writes `*path_id` from `ccb.cdm.matches[0]` after an ioctl that took `&ccb`; the analyser discards what it knew about `ccb.cdm.matches` at that call. |
+
+### The iSCSI target trusts the initiator's declared transfer length
+
+`sys/cam/ctl/ctl_frontend_iscsi.c:2776`, in `cfiscsi_datamove_out()`.
+The function computes
+
+```c
+	expected_len = ntohl(bhssc->bhssc_expected_data_transfer_length);
+	...
+	datamove_len = MIN(io->scsiio.kern_data_len,
+	    expected_len - io->scsiio.kern_rel_offset);
+```
+
+— `expected_len` straight off the wire — and then everything after it
+assumes `io->scsiio.ext_data_filled` is within `datamove_len`. Two things
+rest on that, and nothing checked it.
+
+The scatter-gather walk skips the already-filled bytes:
+
+```c
+	while (r2t_off > 0) {
+		if (r2t_off >= cdw->cdw_sg_len) {
+			r2t_off -= cdw->cdw_sg_len;
+			cdw->cdw_sg_index++;
+			cdw->cdw_sg_addr = ctl_sglist[cdw->cdw_sg_index].addr;
+			cdw->cdw_sg_len = ctl_sglist[cdw->cdw_sg_index].len;
+			continue;
+		}
+```
+
+The index is advanced and the entry **loaded** before `r2t_off > 0` is
+tested again — so consuming the list exactly reads the entry after the
+last one. The same shape as `mdo(1)`'s `remove_groups()`, and here it is
+worse: on the `kern_sg_entries == 0` path `ctl_sglist` is `&ctl_sg_entry`,
+a single `struct ctl_sg_entry` on this frame, and what comes back becomes
+`cdw_sg_addr` — the address the next Data-Out PDU is copied to.
+
+And forty lines further down,
+
+```c
+	r2t_len = MIN(datamove_len - io->scsiio.ext_data_filled,
+	    cs->cs_max_burst_length);
+```
+
+is `uint32_t` arithmetic, so the same excess underflows it and the R2T
+asks the initiator for a full `MaxBurstLength` into a buffer with no room
+for it.
+
+Both are fixed, separately, because they are two different mistakes.
+The invariant is now checked once where `datamove_len` is computed —
+before `cfiscsi_data_wait_new()`, so there is nothing to unwind, the same
+shape as the write-underflow return above it. And the loop tests before
+it loads:
+
+```c
+	while (r2t_off > 0) {
+		if (r2t_off < cdw->cdw_sg_len) {
+			cdw->cdw_sg_addr += r2t_off;
+			cdw->cdw_sg_len -= r2t_off;
+			break;
+		}
+		r2t_off -= cdw->cdw_sg_len;
+		cdw->cdw_sg_index++;
+		cdw->cdw_sg_len = 0;
+		if (r2t_off == 0)
+			break;
+		cdw->cdw_sg_addr = ctl_sglist[cdw->cdw_sg_index].addr;
+		cdw->cdw_sg_len = ctl_sglist[cdw->cdw_sg_index].len;
+	}
+```
+
+That is behaviour-identical. Where the old loop consumed a segment
+exactly and loaded the next entry, the new one leaves `cdw_sg_len` at 0
+and `cdw_sg_index` on that entry — and `cfiscsi_handle_data_segment()`
+already reads `cdw_sg_len == 0` as "load `ctl_sglist[cdw_sg_index]`",
+behind its own `KASSERT(cdw->cdw_sg_index < ctl_sg_count)`. Same cursor,
+by the consumer's own path, without touching the list.
+
+### nfsd writes a whole stack struct into a file's extended attributes
+
+`nfsrv_setextattr()` fills five named members of a `struct pnfsdsattr` on
+the stack and then hands the object to
+
+```c
+	vn_extattr_set(vp, IO_NODELOCKED, EXTATTR_NAMESPACE_SYSTEM,
+	    "pnfsd.dsattr", sizeof(dsattr), (char *)&dsattr, p);
+```
+
+`sizeof(dsattr)`, not "the five members". Any padding the ABI puts inside
+the struct — or inside the two `struct timespec` it copies wholesale — is
+kernel stack that lands in the `pnfsd.dsattr` extended attribute and
+comes back out of it to any pNFS client that reads the file's attributes.
+PBSD builds six architectures and the layout is not the same on all of
+them. `nfsrv_pnfscreate()` writes the same struct to the same attribute
+with the same `sizeof`; both are zeroed now.
+
+### Four more, and four that are right and do not move the number
+
+| where | what |
+|---|---|
+| `sbin/routed/if.c:745` | `ifs0` is filled only in the `RTM_IFINFO` arm, which then `continue`s. An `RTM_NEWADDR` not preceded by one reaches `memcpy(&ifs, &ifs0, sizeof(ifs))` and copies the frame into the interface record, then ORs alias flags into it. The kernel emits IFINFO first — and the `ifinit: out of sync` arm ten lines down is this function already saying it does not assume the stream is as expected. |
+| `usr.bin/env/envopts.c:365` | `*nextarg = NULL` writes `newargv[1]` when the `-S` string produced no arguments, and the `-v -v` dump printed that NULL and then stepped past it. `newargv` is `malloc`'d, so the loop ran until the heap happened to hold a zero word, printing each word before it as a string. |
+| `usr.bin/mkimg/mkimg.c:522` | Neither switch in the per-partition loop assigns `error` on its success paths and neither has a `default`, so a `PART_KIND_SIZE` partition falls through both untouched and `if (error)` tested what the *previous* partition left. Correct only because a nonzero one would already have exited — a chain nobody wrote down. |
+| `usr.sbin/bhyve/amd64/fwctl.c:512` | `fwctl_response()`'s `default` arm writes `*retval` only when `remlen` is positive, and returns either way. That value goes straight out of the fwctl I/O port, so an unwritten one is four bytes of the host's stack handed to the guest. `0xffffffff` at the declaration is what the switch's own `default` already means by "nothing to say". |
+
+```
+--scope bin/ed --scope sbin/routed --scope usr.bin/env --scope usr.bin/mkimg
+--scope usr.sbin/bhyve --scope usr.sbin/pmcstudy
+  before  39 findings, 126 OK, 2 ERROR
+  after   35 findings, 126 OK, 2 ERROR
+
+--scope sys/cam/ctl --scope sys/fs/nfsserver
+  before  36 findings, 26 OK, 1 ERROR
+  after   36 findings, 26 OK, 1 ERROR
+```
+
+Seven go in the first and three arrive, all three relocations. The
+second moves nothing at all, and neither do two of the six in the first.
+**Four right-and-unmeasurable fixes in one batch is worth naming**, with
+the reason for each, because they are not the same reason:
+
+- `bin/ed/main.c` — `strip_escapes()` reserves its last byte ("Worry
+  about a possible trailing escape") and never writes a NUL into it, so
+  an `old_filename` that fills the buffer leaves the caller's `strlen()`
+  running off a `PATH_MAX` allocation. The analyser's path reads
+  `Calling 'strip_escapes'` / `Returning from 'strip_escapes'` with
+  nothing in between — it did not walk the body, so the buffer is
+  symbolic and every byte is garbage whatever the code does.
+- `usr.sbin/pmcstudy/eval_expr.c` — `run_expr()`'s `op == NULL` return
+  was the one that left `*lastone` unwritten, and
+  `gather_exp_to_paren_close()` returns it for the caller to walk as a
+  `struct expression *`. `run_expr()` is mutually recursive with
+  `gather_exp_to_paren_close()`, and the analyser does not inline
+  recursion.
+- `ctl_frontend_iscsi.c` — the invariant check is 80 lines above the
+  loop, and relating "`ext_data_filled <= datamove_len`" to "the index
+  stays inside the list" needs the sum of the segment lengths, which the
+  analyser does not have.
+- `nfs_nfsdport.c` — the finding at `:5589` is `nap->na_filerev` being
+  garbage, a premise about the *caller's* `nfsvattr`. The padding going
+  to disk is something it never reported at all.
+
+The last one is the general case of what col(1) showed earlier in this
+document: **the bug you can measure and the bug that is there are not
+always the same bug.**

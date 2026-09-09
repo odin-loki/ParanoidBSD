@@ -1306,6 +1306,18 @@ strip_escapes(char *s)
 	while (i < filesz - 1	/* Worry about a possible trailing escape */
 	       && (file[i++] = (*s == '\\') ? *++s : *s))
 		s++;
+	/*
+	 * PBSD: terminate.
+	 *
+	 * The loop stops either on the NUL it just copied or on running out
+	 * of buffer -- and in the second case nothing wrote one, so the
+	 * caller's strlen() ran off the end of a PATH_MAX allocation.  The
+	 * bound reserves the last byte ("a possible trailing escape"); this
+	 * is the write that uses it.  On the first exit i is one past the
+	 * NUL and this is a harmless second one, always in range because
+	 * the bound is tested before each store.
+	 */
+	file[i] = '\0';
 	return file;
 }
 

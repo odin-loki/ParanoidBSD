@@ -360,10 +360,23 @@ str_done:
 	}
 	if (env_verbosity > 1) {
 		fprintf(stderr, "#env  split -S:\t'%s'\n", str);
+		/*
+		 * PBSD: the first entry may BE the terminator.
+		 *
+		 * `*nextarg = NULL' above writes newargv[1] when the -S
+		 * string produced no arguments at all, and this printed
+		 * that NULL and then stepped past it into the rest of the
+		 * malloc.  newargv is malloc'd, not calloc'd, so the loop
+		 * ran until the heap happened to hold a zero word, printing
+		 * each word before it as a string.
+		 */
 		oldarg = newargv + 1;
-		fprintf(stderr, "#env      into:\t'%s'\n", *oldarg);
-		for (oldarg++; *oldarg; oldarg++)
-			fprintf(stderr, "#env          &\t'%s'\n", *oldarg);
+		if (*oldarg != NULL) {
+			fprintf(stderr, "#env      into:\t'%s'\n", *oldarg);
+			for (oldarg++; *oldarg; oldarg++)
+				fprintf(stderr, "#env          &\t'%s'\n",
+				    *oldarg);
+		}
 	}
 
 	/* Copy the unprocessed arg-pointers from the original array */

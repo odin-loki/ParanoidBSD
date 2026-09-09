@@ -695,6 +695,19 @@ ifinit(void)
 				      "ifinit sysctl");
 	}
 
+	/*
+	 * PBSD: start the alias prototype.
+	 *
+	 * ifs0 is filled only in the RTM_IFINFO arm below, which then
+	 * `continue's -- so an RTM_NEWADDR that is not preceded by an
+	 * RTM_IFINFO for its interface reaches `memcpy(&ifs, &ifs0, ...)'
+	 * and copies this frame into the interface record, then ORs alias
+	 * flags into it.  The kernel emits IFINFO first; the `ifinit: out
+	 * of sync' arm ten lines down is this function already saying it
+	 * does not assume the stream is as expected.
+	 */
+	memset(&ifs0, 0, sizeof(ifs0));
+
 	/* XXX: thanks to malloc(3), alignment can be presumed OK */
 	ifam_lim = (char *)sysctl_buf + needed;
 	for (ifam = sysctl_buf; (void *)ifam < ifam_lim; ifam = ifam2) {

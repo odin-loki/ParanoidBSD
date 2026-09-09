@@ -2729,6 +2729,42 @@ cfiscsi_datamove_out(union ctl_io *io)
 	datamove_len = MIN(io->scsiio.kern_data_len,
 	    expected_len - io->scsiio.kern_rel_offset);
 
+	/*
+	 * PBSD: the rest of this function assumes ext_data_filled is within
+	 * datamove_len.  Nothing checked it, and expected_len above is the
+	 * initiator's own bhssc_expected_data_transfer_length.
+	 *
+	 * Two things rest on it.  The scatter-gather walk below skips
+	 * ext_data_filled bytes with
+	 *
+	 *	r2t_off -= cdw->cdw_sg_len;
+	 *	cdw->cdw_sg_index++;
+	 *	cdw->cdw_sg_addr = ctl_sglist[cdw->cdw_sg_index].addr;
+	 *
+	 * -- the index is advanced and the entry LOADED before `r2t_off >
+	 * 0' is tested again, so consuming the list exactly reads one entry
+	 * past its end.  On the kern_sg_entries == 0 path that list is the
+	 * single `ctl_sg_entry' on this frame, and what comes back becomes
+	 * cdw_sg_addr: the address the next Data-Out PDU is copied to.
+	 *
+	 * And `datamove_len - io->scsiio.ext_data_filled' further down is
+	 * uint32_t arithmetic, so the same excess underflows it and the R2T
+	 * asks the initiator for a full MaxBurstLength into a buffer that
+	 * has no room for it.
+	 *
+	 * Checked here, before cfiscsi_data_wait_new(), so there is nothing
+	 * to unwind -- the same shape as the write-underflow return above.
+	 */
+	if (io->scsiio.ext_data_filled > datamove_len) {
+		CFISCSI_SESSION_WARN(cs, "ext_data_filled %u exceeds "
+		    "datamove length %u; dropping connection",
+		    io->scsiio.ext_data_filled, datamove_len);
+		ctl_set_data_phase_error(&io->scsiio);
+		ctl_datamove_done(io, true);
+		cfiscsi_session_terminate(cs);
+		return;
+	}
+
 	target_transfer_tag =
 	    atomic_fetchadd_32(&cs->cs_target_transfer_tag, 1);
 	if (target_transfer_tag == 0xffffffff) {
@@ -2769,17 +2805,26 @@ cfiscsi_datamove_out(union ctl_io *io)
 	cdw->cdw_sg_addr = ctl_sglist[cdw->cdw_sg_index].addr;
 	cdw->cdw_sg_len = ctl_sglist[cdw->cdw_sg_index].len;
 	r2t_off = io->scsiio.ext_data_filled;
+	/*
+	 * PBSD: test before loading, so consuming the list exactly does not
+	 * read the entry after the last one.  cfiscsi_handle_data_segment()
+	 * already treats cdw_sg_len == 0 as "load ctl_sglist[cdw_sg_index]",
+	 * behind its own bound check, so leaving it 0 here gives the same
+	 * cursor by the consumer's own path -- and does not touch the list.
+	 */
 	while (r2t_off > 0) {
-		if (r2t_off >= cdw->cdw_sg_len) {
-			r2t_off -= cdw->cdw_sg_len;
-			cdw->cdw_sg_index++;
-			cdw->cdw_sg_addr = ctl_sglist[cdw->cdw_sg_index].addr;
-			cdw->cdw_sg_len = ctl_sglist[cdw->cdw_sg_index].len;
-			continue;
+		if (r2t_off < cdw->cdw_sg_len) {
+			cdw->cdw_sg_addr += r2t_off;
+			cdw->cdw_sg_len -= r2t_off;
+			break;
 		}
-		cdw->cdw_sg_addr += r2t_off;
-		cdw->cdw_sg_len -= r2t_off;
-		r2t_off = 0;
+		r2t_off -= cdw->cdw_sg_len;
+		cdw->cdw_sg_index++;
+		cdw->cdw_sg_len = 0;
+		if (r2t_off == 0)
+			break;
+		cdw->cdw_sg_addr = ctl_sglist[cdw->cdw_sg_index].addr;
+		cdw->cdw_sg_len = ctl_sglist[cdw->cdw_sg_index].len;
 	}
 
 	if (cs->cs_immediate_data &&

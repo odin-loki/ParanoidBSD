@@ -4682,7 +4682,8 @@ nfsrv_pnfscreate(struct vnode *vp, struct vattr *vap, struct ucred *cred,
 	struct nfsdevice *ds, *tds, *fds;
 	struct mount *mp;
 	struct pnfsdsfile *pf, *tpf;
-	struct pnfsdsattr dsattr;
+	/* PBSD: see nfsrv_setextattr() -- all of this goes to disk too. */
+	struct pnfsdsattr dsattr = { 0 };
 	struct vattr va;
 	struct vnode *dvp[NFSDEV_MAXMIRRORS];
 	struct nfsmount *nmp;
@@ -5586,6 +5587,18 @@ nfsrv_setextattr(struct vnode *vp, struct nfsvattr *nap, NFSPROC_T *p)
 	int error;
 
 	ASSERT_VOP_ELOCKED(vp, "nfsrv_setextattr vp");
+	/*
+	 * PBSD: zero the object, because all of it goes to disk.
+	 *
+	 * The five assignments below cover every named member, but
+	 * vn_extattr_set() writes sizeof(dsattr) bytes -- so any padding
+	 * the ABI puts inside this struct, or inside the two struct
+	 * timespec it copies wholesale, is stack that ends up in the
+	 * "pnfsd.dsattr" extended attribute and comes back out of it to
+	 * any pNFS client that reads the file's attributes.  PBSD builds
+	 * six architectures and the layout is not the same on all of them.
+	 */
+	memset(&dsattr, 0, sizeof(dsattr));
 	dsattr.dsa_filerev = nap->na_filerev;
 	dsattr.dsa_size = nap->na_size;
 	dsattr.dsa_atime = nap->na_atime;
