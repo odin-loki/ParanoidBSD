@@ -284,6 +284,55 @@ header left every affected operation at "different barrier", and the first
 version of the gate reported no change at all. With digests the same edit
 names eleven operations and says which side moved.
 
+### ...and the shape it recommends does not compile
+
+"The generic header as the default and a per-architecture override where
+the tree has a reason" is the right shape, and it is not a shape
+`atomic_generic.h` can take today. Every operation in it is an
+unconditional `static __inline` function, fanned out by
+`_ATOMIC_GEN_WIDTH(T, W)` across four widths; there is no per-operation
+hook. A machine header that kept its own LSE-dispatching add and took the
+rest from the generic one does not get an override. It gets:
+
+```
+$ cat probe.c
+static __inline void
+atomic_add_32(volatile uint32_t *p, uint32_t v) { ... }
+#include <sys/atomic_generic.h>
+
+$ clang -fsyntax-only --target=aarch64-unknown-freebsd15.0 ...
+sys/sys/atomic_generic.h:205:1: error: redefinition of 'atomic_add_32'
+  205 | _ATOMIC_GEN_WIDTH(uint32_t, 32)
+note: expanded from macro '_ATOMIC_GEN_WIDTH'
+  170 |  _ATOMIC_GEN_VOID(add, __atomic_fetch_add, T, W, , __ATOMIC_RELAXED)
+probe.c:6:1: note: previous definition is here
+```
+
+So there are two things between the header and adoption, not one, and
+only the first was known:
+
+1. the measurement, which says it is not a drop-in — 171 of 618, and
+   arm64 loses its LSE path;
+2. the mechanism, which does not exist — the header cannot be partially
+   overridden, so the shape that survives (1) cannot be written.
+
+(2) is deliberately left undone. Guarding the fan-out needs a
+granularity decision — per family, per width, or per family-and-width —
+and the three differ exactly where the measurement says the headers do:
+`arm` and `powerpc` have no 8- or 16-bit atomics, so a per-family guard
+that let `arm` keep its own `atomic_add_32` would also throw away the
+generic `atomic_add_16` it has nothing else for. Which granularity is
+right is a question the first architecture to adopt answers by needing
+one; picking it now would be building the instrument before knowing the
+question, which is how task #36's `M_WAITOK` modelling layer came to be
+written, tested, and found to change nothing.
+
+What is safe today, if it is ever wanted, is the additive half: the 14 to
+38 operations per architecture that exist **only** on the generic side.
+Nothing redefines them, so nothing they emit can move. Nothing in the
+tree calls them either, which is why they are named here rather than
+added.
+
 ## `_stdint.h` and `_inttypes.h`: written, and three ABI traps found
 
 `hbsd/src/sys/sys/_stdint_generic.h` (150 lines) and `_inttypes_generic.h`
