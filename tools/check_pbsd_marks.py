@@ -1229,6 +1229,27 @@ FIXES = {
             "return and schedules itself again on `pending > 0'",
         ),
     ],
+    "hbsd/src/sys/dev/cxgbe/t4_sge.c": [
+        (
+            "PBSD: 0, as alloc_ctrlq(), alloc_rxq(), alloc_txq() and",
+            "\t\tMPASS(ofld_rxq->iq.flags & IQ_HW_ALLOCATED);\n\t}\n"
+            "\treturn (rc);\n}\n",
+            "alloc_ofld_rxq() was the only one of the five idempotent "
+            "allocators ending `return (rc)', and rc is assigned only "
+            "inside the two not-yet-allocated blocks - so the idempotent "
+            "case it exists for returned a stack word as an errno",
+        ),
+    ],
+    "hbsd/src/sys/dev/cxgbe/common/t4_hw.c": [
+        (
+            "PBSD: checked.  t4_seeprom_read() returns without writing",
+            "\t\tt4_seeprom_read(adapter, EEPROM_STAT_ADDR, &stats_reg);\n"
+            "\t} while ((stats_reg & 0x1) && --max_poll);\n",
+            "t4_seeprom_write()'s completion poll spun on a stack word "
+            "when the status read failed, and could report the VPD write "
+            "finished without having read anything that says so",
+        ),
+    ],
     "hbsd/src/sys/dev/cxgbe/t4_sched.c": [
         (
             "PBSD: and the mode.",

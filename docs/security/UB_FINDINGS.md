@@ -12539,3 +12539,59 @@ constraint. What it cannot do is relate the loop above —
 know that `c` took the values 0 and 1. A loop-coverage limit, not an
 assertion one, and a different class from anything else read this
 session.
+
+## cxgbe, second pass: the idempotent allocator that was not
+
+### `t4_sge.c` — one of five that ends differently
+
+`alloc_ctrlq()`, `alloc_rxq()`, `alloc_txq()` and `alloc_ofld_txq()` are
+all documented `/* Idempotent. */` and all end `return (0);`.
+`alloc_ofld_rxq()` is documented the same way and ends
+
+```c
+	return (rc);
+```
+
+with `rc` assigned only inside its two `if (!(ofld_rxq->iq.flags &
+IQ_..._ALLOCATED))` blocks. So the case the word "idempotent" exists to
+name — called again with both flags already set, nothing to do —
+returned an unwritten stack word to a caller that reads it as an error
+code. Its four siblings say what the value should be.
+
+### `common/t4_hw.c` — a completion poll on a stack word
+
+```c
+	max_poll = EEPROM_MAX_POLL;
+	do {
+		udelay(EEPROM_DELAY);
+		t4_seeprom_read(adapter, EEPROM_STAT_ADDR, &stats_reg);
+	} while ((stats_reg & 0x1) && --max_poll);
+	if (!max_poll)
+		return -ETIMEDOUT;
+
+	/* Return success! */
+	return 0;
+```
+
+`t4_seeprom_read()` returns without writing `*data` on three paths — a
+misaligned or out-of-range address, and either `t4_seeprom_wait()`
+failing — and `u32 stats_reg;` is an uninitialised local. With the
+return discarded, the loop that decides whether the VPD write finished
+reads whatever was on the stack: it can exit on the first pass and
+`return 0` — "Return success!" — having read nothing that says so.
+
+```
+--scope sys/dev/cxgbe   19 findings -> 16   47 units, OK both sides
+```
+
+### The rest of cxgbe, read
+
+| Where | Shape |
+|---|---|
+| `t4_sge.c:3720` | `cong_map`, assigned under `iq->cong_drop != -1` and read under the same test, with `refill_fl()` and register writes in between that the analyser must assume can change `iq->cong_drop`. |
+| `t4_sge.c:4374`, `:4429`, `:4455` | `vi->viid`, `vi->nofldtxq`, `vi->dev` in `eth_eq_alloc()` and friends. `alloc_eq_hwq()` dispatches on `eq->type`: `EQ_CTRL` (where `vi` is NULL — `free_ctrlq()` passes it literally) goes to `ctrl_eq_alloc()`, the others to the `vi`-using ones. The analyser cannot relate one argument's type tag to another argument's nullness. |
+| `t4_mp_ring.c:318` | `r->consumer[i]` on the `failed:` path of `mp_ring_alloc()`, where `r = malloc(__offsetof(struct mp_ring, items[size]), mt, flags \| M_ZERO)`. The `M_ZERO` is unmodelled — through a flexible-array `__offsetof` size in particular. |
+| `t4_main.c:10240` | `stats[2]` and `stats[3]` under `if (nchan > 2)`, filled by a loop to `nchan`. `nchan` is `chip_params->nchan`, which the four chip tables set to `NCHAN` (4) or `T6_NCHAN` (2) — never 3, so `> 2` means 4. Correct, and fragile: it is right only because 3 is not a value the table can hold. |
+| `t4_cpl_io.c:583` | `struct sglist_seg segs[n];`, `n` at least 1 whenever the `KASSERT(nsegs > 0)` on the next line holds — an invariant one function up. |
+| `iw_cxgbe/cm.c:186`, `cq.c:791`, `qp.c:1846` | NULL tests on a `cm_id`, a `qhp` and a `ucontext` that the RDMA layer guarantees. |
+| `t4_filter.c:1259`, `t4_listen.c:1519`, `cxgbei.c:630`, `t4_tls.c:1037`, `fastlz_api.c:386`, `cudbg_lib.c:1837` | Still unread; they stay on task #61. |

@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,628 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,648 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,687** | **114,204** |
+| | **total** | **41,143** | **21,297,707** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -148,7 +148,7 @@ ten-line ones; these are the entries that need a plan of their own.
 | 2.28.6 | `libexec/rtld-elf/rtld.c` | 7,265 | 0 | `TODO-PORT` |
 | 8.1014.2 | `sys/dev/sound/pci/hda/hdaa.c` | 7,216 | 0 | `TODO-PORT` |
 | 8.615.8 | `sys/dev/ath/if_ath.c` | 7,126 | 0 | `TODO-PORT` |
-| 8.671.20 | `sys/dev/cxgbe/t4_sge.c` | 7,089 | 0 | `TODO-PORT` |
+| 8.671.20 | `sys/dev/cxgbe/t4_sge.c` | 7,098 | 0 | `TODO-PORT` |
 | 8.887.5 | `sys/dev/pci/pci.c` | 7,079 | 0 | `TODO-PORT` |
 | 8.788.132 | `sys/dev/isci/scil/scic_sds_controller.c` | 7,043 | 0 | `TODO-PORT` |
 | 8.1200.75 | `sys/net/iflib.c` | 7,032 | 0 | `TODO-PORT` |
@@ -66932,7 +66932,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.671.19.23 `cxgbe_rate_tag_free_locked()` · `TODO-FN`
   - [ ] 8.671.19.24 `cxgbe_rate_tag_free()` · `TODO-FN`
   - [ ] 8.671.19.25 `cxgbe_ratelimit_query()` · `TODO-FN`
-- [ ] **8.671.20** `t4_sge.c` · 7,089L gen:20 · `TODO-PORT`
+- [ ] **8.671.20** `t4_sge.c` · 7,098L gen:20 · `TODO-PORT`
 - [ ] **8.671.21** `t4_smt.c` · 343L · `TODO-PORT` · 9 fn
   - [ ] 8.671.21.1 `t4_find_or_alloc_sme()` · `TODO-FN`
   - [ ] 8.671.21.2 `t4_write_sme()` · `TODO-FN`
@@ -66988,7 +66988,7 @@ function; a file with two hundred of them is a project.
 ### 8.672 `sys/dev/cxgbe/common`
 
 - [ ] **8.672.1** `common.h` · 1,141L · `TODO-HDR`
-- [ ] **8.672.2** `t4_hw.c` · 12,695L · `TODO-DATA`
+- [ ] **8.672.2** `t4_hw.c` · 12,706L · `TODO-DATA`
 - [ ] **8.672.3** `t4_hw.h` · 354L · `TODO-HDR`
 - [ ] **8.672.4** `t4_msg.h` · 6,721L · `TODO-HDR`
 - [ ] **8.672.5** `t4_regs.h` · 87,088L · `TODO-GEN`

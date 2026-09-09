@@ -3546,7 +3546,18 @@ int t4_seeprom_write(struct adapter *adapter, u32 addr, u32 data)
 	max_poll = EEPROM_MAX_POLL;
 	do {
 		udelay(EEPROM_DELAY);
-		t4_seeprom_read(adapter, EEPROM_STAT_ADDR, &stats_reg);
+		/*
+		 * PBSD: checked.  t4_seeprom_read() returns without writing
+		 * *data on three paths - a misaligned or out-of-range
+		 * address, and either t4_seeprom_wait() failing - and
+		 * stats_reg is an uninitialised local.  Discarding the
+		 * return meant this completion poll decided on a stack word:
+		 * it could exit at once and report the VPD write as
+		 * finished when nothing had been read to say so.
+		 */
+		ret = t4_seeprom_read(adapter, EEPROM_STAT_ADDR, &stats_reg);
+		if (ret)
+			return ret;
 	} while ((stats_reg & 0x1) && --max_poll);
 	if (!max_poll)
 		return -ETIMEDOUT;

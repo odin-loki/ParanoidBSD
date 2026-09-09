@@ -4186,7 +4186,16 @@ alloc_ofld_rxq(struct vi_info *vi, struct sge_ofld_rxq *ofld_rxq, int idx,
 		}
 		MPASS(ofld_rxq->iq.flags & IQ_HW_ALLOCATED);
 	}
-	return (rc);
+	/*
+	 * PBSD: 0, as alloc_ctrlq(), alloc_rxq(), alloc_txq() and
+	 * alloc_ofld_txq() all end.  This is the only one of the five
+	 * idempotent allocators that ended `return (rc)', and rc is assigned
+	 * only inside the two `if (!(... _ALLOCATED))' blocks - so the
+	 * idempotent case this function is documented to support, both flags
+	 * already set and nothing to do, returned an unwritten stack word to
+	 * a caller that reads it as an error code.
+	 */
+	return (0);
 }
 
 /*
