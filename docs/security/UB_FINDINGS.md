@@ -13137,3 +13137,69 @@ The other three findings in the scope:
 | `fasttrap_isa.c:1621` | `ftt_ripmode` is written only at `:609` and `:614`, as `FASTTRAP_RIP_1\|(FASTTRAP_RIP_X * FASTTRAP_REX_B(rex))` and the `RIP_2` form; `FASTTRAP_REX_B(rex)` is `((rex) & 1)`, so the value is one of 1, 2, 5, 6 — exactly the switch's four arms, and `reg` is always assigned. |
 | `fbt/riscv/fbt_isa.c:153` | `rval` and `patchval` are written only inside the loop, which `break`s when it writes them; reaching `:153` needs `instr < limit`, and the loop exits only on `break` or on `instr >= limit`. Another loop bound the analyser will not relate to a guard after it. |
 | `fbt.c:792` | `ctf_list_append()` stores the pointer into the list via `lp->l_prev = q`, which `unix.Malloc` does not count as an escape. |
+
+## The armv7 target said soft float; the build says `gnueabihf`
+
+Found while measuring task #47, which is the point: a measurement that
+does not move the number can still tell you where you are standing.
+
+`includes.py` passed `--target=armv7-unknown-freebsd15.0`.
+`Makefile.inc1:136-142` is
+
+```
+.if ${TARGET} == "arm"
+.if ${TARGET_CPUTYPE:M*soft*} == ""
+TARGET_TRIPLE_ABI=	gnueabihf
+.else
+TARGET_TRIPLE_ABI=	gnueabi
+.endif
+.endif
+```
+
+and `:893` passes the result as `-target ${TARGET_TRIPLE}`. Nothing in
+this tree sets a soft-float `CPUTYPE` — the only matches for
+`CPUTYPE:M*soft*` are in `share/mk/bsd.cpu.mk`, the machinery that
+*reads* it — so the build's arm triple carries the hard-float ABI.
+
+`unknown` is not a neutral spelling of that. It is the other ABI:
+
+```
+armv7-unknown-freebsd15.0     __ARM_PCS 1  __SOFTFP__ 1
+armv7-gnueabihf-freebsd15.0   __ARM_PCS 1  __ARM_PCS_VFP 1  __ARM_FP 0xc
+```
+
+So the whole of armv7 was analysed as soft float. That decides what is
+compiled, not just how it is called: `lib/libc/arm/gen/flt_rounds.c`
+wraps its three softfloat `#include`s and half its body in
+`#ifndef __ARM_PCS_VFP`.
+
+```
+--scope lib/libc --scope lib/msun --scope libexec --check-errors
+  before  239 findings, 1599 OK, 31 ERROR
+  after   239 findings, 1600 OK, 30 ERROR
+
+--scope sys/arm --check-errors
+  before   15 findings, 315 OK, 8 ERROR
+  after    15 findings, 315 OK, 8 ERROR   (byte-identical, per file)
+```
+
+One translation unit comes back, and it is exactly the one task #47 was
+opened about: `lib/msun/arm/fenv-softfp.c`, whose `expected_errors.py`
+entry blamed `lib/msun/Makefile:18` putting `-I${.CURDIR}/x86` on the
+path for an architecture whose `.if` does not hold. The entry was right
+about the flag walk and wrong about the cause of *this* failure; under
+the correct ABI the file compiles with the extra `-I` still there. The
+entry is gone.
+
+`sys/arm` does not move at all — the kernel has no floating point in it —
+which is the useful half of the negative result: this was a userland
+misreading, and now it is not one.
+
+Two checks in `test_includes.py`, made to fail first: with the triple put
+back to `unknown`, "armv7 carries the hard-float ABI" reports
+`armv7-unknown-freebsd15.0` and the second reports `__ARM_PCS __SOFTFP__`.
+The second asks *clang* what the triple means rather than checking the
+string, because the string is not the thing that decides.
+
+`Makefile.inc1` special-cases no other architecture, so the remaining
+five triples are `unknown` in the build too.

@@ -775,6 +775,30 @@ check_that("...so ZFS_DEBUG is set and NDEBUG is not, and ASSERT is a check",
            " | ".join(_derr[:2]) if _derr else
            f"clang exited {_dr.returncode} with no diagnostics")
 
+# ---------------------------------------------------------------------------
+print()
+print("== the target triple is the one the build passes")
+# Makefile.inc1:136-142 picks the arm ABI from CPUTYPE and :893 passes the
+# result as `-target ${TARGET_TRIPLE}'. Nothing in this tree sets a
+# soft-float CPUTYPE, so the build's arm triple is gnueabihf - and
+# `unknown' is not a neutral spelling of it, it is the OTHER ABI:
+#
+#   armv7-unknown-freebsd15.0     __ARM_PCS 1  __SOFTFP__ 1
+#   armv7-gnueabihf-freebsd15.0   __ARM_PCS 1  __ARM_PCS_VFP 1
+#
+# lib/libc/arm/gen/flt_rounds.c wraps its softfloat includes and half its
+# body in `#ifndef __ARM_PCS_VFP', so this decides what is compiled.
+check_that("armv7 carries the hard-float ABI",
+           includes.TRIPLE["armv7"].split("-")[1] == "gnueabihf",
+           includes.TRIPLE["armv7"])
+_vfp = _sp.run(["clang", *includes.target_flags("armv7"),
+                "-dM", "-E", "-x", "c", "-"],
+               input="", capture_output=True, text=True, timeout=120)
+check_that("...and clang defines __ARM_PCS_VFP for it, not __SOFTFP__",
+           "__ARM_PCS_VFP" in _vfp.stdout and "__SOFTFP__" not in _vfp.stdout,
+           " ".join(sorted(l.split()[1] for l in _vfp.stdout.splitlines()
+                           if "__ARM_PCS" in l or "__SOFTFP__" in l)))
+
 print()
 if fails:
     print(f"{len(fails)} check(s) failed")

@@ -87,7 +87,27 @@ ARCH = {
 TRIPLE = {
     "amd64":     "x86_64-unknown-freebsd15.0",
     "aarch64":   "aarch64-unknown-freebsd15.0",
-    "armv7":     "armv7-unknown-freebsd15.0",
+    # gnueabihf, not unknown. Makefile.inc1:136-142 is
+    #
+    #   .if ${TARGET} == "arm"
+    #   .if ${TARGET_CPUTYPE:M*soft*} == ""
+    #   TARGET_TRIPLE_ABI=  gnueabihf
+    #   .else
+    #   TARGET_TRIPLE_ABI=  gnueabi
+    #
+    # and :893 passes it as `-target ${TARGET_TRIPLE}'. Nothing in this
+    # tree sets a soft-float CPUTYPE, so the build's arm triple carries
+    # the hard-float ABI and this one did not:
+    #
+    #   armv7-unknown-freebsd15.0     __ARM_PCS 1  __SOFTFP__ 1
+    #   armv7-gnueabihf-freebsd15.0   __ARM_PCS 1  __ARM_PCS_VFP 1
+    #                                 __ARM_FP 0xc
+    #
+    # so the whole of armv7 was analysed as SOFT float. Not a spelling:
+    # lib/libc/arm/gen/flt_rounds.c wraps its softfloat includes and half
+    # its body in `#ifndef __ARM_PCS_VFP', and the floating-point calling
+    # convention is the other one.
+    "armv7":     "armv7-gnueabihf-freebsd15.0",
     "i386":      "i386-unknown-freebsd15.0",
     "powerpc64": "powerpc64-unknown-freebsd15.0",
     "riscv64":   "riscv64-unknown-freebsd15.0",

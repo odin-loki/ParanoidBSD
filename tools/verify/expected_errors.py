@@ -520,12 +520,6 @@ EXPECTED = {
     "sys/dev/videomode/test.c":
         "a hand-run mode-table test; wants <stdio.h> under -nostdinc",
 
-    # ...and the flag order the Makefile walk gets wrong.
-    "lib/msun/arm/fenv-softfp.c":
-        "lib/msun/Makefile:18 adds -I${.CURDIR}/x86 inside an `.if' that "
-        "armv7 does not take; the walk cannot evaluate the condition, so "
-        "x86's <fenv.h> lands ahead of arm's and __fetestexcept_int() is "
-        "undeclared",
 
     # Sweep 10's sys/contrib shard. Everything here is a source no
     # sys/conf/files* entry and no module Makefile names - checked with
