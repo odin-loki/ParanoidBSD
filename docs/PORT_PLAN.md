@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,859 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,886 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,918** | **114,204** |
+| | **total** | **41,143** | **21,297,945** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -110028,7 +110028,7 @@ function; a file with two hundred of them is a project.
 - [ ] **8.1139.4** `ext2_balloc.c` · 321L · `TODO-PORT` · 2 fn
   - [ ] 8.1139.4.1 `ext2_ext_balloc()` · `TODO-FN`
   - [ ] 8.1139.4.2 `ext2_balloc()` · `TODO-FN`
-- [ ] **8.1139.5** `ext2_bmap.c` · 501L · `TODO-PORT` · 7 fn
+- [ ] **8.1139.5** `ext2_bmap.c` · 509L · `TODO-PORT` · 7 fn
   - [ ] 8.1139.5.1 `ext2_bmap()` · `TODO-FN`
   - [ ] 8.1139.5.2 `ext4_bmapext()` · `TODO-FN`
   - [ ] 8.1139.5.3 `readindir()` · `TODO-FN`
@@ -112012,7 +112012,7 @@ function; a file with two hundred of them is a project.
 
 ### 8.1160 `sys/geom/concat`
 
-- [ ] **8.1160.1** `g_concat.c` · 1,272L gen:5 · `TODO-PORT` · 26 fn
+- [ ] **8.1160.1** `g_concat.c` · 1,281L gen:5 · `TODO-PORT` · 26 fn
   - [ ] 8.1160.1.1 `gcd()` · `TODO-FN`
   - [ ] 8.1160.1.2 `lcm()` · `TODO-FN`
   - [ ] 8.1160.1.3 `g_concat_nvalid()` · `TODO-FN`
@@ -138120,7 +138120,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.1305.9.12 `ufs_aclcheck_nfs4()` · `TODO-FN`
   - [ ] 8.1305.9.13 `ufs_aclcheck_posix1e()` · `TODO-FN`
   - [ ] 8.1305.9.14 `ufs_aclcheck()` · `TODO-FN`
-- [ ] **8.1305.10** `ufs_bmap.c` · 652L gen:1 · `TODO-PORT` · 8 fn
+- [ ] **8.1305.10** `ufs_bmap.c` · 662L gen:1 · `TODO-PORT` · 8 fn
   - [ ] 8.1305.10.1 `ufs_bmap()` · `TODO-FN`
   - [ ] 8.1305.10.2 `readindir()` · `TODO-FN`
   - [ ] 8.1305.10.3 `ufs_bm_sf_get()` · `TODO-FN`

@@ -1060,7 +1060,16 @@ g_concat_ctl_append(struct gctl_req *req, struct g_class *mp)
 	struct g_concat_disk *disk;
 	int *nargs, *hardcode;
 	int error;
-	int disk_candelete;
+	/*
+	 * PBSD: 0, because the fallback that says so lives INSIDE the
+	 * success arm below - `if (g_access(...) == 0) { ...; if (error)
+	 * disk_candelete = 0; }' - so a consumer that could not be opened
+	 * at all left it unwritten, and disk->d_candelete a few lines on
+	 * decides whether BIO_DELETE is passed through to that member.  0
+	 * is what the fallback itself uses and what "we could not ask"
+	 * means.
+	 */
+	int disk_candelete = 0;
 
 	g_topology_assert();
 

@@ -2686,6 +2686,29 @@ FIXES = {
             "all-parity-targets case reconstruct_general() is reached with",
         ),
     ],
+    "hbsd/src/sys/fs/ext2fs/ext2_bmap.c": (
+        "daddr_t blkno = -1;",
+        "\tdaddr_t blkno;\n\tint error;\n",
+        "ext2_bmap: the store to *ap->a_bnp is unconditional and "
+        "ext2_bmaparray() returns ext2_getlbns()'s error having written "
+        "nothing, so a caller reading the block number before the error "
+        "got a stack word",
+    ),
+    "hbsd/src/sys/ufs/ufs/ufs_bmap.c": (
+        "ufs2_daddr_t blkno = -1;",
+        "\tufs2_daddr_t blkno;\n\tint error;\n",
+        "ufs_bmap: the same shape as ext2_bmap, with three returns in "
+        "ufs_bmaparray() that write no *bnp - found by reading the "
+        "sibling, not by the analyser",
+    ),
+    "hbsd/src/sys/geom/concat/g_concat.c": (
+        "int disk_candelete = 0;",
+        "\tint disk_candelete;\n",
+        "g_concat_ctl_append: the `disk_candelete = 0' fallback is "
+        "inside the arm where g_access() succeeded, so a consumer that "
+        "could not be opened left it a stack word - and it decides "
+        "whether BIO_DELETE reaches that member",
+    ),
     "hbsd/src/sys/sys/mbuf.h": (
         "M_EXTPG mbuf %p has no linear data area",
         "\tint adjust;\n\tKASSERT(m->m_data == M_START(m),\n",

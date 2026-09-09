@@ -61,7 +61,15 @@
 int
 ext2_bmap(struct vop_bmap_args *ap)
 {
-	daddr_t blkno;
+	/*
+	 * PBSD: -1, which is this API's own spelling of "not mapped" -
+	 * ext2_bmaparray() writes it at :246 for a zero block pointer.  The
+	 * store to *ap->a_bnp below is unconditional, and ext2_bmaparray()
+	 * returns ext2_getlbns()'s error at :240 having written nothing, so
+	 * a caller that reads the block number before the error got a stack
+	 * word where it now gets a hole.
+	 */
+	daddr_t blkno = -1;
 	int error;
 
 	/*

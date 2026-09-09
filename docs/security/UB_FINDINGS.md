@@ -13583,3 +13583,73 @@ The general lesson is the one the control test gave and this confirms:
 the analyser does not invent NULLs from unconstrained returns. When it
 reports one, something in the code said NULL — here, a macro arm nobody
 was reading.
+
+## `*ap->a_bnp = blkno` is unconditional, and `bmaparray` has returns that write no block
+
+Two of the fs shard's uninitialised reads are the same three lines, once
+in ext2 and once in UFS:
+
+```c
+	error = ext2_bmaparray(ap->a_vp, ap->a_bn, &blkno,
+	    ap->a_runp, ap->a_runb);
+	*ap->a_bnp = blkno;
+	return (error);
+```
+
+`blkno` is a bare local. `ext2_bmaparray()` returns `ext2_getlbns()`'s
+error at `:240` having written nothing through `bnp`; UFS's does the same
+at `:227` and has two `return (EINVAL)` at `:239` and `:245` besides. The
+store is not under the error test, so `VOP_BMAP`'s caller gets a stack
+word as a disk block number on every one of those paths.
+
+Both are now `= -1`, which is not an invention: it is this API's own
+spelling of "not mapped", written by `*bnp = -1` at `ext2_bmap.c:246` and
+`ufs_bmap.c:236` for a zero block pointer. A caller that reads the block
+number before the error now sees a hole.
+
+The analyser reported the ext2 one and not the UFS one — the same code,
+in the tree's primary filesystem, differing only in which paths the path
+budget reached. It was found by reading the sibling, which is what one
+finding in a copied function is for.
+
+## `g_concat`: the "we could not ask" fallback is inside the arm that could
+
+```c
+	error = g_access(cp, 1, 0, 0);
+	if (error == 0) {
+		error = g_getattr("GEOM::candelete", cp, &disk_candelete);
+		if (error != 0)
+			disk_candelete = 0;
+		(void)g_access(cp, -1, 0, 0);
+	} else
+		G_CONCAT_DEBUG(1, "Failed to access disk %s, error %d.", ...);
+	...
+	disk->d_candelete = disk_candelete;
+```
+
+The `disk_candelete = 0` that handles "the attribute could not be read"
+is nested inside the arm where the consumer *was* opened. A consumer that
+could not be opened at all takes the `else`, says so in a debug message,
+and falls through to store an unwritten local into the disk record.
+`d_candelete` is what `g_concat_candelete()` reads to decide whether the
+concat device advertises `GEOM::candelete`, and therefore whether
+`BIO_DELETE` is passed through to that member — so a stack word decides
+whether TRIM reaches a disk. Initialised to 0, which is what the
+fallback beside it already uses and what "we could not ask" means.
+
+```
+--scope sys/fs --scope sys/ufs --scope sys/geom --scope sys/cam
+--scope sys/security --check-errors
+  156 -> 154 findings, 334 OK, 2 ERROR on both sides
+```
+
+Two, not three: `ufs_bmap.c` was never reported, so fixing it moves no
+number. All three markers verified by restoring from `HEAD`: `exit=1`.
+
+### Three from the same shard that are not defects
+
+| where | rests on |
+|---|---|
+| `cam/scsi/scsi_enc_ses.c:2762,2792` | `req.result` is a stack field of a request queued on `ses->ses_requests` and read after `cam_periph_sleep()`. Every write is immediately before the `wakeup(req)` that ends that sleep: `ses_encode()`'s result at `:2228`, and `ses_terminate_control_requests()` at `:133`, reached from `:1939`, `:2208` and `:2728`. `cam_periph_sleep` is `xpt_path_sleep` is `msleep` at `PUSER` — no `PCATCH` — with no timeout, so it returns no other way. |
+| `geom/eli/g_eli.c:1202` | `dcw` is assigned at `:1092`, after the `goto failed` at `:1083` that `g_attach()` failure takes. The `failed:` label reads it only inside `if (cp->provider != NULL)`, and `g_attach()` leaves `cp->provider` NULL exactly when it fails. Worth noting that initialising `dcw` would be the *wrong* fix: `g_access(cp, -1, 0, -1)` on a consumer opened with `dcw == 1` would leak a write count, so 0 is not a safe default here — the guard is. |
+| `geom/eli/g_eli.c:1509` | `g_eli_mkey_decrypt_any()` writes `*nkeyp = -1` on entry (`g_eli_key.c:158`), before any loop, so `nkey` is written whether or not a key is found. The callee is in another translation unit, which is the whole of why the analyser cannot see it. |

@@ -83,7 +83,17 @@ ufs_bmap(
 		int *a_runb;
 	} */ *ap)
 {
-	ufs2_daddr_t blkno;
+	/*
+	 * PBSD: -1, this API's own spelling of "not mapped" -
+	 * ufs_bmaparray() writes it at :236 for a zero block pointer.  The
+	 * store to *ap->a_bnp below is unconditional and ufs_bmaparray()
+	 * has three returns that write nothing: ufs_getlbns()'s error at
+	 * :227 and the two EINVAL at :239 and :245.  Same shape as
+	 * fs/ext2fs/ext2_bmap.c, which the analyser reported and this one
+	 * it did not - found by reading the sibling rather than by the
+	 * tool, which is what one finding in a copied function is for.
+	 */
+	ufs2_daddr_t blkno = -1;
 	int error;
 
 	/*
