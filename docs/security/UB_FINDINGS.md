@@ -12670,3 +12670,50 @@ and read under `if (t->fs.hash)`, with `t4_l2t_alloc_switching()` and
 write through `t`.
 
 `tom/t4_tls.c:1037` is the last one in this scope still unread.
+
+## `cxgbe/tom/t4_tls.c` — a zero-length TLS record, from the wire
+
+The last unread finding in the cxgbe scope, and the one worth the most.
+
+`do_rx_tls_cmp()` ends by deciding how to hand the decrypted record to
+the socket. In the branch that has a control mbuf:
+
+```c
+		if (tls_data != NULL) {
+			m_last(tls_data)->m_flags |= M_EOR;
+			tgr->tls_length = htobe16(tls_data->m_pkthdr.len);
+		} else
+			tgr->tls_length = 0;
+
+		m_freem(m);
+		m = tls_data;
+```
+
+The `else` is the code stating, in its own words, that `tls_data` can be
+NULL — a TLS record with no payload. Two lines later `m` becomes that
+NULL. Then:
+
+```c
+	if (sb->sb_flags & SB_AUTOSIZE &&
+	    V_tcp_do_autorcvbuf &&
+	    sb->sb_hiwat < V_tcp_autorcvbuf_max &&
+	    m->m_pkthdr.len > (sbspace(sb) / 8 * 7)) {
+```
+
+A zero-length application-data record is something a TLS peer may send,
+so this is a remote null dereference on any T6 connection using TLS
+receive offload.
+
+Everything *after* the block is already NULL-safe, which is what makes
+the omission clear rather than ambiguous: `sbappendcontrol_locked()`
+opens `if (m0 != NULL)` and `sbm_clrprotoflags()` walks `while (m)`. The
+append path was written for a record with no data mbuf; the autosize
+heuristic was not. One `m != NULL &&` in front of a condition whose whole
+purpose is to compare a length that does not exist.
+
+```
+--scope sys/dev/cxgbe   13 findings -> 12   47 units, OK both sides
+```
+
+**The cxgbe scope is now fully read: 21 -> 12**, and every one of the
+twelve that remain is written up above with the invariant it rests on.

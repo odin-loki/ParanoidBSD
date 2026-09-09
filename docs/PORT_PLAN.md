@@ -58,7 +58,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 5 | `usr.bin` | 732 | 247,979 | 4,186 |
 | 6 | `usr.sbin` | 1,142 | 657,085 | 9,020 |
 | 7 | `stand` | 484 | 135,408 | 2,433 |
-| 8 | `sys` | 14,951 | 10,496,680 | 81,387 |
+| 8 | `sys` | 14,951 | 10,496,692 | 81,387 |
 | 9 | `secure` | 6 | 1,588 | 18 |
 | 10 | `kerberos5` | 12 | 3,111 | 29 |
 | 11 | `krb5` | 5 | 1,434 | 0 |
@@ -74,7 +74,7 @@ ever see a single name. Where a file's `gen` count is high, read the file.
 | 21 | `crypto` | 5,294 | 2,766,720 | 0 |
 | 22 | `contrib` | 13,389 | 5,624,936 | 0 |
 | 23 | `tests` | 322 | 134,711 | 0 |
-| | **total** | **41,143** | **21,297,739** | **114,204** |
+| | **total** | **41,143** | **21,297,751** | **114,204** |
 
 | tag | files |
 |---|---:|
@@ -67627,7 +67627,7 @@ function; a file with two hundred of them is a project.
   - [ ] 8.678.4.43 `do_pass_establish()` · `TODO-FN`
   - [ ] 8.678.4.44 `t4_init_listen_cpl_handlers()` · `TODO-FN`
   - [ ] 8.678.4.45 `t4_uninit_listen_cpl_handlers()` · `TODO-FN`
-- [ ] **8.678.5** `t4_tls.c` · 1,433L · `TODO-PORT` · 26 fn
+- [ ] **8.678.5** `t4_tls.c` · 1,445L · `TODO-PORT` · 26 fn
   - [ ] 8.678.5.1 `t4_set_tls_tcb_field()` · `TODO-FN`
   - [ ] 8.678.5.2 `can_tls_offload()` · `TODO-FN`
   - [ ] 8.678.5.3 `tls_tx_key()` · `TODO-FN`

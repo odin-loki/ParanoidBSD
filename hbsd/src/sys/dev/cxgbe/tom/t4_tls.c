@@ -1031,7 +1031,19 @@ do_rx_tls_cmp(struct sge_iq *iq, const struct rss_header *rss, struct mbuf *m)
 	/* receive buffer autosize */
 	MPASS(toep->vnet == so->so_vnet);
 	CURVNET_SET(toep->vnet);
-	if (sb->sb_flags & SB_AUTOSIZE &&
+	/*
+	 * PBSD: m != NULL first.  The control-mbuf arm above does
+	 * `m_freem(m); m = tls_data;', and tls_data is NULL for a record
+	 * with no payload - the `else tgr->tls_length = 0' three lines
+	 * earlier is that case.  A zero-length TLS application-data record,
+	 * which a peer may send, therefore reached this dereference.
+	 * Everything after it is already NULL-safe:
+	 * sbappendcontrol_locked() tests m0 for NULL and sbm_clrprotoflags()
+	 * walks `while (m)'.  A record with no data mbuf has no length that
+	 * could justify growing the receive buffer.
+	 */
+	if (m != NULL &&
+	    sb->sb_flags & SB_AUTOSIZE &&
 	    V_tcp_do_autorcvbuf &&
 	    sb->sb_hiwat < V_tcp_autorcvbuf_max &&
 	    m->m_pkthdr.len > (sbspace(sb) / 8 * 7)) {

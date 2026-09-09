@@ -1229,6 +1229,18 @@ FIXES = {
             "return and schedules itself again on `pending > 0'",
         ),
     ],
+    "hbsd/src/sys/dev/cxgbe/tom/t4_tls.c": [
+        (
+            "PBSD: m != NULL first.",
+            "\tif (sb->sb_flags & SB_AUTOSIZE &&\n\t    V_tcp_do_autorcvbuf "
+            "&&\n\t    sb->sb_hiwat < V_tcp_autorcvbuf_max &&\n"
+            "\t    m->m_pkthdr.len > (sbspace(sb) / 8 * 7)) {\n",
+            "the control-mbuf arm does `m_freem(m); m = tls_data;' and "
+            "tls_data is NULL for a record with no payload, so a "
+            "zero-length TLS application-data record reached this "
+            "dereference",
+        ),
+    ],
     "hbsd/src/sys/dev/cxgbe/cudbg/fastlz_api.c": [
         (
             "PBSD: an error, not success.",
