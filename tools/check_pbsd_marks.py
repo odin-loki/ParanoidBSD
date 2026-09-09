@@ -1004,6 +1004,16 @@ FIXES = {
             "label to decide whether to wait for the bus",
         ),
     ],
+    "hbsd/src/sys/dev/iwn/if_iwn.c": [
+        (
+            "PBSD: check this one. iwn_read_prom_data() returns",
+            "\t/* Read regulatory domain (4 ASCII characters). */\n\tiwn_read_prom_data(sc, IWN5000_EEPROM_REG, &val, 2);\n",
+            "iwn_read_prom_data() returns ETIMEDOUT or EIO without "
+            "writing the caller's buffer, and this call produces "
+            "`base' - the address every later EEPROM read in "
+            "iwn5000_read_eeprom() uses",
+        ),
+    ],
     "hbsd/src/sys/dev/ti/if_ti.c": [
         (
             "PBSD: error = 0, which ti_copy_mem()",

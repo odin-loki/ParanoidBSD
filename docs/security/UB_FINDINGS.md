@@ -11128,3 +11128,65 @@ path rather than here. Which of the two lines is wrong depends on
 whether `parent` can be NULL at all, given that this implementation is
 only selected when the parent already carries it. Left for a reading
 that settles that.
+
+---
+
+## `iwn5000_read_eeprom`: a failed EEPROM read becomes the address of every later one
+
+`if_iwn.c:2351` is `core.uninitialized.Assign`, and it is the one place
+in that file where the shape matters most.
+
+```c
+static int
+iwn_read_prom_data(struct iwn_softc *sc, uint32_t addr, void *data, int count)
+{
+	uint8_t *out = data;
+	...
+		if (ntries == 20) {
+			device_printf(sc->sc_dev,
+			    "timeout reading ROM at 0x%x\n", addr);
+			return ETIMEDOUT;
+		}
+		if (sc->sc_flags & IWN_FLAG_HAS_OTPROM) {
+			...
+			if (tmp & IWN_OTP_GP_ECC_UNCORR_STTS) {
+				device_printf(sc->sc_dev,
+				    "OTPROM ECC error at 0x%x\n", addr);
+				return EIO;
+			}
+		}
+		*out++ = val >> 16;
+```
+
+Both error returns are **before** the first write to `*out`, so the
+caller's buffer is untouched. And:
+
+```c
+	/* Read regulatory domain (4 ASCII characters). */
+	iwn_read_prom_data(sc, IWN5000_EEPROM_REG, &val, 2);
+	base = le16toh(val);
+```
+
+`base` is not a value. It is the **address** every subsequent read in
+that function uses — the regulatory domain, the channel list for each
+band, the calibration header, the temperature and voltage calibration
+points, the crystal calibration. A stack word here sends all of them
+somewhere else in the EEPROM, and the driver then configures the
+regulatory domain and channel list from whatever it finds.
+
+The device prints "timeout reading ROM" or "OTPROM ECC error" first, so
+the failure is not silent — but nothing acts on it.
+
+Fixed for this one call. **Not** fixed for the other sixteen: eighteen
+call sites, one of which (`:1657`) checks. The rest are one wrong value
+each rather than a wrong offset for everything, and the `read_eeprom`
+method they sit in is `void`, so propagating an error means changing the
+method's signature and both implementations. That is a different change
+from a line, and half-doing it would leave the file looking checked
+where it is not.
+
+```
+--scope sys/dev/iwn   1 finding -> 0   1 unit, OK on both sides
+```
+
+Both sides at the same scope, per the `ti_copy_scratch` note above.

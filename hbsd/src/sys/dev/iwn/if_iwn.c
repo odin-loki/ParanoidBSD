@@ -2346,8 +2346,30 @@ iwn5000_read_eeprom(struct iwn_softc *sc)
 
 	DPRINTF(sc, IWN_DEBUG_TRACE, "->%s begin\n", __func__);
 
+	/*
+	 * PBSD: check this one. iwn_read_prom_data() returns ETIMEDOUT
+	 * when the EEPROM does not answer in 20 tries and EIO on an
+	 * uncorrectable OTPROM ECC error, and on both it returns BEFORE
+	 * `*out++ = val >> 16', so it leaves the caller's buffer
+	 * untouched. Seventeen of its eighteen call sites in this file
+	 * discard that, and this is the one where it matters most:
+	 * `base' is not a value, it is the ADDRESS every later read in
+	 * this function uses - the regulatory domain, the channel list
+	 * for each band, the calibration header, the temperature and
+	 * voltage points. A stack word here sends all of them somewhere
+	 * else in the EEPROM.
+	 *
+	 * The other sixteen are one wrong value each rather than a wrong
+	 * offset for everything, and the read_eeprom method is void, so
+	 * they need the method's signature changed rather than a line.
+	 * Left as a task rather than half-done here.
+	 */
 	/* Read regulatory domain (4 ASCII characters). */
-	iwn_read_prom_data(sc, IWN5000_EEPROM_REG, &val, 2);
+	if (iwn_read_prom_data(sc, IWN5000_EEPROM_REG, &val, 2) != 0) {
+		device_printf(sc->sc_dev,
+		    "could not read the EEPROM regulatory base\n");
+		return;
+	}
 	base = le16toh(val);
 	iwn_read_prom_data(sc, base + IWN5000_EEPROM_DOMAIN,
 	    sc->eeprom_domain, 4);
